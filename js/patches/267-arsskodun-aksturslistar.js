@@ -85,7 +85,7 @@
   const TRUCK_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 17h1a2 2 0 0 0 4 0h8a2 2 0 0 0 4 0h1v-5l-3-4h-3V7H3z"/></svg>';
   function styleChip(chip, v) {
     chip.dataset.ak = String(v);
-    chip.innerHTML = TRUCK_SVG + (v ? '<b style="font-family:\'Space Mono\',ui-monospace,monospace;font-size:11px;font-weight:700;line-height:1">' + v + '</b>' : '');
+    chip.innerHTML = TRUCK_SVG + (v ? '<b style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:11px;font-weight:700;line-height:1">' + v + '</b>' : '');
     chip.title = v ? ('Akstur ' + v + ' — smelltu til að breyta') : 'Enginn aksturslisti — smelltu til að setja á lista';
     chip.style.cssText =
       'display:inline-flex;align-items:center;justify-content:center;gap:3px;flex:none;' +

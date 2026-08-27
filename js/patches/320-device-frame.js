@@ -75,8 +75,8 @@
     bar.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex:none';
     bar.innerHTML =
       Object.keys(DEVICES).map(k =>
-        '<button data-dev="' + k + '" style="all:unset;cursor:pointer;font:700 12.5px \'Space Grotesk\',sans-serif;color:' + (k === devKey ? '#0f1117' : '#e5e9f0') + ';background:' + (k === devKey ? '#fff' : 'rgba(255,255,255,.12)') + ';padding:8px 14px;border-radius:9px">' + DEVICES[k].label + ' · ' + DEVICES[k].w + '×' + DEVICES[k].h + '</button>').join('') +
-      '<span style="font:12px \'Space Mono\',monospace;color:#9aa3b2">' + Math.round(scale * 100) + '%</span>' +
+        '<button data-dev="' + k + '" style="all:unset;cursor:pointer;font:700 12.5px \'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;color:' + (k === devKey ? '#0f1117' : '#e5e9f0') + ';background:' + (k === devKey ? '#fff' : 'rgba(255,255,255,.12)') + ';padding:8px 14px;border-radius:9px">' + DEVICES[k].label + ' · ' + DEVICES[k].w + '×' + DEVICES[k].h + '</button>').join('') +
+      '<span style="font:12px \'JetBrains Mono\',ui-monospace,monospace;color:#9aa3b2">' + Math.round(scale * 100) + '%</span>' +
       '<button id="_df-refresh" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:9px" title="Endurhlaða rammann (sækir nýjustu stíla)">↻</button>' +
       '<button id="_df-close" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#fff;background:#c9403a;padding:8px 14px;border-radius:9px">✕ Loka</button>';
     const scaler = document.createElement('div');

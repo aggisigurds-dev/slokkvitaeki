@@ -48,18 +48,18 @@
    ============================================================ */
 .view h1{
   color:#11141c !important;
-  font-family:'Space Grotesk', system-ui, sans-serif !important;
+  font-family:'Playfair Display', Georgia, serif !important;
   font-weight:700 !important;
   letter-spacing:-.01em !important;
 }
 .view h2{
   color:#1f2530 !important;
-  font-family:'Space Grotesk', system-ui, sans-serif !important;
+  font-family:'Playfair Display', Georgia, serif !important;
   font-weight:600 !important;
 }
 .view h3{
   color:#3a4250 !important;
-  font-family:'Space Grotesk', system-ui, sans-serif !important;
+  font-family:'Playfair Display', Georgia, serif !important;
   font-weight:600 !important;
 }
 /* Banner h1/h2 explicitly white (only inside the eldbanner) */
@@ -73,7 +73,7 @@
 h1,
 h2,
 h3{
-  font-family:'Space Grotesk', system-ui, sans-serif !important;
+  font-family:'Playfair Display', Georgia, serif !important;
 }
 
 /* ============================================================

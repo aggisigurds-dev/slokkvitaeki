@@ -26,7 +26,7 @@
       ":root{--thm-red:#DA2A1E;--thm-line:#E6E3DA;--thm-line2:#EFEDE6;}",
       "body,.view,.main-panel,button,input,select,textarea,th,td{font-family:'Public Sans',Inter,system-ui,sans-serif !important;}",
       "body.has-mobnav,.main-panel{background:#F5F4EF !important;}",
-      "h1,h2,h3{font-family:'Space Grotesk',sans-serif !important;letter-spacing:-.02em !important;}",
+      "h1,h2,h3{font-family:'Playfair Display',Georgia,serif !important;letter-spacing:-.02em !important;}",
       ".topbar{background:#16181D !important;}",
       ".vnav-btn{position:relative !important;font-weight:500 !important;}",
       ".vnav-btn:hover{background:rgba(255,255,255,.05) !important;}",
@@ -36,11 +36,11 @@
       "._ars-vm,#_ars-sort{border-color:var(--thm-line) !important;border-radius:9px !important;}",
       ".by-preset{border-color:var(--thm-line) !important;border-radius:8px !important;}",
       "._ars-mo{border-color:var(--thm-line) !important;}",
-      "th._ars-sort{font-family:'Space Mono',monospace !important;font-size:10.5px !important;letter-spacing:.05em !important;text-transform:uppercase !important;color:#9A9CA2 !important;}",
+      "th._ars-sort{font-family:'JetBrains Mono',ui-monospace,monospace !important;font-size:10.5px !important;letter-spacing:.05em !important;text-transform:uppercase !important;color:#9A9CA2 !important;}",
       "tr._ars-row td{border-bottom:1px solid var(--thm-line2) !important;}",
       "tr._ars-row:hover{background:#FBFAF6 !important;}",
       ".thm-stat{border:1px solid var(--thm-line) !important;border-radius:13px !important;box-shadow:0 1px 2px rgba(20,20,25,.05) !important;}",
-      ".thm-statnum{font-family:'Space Grotesk',sans-serif !important;letter-spacing:-.02em !important;}",
+      ".thm-statnum{font-family:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif !important;letter-spacing:-.02em !important;}",
       ".thm-track{height:4px;border-radius:3px;margin-top:11px;overflow:hidden;}",
       ".thm-fill{height:100%;border-radius:3px;}"
     ].join('\n');

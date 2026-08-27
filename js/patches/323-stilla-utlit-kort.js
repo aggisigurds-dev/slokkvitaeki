@@ -392,7 +392,7 @@
    * ------------------------------------------------------------------------ */
   const FONTS = [
     ['', '(sjálfgefið)'],
-    ['"Space Grotesk",system-ui,sans-serif', 'Space Grotesk'],
+    ['"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif', 'IBM Plex Sans'],
     ['"Public Sans",system-ui,sans-serif', 'Public Sans'],
     ['system-ui,-apple-system,sans-serif', 'Kerfisletur'],
     ['Verdana,Geneva,sans-serif', 'Verdana'],

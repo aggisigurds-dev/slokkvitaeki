@@ -67,7 +67,7 @@
       +'}',
 
       /* ── fonts ──────────────────────────────────────────────────────────── */
-      P+'body, '+P+'.view, '+P+'.topbar, '+P+'.vnav-btn, '+P+'#bstal-banner{font-family:"Space Grotesk",system-ui,-apple-system,sans-serif}',
+      P+'body, '+P+'.view, '+P+'.topbar, '+P+'.vnav-btn, '+P+'#bstal-banner{font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif}',
 
       /* ── page backdrop: UNIFORM brushed steel-grey (no dark zone around the
        *    content/products — the fixed banner supplies the black at the top). */
@@ -141,7 +141,7 @@
       P+'.view .badge-danger,'+P+'.view .pill-red,'+P+'.view .status-overdue,'+P+'.view [class*="-utrunnin"],'+P+'.view [class*="-haett"]{background:linear-gradient(150deg,#e25555,#a01818)!important;color:#fff!important;border:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)!important}',
 
       /* ── numbers in Space Mono where the app marks them ─────────────────── */
-      P+'.view .kr,'+P+'.view .price,'+P+'.view .amount,'+P+'.view .total,'+P+'.view .mono{font-family:"Space Mono",monospace}',
+      P+'.view .kr,'+P+'.view .price,'+P+'.view .amount,'+P+'.view .total,'+P+'.view .mono{font-family:"JetBrains Mono",ui-monospace,monospace}',
 
       /* ═══ SITE-WIDE RECIPES (Cowork audit §C/§D/§E) ══════════════════════ */
       /* focus rings (a11y) */
@@ -211,9 +211,9 @@
       P+'.ut-head .h-last,'+P+'.ut-head .h-now,'+P+'.ut-grp-cnt,'+P+'.ut-sub{color:var(--ink2)!important}',
       /* theme typeface reaches form controls + buttons (UA controls don't
          inherit the .view font-family). */
-      P+'.view button,'+P+'.view input,'+P+'.view select,'+P+'.view textarea{font-family:"Space Grotesk",system-ui,-apple-system,sans-serif}',
+      P+'.view button,'+P+'.view input,'+P+'.view select,'+P+'.view textarea{font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif}',
       /* reikningur (úttekt) line-item amount column → mono numbers per the guide */
-      P+'#_ctc-section tbody td:last-child,'+P+'#_ctc-section tfoot td:last-child{font-family:"Space Mono",monospace}',
+      P+'#_ctc-section tbody td:last-child,'+P+'#_ctc-section tfoot td:last-child{font-family:"JetBrains Mono",ui-monospace,monospace}',
       /* ── Allir viðskiptavinir (#view-allir-vidsk) — light page, fix off-theme bits ── */
       /* An info-banner sits ABOVE the title, pushing it down onto the LIGHT part
          of the backdrop — so the global white h1 was unreadable. Per the mockup
@@ -308,8 +308,8 @@
       '#bstal-banner .bb-rightwrap{position:relative;z-index:5;margin-left:auto;display:flex;align-items:center;gap:12px}',
       '#bstal-banner .bb-clockbox{text-align:right;padding:8px 16px;border-radius:12px;background:#050607;border:1px solid #000;box-shadow:inset 0 2px 10px #000,inset 0 0 30px rgba(255,160,40,.06)}',
       '#bstal-banner .bb-eyebrow{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:rgba(255,178,77,.55)}',
-      '#bstal-banner .bb-clock{font-family:"Space Mono",monospace;font-size:28px;font-weight:700;line-height:1.05;color:#ffb24d;font-variant-numeric:tabular-nums;letter-spacing:.5px;text-shadow:0 0 14px rgba(255,160,40,.85);contain:layout style}',
-      '#bstal-banner .bb-date{font-size:10px;color:rgba(255,178,77,.5);font-family:"Space Mono",monospace;margin-top:1px;text-transform:uppercase}',
+      '#bstal-banner .bb-clock{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:28px;font-weight:700;line-height:1.05;color:#ffb24d;font-variant-numeric:tabular-nums;letter-spacing:.5px;text-shadow:0 0 14px rgba(255,160,40,.85);contain:layout style}',
+      '#bstal-banner .bb-date{font-size:10px;color:rgba(255,178,77,.5);font-family:"JetBrains Mono",ui-monospace,monospace;margin-top:1px;text-transform:uppercase}',
       /* ember underglow bleeding below the banner */
       '#bstal-ember{position:fixed;top:146px;left:calc(var(--sidebar-w,220px) + 8%);right:8%;height:60px;z-index:39;pointer-events:none;'
         +'background:radial-gradient(62% 100% at 50% 0%,rgba(255,110,30,.32),rgba(255,80,20,.08) 55%,transparent 76%);filter:blur(13px);display:none;'

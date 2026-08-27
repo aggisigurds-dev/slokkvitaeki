@@ -77,7 +77,7 @@
    ============================================================ */
 ${all('h1[style]')},
 ${all('h2[style]')}{
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'Playfair Display', Georgia, serif !important;
   font-weight: 700 !important;
   letter-spacing: -.01em !important;
   color: #11141c !important;
@@ -133,7 +133,7 @@ ${all('[class*="amount"]')},
 ${all('[class*="total"]')},
 ${all('[class*="price"]')},
 ${all('.mono')}{
-  font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
   font-variant-numeric: tabular-nums !important;
 }
 
@@ -141,7 +141,7 @@ ${all('.mono')}{
 ${all('table td[align="right"]')},
 ${all('table td[style*="text-align:right"]')},
 ${all('table td[style*="text-align: right"]')}{
-  font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
   font-variant-numeric: tabular-nums !important;
 }
 
@@ -160,7 +160,7 @@ ${all('button[style*="background: #f3f4f6"]')}{
   border: 1px solid rgba(20,24,34,.14) !important;
   border-radius: 11px !important;
   padding: 8px 14px !important;
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif !important;
   font-weight: 600 !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 1px 2px rgba(20,30,60,.08) !important;
   transition: filter .12s ease, box-shadow .12s ease !important;
@@ -213,7 +213,7 @@ ${all('input[placeholder*="🔎"]')}{
   border: 1.5px solid rgba(20,24,34,.14) !important;
   border-radius: 11px !important;
   padding: 10px 14px !important;
-  font: 14px/1.3 'Space Grotesk', system-ui, sans-serif !important;
+  font: 14px/1.3 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif !important;
   color: #11141c !important;
   box-shadow: inset 0 1px 2px rgba(20,30,60,.05) !important;
   outline: none !important;
@@ -232,7 +232,7 @@ ${all('input[placeholder*="🔎"]:focus')}{
    ============================================================ */
 ${all('.vorur-tab')},
 ${all('[class*="-tab"][style*="border-bottom"]')}{
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif !important;
   font-weight: 600 !important;
   color: #5b6573 !important;
 }
@@ -264,7 +264,7 @@ ${P}#view-vorur .vorur-card:hover{
 /* Vörur — section category headers: cleaner uppercase tracker */
 ${P}#view-vorur [style*="text-transform:uppercase"][style*="font-weight:800"],
 ${P}#view-vorur [style*="text-transform: uppercase"][style*="font-weight: 800"]{
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif !important;
   font-weight: 700 !important;
   letter-spacing: .06em !important;
   font-size: 12.5px !important;
@@ -274,7 +274,7 @@ ${P}#view-vorur [style*="text-transform: uppercase"][style*="font-weight: 800"]{
 /* Tekjur — the kr stat in the hero panel needs Space Mono */
 ${P}#view-income [style*="font-size:22px"][style*="font-weight:700"],
 ${P}#view-income [style*="font-size: 22px"][style*="font-weight: 700"]{
-  font-family: 'Space Mono', ui-monospace, monospace !important;
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
   font-variant-numeric: tabular-nums !important;
   color: #11141c !important;
 }
@@ -282,7 +282,7 @@ ${P}#view-income [style*="font-size: 22px"][style*="font-weight: 700"]{
 /* Bókhalds yfirlit — title row & filter strip get the same lift */
 ${P}#view-bokhalds-yfirlit h1,
 ${P}#view-bokhalds-yfirlit h2{
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'Playfair Display', Georgia, serif !important;
   font-weight: 700 !important;
   color: #11141c !important;
   text-shadow: none !important;
@@ -303,7 +303,7 @@ ${P}#view-taeknimenn [style*="border-radius: 10px"]{
 /* Verkstæði — chrome already metallic via 230; ensure the page-header sub
  * (".bw-page-sub") sits in the right type even when inline-styled */
 ${P}#view-workshop .bw-page-h1{
-  font-family: 'Sora', 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'Playfair Display', Georgia, serif !important;
 }
 
 /* Lánstæki — its bottom-of-row util buttons share the flat-grey pattern;
@@ -321,7 +321,7 @@ ${all('[style*="color: #64748b"][style*="font-size: 12px"]')},
 ${all('[style*="color:#6b7280"][style*="font-size:12px"]')},
 ${all('[style*="color: #6b7280"][style*="font-size: 12px"]')}{
   color: #5b6573 !important;
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif !important;
   font-weight: 500 !important;
   letter-spacing: .01em !important;
 }

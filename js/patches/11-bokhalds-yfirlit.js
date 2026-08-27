@@ -69,7 +69,7 @@
       #${VIEW_ID} { padding: 0; }
       #${VIEW_ID} .by-wrap {
         max-width: 1720px; margin: 0 auto; padding: 10px 18px 60px;
-        font-family: 'Space Grotesk', system-ui, sans-serif; color: #11141c;
+        font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif; color: #11141c;
       }
       #${VIEW_ID} .by-header {
         display: flex; justify-content: space-between; align-items: flex-end;
@@ -105,7 +105,7 @@
         text-transform: uppercase; letter-spacing: 0.14em;
       }
       #${VIEW_ID} .by-card .val {
-        font-family: 'Space Mono', monospace;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
         font-size: 30px; font-weight: 700; margin-top: 4px; color: #11141c;
       }
       #${VIEW_ID} .by-card .sub {
@@ -179,7 +179,7 @@
       }
       #${VIEW_ID} .by-btn.primary:hover { filter: brightness(1.14); }
       #${VIEW_ID} .by-count {
-        font-family: 'Space Mono', monospace;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
         font-size: 12px; color: #9098a6; margin-left: auto;
       }
 
@@ -211,7 +211,7 @@
         vertical-align: top; color: #3a4250;
       }
       #${VIEW_ID} .by-table tbody td.num-col {
-        text-align: right; font-family: 'Space Mono', monospace; font-weight: 600; color: #11141c;
+        text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; color: #11141c;
       }
       #${VIEW_ID} .by-table tbody tr.by-sale-row { cursor: pointer; transition: background .12s; }
       #${VIEW_ID} .by-table tbody tr.by-sale-row:hover { background: #f3f6fc; }
@@ -263,7 +263,7 @@
       #${VIEW_ID} .by-payment-pill.reidufe { background: #fffbeb; color: #b45309; border-color: #fde68a; }
       #${VIEW_ID} .by-payment-pill.reikn { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
       #${VIEW_ID} .by-num-cell {
-        font-family: 'Space Mono', monospace; font-size: 12px; color: #11141c;
+        font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #11141c;
       }
 
       /* One compact line per sala (Agnar, Samsung S26 ~390px). „Greitt" is the
@@ -304,7 +304,7 @@
       <main class="main-panel">
         <div class="by-wrap">
           <div class="by-header" style="display:flex;flex-direction:column;gap:2px;margin-bottom:14px">
-            <h1 style="margin:0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:22px;font-weight:700;color:var(--ink1,#11141c);letter-spacing:-.01em;line-height:1.15">📊 Bókhalds yfirlit</h1>
+            <h1 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:700;color:var(--ink1,#11141c);letter-spacing:-.01em;line-height:1.15">📊 Bókhalds yfirlit</h1>
             <div class="by-sub" style="font-size:12.5px;color:var(--ink3,#5b6472);margin-top:2px">Yfirlit yfir allar sölur með VSK-sundurliðun og útflutningi til CSV fyrir bókhald og skattaskil</div>
           </div>
 
@@ -684,14 +684,14 @@
       if (c.cls === 'accent') {
         return '<div style="flex:1 1 195px;min-width:195px;border-radius:15px;padding:12px 15px;background:linear-gradient(150deg,#6f97ff 0%,#2f5fe0 34%,#1c3d8c 60%,#0b1838 100%);box-shadow:0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.25),0 20px 38px -20px rgba(20,40,120,.5),inset 0 1px 0 rgba(255,255,255,.45)">'
           + '<div style="font-size:9.5px;font-weight:700;letter-spacing:.12em;color:rgba(255,255,255,.72);text-transform:uppercase">' + esc(c.lbl) + '</div>'
-          + '<div style="font-family:\'Space Mono\',monospace;font-size:22px;font-weight:700;color:#fff;margin-top:2px;white-space:nowrap">' + esc(c.val) + '</div>'
+          + '<div style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:22px;font-weight:700;color:#fff;margin-top:2px;white-space:nowrap">' + esc(c.val) + '</div>'
           + (c.sub ? '<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:1px">' + esc(c.sub) + '</div>' : '')
           + '</div>';
       }
       const valCol = c.cls === 'warn' ? '#b45309' : '#11141c';
       return '<div style="flex:1 1 195px;min-width:195px;border-radius:15px;padding:12px 15px;background:linear-gradient(180deg,#ffffff,#eef1f6);box-shadow:' + CS + '">'
         + '<div style="font-size:9.5px;font-weight:700;letter-spacing:.12em;color:#8a93a5;text-transform:uppercase">' + esc(c.lbl) + '</div>'
-        + '<div style="font-family:\'Space Mono\',monospace;font-size:22px;font-weight:700;color:' + valCol + ';margin-top:2px;white-space:nowrap">' + esc(c.val) + '</div>'
+        + '<div style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:22px;font-weight:700;color:' + valCol + ';margin-top:2px;white-space:nowrap">' + esc(c.val) + '</div>'
         + (c.sub ? '<div style="font-size:11px;color:#9098a6;margin-top:1px">' + esc(c.sub) + '</div>' : '')
         + '</div>';
     }).join('');
@@ -740,7 +740,7 @@
             ? '<div style="font-size:10px;color:#16a34a;font-weight:600">✓ greitt ' + esc(fmtDateOnly(s.paid_at)) + '</div><div style="font-size:10px;color:#94a3b8">skráð ' + esc(fmtDateOnly(s.date)) + '</div>'
             : '')
         + '</td>'
-        + '<td><div style="font-size:13.5px;font-weight:600;color:#11141c">' + esc(s.customer || '—') + '</div>' + (getKt(s) ? '<div style="font-family:\'Space Mono\',monospace;font-size:10.5px;color:#9098a6;margin-top:1px">kt. ' + esc(getKt(s)) + '</div>' : '') + '</td>'
+        + '<td><div style="font-size:13.5px;font-weight:600;color:#11141c">' + esc(s.customer || '—') + '</div>' + (getKt(s) ? '<div style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:10.5px;color:#9098a6;margin-top:1px">kt. ' + esc(getKt(s)) + '</div>' : '') + '</td>'
         + '<td>' + esc(s.staff || '') + '</td>'
         + '<td class="num-col">' + s.lines.length + '</td>'
         + '<td class="num-col">' + fmtNum(s.ex) + '</td>'

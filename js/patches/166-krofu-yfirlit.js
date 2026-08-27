@@ -79,7 +79,7 @@
       V + '.ky-table tr.ky-tgrp td{background:#eef2f8;font-weight:700;border-top:2px solid #d7dee9}' +
       V + '.ky-table tr.ky-trow:hover td{background:#f7f9fd}' +
       B + '.ky-table td{color:#11141c}' +
-      B + ".ky-num{font-family:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace !important}" +
+      B + ".ky-num{font-family:'JetBrains Mono',ui-monospace,monospace !important}" +
       // 2026-08-25: Stílstjóri málaði síðuna (grár bakgrunnur, svartur titill,
       // hetjukortið hvítt). Læsum Brunastál-útlitinu aftur + jöfnum KPI-spjöldin
       // (flex-wrap lét Heildarkröfur blása út). Sími-2×2 kemur á eftir (M).
@@ -829,7 +829,7 @@
     const old = document.getElementById('_ky-sync-modal'); if (old) old.remove();
     const wrap = document.createElement('div');
     wrap.id = '_ky-sync-modal';
-    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'Space Grotesk\',system-ui,sans-serif';
+    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif';
     let inner;
     if (data.error) {
       inner = '<div style="font-size:16px;font-weight:800;color:#dc2626;margin-bottom:8px">⚠️ Villa við samstillingu</div>' +
@@ -1730,7 +1730,7 @@
       const old = document.getElementById('_ky-send-modal'); if (old) old.remove();
       const wrap = document.createElement('div');
       wrap.id = '_ky-send-modal';
-      wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100070;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'Space Grotesk\',system-ui,sans-serif';
+      wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100070;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif';
       const isUttekt = !!(sale && sale.source === 'uttekt');
       let reportHtml;
       if (res.found) {
