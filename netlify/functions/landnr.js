@@ -28,7 +28,9 @@ const cors = {
 };
 
 export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors });
+  // 204 MÁ EKKI hafa meginmál — `new Response('', {status:204})` kastar og
+  // Netlify skilar þá 502 (staðfest á lifandi falli 28.08). Verður að vera null.
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
   const url = new URL(req.url);
   const leit = (url.searchParams.get('leit') || url.searchParams.get('term') || '').trim();
