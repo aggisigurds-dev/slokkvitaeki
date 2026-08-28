@@ -178,14 +178,101 @@ inherited `color` on nested containers.
   re-left-aligns them when the drawer is open. If you touch `.vnav-btn`,
   check BOTH rules or labels will scatter.
 
-## 6. Constraints
+## 6. Scroll containers - one per axis
+
+Fixed 2026-08-28 by `js/patches/325-table-single-scroller.js`. Read this before
+touching any `overflow` in this repo.
+
+### The wildcard ("joker") hazard
+
+`css/mobile.css:66` reads:
+
+```css
+.view table, .view .tbl, .view [class*="table"]{ overflow-x:auto !important; }
+```
+
+`[class*="table"]` is a **substring wildcard**. It was meant for the `<table>`,
+but it also matches every wrapper whose class contains the letters `table`:
+
+- `.data-table-scroll`
+- `.data-table-wrap`
+- `._ars-tblscroll` (via its second class `data-table-scroll`)
+
+So three nested elements all became scroll containers where one was intended.
+
+**Never write `[class*="..."]` here.** The class vocabulary in this repo is full
+of compound names (`data-table-wrap`, `data-table-scroll`, `_ars-tblscroll`),
+so a substring match nearly always catches more than you mean. Name the
+elements explicitly.
+
+### The symptom to recognise
+
+Nested horizontal scrollers feel like this to the user: *"it scrolls, stops at
+the same spot, and I have to swipe again to keep going."* The inner box consumes
+the gesture, hits its end, and momentum dies; the outer box needs a fresh touch.
+
+Measured on the arsskodun table at 980px before the fix:
+
+| element | scrolls |
+| --- | --- |
+| `table.data-table` | 117px - gesture dies here |
+| `div._ars-tblscroll` | 390px - needs a new gesture |
+
+By viewmode: `mobile` 0 scrollers, `table` 1, `desktop` **2**. Only Skjar broke.
+
+### The rule
+
+**The wrapper scrolls. The `<table>` never does.** A `<table>` is content, not
+a viewport. When you need a wide table to scroll, put `overflow-x:auto` on the
+wrapper and leave the table `display:table; overflow:visible`.
+
+To check any view for this:
+
+```js
+let el = document.querySelector('YOUR_TABLE'), n = 0;
+while (el && el !== document.documentElement) {
+  const cs = getComputedStyle(el);
+  if (/auto|scroll/.test(cs.overflowX) && el.scrollWidth - el.clientWidth > 1) n++;
+  el = el.parentElement;
+}
+n; // must be 0 or 1. 2+ is the bug.
+```
+
+Also verify nothing is unreachable: `wrapper.scrollWidth >= table.scrollWidth`.
+Before the fix, at 412px in Simi mode the table was 653px but only 338px was
+reachable through the wrapper - content that could never be read. Same class of
+bug as 2026-07-30 (see `245-brunastal-content-skin.js:145`).
+
+### `overflow-x:visible` does not do what you think
+
+Per the CSS spec, if `overflow-y` is anything other than `visible`, then
+`overflow-x:visible` **computes to `auto`** - silently creating the very scroll
+container you were trying to remove.
+
+The wrappers here carry `overflow-y:hidden` (patch 245 keeps the rounded
+corners), so `overflow-x:visible` is a no-op on them. Verified by probe.
+
+**Use `overflow-x:clip`** to un-make a scroll container while `overflow-y`
+stays `hidden`. It coexists with `hidden` and never creates a scroll box.
+Browsers without `clip` drop the declaration and keep the previous behaviour -
+a safe degradation, so no `@supports` guard is needed.
+
+### `:has()` belongs in its own rule block
+
+An unparseable selector invalidates the **entire** selector list it appears in.
+Patch 325 therefore keeps its `:has()` de-nesting rule in a separate `<style>`
+element from the core rules, so an old browser loses only the defensive rule.
+`:has()` is otherwise unused in this repo - it is a new pattern here, so flag it
+if you add more.
+
+## 7. Constraints
 
 - **No build step.** No React, Vite, Tailwind, or PostCSS. Plain HTML/CSS/JS.
 - Modern CSS is available but currently unused: **no `@layer`, no
   `@container`.** Introducing them is fine but is a new pattern - flag it.
 - Cache-busting is manual: bump `?v=` in `index.html` when changing a CSS file.
 
-## 7. Verify before claiming done
+## 8. Verify before claiming done
 
 A CSS edit here is not proof of anything. Confirm in the browser:
 

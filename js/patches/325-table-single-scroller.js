@@ -65,10 +65,16 @@
       h.id = ID + '-has';
       (document.head || document.documentElement).appendChild(h);
     }
+    /* `clip`, EKKI `visible`: umgjörðin hefur overflow-y:hidden (245 heldur
+       ávölu hornunum). Samkvæmt CSS-staðlinum reiknast overflow-x:visible
+       SJÁLFKRAFA sem `auto` þegar hinn ásinn er ekki visible — reglan yrði
+       því gagnslaus. `clip` lifir með overflow-y:hidden og býr ALDREI til
+       skrunkassa. Gamlir vafrar sem kunna ekki `clip` sleppa lýsingunni og
+       sitja eftir með fyrri hegðun (auto) — engin afturför. */
     h.textContent =
       '.view .data-table-wrap:has(.data-table-scroll)' + PAD2 + ',' +
       '.view .data-table-wrap:has(._ars-tblscroll)' + PAD2 +
-      '{overflow-x:visible!important}';
+      '{overflow-x:clip!important}';
   }
 
   if (document.head) inject();
