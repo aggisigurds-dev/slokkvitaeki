@@ -320,13 +320,45 @@
   }
 
   // ── Fljótandi takki + merki ────────────────────────────────────────────────────
+  // Lítill hnappur í borðanum (við hliðina á 🤖 og 🎨) í stað fljótandi takka
+  // sem lá yfir töflunni neðst til hægri. Fljótandi útgáfan er höfð eftir sem
+  // varaleið fyrir síður/tæki þar sem borðinn er ekki til staðar.
+  function injectLauncherCSS() {
+    if (document.getElementById('pat-launch-css')) return;
+    const st = document.createElement('style');
+    st.id = 'pat-launch-css';
+    st.textContent =
+      '#pat-launch.pat-launch-icon{position:static;width:34px;height:34px;padding:0;border:0;' +
+        'background:transparent;border-radius:9px;font-size:17px;line-height:1;cursor:pointer;' +
+        'display:flex;align-items:center;justify-content:center;box-shadow:none;overflow:visible}' +
+      '#pat-launch.pat-launch-icon:hover{background:rgba(255,255,255,.12)}' +
+      '#pat-launch.pat-launch-icon .pat-badge{position:absolute;transform:translate(11px,-11px);' +
+        'min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:#d8451a;color:#fff;' +
+        'font-size:9.5px;font-weight:700;line-height:15px;text-align:center;pointer-events:none}';
+    document.head.appendChild(st);
+  }
+
   function ensureLauncher() {
     if (document.getElementById('pat-launch')) return;
     injectCSS();
+    injectLauncherCSS();
     const b = document.createElement('button');
     b.id = 'pat-launch';
-    b.innerHTML = '🤖 <span>AI-flokka póst</span><span class="pat-badge" id="pat-launch-badge" style="display:none">0</span>';
     b.addEventListener('click', open);
+
+    const wrap = document.querySelector('.bb-rightwrap');
+    if (wrap) {
+      b.className = 'pat-launch-icon';
+      b.title = 'AI-flokka póst';
+      b.setAttribute('aria-label', 'AI-flokka póst');
+      b.innerHTML = '📮<span class="pat-badge" id="pat-launch-badge" style="display:none">0</span>';
+      const clock = wrap.querySelector('.bb-clockbox');
+      if (clock) wrap.insertBefore(b, clock); else wrap.appendChild(b);
+      return;
+    }
+
+    // Varaleið: gamli fljótandi takkinn.
+    b.innerHTML = '🤖 <span>AI-flokka póst</span><span class="pat-badge" id="pat-launch-badge" style="display:none">0</span>';
     document.body.appendChild(b);
   }
   function updateBadge() {
