@@ -96,3 +96,6 @@ tmp_*.py
 
 # playwright-cli vinnuskrár (uppsett 2026-08-28)
 .playwright-cli/
+
+# remember-plugin session memory (staðbundið, aldrei í Git)
+.remember/
