@@ -83,3 +83,6 @@ graphify-out/
 # Keep shared subagents version-controlled
 !.claude/agents/
 !.claude/agents/**
+
+# responsive-craft live preview artifact (auto-copied into serve dir)
+_responsive-preview.html
