@@ -36,3 +36,69 @@ ekki?** Það sem stenst hana fer í `charlize_knowledge` — 1–5 færslur er 
 merki um að dagbók sé að laumast inn.
 
 Ef ekkert nýtt kom í ljós, skrifaðu ekkert. Tóm lota er líka svar.
+
+---
+
+# Hvar hlutirnir liggja (uppfært 28.08.2026)
+
+Taflan efst lýsir HLUTVERKUM. Þessi kafli lýsir STÖÐUM — það var þar sem
+ruglingurinn lá.
+
+## Tvö aðskilin kerfi. Þetta er uppspretta glundroðans.
+
+| | Repo (`.claude/` í slokkvitaeki) | claude.ai-reikningurinn |
+|---|---|---|
+| Fylgir með í Git | ✅ | ❌ |
+| Berst á hinar vélarnar | ✅ sjálfkrafa | ❌ handvirkt per vél |
+| Sést í `git ls-files .claude/` | ✅ | ❌ |
+
+Sama nafn getur verið til á BÁÐUM stöðum og verið sitthvor hluturinn.
+`sara` er t.d. bæði repo-agent (`sara-coworker`) og claude.ai-skill.
+
+**Reglan:** allt sem á að virka á öllum fjórum vélunum verður að vera í
+repo-inu. Skill sem liggur bara á reikningnum er ekki til fyrir hinar vélarnar.
+
+## Agentar í repo-inu (11)
+
+`adstod` · `bord-flettur` · `elon-musk` · `joker` · `kort` · `kunnaskra` ·
+`netvordur` · `prentun` · `sala-reikningar` · `sara-coworker` · `thema`
+
+## Skills í repo-inu
+
+Verkfæri: `add-feature`, `deploy`, `verkefnalisti`, `uttekt-audit`,
+`ajour-endpoint-capture`, `screenshot-verify`, `grill-me`, `cowork-doc-sweep`,
+`brief-to-tasks` · Hönnun: `design-*`, `frontend-design`, `graphic-design`,
+`information-architecture`, `mobile-*`, `slokkvitaeki-layout` ·
+Þekking: **`charlize`**, **`arnold`**, `elon-musk`
+
+`charlize` og `arnold` voru fluttar inn 28.08.2026. Fram að því lágu þær
+aðeins á reikningnum — á meðan `kunnaskra`, `netvordur` og `sara-coworker`
+vísuðu allar í charlize sem var ekki til á vélinni.
+
+**`natalie` er ekki til.** Hvorki agent né skill, hvergi. Ef verk er merkt
+henni fer það í tómið.
+
+## Fjórar vélar + sími — hvernig þær haldast í takt
+
+`heartbeat.js` (luna-bridge) sendir lífsmark á 30 mín fresti á
+`brunaholf.netlify.app/kerfisheilsa.html`: hvaða vél, hvaða repo, hvaða grein,
+síðasta commit og hvort eitthvað sé óvistað. GIT_PULL-takkinn í símanum keyrir
+`git pull --ff-only` á öllum repo-um sem vélin FINNUR.
+
+Gildrur, báðar staðfestar 28.08.2026:
+
+1. **`git status` lýgur þar til `git fetch` er keyrt.** Vinnutré getur sagst
+   „in sync" og verið mánuðum á eftir. Þessi vél var 1518 commit og þrjá
+   mánuði á eftir án þess að nokkuð segði frá því.
+2. **GIT_PULL sleppir repo-um með óvistuðum breytingum** (`--ff-only`).
+   Kerfisheilsa merkir þau `ÓVISTAГ — það er merkið um að vél þurfi hendur.
+
+## Breytingar 28.08.2026 sem hafa áhrif á verkaskiptinguna
+
+- **Tímavera er ekki lengur verk luna-bridge.** API-tengd beint
+  (`timavera-pull.js`). Scheduled task fjarlægt, `timavera-bridge.js` læst
+  nema `TIMAVERA_BRIDGE_FORCE=1`.
+- **Redder þarf ekki lengur Thunderbird opinn.** `redder.js` les pósthólfið
+  beint um IMAP ef `IMAP_BOKHALD_*` er í `.env`; annars gamla mbox-leiðin.
+- **Ajour er enn háð vafra** og setu-köku sem rennur út. `--capture` tekur upp
+  beiðnina svo hægt sé að skipta yfir í hreint JSON-kall síðar.
