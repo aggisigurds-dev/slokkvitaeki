@@ -22,6 +22,56 @@ It contains everything Claude Code needs to know to be useful immediately.
 
 ---
 
+## ⛔ ÞRJÁR REGLUR — lesist fyrst
+
+Agnar eyðir of miklum tíma í að endurtaka sig, staðfesta aftur og biðja um sama
+hlutinn oftar en einu sinni. Það er ekki minnisleysi hjá honum. Það er af því að
+lotur gleyma, stöðuskjáir ljúga og „búið" er sagt án þess að vera prófað.
+Þessar þrjár reglur eru til að stoppa það. Hver þeirra á sér raunverulegt dæmi
+frá 28.08.2026.
+
+### 1. Lestu Charlize ÁÐUR en þú byrjar — ekki bara í lokin
+
+```sql
+select topic, fact, detail from v_charlize_active
+where scope in ('kerfi','baedi','slokkvitaeki') order by created_at desc limit 40;
+```
+
+Þekkingin er þarna. Sé hún ekki lesin er hún enduruppgötvuð — og Agnar spurður
+aftur að því sem hann svaraði fyrir mánuði. Í lok lotu: skrifaðu það sem næsta
+lota veit ekki. *(Skill: `charlize`. Regla hennar: lestu áður en þú breytir,
+skrifaðu áður en þú lokar.)*
+
+### 2. `git status` lýgur þangað til þú keyrir `git fetch`
+
+```bash
+git fetch origin && git status -sb
+```
+
+**Dæmi:** vinnutréð sagðist „in sync" og var 1518 commit og þrjá mánuði á eftir.
+Á þeim grunni var næstum ýtt út kóða sem hafði þegar verið leystur af hólmi.
+Sama gildir um `claude mcp list` (sýnir ekki claude.ai-tengingar) og
+viðbóta-listann (sýnir netþjóna sem verða aldrei auðkenndir). **Enginn stöðuskjár
+er sannleikur fyrr en hann er sannreyndur.**
+
+### 3. Ekkert er „búið" án þess að segja HVERNIG það var prófað
+
+Ekki „lagað". Heldur: *hvað var keyrt, hvað kom út.* Sé það óprófað skal það
+sagt hreint út.
+
+**Dæmi frá einum degi:**
+
+| Sagt | Raunveruleiki |
+|---|---|
+| `doc-indexer.js` á main, virkt | hefði hrunið á fyrsta PDF (pdf-parse v2) |
+| Tímavera „óvirk" síðan í júlí | scheduled task keyrði á klukkutíma fresti í 6 vikur |
+| „Taka úr þjónustu virkar ekki" | virkaði — prófunin svaraði aldrei `Confirm.show` |
+
+Þriðja línan er sérstaklega mikilvæg: **ósannreynd fullyrðing um bilun kostar
+alveg jafn mikinn tíma og ósannreynd fullyrðing um lagfæringu.**
+
+---
+
 ## 🧭 HVER KANN HVAÐ — byrjaðu hér
 
 Þekkingin sem áður var í þessu skjali (~15.000 tokens sem hlóðust í **hverri einustu
