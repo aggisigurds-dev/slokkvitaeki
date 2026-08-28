@@ -86,3 +86,13 @@ graphify-out/
 
 # responsive-craft live preview artifact (auto-copied into serve dir)
 _responsive-preview.html
+
+# 2026-08-28 — staðbundnar yfirferðarskrár með kennitölum viðskiptavina.
+# Mikilvægt: auto-sync á öðrum vélum má ALDREI taka þessar með.
+_luna_*
+_open_items.md
+# Einnota python-skriftur úr gagnaflutningi (sama regla og tmp_*.mjs/json/txt)
+tmp_*.py
+
+# playwright-cli vinnuskrár (uppsett 2026-08-28)
+.playwright-cli/
