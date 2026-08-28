@@ -198,6 +198,17 @@
       'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl>thead,body.appmode #view-rekstrarfelog table.rf-tbl>thead{display:table-header-group!important}',
       'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl>tbody,body.appmode #view-rekstrarfelog table.rf-tbl>tbody{display:table-row-group!important}',
       'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl>colgroup,body.appmode #view-rekstrarfelog table.rf-tbl>colgroup{display:table-column-group}',
+      // Sami varnargarður fyrir „Allar byggingar"-yfirlitstöfluna (rf-ovtbl). 263's
+      // `V table{display:block}` + `V table>thead{display:table}` klauf hana í tvær
+      // töflur svo hausinn (9 <th>) staflaðist upp sem fullbreiðir blokkir og TÆKI-
+      // dálkurinn „hvarf" úr dashboard-töflunni í Sími-/app-ham (haus stakur, gildin
+      // í eigin dálki fyrir neðan). Þvingum hana aftur í EINA töflu svo haus og dálkar
+      // standi saman; hún skrollar lárétt í .rf-ovwrap (overflow-x:auto). Sbr. rf-tbl.
+      'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-ovtbl,body.appmode #view-rekstrarfelog table.rf-ovtbl{display:table!important;min-width:720px;max-width:none;width:100%}',
+      'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-ovtbl>thead,body.appmode #view-rekstrarfelog table.rf-ovtbl>thead{display:table-header-group!important}',
+      'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-ovtbl>tbody,body.appmode #view-rekstrarfelog table.rf-ovtbl>tbody{display:table-row-group!important}',
+      'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-ovtbl>thead>tr,html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-ovtbl>tbody>tr,body.appmode #view-rekstrarfelog table.rf-ovtbl>thead>tr,body.appmode #view-rekstrarfelog table.rf-ovtbl>tbody>tr{display:table-row!important}',
+      'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-ovtbl>thead>tr>th,html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-ovtbl>tbody>tr>td,body.appmode #view-rekstrarfelog table.rf-ovtbl>thead>tr>th,body.appmode #view-rekstrarfelog table.rf-ovtbl>tbody>tr>td{display:table-cell!important}',
       P+'.rf-tbl thead tr{background:'+METB+'}',
       P+'.rf-tbl th{text-align:left;padding:10px 12px;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#f0f2f5;white-space:nowrap;text-transform:uppercase;border:0}',
       P+'.rf-tbl th.c{text-align:center}',
@@ -1395,7 +1406,7 @@
     }).join('');
     if(!trs) trs='<tr><td colspan="9" style="padding:16px;text-align:center;color:var(--ink4)">Ekkert fannst.</td></tr>';
     box.innerHTML='<div class="noprint" style="display:flex;justify-content:flex-end;margin-bottom:8px"><button id="_rf_print" style="padding:7px 13px;border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">🖨 Prenta skýrslu</button></div>'+totHtml+chips+
-      '<div style="overflow-x:auto;background:var(--surface);border:1px solid var(--brd);border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+
+      '<div class="rf-ovwrap" style="overflow-x:auto;background:var(--surface);border:1px solid var(--brd);border-radius:12px"><table class="rf-ovtbl" style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+
       sth('firm','Rekstrarfélag','left','6px')+
       sth('byg','Bygging','left','6px')+
       sth('kt','Kennitala','left','6px')+
