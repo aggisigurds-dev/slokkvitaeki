@@ -255,6 +255,13 @@
   function getDecl(prop) { const r = currentRule(false); return r && r.decls ? r.decls[prop] : undefined; }
   // Apply a numeric size (from slider OR manual number box). Padding V/H set BOTH
   // sides and drop any `padding` shorthand so squared buttons actually shrink.
+  // CSS-eigindi sem TAKA EKKI einingu. Áður féllu þau í px-greinina hér að neðan
+  // ef kallandinn gaf ranga einingu, og út kom ógilt `font-weight:300px` sem
+  // vafrinn hendir þegjandi. Listinn ver okkur óháð því hvað kallandinn sendir.
+  const UNITLESS_PROPS = new Set([
+    'font-weight', 'line-height', 'opacity', 'z-index',
+    'flex-grow', 'flex-shrink', 'order', 'font-variation-settings',
+  ]);
   function applySize(prop, unit, raw) {
     let val = parseFloat(String(raw).replace(',', '.')); if (!isFinite(val)) return;
     snapshot();
@@ -264,7 +271,7 @@
       else if (prop === 'height' && val <= 0) { delete r.decls['height']; }   // 0 = auto (unset)
       else if (prop === 'line-height') { r.decls['line-height'] = String(val / 100); }
       else if (unit === '%') { r.decls[prop] = val + '%'; }
-      else if (unit === '') { r.decls[prop] = String(val); }
+      else if (unit === '' || UNITLESS_PROPS.has(prop)) { r.decls[prop] = String(val); }
       else { if (prop === 'border-width') r.decls['border-style'] = 'solid'; r.decls[prop] = val + 'px'; }
     });
     if (!r0) return;
