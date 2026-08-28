@@ -115,6 +115,11 @@
       '#' + BTN + '{position:static;width:34px;height:34px;padding:0;border:0;background:transparent;',
       '  border-radius:9px;font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}',
       '#' + BTN + ':hover{background:rgba(255,255,255,.12)}',
+      // Fljótandi staða þegar borðaröndin er falin (sími). Situr fyrir ofan
+      // 📮 AI-flokka takkann svo þeir skarist ekki.
+      '#' + BTN + '._float{position:fixed;right:14px;bottom:78px;z-index:9999;width:52px;height:52px;',
+      '  border-radius:50%;background:#1e293b;color:#fff;font-size:22px;',
+      '  box-shadow:0 6px 20px rgba(0,0,0,.45)}',
     ].join('');
     document.head.appendChild(st);
   }
@@ -212,21 +217,41 @@
   }
   function onKey(e) { if (e.key === 'Escape') close(); }
 
-  /* Hnappur í borðanum, við hliðina á 🎨 og 📮. */
+  /* Hnappur í borðanum — EN borðaröndin er FALIN á síma:
+       314-simi-compact-layer.js:189  html[data-viewmode="mobile"] .bb-rightwrap{display:none!important}
+       css/mobile.css:201             #bstal-banner .bb-rightwrap{display:none!important}
+     Það dugar því EKKI að athuga hvort .bb-rightwrap sé til — hún er til en
+     ósýnileg. Sé hún falin fer hnappurinn í fljótandi stöðu neðst til hægri,
+     annars í borðann. Endurmetið í fylgjaranum, því hamurinn getur skipst. */
+  function wrapUsable(w) {
+    return !!w && w.offsetParent !== null && getComputedStyle(w).display !== 'none';
+  }
   function mountButton() {
-    if (document.getElementById(BTN)) return;
-    const wrap = document.querySelector('.bb-rightwrap');
-    if (!wrap) return;
     css();
-    const b = document.createElement('button');
+    const wrap = document.querySelector('.bb-rightwrap');
+    const usable = wrapUsable(wrap);
+    let b = document.getElementById(BTN);
+    const wanted = usable ? 'banner' : 'float';
+    if (b && b.dataset.spot === wanted) return;     // þegar á réttum stað
+    if (b) b.remove();
+
+    b = document.createElement('button');
     b.id = BTN;
     b.type = 'button';
+    b.dataset.spot = wanted;
     b.title = 'Dálkastjóri — fela, sýna og breikka dálka';
     b.setAttribute('aria-label', 'Dálkastjóri');
     b.textContent = '📐';
     b.addEventListener('click', open);
-    const clock = wrap.querySelector('.bb-clockbox');
-    if (clock) wrap.insertBefore(b, clock); else wrap.appendChild(b);
+
+    if (usable) {
+      b.className = '';
+      const clock = wrap.querySelector('.bb-clockbox');
+      if (clock) wrap.insertBefore(b, clock); else wrap.appendChild(b);
+    } else {
+      b.className = '_float';
+      document.body.appendChild(b);
+    }
   }
 
   /* Borðinn er endurteiknaður; ytri fylgjari heldur hnappnum á sínum stað.

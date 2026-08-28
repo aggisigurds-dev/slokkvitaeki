@@ -346,7 +346,12 @@
     b.id = 'pat-launch';
     b.addEventListener('click', open);
 
-    const wrap = document.querySelector('.bb-rightwrap');
+    // Borðaröndin er FALIN á síma (314:189 og css/mobile.css:201) — hún er til
+    // en display:none. Að athuga aðeins tilvist setti takkann á ósýnilegan stað
+    // 28.8.2026 og hann hvarf úr símanum. Athuga því SÝNILEIKA.
+    const wrapEl = document.querySelector('.bb-rightwrap');
+    const wrap = (wrapEl && wrapEl.offsetParent !== null &&
+                  getComputedStyle(wrapEl).display !== 'none') ? wrapEl : null;
     if (wrap) {
       b.className = 'pat-launch-icon';
       b.title = 'AI-flokka póst';
