@@ -256,3 +256,60 @@ Vinnureglurnar þínar:
    viewport og alvöru síminn.
 5. **Y/B/L ársmerkin (`._yr`)** eru áfram varða línan — aðeins útfærð þegar
    Agnar velur eina útgáfu, og þá í 153 look-A blokkinni, hvergi annars.
+
+---
+
+## Gildrur við símaprófun — lærdómur 28.08.2026
+
+Fjórar staðreyndir sem kostuðu heila lotu. Lestu áður en þú reynir að
+endurskapa símaútlit.
+
+### 1. Að minnka gluggann gerir EKKERT
+
+`data-viewmode` á `<html>` ræður útlitinu, ekki breidd gluggans. Það er
+NOTANDA-STILLING, ekki media query. Sjá `slokkvitaeki-layout` kafla 1.
+
+Þess vegna: `resize_window` að 390px sýnir áfram skjáborðsútlit. Ég mældi
+dálkabreiddir aftur og aftur á „síma" sem var í raun `desktop`-ham og fékk
+tölur sem áttu ekkert skylt við það sem Agnar sá.
+
+Rétt leið, í forgangsröð:
+
+1. **📱 device-ramminn í Stílstjóra-toolbar** — sami viewport og alvöru
+   síminn. Þetta er leiðin sem á að nota (stóð þegar neðar í þessari skrá).
+2. Ef þú keyrir samt í console: `document.documentElement.dataset.viewmode = 'mobile'`
+   — EN hún endurstillist. `getViewMode()` (patches 147/166/167) les úr
+   localStorage og skrifar yfir hana við næstu endurteikningu. Staðfest: sett á
+   `mobile`, mæld aftur 5 sek síðar → komin í `desktop`.
+3. Í uppsettum app-ham er hún ÞVINGUÐ í `mobile`, óháð skjástærð og stillingu.
+
+### 2. Vafra-glugginn kemst ekki niður fyrir ~657px
+
+`resize_window` að 390×844 skilar `innerWidth: 657`. Þú KEMST ekki í raunverulega
+símabreidd í þessum vafraglugga. Notaðu device-rammann eða treystu skjámyndum
+frá Agnari.
+
+### 3. `preview_start` gefur ENGAN vef
+
+`.claude/launch.json` → „slokkvitaeki" keyrir `build-dist` (afritar 498 skrár í
+`dist/`) og hættir. Ekkert svarar á portinu — `curl` skilar HTTP 000. Það er
+því EKKI hægt að prófa patch á staðbundnum vef þannig. Prófaðu á
+`slokkvitaeki.netlify.app` eftir push, eða í device-rammanum.
+
+### 4. Dálkastýring er til á TVEIMUR stöðum
+
+- **📐 Dálkastjóri** (patch 326, nýtt 28.8): heilskjás-listi, 46px snertifletir,
+  👁 fela/sýna + − px + á hverjum dálki. Hnappur í borðanum við hliðina á 🎨.
+- **Stilla útlit > Taflan > „ítarlegt ▾"** (patch 323): sami listi, en þremur
+  smellum djúpt og með ~28px hnöppum. Agnar fann hann aldrei — orðið „ítarlegt"
+  segir ekkert um dálka.
+
+Bæði skrifa í sama `TableLook`. 319 gefur út CSS með tvítekið auðkenni +
+`!important`, sem er það EINA sem vinnur á símareglunum í 314. Ekki skrifa nýtt
+CSS fyrir dálkabreiddir — notaðu `TableLook`.
+
+### Reglan sem af þessu leiðir
+
+**Mæling í röngum ham er verri en engin mæling** — hún lítur út eins og
+staðreynd. Staðfestu ALLTAF `document.documentElement.dataset.viewmode` í sömu
+andrá og þú mælir, og hafðu gildið með í niðurstöðunni.
