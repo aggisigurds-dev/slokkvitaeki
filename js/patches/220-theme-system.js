@@ -54,7 +54,18 @@
 
   // Val-leifar gamla kerfisins per tæki — hreinsað svo ekkert „muni" annað þema.
   // AppSettings 'ui_theme' stendur óhreyft (ekki eyða gögnum; enginn les það lengur).
-  try { ['slokk_theme', 'brunastal_accent', 'bstal_prev_preset', '_thm_darkreset_v1'].forEach(k => localStorage.removeItem(k)); } catch (_) {}
+  // 2026-08-28: `cfg_theme` VANTAÐI í þennan lista. Það er lykillinn sem
+  // 66-dark-mode.js notaði, og hann lifði frystinguna af — svo tæki sem einu
+  // sinni fengu 🌙-högg sátu FÖST í dökku þema að eilífu, þvert á "ekkert
+  // þemaflökt" hér að ofan. Per tæki, þess vegna virtist það handahófskennt:
+  // síminn bilaður, tölvan í lagi. Dökka þemað var líka skrifað ÁÐUR en
+  // Brunastál varð til og málaði því gamalt útlit yfir frosna hönnun.
+  try {
+    ['slokk_theme', 'brunastal_accent', 'bstal_prev_preset', '_thm_darkreset_v1',
+     'cfg_theme', 'cfg_theme_v2_reset'].forEach(k => localStorage.removeItem(k));
+  } catch (_) {}
+  // Losa tæki sem sitja föst í dökku frá fyrri lotum.
+  try { document.documentElement.removeAttribute('data-theme'); } catch (_) {}
 
   // Lágmarks-API í stað gamla Theme-kerfisins: set() skiptir ekki lengur um þema
   // heldur endur-applyar bara grunninn — eldri kallarar fá aldrei villu.
