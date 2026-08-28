@@ -2880,8 +2880,8 @@
                 const dir = state.sortDir;
                 const arrow = (col) => '<span class="sort-ar">' + (cur === col ? (dir === 'asc' ? '▲' : '▼') : '⇅') + '</span>';
                 return `
-                  <th class="_ars-mailhdr center" title="Póst-staða — umslag/pera birtir samskiptastöðu. Smelltu á merkið í röðinni til að sjá póstinn.">✉</th>
-                  <th data-sort="name" class="_ars-sort">Fyrirtæki${arrow('name')}<span class="_ars-mailsort" title="Raða eftir póst-stöðu (merkin í þessum dálki). 1× smellur: ósvarað → saga → engin · 2×: póstsaga til fyrst · 3×: til baka í stafrófsröð" style="margin-left:7px;cursor:pointer;font-size:10px;font-weight:800;padding:1px 5px;border-radius:6px;vertical-align:middle;white-space:nowrap;${(cur==='poststada'||cur==='postavail')?'background:rgba(59,130,246,.22);outline:1px solid rgba(59,130,246,.55);color:#fff':'opacity:.5'}">🚦${cur==='poststada'?' staða '+(dir==='asc'?'▲':'▼'):cur==='postavail'?' saga '+(dir==='asc'?'▲':'▼'):''}</span></th>
+                  <th class="_ars-mailhdr center _ars-mailsort" style="cursor:pointer" title="Póst-staða — raða eftir merkjunum í þessum dálki. 1× smellur: ósvarað fyrst · 2×: póstsaga fyrst · 3×: til baka í stafrófsröð. Smelltu á merkið í röðinni sjálfri til að sjá póstinn.">✉${(cur === 'poststada' || cur === 'postavail') ? '<span class="sort-ar" style="color:#60a5fa">' + (dir === 'asc' ? '▲' : '▼') + '</span>' : '<span class="sort-ar">⇅</span>'}</th>
+                  <th data-sort="name" class="_ars-sort">Fyrirtæki${arrow('name')}</th>
                   <th data-notacol="1" title="✈ Ferðanóta — tímabundnar nótur við ferðaskipulag">Ferðanóta</th>
                   <th data-addrcol="1" data-sort="postnumer" class="_ars-sort" title="Raða eftir póstnúmeri (fyrir akstursleiðir)">Heimilisfang${arrow('postnumer')}</th>
                   <th data-sort="month" class="_ars-sort center">Skoðun${arrow('month')}</th>
