@@ -44,7 +44,22 @@
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const kr = n => (window.fmtKr ? window.fmtKr(n) : (Math.round(+n||0).toLocaleString('is-IS') + ' kr'));
 
-  const on = () => { try { return localStorage.getItem(LS_ON) === '1'; } catch (_) { return false; } };
+  /* ?arsview=bilstjori|bord í símaramma: sýnir spjöld eða borð ÁN þess að
+     krukka í vistaða stillingu notandans. Stjórnun = borðið úr
+     arsskodun-mobile.html (renderMobileRows). Bílstjóri = 317-spjöldin. */
+  function previewOverride() {
+    try {
+      const q = new URLSearchParams(location.search).get('arsview');
+      if (q === 'bilstjori') return true;
+      if (q === 'bord' || q === 'stjornun') return false;
+    } catch (_) {}
+    return null;
+  }
+  const on = () => {
+    const o = previewOverride();
+    if (o !== null) return o;
+    try { return localStorage.getItem(LS_ON) === '1'; } catch (_) { return false; }
+  };
   const setOn = v => { try { localStorage.setItem(LS_ON, v ? '1' : '0'); } catch (_) {} };
   const akFilter = () => { try { return localStorage.getItem(LS_AK) || 'allir'; } catch (_) { return 'allir'; } };
   const setAkFilter = v => { try { localStorage.setItem(LS_AK, v); } catch (_) {} };
@@ -358,6 +373,7 @@
   }
 
   function takki() {
+    if (previewOverride() !== null) return;
     const v = document.getElementById(VIEW_ID);
     if (!v || !v.classList.contains('active')) return;
     if (v.querySelector('#_bil-toggle')) return;

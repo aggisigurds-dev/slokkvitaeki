@@ -19,6 +19,8 @@
   if (window.__pageEditorInstalled) return;
   window.__pageEditorInstalled = true;
 
+  const IN_DEVFRAME = !!(new URLSearchParams(location.search).get('devframe'));
+
   const KEY = 'page_editor_v1_json';
   const BTN_ID = '_pe-btn';
   const PANEL_ID = '_pe-panel';
@@ -1604,6 +1606,7 @@
 
   // ── panel open/close ────────────────────────────────────────────────────────
   function openPanel() {
+    if (IN_DEVFRAME) return;
     injectStyles();
     if (document.getElementById(PANEL_ID)) return;
     const p = document.createElement('div'); p.id = PANEL_ID; document.body.appendChild(p);
@@ -1619,6 +1622,7 @@
 
   // ── the 🎨 banner button ────────────────────────────────────────────────────
   function ensureBtn() {
+    if (IN_DEVFRAME) return;
     if (document.getElementById(BTN_ID)) return;
     injectStyles();
     const clockbox = document.querySelector('.bb-clockbox');
@@ -1630,6 +1634,14 @@
 
   function boot() {
     loadState(); applyCss();
+    if (IN_DEVFRAME) {
+      applyZones();
+      try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => { loadState(); applyCss(); applyZones(); }); } catch (_) {}
+      window.addEventListener('hashchange', () => setTimeout(applyZones, 140));
+      document.addEventListener('slokk-viewmode', () => setTimeout(applyZones, 60));
+      setInterval(applyZones, 1500);
+      return;
+    }
     ensureBtn();
     const obs = new MutationObserver(() => { if (!document.getElementById(BTN_ID)) ensureBtn(); });
     obs.observe(document.body, { childList: true, subtree: true });
@@ -1699,6 +1711,7 @@
     // Teikna panelinn upp á nýtt án þess að loka honum — fyrir spjöld sem
     // skrifa í aðra geymslu (t.d. TableLook) og þurfa svo að sýna nýja stöðu.
     refresh: () => { if (document.getElementById(PANEL_ID)) renderPanel(); },
+    syncFrame: () => {},
     // Fyrir hjálpar-patcha (321-toflunet o.fl.): skrifa/lesa staka decl á reglu
     // með eigin selector — sama farvegur og allt annað (snapshot + persist +
     // AppSettings-sync), svo breytingakerfið helst eitt.
