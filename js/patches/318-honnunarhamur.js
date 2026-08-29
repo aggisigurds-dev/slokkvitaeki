@@ -36,7 +36,9 @@
     try {
       if (window.SlokkDevFrame && typeof SlokkDevFrame.iframe === 'function') {
         const f = SlokkDevFrame.iframe();
-        if (f && f.contentDocument && f.contentDocument.documentElement)
+        /* Aðeins skrifa --ars-* inn í rammann þegar hann er á Ársskoðun —
+           annars lentu sleðar/AppSettings á Fjármálum o.fl. */
+        if (f && f.contentDocument && f.contentDocument.documentElement && frameIsArs())
           return f.contentDocument.documentElement;
       }
     } catch (_) {}
@@ -359,6 +361,7 @@
   }
 
   let veljaDoc = null;
+  let _sidastaArsRammi = null;
   function bindVelja(d) {
     if (veljaDoc) {
       try { veljaDoc.removeEventListener('click', velja, true); } catch (_) {}
@@ -422,28 +425,77 @@
     if (!framed) { setOn(false); takki(); }
   }
 
+  /* Ársskoðun í símaramma — sama regla og 320.isArsUrl. page=<annað> vinnur
+     alltaf yfir contentDocument (annars gátu Fjármál o.fl. fengið sleðana
+     þegar #view-arsskodun var enn „active" í SPA-inu eða panellinn sat eftir
+     fyrri Ársskoðun-lotu). */
+  function isArsFrameUrl(url) {
+    const s = String(url || '');
+    try {
+      const u = new URL(s, location.origin);
+      const page = u.searchParams.get('page');
+      if (page && page !== 'arsskodun') return false;
+      if (page === 'arsskodun') return true;
+      if (u.searchParams.has('arsview')) return true;
+    } catch (_) {}
+    return /[?&#]page=arsskodun\b/.test(s) || /#arsskodun\b/.test(s) || /[?&]arsview=/.test(s);
+  }
+  function frameIsArs() {
+    try {
+      const f = window.SlokkDevFrame && SlokkDevFrame.iframe && (SlokkDevFrame.iframe());
+      if (!f) return false;
+      const src = f.src || '';
+      if (src && isArsFrameUrl(src)) return true;
+      /* Ef page= er sett á aðra síðu er svarið alltaf nei — ekki treysta
+         contentDocument.active sem gat verið false positive. */
+      if (src) {
+        try {
+          const page = new URL(src, location.origin).searchParams.get('page');
+          if (page && page !== 'arsskodun') return false;
+        } catch (_) {}
+      }
+      if (f.contentDocument) {
+        try {
+          const loc = f.contentWindow && f.contentWindow.location;
+          if (loc) {
+            const href = String(loc.href || '');
+            if (href && href !== 'about:blank' && isArsFrameUrl(href)) return true;
+            try {
+              const page = new URL(href, location.origin).searchParams.get('page');
+              if (page && page !== 'arsskodun') return false;
+            } catch (_) {}
+          }
+        } catch (_) {}
+        const v = f.contentDocument.getElementById('view-arsskodun');
+        return !!(v && v.classList.contains('active'));
+      }
+    } catch (_) {}
+    return false;
+  }
+  function showFrameHint(host) {
+    const p = document.getElementById('_hh-panel');
+    if (p && p.classList.contains('_hh-frame')) loka();
+    else if (p && host.contains(p)) p.remove();
+    if (!host.querySelector('#_hh-hint')) {
+      host.innerHTML = '<div id="_hh-hint" style="padding:18px 16px;color:#9aa3b0;font:13px/1.5 \'IBM Plex Sans\',sans-serif">Hönnunarsleðar fyrir Fyrirtæki í þjónustu birtast hér. Veldu síðuna og svo Stjórnun eða Bílstjóri uppi.</div>';
+    }
+  }
+
   function syncFrame() {
     if (IN_DEVFRAME) return;
     const host = document.getElementById('_devframe-editor');
     if (!host) {
       const p = document.getElementById('_hh-panel');
       if (p && p.classList.contains('_hh-frame')) loka();
+      _sidastaArsRammi = null;
       return;
     }
-    let ars = false;
-    try {
-      const f = window.SlokkDevFrame && SlokkDevFrame.iframe && SlokkDevFrame.iframe();
-      const src = (f && f.src) || '';
-      ars = /page=arsskodun|arsview=|#arsskodun/.test(src);
-      if (!ars && f && f.contentDocument) {
-        const v = f.contentDocument.getElementById('view-arsskodun');
-        ars = !!(v && v.classList.contains('active'));
-      }
-    } catch (_) {}
+    const ars = frameIsArs();
+    _sidastaArsRammi = ars;
     if (!ars) {
-      if (!host.querySelector('#_hh-panel')) {
-        host.innerHTML = '<div id="_hh-hint" style="padding:18px 16px;color:#9aa3b0;font:13px/1.5 \'IBM Plex Sans\',sans-serif">Hönnunarsleðar fyrir Fyrirtæki í þjónustu birtast hér. Veldu síðuna og svo Stjórnun eða Bílstjóri uppi.</div>';
-      }
+      /* Áður: ef panellinn var þegar til var hintinu sleppt — Fjármál o.fl.
+         héldu þá Ársskoðun-sleðunum. Alltaf loka + sýna hint. */
+      showFrameHint(host);
       return;
     }
     const hint = host.querySelector('#_hh-hint');
@@ -509,6 +561,24 @@
      og teiknar aðeins þegar undirskriftin breytist — sjálfleiðréttandi. */
   let _sidastaUndirskrift = '';
   function fylgjast() {
+    /* Símarammi: endurmeta Ársskoðun vs. aðrar síður — SPA-flakkur inni í
+       iframe kveikir ekki alltaf load, svo syncFrame þarf að keyra aftur
+       þegar ástandið breytist (ekki á hverjum takti — það myndi rífa sleðana). */
+    if (document.getElementById('_devframe-editor')) {
+      const ars = frameIsArs();
+      if (ars !== _sidastaArsRammi) {
+        _sidastaArsRammi = ars;
+        syncFrame();
+      }
+      if (!ars || !document.getElementById('_hh-panel')) return;
+      const sest = sel => { const e = pageDoc().querySelector(sel); return !!(e && e.getBoundingClientRect().height > 0); };
+      const u = (sest('._arsm-row') ? 'b' : '') + (sest('._bil-card') ? 's' : '') + '|' + synHopur;
+      if (u === _sidastaUndirskrift) return;
+      _sidastaUndirskrift = u;
+      teikna();
+      return;
+    }
+    _sidastaArsRammi = null;
     if (!document.getElementById('_hh-panel')) return;
     const framed = !!document.querySelector('#_hh-panel._hh-frame');
     if (!on() && !framed) return;
