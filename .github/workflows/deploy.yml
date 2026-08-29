@@ -18,8 +18,8 @@ jobs:
         with:
           node-version: '20'
 
-      # Assemble the public bundle. Keeps CLAUDE.md (Netlify token + Supabase
-      # info), *.sql schema and _* PII/source assets OUT of what gets published.
+      # Assemble the public bundle. Keeps CLAUDE.md, *.sql schema and _*
+      # PII/source assets OUT of what gets published.
       - name: Build publish folder
         run: node build-dist.js
 
