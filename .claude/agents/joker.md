@@ -478,3 +478,39 @@ Ekki mæla þetta upp á nýtt; það er þegar gert:
 - Mælt 29.08 og var hvergi skráð áður: letrið er **IBM Plex Sans**, ekki Inter.
   Í notkun eru **9 radíusar, 11 leturstærðir, 7 þyngdir, 9 bil-gildi** — en
   rammar eru 1px í 287 af 288 tilvikum, eina víddin sem er öguð.
+
+## Töflur og fljótandi lög — þrjár gildrur, allar mældar 29.08.2026
+
+**1. `width:100%` á töflu með `table-layout:fixed` LÆSIR heildarbreiddinni.**
+Þá er breidd dálka núllsummuleikur: það sem einn dálkur fær taka hinir á sig, og
+að breikka einn dálk getur ALDREI gert annað en að mjókka aðra. Agnar orðaði það
+svona: „when I try to make them wider it just goes to the left and fuck them up."
+Rétt: `width:auto` (breidd = summa dálkanna) + `min-width:100%`. Þá vex taflan til
+hægri og skrunar. Lagað í `319-column-drag.js`.
+
+**2. Í `table-layout:fixed` deila dálkar ÁN skilgreindrar breiddar jafnt því sem
+eftir er.** Um leið og EINN dálkur fékk vistaða breidd varð öll taflan fixed — og
+hinir sex hrundu í nákvæmlega sömu 96px með texta brotinn í miðjum orðum
+(„Mosfellsbæ r"). Mælt hjá Agnari: aðeins TVEIR dálkar áttu vistaða breidd, hinir
+sex voru fórnarlömb. Rétt: festa ALLA dálka á þá breidd sem þeir hafa þegar
+dráttur hefst, svo aðeins sá sem dregið er í breytist.
+
+**3. Portal-íhlutir eru UTAN rótarinnar og erfa því ekki litatóknana.**
+base-ui/Radix setja valmyndir í Portal á `<body>`. Séu tóknarnir (`--popover`
+o.fl.) aðeins skilgreindir á umgjörð appsins fær `bg-popover` EKKERT gildi og
+valmyndin verður GEGNSÆ. Í TurboPaint sást þetta á borðavalinu, en ALLAR
+portal-valmyndir voru jafn gegnsæjar — popover, dialog, tooltip. Lausn:
+`body:has(.rót)` ber sömu tókna meðan síðan er á skjánum.
+
+**4. Fljótandi takkar safnast upp á síma.** Á Sölu lágu FIMM fljótandi takkar úr
+jafnmörgum patchum ofan á vöruflísunum (`#pe-pagelinks`, `#pat-launch`,
+`#cg-sk-trigger`, `#_dst-btn._float`). Enginn þeirra var hluti af Sölu. Þegar
+þú bætir við fljótandi takka: athugaðu hverjir eru þegar á sömu síðu.
+
+## Sýnir sem taka yfir skjáinn ÞURFA leið til baka
+
+`arsskodun_bilstjori_v1` (patch 317) er falinn rofi í localStorage. Sé hann `1`
+hverfur ÖLL síuröndin í Ársskoðun og Bílstjóra-sýnin tekur yfir — og það er
+**engin leið til baka** í viðmótinu. Agnar sat fastur og sagði: „a back button is
+not hard." Hann hefur rétt fyrir sér. Sé sýn sett sem tekur yfir borð, á
+útgönguleiðin að vera sýnileg í sömu sýn.

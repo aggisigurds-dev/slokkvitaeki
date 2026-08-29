@@ -73,10 +73,19 @@
     KY + '.ky-mnum{font-size:14px!important;min-width:0}',
     KY + '.ky-mdate{font-size:12px!important}',
     KY + '.ky-mamt{font-size:15px!important}',
-    // Force the row-action set visible in Öpp (do not re-collapse behind .open).
-    KY + '.ky-mdetail{display:block!important;height:auto!important;overflow:visible!important}',
-    KY + '.ky-acts{display:flex!important;flex-wrap:wrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important;gap:6px;padding:0 10px 10px}',
-    KY + '.ky-acts .ky-abtn,body.appmode #view-krofu-yfirlit button.ky-abtn' +
+    // 2026-08-29: ÞVINGUNIN FELLD NIÐUR. Hér stóð áður „do not re-collapse
+    // behind .open" og reglurnar opnuðu hnappablokkina á ÖLLUM röðum — ~300px
+    // af hnöppum á kröfu, sinnum 43 kröfur, um 13.000px af skruni til að finna
+    // eina kröfu. Felunin hafði verið fjarlægð AF ÞVÍ hnapparnir fundust ekki;
+    // það leysti fundvísina með því að eyðileggja listann.
+    // Nú opnast AÐEINS valin röð (.open) og opnunarhnappurinn (.ky-mexp/.ky-chev)
+    // er áfram 44px og sýnilegur, svo upprunalega vandamálið kemur ekki aftur.
+    KY + '.ky-mdetail{display:none!important}',
+    KY + '.ky-mrow.open .ky-mdetail,' + KY + '.open > .ky-mdetail'
+      + '{display:block!important;height:auto!important;overflow:visible!important}',
+    KY + '.ky-mrow.open .ky-acts,' + KY + '.open .ky-acts'
+      + '{display:flex!important;flex-wrap:wrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important;gap:6px;padding:0 10px 10px}',
+    KY + '.open .ky-acts .ky-abtn,body.appmode #view-krofu-yfirlit .open button.ky-abtn' +
       '{display:inline-flex!important;visibility:visible!important;pointer-events:auto!important;' +
        'flex:1 1 calc(50% - 6px);min-width:calc(50% - 6px);min-height:44px!important;height:44px!important;padding:2px 4px!important;font-size:11px!important}',
     KY + '.ky-mexp,.ky-chev{min-height:44px!important;width:36px!important;height:36px!important;padding:0!important;font-size:16px!important}',
@@ -119,6 +128,17 @@
     HL + '.hl-mcard.open{cursor:default}',
     HL + '.abtn5{min-height:36px!important;height:36px!important;padding:2px 6px!important;font-size:11px!important}',
 
+    // 2026-08-29 (Agnar, spjaldtolvu-hamur: "faranleg nyting a plassi"). Kroffu-
+    // adgerdirnar voru tvaer i rod OHAD skjabreidd — a 834px spjaldtolvu thydir thad
+    // helming skjasins ononotadan og adgerdablokk sem er haerri en krafan sjalf.
+    // Fra 700px: fjorar i rod og laegri hnappar. Aeeins thettleiki — engin ny hegdun.
+    '@media (min-width:700px){'+
+      KY + '.open .ky-acts .ky-abtn,body.appmode #view-krofu-yfirlit .open button.ky-abtn'+
+        '{flex:1 1 calc(25% - 6px)!important;min-width:calc(25% - 6px)!important;height:38px!important;min-height:38px!important}'+
+      '}',
+    '@media (min-width:700px){'+
+      HL + '.hl-mcard.open .hl-macts .abtn5{flex:1 1 calc(25% - 4px);min-width:calc(25% - 4px)}'+
+      '}',
     KY + '{overflow-x:hidden}',
     ARS + '{overflow-x:hidden}',
     HL + '{overflow-x:hidden}'

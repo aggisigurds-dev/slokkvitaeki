@@ -189,3 +189,46 @@ tölu í pappa.
 Nákvæm. As-built. `file:line`. Fid. Tafla. Dálkur. State. Src. Role.
 Ekki ljóð, ekki „endurhönnum peruna". Ef CSS á `._yr` er tillagan → **nei**.
 Ef sameina kt er tillagan → **nei**.
+
+## Síur sem fela gögn ÁN þess að segja frá — mælt 29.08.2026
+
+**Reglan: sía sem kviknar sjálf er villa, ekki eiginleiki.**
+
+**`vorur.forsida` (stjörnusían).** Í `js/pos.js` `tileList()` var reglan: sé
+EITTHVAÐ merkt `forsida=true` sýna flísarnar AÐEINS það. Mælt: 15 vörur merktar
+⇒ **85 af 100 VIRKUM vörum földust** af söluborðinu. Þjónustan slapp aðeins af
+því ekkert þar var merkt — þess vegna leit þetta út eins og duttlungar frekar en
+regla. Agnar: „held að eitthvað gamalt vörusýnarkerfi sé að trufla."
+Núna: hakið „Sjá allar vörur og þjónustu" ræður, sjálfgefið AF (stutt forsíða),
+og talan „· N af M" stendur við hakið þegar eitthvað er falið.
+⭐ á vörukortinu setur vöru á forsíðuna með einum smelli.
+
+**ÞRJÁR óháðar síur fela vörur á Sölu.** Sé kvartað um að vara sjáist ekki,
+athugaðu ALLAR þrjár áður en þú giskar:
+  1. `vorur.virkt = false` → sést hvergi (14 vörur)
+  2. `vorur.forsida` stjörnusían → sjá að ofan (85)
+  3. `sala.hidden_product_ids` í AppSettings (patch 87) → 2 vörur
+
+## Tækjafjöldi: EINN lykill, ein status-sía
+
+Ársskoðun telur SLT/BSL/RS úr `uttaeki` **lyklað á `fyrirtaeki_id`** og AÐEINS
+`status='active'` (`loadActiveUnitsByFid` í 153). Rekstrarfélög töldu á
+**client-NAFNASTRENG** — annar lykill, og sami staður gat sýnt sitt hvora töluna
+á borðunum tveimur.
+
+Sýnin `v_uttaeki_fid_rollup` (búin til 29.08) notar sama lykil, sömu status-síu
+og NÁKVÆMLEGA sömu flokkunarreglu og `categoryOf()`/`eqGroups()`. ATH:
+„Slönguskápur" telst EKKI með í BSL, eins og í JS. Breytist reglan öðrum megin
+VERÐUR hún að breytast hinum megin.
+
+`153` birtir núna `eqGroups` + `eqTrioHtml` svo önnur borð TEIKNI með sömu
+formúlu í stað afrits. Nota þau, ekki afrita.
+
+**Tvær ólíkar staðreyndir, ekki ein:** `v_stadur_yfirlit.taeki_count` kemur úr
+SKÝRSLUM/reikningum (`count_source`), ekki úr tækjaskránni. Þær stemma á 504 af
+569 stöðum; af 65 sem skeikar eru 51 alveg án skráðra tækja. Ekki reyna að láta
+þær stemma — þær mæla sitt hvað.
+
+**Ekki setja varúðarmerki á misræmi sem er í meirihluta raða.** ⚠ var sett á
+TÆKI-dálkinn í Rekstrarfélögum til að sýna muninn og endaði á nánast hverri línu.
+Það varð hávaði og var fjarlægt samdægurs.
