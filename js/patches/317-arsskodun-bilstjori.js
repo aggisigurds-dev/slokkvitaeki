@@ -121,7 +121,8 @@
         + 'border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.12);color:#fff;'
         + 'font:700 13px ' + LETUR + ';cursor:pointer;white-space:nowrap}',
       /* EN má ekki liggja ofan á AKSTUR. 329 felur líka; þetta er öryggisnet. */
-      'html.slokk-bilstjori body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3){display:none!important}',
+      'html.slokk-bilstjori body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3),'
+        + 'html.slokk-bilstjori body #lang-fab{display:none!important}',
       V + '._bil-tabs{display:flex}',
       V + '._bil-tab{flex:1;border:0;background:transparent;color:rgba(255,255,255,.55);font:700 13px ' + LETUR + ';padding:10px 0 9px;border-bottom:2px solid transparent;cursor:pointer}',
       V + '._bil-tab.on{color:#fff;border-bottom-color:#C93C1D}',
