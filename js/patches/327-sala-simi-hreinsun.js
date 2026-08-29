@@ -34,7 +34,11 @@
     '#_dst-btn._float',
   ];
 
-  const scope = 'html[data-viewmode="mobile"]:has(#view-sala.active)';
+  // 2026-08-29 SÍÐAR: takmörkunin við símaham FELLD NIÐUR. „Keldan — fyrirtækjaleit"
+  // flýtur líka yfir vöruflísunum á tölvuskjá („keldan like a idiot over there")
+  // og Agnar bað upphaflega um að hún færi af SÖLUBORÐINU — ekki bara af símanum.
+  // Gildir því í öllum hömum, en áfram AÐEINS meðan Sala er virka sýnin.
+  const scope = 'html:has(#view-sala.active)';
   const css = HIDE.map((s) => scope + ' ' + s).join(',\n') +
     '{display:none!important}';
 

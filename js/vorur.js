@@ -213,8 +213,15 @@
       var badge = '<span style="display:inline-block;background:'+(isSvc?'#fef3c7':'#dbeafe')+';color:'+(isSvc?'#92400e':'#1e40af')+';font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;letter-spacing:0.03em">'+esc(p.flokkur||'')+'</span>';
       var stockInfo = !isSvc && p.birgdir!=null ? '<div style="font-size:11px;color:#64748b;margin-top:4px">🏷️ '+p.birgdir+' á lager</div>' : '';
       var virktPill = p.virkt ? '' : '<span style="display:inline-block;background:#fee2e2;color:#b91c1c;font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;margin-left:4px">ÓVIRKT</span>';
+      // \u2b50 beint \u00e1 kortinu: setur v\u00f6runa \u00e1 s\u00f6luforsi\u00f0una \u00e1n \u00feess a\u00f0 opna hana.
+      // Fyllt stjarna = \u00e1 fors\u00ed\u00f0u, t\u00f3m = ekki. Smellurinn stoppar h\u00e9r (stopPropagation
+      // \u00ed bindEvents) svo hann opni ekki ritilinn \u00ed lei\u00f0inni.
+      var star = '<button class="vorur-star" data-id="'+p.id+'" type="button" title="'+(p.forsida===true?'\u00c1 fors\u00ed\u00f0u S\u00f6lubor\u00f0s \u2014 smelltu til a\u00f0 taka af':'Setja \u00e1 fors\u00ed\u00f0u S\u00f6lubor\u00f0s')+'" '+
+        'style="position:absolute;top:6px;right:6px;z-index:2;width:26px;height:26px;line-height:24px;text-align:center;'+
+        'border-radius:99px;border:1px solid '+(p.forsida===true?'#fbbf24':'#e2e8f0')+';background:'+(p.forsida===true?'#fffbeb':'#fff')+';'+
+        'cursor:pointer;font-size:13px;padding:0;box-shadow:0 1px 2px rgba(0,0,0,.06)">'+(p.forsida===true?'\u2b50':'\u2606')+'</button>';
       return '<div class="vorur-card" data-id="'+p.id+'" style="position:relative;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:9px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'#cbd5e1\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.05)\'" onmouseout="this.style.borderColor=\'#e2e8f0\';this.style.boxShadow=\'\'">' +
-        img +
+        star + img +
         '<div style="margin-top:7px">' +
           '<div>'+badge+virktPill+'</div>' +
           '<div style="font-weight:700;color:#0f172a;font-size:12.5px;margin-top:5px;line-height:1.25">'+esc(p.nafn)+'</div>' +
@@ -239,6 +246,25 @@
         var c = b.getAttribute('data-cat') || '';
         _activeCat = (_activeCat === c) ? '' : c; // smellur á virkan chip = af-sía
         renderView();
+      });
+    });
+    Array.from(document.querySelectorAll('.vorur-star')).forEach(function(b){
+      b.addEventListener('click', async function(e){
+        e.preventDefault(); e.stopPropagation();   // ekki opna ritilinn
+        var id = +b.getAttribute('data-id');
+        var p = (_products || []).find(function(x){ return +x.id === id; });
+        if(!p) return;
+        var next = !(p.forsida === true);
+        b.disabled = true;
+        try {
+          var r = await DB.sb.from('vorur').update({ forsida: next }).eq('id', id).select().single();
+          if(r.error) throw r.error;
+          p.forsida = next;
+          renderView();
+        } catch(err){
+          b.disabled = false;
+          alert('Tókst ekki að vista: ' + ((err && err.message) || err));
+        }
       });
     });
     var nb = document.getElementById('vorur-new');
