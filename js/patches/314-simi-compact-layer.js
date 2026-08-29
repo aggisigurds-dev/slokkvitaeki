@@ -231,14 +231,14 @@
       '{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}',
     // Agnar 2026-08-29: Sala-flísar voru ~9–11px í Sími/Öpp. Aðeins stærra
     // letur — ekki sprengja 2-dálka POS. Skjár (án mobile/appmode) óbreyttur.
-    'html[data-viewmode="mobile"] #view-sala .pos-tile-name,' +
-    'body.appmode #view-sala .pos-tile-name' +
+    'html[data-viewmode="mobile"] body #view-sala .pos-tile-name,' +
+    'html body.appmode #view-sala .pos-tile-name' +
       '{font-size:14px!important;line-height:1.25!important}',
-    'html[data-viewmode="mobile"] #view-sala .pos-tile-price,' +
-    'body.appmode #view-sala .pos-tile-price' +
+    'html[data-viewmode="mobile"] body #view-sala .pos-tile-price,' +
+    'html body.appmode #view-sala .pos-tile-price' +
       '{font-size:16px!important}',
-    'html[data-viewmode="mobile"] #view-sala .pos-tile-exvat,' +
-    'body.appmode #view-sala .pos-tile-exvat' +
+    'html[data-viewmode="mobile"] body #view-sala .pos-tile-exvat,' +
+    'html body.appmode #view-sala .pos-tile-exvat' +
       '{font-size:12px!important}',
     // Kröfur-síur: 166/315 höfðu 36–40px. Þumalmark er ~44px.
     'html[data-viewmode="mobile"] #view-krofu-yfirlit .ky-filterbar .filter-chip,' +
