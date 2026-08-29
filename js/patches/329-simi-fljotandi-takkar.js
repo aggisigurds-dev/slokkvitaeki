@@ -49,6 +49,8 @@
  *   stikan á Sölu (#pos-checkout, negld í pos.js:313 á síma).
  * • EN/IS er falið þegar botnstika er á skjánum (það lá ofan á henni) og fært
  *   í neðra VINSTRA hornið annars, svo það hætti að liggja á QR-tákninu.
+ *   Á Bílstjóra (html.slokk-bilstjori / #_bil-root) er EN falið — það lá ofan
+ *   á AKSTUR-röðinni (Agnar 2026-08-29).
  *
  * Hæð botnstikunnar er MÆLD í keyrslu, ekki negld: navið er ein til þrjár
  * raðir eftir því hve margar síður eru valdar, og ÁFRAM-stikan vex með
@@ -114,7 +116,8 @@ html.slokk-botnstika body #qr-fab:not(#_p1):not(#_p2) {
 /* EN/IS lá ofan á botnstikunni (og undir navinu, sem er á z-index
    2147481001 — þ.e. hvorugur takkinn var smellanlegur). */
 html.slokk-botnstika body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3),
-body.appmode #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3) { display:none !important; }
+body.appmode #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3),
+html.slokk-bilstjori body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3) { display:none !important; }
 
 /* Sé engin botnstika fer EN í vinstra hornið á síma, svo það hætti að liggja
    ofan á QR-tákninu. Hægra hornið tilheyrir skannanum. */
