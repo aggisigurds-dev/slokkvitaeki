@@ -61,8 +61,8 @@
     // #view-arsskodun og myndu annars yfirskrifa hæðir og letur hér.
     const V = '#' + VIEW_ID + '#' + VIEW_ID + ' ';
     s.textContent = [
-      V + '._bil-wrap{padding:0 10px 96px;background:var(--bil-grunnur,#f0eeea)}',
-      V + '._bil-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:8px 0;position:sticky;top:0;z-index:5;background:var(--bil-grunnur,#f0eeea)}',
+      V + '._bil-wrap{padding:0 10px 96px;background:var(--ars-grunnur,#f0eeea)}',
+      V + '._bil-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:8px 0;position:sticky;top:0;z-index:5;background:var(--ars-grunnur,#f0eeea)}',
       V + '._bil-tabs::-webkit-scrollbar{display:none}',
       V + '._bil-tab{flex:0 0 auto;min-height:36px !important;height:36px !important;padding:0 15px;border-radius:3px;cursor:pointer;white-space:nowrap;'
         + 'background:#fff;border:1px solid #e0ddd7;color:#5d5a54;font-weight:600;font-size:13px}',
@@ -72,17 +72,17 @@
 
       /* Spjaldið: aldrei fylltur litaflötur. Litur birtist AÐEINS á 3px kantinum. */
       V + '._bil-card{background:#fff !important;background-image:none !important;'
-        + 'border:1px solid var(--bil-rammi,#e3e1dc) !important;'
-        + 'border-left:var(--bil-kantur,3px) solid #ded9d2 !important;'
-        + 'border-radius:var(--bil-radius,3px);padding:12px 13px;margin-bottom:var(--bil-bil,12px);box-shadow:0 1px 1px rgba(20,20,18,.04)}',
+        + 'border:1px solid var(--ars-rammi,#e3e1dc) !important;'
+        + 'border-left:var(--ars-spjald-kantur,3px) solid #ded9d2 !important;'
+        + 'border-radius:var(--ars-spjald-radius,3px);padding:12px 13px;margin-bottom:var(--ars-spjald-bil,12px);box-shadow:0 1px 1px rgba(20,20,18,.04)}',
       V + '._bil-card._bs-done{border-left-color:#2e6b4a !important}',
       V + '._bil-card._bs-vinnslu{border-left-color:#5980a6 !important}',
       V + '._bil-card._bs-vantar{border-left-color:#c0392b !important}',
       V + '._bil-card._bs-sleppt{border-left-color:#c9a227 !important}',
 
       V + '._bil-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}',
-      V + '._bil-nm{font-size:var(--bil-nafn-letur,16.5px);font-weight:600;color:#16181c;line-height:1.2}',
-      V + '._bil-addr{font-size:12px;color:var(--bil-texti,#5d5a54);margin-top:2px}',
+      V + '._bil-nm{font-size:var(--ars-spjald-nafn,16.5px);font-weight:600;color:#16181c;line-height:1.2}',
+      V + '._bil-addr{font-size:12px;color:var(--ars-texti-mjukur,#5d5a54);margin-top:2px}',
       /* Staða = TEXTI í djúpa þrepinu, ekki pilla. Hrátt stálblátt aldrei á texta. */
       V + '._bil-st{flex:0 0 auto;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;color:#6f6b63 !important;background:none !important;padding:0 !important;border:0 !important}',
       V + '._bil-st._bs-done{color:#2e6b4a !important}',
@@ -92,13 +92,13 @@
 
       /* Árs-reitir: flatir. Engir gljáar, engar ljósdíóður, engir deplar. */
       V + '._bil-yrs{display:flex;gap:3px}',
-      V + '._bil-yr{width:var(--bil-ar-breidd,31px);height:var(--bil-ar-haed,20px);border-radius:2px;display:flex;align-items:center;justify-content:center;'
+      V + '._bil-yr{width:var(--ars-arsreitur-breidd,31px);height:var(--ars-arsreitur-haed,20px);border-radius:2px;display:flex;align-items:center;justify-content:center;'
         + 'font-size:10.5px;font-weight:600;background:#e8e5e0;color:#6f6b63;font-variant-numeric:tabular-nums}',
       V + '._bil-yr.skyrsla{background:#2e6b4a;color:#fff}',
       V + '._bil-yr.skodad{background:#c9a227;color:#2b2205}',
 
       V + '._bil-mid{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 8px}',
-      V + '._bil-meta{font-size:12px;color:var(--bil-texti,#5d5a54);font-variant-numeric:tabular-nums}',
+      V + '._bil-meta{font-size:12px;color:var(--ars-texti-mjukur,#5d5a54);font-variant-numeric:tabular-nums}',
       V + '._bil-val{margin-left:auto;font-size:12.5px;font-weight:600;color:#16181c;font-variant-numeric:tabular-nums}',
       V + '._bil-note{font-size:12px;color:#5d5a54;background:#f4f6f9;border-radius:2px;padding:7px 9px;margin-bottom:8px}',
 
@@ -112,22 +112,22 @@
 
       /* Akstur: SAMFELLDUR segment-strimill, ekki fjórir stakir hnappar. */
       V + '._bil-akrow{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
-      V + '._bil-aklbl{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--bil-smatexti,#6f6b63)}',
+      V + '._bil-aklbl{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--ars-texti-merki,#6f6b63)}',
       V + '._bil-seg{display:flex;border:1px solid #e0ddd7;border-radius:2px;overflow:hidden}',
-      V + '._bil-ak{width:30px;min-height:var(--bil-akstur-haed,36px) !important;height:var(--bil-akstur-haed,36px) !important;border:0;border-left:1px solid #e0ddd7;background:#fff;cursor:pointer;'
+      V + '._bil-ak{width:30px;min-height:var(--ars-akstur-haed,36px) !important;height:var(--ars-akstur-haed,36px) !important;border:0;border-left:1px solid #e0ddd7;background:#fff;cursor:pointer;'
         + 'color:#5d5a54;font-size:12.5px;font-weight:600;padding:0}',
       V + '._bil-ak:first-child{border-left:0}',
-      V + '._bil-ak.on{background:var(--bil-djupt,#17324f);color:#f2f5f8}',
+      V + '._bil-ak.on{background:var(--ars-sokkull,#17324f);color:#f2f5f8}',
 
       /* Hringja/Leiðsögn: 38px táknhnappar, engir textar. Skoðað er eina fyllta. */
       V + '._bil-btns{display:flex;gap:8px;align-items:center}',
       V + '._bil-ic{width:38px;height:38px;flex:0 0 38px;border:1px solid #e0ddd7;background:#fff;border-radius:2px;'
         + 'cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;'
-        + 'min-height:var(--bil-takn-haed,38px) !important;height:var(--bil-takn-haed,38px) !important}',
+        + 'min-height:var(--ars-takn-haed,38px) !important;height:var(--ars-takn-haed,38px) !important}',
       V + '._bil-ic[disabled]{opacity:.4;cursor:default}',
-      V + '._bil-done{flex:1;min-height:var(--bil-skodad-haed,40px) !important;height:var(--bil-skodad-haed,40px) !important;border-radius:2px;cursor:pointer;font-size:13.5px;font-weight:600;'
+      V + '._bil-done{flex:1;min-height:var(--ars-skodad-haed,40px) !important;height:var(--ars-skodad-haed,40px) !important;border-radius:2px;cursor:pointer;font-size:13.5px;font-weight:600;'
         + 'background:#f0eeea;border:1px solid #e0ddd7;color:#5d5a54}',
-      V + '._bil-done.hakad{background:var(--bil-djupt,#17324f);border-color:var(--bil-djupt,#17324f);color:#f2f5f8}',
+      V + '._bil-done.hakad{background:var(--ars-sokkull,#17324f);border-color:var(--ars-sokkull,#17324f);color:#f2f5f8}',
       V + '._bil-done[disabled]{opacity:.5;cursor:default}',
       V + '._bil-tom{padding:34px 12px;text-align:center;color:#5d5a54;font-size:13px}'
     ].join('');

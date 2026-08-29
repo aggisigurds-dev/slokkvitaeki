@@ -1,0 +1,71 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ÁRSSKOÐUN Í SÍMA — ALLAR STÆRÐIR OG LITIR Á EINUM STAÐ
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Agnar 2026-08-29: „I also really want to be able to fix my page myself
+   instead of days trying to make code do it."
+
+   Áður lágu þessar tölur á þrem stöðum — inline stílum í 153-arsskodun.js,
+   @media-reglum í 314-arsskodun-mobile-compact.js, og css/mobile.css. Þess
+   vegna þurfti kóðalotu til að hreyfa raðhæð um tvo pixla, og þess vegna
+   töpuðu inline-stílar TVISVAR fyrir @media-reglum sama daginn.
+
+   ── HVERNIG ÞÚ BREYTIR ÚTLITINU ────────────────────────────────────────────
+   Breyttu tölunni hér, vistaðu, endurhlaððu símann. Það er allt.
+   Enginn þarf að snerta JS og ekkert þarf að committa til að sjá útkomuna.
+
+   ── REGLUR ─────────────────────────────────────────────────────────────────
+   • Engin tala má vera skrifuð tvisvar. Þarftu nýja stærð: bættu breytu HÉR
+     fyrst, lestu hana svo úr pappanum — aldrei negla tölu í JS.
+   • Patch 153 og 317 lesa allar með var(--nafn, fallback). Fallback-ið er
+     SAMA tala og stendur hér, svo ekkert brotnar þótt lína sé fjarlægð —
+     þá fer hún bara í upprunalegu stærðina.
+   • Þetta gildir í SÍMA OG APPHAM. Skjáborðstaflan er annar kóði
+     (renderTable í 153) og snertist ekki af neinu hér.
+
+   Skráin er hlaðin Á UNDAN patch-stílunum í index.html — það skiptir máli.
+   ═════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Borð-útlitið (frosinn nafndálkur + skrun) ───────────────────────────
+     Nafndálkurinn stendur kyrr þegar strokið er til hliðar; hinir átta
+     skrunast. Summa dálkanna ræður hversu langt er hægt að skruna.          */
+  --ars-nafn-dalkur:   150px;   /* frosni dálkurinn til vinstri              */
+  --ars-rad-haed:       52px;   /* hæð hverrar raðar (fast, ekki min)        */
+  --ars-haus-haed:      38px;   /* hæð haus-raðarinnar                       */
+  --ars-nafn-letur:   12.5px;   /* fyrirtækjanafnið — klemmt í tvær línur    */
+  --ars-undirtexti:    9.5px;   /* póstnúmer / ✉ vantar, undir nafninu       */
+
+  /* ── Dálkabreiddirnar sem skrunast ─────────────────────────────────────── */
+  --ars-col-man:        56px;
+  --ars-col-ar:        112px;
+  --ars-col-taeki:      96px;
+  --ars-col-akstur:     60px;
+  --ars-col-stada:      52px;
+  --ars-col-virdi:      84px;
+  --ars-col-sidast:     78px;
+  --ars-col-nota:      130px;
+
+  /* ── Bílstjóraspjöldin (patch 317) ─────────────────────────────────────── */
+  --ars-spjald-bil:     12px;   /* bil milli spjalda                         */
+  --ars-spjald-nafn:  16.5px;   /* fyrirtækjanafnið á spjaldi                */
+  --ars-spjald-kantur:   3px;   /* litaði kanturinn vinstra megin            */
+  --ars-spjald-radius:   3px;
+  --ars-arsreitur-breidd: 31px;
+  --ars-arsreitur-haed:   20px;
+  --ars-takn-haed:      38px;   /* Hringja / Leiðsögn — táknhnappar          */
+  --ars-akstur-haed:    36px;   /* reitir í akstursstrimlinum                */
+  --ars-skodad-haed:    40px;   /* ✓ Skoðað — eina fyllta aðgerðin           */
+
+  /* ── Litir ──────────────────────────────────────────────────────────────
+     Birtuskilagólf: --ars-texti-mjukur mælist 6.9:1. Ekkert ljósara á texta
+     sem á að lesa — þetta er tól sem er notað úti í dagsljósi.              */
+  --ars-texti:        #16181c;  /* aðaltexti, fyrirtækjanöfn                 */
+  --ars-texti-mjukur: #5d5a54;  /* ALLUR annar texti                         */
+  --ars-texti-merki:  #6f6b63;  /* smámerki („AKSTUR")                       */
+  --ars-grunnur:      #f0eeea;  /* flöturinn undir spjöldunum                */
+  --ars-rammi:        #e3e1dc;  /* rammi spjalds                             */
+  --ars-hairline:     #e0ddd7;  /* hárlínur á táknhnöppum og strimli         */
+  --ars-accent:       #5980a6;  /* AÐEINS á kanti og striki — aldrei á texta */
+  --ars-accent-djupt: #2a4763;  /* accent á smátexta fer HÉR í gegn          */
+  --ars-sokkull:      #17324f;  /* eina fyllta aðgerðin: ✓ Skoðað            */
+}
