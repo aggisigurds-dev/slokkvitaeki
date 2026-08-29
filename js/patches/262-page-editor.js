@@ -916,7 +916,30 @@
   // Tvísmellur setur takkann aftur í hornið; ✕ fjarlægir hann (stærra og sýnilegra
   // en áður — það var of smátt til að hitta á síma).
   let _plRz = null;
-  const PL_POS = l => (l && typeof l.x === 'number' && typeof l.y === 'number');
+  // 2026-08-29 (Agnar: „hann er fastur á stað í skjánum þegar ég skrolla niður").
+  // Áður geymdist staðsetningin sem hlutfall af GLUGGANUM og takkinn sat á
+  // position:fixed yfirlagi — hann elti því skjáinn og lá ofan á efninu alla
+  // leið niður síðuna. Núna er hann festur á SÍÐUNA: dx = hlutfall af breidd
+  // skjals (svo hann haldi sér á öllum skjástærðum), dy = px frá toppi skjals.
+  const PL_POS = l => (l && typeof l.dx === 'number' && typeof l.dy === 'number');
+  // Eldri takkar (x/y sem hlutfall af glugganum) færast yfir í dx/dy við fyrstu
+  // teikningu — sama sjónræna staðsetning og áður, en fylgir nú síðunni.
+  function plMigrate(arr) {
+    const d = document.documentElement;
+    let changed = false;
+    (arr || []).forEach(l => {
+      if (!l || PL_POS(l)) return;
+      if (typeof l.x === 'number' && typeof l.y === 'number') {
+        l.dx = l.x;
+        l.dy = Math.round((l.y / 100) * (d.clientHeight || window.innerHeight || 768));
+        delete l.x; delete l.y;
+        changed = true;
+      }
+    });
+    return changed;
+  }
+  // Er stílstjórinn opinn? Þá — og AÐEINS þá — má draga takkana og ✕ sést.
+  function plEditMode() { return !!document.getElementById(PANEL_ID); }
   // 2026-08-29 (Agnar: „hún getur færst svoldið eftir refresh").
   // Tvær ástæður, báðar hér:
   //  1) window.innerWidth TELUR skrunstikuna með, clientWidth ekki. Síða MEÐ
@@ -926,28 +949,59 @@
   //     takkinn annarrar breiddar en hann endar í, og klemman við hægri brún
   //     reiknast af rangri breidd. Þess vegna er endurstaðsett við fonts.ready
   //     (sjá renderPageLinks) — ekki bara við fyrstu teikningu.
-  function plClamp(el, xPct, yPct) {
+  // xPct = hlutfall af breidd skjals, yPx = px frá toppi SKJALS (ekki gluggans).
+  function plClamp(el, xPct, yPx) {
     const d = document.documentElement;
     const w = el.offsetWidth || 120, h = el.offsetHeight || 32;
-    const vw = d.clientWidth || window.innerWidth || 1024;
-    const vh = d.clientHeight || window.innerHeight || 768;
-    let left = (xPct / 100) * vw, top = (yPct / 100) * vh;
-    left = Math.max(4, Math.min(left, vw - w - 4));
-    top = Math.max(4, Math.min(top, vh - h - 4));
+    const dw = d.clientWidth || window.innerWidth || 1024;
+    const dh = Math.max(d.scrollHeight || 0, d.clientHeight || window.innerHeight || 768);
+    let left = (xPct / 100) * dw;
+    let top = +yPx || 0;
+    left = Math.max(4, Math.min(left, dw - w - 4));
+    top = Math.max(4, Math.min(top, Math.max(4, dh - h - 4)));
     el.style.left = left + 'px'; el.style.top = top + 'px';
+  }
+  // Stöðugt, einkvæmt id per takka — byggt á NAFNINU, ekki á sætisnúmeri sem
+  // hliðrast þegar takka er eytt.
+  //
+  // 2026-08-29 (Agnar: „ef ég er að reyna breyta útliti á honum í annað skiptið
+  // þá breytir það öðrum tökkum líka"). Ástæðan: takkarnir höfðu hvorki id né
+  // klasa, svo relSelector gekk upp tréð og stoppaði á fyrsta id-inu sem hann
+  // fann — umgjörðinni #pe-pagelinks. Sú regla nær yfir ALLA takkana. Með
+  // einkvæmu id-i verður valið „🎯 Bara þennan" raunverulega bara þennan.
+  function plId(name) {
+    const s = String(name || 'takki').toLowerCase()
+      .replace(/[^a-z0-9à-þ]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+    return 'pe-pl-' + (s || 'takki');
   }
   function renderPageLinks(force) {
     const k = curViewId();
     if (!force && k === _plKey && document.getElementById('pe-pagelinks')) return;
     _plKey = k;
     let box = document.getElementById('pe-pagelinks');
+    let dbox = document.getElementById('pe-pagelinks-doc');
     const arr = ((state.pageLinks || {})[k] || []);
-    if (!arr.length) { if (box) box.remove(); return; }
+    if (!arr.length) { if (box) box.remove(); if (dbox) dbox.remove(); return; }
+    if (plMigrate(arr)) persist();
     if (!box) {
       box = document.createElement('div');
       box.id = 'pe-pagelinks';
       document.body.appendChild(box);
     }
+    // TVÖ lög, því takkarnir eiga tvenns konar heimili:
+    //  • #pe-pagelinks      — position:fixed. Sjálfgefna hornið neðst til hægri,
+    //                         sem Á að fljóta með skjánum (óbreytt hegðun).
+    //  • #pe-pagelinks-doc  — position:absolute á SKJALINU. Dregnir takkar sitja
+    //                         hér og skruna með efninu, í stað þess að liggja
+    //                         ofan á því alla leið niður síðuna.
+    if (!dbox) {
+      dbox = document.createElement('div');
+      dbox.id = 'pe-pagelinks-doc';
+      document.body.appendChild(dbox);
+    }
+    dbox.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:0;z-index:99500;pointer-events:none';
+    dbox.innerHTML = '';
+    const editMode = plEditMode();
     // Stíllinn er settur í HVERT sinn (ekki bara við stofnun): annars situr eldra
     // eintak eftir með gamla stíl ef patchinn er endurhlaðinn í lifandi síðu.
     // Gegnsætt yfirlag yfir allan gluggann svo takkarnir geti setið hvar sem er.
@@ -967,21 +1021,42 @@
     } catch (_) {}
     box.innerHTML = '<div id="pe-pl-stack" style="position:absolute;right:12px;bottom:' + bot + 'px;display:flex;flex-direction:column;gap:8px;align-items:flex-end"></div>';
     const stack = box.querySelector('#pe-pl-stack');
+    const used = {};
     arr.forEach((l, i) => {
       const el = document.createElement('span');
       el.setAttribute('data-pl-chip', String(i));
-      el.style.cssText = 'pointer-events:auto;display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #cbd5e1;border-radius:99px;padding:7px 8px 7px 13px;box-shadow:0 6px 18px -8px rgba(15,23,42,.4);cursor:grab;touch-action:none;user-select:none';
-      el.title = 'Dragðu takkann þangað sem þú vilt hafa hann · tvísmellur setur hann aftur í hornið';
+      el.className = 'pe-pl-chip';
+      // Einkvæmt id svo stílstjórinn geti valið ÞENNAN takka en ekki alla.
+      // Tveir takkar með sama nafn fá -2, -3 … svo id-in haldist einkvæm.
+      let id = plId(l.n);
+      if (used[id]) id = id + '-' + (++used[plId(l.n)]);
+      else { used[id] = 1; }
+      el.id = id;
+      el.style.cssText = 'pointer-events:auto;display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #cbd5e1;border-radius:99px;padding:7px 8px 7px 13px;box-shadow:0 6px 18px -8px rgba(15,23,42,.4);touch-action:none;user-select:none;cursor:' + (editMode ? 'grab' : 'pointer');
+      el.title = editMode
+        ? 'Stílstjórinn er opinn — dragðu takkann þangað sem þú vilt hafa hann · tvísmellur setur hann aftur í hornið'
+        : l.n;
       el.innerHTML =
         '<a href="' + esc(l.u) + '" target="_blank" rel="noopener" draggable="false" style="font:700 12.5px \'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;color:#0f172a;text-decoration:none;white-space:nowrap;max-width:52vw;overflow:hidden;text-overflow:ellipsis">' + esc(l.n) + '</a>' +
-        '<button type="button" data-pl-del="' + i + '" title="Fjarlægja takkann af síðunni" style="all:unset;cursor:pointer;width:20px;height:20px;line-height:20px;text-align:center;border-radius:99px;background:#f1f5f9;color:#475569;font-size:12px;font-weight:700;flex:none">✕</button>';
-      if (PL_POS(l)) { el.style.position = 'absolute'; box.appendChild(el); plClamp(el, l.x, l.y); }
+        // 2026-08-29 (Agnar): ✕ og færsla eiga AÐEINS heima í ritilham. Utan hans
+        // er takkinn bara takki — ekkert ✕ til að ýta óvart á og hann haggast ekki.
+        (editMode
+          ? '<button type="button" data-pl-del="' + i + '" title="Fjarlægja takkann af þessari síðu" style="all:unset;cursor:pointer;width:20px;height:20px;line-height:20px;text-align:center;border-radius:99px;background:#f1f5f9;color:#475569;font-size:12px;font-weight:700;flex:none">✕</button>'
+          : '');
+      if (PL_POS(l)) { el.style.position = 'absolute'; dbox.appendChild(el); plClamp(el, l.dx, l.dy); }
       else stack.appendChild(el);
     });
-    box.querySelectorAll('[data-pl-del]').forEach(b => b.onclick = e => {
+    // ATH: takkarnir búa núna í TVEIMUR gámum (staflinn í box, dregnir í dbox),
+    // svo hvor tveggja verður að leita í báðum — annars missa dregnu takkarnir
+    // ✕-ið og dráttinn.
+    const chips = sel => [].concat(
+      Array.prototype.slice.call(box.querySelectorAll(sel)),
+      Array.prototype.slice.call(dbox.querySelectorAll(sel)));
+    chips('[data-pl-del]').forEach(b => b.onclick = e => {
       e.preventDefault(); e.stopPropagation(); removePageLink(+b.dataset.plDel);
     });
-    box.querySelectorAll('[data-pl-chip]').forEach(el => plDraggable(el, arr));
+    // Dráttur aðeins í ritilham — utan hans haggast takkinn ekki.
+    if (editMode) chips('[data-pl-chip]').forEach(el => plDraggable(el, arr));
     // Endurstaðsetja þegar letrið er komið: fyrsta mælingin á breidd takkans er
     // gerð með fallback-letri og skeikar nógu miklu til að klemman við brúnina
     // reiknist skakkt. Þetta keyrir einu sinni per teikningu og hreyfir ekkert
@@ -989,11 +1064,11 @@
     try {
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(() => {
-          const b = document.getElementById('pe-pagelinks'); if (b !== box) return;
+          const b = document.getElementById('pe-pagelinks-doc'); if (b !== dbox) return;
           arr.forEach((l, i) => {
             if (!PL_POS(l)) return;
-            const c = box.querySelector('[data-pl-chip="' + i + '"]');
-            if (c && c.style.position === 'absolute') plClamp(c, l.x, l.y);
+            const c = dbox.querySelector('[data-pl-chip="' + i + '"]');
+            if (c) plClamp(c, l.dx, l.dy);
           });
         });
       }
@@ -1005,7 +1080,7 @@
     el.addEventListener('dblclick', e => {
       e.preventDefault();
       const l = arr[+el.getAttribute('data-pl-chip')]; if (!l) return;
-      delete l.x; delete l.y;
+      delete l.x; delete l.y; delete l.dx; delete l.dy;
       persist(); renderPageLinks(true); toast('↩ Takkinn aftur í hornið');
     });
     el.addEventListener('pointerdown', e => {
@@ -1021,13 +1096,16 @@
           moved = true;
           el.style.cursor = 'grabbing';
           el.style.opacity = '.92';
-          // Losa úr staflanum og festa á yfirlagið, á sama stað og hann var.
-          const box = document.getElementById('pe-pagelinks');
-          if (box && el.parentElement !== box) { el.style.position = 'absolute'; box.appendChild(el); }
+          // Losa úr staflanum og festa á SKJAL-lagið, á sama stað og hann var.
+          const dbox = document.getElementById('pe-pagelinks-doc');
+          if (dbox && el.parentElement !== dbox) { el.style.position = 'absolute'; dbox.appendChild(el); }
         }
         ev.preventDefault();
-        const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
-        plClamp(el, ((ev.clientX - offX) / vw) * 100, ((ev.clientY - offY) / vh) * 100);
+        // clientX/Y eru miðuð við GLUGGANN; skjal-lagið vill hnit frá toppi
+        // SKJALSINS, svo skrunstaðan bætist við. Án hennar stökk takkinn upp á
+        // við sem nam skruninu um leið og hann var sleppt.
+        const dw = document.documentElement.clientWidth || window.innerWidth || 1024;
+        plClamp(el, ((ev.clientX - offX) / dw) * 100, (ev.clientY - offY) + (window.scrollY || 0));
       };
       const onUp = ev => {
         document.removeEventListener('pointermove', onMove, true);
@@ -1036,10 +1114,11 @@
         el.style.cursor = 'grab'; el.style.opacity = '';
         if (!moved) return;                 // hreinn smellur → tengillinn sér um sig
         ev.preventDefault();
-        const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
-        l.x = Math.max(0, Math.min(100, (parseFloat(el.style.left) / vw) * 100));
-        l.y = Math.max(0, Math.min(100, (parseFloat(el.style.top) / vh) * 100));
-        persist(); toast('📍 Staðsetning takkans vistuð');
+        const dw = document.documentElement.clientWidth || window.innerWidth || 1024;
+        l.dx = Math.max(0, Math.min(100, (parseFloat(el.style.left) / dw) * 100));
+        l.dy = Math.max(0, Math.round(parseFloat(el.style.top) || 0));
+        delete l.x; delete l.y;             // gamla glugga-hlutfallið á ekki við lengur
+        persist(); toast('📍 Staðsetning takkans vistuð — hann fylgir nú síðunni');
       };
       // Hlustað á DOCUMENT, ekki á takkann sjálfan: við færum hann milli foreldra
       // í miðjum drætti (úr staflanum yfir á yfirlagið) og það EYÐIR pointer-capture,
@@ -1529,8 +1608,13 @@
     if (document.getElementById(PANEL_ID)) return;
     const p = document.createElement('div'); p.id = PANEL_ID; document.body.appendChild(p);
     renderPanel();
+    renderPageLinks(true);   // ✕ og dráttur kvikna á link-tökkunum
   }
-  function closePanel() { const p = document.getElementById(PANEL_ID); if (p) p.remove(); setPicking(false); hideHighlight(); }
+  function closePanel() {
+    const p = document.getElementById(PANEL_ID); if (p) p.remove();
+    setPicking(false); hideHighlight();
+    renderPageLinks(true);   // ✕ hverfur og takkarnir læsast á sínum stað
+  }
   function togglePanel() { if (document.getElementById(PANEL_ID)) closePanel(); else openPanel(); }
 
   // ── the 🎨 banner button ────────────────────────────────────────────────────
