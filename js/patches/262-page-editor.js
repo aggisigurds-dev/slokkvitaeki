@@ -772,6 +772,7 @@
     const sidanGrp = '<div class="pe-grp" style="margin-top:14px">' +
       '<span class="pe-grplbl">Síðan</span>' +
       '<button class="pe-btn pri" id="pe-savepage" title="Vista útlit þessarar síðu sem nefnda útgáfu — hægt að sækja aftur hvenær sem er">💾 Vista síðu</button>' +
+      (IN_DEVFRAME ? '' : '<button class="pe-btn" id="pe-save-as-app" title="Búa til / uppfæra app-útgáfu af þessari síðu sem birtist á Öpp-síðunni">📱 Vista sem app í Öpp</button>') +
       '<button class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + ' title="Afturkalla síðustu breytingu">↩ Afturkalla</button>' +
       '<button class="pe-btn" id="pe-reset">↺ Resetta ▾</button>' +
       '<button class="pe-btn" id="pe-bg">🖼 Bakgrunnsmynd</button>' +
