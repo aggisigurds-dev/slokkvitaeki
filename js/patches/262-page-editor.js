@@ -25,7 +25,7 @@
   const STYLE_ID = '_pe-overrides';
   const HL_ID = '_pe-highlight';
 
-  let state = { rules: [], bg: { all: null, pages: {} }, favs: [], zones: {} };
+  let state = { rules: [], bg: { all: null, pages: {} }, favs: [], zones: {}, zoom: {} };
   let target = null;        // currently selected DOM element
   let picking = false;      // element-pick mode
   let scope = 'page';       // 'page' | 'all'
@@ -47,7 +47,7 @@
   function loadState() {
     try {
       const raw = window.AppSettings && AppSettings.path ? AppSettings.path(KEY) : null;
-      if (raw) state = Object.assign({ rules: [], bg: { all: null, pages: {} }, favs: [], zones: {} }, JSON.parse(raw));
+      if (raw) state = Object.assign({ rules: [], bg: { all: null, pages: {} }, favs: [], zones: {}, zoom: {} }, JSON.parse(raw));
       if (!state.bg) state.bg = { all: null, pages: {} };
       if (!Array.isArray(state.rules)) state.rules = [];
       if (!Array.isArray(state.favs)) state.favs = [];
@@ -55,6 +55,7 @@
       if (!Array.isArray(state.customLinks)) state.customLinks = [];
       if (!state.pageLinks || typeof state.pageLinks !== 'object') state.pageLinks = {};
       if (!state.zones || typeof state.zones !== 'object') state.zones = {};
+      if (!state.zoom || typeof state.zoom !== 'object') state.zoom = {};
     } catch (_) {}
   }
   function persist() {
@@ -169,6 +170,17 @@
     let st = document.getElementById(STYLE_ID);
     if (!st) { st = document.createElement('style'); st.id = STYLE_ID; document.head.appendChild(st); }
     let css = '';
+    // ── SÍÐU-ZOOM ───────────────────────────────────────────────────────────
+    // Agnar 29.08: „kannski eins og zoom out 20%". `zoom` er notað en EKKI
+    // `transform:scale()`: scale minnkar aðeins myndina og skilur eftir sama
+    // pláss, svo spjöldin héldu sinni hæð og ekkert ynnist. `zoom` reiknar
+    // umbrotið upp á nýtt — kortin verða raunverulega lægri og fleiri komast
+    // á skjáinn, sem var tilgangurinn.
+    for (const vid in (state.zoom || {})) {
+      const z = state.zoom[vid];
+      if (!z || z === 100) continue;
+      css += '#' + vid + '#' + vid + '{zoom:' + (z / 100) + '}' + String.fromCharCode(10);
+    }
     const colorSels = [];
     for (const r of state.rules) {
       const keys = r.decls ? Object.keys(r.decls) : [];
@@ -540,6 +552,14 @@
       '#' + PANEL_ID + ' .pe-target{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;background:#111827;color:#e5e7eb;padding:4px 9px;border-radius:7px;white-space:nowrap;overflow:hidden;max-width:320px;text-overflow:ellipsis}',
       '#' + PANEL_ID + ' .pe-empty{padding:22px;text-align:center;color:#64748b;font-size:13px;border:1px dashed #cbd5e1;border-radius:12px;background:#fff}',
       // ── v2: þrepa-merki, svæða-kort og verkfæraspjöld ───────────────────────
+      // App-hamur: hausinn (#_app-hdr) er á z-index 2147481001 og lá YFIR toppi
+      // spjaldsins — mælt: elementFromPoint 40px niður í spjaldinu skilaði
+      // _app-hdr, svo efstu stýringarnar tóku ekki við smelli. Spjaldið fer
+      // hærra og byrjar undir hausnum svo hvorugt hylji hitt.
+      'body.appmode #' + PANEL_ID + '{z-index:2147481500 !important;top:50px !important}',
+      'body.appmode #' + PANEL_ID + '.pe-side{height:calc(100vh - 50px) !important}',
+      '#' + PANEL_ID + ' .pe-zoom{display:inline-flex;align-items:center;gap:3px;margin-left:auto}',
+      '#' + PANEL_ID + ' .pe-zoomv{font-size:12px;font-weight:800;min-width:42px;text-align:center;font-variant-numeric:tabular-nums;color:#334155}',
       '#' + PANEL_ID + ' .pe-step{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin:14px 0 2px}',
       '#' + PANEL_ID + ' .pe-pickrow{display:flex;gap:8px}',
       '#' + PANEL_ID + ' .pe-pickrow .pe-btn{flex:1;text-align:center}',
@@ -647,6 +667,13 @@
       '<button class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + ' title="Afturkalla síðustu breytingu">↩ Afturkalla</button>' +
       '<button class="pe-btn" id="pe-reset">↺ Resetta ▾</button>' +
       '<button class="pe-btn" id="pe-bg">🖼 Bakgrunnsmynd</button>' +
+      // Zoom á SÍÐUNA sjálfa — lækkar kortin og kemur fleirum á skjáinn.
+      '<span class="pe-zoom">' +
+        '<button class="pe-btn" data-zoom="-10" title="Minnka um 10%">−</button>' +
+        '<span class="pe-zoomv">' + curZoom() + '%</span>' +
+        '<button class="pe-btn" data-zoom="10" title="Stækka um 10%">+</button>' +
+        (curZoom() !== 100 ? '<button class="pe-btn" data-zoom="0" title="Aftur í 100%">↺</button>' : '') +
+      '</span>' +
     '</div>';
 
     const step2 = '<div class="pe-step">2 · Breyttu</div>';
@@ -1066,6 +1093,19 @@
   // sátu eftir sem óvirkir takkar; á kanban-síðu þýddi það þrjá dauða takka og
   // ekkert nothæft. Finnist ekkert svæði (ókunn síða) sýnum við allt óvirkt
   // eins og áður, svo kortið verði aldrei tómt.
+  // ── Síðu-zoom ─────────────────────────────────────────────────────────────
+  const ZOOM_MIN = 50, ZOOM_MAX = 150;
+  function curZoom() { return (state.zoom && state.zoom[curViewId()]) || 100; }
+  function setZoom(delta) {
+    const v = curViewId(); if (!v || v === 'all') return;
+    snapshot();
+    if (!state.zoom) state.zoom = {};
+    const nyr = delta === 0 ? 100 : Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, curZoom() + delta));
+    if (nyr === 100) delete state.zoom[v]; else state.zoom[v] = nyr;
+    persist(); renderPanel();
+    toast(nyr === 100 ? 'Zoom aftur í 100%' : 'Zoom ' + nyr + '%');
+  }
+
   function zoneMapSection() {
     const found = ZONES.filter(z => !!zoneEl(z));
     const list = found.length ? found : ZONES;
@@ -1278,6 +1318,7 @@
     };
     const up = q('#pe-unpick'); if (up) up.onclick = () => { target = null; extraTargets = []; hideHighlight(); renderPanel(); };
     const bg = q('#pe-bg'); if (bg) bg.onclick = pickBackground;
+    qa('[data-zoom]').forEach(b => b.onclick = () => setZoom(+b.dataset.zoom));
     const rs = q('#pe-reset'); if (rs) rs.onclick = resetMenu;
     const un = q('#pe-undo'); if (un) un.onclick = undo;
     qa('[data-scope]').forEach(b => b.onclick = () => { scope = b.dataset.scope; renderPanel(); });

@@ -884,9 +884,20 @@
     hdr.id = '_app-hdr'; hdr.style.display = ''; hdr.style.background = isBoss ? BOSS_BG_CSS.replace('background:', '') : ('linear-gradient(180deg,' + a.color + ',' + a.dark + ')');
     hdr.innerHTML = '<div class="nm">' + (isBoss ? bossCrownSvg(26) + '<span style="' + BOSS_GOLD_CSS + '">' + esc(a.name) + '</span>' : esc(a.emoji) + ' ' + esc(a.name)) + '</div>' +
       (a.standalone ? '' : '<button id="_app-pages" type="button" title="Þjónustuborð — síður, útlit, útgáfa">⚙ Þjónustuborð</button>') +
+      // 🎨 Stílstjórinn var ÓAÐGENGILEGUR í app-ham: 262 hengir takkann sinn á
+      // banner-klukkuna og app-hamurinn felur bannerinn alveg
+      // (body.appmode #bstal-banner{display:none}). Þar með var ekki hægt að
+      // laga útlit þeirra síðna sem maður notar mest — einmitt í símanum þar
+      // sem plássið er minnst (Agnar 29.08). Takkinn er því endurtekinn hér.
+      '<button id="_app-style" type="button" title="Stilla útlit þessarar síðu">🎨</button>' +
       '<button class="_app-install" data-always="1" id="_app-inst2" type="button">⤓ Setja upp</button>' +
       '<button id="_app-exit" type="button" title="Loka appi">✕</button>';
     if (!hdr.parentNode) document.body.appendChild(hdr);
+    var sty = document.getElementById('_app-style');
+    if (sty && !sty._wired) { sty._wired = 1; sty.addEventListener('click', function (e) {
+      e.preventDefault();
+      try { if (window.PageEditor && PageEditor.toggle) PageEditor.toggle(); } catch (_) {}
+    }); }
 
     var nav = document.getElementById('_app-nav') || document.createElement('div');
     nav.id = '_app-nav'; nav.style.display = '';
