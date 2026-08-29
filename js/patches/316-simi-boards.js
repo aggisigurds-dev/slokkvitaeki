@@ -43,9 +43,14 @@
     // ── Öpp chrome: 261 header is 50px + two fat labels; nav was 120px ────
     // "⚙ Þjónustuborð" / "⤓ Setja upp" do not fit 390px next to the name.
     // Icon-only 36×36 (title= already on the buttons); first glyph is the emoji.
+    // 2026-08-29: the 36px box + text-align:center showed the MIDDLE of the
+    // label, not the emoji — the header read "⚙ Þ" and "⤓ Se" in every app.
+    // 261 now wraps the words in <i class="_applbl">, so hiding that leaves
+    // the emoji alone and centred, which is what this block always meant.
     A + '#_app-hdr{height:44px;padding:0 8px;gap:6px}',
     A + '#_app-hdr .nm{font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     A + '#_app-hdr button{height:36px;min-height:36px;padding:0 8px;font-size:12px}',
+    A + '#_app-hdr ._applbl{display:none}',
     A + '#_app-hdr #_app-pages,' + A + '#_app-hdr #_app-inst2' +
       '{width:36px;min-width:36px;max-width:36px;padding:0;font-size:18px;line-height:36px;' +
        'overflow:hidden;white-space:nowrap;text-align:center}',
