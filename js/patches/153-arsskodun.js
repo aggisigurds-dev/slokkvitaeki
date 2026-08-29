@@ -1731,21 +1731,11 @@
     main.querySelectorAll('._ars-goskip').forEach(el => el.addEventListener('click', (e) => {
       e.stopPropagation(); state.status = 'skipped2025'; saveState(); render();
     }));
-    // ✕ á áminningu beint á röðinni (2026-08-17, Agnar: „they are stuck on
-    // some companies and I cant remove them") — sama vistun og 🗑 í ítarsýninni.
-    main.querySelectorAll('._ars-amin-x').forEach(b => b.addEventListener('click', async (e) => {
-      e.preventDefault(); e.stopPropagation();
-      const id = +b.dataset.coId; if (!id) return;
-      if (!confirm('Eyða áminningunni af þessu fyrirtæki?')) return;
-      const ok = (window.AppSettings && AppSettings.save)
-        ? await AppSettings.save({ [STORAGE_KEY]: { [String(id)]: { aminning: '' } } })
-        : false;
-      if (!ok) { alert('Vistun mistókst — reyndu aftur'); return; }
-      ovrLog(id, 'aminning', 'texti', '');
-      const c2 = (_cache.list || []).find(x => +x.id === id);
-      if (c2 && c2._ars) c2._ars.aminning = '';
-      render();
-    }));
+    // 2026-08-29 (Agnar): áminningin er ekki lengur birt á röðinni né á
+    // síma-kortinu — hún var fastur texti undir fyrirtækjanafninu sem truflaði
+    // borðið. Hún lifir óbreytt í gögnunum og sést í ítarsýninni, þar sem
+    // 🗑 Eyða virkar (og notar núna Confirm.show, ekki innbyggt confirm()).
+    // ✕-hnappurinn á röðinni og handlerinn hans féllu því út.
     // ↩ Virkja aftur / aftur í sleppt — handvirk ekki_sleppt-yfirskrift per
     // fyrirtæki (vistast samstillt í arsskodun_customers + override_log).
     main.querySelectorAll('._ars-unskip').forEach(b => b.addEventListener('click', async (e) => {
@@ -2505,7 +2495,6 @@
           // 2025 was a chaotic year and several locations never got visited.
           const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
           const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
-          const aminning = cleanAminning(ars.aminning);
           const est = +ars.estimated_yearly || 0;
 
           const statusBadge = isDone
@@ -2567,7 +2556,6 @@
                 const ac = attCount(c.id);
                 return ac > 0 ? `<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink3)"><span style="background:#dbeafe;color:var(--brand);font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #93c5fd">📎 ${ac} ${ac === 1 ? 'skjal' : 'skjöl'}</span></div>` : '';
               })()}
-              ${aminning ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:5px 8px;font-size:10.5px;color:#92400e;line-height:1.35"><strong style="font-weight:700">📌 Áminning:</strong> ${esc(aminning.slice(0, 140))}${aminning.length>140?'…':''}</div>` : ''}
 
               <div style="display:flex;gap:5px;margin-top:3px">
                 <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" style="flex:1;padding:5px 9px;background:var(--surface);color:var(--ink1);border:1px solid var(--brd2);border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:600">🏢 Fyrirtæki</button>
@@ -2906,7 +2894,6 @@
               const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
               const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
               const est = +ars.estimated_yearly || 0;
-              const aminning = cleanAminning(ars.aminning);
               const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
               const stLabel = isDone ? ('Skoðað ' + curYear)
                 : isFieldOnly ? 'Í vinnslu'
@@ -2930,7 +2917,6 @@
                     ${((window.NyttBadge && NyttBadge.is(c.id)) || (window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala) && RekstrarfelagBadge.html(c.kennitala, c.customer_base_id)) || state.status === 'skipped2025') ? `<span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;align-items:center">${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : ''}${state.status === 'skipped2025' ? (ars.ekki_sleppt
                       ? `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Handvirkt virkjaður aftur — smelltu til að merkja aftur sem sleppt" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;cursor:pointer;font-weight:700">✓ virkur · ↩ aftur í sleppt</button>`
                       : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</span>` : ''}
-                    ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3;white-space:normal"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''} <button class="_ars-amin-x" data-co-id="${c.id}" type="button" title="Eyða áminningunni af þessu fyrirtæki" style="border:none;background:transparent;color:#b45309;cursor:pointer;font-size:10px;padding:0 3px;opacity:.7">✕</button></div>` : ''}
                     <input class="_note _ars-plannote _ars-note-under" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="···" title="Ferðanóta — tímabundnar nótur við ferðaskipulag" maxlength="140">
                   </td>
                   <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="···" title="Ferðanóta — tímabundnar nótur við ferðaskipulag" maxlength="140"></td>
@@ -2941,7 +2927,6 @@
                       <div class="${g.slt ? '' : 'off'}" title="Slökkvitæki"><b>${g.slt || 0}</b><i>SLT</i></div>
                       <div class="${g.bsl ? '' : 'off'}" title="Brunaslöngur"><b>${g.bsl || 0}</b><i>BSL</i></div>
                       <div class="${g.rs ? '' : 'off'}" title="Reykskynjarar"><b>${g.rs || 0}</b><i>RS</i></div>
-                      ${g.other ? `<div title="Annað"><b>${g.other}</b><i>ANNAÐ</i></div>` : ''}
                       <div class="_estcell" title="Áætlað virði ársþjónustu"><b>${fmtKrShort(est)}</b><i>ÁÆTL</i></div>
                     </div>${ars.equipment_manual ? '<span title="Handvirkt yfirskrifað" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-left:4px;vertical-align:top"></span>' : ''}
                   </td>
@@ -3475,12 +3460,28 @@
     // sem enginn ritill náði til — „get ekki eytt af prófílnum").
     const aminDel = bg.querySelector('._ars-amin-del');
     if (aminDel) aminDel.addEventListener('click', async () => {
-      if (!confirm('Eyða áminningunni af þessu fyrirtæki?')) return;
-      const ok = (window.AppSettings && AppSettings.save)
-        ? await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { aminning: '' } } })
-        : false;
-      if (ok) { aminDel.closest('div[style*="fffbeb"]').remove(); render(); }
-      else alert('Vistun mistókst — reyndu aftur');
+      // 2026-08-29: var innbyggt confirm(). Confirm.show er það sem appið notar
+      // annars staðar og virkar líka þar sem innbyggði glugginn er bældur.
+      const yes = (window.Confirm && Confirm.show)
+        ? await Confirm.show('Eyða áminningunni af þessu fyrirtæki?', { danger: true, okText: 'Eyða' })
+        : confirm('Eyða áminningunni af þessu fyrirtæki?');
+      if (!yes) return;
+      if (!(window.AppSettings && AppSettings.save)) {
+        alert('Vistun ekki tiltæk — AppSettings hlóðst ekki. Endurhlaða síðuna.');
+        return;
+      }
+      aminDel.disabled = true;
+      let ok = false, err = '';
+      try { ok = await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { aminning: '' } } }); }
+      catch (e) { err = (e && e.message) || String(e); }
+      aminDel.disabled = false;
+      if (!ok) { alert('Vistun mistókst' + (err ? ' — ' + err : ' — engin skýring frá vistun') + '.\nÁminningin er ÓBREYTT.'); return; }
+      ovrLog(coId, 'aminning', 'texti', '');
+      const c2 = (_cache.list || []).find(x => +x.id === coId);
+      if (c2 && c2._ars) c2._ars.aminning = '';
+      const box = aminDel.closest('div[style*="fffbeb"]');
+      if (box) box.remove();
+      render();
     });
     eqToggle.addEventListener('click', () => setEqMode(true));
     bg.querySelector('._ars-eq-cancel').addEventListener('click', () => setEqMode(false));
