@@ -262,13 +262,15 @@
       V + '._arsm-name' + P
         + '{width:var(--ars-nafn-dalkur,190px)!important;max-width:var(--ars-nafn-dalkur,190px)!important}',
 
-      /* Hönnunarhamur: ekki éta allan símann svo listinn sjáist áfram. */
-      'html.slokk-phone-dev #_hh-panel,#_hh-panel' + P
-        + '{max-height:32vh!important}',
-      '@media (max-width:900px){#_hh-panel{max-height:32vh!important}}',
+      /* Hönnunarhamur: ekki éta allan símann svo listinn sjáist áfram.
+         318 er 52vh án !important; ramminn (._hh-frame) er ritill og má fylla. */
+      'html.slokk-phone-dev #_hh-panel:not(._hh-frame)' + P + ','
+        + '#_hh-panel:not(._hh-frame)' + P
+        + '{max-height:min(220px,28vh)!important}',
+      '@media (max-width:900px){#_hh-panel:not(._hh-frame){max-height:min(220px,28vh)!important}}',
       'html[data-viewmode="mobile"] #pe-panel:not(.pe-framed),'
         + 'body.appmode #pe-panel:not(.pe-framed)'
-        + '{max-height:32vh!important}'
+        + '{max-height:min(220px,28vh)!important}'
     ].join('\n');
   }
 
