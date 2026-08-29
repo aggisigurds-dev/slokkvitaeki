@@ -59,7 +59,7 @@
     KY + '.ky-mcopy{display:none!important}',
     KY + '.filter-chip,' + KY + '.ky-navbtn,' + KY + '._ky-sync,' + KY + '._ky-exp,' +
     KY + '.page-title__tools button,' + KY + '.page-title__tools select' +
-      '{min-height:36px!important;height:auto!important;padding-top:6px!important;padding-bottom:6px!important;font-size:13px!important}',
+      '{min-height:44px!important;height:auto!important;padding-top:8px!important;padding-bottom:8px!important;font-size:13px!important}',
     KY + 'input._ky-search{font-size:16px!important;min-height:40px!important;padding:8px 10px!important}',
     KY + '.ky-saletop input[type=checkbox],' + KY + '.ky-copick input' +
       '{min-height:20px!important;width:20px!important;height:20px!important;padding:0!important}',

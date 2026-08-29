@@ -42,12 +42,14 @@
     enforce();
     [300, 900, 2000, 4500].forEach(ms => setTimeout(enforce, ms));
     document.addEventListener('DOMContentLoaded', enforce);
-    // Ritillinn á að sitja UTAN við símann. Felum chrome sem 262/261/326/308/297
+    // Ritillinn á að sitja UTAN við símann. Felum panel/sleða sem 262/318
     // teikna inni í barninu — annars fyllir „Stilla útlit" 390px skjáinn.
+    // #_pe-btn stendur: smellur sendir slokk-pe-toggle til foreldris (262)
+    // sem opnar ritilinn í #_devframe-editor við hlið rammans.
     const hide = document.createElement('style');
     hide.id = '_devframe-child-hide';
     hide.textContent = [
-      '#_pe-btn', '#_pe-panel', '#pe-pagelinks', '#pe-pagelinks-doc',
+      '#_pe-panel', '#pe-pagelinks', '#pe-pagelinks-doc',
       '#_dst-btn', '#_app-style', '#pat-launch', '#cg-sk-trigger',
       '#_bil-toggle', '#_hh-toggle', '#_hh-panel'
     ].join(',') + '{display:none!important}';
