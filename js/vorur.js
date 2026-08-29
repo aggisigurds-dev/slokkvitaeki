@@ -170,7 +170,7 @@
           '<span style="font-size:13px;font-weight:800;color:#ffffff;text-transform:uppercase;letter-spacing:0.05em">'+esc(cat)+'</span>' +
           '<span style="font-size:11px;color:#ffffff;background:rgba(255,255,255,.24);padding:1px 8px;border-radius:10px;font-weight:700">'+byCat[cat].length+'</span>' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px">' +
           byCat[cat].map(renderCard).join('') +
         '</div>' +
       '</div>';
@@ -208,19 +208,19 @@
       // picture"). NB full-rammi (allar hliðar) var reyndur 2026-07-26 en Agnar
       // vildi HÁLFAN ramma → bakkað í vinstri-kant.
       var frame = tc ? ';border-left:3.6px solid '+tc+';box-sizing:border-box' : '';
-      var img = p.mynd ? '<img src="'+esc(p.mynd)+'" style="width:100%;height:140px;object-fit:cover;border-radius:8px;background:#f8fafc'+frame+'">' : '<div style="width:100%;height:140px;background:#f8fafc;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:32px'+frame+'">📦</div>';
+      var img = p.mynd ? '<img src="'+esc(p.mynd)+'" style="width:100%;height:72px;object-fit:cover;border-radius:7px;background:#f8fafc'+frame+'">' : '<div style="width:100%;height:72px;background:#f8fafc;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:22px'+frame+'">📦</div>';
       var isSvc = p.flokkur === 'Þjónusta';
       var badge = '<span style="display:inline-block;background:'+(isSvc?'#fef3c7':'#dbeafe')+';color:'+(isSvc?'#92400e':'#1e40af')+';font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;letter-spacing:0.03em">'+esc(p.flokkur||'')+'</span>';
       var stockInfo = !isSvc && p.birgdir!=null ? '<div style="font-size:11px;color:#64748b;margin-top:4px">🏷️ '+p.birgdir+' á lager</div>' : '';
       var virktPill = p.virkt ? '' : '<span style="display:inline-block;background:#fee2e2;color:#b91c1c;font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;margin-left:4px">ÓVIRKT</span>';
-      return '<div class="vorur-card" data-id="'+p.id+'" style="position:relative;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'#cbd5e1\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.05)\'" onmouseout="this.style.borderColor=\'#e2e8f0\';this.style.boxShadow=\'\'">' +
+      return '<div class="vorur-card" data-id="'+p.id+'" style="position:relative;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:9px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'#cbd5e1\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.05)\'" onmouseout="this.style.borderColor=\'#e2e8f0\';this.style.boxShadow=\'\'">' +
         img +
-        '<div style="margin-top:10px">' +
+        '<div style="margin-top:7px">' +
           '<div>'+badge+virktPill+'</div>' +
-          '<div style="font-weight:700;color:#0f172a;font-size:14px;margin-top:6px;line-height:1.3">'+esc(p.nafn)+'</div>' +
-          (p.lysing ? '<div style="color:#64748b;font-size:12px;margin-top:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+esc(p.lysing)+'</div>' : '') +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">' +
-            '<div><div style="font-weight:700;color:#0f172a;font-size:15px">'+fmtKr(priceInc)+'</div><div style="color:#64748b;font-size:11px">'+fmtKr(p.verd_an_vsk)+' án vsk</div></div>' +
+          '<div style="font-weight:700;color:#0f172a;font-size:12.5px;margin-top:5px;line-height:1.25">'+esc(p.nafn)+'</div>' +
+          (p.lysing ? '<div style="color:#64748b;font-size:11px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical">'+esc(p.lysing)+'</div>' : '') +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">' +
+            '<div><div style="font-weight:700;color:#0f172a;font-size:13.5px">'+fmtKr(priceInc)+'</div><div style="color:#64748b;font-size:10px">'+fmtKr(p.verd_an_vsk)+' án vsk</div></div>' +
             stockInfo +
           '</div>' +
         '</div>' +
