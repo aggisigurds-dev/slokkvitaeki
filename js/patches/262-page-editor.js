@@ -511,7 +511,10 @@
       // vinstri, svo augað sjái strax HVAÐ hver takki tilheyrir.
       '#' + PANEL_ID + ' .pe-grp{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:7px 9px;border:1px solid #e2e8f0;border-radius:11px;background:#fff}',
       '#' + PANEL_ID + ' .pe-grplbl{font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#94a3b8;flex:0 0 auto;min-width:58px}',
-      // Tómur hópur (t.d. „Tafla & skjár" áður en 319/320/321 hlaðast) á ekki
+      // Sýn-rofinn (Sími/Tafla/Skjár) fyllir röndina; ramma-takkar 320 sitja á eftir.
+      '#' + PANEL_ID + ' .pe-toolbar .pe-vm{flex:1 1 180px;min-width:160px;box-sizing:border-box}',
+      '#' + PANEL_ID + ' .pe-toolbar .pe-vm button{flex:1;text-align:center}',
+      // Tómur hópur (t.d. „Sýn" áður en takkar teiknast) á ekki
       // að sitja eftir sem stök merkimiða-rönd.
       '#' + PANEL_ID + ' .pe-grp:not(:has(button)){display:none}',
       '#' + PANEL_ID + ' .pe-targetrow{display:flex;align-items:center;gap:8px}',
@@ -628,6 +631,45 @@
       '<input type="color" data-color="' + prop + '" value="' + liveColor(prop, '#333333') + '">' +
       '<button class="pe-btn" data-clear="' + prop + '" title="Hreinsa">✕</button></div>';
   }
+  // Sýn-rofi í Stilla útlit — sama SlokkViewMode og banner-Sími/Tafla/Skjár,
+  // plús SlokkDevFrame fyrir raunveruleg síma-/töflu-hlutföll við útlitsvinnu.
+  function currentViewMode() {
+    const m = document.documentElement.dataset.viewmode;
+    return (m === 'mobile' || m === 'table' || m === 'desktop') ? m : 'desktop';
+  }
+  function viewModeSegHtml() {
+    const m = currentViewMode();
+    const segs = [['mobile', 'Sími'], ['table', 'Tafla'], ['desktop', 'Skjár']];
+    return '<div class="pe-seg pe-vm" id="pe-viewmode" role="group" title="Sýn: Sími / Tafla / Skjár — Sími og Tafla opna tækjaramman">' +
+      segs.map(([k, lbl]) =>
+        '<button type="button" data-pe-vm="' + k + '"' + (k === m ? ' class="on"' : '') + '>' + lbl + '</button>'
+      ).join('') +
+    '</div>';
+  }
+  function syncPeViewModeSeg(mode) {
+    const wrap = document.getElementById('pe-viewmode');
+    if (!wrap) return;
+    const m = mode || currentViewMode();
+    wrap.querySelectorAll('[data-pe-vm]').forEach(b => b.classList.toggle('on', b.dataset.peVm === m));
+  }
+  function applyPeViewMode(mode) {
+    if (mode !== 'mobile' && mode !== 'table' && mode !== 'desktop') mode = 'desktop';
+    try {
+      if (window.SlokkViewMode && typeof SlokkViewMode.apply === 'function') SlokkViewMode.apply(mode, true);
+      else document.documentElement.dataset.viewmode = mode;
+    } catch (_) {
+      try { document.documentElement.dataset.viewmode = mode; } catch (__) {}
+    }
+    syncPeViewModeSeg(mode);
+    try {
+      if (!window.SlokkDevFrame) return;
+      if (mode === 'desktop') {
+        if (typeof SlokkDevFrame.close === 'function') SlokkDevFrame.close();
+      } else if (typeof SlokkDevFrame.open === 'function') {
+        SlokkDevFrame.open(mode === 'table' ? 'tafla' : 'simi');
+      }
+    } catch (_) {}
+  }
   function renderPanel() {
     const p = document.getElementById(PANEL_ID); if (!p) return;
     extraTargets = extraTargets.filter(el => el && el.isConnected && el !== target);
@@ -642,7 +684,9 @@
     // (vista/afturkalla/resetta/bakgrunnur) færast upp í hausinn þar sem þær
     // tilheyra — þær eiga hvorugt þrepið.
     // ⚠️ `.pe-toolbar` verður að lifa áfram sem klasi: patchar 319/320/321 finna
-    // hann með querySelector('.pe-toolbar') og appenda sínum tökkum.
+    // hann með querySelector('.pe-toolbar') og appenda sínum tökkum (rammi / tafla).
+    // Sýn-rofinn (Sími|Tafla|Skjár) er innbyggður hér — sama staður og útlitsstýringar
+    // (ósk Agnars 29.08: skipta um desktop/tablet/mobile í Stilla útlit).
     const head = '<div class="pe-hd">' +
       '<div class="pe-titlerow">' +
         '<div style="flex:1"><h3 class="pe-h">🎨 Stilla útlit</h3></div>' +
@@ -662,7 +706,8 @@
         '<button class="pe-btn" id="pe-unpick">hreinsa val</button></div>' : '') +
       (target ? '<div class="pe-grp">' + '<span class="pe-grplbl">Nákvæmni</span>' + matchSeg + '</div>' : '') +
       '<div class="pe-grp pe-toolbar">' +
-        '<span class="pe-grplbl">Tafla &amp; skjár</span>' +
+        '<span class="pe-grplbl">Sýn</span>' +
+        viewModeSegHtml() +
       '</div>' +
       '</div>';
 
@@ -1408,6 +1453,11 @@
     // en sýnileg í toolbarnum: aðgerðin VAR til, hún fannst bara aldrei ofan í
     // samanbrotnu spjaldi (Agnar 26.08: „Engin skýr Vista síðu-aðgerð").
     const sp = q('#pe-savepage'); if (sp) sp.onclick = saveVersionAs;
+    qa('[data-pe-vm]').forEach(b => b.onclick = e => {
+      e.preventDefault(); e.stopPropagation();
+      applyPeViewMode(b.dataset.peVm);
+    });
+    syncPeViewModeSeg();
     qa('[data-ver-go]').forEach(b => b.onclick = () => activateVersion(+b.dataset.verGo));
     qa('[data-ver-del]').forEach(b => b.onclick = () => deleteVersion(+b.dataset.verDel));
     qa('[data-lk-open]').forEach(b => b.onclick = () => linkGo(+b.dataset.lkOpen, ''));
@@ -1657,6 +1707,10 @@
     applyZones();
     window.addEventListener('hashchange', () => setTimeout(applyZones, 140));
     document.addEventListener('slokk-viewmode', () => setTimeout(applyZones, 60));
+    // Banner-rofi og aðrir kallarar á SlokkViewMode → haltu Sýn-rofanum í spjaldinu samstilltum.
+    document.addEventListener('slokk-viewmode', ev => {
+      try { syncPeViewModeSeg(ev && ev.detail); } catch (_) {}
+    });
     setInterval(applyZones, 1500);
     window.addEventListener('scroll', () => { if (picking) hideHighlight(); }, true);
     // link-takkar á síðum: teikna við ræsingu og elta síðu-skipti
