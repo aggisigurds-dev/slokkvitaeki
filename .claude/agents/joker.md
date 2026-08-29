@@ -399,6 +399,44 @@ broddstafalaust „oktober" og ártal án mánaðar („2025-").
 **Skoðaðu raunveruleg gildi áður en þú sníður þeim stakk.** Ein leið: safnaðu
 formum með `String(v).replace(/\d/g,'9')` og teldu — þá sérðu öll afbrigðin.
 
+### Símastærðirnar eru CSS-BREYTUR — ekki hardkóði
+
+Agnar 29.08: *„I also really want to be able to fix my page myself instead of
+days trying to make code do it."* Það var réttmæt kvörtun: dálkabreiddir,
+raðhæð, letur og litir bjuggu inni í tveimur JS-skrám sem byggja CSS, svo hver
+smábreyting þurfti kóðalotu.
+
+**Þær búa núna efst í `css/mobile.css`** undir hausnum „SÍMASTÆRÐIR — BREYTTU
+HÉR, EKKI Í JS". Patch 153 og 317 lesa þær með `var(--nafn, fallback)`.
+
+Þegar þú breytir símaútliti: **breyttu breytunni, ekki reglunni.** Þarftu nýja
+stærð sem er ekki til, bættu breytu við í `mobile.css` FYRST og lestu hana svo
+úr JS-inu — aldrei negla tölu í pappa.
+
+Sannreynt 29.08: tvær línubreytingar (`--ars-rad-haed: 64px`,
+`--ars-nafn-dalkur: 190px`) færðu allar 678 raðirnar úr 52px í 64px og dálkinn
+úr 150 í 190; taflan endurreiknaði breidd sína 818→858 sjálf. Séu línurnar
+fjarlægðar fer allt í fallback-gildin. Enginn JS snertur.
+
+### Meðferðarreglur sem Agnar samþykkti (HANDOFF v2.1, 29.08)
+
+Fyrsta útgáfa bílstjóraspjaldanna var **hafnað** fyrir að vera of þung — dökkir
+metal-hnappar á allt, fullur litaflötur á spjaldi, sjö jafnþung stök að slást
+um sama spjaldið. Reglurnar sem komu í staðinn:
+
+- **Eitt þungt stak á spjald.** Ein fyllt aðgerð; allt annað hárlínur og texti.
+- **Aldrei fylltur litaflötur á spjaldinu sjálfu.** Staða birtist á 3px kanti
+  og í lit á texta — ekki sem bakgrunnur.
+- **Staða er texti í lit, ekki pilla.** Og í DJÚPA þrepinu: hrátt accent
+  (`#5980a6`) má vera á kanti og striki en **aldrei á smátexta**.
+- **Birtuskilagólf `#5d5a54` (6.9:1).** Ekkert ljósara á texta sem á að lesa.
+  `#8c8880` og `#a8a49c` mældust 3.5:1 og 2.5:1 — of ljós fyrir tæki sem er
+  lesið úti í dagsljósi.
+- **Munurinn á hökuðu og óhökuðu verður að sjást.** Í fyrstu útgáfunni var
+  „Skoðað" blátt í báðum tilvikum og því ólæsilegt sem staða.
+- **Flatt, ekki gljáandi.** Engir gradientar á smástökum, engar ljósdíóður,
+  engir stöðudeplar.
+
 ### Hönnunarskjölin sem til eru núna
 
 Ekki mæla þetta upp á nýtt; það er þegar gert:

@@ -2399,14 +2399,14 @@
          Áður var þetta minmax(0,1fr)+66+34+34+26 án skruns, svo allt kramdist
          í símabreidd — mælt á 430px: taflan 1280px breið og raðirnar 326px HÁAR
          af því allt braut sig niður. Nú skrunast það í staðinn fyrir að brotna. */
-      V+'._arsm-row{display:grid;grid-template-columns:150px 56px 112px 96px 60px 52px 84px 78px 130px;gap:0;align-items:center;width:818px;height:52px;border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
+      V+'._arsm-row{display:grid;grid-template-columns:var(--ars-nafn-dalkur,150px) var(--ars-d-man,56px) var(--ars-d-ar,112px) var(--ars-d-taeki,96px) var(--ars-d-akstur,60px) var(--ars-d-stada,52px) var(--ars-d-virdi,84px) var(--ars-d-sidast,78px) var(--ars-d-nota,130px);gap:0;align-items:center;width:max-content;min-width:100%;height:var(--ars-rad-haed,52px);border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
       V+'._arsm-row>*{padding:0 6px;min-width:0}',
       /* Nafnið helst kyrrt þegar strokið er til hliðar — annars veit maður ekki
          hvaða fyrirtæki maður er að lesa um leið og fyrsti dálkur er farinn. */
       V+'._arsm-name{position:sticky;left:0;z-index:2;background:#fff;overflow:hidden;padding:5px 8px !important;box-shadow:1px 0 0 #eef1f5}',
       V+'._arsm-head ._arsm-name{background:#eef1f5}',
       V+'._arsm-row:active ._arsm-name{background:#f3f5f8}',
-      V+'._arsm-head{height:38px}',
+      V+'._arsm-head{height:var(--ars-haus-haed,38px)}',
       /* Nýju dálkarnir: tæki, virði, síðasta skoðun, ferðanóta. */
       V+'._arsm-eq{text-align:center;font-size:12px;color:#3a4250;font-variant-numeric:tabular-nums}',
       V+'._arsm-val{text-align:right;font-size:11.5px;color:#3a4250;font-variant-numeric:tabular-nums;white-space:nowrap}',
@@ -2431,8 +2431,8 @@
       V+'._arsm-yrhead span{flex:1;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;color:#8a94a3}',
       // nafn + undirlína (póstnr · tækjafjöldi · ✉ vantar)
       V+'._arsm-name{min-width:0}',
-      V+'._arsm-nm{font-size:12.5px;font-weight:600;color:#141a22;white-space:normal;overflow:hidden;overflow-wrap:anywhere;letter-spacing:-.01em;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:29px}',
-      V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;color:#8a94a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
+      V+'._arsm-nm{font-size:var(--ars-nafn-letur,12.5px);font-weight:600;color:#141a22;white-space:normal;overflow:hidden;overflow-wrap:anywhere;letter-spacing:-.01em;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:29px}',
+      V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--ars-undir-letur,9.5px);color:#8a94a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
       // 4-ára reitir
       V+'._arsm-yr{display:flex;gap:2px}',
       V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:#e3e6ea;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-style:normal;font-weight:700;line-height:1}',
