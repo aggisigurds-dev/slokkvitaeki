@@ -283,18 +283,27 @@ Rétt leið, í forgangsröð:
    `mobile`, mæld aftur 5 sek síðar → komin í `desktop`.
 3. Í uppsettum app-ham er hún ÞVINGUÐ í `mobile`, óháð skjástærð og stillingu.
 
-### 2. Vafra-glugginn kemst ekki niður fyrir ~657px
+### 2. ~~Vafra-glugginn kemst ekki niður fyrir ~657px~~ — ÚRELT 29.08
 
-`resize_window` að 390×844 skilar `innerWidth: 657`. Þú KEMST ekki í raunverulega
-símabreidd í þessum vafraglugga. Notaðu device-rammann eða treystu skjámyndum
-frá Agnari.
+**Þetta á ekki lengur við.** Browser-pane-tólin (`mcp__Claude_Browser__*`) setja
+raunverulega útsýnisstærð: `resize_window {width:430,height:860}` skilaði
+`innerWidth: 430` nákvæmlega, mælt 29.08. Gamla 657px-gólfið var takmörkun í
+eldra vafratóli, ekki lögmál.
 
-### 3. `preview_start` gefur ENGAN vef
+Þú getur því mælt á alvöru símabreidd beint. Notaðu 430×860 (S26) og 390×844.
 
-`.claude/launch.json` → „slokkvitaeki" keyrir `build-dist` (afritar 498 skrár í
-`dist/`) og hættir. Ekkert svarar á portinu — `curl` skilar HTTP 000. Það er
-því EKKI hægt að prófa patch á staðbundnum vef þannig. Prófaðu á
-`slokkvitaeki.netlify.app` eftir push, eða í device-rammanum.
+### 3. ~~`preview_start` gefur ENGAN vef~~ — ÚRELT 29.08
+
+**Þetta á ekki lengur við.** `.claude/launch.json` var lagað; stillingin
+`slokkvitaeki-dev` keyrir nú `npx serve -l 5599 .` og portið svarar (staðfest
+29.08: `curl` skilar HTTP 200/301, appið hleðst með raunverulegum Supabase-gögnum).
+
+```
+preview_start { name: "slokkvitaeki-dev" }   → http://localhost:5599
+```
+
+Þú getur því prófað patch STAÐBUNDIÐ áður en þú ýtir. Gerðu það — ýting fer
+sjálfkrafa í framleiðslu innan 15 mínútna (sjá auto-sync).
 
 ### 4. Dálkastýring er til á TVEIMUR stöðum
 
@@ -313,3 +322,93 @@ CSS fyrir dálkabreiddir — notaðu `TableLook`.
 **Mæling í röngum ham er verri en engin mæling** — hún lítur út eins og
 staðreynd. Staðfestu ALLTAF `document.documentElement.dataset.viewmode` í sömu
 andrá og þú mælir, og hafðu gildið með í niðurstöðunni.
+
+---
+
+## Lærdómur 29.08.2026 — frosinn dálkur, lagaskipting og talning
+
+Dagurinn sem Ársskoðunartaflan fór í síma. Þrjár villur komu upp í smíðinni og
+**allar þrjár fundust með talningu, engin þeirra með því að horfa á skjáinn.**
+
+### Mynstrið: frosinn dálkur + lárétt skrun
+
+Þegar tafla þarf fleiri en fjóra dálka í síma er **ekki** rétt að brjóta klefana
+niður. Mælt fyrir: taflan 1280px breið í 430px glugga og raðirnar **326px háar**
+af því hver klefi braut sig. Það er ólæsilegt.
+
+Rétta mynstrið (`js/patches/153-arsskodun.js`, `_ensureArsMrowCss`):
+
+```
+._arsm-tbl  overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none
+._arsm-row  display:grid; width:<summa>; height:<föst>;
+            grid-template-columns: 150px  <dálkar sem skrunast…>
+._arsm-name position:sticky; left:0; z-index:2; background:#fff;
+            box-shadow:1px 0 0 <hárlína>
+```
+
+Þrjú atriði sem gera muninn:
+
+1. **Föst raðhæð** (`height`, ekki `min-height`). Annars vex röðin við langt
+   nafn og 52px-takturinn fer. Nafnið er klemmt í tvær línur með
+   `-webkit-line-clamp:2` og fullt nafn sett í `title`.
+2. **Nafndálkurinn frosinn.** Skrunist hann burt veistu ekki hvaða fyrirtæki þú
+   ert að lesa. `position:sticky; left:0` á grid-barni virkar.
+3. **Síðan sjálf má ekki skrunast lárétt.** Aðeins taflan.
+   Staðfestu: `document.documentElement.scrollWidth === window.innerWidth`.
+
+Sama hugsun lárétt í TurboPaint (`.tp-topbar`, kjarni) — stika sem klipptist af
+í skjáborðsham skrunast nú í staðinn.
+
+### Lagaskiptingin — reglan sem patch 315 braut
+
+Þetta er mikilvægasta reglan hér, því brotið á henni sést AÐEINS í appham:
+
+- **Pappinn sem á sýnina** (153 fyrir Ársskoðun) á **grindina, leturstigann og
+  raðhæðirnar**.
+- **Þjöppunarlögin** (314 sími, 315 appham) eiga **umgjörðina**: fullbreidd,
+  snertimörk, ytri padding.
+
+Patch 315 hafði neglt `grid-template-columns` fyrir Ársskoðunarraðir í appham.
+Þegar 153 fór úr 5 reitum í 9 tróð 315 níu reitum í fimm rákir. Í síma var allt
+í lagi; aðeins appham brotnaði.
+
+**Þjöppunarlag má aldrei negla grind.**
+
+### Gátlistinn — í þessari röð
+
+1. **Mældu FYRIR.** Breidd, hæð, dálkafjöldi í raunstærð (430×860).
+2. **Teldu reiti á móti rákum.** `row.children.length` verður að vera jafnt
+   fjölda í `grid-template-columns`. Röð með 8 reiti í 9 rákum lítur *næstum*
+   rétt út — og var raunveruleg villa í dag (Tæki-reitinn vantaði þótt hausinn
+   væri kominn).
+3. **Mældu ALLAR raðirnar.** `{52: 678}` er svar. „Ég skoðaði fyrstu röðina" er
+   það ekki — fyrsta röðin var 52px meðan 60 aðrar voru 62px.
+4. **Berðu saman MIÐJUR haus↔gagna, ekki vinstri brúnir.** Miðjaðir hnappar
+   (`margin:0 auto`) gefa falskt jákvætt á brúnum.
+5. **Prófaðu appham sérstaklega**: `document.body.classList.add('appmode')`.
+6. **Staðfestu að síðan skrunist ekki lárétt.**
+7. **`node tools/audit-all.cjs`** — 15/15 áður en ýtt er.
+
+### Gögn eru sjaldnast á því formi sem þú heldur
+
+`ars.last_skodun` heitir eins og dagsetning en er **frjáls texti** („2026-febrúar").
+Fyrsta atlagan sneri við um bandstrikið eftir `.slice(0,10)` — sem klippti
+„febrúar" í „febrú" og skilaði „febrú.2026" í 78px dálk. Upprunagögnin höfðu líka
+broddstafalaust „oktober" og ártal án mánaðar („2025-").
+
+**Skoðaðu raunveruleg gildi áður en þú sníður þeim stakk.** Ein leið: safnaðu
+formum með `String(v).replace(/\d/g,'9')` og teldu — þá sérðu öll afbrigðin.
+
+### Hönnunarskjölin sem til eru núna
+
+Ekki mæla þetta upp á nýtt; það er þegar gert:
+
+- **`docs/LITASKRA.md`** — mældir litir eins og þeir ERU (15 textalitir,
+  5 rauðir, 100 gegnsæir innsláttarreitir, 135 stílblöð samtímis).
+- **`docs/DESIGN.md`** — MARKMIÐIÐ, í DESIGN.md-sniði. Tvískipt:
+  kaflinn *„Að breyta síma- og appútliti án þess að berjast við CSS"* er
+  nothæfur strax (sérvirknireglur, lagaskipting, gátlisti); litir/letur/bil
+  bíða þess að þemað verði samræmt. Viðmið í `docs/honnun/`.
+- Mælt 29.08 og var hvergi skráð áður: letrið er **IBM Plex Sans**, ekki Inter.
+  Í notkun eru **9 radíusar, 11 leturstærðir, 7 þyngdir, 9 bil-gildi** — en
+  rammar eru 1px í 287 af 288 tilvikum, eina víddin sem er öguð.
