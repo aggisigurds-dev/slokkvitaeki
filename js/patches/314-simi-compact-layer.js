@@ -186,7 +186,7 @@
 
     // ── Banner: Sími is a MODE, not a media query ──────────────────────────
     'html[data-viewmode="mobile"] #bstal-banner{height:66px!important;top:8px!important;left:58px!important;right:8px!important}',
-    'html[data-viewmode="mobile"] #_pe-btn{min-width:44px!important;min-height:44px!important}',
+    'html[data-viewmode="mobile"] #_pe-btn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}',
     'html[data-viewmode="mobile"] #bstal-banner .bb-rightwrap{display:none!important}',
     'html[data-viewmode="mobile"] #bstal-banner .bb-logo img{height:34px!important}',
     'html[data-viewmode="mobile"] #bstal-ember{display:none!important}',

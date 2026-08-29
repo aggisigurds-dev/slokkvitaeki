@@ -72,7 +72,7 @@
       '{display:none!important}',
     A + '#_dst-btn._float{bottom:calc(76px + env(safe-area-inset-bottom,0px))!important}',
     // Banner-🎨 er 28×28. Á síma þarf hit-area ≥44 án þess að blása borðann.
-    M + '#_pe-btn{min-width:44px!important;min-height:44px!important}',
+    M + '#_pe-btn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}',
 
     // ── Bakendi ────────────────────────────────────────────────────────────
     trio('#view-bakendi .bk-wrap') + '{padding:12px 10px 72px;max-width:none}',
