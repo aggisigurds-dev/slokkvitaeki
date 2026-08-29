@@ -68,7 +68,10 @@
     // Fljótandi chrome sem EKKI er hluti af appinu — mælt ofan á Kröfur:
     // #pat-launch 139×39 @ y=787 sat OFAN Á #_app-nav (y=783). 📐 er lyft
     // yfir dokkann; póst/CG/síðu-linkar eru faldir (sama ástæða og 327 á Sölu).
-    A + '#pat-launch,' + A + '#cg-sk-trigger,' + A + '#pe-pagelinks,' + A + '#pe-pagelinks-doc' +
+    A + '#pat-launch,' + M + '#pat-launch,' +
+    A + '#cg-sk-trigger,' + M + '#cg-sk-trigger,' +
+    A + '#pe-pagelinks,' + A + '#pe-pagelinks-doc,' +
+    M + '#pe-pagelinks,' + M + '#pe-pagelinks-doc' +
       '{display:none!important}',
     A + '#_dst-btn._float{bottom:calc(76px + env(safe-area-inset-bottom,0px))!important}',
     // Banner-🎨 er 28×28. Á síma þarf hit-area ≥44 án þess að blása borðann.
