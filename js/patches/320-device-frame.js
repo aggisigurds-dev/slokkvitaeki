@@ -11,6 +11,8 @@
  *     iframe.contentDocument). Barnið felur 🎨 / panel / 📐 svo síminn sýni
  *     bara appið. ↻ endurhleður rammann.
  *   - Rammar sig ekki aftur (takkarnir birtast ekki í barni).
+ *   - Sími/Tafla í Stilla útlit (.pe-vm) OG banner á skjáborði opna þennan
+ *     ramma (plat hlutföll) — Skjár lokar. Á alvöru síma er banner óbreyttur.
  * ========================================================================== */
 (() => {
   if (window.__devFrame320) return;
@@ -285,11 +287,28 @@
     notifyEditor();
   }
 
-  /* Takkar í Stílstjóra-toolbar (sama endursmíðunar-mynstur og 319). */
+  /* Takkar í Stílstjóra-toolbar (sama endursmíðunar-mynstur og 319).
+     Ef 262 hefur þegar teiknað Sími|Tafla|Skjár (.pe-vm) bætum við AÐEINS
+     landscape-afbrigðunum — annars héldum við fjórum pe-devframe-tökkum. */
   function syncButtons() {
     const bar = document.querySelector('.pe-toolbar');
     if (!bar) return;
-    Object.keys(DEVICES).forEach(k => {
+    const hasVm = !!bar.querySelector('.pe-vm');
+    const keys = hasVm ? ['simiL', 'taflaL'] : Object.keys(DEVICES);
+    // Fjarlægjum portrait-takka sem pe-vm leysir af hólmi.
+    if (hasVm) {
+      ['simi', 'tafla'].forEach(k => {
+        const b = bar.querySelector('#pe-devframe-' + k);
+        if (b) b.remove();
+      });
+      bar.querySelectorAll('[data-pe-vm]').forEach(b => {
+        const want = (curDev === 'simi' || curDev === 'simiL') ? 'mobile'
+          : (curDev === 'tafla' || curDev === 'taflaL') ? 'table'
+          : 'desktop';
+        b.classList.toggle('on', b.dataset.peVm === want);
+      });
+    }
+    keys.forEach(k => {
       const id = 'pe-devframe-' + k;
       let b = bar.querySelector('#' + id);
       if (!b) {
@@ -304,6 +323,27 @@
     });
   }
 
+  /* Á skjáborði: banner Sími/Tafla → plat rammi (ekki CSS á fullri síðu).
+     Á alvöru síma (slokk-phone-dev) er banner-rofinn óbreyttur. */
+  function isPhoneHardware() {
+    try { return document.documentElement.classList.contains('slokk-phone-dev'); } catch (_) { return false; }
+  }
+  document.addEventListener('click', function (e) {
+    if (CHILD_MODE || isPhoneHardware()) return;
+    const b = e.target && e.target.closest && e.target.closest('#_ky-vm-toggle [data-vm]');
+    if (!b) return;
+    const vm = b.dataset.vm;
+    if (vm !== 'mobile' && vm !== 'table' && vm !== 'desktop') return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (vm === 'mobile') open('simi');
+    else if (vm === 'table') open('tafla');
+    else {
+      close();
+      try { if (window.SlokkViewMode && SlokkViewMode.apply) SlokkViewMode.apply('desktop', true); } catch (_) {}
+    }
+  }, true);
+
   let t = null;
   new MutationObserver(muts => {
     for (const m of muts) for (const n of m.addedNodes) {
@@ -317,6 +357,7 @@
     open, close, refresh,
     isOpen: () => !!overlay,
     iframe: () => iframe,
+    device: () => curDev,
   };
   console.log('[patch-320] device frame ready');
 })();

@@ -438,10 +438,11 @@
         // Ástands-klasar merkisins (effRep = skýrsla eða handstaðfest).
         // 2026-08-17 (Agnar): grænt = skoðað (skýrsla til), rautt = EKKI skoðað
         // („red when not inspected"), blátt = bara reikningur/yfirfarið — og
-        // LED-glóðin (.lit) kviknar AÐEINS við fact-check-staðfestingu
-        // („not with green dot light up untill factchecked").
+        // LED á pillunni (.lit) = staðfest (factcheck human EÐA klarad-par).
+        // Ekki sama og græni undirpunkturinn (skýrsla) né blái (reikningur).
+        // Agnar multi-action: LED ≠ „hefur skýrslu".
         const yrCls = (effRep) => {
-          const lit = confirmed ? ' lit' : '';
+          const lit = (confirmed || isKlarad) ? ' lit' : '';
           // gull þegar skoðunarmánuður YFIRSTANDANDI árs er ekki kominn — líka
           // þegar gap-flagg stendur (Claude-yfirferðirnar flögguðu fjölda 2026-
           // raða „skýrsla vantar" þótt skoðunin sé ekki tímabær fyrr en seinna
@@ -513,11 +514,19 @@
   // Same lookup the on-screen year columns use (site-precise via locMap), so
   // other views — e.g. the printed driver list (patch 153 printList) — show the
   // identical '23/'24/'25/'26 status without duplicating the data plumbing.
-  // Returns { '2023': {has, due, reik}, … }. `has` = úttektarskýrsla á skrá.
+  //
+  // Agnar multi-action (presentation only — does NOT change readiness):
+  //   has       → green under-dot = skýrslu-tengt
+  //   reik      → blue under-dot  = invoice-tengt (never invent)
+  //   klarad | confirmed → green LED on the year button = staðfest
+  // Returns { '2023': {has, due, reik, inv, klarad, confirmed}, … }.
   function yearInfo(c) {
-    try { loadLoc(); loadReik(); loadInv(); loadPairs(); } catch (_) {}   // best-effort warm (idempotent)
+    try { loadLoc(); loadReik(); loadInv(); loadPairs(); loadFc(); } catch (_) {}   // best-effort warm (idempotent)
     const out = {};
-    if (!c) { YEARS.forEach(y => out[y] = { has: false, due: (y === '2026'), reik: false, klarad: false }); return out; }
+    if (!c) {
+      YEARS.forEach(y => out[y] = { has: false, due: (y === '2026'), reik: false, klarad: false, confirmed: false });
+      return out;
+    }
     let uf = {}, att = {};
     try { if (window.AppSettings && AppSettings.path) uf = AppSettings.path('uttekt_files') || {}; } catch (e) {}
     try { if (window.AppSettings && AppSettings.path) att = AppSettings.path('company_attachments') || {}; } catch (e) {}
@@ -535,10 +544,12 @@
       // `inv` = úttekt staðfest með reikningi (v_uttekt_ar / POS á stað) en skýrsla vantar —
       // `has` er ÁFRAM skýrslu-eingöngu svo „vantar skýrslu"-talningar standi.
       // `reik` 🧾: við skýrslu = site-keyed úttektarreikningur; án skýrslu = confirmed only.
+      // `confirmed` = year_factcheck human — LED-merki; ekki readiness.
       out[y] = { has: hasRep, due: (y === '2026'),
         reik: hasRep ? hasReikYear(coId, kt, y, ktCount) : hasConfirmedInvYear(coId, y),
         inv: hasConfirmedInvYear(coId, y),
-        klarad: !!(pairMap && pairMap[coId] && pairMap[coId].has(y)) };
+        klarad: !!(pairMap && pairMap[coId] && pairMap[coId].has(y)),
+        confirmed: fcStat(coId, y) === 'human' };
     });
     return out;
   }
