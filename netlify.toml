@@ -108,7 +108,9 @@
   status = 200
 
 # Always revalidate the HTML entry points so a new deploy is picked up across
-# machines. JS/CSS are cache-busted via hand-written ?v= query strings.
+# machines. JS/CSS are cache-busted via hand-written ?v= query strings, and
+# build-dist.js also emits content-hashed /js/_bundle-N.<md5>.js files. HTML
+# stays max-age=0 so a new deploy is noticed; hashed bundles are immutable.
 #
 # 2026-06-13: the rule was scoped to "/index.html", but the app is opened at
 # "/" — Netlify matches header rules by REQUEST path, so the root document "/"
@@ -153,6 +155,31 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "SAMEORIGIN"
     Referrer-Policy = "no-referrer"
+
+# Repeat visits were re-downloading ~1.1 MB of JS on every load because Netlify
+# defaulted static files to max-age=0. Query-string ?v= assets can sit in the
+# browser cache for an hour (HTML still revalidates, so a bump is picked up).
+# Put the hashed-bundle rule AFTER /js/* — Netlify last-match wins for the
+# same header, and _bundle-*.js filenames change when the bytes change.
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/js/_bundle-*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 # Sjálfvirk greiðslu-samstilling úr Payday tvisvar á dag: kl. 10:00 og 15:00
 # (cron er í UTC; Ísland = UTC allt árið → sömu tímar að staðartíma). Sami
