@@ -46,8 +46,14 @@
 
   /* ?arsview=bilstjori|bord í símaramma: sýnir spjöld eða borð ÁN þess að
      krukka í vistaða stillingu notandans. Stjórnun = borðið úr
-     arsskodun-mobile.html (renderMobileRows). Bílstjóri = 317-spjöldin. */
+     arsskodun-mobile.html (renderMobileRows). Bílstjóri = 317-spjöldin.
+     AÐEINS inni í ?devframe=: annars læsir arsview alvöru síma (Agnar sat
+     fastur). Listi á hausnum slökkvir þá á localStorage. */
+  function inDevFrame() {
+    try { return !!new URLSearchParams(location.search).get('devframe'); } catch (_) { return false; }
+  }
   function previewOverride() {
+    if (!inDevFrame()) return null;
     try {
       const q = new URLSearchParams(location.search).get('arsview');
       if (q === 'bilstjori') return true;
@@ -55,12 +61,24 @@
     } catch (_) {}
     return null;
   }
+  function hreinsaArsviewASimi() {
+    if (inDevFrame()) return;
+    try {
+      const u = new URL(location.href);
+      if (!u.searchParams.has('arsview')) return;
+      u.searchParams.delete('arsview');
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+    } catch (_) {}
+  }
   const on = () => {
     const o = previewOverride();
     if (o !== null) return o;
     try { return localStorage.getItem(LS_ON) === '1'; } catch (_) { return false; }
   };
   const setOn = v => { try { localStorage.setItem(LS_ON, v ? '1' : '0'); } catch (_) {} };
+  function merkiBilstjori(virkt) {
+    try { document.documentElement.classList.toggle('slokk-bilstjori', !!virkt); } catch (_) {}
+  }
   const akFilter = () => { try { return localStorage.getItem(LS_AK) || 'allir'; } catch (_) { return 'allir'; } };
   const setAkFilter = v => { try { localStorage.setItem(LS_AK, v); } catch (_) {} };
 
@@ -95,9 +113,16 @@
     s.textContent = [
       V + '._bil-wrap{padding:0 0 96px;background:var(--ars-grunnur,#f0eeea);font-family:' + LETUR + '}',
       V + '._bil-hdr{background:#1a1f2e;padding:9px 12px 0}',
-      V + '._bil-hdr-row{padding-bottom:9px}',
+      V + '._bil-hdr-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-bottom:9px}',
+      V + '._bil-hdr-txt{flex:1;min-width:0}',
       V + '._bil-hdr-tt{font:700 15px ' + LETUR + ';color:#fff}',
       V + '._bil-hdr-sub{font:11px ' + LETUR + ';color:rgba(255,255,255,.6);margin-top:2px}',
+      V + '._bil-listi{flex:none;align-self:center;min-height:36px;padding:0 12px;border-radius:8px;'
+        + 'border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.12);color:#fff;'
+        + 'font:700 13px ' + LETUR + ';cursor:pointer;white-space:nowrap}',
+      /* EN má ekki liggja ofan á AKSTUR. 329 felur líka; þetta er öryggisnet. */
+      'html.slokk-bilstjori body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3),'
+        + 'html.slokk-bilstjori body #lang-fab{display:none!important}',
       V + '._bil-tabs{display:flex}',
       V + '._bil-tab{flex:1;border:0;background:transparent;color:rgba(255,255,255,.55);font:700 13px ' + LETUR + ';padding:10px 0 9px;border-bottom:2px solid transparent;cursor:pointer}',
       V + '._bil-tab.on{color:#fff;border-bottom-color:#C93C1D}',
@@ -120,7 +145,10 @@
 
       V + '._bil-top{display:flex;align-items:flex-start;gap:9px}',
       V + '._bil-top>div{flex:1;min-width:0}',
-      V + '._bil-nm{font-size:var(--ars-spjald-nafn,15.5px);font-weight:700;color:var(--ars-texti,#16181c);line-height:1.2}',
+      V + 'button._bil-nm{display:block;width:100%;min-height:0!important;height:auto!important;padding:0!important;'
+        + 'border:0!important;background:transparent!important;box-shadow:none!important;'
+        + 'font-size:var(--ars-spjald-nafn,15.5px)!important;font-weight:700;color:var(--ars-texti,#16181c);'
+        + 'line-height:1.2;text-align:left;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}',
       V + '._bil-addr{font-size:12px;color:var(--ars-texti-mjukur,#5d5a54);margin-top:2px}',
       V + '._bil-st{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;font:700 11.5px ' + LETUR + ';white-space:nowrap;flex:0 0 auto;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
       V + '._bil-st._bs-done{background:var(--ars-st-done-bg,linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%));border:1px solid var(--ars-st-done-bd,#041c0e);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.22),inset 0 -2px 4px rgba(0,0,0,.28)}',
@@ -316,7 +344,8 @@
         + '</div>'
       : '';
     return '<div class="_bil-card ' + cls + '" data-co="' + c.id + '">'
-      + '<div class="_bil-top"><div><div class="_bil-nm">' + esc(c.nafn || '—') + '</div>'
+      + '<div class="_bil-top"><div>'
+      + '<button type="button" class="_bil-nm" data-co="' + c.id + '">' + esc(c.nafn || '—') + '</button>'
       + (addr ? '<div class="_bil-addr">' + esc(addr) + '</div>' : '') + '</div>'
       + '<span class="_bil-st ' + cls + '">' + esc(merki) + '</span></div>'
       + '<div class="_bil-mid">' + yrs
@@ -351,7 +380,8 @@
     const titill = f === 'allir' ? 'Allir aksturslistar' : 'Aksturslisti ' + f;
     const tabs = [['1', '🚗 1'], ['2', '🚗 2'], ['3', '🚗 3'], ['allir', 'Allir']]
       .map(([k, l]) => '<button type="button" class="_bil-tab' + (f === k ? ' on' : '') + '" data-akf="' + k + '">' + l + '</button>').join('');
-    // 📋 Listi er EKKI inni í símanum — Stjórnun/Bílstjóri situr í ramma-overlayinu.
+    // 📋 Listi situr í dökka hausnum — #_bil-toggle er inni í #ars-main sem
+    // teikna() felur, og 320 felur hann í rammanum. Á síma var engin útgönguleið.
     const body = hopar.length
       ? hopar.map(([m, arr]) =>
           '<div class="_bil-mon"><span>' + (m ? esc(MONTHS[m - 1]) + ' ' + new Date().getFullYear() : 'Án mánaðar') + '</span>'
@@ -359,8 +389,9 @@
           + '<div class="_bil-list">' + arr.map(spjald).join('') + '</div>').join('')
       : '<div class="_bil-tom">Engin fyrirtæki á þessum aksturslista.</div>';
     return '<div class="_bil-wrap"><div class="_bil-hdr"><div class="_bil-hdr-row">'
-      + '<div class="_bil-hdr-tt">' + esc(titill) + '</div>'
-      + '<div class="_bil-hdr-sub">' + talning + ' staðir · ' + budid + ' búnir</div>'
+      + '<div class="_bil-hdr-txt"><div class="_bil-hdr-tt">' + esc(titill) + '</div>'
+      + '<div class="_bil-hdr-sub">' + talning + ' staðir · ' + budid + ' búnir</div></div>'
+      + '<button type="button" class="_bil-listi" title="Til baka í stjórnun">Listi</button>'
       + '</div><div class="_bil-tabs">' + tabs + '</div></div>'
       + body + '</div>';
   }
@@ -374,6 +405,30 @@
   function tengja(root) {
     root.querySelectorAll('._bil-tab').forEach(b => b.addEventListener('click', e => {
       e.preventDefault(); setAkFilter(b.dataset.akf); teikna();
+    }));
+
+    /* Nafn: sami gluggi og skrifstofan notar til að fylla úttekt
+       (Arsskodun.openDetail). Ekki nýtt form. */
+    root.querySelectorAll('._bil-nm').forEach(b => b.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      const id = +b.dataset.co;
+      if (!id) return;
+      try {
+        if (window.Arsskodun && typeof Arsskodun.openDetail === 'function') {
+          Arsskodun.openDetail(id);
+          return;
+        }
+      } catch (_) {}
+      try { if (window._openCompanySafe) window._openCompanySafe(id); } catch (_) {}
+    }));
+
+    root.querySelectorAll('._bil-listi').forEach(b => b.addEventListener('click', e => {
+      e.preventDefault();
+      setOn(false);
+      hreinsaArsviewASimi();
+      slokkva();
+      const tb = document.getElementById('_bil-toggle');
+      if (tb) { tb.textContent = '🚚 Bílstjóri'; tb.title = 'Spjaldasýn fyrir akstur'; }
     }));
 
     root.querySelectorAll('._bil-ak').forEach(b => b.addEventListener('click', e => {
@@ -450,11 +505,13 @@
     }
     main.style.display = 'none';
     box.style.display = '';
+    merkiBilstjori(true);
     box.innerHTML = html();
     tengja(box);
   }
 
   function slokkva() {
+    merkiBilstjori(false);
     const v = document.getElementById(VIEW_ID); if (!v) return;
     const main = v.querySelector('#ars-main'); if (main) main.style.display = '';
     const box = v.querySelector('#_bil-root'); if (box) box.style.display = 'none';
@@ -492,7 +549,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);
   else vakta();
 
-  window.ArsBilstjori = { teikna, on, setOn, version: 'v2-app' };
+  window.ArsBilstjori = { teikna, on, setOn, slokkva, version: 'v2-app' };
   console.log('[patch-317] arsskodun bilstjori ready');
 })();
 /* === END ÁRSSKOÐUN BÍLSTJÓRASPJÖLD === */
