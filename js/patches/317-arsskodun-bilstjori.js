@@ -68,7 +68,8 @@
      Handoff v2.1 vildi hljóðlát 2a-spjöld. Agnar hlóð svo inn
      arsskodun-app.html og nefndi það: dökkur haus, rauð undirstrikun,
      stöðupillur, árs-reitir með ljósdíóðu og tveimur punktum, málmhnappar.
-     Gögnin koma áfram úr 153/187 — þetta er teikning, ekki ný rök. */
+     Gögnin koma áfram úr 153/187 — þetta er teikning, ekki ný rök.
+     Árs-/stöðulitir: SÖMU og skjáborðs `_yr`/`_st` (css/ars-simi-vars.css). */
   function css() {
     if (document.getElementById('_ars-bil-css')) return;
     const s = document.createElement('style');
@@ -97,38 +98,45 @@
         + 'border-left:var(--ars-spjald-kantur,4px) solid #8a94a3 !important;'
         + 'border-radius:var(--ars-spjald-radius,12px);padding:10px 12px;'
         + 'display:flex;flex-direction:column;gap:8px}',
-      V + '._bil-card._bs-done{border-left-color:#1f9d57 !important}',
-      V + '._bil-card._bs-vinnslu{border-left-color:#17324f !important}',
-      V + '._bil-card._bs-vantar{border-left-color:#c0392b !important}',
-      V + '._bil-card._bs-sleppt{border-left-color:#c98a1a !important}',
-      V + '._bil-card._bs-queue{border-left-color:#8a94a3 !important}',
+      /* Kantur + staða: desktop `_st--*` (grænt/blátt/rautt/gull málm) */
+      V + '._bil-card._bs-done{border-left-color:var(--ars-st-done-bd,#041c0e) !important}',
+      V + '._bil-card._bs-vinnslu{border-left-color:var(--ars-st-work-bd,#060f24) !important}',
+      V + '._bil-card._bs-vantar{border-left-color:var(--ars-st-late-bd,#4d0a08) !important}',
+      V + '._bil-card._bs-sleppt{border-left-color:var(--ars-st-skip-bd,rgba(255,220,130,.45)) !important}',
+      V + '._bil-card._bs-queue{border-left-color:var(--ars-st-plan-bd,#12296b) !important}',
 
       V + '._bil-top{display:flex;align-items:flex-start;gap:9px}',
       V + '._bil-top>div{flex:1;min-width:0}',
       V + '._bil-nm{font-size:var(--ars-spjald-nafn,15.5px);font-weight:700;color:#11141c;line-height:1.2}',
       V + '._bil-addr{font-size:12px;color:#5b6573;margin-top:2px}',
-      V + '._bil-st{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:99px;font:700 11.5px system-ui,sans-serif;white-space:nowrap;flex:0 0 auto}',
-      V + '._bil-st._bs-done{background:#e7f7ee;color:#1f9d57}',
-      V + '._bil-st._bs-vinnslu{background:#eef4fb;color:#17324f}',
-      V + '._bil-st._bs-vantar{background:#fdeceb;color:#c0392b}',
-      V + '._bil-st._bs-sleppt{background:#fdf3e0;color:#c98a1a}',
-      V + '._bil-st._bs-queue{background:#f4f6f9;color:#8a94a3}',
+      V + '._bil-st{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;font:600 11.5px system-ui,sans-serif;white-space:nowrap;flex:0 0 auto;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
+      V + '._bil-st._bs-done{background:var(--ars-st-done-bg,linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%));border:1px solid var(--ars-st-done-bd,#041c0e);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.22),inset 0 -2px 4px rgba(0,0,0,.28)}',
+      V + '._bil-st._bs-vinnslu{background:var(--ars-st-work-bg,linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%));border:1px solid var(--ars-st-work-bd,#060f24);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.2)}',
+      V + '._bil-st._bs-vantar{background:var(--ars-st-late-bg,linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%));border:1px solid var(--ars-st-late-bd,#4d0a08);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.28),inset 0 -2px 4px rgba(0,0,0,.26)}',
+      V + '._bil-st._bs-sleppt{color:var(--ars-st-skip-fg,#fff8e6);background:var(--ars-st-skip-bg,linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08));border:1px solid var(--ars-st-skip-bd,rgba(255,220,130,.45));box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -2px 4px rgba(0,0,0,.25)}',
+      V + '._bil-st._bs-queue{background:var(--ars-st-plan-bg,linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%));border:1px solid var(--ars-st-plan-bd,#12296b);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.35),inset 0 -2px 4px rgba(0,0,0,.22)}',
 
       V + '._bil-mid{display:flex;align-items:center;gap:14px;flex-wrap:wrap}',
       V + '._bil-yrs{display:flex;gap:5px;width:184px}',
       V + '._bil-yrcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}',
-      V + '._bil-yr{width:100%;height:var(--ars-arsreitur-haed,26px);min-width:var(--ars-arsreitur-breidd,40px);border-radius:6px;color:#fff;font:700 13px ui-monospace,monospace;'
-        + 'display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);border:1px solid #7a1d13;'
-        + 'background:linear-gradient(180deg,#c0392b,#8c2318)}',
-      V + '._bil-yr.skyrsla{background:linear-gradient(180deg,#1e6b3d,#0d4526);border-color:#0a3a1f}',
-      V + '._bil-yr.skodad{background:linear-gradient(180deg,#c9a227,#8f6d10);border-color:#7a5c0c}',
-      V + '._bil-led{width:5px;height:5px;border-radius:50%;background:#e8705f;flex:none}',
-      V + '._bil-yr.skyrsla ._bil-led{background:#34d17a}',
-      V + '._bil-yr.skodad ._bil-led{background:#f0c246}',
+      /* Árs-reitir: sama málm og desktop `_yr` (tómt/both/penda) */
+      V + '._bil-yr{width:100%;height:var(--ars-arsreitur-haed,26px);min-width:var(--ars-arsreitur-breidd,40px);border-radius:6px;'
+        + 'color:var(--ars-yr-empty-fg,#aab3c0);font:700 13px ui-monospace,monospace;'
+        + 'display:flex;align-items:center;justify-content:center;gap:5px;'
+        + 'background:var(--ars-yr-empty-bg,#f4f6f9);border:1px solid var(--ars-yr-empty-bd,#e7eaf0)}',
+      V + '._bil-yr.skyrsla{color:#fff;background:var(--ars-yr-both-bg,linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%));'
+        + 'border-color:var(--ars-yr-both-bd,#041c0e);text-shadow:0 1px 1px rgba(0,0,0,.35);'
+        + 'box-shadow:inset 0 1.5px 0 rgba(255,255,255,.2),inset 0 -2px 4px rgba(0,0,0,.26)}',
+      V + '._bil-yr.skodad{color:var(--ars-yr-penda-fg,#fff8e6);background:var(--ars-yr-penda-bg,linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08));'
+        + 'border-color:var(--ars-yr-penda-bd,rgba(255,220,130,.45));text-shadow:0 1px 1px rgba(0,0,0,.35);'
+        + 'box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -2px 4px rgba(0,0,0,.25)}',
+      V + '._bil-led{width:6px;height:6px;border-radius:50%;background:var(--ars-led-off,rgba(0,0,0,.14));flex:none}',
+      V + '._bil-yr.skyrsla ._bil-led{background:var(--ars-led-both,#7df0b4);box-shadow:0 0 5px rgba(125,240,180,.9)}',
+      V + '._bil-yr.skodad ._bil-led{background:var(--ars-led-on,#37c47e);box-shadow:0 0 5px rgba(55,196,126,.8)}',
       V + '._bil-dots{display:flex;gap:4px}',
-      V + '._bil-dots i{width:5px;height:5px;border-radius:50%;background:#ccd2da}',
-      V + '._bil-dots i.on{background:#22c55e}',
-      V + '._bil-dots i.inv{background:#2563eb}',
+      V + '._bil-dots i{width:5px;height:5px;border-radius:50%;background:var(--ars-dot-off,#dfe3ea)}',
+      V + '._bil-dots i.on{background:var(--ars-dot-skyrsla,#1f9d57)}',
+      V + '._bil-dots i.inv{background:var(--ars-dot-reik,#2f5fe0)}',
       V + '._bil-eq{display:flex;gap:11px}',
       V + '._bil-eq span{display:flex;flex-direction:column;align-items:center;line-height:1.04}',
       V + '._bil-eq b{font:800 14px system-ui,sans-serif;color:#11141c}',
