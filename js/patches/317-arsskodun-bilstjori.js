@@ -122,13 +122,14 @@
         + 'background:linear-gradient(180deg,#c0392b,#8c2318)}',
       V + '._bil-yr.skyrsla{background:linear-gradient(180deg,#1e6b3d,#0d4526);border-color:#0a3a1f}',
       V + '._bil-yr.skodad{background:linear-gradient(180deg,#c9a227,#8f6d10);border-color:#7a5c0c}',
-      V + '._bil-led{width:5px;height:5px;border-radius:50%;background:#e8705f;flex:none}',
-      V + '._bil-yr.skyrsla ._bil-led{background:#34d17a}',
-      V + '._bil-yr.skodad ._bil-led{background:#f0c246}',
+      // Agnar multi-action: LED = staðfest (klarad|confirmed), NOT „hefur skýrslu".
+      // Grár = óvirkt. Litir úr css/ars-simi-vars.css.
+      V + '._bil-led{width:5px;height:5px;border-radius:50%;background:var(--ars-led-off,#ccd2da);flex:none}',
+      V + '._bil-yr.stadfest ._bil-led{background:var(--ars-led-on,#34d17a)}',
       V + '._bil-dots{display:flex;gap:4px}',
-      V + '._bil-dots i{width:5px;height:5px;border-radius:50%;background:#ccd2da}',
-      V + '._bil-dots i.on{background:#22c55e}',
-      V + '._bil-dots i.inv{background:#2563eb}',
+      V + '._bil-dots i{width:5px;height:5px;border-radius:50%;background:var(--ars-dot-off,#ccd2da)}',
+      V + '._bil-dots i.on{background:var(--ars-dot-skyrsla,#22c55e)}',
+      V + '._bil-dots i.inv{background:var(--ars-dot-reik,#2563eb)}',
       V + '._bil-eq{display:flex;gap:11px}',
       V + '._bil-eq span{display:flex;flex-direction:column;align-items:center;line-height:1.04}',
       V + '._bil-eq b{font:800 14px system-ui,sans-serif;color:#11141c}',
@@ -241,10 +242,12 @@
     const nota = (c.plan_note || '').trim();
     const est = +a.estimated_yearly || 0;
 
-    // Árs-reitirnir eru teiknaðir HÉR en reiknaðir í 153 (Arsskodun.arsPerur) —
-    // ein rökfærsla, tvær teikningar. Ljósdíóða + tveir punktar úr mockupinu:
-    // d1 grænt ef skýrsla, d2 blátt aðeins ef 187.yearInfo.reik er satt
-    // (sama 🧾 og borðið — engin ágiskun, grár punktur ef 187 er ekki til).
+    // Árs-reitirnir eru teiknaðir HÉR en staða (skyrsla/skodad) kemur úr 153
+    // (arsPerur). Agnar multi-action — þrjú merki, presentation only:
+    //   LED (.stadfest) = klarad | factcheck human  (ekki bara „hefur skýrslu")
+    //   d1 .on  grænt    = yearInfo.has   (skýrslu-tengt)
+    //   d2 .inv blátt    = yearInfo.reik  (invoice-tengt; aldrei ágiska)
+    // Grár = óvirkt / ekki til. Sannleikur reiknings/skýrslu = 187.yearInfo.
     const ar = new Date().getFullYear();
     const years = [ar - 3, ar - 2, ar - 1, ar];
     let yrs = '';
@@ -257,11 +260,12 @@
       const p = Arsskodun.arsPerur(c, years, ar, new Date().getMonth() + 1);
       yrs = '<div class="_bil-yrs">' + years.map((y, i) => {
         const st = p.arStada[i] === 'ekkert' ? '' : p.arStada[i];
-        const d1 = p.arStada[i] === 'skyrsla' ? ' on' : '';
-        const rec = invByY[String(y)];
-        const d2 = rec && rec.reik ? ' inv' : '';
+        const rec = invByY[String(y)] || {};
+        const d1 = rec.has ? ' on' : '';
+        const d2 = rec.reik ? ' inv' : '';
+        const led = (rec.klarad || rec.confirmed) ? ' stadfest' : '';
         return '<span class="_bil-yrcol">'
-          + '<span class="_bil-yr ' + st + '"><i class="_bil-led"></i>' + String(y).slice(-2) + '</span>'
+          + '<span class="_bil-yr ' + st + led + '"><i class="_bil-led"></i>' + String(y).slice(-2) + '</span>'
           + '<span class="_bil-dots"><i class="' + d1 + '"></i><i class="' + d2 + '"></i></span>'
           + '</span>';
       }).join('') + '</div>';

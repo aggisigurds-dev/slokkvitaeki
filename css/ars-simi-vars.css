@@ -68,4 +68,15 @@
   --ars-accent:       #5980a6;  /* AÐEINS á kanti og striki — aldrei á texta */
   --ars-accent-djupt: #2a4763;  /* accent á smátexta fer HÉR í gegn          */
   --ars-sokkull:      #17324f;  /* eina fyllta aðgerðin: ✓ Skoðað            */
+
+  /* ── Árs-reitir 23/24/25/26 — þrjú merki (Agnar multi-action) ───────────
+     1. LED á pillunni = staðfest (klarad / factcheck human). Ekki „hefur skýrslu".
+     2. Vinstri punktur undir = skýrslu-tengt (has).
+     3. Hægri punktur undir = reiknings-tengt (reik). Aldrei ágiska reikning.
+     Grár = óvirkt / ekki til. Patch 187 yearInfo + 317/153 teikna úr þessu. */
+  --ars-led-off:      #ccd2da;
+  --ars-led-on:       #34d17a;
+  --ars-dot-off:      #ccd2da;
+  --ars-dot-skyrsla:  #22c55e;
+  --ars-dot-reik:     #2563eb;
 }
