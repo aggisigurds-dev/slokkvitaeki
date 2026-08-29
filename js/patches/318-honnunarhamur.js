@@ -65,15 +65,15 @@
       { v: '--ars-col-nota',   m: 'Nóta',   min: 60, max: 260, sjalf: 130 }
     ] },
     { syn: 'spjald', heiti: 'Spjald · bílstjóri', vidmid: '._bil-card', breytur: [
-      { v: '--ars-spjald-nafn',    m: 'Nafnletur',  min: 12, max: 22, sjalf: 16.5, skref: .5 },
-      { v: '--ars-spjald-bil',     m: 'Bil milli',  min: 4,  max: 28, sjalf: 12 },
-      { v: '--ars-spjald-kantur',  m: 'Kantur',     min: 0,  max: 10, sjalf: 3 },
-      { v: '--ars-spjald-radius',  m: 'Radíus',     min: 0,  max: 18, sjalf: 3 },
-      { v: '--ars-skodad-haed',    m: '✓ Skoðað',   min: 32, max: 60, sjalf: 40 },
-      { v: '--ars-takn-haed',      m: 'Táknhnappar',min: 30, max: 56, sjalf: 38 },
-      { v: '--ars-akstur-haed',    m: 'Akstur',     min: 28, max: 56, sjalf: 36 },
-      { v: '--ars-arsreitur-breidd', m: 'Árs-reitur b.', min: 20, max: 60, sjalf: 31 },
-      { v: '--ars-arsreitur-haed',   m: 'Árs-reitur h.', min: 14, max: 40, sjalf: 20 }
+      { v: '--ars-spjald-nafn',    m: 'Nafnletur',  min: 12, max: 22, sjalf: 15.5, skref: .5 },
+      { v: '--ars-spjald-bil',     m: 'Bil milli',  min: 4,  max: 28, sjalf: 8 },
+      { v: '--ars-spjald-kantur',  m: 'Kantur',     min: 0,  max: 10, sjalf: 4 },
+      { v: '--ars-spjald-radius',  m: 'Radíus',     min: 0,  max: 18, sjalf: 12 },
+      { v: '--ars-skodad-haed',    m: '✓ Skoðað',   min: 32, max: 60, sjalf: 44 },
+      { v: '--ars-takn-haed',      m: 'Táknhnappar',min: 30, max: 56, sjalf: 44 },
+      { v: '--ars-akstur-haed',    m: 'Akstur',     min: 28, max: 56, sjalf: 40 },
+      { v: '--ars-arsreitur-breidd', m: 'Árs-reitur b.', min: 20, max: 60, sjalf: 40 },
+      { v: '--ars-arsreitur-haed',   m: 'Árs-reitur h.', min: 14, max: 40, sjalf: 26 }
     ] }
   ];
   const ALLAR = HOPAR.reduce((a, h) => a.concat(h.breytur), []);
