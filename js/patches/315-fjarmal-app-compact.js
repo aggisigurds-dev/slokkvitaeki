@@ -23,10 +23,10 @@
       '{min-height:52px!important;padding:4px 3px!important;font-size:11px!important;gap:2px!important;border-radius:10px}',
     'body.appmode[data-app="fjarmal"] #_app-nav button .e,body.appmode[data-app="boss"] #_app-nav button .e{font-size:18px}',
     'body.appmode[data-app="fjarmal"] .view.active,body.appmode[data-app="boss"] .view.active' +
-      '{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}',
+      '{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}',
     'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode[data-app="fjarmal"] .view.active:not(#view-field):not(#view-counter):not(#view-workshop),' +
     'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode[data-app="boss"] .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
-      '{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}',
+      '{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}',
 
     // 230 Brunastál: `.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{padding:8px 14px}`
     // The three :not(#id) bump specificity past a plain `#ars-main` rule — copy the
@@ -104,12 +104,12 @@
       'width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;' +
       'overscroll-behavior-x:contain;scrollbar-width:thin}',
     // 2026-08-29: Grindin var negld hér (minmax(0,1fr) 66px 34px 32px 26px) fyrir
-    // gamla 5-reita mrows-markupið. 153 er núna með 9 reiti (150px frosinn nafn +
+    // gamla 5-reita mrows-markupið. 153 er núna með 9 reiti (190px frosinn nafn +
     // 668px sem skrunast) og þessi lína tróð þeim í 5 rákir. Grind og padding eiga
     // heima hjá 153 einum — 315 stillir aðeins rammann utan um töfluna.
     // Lárétt skrun + músar-drag (símarammi) er í patch 328.
     ARS + '._arsm-row._arsm-head{padding:0}',
-    // Nafnið fékk 16px hér; dálkurinn er 150px og raðhæðin föst 52px, svo 16px
+    // Nafnið fékk 16px hér; dálkurinn er 190px og raðhæðin föst 52px, svo 16px
     // sprengdi tveggja-línu klemmuna. 12.5px er það sem 153 mælir með.
     'html body.appmode #view-arsskodun ._arsm-row ._arsm-sub{font-size:9.5px!important}',
     ARS + '._arsm-ak{min-height:26px!important;width:30px!important;height:26px!important;padding:0!important}',

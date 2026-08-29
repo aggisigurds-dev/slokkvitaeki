@@ -249,7 +249,7 @@
       '{min-height:44px!important;height:auto!important;padding-top:8px!important;padding-bottom:8px!important}',
 
     // ── Ársskoðun chrome; do NOT touch ._yr look-A ─────────────────────────
-    M + '#view-arsskodun [style*="max-width:1720px"]{max-width:none!important;padding:8px 8px 48px!important}',
+    M + '#view-arsskodun [style*="max-width:1720px"]{max-width:none!important;padding:6px 0 48px!important}',
     M + '#view-arsskodun ._ars-statgrid{grid-template-columns:1fr 1fr!important;gap:8px!important}',
     M + '#view-arsskodun ._mail-badge,' + A + '#view-arsskodun ._mail-badge' +
       '{position:relative;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;margin:-12px 0 -12px -8px;padding:12px 8px;box-sizing:border-box}',
