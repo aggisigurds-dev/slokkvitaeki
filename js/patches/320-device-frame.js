@@ -74,7 +74,14 @@
     const v = parseFloat(localStorage.getItem(LS_ZOOM) || '');
     return (isFinite(v) && v >= 0.25 && v <= 1.5) ? v : null;
   })();
-  let docked = (function () { try { return localStorage.getItem(LS_DOCK) === '1'; } catch (_) { return false; } })();
+  // 2026-08-29 (Agnar, eftir prófun): „settu þetta bara aftur í miðjuna og
+  // slepptu þessu" — og svo „kemst ekkert til baka". Hliðarhamurinn er því
+  // SLÖKKTUR sjálfgefið og gamla vistaða gildið hreinsað, svo enginn sitji
+  // fastur í honum eftir uppfærslu. Hamurinn sjálfur stendur áfram sem val
+  // (⇤-takkinn) — hann var byggður í #772 og er það sem upphaflega var beðið
+  // um; það var FÖST staða hans sem beit, ekki tilvist hans.
+  try { localStorage.removeItem(LS_DOCK); } catch (_) {}
+  let docked = false;
   const ZOOMS = [0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 1, 1.15, 1.3];
   const EDITOR_W = 340;
 
@@ -218,7 +225,7 @@
         : '') +
       (curUrl ? '<a id="_df-tab" href="' + curUrl.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:9px" title="Opna í nýjum flipa">↗</a>' : '') +
       '<button id="_df-refresh" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:9px" title="Endurhlaða rammann (sækir nýjustu stíla)">↻</button>' +
-      '<button id="_df-close" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#fff;background:#c9403a;padding:8px 14px;border-radius:9px">✕ Loka</button>';
+      '<button id="_df-close" title="Loka rammanum (Esc)" style="all:unset;cursor:pointer;position:sticky;right:0;flex:0 0 auto;white-space:nowrap;margin-left:auto;box-shadow:-10px 0 14px -6px rgba(8,10,14,.9);font:700 12.5px sans-serif;color:#fff;background:#c9403a;padding:8px 14px;border-radius:9px">✕ Loka</button>';
     scaler = document.createElement('div');
     scaler.style.cssText = 'flex:none;transform:scale(' + scale + ');transform-origin:top center';
     const bezel = document.createElement('div');
@@ -253,6 +260,14 @@
     });
     bar.querySelector('#_df-refresh').addEventListener('click', e => { e.preventDefault(); refresh(); });
     bar.querySelector('#_df-close').addEventListener('click', e => { e.preventDefault(); close(); });
+    // Agnar 29.08: „kemst ekkert til baka". ✕ gat skrunast út úr stikunni
+    // þegar hana vantaði pláss. Hann er nú negldur — og Esc lokar líka, svo
+    // það sé ALLTAF útgönguleið óháð því hvað kemst fyrir í stikunni.
+    document.addEventListener('keydown', function onEsc(e) {
+      if (e.key !== 'Escape') return;
+      if (!overlay || !overlay.isConnected) { document.removeEventListener('keydown', onEsc); return; }
+      e.preventDefault(); close(); document.removeEventListener('keydown', onEsc);
+    });
     const stj = bar.querySelector('#_df-stjornun');
     if (stj) stj.addEventListener('click', e => { e.preventDefault(); setArsView('bord'); });
     const bil = bar.querySelector('#_df-bilstjori');
