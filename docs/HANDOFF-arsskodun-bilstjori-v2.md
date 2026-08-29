@@ -70,26 +70,46 @@ hópaður eftir mánuði með 34px hópstiku (`Ágúst 2026` … `6 / 18`), og e
 
 Vinstri kantur spjaldsins 4px í lit stöðunnar.
 
-### Litir og mál
+### Litir og mál — ATH: endurskoðað
 
-Sömu og appið notar — ekkert nýtt:
+Fyrsta útgáfan sem fór í loftið 29.08 var of þung: dökkir metal-hnappar á allt,
+fullur blár flötur á spjaldinu í vinnslu, sjö jafnþungir hlutir að slást um sama
+spjaldið. Það var hafnað. Rétta meðferðin er **hljóðlát spjöld með einni þungri
+aðgerð** — tillaga `2a` í hönnunarskjalinu.
 
-- Toppstika `#1a1f2e`, brand `#C93C1D`, grunnur `#f5f4ef`, spjöld `#fff` með ramma `#e6e9ee`
-- Metal-hnappar `linear-gradient(180deg,#3c4452,#232b38)`, rammi `#10161f`, texti `#dbe2ec`
-- **Virkur** hnappur (Skoðað þegar hakað, valinn aksturslisti) dökkblár metal
-  `linear-gradient(180deg,#2f5a86,#17324f)`, rammi `#0d1a2b`, texti `#eaf1f9`,
-  auk `0 0 0 2px rgba(47,90,134,.28)` á valna akstursnúmerinu
-- Árs-pillur 26px háar: grænt `#1e6b3d→#0d4526` skoðað · gult `#c9a227→#8f6d10`
-  yfirstandandi ár · rautt `#c0392b→#8c2318` ekki skoðað. Ljósdíóða vinstra megin
-  (`#34d17a` / `#f0c246` / `#e8705f`), tveir 5px deplar undir: grænn = skýrsla,
-  blár `#2563eb` = reikningur, `#ccd2da` = vantar
-- Stöðulitir: skoðað `#1f9d57` á `#e7f7ee` · í vinnslu `#17324f` á `#eef4fb` ·
-  á eftir `#c0392b` á `#fdeceb` · sleppt `#c98a1a` á `#fdf3e0` · á dagskrá
-  `#8a94a3` á `#f4f6f9`
-- Snertisvæði aldrei undir 40px, aðgerðahnappar 44px, spjaldabil 8px
+**Eitt þungt stak á spjald.** `✓ Skoðað` er eina fyllta aðgerðin.
 
-`arsskodun-app.html` hér í hönnunarverkefninu er sjónrænt viðmiðið — ekki kóði
-til að afrita, og hún fer af vefnum skv. ákvörðun 2.
+- Spjald: `#fff`, rammi `1px #e3e1dc`, radíus `3px`, skuggi `0 1px 1px rgba(20,20,18,.04)`.
+  Grunnur undir spjöldum `#f0eeea`. **Aldrei fylltur litaflötur á spjaldið sjálft.**
+- Vinstri kantur 3px í lit stöðunnar: skoðað `#2e6b4a` · í vinnslu `#5980a6` ·
+  á eftir `#c0392b` · sleppt `#c9a227` · á dagskrá `#ded9d2`
+- Nafn 16.5px/600 `#16181c`. Allur annar texti `#5d5a54` (6.9:1) — **ekki ljósari.**
+  Smámerki („AKSTUR") 10px/600 `#6f6b63`. Þetta er tól sem er lesið úti í dagsljósi;
+  `#8c8880` og `#a8a49c` mældust 3.5:1 og 2.5:1 og eru of ljós.
+- Stöðumerki er **texti í lit, ekki pilla**: 11px/600, uppháar, í djúpa þrepinu
+  (`#2a4763` fyrir í vinnslu, `#2e6b4a` fyrir skoðað). Hrátt stálblátt `#5980a6`
+  aðeins á 3px kantinum og 2px strikinu — aldrei á texta (Industry-reglan um
+  djúpa þrepið fyrir smátexta í accent).
+- Árs-reitir **flatir**, engir gljáar, engar ljósdíóður, engir deplar:
+  31×20px, radíus 2px, `#2e6b4a` skoðað · `#c9a227` yfirstandandi ár ·
+  `#e8e5e0` með `#6f6b63` texta ekki skoðað. Ártalið sjálft í reitnum (23/24/25/26).
+- Hringja og Leiðsögn eru **38px táknhnappar** með hárlínuramma `#e0ddd7`,
+  hvítur grunnur — ekki fylltir hnappar, ekki með texta.
+- Akstur er **samfelldur segment-strimill**, ekki fjórir stakir hnappar:
+  einn 1px rammi `#e0ddd7` utan um, 30×36px reitir með `1px #e0ddd7` skilum,
+  valinn reitur `#17324f` með `#f2f5f8` texta.
+- `✓ Skoðað` 40px hár, `#17324f` á `#f2f5f8` þegar hakað; óhakað er `Skoðað?`
+  á `#f0eeea` með `#5d5a54` texta. **Munurinn á hökuðu og óhökuðu verður að sjást** —
+  í loftútgáfunni var hann blár í báðum tilvikum.
+- „Óklárað"-blokkin er ljós: `#f2f5f8` með 2px vinstri striki `#5980a6`,
+  texti `#2a4763`, og `⟳ Samstilla` sem hvítur hnappur með ramma `#c3cfdb`.
+  Ekki fullur blár flötur.
+- Snertisvæði aldrei undir 36px, `✓ Skoðað` 40px, spjaldabil 12px
+
+Uppröðunin (mánaðarhópar, flipar, línurnar í spjaldinu) kemur úr `1c`;
+meðferðin að ofan úr `2a`. Bæði eru í `Ársskoðun sími.dc.html` í hönnunar-
+verkefninu — opnaðu það og sjáðu `#1c` og `#2a`. `arsskodun-app.html` er
+ÚRELT viðmið (það er metal-útgáfan) og fer af vefnum skv. ákvörðun 2.
 
 ### Áður en þú ýtir
 

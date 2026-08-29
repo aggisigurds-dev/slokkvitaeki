@@ -49,7 +49,10 @@
   const akFilter = () => { try { return localStorage.getItem(LS_AK) || 'allir'; } catch (_) { return 'allir'; } };
   const setAkFilter = v => { try { localStorage.setItem(LS_AK, v); } catch (_) {} };
 
-  /* ── Stílar ────────────────────────────────────────────────────────────── */
+  /* ── Stílar — HANDOFF v2.1 („hljóðlát spjöld með einni þungri aðgerð") ──
+     Fyrsta útgáfan (29.08) var hafnað: dökkir metal-hnappar á allt, fullur blár
+     flötur á spjaldi í vinnslu, sjö jafnþung stök að slást um sama spjaldið.
+     Hér er ✓ Skoðað EINA fyllta aðgerðin; allt annað er hárlínur og texti. */
   function css() {
     if (document.getElementById('_ars-bil-css')) return;
     const s = document.createElement('style');
@@ -58,43 +61,74 @@
     // #view-arsskodun og myndu annars yfirskrifa hæðir og letur hér.
     const V = '#' + VIEW_ID + '#' + VIEW_ID + ' ';
     s.textContent = [
-      V + '._bil-wrap{padding:0 10px 96px}',
-      V + '._bil-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:8px 0;position:sticky;top:0;z-index:5;background:#f5f4ef}',
+      V + '._bil-wrap{padding:0 10px 96px;background:#f0eeea}',
+      V + '._bil-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:8px 0;position:sticky;top:0;z-index:5;background:#f0eeea}',
       V + '._bil-tabs::-webkit-scrollbar{display:none}',
-      V + '._bil-tab{flex:0 0 auto;min-height:40px;padding:8px 16px;border-radius:10px;border:1px solid #10161f;cursor:pointer;'
-        + 'background:linear-gradient(180deg,#3c4452,#232b38);color:#e6ebf2;font-weight:700;font-size:13.5px;white-space:nowrap}',
-      V + '._bil-tab.on{background:linear-gradient(180deg,#2f5a86,#17324f);border-color:#0d1a2b;color:#eaf1f9}',
-      V + '._bil-mon{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#5b6573;margin:14px 2px 6px;display:flex;justify-content:space-between}',
-      /* !important á bakgrunni OG kanti: ytri reglur máluðu spjaldið heilblátt
-         (gradient) og kantinn hvítan. Mælt hvort tveggja áður en þetta var sett. */
+      V + '._bil-tab{flex:0 0 auto;min-height:36px !important;height:36px !important;padding:0 15px;border-radius:3px;cursor:pointer;white-space:nowrap;'
+        + 'background:#fff;border:1px solid #e0ddd7;color:#5d5a54;font-weight:600;font-size:13px}',
+      V + '._bil-tab.on{background:#17324f;border-color:#17324f;color:#f2f5f8}',
+      V + '._bil-mon{height:34px;display:flex;align-items:center;justify-content:space-between;'
+        + 'font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#6f6b63;margin:8px 2px 4px}',
+
+      /* Spjaldið: aldrei fylltur litaflötur. Litur birtist AÐEINS á 3px kantinum. */
       V + '._bil-card{background:#fff !important;background-image:none !important;'
-        + 'border:1px solid #e6e9ee !important;border-left:4px solid #1f9d57 !important;'
-        + 'border-radius:14px;padding:12px 13px;margin-bottom:10px;'
-        + 'box-shadow:0 1px 2px rgba(20,30,25,.05),0 14px 30px -24px rgba(20,30,25,.45)}',
+        + 'border:1px solid #e3e1dc !important;border-left:3px solid #ded9d2 !important;'
+        + 'border-radius:3px;padding:12px 13px;margin-bottom:12px;box-shadow:0 1px 1px rgba(20,20,18,.04)}',
+      V + '._bil-card._bs-done{border-left-color:#2e6b4a !important}',
+      V + '._bil-card._bs-vinnslu{border-left-color:#5980a6 !important}',
       V + '._bil-card._bs-vantar{border-left-color:#c0392b !important}',
-      V + '._bil-card._bs-vinnslu{border-left-color:#2563eb !important}',
+      V + '._bil-card._bs-sleppt{border-left-color:#c9a227 !important}',
+
       V + '._bil-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}',
-      V + '._bil-nm{font-size:15.5px;font-weight:700;color:#11141c;line-height:1.2}',
-      V + '._bil-addr{font-size:12px;color:#4b5563;margin-top:2px}',
-      V + '._bil-pill{flex:0 0 auto;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}',
-      V + '._bil-pill._bs-done{background:#e7f7ee;color:#1f9d57}',
-      V + '._bil-pill._bs-vantar{background:#fdeceb;color:#c0392b}',
-      V + '._bil-pill._bs-vinnslu{background:#e8f0fe;color:#2563eb}',
+      V + '._bil-nm{font-size:16.5px;font-weight:600;color:#16181c;line-height:1.2}',
+      V + '._bil-addr{font-size:12px;color:#5d5a54;margin-top:2px}',
+      /* Staða = TEXTI í djúpa þrepinu, ekki pilla. Hrátt stálblátt aldrei á texta. */
+      V + '._bil-st{flex:0 0 auto;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;color:#6f6b63 !important;background:none !important;padding:0 !important;border:0 !important}',
+      V + '._bil-st._bs-done{color:#2e6b4a !important}',
+      V + '._bil-st._bs-vinnslu{color:#2a4763 !important}',
+      V + '._bil-st._bs-vantar{color:#c0392b !important}',
+      V + '._bil-st._bs-sleppt{color:#8f6d10 !important}',
+
+      /* Árs-reitir: flatir. Engir gljáar, engar ljósdíóður, engir deplar. */
+      V + '._bil-yrs{display:flex;gap:3px}',
+      V + '._bil-yr{width:31px;height:20px;border-radius:2px;display:flex;align-items:center;justify-content:center;'
+        + 'font-size:10.5px;font-weight:600;background:#e8e5e0;color:#6f6b63;font-variant-numeric:tabular-nums}',
+      V + '._bil-yr.skyrsla{background:#2e6b4a;color:#fff}',
+      V + '._bil-yr.skodad{background:#c9a227;color:#2b2205}',
+
       V + '._bil-mid{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 8px}',
-      V + '._bil-meta{font-size:12px;color:#4b5563;font-variant-numeric:tabular-nums}',
-      V + '._bil-val{margin-left:auto;font-size:12.5px;font-weight:700;color:#11141c;font-variant-numeric:tabular-nums}',
-      V + '._bil-note{font-size:12px;color:#4b5563;background:#f7f8fa;border:1px solid #eef1f5;border-radius:8px;padding:7px 9px;margin-bottom:8px}',
-      V + '._bil-akrow{display:flex;align-items:center;gap:6px;margin-bottom:9px}',
-      V + '._bil-aklbl{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:#6b7280;margin-right:2px}',
-      V + '._bil-ak{min-width:44px;min-height:40px;border-radius:9px;border:1px solid #10161f;cursor:pointer;'
-        + 'background:linear-gradient(180deg,#3c4452,#232b38);color:#e6ebf2;font-weight:700;font-size:14px}',
-      V + '._bil-ak.on{background:linear-gradient(180deg,#2f5a86,#17324f);border-color:#0d1a2b;color:#eaf1f9}',
-      V + '._bil-btns{display:flex;gap:7px}',
-      V + '._bil-b{flex:1;min-height:44px;height:44px;white-space:nowrap;border-radius:10px;border:1px solid #10161f;cursor:pointer;font-weight:700;font-size:12.5px;'
-        + 'background:linear-gradient(180deg,#3c4452,#232b38);color:#e6ebf2;display:flex;align-items:center;justify-content:center;gap:6px}',
-      V + '._bil-b.aðal{flex:1.4;background:linear-gradient(180deg,#2f5a86,#17324f);border-color:#0d1a2b;color:#eaf1f9}',
-      V + '._bil-b[disabled]{opacity:.42;cursor:default}',
-      V + '._bil-tom{padding:34px 12px;text-align:center;color:#6b7280;font-size:13px}'
+      V + '._bil-meta{font-size:12px;color:#5d5a54;font-variant-numeric:tabular-nums}',
+      V + '._bil-val{margin-left:auto;font-size:12.5px;font-weight:600;color:#16181c;font-variant-numeric:tabular-nums}',
+      V + '._bil-note{font-size:12px;color:#5d5a54;background:#f4f6f9;border-radius:2px;padding:7px 9px;margin-bottom:8px}',
+
+      /* „Óklárað" — ljós blokk með 2px striki, EKKI fullur blár flötur. */
+      V + '._bil-ok{background:#f2f5f8;border-left:2px solid #5980a6;border-radius:0 2px 2px 0;padding:8px 10px;margin-bottom:9px;'
+        + 'display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      V + '._bil-oktxt{font-size:11.5px;color:#2a4763;font-weight:600;line-height:1.35}',
+      V + '._bil-oksub{font-weight:400;color:#2a4763;opacity:.85}',
+      V + '._bil-sync{margin-left:auto;min-height:36px;padding:7px 12px;border-radius:2px;cursor:pointer;'
+        + 'background:#fff;border:1px solid #c3cfdb;color:#2a4763;font-size:12px;font-weight:600;white-space:nowrap}',
+
+      /* Akstur: SAMFELLDUR segment-strimill, ekki fjórir stakir hnappar. */
+      V + '._bil-akrow{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
+      V + '._bil-aklbl{font-size:10px;font-weight:600;letter-spacing:.06em;color:#6f6b63}',
+      V + '._bil-seg{display:flex;border:1px solid #e0ddd7;border-radius:2px;overflow:hidden}',
+      V + '._bil-ak{width:30px;min-height:36px !important;height:36px !important;border:0;border-left:1px solid #e0ddd7;background:#fff;cursor:pointer;'
+        + 'color:#5d5a54;font-size:12.5px;font-weight:600;padding:0}',
+      V + '._bil-ak:first-child{border-left:0}',
+      V + '._bil-ak.on{background:#17324f;color:#f2f5f8}',
+
+      /* Hringja/Leiðsögn: 38px táknhnappar, engir textar. Skoðað er eina fyllta. */
+      V + '._bil-btns{display:flex;gap:8px;align-items:center}',
+      V + '._bil-ic{width:38px;height:38px;flex:0 0 38px;border:1px solid #e0ddd7;background:#fff;border-radius:2px;'
+        + 'cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;'
+        + 'min-height:38px !important;height:38px !important}',
+      V + '._bil-ic[disabled]{opacity:.4;cursor:default}',
+      V + '._bil-done{flex:1;min-height:40px !important;height:40px !important;border-radius:2px;cursor:pointer;font-size:13.5px;font-weight:600;'
+        + 'background:#f0eeea;border:1px solid #e0ddd7;color:#5d5a54}',
+      V + '._bil-done.hakad{background:#17324f;border-color:#17324f;color:#f2f5f8}',
+      V + '._bil-done[disabled]{opacity:.5;cursor:default}',
+      V + '._bil-tom{padding:34px 12px;text-align:center;color:#5d5a54;font-size:13px}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -115,9 +149,10 @@
 
   function stada(co) {
     const a = co._ars || {}, ar = new Date().getFullYear();
-    if (+a.last_year_inspected === ar) return ['_bs-done', '✓ Skoðað ' + ar];
-    if (+a.field_inspected_year === ar) return ['_bs-vinnslu', '◐ Í vinnslu'];
-    return ['_bs-vantar', '○ Eftir ' + ar];
+    if (+a.last_year_inspected === ar) return ['_bs-done', 'Skoðað ' + ar];
+    if (+a.field_inspected_year === ar) return ['_bs-vinnslu', 'Í vinnslu'];
+    if (a.ekki_sleppt === false || a.skipped_last_year) return ['_bs-sleppt', 'Sleppt í fyrra'];
+    return ['_bs-vantar', 'Eftir ' + ar];
   }
 
   function rada() {
@@ -145,32 +180,61 @@
   function spjald(c) {
     const a = c._ars || {};
     const [cls, merki] = stada(c);
-    const eq = (window.Arsskodun && Arsskodun.eqGroups) ? Arsskodun.eqGroups(a.equipment || {}) : { slt: 0, bsl: 0, rs: 0 };
+    const eq = (window.Arsskodun && Arsskodun.eqGroups) ? Arsskodun.eqGroups(a.equipment || {}) : { slt: 0, bsl: 0, rs: 0, total: 0 };
     const ak = (window.ArsAkstur && ArsAkstur.of) ? (ArsAkstur.of(c.id) || 0) : (+a.akstur || 0);
-    const simi = (c.simi || c.phone || '').toString().replace(/\s/g, '');
+    const simi = [c.simi, c.farsimi].filter(Boolean)[0];
+    const simiHreint = simi ? String(simi).replace(/\s/g, '') : '';
     const addr = [c.heimilisfang, [c.postnr, c.stadur].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     const nota = (c.plan_note || '').trim();
-    const sid = a.last_skodun ? String(a.last_skodun) : null;
     const est = +a.estimated_yearly || 0;
 
+    // Árs-reitirnir eru teiknaðir HÉR en reiknaðir í 153 (Arsskodun.arsPerur) —
+    // ein rökfærsla, tvær teikningar. Flatir reitir með ártalinu í, skv. v2.1.
+    const ar = new Date().getFullYear();
+    const years = [ar - 3, ar - 2, ar - 1, ar];
+    let yrs = '';
+    try {
+      const p = Arsskodun.arsPerur(c, years, ar, new Date().getMonth() + 1);
+      yrs = '<div class="_bil-yrs">' + years.map((y, i) =>
+        '<span class="_bil-yr ' + (p.arStada[i] === 'ekkert' ? '' : p.arStada[i]) + '">'
+        + String(y).slice(-2) + '</span>').join('') + '</div>';
+    } catch (_) {}
+
+    // „Í vinnslu — óklárað". Talan kemur úr CanonStadur ef hún er til; ANNARS
+    // er línan sleppt. Uppdiktuð tala („3 af 9") væri verri en engin tala.
+    let oklarad = '';
+    if (cls === '_bs-vinnslu') {
+      let skrad = null;
+      try { if (window.CanonStadur && CanonStadur.countOf) skrad = CanonStadur.countOf(c.id); } catch (_) {}
+      const sub = (skrad != null && eq.total)
+        ? '<span class="_bil-oksub">' + skrad + ' af ' + eq.total + ' tækjum skráð</span>' : '';
+      oklarad = '<div class="_bil-ok"><div class="_bil-oktxt">Í vinnslu — óklárað'
+        + (sub ? '<br>' + sub : '') + '</div>'
+        + '<button type="button" class="_bil-sync" data-co="' + c.id + '">⟳ Samstilla í Ársskoðun</button></div>';
+    }
+
+    const hakad = cls === '_bs-done';
     return '<div class="_bil-card ' + cls + '" data-co="' + c.id + '">'
       + '<div class="_bil-top"><div><div class="_bil-nm">' + esc(c.nafn || '—') + '</div>'
       + (addr ? '<div class="_bil-addr">' + esc(addr) + '</div>' : '') + '</div>'
-      + '<span class="_bil-pill ' + cls + '">' + esc(merki) + '</span></div>'
-      + '<div class="_bil-mid">'
+      + '<span class="_bil-st ' + cls + '">' + esc(merki) + '</span></div>'
+      + '<div class="_bil-mid">' + yrs
       + '<span class="_bil-meta"><b>' + eq.slt + '</b> SLT · <b>' + eq.bsl + '</b> BSL · <b>' + eq.rs + '</b> RS</span>'
-      + (sid ? '<span class="_bil-meta">Síðast ' + esc(sid) + '</span>' : '')
+      + (a.last_skodun ? '<span class="_bil-meta">Síðast ' + esc(String(a.last_skodun)) + '</span>' : '')
       + (est ? '<span class="_bil-val">≈ ' + esc(kr(est)) + '</span>' : '')
       + '</div>'
-      + (nota ? '<div class="_bil-note">📝 ' + esc(nota) + '</div>' : '')
-      + '<div class="_bil-akrow"><span class="_bil-aklbl">AKSTUR</span>'
+      + (simi ? '<div class="_bil-meta" style="margin:-2px 0 8px">📞 ' + esc(simi) + '</div>' : '')
+      + (nota ? '<div class="_bil-note">' + esc(nota) + '</div>' : '')
+      + oklarad
+      + '<div class="_bil-akrow"><span class="_bil-aklbl">AKSTUR</span><div class="_bil-seg">'
       + [0, 1, 2, 3].map(n => '<button type="button" class="_bil-ak' + (ak === n ? ' on' : '') + '" data-ak="' + n + '" data-co="' + c.id + '">'
           + (n || '—') + '</button>').join('')
-      + '</div>'
+      + '</div></div>'
       + '<div class="_bil-btns">'
-      + '<button type="button" class="_bil-b _bil-call" data-simi="' + esc(simi) + '"' + (simi ? '' : ' disabled') + '>📞 Hringja</button>'
-      + '<button type="button" class="_bil-b _bil-nav" data-co="' + c.id + '">🗺 Leiðsögn</button>'
-      + '<button type="button" class="_bil-b aðal _bil-done" data-co="' + c.id + '">✓ Skoðað</button>'
+      + '<button type="button" class="_bil-ic _bil-call" title="Hringja" data-simi="' + esc(simiHreint) + '"' + (simiHreint ? '' : ' disabled') + '>📞</button>'
+      + '<button type="button" class="_bil-ic _bil-nav" title="Leiðsögn" data-co="' + c.id + '">🗺</button>'
+      + '<button type="button" class="_bil-done' + (hakad ? ' hakad' : '') + '" data-co="' + c.id + '">'
+      + (hakad ? '✓ Skoðað' : 'Skoðað?') + '</button>'
       + '</div></div>';
   }
 
@@ -212,6 +276,23 @@
       try { if (window.ArsAkstur && ArsAkstur.set) ArsAkstur.set(id, n); } catch (_) {}
       const co = ((Arsskodun._cache || {}).list || []).find(x => +x.id === id);
       if (co) { co._ars = co._ars || {}; co._ars.akstur = n; }
+    }));
+
+    // ⟳ Samstilla: vettvangsskoðun (field_inspected_year) er til en skoðunin
+    // hefur ekki verið færð í Ársskoðun. Þetta færir hana — sama eins-fyrirtækis
+    // vistun og allt annað hér.
+    root.querySelectorAll('._bil-sync').forEach(b => b.addEventListener('click', async e => {
+      e.preventDefault();
+      const id = +b.dataset.co, ar = new Date().getFullYear();
+      const co = ((Arsskodun._cache || {}).list || []).find(x => +x.id === id);
+      if (!co) return;
+      b.disabled = true;
+      const ok = await vista(id, { last_year_inspected: ar });
+      b.disabled = false;
+      if (!ok) { alert('Samstilling mistókst — reyndu aftur'); return; }
+      co._ars = co._ars || {};
+      co._ars.last_year_inspected = ar;
+      teikna();
     }));
 
     root.querySelectorAll('._bil-call').forEach(b => b.addEventListener('click', e => {

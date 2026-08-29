@@ -2487,7 +2487,12 @@
     const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
     const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
     const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
-    return { yrHtml, stState, lastYr, fieldYr, manudur: m };
+    // Hrá staða per ár LÍKA, svo aðrar sýnir teikni sitt eigið útlit úr SÖMU
+    // rökum. Patch 317 (bílstjóraspjöld) er með flata árs-reiti án gljáa og
+    // getur ekki notað yrHtml — en má ekki endurreikna rökin sjálfstætt.
+    const arStada = years.map(y =>
+      repSet.has(y) ? 'skyrsla' : (y === lastYr || y === factYr) ? 'skodad' : 'ekkert');
+    return { yrHtml, arStada, stState, lastYr, fieldYr, manudur: m };
   }
 
   function renderMobileRows(arr) {
