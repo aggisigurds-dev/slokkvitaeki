@@ -7,8 +7,9 @@
  *   - localStorage er SHIMMAÐ fyrir slokk_viewmode (get skilar ramma-ham,
  *     set hunsað) svo ramminn þvingar Sími/Tafla án þess að KRUKKA í
  *     raunverulegu sýnar-vali tækisins.
- *   - Stílstjórinn virkar INNI í rammanum — breytingar vistast í AppSettings
- *     og gilda alls staðar. ↻ endurhleður rammann.
+ *   - Stílstjórinn situr UTAN við rammann (panel í overlay, vinnur á
+ *     iframe.contentDocument). Barnið felur 🎨 / panel / 📐 svo síminn sýni
+ *     bara appið. ↻ endurhleður rammann.
  *   - Rammar sig ekki aftur (takkarnir birtast ekki í barni).
  * ========================================================================== */
 (() => {
@@ -39,6 +40,16 @@
     enforce();
     [300, 900, 2000, 4500].forEach(ms => setTimeout(enforce, ms));
     document.addEventListener('DOMContentLoaded', enforce);
+    // Ritillinn á að sitja UTAN við símann. Felum chrome sem 262/261/326/308/297
+    // teikna inni í barninu — annars fyllir „Stilla útlit" 390px skjáinn.
+    const hide = document.createElement('style');
+    hide.id = '_devframe-child-hide';
+    hide.textContent = [
+      '#_pe-btn', '#_pe-panel', '#pe-pagelinks', '#pe-pagelinks-doc',
+      '#_dst-btn', '#_app-style', '#pat-launch', '#cg-sk-trigger',
+      '#_bil-toggle', '#_hh-toggle', '#_hh-panel'
+    ].join(',') + '{display:none!important}';
+    (document.head || document.documentElement).appendChild(hide);
     return;   // ekkert ramma-UI í barninu
   }
 
@@ -65,13 +76,15 @@
   })();
   let docked = (function () { try { return localStorage.getItem(LS_DOCK) === '1'; } catch (_) { return false; } })();
   const ZOOMS = [0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 1, 1.15, 1.3];
+  const EDITOR_W = 340;
 
-  // „Passa" — stærsta skölun sem kemst fyrir. Í hliðarham er aðeins vinstri
-  // helmingur skjásins í boði, svo viðmiðunarbreiddin er önnur.
+  // „Passa" — stærsta skölun sem kemst fyrir. Ritillinn (Stilla útlit) situr
+  // alltaf til vinstri við símann, svo hann er dreginn frá breiddinni.
   function fitScale(d) {
     const bh = 46;
     const availH = Math.max(280, window.innerHeight - bh - 26);
-    const availW = Math.max(280, (docked ? window.innerWidth * 0.52 : window.innerWidth) - 24);
+    const chrome = EDITOR_W + 48;
+    const availW = Math.max(180, (docked ? window.innerWidth * 0.92 : window.innerWidth) - chrome);
     return Math.min(1, availH / (d.h + 24), availW / (d.w + 24));
   }
   function curScale(d) { return zoom != null ? zoom : fitScale(d); }
@@ -80,16 +93,17 @@
   // rammann upp á nýtt (endurbygging myndi endurhlaða iframe-ið og tapa stöðu).
   function applyView() {
     const d = DEVICES[curDev]; if (!d || !overlay) return;
+    const sc = curScale(d);
+    const packed = Math.round(EDITOR_W + 28 + (d.w + 24) * sc + 28);
     overlay.style.inset = docked ? '0 auto 0 0' : '0';
-    overlay.style.width = docked ? 'min(52vw, ' + Math.round(d.w * curScale(d) + 90) + 'px)' : '';
+    overlay.style.width = docked ? Math.min(window.innerWidth, packed) + 'px' : '';
     overlay.style.background = docked ? 'rgba(8,10,14,.94)' : 'rgba(8,10,14,.86)';
     overlay.style.boxShadow = docked ? '18px 0 60px -20px rgba(0,0,0,.75)' : '';
-    if (scaler) scaler.style.transform = 'scale(' + curScale(d) + ')';
+    if (scaler) scaler.style.transform = 'scale(' + sc + ')';
     const lbl = overlay.querySelector('#_df-pct');
-    if (lbl) lbl.textContent = Math.round(curScale(d) * 100) + '%' + (zoom == null ? ' · passa' : '');
+    if (lbl) lbl.textContent = Math.round(sc * 100) + '%' + (zoom == null ? ' · passa' : '');
     const dk = overlay.querySelector('#_df-dock');
     if (dk) dk.textContent = docked ? '⇥ Fylla skjá' : '⇤ Til hliðar';
-    // Í hliðarham má EKKI loka fyrir hægri helminginn — þar situr Stílstjórinn.
     document.documentElement.style.setProperty('--devframe-dock', docked ? '1' : '0');
   }
   function setZoom(v) {
@@ -111,15 +125,59 @@
      open() nú við { url, title }. Slóðin kemur FULLBÚIN frá kallanda (hann veit
      hvort devframe eigi við); án hennar er hegðunin óbreytt. */
   function frameUrl(devKey, target) {
-    if (target) return target;
-    const u = new URL(location.href);
-    u.searchParams.set('devframe', devKey);
-    return u.toString();
+    try {
+      const u = new URL(target || location.href, location.origin);
+      if (!target) u.searchParams.set('devframe', devKey);
+      if (isArsUrl(u.toString()) && !u.searchParams.get('arsview'))
+        u.searchParams.set('arsview', 'bord');
+      return u.toString();
+    } catch (_) {
+      return target || location.href;
+    }
+  }
+  function isArsUrl(url) {
+    const s = String(url || curUrl || location.href);
+    return /[?&#]page=arsskodun\b/.test(s) || /#arsskodun\b/.test(s) || /[?&]arsview=/.test(s);
+  }
+  function withArsView(url, mode) {
+    try {
+      const u = new URL(url || frameUrl(curDev || 'simi', curUrl), location.origin);
+      u.searchParams.set('arsview', mode);
+      return u.toString();
+    } catch (_) { return url; }
+  }
+  function arsViewOf(url) {
+    try { return new URL(url || iframe && iframe.src || '', location.origin).searchParams.get('arsview') || 'bord'; }
+    catch (_) { return 'bord'; }
+  }
+  function setArsView(mode) {
+    if (!iframe) return;
+    const next = withArsView(iframe.src || curUrl, mode);
+    curUrl = next;
+    try { iframe.src = next; } catch (_) {}
+    syncArsButtons();
+  }
+  function syncArsButtons() {
+    if (!overlay) return;
+    const stj = overlay.querySelector('#_df-stjornun');
+    const bil = overlay.querySelector('#_df-bilstjori');
+    if (!stj || !bil) return;
+    const v = arsViewOf(iframe && iframe.src);
+    stj.style.background = v !== 'bilstjori' ? '#fff' : 'rgba(255,255,255,.12)';
+    stj.style.color = v !== 'bilstjori' ? '#0f1117' : '#e5e9f0';
+    bil.style.background = v === 'bilstjori' ? '#fff' : 'rgba(255,255,255,.12)';
+    bil.style.color = v === 'bilstjori' ? '#0f1117' : '#e5e9f0';
+  }
+  function notifyEditor() {
+    try { if (window.Honnunarhamur && Honnunarhamur.syncFrame) Honnunarhamur.syncFrame(); } catch (_) {}
+    try { if (window.PageEditor && PageEditor.syncFrame) PageEditor.syncFrame(); } catch (_) {}
   }
   function close() {
     if (overlay) overlay.remove();
-    overlay = null; iframe = null; curDev = null; curUrl = null; curTitle = null;
+    overlay = null; iframe = null; scaler = null; curDev = null; curUrl = null; curTitle = null;
+    document.documentElement.style.removeProperty('--devframe-dock');
     syncButtons();
+    notifyEditor();
   }
   function refresh() {
     if (iframe && curDev) { try { iframe.src = frameUrl(curDev, curUrl); } catch (_) {} }
@@ -130,9 +188,12 @@
     const title = opts && opts.title ? String(opts.title) : null;
     close();
     curDev = devKey; curUrl = url; curTitle = title;
+    if (isArsUrl(curUrl || location.href) && curUrl) {
+      if (!/[?&]arsview=/.test(curUrl)) curUrl = withArsView(curUrl, 'bord');
+    }
     overlay = document.createElement('div');
     overlay.id = '_devframe-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99980;background:rgba(8,10,14,.86);display:flex;flex-direction:column;align-items:center;padding:10px 8px;overflow:auto';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99980;background:rgba(8,10,14,.86);display:flex;flex-direction:column;align-items:stretch;padding:10px 8px;overflow:auto';
     const scale = curScale(d);
     const bar = document.createElement('div');
     // Fjögur snið + heiti + ↗ ↻ ✕ komast ekki fyrir í mjóum glugga — barinn
@@ -149,8 +210,12 @@
       '<button id="_df-zin" title="Stækka" style="all:unset;cursor:pointer;flex:0 0 auto;white-space:nowrap;font:700 15px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);width:32px;height:32px;text-align:center;line-height:32px;border-radius:9px">+</button>' +
       '<button id="_df-fit" title="Passa á skjáinn" style="all:unset;cursor:pointer;flex:0 0 auto;white-space:nowrap;font:700 12.5px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:9px">Passa</button>' +
       // Hliðarhamur: síminn til vinstri, hægri helmingur laus fyrir Stílstjórann.
-      '<button id="_df-dock" title="Færa símann til hliðar svo Stílstjórinn sé UTAN hans" style="all:unset;cursor:pointer;flex:0 0 auto;white-space:nowrap;font:700 12.5px sans-serif;color:#0f1117;background:#f5c04a;padding:8px 12px;border-radius:9px">⇤ Til hliðar</button>' +
-      (curTitle ? '<span style="font:700 12.5px sans-serif;color:#fff;background:rgba(255,255,255,.10);padding:8px 12px;border-radius:9px">' + curTitle.replace(/[<>&]/g, '') + '</span>' : '') +
+      '<button id="_df-dock" title="Færa rammann til hliðar svo Öpp-fylkið sjáist hægra megin" style="all:unset;cursor:pointer;flex:0 0 auto;white-space:nowrap;font:700 12.5px sans-serif;color:#0f1117;background:#f5c04a;padding:8px 12px;border-radius:9px">⇤ Til hliðar</button>' +
+      (curTitle ? '<span style="font:700 12.5px sans-serif;color:#fff;background:rgba(255,255,255,.10);padding:8px 12px;border-radius:9px;flex:0 0 auto">' + curTitle.replace(/[<>&]/g, '') + '</span>' : '') +
+      (isArsUrl(curUrl || location.href)
+        ? '<button id="_df-stjornun" type="button" title="Borð-útlit stjórnanda (arsskodun-mobile)" style="all:unset;cursor:pointer;flex:0 0 auto;white-space:nowrap;font:700 12.5px sans-serif;color:#0f1117;background:#fff;padding:8px 12px;border-radius:9px">Stjórnun</button>'
+          + '<button id="_df-bilstjori" type="button" title="Spjöld bílstjóra (arsskodun-app)" style="all:unset;cursor:pointer;flex:0 0 auto;white-space:nowrap;font:700 12.5px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:9px">Bílstjóri</button>'
+        : '') +
       (curUrl ? '<a id="_df-tab" href="' + curUrl.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:9px" title="Opna í nýjum flipa">↗</a>' : '') +
       '<button id="_df-refresh" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:9px" title="Endurhlaða rammann (sækir nýjustu stíla)">↻</button>' +
       '<button id="_df-close" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#fff;background:#c9403a;padding:8px 14px;border-radius:9px">✕ Loka</button>';
@@ -163,8 +228,16 @@
     iframe.style.cssText = 'display:block;width:' + d.w + 'px;height:' + d.h + 'px;border:0;border-radius:' + d.radius + 'px;background:#fff';
     bezel.appendChild(iframe);
     scaler.appendChild(bezel);
+    const row = document.createElement('div');
+    row.id = '_devframe-row';
+    row.style.cssText = 'display:flex;flex:1;min-height:0;width:100%;gap:12px;align-items:stretch;justify-content:center;overflow:auto';
+    const editor = document.createElement('div');
+    editor.id = '_devframe-editor';
+    editor.style.cssText = 'flex:0 0 ' + EDITOR_W + 'px;max-width:min(38vw,400px);min-width:260px;position:relative;overflow:hidden;background:#16181c;border-radius:14px;box-shadow:0 18px 50px -24px rgba(0,0,0,.55)';
+    row.appendChild(editor);
+    row.appendChild(scaler);
     overlay.appendChild(bar);
-    overlay.appendChild(scaler);
+    overlay.appendChild(row);
     document.body.appendChild(overlay);
     bar.querySelectorAll('[data-dev]').forEach(b => b.addEventListener('click', e => {
       e.preventDefault(); open(b.dataset.dev, { url: curUrl, title: curTitle });
@@ -180,22 +253,21 @@
     });
     bar.querySelector('#_df-refresh').addEventListener('click', e => { e.preventDefault(); refresh(); });
     bar.querySelector('#_df-close').addEventListener('click', e => { e.preventDefault(); close(); });
+    const stj = bar.querySelector('#_df-stjornun');
+    if (stj) stj.addEventListener('click', e => { e.preventDefault(); setArsView('bord'); });
+    const bil = bar.querySelector('#_df-bilstjori');
+    if (bil) bil.addEventListener('click', e => { e.preventDefault(); setArsView('bilstjori'); });
     syncButtons();
-    // Ábendingin á aðeins við þegar APPIÐ sjálft er rammað. Sé ytri slóð römmuð
-    // (sjálfstæð útfærsla úr Öpp-fylkinu) er enginn Stílstjóri þar inni.
     applyView();
-    // Gamla ábendingin sagði „opnaðu 🎨 INNI í rammanum" — það er einmitt það
-    // sem gerði þetta ónothæft: Stílstjórinn fyllir þá 390px skjáinn og hylur
-    // það sem verið er að laga. Rétta leiðin er hliðarhamur.
-    if (!curUrl) {
-      try {
-        if (window.Toast && Toast.show) {
-          Toast.show(docked
-            ? 'Síminn er til hliðar — opnaðu Stílstjórann á síðunni hægra megin. Breytingar birtast hér jafnóðum.'
-            : 'Ábending: ⇤ Til hliðar setur símann til vinstri svo Stílstjórinn sé UTAN hans.');
-        }
-      } catch (_) {}
-    }
+    syncArsButtons();
+    iframe.addEventListener('load', () => {
+      let ok = false;
+      try { ok = !!(iframe.contentDocument && iframe.contentWindow); } catch (_) {}
+      if (editor) editor.style.display = ok ? '' : 'none';
+      notifyEditor();
+      [400, 1200, 2500].forEach(ms => setTimeout(notifyEditor, ms));
+    });
+    notifyEditor();
   }
 
   /* Takkar í Stílstjóra-toolbar (sama endursmíðunar-mynstur og 319). */
@@ -226,7 +298,11 @@
   }).observe(document.body, { childList: true, subtree: true });
   syncButtons();
 
-  window.SlokkDevFrame = { open, close, refresh, isOpen: () => !!overlay };
+  window.SlokkDevFrame = {
+    open, close, refresh,
+    isOpen: () => !!overlay,
+    iframe: () => iframe,
+  };
   console.log('[patch-320] device frame ready');
 })();
 /* === END DEVICE FRAME === */

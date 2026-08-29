@@ -27,6 +27,22 @@
 
   const LS_ON  = 'ars_honnunarhamur_v1';
   const AS_KEY = 'ars_simi_stillingar';
+  const IN_DEVFRAME = !!(new URLSearchParams(location.search).get('devframe'));
+
+  function pageRoot() {
+    try {
+      if (window.SlokkDevFrame && typeof SlokkDevFrame.iframe === 'function') {
+        const f = SlokkDevFrame.iframe();
+        if (f && f.contentDocument && f.contentDocument.documentElement)
+          return f.contentDocument.documentElement;
+      }
+    } catch (_) {}
+    return document.documentElement;
+  }
+  function pageDoc() {
+    const r = pageRoot();
+    return (r && r.ownerDocument) || document;
+  }
 
   /* Breyturnar sem má stilla, hópaðar eftir því hvað þær snerta. `syn` ræður
      hvaða hópur birtist þegar stak er valið með pikki. */
@@ -68,12 +84,12 @@
 
   /* Núgildandi tala: yfirskrift ef til, annars það sem ars-simi-vars.css segir. */
   function gildi(b) {
-    const yfir = document.documentElement.style.getPropertyValue(b.v).trim();
-    const s = yfir || getComputedStyle(document.documentElement).getPropertyValue(b.v).trim();
+    const yfir = pageRoot().style.getPropertyValue(b.v).trim();
+    const s = yfir || getComputedStyle(pageRoot()).getPropertyValue(b.v).trim();
     const n = parseFloat(s);
     return isNaN(n) ? b.sjalf : n;
   }
-  const breytt = () => ALLAR.filter(b => document.documentElement.style.getPropertyValue(b.v).trim());
+  const breytt = () => ALLAR.filter(b => pageRoot().style.getPropertyValue(b.v).trim());
 
   /* ── Stílar ────────────────────────────────────────────────────────────── */
   function css() {
@@ -106,7 +122,7 @@
          .view-padding er stimplað INLINE af pinPad() og inline !important
          slær stílblaðs-!important. Mælt 29.08: reglan hér skilaði 64px
          þar sem hún bað um 52vh. Sjá .claude/agents/joker.md. */
-      '#_hh-panel .hidden{display:none}'
+      '#_hh-panel._hh-frame{position:absolute;inset:0;max-height:none;height:100%;width:100%;box-shadow:none;z-index:1;border-radius:14px}',
     ].join('');
     document.head.appendChild(s);
   }
@@ -132,7 +148,7 @@
     // 13 borð-sleða. Krefjumst þess að stakið hafi RAUNVERULEGA stærð.
     const til = h => {
       if (!h.vidmid) return true;
-      const e = document.querySelector(h.vidmid);
+      const e = pageDoc().querySelector(h.vidmid);
       return !!(e && e.getBoundingClientRect().height > 0);
     };
     let hopar = (synHopur ? HOPAR.filter(h => h.syn === synHopur) : HOPAR).filter(til);
@@ -164,7 +180,7 @@
         const b = finna(sl.dataset.v); if (!b) return;
         const n = parseFloat(sl.value);
         // Beint í :root — þess vegna sést það samstundis á öllum röðunum.
-        document.documentElement.style.setProperty(b.v, fmt(b, n));
+        pageRoot().style.setProperty(b.v, fmt(b, n));
         const num = p.querySelector('[data-num="' + b.v + '"]');
         if (num) num.textContent = fmt(b, n);
         const out = p.querySelector('#_hh-css-out');
@@ -180,8 +196,8 @@
     if (!on()) return;
     const p = document.getElementById('_hh-panel');
     if (p && p.contains(e.target)) return;
-    const t = e.target.closest('._bil-card, ._arsm-row, ._arsm-name');
-    document.querySelectorAll('._hh-valid').forEach(x => x.classList.remove('_hh-valid'));
+    const t = e.target.closest && e.target.closest('._bil-card, ._arsm-row, ._arsm-name');
+    pageDoc().querySelectorAll('._hh-valid').forEach(x => x.classList.remove('_hh-valid'));
     if (!t) { synHopur = null; teikna(); return; }
     e.preventDefault(); e.stopPropagation();
     t.classList.add('_hh-valid');
@@ -206,12 +222,12 @@
   function beita(gogn) {
     if (!gogn) return;
     Object.keys(gogn).forEach(v => {
-      if (finna(v)) document.documentElement.style.setProperty(v, gogn[v]);
+      if (finna(v)) pageRoot().style.setProperty(v, gogn[v]);
     });
   }
 
   function endurstilla() {
-    ALLAR.forEach(b => document.documentElement.style.removeProperty(b.v));
+    ALLAR.forEach(b => pageRoot().style.removeProperty(b.v));
     teikna();
   }
 
@@ -220,8 +236,10 @@
      gildið er geymt svo loka() skili því nákvæmlega til baka. */
   let _rymiAdur = null, _ro = null, _settT = null;
   function rymi(kveikja) {
-    const m = document.getElementById('ars-main')
-          || document.querySelector('#view-arsskodun ._bil-wrap');
+    if (document.getElementById('_hh-panel') && document.getElementById('_hh-panel').classList.contains('_hh-frame'))
+      return;
+    const m = pageDoc().getElementById('ars-main')
+          || pageDoc().querySelector('#view-arsskodun ._bil-wrap');
     if (!m) return;
     if (kveikja) {
       if (_rymiAdur === null) _rymiAdur = m.style.paddingBottom || '';
@@ -237,6 +255,15 @@
     }
   }
 
+  let veljaDoc = null;
+  function bindVelja(d) {
+    if (veljaDoc) {
+      try { veljaDoc.removeEventListener('click', velja, true); } catch (_) {}
+    }
+    veljaDoc = d || null;
+    if (veljaDoc) veljaDoc.addEventListener('click', velja, true);
+  }
+
   function opna() {
     css();
     if (document.getElementById('_hh-panel')) return;
@@ -249,7 +276,13 @@
       + '<div id="_hh-ft"><button type="button" class="_hh-b lit" id="_hh-reset">Endurstilla</button>'
       + '<button type="button" class="_hh-b" id="_hh-copy">Afrita CSS</button>'
       + '<button type="button" class="_hh-b adal" id="_hh-save">Vista stillingar</button></div>';
-    document.body.appendChild(p);
+    const host = document.getElementById('_devframe-editor');
+    if (host) {
+      p.classList.add('_hh-frame');
+      host.appendChild(p);
+    } else {
+      document.body.appendChild(p);
+    }
     document.body.classList.add('_hh-on');
     teikna();
     p.querySelector('#_hh-x').addEventListener('click', loka);
@@ -257,11 +290,11 @@
     p.querySelector('#_hh-save').addEventListener('click', e => vista(e.currentTarget));
     p.querySelector('#_hh-copy').addEventListener('click', async e => {
       const txt = ':root {\n' + cssBlokk() + '\n}';
-      try { await navigator.clipboard.writeText(txt); e.currentTarget.textContent = 'Afritað ✓';
+      try { await navigator.clipboard.writeText(txt); e.currentTarget.textContent = 'Afritað';
         setTimeout(() => { e.currentTarget.textContent = 'Afrita CSS'; }, 1600); }
       catch (_) { alert(txt); }
     });
-    document.addEventListener('click', velja, true);
+    bindVelja(pageDoc());
     /* ResizeObserver frekar en handvirkt kall: teikna() keyrir aðeins einu
        sinni (opna() hættir strax ef panellinn er til), og við fyrstu teikningu
        er hann 24px hár. Mælt 29.08: rýmið sat fast í 40px meðan panellinn var
@@ -276,17 +309,55 @@
   function loka() {
     if (_ro) { try { _ro.disconnect(); } catch (_) {} _ro = null; }
     rymi(false);
-    const p = document.getElementById('_hh-panel'); if (p) p.remove();
+    const p = document.getElementById('_hh-panel');
+    const framed = !!(p && p.classList.contains('_hh-frame'));
+    if (p) p.remove();
     document.body.classList.remove('_hh-on');
-    document.querySelectorAll('._hh-valid').forEach(x => x.classList.remove('_hh-valid'));
-    document.removeEventListener('click', velja, true);
+    try { pageDoc().querySelectorAll('._hh-valid').forEach(x => x.classList.remove('_hh-valid')); } catch (_) {}
+    bindVelja(null);
     synHopur = null;
-    setOn(false);
-    takki();
+    if (!framed) { setOn(false); takki(); }
+  }
+
+  function syncFrame() {
+    if (IN_DEVFRAME) return;
+    const host = document.getElementById('_devframe-editor');
+    if (!host) {
+      const p = document.getElementById('_hh-panel');
+      if (p && p.classList.contains('_hh-frame')) loka();
+      return;
+    }
+    let ars = false;
+    try {
+      const f = window.SlokkDevFrame && SlokkDevFrame.iframe && SlokkDevFrame.iframe();
+      const src = (f && f.src) || '';
+      ars = /page=arsskodun|arsview=|#arsskodun/.test(src);
+      if (!ars && f && f.contentDocument) {
+        const v = f.contentDocument.getElementById('view-arsskodun');
+        ars = !!(v && v.classList.contains('active'));
+      }
+    } catch (_) {}
+    if (!ars) {
+      if (!host.querySelector('#_hh-panel')) {
+        host.innerHTML = '<div id="_hh-hint" style="padding:18px 16px;color:#9aa3b0;font:13px/1.5 \'IBM Plex Sans\',sans-serif">Hönnunarsleðar fyrir Fyrirtæki í þjónustu birtast hér. Veldu síðuna og svo Stjórnun eða Bílstjóri uppi.</div>';
+      }
+      return;
+    }
+    const hint = host.querySelector('#_hh-hint');
+    if (hint) hint.remove();
+    if (!document.getElementById('_hh-panel')) opna();
+    else {
+      const p = document.getElementById('_hh-panel');
+      if (p.parentNode !== host) { p.classList.add('_hh-frame'); host.appendChild(p); }
+      bindVelja(pageDoc());
+      teikna();
+    }
   }
 
   /* ── Takki í Ársskoðun ─────────────────────────────────────────────────── */
   function takki() {
+    if (IN_DEVFRAME) return;
+    if (document.getElementById('_devframe-editor')) return;
     const v = document.getElementById('view-arsskodun');
     if (!v || !v.classList.contains('active')) return;
     let b = v.querySelector('#_hh-toggle');
@@ -318,11 +389,14 @@
   }
 
   function vakta() {
-    sækja(); takki();
+    sækja();
+    if (IN_DEVFRAME) return;
+    if (document.getElementById('_devframe-editor')) {
+      syncFrame();
+      return;
+    }
+    takki();
     if (!on()) return;
-    // opna() hættir strax ef panellinn er til, svo hann endurteiknaði sig
-    // ALDREI þegar skipt var milli borðs og bílstjóraspjalda — og sýndi þá
-    // sleða fyrir stök sem voru horfin. teikna() hér heldur honum í takt.
     if (!document.getElementById('_hh-panel')) opna();
   }
 
@@ -332,8 +406,10 @@
      og teiknar aðeins þegar undirskriftin breytist — sjálfleiðréttandi. */
   let _sidastaUndirskrift = '';
   function fylgjast() {
-    if (!on() || !document.getElementById('_hh-panel')) return;
-    const sest = sel => { const e = document.querySelector(sel); return !!(e && e.getBoundingClientRect().height > 0); };
+    if (!document.getElementById('_hh-panel')) return;
+    const framed = !!document.querySelector('#_hh-panel._hh-frame');
+    if (!on() && !framed) return;
+    const sest = sel => { const e = pageDoc().querySelector(sel); return !!(e && e.getBoundingClientRect().height > 0); };
     const u = (sest('._arsm-row') ? 'b' : '') + (sest('._bil-card') ? 's' : '') + '|' + synHopur;
     if (u === _sidastaUndirskrift) return;
     _sidastaUndirskrift = u;
@@ -346,7 +422,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);
   else vakta();
 
-  window.Honnunarhamur = { opna, loka, endurstilla, version: 'v1' };
+  window.Honnunarhamur = { opna, loka, endurstilla, syncFrame, version: 'v1.1' };
   console.log('[patch-318] honnunarhamur ready');
 })();
 /* === END HÖNNUNARHAMUR === */

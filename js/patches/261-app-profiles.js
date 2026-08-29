@@ -746,6 +746,7 @@
     if (app) u.searchParams.set('app', app);
     u.searchParams.set('devframe', 'simi');
     u.searchParams.set('page', p.k);
+    if (p.k === 'arsskodun') u.searchParams.set('arsview', 'bord');
     return u.toString();
   }
 
