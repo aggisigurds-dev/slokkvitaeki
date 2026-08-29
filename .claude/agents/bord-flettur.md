@@ -302,3 +302,39 @@ boot). Sidebar-röð (patch 68) við hlið Reikninga-pósts. `waitForSB()` bíð
   email-send eins og patch 240), → Flytja á Þjónustuborð (`thjonustubeidni`,
   `channel_ref='email:<id>'`, ekki tvítak), ✓ Merki svarað. Public:
   `window.ThjonustuverPostar = {open, reload}`.
+
+---
+
+## Öpp-fylkið og símaramminn (29.08.2026)
+
+**Fylkið** á Öpp-síðunni (`view-opp`, patch 261) listar síður sem raðir og öpp
+sem dálka, með haki á hverjum skurðpunkti. Útgáfur (v1/v2/v3) raðast undir
+móðursíðuna gegnum `VARIANT_OF`.
+
+**↗-hnappurinn FLAKKAR EKKI LENGUR BURT.** Hann opnar símaramma (patch 320)
+ofan á fylkinu, svo röðin sem verið er að meta tapast ekki:
+
+- síða með eigin `url` (Brunahólfs-flipi) → römmuð óbreytt
+- síða inni í appinu → römmuð sem RAUNVERULEG app-síða:
+  `/?app=<lykill>&devframe=simi&page=<síða>`
+
+`SlokkDevFrame.open(devKey, { url, title })` tekur við slóð; án hennar er
+hegðunin sú gamla (núverandi síða). `?page=<lykill>` verður að stillast Á UNDAN
+`buildShell()` — verndarinn í `patchSwitchView` snappar aftur á `_curPage`
+fyrstu 12 sekúndurnar, svo `switchView` EFTIR shellið er kastað til baka.
+
+### ⚠️ Pappanúmer — athugaðu áður en þú býrð til nýjan
+
+Þrjú handoff-skjöl í röð lögðu til númer sem voru upptekin. Staðan 29.08:
+
+```
+312 canon-stadur      315 fjarmal-app-compact
+313 contrast-clarity  316 simi-boards
+314 simi-compact-layer + 314-arsskodun-mobile-compact  ← TVÆR skrár
+317 arsskodun-bilstjori   318 honnunarhamur
+```
+
+`314-arsskodun-mobile-compact.js` er **aftengd úr index.html** (skráin er kyrr):
+hún þjappaði skjáborðstöflunni sem birtist ekki lengur í síma, en reglur hennar
+á `._ars-mo` og `._ars-filterstrip` voru enn virkar og unnu inline-stíla tvisvar
+sama daginn. Tvö lög á sama borði — ekki endurtengja hana.

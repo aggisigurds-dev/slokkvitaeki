@@ -128,6 +128,62 @@ Vírarnir:
 
 ---
 
+## Þrjár sýnir á Ársskoðun — ekki ein (29.08.2026)
+
+Ársskoðun hefur núna ÞRJÁR teikningar á sömu gögnunum. Vitir þú það ekki ferðu
+að laga ranga.
+
+| Sýn | Fall / pappi | Hvenær |
+|---|---|---|
+| Skjáborðstaflan | `renderTable` í 153 | `data-viewmode="desktop"` |
+| Símaborðið | `renderMobileRows` í 153 | sími + appham |
+| Bílstjóraspjöldin | **patch 317** | handvalið með 🚚-takka, geymt í localStorage |
+
+**`renderMobileRows` var DAUÐUR KÓÐI fram að 29.08.** `effView` skilaði `'list'`
+fyrir síma en dispatchið þekkti aðeins `'mrows'`/`'card'`, svo það féll í gegn á
+`renderTable`. Sé eitthvað „ekki að virka í síma", athugaðu FYRST hvaða fall
+teiknar í raun.
+
+### `arsPerur()` — ein rökfærsla, tvær teikningar
+
+Árs-perurnar og stöðurökin voru dregin út í `arsPerur(c, years, ár, mánuður)`
+og flutt út á `Arsskodun.arsPerur`. Hún skilar `{ yrHtml, arStada, stState,
+lastYr, fieldYr, manudur }` — `yrHtml` fyrir borðið, `arStada` (hrátt
+`'skyrsla'|'skodad'|'ekkert'` per ár) fyrir hvern þann sem teiknar sitt eigið
+útlit, eins og 317 gerir með flötu reitina.
+
+**Ekki afrita þessa rökfærslu.** Tvö eintök reka í sundur um leið og annað er
+lagað. `renderTable` hefur sín EIGIN rök (~2618) og er ósnert viljandi —
+`audit-ars-column-shift` ver þau.
+
+### Vistun: EITT fyrirtæki í einu — undantekningarlaust
+
+```js
+await AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } });
+```
+
+Aldrei allan blobinn. Race-lagfæringin frá 2026-07-15 (153:2025). Tvö tæki sem
+vista samtímis skrifa annars hvort yfir annað. Aksturslistinn fer AUK ÞESS um
+`ArsAkstur.set()` — ekki bein skrif — svo talningar og perur uppfærist með.
+
+Stillingar sem eru EKKI kúnnagögn eiga sinn eigin lykil: hönnunarhamurinn (318)
+skrifar í `ars_simi_stillingar`, ekki í `arsskodun_customers`.
+
+### Skoðunarmánuður: `CanonStadur`, aldrei nafna-strengur
+
+`CanonStadur.monthOf(id)` (patch 312) er eina rétta uppsprettan. Blobbið
+(`inspect_month`) er varaleið þegar 312 hefur ekki hlaðið.
+
+### Símastærðirnar eru CSS-breytur
+
+Dálkabreiddir, raðhæð, letur og litir búa í **`css/ars-simi-vars.css`**, ekki í
+JS. 153 og 317 lesa þær með `var(--nafn, fallback)`. Agnar getur breytt þeim
+sjálfur — og **patch 318 (⚙ Hönnunarhamur)** gefur sleða á þær beint ofan á
+raunverulegum gögnum, með vistun í AppSettings.
+
+Þarftu nýja stærð: bættu breytu við í `ars-simi-vars.css` FYRST. Aldrei negla
+tölu í pappa.
+
 ## Rödd
 
 Nákvæm. As-built. `file:line`. Fid. Tafla. Dálkur. State. Src. Role.

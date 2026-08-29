@@ -437,6 +437,34 @@ um sama spjaldið. Reglurnar sem komu í staðinn:
 - **Flatt, ekki gljáandi.** Engir gradientar á smástökum, engar ljósdíóður,
   engir stöðudeplar.
 
+### Sérvirkni: ÞRJÚ afbrigði, ekki tvö
+
+Þetta beit þrisvar á einum degi (29.08). Reglan er ekki „notaðu !important" —
+hún er að vita HVER slær hvern:
+
+| Hver setur | Slær |
+|---|---|
+| Inline `!important` (`setProperty(x, v, 'important')`) | allt |
+| Stílblað `!important` | venjulegan inline-stíl |
+| Venjulegur inline-stíll | venjulegt stílblað |
+
+Mælt dæmi: `m.style.paddingBottom = '455px'` skilaði **reiknuðu gildi 40px** af
+því stílblað setti `!important`. Inline-stíllinn LAS 455px allan tímann.
+`m.style.setProperty('padding-bottom','455px','important')` vann.
+
+**Þess vegna dugar `element.style.x = …` ekki í þessu appi.** Sé gildið sett úr
+JS og haldi ekki: staðfestu MUNINN á `el.style.x` og `getComputedStyle(el).x`
+áður en þú giskar á orsök. Þeir tveir sögðu sitthvora söguna.
+
+### ⚙ Hönnunarhamur (patch 318) — notaðu hann áður en þú skrifar CSS
+
+Ársskoðun er með innbyggðan stillipanel: sleðar á allar símastærðirnar úr
+`css/ars-simi-vars.css`, lifandi á raunverulegum gögnum, með „Afrita CSS" og
+vistun í AppSettings. **Fyrir stærðarbreytingu er hann fljótari en kóði** —
+og Agnar getur notað hann sjálfur, sem var allur tilgangurinn.
+
+Skrifaðu CSS aðeins þegar breytan er ekki til. Þá bætirðu HENNI við fyrst.
+
 ### Hönnunarskjölin sem til eru núna
 
 Ekki mæla þetta upp á nýtt; það er þegar gert:
