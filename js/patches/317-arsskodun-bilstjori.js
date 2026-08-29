@@ -78,27 +78,40 @@
     // #view-arsskodun og myndu annars yfirskrifa hæðir og letur hér.
     const V = '#' + VIEW_ID + '#' + VIEW_ID + ' ';
     const METAL = 'linear-gradient(180deg,#3c4452,#232b38)';
-    const BLUE = 'linear-gradient(180deg,#2f5a86,#17324f)';
+    /* Takkalitur: --ars-sokkull (hönnunarhamur). Solid svo litavalið sést beint. */
+    const BLUE = 'var(--ars-sokkull,#17324f)';
+    const LETUR = "var(--ars-letur,'IBM Plex Sans',-apple-system,'Segoe UI',system-ui,sans-serif)";
+    /* Sömu málm-gljáar og skjáborðstaflan (patch 153 ._yr / ._st--*). Agnar
+       2026-08-29: desktop-taflan er viðmiðið — sími/Bílstjóri endurtaka, ekki
+       finna upp nýja litapallettu. */
+    const YR_RED = 'linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%)';
+    const YR_GREEN = 'linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%)';
+    const YR_GOLD = 'linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08)';
+    const ST_DONE = YR_GREEN;
+    const ST_WORK = 'linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%)';
+    const ST_LATE = YR_RED;
+    const ST_SKIP = YR_GOLD;
+    const YR_SHINE = 'box-shadow:inset 0 1.5px 0 rgba(255,255,255,.25),inset 0 -2px 4px rgba(0,0,0,.26)';
     s.textContent = [
-      V + '._bil-wrap{padding:0 0 96px;background:#f5f4ef}',
+      V + '._bil-wrap{padding:0 0 96px;background:var(--ars-grunnur,#f0eeea);font-family:' + LETUR + '}',
       V + '._bil-hdr{background:#1a1f2e;padding:9px 12px 0}',
       V + '._bil-hdr-row{padding-bottom:9px}',
-      V + '._bil-hdr-tt{font:700 15px system-ui,sans-serif;color:#fff}',
-      V + '._bil-hdr-sub{font:11px system-ui,sans-serif;color:rgba(255,255,255,.6);margin-top:2px}',
+      V + '._bil-hdr-tt{font:700 15px ' + LETUR + ';color:#fff}',
+      V + '._bil-hdr-sub{font:11px ' + LETUR + ';color:rgba(255,255,255,.6);margin-top:2px}',
       V + '._bil-tabs{display:flex}',
-      V + '._bil-tab{flex:1;border:0;background:transparent;color:rgba(255,255,255,.55);font:700 13px system-ui,sans-serif;padding:10px 0 9px;border-bottom:2px solid transparent;cursor:pointer}',
+      V + '._bil-tab{flex:1;border:0;background:transparent;color:rgba(255,255,255,.55);font:700 13px ' + LETUR + ';padding:10px 0 9px;border-bottom:2px solid transparent;cursor:pointer}',
       V + '._bil-tab.on{color:#fff;border-bottom-color:#C93C1D}',
       V + '._bil-mon{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#eef1f5;border-bottom:1px solid #d0d4da;'
-        + 'font:700 10px system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#525b6b}',
+        + 'font:700 10px ' + LETUR + ';letter-spacing:.06em;text-transform:uppercase;color:var(--ars-texti-mjukur,#5d5a54)}',
       V + '._bil-mon i{flex:1;height:1px;background:#d0d4da;font-size:0}',
-      V + '._bil-mon b{font:700 11px ui-monospace,monospace;color:#525b6b;letter-spacing:0;text-transform:none}',
+      V + '._bil-mon b{font:700 11px ui-monospace,monospace;color:var(--ars-texti-mjukur,#5d5a54);letter-spacing:0;text-transform:none}',
       V + '._bil-list{padding:8px 12px 16px;display:flex;flex-direction:column;gap:var(--ars-spjald-bil,8px)}',
 
-      V + '._bil-card{background:#fff !important;border:1px solid #e6e9ee !important;'
-        + 'border-left:var(--ars-spjald-kantur,4px) solid #8a94a3 !important;'
+      V + '._bil-card{background:#fff !important;border:1px solid var(--ars-rammi,#e3e1dc) !important;'
+        + 'border-left:var(--ars-spjald-kantur,4px) solid var(--ars-accent,#5980a6) !important;'
         + 'border-radius:var(--ars-spjald-radius,12px);padding:10px 12px;'
         + 'display:flex;flex-direction:column;gap:8px}',
-      /* Kantur + staða: desktop `_st--*` (grænt/blátt/rautt/gull málm) */
+/* Kantur + staða: desktop `_st--*` via CSS vars; letur/texti úr hönnunarham */
       V + '._bil-card._bs-done{border-left-color:var(--ars-st-done-bd,#041c0e) !important}',
       V + '._bil-card._bs-vinnslu{border-left-color:var(--ars-st-work-bd,#060f24) !important}',
       V + '._bil-card._bs-vantar{border-left-color:var(--ars-st-late-bd,#4d0a08) !important}',
@@ -107,9 +120,9 @@
 
       V + '._bil-top{display:flex;align-items:flex-start;gap:9px}',
       V + '._bil-top>div{flex:1;min-width:0}',
-      V + '._bil-nm{font-size:var(--ars-spjald-nafn,15.5px);font-weight:700;color:#11141c;line-height:1.2}',
-      V + '._bil-addr{font-size:12px;color:#5b6573;margin-top:2px}',
-      V + '._bil-st{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;font:600 11.5px system-ui,sans-serif;white-space:nowrap;flex:0 0 auto;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
+      V + '._bil-nm{font-size:var(--ars-spjald-nafn,15.5px);font-weight:700;color:var(--ars-texti,#16181c);line-height:1.2}',
+      V + '._bil-addr{font-size:12px;color:var(--ars-texti-mjukur,#5d5a54);margin-top:2px}',
+      V + '._bil-st{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;font:700 11.5px ' + LETUR + ';white-space:nowrap;flex:0 0 auto;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
       V + '._bil-st._bs-done{background:var(--ars-st-done-bg,linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%));border:1px solid var(--ars-st-done-bd,#041c0e);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.22),inset 0 -2px 4px rgba(0,0,0,.28)}',
       V + '._bil-st._bs-vinnslu{background:var(--ars-st-work-bg,linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%));border:1px solid var(--ars-st-work-bd,#060f24);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.2)}',
       V + '._bil-st._bs-vantar{background:var(--ars-st-late-bg,linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%));border:1px solid var(--ars-st-late-bd,#4d0a08);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.28),inset 0 -2px 4px rgba(0,0,0,.26)}',
@@ -119,7 +132,7 @@
       V + '._bil-mid{display:flex;align-items:center;gap:14px;flex-wrap:wrap}',
       V + '._bil-yrs{display:flex;gap:5px;width:184px}',
       V + '._bil-yrcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}',
-      /* Árs-reitir: sama málm og desktop `_yr` (tómt/both/penda) */
+/* Árs-reitir: desktop `_yr` via CSS vars; LED = staðfest (multi-action #775) */
       V + '._bil-yr{width:100%;height:var(--ars-arsreitur-haed,26px);min-width:var(--ars-arsreitur-breidd,40px);border-radius:6px;'
         + 'color:var(--ars-yr-empty-fg,#aab3c0);font:700 13px ui-monospace,monospace;'
         + 'display:flex;align-items:center;justify-content:center;gap:5px;'
@@ -130,46 +143,47 @@
       V + '._bil-yr.skodad{color:var(--ars-yr-penda-fg,#fff8e6);background:var(--ars-yr-penda-bg,linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08));'
         + 'border-color:var(--ars-yr-penda-bd,rgba(255,220,130,.45));text-shadow:0 1px 1px rgba(0,0,0,.35);'
         + 'box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -2px 4px rgba(0,0,0,.25)}',
-      V + '._bil-led{width:6px;height:6px;border-radius:50%;background:var(--ars-led-off,rgba(0,0,0,.14));flex:none}',
-      V + '._bil-yr.skyrsla ._bil-led{background:var(--ars-led-both,#7df0b4);box-shadow:0 0 5px rgba(125,240,180,.9)}',
-      V + '._bil-yr.skodad ._bil-led{background:var(--ars-led-on,#37c47e);box-shadow:0 0 5px rgba(55,196,126,.8)}',
-      V + '._bil-dots{display:flex;gap:4px}',
+      // Agnar multi-action: LED = staðfest (klarad|confirmed), NOT „hefur skýrslu".
+      // Grár = óvirkt. Litir úr css/ars-simi-vars.css.
+      V + '._bil-led{width:5px;height:5px;border-radius:50%;background:var(--ars-led-off,#ccd2da);flex:none}',
+      V + '._bil-yr.stadfest ._bil-led{background:var(--ars-led-on,#34d17a);box-shadow:0 0 5px rgba(52,209,122,.8)}',
+      V + '._bil-dots{display:flex;gap:3px}',
       V + '._bil-dots i{width:5px;height:5px;border-radius:50%;background:var(--ars-dot-off,#dfe3ea)}',
       V + '._bil-dots i.on{background:var(--ars-dot-skyrsla,#1f9d57)}',
       V + '._bil-dots i.inv{background:var(--ars-dot-reik,#2f5fe0)}',
       V + '._bil-eq{display:flex;gap:11px}',
       V + '._bil-eq span{display:flex;flex-direction:column;align-items:center;line-height:1.04}',
-      V + '._bil-eq b{font:800 14px system-ui,sans-serif;color:#11141c}',
-      V + '._bil-eq u{font:700 8px system-ui,sans-serif;color:#5b6573;text-decoration:none}',
-      V + '._bil-meta{font:12.5px ui-monospace,monospace;color:#5b6573}',
-      V + '._bil-val{margin-left:auto;font:12.5px ui-monospace,monospace;color:#5b6573}',
-      V + '._bil-who{display:flex;align-items:center;gap:8px;font:12.5px system-ui,sans-serif;color:#5b6573}',
-      V + '._bil-who b{color:#11141c}',
+      V + '._bil-eq b{font:800 14px ' + LETUR + ';color:var(--ars-texti,#16181c)}',
+      V + '._bil-eq u{font:700 8px ' + LETUR + ';color:var(--ars-texti-mjukur,#5d5a54);text-decoration:none}',
+      V + '._bil-meta{font:12.5px ui-monospace,monospace;color:var(--ars-texti-mjukur,#5d5a54)}',
+      V + '._bil-val{margin-left:auto;font:12.5px ui-monospace,monospace;color:var(--ars-texti-mjukur,#5d5a54)}',
+      V + '._bil-who{display:flex;align-items:center;gap:8px;font:12.5px ' + LETUR + ';color:var(--ars-texti-mjukur,#5d5a54)}',
+      V + '._bil-who b{color:var(--ars-texti,#16181c)}',
       V + '._bil-who span{font-family:ui-monospace,monospace}',
-      V + '._bil-note{font:12px system-ui,sans-serif;color:#5b6573;background:#f4f6f9;border-radius:8px;padding:7px 9px}',
+      V + '._bil-note{font:12px ' + LETUR + ';color:var(--ars-texti-mjukur,#5d5a54);background:#f4f6f9;border-radius:8px;padding:7px 9px}',
 
       V + '._bil-ok{display:flex;align-items:center;gap:9px;flex-wrap:wrap;border:1px solid #cfdcea;background:#eef4fb;border-radius:9px;padding:8px 10px}',
-      V + '._bil-oktxt{font:700 12px system-ui,sans-serif;color:#17324f}',
-      V + '._bil-oksub{font:11.5px system-ui,sans-serif;color:#5b6573}',
-      V + '._bil-sync{margin-left:auto;min-height:36px;border:1px solid #0d1a2b;background:' + BLUE + ';color:#eaf1f9;font:700 12px system-ui,sans-serif;border-radius:8px;padding:0 11px;cursor:pointer}',
+      V + '._bil-oktxt{font:700 12px ' + LETUR + ';color:var(--ars-sokkull,#17324f)}',
+      V + '._bil-oksub{font:11.5px ' + LETUR + ';color:var(--ars-texti-mjukur,#5d5a54)}',
+      V + '._bil-sync{margin-left:auto;min-height:36px;border:1px solid #0d1a2b;background:' + BLUE + ';color:#eaf1f9;font:700 12px ' + LETUR + ';border-radius:8px;padding:0 11px;cursor:pointer}',
 
       V + '._bil-akrow{display:flex;gap:7px;align-items:center}',
-      V + '._bil-aklbl{font:700 10px system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;color:#5b6573}',
+      V + '._bil-aklbl{font:700 10px ' + LETUR + ';letter-spacing:.05em;text-transform:uppercase;color:var(--ars-texti-merki,#6f6b63)}',
       V + '._bil-seg{display:flex;gap:4px}',
       V + '._bil-ak{min-width:40px;min-height:var(--ars-akstur-haed,40px) !important;height:var(--ars-akstur-haed,40px) !important;'
         + 'border:1px solid #10161f;background:' + METAL + ';color:#8f99a8;font:700 14px ui-monospace,monospace;border-radius:9px;cursor:pointer;'
         + 'box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}',
-      V + '._bil-ak.on{background:' + BLUE + ';border-color:#0d1a2b;color:#eaf1f9;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 0 2px rgba(47,90,134,.28)}',
+      V + '._bil-ak.on{background:' + BLUE + ';border-color:#0d1a2b;color:#eaf1f9;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 0 2px color-mix(in srgb,var(--ars-sokkull,#17324f) 28%,transparent)}',
 
       V + '._bil-btns{display:flex;gap:7px}',
       V + '._bil-ic{flex:1;min-height:var(--ars-takn-haed,44px) !important;height:auto !important;border:1px solid #10161f;background:' + METAL + ';'
-        + 'color:#dbe2ec;font:700 13px system-ui,sans-serif;border-radius:9px;display:flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;padding:0}',
+        + 'color:#dbe2ec;font:700 13px ' + LETUR + ';border-radius:9px;display:flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;padding:0}',
       V + '._bil-ic[disabled],a._bil-ic[aria-disabled="true"],span._bil-ic[aria-disabled="true"]{opacity:.4;pointer-events:none}',
       V + '._bil-done{flex:1.4;min-height:var(--ars-skodad-haed,44px) !important;height:auto !important;border:1px solid #10161f;background:' + METAL + ';'
-        + 'color:#aab3c0;font:700 13.5px system-ui,sans-serif;border-radius:9px;cursor:pointer}',
+        + 'color:#aab3c0;font:700 13.5px ' + LETUR + ';border-radius:9px;cursor:pointer}',
       V + '._bil-done.hakad{background:' + BLUE + ';border-color:#0d1a2b;color:#eaf1f9}',
       V + '._bil-done[disabled]{opacity:.5;cursor:default}',
-      V + '._bil-tom{padding:34px 12px;text-align:center;color:#5b6573;font-size:13px}'
+      V + '._bil-tom{padding:34px 12px;text-align:center;color:var(--ars-texti-mjukur,#5d5a54);font-size:13px}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -249,10 +263,12 @@
     const nota = (c.plan_note || '').trim();
     const est = +a.estimated_yearly || 0;
 
-    // Árs-reitirnir eru teiknaðir HÉR en reiknaðir í 153 (Arsskodun.arsPerur) —
-    // ein rökfærsla, tvær teikningar. Ljósdíóða + tveir punktar úr mockupinu:
-    // d1 grænt ef skýrsla, d2 blátt aðeins ef 187.yearInfo.reik er satt
-    // (sama 🧾 og borðið — engin ágiskun, grár punktur ef 187 er ekki til).
+    // Árs-reitirnir eru teiknaðir HÉR en staða (skyrsla/skodad) kemur úr 153
+    // (arsPerur). Agnar multi-action — þrjú merki, presentation only:
+    //   LED (.stadfest) = klarad | factcheck human  (ekki bara „hefur skýrslu")
+    //   d1 .on  grænt    = yearInfo.has   (skýrslu-tengt)
+    //   d2 .inv blátt    = yearInfo.reik  (invoice-tengt; aldrei ágiska)
+    // Grár = óvirkt / ekki til. Sannleikur reiknings/skýrslu = 187.yearInfo.
     const ar = new Date().getFullYear();
     const years = [ar - 3, ar - 2, ar - 1, ar];
     let yrs = '';
@@ -265,11 +281,12 @@
       const p = Arsskodun.arsPerur(c, years, ar, new Date().getMonth() + 1);
       yrs = '<div class="_bil-yrs">' + years.map((y, i) => {
         const st = p.arStada[i] === 'ekkert' ? '' : p.arStada[i];
-        const d1 = p.arStada[i] === 'skyrsla' ? ' on' : '';
-        const rec = invByY[String(y)];
-        const d2 = rec && rec.reik ? ' inv' : '';
+        const rec = invByY[String(y)] || {};
+        const d1 = rec.has ? ' on' : '';
+        const d2 = rec.reik ? ' inv' : '';
+        const led = (rec.klarad || rec.confirmed) ? ' stadfest' : '';
         return '<span class="_bil-yrcol">'
-          + '<span class="_bil-yr ' + st + '"><i class="_bil-led"></i>' + String(y).slice(-2) + '</span>'
+          + '<span class="_bil-yr ' + st + led + '"><i class="_bil-led"></i>' + String(y).slice(-2) + '</span>'
           + '<span class="_bil-dots"><i class="' + d1 + '"></i><i class="' + d2 + '"></i></span>'
           + '</span>';
       }).join('') + '</div>';

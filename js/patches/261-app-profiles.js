@@ -177,24 +177,115 @@
     while (APP_BY_KEY[k]) k = base + 'abcdefghij'.charAt(i++ % 10);
     return k;
   }
-  function createCustomApp() {
-    var name = prompt('Nafn á nýja appinu:', ''); if (!name || !String(name).trim()) return;
-    name = String(name).trim().slice(0, 30);
-    var emoji = prompt('Tákn (emoji) fyrir appið:', '📱') || '📱';
+  // Stofna / uppfæra custom app án native prompt — Stilla útlit (262) og Öpp.
+  // opts: { name, pageKey?, emoji?, blurb?, color?, dark?, key? }
+  // Skilar { ok, key, name, updated } eða { ok:false, error }.
+  function saveAsApp(opts) {
+    opts = opts || {};
+    var name = String(opts.name || '').trim().slice(0, 30);
+    if (!name) return { ok: false, error: 'name' };
+    var pageKey = opts.pageKey ? String(opts.pageKey).trim() : '';
+    if (pageKey && !pageByKey(pageKey)) return { ok: false, error: 'page' };
+    var emoji = String(opts.emoji || '📱').trim().slice(0, 4) || '📱';
+    var blurb = String(opts.blurb || 'Útlitsútgáfa frá Stilla útlit').trim().slice(0, 120)
+      || 'Útlitsútgáfa frá Stilla útlit';
+    var defaults = pageKey ? [pageKey] : ['thjonustubord'];
     var list = loadCustoms();
-    var app = { key: customKeyFor(name), name: name, emoji: String(emoji).trim().slice(0, 4) || '📱',
-      color: '#334155', dark: '#0f172a', blurb: 'Notenda-búið app — hakaðu við síðurnar að neðan',
-      defaults: ['thjonustubord'] };
-    list.push(app); saveCustoms(list); mergeCustoms(); render();
-    try { if (window.Toast && Toast.show) Toast.show('📱 „' + name + '" búið til — hakaðu við „⚙ Síður í appinu"'); } catch (_) {}
+    var app = null;
+    var updated = false;
+    if (opts.key) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] && list[i].key === opts.key) { app = list[i]; break; }
+      }
+    }
+    if (!app && pageKey) {
+      for (var j = 0; j < list.length; j++) {
+        var c = list[j];
+        if (!c || !c.key) continue;
+        if (c.name === name && Array.isArray(c.defaults) && c.defaults[0] === pageKey) {
+          app = c; break;
+        }
+      }
+    }
+    if (app) {
+      app.name = name; app.emoji = emoji; app.blurb = blurb; app.defaults = defaults;
+      if (opts.color) app.color = opts.color;
+      if (opts.dark) app.dark = opts.dark;
+      updated = true;
+    } else {
+      app = {
+        key: customKeyFor(name), name: name, emoji: emoji,
+        color: opts.color || '#334155', dark: opts.dark || '#0f172a',
+        blurb: blurb, defaults: defaults
+      };
+      list.push(app);
+    }
+    saveCustoms(list);
+    mergeCustoms();
+    if (pageKey) saveCfg(app.key, defaults.slice());
+    try { render(); } catch (_) {}
+    return { ok: true, key: app.key, name: app.name, updated: updated };
+  }
+  function createCustomApp() {
+    openNewAppDialog();
+  }
+  function openNewAppDialog() {
+    var existing = document.getElementById('_op-newapp-dlg');
+    if (existing) existing.remove();
+    var dlg = document.createElement('div');
+    dlg.id = '_op-newapp-dlg';
+    dlg.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    dlg.innerHTML =
+      '<div style="background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(400px,calc(100vw - 32px));overflow:hidden;font:inherit">' +
+        '<div style="padding:16px 18px 6px;font-size:16px;font-weight:800;color:#0f172a">Búa til app</div>' +
+        '<div style="padding:8px 18px 14px;display:flex;flex-direction:column;gap:10px">' +
+          '<label style="display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:700;color:#475569">Nafn' +
+            '<input id="_op-na-name" type="text" maxlength="30" placeholder="t.d. Ársskoðun sími" style="padding:10px 12px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:15px"></label>' +
+          '<label style="display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:700;color:#475569">Tákn' +
+            '<input id="_op-na-emoji" type="text" maxlength="4" value="📱" style="width:72px;padding:10px 12px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:20px;text-align:center"></label>' +
+        '</div>' +
+        '<div style="padding:11px 18px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;background:#f8fafc">' +
+          '<button type="button" id="_op-na-cancel" style="padding:8px 16px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
+          '<button type="button" id="_op-na-ok" style="padding:8px 18px;background:#2563eb;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Búa til</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(dlg);
+    var nameEl = dlg.querySelector('#_op-na-name');
+    var emojiEl = dlg.querySelector('#_op-na-emoji');
+    function close() { dlg.remove(); }
+    dlg.querySelector('#_op-na-cancel').addEventListener('click', close);
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) close(); });
+    dlg.querySelector('#_op-na-ok').addEventListener('click', function () {
+      var name = (nameEl.value || '').trim().slice(0, 30);
+      if (!name) { try { nameEl.focus(); } catch (_) {} return; }
+      var r = saveAsApp({
+        name: name,
+        emoji: (emojiEl.value || '📱').trim().slice(0, 4) || '📱',
+        blurb: 'Notenda-búið app — hakaðu við síðurnar að neðan',
+        pageKey: 'thjonustubord'
+      });
+      close();
+      if (r && r.ok) {
+        try { if (window.Toast && Toast.show) Toast.show('📱 „' + r.name + '" búið til — hakaðu við „⚙ Síður í appinu"'); } catch (_) {}
+      }
+    });
+    setTimeout(function () { try { nameEl.focus(); } catch (_) {} }, 40);
   }
   function deleteCustomApp(key) {
     var a = APP_BY_KEY[key]; if (!a || !a.custom) return;
-    if (!confirm('Eyða appinu „' + a.name + '"?')) return;
-    saveCustoms(loadCustoms().filter(function (c) { return c && c.key !== key; }));
-    var i = APPS.indexOf(a); if (i >= 0) APPS.splice(i, 1); delete APP_BY_KEY[key];
-    try { var c = loadCfg(); if (c && c[key]) { delete c[key]; var st = JSON.stringify(c); localStorage.setItem(CFG_KEY, st); if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: st }); } } catch (_) {}
-    render();
+    function doDelete() {
+      saveCustoms(loadCustoms().filter(function (c) { return c && c.key !== key; }));
+      var i = APPS.indexOf(a); if (i >= 0) APPS.splice(i, 1); delete APP_BY_KEY[key];
+      try { var c = loadCfg(); if (c && c[key]) { delete c[key]; var st = JSON.stringify(c); localStorage.setItem(CFG_KEY, st); if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: st }); } } catch (_) {}
+      render();
+    }
+    if (window.Confirm && typeof Confirm.show === 'function') {
+      Confirm.show('Eyða appinu „' + a.name + '"?', { danger: true, okText: 'Eyða' }).then(function (ok) {
+        if (ok) doDelete();
+      });
+      return;
+    }
+    doDelete();
   }
   // Skýja-eintakið kemur seint — sama 12s-retry mynstur og cfg-migrationin.
   (function () {
@@ -1196,5 +1287,12 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.AppProfiles = { open: openLauncher, reload: render, pagesFor: pagesFor };
+  window.AppProfiles = {
+    open: openLauncher,
+    reload: render,
+    pagesFor: pagesFor,
+    saveAsApp: saveAsApp,
+    pageByKey: pageByKey,
+    allPages: allPages
+  };
 })();

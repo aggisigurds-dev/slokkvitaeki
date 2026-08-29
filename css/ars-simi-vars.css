@@ -56,9 +56,15 @@
   --ars-akstur-haed:    40px;   /* 40×40 akstursreitir                       */
   --ars-skodad-haed:    44px;   /* ✓ Skoðað                                  */
 
+  /* ── Letur ──────────────────────────────────────────────────────────────
+     Curated list í hönnunarham (318). Sömu fjölskyldur og index.html hleður
+     (IBM Plex / Playfair / JetBrains) + system.                                */
+  --ars-letur: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
   /* ── Litir ──────────────────────────────────────────────────────────────
      Birtuskilagólf: --ars-texti-mjukur mælist 6.9:1. Ekkert ljósara á texta
-     sem á að lesa — þetta er tól sem er notað úti í dagsljósi.              */
+     sem á að lesa — þetta er tól sem er notað úti í dagsljósi.
+     Hönnunarhamur (318) opinberar þessa litabreytu í símaramma.            */
   --ars-texti:        #16181c;  /* aðaltexti, fyrirtækjanöfn                 */
   --ars-texti-mjukur: #5d5a54;  /* ALLUR annar texti                         */
   --ars-texti-merki:  #6f6b63;  /* smámerki („AKSTUR")                       */
@@ -69,7 +75,7 @@
   --ars-accent-djupt: #2a4763;  /* accent á smátexta fer HÉR í gegn          */
   --ars-sokkull:      #17324f;  /* eina fyllta aðgerðin: ✓ Skoðað            */
 
-  /* ── Skjáborðs `_yr` / `_st` litir (153 `_ensureMockCss`) ───────────────
+/* ── Skjáborðs `_yr` / `_st` litir (153 `_ensureMockCss`) ───────────────
      Agnar 2026-08-29: „eða bara að appið notist við litina frá desktop
      síðunni" — Bílstjóri (317) og síma-borð (_arsm-*) lesa HÉR. Skjáborðið
      heldur hardkóðuðum gildum í 153 (óbreytt útlit); þessar breytur eru
@@ -86,13 +92,6 @@
   --ars-yr-penda-fg:  #fff8e6;
   --ars-yr-penda-bg:  linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);
   --ars-yr-penda-bd:  rgba(255,220,130,.45);
-  --ars-led-off:      rgba(0,0,0,.14);
-  --ars-led-on:       #37c47e;
-  --ars-led-both:     #7df0b4;
-  --ars-led-inv:      #9fc3ff;
-  --ars-dot-off:      #dfe3ea;
-  --ars-dot-skyrsla:  #1f9d57;
-  --ars-dot-reik:     #2f5fe0;
   --ars-st-done-bg:   linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);
   --ars-st-done-bd:   #041c0e;
   --ars-st-work-bg:   linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%);
@@ -104,4 +103,15 @@
   --ars-st-skip-fg:   #fff8e6;
   --ars-st-skip-bg:   linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);
   --ars-st-skip-bd:   rgba(255,220,130,.45);
+
+  /* ── Árs-reitir 23/24/25/26 — þrjú merki (Agnar multi-action) ───────────
+     1. LED á pillunni = staðfest (klarad / factcheck human). Ekki „hefur skýrslu".
+     2. Vinstri punktur undir = skýrslu-tengt (has).
+     3. Hægri punktur undir = reiknings-tengt (reik). Aldrei ágiska reikning.
+     Grár = óvirkt / ekki til. Patch 187 yearInfo + 317/153 teikna úr þessu. */
+  --ars-led-off:      #ccd2da;
+  --ars-led-on:       #34d17a;
+  --ars-dot-off:      #dfe3ea;
+  --ars-dot-skyrsla:  #1f9d57;
+  --ars-dot-reik:     #2f5fe0;
 }
