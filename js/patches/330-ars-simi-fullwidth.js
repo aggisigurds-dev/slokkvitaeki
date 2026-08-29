@@ -31,6 +31,14 @@
       out.push(A + V + suffix + decl);
     }
 
+    /* css/mobile.css @media(max-width:900): `.view{padding:56px 12px 24px 12px
+       !important}` — þetta er 12px hliðargatið á RAUNVERULEGUM 390px (sími og
+       símarammi). padding-top/bottom eru þegar yfirskrifuð; vinstri/hægri
+       sátu eftir. */
+    const side0 = '{padding-left:0!important;padding-right:0!important}';
+    both(P, side0);
+    both('.view.active' + P, side0);
+
     /* ── 1. Drepa hliðargötin ───────────────────────────────────────────────
        Inline 1720-ramminn + 314 8px + .main-panel 10/14/32px lögðust ofan á
        hvort annað. Hér er vinstri/hægri = 0. Lítið öryggisbil (8px) aðeins
