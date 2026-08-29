@@ -114,10 +114,15 @@
     'html body.appmode #view-arsskodun ._arsm-row ._arsm-sub{font-size:9.5px!important}',
     ARS + '._arsm-ak{min-height:26px!important;width:30px!important;height:26px!important;padding:0!important}',
     ARS + '#_ars-search{font-size:16px!important;min-height:40px!important;padding:8px 10px!important}',
-    ARS + '#_ars-new,' + ARS + '#_ars-print,' + ARS + '#_ars-print-caret,' + ARS + '#_ars-ovr,' +
-    ARS + '#_ars-sort,' + ARS + '._ars-st,' + ARS + '._ars-mo,' + ARS + '#_ars-skiphide,' +
+    ARS + '#_ars-new,' + ARS + '#_ars-ovr,' +
+    ARS + '._ars-st,' + ARS + '._ars-mo,' + ARS + '#_ars-skiphide,' +
     ARS + '#_ars-pnr-btn' +
       '{min-height:36px!important;padding-top:6px!important;padding-bottom:6px!important;font-size:13px!important}',
+    // Same hide as 314: Fjármál/Boss app is body.appmode. Stafrófsröð +
+    // Prenta lista stay on desktop Skjár (not appmode).
+    ARS + '#_ars-sort,' + ARS + '#_ars-print-wrap,' + ARS + '#_ars-print,' +
+    ARS + '#_ars-print-caret,' + ARS + '#_ars-print-menu' +
+      '{display:none!important}',
     ARS + 'table td,' + ARS + 'table th{padding:4px 6px;font-size:13px}',
 
     // ── Hreyfingar: full-bleed + actions on open ──

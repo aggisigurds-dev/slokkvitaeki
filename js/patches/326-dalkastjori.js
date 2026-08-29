@@ -231,6 +231,12 @@
     const wrap = document.querySelector('.bb-rightwrap');
     const usable = wrapUsable(wrap);
     let b = document.getElementById(BTN);
+    // Fljótandi 📐 á síðu ÁN töflu er bara overlay. Mælt á Kröfu-listanum
+    // (spjöld, engin tafla) — 52×52 sat ofan á síðasta fyrirtæki.
+    if (!usable && !currentTable()) {
+      if (b) b.remove();
+      return;
+    }
     const wanted = usable ? 'banner' : 'float';
     if (b && b.dataset.spot === wanted) return;     // þegar á réttum stað
     if (b) b.remove();
