@@ -89,13 +89,25 @@
   const ZOOMS = [0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 1, 1.15, 1.3];
   const EDITOR_W = 340;
 
+  /* Alvöru sími (ekki plat-rammi á skjáborði). Hönnunarhamur opnar rammann
+     hér líka — þá verður að stafla ritli undir forskoðun, ekki 340px hlið. */
+  function isNativePhoneViewport() {
+    try {
+      if (document.documentElement.classList.contains('slokk-phone-dev')) return true;
+      return window.innerWidth <= 430 && window.parent === window;
+    } catch (_) { return false; }
+  }
+
   // „Passa" — stærsta skölun sem kemst fyrir. Ritillinn (Stilla útlit) situr
   // alltaf til vinstri við símann, svo hann er dreginn frá breiddinni.
+  // Á alvöru síma er ritillinn UNDIR forskoðuninni: telja hæð hans frá, ekki breidd.
   function fitScale(d) {
-    const bh = 46;
-    const availH = Math.max(280, window.innerHeight - bh - 26);
-    const chrome = EDITOR_W + 48;
-    const availW = Math.max(180, (docked ? window.innerWidth * 0.92 : window.innerWidth) - chrome);
+    const phone = isNativePhoneViewport();
+    const bh = phone ? 52 : 46;
+    const editorH = phone ? Math.round(Math.min(window.innerHeight * 0.42, 380)) : 0;
+    const availH = Math.max(phone ? 140 : 280, window.innerHeight - bh - 26 - editorH);
+    const chrome = phone ? 24 : EDITOR_W + 48;
+    const availW = Math.max(160, (docked && !phone ? window.innerWidth * 0.92 : window.innerWidth) - chrome);
     return Math.min(1, availH / (d.h + 24), availW / (d.w + 24));
   }
   function curScale(d) { return zoom != null ? zoom : fitScale(d); }
@@ -104,17 +116,47 @@
   // rammann upp á nýtt (endurbygging myndi endurhlaða iframe-ið og tapa stöðu).
   function applyView() {
     const d = DEVICES[curDev]; if (!d || !overlay) return;
+    const phone = isNativePhoneViewport();
     const sc = curScale(d);
-    const packed = Math.round(EDITOR_W + 28 + (d.w + 24) * sc + 28);
-    overlay.style.inset = docked ? '0 auto 0 0' : '0';
-    overlay.style.width = docked ? Math.min(window.innerWidth, packed) + 'px' : '';
-    overlay.style.background = docked ? 'rgba(8,10,14,.94)' : 'rgba(8,10,14,.86)';
-    overlay.style.boxShadow = docked ? '18px 0 60px -20px rgba(0,0,0,.75)' : '';
+    if (phone) {
+      overlay.style.inset = '0';
+      overlay.style.width = '';
+      overlay.style.background = 'rgba(8,10,14,.94)';
+      overlay.style.boxShadow = '';
+      overlay.classList.add('_df-phone');
+      const row = overlay.querySelector('#_devframe-row');
+      if (row) row.style.flexDirection = 'column';
+      const editor = overlay.querySelector('#_devframe-editor');
+      if (editor) {
+        editor.style.flex = '0 0 42vh';
+        editor.style.height = '42vh';
+        editor.style.width = '100%';
+        editor.style.maxWidth = 'none';
+        editor.style.minWidth = '0';
+        editor.style.maxHeight = '42vh';
+        editor.style.order = '2';
+      }
+      const stage = overlay.querySelector('#_devframe-stage');
+      if (stage) {
+        stage.style.order = '1';
+        stage.style.flex = '1 1 auto';
+        stage.style.minHeight = '0';
+      }
+      const dk = overlay.querySelector('#_df-dock');
+      if (dk) dk.style.display = 'none';
+    } else {
+      overlay.classList.remove('_df-phone');
+      const packed = Math.round(EDITOR_W + 28 + (d.w + 24) * sc + 28);
+      overlay.style.inset = docked ? '0 auto 0 0' : '0';
+      overlay.style.width = docked ? Math.min(window.innerWidth, packed) + 'px' : '';
+      overlay.style.background = docked ? 'rgba(8,10,14,.94)' : 'rgba(8,10,14,.86)';
+      overlay.style.boxShadow = docked ? '18px 0 60px -20px rgba(0,0,0,.75)' : '';
+      const dk = overlay.querySelector('#_df-dock');
+      if (dk) { dk.style.display = ''; dk.textContent = docked ? '⇥ Fylla skjá' : '⇤ Til hliðar'; }
+    }
     if (scaler) scaler.style.transform = 'scale(' + sc + ')';
     const lbl = overlay.querySelector('#_df-pct');
     if (lbl) lbl.textContent = Math.round(sc * 100) + '%' + (zoom == null ? ' · passa' : '');
-    const dk = overlay.querySelector('#_df-dock');
-    if (dk) dk.textContent = docked ? '⇥ Fylla skjá' : '⇤ Til hliðar';
     document.documentElement.style.setProperty('--devframe-dock', docked ? '1' : '0');
   }
   function setZoom(v) {
@@ -245,8 +287,12 @@
     const editor = document.createElement('div');
     editor.id = '_devframe-editor';
     editor.style.cssText = 'flex:0 0 ' + EDITOR_W + 'px;max-width:min(38vw,400px);min-width:260px;position:relative;overflow:hidden;background:#16181c;border-radius:14px;box-shadow:0 18px 50px -24px rgba(0,0,0,.55)';
+    const stage = document.createElement('div');
+    stage.id = '_devframe-stage';
+    stage.style.cssText = 'flex:1;min-width:0;min-height:0;overflow:auto;touch-action:pan-x pan-y pinch-zoom;-webkit-overflow-scrolling:touch;display:flex;justify-content:center;align-items:flex-start';
+    stage.appendChild(scaler);
     row.appendChild(editor);
-    row.appendChild(scaler);
+    row.appendChild(stage);
     overlay.appendChild(bar);
     overlay.appendChild(row);
     document.body.appendChild(overlay);
@@ -354,6 +400,7 @@
     clearTimeout(t); t = setTimeout(syncButtons, 250);
   }).observe(document.body, { childList: true, subtree: true });
   syncButtons();
+  window.addEventListener('resize', () => { if (overlay) applyView(); });
 
   window.SlokkDevFrame = {
     open, close, refresh,

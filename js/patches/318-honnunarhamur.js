@@ -231,6 +231,8 @@
     // Útlit (litir/letur) hefur vidmid=null → birtist alltaf.
     const til = h => {
       if (!h.vidmid) return true;
+      /* Ritill-flötur (332) biður um ALLA sleða, líka áður en iframe er mældur. */
+      if (p.getAttribute('data-hh-all') === '1') return true;
       const e = pageDoc().querySelector(h.vidmid);
       return !!(e && e.getBoundingClientRect().height > 0);
     };
@@ -311,17 +313,22 @@
     teikna();
   }
 
+  function toast(m) {
+    try { if (window.Toast && Toast.show) { Toast.show(m); return; } } catch (_) {}
+    try { if (window.showToast) { showToast(m); return; } } catch (_) {}
+  }
+
   /* ── Vistun í AppSettings — EIGIN lykill, aldrei arsskodun_customers ───── */
   async function vista(btn) {
     const b = breytt();
-    if (!b.length) { alert('Engu hefur verið breytt.'); return; }
+    if (!b.length) { toast('Engu hefur verið breytt.'); return; }
     const gogn = {};
     b.forEach(x => { gogn[x.v] = fmt(x, gildi(x)); });
-    if (!window.AppSettings || !AppSettings.save) { alert('AppSettings ekki tiltækt'); return; }
+    if (!window.AppSettings || !AppSettings.save) { toast('AppSettings ekki tiltækt'); return; }
     btn.disabled = true;
     const ok = await AppSettings.save({ [AS_KEY]: gogn });
     btn.disabled = false;
-    alert(ok ? 'Vistað — gildir á öllum tækjum sem nota þetta app.' : 'Vistun mistókst');
+    toast(ok ? 'Vistað — gildir á öllum tækjum sem nota þetta app.' : 'Vistun mistókst');
   }
 
   function beita(gogn) {
@@ -398,7 +405,7 @@
       const txt = ':root {\n' + cssBlokk() + '\n}';
       try { await navigator.clipboard.writeText(txt); e.currentTarget.textContent = 'Afritað';
         setTimeout(() => { e.currentTarget.textContent = 'Afrita CSS'; }, 1600); }
-      catch (_) { alert(txt); }
+      catch (_) { toast('Gat ekki afritað — CSS er sýnt fyrir ofan'); }
     });
     bindVelja(pageDoc());
     /* ResizeObserver frekar en handvirkt kall: teikna() keyrir aðeins einu
@@ -575,7 +582,8 @@
       }
       if (!ars || !document.getElementById('_hh-panel')) return;
       const sest = sel => { const e = pageDoc().querySelector(sel); return !!(e && e.getBoundingClientRect().height > 0); };
-      const u = (sest('._arsm-row') ? 'b' : '') + (sest('._bil-card') ? 's' : '') + '|' + synHopur;
+      const allFl = (document.getElementById('_hh-panel') || {}).getAttribute('data-hh-all') || '';
+    const u = (sest('._arsm-row') ? 'b' : '') + (sest('._bil-card') ? 's' : '') + '|' + synHopur + '|' + allFl;
       if (u === _sidastaUndirskrift) return;
       _sidastaUndirskrift = u;
       teikna();
@@ -586,7 +594,8 @@
     const framed = !!document.querySelector('#_hh-panel._hh-frame');
     if (!on() && !framed) return;
     const sest = sel => { const e = pageDoc().querySelector(sel); return !!(e && e.getBoundingClientRect().height > 0); };
-    const u = (sest('._arsm-row') ? 'b' : '') + (sest('._bil-card') ? 's' : '') + '|' + synHopur;
+    const allFl = (document.getElementById('_hh-panel') || {}).getAttribute('data-hh-all') || '';
+    const u = (sest('._arsm-row') ? 'b' : '') + (sest('._bil-card') ? 's' : '') + '|' + synHopur + '|' + allFl;
     if (u === _sidastaUndirskrift) return;
     _sidastaUndirskrift = u;
     teikna();
@@ -598,7 +607,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);
   else vakta();
 
-  window.Honnunarhamur = { opna, loka, endurstilla, syncFrame, version: 'v1.2' };
+  window.Honnunarhamur = { opna, loka, endurstilla, syncFrame, version: 'v1.3' };
   console.log('[patch-318] honnunarhamur ready');
 })();
 /* === END HÖNNUNARHAMUR === */
