@@ -100,11 +100,14 @@
     ARS + 'h1{font-size:18px!important;line-height:1.15!important}',
     ARS + '._ars-statgrid{gap:6px!important;margin-bottom:8px!important}',
     ARS + '._ars-statgrid > div{padding:8px 10px!important}',
-    ARS + '._arsm-tbl{border-radius:0;border-left:none;border-right:none;margin-top:0;box-shadow:none;width:100%}',
+    ARS + '._arsm-tbl{border-radius:0;border-left:none;border-right:none;margin-top:0;box-shadow:none;' +
+      'width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;' +
+      'overscroll-behavior-x:contain;scrollbar-width:thin}',
     // 2026-08-29: Grindin var negld hér (minmax(0,1fr) 66px 34px 32px 26px) fyrir
     // gamla 5-reita mrows-markupið. 153 er núna með 9 reiti (150px frosinn nafn +
     // 668px sem skrunast) og þessi lína tróð þeim í 5 rákir. Grind og padding eiga
     // heima hjá 153 einum — 315 stillir aðeins rammann utan um töfluna.
+    // Lárétt skrun + músar-drag (símarammi) er í patch 328.
     ARS + '._arsm-row._arsm-head{padding:0}',
     // Nafnið fékk 16px hér; dálkurinn er 150px og raðhæðin föst 52px, svo 16px
     // sprengdi tveggja-línu klemmuna. 12.5px er það sem 153 mælir með.
