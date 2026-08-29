@@ -507,6 +507,43 @@
   function styles() {
     if (document.getElementById('_app-styles')) return;
     var css = [
+      // ── FYLKI: síður × öpp ──────────────────────────────────────────────
+      // Fyrsta súlan er LÆST (position:sticky) svo síðuheitið sjáist alltaf
+      // þegar strokið er til hliðar — annars veit maður ekki hvaða röð maður
+      // er að haka við um leið og öppin verða fleiri en skjárinn ber.
+      '.mx-box{padding:0 !important;overflow:hidden}',
+      '.mx-sum{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;list-style:none;user-select:none}',
+      '.mx-sum::-webkit-details-marker{display:none}',
+      '.mx-sum-t{font-weight:800;font-size:13.5px;color:#0f172a}',
+      '.mx-sum-n{margin-left:auto;font-size:11px;color:#64748b;white-space:nowrap}',
+      '.mx-scroll{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;border-top:1px solid #e2e8f0}',
+      // Appið þvingar ALLAR töflur í `display:block;max-width:100%;overflow-x:auto`
+      // (almenn "responsive tafla"-regla). Þá verður taflan sjálf skrunbox inni í
+      // .mx-scroll, læsta súlan hættir að virka og síðustu dálkarnir KLIPPAST AF
+      // í stað þess að skrunast (staðfest: síðasta appið á x=546 í 470px glugga).
+      // Hér er hún færð aftur í alvöru töflu og skrunið skilið eftir hjá .mx-scroll.
+      '.mx-scroll .mx-t{display:table !important;border-collapse:separate;border-spacing:0;font-size:12.5px;width:max-content !important;min-width:100% !important;max-width:none !important;overflow:visible !important}',
+      '.mx-t th,.mx-t td{padding:0;margin:0}',
+      '.mx-t thead th{position:sticky;top:0;z-index:3;background:#f8fafc;border-bottom:1px solid #e2e8f0}',
+      '.mx-cnr{position:sticky;left:0;z-index:4 !important;background:#f8fafc !important;text-align:left;padding:8px 12px !important;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#64748b;min-width:190px;border-right:1px solid #e2e8f0}',
+      '.mx-ah{padding:7px 4px !important;min-width:62px;text-align:center;vertical-align:bottom}',
+      '.mx-ae{font-size:17px;line-height:1.1}',
+      '.mx-an{font-size:9px;color:#64748b;line-height:1.15;max-width:62px;margin:2px auto 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.mx-rh{position:sticky;left:0;z-index:2;background:#fff;text-align:left;font-weight:600;color:#0f172a;padding:7px 12px !important;border-right:1px solid #e2e8f0;border-bottom:1px solid #f1f5f9;white-space:nowrap}',
+      '.mx-t tbody tr:nth-child(even) .mx-rh{background:#fcfdff}',
+      '.mx-t tbody tr:nth-child(even) td{background:#fcfdff}',
+      '.mx-pe{margin-right:7px}',
+      // Útgáfu-raðir eru inndregnar og merktar v2/v3 svo sjáist strax að þetta
+      // er SAMA síðan í annarri útfærslu, ekki ótengd síða.
+      '.mx-sub .mx-rh{padding-left:30px !important;font-weight:500;color:#475569}',
+      '.mx-vb{display:inline-block;margin-right:7px;background:#e0edff;color:#1d4ed8;border-radius:5px;padding:1px 6px;font-size:9.5px;font-weight:800;vertical-align:1px}',
+      '.mx-sub .mx-vb{background:#f1f5f9;color:#64748b}',
+      '.mx-c{text-align:center;border-bottom:1px solid #f1f5f9}',
+      '.mx-c input{width:17px;height:17px;accent-color:#0e7a4f;cursor:pointer;margin:6px auto;display:block}',
+      '.mx-op{width:34px;text-align:center;border-bottom:1px solid #f1f5f9}',
+      '.mx-open{all:unset;cursor:pointer;color:#94a3b8;font-size:13px;padding:4px 6px;border-radius:6px}',
+      '.mx-open:hover{color:#0f172a;background:#eef2f7}',
+      '.mx-hint{padding:8px 14px 12px;font-size:11px;color:#64748b;border-top:1px solid #f1f5f9}',
       // launcher page
       '#' + VIEW_ID + '{padding:0 !important;background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%) !important;min-height:100vh}',
       // Launcher-inn er hub-síða → fasti Brunastál-borðinn (og hamborgarinn) liggja
@@ -648,6 +685,85 @@
     else document.body.appendChild(v);
     return v;
   }
+  /* ── FYLKI: síður × öpp ─────────────────────────────────────────────────────
+   * Agnar 29.08: "öll öppin eru með allskonar útgáfur núna með sömu síðunni …
+   * listaðu frekar allar tilbúnar síður og öppin til hliðar, og sjá bara
+   * checkmark hvaða síður hvert app á að vera með."
+   *
+   * Áður: sex öpp, hvert með sinn samanbrotna lista yfir allar 35 síðurnar.
+   * Til að sjá hvar EIN síða er notuð þurfti að opna sex lista og bera saman.
+   * Núna: eitt fylki — síður niður, öpp til hliðar, hak í skurðpunkti.
+   *
+   * ÚTGÁFUR. Sumar síður eru til í fleiri en einni útfærslu undir ólíkum lyklum
+   * (Kröfu yfirlit í Slökkvitæki OG í Brunahólfi; tvær reikningagerðir). Þær
+   * eru hópaðar í eina röð með v1/v2-merki svo sjáist að þetta er sama síðan —
+   * annars líta þær út eins og ótengdar síður í 35-línu lista.
+   * Hóparnir eru TALDIR UPP, ekki giskaðir: sjálfvirk pörun á heitum myndi
+   * para saman óskyldar síður um leið og einhver endurnefnir eitthvað.        */
+  var VARIANT_OF = {
+    'br-krofuyfirlit':  'krofu-yfirlit',
+    'br-hreyfingar':    'hreyfingarlisti',
+    'br-reikningagerd': 'br-gerdreikninga'
+  };
+
+  function matrixRows() {
+    var pages = allPages();
+    var byKey = {}; pages.forEach(function (p) { byKey[p.k] = p; });
+    var kids = {};
+    pages.forEach(function (p) {
+      var par = VARIANT_OF[p.k];
+      if (par && byKey[par]) { (kids[par] = kids[par] || []).push(p); }
+    });
+    var rows = [];
+    pages.forEach(function (p) {
+      if (VARIANT_OF[p.k] && byKey[VARIANT_OF[p.k]]) return;   // birtist sem útgáfa
+      rows.push({ page: p, v: 1, parent: null });
+      (kids[p.k] || []).forEach(function (c, i) {
+        rows.push({ page: c, v: i + 2, parent: p });
+      });
+    });
+    return rows;
+  }
+
+  function matrixHtml() {
+    var apps = APPS.map(function (b) { return effectiveApp(b.key); })
+                   .filter(function (a) { return !a.standalone; });
+    var sel = {};
+    apps.forEach(function (a) { sel[a.key] = {}; pagesFor(a.key).forEach(function (k) { sel[a.key][k] = 1; }); });
+
+    var head = '<th class="mx-cnr">Síða</th>' + apps.map(function (a) {
+      return '<th class="mx-ah" title="' + esc(a.name) + '">' +
+        '<div class="mx-ae">' + esc(a.emoji) + '</div>' +
+        '<div class="mx-an">' + esc(a.name) + '</div></th>';
+    }).join('') + '<th class="mx-op"></th>';
+
+    var body = matrixRows().map(function (r) {
+      var p = r.page;
+      var nafn = r.parent
+        ? '<span class="mx-vb">v' + r.v + '</span>' + esc(p.label)
+        : '<span class="mx-pe">' + p.emoji + '</span>' + esc(p.label) +
+          (r.v === 1 && matrixRows().filter(function (x) { return x.parent === p; }).length
+            ? '<span class="mx-vb">v1</span>' : '');
+      var cells = apps.map(function (a) {
+        return '<td class="mx-c"><input type="checkbox" class="_op-mx" data-app="' + a.key +
+               '" data-k="' + p.k + '"' + (sel[a.key][p.k] ? ' checked' : '') + '></td>';
+      }).join('');
+      return '<tr class="' + (r.parent ? 'mx-sub' : '') + '">' +
+        '<th class="mx-rh">' + nafn + '</th>' + cells +
+        '<td class="mx-op"><button class="mx-open _op-mxopen" data-k="' + p.k +
+        '" type="button" title="Opna síðuna og sjá útlitið">↗</button></td></tr>';
+    }).join('');
+
+    return '<details class="op-card mx-box" open><summary class="mx-sum">' +
+        '<span class="mx-sum-t">▦ Fylki — hvaða síður eru í hvaða appi</span>' +
+        '<span class="mx-sum-n">' + matrixRows().length + ' síður · ' + apps.length + ' öpp</span>' +
+      '</summary>' +
+      '<div class="mx-scroll"><table class="mx-t"><thead><tr>' + head + '</tr></thead>' +
+      '<tbody>' + body + '</tbody></table></div>' +
+      '<div class="mx-hint">Strjúktu til hliðar til að sjá fleiri öpp · ↗ opnar síðuna svo þú sjáir útlitið</div>' +
+    '</details>';
+  }
+
   function render() {
     styles();
     var v = viewEl();
@@ -684,6 +800,7 @@
     var ver = versionLine();
     v.innerHTML = '<div class="op-main"><h1 class="op-h1">📱 Öpp</h1>' +
       '<p class="op-sub">Léttar, símavænar útgáfur með völdum síðum — hver með eigin hlekk og hægt að setja upp í símann.</p>' +
+      matrixHtml() +
       cards +
       '<div class="op-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:170px;border:2px dashed #cbd5e1;background:rgba(255,255,255,.06)">' +
         '<div style="font-size:34px;line-height:1">➕</div>' +
@@ -709,6 +826,28 @@
       try { navigator.clipboard.writeText(url); toast('🔗 Hlekkur afritaður'); } catch (_) { toast(url); }
     }); });
     v.querySelectorAll('._op-panel').forEach(function (b) { b.addEventListener('click', function () { openControlPanel(b.dataset.app); }); });
+    /* Fylkis-hakið skrifar BEINT í geymsluna og speglar sig svo í gamla
+     * app-listann (og teljarann hans) — annars fara sýnirnar tvær úr takti og
+     * notandinn sér tvö ólík svör við sömu spurningu. */
+    v.querySelectorAll('._op-mx').forEach(function (cb) { cb.addEventListener('change', function () {
+      var app = cb.dataset.app, k = cb.dataset.k;
+      var cur = pagesFor(app).slice();
+      var i = cur.indexOf(k);
+      if (cb.checked) { if (i < 0) cur.push(k); } else if (i >= 0) { cur.splice(i, 1); }
+      saveCfg(app, cur);
+      var tvi = v.querySelector('._op-pg[data-app="' + app + '"][data-k="' + k + '"]');
+      if (tvi) tvi.checked = cb.checked;
+      var cnt = v.querySelector('.op-pgcount[data-app="' + app + '"]');
+      if (cnt) cnt.textContent = cur.length + ' valdar';
+    }); });
+    v.querySelectorAll('._op-mxopen').forEach(function (b) { b.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var p = pageByKey(b.dataset.k); if (!p) return;
+      // Brunahólfs-síður eiga sína eigin slóð; heimasíður fara um switchView.
+      if (p.url) { window.open(p.url, '_blank', 'noopener'); return; }
+      try { if (window.App && App.switchView) App.switchView(p.k); else location.hash = '#' + p.k; }
+      catch (_) { location.hash = '#' + p.k; }
+    }); });
     v.querySelectorAll('._op-pg').forEach(function (cb) { cb.addEventListener('change', function () {
       var app = cb.dataset.app;
       var picked = allPages().map(function (p) { return p.k; }).filter(function (k) {
@@ -717,6 +856,8 @@
       saveCfg(app, picked);
       var cnt = v.querySelector('.op-pgcount[data-app="' + app + '"]');
       if (cnt) cnt.textContent = picked.length + ' valdar';
+      var mx = v.querySelector('._op-mx[data-app="' + app + '"][data-k="' + cb.dataset.k + '"]');
+      if (mx) mx.checked = cb.checked;
     }); });
   }
 
