@@ -1103,12 +1103,20 @@ var Lanstaeki = {
 <script defer src="/js/patches/314-simi-compact-layer.js?v=20260826fold"></script>
 <script defer src="/js/patches/315-fjarmal-app-compact.js?v=20260826acts1"></script>
 <script defer src="/js/patches/316-simi-boards.js?v=20260826fold"></script>
+<script defer src="/js/patches/317-arsskodun-bilstjori.js?v=20260829bil1"></script>
 <script defer src="/js/patches/317-elon-trace.js?v=20260826c"></script>
 <script defer src="/js/patches/264-beidni-gate.js?v=20260710a"></script>
 <script defer src="/js/patches/265-utfyllt-skjol.js?v=20260720send"></script>
 <script defer src="/js/patches/266-arsskodun-workflow-sync.js?v=20260722farid"></script>
 <script defer src="/js/patches/267-arsskodun-aksturslistar.js?v=20260817metal"></script>
-<script defer src="/js/patches/314-arsskodun-mobile-compact.js?v=20260826dense"></script>
+<!-- 314-arsskodun-mobile-compact.js TEKIN ÚR NOTKUN 2026-08-29.
+     Hún þjappaði SKJÁBORÐSTÖFLUNNI á 390px. Frá og með f819a2f rennur sími/appham
+     á renderMobileRows (grid, ._arsm-*) og skjáborðstaflan birtist alls ekki þar —
+     mælt í loftinu: ._ars-tblscroll = 0. Töflu-reglur hennar voru því dauðar, EN
+     reglur hennar á ._ars-mo og ._ars-filterstrip voru enn virkar og kepptu við
+     nýju strimlana (staðfest: inline display:flex tapaði fyrir @media-reglu héðan).
+     Tvö lög á sama borði — sjá docs/HANDOFF-arsskodun-simi.md „Sambúð við 314".
+     Skráin er kyrr í js/patches/ ef þarf að bakka. -->
 <script defer src="/js/patches/268-aksturslisti-vakt.js?v=20260717a"></script>
 <script defer src="/js/patches/269-verkstaedi-loaned.js?v=20260725wf2"></script>
 <script defer src="/js/patches/270-report-facts-sync.js?v=20260730listi"></script>

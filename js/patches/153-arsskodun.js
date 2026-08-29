@@ -2413,6 +2413,13 @@
       V+'._arsm-last{text-align:center;font-size:11px;color:#5b6573;white-space:nowrap}',
       V+'._arsm-note{font-size:11px;color:#5b6573;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       V+'._arsm-note.tom{color:#b6c0cc}',
+      /* 2026-08-29 (ákvörðun Agnars í HANDOFF v2): KPI-spjöldin fara ÚR
+         símaútlitinu. 187px af skjáhæð fyrir þrjár tölur sem bílstjóri notar
+         ekki á staðnum er ekki réttur díll — þau ýttu töflunni niður fyrir
+         fyrsta skjá. Tölurnar tapast ekki: botnstrimillinn (._ars-summary)
+         sýnir fjölda og samtölu áfram, á 34px í stað 187. Á SKJÁBORÐI standa
+         spjöldin óhreyfð — þessi regla gildir aðeins í síma/appham. */
+      V+'._ars-statgrid{display:none !important}',
       V+'._arsm-row:last-child{border-bottom:none}',
       V+'._arsm-row:active{background:#f3f5f8}',
       // haus-röð — árin sýnd einu sinni efst
@@ -2460,6 +2467,29 @@
     ].join('\n');
     document.head.appendChild(s);
   }
+  /* Árs-perurnar og stöðuna á EINUM stað. renderMobileRows og patch 317
+     (bílstjóraspjöldin) kalla bæði hingað; renderTable hefur sín eigin rök
+     (~2618) og er ÓSNERT viljandi — audit-ars-column-shift ver þau. */
+  function arsPerur(c, years, curYear, curMonth) {
+    const ars = c._ars || {};
+    const m = +ars.inspect_month || 0;
+    const lastYr = +ars.last_year_inspected || 0;
+    const fieldYr = +ars.field_inspected_year || 0;
+    const repSet = new Set((ars._docYears || []).map(Number));
+    const factYr = +ars._report_year || 0;
+    const yrHtml = years.map(y => {
+      if (repSet.has(y)) return `<i class="rep" title="Úttektarskýrsla ${y} á skrá">✓</i>`;
+      if (y === lastYr || y === factYr) return `<i class="gap" title="Skoðað ${y} — skýrslu vantar">!</i>`;
+      return `<i title="Engin skoðun skráð ${y}"></i>`;
+    }).join('');
+    const isDone = isDoneYear(c, curYear);
+    const isFieldOnly = !isDone && fieldYr === curYear;
+    const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
+    const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
+    const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
+    return { yrHtml, stState, lastYr, fieldYr, manudur: m };
+  }
+
   function renderMobileRows(arr) {
     _ensureArsMrowCss();
     const today = new Date();
@@ -2474,20 +2504,11 @@
       const lastYr = +ars.last_year_inspected || 0;
       const fieldYr = +ars.field_inspected_year || 0;
       const totalEq = eqGroups(ars.equipment || {}).total;
-      // 4-ára reitir — grænt (skýrsla) / gult (skoðað, skýrslu vantar) / grátt
-      const repSet = new Set((ars._docYears || []).map(Number));
-      const factYr = +ars._report_year || 0;
-      const yrHtml = years.map(y => {
-        if (repSet.has(y)) return `<i class="rep" title="Úttektarskýrsla ${y} á skrá">✓</i>`;
-        if (y === lastYr || y === factYr) return `<i class="gap" title="Skoðað ${y} — skýrslu vantar">!</i>`;
-        return `<i title="Engin skoðun skráð ${y}"></i>`;
-      }).join('');
-      // Staða — sama stState-rök og renderTable (~2618-2624)
-      const isDone = isDoneYear(c, curYear);
-      const isFieldOnly = !isDone && fieldYr === curYear;
-      const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
-      const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
-      const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
+      // 4-ára reitir + staða — DREGIÐ ÚT í arsPerur() svo bílstjóraspjöldin
+      // (patch 317) reikni ÞETTA SAMA en afriti það ekki. Tvö eintök af þessari
+      // rökfærslu myndu reka í sundur um leið og annað þeirra væri lagað.
+      const _p = arsPerur(c, years, curYear, curMonth);
+      const yrHtml = _p.yrHtml, stState = _p.stState;
       const stMap = {
         done:  ['done',   '✓', 'Skoðað ' + curYear],
         work:  ['til',    '📄', 'Í vinnslu — skýrsla/reikningur eftir'],
@@ -3951,7 +3972,7 @@
   // eqGroups/eqTrioHtml eru birt af sömu ástæðu og cleanAminning: önnur borð
   // (175 Rekstrarfélög) eiga að TEIKNA SLT/BSL/RS með nákvæmlega sömu formúlu,
   // ekki afriti af henni. Sjá athugasemd við eqGroups um forflokkað inntak.
-  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, version: 'v1' };
+  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, version: 'v1' };
 
   // Keep the cached priority in sync when the ❗ control is cycled (patch 175),
   // so sorting by ❗ stays correct. The ❗ button updates itself in place — no
