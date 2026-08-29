@@ -4,7 +4,10 @@
  * beside Sími/Tafla/Skjár, before .bb-rightwrap) opens Stilla útlit. Lives in
  * .bb-face — not inside .bb-rightwrap — so 314/mobile.css hiding the clock
  * wrap never swallows the activator. Quiet floating fallback only when the
- * banner face is missing. Hidden in ?devframe= children (IN_DEVFRAME + 320).
+ * banner face is missing. In ?devframe= children the 🎨 stays; click posts
+ * slokk-pe-toggle to the parent, which opens #_pe-panel in #_devframe-editor
+ * (320 hides the child's panel). Native Sími/Öpp on a wide window opens the
+ * device frame first so the editor sits beside the phone, not inside it.
  *
  * Docked panel: pick any element and restyle live (sliders, litir, halli,
  * leturgerð, stíla-safn, bakgrunnur). Saved via AppSettings /
@@ -15,6 +18,7 @@
   window.__pageEditorInstalled = true;
 
   const IN_DEVFRAME = !!(new URLSearchParams(location.search).get('devframe'));
+  const PE_FRAME_MSG = 'slokk-pe-toggle';
 
   const KEY = 'page_editor_v1_json';
   const BTN_ID = '_pe-btn';
@@ -595,8 +599,12 @@
       '#' + PANEL_ID + '.pe-desk .pe-empty{display:none}',
       '#' + PANEL_ID + '.pe-desk .pe-tip{display:block}',
       // ── v2: þrepa-merki, svæða-kort og verkfæraspjöld ───────────────────────
-      'body.appmode #' + PANEL_ID + '{z-index:2147481500 !important;top:50px !important}',
-      'body.appmode #' + PANEL_ID + '.pe-side{height:calc(100vh - 50px) !important}',
+      // App/Sími: ritillinn á EKKI að fylla símann. pe-framed situr í
+      // #_devframe-editor (utan iframe). Á raunverulegum síma (ekki rammi)
+      // er þetta þjappað botn-sheet svo 390px efnið sjáist áfram.
+      'body.appmode #' + PANEL_ID + ':not(.pe-framed){z-index:2147481500 !important;top:auto !important;bottom:0 !important;max-height:38vh !important}',
+      'body.appmode #' + PANEL_ID + '.pe-side:not(.pe-framed){height:auto !important;max-height:38vh !important}',
+      'html[data-viewmode="mobile"] #' + PANEL_ID + ':not(.pe-framed){max-height:38vh}',
       '#' + PANEL_ID + ' .pe-zoom{display:inline-flex;align-items:center;gap:3px;margin-left:auto}',
       '#' + PANEL_ID + ' .pe-zoomv{font-size:12px;font-weight:800;min-width:42px;text-align:center;font-variant-numeric:tabular-nums;color:#334155}',
       '#' + PANEL_ID + ' .pe-step{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin:14px 0 2px}',
@@ -1847,10 +1855,43 @@
   }
 
   // ── panel open/close ────────────────────────────────────────────────────────
+  // 🎨 in a ?devframe= child asks the parent overlay to open 262 in
+  // #_devframe-editor (same pattern as 318 Hönnunarhamur + 320).
+  function isPhoneHardware() {
+    try { return document.documentElement.classList.contains('slokk-phone-dev'); } catch (_) { return false; }
+  }
+  function isNativePhoneViewport() {
+    if (isPhoneHardware()) return true;
+    try { return window.innerWidth <= 430 && window.innerHeight <= 920 && window.parent === window; } catch (_) { return false; }
+  }
+  function askParentToggle() {
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: PE_FRAME_MSG }, location.origin);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+  function openDeviceFrameForEditor() {
+    if (document.getElementById('_devframe-editor')) return false;
+    if (isNativePhoneViewport()) return false;
+    const df = window.SlokkDevFrame;
+    if (!df || typeof df.open !== 'function') return false;
+    const vm = document.documentElement.getAttribute('data-viewmode') || '';
+    const app = !!(document.body && document.body.classList.contains('appmode'));
+    if (vm !== 'mobile' && vm !== 'table' && !app) return false;
+    df.open(vm === 'table' ? 'tafla' : 'simi');
+    return true;
+  }
   function openPanel() {
-    if (IN_DEVFRAME) return;
-    injectStyles();
+    if (IN_DEVFRAME) { askParentToggle(); return; }
     if (document.getElementById(PANEL_ID)) return;
+    if (openDeviceFrameForEditor()) {
+      // df.open() → notifyEditor → syncFrame → openPanel (panel now in host)
+      if (document.getElementById(PANEL_ID)) return;
+    }
+    injectStyles();
     preferDesktopDock();
     const p = document.createElement('div'); p.id = PANEL_ID;
     const host = document.getElementById('_devframe-editor');
@@ -1889,7 +1930,11 @@
     if (p.parentNode !== host) host.appendChild(p);
     renderPanel();
   }
-  function togglePanel() { if (document.getElementById(PANEL_ID)) closePanel(); else openPanel(); }
+  function togglePanel() {
+    if (IN_DEVFRAME) { askParentToggle(); return; }
+    if (document.getElementById(PANEL_ID)) closePanel();
+    else openPanel();
+  }
 
   // ── quiet paint-palette activator in the Brunastál banner ──────────────────
   // Same open path as before: click → togglePanel() → PageEditor panel (#_pe-panel).
@@ -1902,7 +1947,6 @@
       + '</svg>';
   }
   function ensureBtn() {
-    if (IN_DEVFRAME) return;
     injectStyles();
     const face = document.querySelector('#bstal-banner .bb-face');
     const rightwrap = document.querySelector('#bstal-banner .bb-rightwrap');
@@ -1923,7 +1967,12 @@
     b.title = 'Stilla útlit — litir, letur, stærðir, bakgrunnur';
     b.setAttribute('aria-label', 'Stilla útlit');
     b.innerHTML = paletteIconHtml();
-    b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); togglePanel(); });
+    b.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (IN_DEVFRAME) { askParentToggle(); return; }
+      togglePanel();
+    });
     if (wanted === 'banner') {
       face.insertBefore(b, rightwrap || null);
     } else {
@@ -1944,8 +1993,26 @@
       try { syncPeViewModeSeg(ev && ev.detail); } catch (_) {}
     });
       setInterval(applyZones, 1500);
+      // 🎨 stays in the phone banner; click asks the parent to open 262
+      // beside the device instead of filling the iframe.
+      ensureBtn();
+      let _peBtnT = null;
+      const obs = new MutationObserver(() => {
+        clearTimeout(_peBtnT);
+        _peBtnT = setTimeout(ensureBtn, 150);
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+      [400, 1200, 3000].forEach(ms => setTimeout(ensureBtn, ms));
+      document.addEventListener('slokk-viewmode', () => setTimeout(ensureBtn, 60));
       return;
     }
+    window.addEventListener('message', function (e) {
+      try {
+        if (e.origin !== location.origin) return;
+        if (!e.data || e.data.type !== PE_FRAME_MSG) return;
+        togglePanel();
+      } catch (_) {}
+    });
     ensureBtn();
     let _peBtnT = null;
     const obs = new MutationObserver(() => {

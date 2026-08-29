@@ -229,6 +229,24 @@
     'html[data-viewmode="mobile"] #view-sala #pos-products,' +
     'body.appmode #view-sala #pos-services,body.appmode #view-sala #pos-products' +
       '{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}',
+    // Agnar 2026-08-29: Sala-flísar voru ~9–11px í Sími/Öpp. Aðeins stærra
+    // letur — ekki sprengja 2-dálka POS. Skjár (án mobile/appmode) óbreyttur.
+    'html[data-viewmode="mobile"] #view-sala .pos-tile-name,' +
+    'body.appmode #view-sala .pos-tile-name' +
+      '{font-size:14px!important;line-height:1.25!important}',
+    'html[data-viewmode="mobile"] #view-sala .pos-tile-price,' +
+    'body.appmode #view-sala .pos-tile-price' +
+      '{font-size:16px!important}',
+    'html[data-viewmode="mobile"] #view-sala .pos-tile-exvat,' +
+    'body.appmode #view-sala .pos-tile-exvat' +
+      '{font-size:12px!important}',
+    // Kröfur-síur: 166/315 höfðu 36–40px. Þumalmark er ~44px.
+    'html[data-viewmode="mobile"] #view-krofu-yfirlit .ky-filterbar .filter-chip,' +
+    'html[data-viewmode="mobile"] #view-krofu-yfirlit ._ky-sync,' +
+    'body.appmode #view-krofu-yfirlit .ky-filterbar .filter-chip,' +
+    'body.appmode #view-krofu-yfirlit .filter-chip,' +
+    'body.appmode #view-krofu-yfirlit ._ky-sync' +
+      '{min-height:44px!important;height:auto!important;padding-top:8px!important;padding-bottom:8px!important}',
 
     // ── Ársskoðun chrome; do NOT touch ._yr look-A ─────────────────────────
     M + '#view-arsskodun [style*="max-width:1720px"]{max-width:none!important;padding:8px 8px 48px!important}',
