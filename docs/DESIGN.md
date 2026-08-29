@@ -11,6 +11,20 @@
 > **gagnaþétt**, eins og þetta app. Þau eru viðmið um *uppbyggingu*, ekki
 > auðkenni sem á að afrita.
 
+## Hvernig á að nota þetta skjal
+
+Skjalið er **tvískipt viljandi**, því helmingarnir eiga við á ólíkum tímum:
+
+| Hluti | Kaflar | Hvenær |
+|---|---|---|
+| **Nothæft strax** | [Að breyta síma- og appútliti án þess að berjast við CSS](#að-breyta-síma--og-appútliti-án-þess-að-berjast-við-css) | Í hvert sinn sem síma- eða appbreyting er gerð. Sérvirknireglurnar, verkaskipting laganna og 7 liða gátlistinn. |
+| **Bíður** | Litir · Letur · Útlit og bil · Form · Hæð og dýpt · Íhlutir · [Leiðin þangað](#leiðin-þangað) | Þegar þú vilt samræma þemað. Ekkert af því er komið í framkvæmd — þetta er markmiðið, tilbúið þegar þú ert það. |
+
+Seinni hlutinn krefst **engra aðgerða núna**. Hann er skrifaður niður svo
+mælingin frá 28.–29.08 glatist ekki og svo að næsta lota — hvort sem það er ég
+eða þú — byrji ekki á að mæla sama hlutinn upp á nýtt. „Leiðin þangað" er í sex
+skrefum sem má taka eitt og eitt, hvenær sem er.
+
 ---
 
 ## Yfirlit
