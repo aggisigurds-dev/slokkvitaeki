@@ -31,14 +31,14 @@
   /* Breyturnar sem má stilla, hópaðar eftir því hvað þær snerta. `syn` ræður
      hvaða hópur birtist þegar stak er valið með pikki. */
   const HOPAR = [
-    { syn: 'bord', heiti: 'Borð · röð', breytur: [
+    { syn: 'bord', heiti: 'Borð · röð', vidmid: '._arsm-row', breytur: [
       { v: '--ars-rad-haed',      m: 'Raðhæð',        min: 36, max: 96,  sjalf: 52 },
       { v: '--ars-nafn-dalkur',   m: 'Nafndálkur',    min: 90, max: 260, sjalf: 150 },
       { v: '--ars-nafn-letur',    m: 'Nafnletur',     min: 10, max: 20,  sjalf: 12.5, skref: .5 },
       { v: '--ars-undirtexti',    m: 'Undirtexti',    min: 7,  max: 14,  sjalf: 9.5,  skref: .5 },
       { v: '--ars-haus-haed',     m: 'Haushæð',       min: 26, max: 60,  sjalf: 38 }
     ] },
-    { syn: 'dalkar', heiti: 'Borð · dálkar', breytur: [
+    { syn: 'dalkar', heiti: 'Borð · dálkar', vidmid: '._arsm-row', breytur: [
       { v: '--ars-col-man',    m: 'Mán',    min: 34, max: 110, sjalf: 56 },
       { v: '--ars-col-ar',     m: 'Ár',     min: 60, max: 180, sjalf: 112 },
       { v: '--ars-col-taeki',  m: 'Tæki',   min: 50, max: 160, sjalf: 96 },
@@ -48,7 +48,7 @@
       { v: '--ars-col-sidast', m: 'Síðast', min: 50, max: 150, sjalf: 78 },
       { v: '--ars-col-nota',   m: 'Nóta',   min: 60, max: 260, sjalf: 130 }
     ] },
-    { syn: 'spjald', heiti: 'Spjald · bílstjóri', breytur: [
+    { syn: 'spjald', heiti: 'Spjald · bílstjóri', vidmid: '._bil-card', breytur: [
       { v: '--ars-spjald-nafn',    m: 'Nafnletur',  min: 12, max: 22, sjalf: 16.5, skref: .5 },
       { v: '--ars-spjald-bil',     m: 'Bil milli',  min: 4,  max: 28, sjalf: 12 },
       { v: '--ars-spjald-kantur',  m: 'Kantur',     min: 0,  max: 10, sjalf: 3 },
@@ -123,7 +123,19 @@
 
   function teikna() {
     const p = document.getElementById('_hh-panel'); if (!p) return;
-    const hopar = synHopur ? HOPAR.filter(h => h.syn === synHopur) : HOPAR;
+    // Sýna AÐEINS hópa sem eiga sér stak á skjánum. Í spjaldtölvuham (table)
+    // teiknast skjáborðstaflan, ekki ._arsm-row — borð-sleðarnir hefðu þá
+    // ekkert að stilla og litið út fyrir að vera bilaðir. Mælt 29.08 við
+    // 1112x834: ._arsm-row = 0, skjáborðstaflan = 1.
+    // Tilvist DUGAR EKKI: ._arsm-row er áfram í DOM-inu þegar bílstjórasýnin
+    // felur #ars-main með display:none. Mælt 29.08 — spjaldaham sýndi áfram
+    // 13 borð-sleða. Krefjumst þess að stakið hafi RAUNVERULEGA stærð.
+    const til = h => {
+      if (!h.vidmid) return true;
+      const e = document.querySelector(h.vidmid);
+      return !!(e && e.getBoundingClientRect().height > 0);
+    };
+    let hopar = (synHopur ? HOPAR.filter(h => h.syn === synHopur) : HOPAR).filter(til);
     p.querySelector('#_hh-tt').textContent = synHopur
       ? (HOPAR.find(h => h.syn === synHopur) || {}).heiti : 'Hönnunarhamur';
     p.querySelector('#_hh-val').textContent = synHopur ? '· pikkaðu utan til að sýna allt' : '';
@@ -137,6 +149,9 @@
             + 'min="' + b.min + '" max="' + b.max + '" step="' + (b.skref || 1) + '" value="' + g + '">'
             + '<span class="_hh-num" data-num="' + b.v + '">' + fmt(b, g) + '</span></div>';
         }).join('')).join('')
+      + (hopar.length ? '' : '<div style="padding:18px 2px;color:#9aa3b0;font-size:12.5px;line-height:1.5">'
+          + 'Engar stillanlegar stærðir á þessum skjá.<br>Sleðarnir stilla símaútlitið — '
+          + 'skiptu í 📱 Sími eða kveiktu á 🚚 Bílstjóra.</div>')
       + '<pre id="_hh-css-out">' + esc(cssBlokk()) + '</pre>';
     tengjaSleda(p);
   }
@@ -203,7 +218,7 @@
   /* Panellinn má ekki hylja neðstu röðina. #ars-main er skrunkassinn; hann er
      ekki stimplaður inline af pinPad, svo hér dugar bein stilling. Upprunalega
      gildið er geymt svo loka() skili því nákvæmlega til baka. */
-  let _rymiAdur = null, _ro = null;
+  let _rymiAdur = null, _ro = null, _settT = null;
   function rymi(kveikja) {
     const m = document.getElementById('ars-main')
           || document.querySelector('#view-arsskodun ._bil-wrap');
@@ -302,7 +317,29 @@
     } catch (_) {}
   }
 
-  function vakta() { sækja(); takki(); if (on()) opna(); }
+  function vakta() {
+    sækja(); takki();
+    if (!on()) return;
+    // opna() hættir strax ef panellinn er til, svo hann endurteiknaði sig
+    // ALDREI þegar skipt var milli borðs og bílstjóraspjalda — og sýndi þá
+    // sleða fyrir stök sem voru horfin. teikna() hér heldur honum í takt.
+    if (!document.getElementById('_hh-panel')) opna();
+  }
+
+  /* MutationObserver á body náði EKKI skiptunum milli borðs og spjalda —
+     mælt 29.08: 0 endurteikningar á 2,5 sek meðan panellinn sýndi hópinn sem
+     var horfinn. Í stað þess að elta DOM-atburði les þetta ÁSTANDIÐ sjálft
+     og teiknar aðeins þegar undirskriftin breytist — sjálfleiðréttandi. */
+  let _sidastaUndirskrift = '';
+  function fylgjast() {
+    if (!on() || !document.getElementById('_hh-panel')) return;
+    const sest = sel => { const e = document.querySelector(sel); return !!(e && e.getBoundingClientRect().height > 0); };
+    const u = (sest('._arsm-row') ? 'b' : '') + (sest('._bil-card') ? 's' : '') + '|' + synHopur;
+    if (u === _sidastaUndirskrift) return;
+    _sidastaUndirskrift = u;
+    teikna();
+  }
+  setInterval(fylgjast, 700);
   document.addEventListener('slokk-viewmode', vakta);
   new MutationObserver(() => { clearTimeout(window.__hhT); window.__hhT = setTimeout(vakta, 300); })
     .observe(document.body, { childList: true, subtree: true });

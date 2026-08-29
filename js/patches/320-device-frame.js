@@ -20,7 +20,9 @@
 
   /* ── BARNIÐ: þvinga sýn án þess að vista ─────────────────────────────── */
   if (CHILD_MODE) {
-    const vm = CHILD_MODE === 'tafla' ? 'table' : 'mobile';
+    // Sniðin eru fjögur en sýnarhamirnir tveir — landscape-afbrigðin þvinga
+    // SAMA ham og hæðarsniðin, aðeins útsýnisstærðin er önnur.
+    const vm = /^tafla/.test(CHILD_MODE) ? 'table' : 'mobile';
     try {
       const realGet = Storage.prototype.getItem, realSet = Storage.prototype.setItem;
       Storage.prototype.getItem = function (k) { return k === 'slokk_viewmode' ? vm : realGet.call(this, k); };
@@ -41,9 +43,15 @@
   }
 
   /* ── FORELDRIÐ: takkar í Stílstjóra-toolbar + ramminn ────────────────── */
+  /* 2026-08-29 (Agnar: „Geturðu nokkuð bætt við tablet í landscape view líka").
+     Ramminn hafði aðeins hæðarsnið. Spjaldtölva á hliðina er 1112px breið —
+     yfir öllum brotmörkum appsins — svo það er allt annað útlit en 834px, og
+     var hvergi hægt að skoða. `vm` segir hvaða sýnarham barnið á að þvinga. */
   const DEVICES = {
-    simi:  { label: '📱 Sími',        w: 390, h: 844,  radius: 34 },
-    tafla: { label: '📲 Spjaldtölva', w: 834, h: 1112, radius: 22 },
+    simi:       { label: '📱 Sími',          w: 390,  h: 844,  radius: 34, vm: 'mobile' },
+    simiL:      { label: '📱 Sími ↔',        w: 844,  h: 390,  radius: 34, vm: 'mobile' },
+    tafla:      { label: '📲 Spjaldtölva',   w: 834,  h: 1112, radius: 22, vm: 'table'  },
+    taflaL:     { label: '📲 Spjaldtölva ↔', w: 1112, h: 834,  radius: 22, vm: 'table'  },
   };
   let overlay = null, iframe = null, curDev = null, curUrl = null, curTitle = null;
 
@@ -80,10 +88,13 @@
     const availW = Math.max(280, window.innerWidth - 24);
     const scale = Math.min(1, availH / (d.h + 24), availW / (d.w + 24));
     const bar = document.createElement('div');
-    bar.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex:none';
+    // Fjögur snið + heiti + ↗ ↻ ✕ komast ekki fyrir í mjóum glugga — barinn
+    // skrunast frekar en að klippast (sama regla og annars staðar í appinu).
+    bar.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex:none;'
+      + 'max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding-bottom:2px';
     bar.innerHTML =
       Object.keys(DEVICES).map(k =>
-        '<button data-dev="' + k + '" style="all:unset;cursor:pointer;font:700 12.5px \'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;color:' + (k === devKey ? '#0f1117' : '#e5e9f0') + ';background:' + (k === devKey ? '#fff' : 'rgba(255,255,255,.12)') + ';padding:8px 14px;border-radius:9px">' + DEVICES[k].label + ' · ' + DEVICES[k].w + '×' + DEVICES[k].h + '</button>').join('') +
+        '<button data-dev="' + k + '" style="all:unset;cursor:pointer;font:700 12.5px \'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;color:' + (k === devKey ? '#0f1117' : '#e5e9f0') + ';background:' + (k === devKey ? '#fff' : 'rgba(255,255,255,.12)') + ';padding:8px 14px;border-radius:9px;flex:0 0 auto;white-space:nowrap">' + DEVICES[k].label + ' · ' + DEVICES[k].w + '×' + DEVICES[k].h + '</button>').join('') +
       '<span style="font:12px \'JetBrains Mono\',ui-monospace,monospace;color:#9aa3b2">' + Math.round(scale * 100) + '%</span>' +
       (curTitle ? '<span style="font:700 12.5px sans-serif;color:#fff;background:rgba(255,255,255,.10);padding:8px 12px;border-radius:9px">' + curTitle.replace(/[<>&]/g, '') + '</span>' : '') +
       (curUrl ? '<a id="_df-tab" href="' + curUrl.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:9px" title="Opna í nýjum flipa">↗</a>' : '') +
