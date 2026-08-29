@@ -527,7 +527,7 @@
       '#' + PANEL_ID + '.pe-desk:not(.pe-side){max-height:36vh}',
       // Færum síðuna til hægri svo taflan sjáist meðan stjórnborðið er opið.
       'html[data-viewmode="desktop"] body.pe-side-open #bstal-banner,' +
-      'html[data-viewmode="desktop"] body.pe-side-open #bstal-ember{left:var(--pe-side-w,320px)!important;width:calc(100% - var(--pe-side-w,320px))!important;right:14px!important}',
+      'html[data-viewmode="desktop"] body.pe-side-open #bstal-ember{left:calc(var(--pe-side-w,320px) + 14px)!important;right:14px!important;width:auto!important}',
       'html[data-viewmode="desktop"] body.pe-side-open .view.active{margin-left:var(--pe-side-w,320px)!important;box-sizing:border-box}',
       'html[data-viewmode="desktop"] body.pe-side-open .topbar{visibility:hidden;pointer-events:none}',
       // Header is now its own column: title row, then a toolbar row (wraps
