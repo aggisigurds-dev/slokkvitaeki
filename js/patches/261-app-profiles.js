@@ -33,6 +33,14 @@
     { k: 'verkbord',         label: 'Verkefnalisti',         short: 'Verkefni',   emoji: '📋' },
     { k: 'thjonustubord',    label: 'Þjónustuborð (mobíl)', short: 'Þjónusta',   emoji: '🔧' },
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
+    // 2026-08-29: útfærslur af Ársskoðun úr Claude Design. Sjálfstæðar HTML-skrár
+    // í rót repo-sins, svo þær fá `url` eins og Brunahólfs-síðurnar — ↗-hnappurinn
+    // í fylkinu opnar þær beint svo Agnar geti SKOÐAÐ útfærsluna áður en hann hakar
+    // við hana. ⚠️ Báðar keyra enn á sýnigögnum (12 fyrirtæki), ekki Supabase.
+    { k: 'arsskodun-v-mobile', label: 'Ársskoðun — listi (sýnishorn)', short: 'Árssk. listi',
+      emoji: '📋', url: '/arsskodun-mobile.html' },
+    { k: 'arsskodun-v-app',    label: 'Ársskoðun — akstursspjöld (sýnishorn)', short: 'Árssk. akstur',
+      emoji: '🚗', url: '/arsskodun-app.html' },
     { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
     { k: 'thjonustu-verkstaedi', label: 'ÞjónustuVerkstæði', short: 'Verkstæði', emoji: '🔧' },
     { k: 'brunayfirlit',     label: 'Brunakerfi yfirlit',    short: 'Brunakerfi', emoji: '🚨' },
@@ -703,7 +711,11 @@
   var VARIANT_OF = {
     'br-krofuyfirlit':  'krofu-yfirlit',
     'br-hreyfingar':    'hreyfingarlisti',
-    'br-reikningagerd': 'br-gerdreikninga'
+    'br-reikningagerd': 'br-gerdreikninga',
+    // Ársskoðun er v1 (raunveruleg gögn, 678 fyrirtæki); þessar tvær raðast
+    // undir hana sem v2/v3 og fá sitt eigið hak per appi.
+    'arsskodun-v-mobile': 'arsskodun',
+    'arsskodun-v-app':    'arsskodun'
   };
 
   function matrixRows() {
