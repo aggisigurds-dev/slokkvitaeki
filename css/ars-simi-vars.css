@@ -56,9 +56,15 @@
   --ars-akstur-haed:    40px;   /* 40×40 akstursreitir                       */
   --ars-skodad-haed:    44px;   /* ✓ Skoðað                                  */
 
+  /* ── Letur ──────────────────────────────────────────────────────────────
+     Curated list í hönnunarham (318). Sömu fjölskyldur og index.html hleður
+     (IBM Plex / Playfair / JetBrains) + system.                                */
+  --ars-letur: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
   /* ── Litir ──────────────────────────────────────────────────────────────
      Birtuskilagólf: --ars-texti-mjukur mælist 6.9:1. Ekkert ljósara á texta
-     sem á að lesa — þetta er tól sem er notað úti í dagsljósi.              */
+     sem á að lesa — þetta er tól sem er notað úti í dagsljósi.
+     Hönnunarhamur (318) opinberar þessa litabreytu í símaramma.            */
   --ars-texti:        #16181c;  /* aðaltexti, fyrirtækjanöfn                 */
   --ars-texti-mjukur: #5d5a54;  /* ALLUR annar texti                         */
   --ars-texti-merki:  #6f6b63;  /* smámerki („AKSTUR")                       */

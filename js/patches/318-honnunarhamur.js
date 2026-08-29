@@ -1,11 +1,14 @@
-/* === HÖNNUNARHAMUR — sleðar á símastærðirnar ================================
+/* === HÖNNUNARHAMUR — sleðar á símastærðir + litir/letur =====================
  *
  * Agnar 2026-08-29: „I also really want to be able to fix my page myself
  * instead of days trying to make code do it."
+ * Agnar 2026-08-29: „yrði snilld að geta breytt um font, textaliti, bakgrunn..
+ * takka liti"
  *
  * Verk 3 úr handoff-inu „Símastillingar á einn stað". Verk 2 (css/ars-simi-vars.css)
  * er forsendan: allar símastærðir Ársskoðunar eru CSS-breytur á einum stað.
- * Þessi pappi gefur sleða á þær breytur, beint ofan á RAUNVERULEGUM gögnum.
+ * Þessi pappi gefur sleða + litavali + letraföllu á þær breytur, beint ofan á
+ * RAUNVERULEGUM gögnum.
  *
  * ── HVERNIG ÞAÐ VIRKAR ─────────────────────────────────────────────────────
  * Sleði skrifar í document.documentElement.style.setProperty(...) — þess vegna
@@ -44,9 +47,31 @@
     return (r && r.ownerDocument) || document;
   }
 
+  /* Letrafjölskyldur sem index.html hleður þegar (IBM / Playfair / JetBrains)
+     + system — ekki Inter/Roboto/Arial. */
+  const FONTAR = [
+    { m: 'IBM Plex Sans',   v: "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+    { m: 'Playfair Display', v: "'Playfair Display', Georgia, 'Times New Roman', serif" },
+    { m: 'JetBrains Mono',  v: "'JetBrains Mono', ui-monospace, Menlo, monospace" },
+    { m: 'System',          v: "system-ui, -apple-system, 'Segoe UI', sans-serif" },
+    { m: 'Georgia',         v: "Georgia, 'Times New Roman', serif" }
+  ];
+  const LETUR_SJALF = FONTAR[0].v;
+
   /* Breyturnar sem má stilla, hópaðar eftir því hvað þær snerta. `syn` ræður
-     hvaða hópur birtist þegar stak er valið með pikki. */
+     hvaða hópur birtist þegar stak er valið með pikki. `tegund`: staerd
+     (sjálfgefið), litur, fontur. Útlit-hópurinn hefur engin vidmid → birtist
+     alltaf (sími og bílstjóri). */
   const HOPAR = [
+    { syn: 'utlit', heiti: 'Útlit · litir og letur', vidmid: null, breytur: [
+      { v: '--ars-letur',        m: 'Letur',        tegund: 'fontur', sjalf: LETUR_SJALF },
+      { v: '--ars-texti',        m: 'Texti',        tegund: 'litur',  sjalf: '#16181c' },
+      { v: '--ars-texti-mjukur', m: 'Mjukur texti', tegund: 'litur',  sjalf: '#5d5a54' },
+      { v: '--ars-grunnur',      m: 'Bakgrunnur',   tegund: 'litur',  sjalf: '#f0eeea' },
+      { v: '--ars-sokkull',      m: 'Takkalitur',   tegund: 'litur',  sjalf: '#17324f' },
+      { v: '--ars-accent',       m: 'Accent / kantur', tegund: 'litur', sjalf: '#5980a6' },
+      { v: '--ars-rammi',        m: 'Rammi',        tegund: 'litur',  sjalf: '#e3e1dc' }
+    ] },
     { syn: 'bord', heiti: 'Borð · röð', vidmid: '._arsm-row', breytur: [
       { v: '--ars-rad-haed',      m: 'Raðhæð',        min: 36, max: 96,  sjalf: 52 },
       { v: '--ars-nafn-dalkur',   m: 'Nafndálkur',    min: 90, max: 260, sjalf: 150 },
@@ -78,14 +103,40 @@
   ];
   const ALLAR = HOPAR.reduce((a, h) => a.concat(h.breytur), []);
   const finna = v => ALLAR.find(b => b.v === v);
+  const erLitur = b => b && b.tegund === 'litur';
+  const erFontur = b => b && b.tegund === 'fontur';
 
   const on = () => { try { return localStorage.getItem(LS_ON) === '1'; } catch (_) { return false; } };
   const setOn = v => { try { localStorage.setItem(LS_ON, v ? '1' : '0'); } catch (_) {} };
 
-  /* Núgildandi tala: yfirskrift ef til, annars það sem ars-simi-vars.css segir. */
+  /* <input type="color"> tekur aðeins #rrggbb. */
+  function tilHex(s) {
+    s = String(s || '').trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase();
+    if (/^#[0-9a-fA-F]{3}$/.test(s))
+      return ('#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3]).toLowerCase();
+    const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if (m) {
+      const h = x => ('0' + Math.max(0, Math.min(255, +x)).toString(16)).slice(-2);
+      return '#' + h(m[1]) + h(m[2]) + h(m[3]);
+    }
+    return '#16181c';
+  }
+  const normFont = s => String(s || '').replace(/["']/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+  function fontMatch(cur, cand) {
+    const a = normFont(cur), b = normFont(cand);
+    if (!a || !b) return false;
+    if (a === b) return true;
+    /* Samanburður á fyrstu fjölskyldunni dugir þegar computed style styttir stackið. */
+    return a.split(',')[0] === b.split(',')[0];
+  }
+
+  /* Núgildandi gildi: yfirskrift ef til, annars það sem ars-simi-vars.css segir. */
   function gildi(b) {
     const yfir = pageRoot().style.getPropertyValue(b.v).trim();
-    const s = yfir || getComputedStyle(pageRoot()).getPropertyValue(b.v).trim();
+    let s = yfir || getComputedStyle(pageRoot()).getPropertyValue(b.v).trim();
+    if (erLitur(b)) return tilHex(s || b.sjalf);
+    if (erFontur(b)) return s || b.sjalf;
     const n = parseFloat(s);
     return isNaN(n) ? b.sjalf : n;
   }
@@ -108,7 +159,11 @@
       '._hh-row{display:flex;align-items:center;gap:10px;padding:5px 0}',
       '._hh-lbl{flex:0 0 96px;font-size:12px;color:#b9c0c9}',
       '._hh-sl{flex:1;min-height:40px;accent-color:#5980a6;background:transparent}',
+      '._hh-col{flex:0 0 44px;width:44px;height:36px;padding:0;border:1px solid #3a3f47;border-radius:3px;background:transparent;cursor:pointer}',
+      '._hh-sel{flex:1;min-height:36px;max-width:100%;background:#0e1013;color:#e8e6e2;border:1px solid #3a3f47;border-radius:3px;',
+        'font:12.5px "IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;padding:4px 8px}',
       '._hh-num{flex:0 0 56px;text-align:right;font:600 12.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:#e8e6e2}',
+      '._hh-num._hh-hex{flex:0 0 72px;font-size:11.5px;letter-spacing:.02em}',
       '#_hh-css-out{margin:8px 0 0;padding:9px 10px;background:#0e1013;border:1px solid #2a2d33;border-radius:3px;',
         'font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#a8d0a8;white-space:pre;overflow-x:auto}',
       '#_hh-ft{display:flex;gap:8px;padding:9px 12px;border-top:1px solid #2a2d33;flex:none;align-items:center}',
@@ -135,7 +190,32 @@
     if (!b.length) return '/* engu breytt enn */';
     return b.map(x => '  ' + x.v + ': ' + fmt(x, gildi(x)) + ';').join('\n');
   }
-  const fmt = (b, n) => (b.skref ? n : Math.round(n)) + 'px';
+  function fmt(b, n) {
+    if (erLitur(b) || erFontur(b)) return String(n);
+    return (b.skref ? n : Math.round(n)) + 'px';
+  }
+
+  function rodarHtml(b) {
+    const g = gildi(b);
+    const id = 'hh_' + b.v.slice(2);
+    if (erLitur(b)) {
+      const hex = tilHex(g);
+      return '<div class="_hh-row"><label class="_hh-lbl" for="' + id + '">' + b.m + '</label>'
+        + '<input class="_hh-col" id="' + id + '" type="color" data-v="' + b.v + '" value="' + hex + '">'
+        + '<span class="_hh-num _hh-hex" data-num="' + b.v + '">' + hex + '</span></div>';
+    }
+    if (erFontur(b)) {
+      return '<div class="_hh-row"><label class="_hh-lbl" for="' + id + '">' + b.m + '</label>'
+        + '<select class="_hh-sel" id="' + id + '" data-v="' + b.v + '">'
+        + FONTAR.map(f => '<option value="' + escAttr(f.v) + '"'
+          + (fontMatch(g, f.v) ? ' selected' : '') + '>' + esc(f.m) + '</option>').join('')
+        + '</select></div>';
+    }
+    return '<div class="_hh-row"><label class="_hh-lbl" for="' + id + '">' + b.m + '</label>'
+      + '<input class="_hh-sl" id="' + id + '" type="range" data-v="' + b.v + '" '
+      + 'min="' + b.min + '" max="' + b.max + '" step="' + (b.skref || 1) + '" value="' + g + '">'
+      + '<span class="_hh-num" data-num="' + b.v + '">' + fmt(b, g) + '</span></div>';
+  }
 
   function teikna() {
     const p = document.getElementById('_hh-panel'); if (!p) return;
@@ -146,48 +226,71 @@
     // Tilvist DUGAR EKKI: ._arsm-row er áfram í DOM-inu þegar bílstjórasýnin
     // felur #ars-main með display:none. Mælt 29.08 — spjaldaham sýndi áfram
     // 13 borð-sleða. Krefjumst þess að stakið hafi RAUNVERULEGA stærð.
+    // Útlit (litir/letur) hefur vidmid=null → birtist alltaf.
     const til = h => {
       if (!h.vidmid) return true;
       const e = pageDoc().querySelector(h.vidmid);
       return !!(e && e.getBoundingClientRect().height > 0);
     };
     let hopar = (synHopur ? HOPAR.filter(h => h.syn === synHopur) : HOPAR).filter(til);
+    /* Þegar pikkað er á stak: sýna líka Útlit svo litir/letur séu alltaf aðgengileg. */
+    if (synHopur && synHopur !== 'utlit') {
+      const ut = HOPAR.find(h => h.syn === 'utlit');
+      if (ut && !hopar.some(h => h.syn === 'utlit')) hopar = [ut].concat(hopar);
+    }
     p.querySelector('#_hh-tt').textContent = synHopur
       ? (HOPAR.find(h => h.syn === synHopur) || {}).heiti : 'Hönnunarhamur';
     p.querySelector('#_hh-val').textContent = synHopur ? '· pikkaðu utan til að sýna allt' : '';
     p.querySelector('#_hh-body').innerHTML =
-      hopar.map(h => (synHopur ? '' : '<div class="_hh-lbl" style="flex:none;margin:8px 0 2px;color:#7f8894;font-size:11px;'
+      hopar.map(h => (synHopur && h.syn !== 'utlit' ? '' : '<div class="_hh-lbl" style="flex:none;margin:8px 0 2px;color:#7f8894;font-size:11px;'
         + 'text-transform:uppercase;letter-spacing:.05em">' + h.heiti + '</div>')
-        + h.breytur.map(b => {
-          const g = gildi(b);
-          return '<div class="_hh-row"><label class="_hh-lbl" for="hh_' + b.v.slice(2) + '">' + b.m + '</label>'
-            + '<input class="_hh-sl" id="hh_' + b.v.slice(2) + '" type="range" data-v="' + b.v + '" '
-            + 'min="' + b.min + '" max="' + b.max + '" step="' + (b.skref || 1) + '" value="' + g + '">'
-            + '<span class="_hh-num" data-num="' + b.v + '">' + fmt(b, g) + '</span></div>';
-        }).join('')).join('')
+        + h.breytur.map(rodarHtml).join('')).join('')
       + (hopar.length ? '' : '<div style="padding:18px 2px;color:#9aa3b0;font-size:12.5px;line-height:1.5">'
           + 'Engar stillanlegar stærðir á þessum skjá.<br>Sleðarnir stilla símaútlitið — '
-          + 'skiptu í 📱 Sími eða kveiktu á 🚚 Bílstjóra.</div>')
+          + 'skiptu í Sími eða kveiktu á Bílstjóra.</div>')
       + '<pre id="_hh-css-out">' + esc(cssBlokk()) + '</pre>';
     tengjaSleda(p);
   }
 
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const escAttr = s => esc(s).replace(/"/g, '&quot;');
+
+  function uppfCssOut(p) {
+    const out = p.querySelector('#_hh-css-out');
+    if (out) out.textContent = cssBlokk();
+  }
 
   function tengjaSleda(p) {
     p.querySelectorAll('._hh-sl').forEach(sl => {
       const uppf = () => {
         const b = finna(sl.dataset.v); if (!b) return;
         const n = parseFloat(sl.value);
-        // Beint í :root — þess vegna sést það samstundis á öllum röðunum.
         pageRoot().style.setProperty(b.v, fmt(b, n));
         const num = p.querySelector('[data-num="' + b.v + '"]');
         if (num) num.textContent = fmt(b, n);
-        const out = p.querySelector('#_hh-css-out');
-        if (out) out.textContent = cssBlokk();
+        uppfCssOut(p);
       };
       sl.addEventListener('input', uppf);
       sl.addEventListener('change', uppf);
+    });
+    p.querySelectorAll('._hh-col').forEach(inp => {
+      const uppf = () => {
+        const b = finna(inp.dataset.v); if (!b) return;
+        const hex = tilHex(inp.value);
+        pageRoot().style.setProperty(b.v, hex);
+        const num = p.querySelector('[data-num="' + b.v + '"]');
+        if (num) num.textContent = hex;
+        uppfCssOut(p);
+      };
+      inp.addEventListener('input', uppf);
+      inp.addEventListener('change', uppf);
+    });
+    p.querySelectorAll('._hh-sel').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const b = finna(sel.dataset.v); if (!b) return;
+        pageRoot().style.setProperty(b.v, sel.value);
+        uppfCssOut(p);
+      });
     });
   }
 
@@ -422,7 +525,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);
   else vakta();
 
-  window.Honnunarhamur = { opna, loka, endurstilla, syncFrame, version: 'v1.1' };
+  window.Honnunarhamur = { opna, loka, endurstilla, syncFrame, version: 'v1.2' };
   console.log('[patch-318] honnunarhamur ready');
 })();
 /* === END HÖNNUNARHAMUR === */
