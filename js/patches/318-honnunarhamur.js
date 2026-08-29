@@ -552,6 +552,9 @@
     }
     takki();
     if (!on()) return;
+    // App-hamur er vinnuskjár (S26). Auto-opnað 52vh-sheet yfir listanum
+    // er „ritillinn lekur inn í símann". Takkinn stendur — Agnar opnar sjálfur.
+    if (document.body && document.body.classList.contains('appmode')) return;
     if (!document.getElementById('_hh-panel')) opna();
   }
 
