@@ -2249,7 +2249,12 @@
         const row = allItems().find(x => String(x.id) === String(t.getAttribute('data-id')));
         if (!row) return;
         const nafn = (row.customer_nafn || String(row.title || '').split(' — ')[0] || '').trim();
-        window.dispatchEvent(new CustomEvent('st-skra-verk', { detail: { name: nafn, id: row.id } }));
+        // 2026-08-29 (Agnar): athugasemd málsins á að fylgja með á dagskrána.
+        // Áður fór aðeins nafnið yfir og athugasemdareiturinn opnaðist tómur —
+        // þá þurfti að skruna til baka í málið og afrita textann handvirkt.
+        window.dispatchEvent(new CustomEvent('st-skra-verk', {
+          detail: { name: nafn, id: row.id, note: String(row.notes || '').trim() },
+        }));
         const main = document.getElementById('vb-main');
         if (main && main.scrollIntoView) main.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;

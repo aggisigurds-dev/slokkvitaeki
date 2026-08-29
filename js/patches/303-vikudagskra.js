@@ -501,10 +501,20 @@
   // „Setja á dagskrá" í VALIÐ MÁL — senda st-skra-verk og bannerinn opnar
   // gluggann með nafn viðskiptavinarins forútfyllt á daginn í dag.
   window.addEventListener('st-skra-verk', ev => {
-    const nafn = (ev && ev.detail && ev.detail.name) || '';
+    const d = (ev && ev.detail) || {};
+    const nafn = String(d.name || '').trim();
+    const note = String(d.note || '').trim();
     openModal(fmt(new Date()));
+    // 2026-08-29 (Agnar): athugasemd málsins fylgir núna með. Gildin fara í
+    // state.form — ekki bara í DOM — því renderModal les ALLTAF úr state.form;
+    // væri þetta aðeins sett í reitinn hyrfi það við fyrstu endurteikningu
+    // (t.d. þegar smellt er á „Þennan dag"). renderModal skrifar líka
+    // data-original, svo #177 (dirty-guard) telji forútfylltan glugga óbreyttan.
+    if (nafn) state.form.name = nafn;
+    if (note) state.form.note = note;
+    if (nafn || note) renderModal();
     const n = document.getElementById('vd-name');
-    if (n && nafn) { n.value = nafn; n.setAttribute('data-original', nafn); n.select(); }
+    if (n && nafn) n.select();
   });
 
   // Borðið kann að vera teiknað ÁÐUR en þessi skrá er lesin: #231 og #303 eru
