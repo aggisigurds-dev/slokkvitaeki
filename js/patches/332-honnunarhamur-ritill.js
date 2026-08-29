@@ -225,7 +225,8 @@
     }
     const editor = overlay.querySelector('#_devframe-editor');
     if (editor) {
-      editor.style.flex = '0 0 auto';
+      editor.style.flex = '0 0 42vh';
+      editor.style.height = '42vh';
       editor.style.width = '100%';
       editor.style.maxWidth = 'none';
       editor.style.minWidth = '0';
