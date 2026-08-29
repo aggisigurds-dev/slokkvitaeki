@@ -149,9 +149,9 @@
         + 'border:0!important;background:transparent!important;box-shadow:none!important;'
         + 'font-size:var(--ars-spjald-nafn,15.5px)!important;font-weight:700;color:var(--ars-texti,#16181c);'
         + 'line-height:1.2;text-align:left;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}',
-      V + 'button._bil-prof{flex:none;min-width:44px;min-height:36px!important;height:auto!important;'
-        + 'padding:6px 9px!important;border:1px solid #10161f;background:' + METAL + ';color:#dbe2ec;'
-        + 'font:700 11px ' + LETUR + ';border-radius:8px;cursor:pointer;white-space:nowrap}',
+      V + 'button._bil-prof{flex:none;width:44px;min-width:44px;max-width:44px;min-height:44px!important;height:44px!important;'
+        + 'padding:0!important;border:1px solid #10161f;background:' + METAL + ';color:#dbe2ec;font-size:18px;'
+        + 'border-radius:9px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}',
       V + '._bil-addr{font-size:12px;color:var(--ars-texti-mjukur,#5d5a54);margin-top:2px}',
       V + '._bil-st{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;font:700 11.5px ' + LETUR + ';white-space:nowrap;flex:0 0 auto;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
       V + '._bil-st._bs-done{background:var(--ars-st-done-bg,linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%));border:1px solid var(--ars-st-done-bd,#041c0e);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.22),inset 0 -2px 4px rgba(0,0,0,.28)}',
@@ -349,7 +349,7 @@
     return '<div class="_bil-card ' + cls + '" data-co="' + c.id + '">'
       + '<div class="_bil-top"><div><div class="_bil-nmrow">'
       + '<button type="button" class="_bil-nm _ars-open" data-co-id="' + c.id + '">' + esc(c.nafn || '—') + '</button>'
-      + '<button type="button" class="_bil-prof _ars-open" data-co-id="' + c.id + '" title="Fylla úttektarskýrslu" aria-label="Skýrsla">Skýrsla</button>'
+      + '<button type="button" class="_bil-prof _ars-open" data-co-id="' + c.id + '" title="Opna fyrirtæki" aria-label="Opna fyrirtæki">🏢</button>'
       + '</div>'
       + (addr ? '<div class="_bil-addr">' + esc(addr) + '</div>' : '') + '</div>'
       + '<span class="_bil-st ' + cls + '">' + esc(merki) + '</span></div>'
@@ -412,8 +412,8 @@
       e.preventDefault(); setAkFilter(b.dataset.akf); teikna();
     }));
 
-    /* Nafn / Skýrsla: sami gluggi og skrifstofan notar til að fylla úttekt
-       (Arsskodun.openDetail). Ekki nýtt form. */
+    /* 🏢 / nafn: Arsskodun.openDetail — sami fyrirtækjagluggi og röð á skjáborði.
+       Ekki ný síða. data-co-id eins og ._ars-open í 153. */
     function opnaProf(id) {
       if (!id) return;
       try {
