@@ -44,9 +44,14 @@
     // "⚙ Þjónustuborð" / "⤓ Setja upp" do not fit 390px next to the name.
     // Icon-only 44×44 (title= already on the buttons); first glyph is the emoji.
     // Mælt 29.08 á 390px: 36×36 / 28×36 — undir 44 HIG og 48 Material.
+    // 2026-08-29 (síðar): reiturinn + text-align:center sýndi MIÐJU strengsins,
+    // ekki táknið — hausinn las „⚙ Þ" og „⤓ Se" í hverju einasta appi. 261 vefur
+    // orðin nú í <i class="_applbl">; með hann falinn stendur táknið eitt eftir,
+    // miðjað, sem er það sem þessi blokk hefur alltaf meint.
     A + '#_app-hdr{height:48px;padding:0 6px;gap:4px}',
     A + '#_app-hdr .nm{font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     A + '#_app-hdr button{height:44px;min-height:44px;min-width:44px;padding:0 8px;font-size:13px}',
+    A + '#_app-hdr ._applbl{display:none}',
     A + '#_app-hdr #_app-pages,' + A + '#_app-hdr #_app-inst2,' +
     A + '#_app-hdr #_app-style,' + A + '#_app-hdr #_app-exit' +
       '{width:44px;min-width:44px;max-width:44px;padding:0;font-size:18px;line-height:44px;' +

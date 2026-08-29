@@ -1009,14 +1009,17 @@
     var hdr = document.getElementById('_app-hdr') || document.createElement('div');
     hdr.id = '_app-hdr'; hdr.style.display = ''; hdr.style.background = isBoss ? BOSS_BG_CSS.replace('background:', '') : ('linear-gradient(180deg,' + a.color + ',' + a.dark + ')');
     hdr.innerHTML = '<div class="nm">' + (isBoss ? bossCrownSvg(26) + '<span style="' + BOSS_GOLD_CSS + '">' + esc(a.name) + '</span>' : esc(a.emoji) + ' ' + esc(a.name)) + '</div>' +
-      (a.standalone ? '' : '<button id="_app-pages" type="button" title="Þjónustuborð — síður, útlit, útgáfa">⚙ Þjónustuborð</button>') +
+      // Textinn situr í ._applbl svo 316 geti falið hann og skilið EFTIR
+      // táknið eitt í 36px reitnum (sjá athugasemd þar). Áður var klippt á
+      // miðjum streng og hausinn sýndi „⚙ Þ" og „⤓ Se".
+      (a.standalone ? '' : '<button id="_app-pages" type="button" title="Þjónustuborð — síður, útlit, útgáfa">⚙<i class="_applbl"> Þjónustuborð</i></button>') +
       // 🎨 Stílstjórinn var ÓAÐGENGILEGUR í app-ham: 262 hengir takkann sinn á
       // banner-klukkuna og app-hamurinn felur bannerinn alveg
       // (body.appmode #bstal-banner{display:none}). Þar með var ekki hægt að
       // laga útlit þeirra síðna sem maður notar mest — einmitt í símanum þar
       // sem plássið er minnst (Agnar 29.08). Takkinn er því endurtekinn hér.
       '<button id="_app-style" type="button" title="Stilla útlit þessarar síðu">🎨</button>' +
-      '<button class="_app-install" data-always="1" id="_app-inst2" type="button">⤓ Setja upp</button>' +
+      '<button class="_app-install" data-always="1" id="_app-inst2" type="button" title="Setja appið upp í símann">⤓<i class="_applbl"> Setja upp</i></button>' +
       '<button id="_app-exit" type="button" title="Loka appi">✕</button>';
     if (!hdr.parentNode) document.body.appendChild(hdr);
     var sty = document.getElementById('_app-style');
