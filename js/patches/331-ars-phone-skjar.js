@@ -106,7 +106,17 @@
       vp.setAttribute('content', ZOOM);
     }
   }
+  function hubPageZoomed() {
+    try {
+      if (window.AppPageZoom && typeof window.AppPageZoom.get === 'function') {
+        return window.AppPageZoom.get() !== 1;
+      }
+    } catch (_) {}
+    return false;
+  }
   function restoreZoom() {
+    /* Hard síðuzoom (333) á Android: láta pinch-viewport vera áfram. */
+    if (hubPageZoomed()) { enableZoom(); return; }
     const vp = vpEl();
     if (_vpSaved != null) {
       vp.setAttribute('content', _vpSaved);
@@ -126,6 +136,7 @@
     vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
   }
   function syncViewport(mode) {
+    if (hubPageZoomed()) { enableZoom(); if (!arsActive()) resetCssZoom(); return; }
     if (!arsActive()) { restoreZoom(); resetCssZoom(); return; }
     if (wantsWide(mode) && isPhoneLike()) enableZoom();
     else restoreZoom();
@@ -322,12 +333,14 @@
       return Math.hypot(dx, dy) || 1;
     }
     function onStart(e) {
+      if (hubPageZoomed()) return;
       if (!wantsWide(get()) || !isPhoneLike()) return;
       if (!e.touches || e.touches.length !== 2) return;
       startDist = dist(e.touches[0], e.touches[1]);
       startScale = cssScale;
     }
     function onMove(e) {
+      if (hubPageZoomed()) return;
       if (!startDist || !e.touches || e.touches.length !== 2) return;
       if (!wantsWide(get()) || !isPhoneLike()) return;
       const d = dist(e.touches[0], e.touches[1]);

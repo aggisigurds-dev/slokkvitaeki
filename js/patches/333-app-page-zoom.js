@@ -51,28 +51,44 @@
   }
   function syncViewport() {
     if (scale === 1) return;
-    try { vpEl().setAttribute('content', PINCH_VP); } catch (_) {}
+    try {
+      const vp = vpEl();
+      if (vp.getAttribute('content') !== PINCH_VP) vp.setAttribute('content', PINCH_VP);
+    } catch (_) {}
   }
 
+  function zoomTargets() {
+    const out = [document.documentElement];
+    if (document.body) out.push(document.body);
+    const app = document.getElementById('app');
+    if (app) out.push(app);
+    return out;
+  }
   function apply(z, persist) {
     scale = clamp(z);
     const html = document.documentElement;
-    const body = document.body;
     const zStr = scale === 1 ? '' : String(scale);
     try {
-      html.style.zoom = zStr;
       html.style.setProperty('--app-page-zoom', String(scale));
       html.classList.toggle('app-page-zoomed', scale !== 1);
     } catch (_) {}
-    /* Android WebView: body.zoom ef html.zoom er hunsað. Ekki BÆÐI, því þá
-       tvöfaldast. Aðeins body ef html skilaði ekki. */
+    /* Android: CSS zoom á html (heil síða). body / #app aðeins ef html
+       hunsaði zoom — aldrei bæði, þá tvöfaldast. */
+    const nodes = zoomTargets();
+    try { nodes.forEach(n => { n.style.zoom = ''; }); } catch (_) {}
+    let stuck = false;
     try {
-      if (body) {
-        const got = String(html.style.zoom || '');
-        if (zStr && got !== zStr) body.style.zoom = zStr;
-        else if (!zStr) body.style.zoom = '';
-      }
+      html.style.zoom = zStr;
+      stuck = !zStr || String(html.style.zoom || '') === zStr;
     } catch (_) {}
+    if (!stuck && zStr) {
+      for (let i = 1; i < nodes.length; i++) {
+        try {
+          nodes[i].style.zoom = zStr;
+          if (String(nodes[i].style.zoom || '') === zStr) break;
+        } catch (_) {}
+      }
+    }
     const bar = document.getElementById(BAR_ID);
     if (bar) {
       bar.classList.toggle('on', scale !== 1);
@@ -158,12 +174,41 @@
     apply(scale, false);
   }
 
+  function reapply() { apply(scale, false); }
+
   ['hashchange', 'popstate', 'pageshow'].forEach(ev =>
-    window.addEventListener(ev, () => setTimeout(() => apply(scale, false), 0)));
-  document.addEventListener('slokk-viewmode', () => setTimeout(() => apply(scale, false), 40));
+    window.addEventListener(ev, () => setTimeout(reapply, 0)));
+  document.addEventListener('slokk-viewmode', () => setTimeout(reapply, 40));
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) apply(scale, false);
+    if (!document.hidden) reapply();
   });
+
+  function wrapSwitch() {
+    try {
+      if (!window.App || typeof App.switchView !== 'function' || App.switchView.__appZoom333) return false;
+      const orig = App.switchView;
+      App.switchView = function () {
+        const r = orig.apply(this, arguments);
+        setTimeout(reapply, 0);
+        setTimeout(reapply, 80);
+        return r;
+      };
+      App.switchView.__appZoom333 = true;
+      return true;
+    } catch (_) { return false; }
+  }
+  wrapSwitch();
+  [200, 800, 2000].forEach(ms => setTimeout(wrapSwitch, ms));
+
+  try {
+    const mo = new MutationObserver(() => { if (scale !== 1) syncViewport(); });
+    const startMo = () => {
+      const vp = document.querySelector('meta[name="viewport"]');
+      if (vp) mo.observe(vp, { attributes: true, attributeFilter: ['content'] });
+    };
+    if (document.head) startMo();
+    else document.addEventListener('DOMContentLoaded', startMo, { once: true });
+  } catch (_) {}
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
