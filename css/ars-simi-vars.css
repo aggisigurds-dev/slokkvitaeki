@@ -45,16 +45,16 @@
   --ars-col-sidast:     78px;
   --ars-col-nota:      130px;
 
-  /* ── Bílstjóraspjöldin (patch 317) ─────────────────────────────────────── */
-  --ars-spjald-bil:     12px;   /* bil milli spjalda                         */
-  --ars-spjald-nafn:  16.5px;   /* fyrirtækjanafnið á spjaldi                */
-  --ars-spjald-kantur:   3px;   /* litaði kanturinn vinstra megin            */
-  --ars-spjald-radius:   3px;
-  --ars-arsreitur-breidd: 31px;
-  --ars-arsreitur-haed:   20px;
-  --ars-takn-haed:      38px;   /* Hringja / Leiðsögn — táknhnappar          */
-  --ars-akstur-haed:    36px;   /* reitir í akstursstrimlinum                */
-  --ars-skodad-haed:    40px;   /* ✓ Skoðað — eina fyllta aðgerðin           */
+  /* ── Bílstjóraspjöldin (patch 317) — stærðir úr arsskodun-app.html ─────── */
+  --ars-spjald-bil:      8px;   /* bil milli spjalda                         */
+  --ars-spjald-nafn:   15.5px;  /* fyrirtækjanafnið á spjaldi                */
+  --ars-spjald-kantur:   4px;   /* litaði kanturinn vinstra megin            */
+  --ars-spjald-radius:  12px;
+  --ars-arsreitur-breidd: 40px;
+  --ars-arsreitur-haed:   26px;
+  --ars-takn-haed:      44px;   /* Hringja / Leiðsögn — málmhnappar          */
+  --ars-akstur-haed:    40px;   /* 40×40 akstursreitir                       */
+  --ars-skodad-haed:    44px;   /* ✓ Skoðað                                  */
 
   /* ── Litir ──────────────────────────────────────────────────────────────
      Birtuskilagólf: --ars-texti-mjukur mælist 6.9:1. Ekkert ljósara á texta
