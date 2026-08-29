@@ -234,6 +234,15 @@
     M + '#view-arsskodun ._ars-statgrid{grid-template-columns:1fr 1fr!important;gap:8px!important}',
     M + '#view-arsskodun ._mail-badge,' + A + '#view-arsskodun ._mail-badge' +
       '{position:relative;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;margin:-12px 0 -12px -8px;padding:12px 8px;box-sizing:border-box}',
+    // Agnar 2026-08-29: „stafrófsröð má fara, prenta lista má fara í mobile
+    // view og app view". Hide the sort select + print split-button on Sími
+    // and Öpp. Desktop Skjár keeps both; print/sort logic in 153 is untouched.
+    M + '#view-arsskodun #_ars-sort,' + A + '#view-arsskodun #_ars-sort,' +
+    M + '#view-arsskodun #_ars-print-wrap,' + A + '#view-arsskodun #_ars-print-wrap,' +
+    M + '#view-arsskodun #_ars-print,' + A + '#view-arsskodun #_ars-print,' +
+    M + '#view-arsskodun #_ars-print-caret,' + A + '#view-arsskodun #_ars-print-caret,' +
+    M + '#view-arsskodun #_ars-print-menu,' + A + '#view-arsskodun #_ars-print-menu' +
+      '{display:none!important}',
 
     // ── Rekstrarfélög row density (Heimaleiga data is another ticket) ──────
     M + '#view-rekstrarfelog .rf-page,' + A + '#view-rekstrarfelog .rf-page{padding:8px 8px 40px!important}',
