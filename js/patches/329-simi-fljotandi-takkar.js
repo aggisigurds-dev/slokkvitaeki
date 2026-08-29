@@ -128,15 +128,6 @@ html.slokk-simahamur body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3) {
   bottom: 14px !important;
   transform: none !important;
 }
-
-/* Ársskoðun: EN var fært til vinstri (ofan) og lá ofan á listanum + QR.
-   App/Bílstjóri/botnstika fela það þegar; hér er Ársskoðun á síma. */
-html[data-viewmode="mobile"] body:has(#view-arsskodun.active) #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3),
-html.slokk-phone-dev body:has(#view-arsskodun.active) #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3),
-html.slokk-simahamur body:has(#view-arsskodun.active) #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3),
-body.appmode:has(#view-arsskodun.active) #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3) {
-  display: none !important;
-}
 `;
 
   const st = document.createElement('style');
