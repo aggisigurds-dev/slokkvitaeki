@@ -267,16 +267,38 @@
     }
   }
 
+  function wrapOpna() {
+    const H = window.Honnunarhamur;
+    if (!H || typeof H.opna !== 'function' || H.__hh332wrap) return;
+    H.__hh332wrap = true;
+    const orig = H.opna;
+    H.opna = function () {
+      const r = orig.apply(this, arguments);
+      setTimeout(scan, 0);
+      setTimeout(scan, 80);
+      return r;
+    };
+  }
+
   function scan() {
     if (IN_DEVFRAME) return;
+    wrapOpna();
     if (framed()) stackPhoneOverlay();
     const p = document.getElementById('_hh-panel');
     if (p) enhance(p);
     else if (!framed()) document.documentElement.classList.remove('_hh331-phone');
   }
 
-  new MutationObserver(() => { clearTimeout(window.__hh331T); window.__hh331T = setTimeout(scan, 80); })
-    .observe(document.documentElement, { childList: true, subtree: true });
+  new MutationObserver(() => {
+    /* Trailing throttle — Ársskoðun stimplar DOM stöðugt, svo
+       clearTimeout-á-hverjum-mut myndi aldrei keyra scan. */
+    if (window.__hh331T) return;
+    window.__hh331T = setTimeout(() => { window.__hh331T = null; scan(); }, 40);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener('click', e => {
+    const t = e.target && e.target.closest && e.target.closest('#_hh-toggle');
+    if (t) setTimeout(scan, 30);
+  }, true);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan);
   else scan();
 
