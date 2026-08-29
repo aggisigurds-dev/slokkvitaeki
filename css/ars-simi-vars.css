@@ -76,7 +76,7 @@
      Grár = óvirkt / ekki til. Patch 187 yearInfo + 317/153 teikna úr þessu. */
   --ars-led-off:      #ccd2da;
   --ars-led-on:       #34d17a;
-  --ars-dot-off:      #ccd2da;
-  --ars-dot-skyrsla:  #22c55e;
-  --ars-dot-reik:     #2563eb;
+  --ars-dot-off:      #dfe3ea;
+  --ars-dot-skyrsla:  #1f9d57;
+  --ars-dot-reik:     #2f5fe0;
 }

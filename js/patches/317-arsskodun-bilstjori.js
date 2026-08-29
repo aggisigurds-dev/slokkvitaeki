@@ -78,6 +78,17 @@
     const V = '#' + VIEW_ID + '#' + VIEW_ID + ' ';
     const METAL = 'linear-gradient(180deg,#3c4452,#232b38)';
     const BLUE = 'linear-gradient(180deg,#2f5a86,#17324f)';
+    /* Sömu málm-gljáar og skjáborðstaflan (patch 153 ._yr / ._st--*). Agnar
+       2026-08-29: desktop-taflan er viðmiðið — sími/Bílstjóri endurtaka, ekki
+       finna upp nýja litapallettu. */
+    const YR_RED = 'linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%)';
+    const YR_GREEN = 'linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%)';
+    const YR_GOLD = 'linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08)';
+    const ST_DONE = YR_GREEN;
+    const ST_WORK = 'linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%)';
+    const ST_LATE = YR_RED;
+    const ST_SKIP = YR_GOLD;
+    const YR_SHINE = 'box-shadow:inset 0 1.5px 0 rgba(255,255,255,.25),inset 0 -2px 4px rgba(0,0,0,.26)';
     s.textContent = [
       V + '._bil-wrap{padding:0 0 96px;background:#f5f4ef}',
       V + '._bil-hdr{background:#1a1f2e;padding:9px 12px 0}',
@@ -97,39 +108,43 @@
         + 'border-left:var(--ars-spjald-kantur,4px) solid #8a94a3 !important;'
         + 'border-radius:var(--ars-spjald-radius,12px);padding:10px 12px;'
         + 'display:flex;flex-direction:column;gap:8px}',
-      V + '._bil-card._bs-done{border-left-color:#1f9d57 !important}',
-      V + '._bil-card._bs-vinnslu{border-left-color:#17324f !important}',
-      V + '._bil-card._bs-vantar{border-left-color:#c0392b !important}',
-      V + '._bil-card._bs-sleppt{border-left-color:#c98a1a !important}',
+      V + '._bil-card._bs-done{border-left-color:#0f4f2b !important}',
+      V + '._bil-card._bs-vinnslu{border-left-color:#183363 !important}',
+      V + '._bil-card._bs-vantar{border-left-color:#b0201b !important}',
+      V + '._bil-card._bs-sleppt{border-left-color:#c99a1e !important}',
       V + '._bil-card._bs-queue{border-left-color:#8a94a3 !important}',
 
       V + '._bil-top{display:flex;align-items:flex-start;gap:9px}',
       V + '._bil-top>div{flex:1;min-width:0}',
       V + '._bil-nm{font-size:var(--ars-spjald-nafn,15.5px);font-weight:700;color:#11141c;line-height:1.2}',
       V + '._bil-addr{font-size:12px;color:#5b6573;margin-top:2px}',
-      V + '._bil-st{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:99px;font:700 11.5px system-ui,sans-serif;white-space:nowrap;flex:0 0 auto}',
-      V + '._bil-st._bs-done{background:#e7f7ee;color:#1f9d57}',
-      V + '._bil-st._bs-vinnslu{background:#eef4fb;color:#17324f}',
-      V + '._bil-st._bs-vantar{background:#fdeceb;color:#c0392b}',
-      V + '._bil-st._bs-sleppt{background:#fdf3e0;color:#c98a1a}',
-      V + '._bil-st._bs-queue{background:#f4f6f9;color:#8a94a3}',
+      /* Staða: sömu málmhnappar og ._st--done/work/late á skjáborði. */
+      V + '._bil-st{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;font:700 11.5px system-ui,sans-serif;white-space:nowrap;flex:0 0 auto;'
+        + 'color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35);border:1px solid #060f24;' + YR_SHINE + '}',
+      V + '._bil-st._bs-done{background:' + ST_DONE + ';border-color:#041c0e}',
+      V + '._bil-st._bs-vinnslu{background:' + ST_WORK + ';border-color:#060f24}',
+      V + '._bil-st._bs-vantar{background:' + ST_LATE + ';border-color:#4d0a08}',
+      V + '._bil-st._bs-sleppt{background:' + ST_SKIP + ';border-color:rgba(255,220,130,.45);color:#fff8e6}',
+      V + '._bil-st._bs-queue{background:' + METAL + ';border-color:#10161f;color:#dbe2ec;text-shadow:none}',
 
       V + '._bil-mid{display:flex;align-items:center;gap:14px;flex-wrap:wrap}',
       V + '._bil-yrs{display:flex;gap:5px;width:184px}',
       V + '._bil-yrcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}',
+      /* Árs-reitir: sömu 145° málmar og ._yr.now / .both / .penda. */
       V + '._bil-yr{width:100%;height:var(--ars-arsreitur-haed,26px);min-width:var(--ars-arsreitur-breidd,40px);border-radius:6px;color:#fff;font:700 13px ui-monospace,monospace;'
-        + 'display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);border:1px solid #7a1d13;'
-        + 'background:linear-gradient(180deg,#c0392b,#8c2318)}',
-      V + '._bil-yr.skyrsla{background:linear-gradient(180deg,#1e6b3d,#0d4526);border-color:#0a3a1f}',
-      V + '._bil-yr.skodad{background:linear-gradient(180deg,#c9a227,#8f6d10);border-color:#7a5c0c}',
+        + 'display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid #4d0a08;'
+        + 'text-shadow:0 1px 1px rgba(0,0,0,.35);' + YR_SHINE + ';background:' + YR_RED + '}',
+      V + '._bil-yr.skyrsla{background:' + YR_GREEN + ';border-color:#041c0e}',
+      V + '._bil-yr.skodad{background:' + YR_GOLD + ';border-color:rgba(255,220,130,.45);color:#fff8e6;'
+        + 'box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -2px 4px rgba(0,0,0,.25)}',
       // Agnar multi-action: LED = staðfest (klarad|confirmed), NOT „hefur skýrslu".
       // Grár = óvirkt. Litir úr css/ars-simi-vars.css.
       V + '._bil-led{width:5px;height:5px;border-radius:50%;background:var(--ars-led-off,#ccd2da);flex:none}',
-      V + '._bil-yr.stadfest ._bil-led{background:var(--ars-led-on,#34d17a)}',
-      V + '._bil-dots{display:flex;gap:4px}',
-      V + '._bil-dots i{width:5px;height:5px;border-radius:50%;background:var(--ars-dot-off,#ccd2da)}',
-      V + '._bil-dots i.on{background:var(--ars-dot-skyrsla,#22c55e)}',
-      V + '._bil-dots i.inv{background:var(--ars-dot-reik,#2563eb)}',
+      V + '._bil-yr.stadfest ._bil-led{background:var(--ars-led-on,#34d17a);box-shadow:0 0 5px rgba(52,209,122,.8)}',
+      V + '._bil-dots{display:flex;gap:3px}',
+      V + '._bil-dots i{width:5px;height:5px;border-radius:50%;background:var(--ars-dot-off,#dfe3ea)}',
+      V + '._bil-dots i.on{background:var(--ars-dot-skyrsla,#1f9d57)}',
+      V + '._bil-dots i.inv{background:var(--ars-dot-reik,#2f5fe0)}',
       V + '._bil-eq{display:flex;gap:11px}',
       V + '._bil-eq span{display:flex;flex-direction:column;align-items:center;line-height:1.04}',
       V + '._bil-eq b{font:800 14px system-ui,sans-serif;color:#11141c}',

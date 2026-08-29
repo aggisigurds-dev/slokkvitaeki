@@ -2433,11 +2433,11 @@
       V+'._arsm-name{min-width:0}',
       V+'._arsm-nm{font-size:var(--ars-nafn-letur,12.5px);font-weight:600;color:#141a22;white-space:normal;overflow:hidden;overflow-wrap:anywhere;letter-spacing:-.01em;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:29px}',
       V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--ars-undirtexti,9.5px);color:#8a94a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
-      // 4-ára reitir
+      // 4-ára reitir — sömu málm-gljáar og skjáborð ._yr.both / .penda (Agnar viðmið)
       V+'._arsm-yr{display:flex;gap:2px}',
-      V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:#e3e6ea;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-style:normal;font-weight:700;line-height:1}',
-      V+'._arsm-yr i.rep{background:#1f9d57}',
-      V+'._arsm-yr i.gap{background:#e0a83a}',
+      V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:#e3e6ea;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-style:normal;font-weight:700;line-height:1;border:1px solid transparent}',
+      V+'._arsm-yr i.rep{background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -1px 2px rgba(0,0,0,.26)}',
+      V+'._arsm-yr i.gap{background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border-color:rgba(255,220,130,.45);color:#fff8e6;box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -1px 2px rgba(0,0,0,.25)}',
       // mánuður (rautt ef núverandi mánuður · grátt „—" ef enginn)
       V+'._arsm-mo{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;font-weight:700;color:#141a22;text-align:center;line-height:1.1;white-space:nowrap}',
       V+'._arsm-mo.none{color:#8a94a3;font-weight:400}',
@@ -2447,12 +2447,12 @@
       V+'._arsm-ak.d1{background:#e8f0fe;border-color:#2563eb;color:#2563eb}',
       V+'._arsm-ak.d2{background:#e7f7ee;border-color:#1f9d57;color:#1f9d57}',
       V+'._arsm-ak.d3{background:#f1ecfe;border-color:#8b5cf6;color:#8b5cf6}',
-      // staða-punktur
-      V+'._arsm-st{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;margin:0 auto;line-height:1}',
-      V+'._arsm-st.done{background:#e7f7ee;color:#1f9d57}',
-      V+'._arsm-st.eftir{background:#fdf3e0;color:#c98a1a}',
-      V+'._arsm-st.til{background:#e8f0fe;color:#2563eb}',
-      V+'._arsm-st.vantar{background:#fdeceb;color:#c0392b}',
+      // staða — málmhnappar eins og ._st--done/work/late (ekki pastel)
+      V+'._arsm-st{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;margin:0 auto;line-height:1;color:#fff;border:1px solid transparent;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
+      V+'._arsm-st.done{background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e}',
+      V+'._arsm-st.eftir{background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border-color:rgba(255,220,130,.45);color:#fff8e6}',
+      V+'._arsm-st.til{background:linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%);border-color:#060f24}',
+      V+'._arsm-st.vantar{background:linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);border-color:#4d0a08}',
       // ── app-ham yfirlög: patch 261 þvingar .view button{min-height:50px;
       //    font-size:17px;padding:12px} + .view{font-size:17px}. #view-arsskodun-
       //    sértækni + !important heldur röðunum þéttum (sama vopn og 261 notar
@@ -2488,8 +2488,8 @@
     const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
     const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
     // Hrá staða per ár LÍKA, svo aðrar sýnir teikni sitt eigið útlit úr SÖMU
-    // rökum. Patch 317 (bílstjóraspjöld) er með flata árs-reiti án gljáa og
-    // getur ekki notað yrHtml — en má ekki endurreikna rökin sjálfstætt.
+    // rökum. Patch 317 (bílstjóraspjöld) notar sömu málm-gljáa og taflan
+    // en getur ekki notað yrHtml — má ekki endurreikna rökin sjálfstætt.
     const arStada = years.map(y =>
       repSet.has(y) ? 'skyrsla' : (y === lastYr || y === factYr) ? 'skodad' : 'ekkert');
     return { yrHtml, arStada, stState, lastYr, fieldYr, manudur: m };
