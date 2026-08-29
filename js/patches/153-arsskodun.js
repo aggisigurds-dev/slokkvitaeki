@@ -87,6 +87,32 @@
   const MONTHS_IS = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
   const MONTHS_IS_SHORT = ['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
 
+  // `last_skodun` er FRJÁLS TEXTI úr innflutningnum, ekki ISO-dagsetning: hún
+  // kemur langoftast sem „2026-febrúar“. Fyrsta atlagan hér sneri einfaldlega við
+  // um bandstrikið eftir .slice(0,10) — sem klippti „febrúar“ í „febrú“ og skilaði
+  // „febrú.2026“ í 78px dálkinn. Þáttum í staðinn og styttum með MONTHS_IS_SHORT.
+  function stuttSkodun(v) {
+    const t = String(v).trim();
+    let m = /^(\d{4})-(\d{1,2})(?:-\d{1,2})?$/.exec(t);       // 2026-02 / 2026-02-15
+    if (m) {
+      const i = +m[2];
+      return (i >= 1 && i <= 12 ? MONTHS_IS_SHORT[i - 1] + '. ' : '') + m[1];
+    }
+    if (/^\d{4}[-\s]*$/.test(t)) return t.slice(0, 4);           // „2025-“ — ártal án mánaðar
+    m = /^(\d{4})[-\s]+(.+)$/.exec(t);                          // 2026-febrúar
+    if (m) {
+      // Upprunagögnin eru handslegin: „oktober“ kemur fyrir við hlið „október“.
+      // Berum saman broddstafalaust og NFC-samræmt, sama og gert er í leitinni.
+      const flat = x => x.normalize('NFD').replace(/[̀-ͯ]/g, '')
+                         .replace(/ð/g, 'd').replace(/þ/g, 'th').replace(/æ/g, 'ae').toLowerCase();
+      const leit = flat(m[2].trim());
+      const i = MONTHS_IS.findIndex(n => flat(n) === leit);
+      return (i >= 0 ? MONTHS_IS_SHORT[i] + '. ' : m[2].trim() + ' ') + m[1];
+    }
+    return t.length > 12 ? t.slice(0, 11) + '…' : t;             // óþekkt form — sýnum það óbrenglað
+  }
+
+
   // 2026-06: yearly estimate = Σ(tæki × Yfirferð) + these per-company add-ons.
   // NO recharge (hleðsla) — Agnar's choice, recharge isn't a yearly cost.
   const SKYRSLUGERD = 4340;   // Skýrslugerð: 3500 + 24% VSK (once per year)
@@ -1361,10 +1387,14 @@
     _ensureArsVmCss();
     const vm = arsViewMode();
     const isPhone = (window.innerWidth || document.documentElement.clientWidth) <= 768;
-    // 2026-08-26: Sími/app uses the SAME desktop table (glossy year pills,
-    // metallic header, status chips) — patch 314 compacts it to 390px.
+    // 2026-08-26: Sími/app notaði SÖMU skjáborðstöfluna og patch 314 kramdi
+    // hana í 390px. 2026-08-29 mældist útkoman af því: taflan 1280px breið í
+    // 430px glugga og raðirnar 326px HÁAR af því hver klefi braut sig niður.
+    // Agnar bað um frosinn nafndálk + lárétt skrun í staðinn, svo síminn fer nú
+    // á 'mrows' (renderMobileRows) sem var til en var ALDREI náð í — 'list' féll
+    // í gegn á renderTable. Handvalið „Tafla" heldur áfram í töfluna.
     const appMode = !!(document.body && document.body.classList.contains('appmode'));
-    const effView = (vm === 'mobile' || appMode) ? 'list'
+    const effView = (vm === 'mobile' || appMode) ? 'mrows'
                   : vm === 'table'  ? 'list'
                   : (isPhone ? 'card' : state.view);
     // Stats restricted to companies that ARE in árskoðun (have equipment).
@@ -2355,9 +2385,27 @@
     const A = 'body.appmode #view-arsskodun ';   // app-ham yfirlög (beat patch 261 .view button)
     s.textContent = [
       // hvítt spjald sem poppar á steel-gráa app-bakgrunninum
-      V+'._arsm-tbl{background:#fff;border:1px solid #e6e9ee;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(20,30,25,.05),0 14px 30px -24px rgba(20,30,25,.45);margin-top:4px}',
-      // ein lína = grind: nafn | 4-ára | mánuður | akstur | staða
-      V+'._arsm-row{display:grid;grid-template-columns:minmax(0,1fr) 66px 34px 34px 26px;gap:7px;align-items:center;padding:9px 11px;border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
+      V+'._arsm-tbl{background:#fff;border:1px solid #e6e9ee;border-radius:14px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 1px 2px rgba(20,30,25,.05),0 14px 30px -24px rgba(20,30,25,.45);margin-top:4px}',
+      /* Hönnun Agnars 29.08 (Claude Design, forskoðuð 430x860):
+         150px FROSINN nafndálkur + 668px sem skrunast til hliðar.
+         56+112+96+60+52+84+78+130 = 668 → röðin er 818px.
+         Áður var þetta minmax(0,1fr)+66+34+34+26 án skruns, svo allt kramdist
+         í símabreidd — mælt á 430px: taflan 1280px breið og raðirnar 326px HÁAR
+         af því allt braut sig niður. Nú skrunast það í staðinn fyrir að brotna. */
+      V+'._arsm-row{display:grid;grid-template-columns:150px 56px 112px 96px 60px 52px 84px 78px 130px;gap:0;align-items:center;width:818px;height:52px;border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
+      V+'._arsm-row>*{padding:0 6px;min-width:0}',
+      /* Nafnið helst kyrrt þegar strokið er til hliðar — annars veit maður ekki
+         hvaða fyrirtæki maður er að lesa um leið og fyrsti dálkur er farinn. */
+      V+'._arsm-name{position:sticky;left:0;z-index:2;background:#fff;overflow:hidden;padding:5px 8px !important;box-shadow:1px 0 0 #eef1f5}',
+      V+'._arsm-head ._arsm-name{background:#eef1f5}',
+      V+'._arsm-row:active ._arsm-name{background:#f3f5f8}',
+      V+'._arsm-head{height:38px}',
+      /* Nýju dálkarnir: tæki, virði, síðasta skoðun, ferðanóta. */
+      V+'._arsm-eq{text-align:center;font-size:12px;color:#3a4250;font-variant-numeric:tabular-nums}',
+      V+'._arsm-val{text-align:right;font-size:11.5px;color:#3a4250;font-variant-numeric:tabular-nums;white-space:nowrap}',
+      V+'._arsm-last{text-align:center;font-size:11px;color:#5b6573;white-space:nowrap}',
+      V+'._arsm-note{font-size:11px;color:#5b6573;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V+'._arsm-note.tom{color:#b6c0cc}',
       V+'._arsm-row:last-child{border-bottom:none}',
       V+'._arsm-row:active{background:#f3f5f8}',
       // haus-röð — árin sýnd einu sinni efst
@@ -2369,7 +2417,7 @@
       V+'._arsm-yrhead span{flex:1;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;color:#8a94a3}',
       // nafn + undirlína (póstnr · tækjafjöldi · ✉ vantar)
       V+'._arsm-name{min-width:0}',
-      V+'._arsm-nm{font-size:13.5px;font-weight:600;color:#141a22;white-space:normal;overflow:visible;overflow-wrap:anywhere;letter-spacing:-.01em;line-height:1.2}',
+      V+'._arsm-nm{font-size:12.5px;font-weight:600;color:#141a22;white-space:normal;overflow:hidden;overflow-wrap:anywhere;letter-spacing:-.01em;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:29px}',
       V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;color:#8a94a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
       // 4-ára reitir
       V+'._arsm-yr{display:flex;gap:2px}',
@@ -2396,7 +2444,7 @@
       //    sértækni + !important heldur röðunum þéttum (sama vopn og 261 notar
       //    sjálft á töfluna, sjá 261:518-522). ──
       A+'._arsm-ak{min-height:0!important;height:26px!important;font-size:12px!important;padding:0!important;line-height:1!important}',
-      A+'._arsm-nm{font-size:13.5px!important}',
+      A+'._arsm-nm{font-size:12.5px!important}',
       A+'._arsm-sub{font-size:9.5px!important}',
       A+'._arsm-mo{font-size:11px!important}',
       A+'._arsm-h,'+A+'._arsm-yrhead span{font-size:8.5px!important}',
@@ -2456,28 +2504,43 @@
       const email = (c.netfang || '').trim();
       const subBits = [];
       if (pnr) subBits.push(esc(pnr));
-      subBits.push(totalEq + ' tæki');
       if (!email) subBits.push('✉ vantar');
+      // Tækjafjöldi fór úr undirlínunni í eigin dálk (hönnun 29.08) — undirlínan
+      // ber nú aðeins póstnúmer og ✉-viðvörun, svo nafnið fái pláss í 150px.
+      const est = +ars.estimated_yearly || 0;
+      const virdi = est ? esc(fmtKr(est)) : '<span style="color:#b6c0cc">—</span>';
+      const sidast = ars.last_skodun
+        ? esc(stuttSkodun(ars.last_skodun))
+        : '<span style="color:#b6c0cc">—</span>';
+      const nota = (c.plan_note || '').trim();
       return `
         <div class="_ars-row _arsm-row" data-co-id="${c.id}" tabindex="0">
           <div class="_arsm-name">
-            <div class="_arsm-nm">${esc(c.nafn || '—')}</div>
+            <div class="_arsm-nm" title="${esc(c.nafn || '')}">${esc(c.nafn || '—')}</div>
             <div class="_arsm-sub">${subBits.join(' · ')}</div>
           </div>
-          <div class="_arsm-yr">${yrHtml}</div>
           ${moCell}
+          <div class="_arsm-yr">${yrHtml}</div>
+          <div class="_arsm-eq" title="Fjöldi tækja">${totalEq || '<span style="color:#b6c0cc">—</span>'}</div>
           <button type="button" class="_arsm-ak${ak ? ' d' + ak : ''}" data-akco="${c.id}" title="${ak ? 'Akstur ' + ak + ' — smelltu til að breyta' : 'Enginn aksturslisti — smelltu til að setja á lista'}">${ak || '—'}</button>
           <span class="_arsm-st ${st[0]}" title="${esc(st[2])}">${st[1]}</span>
+          <div class="_arsm-val" title="Áætlað virði ársþjónustu">${virdi}</div>
+          <div class="_arsm-last" title="Síðasta skoðun">${sidast}</div>
+          <div class="_arsm-note${nota ? '' : ' tom'}" title="${esc(nota || 'Engin ferðanóta')}">${esc(nota || '—')}</div>
         </div>`;
     }).join('');
     return `
       <div class="_arsm-tbl">
         <div class="_arsm-row _arsm-head">
           <div class="_arsm-h">Fyrirtæki</div>
-          <div class="_arsm-yrhead">${years.map(y => `<span>'${String(y).slice(-2)}</span>`).join('')}</div>
           <div class="_arsm-h _arsm-c">Mán</div>
+          <div class="_arsm-yrhead">${years.map(y => `<span>'${String(y).slice(-2)}</span>`).join('')}</div>
+          <div class="_arsm-h _arsm-c">Tæki</div>
           <div class="_arsm-h _arsm-c">🚗</div>
           <div class="_arsm-h _arsm-c">St</div>
+          <div class="_arsm-h" style="text-align:right">Virði</div>
+          <div class="_arsm-h _arsm-c">Síðast</div>
+          <div class="_arsm-h">Nóta</div>
         </div>
         ${rows}
       </div>`;

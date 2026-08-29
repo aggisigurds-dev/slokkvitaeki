@@ -92,11 +92,15 @@
     ARS + '._ars-statgrid{gap:6px!important;margin-bottom:8px!important}',
     ARS + '._ars-statgrid > div{padding:8px 10px!important}',
     ARS + '._arsm-tbl{border-radius:0;border-left:none;border-right:none;margin-top:0;box-shadow:none;width:100%}',
-    ARS + '._arsm-row{padding:6px 10px;gap:4px;grid-template-columns:minmax(0,1fr) 66px 34px 32px 26px}',
-    ARS + '._arsm-row._arsm-head{padding:5px 10px}',
-    'html body.appmode #view-arsskodun ._arsm-row ._arsm-nm{font-size:16px!important;font-weight:700;line-height:1.2}',
-    'html body.appmode #view-arsskodun ._arsm-row ._arsm-sub{font-size:12px!important}',
-    ARS + '._arsm-ak{min-height:32px!important;width:32px!important;height:32px!important;padding:0!important}',
+    // 2026-08-29: Grindin var negld hér (minmax(0,1fr) 66px 34px 32px 26px) fyrir
+    // gamla 5-reita mrows-markupið. 153 er núna með 9 reiti (150px frosinn nafn +
+    // 668px sem skrunast) og þessi lína tróð þeim í 5 rákir. Grind og padding eiga
+    // heima hjá 153 einum — 315 stillir aðeins rammann utan um töfluna.
+    ARS + '._arsm-row._arsm-head{padding:0}',
+    // Nafnið fékk 16px hér; dálkurinn er 150px og raðhæðin föst 52px, svo 16px
+    // sprengdi tveggja-línu klemmuna. 12.5px er það sem 153 mælir með.
+    'html body.appmode #view-arsskodun ._arsm-row ._arsm-sub{font-size:9.5px!important}',
+    ARS + '._arsm-ak{min-height:26px!important;width:30px!important;height:26px!important;padding:0!important}',
     ARS + '#_ars-search{font-size:16px!important;min-height:40px!important;padding:8px 10px!important}',
     ARS + '#_ars-new,' + ARS + '#_ars-print,' + ARS + '#_ars-print-caret,' + ARS + '#_ars-ovr,' +
     ARS + '#_ars-sort,' + ARS + '._ars-st,' + ARS + '._ars-mo,' + ARS + '#_ars-skiphide,' +
