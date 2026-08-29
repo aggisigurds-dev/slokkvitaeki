@@ -1919,13 +1919,17 @@
       var grp = (co && equip && equip.grpOf) ? equip.grpOf(co.id) : null;
       var trio = '';
       if (grp && grp.units > 0 && window.Arsskodun && Arsskodun.eqTrioHtml) {
-        var mismatch = (units > 0 && grp.units !== units);
-        trio = '<span class="rf-eqtrio" style="display:inline-flex;align-items:center;gap:5px;margin-left:7px;vertical-align:middle">' +
+        // 2026-08-29 SÍÐAR SAMA DAG: ⚠-merkið sem hér stóð er FARIÐ. Hugmyndin
+        // var að sýna þegar tækjaskráin og skýrslutalan stangast á — en í raun
+        // stangast þær á í meirihluta raða, svo merkið sat á nánast hverri línu
+        // og varð hávaði í stað upplýsinga (Agnar: „and what the hell").
+        // Misræmið er raunverulegt og mælt (504 af 569 stöðum stemma, 65 ekki),
+        // en það á heima í yfirferð — ekki sem varúðarþríhyrningur á borði sem
+        // er notað daglega. Talan sjálf er áfram sýnileg: 🧯 er skýrslutalan og
+        // SLT/BSL/RS er tækjaskráin, svo munurinn sést hvort eð er.
+        trio = '<span class="rf-eqtrio" style="display:inline-flex;align-items:center;margin-left:7px;vertical-align:middle"' +
+               ' title="Úr tækjaskránni — sama talning og Ársskoðun">' +
                  Arsskodun.eqTrioHtml(grp, 'screen') +
-                 (mismatch
-                   ? '<span title="Tækjaskráin segir ' + grp.units + ', skýrslan ' + units +
-                     ' — skiptingin er úr tækjaskránni" style="font-size:10px;color:#b45309">⚠</span>'
-                   : '') +
                '</span>';
       }
       var unitCell = stackTd(

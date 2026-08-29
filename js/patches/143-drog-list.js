@@ -170,6 +170,7 @@
             '<div style="font-size:12px;color:#fef3c7;margin-top:2px">Sölur sem hafa ekki verið kláraðar — birtast ekki í Bókhaldi fyrr en klárað er</div>' +
           '</div>' +
           '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+            '<input id="_drog-q" type="search" autocomplete="off" placeholder="Leita \u2014 n\u00famer, vi\u00f0skiptavinur\u2026" style="padding:6px 10px;border:1px solid rgba(255,255,255,0.4);border-radius:7px;background:rgba(255,255,255,0.15);color:#fff;font:inherit;font-size:12.5px;width:230px;max-width:46vw">' +
             '<label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#fff;cursor:pointer;white-space:nowrap"><input type="checkbox" id="_drog-showdel" style="cursor:pointer"> Sýna eydd</label>' +
             '<select id="_drog-sort" title="Raða" style="padding:6px 9px;border:1px solid rgba(255,255,255,0.4);border-radius:7px;background:rgba(255,255,255,0.15);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">' +
               '<option value="updated_desc" style="color:#0f172a">🕐 Nýlega breytt fyrst</option>' +
@@ -188,6 +189,21 @@
     if (sortSel) {
       sortSel.value = _sortMode;
       sortSel.addEventListener('change', e => { _sortMode = e.target.value; saveSort(_sortMode); renderList(); });
+    }
+    const qBox = v.querySelector('#_drog-q');
+    if (qBox) {
+      var _qT = null;
+      qBox.addEventListener('input', function () {
+        clearTimeout(_qT);
+        _qT = setTimeout(function () {
+          _q = String(qBox.value || '').trim().toLowerCase();
+          renderList();
+        }, 140);
+      });
+      // Esc hreinsar — sama venja og annars staðar í appinu.
+      qBox.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { qBox.value = ''; _q = ''; renderList(); }
+      });
     }
     const showDel = v.querySelector('#_drog-showdel');
     if (showDel) {
@@ -226,6 +242,14 @@
     window.App._drogSwitchPatched = true;
   }
 
+  // 2026-08-29 (Agnar): sía listann á leitarstreng. Tóm leit = allt eins og áður.
+  var _q = '';
+  function matchesQ(d) {
+    if (!_q) return true;
+    return [d.num, d.customer_nafn, d.greitt_med, d._loc]
+      .map(function (x) { return String(x == null ? '' : x).toLowerCase(); })
+      .join(' ').indexOf(_q) > -1;
+  }
   function renderList() {
     const body = document.getElementById('_drog-body');
     if (!body) return;
@@ -246,7 +270,12 @@
           return (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || '');
       }
     });
-    const rows = sorted.map(s => {
+    const synileg = sorted.filter(matchesQ);
+    if (!synileg.length) {
+      body.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8;font-style:italic;font-size:13px">Ekkert fannst fyrir \u201e' + esc(_q) + '\u201c</div>';
+      return;
+    }
+    const rows = synileg.map(s => {
       const age = daysSince(s.created_at);
       const ageBadge = age > 14
         ? '<span style="font-size:10px;font-weight:700;background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:99px">' + age + ' daga gamalt</span>'
