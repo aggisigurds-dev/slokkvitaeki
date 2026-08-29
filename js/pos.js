@@ -632,9 +632,16 @@
   // Núna ræður hakið „Sjá allar vörur og þjónustu" og það er SJÁLFGEFIÐ Á.
   // Stjörnusían er þá val sem maður kveikir á vísvitandi, ekki eitthvað sem
   // kviknar sjálft við fyrstu stjörnu. Röðunin (rodun) gildir í báðum tilvikum.
+  // 2026-08-29 SÍÐAR SAMA DAG: sjálfgefna gildið var SNÚIÐ VIÐ. Ég las beiðnina
+  // þannig að stjörnusían ætti að víkja, og setti hakið sjálfgefið á — þá komu
+  // allar 85 vörurnar aftur inn á forsíðuna og hún varð ólæsileg („now all the
+  // other varas back at the damn sala frontpage"). Agnar VILL stuttu forsíðuna;
+  // það sem hann bað um var að KOMAST Í hinar, ekki að fá þær allar upp.
+  // Sjálfgefið er því AF (stjörnusían ræður eins og áður) og hakið er leiðin til
+  // að sjá allt þegar maður vill.
   var SHOWALL_KEY = 'pos_syna_allar_vorur';
   function showAllTiles(){
-    try { return localStorage.getItem(SHOWALL_KEY) !== '0'; } catch (_) { return true; }
+    try { return localStorage.getItem(SHOWALL_KEY) === '1'; } catch (_) { return false; }
   }
   function setShowAllTiles(v){
     try { localStorage.setItem(SHOWALL_KEY, v ? '1' : '0'); } catch (_) {}
