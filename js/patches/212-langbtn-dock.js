@@ -33,6 +33,13 @@
     // v9.js-flotið (position:fixed, z-index:9999) sem flaut yfir modal-glugga.
     // Það er nákvæmlega bilunin sem þessi patch var skrifaður til að laga, svo
     // hún hefði endurvakist þegjandi. EN-takkinn er nú dokkaður EINN.
+    // LEIÐRÉTTING 2026-08-29: í commit a7e19d9 fullyrti ég að þessi patch væri
+    // "dauður allan tímann" af því app.css:3551 setur #_slokk_langbtn með
+    // !important. ÞAÐ VAR RANGT. Mæling á ástandinu FYRIR breytinguna (f049379)
+    // sýnir left:166px og z-index:200 — gildi ÞESSA patch, ekki app.css. Inline
+    // !important vinnur stílblað-!important eins og staðallinn segir. Fyrri
+    // mæling mín var gerð eftir handvirka endurkeyrslu í flipa þar sem staðan
+    // var þegar brengluð.
     var theme = document.getElementById('dark-toggle');   // má vera null
     var lang  = document.getElementById('_slokk_langbtn');
     if (!lang) return false;
