@@ -989,15 +989,22 @@
       // 185/companieslist/89/77. 175 sækir v_stadur_yfirlit ekki lengur sér (engin
       // tvítekin formúla sem getur rekið í sundur).
       try{ if(window.CanonStadur) await CanonStadur.ready(); }catch(e){}
+      // 2026-08-29 (Agnar): TÆKI-reiturinn á að sýna SÖMU töfluna og Ársskoðun
+      // (SLT/BSL/RS), ekki bara heildartölu. Skiptingin kemur úr
+      // v_uttaeki_fid_rollup — LYKLAÐ Á fyrirtaeki_id og síað á status='active',
+      // nákvæmlega eins og loadActiveUnitsByFid í 153. Nafna-rollupið hér að
+      // neðan er ANNAR lykill og hefði gefið aðrar tölur á sama stað.
       var _res = await Promise.all([
         fetchAllRows(SB, 'v_uttaeki_client_rollup',
                      'client,units,y2024,y2025,y2026,next_insp'),
         fetchAllRows(SB, 'arsskodun_report_facts',
                      'fyrirtaeki_id,total_devices,report_year'),
         fetchAllRows(SB, 'uttaeki', 'worksite_id,last_insp,next_insp',
-                     function(q){ return q.not('worksite_id','is',null); })
+                     function(q){ return q.not('worksite_id','is',null); }),
+        fetchAllRows(SB, 'v_uttaeki_fid_rollup',
+                     'fyrirtaeki_id,units,slt,bsl,rs,other_units')
       ]);
-      var rows=_res[0], factRows=_res[1], wsRows=_res[2];
+      var rows=_res[0], factRows=_res[1], wsRows=_res[2], fidRows=_res[3]||[];
       var base={},comp={},street={};
       rows.forEach(function(u){ var b=_norm(u.client); if(!b)return; var c=_compact(u.client), s=_streetnum(u.client);
         (base[b]||(base[b]=_blank())); _add(base[b],u);
@@ -1007,6 +1014,13 @@
       wsRows.forEach(function(u){ if(u.worksite_id==null)return; var k=String(u.worksite_id);
         (ws[k]||(ws[k]=_blank())); _addRaw(ws[k],u); });
       factRows.forEach(function(f){ if(f&&f.fyrirtaeki_id!=null) facts[String(f.fyrirtaeki_id)]=f; });
+      // Tækjaskiptingin (SLT/BSL/RS) per starfsstöð — sami lykill og Ársskoðun.
+      // Aðeins hóparnir eru geymdir; heildartöluna ræður canonical brunnurinn
+      // áfram (sjá bldEquipSt), svo öryggisreglan frá 2026-08-23 haldist.
+      var fidGrp={};
+      fidRows.forEach(function(r){ if(!r||r.fyrirtaeki_id==null)return;
+        fidGrp[String(r.fyrirtaeki_id)] = { slt:+r.slt||0, bsl:+r.bsl||0, rs:+r.rs||0,
+                                            other:+r.other_units||0, units:+r.units||0 }; });
       // 2026-07-16 (Agnar): TÆKI = nákvæmlega tækin sem standa á fyrirtækinu
       // (sama og prófíllinn sýnir) — götu+númer-giskið safnaði gömlum
       // client-strengja-útgáfum saman (Hamraborg 7 sýndi 30 í stað 14).
@@ -1014,6 +1028,7 @@
         var c=_compact(name); if(comp[c])return comp[c]; return null; },
         wsOf:function(id){ return id==null?null:(ws[String(id)]||null); },
         factOf:function(id){ return id==null?null:(facts[String(id)]||null); },
+        grpOf:function(id){ return id==null?null:(fidGrp[String(id)]||null); },
         canonOf:function(id){ return (id!=null&&window.CanonStadur)?CanonStadur.rowOf(id):null; } };
       _equipAt=Date.now();
       return _equip;
@@ -1890,8 +1905,31 @@
       // TÆKI: 🧯 slökkvitæki + 🚨 brunakerfis-búnaður, hvor á sinni línu
       var slCntTxt = units>0 ? String(units) : (hasRep||lkYears.length?'–':'0');
       var brCntTxt = bUnits>0 ? String(bUnits) : (bHasData?'–':'0');
+      // 2026-08-29 (Agnar): SLT/BSL/RS-skiptingin úr Ársskoðun bætist við á eftir
+      // heildartölunni — SÖMU tölur, því hún kemur úr v_uttaeki_fid_rollup (sami
+      // lykill fyrirtaeki_id + status='active') og er teiknuð með eqTrioHtml úr
+      // 153, ekki afriti af honum.
+      //
+      // Heildartalan (🧯) stendur ÁFRAM efst og kemur áfram úr canonical brunninum
+      // (skýrsla > reikningur). Hún og skiptingin eru sitt hvor staðreyndin:
+      // skýrslutalan vs. tækjaskráin. Þær stemma á 504 af 569 stöðum. Skeiki þeim
+      // er það SÝNT með ⚠ í stað þess að fela það — 51 staður á skýrslu án nokkurs
+      // skráðs tækis og 14 hafa raunverulegt misræmi. Það eru gagnavillur sem eiga
+      // að sjást, ekki hverfa.
+      var grp = (co && equip && equip.grpOf) ? equip.grpOf(co.id) : null;
+      var trio = '';
+      if (grp && grp.units > 0 && window.Arsskodun && Arsskodun.eqTrioHtml) {
+        var mismatch = (units > 0 && grp.units !== units);
+        trio = '<span class="rf-eqtrio" style="display:inline-flex;align-items:center;gap:5px;margin-left:7px;vertical-align:middle">' +
+                 Arsskodun.eqTrioHtml(grp, 'screen') +
+                 (mismatch
+                   ? '<span title="Tækjaskráin segir ' + grp.units + ', skýrslan ' + units +
+                     ' — skiptingin er úr tækjaskránni" style="font-size:10px;color:#b45309">⚠</span>'
+                   : '') +
+               '</span>';
+      }
       var unitCell = stackTd(
-        '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+'" title="Slökkvitæki á staðnum"><em>🧯</em>'+slCntTxt+'</span>',
+        '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+'" title="Slökkvitæki á staðnum"><em>🧯</em>'+slCntTxt+'</span>'+trio,
         '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bruInSvc);
       var bldBaseId = (co && co.customer_base_id != null) ? co.customer_base_id
                     : (b.customer_base_id != null ? b.customer_base_id : baseByKt[digits(b.kt)]);

@@ -548,6 +548,16 @@
   function eqGroups(equipment) {
     const e = equipment || {};
     const n = k => +e[k] || 0;
+    // 2026-08-29 (Agnar „sama source, vil ekki sjá misræmi"): taka líka við
+    // FORFLOKKUÐU inntaki {slt,bsl,rs,other}. Rekstrarfélög (175) les hópana
+    // beint úr v_uttaeki_fid_rollup — sami lykill (fyrirtaeki_id), sama
+    // status-sía ('active') og sama flokkunarregla og categoryOf() hér að ofan —
+    // og teiknar þá með eqTrioHtml. Þannig er EIN teikning og EIN formúla fyrir
+    // bæði borðin í stað tveggja sem geta rekið í sundur.
+    if (e.slt != null || e.bsl != null || e.rs != null) {
+      const s = n('slt'), b = n('bsl'), r = n('rs'), o = n('other');
+      return { slt: s, bsl: b, rs: r, other: o, total: s + b + r + o };
+    }
     const slt = n('lettvatn') + n('duft2') + n('duft6_12') + n('co2_2') + n('co2_5');
     const bsl = n('brunaslongur');
     const rs  = n('reykskynjarar');
@@ -3839,7 +3849,10 @@
   // same live equipment counts + estimated yearly revenue per company.
   // cleanAminning er birt svo önnur borð (190 Verkstæði) noti SÖMU hreinsun —
   // annars sæist tvítekni „---"-textinn þar áfram þótt hann sé horfinn hér.
-  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, version: 'v1' };
+  // eqGroups/eqTrioHtml eru birt af sömu ástæðu og cleanAminning: önnur borð
+  // (175 Rekstrarfélög) eiga að TEIKNA SLT/BSL/RS með nákvæmlega sömu formúlu,
+  // ekki afriti af henni. Sjá athugasemd við eqGroups um forflokkað inntak.
+  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, version: 'v1' };
 
   // Keep the cached priority in sync when the ❗ control is cycled (patch 175),
   // so sorting by ❗ stays correct. The ❗ button updates itself in place — no
