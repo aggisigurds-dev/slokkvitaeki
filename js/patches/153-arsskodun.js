@@ -2392,7 +2392,7 @@
     const A = 'body.appmode #view-arsskodun ';   // app-ham yfirlög (beat patch 261 .view button)
     s.textContent = [
       // hvítt spjald sem poppar á steel-gráa app-bakgrunninum
-      V+'._arsm-tbl{background:#fff;border:1px solid #e6e9ee;border-radius:14px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 1px 2px rgba(20,30,25,.05),0 14px 30px -24px rgba(20,30,25,.45);margin-top:4px}',
+      V+'._arsm-tbl{background:#fff;border:1px solid var(--ars-rammi,#e3e1dc);border-radius:14px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 1px 2px rgba(20,30,25,.05),0 14px 30px -24px rgba(20,30,25,.45);margin-top:4px;font-family:var(--ars-letur,\'IBM Plex Sans\',-apple-system,\'Segoe UI\',system-ui,sans-serif)}',
       /* Hönnun Agnars 29.08 (Claude Design, forskoðuð 430x860):
          150px FROSINN nafndálkur + 668px sem skrunast til hliðar.
          56+112+96+60+52+84+78+130 = 668 → röðin er 818px.
@@ -2408,10 +2408,10 @@
       V+'._arsm-row:active ._arsm-name{background:#f3f5f8}',
       V+'._arsm-head{height:var(--ars-haus-haed,38px)}',
       /* Nýju dálkarnir: tæki, virði, síðasta skoðun, ferðanóta. */
-      V+'._arsm-eq{text-align:center;font-size:12px;color:#3a4250;font-variant-numeric:tabular-nums}',
-      V+'._arsm-val{text-align:right;font-size:11.5px;color:#3a4250;font-variant-numeric:tabular-nums;white-space:nowrap}',
-      V+'._arsm-last{text-align:center;font-size:11px;color:#5b6573;white-space:nowrap}',
-      V+'._arsm-note{font-size:11px;color:#5b6573;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V+'._arsm-eq{text-align:center;font-size:12px;color:var(--ars-texti-mjukur,#5d5a54);font-variant-numeric:tabular-nums}',
+      V+'._arsm-val{text-align:right;font-size:11.5px;color:var(--ars-texti-mjukur,#5d5a54);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      V+'._arsm-last{text-align:center;font-size:11px;color:var(--ars-texti-mjukur,#5d5a54);white-space:nowrap}',
+      V+'._arsm-note{font-size:11px;color:var(--ars-texti-mjukur,#5d5a54);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       V+'._arsm-note.tom{color:#b6c0cc}',
       /* 2026-08-29 (ákvörðun Agnars í HANDOFF v2): KPI-spjöldin fara ÚR
          símaútlitinu. 187px af skjáhæð fyrir þrjár tölur sem bílstjóri notar
@@ -2425,25 +2425,25 @@
       // haus-röð — árin sýnd einu sinni efst
       V+'._arsm-head{background:#eef1f5;cursor:default}',
       V+'._arsm-head:active{background:#eef1f5}',
-      V+'._arsm-h{font-size:8.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#8a94a3}',
+      V+'._arsm-h{font-size:8.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ars-texti-merki,#6f6b63)}',
       V+'._arsm-c{text-align:center}',
       V+'._arsm-yrhead{display:flex;gap:2px}',
-      V+'._arsm-yrhead span{flex:1;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;color:#8a94a3}',
+      V+'._arsm-yrhead span{flex:1;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;color:var(--ars-texti-merki,#6f6b63)}',
       // nafn + undirlína (póstnr · tækjafjöldi · ✉ vantar)
       V+'._arsm-name{min-width:0}',
-      V+'._arsm-nm{font-size:var(--ars-nafn-letur,12.5px);font-weight:600;color:#141a22;white-space:normal;overflow:hidden;overflow-wrap:anywhere;letter-spacing:-.01em;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:29px}',
-      V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--ars-undirtexti,9.5px);color:#8a94a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
+      V+'._arsm-nm{font-size:var(--ars-nafn-letur,12.5px);font-weight:600;color:var(--ars-texti,#16181c);white-space:normal;overflow:hidden;overflow-wrap:anywhere;letter-spacing:-.01em;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:29px}',
+      V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--ars-undirtexti,9.5px);color:var(--ars-texti-merki,#6f6b63);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
       // 4-ára reitir — sömu málm-gljáar og skjáborð ._yr.both / .penda (Agnar viðmið)
       V+'._arsm-yr{display:flex;gap:2px}',
       V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:#e3e6ea;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-style:normal;font-weight:700;line-height:1;border:1px solid transparent}',
       V+'._arsm-yr i.rep{background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -1px 2px rgba(0,0,0,.26)}',
       V+'._arsm-yr i.gap{background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border-color:rgba(255,220,130,.45);color:#fff8e6;box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -1px 2px rgba(0,0,0,.25)}',
       // mánuður (rautt ef núverandi mánuður · grátt „—" ef enginn)
-      V+'._arsm-mo{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;font-weight:700;color:#141a22;text-align:center;line-height:1.1;white-space:nowrap}',
-      V+'._arsm-mo.none{color:#8a94a3;font-weight:400}',
+      V+'._arsm-mo{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;font-weight:700;color:var(--ars-texti,#16181c);text-align:center;line-height:1.1;white-space:nowrap}',
+      V+'._arsm-mo.none{color:var(--ars-texti-merki,#6f6b63);font-weight:400}',
       V+'._arsm-mo.due{color:#c0392b}',
       // akstur-toggle (0=grár „—" · 1=blár · 2=grænn · 3=fjólublár) — sbr. mockup v2
-      V+'._arsm-ak{width:30px;height:26px;margin:0 auto;border-radius:8px;border:1.5px solid #e6e9ee;background:#f4f6f9;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:700;color:#8a94a3;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}',
+      V+'._arsm-ak{width:30px;height:26px;margin:0 auto;border-radius:8px;border:1.5px solid var(--ars-rammi,#e3e1dc);background:#f4f6f9;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:700;color:var(--ars-texti-merki,#6f6b63);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}',
       V+'._arsm-ak.d1{background:#e8f0fe;border-color:#2563eb;color:#2563eb}',
       V+'._arsm-ak.d2{background:#e7f7ee;border-color:#1f9d57;color:#1f9d57}',
       V+'._arsm-ak.d3{background:#f1ecfe;border-color:#8b5cf6;color:#8b5cf6}',
