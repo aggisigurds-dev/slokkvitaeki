@@ -334,6 +334,7 @@
   function rerenderCatalog(){
     var sv=document.getElementById('pos-services');if(sv)sv.innerHTML=buildServicesHTML();
     var pr=document.getElementById('pos-products');if(pr)pr.innerHTML=buildProductsHTML();
+    syncShowAllUI();
     // 2026-05-09: notify patches (87-sala-from-settings) that the catalog
     // tiles were re-rendered so they can re-apply custom order, pinned tiles,
     // hidden product filtering. Without this, the periodic loadAll() watcher
@@ -541,6 +542,14 @@
             // Viðskiptavinur header is the manual fallback. Kept the id
             // so the wireUp handler can defensively check.
             '<button id="pos-scan" style="display:none">unused</button>' +
+            // Hakið sem ræður stjörnusíunni. Textinn er orðalag Agnars sjálfs.
+            // Talan aftan við segir hvað er sýnt af hverju — svo aldrei sé hægt
+            // að fela vörur án þess að það sjáist á skjánum.
+            '<label id="pos-showall-wrap" style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#475569;font-weight:600" title="Af: sýna aðeins vörur sem eru stjörnumerktar á forsíðu Söluborðs">' +
+              '<input type="checkbox" id="pos-showall" style="width:16px;height:16px;cursor:pointer">' +
+              '<span>Sjá allar vörur og þjónustu</span>' +
+              '<span id="pos-showall-count" style="font-weight:500;color:#94a3b8;font-variant-numeric:tabular-nums"></span>' +
+            '</label>' +
           '</div>' +
           '<div id="pos-services" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>' +
         '</div>' +
@@ -612,8 +621,40 @@
   // (1 = fremst, null/hátt = aftast, svo stafrófsröð). Ekkert merkt = allt
   // sýnist í rodun+stafrófsröð eins og áður. Snertir EKKERT í körfu/kt-flæði
   // — state.services/products standa óbreytt fyrir Listann og leitina.
+  // 2026-08-29 (Agnar: „held að eitthvað gamalt vörusýnarkerfi sé að trufla,
+  // mikið af vörum eru ekki að sjást"). Það var rétt greint — og þetta var það.
+  //
+  // Reglan að ofan er ÓSÝNILEG: um leið og EITT er stjörnumerkt hverfa öll hin
+  // af flísunum, án þess að nokkurs staðar standi hvers vegna. Mælt í gögnunum
+  // 29.08: 15 vörur stjörnumerktar → 85 af 100 VIRKUM vörum földust. Þjónustan
+  // slapp aðeins af því ekkert þar var merkt.
+  //
+  // Núna ræður hakið „Sjá allar vörur og þjónustu" og það er SJÁLFGEFIÐ Á.
+  // Stjörnusían er þá val sem maður kveikir á vísvitandi, ekki eitthvað sem
+  // kviknar sjálft við fyrstu stjörnu. Röðunin (rodun) gildir í báðum tilvikum.
+  var SHOWALL_KEY = 'pos_syna_allar_vorur';
+  function showAllTiles(){
+    try { return localStorage.getItem(SHOWALL_KEY) !== '0'; } catch (_) { return true; }
+  }
+  function setShowAllTiles(v){
+    try { localStorage.setItem(SHOWALL_KEY, v ? '1' : '0'); } catch (_) {}
+  }
+  // Heldur hakinu og talningunni í takt við ástandið. Talan er þarna svo aldrei
+  // sé hægt að fela vörur án þess að það sjáist — það var einmitt vandamálið.
+  function syncShowAllUI(){
+    var cb = document.getElementById('pos-showall');
+    if (!cb) return;
+    var all = showAllTiles();
+    cb.checked = all;
+    var tot = (state.services.length + state.products.length);
+    var syn = tileList(state.services).length + tileList(state.products).length;
+    var c = document.getElementById('pos-showall-count');
+    if (c) c.textContent = (syn === tot) ? '' : ('· ' + syn + ' af ' + tot);
+    var w = document.getElementById('pos-showall-wrap');
+    if (w) w.style.color = all ? '#475569' : '#b45309';
+  }
   function tileList(arr){
-    var any = arr.some(function(p){return p.forsida === true;});
+    var any = !showAllTiles() && arr.some(function(p){return p.forsida === true;});
     var rows = any ? arr.filter(function(p){return p.forsida === true;}) : arr.slice();
     rows.sort(function(a,b){
       var ra = (a.rodun == null ? 9999 : +a.rodun), rb = (b.rodun == null ? 9999 : +b.rodun);
@@ -913,6 +954,12 @@
     var drogBtn=document.getElementById('pos-drog');
     if(drogBtn)drogBtn.addEventListener('click',function(){try{if(window.DrogList&&DrogList.open){DrogList.open();}}catch(_){}});
     document.getElementById('pos-scan').addEventListener('click',scanQr);
+    // „Sjá allar vörur og þjónustu" — ræður stjörnusíunni (sjá tileList).
+    var showAllCb = document.getElementById('pos-showall');
+    if (showAllCb) showAllCb.addEventListener('change', function(){
+      setShowAllTiles(showAllCb.checked);
+      rerenderCatalog();
+    });
     var topScanBtn = document.getElementById('pos-scan-top');
     if (topScanBtn) topScanBtn.addEventListener('click', scanQr);
     document.getElementById('pos-services').addEventListener('click',function(e){var b=e.target.closest('.pos-svc');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);var s=state.services.find(function(x){return x.id===id;});if(!s)return;state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id,krefst_verkbeidni:!!s.krefst_verkbeidni});rerenderDynamic();});
