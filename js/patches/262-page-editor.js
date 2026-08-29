@@ -1,19 +1,14 @@
 /* === STÍLSTJÓRI — 🎨 lifandi útlits-ritill (262) ============================
  *
- * A small 🎨 button in the Brunastál banner (right before the clock) opens a
- * docked panel at the BOTTOM of the site. Pick any element on the page and
- * restyle it live: sliders (letur/breidd/hæð/padding/border/bil…), litir
- * (texti/bakgrunnur/border), halli (gradient), leturgerð, tilbúin stíla-safn
- * (dökkur málmur / gler / pilla …), og bakgrunnsmynd. Everything applies
- * INSTANTLY and is saved (synced across devices via AppSettings).
+ * A small paint-palette icon (#_pe-btn) in the Brunastál banner (.bb-face,
+ * beside Sími/Tafla/Skjár, before .bb-rightwrap) opens Stilla útlit. Lives in
+ * .bb-face — not inside .bb-rightwrap — so 314/mobile.css hiding the clock
+ * wrap never swallows the activator. Quiet floating fallback only when the
+ * banner face is missing. Hidden in ?devframe= children (IN_DEVFRAME + 320).
  *
- * Scope per change: „Þessi síða" (only the active view — overrides there) eða
- * „Allar síður" (global). Stored as ONE json string under `page_editor_v1_json`
- * (string keys overwrite cleanly — no array-merge / delete-propagation issues).
- *
- * Overrides are injected as a <style id="_pe-overrides"> with !important so they
- * win over the app's own CSS. Phase 1 — custom saved presets, an emoji palette
- * and a per-box component builder are the planned next steps.
+ * Docked panel: pick any element and restyle live (sliders, litir, halli,
+ * leturgerð, stíla-safn, bakgrunnur). Saved via AppSettings /
+ * page_editor_v1_json. Scope: „Þessi síða" eða „Allar síður".
  * ========================================================================== */
 (() => {
   if (window.__pageEditorInstalled) return;
@@ -488,18 +483,33 @@
     if (document.getElementById('_pe-css')) return;
     const s = document.createElement('style'); s.id = '_pe-css';
     s.textContent = [
-      '#' + BTN_ID + '{all:unset;cursor:pointer;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;margin-right:6px;transition:background .12s}',
-      '#' + BTN_ID + ':hover{background:rgba(255,255,255,.14)}',
+      // Quiet banner activator (Agnar 2026-08-29: litill málningarplatti í banner).
+      // Not a loud floating 🎨 — small SVG in .bb-face next to Sími/Tafla/Skjár.
+      '#' + BTN_ID + '{all:unset;cursor:pointer;color:rgba(255,210,150,.78);line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;margin:0 2px;flex:0 0 auto;opacity:.88;transition:background .12s,color .12s,opacity .12s}',
+      '#' + BTN_ID + ':hover{background:rgba(255,255,255,.12);color:#ffd39a;opacity:1}',
+      '#' + BTN_ID + ' svg{display:block;width:15px;height:15px;pointer-events:none}',
+      '#' + BTN_ID + '._pe-float{position:fixed;right:14px;bottom:18px;z-index:9998;width:30px;height:30px;margin:0;opacity:.5;background:rgba(12,14,18,.42);border:1px solid rgba(255,255,255,.1);border-radius:9px;color:rgba(255,210,150,.75)}',
+      '#' + BTN_ID + '._pe-float:hover{opacity:.88;background:rgba(12,14,18,.68)}',
       '#' + PANEL_ID + '{position:fixed;left:0;right:0;bottom:0;z-index:99990;max-height:56vh;overflow:auto;background:#f8fafc;border-top:1px solid #cbd5e1;box-shadow:0 -12px 34px -14px rgba(15,23,42,.35);font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;color:#11141c;padding:14px 18px 22px}',
-      // Hliðar-dokkun: hægri panel í fullri hæð á breiðum skjá — stýringarnar
+      // Hliðar-dokkun: panel í fullri hæð á breiðum skjá — stýringarnar
       // hlaðast lóðrétt og skyggja ekki á töfluna sem verið er að stilla.
       '@media (min-width:900px){' +
         /* 2026-08-26 (Agnar): hliðarpanellinn VINSTRA megin, yfir app-sidebarnum
            — maður þarf ekki nav-ið á meðan verið er að stíla. */
-        '#' + PANEL_ID + '.pe-side{left:0;right:auto;top:0;bottom:0;width:336px;max-width:94vw;max-height:none;height:auto;border-top:0;border-left:0;border-right:1px solid #cbd5e1;box-shadow:16px 0 36px -18px rgba(15,23,42,.45);padding:14px 16px 26px;overflow-y:auto}' +
+        '#' + PANEL_ID + '.pe-side{left:0;right:auto;top:0;bottom:0;width:320px;max-width:94vw;max-height:none;height:auto;border-top:0;border-left:0;border-right:1px solid #cbd5e1;box-shadow:16px 0 36px -18px rgba(15,23,42,.45);padding:12px 14px 22px;overflow-y:auto}' +
         '#' + PANEL_ID + '.pe-side .pe-grid{grid-template-columns:1fr;gap:10px}' +
         '#' + PANEL_ID + '.pe-side .pe-target{max-width:100%}' +
+        /* Botn á breiðum skjá: þjappað sheet — ekki 56vh af tómum hvítum reitum. */
+        '#' + PANEL_ID + ':not(.pe-side){max-height:36vh}' +
       '}',
+      // Desktop/Skjár án media-query (viewmode=desktop á þröngum glugga líka).
+      '#' + PANEL_ID + '.pe-desk.pe-side{left:0;right:auto;top:0;bottom:0;width:320px;max-width:94vw;max-height:none;height:auto;border-top:0;border-left:0;border-right:1px solid #cbd5e1;box-shadow:16px 0 36px -18px rgba(15,23,42,.45);padding:12px 14px 22px;overflow-y:auto}',
+      '#' + PANEL_ID + '.pe-desk:not(.pe-side){max-height:36vh}',
+      // Færum síðuna til hægri svo taflan sjáist meðan stjórnborðið er opið.
+      'html[data-viewmode="desktop"] body.pe-side-open #bstal-banner,' +
+      'html[data-viewmode="desktop"] body.pe-side-open #bstal-ember{left:var(--pe-side-w,320px)!important;width:calc(100% - var(--pe-side-w,320px))!important}',
+      'html[data-viewmode="desktop"] body.pe-side-open .view.active{margin-left:var(--pe-side-w,320px)!important;width:auto!important;max-width:calc(100% - var(--pe-side-w,320px))!important;box-sizing:border-box}',
+      'html[data-viewmode="desktop"] body.pe-side-open .topbar{visibility:hidden;pointer-events:none}',
       // Header is now its own column: title row, then a toolbar row (wraps
       // cleanly instead of everything fighting for one line), then — only when
       // a target is picked — its own row for the selector chip. Fixes the
@@ -1727,16 +1737,46 @@
   }
   function togglePanel() { if (document.getElementById(PANEL_ID)) closePanel(); else openPanel(); }
 
-  // ── the 🎨 banner button ────────────────────────────────────────────────────
+  // ── quiet paint-palette activator in the Brunastál banner ──────────────────
+  // Same open path as before: click → togglePanel() → PageEditor panel (#_pe-panel).
+  // Placement mirrors patch 166's viewmode toggle: .bb-face BEFORE .bb-rightwrap,
+  // so Sími-ham (314 hides .bb-rightwrap) still shows the activator.
+  function paletteIconHtml() {
+    // Material-style palette silhouette — quiet, no emoji, matches banner amber.
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false">'
+      + '<path fill="currentColor" d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.4-1.02-.23-.27-.35-.61-.35-.98 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 8 6.5 8s1.5.67 1.5 1.5S7.33 11 6.5 11zm3-4C8.67 7 8 6.33 8 5.5S8.67 4 9.5 4s1.5.67 1.5 1.5S10.33 7 9.5 7zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 4 14.5 4s1.5.67 1.5 1.5S15.33 7 14.5 7zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>'
+      + '</svg>';
+  }
   function ensureBtn() {
     if (IN_DEVFRAME) return;
-    if (document.getElementById(BTN_ID)) return;
     injectStyles();
-    const clockbox = document.querySelector('.bb-clockbox');
-    const mk = () => { const b = document.createElement('button'); b.id = BTN_ID; b.type = 'button'; b.title = 'Stilla útlit — litir, letur, stærðir, bakgrunnur'; b.textContent = '🎨'; b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); togglePanel(); }); return b; };
-    if (clockbox && clockbox.parentNode) { clockbox.parentNode.insertBefore(mk(), clockbox); return; }
-    const restore = document.getElementById('bstal-restore');
-    if (restore && restore.style.display !== 'none') { const b = mk(); b.style.cssText += ';position:fixed;right:108px;top:14px;z-index:9998;width:38px;height:38px;margin:0;background:rgba(0,0,0,.35)'; document.body.appendChild(b); }
+    const face = document.querySelector('#bstal-banner .bb-face');
+    const rightwrap = document.querySelector('#bstal-banner .bb-rightwrap');
+    const wanted = face ? 'banner' : 'float';
+    let b = document.getElementById(BTN_ID);
+    if (b && b.dataset.spot === wanted) {
+      // Banner rebuilt / viewmode re-ordered — keep us just before the clock wrap.
+      if (wanted === 'banner' && rightwrap && (b.parentNode !== face || b.nextElementSibling !== rightwrap)) {
+        face.insertBefore(b, rightwrap);
+      }
+      return;
+    }
+    if (b) b.remove();
+    b = document.createElement('button');
+    b.id = BTN_ID;
+    b.type = 'button';
+    b.dataset.spot = wanted;
+    b.title = 'Stilla útlit — litir, letur, stærðir, bakgrunnur';
+    b.setAttribute('aria-label', 'Stilla útlit');
+    b.innerHTML = paletteIconHtml();
+    b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); togglePanel(); });
+    if (wanted === 'banner') {
+      face.insertBefore(b, rightwrap || null);
+    } else {
+      // Quiet fallback only when the banner face is gone — not a second big 🎨.
+      b.className = '_pe-float';
+      document.body.appendChild(b);
+    }
   }
 
   function boot() {
@@ -1753,9 +1793,14 @@
       return;
     }
     ensureBtn();
-    const obs = new MutationObserver(() => { if (!document.getElementById(BTN_ID)) ensureBtn(); });
+    let _peBtnT = null;
+    const obs = new MutationObserver(() => {
+      clearTimeout(_peBtnT);
+      _peBtnT = setTimeout(ensureBtn, 150);
+    });
     obs.observe(document.body, { childList: true, subtree: true });
     [400, 1200, 3000].forEach(ms => setTimeout(ensureBtn, ms));
+    document.addEventListener('slokk-viewmode', () => setTimeout(ensureBtn, 60));
     document.addEventListener('mousemove', onMove, true);
     document.addEventListener('click', onPick, true);
     // re-hydrate overrides once settings sync from the DB
