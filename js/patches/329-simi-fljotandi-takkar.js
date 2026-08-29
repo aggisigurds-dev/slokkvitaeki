@@ -71,11 +71,27 @@
     '#_dst-btn._float',
   ];
 
-  /* Þrjú svið: uppsett app, læsti Bílstjórinn og alvöru símavélbúnaður.
-     `html.slokk-phone-dev` kemur úr 166 (skjástærð/snerting), EKKI úr
-     gluggabreidd — mjór gluggi á tölvuskjá telst því ekki sími og
+  /* Símaramminn (320) keyrir barnið með ?devframe=simi|tafla. Þar er `screen`
+     skjár TÖLVUNNAR, svo 166 setur ekki .slokk-phone-dev og símareglurnar
+     hefðu ekki gilt í forskoðuninni. Merkjum barnið sjálf — annars héldi
+     ramminn áfram að sýna annað en síminn, sem er einmitt gallinn sem þessi
+     patch er skrifaður út af. */
+  try {
+    if (new URLSearchParams(location.search).get('devframe')) {
+      document.documentElement.classList.add('slokk-simahamur');
+    }
+  } catch (_) {}
+
+  /* Fjögur svið: uppsett app, læsti Bílstjórinn, alvöru símavélbúnaður og
+     símaramminn. `html.slokk-phone-dev` kemur úr 166 (skjástærð/snerting),
+     EKKI úr gluggabreidd — mjór gluggi á tölvuskjá telst því ekki sími og
      skjáborðið helst ósnert. */
-  const SVID = ['body.appmode', 'body.bs-active', 'html.slokk-phone-dev body'];
+  const SVID = [
+    'body.appmode',
+    'body.bs-active',
+    'html.slokk-phone-dev body',
+    'html.slokk-simahamur body',
+  ];
 
   const felur = [];
   SVID.forEach((s) => BAKVINNSLA.forEach((b) => felur.push(s + ' ' + b)));
@@ -102,7 +118,8 @@ body.appmode #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3) { display:none !impor
 
 /* Sé engin botnstika fer EN í vinstra hornið á síma, svo það hætti að liggja
    ofan á QR-tákninu. Hægra hornið tilheyrir skannanum. */
-html.slokk-phone-dev body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3) {
+html.slokk-phone-dev body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3),
+html.slokk-simahamur body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3) {
   left: 12px !important;
   right: auto !important;
   bottom: 14px !important;
