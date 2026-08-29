@@ -61,7 +61,8 @@
       <button id="backup-btn" class="btn btn-outline" style="width:100%">💾 Afrita allt sem JSON</button>
       <div style="font-size:11px;color:#94a3b8;margin-top:6px">Niðurhal á öllum gögnum þínum.</div>`;
     (modal.querySelector('.sm-modal') || modal).appendChild(wrap);
-    document.getElementById('backup-btn').onclick = backup;
+    var backupBtn = document.getElementById('backup-btn');
+    if (backupBtn) backupBtn.onclick = backup;
   });
   obs.observe(document.body, { childList:true, subtree:true });
 

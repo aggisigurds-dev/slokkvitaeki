@@ -269,7 +269,8 @@
 
     sm.appendChild(sec);
 
-    document.getElementById('sms-save-btn').onclick = () => {
+    var smsSaveBtn = document.getElementById('sms-save-btn');
+    if (smsSaveBtn) smsSaveBtn.onclick = () => {
       localStorage.setItem(K.CO_PHONE, (document.getElementById('sms-co-phone')?.value || '').trim());
       localStorage.setItem(K.OVERDUE_DAYS, document.getElementById('sms-days')?.value || '2');
       localStorage.setItem(K.TEMPLATE, document.getElementById('sms-tpl')?.value || '');

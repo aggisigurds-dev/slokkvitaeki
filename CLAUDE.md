@@ -129,7 +129,7 @@ maps.
 ## Credentials
 
 ```
-NETLIFY_TOKEN  = nfp_Yeabk2zFF2GspfKi5rq3XbqPftGpSrhqa6b7
+NETLIFY_TOKEN  = GitHub Actions secret `NETLIFY_TOKEN` (create at app.netlify.com → User settings → Applications → Personal access tokens). Never commit the value.
 NETLIFY_SITE   = d22039b2-75f2-4206-b543-7c6176f2d181
 
 SUPABASE_URL   = https://osfdzskyvisifcwyjkuk.supabase.co
