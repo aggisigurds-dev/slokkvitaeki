@@ -115,21 +115,33 @@
 # fell through to the default long cache. That stranded users on stale cached
 # JS for every deploy (the recurring "fixes don't show up" gremlin). Cover the
 # root and every *.html page so the entry document always revalidates.
+# SAMEORIGIN (not DENY): 320-device-frame.js embeds the same origin in an
+# iframe so Sími/Spjald preview works. nosniff + Referrer-Policy are free;
+# a strict CSP would break the inline/patch script soup — do not add one here.
 [[headers]]
   for = "/"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "no-referrer"
 
 [[headers]]
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "no-referrer"
 
 # The mini-app paths serve index.html via rewrite — revalidate them too.
 [[headers]]
   for = "/app/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "no-referrer"
 
 # Tónlist-widgetið býr á /spotify/ (eigin PWA-scope, sjálfstæð síða — ekki hluti
 # af SPA-inu). Beiðnin er á "/spotify/" svo hvorki "/" né "/*.html" reglan nær
@@ -138,6 +150,9 @@
   for = "/spotify/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "no-referrer"
 
 # Sjálfvirk greiðslu-samstilling úr Payday tvisvar á dag: kl. 10:00 og 15:00
 # (cron er í UTC; Ísland = UTC allt árið → sömu tímar að staðartíma). Sami
