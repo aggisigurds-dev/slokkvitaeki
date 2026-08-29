@@ -1385,6 +1385,7 @@
     //   desktop → the current behaviour (phone-auto + the user's Kort/Listi pick)
     _ensureArsMobileCss();
     _ensureArsVmCss();
+    _ensureArsStrimlarCss();
     const vm = arsViewMode();
     const isPhone = (window.innerWidth || document.documentElement.clientWidth) <= 768;
     // 2026-08-26: Sími/app notaði SÖMU skjáborðstöfluna og patch 314 kramdi
@@ -1592,8 +1593,14 @@
           </div>
         </div>
 
-        <!-- Month chip row (fjöl-val: veldu nokkra mánuði saman; „Án mánaðar" aftast) -->
-        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+        <!-- Month chip row (fjöl-val: veldu nokkra mánuði saman; „Án mánaðar" aftast)
+             2026-08-29 (Agnar: „hafðu bara scroll möguleika á öllu sem passar illa",
+             + hönnun úr Claude Design sem sýnir strimlana skrunast): var flex-wrap:wrap
+             og braut sig í FJÓRAR raðir á 390px — mælt 160px há. Ásamt hinum blokkunum
+             ýtti það töflunni 824px niður í 732px sýn, svo maður varð að skruna heilan
+             skjá áður en nokkurt gagn sást. Nú ein lína sem skrunast; á breiðum skjá
+             fitur hún og engin skrunstika birtist. -->
+        <div class="_ars-morow" style="display:flex;gap:5px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;margin-bottom:14px;align-items:center">
           <span style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;padding-right:3px">Mánuður:</span>
           ${(() => {
             const selSet = new Set(state.months || []);
@@ -2532,7 +2539,11 @@
     return `
       <div class="_arsm-tbl">
         <div class="_arsm-row _arsm-head">
-          <div class="_arsm-h">Fyrirtæki</div>
+          <!-- _arsm-name LÍKA á hausnum: án hans er hausreiturinn static meðan
+               gagnareiturinn er sticky, svo „Fyrirtæki" skrunast burt og hausar
+               hætta að standa yfir sínum dálki (mælt 29.08: 456px misgengi við
+               fullt skrun). CSS-reglan ._arsm-head ._arsm-name var þegar til. -->
+          <div class="_arsm-h _arsm-name">Fyrirtæki</div>
           <div class="_arsm-h _arsm-c">Mán</div>
           <div class="_arsm-yrhead">${years.map(y => `<span>'${String(y).slice(-2)}</span>`).join('')}</div>
           <div class="_arsm-h _arsm-c">Tæki</div>
@@ -2730,6 +2741,31 @@
         '#view-arsskodun ._ars-statusrow{overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;max-width:100%}' +
         '#view-arsskodun ._ars-statusrow>button{scroll-snap-align:start;flex:0 0 auto!important;white-space:nowrap}' +
       '}';
+    document.head.appendChild(s);
+  }
+
+  // Strimlarnir skrunast frekar en að brotna. Utan @media viljandi: reglan
+  // gildir alls staðar, en `overflow-x:auto` sýnir aðeins skrunstiku þegar
+  // innihaldið kemst raunverulega ekki fyrir — á breiðum skjá sést engin.
+  function _ensureArsStrimlarCss() {
+    if (document.getElementById('_ars-strimlar-css')) return;
+    const s = document.createElement('style');
+    s.id = '_ars-strimlar-css';
+    const V = '#view-arsskodun#view-arsskodun ';
+    s.textContent = [
+      // display:flex verður að koma HÉÐAN: inline-stíllinn tapaði fyrir reglu inni
+      // í @media (mælt: computed display=block þótt inline segði flex). Tvöfaldað
+      // auðkenni er húsvenjan sem vinnur á þeim lögum.
+      V + '._ars-morow{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;'
+        + 'scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}',
+      V + '._ars-morow::-webkit-scrollbar{display:none}',
+      V + '._ars-morow>*{flex:0 0 auto;white-space:nowrap}',
+      V + '._ars-statusrow{scrollbar-width:none}',
+      V + '._ars-statusrow::-webkit-scrollbar{display:none}',
+      V + '#_ars-pnr-row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}',
+      V + '#_ars-pnr-row::-webkit-scrollbar{display:none}',
+      V + '#_ars-pnr-row>*{flex:0 0 auto;white-space:nowrap}'
+    ].join('');
     document.head.appendChild(s);
   }
 

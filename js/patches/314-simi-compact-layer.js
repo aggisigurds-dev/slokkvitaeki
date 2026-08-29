@@ -262,7 +262,20 @@
     // Appmode list cells: 261 sets td{font-size:16.5px} which inflates every
     // overview table. Names stay ≥16px on the row titles (315 / page CSS);
     // table chrome goes compact. Forms keep 16px via the input rules above.
-    A + V + ' table td,' + A + V + ' table th{font-size:13px}'
+    A + V + ' table td,' + A + V + ' table th{font-size:13px}',
+
+    /* 2026-08-29 (Agnar: „hafðu bara scroll möguleika á öllu sem passar illa").
+       Tvennt mældist KLIPPT í kyrrþey á 390px — efnið var þarna en varð ekki náð í:
+         .co-banner  330px sýnileg / 400px innihald  (overflow:hidden faldi 70px)
+         .pos-grid   362px sýnileg / 383px innihald  (21px af hægri dálki)
+       Skrun er ekki rót vandans — barn er breiðara en dálkurinn — en það er skárra
+       en að fela gögn þegjandi. Rótin á heima í sínum eigin pappa. */
+    M + '.co-banner,' + A + '.co-banner'
+      + '{overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;scrollbar-width:none}',
+    M + '.co-banner::-webkit-scrollbar,' + A + '.co-banner::-webkit-scrollbar{display:none}',
+    M + '#view-sala .pos-grid,' + A + '#view-sala .pos-grid'
+      + '{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}',
+    M + '#view-sala .pos-grid::-webkit-scrollbar,' + A + '#view-sala .pos-grid::-webkit-scrollbar{display:none}'
   ].join('\n');
 
   const style = document.createElement('style');
