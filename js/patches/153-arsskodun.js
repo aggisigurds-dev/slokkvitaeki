@@ -2435,9 +2435,9 @@
       V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--ars-undirtexti,9.5px);color:var(--ars-texti-merki,#6f6b63);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
       // 4-ára reitir — sömu málm-gljáar og skjáborð ._yr.both / .penda (Agnar viðmið)
       V+'._arsm-yr{display:flex;gap:2px}',
-      V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:#e3e6ea;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-style:normal;font-weight:700;line-height:1;border:1px solid transparent}',
-      V+'._arsm-yr i.rep{background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -1px 2px rgba(0,0,0,.26)}',
-      V+'._arsm-yr i.gap{background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border-color:rgba(255,220,130,.45);color:#fff8e6;box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -1px 2px rgba(0,0,0,.25)}',
+V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empty-bg,#f4f6f9);border:1px solid var(--ars-yr-empty-bd,#e7eaf0);display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--ars-yr-empty-fg,#aab3c0);font-style:normal;font-weight:700;line-height:1;box-sizing:border-box}',
+      V+'._arsm-yr i.rep{color:#fff;background:var(--ars-yr-both-bg,linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%));border-color:var(--ars-yr-both-bd,#041c0e);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -1px 2px rgba(0,0,0,.26)}',
+      V+'._arsm-yr i.gap{color:var(--ars-yr-penda-fg,#fff8e6);background:var(--ars-yr-penda-bg,linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08));border-color:var(--ars-yr-penda-bd,rgba(255,220,130,.45));box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -1px 2px rgba(0,0,0,.25)}',
       // mánuður (rautt ef núverandi mánuður · grátt „—" ef enginn)
       V+'._arsm-mo{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;font-weight:700;color:var(--ars-texti,#16181c);text-align:center;line-height:1.1;white-space:nowrap}',
       V+'._arsm-mo.none{color:var(--ars-texti-merki,#6f6b63);font-weight:400}',
@@ -2447,12 +2447,12 @@
       V+'._arsm-ak.d1{background:#e8f0fe;border-color:#2563eb;color:#2563eb}',
       V+'._arsm-ak.d2{background:#e7f7ee;border-color:#1f9d57;color:#1f9d57}',
       V+'._arsm-ak.d3{background:#f1ecfe;border-color:#8b5cf6;color:#8b5cf6}',
-      // staða — málmhnappar eins og ._st--done/work/late (ekki pastel)
-      V+'._arsm-st{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;margin:0 auto;line-height:1;color:#fff;border:1px solid transparent;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
-      V+'._arsm-st.done{background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e}',
-      V+'._arsm-st.eftir{background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border-color:rgba(255,220,130,.45);color:#fff8e6}',
-      V+'._arsm-st.til{background:linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%);border-color:#060f24}',
-      V+'._arsm-st.vantar{background:linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);border-color:#4d0a08}',
+// staða — málmhnappar eins og ._st--done/work/late (CSS vars úr ars-simi-vars)
+      V+'._arsm-st{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;margin:0 auto;line-height:1;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35);border:1px solid transparent;box-sizing:border-box}',
+      V+'._arsm-st.done{background:var(--ars-st-done-bg,linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%));border-color:var(--ars-st-done-bd,#041c0e)}',
+      V+'._arsm-st.eftir{color:var(--ars-st-skip-fg,#fff8e6);background:var(--ars-st-skip-bg,linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08));border-color:var(--ars-st-skip-bd,rgba(255,220,130,.45))}',
+      V+'._arsm-st.til{background:var(--ars-st-work-bg,linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%));border-color:var(--ars-st-work-bd,#060f24)}',
+      V+'._arsm-st.vantar{background:var(--ars-st-late-bg,linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%));border-color:var(--ars-st-late-bd,#4d0a08)}',
       // ── app-ham yfirlög: patch 261 þvingar .view button{min-height:50px;
       //    font-size:17px;padding:12px} + .view{font-size:17px}. #view-arsskodun-
       //    sértækni + !important heldur röðunum þéttum (sama vopn og 261 notar
