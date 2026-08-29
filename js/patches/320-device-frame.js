@@ -86,7 +86,7 @@
   // um; það var FÖST staða hans sem beit, ekki tilvist hans.
   try { localStorage.removeItem(LS_DOCK); } catch (_) {}
   let docked = false;
-  const ZOOMS = [0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 1, 1.15, 1.3];
+  const ZOOMS = [0.15, 0.2, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 1, 1.15, 1.3];
   const EDITOR_W = 340;
 
   // „Passa" — stærsta skölun sem kemst fyrir. Ritillinn (Stilla útlit) situr

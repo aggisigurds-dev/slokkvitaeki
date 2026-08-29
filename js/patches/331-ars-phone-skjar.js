@@ -4,7 +4,7 @@
  * („208 Lundi 9, 200 Kópavogi" → 20 / 8 / Lu / n / di …). Skjár-rofinn í
  * borðanum sat oft í x=433, utan 390px skjás. Hann vildi (a) lesanlegt Sími
  * og (b) „just in case" fulla skjáborðstöflu á RAUNSÍMANUM með pinch-zoom
- * og skruni.
+ * og skruni. Fylgja: „Would have been nice to be able to zoom more out".
  *
  * Þessi pappi:
  *   1. Sími|Tafla|Skjár rofi INNI Á Ársskoðun (sticky, alltaf á 390px).
@@ -13,9 +13,12 @@
  *      þvingað mrows til baka.
  *   3. Skjár/Tafla á coarse/þröngum glugga = FULLSÍÐU skjáborðstafla
  *      (100vw, min-width ~1100px, overflow auto á báðum ásum, pinch-zoom).
- *   4. Viewport-meta leyfir zoom í Skjár/Tafla; Sími fær fyrra viewport til baka.
- *   5. Drepa break-all / overflow-wrap:anywhere á heimilisfangi.
- *   6. Hönnunarhamur má ekki éta allan símann — max 32vh.
+ *   4. Viewport-meta: minimum-scale=0.1, initial-scale=0.42 í Skjár/Tafla.
+ *      Sími fær fyrra viewport til baka.
+ *   5. CSS zoom (min 0.15) + − / + / Passa á borðanum, því iOS hunsa oft
+ *      minimum-scale undir ~0.25. Pinch á skrunaranum stillir sömu skölun.
+ *   6. Drepa break-all / overflow-wrap:anywhere á heimilisfangi.
+ *   7. Hönnunarhamur má ekki éta allan símann — max 28vh / 220px.
  *
  * 153/187-reikningur er ÓSNERT. 320/318 rammi er ekki forsenda — þetta gildir
  * á alvöru síma. Aldrei isPhone→card.
@@ -25,11 +28,16 @@
   window.__arsPhoneSkjar331 = true;
 
   const LS = 'arsskodun_viewmode';
+  const LSZ = 'arsskodun_skjar_zoom';
   const STYLE_ID = 'ars-phone-skjar-331';
   const BAR_ID = '_ars-sjon';
   const VIEW_ID = 'view-arsskodun';
   const P = ':not(#_p331a):not(#_p331b):not(#_p331c)';
-  const ZOOM = 'width=device-width, initial-scale=1, minimum-scale=0.25, maximum-scale=5, user-scalable=yes, viewport-fit=cover';
+  const MIN_CSS = 0.15;
+  const MAX_CSS = 3;
+  const START = 0.42;
+  const STEPS = [0.15, 0.18, 0.22, 0.26, 0.32, 0.42, 0.52, 0.65, 0.8, 1, 1.25, 1.6, 2, 2.5, 3];
+  const ZOOM = 'width=device-width, initial-scale=0.42, minimum-scale=0.1, maximum-scale=5, user-scalable=yes, viewport-fit=cover';
   const MAP = {
     simi: 'mobile', mobile: 'mobile',
     tafla: 'table', table: 'table',
@@ -118,7 +126,7 @@
     vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
   }
   function syncViewport(mode) {
-    if (!arsActive()) { restoreZoom(); return; }
+    if (!arsActive()) { restoreZoom(); resetCssZoom(); return; }
     if (wantsWide(mode) && isPhoneLike()) enableZoom();
     else restoreZoom();
   }
@@ -130,6 +138,100 @@
     } catch (_) {}
   }
 
+  /* ── CSS zoom fallback (iOS hunsa minimum-scale < ~0.25) ───────────────── */
+  let cssScale = START;
+  try {
+    const z = parseFloat(localStorage.getItem(LSZ) || '');
+    if (z >= MIN_CSS && z <= MAX_CSS) cssScale = z;
+  } catch (_) {}
+
+  function tableEl() {
+    return document.querySelector('#view-arsskodun ._ars-tblscroll table')
+      || document.querySelector('#view-arsskodun table.data-table');
+  }
+  function scrollerEl() {
+    return document.querySelector('#view-arsskodun ._ars-tblscroll')
+      || document.querySelector('#view-arsskodun .data-table-scroll');
+  }
+  function clampScale(s) {
+    s = +s;
+    if (!isFinite(s)) s = 1;
+    return Math.round(Math.min(MAX_CSS, Math.max(MIN_CSS, s)) * 100) / 100;
+  }
+  function paintZoomPct() {
+    const el = document.getElementById('_ars-z-pct');
+    if (el) el.textContent = Math.round(cssScale * 100) + '%';
+    const row = document.querySelector('#_ars-sjon ._ars-sjon-zoom');
+    if (row) {
+      const wide = wantsWide(get()) && isPhoneLike();
+      row.hidden = !wide;
+    }
+  }
+  function applyCssScale(s, persist) {
+    cssScale = clampScale(s);
+    try {
+      document.documentElement.style.setProperty('--ars-skjar-zoom', String(cssScale));
+    } catch (_) {}
+    const tbl = tableEl();
+    const supportsZoom = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('zoom', '0.5');
+    if (tbl && wantsWide(get()) && isPhoneLike()) {
+      if (supportsZoom) {
+        tbl.style.zoom = String(cssScale);
+        tbl.style.transform = '';
+      } else {
+        tbl.style.zoom = '';
+        tbl.style.transform = 'scale(' + cssScale + ')';
+        tbl.style.transformOrigin = '0 0';
+      }
+    } else if (tbl) {
+      tbl.style.zoom = '';
+      tbl.style.removeProperty('zoom');
+      tbl.style.transform = '';
+    }
+    paintZoomPct();
+    if (persist !== false) {
+      try { localStorage.setItem(LSZ, String(cssScale)); } catch (_) {}
+    }
+  }
+  function resetCssZoom() {
+    const tbl = tableEl();
+    if (tbl) {
+      tbl.style.zoom = '';
+      tbl.style.removeProperty('zoom');
+      tbl.style.transform = '';
+    }
+    try { document.documentElement.style.removeProperty('--ars-skjar-zoom'); } catch (_) {}
+    paintZoomPct();
+  }
+  function naturalTableWidth() {
+    const tbl = tableEl();
+    if (!tbl) return 1100;
+    const w = tbl.scrollWidth || tbl.getBoundingClientRect().width || 1100;
+    const z = cssScale > 0.01 ? cssScale : 1;
+    /* CSS zoom shrinks scrollWidth; undo it to get the real table. */
+    return w / z;
+  }
+  function fitScale() {
+    const wrap = scrollerEl();
+    const avail = (wrap && wrap.clientWidth) || window.innerWidth || 390;
+    const natural = naturalTableWidth();
+    return clampScale((avail - 8) / Math.max(natural, 1));
+  }
+  function stepScale(dir) {
+    if (dir < 0) {
+      let j = STEPS.length - 1;
+      while (j > 0 && STEPS[j] >= cssScale - 0.001) j--;
+      return STEPS[j];
+    }
+    let k = 0;
+    while (k < STEPS.length - 1 && STEPS[k] <= cssScale + 0.001) k++;
+    return STEPS[k];
+  }
+  function landCssZoom() {
+    if (!(wantsWide(get()) && isPhoneLike())) { resetCssZoom(); return; }
+    applyCssScale(cssScale, false);
+  }
+
   function paintBar(mode) {
     const bar = document.getElementById(BAR_ID);
     if (!bar) return;
@@ -138,6 +240,7 @@
       b.classList.toggle('on', on);
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
+    paintZoomPct();
   }
 
   function setMode(mode, rerender) {
@@ -161,23 +264,43 @@
         }
       } catch (_) {}
     }
+    setTimeout(landCssZoom, 60);
+    setTimeout(landCssZoom, 400);
   }
 
-  /* ── Sticky Sími | Tafla | Skjár á sjálfri síðunni ─────────────────────── */
+  /* ── Sticky Sími | Tafla | Skjár + − / + / Passa ───────────────────────── */
   function buildBar() {
     const wrap = document.createElement('div');
     wrap.id = BAR_ID;
     wrap.setAttribute('role', 'group');
     wrap.setAttribute('aria-label', 'Sýn: Sími, Tafla eða Skjár');
     wrap.innerHTML =
-      '<button type="button" data-ars-sjon="sími" title="Sími — listi sem passar á símann">Sími</button>' +
-      '<button type="button" data-ars-sjon="tafla" title="Tafla — þétt skjáborðstafla, pinch-zoom og skrun">Tafla</button>' +
-      '<button type="button" data-ars-sjon="skjár" title="Skjár — full skjáborðstafla, pinch-zoom og skrun">Skjár</button>';
+      '<div class="_ars-sjon-modes">' +
+        '<button type="button" data-ars-sjon="sími" title="Sími — listi sem passar á símann">Sími</button>' +
+        '<button type="button" data-ars-sjon="tafla" title="Tafla — þétt skjáborðstafla, pinch-zoom og skrun">Tafla</button>' +
+        '<button type="button" data-ars-sjon="skjár" title="Skjár — full skjáborðstafla, pinch-zoom og skrun">Skjár</button>' +
+      '</div>' +
+      '<div class="_ars-sjon-zoom" hidden>' +
+        '<button type="button" data-ars-z="out" title="Minnka — sjá meira af töflunni" aria-label="Minnka">−</button>' +
+        '<span id="_ars-z-pct">100%</span>' +
+        '<button type="button" data-ars-z="in" title="Stækka" aria-label="Stækka">+</button>' +
+        '<button type="button" data-ars-z="fit" title="Passa alla töfluna á skjáinn">Passa</button>' +
+      '</div>';
     wrap.querySelectorAll('[data-ars-sjon]').forEach(b => {
       b.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
         setMode(b.getAttribute('data-ars-sjon'), true);
+      });
+    });
+    wrap.querySelectorAll('[data-ars-z]').forEach(b => {
+      b.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const k = b.getAttribute('data-ars-z');
+        if (k === 'out') applyCssScale(stepScale(-1));
+        else if (k === 'in') applyCssScale(stepScale(1));
+        else if (k === 'fit') applyCssScale(fitScale());
       });
     });
     return wrap;
@@ -186,6 +309,10 @@
     const v = document.getElementById(VIEW_ID);
     if (!v) return;
     let bar = document.getElementById(BAR_ID);
+    if (bar && !bar.querySelector('._ars-sjon-zoom')) {
+      bar.parentNode && bar.parentNode.removeChild(bar);
+      bar = null;
+    }
     if (!bar) bar = buildBar();
     const main = v.querySelector('#ars-main');
     if (bar.parentNode !== v || (main && bar.nextElementSibling !== main && bar !== v.firstElementChild)) {
@@ -194,25 +321,68 @@
     paintBar(get());
   }
 
+  function bindPinch() {
+    if (window.__ars331pinch) return;
+    window.__ars331pinch = true;
+    let startDist = 0;
+    let startScale = 1;
+    function dist(a, b) {
+      const dx = a.clientX - b.clientX, dy = a.clientY - b.clientY;
+      return Math.hypot(dx, dy) || 1;
+    }
+    function onStart(e) {
+      if (!wantsWide(get()) || !isPhoneLike()) return;
+      if (!e.touches || e.touches.length !== 2) return;
+      startDist = dist(e.touches[0], e.touches[1]);
+      startScale = cssScale;
+    }
+    function onMove(e) {
+      if (!startDist || !e.touches || e.touches.length !== 2) return;
+      if (!wantsWide(get()) || !isPhoneLike()) return;
+      const d = dist(e.touches[0], e.touches[1]);
+      applyCssScale(startScale * (d / startDist), false);
+      try { e.preventDefault(); } catch (_) {}
+    }
+    function onEnd(e) {
+      if (e.touches && e.touches.length >= 2) return;
+      if (startDist) {
+        startDist = 0;
+        try { localStorage.setItem(LSZ, String(cssScale)); } catch (_) {}
+      }
+    }
+    document.addEventListener('touchstart', onStart, { passive: true, capture: true });
+    document.addEventListener('touchmove', onMove, { passive: false, capture: true });
+    document.addEventListener('touchend', onEnd, { passive: true, capture: true });
+    document.addEventListener('touchcancel', onEnd, { passive: true, capture: true });
+  }
+
   function css() {
     const V = '#view-arsskodun#view-arsskodun ';
     const W = 'html.ars-wide-table ';
     return [
       /* Rofi — falinn á breiðum músarskjá (borðinn dugar). Sýnilegur á síma. */
-      '#' + BAR_ID + '{display:none;position:sticky;top:0;z-index:40;align-items:stretch;gap:0;'
+      '#' + BAR_ID + '{display:none;position:sticky;top:0;z-index:40;flex-direction:column;align-items:stretch;gap:6px;'
         + 'margin:0;padding:6px 8px;background:var(--ars-grunnur,#f0eeea);'
         + 'border-bottom:1px solid var(--ars-rammi,#e3e1dc);box-sizing:border-box}',
       'html.slokk-phone-dev #' + BAR_ID + ',html.ars-wide-table #' + BAR_ID
         + '{display:flex!important}',
       '@media (max-width:900px){#' + BAR_ID + '{display:flex!important}}',
       '@media (pointer:coarse){#' + BAR_ID + '{display:flex!important}}',
-      '#' + BAR_ID + '>button{flex:1;min-height:40px;margin:0;padding:8px 6px;border:1px solid #cfd4dc;'
+      '#' + BAR_ID + ' ._ars-sjon-modes{display:flex;align-items:stretch}',
+      '#' + BAR_ID + ' ._ars-sjon-modes>button{flex:1;min-height:40px;margin:0;padding:8px 6px;border:1px solid #cfd4dc;'
         + 'background:#fff;color:#334155;font:inherit;font-size:13px;font-weight:700;cursor:pointer;'
         + 'touch-action:manipulation}',
-      '#' + BAR_ID + '>button:first-child{border-radius:9px 0 0 9px}',
-      '#' + BAR_ID + '>button:last-child{border-radius:0 9px 9px 0}',
-      '#' + BAR_ID + '>button+button{border-left:0}',
-      '#' + BAR_ID + '>button.on{background:#1d4ed8;border-color:#1d4ed8;color:#fff}',
+      '#' + BAR_ID + ' ._ars-sjon-modes>button:first-child{border-radius:9px 0 0 9px}',
+      '#' + BAR_ID + ' ._ars-sjon-modes>button:last-child{border-radius:0 9px 9px 0}',
+      '#' + BAR_ID + ' ._ars-sjon-modes>button+button{border-left:0}',
+      '#' + BAR_ID + ' ._ars-sjon-modes>button.on{background:#1d4ed8;border-color:#1d4ed8;color:#fff}',
+      '#' + BAR_ID + ' ._ars-sjon-zoom{display:flex;align-items:center;gap:6px}',
+      '#' + BAR_ID + ' ._ars-sjon-zoom[hidden]{display:none!important}',
+      '#' + BAR_ID + ' ._ars-sjon-zoom>button{flex:0 0 auto;min-width:40px;min-height:36px;margin:0;padding:6px 10px;'
+        + 'border:1px solid #cfd4dc;border-radius:8px;background:#fff;color:#334155;font:inherit;font-size:16px;'
+        + 'font-weight:700;cursor:pointer;touch-action:manipulation}',
+      '#' + BAR_ID + ' ._ars-sjon-zoom>button[data-ars-z="fit"]{flex:1;font-size:13px}',
+      '#' + BAR_ID + ' #_ars-z-pct{flex:0 0 auto;min-width:44px;text-align:center;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#475569}',
 
       /* Heimili: ALDREI staf-per-línu. */
       V + '._addr' + P + ',' + V + '._ars-ca' + P + ',' + V + '._arsm-addr' + P + ','
@@ -242,14 +412,15 @@
         + 'html.ars-wide-table[data-viewmode="mobile"] #view-arsskodun ._ars-tblscroll' + P + ','
         + 'html.ars-wide-table[data-viewmode="mobile"] #view-arsskodun .data-table-scroll' + P
         + '{width:100%!important;max-width:100vw!important;min-width:0!important;'
-        + 'max-height:calc(100dvh - 140px)!important;height:calc(100dvh - 140px)!important;'
+        + 'max-height:calc(100dvh - 180px)!important;height:calc(100dvh - 180px)!important;'
         + 'overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
         + '-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom!important;'
         + 'overscroll-behavior:contain}',
       W + '#view-arsskodun table.data-table' + P + ','
         + W + '#view-arsskodun ._ars-tblscroll>table' + P
         + '{display:table!important;min-width:1100px!important;width:max-content!important;'
-        + 'max-width:none!important;table-layout:fixed!important;overflow:visible!important}',
+        + 'max-width:none!important;table-layout:fixed!important;overflow:visible!important;'
+        + 'zoom:var(--ars-skjar-zoom,1);transform-origin:0 0}',
       W + '#view-arsskodun table.data-table th' + P + ','
         + W + '#view-arsskodun table.data-table td' + P
         + '{word-break:normal!important;overflow-wrap:break-word!important;'
@@ -298,6 +469,8 @@
         }
       } catch (_) {}
     }
+    if (wantsWide(mode) && isPhoneLike()) setTimeout(landCssZoom, 80);
+    else resetCssZoom();
   }
 
   /* Banner-rofinn: samstilla LS aðeins þegar notandi velur sjálfur og
@@ -322,6 +495,7 @@
     mountCss();
     applyNow(false);
     ensureBar();
+    bindPinch();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
@@ -329,10 +503,18 @@
 
   new MutationObserver(() => {
     clearTimeout(window.__ars331t);
-    window.__ars331t = setTimeout(() => { ensureBar(); stampHtml(get()); }, 200);
+    window.__ars331t = setTimeout(() => {
+      ensureBar();
+      stampHtml(get());
+      if (wantsWide(get()) && isPhoneLike()) landCssZoom();
+    }, 200);
   }).observe(document.documentElement, { childList: true, subtree: true });
 
-  window.ArsSjon = { get, set: setMode, enableZoom, restoreZoom, version: '331' };
+  window.ArsSjon = {
+    get, set: setMode, enableZoom, restoreZoom,
+    scale: () => cssScale, setScale: applyCssScale, fit: () => applyCssScale(fitScale()),
+    MIN: MIN_CSS, START, version: '331d'
+  };
   console.log('[patch-331] arsskodun phone skjar/zoom');
 })();
 /* === END ÁRSSKOÐUN SÍMI/SKJÁR ZOOM === */
