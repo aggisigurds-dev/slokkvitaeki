@@ -45,25 +45,33 @@
     simi:  { label: '📱 Sími',        w: 390, h: 844,  radius: 34 },
     tafla: { label: '📲 Spjaldtölva', w: 834, h: 1112, radius: 22 },
   };
-  let overlay = null, iframe = null, curDev = null;
+  let overlay = null, iframe = null, curDev = null, curUrl = null, curTitle = null;
 
-  function frameUrl(devKey) {
+  /* 2026-08-29: ramminn tók áður AÐEINS núverandi síðu (location.href). Öpp-fylkið
+     þarf að ramma HVAÐA síðu sem er — Agnar: „mér er bara vísað á síðuna á
+     desctopinnu… er hægt að láta hana poppa upp í mobile view style". Því tekur
+     open() nú við { url, title }. Slóðin kemur FULLBÚIN frá kallanda (hann veit
+     hvort devframe eigi við); án hennar er hegðunin óbreytt. */
+  function frameUrl(devKey, target) {
+    if (target) return target;
     const u = new URL(location.href);
     u.searchParams.set('devframe', devKey);
     return u.toString();
   }
   function close() {
     if (overlay) overlay.remove();
-    overlay = null; iframe = null; curDev = null;
+    overlay = null; iframe = null; curDev = null; curUrl = null; curTitle = null;
     syncButtons();
   }
   function refresh() {
-    if (iframe && curDev) { try { iframe.src = frameUrl(curDev); } catch (_) {} }
+    if (iframe && curDev) { try { iframe.src = frameUrl(curDev, curUrl); } catch (_) {} }
   }
-  function open(devKey) {
+  function open(devKey, opts) {
     const d = DEVICES[devKey]; if (!d) return;
+    const url = opts && opts.url ? String(opts.url) : null;
+    const title = opts && opts.title ? String(opts.title) : null;
     close();
-    curDev = devKey;
+    curDev = devKey; curUrl = url; curTitle = title;
     overlay = document.createElement('div');
     overlay.id = '_devframe-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99980;background:rgba(8,10,14,.86);display:flex;flex-direction:column;align-items:center;padding:10px 8px;overflow:auto';
@@ -77,6 +85,8 @@
       Object.keys(DEVICES).map(k =>
         '<button data-dev="' + k + '" style="all:unset;cursor:pointer;font:700 12.5px \'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;color:' + (k === devKey ? '#0f1117' : '#e5e9f0') + ';background:' + (k === devKey ? '#fff' : 'rgba(255,255,255,.12)') + ';padding:8px 14px;border-radius:9px">' + DEVICES[k].label + ' · ' + DEVICES[k].w + '×' + DEVICES[k].h + '</button>').join('') +
       '<span style="font:12px \'JetBrains Mono\',ui-monospace,monospace;color:#9aa3b2">' + Math.round(scale * 100) + '%</span>' +
+      (curTitle ? '<span style="font:700 12.5px sans-serif;color:#fff;background:rgba(255,255,255,.10);padding:8px 12px;border-radius:9px">' + curTitle.replace(/[<>&]/g, '') + '</span>' : '') +
+      (curUrl ? '<a id="_df-tab" href="' + curUrl.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:9px" title="Opna í nýjum flipa">↗</a>' : '') +
       '<button id="_df-refresh" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#e5e9f0;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:9px" title="Endurhlaða rammann (sækir nýjustu stíla)">↻</button>' +
       '<button id="_df-close" style="all:unset;cursor:pointer;font:700 12.5px sans-serif;color:#fff;background:#c9403a;padding:8px 14px;border-radius:9px">✕ Loka</button>';
     const scaler = document.createElement('div');
@@ -84,18 +94,24 @@
     const bezel = document.createElement('div');
     bezel.style.cssText = 'padding:12px;background:linear-gradient(160deg,#2b2f36,#101216);border-radius:' + (d.radius + 12) + 'px;box-shadow:0 24px 70px -20px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.14)';
     iframe = document.createElement('iframe');
-    iframe.src = frameUrl(devKey);
+    iframe.src = frameUrl(devKey, curUrl);
     iframe.style.cssText = 'display:block;width:' + d.w + 'px;height:' + d.h + 'px;border:0;border-radius:' + d.radius + 'px;background:#fff';
     bezel.appendChild(iframe);
     scaler.appendChild(bezel);
     overlay.appendChild(bar);
     overlay.appendChild(scaler);
     document.body.appendChild(overlay);
-    bar.querySelectorAll('[data-dev]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); open(b.dataset.dev); }));
+    bar.querySelectorAll('[data-dev]').forEach(b => b.addEventListener('click', e => {
+      e.preventDefault(); open(b.dataset.dev, { url: curUrl, title: curTitle });
+    }));
     bar.querySelector('#_df-refresh').addEventListener('click', e => { e.preventDefault(); refresh(); });
     bar.querySelector('#_df-close').addEventListener('click', e => { e.preventDefault(); close(); });
     syncButtons();
-    try { if (window.Toast && Toast.show) Toast.show('Ábending: opnaðu 🎨 INNI í rammanum til að stíla í alvöru hlutföllum'); } catch (_) {}
+    // Ábendingin á aðeins við þegar APPIÐ sjálft er rammað. Sé ytri slóð römmuð
+    // (sjálfstæð útfærsla úr Öpp-fylkinu) er enginn Stílstjóri þar inni.
+    if (!curUrl) {
+      try { if (window.Toast && Toast.show) Toast.show('Ábending: opnaðu 🎨 INNI í rammanum til að stíla í alvöru hlutföllum'); } catch (_) {}
+    }
   }
 
   /* Takkar í Stílstjóra-toolbar (sama endursmíðunar-mynstur og 319). */
@@ -126,7 +142,7 @@
   }).observe(document.body, { childList: true, subtree: true });
   syncButtons();
 
-  window.SlokkDevFrame = { open, close, refresh };
+  window.SlokkDevFrame = { open, close, refresh, isOpen: () => !!overlay };
   console.log('[patch-320] device frame ready');
 })();
 /* === END DEVICE FRAME === */

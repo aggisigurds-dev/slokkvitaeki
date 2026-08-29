@@ -737,6 +737,30 @@
     return rows;
   }
 
+  /* Slóðin sem símaramminn á að sýna fyrir tiltekna síðu.
+     • Síða með eigin `url` (Brunahólfs-flipi eða sjálfstæð HTML-útfærsla) er
+       sín eigin síða — hún er römmuð ÓBREYTT, engin devframe-breyta.
+     • Síða inni í appinu er römmuð sem RAUNVERULEG APP-SÍÐA: ?app=<lykill>
+       kveikir app-haminn (botnflakk + haus), devframe=simi þvingar símasýn án
+       þess að krukka í sýnarvali tækisins, og page=<lykill> lendir á réttri
+       síðu í stað heimasíðu appsins. */
+  function previewUrl(p) {
+    if (p.url) return p.url;
+    var app = null;
+    // Veldu app sem hefur síðuna valda — þá sést hún í sínu rétta samhengi.
+    APPS.forEach(function (b) {
+      if (app) return;
+      var a = effectiveApp(b.key);
+      if (a && !a.standalone && pagesFor(a.key).indexOf(p.k) >= 0) app = a.key;
+    });
+    if (!app) { var f = APPS.filter(function (b) { return !effectiveApp(b.key).standalone; })[0]; app = f && f.key; }
+    var u = new URL(location.origin + '/');
+    if (app) u.searchParams.set('app', app);
+    u.searchParams.set('devframe', 'simi');
+    u.searchParams.set('page', p.k);
+    return u.toString();
+  }
+
   function matrixHtml() {
     var apps = APPS.map(function (b) { return effectiveApp(b.key); })
                    .filter(function (a) { return !a.standalone; });
@@ -855,7 +879,17 @@
     v.querySelectorAll('._op-mxopen').forEach(function (b) { b.addEventListener('click', function (e) {
       e.preventDefault(); e.stopPropagation();
       var p = pageByKey(b.dataset.k); if (!p) return;
-      // Brunahólfs-síður eiga sína eigin slóð; heimasíður fara um switchView.
+      // 2026-08-29 (Agnar: „mér er bara vísað á síðuna á desctopinnu… ekki raun
+      // app síðuna"): ↗ FLAKKAR EKKI LENGUR BURT. Áður fór hann um switchView og
+      // skilaði skjáborðsútlitinu í kerfinu — sem er einmitt ekki það sem á að
+      // meta áður en hakað er við útfærslu. Nú poppar hann upp símaramma (320)
+      // ofan á Öpp-yfirlitinu, svo röðin í fylkinu tapast ekki.
+      var url = previewUrl(p);
+      if (window.SlokkDevFrame && SlokkDevFrame.open) {
+        SlokkDevFrame.open('simi', { url: url, title: p.label });
+        return;
+      }
+      // 320 ekki hlaðinn (t.d. eldri skyndiminnisútgáfa) — gamla hegðunin.
       if (p.url) { window.open(p.url, '_blank', 'noopener'); return; }
       try { if (window.App && App.switchView) App.switchView(p.k); else location.hash = '#' + p.k; }
       catch (_) { location.hash = '#' + p.k; }
@@ -1150,7 +1184,21 @@
       // Enginn 6s dauðafrestur lengur — á hægum síma gat App.switchView komið
       // seinna og shellið byggðist þá ALDREI; vaktarinn tekur líka við eftirá.
       (function tick() {
-        if (document.querySelector('.vnav-btn') && window.App && window.App.switchView) { buildShell(); startShellGuard(); return; }
+        if (document.querySelector('.vnav-btn') && window.App && window.App.switchView) {
+          // ?page=<lykill> — notað af símaramma-forskoðuninni í Öpp-fylkinu svo
+          // ramminn lendi á RÉTTU síðunni en ekki heimasíðu appsins.
+          //
+          // Stillt Á UNDAN buildShell viljandi: shellið opnar á `_curPage` sé hún
+          // í síðulistanum (annars pages[0]), og verndarinn í patchSwitchView
+          // snappar aftur á `_curPage` fyrstu 12 sekúndurnar. switchView EFTIR
+          // buildShell var því kastað til baka — mælt: lenti á krofu-yfirlit.
+          try {
+            var want = new URLSearchParams(location.search).get('page');
+            if (want && pageByKey(want) && pagesFor(ACTIVE).indexOf(want) !== -1) _curPage = want;
+          } catch (_) {}
+          buildShell();
+          startShellGuard(); return;
+        }
         setTimeout(tick, 250);
       })();
       startShellGuard();
