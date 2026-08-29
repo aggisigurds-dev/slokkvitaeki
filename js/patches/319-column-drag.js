@@ -88,7 +88,13 @@
       // sleppir „html " og heldur áfram að virka óbreytt.
       const base = 'html body #' + vid + '#' + vid + ' ' +
         (cls === 'table' ? 'table' : (cls[0] === '#' ? 'table' + cls : 'table' + cls));
-      if (wKeys.length) css += base + '{table-layout:fixed!important;width:100%!important}\n';
+      // 2026-08-29 (Agnar: „when I try to make them wider it just goes to the left
+      // and fucks them up"). `width:100%` LÆSTI heildarbreidd töflunnar, svo það
+      // sem einn dálkur fékk tóku hinir á sig — að breikka einn dálk þýddi alltaf
+      // að mjókka aðra. Með `width:auto` verður breidd töflunnar SUMMA dálkanna,
+      // svo hún vex til hægri og skrunar (töfluskrunarinn úr 325 sér um það).
+      // `min-width:100%` heldur henni áfram út í kant þegar dálkarnir eru mjóir.
+      if (wKeys.length) css += base + '{table-layout:fixed!important;width:auto!important;min-width:100%!important}\n';
       wKeys.forEach(n => { css += base + ' col:nth-child(' + n + '){width:' + w[n] + 'px!important}\n'; });
       aKeys.forEach(n => { css += base + ' tbody td:nth-child(' + n + '),' + base + ' thead th:nth-child(' + n + '){text-align:' + al[n] + '!important}\n'; });
       if (e.padY != null) css += base + ' tbody td{padding-top:' + e.padY + 'px!important;padding-bottom:' + e.padY + 'px!important;min-height:0!important;height:auto!important}\n';
@@ -189,6 +195,27 @@
     const startX = ev.clientX;
     const startW = th.getBoundingClientRect().width;
     const col = table.querySelectorAll('colgroup col')[colN - 1];
+    // 2026-08-29 (Agnar: „ég ætlaði að stækka Skoðun aðeins og þá fór allt í rugl").
+    //
+    // Um leið og EINN dálkur fékk vistaða breidd varð taflan table-layout:fixed.
+    // Í þeim ham deila dálkar ÁN skilgreindrar breiddar jafnt því sem eftir er —
+    // svo Fyrirtæki, Ferðanóta, Heimilisfang, Tæki, Akstur og Forgangur hrundu
+    // öll í nákvæmlega sömu 96px og textinn brotnaði í miðjum orðum. Aðeins tveir
+    // dálkar áttu í raun vistaða breidd; hinir sex voru fórnarlömb.
+    //
+    // Lagfæring: FESTA alla dálka á þá breidd sem þeir HAFA þegar, um leið og
+    // dráttur hefst. Þá breytist aðeins sá sem dregið er í — hinir standa kyrrir
+    // í stað þess að endurdeilast.
+    const st0 = (store[key] = store[key] || {});
+    st0.w = st0.w || {};
+    const heads = table.querySelectorAll('thead th');
+    heads.forEach((h, i) => {
+      const n = i + 1;
+      if (st0.w[n] != null) return;                       // á þegar vistaða breidd
+      if (h.offsetParent === null) return;                // falinn dálkur — snertum ekki
+      const wNow = Math.round(h.getBoundingClientRect().width);
+      if (wNow > 0) st0.w[n] = wNow;
+    });
     const move = e => {
       const w = Math.max(24, Math.min(Math.round(startW + (e.clientX - startX)), Math.round(window.innerWidth * 0.9)));
       const st = (store[key] = store[key] || {}); (st.w = st.w || {})[colN] = w;
