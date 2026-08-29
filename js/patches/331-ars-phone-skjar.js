@@ -13,10 +13,10 @@
  *      þvingað mrows til baka.
  *   3. Skjár/Tafla á coarse/þröngum glugga = FULLSÍÐU skjáborðstafla
  *      (100vw, min-width ~1100px, overflow auto á báðum ásum, pinch-zoom).
- *   4. Viewport-meta: minimum-scale=0.1, initial-scale=0.42 í Skjár/Tafla.
- *      Sími fær fyrra viewport til baka.
- *   5. CSS zoom (min 0.15) + − / + / Passa á borðanum, því iOS hunsa oft
- *      minimum-scale undir ~0.25. Pinch á skrunaranum stillir sömu skölun.
+ *   4. Viewport-meta í Skjár/Tafla: minimum-scale=0.1, user-scalable=yes.
+ *      Sími fær fyrra viewport til baka. Hub-síðuzoom (333, app_page_zoom)
+ *      minnkar ALLA síðuna; Passa hér passar bara töfluna.
+ *   5. Passa-takki á Skjár-borðanum. Hard −/+ er í patch 333.
  *   6. Drepa break-all / overflow-wrap:anywhere á heimilisfangi.
  *   7. Hönnunarhamur má ekki éta allan símann — max 28vh / 220px.
  *
@@ -35,9 +35,9 @@
   const P = ':not(#_p331a):not(#_p331b):not(#_p331c)';
   const MIN_CSS = 0.15;
   const MAX_CSS = 3;
-  const START = 0.42;
+  const START = 1;
   const STEPS = [0.15, 0.18, 0.22, 0.26, 0.32, 0.42, 0.52, 0.65, 0.8, 1, 1.25, 1.6, 2, 2.5, 3];
-  const ZOOM = 'width=device-width, initial-scale=0.42, minimum-scale=0.1, maximum-scale=5, user-scalable=yes, viewport-fit=cover';
+  const ZOOM = 'width=device-width, initial-scale=1, minimum-scale=0.1, maximum-scale=5, user-scalable=yes, viewport-fit=cover';
   const MAP = {
     simi: 'mobile', mobile: 'mobile',
     tafla: 'table', table: 'table',
@@ -139,11 +139,7 @@
   }
 
   /* ── CSS zoom fallback (iOS hunsa minimum-scale < ~0.25) ───────────────── */
-  let cssScale = START;
-  try {
-    const z = parseFloat(localStorage.getItem(LSZ) || '');
-    if (z >= MIN_CSS && z <= MAX_CSS) cssScale = z;
-  } catch (_) {}
+  let cssScale = 1;
 
   function tableEl() {
     return document.querySelector('#view-arsskodun ._ars-tblscroll table')
@@ -281,10 +277,7 @@
         '<button type="button" data-ars-sjon="skjár" title="Skjár — full skjáborðstafla, pinch-zoom og skrun">Skjár</button>' +
       '</div>' +
       '<div class="_ars-sjon-zoom" hidden>' +
-        '<button type="button" data-ars-z="out" title="Minnka — sjá meira af töflunni" aria-label="Minnka">−</button>' +
-        '<span id="_ars-z-pct">100%</span>' +
-        '<button type="button" data-ars-z="in" title="Stækka" aria-label="Stækka">+</button>' +
-        '<button type="button" data-ars-z="fit" title="Passa alla töfluna á skjáinn">Passa</button>' +
+        '<button type="button" data-ars-z="fit" title="Passa töfluna á skjáinn">Passa töflu</button>' +
       '</div>';
     wrap.querySelectorAll('[data-ars-sjon]').forEach(b => {
       b.addEventListener('click', e => {
@@ -298,9 +291,7 @@
         e.preventDefault();
         e.stopPropagation();
         const k = b.getAttribute('data-ars-z');
-        if (k === 'out') applyCssScale(stepScale(-1));
-        else if (k === 'in') applyCssScale(stepScale(1));
-        else if (k === 'fit') applyCssScale(fitScale());
+        if (k === 'fit') applyCssScale(fitScale());
       });
     });
     return wrap;
