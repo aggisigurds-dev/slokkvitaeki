@@ -1375,29 +1375,27 @@
     if (!main) return;
     const all = _cache.list;
     const filtered = filteredSorted();
-    // 2026-06-21 (mobile): on a phone-width screen force the CARD layout — the
-    // wide 8-column table scrolls sideways and is unusable with a thumb. Desktop
-    // keeps the user's chosen view (state.view).
-    // 2026-07-06: the app-wide view-mode toggle (📱 Sími / ▦ Tafla / 🖥 Skjár,
-    // lives in the Brunastál banner — patch 166) now also drives this page.
-    //   mobile  → single-column stacked cards (renderCards + data-viewmode CSS)
-    //   table   → dense company table (renderTable + data-viewmode CSS)
-    //   desktop → the current behaviour (phone-auto + the user's Kort/Listi pick)
-    _ensureArsMobileCss();
-    _ensureArsVmCss();
-    _ensureArsStrimlarCss();
-    const vm = arsViewMode();
-    const isPhone = (window.innerWidth || document.documentElement.clientWidth) <= 768;
+    // 2026-07-06: the app-wide view-mode toggle (Sími / Tafla / Skjár,
+    // lives in the Brunastál banner — patch 166) drives this page.
     // 2026-08-26: Sími/app notaði SÖMU skjáborðstöfluna og patch 314 kramdi
     // hana í 390px. 2026-08-29 mældist útkoman af því: taflan 1280px breið í
     // 430px glugga og raðirnar 326px HÁAR af því hver klefi braut sig niður.
     // Agnar bað um frosinn nafndálk + lárétt skrun í staðinn, svo síminn fer nú
     // á 'mrows' (renderMobileRows) sem var til en var ALDREI náð í — 'list' féll
-    // í gegn á renderTable. Handvalið „Tafla" heldur áfram í töfluna.
+    // í gegn á renderTable.
+    // 2026-08-29 (Agnar): Skjár á síma sýndi gömlu renderCards-spjöldin
+    // (Fyrirtæki / Á korti afklippt) af því `isPhone` (viewport ≤768)
+    // trompaði data-viewmode. Útlitið ræðst af viewmode, EKKI gluggabreidd:
+    //   mobile / appmode → renderMobileRows (mrows)
+    //   desktop (Skjár) / table (Tafla) → renderTable, jafnvel á 390px —
+    //     taflan skrunar lárétt (325). Aldrei isPhone→card.
+    // Bílstjóri = patch 317, ósnert.
+    _ensureArsMobileCss();
+    _ensureArsVmCss();
+    _ensureArsStrimlarCss();
+    const vm = arsViewMode();
     const appMode = !!(document.body && document.body.classList.contains('appmode'));
-    const effView = (vm === 'mobile' || appMode) ? 'mrows'
-                  : vm === 'table'  ? 'list'
-                  : (isPhone ? 'card' : state.view);
+    const effView = (vm === 'mobile' || appMode) ? 'mrows' : 'list';
     // Stats restricted to companies that ARE in árskoðun (have equipment).
     // The full list still includes everyone — the user wanted the whole
     // fyrirtækjaregistur in one tab, but tiles only count the ones that
@@ -1666,7 +1664,7 @@
             <div style="font-size:14px;font-weight:600;color:var(--ink1);margin-bottom:3px">Engin fyrirtæki passa við þessa síu</div>
             <div style="font-size:12px">Reyndu að breyta sía eða leitarstreng.</div>
           </div>
-        `) : (state.status === 'suspect' ? renderSuspectList(filtered) : (effView === 'mrows' ? renderMobileRows(filtered) : effView === 'card' ? renderCards(filtered) : renderTable(filtered)))}
+        `) : (state.status === 'suspect' ? renderSuspectList(filtered) : (effView === 'mrows' ? renderMobileRows(filtered) : renderTable(filtered)))}
 
         ${filteredAars.length > 0 ? `
         <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--surface2);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
@@ -2804,8 +2802,8 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
     return (m === 'mobile' || m === 'table' || m === 'desktop') ? m : 'desktop';
   }
   // CSS keyed off html[data-viewmode] so it applies at ANY width (the toggle is
-  // deliberate, not screen-size driven). Matches the Kröfu yfirlit look:
-  // stacked big-tap cards for mobile · dense sticky-dark-header table for table.
+  // deliberate, not screen-size driven). Sími teiknar mrows; Skjár/Tafla
+  // teikna renderTable. Þessar reglur eru þétting ofan á þá teikningu.
   function _ensureArsVmCss() {
     if (document.getElementById('_ars-vm-css')) return;
     const s = document.createElement('style');
