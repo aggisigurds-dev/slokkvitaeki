@@ -152,23 +152,22 @@
     return box;
   }
 
-  // Sjálfkrafa á Sölu (Agnar 28.08: „setja þá inn á sölu til að byrja með").
-  // Sest efst í sýnina og helst þar þótt hún sé endurteiknuð.
-  function autoMount() {
-    const v = document.getElementById('view-sala');
-    if (!v || !v.classList.contains('active')) return;
-    if (v.querySelector('.lnr-box')) return;
-    const box = el({});
-    box.style.margin = '0 0 12px';
-    v.insertBefore(box, v.firstChild);
+  // 2026-08-29 (Agnar): „má taka teikningaleitartakkann út af söluborði."
+  // Sjálf-ísetningin á Sölu er farin — hún var sett inn 28.08 („setja þá inn á
+  // sölu til að byrja með") og átti alltaf að vera bráðabirgðastaður. TÓLIÐ
+  // SJÁLFT stendur óbreytt: Landnr.open() opnar það fljótandi hvar sem er og
+  // Landnr.mount(el) setur það inn í hvaða svæði sem er — TurboPaint notar það.
+  //
+  // Í leiðinni fór setInterval(autoMount, 2000) sem keyrði svo lengi sem síðan
+  // var opin, bara til að athuga hvort kassinn væri á sínum stað.
+  //
+  // Hreinsun: sé kassinn til í DOM-inu (t.d. flipi sem var opinn fyrir uppfærslu)
+  // er hann tekinn út, svo hann sitji ekki eftir þar til síðan er endurhlaðin.
+  function unmountFromSala() {
+    document.querySelectorAll('#view-sala .lnr-box').forEach(b => b.remove());
   }
-  function boot() {
-    autoMount();
-    window.addEventListener('hashchange', () => setTimeout(autoMount, 150));
-    document.addEventListener('slokk-viewmode', () => setTimeout(autoMount, 80));
-    setInterval(autoMount, 2000);   // ódýrt: hættir strax ef hann er þegar á sínum stað
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', unmountFromSala);
+  else unmountFromSala();
 
   window.Landnr = { search, teikningar, landeignaskra, el, mount, open };
   console.log('[patch-325] teikninga-leit tilbúin — Landnr.mount(el) / Landnr.open()');

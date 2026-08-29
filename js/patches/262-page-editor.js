@@ -610,8 +610,15 @@
   // ── the panel ───────────────────────────────────────────────────────────────
   function sliderRow(label, prop, min, max, step, unit) {
     const v = liveNum(prop, min);
+    // 2026-08-29 (Agnar: „ég næ rosalega takmarkað að stækka þessa glugga box").
+    // Talnareiturinn hefur aldrei haft þak, en sleðinn hafði FAST hámark. Þegar
+    // gildið fór yfir það sat sleðinn pinnaður lengst til hægri og hreyfðist
+    // ekki lengra — það leit út eins og stækkunin sjálf væri búin. Hámarkið
+    // eltir núna gildið (+25% svigrúm), svo alltaf megi draga lengra en núna er.
+    const st = step || 1;
+    const hi = Math.max(max, Math.ceil((+v || 0) * 1.25 / st) * st);
     return '<div class="pe-row"><label>' + esc(label) + '</label>' +
-      '<input type="range" data-slider="' + prop + '" data-unit="' + (unit || 'px') + '" min="' + min + '" max="' + max + '" step="' + (step || 1) + '" value="' + v + '">' +
+      '<input type="range" data-slider="' + prop + '" data-unit="' + (unit || 'px') + '" min="' + min + '" max="' + hi + '" step="' + st + '" value="' + v + '">' +
       '<input type="number" class="pe-val" data-num="' + prop + '" data-unit="' + (unit || 'px') + '" step="' + (step || 1) + '" value="' + v + '"></div>';
   }
   function colorRow(label, prop) {
@@ -694,9 +701,12 @@
           sliderRow('Stafabil', 'letter-spacing', -2, 8, 0.5) +
         '</details>' +
         '<details class="pe-sec"><summary><h4>Box &amp; gluggi</h4></summary>' +
-          sliderRow('Breidd', 'width', 40, 1280, 5) +
-          sliderRow('Hæð (0=sjálfv.)', 'height', 0, 600, 2) +
-          sliderRow('Lágmarkshæð', 'min-height', 0, 600, 5) +
+          // Grunn-hámörkin miðast við raunveruleg borð, ekki við smáhluti:
+          // breið tafla þarf meira en 1280px og há síða meira en 600px. Sleðinn
+          // fer sjálfkrafa hærra en þetta ef gildið er þegar hærra (sjá sliderRow).
+          sliderRow('Breidd', 'width', 40, 3840, 5) +
+          sliderRow('Hæð (0=sjálfv.)', 'height', 0, 2400, 2) +
+          sliderRow('Lágmarkshæð', 'min-height', 0, 2400, 5) +
           sliderRow('Border þykkt', 'border-width', 0, 10, 1) +
           sliderRow('Border radíus', 'border-radius', 0, 44, 1) +
           sliderRow('Bil (gap)', 'gap', 0, 40, 1) +
@@ -907,9 +917,20 @@
   // en áður — það var of smátt til að hitta á síma).
   let _plRz = null;
   const PL_POS = l => (l && typeof l.x === 'number' && typeof l.y === 'number');
+  // 2026-08-29 (Agnar: „hún getur færst svoldið eftir refresh").
+  // Tvær ástæður, báðar hér:
+  //  1) window.innerWidth TELUR skrunstikuna með, clientWidth ekki. Síða MEÐ
+  //     skrunstiku og síða ÁN hennar gáfu því sitt hvora pixla-tölu út úr sama
+  //     prósentugildinu — takkinn færðist um ~15px við það eitt að skipta um síðu.
+  //  2) offsetWidth er mælt ÁÐUR en letrið (IBM Plex Sans) er komið. Þá er
+  //     takkinn annarrar breiddar en hann endar í, og klemman við hægri brún
+  //     reiknast af rangri breidd. Þess vegna er endurstaðsett við fonts.ready
+  //     (sjá renderPageLinks) — ekki bara við fyrstu teikningu.
   function plClamp(el, xPct, yPct) {
+    const d = document.documentElement;
     const w = el.offsetWidth || 120, h = el.offsetHeight || 32;
-    const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+    const vw = d.clientWidth || window.innerWidth || 1024;
+    const vh = d.clientHeight || window.innerHeight || 768;
     let left = (xPct / 100) * vw, top = (yPct / 100) * vh;
     left = Math.max(4, Math.min(left, vw - w - 4));
     top = Math.max(4, Math.min(top, vh - h - 4));
@@ -961,6 +982,22 @@
       e.preventDefault(); e.stopPropagation(); removePageLink(+b.dataset.plDel);
     });
     box.querySelectorAll('[data-pl-chip]').forEach(el => plDraggable(el, arr));
+    // Endurstaðsetja þegar letrið er komið: fyrsta mælingin á breidd takkans er
+    // gerð með fallback-letri og skeikar nógu miklu til að klemman við brúnina
+    // reiknist skakkt. Þetta keyrir einu sinni per teikningu og hreyfir ekkert
+    // ef breiddin var þegar rétt.
+    try {
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => {
+          const b = document.getElementById('pe-pagelinks'); if (b !== box) return;
+          arr.forEach((l, i) => {
+            if (!PL_POS(l)) return;
+            const c = box.querySelector('[data-pl-chip="' + i + '"]');
+            if (c && c.style.position === 'absolute') plClamp(c, l.x, l.y);
+          });
+        });
+      }
+    } catch (_) {}
   }
   // Draga takka: pointer-events, virkar bæði með mús og á snertiskjá. Hreyfing
   // undir 4px telst smellur (svo tengillinn opnist eðlilega), yfir 4px er dráttur.
@@ -1533,7 +1570,25 @@
     // teiknum upp á nýtt til að klemma þá aftur inn í gluggann.
     window.addEventListener('resize', () => { clearTimeout(_plRz); _plRz = setTimeout(() => renderPageLinks(true), 180); });
     document.addEventListener('slokk-viewmode', () => renderPageLinks(true));
-    setInterval(() => renderPageLinks(false), 2000);   // ódýrt: no-op nema view breytist
+    // 2026-08-29 (Agnar: „sést alltaf í kanski eina sekúndu ennþá þegar maður
+    // skiptir um síðu"). Ástæðan: síðuskipti í þessu appi eru EKKI alltaf
+    // hashchange — flestar sýnir skipta bara um .active-klasann. Þá tók ekkert
+    // eftir skiptunum fyrr en 2 sekúndna pollið kom næst, og takki gömlu
+    // síðunnar sat eftir á meðan. Fylgjumst því með klasanum sjálfum og
+    // teiknum um leið og hann breytist.
+    try {
+      const vObs = new MutationObserver(() => renderPageLinks(false));
+      document.querySelectorAll('.view').forEach(v => vObs.observe(v, { attributes: true, attributeFilter: ['class'] }));
+      // Sýnir sem bætast við eftir á (lazy-teiknaðar síður) fá sama fylgjara.
+      new MutationObserver(muts => {
+        muts.forEach(m => (m.addedNodes || []).forEach(n => {
+          if (n.nodeType === 1 && n.classList && n.classList.contains('view')) {
+            vObs.observe(n, { attributes: true, attributeFilter: ['class'] });
+          }
+        }));
+      }).observe(document.body, { childList: true, subtree: true });
+    } catch (_) {}
+    setInterval(() => renderPageLinks(false), 2000);   // bakvörður ef fylgjarinn missir af
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
