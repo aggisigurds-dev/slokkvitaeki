@@ -105,7 +105,7 @@
         + 'font:700 10px ' + LETUR + ';letter-spacing:.06em;text-transform:uppercase;color:var(--ars-texti-mjukur,#5d5a54)}',
       V + '._bil-mon i{flex:1;height:1px;background:#d0d4da;font-size:0}',
       V + '._bil-mon b{font:700 11px ui-monospace,monospace;color:var(--ars-texti-mjukur,#5d5a54);letter-spacing:0;text-transform:none}',
-      V + '._bil-list{padding:8px 12px 16px;display:flex;flex-direction:column;gap:var(--ars-spjald-bil,8px)}',
+      V + '._bil-list{padding:8px 4px 16px;display:flex;flex-direction:column;gap:var(--ars-spjald-bil,8px)}',
 
       V + '._bil-card{background:#fff !important;border:1px solid var(--ars-rammi,#e3e1dc) !important;'
         + 'border-left:var(--ars-spjald-kantur,4px) solid var(--ars-accent,#5980a6) !important;'
@@ -120,7 +120,14 @@
 
       V + '._bil-top{display:flex;align-items:flex-start;gap:9px}',
       V + '._bil-top>div{flex:1;min-width:0}',
-      V + '._bil-nm{font-size:var(--ars-spjald-nafn,15.5px);font-weight:700;color:var(--ars-texti,#16181c);line-height:1.2}',
+      V + '._bil-nmrow{display:flex;align-items:flex-start;gap:6px}',
+      V + 'button._bil-nm{flex:1;min-width:0;min-height:0!important;height:auto!important;padding:0!important;'
+        + 'border:0!important;background:transparent!important;box-shadow:none!important;'
+        + 'font-size:var(--ars-spjald-nafn,15.5px)!important;font-weight:700;color:var(--ars-texti,#16181c);'
+        + 'line-height:1.2;text-align:left;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}',
+      V + 'button._bil-prof{flex:none;width:44px;min-width:44px;max-width:44px;min-height:44px!important;height:44px!important;'
+        + 'padding:0!important;border:1px solid #10161f;background:' + METAL + ';color:#dbe2ec;font-size:18px;'
+        + 'border-radius:9px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}',
       V + '._bil-addr{font-size:12px;color:var(--ars-texti-mjukur,#5d5a54);margin-top:2px}',
       V + '._bil-st{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;font:700 11.5px ' + LETUR + ';white-space:nowrap;flex:0 0 auto;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
       V + '._bil-st._bs-done{background:var(--ars-st-done-bg,linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%));border:1px solid var(--ars-st-done-bd,#041c0e);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.22),inset 0 -2px 4px rgba(0,0,0,.28)}',
@@ -316,7 +323,10 @@
         + '</div>'
       : '';
     return '<div class="_bil-card ' + cls + '" data-co="' + c.id + '">'
-      + '<div class="_bil-top"><div><div class="_bil-nm">' + esc(c.nafn || '—') + '</div>'
+      + '<div class="_bil-top"><div><div class="_bil-nmrow">'
+      + '<button type="button" class="_bil-nm _ars-open" data-co-id="' + c.id + '">' + esc(c.nafn || '—') + '</button>'
+      + '<button type="button" class="_bil-prof _ars-open" data-co-id="' + c.id + '" title="Opna fyrirtæki" aria-label="Opna fyrirtæki">🏢</button>'
+      + '</div>'
       + (addr ? '<div class="_bil-addr">' + esc(addr) + '</div>' : '') + '</div>'
       + '<span class="_bil-st ' + cls + '">' + esc(merki) + '</span></div>'
       + '<div class="_bil-mid">' + yrs
@@ -374,6 +384,22 @@
   function tengja(root) {
     root.querySelectorAll('._bil-tab').forEach(b => b.addEventListener('click', e => {
       e.preventDefault(); setAkFilter(b.dataset.akf); teikna();
+    }));
+
+    /* 🏢 / nafn: sama fyrirtækjagluggi og röð á skjáborði (Arsskodun.openDetail).
+       Ekki ný síða. data-co-id eins og ._ars-open í 153. */
+    function opnaProf(id) {
+      if (!id) return;
+      try {
+        if (window.Arsskodun && typeof Arsskodun.openDetail === 'function') {
+          Arsskodun.openDetail(id);
+          return;
+        }
+      } catch (_) {}
+    }
+    root.querySelectorAll('._ars-open').forEach(b => b.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      opnaProf(+b.dataset.coId);
     }));
 
     root.querySelectorAll('._bil-ak').forEach(b => b.addEventListener('click', e => {

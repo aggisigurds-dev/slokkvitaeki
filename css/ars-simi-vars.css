@@ -29,7 +29,7 @@
   /* ── Borð-útlitið (frosinn nafndálkur + skrun) ───────────────────────────
      Nafndálkurinn stendur kyrr þegar strokið er til hliðar; hinir átta
      skrunast. Summa dálkanna ræður hversu langt er hægt að skruna.          */
-  --ars-nafn-dalkur:   150px;   /* frosni dálkurinn til vinstri              */
+  --ars-nafn-dalkur:   190px;   /* frosni dálkurinn til vinstri              */
   --ars-rad-haed:       52px;   /* hæð hverrar raðar (fast, ekki min)        */
   --ars-haus-haed:      38px;   /* hæð haus-raðarinnar                       */
   --ars-nafn-letur:   12.5px;   /* fyrirtækjanafnið — klemmt í tvær línur    */

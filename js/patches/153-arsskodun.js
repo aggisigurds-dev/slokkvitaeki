@@ -2394,12 +2394,12 @@
       // hvítt spjald sem poppar á steel-gráa app-bakgrunninum
       V+'._arsm-tbl{background:#fff;border:1px solid var(--ars-rammi,#e3e1dc);border-radius:14px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 1px 2px rgba(20,30,25,.05),0 14px 30px -24px rgba(20,30,25,.45);margin-top:4px;font-family:var(--ars-letur,\'IBM Plex Sans\',-apple-system,\'Segoe UI\',system-ui,sans-serif)}',
       /* Hönnun Agnars 29.08 (Claude Design, forskoðuð 430x860):
-         150px FROSINN nafndálkur + 668px sem skrunast til hliðar.
-         56+112+96+60+52+84+78+130 = 668 → röðin er 818px.
+         190px FROSINN nafndálkur + 668px sem skrunast til hliðar.
+         56+112+96+60+52+84+78+130 = 668 → röðin er 858px.
          Áður var þetta minmax(0,1fr)+66+34+34+26 án skruns, svo allt kramdist
          í símabreidd — mælt á 430px: taflan 1280px breið og raðirnar 326px HÁAR
          af því allt braut sig niður. Nú skrunast það í staðinn fyrir að brotna. */
-      V+'._arsm-row{display:grid;grid-template-columns:var(--ars-nafn-dalkur,150px) var(--ars-col-man,56px) var(--ars-col-ar,112px) var(--ars-col-taeki,96px) var(--ars-col-akstur,60px) var(--ars-col-stada,52px) var(--ars-col-virdi,84px) var(--ars-col-sidast,78px) var(--ars-col-nota,130px);gap:0;align-items:center;width:max-content;min-width:100%;height:var(--ars-rad-haed,52px);border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
+      V+'._arsm-row{display:grid;grid-template-columns:var(--ars-nafn-dalkur,190px) var(--ars-col-man,56px) var(--ars-col-ar,112px) var(--ars-col-taeki,96px) var(--ars-col-akstur,60px) var(--ars-col-stada,52px) var(--ars-col-virdi,84px) var(--ars-col-sidast,78px) var(--ars-col-nota,130px);gap:0;align-items:center;width:max-content;min-width:100%;height:var(--ars-rad-haed,52px);border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
       V+'._arsm-row>*{padding:0 6px;min-width:0}',
       /* Nafnið helst kyrrt þegar strokið er til hliðar — annars veit maður ekki
          hvaða fyrirtæki maður er að lesa um leið og fyrsti dálkur er farinn. */
@@ -2431,7 +2431,7 @@
       V+'._arsm-yrhead span{flex:1;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;color:var(--ars-texti-merki,#6f6b63)}',
       // nafn + undirlína (póstnr · tækjafjöldi · ✉ vantar)
       V+'._arsm-name{min-width:0}',
-      V+'._arsm-nm{font-size:var(--ars-nafn-letur,12.5px);font-weight:600;color:var(--ars-texti,#16181c);white-space:normal;overflow:hidden;overflow-wrap:anywhere;letter-spacing:-.01em;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:29px}',
+      V+'._arsm-nm{font-size:var(--ars-nafn-letur,12.5px);font-weight:600;color:var(--ars-texti,#16181c);white-space:normal;overflow:hidden;overflow-wrap:break-word;word-break:normal;letter-spacing:-.01em;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:29px}',
       V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--ars-undirtexti,9.5px);color:var(--ars-texti-merki,#6f6b63);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
       // 4-ára reitir — sömu málm-gljáar og skjáborð ._yr.both / .penda (Agnar viðmið)
       V+'._arsm-yr{display:flex;gap:2px}',

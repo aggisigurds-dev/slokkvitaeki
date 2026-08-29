@@ -76,7 +76,7 @@
     ] },
     { syn: 'bord', heiti: 'Borð · röð', vidmid: '._arsm-row', breytur: [
       { v: '--ars-rad-haed',      m: 'Raðhæð',        min: 36, max: 96,  sjalf: 52 },
-      { v: '--ars-nafn-dalkur',   m: 'Nafndálkur',    min: 90, max: 260, sjalf: 150 },
+      { v: '--ars-nafn-dalkur',   m: 'Nafndálkur',    min: 90, max: 260, sjalf: 190 },
       { v: '--ars-nafn-letur',    m: 'Nafnletur',     min: 10, max: 20,  sjalf: 12.5, skref: .5 },
       { v: '--ars-undirtexti',    m: 'Undirtexti',    min: 7,  max: 14,  sjalf: 9.5,  skref: .5 },
       { v: '--ars-haus-haed',     m: 'Haushæð',       min: 26, max: 60,  sjalf: 38 }
