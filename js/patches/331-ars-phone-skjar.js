@@ -222,21 +222,29 @@
       V + '._ars-addrcell' + P + '{min-width:180px!important;width:auto!important}',
       V + '._arsm-name' + P + '{overflow:visible!important;min-width:var(--ars-nafn-dalkur,190px)!important}',
 
-      /* Skjár/Tafla á síma: full síða, taflan má ekki krammast í 1ch. */
+      /* Skjár/Tafla á síma: full síða, taflan má ekki krammast í 1ch.
+         328 setur overflow-y:hidden + overflow-x:clip á síma-viewmode — við
+         höldum data-viewmode=mobile á raunsíma (hliðarstika), svo þessar
+         reglur verða að slá 328. */
       W + '#view-arsskodun' + P + ','
-        + W + '#view-arsskodun.view.active' + P
+        + W + '#view-arsskodun.view.active' + P + ','
+        + 'html.ars-wide-table[data-viewmode="mobile"] #view-arsskodun' + P
         + '{width:100vw!important;max-width:100vw!important;margin-left:0!important;'
         + 'padding-left:0!important;padding-right:0!important;box-sizing:border-box!important;'
-        + '--sidebar-w:0px;overflow:auto!important;touch-action:pan-x pan-y pinch-zoom}',
+        + '--sidebar-w:0px;overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
+        + 'touch-action:pan-x pan-y pinch-zoom!important}',
       W + '#view-arsskodun #ars-main' + P + ','
         + W + '#view-arsskodun #ars-main.main-panel' + P
         + '{width:100%!important;max-width:none!important;overflow:visible!important}',
       W + '#view-arsskodun ._ars-tblscroll' + P + ','
         + W + '#view-arsskodun .data-table-scroll' + P + ','
-        + W + '#view-arsskodun .data-table-wrap' + P
+        + W + '#view-arsskodun .data-table-wrap' + P + ','
+        + 'html.ars-wide-table[data-viewmode="mobile"] #view-arsskodun ._ars-tblscroll' + P + ','
+        + 'html.ars-wide-table[data-viewmode="mobile"] #view-arsskodun .data-table-scroll' + P
         + '{width:100%!important;max-width:100vw!important;min-width:0!important;'
+        + 'max-height:calc(100dvh - 140px)!important;height:calc(100dvh - 140px)!important;'
         + 'overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
-        + '-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom;'
+        + '-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom!important;'
         + 'overscroll-behavior:contain}',
       W + '#view-arsskodun table.data-table' + P + ','
         + W + '#view-arsskodun ._ars-tblscroll>table' + P
@@ -244,8 +252,15 @@
         + 'max-width:none!important;table-layout:fixed!important;overflow:visible!important}',
       W + '#view-arsskodun table.data-table th' + P + ','
         + W + '#view-arsskodun table.data-table td' + P
-        + '{word-break:normal!important;overflow-wrap:break-word!important}',
-      'html.ars-wide-table,html.ars-wide-table body{overflow-x:auto!important}',
+        + '{word-break:normal!important;overflow-wrap:break-word!important;'
+        + 'white-space:normal!important}',
+      W + '#view-arsskodun ._ars-addrcell' + P
+        + '{min-width:180px!important;max-width:none!important}',
+      'html.ars-wide-table,html.ars-wide-table body{overflow-x:auto!important;touch-action:pan-x pan-y pinch-zoom}',
+      /* Sími-listi: nafndálkur má ekki krammast (330 max-width:100% + min-width:0). */
+      V + '._arsm-row' + P + '{width:max-content!important}',
+      V + '._arsm-name' + P
+        + '{width:var(--ars-nafn-dalkur,190px)!important;max-width:var(--ars-nafn-dalkur,190px)!important}',
 
       /* Hönnunarhamur: ekki éta allan símann svo listinn sjáist áfram. */
       'html.slokk-phone-dev #_hh-panel,#_hh-panel' + P
