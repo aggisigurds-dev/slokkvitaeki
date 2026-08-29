@@ -139,9 +139,6 @@
         }).join('')).join('')
       + '<pre id="_hh-css-out">' + esc(cssBlokk()) + '</pre>';
     tengjaSleda(p);
-    // Hæð panelsins breytist þegar hópur er valinn — og við fyrstu teikningu
-    // er hann enn tómur. Mælt 29.08: rými varð 40px meðan panellinn var 439px.
-    requestAnimationFrame(() => rymi(true));
   }
 
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -206,7 +203,7 @@
   /* Panellinn má ekki hylja neðstu röðina. #ars-main er skrunkassinn; hann er
      ekki stimplaður inline af pinPad, svo hér dugar bein stilling. Upprunalega
      gildið er geymt svo loka() skili því nákvæmlega til baka. */
-  let _rymiAdur = null;
+  let _rymiAdur = null, _ro = null;
   function rymi(kveikja) {
     const m = document.getElementById('ars-main')
           || document.querySelector('#view-arsskodun ._bil-wrap');
@@ -214,9 +211,13 @@
     if (kveikja) {
       if (_rymiAdur === null) _rymiAdur = m.style.paddingBottom || '';
       const h = (document.getElementById('_hh-panel') || {}).offsetHeight || 0;
-      m.style.paddingBottom = (h + 16) + 'px';
+      // 'important' er NAUÐSYNLEGT: venjulegur inline-stíll TAPAR fyrir
+      // stílblaði með !important. Mælt 29.08 — inline sagði 455px meðan
+      // reiknað gildi var 40px. Aðeins inline !important vinnur á því.
+      m.style.setProperty('padding-bottom', (h + 16) + 'px', 'important');
     } else if (_rymiAdur !== null) {
-      m.style.paddingBottom = _rymiAdur;
+      m.style.removeProperty('padding-bottom');
+      if (_rymiAdur) m.style.paddingBottom = _rymiAdur;
       _rymiAdur = null;
     }
   }
@@ -246,9 +247,19 @@
       catch (_) { alert(txt); }
     });
     document.addEventListener('click', velja, true);
+    /* ResizeObserver frekar en handvirkt kall: teikna() keyrir aðeins einu
+       sinni (opna() hættir strax ef panellinn er til), og við fyrstu teikningu
+       er hann 24px hár. Mælt 29.08: rýmið sat fast í 40px meðan panellinn var
+       439px, svo neðsta röðin lá undir honum. Athugarinn fylgir hæðinni hvort
+       sem hún breytist við teikningu eða hópaval. */
+    try {
+      _ro = new ResizeObserver(() => rymi(true));
+      _ro.observe(p);
+    } catch (_) { rymi(true); }
   }
 
   function loka() {
+    if (_ro) { try { _ro.disconnect(); } catch (_) {} _ro = null; }
     rymi(false);
     const p = document.getElementById('_hh-panel'); if (p) p.remove();
     document.body.classList.remove('_hh-on');
