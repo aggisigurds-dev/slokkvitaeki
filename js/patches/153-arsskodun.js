@@ -1394,8 +1394,11 @@
     _ensureArsVmCss();
     _ensureArsStrimlarCss();
     const vm = arsViewMode();
-    const appMode = !!(document.body && document.body.classList.contains('appmode'));
-    const effView = (vm === 'mobile' || appMode) ? 'mrows' : 'list';
+    // Útlitið ræðst af viewMode, EKKI gluggabreidd og EKKI appmode.
+    // Appmode þvingaði áður alltaf mrows, svo Skjár á raunsíma/í Fjármálum
+    // opnaðist aldrei. arsskodun_viewmode (sími/tafla/skjár) gildir fyrst;
+    // html[data-viewmode] er varaleið. Aldrei isPhone→card.
+    const effView = (vm === 'mobile') ? 'mrows' : 'list';
     // Stats restricted to companies that ARE in árskoðun (have equipment).
     // The full list still includes everyone — the user wanted the whole
     // fyrirtækjaregistur in one tab, but tiles only count the ones that
@@ -2397,11 +2400,11 @@
          Áður var þetta minmax(0,1fr)+66+34+34+26 án skruns, svo allt kramdist
          í símabreidd — mælt á 430px: taflan 1280px breið og raðirnar 326px HÁAR
          af því allt braut sig niður. Nú skrunast það í staðinn fyrir að brotna. */
-      V+'._arsm-row{display:grid;grid-template-columns:var(--ars-nafn-dalkur,190px) var(--ars-col-man,56px) var(--ars-col-ar,112px) var(--ars-col-taeki,96px) var(--ars-col-akstur,60px) var(--ars-col-stada,52px) var(--ars-col-virdi,84px) var(--ars-col-sidast,78px) var(--ars-col-nota,130px);gap:0;align-items:center;width:max-content;min-width:100%;height:var(--ars-rad-haed,52px);border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
+      V+'._arsm-row{display:grid;grid-template-columns:var(--ars-nafn-dalkur,190px) var(--ars-col-man,56px) var(--ars-col-ar,112px) var(--ars-col-taeki,96px) var(--ars-col-akstur,60px) var(--ars-col-stada,52px) var(--ars-col-virdi,84px) var(--ars-col-sidast,78px) var(--ars-col-nota,130px);gap:0;align-items:center;width:max-content;min-width:100%;min-height:var(--ars-rad-haed,52px);height:auto;border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
       V+'._arsm-row>*{padding:0 6px;min-width:0}',
       /* Nafnið helst kyrrt þegar strokið er til hliðar — annars veit maður ekki
          hvaða fyrirtæki maður er að lesa um leið og fyrsti dálkur er farinn. */
-      V+'._arsm-name{position:sticky;left:0;z-index:2;background:#fff;overflow:hidden;padding:5px 8px !important;box-shadow:1px 0 0 #eef1f5}',
+      V+'._arsm-name{position:sticky;left:0;z-index:2;background:#fff;overflow:visible;min-width:var(--ars-nafn-dalkur,190px);max-width:var(--ars-nafn-dalkur,190px);padding:5px 8px !important;box-shadow:1px 0 0 #eef1f5}',
       V+'._arsm-head ._arsm-name{background:#eef1f5}',
       V+'._arsm-row:active ._arsm-name{background:#f3f5f8}',
       V+'._arsm-head{height:var(--ars-haus-haed,38px)}',
@@ -2427,10 +2430,11 @@
       V+'._arsm-c{text-align:center}',
       V+'._arsm-yrhead{display:flex;gap:2px}',
       V+'._arsm-yrhead span{flex:1;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;color:var(--ars-texti-merki,#6f6b63)}',
-      // nafn + undirlína (póstnr · tækjafjöldi · ✉ vantar)
-      V+'._arsm-name{min-width:0}',
+      // nafn + kt + heimili (umbrotslína, ekki staf-per-línu)
+      V+'._arsm-name{min-width:var(--ars-nafn-dalkur,190px)}',
       V+'._arsm-nm{font-size:var(--ars-nafn-letur,12.5px);font-weight:600;color:var(--ars-texti,#16181c);white-space:normal;overflow:hidden;overflow-wrap:break-word;word-break:normal;letter-spacing:-.01em;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:29px}',
       V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--ars-undirtexti,9.5px);color:var(--ars-texti-merki,#6f6b63);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
+      V+'._arsm-addr{font-size:11px;color:var(--ars-texti-mjukur,#5d5a54);white-space:normal;overflow-wrap:break-word;word-break:normal;hyphens:manual;line-height:1.25;margin-top:2px}',
       // 4-ára reitir — sömu málm-gljáar og skjáborð ._yr.both / .penda (Agnar viðmið)
       V+'._arsm-yr{display:flex;gap:2px}',
 V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empty-bg,#f4f6f9);border:1px solid var(--ars-yr-empty-bd,#e7eaf0);display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--ars-yr-empty-fg,#aab3c0);font-style:normal;font-weight:700;line-height:1;box-sizing:border-box}',
@@ -2530,14 +2534,15 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
         : `<div class="_arsm-mo ${moCls}">${esc(moLabel)}</div>`;
       // Akstur (0→1→2→3→0)
       const ak = arsAksturOf(c);
-      // Undirlína: póstnr · N tæki · ✉ vantar
+      // Undirlína: kt · póstnr · ✉ vantar. Heimilisfang er eigin umbrotslína.
       const pnr = pnrOf(c);
       const email = (c.netfang || '').trim();
+      const ktLine = c.kennitala ? fmtKt(c.kennitala) : '';
+      const addrLine = String(c.heimilisfang || '').replace(/\s+/g, ' ').trim();
       const subBits = [];
+      if (ktLine) subBits.push(esc(ktLine));
       if (pnr) subBits.push(esc(pnr));
       if (!email) subBits.push('✉ vantar');
-      // Tækjafjöldi fór úr undirlínunni í eigin dálk (hönnun 29.08) — undirlínan
-      // ber nú aðeins póstnúmer og ✉-viðvörun, svo nafnið fái pláss í 150px.
       const est = +ars.estimated_yearly || 0;
       const virdi = est ? esc(fmtKr(est)) : '<span style="color:#b6c0cc">—</span>';
       const sidast = ars.last_skodun
@@ -2549,6 +2554,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
           <div class="_arsm-name">
             <div class="_arsm-nm" title="${esc(c.nafn || '')}">${esc(c.nafn || '—')}</div>
             <div class="_arsm-sub">${subBits.join(' · ')}</div>
+            ${addrLine ? `<div class="_arsm-addr">${esc(addrLine)}</div>` : ''}
           </div>
           ${moCell}
           <div class="_arsm-yr">${yrHtml}</div>
@@ -2798,6 +2804,23 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
   // html[data-viewmode] and fires a `slokk-viewmode` event. Here we only READ
   // that attribute and restyle. Fallback 'desktop'.
   function arsViewMode() {
+    // Page-local Sími/Tafla/Skjár (localStorage.arsskodun_viewmode) gildir
+    // fyrst — svo Skjár á raunsíma/í appmode haldist eftir endurhleðslu og
+    // 166 geti ekki þvingað mrows til baka. Bannerinn (slokk_viewmode) er
+    // varaleið. Gildi: sími|simi|mobile · tafla|table · skjár|skjar|desktop.
+    try {
+      if (window.ArsSjon && typeof window.ArsSjon.get === 'function') {
+        const g = window.ArsSjon.get();
+        if (g === 'mobile' || g === 'table' || g === 'desktop') return g;
+      }
+    } catch (_) {}
+    try {
+      const raw = String(localStorage.getItem('arsskodun_viewmode') || '');
+      const m = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (m === 'simi' || m === 'mobile') return 'mobile';
+      if (m === 'tafla' || m === 'table') return 'table';
+      if (m === 'skjar' || m === 'desktop') return 'desktop';
+    } catch (_) {}
     const m = document.documentElement.dataset.viewmode;
     return (m === 'mobile' || m === 'table' || m === 'desktop') ? m : 'desktop';
   }
@@ -2814,8 +2837,8 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       // ── 📱 Sími — ÞÉTT single-column spjöld (~3× lægri hæð per fyrirtæki) ──
       M + '._ars-cardgrid{grid-template-columns:1fr!important;gap:6px!important}' +
       M + '._ars-card{padding:8px 11px!important;gap:2px!important;border-radius:10px!important}' +
-      M + '._ars-cn{font-size:13.5px!important;line-height:1.15!important;overflow:visible;white-space:normal;overflow-wrap:anywhere}' +
-      M + '._ars-ca{font-size:11px!important;margin-top:0!important;overflow:visible;white-space:normal;overflow-wrap:anywhere}' +
+      M + '._ars-cn{font-size:13.5px!important;line-height:1.15!important;overflow:visible;white-space:normal;overflow-wrap:break-word;word-break:normal}' +
+      M + '._ars-ca{font-size:11px!important;margin-top:0!important;overflow:visible;white-space:normal;overflow-wrap:break-word;word-break:normal}' +
       // fela kt-línu + netfangs-línu á spjaldinu (sést í ítarsýn/fyrirtæki) svo hæðin hrynur
       M + '._ars-card ._ars-cn+div{font-size:9px!important}' +
       // þrír stat-kassar → ein þjöppuð lína, engir rammar
@@ -2838,7 +2861,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       M + '._ars-statusrow{overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;max-width:100%}' +
       M + '._ars-statusrow>button{flex:0 0 auto!important;white-space:nowrap}' +
       // ── ▦ Tafla — ULTRA-dense rows: ~3× lægri hæð per fyrirtæki ──
-      T + 'table{font-size:11px!important;min-width:0!important}' +
+      T + 'table{font-size:11px!important;min-width:1100px!important}' +
       T + 'table thead{position:sticky;top:0;z-index:2}' +
       T + 'table thead tr{background:#0f172a!important;border-bottom:0!important}' +
       T + 'table thead th{background:#0f172a!important;color:#fff!important;padding:4px 8px!important;font-size:9px!important;white-space:nowrap}' +
@@ -2891,9 +2914,10 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       V+'.data-table th._ars-mailhdr{padding-left:4px!important;padding-right:4px!important;text-align:center;font-size:12px;letter-spacing:0}',
       V+'.data-table td._ars-mailcol{padding-left:4px;padding-right:4px;text-align:center;white-space:nowrap}',
       V+'.data-table td._ars-mailcol ._mail-badge{margin:0!important}',
-      V+'._co{display:block;font-size:13px;font-weight:600;color:var(--ink);white-space:normal;overflow:visible;overflow-wrap:anywhere}',
+      V+'._co{display:block;font-size:13px;font-weight:600;color:var(--ink);white-space:normal;overflow:visible;overflow-wrap:break-word;word-break:normal}',
       V+'._kt{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.02em;white-space:nowrap;line-height:1.2}',
-      V+'._addr{white-space:normal;overflow:visible;overflow-wrap:anywhere;display:block}',
+      V+'._addr{white-space:normal;overflow:visible;overflow-wrap:break-word;word-break:normal;hyphens:manual;display:block}',
+      V+'._ars-addrcell{min-width:180px}',
       V+'._post{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);margin-right:8px}',
       V+'._mo{font-family:var(--mono);font-size:12px;color:var(--ink-2)}',
       // Ein-lína ferðanóta: dökkgrá punktalína sem skreppur (min-width:0).
@@ -3977,7 +4001,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
   // eqGroups/eqTrioHtml eru birt af sömu ástæðu og cleanAminning: önnur borð
   // (175 Rekstrarfélög) eiga að TEIKNA SLT/BSL/RS með nákvæmlega sömu formúlu,
   // ekki afriti af henni. Sjá athugasemd við eqGroups um forflokkað inntak.
-  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, version: 'v1' };
+  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, arsViewMode, version: 'v1' };
 
   // Keep the cached priority in sync when the ❗ control is cycled (patch 175),
   // so sorting by ❗ stays correct. The ❗ button updates itself in place — no
