@@ -516,7 +516,7 @@
         // fyrirtaeki locations that belong to those bases → the buildings/sites
         var baseIds = Object.keys(bases).map(function(x){return parseInt(x,10);});
         if (baseIds.length){
-          var siteCols = 'id,nafn,kennitala,heimilisfang,netfang,simi,customer_base_id,bokunarnumer,stadur_nr,plan_note';
+          var siteCols = 'id,nafn,kennitala,heimilisfang,netfang,simi,customer_base_id,bokunarnumer,stadur_nr,plan_note,er_i_thjonustu';
           var alive = function(q){ return q.is('deleted_at', null); };
           var siteRows = await fetchAllIn(SB, 'fyrirtaeki', siteCols, 'customer_base_id', baseIds, alive);
           // Recover sites that share a tagged base's kennitala but are not
@@ -560,7 +560,8 @@
               customer_base_id: f.customer_base_id,
               bokunarnumer: f.bokunarnumer||'',
               stadur_nr: f.stadur_nr,
-              plan_note: f.plan_note||''
+              plan_note: f.plan_note||'',
+              er_i_thjonustu: f.er_i_thjonustu !== false
             });
           });
           // Base tagged as rekstrarfélag but with no fyrirtaeki row yet (SAB ehf
@@ -1470,7 +1471,7 @@
           // 2026-07-27: hversu margir staðir félagsins eru í brunakerfisþjónustu
           // (hver fyrirtækja-röð talin einu sinni — sjá firstTime í _fillBodyInner)
           try{ var c=companyForBld(b), x=c?bruIx.get(c.id):null;
-            if(x && (x.inService || Object.keys(x.years||{}).length)) seenBru[c.id]=1; }catch(e){}
+            if(x && x.inService) seenBru[c.id]=1; }catch(e){}
         });
         overdueByFirm[name]=n; bruByFirm[name]=Object.keys(seenBru).length;
       });
@@ -1816,8 +1817,12 @@
     // building table
     var rows=blds.map(function(b,_bi){
       var co=companyForBld(b);
+      var slInSvc = b.er_i_thjonustu !== false;
       var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open" title="'+esc(b.nafn)+'">'+esc(b.nafn)+'</a>'
                    : '<span title="'+esc(b.nafn)+'">'+esc(b.nafn)+'</span> <span style="color:#9098a6;font-size:11px;font-weight:400">(ekki í skrá)</span>';
+      if (!slInSvc) {
+        link += ' <span style="color:#9098a6;font-size:11px;font-weight:400" title="Ekki í slökkvitækjaþjónustu — lögheimili/samningur, ekki hótel á slökk-borði">(ekki í slökkþjónustu)</span>';
+      }
       var doc = co
         ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#1d4ed8;text-decoration:underline">skjöl</a>'
         : '<span class="rf-nodoc" title="Bygging ekki tengd fyrirtæki í skrá — engin skjalamappa">—</span>';
@@ -1854,7 +1859,7 @@
       var bruInSvc = !!(bx && bx.inService);
       var bOver = !!(bx && bx.next && bx.next < today);
       if (firstTime(co,b)) {
-        if (bHasData) nBruSvc++;
+        if (bruInSvc) nBruSvc++;
         totSl += units; totBr += bUnits;
         if (d26) slDoneCur++;
         if (bY[CURY] && bY[CURY].kind==='rep') brDoneCur++;
@@ -1951,7 +1956,7 @@
         var done=[d23,d24,d25,d26][i], rep=[false,!!att[0],!!att[1],!!att[2]][i], file=[f23,f24,f25,f26][i];
         var slBundled = !!(bldPairs && bldPairs[y+'|uttekt']);
         var brBundled = !!(bldPairs && bldPairs[y+'|brunakerfi']);
-        slPills += yrMiniSl(y, done, rep, lks[y], file, units, slBundled, y===CURY, slHasData, isOver, !!(st&&st.next));
+        slPills += yrMiniSl(y, done, rep, lks[y], file, units, slBundled, y===CURY, slInSvc && slHasData, isOver, !!(st&&st.next));
         brPills += yrMiniBr(y, bY[y], bUnits, brBundled, y===CURY, bHasData, bOver, !!(bx&&bx.next));
       });
       // EINN „Skoðanir · Skjöl" dálkur með láréttum ártölu-strimli — eins og
@@ -1979,7 +1984,7 @@
       // akstur/næst/aðgerðir) — engu var eytt, bara falið þar til smellt er.
       var sumParts=[];
       if(showSl) sumParts.push('<span class="rf-sum-chip'+(units<=0?' is-zero':'')+'">🧯'+(units>0?units:'–')+(d26?' ✓'+CURY:(slHasData?' …':''))+'</span>');
-      if(showBr && bHasData) sumParts.push('<span class="rf-sum-chip">🚨'+(bUnits>0?bUnits:'–')+(bY[CURY]?' ✓'+CURY:' …')+'</span>');
+      if(showBr && bruInSvc) sumParts.push('<span class="rf-sum-chip">🚨'+(bUnits>0?bUnits:'–')+(bY[CURY]?' ✓'+CURY:' …')+'</span>');
       var sumNextDate = (st&&st.next) || (bx&&bx.next) || null;
       var sumOver = (showSl&&isOver&&slHasData)||(showBr&&bOver);
       if(sumNextDate) sumParts.push('<span class="rf-sum-next'+(sumOver?' is-over':'')+'" title="'+esc(sumNextDate)+'">'+(sumOver?'⚠ ':'')+esc(monthLabel(sumNextDate))+'</span>');

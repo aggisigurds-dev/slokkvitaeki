@@ -57,7 +57,8 @@ automation health and pings Agnar *only* when something needs him.
 | **Rekstrarfélaga-staðir hrúgast ekki saman á kennitölu** | `175` live-raðir bera `co_id = fyrirtaeki.id`; `companyForBld` giskar aldrei `hits[0]`; `document_pairs` lyklað á `fyrirtaeki_id` (ekki base) | — | `audit-rekstrarfelog-sites.cjs` |
 | **Rekstrarfélög = kennitala + staðurinnúmer** | `payday-push` `accountingCost` `"kt nr. N"` aðeins þegar `_siteTrusted`; POS giskar ekki `.limit(1)` á fyrsta hótel | — | `audit-stadur-nr.cjs` |
 | **Ársskoðun blár reiknings-punktur er per stað + úttekt** | `187` `hasReikYear`: `byCo` + unique-kt orphan; `hasConfirmedInvYear` = `v_uttekt_ar` / POS `solur.customer_id` (ekki Drive-einn); `vidskiptategund` sleppir brunakerfi/búð | — | `audit-arsskodun-inv-dot.cjs` |
-| **Ársskoðun 🧾 er úttekt, ekki brunakerfi** | `187` `isUttektInvoiceTeg` + pair-skip; `isReportKind` telur ekki brunakerfi-PDF; `199` `invUtByY`/`invBrByY`; `175` `tegByInv` | — | `audit-arsskodun-inv-dot.cjs` / `audit-rekstrarfelog-sites.cjs` |
+| **Ársskoðun 🧾 er úttekt, ekki brunakerfi** | `187` `isUttektInvoiceTeg` + pair-skip; `isReportKind` telur ekki brunakerfi-PDF; `199` `invUtByY`/`invoiceServiceKind`; `175` `tegByInv` | — | `audit-arsskodun-inv-dot.cjs` / `audit-rekstrarfelog-sites.cjs` |
+| **Slökk og brunakerfi mála ekki hvort annað** | Gátt `ar_slokk` / `bru_i_thjonustu` (ekki `sidasta_ar` fill-forward, ekki `er_i_thjonustu` sem Brunak.); `190` `isUttektInvoiceTeg` + `_pdByCo`; `175` hero/footer = `inService` | — | `audit-service-unmesh.cjs` |
 
 ---
 

@@ -12,6 +12,7 @@
 
 const P = require('./_portal');
 const { pickHose, slokkMinusHose } = require('./_gatt-eq.cjs');
+const GY = require('./_gatt-years.cjs');
 
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
@@ -109,15 +110,30 @@ exports.handler = async (event) => {
       if (dr.ok) docs = await dr.json();
     } catch (_) {}
 
-    // Brunakerfis-ár per byggingu (raunveruleg brunakerfis-skjöl) — svo yfirlitið
-    // merki brunakerfi AÐEINS þar sem raunverulegt brunakerfis-skjal er til, í stað
-    // þess að spegla slökkvitækja-stöðuna (sem gaf falskar brunakerfis-skoðanir).
+    // Ár per byggingu úr RAUNVERULEGUM skjölum á ÞESSU fyrirtaeki_id.
+    // Slökk og brunakerfi eru tvær þjónustur — aldrei spegla aðra í hina
+    // (Center Hótel er í báðum; Hlaðvarpinn er aðeins í slökk).
     const bruYearsByFy = {};
+    const slokkYearsByFy = {};
     docs.forEach((d) => {
-      if (d.doc_type === 'brunakerfi' && !d.is_duplicate && d.fyrirtaeki_id != null && d.year != null) {
+      if (d.is_duplicate || d.fyrirtaeki_id == null || d.year == null) return;
+      if (d.doc_type === 'brunakerfi') {
         (bruYearsByFy[d.fyrirtaeki_id] = bruYearsByFy[d.fyrirtaeki_id] || new Set()).add(String(d.year));
+      } else if (d.doc_type === 'uttektarskyrsla') {
+        (slokkYearsByFy[d.fyrirtaeki_id] = slokkYearsByFy[d.fyrirtaeki_id] || new Set()).add(String(d.year));
       }
     });
+
+    // Brunakerfisþjónusta = AppSettings.brunakerfi_customers[fid], EKKI slökk
+    // er_i_thjonustu (það málaði „Brunak. Já" á Hlaðvarpinn).
+    let bruMap = {};
+    try {
+      const ar = await P.sbGet('app_settings?id=eq.1&select=settings');
+      if (ar.ok) {
+        const row = (await ar.json())[0];
+        bruMap = (row && row.settings && row.settings.brunakerfi_customers) || {};
+      }
+    } catch (_) {}
 
     // 2c) Brunaslöngur per byggingu. Sýnishornið (Center Hótel) sýnir slöngur
     //     sem eigin dálk; total_devices inniheldur þær. Skýrsla fyrst, tækjaskrá
@@ -147,14 +163,21 @@ exports.handler = async (event) => {
       const st = stById[s.id] || {};
       const slo = pickHose(factSloById[s.id], liveBslById[s.id]);
       const rawTotal = st.total_devices != null ? st.total_devices : null;
+      const arSlokk = [...(slokkYearsByFy[s.id] || [])].sort();
+      const arBru = [...(bruYearsByFy[s.id] || [])].sort();
+      const bruEntry = bruMap[s.id] || bruMap[String(s.id)] || null;
+      const bruOn = GY.bruInService(bruMap, s.id);
       return {
         id: s.id, nafn: s.nafn, heimilisfang: s.heimilisfang || '',
         i_thjonustu: s.er_i_thjonustu !== false,
+        bru_i_thjonustu: bruOn,
         stada: st.stada || (s.er_i_thjonustu === false ? 'ekki_i_thjonustu' : 'engin_skyrsla'),
-        sidasta_ar: st.report_year || null,
-        ar_bru: [...(bruYearsByFy[s.id] || [])].sort(),
+        sidasta_ar: GY.lastYear(arSlokk) || st.report_year || null,
+        ar_slokk: arSlokk,
+        ar_bru: arBru,
         // skoðunarmánuður úr v_next_inspection (eins og „📅"-takkinn); fallback á skýrslu-mánuð
         skodun_manudur: imById[s.id] != null ? imById[s.id] : (st.inspect_month != null ? st.inspect_month : null),
+        bru_skodun_manudur: bruEntry && bruEntry.inspect_month != null ? Number(bruEntry.inspect_month) : null,
         taeki: slokkMinusHose(rawTotal, slo),
         slo: slo,
       };
@@ -206,14 +229,17 @@ exports.handler = async (event) => {
       }
     } catch (_) {}
 
-    const inService = buildings.filter((b) => b.i_thjonustu);
+    // Yfirlit: aðeins staðir í annarri hvorri þjónustunni. Þverholt 14 er
+    // lögheimili/samningur, ekki hótel á slökk- eða brunakerfisborði.
+    const onBoard = buildings.filter((b) => b.i_thjonustu || b.bru_i_thjonustu);
+    const inService = onBoard.filter((b) => b.i_thjonustu);
     const stats = {
       byggingar: inService.length,
-      i_lagi: buildings.filter((b) => b.stada === 'ok').length,
-      vantar: buildings.filter((b) => b.stada === 'engin_skyrsla').length,
+      i_lagi: onBoard.filter((b) => b.stada === 'ok').length,
+      vantar: onBoard.filter((b) => b.i_thjonustu && b.stada === 'engin_skyrsla').length,
       taeki_alls: inService.reduce((n, b) => n + (b.taeki || 0), 0),
       brunaslongur_alls: inService.reduce((n, b) => n + (b.slo || 0), 0),
-      brunakerfi_stk: inService.filter((b) => (b.ar_bru || []).length > 0).length,
+      brunakerfi_stk: onBoard.filter((b) => b.bru_i_thjonustu).length,
     };
 
     // 4) Skilaboð + merkja starfs-skilaboð lesin
@@ -231,7 +257,7 @@ exports.handler = async (event) => {
 
     return P.json(200, {
       account: { name: name || '', theme: theme, open: openMode },
-      stats, buildings, reports, invoices, messages,
+      stats, buildings: onBoard, reports, invoices, messages,
     });
   } catch (e) {
     return P.json(500, { error: String((e && e.message) || e) });
