@@ -83,11 +83,12 @@
     KY + '.ky-mdetail{display:none!important}',
     KY + '.ky-mrow.open .ky-mdetail,' + KY + '.open > .ky-mdetail'
       + '{display:block!important;height:auto!important;overflow:visible!important}',
-    KY + '.ky-mrow.open .ky-acts,' + KY + '.open .ky-acts'
-      + '{display:flex!important;flex-wrap:wrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important;gap:6px;padding:0 10px 10px}',
-    KY + '.open .ky-acts .ky-abtn,body.appmode #view-krofu-yfirlit .open button.ky-abtn' +
+    // Brunahólf chips (46×42, nowrap, swipe) — not a 2-col tile stack.
+    KY + '.ky-mrow.open .ky-acts,' + KY + '.open .ky-acts,' + KY + '.ky-acts'
+      + '{display:flex!important;flex-wrap:nowrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow-x:auto!important;overflow-y:hidden!important;pointer-events:auto!important;gap:6px;padding:4px 10px 8px;-webkit-overflow-scrolling:touch}',
+    KY + '.ky-acts .ky-abtn,' + KY + '.open .ky-acts .ky-abtn,body.appmode #view-krofu-yfirlit .open button.ky-abtn,body.appmode #view-krofu-yfirlit button.ky-abtn' +
       '{display:inline-flex!important;visibility:visible!important;pointer-events:auto!important;' +
-       'flex:1 1 calc(50% - 6px);min-width:calc(50% - 6px);min-height:44px!important;height:44px!important;padding:2px 4px!important;font-size:11px!important}',
+       'flex:0 0 auto!important;min-width:46px!important;width:auto!important;min-height:0!important;height:42px!important;padding:0 7px!important;font-size:inherit!important}',
     KY + '.ky-mexp,.ky-chev{min-height:44px!important;width:36px!important;height:36px!important;padding:0!important;font-size:16px!important}',
     KY + '.ky-mnote{display:block!important;font-size:16px!important;min-height:44px!important}',
 
@@ -132,24 +133,17 @@
     HL + '.hl-mcard{border-radius:0;border-left:none;border-right:none;margin-bottom:0;cursor:pointer}',
     HL + '.hl-mhead{padding:8px 12px}',
     HL + '.hl-mcard:not(.open) .hl-macts{display:none!important}',
-    HL + '.hl-mcard.open .hl-macts{display:flex!important;flex-wrap:wrap;gap:4px;padding:6px 10px 10px}',
+    HL + '.hl-mcard.open .hl-macts{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;gap:6px;padding:6px 10px 10px;-webkit-overflow-scrolling:touch}',
     HL + '.hl-mcard.open{cursor:default}',
-    HL + '.abtn5{min-height:36px!important;height:36px!important;padding:2px 6px!important;font-size:11px!important}',
+    HL + '.abtn5{flex:0 0 auto!important;min-width:46px!important;min-height:0!important;height:42px!important;padding:0 7px!important;font-size:inherit!important}',
 
     // 2026-08-29 (Agnar, spjaldtolvu-hamur: "faranleg nyting a plassi"). Kroffu-
     // adgerdirnar voru tvaer i rod OHAD skjabreidd — a 834px spjaldtolvu thydir thad
     // helming skjasins ononotadan og adgerdablokk sem er haerri en krafan sjalf.
     // Fra 700px: fjorar i rod og laegri hnappar. Aeeins thettleiki — engin ny hegdun.
-    '@media (min-width:700px){'+
-      KY + '.open .ky-acts .ky-abtn,body.appmode #view-krofu-yfirlit .open button.ky-abtn'+
-        '{flex:1 1 calc(25% - 6px)!important;min-width:calc(25% - 6px)!important;height:38px!important;min-height:38px!important}'+
-      '}',
-    '@media (min-width:700px){'+
-      HL + '.hl-mcard.open .hl-macts .abtn5{flex:1 1 calc(25% - 4px);min-width:calc(25% - 4px)}'+
-      '}',
-    KY + '{overflow-x:hidden}',
+    KY + '{overflow-x:auto;-webkit-overflow-scrolling:touch}',
     ARS + '{overflow-x:hidden}',
-    HL + '{overflow-x:hidden}'
+    HL + '{overflow-x:auto;-webkit-overflow-scrolling:touch}'
   ].join('\n');
 
   function mountCss() {
