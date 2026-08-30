@@ -26,7 +26,9 @@
  *   • Verkdagbókar-færslur (óloknar) birtast inni í borðinu (📓) — opnast í
  *     Verkdagbók til að breyta; hægt að haka „Klárað“ beint.
  *   • ✨ Tillaga: endurnýtir /api/tv-summary (sama Haiku-endapunkt og #182) til
- *     að fá eina næsta-skref línu. Dýpri AI-hjálp kemur í fasa 2.
+ *     að fá eina næsta-skref línu. Dýpri AI (útgáfa 2): patch 343 fyllir
+ *     `#vb-ai-slot` — leiðir „eftir að gera“ úr gögnum og leggur til
+ *     búa-til/loka með staðfestingu. applyActions() er eini skrif-stígurinn.
  *
  * Gögn: BEINT í `thjonustubeidni` töfluna (sama og Beiðnir #182 notar — engin
  * ný tafla, engin tvíföldun). Verkdagbók lesin live úr `verkdagbok`.
@@ -431,6 +433,7 @@
     } catch (e) { state.vd = []; }
     state.loading = false;
     renderControls(); renderList(); refreshBadge();
+    if (window.VerkbordAi) { try { VerkbordAi.mount(); } catch (_) {} }
     // Nýjasta svarið í þræðinum (2026-07-10, ósk Agnars): ✨-samantektin/forsýnin
     // gat sýnt GAMALT efni úr miðjum póstþræði (löngu afgreitt). Flettum upp
     // nýjasta póstinum með sömu efnislínu og sýnum HANN — keyrt eftir fyrstu
@@ -1173,6 +1176,8 @@
         '<div id="vb-dagskra" style="margin-bottom:16px"></div>' +
         // Skipulagsborð (patch #304) — 12-rúða skipulagsgriðin undir dagskránni.
         '<div id="vb-skipulag"></div>' +
+        // AI-borð (patch 343) — tómt reit, renderAll má ekki teikna innihaldið.
+        '<div id="vb-ai-slot"></div>' +
         // Composer-kort (skráningarlínan + MERKI tagpicks)
         '<div id="vb-composer" style="' + V3_CARD + ';padding:14px 16px;margin-bottom:16px;display:' + (state.composerOpen ? 'block' : 'none') + '">' +
           '<div style="display:flex;gap:8px;align-items:center;margin-bottom:9px;flex-wrap:wrap">' +
@@ -1228,6 +1233,7 @@
     // renderAll skrifar yfir allt #vb-main, svo dagskráin er teiknuð aftur hér.
     if (window.Vikudagskra) { try { Vikudagskra.mount(); } catch (e) { console.warn('[verkbord] dagskrá:', e); } }
     if (window.Skipulagsbord) { try { Skipulagsbord.mount(); } catch (e) { console.warn('[verkbord] skipulagsbord:', e); } }
+    if (window.VerkbordAi) { try { VerkbordAi.mount(); } catch (e) { console.warn('[verkbord] ai:', e); } }
   }
 
   // MERKI-röðin undir skráningarreitnum sést aðeins þegar það er eitthvað til
@@ -2549,7 +2555,78 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.Verkbord = { open: show, reload: load, importOld };
+  // Patch 343: confirmed AI / derived actions only. Never DELETE. Never guess a site.
+  async function applyActions(actions) {
+    const SB = getSB();
+    if (!SB) { toast('Engin gagnabankatenging'); return { created: 0, closed: 0, tagged: 0, notes: 0, skipped: 0, errors: ['no sb'] }; }
+    const out = { created: 0, closed: 0, tagged: 0, notes: 0, skipped: 0, errors: [] };
+    const list = Array.isArray(actions) ? actions : [];
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i] || {};
+      try {
+        if (a.op === 'create') {
+          const title = String(a.title || '').trim().slice(0, 240);
+          if (!title) { out.skipped++; continue; }
+          const ref = a.channel_ref ? String(a.channel_ref).slice(0, 120) : '';
+          if (ref) {
+            const dup = state.items.find(x => String(x.channel_ref || '') === ref && x.status !== 'lokad');
+            if (dup) { out.skipped++; continue; }
+          }
+          const tags = Array.isArray(a.tags) ? a.tags.filter(t => TAGS[t]) : [];
+          const obj = {
+            title,
+            notes: String(a.notes || '').slice(0, 4000),
+            type: TYPES[a.type] ? a.type : 'annad',
+            status: 'nytt',
+            priority: a.important ? 'har' : 'venjulegur',
+            customer_nafn: a.customer_nafn || null,
+            customer_base_id: a.customer_base_id || null,
+            tags,
+            flokkur: FLOKKAR[a.flokkur] ? a.flokkur : null,
+            source: 'cowork',
+            channel_ref: ref || null,
+            important: a.important === true,
+            created_at: nowIso(), created_by: currentUser(), updated_at: nowIso()
+          };
+          const r = await SB.from('thjonustubeidni').insert(obj).select().single();
+          if (r.error) throw r.error;
+          state.items.unshift(r.data);
+          out.created++;
+        } else if (a.op === 'close') {
+          const id = Number(a.id);
+          if (!id) { out.skipped++; continue; }
+          await saveRow(id, { status: 'lokad' });
+          out.closed++;
+        } else if (a.op === 'tag') {
+          const id = Number(a.id);
+          const row = state.items.find(x => x.id === id);
+          if (!row) { out.skipped++; continue; }
+          const cur = rowTags(row);
+          const add = Array.isArray(a.add_tags) ? a.add_tags.filter(t => TAGS[t] && cur.indexOf(t) === -1) : [];
+          if (!add.length) { out.skipped++; continue; }
+          await saveRow(id, { tags: cur.concat(add) });
+          out.tagged++;
+        } else if (a.op === 'notes') {
+          const id = Number(a.id);
+          const row = state.items.find(x => x.id === id);
+          if (!row) { out.skipped++; continue; }
+          const extra = String(a.notes || '').trim();
+          if (!extra) { out.skipped++; continue; }
+          const merged = ((row.notes ? String(row.notes).trim() + '\n\n' : '') + extra).slice(0, 8000);
+          await saveRow(id, { notes: merged });
+          out.notes++;
+        } else {
+          out.skipped++;
+        }
+      } catch (e) {
+        out.errors.push(String((e && e.message) || e));
+      }
+    }
+    renderControls(); renderList(); renderSel(); refreshBadge();
+    return out;
+  }
+
+  window.Verkbord = { open: show, reload: load, importOld, applyActions };
   console.log('[patch-231] Verkborð installed — App.switchView("verkbord")');
 })();
 /* === END VERKBORÐ === */

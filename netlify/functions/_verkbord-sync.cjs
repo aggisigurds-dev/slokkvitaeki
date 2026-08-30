@@ -1,0 +1,349 @@
+'use strict';
+/**
+ * Shared validator for /api/verkbord-sync and the Þjónustuborð AI patch.
+ *
+ * The model NEVER writes the database. This module only:
+ *   - sanitises proposed actions into the board vocabulary (231)
+ *   - matches a name hint to ONE fyrirtaeki row (never a kennitala merge)
+ *   - derives "eftir að gera" from per-site report/invoice facts
+ *
+ * Center Hotel (kt 450905-1430, customers_base 146) is 11 fyrirtaeki.
+ * Matching "Center Hótel" without a site name MUST return null.
+ */
+
+const FLOKKAR = ['tilbod', 'thjonusta', 'brunakerfi', 'rukkun', 'samskipti'];
+const TAGS = [
+  'gera_tilbod', 'thjonustusamningur', 'bokhald', 'kvortun', 'hringja',
+  'brunakerfi', 'eftir_ad_rukka', 'thjonusta', 'senda_tolvupost',
+  'senda_skyrslur', 'uppsetning',
+];
+const TYPES = [
+  'tilbod', 'email', 'skyrsla', 'heimsokn', 'hringja', 'samningur',
+  'skjalabeidni', 'verkdagbok', 'annad',
+];
+const OPS = ['create', 'close', 'tag', 'notes'];
+
+const TAG_TO_FLOKK = {
+  gera_tilbod: 'tilbod',
+  thjonustusamningur: 'thjonusta',
+  bokhald: 'rukkun',
+  kvortun: 'samskipti',
+  hringja: 'samskipti',
+  brunakerfi: 'brunakerfi',
+  eftir_ad_rukka: 'rukkun',
+  thjonusta: 'thjonusta',
+  senda_tolvupost: 'samskipti',
+  senda_skyrslur: 'thjonusta',
+  uppsetning: 'thjonusta',
+};
+const TAG_TO_TYPE = {
+  gera_tilbod: 'tilbod',
+  senda_skyrslur: 'skyrsla',
+  senda_tolvupost: 'email',
+  hringja: 'hringja',
+  eftir_ad_rukka: 'skyrsla',
+  brunakerfi: 'skyrsla',
+  thjonusta: 'heimsokn',
+  uppsetning: 'heimsokn',
+};
+
+function fold(s) {
+  return String(s == null ? '' : s)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function uniqTags(list) {
+  const out = [];
+  const seen = new Set();
+  (Array.isArray(list) ? list : []).forEach((t) => {
+    if (!TAGS.includes(t) || seen.has(t)) return;
+    seen.add(t);
+    out.push(t);
+  });
+  return out.slice(0, 4);
+}
+
+/**
+ * Match a free-text hint to exactly one site.
+ * Exact fold first, then unique substring. 0 or 2+ hits → null (do not guess).
+ */
+function matchSite(hint, sites) {
+  const f = fold(hint);
+  if (!f || f.length < 2) return null;
+  const list = Array.isArray(sites) ? sites : [];
+  const exact = list.filter((s) => fold(s.nafn) === f);
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) return null;
+  const hits = list.filter((s) => {
+    const n = fold(s.nafn);
+    if (!n) return false;
+    if (n.indexOf(f) !== -1) return true;
+    return f.length >= 6 && f.indexOf(n) !== -1;
+  });
+  if (hits.length === 1) return hits[0];
+  return null;
+}
+
+function channelRef(kind, year, fid) {
+  return 'derived:' + String(kind || '') + ':' + String(year || '') + ':' + String(fid || '');
+}
+
+function parseTags(raw) {
+  let t = raw;
+  if (typeof t === 'string') {
+    try { t = JSON.parse(t); } catch (_) { t = []; }
+  }
+  return Array.isArray(t) ? t : [];
+}
+
+function isOpenItem(i) {
+  if (!i || i._vd) return false;
+  if (i.status === 'lokad') return false;
+  if (i.archived_at || i.deleted_at) return false;
+  return true;
+}
+
+/** Open board row for this exact site name, optionally sharing a tag. */
+function existingBoardHit(items, site, tags) {
+  const fn = fold(site && site.nafn);
+  if (!fn) return null;
+  const want = new Set(Array.isArray(tags) ? tags : []);
+  const list = Array.isArray(items) ? items : [];
+  for (let i = 0; i < list.length; i++) {
+    const row = list[i];
+    if (!isOpenItem(row)) continue;
+    if (fold(row.customer_nafn) !== fn) continue;
+    if (!want.size) return row;
+    const have = parseTags(row.tags);
+    if (have.some((t) => want.has(t))) return row;
+  }
+  return null;
+}
+
+/**
+ * Per-site slökk coverage. Never keyed by kennitala / customer_base_id.
+ * reports: [{ fyrirtaeki_id }]  invoices: [{ customer_id }]
+ */
+function deriveUttekt(sites, reports, invoices, year) {
+  const y = Number(year) || new Date().getFullYear();
+  const rep = new Map();
+  (reports || []).forEach((r) => {
+    const id = Number(r && r.fyrirtaeki_id);
+    if (!id) return;
+    const dags = r.doc_date || r.created_at || '';
+    const prev = rep.get(id);
+    if (!prev || String(dags) > String(prev.dags)) rep.set(id, { id: r.id, dags: dags });
+  });
+  const inv = new Set();
+  (invoices || []).forEach((s) => {
+    const id = Number(s && s.customer_id);
+    if (id) inv.add(id);
+  });
+  const out = [];
+  (sites || []).forEach((s) => {
+    if (s && s.er_i_thjonustu === false) return;
+    const fid = Number(s && s.id);
+    if (!fid) return;
+    const rec = rep.get(fid);
+    const hasR = !!rec;
+    const hasI = inv.has(fid);
+    let kind = 'engin_skyrsla';
+    if (hasR && hasI) kind = 'klarad_skjol';
+    else if (hasR) kind = 'vantar_reikning';
+    else if (hasI) kind = 'vantar_skyrslu';
+    if (kind !== 'vantar_reikning' && kind !== 'vantar_skyrslu') return;
+    out.push({
+      kind,
+      fid,
+      nafn: s.nafn,
+      customer_base_id: s.customer_base_id || null,
+      year: y,
+      dags: rec && rec.dags ? rec.dags : null,
+    });
+  });
+  return out;
+}
+
+function titleForDerived(d) {
+  if (d.kind === 'vantar_reikning') return 'Vantar úttektarreikning ' + d.year + ' — ' + d.nafn;
+  if (d.kind === 'vantar_skyrslu') return 'Vantar úttektarskýrslu ' + d.year + ' — ' + d.nafn;
+  return String(d.nafn || 'Verk');
+}
+
+function actionFromDerived(d, openItems) {
+  const tags = d.kind === 'vantar_reikning' ? ['eftir_ad_rukka']
+    : d.kind === 'vantar_skyrslu' ? ['senda_skyrslur'] : [];
+  const ref = channelRef(d.kind, d.year, d.fid);
+  const items = openItems || [];
+  if (items.some((i) => isOpenItem(i) && String(i.channel_ref || '') === ref)) {
+    return { op: 'skip', onBoard: true, kind: d.kind, fid: d.fid, nafn: d.nafn, year: d.year, channel_ref: ref, reason: 'þegar á borði' };
+  }
+  if (existingBoardHit(items, { nafn: d.nafn }, tags)) {
+    return { op: 'skip', onBoard: true, kind: d.kind, fid: d.fid, nafn: d.nafn, year: d.year, channel_ref: ref, reason: 'þegar á borði' };
+  }
+  return {
+    op: 'create',
+    title: titleForDerived(d),
+    type: 'skyrsla',
+    tags,
+    flokkur: d.kind === 'vantar_reikning' ? 'rukkun' : 'thjonusta',
+    customer_nafn: d.nafn,
+    customer_base_id: d.customer_base_id || null,
+    channel_ref: ref,
+    notes: 'Leitt úr gögnum: ' + d.kind + ' ' + d.year + ' á fyrirtaeki_id ' + d.fid + '. Ekki gisk, ekki kt-merge.',
+    reason: d.kind === 'vantar_reikning' ? 'Úttektarskýrsla til, enginn úttektarreikningur á þessum stað.' : 'Úttektarreikningur til, engin úttektarskýrsla á þessum stað.',
+    source: 'derived',
+    defaultOn: false,
+    kind: d.kind,
+    fid: d.fid,
+    year: d.year,
+    dags: d.dags || null,
+  };
+}
+
+function parseJsonArray(text) {
+  const s = String(text || '');
+  const m = s.match(/\[[\s\S]*\]/);
+  if (!m) return [];
+  try {
+    const v = JSON.parse(m[0]);
+    return Array.isArray(v) ? v : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * Drop invented vocabulary, refuse kennitala-only customer links, cap size.
+ * Close is never default-on. Unknown item ids are dropped.
+ */
+function validateActions(raw, opts) {
+  const sites = (opts && opts.sites) || [];
+  const openItems = (opts && opts.openItems) || [];
+  const arr = Array.isArray(raw) ? raw.slice(0, 40) : [];
+  const out = [];
+  arr.forEach((a) => {
+    if (!a || typeof a !== 'object') return;
+    const op = a.op;
+    if (op === 'create') {
+      const title = String(a.title || '').trim().slice(0, 240);
+      if (!title) return;
+      const hint = String(a.customer_nafn || a.customer_hint || '').trim();
+      const site = matchSite(hint, sites);
+      let customer_nafn = null;
+      let customer_base_id = null;
+      if (site) {
+        customer_nafn = site.nafn;
+        customer_base_id = site.customer_base_id || null;
+      } else if (hint) {
+        const hits = sites.filter((s) => {
+          const n = fold(s.nafn);
+          const h = fold(hint);
+          return n === h || n.indexOf(h) !== -1 || (h.length >= 6 && h.indexOf(n) !== -1);
+        });
+        if (hits.length > 1) {
+          // Group name like "Center Hótel" — do not attach the legal entity as a site.
+          customer_nafn = null;
+        } else {
+          customer_nafn = hint.slice(0, 160);
+        }
+      }
+      const tags = uniqTags(a.tags);
+      const type = TYPES.includes(a.type) ? a.type : (TAG_TO_TYPE[tags[0]] || 'annad');
+      const flokkur = FLOKKAR.includes(a.flokkur) ? a.flokkur : (TAG_TO_FLOKK[tags[0]] || null);
+      let ref = a.channel_ref ? String(a.channel_ref).slice(0, 120) : '';
+      if (ref && !/^derived:[a-z0-9_]+:\d{4}:\d+$/.test(ref) && !/^notes:[a-z0-9_-]{4,40}$/.test(ref)) {
+        ref = '';
+      }
+      if (ref && openItems.some((i) => isOpenItem(i) && String(i.channel_ref || '') === ref)) return;
+      if (site && existingBoardHit(openItems, site, tags.length ? tags : null)) return;
+      out.push({
+        op: 'create',
+        title,
+        notes: String(a.notes || '').slice(0, 2000),
+        type,
+        tags,
+        flokkur,
+        customer_nafn,
+        customer_base_id,
+        important: a.important === true,
+        channel_ref: ref || null,
+        reason: String(a.reason || '').slice(0, 240),
+        source: a.source === 'derived' ? 'derived' : 'notes',
+        defaultOn: a.defaultOn !== false,
+      });
+      return;
+    }
+    if (op === 'close') {
+      const id = Number(a.id);
+      if (!id) return;
+      const row = openItems.find((i) => Number(i.id) === id);
+      if (!row) return;
+      out.push({
+        op: 'close',
+        id,
+        title: String(row.title || '').slice(0, 240),
+        customer_nafn: row.customer_nafn || null,
+        reason: String(a.reason || '').slice(0, 240),
+        defaultOn: false,
+      });
+      return;
+    }
+    if (op === 'tag') {
+      const id = Number(a.id);
+      if (!id) return;
+      const row = openItems.find((i) => Number(i.id) === id);
+      if (!row) return;
+      const add = uniqTags(a.add_tags || a.tags);
+      if (!add.length) return;
+      out.push({
+        op: 'tag',
+        id,
+        add_tags: add,
+        title: String(row.title || '').slice(0, 240),
+        customer_nafn: row.customer_nafn || null,
+        reason: String(a.reason || '').slice(0, 240),
+        defaultOn: false,
+      });
+      return;
+    }
+    if (op === 'notes') {
+      const id = Number(a.id);
+      if (!id) return;
+      const row = openItems.find((i) => Number(i.id) === id);
+      if (!row) return;
+      const extra = String(a.notes || '').trim().slice(0, 2000);
+      if (!extra) return;
+      out.push({
+        op: 'notes',
+        id,
+        notes: extra,
+        title: String(row.title || '').slice(0, 240),
+        customer_nafn: row.customer_nafn || null,
+        reason: String(a.reason || '').slice(0, 240),
+        defaultOn: false,
+      });
+    }
+  });
+  return out;
+}
+
+module.exports = {
+  FLOKKAR,
+  TAGS,
+  TYPES,
+  OPS,
+  fold,
+  matchSite,
+  channelRef,
+  existingBoardHit,
+  deriveUttekt,
+  actionFromDerived,
+  parseJsonArray,
+  validateActions,
+  uniqTags,
+};
