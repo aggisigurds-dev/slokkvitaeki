@@ -205,6 +205,9 @@
         + '{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}',
       both('#view-brunakerfi-yfirlit ._bky-tbl' + P)
         + '{min-width:820px}',
+      both('#view-brunakerfi-yfirlit [style*="display:flex;gap:8px;flex-wrap:wrap"]' + P) + ','
+        + both('#view-brunakerfi-yfirlit [style*="display:flex;gap:6px;flex-wrap:wrap"]' + P)
+        + strip,
       both('#view-brunakerfi-yfirlit [style*="overflow-x:auto"]' + P)
         + '{overflow-x:auto!important;max-width:100%!important;-webkit-overflow-scrolling:touch}',
       Z + '#view-brunakerfi-yfirlit,'
