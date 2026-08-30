@@ -289,6 +289,21 @@
     const di = dueInfo(r.due_at);
     return !!(di && di.diff <= 0);
   }
+  // 2026-08-30 (ósk Agnars): skýrslumál 2023–2025 eru ekki vinnan þessa árs.
+  // Þau blésu Verkefni upp (Tengja úttektarskýrslu — X 2023 …). Falin á
+  // opnum biðröðum; 2026 og póstar án árs standa.
+  function hasOldReportYear(s) {
+    return /(?:^|[^\d])(2023|2024|2025)(?:[^\d]|$)/.test(String(s == null ? '' : s));
+  }
+  function isOldYearReport(r) {
+    if (!r || r._vd) return false;
+    const blob = String(r.title || '') + '\n' + String(r.notes || '') + '\n' + String(r.channel_ref || '');
+    if (!hasOldReportYear(blob)) return false;
+    if (/sk[yý]rsl|úttektarskyr|uttektarskyr|tengja úttekt/i.test(blob)) return true;
+    if (r.type === 'skyrsla') return true;
+    const tags = rowTags(r);
+    return tags.indexOf('senda_skyrslur') !== -1;
+  }
 
   // ── state ────────────────────────────────────────────────────────────────
   const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode', WKEY = '_vb_worker';
@@ -331,6 +346,7 @@
     // til að slökkva á því — svo lykillinn er hreinsaður í stað þess að lesast.
     fFlokk: (function () { try { localStorage.removeItem('_vb_flokk'); } catch (_) {} return ''; })(),
     showOld: false,
+    showOldReports: false,
     // ── Verkborð V3 (2026-08-06, hönnun „Verkbord med banner V3") ───────────
     // Einn langur listi var óskýr (ósk Agnars) → málin flokkast nú í kort eftir
     // merki, og valið mál opnast í fastri hliðarspjaldi í stað þess að þenja
@@ -695,6 +711,28 @@
       toast('🧹 ' + ids.length + ' greiðslu-tilkynningar faldar');
     } catch (e) { toast('Hreinsun stöðvaðist: ' + (e.message || e)); load(); }
   }
+  async function clearOldYearReports() {
+    const SB = getSB(); if (!SB) return;
+    const old = state.items.filter(x => isOpen(x) && !isArchived(x) && isOldYearReport(x));
+    if (!old.length) { toast('Engar skýrslur 2023–2025 á borðinu'); return; }
+    const msg = 'Fela ' + old.length + ' skýrslumál 2023–2025? Þau eru ekki vinnan þessa árs. Endurheimtanlegt í geymslu.';
+    const ok = (window.Confirm && Confirm.show) ? await Confirm.show(msg, { okText: 'Fela', cancelText: 'Hætta við' }) : false;
+    if (!ok) {
+      if (!(window.Confirm && Confirm.show)) toast('Staðfestingargluggi vantar — ekkert falið');
+      return;
+    }
+    const stamp = nowIso();
+    const ids = old.map(x => x.id);
+    old.forEach(x => { x.archived_at = stamp; });
+    renderControls(); renderList(); refreshBadge();
+    try {
+      for (let i = 0; i < ids.length; i += 100) {
+        const r = await SB.from('thjonustubeidni').update({ archived_at: stamp }).in('id', ids.slice(i, i + 100));
+        if (r.error) throw r.error;
+      }
+      toast('📦 ' + ids.length + ' skýrslur 2023–2025 faldar');
+    } catch (e) { toast('Hreinsun stöðvaðist: ' + (e.message || e)); load(); }
+  }
   async function vdSetDone(rawId) {
     const SB = getSB(); if (!SB) return;
     try {
@@ -760,10 +798,13 @@
     return d < 0 ? 0 : d;
   }
   function inQueue(r) {
+    if (isOldYearReport(r) && !state.showOldReports) {
+      if (state.queue === 'lokad') return !isOpen(r);
+      return false;
+    }
     if (state.queue === 'lokad') return !isOpen(r);
     if (state.queue === 'post') return isOpen(r) && isPost(r) && (state.showOld ? true : !isArchived(r));
-    if (state.queue === 'allt') return isOpen(r) && !isArchived(r); // v3: allt opið (innhólf + verkefni)
-    // verk (sjálfgefið) — handvirkt + fært yfir; geymslan aldrei hér
+    if (state.queue === 'allt') return isOpen(r) && !isArchived(r);
     return isOpen(r) && !isPost(r) && !isArchived(r);
   }
   // 2026-07-10: gamla type-sían fjarlægð (flokkun fer nú gegnum MERKI). Hlutlaus
@@ -843,8 +884,13 @@
   }
   function counts() {
     const all = allItems();
-    const c = { idag: 0, verk: 0, post: 0, allt: 0, geymsla: 0, lokad: 0, wait: 0, od: 0 };
+    const c = { idag: 0, verk: 0, post: 0, allt: 0, geymsla: 0, lokad: 0, wait: 0, od: 0, oldReports: 0 };
     for (const x of all) {
+      if (isOldYearReport(x) && isOpen(x) && !isArchived(x)) c.oldReports++;
+      if (isOldYearReport(x) && !state.showOldReports) {
+        if (!isOpen(x)) c.lokad++;
+        continue;
+      }
       if (!isOpen(x)) { c.lokad++; continue; }
       if (isPost(x)) {
         if (isArchived(x)) { c.geymsla++; continue; }
@@ -1252,6 +1298,7 @@
     const el = document.getElementById('vb-controls'); if (!el) return;
     const c = counts();
     const noiseN = allItems().filter(x => isOpen(x) && isPaymentNoise(x)).length;
+    const oldRepN = c.oldReports;
     // Morgunlínan undir síðutitlinum (mono, á dökka bandinu).
     const mg = document.getElementById('vb-morgun');
     if (mg) mg.textContent =
@@ -1300,6 +1347,11 @@
           '<button data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (engin tvítök)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:rgba(255,255,255,.85);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✉️ Sækja póst</button>' +
           '<a href="kunnaskra.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#7ee0c0;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🗂️ Kúnnaskrá</a><a href="postsvorun.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#f0b866;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">📨 Póstsvörun</a>' +
           (noiseN ? '<button data-act="clearnoise" title="Fela allar Payday-greiðslutilkynningar í einu (endurheimtanlegt)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#ff8a82;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🧹 ' + noiseN + '</button>' : '') +
+          (oldRepN ? '<button data-act="clearoldrep" title="Fela skýrslumál 2023–2025 varanlega í geymslu. Þau eru nú þegar falin á opnum biðröðum." style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#fde68a;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">📄 2023–25 · ' + oldRepN + '</button>' : '') +
+          (oldRepN ? '<button data-act="showoldrep" title="Sýna samt skýrslumál 2023–2025" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' +
+            (state.showOldReports ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.85)') +
+            ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">' +
+            (state.showOldReports ? '▲ Fela 2023–25' : 'Sýna 2023–25') + '</button>' : '') +
           // 2026-08-06: V3-endurhönnunin týndi einu leiðinni til að sjá aftur
           // póst sem er í geymslu (ekkert eytt, bara falið) — state.showOld
           // og smellhlustarinn voru enn til, bara enginn hnappur sem kveikti
@@ -2186,6 +2238,8 @@
       if (act === 'reply') { e.stopPropagation(); replyToBeidni(nid); return; }
       if (act === 'quickdel') { e.stopPropagation(); quickDelete(nid); return; }
       if (act === 'clearnoise') { clearPaymentNoise(); return; }
+      if (act === 'clearoldrep') { clearOldYearReports(); return; }
+      if (act === 'showoldrep') { state.showOldReports = !state.showOldReports; renderControls(); renderList(); refreshBadge(); return; }
       if (act === 'del') { e.stopPropagation(); softDelete(nid); return; }
       if (act === 'collapse') { e.stopPropagation(); state.expandedId = null; renderList(); return; }
       if (act === 'vd-open') { e.stopPropagation(); if (window.App && App.switchView) App.switchView('verkdagbok'); return; }
@@ -2626,7 +2680,7 @@
     return out;
   }
 
-  window.Verkbord = { open: show, reload: load, importOld, applyActions };
+  window.Verkbord = { open: show, reload: load, importOld, applyActions, isOldYearReport };
   console.log('[patch-231] Verkborð installed — App.switchView("verkbord")');
 })();
 /* === END VERKBORÐ === */
