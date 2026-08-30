@@ -243,13 +243,18 @@
       // Center/Pizzan/Heimaleiga-systkini græn án eigin skýrslu.
       const ids = Array.from(new Set(svc.map(c => c.id).filter(v => v != null)));
       const byCo = new Map();   // coId -> {skyrsla, reik}
-      for (let i = 0; i < ids.length; i += 300) {
-        const chunk = ids.slice(i, i + 300);
+      // Ár-sía + blaðsíður (ekki 300-id IN): public_url er EKKI dálkur
+      // (400 þagði niður alla skýrslulínu áður). Sama uppspretta og 187.
+      const PAGE = 1000;
+      for (let off = 0; off <= 20000; off += PAGE) {
         const r = await sb.from('customer_documents')
-          .select('fyrirtaeki_id,doc_type,invoice_number,public_url,drive_file_id,storage_path,vidskiptategund')
-          .in('fyrirtaeki_id', chunk).eq('year', curYear)
-          .in('doc_type', ['uttektarskyrsla', 'reikningur']);
-        (r.data || []).forEach(d => {
+          .select('fyrirtaeki_id,doc_type,invoice_number,drive_file_id,storage_path,vidskiptategund')
+          .eq('year', curYear)
+          .in('doc_type', ['uttektarskyrsla', 'reikningur'])
+          .not('fyrirtaeki_id', 'is', null)
+          .range(off, off + PAGE - 1);
+        const rows = r.data || [];
+        rows.forEach(d => {
           if (d.doc_type === 'reikningur' && !isUttektInvoiceTeg(d.vidskiptategund)) return;
           const k = String(d.fyrirtaeki_id);
           if (!k || k === 'null' || k === 'undefined') return;
@@ -257,6 +262,7 @@
           if (d.doc_type === 'reikningur') { if (!e.reik) e.reik = d; }
           else if (!e.skyrsla) e.skyrsla = d;
         });
+        if (rows.length < PAGE) break;
       }
       _yearDocs = byCo;
 
@@ -642,8 +648,8 @@
     if (window.ReceiptSender && ReceiptSender.sendDoc) {
       ReceiptSender.sendDoc({
         kind: 'skyrsla', filename: filename,
-        url: d.public_url || undefined,
-        driveId: (!d.public_url && d.drive_file_id) ? d.drive_file_id : undefined,
+        url: docUrl(d) || undefined,
+        driveId: (!docUrl(d) && d.drive_file_id) ? d.drive_file_id : undefined,
         to: co.netfang || '', nafn: nafn, ar: curYear
       });
       return;
