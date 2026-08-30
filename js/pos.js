@@ -70,6 +70,13 @@
   }
   // Let product edits (Stillingar / Vörur) force the next loadAll to re-fetch.
   function invalidateVorur(){ _vorurTs = 0; _vorurInflight = null; }
+  function refreshCatalogIfStale(){
+    if (_vorurTs || _vorurInflight) return;
+    loadAll().then(function(){
+      var v=document.getElementById('view-sala');
+      if(v && v.getAttribute('data-pos-v3')==='1') rerenderCatalog();
+    });
+  }
   function lookupKt(kt){
     kt = kt.replace(/[^0-9]/g, '');
     if (kt.length !== 10) return Promise.resolve(null);
@@ -1848,7 +1855,7 @@
     '</body></html>');
     w.document.close();
   }
-  function watch(){setInterval(function(){var v=document.getElementById('view-sala');if(!v||!v.classList.contains('active'))return;if(!document.getElementById('pos-checkout')){v.removeAttribute('data-pos-v3');loadAll().then(render);}},300);}
+  function watch(){setInterval(function(){var v=document.getElementById('view-sala');if(!v||!v.classList.contains('active'))return;if(!document.getElementById('pos-checkout')){v.removeAttribute('data-pos-v3');loadAll().then(render);return;}refreshCatalogIfStale();},300);}
   window.POS = { getState: function(){ return state; }, totals: totals, rerenderDynamic: rerenderDynamic, invalidateVorur: invalidateVorur };
   // App-wide view-mode toggle (patch 166) → POS reacts PURELY via CSS keyed off
   // html[data-viewmode] (see _ensurePosVmCss). We deliberately DO NOT re-render
@@ -1857,6 +1864,9 @@
   document.addEventListener('slokk-viewmode', function(){
     var v=document.getElementById('view-sala');
     if(v && v.classList.contains('active')) _ensurePosVmCss();
+  });
+  document.addEventListener('view-shown', function(e){
+    if(e && e.detail && e.detail.name==='sala') refreshCatalogIfStale();
   });
   function init(){watch();console.log('[POS v3] Ready');}
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
