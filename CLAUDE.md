@@ -90,6 +90,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | QR-merki, miðaprentun (Brother PT-P750W), raðnúmer, skannann | `prentun` |
 | Kort, Leaflet, mapfix-merkin, geocode/Nominatim, kill-dots | `kort` |
 | Ársskoðun-perur, 📅 SOURCE vs FILTER, FULLBÚIÐ, útreikningar, skjöl, öll borð, data-elon, as-built (`docs/RAFKERFI.md`) | `elon-musk` |
+| Sama villumynstur víðar (systkini-kt, röng join, falskt grænt) | skill `villuleit` (+ `netvordur` ef vörðuð leið; `natalie` ef factcheck) |
 
 **Notkun:** kallaðu á sérfræðinginn með Agent-tólinu (`subagent_type`), eða lestu skrána
 hans beint þegar þú þarft bara þekkinguna. **Ekki afrita innihald þeirra hingað** — ein
