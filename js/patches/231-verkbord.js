@@ -305,9 +305,59 @@
     return tags.indexOf('senda_skyrslur') !== -1;
   }
 
+  // 2026-08-30 (ósk Agnars): starfsfólk á að sjá daglega vinnu, ekki bakkann.
+  // Óúthlutað og eldra en 30 dagar skráist á Agnar. Sjálfgefin sía er
+  // „Allir nema Agnar". Tómt vistað gildi (gamla „Allir") flyst yfir.
+  // Keep in sync with tools/test-verkbord-assignee.cjs
+  const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
+  const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
+  function normAssignee(v) {
+    const s = String(v == null ? '' : v).trim();
+    return WORKER_SENTINELS[s] ? '' : s;
+  }
+  function assignedForNew(worker) {
+    return normAssignee(worker) || null;
+  }
+  function isOlderThanMonth(r, now) {
+    const t = Date.parse(r && r.created_at);
+    if (!Number.isFinite(t)) return false;
+    return t < (now != null ? now : Date.now()) - OLD_JOB_MS;
+  }
+  function effectiveAssignee(r, now) {
+    const named = normAssignee(r && r.assigned_to);
+    if (named) return named;
+    if (!r || r._vd) return '';
+    if (!isOpen(r) || isArchived(r) || r.deleted_at) return '';
+    return isOlderThanMonth(r, now) ? 'Agnar' : '';
+  }
+  function matchesWorker(r, filter, now) {
+    const w = filter != null ? filter : state.fWorker;
+    if (!w || w === 'allir') return true;
+    const who = effectiveAssignee(r, now);
+    if (w === 'nema_agnar') return who !== 'Agnar';
+    return who === w;
+  }
+  function readStoredWorker() {
+    try {
+      const stored = localStorage.getItem(WKEY);
+      if (stored === null || stored === '') return 'nema_agnar';
+      return stored;
+    } catch (_) { return 'nema_agnar'; }
+  }
+  function workerFilterOptions() {
+    const cur = state.fWorker || 'nema_agnar';
+    const opt = function (val, label) {
+      return '<option value="' + val + '"' + (cur === val ? ' selected' : '') + '>' + label + '</option>';
+    };
+    return opt('nema_agnar', 'Allir nema Agnar') +
+      opt('Agnar', 'Agnar') +
+      WORKERS.filter(w => w !== 'Agnar').map(w => opt(w, w)).join('') +
+      opt('allir', 'Allir');
+  }
+
   // ── state ────────────────────────────────────────────────────────────────
   const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode', WKEY = '_vb_worker';
-  // Starfsmenn (skráning + sía) — „Allir" = óúthlutað/engin sía (2026-07-13, ósk Agnars).
+  // Starfsmenn (skráning + sía). Sjálfgefið „Allir nema Agnar" (2026-08-30).
   const WORKERS = ['Anni', 'Agnar', 'Andri', 'Elías', 'Hákon', 'Sara'];
   // Valin sía: texti lýsist upp + glóð í lit chips-ins (2026-07-13, ósk Agnars —
   // „sést illa hvað er valið"). currentColor = litur chips-ins svo glóðin passar.
@@ -374,7 +424,7 @@
         return TAGS[raw] ? [raw] : [];
       } catch (_) { return []; }
     })(),
-    fWorker: (function () { try { return localStorage.getItem(WKEY) || ''; } catch (_) { return ''; } })(),  // '' = Allir
+    fWorker: readStoredWorker(),
     viewMode: (function () { try { return localStorage.getItem(VMKEY) || 'itarlegt'; } catch (_) { return 'itarlegt'; } })(),
     search: '',
     addType: 'annad',
@@ -404,7 +454,10 @@
   }
   function setViewMode(v) { state.viewMode = v; try { localStorage.setItem(VMKEY, v); } catch (_) {} }
   function setFilter(f) { state.filter = f; try { localStorage.setItem(FKEY, f); } catch (_) {} }
-  function setWorker(v) { state.fWorker = v; try { localStorage.setItem(WKEY, v); } catch (_) {} }
+  function setWorker(v) {
+    state.fWorker = v || 'nema_agnar';
+    try { localStorage.setItem(WKEY, state.fWorker); } catch (_) {}
+  }
 
   // verkdagbok rows → pseudo work-items (read-through; structure stays in #04).
   function vdItems() {
@@ -449,12 +502,48 @@
     } catch (e) { state.vd = []; }
     state.loading = false;
     renderControls(); renderList(); refreshBadge();
+    claimOldJobs();
     if (window.VerkbordAi) { try { VerkbordAi.mount(); } catch (_) {} }
     // Nýjasta svarið í þræðinum (2026-07-10, ósk Agnars): ✨-samantektin/forsýnin
     // gat sýnt GAMALT efni úr miðjum póstþræði (löngu afgreitt). Flettum upp
     // nýjasta póstinum með sömu efnislínu og sýnum HANN — keyrt eftir fyrstu
     // málningu svo borðið birtist strax.
     loadThreadLatest().then(ok => { if (ok) renderList(); }).catch(() => {});
+  }
+
+  // Óúthlutað og eldra en 30 dagar → Agnar. Idempotent; snertir ekki
+  // mál sem þegar eru skráð á Anni/Andri/o.s.frv.
+  let _claimingOld = false;
+  async function claimOldJobs() {
+    if (_claimingOld) return;
+    const cutoff = Date.now() - OLD_JOB_MS;
+    const ids = [];
+    for (const r of state.items) {
+      if (!isOpen(r) || isArchived(r) || r.deleted_at) continue;
+      if (normAssignee(r.assigned_to)) continue;
+      const t = Date.parse(r.created_at);
+      if (!Number.isFinite(t) || t >= cutoff) continue;
+      ids.push(r.id);
+      r.assigned_to = 'Agnar';
+    }
+    if (!ids.length) return;
+    renderControls(); renderList(); refreshBadge();
+    const SB = getSB(); if (!SB) return;
+    _claimingOld = true;
+    try {
+      const stamp = nowIso();
+      for (let i = 0; i < ids.length; i += 100) {
+        const chunk = ids.slice(i, i + 100);
+        const { error } = await SB.from('thjonustubeidni')
+          .update({ assigned_to: 'Agnar', updated_at: stamp })
+          .in('id', chunk);
+        if (error) console.warn('[verkbord] claimOldJobs', error.message);
+      }
+    } catch (e) {
+      console.warn('[verkbord] claimOldJobs', e);
+    } finally {
+      _claimingOld = false;
+    }
   }
 
   // Efnislína án Re:/Fwd:/Sv:-forskeyta — lykill fyrir þráða-mátun.
@@ -547,7 +636,7 @@
     const obj = {
       title, notes: rskNote, type: type || 'annad', status: 'nytt', priority: 'venjulegur',
       customer_nafn: custName || null, customer_base_id: baseId,
-      assigned_to: (worker && worker !== 'Allir') ? worker : null,
+      assigned_to: assignedForNew(worker),
       tags: Array.isArray(tags) ? tags : [],
       source: 'beint', important: false, created_at: nowIso(), created_by: currentUser(), updated_at: nowIso()
     };
@@ -832,7 +921,7 @@
     // Fleiri en eitt merki valið = ALLT sem ber eitthvert þeirra (sameining),
     // svo það að bæta við merki víkkar listann í stað þess að tæma hann.
     if (state.fTags.length) r = r.filter(x => { const dt = rowChips(x); return state.fTags.some(t => dt.indexOf(t) !== -1); });
-    if (state.fWorker) r = r.filter(x => String(x.assigned_to || '') === state.fWorker);
+    if (state.fWorker && state.fWorker !== 'allir') r = r.filter(x => matchesWorker(x));
     if (state.fStar) r = r.filter(x => !!x.important);
     const s = state.search.trim().toLowerCase();
     if (s) r = r.filter(x => [x.customer_nafn, x.title, x.notes].some(f => (f || '').toLowerCase().includes(s)));
@@ -888,9 +977,10 @@
     for (const x of all) {
       if (isOldYearReport(x) && isOpen(x) && !isArchived(x)) c.oldReports++;
       if (isOldYearReport(x) && !state.showOldReports) {
-        if (!isOpen(x)) c.lokad++;
+        if (!isOpen(x) && matchesWorker(x)) c.lokad++;
         continue;
       }
+      if (!matchesWorker(x)) continue;
       if (!isOpen(x)) { c.lokad++; continue; }
       if (isPost(x)) {
         if (isArchived(x)) { c.geymsla++; continue; }
@@ -1297,7 +1387,7 @@
   function renderControls() {
     const el = document.getElementById('vb-controls'); if (!el) return;
     const c = counts();
-    const noiseN = allItems().filter(x => isOpen(x) && isPaymentNoise(x)).length;
+    const noiseN = allItems().filter(x => isOpen(x) && isPaymentNoise(x) && matchesWorker(x)).length;
     const oldRepN = c.oldReports;
     // Morgunlínan undir síðutitlinum (mono, á dökka bandinu).
     const mg = document.getElementById('vb-morgun');
@@ -1337,12 +1427,11 @@
             '<button data-act="viewmode" data-vm="itarlegt" style="height:38px;padding:0 13px;border:0;border-left:1px solid rgba(20,24,34,.3);' + (state.viewMode !== 'thett' ? V3_METAL_ON.replace('border:1px solid #0a0b0d;', '') + ';color:#fff' : V3_METAL.replace('border:1px solid #0a0b0d;', '') + ';color:rgba(255,255,255,.6)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">▮ Ítarlegt</button>' +
           '</span>' +
           '<select id="vb-worker-filter" title="Sía eftir starfsmanni" style="height:38px;padding:0 10px;border-radius:11px;' +
-            (state.fWorker
+            (state.fWorker && state.fWorker !== 'nema_agnar'
               ? 'border:1.5px solid #a5b4fc;background:linear-gradient(180deg,#3730a3,#1e1b4b);color:#e0e7ff;box-shadow:0 0 12px -2px #818cf8;text-shadow:0 0 8px #a5b4fc'
               : 'border:1px solid #0a0b0d;background:linear-gradient(180deg,#26272c,#0d0e10);color:#fff') +
             ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;outline:none">' +
-            '<option value=""' + (!state.fWorker ? ' selected' : '') + '>👤 Allir</option>' +
-            WORKERS.map(w => '<option value="' + w + '"' + (state.fWorker === w ? ' selected' : '') + '>' + w + '</option>').join('') +
+            workerFilterOptions() +
           '</select>' +
           '<button data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (engin tvítök)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:rgba(255,255,255,.85);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✉️ Sækja póst</button>' +
           '<a href="kunnaskra.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#7ee0c0;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🗂️ Kúnnaskrá</a><a href="postsvorun.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#f0b866;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">📨 Póstsvörun</a>' +
@@ -1661,7 +1750,7 @@
           // 2026-08-10 (ósk Agnars — „quite time consuming register projects"):
           // flýtiskráning beint úr flokkahausnum — sami quickAdd() og aðal-
           // composerinn notar, bara forfyllt með ÞESSU merki + valda starfsmanni
-          // (state.fWorker, sami veljari og „Agnar/Allir" efst á borðinu).
+          // (state.fWorker, sami veljari og „Allir nema Agnar" efst á borðinu).
           '<button data-act="catadd" data-cat="' + esc(g.key) + '" title="Fljótskrá í ' + esc(g.name) + '" ' +
             'style="flex:none;width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,.4);' +
             'background:' + (state.catAddOpen[g.key] ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.1)') + ';' +
@@ -1886,6 +1975,7 @@
     // Breiðara viewið (▮ Ítarlegt, líka sjálfgefna „venjulegt"): skýringin fær
     // allt að 6 línur í stað einnar (ósk Agnars 11.7., +2 línur 2026-08-07) — Þétt heldur einni.
     const wide = state.viewMode !== 'thett';
+    const who = effectiveAssignee(r);
     const di = dueInfo(r.due_at);
     const od = isOverdue(r);
     const chips = rowChips(r);
@@ -1921,7 +2011,7 @@
             (wide ? 'display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;overflow-wrap:break-word;line-height:1.5'
                   : 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis') + '">' + esc(desc) + '</div>' : '') +
           (!compact ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + linkLine + flags +
-            (r.assigned_to ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;white-space:nowrap">👤 ' + esc(r.assigned_to) + '</span>' : '') +
+            (who ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;white-space:nowrap">👤 ' + esc(who) + '</span>' : '') +
             (r._vd ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#fef3c7;color:#92400e;border:1px solid #fde68a">📓 úr Verkdagbók</span>' : '') +
           '</div>' : '') +
           (open ? renderEditor(r) : '') +
@@ -1974,8 +2064,8 @@
         '<div><label>Staða</label><select data-field="status">' + statusOpts + '</select></div>' +
         '<div><label>Forgangur</label><select data-field="priority">' + prioOpts + '</select></div>' +
         '<div><label>Starfsmaður</label><select data-field="assigned_to">' +
-          '<option value=""' + (!r.assigned_to ? ' selected' : '') + '>👤 Allir</option>' +
-          WORKERS.map(w => '<option value="' + w + '"' + (r.assigned_to === w ? ' selected' : '') + '>' + w + '</option>').join('') +
+          '<option value=""' + (!effectiveAssignee(r) ? ' selected' : '') + '>👤 Allir</option>' +
+          WORKERS.map(w => '<option value="' + w + '"' + (effectiveAssignee(r) === w ? ' selected' : '') + '>' + w + '</option>').join('') +
         '</select></div>' +
         '<div><label>Gjalddagi / dagsetning</label><input type="date" data-field="due_at" value="' + dueVal + '"></div>' +
       '</div>' +
@@ -2397,20 +2487,25 @@
         .catch(() => { state.addRsk = null; inp.style.borderColor = '#dc2626'; toast('Kennitalan fannst ekki í RSK'); });
     });
     root.addEventListener('change', e => {
-      if (e.target.id === 'vb-worker-filter') { setWorker(e.target.value); state.page = 0; renderList(); return; }
+      if (e.target.id === 'vb-worker-filter') {
+        setWorker(e.target.value); state.page = 0;
+        renderControls(); renderList(); refreshBadge();
+        return;
+      }
       const f = e.target.getAttribute && e.target.getAttribute('data-field');
       if (!f) return;
       const id = currentEditorId(e.target);
       if (id == null) return;
       let val = e.target.value;
       if (f === 'due_at') val = val ? new Date(val + 'T00:00:00').toISOString() : null;
+      if (f === 'assigned_to') val = assignedForNew(val);
       if (f === 'customer_nafn') {
         const match = (state.companies || []).find(c => c.nafn === val);
         saveRow(id, { customer_nafn: val || null, customer_base_id: match ? match.customer_base_id : null });
       } else {
         saveRow(id, { [f]: val });
       }
-      if (f === 'status' || f === 'type') { renderControls(); renderList(); refreshBadge(); }
+      if (f === 'status' || f === 'type' || f === 'assigned_to') { renderControls(); renderList(); refreshBadge(); }
     });
   }
   function currentEditorId() { return state.expandedId; }
@@ -2439,8 +2534,8 @@
   // Flokka-flýtiskráning (2026-08-10, ósk Agnars): sama quickAdd() sem knýr
   // aðal-composerinn, en kallað beint úr flokkahausnum — forfyllt með ÞESSU
   // merki einu (ekki state.addTags, sem er fyrir aðal-composerinn) og núverandi
-  // starfsmanna-síu (state.fWorker — sama „Agnar/Allir" veljari og efst á
-  // borðinu, svo fljótskráð mál lendi hjá þeim sem borðið er síað á).
+  // starfsmanna-síu (state.fWorker — sami veljari og „Allir nema Agnar" efst á
+  // borðinu). Nema_agnar/allir skrifa ekki sentinels í assigned_to.
   async function catQuickAdd(cat) {
     const custEl = document.querySelector('.vb-catadd-cust[data-cat="' + cat + '"]');
     const txtEl = document.querySelector('.vb-catadd-txt[data-cat="' + cat + '"]');
@@ -2449,7 +2544,7 @@
     if (!v.trim()) { txtEl.focus(); return; }
     const cv = custEl ? custEl.value : '';
     txtEl.value = ''; if (custEl) custEl.value = '';
-    await quickAdd(v, null, cv, false, [cat], null, state.fWorker || '');
+    await quickAdd(v, null, cv, false, [cat], null, assignedForNew(state.fWorker));
     // quickAdd endurteiknar #vb-list — sækja ferskt eintak áður en fókusað er.
     const freshTxt = document.querySelector('.vb-catadd-txt[data-cat="' + cat + '"]');
     if (freshTxt) freshTxt.focus();
@@ -2680,7 +2775,7 @@
     return out;
   }
 
-  window.Verkbord = { open: show, reload: load, importOld, applyActions, isOldYearReport };
+  window.Verkbord = { open: show, reload: load, importOld, applyActions, isOldYearReport, effectiveAssignee, matchesWorker, assignedForNew };
   console.log('[patch-231] Verkborð installed — App.switchView("verkbord")');
 })();
 /* === END VERKBORÐ === */
