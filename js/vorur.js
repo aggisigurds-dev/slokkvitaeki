@@ -213,6 +213,7 @@
       var badge = '<span style="display:inline-block;background:'+(isSvc?'#fef3c7':'#dbeafe')+';color:'+(isSvc?'#92400e':'#1e40af')+';font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;letter-spacing:0.03em">'+esc(p.flokkur||'')+'</span>';
       var stockInfo = !isSvc && p.birgdir!=null ? '<div style="font-size:11px;color:#64748b;margin-top:4px">🏷️ '+p.birgdir+' á lager</div>' : '';
       var virktPill = p.virkt ? '' : '<span style="display:inline-block;background:#fee2e2;color:#b91c1c;font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;margin-left:4px">ÓVIRKT</span>';
+      var adraPill = p.sja_adrar_vorur === true ? '<span style="display:inline-block;background:#e2e8f0;color:#334155;font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;margin-left:4px">aðrar vörur</span>' : '';
       // \u2b50 beint \u00e1 kortinu: setur v\u00f6runa \u00e1 s\u00f6luforsi\u00f0una \u00e1n \u00feess a\u00f0 opna hana.
       // Fyllt stjarna = \u00e1 fors\u00ed\u00f0u, t\u00f3m = ekki. Smellurinn stoppar h\u00e9r (stopPropagation
       // \u00ed bindEvents) svo hann opni ekki ritilinn \u00ed lei\u00f0inni.
@@ -223,7 +224,7 @@
       return '<div class="vorur-card" data-id="'+p.id+'" style="position:relative;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:9px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'#cbd5e1\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.05)\'" onmouseout="this.style.borderColor=\'#e2e8f0\';this.style.boxShadow=\'\'">' +
         star + img +
         '<div style="margin-top:7px">' +
-          '<div>'+badge+virktPill+'</div>' +
+          '<div>'+badge+virktPill+adraPill+'</div>' +
           '<div style="font-weight:700;color:#0f172a;font-size:12.5px;margin-top:5px;line-height:1.25">'+esc(p.nafn)+'</div>' +
           (p.lysing ? '<div style="color:#64748b;font-size:11px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical">'+esc(p.lysing)+'</div>' : '') +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">' +
@@ -355,7 +356,7 @@
       // Forsíðu-val + röðun (Agnar 26.08): sé EITTHVAÐ merkt á forsíðu sýna
       // flísarnar á Sölusíðunni AÐEINS merktu vörurnar; röðunarnúmerið raðar
       // (1 = fremst, tómt/hátt = aftast). Ekkert merkt = allt sýnist áfram.
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
         '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:220px">' +
           '<input id="f-forsida" type="checkbox" '+(p.forsida===true?'checked':'')+' style="width:18px;height:18px">' +
           '<span style="font-size:14px;color:#334155">⭐ Sýna á forsíðu Söluborðs (flísunum)</span>' +
@@ -364,6 +365,12 @@
           '<input id="f-rodun" type="number" min="1" value="'+(p.rodun==null?'':p.rodun)+'" placeholder="t.d. 1" title="1 = fremst á Sölusíðunni; tómt eða há tala = aftast" style="width:90px;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;box-sizing:border-box">' +
         '</label>' +
       '</div>' +
+      // Sala: aðalrúða XOR „Sjá aðrar vörur" neðst. Hak = falið af forsíðu-flísunum,
+      // sýnt þegar smellt er á „Sjá aðrar vörur" undir vörulistanum.
+      '<label style="display:flex;align-items:center;gap:8px;margin-bottom:20px;cursor:pointer">' +
+        '<input id="f-sja-adrar" type="checkbox" '+(p.sja_adrar_vorur===true?'checked':'')+' style="width:18px;height:18px">' +
+        '<span style="font-size:14px;color:#334155">Sýna undir aðrar vörur</span>' +
+      '</label>' +
       '<div style="display:flex;gap:8px;justify-content:space-between;padding-top:16px;border-top:1px solid #e2e8f0">' +
         (isNew ? '<div></div>' : '<button id="vorur-del" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px">Eyða</button>') +
         '<div style="display:flex;gap:8px">' +
@@ -390,6 +397,13 @@
     }
     document.getElementById('f-verd-inc').addEventListener('input', recomputeExVat);
     document.getElementById('f-vsk').addEventListener('input', recomputeExVat);
+    // Forsíða og „aðrar vörur" eru XOR — sama vara er ekki á báðum stöðum.
+    var fForsida = document.getElementById('f-forsida');
+    var fAdra = document.getElementById('f-sja-adrar');
+    if (fForsida && fAdra) {
+      fAdra.addEventListener('change', function(){ if (fAdra.checked) fForsida.checked = false; });
+      fForsida.addEventListener('change', function(){ if (fForsida.checked) fAdra.checked = false; });
+    }
     // Auto-toggle birgdir when flokkur switches to/from Þjónusta,
     // + sýna nýr-flokkur reitinn þegar „➕ Nýr flokkur…" er valið.
     document.getElementById('f-flokkur').addEventListener('change',function(e){
@@ -442,8 +456,11 @@
         mynd: imgDataUrl || '',
         virkt: document.getElementById('f-virkt').checked,
         forsida: document.getElementById('f-forsida').checked,
+        sja_adrar_vorur: !!(document.getElementById('f-sja-adrar') && document.getElementById('f-sja-adrar').checked),
         rodun: (function(){ var v = parseInt(document.getElementById('f-rodun').value, 10); return isNaN(v) ? null : v; })()
       };
+      // XOR: undir aðrar vörur er ekki á forsíðu-flísunum.
+      if (data.sja_adrar_vorur) data.forsida = false;
       if(!data.nafn){alert('Nafn er skilyrði');return;}
       var btn = document.getElementById('vorur-save');
       btn.disabled = true; btn.textContent = 'Vista...';
@@ -455,6 +472,7 @@
           var ur = await DB.sb.from('vorur').update(data).eq('id',product.id).select().single();
           if(ur.error) throw ur.error;
         }
+        try { if (window.POS && typeof window.POS.invalidateVorur === 'function') window.POS.invalidateVorur(); } catch(_){}
         await refresh();
         m.remove();
       } catch(e){ alert('Villa: '+(e.message||e)); btn.disabled=false; btn.textContent='Vista'; }
