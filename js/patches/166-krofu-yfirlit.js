@@ -366,9 +366,11 @@
     return m;
   }
   function lockPhoneViewport(mode) {
-    // Chrome "Request desktop site" ignores width=device-width and lays the
-    // page out at ~980px. Sími on a real phone must use the short screen
-    // side so the UI fills the S26, not a centred/left strip.
+    // Brunahólf Fjármála-yfirlit model: width=device-width so Android hard-zoom
+    // and pinch reflow. Never lock width=390 / maximum-scale=1 / user-scalable=no
+    // — that froze the layout while Brunahólf followed. Phone chrome still uses
+    // slokk-phone-dev + data-viewmode, not a numeric viewport width.
+    void mode;
     if (!isPhoneDevice()) return;
     try {
       let vp = document.querySelector('meta[name="viewport"]');
@@ -377,12 +379,8 @@
         vp.setAttribute('name', 'viewport');
         (document.head || document.documentElement).appendChild(vp);
       }
-      const short = Math.min(screen.width || 0, screen.height || 0);
-      if (mode === 'mobile' && short >= 320 && short <= 700) {
-        vp.setAttribute('content', 'width=' + short + ', initial-scale=1, viewport-fit=cover');
-      } else {
-        vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
-      }
+      const open = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
+      if (vp.getAttribute('content') !== open) vp.setAttribute('content', open);
     } catch (_) {}
   }
   function applyViewMode(mode, rerender) {

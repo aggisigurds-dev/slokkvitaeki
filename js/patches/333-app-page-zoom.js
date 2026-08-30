@@ -1,12 +1,16 @@
 /* === HUB: SÍÐUZOOOM − / + Á ALLRI SÍÐUNNI (333) ============================
  *
- * Agnar 2026-08-29: hard −/+ áttu að minnka ALLAN hubbinn, ekki bara
- * Ársskoðunar-töfluskrunarann, og halda zoom-inu á Fjármálum / Stilla /
- * öðrum síðum þar til hann breytir því. Android (S26): CSS zoom á html
- * + viewport user-scalable svo venjulegt pinch virkar áfram.
+ * Agnar 2026-08-29: hard −/+ áttu að minnka ALLAN hubbinn.
+ * 2026-08-30: CSS zoom á html / #app-zoom-root skildi eftir dauðan beige
+ * „frímerkis" viewport sem fylgdi ekki. Brunahólf Fjármála-yfirlit notar
+ * native visual viewport (width=device-width, initial-scale=1, pinch).
  *
- *   localStorage.app_page_zoom  sjálfgefið 1 uns hann ýtir á takkana
- *   Fastur − / % / + / 1:1 rofi á öllum síðum (ekki bara Skjár-borðanum)
+ * − / + breyta SAMA hlut og vafrinn: viewport initial-scale. Aldrei
+ * html { zoom } / #app-zoom-root { zoom }. Pinch er source of truth;
+ * takkarnir eru þægindi ofan á því (aðeins zoom IN, svo síðan fyllir
+ * skjáinn í stað þess að minnka).
+ *
+ *   localStorage.app_page_zoom  sjálfgefið 1
  *
  * 153/187-reikningur er ÓSNERT.
  * ========================================================================== */
@@ -17,10 +21,10 @@
   const LS = 'app_page_zoom';
   const BAR_ID = '_app-zoom';
   const STYLE_ID = 'app-page-zoom-333';
-  const MIN = 0.15;
+  const MIN = 1;
   const MAX = 3;
-  const STEPS = [0.15, 0.22, 0.3, 0.4, 0.5, 0.62, 0.75, 0.88, 1, 1.15, 1.35, 1.6, 2, 2.5, 3];
-  const PINCH_VP = 'width=device-width, initial-scale=1, minimum-scale=0.1, maximum-scale=5, user-scalable=yes, viewport-fit=cover';
+  const STEPS = [1, 1.15, 1.35, 1.6, 2, 2.5, 3];
+  const HUB_VP = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
 
   function clamp(s) {
     s = +s;
@@ -49,55 +53,49 @@
     }
     return vp;
   }
+  function viewportContent() {
+    if (scale === 1) return HUB_VP;
+    return 'width=device-width, initial-scale=' + scale + ', user-scalable=yes, viewport-fit=cover';
+  }
   function syncViewport() {
-    if (scale === 1) return;
     try {
       const vp = vpEl();
-      if (vp.getAttribute('content') !== PINCH_VP) vp.setAttribute('content', PINCH_VP);
+      const next = viewportContent();
+      if (vp.getAttribute('content') !== next) vp.setAttribute('content', next);
     } catch (_) {}
   }
 
-  function zoomTargets() {
-    const out = [document.documentElement];
-    if (document.body) out.push(document.body);
-    const app = document.getElementById('app');
-    if (app) out.push(app);
-    return out;
+  function clearCssZoom() {
+    const nodes = [document.documentElement];
+    if (document.body) nodes.push(document.body);
+    ['app', 'app-zoom-root'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) nodes.push(el);
+    });
+    nodes.forEach(n => {
+      try {
+        n.style.zoom = '';
+        n.style.removeProperty('zoom');
+      } catch (_) {}
+    });
   }
+
   function apply(z, persist) {
     scale = clamp(z);
     const html = document.documentElement;
-    const zStr = scale === 1 ? '' : String(scale);
     try {
       html.style.setProperty('--app-page-zoom', String(scale));
       html.classList.toggle('app-page-zoomed', scale !== 1);
     } catch (_) {}
-    /* Android: CSS zoom á html (heil síða). body / #app aðeins ef html
-       hunsaði zoom — aldrei bæði, þá tvöfaldast. */
-    const nodes = zoomTargets();
-    try { nodes.forEach(n => { n.style.zoom = ''; }); } catch (_) {}
-    let stuck = false;
-    try {
-      html.style.zoom = zStr;
-      stuck = !zStr || String(html.style.zoom || '') === zStr;
-    } catch (_) {}
-    if (!stuck && zStr) {
-      for (let i = 1; i < nodes.length; i++) {
-        try {
-          nodes[i].style.zoom = zStr;
-          if (String(nodes[i].style.zoom || '') === zStr) break;
-        } catch (_) {}
-      }
-    }
+    clearCssZoom();
+    syncViewport();
     const bar = document.getElementById(BAR_ID);
     if (bar) {
       bar.classList.toggle('on', scale !== 1);
-      /* Gagnstæð zoom svo takkarnir haldist þrýstanlegir. */
-      bar.style.zoom = scale === 1 ? '' : String(Math.round((1 / scale) * 1000) / 1000);
+      bar.style.zoom = '';
       const pct = bar.querySelector('#_app-zoom-pct');
       if (pct) pct.textContent = Math.round(scale * 100) + '%';
     }
-    syncViewport();
     if (persist !== false) write(scale);
   }
 
@@ -124,7 +122,7 @@
       '#' + BAR_ID + '>button#_app-zoom-reset{font-size:11px;min-width:44px}',
       '#' + BAR_ID + ' #_app-zoom-pct{flex:0 0 auto;min-width:40px;text-align:center;'
         + 'font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#334155}',
-      'html.app-page-zoomed,html.app-page-zoomed body{touch-action:pan-x pan-y pinch-zoom}',
+      'html,body,#app,#app-zoom-root{touch-action:pan-x pan-y pinch-zoom}',
       '@media (min-width:1100px) and (pointer:fine){'
         + '#' + BAR_ID + ':not(.on){display:none}'
         + '}'
@@ -201,7 +199,7 @@
   [200, 800, 2000].forEach(ms => setTimeout(wrapSwitch, ms));
 
   try {
-    const mo = new MutationObserver(() => { if (scale !== 1) syncViewport(); });
+    const mo = new MutationObserver(() => { syncViewport(); });
     const startMo = () => {
       const vp = document.querySelector('meta[name="viewport"]');
       if (vp) mo.observe(vp, { attributes: true, attributeFilter: ['content'] });
@@ -214,7 +212,8 @@
   else boot();
   [200, 800, 2000].forEach(ms => setTimeout(boot, ms));
 
-  window.AppPageZoom = { get: () => scale, set: apply, MIN, version: '333' };
-  console.log('[patch-333] app page zoom');
+  window.AppPageZoom = { get: () => scale, set: apply, MIN, version: '333-native' };
+  window.SlokkHubViewport = HUB_VP;
+  console.log('[patch-333] app page zoom (native viewport)');
 })();
 /* === END HUB SÍÐUZOOOM === */

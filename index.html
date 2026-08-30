@@ -6,7 +6,7 @@
      EITT borð yfir bæði öppin, ekki tvö sem enginn les. -->
 <script src="/js/villuvakt.js?v=1"></script>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#C93C1D"/>
@@ -62,8 +62,8 @@
 <!-- Símastærðir Ársskoðunar: allar tölur og litir á EINUM stað. Hlaðin
      Á UNDAN hinum svo :root-breyturnar séu til þegar pöpparnir lesa þær. -->
 <link rel="stylesheet" href="/css/ars-simi-vars.css?v=20260829fw">
-<link rel="stylesheet" href="/css/app.css?v=20260826csl"/>
-<link rel="stylesheet" href="/css/mobile.css?v=20260622b">
+<link rel="stylesheet" href="/css/app.css?v=20260830vp"/>
+<link rel="stylesheet" href="/css/mobile.css?v=20260830vp">
 <link rel="stylesheet" href="/css/theme-scoped.css?v=20260703g">
 <style>
 /* Manual-typed number fields (2026-06-16): hide the up/down spinner on every
@@ -85,9 +85,10 @@ html, body { color-scheme: only light; }
    disappear. Gated on a class the inline script below removes on DOMContentLoaded
    (or a 1.8s failsafe), so a failed/slow patch can never leave the nav hidden. */
 html.sb-settling nav.view-nav { visibility: hidden !important; }
-/* Pinch-zoom restored (2026-07-14, WCAG 1.4.4 — field staff read serials in sunlight):
-   dropped maximum-scale/user-scalable from the viewport. touch-action:manipulation keeps
-   buttons responsive (no double-tap-zoom delay) without disabling pinch-zoom on content. */
+/* Pinch-zoom (WCAG 1.4.4, Brunahólf Fjármála-yfirlit model):
+   width=device-width, initial-scale=1, user-scalable=yes — never maximum-scale=1
+   or width=390. touch-action:manipulation keeps buttons responsive (no
+   double-tap-zoom delay) without disabling pinch-zoom on content. */
 button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 </style>
 <script>
@@ -1021,7 +1022,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/163-hook-chain-fix.js?v=20260519a"></script>
 <script defer src="/js/patches/164-companies-open-loading-fix.js?v=20260705a"></script>
 <script defer src="/js/patches/165-visit-workflow.js?v=20260818eindef"></script>
-<script defer src="/js/patches/166-krofu-yfirlit.js?v=20260830mrg798"></script>
+<script defer src="/js/patches/166-krofu-yfirlit.js?v=20260830m2"></script>
 <script defer src="/js/patches/167-hreyfingarlisti.js?v=20260814stada"></script>
 <script defer src="/js/patches/168-company-inspection-report.js?v=20260730slong"></script>
 <script defer src="/js/patches/176-company-report-email.js?v=20260731felag"></script>
@@ -1056,7 +1057,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/216-theme-sidebar-dashboard.js?v=20260617a"></script>
 <script defer src="/js/patches/217-theme-arsskodun-tidy.js?v=20260817off"></script>
 <script defer src="/js/patches/218-url-routing.js?v=20260826simi"></script>
-<script defer src="/js/patches/219-bilstjori.js?v=20260730tablet"></script>
+<script defer src="/js/patches/219-bilstjori.js?v=20260830vp"></script>
 <script defer src="/js/patches/220-theme-system.js?v=20260817frozen"></script>
 <script defer src="/js/patches/221-kerfi-registry.js?v=20260618a"></script>
 <script defer src="/js/patches/222-grunsamlegt-flag.js?v=20260817rodun"></script>
@@ -1089,7 +1090,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/254-receipt-sender.js?v=20260731felag"></script>
 <script defer src="/js/patches/255-auto-discount.js?v=20260729wt"></script>
 <!-- hibernated 2026-07-09 (rangur dökkur titil-bar úr #260, ekki í comps): 260-global-titlebar.js -->
-<script defer src="/js/patches/261-app-profiles.js?v=20260830chips"></script>
+<script defer src="/js/patches/261-app-profiles.js?v=20260830mrg800"></script>
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
 <script defer src="/js/patches/262-page-editor.js?v=20260829tidy"></script>
 <script defer src="/js/patches/319-column-drag.js?v=20260826d"></script>
@@ -1100,7 +1101,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/324-stilla-utlit-afgreidsla.js?v=20260827a"></script>
 <script defer src="/js/patches/325-landnr-teikningar.js?v=20260828a"></script>
 <script defer src="/js/patches/325-table-single-scroller.js?v=20260828b"></script>
-<script defer src="/js/patches/328-simi-table-hscroll.js?v=20260829a"></script>
+<script defer src="/js/patches/328-simi-table-hscroll.js?v=20260830vp"></script>
 <script defer src="/js/patches/326-dalkastjori.js?v=20260829jkr"></script>
 <script defer src="/js/patches/327-sala-simi-hreinsun.js?v=20260829a"></script>
 <script defer src="/js/patches/329-simi-fljotandi-takkar.js?v=20260829d"></script>
@@ -1108,18 +1109,19 @@ var Lanstaeki = {
 <script defer src="/js/patches/318-color-scheme-light.js?v=20260826a"></script>
 <!-- hibernated 2026-08-23: TEMPORARY event-logging debug patch, no longer needed → _attic/patches/145-companies-diagnose.js -->
 <!-- <script defer src="/js/patches/145-companies-diagnose.js?v=20260516a"></script> -->
-<script defer src="/js/patches/263-mobile-baseline.js?v=20260826miswire"></script>
+<script defer src="/js/patches/263-mobile-baseline.js?v=20260830vp"></script>
 <script defer src="/js/patches/314-simi-compact-layer.js?v=20260830chips"></script>
-<script defer src="/js/patches/315-fjarmal-app-compact.js?v=20260830mrg798"></script>
+<script defer src="/js/patches/315-fjarmal-app-compact.js?v=20260830m2"></script>
 <script defer src="/js/patches/316-simi-boards.js?v=20260829mrg785"></script>
 <script defer src="/js/patches/317-arsskodun-bilstjori.js?v=20260829mrg"></script>
 <script defer src="/js/patches/318-honnunarhamur.js?v=20260829ritill"></script>
 <script defer src="/js/patches/332-honnunarhamur-ritill.js?v=20260829c"></script>
 <script defer src="/js/patches/330-ars-simi-fullwidth.js?v=20260829mrg"></script>
-<script defer src="/js/patches/331-ars-phone-skjar.js?v=20260829f"></script>
-<script defer src="/js/patches/333-app-page-zoom.js?v=20260829b"></script>
+<script defer src="/js/patches/331-ars-phone-skjar.js?v=20260830vp"></script>
+<script defer src="/js/patches/333-app-page-zoom.js?v=20260830vp"></script>
 <script defer src="/js/patches/334-simi-skjar-zoom-compact.js?v=20260830b"></script>
-<script defer src="/js/patches/335-krofu-brunaholf-layout.js?v=20260830mrg798"></script>
+<script defer src="/js/patches/336-viewport-brunaholf-zoom.js?v=20260830vp"></script>
+<script defer src="/js/patches/335-krofu-brunaholf-layout.js?v=20260830m2"></script>
 <script defer src="/js/patches/317-elon-trace.js?v=20260826c"></script>
 <script defer src="/js/patches/264-beidni-gate.js?v=20260710a"></script>
 <script defer src="/js/patches/265-utfyllt-skjol.js?v=20260720send"></script>
