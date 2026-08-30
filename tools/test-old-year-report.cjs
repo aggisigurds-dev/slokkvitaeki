@@ -2,6 +2,8 @@
 'use strict';
 /**
  * Keep in sync with isOldYearReport in js/patches/231-verkbord.js
+ * (year hide is independent of the 30-day Agnar claim — 2023 tengja rows
+ * were created 2026-08-09, so they are hidden here, not moved to Agnar.)
  */
 function hasOldReportYear(s) {
   return /(?:^|[^\d])(2023|2024|2025)(?:[^\d]|$)/.test(String(s == null ? '' : s));
