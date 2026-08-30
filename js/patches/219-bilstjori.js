@@ -69,13 +69,12 @@
       let link = document.querySelector('link[rel="manifest"]');
       if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
       link.setAttribute('href', '/manifest-bilstjori.json?v=1');
-      // 2026-07-17: appið opnist ALLTAF í app-skala (device-width, zoom 1) —
-      // grunn-viewportið leyfir pinch-zoom og út-zoomað ástand gat setið fast
-      // í uppsetta appinu svo allt birtist agnarsmátt. Bílstjóra-appið þarf
-      // ekki pinch-zoom, svo læst hamur festir skalann.
+      // Same open viewport as Brunahólf Fjármála-yfirlit / hub pages.
+      // maximum-scale=1 + user-scalable=no froze Android pinch on the driver
+      // PWA; layout fill is CSS (max-width:100%), not a scale lock.
       let vp = document.querySelector('meta[name="viewport"]');
       if (!vp) { vp = document.createElement('meta'); vp.setAttribute('name', 'viewport'); document.head.appendChild(vp); }
-      vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+      vp.setAttribute('content', 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover');
       const tc = document.querySelector('meta[name="theme-color"]');
       if (tc) tc.setAttribute('content', '#0a0b0d');
       // Driver app = full-width phone app. The base .bt.screen caps at 440px

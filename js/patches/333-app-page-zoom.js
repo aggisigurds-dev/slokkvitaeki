@@ -1,17 +1,16 @@
 /* === HUB: SÍÐUZOOOM − / + Á ALLRI SÍÐUNNI (333) ============================
  *
- * Agnar 2026-08-29: hard −/+ áttu að minnka ALLAN hubbinn, ekki bara
- * Ársskoðunar-töfluskrunarann, og halda zoom-inu á Fjármálum / Stilla /
- * öðrum síðum þar til hann breytir því.
+ * Agnar 2026-08-29: hard −/+ áttu að minnka ALLAN hubbinn.
+ * 2026-08-30: CSS zoom á html / #app-zoom-root skildi eftir dauðan beige
+ * „frímerkis" viewport sem fylgdi ekki. Brunahólf Fjármála-yfirlit notar
+ * native visual viewport (width=device-width, initial-scale=1, pinch).
  *
- * 2026-08-30: CSS zoom á html skildi eftir dauðan viewport á Android —
- * innihaldið minnkaði en overflow óx ekki, svo ekki var hægt að skruna
- * í tóma beige-svæðið né ná í klippta dálka. Zoom fer nú á innri
- * #app-zoom-root með min-width/min-height = viewport / zoom, og html/body
- * eru skrunarar. − / % / + / 1:1 situr UTAN ræturinnar (visual viewport).
+ * − / + breyta SAMA hlut og vafrinn: viewport initial-scale. Aldrei
+ * html { zoom } / #app-zoom-root { zoom }. Pinch er source of truth;
+ * takkarnir eru þægindi ofan á því (aðeins zoom IN, svo síðan fyllir
+ * skjáinn í stað þess að minnka).
  *
- *   localStorage.app_page_zoom  sjálfgefið 1 uns hann ýtir á takkana
- *   Fastur − / % / + / 1:1 rofi á öllum síðum (ekki bara Skjár-borðanum)
+ *   localStorage.app_page_zoom  sjálfgefið 1
  *
  * 153/187-reikningur er ÓSNERT.
  * ========================================================================== */
@@ -21,13 +20,11 @@
 
   const LS = 'app_page_zoom';
   const BAR_ID = '_app-zoom';
-  const ROOT_ID = 'app-zoom-root';
-  const SPACER_ID = '_app-zoom-spacer';
   const STYLE_ID = 'app-page-zoom-333';
-  const MIN = 0.15;
+  const MIN = 1;
   const MAX = 3;
-  const STEPS = [0.15, 0.22, 0.3, 0.4, 0.5, 0.62, 0.75, 0.88, 1, 1.15, 1.35, 1.6, 2, 2.5, 3];
-  const PINCH_VP = 'width=device-width, initial-scale=1, minimum-scale=0.1, maximum-scale=5, user-scalable=yes, viewport-fit=cover';
+  const STEPS = [1, 1.15, 1.35, 1.6, 2, 2.5, 3];
+  const HUB_VP = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
 
   function clamp(s) {
     s = +s;
@@ -56,85 +53,31 @@
     }
     return vp;
   }
+  function viewportContent() {
+    if (scale === 1) return HUB_VP;
+    return 'width=device-width, initial-scale=' + scale + ', user-scalable=yes, viewport-fit=cover';
+  }
   function syncViewport() {
-    if (scale === 1) return;
     try {
       const vp = vpEl();
-      if (vp.getAttribute('content') !== PINCH_VP) vp.setAttribute('content', PINCH_VP);
+      const next = viewportContent();
+      if (vp.getAttribute('content') !== next) vp.setAttribute('content', next);
     } catch (_) {}
   }
 
-  function keepOut(n) {
-    if (!n || !n.id) return false;
-    return n.id === BAR_ID || n.id === ROOT_ID || n.id === SPACER_ID;
-  }
-
-  function ensureRoot() {
-    if (!document.body) return null;
-    let root = document.getElementById(ROOT_ID);
-    if (!root) {
-      root = document.createElement('div');
-      root.id = ROOT_ID;
-      const bar = document.getElementById(BAR_ID);
-      const move = [];
-      for (let n = document.body.firstChild; n; n = n.nextSibling) {
-        if (keepOut(n)) continue;
-        move.push(n);
-      }
-      move.forEach(n => root.appendChild(n));
-      if (bar && bar.parentNode === document.body) document.body.insertBefore(root, bar);
-      else document.body.insertBefore(root, document.body.firstChild);
-    }
-    const bar = document.getElementById(BAR_ID);
-    if (bar && bar.parentNode !== document.body) document.body.appendChild(bar);
-    return root;
-  }
-
-  function clearHtmlBodyZoom() {
-    try { document.documentElement.style.zoom = ''; } catch (_) {}
-    try { if (document.body) document.body.style.zoom = ''; } catch (_) {}
-    const app = document.getElementById('app');
-    try { if (app) app.style.zoom = ''; } catch (_) {}
-  }
-
-  function dropSpacer() {
-    const sp = document.getElementById(SPACER_ID);
-    if (sp) try { sp.remove(); } catch (_) {}
-  }
-
-  function compensateOverflow() {
-    if (scale === 1) { dropSpacer(); return; }
-    const root = document.getElementById(ROOT_ID);
-    if (!root) return;
-    const z = scale;
-    const wantW = Math.ceil((window.innerWidth || 390) / z);
-    const wantH = Math.ceil((window.innerHeight || 800) / z);
-    /* Inverse viewport only — do not copy scrollHeight into min-height
-       (that compounds on reapply and balloons Verk to tens of thousands of px). */
-    try {
-      root.style.minWidth = wantW + 'px';
-      root.style.minHeight = wantH + 'px';
-    } catch (_) {}
-    const layoutW = Math.max(wantW, root.scrollWidth || 0, root.offsetWidth || 0);
-    const layoutH = Math.max(wantH, root.scrollHeight || 0, root.offsetHeight || 0);
-    const se = document.scrollingElement || document.documentElement;
-    const needX = layoutW * z > (window.innerWidth || 0) + 4;
-    const needY = layoutH * z > (window.innerHeight || 0) + 4;
-    const dead = se && se.scrollHeight <= se.clientHeight + 2 && se.scrollWidth <= se.clientWidth + 2;
-    if (dead && (needX || needY || layoutH > wantH || layoutW > wantW)) {
-      let sp = document.getElementById(SPACER_ID);
-      if (!sp) {
-        sp = document.createElement('div');
-        sp.id = SPACER_ID;
-        sp.setAttribute('aria-hidden', 'true');
-        sp.style.cssText = 'position:absolute;left:0;top:0;pointer-events:none;visibility:hidden;z-index:-1;width:1px;height:1px';
-        document.body.appendChild(sp);
-      }
-      sp.style.width = Math.max(layoutW, Math.ceil(layoutW * z)) + 'px';
-      sp.style.height = Math.max(layoutH, Math.ceil(layoutH * z)) + 'px';
-    } else if (!dead) {
-      dropSpacer();
-    }
+  function clearCssZoom() {
+    const nodes = [document.documentElement];
+    if (document.body) nodes.push(document.body);
+    ['app', 'app-zoom-root'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) nodes.push(el);
+    });
+    nodes.forEach(n => {
+      try {
+        n.style.zoom = '';
+        n.style.removeProperty('zoom');
+      } catch (_) {}
+    });
   }
 
   function apply(z, persist) {
@@ -144,22 +87,8 @@
       html.style.setProperty('--app-page-zoom', String(scale));
       html.classList.toggle('app-page-zoomed', scale !== 1);
     } catch (_) {}
-    clearHtmlBodyZoom();
-    const root = ensureRoot();
-    if (root) {
-      if (scale === 1) {
-        root.style.zoom = '';
-        root.style.minWidth = '';
-        root.style.minHeight = '';
-        root.style.width = '';
-        dropSpacer();
-      } else {
-        root.style.zoom = String(scale);
-        root.style.minWidth = 'calc(100vw / var(--app-page-zoom))';
-        root.style.minHeight = 'calc(100dvh / var(--app-page-zoom))';
-        root.style.width = 'max-content';
-      }
-    }
+    clearCssZoom();
+    syncViewport();
     const bar = document.getElementById(BAR_ID);
     if (bar) {
       bar.classList.toggle('on', scale !== 1);
@@ -167,13 +96,7 @@
       const pct = bar.querySelector('#_app-zoom-pct');
       if (pct) pct.textContent = Math.round(scale * 100) + '%';
     }
-    syncViewport();
     if (persist !== false) write(scale);
-    requestAnimationFrame(() => {
-      compensateOverflow();
-      requestAnimationFrame(compensateOverflow);
-    });
-    setTimeout(compensateOverflow, 80);
   }
 
   function step(dir) {
@@ -188,7 +111,6 @@
   }
 
   function css() {
-    const Z = 'html.app-page-zoomed';
     return [
       '#' + BAR_ID + '{position:fixed;top:calc(env(safe-area-inset-top,0px) + 52px);right:8px;z-index:2147483600;'
         + 'display:flex;align-items:center;gap:4px;padding:4px;border-radius:12px;'
@@ -200,50 +122,7 @@
       '#' + BAR_ID + '>button#_app-zoom-reset{font-size:11px;min-width:44px}',
       '#' + BAR_ID + ' #_app-zoom-pct{flex:0 0 auto;min-width:40px;text-align:center;'
         + 'font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#334155}',
-      '#' + ROOT_ID + '{display:contents}',
-      Z + ' #' + ROOT_ID + '{display:block;box-sizing:border-box;width:max-content;'
-        + 'min-width:calc(100vw / var(--app-page-zoom,1));'
-        + 'min-height:calc(100dvh / var(--app-page-zoom,1))}',
-      Z + ',' + Z + ' body,'
-        + Z + '[data-viewmode="mobile"],' + Z + '[data-viewmode="mobile"] body,'
-        + Z + ' body.appmode'
-        + '{overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
-        + 'height:auto!important;max-height:none!important;overscroll-behavior:auto;'
-        + 'touch-action:pan-x pan-y pinch-zoom}',
-      Z + ' body{display:block!important;position:relative;min-height:calc(100dvh / var(--app-page-zoom,1));'
-        + 'min-width:calc(100vw / var(--app-page-zoom,1))}',
-      Z + ' .view,' + Z + ' .view.active,'
-        + Z + '[data-bstal-banner="on"] .view.active,'
-        + Z + '[data-bstal-banner="on"][data-thm-preset="brunastal"] .view.active,'
-        + Z + '[data-bstal-banner="on"][data-thm-preset="brunastal"] .view.active:not(#view-field):not(#view-counter):not(#view-workshop),'
-        + Z + '[data-viewmode="mobile"] .view.active,'
-        + Z + ' body.appmode .view.active'
-        + '{width:100%!important;max-width:none!important;min-width:100%!important;'
-        + 'height:auto!important;max-height:none!important;'
-        + 'min-height:calc(100dvh / var(--app-page-zoom,1))!important;'
-        + 'overflow:visible!important;overflow-x:auto!important;overflow-y:visible!important}',
-      Z + '[data-viewmode="mobile"] .view.active,'
-        + Z + ' body.appmode .view.active'
-        + '{margin-left:0!important}',
-      Z + ' #view-krofu-yfirlit,' + Z + ' #view-opp,' + Z + ' #view-brunakerfi-yfirlit,'
-        + Z + ' #view-arsskodun,' + Z + ' #view-counter,' + Z + ' #view-workshop,'
-        + Z + ' body.appmode #view-krofu-yfirlit,'
-        + Z + ' body.appmode #view-arsskodun,'
-        + Z + '[data-viewmode="mobile"] #view-krofu-yfirlit,'
-        + Z + '[data-viewmode="mobile"] #view-arsskodun'
-        + '{overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
-        + 'max-width:none!important}',
-      Z + ' #view-arsskodun ._ars-tblscroll,'
-        + Z + ' #view-arsskodun .data-table-scroll,'
-        + Z + ' #view-arsskodun .data-table-wrap,'
-        + Z + ' #view-arsskodun ._arsm-tbl,'
-        + Z + ' #view-arsskodun #ars-main'
-        + '{overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
-        + 'max-width:none!important;max-height:none!important;height:auto!important;'
-        + 'min-width:0}',
-      Z + ' #view-arsskodun table.data-table,'
-        + Z + ' #view-arsskodun ._ars-tblscroll>table'
-        + '{min-width:1100px!important;width:max-content!important;max-width:none!important}',
+      'html,body,#app,#app-zoom-root{touch-action:pan-x pan-y pinch-zoom}',
       '@media (min-width:1100px) and (pointer:fine){'
         + '#' + BAR_ID + ':not(.on){display:none}'
         + '}'
@@ -258,15 +137,11 @@
       (document.head || document.documentElement).appendChild(s);
     }
     s.textContent = css();
-    if (s.parentNode && s.parentNode.lastElementChild !== s) s.parentNode.appendChild(s);
   }
 
   function ensureBar() {
     let bar = document.getElementById(BAR_ID);
-    if (bar) {
-      if (bar.parentNode && bar.parentNode !== document.body) document.body.appendChild(bar);
-      return bar;
-    }
+    if (bar) return bar;
     bar = document.createElement('div');
     bar.id = BAR_ID;
     bar.setAttribute('role', 'group');
@@ -293,7 +168,6 @@
 
   function boot() {
     mountCss();
-    ensureRoot();
     ensureBar();
     apply(scale, false);
   }
@@ -306,7 +180,6 @@
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) reapply();
   });
-  window.addEventListener('resize', () => { if (scale !== 1) setTimeout(compensateOverflow, 40); });
 
   function wrapSwitch() {
     try {
@@ -326,7 +199,7 @@
   [200, 800, 2000].forEach(ms => setTimeout(wrapSwitch, ms));
 
   try {
-    const mo = new MutationObserver(() => { if (scale !== 1) syncViewport(); });
+    const mo = new MutationObserver(() => { syncViewport(); });
     const startMo = () => {
       const vp = document.querySelector('meta[name="viewport"]');
       if (vp) mo.observe(vp, { attributes: true, attributeFilter: ['content'] });
@@ -335,30 +208,12 @@
     else document.addEventListener('DOMContentLoaded', startMo, { once: true });
   } catch (_) {}
 
-  try {
-    const bodyMo = new MutationObserver(muts => {
-      const root = document.getElementById(ROOT_ID);
-      if (!root || !document.body) return;
-      muts.forEach(m => {
-        m.addedNodes.forEach(n => {
-          if (n.parentNode !== document.body) return;
-          if (keepOut(n)) return;
-          try { root.appendChild(n); } catch (_) {}
-        });
-      });
-    });
-    const watchBody = () => {
-      if (document.body) bodyMo.observe(document.body, { childList: true });
-    };
-    if (document.body) watchBody();
-    else document.addEventListener('DOMContentLoaded', watchBody, { once: true });
-  } catch (_) {}
-
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
   [200, 800, 2000].forEach(ms => setTimeout(boot, ms));
 
-  window.AppPageZoom = { get: () => scale, set: apply, MIN, version: '333.1' };
-  console.log('[patch-333] app page zoom (scroll-fix)');
+  window.AppPageZoom = { get: () => scale, set: apply, MIN, version: '333-native' };
+  window.SlokkHubViewport = HUB_VP;
+  console.log('[patch-333] app page zoom (native viewport)');
 })();
 /* === END HUB SÍÐUZOOOM === */
