@@ -150,5 +150,11 @@ ok('Our SENT report is not a board ticket', sent.op === 'skip');
 
 ok('Center kt still does not pick a hotel', V.matchByKt('450905-1430', SITES) == null);
 
+const news = V.classifyEmailTask({
+  id: 1, sender_email: 'noreply@google.com', subject: 'Learn how Google Analytics can help',
+  snippet: 'Set up Analytics for free', folder: 'INBOX'
+}, { sites: SITES, openItems: [] });
+ok('Newsletter is not a board ticket', news.op === 'skip' && news.reason === 'óflokkað');
+
 console.log(failed ? '\nFAIL ' + failed : '\nOK');
 process.exit(failed ? 1 : 0);

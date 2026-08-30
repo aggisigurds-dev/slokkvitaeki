@@ -287,6 +287,10 @@ function classifyEmailTask(email, opts) {
     };
   }
 
+  if (reason === 'Svara pósti.') {
+    return { op: 'skip', reason: 'óflokkað', channel_ref: ref, title: subj };
+  }
+
   return {
     op: 'create',
     title: title.slice(0, 240),
