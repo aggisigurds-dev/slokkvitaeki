@@ -75,7 +75,7 @@
 
       /* 333 hard-zoom: view + card-rows must stay scrollable (no dead beige). */
       Z + KY + ','
-        + Z + M + KY + ','
+        + 'html.app-page-zoomed[data-viewmode="mobile"] ' + KY + ','
         + Z + A + KY + ','
         + Z + KY + ' .ky-card-rows'
         + '{overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
