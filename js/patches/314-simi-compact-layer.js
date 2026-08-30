@@ -143,6 +143,8 @@
 
     g(' .abtn5') + '{min-height:40px!important;height:40px!important;padding:0 10px!important;font-size:9.5px!important}',
     g(' .ky-abtn') + '{min-height:42px!important;height:42px!important;padding:0 7px!important}',
+    M + '#view-krofu-yfirlit .ky-acts .ky-abtn,' + A + '#view-krofu-yfirlit .ky-acts .ky-abtn' +
+      '{min-height:0!important;height:16px!important;padding:0 4px!important;flex-direction:row!important}',
 
     // Pills/chips in rows are status, not tap-primary — keep them compact.
     // filter-chip is a toolbar control → tappable, handled below.

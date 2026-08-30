@@ -191,25 +191,37 @@
       M + '.ky-filterbar .filter-chip,' + M + '._ky-sync{flex:1 1 auto;min-height:44px!important;height:auto!important;padding:8px 12px!important;font-size:13px!important}' +
       M + '.ky-filterbar ._ky-search{flex:1 1 100%!important;min-height:40px!important;font-size:16px!important;padding:8px 10px!important}' +
       M + '.ky-co{border-radius:0;border-left:none;border-right:none;margin-bottom:0;box-shadow:none}' +
-      M + '.ky-cohead{padding:8px 12px 4px}' +
-      M + '.ky-coname{font-size:15px;line-height:1.2}' +
-      M + '.ky-cometa{font-size:11px;margin-top:1px}' +
+      M + '.ky-cohead{padding:6px 10px 2px}' +
+      M + '.ky-coname{font-size:14px;line-height:1.15}' +
+      M + '.ky-cometa{font-size:11px;margin-top:0}' +
       M + '.ky-kraflbl{display:none}' +
-      M + '.ky-krafamt{font-size:15px;margin-top:0}' +
-      M + '.ky-cobar{margin-top:4px}' +
-      M + '.ky-cobar>div{height:4px!important;width:100%!important;max-width:100%!important;margin-top:0!important}' +
-      M + '.ky-cosub{margin-top:4px;font-size:11px}' +
-      M + '.ky-mcopy{width:36px;height:36px;min-height:36px!important}' +
+      M + '.ky-krafamt{font-size:14px;margin-top:0}' +
+      M + '.ky-cobar{margin-top:3px}' +
+      M + '.ky-cobar>div{height:3px!important;width:100%!important;max-width:100%!important;margin-top:0!important}' +
+      M + '.ky-cosub{margin-top:2px;font-size:10px}' +
+      M + '.ky-mcopy{display:none!important}' +
       M + '.ky-mrow{padding:0;border-top:1px solid #e8ecf2}' +
-      M + '.ky-saletop{min-height:44px;padding:8px 12px;gap:8px;-webkit-tap-highlight-color:transparent}' +
-      M + '.ky-mdetail{display:block!important;padding:4px 12px 10px;height:auto!important;overflow:visible!important}' +
-      M + '.ky-chev{margin-left:4px;flex:none;color:#334155;font-size:16px;line-height:1}' +
-      M + '.ky-hasnote{flex:none;font-size:12px;opacity:.8}' +
-      M + '.ky-mnote{display:block!important;margin-top:4px;min-height:44px!important;font-size:16px!important;padding:8px 10px!important}' +
-      M + '.ky-acts{display:flex!important;flex-wrap:wrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important;margin-top:8px;gap:8px;padding:0 12px 10px}' +
-      M + '.ky-acts .ky-abtn{display:inline-flex!important;visibility:visible!important;pointer-events:auto!important;flex:1 1 calc(50% - 8px);min-width:calc(50% - 8px);min-height:44px!important;height:44px!important;padding:0 6px!important;font-size:11px!important}' +
+      M + '.ky-saletop{min-height:0;padding:4px 10px;gap:6px;-webkit-tap-highlight-color:transparent}' +
+      M + '.ky-mdetail{display:block!important;padding:0 10px 2px;height:auto!important;overflow:visible!important}' +
+      M + '.ky-chev{margin-left:4px;flex:none;color:#334155;font-size:14px;line-height:1}' +
+      M + '.ky-hasnote{flex:none;font-size:11px;opacity:.8}' +
+      M + '.ky-mnote{display:block!important;margin-top:2px;min-height:28px!important;height:28px!important;font-size:16px!important;padding:2px 8px!important}' +
+      // Two chip rows (~16px + 3px gap + 16px ≈ 35px). 18% basis ⇒ 5+3 or 5+4, never a 3rd row.
+      M + '.ky-acts,' + M + '.ky-mrow .ky-acts,' + M + '.ky-mrow.open .ky-acts' +
+        '{display:flex!important;flex-wrap:wrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important;margin-top:3px;gap:3px;padding:2px 10px 8px}' +
+      M + '.ky-acts .ky-abtn,' + M + '.ky-mrow .ky-acts .ky-abtn,' + M + '.ky-mrow.open .ky-acts .ky-abtn,' +
+      M + '.ky-acts .ky-abtn:not(#_kyc0):not(#_kyc1):not(#_kyc2),' +
+      M + 'button.ky-abtn:not(#_kyc0):not(#_kyc1):not(#_kyc2)' +
+        '{display:inline-flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;visibility:visible!important;pointer-events:auto!important;' +
+         'flex:1 1 calc(18% - 3px)!important;min-width:calc(18% - 3px)!important;max-width:none!important;' +
+         'min-height:0!important;height:16px!important;padding:0 4px!important;gap:2px!important;border-radius:5px!important;' +
+         'font-size:9px!important;line-height:1!important;white-space:nowrap;overflow:hidden}' +
+      M + '.ky-acts .ky-abtn span,' + M + '.ky-acts .ky-abtn .ky-abtn-ico,' + M + '.ky-acts .ky-abtn .ky-abtn-lbl' +
+        '{font-size:9px!important;line-height:1!important;letter-spacing:0!important}' +
+      M + '.ky-acts .ky-abtn .ky-abtn-ico{font-size:11px!important}' +
       // Beat 261's 50px hammer with ID-level !important (this view is skipped in 263).
-      M + 'button.ky-abtn,' + M + 'button.ky-navbtn{display:inline-flex!important;min-height:44px!important;height:44px!important;padding-top:0!important;padding-bottom:0!important;overflow:visible!important;pointer-events:auto!important}' +
+      // Nav/month buttons stay 44px; claim chips stay 16px (do not re-inflate ky-abtn here).
+      M + 'button.ky-navbtn{display:inline-flex!important;min-height:44px!important;height:44px!important;padding-top:0!important;padding-bottom:0!important;overflow:visible!important;pointer-events:auto!important}' +
       M + 'button._ky-exp{min-height:0!important;padding:6px 8px!important}' +
       M + 'input._ky-note,' + M + 'input._ky-search,' + M + 'select._ky-sort{min-height:44px!important;font-size:16px!important}' +
       M + '{overflow-x:auto;-webkit-overflow-scrolling:touch}';
@@ -293,8 +305,8 @@
   // filled=true → dark-metal green (used for a sent claim).
   function kyAbtn(cls, extra, glyph, label, color, title, filled) {
     return '<button class="' + cls + ' ky-abtn' + (filled ? ' on' : '') + '" ' + extra + ' type="button" title="' + esc(title) + '">' +
-      '<span style="font-size:14px;line-height:1;color:' + (filled ? '#fff' : color) + '">' + glyph + '</span>' +
-      '<span style="font-size:8.5px;font-weight:700;letter-spacing:.02em;color:' + (filled ? '#fff' : color) + '">' + esc(label) + '</span>' +
+      '<span class="ky-abtn-ico" style="font-size:14px;line-height:1;color:' + (filled ? '#fff' : color) + '">' + glyph + '</span>' +
+      '<span class="ky-abtn-lbl" style="font-size:8.5px;font-weight:700;letter-spacing:.02em;color:' + (filled ? '#fff' : color) + '">' + esc(label) + '</span>' +
     '</button>';
   }
 
@@ -1710,11 +1722,12 @@
 
   // 📄 Skýrsla takki í kyAbtn-röðinni: GRÆNN (filled) þegar skýrsla ársins er
   // til → opnar hana; grár „vantar" annars (smellur = toast, ekkert meira).
-  function skyrslaBtnFor(s) {
+  function skyrslaBtnFor(s, compact) {
     const res = resolveSkyrsla(s);
+    const lab = compact ? 'Skýr.' : 'Skýrsla';
     return res.found
-      ? kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '"', '📄', 'Skýrsla', '#0f7a43', 'Úttektarskýrsla ' + res.year + ' — opna og yfirfara áður en krafan er send (fylgir kröfunni sem viðhengi)', true)
-      : kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '" data-missing="1"', '📄', 'Skýrsla', '#a6adbb', 'Engin úttektarskýrsla fundin fyrir ' + res.year, false);
+      ? kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '"', '📄', lab, '#0f7a43', 'Úttektarskýrsla ' + res.year + ' — opna og yfirfara áður en krafan er send (fylgir kröfunni sem viðhengi)', true)
+      : kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '" data-missing="1"', '📄', lab, '#a6adbb', 'Engin úttektarskýrsla fundin fyrir ' + res.year, false);
   }
   function skyrslaIconFor(s) {
     const res = resolveSkyrsla(s);
