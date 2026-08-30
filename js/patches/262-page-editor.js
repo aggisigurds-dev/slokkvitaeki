@@ -559,10 +559,16 @@
     const s = document.createElement('style'); s.id = '_pe-css';
     s.textContent = [
       // Quiet banner activator (Agnar 2026-08-29: litill málningarplatti í banner).
-      // Not a loud floating 🎨 — small SVG in .bb-face next to Sími/Tafla/Skjár.
-      '#' + BTN_ID + '{all:unset;cursor:pointer;color:rgba(255,210,150,.78);line-height:1;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;margin:0 2px;flex:0 0 auto;opacity:.88;transition:background .12s,color .12s,opacity .12s}',
-      '#' + BTN_ID + ':hover{background:rgba(255,255,255,.12);color:#ffd39a;opacity:1}',
-      '#' + BTN_ID + ' svg{display:block;width:15px;height:15px;pointer-events:none}',
+      // position:relative + z-index:8 — .bb-flames is z-index:1 and was painting
+      // OVER the amber SVG (same colour as the fire), so the icon vanished.
+      '#' + BTN_ID + '{all:unset;cursor:pointer;position:relative;z-index:8;color:#ffd39a;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;min-width:32px;min-height:32px;border-radius:8px;margin:0 6px 0 4px;flex:0 0 auto;opacity:1;background:rgba(8,10,14,.55);border:1px solid rgba(255,210,150,.38);box-sizing:border-box;transition:background .12s,color .12s,opacity .12s}',
+      '#' + BTN_ID + ':hover{background:rgba(12,14,18,.78);color:#ffe2b3;opacity:1}',
+      '#' + BTN_ID + ' svg{display:block;width:18px;height:18px;pointer-events:none}',
+      // Compact chrome (337/334/314) must not swallow the activator on Skjár or Sími.
+      'html[data-viewmode="desktop"] #bstal-banner #' + BTN_ID + ':not(#_p262a),'
+        + 'html[data-viewmode="table"] #bstal-banner #' + BTN_ID + ':not(#_p262a),'
+        + 'html[data-viewmode="mobile"] #bstal-banner #' + BTN_ID + ':not(#_p262a)'
+        + '{display:inline-flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}',
       '#' + BTN_ID + '._pe-float{position:fixed;right:14px;bottom:18px;z-index:9998;width:30px;height:30px;margin:0;opacity:.5;background:rgba(12,14,18,.42);border:1px solid rgba(255,255,255,.1);border-radius:9px;color:rgba(255,210,150,.75)}',
       '#' + BTN_ID + '._pe-float:hover{opacity:.88;background:rgba(12,14,18,.68)}',
       '#' + PANEL_ID + '{position:fixed;left:0;right:0;bottom:0;z-index:99990;max-height:56vh;overflow:auto;background:#f8fafc;border-top:1px solid #cbd5e1;box-shadow:0 -12px 34px -14px rgba(15,23,42,.35);font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;color:#11141c;padding:14px 18px 22px}',
@@ -2045,13 +2051,18 @@
 
   // ── quiet paint-palette activator in the Brunastál banner ──────────────────
   // Same open path as before: click → togglePanel() → PageEditor panel (#_pe-panel).
-  // Placement mirrors patch 166's viewmode toggle: .bb-face BEFORE .bb-rightwrap,
-  // so Sími-ham (314 hides .bb-rightwrap) still shows the activator.
+  // Lives in .bb-face immediately BEFORE .bb-rightwrap (clock), AFTER the
+  // Sími/Tafla/Skjár toggle (166 inserts itself before #_pe-btn). Not inside
+  // .bb-rightwrap — 314/mobile.css hide that wrap in Sími-ham.
   function paletteIconHtml() {
     // Material-style palette silhouette — quiet, no emoji, matches banner amber.
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false">'
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">'
       + '<path fill="currentColor" d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.4-1.02-.23-.27-.35-.61-.35-.98 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 8 6.5 8s1.5.67 1.5 1.5S7.33 11 6.5 11zm3-4C8.67 7 8 6.33 8 5.5S8.67 4 9.5 4s1.5.67 1.5 1.5S10.33 7 9.5 7zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 4 14.5 4s1.5.67 1.5 1.5S15.33 7 14.5 7zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>'
       + '</svg>';
+  }
+  function placeBannerBtn(b, face, rightwrap) {
+    if (rightwrap) face.insertBefore(b, rightwrap);
+    else face.appendChild(b);
   }
   function ensureBtn() {
     injectStyles();
@@ -2061,8 +2072,8 @@
     let b = document.getElementById(BTN_ID);
     if (b && b.dataset.spot === wanted) {
       // Banner rebuilt / viewmode re-ordered — keep us just before the clock wrap.
-      if (wanted === 'banner' && rightwrap && (b.parentNode !== face || b.nextElementSibling !== rightwrap)) {
-        face.insertBefore(b, rightwrap);
+      if (wanted === 'banner' && (b.parentNode !== face || (rightwrap && b.nextElementSibling !== rightwrap))) {
+        placeBannerBtn(b, face, rightwrap);
       }
       return;
     }
@@ -2071,8 +2082,8 @@
     b.id = BTN_ID;
     b.type = 'button';
     b.dataset.spot = wanted;
-    b.title = 'Stilla útlit — litir, letur, stærðir, bakgrunnur';
-    b.setAttribute('aria-label', 'Stilla útlit');
+    b.title = 'Stílstjóri — stilla útlit (litir, letur, stærðir, bakgrunnur)';
+    b.setAttribute('aria-label', 'Stílstjóri');
     b.innerHTML = paletteIconHtml();
     b.addEventListener('click', e => {
       e.preventDefault();
@@ -2081,7 +2092,7 @@
       togglePanel();
     });
     if (wanted === 'banner') {
-      face.insertBefore(b, rightwrap || null);
+      placeBannerBtn(b, face, rightwrap);
     } else {
       // Quiet fallback only when the banner face is gone — not a second big 🎨.
       b.className = '_pe-float';
