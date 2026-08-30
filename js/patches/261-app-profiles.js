@@ -66,6 +66,7 @@
     // svo AÐEINS stöðin birtist í appinu, ekki allur Bakendinn. Tengja skýrslu/reikning
     // við réttan stað + ár beint úr símanum.
     { k: 'br-skyrslustod',  label: 'Skýrslu-stöð (Brunahólf)',        short: 'Skýrslust.', emoji: '📊', url: 'https://brunaholf.netlify.app/?embed=1#skyrslustod' },
+    { k: 'turbopaint',      label: 'TurboPaint — teikningar',        short: 'Teikningar', emoji: '📐', url: 'https://kjarni.vercel.app/kjarni/turbopaint' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -115,7 +116,7 @@
     { key: 'brunakerfi', emoji: '🚨', name: 'Brunakerfi', color: '#b91c1c', dark: '#7f1d1d',
       manifest: '/manifest-brunakerfi.json', home: 'brunayfirlit',
       blurb: 'Skoðunarmanna-app: fyrirtækin, skoðunarskýrslur og verð — skráð á staðnum',
-      defaults: ['brunayfirlit', 'sala'] },
+      defaults: ['brunayfirlit', 'sala', 'turbopaint'] },
     // Bílstjóri er STANDALONE: engin botn-nav-skel (patch 219 á heilan
     // læstan fullskjá). Kortið gefur bara Opna / Setja upp / Afrita hlekk —
     // engin „Síður í appinu"-listi. ?app=bilstjori ræsir læsta Bílstjórann.
