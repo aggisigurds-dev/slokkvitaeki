@@ -3,12 +3,15 @@
  * Fasi 2 af „dýpri AI-hjálp“ sem 231 lofaði. Model skrifar ALDREI beint:
  *   1. ÚR GÖGNUM: úttektarskýrsla 2026 vs úttektarreikningur, per fyrirtaeki_id
  *      (aldrei kt-merge — Center Hótel er 11 staðir).
- *   2. MINNISBLAÐ: líma texta → POST /api/verkbord-sync → tillögur.
- *   3. Notandi hakar og ýtir á „Setja á borð“ / „Nota valið“ → Confirm.show
+ *   2. PÓSTAR: INBOX flokkað með reglum (afrit, teikningar, nýtt húsfélag,
+ *      eftirfylgni). SENT og tvítekinn þráður á opnu máli eru sleppt.
+ *   3. MINNISBLAÐ: líma texta → POST /api/verkbord-sync → tillögur.
+ *   4. Notandi hakar og ýtir á „Setja á borð“ / „Nota valið“ → Confirm.show
  *      → Verkbord.applyActions.
  *
  * Sending skýrslu er óvituð (ekkert sent_at) — því er EKKI auto-lokað.
  * Plaza/Arnarhvoll „eftir að senda“ kemur inn um minnisblaðið, ekki blob.
+ * GreenKey án fyrirtaeki-raðar: sender sem nafn, enginn customer_base_id.
  */
 (() => {
   if (window.VerkbordAi) return;
@@ -118,7 +121,9 @@
     err: '',
     lastApply: '',
     filter: '',
-    showN: 25
+    showN: 25,
+    emails: [],
+    mailActions: []
   };
 
   function openItems() {
@@ -185,6 +190,8 @@
   function kindLabel(k) {
     if (k === 'vantar_reikning') return 'Rukka';
     if (k === 'vantar_skyrslu') return 'Skýrsla';
+    if (k === 'email') return 'Póstur';
+    if (k === 'email_thread') return 'Ítrekun';
     return k || '';
   }
 
@@ -194,7 +201,7 @@
     state.loading = true; state.err = ''; draw();
     try {
       const [fy, docs, sales] = await Promise.all([
-        SB.from('fyrirtaeki').select('id,nafn,customer_base_id,er_i_thjonustu').is('deleted_at', null).range(0, 2999),
+        SB.from('fyrirtaeki').select('id,nafn,customer_base_id,er_i_thjonustu,kennitala').is('deleted_at', null).range(0, 2999),
         SB.from('customer_documents').select('id,fyrirtaeki_id,doc_date,created_at').eq('year', YEAR).eq('doc_type', 'uttektarskyrsla')
           .eq('is_duplicate', false).not('fyrirtaeki_id', 'is', null).range(0, 1999),
         SB.from('solur').select('id,customer_id,source,vidskiptategund,status,is_credit,created_at')
@@ -214,6 +221,55 @@
       state.derived = deriveUttekt(state.sites, reports, invoices, YEAR);
     } catch (e) {
       state.err = 'Náði ekki gögnum: ' + (e.message || e);
+    }
+    state.loading = false;
+    draw();
+  }
+
+  async function loadInbox() {
+    const SB = getSB();
+    if (!SB) { state.err = 'Engin gagnabankatenging'; return; }
+    state.loading = true; state.err = ''; draw();
+    try {
+      if (!state.sites.length) {
+        const fy = await SB.from('fyrirtaeki').select('id,nafn,customer_base_id,er_i_thjonustu,kennitala').is('deleted_at', null).range(0, 2999);
+        if (fy.error) throw fy.error;
+        state.sites = fy.data || [];
+      }
+      const r = await SB.from('email_digest')
+        .select('id,sender_name,sender_email,subject,snippet,body_preview,received_at,folder')
+        .eq('account', 'eldklar@eldklar.is')
+        .ilike('folder', '%inbox%')
+        .order('received_at', { ascending: false }).range(0, 79);
+      if (r.error) throw r.error;
+      state.emails = (r.data || []).filter(e => !/eldklar@eldklar/i.test(e.sender_email || ''));
+      const open = openItems().slice(0, 80).map(it => ({
+        id: it.id, title: it.title, type: it.type, tags: parseTags(it.tags),
+        status: it.status, customer_nafn: it.customer_nafn, channel_ref: it.channel_ref,
+        archived_at: it.archived_at
+      }));
+      const sites = state.sites.map(s => ({
+        id: s.id, nafn: s.nafn, customer_base_id: s.customer_base_id, kennitala: s.kennitala
+      }));
+      const payload = {
+        emails: state.emails.slice(0, 40).map(e => ({
+          id: e.id, sender_name: e.sender_name, sender_email: e.sender_email,
+          subject: e.subject, snippet: e.body_preview || e.snippet, folder: e.folder,
+          received_at: e.received_at
+        })),
+        items: open,
+        sites: sites.slice(0, 2500)
+      };
+      const res = await fetch('/api/verkbord-sync', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || (data && data.error)) throw new Error((data && data.error) || ('HTTP ' + res.status));
+      state.mailActions = Array.isArray(data.actions) ? data.actions : [];
+    } catch (e) {
+      state.err = 'Póstlesning: ' + (e.message || e);
+      state.mailActions = [];
     }
     state.loading = false;
     draw();
@@ -272,11 +328,13 @@
     if (!list.length) { toast('Ekkert valið'); return; }
     const nCreate = list.filter(a => a.op === 'create').length;
     const nClose = list.filter(a => a.op === 'close').length;
+    const nNotes = list.filter(a => a.op === 'notes').length;
+    const bitsMsg = [];
+    if (nCreate) bitsMsg.push(nCreate + ' nýtt mál');
+    if (nClose) bitsMsg.push(nClose + ' lokun');
+    if (nNotes) bitsMsg.push(nNotes + ' nóta á opnu máli');
     const msg = label + '\n\n' +
-      (nCreate ? nCreate + ' nýtt mál' : '') +
-      (nCreate && nClose ? ', ' : '') +
-      (nClose ? nClose + ' lokun' : '') +
-      (nCreate || nClose ? '' : list.length + ' aðgerðir') +
+      (bitsMsg.length ? bitsMsg.join(', ') : list.length + ' aðgerðir') +
       '.\nAI skrifar ekkert án þessa.';
     const ok = (window.Confirm && Confirm.show)
       ? await Confirm.show(msg, { okText: 'Vista á borð', cancelText: 'Hætta við' })
@@ -298,6 +356,7 @@
     toast('Borð uppfært: ' + state.lastApply);
     state.proposals = [];
     if (window.Verkbord.reload) await Verkbord.reload();
+    if (state.tab === 'postar') await loadInbox();
     else await loadDerived();
   }
 
@@ -311,7 +370,8 @@
 
   function actionRow(a, name, i) {
     const onBoard = a.op === 'skip' || a.onBoard;
-    const checked = !onBoard && a.defaultOn !== false && a.op === 'create';
+    const pickable = a.op === 'create' || a.op === 'notes';
+    const checked = !onBoard && pickable && a.defaultOn === true;
     const payload = esc(JSON.stringify(a));
     const who = a.customer_nafn ? esc(a.customer_nafn) : 'óháð stað';
     const tags = (a.tags || a.add_tags || []).map(t => TAGS[t] || t).join(', ');
@@ -341,6 +401,29 @@
     if (q) list = list.filter(a => fold((a.customer_nafn || a.nafn || a.title || '')).indexOf(q) !== -1);
     return list;
   }
+  function mailWork() {
+    return (state.mailActions || []).filter(a => a.op === 'create' || a.op === 'notes');
+  }
+  function mailListHTML() {
+    const work = mailWork();
+    const skips = (state.mailActions || []).filter(a => a.op === 'skip' || a.onBoard);
+    if (state.loading) return '<p class="vbai-hint">Les pósthólf…</p>';
+    if (!state.mailActions.length) {
+      return '<p class="vbai-hint">Aðeins INBOX. SENT (skýrslur sem við sendum, t.d. Norðurhella) eru ekki verk.</p>' +
+        '<button type="button" class="vbai-btn" data-vbai="reload-mail">Lesa pósta</button>';
+    }
+    return '<p class="vbai-hint">Flokkað: afrit reiknings, teikningar, nýtt húsfélag, eftirfylgni. ' +
+        'Ítrekun á opnu máli verður nóta, ekki nýtt mál. Ekkert nýtt mál er merkt sjálfkrafa.</p>' +
+      (work.length
+        ? '<div id="vbai-mail-rows">' + work.map((a, i) => actionRow(a, 'mail', i)).join('') + '</div>'
+        : '<p class="vbai-hint">Engin ný verk í þessum 40 póstum.</p>') +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+        (work.length ? '<button type="button" class="vbai-btn go" data-vbai="apply-mail">Setja valið á borð</button>' : '') +
+        '<button type="button" class="vbai-btn" data-vbai="reload-mail">Lesa aftur</button>' +
+      '</div>' +
+      (skips.length ? '<p class="vbai-hint" style="margin-top:10px">' + skips.length + ' póstum sleppt (SENT eða þegar á borði).</p>' : '');
+  }
+
   function derListHTML(creates) {
     const list = filteredCreates(creates);
     const shown = list.slice(0, state.showN);
@@ -377,6 +460,11 @@
         (wait ? '<p class="vbai-hint">Pósthólf: ' + wait + ' ósvaraðir póstar eru þegar á borðinu (Bíður svars).</p>' : '') +
         (state.loading ? '<p class="vbai-hint">Sæki gögn…</p>' : '<div id="vbai-derlist">' + derListHTML(creates) + '</div>') +
         (skips.length ? '<p class="vbai-hint" style="margin-top:10px">' + skips.length + ' staðir þegar á borði (sleppt).</p>' : '');
+    } else if (state.tab === 'postar') {
+      inner =
+        '<p class="vbai-hint">Sömu tegundir og raunverulegir póstar: vantar afrit, teikningar, nýtt húsfélag með kennitölu, eftirlit sem pípar. ' +
+        'GreenKey án staðar í grunninum fær sendanda sem nafn, ekki gisk. Kjarrhólmi 14 er ekki sameinað við 18.</p>' +
+        mailListHTML();
     } else {
       inner =
         '<p class="vbai-hint">Límdu minnisblað, listann af „senda / rukka / hringja", eða skrifaðu ' +
@@ -397,6 +485,8 @@
       '<div class="vbai-tabs">' +
         '<button type="button" class="vbai-tab' + (state.tab === 'gogn' ? ' on' : '') + '" data-vbai="tab-gogn">Úr gögnum' +
           (todoCount() ? ' (' + todoCount() + ')' : '') + '</button>' +
+        '<button type="button" class="vbai-tab' + (state.tab === 'postar' ? ' on' : '') + '" data-vbai="tab-postar">Póstar' +
+          (mailWork().length ? ' (' + mailWork().length + ')' : '') + '</button>' +
         '<button type="button" class="vbai-tab' + (state.tab === 'minni' ? ' on' : '') + '" data-vbai="tab-minni">Minnisblað</button>' +
       '</div>' +
       (state.err ? '<div class="vbai-err">' + esc(state.err) + '</div>' : '') +
@@ -413,7 +503,7 @@
     const wait = waitingMail();
     const sub = n
       ? (n + ' staðir vantar reikning eða skýrslu ' + YEAR)
-      : (state.loading ? 'Sæki stöðu…' : 'Gögn og minnisblöð → mál á borðið, með staðfestingu');
+      : (state.loading ? 'Sæki stöðu…' : 'Gögn, póstar og minnisblöð → mál á borðið, með staðfestingu');
     slot.innerHTML =
       '<div class="vbai-card">' +
         '<div class="vbai-bar">' +
@@ -439,8 +529,15 @@
         return;
       }
       if (act === 'tab-gogn') { state.tab = 'gogn'; draw(); return; }
+      if (act === 'tab-postar') {
+        state.tab = 'postar';
+        draw();
+        if (!state.mailActions.length && !state.loading) loadInbox();
+        return;
+      }
       if (act === 'tab-minni') { state.tab = 'minni'; draw(); return; }
       if (act === 'refresh') { loadDerived(); return; }
+      if (act === 'reload-mail') { loadInbox(); return; }
       if (act === 'more') { state.showN += 25; draw(); return; }
       if (act === 'propose') {
         const ta = document.getElementById('vbai-notes');
@@ -450,6 +547,10 @@
       }
       if (act === 'apply-der') {
         confirmApply(selectedFrom(slot, 'der'), 'Setja valin mál úr gögnum á Þjónustuborðið?');
+        return;
+      }
+      if (act === 'apply-mail') {
+        confirmApply(selectedFrom(slot, 'mail'), 'Setja valda pósta á Þjónustuborðið?');
         return;
       }
       if (act === 'apply-ai') {

@@ -18,6 +18,7 @@
 
 [functions]
   directory = "netlify/functions"
+  included_files = ["netlify/functions/_verkbord-sync.cjs"]
 
 # --- ÖRYGGI: innri skrár ALDREI birtar --------------------------------------
 # dist/ inniheldur hvorki *.md, *.sql né _*-skrár (build-dist síar), en þessar

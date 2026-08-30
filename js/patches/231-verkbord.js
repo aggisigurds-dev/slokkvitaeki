@@ -2583,7 +2583,7 @@
             customer_base_id: a.customer_base_id || null,
             tags,
             flokkur: FLOKKAR[a.flokkur] ? a.flokkur : null,
-            source: 'cowork',
+            source: (ref && ref.indexOf('email:') === 0) ? 'email' : 'cowork',
             channel_ref: ref || null,
             important: a.important === true,
             created_at: nowIso(), created_by: currentUser(), updated_at: nowIso()
