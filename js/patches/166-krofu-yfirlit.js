@@ -434,9 +434,17 @@
     if (face) {
       const t = existing || buildToggle();
       t.className = 'ky-vm'; t.style.cssText = '';
-      if (rightwrap) {
-        if (t.parentNode !== face || t.nextElementSibling !== rightwrap) {
-          face.insertBefore(t, rightwrap);
+      // Anchor BEFORE the paint-palette (#_pe-btn, 262) when it is already in
+      // the face, else before the clock wrap. Both patches insertBefore the
+      // same node; last-writer used to swap them and the amber palette sat
+      // under the flames with no z-index (invisible, covering Sími/Tafla/Skjár).
+      const pe = document.getElementById('_pe-btn');
+      const anchor = (pe && pe.parentNode === face && pe.dataset.spot === 'banner')
+        ? pe
+        : (rightwrap || null);
+      if (anchor) {
+        if (t.parentNode !== face || t.nextElementSibling !== anchor) {
+          face.insertBefore(t, anchor);
         }
       } else if (t.parentNode !== face) {
         face.appendChild(t);

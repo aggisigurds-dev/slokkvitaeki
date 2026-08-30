@@ -657,6 +657,9 @@
       // sé ekki falinn. Á síma er borðinn grennri en á skjáborði.
       '#' + VIEW_ID + ' .op-main{max-width:760px;margin:0 auto;padding:96px 18px 60px;box-sizing:border-box}',
       '@media (min-width:901px){#' + VIEW_ID + ' .op-main{padding-top:118px}}',
+      // Skjár: Fylki-spjaldið var 760px-eyja á risastórum gráum fleti. Breiðara
+      // svo Stílstjóri geti málað síðuna. Sími/Tafla halda 760px. Aðrar síður ósnertar.
+      'html[data-viewmode="desktop"] #' + VIEW_ID + ' .op-main{max-width:min(1280px,calc(100% - 40px))}',
       '#' + VIEW_ID + ' .op-h1{margin:0 0 4px;font-size:26px;font-weight:800;color:#fff}',
       '#' + VIEW_ID + ' .op-sub{margin:0 0 20px;font-size:13px;color:rgba(255,255,255,.65)}',
       '#' + VIEW_ID + ' .op-card{background:#fff;border-radius:18px;padding:18px;margin:0 0 16px;box-shadow:0 18px 44px -22px rgba(10,20,40,.5)}',
