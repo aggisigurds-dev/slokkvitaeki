@@ -1,0 +1,6 @@
+---
+description: Never slurp giant app files
+alwaysApply: true
+---
+
+Never read `index.html`, `js/pos.js`, a whole large `js/patches/*` file, `dist/`, or `graphify-out/` in one shot. Grep first, then Read with offset and limit. Prefer source under `js/patches/` over minified `dist/` bundles.

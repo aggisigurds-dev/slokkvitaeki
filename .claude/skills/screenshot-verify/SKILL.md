@@ -12,6 +12,8 @@ description: >
 
 # Screenshot / browser-verify from a remote session
 
+Cursor Cloud Agents should prefer the Cursor Playwright MCP (or computer use). Use this relay only if Playwright fails.
+
 **A screenshot of the result is part of finishing a Verkefnalisti task** (Agnar
 reviews from his phone). But in a Claude Code **web/remote** session a plain
 `playwright` `chromium.launch()` + `page.goto('https://…')` fails every time with
