@@ -215,7 +215,12 @@
     var nextInsp=(y+1)+'-06-01';
     // Count what is ALREADY registered for this company, per category, so we
     // only add the tæki that are missing (no duplicates).
-    var existing=((window.DB&&DB.cache&&DB.cache.units)||[]).filter(function(u){return u.client===nafn;});
+    // Telja á AUÐKENNI þegar það er til, ekki á nafni. Tveir staðir geta
+    // borið sama nafn; nafna-talning bætti þá við of fáum eða of mörgum.
+    var _fidNum=(coId!=null&&coId!=='')?Number(coId):null;
+    var existing=((window.DB&&DB.cache&&DB.cache.units)||[]).filter(function(u){
+      return _fidNum!=null ? Number(u.fyrirtaeki_id)===_fidNum : u.client===nafn;
+    });
     var have={}; existing.forEach(function(u){ var c=catOf(u); if(c) have[c]=(have[c]||0)+1; });
     var rows=[], used={}, summary=[];
     lines.forEach(function(l){
@@ -225,8 +230,15 @@
       var label=m[0]+(m[1]?' '+m[1]:'');
       summary.push('• '+label+': skýrsla '+n+' · skráð '+existN+' → '+(add>0?('bæti við '+add):'fullt ✓'));
       for(var i=0;i<add;i++){ var s; do{ s=tmpSerial(); }while(used[s]); used[s]=1;
-        rows.push({ serial:s, type:m[0], size:m[1], client:nafn, location:'',
-          last_insp:lastInsp, next_insp:nextInsp, status:'active', pressure:14 }); }
+        var _r={ serial:s, type:m[0], size:m[1], client:nafn, location:'',
+          last_insp:lastInsp, next_insp:nextInsp, status:'active', pressure:14 };
+        // Án fyrirtaeki_id verður tækið draugur — sjá 73-bulk-add-units.
+        if(_fidNum!=null){
+          _r.fyrirtaeki_id=_fidNum;
+          try{ var _c=((window.Companies&&Companies.list)||[]).find(function(x){return +x.id===_fidNum;});
+               if(_c&&_c.customer_base_id!=null) _r.customer_base_id=Number(_c.customer_base_id); }catch(_){}
+        }
+        rows.push(_r); }
     });
     if(!summary.length){ alert('Engin tæki í skýrslunni.'); return; }
     // Remember which report this came from (proof), even if nothing new is added.

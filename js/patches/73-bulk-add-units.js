@@ -20,7 +20,23 @@
     return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  function openBulkModal(nafn, refreshFn) {
+  // 2026-08-30 — sameiginleg auðkennis-uppfletting. Tæki sem er skrifað án
+  // fyrirtaeki_id verður draugur: reikningurinn telur það (hann telur á nafni)
+  // en tækjalistinn ekki (hann telur á auðkenni). Sama vél og bjó til
+  // 152.880-reikninginn hjá Kirkjuvöllum og tvítalninguna hjá Metal.
+  function _ownerIds(coId) {
+    var fid = (coId != null && coId !== '') ? Number(coId) : null;
+    var bid = null;
+    if (fid != null) {
+      try {
+        var c = ((window.Companies && Companies.list) || []).find(function (x) { return +x.id === fid; });
+        if (c && c.customer_base_id != null) bid = Number(c.customer_base_id);
+      } catch (_) {}
+    }
+    return { fid: fid, bid: bid };
+  }
+
+  function openBulkModal(nafn, refreshFn, coId) {
     const existing = document.getElementById('_bulkadd_modal');
     if (existing) existing.remove();
     const today = new Date().toISOString().slice(0, 10);
@@ -75,7 +91,7 @@
     document.getElementById('_ba_x').onclick = close;
     document.getElementById('_ba_cancel').onclick = close;
     m.onclick = (e) => { if (e.target === m) close(); };
-    document.getElementById('_ba_save').onclick = () => submitBulk(nafn, refreshFn);
+    document.getElementById('_ba_save').onclick = () => submitBulk(nafn, refreshFn, coId);
 
     // Type-aware Stærð — Brunaslanga uses metre lengths (30 m), skynjarar/skápur
     // have no size (—); the kg list only makes sense for handslökkvitæki.
@@ -101,7 +117,7 @@
     if (typeSel) { typeSel.addEventListener('change', syncSizes); syncSizes(); }
   }
 
-  async function submitBulk(nafn, refreshFn) {
+  async function submitBulk(nafn, refreshFn, coId) {
     const qty = parseInt(document.getElementById('_ba_qty').value, 10);
     if (!qty || qty < 1 || qty > 200) { alert('Magn verður að vera milli 1 og 200'); return; }
     const type = document.getElementById('_ba_type').value;
@@ -118,11 +134,24 @@
       const s = tmpSerial();
       if (used[s]) continue;
       used[s] = 1;
-      rows.push({
+      const _o = _ownerIds(coId);
+      const _row = {
         serial: s, type, size, client: nafn, location: loc,
         last_insp: today, next_insp: nextInsp,
         status: 'active', pressure: 14
-      });
+      };
+      if (_o.fid != null) _row.fyrirtaeki_id = _o.fid;
+      if (_o.bid != null) _row.customer_base_id = _o.bid;
+      rows.push(_row);
+    }
+    // Ekkert auðkenni -> tækin yrðu ótengd og teldust ekki með í tækjalistanum
+    // þótt reikningurinn rukkaði þau. Það er spurt, ekki skrifað þegjandi.
+    if (coId == null) {
+      if (!confirm('Ekkert fyrirtækis-auðkenni fylgir þessum skjá.\n\n' + qty +
+                   ' tæki yrðu skráð ÓTENGD — þau sjást þá ekki í tækjalistanum\n' +
+                   'en gætu samt lent á reikningi. Halda samt áfram?')) {
+        btn.disabled = false; btn.textContent = 'Skrá tæki'; return;
+      }
     }
 
     try {
@@ -212,7 +241,7 @@
       } else if (window.Companies && Companies.openDetail && custId) {
         refreshFn = () => Companies.openDetail(custId);
       }
-      openBulkModal(nafn, refreshFn);
+      openBulkModal(nafn, refreshFn, custId);
     };
     addBtn.parentNode.insertBefore(btn, addBtn);
     // Hide the original single-unit button — but ONLY on the company/customer
