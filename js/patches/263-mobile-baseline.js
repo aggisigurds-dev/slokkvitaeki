@@ -54,7 +54,7 @@
     // Root guarantee: in mobile mode the page never scrolls sideways, whatever
     // the viewport width. This is the recoverable escape-hatch behaviour —
     // Skjár removes the attribute and everything returns to normal.
-    'html[data-viewmode="mobile"],html[data-viewmode="mobile"] body{overflow-x:hidden!important}',
+    'html[data-viewmode="mobile"],html[data-viewmode="mobile"] body{overflow-x:auto!important}',
     // The active content view fills the width and clips stray wide children.
     V + '{max-width:100%!important;overflow-x:hidden!important}',
     // Content images fit; leaflet map tiles are explicitly left alone below.

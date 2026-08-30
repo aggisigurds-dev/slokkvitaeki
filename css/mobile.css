@@ -100,7 +100,7 @@
 /* ============================================================ */
 @media (max-width: 480px){
   /* No element bleeds past the viewport */
-  html,body{overflow-x:hidden}
+  html,body{overflow-x:auto}
   *{box-sizing:border-box}
 
   /* Topbar / hamburger sit further out so the nav drawer can be 88vw wide */
@@ -202,7 +202,7 @@
   #bstal-banner .bb-logo{ padding-left:52px !important; }
 
   /* (3) Hard stop on any sideways bleed at every mobile width (was ≤480 only). */
-  html, body{ overflow-x:hidden !important; }
+  html, body{ overflow-x:auto !important; }
 
   /* (4) Sala POS: stack products over the cart + stack the banner across the
      whole mobile range (these fixes were ≤480-only, so they missed larger
