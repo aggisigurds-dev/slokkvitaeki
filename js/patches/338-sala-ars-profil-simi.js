@@ -131,11 +131,13 @@
         + 'padding:0 10px!important;font-size:13px!important;white-space:nowrap!important}',
       both('#companies-main [data-co-id]' + P)
         + strip.slice(0, -1) + ';margin-bottom:10px!important;padding:2px 0 6px!important}',
-      both('#companies-main [data-co-id] .btn' + P) + ','
-        + both('#companies-main [data-co-id] button' + P) + ','
-        + A + '#companies-main:has(.co-banner) [data-co-id] button' + P + ','
-        + A + '#companies-main:has(.co-banner) [data-co-id] .btn' + P
+      both('#companies-main [data-co-id] .btn:not(._co-edit-anchor)' + P) + ','
+        + both('#companies-main [data-co-id] button:not(._co-edit-anchor)' + P) + ','
+        + A + '#companies-main:has(.co-banner) [data-co-id] button:not(._co-edit-anchor)' + P + ','
+        + A + '#companies-main:has(.co-banner) [data-co-id] .btn:not(._co-edit-anchor)' + P
         + chip,
+      both('#companies-main ._co-edit-anchor' + P)
+        + '{display:none!important}',
       both('#companies-main .uttekt-cols' + P)
         + '{display:flex!important;flex-direction:column!important;gap:10px!important}',
       both('#companies-main .uttekt-col-l' + P) + ','
