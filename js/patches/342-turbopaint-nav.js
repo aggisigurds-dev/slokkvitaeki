@@ -39,9 +39,6 @@
     v.className = (sample.className || 'view').replace(/\bactive\b/g, '').trim();
     v.innerHTML =
       '<div class="tp-frame-wrap">' +
-        '<div class="tp-frame-bar">Teikningar á TurboPaint · ' +
-          '<a href="' + SRC + '" target="_blank" rel="noopener">Opna í eigin flipa</a>' +
-        '</div>' +
         '<iframe title="TurboPaint" allow="clipboard-read; clipboard-write"></iframe>' +
       '</div>';
     sample.parentElement.appendChild(v);
@@ -73,20 +70,31 @@
   function injectNav() {
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) { setTimeout(injectNav, 600); return; }
-    if (nav.querySelector('[data-view="' + NAV_KEY + '"]')) return;
     const tpl = nav.querySelector('.vnav-btn');
     if (!tpl) { setTimeout(injectNav, 600); return; }
-    const btn = document.createElement('button');
-    btn.className = (tpl.className || 'vnav-btn').replace(/\bactive\b/g, '').trim();
-    btn.setAttribute('data-view', NAV_KEY);
-    btn.innerHTML = NAV_LABEL;
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (window.App && App.switchView) App.switchView(NAV_KEY);
-      else show();
-    });
-    nav.appendChild(btn);
+    let btn = nav.querySelector('[data-view="' + NAV_KEY + '"]');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.className = (tpl.className || 'vnav-btn').replace(/\bactive\b/g, '').trim();
+      btn.setAttribute('data-view', NAV_KEY);
+      btn.innerHTML = NAV_LABEL;
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.App && App.switchView) App.switchView(NAV_KEY);
+        else show();
+      });
+    }
+    // Daily use: sit next to Sala (landnr/teikningar used to live there),
+    // not at the bottom of a long sidebar.
+    const after = nav.querySelector('[data-view="sala"]')
+      || nav.querySelector('[data-view="thjonustubord"]')
+      || tpl;
+    if (after && after.nextSibling !== btn) {
+      after.parentNode.insertBefore(btn, after.nextSibling);
+    } else if (!btn.parentNode) {
+      nav.appendChild(btn);
+    }
   }
 
   function patchSwitchView() {
