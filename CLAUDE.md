@@ -312,3 +312,19 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## Cursor Cloud specific instructions
+
+Cloud Agents see this repo at `/agent/repos/slokkvitaeki`. Open that folder. Daily work is one repo per window; the 8-root workspace is only when the task crosses repos.
+
+**Verkefnalisti** still applies: `GET https://brunaholf.netlify.app/api/verkefnalisti` (beidni/i_vinnu) before starting new work.
+
+**Charlize** still applies: read `v_charlize_active` (scope `kerfi`/`baedi`/`slokkvitaeki`) before changing DB, deploy, or Drive.
+
+**Screenshots / browser:** use Cursor Playwright MCP or computer use. `tools/bh-browser.cjs` is a Claude Code remote-egress workaround (see `brunaholf/docs/BROWSER-MCP-SETUP.md`). Do not use bh-browser unless Playwright fails.
+
+Never read `index.html`, large `js/patches/*`, `js/pos.js`, `dist/`, or `graphify-out/` whole. Grep first, then Read with offset/limit.
+
+Start with `git fetch origin && git status -sb`. Never run `node deploy.js`. Run `node tools/audit-all.cjs` before every push. Read `docs/ORYGGISNET.md` first; route guarded paths (invoice OUT `10`/`233`/`254`, kennitala `121`/`pos.js`, `payday-push`, readiness `153`/`187`) through `netvordur`.
+
+The 4-machine deploy rule still holds: pull the default branch first, push to deploy. Cursor Cloud is another machine. Same rule.
