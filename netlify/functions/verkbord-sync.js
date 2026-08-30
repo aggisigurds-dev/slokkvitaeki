@@ -30,17 +30,23 @@ export default async (req) => {
     if (got !== GATE) return j(401, { error: 'unauthorized' });
   }
 
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return j(400, { error: 'ANTHROPIC_API_KEY_MISSING' });
-
   let body;
   try { body = await req.json(); } catch (_) { return j(400, { error: 'Invalid JSON' }); }
 
   const notes = String(body.notes || '').replace(/\s+/g, ' ').trim().slice(0, 4000);
   const items = Array.isArray(body.items) ? body.items.slice(0, 80) : [];
   const facts = Array.isArray(body.facts) ? body.facts.slice(0, 40) : [];
-  const sites = Array.isArray(body.sites) ? body.sites.slice(0, 200) : [];
-  if (!notes && !facts.length && !items.length) return j(400, { error: 'no input' });
+  const emails = Array.isArray(body.emails) ? body.emails.slice(0, 40) : [];
+  const sites = Array.isArray(body.sites) ? body.sites.slice(0, emails.length ? 2500 : 200) : [];
+  if (!notes && !facts.length && !items.length && !emails.length) return j(400, { error: 'no input' });
+
+  if (emails.length && !notes) {
+    const actions = emails.map((e) => V.classifyEmailTask(e, { sites, openItems: items }));
+    return j(200, { actions, model: 'rules-email' });
+  }
+
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return j(400, { error: 'ANTHROPIC_API_KEY_MISSING' });
 
   const itemLines = items.map((it) => {
     const tags = Array.isArray(it.tags) ? it.tags.join(',') : '';
@@ -63,7 +69,13 @@ export default async (req) => {
     '- Rekstrarfélög og fjölstaða-kt: sami leikur — aldrei sameina staði.\n' +
     '- Loka (op=close) AÐEINS með raunverulegu id úr MÁLUM. Lokaðu EKKI úttekt/reikningi sem er "búið" í facts — sending skýrslu er óvituð. ' +
     'Sjálfgefið: ekki loka.\n' +
-    '- Búa til (op=create) eitt mál per aðskilið verk úr minnisblaðinu. tags/flokkur/type úr ORÐAFORÐANUM.\n' +
+    '- Búa til (op=create) eitt mál per aðskilið verk úr minnisblaðinu eða póstinum. tags/flokkur/type úr ORÐAFORÐANUM.\n' +
+    '- Póstar (dæmi): „fengum ekki reikning / vantar afrit“ → bokhald+senda_tolvupost, rukkun, skjalabeidni. ' +
+    '„senda teikningar/neyðarteikningar“ → brunakerfi+senda_skyrslur. ' +
+    'Kennitala + tæki + „má senda reikning“ → eftir_ad_rukka+thjonusta, heimsokn, nákvæmt húsfélagsnafn. ' +
+    '„var eftirlit lokið / skynjari pípar“ → thjonusta+hringja, heimsokn, important. ' +
+    'Ítrekun með sömu efnislínu og opið mál → op=notes á því id, ekki nýtt mál. ' +
+    'Póstur frá okkur (SENT) → ekkert mál.\n' +
     '- tags leyfileg: gera_tilbod, thjonustusamningur, bokhald, kvortun, hringja, brunakerfi, ' +
     'eftir_ad_rukka, thjonusta, senda_tolvupost, senda_skyrslur, uppsetning.\n' +
     '- flokkur: tilbod|thjonusta|brunakerfi|rukkun|samskipti.\n' +
