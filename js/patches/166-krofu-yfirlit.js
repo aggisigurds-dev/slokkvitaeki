@@ -1599,8 +1599,9 @@
     ].join(' · ');
     // Hlekkjanlegt nafn: beint customer_id, annars fyrirtaeki fundið eftir kt,
     // annars nafna-endurheimtin (rec.coId) — úttektar-sölur bera oft ekkert id.
+    const ktSites = (directKt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[directKt]) || [];
     const linkId = grp.id
-      || (directKt && _state.fyrirtIdsByKt && (_state.fyrirtIdsByKt[directKt] || [])[0])
+      || (ktSites.length === 1 ? ktSites[0] : null)
       || (recovered && recovered.coId)
       || null;
     const nameHtml = linkId
@@ -1624,20 +1625,20 @@
   // ── 📄 Úttektarskýrsla per krafa (2026-07-16) ──────────────────────────────
   // Resolve the inspection report for the sale's YEAR: (1) fyrirtækjaviðhengi
   // (CompanyAttachments, kind='skyrsla', sama ár — sama og payday-push notar),
-  // (2) customer_documents (doc_type='uttektarskyrsla', sama ár) per fyrirtæki
-  // eða customers_base. Skilar {found, kind:'att'|'doc', ...} — aldrei giskað.
+  // (2) customer_documents (doc_type='uttektarskyrsla', sama ár) á ÞESSUM stað
+  // (solur.customer_id). Kennitala / customer_base_id er EKKI einkvæm — 19 kt
+  // ná yfir 78 staði (Center Hótel, Pizzan, Heimaleiga). Fyrsta systkini-skýrsla
+  // málaði Arnarhvoll með Skjaldbreið. Skilar {found, ...} — aldrei giskað.
   function resolveSkyrsla(s) {
     const yr = String(new Date(s.created_at || Date.now()).getFullYear());
     const candidateIds = [];
     if (s.customer_id) candidateIds.push(s.customer_id);
-    // Úttektar-sölur eru oft vistaðar nafn-eingöngu (ekkert customer_id/kt) —
-    // notum þá nafna-endurheimtina (nameKt) sem síðan sýnir þegar 🔗 kt-ið.
     const rec = (_state.nameKt || {})[keyName(s.customer_nafn)] || null;
-    if (rec && rec.coId != null && !candidateIds.includes(rec.coId)) candidateIds.push(rec.coId);
     const kt = (s.customer_kt || (rec && rec.kt) || '').trim();
-    if (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) {
-      _state.fyrirtIdsByKt[kt].forEach(id => { if (!candidateIds.includes(id)) candidateIds.push(id); });
-    }
+    const ktSites = (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) || [];
+    // Án customer_id: nafn-endurheimt eða kt AÐEINS þegar kt-in á einn stað.
+    if (!candidateIds.length && rec && rec.coId != null) candidateIds.push(rec.coId);
+    if (!candidateIds.length && ktSites.length === 1) candidateIds.push(ktSites[0]);
     // 1) fyrirtækjaviðhengi (Supabase samningar-bucket)
     try {
       if (window.CompanyAttachments && CompanyAttachments.list) {
@@ -1648,16 +1649,17 @@
         }
       }
     } catch (_) {}
-    // 2) customer_documents (Drive-hryggurinn)
+    // 2) customer_documents — AÐEINS þessi staður. Base/kt-víðar raðir eru
+    // notaðar aðeins þegar kt-in á einn stað (ótvírætt). Annars: engin skýrsla.
     const docs = [];
     candidateIds.forEach(id => ((_state.docsByCo || {})[String(id)] || []).forEach(d => { if (!docs.includes(d)) docs.push(d); }));
-    const baseIds = [];
-    if (s.customer_base_id) baseIds.push(s.customer_base_id);
-    const fy = s.customer_id ? (_state.fyrirtMap || {})[s.customer_id] : null;
-    if (fy && fy.customer_base_id != null) baseIds.push(fy.customer_base_id);
-    if (kt && _state.baseIdByKt && _state.baseIdByKt[kt] != null) baseIds.push(_state.baseIdByKt[kt]);
-    if (rec && rec.baseId != null && !baseIds.includes(rec.baseId)) baseIds.push(rec.baseId);
-    baseIds.forEach(id => ((_state.docsByBase || {})[String(id)] || []).forEach(d => { if (!docs.includes(d)) docs.push(d); }));
+    if (!docs.length && !candidateIds.length && ktSites.length <= 1) {
+      const baseIds = [];
+      if (s.customer_base_id) baseIds.push(s.customer_base_id);
+      if (kt && _state.baseIdByKt && _state.baseIdByKt[kt] != null) baseIds.push(_state.baseIdByKt[kt]);
+      if (rec && rec.baseId != null && !baseIds.includes(rec.baseId)) baseIds.push(rec.baseId);
+      baseIds.forEach(id => ((_state.docsByBase || {})[String(id)] || []).forEach(d => { if (!docs.includes(d)) docs.push(d); }));
+    }
     const doc = docs.find(d => String(d.year || '') === yr && (d.drive_file_id || d.storage_path));
     if (doc) return { found: true, kind: 'doc', doc, year: yr };
     return { found: false, year: yr };

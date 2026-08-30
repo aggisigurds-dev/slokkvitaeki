@@ -98,7 +98,20 @@
     } catch (_) { /* view may be unavailable */ }
   }
   function docsFor(c) {
-    return (c.customer_base_id != null && _docByBase.get(String(c.customer_base_id))) || _docByKt.get(_normKt(c.kennitala)) || null;
+    const rec = (c.customer_base_id != null && _docByBase.get(String(c.customer_base_id))) || _docByKt.get(_normKt(c.kennitala)) || null;
+    if (!rec) return null;
+    // customer_doc_status er lögaðila-víð. Á fjölstaða-kt (Center/Pizzan)
+    // málaði Ú11/R8 á hvert hótel sem ætti 0. Aðeins sýnt þegar kt/base á einn stað.
+    const kt = _normKt(c.kennitala);
+    const list = (window.Companies && Companies.list) || [];
+    let n = 0;
+    for (let i = 0; i < list.length; i++) {
+      const x = list[i];
+      if (c.customer_base_id != null && x.customer_base_id === c.customer_base_id) n++;
+      else if (kt && _normKt(x.kennitala) === kt) n++;
+    }
+    if (n > 1) return null;
+    return rec;
   }
 
   // Bank-import-only payer rows (PR1 / framhald 48A): fyrirtaeki flagged
