@@ -109,7 +109,7 @@
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#6d28d9', dark: '#4c1d95',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
-      defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-skyrslustod', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
+      defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-skyrslustod', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting', 'turbopaint'] },
     // Brunakerfi-appið fyrir skoðunarmenn á staðnum (ósk Agnars 2026-07-21):
     // yfirlitið er heimasíðan; fyrirtækjasíðan (274) og skýrslu-formið (273)
     // opnast þaðan sem yfirlög — allt innan sömu læstu skeljar.
@@ -462,6 +462,8 @@
         insertOnce('__tvks1', 'thjonustu-verkstaedi', 'thjonustuverk');
         insertOnce('__yfd1',  'br-yfirferd', 'br-fjarmalyfirlit', 'boss');
         insertOnce('__bksl1', 'sala', 'brunayfirlit', 'brunakerfi');
+        insertOnce('__tp1',   'turbopaint', 'sala', 'brunakerfi');
+        insertOnce('__tp1b',  'turbopaint', 'br-maeting', 'brunaholf');
         if (changed) {
           var s = JSON.stringify(c);
           try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
