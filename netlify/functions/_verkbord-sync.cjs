@@ -71,6 +71,34 @@ function uniqTags(list) {
  * Match a free-text hint to exactly one site.
  * Exact fold first, then unique substring. 0 or 2+ hits → null (do not guess).
  */
+function extractKennitala(text) {
+  const digits = String(text || '').replace(/[^\d]/g, '');
+  // Prefer dashed 6+4 in the original text.
+  const m = String(text || '').match(/\b(\d{6})-?(\d{4})\b/);
+  if (m) return m[1] + m[2];
+  if (digits.length === 10) return digits;
+  return '';
+}
+
+function ktDigits(s) {
+  return String(s == null ? '' : s).replace(/\D/g, '');
+}
+
+/** Exactly one site with this kennitala. 0 or 2+ (Center Hotel) → null. */
+function matchByKt(kt, sites) {
+  const d = ktDigits(kt);
+  if (d.length !== 10) return null;
+  const hits = (sites || []).filter((s) => ktDigits(s.kennitala) === d);
+  if (hits.length === 1) return hits[0];
+  return null;
+}
+
+function normSubj(s) {
+  let t = fold(s);
+  for (let i = 0; i < 6; i++) t = t.replace(/^(re|fw|fwd|sv|vs) /, '');
+  return t.trim();
+}
+
 function matchSite(hint, sites) {
   const f = fold(hint);
   if (!f || f.length < 2) return null;
@@ -168,6 +196,116 @@ function deriveUttekt(sites, reports, invoices, year) {
   return out;
 }
 
+function classifyEmailTask(email, opts) {
+  const openItems = (opts && opts.openItems) || [];
+  const sites = (opts && opts.sites) || [];
+  const id = email && email.id;
+  const sender = String((email && (email.sender_email || email.from)) || '');
+  const subj = String((email && email.subject) || '').trim();
+  const body = String((email && (email.body || email.snippet || email.body_preview)) || '');
+  const blob = subj + '\n' + body + '\n' + String((email && email.sender_name) || '');
+  const f = fold(blob);
+  const ref = id ? 'email:' + id : '';
+
+  if (/eldklar@eldklar\.is/i.test(sender) || String((email && email.folder) || '').toUpperCase() === 'SENT') {
+    return { op: 'skip', reason: 'okkar póstur', channel_ref: ref, title: subj };
+  }
+
+  if (ref && openItems.some((i) => isOpenItem(i) && String(i.channel_ref || '') === ref)) {
+    return { op: 'skip', onBoard: true, reason: 'þegar á borði', channel_ref: ref, title: subj };
+  }
+
+  const thread = openItems.find((i) => {
+    if (!isOpenItem(i)) return false;
+    const a = normSubj(i.title);
+    const b = normSubj(subj);
+    return a && b && (a === b || (a.length >= 8 && b.indexOf(a) !== -1) || (b.length >= 8 && a.indexOf(b) !== -1));
+  });
+
+  let tags = ['senda_tolvupost'];
+  let type = 'email';
+  let flokkur = 'samskipti';
+  let reason = 'Svara pósti.';
+  let title = subj || String((email && email.sender_name) || 'Póstur').slice(0, 90);
+  let important = false;
+
+  if (/afrit af (greiddum )?reikning|ekki hafa fengid.*reikning|ekki fengid.*reikning|flett upp reikning|vantar afrit/.test(f)) {
+    tags = ['bokhald', 'senda_tolvupost'];
+    type = 'skjalabeidni';
+    flokkur = 'rukkun';
+    reason = 'Senda afrit reiknings.';
+    title = 'Afrit reiknings — ' + (String((email && email.sender_name) || subj).slice(0, 80));
+  } else if (/teikning|neydarteikn/.test(f)) {
+    tags = ['brunakerfi', 'senda_skyrslur'];
+    type = 'skjalabeidni';
+    flokkur = 'brunakerfi';
+    reason = 'Senda teikningar / neyðarteikningar.';
+    title = 'Senda teikningar — ' + (String((email && email.sender_name) || subj).slice(0, 80));
+  } else if ((/ma senda reikning|senda reikninginn/.test(f) || /kennitala/.test(f)) && /reykskyn|slokkvitaeki|kolsyru|lettvatn/.test(f)) {
+    tags = ['eftir_ad_rukka', 'thjonusta'];
+    type = 'heimsokn';
+    flokkur = 'thjonusta';
+    reason = 'Rukka og setja á áætlun.';
+  } else if (/var eftirlit|pipir|pipar i|skynjara/.test(f) && /eftirlit|skynjar/.test(f)) {
+    tags = ['thjonusta', 'hringja'];
+    type = 'heimsokn';
+    flokkur = 'thjonusta';
+    reason = 'Svara: eftirlit og skynjari sem pípar.';
+    important = true;
+    title = subj || 'Eftirlit / skynjari pípar';
+  }
+
+  const kt = extractKennitala(blob);
+  let site = matchByKt(kt, sites);
+  if (!site) {
+    site = matchSite(email && email.sender_name, sites)
+      || matchSite(subj, sites);
+  }
+  if (!site && sender.indexOf('@') !== -1) {
+    const stem = fold(sender.split('@')[1].split('.')[0]);
+    if (stem.length >= 5) site = matchSite(stem, sites);
+  }
+  if (!site) {
+    const hits = (sites || []).filter((s) => {
+      const n = fold(s.nafn).replace(/^(husf|husfelagid|husfelagio)\s+/, '');
+      return n.length >= 8 && f.indexOf(n) !== -1;
+    });
+    if (hits.length === 1) site = hits[0];
+  }
+
+  if (thread && (!site || !thread.customer_nafn || fold(thread.customer_nafn) === fold(site.nafn))) {
+    return {
+      op: 'notes',
+      id: thread.id,
+      notes: (email && email.received_at ? String(email.received_at).slice(0, 10) + ': ' : '') + body.slice(0, 500),
+      title: thread.title,
+      customer_nafn: thread.customer_nafn || (site && site.nafn) || null,
+      reason: 'Ítrekun á opnu máli — ekki nýtt mál.',
+      defaultOn: true,
+      channel_ref: ref,
+      kind: 'email_thread',
+    };
+  }
+
+  return {
+    op: 'create',
+    title: title.slice(0, 240),
+    notes: body.slice(0, 2000),
+    type,
+    tags,
+    flokkur,
+    customer_nafn: site ? site.nafn : (String((email && email.sender_name) || '').slice(0, 160) || null),
+    customer_base_id: site ? (site.customer_base_id || null) : null,
+    channel_ref: ref || null,
+    important,
+    reason,
+    source: 'email',
+    defaultOn: !!important,
+    kind: 'email',
+    sender,
+  };
+}
+
 function titleForDerived(d) {
   if (d.kind === 'vantar_reikning') return 'Vantar úttektarreikning ' + d.year + ' — ' + d.nafn;
   if (d.kind === 'vantar_skyrslu') return 'Vantar úttektarskýrslu ' + d.year + ' — ' + d.nafn;
@@ -256,7 +394,7 @@ function validateActions(raw, opts) {
       const type = TYPES.includes(a.type) ? a.type : (TAG_TO_TYPE[tags[0]] || 'annad');
       const flokkur = FLOKKAR.includes(a.flokkur) ? a.flokkur : (TAG_TO_FLOKK[tags[0]] || null);
       let ref = a.channel_ref ? String(a.channel_ref).slice(0, 120) : '';
-      if (ref && !/^derived:[a-z0-9_]+:\d{4}:\d+$/.test(ref) && !/^notes:[a-z0-9_-]{4,40}$/.test(ref)) {
+      if (ref && !/^derived:[a-z0-9_]+:\d{4}:\d+$/.test(ref) && !/^notes:[a-z0-9_-]{4,40}$/.test(ref) && !/^email:\d+$/.test(ref)) {
         ref = '';
       }
       if (ref && openItems.some((i) => isOpenItem(i) && String(i.channel_ref || '') === ref)) return;
@@ -273,7 +411,7 @@ function validateActions(raw, opts) {
         important: a.important === true,
         channel_ref: ref || null,
         reason: String(a.reason || '').slice(0, 240),
-        source: a.source === 'derived' ? 'derived' : 'notes',
+        source: a.source === 'derived' ? 'derived' : (ref && ref.indexOf('email:') === 0 ? 'email' : 'notes'),
         defaultOn: a.defaultOn !== false,
       });
       return;
@@ -343,6 +481,9 @@ module.exports = {
   existingBoardHit,
   deriveUttekt,
   actionFromDerived,
+  classifyEmailTask,
+  extractKennitala,
+  matchByKt,
   parseJsonArray,
   validateActions,
   uniqTags,
