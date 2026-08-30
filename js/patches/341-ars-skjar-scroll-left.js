@@ -148,12 +148,10 @@
       const cs = getComputedStyle(tb);
       if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return 0;
       const r = tb.getBoundingClientRect();
+      const cssW = parseFloat(cs.width) || 0;
+      const open = document.body && document.body.classList.contains('mobile-nav-open');
+      if (open) return Math.round(Math.max(r.right > 80 ? r.right : 0, cssW || 260));
       if (r.left < 8 && r.right > 80 && r.width >= 40) return Math.round(r.right);
-      /* Drawer class can outlive a flaky transform measurement (scroll/zoom). */
-      if (document.body && document.body.classList.contains('mobile-nav-open')) {
-        const w = parseFloat(cs.width) || 260;
-        if (w >= 40) return Math.round(w);
-      }
     } catch (_) {}
     return 0;
   }
