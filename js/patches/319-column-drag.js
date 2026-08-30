@@ -62,10 +62,18 @@
     const cls = t.id ? ('#' + t.id) : (t.classList[0] ? ('.' + t.classList[0]) : '');
     return vid + '|' + (cls || 'table');
   }
+  function paintHeads() {
+    const heads = [];
+    try { if (document.head) heads.push(document.head); } catch (_) {}
+    try {
+      const f = window.SlokkDevFrame && SlokkDevFrame.iframe && SlokkDevFrame.iframe();
+      const h = f && f.contentDocument && f.contentDocument.head;
+      if (h && heads.indexOf(h) < 0) heads.push(h);
+    } catch (_) {}
+    return heads.length ? heads : [document.documentElement];
+  }
   // ── style-blaðið: vistaðar breiddir → CSS sem vinnur á 314 ────────────────
   function applyCss() {
-    let s = document.getElementById(SHEET);
-    if (!s) { s = document.createElement('style'); s.id = SHEET; (document.head || document.documentElement).appendChild(s); }
     let css = '';
     for (const key in store) {
       const e = store[key] || {};
@@ -114,8 +122,15 @@
       }
       if (e.zebra) css += base + ' tbody tr:nth-child(even) td{background-image:linear-gradient(rgba(100,116,139,.09),rgba(100,116,139,.09))!important}\n';
     }
-    s.textContent = css;
-    if (s.parentNode) s.parentNode.appendChild(s);   // sitja síðast → vinna 314
+    paintHeads().forEach(head => {
+      try {
+        const doc = head.ownerDocument || document;
+        let s = doc.getElementById(SHEET);
+        if (!s) { s = doc.createElement('style'); s.id = SHEET; head.appendChild(s); }
+        s.textContent = css;
+        if (s.parentNode) s.parentNode.appendChild(s);
+      } catch (_) {}
+    });
   }
 
   // ── grip-línurnar ─────────────────────────────────────────────────────────
@@ -393,6 +408,7 @@
     get: () => JSON.parse(JSON.stringify(store)),
     set: (v) => { store = (v && typeof v === 'object') ? v : {}; save(); applyCss();
       document.querySelectorAll('colgroup col').forEach(c => c.style.removeProperty('width')); },
+    paint: applyCss,
   };
   console.log('[patch-319] column drag ready');
 })();

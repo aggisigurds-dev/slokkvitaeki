@@ -32,21 +32,39 @@
   const AS_KEY = 'ars_simi_stillingar';
   const IN_DEVFRAME = !!(new URLSearchParams(location.search).get('devframe'));
 
-  function pageRoot() {
+  /* Live-málning: sleðar skrifa í iframe (síminn sem Agnar horfir á) OG í
+     foreldrið svo persist/vista haldist. Áður fór pageRoot() bara í iframe
+     þegar frameIsArs() — og aðeins ÞÁNGAR; bakgrunnar/litir lentu á dimmda
+     hub-inum bak við overlay. */
+  function frameRoot() {
     try {
+      if (IN_DEVFRAME) return null;
       if (window.SlokkDevFrame && typeof SlokkDevFrame.iframe === 'function') {
         const f = SlokkDevFrame.iframe();
-        /* Aðeins skrifa --ars-* inn í rammann þegar hann er á Ársskoðun —
-           annars lentu sleðar/AppSettings á Fjármálum o.fl. */
-        if (f && f.contentDocument && f.contentDocument.documentElement && frameIsArs())
+        if (f && f.contentDocument && f.contentDocument.documentElement)
           return f.contentDocument.documentElement;
       }
     } catch (_) {}
-    return document.documentElement;
+    return null;
+  }
+  function pageRoot() {
+    return frameRoot() || document.documentElement;
   }
   function pageDoc() {
     const r = pageRoot();
     return (r && r.ownerDocument) || document;
+  }
+  function paintRoots() {
+    const roots = [document.documentElement];
+    const fr = frameRoot();
+    if (fr && fr !== roots[0]) roots.push(fr);
+    return roots;
+  }
+  function setVar(v, val) {
+    paintRoots().forEach(r => { try { r.style.setProperty(v, val); } catch (_) {} });
+  }
+  function clearVar(v) {
+    paintRoots().forEach(r => { try { r.style.removeProperty(v); } catch (_) {} });
   }
 
   /* Letrafjölskyldur sem index.html hleður þegar (IBM / Playfair / JetBrains)
@@ -269,7 +287,7 @@
       const uppf = () => {
         const b = finna(sl.dataset.v); if (!b) return;
         const n = parseFloat(sl.value);
-        pageRoot().style.setProperty(b.v, fmt(b, n));
+        setVar(b.v, fmt(b, n));
         const num = p.querySelector('[data-num="' + b.v + '"]');
         if (num) num.textContent = fmt(b, n);
         uppfCssOut(p);
@@ -281,7 +299,7 @@
       const uppf = () => {
         const b = finna(inp.dataset.v); if (!b) return;
         const hex = tilHex(inp.value);
-        pageRoot().style.setProperty(b.v, hex);
+        setVar(b.v, hex);
         const num = p.querySelector('[data-num="' + b.v + '"]');
         if (num) num.textContent = hex;
         uppfCssOut(p);
@@ -292,7 +310,7 @@
     p.querySelectorAll('._hh-sel').forEach(sel => {
       sel.addEventListener('change', () => {
         const b = finna(sel.dataset.v); if (!b) return;
-        pageRoot().style.setProperty(b.v, sel.value);
+        setVar(b.v, sel.value);
         uppfCssOut(p);
       });
     });
@@ -334,12 +352,12 @@
   function beita(gogn) {
     if (!gogn) return;
     Object.keys(gogn).forEach(v => {
-      if (finna(v)) pageRoot().style.setProperty(v, gogn[v]);
+      if (finna(v)) setVar(v, gogn[v]);
     });
   }
 
   function endurstilla() {
-    ALLAR.forEach(b => pageRoot().style.removeProperty(b.v));
+    ALLAR.forEach(b => clearVar(b.v));
     teikna();
   }
 
@@ -488,6 +506,17 @@
     }
   }
 
+  function pushLiveToFrame() {
+    const fr = frameRoot();
+    if (!fr) return;
+    ALLAR.forEach(b => {
+      const val = document.documentElement.style.getPropertyValue(b.v).trim();
+      if (val) {
+        try { fr.style.setProperty(b.v, val); } catch (_) {}
+      }
+    });
+  }
+
   function syncFrame() {
     if (IN_DEVFRAME) return;
     const host = document.getElementById('_devframe-editor');
@@ -497,6 +526,8 @@
       _sidastaArsRammi = null;
       return;
     }
+    pushLiveToFrame();
+    sækja();
     const ars = frameIsArs();
     _sidastaArsRammi = ars;
     if (!ars) {
@@ -607,7 +638,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);
   else vakta();
 
-  window.Honnunarhamur = { opna, loka, endurstilla, syncFrame, version: 'v1.3' };
+  window.Honnunarhamur = { opna, loka, endurstilla, syncFrame, version: 'v1.4' };
   console.log('[patch-318] honnunarhamur ready');
 })();
 /* === END HÖNNUNARHAMUR === */
