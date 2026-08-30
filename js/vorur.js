@@ -365,8 +365,8 @@
           '<input id="f-rodun" type="number" min="1" value="'+(p.rodun==null?'':p.rodun)+'" placeholder="t.d. 1" title="1 = fremst á Sölusíðunni; tómt eða há tala = aftast" style="width:90px;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;box-sizing:border-box">' +
         '</label>' +
       '</div>' +
-      // Sala: aðalrúða XOR „Sjá aðrar vörur" neðst. Hak = falið af forsíðu-flísunum,
-      // sýnt þegar smellt er á „Sjá aðrar vörur" undir vörulistanum.
+      // Sala: hak = falið af aðalflísunum, sýnt undir „Sjá aðrar vörur".
+      // Óhakað (og virkt) = áfram á Söluborðinu (stjörnusían ræður forsíðu-flísunum).
       '<label style="display:flex;align-items:center;gap:8px;margin-bottom:20px;cursor:pointer">' +
         '<input id="f-sja-adrar" type="checkbox" '+(p.sja_adrar_vorur===true?'checked':'')+' style="width:18px;height:18px">' +
         '<span style="font-size:14px;color:#334155">Sýna undir aðrar vörur</span>' +
