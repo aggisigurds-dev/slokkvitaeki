@@ -10,6 +10,7 @@ description: >
   a Cowork machine, or coordinating who-does-what across the agents. Also the
   reference for how the customer database is modelled (customers_base root,
   fyrirtaeki service branch, rekstrarfélög + sites).
+  Kveikjuorð: Drive, skjal, veiði, doc-sweep, samningur, úttektarskýrsla.
 ---
 
 # Cowork doc-sweep — teamwork playbook

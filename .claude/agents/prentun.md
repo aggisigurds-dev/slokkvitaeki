@@ -1,6 +1,6 @@
 ---
 name: prentun
-description: QR-merkin og miðaprentunin — Brother PT-P750W, raðnúmerakerfið, QR-skanninn og allar prentleiðirnar. Notaðu þegar miði prentast vitlaust/lítill/óskannanlegur, þegar QR skannast ekki, þegar bæta á við prentleið eða breyta miðasniði, og fyrir raðnúmera-spurningar (S0001, GY-0012 …).
+description: QR-merkin og miðaprentunin — Brother PT-P750W, raðnúmerakerfið, QR-skanninn og allar prentleiðirnar. Notaðu þegar miði prentast vitlaust/lítill/óskannanlegur, þegar QR skannast ekki, þegar bæta á við prentleið eða breyta miðasniði, og fyrir raðnúmera-spurningar (S0001, GY-0012 …). Kveikjuorð: prentun, QR, miði, Brother, raðnúmer.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 

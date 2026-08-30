@@ -1,6 +1,6 @@
 ---
 name: netvordur
-description: Netvörður — gætir öryggisnetsins. KALLA ÁÐUR en breytt er vörðum leiðum (reikninga-OUT, kennitala, rukkun, tilbúið-staða) OG á eftir, til að staðfesta að breytingin rjúfi ekki netið. Fer yfir kortið (docs/ORYGGISNET.md), keyrir `node tools/audit-all.cjs`, og segir SAFE eða CUTS-A-WIRE með nákvæmlega hvaða vír slitnaði og hvernig á að tengja hann aftur. Notaðu líka þegar spurt er „er óhætt að ýta", „brýtur þetta eitthvað", eða fyrir hvaða breytingu sem snertir 10/233/254, 121, pos.js, payday-push, 153/187, 114, 309.
+description: Netvörður — gætir öryggisnetsins. KALLA ÁÐUR en breytt er vörðum leiðum (reikninga-OUT, kennitala, rukkun, tilbúið-staða) OG á eftir, til að staðfesta að breytingin rjúfi ekki netið. Fer yfir kortið (docs/ORYGGISNET.md), keyrir `node tools/audit-all.cjs`, og segir SAFE eða CUTS-A-WIRE með nákvæmlega hvaða vír slitnaði og hvernig á að tengja hann aftur. Notaðu líka þegar spurt er „er óhætt að ýta", „brýtur þetta eitthvað", eða fyrir hvaða breytingu sem snertir 10/233/254, 121, pos.js, payday-push, 153/187, 114, 309. Kveikjuorð: öryggisnet, er óhætt, brýtur þetta, audit-all, SAFE, CUTS-A-WIRE.
 tools: Bash, Read, Grep, Glob
 ---
 

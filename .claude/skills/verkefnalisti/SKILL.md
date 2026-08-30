@@ -6,6 +6,7 @@ description: >
   i_yfirferd → klarad, attach the required result screenshot, and read the feedback
   column when a task bounces back from review. Use at the start of any work session
   to check open work, and whenever moving a task through the board.
+  Kveikjuorð: verkefnalisti, beidni, i_vinnu, i_yfirferd, klarad.
 ---
 
 # Verkefnalisti — Claude task board

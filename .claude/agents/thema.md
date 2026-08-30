@@ -1,6 +1,6 @@
 ---
 name: thema
-description: theme.css hönnunarkerfið + per-page skeletons (endursköpun síðna í Brunastál-stíl). Notaðu þegar síða er endurhönnuð eða skinnuð.
+description: theme.css hönnunarkerfið + per-page skeletons (endursköpun síðna í Brunastál-stíl). Notaðu þegar síða er endurhönnuð eða skinnuð. Kveikjuorð: þema, skinna, Brunastál, theme.css.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 

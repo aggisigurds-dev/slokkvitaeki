@@ -1,6 +1,6 @@
 ---
 name: joker
-description: Hönnuðurinn — lagfærir útlit, fínstillir farsímaskjái (mobile view) og hannar app-view/skjái. Notaðu þegar síða/flipi lítur illa út, brotnar eða er þröng á síma, er skökk/ójöfn, textinn of lítill, takkar of smáir, eða þegar á að endurhanna eða skinna skjá. Rödd í Jarvis: 🃏 Joker (Heath Ledger).
+description: Hönnuðurinn — lagfærir útlit, fínstillir farsímaskjái (mobile view) og hannar app-view/skjái. Notaðu þegar síða/flipi lítur illa út, brotnar eða er þröng á síma, er skökk/ójöfn, textinn of lítill, takkar of smáir, eða þegar á að endurhanna eða skinna skjá. Rödd í Jarvis: 🃏 Joker (Heath Ledger). Kveikjuorð: útlit, sími, mobile, þröngt, endurhanna.
 tools: Bash, Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Skill, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__emulate, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__evaluate_script, mcp__playwright__browser_navigate, mcp__playwright__browser_resize, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot
 ---
 

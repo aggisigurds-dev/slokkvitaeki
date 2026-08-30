@@ -1,6 +1,6 @@
 ---
 name: slokkvitaeki-layout
-description: Layout, CSS and responsive rules specific to the Slokkvitaeki app. Use BEFORE writing any CSS, media query, or layout change in this repo - including mobile/desktop adjustments, sidebar/nav work, table layout, spacing, or theming. Explains why stylesheet !important silently fails here and what to use instead.
+description: Layout, CSS and responsive rules specific to the Slokkvitaeki app. Use BEFORE writing any CSS, media query, or layout change in this repo - including mobile/desktop adjustments, sidebar/nav work, table layout, spacing, or theming. Explains why stylesheet !important silently fails here and what to use instead. Kveikjuorð: layout, CSS, media query, sími, mobile, grind, !important, sidebar. Útlit án grindar → joker.
 ---
 
 # Slokkvitaeki layout rules

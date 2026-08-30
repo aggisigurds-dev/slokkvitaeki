@@ -7,6 +7,7 @@ description: >
   equal production, and how to revert a bad deploy. Use whenever you are about to
   commit/push/deploy the Slökkvitæki app, when a deploy looks wrong or stale, or
   when onboarding a machine to the deploy flow.
+  Kveikjuorð: deploy, ýta, git push, deploy.js (bannað), revert.
 ---
 
 # Deploy — Slökkvitæki ehf web app

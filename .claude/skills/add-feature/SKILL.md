@@ -7,6 +7,7 @@ description: >
   RLS-open tables), when to add a server-side Netlify function (AI/secret work),
   and how to verify the bundle before pushing. Use when adding any new view, board,
   button, or behavior to the app, or a new /api endpoint.
+  Kveikjuorð: nýr flipi, nýtt borð, nýtt API, patch, add-feature.
 ---
 
 # Add a feature — Slökkvitæki app
