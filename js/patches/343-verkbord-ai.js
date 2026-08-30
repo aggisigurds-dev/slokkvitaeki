@@ -41,7 +41,9 @@
     return Array.isArray(t) ? t : [];
   }
   function isOpenItem(i) {
-    return !!(i && !i._vd && i.status !== 'lokad' && !i.archived_at && !i.deleted_at);
+    if (!(i && !i._vd && i.status !== 'lokad' && !i.archived_at && !i.deleted_at)) return false;
+    if (window.Verkbord && Verkbord.isOldYearReport && Verkbord.isOldYearReport(i)) return false;
+    return true;
   }
   function existingBoardHit(items, site, tags) {
     const fn = fold(site && site.nafn);
