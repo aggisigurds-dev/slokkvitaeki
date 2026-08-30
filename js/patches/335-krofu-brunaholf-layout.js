@@ -4,10 +4,14 @@
  * Brunahólf Kröfu yfirlit — þétt yfirlit, 46×42 ky-abtn á EINNI línu, lárétt
  * skrun (ekki 2-dálka flísar, ekki 16px þriðja útlit).
  *
- * 166 á master (#795) stillir 16px wrap-chips með :not(#_kyc0)×3. 261/314/315
- * reyna 50% flísar. Þessi patch vinnur CSS-stríðið (sömu :not-keðju + auka
- * fake-id) svo flísarnar / 16px komi ekki aftur, og svo zoom skili overflow
- * (ekki dauðu beige).
+ * Brunahólf er EKKI sami kóði: brunaholf/index.html renderKrofuyfirlit()
+ * afritaði Skjár-röðina úr 166. Sími/appmode hér notaði svo renderCompanyMobile
+ * (2-dálka .ky-acts). 166 teiknar nú Skjár-röðina alls staðar nema ▦ Tafla.
+ *
+ * 166 á master (#795) stillir 16px wrap-chips með :not(#_kyc0)×3. 340 (#797)
+ * vefur í 2 línur. 261/314/315 reyna 50% flísar. Þessi patch vinnur CSS-stríðið
+ * (sömu :not-keðju + auka fake-id) svo flísarnar / 16px / 2-línu 340 komi ekki
+ * aftur, og svo zoom skili overflow (ekki dauðu beige).
  *
  * 153/187-reikningur er ÓSNERT. .oneignore er ekki snert.
  * Viewport: ekki user-scalable=no / width=390 / html { zoom }.
@@ -18,7 +22,7 @@
 
   const STYLE_ID = 'krofu-brunaholf-layout-335';
   /* 166 uses :not(#_kyc0):not(#_kyc1):not(#_kyc2) (3 IDs). Match that and add
-     one more so this sheet wins without editing 166. */
+     one more so this sheet wins without editing 166. Also beats 340 wrap. */
   const K = ':not(#_kyc0):not(#_kyc1):not(#_kyc2):not(#_p335a)';
 
   function css() {
@@ -56,7 +60,7 @@
         + '{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;'
         + 'min-width:max-content!important;width:max-content!important}',
 
-      /* Never let 166/314/315 wrap chips into 2-col tiles or 16px crumbs. */
+      /* Never let 166/314/315/340 wrap chips into 2-col tiles or 16px crumbs. */
       M + KY + ' .ky-acts' + K + ','
         + A + KY + ' .ky-acts' + K + ','
         + A + KY + ' .open .ky-acts' + K + ','
