@@ -14,9 +14,7 @@
  * clamped to patch 231. Site matching refuses kennitala / group-name merges
  * (Center Hotel is 11 fyrirtaeki on one kt).
  */
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const V = require('./_verkbord-sync.cjs');
+import V from './_verkbord-sync.cjs';
 
 const MODEL = 'claude-haiku-4-5-20251001';
 
@@ -124,4 +122,7 @@ function j(status, obj) {
   return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json', ...cors() } });
 }
 
-export const config = { path: '/api/verkbord-sync' };
+export const config = {
+  path: '/api/verkbord-sync',
+  includedFiles: ['netlify/functions/_verkbord-sync.cjs'],
+};
