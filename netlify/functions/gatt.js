@@ -11,6 +11,7 @@
 // öruggum reitum. Skjöl sótt gegnum /api/gatt-doc (eignarhaldsprófað).
 
 const P = require('./_portal');
+const { pickHose, slokkMinusHose } = require('./_gatt-eq.cjs');
 
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
@@ -118,8 +119,34 @@ exports.handler = async (event) => {
       }
     });
 
+    // 2c) Brunaslöngur per byggingu. Sýnishornið (Center Hótel) sýnir slöngur
+    //     sem eigin dálk; total_devices inniheldur þær. Skýrsla fyrst, tækjaskrá
+    //     sem vara (óvirkar slöngur á Arnarhvoll eru samt á skýrslunni).
+    const factSloById = {};
+    const liveBslById = {};
+    try {
+      if (siteIds.length) {
+        const ids = siteIds.join(',');
+        const ar = await P.sbGet(`arsskodun_report_facts?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,report_year,equipment&order=report_year.desc`);
+        if (ar.ok) {
+          (await ar.json()).forEach((r) => {
+            if (factSloById[r.fyrirtaeki_id] !== undefined) return;
+            let eq = r.equipment || {};
+            if (typeof eq === 'string') { try { eq = JSON.parse(eq); } catch (_) { eq = {}; } }
+            factSloById[r.fyrirtaeki_id] = eq.brunaslongur != null ? Number(eq.brunaslongur) : null;
+          });
+        }
+        const rr = await P.sbGet(`v_uttaeki_fid_rollup?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,bsl`);
+        if (rr.ok) {
+          (await rr.json()).forEach((r) => { liveBslById[r.fyrirtaeki_id] = Number(r.bsl) || 0; });
+        }
+      }
+    } catch (_) {}
+
     const buildings = sites.map((s) => {
       const st = stById[s.id] || {};
+      const slo = pickHose(factSloById[s.id], liveBslById[s.id]);
+      const rawTotal = st.total_devices != null ? st.total_devices : null;
       return {
         id: s.id, nafn: s.nafn, heimilisfang: s.heimilisfang || '',
         i_thjonustu: s.er_i_thjonustu !== false,
@@ -128,7 +155,8 @@ exports.handler = async (event) => {
         ar_bru: [...(bruYearsByFy[s.id] || [])].sort(),
         // skoðunarmánuður úr v_next_inspection (eins og „📅"-takkinn); fallback á skýrslu-mánuð
         skodun_manudur: imById[s.id] != null ? imById[s.id] : (st.inspect_month != null ? st.inspect_month : null),
-        taeki: st.total_devices != null ? st.total_devices : null,
+        taeki: slokkMinusHose(rawTotal, slo),
+        slo: slo,
       };
     });
 
@@ -178,11 +206,14 @@ exports.handler = async (event) => {
       }
     } catch (_) {}
 
+    const inService = buildings.filter((b) => b.i_thjonustu);
     const stats = {
-      byggingar: buildings.filter((b) => b.i_thjonustu).length,
+      byggingar: inService.length,
       i_lagi: buildings.filter((b) => b.stada === 'ok').length,
       vantar: buildings.filter((b) => b.stada === 'engin_skyrsla').length,
-      taeki_alls: buildings.reduce((n, b) => n + (b.taeki || 0), 0),
+      taeki_alls: inService.reduce((n, b) => n + (b.taeki || 0), 0),
+      brunaslongur_alls: inService.reduce((n, b) => n + (b.slo || 0), 0),
+      brunakerfi_stk: inService.filter((b) => (b.ar_bru || []).length > 0).length,
     };
 
     // 4) Skilaboð + merkja starfs-skilaboð lesin
