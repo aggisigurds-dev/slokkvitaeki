@@ -59,9 +59,35 @@
   }
 
   /* ── Staðan, beint úr grunni ─────────────────────────────────────────── */
+  /* Kennitölu-staða starfsstöðvar: ber hún sömu kt og grunnfærslan sem hún
+     hangir á? Mælt 30.08: 32 stöðvar stangast á, 153 hafa enga tengingu. */
+  async function fetchKt(coId) {
+    const s = sb(); if (!s) return null;
+    try {
+      const r = await s.from('fyrirtaeki')
+        .select('nafn,kennitala,customer_base_id').eq('id', coId).maybeSingle();
+      if (!r.data) return null;
+      const site = r.data;
+      const digits = v => String(v == null ? '' : v).replace(/\D/g, '');
+      if (site.customer_base_id == null) {
+        return { staða: 'ótengd', stadur: site.nafn, kt_stadar: site.kennitala || null };
+      }
+      const b = await s.from('customers_base')
+        .select('nafn,kennitala').eq('id', site.customer_base_id).maybeSingle();
+      const base = b.data || {};
+      const same = digits(site.kennitala) === digits(base.kennitala);
+      return {
+        staða: same ? 'í lagi' : 'stangast á',
+        stadur: site.nafn, kt_stadar: site.kennitala || null,
+        grunnur: base.nafn || null, kt_grunns: base.kennitala || null,
+      };
+    } catch (_) { return null; }
+  }
+
   async function fetchStatus(coId, year) {
     const s = sb(); if (!s) return null;
-    const out = { skyrsla: null, reikningur: null };
+    const out = { skyrsla: null, reikningur: null, kt: null };
+    out.kt = await fetchKt(coId);
     try {
       const r = await s.from('customer_documents')
         .select('doc_date,drive_file_id')
@@ -132,6 +158,13 @@
                       greitt ? 'raudt' : 'gult'));
     } else {
       parts.push(pill('🧾 Reikningur ' + year + ' — enginn', 'hlutlaust'));
+    }
+    // Kennitalan — sýnd ÁÐUR en nokkur snertir takkann (regla 2).
+    if (st.kt && st.kt.staða === 'stangast á') {
+      parts.push(pill('⚠ Kennitala á reiki: staður ' + esc(st.kt.kt_stadar || '—') +
+                      ' · grunnur ' + esc(st.kt.kt_grunns || '—'), 'raudt'));
+    } else if (st.kt && st.kt.staða === 'ótengd') {
+      parts.push(pill('⚠ Engin grunntenging — kt óstaðfest', 'gult'));
     }
     return parts.join(' ');
   }
@@ -234,6 +267,26 @@
     e.preventDefault(); e.stopImmediatePropagation();
     const st = await statusFor(coId, year, true);
     paintStrip(coId, year);
+
+    // Kennitöluvörn (liður 9). Sláturfélag Suðurlands borgaði 185.003 kr fyrir
+    // vinnu hjá Interroll Nordic og Hreyfill 102.000 kr fyrir Höldur — af því
+    // kennitalan sat föst á rangri starfsstöð. Reikningurinn fór rétt eftir
+    // gögnunum, á rangan aðila. Hvorugur er kreditfærður.
+    if (st && st.kt && st.kt.staða === 'stangast á') {
+      const ok = window.Confirm && Confirm.show
+        ? await Confirm.show(
+            'KENNITALA STANGAST Á\n\n' +
+            'Staðurinn „' + (st.kt.stadur || '?') + '" ber ' + (st.kt.kt_stadar || '—') + '\n' +
+            'en grunnfærslan „' + (st.kt.grunnur || '?') + '" ber ' + (st.kt.kt_grunns || '—') + '.\n\n' +
+            'Reikningurinn fer á kennitölu STAÐARINS. Sé hún röng fær rangur aðili\n' +
+            'reikninginn — það hefur gerst tvisvar og hvorugt er leiðrétt enn.\n\n' +
+            'Halda samt áfram?',
+            { danger: true, okText: 'Halda áfram samt' })
+        : confirm('Kennitala stangast á (staður ' + (st.kt.kt_stadar || '—') +
+                  ' vs grunnur ' + (st.kt.kt_grunns || '—') + '). Halda áfram?');
+      if (!ok) return;
+    }
+
     if (!st || !st.reikningur) {                 // ekkert til → leyfa venjulegt flæði
       btn.dataset.uvOk = '1';
       btn.click();
