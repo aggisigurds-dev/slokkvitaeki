@@ -109,6 +109,15 @@
       both('#view-counter' + P) + pan,
       both('#view-workshop' + P) + pan,
       both('#view-field' + P) + pan,
+      /* Kanban: columns pan sideways (not 3 squeezed postage stamps). */
+      both('#view-counter [style*="grid-template-columns:1fr 1fr 1fr"]' + P)
+        + '{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;'
+        + 'overflow-y:hidden!important;grid-template-columns:none!important;'
+        + 'height:auto!important;min-height:calc(100dvh - 170px)!important;'
+        + '-webkit-overflow-scrolling:touch}',
+      both('#view-counter .cw-col' + P)
+        + '{flex:0 0 280px!important;min-width:260px!important;max-width:88vw!important;'
+        + 'height:auto!important;min-height:360px!important}',
       both('#view-counter .cw-rcard' + P)
         + '{flex-wrap:nowrap!important;align-items:center!important;gap:6px!important;'
         + 'overflow-x:auto!important;-webkit-overflow-scrolling:touch}',
