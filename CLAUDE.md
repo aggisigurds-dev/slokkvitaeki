@@ -92,7 +92,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Ársskoðun-perur, 📅 SOURCE vs FILTER, FULLBÚIÐ, útreikningar, skjöl, öll borð, data-elon, as-built (`docs/RAFKERFI.md`) | `elon-musk` |
 | Sama villumynstur víðar (systkini-kt, röng join, falskt grænt) | skill `villuleit` + `variant-analysis` (+ `natalie` til að mæla, `netvordur` ef vörðuð leið) |
 
-Kveikjuorð (copy-paste): [`docs/TRIGGERS.md`](docs/TRIGGERS.md) — `villuleit`, `variant`, `kennitala`, `skýrsla`, `reikningur`, `krafa`, `RLS`, `hraði`, `kort`, `prentun`, …
+Kveikjuorð (copy-paste): [`docs/TRIGGERS.md`](docs/TRIGGERS.md) — `hindra klúður`, `villuleit`, `variant`, `kennitala`, `skýrsla`, `reikningur`, `krafa`, `RLS`, `hraði`, `kort`, `prentun`, …
 
 **Notkun:** kallaðu á sérfræðinginn með Agent-tólinu (`subagent_type`), eða lestu skrána
 hans beint þegar þú þarft bara þekkinguna. **Ekki afrita innihald þeirra hingað** — ein
