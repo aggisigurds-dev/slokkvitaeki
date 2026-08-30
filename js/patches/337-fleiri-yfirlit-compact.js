@@ -62,15 +62,34 @@
         + '{font-size:18px!important}',
       both('#view-hreyfingarlisti .page-title p' + P)
         + '{display:none!important}',
+      both('#view-hreyfingarlisti .page-title__tools' + P) + strip,
+      both('#view-hreyfingarlisti .page-title__tools .seg' + P)
+        + '{flex-wrap:nowrap!important;flex:0 0 auto!important}',
+      both('#view-hreyfingarlisti .page-title__tools button' + P) + ','
+        + both('#view-hreyfingarlisti .page-title__tools .seg button' + P)
+        + '{flex:0 0 auto!important;min-height:36px!important;height:36px!important;'
+        + 'padding:0 10px!important;font-size:13px!important;white-space:nowrap!important}',
+      both('#view-hreyfingarlisti .page-title__tools input' + P)
+        + '{flex:0 1 160px!important;min-width:120px!important;min-height:36px!important;'
+        + 'height:36px!important}',
       both('#view-hreyfingarlisti .stat-row' + P)
-        + '{gap:6px!important;margin-bottom:6px!important}',
+        + '{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;'
+        + 'gap:6px!important;margin-bottom:6px!important;-webkit-overflow-scrolling:touch;'
+        + 'grid-template-columns:none!important}',
       both('#view-hreyfingarlisti .stat-card' + P) + ','
         + both('#view-hreyfingarlisti .thm .app-page .stat-card' + P)
-        + '{padding:6px 8px!important;border-radius:10px!important;min-height:0!important}',
+        + '{flex:0 0 auto!important;min-width:132px!important;width:auto!important;'
+        + 'padding:6px 8px!important;border-radius:10px!important;min-height:0!important}',
       both('#view-hreyfingarlisti .stat-card__value' + P)
         + '{font-size:14px!important}',
       both('#view-hreyfingarlisti .stat-card__label' + P)
         + '{font-size:9px!important}',
+      both('#view-hreyfingarlisti .filter-row' + P) + strip,
+      both('#view-hreyfingarlisti .filter-chip' + P)
+        + '{flex:0 0 auto!important;min-height:36px!important;height:36px!important;'
+        + 'padding:0 10px!important;white-space:nowrap!important}',
+      both('#view-hreyfingarlisti .filter-search' + P)
+        + '{flex:0 1 180px!important;min-width:140px!important}',
       both('#view-hreyfingarlisti .hl-mcard' + P)
         + '{margin-bottom:6px!important;overflow:visible!important}',
       both('#view-hreyfingarlisti .hl-mhead' + P)
