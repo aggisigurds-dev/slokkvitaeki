@@ -12,6 +12,10 @@
  * Docked panel: pick any element and restyle live (sliders, litir, halli,
  * leturgerð, stíla-safn, bakgrunnur). Saved via AppSettings /
  * page_editor_v1_json. Scope: „Þessi síða" eða „Allar síður".
+ *
+ * Símarammi (320): ritillinn situr í #_devframe-editor UTAN iframe. Live-málning
+ * (#_pe-overrides, bakgrunnar, svæði, pikk) skrifar í iframe.contentDocument
+ * — appið sem Agnar horfir á — og í foreldrið til að persist/vista haldist.
  * ========================================================================== */
 (() => {
   if (window.__pageEditorInstalled) return;
@@ -19,6 +23,38 @@
 
   const IN_DEVFRAME = !!(new URLSearchParams(location.search).get('devframe'));
   const PE_FRAME_MSG = 'slokk-pe-toggle';
+
+  // Live-málning: þegar símaramminn er opinn er sýnilega síðan iframe-skjalið,
+  // ekki dimmda hub-inn bak við overlay. persist() skrifar samt í AppSettings
+  // eins og áður. Foreldrið fær sömu CSS-yfirskriftir svo vistað helst í samræmi.
+  function frameEl() {
+    try {
+      if (IN_DEVFRAME) return null;
+      const f = window.SlokkDevFrame && typeof SlokkDevFrame.iframe === 'function' && SlokkDevFrame.iframe();
+      if (f && f.contentDocument && f.contentDocument.documentElement) return f;
+    } catch (_) {}
+    return null;
+  }
+  function frameDoc() {
+    try { const f = frameEl(); return (f && f.contentDocument) || null; } catch (_) { return null; }
+  }
+  function liveDoc() { return frameDoc() || document; }
+  function paintDocs() {
+    const out = [document];
+    const fd = frameDoc();
+    if (fd && fd !== document) out.push(fd);
+    return out;
+  }
+  function activeViewEl() {
+    try {
+      const fd = frameDoc();
+      if (fd) {
+        const v = fd.querySelector('.view.active');
+        if (v) return v;
+      }
+    } catch (_) {}
+    try { return document.querySelector('.view.active'); } catch (_) { return null; }
+  }
 
   const KEY = 'page_editor_v1_json';
   const BTN_ID = '_pe-btn';
@@ -117,7 +153,8 @@
   function relSelector(el, general) {
     const parts = [];
     let node = el;
-    while (node && node.nodeType === 1 && !node.classList.contains('view') && node !== document.body) {
+    const stopBody = (el.ownerDocument && el.ownerDocument.body) || document.body;
+    while (node && node.nodeType === 1 && !node.classList.contains('view') && node !== stopBody) {
       if (node.id && !general) { parts.unshift('#' + cssEsc(node.id)); break; }
       let part = node.tagName.toLowerCase();
       const cls = Array.prototype.slice.call(node.classList).filter(c => c && !/(^active$|^on$|^open$|^show$|^selected$|^_pe-)/.test(c)).slice(0, 2);
@@ -145,7 +182,7 @@
     // hvítan) — á ÖLLUM síðum næði yfir allt appið. Færum slíka reglu
     // sjálfkrafa á síðuna sem er opin.
     if (scp === 'all' && !/[.#\[]/.test(String(sel || ''))) {
-      const cur = document.querySelector('.view.active');
+      const cur = activeViewEl();
       if (cur && cur.id) {
         scp = cur.id;
         try { toast('„' + sel + '" er of vítt fyrir allar síður — vistað á þessa síðu í staðinn.'); } catch (_) {}
@@ -184,14 +221,18 @@
   function selHitsTable(sel) {
     if (_tblCache && sel in _tblCache) return _tblCache[sel];
     let hit = false;
-    try { const el = document.querySelector(sel); hit = !!el && el.tagName === 'TABLE'; } catch (_) {}
+    try {
+      paintDocs().forEach(d => {
+        if (hit) return;
+        const el = d.querySelector(sel);
+        if (el && el.tagName === 'TABLE') hit = true;
+      });
+    } catch (_) {}
     if (_tblCache) _tblCache[sel] = hit;
     return hit;
   }
   function applyCss() {
     _tblCache = {};
-    let st = document.getElementById(STYLE_ID);
-    if (!st) { st = document.createElement('style'); st.id = STYLE_ID; document.head.appendChild(st); }
     let css = '';
     // ── SÍÐU-ZOOM ───────────────────────────────────────────────────────────
     // Agnar 29.08: „kannski eins og zoom out 20%". `zoom` er notað en EKKI
@@ -241,7 +282,13 @@
       : 'background-image:url(' + v + ') !important;background-size:cover !important;background-position:center !important' + (fixed ? ';background-attachment:fixed !important' : '');
     if (state.bg && state.bg.all) css += 'body{' + bgDecl(state.bg.all, true) + '}\n';
     if (state.bg && state.bg.pages) for (const vid in state.bg.pages) { if (state.bg.pages[vid]) css += '#' + vid + '{' + bgDecl(state.bg.pages[vid], false) + '}\n'; }
-    st.textContent = css;
+    paintDocs().forEach(d => {
+      try {
+        let st = d.getElementById(STYLE_ID);
+        if (!st) { st = d.createElement('style'); st.id = STYLE_ID; (d.head || d.documentElement).appendChild(st); }
+        st.textContent = css;
+      } catch (_) {}
+    });
     try { scrubContrastInk(); } catch (_) {}
   }
   // 313-contrast-clarity skrifar inline-lit með !important (merkir data-cc313).
@@ -255,8 +302,10 @@
     return false;
   }
   function scrubContrastInk() {
-    document.querySelectorAll('[data-cc313]').forEach(el => {
-      if (controlsColor(el)) { el.style.removeProperty('color'); el.removeAttribute('data-cc313'); }
+    paintDocs().forEach(d => {
+      d.querySelectorAll('[data-cc313]').forEach(el => {
+        if (controlsColor(el)) { el.style.removeProperty('color'); el.removeAttribute('data-cc313'); }
+      });
     });
   }
 
@@ -915,7 +964,7 @@
     const val = 'css:' + g[1];
     if (scope === 'all') { state.bg.all = val; }
     else {
-      const cur = document.querySelector('.view.active');
+      const cur = activeViewEl();
       if (!cur || !cur.id) { state.bg.all = val; } else { state.bg.pages[cur.id] = val; }
     }
     persist(); toast('🖼 ' + g[0] + (scope === 'all' ? ' — allar síður' : ' — þessi síða'));
@@ -923,7 +972,7 @@
   function clearGalleryBg() {
     snapshot();
     if (scope === 'all') state.bg.all = null;
-    else { const cur = document.querySelector('.view.active'); if (cur && cur.id) state.bg.pages[cur.id] = null; else state.bg.all = null; }
+    else { const cur = activeViewEl(); if (cur && cur.id) state.bg.pages[cur.id] = null; else state.bg.all = null; }
     persist(); toast('Bakgrunnur hreinsaður');
   }
   function bgGallerySection() {
@@ -987,7 +1036,7 @@
     try { window.open((qq && L.srch) ? L.srch + encodeURIComponent(qq) : L.base, '_blank', 'noopener'); } catch (_) {}
   }
   // ── link-takkar Á síðunni sjálfri ──────────────────────────────────────────
-  function curViewId() { const v = document.querySelector('.view.active'); return (v && v.id) || 'all'; }
+  function curViewId() { const v = activeViewEl(); return (v && v.id) || 'all'; }
   // view-arsskodun → arsskodun (AppProfiles / Öpp page keys)
   function curAppPageKey() {
     const vid = curViewId();
@@ -1363,7 +1412,7 @@
   // eiganda og 262 helst við það eitt að vera umgjörðin.
   const ZONES = [
     { id: 'haus',  label: 'Haus',
-      find: v => { const h = v && v.querySelector('h1'); return (h && h.parentElement !== v ? h.parentElement : h) || document.getElementById('bstal-banner'); } },
+      find: v => { const h = v && v.querySelector('h1'); return (h && h.parentElement !== v ? h.parentElement : h) || liveDoc().getElementById('bstal-banner'); } },
     { id: 'kpi',   label: 'Talnaspjöldin (KPI)',
       find: v => v && v.querySelector('._ars-statgrid, .statgrid, .kpi-grid, .stats') },
     { id: 'siur',  label: 'Síur',
@@ -1382,13 +1431,13 @@
     { id: 'kort',   label: 'Verk-kortin',
       find: v => v && v.querySelector('.cw-rcard, .cw-col-scroll > [onclick^="Counter.select"]') },
   ];
-  const NAVZONE = { id: 'valmynd', label: 'Valmynd', find: () => document.querySelector('.topbar') };
+  const NAVZONE = { id: 'valmynd', label: 'Valmynd', find: () => liveDoc().querySelector('.topbar') };
   const ALLZONES = ZONES.concat([NAVZONE]);
   let activeZone = null;    // id svæðisins sem er valið — ræður hvaða spjald er opið
   const cards = {};         // svæðis-id → { render(cfg, api), wire(root, cfg, api) }
 
   function zoneEl(z) {
-    try { return z.find(document.querySelector('.view.active')) || null; } catch (_) { return null; }
+    try { return z.find(activeViewEl()) || null; } catch (_) { return null; }
   }
   // Stillingar spjaldanna liggja í SÖMU geymslu og útlits-reglurnar
   // (page_editor_v1_json) og eru skorðaðar við síðuna. Þar með fylgja þær milli
@@ -1415,11 +1464,10 @@
   // atburð og keyra sinn eigin „applier" þegar stillingar breytast eða síðan
   // er endurteiknuð.
   function applyZones() {
-    try {
-      document.dispatchEvent(new CustomEvent('pe-zones-apply', {
-        detail: { view: curViewId(), cfg: (state.zones || {})[curViewId()] || {} }
-      }));
-    } catch (_) {}
+    const detail = { view: curViewId(), cfg: (state.zones || {})[curViewId()] || {} };
+    paintDocs().forEach(d => {
+      try { d.dispatchEvent(new CustomEvent('pe-zones-apply', { detail: detail })); } catch (_) {}
+    });
   }
   // Kortið sýnir svæðin sem ERU á síðunni sem er opin — ársskoðun fær Haus /
   // Talnaspjöld / Síur / Taflan, Afgreiðsla fær Haus / Leitarrönd /
@@ -1728,7 +1776,7 @@
       const sel = relSelector(target, matchMode === 'many'), scp = targetScope();
       state.rules = state.rules.filter(r => !(r.sel === sel && r.scope === scp));
     } else if (ans === '2') {
-      const cur = document.querySelector('.view.active') || target && target.closest('.view');
+      const cur = activeViewEl() || target && target.closest('.view');
       const id = (cur && cur.id) || vid;
       if (id) { state.rules = state.rules.filter(r => r.scope !== id); if (state.bg.pages) delete state.bg.pages[id]; }
     } else if (ans === '3') {
@@ -1766,7 +1814,7 @@
       const f = inp.files && inp.files[0]; if (!f) return;
       const where = prompt('Setja bakgrunn á:\n1 = þessa síðu\n2 = allar síður\n\n1 eða 2:', '1');
       if (where !== '1' && where !== '2') return;
-      const cur = document.querySelector('.view.active');
+      const cur = activeViewEl();
       const id = cur && cur.id;
       if (where === '1' && !id) { toast('Opnaðu síðuna fyrst'); return; }
 
@@ -1789,10 +1837,22 @@
   function setPicking(on) {
     picking = on;
     document.body.classList.toggle('pe-picking', on);
+    try {
+      const fd = frameDoc();
+      if (fd && fd.body) fd.body.classList.toggle('pe-picking', on);
+    } catch (_) {}
     if (!on) hideHighlight();
     renderPanel();
   }
-  function insideEditor(el) { return !!(el.closest && (el.closest('#' + PANEL_ID) || el.closest('#' + BTN_ID) || el.closest('#_devframe-overlay') || el.id === HL_ID || el.id === HL_ID + '-lbl')); }
+  function insideEditor(el) {
+    if (!el || !el.closest) return false;
+    if (el.closest('#' + PANEL_ID) || el.closest('#' + BTN_ID)) return true;
+    if (el.id === HL_ID || el.id === HL_ID + '-lbl') return true;
+    // Overlay-króm (stika, ritill) er ekki málað — en iframe-efnið ER.
+    if (el.ownerDocument === document && el.closest('#_devframe-overlay') && el.tagName !== 'IFRAME')
+      return true;
+    return false;
+  }
   // Mannamál um hlutinn — birt á merkimiða við bendilinn og í val-röndinni
   // („gera betur augljóst hvað maður er að fara velja", Agnar 26.08).
   function friendlyName(el) {
@@ -1818,7 +1878,18 @@
   function highlight(el) {
     let h = document.getElementById(HL_ID);
     if (!h) { h = document.createElement('div'); h.id = HL_ID; document.body.appendChild(h); }
-    const r = el.getBoundingClientRect();
+    let r = el.getBoundingClientRect();
+    try {
+      if (el.ownerDocument && el.ownerDocument !== document) {
+        const f = frameEl();
+        if (f) {
+          const ir = f.getBoundingClientRect();
+          const sx = f.clientWidth ? ir.width / f.clientWidth : 1;
+          const sy = f.clientHeight ? ir.height / f.clientHeight : 1;
+          r = { left: ir.left + r.left * sx, top: ir.top + r.top * sy, width: r.width * sx, height: r.height * sy };
+        }
+      }
+    } catch (_) {}
     h.style.display = 'block'; h.style.left = r.left + 'px'; h.style.top = r.top + 'px'; h.style.width = r.width + 'px'; h.style.height = r.height + 'px';
     let l = document.getElementById(HL_ID + '-lbl');
     if (!l) {
@@ -1899,6 +1970,7 @@
     else document.body.appendChild(p);
     renderPanel();
     renderPageLinks(true);   // ✕ og dráttur kvikna á link-tökkunum
+    bindFramePaint();
   }
   function closePanel() {
     const p = document.getElementById(PANEL_ID); if (p) p.remove();
@@ -1907,28 +1979,63 @@
     renderPageLinks(true);   // ✕ hverfur og takkarnir læsast á sínum stað
   }
   // SlokkDevFrame (#772): ritillinn situr UTAN iframe í #_devframe-editor.
+  // Live-málning verður að elta iframe-skjalið (load/SPA) — annars málar
+  // Stílstjórinn bara dimmda hub-inn bak við rammann.
+  let _framePickDoc = null;
+  function unbindFramePick() {
+    if (!_framePickDoc) return;
+    try {
+      _framePickDoc.removeEventListener('mousemove', onMove, true);
+      _framePickDoc.removeEventListener('click', onPick, true);
+    } catch (_) {}
+    _framePickDoc = null;
+  }
+  function bindFramePaint() {
+    const fd = frameDoc();
+    if (_framePickDoc && _framePickDoc !== fd) unbindFramePick();
+    if (fd && fd !== document && fd !== _framePickDoc) {
+      _framePickDoc = fd;
+      try {
+        fd.addEventListener('mousemove', onMove, true);
+        fd.addEventListener('click', onPick, true);
+        if (!fd.getElementById('_pe-pick-css')) {
+          const s = fd.createElement('style');
+          s.id = '_pe-pick-css';
+          s.textContent = 'body.pe-picking *{cursor:crosshair !important}';
+          (fd.head || fd.documentElement).appendChild(s);
+        }
+        if (picking && fd.body) fd.body.classList.add('pe-picking');
+      } catch (_) {}
+    }
+    applyCss();
+    applyZones();
+    try { if (window.TableLook && typeof TableLook.paint === 'function') TableLook.paint(); } catch (_) {}
+  }
   function syncFrame() {
     if (IN_DEVFRAME) return;
     const host = document.getElementById('_devframe-editor');
     let p = document.getElementById(PANEL_ID);
     if (!host) {
+      unbindFramePick();
       if (p && p.classList.contains('pe-framed')) {
         p.classList.remove('pe-framed');
         p.style.width = dock === 'side' ? (_sideW + 'px') : '';
         document.body.appendChild(p);
         renderPanel();
       }
+      applyCss();
       return;
     }
     if (!p) {
       openPanel();
       p = document.getElementById(PANEL_ID);
     }
-    if (!p) return;
+    if (!p) { bindFramePaint(); return; }
     p.classList.add('pe-framed', 'pe-side');
     p.style.width = '';
     if (p.parentNode !== host) host.appendChild(p);
     renderPanel();
+    bindFramePaint();
   }
   function togglePanel() {
     if (IN_DEVFRAME) { askParentToggle(); return; }
