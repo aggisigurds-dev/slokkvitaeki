@@ -331,10 +331,19 @@ var Field = {
   submitAddUnit: async function() {
     var client=document.getElementById('au-client').value.trim();
     if(!client){Toast.show('Sláðu inn staðsetningu');return;}
-    var u=await DB.addUnit({type:document.getElementById('au-type').value,size:document.getElementById('au-size').value||'6 kg',client,location:document.getElementById('au-loc').value,inst:document.getElementById('au-inst').value,next:document.getElementById('au-next').value});
+    // 2026-08-30 (regla 0): fyrirtækis-id fylgir nú með úr Companies.addUnit.
+    var _f=document.getElementById('modal-addunit');
+    var _co=_f&&_f.dataset.coId?parseInt(_f.dataset.coId,10):null;
+    var u=await DB.addUnit({type:document.getElementById('au-type').value,size:document.getElementById('au-size').value||'6 kg',client,location:document.getElementById('au-loc').value,inst:document.getElementById('au-inst').value,next:document.getElementById('au-next').value,fyrirtaeki_id:(_co||null)});
     Modal.close('modal-addunit'); Field.render();
     setTimeout(function(){Print.showQR(u);},200);
-    Toast.show('Tæki skráð · '+u.serial);
+    // Regla 2 — allt sjáanlegt: tækist ekki að tengja tækið á það að SJÁST,
+    // ekki verða þögull draugur sem birtist síðar á reikningi.
+    if(u && u.fyrirtaeki_id==null){
+      Toast.show('⚠ Tæki skráð ('+u.serial+') EN ÓTENGT fyrirtæki — opnaðu fyrirtækið og skráðu það þaðan');
+    } else {
+      Toast.show('Tæki skráð · '+u.serial);
+    }
   }
 };
 

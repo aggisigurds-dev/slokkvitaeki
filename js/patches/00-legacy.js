@@ -3206,7 +3206,7 @@ console.log('[patch-master] loaded with all fixes');
       // each, single length-picker for the whole batch.
       if(window.Print&&typeof Print.showJob==='function'){
         Print.showJob({customer:cust,phone:phone,units:units});
-      }else{alert('Prentun ekki tiltæk — QR-miðakerfið er ekki hlaðið.');}
+      }else{/* 2026-08-30 (verk 3): alert() frystir sjálfvirka setu og stoppar flæðið þegar prentun er ótiltæk — tækið er þá SKRÁÐ en notandinn situr fastur í glugga. Toast segir sömu skilaboð án þess að loka á neitt. */if(window.Toast&&Toast.show){Toast.show('Prentun ekki tiltæk — QR-miðakerfið er ekki hlaðið.');}else{console.warn('Prentun ekki tiltæk — QR-miðakerfið er ekki hlaðið.');}}
     };
     bar.querySelector('._pm_b_close').onclick=function(){t.querySelectorAll('._pm_cb').forEach(function(c){c.checked=false;});bar.remove();};
   }

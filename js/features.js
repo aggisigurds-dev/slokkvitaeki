@@ -285,6 +285,11 @@ var Companies = {
     });
   },
   addUnit: function(id, nafn) {
+    // 2026-08-30 (regla 0): id-ið barst hingað en fór aldrei lengra — tækið var
+    // skráð með nafni einu saman og varð draugur (fyrirtaeki_id NULL). Geymt á
+    // forminu svo submitAddUnit geti sent það með.
+    var _f = document.getElementById('modal-addunit');
+    if (_f) _f.dataset.coId = String(id == null ? '' : id);
     document.getElementById('au-client').value = nafn;
     document.getElementById('au-loc').value = '';
     var t = U.today(), n = (parseInt(t.slice(0, 4)) + 1) + t.slice(4);
