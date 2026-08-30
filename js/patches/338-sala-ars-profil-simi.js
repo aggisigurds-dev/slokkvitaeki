@@ -158,10 +158,11 @@
          Inline 3-dálka KPI + 4-dálka tækjaflísar + flex:1 min-width:140px
          fótur = risakort á 390px. Yfirlit: þétt spjald, chippa-röð. */
       both('._ars-modal-bg' + P)
-        + '{padding:8px 8px 16px!important;align-items:stretch!important;'
+        + '{padding:8px 8px 16px!important;align-items:flex-start!important;'
         + 'justify-content:flex-start!important}',
       both('._ars-modal' + P)
-        + '{max-width:none!important;width:100%!important;border-radius:12px!important;'
+        + '{max-width:none!important;width:100%!important;max-height:calc(100dvh - 16px)!important;'
+        + 'overflow-y:auto!important;border-radius:12px!important;'
         + 'box-sizing:border-box!important}',
       both('._ars-modal>div:first-child' + P)
         + '{padding:10px 12px!important;gap:8px!important}',
