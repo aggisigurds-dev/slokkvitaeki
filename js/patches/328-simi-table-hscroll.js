@@ -49,7 +49,7 @@
         r + ' ' + SEL.split(', ').map((x) => x + P).join(',' + r + ' ') +
         '{max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;' +
         '-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;' +
-        'scrollbar-width:thin;touch-action:pan-x pan-y;cursor:grab}'
+        'scrollbar-width:thin;touch-action:pan-x pan-y pinch-zoom;cursor:grab}'
       );
       rules.push(
         r + ' ' + SEL.split(', ').map((x) => x + P + ':active').join(',' + r + ' ') +

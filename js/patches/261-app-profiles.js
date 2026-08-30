@@ -594,6 +594,21 @@
   }
   function toast(msg) { if (window.Toast && Toast.show) Toast.show(msg); else try { alert(msg); } catch (_) {} }
 
+  // Brunahólf Fjármála-yfirlit viewport: pinch + hard-zoom reflow. 166 used to
+  // write width=390 in appmode (getViewMode → mobile) which froze Android zoom.
+  var HUB_VP = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
+  function setHubViewport() {
+    try {
+      var vp = document.querySelector('meta[name="viewport"]');
+      if (!vp) {
+        vp = document.createElement('meta');
+        vp.setAttribute('name', 'viewport');
+        (document.head || document.documentElement).appendChild(vp);
+      }
+      if (vp.getAttribute('content') !== HUB_VP) vp.setAttribute('content', HUB_VP);
+    } catch (_) {}
+  }
+
   // ── styles ───────────────────────────────────────────────────────────────────
   function styles() {
     if (document.getElementById('_app-styles')) return;
@@ -669,6 +684,7 @@
       '#' + VIEW_ID + ' .op-pg input{width:20px;height:20px;accent-color:#0e7a4f;flex:none}',
       '#' + VIEW_ID + ' .op-pg .e{font-size:18px}',
       // ── app mode shell ──
+      'body.appmode,body.appmode #app{overflow-x:auto!important;touch-action:pan-x pan-y pinch-zoom}',
       'body.appmode #bstal-banner{display:none !important}',
       'body.appmode .topbar,body.appmode .sidebar,body.appmode nav.view-nav{display:none !important}',
       // Hide every mobile-nav hamburger variant (three patches ship one) + drawers.
@@ -995,6 +1011,7 @@
     _bootAt = Date.now();
     var a = effectiveApp(ACTIVE); if (!a) return;
     styles();
+    setHubViewport();
     document.body.classList.add('appmode');
     document.body.setAttribute('data-app', a.key);
     var pages = pagesFor(a.key); if (!pages.length) pages = a.defaults.slice();
