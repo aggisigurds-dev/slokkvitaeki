@@ -421,7 +421,7 @@
         (work.length ? '<button type="button" class="vbai-btn go" data-vbai="apply-mail">Setja valið á borð</button>' : '') +
         '<button type="button" class="vbai-btn" data-vbai="reload-mail">Lesa aftur</button>' +
       '</div>' +
-      (skips.length ? '<p class="vbai-hint" style="margin-top:10px">' + skips.length + ' póstum sleppt (SENT eða þegar á borði).</p>' : '');
+      (skips.length ? '<p class="vbai-hint" style="margin-top:10px">' + skips.length + ' póstum sleppt (SENT, þegar á borði, eða óflokkað).</p>' : '');
   }
 
   function derListHTML(creates) {
