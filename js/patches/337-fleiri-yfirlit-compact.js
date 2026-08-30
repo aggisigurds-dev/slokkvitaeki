@@ -56,10 +56,25 @@
          vefur í 25%/50% flísar. Yfirlit = chips alltaf, ein röð, skrun. */
       both('#view-hreyfingarlisti' + P) + pan,
       both('#view-hreyfingarlisti .hl-mlist' + P) + fill,
+      both('#view-hreyfingarlisti .page-title' + P)
+        + '{margin-bottom:6px!important;gap:6px!important}',
+      both('#view-hreyfingarlisti .page-title h1' + P)
+        + '{font-size:18px!important}',
+      both('#view-hreyfingarlisti .page-title p' + P)
+        + '{display:none!important}',
+      both('#view-hreyfingarlisti .stat-row' + P)
+        + '{gap:6px!important;margin-bottom:6px!important}',
+      both('#view-hreyfingarlisti .stat-card' + P) + ','
+        + both('#view-hreyfingarlisti .thm .app-page .stat-card' + P)
+        + '{padding:6px 8px!important;border-radius:10px!important;min-height:0!important}',
+      both('#view-hreyfingarlisti .stat-card__value' + P)
+        + '{font-size:14px!important}',
+      both('#view-hreyfingarlisti .stat-card__label' + P)
+        + '{font-size:9px!important}',
       both('#view-hreyfingarlisti .hl-mcard' + P)
         + '{margin-bottom:6px!important;overflow:visible!important}',
       both('#view-hreyfingarlisti .hl-mhead' + P)
-        + '{padding:8px 12px 4px!important}',
+        + '{padding:6px 12px 2px!important}',
       both('#view-hreyfingarlisti .hl-macts' + P) + ','
         + A + '#view-hreyfingarlisti .hl-mcard:not(.open) .hl-macts' + P + ','
         + A + '#view-hreyfingarlisti .hl-mcard.open .hl-macts' + P
