@@ -88,12 +88,28 @@
     if (s.parentNode && s.parentNode.lastElementChild !== s) s.parentNode.appendChild(s);
   }
 
-  /* 333 skrifar inline zoom á borðann í hvert sinn. CSS !important vinnur,
-     en við núllstillum líka svo getBoundingClientRect sé ekki villandi. */
+  /* 333 skrifar inverse zoom á borðann. CSS zoom:1 !important drepur
+     uppblásturinn á Android (fixed UTAN html-zoom). Þar sem html-zoom
+     NÆR til borðans (Chromium) verður hann of lítill — þá scale-um við
+     aftur upp í ~30px svo −/+ haldist þrýstanlegt. */
   function pinZoomChrome() {
     const bar = document.getElementById('_app-zoom');
     if (!bar) return;
     try { bar.style.zoom = '1'; } catch (_) {}
+    try {
+      bar.style.transform = '';
+      bar.style.transformOrigin = 'top right';
+    } catch (_) {}
+    requestAnimationFrame(() => {
+      try {
+        const h = bar.getBoundingClientRect().height;
+        if (h > 1 && h < 24) {
+          const s = Math.round(Math.min(30 / h, 4) * 1000) / 1000;
+          bar.style.transformOrigin = 'top right';
+          bar.style.transform = 'scale(' + s + ')';
+        }
+      } catch (_) {}
+    });
   }
 
   function wrapApply() {
