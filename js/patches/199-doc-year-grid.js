@@ -128,10 +128,21 @@
   // needs re-finding ("dauður hlekkur... ÞARF AÐ FINNA AFTUR"), not just true
   // copies. Blindly dropping every flagged row would hide those years
   // entirely (0 left) instead of decluttering them — worse than the mess.
-  async function fetchDocs(baseId){
-    var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund').eq('customer_base_id', baseId);
-      return r.data||[]; }catch(e){ return []; }
+  async function fetchDocs(baseId, coId){
+    var sb=SB(); if(!sb||(!baseId&&!coId)) return [];
+    var out=[], seen={};
+    function add(rows){ (rows||[]).forEach(function(d){ if(d&&d.id!=null&&!seen[d.id]){ seen[d.id]=1; out.push(d); } }); }
+    try{
+      if(coId){
+        var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund').eq('fyrirtaeki_id', coId);
+        add(r.data);
+      }
+      if(baseId){
+        var r2=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund').eq('customer_base_id', baseId);
+        add(r2.data);
+      }
+    }catch(e){}
+    return out;
   }
   // Brunakerfis-skoðanir (doc_type='brunakerfi') eru lyklaðar á fyrirtaeki_id —
   // patch 273 skrifar customer_base_id NULL — svo base-leiðin (fetchDocs) nær þeim
@@ -282,7 +293,7 @@
         return invHit.some(function(x){return +x.id===+coId;});
       }
       var matched=keys.filter(function(x){return docMatchesLoc(d.notes, x.k, allK);});
-      if(!matched.length) return true;                               // óvíst → birt á öllum
+      if(!matched.length) return false;                              // óvíst → fela, ekki mála á systkini
       return matched.some(function(x){return +x.id===+coId;});
     });
   }
@@ -794,10 +805,12 @@
     var kt = co ? co.kennitala : await ktForCoId(coId);
     await fcLoad(coId);
     var baseId = kt ? await baseIdForKt(kt) : null;
-    var docs = baseId ? await fetchDocs(baseId) : [];
-    if(baseId && kt) docs = await filterDocsToLocation(docs, kt, coId);
+    var docs = await fetchDocs(baseId, coId);
+    if(kt) docs = await filterDocsToLocation(docs, kt, coId);
     var payday = kt ? await fetchPayday(kt) : [];
     var srcByNum = kt ? await fetchSolurSrc(kt) : {};
+    var sibs = kt ? await siblingsForKt(kt) : [];
+    var paydaySiteSafe = sibs.length <= 1;
 
     // ── group customer_documents per year/type ──
     // 2026-07-21 (Agnar): brunakerfi (eldvarnakerfi) er ÖNNUR þjónusta en
@@ -805,7 +818,10 @@
     // úttektarskýrslu-dálknum og litu út eins og tvítök/rugl. Nú AÐSKILDAR:
     // repByY = slökkvitæki-úttektir, bruByY = brunakerfi-skoðanir.
     var repByY={}, bruByY={}, invUtByY={}, invBrByY={}, pdByY={}, samn=[];
-    payday.forEach(function(p){ var y=pdYear(p); if(y>=2000&&y<=NOW+1) (pdByY[y]=pdByY[y]||[]).push(p); });
+    // Payday-kt er fyrirtækja-víð. Á fjölstaða-kt (Center/Pizzan) málaði
+    // ótengd PD-krafa árið á ÖLLUM hótelunum. Greiðslustaða per R-númer
+    // (paydayStatusFor) er áfram örugg — hún lyklast á þessar staðar reikning.
+    if(paydaySiteSafe) payday.forEach(function(p){ var y=pdYear(p); if(y>=2000&&y<=NOW+1) (pdByY[y]=pdByY[y]||[]).push(p); });
     function pushInvByService(d, y){
       var knd=invoiceServiceKind(d, srcByNum);
       if(knd==='bud') return;

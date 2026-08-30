@@ -85,9 +85,10 @@
   }
 
   // ── identity resolution ─────────────────────────────────────────────────────
-  // Faithful to patch 253's loadDocs: expand to ALL fyrirtaeki-rows of the kt +
-  // their customer_base_ids (a kt can have many staðir). Any given field may be
-  // supplied by the caller; the rest are looked up. kt drives solur + Payday.
+  // When the caller has a site id (company profile / Sala pick of a fyrirtaeki)
+  // we stay on THAT fyrirtaeki_id. Expanding to every sibling of the kt painted
+  // Center/Pizzan/Heimaleiga reports onto the wrong hotel (Arnarhvoll inherited
+  // Skjaldbreið). kt-víð útvíkkun er AÐEINS þegar enginn staður er gefinn.
   async function resolveIdentity(opts) {
     const sb = SB();
     let coId = opts.coId, baseId = opts.baseId, kt = opts.kt, nafn = opts.nafn;
@@ -95,20 +96,27 @@
     if (coId != null && /^\d+$/.test(String(coId))) coIds.push(+coId);
     const baseIds = [];
     if (baseId != null && baseId !== '') baseIds.push(baseId);
+    const siteLocked = coIds.length === 1;
 
     // kt / nafn from the in-memory company list (cheap) then fyrirtaeki row.
     if ((!kt || !nafn) && coId != null) {
       try { const c = (window.Companies && Companies.list || []).find(x => +x.id === +coId); if (c) { kt = kt || c.kennitala; nafn = nafn || c.nafn; } } catch (_) {}
     }
-    if ((!kt || !nafn) && coId != null && sb) {
-      try { const r = await sb.from('fyrirtaeki').select('kennitala,nafn').eq('id', +coId).maybeSingle(); if (r && r.data) { kt = kt || r.data.kennitala; nafn = nafn || r.data.nafn; } } catch (_) {}
+    if ((!kt || !nafn || (siteLocked && !baseIds.length)) && coId != null && sb) {
+      try {
+        const r = await sb.from('fyrirtaeki').select('kennitala,nafn,customer_base_id').eq('id', +coId).maybeSingle();
+        if (r && r.data) {
+          kt = kt || r.data.kennitala; nafn = nafn || r.data.nafn;
+          if (r.data.customer_base_id != null && !baseIds.includes(r.data.customer_base_id)) baseIds.push(r.data.customer_base_id);
+        }
+      } catch (_) {}
     }
     if (!kt && baseIds.length && sb) {
       try { const r = await sb.from('customers_base').select('kennitala').eq('id', baseIds[0]).maybeSingle(); if (r && r.data) kt = r.data.kennitala; } catch (_) {}
     }
 
     const ktd = ktDigits(kt);
-    if (ktd.length === 10 && ktd !== '9999999999' && sb) {
+    if (!siteLocked && ktd.length === 10 && ktd !== '9999999999' && sb) {
       try {
         const d = ktDashed(ktd);
         const f = await sb.from('fyrirtaeki').select('id,customer_base_id')
@@ -126,7 +134,7 @@
         } catch (_) {}
       }
     }
-    return { coIds, baseIds, kt: kt || '', ktd, nafn: nafn || '' };
+    return { coIds, baseIds, kt: kt || '', ktd, nafn: nafn || '', siteLocked };
   }
 
   // ── open helpers ────────────────────────────────────────────────────────────
@@ -245,39 +253,46 @@
     if (!sb) return clearFalse();
 
     let idty;
-    try { idty = await resolveIdentity(opts); } catch (_) { idty = { coIds: [], baseIds: [], kt: '', ktd: '', nafn: opts.nafn || '' }; }
+    try { idty = await resolveIdentity(opts); } catch (_) { idty = { coIds: [], baseIds: [], kt: '', ktd: '', nafn: opts.nafn || '', siteLocked: false }; }
     if (stale()) return false;
-    const { coIds, baseIds, ktd } = idty;
+    const { coIds, baseIds, ktd, siteLocked } = idty;
     if (!coIds.length && !baseIds.length) return clearFalse();
 
-    // 1) customer_documents (Drive-skráin / Supabase Storage skjöl)
+    // 1) customer_documents — site-locked: AÐEINS fyrirtaeki_id. Base-join
+    //    málaði fyrsta systkini-skjalið á alla hótel Center/Pizzan.
     let docs = [];
     try {
       const ors = [];
       if (coIds.length) ors.push('fyrirtaeki_id.in.(' + coIds.join(',') + ')');
-      if (baseIds.length) ors.push('customer_base_id.in.(' + baseIds.join(',') + ')');
-      const r = await sb.from('customer_documents')
-        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id,customer_base_id')
-        .or(ors.join(','))
-        .in('doc_type', ['uttektarskyrsla', 'brunakerfi', 'reikningur', 'samningur']);
-      docs = (r.data || []).map(mapDocUrl);
+      if (!siteLocked && baseIds.length) ors.push('customer_base_id.in.(' + baseIds.join(',') + ')');
+      if (ors.length) {
+        const r = await sb.from('customer_documents')
+          .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id,customer_base_id')
+          .or(ors.join(','))
+          .in('doc_type', ['uttektarskyrsla', 'brunakerfi', 'reikningur', 'samningur']);
+        docs = (r.data || []).map(mapDocUrl);
+      }
     } catch (_) {}
     if (stale()) return false;
 
-    // 2) solur self-match key: source 'uttekt' → úttektarskýrsla, 'brunakerfi' →
-    //    brunakerfisskýrsla. 'source|year' -> nýjasti reikningur þess árs/þjónustu.
+    // 2) solur: site-locked → customer_id (staðurinn). Annars kt (lögaðili).
     const solBySrc = {};
     try {
-      if (ktd.length === 10 && ktd !== '9999999999') {
-        const sr = await sb.from('solur').select('id,num,source,samtals,created_at')
+      let sr = null;
+      if (siteLocked && coIds.length) {
+        sr = await sb.from('solur').select('id,num,source,samtals,created_at,customer_id')
+          .in('customer_id', coIds)
+          .in('source', ['uttekt', 'brunakerfi']).limit(400);
+      } else if (ktd.length === 10 && ktd !== '9999999999') {
+        sr = await sb.from('solur').select('id,num,source,samtals,created_at')
           .or('customer_kt.eq.' + ktd + ',customer_kt.eq.' + ktDashed(ktd))
           .in('source', ['uttekt', 'brunakerfi']).limit(400);
-        (sr.data || []).forEach(s => {
-          const y = String(s.created_at || '').slice(0, 4);
-          const k = (s.source || '') + '|' + y;
-          if (!solBySrc[k]) solBySrc[k] = s;
-        });
       }
+      (sr && sr.data || []).forEach(s => {
+        const y = String(s.created_at || '').slice(0, 4);
+        const k = (s.source || '') + '|' + y;
+        if (!solBySrc[k]) solBySrc[k] = s;
+      });
     } catch (_) {}
     if (stale()) return false;
 
@@ -312,8 +327,8 @@
     //    pairs show for ALL companies (t.d. BGT ehf → sitt eigið „Úttekt <ár>").
     try {
       const scope = [];
-      if (baseIds.length) scope.push('customer_base_id.in.(' + baseIds.join(',') + ')');
       if (coIds.length) scope.push('fyrirtaeki_id.in.(' + coIds.join(',') + ')');
+      if (!siteLocked && baseIds.length) scope.push('customer_base_id.in.(' + baseIds.join(',') + ')');
       if (scope.length) {
         const dp = await sb.from('document_pairs')
           .select('year,service_type,report_doc_id,invoice_doc_id,fyrirtaeki_id,customer_base_id')
@@ -336,6 +351,7 @@
         }
         if (stale()) return false;
         pairs.forEach(row => {
+          if (siteLocked && row.fyrirtaeki_id != null && !coIds.includes(+row.fyrirtaeki_id)) return;
           const key = row.service_type === 'brunakerfi' ? 'brunakerfi' : 'skyrsla';
           const y = String(row.year);
           const yb = (bundlesByYear[y] = bundlesByYear[y] || {});
