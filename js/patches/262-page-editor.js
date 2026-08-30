@@ -569,6 +569,12 @@
         + 'html[data-viewmode="table"] #bstal-banner #' + BTN_ID + ':not(#_p262a),'
         + 'html[data-viewmode="mobile"] #bstal-banner #' + BTN_ID + ':not(#_p262a)'
         + '{display:inline-flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}',
+      // Sími 390: logo + Sími/Tafla/Skjár ate the flex row and shoved the
+      // palette past the viewport (x≈465 on a 390 screen). Pin it to the
+      // right of .bb-face — the clock wrap is already hidden (314).
+      'html[data-viewmode="mobile"] #bstal-banner #' + BTN_ID + ':not(#_p262b),'
+        + 'html.slokk-phone-dev #bstal-banner #' + BTN_ID + ':not(#_p262b)'
+        + '{position:absolute!important;right:8px;left:auto;top:50%;transform:translateY(-50%);margin:0;z-index:9}',
       '#' + BTN_ID + '._pe-float{position:fixed;right:14px;bottom:18px;z-index:9998;width:30px;height:30px;margin:0;opacity:.5;background:rgba(12,14,18,.42);border:1px solid rgba(255,255,255,.1);border-radius:9px;color:rgba(255,210,150,.75)}',
       '#' + BTN_ID + '._pe-float:hover{opacity:.88;background:rgba(12,14,18,.68)}',
       '#' + PANEL_ID + '{position:fixed;left:0;right:0;bottom:0;z-index:99990;max-height:56vh;overflow:auto;background:#f8fafc;border-top:1px solid #cbd5e1;box-shadow:0 -12px 34px -14px rgba(15,23,42,.35);font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;color:#11141c;padding:14px 18px 22px}',
