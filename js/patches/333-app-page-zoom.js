@@ -109,12 +109,14 @@
     const z = scale;
     const wantW = Math.ceil((window.innerWidth || 390) / z);
     const wantH = Math.ceil((window.innerHeight || 800) / z);
+    /* Inverse viewport only — do not copy scrollHeight into min-height
+       (that compounds on reapply and balloons Verk to tens of thousands of px). */
+    try {
+      root.style.minWidth = wantW + 'px';
+      root.style.minHeight = wantH + 'px';
+    } catch (_) {}
     const layoutW = Math.max(wantW, root.scrollWidth || 0, root.offsetWidth || 0);
     const layoutH = Math.max(wantH, root.scrollHeight || 0, root.offsetHeight || 0);
-    try {
-      root.style.minWidth = layoutW + 'px';
-      root.style.minHeight = layoutH + 'px';
-    } catch (_) {}
     const se = document.scrollingElement || document.documentElement;
     const needX = layoutW * z > (window.innerWidth || 0) + 4;
     const needY = layoutH * z > (window.innerHeight || 0) + 4;

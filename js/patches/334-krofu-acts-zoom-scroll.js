@@ -48,6 +48,7 @@
         + M + '#view-workshop.active,' + A + '#view-workshop.active'
         + '{overflow-x:auto!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}',
       'html body #view-counter#view-counter [data-pe-kanban],'
+        + 'html[data-viewmode="mobile"] body.appmode #view-counter [style*="grid-template-columns:1fr 1fr 1fr"],'
         + M + '#view-counter [style*="grid-template-columns:1fr 1fr 1fr"],'
         + A + '#view-counter [style*="grid-template-columns:1fr 1fr 1fr"],'
         + 'html[data-viewmode="mobile"] body #view-counter#view-counter [data-pe-kanban],'
