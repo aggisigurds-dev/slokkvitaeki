@@ -3576,7 +3576,7 @@ textarea.fi { resize: vertical; min-height: 72px; }
 
 
 /* SCROLL FIX + Chrome Android Force Dark opt-out (see patch 318). */
-html, body { overflow-y: auto !important; overflow-x: hidden; color-scheme: only light; }
+html, body { overflow-y: auto !important; overflow-x: auto; color-scheme: only light; }
 
 
 /* MODAL FIX — keep header/body/footer as one unified card */

@@ -13,9 +13,9 @@
  *      þvingað mrows til baka.
  *   3. Skjár/Tafla á coarse/þröngum glugga = FULLSÍÐU skjáborðstafla
  *      (100vw, min-width ~1100px, overflow auto á báðum ásum, pinch-zoom).
- *   4. Viewport-meta í Skjár/Tafla: minimum-scale=0.1, user-scalable=yes.
- *      Sími fær fyrra viewport til baka. Hub-síðuzoom (333, app_page_zoom)
- *      minnkar ALLA síðuna; Passa hér passar bara töfluna.
+ *   4. Viewport-meta: alltaf width=device-width, user-scalable=yes (Brunahólf
+ *      Fjármála-yfirlit). Sími má EKKI loka á width=390 — það frýs Android
+ *      hard-zoom. Hub-síðuzoom (333) breytir initial-scale, ekki CSS zoom.
  *   5. Passa-takki á Skjár-borðanum. Hard −/+ er í patch 333.
  *   6. Drepa break-all / overflow-wrap:anywhere á heimilisfangi.
  *   7. Hönnunarhamur má ekki éta allan símann — max 28vh / 220px.
@@ -37,7 +37,8 @@
   const MAX_CSS = 3;
   const START = 1;
   const STEPS = [0.15, 0.18, 0.22, 0.26, 0.32, 0.42, 0.52, 0.65, 0.8, 1, 1.25, 1.6, 2, 2.5, 3];
-  const ZOOM = 'width=device-width, initial-scale=1, minimum-scale=0.1, maximum-scale=5, user-scalable=yes, viewport-fit=cover';
+  const ZOOM = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
+  const HUB_VP = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
   const MAP = {
     simi: 'mobile', mobile: 'mobile',
     tafla: 'table', table: 'table',
@@ -118,22 +119,15 @@
     /* Hard síðuzoom (333) á Android: láta pinch-viewport vera áfram. */
     if (hubPageZoomed()) { enableZoom(); return; }
     const vp = vpEl();
-    if (_vpSaved != null) {
+    const open = HUB_VP;
+    if (_vpSaved != null && !/user-scalable\s*=\s*no|maximum-scale\s*=\s*1(?!\d)|width\s*=\s*\d+/i.test(_vpSaved)) {
       vp.setAttribute('content', _vpSaved);
       _vpSaved = null;
       return;
     }
-    /* Sími á raunsíma: 166 lockPhoneViewport án user-scalable=no. */
-    try {
-      if (typeof window.SlokkIsPhoneDevice === 'function' && window.SlokkIsPhoneDevice()) {
-        const short = Math.min(screen.width || 0, screen.height || 0);
-        if (short >= 320 && short <= 700) {
-          vp.setAttribute('content', 'width=' + short + ', initial-scale=1, viewport-fit=cover');
-          return;
-        }
-      }
-    } catch (_) {}
-    vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+    _vpSaved = null;
+    /* Sími á raunsíma: sama opna viewport og Brunahólf — EKKI width=390. */
+    vp.setAttribute('content', open);
   }
   function syncViewport(mode) {
     if (hubPageZoomed()) { enableZoom(); if (!arsActive()) resetCssZoom(); return; }
@@ -340,12 +334,9 @@
       startScale = cssScale;
     }
     function onMove(e) {
-      if (hubPageZoomed()) return;
-      if (!startDist || !e.touches || e.touches.length !== 2) return;
-      if (!wantsWide(get()) || !isPhoneLike()) return;
-      const d = dist(e.touches[0], e.touches[1]);
-      applyCssScale(startScale * (d / startDist), false);
-      try { e.preventDefault(); } catch (_) {}
+      /* Native pinch is the source of truth (Brunahólf). Do not steal
+         two-finger gestures for CSS zoom — that froze hub pages. */
+      void e;
     }
     function onEnd(e) {
       if (e.touches && e.touches.length >= 2) return;
