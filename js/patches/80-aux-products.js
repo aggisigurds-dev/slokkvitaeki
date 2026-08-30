@@ -132,7 +132,8 @@
       }
       const rows = missing.map(p => ({
         nafn: p.nafn, flokkur: p.flokkur, verd_an_vsk: p.verd_an_vsk,
-        vsk_prosenta: 24, birgdir: 0, mynd: '', virkt: true, lysing: ''
+        vsk_prosenta: 24, birgdir: 0, mynd: '', virkt: true, lysing: '',
+        sja_adrar_vorur: true
       }));
       const ins = await DB.sb.from('vorur').insert(rows).select();
       if (ins.error) {
@@ -303,6 +304,8 @@
 
   function inject() {
     if (_injecting) return;
+    // pos.js now owns the „Sjá aðrar vörur" expander (vorur.sja_adrar_vorur).
+    if (document.getElementById('pos-adrar-toggle')) return;
     const productsGrid = document.getElementById('pos-products');
     if (!productsGrid) return;
     const productsCard = productsGrid.parentElement; // the white card containing "Vörur"
