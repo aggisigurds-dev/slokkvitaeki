@@ -10,3 +10,5 @@ Run `node tools/audit-all.cjs` before every push.
 Never run `node deploy.js`. Deploy is git push only. Pull the default branch first.
 
 Route invoice OUT (`10`/`233`/`254`), kennitala (`121`/`pos.js`), `payday-push`, and readiness (`153`/`187`) through `netvordur`.
+
+Invoice, kennitala, and Payday work often also touches brunaholf hub APIs. Do not fix only the app if the hub endpoint is the source.

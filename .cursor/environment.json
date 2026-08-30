@@ -1,5 +1,6 @@
 {
   "name": "Slökkvitæki web app",
+  "_comment": "Intended Cloud environment is the two-repo pair brunaholf + slokkvitaeki (sibling /agent/repos/brunaholf). This file only bootstraps this repo.",
   "install": "npm install --no-save --no-package-lock netlify-cli && node build-dist.js",
   "terminals": [
     {

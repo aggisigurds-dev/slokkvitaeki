@@ -1,0 +1,10 @@
+---
+description: Acquired app vs parent Brunahólf hub
+alwaysApply: true
+---
+
+This repo is the acquired Slökkvitæki field/ops app. Brunahólf ehf is the parent; the hub / stjórnstöð is `/agent/repos/brunaholf` (brunaholf.netlify.app). Same Supabase.
+
+Before assuming a table or API lives only here, check the sibling hub.
+
+The owner mesh is unfinished. Before merging customers, moving a kennitala, or assuming who owns a record: Charlize (`v_charlize_active`), `docs/STADREYNDIR.md`, then `kunnaskra`. Never invent a parent/child company link.
