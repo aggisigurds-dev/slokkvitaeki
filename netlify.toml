@@ -77,6 +77,18 @@
   status = 404
   force = true
 
+# TurboPaint lives on the Kjarni Vercel app. Bookmarks and typed /kjarni
+# paths on this host used to 404 ("Síðan finnst ekki").
+[[redirects]]
+  from = "/kjarni"
+  to = "https://kjarni.vercel.app/kjarni"
+  status = 302
+
+[[redirects]]
+  from = "/kjarni/*"
+  to = "https://kjarni.vercel.app/kjarni/:splat"
+  status = 302
+
 # Route /api/* to the Netlify Functions under netlify/functions/*.js
 # e.g. /api/geocode -> /.netlify/functions/geocode
 # Clean alias for the bulk-geocode background function (must precede the wildcard).
