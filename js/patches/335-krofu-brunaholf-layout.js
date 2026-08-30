@@ -13,7 +13,9 @@
  * (sömu :not-keðju + auka fake-id) svo flísarnar / 16px / 2-línu 340 komi ekki
  * aftur, og svo zoom skili overflow (ekki dauðu beige).
  *
- * 153/187-reikningur er ÓSNERT. .oneignore er ekki snert.
+ * Skjár 2026-08-30: .ky-row er width:100% (ekki max-content) svo
+ * .ky-row-end (upphæð + stöðu/aðgerða-flísar) situr hægra megin.
+ * Sími/Öpp halda max-content. 153/187-reikningur er ÓSNERT.
  * Viewport: ekki user-scalable=no / width=390 / html { zoom }.
  * ========================================================================== */
 (() => {
@@ -54,11 +56,22 @@
         + '{display:block!important;width:100%!important;max-width:100%!important;'
         + 'overflow-x:auto!important;overflow-y:hidden!important;'
         + '-webkit-overflow-scrolling:touch}',
-      KY + ' .ky-card-rows>.ky-row,'
-        + M + KY + ' .ky-card-rows>.ky-row,'
+      /* Skjár: row fills the card so amount+chips (.ky-row-end) sit at the
+         right edge (under the company KRAFA total). min-width:max-content
+         still lets card-rows scroll if chips overflow. Sími/Öpp keep the
+         shrink-to-content row — same chip strip as before. */
+      KY + ' .ky-card-rows>.ky-row'
+        + '{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;'
+        + 'width:100%!important;min-width:max-content!important;'
+        + 'box-sizing:border-box!important}',
+      M + KY + ' .ky-card-rows>.ky-row,'
         + A + KY + ' .ky-card-rows>.ky-row'
         + '{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;'
         + 'min-width:max-content!important;width:max-content!important}',
+      KY + ' .ky-row-end'
+        + '{display:flex!important;align-items:center!important;gap:12px!important;'
+        + 'margin-left:auto!important;flex:0 0 auto!important;'
+        + 'justify-content:flex-end!important}',
 
       /* Never let 166/314/315/340 wrap chips into 2-col tiles or 16px crumbs. */
       M + KY + ' .ky-acts' + K + ','
