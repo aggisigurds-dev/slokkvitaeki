@@ -1,4 +1,4 @@
-/* === KRÖFUR 2-LÍNU HNAPPAR + KANBAN LÁRÉTT SKRUN (334) =====================
+/* === KRÖFUR 2-LÍNU HNAPPAR + KANBAN LÁRÉTT SKRUN (340) =====================
  *
  * Agnar 2026-08-30 (S26): 8–9 aðgerðahnappar á Kröfuyfirliti stóðu í háum
  * 2×4 stafla. Þeir eiga að sitja á TVEIMUR línum (5+4 / 4+4). Sama lota:
@@ -8,10 +8,10 @@
  * 153/187-reikningur er ÓSNERT. .oneignore er ekki snert.
  * ========================================================================== */
 (() => {
-  if (window.__krofuActsZoomScroll334) return;
-  window.__krofuActsZoomScroll334 = true;
+  if (window.__krofuActsZoomScroll340) return;
+  window.__krofuActsZoomScroll340 = true;
 
-  const STYLE_ID = 'krofu-acts-zoom-scroll-334';
+  const STYLE_ID = 'krofu-acts-zoom-scroll-340';
 
   function css() {
     const M = 'html[data-viewmode="mobile"] ';
@@ -75,6 +75,6 @@
   document.addEventListener('slokk-viewmode', mountCss);
   [80, 400, 1200].forEach(ms => setTimeout(mountCss, ms));
 
-  window.KrofuActsZoomScroll334 = { mountCss, version: '334' };
-  console.log('[patch-334] krofu 2-line acts + kanban hscroll');
+  window.KrofuActsZoomScroll340 = { mountCss, version: '340' };
+  console.log('[patch-340] krofu 2-line acts + kanban hscroll');
 })();
