@@ -397,13 +397,6 @@
     }
     document.getElementById('f-verd-inc').addEventListener('input', recomputeExVat);
     document.getElementById('f-vsk').addEventListener('input', recomputeExVat);
-    // Forsíða og „aðrar vörur" eru XOR — sama vara er ekki á báðum stöðum.
-    var fForsida = document.getElementById('f-forsida');
-    var fAdra = document.getElementById('f-sja-adrar');
-    if (fForsida && fAdra) {
-      fAdra.addEventListener('change', function(){ if (fAdra.checked) fForsida.checked = false; });
-      fForsida.addEventListener('change', function(){ if (fForsida.checked) fAdra.checked = false; });
-    }
     // Auto-toggle birgdir when flokkur switches to/from Þjónusta,
     // + sýna nýr-flokkur reitinn þegar „➕ Nýr flokkur…" er valið.
     document.getElementById('f-flokkur').addEventListener('change',function(e){
@@ -459,8 +452,6 @@
         sja_adrar_vorur: !!(document.getElementById('f-sja-adrar') && document.getElementById('f-sja-adrar').checked),
         rodun: (function(){ var v = parseInt(document.getElementById('f-rodun').value, 10); return isNaN(v) ? null : v; })()
       };
-      // XOR: undir aðrar vörur er ekki á forsíðu-flísunum.
-      if (data.sja_adrar_vorur) data.forsida = false;
       if(!data.nafn){alert('Nafn er skilyrði');return;}
       var btn = document.getElementById('vorur-save');
       btn.disabled = true; btn.textContent = 'Vista...';
