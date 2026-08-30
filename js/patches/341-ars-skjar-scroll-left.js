@@ -138,18 +138,18 @@
     return el;
   }
 
-  /* Sidebar as a layout rail (not an overlay drawer). Overlay
-     (body.mobile-nav-open) must not shift the table — close the drawer. */
+  /* Sidebar covering the table: layout rail OR open phone drawer.
+     Overlay used to be skipped, but then FYRIRTÆKI sat under the drawer
+     at scrollLeft=0 and could not be panned into view. */
   function railWidth() {
     try {
-      if (document.body && document.body.classList.contains('mobile-nav-open')) return 0;
       const tb = document.querySelector('.topbar');
       if (!tb) return 0;
       const cs = getComputedStyle(tb);
-      if (cs.display === 'none' || cs.visibility === 'hidden') return 0;
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return 0;
       const r = tb.getBoundingClientRect();
-      if (r.width < 40 || r.right <= 2) return 0;
-      if (r.left < 8 && r.right > 80) return Math.round(r.width);
+      if (r.width < 40 || r.right <= 8) return 0;
+      if (r.left < 8 && r.right > 80) return Math.round(r.right);
     } catch (_) {}
     return 0;
   }
@@ -289,6 +289,13 @@
   document.addEventListener('slokk-viewmode', () => setTimeout(() => apply(true), 0));
   ['hashchange', 'resize', 'pageshow'].forEach(ev =>
     window.addEventListener(ev, () => setTimeout(() => apply(false), 0)));
+  document.addEventListener('click', ev => {
+    const t = ev && ev.target;
+    if (t && t.closest && t.closest('.mobile-nav-toggle, .topbar, #mobile-nav-toggle')) {
+      setTimeout(() => pinViewToRail(), 50);
+      setTimeout(() => pinViewToRail(), 280);
+    }
+  }, true);
 
   new MutationObserver(() => {
     clearTimeout(window.__ars341t);
@@ -299,6 +306,13 @@
       wrapArsSjon();
     }, 200);
   }).observe(document.documentElement, { childList: true, subtree: true });
+
+  if (document.body) {
+    new MutationObserver(() => {
+      clearTimeout(window.__ars341nav);
+      window.__ars341nav = setTimeout(() => pinViewToRail(), 50);
+    }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  }
 
   window.ArsSkjarScrollLeft = {
     apply, stampWrap, pinViewToRail, revealNameAtOrigin, version: '341'
