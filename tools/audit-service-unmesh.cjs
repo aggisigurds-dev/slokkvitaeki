@@ -135,10 +135,19 @@ async function pageAll(pathAndQuery) {
   function years(fid, type) {
     return docs.filter((d) => d.fyrirtaeki_id === fid && d.doc_type === type && d.year != null).map((d) => String(d.year));
   }
-  const plazaTicks = GY.yearsFromDocs({ ar_slokk: years(193, 'uttektarskyrsla'), ar_bru: years(193, 'brunakerfi') });
-  if (plazaTicks[3][0] !== 'no') fail('Live Plaza has no 2026 úttektarskýrsla — gátt must not tick slökk \'26.');
+  // Lifandi tékkin verja REGLUNA, ekki innihald gagnanna á tilteknum degi:
+  // slökk-tikkið má kvikna af úttektarskýrslu og engu öðru. Áður var fast
+  // krafist að Plaza og Arnarhvoll hefðu ENGA 2026-úttekt — sem varð rangt um
+  // leið og úttektin var raunverulega gerð (Arnarhvoll, ágúst 2026, skjal 9903
+  // úr appinu). Þá sagði netið RED þótt ekkert væri að.
+  [[193, 'Plaza'], [195, 'Arnarhvoll']].forEach((site) => {
+    const slokk = years(site[0], 'uttektarskyrsla');
+    const ticks = GY.yearsFromDocs({ ar_slokk: slokk, ar_bru: years(site[0], 'brunakerfi') });
+    if ((ticks[3][0] === 'ok') !== (slokk.indexOf('2026') >= 0)) {
+      fail('Live ' + site[1] + ' 2026 slökk tick must follow the úttektarskýrsla, not the brunakerfi report.');
+    }
+  });
   const arnarTicks = GY.yearsFromDocs({ ar_slokk: years(195, 'uttektarskyrsla'), ar_bru: years(195, 'brunakerfi') });
-  if (arnarTicks[3][0] !== 'no') fail('Live Arnarhvoll 2026 slökk tick would steal the brunakerfi report.');
   if (arnarTicks[3][1] !== 'ok') fail('Live Arnarhvoll 2026 brunakerfi report missing from ar_bru.');
   const hladDocs = years(1750, 'brunakerfi').concat(years(1750, 'uttektarskyrsla'));
   if (hladDocs.length) fail('Hlaðvarpinn unexpectedly has service docs — check before treating it as empty.');
@@ -150,6 +159,6 @@ async function pageAll(pathAndQuery) {
   }
 
   console.log('Center Hótel sites: ' + center.length + ' (ids ' + center.map((x) => x.id).sort((a, b) => a - b).join(',') + ')');
-  console.log('Plaza 2026 slökk tick: ' + plazaTicks[3][0] + ' · Arnarhvoll 2026: sl=' + arnarTicks[3][0] + ' br=' + arnarTicks[3][1]);
+  console.log('Plaza 2026 slökk tick: ' + GY.yearsFromDocs({ ar_slokk: years(193, 'uttektarskyrsla'), ar_bru: years(193, 'brunakerfi') })[3][0] + ' · Arnarhvoll 2026: sl=' + arnarTicks[3][0] + ' br=' + arnarTicks[3][1]);
   console.log('GREEN: slökk and brunakerfi stay independent per fyrirtaeki_id (11 Center Hotel houses, not one mesh).');
 })().catch((e) => fail(String((e && e.message) || e)));
