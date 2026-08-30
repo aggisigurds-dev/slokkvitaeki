@@ -182,3 +182,28 @@ eða skilti á Miro — fylgdu þessu ferli sem gaf rétta útkomu fyrir Skútuv
 - Brunamálastofnun 165.BR1 — Val og staðsetning handslökkvitækja
   (vatnsidnadur.net/wp-content/uploads/2018/01/MVS-165_BR1.pdf)
 - Reglugerð 1068/2011 um slökkvitæki
+
+## TurboPaint — þar sem tölurnar hér að ofan eru útfærðar
+
+Roster-hlutverk Arnolds er „teiknar slökkvitækja-layout á hústeikningar". Verkfærið
+er **TurboPaint** í kjarna-repo-inu, `/kjarni/turbopaint`, og tölurnar úr þessu
+skjali eru **þegar keyrðar þar í kóða**. Þær eiga einn stað, ekki tvo:
+
+| Skrá | Hvað hún geymir |
+|---|---|
+| `lib/board/mvs165.ts` | fastarnir úr 165.BR1 — 25 m/20 m gönguleið, handfang 70–80 cm, lágmark 2 tæki á hæð, 0,065 A-gildi/m², 26 A lágmark, 6 kg duft ef stakt |
+| `lib/board/krofur.ts` | þarfagreiningin — gólfflötur × notkunarflokkur → krafa, borin saman við það sem er komið á borðið |
+| `lib/board/detect-firewalls.ts` | les EI-30/EI-60 út úr OCR og teiknar eldveggi |
+| `lib/board/firewall-rating.ts` | þolir OCR-rugl (`O`→`0`, `|`→`I`), hafnar 90/120 sem eru ekki okkar flokkar |
+| `lib/board/symbols.ts` | merkin sjálf — flokkar `eldur · flotti · oryggi · bygging` |
+
+**Reglan: breytist reglugerð, breytist `mvs165.ts` — ekki þessi texti og ekki
+viðmótið.** Annars reka þau í sundur og tvær tölur verða til fyrir sömu kröfu.
+
+Fyrirvarinn stendur í `krofur.ts` eins og hér: útreikningurinn er **leiðbeinandi**,
+endanlegt samþykki er hjá hönnuði og slökkviliði sveitarfélagsins. Sá texti á að
+sjást í viðmótinu, ekki bara í athugasemd.
+
+**Öryggis-helmingurinn** (RLS, lyklar, policies) er ekki hér — hann er í
+`oryggi`-agentinum (brunaholf/kjarni). Arnold er röddin á `oryggi`-sviðinu í
+Jarvis, en þekkingin býr þar.

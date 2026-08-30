@@ -58,25 +58,62 @@ Sama nafn getur verið til á BÁÐUM stöðum og verið sitthvor hluturinn.
 **Reglan:** allt sem á að virka á öllum fjórum vélunum verður að vera í
 repo-inu. Skill sem liggur bara á reikningnum er ekki til fyrir hinar vélarnar.
 
-## Agentar í repo-inu (11)
+## Agentar í repo-inu (12)
 
 `adstod` · `bord-flettur` · `elon-musk` · `joker` · `kort` · `kunnaskra` ·
-`netvordur` · `prentun` · `sala-reikningar` · `sara-coworker` · `thema`
+**`natalie`** · `netvordur` · `prentun` · `sala-reikningar` · `sara-coworker` ·
+`thema`
+
+## Roster-nafn → skrá (Jarvis-síðan sýnir persónunöfn, skrárnar heita eftir sviði)
+
+Þetta kort vantaði. Jarvis-síðan (`jarvis.html:324`) sýnir **persónunöfn** en
+agent-skrárnar heita eftir **sviði**, svo verk merkt „Samantha" fann ekkert.
+`slokk` = slokkvitaeki-repo, `bh` = brunaholf, `kj` = kjarni (samsteypan).
+
+| Roster | Agent-skrá | Er til í |
+|---|---|---|
+| 🎩 Jarvis | `jarvis` | bh · kj |
+| 💰 Samantha | `bokari` | bh · kj |
+| 🗂️ Sara | `sara-coworker` (skýrslur) · `sara-organizer` (pörun) | slokk/kj · bh/kj |
+| ❄️ Charlize | `kunnaskra` + skill `charlize` | öll |
+| 🎙️ Freeman | `skjol` | bh · kj |
+| 🥊 Statham | `gagnaleidslur` | bh · kj |
+| 💥 Willis | `hradi` | bh · kj |
+| 🤬 Samuel L. J. | `tengingar` | bh · kj |
+| 🩺 Dr. House | `kerfisheilsa` | bh · kj |
+| 🇺🇸 Trump | `hype` | bh · kj |
+| 💪 Arnold | skill `arnold` (brunavarnir + TurboPaint) · agent `oryggi` (RLS/lyklar) | slokk · bh/kj |
+| 🏷️ DeVito | `prentun` | slokk · kj |
+| 🗺️ Ramsay | `kort` | slokk · kj |
+| ⚡ Elon Musk | `elon-musk` (agent + skill) | slokk · kj |
+| 🌸 Natalie | `natalie` | **slokk (nýtt 30.08.2026)** |
+| 🃏 Joker | `joker` | öll |
+
+Agentar sem eiga **ekkert roster-sæti** og eru samt notaðir: `adstod`,
+`bord-flettur`, `netvordur`, `sala-reikningar`, `thema`, `framendi`.
+Þeir eru ekki týndir — þeir eru bara ekki raddir í Jarvis.
 
 ## Skills í repo-inu
 
 Verkfæri: `add-feature`, `deploy`, `verkefnalisti`, `uttekt-audit`,
 `ajour-endpoint-capture`, `screenshot-verify`, `grill-me`, `cowork-doc-sweep`,
-`brief-to-tasks` · Hönnun: `design-*`, `frontend-design`, `graphic-design`,
+`brief-to-tasks`, **`variant-analysis`** · Hönnun: `design-*`, `frontend-design`, `graphic-design`,
 `information-architecture`, `mobile-*`, `slokkvitaeki-layout` ·
 Þekking: **`charlize`**, **`arnold`**, `elon-musk`
+
+`variant-analysis` kom inn 30.08.2026 eftir að draugavélin fannst á fimm
+stöðum þegar hún hafði verið "löguð" á þremur. Hún er gátlisti fyrir spurninguna
+"er þetta víðar?" — sem á að spyrja ÁÐUR en sagt er lagað.
 
 `charlize` og `arnold` voru fluttar inn 28.08.2026. Fram að því lágu þær
 aðeins á reikningnum — á meðan `kunnaskra`, `netvordur` og `sara-coworker`
 vísuðu allar í charlize sem var ekki til á vélinni.
 
-**`natalie` er ekki til.** Hvorki agent né skill, hvergi. Ef verk er merkt
-henni fer það í tómið.
+**`natalie` var ekki til fram að 30.08.2026** — hvorki agent né skill, þótt hún
+væri á roster og ætti rödd. Verk merkt henni fór í tómið. Nú er
+`.claude/agents/natalie.md` til: staðreyndayfirferð, borðið `factcheck_bord`
+(44 færslur), vinnur með charlize og söru. Hún LES og MÆLIR — leiðréttir aldrei
+gögn sjálf.
 
 ## Fjórar vélar + sími — hvernig þær haldast í takt
 
