@@ -37,7 +37,7 @@ function buildVilla(r, pack) {
     bits.push('Fleiri en einn staður passaði við nafnið — ekkert valið (Center/kt-merge bannað). Tengdu nákvæmt fyrirtæki.');
   }
   if (wantInv && pack.invoice) bits.push('Beðið um reikning. Fannst ' + pack.invoice.label + ' á ' + site + '.');
-  else if (wantInv && !pack.invoice) bits.push('Beðið um reikning. Ekkert úttektarreikningur fannst á ' + site + ' (leitað aðeins á þessum stað).');
+    else if (wantInv && !pack.invoice) bits.push('Beðið um reikning. Enginn úttektarreikningur fannst á ' + site + ' (leitað aðeins á þessum stað).');
   if (wantRep && pack.report) bits.push('Beðið um skýrslu. Fannst ' + pack.report.label + ' á ' + site + '.');
   else if (wantRep && !pack.report) bits.push('Beðið um skýrslu. Engin úttektarskýrsla fannst á ' + site + '.');
   if (!bits.length) {
@@ -103,7 +103,7 @@ const missing = buildVilla(
   { title: 'Re: Reikningur', customer_nafn: 'Fornhagi 11-17' },
   { invoice: null, report: null, ambiguous: false }
 );
-ok('villa says invoice missing on this site only', /Ekkert úttektarreikningur fannst á Fornhagi/.test(missing) && /þessum stað/.test(missing));
+ok('villa says invoice missing on this site only', /Enginn úttektarreikningur fannst á Fornhagi/.test(missing) && /þessum stað/.test(missing));
 
 const wantRep = buildVilla(
   { title: 'Senda teikningar', customer_nafn: 'GreenKey' },

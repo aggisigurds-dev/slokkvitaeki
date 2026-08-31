@@ -706,7 +706,7 @@
       bits.push('Fleiri en einn staður passaði við nafnið — ekkert valið (Center/kt-merge bannað). Tengdu nákvæmt fyrirtæki.');
     }
     if (wantInv && pack.invoice) bits.push('Beðið um reikning. Fannst ' + pack.invoice.label + ' á ' + site + '.');
-    else if (wantInv && !pack.invoice) bits.push('Beðið um reikning. Ekkert úttektarreikningur fannst á ' + site + ' (leitað aðeins á þessum stað).');
+    else if (wantInv && !pack.invoice) bits.push('Beðið um reikning. Enginn úttektarreikningur fannst á ' + site + ' (leitað aðeins á þessum stað).');
     if (wantRep && pack.report) bits.push('Beðið um skýrslu. Fannst ' + pack.report.label + ' á ' + site + '.');
     else if (wantRep && !pack.report) bits.push('Beðið um skýrslu. Engin úttektarskýrsla fannst á ' + site + '.');
     if (!bits.length) {
@@ -724,7 +724,7 @@
       if (pack.invoice) lines.push('- Reikningur: ' + pack.invoice.label + (pack.invoice.url ? ' — ' + pack.invoice.url : ''));
       if (pack.report) lines.push('- Skýrsla: ' + pack.report.label + (pack.report.url ? ' — ' + pack.report.url : ''));
     } else {
-      lines.push('Við erum að ganga frá skjölinum og sendum þau strax og þau eru tilbúin.');
+      lines.push('Við erum að ganga frá skjölunum og sendum þau strax og þau eru tilbúin.');
     }
     if (pack.villa) { lines.push('', pack.villa); }
     lines.push('', 'Bestu kveðjur,', 'Brunahólf Slökkvitæki');
