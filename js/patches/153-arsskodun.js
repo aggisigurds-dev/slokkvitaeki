@@ -2863,7 +2863,11 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
     const s = document.createElement('style');
     s.id = '_ars-vm-css';
     const M = 'html[data-viewmode="mobile"] #view-arsskodun ';
-    const T = 'html[data-viewmode="table"] #view-arsskodun ';
+    // 2026-08-31: TVÖFALDAÐ AUÐKENNI. Reglurnar hér voru til en unnu ekki —
+    // mælt við 1112x834: Tafla skilaði 13px klefaletri eins og skjáborðið
+    // þótt hún bæði um 11px, og sýndi FÆRRI raðir (13 á móti 14). Eitthvað
+    // sértækara sló einfalt #view-arsskodun. Sama húsvenja og í 314/319/323.
+    const T = 'html[data-viewmode="table"] #view-arsskodun#view-arsskodun ';
     s.textContent =
       // ── 📱 Sími — ÞÉTT single-column spjöld (~3× lægri hæð per fyrirtæki) ──
       M + '._ars-cardgrid{grid-template-columns:1fr!important;gap:6px!important}' +
