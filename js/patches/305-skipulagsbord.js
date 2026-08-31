@@ -44,7 +44,17 @@
   function toast(m) { if (window.Toast && Toast.show) Toast.show(m); else console.log('[skipulagsbord]', m); }
 
   // ── State ──────────────────────────────────────────────────────────────────
-  const state = { cards: [], goal: 5, collapsed: false };
+  // Default collapsed: the 12-slot grid eats Þjónustuborð and is still rough
+  // (Agnar 2026-08-31). Missing localStorage pref = collapsed. Explicit Víkka
+  // writes '1' and is honoured on later visits; Fela writes '0'.
+  const OPEN_KEY = 'vb_skipulag_open';
+  function readOpenPref() {
+    try { return localStorage.getItem(OPEN_KEY) === '1'; } catch (_) { return false; }
+  }
+  function writeOpenPref(open) {
+    try { localStorage.setItem(OPEN_KEY, open ? '1' : '0'); } catch (_) {}
+  }
+  const state = { cards: [], goal: 5, collapsed: !readOpenPref() };
   let _drag = null;         // id of card being dragged from the board
   let _pendingRemove = null; // card id to remove after calendar save
 
@@ -433,7 +443,12 @@
     const ctrl = e.target.closest('[data-sb]');
     if (ctrl) {
       const act = ctrl.getAttribute('data-sb');
-      if (act === 'toggle')     { state.collapsed = !state.collapsed; render(); return; }
+      if (act === 'toggle')     {
+        state.collapsed = !state.collapsed;
+        writeOpenPref(!state.collapsed);
+        render();
+        return;
+      }
       if (act === 'goal-plus')  { state.goal = Math.min(state.goal + 1, 12); persist(); return; }
       if (act === 'goal-minus') { state.goal = Math.max(state.goal - 1, 1);  persist(); return; }
       if (act === 'print-all') {
@@ -501,7 +516,7 @@
       toast('📋 Þetta mál er nú þegar á skipulagsbordinu');
       return;
     }
-    if (state.collapsed) { state.collapsed = false; }
+    if (state.collapsed) { state.collapsed = false; writeOpenPref(true); }
     const slot = firstFreeSlot();
     state.cards.push({
       id: newId(),
@@ -520,6 +535,7 @@
     const data = readData();
     state.cards = data.cards || [];
     state.goal  = data.goal  || 5;
+    state.collapsed = !readOpenPref();
     render();
   }
 

@@ -83,6 +83,46 @@
   // (fyrirtaeki carries it) → customer_doc_status, kennitala as fallback.
   let _docByBase = new Map(), _docByKt = new Map(), _docLoaded = false;
   const _normKt = s => String(s == null ? '' : s).replace(/\D/g, '');
+
+  // Per-company, per-year document sets — for the "has docs in 2023/24/25/26" filter.
+  let _docYearsByBase = new Map(), _docYearsByFyrirtaeki = new Map(), _docYearsLoaded = false;
+  async function loadDocYears() {
+    if (!window.DB || !window.DB.fetchAll || !window.DB.sb) return;
+    try {
+      const data = await window.DB.fetchAll((from, to) =>
+        window.DB.sb.from('customer_documents')
+          .select('customer_base_id,fyrirtaeki_id,year')
+          .not('year', 'is', null)
+          .range(from, to)
+      );
+      _docYearsByBase = new Map(); _docYearsByFyrirtaeki = new Map();
+      (data || []).forEach(r => {
+        const yr = +r.year;
+        if (r.customer_base_id != null) {
+          const k = String(r.customer_base_id);
+          if (!_docYearsByBase.has(k)) _docYearsByBase.set(k, new Set());
+          _docYearsByBase.get(k).add(yr);
+        }
+        if (r.fyrirtaeki_id != null) {
+          const k = String(r.fyrirtaeki_id);
+          if (!_docYearsByFyrirtaeki.has(k)) _docYearsByFyrirtaeki.set(k, new Set());
+          _docYearsByFyrirtaeki.get(k).add(yr);
+        }
+      });
+      _docYearsLoaded = true;
+    } catch (_) {}
+  }
+  function docYearsFor(c) {
+    const byBase = c.customer_base_id != null ? _docYearsByBase.get(String(c.customer_base_id)) : null;
+    const byFyrirtaeki = _docYearsByFyrirtaeki.get(String(c.id));
+    if (byBase && byFyrirtaeki) {
+      const merged = new Set(byBase);
+      byFyrirtaeki.forEach(y => merged.add(y));
+      return merged;
+    }
+    return byBase || byFyrirtaeki || null;
+  }
+
   async function loadDocStatus() {
     const SB = (window.DB && window.DB.sb); if (!SB) return;
     try {
@@ -182,7 +222,8 @@
         _unitCount: unitCount,
         _hasGps: !!(c.heimilisfang && gc[c.heimilisfang]) || !!(c.nafn && gc[c.nafn]),
         _docs: docsFor(c),
-        _bankOnly: _bankOnlyIds.has(+c.id)
+        _bankOnly: _bankOnlyIds.has(+c.id),
+        _docYears: docYearsFor(c)
       };
     });
   }
@@ -221,6 +262,11 @@
     }
     if (state.xfilter.includes('missing-docs')) {
       result = result.filter(c => !c._docs || c._docs.total === 0);
+    }
+    for (const yr of [2023, 2024, 2025, 2026]) {
+      if (state.xfilter.includes('has-docs-' + yr)) {
+        result = result.filter(c => c._docYears && c._docYears.has(yr));
+      }
     }
 
     // Free-text search. NB: the kennitala check digit-strips both sides,
@@ -366,6 +412,11 @@
       const m = document.getElementById('_av-main');
       if (m) render(m);
     });
+    // Load the per-year doc sets once, then refresh so the year filter chips fill in.
+    if (!_docYearsLoaded) loadDocYears().then(() => {
+      const m = document.getElementById('_av-main');
+      if (m) render(m);
+    });
     // Load the bank-only flag set once, then refresh so they drop out of view.
     if (!_bankLoaded) loadBankOnly().then(() => {
       const m = document.getElementById('_av-main');
@@ -404,6 +455,10 @@
     const cntNoEmail     = cntAll - cntWithEmail;
     const cntReview      = nonBank.filter(c => !!c.review_flag).length;
     const cntMissingDocs = nonBank.filter(c => !c._docs || c._docs.total === 0).length;
+    const docYearCounts = {};
+    [2023, 2024, 2025, 2026].forEach(yr => {
+      docYearCounts[yr] = nonBank.filter(c => c._docYears && c._docYears.has(yr)).length;
+    });
 
     // theme.css (2026-07-09): viewið flush svo .thm .app-page bandið eigi útlitið.
     if (!document.getElementById('av-thm-style')) {
@@ -496,7 +551,8 @@
             ['has-email',  '✉️ Netfang',      cntWithEmail],
             ['has-gps',    '📍 GPS staðsetning', cntWithGps],
             ['has-units',  '🧯 Hefur tæki',   cntWithUnits],
-            ['no-address', '❌ Vantar heimilisfang', cntNoAddress]
+            ['no-address', '❌ Vantar heimilisfang', cntNoAddress],
+            ...(_docYearsLoaded ? [2023, 2024, 2025, 2026].map(yr => ['has-docs-' + yr, '📅 Skjöl \'' + String(yr).slice(2), docYearCounts[yr]]) : [])
           ].map(([key, lbl, n]) => {
             const sel = state.xfilter.includes(key);
             const inactive = 'background:#fff;border:1px solid rgba(20,24,34,.14);color:#5b6472';
