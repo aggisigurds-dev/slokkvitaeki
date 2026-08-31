@@ -76,9 +76,9 @@ const v231 = fs.readFileSync(path.join(root, 'js/patches/231-verkbord.js'), 'utf
 const v287 = fs.readFileSync(path.join(root, 'js/patches/287-postar-queue.js'), 'utf8');
 const v343 = fs.readFileSync(path.join(root, 'js/patches/343-verkbord-ai.js'), 'utf8');
 
-ok('cache-bust 231 ?v=20260831id2', html.includes('231-verkbord.js?v=20260831id2'));
-ok('cache-bust 343 ?v=20260831id2', html.includes('343-verkbord-ai.js?v=20260831id2'));
-ok('cache-bust 287 ?v=20260831id2', html.includes('287-postar-queue.js?v=20260831id2'));
+ok('cache-bust 231 ?v=20260831id13', html.includes('231-verkbord.js?v=20260831id13'));
+ok('cache-bust 343 ?v=20260831id13', html.includes('343-verkbord-ai.js?v=20260831id13'));
+ok('cache-bust 287 ?v=20260831id13', html.includes('287-postar-queue.js?v=20260831id13'));
 ok('231 exports isAgnarUser', /isAgnarUser,/.test(v231));
 ok('231 chrome is not worker-filter showOwnerChrome', !v231.includes('function showOwnerChrome()'));
 ok('231 chrome not gated on fWorker', !v231.includes('looksLikeAgnar(state.fWorker)'));
