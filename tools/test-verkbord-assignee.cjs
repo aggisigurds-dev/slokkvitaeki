@@ -2,8 +2,8 @@
 'use strict';
 /**
  * Keep in sync with assignee helpers in js/patches/231-verkbord.js
- * (assignedForNew, editorAssigneeValue, resolveEditorRowId, keepSelectedId)
- * and isOldYearReport in the same file / tools/test-old-year-report.cjs
+ * (assignedForNew, editorAssigneeValue, resolveEditorRowId, keepSelectedId,
+ * workerFilterOptionsHtml) and isOldYearReport / tools/test-old-year-report.cjs
  */
 const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
 const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
@@ -14,6 +14,40 @@ function normAssignee(v) {
 }
 function assignedForNew(worker) {
   return normAssignee(worker) || null;
+}
+const WORKERS = ['Agnar', 'Sara', 'Hákon', 'Binni', 'Anni'];
+const WORKER_FILTERS = [
+  ['Agnar', 'Agnar'],
+  ['nema_agnar', 'Allir án Agnars'],
+  ['Sara', 'Sara'],
+  ['Hákon', 'Hákon'],
+  ['Binni', 'Binni'],
+  ['Anni', 'Anni']
+];
+function knownWorkerFilter(v) {
+  if (v === 'nema_agnar') return true;
+  for (let i = 0; i < WORKERS.length; i++) if (WORKERS[i] === v) return true;
+  return false;
+}
+function workerFilterOptionsHtml(cur) {
+  const now = knownWorkerFilter(cur) ? cur : 'nema_agnar';
+  let html = '';
+  for (let i = 0; i < WORKER_FILTERS.length; i++) {
+    const val = WORKER_FILTERS[i][0], label = WORKER_FILTERS[i][1];
+    html += '<option value="' + val + '"' + (now === val ? ' selected' : '') + '>' + label + '</option>';
+  }
+  return html;
+}
+function assigneeOptionsHtml(r) {
+  const cur = editorAssigneeValue(r);
+  const names = WORKERS.slice();
+  if (cur && names.indexOf(cur) === -1) names.push(cur);
+  let html = '<option value=""' + (!cur ? ' selected' : '') + '>—</option>';
+  for (let i = 0; i < names.length; i++) {
+    const w = names[i];
+    html += '<option value="' + w + '"' + (cur === w ? ' selected' : '') + '>' + w + '</option>';
+  }
+  return html;
 }
 function editorAssigneeValue(r) {
   return normAssignee(r && r.assigned_to);
@@ -152,6 +186,25 @@ ok('assignedForNew empty is null', assignedForNew('') === null);
 ok('assignedForNew Allir is null', assignedForNew('Allir') === null);
 ok('assignedForNew Agnar is Agnar', assignedForNew('Agnar') === 'Agnar');
 ok('assignedForNew Anni is Anni', assignedForNew('Anni') === 'Anni');
+ok('assignedForNew Binni is Binni', assignedForNew('Binni') === 'Binni');
+
+const filterHtml = workerFilterOptionsHtml('nema_agnar');
+ok('filter starts with Agnar', filterHtml.indexOf('<option value="Agnar"') === 0);
+ok('filter has Allir án Agnars', /value="nema_agnar"[^>]*>Allir án Agnars</.test(filterHtml));
+ok('filter has Sara Hákon Binni Anni', ['Sara', 'Hákon', 'Binni', 'Anni'].every(n => filterHtml.indexOf('>' + n + '<') !== -1));
+ok('filter has no everyone-Allir', !/>Allir</.test(filterHtml));
+ok('filter has no Andri', filterHtml.indexOf('Andri') === -1);
+ok('filter has no Elías', filterHtml.indexOf('Elías') === -1);
+ok('unknown stored filter falls back to Allir án Agnars', /value="nema_agnar" selected/.test(workerFilterOptionsHtml('allir')));
+ok('Binni stored filter stays selected', /value="Binni" selected/.test(workerFilterOptionsHtml('Binni')));
+ok('Binni filter matches Binni ticket', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'Binni', NOW));
+ok('nema_agnar includes Binni', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'nema_agnar', NOW));
+
+const anniOpts = assigneeOptionsHtml(anniOld);
+ok('assignee dropdown has Agnar', anniOpts.indexOf('>Agnar<') !== -1);
+ok('assignee dropdown has Binni', anniOpts.indexOf('>Binni<') !== -1);
+ok('assignee dropdown selects Anni', /value="Anni" selected/.test(anniOpts));
+ok('orphan Andri still listed when stored', assigneeOptionsHtml({ assigned_to: 'Andri' }).indexOf('>Andri<') !== -1);
 
 ok('editor shows Allir for old unassigned (not effective Agnar)', editorAssigneeValue(oldUnassigned) === '');
 ok('editor shows Agnar only when stored', editorAssigneeValue(agnarRecent) === 'Agnar');

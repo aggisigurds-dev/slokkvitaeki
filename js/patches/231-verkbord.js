@@ -313,11 +313,21 @@
     return tags.indexOf('senda_skyrslur') !== -1;
   }
 
-  // 2026-08-30 (ósk Agnars): starfsfólk á að sjá daglega vinnu, ekki bakkann.
+  // 2026-08-31 (ósk Agnars): eitt nafnaval — Agnar, Allir án Agnars, Sara,
+  // Hákon, Binni, Anni. Starfsfólk sér daglega vinnu; skjalavinna fer á Agnar.
   // Óúthlutað og eldra en 30 dagar skráist á Agnar. Sjálfgefin sía er
-  // „Allir nema Agnar". Tómt vistað gildi (gamla „Allir") flyst yfir.
+  // „Allir án Agnars". Tómt vistað gildi (gamla „Allir") flyst yfir.
   // Keep in sync with tools/test-verkbord-assignee.cjs
   const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
+  const WORKERS = ['Agnar', 'Sara', 'Hákon', 'Binni', 'Anni'];
+  const WORKER_FILTERS = [
+    ['Agnar', 'Agnar'],
+    ['nema_agnar', 'Allir án Agnars'],
+    ['Sara', 'Sara'],
+    ['Hákon', 'Hákon'],
+    ['Binni', 'Binni'],
+    ['Anni', 'Anni']
+  ];
   const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
   function normAssignee(v) {
     const s = String(v == null ? '' : v).trim();
@@ -384,28 +394,47 @@
     if (w === 'nema_agnar') return who !== 'Agnar';
     return who === w;
   }
+  function knownWorkerFilter(v) {
+    if (v === 'nema_agnar') return true;
+    for (let i = 0; i < WORKERS.length; i++) if (WORKERS[i] === v) return true;
+    return false;
+  }
   function readStoredWorker() {
     try {
       const stored = localStorage.getItem(WKEY);
       if (stored === null || stored === '') return 'nema_agnar';
-      return stored;
+      if (knownWorkerFilter(stored)) return stored;
+      return 'nema_agnar';
     } catch (_) { return 'nema_agnar'; }
   }
+  function workerFilterOptionsHtml(cur) {
+    const now = knownWorkerFilter(cur) ? cur : 'nema_agnar';
+    let html = '';
+    for (let i = 0; i < WORKER_FILTERS.length; i++) {
+      const val = WORKER_FILTERS[i][0], label = WORKER_FILTERS[i][1];
+      html += '<option value="' + val + '"' + (now === val ? ' selected' : '') + '>' + label + '</option>';
+    }
+    return html;
+  }
   function workerFilterOptions() {
-    const cur = state.fWorker || 'nema_agnar';
-    const opt = function (val, label) {
-      return '<option value="' + val + '"' + (cur === val ? ' selected' : '') + '>' + label + '</option>';
-    };
-    return opt('nema_agnar', 'Allir nema Agnar') +
-      opt('Agnar', 'Agnar') +
-      WORKERS.filter(w => w !== 'Agnar').map(w => opt(w, w)).join('') +
-      opt('allir', 'Allir');
+    return workerFilterOptionsHtml(state.fWorker);
+  }
+  function assigneeOptionsHtml(r) {
+    const cur = editorAssigneeValue(r);
+    const names = WORKERS.slice();
+    if (cur && names.indexOf(cur) === -1) names.push(cur);
+    let html = '<option value=""' + (!cur ? ' selected' : '') + '>—</option>';
+    for (let i = 0; i < names.length; i++) {
+      const w = names[i];
+      html += '<option value="' + w + '"' + (cur === w ? ' selected' : '') + '>' + w + '</option>';
+    }
+    return html;
   }
 
   // ── state ────────────────────────────────────────────────────────────────
   const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode', WKEY = '_vb_worker';
-  // Starfsmenn (skráning + sía). Sjálfgefið „Allir nema Agnar" (2026-08-30).
-  const WORKERS = ['Anni', 'Agnar', 'Andri', 'Elías', 'Hákon', 'Sara'];
+  // Starfsmenn (skráning + sía). Sjálfgefið „Allir án Agnars". WORKERS er
+  // skilgreint ofar með Agnar / Sara / Hákon / Binni / Anni.
   // Valin sía: texti lýsist upp + glóð í lit chips-ins (2026-07-13, ósk Agnars —
   // „sést illa hvað er valið"). currentColor = litur chips-ins svo glóðin passar.
   // 2026-07-22 (ósk Agnars — „það sýnir illa þegar sían er á … hafðu svarta gráa
@@ -1651,7 +1680,7 @@
               'style="flex:2 1 240px;min-width:170px;height:38px;padding:0 13px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#eef1f6;color:#141822;font-family:inherit;font-size:13.5px;font-weight:500;outline:none">' +
             '<select id="vb-add-worker" title="Starfsmaður" ' +
               'style="flex:none;height:38px;padding:0 10px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#eef1f6;color:#141822;font-family:inherit;font-size:13px;outline:none;cursor:pointer">' +
-              '<option value="">👤 Allir</option>' + WORKERS.map(w => '<option value="' + w + '">' + w + '</option>').join('') +
+              '<option value="">—</option>' + WORKERS.map(w => '<option value="' + w + '">' + w + '</option>').join('') +
             '</select>' +
             // V3: skráningarhnappurinn er blár — rauði liturinn er frátekinn
             // fyrir „+ Nýtt mál" og dagskrár-hnappinn í bannernum.
@@ -2032,7 +2061,7 @@
       return;
     }
     // Keep VALIÐ MÁL on the ticket the user is editing even if it just left
-    // the worker filter (assign to Agnar while "Allir nema Agnar" is on).
+    // the worker filter (assign to Agnar while "Allir án Agnars" is on).
     // Only jump to another row when the selected ticket is gone entirely.
     state.selId = keepSelectedId(state.selId, rows, allItems());
 
@@ -2078,7 +2107,7 @@
           // 2026-08-10 (ósk Agnars — „quite time consuming register projects"):
           // flýtiskráning beint úr flokkahausnum — sami quickAdd() og aðal-
           // composerinn notar, bara forfyllt með ÞESSU merki + valda starfsmanni
-          // (state.fWorker, sami veljari og „Allir nema Agnar" efst á borðinu).
+          // (state.fWorker, sami veljari og „Allir án Agnars" efst á borðinu).
           '<button data-act="catadd" data-cat="' + esc(g.key) + '" title="Fljótskrá í ' + esc(g.name) + '" ' +
             'style="flex:none;width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,.4);' +
             'background:' + (state.catAddOpen[g.key] ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.1)') + ';' +
@@ -2197,6 +2226,12 @@
         // Status chips (not interactive here — stadaPill handles advance)
         '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">' +
           chips.map(t => dkChip(t)).join('') + waitPill(r) + stadaPill(r) +
+          (!r._vd
+            ? '<label style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px">Starfsmaður' +
+              '<select id="vb-sel-worker" data-field="assigned_to" data-id="' + esc(String(r.id)) + '" title="Setja mál á starfsmann" ' +
+              'style="text-transform:none;letter-spacing:0;height:28px;padding:0 8px;border-radius:8px;border:1px solid #d8dadf;background:#fff;color:#16181d;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">' +
+              assigneeOptionsHtml(r) + '</select></label>'
+            : '') +
         '</div>' +
         // BEINT BREYTANLEGUR TITILL — vistast 500ms eftir að hætt er að slá inn
         (r._vd
@@ -2404,9 +2439,8 @@
         // eina flokkunartólið. Gildið í dálkinum stendur óbreytt í grunninum.
         '<div><label>Staða</label><select data-field="status">' + statusOpts + '</select></div>' +
         '<div><label>Forgangur</label><select data-field="priority">' + prioOpts + '</select></div>' +
-        '<div><label>Starfsmaður</label><select data-field="assigned_to">' +
-          '<option value=""' + (!editorAssigneeValue(r) ? ' selected' : '') + '>👤 Allir</option>' +
-          WORKERS.map(w => '<option value="' + w + '"' + (editorAssigneeValue(r) === w ? ' selected' : '') + '>' + w + '</option>').join('') +
+        '<div><label>Starfsmaður</label><select data-field="assigned_to" data-id="' + esc(String(r.id)) + '">' +
+          assigneeOptionsHtml(r) +
         '</select></div>' +
         '<div><label>Gjalddagi / dagsetning</label><input type="date" data-field="due_at" value="' + dueVal + '"></div>' +
       '</div>' +
@@ -2933,7 +2967,7 @@
   // Flokka-flýtiskráning (2026-08-10, ósk Agnars): sama quickAdd() sem knýr
   // aðal-composerinn, en kallað beint úr flokkahausnum — forfyllt með ÞESSU
   // merki einu (ekki state.addTags, sem er fyrir aðal-composerinn) og núverandi
-  // starfsmanna-síu (state.fWorker — sami veljari og „Allir nema Agnar" efst á
+  // starfsmanna-síu (state.fWorker — sami veljari og „Allir án Agnars" efst á
   // borðinu). Nema_agnar/allir skrifa ekki sentinels í assigned_to.
   async function catQuickAdd(cat) {
     const custEl = document.querySelector('.vb-catadd-cust[data-cat="' + cat + '"]');
@@ -3194,6 +3228,7 @@
     open: show, reload: load, importOld, applyActions,
     isOldYearReport, effectiveAssignee, matchesWorker, assignedForNew,
     editorAssigneeValue, coerceRowId, resolveEditorRowId, keepSelectedId,
+    knownWorkerFilter, workerFilterOptionsHtml, assigneeOptionsHtml,
     parseDraftSummary, encodeDraftSummary, buildVilla, foldName
   };
   console.log('[patch-231] Verkborð installed — App.switchView("verkbord")');
