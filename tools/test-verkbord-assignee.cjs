@@ -8,9 +8,12 @@
  */
 const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
 const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
-
-function normAssignee(v) {
+function canonWorker(v) {
   const s = String(v == null ? '' : v).trim();
+  return s === 'Sara' ? 'Bjarndís' : s;
+}
+function normAssignee(v) {
+  const s = canonWorker(v);
   return WORKER_SENTINELS[s] ? '' : s;
 }
 function assignedForNew(worker) {
@@ -28,7 +31,7 @@ function addWorkerOptionsHtml(filter, stateWorker) {
   }
   return html;
 }
-const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Sara'];
+const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Bjarndís'];
 const WORKER_FILTERS = [
   ['Agnar', 'Agnar'],
   ['nema_agnar', 'Allir án Agnars'],
@@ -36,15 +39,16 @@ const WORKER_FILTERS = [
   ['Hákon', 'Hákon'],
   ['Binni', 'Binni'],
   ['Anni', 'Anni'],
-  ['Sara', 'Sara']
+  ['Bjarndís', 'Bjarndís']
 ];
 function knownWorkerFilter(v) {
-  if (v === 'nema_agnar') return true;
-  for (let i = 0; i < WORKERS.length; i++) if (WORKERS[i] === v) return true;
+  const s = canonWorker(v);
+  if (s === 'nema_agnar') return true;
+  for (let i = 0; i < WORKERS.length; i++) if (WORKERS[i] === s) return true;
   return false;
 }
 function workerFilterOptionsHtml(cur) {
-  const now = knownWorkerFilter(cur) ? cur : 'nema_agnar';
+  const now = knownWorkerFilter(cur) ? canonWorker(cur) : 'nema_agnar';
   let html = '';
   for (let i = 0; i < WORKER_FILTERS.length; i++) {
     const val = WORKER_FILTERS[i][0], label = WORKER_FILTERS[i][1];
@@ -90,7 +94,7 @@ function taggedWorkers(r) {
   for (let i = 0; i < raw.length; i++) {
     const t = raw[i];
     if (t.indexOf(WORKER_TAG_PREFIX) !== 0) continue;
-    const n = t.slice(WORKER_TAG_PREFIX.length).trim();
+    const n = canonWorker(t.slice(WORKER_TAG_PREFIX.length).trim());
     if (!n || WORKER_SENTINELS[n]) continue;
     if (names.indexOf(n) === -1) names.push(n);
   }
@@ -108,7 +112,7 @@ function composeTags(categoryTags, workers, extras) {
   });
   const wtags = [];
   (workers || []).forEach(function (n) {
-    const name = String(n == null ? '' : n).trim();
+    const name = canonWorker(String(n == null ? '' : n).trim());
     if (!name || WORKER_SENTINELS[name]) return;
     const tok = WORKER_TAG_PREFIX + name;
     if (wtags.indexOf(tok) === -1) wtags.push(tok);
@@ -126,12 +130,13 @@ function tagsWithWorkers(row, workers) {
   const primary = editorAssigneeValue(row);
   const cleaned = [];
   (workers || []).forEach(function (n) {
-    if (n && n !== primary && cleaned.indexOf(n) === -1) cleaned.push(n);
+    const name = canonWorker(n);
+    if (name && name !== primary && cleaned.indexOf(name) === -1) cleaned.push(name);
   });
   return composeTags(rowTags(row), cleaned, extraTags(row));
 }
 function toggleTaggedWorker(row, name) {
-  const n = String(name == null ? '' : name).trim();
+  const n = canonWorker(String(name == null ? '' : name).trim());
   if (!n || WORKER_SENTINELS[n] || n === editorAssigneeValue(row)) {
     return tagsWithWorkers(row, taggedWorkers(row));
   }
@@ -182,7 +187,7 @@ function effectiveAssignee(r, now) {
   return isOlderThanMonth(r, now) ? 'Agnar' : '';
 }
 function matchesWorker(r, filter, now) {
-  const w = filter;
+  const w = canonWorker(filter);
   if (!w || w === 'allir') return true;
   const who = effectiveAssignee(r, now);
   const tagged = taggedWorkers(r);
@@ -287,7 +292,8 @@ ok('default add from Agnar filter is Agnar', defaultAddWorker('Agnar', null) ===
 ok('default add falls back to state worker', defaultAddWorker(null, 'Anni') === 'Anni');
 ok('default add undefined filter uses state', defaultAddWorker(undefined, 'Binni') === 'Binni');
 ok('default add Charlize filter is Charlize', defaultAddWorker('Charlize', 'nema_agnar') === 'Charlize');
-ok('default add new Sara filter is Sara', defaultAddWorker('Sara', 'nema_agnar') === 'Sara');
+ok('default add Bjarndís filter is Bjarndís', defaultAddWorker('Bjarndís', 'nema_agnar') === 'Bjarndís');
+ok('leftover Sara filter still composes as Bjarndís', defaultAddWorker('Sara', 'nema_agnar') === 'Bjarndís');
 const anniAddHtml = addWorkerOptionsHtml('Anni');
 ok('composer select marks Anni selected', /value="Anni" selected/.test(anniAddHtml));
 ok('composer select does not mark empty when Anni', !/<option value="" selected>/.test(anniAddHtml));
@@ -295,13 +301,16 @@ ok('composer select empty when staff board', /<option value="" selected>/.test(a
 ok('composer select marks Agnar when Agnar filter', /value="Agnar" selected/.test(addWorkerOptionsHtml('Agnar')));
 ok('assignedForNew Binni is Binni', assignedForNew('Binni') === 'Binni');
 ok('assignedForNew Charlize is Charlize', assignedForNew('Charlize') === 'Charlize');
-ok('assignedForNew Sara is Sara', assignedForNew('Sara') === 'Sara');
+ok('assignedForNew Bjarndís is Bjarndís', assignedForNew('Bjarndís') === 'Bjarndís');
+ok('assignedForNew leftover Sara is Bjarndís', assignedForNew('Sara') === 'Bjarndís');
 
 const filterHtml = workerFilterOptionsHtml('nema_agnar');
 ok('filter starts with Agnar', filterHtml.indexOf('<option value="Agnar"') === 0);
 ok('filter has Allir án Agnars', /value="nema_agnar"[^>]*>Allir án Agnars</.test(filterHtml));
-ok('filter has Charlize Hákon Binni Anni Sara', ['Charlize', 'Hákon', 'Binni', 'Anni', 'Sara'].every(n => filterHtml.indexOf('>' + n + '<') !== -1));
-ok('Charlize comes before new Sara', filterHtml.indexOf('>Charlize<') < filterHtml.indexOf('>Sara<') && filterHtml.indexOf('>Sara<') !== -1);
+ok('filter has Charlize Hákon Binni Anni Bjarndís', ['Charlize', 'Hákon', 'Binni', 'Anni', 'Bjarndís'].every(n => filterHtml.indexOf('>' + n + '<') !== -1));
+ok('Charlize comes before Bjarndís', filterHtml.indexOf('>Charlize<') < filterHtml.indexOf('>Bjarndís<') && filterHtml.indexOf('>Bjarndís<') !== -1);
+ok('filter has no Sara label', filterHtml.indexOf('>Sara<') === -1);
+ok('leftover Sara stored filter selects Bjarndís', /value="Bjarndís" selected/.test(workerFilterOptionsHtml('Sara')));
 ok('filter has no everyone-Allir', !/>Allir</.test(filterHtml));
 ok('filter has no Andri', filterHtml.indexOf('Andri') === -1);
 ok('filter has no Elías', filterHtml.indexOf('Elías') === -1);
@@ -310,10 +319,13 @@ ok('Binni stored filter stays selected', /value="Binni" selected/.test(workerFil
 ok('Binni filter matches Binni ticket', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'Binni', NOW));
 ok('nema_agnar includes Binni', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'nema_agnar', NOW));
 ok('Charlize filter matches moved work', matchesWorker({ status: 'nytt', assigned_to: 'Charlize', created_at: isoDaysAgo(2) }, 'Charlize', NOW));
-ok('new Sara filter does not take Charlize work', !matchesWorker({ status: 'nytt', assigned_to: 'Charlize', created_at: isoDaysAgo(2) }, 'Sara', NOW));
-ok('new Sara filter matches only new Sara', matchesWorker({ status: 'nytt', assigned_to: 'Sara', created_at: isoDaysAgo(1) }, 'Sara', NOW));
+ok('Bjarndís filter does not take Charlize work', !matchesWorker({ status: 'nytt', assigned_to: 'Charlize', created_at: isoDaysAgo(2) }, 'Bjarndís', NOW));
+ok('Bjarndís filter matches Bjarndís', matchesWorker({ status: 'nytt', assigned_to: 'Bjarndís', created_at: isoDaysAgo(1) }, 'Bjarndís', NOW));
+ok('leftover Sara assigned_to matches Bjarndís filter', matchesWorker({ status: 'nytt', assigned_to: 'Sara', created_at: isoDaysAgo(1) }, 'Bjarndís', NOW));
 ok('assignee dropdown has Charlize', assigneeOptionsHtml({ assigned_to: null }).indexOf('>Charlize<') !== -1);
-ok('assignee dropdown has empty Sara slot', assigneeOptionsHtml({ assigned_to: null }).indexOf('>Sara<') !== -1);
+ok('assignee dropdown has Bjarndís slot', assigneeOptionsHtml({ assigned_to: null }).indexOf('>Bjarndís<') !== -1);
+ok('assignee dropdown has no Sara', assigneeOptionsHtml({ assigned_to: null }).indexOf('>Sara<') === -1);
+ok('editor leftover Sara shows Bjarndís', editorAssigneeValue({ assigned_to: 'Sara' }) === 'Bjarndís');
 
 const anniOpts = assigneeOptionsHtml(anniOld);
 ok('assignee dropdown has Agnar', anniOpts.indexOf('>Agnar<') !== -1);
@@ -373,7 +385,7 @@ ok('Hákon filter sees Agnar job tagged Hákon', matchesWorker(agnarTaggedHakon,
 ok('Agnar filter still sees own tagged job', matchesWorker(agnarTaggedHakon, 'Agnar', NOW));
 ok('nema_agnar shows Agnar job tagged to staff', matchesWorker(agnarTaggedHakon, 'nema_agnar', NOW));
 ok('Anni filter does not take Hákon tag', !matchesWorker(agnarTaggedHakon, 'Anni', NOW));
-ok('Sara filter does not take Hákon tag', !matchesWorker(agnarTaggedHakon, 'Sara', NOW));
+ok('Bjarndís filter does not take Hákon tag', !matchesWorker(agnarTaggedHakon, 'Bjarndís', NOW));
 ok('tag does not steal assigned_to', effectiveAssignee(agnarTaggedHakon, NOW) === 'Agnar');
 ok('rowTags strips starfs prefix from merki', rowTags(agnarTaggedHakon).join(',') === 'draft');
 ok('taggedWorkers reads Hákon', taggedWorkers(agnarTaggedHakon).join(',') === 'Hákon');
@@ -392,6 +404,10 @@ ok('toggle does not tag primary assignee', toggleTaggedWorker({ assigned_to: 'H�
 ok('toggle off removes tag', toggleTaggedWorker(agnarTaggedHakon, 'Hákon').indexOf('starfs:Hákon') === -1);
 ok('composeTags drops sentinels', composeTags(['draft'], ['nema_agnar', 'Allir', 'Hákon'], []).join(',') === 'draft,starfs:Hákon');
 ok('tagsWithWorkers drops new primary', tagsWithWorkers({ assigned_to: 'Hákon', tags: ['starfs:Hákon', 'draft'] }, ['Hákon', 'Anni']).join(',') === 'draft,starfs:Anni');
+ok('starfs:Sara reads as Bjarndís', taggedWorkers({ tags: ['starfs:Sara'] }).join(',') === 'Bjarndís');
+ok('compose leftover Sara writes starfs:Bjarndís', composeTags([], ['Sara'], []).join(',') === 'starfs:Bjarndís');
+ok('Bjarndís filter sees leftover starfs:Sara tag', matchesWorker({ status: 'nytt', assigned_to: 'Agnar', created_at: isoDaysAgo(2), tags: ['starfs:Sara'] }, 'Bjarndís', NOW));
+ok('toggle leftover Sara tag writes starfs:Bjarndís', toggleTaggedWorker({ assigned_to: 'Agnar', tags: [] }, 'Sara').indexOf('starfs:Bjarndís') !== -1);
 
 console.log(failed ? '\nFAIL ' + failed : '\nOK');
 process.exit(failed ? 1 : 0);
