@@ -1,5 +1,7 @@
 # Hver gerir hvað
 
+Kanónísk agentaskrá (23 agentar, heim, slóð, kveikjur, aldrei): `docs/AGENTASKRA.md`. Kveikjuorð: `docs/TRIGGERS.md`. Þessi síða er Charlize-minni um hlutverk; listinn þar er sannleikurinn.
+
 | Agent | Svæði | Keyrir |
 |---|---|---|
 | **Claude Code** | Slökkvitæki-appið (kóði, patches, deploy) | alltaf-á PC-inn |
