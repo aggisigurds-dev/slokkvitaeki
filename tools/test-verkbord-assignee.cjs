@@ -12,6 +12,11 @@ function canonWorker(v) {
   const s = String(v == null ? '' : v).trim();
   return s === 'Sara' ? 'Bjarndís' : s;
 }
+function canonFilter(v) {
+  const s = canonWorker(v);
+  if (s === 'Allir') return 'allir';
+  return s;
+}
 function normAssignee(v) {
   const s = canonWorker(v);
   return WORKER_SENTINELS[s] ? '' : s;
@@ -33,6 +38,7 @@ function addWorkerOptionsHtml(filter, stateWorker) {
 }
 const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Bjarndís'];
 const WORKER_FILTERS = [
+  ['allir', 'Allir'],
   ['Agnar', 'Agnar'],
   ['nema_agnar', 'Allir án Agnars'],
   ['Charlize', 'Charlize'],
@@ -42,13 +48,13 @@ const WORKER_FILTERS = [
   ['Bjarndís', 'Bjarndís']
 ];
 function knownWorkerFilter(v) {
-  const s = canonWorker(v);
-  if (s === 'nema_agnar') return true;
+  const s = canonFilter(v);
+  if (s === 'nema_agnar' || s === 'allir') return true;
   for (let i = 0; i < WORKERS.length; i++) if (WORKERS[i] === s) return true;
   return false;
 }
 function workerFilterOptionsHtml(cur) {
-  const now = knownWorkerFilter(cur) ? canonWorker(cur) : 'nema_agnar';
+  const now = knownWorkerFilter(cur) ? canonFilter(cur) : 'nema_agnar';
   let html = '';
   for (let i = 0; i < WORKER_FILTERS.length; i++) {
     const val = WORKER_FILTERS[i][0], label = WORKER_FILTERS[i][1];
@@ -187,7 +193,7 @@ function effectiveAssignee(r, now) {
   return isOlderThanMonth(r, now) ? 'Agnar' : '';
 }
 function matchesWorker(r, filter, now) {
-  const w = canonWorker(filter);
+  const w = canonFilter(filter);
   if (!w || w === 'allir') return true;
   const who = effectiveAssignee(r, now);
   const tagged = taggedWorkers(r);
@@ -305,16 +311,19 @@ ok('assignedForNew Bjarndís is Bjarndís', assignedForNew('Bjarndís') === 'Bja
 ok('assignedForNew leftover Sara is Bjarndís', assignedForNew('Sara') === 'Bjarndís');
 
 const filterHtml = workerFilterOptionsHtml('nema_agnar');
-ok('filter starts with Agnar', filterHtml.indexOf('<option value="Agnar"') === 0);
+ok('filter starts with Allir', filterHtml.indexOf('<option value="allir"') === 0);
+ok('filter has Allir overview', /value="allir"[^>]*>Allir</.test(filterHtml));
+ok('filter has Agnar after Allir', filterHtml.indexOf('value="Agnar"') > 0);
 ok('filter has Allir án Agnars', /value="nema_agnar"[^>]*>Allir án Agnars</.test(filterHtml));
 ok('filter has Charlize Hákon Binni Anni Bjarndís', ['Charlize', 'Hákon', 'Binni', 'Anni', 'Bjarndís'].every(n => filterHtml.indexOf('>' + n + '<') !== -1));
 ok('Charlize comes before Bjarndís', filterHtml.indexOf('>Charlize<') < filterHtml.indexOf('>Bjarndís<') && filterHtml.indexOf('>Bjarndís<') !== -1);
 ok('filter has no Sara label', filterHtml.indexOf('>Sara<') === -1);
 ok('leftover Sara stored filter selects Bjarndís', /value="Bjarndís" selected/.test(workerFilterOptionsHtml('Sara')));
-ok('filter has no everyone-Allir', !/>Allir</.test(filterHtml));
+ok('stored Allir selects overview', /value="allir" selected/.test(workerFilterOptionsHtml('Allir')));
+ok('stored allir stays selected', /value="allir" selected/.test(workerFilterOptionsHtml('allir')));
 ok('filter has no Andri', filterHtml.indexOf('Andri') === -1);
 ok('filter has no Elías', filterHtml.indexOf('Elías') === -1);
-ok('unknown stored filter falls back to Allir án Agnars', /value="nema_agnar" selected/.test(workerFilterOptionsHtml('allir')));
+ok('unknown stored filter falls back to Allir án Agnars', /value="nema_agnar" selected/.test(workerFilterOptionsHtml('nobody')));
 ok('Binni stored filter stays selected', /value="Binni" selected/.test(workerFilterOptionsHtml('Binni')));
 ok('Binni filter matches Binni ticket', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'Binni', NOW));
 ok('nema_agnar includes Binni', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'nema_agnar', NOW));
@@ -408,6 +417,23 @@ ok('starfs:Sara reads as Bjarndís', taggedWorkers({ tags: ['starfs:Sara'] }).jo
 ok('compose leftover Sara writes starfs:Bjarndís', composeTags([], ['Sara'], []).join(',') === 'starfs:Bjarndís');
 ok('Bjarndís filter sees leftover starfs:Sara tag', matchesWorker({ status: 'nytt', assigned_to: 'Agnar', created_at: isoDaysAgo(2), tags: ['starfs:Sara'] }, 'Bjarndís', NOW));
 ok('toggle leftover Sara tag writes starfs:Bjarndís', toggleTaggedWorker({ assigned_to: 'Agnar', tags: [] }, 'Sara').indexOf('starfs:Bjarndís') !== -1);
+
+function tagChipUniverse(rows, filter, now) {
+  return rows.filter(function (x) { return matchesWorker(x, filter, now); });
+}
+const chipRows = [anniOld, agnarRecent, oldUnassigned, recentUnassigned];
+ok('Agnar TÖG universe excludes Anni', tagChipUniverse(chipRows, 'Agnar', NOW).indexOf(anniOld) === -1);
+ok('Agnar TÖG universe includes own + old unassigned', tagChipUniverse(chipRows, 'Agnar', NOW).indexOf(agnarRecent) !== -1 && tagChipUniverse(chipRows, 'Agnar', NOW).indexOf(oldUnassigned) !== -1);
+ok('Agnar TÖG universe excludes recent unassigned', tagChipUniverse(chipRows, 'Agnar', NOW).indexOf(recentUnassigned) === -1);
+ok('Allir TÖG universe is the full set', tagChipUniverse(chipRows, 'allir', NOW).length === chipRows.length);
+ok('nema_agnar TÖG universe excludes Agnar-assigned', tagChipUniverse(chipRows, 'nema_agnar', NOW).indexOf(agnarRecent) === -1);
+
+const fs = require('fs');
+const path = require('path');
+const v231src = fs.readFileSync(path.join(__dirname, '..', 'js/patches/231-verkbord.js'), 'utf8');
+ok('231 TÖG chips call matchesWorker', v231src.indexOf('inQueue(x) && matchesWorker(x)') !== -1);
+ok('231 Allir is a filter option', v231src.indexOf("['allir', 'Allir']") !== -1);
+ok('231 Allir is a known filter', /s === 'nema_agnar' \|\| s === 'allir'/.test(v231src));
 
 console.log(failed ? '\nFAIL ' + failed : '\nOK');
 process.exit(failed ? 1 : 0);
