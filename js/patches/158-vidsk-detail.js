@@ -545,6 +545,7 @@
       (ars.equipment && Object.values(ars.equipment).some(v => +v > 0))
     )) || units.length > 0;
     const hasBru = !!bru;
+    const kt = ktDigits(c.kennitala);
     const initial = (c.nafn || '?').trim().charAt(0).toUpperCase();
     const avatarColor = hasArs && hasBru ? '#7c3aed' :
                         hasArs ? '#b91c1c' :
@@ -714,6 +715,17 @@
 
         <!-- Verð & afsláttur & viðskipti (works for ANY customer) -->
         ${renderCommerceCard(c)}
+
+        <!-- Fyrri viðskipti — hreyfingar á þessum viðskiptavini (visible for any customer with a kt) -->
+        ${kt.length === 10 ? `
+        <div id="_vd-hreyf-card" style="background:var(--surface);border:1px solid var(--brd);border-left:3px solid var(--brand);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:14px;font-weight:700;color:var(--ink1);display:flex;align-items:center;gap:7px"><span style="font-size:17px">📋</span> Fyrri viðskipti</h3>
+            <button id="_vd-hreyf-nav" type="button" style="padding:6px 12px;background:var(--surface2);color:var(--ink1);border:1px solid var(--brd2);border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">📊 Hreyfingarlisti →</button>
+          </div>
+          <div id="_vd-hreyf-body" style="font-size:12px;color:var(--ink3);text-align:center;padding:12px 0">Hleður…</div>
+        </div>
+        ` : ''}
 
         ${units.length > 0 ? `
         <!-- Slökkvitæki list -->
@@ -1022,6 +1034,73 @@
       await CompanyPricing.save(coId, list);
       refreshTilbod(main, coId);
     });
+
+    // 📋 Fyrri viðskipti — auto-load recent solur rows for this customer.
+    const hreyfNav = main.querySelector('#_vd-hreyf-nav');
+    const hreyfBody = main.querySelector('#_vd-hreyf-body');
+    if (hreyfNav) {
+      hreyfNav.addEventListener('click', () => {
+        const ktd = ktDigits(c.kennitala);
+        try {
+          if (window.SalaCustomerHistory && typeof SalaCustomerHistory.urlFor === 'function') {
+            location.hash = SalaCustomerHistory.urlFor(ktd).replace(/^#/, '#');
+          } else {
+            location.hash = '#hreyfingarlisti/' + encodeURIComponent(ktd);
+          }
+        } catch (_) {
+          location.hash = '#hreyfingarlisti/' + encodeURIComponent(ktd);
+        }
+      });
+    }
+    if (hreyfBody && sb) {
+      const ktd = ktDigits(c.kennitala);
+      if (ktd.length === 10) {
+        const dashed = ktd.slice(0, 6) + '-' + ktd.slice(6);
+        sb.from('solur')
+          .select('id,num,customer_nafn,samtals,created_at,paid_at,is_credit,status')
+          .or('customer_kt.eq.' + ktd + ',customer_kt.eq.' + dashed)
+          .order('created_at', { ascending: false })
+          .limit(15)
+          .then(({ data, error }) => {
+            const el = document.getElementById('_vd-hreyf-body');
+            if (!el) return;
+            if (error || !data || !data.length) {
+              el.innerHTML = '<div style="padding:10px;text-align:center;font-size:11.5px;color:var(--ink3);font-style:italic">Engar hreyfingar skráðar á þennan kennitala</div>';
+              return;
+            }
+            el.innerHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
+              '<thead><tr style="background:var(--surface2);color:var(--ink3);text-transform:uppercase;font-size:9.5px;font-weight:700">' +
+              '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--brd)">Dagsetning</th>' +
+              '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--brd)">Númer</th>' +
+              '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--brd)">Viðskiptavinur</th>' +
+              '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--brd)">Upphæð</th>' +
+              '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--brd)">Staða</th>' +
+              '</tr></thead><tbody>' +
+              data.map(s => {
+                const d = (s.created_at || '').slice(0, 10).split('-').reverse().join('.');
+                const amt = fmtKr(s.samtals);
+                const isCredit = !!s.is_credit;
+                const isDraft = s.status === 'drog';
+                const isPaid = !!s.paid_at;
+                const statusLabel = isCredit ? '↩ Kredit' : isDraft ? 'Drög' : isPaid ? '✓ Greitt' : 'Ógreitt';
+                const statusColor = isCredit ? 'var(--ink3)' : isDraft ? 'var(--ink3)' : isPaid ? 'var(--grn)' : 'var(--amb)';
+                return '<tr style="border-top:1px solid var(--brd)">' +
+                  '<td style="padding:6px 8px;color:var(--ink3);font-size:11px">' + d + '</td>' +
+                  '<td style="padding:6px 8px;color:var(--brand);font-weight:600;font-family:var(--mono,monospace);font-size:11px">' + esc(s.num || '—') + '</td>' +
+                  '<td style="padding:6px 8px;color:var(--ink2);font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(s.customer_nafn || '—') + '</td>' +
+                  '<td style="padding:6px 8px;text-align:right;color:var(--ink1);font-weight:700;font-variant-numeric:tabular-nums">' + amt + '</td>' +
+                  '<td style="padding:6px 8px;font-size:10.5px;font-weight:700;color:' + statusColor + '">' + statusLabel + '</td>' +
+                  '</tr>';
+              }).join('') +
+              '</tbody></table></div>' +
+              (data.length >= 15 ? '<div style="margin-top:8px;font-size:11px;color:var(--ink3);text-align:center">Sýni 15 nýjustu — <button id="_vd-hreyf-more" type="button" style="background:none;border:none;color:var(--blu);text-decoration:underline;cursor:pointer;font:inherit">sjá allt í hreyfingarlista</button></div>' : '');
+            document.getElementById('_vd-hreyf-more')?.addEventListener('click', () => { hreyfNav && hreyfNav.click(); });
+          }).catch(e => {
+            const el = document.getElementById('_vd-hreyf-body');
+            if (el) el.innerHTML = '<div style="padding:10px;color:var(--red);font-size:11.5px">Villa: ' + esc(String((e && e.message) || e)) + '</div>';
+          });
+      }
+    }
   }
 
   function refreshTilbod(main, coId) {
