@@ -32,6 +32,11 @@
     '#pat-launch',
     '#cg-sk-trigger',
     '#_dst-btn._float',
+    // 2026-08-31 (Agnar krossaði hann yfir á skjámynd): QR-hnappurinn liggur
+    // á 318,730 — beint ofan á vöruflísunum í símaham. Sala er ÞEGAR með
+    // sinn eigin „📷 Skanna" í viðskiptavinaspjaldinu, svo þessi er tvítekning
+    // á þessari EINU síðu. Hann stendur óbreyttur alls staðar annars staðar.
+    '#qr-fab',
   ];
 
   // 2026-08-29 SÍÐAR: takmörkunin við símaham FELLD NIÐUR. „Keldan — fyrirtækjaleit"
