@@ -549,8 +549,16 @@ header, .bar, .umgjord, footer { max-width: 1180px; margin-inline: auto; }
 
   // Rót-þjónninn (sw.js) sendir allt beint á netið og geymir ekkert — hann er
   // eingöngu til staðar svo Chrome bjóði „Bæta á heimaskjá" sem alvöru app.
+  // updateViaCache none: a cached sw.js would strand office PCs on old 231.
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    try {
+      if (window.caches && caches.keys) {
+        caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k))));
+      }
+    } catch (_) {}
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+      .then((r) => { try { r.update(); } catch (_) {} })
+      .catch(() => {});
   }
 })();
 </script>
