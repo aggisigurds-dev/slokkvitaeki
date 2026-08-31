@@ -99,10 +99,11 @@
       { v: '--ars-undirtexti',    m: 'Undirtexti',    min: 7,  max: 14,  sjalf: 9.5,  skref: .5 },
       { v: '--ars-haus-haed',     m: 'Haushæð',       min: 26, max: 60,  sjalf: 38 }
     ] },
+    /* --ars-col-man og --ars-col-taeki fjarlægðir 31.08: Mán og Tæki eru ekki
+       lengur eigin dálkar heldur staflaðir inn í ára-dálkinn (._arsm-stack).
+       Sleði sem stillir dálk sem er ekki til lítur út fyrir að vera bilaður. */
     { syn: 'dalkar', heiti: 'Borð · dálkar', vidmid: '._arsm-row', breytur: [
-      { v: '--ars-col-man',    m: 'Mán',    min: 34, max: 110, sjalf: 56 },
       { v: '--ars-col-ar',     m: 'Ár',     min: 60, max: 180, sjalf: 112 },
-      { v: '--ars-col-taeki',  m: 'Tæki',   min: 50, max: 160, sjalf: 96 },
       { v: '--ars-col-akstur', m: 'Akstur', min: 36, max: 110, sjalf: 60 },
       { v: '--ars-col-stada',  m: 'Staða',  min: 34, max: 100, sjalf: 52 },
       { v: '--ars-col-virdi',  m: 'Virði',  min: 50, max: 160, sjalf: 84 },

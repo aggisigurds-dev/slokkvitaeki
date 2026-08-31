@@ -2400,7 +2400,7 @@
          Áður var þetta minmax(0,1fr)+66+34+34+26 án skruns, svo allt kramdist
          í símabreidd — mælt á 430px: taflan 1280px breið og raðirnar 326px HÁAR
          af því allt braut sig niður. Nú skrunast það í staðinn fyrir að brotna. */
-      V+'._arsm-row{display:grid;grid-template-columns:var(--ars-nafn-dalkur,190px) var(--ars-col-man,56px) var(--ars-col-ar,112px) var(--ars-col-taeki,96px) var(--ars-col-akstur,60px) var(--ars-col-stada,52px) var(--ars-col-virdi,84px) var(--ars-col-sidast,78px) var(--ars-col-nota,130px);gap:0;align-items:center;width:max-content;min-width:100%;min-height:var(--ars-rad-haed,52px);height:auto;border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
+      V+'._arsm-row{display:grid;grid-template-columns:var(--ars-nafn-dalkur,190px) var(--ars-col-ar,112px) var(--ars-col-akstur,60px) var(--ars-col-stada,52px) var(--ars-col-virdi,84px) var(--ars-col-sidast,78px) var(--ars-col-nota,130px);gap:0;align-items:center;width:max-content;min-width:100%;min-height:var(--ars-rad-haed,52px);height:auto;border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
       V+'._arsm-row>*{padding:0 6px;min-width:0}',
       /* Nafnið helst kyrrt þegar strokið er til hliðar — annars veit maður ekki
          hvaða fyrirtæki maður er að lesa um leið og fyrsti dálkur er farinn. */
@@ -2409,6 +2409,14 @@
       V+'._arsm-row:active ._arsm-name{background:#f3f5f8}',
       V+'._arsm-head{height:var(--ars-haus-haed,38px)}',
       /* Nýju dálkarnir: tæki, virði, síðasta skoðun, ferðanóta. */
+      /* 2026-08-31 (Agnar): „mánuðinn fyrir ofan 4 ára checkið og tækja tótal
+         undir". Mán · árs-pillur · tækjafjöldi voru ÞRÍR dálkar hlið við hlið;
+         nú einn staflaður. Dálkunum fækkar úr 9 í 7 og breiddin sem losnar
+         (--ars-col-man + --ars-col-taeki) fer aftur í nafnið og skrunið. */
+      V+'._arsm-stack{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0}',
+      V+'._arsm-stack ._arsm-mo{font-size:10.5px;line-height:1.1}',
+      V+'._arsm-stack ._arsm-yr{width:100%}',
+      V+'._arsm-stack ._arsm-eq{font-size:11px;line-height:1.1}',
       V+'._arsm-eq{text-align:center;font-size:12px;color:var(--ars-texti-mjukur,#5d5a54);font-variant-numeric:tabular-nums}',
       V+'._arsm-val{text-align:right;font-size:11.5px;color:var(--ars-texti-mjukur,#5d5a54);font-variant-numeric:tabular-nums;white-space:nowrap}',
       V+'._arsm-last{text-align:center;font-size:11px;color:var(--ars-texti-mjukur,#5d5a54);white-space:nowrap}',
@@ -2556,9 +2564,11 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
             <div class="_arsm-sub">${subBits.join(' · ')}</div>
             ${addrLine ? `<div class="_arsm-addr">${esc(addrLine)}</div>` : ''}
           </div>
-          ${moCell}
-          <div class="_arsm-yr">${yrHtml}</div>
-          <div class="_arsm-eq" title="Fjöldi tækja">${totalEq || '<span style="color:#b6c0cc">—</span>'}</div>
+          <div class="_arsm-stack">
+            ${moCell}
+            <div class="_arsm-yr">${yrHtml}</div>
+            <div class="_arsm-eq" title="Fjöldi tækja">${totalEq || '<span style="color:#b6c0cc">—</span>'}</div>
+          </div>
           <button type="button" class="_arsm-ak${ak ? ' d' + ak : ''}" data-akco="${c.id}" title="${ak ? 'Akstur ' + ak + ' — smelltu til að breyta' : 'Enginn aksturslisti — smelltu til að setja á lista'}">${ak || '—'}</button>
           <span class="_arsm-st ${st[0]}" title="${esc(st[2])}">${st[1]}</span>
           <div class="_arsm-val" title="Áætlað virði ársþjónustu">${virdi}</div>
@@ -2574,9 +2584,14 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                hætta að standa yfir sínum dálki (mælt 29.08: 456px misgengi við
                fullt skrun). CSS-reglan ._arsm-head ._arsm-name var þegar til. -->
           <div class="_arsm-h _arsm-name">Fyrirtæki</div>
-          <div class="_arsm-h _arsm-c">Mán</div>
-          <div class="_arsm-yrhead">${years.map(y => `<span>'${String(y).slice(-2)}</span>`).join('')}</div>
-          <div class="_arsm-h _arsm-c">Tæki</div>
+          <!-- Hausinn VERÐUR að stafla eins og gögnin. Færi hann áfram þrjá
+               reiti hlið við hlið yrðu 9 haus-reitir í 7 rákum og allt eftir
+               nafndálkinum lenti undir röngum haus (mælt 29.08: sama villa). -->
+          <div class="_arsm-stack">
+            <div class="_arsm-h _arsm-c">Mán</div>
+            <div class="_arsm-yrhead">${years.map(y => `<span>'${String(y).slice(-2)}</span>`).join('')}</div>
+            <div class="_arsm-h _arsm-c">Tæki</div>
+          </div>
           <div class="_arsm-h _arsm-c">🚗</div>
           <div class="_arsm-h _arsm-c">St</div>
           <div class="_arsm-h" style="text-align:right">Virði</div>
