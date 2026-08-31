@@ -498,7 +498,7 @@
   }
 
   function draw() {
-    if (window.Verkbord && Verkbord.showOwnerChrome && !Verkbord.showOwnerChrome()) {
+    if (window.Verkbord && Verkbord.isAgnarUser && !Verkbord.isAgnarUser()) {
       const slot = document.getElementById('vb-ai-slot');
       if (slot) slot.innerHTML = '';
       return;
@@ -588,7 +588,7 @@
   }
 
   function mount() {
-    if (window.Verkbord && Verkbord.showOwnerChrome && !Verkbord.showOwnerChrome()) {
+    if (window.Verkbord && Verkbord.isAgnarUser && !Verkbord.isAgnarUser()) {
       const slot = document.getElementById('vb-ai-slot');
       if (slot) slot.innerHTML = '';
       return;
