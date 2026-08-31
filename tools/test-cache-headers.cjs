@@ -65,11 +65,11 @@ ok('index.html drops Cache Storage on load',
 ok('293 utgafu-vakt cache-bust query matches this SW bump',
   html.includes('/js/patches/293-utgafu-vakt.js?v=20260831sw1'));
 ok('231 Verkborð cache-bust query is present',
-  /231-verkbord\.js\?v=20260831tw2/.test(html));
+  /231-verkbord\.js\?v=20260831cnt/.test(html));
 ok('305 Skipulagsborð cache-bust query is present',
   /305-skipulagsbord\.js\?v=20260831skip/.test(html));
 ok('343 AI-borð cache-bust query is present',
-  /343-verkbord-ai\.js\?v=20260831sc6/.test(html));
+  /343-verkbord-ai\.js\?v=20260831cnt/.test(html));
 ok('287 Postar cache-bust query is present',
   /287-postar-queue\.js\?v=20260831sc6/.test(html));
 

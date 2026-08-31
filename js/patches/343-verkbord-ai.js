@@ -135,7 +135,9 @@
   function waitingMail() {
     return openItems().filter(r => {
       if (r.promoted_at || r.svarad_at) return false;
-      return r.source === 'email' || /^email:/.test(String(r.channel_ref || ''));
+      if (!(r.source === 'email' || /^email:/.test(String(r.channel_ref || '')))) return false;
+      if (window.Verkbord && Verkbord.matchesWorker && !Verkbord.matchesWorker(r)) return false;
+      return true;
     }).length;
   }
 
