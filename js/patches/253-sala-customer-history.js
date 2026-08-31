@@ -308,11 +308,13 @@
     const curYear = new Date().getFullYear();
     const ktd = ktDigits(idty.kt);
 
-    // Finna allar fyrirtækja-raðir kúnnans (kt getur átt margar staðsettningar).
+    // Staður (fyrirtaeki) → AÐEINS sá staður. Kt-víð útvíkkun málaði fyrsta
+    // Center/Pizzan-systkini sem „þessa" staðar skjöl.
+    const siteLocked = !!(idty.id && idty.source === 'fyrirtaeki' && /^\d+$/.test(String(idty.id)));
     const coIds = [];
     const baseIds = [];
-    if (idty.id && idty.source === 'fyrirtaeki') coIds.push(+idty.id);
-    if (ktd.length === 10 && ktd !== '9999999999') {
+    if (siteLocked) coIds.push(+idty.id);
+    if (!siteLocked && ktd.length === 10 && ktd !== '9999999999') {
       const d = ktDashed(ktd);
       const f = await sb.from('fyrirtaeki').select('id,customer_base_id')
         .in('kennitala', d !== ktd ? [ktd, d] : [ktd]).is('deleted_at', null);
@@ -328,7 +330,8 @@
     try {
       const ors = [];
       if (coIds.length) ors.push('fyrirtaeki_id.in.(' + coIds.join(',') + ')');
-      if (baseIds.length) ors.push('customer_base_id.in.(' + baseIds.join(',') + ')');
+      if (!siteLocked && baseIds.length) ors.push('customer_base_id.in.(' + baseIds.join(',') + ')');
+      if (!ors.length) { holder.innerHTML = ''; return; }
       const r = await sb.from('customer_documents')
         .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id')
         .or(ors.join(','))
@@ -392,16 +395,21 @@
     const solBySrc = {}; // 'uttekt|2026' -> {id,num,samtals}
     try {
       const ktb = ktDigits(idty.kt);
-      if (ktb.length === 10 && ktb !== '9999999999') {
-        const sr = await sb.from('solur').select('id,num,source,samtals,created_at')
+      let sr = null;
+      if (siteLocked && coIds.length) {
+        sr = await sb.from('solur').select('id,num,source,samtals,created_at')
+          .in('customer_id', coIds)
+          .in('source', ['uttekt', 'brunakerfi']).limit(400);
+      } else if (ktb.length === 10 && ktb !== '9999999999') {
+        sr = await sb.from('solur').select('id,num,source,samtals,created_at')
           .or('customer_kt.eq.' + ktb + ',customer_kt.eq.' + ktDashed(ktb))
           .in('source', ['uttekt', 'brunakerfi']).limit(400);
-        (sr.data || []).forEach(s => {
-          const y = String(s.created_at || '').slice(0, 4);
-          const k = (s.source || '') + '|' + y;
-          if (!solBySrc[k]) solBySrc[k] = s; // nýjasti/fyrsti per source|ár
-        });
       }
+      (sr && sr.data || []).forEach(s => {
+        const y = String(s.created_at || '').slice(0, 4);
+        const k = (s.source || '') + '|' + y;
+        if (!solBySrc[k]) solBySrc[k] = s;
+      });
     } catch (_) {}
     // Per ár: 🧯 (úttektarskýrsla + uttekt-reikningur) · 🔥 (brunakerfisskýrsla + brunakerfi-reikningur).
     const bundlesByYear = {};
@@ -432,7 +440,26 @@
     // (matched_by='shared_report'), which this purely doc_type-based grouping
     // can't know on its own. Best-effort: never blocks the rest of the modal.
     try {
-      if (baseIds.length) {
+      if (siteLocked && coIds.length) {
+        const dp = await sb.from('document_pairs')
+          .select('year,service_type,report_doc_id,invoice_doc_id,fyrirtaeki_id')
+          .in('fyrirtaeki_id', coIds)
+          .or('report_doc_id.not.is.null,invoice_doc_id.not.is.null');
+        (dp.data || []).forEach(row => {
+          const key = row.service_type === 'brunakerfi' ? 'brunakerfi' : 'skyrsla';
+          const y = String(row.year);
+          const slot = (bundlesByYear[y] = bundlesByYear[y] || {})[key];
+          if (!slot) return;
+          if (!slot.rep && row.report_doc_id) {
+            const repDoc = docs.find(d => d.id === row.report_doc_id);
+            if (repDoc) slot.rep = repDoc;
+          }
+          if (!slot.inv && row.invoice_doc_id) {
+            const invDoc = docs.find(d => d.id === row.invoice_doc_id);
+            if (invDoc) slot.inv = { id: invDoc.id, num: invDoc.invoice_number, samtals: invDoc.amount, _url: invDoc._url, drive_file_id: invDoc.drive_file_id, _fromDoc: true };
+          }
+        });
+      } else if (baseIds.length) {
         const dp = await sb.from('document_pairs')
           .select('year,service_type,report_doc_id,invoice_doc_id')
           .in('customer_base_id', baseIds)

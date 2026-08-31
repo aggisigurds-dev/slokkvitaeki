@@ -31,9 +31,32 @@
   // AppSettings) so the proof shows on every device.
   function getSource(coId){ try{ if(window.AppSettings&&AppSettings.path){ var all=AppSettings.path('inspection_source')||{}; return all[String(coId)]||null; } }catch(_){} return null; }
   function saveSource(coId, src){ try{ if(window.AppSettings&&AppSettings.save){ var o={inspection_source:{}}; o.inspection_source[String(coId)]=src; return AppSettings.save(o); } }catch(_){} return Promise.resolve(); }
-  async function fetchReportDocs(baseId){
-    var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('year,drive_file_id,storage_path,notes').eq('customer_base_id',baseId).eq('doc_type','uttektarskyrsla'); return r.data||[]; }catch(e){ return []; }
+  // „Tengd skýrsla" footer. Á fjölstaða-kt (Center/Pizzan) málaði base-join
+  // nýjustu systurskýrsluna á Plaza/Hlaðvarpinn. Aðeins þessi fyrirtaeki_id;
+  // óstaðsettar base-raðir aðeins þegar kt á einn stað.
+  async function fetchReportDocs(baseId, coId, multiloc){
+    var sb=SB(); if(!sb) return [];
+    var out=[], seen={};
+    function add(rows){
+      (rows||[]).forEach(function(d){
+        if(!d) return;
+        var k=[d.year,d.drive_file_id||'',d.storage_path||'',d.notes||''].join('|');
+        if(seen[k]) return; seen[k]=1; out.push(d);
+      });
+    }
+    try{
+      if(coId){
+        var r=await sb.from('customer_documents').select('year,drive_file_id,storage_path,notes,fyrirtaeki_id')
+          .eq('fyrirtaeki_id', coId).eq('doc_type','uttektarskyrsla');
+        add(r.data);
+      }
+      if(baseId && !multiloc){
+        var r2=await sb.from('customer_documents').select('year,drive_file_id,storage_path,notes,fyrirtaeki_id')
+          .eq('customer_base_id', baseId).eq('doc_type','uttektarskyrsla');
+        add((r2.data||[]).filter(function(d){ return d.fyrirtaeki_id==null || +d.fyrirtaeki_id===+coId; }));
+      }
+    }catch(e){}
+    return out;
   }
   // The report the tækjalisti is based on: prefer the recorded import source,
   // else the newest attached úttektarskýrsla, else the newest report on file.
@@ -215,7 +238,12 @@
     var nextInsp=(y+1)+'-06-01';
     // Count what is ALREADY registered for this company, per category, so we
     // only add the tæki that are missing (no duplicates).
-    var existing=((window.DB&&DB.cache&&DB.cache.units)||[]).filter(function(u){return u.client===nafn;});
+    // Telja á AUÐKENNI þegar það er til, ekki á nafni. Tveir staðir geta
+    // borið sama nafn; nafna-talning bætti þá við of fáum eða of mörgum.
+    var _fidNum=(coId!=null&&coId!=='')?Number(coId):null;
+    var existing=((window.DB&&DB.cache&&DB.cache.units)||[]).filter(function(u){
+      return _fidNum!=null ? Number(u.fyrirtaeki_id)===_fidNum : u.client===nafn;
+    });
     var have={}; existing.forEach(function(u){ var c=catOf(u); if(c) have[c]=(have[c]||0)+1; });
     var rows=[], used={}, summary=[];
     lines.forEach(function(l){
@@ -225,8 +253,15 @@
       var label=m[0]+(m[1]?' '+m[1]:'');
       summary.push('• '+label+': skýrsla '+n+' · skráð '+existN+' → '+(add>0?('bæti við '+add):'fullt ✓'));
       for(var i=0;i<add;i++){ var s; do{ s=tmpSerial(); }while(used[s]); used[s]=1;
-        rows.push({ serial:s, type:m[0], size:m[1], client:nafn, location:'',
-          last_insp:lastInsp, next_insp:nextInsp, status:'active', pressure:14 }); }
+        var _r={ serial:s, type:m[0], size:m[1], client:nafn, location:'',
+          last_insp:lastInsp, next_insp:nextInsp, status:'active', pressure:14 };
+        // Án fyrirtaeki_id verður tækið draugur — sjá 73-bulk-add-units.
+        if(_fidNum!=null){
+          _r.fyrirtaeki_id=_fidNum;
+          try{ var _c=((window.Companies&&Companies.list)||[]).find(function(x){return +x.id===_fidNum;});
+               if(_c&&_c.customer_base_id!=null) _r.customer_base_id=Number(_c.customer_base_id); }catch(_){}
+        }
+        rows.push(_r); }
     });
     if(!summary.length){ alert('Engin tæki í skýrslunni.'); return; }
     // Remember which report this came from (proof), even if nothing new is added.
@@ -413,7 +448,7 @@
     var baseId=await baseIdForKt(co.kennitala);
     var fl = baseId ? await fetchLines(baseId, co, multiloc) : { rows:[], others:0 };
     var lines = fl.rows;
-    var repDocs = baseId ? await fetchReportDocs(baseId) : [];
+    var repDocs = await fetchReportDocs(baseId, coId, multiloc);
     var invoices = await fetchInvoices(co, sibs);
     var hasInv = (invoices.own&&invoices.own.length) || (invoices.siblings&&invoices.siblings.length);
     var footer = sourceFooter(computeSrc(coId, repDocs));
@@ -593,9 +628,9 @@
       '.rdr-box{background:var(--surface);border:1px dashed var(--brd2);border-radius:12px;margin:14px 0}',
       '.rdr-toggle{width:100%;display:flex;align-items:center;gap:9px;background:none;border:0;cursor:pointer;padding:11px 15px;font:inherit;text-align:left}',
       '.rdr-chev{color:var(--ink3);font-size:12px;width:12px;flex:none}',
-      '.rdr-ttl{font-family:"Space Mono",ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink1)}',
+      '.rdr-ttl{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink1)}',
       '.rdr-bodywrap{padding:0 15px 14px}',
-      '.rdr-h{font-family:"Space Mono",ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink1);margin-bottom:10px}',
+      '.rdr-h{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink1);margin-bottom:10px}',
       '.rdr-muted{font-size:12px;color:var(--ink3)}',
       '.rdr-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}',
       '.rdr-lab{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink4)}',

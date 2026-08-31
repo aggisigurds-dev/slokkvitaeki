@@ -55,11 +55,11 @@
       '.tgl-acts{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}' +
       '.tgl-a{border:1px solid var(--brd,#e2e8f0);background:var(--surface,#fff);border-radius:8px;padding:5px 9px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}' +
       '.tgl-a.link{background:#eef2ff;border-color:#c7d2fe;color:#4338ca}.tgl-a.ok{background:#dcfce7;border-color:#bbf7d0;color:#166534}.tgl-a.no{color:#b91c1c}' +
-      '.tgl-empty{text-align:center;color:#94a3b8;padding:34px;font-size:13px}' +
+      '.tgl-empty{text-align:center;color:var(--ink3,#64748b);padding:34px;font-size:13px}' +
       '.tgl-pick{position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px}' +
-      '.tgl-pick-box{background:var(--surface,#fff);border-radius:13px;max-width:460px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}' +
+      '.tgl-pick-box{background:var(--surface,#fff);color:var(--ink,#0f172a);border-radius:13px;max-width:460px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}' +
       '.tgl-pick-res{overflow-y:auto;padding:4px}' +
-      '.tgl-pick-item{padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13px}.tgl-pick-item:hover{background:#eef2ff}';
+      '.tgl-pick-item{padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--ink,#0f172a);font-weight:600}.tgl-pick-item:hover{background:#eef2ff}';
     document.head.appendChild(s);
   }
 
@@ -134,7 +134,7 @@
   function openPicker(x) {
     const wrap = document.createElement('div'); wrap.className = 'tgl-pick';
     wrap.innerHTML = '<div class="tgl-pick-box">' +
-      '<div style="padding:12px 14px;border-bottom:1px solid var(--brd,#eef2f7)"><div style="font-weight:800;font-size:14px">Tengja ' + esc(x.netfang) + ' við fyrirtæki</div>' +
+      '<div style="padding:12px 14px;border-bottom:1px solid var(--brd,#eef2f7)"><div style="font-weight:800;font-size:14px;color:var(--ink,#0f172a)">Tengja ' + esc(x.netfang) + ' við fyrirtæki</div>' +
       '<input class="tgl-search" id="tgl-pick-q" style="width:100%;margin-top:8px;box-sizing:border-box" placeholder="Leita að fyrirtæki (nafn/kt)…" autofocus></div>' +
       '<div class="tgl-pick-res" id="tgl-pick-res"></div>' +
       '<div style="padding:10px 14px;border-top:1px solid var(--brd,#eef2f7);display:flex;justify-content:space-between;gap:8px">' +
@@ -153,7 +153,7 @@
       let list = L;
       if (term) list = L.filter((c) => (c.nafn || '').toLowerCase().includes(term) || String(c.kennitala || '').replace('-', '').includes(term.replace('-', '')));
       else list = L.filter((c) => (c.len || (c.netfang || '').split('@')[1] || '') === x.len);   // suggest same-domain companies first
-      res.innerHTML = list.slice(0, 40).map((c) => '<div class="tgl-pick-item" data-kt="' + esc(c.kennitala || '') + '" data-nm="' + esc(c.nafn || '') + '">' + esc(c.nafn) + (c.kennitala ? ' <span style="color:#94a3b8">' + esc(c.kennitala) + '</span>' : '') + '</div>').join('') || '<div class="tgl-empty">Ekkert fannst</div>';
+      res.innerHTML = list.slice(0, 40).map((c) => '<div class="tgl-pick-item" data-kt="' + esc(c.kennitala || '') + '" data-nm="' + esc(c.nafn || '') + '">' + esc(c.nafn) + (c.kennitala ? ' <span style="color:var(--ink3,#64748b);font-weight:400">' + esc(c.kennitala) + '</span>' : '') + '</div>').join('') || '<div class="tgl-empty">Ekkert fannst</div>';
       res.querySelectorAll('[data-kt]').forEach((it) => it.addEventListener('click', async () => {
         const kt = it.dataset.kt; if (!kt) { toast('⚠ Fyrirtæki vantar kennitölu'); return; }
         try { const j = await post({ action: 'link', id: x.id, kennitala: kt, fyrirtaeki: it.dataset.nm }); apply(j.contact); close(); toast('🔗 Tengt: ' + it.dataset.nm); } catch (e) { toast('⚠ ' + e.message); }

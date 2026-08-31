@@ -271,37 +271,82 @@
       // væri `_settings` bara DEFAULTS, svo eitt sakleysislegt skrif (bílstjóri
       // ýtir á chip) gæti skrifað sjálfgefin gildi yfir 808 fyrirtæki, öll
       // viðhengi og allar verðskrár — og skilað `true`, svo viðmótið segði ✓.
-      let base = _settings;
-      try {
-        const cur = await window.DB.sb.from('app_settings').select('settings').eq('id', 1).maybeSingle();
-        if (cur && cur.error) {
-          console.warn('[app-settings] save hætt við — náði ekki í núverandi stillingar:', cur.error.message);
+      // 2026-08-30 — GLATAÐ SKRIF LAGAÐ (sannleikskoðun 30.08, liður #1).
+      //
+      // Hér stóð áður: lesa settings → sameina í minni → `upsert` SKILYRÐISLAUST.
+      // Skrifaði önnur vél á milli lestrar og skrifs var hún YFIRSKRIFUÐ ÞEGJANDI
+      // og fallið skilaði samt `true`, svo viðmótið sagði ✓. Röðin er ein og hún
+      // er 1,4 MB (arsskodun_customers 531 kB, company_attachments 470 kB), svo
+      // hvert einasta skrif — bílstjóri sem ýtir á chip í símanum — endurskrifar
+      // allt saman. Fjórar vélar vinna samtímis. Þetta er vélin á bak við
+      // „þetta breyttist af sjálfu sér" og „nótan mín hvarf".
+      //
+      // Núna: bjartsýn samhliðavörn á updated_at. Skrifið gildir AÐEINS ef
+      // stimpillinn er sá sami og við lásum. Hafi einhver annar skrifað á milli
+      // snertir uppfærslan enga röð → við lesum upp á nýtt, sameinum ofan á
+      // NÝJASTA ástandið og reynum aftur. deepMerge er viðbætandi, svo
+      // endurtekning er örugg: hvorugt skrifið tapast, þau leggjast saman.
+      //
+      // Mistakist það þrisvar er skilað `false` — ALDREI þögult „tókst".
+      const MAX = 4;
+      for (let attempt = 1; attempt <= MAX; attempt++) {
+        let base = _settings, stamp = null, rowExists = false;
+        try {
+          const cur = await window.DB.sb.from('app_settings')
+            .select('settings,updated_at').eq('id', 1).maybeSingle();
+          if (cur && cur.error) {
+            console.warn('[app-settings] save hætt við — náði ekki í núverandi stillingar:', cur.error.message);
+            return false;
+          }
+          if (cur && cur.data) {
+            rowExists = true;
+            if (cur.data.settings) base = cur.data.settings;
+            stamp = cur.data.updated_at;
+          } else if (!_loaded) {
+            // Engin röð OG aldrei hlaðið = við vitum ekkert. Fyrsta skrif á
+            // glænýrri uppsetningu (hlaðið, engin röð) sleppur hér í gegn.
+            console.warn('[app-settings] save hætt við — stillingar aldrei hlaðnar');
+            return false;
+          }
+        } catch (e) {
+          console.warn('[app-settings] save hætt við — lestrarvilla:', e);
           return false;
         }
-        if (cur && cur.data && cur.data.settings) base = cur.data.settings;
-        else if (!_loaded) {
-          // Engin röð OG aldrei hlaðið = við vitum ekkert. Fyrsta skrif á
-          // glænýrri uppsetningu (hlaðið, engin röð) sleppur hér í gegn.
-          console.warn('[app-settings] save hætt við — stillingar aldrei hlaðnar');
-          return false;
+
+        const next = deepMerge(JSON.parse(JSON.stringify(base)), patch);
+        const nowIso = new Date().toISOString();
+
+        if (!rowExists) {                       // glæný uppsetning — engin röð til
+          const ins = await window.DB.sb.from('app_settings')
+            .upsert({ id: 1, settings: next, updated_at: nowIso }, { onConflict: 'id' });
+          if (ins.error) { console.warn('[app-settings] save error:', ins.error.message); return false; }
+        } else {
+          // Skilyrt uppfærsla: aðeins ef enginn hefur skrifað síðan við lásum.
+          // .select() skilar röðunum sem BREYTTUST — tóm útkoma = árekstur.
+          const upd = await window.DB.sb.from('app_settings')
+            .update({ settings: next, updated_at: nowIso })
+            .eq('id', 1).eq('updated_at', stamp)
+            .select('id');
+          if (upd.error) { console.warn('[app-settings] save error:', upd.error.message); return false; }
+          if (!upd.data || !upd.data.length) {
+            // Árekstur — önnur vél skrifaði á milli. Lesa aftur og sameina ofan
+            // á hennar útgáfu í stað þess að henda henni.
+            if (attempt < MAX) {
+              await new Promise(r => setTimeout(r, 120 * attempt));
+              continue;
+            }
+            console.warn('[app-settings] save gafst upp eftir ' + MAX + ' tilraunir — önnur vél skrifar samtímis');
+            return false;
+          }
         }
-      } catch (e) {
-        console.warn('[app-settings] save hætt við — lestrarvilla:', e);
-        return false;
+
+        _settings = next;
+        // Update cache so the next page load reflects the change immediately.
+        writeCache(next);
+        notify();
+        return true;
       }
-      const next = deepMerge(JSON.parse(JSON.stringify(base)), patch);
-      const r = await window.DB.sb
-        .from('app_settings')
-        .upsert({ id: 1, settings: next, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-      if (r.error) {
-        console.warn('[app-settings] save error:', r.error.message);
-        return false;
-      }
-      _settings = next;
-      // Update cache so the next page load reflects the change immediately.
-      writeCache(next);
-      notify();
-      return true;
+      return false;
     } catch (e) {
       console.warn('[app-settings] save exception:', e);
       return false;

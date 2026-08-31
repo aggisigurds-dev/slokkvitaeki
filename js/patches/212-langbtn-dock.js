@@ -27,21 +27,37 @@
                      'padding', 'border-radius', 'z-index', 'box-shadow'];
 
   function apply() {
-    var theme = document.getElementById('dark-toggle');
+    // 2026-08-28: 🌙-takkinn (66-dark-mode) var fjarlægður með þemuskiptunum.
+    // Áður krafðist þetta fall BEGGJA takkanna og skilaði annars false — sem
+    // hefði þýtt að EN-takkinn fengi ALDREI staðsetningu og dytti aftur í
+    // v9.js-flotið (position:fixed, z-index:9999) sem flaut yfir modal-glugga.
+    // Það er nákvæmlega bilunin sem þessi patch var skrifaður til að laga, svo
+    // hún hefði endurvakist þegjandi. EN-takkinn er nú dokkaður EINN.
+    // LEIÐRÉTTING 2026-08-29: í commit a7e19d9 fullyrti ég að þessi patch væri
+    // "dauður allan tímann" af því app.css:3551 setur #_slokk_langbtn með
+    // !important. ÞAÐ VAR RANGT. Mæling á ástandinu FYRIR breytinguna (f049379)
+    // sýnir left:166px og z-index:200 — gildi ÞESSA patch, ekki app.css. Inline
+    // !important vinnur stílblað-!important eins og staðallinn segir. Fyrri
+    // mæling mín var gerð eftir handvirka endurkeyrslu í flipa þar sem staðan
+    // var þegar brengluð.
+    var theme = document.getElementById('dark-toggle');   // má vera null
     var lang  = document.getElementById('_slokk_langbtn');
-    if (!theme || !lang) return false;
+    if (!lang) return false;
 
     if (window.innerWidth > BP) {
-      // theme = left button, EN = right button — sidebar is 220px wide
-      setImp(theme, {
-        'width': '150px',
-        'margin': '0 0 0 8px',
-        'box-sizing': 'border-box',
-        'border-radius': '8px'
-      });
+      // Sé þema-takkinn til (eldri lotur) situr hann vinstra megin og EN hægra
+      // megin; annars fær EN vinstra sætið sjálft.
+      if (theme) {
+        setImp(theme, {
+          'width': '150px',
+          'margin': '0 0 0 8px',
+          'box-sizing': 'border-box',
+          'border-radius': '8px'
+        });
+      }
       setImp(lang, {
         'transform': 'none',
-        'left': '166px',
+        'left': theme ? '166px' : '8px',
         'bottom': '0px',
         'width': '46px',
         'height': '40px',
@@ -52,7 +68,7 @@
       });
     } else {
       // phone: hand styling back to v9.js / base CSS
-      clearProps(theme, THEME_PROPS);
+      if (theme) clearProps(theme, THEME_PROPS);
       clearProps(lang, LANG_PROPS);
     }
     return true;

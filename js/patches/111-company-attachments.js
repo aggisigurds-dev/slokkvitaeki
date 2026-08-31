@@ -309,10 +309,44 @@
   async function deleteAttachment(coId, file) {
     const SB = getSB();
     if (!SB) return false;
-    try {
-      const r = await SB.storage.from(BUCKET).remove([file.path]);
-      if (r && r.error) console.warn('[company-attach] storage remove:', r.error.message);
-    } catch (e) { console.warn('[company-attach] remove exception:', e); }
+    // 2026-08-30 (sannleikskoðun #6: „delete() skilar true en eyðir engu").
+    //
+    // Hér stóð: reyna storage.remove, SKRÁ villuna í console og halda samt
+    // áfram — fallið skilaði `true` þótt skráin stæði óhreyfð. Þess vegna var
+    // ekki hægt að skipta út röngu skjali: Kirkjuvellir eiga PDF sem segir
+    // 152.880 þegar gögnin segja 121.713, og eyðingin „tókst" í hvert sinn.
+    //
+    // Tvennt skilið að núna:
+    //   • Skrá Í OKKAR GEYMSLU (file.path): mistakist remove er skilað FALSE.
+    //     Þögult ✓ á eyðingu sem gerðist ekki er verra en villa.
+    //   • Skrá í Google Drive (enginn path): hún er EKKI í okkar geymslu og
+    //     verður ekki eydd héðan. Tengingin er rofin og það er sagt berum
+    //     orðum — í stað þess að láta líta út fyrir að skjalið sé farið.
+    const inOurStorage = !!(file && file.path);
+    if (inOurStorage) {
+      try {
+        const r = await SB.storage.from(BUCKET).remove([file.path]);
+        if (r && r.error) {
+          console.warn('[company-attach] storage remove:', r.error.message);
+          try {
+            if (window.Toast && Toast.show) Toast.show('❌ Eyðing mistókst — skráin stendur óbreytt: ' + r.error.message);
+          } catch (_) {}
+          return false;
+        }
+      } catch (e) {
+        console.warn('[company-attach] remove exception:', e);
+        try {
+          if (window.Toast && Toast.show) Toast.show('❌ Eyðing mistókst — skráin stendur óbreytt');
+        } catch (_) {}
+        return false;
+      }
+    } else {
+      try {
+        if (window.Toast && Toast.show) {
+          Toast.show('⚠ Tengingin rofin. Skjalið sjálft liggur í Drive og er ÓBREYTT þar.');
+        }
+      } catch (_) {}
+    }
     // Eyðing verður að vera SKÝR: `saveCompanyAttachments` sameinar nú við ferskt
     // server-fylki, svo það dugar ekki lengur að sleppa hlutnum úr listanum —
     // hann kæmi einfaldlega aftur af server. `removeIds` tekur bæði id og path

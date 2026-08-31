@@ -36,32 +36,51 @@
     trio('#view-opp .op-nm') + '{font-size:16px}',
     trio('#view-opp .op-acts') + '{gap:6px;margin:10px 0 0;flex-wrap:wrap}',
     trio('#view-opp .op-btn') +
-      '{padding:8px 12px;min-height:40px!important;font-size:13px!important}',
-    trio('#view-opp .op-pg') + '{padding:8px 8px;min-height:40px;font-size:14px}',
-    trio('#view-opp .op-pgsum') + '{min-height:40px;padding:8px 4px}',
+      '{padding:10px 12px;min-height:44px!important;font-size:14px!important}',
+    trio('#view-opp .op-pg') + '{padding:10px 8px;min-height:44px;font-size:14px}',
+    trio('#view-opp .op-pgsum') + '{min-height:44px;padding:10px 4px}',
 
     // ── Öpp chrome: 261 header is 50px + two fat labels; nav was 120px ────
     // "⚙ Þjónustuborð" / "⤓ Setja upp" do not fit 390px next to the name.
-    // Icon-only 36×36 (title= already on the buttons); first glyph is the emoji.
-    A + '#_app-hdr{height:44px;padding:0 8px;gap:6px}',
+    // Icon-only 44×44 (title= already on the buttons); first glyph is the emoji.
+    // Mælt 29.08 á 390px: 36×36 / 28×36 — undir 44 HIG og 48 Material.
+    // 2026-08-29 (síðar): reiturinn + text-align:center sýndi MIÐJU strengsins,
+    // ekki táknið — hausinn las „⚙ Þ" og „⤓ Se" í hverju einasta appi. 261 vefur
+    // orðin nú í <i class="_applbl">; með hann falinn stendur táknið eitt eftir,
+    // miðjað, sem er það sem þessi blokk hefur alltaf meint.
+    A + '#_app-hdr{height:48px;padding:0 6px;gap:4px}',
     A + '#_app-hdr .nm{font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-    A + '#_app-hdr button{height:36px;min-height:36px;padding:0 8px;font-size:12px}',
-    A + '#_app-hdr #_app-pages,' + A + '#_app-hdr #_app-inst2' +
-      '{width:36px;min-width:36px;max-width:36px;padding:0;font-size:18px;line-height:36px;' +
+    A + '#_app-hdr button{height:44px;min-height:44px;min-width:44px;padding:0 8px;font-size:13px}',
+    A + '#_app-hdr ._applbl{display:none}',
+    A + '#_app-hdr #_app-pages,' + A + '#_app-hdr #_app-inst2,' +
+    A + '#_app-hdr #_app-style,' + A + '#_app-hdr #_app-exit' +
+      '{width:44px;min-width:44px;max-width:44px;padding:0;font-size:18px;line-height:44px;' +
        'overflow:hidden;white-space:nowrap;text-align:center}',
-    A + '.view.active{padding-top:48px!important}',
+    A + '.view.active{padding-top:52px!important}',
     'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
-      '{padding-top:48px!important}',
+      '{padding-top:52px!important}',
 
     // ── Öpp bottom nav: 261 still paints min-height:120px ──────────────────
     A + '#_app-nav{padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px))!important;gap:4px}',
-    A + '#_app-nav button{flex:1 0 64px;min-width:64px;min-height:52px!important;padding:4px 3px!important;font-size:11px!important;gap:2px!important;border-radius:10px}',
+    A + '#_app-nav button{flex:1 0 64px;min-width:64px;min-height:52px!important;padding:4px 3px!important;font-size:12px!important;gap:2px!important;border-radius:10px}',
     A + '#_app-nav button .e{font-size:18px!important}',
     A + '.view.active{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))!important}',
     'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
       '{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))!important}',
-    A + '#_app-frame{top:44px!important;bottom:64px!important}',
+    A + '#_app-frame{top:48px!important;bottom:64px!important}',
     'body.appmode.appmode-nonav .view.active{padding-bottom:24px!important}',
+
+    // Fljótandi chrome sem EKKI er hluti af appinu — mælt ofan á Kröfur:
+    // #pat-launch 139×39 @ y=787 sat OFAN Á #_app-nav (y=783). 📐 er lyft
+    // yfir dokkann; póst/CG/síðu-linkar eru faldir (sama ástæða og 327 á Sölu).
+    A + '#pat-launch,' + M + '#pat-launch,' +
+    A + '#cg-sk-trigger,' + M + '#cg-sk-trigger,' +
+    A + '#pe-pagelinks,' + A + '#pe-pagelinks-doc,' +
+    M + '#pe-pagelinks,' + M + '#pe-pagelinks-doc' +
+      '{display:none!important}',
+    A + '#_dst-btn._float{bottom:calc(76px + env(safe-area-inset-bottom,0px))!important}',
+    // Banner-🎨 er 28×28. Á síma þarf hit-area ≥44 án þess að blása borðann.
+    M + '#_pe-btn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}',
 
     // ── Bakendi ────────────────────────────────────────────────────────────
     trio('#view-bakendi .bk-wrap') + '{padding:12px 10px 72px;max-width:none}',

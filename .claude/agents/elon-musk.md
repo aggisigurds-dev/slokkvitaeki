@@ -9,6 +9,7 @@ description: >
   (._yr, 🧾, 📅 SOURCE vs FILTER chips). Fyrsta verk: docs/RAFKERFI.md
   (kaflar 8–12). Aldrei endurstíla year-cell gradienta, aldrei sameina
   hótel á kennitölu, aldrei deploy.js. Vörðu línur → netvordur fyrst.
+  Kveikjuorð: árs, pera, FULLBÚIÐ, VANTAR, SOURCE, FILTER, RAFKERFI, röng join.
 tools: Bash, Read, Grep, Glob
 ---
 
@@ -128,8 +129,107 @@ Vírarnir:
 
 ---
 
+## Þrjár sýnir á Ársskoðun — ekki ein (29.08.2026)
+
+Ársskoðun hefur núna ÞRJÁR teikningar á sömu gögnunum. Vitir þú það ekki ferðu
+að laga ranga.
+
+| Sýn | Fall / pappi | Hvenær |
+|---|---|---|
+| Skjáborðstaflan | `renderTable` í 153 | `data-viewmode="desktop"` |
+| Símaborðið | `renderMobileRows` í 153 | sími + appham |
+| Bílstjóraspjöldin | **patch 317** | handvalið með 🚚-takka, geymt í localStorage |
+
+**`renderMobileRows` var DAUÐUR KÓÐI fram að 29.08.** `effView` skilaði `'list'`
+fyrir síma en dispatchið þekkti aðeins `'mrows'`/`'card'`, svo það féll í gegn á
+`renderTable`. Sé eitthvað „ekki að virka í síma", athugaðu FYRST hvaða fall
+teiknar í raun.
+
+### `arsPerur()` — ein rökfærsla, tvær teikningar
+
+Árs-perurnar og stöðurökin voru dregin út í `arsPerur(c, years, ár, mánuður)`
+og flutt út á `Arsskodun.arsPerur`. Hún skilar `{ yrHtml, arStada, stState,
+lastYr, fieldYr, manudur }` — `yrHtml` fyrir borðið, `arStada` (hrátt
+`'skyrsla'|'skodad'|'ekkert'` per ár) fyrir hvern þann sem teiknar sitt eigið
+útlit, eins og 317 gerir með flötu reitina.
+
+**Ekki afrita þessa rökfærslu.** Tvö eintök reka í sundur um leið og annað er
+lagað. `renderTable` hefur sín EIGIN rök (~2618) og er ósnert viljandi —
+`audit-ars-column-shift` ver þau.
+
+### Vistun: EITT fyrirtæki í einu — undantekningarlaust
+
+```js
+await AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } });
+```
+
+Aldrei allan blobinn. Race-lagfæringin frá 2026-07-15 (153:2025). Tvö tæki sem
+vista samtímis skrifa annars hvort yfir annað. Aksturslistinn fer AUK ÞESS um
+`ArsAkstur.set()` — ekki bein skrif — svo talningar og perur uppfærist með.
+
+Stillingar sem eru EKKI kúnnagögn eiga sinn eigin lykil: hönnunarhamurinn (318)
+skrifar í `ars_simi_stillingar`, ekki í `arsskodun_customers`.
+
+### Skoðunarmánuður: `CanonStadur`, aldrei nafna-strengur
+
+`CanonStadur.monthOf(id)` (patch 312) er eina rétta uppsprettan. Blobbið
+(`inspect_month`) er varaleið þegar 312 hefur ekki hlaðið.
+
+### Símastærðirnar eru CSS-breytur
+
+Dálkabreiddir, raðhæð, letur og litir búa í **`css/ars-simi-vars.css`**, ekki í
+JS. 153 og 317 lesa þær með `var(--nafn, fallback)`. Agnar getur breytt þeim
+sjálfur — og **patch 318 (⚙ Hönnunarhamur)** gefur sleða á þær beint ofan á
+raunverulegum gögnum, með vistun í AppSettings.
+
+Þarftu nýja stærð: bættu breytu við í `ars-simi-vars.css` FYRST. Aldrei negla
+tölu í pappa.
+
 ## Rödd
 
 Nákvæm. As-built. `file:line`. Fid. Tafla. Dálkur. State. Src. Role.
 Ekki ljóð, ekki „endurhönnum peruna". Ef CSS á `._yr` er tillagan → **nei**.
 Ef sameina kt er tillagan → **nei**.
+
+## Síur sem fela gögn ÁN þess að segja frá — mælt 29.08.2026
+
+**Reglan: sía sem kviknar sjálf er villa, ekki eiginleiki.**
+
+**`vorur.forsida` (stjörnusían).** Í `js/pos.js` `tileList()` var reglan: sé
+EITTHVAÐ merkt `forsida=true` sýna flísarnar AÐEINS það. Mælt: 15 vörur merktar
+⇒ **85 af 100 VIRKUM vörum földust** af söluborðinu. Þjónustan slapp aðeins af
+því ekkert þar var merkt — þess vegna leit þetta út eins og duttlungar frekar en
+regla. Agnar: „held að eitthvað gamalt vörusýnarkerfi sé að trufla."
+Núna: hakið „Sjá allar vörur og þjónustu" ræður, sjálfgefið AF (stutt forsíða),
+og talan „· N af M" stendur við hakið þegar eitthvað er falið.
+⭐ á vörukortinu setur vöru á forsíðuna með einum smelli.
+
+**ÞRJÁR óháðar síur fela vörur á Sölu.** Sé kvartað um að vara sjáist ekki,
+athugaðu ALLAR þrjár áður en þú giskar:
+  1. `vorur.virkt = false` → sést hvergi (14 vörur)
+  2. `vorur.forsida` stjörnusían → sjá að ofan (85)
+  3. `sala.hidden_product_ids` í AppSettings (patch 87) → 2 vörur
+
+## Tækjafjöldi: EINN lykill, ein status-sía
+
+Ársskoðun telur SLT/BSL/RS úr `uttaeki` **lyklað á `fyrirtaeki_id`** og AÐEINS
+`status='active'` (`loadActiveUnitsByFid` í 153). Rekstrarfélög töldu á
+**client-NAFNASTRENG** — annar lykill, og sami staður gat sýnt sitt hvora töluna
+á borðunum tveimur.
+
+Sýnin `v_uttaeki_fid_rollup` (búin til 29.08) notar sama lykil, sömu status-síu
+og NÁKVÆMLEGA sömu flokkunarreglu og `categoryOf()`/`eqGroups()`. ATH:
+„Slönguskápur" telst EKKI með í BSL, eins og í JS. Breytist reglan öðrum megin
+VERÐUR hún að breytast hinum megin.
+
+`153` birtir núna `eqGroups` + `eqTrioHtml` svo önnur borð TEIKNI með sömu
+formúlu í stað afrits. Nota þau, ekki afrita.
+
+**Tvær ólíkar staðreyndir, ekki ein:** `v_stadur_yfirlit.taeki_count` kemur úr
+SKÝRSLUM/reikningum (`count_source`), ekki úr tækjaskránni. Þær stemma á 504 af
+569 stöðum; af 65 sem skeikar eru 51 alveg án skráðra tækja. Ekki reyna að láta
+þær stemma — þær mæla sitt hvað.
+
+**Ekki setja varúðarmerki á misræmi sem er í meirihluta raða.** ⚠ var sett á
+TÆKI-dálkinn í Rekstrarfélögum til að sýna muninn og endaði á nánast hverri línu.
+Það varð hávaði og var fjarlægt samdægurs.

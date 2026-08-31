@@ -7,11 +7,12 @@ description: >
   equal production, and how to revert a bad deploy. Use whenever you are about to
   commit/push/deploy the Slökkvitæki app, when a deploy looks wrong or stale, or
   when onboarding a machine to the deploy flow.
+  Kveikjuorð: deploy, ýta, git push, deploy.js (bannað), revert.
 ---
 
 # Deploy — Slökkvitæki ehf web app
 
-The app is edited from **4 machines**, each running Claude Code. The single source
+The app is edited from **4 machines**, each running Claude Code or Cursor. The single source
 of truth is `master` on GitHub. Deploy = commit + push. Nothing else.
 
 ## The one rule

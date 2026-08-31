@@ -337,10 +337,10 @@
     return '<div class="cw-rcard" style="' + typeFrame(tcols) + 'display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:10px;margin-bottom:5px;background:#ecfdf5;border:1px solid #a7f3d0">' +
       '<div class="cw-rcard-info" role="button" tabindex="0" onkeydown="_cwKbAct(event)" onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer;line-height:1.25">' +
         '<div style="display:flex;align-items:baseline;gap:6px;min-width:0">' +
-          `<span style="font-family:'Space Mono',monospace;font-size:12px;color:#047857;font-weight:700;flex:none">${dnum(j.num)}</span>` +
+          `<span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#047857;font-weight:700;flex:none">${dnum(j.num)}</span>` +
           `<span class="cw-rcard-name" style="font-size:13px;font-weight:600;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</span>` +
         '</div>' +
-        `<div style="font-family:'Space Mono',monospace;font-size:12px;color:#047857;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${live(j.units).length} slökkvitæki${digitsOnly(j.phone) ? ' · ☎ ' + esc(digitsOnly(j.phone)) : ''}${jobDate(j) ? ' · ' + jobDate(j) : ''}${typeDots(tcols)}</div>` +
+        `<div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#047857;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${live(j.units).length} slökkvitæki${digitsOnly(j.phone) ? ' · ☎ ' + esc(digitsOnly(j.phone)) : ''}${jobDate(j) ? ' · ' + jobDate(j) : ''}${typeDots(tcols)}</div>` +
       '</div>' +
       `<button type="button" class="_cw-del" onclick="event.stopPropagation();window.Workshop&&Workshop.deleteVerkGroup&&Workshop.deleteVerkGroup([${j.id}])" title="Eyða verki (fer í Eydd verk)" style="flex:none;align-self:center;border:0;background:transparent;color:#b91c1c;font-size:13px;line-height:1;padding:2px 4px;cursor:pointer;opacity:.55">🗑</button>` +
       `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;padding:4px 8px;background:#fffbeb;border:1px solid #fde68a;color:#b45309;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
@@ -793,7 +793,7 @@
       '}' +
       '#view-counter .cw-col-head, #view-workshop .cw-col-head{padding:14px 16px!important;border-bottom:1px solid rgba(20,24,34,.06)!important}' +
       '#view-counter .cw-col-title, #view-workshop .cw-col-title{font-size:11px!important;letter-spacing:.12em!important;color:#8a93a5!important}' +
-      '#view-counter .cw-col-sub, #view-workshop .cw-col-sub{font-family:"Space Mono",monospace!important;color:#9098a6!important;font-size:11px!important;margin-top:2px!important}' +
+      '#view-counter .cw-col-sub, #view-workshop .cw-col-sub{font-family:"JetBrains Mono",ui-monospace,monospace!important;color:#9098a6!important;font-size:11px!important;margin-top:2px!important}' +
       // Job card — soft surface
       '#view-counter .cw-col [onclick^="Counter.select"]{border:1px solid rgba(20,24,34,.08)!important;background:#fff!important;border-radius:11px!important;padding:11px 12px!important;transition:background .12s ease!important}' +
       '#view-counter .cw-col [onclick^="Counter.select"]:hover{background:#f3f6fc!important}' +
@@ -803,7 +803,7 @@
       // Counter sidebar toolbar — clean white surface
       '#counter-sidebar{background:#fff!important;border-bottom:1px solid rgba(20,24,34,.08)!important}' +
       // Numbers in mono
-      '#view-counter [style*="font-family:var(--mono"], #view-workshop [style*="font-family:var(--mono"]{font-family:"Space Mono",monospace!important}' +
+      '#view-counter [style*="font-family:var(--mono"], #view-workshop [style*="font-family:var(--mono"]{font-family:"JetBrains Mono",ui-monospace,monospace!important}' +
       // Modal — spec surface
       '#counter-detail-modal>div, #workshop-detail-modal>div{border-radius:16px!important;box-shadow:0 28px 80px rgba(8,10,14,.4)!important}' +
       // "✕ Loka" buttons
@@ -938,7 +938,7 @@
       '.bw-tile-x:hover{background:rgba(220,38,38,.18);color:#b91c1c}' +
       '.bw-tile-body{padding:7px 14px 4px 6px;text-align:center;cursor:pointer}' +
       '.bw-tile-ty{font-size:10px;font-weight:600;color:#11141c;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-      '.bw-tile-ser{font-family:"Space Mono",var(--mono,monospace);font-size:9.5px;color:#7a8493;margin-top:2px}' +
+      '.bw-tile-ser{font-family:"JetBrains Mono",var(--mono,monospace);font-size:9.5px;color:#7a8493;margin-top:2px}' +
       '.bw-tile-parts{font-size:9px;color:#16a34a;font-weight:700;margin-top:2px;min-height:11px}' +
       '.bw-chk{display:block;width:100%;border:none;border-top:1px solid #e2e8f0;cursor:pointer;font-weight:700;font-size:10px;padding:4px;line-height:1.1}' +
       '.bw-chk.no{background:#fff;color:#64748b}' +
@@ -955,7 +955,7 @@
       '.bw-ov{position:fixed;inset:0;background:rgba(8,10,14,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:9000}' +
       '.bw-modal{width:520px;max-width:100%;max-height:92vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 30px 80px -20px #000}' +
       '.bw-mh{background:linear-gradient(145deg,#08080a,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709);color:#fff;padding:15px 20px;display:flex;align-items:center;gap:12px}' +
-      '.bw-mh .ser{font-family:"Space Mono",var(--mono,monospace);font-size:15px;font-weight:700}' +
+      '.bw-mh .ser{font-family:"JetBrains Mono",var(--mono,monospace);font-size:15px;font-weight:700}' +
       '.bw-mh .ty{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px}' +
       '.bw-mh .x{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px}' +
       '.bw-mb{padding:18px 20px 22px}' +
@@ -989,7 +989,7 @@
       '.bw-page-hdr{display:flex;align-items:center;gap:14px;padding:8px 22px 12px;position:relative;flex-shrink:0}' +
       '.bw-page-titles{min-width:0}' +
       '.bw-page-h1{font-size:26px;font-weight:700;margin:0;line-height:1.1;color:#11141c}' +
-      '.bw-page-sub{font-family:"Space Mono",var(--mono,monospace);font-size:13px;color:#6b7280;margin-top:3px}' +
+      '.bw-page-sub{font-family:"JetBrains Mono",var(--mono,monospace);font-size:13px;color:#6b7280;margin-top:3px}' +
       '.bw-page-sub b{color:#2f5fe0}' +
       '.bw-hdr-actions{margin-left:auto;display:flex;align-items:center;gap:10px}' +
       '.bw-scan{display:flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:11px;border:1px solid #cbd5e1;background:#fff;color:#11141c;cursor:pointer;font:600 13px/1 inherit;white-space:nowrap}' +
@@ -1002,13 +1002,13 @@
       /* header matches .bw-chd — flex row, no separator, same font/padding */
       '.bw-shd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 18px 12px;flex-shrink:0}' +
       '.bw-shd-t{font-size:14px;font-weight:700;letter-spacing:.12em;color:#3a4250}' +
-      '.bw-shd-n{margin-left:auto;font-family:"Space Mono",var(--mono,monospace);font-size:12px;color:#9098a6}' +
+      '.bw-shd-n{margin-left:auto;font-family:"JetBrains Mono",var(--mono,monospace);font-size:12px;color:#9098a6}' +
       '.bw-sh-body{padding:0 18px 18px;overflow-y:auto;flex:1;min-height:0}' +
       '.bw-sh-body .bw-row:last-child{margin-bottom:0}' +
       '.bw-sh-body .empty,.bw-sh-body>div[style*="text-align:center"]{padding:18px 8px}' +
       '.bw-chd{display:flex;align-items:center;gap:10px;margin-bottom:12px}' +
       '.bw-chd b{font-size:14px;font-weight:700;letter-spacing:.12em;color:#3a4250}' +
-      '.bw-cnum{margin-left:auto;font-family:"Space Mono",var(--mono,monospace);font-size:12px;color:#9098a6}' +
+      '.bw-cnum{margin-left:auto;font-family:"JetBrains Mono",var(--mono,monospace);font-size:12px;color:#9098a6}' +
       '@media (max-width:900px){.bw-flow{flex-direction:column;align-items:stretch}.bw-card{flex:none}.bw-sh-col{width:auto;position:static;max-height:none}}' +
       '@media (max-width:640px){.bw-cinfo{flex:1 1 100%}.bw-tiles{flex:1 1 100%}' +
         '.bw-page-hdr{flex-wrap:wrap;padding:8px 14px}.bw-hdr-actions{width:100%}.bw-scan{flex:1}.bw-flow{padding:2px 12px 76px}}';

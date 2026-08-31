@@ -40,7 +40,7 @@
         height: auto !important;
         padding: 1px 8px !important;
         border-radius: 20px !important;
-        font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
+        font-family: 'JetBrains Mono', ui-monospace, monospace !important;
         font-size: 11px !important;
         font-weight: 700 !important;
         line-height: 1.4 !important;

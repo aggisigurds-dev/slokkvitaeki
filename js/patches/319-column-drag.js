@@ -62,10 +62,18 @@
     const cls = t.id ? ('#' + t.id) : (t.classList[0] ? ('.' + t.classList[0]) : '');
     return vid + '|' + (cls || 'table');
   }
+  function paintHeads() {
+    const heads = [];
+    try { if (document.head) heads.push(document.head); } catch (_) {}
+    try {
+      const f = window.SlokkDevFrame && SlokkDevFrame.iframe && SlokkDevFrame.iframe();
+      const h = f && f.contentDocument && f.contentDocument.head;
+      if (h && heads.indexOf(h) < 0) heads.push(h);
+    } catch (_) {}
+    return heads.length ? heads : [document.documentElement];
+  }
   // ── style-blaðið: vistaðar breiddir → CSS sem vinnur á 314 ────────────────
   function applyCss() {
-    let s = document.getElementById(SHEET);
-    if (!s) { s = document.createElement('style'); s.id = SHEET; (document.head || document.documentElement).appendChild(s); }
     let css = '';
     for (const key in store) {
       const e = store[key] || {};
@@ -79,8 +87,22 @@
       if (!wKeys.length && !aKeys.length && e.padY == null && !e.fs && !e.lh && !e.ff &&
           !Object.keys(e.hide || {}).length && !e.sticky) continue;
       const [vid, cls] = key.split('|');
-      const base = 'html #' + vid + ' ' + (cls === 'table' ? 'table' : (cls[0] === '#' ? 'table' + cls : 'table' + cls));
-      if (wKeys.length) css += base + '{table-layout:fixed!important;width:100%!important}\n';
+      // SÉRTÆKNI, ekki bara !important (staðfest í vafra 27.08): `html #view-x
+      // table.data-table tbody td{font-size:15px!important}` TAPAÐI fyrir
+      // þéttleika-reglum símaham-laganna, svo letur/línuhæð/raðhæð úr
+      // töflu-ritlinum gerðu ekkert í þeim ham þótt gildin vistuðust rétt.
+      // Auðkennið er því TVÍTEKIÐ (#view-x#view-x = tvö auðkenni); sömu
+      // reglur, bara nógu sterkar til að vinna. `base.slice(5)` að neðan
+      // sleppir „html " og heldur áfram að virka óbreytt.
+      const base = 'html body #' + vid + '#' + vid + ' ' +
+        (cls === 'table' ? 'table' : (cls[0] === '#' ? 'table' + cls : 'table' + cls));
+      // 2026-08-29 (Agnar: „when I try to make them wider it just goes to the left
+      // and fucks them up"). `width:100%` LÆSTI heildarbreidd töflunnar, svo það
+      // sem einn dálkur fékk tóku hinir á sig — að breikka einn dálk þýddi alltaf
+      // að mjókka aðra. Með `width:auto` verður breidd töflunnar SUMMA dálkanna,
+      // svo hún vex til hægri og skrunar (töfluskrunarinn úr 325 sér um það).
+      // `min-width:100%` heldur henni áfram út í kant þegar dálkarnir eru mjóir.
+      if (wKeys.length) css += base + '{table-layout:fixed!important;width:auto!important;min-width:100%!important}\n';
       wKeys.forEach(n => { css += base + ' col:nth-child(' + n + '){width:' + w[n] + 'px!important}\n'; });
       aKeys.forEach(n => { css += base + ' tbody td:nth-child(' + n + '),' + base + ' thead th:nth-child(' + n + '){text-align:' + al[n] + '!important}\n'; });
       if (e.padY != null) css += base + ' tbody td{padding-top:' + e.padY + 'px!important;padding-bottom:' + e.padY + 'px!important;min-height:0!important;height:auto!important}\n';
@@ -100,8 +122,15 @@
       }
       if (e.zebra) css += base + ' tbody tr:nth-child(even) td{background-image:linear-gradient(rgba(100,116,139,.09),rgba(100,116,139,.09))!important}\n';
     }
-    s.textContent = css;
-    if (s.parentNode) s.parentNode.appendChild(s);   // sitja síðast → vinna 314
+    paintHeads().forEach(head => {
+      try {
+        const doc = head.ownerDocument || document;
+        let s = doc.getElementById(SHEET);
+        if (!s) { s = doc.createElement('style'); s.id = SHEET; head.appendChild(s); }
+        s.textContent = css;
+        if (s.parentNode) s.parentNode.appendChild(s);
+      } catch (_) {}
+    });
   }
 
   // ── grip-línurnar ─────────────────────────────────────────────────────────
@@ -181,6 +210,27 @@
     const startX = ev.clientX;
     const startW = th.getBoundingClientRect().width;
     const col = table.querySelectorAll('colgroup col')[colN - 1];
+    // 2026-08-29 (Agnar: „ég ætlaði að stækka Skoðun aðeins og þá fór allt í rugl").
+    //
+    // Um leið og EINN dálkur fékk vistaða breidd varð taflan table-layout:fixed.
+    // Í þeim ham deila dálkar ÁN skilgreindrar breiddar jafnt því sem eftir er —
+    // svo Fyrirtæki, Ferðanóta, Heimilisfang, Tæki, Akstur og Forgangur hrundu
+    // öll í nákvæmlega sömu 96px og textinn brotnaði í miðjum orðum. Aðeins tveir
+    // dálkar áttu í raun vistaða breidd; hinir sex voru fórnarlömb.
+    //
+    // Lagfæring: FESTA alla dálka á þá breidd sem þeir HAFA þegar, um leið og
+    // dráttur hefst. Þá breytist aðeins sá sem dregið er í — hinir standa kyrrir
+    // í stað þess að endurdeilast.
+    const st0 = (store[key] = store[key] || {});
+    st0.w = st0.w || {};
+    const heads = table.querySelectorAll('thead th');
+    heads.forEach((h, i) => {
+      const n = i + 1;
+      if (st0.w[n] != null) return;                       // á þegar vistaða breidd
+      if (h.offsetParent === null) return;                // falinn dálkur — snertum ekki
+      const wNow = Math.round(h.getBoundingClientRect().width);
+      if (wNow > 0) st0.w[n] = wNow;
+    });
     const move = e => {
       const w = Math.max(24, Math.min(Math.round(startW + (e.clientX - startX)), Math.round(window.innerWidth * 0.9)));
       const st = (store[key] = store[key] || {}); (st.w = st.w || {})[colN] = w;
@@ -358,6 +408,7 @@
     get: () => JSON.parse(JSON.stringify(store)),
     set: (v) => { store = (v && typeof v === 'object') ? v : {}; save(); applyCss();
       document.querySelectorAll('colgroup col').forEach(c => c.style.removeProperty('width')); },
+    paint: applyCss,
   };
   console.log('[patch-319] column drag ready');
 })();

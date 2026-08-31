@@ -276,7 +276,7 @@
     if (document.getElementById('_rp-styles')) return;
     const V = '#' + VIEW_ID + ' ';
     const css = [
-      V + '{padding:0 !important;max-width:none !important;background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%) !important;min-height:100vh;font-family:"Space Grotesk",system-ui,sans-serif}',
+      V + '{padding:0 !important;max-width:none !important;background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%) !important;min-height:100vh;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif}',
       V + '.rp-main{max-width:none;margin:0;padding:16px 22px 48px;box-sizing:border-box}',
       V + '.rp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}',
       V + '.rp-title h1{margin:0;font-size:26px;font-weight:700;color:#fff;letter-spacing:-.01em}',
@@ -294,11 +294,11 @@
       V + '.rp-card{background:#fff !important;border:1px solid rgba(20,24,34,.08) !important;border-left:3px solid #cbd5e1 !important;border-radius:13px;box-shadow:0 8px 22px -16px rgba(25,35,60,.22);padding:11px 15px;display:flex;align-items:flex-start;gap:14px}',
       V + '.rp-card.q{border-left-color:#f59e0b !important}',
       V + '.rp-card.matched{border-left-color:#2f5fe0 !important}',
-      V + '.rp-when{flex:none;width:70px;text-align:center;color:#64748b;font-size:11.5px;font-family:"Space Mono",monospace}',
+      V + '.rp-when{flex:none;width:70px;text-align:center;color:#64748b;font-size:11.5px;font-family:"JetBrains Mono",ui-monospace,monospace}',
       V + '.rp-when b{display:block;color:#11141c;font-size:12.5px}',
       V + '.rp-mid{flex:1;min-width:0}',
       V + '.rp-from{font-size:13.5px;font-weight:700;color:#11141c;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
-      V + '.rp-from .em{font-weight:400;color:#94a3b8;font-family:"Space Mono",monospace;font-size:11.5px}',
+      V + '.rp-from .em{font-weight:400;color:#94a3b8;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px}',
       V + '.rp-subj{font-size:12.5px;color:#3a4250;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       V + '.rp-snip{font-size:12px;color:#64748b;margin-top:3px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}',
       V + '.rp-badge{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap}',
@@ -338,7 +338,7 @@
       V + '.rp-btn.ok:hover{background:#d1fae5}',
       V + '.rp-thread-list{margin-top:8px;border-top:1px dashed #e2e8f0;padding-top:7px;display:flex;flex-direction:column;gap:6px}',
       V + '.rp-thread-msg{font-size:11.5px;color:#64748b;padding-left:10px;border-left:2px solid #e2e8f0}',
-      V + '.rp-thread-msg .d{font-family:"Space Mono",monospace;color:#94a3b8}',
+      V + '.rp-thread-msg .d{font-family:"JetBrains Mono",ui-monospace,monospace;color:#94a3b8}',
       V + '.rp-thread-msg .s{font-weight:700;color:#3a4250}',
       V + '.rp-thread-msg .ans{color:#059669}',
       V + '.rp-thread-msg .tx{color:#94a3b8;margin-top:1px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
@@ -370,7 +370,7 @@
       V + '.rp-btn.ai{background:linear-gradient(180deg,#fff,#f3e8ff);color:#7c3aed;border-color:#ddd6fe}',
       V + '.rp-btn.ai:hover{background:#f5f0ff;color:#6d28d9;border-color:#c4b5fd}',
       // ── modal (appended to body — outside .view so patch-245 can't touch it) ──
-      '#_rp-modal{position:fixed;inset:0;z-index:100050;display:flex;align-items:center;justify-content:center;font-family:"Space Grotesk",system-ui,sans-serif}',
+      '#_rp-modal{position:fixed;inset:0;z-index:100050;display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif}',
       '#_rp-modal .rpm-back{position:absolute;inset:0;background:rgba(6,7,10,.62);backdrop-filter:blur(2px)}',
       '#_rp-modal .rpm-card{position:relative;background:#fff;border-radius:16px;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden}',
       '#_rp-modal .rpm-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px;border-bottom:1px solid #eef1f6}',
@@ -1132,8 +1132,22 @@
       try { navigator.clipboard.writeText(ta.value); if (window.Toast && Toast.show) Toast.show('✓ Afritað'); } catch (_) { ta.select(); document.execCommand('copy'); }
     };
     card.querySelector('#_rpm-reply-send').onclick = () => sendReply(m);
-    // auto-draft on open
-    genReply(m, () => '');
+    // Forvinna af Þjónustuborði: fylla svarið og yfirlitið, hoppa yfir Claude.
+    // Ekkert sent hér — notandinn ýtir á Senda svar.
+    if (m.draftBody) {
+      const ta = card.querySelector('#_rpm-reply');
+      if (ta) ta.value = m.draftBody;
+      if (m.draftSummary) {
+        const sumRow = card.querySelector('#_rpm-summary-row');
+        const sumEl = card.querySelector('#_rpm-summary');
+        if (sumRow) sumRow.style.display = '';
+        if (sumEl) sumEl.textContent = m.draftSummary;
+      }
+      const msg = card.querySelector('#_rpm-msg');
+      if (msg) { msg.textContent = 'Forvinna úr Þjónustuborði — yfirfarðu áður en þú sendir.'; msg.className = 'rpm-msg'; }
+    } else {
+      genReply(m, () => '');
+    }
   }
   async function customerInvContext(m) {
     const kt = m.cust && ktDigits(m.cust.kt);

@@ -46,7 +46,7 @@
     return '<button type="button" data-tn-sel="' + esc(sel) + '" data-tn-label="' + esc(title) + '" title="' + esc(title) + '" ' +
       'style="all:unset;box-sizing:border-box;position:fixed;left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;width:' + Math.round(w) + 'px;height:' + Math.round(h) + 'px;' +
       'pointer-events:auto;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
-      'font:700 10.5px \'Space Grotesk\',sans-serif;border:1px solid #c6cdd6;' +
+      'font:700 10.5px \'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;border:1px solid #c6cdd6;' +
       (dark ? 'background:#0f172a;color:#fff;' : 'background:#f1f3f6;color:#334155;') +
       'overflow:visible;white-space:nowrap">' + esc(label) +
       // dráttar-svæði á hægri brún bókstafa-reits: dragðu = dálkbreiddin
@@ -148,7 +148,7 @@
   function destroyOverlay() { const o = document.getElementById(OV_ID); if (o) o.remove(); }
   function closeEditor() { const d = document.getElementById(ED_ID); if (d) d.remove(); editing = null; }
 
-  const TN_FONTS = ['', 'Space Grotesk', 'Space Mono', 'Source Serif 4', 'Georgia, serif', 'system-ui, sans-serif', 'Arial, sans-serif', 'Courier New, monospace', 'Impact, sans-serif'];
+  const TN_FONTS = ['', 'IBM Plex Sans', 'JetBrains Mono', 'Source Serif 4', 'Georgia, serif', 'system-ui, sans-serif', 'Arial, sans-serif', 'Courier New, monospace', 'Impact, sans-serif'];
   function pe() { return window.PageEditor || {}; }
   function readD(prop) { return editing && pe().readDecl ? pe().readDecl(editing.scope, editing.sel, prop) : null; }
   function setD(prop, val) { if (editing && pe().upsertDecl) pe().upsertDecl(editing.scope, editing.sel, prop, val); }
@@ -161,7 +161,7 @@
     d.id = ED_ID;
     const left = Math.min(Math.max(8, nearRect.left), window.innerWidth - 300);
     const top = Math.min(nearRect.bottom + 8, window.innerHeight - 240);
-    d.style.cssText = 'position:fixed;left:' + left + 'px;top:' + top + 'px;z-index:99985;background:#fff;border:1px solid #cbd5e1;border-radius:13px;box-shadow:0 22px 50px -18px rgba(15,23,42,.5);padding:12px 14px;width:270px;font:13px \'Space Grotesk\',sans-serif;color:#0f172a';
+    d.style.cssText = 'position:fixed;left:' + left + 'px;top:' + top + 'px;z-index:99985;background:#fff;border:1px solid #cbd5e1;border-radius:13px;box-shadow:0 22px 50px -18px rgba(15,23,42,.5);padding:12px 14px;width:270px;font:13px \'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;color:#0f172a';
     const curColor = readD('color') || '#0f172a';
     const curBg = readD('background-color') || '#ffffff';
     const curFs = parseInt(readD('font-size'), 10) || '';

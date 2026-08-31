@@ -138,7 +138,20 @@
     } catch (_) { /* view may be unavailable */ }
   }
   function docsFor(c) {
-    return (c.customer_base_id != null && _docByBase.get(String(c.customer_base_id))) || _docByKt.get(_normKt(c.kennitala)) || null;
+    const rec = (c.customer_base_id != null && _docByBase.get(String(c.customer_base_id))) || _docByKt.get(_normKt(c.kennitala)) || null;
+    if (!rec) return null;
+    // customer_doc_status er lögaðila-víð. Á fjölstaða-kt (Center/Pizzan)
+    // málaði Ú11/R8 á hvert hótel sem ætti 0. Aðeins sýnt þegar kt/base á einn stað.
+    const kt = _normKt(c.kennitala);
+    const list = (window.Companies && Companies.list) || [];
+    let n = 0;
+    for (let i = 0; i < list.length; i++) {
+      const x = list[i];
+      if (c.customer_base_id != null && x.customer_base_id === c.customer_base_id) n++;
+      else if (kt && _normKt(x.kennitala) === kt) n++;
+    }
+    if (n > 1) return null;
+    return rec;
   }
 
   // Bank-import-only payer rows (PR1 / framhald 48A): fyrirtaeki flagged
@@ -455,7 +468,7 @@
       document.head.appendChild(_st);
     }
     main.innerHTML = `
-      <div class="thm"><div class="app-page"><main class="app-main" style="font-family:'Space Grotesk',system-ui,sans-serif;color:#11141c">
+      <div class="thm"><div class="app-page"><main class="app-main" style="font-family:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif;color:#11141c">
 
         <div class="page-title">
           <div class="page-title__lead">
@@ -463,11 +476,11 @@
             <div>
               <h1>Allir Viðskiptavinir</h1>
               <p>
-                <span style="font-family:'Space Mono',monospace;color:#fff;font-weight:700">${cntAll}</span> fyrirtæki ·
-                <span style="color:#fca5a5"><span style="font-family:'Space Mono',monospace;font-weight:700">${cntArs}</span> í fyrirtækjaþjónustu</span> ·
-                <span style="color:#93c5fd"><span style="font-family:'Space Mono',monospace;font-weight:700">${cntBru}</span> í brunakerfi</span> ·
-                <span style="color:#7dd3fc"><span style="font-family:'Space Mono',monospace;font-weight:700">${cntFerda}</span> í ferðaþjónustu</span> ·
-                <span style="font-family:'Space Mono',monospace;color:#fff;font-weight:700">${cntOne}</span> án samnings
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace;color:#fff;font-weight:700">${cntAll}</span> fyrirtæki ·
+                <span style="color:#fca5a5"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700">${cntArs}</span> í fyrirtækjaþjónustu</span> ·
+                <span style="color:#93c5fd"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700">${cntBru}</span> í brunakerfi</span> ·
+                <span style="color:#7dd3fc"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700">${cntFerda}</span> í ferðaþjónustu</span> ·
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace;color:#fff;font-weight:700">${cntOne}</span> án samnings
               </p>
             </div>
           </div>
@@ -481,22 +494,22 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px">
           <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)">
             <div style="font-size:10.5px;font-weight:700;color:#8a93a5;letter-spacing:.14em">FJÖLDI</div>
-            <div style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:#11141c;margin-top:4px">${cntAll}</div>
+            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#11141c;margin-top:4px">${cntAll}</div>
             <div style="font-size:11.5px;color:#9098a6;margin-top:3px">viðskiptavinir</div>
           </div>
           <div style="background:linear-gradient(180deg,#eaf7ef,#fff);border:1px solid #a7f3d0;border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)">
             <div style="font-size:10.5px;font-weight:700;color:#047857;letter-spacing:.14em">Í ÞJÓNUSTU</div>
-            <div style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:#1f9d57;margin-top:4px">${cntInService}</div>
+            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#1f9d57;margin-top:4px">${cntInService}</div>
             <div style="font-size:11.5px;color:#5b6472;margin-top:3px">${cntArs} fyrirtækjaþj. · ${cntBru} brunakerfi</div>
           </div>
           <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)">
             <div style="font-size:10.5px;font-weight:700;color:#8a93a5;letter-spacing:.14em">MEÐ TÆKI</div>
-            <div style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:#11141c;margin-top:4px">${cntWithUnits}</div>
+            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#11141c;margin-top:4px">${cntWithUnits}</div>
             <div style="font-size:11.5px;color:#9098a6;margin-top:3px">skráð slökkvitæki</div>
           </div>
           <div style="background:linear-gradient(180deg,#fff7e6,#fff);border:1px solid #fde68a;border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)">
             <div style="font-size:10.5px;font-weight:700;color:#b45309;letter-spacing:.14em">ÁN NETFANGS</div>
-            <div style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:#c77a16;margin-top:4px">${cntNoEmail}</div>
+            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#c77a16;margin-top:4px">${cntNoEmail}</div>
             <div style="font-size:11.5px;color:#9098a6;margin-top:3px">vantar tölvupóst</div>
           </div>
         </div>
@@ -510,7 +523,7 @@
             </div>
             <button id="_av-new-cust" type="button" style="padding:8px 16px;height:38px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:11px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);display:flex;align-items:center;gap:5px">+ Nýr viðskiptavinur</button>
           </div>
-          ${state.view === 'list' ? '<div style="font-family:\'Space Mono\',monospace;font-size:11px;color:#9098a6">Smelltu á dálkahaus til að raða</div>' : ''}
+          ${state.view === 'list' ? '<div style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:11px;color:#9098a6">Smelltu á dálkahaus til að raða</div>' : ''}
         </div>
 
         <!-- Primary service filter chips -->
@@ -525,7 +538,7 @@
             const sel = state.filter === key;
             const inactive = 'background:linear-gradient(180deg,#fdfdfe,#e3e7ee);border:1px solid rgba(20,24,34,.14);color:#3a4250';
             const active   = 'background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;border:1px solid #0a0b0d';
-            return `<button data-filter="${key}" class="_av-ft" style="padding:7px 14px;${sel?active:inactive};border-radius:10px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600">${lbl} <span style="font-family:'Space Mono',monospace;opacity:.7;font-weight:700">${n}</span></button>`;
+            return `<button data-filter="${key}" class="_av-ft" style="padding:7px 14px;${sel?active:inactive};border-radius:10px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600">${lbl} <span style="font-family:'JetBrains Mono',ui-monospace,monospace;opacity:.7;font-weight:700">${n}</span></button>`;
           }).join('')}
         </div>
 
@@ -544,7 +557,7 @@
             const sel = state.xfilter.includes(key);
             const inactive = 'background:#fff;border:1px solid rgba(20,24,34,.14);color:#5b6472';
             const active   = 'background:#eef3ff;border:1px solid #c6d6ff;color:#2f5fe0;font-weight:700';
-            return `<button data-xfilter="${key}" class="_av-xft" style="padding:5px 11px;${sel?active:inactive};border-radius:8px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${lbl} <span style="font-family:'Space Mono',monospace;opacity:.7">${n}</span></button>`;
+            return `<button data-xfilter="${key}" class="_av-xft" style="padding:5px 11px;${sel?active:inactive};border-radius:8px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${lbl} <span style="font-family:'JetBrains Mono',ui-monospace,monospace;opacity:.7">${n}</span></button>`;
           }).join('')}
           ${state.xfilter.length ? `<button id="_av-clear-x" type="button" style="padding:5px 11px;border:none;background:none;color:#c0241f;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">Hreinsa síu ✕</button>` : ''}
           <button id="_av-selmode" type="button" style="margin-left:auto;padding:6px 13px;border:1px solid ${state.selectMode?'#0a0b0d':'rgba(20,24,34,.14)'};background:${state.selectMode?'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)':'#fff'};color:${state.selectMode?'#fff':'#3a4250'};border-radius:9px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700">☑︎ ${state.selectMode?'Hætta vali':'Velja margar'}</button>
@@ -553,7 +566,7 @@
         ${state.selectMode ? `
         <!-- Bulk action bar -->
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;background:#eef3ff;border:1px solid #c6d6ff;border-radius:12px">
-          <span style="font-family:'Space Mono',monospace;font-weight:700;color:#2f5fe0;font-size:13px">${state.selected.size} valdir</span>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;color:#2f5fe0;font-size:13px">${state.selected.size} valdir</span>
           <button id="_av-sel-clear" type="button" style="padding:6px 12px;border:1px solid rgba(20,24,34,.14);background:#fff;border-radius:9px;cursor:pointer;font:inherit;font-size:12px;color:#3a4250">Hreinsa val</button>
           <div style="flex:1;min-width:0"></div>
           <button id="_av-bulk-merge" type="button" ${state.selected.size === 2 ? '' : 'disabled'} title="Sameina tvö fyrirtæki sem eru sama viðskiptavinurinn (færir tæki + skjöl yfir á það sem heldur; hitt fer í geymslu). Veldu nákvæmlega 2." style="padding:6px 12px;border:1px solid #ddd6fe;background:#f5f3ff;color:#6d28d9;border-radius:9px;cursor:pointer;font:inherit;font-size:12px;font-weight:700${state.selected.size === 2 ? '' : ';opacity:.5'}">🔗 Sameina ${state.selected.size === 2 ? 'tvö' : '(veldu 2)'}</button>
@@ -569,7 +582,7 @@
           </div>
         ` : (state.view === 'list' ? renderList(filtered) : renderCards(filtered))}
 
-        <div style="margin-top:20px;font-family:'Space Mono',monospace;font-size:11px;color:#9098a6;text-align:center">
+        <div style="margin-top:20px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#9098a6;text-align:center">
           Sýni <strong style="color:#11141c">${filtered.length}</strong> af ${state.filter === 'bank' ? cntBank : cntAll} viðskiptavinum${cntBank && state.filter !== 'bank' ? ` · ${cntBank} bank-greiðendur faldir` : ''}
         </div>
       </main></div></div>
@@ -796,10 +809,10 @@
                 return `
                   <tr class="_av-row" data-co-id="${c.id}" style="cursor:pointer;transition:background .12s" onmouseover="this.style.background='#f3f6fc'" onmouseout="this.style.background='transparent'">
                     <td style="${cellStyle}"><div style="font-size:13.5px;font-weight:600;color:#11141c">${state.selectMode ? `<input type="checkbox" class="_av-sel" data-co-id="${c.id}" ${state.selected.has(c.id) ? 'checked' : ''} onclick="event.stopPropagation()" style="margin-right:6px;width:15px;height:15px;vertical-align:middle">` : ''}${c.review_flag ? '<span title="' + esc(c.review_note || 'Til skoðunar') + '" style="color:#c77a16;margin-right:4px">⚑</span>' : ''}${esc(c.nafn || '—')}</div>${c.review_flag && c.review_note ? '<div style="font-weight:500;font-size:10.5px;color:#b45309;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">' + esc(c.review_note) + '</div>' : ''}</td>
-                    <td style="${cellStyle};font-family:'Space Mono',monospace;color:${c.kennitala?'#5b6472':'#cbd2dc'};font-size:11px">${editing ? eInput('kennitala', c.kennitala) : (esc(fmtKt(c.kennitala) || '—'))}</td>
+                    <td style="${cellStyle};font-family:'JetBrains Mono',ui-monospace,monospace;color:${c.kennitala?'#5b6472':'#cbd2dc'};font-size:11px">${editing ? eInput('kennitala', c.kennitala) : (esc(fmtKt(c.kennitala) || '—'))}</td>
                     <td style="${cellStyle};color:#3a4250;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.heimilisfang || '')}">${editing ? eInput('heimilisfang', c.heimilisfang) : (esc(c.heimilisfang || '—'))}</td>
-                    <td style="${cellStyle};color:#3a4250;font-family:'Space Mono',monospace;font-size:11.5px">${editing ? eInput('simi', c.simi) : (esc(c.simi || c.farsimi || '—'))}</td>
-                    <td style="${cellStyle};text-align:center;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${c._unitCount>0?'#11141c':'#cbd2dc'}">${c._unitCount || '·'}</td>
+                    <td style="${cellStyle};color:#3a4250;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px">${editing ? eInput('simi', c.simi) : (esc(c.simi || c.farsimi || '—'))}</td>
+                    <td style="${cellStyle};text-align:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;color:${c._unitCount>0?'#11141c':'#cbd2dc'}">${c._unitCount || '·'}</td>
                     <td style="${cellStyle}"><div style="display:flex;gap:4px">${badges.join('')}</div></td>
                     <td style="${cellStyle}">${docBadge(c)}</td>
                     <td style="${cellStyle};text-align:right;white-space:nowrap">

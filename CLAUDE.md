@@ -22,6 +22,56 @@ It contains everything Claude Code needs to know to be useful immediately.
 
 ---
 
+## ⛔ ÞRJÁR REGLUR — lesist fyrst
+
+Agnar eyðir of miklum tíma í að endurtaka sig, staðfesta aftur og biðja um sama
+hlutinn oftar en einu sinni. Það er ekki minnisleysi hjá honum. Það er af því að
+lotur gleyma, stöðuskjáir ljúga og „búið" er sagt án þess að vera prófað.
+Þessar þrjár reglur eru til að stoppa það. Hver þeirra á sér raunverulegt dæmi
+frá 28.08.2026.
+
+### 1. Lestu Charlize ÁÐUR en þú byrjar — ekki bara í lokin
+
+```sql
+select topic, fact, detail from v_charlize_active
+where scope in ('kerfi','baedi','slokkvitaeki') order by created_at desc limit 40;
+```
+
+Þekkingin er þarna. Sé hún ekki lesin er hún enduruppgötvuð — og Agnar spurður
+aftur að því sem hann svaraði fyrir mánuði. Í lok lotu: skrifaðu það sem næsta
+lota veit ekki. *(Skill: `charlize`. Regla hennar: lestu áður en þú breytir,
+skrifaðu áður en þú lokar.)*
+
+### 2. `git status` lýgur þangað til þú keyrir `git fetch`
+
+```bash
+git fetch origin && git status -sb
+```
+
+**Dæmi:** vinnutréð sagðist „in sync" og var 1518 commit og þrjá mánuði á eftir.
+Á þeim grunni var næstum ýtt út kóða sem hafði þegar verið leystur af hólmi.
+Sama gildir um `claude mcp list` (sýnir ekki claude.ai-tengingar) og
+viðbóta-listann (sýnir netþjóna sem verða aldrei auðkenndir). **Enginn stöðuskjár
+er sannleikur fyrr en hann er sannreyndur.**
+
+### 3. Ekkert er „búið" án þess að segja HVERNIG það var prófað
+
+Ekki „lagað". Heldur: *hvað var keyrt, hvað kom út.* Sé það óprófað skal það
+sagt hreint út.
+
+**Dæmi frá einum degi:**
+
+| Sagt | Raunveruleiki |
+|---|---|
+| `doc-indexer.js` á main, virkt | hefði hrunið á fyrsta PDF (pdf-parse v2) |
+| Tímavera „óvirk" síðan í júlí | scheduled task keyrði á klukkutíma fresti í 6 vikur |
+| „Taka úr þjónustu virkar ekki" | virkaði — prófunin svaraði aldrei `Confirm.show` |
+
+Þriðja línan er sérstaklega mikilvæg: **ósannreynd fullyrðing um bilun kostar
+alveg jafn mikinn tíma og ósannreynd fullyrðing um lagfæringu.**
+
+---
+
 ## 🧭 HVER KANN HVAÐ — byrjaðu hér
 
 Þekkingin sem áður var í þessu skjali (~15.000 tokens sem hlóðust í **hverri einustu
@@ -40,6 +90,9 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | QR-merki, miðaprentun (Brother PT-P750W), raðnúmer, skannann | `prentun` |
 | Kort, Leaflet, mapfix-merkin, geocode/Nominatim, kill-dots | `kort` |
 | Ársskoðun-perur, 📅 SOURCE vs FILTER, FULLBÚIÐ, útreikningar, skjöl, öll borð, data-elon, as-built (`docs/RAFKERFI.md`) | `elon-musk` |
+| Sama villumynstur víðar (systkini-kt, röng join, falskt grænt) | skill `villuleit` + `variant-analysis` (+ `natalie` til að mæla, `netvordur` ef vörðuð leið) |
+
+Kveikjuorð (copy-paste): [`docs/TRIGGERS.md`](docs/TRIGGERS.md) — `hindra klúður`, `villuleit`, `variant`, `kennitala`, `skýrsla`, `reikningur`, `krafa`, `RLS`, `hraði`, `kort`, `prentun`, … Agentaskrá: [`docs/AGENTASKRA.md`](docs/AGENTASKRA.md).
 
 **Notkun:** kallaðu á sérfræðinginn með Agent-tólinu (`subagent_type`), eða lestu skrána
 hans beint þegar þú þarft bara þekkinguna. **Ekki afrita innihald þeirra hingað** — ein
@@ -79,7 +132,7 @@ maps.
 ## Credentials
 
 ```
-NETLIFY_TOKEN  = nfp_Yeabk2zFF2GspfKi5rq3XbqPftGpSrhqa6b7
+NETLIFY_TOKEN  = GitHub Actions secret `NETLIFY_TOKEN` (create at app.netlify.com → User settings → Applications → Personal access tokens). Never commit the value.
 NETLIFY_SITE   = d22039b2-75f2-4206-b543-7c6176f2d181
 
 SUPABASE_URL   = https://osfdzskyvisifcwyjkuk.supabase.co
@@ -262,3 +315,19 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## Cursor Cloud specific instructions
+
+Cloud Agents see this repo at `/agent/repos/slokkvitaeki`. Open that folder. Daily work is one repo per window; the 8-root workspace is only when the task crosses repos.
+
+**Verkefnalisti** still applies: `GET https://brunaholf.netlify.app/api/verkefnalisti` (beidni/i_vinnu) before starting new work.
+
+**Charlize** still applies: read `v_charlize_active` (scope `kerfi`/`baedi`/`slokkvitaeki`) before changing DB, deploy, or Drive.
+
+**Screenshots / browser:** use Cursor Playwright MCP or computer use. `tools/bh-browser.cjs` is a Claude Code remote-egress workaround (see `brunaholf/docs/BROWSER-MCP-SETUP.md`). Do not use bh-browser unless Playwright fails.
+
+Never read `index.html`, large `js/patches/*`, `js/pos.js`, `dist/`, or `graphify-out/` whole. Grep first, then Read with offset/limit.
+
+Start with `git fetch origin && git status -sb`. Never run `node deploy.js`. Run `node tools/audit-all.cjs` before every push. Read `docs/ORYGGISNET.md` first; route guarded paths (invoice OUT `10`/`233`/`254`, kennitala `121`/`pos.js`, `payday-push`, readiness `153`/`187`) through `netvordur`.
+
+The 4-machine deploy rule still holds: pull the default branch first, push to deploy. Cursor Cloud is another machine. Same rule.

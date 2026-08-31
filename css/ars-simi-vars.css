@@ -1,0 +1,117 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ÁRSSKOÐUN Í SÍMA — ALLAR STÆRÐIR OG LITIR Á EINUM STAÐ
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Agnar 2026-08-29: „I also really want to be able to fix my page myself
+   instead of days trying to make code do it."
+
+   Áður lágu þessar tölur á þrem stöðum — inline stílum í 153-arsskodun.js,
+   @media-reglum í 314-arsskodun-mobile-compact.js, og css/mobile.css. Þess
+   vegna þurfti kóðalotu til að hreyfa raðhæð um tvo pixla, og þess vegna
+   töpuðu inline-stílar TVISVAR fyrir @media-reglum sama daginn.
+
+   ── HVERNIG ÞÚ BREYTIR ÚTLITINU ────────────────────────────────────────────
+   Breyttu tölunni hér, vistaðu, endurhlaððu símann. Það er allt.
+   Enginn þarf að snerta JS og ekkert þarf að committa til að sjá útkomuna.
+
+   ── REGLUR ─────────────────────────────────────────────────────────────────
+   • Engin tala má vera skrifuð tvisvar. Þarftu nýja stærð: bættu breytu HÉR
+     fyrst, lestu hana svo úr pappanum — aldrei negla tölu í JS.
+   • Patch 153 og 317 lesa allar með var(--nafn, fallback). Fallback-ið er
+     SAMA tala og stendur hér, svo ekkert brotnar þótt lína sé fjarlægð —
+     þá fer hún bara í upprunalegu stærðina.
+   • Þetta gildir í SÍMA OG APPHAM. Skjáborðstaflan er annar kóði
+     (renderTable í 153) og snertist ekki af neinu hér.
+
+   Skráin er hlaðin Á UNDAN patch-stílunum í index.html — það skiptir máli.
+   ═════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Borð-útlitið (frosinn nafndálkur + skrun) ───────────────────────────
+     Nafndálkurinn stendur kyrr þegar strokið er til hliðar; hinir átta
+     skrunast. Summa dálkanna ræður hversu langt er hægt að skruna.          */
+  --ars-nafn-dalkur:   190px;   /* frosni dálkurinn til vinstri              */
+  --ars-rad-haed:       52px;   /* hæð hverrar raðar (fast, ekki min)        */
+  --ars-haus-haed:      38px;   /* hæð haus-raðarinnar                       */
+  --ars-nafn-letur:   12.5px;   /* fyrirtækjanafnið — klemmt í tvær línur    */
+  --ars-undirtexti:    9.5px;   /* póstnúmer / ✉ vantar, undir nafninu       */
+
+  /* ── Dálkabreiddirnar sem skrunast ─────────────────────────────────────── */
+  --ars-col-man:        56px;
+  --ars-col-ar:        112px;
+  --ars-col-taeki:      96px;
+  --ars-col-akstur:     60px;
+  --ars-col-stada:      52px;
+  --ars-col-virdi:      84px;
+  --ars-col-sidast:     78px;
+  --ars-col-nota:      130px;
+
+  /* ── Bílstjóraspjöldin (patch 317) — stærðir úr arsskodun-app.html ─────── */
+  --ars-spjald-bil:      8px;   /* bil milli spjalda                         */
+  --ars-spjald-nafn:   15.5px;  /* fyrirtækjanafnið á spjaldi                */
+  --ars-spjald-kantur:   4px;   /* litaði kanturinn vinstra megin            */
+  --ars-spjald-radius:  12px;
+  --ars-arsreitur-breidd: 40px;
+  --ars-arsreitur-haed:   26px;
+  --ars-takn-haed:      44px;   /* Hringja / Leiðsögn — málmhnappar          */
+  --ars-akstur-haed:    40px;   /* 40×40 akstursreitir                       */
+  --ars-skodad-haed:    44px;   /* ✓ Skoðað                                  */
+
+  /* ── Letur ──────────────────────────────────────────────────────────────
+     Curated list í hönnunarham (318). Sömu fjölskyldur og index.html hleður
+     (IBM Plex / Playfair / JetBrains) + system.                                */
+  --ars-letur: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* ── Litir ──────────────────────────────────────────────────────────────
+     Birtuskilagólf: --ars-texti-mjukur mælist 6.9:1. Ekkert ljósara á texta
+     sem á að lesa — þetta er tól sem er notað úti í dagsljósi.
+     Hönnunarhamur (318) opinberar þessa litabreytu í símaramma.            */
+  --ars-texti:        #16181c;  /* aðaltexti, fyrirtækjanöfn                 */
+  --ars-texti-mjukur: #5d5a54;  /* ALLUR annar texti                         */
+  --ars-texti-merki:  #6f6b63;  /* smámerki („AKSTUR")                       */
+  --ars-grunnur:      #f0eeea;  /* flöturinn undir spjöldunum                */
+  --ars-rammi:        #e3e1dc;  /* rammi spjalds                             */
+  --ars-hairline:     #e0ddd7;  /* hárlínur á táknhnöppum og strimli         */
+  --ars-accent:       #5980a6;  /* AÐEINS á kanti og striki — aldrei á texta */
+  --ars-accent-djupt: #2a4763;  /* accent á smátexta fer HÉR í gegn          */
+  --ars-sokkull:      #17324f;  /* eina fyllta aðgerðin: ✓ Skoðað            */
+
+/* ── Skjáborðs `_yr` / `_st` litir (153 `_ensureMockCss`) ───────────────
+     Agnar 2026-08-29: „eða bara að appið notist við litina frá desktop
+     síðunni" — Bílstjóri (317) og síma-borð (_arsm-*) lesa HÉR. Skjáborðið
+     heldur hardkóðuðum gildum í 153 (óbreytt útlit); þessar breytur eru
+     afrit svo app/sími geti ekki rekið í sundur. */
+  --ars-yr-empty-fg:  #aab3c0;
+  --ars-yr-empty-bg:  #f4f6f9;
+  --ars-yr-empty-bd:  #e7eaf0;
+  --ars-yr-both-bg:   linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);
+  --ars-yr-both-bd:   #041c0e;
+  --ars-yr-now-bg:    linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);
+  --ars-yr-now-bd:    #4d0a08;
+  --ars-yr-inv-bg:    linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%);
+  --ars-yr-inv-bd:    #12296b;
+  --ars-yr-penda-fg:  #fff8e6;
+  --ars-yr-penda-bg:  linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);
+  --ars-yr-penda-bd:  rgba(255,220,130,.45);
+  --ars-st-done-bg:   linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);
+  --ars-st-done-bd:   #041c0e;
+  --ars-st-work-bg:   linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%);
+  --ars-st-work-bd:   #060f24;
+  --ars-st-plan-bg:   linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%);
+  --ars-st-plan-bd:   #12296b;
+  --ars-st-late-bg:   linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);
+  --ars-st-late-bd:   #4d0a08;
+  --ars-st-skip-fg:   #fff8e6;
+  --ars-st-skip-bg:   linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);
+  --ars-st-skip-bd:   rgba(255,220,130,.45);
+
+  /* ── Árs-reitir 23/24/25/26 — þrjú merki (Agnar multi-action) ───────────
+     1. LED á pillunni = staðfest (klarad / factcheck human). Ekki „hefur skýrslu".
+     2. Vinstri punktur undir = skýrslu-tengt (has).
+     3. Hægri punktur undir = reiknings-tengt (reik). Aldrei ágiska reikning.
+     Grár = óvirkt / ekki til. Patch 187 yearInfo + 317/153 teikna úr þessu. */
+  --ars-led-off:      #ccd2da;
+  --ars-led-on:       #34d17a;
+  --ars-dot-off:      #dfe3ea;
+  --ars-dot-skyrsla:  #1f9d57;
+  --ars-dot-reik:     #2f5fe0;
+}

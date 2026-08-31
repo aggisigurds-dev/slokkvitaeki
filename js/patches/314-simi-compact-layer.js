@@ -143,6 +143,8 @@
 
     g(' .abtn5') + '{min-height:40px!important;height:40px!important;padding:0 10px!important;font-size:9.5px!important}',
     g(' .ky-abtn') + '{min-height:42px!important;height:42px!important;padding:0 7px!important}',
+    M + '#view-krofu-yfirlit .ky-acts .ky-abtn,' + A + '#view-krofu-yfirlit .ky-acts .ky-abtn' +
+      '{min-height:0!important;height:16px!important;padding:0 4px!important;flex-direction:row!important}',
 
     // Pills/chips in rows are status, not tap-primary — keep them compact.
     // filter-chip is a toolbar control → tappable, handled below.
@@ -186,6 +188,7 @@
 
     // ── Banner: Sími is a MODE, not a media query ──────────────────────────
     'html[data-viewmode="mobile"] #bstal-banner{height:66px!important;top:8px!important;left:58px!important;right:8px!important}',
+    'html[data-viewmode="mobile"] #_pe-btn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}',
     'html[data-viewmode="mobile"] #bstal-banner .bb-rightwrap{display:none!important}',
     'html[data-viewmode="mobile"] #bstal-banner .bb-logo img{height:34px!important}',
     'html[data-viewmode="mobile"] #bstal-ember{display:none!important}',
@@ -228,12 +231,39 @@
     'html[data-viewmode="mobile"] #view-sala #pos-products,' +
     'body.appmode #view-sala #pos-services,body.appmode #view-sala #pos-products' +
       '{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}',
+    // Agnar 2026-08-29: Sala-flísar voru ~9–11px í Sími/Öpp. Aðeins stærra
+    // letur — ekki sprengja 2-dálka POS. Skjár (án mobile/appmode) óbreyttur.
+    'html[data-viewmode="mobile"] body #view-sala .pos-tile-name,' +
+    'html body.appmode #view-sala .pos-tile-name' +
+      '{font-size:14px!important;line-height:1.25!important}',
+    'html[data-viewmode="mobile"] body #view-sala .pos-tile-price,' +
+    'html body.appmode #view-sala .pos-tile-price' +
+      '{font-size:16px!important}',
+    'html[data-viewmode="mobile"] body #view-sala .pos-tile-exvat,' +
+    'html body.appmode #view-sala .pos-tile-exvat' +
+      '{font-size:12px!important}',
+    // Kröfur-síur: 166/315 höfðu 36–40px. Þumalmark er ~44px.
+    'html[data-viewmode="mobile"] #view-krofu-yfirlit .ky-filterbar .filter-chip,' +
+    'html[data-viewmode="mobile"] #view-krofu-yfirlit ._ky-sync,' +
+    'body.appmode #view-krofu-yfirlit .ky-filterbar .filter-chip,' +
+    'body.appmode #view-krofu-yfirlit .filter-chip,' +
+    'body.appmode #view-krofu-yfirlit ._ky-sync' +
+      '{min-height:44px!important;height:auto!important;padding-top:8px!important;padding-bottom:8px!important}',
 
     // ── Ársskoðun chrome; do NOT touch ._yr look-A ─────────────────────────
-    M + '#view-arsskodun [style*="max-width:1720px"]{max-width:none!important;padding:8px 8px 48px!important}',
+    M + '#view-arsskodun [style*="max-width:1720px"]{max-width:none!important;padding:6px 0 48px!important}',
     M + '#view-arsskodun ._ars-statgrid{grid-template-columns:1fr 1fr!important;gap:8px!important}',
     M + '#view-arsskodun ._mail-badge,' + A + '#view-arsskodun ._mail-badge' +
       '{position:relative;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;margin:-12px 0 -12px -8px;padding:12px 8px;box-sizing:border-box}',
+    // Agnar 2026-08-29: „stafrófsröð má fara, prenta lista má fara í mobile
+    // view og app view". Hide the sort select + print split-button on Sími
+    // and Öpp. Desktop Skjár keeps both; print/sort logic in 153 is untouched.
+    M + '#view-arsskodun #_ars-sort,' + A + '#view-arsskodun #_ars-sort,' +
+    M + '#view-arsskodun #_ars-print-wrap,' + A + '#view-arsskodun #_ars-print-wrap,' +
+    M + '#view-arsskodun #_ars-print,' + A + '#view-arsskodun #_ars-print,' +
+    M + '#view-arsskodun #_ars-print-caret,' + A + '#view-arsskodun #_ars-print-caret,' +
+    M + '#view-arsskodun #_ars-print-menu,' + A + '#view-arsskodun #_ars-print-menu' +
+      '{display:none!important}',
 
     // ── Rekstrarfélög row density (Heimaleiga data is another ticket) ──────
     M + '#view-rekstrarfelog .rf-page,' + A + '#view-rekstrarfelog .rf-page{padding:8px 8px 40px!important}',
@@ -262,7 +292,20 @@
     // Appmode list cells: 261 sets td{font-size:16.5px} which inflates every
     // overview table. Names stay ≥16px on the row titles (315 / page CSS);
     // table chrome goes compact. Forms keep 16px via the input rules above.
-    A + V + ' table td,' + A + V + ' table th{font-size:13px}'
+    A + V + ' table td,' + A + V + ' table th{font-size:13px}',
+
+    /* 2026-08-29 (Agnar: „hafðu bara scroll möguleika á öllu sem passar illa").
+       Tvennt mældist KLIPPT í kyrrþey á 390px — efnið var þarna en varð ekki náð í:
+         .co-banner  330px sýnileg / 400px innihald  (overflow:hidden faldi 70px)
+         .pos-grid   362px sýnileg / 383px innihald  (21px af hægri dálki)
+       Skrun er ekki rót vandans — barn er breiðara en dálkurinn — en það er skárra
+       en að fela gögn þegjandi. Rótin á heima í sínum eigin pappa. */
+    M + '.co-banner,' + A + '.co-banner'
+      + '{overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;scrollbar-width:none}',
+    M + '.co-banner::-webkit-scrollbar,' + A + '.co-banner::-webkit-scrollbar{display:none}',
+    M + '#view-sala .pos-grid,' + A + '#view-sala .pos-grid'
+      + '{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}',
+    M + '#view-sala .pos-grid::-webkit-scrollbar,' + A + '#view-sala .pos-grid::-webkit-scrollbar{display:none}'
   ].join('\n');
 
   const style = document.createElement('style');
@@ -277,7 +320,10 @@
     const app = !!(document.body && document.body.classList.contains('appmode'));
     const mobile = document.documentElement.getAttribute('data-viewmode') === 'mobile';
     if (!app && !mobile) return;
-    const pad = app ? '48px' : '86px';
+    // 86px = 66px slim banner + 12px loft. Stílstjórinn (323) getur mjókkað eða
+    // falið bannerinn — þá verður þessi tala að fylgja, annars situr gat eftir
+    // (eða efnið fer undir bannerinn). `__peBannerPad` er sett þar; ósett = 86px.
+    const pad = app ? '48px' : (window.__peBannerPad || '86px');
     document.querySelectorAll('.view').forEach(function (v) {
       if (v.style.getPropertyValue('padding-top') !== pad) {
         v.style.setProperty('padding-top', pad, 'important');

@@ -327,7 +327,28 @@ var DB = {
     var today = new Date().toISOString().slice(0,10);
     var nextYear = (parseInt(today.slice(0,4))+1) + today.slice(4);
     var serial = 'SÆ-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*9000)+1000);
-    var row = { serial, type: data.type, size: data.size, client: data.client, location: data.location, last_insp: data.inst||today, next_insp: data.next||nextYear, status: 'ok', pressure: 14 };
+    // 2026-08-30 (regla 0 + verk 3):
+    //   • status var HARÐKÓÐAÐ 'ok'. Allt annað í kerfinu notar 'active' (4.802
+    //     raðir) og hver einasta talning síar á það — 74 tæki á 8 fyrirtækjum
+    //     urðu því ósýnileg. Kirkjuvellir #708 misstu 4 duft-tæki þannig og
+    //     bæði Agnar og Claude skráðu þau aftur: reikningur upp á 152.880 í
+    //     stað 121.713.
+    //   • Hvorki fyrirtaeki_id né customer_base_id fylgdi með — aðeins
+    //     nafnastrengur. Listinn síar á id og sá þau ekki; reikningurinn telur
+    //     á nafni og taldi þau. Notandinn sér 1 og borgar fyrir 2.
+    var _fid = (data.fyrirtaeki_id != null && data.fyrirtaeki_id !== '') ? Number(data.fyrirtaeki_id) : null;
+    var _bid = (data.customer_base_id != null && data.customer_base_id !== '') ? Number(data.customer_base_id) : null;
+    // Base-id-ið er sótt af fyrirtækinu ef það fylgdi ekki — ein uppfletting,
+    // engin ágiskun.
+    if (_fid != null && _bid == null) {
+      try {
+        var _c = (window.Companies && Companies.list || []).find(function (x) { return +x.id === _fid; });
+        if (_c && _c.customer_base_id != null) _bid = Number(_c.customer_base_id);
+      } catch (_) {}
+    }
+    var row = { serial, type: data.type, size: data.size, client: data.client, location: data.location, last_insp: data.inst||today, next_insp: data.next||nextYear, status: 'active', pressure: 14 };
+    if (_fid != null) row.fyrirtaeki_id = _fid;
+    if (_bid != null) row.customer_base_id = _bid;
     if (this.online) {
       var res = await this.sb.from('uttaeki').insert(row).select().single();
       if (!res.error) this.cache.units.push(res.data);

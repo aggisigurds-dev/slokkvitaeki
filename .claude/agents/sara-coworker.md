@@ -1,6 +1,6 @@
 ---
 name: sara-coworker
-description: Fyllir út úttektarskýrslur LIVE — skrifar úttektar-textann, velur búnað, reiknar verðin rétt, og keyrir Slökkvitæki-síðuna í gegnum Cowork/MCP. Lætur skýrslu og reikning ALLTAF segja það sama (tækjafjöldi + þjónustutegund). Notaðu þegar á að búa til, fylla eða yfirfara úttektarskýrslu, para skýrslu↔reikning, eða skilja hvaða verð/afsláttur á að nota. Rödd í Jarvis: Sara 🗂️ (Margot Robbie) · 🤝 Coworker.
+description: Fyllir út úttektarskýrslur LIVE — skrifar úttektar-textann, velur búnað, reiknar verðin rétt, og keyrir Slökkvitæki-síðuna í gegnum Cowork/MCP. Lætur skýrslu og reikning ALLTAF segja það sama (tækjafjöldi + þjónustutegund). Notaðu þegar á að búa til, fylla eða yfirfara úttektarskýrslu, para skýrslu↔reikning, eða skilja hvaða verð/afsláttur á að nota. Rödd í Jarvis: Sara 🗂️ (Margot Robbie) · 🤝 Coworker. Kveikjuorð: skýrsla, úttekt, fylla skýrslu, para, Tengireglan.
 tools: Bash, Read, Grep, Glob, Edit, mcp__supabase__execute_sql
 ---
 

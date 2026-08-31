@@ -117,7 +117,17 @@
   }
 
   function docsFor(c) {
-    return docByVid.get(String(c.id)) || docByKt.get(normKt(c.kennitala)) || null;
+    const byVid = docByVid.get(String(c.id));
+    if (byVid) return byVid;
+    const kt = normKt(c.kennitala);
+    if (!kt) return null;
+    const list = (window.Companies && Companies.list) || [];
+    let n = 0;
+    for (let i = 0; i < list.length; i++) {
+      if (normKt(list[i].kennitala) === kt) n++;
+    }
+    if (n > 1) return null;
+    return docByKt.get(kt) || null;
   }
   let searchTerm = '';
   let sortKey = 'name';

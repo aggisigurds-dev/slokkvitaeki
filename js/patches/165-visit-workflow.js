@@ -64,6 +64,14 @@
     try { return JSON.parse(localStorage.getItem(CHOICE_KEY + coId) || '{}'); }
     catch (_) { return {}; }
   }
+  // 2026-08-30: 165 hafði engan skrif-hjálpara — aðeins clearTrip skrifaði, og
+  // hún skrifaði AÐEINS tóman búk. Frágangur heimsóknar þarf að geta MERKT
+  // ferðina kláraða án þess að henda henni (sjá skref 3 í completeVisit).
+  // 227 speglar hvert setItem í skýið, svo þetta berst milli véla af sjálfu sér.
+  function saveTrip(coId, st) {
+    try { localStorage.setItem(CHOICE_KEY + coId, JSON.stringify(st || {})); }
+    catch (_) {}
+  }
   // 2026-07-29 (Agnar: „finnst ársskoðunar svæðið mjög óöruggt"): frágangur
   // heimsóknar hreinsaði ALLT trip-state-ið — líka reitina sem starfsmaðurinn
   // hafði slegið inn (Skoðunaraðili, Framkvæmd, Dags., athugasemdir, texti á
@@ -534,7 +542,7 @@
       const cr = await sb.from('fyrirtaeki').select('kennitala,customer_base_id').eq('id', coId).maybeSingle();
       if (cr.data) { visitKt = cr.data.kennitala || null; visitBaseId = cr.data.customer_base_id || null; }
     } catch (_) {}
-    let saleId = null;
+    let saleId = null, saleNum = null;
     try {
       const ins = await sb.from('solur').insert({
         customer_nafn: coNafn,
@@ -556,6 +564,7 @@
       }).select('num,id').single();
       if (ins.error) throw ins.error;
       saleId = ins.data && ins.data.id;
+      saleNum = ins.data && ins.data.num;
     } catch (e) {
       alert('Sala vistuð ekki: ' + (e.message || e) + '\n\n(Tækin þó uppfærð með nýrri dagsetningu.)');
     }
@@ -569,10 +578,40 @@
       try { await ReportFactsSync.maybeComplete(coId, new Date().getFullYear(), { invoice: true }); } catch (_) {}
     }
 
-    // 3. Clear trip state. Líka grænu „yfirfarið"-hökin (224 `sk_ut_done_<coId>`)
-    //    svo næsta úttekt byrji með hreint borð (þau eru „þessi hringur").
-    clearTrip(coId);
-    try { localStorage.removeItem('sk_ut_done_' + coId); } catch (_) {}
+    // 3. FERÐIN ER KLÁRUÐ — HÚN ER EKKI HREINSUÐ.
+    //
+    // 2026-08-30, yfirregla Agnars: „Þetta er bara ritað í stein nema ég breyti
+    // sjálfur." Hér stóð áður clearTrip(coId) + removeItem('sk_ut_done_'+coId)
+    // með skýringunni „svo næsta úttekt byrji með hreint borð". Það var rótin að
+    // TVEIMUR göllum sem hann hefur kvartað yfir margsinnis:
+    //
+    //   • Grænu hökin hurfu um leið og reikningurinn varð til — og hökuðust svo
+    //     fram og til baka milli véla þegar skýja-speglunin (227) rakst á
+    //     hreinsunina.
+    //   • Spjaldið (129) reiknar LIFANDI áætlun úr valinu. Þegar valið var
+    //     núllstillt hér og skref 5 opnaði spjaldið aftur reiknaði það úr TÓMU
+    //     vali og birti ranga tölu á sama stað og rétta talan stóð sekúndu áður.
+    //     Mælt á Fornhaga 11-17: 170.346 varð að 129.853, mismunurinn nákvæmlega
+    //     8 × (6.782 − 3.150) + 3.600 = 32.656. Engin tilviljun — þetta var
+    //     hreinsunin.
+    //
+    // Ferðin er nú MERKT kláruð og geymd óbreytt. Hökin standa græn, valið
+    // stendur, og _invoice segir hvaða reikningur varð til. Næsta ár á staðurinn
+    // engan reikning þess árs og ritillinn opnast náttúrulega aftur (sama regla
+    // og VisitYearLock, patch 271). Vilji Agnar byrja upp á nýtt er það gert
+    // MEÐVITAÐ með Hreinsa-takkanum — aldrei sjálfkrafa.
+    try {
+      const _fin = loadTrip(coId) || {};
+      _fin._locked = true;
+      _fin._invoice = {
+        num: saleNum || null,
+        id: saleId || null,
+        year: new Date().getFullYear(),
+        at: new Date().toISOString(),
+        samtals: total,
+      };
+      saveTrip(coId, _fin);
+    } catch (_) {}
 
     // 4. Open the saved invoice for printing + vista reikninginn sem PDF.
     if (saleId) {

@@ -19,18 +19,18 @@
   var DEMO = {
     account: { name: 'Center Hótel', theme: 'steel' },
     stats: [
-      { k: 'Byggingar', v: '11' }, { k: 'Slökkvitæki', v: '155' }, { k: 'Brunaslöngur', v: '77' },
-      { k: 'Brunakerfi', v: '10', s: 'hús' }, { k: 'Skoðun á tíma', v: '1', s: 'hús', dark: true },
+      { k: 'Byggingar', v: '10' }, { k: 'Slökkvitæki', v: '155' }, { k: 'Brunaslöngur', v: '77' },
+      { k: 'Brunakerfi', v: '9', s: 'hús' }, { k: 'Skoðun á tíma', v: '1', s: 'hús', dark: true },
     ],
     buildings: [
-      { nafn: 'Arnarhvoll', heimilisfang: 'Ingólfsstræti 1, 101 Reykjavík', sl: 13, slo: 8, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok']], nt: 'Tæki: 01.01.2027|Kerfi: 01.05.2027' },
-      { nafn: 'Grandi', heimilisfang: 'Seljavegur 2, 101 Reykjavík', sl: 14, slo: 11, br: true, y: [['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok']], nt: 'Tæki: 01.01.2027|Kerfi: 01.03.2027' },
-      { nafn: 'Hlaðvarpinn', heimilisfang: 'Aðalstræti 4, 101 Reykjavík', sl: null, slo: null, br: true, y: [['no', 'no'], ['no', 'ok'], ['no', 'ok'], ['no', 'ok']], nt: 'Tæki: —|Kerfi: 01.06.2027' },
-      { nafn: 'Klöpp', heimilisfang: 'Klapparstígur 26, 101 Reykjavík', sl: 18, slo: 10, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok']], nt: 'Tæki: 01.07.2027|Kerfi: 01.10.2026' },
-      { nafn: 'Laugavegur', heimilisfang: 'Laugavegur 95–99, 101 Reykjavík', sl: 15, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok']], nt: 'Tæki: 01.08.2027|Kerfi: 01.09.2027' },
-      { nafn: 'Miðgarður', heimilisfang: 'Laugavegur 120, 101 Reykjavík', sl: 31, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['due', 'ok']], nt: 'Tæki: 01.09.2026|Kerfi: 01.09.2027', ontime: '01.09.2026' },
-      { nafn: 'Plaza', heimilisfang: 'Aðalstræti 4–6, 101 Reykjavík', sl: 44, slo: 39, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'due']], nt: 'Tæki: 01.08.2027|Kerfi: 01.12.2026' },
-      { nafn: 'Skjaldbreið', heimilisfang: 'Laugavegur 16, 101 Reykjavík', sl: 3, slo: null, br: true, y: [['no', 'no'], ['no', 'ok'], ['ok', 'ok'], ['ok', 'ok']], nt: 'Tæki: 01.07.2027|Kerfi: 01.09.2027' },
+      { nafn: 'Arnarhvoll', heimilisfang: 'Ingólfsstræti 1, 101 Reykjavík', sl: 13, slo: 8, br: true, y: [['no', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'ok']], nt: 'Tæki: janúar 2026|Kerfi: maí 2027' },
+      { nafn: 'Grandi', heimilisfang: 'Seljavegur 2, 101 Reykjavík', sl: 14, slo: 11, br: true, y: [['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok']], nt: 'Tæki: janúar 2027|Kerfi: mars 2027' },
+      { nafn: 'Hlaðvarpinn', heimilisfang: 'Aðalstræti 4, 101 Reykjavík', sl: null, slo: null, br: false, y: [['no', 'no'], ['no', 'no'], ['no', 'no'], ['no', 'no']], nt: 'Tæki: —' },
+      { nafn: 'Klöpp', heimilisfang: 'Klapparstígur 26, 101 Reykjavík', sl: 18, slo: 10, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: júlí 2027|Kerfi: október 2026' },
+      { nafn: 'Laugavegur', heimilisfang: 'Laugavegur 95–99, 101 Reykjavík', sl: 15, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: ágúst 2027|Kerfi: september 2026' },
+      { nafn: 'Miðgarður', heimilisfang: 'Laugavegur 120, 101 Reykjavík', sl: 31, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['no', 'ok'], ['ok', 'no']], nt: 'Tæki: september 2027|Kerfi: september 2026' },
+      { nafn: 'Plaza', heimilisfang: 'Aðalstræti 4–6, 101 Reykjavík', sl: 44, slo: 39, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'no']], nt: 'Tæki: ágúst 2026|Kerfi: desember 2026' },
+      { nafn: 'Skjaldbreið', heimilisfang: 'Laugavegur 16, 101 Reykjavík', sl: 3, slo: null, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: júlí 2027|Kerfi: september 2026' },
     ],
     reports: [
       { dags: '2026-08-03', bygging: 'Klöpp', heimilisfang: 'Klapparstígur 26', tegund: 'Slökkvitæki og slöngur', magn: '18 + 10', ar: 2026 },
@@ -122,12 +122,12 @@
       stats: [
         { k: 'Byggingar', v: s.byggingar != null ? String(s.byggingar) : '—' },
         { k: 'Slökkvitæki', v: s.taeki_alls != null ? String(s.taeki_alls) : '—' },
-        { k: 'Brunaslöngur', v: '—' },
-        { k: 'Brunakerfi', v: '—' },
+        { k: 'Brunaslöngur', v: s.brunaslongur_alls != null ? String(s.brunaslongur_alls) : '—' },
+        { k: 'Brunakerfi', v: s.brunakerfi_stk != null ? String(s.brunakerfi_stk) : '—', s: 'hús' },
         { k: 'Skoðun á tíma', v: s.i_lagi != null ? String(s.i_lagi) : '—', s: 'hús', dark: true },
       ],
       buildings: (d.buildings || []).map(function (b) {
-        return { nafn: b.nafn, heimilisfang: b.heimilisfang, sl: b.taeki, slo: null, br: b.i_thjonustu,
+        return { nafn: b.nafn, heimilisfang: b.heimilisfang, sl: b.taeki, slo: b.slo, br: !!b.bru_i_thjonustu,
           y: yearsFromStatus(b), nt: nextInspText(b), docId: null, stada: b.stada };
       }),
       reports: (d.reports || []).map(function (r) {
@@ -140,25 +140,33 @@
     };
   }
   var MONTHS_IS = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
-  // Næsta skoðun = skoðunarmánuður í árinu eftir síðustu skoðun (árleg lota).
+  function lastDocYear(arr) {
+    var m = 0;
+    (arr || []).forEach(function (y) { var n = Number(y); if (n > m) m = n; });
+    return m || null;
+  }
+  // Tvær línur þegar húsið er í báðum þjónustum — slökk og brunakerfi ráða
+  // hvor sinni dagsetningu. Aldrei eitt „næsta skoðun" fyrir báðar.
   function nextInspText(b) {
-    var m = b.skodun_manudur;
-    if (!m || m < 1 || m > 12) return '';
-    var yr = b.sidasta_ar ? (Number(b.sidasta_ar) + 1) : null;
-    return 'Næsta skoðun: ' + MONTHS_IS[m - 1] + (yr ? ' ' + yr : '');
+    var lines = [];
+    function line(lbl, month, last) {
+      if (!month || month < 1 || month > 12) return;
+      var yr = last ? (Number(last) + 1) : null;
+      lines.push(lbl + ': ' + MONTHS_IS[month - 1] + (yr ? ' ' + yr : ''));
+    }
+    if (b.i_thjonustu !== false) line('Tæki', b.skodun_manudur, lastDocYear(b.ar_slokk) || b.sidasta_ar);
+    if (b.bru_i_thjonustu) line('Kerfi', b.bru_skodun_manudur, lastDocYear(b.ar_bru));
+    return lines.join('|');
   }
 
   function yearsFromStatus(b) {
     // Hvert ár sýnir tvö merki: [slökkvitæki, brunakerfi].
-    // Slökkvitæki: einföld nálgun út frá skoðunarstöðu (síðasta úttektarár).
-    // Brunakerfi: AÐEINS ár þar sem raunverulegt brunakerfis-skjal er til (b.ar_bru)
-    //   — annars birtust falskar brunakerfis-skoðanir sem spegluðu slökkvitækin.
-    var cur = b.sidasta_ar || 0;
+    // AÐEINS ár þar sem raunverulegt skjal er til á ÞESSU fyrirtaeki_id.
+    // Aldrei fylla slökk áfram frá sidasta_ar (Miðgarður '25 / Plaza '26).
+    var sl = {}; (b.ar_slokk || []).forEach(function (y) { sl[String(y)] = 1; });
     var bru = {}; (b.ar_bru || []).forEach(function (y) { bru[String(y)] = 1; });
     return ['2023', '2024', '2025', '2026'].map(function (y) {
-      var sl = b.stada === 'engin_skyrsla' ? 'no' : (Number(y) <= cur ? 'ok' : 'no');
-      var br = bru[y] ? 'ok' : 'no';
-      return [sl, br];
+      return [sl[y] ? 'ok' : 'no', bru[y] ? 'ok' : 'no'];
     });
   }
 

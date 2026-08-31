@@ -8,9 +8,12 @@ description: >
   extension. Use whenever a task needs a screenshot for the Verkefnalisti result
   image (result_image_b64), or to confirm a UI fix looks right onscreen before
   calling it done.
+  Kveikjuorð: skjámynd, screenshot, result_image, bh-browser.
 ---
 
 # Screenshot / browser-verify from a remote session
+
+Cursor Cloud Agents should prefer the Cursor Playwright MCP (or computer use). Use this relay only if Playwright fails.
 
 **A screenshot of the result is part of finishing a Verkefnalisti task** (Agnar
 reviews from his phone). But in a Claude Code **web/remote** session a plain

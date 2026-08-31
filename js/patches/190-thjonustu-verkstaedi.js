@@ -82,7 +82,7 @@
   // (field_inspected_year === curYear) telst með úttektina búna, og fullklárað
   // ár (last_year_inspected === curYear) sýnir öll skrefin græn — nema
   // skrefið hafi verið afhakað sérstaklega (explicit false vinnur alltaf).
-  function effSteps(a, hasReik) {
+  function effSteps(a, hasReik, hasSkyrsla) {
     a = a || {};
     const s = Object.assign({}, a[STEPS_KEY] || {});
     if (s.uttekt === undefined && +a.field_inspected_year === curYear) s.uttekt = true;
@@ -92,6 +92,12 @@
     // telst búið þó enginn hafi smellt á það — send-leiðirnar (Kröfuyfirlit,
     // PDF-sjálfvistun, Drive) skrifa ekki skref. Skýrt afhak (false) vinnur.
     if (s.reikningur === undefined && hasReik) s.reikningur = true;
+    // 2026-08-30: sama regla fyrir skýrslu — Ársskoðun 187 / Kröfu yfirlit
+    // lykla úttektarskýrslu á fyrirtaeki_id. Án þessa sat „Skýrsla tilbúin /
+    // send" óhakað þótt skjalið væri til, eða (öfugt) kt/base-join litaði
+    // systkini. Aðeins ÓSKRÁÐ skref eru afleidd; skýrt afhak vinnur.
+    if (s.skyrsla === undefined && hasSkyrsla) s.skyrsla = true;
+    if (s.send === undefined && hasSkyrsla) s.send = true;
     // „Farið á verkstað" er UNDANFARI úttektarinnar: sé úttektin búin hlýtur að
     // hafa verið farið. Án þessa sætu öll eldri kort (og allt sem 153/219/266
     // merkja) uppi með tómt fyrsta skref á eftir grænni úttekt.
@@ -158,13 +164,21 @@
   // co.id → á reikning ársins (fyllt í buckets(), notað í skref-smellinum svo
   // smellurinn sjái SÖMU afleiddu skrefin og teiknuð eru)
   let _reikCoIds = new Set();
+  // Sama regla og Ársskoðun 187: brunakerfi/búð kveikja EKKI úttektar-🧾.
+  // Ómerkt/ovisst telst úttekt (Hamraborg 7).
+  function isUttektInvoiceTeg(teg) {
+    const t = String(teg || '').toLowerCase();
+    return t !== 'brunakerfi' && t !== 'bud';
+  }
   async function loadReik2026() {
     try {
       const sb = (window.DB && DB.sb); if (!sb) return;
       const r = await sb.from('customer_documents')
-        .select('fyrirtaeki_id').eq('doc_type', 'reikningur').eq('year', curYear)
+        .select('fyrirtaeki_id,vidskiptategund').eq('doc_type', 'reikningur').eq('year', curYear)
         .not('fyrirtaeki_id', 'is', null);
-      _reikStadir = new Set((r.data || []).map(x => x.fyrirtaeki_id).filter(v => v != null));
+      _reikStadir = new Set((r.data || [])
+        .filter(x => isUttektInvoiceTeg(x.vidskiptategund))
+        .map(x => x.fyrirtaeki_id).filter(v => v != null));
       // Auto-remove: staðir í „í vinnslu" sem eiga reikning ársins eru í raun
       // kláraðir — merkjum þá án þess að bíða eftir handvirkum smelli (sama og
       // markBuid gerir á hakinu).
@@ -191,67 +205,125 @@
   // ósnert (kortin sleppa bara auka-línunni).
   let _yearDocs = null;      // Map<co.id, {skyrsla|null, reik|null}>
   let _yearDocsLoaded = false;
-  let _pdByKt = null;        // Map<kt(digits), payday-röð>
+  let _pdByCo = null;        // Map<co.id, payday/solur-röð> — STAÐUR, ekki kt
+  let _krafaCoIds = new Set();  // solur.customer_id með senda kröfu ársins
+  function storageUrl(p) {
+    if (!p) return '';
+    const base = String(window.SUPABASE_URL || '').replace(/\/+$/, '');
+    if (!base) return '';
+    const s = String(p).replace(/^\/+/, '');
+    const i = s.indexOf('/'); if (i < 1) return '';
+    return base + '/storage/v1/object/public/' + s.slice(0, i) + '/' +
+           s.slice(i + 1).split('/').map(encodeURIComponent).join('/');
+  }
   function docUrl(d) {
     if (!d) return '';
     if (d.public_url) return d.public_url;
+    // storage-first (sama og 187): Drive-id rotnar; Storage-skýrslur bera
+    // AÐEINS storage_path. Án þessa sýndi docsLine „engin skýrsla".
+    const su = storageUrl(d.storage_path);
+    if (su) return su;
     if (d.drive_file_id && String(d.drive_file_id).indexOf('sb:') !== 0) return 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(d.drive_file_id);
     return '';
+  }
+  function pickBetterPd(prev, next) {
+    if (!prev) return next;
+    const better = (!!next.paid_date && !prev.paid_date) ||
+      (String(next.created_date || '') > String(prev.created_date || ''));
+    return better ? next : prev;
   }
   async function loadYearDocs() {
     try {
       const sb = (window.DB && DB.sb); if (!sb) return;
       const cos = (window.Companies && Companies.list) || [];
       const svc = cos.filter(c => c && !c.deleted_at && c.er_i_thjonustu !== false);
-      // customer_documents — skýrsla + reikningur ársins, tengt gegnum
-      // customer_base_id (spine-FK-inn sem fyrirtaeki ber beint).
-      const baseIds = Array.from(new Set(svc.map(c => c.customer_base_id).filter(v => v != null)));
-      const byBase = new Map();   // baseId -> {skyrsla:[], reik:[]}
-      for (let i = 0; i < baseIds.length; i += 300) {
-        const chunk = baseIds.slice(i, i + 300);
+      // customer_documents — skýrsla + reikningur ársins, lyklað á
+      // fyrirtaeki_id (STAÐURINN). Sama join og Ársskoðun 187. Eldri
+      // customer_base_id-uppfletting + „fyrsta skjal base-sins" lék
+      // Center/Pizzan/Heimaleiga-systkini græn án eigin skýrslu.
+      const ids = Array.from(new Set(svc.map(c => c.id).filter(v => v != null)));
+      const byCo = new Map();   // coId -> {skyrsla, reik}
+      // Ár-sía + blaðsíður (ekki 300-id IN): public_url er EKKI dálkur
+      // (400 þagði niður alla skýrslulínu áður). Sama uppspretta og 187.
+      const PAGE = 1000;
+      for (let off = 0; off <= 20000; off += PAGE) {
         const r = await sb.from('customer_documents')
-          .select('customer_base_id,fyrirtaeki_id,doc_type,invoice_number,public_url,drive_file_id')
-          .in('customer_base_id', chunk).eq('year', curYear)
-          .in('doc_type', ['uttektarskyrsla', 'reikningur']);
-        (r.data || []).forEach(d => {
-          let e = byBase.get(d.customer_base_id); if (!e) { e = { skyrsla: [], reik: [] }; byBase.set(d.customer_base_id, e); }
-          (d.doc_type === 'reikningur' ? e.reik : e.skyrsla).push(d);
+          .select('fyrirtaeki_id,doc_type,invoice_number,drive_file_id,storage_path,vidskiptategund')
+          .eq('year', curYear)
+          .in('doc_type', ['uttektarskyrsla', 'reikningur'])
+          .not('fyrirtaeki_id', 'is', null)
+          .range(off, off + PAGE - 1);
+        const rows = r.data || [];
+        rows.forEach(d => {
+          if (d.doc_type === 'reikningur' && !isUttektInvoiceTeg(d.vidskiptategund)) return;
+          const k = String(d.fyrirtaeki_id);
+          if (!k || k === 'null' || k === 'undefined') return;
+          let e = byCo.get(k); if (!e) { e = { skyrsla: null, reik: null }; byCo.set(k, e); }
+          if (d.doc_type === 'reikningur') { if (!e.reik) e.reik = d; }
+          else if (!e.skyrsla) e.skyrsla = d;
+        });
+        if (rows.length < PAGE) break;
+      }
+      _yearDocs = byCo;
+
+      // Kröfu-yfirlit (166): krafa_sent_at / invoiced_at / dk_invoice_id á
+      // solur.customer_id. Payday-taflan er kt-lykluð og má EKKI lita
+      // fjölstaða-kt (Center 19.778 kr á Arnarhvoll var Skjaldbreið R-000670).
+      const pm = new Map();
+      const krafa = new Set();
+      const yrStart = curYear + '-01-01';
+      const yrEnd = (curYear + 1) + '-01-01';
+      for (let i = 0; i < ids.length; i += 300) {
+        const chunk = ids.slice(i, i + 300);
+        const r = await sb.from('solur')
+          .select('customer_id,num,samtals,paid_at,krafa_sent_at,invoiced_at,dk_invoice_id,created_at,vidskiptategund,status,is_credit')
+          .in('customer_id', chunk).eq('greitt_med', 'reikningur')
+          .gte('created_at', yrStart).lt('created_at', yrEnd);
+        (r.data || []).forEach(s => {
+          if (!s || s.customer_id == null) return;
+          if (s.is_credit) return;
+          const st = String(s.status || '').toLowerCase();
+          if (st === 'void' || st === 'cancelled' || st === 'canceled' || st === 'credit') return;
+          if (!isUttektInvoiceTeg(s.vidskiptategund)) return;
+          const sent = !!(s.krafa_sent_at || s.invoiced_at || s.dk_invoice_id);
+          const cid = String(s.customer_id);
+          if (sent) krafa.add(cid);
+          const row = {
+            number: s.num, amount_total: s.samtals,
+            status: s.paid_at ? 'paid' : (sent ? 'sent' : ''),
+            paid_date: s.paid_at, created_date: s.created_at
+          };
+          if (sent || s.paid_at) pm.set(cid, pickBetterPd(pm.get(cid), row));
         });
       }
-      // Ein skýrsla + einn reikningur per fyrirtæki: rekstrarfélög (margir staðir
-      // á sömu kt/base) → veldu skjalið þar sem fyrirtaeki_id === þessi staður,
-      // annars fyrsta skjal base-sins.
-      const pick = (arr, coId) => {
-        if (!arr || !arr.length) return null;
-        return arr.find(d => d.fyrirtaeki_id != null && String(d.fyrirtaeki_id) === String(coId)) || arr[0];
-      };
-      const dm = new Map();
+      _krafaCoIds = krafa;
+
+      // Payday eftir kt AÐEINS þegar kt-in á einn þjónustustað (ótvírætt).
+      const ktCount = new Map();
       svc.forEach(c => {
-        const e = c.customer_base_id != null ? byBase.get(c.customer_base_id) : null;
-        if (!e) return;
-        dm.set(c.id, { skyrsla: pick(e.skyrsla, c.id), reik: pick(e.reik, c.id) });
+        const k = digits(c.kennitala);
+        if (k.length >= 10 && k !== '9999999999') ktCount.set(k, (ktCount.get(k) || 0) + 1);
       });
-      _yearDocs = dm;
-      // payday_invoices_slokk eftir kt (upphæð + greiðslustaða). Besta röð per kt
-      // á árinu: greidd fyrst, annars nýjust eftir created_date.
-      const kts = Array.from(new Set(svc.map(c => digits(c.kennitala)).filter(k => k.length >= 10 && k !== '9999999999')));
-      const pm = new Map();
-      for (let i = 0; i < kts.length; i += 300) {
-        const chunk = kts.slice(i, i + 300);
+      const uniqueKts = [];
+      const ktToCo = new Map();
+      svc.forEach(c => {
+        const k = digits(c.kennitala);
+        if ((ktCount.get(k) || 0) === 1) { uniqueKts.push(k); ktToCo.set(k, String(c.id)); }
+      });
+      for (let i = 0; i < uniqueKts.length; i += 300) {
+        const chunk = uniqueKts.slice(i, i + 300);
         const r = await sb.from('payday_invoices_slokk')
           .select('kt,number,amount_total,status,paid_date,due_date,created_date')
           .in('kt', chunk);
         (r.data || []).forEach(p => {
           const yr = String(p.created_date || p.due_date || '').slice(0, 4);
-          if (yr && +yr !== curYear) return;   // aðeins yfirstandandi ár
-          const prev = pm.get(p.kt);
-          if (!prev) { pm.set(p.kt, p); return; }
-          const better = (!!p.paid_date && !prev.paid_date) ||
-            (String(p.created_date || '') > String(prev.created_date || ''));
-          if (better) pm.set(p.kt, p);
+          if (yr && +yr !== curYear) return;
+          const coId = ktToCo.get(p.kt);
+          if (coId == null || pm.has(coId)) return;   // solur á staðnum vinnur
+          pm.set(coId, pickBetterPd(pm.get(coId), p));
         });
       }
-      _pdByKt = pm;
+      _pdByCo = pm;
     } catch (_) {}
     render();
   }
@@ -280,24 +352,24 @@
       t.id = '_sv-theme';
       t.textContent = [
         // page heading on white-area (we render below the banner, not on the dark band)
-        '#' + VIEW_ID + ' h1{font-family:"Space Grotesk",system-ui,sans-serif;letter-spacing:-.01em;color:#11141c}',
+        '#' + VIEW_ID + ' h1{font-family:"Playfair Display",Georgia,serif;letter-spacing:-.01em;color:#11141c}',
         // Card surface (the wrapper card for each Í-vinnslu row)
         '#' + VIEW_ID + ' .sv-card{background:#fff!important;border:1px solid rgba(20,24,34,.08)!important;border-left:3px solid #2f5fe0!important;border-radius:16px!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)!important;padding:18px 20px!important}',
         '#' + VIEW_ID + ' .sv-card.haett{border-left-color:#c0241f!important}',
         // Segmented mode-switch (Listi / Breitt / Spjöld) — metallic black pill (filter-chip style)
         '#' + VIEW_ID + ' .sv-seg{background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:11px;padding:3px;gap:3px;box-shadow:0 1px 2px rgba(0,0,0,.04)}',
-        '#' + VIEW_ID + ' .sv-seg button{font-family:"Space Grotesk",system-ui,sans-serif;font-size:13px;font-weight:600;color:#3a4250;padding:7px 14px;border-radius:9px;cursor:pointer;background:transparent;border:0}',
+        '#' + VIEW_ID + ' .sv-seg button{font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;font-size:13px;font-weight:600;color:#3a4250;padding:7px 14px;border-radius:9px;cursor:pointer;background:transparent;border:0}',
         '#' + VIEW_ID + ' .sv-seg button.on{background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18)}',
         // Tinted stat chips (Í vinnslu blue, Á dagskrá amber, Búið green) matching spec
-        '#' + VIEW_ID + ' .sv-chip{font-family:"Space Grotesk",system-ui,sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#3a4250;cursor:pointer;display:inline-flex;align-items:center;gap:8px}',
-        '#' + VIEW_ID + ' .sv-chip .n{font-family:"Space Mono",monospace;font-weight:700;color:inherit}',
+        '#' + VIEW_ID + ' .sv-chip{font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#3a4250;cursor:pointer;display:inline-flex;align-items:center;gap:8px}',
+        '#' + VIEW_ID + ' .sv-chip .n{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:700;color:inherit}',
       // Skref-sía (2026-07-30) — sömu rólegu litir og chip-röðin fyrir ofan;
       // virk sía fær dökka fyllingu (búið) eða gulbrúna (vantar) svo sjáist
       // í einu augnkasti að listinn sé síaður.
       '#' + VIEW_ID + ' .sv-stepf{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:0 2px 16px}',
       '#' + VIEW_ID + ' .sv-stepf-lbl{font-size:12px;color:#8a93a5;font-weight:600}',
       '#' + VIEW_ID + ' .sv-stepf-chip{font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:99px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#3a4250;cursor:pointer;display:inline-flex;align-items:center;gap:6px}',
-      '#' + VIEW_ID + ' .sv-stepf-chip .n{font-family:"Space Mono",monospace;font-weight:700;opacity:.65}',
+      '#' + VIEW_ID + ' .sv-stepf-chip .n{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:700;opacity:.65}',
       '#' + VIEW_ID + ' .sv-stepf-chip:hover{border-color:#94a3b8}',
       '#' + VIEW_ID + ' .sv-stepf-chip.on{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#0f6e3a;color:#fff}',
       '#' + VIEW_ID + ' .sv-stepf-chip.on .n{opacity:.85}',
@@ -309,7 +381,7 @@
         '#' + VIEW_ID + ' .sv-drawer{background:#fff!important;border:1px solid rgba(20,24,34,.08)!important;border-radius:14px!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)!important}',
         '#' + VIEW_ID + ' .sv-drawer-row{border-bottom:1px solid rgba(20,24,34,.06)!important;font-size:13.5px;color:#3a4250}',
         '#' + VIEW_ID + ' .sv-drawer-row .nm{font-weight:600!important;color:#11141c!important}',
-        '#' + VIEW_ID + ' .sv-drawer-row .mn{font-family:"Space Mono",monospace!important;color:#9098a6!important}',
+        '#' + VIEW_ID + ' .sv-drawer-row .mn{font-family:"JetBrains Mono",ui-monospace,monospace!important;color:#9098a6!important}',
         // Stepper — green check filled when ON
         '#' + VIEW_ID + ' .sv-steps{background:#f8fafc;border:1px solid rgba(20,24,34,.06);border-radius:12px;padding:14px 16px}',
         '#' + VIEW_ID + ' .sv-step .nd{width:24px!important;height:24px!important;border:2px solid #cbd5e1!important;color:#64748b!important;font-size:11px!important}',
@@ -318,13 +390,13 @@
         '#' + VIEW_ID + ' .sv-step.on .lb{color:#0f6e3a!important}',
         '#' + VIEW_ID + ' .sv-step.on .ln{background:#2bbf6c!important}',
         // Marks (Hætt / Eftir að uppfæra / Reikningur áður)
-        '#' + VIEW_ID + ' .sv-mark{font-family:"Space Grotesk",system-ui,sans-serif;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:8px;border:1px solid rgba(20,24,34,.14);background:#f6f8fb;color:#5b6472;cursor:pointer;white-space:nowrap}',
+        '#' + VIEW_ID + ' .sv-mark{font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:8px;border:1px solid rgba(20,24,34,.14);background:#f6f8fb;color:#5b6472;cursor:pointer;white-space:nowrap}',
         // Note textarea
-        '#' + VIEW_ID + ' .sv-note{background:#f6f8fb!important;border:1px solid rgba(20,24,34,.14)!important;border-radius:11px!important;padding:11px 13px!important;color:#141822!important;font-family:"Space Grotesk",system-ui,sans-serif!important;font-size:13px!important;line-height:1.45!important}',
+        '#' + VIEW_ID + ' .sv-note{background:#f6f8fb!important;border:1px solid rgba(20,24,34,.14)!important;border-radius:11px!important;padding:11px 13px!important;color:#141822!important;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif!important;font-size:13px!important;line-height:1.45!important}',
         '#' + VIEW_ID + ' .sv-note:focus{outline:none!important;border-color:#2f5fe0!important;background:#fff!important;box-shadow:0 0 0 3px rgba(47,95,224,.12)!important}',
         // Action row
         '#' + VIEW_ID + ' .sv-acts{border-top:0!important;padding-top:0!important;gap:8px!important}',
-        '#' + VIEW_ID + ' .sv-acts ._sv-act{height:36px!important;padding:0 13px!important;border-radius:10px!important;border:1px solid rgba(20,24,34,.14)!important;background:#f1f5f9!important;color:#3a4250!important;font-family:"Space Grotesk",system-ui,sans-serif!important;font-size:12.5px!important;font-weight:600!important;cursor:pointer!important}',
+        '#' + VIEW_ID + ' .sv-acts ._sv-act{height:36px!important;padding:0 13px!important;border-radius:10px!important;border:1px solid rgba(20,24,34,.14)!important;background:#f1f5f9!important;color:#3a4250!important;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif!important;font-size:12.5px!important;font-weight:600!important;cursor:pointer!important}',
         '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="buid"]{border:1px solid #156e3a!important;background:linear-gradient(150deg,#2bbf6c,#0f6e3a)!important;color:#fff!important;font-weight:700!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)!important}',
         '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="unstart"]{border:1px solid #f3c6c4!important;background:#fdecec!important;color:#c0241f!important}',
         '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="report"]{background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)!important;border-color:#0a0b0d!important;color:#fff!important}',
@@ -339,7 +411,7 @@
         '#' + VIEW_ID + ' .sv-empbtn{height:30px;padding:0 12px;border-radius:99px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}',
         '#' + VIEW_ID + ' .sv-stepw .nd{width:26px;height:26px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;color:#94a3b8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;box-sizing:border-box}',
         '#' + VIEW_ID + ' .sv-stepw.on .nd{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#0f6e3a;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}',
-        '#' + VIEW_ID + ' .sv-stepw .lb{font-family:"Space Grotesk",system-ui,sans-serif;font-size:12.5px;font-weight:600;color:#5b6472;white-space:nowrap}',
+        '#' + VIEW_ID + ' .sv-stepw .lb{font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;font-size:12.5px;font-weight:600;color:#5b6472;white-space:nowrap}',
         '#' + VIEW_ID + ' .sv-stepw.on .lb{color:#0f6e3a;font-weight:700}',
         '#' + VIEW_ID + ' .sv-lnw{flex:1;min-width:12px;max-width:46px;height:3px;border-radius:2px;background:#dbe1ea}',
         '#' + VIEW_ID + ' .sv-lnw.on{background:#2bbf6c}',
@@ -349,9 +421,9 @@
         '#' + VIEW_ID + ' .sv-actsw{display:flex!important;gap:8px!important;flex-wrap:nowrap!important;border-top:0!important;padding-top:0!important}',
         '#' + VIEW_ID + ' .sv-actsw ._sv-act{flex:1;height:42px!important;white-space:nowrap}',
         '#' + VIEW_ID + ' .sv-actsw ._sv-act[data-act="report"]{background:#f1f5f9!important;border-color:rgba(20,24,34,.14)!important;color:#3a4250!important}',
-        '#' + VIEW_ID + ' .sv-unmarkw{width:100%;height:38px;border:1px solid #f3c6c4!important;background:#fdf1f1!important;color:#c0241f!important;border-radius:10px!important;font-family:"Space Grotesk",system-ui,sans-serif!important;font-size:12.5px!important;font-weight:700!important;cursor:pointer}',
+        '#' + VIEW_ID + ' .sv-unmarkw{width:100%;height:38px;border:1px solid #f3c6c4!important;background:#fdf1f1!important;color:#c0241f!important;border-radius:10px!important;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif!important;font-size:12.5px!important;font-weight:700!important;cursor:pointer}',
         // Numbers in mono
-        '#' + VIEW_ID + ' [data-mono],#' + VIEW_ID + ' .sv-kt{font-family:"Space Mono",monospace}'
+        '#' + VIEW_ID + ' [data-mono],#' + VIEW_ID + ' .sv-kt{font-family:"JetBrains Mono",ui-monospace,monospace}'
       ].join('');
       document.head.appendChild(t);
     }
@@ -418,7 +490,7 @@
       '#' + VIEW_ID + ' .sv-doclink.reik{color:#4f5d76}',
       '#' + VIEW_ID + ' .sv-doclink.send{background:#eef3ec;border-color:#cfe0cb;color:#3f6b3a}',
       '#' + VIEW_ID + ' .sv-docmuted{font-size:11px;color:var(--ink4);font-style:italic}',
-      '#' + VIEW_ID + ' .sv-pdpill{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid #d9c7b0;background:#f5efe1;color:#7a5f2a}',
+      '#' + VIEW_ID + ' .sv-pdpill{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid #d9c7b0;background:#f5efe1;color:#7a5f2a}',
       '#' + VIEW_ID + ' .sv-pdpill.paid{border-color:#c3ddc7;background:#eef6ef;color:#3f6b3a}'
     ].join('');
     document.head.appendChild(s);
@@ -494,12 +566,16 @@
       const info = arsInfo(co.id);
       // A saved (óklárað) report in the cloud (patch 227/228) = work in progress.
       const hasDraft = !!(window.SavedReports && SavedReports.has && SavedReports.has(co.id));
-      const hasReik = _reikStadir.has(co.id);   // staður, ekki kt — sjá athugasemd við _reikStadir
+      const docs = _yearDocs ? (_yearDocs.get(String(co.id)) || null) : null;
+      const hasSkyrsla = !!(docs && docs.skyrsla);
+      const hasReikDoc = _reikStadir.has(co.id) || !!(docs && docs.reik);   // staður, ekki kt
+      const hasKrafa = _krafaCoIds.has(String(co.id));
+      const hasReik = hasReikDoc || hasKrafa;
       if (hasReik) _reikCoIds.add(co.id);
       const card = {
         id: co.id, nafn: co.nafn || ('#' + co.id), kennitala: co.kennitala || '',
         month: m, aminning: (a.aminning || '').trim(),
-        steps: effSteps(a, hasReik),   // afleidd úr 153-stöðu + reikningi ársins þegar skref eru óskráð
+        steps: effSteps(a, hasReik, hasSkyrsla),   // 153-staða + eigin skýrsla/reikningur/krafa
         stepsMeta: a[STEPS_META_KEY] || {},   // hver setti hvaða skref og hvenær
         mark: a.sv_mark || '',          // bráðabirgða-merking (single-select)
         note: a.sv_note || '',          // bráðabirgða-minnispunktur (frítexti)
@@ -508,10 +584,10 @@
         tekjur: +info.estimated_yearly || 0,
         hasDraft: hasDraft,
         doneDocs: hasFullDocs(co.id),  // already has skýrsla + reikningur for the year
-        reik2026: hasReik,   // 2026 reikningur á skrá (customer_documents)
+        reik2026: hasReikDoc,   // customer_documents á ÞESSUM stað — ekki kt-payday
         netfang: co.netfang || '',   // fyrir ✉️ senda-glugga
-        docs: _yearDocs ? (_yearDocs.get(co.id) || null) : null,   // {skyrsla,reik} ársins
-        pd: _pdByKt ? (_pdByKt.get(digits(co.kennitala)) || null) : null   // payday-krafa ársins
+        docs: docs,   // {skyrsla,reik} ársins, fyrirtaeki_id
+        pd: _pdByCo ? (_pdByCo.get(String(co.id)) || null) : null   // krafa ársins á þessum stað
       };
       if (ly === curYear) out.buid.push(card);
       else if (fy === curYear || hasDraft) out.vinnsla.push(card);   // started OR has a saved draft
@@ -563,7 +639,7 @@
   // ReceiptSender.buildInvoiceBlob teiknar AÐEINS reikninga, svo skýrslan er send
   // sem núverandi customer_documents-skrá (URL/Drive-id) — ekki endurteiknuð.
   function sendSkyrsla(id) {
-    const docs = _yearDocs && _yearDocs.get(id);
+    const docs = _yearDocs && _yearDocs.get(String(id));
     const d = docs && docs.skyrsla;
     if (!d) { toast('Engin úttektarskýrsla ' + curYear + ' fannst'); return; }
     const co = ((window.Companies && Companies.list) || []).find(c => String(c.id) === String(id)) || {};
@@ -572,8 +648,8 @@
     if (window.ReceiptSender && ReceiptSender.sendDoc) {
       ReceiptSender.sendDoc({
         kind: 'skyrsla', filename: filename,
-        url: d.public_url || undefined,
-        driveId: (!d.public_url && d.drive_file_id) ? d.drive_file_id : undefined,
+        url: docUrl(d) || undefined,
+        driveId: (!docUrl(d) && d.drive_file_id) ? d.drive_file_id : undefined,
         to: co.netfang || '', nafn: nafn, ar: curYear
       });
       return;
@@ -593,7 +669,7 @@
     return '<div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">' +
       draftChip +
       (r.units > 0 ? '<span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;background:#eef1f6;color:#475569;border:1px solid #cbd5e1;white-space:nowrap">🧯 ' + r.units + ' einingar</span>' : '') +
-      (r.tekjur > 0 ? '<span style="font-family:\'Space Mono\',monospace;font-size:12px;font-weight:700;color:#11141c;align-self:center" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
+      (r.tekjur > 0 ? '<span style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:12px;font-weight:700;color:#11141c;align-self:center" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
       '</div>';
   }
   // Skjala-lína ársins: 📄 Skýrsla-hlekkur + ✉️ Senda · 🧾 R-nr-hlekkur +
@@ -619,7 +695,7 @@
     if (r.pd) {
       const st = pdStatus(r.pd);
       const amt = fmtKr(r.pd.amount_total);
-      parts.push('<span class="sv-pdpill' + (st.paid ? ' paid' : '') + '" title="Payday-krafa ' + curYear + '">' + (amt ? amt + ' · ' : '') + esc(st.txt) + '</span>');
+      parts.push('<span class="sv-pdpill' + (st.paid ? ' paid' : '') + '" title="Krafa ' + curYear + ' á þessum stað">' + (amt ? amt + ' · ' : '') + esc(st.txt) + '</span>');
     }
     if (!parts.length) return '';
     return '<div class="sv-docsline">' + parts.join('') + '</div>';
@@ -682,9 +758,19 @@
   }
   function nameBlock(r, big) {
     return '<div><div style="font-weight:700;font-size:' + (big ? '15.5px' : '13.5px') + ';color:#11141c;line-height:1.25;letter-spacing:-.005em">' + esc(r.nafn) + '</div>' +
-      (r.kennitala ? '<div style="font-family:\'Space Mono\',monospace;font-size:11px;color:#9098a6;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
+      (r.kennitala ? '<div style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:11px;color:#9098a6;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
   }
-  function aminningLine(r, n) { return r.aminning ? '<div style="font-size:10.5px;color:#b45309">📌 ' + esc(r.aminning.slice(0, n || 80)) + '</div>' : ''; }
+  // Sama hreinsun og Ársskoðun notar (153) — innflutningurinn tvítók sumar
+  // áminningar með „---"-skiltingu og án þessa sæist afritið hér áfram.
+  // Fallback: hrár texti ef 153 hefur ekki hlaðist (röðin tryggir að hann geri það).
+  function cleanAmin(s) {
+    try { if (window.Arsskodun && Arsskodun.cleanAminning) return Arsskodun.cleanAminning(s); } catch (_) {}
+    return String(s == null ? '' : s);
+  }
+  function aminningLine(r, n) {
+    const a = cleanAmin(r.aminning);
+    return a ? '<div style="font-size:10.5px;color:#b45309">📌 ' + esc(a.slice(0, n || 80)) + '</div>' : '';
+  }
   // Alert banner + "remove from board" button for cards that ALREADY have both an
   // úttektarskýrslu and a reikningur filed for the year (→ they're really done).
   function docAlert(r) {
@@ -799,7 +885,7 @@
       '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:5px 0">' +
         '<span style="font-size:10.5px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.6);white-space:nowrap">' + esc(label) + '</span>' +
         '<span style="text-align:right;white-space:nowrap">' +
-          '<b style="font-family:\'Space Mono\',monospace;font-size:15px;font-weight:700;color:' + col + '">' + val + '</b>' +
+          '<b style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:15px;font-weight:700;color:' + col + '">' + val + '</b>' +
           (sub ? '<span style="font-size:10.5px;color:rgba(255,255,255,.45);margin-left:7px">' + esc(sub) + '</span>' : '') +
         '</span></div>';
     const moneyBox =
@@ -851,15 +937,15 @@
       opts = opts || {};
       const arrow = opts.toggle ? (' <span style="opacity:.55;font-size:11px">' + (opts.open ? '▾' : '▸') + '</span>') : '';
       return '<button ' + (opts.toggle ? 'data-toggle="' + opts.toggle + '" ' : '') +
-        'style="font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid ' + c.bd + ';background:' + c.bg + ';color:' + c.fg + ';cursor:' + (opts.toggle ? 'pointer' : 'default') + ';display:inline-flex;align-items:center;gap:8px">' +
+        'style="font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid ' + c.bd + ';background:' + c.bg + ';color:' + c.fg + ';cursor:' + (opts.toggle ? 'pointer' : 'default') + ';display:inline-flex;align-items:center;gap:8px">' +
         '<span style="width:9px;height:9px;border-radius:50%;background:' + c.dot + '"></span>' +
-        '<b style="font-family:\'Space Mono\',monospace">' + count + '</b> ' + esc(label) + arrow + '</button>';
+        '<b style="font-family:\'JetBrains Mono\',ui-monospace,monospace">' + count + '</b> ' + esc(label) + arrow + '</button>';
     };
-    v.innerHTML = '<div style="max-width:none;margin:0;width:100%;box-sizing:border-box;padding:6px 10px 34px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
+    v.innerHTML = '<div style="max-width:none;margin:0;width:100%;box-sizing:border-box;padding:6px 10px 34px;font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin:2px 2px 14px">' +
         '<div style="min-width:0">' +
           '<div style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-.01em;line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.35)">🔧 ÞjónustuVerkstæði</div>' +
-          '<div style="font-size:13px;color:#c7cdd8;margin-top:4px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'Space Mono\',monospace;color:#ffffff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
+          '<div style="font-size:13px;color:#c7cdd8;margin-top:4px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'JetBrains Mono\',ui-monospace,monospace;color:#ffffff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end">' +
           '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">' +
@@ -964,7 +1050,7 @@
       e.stopPropagation();
       const id = +bn.dataset.id, k = bn.dataset.step;
       const a = arsMap()[String(id)] || {};
-      const cur = effSteps(a, _reikCoIds.has(id));               // sama sýn og teiknuð er
+      const cur = effSteps(a, _reikCoIds.has(id), !!( _yearDocs && _yearDocs.get(String(id)) && _yearDocs.get(String(id)).skyrsla ));
       const next = Object.assign({}, a[STEPS_KEY] || {}, cur, { [k]: !cur[k] });
       // Kveikt á úttektinni ⇒ „Farið á verkstað" kviknar með (undanfari), og
       // afhak á ferðinni slekkur á úttektinni. Þannig getur stikan aldrei sýnt

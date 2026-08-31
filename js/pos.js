@@ -70,6 +70,13 @@
   }
   // Let product edits (Stillingar / Vörur) force the next loadAll to re-fetch.
   function invalidateVorur(){ _vorurTs = 0; _vorurInflight = null; }
+  function refreshCatalogIfStale(){
+    if (_vorurTs || _vorurInflight) return;
+    loadAll().then(function(){
+      var v=document.getElementById('view-sala');
+      if(v && v.getAttribute('data-pos-v3')==='1') rerenderCatalog();
+    });
+  }
   function lookupKt(kt){
     kt = kt.replace(/[^0-9]/g, '');
     if (kt.length !== 10) return Promise.resolve(null);
@@ -334,6 +341,8 @@
   function rerenderCatalog(){
     var sv=document.getElementById('pos-services');if(sv)sv.innerHTML=buildServicesHTML();
     var pr=document.getElementById('pos-products');if(pr)pr.innerHTML=buildProductsHTML();
+    syncShowAllUI();
+    syncAdrarUI();
     // 2026-05-09: notify patches (87-sala-from-settings) that the catalog
     // tiles were re-rendered so they can re-apply custom order, pinned tiles,
     // hidden product filtering. Without this, the periodic loadAll() watcher
@@ -541,12 +550,24 @@
             // Viðskiptavinur header is the manual fallback. Kept the id
             // so the wireUp handler can defensively check.
             '<button id="pos-scan" style="display:none">unused</button>' +
+            // Hakið sem ræður stjörnusíunni. Textinn er orðalag Agnars sjálfs.
+            // Talan aftan við segir hvað er sýnt af hverju — svo aldrei sé hægt
+            // að fela vörur án þess að það sjáist á skjánum.
+            '<label id="pos-showall-wrap" style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#475569;font-weight:600" title="Af: sýna aðeins vörur sem eru stjörnumerktar á forsíðu Söluborðs">' +
+              '<input type="checkbox" id="pos-showall" style="width:16px;height:16px;cursor:pointer">' +
+              '<span>Sjá allar vörur og þjónustu</span>' +
+              '<span id="pos-showall-count" style="font-weight:500;color:#94a3b8;font-variant-numeric:tabular-nums"></span>' +
+            '</label>' +
           '</div>' +
           '<div id="pos-services" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>' +
         '</div>' +
         '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
           '<div class="pos-sec" style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Vörur</div>' +
           '<div id="pos-products" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>' +
+          '<button id="pos-adrar-toggle" type="button" style="display:none;margin-top:14px;width:100%;background:#f1f5f9;color:#334155;border:1px dashed #cbd5e1;padding:10px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">Sjá aðrar vörur</button>' +
+          '<div id="pos-adrar-wrap" style="display:none;margin-top:10px">' +
+            '<div id="pos-adrar-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
       '<div class="pos-col-right">' +
@@ -612,14 +633,100 @@
   // (1 = fremst, null/hátt = aftast, svo stafrófsröð). Ekkert merkt = allt
   // sýnist í rodun+stafrófsröð eins og áður. Snertir EKKERT í körfu/kt-flæði
   // — state.services/products standa óbreytt fyrir Listann og leitina.
-  function tileList(arr){
-    var any = arr.some(function(p){return p.forsida === true;});
-    var rows = any ? arr.filter(function(p){return p.forsida === true;}) : arr.slice();
+  // 2026-08-29 (Agnar: „held að eitthvað gamalt vörusýnarkerfi sé að trufla,
+  // mikið af vörum eru ekki að sjást"). Það var rétt greint — og þetta var það.
+  //
+  // Reglan að ofan er ÓSÝNILEG: um leið og EITT er stjörnumerkt hverfa öll hin
+  // af flísunum, án þess að nokkurs staðar standi hvers vegna. Mælt í gögnunum
+  // 29.08: 15 vörur stjörnumerktar → 85 af 100 VIRKUM vörum földust. Þjónustan
+  // slapp aðeins af því ekkert þar var merkt.
+  //
+  // Núna ræður hakið „Sjá allar vörur og þjónustu" og það er SJÁLFGEFIÐ Á.
+  // Stjörnusían er þá val sem maður kveikir á vísvitandi, ekki eitthvað sem
+  // kviknar sjálft við fyrstu stjörnu. Röðunin (rodun) gildir í báðum tilvikum.
+  // 2026-08-29 SÍÐAR SAMA DAG: sjálfgefna gildið var SNÚIÐ VIÐ. Ég las beiðnina
+  // þannig að stjörnusían ætti að víkja, og setti hakið sjálfgefið á — þá komu
+  // allar 85 vörurnar aftur inn á forsíðuna og hún varð ólæsileg („now all the
+  // other varas back at the damn sala frontpage"). Agnar VILL stuttu forsíðuna;
+  // það sem hann bað um var að KOMAST Í hinar, ekki að fá þær allar upp.
+  // Sjálfgefið er því AF (stjörnusían ræður eins og áður) og hakið er leiðin til
+  // að sjá allt þegar maður vill.
+  var SHOWALL_KEY = 'pos_syna_allar_vorur';
+  var _adrarOpen = false;
+  function showAllTiles(){
+    try { return localStorage.getItem(SHOWALL_KEY) === '1'; } catch (_) { return false; }
+  }
+  function setShowAllTiles(v){
+    try { localStorage.setItem(SHOWALL_KEY, v ? '1' : '0'); } catch (_) {}
+  }
+  // vorur.sja_adrar_vorur: falið af aðalrúðunni, sýnt undir „Sjá aðrar vörur".
+  function isAdraVara(p){ return !!(p && p.sja_adrar_vorur === true); }
+  function sortTiles(rows){
     rows.sort(function(a,b){
       var ra = (a.rodun == null ? 9999 : +a.rodun), rb = (b.rodun == null ? 9999 : +b.rodun);
       return (ra - rb) || String(a.nafn||'').localeCompare(String(b.nafn||''), 'is');
     });
     return rows;
+  }
+  // Heldur hakinu og talningunni í takt við ástandið. Talan er þarna svo aldrei
+  // sé hægt að fela vörur án þess að það sjáist — það var einmitt vandamálið.
+  function syncShowAllUI(){
+    var cb = document.getElementById('pos-showall');
+    if (!cb) return;
+    var all = showAllTiles();
+    cb.checked = all;
+    var mainS = state.services.filter(function(p){ return !isAdraVara(p); });
+    var mainP = state.products.filter(function(p){ return !isAdraVara(p); });
+    var tot = mainS.length + mainP.length;
+    var syn = tileList(state.services).length + tileList(state.products).length;
+    var c = document.getElementById('pos-showall-count');
+    if (c) c.textContent = (syn === tot) ? '' : ('· ' + syn + ' af ' + tot);
+    var w = document.getElementById('pos-showall-wrap');
+    if (w) w.style.color = all ? '#475569' : '#b45309';
+  }
+  function tileList(arr){
+    var rows = arr.filter(function(p){ return !isAdraVara(p); });
+    var any = !showAllTiles() && rows.some(function(p){return p.forsida === true;});
+    if (any) rows = rows.filter(function(p){return p.forsida === true;});
+    else rows = rows.slice();
+    return sortTiles(rows);
+  }
+  function adraList(){
+    return sortTiles(state.products.concat(state.services).filter(isAdraVara));
+  }
+  function buildAdraHTML(){
+    var rows = adraList();
+    if (!rows.length) return '';
+    var byCat = {};
+    rows.forEach(function(p){
+      var c = p.flokkur || 'Annað';
+      (byCat[c] = byCat[c] || []).push(p);
+    });
+    var cats = Object.keys(byCat).sort(function(a,b){ return a.localeCompare(b, 'is'); });
+    return cats.map(function(cat){
+      var html = '<div style="grid-column:1/-1;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px">'+esc(cat)+'</div>';
+      html += byCat[cat].map(function(p){ return renderTile(p, p.flokkur === 'Þjónusta'); }).join('');
+      return html;
+    }).join('');
+  }
+  function syncAdrarUI(){
+    var tog = document.getElementById('pos-adrar-toggle');
+    var wrap = document.getElementById('pos-adrar-wrap');
+    var grid = document.getElementById('pos-adrar-grid');
+    if (!tog || !wrap || !grid) return;
+    var rows = adraList();
+    if (!rows.length) {
+      tog.style.display = 'none';
+      wrap.style.display = 'none';
+      grid.innerHTML = '';
+      return;
+    }
+    tog.style.display = '';
+    tog.textContent = _adrarOpen
+      ? ('Fela aðrar vörur')
+      : ('Sjá aðrar vörur (' + rows.length + ')');
+    wrap.style.display = _adrarOpen ? '' : 'none';
+    grid.innerHTML = _adrarOpen ? buildAdraHTML() : '';
   }
   function buildServicesHTML(){if(!state.services.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engin þjónusta skráð. Bættu við í Vörur og þjónusta tab.</div>';return tileList(state.services).map(function(s){return renderTile(s,true);}).join('');}
   function buildProductsHTML(){if(!state.products.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engar vörur skráðar.</div>';return tileList(state.products).map(function(p){return renderTile(p,false);}).join('');}
@@ -913,10 +1020,35 @@
     var drogBtn=document.getElementById('pos-drog');
     if(drogBtn)drogBtn.addEventListener('click',function(){try{if(window.DrogList&&DrogList.open){DrogList.open();}}catch(_){}});
     document.getElementById('pos-scan').addEventListener('click',scanQr);
+    // „Sjá allar vörur og þjónustu" — ræður stjörnusíunni (sjá tileList).
+    var showAllCb = document.getElementById('pos-showall');
+    if (showAllCb) showAllCb.addEventListener('change', function(){
+      setShowAllTiles(showAllCb.checked);
+      rerenderCatalog();
+    });
     var topScanBtn = document.getElementById('pos-scan-top');
     if (topScanBtn) topScanBtn.addEventListener('click', scanQr);
     document.getElementById('pos-services').addEventListener('click',function(e){var b=e.target.closest('.pos-svc');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);var s=state.services.find(function(x){return x.id===id;});if(!s)return;state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id,krefst_verkbeidni:!!s.krefst_verkbeidni});rerenderDynamic();});
     document.getElementById('pos-products').addEventListener('click',function(e){var b=e.target.closest('.pos-prod');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);addProductLine(id);});
+    var adrarToggle = document.getElementById('pos-adrar-toggle');
+    if (adrarToggle) adrarToggle.addEventListener('click', function(){
+      _adrarOpen = !_adrarOpen;
+      syncAdrarUI();
+    });
+    var adrarGrid = document.getElementById('pos-adrar-grid');
+    if (adrarGrid) adrarGrid.addEventListener('click', function(e){
+      var svc = e.target.closest('.pos-svc');
+      var prod = e.target.closest('.pos-prod');
+      if (svc) {
+        var sid = parseInt(svc.getAttribute('data-id'), 10);
+        var s = state.services.find(function(x){ return x.id === sid; });
+        if (!s) return;
+        state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id,krefst_verkbeidni:!!s.krefst_verkbeidni});
+        rerenderDynamic();
+        return;
+      }
+      if (prod) addProductLine(parseInt(prod.getAttribute('data-id'), 10));
+    });
     document.getElementById('pos-lines').addEventListener('click',function(e){var d=e.target.closest('.pos-line-del'),u=e.target.closest('.pos-qty-up'),n=e.target.closest('.pos-qty-dn');if(d){state.lines.splice(parseInt(d.getAttribute('data-idx'),10),1);rerenderDynamic();return;}if(u){var i=parseInt(u.getAttribute('data-idx'),10);state.lines[i].qty++;rerenderDynamic();return;}if(n){var j=parseInt(n.getAttribute('data-idx'),10);state.lines[j].qty--;if(state.lines[j].qty<=0)state.lines.splice(j,1);rerenderDynamic();return;}});
     // Per-line price + discount editing — live, WITHOUT redrawing the inputs
     // (so the cursor never jumps). 2026-07-31: the price field is now in FULL
@@ -1723,7 +1855,7 @@
     '</body></html>');
     w.document.close();
   }
-  function watch(){setInterval(function(){var v=document.getElementById('view-sala');if(!v||!v.classList.contains('active'))return;if(!document.getElementById('pos-checkout')){v.removeAttribute('data-pos-v3');loadAll().then(render);}},300);}
+  function watch(){setInterval(function(){var v=document.getElementById('view-sala');if(!v||!v.classList.contains('active'))return;if(!document.getElementById('pos-checkout')){v.removeAttribute('data-pos-v3');loadAll().then(render);return;}refreshCatalogIfStale();},300);}
   window.POS = { getState: function(){ return state; }, totals: totals, rerenderDynamic: rerenderDynamic, invalidateVorur: invalidateVorur };
   // App-wide view-mode toggle (patch 166) → POS reacts PURELY via CSS keyed off
   // html[data-viewmode] (see _ensurePosVmCss). We deliberately DO NOT re-render
@@ -1732,6 +1864,9 @@
   document.addEventListener('slokk-viewmode', function(){
     var v=document.getElementById('view-sala');
     if(v && v.classList.contains('active')) _ensurePosVmCss();
+  });
+  document.addEventListener('view-shown', function(e){
+    if(e && e.detail && e.detail.name==='sala') refreshCatalogIfStale();
   });
   function init(){watch();console.log('[POS v3] Ready');}
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}

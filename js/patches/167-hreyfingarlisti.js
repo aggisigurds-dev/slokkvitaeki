@@ -36,7 +36,7 @@
     s.id = 'hl-brunastal-skin';
     const V = '#view-hreyfingarlisti ';
     s.textContent =
-      V + '.hl-mono{font-family:\'Space Mono\',ui-monospace,monospace}' +
+      V + '.hl-mono{font-family:\'JetBrains Mono\',ui-monospace,monospace}' +
       V + 'tbody tr{transition:background .12s ease}' +
       V + 'tbody tr:hover{background:#f3f6fc}' +
       V + '.darkfield::placeholder{color:rgba(255,255,255,.55)}' +
@@ -251,7 +251,7 @@
   function ktCell(kt) {
     const d = ktDigits(kt);
     if (d === '9999999999') return '<span style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700">Staðgr.</span>';
-    if (d.length === 10) return '<span style="font-family:\'Space Mono\',monospace;font-size:11px;color:#475569">' + esc(ktDashed(d)) + '</span>';
+    if (d.length === 10) return '<span style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:11px;color:#475569">' + esc(ktDashed(d)) + '</span>';
     return kt ? '<span style="font-family:monospace;font-size:11px;color:#475569">' + esc(kt) + '</span>' : '<span style="color:#cbd5e1">—</span>';
   }
   // Sanitise a value for embedding inside a PostgREST .or() list (commas /

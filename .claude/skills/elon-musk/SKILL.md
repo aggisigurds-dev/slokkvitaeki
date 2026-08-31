@@ -7,6 +7,8 @@ description: >
   lyklar (fyrirtaeki_id), eða „hvaða patch/tafla er þetta borð". Fyrsta
   verk: docs/RAFKERFI.md kaflar 8–12. Ekki nota fyrir nýtt útlit á year-cell
   (joker/thema) né kúnnasameiningu (kunnaskra).
+  Kveikjuorð: árs, ársreitur, pera, FULLBÚIÐ, VANTAR, SOURCE, FILTER, TÆKI,
+  KPI, data-elon, RAFKERFI, röng join, FK-join. Afrit → villuleit.
 ---
 
 # Elon Musk — hvenær á að kalla
@@ -47,3 +49,60 @@ Lesa agentinn `.claude/agents/elon-musk.md` **eða** kalla `subagent_type: elon-
 
 Patch `js/patches/317-elon-trace.js`. Falinn: data-attrs + title. Engin CSS á `._yr`.
 Hylur: `._yr`, FULLBÚIÐ/VANTAR, 📅 SOURCE SWITCH, SKOÐUN `._mo`, FILTER chips `._ars-mo` + `._ars-st`, KPI, TÆKI, STAÐA EFTIR ÁRI, 🧾, afsláttar-pills.
+
+---
+
+# Takka-úttekt (bætt við 28.08.2026)
+
+## Aðferð sem VIRKAR EKKI — ekki endurtaka
+
+Að hlera `EventTarget.prototype.addEventListener` úr console og telja takka
+án hlustanda **gefur falskar niðurstöður**. Hlerinn nær aðeins bindingum sem
+verða til EFTIR að hann er settur upp; allt sem batt sig við fyrstu hleðslu
+lítur út fyrir að vera dautt.
+
+Mælt 28.08: 11.508 takkar, þar af 689 flokkaðir „enginn hlustandi". Í þeim
+hópi var `⬇ Taka úr þjónustu` — sem var sannreynt VIRKANDI sömu klukkustund.
+Talan er því stórlega ýkt og ónothæf.
+
+## Aðferð sem á að nota í staðinn
+
+Kyrrstæð greining á kóðanum, ekki keyrslutími:
+
+1. Finndu takkann í `js/` eða `js/patches/` á texta eða class.
+2. Athugaðu hvort til sé `onclick=`, `addEventListener('click'`, eða
+   umboðshlustandi (`closest('.klasi')`) sem nær yfir hann.
+3. Staðfestu í vafra með EINUM smelli á tiltekinn takka — og kláraðu
+   staðfestingargluggann (sjá gildru hér að neðan).
+
+**Aldrei smella á alla takka í röð.** Listinn inniheldur Eyða, senda póst,
+stofna reikning og taka úr þjónustu. Sjálfvirk smellaruna eyðileggur gögn.
+
+## Gildra: appið notar EIGIN staðfestingarglugga
+
+`Confirm.show(msg)` (`#_cfm-dialog`, hnappar „Hætta við" / „Já") — EKKI
+`window.confirm`. Sá sem stubbar `window.confirm` í prófun sér ekkert
+gerast og ályktar ranglega að takkinn sé bilaður. Svo virkar hann:
+
+```js
+document.getElementById('_cfm-dialog')
+  ?.querySelector('button:nth-of-type(2)')   // „Já"
+  ?.click();
+```
+
+## Staðfest 28.08.2026
+
+| Atriði | Niðurstaða |
+|---|---|
+| `⬇ Taka úr þjónustu` (patch 280) | **VIRKAR** — `er_i_thjonustu=false` í DB, `subscribed=false`, `removed_from_service_at` stimplað. Prófað á fid 510 |
+| Hausar Ársskoðun-töflunnar skarast | Vistað útlit úr stílstjóra, EKKI útgáfu-galli. `TableLook` negldi dálka 5–8 á 40px og `_pe-overrides` setti 18px |
+| `font-weight:300px` í vistuðu CSS | Galli í `262-page-editor.js applySize()` — px sett á einingalaus eigindi. Lagað (`UNITLESS_PROPS`) |
+| Röðun á póst-stöðu | Var til en falin sem 🚦-merki inni í Fyrirtæki-hausnum. Færð á ✉-dálkinn |
+| Skörun á öðrum síðum | Skannaðar allar 51 sýnir: 9 með töflur, aðeins `SKOÐUN⇅` á Ársskoðun skarast (7px) |
+
+## Stílstjórinn geymir í vafranum, ekki á netþjóni
+
+`slokk_app_settings_v1` í localStorage (1,375 MB þegar mælt). Breytingar eru
+því **per vafra**, ekki fyrir alla notendur. `PageEditor.clearRule(scope, sel)`
+hreinsar eina reglu; `scope` er view-id og `sel` er velji ÁN `#view-x#view-x`
+forskeytisins sem `applyCss()` bætir framan við.

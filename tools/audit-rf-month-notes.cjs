@@ -49,7 +49,16 @@ ok('under-name note on Sími', /_ars-note-under/.test(ars));
 ok('plan_note storage kept', /plan_note/.test(ars));
 
 console.log('166 viewmode');
-ok('toggle sits in .bb-face', /#bstal-banner \.bb-face/.test(ky) && /insertBefore\(t, rightwrap\)/.test(ky));
+// 2026-08-30: prófið leitaði að ORÐALAGINU `insertBefore(t, rightwrap)`. Það var
+// endurskrifað í #805/#806 í `face.insertBefore(t, anchor)` þar sem anchor er
+// annaðhvort litaspjaldið (#_pe-btn) eða rightwrap. TRYGGINGIN er óbreytt —
+// rofinn situr í .bb-face og fer Á UNDAN hægri-blokkinni, ekki inn í hana (314
+// felur þá blokk í símaham). Prófið athugar því tryggnguna, ekki orðalagið.
+ok('toggle sits in .bb-face',
+  /#bstal-banner \.bb-face/.test(ky) &&
+  /face\.insertBefore\(t, anchor\)/.test(ky) &&
+  /rightwrap/.test(ky) &&
+  !/rightwrap\.appendChild\(t\)/.test(ky));
 ok('Sími segment forced visible in Skjár', /data-viewmode="desktop"\] \.ky-vm-seg\[data-vm="mobile"\]/.test(ky));
 
 if (failed) { console.log('\nFAILED: ' + failed); process.exit(1); }

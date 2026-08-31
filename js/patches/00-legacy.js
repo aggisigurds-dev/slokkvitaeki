@@ -2163,14 +2163,26 @@ console.log('[patch-master] loaded with all fixes');
 /* ===== FINANCIAL DASHBOARD: VSK breakdown, CSV export, revenue by type ===== */
 (function(){
   var _finInjected = false;
+  function _tekjurOwnsIncome(){
+    var v = document.getElementById('view-income');
+    return !!(v && (v.dataset.tkRendered || v.querySelector('#tekjur-csv')));
+  }
   async function injectFinanceDash(){
+    try {
+    // Tekjur v2 (js/tekjur.js) owns #view-income and replaces #income-main on
+    // first paint. The race: this fetch starts while "Hleður..." is still in
+    // the DOM, then tekjur wipes innerHTML, getElementById('_pm_csv_export')
+    // is null, and `.onclick =` becomes an unhandledrejection on every hash.
+    if(_tekjurOwnsIncome()) return;
     var main = document.getElementById('income-main');
-    if(!main || _finInjected) return;
+    if(!main || !main.isConnected || _finInjected) return;
     if(main.querySelector('._pm_fin')) return;
     _finInjected = true;
     // Fetch all solur records
     var r = await window.DB.sb.from('solur').select('*').neq('status','drog').order('created_at',{ascending:false});
-    if(!r.data) return;
+    main = document.getElementById('income-main');
+    if(!main || !main.isConnected || _tekjurOwnsIncome()) { _finInjected = false; return; }
+    if(!r.data) { _finInjected = false; return; }
     var sales = r.data;
     // Group by month
     var months = {};
@@ -2227,7 +2239,9 @@ console.log('[patch-master] loaded with all fixes');
     html += '</div></div></div>';
     main.insertAdjacentHTML('beforeend', html);
     // CSV Export button
-    document.getElementById('_pm_csv_export').onclick = function(){
+    var csvBtn = document.getElementById('_pm_csv_export');
+    if(!csvBtn) return;
+    csvBtn.onclick = function(){
       var csv = 'Dagsetning,Vi\u00f0skiptavinur,Li\u00f0ur,Magn,Ver\u00f0,\u00c1n VSK,VSK,Samtals,Grei\u00f0slum\u00e1ti\n';
       sales.forEach(function(s){
         (s.linur||[]).forEach(function(l){
@@ -2251,11 +2265,16 @@ console.log('[patch-master] loaded with all fixes');
       URL.revokeObjectURL(url);
     };
     console.log('[pm] financial dashboard injected: '+sales.length+' sales');
+    } catch (e) {
+      _finInjected = false;
+      console.warn('[pm] financial dashboard skip', e && e.message ? e.message : e);
+    }
   }
   setInterval(function(){
     var v = document.getElementById('view-income');
     if(!v || getComputedStyle(v).display==='none') return;
-    injectFinanceDash();
+    var p = injectFinanceDash();
+    if(p && typeof p.catch === 'function') p.catch(function(){});
   }, 1000);
   console.log('[pm] financial dashboard active');
 })();
@@ -3187,7 +3206,7 @@ console.log('[patch-master] loaded with all fixes');
       // each, single length-picker for the whole batch.
       if(window.Print&&typeof Print.showJob==='function'){
         Print.showJob({customer:cust,phone:phone,units:units});
-      }else{alert('Prentun ekki tiltæk — QR-miðakerfið er ekki hlaðið.');}
+      }else{/* 2026-08-30 (verk 3): alert() frystir sjálfvirka setu og stoppar flæðið þegar prentun er ótiltæk — tækið er þá SKRÁÐ en notandinn situr fastur í glugga. Toast segir sömu skilaboð án þess að loka á neitt. */if(window.Toast&&Toast.show){Toast.show('Prentun ekki tiltæk — QR-miðakerfið er ekki hlaðið.');}else{console.warn('Prentun ekki tiltæk — QR-miðakerfið er ekki hlaðið.');}}
     };
     bar.querySelector('._pm_b_close').onclick=function(){t.querySelectorAll('._pm_cb').forEach(function(c){c.checked=false;});bar.remove();};
   }

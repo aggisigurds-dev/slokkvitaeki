@@ -49,8 +49,12 @@
       V + '.ky-abtn:hover{transform:translateY(-1px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 6px 12px -4px rgba(20,30,60,.42)}' +
       V + '.ky-abtn.on{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#156e3a;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 3px 7px -3px rgba(15,110,58,.5)}' +
       V + '.ky-row:hover{background:#f7f9fd}' +
-      // Skjár: wrap the 8 .ky-abtn instead of clipping them (card is overflow:hidden).
-      V + '.ky-row{flex-wrap:wrap}' +
+      // Brunahólf/Skjár: chips stay on one row; .ky-card-rows scrolls sideways
+      // (same as brunaholf index.html .kyf-wrap .ky-card-rows). Wrap was clipping
+      // into a 2-col tile stack on Sími.
+      V + '.ky-card-rows{overflow-x:auto;-webkit-overflow-scrolling:touch}' +
+      V + '.ky-card-rows>.ky-row, ' + V + '.ky-row{flex-wrap:nowrap}' +
+      V + '.ky-row-end{display:flex;align-items:center;gap:12px;margin-left:auto;flex:0 0 auto;justify-content:flex-end}' +
       // Barely-visible per-krafa athugasemd/áminning reitur — svartur texti,
       // ósýnilegur rammi þar til hann er valinn.
       V + '._ky-note{color:#11141c !important;background:transparent !important;border:1px solid transparent !important;border-bottom:1px dashed #d7dce4 !important;border-radius:5px !important;box-shadow:none !important}' +
@@ -79,7 +83,7 @@
       V + '.ky-table tr.ky-tgrp td{background:#eef2f8;font-weight:700;border-top:2px solid #d7dee9}' +
       V + '.ky-table tr.ky-trow:hover td{background:#f7f9fd}' +
       B + '.ky-table td{color:#11141c}' +
-      B + ".ky-num{font-family:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace !important}" +
+      B + ".ky-num{font-family:'JetBrains Mono',ui-monospace,monospace !important}" +
       // 2026-08-25: Stílstjóri málaði síðuna (grár bakgrunnur, svartur titill,
       // hetjukortið hvítt). Læsum Brunastál-útlitinu aftur + jöfnum KPI-spjöldin
       // (flex-wrap lét Heildarkröfur blása út). Sími-2×2 kemur á eftir (M).
@@ -185,31 +189,43 @@
       M + '.ky-exprow ._ky-exp div>div:first-child{font-size:9px!important;letter-spacing:.03em}' +
       M + '.ky-exprow ._ky-exp div>div:last-child{font-size:14px!important}' +
       M + '.ky-filterbar{margin-bottom:6px!important;gap:6px!important}' +
-      M + '.ky-filterbar .filter-chip,' + M + '._ky-sync{flex:1 1 auto;min-height:40px!important;height:auto!important;padding:6px 10px!important;font-size:12px!important}' +
+      M + '.ky-filterbar .filter-chip,' + M + '._ky-sync{flex:1 1 auto;min-height:44px!important;height:auto!important;padding:8px 12px!important;font-size:13px!important}' +
       M + '.ky-filterbar ._ky-search{flex:1 1 100%!important;min-height:40px!important;font-size:16px!important;padding:8px 10px!important}' +
       M + '.ky-co{border-radius:0;border-left:none;border-right:none;margin-bottom:0;box-shadow:none}' +
-      M + '.ky-cohead{padding:8px 12px 4px}' +
-      M + '.ky-coname{font-size:15px;line-height:1.2}' +
-      M + '.ky-cometa{font-size:11px;margin-top:1px}' +
+      M + '.ky-cohead{padding:6px 10px 2px}' +
+      M + '.ky-coname{font-size:14px;line-height:1.15}' +
+      M + '.ky-cometa{font-size:11px;margin-top:0}' +
       M + '.ky-kraflbl{display:none}' +
-      M + '.ky-krafamt{font-size:15px;margin-top:0}' +
-      M + '.ky-cobar{margin-top:4px}' +
-      M + '.ky-cobar>div{height:4px!important;width:100%!important;max-width:100%!important;margin-top:0!important}' +
-      M + '.ky-cosub{margin-top:4px;font-size:11px}' +
-      M + '.ky-mcopy{width:36px;height:36px;min-height:36px!important}' +
+      M + '.ky-krafamt{font-size:14px;margin-top:0}' +
+      M + '.ky-cobar{margin-top:3px}' +
+      M + '.ky-cobar>div{height:3px!important;width:100%!important;max-width:100%!important;margin-top:0!important}' +
+      M + '.ky-cosub{margin-top:2px;font-size:10px}' +
+      M + '.ky-mcopy{display:none!important}' +
       M + '.ky-mrow{padding:0;border-top:1px solid #e8ecf2}' +
-      M + '.ky-saletop{min-height:44px;padding:8px 12px;gap:8px;-webkit-tap-highlight-color:transparent}' +
-      M + '.ky-mdetail{display:block!important;padding:4px 12px 10px;height:auto!important;overflow:visible!important}' +
-      M + '.ky-chev{margin-left:4px;flex:none;color:#334155;font-size:16px;line-height:1}' +
-      M + '.ky-hasnote{flex:none;font-size:12px;opacity:.8}' +
-      M + '.ky-mnote{display:block!important;margin-top:4px;min-height:44px!important;font-size:16px!important;padding:8px 10px!important}' +
-      M + '.ky-acts{display:flex!important;flex-wrap:wrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important;margin-top:8px;gap:8px;padding:0 12px 10px}' +
-      M + '.ky-acts .ky-abtn{display:inline-flex!important;visibility:visible!important;pointer-events:auto!important;flex:1 1 calc(50% - 8px);min-width:calc(50% - 8px);min-height:44px!important;height:44px!important;padding:0 6px!important;font-size:11px!important}' +
+      M + '.ky-saletop{min-height:0;padding:4px 10px;gap:6px;-webkit-tap-highlight-color:transparent}' +
+      M + '.ky-mdetail{display:block!important;padding:0 10px 2px;height:auto!important;overflow:visible!important}' +
+      M + '.ky-chev{margin-left:4px;flex:none;color:#334155;font-size:14px;line-height:1}' +
+      M + '.ky-hasnote{flex:none;font-size:11px;opacity:.8}' +
+      M + '.ky-mnote{display:block!important;margin-top:2px;min-height:28px!important;height:28px!important;font-size:16px!important;padding:2px 8px!important}' +
+      // Two chip rows (~16px + 3px gap + 16px ≈ 35px). 18% basis ⇒ 5+3 or 5+4, never a 3rd row.
+      M + '.ky-acts,' + M + '.ky-mrow .ky-acts,' + M + '.ky-mrow.open .ky-acts' +
+        '{display:flex!important;flex-wrap:wrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important;margin-top:3px;gap:3px;padding:2px 10px 8px}' +
+      M + '.ky-acts .ky-abtn,' + M + '.ky-mrow .ky-acts .ky-abtn,' + M + '.ky-mrow.open .ky-acts .ky-abtn,' +
+      M + '.ky-acts .ky-abtn:not(#_kyc0):not(#_kyc1):not(#_kyc2),' +
+      M + 'button.ky-abtn:not(#_kyc0):not(#_kyc1):not(#_kyc2)' +
+        '{display:inline-flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;visibility:visible!important;pointer-events:auto!important;' +
+         'flex:1 1 calc(18% - 3px)!important;min-width:calc(18% - 3px)!important;max-width:none!important;' +
+         'min-height:0!important;height:16px!important;padding:0 4px!important;gap:2px!important;border-radius:5px!important;' +
+         'font-size:9px!important;line-height:1!important;white-space:nowrap;overflow:hidden}' +
+      M + '.ky-acts .ky-abtn span,' + M + '.ky-acts .ky-abtn .ky-abtn-ico,' + M + '.ky-acts .ky-abtn .ky-abtn-lbl' +
+        '{font-size:9px!important;line-height:1!important;letter-spacing:0!important}' +
+      M + '.ky-acts .ky-abtn .ky-abtn-ico{font-size:11px!important}' +
       // Beat 261's 50px hammer with ID-level !important (this view is skipped in 263).
-      M + 'button.ky-abtn,' + M + 'button.ky-navbtn{display:inline-flex!important;min-height:44px!important;height:44px!important;padding-top:0!important;padding-bottom:0!important;overflow:visible!important;pointer-events:auto!important}' +
+      // Nav/month buttons stay 44px; claim chips stay 16px (do not re-inflate ky-abtn here).
+      M + 'button.ky-navbtn{display:inline-flex!important;min-height:44px!important;height:44px!important;padding-top:0!important;padding-bottom:0!important;overflow:visible!important;pointer-events:auto!important}' +
       M + 'button._ky-exp{min-height:0!important;padding:6px 8px!important}' +
       M + 'input._ky-note,' + M + 'input._ky-search,' + M + 'select._ky-sort{min-height:44px!important;font-size:16px!important}' +
-      M + '{overflow-x:hidden}';
+      M + '{overflow-x:auto;-webkit-overflow-scrolling:touch}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
@@ -290,8 +306,8 @@
   // filled=true → dark-metal green (used for a sent claim).
   function kyAbtn(cls, extra, glyph, label, color, title, filled) {
     return '<button class="' + cls + ' ky-abtn' + (filled ? ' on' : '') + '" ' + extra + ' type="button" title="' + esc(title) + '">' +
-      '<span style="font-size:14px;line-height:1;color:' + (filled ? '#fff' : color) + '">' + glyph + '</span>' +
-      '<span style="font-size:8.5px;font-weight:700;letter-spacing:.02em;color:' + (filled ? '#fff' : color) + '">' + esc(label) + '</span>' +
+      '<span class="ky-abtn-ico" style="font-size:14px;line-height:1;color:' + (filled ? '#fff' : color) + '">' + glyph + '</span>' +
+      '<span class="ky-abtn-lbl" style="font-size:8.5px;font-weight:700;letter-spacing:.02em;color:' + (filled ? '#fff' : color) + '">' + esc(label) + '</span>' +
     '</button>';
   }
 
@@ -321,10 +337,9 @@
     try { return !!(document.body && document.body.classList.contains('appmode')); } catch (_) { return false; }
   }
   function getViewMode() {
-    // Í uppsettu öpp-i (app-mode) er appið SJÁLFT síminn — nota alltaf hreina
-    // síma-útlitið (renderCompanyMobile), óháð vistuðu Sími/Tafla/Skjár vali.
-    // (Ósk Agnars 2026-08-20: „create it for the app format in Öpp".) Vafra-/hub-
-    // sýnin heldur áfram að hlýða rofanum að neðan.
+    // Í uppsettu öpp-i er appið SJÁLFT síminn — haus/KPI þéttist (data-viewmode
+    // = mobile) en listinn er SAMA Brunahólf/Skjár-röðin (renderCompany), ekki
+    // 2-dálka flísar. (Ósk Agnars 2026-08-30: sama layout og Brunahólf.)
     if (inAppMode()) return 'mobile';
     const m = document.documentElement.dataset.viewmode;
     return VM_MODES.indexOf(m) >= 0 ? m : 'desktop';
@@ -352,9 +367,11 @@
     return m;
   }
   function lockPhoneViewport(mode) {
-    // Chrome "Request desktop site" ignores width=device-width and lays the
-    // page out at ~980px. Sími on a real phone must use the short screen
-    // side so the UI fills the S26, not a centred/left strip.
+    // Brunahólf Fjármála-yfirlit model: width=device-width so Android hard-zoom
+    // and pinch reflow. Never lock width=390 / maximum-scale=1 / user-scalable=no
+    // — that froze the layout while Brunahólf followed. Phone chrome still uses
+    // slokk-phone-dev + data-viewmode, not a numeric viewport width.
+    void mode;
     if (!isPhoneDevice()) return;
     try {
       let vp = document.querySelector('meta[name="viewport"]');
@@ -363,12 +380,8 @@
         vp.setAttribute('name', 'viewport');
         (document.head || document.documentElement).appendChild(vp);
       }
-      const short = Math.min(screen.width || 0, screen.height || 0);
-      if (mode === 'mobile' && short >= 320 && short <= 700) {
-        vp.setAttribute('content', 'width=' + short + ', initial-scale=1, viewport-fit=cover');
-      } else {
-        vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
-      }
+      const open = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
+      if (vp.getAttribute('content') !== open) vp.setAttribute('content', open);
     } catch (_) {}
   }
   function applyViewMode(mode, rerender) {
@@ -422,9 +435,17 @@
     if (face) {
       const t = existing || buildToggle();
       t.className = 'ky-vm'; t.style.cssText = '';
-      if (rightwrap) {
-        if (t.parentNode !== face || t.nextElementSibling !== rightwrap) {
-          face.insertBefore(t, rightwrap);
+      // Anchor BEFORE the paint-palette (#_pe-btn, 262) when it is already in
+      // the face, else before the clock wrap. Both patches insertBefore the
+      // same node; last-writer used to swap them and the amber palette sat
+      // under the flames with no z-index (invisible, covering Sími/Tafla/Skjár).
+      const pe = document.getElementById('_pe-btn');
+      const anchor = (pe && pe.parentNode === face && pe.dataset.spot === 'banner')
+        ? pe
+        : (rightwrap || null);
+      if (anchor) {
+        if (t.parentNode !== face || t.nextElementSibling !== anchor) {
+          face.insertBefore(t, anchor);
         }
       } else if (t.parentNode !== face) {
         face.appendChild(t);
@@ -829,7 +850,7 @@
     const old = document.getElementById('_ky-sync-modal'); if (old) old.remove();
     const wrap = document.createElement('div');
     wrap.id = '_ky-sync-modal';
-    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'Space Grotesk\',system-ui,sans-serif';
+    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif';
     let inner;
     if (data.error) {
       inner = '<div style="font-size:16px;font-weight:800;color:#dc2626;margin-bottom:8px">⚠️ Villa við samstillingu</div>' +
@@ -1079,7 +1100,6 @@
 
         ${shown.length
           ? (getViewMode() === 'table' ? renderTable(shown)
-             : getViewMode() === 'mobile' ? shown.map(renderCompanyMobile).join('')
              : shown.map(renderCompany).join(''))
           : (q
               ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Ekkert fyrirtæki passar við „' + esc(_state.search) + '"</div>'
@@ -1579,8 +1599,9 @@
     ].join(' · ');
     // Hlekkjanlegt nafn: beint customer_id, annars fyrirtaeki fundið eftir kt,
     // annars nafna-endurheimtin (rec.coId) — úttektar-sölur bera oft ekkert id.
+    const ktSites = (directKt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[directKt]) || [];
     const linkId = grp.id
-      || (directKt && _state.fyrirtIdsByKt && (_state.fyrirtIdsByKt[directKt] || [])[0])
+      || (ktSites.length === 1 ? ktSites[0] : null)
       || (recovered && recovered.coId)
       || null;
     const nameHtml = linkId
@@ -1604,20 +1625,20 @@
   // ── 📄 Úttektarskýrsla per krafa (2026-07-16) ──────────────────────────────
   // Resolve the inspection report for the sale's YEAR: (1) fyrirtækjaviðhengi
   // (CompanyAttachments, kind='skyrsla', sama ár — sama og payday-push notar),
-  // (2) customer_documents (doc_type='uttektarskyrsla', sama ár) per fyrirtæki
-  // eða customers_base. Skilar {found, kind:'att'|'doc', ...} — aldrei giskað.
+  // (2) customer_documents (doc_type='uttektarskyrsla', sama ár) á ÞESSUM stað
+  // (solur.customer_id). Kennitala / customer_base_id er EKKI einkvæm — 19 kt
+  // ná yfir 78 staði (Center Hótel, Pizzan, Heimaleiga). Fyrsta systkini-skýrsla
+  // málaði Arnarhvoll með Skjaldbreið. Skilar {found, ...} — aldrei giskað.
   function resolveSkyrsla(s) {
     const yr = String(new Date(s.created_at || Date.now()).getFullYear());
     const candidateIds = [];
     if (s.customer_id) candidateIds.push(s.customer_id);
-    // Úttektar-sölur eru oft vistaðar nafn-eingöngu (ekkert customer_id/kt) —
-    // notum þá nafna-endurheimtina (nameKt) sem síðan sýnir þegar 🔗 kt-ið.
     const rec = (_state.nameKt || {})[keyName(s.customer_nafn)] || null;
-    if (rec && rec.coId != null && !candidateIds.includes(rec.coId)) candidateIds.push(rec.coId);
     const kt = (s.customer_kt || (rec && rec.kt) || '').trim();
-    if (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) {
-      _state.fyrirtIdsByKt[kt].forEach(id => { if (!candidateIds.includes(id)) candidateIds.push(id); });
-    }
+    const ktSites = (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) || [];
+    // Án customer_id: nafn-endurheimt eða kt AÐEINS þegar kt-in á einn stað.
+    if (!candidateIds.length && rec && rec.coId != null) candidateIds.push(rec.coId);
+    if (!candidateIds.length && ktSites.length === 1) candidateIds.push(ktSites[0]);
     // 1) fyrirtækjaviðhengi (Supabase samningar-bucket)
     try {
       if (window.CompanyAttachments && CompanyAttachments.list) {
@@ -1628,16 +1649,17 @@
         }
       }
     } catch (_) {}
-    // 2) customer_documents (Drive-hryggurinn)
+    // 2) customer_documents — AÐEINS þessi staður. Base/kt-víðar raðir eru
+    // notaðar aðeins þegar kt-in á einn stað (ótvírætt). Annars: engin skýrsla.
     const docs = [];
     candidateIds.forEach(id => ((_state.docsByCo || {})[String(id)] || []).forEach(d => { if (!docs.includes(d)) docs.push(d); }));
-    const baseIds = [];
-    if (s.customer_base_id) baseIds.push(s.customer_base_id);
-    const fy = s.customer_id ? (_state.fyrirtMap || {})[s.customer_id] : null;
-    if (fy && fy.customer_base_id != null) baseIds.push(fy.customer_base_id);
-    if (kt && _state.baseIdByKt && _state.baseIdByKt[kt] != null) baseIds.push(_state.baseIdByKt[kt]);
-    if (rec && rec.baseId != null && !baseIds.includes(rec.baseId)) baseIds.push(rec.baseId);
-    baseIds.forEach(id => ((_state.docsByBase || {})[String(id)] || []).forEach(d => { if (!docs.includes(d)) docs.push(d); }));
+    if (!docs.length && !candidateIds.length && ktSites.length <= 1) {
+      const baseIds = [];
+      if (s.customer_base_id) baseIds.push(s.customer_base_id);
+      if (kt && _state.baseIdByKt && _state.baseIdByKt[kt] != null) baseIds.push(_state.baseIdByKt[kt]);
+      if (rec && rec.baseId != null && !baseIds.includes(rec.baseId)) baseIds.push(rec.baseId);
+      baseIds.forEach(id => ((_state.docsByBase || {})[String(id)] || []).forEach(d => { if (!docs.includes(d)) docs.push(d); }));
+    }
     const doc = docs.find(d => String(d.year || '') === yr && (d.drive_file_id || d.storage_path));
     if (doc) return { found: true, kind: 'doc', doc, year: yr };
     return { found: false, year: yr };
@@ -1709,11 +1731,12 @@
 
   // 📄 Skýrsla takki í kyAbtn-röðinni: GRÆNN (filled) þegar skýrsla ársins er
   // til → opnar hana; grár „vantar" annars (smellur = toast, ekkert meira).
-  function skyrslaBtnFor(s) {
+  function skyrslaBtnFor(s, compact) {
     const res = resolveSkyrsla(s);
+    const lab = compact ? 'Skýr.' : 'Skýrsla';
     return res.found
-      ? kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '"', '📄', 'Skýrsla', '#0f7a43', 'Úttektarskýrsla ' + res.year + ' — opna og yfirfara áður en krafan er send (fylgir kröfunni sem viðhengi)', true)
-      : kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '" data-missing="1"', '📄', 'Skýrsla', '#a6adbb', 'Engin úttektarskýrsla fundin fyrir ' + res.year, false);
+      ? kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '"', '📄', lab, '#0f7a43', 'Úttektarskýrsla ' + res.year + ' — opna og yfirfara áður en krafan er send (fylgir kröfunni sem viðhengi)', true)
+      : kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '" data-missing="1"', '📄', lab, '#a6adbb', 'Engin úttektarskýrsla fundin fyrir ' + res.year, false);
   }
   function skyrslaIconFor(s) {
     const res = resolveSkyrsla(s);
@@ -1730,7 +1753,7 @@
       const old = document.getElementById('_ky-send-modal'); if (old) old.remove();
       const wrap = document.createElement('div');
       wrap.id = '_ky-send-modal';
-      wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100070;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'Space Grotesk\',system-ui,sans-serif';
+      wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100070;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif';
       const isUttekt = !!(sale && sale.source === 'uttekt');
       let reportHtml;
       if (res.found) {
@@ -1772,84 +1795,10 @@
     });
   }
 
-  // ── 📱 Sími (mobile) — one column, big taps, nothing overlaps ───────────────
+  // ── 📱 Sími — same company cards as Skjár / Brunahólf (not 2-col tiles) ──
+  // Kept so any leftover caller still hits the shared row markup.
   function renderCompanyMobile(grp) {
-    const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
-    const totalStr = String(Math.round(grp.sum));
-    const sendableIds = sales.filter(isSendable).map(s => s.id);
-    const ident = companyIdentity(grp);
-    const ag = agingBarFor(sales);
-
-    // 2026-08 (Agnar — „hreinsað síma-útlit"): rein hvít fyrirtækjakort, aðgerða-
-    // hnappar sem BROTNA (flex-wrap) svo ekkert klippist og líkaminn skrunar aldrei
-    // lárétt. Öll gögn/handtök halda sér — aðeins útlit/uppröðun breytist. „Allar
-    // greiddar" hnappurinn fjarlægður af síma (ósk Agnars). Nýir ky-m*/ky-co*/ky-acts
-    // klasar eru EINGÖNGU á síma svo breiða/tafla-sýnin er ósnert.
-    const rows = sales.map(s => {
-      const da = daysAgo(s.created_at);
-      const skyrslaBtn = skyrslaBtnFor(s);
-      const sid = String(s.id);
-      const isOpen = _state.openSales && _state.openSales.has(sid);
-      const hasNote = !!(s.krafa_note && String(s.krafa_note).trim());
-      return `
-        <div class="ky-row ky-mrow${isOpen ? ' open' : ''}" data-sale-id="${esc(sid)}">
-          <div class="ky-saletop" role="button" tabindex="0" aria-expanded="${isOpen ? 'true' : 'false'}" title="Opna aðgerðir">
-            ${isSendable(s)
-              ? `<input type="checkbox" class="_ky-pick" data-id="${s.id}" data-amount="${Math.round(parseFloat(s.samtals) || 0)}" title="Velja kröfu í Payday-sendingu">`
-              : '<span class="ky-pick-sp"></span>'}
-            <span class="ky-num ky-mnum">${esc(s.num || '')}</span>
-            <span class="ky-num ky-mdate">${fmtDate(s.created_at)}</span>
-            ${agingPill(da)}
-            <span class="ky-num ky-mamt">${fmtKr(s.samtals)}</span>
-            ${hasNote ? '<span class="ky-hasnote" title="Minnispunktur">🗒</span>' : ''}
-            <span class="ky-chev" aria-hidden="true">›</span>
-          </div>
-          <div class="ky-mdetail">
-          <input class="_ky-note ky-mnote" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — vistast sjálfkrafa.">
-          </div>
-          <!-- Sama röð og á breiða borðinu (2026-07-22 v2): skjölin fremst
-               (Senda · Reikningur · Skýrsla), svo staðan (Krafa send · Greitt),
-               svo hitt. Röðin er eins á síma og skjá svo handtökin séu þau sömu.
-               Munurinn: hér BROTNA hnapparnir (flex-wrap) í stað láréttrar skrunar.
-               Alltaf sýnilegir — EKKI inni í .ky-mdetail (P0 fól þá bak við expand). -->
-          <div class="ky-acts">
-            ${kyAbtn('_ky-email', 'data-id="' + s.id + '"', '📧', 'Senda', '#0f766e', 'Senda reikning og/eða úttektarskýrslu í tölvupósti', false)}
-            ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
-            ${skyrslaBtn}
-            ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', s.krafa_sent_at ? 'Krafa send' : 'Senda Kröfu', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
-            ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
-            ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
-            ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
-            ${s.dk_invoice_id ? kyAbtn('_ky-afturkalla', 'data-id="' + s.id + '"', '⊘', 'Afturkalla', '#b45309', 'Afturkalla kröfuna í Payday (fella niður kröfu + reikning)', false) : ''}
-            ${kyAbtn('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin', false)}
-          </div>
-        </div>`;
-    }).join('');
-
-    return `
-      <div class="ky-co">
-        <div class="ky-cohead">
-          <div class="ky-cotop">
-            ${sendableIds.length
-              ? `<label class="ky-copick" title="Velja allar ósendar kröfur"><input type="checkbox" class="_ky-pick-co" data-ids="${sendableIds.join(',')}"></label>`
-              : ''}
-            <div class="ky-coid">
-              <div class="ky-coname">${ident.nameHtml}</div>
-              <div class="ky-cometa">${ident.metaHtml}</div>
-            </div>
-            <div class="ky-krafa">
-              <div class="ky-kraflbl">Krafa</div>
-              <div class="ky-num ky-krafamt">${fmtKr(grp.sum)}</div>
-            </div>
-          </div>
-          <div class="ky-cobar">${ag.agBar}</div>
-          <div class="ky-cosub">
-            <span>${sales.length} kröfur${grp.olderSum > 0 ? ' · <span class="ky-eldra">eldra: ' + fmtKr(grp.olderSum) + '</span>' : ''} · ${ag.oldestLbl}</span>
-            <button class="_ky-copy-total ky-mcopy" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð">📋</button>
-          </div>
-        </div>
-        <div>${rows}</div>
-      </div>`;
+    return renderCompany(grp);
   }
 
   // ── ▦ Tafla (table) — dense, fast-scan; grouped by company ──────────────────
@@ -1954,7 +1903,7 @@
             <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð" style="width:38px;height:38px;background:#f1f5f9;color:#475569;border:1px solid rgba(20,24,34,.14);border-radius:10px;cursor:pointer;font:inherit;font-size:13px">📋</button>
           </div>
         </div>
-        <div>
+        <div class="ky-card-rows">
           ${sales.map(s => {
             const da = daysAgo(s.created_at);
             // 2026-06-30: 📎 fylgiskjal — leita úttektarskýrslu sömu ár.
@@ -1962,8 +1911,9 @@
             // 2026-07-22 (ósk Agnars): þrír vinnuflæðis-hnapparnir — Skýrsla ·
             // 2026-07-22 v2 (ósk Agnars, eftir að hafa séð fyrri röðunina):
             // VINSTRI  = Senda · Reikningur · Skýrsla — skjölin sjálf.
-            // HÆGRI    = Krafa send · Greitt (stöðuhnapparnir tveir) og svo
-            //            Breyta · Bakfæra · Afturkalla · Nýr.
+            // HÆGRI    = upphæð + Krafa send · Greitt · Breyta · Bakfæra ·
+            //            Afturkalla · Nýr — .ky-row-end (margin-left:auto)
+            //            svo klasinn situr við hægra borð (undir KRAFA-heild).
             // Fyrri útgáfan hafði Skýrslu/Kröfu send/Greitt vinstra megin; nú
             // eru skjala-aðgerðirnar vinstra megin og staðan hægra megin.
             return `
@@ -1984,14 +1934,16 @@
                 <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;margin:0 10px">
                   <input class="_ky-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — eigin reitur (ekki athugasemd reikningsins). Vistast sjálfkrafa." style="flex:1;min-width:0;padding:4px 8px;border:1px solid transparent;border-bottom:1px dashed #d3d9e2;background:transparent;font:inherit;font-size:12px;color:#11141c;outline:none;border-radius:5px">
                 </div>
-                <span class="ky-num" style="width:90px;text-align:right;font-weight:700;color:#11141c;white-space:nowrap;flex-shrink:0">${fmtKr(s.samtals)}</span>
-                <div style="display:flex;gap:6px;flex-shrink:0">
-                  ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', s.krafa_sent_at ? 'Krafa send' : 'Senda Kröfu', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
-                  ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
-                  ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
-                  ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
-            ${s.dk_invoice_id ? kyAbtn('_ky-afturkalla', 'data-id="' + s.id + '"', '⊘', 'Afturkalla', '#b45309', 'Afturkalla kröfuna í Payday (fella niður kröfu + reikning)', false) : ''}
-                  ${kyAbtn('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin (opnar Sölu með kt tilbúið)', false)}
+                <div class="ky-row-end" style="display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;justify-content:flex-end">
+                  <span class="ky-num" style="width:90px;text-align:right;font-weight:700;color:#11141c;white-space:nowrap;flex-shrink:0">${fmtKr(s.samtals)}</span>
+                  <div style="display:flex;gap:6px;flex-shrink:0">
+                    ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', s.krafa_sent_at ? 'Krafa send' : 'Senda Kröfu', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
+                    ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
+                    ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
+                    ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
+              ${s.dk_invoice_id ? kyAbtn('_ky-afturkalla', 'data-id="' + s.id + '"', '⊘', 'Afturkalla', '#b45309', 'Afturkalla kröfuna í Payday (fella niður kröfu + reikning)', false) : ''}
+                    ${kyAbtn('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin (opnar Sölu með kt tilbúið)', false)}
+                  </div>
                 </div>
               </div>`;
           }).join('')}

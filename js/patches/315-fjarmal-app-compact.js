@@ -23,10 +23,10 @@
       '{min-height:52px!important;padding:4px 3px!important;font-size:11px!important;gap:2px!important;border-radius:10px}',
     'body.appmode[data-app="fjarmal"] #_app-nav button .e,body.appmode[data-app="boss"] #_app-nav button .e{font-size:18px}',
     'body.appmode[data-app="fjarmal"] .view.active,body.appmode[data-app="boss"] .view.active' +
-      '{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}',
+      '{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}',
     'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode[data-app="fjarmal"] .view.active:not(#view-field):not(#view-counter):not(#view-workshop),' +
     'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode[data-app="boss"] .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
-      '{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}',
+      '{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}',
 
     // 230 Brunastál: `.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{padding:8px 14px}`
     // The three :not(#id) bump specificity past a plain `#ars-main` rule — copy the
@@ -59,7 +59,7 @@
     KY + '.ky-mcopy{display:none!important}',
     KY + '.filter-chip,' + KY + '.ky-navbtn,' + KY + '._ky-sync,' + KY + '._ky-exp,' +
     KY + '.page-title__tools button,' + KY + '.page-title__tools select' +
-      '{min-height:36px!important;height:auto!important;padding-top:6px!important;padding-bottom:6px!important;font-size:13px!important}',
+      '{min-height:44px!important;height:auto!important;padding-top:8px!important;padding-bottom:8px!important;font-size:13px!important}',
     KY + 'input._ky-search{font-size:16px!important;min-height:40px!important;padding:8px 10px!important}',
     KY + '.ky-saletop input[type=checkbox],' + KY + '.ky-copick input' +
       '{min-height:20px!important;width:20px!important;height:20px!important;padding:0!important}',
@@ -73,12 +73,22 @@
     KY + '.ky-mnum{font-size:14px!important;min-width:0}',
     KY + '.ky-mdate{font-size:12px!important}',
     KY + '.ky-mamt{font-size:15px!important}',
-    // Force the row-action set visible in Öpp (do not re-collapse behind .open).
-    KY + '.ky-mdetail{display:block!important;height:auto!important;overflow:visible!important}',
-    KY + '.ky-acts{display:flex!important;flex-wrap:wrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important;gap:6px;padding:0 10px 10px}',
-    KY + '.ky-acts .ky-abtn,body.appmode #view-krofu-yfirlit button.ky-abtn' +
+    // 2026-08-29: ÞVINGUNIN FELLD NIÐUR. Hér stóð áður „do not re-collapse
+    // behind .open" og reglurnar opnuðu hnappablokkina á ÖLLUM röðum — ~300px
+    // af hnöppum á kröfu, sinnum 43 kröfur, um 13.000px af skruni til að finna
+    // eina kröfu. Felunin hafði verið fjarlægð AF ÞVÍ hnapparnir fundust ekki;
+    // það leysti fundvísina með því að eyðileggja listann.
+    // Nú opnast AÐEINS valin röð (.open) og opnunarhnappurinn (.ky-mexp/.ky-chev)
+    // er áfram 44px og sýnilegur, svo upprunalega vandamálið kemur ekki aftur.
+    KY + '.ky-mdetail{display:none!important}',
+    KY + '.ky-mrow.open .ky-mdetail,' + KY + '.open > .ky-mdetail'
+      + '{display:block!important;height:auto!important;overflow:visible!important}',
+    // Brunahólf chips (46×42, nowrap, swipe) — not a 2-col tile stack.
+    KY + '.ky-mrow.open .ky-acts,' + KY + '.open .ky-acts,' + KY + '.ky-acts'
+      + '{display:flex!important;flex-wrap:nowrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow-x:auto!important;overflow-y:hidden!important;pointer-events:auto!important;gap:6px;padding:4px 10px 8px;-webkit-overflow-scrolling:touch}',
+    KY + '.ky-acts .ky-abtn,' + KY + '.open .ky-acts .ky-abtn,body.appmode #view-krofu-yfirlit .open button.ky-abtn,body.appmode #view-krofu-yfirlit button.ky-abtn' +
       '{display:inline-flex!important;visibility:visible!important;pointer-events:auto!important;' +
-       'flex:1 1 calc(50% - 6px);min-width:calc(50% - 6px);min-height:44px!important;height:44px!important;padding:2px 4px!important;font-size:11px!important}',
+       'flex:0 0 auto!important;min-width:46px!important;width:auto!important;min-height:0!important;height:42px!important;padding:0 7px!important;font-size:inherit!important}',
     KY + '.ky-mexp,.ky-chev{min-height:44px!important;width:36px!important;height:36px!important;padding:0!important;font-size:16px!important}',
     KY + '.ky-mnote{display:block!important;font-size:16px!important;min-height:44px!important}',
 
@@ -91,17 +101,29 @@
     ARS + 'h1{font-size:18px!important;line-height:1.15!important}',
     ARS + '._ars-statgrid{gap:6px!important;margin-bottom:8px!important}',
     ARS + '._ars-statgrid > div{padding:8px 10px!important}',
-    ARS + '._arsm-tbl{border-radius:0;border-left:none;border-right:none;margin-top:0;box-shadow:none;width:100%}',
-    ARS + '._arsm-row{padding:6px 10px;gap:4px;grid-template-columns:minmax(0,1fr) 66px 34px 32px 26px}',
-    ARS + '._arsm-row._arsm-head{padding:5px 10px}',
-    'html body.appmode #view-arsskodun ._arsm-row ._arsm-nm{font-size:16px!important;font-weight:700;line-height:1.2}',
-    'html body.appmode #view-arsskodun ._arsm-row ._arsm-sub{font-size:12px!important}',
-    ARS + '._arsm-ak{min-height:32px!important;width:32px!important;height:32px!important;padding:0!important}',
+    ARS + '._arsm-tbl{border-radius:0;border-left:none;border-right:none;margin-top:0;box-shadow:none;' +
+      'width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;' +
+      'overscroll-behavior-x:contain;scrollbar-width:thin}',
+    // 2026-08-29: Grindin var negld hér (minmax(0,1fr) 66px 34px 32px 26px) fyrir
+    // gamla 5-reita mrows-markupið. 153 er núna með 9 reiti (190px frosinn nafn +
+    // 668px sem skrunast) og þessi lína tróð þeim í 5 rákir. Grind og padding eiga
+    // heima hjá 153 einum — 315 stillir aðeins rammann utan um töfluna.
+    // Lárétt skrun + músar-drag (símarammi) er í patch 328.
+    ARS + '._arsm-row._arsm-head{padding:0}',
+    // Nafnið fékk 16px hér; dálkurinn er 190px og raðhæðin föst 52px, svo 16px
+    // sprengdi tveggja-línu klemmuna. 12.5px er það sem 153 mælir með.
+    'html body.appmode #view-arsskodun ._arsm-row ._arsm-sub{font-size:9.5px!important}',
+    ARS + '._arsm-ak{min-height:26px!important;width:30px!important;height:26px!important;padding:0!important}',
     ARS + '#_ars-search{font-size:16px!important;min-height:40px!important;padding:8px 10px!important}',
-    ARS + '#_ars-new,' + ARS + '#_ars-print,' + ARS + '#_ars-print-caret,' + ARS + '#_ars-ovr,' +
-    ARS + '#_ars-sort,' + ARS + '._ars-st,' + ARS + '._ars-mo,' + ARS + '#_ars-skiphide,' +
+    ARS + '#_ars-new,' + ARS + '#_ars-ovr,' +
+    ARS + '._ars-st,' + ARS + '._ars-mo,' + ARS + '#_ars-skiphide,' +
     ARS + '#_ars-pnr-btn' +
       '{min-height:36px!important;padding-top:6px!important;padding-bottom:6px!important;font-size:13px!important}',
+    // Same hide as 314: Fjármál/Boss app is body.appmode. Stafrófsröð +
+    // Prenta lista stay on desktop Skjár (not appmode).
+    ARS + '#_ars-sort,' + ARS + '#_ars-print-wrap,' + ARS + '#_ars-print,' +
+    ARS + '#_ars-print-caret,' + ARS + '#_ars-print-menu' +
+      '{display:none!important}',
     ARS + 'table td,' + ARS + 'table th{padding:4px 6px;font-size:13px}',
 
     // ── Hreyfingar: full-bleed + actions on open ──
@@ -111,13 +133,17 @@
     HL + '.hl-mcard{border-radius:0;border-left:none;border-right:none;margin-bottom:0;cursor:pointer}',
     HL + '.hl-mhead{padding:8px 12px}',
     HL + '.hl-mcard:not(.open) .hl-macts{display:none!important}',
-    HL + '.hl-mcard.open .hl-macts{display:flex!important;flex-wrap:wrap;gap:4px;padding:6px 10px 10px}',
+    HL + '.hl-mcard.open .hl-macts{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;gap:6px;padding:6px 10px 10px;-webkit-overflow-scrolling:touch}',
     HL + '.hl-mcard.open{cursor:default}',
-    HL + '.abtn5{min-height:36px!important;height:36px!important;padding:2px 6px!important;font-size:11px!important}',
+    HL + '.abtn5{flex:0 0 auto!important;min-width:46px!important;min-height:0!important;height:42px!important;padding:0 7px!important;font-size:inherit!important}',
 
-    KY + '{overflow-x:hidden}',
+    // 2026-08-29 (Agnar, spjaldtolvu-hamur: "faranleg nyting a plassi"). Kroffu-
+    // adgerdirnar voru tvaer i rod OHAD skjabreidd — a 834px spjaldtolvu thydir thad
+    // helming skjasins ononotadan og adgerdablokk sem er haerri en krafan sjalf.
+    // Fra 700px: fjorar i rod og laegri hnappar. Aeeins thettleiki — engin ny hegdun.
+    KY + '{overflow-x:auto;-webkit-overflow-scrolling:touch}',
     ARS + '{overflow-x:hidden}',
-    HL + '{overflow-x:hidden}'
+    HL + '{overflow-x:auto;-webkit-overflow-scrolling:touch}'
   ].join('\n');
 
   function mountCss() {

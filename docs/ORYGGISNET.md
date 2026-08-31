@@ -47,6 +47,7 @@ automation health and pings Agnar *only* when something needs him.
 | Protected outcome | Guard (code) | Registry signal | Audit |
 |---|---|---|---|
 | **No blank / 0‑kr invoice can be emailed to a customer** | `233` `buildInvoiceBlob` throws on empty lines; `254` `compose` refuses to send a missing/empty attachment | `blank_invoice_source`, `blank_invoice_blocked`, `send_failed` | `audit-invoice-guard.cjs` |
+| **A Drive/URL-hosted invoice is sendable — and never sent empty** | `254` `_okAtts` telur `content`(>256) **/ `driveId` / `url`** gild; `gmail-send` neitar (422 `ATTACHMENTS_FAILED`) leysist umbeðið viðhengi ekki | `blank_invoice_blocked`, `send_failed` | `audit-attachment-forms.cjs` |
 | **An entered kennitala is never dropped to `999999‑9999`** | `121` saves `customer_kt` on both save paths; `js/pos.js` extracts a kt typed into the name field | *(kt signals to come)* | `audit-kt-trap.cjs` |
 | **POS fastur afsláttur skilar sér í körfuna** | `lookupKt` sækir kt **með og án** bandstriks (sama `.or` og checkout); 114 skrifar `discount_pct` strax; `pickBest` heldur pönnuðum `co_id` | — | `audit-pos-kt-discount.cjs` |
 | **POS search doesn't silently drop customers past 1000 rows** | `DB.fetchAll` pagination on the big tables | — | `audit-pagination.cjs` |
@@ -56,7 +57,8 @@ automation health and pings Agnar *only* when something needs him.
 | **Rekstrarfélaga-staðir hrúgast ekki saman á kennitölu** | `175` live-raðir bera `co_id = fyrirtaeki.id`; `companyForBld` giskar aldrei `hits[0]`; `document_pairs` lyklað á `fyrirtaeki_id` (ekki base) | — | `audit-rekstrarfelog-sites.cjs` |
 | **Rekstrarfélög = kennitala + staðurinnúmer** | `payday-push` `accountingCost` `"kt nr. N"` aðeins þegar `_siteTrusted`; POS giskar ekki `.limit(1)` á fyrsta hótel | — | `audit-stadur-nr.cjs` |
 | **Ársskoðun blár reiknings-punktur er per stað + úttekt** | `187` `hasReikYear`: `byCo` + unique-kt orphan; `hasConfirmedInvYear` = `v_uttekt_ar` / POS `solur.customer_id` (ekki Drive-einn); `vidskiptategund` sleppir brunakerfi/búð | — | `audit-arsskodun-inv-dot.cjs` |
-| **Ársskoðun 🧾 er úttekt, ekki brunakerfi** | `187` `isUttektInvoiceTeg` + pair-skip; `isReportKind` telur ekki brunakerfi-PDF; `199` `invUtByY`/`invBrByY`; `175` `tegByInv` | — | `audit-arsskodun-inv-dot.cjs` / `audit-rekstrarfelog-sites.cjs` |
+| **Ársskoðun 🧾 er úttekt, ekki brunakerfi** | `187` `isUttektInvoiceTeg` + pair-skip; `isReportKind` telur ekki brunakerfi-PDF; `199` `invUtByY`/`invoiceServiceKind`; `175` `tegByInv` | — | `audit-arsskodun-inv-dot.cjs` / `audit-rekstrarfelog-sites.cjs` |
+| **Slökk og brunakerfi mála ekki hvort annað** | Gátt `ar_slokk` / `bru_i_thjonustu` (ekki `sidasta_ar` fill-forward, ekki `er_i_thjonustu` sem Brunak.); `190` `isUttektInvoiceTeg` + `_pdByCo`; `175` hero/footer = `inService` | — | `audit-service-unmesh.cjs` |
 
 ---
 

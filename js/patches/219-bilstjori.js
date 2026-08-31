@@ -69,13 +69,12 @@
       let link = document.querySelector('link[rel="manifest"]');
       if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
       link.setAttribute('href', '/manifest-bilstjori.json?v=1');
-      // 2026-07-17: appið opnist ALLTAF í app-skala (device-width, zoom 1) —
-      // grunn-viewportið leyfir pinch-zoom og út-zoomað ástand gat setið fast
-      // í uppsetta appinu svo allt birtist agnarsmátt. Bílstjóra-appið þarf
-      // ekki pinch-zoom, svo læst hamur festir skalann.
+      // Same open viewport as Brunahólf Fjármála-yfirlit / hub pages.
+      // maximum-scale=1 + user-scalable=no froze Android pinch on the driver
+      // PWA; layout fill is CSS (max-width:100%), not a scale lock.
       let vp = document.querySelector('meta[name="viewport"]');
       if (!vp) { vp = document.createElement('meta'); vp.setAttribute('name', 'viewport'); document.head.appendChild(vp); }
-      vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+      vp.setAttribute('content', 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover');
       const tc = document.querySelector('meta[name="theme-color"]');
       if (tc) tc.setAttribute('content', '#0a0b0d');
       // Driver app = full-width phone app. The base .bt.screen caps at 440px
@@ -538,7 +537,7 @@
   // of overlay-mechanics + gap-filler rules (not in the theme) follows.
   const BS_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
-.bt{--accent:#e23232;--ring:rgba(220,40,34,.55);--glow:rgba(190,20,20,.5);--btn-grad:linear-gradient(145deg,#0d0102,#7a0e12 43%,#a81717 53%,#0f0102);--metb:linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318);--green:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#083f22);--page:linear-gradient(180deg,#23262d 0px,#2e323a 90px,#4d525c 320px,#41454d 100%);--font:'Space Grotesk',system-ui,-apple-system,sans-serif;--mono:'Space Mono',monospace;--ink:#11141c;--ink-2:#3a4250;--muted:#5b6472;--faint:#94a3b8;font-family:var(--font)}
+.bt{--accent:#e23232;--ring:rgba(220,40,34,.55);--glow:rgba(190,20,20,.5);--btn-grad:linear-gradient(145deg,#0d0102,#7a0e12 43%,#a81717 53%,#0f0102);--metb:linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318);--green:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#083f22);--page:linear-gradient(180deg,#23262d 0px,#2e323a 90px,#4d525c 320px,#41454d 100%);--font:'IBM Plex Sans',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;--ink:#11141c;--ink-2:#3a4250;--muted:#5b6472;--faint:#94a3b8;font-family:var(--font)}
 .bt *{box-sizing:border-box}
 /* 2026-07-19 (ósk Agnars): App-view (fullur breidd) er SJÁLFGEFIÐ — appið
    hoppaði áður milli 440px-miðjaðrar „wide view" og fullbreiðrar app-view því

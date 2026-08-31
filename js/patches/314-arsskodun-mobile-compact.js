@@ -45,22 +45,22 @@
          Nótan fær SINN eigin mjóa dálk (col2, sem áður var falinn) og
          under-name línan hverfur → raðhæðin lækkar ~35%. */
       M + 'col,' + A + 'col{width:0!important}',
-      M + 'col:nth-child(1),' + A + 'col:nth-child(1){width:26%!important}',
-      M + 'col:nth-child(2),' + A + 'col:nth-child(2){width:13%!important}',
-      M + 'col:nth-child(4),' + A + 'col:nth-child(4),',
+      M + 'col:nth-child(1),' + A + 'col:nth-child(1){width:7%!important}',
+      M + 'col:nth-child(2),' + A + 'col:nth-child(2){width:26%!important}',
       M + 'col:nth-child(5),' + A + 'col:nth-child(5),',
       M + 'col:nth-child(6),' + A + 'col:nth-child(6),',
       M + 'col:nth-child(7),' + A + 'col:nth-child(7){width:7%!important}',
       M + 'col:nth-child(8),' + A + 'col:nth-child(8){width:9%!important}',
-      M + 'col:nth-child(10),' + A + 'col:nth-child(10){width:8%!important}',
-      M + 'col:nth-child(12),' + A + 'col:nth-child(12){width:16%!important}',
+      M + 'col:nth-child(4),' + A + 'col:nth-child(4){width:24%!important}',
+      M + 'col:nth-child(10),' + A + 'col:nth-child(10){width:13%!important}',
 
-      /* Hide desktop-only columns: heimilisfang, tæki, forgangur.
-         (Nótu-dálkurinn col2 er aftur SÝNILEGUR — sjá v2 að ofan.) */
-      M + 'th[data-addrcol],'+ A + 'th[data-addrcol],',
-      M + 'td._ars-addrcell,'+ A + 'td._ars-addrcell,',
-      M + 'th[data-sort="tools"],'+ A + 'th[data-sort="tools"],',
-      M + 'td:has(._devs),'+ A + 'td:has(._devs),',
+      /* 2026-08-28 (Agnar: „address lost only in mobile view", „taeki sumary
+         is still not there"): HEIMILISFANG og TÆKI voru falin hér sem
+         „desktop-only". Þau eru nú SÝNILEG á síma — plássið kemur úr
+         póst-dálknum sem hafði 26% af skjánum fyrir eitt umslag.
+         FORGANGUR er áfram falinn (síu-flísin ofar gerir sama gagn).
+         Vilji notandinn fela þau má gera það í 📐 Dálkastjóra (patch 326) —
+         TableLook-reglur 319 vinna á þessum. */
       M + 'th[data-sort="priority"],'+ A + 'th[data-sort="priority"],',
       M + 'td:has(._pri-btn),'+ A + 'td:has(._pri-btn),',
       M + 'col:nth-child(3),'+ A + 'col:nth-child(3),',

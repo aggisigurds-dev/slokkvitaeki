@@ -150,11 +150,33 @@
     isInService(coId).then(inSvc => { if (btn.isConnected) applyButtonState(btn, coId, inSvc); }).catch(() => {});
   }
 
-  function watch() {
+  // 2026-08-28: Fylgjast þarf með því að #companies-main sjálft sé SKIPT ÚT.
+  // Áður var einn MutationObserver settur á þann hnút sem fannst við ræsingu.
+  // Skipti appið honum út (í stað þess að breyta börnunum) sat fylgjarinn eftir
+  // á laustengdum hnút og takkinn birtist ALDREI aftur það sem eftir lifði
+  // lotunnar — staðfest 28.8: #companies-main var tengt, en pot í það vakti
+  // engan fylgjara og 0 takkar voru í DOM-inu.
+  let _observed = null;
+  let _pending = null;
+
+  function attach() {
     const main = document.getElementById('companies-main');
-    if (!main) { setTimeout(watch, 500); return; }
-    new MutationObserver(() => injectButton()).observe(main, { childList: true, subtree: true });
+    if (!main) return;
+    if (main !== _observed) {
+      _observed = main;
+      new MutationObserver(() => injectButton()).observe(main, { childList: true, subtree: true });
+    }
     injectButton();
+  }
+
+  function watch() {
+    // Ytri fylgjari á body nær því þegar #companies-main er skipt út. Hann er
+    // afmarkaður (debounce) svo hann kosti ekkert í venjulegri notkun.
+    new MutationObserver(() => {
+      if (_pending) return;
+      _pending = setTimeout(() => { _pending = null; try { attach(); } catch (_) {} }, 120);
+    }).observe(document.body, { childList: true, subtree: true });
+    attach();
   }
   watch();
 
