@@ -182,6 +182,72 @@ async function stada(cfg) {
   };
 }
 
+/* ── MÆLINGABÓKIN ─────────────────────────────────────────────────────────
+   Agnar 31.08: „svona tölur fæ ég í hvert einasta skipti sem ég minnist á
+   þetta. þetta á ekki að geta gerst ítrekað … það þarf að vera listi með
+   öllum svona tölum mér aðgengilegur. skráð baseline í dag, línurit, og í
+   hvert skipti sem hún hreyfist skráist það í bók. valdurinn af breytingunni."
+
+   Talan var alltaf reiknuð upp á nýtt og hent. Því var hver samtal byrjun á
+   núlli. Hér er hún GEYMD: eitt snapshot á dag, mismunur milli daga, og þær
+   aðgerðir úr ai_log sem féllu á milli — það er valdurinn.
+
+   ALLAR þessar tölur eru VANDAMÁL: lægra er betra. Þess vegna er hækkun
+   „verri" og fær viðvörun. Bæta þarf `betra_er_haerra` við ef einhvern tíma
+   kemur mælikvarði þar sem hærra er gott. */
+const EITT_SNAPSHOT_A_DAG = true;
+
+function skraSnapshot(log, tolur) {
+  const nu = new Date().toISOString();
+  const dagur = nu.slice(0, 10);
+  log.maelingar = log.maelingar || [];
+  const sidasta = log.maelingar[log.maelingar.length - 1];
+  // Eitt á dag: annars myndi hver einasti inngangur búa til punkt og línuritið
+  // yrði ólæsilegt eftir einn virkan dag.
+  if (EITT_SNAPSHOT_A_DAG && sidasta && String(sidasta.dags).slice(0, 10) === dagur) {
+    sidasta.tolur = tolur;         // uppfæra daginn í dag
+    sidasta.dags = nu;
+    return false;
+  }
+  log.maelingar.push({ dags: nu, tolur });
+  log.maelingar = log.maelingar.slice(-400);
+  return true;
+}
+
+function saga(log) {
+  const m = log.maelingar || [];
+  if (!m.length) return { punktar: 0, lyklar: [], hreyfing: [], vidvorun: [] };
+  const lyklar = Object.keys(m[m.length - 1].tolur || {});
+  const nyjast = m[m.length - 1];
+  const fyrra = m.length > 1 ? m[m.length - 2] : null;
+
+  const hreyfing = lyklar.map(k => {
+    const nu = +(nyjast.tolur || {})[k] || 0;
+    const adur = fyrra ? (+(fyrra.tolur || {})[k] || 0) : null;
+    const d = adur === null ? null : nu - adur;
+    return {
+      maelikvardi: k, nuna: nu, sidast: adur, breyting: d,
+      // Öll þessi tala er vandamál: hækkun = verra.
+      att: d === null ? 'grunnlína' : d > 0 ? 'VERRI' : d < 0 ? 'betri' : 'óbreytt',
+      ferill: m.slice(-30).map(x => +(x.tolur || {})[k] || 0),
+    };
+  });
+
+  // Valdurinn: aðgerðir sem voru skráðar Á MILLI síðustu tveggja punkta.
+  const fra = fyrra ? fyrra.dags : null;
+  const valdur = (log.faerslur || []).filter(f => !fra || f.dags > fra)
+    .map(f => ({ dags: f.dags, adgerd: f.adgerd, verk: f.verk, nidurstada: f.nidurstada, hver: f.hver }));
+
+  return {
+    punktar: m.length,
+    grunnlina: { dags: m[0].dags, tolur: m[0].tolur },
+    nyjast: { dags: nyjast.dags, tolur: nyjast.tolur },
+    hreyfing,
+    vidvorun: hreyfing.filter(h => h.att === 'VERRI'),
+    valdur_sidustu_breytingar: valdur,
+  };
+}
+
 /* ── HURÐIN ──────────────────────────────────────────────────────────────── */
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
@@ -233,6 +299,20 @@ export default async (req) => {
   try {
     const s = await stada(cfg);
     const log = s.log;
+
+    /* Skrá mælinguna ÁÐUR en hún er afhent. Þetta er það sem gerir bókina til:
+       hver inngangur skilur eftir sig punkt, svo talan sé aldrei „reiknuð og
+       hent" eins og hún hefur alltaf verið. */
+    let nyrPunktur = false;
+    try {
+      nyrPunktur = skraSnapshot(log, s.tolur);
+      const [as2] = await sb(cfg, 'app_settings?select=settings&id=eq.1&limit=1');
+      const st2 = (as2 && as2.settings) || {};
+      await sb(cfg, 'app_settings?id=eq.1', {
+        method: 'PATCH', body: JSON.stringify({ settings: { ...st2, ai_log: log } }),
+      });
+    } catch (_) { /* mæling má aldrei fella innganginn */ }
+    const S = saga(log);
     const rada = o => Object.entries(o || {}).sort((a, b) => b[1] - a[1]).slice(0, 15)
       .map(([adgerd, stig]) => ({ adgerd, stig }));
 
@@ -252,6 +332,12 @@ export default async (req) => {
         serfraedingar: '.claude/agents/*.md — joker (útlit), elon-musk (Ársskoðun), bord-flettur (borð)',
       },
       stada: s.tolur,
+      // BÓKIN: grunnlína, ferill, hreyfing frá síðasta punkti og valdurinn.
+      saga: S,
+      vidvorun: S.vidvorun.length
+        ? S.vidvorun.map(v => `${v.maelikvardi}: ${v.sidast} → ${v.nuna} (+${v.breyting}) — FÓR Í RANGA ÁTT`)
+        : [],
+      nyr_maelipunktur: nyrPunktur,
       vandamal: [
         { id: 'tom_skra', heiti: 'Í þjónustu en engin tæki skráð', fjoldi: s.listar.tom.length,
           skyring: 'Ósýnileg í Ársskoðun að eilífu. ORSÖKIN á bak við hin þrjú.' },

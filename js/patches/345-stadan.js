@@ -163,6 +163,16 @@
       V + '.st-row b{flex:1;min-width:0;font-weight:600;color:#16181c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       V + '.st-row span{flex:0 0 auto;font-size:11.5px;color:#5d5a54;font-variant-numeric:tabular-nums}',
       V + '.st-note{margin-top:16px;font-size:12px;color:#5d5a54;line-height:1.55;border-left:2px solid #d9d5cf;padding-left:11px}',
+      V + '.st-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}',
+      V + '.st-spark{flex:0 0 auto;opacity:.9}',
+      V + '.st-delta{display:inline-block;margin-top:5px;font-size:11px;font-weight:700;padding:1px 6px;border-radius:2px}',
+      V + '.st-delta.verri{background:#fdeceb;color:#c0392b}',
+      V + '.st-delta.betri{background:#e7f7ee;color:#2e6b4a}',
+      V + '.st-delta.grunn{background:#f0eeea;color:#6f6b63;font-weight:600}',
+      V + '.st-card.vidvorun{box-shadow:0 0 0 2px rgba(192,57,43,.22)}',
+      V + '.st-vidv{margin-top:12px;background:#fdeceb;border:1px solid #f0c9cc;border-radius:4px;padding:11px 13px;font-size:12.5px;color:#7a2018;line-height:1.5}',
+      V + '.st-vidv b{display:block;margin-bottom:4px}',
+      V + '.st-valdur{margin-top:6px;font-size:11.5px;color:#8a4a42}',
       V + '.st-bid{padding:40px 0;text-align:center;color:#5d5a54}',
     ].join('');
     document.head.appendChild(s);
@@ -178,6 +188,15 @@
     return v;
   }
 
+  /* Kortin fjögur eru sömu mælikvarðar og hurðin skráir — sami lykill báðum
+     megin svo ferillinn rati á rétt kort. */
+  const MAELIKVARDI = {
+    tom: 'i_thjonustu_an_taekja',
+    enginAkstur: 'komid_a_tima_enginn_akstur',
+    orukkad: 'skodad_en_orukkad',
+    skekkja: 'rukkad_undir_helmingi_skradra',
+  };
+
   const KORT = [
     { key: 'tom', t: 'Í þjónustu — engin tæki skráð',
       d: 'Birtast aldrei í Ársskoðun, komast aldrei á aksturslista. Orsökin á bak við hinar þrjár tölurnar.' },
@@ -189,18 +208,70 @@
       d: 'Innan við helmingur skráðra tækja rukkaður. Annaðhvort er skráin of há eða reikningurinn of lágur.' },
   ];
 
-  let _H = null, _opid = null;
+  let _H = null, _opid = null, _saga = null;
+
+  /* Sagan kemur frá /api/ai-context — þar er hún SKRÁÐ, ekki bara reiknuð.
+     Agnar 31.08: „svona tölur fæ ég í hvert einasta skipti … það þarf að vera
+     listi með öllum svona tölum, skráð baseline, línurit, og í hvert skipti sem
+     hún hreyfist skráist það í bók."  Klikki kallið sýnum við töluna samt —
+     línuritið er viðbót, ekki forsenda. */
+  async function saekjaSogu() {
+    try {
+      const r = await fetch('/api/ai-context', { headers: { accept: 'application/json' } });
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d && d.saga ? { saga: d.saga, vidvorun: d.vidvorun || [] } : null;
+    } catch (_) { return null; }
+  }
+
+  /* Örlínurit — engin söfn, bara SVG. 30 síðustu punktar. */
+  function sparkline(ferill) {
+    if (!Array.isArray(ferill) || ferill.length < 2) return '';
+    const w = 92, h = 22, min = Math.min(...ferill), max = Math.max(...ferill);
+    const sp = (max - min) || 1;
+    const d = ferill.map((v, i) =>
+      (i ? 'L' : 'M') + (i / (ferill.length - 1) * w).toFixed(1) + ' '
+      + (h - ((v - min) / sp) * (h - 3) - 1.5).toFixed(1)).join(' ');
+    const verri = ferill[ferill.length - 1] > ferill[0];
+    return '<svg class="st-spark" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" aria-hidden="true">'
+      + '<path d="' + d + '" fill="none" stroke="' + (verri ? '#c0392b' : '#2e6b4a') + '" stroke-width="1.6"/></svg>';
+  }
 
   function teikna() {
     const v = viewEl();
     if (!_H) { v.innerHTML = '<div class="st-bid">Reikna stöðuna…</div>'; return; }
+    const hreyf = {};
+    if (_saga && _saga.saga && _saga.saga.hreyfing) {
+      _saga.saga.hreyfing.forEach(h => { hreyf[h.maelikvardi] = h; });
+    }
     const kort = KORT.map(k => {
       const n = _H[k.key].length;
-      return '<div class="st-card' + (n === 0 ? ' ok' : '') + '" data-k="' + k.key + '">'
-        + '<div class="st-n">' + n + '</div>'
+      const h = hreyf[MAELIKVARDI[k.key]];
+      let merki = '';
+      if (h && h.breyting !== null && h.breyting !== 0) {
+        const upp = h.breyting > 0;
+        merki = '<span class="st-delta ' + (upp ? 'verri' : 'betri') + '">'
+          + (upp ? '▲ +' : '▼ ') + h.breyting + '</span>';
+      } else if (h && h.att === 'grunnlína') {
+        merki = '<span class="st-delta grunn">grunnlína í dag</span>';
+      }
+      return '<div class="st-card' + (n === 0 ? ' ok' : '') + (h && h.att === 'VERRI' ? ' vidvorun' : '') + '" data-k="' + k.key + '">'
+        + '<div class="st-top"><div class="st-n">' + n + '</div>' + (h ? sparkline(h.ferill) : '') + '</div>'
+        + merki
         + '<div class="st-t">' + esc(k.t) + '</div>'
         + '<div class="st-d">' + esc(k.d) + '</div></div>';
     }).join('');
+
+    const vidv = (_saga && _saga.vidvorun && _saga.vidvorun.length)
+      ? '<div class="st-vidv"><b>⚠ Fór í ranga átt síðan síðast</b>'
+        + _saga.vidvorun.map(v => '<div>' + esc(v) + '</div>').join('')
+        + ((_saga.saga.valdur_sidustu_breytingar || []).length
+            ? '<div class="st-valdur">Skráðar aðgerðir á milli: '
+              + _saga.saga.valdur_sidustu_breytingar.map(a => esc(a.adgerd + ' (' + a.nidurstada + ')')).join(' · ')
+              + '</div>'
+            : '<div class="st-valdur">Engin aðgerð skráð á milli — valdurinn er óskráður.</div>')
+        + '</div>'
+      : '';
 
     let listi = '';
     if (_opid && _H[_opid] && _H[_opid].length) {
@@ -218,6 +289,7 @@
       '<h1 class="st-h1">Staðan</h1>'
       + '<div class="st-sub">Reiknað úr gögnunum núna — engin uppsetning, ekkert vistað. Smelltu á tölu til að sjá listann.</div>'
       + '<div class="st-grid">' + kort + '</div>'
+      + vidv
       + listi
       + '<div class="st-note">Þetta breytir engu. Það sýnir aðeins hvað er ósamræmi í gögnunum.<br>'
       + 'Talan efst til vinstri er orsökin: sé tækið ekki skráð er ekki hægt að vita hvern á að '
@@ -248,6 +320,7 @@
     try {
       if (!(await bidaEftirDB())) throw new Error('Gagnagrunnstenging kom aldrei — endurhlaða síðuna');
       _H = await reikna();
+      _saga = await saekjaSogu();   // má klikka — talan stendur samt
     }
     catch (e) {
       viewEl().innerHTML = '<div class="st-bid">Náði ekki að reikna: ' + esc(e.message || e) + '</div>';
