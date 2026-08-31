@@ -83,6 +83,36 @@ Nýtt síðan 17. ágúst merkt **NÝTT**. Eldri óleyst halda sér. 85+ eldri t
 
 Óleyst úr júlí-yfirferð: doc 485 (Árakur 5 ↔ Breiðvangur 9), doc 752 (Kjarrhólmi 8 ↔ 4), doc 809 (Bæjarhraun ↔ Prófíll).
 
+## F · Systkini-kt: þjónustustaður án eigin 2026-skýrslu (23) — villuleit 31.08
+
+Sama kt á skýrslu á **öðrum** stað. Þetta er malarhaugur (skjal vantar eða situr á röngum fid), ekki join-leki eftir #811. Níu þeirra bera samt `last_year_inspected=2026` í ársskoðunar-blob — 153/187 óbreytt; Agnar ákveður hvort blob sé rétt.
+
+| ☐ | Staður | id | kt | blob ly 2026 |
+|---|---|---|---|---|
+| ☐ | Colas - Gulhella 1 HQ | 1616 | 420187-1499 | já |
+| ☐ | Center Hótel - Hlaðvarpinn | 1750 | 450905-1430 | |
+| ☐ | Center Hótel - Plaza | 193 | 450905-1430 | já (+ fy 2026) |
+| ☐ | Center Hótel - Þingholt Apartments | 200 | 450905-1430 | |
+| ☐ | Vélsmiðja Orms - Kaplahraun | 1629 | 480998-2789 | |
+| ☐ | Vélsmiðja Orms - Slippurinn RVK | 165 | 480998-2789 | já |
+| ☐ | Vélrás - Gullhella | 1740 | 491209-1270 | |
+| ☐ | Vélrás - Klettagarðar | 1742 | 491209-1270 | |
+| ☐ | Heimaleiga - Bríetartún 9-11 | 1487 | 510117-0690 | |
+| ☐ | Heimaleiga - Höfuðstöðvar | 269 | 510117-0690 | já |
+| ☐ | Heimaleiga - Ice Apartments | 1484 | 510117-0690 | |
+| ☐ | Heimaleiga - Máni Apartments | 869 | 510117-0690 | |
+| ☐ | Heimaleiga - Midtown Hotel | 1486 | 510117-0690 | já |
+| ☐ | Endurvinnslan - Köllunarklettsvegur | 1618 | 610789-1299 | |
+| ☐ | Húsf. V/bílageymslu | 118 | 610889-1589 | já |
+| ☐ | Steypustöðin - Borgarnesi | 623 | 660707-0420 | já |
+| ☐ | Steypustöðin - Helguvík | 622 | 660707-0420 | |
+| ☐ | Steypustöðin - Íshellu | 1610 | 660707-0420 | |
+| ☐ | Steypustöðin - Selfossi | 1615 | 660707-0420 | |
+| ☐ | Steypustöðin - Þorlákshöfn | 620 | 660707-0420 | |
+| ☐ | Pizzan - Háholt | 613 | 681016-1200 | |
+| ☐ | Pizzan - Strandgata | 614 | 681016-1200 | já |
+| ☐ | Bílabúð Benna - Fiskislóð | 1612 | 711292-2929 | já |
+
 ## Ópöruð tækjanöfn (teljast ekki inn í 284)
 
 `uttaeki.client` án `fyrirtaeki.nafn` (status ≠ urelt): **Bríetartún 9-11 húsfélag** (48) · **Húsfélag Skaftahlíð 4-10** (27) · Húsfélagið Álftamýri 36 (7) · Indverska matarfélagið ehf (3) · Heilsuvitund Sjúkraþjálfun (2) · Agnar Sigurðsson (1) · `sdfasdf` (1, rusl) · 4 tæki með tómt client.
