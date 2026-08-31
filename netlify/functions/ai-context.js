@@ -230,6 +230,9 @@ function saga(log) {
       // Öll þessi tala er vandamál: hækkun = verra.
       att: d === null ? 'grunnlína' : d > 0 ? 'VERRI' : d < 0 ? 'betri' : 'óbreytt',
       ferill: m.slice(-30).map(x => +(x.tolur || {})[k] || 0),
+      // Dagsetningarnar fylgja með svo línuritið geti sett frystingarmerkin
+      // á réttan stað — ekki bara „30 punktar" heldur 30 DAGSETTIR punktar.
+      dagar: m.slice(-30).map(x => x.dags),
     };
   });
 
@@ -282,6 +285,40 @@ export default async (req) => {
     log[t] = log[t] || {};
     log[t][adgerd] = (log[t][adgerd] || 0) + 1;
 
+    /* ── FRYSTINGIN: fyrir og eftir hverja viðgerð, dagsett ──────────────
+       Agnar 31.08: „línurit sem frystir fyrir og eftir claude viðgerð. með
+       dagsetningu / sama villan á ekki geta gerst nema einu sinni."
+
+       FYRIR  = síðasti mælipunktur eins og hann stóð áður en snert var á.
+       EFTIR  = tölurnar reiknaðar UPP Á NÝTT hér og nú, eftir viðgerðina.
+       Hvorugt er skrifað af þeim sem gerði við — bæði eru mæld.
+
+       VÖRNIN er skilyrðið. Viðgerð án varnar getur endurtekið sig, og þá
+       segir bókin það hreint út: `varin: false`. Vörnin á að vera nafn á
+       verði í tools/audit-all.cjs — sá vörður fellur rautt ef villan
+       reynir að koma aftur. Það er það sem gerir „bara einu sinni" satt;
+       texti um að hafa lagað eitthvað gerir það ekki. */
+    let frysting = null;
+    if (b.vidgerd) {
+      const fyrri = (log.maelingar || [])[(log.maelingar || []).length - 1];
+      let eftir = null;
+      try { eftir = (await stada(cfg)).tolur; } catch (_) {}
+      const vorn = String(b.vorn || '').trim();
+      frysting = {
+        dags: new Date().toISOString(),
+        verk, adgerd, hver: String(b.hver || 'ókunnur').slice(0, 60),
+        fyrir: fyrri ? fyrri.tolur : null,
+        fyrir_dags: fyrri ? fyrri.dags : null,
+        eftir,
+        vorn: vorn || null,
+        varin: !!vorn,
+        nota: String(b.nota || '').slice(0, 600),
+      };
+      log.vidgerdir = (log.vidgerdir || []).concat([frysting]).slice(-200);
+      // Viðgerðin er sjálf mælipunktur — annars sæist stökkið hvergi á línuritinu.
+      if (eftir) skraSnapshot(log, eftir);
+    }
+
     await sb(cfg, 'app_settings?id=eq.1', {
       method: 'PATCH',
       body: JSON.stringify({ settings: { ...settings, ai_log: log } }),
@@ -292,6 +329,11 @@ export default async (req) => {
       adgerd, nidurstada,
       stig_adgerdar: log[t][adgerd],
       faerslur_alls: log.faerslur.length,
+      frysting,
+      // Sagt hreint út þegar viðgerð var skráð án varnar.
+      advorun: (b.vidgerd && !(b.vorn || '').trim())
+        ? 'Viðgerð skráð ÁN varnar — hún getur endurtekið sig. Bættu verði í tools/audit-all.cjs og sendu nafn hans í `vorn`.'
+        : undefined,
     });
   }
 
@@ -334,6 +376,8 @@ export default async (req) => {
       stada: s.tolur,
       // BÓKIN: grunnlína, ferill, hreyfing frá síðasta punkti og valdurinn.
       saga: S,
+      vidgerdir: (log.vidgerdir || []).slice(-20).reverse(),
+      ovardar_vidgerdir: (log.vidgerdir || []).filter(v => !v.varin).map(v => v.adgerd),
       vidvorun: S.vidvorun.length
         ? S.vidvorun.map(v => `${v.maelikvardi}: ${v.sidast} → ${v.nuna} (+${v.breyting}) — FÓR Í RANGA ÁTT`)
         : [],
@@ -355,6 +399,7 @@ export default async (req) => {
       listar: s.listar,
       vid_utgang: {
         hvernig: 'POST á sömu slóð',
+        vidgerd: 'Bættu `vidgerd:true` + `vorn:"<nafn varðar í tools/audit-all.cjs>"` þegar eitthvað var LAGAÐ — þá frystast tölurnar fyrir og eftir, dagsett.',
         dæmi: { verk: 'tom_skra', adgerd: 'fylla magn úr síðasta reikningi',
                 nidurstada: 'jakvaett', facts: ['56 af 260 eiga lesanlegt magn'],
                 nota: 'hvað var gert og hvað kom út', hver: 'claude-code' },
