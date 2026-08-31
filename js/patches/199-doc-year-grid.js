@@ -1394,6 +1394,32 @@
             if(_k && _map[_k]!=null) _saleId=_map[_k];
           }
         }
+        // _att viðhengi hafa ekkert id í customer_documents né í _saleIdByNum —
+        // reynum live-uppflettingu í báðar töflur áður en við gefumst upp.
+        // numKey strip-ar leiðandi núll svo 'R-000107592' og 'R-107592' gefa '107592'.
+        if(_docId==null && _saleId==null && inv && inv._att){
+          var _attNum=numKey(chipInvNum(inv));
+          if(_attNum && sb){
+            linkSaveEl.textContent='Leita…';
+            try{
+              var _cdRs=await sb.from('customer_documents').select('id,invoice_number').ilike('invoice_number','%'+_attNum).limit(5);
+              if(_cdRs&&_cdRs.data){
+                var _cdMatch=_cdRs.data.find(function(r){ return numKey(r.invoice_number)===_attNum; });
+                if(_cdMatch) _docId=_cdMatch.id;
+              }
+            }catch(_){}
+            if(_docId==null){
+              try{
+                var _slRs=await sb.from('solur').select('id,num').ilike('num','%'+_attNum).limit(5);
+                if(_slRs&&_slRs.data){
+                  var _slMatch=_slRs.data.find(function(r){ return numKey(r.num)===_attNum; });
+                  if(_slMatch) _saleId=_slMatch.id;
+                }
+              }catch(_){}
+            }
+            linkSaveEl.textContent='🔗 Tengja';
+          }
+        }
         if(_docId==null && _saleId==null){
           alert('Þessi reikningur er hvorki skjal í skjalasafninu né sala á þessari kennitölu, svo ekkert er hægt að vista.\n\nSkráðu hann á Sölu-síðunni fyrst — þá er hægt að tengja hann hér.');
           linkSaveEl.disabled=false; linkSaveEl.textContent='🔗 Tengja'; return;
