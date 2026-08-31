@@ -55,6 +55,14 @@
     }
     // Coalesce concurrent/rapid callers onto a single request.
     if (_vorurInflight) return _vorurInflight;
+    // DB.sb is null until DB.init() resolves. The .catch() below handles network
+    // errors but NOT this: `DB.sb.from` throws synchronously, before the promise
+    // chain exists, so it escaped as an uncaught TypeError. Measured in the
+    // Brunahólf error watch: 32 incidents 2026-08-30 → 08-31, "Cannot read
+    // properties of null (reading 'from')" on switchView. Nothing is cached and
+    // _vorurTs stays 0, so the next call retries once the connection is up.
+    // Guard: tools/audit-db-null-guard.cjs
+    if (!window.DB || !DB.sb) return Promise.resolve();
     _vorurInflight = DB.sb.from('vorur').select('*').eq('virkt',true).order('nafn').then(function(r){
       var all = r.data || [];
       state.services = all.filter(function(p){return p.flokkur==='Þjónusta';});
