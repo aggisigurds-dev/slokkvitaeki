@@ -1132,8 +1132,22 @@
       try { navigator.clipboard.writeText(ta.value); if (window.Toast && Toast.show) Toast.show('✓ Afritað'); } catch (_) { ta.select(); document.execCommand('copy'); }
     };
     card.querySelector('#_rpm-reply-send').onclick = () => sendReply(m);
-    // auto-draft on open
-    genReply(m, () => '');
+    // Forvinna af Þjónustuborði: fylla svarið og yfirlitið, hoppa yfir Claude.
+    // Ekkert sent hér — notandinn ýtir á Senda svar.
+    if (m.draftBody) {
+      const ta = card.querySelector('#_rpm-reply');
+      if (ta) ta.value = m.draftBody;
+      if (m.draftSummary) {
+        const sumRow = card.querySelector('#_rpm-summary-row');
+        const sumEl = card.querySelector('#_rpm-summary');
+        if (sumRow) sumRow.style.display = '';
+        if (sumEl) sumEl.textContent = m.draftSummary;
+      }
+      const msg = card.querySelector('#_rpm-msg');
+      if (msg) { msg.textContent = 'Forvinna úr Þjónustuborði — yfirfarðu áður en þú sendir.'; msg.className = 'rpm-msg'; }
+    } else {
+      genReply(m, () => '');
+    }
   }
   async function customerInvContext(m) {
     const kt = m.cust && ktDigits(m.cust.kt);

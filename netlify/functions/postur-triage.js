@@ -29,7 +29,7 @@
 // ── The board's real vocabulary (must match js/patches/231-verkbord.js) ────────
 const FLOKKAR = ['tilbod', 'thjonusta', 'brunakerfi', 'rukkun', 'samskipti'];
 const TAGS = [
-  'gera_tilbod', 'thjonustusamningur', 'bokhald', 'kvortun', 'hringja',
+  'draft', 'gera_tilbod', 'thjonustusamningur', 'bokhald', 'kvortun', 'hringja',
   'brunakerfi', 'eftir_ad_rukka', 'thjonusta', 'senda_tolvupost',
   'senda_skyrslur', 'uppsetning',
 ];

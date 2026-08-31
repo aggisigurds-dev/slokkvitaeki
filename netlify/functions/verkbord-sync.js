@@ -74,8 +74,9 @@ export default async (req) => {
     '„var eftirlit lokið / skynjari pípar“ → thjonusta+hringja, heimsokn, important. ' +
     'Ítrekun með sömu efnislínu og opið mál → op=notes á því id, ekki nýtt mál. ' +
     'Póstur frá okkur (SENT) → ekkert mál.\n' +
-    '- tags leyfileg: gera_tilbod, thjonustusamningur, bokhald, kvortun, hringja, brunakerfi, ' +
-    'eftir_ad_rukka, thjonusta, senda_tolvupost, senda_skyrslur, uppsetning.\n' +
+    '- tags leyfileg: draft, gera_tilbod, thjonustusamningur, bokhald, kvortun, hringja, brunakerfi, ' +
+    'eftir_ad_rukka, thjonusta, senda_tolvupost, senda_skyrslur, uppsetning. ' +
+    'draft er forvinna á OPNU máli (op=tag), ekki á nýju máli.\n' +
     '- flokkur: tilbod|thjonusta|brunakerfi|rukkun|samskipti.\n' +
     '- type: tilbod|email|skyrsla|heimsokn|hringja|samningur|annad.\n' +
     '- reason: ein stutt íslensk setning.\n' +

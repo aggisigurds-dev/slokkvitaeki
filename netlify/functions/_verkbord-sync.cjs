@@ -13,7 +13,7 @@
 
 const FLOKKAR = ['tilbod', 'thjonusta', 'brunakerfi', 'rukkun', 'samskipti'];
 const TAGS = [
-  'gera_tilbod', 'thjonustusamningur', 'bokhald', 'kvortun', 'hringja',
+  'draft', 'gera_tilbod', 'thjonustusamningur', 'bokhald', 'kvortun', 'hringja',
   'brunakerfi', 'eftir_ad_rukka', 'thjonusta', 'senda_tolvupost',
   'senda_skyrslur', 'uppsetning',
 ];
@@ -24,6 +24,7 @@ const TYPES = [
 const OPS = ['create', 'close', 'tag', 'notes'];
 
 const TAG_TO_FLOKK = {
+  draft: 'samskipti',
   gera_tilbod: 'tilbod',
   thjonustusamningur: 'thjonusta',
   bokhald: 'rukkun',
@@ -394,7 +395,7 @@ function validateActions(raw, opts) {
           customer_nafn = hint.slice(0, 160);
         }
       }
-      const tags = uniqTags(a.tags);
+      const tags = uniqTags(a.tags).filter((t) => t !== 'draft');
       const type = TYPES.includes(a.type) ? a.type : (TAG_TO_TYPE[tags[0]] || 'annad');
       const flokkur = FLOKKAR.includes(a.flokkur) ? a.flokkur : (TAG_TO_FLOKK[tags[0]] || null);
       let ref = a.channel_ref ? String(a.channel_ref).slice(0, 120) : '';
