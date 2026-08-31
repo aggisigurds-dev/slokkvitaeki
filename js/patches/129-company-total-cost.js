@@ -300,8 +300,17 @@
       const manudur = String(st.skodun_manudur || '').trim();
       const dags    = String(st.skodun_dagsetning || '').trim();
       // Year for the phrase: from the typed date if it carries one, else now.
-      const ym = dags.match(/(\d{4})/);
-      const year = ym ? ym[1] : String(new Date().getFullYear());
+      // 2026-08-31: árið var gripið úr FYRSTU fjórum tölustöfum hvar sem er í
+      // þessum frjálsa textareit — „kl 1400 3.8.2026" hefði gefið árið 1400.
+      // Stjörnu-Oddi (skjal 9257) fékk 2027 á skýrslu sem var unnin 2026-08-03;
+      // reikningurinn fyrir SÖMU heimsókn fór rétt á 2026, svo staðurinn stóð á
+      // „rukkað án skýrslu" með skýrsluna til. Nú þarf 20xx með orðamörkum, og
+      // árið verður að vera raunhæft (næsta ár leyft — „byrja á 2027 skýrslunni").
+      const _nowY = new Date().getFullYear();
+      const ym = dags.match(/\b(20\d{2})\b/);
+      let _y = ym ? +ym[1] : _nowY;
+      if (!(_y >= 2000 && _y <= _nowY + 1)) _y = _nowY;
+      const year = String(_y);
       const phrase = manudur ? ('Framkvæmd í ' + manudur + ' ' + year) : '';
       // 2026-06-10: optional free-text invoice line ("Vegna…"). Kept separate
       // from `phrase` so the úttektarskýrsla keeps its Framkvæmd-í-… wording.

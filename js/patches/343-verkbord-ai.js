@@ -19,7 +19,7 @@
   const YEAR = new Date().getFullYear();
   const FLOKKAR = { tilbod: 'Tilboð', thjonusta: 'Þjónusta', brunakerfi: 'Brunakerfi', rukkun: 'Rukkun', samskipti: 'Samskipti' };
   const TAGS = {
-    gera_tilbod: 'Gera tilboð', thjonustusamningur: 'Þjónustusamningur', bokhald: 'Bókhald',
+    draft: 'Draft', gera_tilbod: 'Gera tilboð', thjonustusamningur: 'Þjónustusamningur', bokhald: 'Bókhald',
     kvortun: 'Kvörtun', hringja: 'Hringja', brunakerfi: 'Brunakerfi',
     eftir_ad_rukka: 'Eftir að rukka', thjonusta: 'Þjónusta', senda_tolvupost: 'Senda tölvupóst',
     senda_skyrslur: 'Senda skýrslur', uppsetning: 'Uppsetning'

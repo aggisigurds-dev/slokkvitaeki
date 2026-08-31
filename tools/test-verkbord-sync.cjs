@@ -72,6 +72,18 @@ const cleaned = V.validateActions(raw, { sites: SITES, openItems });
 const plazaCreate = cleaned.find((a) => a.op === 'create' && a.customer_nafn && a.customer_nafn.indexOf('Plaza') !== -1);
 ok('Plaza create resolved to exact site nafn', !!(plazaCreate && plazaCreate.customer_nafn === 'Center Hótel - Plaza'));
 ok('invented tag dropped', plazaCreate && plazaCreate.tags.indexOf('invented_tag') === -1 && plazaCreate.tags.indexOf('senda_skyrslur') !== -1);
+ok('draft is a known tag', V.TAGS.indexOf('draft') !== -1);
+
+const draftCreate = V.validateActions(
+  [{ op: 'create', title: 'Forvinna Plaza', customer_nafn: 'Plaza', tags: ['draft', 'bokhald'] }],
+  { sites: SITES, openItems: [] }
+);
+ok('draft stripped from create', draftCreate[0] && draftCreate[0].tags.indexOf('draft') === -1 && draftCreate[0].tags.indexOf('bokhald') !== -1);
+const draftTag = V.validateActions(
+  [{ op: 'tag', id: 1, add_tags: ['draft'] }],
+  { sites: SITES, openItems }
+);
+ok('draft allowed on existing ticket via tag', draftTag.some((a) => a.op === 'tag' && a.add_tags && a.add_tags.indexOf('draft') !== -1));
 const groupCreate = cleaned.find((a) => a.title === 'Center eitthvað');
 ok('group-name create has no customer_nafn', !!(groupCreate && !groupCreate.customer_nafn));
 ok('close unknown id dropped', !cleaned.some((a) => a.op === 'close' && a.id === 99));

@@ -75,4 +75,8 @@ Steypustöðin 2026, Kirkjuvellir 152.880, Metal 7→9.
 
 **GitHub er tengingin.** Skill í repo + `git push` berst með `GIT_PULL` á
 Kerfisheilsu. Skill sem liggur bara á claude.ai-reikningnum er ekki til á
-hinum vélunum.
+hinum vélunum. Sjá Charlize `references/agentar.md`.
+
+Engin opinber Cursor/MCP-viðbót gerir „4 tölvur + sími" fyrir þennan hub.
+Community-CLI (skillcp, mcpx) afrita local `~/.cursor` ↔ `~/.claude` — þær
+leysa ekki síma né vélar Agnars. Ekki setja þær upp nema hann biðji.

@@ -31,9 +31,32 @@
   // AppSettings) so the proof shows on every device.
   function getSource(coId){ try{ if(window.AppSettings&&AppSettings.path){ var all=AppSettings.path('inspection_source')||{}; return all[String(coId)]||null; } }catch(_){} return null; }
   function saveSource(coId, src){ try{ if(window.AppSettings&&AppSettings.save){ var o={inspection_source:{}}; o.inspection_source[String(coId)]=src; return AppSettings.save(o); } }catch(_){} return Promise.resolve(); }
-  async function fetchReportDocs(baseId){
-    var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('year,drive_file_id,storage_path,notes').eq('customer_base_id',baseId).eq('doc_type','uttektarskyrsla'); return r.data||[]; }catch(e){ return []; }
+  // „Tengd skýrsla" footer. Á fjölstaða-kt (Center/Pizzan) málaði base-join
+  // nýjustu systurskýrsluna á Plaza/Hlaðvarpinn. Aðeins þessi fyrirtaeki_id;
+  // óstaðsettar base-raðir aðeins þegar kt á einn stað.
+  async function fetchReportDocs(baseId, coId, multiloc){
+    var sb=SB(); if(!sb) return [];
+    var out=[], seen={};
+    function add(rows){
+      (rows||[]).forEach(function(d){
+        if(!d) return;
+        var k=[d.year,d.drive_file_id||'',d.storage_path||'',d.notes||''].join('|');
+        if(seen[k]) return; seen[k]=1; out.push(d);
+      });
+    }
+    try{
+      if(coId){
+        var r=await sb.from('customer_documents').select('year,drive_file_id,storage_path,notes,fyrirtaeki_id')
+          .eq('fyrirtaeki_id', coId).eq('doc_type','uttektarskyrsla');
+        add(r.data);
+      }
+      if(baseId && !multiloc){
+        var r2=await sb.from('customer_documents').select('year,drive_file_id,storage_path,notes,fyrirtaeki_id')
+          .eq('customer_base_id', baseId).eq('doc_type','uttektarskyrsla');
+        add((r2.data||[]).filter(function(d){ return d.fyrirtaeki_id==null || +d.fyrirtaeki_id===+coId; }));
+      }
+    }catch(e){}
+    return out;
   }
   // The report the tækjalisti is based on: prefer the recorded import source,
   // else the newest attached úttektarskýrsla, else the newest report on file.
@@ -425,7 +448,7 @@
     var baseId=await baseIdForKt(co.kennitala);
     var fl = baseId ? await fetchLines(baseId, co, multiloc) : { rows:[], others:0 };
     var lines = fl.rows;
-    var repDocs = baseId ? await fetchReportDocs(baseId) : [];
+    var repDocs = await fetchReportDocs(baseId, coId, multiloc);
     var invoices = await fetchInvoices(co, sibs);
     var hasInv = (invoices.own&&invoices.own.length) || (invoices.siblings&&invoices.siblings.length);
     var footer = sourceFooter(computeSrc(coId, repDocs));

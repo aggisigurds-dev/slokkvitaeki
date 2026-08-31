@@ -118,6 +118,7 @@ Bæði slökkvitæki og brunahólf lesa sama Supabase `osfdzskyvisifcwyjkuk`.
 
 ## Tengt
 
+- Agentaskrá (nafn, heim, slóð, aldrei): `docs/AGENTASKRA.md`
 - Senda: `.claude/skills/villuleit/SKILL.md`
 - Aðferð: `.claude/skills/variant-analysis/SKILL.md`
 - Mæla: `.claude/agents/natalie.md`

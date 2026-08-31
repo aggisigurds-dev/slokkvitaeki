@@ -1,5 +1,7 @@
 # Hver gerir hvað
 
+Kanónísk agentaskrá (23 agentar, heim, slóð, kveikjur, aldrei): `docs/AGENTASKRA.md`. Kveikjuorð: `docs/TRIGGERS.md`. Þessi síða er Charlize-minni um hlutverk; listinn þar er sannleikurinn.
+
 | Agent | Svæði | Keyrir |
 |---|---|---|
 | **Claude Code** | Slökkvitæki-appið (kóði, patches, deploy) | alltaf-á PC-inn |
@@ -96,10 +98,18 @@ Agentar sem eiga **ekkert roster-sæti** og eru samt notaðir: `adstod`,
 ## Skills í repo-inu
 
 Verkfæri: `add-feature`, `deploy`, `verkefnalisti`, `uttekt-audit`,
-`ajour-endpoint-capture`, `screenshot-verify`, `grill-me`, `cowork-doc-sweep`,
-`brief-to-tasks`, **`variant-analysis`** · Hönnun: `design-*`, `frontend-design`, `graphic-design`,
-`information-architecture`, `mobile-*`, `slokkvitaeki-layout` ·
-Þekking: **`charlize`**, **`arnold`**, `elon-musk`
+`villuleit`, `ajour-endpoint-capture`, `screenshot-verify`, `grill-me`,
+`cowork-doc-sweep`, `brief-to-tasks`, **`variant-analysis`** · Hönnun:
+`design-*`, `frontend-design`, `graphic-design`, `information-architecture`,
+`mobile-*`, `slokkvitaeki-layout` · Þekking: **`charlize`**, **`arnold`**,
+`elon-musk`
+
+**Hvernig Agnar sendir villuleit:** opna rétt repo, segja
+`villuleit: sama mynstur og X`. `villuleit` er sendi-leikreglan (grep-gátlisti
+systkini-kt / röng join / falskt grænt). `variant-analysis` er fimm-skrefa
+aðferðin. Skil í Charlize + einn lista (`SAMRAEMI` eða eitt verkefni), ekki
+nýtt app. Falskt grænt / tala-á-skjá → **`natalie`**. Vörðu vírar →
+**`netvordur`**. GitHub er sync á 4 vélar + síma.
 
 `variant-analysis` kom inn 30.08.2026 eftir að draugavélin fannst á fimm
 stöðum þegar hún hafði verið "löguð" á þremur. Hún er gátlisti fyrir spurninguna

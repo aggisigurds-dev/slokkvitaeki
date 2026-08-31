@@ -39,6 +39,7 @@
     samskipti:  { label: 'Samskipti',  emoji: '📞', color: '#d97706' },
   };
   const TAGS = {
+    draft:              { label: 'Draft',             emoji: '📝', color: '#b45309' },
     gera_tilbod:        { label: 'Gera tilboð',       emoji: '📄', color: '#7c3aed' },
     thjonustusamningur: { label: 'Þjónustusamningur', emoji: '📝', color: '#16a34a' },
     bokhald:            { label: 'Bókhald',           emoji: '📊', color: '#1d4ed8' },
