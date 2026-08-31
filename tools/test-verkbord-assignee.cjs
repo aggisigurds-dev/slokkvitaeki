@@ -15,14 +15,15 @@ function normAssignee(v) {
 function assignedForNew(worker) {
   return normAssignee(worker) || null;
 }
-const WORKERS = ['Agnar', 'Sara', 'Hákon', 'Binni', 'Anni'];
+const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Sara'];
 const WORKER_FILTERS = [
   ['Agnar', 'Agnar'],
   ['nema_agnar', 'Allir án Agnars'],
-  ['Sara', 'Sara'],
+  ['Charlize', 'Charlize'],
   ['Hákon', 'Hákon'],
   ['Binni', 'Binni'],
-  ['Anni', 'Anni']
+  ['Anni', 'Anni'],
+  ['Sara', 'Sara']
 ];
 function knownWorkerFilter(v) {
   if (v === 'nema_agnar') return true;
@@ -187,11 +188,14 @@ ok('assignedForNew Allir is null', assignedForNew('Allir') === null);
 ok('assignedForNew Agnar is Agnar', assignedForNew('Agnar') === 'Agnar');
 ok('assignedForNew Anni is Anni', assignedForNew('Anni') === 'Anni');
 ok('assignedForNew Binni is Binni', assignedForNew('Binni') === 'Binni');
+ok('assignedForNew Charlize is Charlize', assignedForNew('Charlize') === 'Charlize');
+ok('assignedForNew Sara is Sara', assignedForNew('Sara') === 'Sara');
 
 const filterHtml = workerFilterOptionsHtml('nema_agnar');
 ok('filter starts with Agnar', filterHtml.indexOf('<option value="Agnar"') === 0);
 ok('filter has Allir án Agnars', /value="nema_agnar"[^>]*>Allir án Agnars</.test(filterHtml));
-ok('filter has Sara Hákon Binni Anni', ['Sara', 'Hákon', 'Binni', 'Anni'].every(n => filterHtml.indexOf('>' + n + '<') !== -1));
+ok('filter has Charlize Hákon Binni Anni Sara', ['Charlize', 'Hákon', 'Binni', 'Anni', 'Sara'].every(n => filterHtml.indexOf('>' + n + '<') !== -1));
+ok('Charlize comes before new Sara', filterHtml.indexOf('>Charlize<') < filterHtml.indexOf('>Sara<') && filterHtml.indexOf('>Sara<') !== -1);
 ok('filter has no everyone-Allir', !/>Allir</.test(filterHtml));
 ok('filter has no Andri', filterHtml.indexOf('Andri') === -1);
 ok('filter has no Elías', filterHtml.indexOf('Elías') === -1);
@@ -199,6 +203,11 @@ ok('unknown stored filter falls back to Allir án Agnars', /value="nema_agnar" s
 ok('Binni stored filter stays selected', /value="Binni" selected/.test(workerFilterOptionsHtml('Binni')));
 ok('Binni filter matches Binni ticket', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'Binni', NOW));
 ok('nema_agnar includes Binni', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'nema_agnar', NOW));
+ok('Charlize filter matches moved work', matchesWorker({ status: 'nytt', assigned_to: 'Charlize', created_at: isoDaysAgo(2) }, 'Charlize', NOW));
+ok('new Sara filter does not take Charlize work', !matchesWorker({ status: 'nytt', assigned_to: 'Charlize', created_at: isoDaysAgo(2) }, 'Sara', NOW));
+ok('new Sara filter matches only new Sara', matchesWorker({ status: 'nytt', assigned_to: 'Sara', created_at: isoDaysAgo(1) }, 'Sara', NOW));
+ok('assignee dropdown has Charlize', assigneeOptionsHtml({ assigned_to: null }).indexOf('>Charlize<') !== -1);
+ok('assignee dropdown has empty Sara slot', assigneeOptionsHtml({ assigned_to: null }).indexOf('>Sara<') !== -1);
 
 const anniOpts = assigneeOptionsHtml(anniOld);
 ok('assignee dropdown has Agnar', anniOpts.indexOf('>Agnar<') !== -1);

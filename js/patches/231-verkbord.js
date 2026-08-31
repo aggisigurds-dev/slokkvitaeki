@@ -313,20 +313,23 @@
     return tags.indexOf('senda_skyrslur') !== -1;
   }
 
-  // 2026-08-31 (ósk Agnars): eitt nafnaval — Agnar, Allir án Agnars, Sara,
-  // Hákon, Binni, Anni. Starfsfólk sér daglega vinnu; skjalavinna fer á Agnar.
+  // 2026-08-31 (ósk Agnars): nafnaval — Agnar, Allir án Agnars, Charlize,
+  // Hákon, Binni, Anni, Sara. Charlize tók við gömlu Söru (mál flutt).
+  // Nýja Sara er tóm slóð fyrir starfsmann sem er að byrja.
+  // Starfsfólk sér daglega vinnu; skjalavinna fer á Agnar.
   // Óúthlutað og eldra en 30 dagar skráist á Agnar. Sjálfgefin sía er
   // „Allir án Agnars". Tómt vistað gildi (gamla „Allir") flyst yfir.
   // Keep in sync with tools/test-verkbord-assignee.cjs
   const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
-  const WORKERS = ['Agnar', 'Sara', 'Hákon', 'Binni', 'Anni'];
+  const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Sara'];
   const WORKER_FILTERS = [
     ['Agnar', 'Agnar'],
     ['nema_agnar', 'Allir án Agnars'],
-    ['Sara', 'Sara'],
+    ['Charlize', 'Charlize'],
     ['Hákon', 'Hákon'],
     ['Binni', 'Binni'],
-    ['Anni', 'Anni']
+    ['Anni', 'Anni'],
+    ['Sara', 'Sara']
   ];
   const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
   function normAssignee(v) {
@@ -434,7 +437,7 @@
   // ── state ────────────────────────────────────────────────────────────────
   const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode', WKEY = '_vb_worker';
   // Starfsmenn (skráning + sía). Sjálfgefið „Allir án Agnars". WORKERS er
-  // skilgreint ofar með Agnar / Sara / Hákon / Binni / Anni.
+  // skilgreint ofar með Agnar / Charlize / Hákon / Binni / Anni / Sara.
   // Valin sía: texti lýsist upp + glóð í lit chips-ins (2026-07-13, ósk Agnars —
   // „sést illa hvað er valið"). currentColor = litur chips-ins svo glóðin passar.
   // 2026-07-22 (ósk Agnars — „það sýnir illa þegar sían er á … hafðu svarta gráa
