@@ -47,6 +47,45 @@ function buildVilla(r, pack) {
   }
   return bits.join(' ');
 }
+function buildReplyDraft(r, pack) {
+  const nafn = String((r && r.customer_nafn) || '').trim() || 'þið';
+  const lines = ['Góðan dag,', '', 'Takk fyrir póstinn.'];
+  if (pack.invoice || pack.report) {
+    lines.push('Hér eru skjölin sem við fundum:');
+    if (pack.invoice) lines.push('- Reikningur: ' + pack.invoice.label + (pack.invoice.url ? ' — ' + pack.invoice.url : ''));
+    if (pack.report) lines.push('- Skýrsla: ' + pack.report.label + (pack.report.url ? ' — ' + pack.report.url : ''));
+  } else {
+    lines.push('Við erum að ganga frá skjölinum og sendum þau strax og þau eru tilbúin.');
+  }
+  if (pack.villa) { lines.push('', pack.villa); }
+  lines.push('', 'Bestu kveðjur,', 'Brunahólf Slökkvitæki');
+  return lines.join('\n');
+}
+function hasDraftTag(r) {
+  let t = r && r.tags;
+  if (typeof t === 'string') { try { t = JSON.parse(t); } catch (_) { t = []; } }
+  return Array.isArray(t) && t.indexOf('draft') !== -1;
+}
+function draftPackIsUseful(pack, r) {
+  if (!pack) return false;
+  if (pack.invoice || pack.report || pack.ambiguous) return true;
+  const th = pack.thread || [];
+  for (let i = 0; i < th.length; i++) {
+    if (String((th[i] && th[i].text) || '').trim()) return true;
+  }
+  if (/Forvinna klikkaði/i.test(String(pack.villa || ''))) return true;
+  if (hasDraftTag(r)) return true;
+  const reply = String(pack.reply || '').trim();
+  if (reply && r) {
+    const expected = String(buildReplyDraft(r, pack) || '').trim();
+    if (reply !== expected) return true;
+  }
+  return false;
+}
+function draftPanelDefaultOpen(pack, r, busy) {
+  if (busy && !pack) return false;
+  return draftPackIsUseful(pack, r);
+}
 function assignedForNew(worker) {
   const s = String(worker == null ? '' : worker).trim();
   return WORKER_SENTINELS[s] ? null : (s || null);
@@ -157,6 +196,40 @@ ok('2023 tengja still old-year report', isOldYearReport({
 ok('assignedForNew(nema_agnar) is null, not a person', assignedForNew('nema_agnar') === null);
 ok('assignedForNew(allir) is null', assignedForNew('allir') === null);
 ok('assignedForNew(Anni) stays Anni', assignedForNew('Anni') === 'Anni');
+
+const orkuRow = { title: 'orkureitur senda reikninga', customer_nafn: 'orkureitur', notes: '', tags: [] };
+const orkuPack = {
+  v: 1, invoice: null, report: null, thread: [], villa: '', reply: '',
+  links: [{ label: 'Samskipta-/viðskiptasaga', href: 'https://example/hist' }],
+  historyUrl: 'https://example/hist', fid: 1, ambiguous: false
+};
+orkuPack.villa = buildVilla(orkuRow, orkuPack);
+orkuPack.reply = buildReplyDraft(orkuRow, orkuPack);
+ok('orkureitur-style empty pack is not useful', draftPackIsUseful(orkuPack, orkuRow) === false);
+ok('orkureitur empty Forvinna stays collapsed', draftPanelDefaultOpen(orkuPack, orkuRow, false) === false);
+ok('null pack is not useful', draftPackIsUseful(null, orkuRow) === false);
+ok('still-loading does not open the panel', draftPanelDefaultOpen(null, orkuRow, true) === false);
+ok('invoice pack is useful', draftPackIsUseful(pack, { title: 'Reikningur', customer_nafn: 'Fornhagi 11-17' }) === true);
+ok('useful pack defaults open', draftPanelDefaultOpen(pack, { title: 'Reikningur' }, false) === true);
+ok('report-only pack is useful', draftPackIsUseful({
+  v: 1, invoice: null, report: pack.report, thread: [], villa: '', reply: '', links: [], historyUrl: '', fid: 1, ambiguous: false
+}, { title: 'Skýrsla' }) === true);
+ok('thread text is useful', draftPackIsUseful({
+  v: 1, invoice: null, report: null, thread: [{ text: 'Vantar afrit' }], villa: '', reply: '', links: [], historyUrl: '', fid: null, ambiguous: false
+}, orkuRow) === true);
+ok('empty thread is not useful', draftPackIsUseful({
+  v: 1, invoice: null, report: null, thread: [{ text: '  ' }], villa: '', reply: '', links: [], historyUrl: '', fid: null, ambiguous: false
+}, orkuRow) === false);
+ok('ambiguous pack is useful', draftPackIsUseful({
+  v: 1, invoice: null, report: null, thread: [], villa: amb, reply: '', links: [], historyUrl: '', fid: null, ambiguous: true
+}, { title: 'Reikningur', customer_nafn: 'Center Hótel' }) === true);
+ok('klikkuð Forvinna is useful', draftPackIsUseful({
+  v: 1, invoice: null, report: null, thread: [], villa: 'Forvinna klikkaði: timeout', reply: '', links: [], historyUrl: '', fid: null, ambiguous: false
+}, orkuRow) === true);
+ok('Draft tag keeps Forvinna useful', draftPackIsUseful(orkuPack, { title: 'orkureitur', tags: ['draft'] }) === true);
+const customRow = { title: 'orkureitur senda reikninga', customer_nafn: 'orkureitur', tags: [] };
+ok('custom reply is useful', draftPackIsUseful(Object.assign({}, orkuPack, { reply: 'Halló, hér er afritið.' }), customRow) === true);
+ok('generic auto-reply is not useful', draftPackIsUseful(orkuPack, orkuRow) === false);
 
 console.log(failed ? '\nFAIL ' + failed : '\nOK');
 process.exit(failed ? 1 : 0);

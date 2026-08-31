@@ -531,6 +531,7 @@
     attachments: {},    // beidniId → [{ id, name, path, url, mime_type, size }]
     draftPack: {},      // beidniId → forvinna { invoice, report, thread, villa, reply, links }
     draftBusy: {},      // beidniId → true while loadDraftPack runs
+    draftOpen: {},      // beidniId → true|false user override for Forvinna panel
     addRsk: null,       // síðasta RSK-uppfletting úr fyrirtækjareitnum {kt,nafn,heimilisfang}
     // Þjónustuverk v3: ⭐ Áríðandi-sía, dálkaröðun, síðuskipting, composer-sýnileiki
     // Áríðandi-sían byrjar AF (Agnar 2026-08-07) — borðið sýnir öll mál sjálfgefið,
@@ -821,6 +822,55 @@
     lines.push('', 'Bestu kveðjur,', 'Brunahólf Slökkvitæki');
     return lines.join('\n');
   }
+  // 2026-08-31 (ósk Agnars): Forvinna sem „á ekkert við" á ekki að fylla VALIÐ MÁL.
+  // Gagnlegt = reikningur, skýrsla, póstþráður, tvírætt nafn, villa, merkt Draft,
+  // eða svar-drög sem starfsmaður hefur breytt. Ekki: fannst-ekki, tóm saga,
+  // sjálfvirk drög, eða „enn að sækja". Keep in sync with tools/test-verkbord-draft.cjs
+  function draftPackIsUseful(pack, r) {
+    if (!pack) return false;
+    if (pack.invoice || pack.report || pack.ambiguous) return true;
+    const th = pack.thread || [];
+    for (let i = 0; i < th.length; i++) {
+      if (String((th[i] && th[i].text) || '').trim()) return true;
+    }
+    if (/Forvinna klikkaði/i.test(String(pack.villa || ''))) return true;
+    if (r && rowTags(r).indexOf('draft') !== -1) return true;
+    const reply = String(pack.reply || '').trim();
+    if (reply && r) {
+      const expected = String(buildReplyDraft(r, pack) || '').trim();
+      if (reply !== expected) return true;
+    }
+    return false;
+  }
+  function readDraftOpenMap() {
+    try {
+      const raw = localStorage.getItem('vb_forvinna_open');
+      const o = raw ? JSON.parse(raw) : {};
+      return o && typeof o === 'object' && !Array.isArray(o) ? o : {};
+    } catch (_) { return {}; }
+  }
+  function writeDraftOpen(id, on) {
+    const k = String(id);
+    state.draftOpen[k] = !!on;
+    try {
+      const o = readDraftOpenMap();
+      o[k] = on ? 1 : 0;
+      const keys = Object.keys(o);
+      if (keys.length > 100) {
+        keys.slice(0, keys.length - 80).forEach(function (old) { delete o[old]; });
+      }
+      localStorage.setItem('vb_forvinna_open', JSON.stringify(o));
+    } catch (_) {}
+  }
+  function isDraftPanelOpen(r, pack) {
+    if (!r || r.id == null) return false;
+    const k = String(r.id);
+    if (Object.prototype.hasOwnProperty.call(state.draftOpen, k)) return !!state.draftOpen[k];
+    const o = readDraftOpenMap();
+    if (Object.prototype.hasOwnProperty.call(o, k)) return o[k] === 1;
+    if (state.draftBusy[r.id] && !pack) return false;
+    return draftPackIsUseful(pack, r);
+  }
   async function loadDraftPack(r, force) {
     if (!r || r._vd) return null;
     const id = r.id;
@@ -968,6 +1018,7 @@
     if (r._vd) return '';
     const busy = !!state.draftBusy[r.id];
     const pack = state.draftPack[r.id] || parseDraftSummary(r.summary);
+    if (!isDraftPanelOpen(r, pack)) return '';
     const on = rowTags(r).indexOf('draft') !== -1;
     const row = function (label, body) {
       return '<div style="display:flex;gap:8px;align-items:flex-start;margin:0 0 8px">' +
@@ -1021,6 +1072,8 @@
     return '<div id="vb-draft" style="border:1px solid #f59e0b;border-radius:12px;background:linear-gradient(180deg,#fffbeb,#fff7ed);padding:12px 12px 10px;margin:0 0 12px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
         '<span style="font-size:12px;font-weight:800;color:#92400e">📝 Forvinna' + (on ? ' · Draft' : '') + '</span>' +
+        '<button data-act="drafttoggle" data-id="' + esc(r.id) + '" type="button" title="Fella Forvinnu" ' +
+          'style="height:22px;padding:0 7px;border-radius:6px;border:1px solid #f59e0b;background:#fff;color:#92400e;font-family:inherit;font-size:10.5px;font-weight:700;cursor:pointer">▾ Fella</button>' +
         '<span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">' +
           '<button data-act="draftrun" data-id="' + esc(r.id) + '" type="button" ' +
             'style="height:28px;padding:0 10px;border-radius:7px;border:1px solid #d97706;background:#fff;color:#92400e;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer">' +
@@ -2172,11 +2225,20 @@
   function selCoHTML(row) {
     if (row._vd) return row.customer_nafn ? '<span style="font-size:12px;font-weight:700;color:#6b7280">🗂 ' + esc(row.customer_nafn) + '</span>' : '';
     const BTNST = 'font:inherit;font-size:11px;padding:2px 7px;border-radius:6px;border:1px solid #d8dadf;background:#f8fafc;color:#4b5058;cursor:pointer;white-space:nowrap';
+    const pack = state.draftPack[row.id] || parseDraftSummary(row.summary);
+    const open = isDraftPanelOpen(row, pack);
+    const useful = draftPackIsUseful(pack, row);
+    const draftBg = open ? '#fde68a' : (useful ? '#fef3c7' : '#fffbeb');
+    const draftBd = open || useful ? '#d97706' : '#f59e0b';
+    const DRAFTBTN = 'font:inherit;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;border:1px solid ' + draftBd +
+      ';background:' + draftBg + ';color:#92400e;cursor:pointer;white-space:nowrap;line-height:1.2';
     return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
       (row.customer_nafn
         ? '<span style="font-size:12px;font-weight:700;color:#6b7280">🗂 ' + esc(row.customer_nafn) + '</span>'
         : '<span style="font-size:12px;color:#94a3b8;font-style:italic">🔗 Engin tenging</span>') +
       '<button data-act="editco" data-id="' + esc(row.id) + '" title="Breyta/tengja fyrirtæki" style="' + BTNST + '">✏️ Tengja</button>' +
+      '<button data-act="drafttoggle" data-id="' + esc(row.id) + '" type="button" title="' +
+        (open ? 'Fella Forvinnu' : 'Opna Forvinnu — reikningur, skýrsla og svar-drög') + '" style="' + DRAFTBTN + '">Forvinna</button>' +
     '</div>';
   }
   // Sticky-rúmfræði VALINS MÁLS (2026-08-14, skjáskot Agnars): stjórnkortið
@@ -2755,10 +2817,25 @@
       }
 
       // ── V3-aðgerðir (flokkakort + valið mál) ─────────────────────────────
+      if (act === 'drafttoggle') {
+        e.stopPropagation();
+        const row = allItems().find(x => String(x.id) === String(nid));
+        if (!row) return;
+        const pack = state.draftPack[row.id] || parseDraftSummary(row.summary);
+        const next = !isDraftPanelOpen(row, pack);
+        writeDraftOpen(row.id, next);
+        renderSel();
+        if (next && !pack && !state.draftBusy[row.id]) {
+          state.draftBusy[row.id] = true; renderSel();
+          loadDraftPack(row, false).then(function () { renderSel(); });
+        }
+        return;
+      }
       if (act === 'draftrun') {
         e.stopPropagation();
         const row = allItems().find(x => String(x.id) === String(nid));
         if (!row) return;
+        writeDraftOpen(row.id, true);
         state.draftBusy[row.id] = true; renderSel();
         loadDraftPack(row, true).then(function () { renderSel(); });
         return;
