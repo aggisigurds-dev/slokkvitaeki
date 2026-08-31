@@ -169,6 +169,14 @@
     X-Frame-Options = "SAMEORIGIN"
     Referrer-Policy = "no-referrer"
 
+# Service worker must revalidate on every visit. A cached sw.js means office
+# PCs never pick up skipWaiting / cache-drop and sit on old Verkborð (231)
+# forever. Explicit rule so it cannot fall through to a long default.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 # Repeat visits were re-downloading ~1.1 MB of JS on every load because Netlify
 # defaulted static files to max-age=0. Query-string ?v= assets can sit in the
 # browser cache for an hour (HTML still revalidates, so a bump is picked up).
