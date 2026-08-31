@@ -822,8 +822,10 @@
     // svo endurvistun tvítekur ekki. byrjunargjald (Fylgihlutir) verður aldrei tæki.
     if (_sale.num) {
       try {
-        const isTaeki = l => (l.type === 'service' || l.krefst_verkbeidni === true)
-          && !/byrjunargjald/i.test(l.desc || '');
+        // Only lines explicitly marked krefst_verkbeidni:true (catalog products)
+        // get a verkbeidni — matches pos.js behaviour. Free-text lines like
+        // "Útkall/þjónusta" or "Akstur" are not workshop-bound.
+        const isTaeki = l => l.krefst_verkbeidni === true;
         const taeki = (_sale.linur || []).filter(isTaeki);
         const ex = await SB.from('verkbeidnir').select('num').like('num', _sale.num + '-V%');
         const existing = ex.data || [];
