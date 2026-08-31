@@ -326,6 +326,45 @@
   function assignedForNew(worker) {
     return normAssignee(worker) || null;
   }
+  // Stored assignee for the Meira dropdown — not effectiveAssignee. Old
+  // unassigned tickets display as Agnar on the list; the editor must still
+  // show Allir so picking Agnar fires change and persists assigned_to.
+  function editorAssigneeValue(r) {
+    return normAssignee(r && r.assigned_to);
+  }
+  function coerceRowId(raw) {
+    if (raw == null || raw === '') return null;
+    const s = String(raw);
+    if (s.indexOf('vd:') === 0) return s;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : s;
+  }
+  // VALIÐ MÁL Meira lives under #vb-sel-ed; list expand uses expandedId.
+  // Prefer the field's own data-id host, then the selected ticket, then the
+  // expanded list row. Never return null while a ticket is open in VALIÐ MÁL.
+  function resolveEditorRowId(el, selId, expandedId) {
+    if (el && el.closest) {
+      const host = el.closest('[data-id]');
+      if (host) {
+        const id = coerceRowId(host.getAttribute('data-id'));
+        if (id != null) return id;
+      }
+      if (el.closest('#vb-sel-ed')) {
+        const id = coerceRowId(selId);
+        if (id != null) return id;
+      }
+    }
+    if (expandedId != null && expandedId !== '') return coerceRowId(expandedId);
+    return coerceRowId(selId);
+  }
+  // Do not steal VALIÐ MÁL when a save (e.g. assigned_to=Agnar) drops the
+  // ticket out of the current worker filter. Only jump to another row if
+  // the selected ticket is gone from the loaded set.
+  function keepSelectedId(selId, visibleRows, allRows) {
+    const sid = selId == null || selId === '' ? '' : String(selId);
+    if (sid && (allRows || []).some(function (x) { return String(x.id) === sid; })) return selId;
+    return (visibleRows && visibleRows.length) ? visibleRows[0].id : null;
+  }
   function isOlderThanMonth(r, now) {
     const t = Date.parse(r && r.created_at);
     if (!Number.isFinite(t)) return false;
@@ -1032,7 +1071,7 @@
   async function saveRow(id, patch) {
     const SB = getSB(); if (!SB) return;
     patch.updated_at = nowIso();
-    const row = state.items.find(x => x.id === id);
+    const row = state.items.find(x => String(x.id) === String(id));
     if (row) Object.assign(row, patch);
     try { const r = await SB.from('thjonustubeidni').update(patch).eq('id', id); if (r.error) throw r.error; }
     catch (e) { toast('Náði ekki að vista: ' + (e.message || e)); }
@@ -1992,9 +2031,10 @@
       renderSel();
       return;
     }
-    // Spjaldið á aldrei að standa tómt við hliðina á fullum lista, og valið mál
-    // sem dettur út úr síunni má ekki sitja eftir.
-    if (!rows.some(x => String(x.id) === String(state.selId))) state.selId = rows[0].id;
+    // Keep VALIÐ MÁL on the ticket the user is editing even if it just left
+    // the worker filter (assign to Agnar while "Allir nema Agnar" is on).
+    // Only jump to another row when the selected ticket is gone entirely.
+    state.selId = keepSelectedId(state.selId, rows, allItems());
 
     let html = '';
 
@@ -2203,7 +2243,7 @@
         // FYLGISKJÖL — sýnd alltaf (nema á verkdagbók-færslum)
         (!r._vd ? attSectionHTML(r) : '') +
         (editing
-          ? '<div id="vb-sel-ed" style="margin-top:4px;padding-top:12px;border-top:1px solid #eef0f2">' + renderEditor(r) + '</div>'
+          ? '<div id="vb-sel-ed" data-id="' + esc(String(r.id)) + '" style="margin-top:4px;padding-top:12px;border-top:1px solid #eef0f2">' + renderEditor(r) + '</div>'
           : '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;padding-top:12px;border-top:1px solid #eef0f2">' +
               (r._vd
                 ? '<button class="vb-btn" data-act="vd-open" data-id="' + esc(r.id) + '">📓 Opna í Verkdagbók</button>' +
@@ -2365,8 +2405,8 @@
         '<div><label>Staða</label><select data-field="status">' + statusOpts + '</select></div>' +
         '<div><label>Forgangur</label><select data-field="priority">' + prioOpts + '</select></div>' +
         '<div><label>Starfsmaður</label><select data-field="assigned_to">' +
-          '<option value=""' + (!effectiveAssignee(r) ? ' selected' : '') + '>👤 Allir</option>' +
-          WORKERS.map(w => '<option value="' + w + '"' + (effectiveAssignee(r) === w ? ' selected' : '') + '>' + w + '</option>').join('') +
+          '<option value=""' + (!editorAssigneeValue(r) ? ' selected' : '') + '>👤 Allir</option>' +
+          WORKERS.map(w => '<option value="' + w + '"' + (editorAssigneeValue(r) === w ? ' selected' : '') + '>' + w + '</option>').join('') +
         '</select></div>' +
         '<div><label>Gjalddagi / dagsetning</label><input type="date" data-field="due_at" value="' + dueVal + '"></div>' +
       '</div>' +
@@ -2862,10 +2902,12 @@
       } else {
         saveRow(id, { [f]: val });
       }
-      if (f === 'status' || f === 'type' || f === 'assigned_to') { renderControls(); renderList(); refreshBadge(); }
+      if (f === 'status' || f === 'type' || f === 'assigned_to') { renderControls(); renderList(); renderSel(); refreshBadge(); }
     });
   }
-  function currentEditorId() { return state.expandedId; }
+  function currentEditorId(el) {
+    return resolveEditorRowId(el, state.selId, state.expandedId);
+  }
   function doAdd(expand) {
     const inp = document.getElementById('vb-add-input'); if (!inp) return;
     const cust = document.getElementById('vb-add-cust');
@@ -3151,6 +3193,7 @@
   window.Verkbord = {
     open: show, reload: load, importOld, applyActions,
     isOldYearReport, effectiveAssignee, matchesWorker, assignedForNew,
+    editorAssigneeValue, coerceRowId, resolveEditorRowId, keepSelectedId,
     parseDraftSummary, encodeDraftSummary, buildVilla, foldName
   };
   console.log('[patch-231] Verkborð installed — App.switchView("verkbord")');
