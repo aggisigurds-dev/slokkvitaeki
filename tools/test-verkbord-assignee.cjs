@@ -2,8 +2,9 @@
 'use strict';
 /**
  * Keep in sync with assignee helpers in js/patches/231-verkbord.js
- * (assignedForNew, editorAssigneeValue, resolveEditorRowId, keepSelectedId,
- * workerFilterOptionsHtml) and isOldYearReport / tools/test-old-year-report.cjs
+ * (assignedForNew, defaultAddWorker, addWorkerOptionsHtml, editorAssigneeValue,
+ * resolveEditorRowId, keepSelectedId, workerFilterOptionsHtml) and
+ * isOldYearReport / tools/test-old-year-report.cjs
  */
 const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
 const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
@@ -14,6 +15,18 @@ function normAssignee(v) {
 }
 function assignedForNew(worker) {
   return normAssignee(worker) || null;
+}
+function defaultAddWorker(filter, stateWorker) {
+  return assignedForNew(filter != null ? filter : stateWorker);
+}
+function addWorkerOptionsHtml(filter, stateWorker) {
+  const cur = defaultAddWorker(filter, stateWorker) || '';
+  let html = '<option value=""' + (!cur ? ' selected' : '') + '>—</option>';
+  for (let i = 0; i < WORKERS.length; i++) {
+    const w = WORKERS[i];
+    html += '<option value="' + w + '"' + (cur === w ? ' selected' : '') + '>' + w + '</option>';
+  }
+  return html;
 }
 const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Sara'];
 const WORKER_FILTERS = [
@@ -187,6 +200,19 @@ ok('assignedForNew empty is null', assignedForNew('') === null);
 ok('assignedForNew Allir is null', assignedForNew('Allir') === null);
 ok('assignedForNew Agnar is Agnar', assignedForNew('Agnar') === 'Agnar');
 ok('assignedForNew Anni is Anni', assignedForNew('Anni') === 'Anni');
+ok('default add from Anni filter is Anni', defaultAddWorker('Anni', 'Hákon') === 'Anni');
+ok('default add from nema_agnar is empty', defaultAddWorker('nema_agnar', 'Hákon') === null);
+ok('default add from allir is empty', defaultAddWorker('allir', 'Anni') === null);
+ok('default add from Agnar filter is Agnar', defaultAddWorker('Agnar', null) === 'Agnar');
+ok('default add falls back to state worker', defaultAddWorker(null, 'Anni') === 'Anni');
+ok('default add undefined filter uses state', defaultAddWorker(undefined, 'Binni') === 'Binni');
+ok('default add Charlize filter is Charlize', defaultAddWorker('Charlize', 'nema_agnar') === 'Charlize');
+ok('default add new Sara filter is Sara', defaultAddWorker('Sara', 'nema_agnar') === 'Sara');
+const anniAddHtml = addWorkerOptionsHtml('Anni');
+ok('composer select marks Anni selected', /value="Anni" selected/.test(anniAddHtml));
+ok('composer select does not mark empty when Anni', !/<option value="" selected>/.test(anniAddHtml));
+ok('composer select empty when staff board', /<option value="" selected>/.test(addWorkerOptionsHtml('nema_agnar')));
+ok('composer select marks Agnar when Agnar filter', /value="Agnar" selected/.test(addWorkerOptionsHtml('Agnar')));
 ok('assignedForNew Binni is Binni', assignedForNew('Binni') === 'Binni');
 ok('assignedForNew Charlize is Charlize', assignedForNew('Charlize') === 'Charlize');
 ok('assignedForNew Sara is Sara', assignedForNew('Sara') === 'Sara');
