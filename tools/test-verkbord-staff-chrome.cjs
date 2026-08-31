@@ -5,7 +5,7 @@
  * showOwnerChrome in js/patches/231-verkbord.js.
  *
  * Extra chrome is visible iff the worker filter is Agnar (and the operator is
- * not a named non-Agnar). Logged-in Agnar + Sara filter must hide extras.
+ * not a named non-Agnar). Logged-in Agnar + Bjarndís filter must hide extras.
  */
 function foldName(s) {
   return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -54,6 +54,7 @@ ok('Anni is not Agnar', !looksLikeAgnar('Anni'));
 ok('Hákon is not Agnar', !looksLikeAgnar('Hákon'));
 ok('Charlize is not Agnar', !looksLikeAgnar('Charlize'));
 ok('Sara is not Agnar', !looksLikeAgnar('Sara'));
+ok('Bjarndís is not Agnar', !looksLikeAgnar('Bjarndís'));
 ok('Aggi is not Agnar', !looksLikeAgnar('Aggi'));
 ok('nema_agnar is not Agnar', !looksLikeAgnar('nema_agnar'));
 ok('Allir án Agnars is not Agnar', !looksLikeAgnar('Allir án Agnars'));
@@ -69,7 +70,8 @@ ok('empty identities office default Agnar', isAgnarFromNames([]));
 ok('override false forces staff', !isAgnarFromNames(['Agnar'], false));
 ok('override true forces Agnar', isAgnarFromNames(['Anni'], true));
 
-ok('Sara filter hides extras even for Agnar operator', !showOwnerChrome('Sara', true));
+ok('Bjarndís filter hides extras even for Agnar operator', !showOwnerChrome('Bjarndís', true));
+ok('leftover Sara filter hides extras even for Agnar operator', !showOwnerChrome('Sara', true));
 ok('Anni filter hides extras even for Agnar operator', !showOwnerChrome('Anni', true));
 ok('Hákon filter hides extras even for Agnar operator', !showOwnerChrome('Hákon', true));
 ok('Charlize filter hides extras even for Agnar operator', !showOwnerChrome('Charlize', true));
@@ -78,7 +80,7 @@ ok('nema_agnar filter hides extras even for Agnar operator', !showOwnerChrome('n
 ok('Agnar filter shows extras for Agnar operator', showOwnerChrome('Agnar', true));
 ok('Agnar filter hidden for Anni operator', !showOwnerChrome('Agnar', false));
 ok('unnamed office + Agnar filter shows extras', showOwnerChrome('Agnar', isAgnarFromNames(['Slökkvitæki'])));
-ok('unnamed office + Sara filter hides extras', !showOwnerChrome('Sara', isAgnarFromNames(['Slökkvitæki'])));
+ok('unnamed office + Bjarndís filter hides extras', !showOwnerChrome('Bjarndís', isAgnarFromNames(['Slökkvitæki'])));
 
 const fs = require('fs');
 const path = require('path');
@@ -88,10 +90,12 @@ const v231 = fs.readFileSync(path.join(root, 'js/patches/231-verkbord.js'), 'utf
 const v287 = fs.readFileSync(path.join(root, 'js/patches/287-postar-queue.js'), 'utf8');
 const v343 = fs.readFileSync(path.join(root, 'js/patches/343-verkbord-ai.js'), 'utf8');
 
-ok('cache-bust 231 ?v=20260831tw2', html.includes('231-verkbord.js?v=20260831tw2'));
+ok('cache-bust 231 ?v=20260831bjd', html.includes('231-verkbord.js?v=20260831bjd'));
 ok('cache-bust 343 ?v=20260831sc6', html.includes('343-verkbord-ai.js?v=20260831sc6'));
 ok('cache-bust 287 ?v=20260831sc6', html.includes('287-postar-queue.js?v=20260831sc6'));
-ok('231 defines showOwnerChrome', v231.includes('function showOwnerChrome()'));
+ok('231 WORKERS has Bjarndís', /const WORKERS = \[[^\]]*Bjarndís/.test(v231));
+ok('231 WORKERS slot is not Sara', !/const WORKERS = \[[^\]]*Sara/.test(v231));
+ok('231 filter label is Bjarndís', v231.includes("['Bjarndís', 'Bjarndís']"));
 ok('231 chrome follows worker filter', v231.includes('looksLikeAgnar(state.fWorker) && isAgnarUser()'));
 ok('231 renderControls uses showOwnerChrome', v231.includes('const agnar = showOwnerChrome()'));
 ok('231 applyStaffChrome uses showOwnerChrome', v231.includes('const staff = !showOwnerChrome()'));
