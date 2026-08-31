@@ -71,6 +71,68 @@
     } catch (_) {}
     return 'Slökkvitæki';
   }
+  // Match by folded first token so "Agnar Sigurðsson" counts; do not treat
+  // "nema_agnar" / "Allir án Agnars" / Anni / Sara as Agnar. Ambiguous leftover
+  // strings that are not Agnar are staff. An unnamed office session (no
+  // UserAuth / bs_employee) is Agnar's machine — secondary lock only.
+  function looksLikeAgnar(raw) {
+    const s = String(raw == null ? '' : raw).trim();
+    if (!s) return false;
+    const f = foldName(s);
+    if (!f) return false;
+    const token = f.split(/\s+/)[0];
+    return token === 'agnar' || token === 'aggisigurds';
+  }
+  function isGenericOperatorName(raw) {
+    const f = foldName(raw).replace(/\s+/g, '');
+    return !f || f === 'slokkvitki' || f === 'slokkvitaeki' || f === 'starfsmaur' || f === 'starfsmadur' || f === 'kassi' || f === 'app';
+  }
+  function operatorIdentityNames() {
+    const names = [];
+    try {
+      const p = window.UserAuth && UserAuth.getProfile && UserAuth.getProfile();
+      if (p && p.nafn) names.push(p.nafn);
+      const u = window.UserAuth && UserAuth.getUser && UserAuth.getUser();
+      if (u && u.email) names.push(String(u.email).split('@')[0]);
+    } catch (_) {}
+    try {
+      names.push(localStorage.getItem('ky_me') || '');
+      names.push(localStorage.getItem('ky_eg') || '');
+      names.push(localStorage.getItem('bs_employee') || '');
+      names.push(localStorage.getItem('starfsmadur') || '');
+    } catch (_) {}
+    names.push(currentUser());
+    return names;
+  }
+  function isAgnarFromNames(names, override) {
+    if (override === true) return true;
+    if (override === false) return false;
+    const list = Array.isArray(names) ? names : [];
+    for (let i = 0; i < list.length; i++) {
+      const n = list[i];
+      if (n == null || n === '') continue;
+      if (isGenericOperatorName(n)) continue;
+      return looksLikeAgnar(n);
+    }
+    return true;
+  }
+  function isAgnarUser() {
+    let override;
+    try { override = window.__vbAgnar; } catch (_) {}
+    return isAgnarFromNames(operatorIdentityNames(), override);
+  }
+  // Extra chrome (AI borð, Innhólf/Allt/Verkefni/Lokað/Póstar, Snjallröðun/Þétt,
+  // Sækja póst / Kúnnaskrá / 2023–25) follows the NAME DROPDOWN, not who is
+  // logged in. Agnar 2026-08-31 follow-up: Sara selected must hide extras even
+  // on Agnar's office session. Picking Agnar in the filter brings them back.
+  // isAgnarUser() is only a secondary lock. Do not gate chrome on isAgnarUser()
+  // alone — that was the live bug (Sara filter, extras still visible).
+  function showOwnerChrome() {
+    return looksLikeAgnar(state.fWorker) && isAgnarUser();
+  }
+  function effectiveQueue() {
+    return showOwnerChrome() ? state.queue : 'allt';
+  }
 
   // ── reference data ───────────────────────────────────────────────────────
   // Unified type vocabulary. Includes the legacy keys patch #182 wrote so old
@@ -117,7 +179,8 @@
 
   // ── Merki/tags (2026-07-10, ósk Agnars — sama sett og gamla Þjónustuverk-borðið)
   // Geymd í thjonustubeidni.tags (jsonb fylki, additive dálkur). Mörg merki per
-  // beiðni; sían efst telur og síar; ritillinn togglar.
+  // beiðni; sían efst telur og síar; ritillinn togglar. Starfsmanna-tög
+  // (starfs:Hákon) búa í sama fylki en rowTags síar þau frá merki-viðmótinu.
   const TAGS = {
     // 2026-08-31 (ósk Agnars): forvinna tilbúin — reikningur, skýrsla, viðhengi,
     // slóðir, svar-drög, samskiptasaga og sönnun á villunni. Starfsfólk yfirfer.
@@ -252,10 +315,21 @@
     return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear();
   }
 
-  function rowTags(r) {
+  function rawTagList(r) {
     let t = r && r.tags;
     if (typeof t === 'string') { try { t = JSON.parse(t); } catch (_) { t = []; } }
-    return Array.isArray(t) ? t.filter(x => TAGS[x]) : [];
+    if (!Array.isArray(t)) return [];
+    const out = [];
+    for (let i = 0; i < t.length; i++) {
+      const x = t[i];
+      if (typeof x !== 'string') continue;
+      const s = x.trim();
+      if (s && out.indexOf(s) === -1) out.push(s);
+    }
+    return out;
+  }
+  function rowTags(r) {
+    return rawTagList(r).filter(function (x) { return TAGS[x]; });
   }
   function tagChip(t, small) {
     const d = TAGS[t]; if (!d) return '';
@@ -413,8 +487,14 @@
     const w = filter != null ? filter : state.fWorker;
     if (!w || w === 'allir') return true;
     const who = effectiveAssignee(r, now);
-    if (w === 'nema_agnar') return who !== 'Agnar';
-    return who === w;
+    const tagged = taggedWorkers(r);
+    if (w === 'nema_agnar') {
+      if (who !== 'Agnar') return true;
+      for (let i = 0; i < tagged.length; i++) if (tagged[i] !== 'Agnar') return true;
+      return false;
+    }
+    if (who === w) return true;
+    return tagged.indexOf(w) !== -1;
   }
   function knownWorkerFilter(v) {
     if (v === 'nema_agnar') return true;
@@ -449,6 +529,92 @@
     for (let i = 0; i < names.length; i++) {
       const w = names[i];
       html += '<option value="' + w + '"' + (cur === w ? ' selected' : '') + '>' + w + '</option>';
+    }
+    return html;
+  }
+  // 2026-08-31 (ósk Agnars): létt tag á annan starfsmann án þess að stela
+  // assigned_to. Geymt í tags sem „starfs:Hákon". Hákon sér málið á sínu
+  // borði; aðalstarfsmaðurinn er óbreyttur. Keep in sync with
+  // tools/test-verkbord-assignee.cjs
+  const WORKER_TAG_PREFIX = 'starfs:';
+  function taggedWorkers(r) {
+    const names = [];
+    const raw = rawTagList(r);
+    for (let i = 0; i < raw.length; i++) {
+      const t = raw[i];
+      if (t.indexOf(WORKER_TAG_PREFIX) !== 0) continue;
+      const n = t.slice(WORKER_TAG_PREFIX.length).trim();
+      if (!n || WORKER_SENTINELS[n]) continue;
+      if (names.indexOf(n) === -1) names.push(n);
+    }
+    return names;
+  }
+  function extraTags(r) {
+    return rawTagList(r).filter(function (x) {
+      return !TAGS[x] && x.indexOf(WORKER_TAG_PREFIX) !== 0;
+    });
+  }
+  function composeTags(categoryTags, workers, extras) {
+    const cats = [];
+    (categoryTags || []).forEach(function (t) {
+      if (TAGS[t] && cats.indexOf(t) === -1) cats.push(t);
+    });
+    const wtags = [];
+    (workers || []).forEach(function (n) {
+      const name = String(n == null ? '' : n).trim();
+      if (!name || WORKER_SENTINELS[name]) return;
+      const tok = WORKER_TAG_PREFIX + name;
+      if (wtags.indexOf(tok) === -1) wtags.push(tok);
+    });
+    const rest = [];
+    (extras || []).forEach(function (x) {
+      if (typeof x === 'string' && x && rest.indexOf(x) === -1) rest.push(x);
+    });
+    return cats.concat(wtags).concat(rest);
+  }
+  function tagsWithCategory(row, nextCats) {
+    return composeTags(nextCats, taggedWorkers(row), extraTags(row));
+  }
+  function tagsWithWorkers(row, workers) {
+    const primary = editorAssigneeValue(row);
+    const cleaned = [];
+    (workers || []).forEach(function (n) {
+      if (n && n !== primary && cleaned.indexOf(n) === -1) cleaned.push(n);
+    });
+    return composeTags(rowTags(row), cleaned, extraTags(row));
+  }
+  function toggleTaggedWorker(row, name) {
+    const n = String(name == null ? '' : name).trim();
+    if (!n || WORKER_SENTINELS[n] || n === editorAssigneeValue(row)) {
+      return tagsWithWorkers(row, taggedWorkers(row));
+    }
+    const cur = taggedWorkers(row).slice();
+    const i = cur.indexOf(n);
+    if (i === -1) cur.push(n); else cur.splice(i, 1);
+    return tagsWithWorkers(row, cur);
+  }
+  function taggedListChipsHtml(r) {
+    const tagged = taggedWorkers(r);
+    if (!tagged.length) return '';
+    return tagged.map(function (n) {
+      return '<span title="Taggaður — sér málið, er ekki aðalstarfsmaður" style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4;white-space:nowrap">🏷 ' + esc(n) + '</span>';
+    }).join('');
+  }
+  function tagWorkerButtonsHtml(r) {
+    const primary = editorAssigneeValue(r);
+    const tagged = taggedWorkers(r);
+    let html = '';
+    for (let i = 0; i < WORKERS.length; i++) {
+      const w = WORKERS[i];
+      if (w === primary) continue;
+      const on = tagged.indexOf(w) !== -1;
+      html += '<button data-act="tagworker" data-id="' + esc(String(r.id)) + '" data-worker="' + esc(w) + '" type="button" title="' +
+        (on ? 'Taka ' + w + ' af málinu' : 'Tagga ' + w + ' svo viðkomandi sjái málið — án þess að taka það yfir') + '" ' +
+        'style="font-family:inherit;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;cursor:pointer;' +
+        (on
+          ? 'color:#0f766e;background:#ccfbf1;border:1.5px solid #14b8a6'
+          : 'color:#64748b;background:#fff;border:1px solid #d8dadf') + '">' +
+        (on ? '🏷 ' : '') + esc(w) + '</button>';
     }
     return html;
   }
@@ -527,6 +693,7 @@
     search: '',
     addType: 'annad',
     addTags: [],        // merki valin í ný-beiðni línunni (hreinsast eftir skráningu)
+    addTagged: [],      // auka starfsmenn (starfs:X) við nýtt mál
     threadLatest: {},   // beidniId → nýjasti póstur í þræðinum (sjá loadThreadLatest)
     attachments: {},    // beidniId → [{ id, name, path, url, mime_type, size }]
     draftPack: {},      // beidniId → forvinna { invoice, report, thread, villa, reply, links }
@@ -559,6 +726,9 @@
     state.fWorker = v || 'nema_agnar';
     try { localStorage.setItem(WKEY, state.fWorker); } catch (_) {}
     syncAddWorkerSelect();
+    applyStaffChrome();
+    if (document.getElementById('vb-controls')) renderControls();
+    if (window.VerkbordAi) { try { VerkbordAi.mount(); } catch (_) {} }
   }
 
   // verkdagbok rows → pseudo work-items (read-through; structure stays in #04).
@@ -605,6 +775,7 @@
     state.loading = false;
     renderControls(); renderList(); refreshBadge();
     claimOldJobs();
+    applyStaffChrome();
     if (window.VerkbordAi) { try { VerkbordAi.mount(); } catch (_) {} }
     // Nýjasta svarið í þræðinum (2026-07-10, ósk Agnars): ✨-samantektin/forsýnin
     // gat sýnt GAMALT efni úr miðjum póstþræði (löngu afgreitt). Flettum upp
@@ -718,7 +889,7 @@
     return state.companies;
   }
 
-  async function quickAdd(title, type, custName, expand, tags, rsk, worker) {
+  async function quickAdd(title, type, custName, expand, tags, rsk, worker, extraWorkers) {
     title = (title || '').trim();
     if (!title) return;
     const SB = getSB(); if (!SB) { toast('Engin gagnabankatenging'); return; }
@@ -735,11 +906,14 @@
     if (!baseId && rsk && rsk.inSystem && rsk.baseId) { baseId = rsk.baseId; custName = custName || rsk.nafn; }
     // RSK-fyrirtæki sem er EKKI á skrá: kt + heimilisfang fylgja í nótunum.
     const rskNote = (rsk && !rsk.inSystem && !baseId) ? 'RSK: kt ' + rsk.kt + (rsk.heimilisfang ? ' · ' + rsk.heimilisfang : '') : '';
+    const primary = assignedForNew(worker);
+    const extra = (extraWorkers || []).filter(function (n) { return n && n !== primary; });
+    const cats = Array.isArray(tags) ? tags.filter(function (t) { return TAGS[t]; }) : [];
     const obj = {
       title, notes: rskNote, type: type || 'annad', status: 'nytt', priority: 'venjulegur',
       customer_nafn: custName || null, customer_base_id: baseId,
-      assigned_to: assignedForNew(worker),
-      tags: Array.isArray(tags) ? tags : [],
+      assigned_to: primary,
+      tags: composeTags(cats, extra, []),
       source: 'beint', important: false, created_at: nowIso(), created_by: currentUser(), updated_at: nowIso()
     };
     try {
@@ -991,9 +1165,10 @@
     if (ta) pack.reply = ta.value;
     const tags = rowTags(r);
     if (tags.indexOf('draft') === -1) tags.push('draft');
-    await saveRow(r.id, { summary: encodeDraftSummary(pack), tags: tags });
+    const nextTags = tagsWithCategory(r, tags);
+    await saveRow(r.id, { summary: encodeDraftSummary(pack), tags: nextTags });
     r.summary = encodeDraftSummary(pack);
-    r.tags = tags;
+    r.tags = nextTags;
     toast('📝 Draft vistað — reikningur, skýrsla og svar-drög á málinu');
     renderControls(); renderList(); renderSel();
   }
@@ -1156,6 +1331,10 @@
           '<select id="vb-sel-worker" data-field="assigned_to" data-id="' + bid + '" title="Setja mál á starfsmann" ' +
           'style="text-transform:none;letter-spacing:0;height:26px;padding:0 8px;border-radius:7px;border:1px solid #d8dadf;background:#fff;color:#16181d;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">' +
           assigneeOptionsHtml(r) + '</select></label>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
+        '<span style="font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px">Tagga starfsmann</span>' +
+        tagWorkerButtonsHtml(r) +
       '</div>' +
       (atts.length
         ? atts.map(function (a) {
@@ -1323,13 +1502,14 @@
     return d < 0 ? 0 : d;
   }
   function inQueue(r) {
+    const q = effectiveQueue();
     if (isOldYearReport(r) && !state.showOldReports) {
-      if (state.queue === 'lokad') return !isOpen(r);
+      if (q === 'lokad') return !isOpen(r);
       return false;
     }
-    if (state.queue === 'lokad') return !isOpen(r);
-    if (state.queue === 'post') return isOpen(r) && isPost(r) && (state.showOld ? true : !isArchived(r));
-    if (state.queue === 'allt') return isOpen(r) && !isArchived(r);
+    if (q === 'lokad') return !isOpen(r);
+    if (q === 'post') return isOpen(r) && isPost(r) && (state.showOld ? true : !isArchived(r));
+    if (q === 'allt') return isOpen(r) && !isArchived(r);
     return isOpen(r) && !isPost(r) && !isArchived(r);
   }
   // 2026-07-10: gamla type-sían fjarlægð (flokkun fer nú gegnum MERKI). Hlutlaus
@@ -1375,7 +1555,7 @@
     }
     // Innhólfið raðast sér: ósvarað ELST efst (því lengur sem kúnni bíður, því
     // ofar), svo svarað/upplýsingar nýjast efst, geymslan (ef sýnd) aftast.
-    if (state.queue === 'post' && state.sort !== 'nyjast') {
+    if (effectiveQueue() === 'post' && state.sort !== 'nyjast') {
       r.sort((a, b) => {
         const aa = isArchived(a) ? 1 : 0, ba = isArchived(b) ? 1 : 0;
         if (aa !== ba) return aa - ba;
@@ -1715,8 +1895,24 @@
       html[data-theme="dark"] #view-verkbord .card,
       html[data-theme="dark"] #view-verkbord table {
         background: #fff !important; color: #11141c !important; border-color: #e5e7eb !important; }
+      /* Staff chrome: hide AI borð slot so 343 cannot leave a 16px hole. */
+      #view-verkbord.vb-staff #vb-ai-slot { display: none !important; margin: 0 !important; height: 0 !important;
+        overflow: hidden !important; padding: 0 !important; }
     `;
     document.head.appendChild(s);
+  }
+
+  function applyStaffChrome() {
+    const staff = !showOwnerChrome();
+    const view = document.getElementById(VIEW_ID);
+    if (view) view.classList.toggle('vb-staff', staff);
+    const slot = document.getElementById('vb-ai-slot');
+    if (slot) {
+      slot.style.display = staff ? 'none' : '';
+      if (staff) slot.innerHTML = '';
+    }
+    const chip = document.getElementById('vb-postar-chip');
+    if (staff && chip && chip.parentNode) chip.parentNode.removeChild(chip);
   }
 
   // ── render (Þjónustuverk v3 — speglar Thjonustuverkv3.dc.html) ────────────
@@ -1783,6 +1979,16 @@
                 d.emoji + ' ' + esc(d.label) + '</button>';
             }).join('') +
           '</div>' +
+          '<div class="vb-scroll" id="vb-add-tagged" style="align-items:center;margin-top:8px;display:none">' +
+            '<span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#94a3b8;margin-right:1px">TAGGA LÍKA</span>' +
+            WORKERS.map(function (w) {
+              const on = state.addTagged.indexOf(w) !== -1;
+              return '<button data-act="addtagged" data-worker="' + w + '" type="button" title="Tagga ' + w + ' án þess að setja málið á hann" ' +
+                'style="font-family:inherit;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;cursor:pointer;' +
+                (on ? 'color:#0f766e;background:#ccfbf1;border:1.5px solid #14b8a6' : 'color:#64748b;background:#fff;border:1px solid #d8dadf') + '">' +
+                (on ? '🏷 ' : '') + w + '</button>';
+            }).join('') +
+          '</div>' +
         '</div>' +
         // Stjórnkortið loðir við toppinn svo flipar/síur séu alltaf við höndina
         // þegar skrunað er niður langan flokkalista.
@@ -1802,6 +2008,7 @@
       '</div>';
     renderControls(); renderList(); renderSel();
     syncAddTags();
+    applyStaffChrome();
     // renderAll skrifar yfir allt #vb-main, svo dagskráin er teiknuð aftur hér.
     if (window.Vikudagskra) { try { Vikudagskra.mount(); } catch (e) { console.warn('[verkbord] dagskrá:', e); } }
     if (window.Skipulagsbord) { try { Skipulagsbord.mount(); } catch (e) { console.warn('[verkbord] skipulagsbord:', e); } }
@@ -1814,17 +2021,24 @@
   function syncAddTags() {
     const row = document.getElementById('vb-add-tags'); if (!row) return;
     const inp = document.getElementById('vb-add-input');
-    const show = !!(inp && inp.value.trim()) || state.addTags.length > 0;
+    const show = !!(inp && inp.value.trim()) || state.addTags.length > 0 || state.addTagged.length > 0;
     row.style.display = show ? '' : 'none';
+    const tagged = document.getElementById('vb-add-tagged');
+    if (tagged) tagged.style.display = show ? '' : 'none';
   }
 
   // Stjórnkortið (v3): Innhólf/Allt/Verkefni/Lokað flipar + leit + röðun/sýn,
   // skil, svo TÖG-síuröðin (⭐ Áríðandi + dökk-metal merkjachippar með teljara).
+  // Extra chrome only when the name dropdown is Agnar. Sara / Anni / Hákon /
+  // Charlize / Binni / Allir án Agnars get nafnaval + leit ofan TÖG — engin AI-borð,
+  // biðraðir, Snjallröðun/Þétt né Sækja póst / Kúnnaskrá / 2023–25.
   function renderControls() {
     const el = document.getElementById('vb-controls'); if (!el) return;
     const c = counts();
     const noiseN = allItems().filter(x => isOpen(x) && isPaymentNoise(x) && matchesWorker(x)).length;
     const oldRepN = c.oldReports;
+    const agnar = showOwnerChrome();
+    applyStaffChrome();
     // Morgunlínan undir síðutitlinum (mono, á dökka bandinu).
     const mg = document.getElementById('vb-morgun');
     if (mg) mg.textContent =
@@ -1841,55 +2055,61 @@
         icon + label +
         '<span style="font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,.16);border-radius:9px;padding:1px 7px">' + n + '</span></button>';
     };
+    const searchHtml =
+      '<div style="position:relative;flex:1 1 200px;min-width:160px;max-width:260px">' +
+        '<span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9aa3b5;font-size:13px">🔎</span>' +
+        '<input class="malSearch" id="vb-search" placeholder="Leita í málum…" value="' + esc(state.search) + '" ' +
+          'style="width:100%;height:38px;padding:0 12px 0 34px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#141822;font-family:inherit;font-size:13px;outline:none;box-shadow:inset 0 1px 2px rgba(20,30,60,.05)">' +
+      '</div>';
+    const workerHtml =
+      '<select id="vb-worker-filter" title="Sía eftir starfsmanni" style="height:38px;padding:0 10px;border-radius:11px;' +
+        (state.fWorker && state.fWorker !== 'nema_agnar'
+          ? 'border:1.5px solid #a5b4fc;background:linear-gradient(180deg,#3730a3,#1e1b4b);color:#e0e7ff;box-shadow:0 0 12px -2px #818cf8;text-shadow:0 0 8px #a5b4fc'
+          : 'border:1px solid #0a0b0d;background:linear-gradient(180deg,#26272c,#0d0e10);color:#fff') +
+        ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;outline:none">' +
+        workerFilterOptions() +
+      '</select>';
+
+    const topRow = agnar
+      ? ('<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(20,24,34,.08);flex-wrap:wrap">' +
+          '<div class="vb-scroll" style="width:auto;flex:1 1 auto;min-width:0">' +
+            tab('post', '📥 ', 'Innhólf', c.post) +
+            tab('allt', '☰ ', 'Allt', c.allt) +
+            tab('verk', '📋 ', 'Verkefni', c.verk) +
+            tab('lokad', '✓ ', 'Lokað', c.lokad) +
+          '</div>' +
+          searchHtml +
+          '<div class="vb-scroll" style="width:auto;flex:0 1 auto">' +
+            '<button data-act="sort" data-s="snjall" title="Áríðandi og gjalddagar efst — hreinsar dálkaröðun" ' +
+              'style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:11px;' + (state.sort !== 'nyjast' && !state.colSort ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.9)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">⭐ Snjallröðun</button>' +
+            '<span style="display:inline-flex;border:1px solid #0a0b0d;border-radius:11px;overflow:hidden">' +
+              '<button data-act="viewmode" data-vm="thett" style="height:38px;padding:0 13px;border:0;' + (state.viewMode === 'thett' ? V3_METAL_ON.replace('border:1px solid #0a0b0d;', '') + ';color:#fff' : V3_METAL.replace('border:1px solid #0a0b0d;', '') + ';color:rgba(255,255,255,.6)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">☰ Þétt</button>' +
+              '<button data-act="viewmode" data-vm="itarlegt" style="height:38px;padding:0 13px;border:0;border-left:1px solid rgba(20,24,34,.3);' + (state.viewMode !== 'thett' ? V3_METAL_ON.replace('border:1px solid #0a0b0d;', '') + ';color:#fff' : V3_METAL.replace('border:1px solid #0a0b0d;', '') + ';color:rgba(255,255,255,.6)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">▮ Ítarlegt</button>' +
+            '</span>' +
+            workerHtml +
+            '<button data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (engin tvítök)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:rgba(255,255,255,.85);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✉️ Sækja póst</button>' +
+            '<a href="kunnaskra.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#7ee0c0;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🗂️ Kúnnaskrá</a><a href="postsvorun.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#f0b866;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">📨 Póstsvörun</a>' +
+            (noiseN ? '<button data-act="clearnoise" title="Fela allar Payday-greiðslutilkynningar í einu (endurheimtanlegt)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#ff8a82;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🧹 ' + noiseN + '</button>' : '') +
+            (oldRepN ? '<button data-act="clearoldrep" title="Fela skýrslumál 2023–2025 varanlega í geymslu. Þau eru nú þegar falin á opnum biðröðum." style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#fde68a;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">📄 2023–25 · ' + oldRepN + '</button>' : '') +
+            (oldRepN ? '<button data-act="showoldrep" title="Sýna samt skýrslumál 2023–2025" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' +
+              (state.showOldReports ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.85)') +
+              ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">' +
+              (state.showOldReports ? '▲ Fela 2023–25' : 'Sýna 2023–25') + '</button>' : '') +
+            ((state.queue === 'post' && (c.geymsla || state.showOld))
+              ? '<button data-act="showold" title="Póstur í geymslu er aldrei eytt — sýna/fela hann hér" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' +
+                (state.showOld ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.85)') +
+                ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">' +
+                (state.showOld ? '▲ Fela geymslu' : '📦 Geymsla · ' + c.geymsla) + '</button>'
+              : '') +
+          '</div>' +
+        '</div>')
+      : ('<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(20,24,34,.08);flex-wrap:wrap">' +
+          workerHtml +
+          searchHtml +
+        '</div>');
 
     el.innerHTML =
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(20,24,34,.08);flex-wrap:wrap">' +
-        '<div class="vb-scroll" style="width:auto;flex:1 1 auto;min-width:0">' +
-          tab('post', '📥 ', 'Innhólf', c.post) +
-          tab('allt', '☰ ', 'Allt', c.allt) +
-          tab('verk', '📋 ', 'Verkefni', c.verk) +
-          tab('lokad', '✓ ', 'Lokað', c.lokad) +
-        '</div>' +
-        '<div style="position:relative;flex:1 1 200px;min-width:160px;max-width:260px">' +
-          '<span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9aa3b5;font-size:13px">🔎</span>' +
-          '<input class="malSearch" id="vb-search" placeholder="Leita í málum…" value="' + esc(state.search) + '" ' +
-            'style="width:100%;height:38px;padding:0 12px 0 34px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#141822;font-family:inherit;font-size:13px;outline:none;box-shadow:inset 0 1px 2px rgba(20,30,60,.05)">' +
-        '</div>' +
-        '<div class="vb-scroll" style="width:auto;flex:0 1 auto">' +
-          '<button data-act="sort" data-s="snjall" title="Áríðandi og gjalddagar efst — hreinsar dálkaröðun" ' +
-            'style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:11px;' + (state.sort !== 'nyjast' && !state.colSort ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.9)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">⭐ Snjallröðun</button>' +
-          '<span style="display:inline-flex;border:1px solid #0a0b0d;border-radius:11px;overflow:hidden">' +
-            '<button data-act="viewmode" data-vm="thett" style="height:38px;padding:0 13px;border:0;' + (state.viewMode === 'thett' ? V3_METAL_ON.replace('border:1px solid #0a0b0d;', '') + ';color:#fff' : V3_METAL.replace('border:1px solid #0a0b0d;', '') + ';color:rgba(255,255,255,.6)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">☰ Þétt</button>' +
-            '<button data-act="viewmode" data-vm="itarlegt" style="height:38px;padding:0 13px;border:0;border-left:1px solid rgba(20,24,34,.3);' + (state.viewMode !== 'thett' ? V3_METAL_ON.replace('border:1px solid #0a0b0d;', '') + ';color:#fff' : V3_METAL.replace('border:1px solid #0a0b0d;', '') + ';color:rgba(255,255,255,.6)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">▮ Ítarlegt</button>' +
-          '</span>' +
-          '<select id="vb-worker-filter" title="Sía eftir starfsmanni" style="height:38px;padding:0 10px;border-radius:11px;' +
-            (state.fWorker && state.fWorker !== 'nema_agnar'
-              ? 'border:1.5px solid #a5b4fc;background:linear-gradient(180deg,#3730a3,#1e1b4b);color:#e0e7ff;box-shadow:0 0 12px -2px #818cf8;text-shadow:0 0 8px #a5b4fc'
-              : 'border:1px solid #0a0b0d;background:linear-gradient(180deg,#26272c,#0d0e10);color:#fff') +
-            ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;outline:none">' +
-            workerFilterOptions() +
-          '</select>' +
-          '<button data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (engin tvítök)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:rgba(255,255,255,.85);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✉️ Sækja póst</button>' +
-          '<a href="kunnaskra.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#7ee0c0;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🗂️ Kúnnaskrá</a><a href="postsvorun.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#f0b866;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">📨 Póstsvörun</a>' +
-          (noiseN ? '<button data-act="clearnoise" title="Fela allar Payday-greiðslutilkynningar í einu (endurheimtanlegt)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#ff8a82;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🧹 ' + noiseN + '</button>' : '') +
-          (oldRepN ? '<button data-act="clearoldrep" title="Fela skýrslumál 2023–2025 varanlega í geymslu. Þau eru nú þegar falin á opnum biðröðum." style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#fde68a;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">📄 2023–25 · ' + oldRepN + '</button>' : '') +
-          (oldRepN ? '<button data-act="showoldrep" title="Sýna samt skýrslumál 2023–2025" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' +
-            (state.showOldReports ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.85)') +
-            ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">' +
-            (state.showOldReports ? '▲ Fela 2023–25' : 'Sýna 2023–25') + '</button>' : '') +
-          // 2026-08-06: V3-endurhönnunin týndi einu leiðinni til að sjá aftur
-          // póst sem er í geymslu (ekkert eytt, bara falið) — state.showOld
-          // og smellhlustarinn voru enn til, bara enginn hnappur sem kveikti
-          // á þeim. Sýnd aðeins á Innhólf-flipanum þegar eitthvað er í geymslu
-          // (eða þegar þegar kveikt, svo hægt sé að slökkva aftur).
-          ((state.queue === 'post' && (c.geymsla || state.showOld))
-            ? '<button data-act="showold" title="Póstur í geymslu er aldrei eytt — sýna/fela hann hér" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' +
-              (state.showOld ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.85)') +
-              ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">' +
-              (state.showOld ? '▲ Fela geymslu' : '📦 Geymsla · ' + c.geymsla) + '</button>'
-            : '') +
-        '</div>' +
-      '</div>' +
+      topRow +
       // TÖG-síuröðin
       '<div class="vb-scroll" style="align-items:center">' +
         '<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#8a93a5;margin-right:2px">TÖG</span>' +
@@ -2034,6 +2254,7 @@
         (clamp ? '' : waitPill(r)) +
         // HIN merkin sem málið ber — sýnileg beint á röðinni (ósk Agnars 14.08).
         miniTagChips(r, groupKey || '') +
+        '<span style="flex:none;display:flex;flex-wrap:wrap;gap:4px;align-items:center">' + taggedListChipsHtml(r) + '</span>' +
         '<button data-act="skra" data-id="' + esc(r.id) + '" title="Setja á dagskrá" ' +
           'style="flex:none;border:1px solid #d8dadf;border-radius:7px;background:#fff;cursor:pointer;padding:3px 8px;' +
           'font-size:11px;font-weight:700;color:#4b5058;font-family:inherit' + (clamp ? ';margin-top:2px' : '') + '">🗓 Á dagskrá</button>' +
@@ -2314,7 +2535,7 @@
       '<div style="padding:14px 16px 16px">' +
         // Status chips (not interactive here — stadaPill handles advance)
         '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">' +
-          chips.map(t => dkChip(t)).join('') + waitPill(r) + stadaPill(r) +
+          chips.map(t => dkChip(t)).join('') + taggedListChipsHtml(r) + waitPill(r) + stadaPill(r) +
         '</div>' +
         // BEINT BREYTANLEGUR TITILL — vistast 500ms eftir að hætt er að slá inn
         (r._vd
@@ -2471,6 +2692,7 @@
                   : 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis') + '">' + esc(desc) + '</div>' : '') +
           (!compact ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + linkLine + flags +
             (who ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;white-space:nowrap">👤 ' + esc(who) + '</span>' : '') +
+            taggedListChipsHtml(r) +
             (r._vd ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#fef3c7;color:#92400e;border:1px solid #fde68a">📓 úr Verkdagbók</span>' : '') +
           '</div>' : '') +
           (open ? renderEditor(r) : '') +
@@ -2591,6 +2813,27 @@
         t.style.background = on ? d.color : d.color + '12';
         t.style.borderColor = d.color + (on ? '' : '44');
         syncAddTags();
+        return;
+      }
+      if (act === 'addtagged') {
+        const w = t.getAttribute('data-worker');
+        if (!w) return;
+        const i = state.addTagged.indexOf(w);
+        if (i === -1) state.addTagged.push(w); else state.addTagged.splice(i, 1);
+        const on = i === -1;
+        t.style.color = on ? '#0f766e' : '#64748b';
+        t.style.background = on ? '#ccfbf1' : '#fff';
+        t.style.border = on ? '1.5px solid #14b8a6' : '1px solid #d8dadf';
+        t.textContent = (on ? '🏷 ' : '') + w;
+        return;
+      }
+      if (act === 'tagworker') {
+        e.stopPropagation();
+        const rid = Number(t.getAttribute('data-id'));
+        const row = state.items.find(x => x.id === rid); if (!row) return;
+        const name = t.getAttribute('data-worker');
+        saveRow(rid, { tags: toggleTaggedWorker(row, name) });
+        renderControls(); renderList(); renderSel(); refreshBadge();
         return;
       }
       if (act === 'addtype') {
@@ -2733,10 +2976,10 @@
         // eftir þótt hakið segði AF — kvörtunin sem lagfærð var 2026-07-20.
         const patch = {};
         if (rowChips(row).indexOf(tg) !== -1) {
-          patch.tags = cur.filter(x => x !== tg);
+          patch.tags = tagsWithCategory(row, cur.filter(x => x !== tg));
           if (flokkTag(row) === tg) patch.flokkur = null;
         } else {
-          patch.tags = cur.concat([tg]);
+          patch.tags = tagsWithCategory(row, cur.concat([tg]));
         }
         saveRow(rid, patch);
         renderControls(); renderList(); renderSel();
@@ -3031,6 +3274,15 @@
       if (f === 'customer_nafn') {
         const match = (state.companies || []).find(c => c.nafn === val);
         saveRow(id, { customer_nafn: val || null, customer_base_id: match ? match.customer_base_id : null });
+      } else if (f === 'assigned_to') {
+        const row = state.items.find(x => String(x.id) === String(id));
+        const patch = { assigned_to: val };
+        if (row) {
+          const next = Object.assign({}, row, { assigned_to: val });
+          const tw = taggedWorkers(row).filter(function (n) { return n !== (val || ''); });
+          patch.tags = tagsWithWorkers(next, tw);
+        }
+        saveRow(id, patch);
       } else {
         saveRow(id, { [f]: val });
       }
@@ -3053,11 +3305,17 @@
     if (cust) cust.style.borderColor = '';
     const wsel = document.getElementById('vb-add-worker');
     const worker = wsel ? wsel.value : (defaultAddWorker() || '');
-    quickAdd(v, state.addType, cv, !!expand, state.addTags.slice(), rsk, worker);
+    quickAdd(v, state.addType, cv, !!expand, state.addTags.slice(), rsk, worker, state.addTagged.slice());
     state.addTags = [];
+    state.addTagged = [];
     document.querySelectorAll('#view-verkbord [data-act="addtag"]').forEach(c => {
       const d = TAGS[c.getAttribute('data-tag')]; if (!d) return;
       c.style.color = d.color; c.style.background = d.color + '12'; c.style.borderColor = d.color + '44';
+    });
+    document.querySelectorAll('#view-verkbord [data-act="addtagged"]').forEach(c => {
+      const w = c.getAttribute('data-worker');
+      c.style.color = '#64748b'; c.style.background = '#fff'; c.style.border = '1px solid #d8dadf';
+      c.textContent = w || '';
     });
     syncAddTags();
     inp.focus();
@@ -3289,7 +3547,7 @@
           const cur = rowTags(row);
           const add = Array.isArray(a.add_tags) ? a.add_tags.filter(t => TAGS[t] && cur.indexOf(t) === -1) : [];
           if (!add.length) { out.skipped++; continue; }
-          await saveRow(id, { tags: cur.concat(add) });
+          await saveRow(id, { tags: tagsWithCategory(row, cur.concat(add)) });
           out.tagged++;
         } else if (a.op === 'notes') {
           const id = Number(a.id);
@@ -3306,7 +3564,7 @@
           if (!row) { out.skipped++; continue; }
           const cur = rowTags(row);
           if (cur.indexOf('draft') === -1) cur.push('draft');
-          const patch = { tags: cur };
+          const patch = { tags: tagsWithCategory(row, cur) };
           if (a.pack && typeof a.pack === 'object') patch.summary = encodeDraftSummary(a.pack);
           else if (a.summary && String(a.summary).indexOf(DRAFT_MARK) === 0) patch.summary = String(a.summary);
           await saveRow(id, patch);
@@ -3328,7 +3586,15 @@
     editorAssigneeValue, coerceRowId, resolveEditorRowId, keepSelectedId,
     knownWorkerFilter, workerFilterOptionsHtml, assigneeOptionsHtml,
     defaultAddWorker, addWorkerOptionsHtml,
-    parseDraftSummary, encodeDraftSummary, buildVilla, foldName
+    taggedWorkers, composeTags, tagsWithCategory, tagsWithWorkers, toggleTaggedWorker,
+    parseDraftSummary, encodeDraftSummary, buildVilla, foldName,
+    looksLikeAgnar, isGenericOperatorName, isAgnarFromNames, isAgnarUser,
+    showOwnerChrome, effectiveQueue, applyStaffChrome,
+    refreshChrome: function () {
+      const main = document.getElementById('vb-main');
+      if (main) renderAll();
+      else applyStaffChrome();
+    }
   };
   console.log('[patch-231] Verkborð installed — App.switchView("verkbord")');
 })();
