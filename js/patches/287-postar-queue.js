@@ -230,7 +230,7 @@
   }
 
   function injectChip() {
-    if (window.Verkbord && Verkbord.isAgnarUser && !Verkbord.isAgnarUser()) {
+    if (window.Verkbord && Verkbord.showOwnerChrome && !Verkbord.showOwnerChrome()) {
       var me = document.getElementById(CHIP_ID);
       if (me && me.parentNode) me.parentNode.removeChild(me);
       return;
