@@ -437,6 +437,48 @@ um sama spjaldið. Reglurnar sem komu í staðinn:
 - **Flatt, ekki gljáandi.** Engir gradientar á smástökum, engar ljósdíóður,
   engir stöðudeplar.
 
+### ✅ SALA Í SÍMA ER TILBÚIN — ekki fikta, hún er varin (31.08.2026)
+
+Agnar: *„Þessi er bara tilbúinn… Sala ready í mobile view."* Þetta er eina
+símaskjámyndin sem hann hefur lýst yfir kláraðri. **Byrjaðu ekki að laga hana.**
+
+Varið ástand: á söluborðinu í síma flýtur EKKERT ofan á vöruflísunum. Aðeins
+réttmæt umgjörð stendur eftir — `.topbar` · `#_mnav_btn` (☰) · `#bstal-banner`
+· `#_app-zoom` · `#pos-checkout` (✓ ÁFRAM).
+
+Fimm fljótandi takkar úr ÖÐRUM pöppum lögðust áður ofan á vörurnar. Hver þeirra
+er fullkomlega réttmætur á sinni eigin síðu — enginn þeirra er hluti af Sölu:
+
+| Takki | Pappi | |
+|---|---|---|
+| `#pe-pagelinks` / `-doc` | 262 | „Keldan — fyrirtækjaleit" |
+| `#pat-launch` | 308 | 🤖 AI-flokka póst |
+| `#cg-sk-trigger` | 297 | 🎯 CG |
+| `#_dst-btn._float` | 326 | 📐 Dálkastjóri — engin tafla á Sölu hvort eð er |
+| `#qr-fab` | QR | 📷 — **tvítekning**: Sala hefur sinn eigin `#pos-scan-top` |
+
+Þeir eru faldir í **`js/patches/327-sala-simi-hreinsun.js`**, scope-að við
+`html:has(#view-sala.active)`. **Þetta eyðir engu** — takkarnir standa óbreyttir
+alls staðar annars staðar.
+
+**`tools/audit-sala-simi.cjs` ver þetta.** Sex varnaglar, hver sannreyndur með
+því að brjóta hann vísvitandi og staðfesta að prófið verði rautt. Þrír þeirra
+eru þess virði að lesa áður en þú snertir Sölu:
+
+- **`#pos-checkout` má ALDREI í felulistann.** ✓ ÁFRAM er eina leiðin út úr
+  körfunni. Falinn væri Sala ónothæf en liti fullkomlega rétt út — nákvæmlega
+  sú tegund villu sem skjáskot afhjúpar ekki.
+- **`#pos-scan-top` verður að lifa í `js/pos.js`.** Forsendan fyrir því að fela
+  `#qr-fab` er að hann sé tvítekning. Hverfi Skanna-hnappurinn er `#qr-fab`
+  eina skönnunarleiðin — og þá má ekki fela hann.
+- **Scope-ið má ekki víkka.** `html:has(#view-sala.active)` er það sem gerir
+  þetta að síðu-hreinsun en ekki eyðingu.
+
+⚠️ **Gamalt afrit lítur út eins og villa.** Agnar sendi skjámynd af þessum
+tökkum og þrír þeirra voru þegar farnir — hann var að skoða `localhost:5605`
+sem keyrði eldri útgáfu. Það gerðist ÞRISVAR 29.–31.08. Áður en þú lagar
+„villu" af skjámynd: staðfestu á núverandi kóða að hún sé enn til.
+
 ### Sérvirkni: ÞRJÚ afbrigði, ekki tvö
 
 Þetta beit þrisvar á einum degi (29.08). Reglan er ekki „notaðu !important" —
