@@ -1070,12 +1070,16 @@
     const atts = state.attachments[r.id] || [];
     const bid = esc(String(r.id));
     return '<div style="border-top:1px solid #f1f3f5;padding-top:10px;margin-top:6px">' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
         '<span style="font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px">📎 Fylgiskjöl</span>' +
         '<label style="cursor:pointer;height:26px;padding:0 10px;border-radius:7px;border:1px solid #d8dadf;background:#fff;' +
           'font-size:11px;font-weight:700;color:#4b5058;font-family:inherit;display:inline-flex;align-items:center;gap:4px">' +
           '＋ Hlaða inn<input type="file" multiple style="display:none" onchange="window.__vbUpload(event,' + bid + ')">' +
         '</label>' +
+        '<label style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px">Starfsmaður' +
+          '<select id="vb-sel-worker" data-field="assigned_to" data-id="' + bid + '" title="Setja mál á starfsmann" ' +
+          'style="text-transform:none;letter-spacing:0;height:26px;padding:0 8px;border-radius:7px;border:1px solid #d8dadf;background:#fff;color:#16181d;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">' +
+          assigneeOptionsHtml(r) + '</select></label>' +
       '</div>' +
       (atts.length
         ? atts.map(function (a) {
@@ -2226,12 +2230,6 @@
         // Status chips (not interactive here — stadaPill handles advance)
         '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">' +
           chips.map(t => dkChip(t)).join('') + waitPill(r) + stadaPill(r) +
-          (!r._vd
-            ? '<label style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px">Starfsmaður' +
-              '<select id="vb-sel-worker" data-field="assigned_to" data-id="' + esc(String(r.id)) + '" title="Setja mál á starfsmann" ' +
-              'style="text-transform:none;letter-spacing:0;height:28px;padding:0 8px;border-radius:8px;border:1px solid #d8dadf;background:#fff;color:#16181d;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">' +
-              assigneeOptionsHtml(r) + '</select></label>'
-            : '') +
         '</div>' +
         // BEINT BREYTANLEGUR TITILL — vistast 500ms eftir að hætt er að slá inn
         (r._vd
