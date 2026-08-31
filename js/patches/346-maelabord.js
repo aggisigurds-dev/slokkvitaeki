@@ -83,6 +83,10 @@
       V + '.mb-hd h1{margin:0;font-size:19px;font-weight:600;letter-spacing:.14em;color:#eceff3}',
       V + '.mb-hd .mb-sub{font-size:12px;color:#6d757f}',
       V + '.mb-hd .mb-upp{margin-left:auto;font:11.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:#6d757f}',
+      V + '#mb-maela{flex:0 0 auto;min-height:34px;padding:0 13px;border-radius:3px;border:1px solid #3b4148;'
+        + 'background:#1c2026;color:#cfd5dc;font-size:12.5px;font-weight:600;cursor:pointer;letter-spacing:.03em}',
+      V + '#mb-maela:hover{background:#242931;border-color:#4a5158}',
+      V + '#mb-maela[disabled]{opacity:.55;cursor:default}',
 
       /* Blikkandi viðvörun */
       V + '.mb-alarm{border:1px solid #7d2b26;background:#1d1113;border-left:3px solid #c0392b;'
@@ -320,7 +324,8 @@
     v.innerHTML = '<div class="mb-wrap">'
       + '<div class="mb-hd"><h1>MÆLABORÐ</h1>'
       + '<span class="mb-sub">grunnlína ' + esc(grunn) + ' · ' + (S.punktar || 0) + ' mælipunktar</span>'
-      + '<span class="mb-upp">mælt ' + esc(nyjast) + '</span></div>'
+      + '<span class="mb-upp">mælt ' + esc(nyjast) + '</span>'
+      + '<button id="mb-maela" type="button" title="Les ~35 þús. raðir og skráir nýjan mælipunkt">Mæla núna</button></div>'
       + alarm
       + '<div class="mb-maelar">' + madar + '</div>'
       + '<div class="mb-graf"><h2>' + esc(HEITI(_valinn)) + '</h2>'
@@ -331,6 +336,23 @@
       + 'dagsettar. Hækkun er verri — allar þessar tölur eru vandamál. Viðgerð verður að nefna vörn í '
       + '<code>tools/audit-all.cjs</code>; sá vörður fellur rautt reyni villan að koma aftur. Það er það sem '
       + 'gerir „bara einu sinni" satt.</div></div>';
+
+    /* Mæling er aðgerð, ekki aukaverkun af því að opna síðuna: full skönnun
+       les ~35 þús. raðir. Síðan sýnir bókina strax og mælir bara þegar beðið
+       er um það. */
+    const takki = v.querySelector('#mb-maela');
+    if (takki) takki.addEventListener('click', async () => {
+      takki.disabled = true;
+      takki.textContent = 'Mæli…';
+      try {
+        const r = await fetch('/api/ai-context?maela=1', { headers: { accept: 'application/json' } });
+        const d = await r.json().catch(() => null);
+        if (r.ok && d) _d = d; else _d = { villa: 'HTTP ' + r.status };
+      } catch (e) {
+        _d = { villa: String((e && e.message) || e) };
+      }
+      teikna();
+    });
 
     v.querySelectorAll('.mb-m').forEach(el => el.addEventListener('click', () => {
       _valinn = el.dataset.k;

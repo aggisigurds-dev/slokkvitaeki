@@ -114,69 +114,229 @@ const GJALD = /byrjunargjald|akstur|ferðakostn|sendingar|umsýslu|útkall/i;
 async function stada(cfg) {
   const AR = new Date().getFullYear();
   const man = new Date().getMonth() + 1;
+  const NU = Date.now();
+  const D30 = 30 * 864e5;
+  const idag = new Date().toISOString().slice(0, 10);
 
-  const co = await allar(cfg, 'fyrirtaeki?select=id,nafn,kennitala,er_i_thjonustu,customer_base_id&deleted_at=is.null&order=id');
+  /* Hver tafla er sótt EINU SINNI og margir mælar leiddir af sama gagnasafni.
+     Þess vegna kosta 50 mælar ekki 50 skannanir. `allar` kastar villu ef eitthvað
+     mistekst — hún má ALDREI skila tómu: tómt safn lítur út eins og heilbrigt
+     kerfi (mælt 31.08: Staðan sýndi fjögur núll og virtist í lagi, af því að
+     hjálparfallið gerði `break` í stað `throw`). */
+  const co   = await allar(cfg, 'fyrirtaeki?select=id,nafn,kennitala,simi,farsimi,netfang,heimilisfang,postnumer,er_i_thjonustu,customer_base_id,status&deleted_at=is.null&order=id');
+  const sol  = await allar(cfg, 'solur?select=id,num,customer_id,customer_base_id,created_at,linur,is_credit,status,samtals&order=created_at.desc');
+  const docs = await allar(cfg, 'customer_documents?select=id,customer_base_id,fyrirtaeki_id,doc_type,year,link_ok,invoice_number,is_duplicate&order=id');
+  const ut   = await allar(cfg, 'uttaeki?select=id,serial,type,location,last_insp,next_insp,fyrirtaeki_id,customer_base_id&order=id');
+  const tb   = await allar(cfg, 'thjonustubeidni?select=id,status,created_at,svarad_at,customer_base_id,important&deleted_at=is.null&order=id');
+  const vb   = await allar(cfg, 'verkbeidnir?select=id,status,created_at&order=id');
+  const vl   = await allar(cfg, 'verklidur?select=id,uttaeki_id&order=id');
+  const sam  = await allar(cfg, 'thjonustusamningar?select=id,company_id,status,next_due&order=id');
+  const vlisti = await allar(cfg, 'verkefnalisti?select=id,status&order=id');
+
   const [as] = await sb(cfg, 'app_settings?select=settings&id=eq.1&limit=1');
   const settings = (as && as.settings) || {};
   const ars = settings.arsskodun_customers || {};
 
-  const sol = await allar(cfg, 'solur?select=customer_id,created_at,linur,is_credit&order=created_at.desc');
+  const tomt = v => v == null || String(v).trim() === '';
+  const tel  = (arr, f) => arr.reduce((n, x) => n + (f(x) ? 1 : 0), 0);
+  /* Tvítekningar: fjöldi RAÐA sem lenda í hópi stærri en einum — ekki fjöldi
+     hópa. Tvö fyrirtæki með sömu kennitölu eru tvö vandamál, ekki eitt. */
+  const tvitekid = (arr, lykill) => {
+    const m = new Map();
+    arr.forEach(x => { const k = lykill(x); if (tomt(k)) return; m.set(k, (m.get(k) || 0) + 1); });
+    let n = 0; m.forEach(v => { if (v > 1) n += v; });
+    return n;
+  };
+  const ktGild = k => /^\d{10}$/.test(String(k || '').replace(/\D/g, ''));
+  const linurAf = s => {
+    let L = s.linur;
+    if (typeof L === 'string') { try { L = JSON.parse(L); } catch (_) { L = []; } }
+    return Array.isArray(L) ? L : [];
+  };
+
+  const iThj = co.filter(c => c.er_i_thjonustu);
+
+  /* ── Sölur: hvað var rukkað í ár, og hver var síðasti reikningur ───────── */
   const medSolu = new Set(), rukkad = new Map(), sidasta = new Map();
+  const solIAr = [];
   sol.forEach(s => {
-    if (s.is_credit) return;
     const k = String(s.customer_id);
+    if (String(s.created_at).slice(0, 4) === String(AR)) solIAr.push(s);
+    if (s.is_credit) return;
     if (!sidasta.has(k)) sidasta.set(k, s);
     if (String(s.created_at).slice(0, 4) !== String(AR)) return;
     medSolu.add(k);
-    let L = s.linur;
-    if (typeof L === 'string') { try { L = JSON.parse(L); } catch (_) { L = []; } }
-    if (!Array.isArray(L)) return;
-    rukkad.set(k, (rukkad.get(k) || 0) + L.filter(l => !GJALD.test(l.desc || ''))
+    rukkad.set(k, (rukkad.get(k) || 0) + linurAf(s).filter(l => !GJALD.test(l.desc || ''))
       .reduce((n, l) => n + (+l.qty || 0), 0));
   });
 
-  const docs = await allar(cfg, 'customer_documents?select=customer_base_id,doc_type,year,link_ok&order=id');
+  /* ── Skjöl ────────────────────────────────────────────────────────────── */
   const medReikn = new Set(docs.filter(d => d.doc_type === 'reikningur' && +d.year === AR && d.customer_base_id != null)
     .map(d => String(d.customer_base_id)));
+  const medSkyrslu = new Set(docs.filter(d => d.doc_type === 'uttektarskyrsla' && +d.year === AR && d.customer_base_id != null)
+    .map(d => String(d.customer_base_id)));
+  const reikningar = docs.filter(d => d.doc_type === 'reikningur');
 
+  /* ── Fjórir listarnir sem Staðan sýnir ────────────────────────────────── */
   const H = { tom: [], enginAkstur: [], orukkad: [], skekkja: [], fyllanleg: [] };
+  let anManadar = 0, ekkiSkodadIAr = 0, ekkiSkodad2Ar = 0, ofrukkad = 0;
+
   co.forEach(c => {
     const a = ars[String(c.id)] || null;
     const taeki = a ? heild(a.equipment) : 0;
     const g = { id: c.id, nafn: c.nafn, kt: c.kennitala };
+
     if (c.er_i_thjonustu && taeki === 0) {
       H.tom.push(g);
       // Auto-trigger: skráin er tóm EN síðasti reikningur segir magn.
       const s = sidasta.get(String(c.id));
       if (s) {
-        let L = s.linur;
-        if (typeof L === 'string') { try { L = JSON.parse(L); } catch (_) { L = []; } }
-        const q = Array.isArray(L) ? L.filter(l => !GJALD.test(l.desc || ''))
-          .reduce((n, l) => n + (+l.qty || 0), 0) : 0;
+        const q = linurAf(s).filter(l => !GJALD.test(l.desc || ''))
+          .reduce((n, l) => n + (+l.qty || 0), 0);
         if (q > 0) H.fyllanleg.push({ ...g, magn_af_reikningi: q, reikningur: String(s.created_at).slice(0, 10) });
       }
     }
     if (!a || taeki === 0) return;
+
     const m = +a.inspect_month || 0;
-    const skodad = +a.last_year_inspected === AR;
+    const sidast = +a.last_year_inspected || 0;
+    const skodad = sidast === AR;
+    if (c.er_i_thjonustu && !m) anManadar++;
+    if (c.er_i_thjonustu && !skodad) ekkiSkodadIAr++;
+    if (c.er_i_thjonustu && sidast > 0 && sidast <= AR - 2) ekkiSkodad2Ar++;
+
     if (m > 0 && m <= man && !skodad && !(+a.akstur)) H.enginAkstur.push({ ...g, manudur: m });
     if (!skodad) return;
+
     const cb = c.customer_base_id != null ? String(c.customer_base_id) : null;
     if (!medSolu.has(String(c.id)) && !(cb && medReikn.has(cb))) H.orukkad.push({ ...g, taeki });
     const r = rukkad.get(String(c.id)) || 0;
     if (r > 0 && r / taeki < 0.5) H.skekkja.push({ ...g, skrad: taeki, rukkad: r });
+    if (r > 0 && r / taeki > 2) ofrukkad++;
   });
 
+  const medSamning = new Set(sam.filter(x => x.status === 'virkur' && x.company_id != null)
+    .map(x => String(x.company_id)));
+
+  /* ── MÆLARNIR ─────────────────────────────────────────────────────────────
+     Sérhver tala hér er VANDAMÁL: hærra er verra. Sá samningur er forsenda þess
+     að viðvörunin viti hvað sé „röng átt". Bætist einhvern tíma við mælikvarði
+     þar sem hærra er gott þarf hann skýra merkingu — ekki þögla undantekningu.
+
+     Stöðugildin hér að neðan eru MÆLD úr töflunum 31.08.2026, ekki ágiskuð:
+       thjonustubeidni.status  nytt · lokad · klarad · i_vinnslu
+       verkbeidnir.status      collected · eytt · ready · received
+       verkefnalisti.status    beidni · klarad · i_vinnu · i_yfirferd · sleppt
+       thjonustusamningar      virkur · imported_from_drive · template · tilbod
+       solur.status            final · drog · void
+       fyrirtaeki.status       virkur · óvirkur
+       customer_documents      uttektarskyrsla · reikningur · samningur · brunakerfi */
+  const tolur = {
+    /* Skráin sjálf */
+    i_thjonustu_an_taekja:            H.tom.length,
+    thar_af_fyllanleg_ur_reikningi:   H.fyllanleg.length,
+    i_thjonustu_an_kennitolu:         tel(iThj, c => tomt(c.kennitala)),
+    i_thjonustu_ogild_kennitala:      tel(iThj, c => !tomt(c.kennitala) && !ktGild(c.kennitala)),
+    tvitekin_kennitala:               tvitekid(co, c => String(c.kennitala || '').replace(/\D/g, '')),
+    i_thjonustu_an_heimilisfangs:     tel(iThj, c => tomt(c.heimilisfang)),
+    i_thjonustu_an_postnumers:        tel(iThj, c => tomt(c.postnumer)),
+    i_thjonustu_an_tengilids:         tel(iThj, c => tomt(c.simi) && tomt(c.farsimi) && tomt(c.netfang)),
+    i_thjonustu_an_netfangs:          tel(iThj, c => tomt(c.netfang)),
+    i_thjonustu_an_kunnaskrar:        tel(iThj, c => c.customer_base_id == null),
+    i_thjonustu_en_merkt_ovirkt:      tel(iThj, c => c.status === '\u00f3virkur'),
+
+    /* Ársskoðun */
+    komid_a_tima_enginn_akstur:       H.enginAkstur.length,
+    i_thjonustu_an_skodunarmanadar:   anManadar,
+    i_thjonustu_ekki_skodad_i_ar:     ekkiSkodadIAr,
+    i_thjonustu_ekki_skodad_2_ar:     ekkiSkodad2Ar,
+
+    /* Sala og rukkun */
+    skodad_en_orukkad:                H.orukkad.length,
+    rukkad_undir_helmingi_skradra:    H.skekkja.length,
+    rukkad_yfir_tvofalt_skrad:        ofrukkad,
+    solur_i_ar_an_vidskiptavinar:     tel(solIAr, s => s.customer_id == null && s.customer_base_id == null),
+    solur_i_ar_an_lina:               tel(solIAr, s => !s.is_credit && linurAf(s).length === 0),
+    solur_i_ar_an_upphaedar:          tel(solIAr, s => !s.is_credit && s.status === 'final' && !(+s.samtals)),
+    solur_fastar_i_drogum:            tel(sol, s => s.status === 'drog'),
+    kreditreikningar_i_ar:            tel(solIAr, s => !!s.is_credit),
+    tvitekin_solunumer:               tvitekid(sol.filter(s => s.status !== 'void'), s => s.num),
+
+    /* Skjöl og Drive */
+    dauder_drive_tenglar:             tel(docs, d => d.link_ok === false),
+    oathugadir_drive_tenglar:         tel(docs, d => d.link_ok === null),
+    skjol_an_kunnaskrar:              tel(docs, d => d.customer_base_id == null && d.fyrirtaeki_id == null),
+    skjol_merkt_tvitekin:             tel(docs, d => d.is_duplicate === true),
+    reikningsskjol_an_numers:         tel(reikningar, d => tomt(d.invoice_number)),
+    tvitekin_reikningsnumer:          tvitekid(reikningar, d => d.invoice_number),
+
+    /* Tæki */
+    taeki_an_eiganda:                 tel(ut, x => x.fyrirtaeki_id == null && x.customer_base_id == null),
+    taeki_an_radnumers:               tel(ut, x => tomt(x.serial)),
+    tvitekid_radnumer:                tvitekid(ut, x => x.serial),
+    taeki_an_tegundar:                tel(ut, x => tomt(x.type)),
+    taeki_an_stadsetningar:           tel(ut, x => tomt(x.location)),
+    taeki_an_sidustu_skodunar:        tel(ut, x => tomt(x.last_insp)),
+    taeki_an_naestu_skodunar:         tel(ut, x => tomt(x.next_insp)),
+    taeki_med_utrunna_skodun:         tel(ut, x => !tomt(x.next_insp) && String(x.next_insp).slice(0, 10) < idag),
+
+    /* Þjónustuborð */
+    opin_thjonustumal:                tel(tb, x => x.status === 'nytt'),
+    opin_eldri_en_6_manada:           tel(tb, x => x.status === 'nytt' && (NU - new Date(x.created_at)) / D30 >= 6),
+    opin_an_svarad_at:                tel(tb, x => x.status === 'nytt' && tomt(x.svarad_at)),
+    opin_an_kunnaskrar:               tel(tb, x => x.status === 'nytt' && x.customer_base_id == null),
+
+    /* Verk */
+    verkbeidnir_ekki_sottar:          tel(vb, x => x.status === 'ready'),
+    verkbeidnir_ekki_sottar_30_daga:  tel(vb, x => x.status === 'ready' && (NU - new Date(x.created_at)) / D30 >= 1),
+    verklidir_an_taekis:              tel(vl, x => x.uttaeki_id == null),
+
+    /* Samningar */
+    samningar_komnir_a_tima:          tel(sam, x => x.status === 'virkur' && !tomt(x.next_due) && String(x.next_due).slice(0, 10) < idag),
+    i_thjonustu_an_samnings:          tel(iThj, c => !medSamning.has(String(c.id))),
+
+    /* Verkefnalisti */
+    verkefni_i_beidni:                tel(vlisti, x => x.status === 'beidni'),
+    verkefni_i_vinnu:                 tel(vlisti, x => x.status === 'i_vinnu'),
+    verkefni_i_yfirferd:              tel(vlisti, x => x.status === 'i_yfirferd'),
+  };
+
+  /* ── VEIÐIN Á SÍNAR TÖLUR ────────────────────────────────────────────────
+     Brunahólf reiknar þegar skýrslu-/reikninga-þekjuna (`/api/veidin`, með
+     grunnlínu frá 2026-07-30). Þær tölur eru EKKI reiknaðar aftur hér.
+
+     Ástæðan er mæld, ekki huglæg: 31.08.2026 reiknaði þessi skrá sjálfstætt
+     „skýrsla í ár án reiknings = 46" á meðan Veiðin sagði 149, og „skjöl án
+     árs = 213" á meðan Veiðin sagði 1. Tvær skilgreiningar á sömu tölu er
+     einmitt ástæðan fyrir því að Agnar fær ólík svör í hvert skipti sem hann
+     spyr. Ein tala á að eiga einn eiganda.
+
+     Mælaborðið leggur til það sem Veiðina vantar: SÖGUNA. Veiðin á tvo punkta
+     — frosna grunnlínu í kóða og daginn í dag — og enga skráningu á því hvað
+     olli hreyfingunni.
+
+     Klikki kallið eru tölurnar FJARVERANDI, ekki núll. Núll lítur út eins og
+     leyst vandamál. */
+  let veidin_sotti = false;
+  try {
+    const r = await fetch('https://brunaholf.netlify.app/api/veidin', {
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.ok) {
+      const v = await r.json();
+      if (v && v.nuna) {
+        Object.entries(v.nuna).forEach(([k, n]) => {
+          if (typeof n === 'number') tolur['veidin_' + k] = n;
+        });
+        veidin_sotti = true;
+      }
+    }
+  } catch (_) { /* fjarverandi er rétt svar; núll væri ósatt */ }
+
   return {
-    tolur: {
-      i_thjonustu_an_taekja: H.tom.length,
-      thar_af_fyllanleg_ur_reikningi: H.fyllanleg.length,
-      komid_a_tima_enginn_akstur: H.enginAkstur.length,
-      skodad_en_orukkad: H.orukkad.length,
-      rukkad_undir_helmingi_skradra: H.skekkja.length,
-      dauder_drive_tenglar: docs.filter(d => d.link_ok === false).length,
-      oathugadir_drive_tenglar: docs.filter(d => d.link_ok === null).length,
-    },
+    tolur,
+    veidin_sotti,
     listar: H,
     log: settings.ai_log || { faerslur: [], virkar: {}, mistokst: {} },
   };
@@ -339,21 +499,41 @@ export default async (req) => {
 
   /* ── INN: allt sem AI þarf ───────────────────────────────────────────── */
   try {
-    const s = await stada(cfg);
-    const log = s.log;
+    /* TVEIR HRAÐAR — og það er við hefði.
+       Full mæling les ~35 þús. raðir úr níu töflum og sækir Veiðina (~4 sek).
+       Væri hún keyrð við hverja opnun síðunnar yrði mælaborðið hægt OG bókin
+       fyllt af punktum sem enginn bað um.
 
-    /* Skrá mælinguna ÁÐUR en hún er afhent. Þetta er það sem gerir bókina til:
-       hver inngangur skilur eftir sig punkt, svo talan sé aldrei „reiknuð og
-       hent" eins og hún hefur alltaf verið. */
-    let nyrPunktur = false;
-    try {
-      nyrPunktur = skraSnapshot(log, s.tolur);
-      const [as2] = await sb(cfg, 'app_settings?select=settings&id=eq.1&limit=1');
-      const st2 = (as2 && as2.settings) || {};
-      await sb(cfg, 'app_settings?id=eq.1', {
-        method: 'PATCH', body: JSON.stringify({ settings: { ...st2, ai_log: log } }),
-      });
-    } catch (_) { /* mæling má aldrei fella innganginn */ }
+         GET /api/ai-context           → bókin eins og hún stendur. Ein fyrirspurn.
+         GET /api/ai-context?maela=1   → mælir upp á nýtt og skráir punkt.
+
+       Mæling er þannig AÐGERÐ, ekki aukaverkun af því að einhver opnaði síðu. */
+    const maela = new URL(req.url).searchParams.get('maela') === '1';
+
+    let s, log, nyrPunktur = false;
+    if (maela) {
+      s = await stada(cfg);
+      log = s.log;
+      /* Skrá mælinguna ÁÐUR en hún er afhent — það er það sem gerir bókina til.
+         Mæling má þó aldrei fella innganginn, því try/catch. */
+      try {
+        nyrPunktur = skraSnapshot(log, s.tolur);
+        const [as2] = await sb(cfg, 'app_settings?select=settings&id=eq.1&limit=1');
+        const st2 = (as2 && as2.settings) || {};
+        await sb(cfg, 'app_settings?id=eq.1', {
+          method: 'PATCH', body: JSON.stringify({ settings: { ...st2, ai_log: log } }),
+        });
+      } catch (_) {}
+    } else {
+      const [as1] = await sb(cfg, 'app_settings?select=settings&id=eq.1&limit=1');
+      const st1 = (as1 && as1.settings) || {};
+      log = st1.ai_log || { faerslur: [], virkar: {}, mistokst: {} };
+      const sidasti = (log.maelingar || [])[(log.maelingar || []).length - 1];
+      /* Aldrei uppdiktuð núll: hafi ekkert verið mælt eru tölurnar TÓMAR og
+         `maelt` er null. Tómt er satt; núll væri lýgi sem lítur út eins og
+         leyst vandamál. */
+      s = { tolur: sidasti ? sidasti.tolur : {}, listar: null, log, maelt: sidasti ? sidasti.dags : null };
+    }
     const S = saga(log);
     const rada = o => Object.entries(o || {}).sort((a, b) => b[1] - a[1]).slice(0, 15)
       .map(([adgerd, stig]) => ({ adgerd, stig }));
@@ -374,6 +554,10 @@ export default async (req) => {
         serfraedingar: '.claude/agents/*.md — joker (útlit), elon-musk (Ársskoðun), bord-flettur (borð)',
       },
       stada: s.tolur,
+      maelt: maela ? new Date().toISOString() : (s.maelt || null),
+      // Segir hreint út hvort þetta var mælt núna eða lesið úr bókinni.
+      ferskt: maela,
+      hvernig_maela_upp_a_nytt: 'GET /api/ai-context?maela=1',
       // BÓKIN: grunnlína, ferill, hreyfing frá síðasta punkti og valdurinn.
       saga: S,
       vidgerdir: (log.vidgerdir || []).slice(-20).reverse(),
@@ -383,19 +567,22 @@ export default async (req) => {
         : [],
       nyr_maelipunktur: nyrPunktur,
       vandamal: [
-        { id: 'tom_skra', heiti: 'Í þjónustu en engin tæki skráð', fjoldi: s.listar.tom.length,
+        { id: 'tom_skra', heiti: 'Í þjónustu en engin tæki skráð', fjoldi: (s.listar ? s.listar.tom.length : (s.tolur.i_thjonustu_an_taekja || 0)),
           skyring: 'Ósýnileg í Ársskoðun að eilífu. ORSÖKIN á bak við hin þrjú.' },
-        { id: 'fyllanleg', heiti: 'Tóm skrá EN síðasti reikningur segir magn', fjoldi: s.listar.fyllanleg.length,
+        { id: 'fyllanleg', heiti: 'Tóm skrá EN síðasti reikningur segir magn', fjoldi: (s.listar ? s.listar.fyllanleg.length : (s.tolur.thar_af_fyllanleg_ur_reikningi || 0)),
           skyring: 'AUTO-TRIGGER: hér má fylla skrána úr reikningnum. Telja aðeins ný tæki — '
                  + 'ekki gömul draugatæki sem troða sér inn í reikninga.' },
-        { id: 'enginn_akstur', heiti: 'Komið á tíma, á engum aksturslista', fjoldi: s.listar.enginAkstur.length },
-        { id: 'orukkad', heiti: 'Skoðað í ár en hvorki sala né reikningur', fjoldi: s.listar.orukkad.length },
-        { id: 'skekkja', heiti: 'Rukkuð tæki undir helmingi skráðra', fjoldi: s.listar.skekkja.length },
+        { id: 'enginn_akstur', heiti: 'Komið á tíma, á engum aksturslista', fjoldi: (s.listar ? s.listar.enginAkstur.length : (s.tolur.komid_a_tima_enginn_akstur || 0)) },
+        { id: 'orukkad', heiti: 'Skoðað í ár en hvorki sala né reikningur', fjoldi: (s.listar ? s.listar.orukkad.length : (s.tolur.skodad_en_orukkad || 0)) },
+        { id: 'skekkja', heiti: 'Rukkuð tæki undir helmingi skráðra', fjoldi: (s.listar ? s.listar.skekkja.length : (s.tolur.rukkad_undir_helmingi_skradra || 0)) },
       ],
       // Það sem hefur VIRKAÐ áður, efst. Þetta er þroskinn: talning, ekki þjálfun.
       virkar: rada(log.virkar),
       mistokst: rada(log.mistokst),
       sidustu_faerslur: (log.faerslur || []).slice(-12).reverse(),
+      // Listarnir (nöfnin á bak við tölurnar) verða aðeins til við mælingu.
+      // Á hraðleið eru þeir null — ekki tómt fylki, sem liti út eins og
+      // „enginn á listanum".
       listar: s.listar,
       vid_utgang: {
         hvernig: 'POST á sömu slóð',
