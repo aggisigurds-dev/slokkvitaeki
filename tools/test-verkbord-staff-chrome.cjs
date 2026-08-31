@@ -4,8 +4,9 @@
  * Keep in sync with looksLikeAgnar / isGenericOperatorName / isAgnarFromNames /
  * showOwnerChrome in js/patches/231-verkbord.js.
  *
- * Extra chrome is visible iff the worker filter is Agnar (and the operator is
- * not a named non-Agnar). Logged-in Agnar + Sara filter must hide extras.
+ * Extra chrome is visible iff the worker filter is Agnar or Allir (owner
+ * overview) and the operator is not a named non-Agnar. Logged-in Agnar +
+ * Bjarndís / nema_agnar filter must hide extras.
  */
 function foldName(s) {
   return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -35,8 +36,13 @@ function isAgnarFromNames(names, override) {
   }
   return true;
 }
+function isOwnerOverviewFilter(raw) {
+  const s = String(raw == null ? '' : raw).trim();
+  if (s === 'allir' || s === 'Allir') return true;
+  return looksLikeAgnar(s);
+}
 function showOwnerChrome(fWorker, operatorIsAgnar) {
-  return looksLikeAgnar(fWorker) && !!operatorIsAgnar;
+  return isOwnerOverviewFilter(fWorker) && !!operatorIsAgnar;
 }
 
 let failed = 0;
@@ -54,8 +60,11 @@ ok('Anni is not Agnar', !looksLikeAgnar('Anni'));
 ok('Hákon is not Agnar', !looksLikeAgnar('Hákon'));
 ok('Charlize is not Agnar', !looksLikeAgnar('Charlize'));
 ok('Sara is not Agnar', !looksLikeAgnar('Sara'));
+ok('Bjarndís is not Agnar', !looksLikeAgnar('Bjarndís'));
 ok('Aggi is not Agnar', !looksLikeAgnar('Aggi'));
 ok('nema_agnar is not Agnar', !looksLikeAgnar('nema_agnar'));
+ok('Allir overview is not Agnar name', !looksLikeAgnar('allir'));
+ok('Allir capital is not Agnar name', !looksLikeAgnar('Allir'));
 ok('Allir án Agnars is not Agnar', !looksLikeAgnar('Allir án Agnars'));
 ok('empty is not Agnar name', !looksLikeAgnar(''));
 ok('Slökkvitæki generic', isGenericOperatorName('Slökkvitæki'));
@@ -69,16 +78,20 @@ ok('empty identities office default Agnar', isAgnarFromNames([]));
 ok('override false forces staff', !isAgnarFromNames(['Agnar'], false));
 ok('override true forces Agnar', isAgnarFromNames(['Anni'], true));
 
-ok('Sara filter hides extras even for Agnar operator', !showOwnerChrome('Sara', true));
+ok('Bjarndís filter hides extras even for Agnar operator', !showOwnerChrome('Bjarndís', true));
+ok('leftover Sara filter hides extras even for Agnar operator', !showOwnerChrome('Sara', true));
 ok('Anni filter hides extras even for Agnar operator', !showOwnerChrome('Anni', true));
 ok('Hákon filter hides extras even for Agnar operator', !showOwnerChrome('Hákon', true));
 ok('Charlize filter hides extras even for Agnar operator', !showOwnerChrome('Charlize', true));
 ok('Binni filter hides extras even for Agnar operator', !showOwnerChrome('Binni', true));
 ok('nema_agnar filter hides extras even for Agnar operator', !showOwnerChrome('nema_agnar', true));
+ok('Allir overview shows extras for Agnar operator', showOwnerChrome('allir', true));
+ok('Allir capital overview shows extras', showOwnerChrome('Allir', true));
+ok('Allir overview hidden for Anni operator', !showOwnerChrome('allir', false));
 ok('Agnar filter shows extras for Agnar operator', showOwnerChrome('Agnar', true));
 ok('Agnar filter hidden for Anni operator', !showOwnerChrome('Agnar', false));
 ok('unnamed office + Agnar filter shows extras', showOwnerChrome('Agnar', isAgnarFromNames(['Slökkvitæki'])));
-ok('unnamed office + Sara filter hides extras', !showOwnerChrome('Sara', isAgnarFromNames(['Slökkvitæki'])));
+ok('unnamed office + Bjarndís filter hides extras', !showOwnerChrome('Bjarndís', isAgnarFromNames(['Slökkvitæki'])));
 
 const fs = require('fs');
 const path = require('path');
@@ -88,11 +101,15 @@ const v231 = fs.readFileSync(path.join(root, 'js/patches/231-verkbord.js'), 'utf
 const v287 = fs.readFileSync(path.join(root, 'js/patches/287-postar-queue.js'), 'utf8');
 const v343 = fs.readFileSync(path.join(root, 'js/patches/343-verkbord-ai.js'), 'utf8');
 
-ok('cache-bust 231 ?v=20260831tw2', html.includes('231-verkbord.js?v=20260831tw2'));
-ok('cache-bust 343 ?v=20260831sc6', html.includes('343-verkbord-ai.js?v=20260831sc6'));
+ok('cache-bust 231 ?v=20260831cnt', html.includes('231-verkbord.js?v=20260831cnt'));
+ok('cache-bust 343 ?v=20260831cnt', html.includes('343-verkbord-ai.js?v=20260831cnt'));
 ok('cache-bust 287 ?v=20260831sc6', html.includes('287-postar-queue.js?v=20260831sc6'));
-ok('231 defines showOwnerChrome', v231.includes('function showOwnerChrome()'));
-ok('231 chrome follows worker filter', v231.includes('looksLikeAgnar(state.fWorker) && isAgnarUser()'));
+ok('231 WORKERS has Bjarndís', /const WORKERS = \[[^\]]*Bjarndís/.test(v231));
+ok('231 WORKERS slot is not Sara', !/const WORKERS = \[[^\]]*Sara/.test(v231));
+ok('231 filter label is Bjarndís', v231.includes("['Bjarndís', 'Bjarndís']"));
+ok('231 Allir is owner overview', v231.includes("['allir', 'Allir']"));
+ok('231 TÖG counts follow worker filter', v231.includes('inQueue(x) && matchesWorker(x)'));
+ok('231 chrome follows worker filter', v231.includes('isOwnerOverviewFilter(state.fWorker) && isAgnarUser()'));
 ok('231 renderControls uses showOwnerChrome', v231.includes('const agnar = showOwnerChrome()'));
 ok('231 applyStaffChrome uses showOwnerChrome', v231.includes('const staff = !showOwnerChrome()'));
 ok('231 setWorker refreshes chrome', /function setWorker\(v\) \{[\s\S]*?applyStaffChrome\(\);[\s\S]*?renderControls\(\);/.test(v231));
@@ -103,7 +120,7 @@ ok('231 comment says filter not login', v231.includes('NAME DROPDOWN') || v231.i
 ok('231 does not gate chrome on operator alone', !v231.includes('never the worker filter'));
 ok('Forvinna collapse still present', v231.includes("data-act=\"drafttoggle\"") && v231.includes('function draftPackIsUseful'));
 ok('287 skips Póstar chip via showOwnerChrome', v287.includes('!Verkbord.showOwnerChrome()'));
-ok('343 skips AI mount via showOwnerChrome', v343.includes('!Verkbord.showOwnerChrome()'));
+ok('343 waitingMail respects worker filter', v343.includes('Verkbord.matchesWorker') && v343.includes('waitingMail'));
 ok('231 exports showOwnerChrome', /showOwnerChrome,/.test(v231));
 
 console.log(failed ? '\nFAIL ' + failed : '\nOK');

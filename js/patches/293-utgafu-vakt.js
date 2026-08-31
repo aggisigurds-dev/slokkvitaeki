@@ -12,8 +12,8 @@
    build-dist.js) og sækir /build.json reglulega. Sé auðkennið á þjóninum
    ANNAÐ en það sem flipinn keyrir birtist áberandi borði neðst:
        „🔄 Nýrri útgáfa er komin — Endurhlaða"
-   Takkinn hreinsar líka Cache Storage og afskráir service worker áður en
-   hann endurhleður, svo endurhleðslan skili ÖRUGGLEGA nýja kóðanum.
+   Þegar nýrri útgáfa sést er Cache Storage tæmt strax (gamall 231/305/343/287
+   má ekki sitja). Takkinn afskráir svo service worker áður en hann endurhleður.
 
    Athugað: við ræsingu (5 s), á 3 mín fresti, og í hvert sinn sem flipinn fær
    fókus aftur (algengasta tilvikið — flipi sem hefur legið opinn í marga tíma).
@@ -33,15 +33,27 @@
 
   const hunsad = () => { try { return localStorage.getItem(HUNSA_KEY) || ''; } catch (_) { return ''; } };
 
-  async function hreinsaOgEndurhlada() {
-    // Cache Storage + service worker geta borið gamla útgáfu áfram þótt
-    // netþjónninn sé með nýja — hreinsa BÆÐI áður en endurhlaðið er.
+  async function hreinsaSkyndiminni() {
+    // Drop leftover Cache Storage (legacy SW names, old 231/305/343/287)
+    // as soon as a newer build is seen, so the next reload cannot replay it.
     try {
       if (window.caches && caches.keys) {
         const ks = await caches.keys();
         await Promise.all(ks.map(k => caches.delete(k)));
       }
     } catch (_) {}
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+        const r = await navigator.serviceWorker.getRegistration();
+        if (r && r.update) await r.update();
+      }
+    } catch (_) {}
+  }
+
+  async function hreinsaOgEndurhlada() {
+    // Cache Storage + service worker geta borið gamla útgáfu áfram þótt
+    // netþjónninn sé með nýja — hreinsa BÆÐI áður en endurhlaðið er.
+    await hreinsaSkyndiminni();
     try {
       if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
         const rs = await navigator.serviceWorker.getRegistrations();
@@ -90,7 +102,10 @@
       const r = await fetch('/build.json?_=' + Date.now(), { cache: 'no-store' });
       if (!r.ok) return;                    // eldri deploy án build.json → þegja
       const j = await r.json();
-      if (j && j.commit && j.commit !== MINE) syna(j.commit);
+      if (j && j.commit && j.commit !== MINE) {
+        hreinsaSkyndiminni();
+        syna(j.commit);
+      }
     } catch (_) { /* net niðri → þegja, reynt aftur síðar */ }
   }
 
@@ -100,5 +115,5 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) athuga(); });
 
   // Handvirkt: UtgafuVakt.athuga() í console, og .endurhlada() þvingar hreinsun.
-  window.UtgafuVakt = { athuga, endurhlada: hreinsaOgEndurhlada, minUtgafa: MINE };
+  window.UtgafuVakt = { athuga, endurhlada: hreinsaOgEndurhlada, hreinsa: hreinsaSkyndiminni, minUtgafa: MINE };
 })();

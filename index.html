@@ -53,7 +53,7 @@
   }catch(e){}
 })();
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){try{if(window.caches&&caches.keys){caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}));});}}catch(e){}navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(function(r){try{r.update();}catch(e){}}).catch(function(){});});}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -1068,7 +1068,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/228-saved-report-box.js?v=20260619a"></script>
 <script defer src="/js/patches/229-sala-theme-bridge.js?v=20260619d"></script>
 <script defer src="/js/patches/230-brunastal-theme.js?v=20260817frozen"></script>
-<script defer src="/js/patches/231-verkbord.js?v=20260831tw2"></script>
+<script defer src="/js/patches/231-verkbord.js?v=20260831cnt"></script>
 <script defer src="/js/patches/232-bakendi.js?v=20260712rfsites"></script>
 <script defer src="/js/patches/233-uttekt-pdf-autosave.js?v=20260726drog"></script>
 <script defer src="/js/patches/234-verk-soft-delete.js?v=20260623b"></script>
@@ -1152,7 +1152,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/274-brunakerfi-fyrirtaeki.js?v=20260731bundle1"></script>
 <script defer src="/js/patches/291-brunakerfi-reikningur.js?v=20260730"></script>
 <script defer src="/js/patches/292-build-stamp.js?v=20260730a"></script>
-<script defer src="/js/patches/293-utgafu-vakt.js?v=20260730a"></script>
+<script defer src="/js/patches/293-utgafu-vakt.js?v=20260831sw1"></script>
 <script defer src="/js/patches/294-uttektartexti.js?v=20260817husmal"></script>
 <script defer src="/js/patches/295-company-mail-badge.js?v=20260820c"></script>
 <script defer src="/js/patches/297-cg-capture.js?v=20260805a"></script>
@@ -1171,7 +1171,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/307-afslattarkassi.js?v=20260812a"></script>
 <script defer src="/js/patches/311-doc-pairs-band.js?v=20260830ffact"></script>
 <script defer src="/js/patches/308-postur-ai-triage.js?v=20260831draft"></script>
-<script defer src="/js/patches/343-verkbord-ai.js?v=20260831sc6"></script>
+<script defer src="/js/patches/343-verkbord-ai.js?v=20260831cnt"></script>
 <script defer src="/js/patches/275-sala-tilbod.js?v=20260721d"></script>
 <script defer src="/js/patches/276-brunakerfi-back.js?v=20260806a"></script>
 <script defer src="/js/patches/277-nav-back.js?v=20260806a"></script>

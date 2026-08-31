@@ -72,7 +72,7 @@
     return 'Slökkvitæki';
   }
   // Match by folded first token so "Agnar Sigurðsson" counts; do not treat
-  // "nema_agnar" / "Allir án Agnars" / Anni / Sara as Agnar. Ambiguous leftover
+  // "nema_agnar" / "Allir án Agnars" / Anni / Bjarndís as Agnar. Ambiguous leftover
   // strings that are not Agnar are staff. An unnamed office session (no
   // UserAuth / bs_employee) is Agnar's machine — secondary lock only.
   function looksLikeAgnar(raw) {
@@ -123,12 +123,18 @@
   }
   // Extra chrome (AI borð, Innhólf/Allt/Verkefni/Lokað/Póstar, Snjallröðun/Þétt,
   // Sækja póst / Kúnnaskrá / 2023–25) follows the NAME DROPDOWN, not who is
-  // logged in. Agnar 2026-08-31 follow-up: Sara selected must hide extras even
-  // on Agnar's office session. Picking Agnar in the filter brings them back.
-  // isAgnarUser() is only a secondary lock. Do not gate chrome on isAgnarUser()
-  // alone — that was the live bug (Sara filter, extras still visible).
+  // logged in. Agnar 2026-08-31 follow-up: Bjarndís selected must hide extras even
+  // on Agnar's office session. Picking Agnar brings them back. Allir is the
+  // owner's overview (combined board) so it also shows extras. isAgnarUser() is
+  // only a secondary lock. Do not gate chrome on isAgnarUser() alone — that was
+  // the live bug (staff filter, extras still visible).
+  function isOwnerOverviewFilter(raw) {
+    const s = String(raw == null ? '' : raw).trim();
+    if (s === 'allir' || s === 'Allir') return true;
+    return looksLikeAgnar(s);
+  }
   function showOwnerChrome() {
-    return looksLikeAgnar(state.fWorker) && isAgnarUser();
+    return isOwnerOverviewFilter(state.fWorker) && isAgnarUser();
   }
   function effectiveQueue() {
     return showOwnerChrome() ? state.queue : 'allt';
@@ -387,27 +393,34 @@
     return tags.indexOf('senda_skyrslur') !== -1;
   }
 
-  // 2026-08-31 (ósk Agnars): nafnaval — Agnar, Allir án Agnars, Charlize,
-  // Hákon, Binni, Anni, Sara. Charlize tók við gömlu Söru (mál flutt).
-  // Nýja Sara er tóm slóð fyrir starfsmann sem er að byrja.
+  // 2026-08-31 (ósk Agnars): nafnaval — Allir, Agnar, Allir án Agnars, Charlize,
+  // Hákon, Binni, Anni, Bjarndís. Charlize tók við gömlu Söru (mál flutt).
+  // Bjarndís er nýja slóðin (áður tóm Sara-slóð). Vistað „Sara" og
+  // starfs:Sara lesast sem Bjarndís. Charlize-mál eru óhreyfð.
   // Starfsfólk sér daglega vinnu; skjalavinna fer á Agnar.
   // Óúthlutað og eldra en 30 dagar skráist á Agnar. Sjálfgefin sía er
-  // „Allir án Agnars". Tómt vistað gildi (gamla „Allir") flyst yfir.
+  // „Allir án Agnars". Vistað „Allir"/allir opnar eiganda-yfirlitið aftur
+  // (sameinað borð). Tómt gildi flyst áfram yfir í Allir án Agnars.
   // Keep in sync with tools/test-verkbord-assignee.cjs
   const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
-  const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Sara'];
+  const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Bjarndís'];
   const WORKER_FILTERS = [
+    ['allir', 'Allir'],
     ['Agnar', 'Agnar'],
     ['nema_agnar', 'Allir án Agnars'],
     ['Charlize', 'Charlize'],
     ['Hákon', 'Hákon'],
     ['Binni', 'Binni'],
     ['Anni', 'Anni'],
-    ['Sara', 'Sara']
+    ['Bjarndís', 'Bjarndís']
   ];
   const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
-  function normAssignee(v) {
+  function canonWorker(v) {
     const s = String(v == null ? '' : v).trim();
+    return s === 'Sara' ? 'Bjarndís' : s;
+  }
+  function normAssignee(v) {
+    const s = canonWorker(v);
     return WORKER_SENTINELS[s] ? '' : s;
   }
   function assignedForNew(worker) {
@@ -484,7 +497,7 @@
     return isOlderThanMonth(r, now) ? 'Agnar' : '';
   }
   function matchesWorker(r, filter, now) {
-    const w = filter != null ? filter : state.fWorker;
+    const w = canonFilter(filter != null ? filter : state.fWorker);
     if (!w || w === 'allir') return true;
     const who = effectiveAssignee(r, now);
     const tagged = taggedWorkers(r);
@@ -496,21 +509,27 @@
     if (who === w) return true;
     return tagged.indexOf(w) !== -1;
   }
+  function canonFilter(v) {
+    const s = canonWorker(v);
+    if (s === 'Allir') return 'allir';
+    return s;
+  }
   function knownWorkerFilter(v) {
-    if (v === 'nema_agnar') return true;
-    for (let i = 0; i < WORKERS.length; i++) if (WORKERS[i] === v) return true;
+    const s = canonFilter(v);
+    if (s === 'nema_agnar' || s === 'allir') return true;
+    for (let i = 0; i < WORKERS.length; i++) if (WORKERS[i] === s) return true;
     return false;
   }
   function readStoredWorker() {
     try {
       const stored = localStorage.getItem(WKEY);
       if (stored === null || stored === '') return 'nema_agnar';
-      if (knownWorkerFilter(stored)) return stored;
+      if (knownWorkerFilter(stored)) return canonFilter(stored);
       return 'nema_agnar';
     } catch (_) { return 'nema_agnar'; }
   }
   function workerFilterOptionsHtml(cur) {
-    const now = knownWorkerFilter(cur) ? cur : 'nema_agnar';
+    const now = knownWorkerFilter(cur) ? canonFilter(cur) : 'nema_agnar';
     let html = '';
     for (let i = 0; i < WORKER_FILTERS.length; i++) {
       const val = WORKER_FILTERS[i][0], label = WORKER_FILTERS[i][1];
@@ -543,7 +562,7 @@
     for (let i = 0; i < raw.length; i++) {
       const t = raw[i];
       if (t.indexOf(WORKER_TAG_PREFIX) !== 0) continue;
-      const n = t.slice(WORKER_TAG_PREFIX.length).trim();
+      const n = canonWorker(t.slice(WORKER_TAG_PREFIX.length).trim());
       if (!n || WORKER_SENTINELS[n]) continue;
       if (names.indexOf(n) === -1) names.push(n);
     }
@@ -561,7 +580,7 @@
     });
     const wtags = [];
     (workers || []).forEach(function (n) {
-      const name = String(n == null ? '' : n).trim();
+      const name = canonWorker(String(n == null ? '' : n).trim());
       if (!name || WORKER_SENTINELS[name]) return;
       const tok = WORKER_TAG_PREFIX + name;
       if (wtags.indexOf(tok) === -1) wtags.push(tok);
@@ -579,12 +598,13 @@
     const primary = editorAssigneeValue(row);
     const cleaned = [];
     (workers || []).forEach(function (n) {
-      if (n && n !== primary && cleaned.indexOf(n) === -1) cleaned.push(n);
+      const name = canonWorker(n);
+      if (name && name !== primary && cleaned.indexOf(name) === -1) cleaned.push(name);
     });
     return composeTags(rowTags(row), cleaned, extraTags(row));
   }
   function toggleTaggedWorker(row, name) {
-    const n = String(name == null ? '' : name).trim();
+    const n = canonWorker(String(name == null ? '' : name).trim());
     if (!n || WORKER_SENTINELS[n] || n === editorAssigneeValue(row)) {
       return tagsWithWorkers(row, taggedWorkers(row));
     }
@@ -622,7 +642,7 @@
   // ── state ────────────────────────────────────────────────────────────────
   const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode', WKEY = '_vb_worker';
   // Starfsmenn (skráning + sía). Sjálfgefið „Allir án Agnars". WORKERS er
-  // skilgreint ofar með Agnar / Charlize / Hákon / Binni / Anni / Sara.
+  // skilgreint ofar með Agnar / Charlize / Hákon / Binni / Anni / Bjarndís.
   // Valin sía: texti lýsist upp + glóð í lit chips-ins (2026-07-13, ósk Agnars —
   // „sést illa hvað er valið"). currentColor = litur chips-ins svo glóðin passar.
   // 2026-07-22 (ósk Agnars — „það sýnir illa þegar sían er á … hafðu svarta gráa
@@ -723,7 +743,7 @@
   function setViewMode(v) { state.viewMode = v; try { localStorage.setItem(VMKEY, v); } catch (_) {} }
   function setFilter(f) { state.filter = f; try { localStorage.setItem(FKEY, f); } catch (_) {} }
   function setWorker(v) {
-    state.fWorker = v || 'nema_agnar';
+    state.fWorker = knownWorkerFilter(v) ? canonFilter(v) : 'nema_agnar';
     try { localStorage.setItem(WKEY, state.fWorker); } catch (_) {}
     syncAddWorkerSelect();
     applyStaffChrome();
@@ -2029,7 +2049,7 @@
 
   // Stjórnkortið (v3): Innhólf/Allt/Verkefni/Lokað flipar + leit + röðun/sýn,
   // skil, svo TÖG-síuröðin (⭐ Áríðandi + dökk-metal merkjachippar með teljara).
-  // Extra chrome only when the name dropdown is Agnar. Sara / Anni / Hákon /
+  // Extra chrome only when the name dropdown is Agnar. Bjarndís / Anni / Hákon /
   // Charlize / Binni / Allir án Agnars get nafnaval + leit ofan TÖG — engin AI-borð,
   // biðraðir, Snjallröðun/Þétt né Sækja póst / Kúnnaskrá / 2023–25.
   function renderControls() {
@@ -2117,7 +2137,7 @@
           (state.fStar ? FILTER_ON : 'opacity:1') + '">⭐ Áríðandi' + (c ? '' : '') + '</button>' +
         (function () {
           const tc = {};
-          allItems().filter(x => inQueue(x)).forEach(x => rowChips(x).forEach(t => { tc[t] = (tc[t] || 0) + 1; }));
+          allItems().filter(x => inQueue(x) && matchesWorker(x)).forEach(x => rowChips(x).forEach(t => { tc[t] = (tc[t] || 0) + 1; }));
           const chips = TAG_ORDER.map(t => {
             const d = TAGS[t], on = state.fTags.indexOf(t) !== -1, n = tc[t] || 0;
             // Merki sem enginn ber er falið — nema það sé valið, eða splunkunýtt
@@ -3583,9 +3603,14 @@
   window.Verkbord = {
     open: show, reload: load, importOld, applyActions,
     isOldYearReport, effectiveAssignee, matchesWorker, assignedForNew,
+    canonFilter, isOwnerOverviewFilter,
     editorAssigneeValue, coerceRowId, resolveEditorRowId, keepSelectedId,
     knownWorkerFilter, workerFilterOptionsHtml, assigneeOptionsHtml,
     defaultAddWorker, addWorkerOptionsHtml,
+    taggedWorkers, composeTags, tagsWithCategory, tagsWithWorkers, toggleTaggedWorker,
+    parseDraftSummary, encodeDraftSummary, buildVilla, foldName,
+    looksLikeAgnar, isGenericOperatorName, isAgnarFromNames, isAgnarUser,
+    showOwnerChrome, effectiveQueue, applyStaffChrome,
     taggedWorkers, composeTags, tagsWithCategory, tagsWithWorkers, toggleTaggedWorker,
     parseDraftSummary, encodeDraftSummary, buildVilla, foldName,
     looksLikeAgnar, isGenericOperatorName, isAgnarFromNames, isAgnarUser,
