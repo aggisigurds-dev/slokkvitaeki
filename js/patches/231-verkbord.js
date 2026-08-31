@@ -71,13 +71,10 @@
     } catch (_) {}
     return 'Slökkvitæki';
   }
-  // Owner chrome (AI borð, biðraðir, Snjallröðun/Þétt, Sækja póst, …) is only
-  // for the logged-in operator Agnar — never the worker filter. Anni looking
-  // at her own board must not see it; Agnar looking at Anni's filter still does.
   // Match by folded first token so "Agnar Sigurðsson" counts; do not treat
-  // "nema_agnar" / "Allir án Agnars" / Anni as Agnar. Ambiguous leftover
+  // "nema_agnar" / "Allir án Agnars" / Anni / Sara as Agnar. Ambiguous leftover
   // strings that are not Agnar are staff. An unnamed office session (no
-  // UserAuth / bs_employee) is Agnar's machine.
+  // UserAuth / bs_employee) is Agnar's machine — secondary lock only.
   function looksLikeAgnar(raw) {
     const s = String(raw == null ? '' : raw).trim();
     if (!s) return false;
@@ -124,8 +121,17 @@
     try { override = window.__vbAgnar; } catch (_) {}
     return isAgnarFromNames(operatorIdentityNames(), override);
   }
+  // Extra chrome (AI borð, Innhólf/Allt/Verkefni/Lokað/Póstar, Snjallröðun/Þétt,
+  // Sækja póst / Kúnnaskrá / 2023–25) follows the NAME DROPDOWN, not who is
+  // logged in. Agnar 2026-08-31 follow-up: Sara selected must hide extras even
+  // on Agnar's office session. Picking Agnar in the filter brings them back.
+  // isAgnarUser() is only a secondary lock. Do not gate chrome on isAgnarUser()
+  // alone — that was the live bug (Sara filter, extras still visible).
+  function showOwnerChrome() {
+    return looksLikeAgnar(state.fWorker) && isAgnarUser();
+  }
   function effectiveQueue() {
-    return isAgnarUser() ? state.queue : 'allt';
+    return showOwnerChrome() ? state.queue : 'allt';
   }
 
   // ── reference data ───────────────────────────────────────────────────────
@@ -615,6 +621,9 @@
     state.fWorker = v || 'nema_agnar';
     try { localStorage.setItem(WKEY, state.fWorker); } catch (_) {}
     syncAddWorkerSelect();
+    applyStaffChrome();
+    if (document.getElementById('vb-controls')) renderControls();
+    if (window.VerkbordAi) { try { VerkbordAi.mount(); } catch (_) {} }
   }
 
   // verkdagbok rows → pseudo work-items (read-through; structure stays in #04).
@@ -662,7 +671,7 @@
     renderControls(); renderList(); refreshBadge();
     claimOldJobs();
     applyStaffChrome();
-    if (isAgnarUser() && window.VerkbordAi) { try { VerkbordAi.mount(); } catch (_) {} }
+    if (window.VerkbordAi) { try { VerkbordAi.mount(); } catch (_) {} }
     // Nýjasta svarið í þræðinum (2026-07-10, ósk Agnars): ✨-samantektin/forsýnin
     // gat sýnt GAMALT efni úr miðjum póstþræði (löngu afgreitt). Flettum upp
     // nýjasta póstinum með sömu efnislínu og sýnum HANN — keyrt eftir fyrstu
@@ -1781,7 +1790,7 @@
   }
 
   function applyStaffChrome() {
-    const staff = !isAgnarUser();
+    const staff = !showOwnerChrome();
     const view = document.getElementById(VIEW_ID);
     if (view) view.classList.toggle('vb-staff', staff);
     const slot = document.getElementById('vb-ai-slot');
@@ -1880,7 +1889,7 @@
     // renderAll skrifar yfir allt #vb-main, svo dagskráin er teiknuð aftur hér.
     if (window.Vikudagskra) { try { Vikudagskra.mount(); } catch (e) { console.warn('[verkbord] dagskrá:', e); } }
     if (window.Skipulagsbord) { try { Skipulagsbord.mount(); } catch (e) { console.warn('[verkbord] skipulagsbord:', e); } }
-    if (isAgnarUser() && window.VerkbordAi) { try { VerkbordAi.mount(); } catch (e) { console.warn('[verkbord] ai:', e); } }
+    if (window.VerkbordAi) { try { VerkbordAi.mount(); } catch (e) { console.warn('[verkbord] ai:', e); } }
   }
 
   // MERKI-röðin undir skráningarreitnum sést aðeins þegar það er eitthvað til
@@ -1895,14 +1904,15 @@
 
   // Stjórnkortið (v3): Innhólf/Allt/Verkefni/Lokað flipar + leit + röðun/sýn,
   // skil, svo TÖG-síuröðin (⭐ Áríðandi + dökk-metal merkjachippar með teljara).
-  // Starfsfólk (ekki Agnar) fær aðeins nafnaval + leit ofan TÖG — engin AI-borð,
+  // Extra chrome only when the name dropdown is Agnar. Sara / Anni / Hákon /
+  // Charlize / Binni / Allir án Agnars get nafnaval + leit ofan TÖG — engin AI-borð,
   // biðraðir, Snjallröðun/Þétt né Sækja póst / Kúnnaskrá / 2023–25.
   function renderControls() {
     const el = document.getElementById('vb-controls'); if (!el) return;
     const c = counts();
     const noiseN = allItems().filter(x => isOpen(x) && isPaymentNoise(x) && matchesWorker(x)).length;
     const oldRepN = c.oldReports;
-    const agnar = isAgnarUser();
+    const agnar = showOwnerChrome();
     applyStaffChrome();
     // Morgunlínan undir síðutitlinum (mono, á dökka bandinu).
     const mg = document.getElementById('vb-morgun');
@@ -3415,7 +3425,7 @@
     defaultAddWorker, addWorkerOptionsHtml,
     parseDraftSummary, encodeDraftSummary, buildVilla, foldName,
     looksLikeAgnar, isGenericOperatorName, isAgnarFromNames, isAgnarUser,
-    effectiveQueue, applyStaffChrome,
+    showOwnerChrome, effectiveQueue, applyStaffChrome,
     refreshChrome: function () {
       const main = document.getElementById('vb-main');
       if (main) renderAll();
