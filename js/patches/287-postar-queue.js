@@ -230,6 +230,11 @@
   }
 
   function injectChip() {
+    if (window.Verkbord && Verkbord.isAgnarUser && !Verkbord.isAgnarUser()) {
+      var me = document.getElementById(CHIP_ID);
+      if (me && me.parentNode) me.parentNode.removeChild(me);
+      return;
+    }
     var native = document.querySelector('[data-act="queue"]');
     if (!native) return;
     if (!ACTIVE_STYLE) { ACTIVE_STYLE = selStyle(); INACTIVE_STYLE = unselStyle(); }

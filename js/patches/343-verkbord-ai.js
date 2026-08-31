@@ -498,6 +498,11 @@
   }
 
   function draw() {
+    if (window.Verkbord && Verkbord.isAgnarUser && !Verkbord.isAgnarUser()) {
+      const slot = document.getElementById('vb-ai-slot');
+      if (slot) slot.innerHTML = '';
+      return;
+    }
     const slot = document.getElementById('vb-ai-slot');
     if (!slot) return;
     injectCSS();
@@ -583,6 +588,11 @@
   }
 
   function mount() {
+    if (window.Verkbord && Verkbord.isAgnarUser && !Verkbord.isAgnarUser()) {
+      const slot = document.getElementById('vb-ai-slot');
+      if (slot) slot.innerHTML = '';
+      return;
+    }
     const slot = document.getElementById('vb-ai-slot');
     if (!slot) return;
     draw();
