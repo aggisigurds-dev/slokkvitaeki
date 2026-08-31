@@ -1712,6 +1712,22 @@
       state.view = b.dataset.viewMode; saveState(); render();
     }));
     main.querySelector('#_ars-new')?.addEventListener('click', openNewCompanyDialog);
+
+    /* 2026-08-31 (Agnar: „færa kanski nýtt fyrirtæki við hliðina á leita").
+       Í SÍMA einum: hnappurinn býr í verkfærastikunni með Kort/Listi og röðun,
+       svo hann fær sína eigin línu fyrir ofan leitina — tvær hálftómar raðir í
+       stað einnar. Hér er hann FÆRÐUR (ekki afritaður) inn í síustrimilinn.
+       Skjáborðið er ósnert: markupið stendur óbreytt og færslan gerist aðeins
+       þegar símaborðið (._arsm-row) er raunverulega teiknað. */
+    try {
+      const nyr = main.querySelector('#_ars-new');
+      const strip = main.querySelector('._ars-filterstrip');
+      if (nyr && strip && main.querySelector('._arsm-row') && nyr.parentElement !== strip) {
+        nyr.style.flex = '0 0 auto';
+        nyr.style.whiteSpace = 'nowrap';
+        strip.insertBefore(nyr, strip.firstChild);
+      }
+    } catch (_) {}
     main.querySelector('#_ars-sort')?.addEventListener('change', e => {
       const v = e.target.value;
       // Drive the SAME sort path as the column headers (state.sortCol/Dir) so the
