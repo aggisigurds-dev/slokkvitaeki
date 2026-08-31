@@ -179,7 +179,8 @@
 
   // ── Merki/tags (2026-07-10, ósk Agnars — sama sett og gamla Þjónustuverk-borðið)
   // Geymd í thjonustubeidni.tags (jsonb fylki, additive dálkur). Mörg merki per
-  // beiðni; sían efst telur og síar; ritillinn togglar.
+  // beiðni; sían efst telur og síar; ritillinn togglar. Starfsmanna-tög
+  // (starfs:Hákon) búa í sama fylki en rowTags síar þau frá merki-viðmótinu.
   const TAGS = {
     // 2026-08-31 (ósk Agnars): forvinna tilbúin — reikningur, skýrsla, viðhengi,
     // slóðir, svar-drög, samskiptasaga og sönnun á villunni. Starfsfólk yfirfer.
@@ -314,10 +315,21 @@
     return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear();
   }
 
-  function rowTags(r) {
+  function rawTagList(r) {
     let t = r && r.tags;
     if (typeof t === 'string') { try { t = JSON.parse(t); } catch (_) { t = []; } }
-    return Array.isArray(t) ? t.filter(x => TAGS[x]) : [];
+    if (!Array.isArray(t)) return [];
+    const out = [];
+    for (let i = 0; i < t.length; i++) {
+      const x = t[i];
+      if (typeof x !== 'string') continue;
+      const s = x.trim();
+      if (s && out.indexOf(s) === -1) out.push(s);
+    }
+    return out;
+  }
+  function rowTags(r) {
+    return rawTagList(r).filter(function (x) { return TAGS[x]; });
   }
   function tagChip(t, small) {
     const d = TAGS[t]; if (!d) return '';
@@ -475,8 +487,14 @@
     const w = filter != null ? filter : state.fWorker;
     if (!w || w === 'allir') return true;
     const who = effectiveAssignee(r, now);
-    if (w === 'nema_agnar') return who !== 'Agnar';
-    return who === w;
+    const tagged = taggedWorkers(r);
+    if (w === 'nema_agnar') {
+      if (who !== 'Agnar') return true;
+      for (let i = 0; i < tagged.length; i++) if (tagged[i] !== 'Agnar') return true;
+      return false;
+    }
+    if (who === w) return true;
+    return tagged.indexOf(w) !== -1;
   }
   function knownWorkerFilter(v) {
     if (v === 'nema_agnar') return true;
@@ -511,6 +529,92 @@
     for (let i = 0; i < names.length; i++) {
       const w = names[i];
       html += '<option value="' + w + '"' + (cur === w ? ' selected' : '') + '>' + w + '</option>';
+    }
+    return html;
+  }
+  // 2026-08-31 (ósk Agnars): létt tag á annan starfsmann án þess að stela
+  // assigned_to. Geymt í tags sem „starfs:Hákon". Hákon sér málið á sínu
+  // borði; aðalstarfsmaðurinn er óbreyttur. Keep in sync with
+  // tools/test-verkbord-assignee.cjs
+  const WORKER_TAG_PREFIX = 'starfs:';
+  function taggedWorkers(r) {
+    const names = [];
+    const raw = rawTagList(r);
+    for (let i = 0; i < raw.length; i++) {
+      const t = raw[i];
+      if (t.indexOf(WORKER_TAG_PREFIX) !== 0) continue;
+      const n = t.slice(WORKER_TAG_PREFIX.length).trim();
+      if (!n || WORKER_SENTINELS[n]) continue;
+      if (names.indexOf(n) === -1) names.push(n);
+    }
+    return names;
+  }
+  function extraTags(r) {
+    return rawTagList(r).filter(function (x) {
+      return !TAGS[x] && x.indexOf(WORKER_TAG_PREFIX) !== 0;
+    });
+  }
+  function composeTags(categoryTags, workers, extras) {
+    const cats = [];
+    (categoryTags || []).forEach(function (t) {
+      if (TAGS[t] && cats.indexOf(t) === -1) cats.push(t);
+    });
+    const wtags = [];
+    (workers || []).forEach(function (n) {
+      const name = String(n == null ? '' : n).trim();
+      if (!name || WORKER_SENTINELS[name]) return;
+      const tok = WORKER_TAG_PREFIX + name;
+      if (wtags.indexOf(tok) === -1) wtags.push(tok);
+    });
+    const rest = [];
+    (extras || []).forEach(function (x) {
+      if (typeof x === 'string' && x && rest.indexOf(x) === -1) rest.push(x);
+    });
+    return cats.concat(wtags).concat(rest);
+  }
+  function tagsWithCategory(row, nextCats) {
+    return composeTags(nextCats, taggedWorkers(row), extraTags(row));
+  }
+  function tagsWithWorkers(row, workers) {
+    const primary = editorAssigneeValue(row);
+    const cleaned = [];
+    (workers || []).forEach(function (n) {
+      if (n && n !== primary && cleaned.indexOf(n) === -1) cleaned.push(n);
+    });
+    return composeTags(rowTags(row), cleaned, extraTags(row));
+  }
+  function toggleTaggedWorker(row, name) {
+    const n = String(name == null ? '' : name).trim();
+    if (!n || WORKER_SENTINELS[n] || n === editorAssigneeValue(row)) {
+      return tagsWithWorkers(row, taggedWorkers(row));
+    }
+    const cur = taggedWorkers(row).slice();
+    const i = cur.indexOf(n);
+    if (i === -1) cur.push(n); else cur.splice(i, 1);
+    return tagsWithWorkers(row, cur);
+  }
+  function taggedListChipsHtml(r) {
+    const tagged = taggedWorkers(r);
+    if (!tagged.length) return '';
+    return tagged.map(function (n) {
+      return '<span title="Taggaður — sér málið, er ekki aðalstarfsmaður" style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4;white-space:nowrap">🏷 ' + esc(n) + '</span>';
+    }).join('');
+  }
+  function tagWorkerButtonsHtml(r) {
+    const primary = editorAssigneeValue(r);
+    const tagged = taggedWorkers(r);
+    let html = '';
+    for (let i = 0; i < WORKERS.length; i++) {
+      const w = WORKERS[i];
+      if (w === primary) continue;
+      const on = tagged.indexOf(w) !== -1;
+      html += '<button data-act="tagworker" data-id="' + esc(String(r.id)) + '" data-worker="' + esc(w) + '" type="button" title="' +
+        (on ? 'Taka ' + w + ' af málinu' : 'Tagga ' + w + ' svo viðkomandi sjái málið — án þess að taka það yfir') + '" ' +
+        'style="font-family:inherit;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;cursor:pointer;' +
+        (on
+          ? 'color:#0f766e;background:#ccfbf1;border:1.5px solid #14b8a6'
+          : 'color:#64748b;background:#fff;border:1px solid #d8dadf') + '">' +
+        (on ? '🏷 ' : '') + esc(w) + '</button>';
     }
     return html;
   }
@@ -589,6 +693,7 @@
     search: '',
     addType: 'annad',
     addTags: [],        // merki valin í ný-beiðni línunni (hreinsast eftir skráningu)
+    addTagged: [],      // auka starfsmenn (starfs:X) við nýtt mál
     threadLatest: {},   // beidniId → nýjasti póstur í þræðinum (sjá loadThreadLatest)
     attachments: {},    // beidniId → [{ id, name, path, url, mime_type, size }]
     draftPack: {},      // beidniId → forvinna { invoice, report, thread, villa, reply, links }
@@ -784,7 +889,7 @@
     return state.companies;
   }
 
-  async function quickAdd(title, type, custName, expand, tags, rsk, worker) {
+  async function quickAdd(title, type, custName, expand, tags, rsk, worker, extraWorkers) {
     title = (title || '').trim();
     if (!title) return;
     const SB = getSB(); if (!SB) { toast('Engin gagnabankatenging'); return; }
@@ -801,11 +906,14 @@
     if (!baseId && rsk && rsk.inSystem && rsk.baseId) { baseId = rsk.baseId; custName = custName || rsk.nafn; }
     // RSK-fyrirtæki sem er EKKI á skrá: kt + heimilisfang fylgja í nótunum.
     const rskNote = (rsk && !rsk.inSystem && !baseId) ? 'RSK: kt ' + rsk.kt + (rsk.heimilisfang ? ' · ' + rsk.heimilisfang : '') : '';
+    const primary = assignedForNew(worker);
+    const extra = (extraWorkers || []).filter(function (n) { return n && n !== primary; });
+    const cats = Array.isArray(tags) ? tags.filter(function (t) { return TAGS[t]; }) : [];
     const obj = {
       title, notes: rskNote, type: type || 'annad', status: 'nytt', priority: 'venjulegur',
       customer_nafn: custName || null, customer_base_id: baseId,
-      assigned_to: assignedForNew(worker),
-      tags: Array.isArray(tags) ? tags : [],
+      assigned_to: primary,
+      tags: composeTags(cats, extra, []),
       source: 'beint', important: false, created_at: nowIso(), created_by: currentUser(), updated_at: nowIso()
     };
     try {
@@ -1057,9 +1165,10 @@
     if (ta) pack.reply = ta.value;
     const tags = rowTags(r);
     if (tags.indexOf('draft') === -1) tags.push('draft');
-    await saveRow(r.id, { summary: encodeDraftSummary(pack), tags: tags });
+    const nextTags = tagsWithCategory(r, tags);
+    await saveRow(r.id, { summary: encodeDraftSummary(pack), tags: nextTags });
     r.summary = encodeDraftSummary(pack);
-    r.tags = tags;
+    r.tags = nextTags;
     toast('📝 Draft vistað — reikningur, skýrsla og svar-drög á málinu');
     renderControls(); renderList(); renderSel();
   }
@@ -1222,6 +1331,10 @@
           '<select id="vb-sel-worker" data-field="assigned_to" data-id="' + bid + '" title="Setja mál á starfsmann" ' +
           'style="text-transform:none;letter-spacing:0;height:26px;padding:0 8px;border-radius:7px;border:1px solid #d8dadf;background:#fff;color:#16181d;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">' +
           assigneeOptionsHtml(r) + '</select></label>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
+        '<span style="font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px">Tagga starfsmann</span>' +
+        tagWorkerButtonsHtml(r) +
       '</div>' +
       (atts.length
         ? atts.map(function (a) {
@@ -1866,6 +1979,16 @@
                 d.emoji + ' ' + esc(d.label) + '</button>';
             }).join('') +
           '</div>' +
+          '<div class="vb-scroll" id="vb-add-tagged" style="align-items:center;margin-top:8px;display:none">' +
+            '<span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#94a3b8;margin-right:1px">TAGGA LÍKA</span>' +
+            WORKERS.map(function (w) {
+              const on = state.addTagged.indexOf(w) !== -1;
+              return '<button data-act="addtagged" data-worker="' + w + '" type="button" title="Tagga ' + w + ' án þess að setja málið á hann" ' +
+                'style="font-family:inherit;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;cursor:pointer;' +
+                (on ? 'color:#0f766e;background:#ccfbf1;border:1.5px solid #14b8a6' : 'color:#64748b;background:#fff;border:1px solid #d8dadf') + '">' +
+                (on ? '🏷 ' : '') + w + '</button>';
+            }).join('') +
+          '</div>' +
         '</div>' +
         // Stjórnkortið loðir við toppinn svo flipar/síur séu alltaf við höndina
         // þegar skrunað er niður langan flokkalista.
@@ -1898,8 +2021,10 @@
   function syncAddTags() {
     const row = document.getElementById('vb-add-tags'); if (!row) return;
     const inp = document.getElementById('vb-add-input');
-    const show = !!(inp && inp.value.trim()) || state.addTags.length > 0;
+    const show = !!(inp && inp.value.trim()) || state.addTags.length > 0 || state.addTagged.length > 0;
     row.style.display = show ? '' : 'none';
+    const tagged = document.getElementById('vb-add-tagged');
+    if (tagged) tagged.style.display = show ? '' : 'none';
   }
 
   // Stjórnkortið (v3): Innhólf/Allt/Verkefni/Lokað flipar + leit + röðun/sýn,
@@ -2129,6 +2254,7 @@
         (clamp ? '' : waitPill(r)) +
         // HIN merkin sem málið ber — sýnileg beint á röðinni (ósk Agnars 14.08).
         miniTagChips(r, groupKey || '') +
+        '<span style="flex:none;display:flex;flex-wrap:wrap;gap:4px;align-items:center">' + taggedListChipsHtml(r) + '</span>' +
         '<button data-act="skra" data-id="' + esc(r.id) + '" title="Setja á dagskrá" ' +
           'style="flex:none;border:1px solid #d8dadf;border-radius:7px;background:#fff;cursor:pointer;padding:3px 8px;' +
           'font-size:11px;font-weight:700;color:#4b5058;font-family:inherit' + (clamp ? ';margin-top:2px' : '') + '">🗓 Á dagskrá</button>' +
@@ -2409,7 +2535,7 @@
       '<div style="padding:14px 16px 16px">' +
         // Status chips (not interactive here — stadaPill handles advance)
         '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">' +
-          chips.map(t => dkChip(t)).join('') + waitPill(r) + stadaPill(r) +
+          chips.map(t => dkChip(t)).join('') + taggedListChipsHtml(r) + waitPill(r) + stadaPill(r) +
         '</div>' +
         // BEINT BREYTANLEGUR TITILL — vistast 500ms eftir að hætt er að slá inn
         (r._vd
@@ -2566,6 +2692,7 @@
                   : 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis') + '">' + esc(desc) + '</div>' : '') +
           (!compact ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + linkLine + flags +
             (who ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;white-space:nowrap">👤 ' + esc(who) + '</span>' : '') +
+            taggedListChipsHtml(r) +
             (r._vd ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#fef3c7;color:#92400e;border:1px solid #fde68a">📓 úr Verkdagbók</span>' : '') +
           '</div>' : '') +
           (open ? renderEditor(r) : '') +
@@ -2686,6 +2813,27 @@
         t.style.background = on ? d.color : d.color + '12';
         t.style.borderColor = d.color + (on ? '' : '44');
         syncAddTags();
+        return;
+      }
+      if (act === 'addtagged') {
+        const w = t.getAttribute('data-worker');
+        if (!w) return;
+        const i = state.addTagged.indexOf(w);
+        if (i === -1) state.addTagged.push(w); else state.addTagged.splice(i, 1);
+        const on = i === -1;
+        t.style.color = on ? '#0f766e' : '#64748b';
+        t.style.background = on ? '#ccfbf1' : '#fff';
+        t.style.border = on ? '1.5px solid #14b8a6' : '1px solid #d8dadf';
+        t.textContent = (on ? '🏷 ' : '') + w;
+        return;
+      }
+      if (act === 'tagworker') {
+        e.stopPropagation();
+        const rid = Number(t.getAttribute('data-id'));
+        const row = state.items.find(x => x.id === rid); if (!row) return;
+        const name = t.getAttribute('data-worker');
+        saveRow(rid, { tags: toggleTaggedWorker(row, name) });
+        renderControls(); renderList(); renderSel(); refreshBadge();
         return;
       }
       if (act === 'addtype') {
@@ -2828,10 +2976,10 @@
         // eftir þótt hakið segði AF — kvörtunin sem lagfærð var 2026-07-20.
         const patch = {};
         if (rowChips(row).indexOf(tg) !== -1) {
-          patch.tags = cur.filter(x => x !== tg);
+          patch.tags = tagsWithCategory(row, cur.filter(x => x !== tg));
           if (flokkTag(row) === tg) patch.flokkur = null;
         } else {
-          patch.tags = cur.concat([tg]);
+          patch.tags = tagsWithCategory(row, cur.concat([tg]));
         }
         saveRow(rid, patch);
         renderControls(); renderList(); renderSel();
@@ -3126,6 +3274,15 @@
       if (f === 'customer_nafn') {
         const match = (state.companies || []).find(c => c.nafn === val);
         saveRow(id, { customer_nafn: val || null, customer_base_id: match ? match.customer_base_id : null });
+      } else if (f === 'assigned_to') {
+        const row = state.items.find(x => String(x.id) === String(id));
+        const patch = { assigned_to: val };
+        if (row) {
+          const next = Object.assign({}, row, { assigned_to: val });
+          const tw = taggedWorkers(row).filter(function (n) { return n !== (val || ''); });
+          patch.tags = tagsWithWorkers(next, tw);
+        }
+        saveRow(id, patch);
       } else {
         saveRow(id, { [f]: val });
       }
@@ -3148,11 +3305,17 @@
     if (cust) cust.style.borderColor = '';
     const wsel = document.getElementById('vb-add-worker');
     const worker = wsel ? wsel.value : (defaultAddWorker() || '');
-    quickAdd(v, state.addType, cv, !!expand, state.addTags.slice(), rsk, worker);
+    quickAdd(v, state.addType, cv, !!expand, state.addTags.slice(), rsk, worker, state.addTagged.slice());
     state.addTags = [];
+    state.addTagged = [];
     document.querySelectorAll('#view-verkbord [data-act="addtag"]').forEach(c => {
       const d = TAGS[c.getAttribute('data-tag')]; if (!d) return;
       c.style.color = d.color; c.style.background = d.color + '12'; c.style.borderColor = d.color + '44';
+    });
+    document.querySelectorAll('#view-verkbord [data-act="addtagged"]').forEach(c => {
+      const w = c.getAttribute('data-worker');
+      c.style.color = '#64748b'; c.style.background = '#fff'; c.style.border = '1px solid #d8dadf';
+      c.textContent = w || '';
     });
     syncAddTags();
     inp.focus();
@@ -3384,7 +3547,7 @@
           const cur = rowTags(row);
           const add = Array.isArray(a.add_tags) ? a.add_tags.filter(t => TAGS[t] && cur.indexOf(t) === -1) : [];
           if (!add.length) { out.skipped++; continue; }
-          await saveRow(id, { tags: cur.concat(add) });
+          await saveRow(id, { tags: tagsWithCategory(row, cur.concat(add)) });
           out.tagged++;
         } else if (a.op === 'notes') {
           const id = Number(a.id);
@@ -3401,7 +3564,7 @@
           if (!row) { out.skipped++; continue; }
           const cur = rowTags(row);
           if (cur.indexOf('draft') === -1) cur.push('draft');
-          const patch = { tags: cur };
+          const patch = { tags: tagsWithCategory(row, cur) };
           if (a.pack && typeof a.pack === 'object') patch.summary = encodeDraftSummary(a.pack);
           else if (a.summary && String(a.summary).indexOf(DRAFT_MARK) === 0) patch.summary = String(a.summary);
           await saveRow(id, patch);
@@ -3423,6 +3586,7 @@
     editorAssigneeValue, coerceRowId, resolveEditorRowId, keepSelectedId,
     knownWorkerFilter, workerFilterOptionsHtml, assigneeOptionsHtml,
     defaultAddWorker, addWorkerOptionsHtml,
+    taggedWorkers, composeTags, tagsWithCategory, tagsWithWorkers, toggleTaggedWorker,
     parseDraftSummary, encodeDraftSummary, buildVilla, foldName,
     looksLikeAgnar, isGenericOperatorName, isAgnarFromNames, isAgnarUser,
     showOwnerChrome, effectiveQueue, applyStaffChrome,

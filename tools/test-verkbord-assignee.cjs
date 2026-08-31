@@ -3,8 +3,8 @@
 /**
  * Keep in sync with assignee helpers in js/patches/231-verkbord.js
  * (assignedForNew, defaultAddWorker, addWorkerOptionsHtml, editorAssigneeValue,
- * resolveEditorRowId, keepSelectedId, workerFilterOptionsHtml) and
- * isOldYearReport / tools/test-old-year-report.cjs
+ * resolveEditorRowId, keepSelectedId, workerFilterOptionsHtml, taggedWorkers,
+ * composeTags, matchesWorker) and isOldYearReport / tools/test-old-year-report.cjs
  */
 const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
 const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
@@ -66,6 +66,80 @@ function assigneeOptionsHtml(r) {
 function editorAssigneeValue(r) {
   return normAssignee(r && r.assigned_to);
 }
+const TAGS = { draft: true, senda_skyrslur: true, gera_tilbod: true };
+const WORKER_TAG_PREFIX = 'starfs:';
+function rawTagList(r) {
+  let t = r && r.tags;
+  if (typeof t === 'string') { try { t = JSON.parse(t); } catch (_) { t = []; } }
+  if (!Array.isArray(t)) return [];
+  const out = [];
+  for (let i = 0; i < t.length; i++) {
+    const x = t[i];
+    if (typeof x !== 'string') continue;
+    const s = x.trim();
+    if (s && out.indexOf(s) === -1) out.push(s);
+  }
+  return out;
+}
+function rowTags(r) {
+  return rawTagList(r).filter(function (x) { return TAGS[x]; });
+}
+function taggedWorkers(r) {
+  const names = [];
+  const raw = rawTagList(r);
+  for (let i = 0; i < raw.length; i++) {
+    const t = raw[i];
+    if (t.indexOf(WORKER_TAG_PREFIX) !== 0) continue;
+    const n = t.slice(WORKER_TAG_PREFIX.length).trim();
+    if (!n || WORKER_SENTINELS[n]) continue;
+    if (names.indexOf(n) === -1) names.push(n);
+  }
+  return names;
+}
+function extraTags(r) {
+  return rawTagList(r).filter(function (x) {
+    return !TAGS[x] && x.indexOf(WORKER_TAG_PREFIX) !== 0;
+  });
+}
+function composeTags(categoryTags, workers, extras) {
+  const cats = [];
+  (categoryTags || []).forEach(function (t) {
+    if (TAGS[t] && cats.indexOf(t) === -1) cats.push(t);
+  });
+  const wtags = [];
+  (workers || []).forEach(function (n) {
+    const name = String(n == null ? '' : n).trim();
+    if (!name || WORKER_SENTINELS[name]) return;
+    const tok = WORKER_TAG_PREFIX + name;
+    if (wtags.indexOf(tok) === -1) wtags.push(tok);
+  });
+  const rest = [];
+  (extras || []).forEach(function (x) {
+    if (typeof x === 'string' && x && rest.indexOf(x) === -1) rest.push(x);
+  });
+  return cats.concat(wtags).concat(rest);
+}
+function tagsWithCategory(row, nextCats) {
+  return composeTags(nextCats, taggedWorkers(row), extraTags(row));
+}
+function tagsWithWorkers(row, workers) {
+  const primary = editorAssigneeValue(row);
+  const cleaned = [];
+  (workers || []).forEach(function (n) {
+    if (n && n !== primary && cleaned.indexOf(n) === -1) cleaned.push(n);
+  });
+  return composeTags(rowTags(row), cleaned, extraTags(row));
+}
+function toggleTaggedWorker(row, name) {
+  const n = String(name == null ? '' : name).trim();
+  if (!n || WORKER_SENTINELS[n] || n === editorAssigneeValue(row)) {
+    return tagsWithWorkers(row, taggedWorkers(row));
+  }
+  const cur = taggedWorkers(row).slice();
+  const i = cur.indexOf(n);
+  if (i === -1) cur.push(n); else cur.splice(i, 1);
+  return tagsWithWorkers(row, cur);
+}
 function coerceRowId(raw) {
   if (raw == null || raw === '') return null;
   const s = String(raw);
@@ -111,8 +185,14 @@ function matchesWorker(r, filter, now) {
   const w = filter;
   if (!w || w === 'allir') return true;
   const who = effectiveAssignee(r, now);
-  if (w === 'nema_agnar') return who !== 'Agnar';
-  return who === w;
+  const tagged = taggedWorkers(r);
+  if (w === 'nema_agnar') {
+    if (who !== 'Agnar') return true;
+    for (let i = 0; i < tagged.length; i++) if (tagged[i] !== 'Agnar') return true;
+    return false;
+  }
+  if (who === w) return true;
+  return tagged.indexOf(w) !== -1;
 }
 function shouldClaim(r, now) {
   if (!isOpen(r) || isArchived(r) || r.deleted_at) return false;
@@ -274,6 +354,44 @@ ok('2023 tengja is 21 days so not claimed', !shouldClaim(tengja2023, NOW));
 ok('2023 tengja hidden from staff by year not Agnar', matchesWorker(tengja2023, 'nema_agnar', NOW));
 ok('senda tilbúna án árs stays on staff board', matchesWorker(sendaNoYear, 'nema_agnar', NOW) && !isOldYearReport(sendaNoYear));
 ok('2026 derived stays on staff board', matchesWorker(derived2026, 'nema_agnar', NOW) && !isOldYearReport(derived2026));
+
+const agnarTaggedHakon = {
+  status: 'nytt', created_at: isoDaysAgo(5), assigned_to: 'Agnar',
+  tags: ['draft', 'starfs:Hákon']
+};
+const hakonAssigned = { status: 'nytt', created_at: isoDaysAgo(2), assigned_to: 'Hákon' };
+const oldUnassignedTaggedHakon = {
+  status: 'nytt', created_at: isoDaysAgo(40), assigned_to: null,
+  tags: ['starfs:Hákon']
+};
+const agnarTaggedAgnarOnly = {
+  status: 'nytt', created_at: isoDaysAgo(3), assigned_to: 'Agnar',
+  tags: ['starfs:Agnar']
+};
+
+ok('Hákon filter sees Agnar job tagged Hákon', matchesWorker(agnarTaggedHakon, 'Hákon', NOW));
+ok('Agnar filter still sees own tagged job', matchesWorker(agnarTaggedHakon, 'Agnar', NOW));
+ok('nema_agnar shows Agnar job tagged to staff', matchesWorker(agnarTaggedHakon, 'nema_agnar', NOW));
+ok('Anni filter does not take Hákon tag', !matchesWorker(agnarTaggedHakon, 'Anni', NOW));
+ok('Sara filter does not take Hákon tag', !matchesWorker(agnarTaggedHakon, 'Sara', NOW));
+ok('tag does not steal assigned_to', effectiveAssignee(agnarTaggedHakon, NOW) === 'Agnar');
+ok('rowTags strips starfs prefix from merki', rowTags(agnarTaggedHakon).join(',') === 'draft');
+ok('taggedWorkers reads Hákon', taggedWorkers(agnarTaggedHakon).join(',') === 'Hákon');
+ok('Hákon assigned still matches Hákon without tag', matchesWorker(hakonAssigned, 'Hákon', NOW));
+ok('old unassigned tagged Hákon still claims', shouldClaim(oldUnassignedTaggedHakon, NOW));
+ok('old unassigned tagged Hákon is effective Agnar', effectiveAssignee(oldUnassignedTaggedHakon, NOW) === 'Agnar');
+ok('Hákon filter sees old unassigned tagged to him', matchesWorker(oldUnassignedTaggedHakon, 'Hákon', NOW));
+ok('nema_agnar sees old unassigned tagged to staff', matchesWorker(oldUnassignedTaggedHakon, 'nema_agnar', NOW));
+ok('Anni old is not claimed even with a tag', !shouldClaim(Object.assign({}, anniOld, { tags: ['starfs:Hákon'] }), NOW));
+ok('tagging Agnar on Agnar job does not leak to nema_agnar', !matchesWorker(agnarTaggedAgnarOnly, 'nema_agnar', NOW));
+
+const preserved = tagsWithCategory(agnarTaggedHakon, ['draft', 'senda_skyrslur']);
+ok('category rewrite keeps starfs:Hákon', preserved.indexOf('starfs:Hákon') !== -1 && preserved.indexOf('senda_skyrslur') !== -1 && preserved.indexOf('draft') !== -1);
+ok('toggle tags Hákon onto Agnar row', toggleTaggedWorker({ assigned_to: 'Agnar', tags: ['draft'] }, 'Hákon').indexOf('starfs:Hákon') !== -1);
+ok('toggle does not tag primary assignee', toggleTaggedWorker({ assigned_to: 'Hákon', tags: [] }, 'Hákon').indexOf('starfs:Hákon') === -1);
+ok('toggle off removes tag', toggleTaggedWorker(agnarTaggedHakon, 'Hákon').indexOf('starfs:Hákon') === -1);
+ok('composeTags drops sentinels', composeTags(['draft'], ['nema_agnar', 'Allir', 'Hákon'], []).join(',') === 'draft,starfs:Hákon');
+ok('tagsWithWorkers drops new primary', tagsWithWorkers({ assigned_to: 'Hákon', tags: ['starfs:Hákon', 'draft'] }, ['Hákon', 'Anni']).join(',') === 'draft,starfs:Anni');
 
 console.log(failed ? '\nFAIL ' + failed : '\nOK');
 process.exit(failed ? 1 : 0);
