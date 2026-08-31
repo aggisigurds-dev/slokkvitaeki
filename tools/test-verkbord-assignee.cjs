@@ -2,8 +2,9 @@
 'use strict';
 /**
  * Keep in sync with assignee helpers in js/patches/231-verkbord.js
- * (assignedForNew, editorAssigneeValue, resolveEditorRowId, keepSelectedId,
- * workerFilterOptionsHtml) and isOldYearReport / tools/test-old-year-report.cjs
+ * (assignedForNew, defaultAddWorker, addWorkerOptionsHtml, editorAssigneeValue,
+ * resolveEditorRowId, keepSelectedId, workerFilterOptionsHtml) and
+ * isOldYearReport / tools/test-old-year-report.cjs
  */
 const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
 const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
@@ -15,14 +16,27 @@ function normAssignee(v) {
 function assignedForNew(worker) {
   return normAssignee(worker) || null;
 }
-const WORKERS = ['Agnar', 'Sara', 'Hákon', 'Binni', 'Anni'];
+function defaultAddWorker(filter, stateWorker) {
+  return assignedForNew(filter != null ? filter : stateWorker);
+}
+function addWorkerOptionsHtml(filter, stateWorker) {
+  const cur = defaultAddWorker(filter, stateWorker) || '';
+  let html = '<option value=""' + (!cur ? ' selected' : '') + '>—</option>';
+  for (let i = 0; i < WORKERS.length; i++) {
+    const w = WORKERS[i];
+    html += '<option value="' + w + '"' + (cur === w ? ' selected' : '') + '>' + w + '</option>';
+  }
+  return html;
+}
+const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Sara'];
 const WORKER_FILTERS = [
   ['Agnar', 'Agnar'],
   ['nema_agnar', 'Allir án Agnars'],
-  ['Sara', 'Sara'],
+  ['Charlize', 'Charlize'],
   ['Hákon', 'Hákon'],
   ['Binni', 'Binni'],
-  ['Anni', 'Anni']
+  ['Anni', 'Anni'],
+  ['Sara', 'Sara']
 ];
 function knownWorkerFilter(v) {
   if (v === 'nema_agnar') return true;
@@ -186,12 +200,28 @@ ok('assignedForNew empty is null', assignedForNew('') === null);
 ok('assignedForNew Allir is null', assignedForNew('Allir') === null);
 ok('assignedForNew Agnar is Agnar', assignedForNew('Agnar') === 'Agnar');
 ok('assignedForNew Anni is Anni', assignedForNew('Anni') === 'Anni');
+ok('default add from Anni filter is Anni', defaultAddWorker('Anni', 'Hákon') === 'Anni');
+ok('default add from nema_agnar is empty', defaultAddWorker('nema_agnar', 'Hákon') === null);
+ok('default add from allir is empty', defaultAddWorker('allir', 'Anni') === null);
+ok('default add from Agnar filter is Agnar', defaultAddWorker('Agnar', null) === 'Agnar');
+ok('default add falls back to state worker', defaultAddWorker(null, 'Anni') === 'Anni');
+ok('default add undefined filter uses state', defaultAddWorker(undefined, 'Binni') === 'Binni');
+ok('default add Charlize filter is Charlize', defaultAddWorker('Charlize', 'nema_agnar') === 'Charlize');
+ok('default add new Sara filter is Sara', defaultAddWorker('Sara', 'nema_agnar') === 'Sara');
+const anniAddHtml = addWorkerOptionsHtml('Anni');
+ok('composer select marks Anni selected', /value="Anni" selected/.test(anniAddHtml));
+ok('composer select does not mark empty when Anni', !/<option value="" selected>/.test(anniAddHtml));
+ok('composer select empty when staff board', /<option value="" selected>/.test(addWorkerOptionsHtml('nema_agnar')));
+ok('composer select marks Agnar when Agnar filter', /value="Agnar" selected/.test(addWorkerOptionsHtml('Agnar')));
 ok('assignedForNew Binni is Binni', assignedForNew('Binni') === 'Binni');
+ok('assignedForNew Charlize is Charlize', assignedForNew('Charlize') === 'Charlize');
+ok('assignedForNew Sara is Sara', assignedForNew('Sara') === 'Sara');
 
 const filterHtml = workerFilterOptionsHtml('nema_agnar');
 ok('filter starts with Agnar', filterHtml.indexOf('<option value="Agnar"') === 0);
 ok('filter has Allir án Agnars', /value="nema_agnar"[^>]*>Allir án Agnars</.test(filterHtml));
-ok('filter has Sara Hákon Binni Anni', ['Sara', 'Hákon', 'Binni', 'Anni'].every(n => filterHtml.indexOf('>' + n + '<') !== -1));
+ok('filter has Charlize Hákon Binni Anni Sara', ['Charlize', 'Hákon', 'Binni', 'Anni', 'Sara'].every(n => filterHtml.indexOf('>' + n + '<') !== -1));
+ok('Charlize comes before new Sara', filterHtml.indexOf('>Charlize<') < filterHtml.indexOf('>Sara<') && filterHtml.indexOf('>Sara<') !== -1);
 ok('filter has no everyone-Allir', !/>Allir</.test(filterHtml));
 ok('filter has no Andri', filterHtml.indexOf('Andri') === -1);
 ok('filter has no Elías', filterHtml.indexOf('Elías') === -1);
@@ -199,6 +229,11 @@ ok('unknown stored filter falls back to Allir án Agnars', /value="nema_agnar" s
 ok('Binni stored filter stays selected', /value="Binni" selected/.test(workerFilterOptionsHtml('Binni')));
 ok('Binni filter matches Binni ticket', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'Binni', NOW));
 ok('nema_agnar includes Binni', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'nema_agnar', NOW));
+ok('Charlize filter matches moved work', matchesWorker({ status: 'nytt', assigned_to: 'Charlize', created_at: isoDaysAgo(2) }, 'Charlize', NOW));
+ok('new Sara filter does not take Charlize work', !matchesWorker({ status: 'nytt', assigned_to: 'Charlize', created_at: isoDaysAgo(2) }, 'Sara', NOW));
+ok('new Sara filter matches only new Sara', matchesWorker({ status: 'nytt', assigned_to: 'Sara', created_at: isoDaysAgo(1) }, 'Sara', NOW));
+ok('assignee dropdown has Charlize', assigneeOptionsHtml({ assigned_to: null }).indexOf('>Charlize<') !== -1);
+ok('assignee dropdown has empty Sara slot', assigneeOptionsHtml({ assigned_to: null }).indexOf('>Sara<') !== -1);
 
 const anniOpts = assigneeOptionsHtml(anniOld);
 ok('assignee dropdown has Agnar', anniOpts.indexOf('>Agnar<') !== -1);

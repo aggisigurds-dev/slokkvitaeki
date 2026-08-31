@@ -313,20 +313,23 @@
     return tags.indexOf('senda_skyrslur') !== -1;
   }
 
-  // 2026-08-31 (ósk Agnars): eitt nafnaval — Agnar, Allir án Agnars, Sara,
-  // Hákon, Binni, Anni. Starfsfólk sér daglega vinnu; skjalavinna fer á Agnar.
+  // 2026-08-31 (ósk Agnars): nafnaval — Agnar, Allir án Agnars, Charlize,
+  // Hákon, Binni, Anni, Sara. Charlize tók við gömlu Söru (mál flutt).
+  // Nýja Sara er tóm slóð fyrir starfsmann sem er að byrja.
+  // Starfsfólk sér daglega vinnu; skjalavinna fer á Agnar.
   // Óúthlutað og eldra en 30 dagar skráist á Agnar. Sjálfgefin sía er
   // „Allir án Agnars". Tómt vistað gildi (gamla „Allir") flyst yfir.
   // Keep in sync with tools/test-verkbord-assignee.cjs
   const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
-  const WORKERS = ['Agnar', 'Sara', 'Hákon', 'Binni', 'Anni'];
+  const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Sara'];
   const WORKER_FILTERS = [
     ['Agnar', 'Agnar'],
     ['nema_agnar', 'Allir án Agnars'],
-    ['Sara', 'Sara'],
+    ['Charlize', 'Charlize'],
     ['Hákon', 'Hákon'],
     ['Binni', 'Binni'],
-    ['Anni', 'Anni']
+    ['Anni', 'Anni'],
+    ['Sara', 'Sara']
   ];
   const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
   function normAssignee(v) {
@@ -335,6 +338,25 @@
   }
   function assignedForNew(worker) {
     return normAssignee(worker) || null;
+  }
+  // Composer-starfsmaðurinn fylgir síunni: Anni-sía → Anni, Agnar-sía → Agnar.
+  // Allir án Agnars / allir / tómt → „—" (ekkert vistað assigned_to).
+  function defaultAddWorker(filter) {
+    return assignedForNew(filter != null ? filter : state.fWorker);
+  }
+  function addWorkerOptionsHtml(filter) {
+    const cur = defaultAddWorker(filter) || '';
+    let html = '<option value=""' + (!cur ? ' selected' : '') + '>—</option>';
+    for (let i = 0; i < WORKERS.length; i++) {
+      const w = WORKERS[i];
+      html += '<option value="' + w + '"' + (cur === w ? ' selected' : '') + '>' + w + '</option>';
+    }
+    return html;
+  }
+  function syncAddWorkerSelect() {
+    const sel = document.getElementById('vb-add-worker');
+    if (!sel) return;
+    sel.value = defaultAddWorker() || '';
   }
   // Stored assignee for the Meira dropdown — not effectiveAssignee. Old
   // unassigned tickets display as Agnar on the list; the editor must still
@@ -434,7 +456,7 @@
   // ── state ────────────────────────────────────────────────────────────────
   const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode', WKEY = '_vb_worker';
   // Starfsmenn (skráning + sía). Sjálfgefið „Allir án Agnars". WORKERS er
-  // skilgreint ofar með Agnar / Sara / Hákon / Binni / Anni.
+  // skilgreint ofar með Agnar / Charlize / Hákon / Binni / Anni / Sara.
   // Valin sía: texti lýsist upp + glóð í lit chips-ins (2026-07-13, ósk Agnars —
   // „sést illa hvað er valið"). currentColor = litur chips-ins svo glóðin passar.
   // 2026-07-22 (ósk Agnars — „það sýnir illa þegar sían er á … hafðu svarta gráa
@@ -535,6 +557,7 @@
   function setWorker(v) {
     state.fWorker = v || 'nema_agnar';
     try { localStorage.setItem(WKEY, state.fWorker); } catch (_) {}
+    syncAddWorkerSelect();
   }
 
   // verkdagbok rows → pseudo work-items (read-through; structure stays in #04).
@@ -1684,7 +1707,7 @@
               'style="flex:2 1 240px;min-width:170px;height:38px;padding:0 13px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#eef1f6;color:#141822;font-family:inherit;font-size:13.5px;font-weight:500;outline:none">' +
             '<select id="vb-add-worker" title="Starfsmaður" ' +
               'style="flex:none;height:38px;padding:0 10px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#eef1f6;color:#141822;font-family:inherit;font-size:13px;outline:none;cursor:pointer">' +
-              '<option value="">—</option>' + WORKERS.map(w => '<option value="' + w + '">' + w + '</option>').join('') +
+              addWorkerOptionsHtml() +
             '</select>' +
             // V3: skráningarhnappurinn er blár — rauði liturinn er frátekinn
             // fyrir „+ Nýtt mál" og dagskrár-hnappinn í bannernum.
@@ -2952,7 +2975,7 @@
     state.addRsk = null;
     if (cust) cust.style.borderColor = '';
     const wsel = document.getElementById('vb-add-worker');
-    const worker = wsel ? wsel.value : '';
+    const worker = wsel ? wsel.value : (defaultAddWorker() || '');
     quickAdd(v, state.addType, cv, !!expand, state.addTags.slice(), rsk, worker);
     state.addTags = [];
     document.querySelectorAll('#view-verkbord [data-act="addtag"]').forEach(c => {
@@ -2975,7 +2998,7 @@
     if (!v.trim()) { txtEl.focus(); return; }
     const cv = custEl ? custEl.value : '';
     txtEl.value = ''; if (custEl) custEl.value = '';
-    await quickAdd(v, null, cv, false, [cat], null, assignedForNew(state.fWorker));
+    await quickAdd(v, null, cv, false, [cat], null, defaultAddWorker());
     // quickAdd endurteiknar #vb-list — sækja ferskt eintak áður en fókusað er.
     const freshTxt = document.querySelector('.vb-catadd-txt[data-cat="' + cat + '"]');
     if (freshTxt) freshTxt.focus();
@@ -3227,6 +3250,7 @@
     isOldYearReport, effectiveAssignee, matchesWorker, assignedForNew,
     editorAssigneeValue, coerceRowId, resolveEditorRowId, keepSelectedId,
     knownWorkerFilter, workerFilterOptionsHtml, assigneeOptionsHtml,
+    defaultAddWorker, addWorkerOptionsHtml,
     parseDraftSummary, encodeDraftSummary, buildVilla, foldName
   };
   console.log('[patch-231] Verkborð installed — App.switchView("verkbord")');
