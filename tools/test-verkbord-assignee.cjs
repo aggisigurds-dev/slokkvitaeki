@@ -2,7 +2,8 @@
 'use strict';
 /**
  * Keep in sync with assignee helpers in js/patches/231-verkbord.js
- * and isOldYearReport in the same file / tools/test-old-year-report.cjs
+ * (assignedForNew, editorAssigneeValue, resolveEditorRowId, keepSelectedId,
+ * workerFilterOptionsHtml) and isOldYearReport / tools/test-old-year-report.cjs
  */
 const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
 const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
@@ -13,6 +14,70 @@ function normAssignee(v) {
 }
 function assignedForNew(worker) {
   return normAssignee(worker) || null;
+}
+const WORKERS = ['Agnar', 'Sara', 'Hákon', 'Binni', 'Anni'];
+const WORKER_FILTERS = [
+  ['Agnar', 'Agnar'],
+  ['nema_agnar', 'Allir án Agnars'],
+  ['Sara', 'Sara'],
+  ['Hákon', 'Hákon'],
+  ['Binni', 'Binni'],
+  ['Anni', 'Anni']
+];
+function knownWorkerFilter(v) {
+  if (v === 'nema_agnar') return true;
+  for (let i = 0; i < WORKERS.length; i++) if (WORKERS[i] === v) return true;
+  return false;
+}
+function workerFilterOptionsHtml(cur) {
+  const now = knownWorkerFilter(cur) ? cur : 'nema_agnar';
+  let html = '';
+  for (let i = 0; i < WORKER_FILTERS.length; i++) {
+    const val = WORKER_FILTERS[i][0], label = WORKER_FILTERS[i][1];
+    html += '<option value="' + val + '"' + (now === val ? ' selected' : '') + '>' + label + '</option>';
+  }
+  return html;
+}
+function assigneeOptionsHtml(r) {
+  const cur = editorAssigneeValue(r);
+  const names = WORKERS.slice();
+  if (cur && names.indexOf(cur) === -1) names.push(cur);
+  let html = '<option value=""' + (!cur ? ' selected' : '') + '>—</option>';
+  for (let i = 0; i < names.length; i++) {
+    const w = names[i];
+    html += '<option value="' + w + '"' + (cur === w ? ' selected' : '') + '>' + w + '</option>';
+  }
+  return html;
+}
+function editorAssigneeValue(r) {
+  return normAssignee(r && r.assigned_to);
+}
+function coerceRowId(raw) {
+  if (raw == null || raw === '') return null;
+  const s = String(raw);
+  if (s.indexOf('vd:') === 0) return s;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : s;
+}
+function resolveEditorRowId(el, selId, expandedId) {
+  if (el && el.closest) {
+    const host = el.closest('[data-id]');
+    if (host) {
+      const id = coerceRowId(host.getAttribute('data-id'));
+      if (id != null) return id;
+    }
+    if (el.closest('#vb-sel-ed')) {
+      const id = coerceRowId(selId);
+      if (id != null) return id;
+    }
+  }
+  if (expandedId != null && expandedId !== '') return coerceRowId(expandedId);
+  return coerceRowId(selId);
+}
+function keepSelectedId(selId, visibleRows, allRows) {
+  const sid = selId == null || selId === '' ? '' : String(selId);
+  if (sid && (allRows || []).some(function (x) { return String(x.id) === sid; })) return selId;
+  return (visibleRows && visibleRows.length) ? visibleRows[0].id : null;
 }
 function isOpen(r) { return r.status !== 'lokad'; }
 function isArchived(r) { return !r._vd && !!r.archived_at; }
@@ -121,6 +186,47 @@ ok('assignedForNew empty is null', assignedForNew('') === null);
 ok('assignedForNew Allir is null', assignedForNew('Allir') === null);
 ok('assignedForNew Agnar is Agnar', assignedForNew('Agnar') === 'Agnar');
 ok('assignedForNew Anni is Anni', assignedForNew('Anni') === 'Anni');
+ok('assignedForNew Binni is Binni', assignedForNew('Binni') === 'Binni');
+
+const filterHtml = workerFilterOptionsHtml('nema_agnar');
+ok('filter starts with Agnar', filterHtml.indexOf('<option value="Agnar"') === 0);
+ok('filter has Allir án Agnars', /value="nema_agnar"[^>]*>Allir án Agnars</.test(filterHtml));
+ok('filter has Sara Hákon Binni Anni', ['Sara', 'Hákon', 'Binni', 'Anni'].every(n => filterHtml.indexOf('>' + n + '<') !== -1));
+ok('filter has no everyone-Allir', !/>Allir</.test(filterHtml));
+ok('filter has no Andri', filterHtml.indexOf('Andri') === -1);
+ok('filter has no Elías', filterHtml.indexOf('Elías') === -1);
+ok('unknown stored filter falls back to Allir án Agnars', /value="nema_agnar" selected/.test(workerFilterOptionsHtml('allir')));
+ok('Binni stored filter stays selected', /value="Binni" selected/.test(workerFilterOptionsHtml('Binni')));
+ok('Binni filter matches Binni ticket', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'Binni', NOW));
+ok('nema_agnar includes Binni', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'nema_agnar', NOW));
+
+const anniOpts = assigneeOptionsHtml(anniOld);
+ok('assignee dropdown has Agnar', anniOpts.indexOf('>Agnar<') !== -1);
+ok('assignee dropdown has Binni', anniOpts.indexOf('>Binni<') !== -1);
+ok('assignee dropdown selects Anni', /value="Anni" selected/.test(anniOpts));
+ok('orphan Andri still listed when stored', assigneeOptionsHtml({ assigned_to: 'Andri' }).indexOf('>Andri<') !== -1);
+
+ok('editor shows Allir for old unassigned (not effective Agnar)', editorAssigneeValue(oldUnassigned) === '');
+ok('editor shows Agnar only when stored', editorAssigneeValue(agnarRecent) === 'Agnar');
+ok('editor shows Anni stored', editorAssigneeValue(anniOld) === 'Anni');
+ok('editor treats Allir sentinel as empty', editorAssigneeValue(allirOld) === '');
+
+function fakeEl(map) {
+  return { closest: function (sel) { return Object.prototype.hasOwnProperty.call(map, sel) ? map[sel] : null; } };
+}
+const host821 = { getAttribute: function () { return '821'; } };
+ok('editor id from data-id host', resolveEditorRowId(fakeEl({ '[data-id]': host821 }), 1, null) === 821);
+ok('VALIÐ MÁL without host uses selId (expandedId was null after selrow)', resolveEditorRowId(fakeEl({ '[data-id]': null, '#vb-sel-ed': {} }), 705, null) === 705);
+ok('no event target: expandedId wins', resolveEditorRowId(null, 705, 12) === 12);
+ok('no event target: selId when Meira/expanded is null', resolveEditorRowId(null, 705, null) === 705);
+ok('old currentEditorId(expandedId-only) would skip VALIÐ MÁL save', resolveEditorRowId(null, 705, null) != null);
+
+const allRows = [{ id: 705, assigned_to: 'Agnar' }, { id: 1, assigned_to: 'Anni' }];
+const staffVisible = allRows.filter(x => matchesWorker(x, 'nema_agnar', NOW));
+ok('nema_agnar visible after Agnar-assign is the other ticket', staffVisible.length === 1 && staffVisible[0].id === 1);
+ok('keep VALIÐ MÁL on ticket that left nema_agnar', keepSelectedId(705, staffVisible, allRows) === 705);
+ok('jump only when selected ticket is gone', keepSelectedId(999, staffVisible, allRows) === 1);
+ok('empty filter still keeps existing ticket', keepSelectedId(705, [], allRows) === 705);
 
 ok('claim old unassigned', shouldClaim(oldUnassigned, NOW));
 ok('do not claim recent', !shouldClaim(recentUnassigned, NOW));
