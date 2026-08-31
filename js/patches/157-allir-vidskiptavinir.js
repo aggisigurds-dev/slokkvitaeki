@@ -86,27 +86,39 @@
 
   // Per-company, per-year document sets — for the "has docs in 2023/24/25/26" filter.
   let _docYearsByBase = new Map(), _docYearsByFyrirtaeki = new Map(), _docYearsLoaded = false;
+  // Parallel maps scoped to doc_type='uttektarskyrsla' only — for the úttektarskýrsla 2025/26 chips.
+  let _uttektYearsByBase = new Map(), _uttektYearsByFyrirtaeki = new Map();
   async function loadDocYears() {
     if (!window.DB || !window.DB.fetchAll || !window.DB.sb) return;
     try {
       const data = await window.DB.fetchAll((from, to) =>
         window.DB.sb.from('customer_documents')
-          .select('customer_base_id,fyrirtaeki_id,year')
+          .select('customer_base_id,fyrirtaeki_id,year,doc_type')
           .not('year', 'is', null)
           .range(from, to)
       );
       _docYearsByBase = new Map(); _docYearsByFyrirtaeki = new Map();
+      _uttektYearsByBase = new Map(); _uttektYearsByFyrirtaeki = new Map();
       (data || []).forEach(r => {
         const yr = +r.year;
+        const isUttekt = (r.doc_type || '').toLowerCase().startsWith('uttekt');
         if (r.customer_base_id != null) {
           const k = String(r.customer_base_id);
           if (!_docYearsByBase.has(k)) _docYearsByBase.set(k, new Set());
           _docYearsByBase.get(k).add(yr);
+          if (isUttekt) {
+            if (!_uttektYearsByBase.has(k)) _uttektYearsByBase.set(k, new Set());
+            _uttektYearsByBase.get(k).add(yr);
+          }
         }
         if (r.fyrirtaeki_id != null) {
           const k = String(r.fyrirtaeki_id);
           if (!_docYearsByFyrirtaeki.has(k)) _docYearsByFyrirtaeki.set(k, new Set());
           _docYearsByFyrirtaeki.get(k).add(yr);
+          if (isUttekt) {
+            if (!_uttektYearsByFyrirtaeki.has(k)) _uttektYearsByFyrirtaeki.set(k, new Set());
+            _uttektYearsByFyrirtaeki.get(k).add(yr);
+          }
         }
       });
       _docYearsLoaded = true;
@@ -115,6 +127,16 @@
   function docYearsFor(c) {
     const byBase = c.customer_base_id != null ? _docYearsByBase.get(String(c.customer_base_id)) : null;
     const byFyrirtaeki = _docYearsByFyrirtaeki.get(String(c.id));
+    if (byBase && byFyrirtaeki) {
+      const merged = new Set(byBase);
+      byFyrirtaeki.forEach(y => merged.add(y));
+      return merged;
+    }
+    return byBase || byFyrirtaeki || null;
+  }
+  function uttektYearsFor(c) {
+    const byBase = c.customer_base_id != null ? _uttektYearsByBase.get(String(c.customer_base_id)) : null;
+    const byFyrirtaeki = _uttektYearsByFyrirtaeki.get(String(c.id));
     if (byBase && byFyrirtaeki) {
       const merged = new Set(byBase);
       byFyrirtaeki.forEach(y => merged.add(y));
@@ -223,7 +245,8 @@
         _hasGps: !!(c.heimilisfang && gc[c.heimilisfang]) || !!(c.nafn && gc[c.nafn]),
         _docs: docsFor(c),
         _bankOnly: _bankOnlyIds.has(+c.id),
-        _docYears: docYearsFor(c)
+        _docYears: docYearsFor(c),
+        _uttektYears: uttektYearsFor(c)
       };
     });
   }
@@ -262,6 +285,15 @@
     }
     if (state.xfilter.includes('missing-docs')) {
       result = result.filter(c => !c._docs || c._docs.total === 0);
+    }
+    if (state.xfilter.includes('has-samningur')) {
+      result = result.filter(c => c._docs && c._docs.samningur);
+    }
+    if (state.xfilter.includes('has-uttekt-2025')) {
+      result = result.filter(c => c._uttektYears && c._uttektYears.has(2025));
+    }
+    if (state.xfilter.includes('has-uttekt-2026')) {
+      result = result.filter(c => c._uttektYears && c._uttektYears.has(2026));
     }
     for (const yr of [2023, 2024, 2025, 2026]) {
       if (state.xfilter.includes('has-docs-' + yr)) {
@@ -455,6 +487,9 @@
     const cntNoEmail     = cntAll - cntWithEmail;
     const cntReview      = nonBank.filter(c => !!c.review_flag).length;
     const cntMissingDocs = nonBank.filter(c => !c._docs || c._docs.total === 0).length;
+    const cntSamningur   = nonBank.filter(c => c._docs && c._docs.samningur).length;
+    const cntUttekt2025  = nonBank.filter(c => c._uttektYears && c._uttektYears.has(2025)).length;
+    const cntUttekt2026  = nonBank.filter(c => c._uttektYears && c._uttektYears.has(2026)).length;
     const docYearCounts = {};
     [2023, 2024, 2025, 2026].forEach(yr => {
       docYearCounts[yr] = nonBank.filter(c => c._docYears && c._docYears.has(yr)).length;
@@ -548,6 +583,11 @@
           ${[
             ['review',     '⚑ Til skoðunar',  cntReview],
             ['missing-docs','📄 Vantar skjöl', cntMissingDocs],
+            ...(_docLoaded ? [['has-samningur', '📋 Þjónustusamningur', cntSamningur]] : []),
+            ...(_docYearsLoaded ? [
+              ['has-uttekt-2025', '📝 Úttekt \'25', cntUttekt2025],
+              ['has-uttekt-2026', '📝 Úttekt \'26', cntUttekt2026]
+            ] : []),
             ['has-email',  '✉️ Netfang',      cntWithEmail],
             ['has-gps',    '📍 GPS staðsetning', cntWithGps],
             ['has-units',  '🧯 Hefur tæki',   cntWithUnits],
@@ -681,6 +721,21 @@
     main.querySelectorAll('._av-flag').forEach(b => {
       b.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); toggleReview(+b.dataset.coId); });
     });
+    // Athugasemdir auto-save with 800ms debounce per row.
+    main.querySelectorAll('._av-note').forEach(ta => {
+      ta.addEventListener('input', e => {
+        const coId = +ta.dataset.coId;
+        clearTimeout(_noteTimers[coId]);
+        ta.style.borderColor = '#fcd34d'; // amber = unsaved
+        _noteTimers[coId] = setTimeout(() => {
+          saveNote(coId, ta.value).then(() => {
+            if (document.contains(ta)) ta.style.borderColor = '#86efac'; // green = saved
+            setTimeout(() => { if (document.contains(ta)) ta.style.borderColor = 'rgba(20,24,34,.14)'; }, 1200);
+          });
+        }, 800);
+      });
+      ta.addEventListener('click', e => e.stopPropagation());
+    });
     // Bulk select mode
     main.querySelector('#_av-selmode')?.addEventListener('click', () => {
       state.selectMode = !state.selectMode;
@@ -794,6 +849,7 @@
                 ${sortTh('Tæki', 'units', ';text-align:center')}
                 <th style="${headerStyle}">Þjónusta</th>
                 ${sortTh('📄 Skjöl', 'docs')}
+                <th style="${headerStyle};min-width:180px">Athugasemdir</th>
                 <th style="${headerStyle};text-align:right;width:90px">Aðgerð</th>
               </tr>
             </thead>
@@ -815,6 +871,13 @@
                     <td style="${cellStyle};text-align:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;color:${c._unitCount>0?'#11141c':'#cbd2dc'}">${c._unitCount || '·'}</td>
                     <td style="${cellStyle}"><div style="display:flex;gap:4px">${badges.join('')}</div></td>
                     <td style="${cellStyle}">${docBadge(c)}</td>
+                    <td style="${cellStyle};padding:8px 10px" onclick="event.stopPropagation()">
+                      <textarea class="_av-note" data-co-id="${c.id}" placeholder="Athugasemdir..." rows="2"
+                        style="width:100%;min-width:170px;box-sizing:border-box;padding:5px 8px;border:1px solid rgba(20,24,34,.14);border-radius:7px;font:inherit;font-size:12px;color:#3a4250;resize:vertical;background:#fdfdfe;line-height:1.4;outline:none"
+                        onfocus="this.style.borderColor='#93c5fd';this.style.background='#fff'"
+                        onblur="this.style.borderColor='rgba(20,24,34,.14)';this.style.background='#fdfdfe'"
+                      >${esc(c.athugasemdir || '')}</textarea>
+                    </td>
                     <td style="${cellStyle};text-align:right;white-space:nowrap">
                       ${editing ? `
                       <button class="_av-esave" data-co-id="${c.id}" type="button" title="Vista breytingar" style="padding:3px 9px;border:1px solid #86efac;background:#16a34a;color:#fff;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✓ Vista</button>
@@ -1050,6 +1113,21 @@
     if (window.Toast && Toast.show) Toast.show(`🚌 ${ids.length} merkt sem Ferðaþjónusta`);
     state.selected.clear(); state.selectMode = false;
     const main = document.getElementById('_av-main'); if (main) render(main);
+  }
+
+  // Athugasemdir (notes) auto-save — debounced 800ms, writes to fyrirtaeki.athugasemdir
+  // and updates the in-memory Companies.list so the next render shows the latest value.
+  const _noteTimers = {};
+  async function saveNote(coId, text) {
+    const SB = (window.DB && window.DB.sb);
+    const val = text.trim() || null;
+    const list = (window.Companies && Companies.list) || [];
+    const idx = list.findIndex(c => +c.id === +coId);
+    if (idx >= 0) list[idx].athugasemdir = val;
+    if (SB) {
+      try { await SB.from('fyrirtaeki').update({ athugasemdir: val }).eq('id', coId); }
+      catch (e) { console.warn('[allir-vidsk] saveNote failed', e); }
+    }
   }
 
   // Inline-edit save → write kt / heimilisfang / sími to fyrirtaeki and update
