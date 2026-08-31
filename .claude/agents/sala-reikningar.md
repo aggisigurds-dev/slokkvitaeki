@@ -1,6 +1,6 @@
 ---
 name: sala-reikningar
-description: Sala/POS, reikningagerð, dkPlus/Payday, afslættir, sjálfvirk PDF-vistun, reikninga-póstur og úttektartexti. Notaðu fyrir allt sem snýr að sölu, reikningum, verði og afslætti.
+description: Sala/POS, reikningagerð, dkPlus/Payday, afslættir, sjálfvirk PDF-vistun, reikninga-póstur og úttektartexti. Notaðu fyrir allt sem snýr að sölu, reikningum, verði og afslætti. Kveikjuorð: reikningur, sala, POS, Payday, dkPlus, afsláttur, krafa, útistandandi.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 

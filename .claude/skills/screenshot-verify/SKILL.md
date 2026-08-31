@@ -8,6 +8,7 @@ description: >
   extension. Use whenever a task needs a screenshot for the Verkefnalisti result
   image (result_image_b64), or to confirm a UI fix looks right onscreen before
   calling it done.
+  Kveikjuorð: skjámynd, screenshot, result_image, bh-browser.
 ---
 
 # Screenshot / browser-verify from a remote session

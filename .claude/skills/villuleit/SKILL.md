@@ -1,9 +1,16 @@
 ---
 name: villuleit
-description: Hvernig Agnar sendir skill-agenta í villuleit sem er variant-alert — finna afrit af sama villumynstri (systkini-kt, röng join, falskt grænt) þvert á hubinn. Notaðu þegar Agnar segir „villuleit", „variant", „variant-alert", „fölsk staðreynd", „false-fact", „sama mynstur og X", „er þetta víðar", „afrit", „systkini", „röng join", „FK-join", eða þegar ein villa er fundin og næsta skref er systkini. Taflan er docs/TRIGGERS.md. Ekki nýtt app. Skil í Charlize + einn lista.
+description: Hvernig Agnar sendir skill-agenta í villuleit sem er variant-alert — finna afrit af sama villumynstri (systkini-kt, röng join, falskt grænt) þvert á hubinn. Notaðu þegar Agnar segir „hindra klúður", „stöðva klúður", „villuleit", „variant", „variant-alert", „fölsk staðreynd", „false-fact", „sama mynstur og X", „er þetta víðar", „afrit", „systkini", „röng join", „FK-join", eða þegar ein villa er fundin og næsta skref er systkini. Taflan er docs/TRIGGERS.md. Ekki nýtt app. Skil í Charlize + einn lista.
 ---
 
 Kveikjuorð (límtafla): `docs/TRIGGERS.md`.
+
+## Hindra (áður en merge)
+
+`hindra klúður` er **vörn**, ekki veiði. Áður en ýtt er: `node tools/audit-all.cjs` +
+netvörður (`docs/ORYGGISNET.md`). Grepðu `customer_base_id` án `fyrirtaeki_id`,
+`public_url`, Payday-eftir-kt. Charlize: `skýrsla = fyrirtaeki_id aldrei kennitala`.
+Ekki breyta 153/187-reikningum. Ekki snerta Brunahólf.
 
 # Villuleit — Agnar sendir, agentinn leitar víðar
 

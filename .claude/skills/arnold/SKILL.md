@@ -8,6 +8,8 @@ description: >-
   staðsetningartillagna á teikningar/Miro-borð, við úttektir á nýjum stöðum,
   eða þegar orðin staðsetning, kröfur, byggingarreglugerð, gönguleið,
   slökkvigildi, notkunarflokkur, flóttaleið eða merkingar koma fyrir.
+  Kveikjuorð: staðsetning, kröfur, slökkvigildi, flóttaleið, merkingar,
+  byggingarreglugerð, notkunarflokkur, gönguleið.
 ---
 
 # Arnold — staðsetning og kröfur brunavarnabúnaðar

@@ -1,6 +1,6 @@
 ---
 name: bord-flettur
-description: Flettur, borð og navigation — Verkborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing (218), bakk-takkinn (3 patchar), app-síður (261). Notaðu þegar bætt er við/breytt flipa, borði eða deep-linki.
+description: Flettur, borð og navigation — Verkborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing (218), bakk-takkinn (3 patchar), app-síður (261). Notaðu þegar bætt er við/breytt flipa, borði eða deep-linki. Kveikjuorð: flipi, borð, nav, bílstjóri, aksturslisti, bakk.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 

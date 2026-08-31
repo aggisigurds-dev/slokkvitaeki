@@ -7,6 +7,8 @@ description: >
   lyklar (fyrirtaeki_id), eða „hvaða patch/tafla er þetta borð". Fyrsta
   verk: docs/RAFKERFI.md kaflar 8–12. Ekki nota fyrir nýtt útlit á year-cell
   (joker/thema) né kúnnasameiningu (kunnaskra).
+  Kveikjuorð: árs, ársreitur, pera, FULLBÚIÐ, VANTAR, SOURCE, FILTER, TÆKI,
+  KPI, data-elon, RAFKERFI, röng join, FK-join. Afrit → villuleit.
 ---
 
 # Elon Musk — hvenær á að kalla

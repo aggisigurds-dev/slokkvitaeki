@@ -9,6 +9,7 @@ description: >
   (._yr, 🧾, 📅 SOURCE vs FILTER chips). Fyrsta verk: docs/RAFKERFI.md
   (kaflar 8–12). Aldrei endurstíla year-cell gradienta, aldrei sameina
   hótel á kennitölu, aldrei deploy.js. Vörðu línur → netvordur fyrst.
+  Kveikjuorð: árs, pera, FULLBÚIÐ, VANTAR, SOURCE, FILTER, RAFKERFI, röng join.
 tools: Bash, Read, Grep, Glob
 ---
 

@@ -8,6 +8,7 @@ description: >
   (no browser, no clicking). Use when turning the manual Ajour export into an
   automated API pull, or whenever the Ajour data endpoint needs to be (re)found.
   Runs on a desktop with a browser (Cowork); ideal with the Playwright MCP.
+  Kveikjuorð: Ajour, NLSH, CSV, endpoint, AjourRegistrationData.
 ---
 
 # Ajour endpoint capture

@@ -1,6 +1,6 @@
 ---
 name: uttekt-audit
-description: Samræmisúttekt Slökkvitækis — ber saman magn á tækjaúttektarlista (uttaeki), magn í úttektarskýrslu (arsskodun_report_facts) og magn á reikningi (solur) fyrir hvert skoðað fyrirtæki árs; allt stemmir = grænt merki, annað fer á „skoða sérstaklega"-lista. Notaðu þegar Agnar biður um audit, samræmi, „passar magnið", „stemmir þetta", „farðu yfir árið", „hvort rétt skýrsla sé við hvert", eða vill uppfæra docs/SAMRAEMI-<ár>.md. Líka fyrir stakt fyrirtæki („stemmir Afltak?").
+description: Samræmisúttekt Slökkvitækis — ber saman magn á tækjaúttektarlista (uttaeki), magn í úttektarskýrslu (arsskodun_report_facts) og magn á reikningi (solur) fyrir hvert skoðað fyrirtæki árs; allt stemmir = grænt merki, annað fer á „skoða sérstaklega"-lista. Notaðu þegar Agnar biður um audit, samræmi, „passar magnið", „stemmir þetta", „farðu yfir árið", „hvort rétt skýrsla sé við hvert", eða vill uppfæra docs/SAMRAEMI-<ár>.md. Líka fyrir stakt fyrirtæki („stemmir Afltak?"). Kveikjuorð: audit, samræmi, stemmir, passar magnið, fölsk staðreynd, false-fact, falskt grænt, arsskodun_report_facts. Afrit af sömu villu → villuleit / variant-analysis.
 ---
 
 # Úttektar-audit — magn á þremur stöðum == grænt

@@ -1,6 +1,6 @@
 ---
 name: adstod
-description: AI-aðstoðarmaðurinn — Customer brief (237), 🤖 banner-spjald (238), Aðstoðarmiðstöð (239). Notaðu þegar unnið er með watchlist, tips eða reglu-analyzera.
+description: AI-aðstoðarmaðurinn — Customer brief (237), 🤖 banner-spjald (238), Aðstoðarmiðstöð (239). Notaðu þegar unnið er með watchlist, tips eða reglu-analyzera. Kveikjuorð: watchlist, banner, aðstoð, tips.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 

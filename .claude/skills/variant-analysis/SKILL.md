@@ -1,6 +1,6 @@
 ---
 name: variant-analysis
-description: Finnur ALLA staði sem bera sömu villu og sá sem var nýlega lagaður. Notaðu strax eftir að villa finnst — áður en sagt er „lagað" — og þegar Agnar segir „er þetta víðar", „laga þetta alls staðar", „hvar annars staðar", eða þegar sama villan kemur aftur eftir að hún átti að vera löguð. Fimm skref: rótin, nákvæm samsvörun, hvað má afstrakta, útvíkka þar til falsjákvæðin taka yfir, og staðfesta hvert tilvik á raungögnum.
+description: Finnur ALLA staði sem bera sömu villu og sá sem var nýlega lagaður. Notaðu strax eftir að villa finnst — áður en sagt er „lagað" — og þegar Agnar segir „villuleit", „variant", „variant-alert", „er þetta víðar", „laga þetta alls staðar", „hvar annars staðar", „afrit", „sama mynstur", eða þegar sama villan kemur aftur eftir að hún átti að vera löguð. Fimm skref: rótin, nákvæm samsvörun, hvað má afstrakta, útvíkka þar til falsjákvæðin taka yfir, og staðfesta hvert tilvik á raungögnum. Senda-leikregla: docs/TRIGGERS.md + skill villuleit.
 ---
 
 # Variant analysis — ein villa er aldrei ein

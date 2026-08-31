@@ -1,6 +1,6 @@
 ---
 name: kunnaskra
-description: Viðskiptavina-líkanið (customers_base/fyrirtaeki/vidskiptavinir), DB-skema, base-sameining, kerfis-kort og póst-merki/póstnúmer á fyrirtækjum. Notaðu fyrir kúnna, kennitölur, gagnaskema og tengingar.
+description: Viðskiptavina-líkanið (customers_base/fyrirtaeki/vidskiptavinir), DB-skema, base-sameining, kerfis-kort og póst-merki/póstnúmer á fyrirtækjum. Notaðu fyrir kúnna, kennitölur, gagnaskema og tengingar. Kveikjuorð: kennitala, kt, customers_base, rekstrarfélag, sameina, tvítak, 999999, systkini-kt.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 

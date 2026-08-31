@@ -1,6 +1,6 @@
 ---
 name: kort
-description: Kortin og geocode-kerfið — Leaflet, mapfix-merkin, Nominatim-proxyið, geocode_cache lögin þrjú og kill-dots sagan. Notaðu þegar pinnar vantar/eru rangir, geocode bregst, kort frýs eða birtist grátt, appelsínugulir punktar birtast aftur, eða þegar bæta á korti á nýja síðu. (Leiðsögn/Bílstjóri/Aksturslisti sem SÍÐUR eiga heima hjá bord-flettur — hér er kort-vélin sjálf.)
+description: Kortin og geocode-kerfið — Leaflet, mapfix-merkin, Nominatim-proxyið, geocode_cache lögin þrjú og kill-dots sagan. Notaðu þegar pinnar vantar/eru rangir, geocode bregst, kort frýs eða birtist grátt, appelsínugulir punktar birtast aftur, eða þegar bæta á korti á nýja síðu. (Leiðsögn/Bílstjóri/Aksturslisti sem SÍÐUR eiga heima hjá bord-flettur — hér er kort-vélin sjálf.) Kveikjuorð: kort, pinnar, geocode, Leaflet, kill-dots, Nominatim.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 
