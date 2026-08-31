@@ -50,7 +50,12 @@
       let q = sb.from(tafla).select(select).range(from, from + 999);
       if (filt) q = filt(q);
       const { data, error } = await q;
-      if (error || !data || !data.length) break;
+      // KASTA, EKKI ÞEGJA. Fyrsta útgáfan gerði `if (error) break` og skilaði
+      // tómu fylki þegar ég hafði beðið um dálk sem er ekki til
+      // (fyrirtaeki.stadur). Síðan sýndi þá NÚLL á öllum fjórum tölunum og leit
+      // út fyrir að allt væri í himnalagi. Þögul villa er verri en villan.
+      if (error) throw new Error(tafla + ': ' + error.message);
+      if (!data || !data.length) break;
       out = out.concat(data);
       if (data.length < 1000) break;
       from += 1000;
@@ -64,7 +69,7 @@
   async function reikna() {
     const sb = SB(); if (!sb) throw new Error('Gagnagrunnstenging ekki tilbúin');
 
-    const co = await allar('fyrirtaeki', 'id,nafn,kennitala,simi,farsimi,stadur,er_i_thjonustu',
+    const co = await allar('fyrirtaeki', 'id,nafn,kennitala,simi,farsimi,heimilisfang,er_i_thjonustu,customer_base_id',
       q => q.is('deleted_at', null));
     let ars = {};
     try {
@@ -85,13 +90,28 @@
       rukkad.set(String(s.customer_id), (rukkad.get(String(s.customer_id)) || 0) + q);
     });
 
+    /* Reikningur getur verið SKRÁÐUR SEM SKJAL þótt engin sala sé í kerfinu
+       (dkPlus/Drive-leiðin). Fyrsta útgáfan taldi aðeins sölur og fékk 161 —
+       Node-mælingin sem taldi hvort tveggja fékk 30. Sá sem á reikning á skrá
+       er rukkaður, sama hvaða leið hann fór. */
+    let medReikning = new Set();
+    try {
+      const docs = await allar('customer_documents', 'customer_base_id,doc_type,year');
+      docs.forEach(d => {
+        if (d.doc_type === 'reikningur' && +d.year === AR && d.customer_base_id != null) {
+          medReikning.add(String(d.customer_base_id));
+        }
+      });
+    } catch (_) {}
+
     const man = new Date().getMonth() + 1;
     const H = { tom: [], enginAkstur: [], orukkad: [], skekkja: [] };
 
     co.forEach(c => {
       const a = ars[String(c.id)] || null;
       const taeki = a ? heild(a.equipment) : 0;
-      const gogn = { id: c.id, nafn: c.nafn, kt: c.kennitala, simi: c.simi || c.farsimi, stadur: c.stadur };
+      const gogn = { id: c.id, nafn: c.nafn, kt: c.kennitala, simi: c.simi || c.farsimi, stadur: c.heimilisfang };
+      const cb = c.customer_base_id != null ? String(c.customer_base_id) : null;
 
       // 1 · merkt í þjónustu en ekkert tæki skráð
       if (c.er_i_thjonustu && taeki === 0) H.tom.push(gogn);
@@ -106,7 +126,9 @@
 
       if (!skodad) return;
       // 3 · skoðað í ár en hvorki sala né reikningur
-      if (!medSolu.has(String(c.id))) H.orukkad.push({ ...gogn, aukalega: taeki + ' tæki' });
+      if (!medSolu.has(String(c.id)) && !(cb && medReikning.has(cb))) {
+        H.orukkad.push({ ...gogn, aukalega: taeki + ' tæki' });
+      }
       // 4 · rukkuð tæki langt undir skráðum
       const r = rukkad.get(String(c.id)) || 0;
       if (r > 0 && r / taeki < 0.5) {
@@ -207,15 +229,31 @@
     }));
   }
 
+  /* Bíða eftir DB.sb í stað þess að gefast upp. Bein slóð (/#stadan) kveikir
+     sýnina ÁÐUR en DB.init() er búið, og fyrsta útgáfan skrifaði þá
+     „Gagnagrunnstenging ekki tilbúin" og sat föst þannig — sem lítur út eins
+     og síðan sé biluð þótt hún hefði virkað sekúndu síðar. */
+  async function bidaEftirDB(ms) {
+    const til = Date.now() + (ms || 20000);
+    while (!SB() && Date.now() < til) await new Promise(r => setTimeout(r, 300));
+    return !!SB();
+  }
+
+  let _reiknar = false;
   async function opna() {
     css();
     teikna();
-    if (_H) return;
-    try { _H = await reikna(); }
+    if (_H || _reiknar) return;
+    _reiknar = true;
+    try {
+      if (!(await bidaEftirDB())) throw new Error('Gagnagrunnstenging kom aldrei — endurhlaða síðuna');
+      _H = await reikna();
+    }
     catch (e) {
       viewEl().innerHTML = '<div class="st-bid">Náði ekki að reikna: ' + esc(e.message || e) + '</div>';
       return;
     }
+    finally { _reiknar = false; }
     teikna();
   }
 
@@ -240,8 +278,44 @@
     return true;
   }
 
+  /* App.switchView þekkir aðeins sýnir sem eru í index.html. Þessi er búin til
+     af pappa, svo hún verður að skrá sig sjálf — nákvæmlega eins og 239 gerir
+     fyrir Aðstoðarmiðstöðina. Án þessa birtist tómur skjár þegar smellt er á
+     nav-takkann (mælt 31.08: kortin fjögur voru til en .active vantaði). */
+  function hookSwitch() {
+    if (!window.App || !App.switchView) return false;
+    if (App.__stadanPatched) return true;
+    const orig = App.switchView.bind(App);
+    App.switchView = function (k) {
+      if (k === NAV_KEY) {
+        document.querySelectorAll('.view').forEach(v => { v.style.display = 'none'; v.classList.remove('active'); });
+        const v = viewEl();
+        v.style.display = 'block';
+        v.classList.add('active');
+        opna();
+        try { history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
+        return;
+      }
+      const me = document.getElementById(VIEW_ID);
+      if (me) { me.style.display = 'none'; me.classList.remove('active'); }
+      return orig(k);
+    };
+    App.__stadanPatched = true;
+    return true;
+  }
+
   function vakta() {
     navTakki();
+    hookSwitch();
+    // Bein slóð /#stadan á líka að virka, ekki bara nav-takkinn.
+    try {
+      if (location.hash.replace('#', '') === NAV_KEY) {
+        const v = document.getElementById(VIEW_ID);
+        if (!v || !v.classList.contains('active')) {
+          if (window.App && App.switchView) App.switchView(NAV_KEY);
+        }
+      }
+    } catch (_) {}
     const v = document.getElementById(VIEW_ID);
     if (v && v.classList.contains('active')) opna();
   }
