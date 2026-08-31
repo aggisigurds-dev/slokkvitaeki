@@ -727,6 +727,14 @@
         </div>
         ` : ''}
 
+        <!-- Skjöl & Skýrslur — customer_documents eftir fyrirtaeki_id, alltaf sýnilegt -->
+        <div id="_vd-docs-card" style="background:var(--surface);border:1px solid var(--brd);border-left:3px solid var(--blu);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:14px;font-weight:700;color:var(--ink1);display:flex;align-items:center;gap:7px"><span style="font-size:17px">📁</span> Skjöl &amp; Skýrslur</h3>
+          </div>
+          <div id="_vd-docs-body" style="font-size:12px;color:var(--ink3);text-align:center;padding:12px 0">Hleður…</div>
+        </div>
+
         ${units.length > 0 ? `
         <!-- Slökkvitæki list -->
         <div style="background:var(--surface);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm)">
@@ -811,13 +819,14 @@
           `;
         })() : '')}
 
-        ${c.athugasemdir ? `
-        <!-- Notes -->
+        <!-- Athugasemdir — alltaf sýnilegt, editable, vistar í fyrirtaeki.athugasemdir -->
         <div style="background:var(--surface);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm)">
-          <h3 style="margin:0 0 8px 0;font-size:13px;font-weight:700;color:var(--ink1)">📝 Athugasemdir</h3>
-          <div style="font-size:12.5px;color:var(--ink2);white-space:pre-wrap;line-height:1.45">${esc(c.athugasemdir)}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:13px;font-weight:700;color:var(--ink1)">📝 Athugasemdir</h3>
+            <span id="_vd-athuga-saved" style="font-size:10.5px;color:var(--grn);opacity:0;transition:opacity .3s">✓ Vistað</span>
+          </div>
+          <textarea id="_vd-athuga-ta" rows="3" placeholder="Ástæða þjónustu-brottnáms, sérstök leiðbeiningar, athugasemdir…" style="width:100%;padding:8px 10px;border:1px solid var(--brd2);border-radius:8px;font:inherit;font-size:12.5px;color:var(--ink1);background:var(--surface2);resize:vertical;min-height:72px;outline:none;box-sizing:border-box;transition:border-color .15s">${esc(c.athugasemdir || '')}</textarea>
         </div>
-        ` : ''}
 
         <div style="margin-top:20px;font-size:10.5px;color:var(--ink4);text-align:center">
           Viðskiptavinur ID #${c.id} · uppfært samstundis
@@ -1100,6 +1109,78 @@
             if (el) el.innerHTML = '<div style="padding:10px;color:var(--red);font-size:11.5px">Villa: ' + esc(String((e && e.message) || e)) + '</div>';
           });
       }
+    }
+
+    // 📝 Athugasemdir — debounce-vista í fyrirtaeki.athugasemdir
+    const athugaTa = main.querySelector('#_vd-athuga-ta');
+    const athugaSaved = main.querySelector('#_vd-athuga-saved');
+    if (athugaTa && sb) {
+      let _athugaTimer = null;
+      athugaTa.addEventListener('focus', () => { athugaTa.style.borderColor = 'var(--blu)'; athugaTa.style.background = 'var(--surface)'; });
+      athugaTa.addEventListener('blur',  () => { athugaTa.style.borderColor = 'var(--brd2)'; athugaTa.style.background = 'var(--surface2)'; });
+      athugaTa.addEventListener('input', () => {
+        clearTimeout(_athugaTimer);
+        _athugaTimer = setTimeout(async () => {
+          const val = athugaTa.value.trim() || null;
+          try {
+            await sb.from('fyrirtaeki').update({ athugasemdir: val }).eq('id', coId);
+            c.athugasemdir = val;
+            if (athugaSaved) { athugaSaved.style.opacity = '1'; setTimeout(() => { if (athugaSaved) athugaSaved.style.opacity = '0'; }, 2000); }
+          } catch (_) {}
+        }, 900);
+      });
+    }
+
+    // 📁 Skjöl & Skýrslur — sækja customer_documents eftir fyrirtaeki_id
+    const docsBody = document.getElementById('_vd-docs-body');
+    if (docsBody && sb) {
+      sb.from('customer_documents')
+        .select('id,doc_type,year,doc_date,customer_name,amount,file_name,drive_file_id,source,vidskiptategund')
+        .eq('fyrirtaeki_id', coId)
+        .order('year', { ascending: false, nullsFirst: false })
+        .order('doc_date', { ascending: false, nullsFirst: false })
+        .limit(40)
+        .then(({ data, error }) => {
+          const el = document.getElementById('_vd-docs-body');
+          if (!el) return;
+          if (error || !data || !data.length) {
+            el.innerHTML = '<div style="padding:10px;text-align:center;font-size:11.5px;color:var(--ink3);font-style:italic">Engin skjöl skráð</div>';
+            return;
+          }
+          const typeLabel = t => {
+            if (t === 'reikningur')       return '🧾 Reikningur';
+            if (t === 'samningur')        return '📄 Samningur';
+            if (t === 'uttektarskyrsla') return '📋 Úttektarskýrsla';
+            if (t === 'brunakerfi')       return '🚨 Brunakerfi';
+            return '📁 ' + (t || 'Skjal');
+          };
+          el.innerHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
+            '<thead><tr style="background:var(--surface2);color:var(--ink3);text-transform:uppercase;font-size:9.5px;font-weight:700">' +
+            '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--brd)">Tegund</th>' +
+            '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--brd)">Ár</th>' +
+            '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--brd)">Dagsetning</th>' +
+            '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--brd)">Upphæð</th>' +
+            '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--brd)">Skrá</th>' +
+            '</tr></thead><tbody>' +
+            data.map(d => {
+              const docDate = (d.doc_date || '').split('-').reverse().join('.');
+              const amt = d.amount ? fmtKr(+d.amount) : '—';
+              const fileCell = d.drive_file_id
+                ? '<a href="https://drive.google.com/file/d/' + esc(d.drive_file_id) + '/view" target="_blank" rel="noopener" style="color:var(--blu);text-decoration:none;font-weight:600" title="' + esc(d.file_name || 'Opna í Drive') + '">↗ Drive</a>'
+                : (d.file_name ? '<span style="color:var(--ink3);font-size:10.5px;max-width:140px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(d.file_name) + '">' + esc(d.file_name) + '</span>' : '—');
+              return '<tr style="border-top:1px solid var(--brd)">' +
+                '<td style="padding:6px 8px;white-space:nowrap">' + typeLabel(d.doc_type) + '</td>' +
+                '<td style="padding:6px 8px;color:var(--ink2);font-variant-numeric:tabular-nums;font-weight:700">' + (d.year || '—') + '</td>' +
+                '<td style="padding:6px 8px;color:var(--ink3)">' + (docDate || '—') + '</td>' +
+                '<td style="padding:6px 8px;text-align:right;color:var(--ink1);font-weight:700;font-variant-numeric:tabular-nums">' + amt + '</td>' +
+                '<td style="padding:6px 8px">' + fileCell + '</td>' +
+                '</tr>';
+            }).join('') +
+            '</tbody></table></div>';
+        }).catch(e => {
+          const el = document.getElementById('_vd-docs-body');
+          if (el) el.innerHTML = '<div style="padding:10px;color:var(--red);font-size:11.5px">Villa: ' + esc(String((e && e.message) || e)) + '</div>';
+        });
     }
   }
 
