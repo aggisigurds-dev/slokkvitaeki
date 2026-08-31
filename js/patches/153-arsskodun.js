@@ -2400,7 +2400,7 @@
          Áður var þetta minmax(0,1fr)+66+34+34+26 án skruns, svo allt kramdist
          í símabreidd — mælt á 430px: taflan 1280px breið og raðirnar 326px HÁAR
          af því allt braut sig niður. Nú skrunast það í staðinn fyrir að brotna. */
-      V+'._arsm-row{display:grid;grid-template-columns:var(--ars-nafn-dalkur,190px) var(--ars-col-ar,112px) var(--ars-col-akstur,60px) var(--ars-col-stada,52px) var(--ars-col-virdi,84px) var(--ars-col-sidast,78px) var(--ars-col-nota,130px);gap:0;align-items:center;width:max-content;min-width:100%;min-height:var(--ars-rad-haed,52px);height:auto;border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
+      V+'._arsm-row{display:grid;grid-template-columns:var(--ars-nafn-dalkur,190px) var(--ars-col-ar,112px) var(--ars-col-akstur,60px) var(--ars-col-stada,52px) var(--ars-col-nota,130px);gap:0;align-items:center;width:max-content;min-width:100%;min-height:var(--ars-rad-haed,52px);height:auto;border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
       V+'._arsm-row>*{padding:0 6px;min-width:0}',
       /* Nafnið helst kyrrt þegar strokið er til hliðar — annars veit maður ekki
          hvaða fyrirtæki maður er að lesa um leið og fyrsti dálkur er farinn. */
@@ -2571,8 +2571,10 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
           </div>
           <button type="button" class="_arsm-ak${ak ? ' d' + ak : ''}" data-akco="${c.id}" title="${ak ? 'Akstur ' + ak + ' — smelltu til að breyta' : 'Enginn aksturslisti — smelltu til að setja á lista'}">${ak || '—'}</button>
           <span class="_arsm-st ${st[0]}" title="${esc(st[2])}">${st[1]}</span>
-          <div class="_arsm-val" title="Áætlað virði ársþjónustu">${virdi}</div>
-          <div class="_arsm-last" title="Síðasta skoðun">${sidast}</div>
+          <!-- Virði og Síðast tekin út úr símaborðinu 31.08 (Agnar: „bara hide
+               á virði og síðast, svo það komi bara nótan við hlið græna checks").
+               Gögnin eru ÓSNERT í _ars (estimated_yearly, last_skodun) og standa
+               áfram í skjáborðstöflunni — þetta er aðeins þrengri sýn á síma. -->
           <div class="_arsm-note${nota ? '' : ' tom'}" title="${esc(nota || 'Engin ferðanóta')}">${esc(nota || '—')}</div>
         </div>`;
     }).join('');
@@ -2594,8 +2596,6 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
           </div>
           <div class="_arsm-h _arsm-c">🚗</div>
           <div class="_arsm-h _arsm-c">St</div>
-          <div class="_arsm-h" style="text-align:right">Virði</div>
-          <div class="_arsm-h _arsm-c">Síðast</div>
           <div class="_arsm-h">Nóta</div>
         </div>
         ${rows}
