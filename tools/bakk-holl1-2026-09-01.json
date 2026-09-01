@@ -1,0 +1,180 @@
+[
+ {
+  "id": 1748,
+  "fyrir": {
+   "co_id": 1748,
+   "steps_2026": {
+    "send": true,
+    "uttekt": true,
+    "skyrsla": true,
+    "reikningur": true,
+    "taekjalisti": true
+   },
+   "inspect_month": 8,
+   "steps_meta_2026": {
+    "taekjalisti": {
+     "at": 1787312607405,
+     "by": ""
+    }
+   },
+   "listi_stadfest_ar": 2026,
+   "last_year_inspected": 2026,
+   "field_inspected_year": 0
+  }
+ },
+ {
+  "id": 1176,
+  "fyrir": {
+   "_src": "cowork-fill-20260718",
+   "co_id": 1176,
+   "sv_note": "á eftir að skila nokkrum tækjum",
+   "equipment": {},
+   "steps_2026": {
+    "send": true,
+    "uttekt": true,
+    "skyrsla": true,
+    "reikningur": true,
+    "taekjalisti": true
+   },
+   "subscribed": true,
+   "inspect_month": 8,
+   "steps_meta_2026": {
+    "taekjalisti": {
+     "at": 1786986658642,
+     "by": "Agnar"
+    }
+   },
+   "listi_stadfest_ar": 2026,
+   "last_year_inspected": 2026,
+   "field_inspected_year": 0,
+   "inspect_month_manual": true
+  }
+ },
+ {
+  "id": 1645,
+  "fyrir": {
+   "co_id": 1645,
+   "steps_2026": {
+    "send": true,
+    "uttekt": true,
+    "skyrsla": true,
+    "reikningur": true,
+    "taekjalisti": true
+   },
+   "inspect_month": 7,
+   "steps_meta_2026": {
+    "taekjalisti": {
+     "at": 1786015257146,
+     "by": "Agnar"
+    }
+   },
+   "listi_stadfest_ar": 2026,
+   "last_year_inspected": 2026,
+   "field_inspected_year": 0
+  }
+ },
+ {
+  "id": 1619,
+  "fyrir": {
+   "_src": "cowork-fill-20260718",
+   "co_id": 1619,
+   "steps_2026": {
+    "send": true,
+    "uttekt": true,
+    "skyrsla": true,
+    "reikningur": true,
+    "taekjalisti": true
+   },
+   "subscribed": true,
+   "nytt_manual": true,
+   "inspect_month": 7,
+   "steps_meta_2026": {
+    "taekjalisti": {
+     "at": 1785948406230,
+     "by": "Agnar"
+    }
+   },
+   "listi_stadfest_ar": 2026,
+   "last_year_inspected": 2026,
+   "field_inspected_year": 0
+  }
+ },
+ {
+  "id": 1129,
+  "fyrir": {
+   "co_id": 1129,
+   "steps_2026": {
+    "send": true,
+    "uttekt": true,
+    "skyrsla": true,
+    "reikningur": true,
+    "taekjalisti": true
+   },
+   "inspect_month": 6,
+   "steps_meta_2026": {
+    "taekjalisti": {
+     "at": 1785846546374,
+     "by": "Agnar"
+    }
+   },
+   "listi_stadfest_ar": 2026,
+   "last_year_inspected": 2026,
+   "field_inspected_year": 0
+  }
+ },
+ {
+  "id": 1621,
+  "fyrir": {
+   "_src": "cowork-fill-20260718",
+   "co_id": 1621,
+   "akstur": 0,
+   "month_src": "taekjaskra",
+   "steps_2026": {
+    "send": true,
+    "uttekt": true,
+    "skyrsla": true,
+    "reikningur": true,
+    "taekjalisti": true
+   },
+   "subscribed": true,
+   "inspect_month": 8,
+   "steps_meta_2026": {
+    "taekjalisti": {
+     "at": 1785791723373,
+     "by": "Agnar"
+    }
+   },
+   "listi_stadfest_ar": 2026,
+   "last_year_inspected": 2026,
+   "field_inspected_year": 0
+  }
+ },
+ {
+  "id": 152,
+  "fyrir": {
+   "priority": 0,
+   "equipment": {},
+   "steps_2026": {
+    "send": true,
+    "uttekt": true,
+    "skyrsla": true,
+    "reikningur": true
+   },
+   "subscribed": true,
+   "inspect_month": 5,
+   "last_year_inspected": 2026
+  }
+ },
+ {
+  "id": 575,
+  "fyrir": {
+   "co_id": 575,
+   "priority": 2,
+   "equipment": {},
+   "steps_2026": {},
+   "inspect_month": 7,
+   "last_year_inspected": 2026,
+   "inspect_month_manual": true
+  }
+ }
+]

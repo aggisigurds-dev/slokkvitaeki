@@ -5,18 +5,18 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-01 06:00 · 284 virkar staðreyndir
+Sótt 2026-09-01 06:07 · 285 virkar staðreyndir
 
 ---
 
 ## 1. Staðan í tölum
 
-Mælt 2026-09-01 05:59 · 74 mælar · allar tölur eru VANDAMÁL (hærra = verra).
+Mælt 2026-09-01 06:06 · 74 mælar · allar tölur eru VANDAMÁL (hærra = verra).
 
 **⚠ Fór í ranga átt síðan síðast:**
 
+- rukkad_yfir_tvofalt_skrad: 22 → 23 (+1) — FÓR Í RANGA ÁTT
 - komid_a_tima_enginn_akstur: 25 → 46 (+21) — FÓR Í RANGA ÁTT
-- thar_af_med_drive_reikning: 0 → 113 (+113) — FÓR Í RANGA ÁTT
 - i_thjonustu_ekki_skodad_i_ar: 144 → 145 (+1) — FÓR Í RANGA ÁTT
 
 | Mælir | Tala |
@@ -46,13 +46,13 @@ Skilaðu niðurstöðu á RÉTT svið svo hún rati til þess sem á málið:
 |---|---|---:|---|
 | `kunnaskra` | `.claude/agents/kunnaskra.md` | 11 | — |
 | `sala-reikningar` | `.claude/agents/sala-reikningar.md` | 15 | — |
-| `elon-musk` | `.claude/agents/elon-musk.md` | 12 | — |
+| `elon-musk` | `.claude/agents/elon-musk.md` | 13 | — |
 | `bord-flettur` | `.claude/agents/bord-flettur.md` | 6 | — |
 | `prentun` | `.claude/agents/prentun.md` | 2 | — |
 
-**28 mælar eiga engan sérfræðing enn** — sýnilegt gat, ekki falið:
+**27 mælar eiga engan sérfræðing enn** — sýnilegt gat, ekki falið:
 
-`taeki_an_eiganda` · `verkefni_i_vinnu` · `taeki_an_tegundar` · `verkefni_i_beidni` · `veidin_systkini_kt` · `veidin_drive_tvitok` · `veidin_skjol_an_ars` · `verkefni_i_yfirferd` · `dauder_drive_tenglar` · `skjol_merkt_tvitekin` · `veidin_hud_buid_2026` · `taeki_an_stadsetningar` · `i_thjonustu_an_samnings` · `samningar_komnir_a_tima` · `veidin_drive_2026_radir` · `oathugadir_drive_tenglar` · `taeki_an_naestu_skodunar` · `taeki_med_utrunna_skodun` · `veidin_felog_i_thjonustu` · `veidin_felog_med_netfang` · `taeki_an_sidustu_skodunar` · `veidin_stadir_i_thjonustu` · `veidin_stadir_med_samning` · `thar_af_med_drive_reikning` · `veidin_drive_2026_distinct` · `veidin_hud_buid_vs_skyrsla` · `solur_i_ar_an_vidskiptavinar` · `veidin_blob_graen_an_skyrslu`
+`taeki_an_eiganda` · `verkefni_i_vinnu` · `taeki_an_tegundar` · `verkefni_i_beidni` · `veidin_systkini_kt` · `veidin_drive_tvitok` · `veidin_skjol_an_ars` · `verkefni_i_yfirferd` · `dauder_drive_tenglar` · `skjol_merkt_tvitekin` · `veidin_hud_buid_2026` · `taeki_an_stadsetningar` · `i_thjonustu_an_samnings` · `samningar_komnir_a_tima` · `veidin_drive_2026_radir` · `oathugadir_drive_tenglar` · `taeki_an_naestu_skodunar` · `taeki_med_utrunna_skodun` · `veidin_felog_i_thjonustu` · `veidin_felog_med_netfang` · `taeki_an_sidustu_skodunar` · `veidin_stadir_i_thjonustu` · `veidin_stadir_med_samning` · `veidin_drive_2026_distinct` · `veidin_hud_buid_vs_skyrsla` · `solur_i_ar_an_vidskiptavinar` · `veidin_blob_graen_an_skyrslu`
 
 ## 3. Staðreyndir — lesa ÁÐUR en breytt er
 
@@ -63,7 +63,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [skjol](#skjol) | 27 |
 | [solur](#solur) | 16 |
 | [thjonustulisti](#thjonustulisti) | 15 |
-| [taeki](#taeki) | 12 |
+| [taeki](#taeki) | 13 |
 | [sameining](#sameining) | 12 |
 | [postur](#postur) | 10 |
 | [document_pairs](#document-pairs) | 8 |
@@ -266,6 +266,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### taeki
 
+- **Hledsla telst taeki tegar hun stendur EIN a reikningi, en EKKI tegar yfirferd af somu tegund er a sama reikningi. Afltak R-000762: 5 lettvatns-hledslur, engin yfirferd => 5 taeki. Dalbrekka R-000683: 1 hledsla + 43 yfirferdir => 43, ekki 44.** _(likely)_
+  <br>Vidbot vid regluna sem Agnar stadfesti 01.09 (sala + yfirferd leggjast saman). Rokstudningur: hledsla er adgerd A taeki sem er thegar yfirfarid; standi hun ein er hun eina merkid um ad taekid se til. Dalbrekka-tilvikid er OVISST — munurinn er 1 af 43.
+  <br><sub>2026-09-01 · slokkvitaeki · 8 reikningar lesnir 01.09.2026 · claude-code</sub>
 - **Taekjafjoldi af reikningi: SALA og YFIRFERD af somu tegund leggjast SAMAN. Hunar R-106989: 117 Lettvatn 6L x4 (selt) + 133 Yfirferd Lettvatn 6-9L x2 = 6 lettvatn. Stadfest af Agnari 01.09.2026.**
   <br>Rokstudningur heldur i badar attir: attu their 2 og keyptu 4 = 6; eda voru 4 af 6 endurnyjud og 2 yfirfarin = 6. Vorunumer sem eru GJOLD og teljast ekki: 198 Vinna pr. Klst, 200 Akstur, 060 Skyrslugerd og vottun. 149 Skilti a engan reit i taekjaskranni (co2_2 co2_5 duft2 duft6_12 lettvatn brunaslong
   <br><sub>2026-09-01 · slokkvitaeki · Agnar, skjamynd med yfirstrikun · claude-code</sub>
@@ -535,12 +538,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Ómerkt X í duft-dálki vinnublaðs þýðir 6 kg — stærðin er aðeins skrifuð þegar hún víkur frá sjálfgefnu**
   <br>Þess vegna má ekki lesa ómerkt merki sem „óþekkt stærð" og ekki heldur sleppa því. Dæmi Kirkjuvellir 9 (21.08.2026): duft-dálkurinn hafði 2 kg, ómerkt ⊗, 9 kg og 2 kg — sem er 2x 2 kg + 6 kg hleðsla + 9 kg yfirferð, alls fjögur duft-tæki en ekki þrjú.
   <br><sub>2026-08-21 · slokkvitaeki · agnar · cowork</sub>
-- **Tölur eins og „403" í léttvatnsdálki eru ÍBÚÐANÚMER, ekki raðnúmer — þau segja hvaðan tækið var tekið í hleðslu**
-  <br>Staðfest með 2024-skýrslu Kirkjuvalla sem orðar það beint: „Endurhlaðin voru slökkvitæki úr íbúðum 104, 302, 303, 404 og 501." Sama ritháttur á blaðinu 2026 með 403. Skrifaðu hleðsluna í skýrslutextann með íbúðarnúmeri, eins og húsmálið gerir.
-  <br><sub>2026-08-21 · slokkvitaeki · drive · cowork</sub>
 - **Á vinnublöðunum afmarka LÁRÉTTU STRIKIN verkin — eitt verk nær yfir margar prentaðar línur og öll merki í tækjadálkunum tilheyra blokkinni, ekki línunni sem fyrirtækisnafnið stendur á**
   <br>Þetta er lykillinn að því að telja rétt. Dæmi 21.08.2026: Kirkjuvellir 9 náði niður fyrir auðar línur og netfangslínuna, og X-in í léttvatnsdálkinum í allri þeirri blokk voru 15 yfirferðir + 1 hleðsla (íbúð 403) — ekki 1-2 eins og lestur eftir línu gaf. Fornhagi 11-17 er EIN blokk sem spannar fjóra 
   <br><sub>2026-08-21 · slokkvitaeki · agnar · cowork</sub>
+- **Tölur eins og „403" í léttvatnsdálki eru ÍBÚÐANÚMER, ekki raðnúmer — þau segja hvaðan tækið var tekið í hleðslu**
+  <br>Staðfest með 2024-skýrslu Kirkjuvalla sem orðar það beint: „Endurhlaðin voru slökkvitæki úr íbúðum 104, 302, 303, 404 og 501." Sama ritháttur á blaðinu 2026 með 403. Skrifaðu hleðsluna í skýrslutextann með íbúðarnúmeri, eins og húsmálið gerir.
+  <br><sub>2026-08-21 · slokkvitaeki · drive · cowork</sub>
 
 ### payday
 
