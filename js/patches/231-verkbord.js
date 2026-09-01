@@ -1661,16 +1661,18 @@
     });
     return r;
   }
-  function counts() {
+  function counts(o) {
+    // o.oosiad = hunsa starfsmannasíuna (fyrir merkið, sem má ekki ljúga).
+    const _osiad = !!(o && o.oosiad);
     const all = allItems();
     const c = { idag: 0, verk: 0, post: 0, allt: 0, geymsla: 0, lokad: 0, wait: 0, od: 0, oldReports: 0 };
     for (const x of all) {
       if (isOldYearReport(x) && isOpen(x) && !isArchived(x)) c.oldReports++;
       if (isOldYearReport(x) && !state.showOldReports) {
-        if (!isOpen(x) && matchesWorker(x)) c.lokad++;
+        if (!isOpen(x) && (_osiad || matchesWorker(x))) c.lokad++;
         continue;
       }
-      if (!matchesWorker(x)) continue;
+      if (!_osiad && !matchesWorker(x)) continue;
       if (!isOpen(x)) { c.lokad++; continue; }
       if (isPost(x)) {
         if (isArchived(x)) { c.geymsla++; continue; }
@@ -1710,10 +1712,21 @@
   function refreshBadge() {
     const b = document.querySelector('.vb-badge');
     if (!b) return;
-    // Badge = það sem kallar á athygli: póstar sem bíða svars + verk dagsins.
-    const c = counts();
-    const n = c.wait + c.idag;
+    /* Badge = það sem kallar á athygli: póstar sem bíða svars + verk dagsins.
+       2026-09-01: talan var SÍUÐ (counts() sleppti öllu sem matchesWorker
+       hafnaði). Með sjálfgefnu síunni `nema_agnar` taldi merkið því ALDREI
+       Agnars eigin mál — hann sá „1" á meðan hans eigið mál lá óhreyft í viku.
+       Merki sem sést alls staðar í appinu má ekki bera síaða tölu; sían á
+       heima í listanum, ekki í viðvöruninni. Talan er nú ÓSÍUÐ og sú síaða
+       fer í tooltip þegar þær eru ólíkar. */
+    const heild = counts({ oosiad: true });
+    const n = heild.wait + heild.idag;
+    const siad = counts();
+    const ns = siad.wait + siad.idag;
     b.textContent = String(n);
+    b.title = ns !== n
+      ? n + ' mál kalla á athygli · ' + ns + ' sjást með núverandi síu'
+      : n + ' mál kalla á athygli';
     b.style.display = n > 0 ? 'inline-block' : 'none';
   }
 
@@ -2206,6 +2219,19 @@
           return chips + (state.fTags.length > 1
             ? '<button data-act="tagclear" title="Hreinsa öll valin merki" style="font-family:inherit;font-size:12px;font-weight:700;padding:5px 11px;border-radius:8px;' + FILTER_METAL + ';color:#ff8a82;cursor:pointer;white-space:nowrap">✕ Hreinsa (' + state.fTags.length + ')</button>'
             : '');
+        })() +
+        // Auða svæðið hægra megin við merkin (Agnar benti á það 01.09.2026):
+        // hér stendur hvað sían felur, í sömu röð og sían sjálf — svo talan og
+        // stýringin sem breytir henni séu á sama stað.
+        (function () {
+          const f = faldirAfSiu();
+          if (!f.faldir) return '';
+          return '<span data-act="siuhreinsa" title="Smelltu til að sýna öll málin" ' +
+            'style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:8px;' +
+            'background:rgba(250,204,21,.14);border:1px solid rgba(250,204,21,.45);color:#fde68a;' +
+            'font-size:11.5px;font-weight:700;white-space:nowrap;cursor:pointer">' +
+            '⚠ ' + f.faldir + ' af ' + f.alls + ' falin' +
+            '<span style="opacity:.8;font-weight:600">· sýna allt</span></span>';
         })() +
       '</div>';
   }
@@ -3005,6 +3031,15 @@
       }
       if (act === 'tagfilter') { toggleTag(t.getAttribute('data-tag')); state.page = 0; renderControls(); renderList(); return; }
       if (act === 'tagclear') { state.fTags = []; try { localStorage.setItem(TGKEY, '[]'); } catch (_) {} state.page = 0; renderControls(); renderList(); return; }
+      // „N af M falin · sýna allt" í TÖG-röðinni. Hreinsar ALLAR fjórar síurnar
+      // og geymdu gildin — annars kæmi sama sían aftur við næstu opnun.
+      if (act === 'siuhreinsa') {
+        state.fWorker = 'allir'; state.fTags = []; state.fFlokk = ''; state.fStar = false;
+        try { localStorage.setItem(WKEY, 'allir'); localStorage.setItem(TGKEY, '[]'); } catch (_) {}
+        state.page = 0;
+        renderControls(); renderList(); renderSel(); refreshBadge();
+        return;
+      }
       // ── Inline fyrirtæki-breyting í VALIÐ MÁL (2026-08-09) ───────────────
       if (act === 'editco') {
         e.stopPropagation();
