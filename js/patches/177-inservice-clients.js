@@ -39,8 +39,16 @@
     try {
       let from = 0; const page = 1000;
       while (true) {
+        // 2026-09-01: Í NOTKUN = allt NEMA 'urelt'. Áður .eq('status','active').
+        // `uttaeki.status` ber FJÖGUR gildi — active 4891 · urelt 482 · „Í lagi“ 154 · ok 74
+        // — svo sían á 'active' faldi 228 tæki á 17 fyrirtækjum. FJÓRTÁN þeirra eiga
+        // ekkert 'active' og litu því út fyrir að vera ALVEG TÓM: Bríetartún (48),
+        // Dalbrekka (48), bílskúrinn (16), Dra ehf (37), Iceland Comfort (15).
+        // Mælt fyrir breytingu: hjá SEX þeirra fer afleidda talan að stemma við
+        // arsskodun-blobbinn sem þegar var réttur — sterkasta vísbendingin um að sían
+        // var villan, ekki gögnin. Vörður: tools/audit-status-gildi.cjs.
         const r = await fetch(
-          window.SUPABASE_URL + '/rest/v1/uttaeki?select=client&status=eq.active',
+          window.SUPABASE_URL + '/rest/v1/uttaeki?select=client&status=neq.urelt',
           {
             headers: {
               apikey: window.SUPABASE_KEY,

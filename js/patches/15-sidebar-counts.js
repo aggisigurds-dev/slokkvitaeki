@@ -78,13 +78,21 @@
       const today = todayISO();
       const d30 = in30ISO();
       const ov = await sb.from('uttaeki').select('id', { count: 'exact', head: true })
-        .eq('status', 'active').lt('next_insp', today);
+      // 2026-09-01: Í NOTKUN = allt NEMA 'urelt'. Áður .eq('status','active').
+      // `uttaeki.status` ber FJÖGUR gildi — active 4891 · urelt 482 · „Í lagi" 154 ·
+      // ok 74 — svo sían á 'active' faldi 228 tæki á 17 fyrirtækjum. FJÓRTÁN þeirra
+      // eiga ekkert 'active' og litu því út fyrir að vera ALVEG TÓM: Bríetartún (48),
+      // Dalbrekka (48), bílskúrinn (16), Dra ehf (37), Iceland Comfort (15).
+      // Mælt fyrir breytingu: hjá SEX þeirra fer afleidda talan að stemma við
+      // arsskodun-blobbinn sem þegar var réttur — sterkasta vísbendingin um að
+      // sían var villan, ekki gögnin. Vörður: tools/audit-status-gildi.cjs.
+        .neq('status', 'urelt').lt('next_insp', today);
       const ovCount = ov.count || 0;
       if (ovCount > 0) {
         setBadge('field', ovCount, 'red');
       } else {
         const due = await sb.from('uttaeki').select('id', { count: 'exact', head: true })
-          .eq('status', 'active').gte('next_insp', today).lte('next_insp', d30);
+          .neq('status', 'urelt').gte('next_insp', today).lte('next_insp', d30);
         setBadge('field', due.count || 0, 'orange');
       }
 
