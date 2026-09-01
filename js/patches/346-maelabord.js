@@ -241,6 +241,15 @@
         + 'background:#1c2026;color:#cfd5dc;font-size:12.5px;font-weight:600;cursor:pointer;letter-spacing:.03em}',
       V + '#mb-maela:hover{background:#242931;border-color:#4a5158}',
       V + '#mb-maela[disabled]{opacity:.55;cursor:default}',
+      V + '#mb-trio{flex:0 0 auto;min-height:34px;padding:0 13px;border-radius:3px;border:1px solid #2b5c3a;'
+        + 'background:#16301f;color:#8fd0a8;font-size:12.5px;font-weight:600;cursor:pointer;letter-spacing:.03em}',
+      V + '#mb-trio:hover{background:#1c3d29;border-color:#4ade80;color:#bbf7d0}',
+      V + '#mb-trio[disabled]{opacity:.55;cursor:default}',
+      V + '.mb-trio-nid{margin-top:12px;border:1px solid #23262c;border-left:3px solid #2b5c3a;'
+        + 'border-radius:3px;background:#131519;padding:12px 14px;font-size:12.5px;color:#cfd5dc;line-height:1.6}',
+      V + '.mb-trio-nid.alarm{border-left-color:#c0392b;background:#1d1113;color:#f0c3bd}',
+      V + '.mb-trio-nid b{color:#eceff3}',
+      V + '.mb-trio-nid .rod{padding:2px 0}',
 
       /* Blikkandi viðvörun */
       V + '.mb-alarm{border:1px solid #7d2b26;background:#1d1113;border-left:3px solid #c0392b;'
@@ -500,9 +509,11 @@
       + '<div class="mb-hd"><h1>MÆLABORÐ</h1>'
       + '<span class="mb-sub">grunnlína ' + esc(grunn) + ' · ' + (S.punktar || 0) + ' mælipunktar</span>'
       + '<span class="mb-upp">mælt ' + esc(nyjast) + '</span>'
-      + '<button id="mb-maela" type="button" title="Les ~35 þús. raðir og skráir nýjan mælipunkt">Mæla núna</button></div>'
+      + '<button id="mb-maela" type="button" title="Les ~35 þús. raðir og skráir nýjan mælipunkt">Mæla núna</button>'
+      + '<button id="mb-trio" type="button" title="Ber saman prófíl, skýrslu og reikning fyrir hvert fyrirtæki og skráir breytingar í trio_saga">Tríó-keyrsla</button></div>'
       + alarm
       + '<div class="mb-maelar">' + madar + '</div>'
+      + '<div id="mb-trio-nid"></div>'
       + '<div class="mb-graf"><h2>' + esc(HEITI(_valinn)) + '</h2>'
       + '<div class="mb-gs">Brotalínur = frysting við viðgerð. Smelltu á mæli að ofan til að skipta.</div>'
       + graf(valinnH, vg) + '</div>'
@@ -515,6 +526,49 @@
     /* Mæling er aðgerð, ekki aukaverkun af því að opna síðuna: full skönnun
        les ~35 þús. raðir. Síðan sýnir bókina strax og mælir bara þegar beðið
        er um það. */
+    /* TRÍÓ-KEYRSLAN — Agnar 01.09.2026: „Þá setur maður frekar trigger í
+       mælaborð eða álíka til að renna check gegnum kerfið."
+       Hún er hér EN EKKI á fyrirtækjaspjaldinu: að reikna tríóið í hvert sinn
+       sem spjald opnast er sama talan reiknuð tugi sinnum á dag. Spjaldið les
+       síðustu staðfestingu; ÞESSI takki býr hana til. */
+    const trioTakki = v.querySelector('#mb-trio');
+    if (trioTakki) trioTakki.addEventListener('click', async () => {
+      const nid = document.getElementById('mb-trio-nid');
+      trioTakki.disabled = true;
+      trioTakki.textContent = 'Keyri…';
+      if (nid) nid.innerHTML = '<div class="mb-trio-nid">Ber saman prófíl, skýrslu og reikning fyrir hvert fyrirtæki…</div>';
+      try {
+        const r = await fetch('/api/trio?skra=1', { headers: { accept: 'application/json' } });
+        const d = await r.json().catch(() => null);
+        if (!r.ok || !d || d.villa) throw new Error((d && d.villa) || ('HTTP ' + r.status));
+        const alarm = d.alarm || [];
+        const hlutf = d.profill_vs_skyrsla
+          ? Math.round(d.profill_vs_skyrsla_sammala / d.profill_vs_skyrsla * 100) : 0;
+        let h = '<div class="mb-trio-nid' + (alarm.length ? ' alarm' : '') + '">'
+          + '<div class="rod"><b>' + d.profill_vs_skyrsla_sammala + ' af ' + d.profill_vs_skyrsla
+          + '</b> staðfest — prófíll og skýrsla sammála (' + hlutf + '%)</div>'
+          + '<div class="rod">' + d.vikja + ' víkja'
+          + (d.vikja_5_eda_meira ? ', þar af ' + d.vikja_5_eda_meira + ' um 5 tæki eða meira' : '') + '</div>'
+          + '<div class="rod">' + (d.skrad === 0 ? 'Engin breyting síðan síðast — ekkert skráð.'
+              : d.skrad + ' breytingar skráðar í bókina.') + '</div>';
+        if (alarm.length) {
+          h += '<div class="rod" style="margin-top:7px"><b>⚠ ' + alarm.length + ' ROFNUÐU</b>'
+            + ' — voru sammála, eru það ekki lengur:</div>'
+            + alarm.slice(0, 12).map(a => '<div class="rod">· ' + esc(a.nafn || ('fid ' + a.id))
+              + ' — ' + esc(a.hvad) + '</div>').join('');
+        }
+        h += '</div>';
+        if (nid) nid.innerHTML = h;
+      } catch (e) {
+        // Villa skilar ALDREI tölum — tómt liti út eins og „ekkert misræmi".
+        if (nid) nid.innerHTML = '<div class="mb-trio-nid alarm">Tríó-keyrslan brást: '
+          + esc(String((e && e.message) || e)) + '. Engar tölur eru sýndar — bilun má ekki líta út eins og að allt stemmi.</div>';
+      } finally {
+        trioTakki.disabled = false;
+        trioTakki.textContent = 'Tríó-keyrsla';
+      }
+    });
+
     const takki = v.querySelector('#mb-maela');
     if (takki) takki.addEventListener('click', async () => {
       takki.disabled = true;

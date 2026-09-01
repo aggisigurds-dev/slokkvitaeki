@@ -252,18 +252,28 @@
   async function fetchTrio(coId){
     try{
       var sb=SB(); if(!sb) return null;
-      // Ohadar — samhlida. I rod kostudu thaer ~800 ms per spjald (maelt 01.09).
-      var sv = await Promise.all([
-        sb.from('arsskodun_report_facts').select('report_year,total_devices')
-          .eq('fyrirtaeki_id', coId).maybeSingle(),
-        sb.from('uttaeki').select('id',{count:'exact',head:true})
-          .eq('fyrirtaeki_id', coId).eq('status','active'),
-      ]);
-      var f = sv[0], u = sv[1];
-      if(f.error || !f.data || f.data.total_devices==null) return null;
-      if(u.error || u.count==null) return null;
-      return { ar:+f.data.report_year, skyrsla:+f.data.total_devices, profill:+u.count };
-    }catch(e){ return soknVilla('tríó-tölur', e) && null; }
+      /* LES SÍÐUSTU STAÐFESTINGU — reiknar ekki.
+         Agnar 01.09.2026: „ef ég er að hoppa á milli fyrirtækja þá getur þetta
+         truflað og er óþarfi að checka tugi skipta á dag."
+         Fyrri útgáfa taldi tækin og las skýrslutöluna í hvert sinn sem spjald
+         opnaðist. Það er sama talan reiknuð aftur og aftur, og hún breytist
+         ekki milli þess sem einhver skráir tæki.
+         Nú er ÞETTA ein indexuð röð úr trio_saga — það sem síðasta heildar-
+         keyrsla staðfesti. Það er líka réttara: græna ljósið sýnir DAGSETTA
+         staðfestingu, ekki ferska ágiskun. Heildarkeyrslan er /api/trio?skra=1,
+         ræst af mælaborðinu. */
+      var r=await sb.from('trio_saga')
+        .select('profill,skyrsla,dags')
+        .eq('fyrirtaeki_id', coId).order('dags',{ascending:false}).limit(1).maybeSingle();
+      if(r.error || !r.data || r.data.skyrsla==null || r.data.profill==null) return null;
+      // Árið kemur úr skýrslutölunni sjálfri; það er geymt í report_facts, svo
+      // við lesum það aðeins þegar staðfesting er til (ein létt fyrirspurn).
+      var f=await sb.from('arsskodun_report_facts').select('report_year')
+        .eq('fyrirtaeki_id', coId).maybeSingle();
+      if(f.error || !f.data) return null;
+      return { ar:+f.data.report_year, skyrsla:+r.data.skyrsla, profill:+r.data.profill,
+               stadfest: r.data.dags };
+    }catch(e){ return soknVilla('tríó-staðfestingu', e) && null; }
   }
   async function fetchPairs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
@@ -524,7 +534,8 @@
     else if(trioRangt && both) cls+=' ostemmt';      // skjöl til EN tölur skakkar
     else if(both) cls+=' both';
     else if(fcStat==='claude') cls+=' claude'; else if(fcStat==='gap') cls+=' gap';
-    var trioTxt = trioAr ? (' — spjaldið ' + trio.profill + ' tæki, skýrslan ' + trio.skyrsla) : '';
+    var trioTxt = trioAr ? (' — spjaldið ' + trio.profill + ' tæki, skýrslan ' + trio.skyrsla
+      + (trio.stadfest ? ' (staðfest ' + String(trio.stadfest).slice(0,10) + ')' : '')) : '';
     var tip=fcStat==='human'?(y+' — ✓ staðfest handvirkt (grænt) — tvísmelltu fyrir 🟠 „skýrsla vantar"')
       :(trioOk&&both)?(y+' — ✓✓ STAÐFEST TRÍÓ: skýrsla, reikningur OG tækjatalan stemmir'+trioTxt)
       :(trioRangt&&both)?(y+' — ⚠ skýrsla og reikningur á skrá EN tækjatalan stemmir ekki'+trioTxt+' — annað hvort er rangt')

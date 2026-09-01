@@ -118,7 +118,14 @@ function linurAf(s) {
 
   const [co, ut, facts, sol] = await Promise.all([
     allar('fyrirtaeki?select=id,nafn,er_i_thjonustu&deleted_at=is.null&order=id'),
-    allar('uttaeki?select=id,fyrirtaeki_id&status=eq.active&order=id'),
+    /* Í NOTKUN = allt NEMA 'urelt'. Ekki .eq('status','active').
+       Mælt 01.09.2026: status ber FJÖGUR gildi — active 4891, urelt 482,
+       'Í lagi' 154, 'ok' 74. Sían á 'active' faldi 228 tæki á 17 fyrirtækjum,
+       og FJÓRTÁN þeirra eiga ekkert 'active' — þau litu út fyrir að vera
+       alveg tóm. Bríetartún (48), Dalbrekka (48) og bílskúrinn (16) eru þar á
+       meðal. Patch 129 ber athugasemd um sömu villu: „server-side
+       .eq('status','active'), which silently dropped any unit." */
+    allar('uttaeki?select=id,fyrirtaeki_id&status=neq.urelt&order=id'),
     allar('arsskodun_report_facts?select=fyrirtaeki_id,report_year,total_devices,parse_ok&order=fyrirtaeki_id'),
     allar('solur?select=customer_id,created_at,linur,is_credit,status&order=created_at.desc'),
   ]);
