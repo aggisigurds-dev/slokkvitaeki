@@ -107,6 +107,66 @@ const REGLUR = [
   + 'staðfestu á núverandi kóða að hún sé enn til.',
 ];
 
+/* ── STÝRISKRÁIN — hvaða sérfræðingur á hvaða tölu ──────────────────────────
+ * Agnar 31.08: „þú veist ekkert hvað er í gangi í kerfinu. þessvegna gerist
+ * aldrei neitt … það þarf einhvern veginn að gera einhverja stýriskrá sem
+ * leiðbeinir ykkur … þú lest skill agent memory facts + activity report.
+ * gerir viðgerð og skilar inn niðurstöðum og nýtt fix inn til viðeigandi
+ * skills agents."
+ *
+ * ÁÐUR skrifaði hver viðgerð í EINA flata `ai_log`-blokk sem engin framtíðar-
+ * lota las — af því ekkert í kerfinu benti á hana. Á sama tíma eru 12
+ * sérfræðingar í .claude/agents/*.md, hver með sitt svið (sjá
+ * docs/AGENTASKRA.md, sem er sama hugmynd sem "hvaða agent á þetta mál" en
+ * vísar EKKI niðurstöðum til baka). Þetta er brúin.
+ *
+ * Þessi tafla er MÆLD eign, ekki ágiskun: aðeins mælar sem lýsing sérfræðings
+ * í AGENTASKRA.md nefnir berum orðum eru settir hér. Restin lendir í
+ * `oflokkad_maelar` í svid_yfirlit — SÝNILEGT autt svæði er réttara en
+ * fölsuð eignarhald. (Sama regla og annars staðar í þessari skrá: óathugað
+ * á að segjast óathugað.)
+ */
+const SVID_EIGENDUR = {
+  'kunnaskra': {
+    heiti: 'Viðskiptavina-líkanið — kennitölur, tengiliðir, grunnskrá',
+    skra: '.claude/agents/kunnaskra.md',
+    maelar: ['i_thjonustu_an_kennitolu', 'i_thjonustu_ogild_kennitala', 'tvitekin_kennitala',
+      'i_thjonustu_an_kunnaskrar', 'skjol_an_kunnaskrar', 'opin_an_kunnaskrar',
+      'i_thjonustu_an_heimilisfangs', 'i_thjonustu_an_postnumers',
+      'i_thjonustu_an_tengilids', 'i_thjonustu_an_netfangs', 'i_thjonustu_en_merkt_ovirkt'],
+  },
+  'sala-reikningar': {
+    heiti: 'Sala/POS, reikningar, Payday/dkPlus, afslættir',
+    skra: '.claude/agents/sala-reikningar.md',
+    maelar: ['skodad_en_orukkad', 'rukkad_undir_helmingi_skradra', 'rukkad_yfir_tvofalt_skrad',
+      'solur_i_ar_an_lina', 'solur_i_ar_an_upphaedar', 'solur_fastar_i_drogum',
+      'kreditreikningar_i_ar', 'tvitekin_solunumer', 'reikningsskjol_an_numers',
+      'tvitekin_reikningsnumer', 'thar_af_fyllanleg_ur_reikningi',
+      'veidin_rukkud_an_skyrslu', 'veidin_bundle_por', 'veidin_bundle_reikn_vantar',
+      'veidin_bundle_skyrsla_vantar'],
+  },
+  'elon-musk': {
+    heiti: 'Ársskoðun — perur, skoðunarmánuður, skýrslu-þekja',
+    skra: '.claude/agents/elon-musk.md',
+    maelar: ['i_thjonustu_an_taekja', 'komid_a_tima_enginn_akstur', 'i_thjonustu_an_skodunarmanadar',
+      'i_thjonustu_ekki_skodad_i_ar', 'i_thjonustu_ekki_skodad_2_ar',
+      'veidin_stadir_med_2026_skyrslu', 'veidin_stadir_med_2025_skyrslu',
+      'veidin_engin_skyrsla_25_26', 'veidin_amber_felog', 'veidin_gleymd_felog',
+      'veidin_skyrslur_2026', 'veidin_skyrslur_2026_reviewed'],
+  },
+  'bord-flettur': {
+    heiti: 'Verkborð, þjónustuborð, verkbeiðnir, bílstjóri',
+    skra: '.claude/agents/bord-flettur.md',
+    maelar: ['opin_thjonustumal', 'opin_eldri_en_6_manada', 'opin_an_svarad_at',
+      'verkbeidnir_ekki_sottar', 'verkbeidnir_ekki_sottar_30_daga', 'verklidir_an_taekis'],
+  },
+  'prentun': {
+    heiti: 'QR-merki, raðnúmer, miðaprentun',
+    skra: '.claude/agents/prentun.md',
+    maelar: ['taeki_an_radnumers', 'tvitekid_radnumer'],
+  },
+};
+
 /* ── STAÐAN ──────────────────────────────────────────────────────────────── */
 const heild = e => Object.values(e || {}).reduce((s, v) => s + (+v || 0), 0);
 const GJALD = /byrjunargjald|akstur|ferðakostn|sendingar|umsýslu|útkall/i;
@@ -428,13 +488,24 @@ export default async (req) => {
     const nidurstada = b.nidurstada === 'jakvaett' ? 'jakvaett' : 'neikvaett';
     if (!verk || !adgerd) return json(400, { villa: 'verk og adgerd eru skylda' });
 
+    /* SVIÐIÐ: hvaða sérfræðingur á þetta mál. `oflokkad` er gilt svar — betra
+       en að giska rangt — en það er sagt hreint út í `svid_advorun` svo
+       ábyrgðin á að flokka lendi hjá einhverjum, ekki hverfi þegjandi. */
+    const svidInn = String(b.svid || '').trim();
+    const svid = SVID_EIGENDUR[svidInn] ? svidInn : 'oflokkad';
+    const svidAdvorun = !svidInn
+      ? 'Ekkert `svid` gefið upp — færslan lendir í "oflokkad" og enginn sérfræðingur sér hana. Gild svið: ' + Object.keys(SVID_EIGENDUR).join(', ') + '.'
+      : (svid === 'oflokkad'
+          ? `"${svidInn}" er ekki þekkt svið — sjá gild svið: ` + Object.keys(SVID_EIGENDUR).join(', ') + '.'
+          : undefined);
+
     const [as] = await sb(cfg, 'app_settings?select=settings&id=eq.1&limit=1');
     const settings = (as && as.settings) || {};
     const log = settings.ai_log || { faerslur: [], virkar: {}, mistokst: {} };
 
     log.faerslur = (log.faerslur || []).concat([{
       dags: new Date().toISOString(),
-      verk, adgerd, nidurstada,
+      verk, adgerd, nidurstada, svid,
       facts: Array.isArray(b.facts) ? b.facts.slice(0, 20) : [],
       nota: String(b.nota || '').slice(0, 600),
       hver: String(b.hver || 'ókunnur').slice(0, 60),
@@ -466,7 +537,7 @@ export default async (req) => {
       const vorn = String(b.vorn || '').trim();
       frysting = {
         dags: new Date().toISOString(),
-        verk, adgerd, hver: String(b.hver || 'ókunnur').slice(0, 60),
+        verk, adgerd, svid, hver: String(b.hver || 'ókunnur').slice(0, 60),
         fyrir: fyrri ? fyrri.tolur : null,
         fyrir_dags: fyrri ? fyrri.dags : null,
         eftir,
@@ -490,6 +561,8 @@ export default async (req) => {
       stig_adgerdar: log[t][adgerd],
       faerslur_alls: log.faerslur.length,
       frysting,
+      svid,
+      svid_advorun: svidAdvorun,
       // Sagt hreint út þegar viðgerð var skráð án varnar.
       advorun: (b.vidgerd && !(b.vorn || '').trim())
         ? 'Viðgerð skráð ÁN varnar — hún getur endurtekið sig. Bættu verði í tools/audit-all.cjs og sendu nafn hans í `vorn`.'
@@ -538,6 +611,31 @@ export default async (req) => {
     const rada = o => Object.entries(o || {}).sort((a, b) => b[1] - a[1]).slice(0, 15)
       .map(([adgerd, stig]) => ({ adgerd, stig }));
 
+    /* ── SVIÐSYFIRLIT — stýriskráin gerð sýnileg ─────────────────────────
+       Fyrir hvert svið: heiti + heimaskrá sérfræðingsins, grunnlína hans
+       eigin mæla (kaflaheiti + tala — ekki allur bókin), og síðustu
+       færslur/viðgerðir sem voru ROUTAÐAR þangað. `tools/svid-skyrsla.cjs`
+       les þetta og skrifar það inn í viðkomandi .claude/agents/*.md skrá —
+       það er skrefið sem lokar hringnum sem vantaði: héðan í frá les
+       framtíðarlota sem opnar t.d. sala-reikningar STRAX hvað gerðist í
+       hennar sviði, í stað þess að þessi bók sé eina heimildin.
+       Mælar sem enginn sérfræðingur á enn eru í `oflokkad_maelar` — sýnilegt
+       gat, ekki falið eitt. */
+    const eignadirMaelar = new Set();
+    Object.values(SVID_EIGENDUR).forEach(v => v.maelar.forEach(k => eignadirMaelar.add(k)));
+    const svid_yfirlit = Object.entries(SVID_EIGENDUR).map(([key, def]) => ({
+      svid: key,
+      heiti: def.heiti,
+      skra: def.skra,
+      grunnlina: Object.fromEntries(def.maelar.map(k => [k, s.tolur[k] ?? null])),
+      sidustu_faerslur: (log.faerslur || []).filter(f => f.svid === key).slice(-5).reverse()
+        .map(f => ({ dags: f.dags, adgerd: f.adgerd, nidurstada: f.nidurstada })),
+      sidustu_vidgerdir: (log.vidgerdir || []).filter(v => v.svid === key).slice(-5).reverse()
+        .map(v => ({ dags: v.dags, adgerd: v.adgerd, varin: v.varin, vorn: v.vorn })),
+    }));
+    const oflokkad_maelar = Object.keys(s.tolur || {}).filter(k => !eignadirMaelar.has(k));
+    const oflokkadar_faerslur = (log.faerslur || []).filter(f => !f.svid || f.svid === 'oflokkad').length;
+
     return json(200, {
       kerfi: {
         nafn: 'Slökkvitæki ehf — innra kerfi',
@@ -562,6 +660,10 @@ export default async (req) => {
       saga: S,
       vidgerdir: (log.vidgerdir || []).slice(-20).reverse(),
       ovardar_vidgerdir: (log.vidgerdir || []).filter(v => !v.varin).map(v => v.adgerd),
+      // STÝRISKRÁIN: hvaða sérfræðingur á hvaða tölu, og hvað gerðist á hans sviði.
+      svid_yfirlit,
+      oflokkad_maelar,
+      oflokkadar_faerslur,
       vidvorun: S.vidvorun.length
         ? S.vidvorun.map(v => `${v.maelikvardi}: ${v.sidast} → ${v.nuna} (+${v.breyting}) — FÓR Í RANGA ÁTT`)
         : [],
@@ -587,8 +689,11 @@ export default async (req) => {
       vid_utgang: {
         hvernig: 'POST á sömu slóð',
         vidgerd: 'Bættu `vidgerd:true` + `vorn:"<nafn varðar í tools/audit-all.cjs>"` þegar eitthvað var LAGAÐ — þá frystast tölurnar fyrir og eftir, dagsett.',
+        svid: 'Bættu ALLTAF `svid:"<lykill>"` við — sjá `svid_yfirlit` fyrir gild svið (kunnaskra, sala-reikningar, elon-musk, bord-flettur, prentun) eða "oflokkad". '
+            + 'Þetta er skrefið sem beinir niðurstöðunni til RÉTTS sérfræðings í stað þess að hún hverfi í eina bók sem enginn les til baka. '
+            + 'Keyrðu svo `node tools/svid-skyrsla.cjs` — hann skrifar kaflaheiti + grunnlínutölu inn í viðkomandi .claude/agents/*.md skrá.',
         dæmi: { verk: 'tom_skra', adgerd: 'fylla magn úr síðasta reikningi',
-                nidurstada: 'jakvaett', facts: ['56 af 260 eiga lesanlegt magn'],
+                nidurstada: 'jakvaett', svid: 'sala-reikningar', facts: ['56 af 260 eiga lesanlegt magn'],
                 nota: 'hvað var gert og hvað kom út', hver: 'claude-code' },
         regla: 'Skilaðu ALLTAF skýrslu — líka þegar ekkert virkaði. Neikvæð útkoma '
              + 'er jafn verðmæt: hún kemur í veg fyrir að næsti reyni sama hlutinn aftur.',

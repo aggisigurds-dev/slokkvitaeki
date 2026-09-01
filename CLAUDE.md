@@ -30,17 +30,31 @@ lotur gleyma, stöðuskjáir ljúga og „búið" er sagt án þess að vera pr�
 Þessar þrjár reglur eru til að stoppa það. Hver þeirra á sér raunverulegt dæmi
 frá 28.08.2026.
 
-### 1. Lestu Charlize ÁÐUR en þú byrjar — ekki bara í lokin
+### 1. Minnisstýribókin — hún les sig sjálf, en þú SKRIFAR í hana
 
-```sql
-select topic, fact, detail from v_charlize_active
-where scope in ('kerfi','baedi','slokkvitaeki') order by created_at desc limit 40;
+```bash
+node tools/minni.cjs                    # stýribókin (git-eintak, 87 ms, án nets)
+node tools/minni.cjs solur              # bara það efni
+node tools/minni.cjs --ferskt           # beint úr Supabase
+node tools/minni.cjs --skra "<staðreynd>" --topic <efni>
+node tools/minni.cjs --uppfaera         # endurskrifa docs/MINNISBOK.md + committa
 ```
 
-Þekkingin er þarna. Sé hún ekki lesin er hún enduruppgötvuð — og Agnar spurður
-aftur að því sem hann svaraði fyrir mánuði. Í lok lotu: skrifaðu það sem næsta
-lota veit ekki. *(Skill: `charlize`. Regla hennar: lestu áður en þú breytir,
-skrifaðu áður en þú lokar.)*
+**Þessi regla er nú þvinguð, ekki beðin um.** `SessionStart`-hookur í
+`.claude/settings.json` keyrir `minni.cjs` sjálfkrafa við upphaf hverrar lotu.
+Ástæðan er mæld: þessi regla sagði áður „lestu Charlize ÁÐUR en þú byrjar" með
+SQL-fyrirspurn, og lotan 31.08.2026 las hana **ekki** — með CLAUDE.md í samhengi
+allan tímann. Hún endurreiknaði í staðinn tölur sem voru þegar til, og fann
+tvö mælikerfi sem stönguðust á. Tilmæli duga ekki.
+
+**Tvær hliðar á sama minni:** Supabase (`charlize_knowledge` / `v_charlize_active`,
+282 virkar staðreyndir) er sannleikurinn — ritanlegur samstundis úr hvaða
+verkfæri sem er. `docs/MINNISBOK.md` er **generuð** og committuð, svo minnið
+berst á allar fjórar vélarnar með `git pull` og er læsilegt án nets eða lykla.
+
+Það sem eftir stendur af þér: **skrifa.** Hookurinn les; hann getur ekki vitað
+hvað þú lærðir. Í lok lotu — `--skra` og svo `--uppfaera`. *(Skill: `charlize`.
+Regla hennar stendur: lestu áður en þú breytir, skrifaðu áður en þú lokar.)*
 
 ### 2. `git status` lýgur þangað til þú keyrir `git fetch`
 

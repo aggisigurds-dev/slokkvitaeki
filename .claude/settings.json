@@ -1,3 +1,18 @@
 {
-  "enableAllProjectMcpServers": true
+  "enableAllProjectMcpServers": true,
+
+  "//": "SessionStart-hookurinn er ÞVINGUNIN. CLAUDE.md regla #1 hefur sagt „Lestu Charlize ÁÐUR en þú byrjar\" síðan í ágúst og lotan 31.08.2026 gerði það samt ekki — með CLAUDE.md í samhengi allan tímann. Tilmæli duga ekki; sjálfvirk keyrsla gerir það. Hookurinn les GIT-eintakið (docs/MINNISBOK.md), ekki Supabase: það er samstundis, þarf hvorki net né lykla, og fellur aldrei lotu. Ferskt eintak fæst með `node tools/minni.cjs --ferskt`.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node tools/minni.cjs 2>&1 || echo 'Minnisstýribókin svaraði ekki — keyrðu: node tools/minni.cjs --uppfaera'",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
 }
