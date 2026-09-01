@@ -434,7 +434,48 @@ function skraSnapshot(log, tolur) {
   return true;
 }
 
-function saga(log) {
+/* ── STEFNA HVERS MÆLIS ────────────────────────────────────────────────────
+ * Sjálfgefið er `laegra_betra` — langflestir mælar hér eru vandamálateljarar.
+ * Þessi listi er UNDANTEKNINGARNAR, og hann er dómur en ekki mæling: Agnar má
+ * leiðrétta hann. Verði mælir rangt flokkaður blikkar viðvörun á framförum
+ * (eða þegir yfir afturför), og hvort tveggja eyðileggur traustið á kerfinu.
+ *
+ *   haerra_betra  fjölgun er framför  (þekja, kláruð pör, netföng)
+ *   hlutlaus      stofnstærð eða eðlileg umferð — aldrei viðvörun
+ */
+const STEFNA = {
+  // Þekja: fleiri skýrslur, fleiri pör, fleiri netföng = betra.
+  veidin_stadir_med_2026_skyrslu: 'haerra_betra',
+  veidin_stadir_med_2025_skyrslu: 'haerra_betra',
+  veidin_skyrslur_2026: 'haerra_betra',
+  veidin_skyrslur_2026_reviewed: 'haerra_betra',
+  veidin_bundle_por: 'haerra_betra',
+  veidin_felog_med_netfang: 'haerra_betra',
+  veidin_stadir_med_samning: 'haerra_betra',
+  veidin_hud_buid_2026: 'haerra_betra',
+
+  // Stofnstærðir: segja hvað er til, ekki hvað er að.
+  veidin_stadir_i_thjonustu: 'hlutlaus',
+  veidin_felog_i_thjonustu: 'hlutlaus',
+  veidin_drive_2026_radir: 'hlutlaus',
+  veidin_drive_2026_distinct: 'hlutlaus',
+
+  // Undirmengi af vandamáli sem er GOTT að sé hátt: því fleiri sem má fylla
+  // úr síðasta reikningi, því meira af 260-vandanum er leysanlegt strax.
+  thar_af_fyllanleg_ur_reikningi: 'hlutlaus',
+
+  // Kreditreikningar eru eðlilegur hluti reksturs, ekki bilun í sjálfu sér.
+  kreditreikningar_i_ar: 'hlutlaus',
+
+  // Verkefnalistinn er vinnuflæði: að verk séu í vinnu er ekki vandamál.
+  verkefni_i_vinnu: 'hlutlaus',
+  verkefni_i_yfirferd: 'hlutlaus',
+};
+
+/* Flutt út svo rökfræðin sé prófanleg án gagnagrunns — Netlify notar aðeins
+   default-útflutninginn, svo þetta breytir engu um keyrsluna.
+   Próf: tools/audit-stefna.cjs */
+export function saga(log) {
   const m = log.maelingar || [];
   if (!m.length) return { punktar: 0, lyklar: [], hreyfing: [], vidvorun: [] };
   const lyklar = Object.keys(m[m.length - 1].tolur || {});
@@ -445,10 +486,19 @@ function saga(log) {
     const nu = +(nyjast.tolur || {})[k] || 0;
     const adur = fyrra ? (+(fyrra.tolur || {})[k] || 0) : null;
     const d = adur === null ? null : nu - adur;
+    const stefna = STEFNA[k] || 'laegra_betra';
     return {
-      maelikvardi: k, nuna: nu, sidast: adur, breyting: d,
-      // Öll þessi tala er vandamál: hækkun = verra.
-      att: d === null ? 'grunnlína' : d > 0 ? 'VERRI' : d < 0 ? 'betri' : 'óbreytt',
+      maelikvardi: k, nuna: nu, sidast: adur, breyting: d, stefna,
+      /* Áttin fer eftir stefnu mælisins, ekki eftir formerki einu saman.
+         Upphaflega var þetta skrifað „öll þessi tala er vandamál: hækkun =
+         verra". Það var RANGT um 8 mæla úr Veiðinni: fjölgi stöðum með
+         2026-skýrslu úr 298 í 305 hefði viðvörunin öskrað þegar hlutir
+         löguðust — og viðvörun sem hrópar á framfarir er verri en engin. */
+      att: d === null ? 'grunnlína'
+        : stefna === 'hlutlaus' ? 'hlutlaus'
+        : d === 0 ? 'óbreytt'
+        : (stefna === 'haerra_betra' ? (d > 0 ? 'betri' : 'VERRI')
+                                     : (d > 0 ? 'VERRI' : 'betri')),
       ferill: m.slice(-30).map(x => +(x.tolur || {})[k] || 0),
       // Dagsetningarnar fylgja með svo línuritið geti sett frystingarmerkin
       // á réttan stað — ekki bara „30 punktar" heldur 30 DAGSETTIR punktar.
