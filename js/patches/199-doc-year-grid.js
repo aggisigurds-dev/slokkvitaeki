@@ -228,6 +228,39 @@
   // grants patch 253's "📦 Pör" band already uses, no new endpoint needed.
   // service_type is 'uttekt' (slökkvitæki) | 'brunakerfi' — NOT the app's own
   // doc_type spelling, see sql/2026-08-05_document_pairs.sql in Brunahólf.
+  /* ── TRÍÓIÐ ───────────────────────────────────────────────────────────────
+     Agnar 01.09.2026: „mátt kannski breyta trigger af Græna ljósinu á
+     árstölunni í það að það sé staðfest tríó."
+
+     Grænt þýddi áður að TVÖ SKJÖL væru til (skýrsla + reikningur það ár). Það
+     segir ekkert um hvort TÖLURNAR stemmi — hús gat borið skýrslu og reikning
+     og samt haft ranga tækjatölu á spjaldinu.
+
+     Nú er sterkasta græna ástandið staðfest tríó: `uttaeki`-fjöldi = tækjatalan
+     sem tæknimaðurinn taldi upp í skýrsluna (arsskodun_report_facts).
+
+     MÆLT ÁÐUR EN ÞESSU VAR BREYTT (01.09.2026): 356 ár eru græn í dag. Krefðist
+     grænt tríós misstu 39 það — en aðeins 12 af RÉTTRI ástæðu (tölurnar
+     stangast á). Hin 27 hafa engin tríó-gögn, og að refsa fyrir gagnaleysi er
+     ekki það sama og að finna villu. Þess vegna þrjú ástönd, ekki tvö:
+       staðfest tríó   → grænt með ✓ (sterkast)
+       skjöl, engin tríó-gögn → grænt eins og áður, ómerkt
+       skjöl EN tölur stangast á → EKKI grænt, gult með ⚠
+
+     Skýrslutalan er ein per fyrirtæki (report_year), svo tríóið gildir um EITT
+     ár. Önnur ár halda fyrri hegðun óbreyttri. */
+  async function fetchTrio(coId){
+    try{
+      var sb=SB(); if(!sb) return null;
+      var f=await sb.from('arsskodun_report_facts')
+        .select('report_year,total_devices').eq('fyrirtaeki_id', coId).maybeSingle();
+      if(f.error || !f.data || f.data.total_devices==null) return null;
+      var u=await sb.from('uttaeki').select('id',{count:'exact',head:true})
+        .eq('fyrirtaeki_id', coId).eq('status','active');
+      if(u.error || u.count==null) return null;
+      return { ar:+f.data.report_year, skyrsla:+f.data.total_devices, profill:+u.count };
+    }catch(e){ return soknVilla('tríó-tölur', e) && null; }
+  }
   async function fetchPairs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
     try{ var r=await sb.from('document_pairs').select('id,year,service_type,report_doc_id,invoice_doc_id,solur_id,status,matched_by,fyrirtaeki_id').eq('customer_base_id', baseId);
@@ -475,12 +508,23 @@
   // á skrá (sama regla og ✓ FULLBÚIÐ á þjónustukortinu og '_yr both' á
   // listanum). Skjölin eru staðreyndir og tromma því gap/claude-flögg;
   // handvirk staðfesting (glóandi grænt) heldur sínu útliti ofar öllu.
-  function pill(y, hasReport, fcStat, note, hasInv){
+  function pill(y, hasReport, fcStat, note, hasInv, trio){
     var cls=hasReport?'ok':(y===NOW?'now':'none');
     var both=!!(hasReport&&hasInv);
-    if(fcStat==='human') cls+=' done'; else if(both) cls+=' both'; else if(fcStat==='claude') cls+=' claude'; else if(fcStat==='gap') cls+=' gap';
+    // Tríóið gildir AÐEINS um árið sem skýrslutalan tilheyrir.
+    var trioAr = !!(trio && trio.ar === y);
+    var trioOk = trioAr && trio.profill === trio.skyrsla;
+    var trioRangt = trioAr && !trioOk;
+    if(fcStat==='human') cls+=' done';
+    else if(trioOk && both) cls+=' trio';            // sterkasta græna
+    else if(trioRangt && both) cls+=' ostemmt';      // skjöl til EN tölur skakkar
+    else if(both) cls+=' both';
+    else if(fcStat==='claude') cls+=' claude'; else if(fcStat==='gap') cls+=' gap';
+    var trioTxt = trioAr ? (' — spjaldið ' + trio.profill + ' tæki, skýrslan ' + trio.skyrsla) : '';
     var tip=fcStat==='human'?(y+' — ✓ staðfest handvirkt (grænt) — tvísmelltu fyrir 🟠 „skýrsla vantar"')
-      :both?(y+' — ✓ fullbúið: skýrsla OG reikningur á skrá — tvísmelltu til að staðfesta handvirkt')
+      :(trioOk&&both)?(y+' — ✓✓ STAÐFEST TRÍÓ: skýrsla, reikningur OG tækjatalan stemmir'+trioTxt)
+      :(trioRangt&&both)?(y+' — ⚠ skýrsla og reikningur á skrá EN tækjatalan stemmir ekki'+trioTxt+' — annað hvort er rangt')
+      :both?(y+' — ✓ fullbúið: skýrsla OG reikningur á skrá (engin tækjatala til að staðfesta) — tvísmelltu til að staðfesta handvirkt')
       :fcStat==='claude'?(y+' — 🔵 blátt: úttekt gerð / yfirfarið, skýrsla vantar'+(note?(': '+note):'')+' — tvísmelltu til að hreinsa (sjálfvirk staða)')
       :fcStat==='gap'?(y+' — 🟠 '+(note||'skýrsla vantar')+' — tvísmelltu fyrir 🔵 „úttekt gerð, skýrsla vantar"')
       :(hasReport?(y+' — skýrsla á skrá — tvísmelltu til að yfirtaka handvirkt (grænt → gult → blátt → sjálfvirkt)')
@@ -809,6 +853,9 @@
   async function render(section, coId){
     // Núllað per fyrirtæki — annars bærist bilun frá einu kortinu yfir á næsta.
     _sokn = [];
+    // Tríó-tölurnar fyrir ÞETTA fyrirtæki. null = engin gögn, og þá heldur
+    // árstalan fyrri hegðun — gagnaleysi má ekki líta út eins og villa.
+    var _trio = await fetchTrio(coId);
     // 2026-08-18 (Agnar): rafræna krafan fer ALLTAF — rofinn hér stýrir aðeins
     // hvort tölvupóstafrit (reikningur+skýrsla) fylgi. payday_delivery:
     // 'electronic' = póstur AF; annað/tómt = póstur Á (sjálfgefið).
@@ -976,7 +1023,7 @@
     var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return b-a;});
 
     // ── status pills ──
-    var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y), (invUtByY[y]||[]).length>0); }).join('');
+    var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y), (invUtByY[y]||[]).length>0, _trio); }).join('');
     var monthInfo = await loadInspectMonth(coId, baseId);
     section._monthInfo = monthInfo;
 
@@ -1784,6 +1831,14 @@
       '.sk-pill.none{opacity:.55}',
       // Glóandi grænn = handvirkt staðfest (human).
       '.sk-pill.both{border-color:#16a34a;background:#dcfce7;color:#14532d}',
+      // Staðfest tríó — sterkasta græna. Hringurinn verður ✓ svo ástandið
+      // sjáist án þess að treysta á litbrigði eitt.
+      '.sk-pill.trio{border-color:#15803d;background:#bbf7d0;color:#052e16;box-shadow:0 0 0 1px rgba(21,128,61,.35)}',
+      '.sk-pill.trio::before{content:"✓";width:auto;height:auto;border-radius:0;background:none;color:#15803d;font-size:10px;font-weight:900;line-height:1}',
+      // Skjöl til en tölur stangast á — MÁ EKKI vera grænt. Það er einmitt
+      // tilvikið sem gamla græna ljósið faldi.
+      '.sk-pill.ostemmt{border-color:#b45309;background:#fff8ea;color:#7c2d12}',
+      '.sk-pill.ostemmt::before{content:"⚠";width:auto;height:auto;border-radius:0;background:none;color:#b45309;font-size:10px;line-height:1}',
       '.sk-pill.both::before{background:#16a34a}',
       '.sk-pill.done{border-color:#16a34a;background:#dcfce7;color:#14532d;box-shadow:0 0 0 1px rgba(22,163,74,.25)}',
       '.sk-pill.done::before{background:#16a34a;box-shadow:0 0 6px 1.5px rgba(22,163,74,.9);animation:sk-glow 1.6s ease-in-out infinite}',
