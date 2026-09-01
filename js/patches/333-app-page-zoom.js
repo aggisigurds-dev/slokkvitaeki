@@ -21,9 +21,17 @@
   const LS = 'app_page_zoom';
   const BAR_ID = '_app-zoom';
   const STYLE_ID = 'app-page-zoom-333';
-  const MIN = 1;
-  const MAX = 3;
-  const STEPS = [1, 1.15, 1.35, 1.6, 2, 2.5, 3];
+  // 2026-09-01 (Agnar): „the zoom button actually means enlarge content or
+  // shrink content. because i can still use pince zoom." Rétt greint — og
+  // kóðinn staðfesti það: −/+ skrifuðu `initial-scale` í viewport-taggið, sem
+  // er BÓKSTAFLEGA sama vélin og fingraklípan. MIN var 1, svo „−" komst aldrei
+  // niður fyrir 100% (sjá gömlu athugasemdina: „aðeins zoom IN").
+  // Takkarnir gerðu því tvennt í senn: hermdu eftir klípunni og gátu bara
+  // stækkað. Núna skala þeir INNIHALDIÐ og mega fara NIÐUR fyrir 100%, svo
+  // meira komist á skjáinn. Klípan er áfram ósnert og sér um stækkunarglerið.
+  const MIN = 0.7;
+  const MAX = 2;
+  const STEPS = [0.7, 0.8, 0.9, 1, 1.15, 1.35, 1.6, 2];
   const HUB_VP = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
 
   function clamp(s) {
@@ -53,10 +61,11 @@
     }
     return vp;
   }
-  function viewportContent() {
-    if (scale === 1) return HUB_VP;
-    return 'width=device-width, initial-scale=' + scale + ', user-scalable=yes, viewport-fit=cover';
-  }
+  // Viewport-taggið er NÚ ALLTAF native. Áður var `initial-scale` skrifað hér
+  // og það var einmitt vandinn: takkarnir hreyfðu sama stýri og fingraklípan,
+  // svo þeir bættu engu við hana. Klípan á viewport-ið ein; takkarnir skala
+  // innihaldið (sjá contentZoomCss).
+  function viewportContent() { return HUB_VP; }
   function syncViewport() {
     try {
       const vp = vpEl();
@@ -123,6 +132,44 @@
       '#' + BAR_ID + ' #_app-zoom-pct{flex:0 0 auto;min-width:40px;text-align:center;'
         + 'font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#334155}',
       'html,body,#app,#app-zoom-root{touch-action:pan-x pan-y pinch-zoom}',
+
+      /* ── INNIHALDS-SKÖLUNIN ────────────────────────────────────────────────
+         Skalað er á `.view` — efnissvæðinu — EKKI á html/body. Sú leið var
+         reynd 2026-08-30 og skildi eftir dauðan beige „frímerkis"-viewport:
+         html-kassinn minnkaði en viewport-ið fylgdi ekki. (Athugasemdin vísar
+         í #app / #app-zoom-root; hvorugt er til í index.html — mælt, 0 tilvik
+         — svo skölunin lenti óhjákvæmilega á html.) `.view` er venjulegur
+         blokkur inni í flæðinu og hefur enga slíka viewport-tengingu.
+
+         TVÆR LEIÐRÉTTINGAR SEM ERU EKKI VALFRJÁLSAR:
+
+         1. BREIDDIN. 261:702 negldi `width:100vw!important` á `.view` í
+            app-ham. Zoom margfaldar þá tölu, svo við 0,7 yrði sýnin 70vw og
+            30vw af beige stæði eftir — nákvæmlega gamla gallinn. Deilt með
+            skalanum: 100vw/0,7 = 143vw, sem málast sem 100vw.
+
+         2. FYLLINGIN UNDIR FÖSTU CHROME-I. Botnstikan og toppstikan eru
+            `position:fixed` og skalast EKKI með. Fyllingin sem heldur efninu
+            frá þeim er hins vegar inni í `.view` og skalast. Við 0,7 yrði
+            140px fyllingin að 98px meðan stikan er áfram 140px há — síðasta
+            röðin hyrfi undir hana. Deilt með skalanum líka. */
+      /* SÍMA/APP-HAMUR EINGÖNGU. 100vw-leiðréttingin á breiddinni gildir bara
+         þar sem 261 negldi `width:100vw` (app-hamur). Á skjáborði hefur `.view`
+         `margin-left` fyrir hliðarstikuna og er EKKI 100vw — óskorðuð regla
+         hefði þvingað 100vw/z þar og rifið skjáborðsútlitið í sundur. Zoom-
+         stikan sjálf er hvort eð er falin á breiðum skjá með fínbendli (reglan
+         neðst), svo þetta er engin skerðing í reynd. */
+      'html.app-page-zoomed body.appmode .view.active,'
+        + 'html.app-page-zoomed[data-viewmode="mobile"] .view.active{'
+        + 'zoom:var(--app-page-zoom);'
+        + 'width:calc(100vw / var(--app-page-zoom))!important;'
+        + 'max-width:calc(100vw / var(--app-page-zoom))!important;'
+        + 'min-height:calc(100vh / var(--app-page-zoom))}',
+      'html.app-page-zoomed body.appmode .view.active{'
+        + 'padding-top:calc(50px / var(--app-page-zoom))!important;'
+        + 'padding-bottom:calc((140px + env(safe-area-inset-bottom,0px)) / var(--app-page-zoom))!important}',
+      'html.app-page-zoomed body.appmode.appmode-nonav .view.active{'
+        + 'padding-bottom:calc(24px / var(--app-page-zoom))!important}',
       '@media (min-width:1100px) and (pointer:fine){'
         + '#' + BAR_ID + ':not(.on){display:none}'
         + '}'
