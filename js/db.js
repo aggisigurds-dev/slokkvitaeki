@@ -219,6 +219,19 @@ var DB = {
       if (tables.indexOf('vidskiptavinir') >= 0 && window.Vidskiptavinir && typeof Vidskiptavinir.load === 'function') {
         try { Vidskiptavinir.load(); } catch(e){}
       }
+      // 2026-09-01 (Agnar: "erum að vinna í nokkrum tölvum og stundum henda
+      // okkar á milli"). Þjónustuborðið hafði ENGA lifandi samstillingu —
+      // hvorki hér né í patch 231 (engin .channel/subscribe/setInterval þar).
+      // Það hlóðst aðeins við opnun, svo mál sem samstarfsmaður bjó til sást
+      // aldrei fyrr en endurhlaðið var. Aðeins endurhlaðið þegar borðið er
+      // RAUNVERULEGA opið — annars er þetta ókeypis; sama regla og gildir um
+      // jobs/units hér að ofan.
+      if (tables.indexOf('thjonustubeidni') >= 0
+          && window.Verkbord && typeof Verkbord.reload === 'function') {
+        var _vbOpen = document.getElementById('view-verkbord');
+        _vbOpen = _vbOpen && _vbOpen.classList.contains('active');
+        if (_vbOpen) { try { Verkbord.reload(); } catch(e){} }
+      }
       // Other tables (solur, app_settings, etc.) — let observers/views
       // refetch lazily when they become active.
     }
@@ -230,7 +243,7 @@ var DB = {
     // AÐEINS þær töflur sem applyChange() bregst raunverulega við — minnkar
     // umferðina verulega og gerir tenginguna síður viðkvæma fyrir álagi sem á
     // ekkert skylt við þetta app.
-    var RT_TABLES = ['uttaeki', 'verkbeidnir', 'verklidur', 'fyrirtaeki', 'vidskiptavinir'];
+    var RT_TABLES = ['uttaeki', 'verkbeidnir', 'verklidur', 'fyrirtaeki', 'vidskiptavinir', 'thjonustubeidni'];
     var ch = this.sb.channel('changes');
     RT_TABLES.forEach(function (tbl) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, function (payload) {
