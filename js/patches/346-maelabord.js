@@ -46,21 +46,171 @@
      Lykillinn er sá SAMI og hurðin skráir. Bætist mælikvarði við hurðina birtist
      hann sjálfkrafa hér neðst sem „nýr" — betra en að hverfa þegjandi. */
   const MAELAR = [
-    { k: 'i_thjonustu_an_taekja', t: 'Í þjónustu, engin tæki skráð',
-      s: 'Ósýnileg í Ársskoðun. Orsökin á bak við hinar tölurnar.' },
-    { k: 'thar_af_fyllanleg_ur_reikningi', t: '…þar af fyllanleg úr reikningi',
-      s: 'Magnið er til í síðasta reikningi og má lesa þaðan.' },
-    { k: 'komid_a_tima_enginn_akstur', t: 'Komin á tíma, á engum aksturslista',
-      s: 'Enginn er á leiðinni þangað.' },
-    { k: 'skodad_en_orukkad', t: 'Skoðuð í ár, hvorki sala né reikningur',
+    /* SKRÁIN — kunnaskra */
+    { g: 'Skráin', k: 'i_thjonustu_an_taekja', t: 'Í þjónustu, engin tæki skráð',
+      s: 'Ósýnileg í Ársskoðun. Orsökin á bak við margar hinna talnanna.' },
+    { g: 'Skráin', k: 'thar_af_fyllanleg_ur_reikningi', t: '…þar af fyllanleg úr reikningi',
+      s: 'Magnið er til í síðasta reikningi og má lesa þaðan. Hátt er GOTT hér.' },
+    { g: 'Skráin', k: 'i_thjonustu_an_kennitolu', t: 'Í þjónustu, engin kennitala',
+      s: 'Ekki hægt að para við kúnnaskrá né reikning.' },
+    { g: 'Skráin', k: 'i_thjonustu_ogild_kennitala', t: 'Kennitala ekki 10 stafir',
+      s: 'Villuslegin kennitala paraast aldrei rétt.' },
+    { g: 'Skráin', k: 'tvitekin_kennitala', t: 'Sama kennitala á fleiri en einu fyrirtæki',
+      s: 'Rekstrarfélög eiga margar starfsstöðvar — en tvítak felur sig hér líka.' },
+    { g: 'Skráin', k: 'i_thjonustu_an_heimilisfangs', t: 'Í þjónustu, ekkert heimilisfang',
+      s: 'Bílstjórinn hefur ekkert að fara eftir.' },
+    { g: 'Skráin', k: 'i_thjonustu_an_postnumers', t: 'Í þjónustu, ekkert póstnúmer',
+      s: 'Fellur út úr svæðaskiptum aksturslistum.' },
+    { g: 'Skráin', k: 'i_thjonustu_an_tengilids', t: 'Enginn sími, farsími né netfang',
+      s: 'Ekki hægt að boða komu né senda skýrslu.' },
+    { g: 'Skráin', k: 'i_thjonustu_an_netfangs', t: 'Í þjónustu, ekkert netfang',
+      s: 'Reikningur og skýrsla komast ekki í tölvupósti.' },
+    { g: 'Skráin', k: 'i_thjonustu_an_kunnaskrar', t: 'Í þjónustu, ekki tengt kúnnaskrá',
+      s: 'Skjöl og reikningar rata ekki á staðinn.' },
+    { g: 'Skráin', k: 'i_thjonustu_en_merkt_ovirkt', t: 'Í þjónustu en merkt óvirkt',
+      s: 'Tvö flögg segja andstæða hluti.' },
+
+    /* ÁRSSKOÐUN — elon-musk */
+    { g: 'Ársskoðun', k: 'komid_a_tima_enginn_akstur', t: 'Komin á tíma, á engum aksturslista',
+      s: 'Enginn er á leiðinni þangað. Stekkur við hver mánaðamót — það er dagatalið.' },
+    { g: 'Ársskoðun', k: 'i_thjonustu_an_skodunarmanadar', t: 'Enginn skoðunarmánuður settur',
+      s: 'Kemst aldrei á tíma, því ekkert segir hvenær.' },
+    { g: 'Ársskoðun', k: 'i_thjonustu_ekki_skodad_i_ar', t: 'Ekki skoðað í ár',
+      s: 'Árið er ekki búið — en þetta er eftirstandandi verk.' },
+    { g: 'Ársskoðun', k: 'i_thjonustu_ekki_skodad_2_ar', t: 'Ekki skoðað í 2 ár eða lengur',
+      s: 'Farið fram úr lögbundinni árlegri yfirferð.' },
+    { g: 'Ársskoðun', k: 'veidin_stadir_med_2026_skyrslu', t: 'Staðir með 2026-skýrslu  ↑',
+      s: 'Veiðin. Fjölgun er ÞEKJA — hærra er betra.' },
+    { g: 'Ársskoðun', k: 'veidin_stadir_med_2025_skyrslu', t: 'Staðir með 2025-skýrslu  ↑',
+      s: 'Veiðin. Hærra er betra.' },
+    { g: 'Ársskoðun', k: 'veidin_engin_skyrsla_25_26', t: 'Hvorki 2025 né 2026 skýrsla',
+      s: 'Veiðin. Tveggja ára gat.' },
+    { g: 'Ársskoðun', k: 'veidin_amber_felog', t: 'Amber-félög',
+      s: 'Veiðin. Gulmerkt — þarfnast yfirferðar.' },
+    { g: 'Ársskoðun', k: 'veidin_gleymd_felog', t: 'Gleymd félög',
+      s: 'Veiðin. Enginn hefur snert þau.' },
+    { g: 'Ársskoðun', k: 'veidin_skyrslur_2026', t: '2026-skýrslur alls  ↑',
+      s: 'Veiðin. Hærra er betra.' },
+    { g: 'Ársskoðun', k: 'veidin_skyrslur_2026_reviewed', t: '…þar af yfirfarnar  ↑',
+      s: 'Veiðin. Hærra er betra.' },
+
+    /* SALA OG RUKKUN — sala-reikningar */
+    { g: 'Sala og rukkun', k: 'skodad_en_orukkad', t: 'Skoðað í ár, hvorki sala né reikningur',
       s: 'Vinnan var unnin og ekki rukkuð.' },
-    { k: 'rukkad_undir_helmingi_skradra', t: 'Rukkuð tæki undir helmingi skráðra',
+    { g: 'Sala og rukkun', k: 'rukkad_undir_helmingi_skradra', t: 'Rukkuð tæki undir helmingi skráðra',
       s: 'Skráin eða reikningurinn er skakkur — annað hvort.' },
-    { k: 'dauder_drive_tenglar', t: 'Dauðir Drive-tenglar',
+    { g: 'Sala og rukkun', k: 'rukkad_yfir_tvofalt_skrad', t: 'Rukkuð tæki yfir tvöfalt skráð',
+      s: 'Hin áttin: gömul draugatæki geta troðið sér inn á reikninga.' },
+    { g: 'Sala og rukkun', k: 'solur_i_ar_an_vidskiptavinar', t: 'Sölur í ár án viðskiptavinar',
+      s: 'Hvorki customer_id né kúnnaskrá — ratar hvergi.' },
+    { g: 'Sala og rukkun', k: 'solur_i_ar_an_lina', t: 'Sölur í ár án lína',
+      s: 'Reikningur án innihalds.' },
+    { g: 'Sala og rukkun', k: 'solur_i_ar_an_upphaedar', t: 'Frágengnar sölur án upphæðar',
+      s: 'Status final en samtals 0.' },
+    { g: 'Sala og rukkun', k: 'solur_fastar_i_drogum', t: 'Sölur fastar í drögum',
+      s: 'Aldrei frágengnar — hvorki rukkaðar né felldar.' },
+    { g: 'Sala og rukkun', k: 'kreditreikningar_i_ar', t: 'Kreditreikningar í ár',
+      s: 'Eðlilegur hluti reksturs — talinn til upplýsingar, ekki sem villa.' },
+    { g: 'Sala og rukkun', k: 'tvitekin_solunumer', t: 'Tvítekin sölunúmer',
+      s: 'Sama númer á fleiri en einni sölu.' },
+    { g: 'Sala og rukkun', k: 'reikningsskjol_an_numers', t: 'Reikningsskjöl án reikningsnúmers',
+      s: 'Ekki hægt að para við sölu.' },
+    { g: 'Sala og rukkun', k: 'tvitekin_reikningsnumer', t: 'Tvítekin reikningsnúmer í skjölum',
+      s: 'Sama R-númer á fleiri en einu skjali.' },
+    { g: 'Sala og rukkun', k: 'veidin_rukkud_an_skyrslu', t: 'Rukkað 2026 án skýrslu',
+      s: 'Veiðin. Reikningur fór út, skýrslan er ekki til.' },
+    { g: 'Sala og rukkun', k: 'veidin_bundle_por', t: 'Kláruð pör (skýrsla + reikningur)  ↑',
+      s: 'Veiðin. Hærra er betra.' },
+    { g: 'Sala og rukkun', k: 'veidin_bundle_reikn_vantar', t: '2026-skýrslur án reiknings',
+      s: 'Veiðin. Vinnan var unnin og ekki rukkuð.' },
+    { g: 'Sala og rukkun', k: 'veidin_bundle_skyrsla_vantar', t: '2026-reikningar án skýrslu',
+      s: 'Veiðin. Rukkað en engin skýrsla á skrá.' },
+
+    /* SKJÖL OG DRIVE */
+    { g: 'Skjöl og Drive', k: 'dauder_drive_tenglar', t: 'Dauðir Drive-tenglar',
       s: 'Skýrslan er ekki þar sem tengillinn segir.' },
-    { k: 'oathugadir_drive_tenglar', t: 'Óathugaðir Drive-tenglar',
+    { g: 'Skjöl og Drive', k: 'oathugadir_drive_tenglar', t: 'Óathugaðir Drive-tenglar',
       s: 'Veit ekki hvort þeir virka. Óvissa, ekki bilun.' },
+    { g: 'Skjöl og Drive', k: 'skjol_an_kunnaskrar', t: 'Skjöl án eiganda',
+      s: 'Hvorki kúnnaskrá né fyrirtæki — finnast ekki á staðnum.' },
+    { g: 'Skjöl og Drive', k: 'skjol_merkt_tvitekin', t: 'Skjöl merkt tvítekin',
+      s: 'Þegar greind sem afrit; bíða förgunar eða staðfestingar.' },
+    { g: 'Skjöl og Drive', k: 'veidin_skjol_an_ars', t: 'Skjöl án árs',
+      s: 'Veiðin. Fóru úr 336 í 1 — nánast leyst.' },
+    { g: 'Skjöl og Drive', k: 'veidin_drive_tvitok', t: 'Drive-tvítök 2026',
+      s: 'Veiðin. Sama skjal oftar en einu sinni.' },
+    { g: 'Skjöl og Drive', k: 'veidin_drive_2026_radir', t: 'Drive-raðir 2026',
+      s: 'Veiðin. Stofnstærð — hvorki góð né slæm.' },
+    { g: 'Skjöl og Drive', k: 'veidin_drive_2026_distinct', t: '…þar af einstök skjöl',
+      s: 'Veiðin. Stofnstærð.' },
+    { g: 'Skjöl og Drive', k: 'veidin_blob_graen_an_skyrslu', t: 'Græn í blob en engin skýrsla',
+      s: 'Veiðin. Kerfið segir búið; skjalið er ekki til.' },
+    { g: 'Skjöl og Drive', k: 'veidin_hud_buid_2026', t: 'Húð merkt búið 2026',
+      s: 'Veiðin. Stofnstærð yfirferðar.' },
+    { g: 'Skjöl og Drive', k: 'veidin_hud_buid_vs_skyrsla', t: 'Húð búið en skýrsla vantar',
+      s: 'Veiðin. Misræmi milli merkingar og skjals.' },
+    { g: 'Skjöl og Drive', k: 'veidin_systkini_kt', t: 'Systkini-kennitölur',
+      s: 'Veiðin. Sama kt á mörgum stöðum — join-leki felur sig hér.' },
+
+    /* TÆKI */
+    { g: 'Tæki', k: 'taeki_med_utrunna_skodun', t: 'Tæki með útrunna skoðun',
+      s: 'next_insp er liðinn. Stærsta einstaka talan í kerfinu.' },
+    { g: 'Tæki', k: 'taeki_an_naestu_skodunar', t: 'Tæki án næstu skoðunar',
+      s: 'Ekkert segir hvenær á að koma aftur.' },
+    { g: 'Tæki', k: 'taeki_an_sidustu_skodunar', t: 'Tæki án síðustu skoðunar',
+      s: 'Engin saga — ekki hægt að reikna næsta gjalddaga.' },
+    { g: 'Tæki', k: 'taeki_an_stadsetningar', t: 'Tæki án staðsetningar í húsi',
+      s: 'Tæknimaðurinn veit ekki hvar það hangir.' },
+    { g: 'Tæki', k: 'taeki_an_eiganda', t: 'Tæki án eiganda',
+      s: 'Hvorki fyrirtæki né kúnnaskrá.' },
+    { g: 'Tæki', k: 'taeki_an_radnumers', t: 'Tæki án raðnúmers',
+      s: 'Ekki hægt að skanna né rekja.' },
+    { g: 'Tæki', k: 'tvitekid_radnumer', t: 'Tvítekið raðnúmer',
+      s: 'Sama raðnúmer á fleiri en einu tæki.' },
+    { g: 'Tæki', k: 'taeki_an_tegundar', t: 'Tæki án tegundar',
+      s: 'Ekki hægt að reikna slökkvigildi né verð.' },
+
+    /* ÞJÓNUSTUBORÐ OG VERK — bord-flettur */
+    { g: 'Þjónustuborð og verk', k: 'opin_thjonustumal', t: 'Opin þjónustumál',
+      s: 'Staða nytt og ekki eytt.' },
+    { g: 'Þjónustuborð og verk', k: 'opin_eldri_en_6_manada', t: '…þar af eldri en 6 mánaða',
+      s: 'Líklega afgreidd í raun, aldrei merkt.' },
+    { g: 'Þjónustuborð og verk', k: 'opin_an_svarad_at', t: 'Opin mál án svarad_at',
+      s: 'Reiturinn er til og ekkert skrifar í hann. Þess vegna vex borðið.' },
+    { g: 'Þjónustuborð og verk', k: 'opin_an_kunnaskrar', t: 'Opin mál án viðskiptavinar',
+      s: 'Ekki hægt að sjá söguna á staðnum.' },
+    { g: 'Þjónustuborð og verk', k: 'verkbeidnir_ekki_sottar', t: 'Verkbeiðnir tilbúnar, ósóttar',
+      s: 'Staða ready — bíða á verkstæði.' },
+    { g: 'Þjónustuborð og verk', k: 'verkbeidnir_ekki_sottar_30_daga', t: '…þar af yfir 30 daga',
+      s: 'Standa á gólfinu.' },
+    { g: 'Þjónustuborð og verk', k: 'verklidir_an_taekis', t: 'Verkliðir án tækis',
+      s: 'Vinna skráð á ekkert tæki — rekst ekki á sögu tækisins.' },
+
+    /* SAMNINGAR */
+    { g: 'Samningar', k: 'i_thjonustu_an_samnings', t: 'Í þjónustu án virks samnings',
+      s: 'Þjónustað án samnings að baki.' },
+    { g: 'Samningar', k: 'samningar_komnir_a_tima', t: 'Samningar komnir á gjalddaga',
+      s: 'next_due liðinn og staða virkur.' },
+    { g: 'Samningar', k: 'veidin_stadir_med_samning', t: 'Staðir með samning  ↑',
+      s: 'Veiðin. Hærra er betra.' },
+    { g: 'Samningar', k: 'veidin_felog_med_netfang', t: 'Félög með netfang  ↑',
+      s: 'Veiðin. Hærra er betra.' },
+
+    /* STOFNSTÆRÐIR */
+    { g: 'Stofnstærðir', k: 'veidin_stadir_i_thjonustu', t: 'Staðir í þjónustu',
+      s: 'Veiðin. Nefnarinn í flestum hlutföllum hér að ofan.' },
+    { g: 'Stofnstærðir', k: 'veidin_felog_i_thjonustu', t: 'Félög í þjónustu',
+      s: 'Veiðin. Stofnstærð.' },
+
+    /* VERKEFNALISTINN */
+    { g: 'Verkefnalisti', k: 'verkefni_i_beidni', t: 'Verkefni í beiðni',
+      s: 'Bíða þess að vera tekin.' },
+    { g: 'Verkefnalisti', k: 'verkefni_i_vinnu', t: 'Verkefni í vinnu',
+      s: 'Í gangi — eðlilegt vinnuflæði, ekki vandamál.' },
+    { g: 'Verkefnalisti', k: 'verkefni_i_yfirferd', t: 'Verkefni í yfirferð',
+      s: 'Bíða samþykkis Agnars.' },
   ];
+
   const HEITI = k => (MAELAR.find(m => m.k === k) || {}).t || String(k).replace(/_/g, ' ');
 
   let _d = null, _valinn = 'i_thjonustu_an_taekja', _sott = false;
@@ -102,6 +252,9 @@
       V + '.mb-maelar{border:1px solid #23262c;border-radius:4px;overflow:hidden;background:#131519}',
       V + '.mb-m{display:grid;grid-template-columns:1fr 88px 74px 116px;gap:12px;align-items:center;'
         + 'padding:11px 14px;border-bottom:1px solid #1e2126;cursor:pointer}',
+      V + '.mb-hopur{padding:9px 14px 7px;font-size:10.5px;font-weight:700;letter-spacing:.13em;'
+        + 'color:#7d858f;background:#0f1115;border-bottom:1px solid #1e2126;border-top:1px solid #1e2126}',
+      V + '.mb-hopur:first-child{border-top:0}',
       V + '.mb-m:last-child{border-bottom:0}',
       V + '.mb-m:hover{background:#181b20}',
       V + '.mb-m.valinn{background:#191d23;box-shadow:inset 3px 0 0 #c0392b}',
@@ -170,15 +323,18 @@
   }
 
   /* ── Teikning ──────────────────────────────────────────────────────────── */
-  function sparkline(ferill) {
+  function sparkline(ferill, stefna) {
     if (!Array.isArray(ferill) || ferill.length < 2) return '';
     const w = 104, h = 26, mn = Math.min(...ferill), mx = Math.max(...ferill), sp = (mx - mn) || 1;
     const d = ferill.map((v, i) => (i ? 'L' : 'M')
       + (i / (ferill.length - 1) * w).toFixed(1) + ' '
       + (h - ((v - mn) / sp) * (h - 4) - 2).toFixed(1)).join(' ');
-    const verri = ferill[ferill.length - 1] > ferill[0];
+    // Liturinn verður að fylgja stefnu mælisins, annars er grænt/rautt öfugt
+    // á þeim átta sem batna við hækkun.
+    const upp = ferill[ferill.length - 1] > ferill[0];
+    const verri = stefna === 'hlutlaus' ? null : (stefna === 'haerra_betra' ? !upp : upp);
     return '<svg class="mb-sp" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" aria-hidden="true">'
-      + '<path d="' + d + '" fill="none" stroke="' + (verri ? '#c0392b' : '#4e9c72') + '" stroke-width="1.7"/></svg>';
+      + '<path d="' + d + '" fill="none" stroke="' + (verri === null ? '#5c646e' : verri ? '#c0392b' : '#4e9c72') + '" stroke-width="1.7"/></svg>';
   }
 
   /* Stóra línuritið með frystingarmerkjum. Einn punktur = enginn ferill enn:
@@ -244,6 +400,10 @@
   function deltaMerki(h) {
     if (!h) return '<span class="mb-dl kyrr">—</span>';
     if (h.att === 'grunnlína') return '<span class="mb-dl grunn">GRUNNLÍNA</span>';
+    // Hlutlaus mælir sýnir hreyfingu án dóms — stofnstærð sem hækkar er ekki bilun.
+    if (h.att === 'hlutlaus') {
+      return '<span class="mb-dl kyrr">' + (h.breyting > 0 ? '+' : '') + (h.breyting || 0) + '</span>';
+    }
     if (!h.breyting) return '<span class="mb-dl kyrr">óbreytt</span>';
     const upp = h.breyting > 0;
     return '<span class="mb-dl ' + (upp ? 'verri' : 'betri') + '">'
@@ -285,14 +445,25 @@
         + '</div>'
       : '';
 
+    /* Flokkahaus birtist þegar `g` breytist. 73 raðir í einni bunu eru
+       veggur; áttatíu prósent af gagninu er að vita hvar maður er staddur. */
+    let sidastiHopur = null;
     const madar = listi.map(m => {
       const h = byKey[m.k];
-      return '<div class="mb-m' + (_valinn === m.k ? ' valinn' : '') + (h.nuna === 0 ? ' nul' : '')
+      const hopur = m.g || 'Annað';
+      const haus = hopur !== sidastiHopur
+        ? '<div class="mb-hopur">' + esc(hopur) + '</div>' : '';
+      sidastiHopur = hopur;
+      // Grænt núll þýðir „leyst" — en aðeins þegar lægra ER betra. Hlutlaus
+      // stofnstærð upp á 0 er ekki sigur, og hærra-betra 0 er þvert á móti slæmt.
+      const graent = h.nuna === 0 && (h.stefna || 'laegra_betra') === 'laegra_betra';
+      return haus
+        + '<div class="mb-m' + (_valinn === m.k ? ' valinn' : '') + (graent ? ' nul' : '')
         + '" data-k="' + esc(m.k) + '">'
         + '<div><div class="mb-t">' + esc(m.t) + '</div><div class="mb-s">' + esc(m.s) + '</div></div>'
         + '<div class="mb-n">' + h.nuna + '</div>'
         + '<div>' + deltaMerki(h) + '</div>'
-        + '<div>' + sparkline(h.ferill) + '</div></div>';
+        + '<div>' + sparkline(h.ferill, h.stefna) + '</div></div>';
     }).join('');
 
     const valinnH = byKey[_valinn] || hr[0];
