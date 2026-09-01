@@ -22,6 +22,18 @@
  *   node tools/trio.cjs            samantekt
  *   node tools/trio.cjs --listi    hvert fyrirtæki sem víkur
  *   node tools/trio.cjs --fid 443  eitt fyrirtæki í smáatriðum
+ *   node tools/trio.cjs --skra     SKRÁIR breytingar í trio_saga + kveikir alarm
+ *   node tools/trio.cjs --saga 443 hvað hefur gerst hjá þessu ID
+ *
+ * LOG-REGISTERIÐ (Agnar 01.09.2026: „tengja alarm ef það breytist á hverju ID
+ * sem skráist niður í log register.. svo þú getir síðar komið og greint hvað
+ * gerðist"): `--skra` ber hverja tölu saman við SÍÐUSTU skráðu og skrifar röð
+ * í `trio_saga` AÐEINS þegar eitthvað hreyfðist. Keyrsla sem finnur ekkert
+ * skrifar ekkert — annars drukknaði sagan í eins röðum.
+ *
+ * ALARMIÐ er `tegund='rofnadi'`: staður sem VAR sammála (prófíll = skýrsla) og
+ * er það ekki lengur. Það er eina breytingin sem þýðir alltaf að eitthvað fór
+ * úrskeiðis; hinar geta verið eðlileg vinna (ný tæki, ný skýrsla).
  */
 const fs = require('fs');
 const path = require('path');
@@ -33,6 +45,9 @@ const KEY = (cfg.match(/SUPABASE_KEY\s*=\s*["']([^"']+)/) || [])[1];
 const H = { apikey: KEY, Authorization: 'Bearer ' + KEY };
 
 const LISTI = process.argv.includes('--listi');
+const SKRA = process.argv.includes('--skra');
+const SAGA = (() => { const i = process.argv.indexOf('--saga'); return i > -1 ? +process.argv[i + 1] : null; })();
+const HW = { ...H, 'content-type': 'application/json' };
 const EITT = (() => { const i = process.argv.indexOf('--fid'); return i > -1 ? +process.argv[i + 1] : null; })();
 
 async function allar(q) {
@@ -78,6 +93,29 @@ function linurAf(s) {
 }
 
 (async () => {
+  if (SAGA != null) {
+    const r = await fetch(URL_ + '/rest/v1/trio_saga?select=*&fyrirtaeki_id=eq.' + SAGA + '&order=dags.desc', { headers: H });
+    if (!r.ok) throw new Error(r.status + ' ' + (await r.text()).slice(0, 160));
+    const rows = await r.json();
+    const c = await (await fetch(URL_ + '/rest/v1/fyrirtaeki?select=nafn&id=eq.' + SAGA, { headers: H })).json();
+    console.log('\nSAGA — fid ' + SAGA + '  ' + ((c[0] && c[0].nafn) || '(ekki til)'));
+    if (!rows.length) { console.log('  Engin skráð breyting.'); return; }
+    rows.forEach(x => {
+      console.log('\n  ' + String(x.dags).slice(0, 16).replace('T', ' ') + '   [' + x.tegund + ']');
+      // Sýna aðeins það sem HREYFÐIST — óbreytt tala í sögu er hávaði, og
+      // „null" á skjá er ekki svar heldur gloppa. Tómt gildi er —.
+      const t = v => (v == null ? '—' : String(v));
+      const lidur = (heiti, f, n) => (f === n ? heiti + ' ' + t(n) : heiti + ' ' + t(f) + ' → ' + t(n));
+      console.log('    ' + [
+        lidur('prófíll', x.fyrri_profill, x.profill),
+        lidur('skýrsla', x.fyrri_skyrsla, x.skyrsla),
+        lidur('reikningur', x.fyrri_reikningur, x.reikningur),
+      ].join('   '));
+      if (x.vidvorun) console.log('    ' + x.vidvorun);
+    });
+    return;
+  }
+
   const [co, ut, facts, sol] = await Promise.all([
     allar('fyrirtaeki?select=id,nafn,er_i_thjonustu&deleted_at=is.null&order=id'),
     allar('uttaeki?select=id,fyrirtaeki_id&status=eq.active&order=id'),
@@ -183,5 +221,93 @@ function linurAf(s) {
         + '  ' + String(v.c.nafn).slice(0, 40) + '  (fid ' + v.c.id + ')'));
   } else if (vikur.length) {
     console.log('\n  `--listi` sýnir hvert þeirra.');
+  }
+
+  /* ── LOG-REGISTERIÐ ────────────────────────────────────────────────────────
+     Ber hverja tölu saman við SÍÐUSTU skráðu og skrifar röð AÐEINS þegar
+     eitthvað hreyfðist. Keyrsla sem finnur ekkert skrifar ekkert — annars
+     drukknaði sagan í eins röðum og „hvað gerðist" yrði ólæsilegt.
+
+     ALARMIÐ er `rofnadi`: staður sem VAR sammála og er það ekki lengur. Það er
+     eina breytingin sem þýðir alltaf að eitthvað fór úrskeiðis. Hinar geta
+     verið eðlileg vinna — ný tæki skráð, ný skýrsla lesin. */
+  if (SKRA) {
+    const sidustu = new Map();
+    let sag = [], from = 0;
+    for (;;) {
+      const r = await fetch(URL_ + '/rest/v1/trio_saga?select=*&order=dags.desc&offset=' + from + '&limit=1000', { headers: H });
+      if (!r.ok) throw new Error('trio_saga ' + r.status + ' ' + (await r.text()).slice(0, 160));
+      const d = await r.json();
+      if (!d.length) break;
+      sag = sag.concat(d);
+      if (d.length < 1000) break;
+      from += 1000;
+    }
+    sag.forEach(x => { const k = String(x.fyrirtaeki_id); if (!sidustu.has(k)) sidustu.set(k, x); });
+
+    const nyjar = [];
+    iThj.forEach(c => {
+      const k = String(c.id);
+      const p = profill.get(k) ?? null;
+      const sk = skyrsla.has(k) ? skyrsla.get(k).n : null;
+      const re = reikn.has(k) ? reikn.get(k).n : null;
+      if (p == null && sk == null && re == null) return;   // ekkert að skrá
+
+      const f = sidustu.get(k);
+      const stemmirNu = (p != null && sk != null) ? (p === sk) : null;
+
+      if (!f) {
+        nyjar.push({
+          fyrirtaeki_id: c.id, profill: p, skyrsla: sk, reikningur: re,
+          stemmir: stemmirNu, tegund: 'nytt',
+          vidvorun: 'Fyrsta mæling: prófíll ' + (p ?? '—') + ' · skýrsla ' + (sk ?? '—') + ' · reikningur ' + (re ?? '—'),
+        });
+        return;
+      }
+      if (f.profill === p && f.skyrsla === sk && f.reikningur === re) return;  // óbreytt
+
+      const breyt = [];
+      if (f.profill !== p) breyt.push('prófíll ' + (f.profill ?? '—') + ' → ' + (p ?? '—'));
+      if (f.skyrsla !== sk) breyt.push('skýrsla ' + (f.skyrsla ?? '—') + ' → ' + (sk ?? '—'));
+      if (f.reikningur !== re) breyt.push('reikningur ' + (f.reikningur ?? '—') + ' → ' + (re ?? '—'));
+
+      let teg = 'breyting';
+      if (f.stemmir === true && stemmirNu === false) teg = 'rofnadi';
+      else if (f.stemmir === false && stemmirNu === true) teg = 'lagadist';
+
+      nyjar.push({
+        fyrirtaeki_id: c.id, profill: p, skyrsla: sk, reikningur: re, stemmir: stemmirNu,
+        fyrri_profill: f.profill, fyrri_skyrsla: f.skyrsla, fyrri_reikningur: f.reikningur,
+        fyrri_dags: f.dags, tegund: teg, vidvorun: breyt.join(' · '),
+      });
+    });
+
+    console.log('');
+    if (!nyjar.length) {
+      console.log('  LOG-REGISTER: engin breyting síðan síðast. Ekkert skráð.');
+    } else {
+      for (let i = 0; i < nyjar.length; i += 100) {
+        const r = await fetch(URL_ + '/rest/v1/trio_saga', {
+          method: 'POST', headers: HW, body: JSON.stringify(nyjar.slice(i, i + 100)),
+        });
+        if (!r.ok) throw new Error('skrif ' + r.status + ' ' + (await r.text()).slice(0, 200));
+      }
+      const eftirTeg = {};
+      nyjar.forEach(x => { eftirTeg[x.tegund] = (eftirTeg[x.tegund] || 0) + 1; });
+      console.log('  LOG-REGISTER: ' + nyjar.length + ' færslur skráðar í trio_saga');
+      Object.entries(eftirTeg).forEach(([t, n]) => console.log('     ' + String(n).padStart(5) + '  ' + t));
+
+      const alarm = nyjar.filter(x => x.tegund === 'rofnadi');
+      if (alarm.length) {
+        console.log('');
+        console.log('  ⚠ ALARM — ' + alarm.length + ' staður/staðir ROFNUÐU (voru sammála, eru ekki lengur):');
+        const nafn = new Map(co.map(c => [c.id, c.nafn]));
+        alarm.slice(0, 20).forEach(x => console.log('     fid ' + String(x.fyrirtaeki_id).padEnd(6)
+          + String(nafn.get(x.fyrirtaeki_id) || '').slice(0, 34).padEnd(36) + x.vidvorun));
+        console.log('');
+        console.log('     Greina: node tools/trio.cjs --saga <fid>');
+        process.exitCode = 1;      // alarm á að sjást í keyrslu, ekki bara í texta
+      }
+    }
   }
 })().catch(e => { console.error('VILLA:', e.message); process.exitCode = 1; });
