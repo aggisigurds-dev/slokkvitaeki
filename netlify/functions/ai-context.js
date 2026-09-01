@@ -148,7 +148,7 @@ const SVID_EIGENDUR = {
   'elon-musk': {
     heiti: 'Ársskoðun — perur, skoðunarmánuður, skýrslu-þekja',
     skra: '.claude/agents/elon-musk.md',
-    maelar: ['i_thjonustu_an_taekja', 'komid_a_tima_enginn_akstur', 'i_thjonustu_an_skodunarmanadar',
+    maelar: ['i_thjonustu_an_taekja', 'thar_af_med_drive_reikning', 'komid_a_tima_enginn_akstur', 'i_thjonustu_an_skodunarmanadar',
       'i_thjonustu_ekki_skodad_i_ar', 'i_thjonustu_ekki_skodad_2_ar',
       'veidin_stadir_med_2026_skyrslu', 'veidin_stadir_med_2025_skyrslu',
       'veidin_engin_skyrsla_25_26', 'veidin_amber_felog', 'veidin_gleymd_felog',
@@ -185,7 +185,7 @@ async function stada(cfg) {
      hjálparfallið gerði `break` í stað `throw`). */
   const co   = await allar(cfg, 'fyrirtaeki?select=id,nafn,kennitala,simi,farsimi,netfang,heimilisfang,postnumer,er_i_thjonustu,customer_base_id,status&deleted_at=is.null&order=id');
   const sol  = await allar(cfg, 'solur?select=id,num,customer_id,customer_base_id,created_at,linur,is_credit,status,samtals&order=created_at.desc');
-  const docs = await allar(cfg, 'customer_documents?select=id,customer_base_id,fyrirtaeki_id,doc_type,year,link_ok,invoice_number,is_duplicate&order=id');
+  const docs = await allar(cfg, 'customer_documents?select=id,customer_base_id,fyrirtaeki_id,doc_type,year,link_ok,invoice_number,is_duplicate,drive_file_id&order=id');
   const ut   = await allar(cfg, 'uttaeki?select=id,serial,type,location,last_insp,next_insp,fyrirtaeki_id,customer_base_id&order=id');
   const tb   = await allar(cfg, 'thjonustubeidni?select=id,status,created_at,svarad_at,customer_base_id,important&deleted_at=is.null&order=id');
   const vb   = await allar(cfg, 'verkbeidnir?select=id,status,created_at&order=id');
@@ -236,6 +236,23 @@ async function stada(cfg) {
   const medSkyrslu = new Set(docs.filter(d => d.doc_type === 'uttektarskyrsla' && +d.year === AR && d.customer_base_id != null)
     .map(d => String(d.customer_base_id)));
   const reikningar = docs.filter(d => d.doc_type === 'reikningur');
+
+  /* Reikningsskjöl sem eiga LESANLEGT PDF og hanga á fyrirtækinu SJÁLFU.
+     Mælt 01.09.2026 við að fylla Húnar ehf (id 1734): magnið var hvergi í
+     gagnagrunninum — engin sala, engin uttaeki-röð, aðeins upphæðin 128.621 —
+     en PDF-ið á Drive bar línurnar (117 Léttvatn 6L ×4 selt, 133 Yfirferð
+     Léttvatn 6-9L ×2). `thar_af_fyllanleg_ur_reikningi` sá það EKKI, því sá
+     mælir krefst `solur`-raðar með línum.
+
+     Aðeins fyrirtaeki_id er notað, ekki customer_base_id: systurfélög deila
+     kúnnaskrárröð, og reikningur systurfélags segir ekkert um þennan stað.
+     Það er sama join-lekan og hefur bitið áður. */
+  const drivePerFid = new Map();
+  reikningar.forEach(d => {
+    if (!d.drive_file_id || d.fyrirtaeki_id == null) return;
+    const k = String(d.fyrirtaeki_id);
+    drivePerFid.set(k, (drivePerFid.get(k) || 0) + 1);
+  });
 
   /* ── Fjórir listarnir sem Staðan sýnir ────────────────────────────────── */
   const H = { tom: [], enginAkstur: [], orukkad: [], skekkja: [], fyllanleg: [] };
@@ -295,6 +312,7 @@ async function stada(cfg) {
     /* Skráin sjálf */
     i_thjonustu_an_taekja:            H.tom.length,
     thar_af_fyllanleg_ur_reikningi:   H.fyllanleg.length,
+    thar_af_med_drive_reikning:       H.tom.filter(g => drivePerFid.has(String(g.id))).length,
     i_thjonustu_an_kennitolu:         tel(iThj, c => tomt(c.kennitala)),
     i_thjonustu_ogild_kennitala:      tel(iThj, c => !tomt(c.kennitala) && !ktGild(c.kennitala)),
     tvitekin_kennitala:               tvitekid(co, c => String(c.kennitala || '').replace(/\D/g, '')),
@@ -463,6 +481,8 @@ const STEFNA = {
   // Undirmengi af vandamáli sem er GOTT að sé hátt: því fleiri sem má fylla
   // úr síðasta reikningi, því meira af 260-vandanum er leysanlegt strax.
   thar_af_fyllanleg_ur_reikningi: 'hlutlaus',
+  // Sama eðli: hátt þýðir „meira er leysanlegt strax", ekki „meira er að".
+  thar_af_med_drive_reikning: 'hlutlaus',
 
   // Kreditreikningar eru eðlilegur hluti reksturs, ekki bilun í sjálfu sér.
   kreditreikningar_i_ar: 'hlutlaus',
