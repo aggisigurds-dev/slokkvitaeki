@@ -105,7 +105,7 @@
   ];
 
   function isUnitOk(u) {
-    return !u.status || u.status === 'active';
+    return u.status !== 'urelt';
   }
 
   function categorize(units) {

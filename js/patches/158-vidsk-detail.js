@@ -68,7 +68,7 @@
   function getUnitsFor(coName) {
     if (!coName) return [];
     const units = (window.DB && window.DB.cache && window.DB.cache.units) || [];
-    return units.filter(u => u.status === 'active' && u.client === coName);
+    return units.filter(u => u.status !== 'urelt' && u.client === coName);
   }
   function ktDigits(kt) { return String(kt || '').replace(/[^0-9]/g, ''); }
 

@@ -26,7 +26,7 @@ var Companies = {
         // "Overdue" = active unit whose next inspection is in the past. Real status values
         // are 'active'/'geymsla'/etc. — there's no 'overdue' status string.
         var _today = new Date().toISOString().substring(0,10);
-        var ov = units.filter(function(u) { return u.status === 'active' && u.next_insp && u.next_insp < _today; }).length;
+        var ov = units.filter(function(u) { return u.status !== 'urelt' && u.next_insp && u.next_insp < _today; }).length;
         var nafn = U.e(c.nafn);
         var simi = c.simi ? '<div class="company-meta">' + U.e(c.simi) + '</div>' : '';
         var addr = c.heimilisfang || c.heimilisFang || '';

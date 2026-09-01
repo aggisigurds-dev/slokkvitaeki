@@ -89,8 +89,8 @@
     var units = DB.cache.units || [];
     var jobs = DB.cache.jobs || [];
     var _today = new Date().toISOString().substring(0,10);
-    var overdue = units.filter(function(u){ return u.status==='active' && u.next_insp && u.next_insp<_today; }).length;
-    var ok = units.filter(function(u){ return u.status==='active' && u.next_insp && u.next_insp>=_today; }).length;
+    var overdue = units.filter(function(u){ return u.status!=='urelt' && u.next_insp && u.next_insp<_today; }).length;
+    var ok = units.filter(function(u){ return u.status!=='urelt' && u.next_insp && u.next_insp>=_today; }).length;
     var inStorage = units.filter(function(u){ return u.status==='geymsla'; }).length;
     var inProg = jobs.filter(function(j){ return j.status==='inprogress'||j.status==='received'; }).length;
     var ready = jobs.filter(function(j){ return j.status==='ready'; }).length;
@@ -180,7 +180,7 @@
       // client / serial / type). Previously a customer name with HTML in
       // it would inject into the dashboard's "upcoming visits" widget.
       var _e=(window.U&&U.e)?U.e:function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(ch){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];});};
-      if (!visits.length) { var _td=new Date().toISOString().substring(0,10),_d60=new Date(Date.now()+60*86400000).toISOString().substring(0,10);var _due=(DB.cache.units||[]).filter(function(u){return u.status==='active' && u.next_insp && u.next_insp<=_d60;}).sort(function(a,b){return (a.next_insp||'').localeCompare(b.next_insp||'');}).slice(0,6);if(!_due.length){ el.innerHTML='<p style="color:#aaa;font-size:12px;margin:0;">'+(_lang==='en'?'No upcoming visits':'Engar heimsóknir')+'</p>'; return; }el.innerHTML=_due.map(function(u){var ov=u.next_insp<_td;var col=ov?'#dc2626':'#b45309';var dt=new Date(u.next_insp).toLocaleDateString('is',{day:'numeric',month:'short'});return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f3f4f6"><div style="min-width:0;flex:1"><div style="font-weight:600;color:#111;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_e(u.client||u.serial)+'</div><div style="color:#666;font-size:11px">'+_e(u.serial||'')+(u.type?' · '+_e(u.type):'')+'</div></div><div style="color:'+col+';font-size:12px;font-weight:600;white-space:nowrap;margin-left:8px">'+(ov?(_lang==='en'?'Overdue ':'Útrunnið '):'')+dt+'</div></div>';}).join('');return; }
+      if (!visits.length) { var _td=new Date().toISOString().substring(0,10),_d60=new Date(Date.now()+60*86400000).toISOString().substring(0,10);var _due=(DB.cache.units||[]).filter(function(u){return u.status!=='urelt' && u.next_insp && u.next_insp<=_d60;}).sort(function(a,b){return (a.next_insp||'').localeCompare(b.next_insp||'');}).slice(0,6);if(!_due.length){ el.innerHTML='<p style="color:#aaa;font-size:12px;margin:0;">'+(_lang==='en'?'No upcoming visits':'Engar heimsóknir')+'</p>'; return; }el.innerHTML=_due.map(function(u){var ov=u.next_insp<_td;var col=ov?'#dc2626':'#b45309';var dt=new Date(u.next_insp).toLocaleDateString('is',{day:'numeric',month:'short'});return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f3f4f6"><div style="min-width:0;flex:1"><div style="font-weight:600;color:#111;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_e(u.client||u.serial)+'</div><div style="color:#666;font-size:11px">'+_e(u.serial||'')+(u.type?' · '+_e(u.type):'')+'</div></div><div style="color:'+col+';font-size:12px;font-weight:600;white-space:nowrap;margin-left:8px">'+(ov?(_lang==='en'?'Overdue ':'Útrunnið '):'')+dt+'</div></div>';}).join('');return; }
       var monthColors = {'04':'#dc2626','05':'#d97706','06':'#059669','07':'#059669'};
       el.innerHTML = visits.map(function(v){
         var d=new Date(v.date); var m=v.date.slice(5,7);
@@ -212,8 +212,8 @@
       units.forEach(function(u){
         if (!byComp[u.client]) byComp[u.client]={ok:0,overdue:0,total:0};
         byComp[u.client].total++;
-        if (u.status==='active' && u.next_insp && u.next_insp<_td) byComp[u.client].overdue++;
-        else if (u.status==='active' && u.next_insp && u.next_insp>=_td) byComp[u.client].ok++;
+        if (u.status!=='urelt' && u.next_insp && u.next_insp<_td) byComp[u.client].overdue++;
+        else if (u.status!=='urelt' && u.next_insp && u.next_insp>=_td) byComp[u.client].ok++;
       });
       var companies = Object.keys(byComp).filter(function(c){return c;}).sort(function(a,b){
         var A=byComp[a], B=byComp[b];

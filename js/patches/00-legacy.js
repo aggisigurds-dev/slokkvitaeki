@@ -1634,7 +1634,7 @@ console.log('[patch-master] loaded with all fixes');
       var units = (window.DB&&DB.cache&&DB.cache.units)||[];
       var _today = new Date().toISOString().substring(0,10);
       var _d30 = new Date(Date.now()+30*86400000).toISOString().substring(0,10);
-      var cu = units.filter(function(u){return u.status==='active'&&u.client===companyName;});
+      var cu = units.filter(function(u){return u.status!=='urelt'&&u.client===companyName;});
       var isRed=false,isOrange=false,isGreen=false;
       if(cu.length){var od=cu.some(function(u){return u.next_insp&&u.next_insp<_today;});var du=cu.some(function(u){return u.next_insp&&u.next_insp>=_today&&u.next_insp<=_d30;});isRed=od;isOrange=!od&&du;isGreen=!od&&!du;}
       var bg = isRed?'red':isOrange?'orange':isGreen?'green':'gray';

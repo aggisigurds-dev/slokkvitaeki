@@ -662,12 +662,14 @@
     return byFid;
   }
   // 2026-08-10: separate from loadActiveUnitsByFid on purpose — that one
-  // filters status='active' (narrower than most of this codebase's "still in
-  // service" convention) and doesn't select next_insp at all. The "next
-  // inspection" derivation used everywhere else (companieslist.js, 185-
-  // inservice-yfirlit.js) is status != 'urelt' + earliest next_insp wins —
-  // matching that here so a company with real units sitting in status='ok'
-  // (the common case) isn't silently skipped.
+  // doesn't select next_insp at all. The "next inspection" derivation used
+  // everywhere else (companieslist.js, 185-inservice-yfirlit.js) is
+  // status != 'urelt' + earliest next_insp wins — matching that here so a
+  // company with real units sitting in status='ok' (the common case) isn't
+  // silently skipped.
+  // 2026-09-01: thessi athugasemd sagdi lika ad loadActiveUnitsByFid siadi a
+  // 'active' — sa munur er horfinn. Systurfallid bar rettu regluna i meira en
+  // ar an thess ad hun baerist yfir; thad var villan. Baedi sia nu eins.
   // 2026-08-23: lyklað á uttaeki.fyrirtaeki_id (starfsstöð) eins og hér að ofan.
   async function loadNextInspByFid(SB) {
     const byFid = {};

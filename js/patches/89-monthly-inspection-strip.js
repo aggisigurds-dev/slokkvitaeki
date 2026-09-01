@@ -40,7 +40,7 @@
   function statusFor(units) {
     const today = new Date(); today.setHours(0,0,0,0);
     const d30 = new Date(today.getTime() + 30*86400000);
-    const cu = units.filter(u => u && u.status === 'active');
+    const cu = units.filter(u => u && u.status !== 'urelt');
     if (!cu.length) return { color: '#9ca3af', emoji: '⚪', label: 'Engin tæki' };
     let overdue = 0, soon = 0, ok = 0, noDate = 0;
     cu.forEach(u => {

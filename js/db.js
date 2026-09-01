@@ -338,8 +338,8 @@ var DB = {
   getUnits: function() { return this.cache.units; },
   getUnit: function(id) { return this.cache.units.find(function(u) { return u.id === id; }); },
   findBySerial: function(s) { return this.cache.units.find(function(u) { return u.serial.toLowerCase() === s.toLowerCase().trim(); }); },
-  getOverdue: function() { var today=new Date().toISOString().substring(0,10); return this.cache.units.filter(function(u){ return u.status==='active' && u.next_insp && u.next_insp < today; }); },
-  getDue: function() { var today=new Date().toISOString().substring(0,10); var d=new Date(); d.setDate(d.getDate()+30); var in30=d.toISOString().substring(0,10); return this.cache.units.filter(function(u){ return u.status==='active' && u.next_insp && u.next_insp >= today && u.next_insp <= in30; }); },
+  getOverdue: function() { var today=new Date().toISOString().substring(0,10); return this.cache.units.filter(function(u){ return u.status!=='urelt' && u.next_insp && u.next_insp < today; }); },
+  getDue: function() { var today=new Date().toISOString().substring(0,10); var d=new Date(); d.setDate(d.getDate()+30); var in30=d.toISOString().substring(0,10); return this.cache.units.filter(function(u){ return u.status!=='urelt' && u.next_insp && u.next_insp >= today && u.next_insp <= in30; }); },
 
   addUnit: async function(data) {
     var today = new Date().toISOString().slice(0,10);

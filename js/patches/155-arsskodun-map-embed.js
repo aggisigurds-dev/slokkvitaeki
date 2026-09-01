@@ -69,7 +69,7 @@
     const units = (window.DB && window.DB.cache && window.DB.cache.units) || [];
     const _today = new Date().toISOString().slice(0,10);
     const _d30   = new Date(Date.now() + 30*86400000).toISOString().slice(0,10);
-    const cu = units.filter(u => u.status === 'active' && u.client === co.nafn);
+    const cu = units.filter(u => u.status !== 'urelt' && u.client === co.nafn);
     if (cu.length) {
       let overdue=0, due=0, ok=0, noDate=0;
       cu.forEach(u => {

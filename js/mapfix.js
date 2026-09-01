@@ -63,7 +63,7 @@
   function statusFor(units, companyName){
     var _today = new Date().toISOString().substring(0,10);
     var _d30 = new Date(Date.now()+30*86400000).toISOString().substring(0,10);
-    var cu = units.filter(function(u){return u.status==='active' && u.client===companyName;});
+    var cu = units.filter(function(u){return u.status!=='urelt' && u.client===companyName;});
     if(!cu.length) return {color:'#6b7280', label:'Engin tæki', count:0};
     var overdue=0, due=0, ok=0, noDate=0;
     cu.forEach(function(u){
@@ -148,7 +148,7 @@
     // Companies with neither are walk-in / sale-only and don't belong.
     var hasUnits = {};
     units.forEach(function(u){
-      if (u.status === 'active') hasUnits[u.client] = true;
+      if (u.status !== 'urelt') hasUnits[u.client] = true;
     });
     var arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
     var bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};

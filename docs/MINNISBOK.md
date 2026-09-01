@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-01 14:45 · 308 virkar staðreyndir
+Sótt 2026-09-01 15:09 · 309 virkar staðreyndir
 
 ---
 
@@ -330,14 +330,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Austurberg: TVAER kennitolur a somu byggingu. id 291 (511115-1400) er virka husfelagid — rett heimilisfang, tengilidur, reikningar 2021/2023/2024/2026. id 499 (470486-7169) var stofnad SJALFVIRKT ur Skuldunautaskra 2026-05-17, ber posthólf sem heimilisfang og banner_note 'ATH - kanski kerfisvilla'. Uttektarskyrslur 2026 og 2024 eru SOMU skjolin a badum.**
   <br>Badir bera sima 585-4800 og netfang reikningar@eignaumsjon.is (Eignaumsjon). 499 a adeins sitt eigid: reikning R-100585 fra 2021 (9.647 kr) og samning fra 2015 — allt fra 2023 er a 291. 470486-7169 er tvi gamla husfelags-kennitalan. EKKI sameinad: sameining kunnarada krefst Agnars (kunnaskra-reglan)
   <br><sub>2026-09-01 · slokkvitaeki · Agnar benti a, sannreynt 01.09.2026 · claude-code</sub>
-- **Ingólfsstræti 5 sameinað: #1271 (tómt, eytt) -> #342 (kt 570998-2509/base 490).**
-  <br>survivor=342 loser=1271
+- **Kristnibraut 69 sameinað: #1300 (tómt, eytt) -> #343 (kt 550704-2260/base 437).**
+  <br>survivor=343 loser=1300
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Kaplahraun 9 Bílasprautun Íslands sameinað: #1449 (eytt) -> #1329 (kt 650398-2389/base 904).**
   <br>survivor=1329 loser=1449
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Kristnibraut 69 sameinað: #1300 (tómt, eytt) -> #343 (kt 550704-2260/base 437).**
-  <br>survivor=343 loser=1300
+- **Ingólfsstræti 5 sameinað: #1271 (tómt, eytt) -> #342 (kt 570998-2509/base 490).**
+  <br>survivor=342 loser=1271
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Leirubakki 4 sameinað: #1281 (tómt, eytt) -> #330 (kt 500585-0999/base 275).**
   <br>survivor=330 loser=1281
@@ -585,12 +585,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### sweep
 
-- **Heilsu-sopun 30.08.2026: uttaeki_null_fid og canon_stadur_empty (thekkt fra #225, 24.08) hafa vaxid mikid og eru enn oleyst - uttaeki_null_fid 199->3348 log-atburdir, canon_stadur_empty 3->357, á 6 dogum. Bæði enn flokkud architectural/customer-data-affecting, ekki snert.**
-  <br>v_app_problems_open 30.08.2026: uttaeki_null_fid n=3348 (fyrst 23.08, sidast 30.08 18:07, #sala), canon_stadur_empty n=357 (fyrst 24.08, sidast 30.08 17:30, v_stadur_yfirlit skilar 0 rodum, #turbopaint). Talnastökkin eru liklega log-atburdir a hverja siduhledslu/heilsu-athugun (ekki ny einstok taeki
-  <br><sub>2026-08-30 · slokkvitaeki · sql · claude-code</sub>
 - **Heilsu-sopun 30.08.2026: GitHub-adgangur ad slokkvitaeki-repoinu er ENN ekki til stadar i thessu keyrsluumhverfi (staðfestir #225 fra 23-24.08 - 6 dogum sidar, oleyst). Sjalfvirkar sopanir geta thvi aldrei fixed/pushed/PR-ad, adeins lesid Supabase og skrifad Charlize.**
   <br>Reynt: gh CLI vantar, GitHub API (repos/aggisigurds-dev/slokkvitaeki) svarar alltaf 'GitHub access to this repository is not enabled for this session. Use add_repo...' - sama fyrir tilbuna repo-nofn, svo skilabodin thekkja ekki repo-tilvist. git clone med https://github.com/... bidur um innskraningu
   <br><sub>2026-08-30 · kerfi · sql · claude-code</sub>
+- **Heilsu-sopun 30.08.2026: uttaeki_null_fid og canon_stadur_empty (thekkt fra #225, 24.08) hafa vaxid mikid og eru enn oleyst - uttaeki_null_fid 199->3348 log-atburdir, canon_stadur_empty 3->357, á 6 dogum. Bæði enn flokkud architectural/customer-data-affecting, ekki snert.**
+  <br>v_app_problems_open 30.08.2026: uttaeki_null_fid n=3348 (fyrst 23.08, sidast 30.08 18:07, #sala), canon_stadur_empty n=357 (fyrst 24.08, sidast 30.08 17:30, v_stadur_yfirlit skilar 0 rodum, #turbopaint). Talnastökkin eru liklega log-atburdir a hverja siduhledslu/heilsu-athugun (ekki ny einstok taeki
+  <br><sub>2026-08-30 · slokkvitaeki · sql · claude-code</sub>
 - **Heilsu-sopun 24.08.2026: tvö ny opin vandamal i app_problems auk thekkta promise_rejection - uttaeki_null_fid (199 log-atburdir / 49 virk taeki an fyrirtaeki_id, sest a #company/169) og canon_stadur_empty (3, v_stadur_yfirlit skilar 0 rodum a #sala).**
   <br>uttaeki_null_fid gaeti verid leif af taekjaskrar-endurbyggingunni 23.08 (sjá sync-faerslur) - taeki sem vantar fyrirtaeki_id FK. canon_stadur_empty er ahyggjuefni thvi v_stadur_yfirlit er nyi canonical-brunnurinn sem Agnar krafdist 23.08 (MIKILVAEGASTA REGLAN) - ef hann skilar 0 rodum a #sala er can
   <br><sub>2026-08-24 · slokkvitaeki · sql · claude-code</sub>
@@ -904,6 +904,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Verkefni klárast og verða úrelt; þekking gerir það ekki.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
 
+### kerfi
+
+- **Stödusian a taekjum: I NOTKUN = uttaeki.status != 'urelt', ALDREI = 'active'. Stadan ber fjogur gildi (active 4891, urelt 482, 'I lagi' 154, ok 74). Tuttugu og tveir kodastadir siudu a 'active' einu -- sex fyrirspurnir server-megin (153, 15 x2, 177, 00-legacy, audit-fk-join) og sextan samanburdir JS-megin a DB.cache.units (db.js x2, features.js, mapfix.js x2, v9.js x5, 00-legacy, 102, 155, 157, 158, 89). Their foldu 228 taeki a 17 fyrirtaekjum; 14 theirra attu ekkert 'active' og litu ut fyrir ad vera ALVEG TOM (Brietartun 48, Dalbrekka 48, bilskurinn 16, Dra ehf 37, Iceland Comfort 15). Lagfaert 01.09.2026. Sonnunin var maeld, ekki alyktud: hja SEX fyrirtaekjum for afleidda talan ad stemma vid arsskodun-blobbinn sem thegar var rettur. Vordur: tools/audit-status-gildi.cjs vaktar baedi ny stodugildi OG afturfor i koda (skannar upprunann, strippar blokk-athugasemdir, LEYFT-listi fyrir logmaet tilvik).**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### svid/agentar
 
 - **Rambo er nýtt svið — hættuleit og forskoðun áður en óafturkræf aðgerð er framkvæmd**
@@ -988,10 +993,10 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Staðfest 28.8.2026 í patch 280 (Taka úr/Setja í þjónustu): watch() setti fylgjara á þann #companies-main sem fannst við ræsingu. Appið skiptir hnútnum út við sumar endurteikningar, og þá sat fylgjarinn á laustengdum hnút. Greining: #companies-main var tengt, Breyta-takkinn með onclick til staðar, en
   <br><sub>2026-08-28 · slokkvitaeki · kóði · claude-code</sub>
 
-### pdf
+### redder
 
-- **pdf-parse v2 flytur út HLUT, ekki fall — gamla kallið pdf(buf) hrynur og þarf new PDFParse({data}).getText()**
-  <br>doc-indexer.js sat á main með v1-kallinu eftir að package.json var uppfært í ^2.4.5; hefði hrunið á fyrsta PDF. Lagað 28.8.2026 eftir mynstrinu sem redder.js notaði þegar.
+- **redder.js las Thunderbird-mbox eftir byte-offset; Thunderbird þjappar skrána reglulega og þá festist keyrslan varanlega á "engin ný skeyti"**
+  <br>Þögul villa: keyrslan lítur út fyrir að hafa tekist. IMAP-leiðin (imapflow) rekur UID í staðinn og þarf Thunderbird hvergi. Bætt við 28.8.2026 — valið er sjálfvirkt eftir því hvort IMAP_BOKHALD_* er í .env.
   <br><sub>2026-08-28 · kerfi · kóði · claude-code</sub>
 
 ### timavera
@@ -1000,10 +1005,10 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Desktop-xlsx leiðin reiknaði annað time_in og þar með annan entry_key fyrir sömu færslu, sem tvítaldi tíma á móti API-línunum. Scheduled task LunaBridge-Timavera var fjarlægt 28.8.2026 og Tímavera tekin út úr setup-tasks.bat.
   <br><sub>2026-08-28 · kerfi · kóði · claude-code</sub>
 
-### redder
+### pdf
 
-- **redder.js las Thunderbird-mbox eftir byte-offset; Thunderbird þjappar skrána reglulega og þá festist keyrslan varanlega á "engin ný skeyti"**
-  <br>Þögul villa: keyrslan lítur út fyrir að hafa tekist. IMAP-leiðin (imapflow) rekur UID í staðinn og þarf Thunderbird hvergi. Bætt við 28.8.2026 — valið er sjálfvirkt eftir því hvort IMAP_BOKHALD_* er í .env.
+- **pdf-parse v2 flytur út HLUT, ekki fall — gamla kallið pdf(buf) hrynur og þarf new PDFParse({data}).getText()**
+  <br>doc-indexer.js sat á main með v1-kallinu eftir að package.json var uppfært í ^2.4.5; hefði hrunið á fyrsta PDF. Lagað 28.8.2026 eftir mynstrinu sem redder.js notaði þegar.
   <br><sub>2026-08-28 · kerfi · kóði · claude-code</sub>
 
 ### ajour
@@ -1084,16 +1089,16 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Dalvegur (jan 2026): 1 léttvatn + 2 duft 6-12kg + 1 slanga = 4. Knarrarvogur 4 (jan 2026): 3 léttvatn + 2 CO2 2kg + 4 CO2 5kg + 2 slöngur = 11. Skútuhraun (jan 2026): 1 léttvatn + 1 duft 6-12kg + 1 CO2 2kg + 3 slöngur = 6. Austurhraun 3 (mars 2026): 6 léttvatn + 1 CO2 5kg + 2 slöngur = 9. Köllunarkl
   <br><sub>2026-08-23 · slokkvitaeki · Cowork 21.08.2026 — lestur á 5 úttektarskýrslum · natalie</sub>
 
-### R-107758 (193.600 kr.) LEYST — það var Bríetartún, ekki Grensásvegur
-
-- **Fjórir reikningar upp á nákvæmlega 193.600 kr. eru allir SAMA verkið: Bríetartún 9-11, desember 2025.**
-  <br>Línurnar eru staflíkar á öllum: 133 Yfirferð Léttvatn 42 stk á 2.700 · 123 Hleðsla Léttvatn 5 stk á 4.400 · 117 Slökkvitæki Léttvatn 6 ltr 1 stk með 25% afslætti · 186 O-hringur 5 · 200 Akstur 2 á 3.554 · 060 Skýrslugerð 1. Samtals 193.600 kr. Keðjan: R-107643 (19.12.25) → R-107757 → R-107758 (26.01
-  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
-
 ### Laugavegur 42 (Iðun Apartments) — húsfélagið greiðir
 
 - **Skýrslan er stíluð á Heimaleigu en reikningurinn á húsfélagið. Staðurinn liggur rétt.**
   <br>Úttekt feb 2026: „Heimaleiga ehf. kt:510117-0690 vegna Laugavegur 42 101 Reykjavík (Iðun apartments)" — 9 léttvatn + 1 duft 6-12 kg = 10 tæki. Reikningur R-107860 (61.390 kr.) er á Húsfélagið Laugavegi 42, kt 611096-2599. Greiðandinn ræður: staðurinn tilheyrir húsfélaginu, Heimaleiga er rekstraraðil
+  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
+
+### R-107758 (193.600 kr.) LEYST — það var Bríetartún, ekki Grensásvegur
+
+- **Fjórir reikningar upp á nákvæmlega 193.600 kr. eru allir SAMA verkið: Bríetartún 9-11, desember 2025.**
+  <br>Línurnar eru staflíkar á öllum: 133 Yfirferð Léttvatn 42 stk á 2.700 · 123 Hleðsla Léttvatn 5 stk á 4.400 · 117 Slökkvitæki Léttvatn 6 ltr 1 stk með 25% afslætti · 186 O-hringur 5 · 200 Akstur 2 á 3.554 · 060 Skýrslugerð 1. Samtals 193.600 kr. Keðjan: R-107643 (19.12.25) → R-107757 → R-107758 (26.01
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
 ### Bríetartún 9-11 er TVÖ verk í sama húsi

@@ -216,7 +216,7 @@
     // per company for 444 cards).
     const unitsByClient = {};
     units.forEach(u => {
-      if (u.status === 'active') {
+      if (u.status !== 'urelt') {
         unitsByClient[u.client] = (unitsByClient[u.client] || 0) + 1;
       }
     });
