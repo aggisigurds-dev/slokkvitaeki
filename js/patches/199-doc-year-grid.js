@@ -818,13 +818,20 @@
     // úttektarskýrslu-dálknum og litu út eins og tvítök/rugl. Nú AÐSKILDAR:
     // repByY = slökkvitæki-úttektir, bruByY = brunakerfi-skoðanir.
     var repByY={}, bruByY={}, invUtByY={}, invBrByY={}, pdByY={}, samn=[];
+    // Búðarreikningar detta út úr BÁÐUM þjónustuflokkum (pushInvByService hér
+    // að neðan). Það er rétt — staðgreidd búðarsala er ekki slökkvitækja-
+    // þjónusta og má ekki lita árið grænt. En hingað til hurfu þeir ALVEG:
+    // fyrirtæki gat átt reikning í customer_documents sem sást hvergi á
+    // síðunni (NR5 ehf R-108161, 56.775 kr — Agnar 01.09.2026: „ég sé engan
+    // reikning á síðunni"). Þeir safnast nú hér og birtast í eigin línu.
+    var budInv=[];
     // Payday-kt er fyrirtækja-víð. Á fjölstaða-kt (Center/Pizzan) málaði
     // ótengd PD-krafa árið á ÖLLUM hótelunum. Greiðslustaða per R-númer
     // (paydayStatusFor) er áfram örugg — hún lyklast á þessar staðar reikning.
     if(paydaySiteSafe) payday.forEach(function(p){ var y=pdYear(p); if(y>=2000&&y<=NOW+1) (pdByY[y]=pdByY[y]||[]).push(p); });
     function pushInvByService(d, y){
       var knd=invoiceServiceKind(d, srcByNum);
-      if(knd==='bud') return;
+      if(knd==='bud'){ budInv.push(d); return; }
       if(knd==='brunakerfi') (invBrByY[y]=invBrByY[y]||[]).push(d);
       else (invUtByY[y]=invUtByY[y]||[]).push(d);
     }
@@ -1186,6 +1193,26 @@
     // across both apps) to fix a report/invoice matched to the wrong site or year.
     var fixLink = baseId ? '<div class="sk-strip" style="justify-content:flex-end"><a href="https://brunaholf.netlify.app/#bakendi/'+baseId+'" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:700;color:var(--ink3);text-decoration:none" title="Laga pörun skýrslna/reikninga við staði í Brunahólf">🔗 Laga pörun í Brunahólf →</a></div>' : '';
 
+    /* 🏪 Búðarhreyfingar — nýjast fyrst. Sýnir að reikningurinn ER til án þess
+       að láta hann telja sem þjónustu ársins. Enginn nýr lestur: budInv er
+       byggt úr sömu `docs` og allt hitt. */
+    var budHtml='';
+    if(budInv.length){
+      budInv.sort(function(x,y){
+        return String(y.doc_date||y.year||'').localeCompare(String(x.doc_date||x.year||''));
+      });
+      budHtml = budInv.map(function(d){
+        var dt=String(d.doc_date||'').slice(0,10) || (d.year?String(d.year):'');
+        var amt=(d.amount!=null&&d.amount!=='')?(' · '+fmtKrLoc(d.amount)+' kr'):'';
+        return '<span style="display:inline-flex;align-items:center;gap:5px;margin:2px 6px 2px 0">'+
+          invDocChip(d, srcByNum)+
+          '<span class="sk-sub" style="white-space:nowrap">'+esc(dt)+esc(amt)+'</span></span>';
+      }).join('');
+    }
+    var budStrip = budInv.length
+      ? '<div class="sk-strip"><div class="sk-strip-l" title="Staðgreidd búðarsala. Telst EKKI þjónusta ársins og litar ekki árið — en hún er til og sést hér.">🏪 Búðarhreyfingar</div><div class="sk-strip-r">'+budHtml+'</div></div>'
+      : '';
+
     section.innerHTML = hdr +
       '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') + monthPillHtml(monthInfo) +'</div></div>'+
       '<div class="sk-svc-grid sk-samn-grid">'+samnHtml+'</div>'+
@@ -1193,6 +1220,7 @@
         '<div class="sk-yr-add"><button type="button" class="sk-doc add" data-add-yr-svc="1">+ ár / þjónusta</button>'+
         '<span class="sk-sub">skýrsla og reikningur parast sjálfkrafa eftir ári — nýjasta árið opið, eldri ár samanþjöppuð</span></div>'+
       '</div>'+
+      budStrip+
       '<div class="sk-strip"><div class="sk-strip-l">📎 Önnur viðhengi</div><div class="sk-strip-r">'+otherHtml+'</div></div>'+
       notLinked + fixLink;
   }
