@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-01 23:16 · 322 virkar staðreyndir
+Sótt 2026-09-01 23:35 · 323 virkar staðreyndir
 
 ---
 
@@ -73,10 +73,10 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [postur](#postur) | 10 |
 | [reikningar](#reikningar) | 8 |
 | [document_pairs](#document-pairs) | 8 |
+| [kerfi](#kerfi) | 7 |
 | [rekstrarfelog](#rekstrarfelog) | 7 |
 | [sync](#sync) | 7 |
 | [oryggi](#oryggi) | 7 |
-| [kerfi](#kerfi) | 6 |
 | [oryggisnet](#oryggisnet) | 6 |
 | [kunni](#kunni) | 6 |
 | [sweep](#sweep) | 5 |
@@ -494,6 +494,23 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Mælt 12.08.2026: 2026 = 206 af 279 skýrslum með reikning tengdan (73,8%). 2025 = 1 af 238, þótt 95 þeirra eigi reikning á sömu kt í customer_documents. Reikningasafn 2025 (326 skjöl) er því nánast ósnert af pöruninni. Bakfylling þarf að keyra pörunina á year=2025 sérstaklega.
   <br><sub>2026-08-12 · brunaholf · sql · cowork</sub>
 
+### kerfi
+
+- **STADREYNDIR.md er safnad ur morgum lotum og sumt i thvi er AFSANNAD, ekki bara gamalt. Yfirferd 01.09.2026 (tools/stadreyndir-yfirferd.cjs maelir allar maelanlegar tolur upp a nytt): 8 stodust, 20 raku litillega, 8 raku svo mikid ad alyktun byggd a theim yrdi rong. FJOGUR voru osonn: (1) 'uttaeki 5.843 taeki, 5.648 an stadar, otengd taeki eru ALDREI verkefni, uttaeki-radir skipta ekki mali' — nuna eru 5.597 af 5.601 TENGD stad, 0,1% otengd en ekki 96,7%; su fullyrding hefdi latid mann afskrifa status-sianna-lagfaeringuna sem tilgangslausa; (2) email_digest 'fimm posthólf, 30.724 radir' — nuna EITT holf (eldklar@eldklar.is) og 5.576 radir; (3) invoices 'Brunaholf AR 435' — skilar NULL rodum med anon-lykli (taemd eda RLS, anon getur ekki greint a milli); (4) endurheimtar-talan '56 felog med skjol en engan stad i thjonustu' — nuna 247, maelt tvisvar med ohadum adferdum. Skjalid sagdist lika SPEGLAD i badum sofnum en §0-6 hofdu rekid i sundur; sameinad 01.09.2026 og skrarnar eru nu ordrett eins.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **'Breyta samantekt'-reiturinn a fyrirtaekjaspjaldinu skrifar i fyrirtaeki.athugasemdir — 286-samskipti-panel.js:218, client.from('fyrirtaeki').update({athugasemdir: val}).eq('id', f.id). Samhlida lota skradi thetta 01.09.2026 sem OLEYSTA hljodlata gagnataps-ahaettu eftir ad hafa leitad i review_note, banner_note, plan_note, thjonustubeidni.summary, nlsh_notes, samskipti_stada, customer_documents.notes og ollum 59 lyklum app_settings — en ekki i athugasemdir. Ekkert tapadist; textinn er a id 1524. LAERDOMUR: leit i 'ollum liklegum dalkum' er ekki sama og ad lesa kodann sem skrifar. Grep a hnappstextann (her 'Breyta samantekt') svarar thessu strax. Skrifin eru vordud sidan 06.08.2026: an gagnagrunnstengingar stoppar 286:216 med skilabodum i stad thess ad syna textann eins og hann hafi vistast.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **TENGDU A customer_id, ALDREI A KENNITOLU EINA. Hja rekstrarfelagi er kennitalan sameiginleg ollum stodum, svo kt-tenging eignar HVERJUM stad allt sem felagid gerir. Thetta bjo til threjar rangar 'nidurstodur' i STADREYNDIR §8 (samhlida lota, 01.09.2026): (a) 'Center Hotel - Thverholt 14 (fid 1627) med 7 uttektir en null taeki' — fid 1627 a NULL uttektir; thaer sjo tilheyra sjo odrum Center-husum a kt 450905-1430, hvert med sitt customer_id; (b) '8 felog med uttekt en ekki i thjonustu' — rett tala er 4 tengt a customer_id, kt-tengingin baetti ranglega vid Thverholti 14 og Pumpingiron; (c) 'Themasnyrting tviskrad a fid 151 + 1262' — fid 151 er mjuk-eytt sidan 2026-07-12 (deleted_at ma aldrei gleymast i talningu). solur hefur customer_id OG customer_kt; customer_id er thad sem bindur soluna vid starfsstodina. Vordur um sama mynstur: tools/audit-stadur-nr.cjs og audit-rekstrarfelog-sites.cjs.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **app_settings er EIN rod (id=1) med 59 lyklum i settings-JSONB, ekki fjorum. STADREYNDIR 7.9 taldi upp fjora (inspection_trips, company_attachments, arsskodun_customers, uttekt_files) eins og listinn vaeri taemandi; leidrett 01.09.2026. Thetta skiptir mali af thvi ad rodin er EIN: lota sem les nokkra lykla og skrifar settings til baka i heilu lagi EYDIR hinum. Lestu rodina, braeddu inn i hana, skrifadu hana svo aftur.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **Auto-sync (Windows Scheduled Task, 15 min) pushar wip-commit a master og THAD RAESTI DEPLOY — halfklarad verk for i loftid oprofad kl 15:05 midja i verki sem lauk 15:12 (01.09.2026). Lagfaert: auto-sync-slokkvitaeki.ps1 og auto-sync-brunaholf.ps1 i OneDrive/ClaudeMemory baeta nu [skip ci] vid wip-skilabodin — token sem BAEDI GitHub Actions og Netlify Git-tengingin virda — svo wip synkast milli velanna en byggir ekkert. Tokenid er EKKI sett i blindni: skriftan les git log origin/<grein>..HEAD og merkir adeins thegar hvert einasta oputta commit er wip; bidi raunverulegt commit fer pushid ut omerkt svo thad deployi. Mistakist lesturinn er gert rad fyrir raunverulegu verki (bilun ma ekki stoppa deploy thegjandi). Sannreynt i einangrudu safni i ollum thremur tilvikum.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **Endurnefning fyrirtaekis skilar ser EKKI nidur i taekin thegar hun fer beint i gagnagrunninn. Samfellan er til i koda (14-companies-openedit:209, 157:922, 00-legacy:2655 keyra .update({client:nafn}).eq('client',oldNafn)) en hangir a UI-flaedinu; REST/MCP/SQL sniðganga hana - og thad er einmitt leidin sem Claude notar i lotu. Fjoldi skjaa siar taeki a NAFNI en ekki FK (mapfix.js:66, 158:71, 155:72, 00-legacy:1637, 89:43) svo fyrirtaekid syndi NULL taeki. Brietartun 9-11 (fid 443) var endurnefnt i 'Heimaleiga - Brietartun 9-11 (husfelag)' 01.09.2026 og 48 taeki baru afram gamla nafnid; samraemd sama dag. lanstaeki hefur ENGAN fyrirtaeki_id - adeins nafn-streng - svo endurnefning slitur thad alveg (12 lanstaeki, oll gild). Vordur: tools/audit-rename-cascade.cjs, baseline 3 (fid 848 Skaftahlid, 429 Alftamyri, 288 Velsmidja Orms - bida akvordunar Agnars um hvort nafnid se rett).**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **Stödusian a taekjum: I NOTKUN = uttaeki.status != 'urelt', ALDREI = 'active'. Stadan ber fjogur gildi (active 4891, urelt 482, 'I lagi' 154, ok 74). Tuttugu og tveir kodastadir siudu a 'active' einu -- sex fyrirspurnir server-megin (153, 15 x2, 177, 00-legacy, audit-fk-join) og sextan samanburdir JS-megin a DB.cache.units (db.js x2, features.js, mapfix.js x2, v9.js x5, 00-legacy, 102, 155, 157, 158, 89). Their foldu 228 taeki a 17 fyrirtaekjum; 14 theirra attu ekkert 'active' og litu ut fyrir ad vera ALVEG TOM (Brietartun 48, Dalbrekka 48, bilskurinn 16, Dra ehf 37, Iceland Comfort 15). Lagfaert 01.09.2026. Sonnunin var maeld, ekki alyktud: hja SEX fyrirtaekjum for afleidda talan ad stemma vid arsskodun-blobbinn sem thegar var rettur. Vordur: tools/audit-status-gildi.cjs vaktar baedi ny stodugildi OG afturfor i koda (skannar upprunann, strippar blokk-athugasemdir, LEYFT-listi fyrir logmaet tilvik).**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### rekstrarfelog
 
 - **HEIMALEIGU-KORTID (stadfest af Agnari 01.09.2026): Heimaleiga ehf ser um eignirnar, hver eign hefur sinn greidanda med eigin kennitolu, og allir bera rekstrarfelag=Heimaleiga. Niu greidendur, 17 starfsstodvar, 443 taeki.**
@@ -565,21 +582,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Engir lyklar eða tokens í nótum, skjölum eða þekkingargrunni — aðeins hvar þeir fást**
   <br>Netlify PAT rennur út milli lota og sækist í User Settings -> Applications -> Personal access tokens.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
-
-### kerfi
-
-- **'Breyta samantekt'-reiturinn a fyrirtaekjaspjaldinu skrifar i fyrirtaeki.athugasemdir — 286-samskipti-panel.js:218, client.from('fyrirtaeki').update({athugasemdir: val}).eq('id', f.id). Samhlida lota skradi thetta 01.09.2026 sem OLEYSTA hljodlata gagnataps-ahaettu eftir ad hafa leitad i review_note, banner_note, plan_note, thjonustubeidni.summary, nlsh_notes, samskipti_stada, customer_documents.notes og ollum 59 lyklum app_settings — en ekki i athugasemdir. Ekkert tapadist; textinn er a id 1524. LAERDOMUR: leit i 'ollum liklegum dalkum' er ekki sama og ad lesa kodann sem skrifar. Grep a hnappstextann (her 'Breyta samantekt') svarar thessu strax. Skrifin eru vordud sidan 06.08.2026: an gagnagrunnstengingar stoppar 286:216 med skilabodum i stad thess ad syna textann eins og hann hafi vistast.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **TENGDU A customer_id, ALDREI A KENNITOLU EINA. Hja rekstrarfelagi er kennitalan sameiginleg ollum stodum, svo kt-tenging eignar HVERJUM stad allt sem felagid gerir. Thetta bjo til threjar rangar 'nidurstodur' i STADREYNDIR §8 (samhlida lota, 01.09.2026): (a) 'Center Hotel - Thverholt 14 (fid 1627) med 7 uttektir en null taeki' — fid 1627 a NULL uttektir; thaer sjo tilheyra sjo odrum Center-husum a kt 450905-1430, hvert med sitt customer_id; (b) '8 felog med uttekt en ekki i thjonustu' — rett tala er 4 tengt a customer_id, kt-tengingin baetti ranglega vid Thverholti 14 og Pumpingiron; (c) 'Themasnyrting tviskrad a fid 151 + 1262' — fid 151 er mjuk-eytt sidan 2026-07-12 (deleted_at ma aldrei gleymast i talningu). solur hefur customer_id OG customer_kt; customer_id er thad sem bindur soluna vid starfsstodina. Vordur um sama mynstur: tools/audit-stadur-nr.cjs og audit-rekstrarfelog-sites.cjs.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **app_settings er EIN rod (id=1) med 59 lyklum i settings-JSONB, ekki fjorum. STADREYNDIR 7.9 taldi upp fjora (inspection_trips, company_attachments, arsskodun_customers, uttekt_files) eins og listinn vaeri taemandi; leidrett 01.09.2026. Thetta skiptir mali af thvi ad rodin er EIN: lota sem les nokkra lykla og skrifar settings til baka i heilu lagi EYDIR hinum. Lestu rodina, braeddu inn i hana, skrifadu hana svo aftur.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **Auto-sync (Windows Scheduled Task, 15 min) pushar wip-commit a master og THAD RAESTI DEPLOY — halfklarad verk for i loftid oprofad kl 15:05 midja i verki sem lauk 15:12 (01.09.2026). Lagfaert: auto-sync-slokkvitaeki.ps1 og auto-sync-brunaholf.ps1 i OneDrive/ClaudeMemory baeta nu [skip ci] vid wip-skilabodin — token sem BAEDI GitHub Actions og Netlify Git-tengingin virda — svo wip synkast milli velanna en byggir ekkert. Tokenid er EKKI sett i blindni: skriftan les git log origin/<grein>..HEAD og merkir adeins thegar hvert einasta oputta commit er wip; bidi raunverulegt commit fer pushid ut omerkt svo thad deployi. Mistakist lesturinn er gert rad fyrir raunverulegu verki (bilun ma ekki stoppa deploy thegjandi). Sannreynt i einangrudu safni i ollum thremur tilvikum.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **Endurnefning fyrirtaekis skilar ser EKKI nidur i taekin thegar hun fer beint i gagnagrunninn. Samfellan er til i koda (14-companies-openedit:209, 157:922, 00-legacy:2655 keyra .update({client:nafn}).eq('client',oldNafn)) en hangir a UI-flaedinu; REST/MCP/SQL sniðganga hana - og thad er einmitt leidin sem Claude notar i lotu. Fjoldi skjaa siar taeki a NAFNI en ekki FK (mapfix.js:66, 158:71, 155:72, 00-legacy:1637, 89:43) svo fyrirtaekid syndi NULL taeki. Brietartun 9-11 (fid 443) var endurnefnt i 'Heimaleiga - Brietartun 9-11 (husfelag)' 01.09.2026 og 48 taeki baru afram gamla nafnid; samraemd sama dag. lanstaeki hefur ENGAN fyrirtaeki_id - adeins nafn-streng - svo endurnefning slitur thad alveg (12 lanstaeki, oll gild). Vordur: tools/audit-rename-cascade.cjs, baseline 3 (fid 848 Skaftahlid, 429 Alftamyri, 288 Velsmidja Orms - bida akvordunar Agnars um hvort nafnid se rett).**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **Stödusian a taekjum: I NOTKUN = uttaeki.status != 'urelt', ALDREI = 'active'. Stadan ber fjogur gildi (active 4891, urelt 482, 'I lagi' 154, ok 74). Tuttugu og tveir kodastadir siudu a 'active' einu -- sex fyrirspurnir server-megin (153, 15 x2, 177, 00-legacy, audit-fk-join) og sextan samanburdir JS-megin a DB.cache.units (db.js x2, features.js, mapfix.js x2, v9.js x5, 00-legacy, 102, 155, 157, 158, 89). Their foldu 228 taeki a 17 fyrirtaekjum; 14 theirra attu ekkert 'active' og litu ut fyrir ad vera ALVEG TOM (Brietartun 48, Dalbrekka 48, bilskurinn 16, Dra ehf 37, Iceland Comfort 15). Lagfaert 01.09.2026. Sonnunin var maeld, ekki alyktud: hja SEX fyrirtaekjum for afleidda talan ad stemma vid arsskodun-blobbinn sem thegar var rettur. Vordur: tools/audit-status-gildi.cjs vaktar baedi ny stodugildi OG afturfor i koda (skannar upprunann, strippar blokk-athugasemdir, LEYFT-listi fyrir logmaet tilvik).**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### oryggisnet
 
