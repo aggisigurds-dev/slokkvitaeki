@@ -252,11 +252,15 @@
   async function fetchTrio(coId){
     try{
       var sb=SB(); if(!sb) return null;
-      var f=await sb.from('arsskodun_report_facts')
-        .select('report_year,total_devices').eq('fyrirtaeki_id', coId).maybeSingle();
+      // Ohadar — samhlida. I rod kostudu thaer ~800 ms per spjald (maelt 01.09).
+      var sv = await Promise.all([
+        sb.from('arsskodun_report_facts').select('report_year,total_devices')
+          .eq('fyrirtaeki_id', coId).maybeSingle(),
+        sb.from('uttaeki').select('id',{count:'exact',head:true})
+          .eq('fyrirtaeki_id', coId).eq('status','active'),
+      ]);
+      var f = sv[0], u = sv[1];
       if(f.error || !f.data || f.data.total_devices==null) return null;
-      var u=await sb.from('uttaeki').select('id',{count:'exact',head:true})
-        .eq('fyrirtaeki_id', coId).eq('status','active');
       if(u.error || u.count==null) return null;
       return { ar:+f.data.report_year, skyrsla:+f.data.total_devices, profill:+u.count };
     }catch(e){ return soknVilla('tríó-tölur', e) && null; }
@@ -853,9 +857,14 @@
   async function render(section, coId){
     // Núllað per fyrirtæki — annars bærist bilun frá einu kortinu yfir á næsta.
     _sokn = [];
-    // Tríó-tölurnar fyrir ÞETTA fyrirtæki. null = engin gögn, og þá heldur
-    // árstalan fyrri hegðun — gagnaleysi má ekki líta út eins og villa.
-    var _trio = await fetchTrio(coId);
+    /* Tríó-tölurnar fyrir ÞETTA fyrirtæki. null = engin gögn, og þá heldur
+       árstalan fyrri hegðun — gagnaleysi má ekki líta út eins og villa.
+
+       RÆST HÉR EN EKKI BEÐIÐ. render() er keðja af sjö fyrirspurnum í röð;
+       biðum við hér bættust ~800 ms framan á hvert spjald, á undan „Hleð…".
+       Loforðið er látið ganga samhliða hinum og beðið fyrst þar sem talan er
+       notuð — þá kostar það ekkert í biðtíma. */
+    var _trioP = fetchTrio(coId);
     // 2026-08-18 (Agnar): rafræna krafan fer ALLTAF — rofinn hér stýrir aðeins
     // hvort tölvupóstafrit (reikningur+skýrsla) fylgi. payday_delivery:
     // 'electronic' = póstur AF; annað/tómt = póstur Á (sjálfgefið).
@@ -1023,6 +1032,7 @@
     var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return b-a;});
 
     // ── status pills ──
+    var _trio = await _trioP;
     var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y), (invUtByY[y]||[]).length>0, _trio); }).join('');
     var monthInfo = await loadInspectMonth(coId, baseId);
     section._monthInfo = monthInfo;
