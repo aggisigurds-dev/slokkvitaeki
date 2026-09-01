@@ -213,3 +213,11 @@
 # tekur 5 verk í senn og gerir ekkert þegar ekkert nýtt er (ein Supabase-fyrirspurn).
 [functions."verkefnalisti-vision-cron"]
   schedule = "*/15 * * * *"
+
+# Trio-maelitaekid: ber saman profíl, úttektarskýrslu og reikning fyrir hvert
+# fyrirtæki og skráir hverja breytingu í trio_saga med alarmi þegar staðfest
+# tríó rofnar. Einu sinni á sólarhring, 06:00 UTC — Agnar 01.09.2026:
+# „óþarfi að checka tugi skipta á dag“. Keyrslan tekur 2,4 s og skrifar ekkert
+# þegar ekkert hefur breyst.
+[functions."trio-cron"]
+  schedule = "0 6 * * *"
