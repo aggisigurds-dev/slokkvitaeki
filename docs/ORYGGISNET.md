@@ -270,6 +270,23 @@ baseline rows and lowering the constant is how the net tightens over time.
   site-keyed úttekt; inv-only = `v_uttekt_ar` eða `solur.customer_id`.
   `153` `_docYears` tekur ekki lengur allar base-skýrslur inn á hvert systkini
   (Plaza Sími málaðist grænt 2026 af Klöpp/Grandi). Invoice OUT / payday / kt-save ósnert.
+- **2026‑09‑01 — `overflow-x:auto` þvingar `overflow-y:auto`: Númer-glugginn opnaðist ekki.**
+  Agnar: „the númer postalcode chooser does not open". Hnappurinn var aldrei bilaður
+  — hann toggle-aði, `aria-expanded` fór í `true`, örin í ▴ og `#_ars-pnr-panel` VAR
+  í DOM. Hann var klipptur í ekkert. `_ensureArsStrimlarCss()` setur `overflow-x:auto`
+  á `#_ars-pnr-row` (svo strimillinn skrunist í stað þess að brotna), og **CSS leyfir
+  ekki að klippa annan ásinn og hafa hinn `visible`** — `overflow-y` þvingast líka í
+  `auto` (mælt í Chromium: auto/auto). Röðin er 28px há og glugginn var
+  `position:absolute;top:100%`, þ.e. byrjaði á neðri brún hennar, utan overflow-boxins.
+  Reproduceraðist EINS á skjá og síma. Lærdómur: **klipping breytir ekki
+  `getBoundingClientRect`, bara málun og hit-test** — glugginn mældist með
+  trúverðuga hæð meðan hann var gjörsamlega ónothæfur, svo `elementFromPoint` er
+  eina áreiðanlega prófunin. Nú `position:fixed` + `_pnrPlace()` (hnit frá hnappinum,
+  flettist upp ef pláss vantar niðri) kallað úr render-hala og úr `scroll`/`resize`
+  hlusturum sem eru skráðir EINU SINNI. Varið af `tools/audit-pnr-panel.cjs`.
+  ⚠️ Sama gildra á við `._ars-morow` og `._ars-statusrow` — báðar hafa líka
+  `overflow-x:auto`. Hengi einhver popup þar seinna þarf sömu meðferð.
+  Invoice OUT / payday / kt-save / readiness (153/187) ósnert — `netvordur`: SAFE.
 - *Add a line here every time you make something bulletproof.*
 
 ---

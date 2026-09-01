@@ -857,8 +857,47 @@
   };
   // „Númer"-glugginn opinn/lokaður — bara fyrir þessa setu, ekki vistað.
   let _pnrOpen = false;
+
+  // Glugginn er `position:fixed` og fær hnitin sín hér. ÁSTÆÐAN (2026-09-01):
+  // hann var `position:absolute;top:100%` inni í #_ars-pnr-row, en sú röð fær
+  // `overflow-x:auto` í _ensureArsStrimlarCss() (svo strimillinn skrunist í
+  // stað þess að brotna). CSS leyfir ekki að klippa annan ásinn og hafa hinn
+  // sýnilegan — `overflow-x:auto` þvingar `overflow-y` líka í `auto` (mælt:
+  // auto/auto). Röðin er 28px há, glugginn byrjar á neðri brún hennar og var
+  // því klipptur í ekkert: hnappurinn virkaði, aria-expanded fór í true, en
+  // ekkert sást. Reproduceraðist EINS á skjá og síma. `fixed` sleppur út úr
+  // overflow-boxinu; engin forsíða í keðjunni býr til containing block
+  // (transform/filter/contain) — mælt í sömu prófun.
+  function _pnrPlace() {
+    const p = document.getElementById('_ars-pnr-panel');
+    const btn = document.getElementById('_ars-pnr-btn');
+    if (!p || !btn) return;
+    const r = btn.getBoundingClientRect();
+    const below = window.innerHeight - r.bottom - 12;
+    const above = r.top - 12;
+    const flip = below < 260 && above > below;   // ekkert pláss niðri → opna upp
+    const w = Math.min(460, window.innerWidth - 12);
+    p.style.width = w + 'px';
+    p.style.left = Math.round(Math.max(6, Math.min(r.left, window.innerWidth - w - 6))) + 'px';
+    p.style.maxHeight = Math.round(Math.min(window.innerHeight * 0.65, flip ? above : below)) + 'px';
+    if (flip) {
+      p.style.top = 'auto';
+      p.style.bottom = Math.round(window.innerHeight - r.top + 6) + 'px';
+    } else {
+      p.style.top = Math.round(r.bottom + 6) + 'px';
+      p.style.bottom = 'auto';
+    }
+  }
+  // Hnappurinn hreyfist við skrun/stærðarbreytingu en fastur gluggi gerir það
+  // ekki — elta hann. Skráð EINU SINNI, eins og mousedown hér að neðan.
+  ['scroll', 'resize'].forEach(ev => window.addEventListener(ev, () => {
+    if (_pnrOpen) _pnrPlace();
+  }, true));
+
   // Smellur utan gluggans lokar honum. Skráð EINU SINNI á document (ekki í
   // render()) svo hlustendur hlaðist ekki upp við hverja endurteikningu.
+  // NB: glugginn er áfram BARN #_ars-pnr-row í DOM þótt hann sé fixed, svo
+  // `closest` hér nær yfir smelli inni í honum eins og áður.
   document.addEventListener('mousedown', e => {
     if (!_pnrOpen) return;
     if (e.target.closest && e.target.closest('#_ars-pnr-row')) return;
@@ -1631,7 +1670,7 @@
             <button id="_ars-pnr-clear" type="button" title="Taka póstnúmera-síuna af — sýna öll númer aftur" style="padding:5px 11px;border:1px solid var(--brd2);background:var(--surface);color:var(--ink2);border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">✕ Sýna öll</button>
           ` : ''}
           ${_pnrOpen ? `
-          <div id="_ars-pnr-panel" style="position:absolute;top:100%;left:0;margin-top:6px;z-index:80;background:var(--surface);border:1px solid var(--brd2);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.30);width:min(460px,94vw);max-height:65vh;display:flex;flex-direction:column;overflow:hidden">
+          <div id="_ars-pnr-panel" style="position:fixed;top:0;left:0;margin:0;z-index:9999;background:var(--surface);border:1px solid var(--brd2);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.30);width:min(460px,94vw);max-height:65vh;display:flex;flex-direction:column;overflow:hidden">
             <div style="display:flex;gap:6px;align-items:center;padding:9px 11px;border-bottom:1px solid var(--brd);background:var(--surface2)">
               <span style="font-size:11px;font-weight:800;color:var(--ink1);margin-right:auto">📍 Póstnúmer${pnrActive ? ` — ${state.postnr.length} af ${pnrAllKeys.length} valin` : ' — öll valin'}</span>
               <button id="_ars-pnr-selall" type="button" style="padding:4px 10px;border:1px solid var(--brd2);background:var(--surface);color:var(--ink1);border-radius:7px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">☑ Velja allt</button>
@@ -2069,6 +2108,9 @@
         } catch (_) { /* type=search may not allow setSelectionRange in some browsers */ }
       }
     }
+
+    // Fasti Númer-glugginn fær hnitin sín eftir að hnappurinn er kominn í DOM.
+    if (_pnrOpen) _pnrPlace();
   }
 
   // ── Print the currently-filtered list ─────────────────────────────────────
