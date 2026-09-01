@@ -1,0 +1,123 @@
+[
+ {
+  "id": 1623,
+  "fyrir": {
+   "equipment": {},
+   "steps_2026": {
+    "reikningur": true
+   },
+   "subscribed": true,
+   "inspect_month": 0,
+   "last_year_inspected": 0
+  }
+ },
+ {
+  "id": 590,
+  "fyrir": {
+   "co_id": 590,
+   "steps_2026": {
+    "send": true,
+    "uttekt": true,
+    "skyrsla": true,
+    "reikningur": true
+   },
+   "inspect_month": 7,
+   "last_year_inspected": 2026,
+   "field_inspected_year": 0
+  }
+ },
+ {
+  "id": 641,
+  "fyrir": {
+   "co_id": 641,
+   "priority": 0,
+   "equipment": {},
+   "steps_2026": {
+    "send": true,
+    "uttekt": true,
+    "skyrsla": true,
+    "reikningur": true
+   },
+   "subscribed": true,
+   "inspect_month": 6,
+   "last_year_inspected": 2026,
+   "field_inspected_year": 0
+  }
+ },
+ {
+  "id": 1524,
+  "fyrir": {
+   "akstur": 1,
+   "priority": 1,
+   "nytt_manual": true,
+   "inspect_month": 8,
+   "inspect_month_manual": true
+  }
+ },
+ {
+  "id": 1485,
+  "fyrir": {
+   "priority": 0,
+   "steps_2026": {
+    "uttekt": true,
+    "skyrsla": true,
+    "reikningur": true,
+    "taekjalisti": true
+   },
+   "inspect_month": 3,
+   "steps_meta_2026": {
+    "taekjalisti": {
+     "at": 1785774555298,
+     "by": "Agnar"
+    }
+   },
+   "listi_stadfest_ar": 2026,
+   "last_year_inspected": 2026
+  }
+ },
+ {
+  "id": 1208,
+  "fyrir": {
+   "_src": "cowork-fill-20260718",
+   "equipment": {},
+   "subscribed": true
+  }
+ },
+ {
+  "id": 835,
+  "fyrir": {
+   "priority": 2,
+   "steps_2026": {
+    "reikningur": true
+   },
+   "subscribed": true,
+   "_bankimport": "reactivated 2024-2026"
+  }
+ },
+ {
+  "id": 1386,
+  "fyrir": {
+   "equipment": {},
+   "steps_2026": {
+    "reikningur": true
+   },
+   "inspect_month": 10,
+   "last_year_inspected": 0
+  }
+ },
+ {
+  "id": 579,
+  "fyrir": {
+   "note": "Bætt 2026-05-25 — reikningar með skýrslugerð til þeirra fundust",
+   "co_id": 579,
+   "source": "invoice-skyrslugerd-detection",
+   "steps_2026": {
+    "reikningur": true
+   },
+   "subscribed": true,
+   "_bankimport": "reactivated 2024-2026",
+   "ekki_sleppt": true,
+   "inspect_month": 11
+  }
+ }
+]
