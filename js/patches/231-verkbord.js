@@ -1549,6 +1549,60 @@
     const m = TYPE_TO_TAG[r && r.type];
     return m ? [m] : [];
   }
+  /* Hversu mörg mál FELUR sían? Sama grunnmengi og visibleRows byrjar á, svo
+     talan er raunveruleg en ekki áætluð. Leitarstrengurinn er EKKI talinn með —
+     hann stendur í reitnum og notandinn veit af honum. Hinar fjórar (flokkur,
+     merki, starfsmaður, stjarna) eru ósýnilegar þegar þær eru virkar.
+
+     Agnar 01.09.2026: mál 817 var stílað á hann, lá óhreyft í viku og hann sá
+     það ekki — sjálfgefna starfsmannasían er `nema_agnar`, „allir NEMA Agnar",
+     og hún býr í localStorage svo hún er ólík á hverri tölvu. Hann hélt að
+     borðið væri ekki að samstillast. Sían á að segja frá sér. */
+  function faldirAfSiu() {
+    const grunnur = allItems().filter(x => inQueue(x) && inFilter(x));
+    const eftir = grunnur.filter(x => {
+      if (state.fFlokk && (state.fFlokk === 'annad' ? !!rowFlokk(x) : rowFlokk(x) !== state.fFlokk)) return false;
+      if (state.fTags.length) { const dt = rowChips(x); if (!state.fTags.some(t => dt.indexOf(t) !== -1)) return false; }
+      if (state.fWorker && state.fWorker !== 'allir' && !matchesWorker(x)) return false;
+      if (state.fStar && !x.important) return false;
+      return true;
+    });
+    return { faldir: grunnur.length - eftir.length, alls: grunnur.length };
+  }
+
+  function siuBordi(f) {
+    if (!f || f.faldir <= 0) return '';
+    return '<div id="vb-siubordi" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;'
+      + 'padding:9px 13px;border-radius:11px;border:1px solid #fcd34d;background:#fffbeb;color:#78350f;font-size:12.5px">'
+      + '<span style="font-weight:800">Sía er virk</span>'
+      + '<span>' + f.faldir + ' af ' + f.alls + ' málum eru falin'
+      + (state.fWorker && state.fWorker !== 'allir'
+          ? ' · starfsmaður: <b>' + esc(state.fWorker === 'nema_agnar' ? 'Allir án Agnars' : state.fWorker) + '</b>' : '')
+      + (state.fTags.length ? ' · merki: <b>' + esc(state.fTags.join(', ')) + '</b>' : '')
+      + (state.fFlokk ? ' · flokkur: <b>' + esc(state.fFlokk) + '</b>' : '')
+      + (state.fStar ? ' · aðeins áríðandi' : '')
+      + '</span>'
+      + '<button id="vb-hreinsa-siu" type="button" style="margin-left:auto;height:30px;padding:0 12px;border-radius:9px;'
+      + 'border:1px solid #b45309;background:#b45309;color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer">'
+      + 'Sýna allt</button></div>';
+  }
+
+  /* „Sýna allt" hreinsar ALLAR fjórar síurnar OG localStorage-gildin þeirra —
+     annars kæmi sama sían aftur við næstu opnun og notandinn stæði í sömu
+     sporum á morgun. */
+  function wireSiuBordi() {
+    const b = document.getElementById('vb-hreinsa-siu');
+    if (!b) return;
+    b.addEventListener('click', function () {
+      state.fWorker = 'allir'; state.fTags = []; state.fFlokk = ''; state.fStar = false;
+      try {
+        localStorage.setItem(WKEY, 'allir');
+        localStorage.setItem(TGKEY, '[]');
+      } catch (_) {}
+      renderControls(); renderList(); renderSel(); refreshBadge();
+    });
+  }
+
   function visibleRows() {
     let r = allItems().filter(x => inQueue(x) && inFilter(x));
     // Flokka-sían (v2): '' = allt, 'annad' = án flokks, annars einn af fimm.
@@ -2375,9 +2429,15 @@
     }
     const rows = visibleRows();
     renderTop(rows);
+    const _f = faldirAfSiu();
+    const _bordi = siuBordi(_f);
     if (!rows.length) {
-      el.innerHTML = '<div style="' + CARD_V3 + ';padding:26px;text-align:center;color:#6b7280;font-size:13px">' +
-        (state.search ? 'Ekkert fannst fyrir „' + esc(state.search) + '“.' : '🎉 Ekkert hér.') + '</div>';
+      // Tómur listi MEÐ virkri síu er nákvæmlega tilvikið sem blekkti Agnar —
+      // „Ekkert hér" er þá ósatt.
+      el.innerHTML = _bordi + '<div style="' + CARD_V3 + ';padding:26px;text-align:center;color:#6b7280;font-size:13px">' +
+        (state.search ? 'Ekkert fannst fyrir „' + esc(state.search) + '“.'
+         : _f.faldir > 0 ? 'Ekkert sýnilegt — sían felur ' + _f.faldir + ' mál.' : '🎉 Ekkert hér.') + '</div>';
+      wireSiuBordi();
       renderSel();
       return;
     }
@@ -2386,7 +2446,7 @@
     // Only jump to another row when the selected ticket is gone entirely.
     state.selId = keepSelectedId(state.selId, rows, allItems());
 
-    let html = '';
+    let html = _bordi;
 
     // ⭐ BÍÐUR SVARS — ósvaraðir póstar, elstu efst.
     const wait = rows.filter(x => isWaiting(x)).sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
@@ -2454,6 +2514,7 @@
     }
 
     el.innerHTML = html;
+    wireSiuBordi();
     renderSel();   // öll önnur köll á renderList() halda spjaldinu í takt
   }
 
