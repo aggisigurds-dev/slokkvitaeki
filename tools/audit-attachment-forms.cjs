@@ -66,6 +66,30 @@ if (fs.existsSync(sib)) {
   } else {
     bad('brunaholf/gmail-send: engin neitun við óleyst viðhengi — kúnni gæti fengið reikningslausan póst merktan „Sent".');
   }
+  // 2026-09-01: strengirnir tveir að ofan duga EKKI einir. Meðan tveir verðir
+  // með sama nafni lágu í skránni (sá frá 08-27 og sá nýi) hefði mátt eyða þeim
+  // nýja — með registry-skráningunni — og þetta próf hefði samt verið GRÆNT af
+  // því dauði tvífarinn uppfyllti greppið. Vörður sem audit sér ekki er vörður
+  // sem hverfur þegjandi. Þess vegna er nú sannað hvert atriði fyrir sig.
+  if (/allowPartial\s*!==\s*true/.test(gs)) {
+    ok('brunaholf/gmail-send: allowPartial er STÍFT === true (truthy slekkur ekki á vörninni)');
+  } else {
+    bad('brunaholf/gmail-send: allowPartial-prófið er laust — `allowPartial:"nei"` myndi slökkva á vörninni.');
+  }
+  // Kallstaðurinn sjálfur, ekki bara nafnið: `_disabled_logAttachmentFailure`
+  // inniheldur strenginn og hefði haldið þessu grænu meðan skráningin var slökkt.
+  if (/await\s+logAttachmentFailure\s*\(/.test(gs) && /app_problems/.test(gs) && /attachments_failed/.test(gs)) {
+    ok('brunaholf/gmail-send: stöðvuð sending er SKRÁÐ í app_problems (3×/dag sópunin sér hana)');
+  } else {
+    bad('brunaholf/gmail-send: stöðvunin er þögul — engin app_problems-skráning, sópunin sér hana aldrei.');
+  }
+  // Regla 6: skráanöfn bera kennitölu í 41% tilvika (mælt á 3.755 röðum), svo
+  // hreinsunin er meginregla. `\b` dugar ekki — undirstrik er orðstafur.
+  if (/scrubDetail/.test(gs) && /\(\?<!\\d\)/.test(gs)) {
+    ok('brunaholf/gmail-send: kennitölur/slóðir hreinsaðar úr registry-detail (lookbehind, ekki \\b)');
+  } else {
+    bad('brunaholf/gmail-send: kennitala eða slóð með token gæti ratað í app_problems (regla 6).');
+  }
 } else {
   console.log('  --  brunaholf ekki í þessari vinnumöppu — þjóns-vörnin ekki prófuð hér');
 }
