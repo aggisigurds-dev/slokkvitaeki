@@ -518,6 +518,11 @@
       '.ut-bulk-date{border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.92);color:#0f172a;border-radius:8px;padding:5px 8px;font:inherit;font-size:12px}',
       '.ut-bulk-del{border:1px solid rgba(252,165,165,.6);background:rgba(220,38,38,.25);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
       '.ut-bulk-clear{margin-left:auto;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer}',
+      // Fyrirspurnargrunnur fyrir clamp()-regluna á .ut-lastcol/.h-last neðar.
+      // Bæði hausinn og raðirnar eru afkomendur .ut-list, svo þau mæla sama
+      // kassann og geta ekki skriðið í sundur. Engin absolute-staðsetning er
+      // inni í listanum (athugað), svo containment breytir engu öðru.
+      '.ut-list{container-type:inline-size}',
       '.ut-head{display:flex;align-items:center;padding:11px 15px 7px;border-bottom:1px solid var(--brd)}',
       '.ut-head .sp{flex:1}',
       // Hausinn VERÐUR að fylgja dálkunum: sömu breiddir og bil og .ut-lastcol /
@@ -556,6 +561,30 @@
       // svo boxið hefjist strax eftir tækjaheitið og sé í engum vafa um að
       // tilheyra „frá síðustu skýrslu" — ekki stjórntökkunum hægra megin.
       '.ut-lastcol{width:190px;display:flex;justify-content:flex-start;flex:none;margin-right:24px}',
+      // 2026-09-01 (Agnar): „yfirfarið is locked in left side, plenty of space to
+      // the right … make it push to the right towards the check symbol if the
+      // window is drawn together". Dálkurinn var STÍFUR 190px utan um 109px
+      // chippu — 81px dautt pláss sem hélt sér óbreytt meðan tækjaheitið var
+      // kramið. Mælt (raunverulegt CSS, tveir dálkar á síðunni):
+      //   raðarbreidd 820 → heiti 143px, ein lína   · dautt pláss 81px
+      //   raðarbreidd 760 → heiti  83px, TVÆR línur · dautt pláss 81px
+      //   raðarbreidd 720 → heiti  43px, tvær línur · dautt pláss 81px
+      //   raðarbreidd 680 → heiti   3px, ÞRJÁR línur· dautt pláss 81px
+      //
+      // ÞVINGUNIN ER SPJALDBREIDDIN, EKKI GLUGGABREIDDIN. Agnar er með breiðan
+      // glugga; spjaldið er mjótt af því „Upplýsingar um úttekt" situr við hliðina.
+      // @media hefði því mælt vitlausan hlut og aldrei slegið inn — þess vegna
+      // @container á .ut-list (fyrsta notkun í þessu repo, sjá skill
+      // slokkvitaeki-layout §7: nýtt mynstur, flaggað viljandi).
+      //
+      // Chippan er ÁFRAM vinstri-jöfnuð (Agnar bað þrisvar um það, sjá að ofan);
+      // það er DÁLKURINN sem gefur eftir, svo chippan færist til hægri í átt að
+      // ✓ og heitið fær plássið. Breidd 190px er óbreytt niður að ~807px röð.
+      // SAMA regla á .h-last — hausinn VERÐUR að fylgja dálkinum (sjá 523-528),
+      // og með einni sameiginlegri reglu getur hann ekki losnað frá honum.
+      // Fyrri 190px-yfirlýsingin stendur eftir viljandi: skilji vafri ekki cqw
+      // fellur hann aftur í hana í stað þess að hrynja í width:auto.
+      '.ut-lastcol,.ut-head .h-last{width:clamp(116px,100cqw - 617px,190px)}',
       '.ut-last{font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;white-space:nowrap;background:var(--surface2);color:var(--ink2);border:1px solid var(--brd)}',
       '.ut-last.h{background:#fdeecb;color:#9a5b1a;border-color:#e7c98f}',
       '.ut-last.old{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d);border-color:var(--red-bd,#fca5a5)}',

@@ -1186,6 +1186,10 @@ var Lanstaeki = {
 <script defer src="/js/patches/288-rf-thjonustu-summa.js?v=20260805perf"></script>
 <script defer src="/js/patches/309-thjonustuver-postar.js?v=20260819a"></script>
 <script defer src="/js/patches/310-tengilidir.js?v=20260820a"></script>
+<!-- 348 heldur slóðinni í takt við virku sýnina svo refresh lendi ekki alltaf á
+     sölusíðunni. Verður að hlaðast SÍÐAST (defer = keyrsla í skjalaröð) svo
+     window.UrlRouting (218) sé til staðar þegar hann ræsir. -->
+<script defer src="/js/patches/348-view-hash-sync.js?v=20260901vh1"></script>
     <script src="/js/tekjur.js?v=20260710grad"></script>
 <script src="/js/v9.js?v=20260817rodun"></script>
 <script src="/js/scanmode.js?v=20260510f"></script>

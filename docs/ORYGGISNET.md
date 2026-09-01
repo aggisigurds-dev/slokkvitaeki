@@ -145,6 +145,38 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑01** — **Viðhengja-vörnin hert + registry-vírinn tengdur.**
+  ⚠️ Fyrri útgáfa þessarar færslu sagði að vörnin hefði „aldrei verið til" og að
+  `audit-attachment-forms` próf 4 hefði verið RAUTT. **Hvort tveggja var rangt**
+  og er leiðrétt hér: vörnin kom með `68c7a66` (2026‑08‑27) og er í `main`.
+  Villan var lotunnar: vinnutréð stóð á grein **32 commit á eftir** `main`, þar
+  sem vörnin var ekki komin — `grep` fann 0 tilvik og auditið var rautt Á ÞEIRRI
+  GREIN. Nákvæmlega regla 2 í CLAUDE.md („`git status` lýgur þangað til þú keyrir
+  `git fetch`"). Audit-rauðleiki er ekki staðreynd um `main` fyrr en tréð er
+  ferskt; það á að vera fyrsta prófunin, ekki sú síðasta.
+  Það sem raunverulega breyttist í dag, ofan á vörnina frá 08‑27:
+  **(1)** bilunin er ekki lengur ÞÖGUL — `logAttachmentFailure()` skrifar í
+  `app_problems` (`source_app='brunaholf'`, `kind='attachments_failed'`);
+  brunahólf hafði aldrei skrifað í registry-ið (0 raðir), svo 3×/dag sópunin sá
+  aldrei stöðvaða sendingu. **(2)** `warnings` getur ekki lengur verið tómt
+  þegar vörnin skýtur (færsla án `content/driveId/url` skilar nú ástæðu —
+  `content:''` féll áður þegjandi í gegn). **(3)** `allowPartial === true` stíft,
+  svo truthy-strengur slökkvi ekki óvart á vörninni. **(4)** `requested` talið
+  inni í lykkjunni í stað tveggja talningarleiða sem gátu rekið í sundur.
+  Persónuvernd (regla 6): `scrubDetail()` hreinsar kennitölur OG slóðir úr
+  `detail`. Fyrsta atlagan notaði `\b…\b` og lak `Reikningur_120380-4569.pdf`
+  (undirstrik er orðstafur) — mælt á 3.755 skráanöfnum í `customer_documents`
+  bera **1.533 (41%) kennitölu**, svo þetta er meginreglan, ekki jaðartilvik.
+  Lookbehind/lookahead á tölustaf leysti það. `catch (e)` gat auk þess borið
+  fulla slóð með `?token=` inn í registry-ið; slóðir eru nú strípaðar.
+  Gamli 08‑27 vörðurinn var orðinn óaðgengilegur kóði undir þeim nýja og var
+  fjarlægður — tvær varnir með sama nafni fela hvor aðra fyrir auditinu.
+  Prófað: `tools/test-gmail-attachment-guard.cjs` (hegðunarprófun gegn raunveru-
+  legum `handler`, stubbað `fetch`) — 422 kemur, EKKERT sent, `allowPartial:true`
+  hleypir í gegn, truthy-strengur ekki, N=0 og null-færsla valda ekki fölsku 422,
+  kennitala ratar ekki í registry. `audit-all`: 23/23.
+  netvordur: CUTS‑A‑WIRE → CUTS‑A‑WIRE (fann stöðu-villuna og kt-lekann) → tengt.
+
 - **2026‑08‑20** — Net founded. Invoice‑OUT guard (blank/wrong/missing → blocked,
   live in prod, #660). Kennitala `999999` trap fixed at the source (#661).
   Problem registry + `window.logProblem` + 3×/day sweep (#661). Five root causes
