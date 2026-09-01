@@ -868,6 +868,13 @@
   // ekkert sást. Reproduceraðist EINS á skjá og síma. `fixed` sleppur út úr
   // overflow-boxinu; engin forsíða í keðjunni býr til containing block
   // (transform/filter/contain) — mælt í sömu prófun.
+  //
+  // SAMA regla bítur tvisvar: `#_ars-pnr-row>*{white-space:nowrap}` á líka við
+  // gluggann (hann ER barn raðarinnar) og ERFIST niður allt undirtréð. Þess
+  // vegna gat hausinn hvorki brotnað né skroppið saman — hann þurfti 415px en
+  // hafði 376px, svo „✓ Loka" lá 38px utan gluggans og mældist ÓSMELLANLEGUR á
+  // síma (elementFromPoint skilaði ekki hnappnum). Þaðan koma `white-space:normal`
+  // á glugganum og `flex-wrap:wrap` + `min-width:0` á hausnum. Ekki fjarlægja.
   function _pnrPlace() {
     const p = document.getElementById('_ars-pnr-panel');
     const btn = document.getElementById('_ars-pnr-btn');
@@ -1670,9 +1677,9 @@
             <button id="_ars-pnr-clear" type="button" title="Taka póstnúmera-síuna af — sýna öll númer aftur" style="padding:5px 11px;border:1px solid var(--brd2);background:var(--surface);color:var(--ink2);border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">✕ Sýna öll</button>
           ` : ''}
           ${_pnrOpen ? `
-          <div id="_ars-pnr-panel" style="position:fixed;top:0;left:0;margin:0;z-index:9999;background:var(--surface);border:1px solid var(--brd2);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.30);width:min(460px,94vw);max-height:65vh;display:flex;flex-direction:column;overflow:hidden">
-            <div style="display:flex;gap:6px;align-items:center;padding:9px 11px;border-bottom:1px solid var(--brd);background:var(--surface2)">
-              <span style="font-size:11px;font-weight:800;color:var(--ink1);margin-right:auto">📍 Póstnúmer${pnrActive ? ` — ${state.postnr.length} af ${pnrAllKeys.length} valin` : ' — öll valin'}</span>
+          <div id="_ars-pnr-panel" style="position:fixed;top:0;left:0;margin:0;z-index:9999;background:var(--surface);border:1px solid var(--brd2);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.30);width:min(460px,94vw);max-height:65vh;display:flex;flex-direction:column;overflow:hidden;white-space:normal">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:9px 11px;border-bottom:1px solid var(--brd);background:var(--surface2)">
+              <span style="font-size:11px;font-weight:800;color:var(--ink1);margin-right:auto;min-width:0;overflow:hidden;text-overflow:ellipsis">📍 Póstnúmer${pnrActive ? ` — ${state.postnr.length} af ${pnrAllKeys.length} valin` : ' — öll valin'}</span>
               <button id="_ars-pnr-selall" type="button" style="padding:4px 10px;border:1px solid var(--brd2);background:var(--surface);color:var(--ink1);border-radius:7px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">☑ Velja allt</button>
               <button id="_ars-pnr-selnone" type="button" style="padding:4px 10px;border:1px solid var(--brd2);background:var(--surface);color:var(--ink1);border-radius:7px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">☐ Hreinsa allt</button>
               <button id="_ars-pnr-close" type="button" style="padding:4px 10px;border:none;background:var(--brand);color:#fff;border-radius:7px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:800">✓ Loka</button>

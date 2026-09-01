@@ -58,6 +58,23 @@ if (!panelTag) {
   }
 }
 
+// ── 1b. …and must undo the nowrap the same strimlar rule inherits into it ────
+// #_ars-pnr-row>*{white-space:nowrap} applies to the panel itself and inherits
+// through the whole subtree, so the header could neither wrap nor shrink: it
+// needed 415px in 376px and "✓ Loka" sat 38px outside the panel, measured
+// unclickable on a 390px phone. Panel needs white-space:normal; header needs
+// flex-wrap:wrap and a shrinkable (min-width:0) title.
+const rowNowrap = /#_ars-pnr-row>\*\{[^}]*white-space:\s*nowrap/.test(src);
+if (rowNowrap && panelTag && !/white-space:\s*normal/.test(panelTag)) {
+  fails.push('153 #_ars-pnr-panel lost white-space:normal while #_ars-pnr-row>* still sets white-space:nowrap — it inherits into the panel and pushes the "✓ Loka" button outside the panel, unclickable on a phone');
+}
+const hdrTag = (src.match(/<div style="display:flex;gap:6px;align-items:center;[^"]*border-bottom[^"]*">/) || [])[0];
+if (!hdrTag) {
+  fails.push('153 póstnúmera-glugginn header row markup changed shape — the flex-wrap guard below can no longer see it (update this audit deliberately, do not delete it)');
+} else if (!/flex-wrap:\s*wrap/.test(hdrTag)) {
+  fails.push('153 panel header lost flex-wrap:wrap — "✓ Loka" overflows the panel on a narrow phone and becomes unclickable');
+}
+
 // ── 2. The placement helper must exist ───────────────────────────────────────
 if (!/function\s+_pnrPlace\s*\(/.test(src)) {
   fails.push('153 _pnrPlace() is gone — a position:fixed panel with no coordinate source renders at the viewport origin, not under the button');
