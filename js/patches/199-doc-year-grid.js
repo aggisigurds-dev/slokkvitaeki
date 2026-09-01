@@ -26,6 +26,25 @@
   window.__docYearGridInstalled = true;
 
   function SB(){ return (window.DB && window.DB.sb) || window.__vdaSB || null; }
+  /* ── ÓSÓTT ER EKKI SAMA OG EKKERT ─────────────────────────────────────────
+     Fimm sækingar hér skiluðu `[]` þegar þær klikkuðu. Á þessu spjaldi þýðir
+     tómt „ekkert skjal er til" — svo bilun leit út eins og VANTAR, sem er
+     einmitt öfug niðurstaða. Skráin segir regluna sjálf neðar: „sýnilegt-en-
+     brotið er skárra en að láta líta út fyrir að skoðun vanti."
+
+     Það hefur þegar bitið hér: athugasemdin við fetchPairs lýsir upsert sem
+     kastaði, var kyngt af catch-inu, og „🔗 Tengja" leit út eins og hún virkaði
+     þótt röðin vistaðist aldrei.
+
+     Teikningin heldur áfram (annars hyrfi spjaldið allt), en það sem MISTÓKST
+     er skráð og sagt á kortinu. */
+  var _sokn = [];
+  function soknVilla(hvad, e) {
+    var m = (e && (e.message || e.code)) ? String(e.message || e.code) : 'óþekkt villa';
+    if (_sokn.indexOf(hvad) === -1) _sokn.push(hvad);
+    console.warn('[doc-year-grid] náði ekki í ' + hvad + ': ' + m);
+    return [];
+  }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function digits(s){ return String(s||'').replace(/\D/g,''); }
   function dash(kt){ var d=digits(kt); return d.length>=10 ? d.slice(0,6)+'-'+d.slice(6,10) : d; }
@@ -153,7 +172,7 @@
     try{ var r=await sb.from('customer_documents')
         .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund')
         .eq('fyrirtaeki_id', coId).eq('doc_type','brunakerfi');
-      return r.data||[]; }catch(e){ return []; }
+      return r.data||[]; }catch(e){ return soknVilla('brunakerfisskjöl', e); }
   }
   // Fjarlægja is_duplicate=true færslur úr EINUM (ár,þjónusta) hóp — EN AÐEINS
   // ef a.m.k. ein ómerkt (eða handvirkt viðhengi, sem ber aldrei þetta flagg)
@@ -200,7 +219,7 @@
         .select('payday_id,number,amount_total,created_date,due_date,paid_date,status,reference')
         .or('kt.eq.'+d+',kt.eq.'+dd).limit(400);
       return r.data||[];
-    }catch(e){ return []; }
+    }catch(e){ return soknVilla('Payday-kröfur', e); }
   }
   // ── document_pairs (Brunahólf's skýrsla<->reikningur bundle table) ─────────
   // 2026-08-05 (ósk Agnars: „auto generated bundle... but I want to create
@@ -212,7 +231,7 @@
   async function fetchPairs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
     try{ var r=await sb.from('document_pairs').select('id,year,service_type,report_doc_id,invoice_doc_id,solur_id,status,matched_by,fyrirtaeki_id').eq('customer_base_id', baseId);
-      return r.data||[]; }catch(e){ return []; }
+      return r.data||[]; }catch(e){ return soknVilla('pörun (document_pairs)', e); }
   }
   // 2026-08-10: the real unique index (Brunahólf, 2026-08-09) is
   // (customer_base_id, year, service_type, COALESCE(fyrirtaeki_id,0)) — an
@@ -255,7 +274,7 @@
   async function siblingsForKt(kt){
     var sb=SB(); if(!sb) return [];
     try{ var r=await sb.from('fyrirtaeki').select('id,nafn,heimilisfang').eq('kennitala', dash(kt)); return r.data||[]; }
-    catch(e){ return []; }
+    catch(e){ return soknVilla('systkinastaðir', e); }
   }
   function addrKeys(h){
     h=String(h||'');
@@ -506,7 +525,7 @@
         if(!s.customer_id && !multi) return true;
         return false;
       });
-    }catch(_){ return []; }
+    }catch(e){ return soknVilla('sölureikningar', e); }
   }
   // Reiknings-chip R-númer → 'afgr' ef solur.source er pos/sott, annars 'uttekt'
   // (sjálfgefið úttekt — prófíllinn er skoðunar-miðaður svo óþekkt skjöl teljast
@@ -788,6 +807,8 @@
   }
 
   async function render(section, coId){
+    // Núllað per fyrirtæki — annars bærist bilun frá einu kortinu yfir á næsta.
+    _sokn = [];
     // 2026-08-18 (Agnar): rafræna krafan fer ALLTAF — rofinn hér stýrir aðeins
     // hvort tölvupóstafrit (reikningur+skýrsla) fylgi. payday_delivery:
     // 'electronic' = póstur AF; annað/tómt = póstur Á (sjálfgefið).
@@ -1201,6 +1222,16 @@
 
        Engin ný fyrirspurn: byggt úr sömu `docs`. Ógildir (void) reikningar eru
        ekki taldir, sama regla og annars staðar á kortinu. */
+    /* Ef eitthvað MISTÓKST við að sækja er það sagt hér — ofar á kortinu en
+       árin sjálf, því annars les maður „vantar" sem staðreynd. */
+    var soknBordi = _sokn.length
+      ? '<div class="sk-strip" style="background:rgba(192,57,43,.08)"><div class="sk-strip-l" style="color:#c0392b">⚠ Ósótt</div>'
+        + '<div class="sk-strip-r"><span class="sk-sub" style="color:#a33">'
+        + 'Náði ekki í: <b>' + esc(_sokn.join(', ')) + '</b>. '
+        + 'Það sem sýnist vanta hér að neðan gæti verið til — þetta er bilun, ekki gat.'
+        + '</span></div></div>'
+      : '';
+
     var hreyf = docs.filter(function(d){
       return d.doc_type==='reikningur' && !isVoidInvoiceDoc(d);
     }).map(function(d){
@@ -1248,7 +1279,7 @@
         '<span class="sk-sub">skýrsla og reikningur parast sjálfkrafa eftir ári — nýjasta árið opið, eldri ár samanþjöppuð</span></div>'+
       '</div>'+
       '<div class="sk-strip"><div class="sk-strip-l">📎 Önnur viðhengi</div><div class="sk-strip-r">'+otherHtml+'</div></div>'+
-      hreyfHtml + notLinked + fixLink;
+      hreyfHtml + soknBordi + notLinked + fixLink;
   }
 
   function wire(section){
