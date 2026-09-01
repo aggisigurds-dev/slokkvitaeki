@@ -53,6 +53,8 @@
       s: 'Magnið er til í síðasta reikningi og má lesa þaðan. Hátt er GOTT hér.' },
     { g: 'Skráin', k: 'thar_af_med_drive_reikning', t: '…þar af með Drive-reikning á sér',
       s: 'Magnið er í PDF-inu og má lesa þaðan (eins og Húnar). Hátt er GOTT hér.' },
+    { g: 'Skráin', k: 'blob_og_uttaeki_osamraeda', t: 'Blob og tækjaraðir segja sitthvað',
+      s: 'Appið lætur tækjaraðirnar vinna — ósamræmið er þögult þar til einhver setur equipment_manual.' },
     { g: 'Skráin', k: 'i_thjonustu_an_kennitolu', t: 'Í þjónustu, engin kennitala',
       s: 'Ekki hægt að para við kúnnaskrá né reikning.' },
     { g: 'Skráin', k: 'i_thjonustu_ogild_kennitala', t: 'Kennitala ekki 10 stafir',

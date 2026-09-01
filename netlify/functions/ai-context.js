@@ -214,6 +214,22 @@ async function stada(cfg) {
     return Array.isArray(L) ? L : [];
   };
 
+  /* Tækjafjöldi býr á TVEIMUR stöðum og þeir eru ólíkir:
+       `arsskodun_customers[id].equipment`  flokkatölur — Ársskoðunar-yfirlitið
+       `uttaeki`-raðir                      einstök tæki — fyrirtækjaprófíllinn,
+                                            kostnaðarreikningur og skýrslur
+     Mælt 01.09.2026: af 242 sem þessi skrá kallaði „í þjónustu án tækja" áttu
+     150 uttaeki-raðir. Þau voru ALDREI tóm í appinu — talan mældi bara annan
+     staðinn. Raunverulega tóm (hvorugt) eru 92.
+     Talan 260 sem hefur verið gefin upp ítrekað var því röng skilgreining, ekki
+     rangt reiknuð. Hér er hún leiðrétt: tómt þýðir tómt á BÁÐUM stöðum. */
+  const utPerFid = new Map();
+  ut.forEach(u => {
+    if (u.fyrirtaeki_id == null) return;
+    const k = String(u.fyrirtaeki_id);
+    utPerFid.set(k, (utPerFid.get(k) || 0) + 1);
+  });
+
   const iThj = co.filter(c => c.er_i_thjonustu);
 
   /* ── Sölur: hvað var rukkað í ár, og hver var síðasti reikningur ───────── */
@@ -263,7 +279,8 @@ async function stada(cfg) {
     const taeki = a ? heild(a.equipment) : 0;
     const g = { id: c.id, nafn: c.nafn, kt: c.kennitala };
 
-    if (c.er_i_thjonustu && taeki === 0) {
+    // Tómt aðeins ef HVORUGUR staðurinn hefur tæki.
+    if (c.er_i_thjonustu && taeki === 0 && !utPerFid.has(String(c.id))) {
       H.tom.push(g);
       // Auto-trigger: skráin er tóm EN síðasti reikningur segir magn.
       const s = sidasta.get(String(c.id));
@@ -313,6 +330,16 @@ async function stada(cfg) {
     i_thjonustu_an_taekja:            H.tom.length,
     thar_af_fyllanleg_ur_reikningi:   H.fyllanleg.length,
     thar_af_med_drive_reikning:       H.tom.filter(g => drivePerFid.has(String(g.id))).length,
+    // Blobbið og uttaeki segja SITTHVAÐ um sama fyrirtæki. Appið lætur uttaeki
+    // vinna (patch 153, `if (units.length && !manual.equipment_manual)`), svo
+    // blob-talan er þögult ósamræmi sem enginn sér fyrr en einhver setur
+    // equipment_manual og hún tekur skyndilega yfir.
+    blob_og_uttaeki_osamraeda:        co.filter(c => {
+      const a = ars[String(c.id)];
+      const b = heild(a && a.equipment);
+      const u = utPerFid.get(String(c.id)) || 0;
+      return b > 0 && u > 0 && b !== u;
+    }).length,
     i_thjonustu_an_kennitolu:         tel(iThj, c => tomt(c.kennitala)),
     i_thjonustu_ogild_kennitala:      tel(iThj, c => !tomt(c.kennitala) && !ktGild(c.kennitala)),
     tvitekin_kennitala:               tvitekid(co, c => String(c.kennitala || '').replace(/\D/g, '')),
