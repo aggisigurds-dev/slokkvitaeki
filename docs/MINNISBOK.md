@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-01 11:32 · 300 virkar staðreyndir
+Sótt 2026-09-01 11:54 · 301 virkar staðreyndir
 
 ---
 
@@ -72,9 +72,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [postur](#postur) | 10 |
 | [reikningar](#reikningar) | 8 |
 | [document_pairs](#document-pairs) | 8 |
+| [sync](#sync) | 7 |
 | [villuleit](#villuleit) | 7 |
 | [oryggi](#oryggi) | 7 |
-| [sync](#sync) | 6 |
 | [kunni](#kunni) | 6 |
 | [sweep](#sweep) | 5 |
 | [vinnublod](#vinnublod) | 5 |
@@ -330,8 +330,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Austurberg: TVAER kennitolur a somu byggingu. id 291 (511115-1400) er virka husfelagid — rett heimilisfang, tengilidur, reikningar 2021/2023/2024/2026. id 499 (470486-7169) var stofnad SJALFVIRKT ur Skuldunautaskra 2026-05-17, ber posthólf sem heimilisfang og banner_note 'ATH - kanski kerfisvilla'. Uttektarskyrslur 2026 og 2024 eru SOMU skjolin a badum.**
   <br>Badir bera sima 585-4800 og netfang reikningar@eignaumsjon.is (Eignaumsjon). 499 a adeins sitt eigid: reikning R-100585 fra 2021 (9.647 kr) og samning fra 2015 — allt fra 2023 er a 291. 470486-7169 er tvi gamla husfelags-kennitalan. EKKI sameinad: sameining kunnarada krefst Agnars (kunnaskra-reglan)
   <br><sub>2026-09-01 · slokkvitaeki · Agnar benti a, sannreynt 01.09.2026 · claude-code</sub>
-- **Ármúli 21 Indverska matarfélagið sameinað: #1369 (gömul kt 510613-0310/base 878, eytt) + #912 -> #241 (núv. kt 610417-0350/base 575). Gamall samningur (doc 86) fluttur á 575/241; base 878 gleypt.**
-  <br>survivor=241 losers=1369,912
+- **Skógarás 11 sameinað: #1274 (tómt, án kt/base) -> #329 (kt 610586-2019/base 579).**
+  <br>survivor=329 loser=1274
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Kaplahraun 9 Bílasprautun Íslands sameinað: #1449 (eytt) -> #1329 (kt 650398-2389/base 904).**
   <br>survivor=1329 loser=1449
@@ -354,8 +354,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Engjahlíð 1 sameinað: #1359 (tómt) -> #1458 (ber öll tæki/skýrslu; kt 521094-2229/base 919), endurnefnt „Húsfélagið Engjahlíð 1". Hvorugt bar reikning; data-berandi röð valin.**
   <br>survivor=1458 loser=1359
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Skógarás 11 sameinað: #1274 (tómt, án kt/base) -> #329 (kt 610586-2019/base 579).**
-  <br>survivor=329 loser=1274
+- **Ármúli 21 Indverska matarfélagið sameinað: #1369 (gömul kt 510613-0310/base 878, eytt) + #912 -> #241 (núv. kt 610417-0350/base 575). Gamall samningur (doc 86) fluttur á 575/241; base 878 gleypt.**
+  <br>survivor=241 losers=1369,912
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Bíldshöfði 16 „Batik ehf" sameinað: #1319 (kt-innsláttarvilla 650706-0604, eytt) -> #804 (kt 650706-0640/base 692). MIKILVÆGT: Martex-Batik ehf #544 (kt 660707-1740/base 721, eigin reikningur R-107651) er AÐSKILIÐ félag — EKKI sameinað.**
   <br>survivor=804 loser=1319; EXCLUDE 544 Martex-Batik
@@ -454,6 +454,30 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Mælt 12.08.2026: 2026 = 206 af 279 skýrslum með reikning tengdan (73,8%). 2025 = 1 af 238, þótt 95 þeirra eigi reikning á sömu kt í customer_documents. Reikningasafn 2025 (326 skjöl) er því nánast ósnert af pöruninni. Bakfylling þarf að keyra pörunina á year=2025 sérstaklega.
   <br><sub>2026-08-12 · brunaholf · sql · cowork</sub>
 
+### sync
+
+- **NYJAR toflur lenda EKKI sjalfkrafa i supabase_realtime-utgafunni. Askrift i js/db.js a toflu sem er ekki i utgafunni sendir ALDREI neitt — og gefur engin villuboð, svo hun litur ut eins og hun virki.**
+  <br>Fundid 01.09.2026 vid ad profa nyja spjallid. Utgafan innihelt adeins: dagskra, fyrirtaeki, lanstaeki, uttaeki, verkbeidnir, verklidur. Thad thydir tvennt til vidbotar: (1) thjonustubeidni sem eg baetti i RT_TABLES sama dag til ad laga 'bordid syncast ekki milli tolva' hefdi EKKI virkad — lagfaering
+  <br><sub>2026-09-01 · kerfi · sannreynt 01.09.2026 · claude-code</sub>
+- **GUIDE RULE (Agnar 23.08): virk taeki (uttaeki active count) hafa ENGA thydingu — daudar/tomar sjalfgerdar tolur. Taekjafjoldi OG skodunarmanudur koma ALLTAF ur skyrslu (arsskodun_report_facts) og reikningi (uttekt_reikningur_facts) — ALDREI ur uttaeki active count ne uttaeki.next_insp (lika daud). Ef hvorki skyrsla ne reikningur til -> talan/manudurinn er OTHEKKT, ekki folsud ur daudum taekjum.**
+  <br>Leysir 17-vs-13: Benna Krokhals = 17 (skyrsla), aldrei 13 (active). v_stadur_yfirlit uppfaert: taeki_count = blob-manual(report-derived) > arsskodun_report_facts total (nyjasta) > uttekt_reikningur_facts total (nyjasta) > null. inspect_month = blob > report-month > invoice-month > null (henti next_i
+  <br><sub>2026-08-23 · slokkvitaeki · agnar · claude-code</sub>
+- **AKKERI (Agnar 23.08): fyrirtaekjaprofillinn (patch 199 „Stada eftir ari" ars-pillur + 📅 manadar-pilla) er HOFDINGINN fyrir skodunarmanud + skodunar-stodu. Arsskodun (153), Rekstrarfelog (175) og vidskiptavina-gatt eiga OLL ad syna nakvaemlega sama manud+stodu og profillinn. Taekjatalan kemur ur skyrslunni (arsskodun_report_facts, entry 4).**
+  <br>Canonical view v_stadur_yfirlit stillt a 199-rokfraedi 23.08: inspect_month = blob inspect_month > arsskodun_report_facts.inspect_month (nyjasta report_year) > elsta uttaeki.next_insp manudur (per fyrirtaeki_id, status!=urelt). factcheck_status (yfirstandandi ar) = human (year_factcheck) > klarad-pa
+  <br><sub>2026-08-23 · slokkvitaeki · agnar · claude-code</sub>
+- **Osamraemid (sami stadur, 3 tolur) er kerfisbundid: ~14 taekjafjolda-skjair, ~10 manadar-skjair, ~14 stodu-skjair i badum repo-um + 9 DB-view reikna SJALFSTAETT, lyklad 3 vegu (fyrirtaeki_id vs client-nafn-strengur vs customer_base_id/kt) med 3 stodu-siur (active vs !=urelt vs engin). Canonical lausn = v_stadur_yfirlit (buid til 23.08).**
+  <br>STAERSTA fravik = taekjafjolda-LYKILL: klasi les enn client-nafn-streng (db.js unitsByClient C1, companieslist C2, 89-strip C6, 224-uttekt-taeki C7, 306 C9, krofur-yfirlit C14, og VIEW v_uttaeki_client_rollup C5) -> margfaldar fjolstada-rekstrarfelog. Master = 153-arsskodun.js (C3/M1/S1: blob equipm
+  <br><sub>2026-08-23 · slokkvitaeki · kóði · claude-code</sub>
+- **MIKILVÆGASTA REGLAN (Agnar 23.08): ALLT verður að reiknast og syncast saman og taka gögn af sama stað. Sami staður MÁ ALDREI sýna mismunandi tækjafjölda / skoðunarmánuð / skoðun-stöðu eftir skjá (gátt vs ársskoðun vs rekstrarfélög vs brunaholf-hub). Ein uppspretta sannleika, allir skjáir lesa hana.**
+  <br>Fannst 23.08 þegar Heimaleiga birtist í 3 gluggum með 3 ólíkum gildum: tækjafjöldi (active-only 38 vs all-status/report 42 vs gamall nafna-join), skoðunarmánuður (júní vs júlí á sama stað) og skoðun/ekki-skoðun eftir skjá. Rót: hver skjár reiknar SJÁLFSTÆTT með ólíkri skilgreiningu (status=active vs
+  <br><sub>2026-08-23 · baedi · agnar · claude-code</sub>
+- **"Sync virkar ekki" er oftast framendavilla — staðfestu í grunninum fyrst**
+  <br>Payday-sync 25.7 keyrði rétt (352 raðir) en mælaborðið sýndi harðkóðaða dagsetningu og endurspurði ekki.
+  <br><sub>2026-08-07 · baedi · sql · chat</sub>
+- **Endurnýta timavera_meta-mynstrið fyrir alla sync-tímastimpla — ekki búa til ný afbrigði**
+  <br>Bein fyrirmæli Agnars 25.7.2026. Ein lína, upsert per import: last_import, source_file, row_count.
+  <br><sub>2026-08-07 · baedi · agnar · chat</sub>
+
 ### villuleit
 
 - **Maelir sem les adeins EINA uppsprettu gefur ranga skilgreiningu, ekki ranga tolu. Talan 260 (i thjonustu an taekja) las adeins arsskodun_customers-blobbinn; 150 af 242 attu uttaeki-radir. Rett tala var 92.**
@@ -502,27 +526,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Netlify PAT rennur út milli lota og sækist í User Settings -> Applications -> Personal access tokens.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
 
-### sync
-
-- **GUIDE RULE (Agnar 23.08): virk taeki (uttaeki active count) hafa ENGA thydingu — daudar/tomar sjalfgerdar tolur. Taekjafjoldi OG skodunarmanudur koma ALLTAF ur skyrslu (arsskodun_report_facts) og reikningi (uttekt_reikningur_facts) — ALDREI ur uttaeki active count ne uttaeki.next_insp (lika daud). Ef hvorki skyrsla ne reikningur til -> talan/manudurinn er OTHEKKT, ekki folsud ur daudum taekjum.**
-  <br>Leysir 17-vs-13: Benna Krokhals = 17 (skyrsla), aldrei 13 (active). v_stadur_yfirlit uppfaert: taeki_count = blob-manual(report-derived) > arsskodun_report_facts total (nyjasta) > uttekt_reikningur_facts total (nyjasta) > null. inspect_month = blob > report-month > invoice-month > null (henti next_i
-  <br><sub>2026-08-23 · slokkvitaeki · agnar · claude-code</sub>
-- **AKKERI (Agnar 23.08): fyrirtaekjaprofillinn (patch 199 „Stada eftir ari" ars-pillur + 📅 manadar-pilla) er HOFDINGINN fyrir skodunarmanud + skodunar-stodu. Arsskodun (153), Rekstrarfelog (175) og vidskiptavina-gatt eiga OLL ad syna nakvaemlega sama manud+stodu og profillinn. Taekjatalan kemur ur skyrslunni (arsskodun_report_facts, entry 4).**
-  <br>Canonical view v_stadur_yfirlit stillt a 199-rokfraedi 23.08: inspect_month = blob inspect_month > arsskodun_report_facts.inspect_month (nyjasta report_year) > elsta uttaeki.next_insp manudur (per fyrirtaeki_id, status!=urelt). factcheck_status (yfirstandandi ar) = human (year_factcheck) > klarad-pa
-  <br><sub>2026-08-23 · slokkvitaeki · agnar · claude-code</sub>
-- **Osamraemid (sami stadur, 3 tolur) er kerfisbundid: ~14 taekjafjolda-skjair, ~10 manadar-skjair, ~14 stodu-skjair i badum repo-um + 9 DB-view reikna SJALFSTAETT, lyklad 3 vegu (fyrirtaeki_id vs client-nafn-strengur vs customer_base_id/kt) med 3 stodu-siur (active vs !=urelt vs engin). Canonical lausn = v_stadur_yfirlit (buid til 23.08).**
-  <br>STAERSTA fravik = taekjafjolda-LYKILL: klasi les enn client-nafn-streng (db.js unitsByClient C1, companieslist C2, 89-strip C6, 224-uttekt-taeki C7, 306 C9, krofur-yfirlit C14, og VIEW v_uttaeki_client_rollup C5) -> margfaldar fjolstada-rekstrarfelog. Master = 153-arsskodun.js (C3/M1/S1: blob equipm
-  <br><sub>2026-08-23 · slokkvitaeki · kóði · claude-code</sub>
-- **MIKILVÆGASTA REGLAN (Agnar 23.08): ALLT verður að reiknast og syncast saman og taka gögn af sama stað. Sami staður MÁ ALDREI sýna mismunandi tækjafjölda / skoðunarmánuð / skoðun-stöðu eftir skjá (gátt vs ársskoðun vs rekstrarfélög vs brunaholf-hub). Ein uppspretta sannleika, allir skjáir lesa hana.**
-  <br>Fannst 23.08 þegar Heimaleiga birtist í 3 gluggum með 3 ólíkum gildum: tækjafjöldi (active-only 38 vs all-status/report 42 vs gamall nafna-join), skoðunarmánuður (júní vs júlí á sama stað) og skoðun/ekki-skoðun eftir skjá. Rót: hver skjár reiknar SJÁLFSTÆTT með ólíkri skilgreiningu (status=active vs
-  <br><sub>2026-08-23 · baedi · agnar · claude-code</sub>
-- **"Sync virkar ekki" er oftast framendavilla — staðfestu í grunninum fyrst**
-  <br>Payday-sync 25.7 keyrði rétt (352 raðir) en mælaborðið sýndi harðkóðaða dagsetningu og endurspurði ekki.
-  <br><sub>2026-08-07 · baedi · sql · chat</sub>
-- **Endurnýta timavera_meta-mynstrið fyrir alla sync-tímastimpla — ekki búa til ný afbrigði**
-  <br>Bein fyrirmæli Agnars 25.7.2026. Ein lína, upsert per import: last_import, source_file, row_count.
-  <br><sub>2026-08-07 · baedi · agnar · chat</sub>
-
 ### kunni
 
 - **fyrirtaeki.postnumer er SÉRSTAKUR reitur sem UI-ið les — það les EKKI póstnúmerið úr heimilisfanginu**
@@ -546,12 +549,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### sweep
 
-- **Heilsu-sopun 30.08.2026: uttaeki_null_fid og canon_stadur_empty (thekkt fra #225, 24.08) hafa vaxid mikid og eru enn oleyst - uttaeki_null_fid 199->3348 log-atburdir, canon_stadur_empty 3->357, á 6 dogum. Bæði enn flokkud architectural/customer-data-affecting, ekki snert.**
-  <br>v_app_problems_open 30.08.2026: uttaeki_null_fid n=3348 (fyrst 23.08, sidast 30.08 18:07, #sala), canon_stadur_empty n=357 (fyrst 24.08, sidast 30.08 17:30, v_stadur_yfirlit skilar 0 rodum, #turbopaint). Talnastökkin eru liklega log-atburdir a hverja siduhledslu/heilsu-athugun (ekki ny einstok taeki
-  <br><sub>2026-08-30 · slokkvitaeki · sql · claude-code</sub>
 - **Heilsu-sopun 30.08.2026: GitHub-adgangur ad slokkvitaeki-repoinu er ENN ekki til stadar i thessu keyrsluumhverfi (staðfestir #225 fra 23-24.08 - 6 dogum sidar, oleyst). Sjalfvirkar sopanir geta thvi aldrei fixed/pushed/PR-ad, adeins lesid Supabase og skrifad Charlize.**
   <br>Reynt: gh CLI vantar, GitHub API (repos/aggisigurds-dev/slokkvitaeki) svarar alltaf 'GitHub access to this repository is not enabled for this session. Use add_repo...' - sama fyrir tilbuna repo-nofn, svo skilabodin thekkja ekki repo-tilvist. git clone med https://github.com/... bidur um innskraningu
   <br><sub>2026-08-30 · kerfi · sql · claude-code</sub>
+- **Heilsu-sopun 30.08.2026: uttaeki_null_fid og canon_stadur_empty (thekkt fra #225, 24.08) hafa vaxid mikid og eru enn oleyst - uttaeki_null_fid 199->3348 log-atburdir, canon_stadur_empty 3->357, á 6 dogum. Bæði enn flokkud architectural/customer-data-affecting, ekki snert.**
+  <br>v_app_problems_open 30.08.2026: uttaeki_null_fid n=3348 (fyrst 23.08, sidast 30.08 18:07, #sala), canon_stadur_empty n=357 (fyrst 24.08, sidast 30.08 17:30, v_stadur_yfirlit skilar 0 rodum, #turbopaint). Talnastökkin eru liklega log-atburdir a hverja siduhledslu/heilsu-athugun (ekki ny einstok taeki
+  <br><sub>2026-08-30 · slokkvitaeki · sql · claude-code</sub>
 - **Heilsu-sopun 24.08.2026: tvö ny opin vandamal i app_problems auk thekkta promise_rejection - uttaeki_null_fid (199 log-atburdir / 49 virk taeki an fyrirtaeki_id, sest a #company/169) og canon_stadur_empty (3, v_stadur_yfirlit skilar 0 rodum a #sala).**
   <br>uttaeki_null_fid gaeti verid leif af taekjaskrar-endurbyggingunni 23.08 (sjá sync-faerslur) - taeki sem vantar fyrirtaeki_id FK. canon_stadur_empty er ahyggjuefni thvi v_stadur_yfirlit er nyi canonical-brunnurinn sem Agnar krafdist 23.08 (MIKILVAEGASTA REGLAN) - ef hann skilar 0 rodum a #sala er can
   <br><sub>2026-08-24 · slokkvitaeki · sql · claude-code</sub>
@@ -792,12 +795,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### hradi
 
-- **Tilboðssíðan (brunaholf-tilbod og /public/tilbod/) á að lazy-loada docx@9.1.0 UMD við Sækja .docx, ekki á hverri heimsókn (~147 KB gzip)**
-  <br>logo.png var 218 KB ógegnsætt RGBA; 10 KB palette PNG með hvítu slegnu út svo header invert sýni merkið. HTML heldur max-age=0. Sér Netlify-site brunaholf-tilbod.netlify.app þarf publish dir public/tilbod (eða re-drop) til að fá nested netlify.toml.
-  <br><sub>2026-08-29 · brunaholf · kóði · cursor</sub>
 - **Hashed /js/_bundle-*.js files are safe to Cache-Control: public, max-age=31536000, immutable because build-dist.js puts an MD5 in the filename; HTML stays max-age=0 so a new deploy is noticed**
   <br>Measured 29.8.2026: production sent max-age=0 on ~1.1 MB of bundles. Preview #789 serves immutable on _bundle-0..7, 1h SWR on /js/* and /css/*, 1d SWR on /img/*, sw.js still max-age=0.
   <br><sub>2026-08-29 · slokkvitaeki · kóði · cursor</sub>
+- **Tilboðssíðan (brunaholf-tilbod og /public/tilbod/) á að lazy-loada docx@9.1.0 UMD við Sækja .docx, ekki á hverri heimsókn (~147 KB gzip)**
+  <br>logo.png var 218 KB ógegnsætt RGBA; 10 KB palette PNG með hvítu slegnu út svo header invert sýni merkið. HTML heldur max-age=0. Sér Netlify-site brunaholf-tilbod.netlify.app þarf publish dir public/tilbod (eða re-drop) til að fá nested netlify.toml.
+  <br><sub>2026-08-29 · brunaholf · kóði · cursor</sub>
 
 ### afslattarhopar
 
