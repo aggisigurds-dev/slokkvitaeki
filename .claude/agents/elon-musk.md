@@ -233,3 +233,92 @@ SKÝRSLUM/reikningum (`count_source`), ekki úr tækjaskránni. Þær stemma á 
 **Ekki setja varúðarmerki á misræmi sem er í meirihluta raða.** ⚠ var sett á
 TÆKI-dálkinn í Rekstrarfélögum til að sýna muninn og endaði á nánast hverri línu.
 Það varð hávaði og var fjarlægt samdægurs.
+
+## Tækjafjöldi býr á TVEIMUR stöðum — lestu báða áður en þú telur
+
+Mælt 01.09.2026. Þetta er dýrasta villa dagsins og hún var í mælingunni, ekki
+í gögnunum.
+
+| Uppspretta | Hvað hún er | Hver les hana |
+|---|---|---|
+| `arsskodun_customers[id].equipment` | flokkatölur (`lettvatn`, `co2_5` …) | Ársskoðunar-yfirlitið |
+| `uttaeki`-raðir | einstök tæki með raðnúmeri | **fyrirtækjaprófíllinn**, kostnaður, skýrslur |
+
+**Forgangsröðin í patch 153** (`~425`–`463`) er þessi og skiptir öllu:
+
+1. `equipment_manual: true` í blobbinum — **vinnur yfir allt**
+2. annars: afleiðsla úr `uttaeki` ef einhverjar raðir eru til (`_derived`)
+3. annars: fersk skýrsla (`report_year >= 2025`)
+4. annars: blob-tölurnar eins og þær standa
+
+`_unit_count` er **aðeins** reiknað í tilvikum 1–3. Skrifirðu `equipment` í
+blobbinn án `equipment_manual` fær fyrirtækið **auðan Tæki-dálk þótt talan sé
+til** — það leit út eins og skrifin hefðu ekki virkað.
+
+**Afleiðing fyrir mælingar:** mælir sem telur „í þjónustu án tækja" og les
+aðeins blobbinn gaf **242**; af þeim áttu **150** `uttaeki`-raðir og voru
+aldrei tómar. Rétt tala: **92**. Talan 260 sem var gefin upp mánuðum saman var
+því röng SKILGREINING, ekki rangt reiknuð. Sjá mælinn `blob_og_uttaeki_osamraeda`
+(108 fyrirtæki þar sem uppspretturnar segja sitthvað).
+
+## Að fylla tækjafjölda úr reikningi — verklagið
+
+Reglan er Agnars (staðfest 01.09.2026, Charlize 305/307):
+
+> **Sala + yfirferð + hleðsla af sömu tegund leggjast SAMAN.**
+> Yfirferð er innifalin í hleðslu, svo hlaðið tæki er EKKI líka í
+> yfirferðarlínunni — þau eru sitthvort tækið.
+
+Dæmi: Grillvagninn R-000548 — `Hleðsla Duft 6kg ×3` + `Nýtt Duft 6kg ×5` = **8**.
+Dalbrekka R-000683 — `Yfirferð Léttvatn ×43` + `Hleðsla ×1` = **44**.
+
+**Telst EKKI tæki:** Vinna pr. Klst · Akstur · Skýrslugerð og vottun ·
+Skoðunargjald · byrjunargjald · Skilti/límmiðar/V-merki · rafhlöður ·
+sjúkratöskur · Úðastútur · Notaðir kútar.
+
+**Skrefin:**
+
+1. `customer_documents` → `drive_file_id` → lestu PDF-ið. Magnið er oft
+   **hvergi í gagnagrunninum** — aðeins upphæðin er skráð.
+2. **Staðfestu hverja línu með margföldun**: fjöldi × einingaverð = upphæð
+   línunnar. Aldrei álykta magn af heildarupphæð.
+3. Flettu einingaverði upp í `vorur` áður en tala í heiti er túlkuð sem
+   pakkning. `Reykskynjari 2` (2.195 kr) og `Reykskynjari 3` (5.363 kr) eru
+   **tvær gerðir**, ekki tveggja/þriggja stk pakkar.
+4. Lestu fótnótuna. `Vegna <staður>` tengir reikning sem er stílaður á annað
+   félag. `úttekið <nafn>, <bygging>` þýðir að reikningurinn nær yfir EINA
+   byggingu af mörgum — **slepptu þá**; skrá upp á 1 tæki á sveitarfélag lítur
+   út fyrir að vera fullbúin og felur vandann. Tóm skrá er sannari en skökk.
+5. Athugaðu `vidskiptategund`. `bud` = staðgreidd búðarsala, ekki
+   þjónustuheimsókn — veikari heimild um hvað er uppsett á staðnum.
+6. **Búðu til `uttaeki`-raðir**, ekki bara blob-tölur, annars sést ekkert á
+   prófílnum og kostnaðurinn reiknast 0 kr.
+
+**Raðirnar (sama og `+ Bæta við tæki`, patch 73):**
+
+```js
+{ serial: 'TMP-' + 6 stafir úr '23456789ABCDEFGHJKLMNPQRSTUVWXYZ',  // engin 0/1/I/O
+  type, size, client: nafn, location: null,
+  last_insp, next_insp, status: 'active', service_choice: 'yfirferd',
+  fyrirtaeki_id, customer_base_id }
+```
+
+`type`/`size` VERÐA að vera strengirnir sem eru þegar ráðandi í grunni, annars
+lendir `categoryOf()` þeim í `annad` og verðlistinn finnur þá ekki:
+`Léttvatn|6 L` · `ABC Duft|6 kg` · `ABC Duft|2 kg` · `CO2|5 kg` · `CO2|2 kg` ·
+`Brunaslanga|null` · `Reykskynjari|null` · `Eldvarnarteppi|null`.
+
+**Tvennt sem á að víkja frá takkanum:**
+
+- `pressure` **null**, ekki 14. Takkinn skrifar 14 því tæknimaður les af
+  mælinum. Skrifborðsvinna hefur ekki séð tækið — það væri fundin upp mæling.
+- `last_insp` = **dagsetning reikningsins**, `next_insp` = ár frá honum. Ekki
+  dagurinn í dag eins og glugginn stingur upp á; það myndi merkja tæki sem eru
+  raunverulega á tíma sem í lagi og fela þau.
+
+**Verðið sem þetta kostar, sagt fyrirfram:** reikningur ber tegund og fjölda en
+**aldrei staðsetningu í húsi**. Hver röð hækkar `taeki_an_stadsetningar` og
+hverfur ekki þaðan fyrr en einhver stendur á staðnum.
+
+**Alltaf:** afrit af fyrri stöðu áður en skrifað er, og lestu til baka úr
+grunni eftir á. „Vistað" án lesturs er ekki sannreynt.

@@ -266,3 +266,62 @@ viðskiptavinavefinn.
 
 **Afturkræft:** afrit í `backup_20260829_amount_fill` (venja repósins).
 Reikningar án upphæðar fóru úr 381 í 103 af 1.464.
+
+## Reikninga-tegundin (`vidskiptategund`) stýrir því hvað SÉST
+
+Mælt 01.09.2026 eftir að Agnar sagði „ég sé engan reikning á síðunni" um
+reikning sem var til, rétt tengdur og með virkum tengli.
+
+`customer_documents.doc_type` er alltaf `'reikningur'` fyrir allar þjónustur.
+Raunverulegi merkimiðinn er **`vidskiptategund`**: `uttekt` · `bud` ·
+`brunakerfi` · `ovisst`/null.
+
+**Tveir staðir henda búðarreikningum, báðir viljandi:**
+
+| Skrá | Fall | Áhrif |
+|---|---|---|
+| `187-inservice-row-reports.js` | `isUttektInvoiceTeg()` | 🧾 á Ársskoðun kviknar ekki |
+| `199-doc-year-grid.js` | `pushInvByService()` — `if (knd==='bud') return` | dettur út úr **báðum** þjónustuflokkum árs-grindarinnar |
+
+Reglan er rétt og á að standa: staðgreidd búðarsala er ekki
+slökkvitækjaþjónusta og má ekki lita árið grænt. **En hún má ekki hverfa.**
+Frá 01.09.2026 birtast allir reikningar staðarins í **📒 Hreyfingar** neðst á
+fyrirtækjaspjaldinu (tegund · dagsetning · chip · upphæð · summa), byggt úr
+sömu `docs` — engin ný fyrirspurn.
+
+Dreifingin á þeim 28 fyrirtækjum sem voru tóm og áttu Drive-reikning:
+**23 `uttekt` · 3 `bud` · 1 `brunakerfi` · 1 óflokkað.**
+
+**Hvernig þekkja má búðarsölu á reikningnum sjálfum:** staðgreiðsla, engin
+`Yfirferð`-lína, enginn `Akstur`, engin `Skýrslugerð og vottun`. Aðeins
+vörulínur. Dæmi: NR5 ehf R-108161 — 3 léttvatn + 1 CO₂ 5 kg, 56.775 kr,
+staðgreitt. Rétt flokkað sem `bud`; fyrirtækið hefur aldrei fengið
+þjónustureikning.
+
+## Reikninga-PDF: orðaforðinn og gildrurnar
+
+Gamla bókhaldskerfið og nýja Sölu-kerfið nota **ólíkt orðalag** á sama hlut.
+Bæði koma fyrir í Drive-möppunni:
+
+| Gamla | Nýja |
+|---|---|
+| `117 Slökkvitæki Léttvatn 6 ltr.` | `Nýtt · Léttvatn 6 kg. AB Slökkvitæki` |
+| `133 Yfirferð Léttvatn 6-9 ltr.` | `Yfirferð · Léttvatnstæki 6L. yfirferð` |
+| `123 Hleðsla Léttvatn 6-9 ltr/duft` | `Hleðsla · Léttvatnstækis 6L. hleðsla` |
+| `060 Skýrslugerð og vottun.` | `Skýrslugerð` |
+
+**Gildrur, allar hittar 01.09.2026:**
+
+- **Vörunúmer 123 „Léttvatn 6-9 ltr/duft"** — eitt verð fyrir hvort tveggja.
+  Fjöldinn segir ekki hvor tegundin. Skráðu óvissuna með tölunni.
+- **Tala í vöruheiti er ekki alltaf magn.** `Reykskynjari 2` / `Reykskynjari 3`
+  eru gerðir. Flettu einingaverðinu upp í `vorur` — það sker úr.
+- **PDF getur borið TVO reikninga** á sitthvorri síðu (R-107753 Fagkaup bar
+  óskyldan „UVS-57 Bjarki verkstæði Sindra"). Línan gildir fyrir hausinn sem
+  hún stendur undir.
+- **`customer_documents.amount` getur verið rangt.** Hamraborg R-000577: raðan
+  segir 26.884 kr, PDF-ið segir „Til greiðslu 16.220 kr". Treystu PDF-inu.
+- **Reikningur stílaður á annað félag** tengist staðnum gegnum fótnótuna
+  `Vegna <staður>`.
+
+Staðfestu ALLTAF hverja línu með margföldun: fjöldi × einingaverð = upphæð.
