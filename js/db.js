@@ -226,6 +226,11 @@ var DB = {
       // aldrei fyrr en endurhlaðið var. Aðeins endurhlaðið þegar borðið er
       // RAUNVERULEGA opið — annars er þetta ókeypis; sama regla og gildir um
       // jobs/units hér að ofan.
+      // Spjallid (patch 347) — glodin a hlidarstikunni a ad kvikna strax,
+      // lika thegar bordid er lokad. Thess vegna EKKERT .active-skilyrdi her.
+      if (tables.indexOf('spjall') >= 0 && typeof window.SpjallRefresh === 'function') {
+        try { window.SpjallRefresh(); } catch(e){}
+      }
       if (tables.indexOf('thjonustubeidni') >= 0
           && window.Verkbord && typeof Verkbord.reload === 'function') {
         var _vbOpen = document.getElementById('view-verkbord');
@@ -243,7 +248,7 @@ var DB = {
     // AÐEINS þær töflur sem applyChange() bregst raunverulega við — minnkar
     // umferðina verulega og gerir tenginguna síður viðkvæma fyrir álagi sem á
     // ekkert skylt við þetta app.
-    var RT_TABLES = ['uttaeki', 'verkbeidnir', 'verklidur', 'fyrirtaeki', 'vidskiptavinir', 'thjonustubeidni'];
+    var RT_TABLES = ['uttaeki', 'verkbeidnir', 'verklidur', 'fyrirtaeki', 'vidskiptavinir', 'thjonustubeidni', 'spjall'];
     var ch = this.sb.channel('changes');
     RT_TABLES.forEach(function (tbl) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, function (payload) {
