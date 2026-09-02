@@ -403,7 +403,10 @@
   // (sameinað borð). Tómt gildi flyst áfram yfir í Allir án Agnars.
   // Keep in sync with tools/test-verkbord-assignee.cjs
   const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
-  const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Bjarndís'];
+  // 2026-09-02: 'Afgreiðsla' er hér LÍKA. knownWorkerFilter() prófar gegn ÞESSUM
+  // lista, ekki WORKER_FILTERS — fyrsta útgáfan bætti nafninu aðeins í hinn og
+  // veljarinn sneri því tómur við: listinn sat fastur á fyrri starfsmanni.
+  const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Bjarndís', 'Afgreiðsla'];
   const WORKER_FILTERS = [
     ['allir', 'Allir'],
     ['Agnar', 'Agnar'],
@@ -717,9 +720,13 @@
     // tveggja svarar spurningunni „hvers borð er þetta". Nafn þaðan trompar
     // gamla WKEY-gildið svo maður þurfi ekki að stilla tvennt.
     fWorker: (function () {
+      // #350 hleðst Á EFTIR þessari skrá, svo `window.BordStarfsmadur` er ekki
+      // til hér. Lyklinum sjálfum (`vb_starfsmadur`) er hins vegar hægt að
+      // treysta — hann er sama minnið, lesið beint.
       try {
-        const n = (window.BordStarfsmadur && BordStarfsmadur.get) ? BordStarfsmadur.get() : null;
-        if (n && typeof knownWorkerFilter === 'function' && knownWorkerFilter(n)) return canonFilter(n);
+        let n = null;
+        try { n = localStorage.getItem('vb_starfsmadur'); } catch (_) {}
+        if (n && knownWorkerFilter(n)) return canonFilter(n);
       } catch (_) {}
       return readStoredWorker();
     })(),
@@ -3722,7 +3729,7 @@
       state.fWorker = canonFilter(nafn);
       try { localStorage.setItem(WKEY, state.fWorker); } catch (_) {}
       renderControls(); renderList(); renderSel(); refreshBadge();
-    } catch (_) {}
+    } catch (e) { console.warn('[verkbord] starfsmannaskipti brugðust:', e); }
   });
 
   window.Verkbord = {
