@@ -186,12 +186,15 @@ async function stada(cfg) {
   const co   = await allar(cfg, 'fyrirtaeki?select=id,nafn,kennitala,simi,farsimi,netfang,heimilisfang,postnumer,er_i_thjonustu,customer_base_id,status&deleted_at=is.null&order=id');
   const sol  = await allar(cfg, 'solur?select=id,num,customer_id,customer_base_id,created_at,linur,is_credit,status,samtals&order=created_at.desc');
   const docs = await allar(cfg, 'customer_documents?select=id,customer_base_id,fyrirtaeki_id,doc_type,year,link_ok,invoice_number,is_duplicate,drive_file_id&order=id');
-  const ut   = await allar(cfg, 'uttaeki?select=id,serial,type,location,last_insp,next_insp,fyrirtaeki_id,customer_base_id&order=id');
+  const ut   = await allar(cfg, 'uttaeki?select=id,serial,type,location,last_insp,next_insp,fyrirtaeki_id,customer_base_id,status&order=id');
   const tb   = await allar(cfg, 'thjonustubeidni?select=id,status,created_at,svarad_at,customer_base_id,important&deleted_at=is.null&order=id');
   const vb   = await allar(cfg, 'verkbeidnir?select=id,status,created_at&order=id');
   const vl   = await allar(cfg, 'verklidur?select=id,uttaeki_id&order=id');
-  const sam  = await allar(cfg, 'thjonustusamningar?select=id,company_id,status,next_due&order=id');
+  const sam  = await allar(cfg, 'thjonustusamningar?select=id,company_id,status,next_due,signed_at&order=id');
   const vlisti = await allar(cfg, 'verkefnalisti?select=id,status&order=id');
+  /* Þekju-mælingar á mælaborðið (2026-09-02): pörun skýrslna↔reikninga + trio-staðfesting. */
+  const pairs = await allar(cfg, 'document_pairs?select=year,service_type,report_doc_id,invoice_doc_id,fyrirtaeki_id&order=id');
+  const facts = await allar(cfg, 'arsskodun_report_facts?select=fyrirtaeki_id,report_year,total_devices&order=fyrirtaeki_id');
 
   const [as] = await sb(cfg, 'app_settings?select=settings&id=eq.1&limit=1');
   const settings = (as && as.settings) || {};
@@ -325,6 +328,35 @@ async function stada(cfg) {
        solur.status            final · drog · void
        fyrirtaeki.status       virkur · óvirkur
        customer_documents      uttektarskyrsla · reikningur · samningur · brunakerfi */
+  /* ── Þekju-mælingar (mælaborð, 2026-09-02) ─────────────────────────────────
+     Skýrslu-/reikninga-þekja er tekin úr SÖMU töflu (document_pairs) svo tölurnar
+     stemmi — par getur haft skýrslu en vantað reikning (þá er skýrslur ≥ reikningar),
+     aldrei öfugt. Split á service_type (uttekt = slökkvitæki · brunakerfi).
+     Trio-staðfest per skýrsluár: prófíll (uttaeki ≠ 'urelt') = skýrslan (total_devices).
+     Endurheimt: staður sem hafði skýrslu árið X, sleppti næsta ári, og kom aftur '25/'26. */
+  const parY = (st, yr, hafa) => tel(pairs, p => p.service_type === st && p.year === yr && p.fyrirtaeki_id != null
+                                              && (hafa === 'skyrsla' ? p.report_doc_id != null : p.invoice_doc_id != null));
+  const profTrio = new Map();
+  ut.forEach(u => { if (u && u.status !== 'urelt' && u.fyrirtaeki_id != null) { const k = String(u.fyrirtaeki_id); profTrio.set(k, (profTrio.get(k) || 0) + 1); } });
+  // Sama hlið og trio.js: KREFST p>0 OG s>0 áður en borið er saman — annars taldist
+  // fyrirtæki með engin tæki og skýrslu upp á 0 ranglega „staðfest" (0===0).
+  const trioAr = yr => tel(facts, f => {
+    if (!f || f.fyrirtaeki_id == null || f.report_year !== yr) return false;
+    const p = profTrio.get(String(f.fyrirtaeki_id)) || 0, s = +f.total_devices;
+    return p > 0 && s > 0 && p === s;
+  });
+  const fidMedSamn = new Set(), baseMedSamn = new Set();
+  docs.forEach(d => { if (d.doc_type === 'samningur') { if (d.fyrirtaeki_id != null) fidMedSamn.add(String(d.fyrirtaeki_id)); if (d.customer_base_id != null) baseMedSamn.add(String(d.customer_base_id)); } });
+  sam.forEach(s => { if (s.company_id != null) fidMedSamn.add(String(s.company_id)); });
+  const skyrsluArPerFid = new Map();
+  docs.forEach(d => { if (d.doc_type === 'uttektarskyrsla' && !d.is_duplicate && d.year != null && d.fyrirtaeki_id != null) {
+    const k = String(d.fyrirtaeki_id); if (!skyrsluArPerFid.has(k)) skyrsluArPerFid.set(k, new Set()); skyrsluArPerFid.get(k).add(+d.year); } });
+  let endurh23 = 0, endurh24 = 0;
+  skyrsluArPerFid.forEach(yrs => {
+    if (yrs.has(2023) && !yrs.has(2024) && (yrs.has(2025) || yrs.has(2026))) endurh23++;
+    if (yrs.has(2024) && !yrs.has(2025) && yrs.has(2026)) endurh24++;
+  });
+
   const tolur = {
     /* Skráin sjálf */
     i_thjonustu_an_taekja:            H.tom.length,
@@ -404,6 +436,28 @@ async function stada(cfg) {
     verkefni_i_beidni:                tel(vlisti, x => x.status === 'beidni'),
     verkefni_i_vinnu:                 tel(vlisti, x => x.status === 'i_vinnu'),
     verkefni_i_yfirferd:              tel(vlisti, x => x.status === 'i_yfirferd'),
+
+    /* Þekja — Slökkvitæki (úttekt), pör með skjal */
+    skyrslur_slt_2026:                parY('uttekt', 2026, 'skyrsla'),
+    reikn_slt_2026:                   parY('uttekt', 2026, 'reikn'),
+    skyrslur_slt_2025:                parY('uttekt', 2025, 'skyrsla'),
+    reikn_slt_2025:                   parY('uttekt', 2025, 'reikn'),
+    /* Þekja — Brunakerfi */
+    skyrslur_bk_2026:                 parY('brunakerfi', 2026, 'skyrsla'),
+    reikn_bk_2026:                    parY('brunakerfi', 2026, 'reikn'),
+    skyrslur_bk_2025:                 parY('brunakerfi', 2025, 'skyrsla'),
+    reikn_bk_2025:                    parY('brunakerfi', 2025, 'reikn'),
+    /* Trio staðfest per skýrsluár (prófíll = skýrsla) */
+    trio_stadfest_2026:               trioAr(2026),
+    trio_stadfest_2025:               trioAr(2025),
+    /* Samningar og nýliðun */
+    samningsskjol_i_kerfinu:          tel(docs, d => d.doc_type === 'samningur' && !d.is_duplicate),
+    nyir_samningar_2026:              tel(sam, s => s.signed_at && String(s.signed_at).slice(0, 4) === '2026'),
+    i_thjonustu_an_samnings_skjals:   tel(co, c => c.er_i_thjonustu && !fidMedSamn.has(String(c.id))
+                                          && !(c.customer_base_id != null && baseMedSamn.has(String(c.customer_base_id)))),
+    /* Endurheimtir viðskiptavinir (win-back) */
+    endurheimt_fra_2023:              endurh23,
+    endurheimt_fra_2024:              endurh24,
   };
 
   /* ── VEIÐIN Á SÍNAR TÖLUR ────────────────────────────────────────────────
@@ -517,6 +571,18 @@ const STEFNA = {
   // Verkefnalistinn er vinnuflæði: að verk séu í vinnu er ekki vandamál.
   verkefni_i_vinnu: 'hlutlaus',
   verkefni_i_yfirferd: 'hlutlaus',
+
+  // Þekja á mælaborðinu: fleiri skýrslur/reikningar/staðfestingar = betra.
+  skyrslur_slt_2026: 'haerra_betra', reikn_slt_2026: 'haerra_betra',
+  skyrslur_slt_2025: 'haerra_betra', reikn_slt_2025: 'haerra_betra',
+  skyrslur_bk_2026: 'haerra_betra',  reikn_bk_2026: 'haerra_betra',
+  skyrslur_bk_2025: 'haerra_betra',  reikn_bk_2025: 'haerra_betra',
+  trio_stadfest_2026: 'haerra_betra', trio_stadfest_2025: 'haerra_betra',
+  // Stofnstærð + nýliðun + endurheimt: fleiri = betra (eða hlutlaust), aldrei viðvörun.
+  samningsskjol_i_kerfinu: 'hlutlaus',
+  nyir_samningar_2026: 'haerra_betra',
+  endurheimt_fra_2023: 'haerra_betra', endurheimt_fra_2024: 'haerra_betra',
+  // i_thjonustu_an_samnings_skjals heldur default (laegra_betra) — gloppa sem á að lækka.
 };
 
 /* Flutt út svo rökfræðin sé prófanleg án gagnagrunns — Netlify notar aðeins
