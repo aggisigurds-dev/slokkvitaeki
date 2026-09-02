@@ -338,8 +338,13 @@ async function stada(cfg) {
                                               && (hafa === 'skyrsla' ? p.report_doc_id != null : p.invoice_doc_id != null));
   const profTrio = new Map();
   ut.forEach(u => { if (u && u.status !== 'urelt' && u.fyrirtaeki_id != null) { const k = String(u.fyrirtaeki_id); profTrio.set(k, (profTrio.get(k) || 0) + 1); } });
-  const trioAr = yr => tel(facts, f => f && f.total_devices != null && f.fyrirtaeki_id != null
-                                     && f.report_year === yr && (profTrio.get(String(f.fyrirtaeki_id)) || 0) === +f.total_devices);
+  // Sama hlið og trio.js: KREFST p>0 OG s>0 áður en borið er saman — annars taldist
+  // fyrirtæki með engin tæki og skýrslu upp á 0 ranglega „staðfest" (0===0).
+  const trioAr = yr => tel(facts, f => {
+    if (!f || f.fyrirtaeki_id == null || f.report_year !== yr) return false;
+    const p = profTrio.get(String(f.fyrirtaeki_id)) || 0, s = +f.total_devices;
+    return p > 0 && s > 0 && p === s;
+  });
   const fidMedSamn = new Set(), baseMedSamn = new Set();
   docs.forEach(d => { if (d.doc_type === 'samningur') { if (d.fyrirtaeki_id != null) fidMedSamn.add(String(d.fyrirtaeki_id)); if (d.customer_base_id != null) baseMedSamn.add(String(d.customer_base_id)); } });
   sam.forEach(s => { if (s.company_id != null) fidMedSamn.add(String(s.company_id)); });
