@@ -176,6 +176,9 @@
       '._sp-skra{display:inline-flex;align-items:center;gap:7px;margin-top:5px;padding:5px 9px;border-radius:8px;'
         + 'background:#0f1115;border:1px solid #2b3038;color:#8fd0a8;text-decoration:none;font-size:11.5px;font-weight:700}',
       '._sp-skra:hover{border-color:#4ade80;color:#4ade80}',
+      '._sp-hd{display:flex;align-items:center;gap:8px}',
+      '._sp-x{margin-left:auto;border:0;background:transparent;color:#6b7280;font-size:12px;line-height:1;cursor:pointer;padding:0 2px;opacity:.55;font:inherit}',
+      '._sp-m:hover ._sp-x{opacity:1}._sp-x:hover{color:#ef4444}',
       '#_spjall-drop{border-top:1px solid #23262c;padding:10px 12px;background:#0f1115;display:flex;gap:8px;align-items:flex-end}',
       '#_spjall-drop.yfir{background:#14321f;box-shadow:inset 0 0 0 2px #4ade80}',
       '#_spjall-txt{flex:1;min-height:40px;max-height:120px;resize:none;padding:10px 12px;border-radius:9px;'
@@ -223,7 +226,13 @@
       const klst = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
       const dags = t.toISOString().slice(0, 10);
       return '<div class="_sp-m' + (mitt ? ' eg' : '') + '"' + (nytt ? ' style="box-shadow:0 0 0 1px #4ade80"' : '') + '>'
-        + '<div class="_sp-hd">' + esc(m.author) + ' · ' + dags + ' ' + klst + (nytt ? ' · NÝTT' : '') + '</div>'
+        + '<div class="_sp-hd">' + esc(m.author) + ' · ' + dags + ' ' + klst + (nytt ? ' · NÝTT' : '')
+        // 2026-09-02 (Agnar: „leyfðu að eyða spjallpunktum, þá fyrir öllum").
+        // Mjúk-eyðing: deleted_at er sett, saekja() síar hana út, og realtime
+        // (UPDATE á spjall) lætur hinar tölvurnar fella hana líka. Röðin er
+        // aldrei eydd úr grunninum.
+        + '<button type="button" class="_sp-x" data-sp-eyda="' + esc(m.id) + '" title="Eyða — hverfur hjá öllum">✕</button>'
+        + '</div>'
         + (m.body ? esc(m.body) : '')
         + (m.file_url
             ? '<a class="_sp-skra" href="' + esc(m.file_url) + '" target="_blank" rel="noopener" download>'
@@ -292,6 +301,19 @@
       teikna();
     });
     if (!_opid) return;
+
+    // Eyða skilaboði — fyrir alla. Eitt staðfestingarspurning; röðin er
+    // mjúk-eydd og má endurheimta úr grunninum ef á þarf að halda.
+    w.querySelectorAll('[data-sp-eyda]').forEach(b => b.addEventListener('click', async ev => {
+      ev.preventDefault(); ev.stopPropagation();
+      const id = b.getAttribute('data-sp-eyda');
+      if (!window.confirm('Eyða þessum skilaboðum? Þau hverfa hjá öllum.')) return;
+      const sb = SB(); if (!sb) { toast('Engin gagnagrunnstenging'); return; }
+      const r = await sb.from('spjall').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+      if (r.error) { toast('Tókst ekki að eyða: ' + (r.error.message || r.error)); return; }
+      await saekja();
+      teikna();
+    }));
 
     const txt = w.querySelector('#_spjall-txt');
     const send = w.querySelector('#_spjall-senda');
