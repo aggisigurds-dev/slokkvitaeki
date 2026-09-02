@@ -1,0 +1,4348 @@
+{
+ "maelt": "2026-09-02",
+ "hopar": [
+  {
+   "kt": "4509051430",
+   "nafn": "Center Hótel",
+   "merki": "Center Hótel",
+   "stadir": [
+    {
+     "fid": 192,
+     "nafn": "Center Hótel - Miðgarður",
+     "heimilisfang": "Laugavegur 120, 101 Reykjavík",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 38,
+     "skjol": 31,
+     "skjolHrein": 16,
+     "skyrsluAr": 2026,
+     "skyrslutala": 38,
+     "man": 8,
+     "nafnrek": 0,
+     "base": 146
+    },
+    {
+     "fid": 193,
+     "nafn": "Center Hótel - Plaza",
+     "heimilisfang": "Aðalstræti 4-6, 101 Reykjavík",
+     "nr": 2,
+     "ithj": true,
+     "taeki": 80,
+     "skjol": 18,
+     "skjolHrein": 15,
+     "skyrsluAr": 2026,
+     "skyrslutala": 80,
+     "man": 8,
+     "nafnrek": 0,
+     "base": 146
+    },
+    {
+     "fid": 195,
+     "nafn": "Center Hótel - Arnarhvoll",
+     "heimilisfang": "Ingólfsstræti 1, 101 Reykjavík",
+     "nr": 3,
+     "ithj": true,
+     "taeki": 18,
+     "skjol": 15,
+     "skjolHrein": 10,
+     "skyrsluAr": 2026,
+     "skyrslutala": 19,
+     "man": 8,
+     "nafnrek": 0,
+     "base": 146
+    },
+    {
+     "fid": 196,
+     "nafn": "Center Hótel - Klöpp",
+     "heimilisfang": "Klapparstígur 26, 101 Reykjavík",
+     "nr": 4,
+     "ithj": true,
+     "taeki": 28,
+     "skjol": 13,
+     "skjolHrein": 11,
+     "skyrsluAr": 2026,
+     "skyrslutala": 28,
+     "man": 7,
+     "nafnrek": 0,
+     "base": 146
+    },
+    {
+     "fid": 197,
+     "nafn": "Center Hótel - Grandi",
+     "heimilisfang": "Seljavegur 2, 101 Reykjavík",
+     "nr": 5,
+     "ithj": true,
+     "taeki": 25,
+     "skjol": 17,
+     "skjolHrein": 16,
+     "skyrsluAr": 2026,
+     "skyrslutala": 25,
+     "man": 1,
+     "nafnrek": 0,
+     "base": 146
+    },
+    {
+     "fid": 198,
+     "nafn": "Center Hótel - Skjaldbreið",
+     "heimilisfang": "Laugavegur 16, 101 Reykjavík",
+     "nr": 6,
+     "ithj": true,
+     "taeki": 3,
+     "skjol": 9,
+     "skjolHrein": 9,
+     "skyrsluAr": 2026,
+     "skyrslutala": 3,
+     "man": 7,
+     "nafnrek": 0,
+     "base": 146
+    },
+    {
+     "fid": 199,
+     "nafn": "Center Hótel - Þingholt",
+     "heimilisfang": "Þingholtsstræti 3-5, 101 Reykjavík",
+     "nr": 7,
+     "ithj": true,
+     "taeki": 24,
+     "skjol": 16,
+     "skjolHrein": 11,
+     "skyrsluAr": 2026,
+     "skyrslutala": 24,
+     "man": 8,
+     "nafnrek": 0,
+     "base": 146
+    },
+    {
+     "fid": 200,
+     "nafn": "Center Hótel - Þingholt Apartments",
+     "heimilisfang": "Þingholtsstræti 2-4, 101 Reykjavík",
+     "nr": 8,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 4,
+     "skjolHrein": 3,
+     "skyrsluAr": 2025,
+     "skyrslutala": 5,
+     "man": 12,
+     "nafnrek": 0,
+     "base": 146
+    },
+    {
+     "fid": 201,
+     "nafn": "Center Hótel - Laugavegur",
+     "heimilisfang": "Laugavegur 95-99, 101 Reykjavík",
+     "nr": 9,
+     "ithj": true,
+     "taeki": 19,
+     "skjol": 13,
+     "skjolHrein": 9,
+     "skyrsluAr": 2026,
+     "skyrslutala": 19,
+     "man": 8,
+     "nafnrek": 0,
+     "base": 146
+    },
+    {
+     "fid": 1750,
+     "nafn": "Center Hótel - Hlaðvarpinn",
+     "heimilisfang": "Aðalstræti 4, 101 Reykjavík",
+     "nr": 10,
+     "ithj": true,
+     "taeki": 0,
+     "skjol": 0,
+     "skjolHrein": 0,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 146
+    },
+    {
+     "fid": 1627,
+     "nafn": "Center Hótel - Þverholt 14",
+     "heimilisfang": "Þverholt 14, 105 Reykjavík",
+     "nr": 11,
+     "ithj": false,
+     "taeki": 0,
+     "skjol": 2,
+     "skjolHrein": 2,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 146
+    }
+   ],
+   "taeki": 240,
+   "skjol": 138,
+   "ithj": 10,
+   "stadfest": 8,
+   "anNr": 0
+  },
+  {
+   "kt": "6810161200",
+   "nafn": "Pizzan ehf",
+   "merki": "Pizzan",
+   "stadir": [
+    {
+     "fid": 317,
+     "nafn": "Pizzan - Fjarðargata",
+     "heimilisfang": "Fjarðargötu 11 220 Hafnarfirði",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 3,
+     "skjol": 8,
+     "skjolHrein": 8,
+     "skyrsluAr": 2026,
+     "skyrslutala": 3,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 786
+    },
+    {
+     "fid": 613,
+     "nafn": "Pizzan - Háholt",
+     "heimilisfang": "Háholt, 270 Mosfellsbær",
+     "nr": 2,
+     "ithj": true,
+     "taeki": 4,
+     "skjol": 2,
+     "skjolHrein": 2,
+     "skyrsluAr": 2024,
+     "skyrslutala": 4,
+     "man": 6,
+     "nafnrek": 0,
+     "base": 786
+    },
+    {
+     "fid": 614,
+     "nafn": "Pizzan - Strandgata",
+     "heimilisfang": "Strandgötu 75, 220 Hafnarfjörður",
+     "nr": 3,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 8,
+     "skjolHrein": 8,
+     "skyrsluAr": 2025,
+     "skyrslutala": 5,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 786
+    },
+    {
+     "fid": 615,
+     "nafn": "Pizzan - Hringbraut",
+     "heimilisfang": "Hringbraut 119, 101 Reykjavík",
+     "nr": 4,
+     "ithj": true,
+     "taeki": 4,
+     "skjol": 3,
+     "skjolHrein": 3,
+     "skyrsluAr": 2026,
+     "skyrslutala": 4,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 786
+    },
+    {
+     "fid": 616,
+     "nafn": "Pizzan - Lóuhólar",
+     "heimilisfang": "Lóuhólar 2-6, 111 Reykjavík",
+     "nr": 5,
+     "ithj": true,
+     "taeki": 4,
+     "skjol": 3,
+     "skjolHrein": 3,
+     "skyrsluAr": 2026,
+     "skyrslutala": 4,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 786
+    },
+    {
+     "fid": 617,
+     "nafn": "Pizzan - Núpalind",
+     "heimilisfang": "Núpalind 1, 200 Kópavogi",
+     "nr": 6,
+     "ithj": true,
+     "taeki": 2,
+     "skjol": 3,
+     "skjolHrein": 3,
+     "skyrsluAr": 2026,
+     "skyrslutala": 2,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 786
+    },
+    {
+     "fid": 618,
+     "nafn": "Pizzan - Fellsmúli",
+     "heimilisfang": "Fellsmúla 24, 108 Reykjavík",
+     "nr": 7,
+     "ithj": true,
+     "taeki": 4,
+     "skjol": 3,
+     "skjolHrein": 3,
+     "skyrsluAr": 2026,
+     "skyrslutala": 4,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 786
+    },
+    {
+     "fid": 621,
+     "nafn": "Pizzan - Njarðvík",
+     "heimilisfang": "Hólagata 20, 260 Njarðvík",
+     "nr": 8,
+     "ithj": true,
+     "taeki": 8,
+     "skjol": 5,
+     "skjolHrein": 5,
+     "skyrsluAr": 2026,
+     "skyrslutala": 8,
+     "man": 8,
+     "nafnrek": 0,
+     "base": 786
+    },
+    {
+     "fid": 1607,
+     "nafn": "Pizzan - Hverafold",
+     "heimilisfang": "Hverafold 1-3, 112 Reykjavík",
+     "nr": 9,
+     "ithj": true,
+     "taeki": 3,
+     "skjol": 4,
+     "skjolHrein": 4,
+     "skyrsluAr": 2026,
+     "skyrslutala": 3,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 786
+    },
+    {
+     "fid": 1608,
+     "nafn": "Pizzan - Litlatún",
+     "heimilisfang": "Litlatún 3, 210 Garðabær",
+     "nr": 10,
+     "ithj": true,
+     "taeki": 3,
+     "skjol": 4,
+     "skjolHrein": 4,
+     "skyrsluAr": 2026,
+     "skyrslutala": 3,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 786
+    },
+    {
+     "fid": 1609,
+     "nafn": "Pizzan - Nýbílavegur",
+     "heimilisfang": "Nýbílavegur 6-8, 200 Kópavogur",
+     "nr": 11,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 1,
+     "skjolHrein": 1,
+     "skyrsluAr": 2026,
+     "skyrslutala": 5,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 786
+    }
+   ],
+   "taeki": 45,
+   "skjol": 44,
+   "ithj": 11,
+   "stadfest": 11,
+   "anNr": 0
+  },
+  {
+   "kt": "5101170690",
+   "nafn": "Heimaleiga ehf",
+   "merki": "Heimaleiga",
+   "stadir": [
+    {
+     "fid": 269,
+     "nafn": "Heimaleiga - Höfuðstöðvar",
+     "heimilisfang": "Grensásvegur 14, 108 Reykjavík",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 6,
+     "skjolHrein": 5,
+     "skyrsluAr": 2025,
+     "skyrslutala": 5,
+     "man": null,
+     "nafnrek": 0,
+     "base": 293
+    },
+    {
+     "fid": 869,
+     "nafn": "Heimaleiga - Máni Apartments",
+     "heimilisfang": "Laugavegur 18, 101 Reykjavík (3.–6. hæð)",
+     "nr": 2,
+     "ithj": true,
+     "taeki": 61,
+     "skjol": 3,
+     "skjolHrein": 2,
+     "skyrsluAr": 2025,
+     "skyrslutala": 54,
+     "man": 7,
+     "nafnrek": 0,
+     "base": 293
+    },
+    {
+     "fid": 1483,
+     "nafn": "Heimaleiga - Blue Mountain Apartments",
+     "heimilisfang": "Urðarhvarf 2, 203 Kópavogur",
+     "nr": 3,
+     "ithj": true,
+     "taeki": 42,
+     "skjol": 7,
+     "skjolHrein": 6,
+     "skyrsluAr": 2026,
+     "skyrslutala": 42,
+     "man": 8,
+     "nafnrek": 0,
+     "base": 293
+    },
+    {
+     "fid": 1484,
+     "nafn": "Heimaleiga - Ice Apartments",
+     "heimilisfang": "Laugavegur 1, 101 Reykjavík",
+     "nr": 4,
+     "ithj": true,
+     "taeki": 8,
+     "skjol": 3,
+     "skjolHrein": 2,
+     "skyrsluAr": 2025,
+     "skyrslutala": 8,
+     "man": null,
+     "nafnrek": 0,
+     "base": 293
+    },
+    {
+     "fid": 1485,
+     "nafn": "Heimaleiga - Freyjugata 16",
+     "heimilisfang": "Freyjugata 16, 101 Reykjavík",
+     "nr": 5,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 2,
+     "skjolHrein": 2,
+     "skyrsluAr": 2026,
+     "skyrslutala": 5,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 293
+    },
+    {
+     "fid": 1486,
+     "nafn": "Heimaleiga - Midtown Hotel",
+     "heimilisfang": "Laugavegur 18, 101 Reykjavík (1.–2. hæð)",
+     "nr": 6,
+     "ithj": true,
+     "taeki": 61,
+     "skjol": 1,
+     "skjolHrein": 1,
+     "skyrsluAr": 2025,
+     "skyrslutala": 61,
+     "man": 10,
+     "nafnrek": 0,
+     "base": 293
+    },
+    {
+     "fid": 1487,
+     "nafn": "Heimaleiga - Bríetartún 9-11",
+     "heimilisfang": "Bríetartún 9 og 11, 105 Reykjavík",
+     "nr": 7,
+     "ithj": true,
+     "taeki": 8,
+     "skjol": 2,
+     "skjolHrein": 2,
+     "skyrsluAr": 2025,
+     "skyrslutala": 8,
+     "man": null,
+     "nafnrek": 0,
+     "base": 293
+    },
+    {
+     "fid": 1488,
+     "nafn": "Heimaleiga - Iceland Comfort Apartments",
+     "heimilisfang": "Hamraborg 7, 200 Kópavogur",
+     "nr": 8,
+     "ithj": true,
+     "taeki": 15,
+     "skjol": 5,
+     "skjolHrein": 4,
+     "skyrsluAr": 2025,
+     "skyrslutala": 15,
+     "man": 6,
+     "nafnrek": 0,
+     "base": 293
+    },
+    {
+     "fid": 1621,
+     "nafn": "Heimaleiga - Dalbrekka 4-6",
+     "heimilisfang": "Dalbrekka 4-6, 200 Kópavogur",
+     "nr": 9,
+     "ithj": true,
+     "taeki": 48,
+     "skjol": 2,
+     "skjolHrein": 2,
+     "skyrsluAr": 2026,
+     "skyrslutala": 48,
+     "man": 8,
+     "nafnrek": 0,
+     "base": 293
+    },
+    {
+     "fid": 1645,
+     "nafn": "Heimaleiga - Dalbrekka 4-6 (bílskúr)",
+     "heimilisfang": "Dalbrekka 4-6, 200 Kópavogur (bílskúr)",
+     "nr": 11,
+     "ithj": true,
+     "taeki": 16,
+     "skjol": 2,
+     "skjolHrein": 2,
+     "skyrsluAr": 2026,
+     "skyrslutala": 16,
+     "man": 7,
+     "nafnrek": 0,
+     "base": 293
+    }
+   ],
+   "taeki": 269,
+   "skjol": 33,
+   "ithj": 10,
+   "stadfest": 9,
+   "anNr": 0
+  },
+  {
+   "kt": "6607070420",
+   "nafn": "Steypustöðin",
+   "merki": "Steypustöðin",
+   "stadir": [
+    {
+     "fid": 285,
+     "nafn": "Steypustöðin - Malarhöfða",
+     "heimilisfang": "Malarhöfða 38 110 Reykjavík",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 6,
+     "skjol": 12,
+     "skjolHrein": 12,
+     "skyrsluAr": 2026,
+     "skyrslutala": 6,
+     "man": null,
+     "nafnrek": 0,
+     "base": 720
+    },
+    {
+     "fid": 608,
+     "nafn": "Steypustöðin - Hringhellu",
+     "heimilisfang": "Hringhellu, 221 Hafnarfjörður",
+     "nr": 2,
+     "ithj": true,
+     "taeki": 22,
+     "skjol": 7,
+     "skjolHrein": 7,
+     "skyrsluAr": 2026,
+     "skyrslutala": 22,
+     "man": 2,
+     "nafnrek": 0,
+     "base": 720
+    },
+    {
+     "fid": 620,
+     "nafn": "Steypustöðin - Þorlákshöfn",
+     "heimilisfang": "Þorlákshöfn, 815 Þorlákshöfn",
+     "nr": 3,
+     "ithj": true,
+     "taeki": 8,
+     "skjol": 2,
+     "skjolHrein": 2,
+     "skyrsluAr": 2025,
+     "skyrslutala": 8,
+     "man": 1,
+     "nafnrek": 0,
+     "base": 720
+    },
+    {
+     "fid": 622,
+     "nafn": "Steypustöðin - Helguvík (Berghólabraut 9)",
+     "heimilisfang": "Berghólabraut 9, 230 Reykjanesbær",
+     "nr": 4,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 5,
+     "skjolHrein": 5,
+     "skyrsluAr": 2024,
+     "skyrslutala": 5,
+     "man": 6,
+     "nafnrek": 0,
+     "base": 720
+    },
+    {
+     "fid": 623,
+     "nafn": "Steypustöðin - Borgarnesi",
+     "heimilisfang": "Engjaási 2, 310 Borgarnes",
+     "nr": 5,
+     "ithj": true,
+     "taeki": 36,
+     "skjol": 3,
+     "skjolHrein": 3,
+     "skyrsluAr": 2024,
+     "skyrslutala": 36,
+     "man": 11,
+     "nafnrek": 0,
+     "base": 720
+    },
+    {
+     "fid": 1610,
+     "nafn": "Steypustöðin - Íshellu",
+     "heimilisfang": "Íshella, 221 Hafnarfjörður",
+     "nr": 7,
+     "ithj": true,
+     "taeki": 29,
+     "skjol": 2,
+     "skjolHrein": 2,
+     "skyrsluAr": 2025,
+     "skyrslutala": 29,
+     "man": 1,
+     "nafnrek": 0,
+     "base": 720
+    },
+    {
+     "fid": 1615,
+     "nafn": "Steypustöðin - Selfossi (Hrísmýri 8)",
+     "heimilisfang": "Hrísmýri 8, 800 Selfoss",
+     "nr": 8,
+     "ithj": true,
+     "taeki": 12,
+     "skjol": 2,
+     "skjolHrein": 2,
+     "skyrsluAr": 2025,
+     "skyrslutala": 12,
+     "man": 1,
+     "nafnrek": 0,
+     "base": 720
+    },
+    {
+     "fid": 1727,
+     "nafn": "Steypustöðin - Hólabrú, Hvalfjörður",
+     "heimilisfang": "Hólabrú, 301 Akranes",
+     "nr": null,
+     "ithj": true,
+     "taeki": 0,
+     "skjol": 2,
+     "skjolHrein": 1,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 720
+    }
+   ],
+   "taeki": 118,
+   "skjol": 35,
+   "ithj": 8,
+   "stadfest": 7,
+   "anNr": 1
+  },
+  {
+   "kt": "6107891299",
+   "nafn": "Endurvinnslan",
+   "merki": "Endurvinnslan",
+   "stadir": [
+    {
+     "fid": 604,
+     "nafn": "Endurvinnslan - Dalvegur",
+     "heimilisfang": "Dalvegur, 200 Kópavogi",
+     "nr": 2,
+     "ithj": true,
+     "taeki": 4,
+     "skjol": 4,
+     "skjolHrein": 4,
+     "skyrsluAr": 2026,
+     "skyrslutala": 4,
+     "man": 1,
+     "nafnrek": 0,
+     "base": 582
+    },
+    {
+     "fid": 605,
+     "nafn": "Endurvinnslan - Knarrarvogur",
+     "heimilisfang": "Knarrarvogur 4, 104 Reykjavík",
+     "nr": 3,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 11,
+     "skjolHrein": 10,
+     "skyrsluAr": 2026,
+     "skyrslutala": 5,
+     "man": 1,
+     "nafnrek": 0,
+     "base": 582
+    },
+    {
+     "fid": 606,
+     "nafn": "Endurvinnslan - Skútuhraun",
+     "heimilisfang": "Skútuhraun, 220 Hafnarfjörður",
+     "nr": 4,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 4,
+     "skjolHrein": 4,
+     "skyrsluAr": 2026,
+     "skyrslutala": 5,
+     "man": 1,
+     "nafnrek": 0,
+     "base": 582
+    },
+    {
+     "fid": 619,
+     "nafn": "Endurvinnslan - Austurhraun",
+     "heimilisfang": "Austurhraun 3, 210 Garðabær",
+     "nr": 5,
+     "ithj": true,
+     "taeki": 8,
+     "skjol": 9,
+     "skjolHrein": 7,
+     "skyrsluAr": 2026,
+     "skyrslutala": 8,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 582
+    },
+    {
+     "fid": 1618,
+     "nafn": "Endurvinnslan - Köllunarklettsvegur",
+     "heimilisfang": "Köllunarklettsvegur, 104 Reykjavík",
+     "nr": 6,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 3,
+     "skjolHrein": 3,
+     "skyrsluAr": 2025,
+     "skyrslutala": 5,
+     "man": 12,
+     "nafnrek": 0,
+     "base": 582
+    }
+   ],
+   "taeki": 27,
+   "skjol": 31,
+   "ithj": 5,
+   "stadfest": 5,
+   "anNr": 0
+  },
+  {
+   "kt": "4912091270",
+   "nafn": "Vélrás",
+   "merki": "Vélrás",
+   "stadir": [
+    {
+     "fid": 470,
+     "nafn": "VR-5 ehf.",
+     "heimilisfang": "Klettagörðum 12, 104 Reykjavík",
+     "nr": 2,
+     "ithj": true,
+     "taeki": 13,
+     "skjol": 6,
+     "skjolHrein": 6,
+     "skyrsluAr": 2026,
+     "skyrslutala": 13,
+     "man": null,
+     "nafnrek": 0,
+     "base": 265
+    },
+    {
+     "fid": 609,
+     "nafn": "Vélrás - Álhella",
+     "heimilisfang": "Álhella 4-8, 221 Hafnarfjörður",
+     "nr": 4,
+     "ithj": true,
+     "taeki": 9,
+     "skjol": 10,
+     "skjolHrein": 8,
+     "skyrsluAr": 2026,
+     "skyrslutala": 9,
+     "man": 8,
+     "nafnrek": 0,
+     "base": 265
+    },
+    {
+     "fid": 1740,
+     "nafn": "Vélrás - Gullhella",
+     "heimilisfang": "Gullhella 4, 221 Hafnarfjörður",
+     "nr": null,
+     "ithj": true,
+     "taeki": 0,
+     "skjol": 0,
+     "skjolHrein": 0,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 265
+    },
+    {
+     "fid": 1741,
+     "nafn": "Vélrás - Sléttuhraun",
+     "heimilisfang": "Sléttuhraun 19-21, 220 Hafnarfjörður",
+     "nr": null,
+     "ithj": true,
+     "taeki": 0,
+     "skjol": 1,
+     "skjolHrein": 1,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 265
+    },
+    {
+     "fid": 1742,
+     "nafn": "Vélrás - Klettagarðar",
+     "heimilisfang": "Klettagarðar 12, 104 Reykjavík",
+     "nr": null,
+     "ithj": true,
+     "taeki": 0,
+     "skjol": 1,
+     "skjolHrein": 1,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 265
+    }
+   ],
+   "taeki": 22,
+   "skjol": 18,
+   "ithj": 5,
+   "stadfest": 2,
+   "anNr": 3
+  },
+  {
+   "kt": "4201871499",
+   "nafn": "Colas Ísland ehf.",
+   "merki": "Colas",
+   "stadir": [
+    {
+     "fid": 218,
+     "nafn": "Colas - Gullhella",
+     "heimilisfang": "Gullhella, 221 Hafnarfjörður",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 16,
+     "skjol": 16,
+     "skjolHrein": 15,
+     "skyrsluAr": 2026,
+     "skyrslutala": 16,
+     "man": 2,
+     "nafnrek": 0,
+     "base": 52
+    },
+    {
+     "fid": 1490,
+     "nafn": "Colas - Álfhella",
+     "heimilisfang": "Álfhella, 221 Hafnarfjörður.",
+     "nr": 3,
+     "ithj": true,
+     "taeki": 17,
+     "skjol": 7,
+     "skjolHrein": 7,
+     "skyrsluAr": 2025,
+     "skyrslutala": 17,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 52
+    },
+    {
+     "fid": 1493,
+     "nafn": "Colas - Óseyrarbraut",
+     "heimilisfang": "Óseyrarbraut, 221 Hafnarfjörður",
+     "nr": 5,
+     "ithj": true,
+     "taeki": 6,
+     "skjol": 7,
+     "skjolHrein": 7,
+     "skyrsluAr": 2025,
+     "skyrslutala": 6,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 52
+    },
+    {
+     "fid": 1616,
+     "nafn": "Colas - Gulhella 1 (skrifstofa/HQ)",
+     "heimilisfang": "Gulhellu 1, 220 Hafnarfjörður",
+     "nr": 6,
+     "ithj": true,
+     "taeki": 24,
+     "skjol": 4,
+     "skjolHrein": 4,
+     "skyrsluAr": 2023,
+     "skyrslutala": 24,
+     "man": 2,
+     "nafnrek": 0,
+     "base": 52
+    }
+   ],
+   "taeki": 63,
+   "skjol": 34,
+   "ithj": 4,
+   "stadfest": 4,
+   "anNr": 0
+  },
+  {
+   "kt": "5409942269",
+   "nafn": "Aðalskoðun",
+   "merki": "Aðalskoðun",
+   "stadir": [
+    {
+     "fid": 261,
+     "nafn": "Aðalskoðun - Grjótháls",
+     "heimilisfang": "Grjóthálsi 10, 110 Reykjavík",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 7,
+     "skjol": 6,
+     "skjolHrein": 6,
+     "skyrsluAr": 2026,
+     "skyrslutala": 7,
+     "man": 2,
+     "nafnrek": 0,
+     "base": 412
+    },
+    {
+     "fid": 611,
+     "nafn": "Aðalskoðun - Skeifan",
+     "heimilisfang": "Skeifan 5, 108 Reykjavík",
+     "nr": 3,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 3,
+     "skjolHrein": 3,
+     "skyrsluAr": 2025,
+     "skyrslutala": 5,
+     "man": 2,
+     "nafnrek": 0,
+     "base": 412
+    },
+    {
+     "fid": 612,
+     "nafn": "Aðalskoðun - Skemmuvegur",
+     "heimilisfang": "Skemmuvegur 6, 200 Kópavogur",
+     "nr": 4,
+     "ithj": true,
+     "taeki": 4,
+     "skjol": 6,
+     "skjolHrein": 6,
+     "skyrsluAr": 2026,
+     "skyrslutala": 4,
+     "man": 2,
+     "nafnrek": 0,
+     "base": 412
+    },
+    {
+     "fid": 1411,
+     "nafn": "Aðalskoðun - Hjallahraun",
+     "heimilisfang": "Hjallahraun 4, 220 Hafnarfjörður",
+     "nr": 5,
+     "ithj": true,
+     "taeki": 6,
+     "skjol": 5,
+     "skjolHrein": 5,
+     "skyrsluAr": 2025,
+     "skyrslutala": 6,
+     "man": 3,
+     "nafnrek": 0,
+     "base": 412
+    }
+   ],
+   "taeki": 22,
+   "skjol": 20,
+   "ithj": 4,
+   "stadfest": 4,
+   "anNr": 0
+  },
+  {
+   "kt": "4809982789",
+   "nafn": "Stálsmiðjan Framtak Vélsmiðja Orms og Víglundar",
+   "merki": "Vélsmiðja Orms og Víglundar",
+   "stadir": [
+    {
+     "fid": 165,
+     "nafn": "Vélsmiðja Orms og Víglundar - Slippurinn RVK",
+     "heimilisfang": "Vesturhrauni 1, 220 Hafnarfjörður",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 24,
+     "skjol": 7,
+     "skjolHrein": 6,
+     "skyrsluAr": 2025,
+     "skyrslutala": 24,
+     "man": 5,
+     "nafnrek": 0,
+     "base": 240
+    },
+    {
+     "fid": 288,
+     "nafn": "Vélsmiðja Orms og Víglundar - Skútuhraun",
+     "heimilisfang": "Skútuhraun 9 220 Hafnarfirði",
+     "nr": 2,
+     "ithj": true,
+     "taeki": 6,
+     "skjol": 4,
+     "skjolHrein": 3,
+     "skyrsluAr": 2026,
+     "skyrslutala": 6,
+     "man": 2,
+     "nafnrek": 6,
+     "base": 240
+    },
+    {
+     "fid": 1629,
+     "nafn": "Vélsmiðja Orms og Víglundar - Kaplahraun",
+     "heimilisfang": "Kaplahraun 14-16, 220 Hafnarfjörður",
+     "nr": 3,
+     "ithj": true,
+     "taeki": 0,
+     "skjol": 6,
+     "skjolHrein": 6,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 240
+    }
+   ],
+   "taeki": 30,
+   "skjol": 17,
+   "ithj": 3,
+   "stadfest": 2,
+   "anNr": 0
+  },
+  {
+   "kt": "6108891589",
+   "nafn": "Húsf. Miðleiti 2-6",
+   "merki": "Eignaumsjón",
+   "stadir": [
+    {
+     "fid": 118,
+     "nafn": "Húsf. V/bílageymslu",
+     "heimilisfang": "Miðleiti 2-6, 103 Reykjavík",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 15,
+     "skjol": 6,
+     "skjolHrein": 5,
+     "skyrsluAr": 2025,
+     "skyrslutala": 15,
+     "man": 6,
+     "nafnrek": 0,
+     "base": 584
+    },
+    {
+     "fid": 119,
+     "nafn": "Húsf. Miðleiti 2-6",
+     "heimilisfang": "Miðleiti 2-6, 103 Reykjavík",
+     "nr": 2,
+     "ithj": true,
+     "taeki": 15,
+     "skjol": 8,
+     "skjolHrein": 6,
+     "skyrsluAr": 2026,
+     "skyrslutala": 15,
+     "man": 5,
+     "nafnrek": 0,
+     "base": 584
+    }
+   ],
+   "taeki": 30,
+   "skjol": 14,
+   "ithj": 2,
+   "stadfest": 2,
+   "anNr": 0
+  },
+  {
+   "kt": "6302161680",
+   "nafn": "E Fasteignafélag",
+   "merki": null,
+   "stadir": [
+    {
+     "fid": 1626,
+     "nafn": "E Fasteignafélag v/Norðurhella 17",
+     "heimilisfang": "Sóleyjargötu 15, 101 Reykjavík",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 6,
+     "skjol": 4,
+     "skjolHrein": 4,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 1059
+    },
+    {
+     "fid": 1748,
+     "nafn": "E fasteignafélag v/Dugguvogur 57",
+     "heimilisfang": "Sóleyjargötu 15",
+     "nr": null,
+     "ithj": true,
+     "taeki": 8,
+     "skjol": 2,
+     "skjolHrein": 2,
+     "skyrsluAr": 2026,
+     "skyrslutala": 4,
+     "man": 8,
+     "nafnrek": 0,
+     "base": 1059
+    }
+   ],
+   "taeki": 14,
+   "skjol": 6,
+   "ithj": 2,
+   "stadfest": 0,
+   "anNr": 1
+  },
+  {
+   "kt": "7112922929",
+   "nafn": "Bílabúð Benna ehf",
+   "merki": null,
+   "stadir": [
+    {
+     "fid": 532,
+     "nafn": "Bílabúð Benna ehf",
+     "heimilisfang": "Krókhálsi 9, 110 Reykjavík",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 13,
+     "skjol": 5,
+     "skjolHrein": 4,
+     "skyrsluAr": 2026,
+     "skyrslutala": 17,
+     "man": 6,
+     "nafnrek": 0,
+     "base": 868
+    },
+    {
+     "fid": 1612,
+     "nafn": "Bílabúð Benna - Fiskislóð",
+     "heimilisfang": "Fiskislóð 41, 101 Reykjavík",
+     "nr": 2,
+     "ithj": true,
+     "taeki": 0,
+     "skjol": 1,
+     "skjolHrein": 1,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 868
+    }
+   ],
+   "taeki": 13,
+   "skjol": 6,
+   "ithj": 2,
+   "stadfest": 0,
+   "anNr": 0
+  },
+  {
+   "kt": "4808160210",
+   "nafn": "Granitsmiðjan",
+   "merki": null,
+   "stadir": [
+    {
+     "fid": 687,
+     "nafn": "Granitsmiðjan",
+     "heimilisfang": "Smiðsbúð 3, 210 Garðabæ",
+     "nr": 1,
+     "ithj": true,
+     "taeki": 5,
+     "skjol": 2,
+     "skjolHrein": 1,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 237
+    },
+    {
+     "fid": 737,
+     "nafn": "Herbergjaleiga",
+     "heimilisfang": "Smiðsbúð 3, 210 Garðabæ",
+     "nr": 2,
+     "ithj": true,
+     "taeki": 0,
+     "skjol": 4,
+     "skjolHrein": 4,
+     "skyrsluAr": 2025,
+     "skyrslutala": 0,
+     "man": null,
+     "nafnrek": 0,
+     "base": 237
+    }
+   ],
+   "taeki": 5,
+   "skjol": 6,
+   "ithj": 2,
+   "stadfest": 1,
+   "anNr": 0
+  },
+  {
+   "kt": "6501840259",
+   "nafn": "Menja ehf.",
+   "merki": null,
+   "stadir": [
+    {
+     "fid": 1531,
+     "nafn": "kt 650184-0259",
+     "heimilisfang": null,
+     "nr": 1,
+     "ithj": false,
+     "taeki": 0,
+     "skjol": 3,
+     "skjolHrein": 3,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 917
+    },
+    {
+     "fid": 908,
+     "nafn": "Menja ehf.",
+     "heimilisfang": "Bæjarlind 14-16, 200 Kópavogi",
+     "nr": 38,
+     "ithj": false,
+     "taeki": 0,
+     "skjol": 1,
+     "skjolHrein": 1,
+     "skyrsluAr": null,
+     "skyrslutala": null,
+     "man": null,
+     "nafnrek": 0,
+     "base": 917
+    }
+   ],
+   "taeki": 0,
+   "skjol": 4,
+   "ithj": 0,
+   "stadfest": 0,
+   "anNr": 0
+  }
+ ],
+ "merkjaHopar": {
+  "Colas": [
+   {
+    "baseId": 52,
+    "nafn": "Colas Ísland ehf.",
+    "kt": "4201871499",
+    "stadir": [
+     {
+      "fid": 218,
+      "nafn": "Colas - Gullhella",
+      "heimilisfang": "Gullhella, 221 Hafnarfjörður",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 16,
+      "skjol": 16,
+      "skjolHrein": 15,
+      "skyrsluAr": 2026,
+      "skyrslutala": 16,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 52
+     },
+     {
+      "fid": 1490,
+      "nafn": "Colas - Álfhella",
+      "heimilisfang": "Álfhella, 221 Hafnarfjörður.",
+      "nr": 3,
+      "ithj": true,
+      "taeki": 17,
+      "skjol": 7,
+      "skjolHrein": 7,
+      "skyrsluAr": 2025,
+      "skyrslutala": 17,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 52
+     },
+     {
+      "fid": 1493,
+      "nafn": "Colas - Óseyrarbraut",
+      "heimilisfang": "Óseyrarbraut, 221 Hafnarfjörður",
+      "nr": 5,
+      "ithj": true,
+      "taeki": 6,
+      "skjol": 7,
+      "skjolHrein": 7,
+      "skyrsluAr": 2025,
+      "skyrslutala": 6,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 52
+     },
+     {
+      "fid": 1616,
+      "nafn": "Colas - Gulhella 1 (skrifstofa/HQ)",
+      "heimilisfang": "Gulhellu 1, 220 Hafnarfjörður",
+      "nr": 6,
+      "ithj": true,
+      "taeki": 24,
+      "skjol": 4,
+      "skjolHrein": 4,
+      "skyrsluAr": 2023,
+      "skyrslutala": 24,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 52
+     }
+    ],
+    "taeki": 63
+   }
+  ],
+  "Eignaumsjón": [
+   {
+    "baseId": 89,
+    "nafn": "Húsfélagið Álftamýri 36",
+    "kt": "4305820549",
+    "stadir": [
+     {
+      "fid": 429,
+      "nafn": "Álftamýri 32,34,36,húsfélag",
+      "heimilisfang": "Álftamýri 36, 108 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 11,
+      "skjol": 10,
+      "skjolHrein": 8,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 6,
+      "nafnrek": 7,
+      "base": 89
+     }
+    ],
+    "taeki": 11
+   },
+   {
+    "baseId": 111,
+    "nafn": "Húsfélagið Kórsölum 3",
+    "kt": "4404023480",
+    "stadir": [
+     {
+      "fid": 293,
+      "nafn": "Húsfélagið Kórsölum 3",
+      "heimilisfang": "Kórsölum 3, 201 Kópavogi",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 11,
+      "skjol": 11,
+      "skjolHrein": 10,
+      "skyrsluAr": 2025,
+      "skyrslutala": 11,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 111
+     }
+    ],
+    "taeki": 11
+   },
+   {
+    "baseId": 117,
+    "nafn": "Húsfélagið Þverbrekku 2",
+    "kt": "4405760529",
+    "stadir": [
+     {
+      "fid": 271,
+      "nafn": "Húsfélagið Þverbrekku 2",
+      "heimilisfang": "Þverbrekku 2, 200 Kópavogur",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 10,
+      "skjolHrein": 6,
+      "skyrsluAr": 2026,
+      "skyrslutala": 7,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 117
+     }
+    ],
+    "taeki": 7
+   },
+   {
+    "baseId": 120,
+    "nafn": "Húsfélagið Stigahlíð 26",
+    "kt": "4406992869",
+    "stadir": [
+     {
+      "fid": 425,
+      "nafn": "Húsfélagið Stigahlíð 26",
+      "heimilisfang": "Stigahlíð 26, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 9,
+      "skjolHrein": 7,
+      "skyrsluAr": 2025,
+      "skyrslutala": 0,
+      "man": null,
+      "nafnrek": 0,
+      "base": 120
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 122,
+    "nafn": "Húsfélagið Álfholt 2c",
+    "kt": "4409003210",
+    "stadir": [
+     {
+      "fid": 442,
+      "nafn": "Húsfélagið Álfholt 2c",
+      "heimilisfang": "Álfholt 2c, 220 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 2,
+      "skjol": 8,
+      "skjolHrein": 7,
+      "skyrsluAr": 2025,
+      "skyrslutala": 2,
+      "man": 12,
+      "nafnrek": 0,
+      "base": 122
+     }
+    ],
+    "taeki": 2
+   },
+   {
+    "baseId": 124,
+    "nafn": "Húsfélagið Bólstaðarhlíð 40",
+    "kt": "4410872769",
+    "stadir": [
+     {
+      "fid": 247,
+      "nafn": "Húsfélagið Bólstaðarhlíð 40",
+      "heimilisfang": "Bólstaðarhlíð 40, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 2,
+      "skjol": 7,
+      "skjolHrein": 7,
+      "skyrsluAr": 2026,
+      "skyrslutala": 2,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 124
+     }
+    ],
+    "taeki": 2
+   },
+   {
+    "baseId": 160,
+    "nafn": "Kríuás 15",
+    "kt": "4603023660",
+    "stadir": [
+     {
+      "fid": 496,
+      "nafn": "Kríuás 15",
+      "heimilisfang": "Kríuás 15, 220 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 3,
+      "skjol": 7,
+      "skjolHrein": 6,
+      "skyrsluAr": 2025,
+      "skyrslutala": 3,
+      "man": null,
+      "nafnrek": 0,
+      "base": 160
+     }
+    ],
+    "taeki": 3
+   },
+   {
+    "baseId": 177,
+    "nafn": "Húsfélagið Háteigsvegi 3",
+    "kt": "4610091660",
+    "stadir": [
+     {
+      "fid": 422,
+      "nafn": "Húsfélagið Háteigsvegi 3",
+      "heimilisfang": "Háteigsvegi 3, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 9,
+      "skjol": 11,
+      "skjolHrein": 10,
+      "skyrsluAr": 2025,
+      "skyrslutala": 9,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 177
+     }
+    ],
+    "taeki": 9
+   },
+   {
+    "baseId": 188,
+    "nafn": "Húsfélagið Skipholti 50b",
+    "kt": "4702891989",
+    "stadir": [
+     {
+      "fid": 294,
+      "nafn": "Húsfélagið Skipholti 50b",
+      "heimilisfang": "Skipholti 50b, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 16,
+      "skjol": 12,
+      "skjolHrein": 10,
+      "skyrsluAr": 2026,
+      "skyrslutala": 16,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 188
+     }
+    ],
+    "taeki": 16
+   },
+   {
+    "baseId": 191,
+    "nafn": "Húsfélag Blikhólar 2",
+    "kt": "4704862529",
+    "stadir": [
+     {
+      "fid": 669,
+      "nafn": "Húsfélag Blikhólar 2",
+      "heimilisfang": "Blikhólar 2 111 reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 13,
+      "skjol": 4,
+      "skjolHrein": 4,
+      "skyrsluAr": 2024,
+      "skyrslutala": 13,
+      "man": 12,
+      "nafnrek": 0,
+      "base": 191
+     }
+    ],
+    "taeki": 13
+   },
+   {
+    "baseId": 192,
+    "nafn": "Austurberg 2,húsfélag",
+    "kt": "4704867169",
+    "stadir": [
+     {
+      "fid": 499,
+      "nafn": "Austurberg 2,húsfélag",
+      "heimilisfang": "Pósthólf 8940, 128 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 4,
+      "skjolHrein": 4,
+      "skyrsluAr": 2026,
+      "skyrslutala": 0,
+      "man": null,
+      "nafnrek": 0,
+      "base": 192
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 196,
+    "nafn": "Ásakór 1 og 3, húsfélag",
+    "kt": "4705082050",
+    "stadir": [
+     {
+      "fid": 592,
+      "nafn": "Húsfélagið Ásakór 1 og 3",
+      "heimilisfang": "Suðurlandsbraut 30, 108 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 1,
+      "skjolHrein": 1,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 196
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 226,
+    "nafn": "Hraunbær 14",
+    "kt": "4802776789",
+    "stadir": [
+     {
+      "fid": 459,
+      "nafn": "Hraunbær 14",
+      "heimilisfang": "Hraunbær 14, 110 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 9,
+      "skjolHrein": 7,
+      "skyrsluAr": 2026,
+      "skyrslutala": 7,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 226
+     }
+    ],
+    "taeki": 7
+   },
+   {
+    "baseId": 229,
+    "nafn": "Húsfélagið Sóleyjarhlíð 1",
+    "kt": "4802962579",
+    "stadir": [
+     {
+      "fid": 428,
+      "nafn": "Húsfélagið Sóleyjarhlíð 1",
+      "heimilisfang": "Sóleyjarhlíð 1, 221 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 2,
+      "skjol": 12,
+      "skjolHrein": 10,
+      "skyrsluAr": 2025,
+      "skyrslutala": 2,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 229
+     }
+    ],
+    "taeki": 2
+   },
+   {
+    "baseId": 241,
+    "nafn": "Torfufell 50",
+    "kt": "4810741349",
+    "stadir": [
+     {
+      "fid": 436,
+      "nafn": "Torfufell 50",
+      "heimilisfang": "Torfufell 50, 111 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 9,
+      "skjolHrein": 5,
+      "skyrsluAr": 2025,
+      "skyrslutala": 7,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 241
+     }
+    ],
+    "taeki": 7
+   },
+   {
+    "baseId": 250,
+    "nafn": "Húsfélagið Stakkholt 2-4",
+    "kt": "4901150130",
+    "stadir": [
+     {
+      "fid": 497,
+      "nafn": "Húsfélagið Stakkholt 2-4",
+      "heimilisfang": "Stakkholt 2-4, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 10,
+      "skjol": 15,
+      "skjolHrein": 13,
+      "skyrsluAr": 2025,
+      "skyrslutala": 10,
+      "man": null,
+      "nafnrek": 0,
+      "base": 250
+     }
+    ],
+    "taeki": 10
+   },
+   {
+    "baseId": 253,
+    "nafn": "Flétturima",
+    "kt": "4902120190",
+    "stadir": [
+     {
+      "fid": 301,
+      "nafn": "Flétturima",
+      "heimilisfang": "stigagqangar 10-16 + Bílskýli 112 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 15,
+      "skjol": 3,
+      "skjolHrein": 3,
+      "skyrsluAr": 2026,
+      "skyrslutala": 15,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 253
+     }
+    ],
+    "taeki": 15
+   },
+   {
+    "baseId": 260,
+    "nafn": "Húsfélagið Hamraborg 20",
+    "kt": "4906760239",
+    "stadir": [
+     {
+      "fid": 645,
+      "nafn": "Húsfélagið Hamraborg 20",
+      "heimilisfang": "200 Hamraborg 20",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 9,
+      "skjol": 9,
+      "skjolHrein": 6,
+      "skyrsluAr": 2026,
+      "skyrslutala": 9,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 260
+     }
+    ],
+    "taeki": 9
+   },
+   {
+    "baseId": 277,
+    "nafn": "Húsfélagið 17 júnítorg 1-7, 101 Reykjavík",
+    "kt": "5007070110",
+    "stadir": [
+     {
+      "fid": 203,
+      "nafn": "Húsfélagið 17 júnítorg 1-7, 101 Reykjavík",
+      "heimilisfang": "17 júnítorg 1-7, 101 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 22,
+      "skjolHrein": 15,
+      "skyrsluAr": 2026,
+      "skyrslutala": 7,
+      "man": 4,
+      "nafnrek": 0,
+      "base": 277
+     },
+     {
+      "fid": 1284,
+      "nafn": "Húsfélag 17. Júní torg",
+      "heimilisfang": "17. júní torg 1-7, 101 Reykjavík",
+      "nr": 220,
+      "ithj": false,
+      "taeki": 0,
+      "skjol": 0,
+      "skjolHrein": 0,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 277
+     }
+    ],
+    "taeki": 7
+   },
+   {
+    "baseId": 280,
+    "nafn": "Seljabraut 42",
+    "kt": "5009760129",
+    "stadir": [
+     {
+      "fid": 453,
+      "nafn": "Seljabraut 42",
+      "heimilisfang": "Seljabraut 42, 109 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 6,
+      "skjol": 8,
+      "skjolHrein": 5,
+      "skyrsluAr": 2025,
+      "skyrslutala": 6,
+      "man": 12,
+      "nafnrek": 0,
+      "base": 280
+     }
+    ],
+    "taeki": 6
+   },
+   {
+    "baseId": 302,
+    "nafn": "Húsf. Stóragerði 20",
+    "kt": "5104863589",
+    "stadir": [
+     {
+      "fid": 125,
+      "nafn": "Húsf. Stóragerði 20",
+      "heimilisfang": "Stóragerði 20, 108 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 10,
+      "skjol": 11,
+      "skjolHrein": 10,
+      "skyrsluAr": 2026,
+      "skyrslutala": 10,
+      "man": 5,
+      "nafnrek": 0,
+      "base": 302
+     }
+    ],
+    "taeki": 10
+   },
+   {
+    "baseId": 311,
+    "nafn": "Húsfélag Sólvangsvegur 1",
+    "kt": "5109140150",
+    "stadir": [
+     {
+      "fid": 160,
+      "nafn": "Húsfélag Sólvangsvegur 1",
+      "heimilisfang": "Sólvangsvegur 1, 220 Hafnarfjörður",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 311
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 315,
+    "nafn": "Strandasel 9",
+    "kt": "5110877679",
+    "stadir": [
+     {
+      "fid": 372,
+      "nafn": "Strandasel 9",
+      "heimilisfang": "Strandasel 9, 109 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 9,
+      "skjolHrein": 9,
+      "skyrsluAr": 2026,
+      "skyrslutala": 7,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 315
+     }
+    ],
+    "taeki": 7
+   },
+   {
+    "baseId": 316,
+    "nafn": "Austurberg 2-6, húsfélag",
+    "kt": "5111151400",
+    "stadir": [
+     {
+      "fid": 291,
+      "nafn": "Húsfélagið Austurberg 2-4-6",
+      "heimilisfang": "Austurberg 2-4-6, 111 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 6,
+      "skjol": 7,
+      "skjolHrein": 7,
+      "skyrsluAr": 2026,
+      "skyrslutala": 6,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 316
+     }
+    ],
+    "taeki": 6
+   },
+   {
+    "baseId": 332,
+    "nafn": "Tangarbryggja",
+    "kt": "5204190120",
+    "stadir": [
+     {
+      "fid": 742,
+      "nafn": "Tangarbryggja 13-15 Bílakjallari",
+      "heimilisfang": "Tangarbryggja 13-15 bílakjallari, 110 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 3,
+      "skjol": 11,
+      "skjolHrein": 8,
+      "skyrsluAr": 2026,
+      "skyrslutala": 3,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 332
+     }
+    ],
+    "taeki": 3
+   },
+   {
+    "baseId": 334,
+    "nafn": "Kríuhólar 2",
+    "kt": "5204780199",
+    "stadir": [
+     {
+      "fid": 434,
+      "nafn": "Kríuhólar 2",
+      "heimilisfang": "Kríuhólar 2, 110 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 18,
+      "skjol": 7,
+      "skjolHrein": 6,
+      "skyrsluAr": 2025,
+      "skyrslutala": 18,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 334
+     }
+    ],
+    "taeki": 18
+   },
+   {
+    "baseId": 338,
+    "nafn": "Flétturimi 14,húsfélag",
+    "kt": "5205932419",
+    "stadir": [
+     {
+      "fid": 786,
+      "nafn": "Flétturimi 14,húsfélag",
+      "heimilisfang": "Flétturima 14, 112 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 1,
+      "skjolHrein": 1,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 338
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 369,
+    "nafn": "Húsfélagið Ásholt 2",
+    "kt": "5303911089",
+    "stadir": [
+     {
+      "fid": 853,
+      "nafn": "Húsfélagið Ásholt 2",
+      "heimilisfang": "Ásholt 2, 105 Reykjavík",
+      "nr": 1,
+      "ithj": false,
+      "taeki": 34,
+      "skjol": 5,
+      "skjolHrein": 4,
+      "skyrsluAr": 2023,
+      "skyrslutala": 34,
+      "man": 12,
+      "nafnrek": 0,
+      "base": 369
+     }
+    ],
+    "taeki": 34
+   },
+   {
+    "baseId": 382,
+    "nafn": "Húsfélagið Laufvangur 16",
+    "kt": "5311750269",
+    "stadir": [
+     {
+      "fid": 251,
+      "nafn": "Húsfélagið Laufvangur 16",
+      "heimilisfang": "Laufvangur 16, 220 Hafnarfjörður",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 6,
+      "skjol": 4,
+      "skjolHrein": 4,
+      "skyrsluAr": 2026,
+      "skyrslutala": 6,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 382
+     }
+    ],
+    "taeki": 6
+   },
+   {
+    "baseId": 383,
+    "nafn": "Húsfélagið Álfaskeið 98-100",
+    "kt": "5311750859",
+    "stadir": [
+     {
+      "fid": 456,
+      "nafn": "Húsfélagið Álfaskeið 98-100",
+      "heimilisfang": "Álfaskeið 98-100, 220 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 6,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": 2026,
+      "skyrslutala": 6,
+      "man": 4,
+      "nafnrek": 0,
+      "base": 383
+     }
+    ],
+    "taeki": 6
+   },
+   {
+    "baseId": 385,
+    "nafn": "Sléttuhraun 32",
+    "kt": "5311752719",
+    "stadir": [
+     {
+      "fid": 348,
+      "nafn": "Sléttuhraun 32",
+      "heimilisfang": "Sléttuhraun 32, 220 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 3,
+      "skjol": 7,
+      "skjolHrein": 7,
+      "skyrsluAr": 2026,
+      "skyrslutala": 3,
+      "man": 4,
+      "nafnrek": 0,
+      "base": 385
+     }
+    ],
+    "taeki": 3
+   },
+   {
+    "baseId": 386,
+    "nafn": "Húsfélagið Suðurlandsbraut 30",
+    "kt": "5311800709",
+    "stadir": [
+     {
+      "fid": 463,
+      "nafn": "Húsfélagið Suðurlandsbraut 30",
+      "heimilisfang": "Suðurlandsbraut 30, 108 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 8,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": 2025,
+      "skyrslutala": 8,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 386
+     }
+    ],
+    "taeki": 8
+   },
+   {
+    "baseId": 413,
+    "nafn": "Flétturimi 10,húsfélag",
+    "kt": "5409942939",
+    "stadir": [
+     {
+      "fid": 784,
+      "nafn": "Flétturimi 10,húsfélag",
+      "heimilisfang": "Flétturima 10, 112 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 13,
+      "skjol": 3,
+      "skjolHrein": 3,
+      "skyrsluAr": 2023,
+      "skyrslutala": 13,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 413
+     }
+    ],
+    "taeki": 13
+   },
+   {
+    "baseId": 422,
+    "nafn": "Húsfélag Jörfabakki 32",
+    "kt": "5412810379",
+    "stadir": [
+     {
+      "fid": 1148,
+      "nafn": "Húsfélag Jörfabakki 32",
+      "heimilisfang": "Jörfabakki 32, 109 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 422
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 423,
+    "nafn": "Hamraborg 28",
+    "kt": "5412811429",
+    "stadir": [
+     {
+      "fid": 368,
+      "nafn": "Hamraborg 28",
+      "heimilisfang": "Hamraborg 28, 200 Kópavogi",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 6,
+      "skjolHrein": 6,
+      "skyrsluAr": 2026,
+      "skyrslutala": 7,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 423
+     }
+    ],
+    "taeki": 7
+   },
+   {
+    "baseId": 430,
+    "nafn": "Húsfélagið Tungusel 3",
+    "kt": "5503840279",
+    "stadir": [
+     {
+      "fid": 255,
+      "nafn": "Húsfélagið Tungusel 3",
+      "heimilisfang": "Tungusel 3, 109 Reykjavík",
+      "nr": 2,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 8,
+      "skjolHrein": 7,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 430
+     }
+    ],
+    "taeki": 4
+   },
+   {
+    "baseId": 465,
+    "nafn": "Tungusel 1-5-7",
+    "kt": "5606171190",
+    "stadir": [
+     {
+      "fid": 351,
+      "nafn": "Tungusel 1-5-7",
+      "heimilisfang": "Tungusel 1-5-7, 109 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 20,
+      "skjol": 12,
+      "skjolHrein": 7,
+      "skyrsluAr": 2026,
+      "skyrslutala": 20,
+      "man": 4,
+      "nafnrek": 0,
+      "base": 465
+     }
+    ],
+    "taeki": 20
+   },
+   {
+    "baseId": 469,
+    "nafn": "Akurvellir 1,húsfélag",
+    "kt": "5611060450",
+    "stadir": [
+     {
+      "fid": 438,
+      "nafn": "Húsfélagið Akurvellir 1 221 Hafnarfirði",
+      "heimilisfang": "Akurvellir 1, 221 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 6,
+      "skjolHrein": 6,
+      "skyrsluAr": 2025,
+      "skyrslutala": 4,
+      "man": 12,
+      "nafnrek": 0,
+      "base": 469
+     }
+    ],
+    "taeki": 4
+   },
+   {
+    "baseId": 492,
+    "nafn": "Tjarnarból 6",
+    "kt": "5710872199",
+    "stadir": [
+     {
+      "fid": 389,
+      "nafn": "Tjarnarból 6",
+      "heimilisfang": "Tjarnarból 6, 170 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 7,
+      "skjolHrein": 5,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 7,
+      "nafnrek": 0,
+      "base": 492
+     }
+    ],
+    "taeki": 4
+   },
+   {
+    "baseId": 525,
+    "nafn": "Húsfélag Eskivellir 21",
+    "kt": "5903140130",
+    "stadir": [
+     {
+      "fid": 680,
+      "nafn": "Húsfélag Eskivellir 21",
+      "heimilisfang": "Eskivellir 21 A og B, 221 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 13,
+      "skjol": 8,
+      "skjolHrein": 7,
+      "skyrsluAr": 2024,
+      "skyrslutala": 13,
+      "man": 12,
+      "nafnrek": 0,
+      "base": 525
+     }
+    ],
+    "taeki": 13
+   },
+   {
+    "baseId": 545,
+    "nafn": "Húsfélagið Hátún 8",
+    "kt": "6001692389",
+    "stadir": [
+     {
+      "fid": 123,
+      "nafn": "Húsfélagið Hátún 8",
+      "heimilisfang": "Hátún 8, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 18,
+      "skjol": 5,
+      "skjolHrein": 4,
+      "skyrsluAr": 2026,
+      "skyrslutala": 18,
+      "man": 5,
+      "nafnrek": 0,
+      "base": 545
+     }
+    ],
+    "taeki": 18
+   },
+   {
+    "baseId": 547,
+    "nafn": "Álfholt 2c,húsfélag",
+    "kt": "6001922489",
+    "stadir": [
+     {
+      "fid": 514,
+      "nafn": "Álfholt 2c,húsfélag",
+      "heimilisfang": "Álfholti 2c, 220 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 1,
+      "skjolHrein": 1,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 547
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 552,
+    "nafn": "Rekstrarfélag Norðurturnsins",
+    "kt": "6003171990",
+    "stadir": [],
+    "taeki": 0
+   },
+   {
+    "baseId": 561,
+    "nafn": "Tjarnarból 2",
+    "kt": "6009740179",
+    "stadir": [
+     {
+      "fid": 388,
+      "nafn": "Tjarnarból 2",
+      "heimilisfang": "Tjarnarból 2, 170 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 10,
+      "skjol": 8,
+      "skjolHrein": 4,
+      "skyrsluAr": 2025,
+      "skyrslutala": 10,
+      "man": 7,
+      "nafnrek": 0,
+      "base": 561
+     }
+    ],
+    "taeki": 10
+   },
+   {
+    "baseId": 565,
+    "nafn": "Húsfélagið Álfaskeið 78",
+    "kt": "6011750459",
+    "stadir": [
+     {
+      "fid": 257,
+      "nafn": "Húsfélagið Álfaskeið 78",
+      "heimilisfang": "Álfaskeið 78, 220 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 6,
+      "skjol": 8,
+      "skjolHrein": 8,
+      "skyrsluAr": 2026,
+      "skyrslutala": 6,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 565
+     }
+    ],
+    "taeki": 6
+   },
+   {
+    "baseId": 574,
+    "nafn": "Húsfélagið Dalsel 12",
+    "kt": "6103770179",
+    "stadir": [
+     {
+      "fid": 417,
+      "nafn": "Húsfélagið Dalsel 12",
+      "heimilisfang": "Dalsel 12, 109 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 10,
+      "skjol": 8,
+      "skjolHrein": 6,
+      "skyrsluAr": 2025,
+      "skyrslutala": 10,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 574
+     }
+    ],
+    "taeki": 10
+   },
+   {
+    "baseId": 576,
+    "nafn": "Húsfélagið Flétturima 16",
+    "kt": "6104932389",
+    "stadir": [
+     {
+      "fid": 656,
+      "nafn": "Húsfélagið Flétturima 16",
+      "heimilisfang": "112 Flétturima 16",
+      "nr": 1,
+      "ithj": false,
+      "taeki": 0,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": 2026,
+      "skyrslutala": 0,
+      "man": null,
+      "nafnrek": 0,
+      "base": 576
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 578,
+    "nafn": "Kirkjulundur 12",
+    "kt": "6105140300",
+    "stadir": [
+     {
+      "fid": 432,
+      "nafn": "Kirkjulundur 12-14",
+      "heimilisfang": "Kirkjulundur 12-14, 210 Garðabær",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 11,
+      "skjolHrein": 8,
+      "skyrsluAr": 2025,
+      "skyrslutala": 4,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 578
+     }
+    ],
+    "taeki": 4
+   },
+   {
+    "baseId": 580,
+    "nafn": "Húsfélag Skipholti 50D",
+    "kt": "6105962079",
+    "stadir": [
+     {
+      "fid": 701,
+      "nafn": "Húsfélagið Skipholti 50d",
+      "heimilisfang": "Skipholti 50D, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 6,
+      "skjolHrein": 6,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 580
+     }
+    ],
+    "taeki": 4
+   },
+   {
+    "baseId": 584,
+    "nafn": "Húsf. Miðleiti 2-6",
+    "kt": "6108891589",
+    "stadir": [
+     {
+      "fid": 118,
+      "nafn": "Húsf. V/bílageymslu",
+      "heimilisfang": "Miðleiti 2-6, 103 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 15,
+      "skjol": 6,
+      "skjolHrein": 5,
+      "skyrsluAr": 2025,
+      "skyrslutala": 15,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 584
+     },
+     {
+      "fid": 119,
+      "nafn": "Húsf. Miðleiti 2-6",
+      "heimilisfang": "Miðleiti 2-6, 103 Reykjavík",
+      "nr": 2,
+      "ithj": true,
+      "taeki": 15,
+      "skjol": 8,
+      "skjolHrein": 6,
+      "skyrsluAr": 2026,
+      "skyrslutala": 15,
+      "man": 5,
+      "nafnrek": 0,
+      "base": 584
+     }
+    ],
+    "taeki": 30
+   },
+   {
+    "baseId": 585,
+    "nafn": "Húsfélagið Gullsmára 5",
+    "kt": "6110962329",
+    "stadir": [
+     {
+      "fid": 327,
+      "nafn": "Húsfélagið Gullsmára 5",
+      "heimilisfang": "Gullsmára 5, 201 Kópavogi",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 19,
+      "skjol": 13,
+      "skjolHrein": 8,
+      "skyrsluAr": 2026,
+      "skyrslutala": 19,
+      "man": 4,
+      "nafnrek": 0,
+      "base": 585
+     }
+    ],
+    "taeki": 19
+   },
+   {
+    "baseId": 586,
+    "nafn": "Húsfélagið Laugavegi 42",
+    "kt": "6110962599",
+    "stadir": [
+     {
+      "fid": 835,
+      "nafn": "Húsfélagið Laugavegi 42 (Iðun apartments)",
+      "heimilisfang": "Laugavegi 42, 101 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 10,
+      "skjol": 4,
+      "skjolHrein": 2,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 586
+     }
+    ],
+    "taeki": 10
+   },
+   {
+    "baseId": 591,
+    "nafn": "Jaðarleiti",
+    "kt": "6111170190",
+    "stadir": [
+     {
+      "fid": 704,
+      "nafn": "Jaðarleiti",
+      "heimilisfang": "Jaðarleiti 2-8, 103 Reykjavík",
+      "nr": 2,
+      "ithj": true,
+      "taeki": 11,
+      "skjol": 7,
+      "skjolHrein": 6,
+      "skyrsluAr": 2024,
+      "skyrslutala": 11,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 591
+     }
+    ],
+    "taeki": 11
+   },
+   {
+    "baseId": 592,
+    "nafn": "Sléttahraun 19-21",
+    "kt": "6111750519",
+    "stadir": [
+     {
+      "fid": 735,
+      "nafn": "Sléttahraun 19-21",
+      "heimilisfang": "Sléttahraun 19-21, 220 Hafnarfjörður",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 6,
+      "skjolHrein": 5,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 4,
+      "nafnrek": 0,
+      "base": 592
+     }
+    ],
+    "taeki": 4
+   },
+   {
+    "baseId": 600,
+    "nafn": "Húsfélagið Álftamýri 24-30",
+    "kt": "6201850439",
+    "stadir": [
+     {
+      "fid": 259,
+      "nafn": "Húsfélagið Álftamýri 24-30",
+      "heimilisfang": "Álftamýri 24-30, 108 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 51,
+      "skjol": 9,
+      "skjolHrein": 9,
+      "skyrsluAr": 2026,
+      "skyrslutala": 51,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 600
+     }
+    ],
+    "taeki": 51
+   },
+   {
+    "baseId": 626,
+    "nafn": "Jöfrabakki",
+    "kt": "6302840159",
+    "stadir": [
+     {
+      "fid": 705,
+      "nafn": "Jöfrabakki",
+      "heimilisfang": "Jöfrabakki 32, 109 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 1,
+      "skjolHrein": 1,
+      "skyrsluAr": 2024,
+      "skyrslutala": 7,
+      "man": 7,
+      "nafnrek": 0,
+      "base": 626
+     }
+    ],
+    "taeki": 7
+   },
+   {
+    "baseId": 667,
+    "nafn": "Aflagrandi 40,húsfélag",
+    "kt": "6407891239",
+    "stadir": [
+     {
+      "fid": 851,
+      "nafn": "Aflagrandi 40,húsfélag",
+      "heimilisfang": "Aflagranda 40, 107 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 15,
+      "skjol": 3,
+      "skjolHrein": 3,
+      "skyrsluAr": 2026,
+      "skyrslutala": 15,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 667
+     }
+    ],
+    "taeki": 15
+   },
+   {
+    "baseId": 668,
+    "nafn": "Gullsmári",
+    "kt": "6407962439",
+    "stadir": [
+     {
+      "fid": 690,
+      "nafn": "Húsfélagið Gullsmári 9",
+      "heimilisfang": "Gullsmári 9, 201 Kópavogi",
+      "nr": 1,
+      "ithj": false,
+      "taeki": 0,
+      "skjol": 4,
+      "skjolHrein": 4,
+      "skyrsluAr": 2024,
+      "skyrslutala": 20,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 668
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 671,
+    "nafn": "Þangbakki 8-10,húsfélag",
+    "kt": "6409800289",
+    "stadir": [
+     {
+      "fid": 1261,
+      "nafn": "Þangbakki 8-10,húsfélag",
+      "heimilisfang": "Pósthólf 8940, 128 Reykjavík",
+      "nr": 1,
+      "ithj": false,
+      "taeki": 55,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": 2026,
+      "skyrslutala": 55,
+      "man": 4,
+      "nafnrek": 0,
+      "base": 671
+     }
+    ],
+    "taeki": 55
+   },
+   {
+    "baseId": 694,
+    "nafn": "Flétturimi 12,húsfélag",
+    "kt": "6508942279",
+    "stadir": [
+     {
+      "fid": 811,
+      "nafn": "Flétturimi 12,húsfélag",
+      "heimilisfang": "Flétturima 12, 112 Reykjavík",
+      "nr": 1,
+      "ithj": false,
+      "taeki": 0,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 694
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 700,
+    "nafn": "Húsfélagið Sléttahraun 23-25",
+    "kt": "6511091240",
+    "stadir": [
+     {
+      "fid": 252,
+      "nafn": "Húsfélagið Sléttahraun 23-25",
+      "heimilisfang": "Sléttahraun 23-25, 220 Hafnarfjörður",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 17,
+      "skjol": 6,
+      "skjolHrein": 5,
+      "skyrsluAr": 2026,
+      "skyrslutala": 17,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 700
+     }
+    ],
+    "taeki": 17
+   },
+   {
+    "baseId": 739,
+    "nafn": "Húsfélagið Gnoðarvogi 28",
+    "kt": "6703952199",
+    "stadir": [
+     {
+      "fid": 250,
+      "nafn": "Húsfélagið Gnoðarvogi 28",
+      "heimilisfang": "Gnoðarvogi 28, 104 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": 2026,
+      "skyrslutala": 5,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 739
+     }
+    ],
+    "taeki": 5
+   },
+   {
+    "baseId": 777,
+    "nafn": "Bílskýli Flétturima 10-16",
+    "kt": "6804972149",
+    "stadir": [
+     {
+      "fid": 805,
+      "nafn": "Bílskýli Flétturima 10-16",
+      "heimilisfang": "Flétturima 10, 112 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 777
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 787,
+    "nafn": "Skaftahlíð 4-10,húsfélag",
+    "kt": "6811780159",
+    "stadir": [
+     {
+      "fid": 848,
+      "nafn": "Skaftahlíð 4-10,húsfélag",
+      "heimilisfang": "Skaftahlíð 4-10, 104 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 27,
+      "skjol": 7,
+      "skjolHrein": 6,
+      "skyrsluAr": 2024,
+      "skyrslutala": 27,
+      "man": 4,
+      "nafnrek": 27,
+      "base": 787
+     }
+    ],
+    "taeki": 27
+   },
+   {
+    "baseId": 834,
+    "nafn": "Kleppsvegur",
+    "kt": "7006780409",
+    "stadir": [
+     {
+      "fid": 710,
+      "nafn": "Kleppsvegur",
+      "heimilisfang": "Kleppsvegur 34-36-38, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 23,
+      "skjol": 8,
+      "skjolHrein": 7,
+      "skyrsluAr": 2026,
+      "skyrslutala": 23,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 834
+     }
+    ],
+    "taeki": 23
+   }
+  ],
+  "Rekstrarumsjón": [
+   {
+    "baseId": 100,
+    "nafn": "Húsfélagið Dofraberg 11",
+    "kt": "4309901019",
+    "stadir": [
+     {
+      "fid": 418,
+      "nafn": "Húsfélagið Dofraberg 11",
+      "heimilisfang": "Dofraberg 11, 221 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 10,
+      "skjolHrein": 9,
+      "skyrsluAr": 2025,
+      "skyrslutala": 7,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 100
+     }
+    ],
+    "taeki": 7
+   },
+   {
+    "baseId": 209,
+    "nafn": "Húsfélagið Álfaskeið 82-84",
+    "kt": "4710023050",
+    "stadir": [
+     {
+      "fid": 854,
+      "nafn": "Húsfélagið Álfaskeið 82-84",
+      "heimilisfang": "Álfaskeið 82-84, 220 Hafnarfjörður",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 1,
+      "skjolHrein": 1,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 209
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 223,
+    "nafn": "Gerplustræti 6-12, húsfélag",
+    "kt": "4802182640",
+    "stadir": [
+     {
+      "fid": 846,
+      "nafn": "Gerplustræti 6-12, húsfélag",
+      "heimilisfang": "Pósthólf 349, 220 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 1,
+      "skjolHrein": 1,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 223
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 388,
+    "nafn": "Eskivellir 5",
+    "kt": "5312050490",
+    "stadir": [
+     {
+      "fid": 377,
+      "nafn": "Húsfélagið Eskivellir 5",
+      "heimilisfang": "Eskivellir 5, 221 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 8,
+      "skjolHrein": 5,
+      "skyrsluAr": 2026,
+      "skyrslutala": 0,
+      "man": 7,
+      "nafnrek": 0,
+      "base": 388
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 748,
+    "nafn": "Húsf. Eskivellir 1",
+    "kt": "6706061980",
+    "stadir": [
+     {
+      "fid": 161,
+      "nafn": "Húsf. Eskivellir 1",
+      "heimilisfang": "Eskivellir 1, 221 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 8,
+      "skjol": 11,
+      "skjolHrein": 10,
+      "skyrsluAr": 2026,
+      "skyrslutala": 8,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 748
+     }
+    ],
+    "taeki": 8
+   }
+  ],
+  "Center Hótel": [
+   {
+    "baseId": 146,
+    "nafn": "Center Hótel",
+    "kt": "4509051430",
+    "stadir": [
+     {
+      "fid": 192,
+      "nafn": "Center Hótel - Miðgarður",
+      "heimilisfang": "Laugavegur 120, 101 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 38,
+      "skjol": 31,
+      "skjolHrein": 16,
+      "skyrsluAr": 2026,
+      "skyrslutala": 38,
+      "man": 8,
+      "nafnrek": 0,
+      "base": 146
+     },
+     {
+      "fid": 193,
+      "nafn": "Center Hótel - Plaza",
+      "heimilisfang": "Aðalstræti 4-6, 101 Reykjavík",
+      "nr": 2,
+      "ithj": true,
+      "taeki": 80,
+      "skjol": 18,
+      "skjolHrein": 15,
+      "skyrsluAr": 2026,
+      "skyrslutala": 80,
+      "man": 8,
+      "nafnrek": 0,
+      "base": 146
+     },
+     {
+      "fid": 195,
+      "nafn": "Center Hótel - Arnarhvoll",
+      "heimilisfang": "Ingólfsstræti 1, 101 Reykjavík",
+      "nr": 3,
+      "ithj": true,
+      "taeki": 18,
+      "skjol": 15,
+      "skjolHrein": 10,
+      "skyrsluAr": 2026,
+      "skyrslutala": 19,
+      "man": 8,
+      "nafnrek": 0,
+      "base": 146
+     },
+     {
+      "fid": 196,
+      "nafn": "Center Hótel - Klöpp",
+      "heimilisfang": "Klapparstígur 26, 101 Reykjavík",
+      "nr": 4,
+      "ithj": true,
+      "taeki": 28,
+      "skjol": 13,
+      "skjolHrein": 11,
+      "skyrsluAr": 2026,
+      "skyrslutala": 28,
+      "man": 7,
+      "nafnrek": 0,
+      "base": 146
+     },
+     {
+      "fid": 197,
+      "nafn": "Center Hótel - Grandi",
+      "heimilisfang": "Seljavegur 2, 101 Reykjavík",
+      "nr": 5,
+      "ithj": true,
+      "taeki": 25,
+      "skjol": 17,
+      "skjolHrein": 16,
+      "skyrsluAr": 2026,
+      "skyrslutala": 25,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 146
+     },
+     {
+      "fid": 198,
+      "nafn": "Center Hótel - Skjaldbreið",
+      "heimilisfang": "Laugavegur 16, 101 Reykjavík",
+      "nr": 6,
+      "ithj": true,
+      "taeki": 3,
+      "skjol": 9,
+      "skjolHrein": 9,
+      "skyrsluAr": 2026,
+      "skyrslutala": 3,
+      "man": 7,
+      "nafnrek": 0,
+      "base": 146
+     },
+     {
+      "fid": 199,
+      "nafn": "Center Hótel - Þingholt",
+      "heimilisfang": "Þingholtsstræti 3-5, 101 Reykjavík",
+      "nr": 7,
+      "ithj": true,
+      "taeki": 24,
+      "skjol": 16,
+      "skjolHrein": 11,
+      "skyrsluAr": 2026,
+      "skyrslutala": 24,
+      "man": 8,
+      "nafnrek": 0,
+      "base": 146
+     },
+     {
+      "fid": 200,
+      "nafn": "Center Hótel - Þingholt Apartments",
+      "heimilisfang": "Þingholtsstræti 2-4, 101 Reykjavík",
+      "nr": 8,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 4,
+      "skjolHrein": 3,
+      "skyrsluAr": 2025,
+      "skyrslutala": 5,
+      "man": 12,
+      "nafnrek": 0,
+      "base": 146
+     },
+     {
+      "fid": 201,
+      "nafn": "Center Hótel - Laugavegur",
+      "heimilisfang": "Laugavegur 95-99, 101 Reykjavík",
+      "nr": 9,
+      "ithj": true,
+      "taeki": 19,
+      "skjol": 13,
+      "skjolHrein": 9,
+      "skyrsluAr": 2026,
+      "skyrslutala": 19,
+      "man": 8,
+      "nafnrek": 0,
+      "base": 146
+     },
+     {
+      "fid": 1627,
+      "nafn": "Center Hótel - Þverholt 14",
+      "heimilisfang": "Þverholt 14, 105 Reykjavík",
+      "nr": 11,
+      "ithj": false,
+      "taeki": 0,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 146
+     },
+     {
+      "fid": 1750,
+      "nafn": "Center Hótel - Hlaðvarpinn",
+      "heimilisfang": "Aðalstræti 4, 101 Reykjavík",
+      "nr": 10,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 0,
+      "skjolHrein": 0,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 146
+     }
+    ],
+    "taeki": 240
+   }
+  ],
+  "Eignarekstur": [
+   {
+    "baseId": 193,
+    "nafn": "Húsfélag Álftamýri 48",
+    "kt": "4704867839",
+    "stadir": [
+     {
+      "fid": 168,
+      "nafn": "Húsfélag Álftamýri 48",
+      "heimilisfang": "Álftamýri 48, 104 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 14,
+      "skjol": 5,
+      "skjolHrein": 4,
+      "skyrsluAr": 2026,
+      "skyrslutala": 14,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 193
+     }
+    ],
+    "taeki": 14
+   },
+   {
+    "baseId": 216,
+    "nafn": "Eignarekstur ehf.",
+    "kt": "4712151470",
+    "stadir": [
+     {
+      "fid": 830,
+      "nafn": "Eignarekstur ehf.",
+      "heimilisfang": "Heiðarási 22, 110 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 7,
+      "skjolHrein": 7,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 216
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 231,
+    "nafn": "Húsfélagið Furugrund 73",
+    "kt": "4804867309",
+    "stadir": [
+     {
+      "fid": 143,
+      "nafn": "Húsfélagið Furugrund 73",
+      "heimilisfang": "Furugrund 73, 200 Kópavogur",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 10,
+      "skjol": 12,
+      "skjolHrein": 8,
+      "skyrsluAr": 2026,
+      "skyrslutala": 10,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 231
+     }
+    ],
+    "taeki": 10
+   },
+   {
+    "baseId": 273,
+    "nafn": "Húsfélagið Leifsgata 10",
+    "kt": "5004861399",
+    "stadir": [
+     {
+      "fid": 586,
+      "nafn": "Húsfélagið Leifsgata 10",
+      "heimilisfang": "Leifsgötu 10, 101 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 273
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 298,
+    "nafn": "Húsfélagið Árskógar 6-8",
+    "kt": "5102932079",
+    "stadir": [
+     {
+      "fid": 856,
+      "nafn": "Húsfélagið Árskógar 6-8",
+      "heimilisfang": "Árskógar 6-8, 109 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 25,
+      "skjol": 7,
+      "skjolHrein": 7,
+      "skyrsluAr": 2026,
+      "skyrslutala": 25,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 298
+     }
+    ],
+    "taeki": 25
+   },
+   {
+    "baseId": 314,
+    "nafn": "Mörðufell",
+    "kt": "5110876279",
+    "stadir": [
+     {
+      "fid": 719,
+      "nafn": "Mörðufell",
+      "heimilisfang": "Mörðufell 15,, 111 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 314
+     }
+    ],
+    "taeki": 4
+   },
+   {
+    "baseId": 327,
+    "nafn": "Húsfélagið Stigahlíð 10",
+    "kt": "5203911859",
+    "stadir": [
+     {
+      "fid": 424,
+      "nafn": "Húsfélagið Stigahlíð 10",
+      "heimilisfang": "Stigahlíð 10, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 9,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": 2025,
+      "skyrslutala": 9,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 327
+     }
+    ],
+    "taeki": 9
+   },
+   {
+    "baseId": 345,
+    "nafn": "Húsfélagið Árskógar 1-3",
+    "kt": "5208190290",
+    "stadir": [
+     {
+      "fid": 855,
+      "nafn": "Húsfélagið Árskógar 1-3",
+      "heimilisfang": "Árskógar 1-3, 109 Reykjavík",
+      "nr": 1,
+      "ithj": false,
+      "taeki": 0,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 345
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 353,
+    "nafn": "Gnoðavogur",
+    "kt": "5211810449",
+    "stadir": [
+     {
+      "fid": 237,
+      "nafn": "Gnoðavogur",
+      "heimilisfang": "Gnoðavogur 24, 104 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 8,
+      "skjolHrein": 8,
+      "skyrsluAr": 2026,
+      "skyrslutala": 7,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 353
+     }
+    ],
+    "taeki": 7
+   },
+   {
+    "baseId": 824,
+    "nafn": "Berjavellir 6",
+    "kt": "7003043530",
+    "stadir": [
+     {
+      "fid": 489,
+      "nafn": "Berjavellir 6",
+      "heimilisfang": "Berjavellir 6, 221 Hafnarfjörður",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 10,
+      "skjol": 7,
+      "skjolHrein": 6,
+      "skyrsluAr": 2025,
+      "skyrslutala": 10,
+      "man": null,
+      "nafnrek": 0,
+      "base": 824
+     }
+    ],
+    "taeki": 10
+   }
+  ],
+  "Vélsmiðja Orms og Víglundar": [
+   {
+    "baseId": 240,
+    "nafn": "Stálsmiðjan Framtak Vélsmiðja Orms og Víglundar",
+    "kt": "4809982789",
+    "stadir": [
+     {
+      "fid": 165,
+      "nafn": "Vélsmiðja Orms og Víglundar - Slippurinn RVK",
+      "heimilisfang": "Vesturhrauni 1, 220 Hafnarfjörður",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 24,
+      "skjol": 7,
+      "skjolHrein": 6,
+      "skyrsluAr": 2025,
+      "skyrslutala": 24,
+      "man": 5,
+      "nafnrek": 0,
+      "base": 240
+     },
+     {
+      "fid": 288,
+      "nafn": "Vélsmiðja Orms og Víglundar - Skútuhraun",
+      "heimilisfang": "Skútuhraun 9 220 Hafnarfirði",
+      "nr": 2,
+      "ithj": true,
+      "taeki": 6,
+      "skjol": 4,
+      "skjolHrein": 3,
+      "skyrsluAr": 2026,
+      "skyrslutala": 6,
+      "man": 2,
+      "nafnrek": 6,
+      "base": 240
+     },
+     {
+      "fid": 1629,
+      "nafn": "Vélsmiðja Orms og Víglundar - Kaplahraun",
+      "heimilisfang": "Kaplahraun 14-16, 220 Hafnarfjörður",
+      "nr": 3,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 6,
+      "skjolHrein": 6,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 240
+     }
+    ],
+    "taeki": 30
+   }
+  ],
+  "Vélrás": [
+   {
+    "baseId": 265,
+    "nafn": "Vélrás",
+    "kt": "4912091270",
+    "stadir": [
+     {
+      "fid": 470,
+      "nafn": "VR-5 ehf.",
+      "heimilisfang": "Klettagörðum 12, 104 Reykjavík",
+      "nr": 2,
+      "ithj": true,
+      "taeki": 13,
+      "skjol": 6,
+      "skjolHrein": 6,
+      "skyrsluAr": 2026,
+      "skyrslutala": 13,
+      "man": null,
+      "nafnrek": 0,
+      "base": 265
+     },
+     {
+      "fid": 609,
+      "nafn": "Vélrás - Álhella",
+      "heimilisfang": "Álhella 4-8, 221 Hafnarfjörður",
+      "nr": 4,
+      "ithj": true,
+      "taeki": 9,
+      "skjol": 10,
+      "skjolHrein": 8,
+      "skyrsluAr": 2026,
+      "skyrslutala": 9,
+      "man": 8,
+      "nafnrek": 0,
+      "base": 265
+     },
+     {
+      "fid": 1740,
+      "nafn": "Vélrás - Gullhella",
+      "heimilisfang": "Gullhella 4, 221 Hafnarfjörður",
+      "nr": null,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 0,
+      "skjolHrein": 0,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 265
+     },
+     {
+      "fid": 1741,
+      "nafn": "Vélrás - Sléttuhraun",
+      "heimilisfang": "Sléttuhraun 19-21, 220 Hafnarfjörður",
+      "nr": null,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 1,
+      "skjolHrein": 1,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 265
+     },
+     {
+      "fid": 1742,
+      "nafn": "Vélrás - Klettagarðar",
+      "heimilisfang": "Klettagarðar 12, 104 Reykjavík",
+      "nr": null,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 1,
+      "skjolHrein": 1,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 265
+     }
+    ],
+    "taeki": 22
+   }
+  ],
+  "Heimaleiga": [
+   {
+    "baseId": 293,
+    "nafn": "Heimaleiga ehf",
+    "kt": "5101170690",
+    "stadir": [
+     {
+      "fid": 269,
+      "nafn": "Heimaleiga - Höfuðstöðvar",
+      "heimilisfang": "Grensásvegur 14, 108 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 6,
+      "skjolHrein": 5,
+      "skyrsluAr": 2025,
+      "skyrslutala": 5,
+      "man": null,
+      "nafnrek": 0,
+      "base": 293
+     },
+     {
+      "fid": 869,
+      "nafn": "Heimaleiga - Máni Apartments",
+      "heimilisfang": "Laugavegur 18, 101 Reykjavík (3.–6. hæð)",
+      "nr": 2,
+      "ithj": true,
+      "taeki": 61,
+      "skjol": 3,
+      "skjolHrein": 2,
+      "skyrsluAr": 2025,
+      "skyrslutala": 54,
+      "man": 7,
+      "nafnrek": 0,
+      "base": 293
+     },
+     {
+      "fid": 1483,
+      "nafn": "Heimaleiga - Blue Mountain Apartments",
+      "heimilisfang": "Urðarhvarf 2, 203 Kópavogur",
+      "nr": 3,
+      "ithj": true,
+      "taeki": 42,
+      "skjol": 7,
+      "skjolHrein": 6,
+      "skyrsluAr": 2026,
+      "skyrslutala": 42,
+      "man": 8,
+      "nafnrek": 0,
+      "base": 293
+     },
+     {
+      "fid": 1484,
+      "nafn": "Heimaleiga - Ice Apartments",
+      "heimilisfang": "Laugavegur 1, 101 Reykjavík",
+      "nr": 4,
+      "ithj": true,
+      "taeki": 8,
+      "skjol": 3,
+      "skjolHrein": 2,
+      "skyrsluAr": 2025,
+      "skyrslutala": 8,
+      "man": null,
+      "nafnrek": 0,
+      "base": 293
+     },
+     {
+      "fid": 1485,
+      "nafn": "Heimaleiga - Freyjugata 16",
+      "heimilisfang": "Freyjugata 16, 101 Reykjavík",
+      "nr": 5,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": 2026,
+      "skyrslutala": 5,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 293
+     },
+     {
+      "fid": 1486,
+      "nafn": "Heimaleiga - Midtown Hotel",
+      "heimilisfang": "Laugavegur 18, 101 Reykjavík (1.–2. hæð)",
+      "nr": 6,
+      "ithj": true,
+      "taeki": 61,
+      "skjol": 1,
+      "skjolHrein": 1,
+      "skyrsluAr": 2025,
+      "skyrslutala": 61,
+      "man": 10,
+      "nafnrek": 0,
+      "base": 293
+     },
+     {
+      "fid": 1487,
+      "nafn": "Heimaleiga - Bríetartún 9-11",
+      "heimilisfang": "Bríetartún 9 og 11, 105 Reykjavík",
+      "nr": 7,
+      "ithj": true,
+      "taeki": 8,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": 2025,
+      "skyrslutala": 8,
+      "man": null,
+      "nafnrek": 0,
+      "base": 293
+     },
+     {
+      "fid": 1488,
+      "nafn": "Heimaleiga - Iceland Comfort Apartments",
+      "heimilisfang": "Hamraborg 7, 200 Kópavogur",
+      "nr": 8,
+      "ithj": true,
+      "taeki": 15,
+      "skjol": 5,
+      "skjolHrein": 4,
+      "skyrsluAr": 2025,
+      "skyrslutala": 15,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 293
+     },
+     {
+      "fid": 1621,
+      "nafn": "Heimaleiga - Dalbrekka 4-6",
+      "heimilisfang": "Dalbrekka 4-6, 200 Kópavogur",
+      "nr": 9,
+      "ithj": true,
+      "taeki": 48,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": 2026,
+      "skyrslutala": 48,
+      "man": 8,
+      "nafnrek": 0,
+      "base": 293
+     },
+     {
+      "fid": 1645,
+      "nafn": "Heimaleiga - Dalbrekka 4-6 (bílskúr)",
+      "heimilisfang": "Dalbrekka 4-6, 200 Kópavogur (bílskúr)",
+      "nr": 11,
+      "ithj": true,
+      "taeki": 16,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": 2026,
+      "skyrslutala": 16,
+      "man": 7,
+      "nafnrek": 0,
+      "base": 293
+     }
+    ],
+    "taeki": 269
+   },
+   {
+    "baseId": 303,
+    "nafn": "SAB ehf.",
+    "kt": "5104962489",
+    "stadir": [],
+    "taeki": 0
+   },
+   {
+    "baseId": 308,
+    "nafn": "G14 ehf",
+    "kt": "5108090170",
+    "stadir": [
+     {
+      "fid": 204,
+      "nafn": "Heimaleiga - G14 ehf",
+      "heimilisfang": "Grensásvegur 14, 108 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 14,
+      "skjolHrein": 13,
+      "skyrsluAr": 2024,
+      "skyrslutala": 7,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 308
+     }
+    ],
+    "taeki": 7
+   },
+   {
+    "baseId": 394,
+    "nafn": "Bríetartún 9-11",
+    "kt": "5401190660",
+    "stadir": [
+     {
+      "fid": 443,
+      "nafn": "Heimaleiga - Bríetartún 9-11 (húsfélag)",
+      "heimilisfang": "Bríetartún 9-11, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 48,
+      "skjol": 10,
+      "skjolHrein": 8,
+      "skyrsluAr": 2025,
+      "skyrslutala": 48,
+      "man": 12,
+      "nafnrek": 0,
+      "base": 394
+     }
+    ],
+    "taeki": 48
+   },
+   {
+    "baseId": 676,
+    "nafn": "S&H Invest ehf. (Heimaleiga - Laugavegur 46)",
+    "kt": "6411150100",
+    "stadir": [
+     {
+      "fid": 305,
+      "nafn": "Heimaleiga - Laugavegur 46",
+      "heimilisfang": "Laugavegur 46, 101 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 6,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": 2026,
+      "skyrslutala": 6,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 676
+     }
+    ],
+    "taeki": 6
+   },
+   {
+    "baseId": 681,
+    "nafn": "EA Law Practice ehf.",
+    "kt": "6502220400",
+    "stadir": [
+     {
+      "fid": 857,
+      "nafn": "Heimaleiga - EA Law Practice",
+      "heimilisfang": "Skipholt 50D, 105 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 0,
+      "skjolHrein": 0,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 681
+     }
+    ],
+    "taeki": 0
+   },
+   {
+    "baseId": 769,
+    "nafn": "Mannheimar ehf",
+    "kt": "6801696409",
+    "stadir": [
+     {
+      "fid": 626,
+      "nafn": "Heimaleiga - Mannheimar",
+      "heimilisfang": "Grettisgata 62, 101 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 8,
+      "skjol": 3,
+      "skjolHrein": 2,
+      "skyrsluAr": 2026,
+      "skyrslutala": 8,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 769
+     }
+    ],
+    "taeki": 8
+   },
+   {
+    "baseId": 784,
+    "nafn": "Aegina ehf.",
+    "kt": "6810130830",
+    "stadir": [
+     {
+      "fid": 1622,
+      "nafn": "Heimaleiga - Icelandic Apartments",
+      "heimilisfang": "Urðarhvarf 4, 203 Kópavogur",
+      "nr": 10,
+      "ithj": true,
+      "taeki": 40,
+      "skjol": 6,
+      "skjolHrein": 4,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 784
+     }
+    ],
+    "taeki": 40
+   },
+   {
+    "baseId": 866,
+    "nafn": "S30 ehf. (Heimaleiga - Ármúli 13A)",
+    "kt": "7110962059",
+    "stadir": [
+     {
+      "fid": 243,
+      "nafn": "Heimaleiga - S30 Apartments",
+      "heimilisfang": "Ármúli 13A, 108 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 65,
+      "skjol": 3,
+      "skjolHrein": 2,
+      "skyrsluAr": 2026,
+      "skyrslutala": 65,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 866
+     }
+    ],
+    "taeki": 65
+   }
+  ],
+  "Fjöleignir": [
+   {
+    "baseId": 376,
+    "nafn": "Tjarnarból",
+    "kt": "5308740369",
+    "stadir": [
+     {
+      "fid": 744,
+      "nafn": "Tjarnarból",
+      "heimilisfang": "Tjarnarból 12, 107 Seltjarnarnes",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 10,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": 2024,
+      "skyrslutala": 10,
+      "man": null,
+      "nafnrek": 0,
+      "base": 376
+     }
+    ],
+    "taeki": 10
+   },
+   {
+    "baseId": 860,
+    "nafn": "Galtalind 13-15,húsfélag",
+    "kt": "6305160640",
+    "stadir": [
+     {
+      "fid": 684,
+      "nafn": "Galtalind 13-15,húsfélag",
+      "heimilisfang": "Galtalind 13-15, 201 Kópavogur",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 5,
+      "skjolHrein": 4,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 860
+     }
+    ],
+    "taeki": 4
+   }
+  ],
+  "Steypustöðin": [
+   {
+    "baseId": 379,
+    "nafn": "Steypustöðin Vatnskarðsnámur",
+    "kt": "5310932409",
+    "stadir": [
+     {
+      "fid": 414,
+      "nafn": "Steypustöðin - Vatnskarðsnámur",
+      "heimilisfang": "Álfhellu 1, 221 Hafnarfjörður",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 10,
+      "skjol": 7,
+      "skjolHrein": 4,
+      "skyrsluAr": 2025,
+      "skyrslutala": 10,
+      "man": 9,
+      "nafnrek": 0,
+      "base": 379
+     }
+    ],
+    "taeki": 10
+   },
+   {
+    "baseId": 720,
+    "nafn": "Steypustöðin",
+    "kt": "6607070420",
+    "stadir": [
+     {
+      "fid": 285,
+      "nafn": "Steypustöðin - Malarhöfða",
+      "heimilisfang": "Malarhöfða 38 110 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 6,
+      "skjol": 12,
+      "skjolHrein": 12,
+      "skyrsluAr": 2026,
+      "skyrslutala": 6,
+      "man": null,
+      "nafnrek": 0,
+      "base": 720
+     },
+     {
+      "fid": 608,
+      "nafn": "Steypustöðin - Hringhellu",
+      "heimilisfang": "Hringhellu, 221 Hafnarfjörður",
+      "nr": 2,
+      "ithj": true,
+      "taeki": 22,
+      "skjol": 7,
+      "skjolHrein": 7,
+      "skyrsluAr": 2026,
+      "skyrslutala": 22,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 720
+     },
+     {
+      "fid": 620,
+      "nafn": "Steypustöðin - Þorlákshöfn",
+      "heimilisfang": "Þorlákshöfn, 815 Þorlákshöfn",
+      "nr": 3,
+      "ithj": true,
+      "taeki": 8,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": 2025,
+      "skyrslutala": 8,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 720
+     },
+     {
+      "fid": 622,
+      "nafn": "Steypustöðin - Helguvík (Berghólabraut 9)",
+      "heimilisfang": "Berghólabraut 9, 230 Reykjanesbær",
+      "nr": 4,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": 2024,
+      "skyrslutala": 5,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 720
+     },
+     {
+      "fid": 623,
+      "nafn": "Steypustöðin - Borgarnesi",
+      "heimilisfang": "Engjaási 2, 310 Borgarnes",
+      "nr": 5,
+      "ithj": true,
+      "taeki": 36,
+      "skjol": 3,
+      "skjolHrein": 3,
+      "skyrsluAr": 2024,
+      "skyrslutala": 36,
+      "man": 11,
+      "nafnrek": 0,
+      "base": 720
+     },
+     {
+      "fid": 1610,
+      "nafn": "Steypustöðin - Íshellu",
+      "heimilisfang": "Íshella, 221 Hafnarfjörður",
+      "nr": 7,
+      "ithj": true,
+      "taeki": 29,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": 2025,
+      "skyrslutala": 29,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 720
+     },
+     {
+      "fid": 1615,
+      "nafn": "Steypustöðin - Selfossi (Hrísmýri 8)",
+      "heimilisfang": "Hrísmýri 8, 800 Selfoss",
+      "nr": 8,
+      "ithj": true,
+      "taeki": 12,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": 2025,
+      "skyrslutala": 12,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 720
+     },
+     {
+      "fid": 1727,
+      "nafn": "Steypustöðin - Hólabrú, Hvalfjörður",
+      "heimilisfang": "Hólabrú, 301 Akranes",
+      "nr": null,
+      "ithj": true,
+      "taeki": 0,
+      "skjol": 2,
+      "skjolHrein": 1,
+      "skyrsluAr": null,
+      "skyrslutala": null,
+      "man": null,
+      "nafnrek": 0,
+      "base": 720
+     }
+    ],
+    "taeki": 118
+   }
+  ],
+  "Aðalskoðun": [
+   {
+    "baseId": 412,
+    "nafn": "Aðalskoðun",
+    "kt": "5409942269",
+    "stadir": [
+     {
+      "fid": 261,
+      "nafn": "Aðalskoðun - Grjótháls",
+      "heimilisfang": "Grjóthálsi 10, 110 Reykjavík",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 7,
+      "skjol": 6,
+      "skjolHrein": 6,
+      "skyrsluAr": 2026,
+      "skyrslutala": 7,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 412
+     },
+     {
+      "fid": 611,
+      "nafn": "Aðalskoðun - Skeifan",
+      "heimilisfang": "Skeifan 5, 108 Reykjavík",
+      "nr": 3,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 3,
+      "skjolHrein": 3,
+      "skyrsluAr": 2025,
+      "skyrslutala": 5,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 412
+     },
+     {
+      "fid": 612,
+      "nafn": "Aðalskoðun - Skemmuvegur",
+      "heimilisfang": "Skemmuvegur 6, 200 Kópavogur",
+      "nr": 4,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 6,
+      "skjolHrein": 6,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 2,
+      "nafnrek": 0,
+      "base": 412
+     },
+     {
+      "fid": 1411,
+      "nafn": "Aðalskoðun - Hjallahraun",
+      "heimilisfang": "Hjallahraun 4, 220 Hafnarfjörður",
+      "nr": 5,
+      "ithj": true,
+      "taeki": 6,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": 2025,
+      "skyrslutala": 6,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 412
+     }
+    ],
+    "taeki": 22
+   }
+  ],
+  "Endurvinnslan": [
+   {
+    "baseId": 582,
+    "nafn": "Endurvinnslan",
+    "kt": "6107891299",
+    "stadir": [
+     {
+      "fid": 604,
+      "nafn": "Endurvinnslan - Dalvegur",
+      "heimilisfang": "Dalvegur, 200 Kópavogi",
+      "nr": 2,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 4,
+      "skjolHrein": 4,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 582
+     },
+     {
+      "fid": 605,
+      "nafn": "Endurvinnslan - Knarrarvogur",
+      "heimilisfang": "Knarrarvogur 4, 104 Reykjavík",
+      "nr": 3,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 11,
+      "skjolHrein": 10,
+      "skyrsluAr": 2026,
+      "skyrslutala": 5,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 582
+     },
+     {
+      "fid": 606,
+      "nafn": "Endurvinnslan - Skútuhraun",
+      "heimilisfang": "Skútuhraun, 220 Hafnarfjörður",
+      "nr": 4,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 4,
+      "skjolHrein": 4,
+      "skyrsluAr": 2026,
+      "skyrslutala": 5,
+      "man": 1,
+      "nafnrek": 0,
+      "base": 582
+     },
+     {
+      "fid": 619,
+      "nafn": "Endurvinnslan - Austurhraun",
+      "heimilisfang": "Austurhraun 3, 210 Garðabær",
+      "nr": 5,
+      "ithj": true,
+      "taeki": 8,
+      "skjol": 9,
+      "skjolHrein": 7,
+      "skyrsluAr": 2026,
+      "skyrslutala": 8,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 582
+     },
+     {
+      "fid": 1618,
+      "nafn": "Endurvinnslan - Köllunarklettsvegur",
+      "heimilisfang": "Köllunarklettsvegur, 104 Reykjavík",
+      "nr": 6,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 3,
+      "skjolHrein": 3,
+      "skyrsluAr": 2025,
+      "skyrslutala": 5,
+      "man": 12,
+      "nafnrek": 0,
+      "base": 582
+     }
+    ],
+    "taeki": 27
+   }
+  ],
+  "Pizzan": [
+   {
+    "baseId": 786,
+    "nafn": "Pizzan ehf",
+    "kt": "6810161200",
+    "stadir": [
+     {
+      "fid": 317,
+      "nafn": "Pizzan - Fjarðargata",
+      "heimilisfang": "Fjarðargötu 11 220 Hafnarfirði",
+      "nr": 1,
+      "ithj": true,
+      "taeki": 3,
+      "skjol": 8,
+      "skjolHrein": 8,
+      "skyrsluAr": 2026,
+      "skyrslutala": 3,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 786
+     },
+     {
+      "fid": 613,
+      "nafn": "Pizzan - Háholt",
+      "heimilisfang": "Háholt, 270 Mosfellsbær",
+      "nr": 2,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 2,
+      "skjolHrein": 2,
+      "skyrsluAr": 2024,
+      "skyrslutala": 4,
+      "man": 6,
+      "nafnrek": 0,
+      "base": 786
+     },
+     {
+      "fid": 614,
+      "nafn": "Pizzan - Strandgata",
+      "heimilisfang": "Strandgötu 75, 220 Hafnarfjörður",
+      "nr": 3,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 8,
+      "skjolHrein": 8,
+      "skyrsluAr": 2025,
+      "skyrslutala": 5,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 786
+     },
+     {
+      "fid": 615,
+      "nafn": "Pizzan - Hringbraut",
+      "heimilisfang": "Hringbraut 119, 101 Reykjavík",
+      "nr": 4,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 3,
+      "skjolHrein": 3,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 786
+     },
+     {
+      "fid": 616,
+      "nafn": "Pizzan - Lóuhólar",
+      "heimilisfang": "Lóuhólar 2-6, 111 Reykjavík",
+      "nr": 5,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 3,
+      "skjolHrein": 3,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 786
+     },
+     {
+      "fid": 617,
+      "nafn": "Pizzan - Núpalind",
+      "heimilisfang": "Núpalind 1, 200 Kópavogi",
+      "nr": 6,
+      "ithj": true,
+      "taeki": 2,
+      "skjol": 3,
+      "skjolHrein": 3,
+      "skyrsluAr": 2026,
+      "skyrslutala": 2,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 786
+     },
+     {
+      "fid": 618,
+      "nafn": "Pizzan - Fellsmúli",
+      "heimilisfang": "Fellsmúla 24, 108 Reykjavík",
+      "nr": 7,
+      "ithj": true,
+      "taeki": 4,
+      "skjol": 3,
+      "skjolHrein": 3,
+      "skyrsluAr": 2026,
+      "skyrslutala": 4,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 786
+     },
+     {
+      "fid": 621,
+      "nafn": "Pizzan - Njarðvík",
+      "heimilisfang": "Hólagata 20, 260 Njarðvík",
+      "nr": 8,
+      "ithj": true,
+      "taeki": 8,
+      "skjol": 5,
+      "skjolHrein": 5,
+      "skyrsluAr": 2026,
+      "skyrslutala": 8,
+      "man": 8,
+      "nafnrek": 0,
+      "base": 786
+     },
+     {
+      "fid": 1607,
+      "nafn": "Pizzan - Hverafold",
+      "heimilisfang": "Hverafold 1-3, 112 Reykjavík",
+      "nr": 9,
+      "ithj": true,
+      "taeki": 3,
+      "skjol": 4,
+      "skjolHrein": 4,
+      "skyrsluAr": 2026,
+      "skyrslutala": 3,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 786
+     },
+     {
+      "fid": 1608,
+      "nafn": "Pizzan - Litlatún",
+      "heimilisfang": "Litlatún 3, 210 Garðabær",
+      "nr": 10,
+      "ithj": true,
+      "taeki": 3,
+      "skjol": 4,
+      "skjolHrein": 4,
+      "skyrsluAr": 2026,
+      "skyrslutala": 3,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 786
+     },
+     {
+      "fid": 1609,
+      "nafn": "Pizzan - Nýbílavegur",
+      "heimilisfang": "Nýbílavegur 6-8, 200 Kópavogur",
+      "nr": 11,
+      "ithj": true,
+      "taeki": 5,
+      "skjol": 1,
+      "skjolHrein": 1,
+      "skyrsluAr": 2026,
+      "skyrslutala": 5,
+      "man": 3,
+      "nafnrek": 0,
+      "base": 786
+     }
+    ],
+    "taeki": 45
+   }
+  ]
+ },
+ "heild": {
+  "fjolstada": 14,
+  "taeki": 898
+ }
+}
