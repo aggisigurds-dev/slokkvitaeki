@@ -46,6 +46,39 @@
      Lykillinn er sá SAMI og hurðin skráir. Bætist mælikvarði við hurðina birtist
      hann sjálfkrafa hér neðst sem „nýr" — betra en að hverfa þegjandi. */
   const MAELAR = [
+    /* ÞEKJA & STAÐFESTING — efst (2026-09-02, ósk Agnars). Allar mældar lifandi úr
+       gögnunum við hvern inngang og dagsettar í sögunni — ekki plat, sjá „mælt kl." */
+    { g: 'Slökkvitæki — þekja', k: 'skyrslur_slt_2026', t: 'Úttektarskýrslur 2026 (pör með skjal)',
+      s: 'document_pairs · úttekt · skýrsluskjal fundið og tengt fyrirtæki. Hærra er betra.' },
+    { g: 'Slökkvitæki — þekja', k: 'reikn_slt_2026', t: 'Úttektar-reikningar 2026 (pör með skjal)',
+      s: 'Sömu pör, reikningsskjal fundið. Má vera lægra en skýrslur (par án reiknings).' },
+    { g: 'Slökkvitæki — þekja', k: 'skyrslur_slt_2025', t: 'Úttektarskýrslur 2025 (pör með skjal)',
+      s: 'Slökkvitæki. Hærra er betra.' },
+    { g: 'Slökkvitæki — þekja', k: 'reikn_slt_2025', t: 'Úttektar-reikningar 2025 (pör með skjal)',
+      s: 'Slökkvitæki. Hærra er betra.' },
+    { g: 'Brunakerfi — þekja', k: 'skyrslur_bk_2026', t: 'Brunakerfi skýrslur 2026 (pör með skjal)',
+      s: 'document_pairs · brunakerfi · með skýrslu.' },
+    { g: 'Brunakerfi — þekja', k: 'reikn_bk_2026', t: 'Brunakerfi reikningar 2026 (pör með skjal)',
+      s: 'Sömu pör, reikningur fundinn.' },
+    { g: 'Brunakerfi — þekja', k: 'skyrslur_bk_2025', t: 'Brunakerfi skýrslur 2025 (pör með skjal)',
+      s: 'Brunakerfi.' },
+    { g: 'Brunakerfi — þekja', k: 'reikn_bk_2025', t: 'Brunakerfi reikningar 2025 (pör með skjal)',
+      s: 'Brunakerfi.' },
+    { g: 'Trio staðfest', k: 'trio_stadfest_2026', t: 'Trio staðfest 2026',
+      s: 'Fyrirtæki með úttektarskýrslu 2026 þar sem prófíll (tækjafjöldi) = skýrslan.' },
+    { g: 'Trio staðfest', k: 'trio_stadfest_2025', t: 'Trio staðfest 2025',
+      s: 'Prófíll = skýrsla, skýrsluár 2025.' },
+    { g: 'Samningar & nýliðun', k: 'samningsskjol_i_kerfinu', t: 'Þjónustusamningsskjöl í kerfinu',
+      s: 'customer_documents · samningur · án tvítaka. Stofnstærð.' },
+    { g: 'Samningar & nýliðun', k: 'nyir_samningar_2026', t: 'Nýir þjónustusamningar 2026',
+      s: 'thjonustusamningar undirritaðir (signed_at) í ár — nýir í viðskipti.' },
+    { g: 'Samningar & nýliðun', k: 'i_thjonustu_an_samnings_skjals', t: 'Í þjónustu án samnings',
+      s: 'Staðir í þjónustu án samningsskjals OG án samningsfærslu. Lægra er betra.' },
+    { g: 'Endurheimtir', k: 'endurheimt_fra_2023', t: 'Endurheimtir — síðast skoðun 2023',
+      s: 'Höfðu skýrslu 2023, slepptu 2024, komnir aftur ’25/’26.' },
+    { g: 'Endurheimtir', k: 'endurheimt_fra_2024', t: 'Endurheimtir — síðast skoðun 2024',
+      s: 'Höfðu skýrslu 2024, slepptu 2025, komnir aftur ’26.' },
+
     /* SKRÁIN — kunnaskra */
     { g: 'Skráin', k: 'i_thjonustu_an_taekja', t: 'Í þjónustu, engin tæki skráð',
       s: 'Ósýnileg í Ársskoðun. Orsökin á bak við margar hinna talnanna.' },

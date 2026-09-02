@@ -199,8 +199,14 @@ export default async (req) => {
         const stemmirNu = (p != null && s != null) ? (p === s) : null;
 
         if (!f) {
+          // ÖLL raða-form í sama bulk-insert VERÐA að hafa sömu lykla, annars
+          // hafnar PostgREST öllu kallinu (PGRST102 „All object keys must match").
+          // 'nytt' fékk ekki fyrri_*-lyklana sem 'breyting' hefur → keyrslan féll
+          // um leið og hún fann bæði nýtt fyrirtæki OG breytingu. Pöddum með null.
           nyjar.push({ fyrirtaeki_id: c.id, profill: p, skyrsla: s, reikningur: r,
-            stemmir: stemmirNu, tegund: 'nytt',
+            stemmir: stemmirNu,
+            fyrri_profill: null, fyrri_skyrsla: null, fyrri_reikningur: null, fyrri_dags: null,
+            tegund: 'nytt',
             vidvorun: `Fyrsta mæling: prófíll ${p ?? '—'} · skýrsla ${s ?? '—'} · reikningur ${r ?? '—'}` });
           return;
         }
