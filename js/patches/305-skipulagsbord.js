@@ -589,7 +589,10 @@
 
   if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(mount);
   // Skipt um starfsmann → annad bord (#350).
-  if (window.BordStarfsmadur && BordStarfsmadur.onChange) BordStarfsmadur.onChange(mount);
+  // 2026-09-02: BIÐRÖÐ, ekki beint kall. #350 hleðst Á EFTIR þessari skrá, svo
+  // `window.BordStarfsmadur` er EKKI til hér — beint `onChange` hvarf þegjandi
+  // og borðið skipti aldrei um starfsmann. Biðröðin er óháð hleðsluröð.
+  (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(mount);
 
   window.Skipulagsbord = { mount, addFromRow };
 

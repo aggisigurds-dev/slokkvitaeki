@@ -1193,8 +1193,10 @@ var Lanstaeki = {
 <!-- 349 tvöfaldar botnstikuna í Boss-appinu OG hækkar botnfyllinguna
      sem heldur efninu frá henni. Verður að hlaðast eftir 315/316/330/338. -->
 <script defer src="/js/patches/349-boss-nav-stor.js?v=20260901bn1"></script>
-<!-- Bord per starfsmann: veljari vid hlidina a Vidskiptavinavefjum. Verdur ad
-     hlada A EFTIR 303/305 svo BordStarfsmadur se til thegar their teikna. -->
+<!-- Bord per starfsmann: veljari vid hlidina a Vidskiptavinavefjum.
+     ATH hledsluroðin skiptir EKKI mali: 231/303/305 hladast a undan thessari
+     skra og skra sig i window.__bordStarfsmadurAskrift, sem #350 tæmir. Beint
+     BordStarfsmadur.onChange hefdi horfid thegjandi og bordin aldrei skipt. -->
 <script defer src="/js/patches/350-bord-starfsmenn.js?v=20260902st1"></script>
     <script src="/js/tekjur.js?v=20260710grad"></script>
 <script src="/js/v9.js?v=20260817rodun"></script>

@@ -57,7 +57,7 @@
     const n = String(nafn || '').trim();
     if (!n) return;
     try { localStorage.setItem(LS_KEY, n); } catch (_) {}
-    listeners.forEach(fn => { try { fn(n); } catch (_) {} });
+    tilkynna(n);
     render();
   }
 
@@ -78,6 +78,12 @@
   }
 
   function onChange(fn) { if (typeof fn === 'function') listeners.push(fn); }
+  // Skrár sem hlaðast Á UNDAN þessari geta ekki kallað á `onChange` — þær ýta
+  // í `window.__bordStarfsmadurAskrift` í staðinn. Bæði eru kölluð hér.
+  function tilkynna(n) {
+    const bid = window.__bordStarfsmadurAskrift || [];
+    listeners.concat(bid).forEach(fn => { try { fn(n); } catch (_) {} });
+  }
 
   // Lykilslóð borðs fyrir NÚVERANDI starfsmann. Borðin tvö kalla á þetta svo
   // slóðin sé skilgreind á EINUM stað.
@@ -107,7 +113,7 @@
     const ok = await AppSettings.save(patch);
     if (ok) {
       console.log('[bord-starfsmenn] gömul borð flutt á Agnar');
-      listeners.forEach(fn => { try { fn(get()); } catch (_) {} });
+      tilkynna(get());
     }
   }
 

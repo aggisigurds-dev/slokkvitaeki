@@ -3715,7 +3715,8 @@
 
   // 2026-09-02: veljarinn i #350 setur starfsmanninn her lika, svo eitt val
   // radi dagskra, skipulagsbordi OG verklistanum.
-  if (window.BordStarfsmadur && BordStarfsmadur.onChange) BordStarfsmadur.onChange(function (nafn) {
+  // Biðröð — #350 hleðst á eftir þessari skrá (sjá 303/305).
+  (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(function (nafn) {
     try {
       if (!knownWorkerFilter(nafn)) return;   // onefnt bord siar ekki listann
       state.fWorker = canonFilter(nafn);
