@@ -683,8 +683,10 @@
     if (!cb) return;
     var all = showAllTiles();
     cb.checked = all;
-    var mainS = state.services.filter(function(p){ return !isAdraVara(p); });
-    var mainP = state.products.filter(function(p){ return !isAdraVara(p); });
+    // Sama regla og tileList — annars segir talan „x af y" ranga sögu.
+    var iAdal = function(p){ return !isAdraVara(p) || p.forsida === true; };
+    var mainS = state.services.filter(iAdal);
+    var mainP = state.products.filter(iAdal);
     var tot = mainS.length + mainP.length;
     var syn = tileList(state.services).length + tileList(state.products).length;
     var c = document.getElementById('pos-showall-count');
@@ -692,15 +694,27 @@
     var w = document.getElementById('pos-showall-wrap');
     if (w) w.style.color = all ? '#475569' : '#b45309';
   }
+  // 2026-09-02: FORSIDA VINNUR. Aður síaði þetta á `sja_adrar_vorur` Á UNDAN
+  // forsíðu-prófinu, og þá duttu allar 18 vörurnar sem bera BÁÐA fánana út áður
+  // en prófið keyrði. `any` varð false og rúðan féll aftur í „sýna allt sem er
+  // ekki merkt aðrar" — sem var afgangurinn (Brunaslöngustútur, byrjunargjald,
+  // notaðir kútar) á meðan slökkvitækin sjálf hurfu niður í „Sjá aðrar vörur".
+  //
+  // Rótin er að tvö óháð hök í `vorur.js` segja andstætt og ekkert stöðvaði það.
+  // Vara sem er PINNUÐ á forsíðuna má aldrei vera falin af hinum fánanum — þá
+  // getur mótsögnin ekki lengur falið neitt, hvernig sem gögnin líta út.
   function tileList(arr){
-    var rows = arr.filter(function(p){ return !isAdraVara(p); });
+    var rows = arr.filter(function(p){ return !isAdraVara(p) || p.forsida === true; });
     var any = !showAllTiles() && rows.some(function(p){return p.forsida === true;});
     if (any) rows = rows.filter(function(p){return p.forsida === true;});
     else rows = rows.slice();
     return sortTiles(rows);
   }
+  // Forsíðu-vörur birtast EKKI líka hér — annars stæði sama varan á tveimur
+  // stöðum í sömu sýn.
   function adraList(){
-    return sortTiles(state.products.concat(state.services).filter(isAdraVara));
+    return sortTiles(state.products.concat(state.services)
+      .filter(function(p){ return isAdraVara(p) && p.forsida !== true; }));
   }
   function buildAdraHTML(){
     var rows = adraList();
