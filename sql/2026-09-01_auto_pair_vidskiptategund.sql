@@ -1,3 +1,18 @@
+-- ============================================================================
+-- ✅ KEYRT 02.09.2026. Skorðan er komin í `auto_pair_customer_document()` og
+-- 56 rangar tengingar voru losaðar (15 þeirra merktar `klarad`). Vörðurinn
+-- tools/audit-para-tegund.cjs stendur nú í GRUNNLINA = 0.
+--
+-- Tvennt sem breyttist frá áætluninni hér að neðan:
+--   · `v_service_type` er EKKI til í fallinu — það var ágiðskað og skjalið sagði
+--     það. Rétta leiðin var ný breyta `v_teg` borin saman við `p.service_type`.
+--   · Biðstöðu-greinin (INSERT) greip HVAÐA par sem er, óháð service_type. Þær
+--     tvær greinar þurftu ÓLÍKA skörðu, ekki sömu.
+--
+-- Sannreynt: búðar-reikningur parast EKKI, úttektar-reikningur parast (par 1504,
+-- bæði prófuninni eytt á eftir). Afrit: backup_20260902_document_pairs (1.443 raðir).
+-- ============================================================================
+
 -- Pörun má ekki tengja reikning af rangri þjónustutegund
 -- ============================================================================
 -- Fundið 01.09.2026: Agnar sá „Úttekt 2026 · reikn. R-108161 ✓" á NR5 ehf.

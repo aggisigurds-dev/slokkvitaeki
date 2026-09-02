@@ -18,7 +18,7 @@
  *
  * ÞESSI VÖRÐUR fellur rautt ef talan fer YFIR grunnlínuna. Hann lagar ekkert —
  * lagfæringin er `sql/2026-09-01_auto_pair_vidskiptategund.sql` (trigger) og
- * `tools/laga-para-tegund.cjs` (þau 53 sem þegar eru til). Báðar bíða Agnars.
+ * `tools/laga-para-tegund.cjs`. Báðar keyrðar 02.09.2026 — sjá GRUNNLINA hér að neðan.
  *
  *   node tools/audit-para-tegund.cjs
  */
@@ -27,7 +27,11 @@ const path = require('path');
 
 // Mælt 01.09.2026: 51 uttekt←bud · 1 uttekt←brunakerfi · 1 brunakerfi←uttekt.
 // Lækkar þegar lagfæringin er keyrð; þá á að lækka þessa tölu með.
-const GRUNNLINA = 53;
+// 02.09.2026: LAGFÆRT — grunnlínan fór úr 53 í 0. Triggerinn `auto_pair_customer_document()`
+// hafnar nú búðarsölu og röngum þjónustuflokki, og 56 rangar tengingar voru losaðar
+// (afrit: backup_20260902_document_pairs). Þær má EKKI koma aftur — hver ný er villa,
+// ekki rek. Sannreynt: búðar-reikningur parast ekki, úttektar-reikningur parast.
+const GRUNNLINA = 0;
 
 const rot = path.join(__dirname, '..');
 const cfg = fs.readFileSync(path.join(rot, 'js/config.js'), 'utf8');
