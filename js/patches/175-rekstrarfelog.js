@@ -370,6 +370,19 @@
       P+'.rf-stat--od{background:linear-gradient(180deg,#8a6414,#5e430c 55%,#241804);border:1px solid #241804}',
       P+'.rf-stack{display:flex;flex-direction:column;align-items:center;gap:2px}',
       P+'.rf-stack>span{min-height:17px;display:flex;align-items:center;justify-content:center}',
+      // ── Tæki-dálkurinn: TVÆR FASTAR AKREINAR (2026-09-02, ósk Agnars) ────────
+      // Áður voru pillan og SLT/BSL/RS-yfirlitið eitt MIÐJAÐ par, svo pillan
+      // færðist eftir því hvort yfirlitið væri til staðar: mælt á 71 röðum stóð
+      // hún í ÁTTA mismunandi x-stöðum, 39px flakk (með yfirliti −17…−10, án
+      // þess +19/+22) — engin bein lína niður. Og parið þurfti ~120px í 85px
+      // frumu, svo það flæddi ~34px inn í næsta dálk („troða sér inn á
+      // tækjayfirlitið"). Fastar akreinar leysa hvort tveggja: pillan á alltaf
+      // sömu 48px og yfirlitið sínar 66px, svo hvorugt gengur á hitt.
+      P+'.rf-tbl td.rf-cnt-cell{padding-left:4px;padding-right:4px}',
+      P+'.rf-tbl td.rf-cnt-cell .rf-stack>span{display:grid;grid-template-columns:48px minmax(0,66px);column-gap:8px;justify-content:center;align-items:center}',
+      // Pillan fyllir akreinina — jafnbreiðar pillur gefa beina línu á BÁÐUM
+      // köntum, óháð því hvort talan er 8 eða 65.
+      P+'.rf-tbl td.rf-cnt-cell .rf-cnt{width:100%}',
       P+'.rf-tbl td.rf-nextcell .rf-stack{align-items:flex-start}',
       P+'.rf-cnt{height:17px;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:700;color:#fff;border-radius:6px;padding:0 8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3);white-space:nowrap}',
       P+'.rf-cnt em{font-style:normal;font-size:9px}',
@@ -396,6 +409,9 @@
         P+'.rf-tbl tbody tr:nth-child(even) td.rf-cellname{background:#fbfcfe}'+
         P+'.rf-tbl tbody tr:hover td.rf-cellname{background:#f3f6fc}'+
         P+'.rf-tbl tbody td{padding:0 8px!important}'+
+        // Taflan skreppur í 760px hér, svo föstu akreinarnar (48+8+66) komast
+        // ekki fyrir — efnis-stærð í staðinn. Beina línan á við Skjá/Töflu.
+        P+'.rf-tbl td.rf-cnt-cell .rf-stack>span{grid-template-columns:auto auto;column-gap:6px}'+
         P+'.rf-bname{font-size:16px}'+
         P+'.rf-baddr{font-size:14px}'+
         P+'.rf-bldrow{min-height:44px}'+
@@ -1932,7 +1948,7 @@
         // en það á heima í yfirferð — ekki sem varúðarþríhyrningur á borði sem
         // er notað daglega. Talan sjálf er áfram sýnileg: 🧯 er skýrslutalan og
         // SLT/BSL/RS er tækjaskráin, svo munurinn sést hvort eð er.
-        trio = '<span class="rf-eqtrio" style="display:inline-flex;align-items:center;margin-left:7px;vertical-align:middle"' +
+        trio = '<span class="rf-eqtrio" style="display:inline-flex;align-items:center;justify-content:center;vertical-align:middle"' +
                ' title="Úr tækjaskránni — sama talning og Ársskoðun">' +
                  Arsskodun.eqTrioHtml(grp, 'screen') +
                '</span>';
@@ -2163,9 +2179,9 @@
           // með „…" í stað þess að vefjast. Summa = 1210px (sbr. min-width).
           '<colgroup>'+
             '<col style="width:236px">'+   // Bygging (nafn + kt)
-            '<col style="width:210px">'+   // Heimilisfang
-            '<col style="width:150px">'+   // Nóta
-            '<col style="width:76px">'+    // Tæki
+            '<col style="width:184px">'+   // Heimilisfang
+            '<col style="width:122px">'+   // Nóta
+            '<col style="width:130px">'+   // Tæki (48px pilla + 8 + 66px yfirlit + 8 fylling)
             '<col style="width:200px">'+  // Skoðanir · Skjöl (ártölu-strimill 2023–2026)
             '<col style="width:46px">'+    // 🚗
             '<col style="width:152px">'+   // Næsta skoðun
