@@ -185,6 +185,11 @@
     mo.observe(v, { childList: true, subtree: true });
     setja();
     flytjaGomul();
+    // Tilkynna nafnið EINU SINNI við ræsingu. 231 býr til state sitt áður en
+    // þessi skrá hleðst og giskar þá á „Allir án Agnars" sé ekkert munað á
+    // vélinni — veljarinn sýndi þá „Agnar" en listinn annað. Þetta réttir
+    // hann af um leið og hann er til.
+    setTimeout(() => tilkynna(get()), 300);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ræsa, { once: true });
   else ræsa();
