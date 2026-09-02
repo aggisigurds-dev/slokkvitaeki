@@ -45,6 +45,15 @@
 
   function hver() {
     try {
+      // 2026-09-02: starfsmaðurinn sem er valinn á Þjónustuborðinu (#350) er
+      // höfundurinn. `Verkbord.currentUser` var aldrei til, svo ÖLL skilaboð
+      // báru „Slökkvitæki" — og lesið-merkingin (spjall_lesid er lyklað á
+      // höfund) var þá sameiginleg fyrir alla, svo glóðin slokknaði fyrir
+      // alla um leið og einn las.
+      let n = null;
+      try { n = localStorage.getItem('vb_starfsmadur'); } catch (_) {}
+      if (n && n.trim()) return n.trim();
+      if (window.BordStarfsmadur && typeof BordStarfsmadur.get === 'function') return BordStarfsmadur.get();
       if (window.Verkbord && typeof Verkbord.currentUser === 'function') return Verkbord.currentUser();
       const p = window.UserAuth && UserAuth.getProfile && UserAuth.getProfile();
       if (p && p.nafn) return p.nafn;
@@ -245,14 +254,33 @@
     stilar();
     const w = document.getElementById('_spjall-wrap');
     if (!w) return;
+    // 2026-09-02: VARÐVEITA ÞAÐ SEM ER VERIÐ AÐ SKRIFA. Þetta fall er kallað
+    // við hverja lifandi uppfærslu (SpjallRefresh úr db.js) — líka bergmálið af
+    // eigin sendingu ~5 sek. síðar — og `innerHTML =` þurrkaði þá textareað
+    // með hálfskrifuðum texta. Mælt í gegnum viðmótið: texti sem beið sendingar
+    // hvarf. Frá notandanum séð: „spjallið vistast ekki".
+    const gamalt = w.querySelector('#_spjall-txt');
+    const drog = gamalt ? gamalt.value : '';
+    const hafdiFokus = !!gamalt && document.activeElement === gamalt;
+    const caret = gamalt ? [gamalt.selectionStart, gamalt.selectionEnd] : null;
+    const logG = document.getElementById('_spjall-log');
+    const varNedst = !logG || (logG.scrollHeight - logG.scrollTop - logG.clientHeight) < 40;
     w.innerHTML = '<div style="background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.07);overflow:hidden">'
       + hausHtml()
       + (_opid ? skilabodHtml() + innslattHtml() : '')
       + '</div>';
     tengja(w);
     hlidarNeon();
+    const nytt = w.querySelector('#_spjall-txt');
+    if (nytt && drog) {
+      nytt.value = drog;
+      nytt.style.height = 'auto'; nytt.style.height = Math.min(nytt.scrollHeight, 120) + 'px';
+      if (hafdiFokus) { try { nytt.focus(); if (caret) nytt.setSelectionRange(caret[0], caret[1]); } catch (_) {} }
+    }
     const log = document.getElementById('_spjall-log');
-    if (log) log.scrollTop = log.scrollHeight;
+    // Skruna aðeins neðst ef notandinn var þegar neðst — annars hoppar
+    // sagan undan honum þegar hann er að lesa eldri skilaboð.
+    if (log && varNedst) log.scrollTop = log.scrollHeight;
   }
 
   function tengja(w) {
