@@ -447,20 +447,39 @@
     const nyttHolf = e.target.closest('[data-sb-nytt]');
     if (nyttHolf) {
       e.stopPropagation();
+      // 2026-09-02: skrifað BEINT Í KASSANN — Agnar: „hafðu að maður getur
+      // skrifað beint inn í minniskassann". `prompt()` var fljótlegt en það er
+      // stýrikerfis-gluggi ofan á síðunni: hann tekur fókusinn, sýnir enga
+      // umgjörð og maður sér ekki borðið á meðan.
       const i = Number(nyttHolf.getAttribute('data-sb-nytt'));
-      const txt = window.prompt('Minnispunktur:');
-      if (!txt || !txt.trim()) return;
-      const t = txt.trim();
-      // Fyrsta línan verður fyrirsögn spjaldsins, afgangurinn meginmál — sama
-      // og spjöldin úr Verkborðinu líta út.
-      const skil = t.indexOf(String.fromCharCode(10));
-      state.cards.push({
-        id: newId(), slot: i, verkbord_id: null,
-        name: skil > 0 ? t.slice(0, skil).trim() : t,
-        title: skil > 0 ? t.slice(skil + 1).trim() : '',
-        type: null, minnispunktur: true
+      if (nyttHolf.querySelector('textarea')) return;   // þegar í ritun
+      nyttHolf.innerHTML =
+        '<textarea class="sb-minnis" placeholder="Minnispunktur… (Enter vistar, Esc hættir við)" ' +
+        'style="width:100%;height:100%;min-height:64px;box-sizing:border-box;border:0;outline:none;' +
+        'background:transparent;resize:none;font:inherit;font-size:12.5px;line-height:1.4;' +
+        'color:#1f2430;padding:8px"></textarea>';
+      const ta = nyttHolf.querySelector('textarea');
+      ta.focus();
+      const vista = () => {
+        const t = (ta.value || '').trim();
+        if (!t) { render(); return; }
+        const skil = t.indexOf(String.fromCharCode(10));
+        state.cards.push({
+          id: newId(), slot: i, verkbord_id: null,
+          name: skil > 0 ? t.slice(0, skil).trim() : t,
+          title: skil > 0 ? t.slice(skil + 1).trim() : '',
+          type: null, minnispunktur: true
+        });
+        persist();
+      };
+      ta.addEventListener('keydown', ev => {
+        ev.stopPropagation();
+        // Enter vistar, Shift+Enter gefur nýja línu (fyrsta línan er fyrirsögn).
+        if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); ta.blur(); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); ta.value = ''; ta.blur(); }
       });
-      persist();
+      ta.addEventListener('click', ev => ev.stopPropagation());
+      ta.addEventListener('blur', vista, { once: true });
       return;
     }
 

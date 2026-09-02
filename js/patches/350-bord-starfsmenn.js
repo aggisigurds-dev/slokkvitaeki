@@ -122,6 +122,7 @@
   function render() {
     const slot = document.getElementById(SLOT);
     if (!slot) return;
+    if (typeof maRender === 'function' && !maRender()) return;
     const nu = get(), nofn = list();
     const val = nofn.map(n =>
       `<option value="${esc(n)}"${n === nu ? ' selected' : ''}>${esc(n)}</option>`).join('');
@@ -153,14 +154,28 @@
 
   // Verkborðið teiknar sig upp á nýtt við hverja síu; reiturinn þarf því að
   // komast inn aftur án þess að #231 viti af okkur.
+  // 2026-09-02: MÁ EKKI TEIKNA UPP Á NÝTT ÞEGAR REITURINN ER ÞEGAR TIL.
+  // Fyrsta útgáfan kallaði `render()` í hverri MutationObserver-hringferð, og
+  // Verkborðið breytir DOM-inu stöðugt (teljarar, merki, listinn). Þá var
+  // `<select>`-inn endurbyggður undir fingrinum og fellilistinn LOKAÐIST
+  // samstundis — Agnar: „það virkar ekki að reyna skipta um nafn, lokast strax
+  // aftur." Reiturinn er því aðeins settur inn ef hann VANTAR; efnið hans
+  // uppfærist í `set()` og þegar nafnalistinn breytist.
   function setja() {
+    if (document.getElementById(SLOT)) return;
     const hopur = document.querySelector('#view-verkbord [data-act="gattadmin"]');
     if (!hopur || !hopur.parentElement) return;
-    if (document.getElementById(SLOT)) { render(); return; }
     const d = document.createElement('div');
     d.id = SLOT;
     hopur.parentElement.insertBefore(d, hopur);
     render();
+  }
+
+  // Aukavörn: jafnvel þótt eitthvað kalli á render() á meðan listinn er opinn
+  // sleppum við því. Fókus á <select> þýðir að notandinn er að velja.
+  function maRender() {
+    const sel = document.getElementById('vb-starfsmadur');
+    return !(sel && document.activeElement === sel);
   }
 
   const mo = new MutationObserver(() => { setja(); });
