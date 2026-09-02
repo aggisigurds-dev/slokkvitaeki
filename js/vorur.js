@@ -398,18 +398,13 @@
     document.getElementById('f-verd-inc').addEventListener('input', recomputeExVat);
     document.getElementById('f-vsk').addEventListener('input', recomputeExVat);
 
-    // 2026-09-02: hökin tvö útiloka hvort annað. Áður voru þau óháð og sögðu
-    // andstætt — „Sýna á forsíðu" OG „Sýna undir aðrar vörur" bæði hokuð.
-    // Allar 18 forsíðu-vörurnar báru báða fánana og hurfu því af Söluborðinu
-    // þangad til `pos.js` var lagfært til að láta forsíðuna vinna. Hvort tveggja
-    // þarf: kóðinn má ekki fela, og formið má ekki búa mótsögnina til aftur.
-    (function(){
-      var fFors = document.getElementById('f-forsida');
-      var fAdrar = document.getElementById('f-sja-adrar');
-      if (!fFors || !fAdrar) return;
-      fFors.addEventListener('change', function(){ if (fFors.checked) fAdrar.checked = false; });
-      fAdrar.addEventListener('change', function(){ if (fAdrar.checked) fFors.checked = false; });
-    })();
+    // 2026-09-02: hökin tvö eru SJÁLFSTÆÐ og má haka við bæði — Agnar:
+    // „væri fínt ef þær geta verið hakaðar við á báðum stöðum". `forsida`
+    // stýrir aðalrúðunni á Söluborðinu, `sja_adrar_vorur` listann að neðan.
+    // Þær voru um tíma látnar útiloka hvor aðra — það var mislestur á vandanum:
+    // böggurinn var ekki að bæði væru hökuð heldur að `pos.js` síði á hinum
+    // fánanum á undan forsíðunni og faldi því allar 18 forsíðu-vörurnar.
+
     // Auto-toggle birgdir when flokkur switches to/from Þjónusta,
     // + sýna nýr-flokkur reitinn þegar „➕ Nýr flokkur…" er valið.
     document.getElementById('f-flokkur').addEventListener('change',function(e){

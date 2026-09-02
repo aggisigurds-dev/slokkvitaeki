@@ -700,9 +700,9 @@
   // ekki merkt aðrar" — sem var afgangurinn (Brunaslöngustútur, byrjunargjald,
   // notaðir kútar) á meðan slökkvitækin sjálf hurfu niður í „Sjá aðrar vörur".
   //
-  // Rótin er að tvö óháð hök í `vorur.js` segja andstætt og ekkert stöðvaði það.
-  // Vara sem er PINNUÐ á forsíðuna má aldrei vera falin af hinum fánanum — þá
-  // getur mótsögnin ekki lengur falið neitt, hvernig sem gögnin líta út.
+  // Fánarnir tveir eru EKKI mótsögn heldur tvær sjálfstæðar staðsetningar, og
+  // vara má bera báða (Agnar 02.09.2026). Vara sem er pinnuð á forsíðuna má
+  // því aldrei vera falin af hinum fánanum — hún birtist á báðum stöðum.
   function tileList(arr){
     var rows = arr.filter(function(p){ return !isAdraVara(p) || p.forsida === true; });
     var any = !showAllTiles() && rows.some(function(p){return p.forsida === true;});
@@ -710,11 +710,13 @@
     else rows = rows.slice();
     return sortTiles(rows);
   }
-  // Forsíðu-vörur birtast EKKI líka hér — annars stæði sama varan á tveimur
-  // stöðum í sömu sýn.
+  // Agnar 02.09.2026: „væri fínt ef þær geta verið hakaðar við á báðum
+  // stöðum.. bæði á forsíðu og undir aðrar vörur." Fánarnir tveir eru því
+  // EKKI mótsögn heldur tvær sjálfstæðar staðsetningar: `forsida` ræður
+  // aðalrúðunni, `sja_adrar_vorur` ræður listanum að neðan, og vara má standa
+  // á báðum stöðum. Forsíðu-vörur eru því EKKI teknar út hér.
   function adraList(){
-    return sortTiles(state.products.concat(state.services)
-      .filter(function(p){ return isAdraVara(p) && p.forsida !== true; }));
+    return sortTiles(state.products.concat(state.services).filter(isAdraVara));
   }
   function buildAdraHTML(){
     var rows = adraList();
