@@ -459,8 +459,13 @@
         'background:transparent;resize:none;font:inherit;font-size:12.5px;line-height:1.4;' +
         'color:#1f2430;padding:8px"></textarea>';
       const ta = nyttHolf.querySelector('textarea');
-      ta.focus();
+      // Fókus tvisvar: strax, og aftur eftir að smell-atburðurinn er búinn.
+      // Mælt 02.09.2026: eitthvað annað í smell-keðjunni tók fókusinn af
+      // textareanu jafnóðum (activeElement var BODY), og þá gerði blur() ekkert.
+      ta.focus(); setTimeout(() => { try { ta.focus(); } catch (_) {} }, 0);
+      let vistad = false;   // vista aðeins EINU SINNI þótt Enter og blur komi bæði
       const vista = () => {
+        if (vistad) return; vistad = true;
         const t = (ta.value || '').trim();
         if (!t) { render(); return; }
         const skil = t.indexOf(String.fromCharCode(10));
@@ -474,12 +479,16 @@
       };
       ta.addEventListener('keydown', ev => {
         ev.stopPropagation();
-        // Enter vistar, Shift+Enter gefur nýja línu (fyrsta línan er fyrirsögn).
-        if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); ta.blur(); }
-        else if (ev.key === 'Escape') { ev.preventDefault(); ta.value = ''; ta.blur(); }
+        // Enter vistar BEINT — ekki gegnum blur(). blur() á element sem hefur
+        // ekki fókus gerir ekkert, og þá vistaðist aldrei neitt. Shift+Enter
+        // gefur nýja línu (fyrsta línan er fyrirsögn). Esc hættir við.
+        if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); vista(); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); ta.value = ''; vista(); }
       });
       ta.addEventListener('click', ev => ev.stopPropagation());
-      ta.addEventListener('blur', vista, { once: true });
+      ta.addEventListener('mousedown', ev => ev.stopPropagation());
+      // Smellur annars staðar vistar líka — varaleið, ekki aðalleið.
+      ta.addEventListener('blur', vista);
       return;
     }
 
