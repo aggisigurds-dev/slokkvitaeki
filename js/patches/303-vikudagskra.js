@@ -96,15 +96,39 @@
   }
 
   // ── gögn (samstillt gegnum AppSettings) ──────────────────────────────────
+  // 2026-09-02: DAGSKRÁIN ER PER STARFSMANN (#350). Slóðin er
+  // `vikudagskra.by_staff.<nafn>.jobs`; gamli `vikudagskra.jobs` stendur eftir
+  // sem afrit og er lesinn ef nýja greinin er tóm (flutningur í #350).
+  function lykill() {
+    return (window.BordStarfsmadur && BordStarfsmadur.bordLykill)
+      ? BordStarfsmadur.bordLykill('vikudagskra') + '.jobs'
+      : 'vikudagskra.jobs';
+  }
   function readJobs() {
-    const v = (window.AppSettings && AppSettings.path) ? AppSettings.path('vikudagskra.jobs') : null;
-    return Array.isArray(v) ? v : [];
+    if (!window.AppSettings || !AppSettings.path) return [];
+    const v = AppSettings.path(lykill());
+    if (Array.isArray(v)) return v;
+    // Fyrsta opnun þessa starfsmanns: engin grein til enn.
+    const nafn = (window.BordStarfsmadur && BordStarfsmadur.get) ? BordStarfsmadur.get() : null;
+    if (nafn === 'Agnar') { const g = AppSettings.path('vikudagskra.jobs'); if (Array.isArray(g)) return g; }
+    return [];
   }
   async function persist(next) {
     state.jobs = next;
     render();
     if (!window.AppSettings || !AppSettings.save) { toast('Stillingar ekki tilbúnar — dagskráin vistaðist ekki'); return; }
-    const ok = await AppSettings.save({ vikudagskra: { jobs: next } });
+    // ── 2026-09-02: BÍÐA EFTIR AÐ STILLINGAR HAFI HLAÐIST. Þetta er rótin á
+    // „dagskráin vistast stundum ekki". Listinn er skrifaður sem HEILT fylki;
+    // sé skrifað áður en `load()` skilar les `readJobs()` úr localStorage-
+    // skyndiminninu (eða tómu), og þá fer sú stutta staða á serverinn og étur
+    // það sem hin vélin hafði vistað. Ekkert sést — skrifin heppnast.
+    if (AppSettings.isLoaded && !AppSettings.isLoaded()) {
+      for (let i = 0; i < 40 && !AppSettings.isLoaded(); i++) await new Promise(r => setTimeout(r, 150));
+      if (!AppSettings.isLoaded()) { toast('Stillingar hlóðust ekki — dagskráin vistaðist ekki'); return; }
+    }
+    const nafn = (window.BordStarfsmadur && BordStarfsmadur.get) ? BordStarfsmadur.get() : 'Agnar';
+    const patch = { vikudagskra: { by_staff: { [nafn]: { jobs: next } } } };
+    const ok = await AppSettings.save(patch);
     if (!ok) toast('Náði ekki að vista dagskrána');
   }
 
@@ -494,6 +518,8 @@
 
   // Stillingar hlaðast eftir á (og breytast þegar annað tæki vistar) → endurteikna.
   if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(mount);
+  // Skipt um starfsmann → annad bord.
+  if (window.BordStarfsmadur && BordStarfsmadur.onChange) BordStarfsmadur.onChange(mount);
 
   window.Vikudagskra = { mount, render, open: openModal, removeJob: id => persist(state.jobs.filter(j => j && j.id !== id)) };
 

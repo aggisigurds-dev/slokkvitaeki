@@ -59,22 +59,43 @@
   let _pendingRemove = null; // card id to remove after calendar save
 
   // ── Storage ────────────────────────────────────────────────────────────────
+  // 2026-09-02: BORÐIÐ ER PER STARFSMANN (#350) — `skipulagsbord.by_staff.<nafn>`.
+  function nafnStarfsm() {
+    return (window.BordStarfsmadur && BordStarfsmadur.get) ? BordStarfsmadur.get() : 'Agnar';
+  }
   function readData() {
-    const v = window.AppSettings && AppSettings.path ? AppSettings.path('skipulagsbord') : null;
+    const P = k => (window.AppSettings && AppSettings.path) ? AppSettings.path(k) : null;
+    const v = P('skipulagsbord.by_staff.' + nafnStarfsm());
     if (v && Array.isArray(v.cards)) return v;
-    // fallback: also check old key name
-    const v2 = window.AppSettings && AppSettings.path ? AppSettings.path('skipulagsborg') : null;
-    if (v2 && Array.isArray(v2.cards)) return v2;
-    try {
-      const ls = JSON.parse(localStorage.getItem('bh_sb') || '{}');
-      return { cards: Array.isArray(ls.cards) ? ls.cards : [], goal: ls.goal || 5 };
-    } catch (_) { return { cards: [], goal: 5 }; }
+    // Fyrsta opnun þessa starfsmanns. Agnar erfir gamla sameiginlega borðið
+    // (flutt í #350); aðrir byrja auðir — annars sæju allir sömu spjöldin.
+    if (nafnStarfsm() === 'Agnar') {
+      const g = P('skipulagsbord');
+      if (g && Array.isArray(g.cards)) return g;
+      const g2 = P('skipulagsborg');
+      if (g2 && Array.isArray(g2.cards)) return g2;
+      try {
+        const ls = JSON.parse(localStorage.getItem('bh_sb') || '{}');
+        if (Array.isArray(ls.cards)) return { cards: ls.cards, goal: ls.goal || 5 };
+      } catch (_) {}
+    }
+    return { cards: [], goal: 5 };
   }
   async function persist() {
     const data = { cards: state.cards, goal: state.goal };
     render();
-    if (window.AppSettings && AppSettings.save) await AppSettings.save({ skipulagsbord: data });
-    try { localStorage.setItem('bh_sb', JSON.stringify(data)); } catch (_) {}
+    if (!window.AppSettings || !AppSettings.save) return;
+    // Sama vörn og í dagskránni (#303): spjöldin eru skrifuð sem HEILT fylki,
+    // svo skrif á undan `load()` skrifa skyndiminnis-stöðuna yfir það sem hin
+    // vélin vistaði. Bíða þar til stillingar hafa hlaðist.
+    if (AppSettings.isLoaded && !AppSettings.isLoaded()) {
+      for (let i = 0; i < 40 && !AppSettings.isLoaded(); i++) await new Promise(r => setTimeout(r, 150));
+      if (!AppSettings.isLoaded()) { if (window.toast) toast('Stillingar hlóðust ekki — borðið vistaðist ekki'); return; }
+    }
+    await AppSettings.save({ skipulagsbord: { by_staff: { [nafnStarfsm()]: data } } });
+    // localStorage-afritið er AÐEINS fyrir Agnar (gamla sameiginlega borðið);
+    // annars myndi afgreiðslutölvan skrifa sitt borð yfir afrit hans.
+    if (nafnStarfsm() === 'Agnar') { try { localStorage.setItem('bh_sb', JSON.stringify(data)); } catch (_) {} }
   }
   function newId() { return 'sb' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
   function firstFreeSlot() {
@@ -198,7 +219,11 @@
   function slotHTML(i) {
     const card = state.cards.find(c => c.slot === i);
     if (!card) {
-      return '<div class="sb-slot sb-empty" data-sb-slot="' + i + '" title="Tóm rúða">' +
+      // 2026-09-02: tóm rúða er nú SMELLANLEG — Agnar: „enable that we can push
+      // on the plus sign in the skipulagsborð and just put in some random text
+      // notes". Áður var hún aðeins sleppi-svæði fyrir drag.
+      return '<div class="sb-slot sb-empty" data-sb-slot="' + i + '" data-sb-nytt="' + i + '" ' +
+        'title="Smelltu til að skrifa minnispunkt">' +
         '<div style="height:100%;display:flex;align-items:center;justify-content:center;' +
           'color:#d3d6da;font-size:18px;font-weight:300;padding:16px 0;pointer-events:none">+</div>' +
         '</div>';
@@ -416,6 +441,29 @@
     const el = document.getElementById(SLOT_ID);
     if (!el || !el.contains(e.target)) return;
 
+    // Tóm rúða → frjáls minnispunktur. Spjaldið fær engan `verkbord_id`, svo
+    // það er hreinn texti sem hangir ekki á máli í þjónustubeiðnum. Vistast
+    // undir NÚVERANDI starfsmanni (#350) og samstillist við aðrar vélar.
+    const nyttHolf = e.target.closest('[data-sb-nytt]');
+    if (nyttHolf) {
+      e.stopPropagation();
+      const i = Number(nyttHolf.getAttribute('data-sb-nytt'));
+      const txt = window.prompt('Minnispunktur:');
+      if (!txt || !txt.trim()) return;
+      const t = txt.trim();
+      // Fyrsta línan verður fyrirsögn spjaldsins, afgangurinn meginmál — sama
+      // og spjöldin úr Verkborðinu líta út.
+      const skil = t.indexOf(String.fromCharCode(10));
+      state.cards.push({
+        id: newId(), slot: i, verkbord_id: null,
+        name: skil > 0 ? t.slice(0, skil).trim() : t,
+        title: skil > 0 ? t.slice(skil + 1).trim() : '',
+        type: null, minnispunktur: true
+      });
+      persist();
+      return;
+    }
+
     // Type dot picker
     const typeDot = e.target.closest('[data-sb-type-cid]');
     if (typeDot) {
@@ -540,6 +588,8 @@
   }
 
   if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(mount);
+  // Skipt um starfsmann → annad bord (#350).
+  if (window.BordStarfsmadur && BordStarfsmadur.onChange) BordStarfsmadur.onChange(mount);
 
   window.Skipulagsbord = { mount, addFromRow };
 

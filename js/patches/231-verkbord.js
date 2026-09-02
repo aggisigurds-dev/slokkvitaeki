@@ -412,7 +412,12 @@
     ['Hákon', 'Hákon'],
     ['Binni', 'Binni'],
     ['Anni', 'Anni'],
-    ['Bjarndís', 'Bjarndís']
+    ['Bjarndís', 'Bjarndís'],
+    // 2026-09-02: afgreiðslutölvan fær sitt eigið borð — Agnar: „create new
+    // name Afgreiðsla that we will keep in afgreiðsla computer for everybody
+    // to see." Það er staður, ekki manneskja, en það er sama hugtakið hér:
+    // hvers borð er þetta.
+    ['Afgreiðsla', 'Afgreiðsla']
   ];
   const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
   function canonWorker(v) {
@@ -708,7 +713,16 @@
         return TAGS[raw] ? [raw] : [];
       } catch (_) { return []; }
     })(),
-    fWorker: readStoredWorker(),
+    // 2026-09-02: veljarinn í #350 og þessi sía eru SAMA stillingin — hvort
+    // tveggja svarar spurningunni „hvers borð er þetta". Nafn þaðan trompar
+    // gamla WKEY-gildið svo maður þurfi ekki að stilla tvennt.
+    fWorker: (function () {
+      try {
+        const n = (window.BordStarfsmadur && BordStarfsmadur.get) ? BordStarfsmadur.get() : null;
+        if (n && typeof knownWorkerFilter === 'function' && knownWorkerFilter(n)) return canonFilter(n);
+      } catch (_) {}
+      return readStoredWorker();
+    })(),
     viewMode: (function () { try { return localStorage.getItem(VMKEY) || 'itarlegt'; } catch (_) { return 'itarlegt'; } })(),
     search: '',
     addType: 'annad',
@@ -1594,11 +1608,14 @@
     const b = document.getElementById('vb-hreinsa-siu');
     if (!b) return;
     b.addEventListener('click', function () {
-      state.fWorker = 'allir'; state.fTags = []; state.fFlokk = ''; state.fStar = false;
-      try {
-        localStorage.setItem(WKEY, 'allir');
-        localStorage.setItem(TGKEY, '[]');
-      } catch (_) {}
+      // 2026-09-02: STARFSMAÐURINN ER UNDANSKILINN hreinsuninni. Agnar: „the
+      // staff name will not change to allir, it should be default remember what
+      // staff name was last time used in that computer." Borðið tilheyrir
+      // þeirri tölvu sem situr við það — afgreiðslutölvan á að standa á
+      // „Afgreiðsla" eftir hreinsun eins og fyrir hana. Hinar þrjár síurnar
+      // hreinsast eins og áður.
+      state.fTags = []; state.fFlokk = ''; state.fStar = false;
+      try { localStorage.setItem(TGKEY, '[]'); } catch (_) {}
       renderControls(); renderList(); renderSel(); refreshBadge();
     });
   }
@@ -3695,6 +3712,17 @@
     renderControls(); renderList(); renderSel(); refreshBadge();
     return out;
   }
+
+  // 2026-09-02: veljarinn i #350 setur starfsmanninn her lika, svo eitt val
+  // radi dagskra, skipulagsbordi OG verklistanum.
+  if (window.BordStarfsmadur && BordStarfsmadur.onChange) BordStarfsmadur.onChange(function (nafn) {
+    try {
+      if (!knownWorkerFilter(nafn)) return;   // onefnt bord siar ekki listann
+      state.fWorker = canonFilter(nafn);
+      try { localStorage.setItem(WKEY, state.fWorker); } catch (_) {}
+      renderControls(); renderList(); renderSel(); refreshBadge();
+    } catch (_) {}
+  });
 
   window.Verkbord = {
     open: show, reload: load, importOld, applyActions,
