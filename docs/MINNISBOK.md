@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-03 12:37 · 344 virkar staðreyndir
+Sótt 2026-09-03 12:51 · 345 virkar staðreyndir
 
 ---
 
@@ -93,7 +93,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [sweep](#sweep) | 5 |
 | [vinnublod](#vinnublod) | 5 |
 | [payday](#payday) | 5 |
-| [deploy](#deploy) | 4 |
+| [brunaholf](#brunaholf) | 4 |
 
 ### skjol
 
@@ -731,6 +731,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Pull-hlið aðeins, push var sleppt.
   <br><sub>2026-08-07 · slokkvitaeki · kodi · chat</sub>
 
+### brunaholf
+
+- **PDF-skjol i brunaholf (03.09.2026, Agnar): skraarnafn er '<Verkstadur> - <Tegund> - <Manudur Ar>.pdf' t.d. 'Fjallabodin Thjorsardal - Efnislisti - Juli 2026.pdf' (bhPdfName + monthLabelFull i index.html; greidanda og kt SLEPPT; samsetta 2ja sidna skjalid heitir lika 'Efnislisti'). Nidurhal: vafrinn nefnir eftir slodinni i Supabase Storage og download-eigindid er hunsad milli lena -> pdf-store.js skilar download_url = public_url + '&download=<nafn>' (Content-Disposition, sannad med HEAD) og listinn Vistud PDF-skjol notar sama. Ekki breyta til baka i kt-nafn.**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **NLSH regla LEYST 03.09.2026 (Agnar: do what you think is best): maelt ur Adalskjalinu sjalfu (Downloads/Landsspitalinn - Adalskjal (1).xlsx, blad uppgjor Juli, dalkar G/H) - ADEINS 2.2 (168->168) og 1.2 (743->743) eru 1 staka = 1 heild; ALLT annad helmingad, lika 1.3 (1->0,5), 2.11 metrar (206->103) og 3.1 (470->235). full a 1.3 i hub kom med dashboard-flipanum 8e842a2 an rokstudnings; calibrada commit-id e232160 flaggadi adeins 1.2. Lagad e806d16: EIN VERK-tafla i nlsh-uppgjor.js (rate, target, full, metrar) sem nlsh-dashboard.js og nlsh-stada.js flytja inn. nlsh_manadarlok SAD med uppsofnudum lokatolum per verklid sept 2025 -> juli 2026 (165 radir, ur manadardalkum bladsins, stemmir vid Heildar lokanir: juli 8429/4670). Agust+ = Ajour thar til Agnar slaer inn (nefndi 9273 fyrir agust).**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **NLSH stafraen manadarlokaskyrsla (03.09.2026, brunaholf nlsh.html + /api/nlsh-stada): thrju log - (1) Ajour-tillaga: SQL nlsh_stada_manudir gefur nyjar Done-lokanir per manud/flokk (fyrsta Done-dags hvers serial), uppsafnad i JS = nakvaemlega sama og nlsh_stada per manud (sannad: jul 8266, agu 9232). (2) LOKATALA: tafla nlsh_manadarlok (month, verk_nr, lokatala numeric, RLS service_role) - talan sem Agnar SENDIR, aud = Ajour gildir, POST {month, lines} vistar/eydir. (3) Skyrslan reiknud eins og bladid: heilar = stakar/2 nema 2.2 og 1.2 (1=1), 2.11 og 3.1 METRAR; verd/heild m.vsk ur VERK i nlsh-uppgjor.js; Fjoldi ur nlsh-dashboard target. ATH MISRAEMI: nlsh-uppgjor/dashboard hafa full a 1.2+1.3 en ekki 2.2 - bladid (juli-xlsx) segir 2.2+1.2; skyrslan fylgir bladinu, aaetlunin i hub er obreytt - Agnar sker ur. UI: manadardalkar sept 2025->valinn (● = lokatolur vistadar), Stada-reitur fyrir valinn manud med lifandi endurreikningi, Vista/Ajour/Afrita.**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **NLSH manadarlok (02.09.2026): brunaholf /api/nlsh-stada?til=YYYY-MM skilar uppsafnadri Done-talningu per verklid (stakar) i lok manadar - reitur 'Stada i lok manadar' a nlsh.html med Afrita-takka. Agnar limir dalkinn i samningsbladid (Google Sheet) sem reiknar heildir/verd sjalft. Talan stemmir EKKI upp a stak vid bladid: ~510 skraningar halfkladar/ekki merktar Done (ekki_done i svarinu) - vitad og i lagi. SQL-fall nlsh_stada (service_role eingongu), VERK-kortlagning deild ur nlsh-uppgjor.js.**
+  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### deploy
 
 - **Rautt audit er EKKI staðreynd um main fyrr en vinnutréð er ferskt. 2026-09-01 var audit-attachment-forms rautt og virtist segja að gmail-send vörnina vantaði; hún var í main frá 68c7a66 (2026-08-27) — greinin var 32 commit á eftir. git fetch + git status -sb á að vera FYRSTA prófunin þegar audit er rautt, ekki sú síðasta. Sama gildir um A/B með git stash: það mælir bara greinina sem þú stendur á.**
@@ -803,25 +814,16 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Nota alltaf húslitina í inline-texta: #0f172a (aðal), #334155/#475569 (auka), #64748b (daufur), #94a3b8 (dauflegastur). Uppgötvað 7.8.2026 á Aksturslistanum (268) — INK var #111827 og sat eftir svartur á flippuðum dökkum kortum. Lagað í PR #609.
   <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
 
-### brunaholf
-
-- **NLSH regla LEYST 03.09.2026 (Agnar: do what you think is best): maelt ur Adalskjalinu sjalfu (Downloads/Landsspitalinn - Adalskjal (1).xlsx, blad uppgjor Juli, dalkar G/H) - ADEINS 2.2 (168->168) og 1.2 (743->743) eru 1 staka = 1 heild; ALLT annad helmingad, lika 1.3 (1->0,5), 2.11 metrar (206->103) og 3.1 (470->235). full a 1.3 i hub kom med dashboard-flipanum 8e842a2 an rokstudnings; calibrada commit-id e232160 flaggadi adeins 1.2. Lagad e806d16: EIN VERK-tafla i nlsh-uppgjor.js (rate, target, full, metrar) sem nlsh-dashboard.js og nlsh-stada.js flytja inn. nlsh_manadarlok SAD med uppsofnudum lokatolum per verklid sept 2025 -> juli 2026 (165 radir, ur manadardalkum bladsins, stemmir vid Heildar lokanir: juli 8429/4670). Agust+ = Ajour thar til Agnar slaer inn (nefndi 9273 fyrir agust).**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **NLSH stafraen manadarlokaskyrsla (03.09.2026, brunaholf nlsh.html + /api/nlsh-stada): thrju log - (1) Ajour-tillaga: SQL nlsh_stada_manudir gefur nyjar Done-lokanir per manud/flokk (fyrsta Done-dags hvers serial), uppsafnad i JS = nakvaemlega sama og nlsh_stada per manud (sannad: jul 8266, agu 9232). (2) LOKATALA: tafla nlsh_manadarlok (month, verk_nr, lokatala numeric, RLS service_role) - talan sem Agnar SENDIR, aud = Ajour gildir, POST {month, lines} vistar/eydir. (3) Skyrslan reiknud eins og bladid: heilar = stakar/2 nema 2.2 og 1.2 (1=1), 2.11 og 3.1 METRAR; verd/heild m.vsk ur VERK i nlsh-uppgjor.js; Fjoldi ur nlsh-dashboard target. ATH MISRAEMI: nlsh-uppgjor/dashboard hafa full a 1.2+1.3 en ekki 2.2 - bladid (juli-xlsx) segir 2.2+1.2; skyrslan fylgir bladinu, aaetlunin i hub er obreytt - Agnar sker ur. UI: manadardalkar sept 2025->valinn (● = lokatolur vistadar), Stada-reitur fyrir valinn manud med lifandi endurreikningi, Vista/Ajour/Afrita.**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **NLSH manadarlok (02.09.2026): brunaholf /api/nlsh-stada?til=YYYY-MM skilar uppsafnadri Done-talningu per verklid (stakar) i lok manadar - reitur 'Stada i lok manadar' a nlsh.html med Afrita-takka. Agnar limir dalkinn i samningsbladid (Google Sheet) sem reiknar heildir/verd sjalft. Talan stemmir EKKI upp a stak vid bladid: ~510 skraningar halfkladar/ekki merktar Done (ekki_done i svarinu) - vitad og i lagi. SQL-fall nlsh_stada (service_role eingongu), VERK-kortlagning deild ur nlsh-uppgjor.js.**
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-
 ### brunavarnir
 
+- **Álhella 7 er SEX aðskilin EI60-brunahólf — slökkvitækjakrafan (26A lágmark) reiknast á hvert hólf fyrir sig, ekki á hæðina í heild**
+  <br>Hólfin skv. brunavarnatexta Brunahönnunar slf (mál 16-179, uppf. 19.08.2026): 0101 verkstæði + milliloft 0106 ~340 m2 · 0102 geymsla 81 · 0103 verkstæði 79 · 0104 geymsla + milliloft 0107 ~85 · 0105 verkstæði + milliloft 0108 ~425 · 0109 inntaksrými 11. Hver leigjandi er á bak við læstan EI60-vegg o
+  <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
 - **Reyndarteikningin merkir sjálf sl.t.-punktana: 11 á 1. hæð — en 0102 og 0104 bera aðeins eitt tæki hvort og ná ekki 26A**
   <br>Talning af grunnmynd 1. hæðar: 0101=3 · 0102=1 · 0103=2 · 0104=1 · 0105=3 · 0109=1 (kolsýran). Geymsluloftin 0106/0107/0108 bera eitt hvert til viðbótar. Eitt 6 L léttvatn er 13A eða 21A — hvorugt nær 26A eitt og sér, svo 0102 og 0104 þurfa annað tæki.
   <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
 - **Við aðalrafmagnstöfluna í 0109 inntaksrými á að vera 5 kg KOLSÝRA, ekki léttvatn — brunahönnunin tilgreinir það sérstaklega**
   <br>Orðrétt úr greinargerðinni: „Slökkvitæki skv. ÍST EN 3 skulu vera skv. teikningum, t.d. 6 L léttvatn og 5 kg kolsýra við aðalrafmagnstöflu." Táknið rafm.inntak-Tafla á grunnmynd 1. hæðar er þessi punktur. Undirtöflurnar í hverju bili fá léttvatn.
-  <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
-- **Álhella 7 er SEX aðskilin EI60-brunahólf — slökkvitækjakrafan (26A lágmark) reiknast á hvert hólf fyrir sig, ekki á hæðina í heild**
-  <br>Hólfin skv. brunavarnatexta Brunahönnunar slf (mál 16-179, uppf. 19.08.2026): 0101 verkstæði + milliloft 0106 ~340 m2 · 0102 geymsla 81 · 0103 verkstæði 79 · 0104 geymsla + milliloft 0107 ~85 · 0105 verkstæði + milliloft 0108 ~425 · 0109 inntaksrými 11. Hver leigjandi er á bak við læstan EI60-vegg o
   <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
 
 ### ui
@@ -1197,10 +1199,10 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Dalvegur (jan 2026): 1 léttvatn + 2 duft 6-12kg + 1 slanga = 4. Knarrarvogur 4 (jan 2026): 3 léttvatn + 2 CO2 2kg + 4 CO2 5kg + 2 slöngur = 11. Skútuhraun (jan 2026): 1 léttvatn + 1 duft 6-12kg + 1 CO2 2kg + 3 slöngur = 6. Austurhraun 3 (mars 2026): 6 léttvatn + 1 CO2 5kg + 2 slöngur = 9. Köllunarkl
   <br><sub>2026-08-23 · slokkvitaeki · Cowork 21.08.2026 — lestur á 5 úttektarskýrslum · natalie</sub>
 
-### R-107758 (193.600 kr.) LEYST — það var Bríetartún, ekki Grensásvegur
+### Laugavegur 42 (Iðun Apartments) — húsfélagið greiðir
 
-- **Fjórir reikningar upp á nákvæmlega 193.600 kr. eru allir SAMA verkið: Bríetartún 9-11, desember 2025.**
-  <br>Línurnar eru staflíkar á öllum: 133 Yfirferð Léttvatn 42 stk á 2.700 · 123 Hleðsla Léttvatn 5 stk á 4.400 · 117 Slökkvitæki Léttvatn 6 ltr 1 stk með 25% afslætti · 186 O-hringur 5 · 200 Akstur 2 á 3.554 · 060 Skýrslugerð 1. Samtals 193.600 kr. Keðjan: R-107643 (19.12.25) → R-107757 → R-107758 (26.01
+- **Skýrslan er stíluð á Heimaleigu en reikningurinn á húsfélagið. Staðurinn liggur rétt.**
+  <br>Úttekt feb 2026: „Heimaleiga ehf. kt:510117-0690 vegna Laugavegur 42 101 Reykjavík (Iðun apartments)" — 9 léttvatn + 1 duft 6-12 kg = 10 tæki. Reikningur R-107860 (61.390 kr.) er á Húsfélagið Laugavegi 42, kt 611096-2599. Greiðandinn ræður: staðurinn tilheyrir húsfélaginu, Heimaleiga er rekstraraðil
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
 ### Heimaleiga — þrjár tómar raðir fjarlægðar
@@ -1209,10 +1211,10 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Allar þrjár báru engin tæki, engin skjöl, engar sölur og engar tengingar. Aegina er greiðandi Urðarhvarfs 4 og lifir sem customers_base 784 — hún þurfti ekki starfsstöð. SAB/U2 (Naustavör 18) var óvirk og gagnalaus. Ármúli 13 sameign var ágiskun — S30 er á Ármúla 13A og ekkert skjal nefnir sameign Á
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
-### Laugavegur 42 (Iðun Apartments) — húsfélagið greiðir
+### R-107758 (193.600 kr.) LEYST — það var Bríetartún, ekki Grensásvegur
 
-- **Skýrslan er stíluð á Heimaleigu en reikningurinn á húsfélagið. Staðurinn liggur rétt.**
-  <br>Úttekt feb 2026: „Heimaleiga ehf. kt:510117-0690 vegna Laugavegur 42 101 Reykjavík (Iðun apartments)" — 9 léttvatn + 1 duft 6-12 kg = 10 tæki. Reikningur R-107860 (61.390 kr.) er á Húsfélagið Laugavegi 42, kt 611096-2599. Greiðandinn ræður: staðurinn tilheyrir húsfélaginu, Heimaleiga er rekstraraðil
+- **Fjórir reikningar upp á nákvæmlega 193.600 kr. eru allir SAMA verkið: Bríetartún 9-11, desember 2025.**
+  <br>Línurnar eru staflíkar á öllum: 133 Yfirferð Léttvatn 42 stk á 2.700 · 123 Hleðsla Léttvatn 5 stk á 4.400 · 117 Slökkvitæki Léttvatn 6 ltr 1 stk með 25% afslætti · 186 O-hringur 5 · 200 Akstur 2 á 3.554 · 060 Skýrslugerð 1. Samtals 193.600 kr. Keðjan: R-107643 (19.12.25) → R-107757 → R-107758 (26.01
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
 ### Bríetartún 9-11 er TVÖ verk í sama húsi
@@ -1239,16 +1241,16 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Uppbygging: haus (nafn + kt + tengiliðir), talnaband með hárlínum (tæki/skýrslur/liðnar skoðanir), ein regluleg tafla per kennitölu með samtals-línu, athugasemdir sem merkt skrá (Á EFTIR/LEIÐRÉTT/ÓLEYST). Frumgerðir í Cowork-verkefninu „Design system redesign request": Center Hotel Yfirlit.dc.html o
   <br><sub>2026-08-21 · slokkvitaeki · cowork · cowork</sub>
 
-### Draugaraðir „(ekki í skrá)" koma úr customer_documents.customer_name
-
-- **Rekstrarfélagasýnin býr til eina línu fyrir hvert customer_name-gildi sem á sér ekki fyrirtæki með sama nafni.**
-  <br>Heimaleigu-hópurinn hafði 18 ólík customer_name-gildi á 46 skjölum — „Heimaleiga ehf", „Máni Apartments", „S30/Heimaleiga", „Aegina ehf.", „Ur arhvarf 4 icelandic Apartments" (OCR-rusl) o.fl. Skjölin voru ÖLL rétt tengd í gegnum fyrirtaeki_id; aðeins merkimiðinn var gamall. Lagað með því að setja cu
-  <br><sub>2026-08-21 · kerfi · Cowork 21.08.2026 · natalie</sub>
-
 ### Tveir viðskiptavinir í sama húsi tvítelja tæki í appinu
 
 - **Appið tengir tæki við starfsstöð eftir heimilisfangsstreng einum saman. Þegar tvö félög eru á sama heimilisfangi fá bæði alla tækjatöluna.**
   <br>Dæmi: Grensásvegur 14 — Heimaleiga (6 tæki) og G14 ehf (7 tæki) sýna bæði 13. Urðarhvarf 4 — Heimaleiga Icelandic Apartments og Pure Deli ehf sýna bæði 40. Ármúli 21 — Indverska matarfélagið tvískráð. GÖGNIN ERU RÉTT: uttaeki.customer_base_id er rétt fyllt á hverri einustu röð. Lagfæringin er í kóða
+  <br><sub>2026-08-21 · kerfi · Cowork 21.08.2026 · natalie</sub>
+
+### Draugaraðir „(ekki í skrá)" koma úr customer_documents.customer_name
+
+- **Rekstrarfélagasýnin býr til eina línu fyrir hvert customer_name-gildi sem á sér ekki fyrirtæki með sama nafni.**
+  <br>Heimaleigu-hópurinn hafði 18 ólík customer_name-gildi á 46 skjölum — „Heimaleiga ehf", „Máni Apartments", „S30/Heimaleiga", „Aegina ehf.", „Ur arhvarf 4 icelandic Apartments" (OCR-rusl) o.fl. Skjölin voru ÖLL rétt tengd í gegnum fyrirtaeki_id; aðeins merkimiðinn var gamall. Lagað með því að setja cu
   <br><sub>2026-08-21 · kerfi · Cowork 21.08.2026 · natalie</sub>
 
 ### Center Hótel — heildarsamningur tekinn saman
