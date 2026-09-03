@@ -1108,7 +1108,15 @@
     const o = readDraftOpenMap();
     if (Object.prototype.hasOwnProperty.call(o, k)) return o[k] === 1;
     if (state.draftBusy[r.id] && !pack) return false;
-    return draftPackIsUseful(pack, r);
+    // 03.09.2026 (ósk Agnars: „hafðu forvinnu default collapsed"): sjálfgefið
+    // LOKAÐ. Áður opnaðist spjaldið sjálfkrafa um leið og Forvinnan þótti
+    // gagnleg (draftPackIsUseful) og ýtti þá titli, fyrirtæki og athugasemdum
+    // niður fyrir skjábrún á hverju einasta máli sem hafði forvinnu.
+    // Per-mál valið hér að ofan stendur áfram: opni hann eitt mál helst það
+    // opið á því máli (geymt í vb_forvinna_open). „Forvinna"-takkinn efst í
+    // VALIÐ MÁL opnar það; draftPackIsUseful stýrir áfram forskoðunar-textanum
+    // í listanum (lína 2606), svo það sést enn HVAR forvinna er tilbúin.
+    return false;
   }
   async function loadDraftPack(r, force) {
     if (!r || r._vd) return null;
@@ -2691,16 +2699,34 @@
         // Status chips (not interactive here — stadaPill handles advance)
         '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">' +
           chips.map(t => dkChip(t)).join('') + taggedListChipsHtml(r) + waitPill(r) + stadaPill(r) +
+          // 03.09.2026 (ósk Agnars): sama aðgerð og 📋-takkinn á spjaldinu í
+          // listanum (data-act="sbpin"), en beint úr VALIÐ MÁL — málið sem er
+          // opið er einmitt það sem maður vill setja á borðið. Verkdagbókar-
+          // færslur (_vd) eiga ekkert erindi þangað.
+          (r._vd ? '' :
+            '<button data-act="sbpin" data-id="' + esc(String(r.id)) + '" type="button" ' +
+              'title="Setja þetta mál á skipulagsborðið (12-rúða griðin undir dagskránni)" ' +
+              'style="border:1px solid #c7d2fe;background:#eef2ff;color:#3730a3;border-radius:7px;' +
+              'padding:3px 9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">' +
+              '📋 Setja á skipulagsborð</button>') +
         '</div>' +
         // BEINT BREYTANLEGUR TITILL — vistast 500ms eftir að hætt er að slá inn
         (r._vd
           ? '<div style="font-size:17px;font-weight:800;color:#16181d;line-height:1.3;margin-bottom:10px">' + esc(r.title || '(ónefnt)') + '</div>'
-          : '<input id="vb-sel-title" data-selid="' + esc(String(r.id)) + '" value="' + esc(r.title || '') + '" placeholder="Titill…" ' +
+          // 03.09.2026 (ósk Agnars: „að header textinn geti verið í tveim línum"):
+          // <textarea>, ekki <input>. Input-reitur getur ALDREI brotið línu —
+          // sama hvaða CSS er sett á hann — svo langur titill sat klipptur á
+          // einni línu. Reitan vex með innihaldinu (sama grow()-mynstur og
+          // athugasemda-reitan neðar); Enter vistar áfram og býr EKKI til
+          // línubil, svo titlar haldist einnar-línu gögn þótt þeir birtist á
+          // tveimur.
+          : '<textarea id="vb-sel-title" data-selid="' + esc(String(r.id)) + '" rows="1" placeholder="Titill…" ' +
             'style="font-size:17px;font-weight:800;color:#16181d;line-height:1.3;margin-bottom:10px;width:100%;' +
             'border:1px solid transparent;border-radius:7px;padding:4px 7px;background:transparent;outline:none;' +
-            'box-sizing:border-box;font-family:inherit" ' +
+            'box-sizing:border-box;font-family:inherit;resize:none;overflow:hidden;display:block" ' +
             'onfocus="this.style.borderColor=\'#d8dadf\';this.style.background=\'#f8fafc\'" ' +
-            'onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">') +
+            'onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">' +
+            esc(r.title || '') + '</textarea>') +
         // FYRIRTÆKI (með ✏️ Tengja hnappi)
         '<div id="vb-sel-co" style="margin-bottom:10px">' + selCoHTML(r) + '</div>' +
         (!r._vd ? draftPackHTML(r) : '') +
@@ -2759,8 +2785,19 @@
     const tInp = document.getElementById('vb-sel-title');
     if (tInp) {
       let _tt = null;
-      const saveTitle = () => { clearTimeout(_tt); saveRow(Number(tInp.dataset.selid), { title: tInp.value }); };
-      tInp.addEventListener('input', () => { clearTimeout(_tt); _tt = setTimeout(saveTitle, 500); });
+      const saveTitle = () => { clearTimeout(_tt); saveRow(Number(tInp.dataset.selid), { title: tInp.value.replace(/\s*\n+\s*/g, ' ').trim() }); };
+      // Vex með innihaldinu — ein lína þegar titillinn er stuttur, tvær (eða
+      // fleiri) þegar hann er langur. setProperty(...,'important') af sömu
+      // ástæðu og hjá athugasemdunum: patch 245 setur height:auto !important á
+      // allar textareur og vinnur annars á venjulegu inline-height.
+      const growT = () => {
+        tInp.style.setProperty('height', 'auto', 'important');
+        tInp.style.setProperty('height', (tInp.scrollHeight + 2) + 'px', 'important');
+      };
+      growT();
+      tInp.addEventListener('input', () => { growT(); clearTimeout(_tt); _tt = setTimeout(saveTitle, 500); });
+      // Enter = vista, ekki línubil: titillinn á að BROTNA í tvær línur, ekki
+      // geyma \n sem síðan birtist sem bil í listanum og í póstum.
       tInp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tInp.blur(); saveTitle(); } });
     }
     const dTa = document.getElementById('vb-draft-reply');
