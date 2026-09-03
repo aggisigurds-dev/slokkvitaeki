@@ -143,7 +143,7 @@ async function keyraTool(name, input) {
       ? `kennitala=eq.${kt}`
       : `nafn=ilike.*${encodeURIComponent(q)}*`;
     const rows = await sb(
-      `fyrirtaeki?${filt}&select=id,nafn,kennitala,simi,farsimi,netfang,heimilisfang,stadur,er_i_thjonustu&limit=12`
+      `fyrirtaeki?${filt}&deleted_at=is.null&select=id,nafn,kennitala,simi,farsimi,netfang,heimilisfang,postnumer,er_i_thjonustu&limit=12`
     );
     return { fjoldi: rows.length, fyrirtaeki: rows };
   }
@@ -160,10 +160,13 @@ async function keyraTool(name, input) {
       const blob = rows && rows.settings && rows.settings.arsskodun_customers;
       if (blob) ars = blob[String(id)] || null;
     } catch (_) {}
-    let taeki = [];
+    // Í notkun = status != 'urelt' (STADREYNDIR §7: uttaeki er TELJARI; fjöldinn
+    // á að stemma við nýjustu skýrsluna). Bili kallið skilum við null — ekki 0 —
+    // svo líkanið segi „veit ekki" í stað þess að fullyrða „engin tæki".
+    let taeki = null, taekiVilla = null;
     try {
-      taeki = await sb(`uttaeki?fyrirtaeki_id=eq.${id}&select=tegund,stada&limit=200`);
-    } catch (_) {}
+      taeki = await sb(`uttaeki?fyrirtaeki_id=eq.${id}&status=neq.urelt&select=type,size,status&limit=500`);
+    } catch (e) { taekiVilla = String(e && e.message || e).slice(0, 160); }
     const minni = await sb(
       `assistant_memory?subject_type=eq.fyrirtaeki&subject_id=eq.${id}&active=is.true&select=fact,source,created_at&limit=20`
     ).catch(() => []);
@@ -171,7 +174,7 @@ async function keyraTool(name, input) {
       fyrirtaeki: {
         id: co.id, nafn: co.nafn, kennitala: co.kennitala,
         simi: co.simi || co.farsimi, netfang: co.netfang,
-        heimilisfang: co.heimilisfang, stadur: co.stadur,
+        heimilisfang: co.heimilisfang, postnumer: co.postnumer,
         i_thjonustu: co.er_i_thjonustu, athugasemdir: co.athugasemdir,
         ferdanota: co.plan_note,
       },
@@ -183,7 +186,9 @@ async function keyraTool(name, input) {
         aksturslisti: ars.akstur,
         taekjafjoldi: ars.equipment,
       },
-      skrad_taeki: taeki.length,
+      skrad_taeki: taeki ? taeki.length : null,
+      taeki_eftir_tegund: taeki ? taeki.reduce((m, t) => { const k = [t.type, t.size].filter(Boolean).join(' ') || 'óþekkt'; m[k] = (m[k] || 0) + 1; return m; }, {}) : null,
+      taeki_villa: taekiVilla,
       minnispunktar: minni,
     };
   }
@@ -193,7 +198,7 @@ async function keyraTool(name, input) {
     if (!id) return { villa: 'vantar id' };
     const n = Math.min(Math.max(+input.fjoldi || 10, 1), 40);
     const rows = await sb(
-      `solur?customer_id=eq.${id}&select=id,created_at,greitt_med,dk_invoice_id,is_credit,athugasemdir&order=created_at.desc&limit=${n}`
+      `solur?customer_id=eq.${id}&hidden=not.is.true&select=id,created_at,samtals,status,paid_at,greitt_med,dk_invoice_id,is_credit,athugasemdir&order=created_at.desc&limit=${n}`
     );
     return { fjoldi: rows.length, solur: rows };
   }
