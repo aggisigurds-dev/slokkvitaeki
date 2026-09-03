@@ -35,6 +35,14 @@
  * Vörðurinn er EKKI mælikvarði á hvort hver sía sé rétt — hann segir að
  * gildin séu óbreytt og að engin ný sía hafi laumast inn. Það er það sem
  * hægt er að vaka yfir vélrænt.
+ *
+ * 3. VIEW-IN (03.09.2026): eftir að allir 22 kóðastaðirnir voru lagaðir fann
+ *    gæðayfirferð að `v_uttaeki_fid_rollup` — sem Rekstrarfélög OG kúnnavefurinn
+ *    (gatt.js) telja tæki úr — síaði ENN á status='active' inni í gagnagrunninum:
+ *    228 tæki vantalin, 14 fyrirtæki sýndust tóm. Kóðaskönnun sér ekki view.
+ *    Þess vegna er þetta MÆLT: summa view-sins á að vera nákvæmlega bein talning
+ *    tækja í notkun með fyrirtaeki_id. Vörðurinn var rauður (5100 ≠ 5328) áður
+ *    en view-ið var lagað, grænn eftir.
  */
 const fs = require('fs');
 const path = require('path');
@@ -149,6 +157,19 @@ function leitaISkra(p) {
   const siur = [];
   SKANNA.forEach(d => skrarnar(path.join(rot, d), []).forEach(p => siur.push(...leitaISkra(p))));
 
+  // ── 3) View-in í gagnagrunninum — MÆLT, ekki lesið ─────────────────────
+  let viewSumma = 0, vf = 0;
+  for (;;) {
+    const r = await fetch(`${URL_}/rest/v1/v_uttaeki_fid_rollup?select=units&offset=${vf}&limit=1000`, { headers: H });
+    if (!r.ok) throw new Error(`view: ${r.status} ${(await r.text()).slice(0, 160)}`);
+    const d = await r.json();
+    d.forEach(x => { viewSumma += (+x.units || 0); });
+    if (d.length < 1000) break;
+    vf += 1000;
+  }
+  const beinTalning = rows.filter(u => u.fyrirtaeki_id != null && !UR_NOTKUN.has(u.status)).length;
+  const viewBil = beinTalning - viewSumma;
+
   // ── Niðurstaða ───────────────────────────────────────────────────────────
   if (nyGildi.length) {
     console.log('❌ NÝTT stöðugildi á uttaeki.status\n');
@@ -169,7 +190,16 @@ function leitaISkra(p) {
     return;
   }
 
+  if (viewBil !== 0) {
+    console.log(`❌ VIEW VANTELUR — v_uttaeki_fid_rollup gefur ${viewSumma} tæki en í notkun með fyrirtaeki_id eru ${beinTalning} (bil ${viewBil})\n`);
+    console.log(`   View-ið síar sennilega enn á status='active'. Rekstrarfélög OG kúnnavefurinn (gatt.js) telja úr því.`);
+    console.log(`   Lagfæring: create or replace view … where status is distinct from 'urelt' — sjá sql/2026-09-03_v_uttaeki_fid_rollup_urelt.sql`);
+    process.exitCode = 1;
+    return;
+  }
+
   console.log(`✅ Stöðugildi óbreytt — ${[...talning.entries()].map(([s, n]) => s + ' ' + n).join(' · ')}`);
   console.log(`   Engin sía á 'active' í kóða (22 lagaðar 01.09.2026, 1 leyfð: stöðu-fellilisti).`);
   console.log(`   ${anActive.length} fyrirtæki eiga tæki í notkun en ekkert "active" — þau sjást nú.`);
+  console.log(`   v_uttaeki_fid_rollup stemmir: ${viewSumma} = bein talning (view-ið síar ekki lengur á active).`);
 })().catch(e => { console.log('❌ Vörðurinn keyrði ekki: ' + e.message); process.exitCode = 1; });
