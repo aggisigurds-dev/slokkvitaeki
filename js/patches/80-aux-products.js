@@ -110,21 +110,43 @@
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function fmtKr(n){const s=Math.round(n).toString();const r=[];let t=s;while(t.length>3){r.unshift(t.slice(-3));t=t.slice(0,-3);}r.unshift(t);return r.join('.')+' kr';}
 
+  // Legsteinarnir (nöfn sem Agnar eyddi viljandi) verða að koma ÚR GAGNAGRUNNINUM.
+  //
+  // 03.09.2026 — af hverju: seed() beið eftir DB.sb en EKKI eftir því að
+  // AppSettings væri búið að hlaðast, og AppSettings.path() skilar innbyggða
+  // SJÁLFGEFNA gildinu ([]) þangað til asynkróna hleðslan úr app_settings
+  // klárast. Lendi seed á undan henni er legsteinalistinn tómur og ALLAR eyddar
+  // vörur eru settar inn aftur. Það gerðist 24.08 (1 röð), 02.09 (1) og
+  // 03.09 kl. 17:11:39 (11 raðir í einni lotu) — Agnar eyddi vörum yfir daginn
+  // og þær voru allar komnar aftur um kvöldið.
+  //
+  // Beinn lestur getur ekki lent í kapphlaupi. Bregðist hann skilum við null og
+  // seed() sleppir innsetningunni ALVEG (fail closed): sáningarvél sem veit ekki
+  // hverju var eytt má ekki setja neitt inn.
+  async function readTombstones() {
+    try {
+      const r = await DB.sb.from('app_settings').select('settings').eq('id', 1).maybeSingle();
+      if (r.error) return null;
+      const sala = (r.data && r.data.settings && r.data.settings.sala) || {};
+      const arr = Array.isArray(sala.deleted_product_names) ? sala.deleted_product_names : [];
+      return new Set(arr.map(n => String(n || '').trim().toLowerCase()));
+    } catch (_) { return null; }
+  }
+
   // ---------- Step 1: idempotent seed ----------
   async function seed() {
     if (!window.DB || !DB.sb) { setTimeout(seed, 600); return; }
     if (localStorage.getItem('_auxProductsSeededV1')) return;
     try {
+      const tombstoned = await readTombstones();
+      if (!tombstoned) {
+        // Engin merking sett — næsta hleðsla reynir aftur þegar netið svarar.
+        console.warn('[aux-products] gat ekki lesið eydd vöruheiti — sleppi sáningu');
+        return;
+      }
       const r = await DB.sb.from('vorur').select('nafn');
       if (r.error) { console.warn('[aux-products] read failed:', r.error.message); return; }
       const have = new Set((r.data || []).map(p => String(p.nafn || '').trim().toLowerCase()));
-      // Respect user deletions — names tombstoned in AppSettings.sala.deleted_product_names
-      // were explicitly removed and should not be re-seeded.
-      const tombstoned = new Set();
-      try {
-        const dpn = window.AppSettings && window.AppSettings.path && window.AppSettings.path('sala.deleted_product_names');
-        if (Array.isArray(dpn)) dpn.forEach(n => tombstoned.add(String(n||'').trim().toLowerCase()));
-      } catch(_) {}
       const missing = AUX_PRODUCTS.filter(p => !have.has(p.nafn.toLowerCase()) && !tombstoned.has(p.nafn.toLowerCase()));
       if (!missing.length) {
         localStorage.setItem('_auxProductsSeededV1', 'all-present-' + Date.now());
