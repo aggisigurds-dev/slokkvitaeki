@@ -393,24 +393,33 @@
     return tags.indexOf('senda_skyrslur') !== -1;
   }
 
-  // 2026-08-31 (ósk Agnars): nafnaval — Allir, Agnar, Allir án Agnars, Charlize,
+  // 2026-08-31 (ósk Agnars): nafnaval — Allir, Agnar, Allir án Ai, Charlize,
   // Hákon, Binni, Anni, Bjarndís. Charlize tók við gömlu Söru (mál flutt).
   // Bjarndís er nýja slóðin (áður tóm Sara-slóð). Vistað „Sara" og
-  // starfs:Sara lesast sem Bjarndís. Charlize-mál eru óhreyfð.
-  // Starfsfólk sér daglega vinnu; skjalavinna fer á Agnar.
-  // Óúthlutað og eldra en 30 dagar skráist á Agnar. Sjálfgefin sía er
-  // „Allir án Agnars". Vistað „Allir"/allir opnar eiganda-yfirlitið aftur
-  // (sameinað borð). Tómt gildi flyst áfram yfir í Allir án Agnars.
+  // starfs:Sara lesast sem Bjarndís.
+  //
+  // 2026-09-03 (ósk Agnars — „færðu öll atriðin sem eru á Agnari yfir á
+  // Charlize … og síðan liður allir án Agnars yrði þá Allir án Ai"):
+  // AI-BUNKINN ER CHARLIZE, EKKI AGNAR. Nafn Agnars var orðið ruslakistan —
+  // skjalavinna og allt óúthlutað eldra en 30 daga lenti á honum, svo hans
+  // eigið nafn sagði ekkert um hvað HANN ætlaði að gera. Nú fer sá bunki á
+  // Charlize og Agnar er venjulegur starfsmaður sem hægt er að stíla á
+  // viljandi. Sjálfgefna sían felur AI-bunkann („Allir án Ai") svo borðið
+  // sýni mannavinnu. Vistað „Allir"/allir opnar eiganda-yfirlitið aftur
+  // (sameinað borð). Tómt gildi flyst áfram yfir í Allir án Ai.
   // Keep in sync with tools/test-verkbord-assignee.cjs
   const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
   // 2026-09-02: 'Afgreiðsla' er hér LÍKA. knownWorkerFilter() prófar gegn ÞESSUM
   // lista, ekki WORKER_FILTERS — fyrsta útgáfan bætti nafninu aðeins í hinn og
   // veljarinn sneri því tómur við: listinn sat fastur á fyrri starfsmanni.
   const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Bjarndís', 'Afgreiðsla'];
+  // Nafn AI-bunkans á EINUM stað — sían, sjálfvirka úthlutunin og undanskilningin
+  // lesa öll héðan, svo þau geti ekki rekið í sundur eins og gerðist með Agnar.
+  const AI_WORKER = 'Charlize';
   const WORKER_FILTERS = [
     ['allir', 'Allir'],
     ['Agnar', 'Agnar'],
-    ['nema_agnar', 'Allir án Agnars'],
+    ['nema_ai', 'Allir án Ai'],
     ['Charlize', 'Charlize'],
     ['Hákon', 'Hákon'],
     ['Binni', 'Binni'],
@@ -422,7 +431,10 @@
     // hvers borð er þetta.
     ['Afgreiðsla', 'Afgreiðsla']
   ];
-  const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
+  // nema_agnar er GAMLA gildið; það situr enn í localStorage á öllum vélunum og
+  // canonFilter() þýðir það yfir í nema_ai. Það má ekki hverfa úr sentinel-
+  // listanum — annars myndi það rata í assigned_to sem starfsmannsnafn.
+  const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true, nema_ai: true };
   function canonWorker(v) {
     const s = String(v == null ? '' : v).trim();
     return s === 'Sara' ? 'Bjarndís' : s;
@@ -435,7 +447,7 @@
     return normAssignee(worker) || null;
   }
   // Composer-starfsmaðurinn fylgir síunni: Anni-sía → Anni, Agnar-sía → Agnar.
-  // Allir án Agnars / allir / tómt → „—" (ekkert vistað assigned_to).
+  // Allir án Ai / allir / tómt → „—" (ekkert vistað assigned_to).
   function defaultAddWorker(filter) {
     return assignedForNew(filter != null ? filter : state.fWorker);
   }
@@ -502,16 +514,16 @@
     if (named) return named;
     if (!r || r._vd) return '';
     if (!isOpen(r) || isArchived(r) || r.deleted_at) return '';
-    return isOlderThanMonth(r, now) ? 'Agnar' : '';
+    return isOlderThanMonth(r, now) ? AI_WORKER : '';
   }
   function matchesWorker(r, filter, now) {
     const w = canonFilter(filter != null ? filter : state.fWorker);
     if (!w || w === 'allir') return true;
     const who = effectiveAssignee(r, now);
     const tagged = taggedWorkers(r);
-    if (w === 'nema_agnar') {
-      if (who !== 'Agnar') return true;
-      for (let i = 0; i < tagged.length; i++) if (tagged[i] !== 'Agnar') return true;
+    if (w === 'nema_ai') {
+      if (who !== AI_WORKER) return true;
+      for (let i = 0; i < tagged.length; i++) if (tagged[i] !== AI_WORKER) return true;
       return false;
     }
     if (who === w) return true;
@@ -520,24 +532,34 @@
   function canonFilter(v) {
     const s = canonWorker(v);
     if (s === 'Allir') return 'allir';
+    // Vistaða gildið á vélunum fjórum er enn nema_agnar (2026-09-03) — sama sía,
+    // nýtt nafn. Þýtt hér svo enginn tapi valinu sínu við uppfærsluna.
+    if (s === 'nema_agnar') return 'nema_ai';
     return s;
   }
   function knownWorkerFilter(v) {
     const s = canonFilter(v);
-    if (s === 'nema_agnar' || s === 'allir') return true;
+    if (s === 'nema_ai' || s === 'allir') return true;
     for (let i = 0; i < WORKERS.length; i++) if (WORKERS[i] === s) return true;
     return false;
   }
   function readStoredWorker() {
     try {
       const stored = localStorage.getItem(WKEY);
-      if (stored === null || stored === '') return 'nema_agnar';
+      if (stored === null || stored === '') return 'nema_ai';
       if (knownWorkerFilter(stored)) return canonFilter(stored);
-      return 'nema_agnar';
-    } catch (_) { return 'nema_agnar'; }
+      return 'nema_ai';
+    } catch (_) { return 'nema_ai'; }
+  }
+  // Merkimiði síunnar á einum stað — „Sía er virk"-borðinn sagði áður „Allir án
+  // Agnars" úr harðkóðaðri línu og hefði setið eftir við þessa nafnabreytingu.
+  function workerFilterLabel(v) {
+    const s = canonFilter(v);
+    for (let i = 0; i < WORKER_FILTERS.length; i++) if (WORKER_FILTERS[i][0] === s) return WORKER_FILTERS[i][1];
+    return String(v == null ? '' : v);
   }
   function workerFilterOptionsHtml(cur) {
-    const now = knownWorkerFilter(cur) ? canonFilter(cur) : 'nema_agnar';
+    const now = knownWorkerFilter(cur) ? canonFilter(cur) : 'nema_ai';
     let html = '';
     for (let i = 0; i < WORKER_FILTERS.length; i++) {
       const val = WORKER_FILTERS[i][0], label = WORKER_FILTERS[i][1];
@@ -649,7 +671,7 @@
 
   // ── state ────────────────────────────────────────────────────────────────
   const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode', WKEY = '_vb_worker';
-  // Starfsmenn (skráning + sía). Sjálfgefið „Allir án Agnars". WORKERS er
+  // Starfsmenn (skráning + sía). Sjálfgefið „Allir án Ai". WORKERS er
   // skilgreint ofar með Agnar / Charlize / Hákon / Binni / Anni / Bjarndís.
   // Valin sía: texti lýsist upp + glóð í lit chips-ins (2026-07-13, ósk Agnars —
   // „sést illa hvað er valið"). currentColor = litur chips-ins svo glóðin passar.
@@ -764,7 +786,7 @@
   function setViewMode(v) { state.viewMode = v; try { localStorage.setItem(VMKEY, v); } catch (_) {} }
   function setFilter(f) { state.filter = f; try { localStorage.setItem(FKEY, f); } catch (_) {} }
   function setWorker(v) {
-    state.fWorker = knownWorkerFilter(v) ? canonFilter(v) : 'nema_agnar';
+    state.fWorker = knownWorkerFilter(v) ? canonFilter(v) : 'nema_ai';
     try { localStorage.setItem(WKEY, state.fWorker); } catch (_) {}
     syncAddWorkerSelect();
     applyStaffChrome();
@@ -825,8 +847,10 @@
     loadThreadLatest().then(ok => { if (ok) renderList(); }).catch(() => {});
   }
 
-  // Óúthlutað og eldra en 30 dagar → Agnar. Idempotent; snertir ekki
-  // mál sem þegar eru skráð á Anni/Andri/o.s.frv.
+  // Óúthlutað og eldra en 30 dagar → AI_WORKER (Charlize). Idempotent; snertir
+  // ekki mál sem þegar eru skráð á Anni/Andri/o.s.frv. Fór áður á Agnar — sjá
+  // skýringuna við AI_WORKER; þessi lína er ástæðan fyrir að gagnaflutningur
+  // einn og sér dugði ekki, hún hefði byggt bunkann upp á honum aftur.
   let _claimingOld = false;
   async function claimOldJobs() {
     if (_claimingOld) return;
@@ -838,7 +862,7 @@
       const t = Date.parse(r.created_at);
       if (!Number.isFinite(t) || t >= cutoff) continue;
       ids.push(r.id);
-      r.assigned_to = 'Agnar';
+      r.assigned_to = AI_WORKER;
     }
     if (!ids.length) return;
     renderControls(); renderList(); refreshBadge();
@@ -849,7 +873,7 @@
       for (let i = 0; i < ids.length; i += 100) {
         const chunk = ids.slice(i, i + 100);
         const { error } = await SB.from('thjonustubeidni')
-          .update({ assigned_to: 'Agnar', updated_at: stamp })
+          .update({ assigned_to: AI_WORKER, updated_at: stamp })
           .in('id', chunk);
         if (error) console.warn('[verkbord] claimOldJobs', error.message);
       }
@@ -1576,7 +1600,7 @@
      merki, starfsmaður, stjarna) eru ósýnilegar þegar þær eru virkar.
 
      Agnar 01.09.2026: mál 817 var stílað á hann, lá óhreyft í viku og hann sá
-     það ekki — sjálfgefna starfsmannasían er `nema_agnar`, „allir NEMA Agnar",
+     það ekki — sjálfgefna starfsmannasían er `nema_ai`, „allir NEMA AI-bunkinn",
      og hún býr í localStorage svo hún er ólík á hverri tölvu. Hann hélt að
      borðið væri ekki að samstillast. Sían á að segja frá sér. */
   function faldirAfSiu() {
@@ -1598,7 +1622,7 @@
       + '<span style="font-weight:800">Sía er virk</span>'
       + '<span>' + f.faldir + ' af ' + f.alls + ' málum eru falin'
       + (state.fWorker && state.fWorker !== 'allir'
-          ? ' · starfsmaður: <b>' + esc(state.fWorker === 'nema_agnar' ? 'Allir án Agnars' : state.fWorker) + '</b>' : '')
+          ? ' · starfsmaður: <b>' + esc(workerFilterLabel(state.fWorker)) + '</b>' : '')
       + (state.fTags.length ? ' · merki: <b>' + esc(state.fTags.join(', ')) + '</b>' : '')
       + (state.fFlokk ? ' · flokkur: <b>' + esc(state.fFlokk) + '</b>' : '')
       + (state.fStar ? ' · aðeins áríðandi' : '')
@@ -1738,8 +1762,8 @@
     if (!b) return;
     /* Badge = það sem kallar á athygli: póstar sem bíða svars + verk dagsins.
        2026-09-01: talan var SÍUÐ (counts() sleppti öllu sem matchesWorker
-       hafnaði). Með sjálfgefnu síunni `nema_agnar` taldi merkið því ALDREI
-       Agnars eigin mál — hann sá „1" á meðan hans eigið mál lá óhreyft í viku.
+       hafnaði). Með sjálfgefnu síunni `nema_ai` taldi merkið því ALDREI
+       falda bunkann — hann sá „1" á meðan hans eigið mál lá óhreyft í viku.
        Merki sem sést alls staðar í appinu má ekki bera síaða tölu; sían á
        heima í listanum, ekki í viðvöruninni. Talan er nú ÓSÍUÐ og sú síaða
        fer í tooltip þegar þær eru ólíkar. */
@@ -2141,7 +2165,7 @@
   // Stjórnkortið (v3): Innhólf/Allt/Verkefni/Lokað flipar + leit + röðun/sýn,
   // skil, svo TÖG-síuröðin (⭐ Áríðandi + dökk-metal merkjachippar með teljara).
   // Extra chrome only when the name dropdown is Agnar. Bjarndís / Anni / Hákon /
-  // Charlize / Binni / Allir án Agnars get nafnaval + leit ofan TÖG — engin AI-borð,
+  // Charlize / Binni / Allir án Ai get nafnaval + leit ofan TÖG — engin AI-borð,
   // biðraðir, Snjallröðun/Þétt né Sækja póst / Kúnnaskrá / 2023–25.
   function renderControls() {
     const el = document.getElementById('vb-controls'); if (!el) return;
@@ -2174,7 +2198,7 @@
       '</div>';
     const workerHtml =
       '<select id="vb-worker-filter" title="Sía eftir starfsmanni" style="height:38px;padding:0 10px;border-radius:11px;' +
-        (state.fWorker && state.fWorker !== 'nema_agnar'
+        (state.fWorker && state.fWorker !== 'nema_ai'
           ? 'border:1.5px solid #a5b4fc;background:linear-gradient(180deg,#3730a3,#1e1b4b);color:#e0e7ff;box-shadow:0 0 12px -2px #818cf8;text-shadow:0 0 8px #a5b4fc'
           : 'border:1px solid #0a0b0d;background:linear-gradient(180deg,#26272c,#0d0e10);color:#fff') +
         ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;outline:none">' +
@@ -2492,7 +2516,7 @@
       return;
     }
     // Keep VALIÐ MÁL on the ticket the user is editing even if it just left
-    // the worker filter (assign to Agnar while "Allir án Agnars" is on).
+    // the worker filter (assign to Charlize while "Allir án Ai" is on).
     // Only jump to another row when the selected ticket is gone entirely.
     state.selId = keepSelectedId(state.selId, rows, allItems());
 
@@ -2538,7 +2562,7 @@
           // 2026-08-10 (ósk Agnars — „quite time consuming register projects"):
           // flýtiskráning beint úr flokkahausnum — sami quickAdd() og aðal-
           // composerinn notar, bara forfyllt með ÞESSU merki + valda starfsmanni
-          // (state.fWorker, sami veljari og „Allir án Agnars" efst á borðinu).
+          // (state.fWorker, sami veljari og „Allir án Ai" efst á borðinu).
           '<button data-act="catadd" data-cat="' + esc(g.key) + '" title="Fljótskrá í ' + esc(g.name) + '" ' +
             'style="flex:none;width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,.4);' +
             'background:' + (state.catAddOpen[g.key] ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.1)') + ';' +
@@ -3463,8 +3487,8 @@
   // Flokka-flýtiskráning (2026-08-10, ósk Agnars): sama quickAdd() sem knýr
   // aðal-composerinn, en kallað beint úr flokkahausnum — forfyllt með ÞESSU
   // merki einu (ekki state.addTags, sem er fyrir aðal-composerinn) og núverandi
-  // starfsmanna-síu (state.fWorker — sami veljari og „Allir án Agnars" efst á
-  // borðinu). Nema_agnar/allir skrifa ekki sentinels í assigned_to.
+  // starfsmanna-síu (state.fWorker — sami veljari og „Allir án Ai" efst á
+  // borðinu). Nema_ai/allir skrifa ekki sentinels í assigned_to.
   async function catQuickAdd(cat) {
     const custEl = document.querySelector('.vb-catadd-cust[data-cat="' + cat + '"]');
     const txtEl = document.querySelector('.vb-catadd-txt[data-cat="' + cat + '"]');

@@ -7,7 +7,7 @@
  * composeTags, matchesWorker) and isOldYearReport / tools/test-old-year-report.cjs
  */
 const OLD_JOB_MS = 30 * 24 * 60 * 60 * 1000;
-const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true };
+const WORKER_SENTINELS = { '': true, Allir: true, allir: true, nema_agnar: true, nema_ai: true };
 function canonWorker(v) {
   const s = String(v == null ? '' : v).trim();
   return s === 'Sara' ? 'Bjarndís' : s;
@@ -15,6 +15,7 @@ function canonWorker(v) {
 function canonFilter(v) {
   const s = canonWorker(v);
   if (s === 'Allir') return 'allir';
+  if (s === 'nema_agnar') return 'nema_ai';
   return s;
 }
 function normAssignee(v) {
@@ -36,11 +37,12 @@ function addWorkerOptionsHtml(filter, stateWorker) {
   }
   return html;
 }
+const AI_WORKER = 'Charlize';
 const WORKERS = ['Agnar', 'Charlize', 'Hákon', 'Binni', 'Anni', 'Bjarndís'];
 const WORKER_FILTERS = [
   ['allir', 'Allir'],
   ['Agnar', 'Agnar'],
-  ['nema_agnar', 'Allir án Agnars'],
+  ['nema_ai', 'Allir án Ai'],
   ['Charlize', 'Charlize'],
   ['Hákon', 'Hákon'],
   ['Binni', 'Binni'],
@@ -49,12 +51,12 @@ const WORKER_FILTERS = [
 ];
 function knownWorkerFilter(v) {
   const s = canonFilter(v);
-  if (s === 'nema_agnar' || s === 'allir') return true;
+  if (s === 'nema_ai' || s === 'allir') return true;
   for (let i = 0; i < WORKERS.length; i++) if (WORKERS[i] === s) return true;
   return false;
 }
 function workerFilterOptionsHtml(cur) {
-  const now = knownWorkerFilter(cur) ? canonFilter(cur) : 'nema_agnar';
+  const now = knownWorkerFilter(cur) ? canonFilter(cur) : 'nema_ai';
   let html = '';
   for (let i = 0; i < WORKER_FILTERS.length; i++) {
     const val = WORKER_FILTERS[i][0], label = WORKER_FILTERS[i][1];
@@ -190,16 +192,16 @@ function effectiveAssignee(r, now) {
   if (named) return named;
   if (!r || r._vd) return '';
   if (!isOpen(r) || isArchived(r) || r.deleted_at) return '';
-  return isOlderThanMonth(r, now) ? 'Agnar' : '';
+  return isOlderThanMonth(r, now) ? AI_WORKER : '';
 }
 function matchesWorker(r, filter, now) {
   const w = canonFilter(filter);
   if (!w || w === 'allir') return true;
   const who = effectiveAssignee(r, now);
   const tagged = taggedWorkers(r);
-  if (w === 'nema_agnar') {
-    if (who !== 'Agnar') return true;
-    for (let i = 0; i < tagged.length; i++) if (tagged[i] !== 'Agnar') return true;
+  if (w === 'nema_ai') {
+    if (who !== AI_WORKER) return true;
+    for (let i = 0; i < tagged.length; i++) if (tagged[i] !== AI_WORKER) return true;
     return false;
   }
   if (who === w) return true;
@@ -238,6 +240,7 @@ const oldUnassigned = { status: 'nytt', created_at: isoDaysAgo(40), assigned_to:
 const recentUnassigned = { status: 'nytt', created_at: isoDaysAgo(5), assigned_to: null };
 const anniOld = { status: 'nytt', created_at: isoDaysAgo(40), assigned_to: 'Anni' };
 const agnarRecent = { status: 'nytt', created_at: isoDaysAgo(5), assigned_to: 'Agnar' };
+const charlizeRecent = { status: 'nytt', created_at: isoDaysAgo(5), assigned_to: 'Charlize' };
 const allirOld = { status: 'nytt', created_at: isoDaysAgo(40), assigned_to: 'Allir' };
 const closedOld = { status: 'lokad', created_at: isoDaysAgo(40), assigned_to: null };
 const archivedOld = { status: 'nytt', created_at: isoDaysAgo(40), assigned_to: null, archived_at: isoDaysAgo(1) };
@@ -264,42 +267,49 @@ const derived2026 = {
   assigned_to: null
 };
 
-ok('unassigned old → Agnar', effectiveAssignee(oldUnassigned, NOW) === 'Agnar');
+ok('unassigned old → Charlize (AI-bunkinn)', effectiveAssignee(oldUnassigned, NOW) === 'Charlize');
 ok('unassigned recent → empty', effectiveAssignee(recentUnassigned, NOW) === '');
 ok('Anni old stays Anni', effectiveAssignee(anniOld, NOW) === 'Anni');
 ok('Agnar recent stays Agnar', effectiveAssignee(agnarRecent, NOW) === 'Agnar');
-ok('Allir sentinel old → Agnar', effectiveAssignee(allirOld, NOW) === 'Agnar');
+ok('Allir sentinel old → Charlize', effectiveAssignee(allirOld, NOW) === 'Charlize');
 ok('closed old not stolen', effectiveAssignee(closedOld, NOW) === '');
 ok('archived old not stolen', effectiveAssignee(archivedOld, NOW) === '');
 ok('verkdagbok not stolen', effectiveAssignee(vdOld, NOW) === '');
 
-ok('nema_agnar includes recent unassigned', matchesWorker(recentUnassigned, 'nema_agnar', NOW));
-ok('nema_agnar excludes old unassigned', !matchesWorker(oldUnassigned, 'nema_agnar', NOW));
-ok('nema_agnar excludes Agnar-assigned', !matchesWorker(agnarRecent, 'nema_agnar', NOW));
-ok('nema_agnar includes Anni', matchesWorker(anniOld, 'nema_agnar', NOW));
-ok('Agnar filter includes old unassigned', matchesWorker(oldUnassigned, 'Agnar', NOW));
+ok('nema_ai includes recent unassigned', matchesWorker(recentUnassigned, 'nema_ai', NOW));
+ok('nema_ai excludes old unassigned (AI-bunkinn)', !matchesWorker(oldUnassigned, 'nema_ai', NOW));
+ok('nema_ai excludes Charlize-assigned', !matchesWorker(charlizeRecent, 'nema_ai', NOW));
+ok('nema_ai INCLUDES Agnar-assigned (hann er starfsmaður núna)', matchesWorker(agnarRecent, 'nema_ai', NOW));
+ok('nema_ai includes Anni', matchesWorker(anniOld, 'nema_ai', NOW));
+// Gamla vistaða gildið á vélunum fjórum má ekki tapa valinu.
+ok('gamla nema_agnar gildið þýðist í nema_ai', canonFilter('nema_agnar') === 'nema_ai');
+ok('gamalt nema_agnar hegðar sér eins og nema_ai', !matchesWorker(oldUnassigned, 'nema_agnar', NOW));
+ok('Charlize filter includes old unassigned', matchesWorker(oldUnassigned, 'Charlize', NOW));
+ok('Agnar filter excludes old unassigned (ekki lengur ruslakistan)', !matchesWorker(oldUnassigned, 'Agnar', NOW));
 ok('Agnar filter includes Agnar-assigned', matchesWorker(agnarRecent, 'Agnar', NOW));
 ok('Agnar filter excludes Anni', !matchesWorker(anniOld, 'Agnar', NOW));
 ok('Anni filter matches Anni', matchesWorker(anniOld, 'Anni', NOW));
 ok('Anni filter excludes recent unassigned', !matchesWorker(recentUnassigned, 'Anni', NOW));
-ok('allir includes Agnar backlog', matchesWorker(oldUnassigned, 'allir', NOW));
+ok('allir includes AI backlog', matchesWorker(oldUnassigned, 'allir', NOW));
 ok('allir includes Anni', matchesWorker(anniOld, 'allir', NOW));
 
-ok('assignedForNew nema_agnar is null', assignedForNew('nema_agnar') === null);
+ok('assignedForNew nema_ai is null', assignedForNew('nema_ai') === null);
+ok('assignedForNew gamla nema_agnar is null', assignedForNew('nema_agnar') === null);
 ok('assignedForNew allir is null', assignedForNew('allir') === null);
 ok('assignedForNew empty is null', assignedForNew('') === null);
 ok('assignedForNew Allir is null', assignedForNew('Allir') === null);
 ok('assignedForNew Agnar is Agnar', assignedForNew('Agnar') === 'Agnar');
 ok('assignedForNew Anni is Anni', assignedForNew('Anni') === 'Anni');
 ok('default add from Anni filter is Anni', defaultAddWorker('Anni', 'Hákon') === 'Anni');
-ok('default add from nema_agnar is empty', defaultAddWorker('nema_agnar', 'Hákon') === null);
+ok('default add from nema_ai is empty', defaultAddWorker('nema_ai', 'Hákon') === null);
+ok('default add from gamla nema_agnar is empty', defaultAddWorker('nema_agnar', 'Hákon') === null);
 ok('default add from allir is empty', defaultAddWorker('allir', 'Anni') === null);
 ok('default add from Agnar filter is Agnar', defaultAddWorker('Agnar', null) === 'Agnar');
 ok('default add falls back to state worker', defaultAddWorker(null, 'Anni') === 'Anni');
 ok('default add undefined filter uses state', defaultAddWorker(undefined, 'Binni') === 'Binni');
-ok('default add Charlize filter is Charlize', defaultAddWorker('Charlize', 'nema_agnar') === 'Charlize');
-ok('default add Bjarndís filter is Bjarndís', defaultAddWorker('Bjarndís', 'nema_agnar') === 'Bjarndís');
-ok('leftover Sara filter still composes as Bjarndís', defaultAddWorker('Sara', 'nema_agnar') === 'Bjarndís');
+ok('default add Charlize filter is Charlize', defaultAddWorker('Charlize', 'nema_ai') === 'Charlize');
+ok('default add Bjarndís filter is Bjarndís', defaultAddWorker('Bjarndís', 'nema_ai') === 'Bjarndís');
+ok('leftover Sara filter still composes as Bjarndís', defaultAddWorker('Sara', 'nema_ai') === 'Bjarndís');
 const anniAddHtml = addWorkerOptionsHtml('Anni');
 ok('composer select marks Anni selected', /value="Anni" selected/.test(anniAddHtml));
 ok('composer select does not mark empty when Anni', !/<option value="" selected>/.test(anniAddHtml));
@@ -310,11 +320,12 @@ ok('assignedForNew Charlize is Charlize', assignedForNew('Charlize') === 'Charli
 ok('assignedForNew Bjarndís is Bjarndís', assignedForNew('Bjarndís') === 'Bjarndís');
 ok('assignedForNew leftover Sara is Bjarndís', assignedForNew('Sara') === 'Bjarndís');
 
-const filterHtml = workerFilterOptionsHtml('nema_agnar');
+const filterHtml = workerFilterOptionsHtml('nema_ai');
 ok('filter starts with Allir', filterHtml.indexOf('<option value="allir"') === 0);
 ok('filter has Allir overview', /value="allir"[^>]*>Allir</.test(filterHtml));
 ok('filter has Agnar after Allir', filterHtml.indexOf('value="Agnar"') > 0);
-ok('filter has Allir án Agnars', /value="nema_agnar"[^>]*>Allir án Agnars</.test(filterHtml));
+ok('filter has Allir án Ai', /value="nema_ai"[^>]*>Allir án Ai</.test(filterHtml));
+ok('gamla merkimiðanum er hvergi haldið eftir', filterHtml.indexOf('Allir án Agnars') === -1);
 ok('filter has Charlize Hákon Binni Anni Bjarndís', ['Charlize', 'Hákon', 'Binni', 'Anni', 'Bjarndís'].every(n => filterHtml.indexOf('>' + n + '<') !== -1));
 ok('Charlize comes before Bjarndís', filterHtml.indexOf('>Charlize<') < filterHtml.indexOf('>Bjarndís<') && filterHtml.indexOf('>Bjarndís<') !== -1);
 ok('filter has no Sara label', filterHtml.indexOf('>Sara<') === -1);
@@ -323,7 +334,8 @@ ok('stored Allir selects overview', /value="allir" selected/.test(workerFilterOp
 ok('stored allir stays selected', /value="allir" selected/.test(workerFilterOptionsHtml('allir')));
 ok('filter has no Andri', filterHtml.indexOf('Andri') === -1);
 ok('filter has no Elías', filterHtml.indexOf('Elías') === -1);
-ok('unknown stored filter falls back to Allir án Agnars', /value="nema_agnar" selected/.test(workerFilterOptionsHtml('nobody')));
+ok('unknown stored filter falls back to Allir án Ai', /value="nema_ai" selected/.test(workerFilterOptionsHtml('nobody')));
+ok('gamalt vistað nema_agnar velur Allir án Ai', /value="nema_ai" selected/.test(workerFilterOptionsHtml('nema_agnar')));
 ok('Binni stored filter stays selected', /value="Binni" selected/.test(workerFilterOptionsHtml('Binni')));
 ok('Binni filter matches Binni ticket', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'Binni', NOW));
 ok('nema_agnar includes Binni', matchesWorker({ status: 'nytt', assigned_to: 'Binni', created_at: isoDaysAgo(2) }, 'nema_agnar', NOW));
@@ -357,10 +369,10 @@ ok('no event target: expandedId wins', resolveEditorRowId(null, 705, 12) === 12)
 ok('no event target: selId when Meira/expanded is null', resolveEditorRowId(null, 705, null) === 705);
 ok('old currentEditorId(expandedId-only) would skip VALIÐ MÁL save', resolveEditorRowId(null, 705, null) != null);
 
-const allRows = [{ id: 705, assigned_to: 'Agnar' }, { id: 1, assigned_to: 'Anni' }];
-const staffVisible = allRows.filter(x => matchesWorker(x, 'nema_agnar', NOW));
-ok('nema_agnar visible after Agnar-assign is the other ticket', staffVisible.length === 1 && staffVisible[0].id === 1);
-ok('keep VALIÐ MÁL on ticket that left nema_agnar', keepSelectedId(705, staffVisible, allRows) === 705);
+const allRows = [{ id: 705, assigned_to: 'Charlize' }, { id: 1, assigned_to: 'Anni' }];
+const staffVisible = allRows.filter(x => matchesWorker(x, 'nema_ai', NOW));
+ok('nema_ai visible after Charlize-assign is the other ticket', staffVisible.length === 1 && staffVisible[0].id === 1);
+ok('keep VALIÐ MÁL on ticket that left nema_ai', keepSelectedId(705, staffVisible, allRows) === 705);
 ok('jump only when selected ticket is gone', keepSelectedId(999, staffVisible, allRows) === 1);
 ok('empty filter still keeps existing ticket', keepSelectedId(705, [], allRows) === 705);
 
@@ -385,14 +397,14 @@ const oldUnassignedTaggedHakon = {
   status: 'nytt', created_at: isoDaysAgo(40), assigned_to: null,
   tags: ['starfs:Hákon']
 };
-const agnarTaggedAgnarOnly = {
-  status: 'nytt', created_at: isoDaysAgo(3), assigned_to: 'Agnar',
-  tags: ['starfs:Agnar']
+const aiTaggedAiOnly = {
+  status: 'nytt', created_at: isoDaysAgo(3), assigned_to: 'Charlize',
+  tags: ['starfs:Charlize']
 };
 
 ok('Hákon filter sees Agnar job tagged Hákon', matchesWorker(agnarTaggedHakon, 'Hákon', NOW));
 ok('Agnar filter still sees own tagged job', matchesWorker(agnarTaggedHakon, 'Agnar', NOW));
-ok('nema_agnar shows Agnar job tagged to staff', matchesWorker(agnarTaggedHakon, 'nema_agnar', NOW));
+ok('nema_ai shows Agnar job tagged to staff', matchesWorker(agnarTaggedHakon, 'nema_ai', NOW));
 ok('Anni filter does not take Hákon tag', !matchesWorker(agnarTaggedHakon, 'Anni', NOW));
 ok('Bjarndís filter does not take Hákon tag', !matchesWorker(agnarTaggedHakon, 'Bjarndís', NOW));
 ok('tag does not steal assigned_to', effectiveAssignee(agnarTaggedHakon, NOW) === 'Agnar');
@@ -400,11 +412,11 @@ ok('rowTags strips starfs prefix from merki', rowTags(agnarTaggedHakon).join(','
 ok('taggedWorkers reads Hákon', taggedWorkers(agnarTaggedHakon).join(',') === 'Hákon');
 ok('Hákon assigned still matches Hákon without tag', matchesWorker(hakonAssigned, 'Hákon', NOW));
 ok('old unassigned tagged Hákon still claims', shouldClaim(oldUnassignedTaggedHakon, NOW));
-ok('old unassigned tagged Hákon is effective Agnar', effectiveAssignee(oldUnassignedTaggedHakon, NOW) === 'Agnar');
+ok('old unassigned tagged Hákon is effective Charlize', effectiveAssignee(oldUnassignedTaggedHakon, NOW) === 'Charlize');
 ok('Hákon filter sees old unassigned tagged to him', matchesWorker(oldUnassignedTaggedHakon, 'Hákon', NOW));
-ok('nema_agnar sees old unassigned tagged to staff', matchesWorker(oldUnassignedTaggedHakon, 'nema_agnar', NOW));
+ok('nema_ai sees old unassigned tagged to staff', matchesWorker(oldUnassignedTaggedHakon, 'nema_ai', NOW));
 ok('Anni old is not claimed even with a tag', !shouldClaim(Object.assign({}, anniOld, { tags: ['starfs:Hákon'] }), NOW));
-ok('tagging Agnar on Agnar job does not leak to nema_agnar', !matchesWorker(agnarTaggedAgnarOnly, 'nema_agnar', NOW));
+ok('tagging Charlize on Charlize job does not leak to nema_ai', !matchesWorker(aiTaggedAiOnly, 'nema_ai', NOW));
 
 const preserved = tagsWithCategory(agnarTaggedHakon, ['draft', 'senda_skyrslur']);
 ok('category rewrite keeps starfs:Hákon', preserved.indexOf('starfs:Hákon') !== -1 && preserved.indexOf('senda_skyrslur') !== -1 && preserved.indexOf('draft') !== -1);
@@ -421,19 +433,26 @@ ok('toggle leftover Sara tag writes starfs:Bjarndís', toggleTaggedWorker({ assi
 function tagChipUniverse(rows, filter, now) {
   return rows.filter(function (x) { return matchesWorker(x, filter, now); });
 }
-const chipRows = [anniOld, agnarRecent, oldUnassigned, recentUnassigned];
+const chipRows = [anniOld, agnarRecent, charlizeRecent, oldUnassigned, recentUnassigned];
 ok('Agnar TÖG universe excludes Anni', tagChipUniverse(chipRows, 'Agnar', NOW).indexOf(anniOld) === -1);
-ok('Agnar TÖG universe includes own + old unassigned', tagChipUniverse(chipRows, 'Agnar', NOW).indexOf(agnarRecent) !== -1 && tagChipUniverse(chipRows, 'Agnar', NOW).indexOf(oldUnassigned) !== -1);
+ok('Agnar TÖG universe includes own', tagChipUniverse(chipRows, 'Agnar', NOW).indexOf(agnarRecent) !== -1);
+ok('Agnar TÖG universe no longer includes old unassigned', tagChipUniverse(chipRows, 'Agnar', NOW).indexOf(oldUnassigned) === -1);
+ok('Charlize TÖG universe includes own + old unassigned', tagChipUniverse(chipRows, 'Charlize', NOW).indexOf(charlizeRecent) !== -1 && tagChipUniverse(chipRows, 'Charlize', NOW).indexOf(oldUnassigned) !== -1);
 ok('Agnar TÖG universe excludes recent unassigned', tagChipUniverse(chipRows, 'Agnar', NOW).indexOf(recentUnassigned) === -1);
 ok('Allir TÖG universe is the full set', tagChipUniverse(chipRows, 'allir', NOW).length === chipRows.length);
-ok('nema_agnar TÖG universe excludes Agnar-assigned', tagChipUniverse(chipRows, 'nema_agnar', NOW).indexOf(agnarRecent) === -1);
+ok('nema_ai TÖG universe excludes Charlize-assigned', tagChipUniverse(chipRows, 'nema_ai', NOW).indexOf(charlizeRecent) === -1);
+ok('nema_ai TÖG universe KEEPS Agnar-assigned', tagChipUniverse(chipRows, 'nema_ai', NOW).indexOf(agnarRecent) !== -1);
 
 const fs = require('fs');
 const path = require('path');
 const v231src = fs.readFileSync(path.join(__dirname, '..', 'js/patches/231-verkbord.js'), 'utf8');
 ok('231 TÖG chips call matchesWorker', v231src.indexOf('inQueue(x) && matchesWorker(x)') !== -1);
 ok('231 Allir is a filter option', v231src.indexOf("['allir', 'Allir']") !== -1);
-ok('231 Allir is a known filter', /s === 'nema_agnar' \|\| s === 'allir'/.test(v231src));
+ok('231 Allir is a known filter', /s === 'nema_ai' \|\| s === 'allir'/.test(v231src));
+ok('231 merkir AI-bunkann Charlize', v231src.indexOf("const AI_WORKER = 'Charlize'") !== -1);
+ok('231 gefur gamla nema_agnar gildinu þýðingu', v231src.indexOf("if (s === 'nema_agnar') return 'nema_ai'") !== -1);
+ok('231 sópar gömlum málum á AI_WORKER, ekki Agnar', v231src.indexOf("assigned_to: AI_WORKER") !== -1 && v231src.indexOf("assigned_to: 'Agnar'") === -1);
+ok('231 hefur engan harðkóðaðan Allir án Agnars merkimiða', v231src.indexOf("'Allir án Agnars'") === -1);
 
 console.log(failed ? '\nFAIL ' + failed : '\nOK');
 process.exit(failed ? 1 : 0);
