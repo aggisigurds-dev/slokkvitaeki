@@ -127,6 +127,11 @@
         border-color:#2563eb; background:rgba(37,99,235,.06);
       }
       #${SLOT_ID} .sb-slot.sb-empty { cursor:pointer; }
+      /* Ritanlegur texti á minnispunkta-spjaldi — lýsist upp við yfirsvif svo
+         sjáist að hann er smellanlegur. Aðeins bakgrunnur, ENGIN rammabreyting:
+         rammi myndi hliðra textanum og láta spjaldið hoppa til við músina. */
+      #${SLOT_ID} .sb-rit { transition:background .12s; }
+      #${SLOT_ID} .sb-card:hover .sb-rit:hover { background:rgba(37,99,235,.09); }
       #${SLOT_ID} .sb-card {
         width:100%; min-height:70px; box-sizing:border-box;
         padding:8px 8px 7px; border-radius:9px;
@@ -232,13 +237,25 @@
     const name  = row.customer_nafn || card.name || '—';
     const title = row.title || card.title || '';
     const tc    = card.type != null ? TYPES[card.type][1] : '#d3d6db';
+    // 03.09.2026 (ósk Agnars: „ég vill geta haldið áfram að breyta … bara geta
+    // skrifað beint á þetta svæði"): MINNISPUNKTA-spjöld (þau sem eru ekki
+    // tengd máli) eru ritanleg beint á borðinu — sama og þegar þau eru búin til.
+    // Spjöld sem HANGA Á MÁLI spegla titil málsins úr VerkbordLiveItems; að
+    // skrifa á þau hér myndi annaðhvort þurrkast út við næstu teikningu eða
+    // þurfa að skrifa í þjónustubeiðnina á bak við — þau opna því málið áfram,
+    // þar sem titillinn er ritanlegur í VALIÐ MÁL.
+    const ritanlegt = card.verkbord_id == null;
 
     return '<div class="sb-slot" data-sb-slot="' + i + '">' +
       '<div class="sb-card" draggable="true" data-sb-card="' + esc(card.id) + '" ' +
-        'data-sb-vid="' + esc(card.verkbord_id) + '" title="Smella til að opna málið hér að neðan">' +
+        'data-sb-vid="' + esc(card.verkbord_id) + '" title="' +
+        (ritanlegt ? 'Smella á textann til að breyta honum' : 'Smella til að opna málið hér að neðan') + '">' +
         // Header: dot + name + delete
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">' +
-          '<div style="display:flex;align-items:center;gap:5px;overflow:hidden;flex:1;min-width:0">' +
+          '<div class="' + (ritanlegt ? 'sb-rit' : '') + '"' +
+            (ritanlegt ? ' data-sb-edit="' + esc(card.id) + '"' : '') +
+            ' style="display:flex;align-items:center;gap:5px;overflow:hidden;flex:1;min-width:0' +
+            (ritanlegt ? ';cursor:text;border-radius:5px' : '') + '">' +
             '<span style="width:9px;height:9px;border-radius:50%;background:' + tc + ';flex:none;' +
               'margin-top:1px;transition:background .15s"></span>' +
             '<span style="font-size:11.5px;font-weight:800;color:#1a1c22;overflow:hidden;' +
@@ -248,10 +265,14 @@
         '</div>' +
         // Title
         (title
-          ? '<div style="font-size:10.5px;color:#6b7280;line-height:1.4;overflow:hidden;' +
+          ? '<div' + (ritanlegt ? ' class="sb-rit" data-sb-edit="' + esc(card.id) + '" style="cursor:text;border-radius:5px;' : ' style="') +
+              'font-size:10.5px;color:#6b7280;line-height:1.4;overflow:hidden;' +
               'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' +
               esc(title) + '</div>'
-          : '') +
+          : (ritanlegt
+              ? '<div class="sb-rit" data-sb-edit="' + esc(card.id) + '" style="cursor:text;border-radius:5px;' +
+                  'font-size:10.5px;color:#c3c7cd;line-height:1.4">Bæta við nánar…</div>'
+              : '')) +
         // Type picker dots
         typeDotRow(card) +
       '</div></div>';
@@ -489,6 +510,62 @@
       ta.addEventListener('mousedown', ev => ev.stopPropagation());
       // Smellur annars staðar vistar líka — varaleið, ekki aðalleið.
       ta.addEventListener('blur', vista);
+      return;
+    }
+
+    // ── Breyta minnispunkta-spjaldi BEINT á borðinu ─────────────────────────
+    // 03.09.2026 (ósk Agnars). Sama ritflæði og þegar spjaldið er búið til í
+    // tómri rúðu: textareita ofan í spjaldinu, fyrsta línan er fyrirsögn og
+    // restin skýring, Enter vistar, Shift+Enter gefur línu, Esc hættir við.
+    const ritSvaedi = e.target.closest('[data-sb-edit]');
+    if (ritSvaedi) {
+      e.stopPropagation();
+      e.preventDefault();
+      const cid  = ritSvaedi.getAttribute('data-sb-edit');
+      const card = state.cards.find(c => c.id === cid);
+      if (!card) return;
+      const kort = ritSvaedi.closest('.sb-card');
+      if (!kort || kort.querySelector('textarea')) return;   // þegar í ritun
+      // Dragið verður að slökkna á meðan — annars stelur það mousedown og
+      // ekki er hægt að setja bendilinn né velja texta inni í reitnum.
+      const dragAdur = kort.getAttribute('draggable');
+      kort.setAttribute('draggable', 'false');
+
+      const fyrir = (card.name || '') + (card.title ? String.fromCharCode(10) + card.title : '');
+      const haed  = Math.max(64, kort.offsetHeight - 8);
+      kort.innerHTML =
+        '<textarea class="sb-minnis" placeholder="Minnispunktur… (Enter vistar, Esc hættir við)" ' +
+        'style="width:100%;height:' + haed + 'px;box-sizing:border-box;border:0;outline:none;' +
+        'background:transparent;resize:none;font:inherit;font-size:12.5px;line-height:1.4;' +
+        'color:#1f2430;padding:0"></textarea>';
+      const ta = kort.querySelector('textarea');
+      ta.value = fyrir;
+      // Fókus tvisvar af sömu ástæðu og í nýskráningunni: eitthvað annað í
+      // smell-keðjunni tók fókusinn jafnóðum og þá gerði blur() ekkert.
+      ta.focus(); setTimeout(() => { try { ta.focus(); ta.selectionStart = ta.selectionEnd = ta.value.length; } catch (_) {} }, 0);
+
+      let vistad = false;   // Enter OG blur mega bæði koma — vista aðeins einu sinni
+      const vista = (haettVid) => {
+        if (vistad) return; vistad = true;
+        kort.setAttribute('draggable', dragAdur == null ? 'true' : dragAdur);
+        if (haettVid) { render(); return; }
+        const t = (ta.value || '').trim();
+        // Tómt = spjaldið er ekki lengur minnispunktur; fjarlægjum það frekar en
+        // að skilja eftir nafnlaust spjald sem ekki er hægt að smella á aftur.
+        if (!t) { state.cards = state.cards.filter(c => c.id !== cid); persist(); return; }
+        const skil = t.indexOf(String.fromCharCode(10));
+        card.name  = skil > 0 ? t.slice(0, skil).trim() : t;
+        card.title = skil > 0 ? t.slice(skil + 1).trim() : '';
+        persist();
+      };
+      ta.addEventListener('keydown', ev => {
+        ev.stopPropagation();
+        if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); vista(false); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); vista(true); }
+      });
+      ta.addEventListener('click', ev => ev.stopPropagation());
+      ta.addEventListener('mousedown', ev => ev.stopPropagation());
+      ta.addEventListener('blur', () => vista(false));
       return;
     }
 
