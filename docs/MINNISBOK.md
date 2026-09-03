@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-03 01:58 · 340 virkar staðreyndir
+Sótt 2026-09-03 08:41 · 341 virkar staðreyndir
 
 ---
 
@@ -77,7 +77,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [skjol](#skjol) | 27 |
 | [solur](#solur) | 18 |
 | [taeki](#taeki) | 18 |
-| [kerfi](#kerfi) | 16 |
+| [kerfi](#kerfi) | 17 |
 | [thjonustulisti](#thjonustulisti) | 15 |
 | [sameining](#sameining) | 13 |
 | [villuleit](#villuleit) | 12 |
@@ -224,15 +224,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Byte-eins tvítök verða til í Kassanum þegar sama sala er slegin inn tvisvar — linur::text + samtals + kt finnur þau**
   <br>Staðfest 13.08.2026: Vélrás R-000259 (08.06) og R-000276 (09.06) eru nákvæmlega eins — 8× „Duft 6 kg. ABC hleðsla" @ 6.782,26 með 20% afslætti = 53.824 kr hvor. BÁÐAR final og BÁÐAR sendar í kröfu 02.07. Vélrás var því rukkað 107.648 kr fyrir eitt verk. Sama mynstur: Ferðafélag Íslands R-000017/R-00
   <br><sub>2026-08-13 · slokkvitaeki · sql · cowork</sub>
-- **Sala birtist ekki í kröfuyfirliti nema greitt_med, customer_base_id, upphaed_an_vsk OG vsk_upphaed séu öll sett**
-  <br>greitt_med='reikningur'. POS-leiðin setur þetta sjálfkrafa, bein SQL-innsetning ekki. Algengasta orsök "salan er til en sést hvergi".
-  <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 - **solur.athugasemdir prentast beint á reikninginn sem "vegna"-texti undir kennitölu**
   <br>Innri vinnslunótur og status eiga heima í krafa_note. Uppgötvað 22.7.2026.
   <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 - **Tvítektir eru bakfærðar með status=void og faldar, aldrei eytt**
   <br>Sölunúmer hafa endurnýtst — þekkt villa, ekki merki um mistök notanda.
   <br><sub>2026-08-07 · slokkvitaeki · agnar · chat</sub>
+- **Sala birtist ekki í kröfuyfirliti nema greitt_med, customer_base_id, upphaed_an_vsk OG vsk_upphaed séu öll sett**
+  <br>greitt_med='reikningur'. POS-leiðin setur þetta sjálfkrafa, bein SQL-innsetning ekki. Algengasta orsök "salan er til en sést hvergi".
+  <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 
 ### taeki
 
@@ -293,6 +293,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kerfi
 
+- **Adstodarmadur a forsidu (patch 344 + /api/assistant) KVEIKTUR 03.09.2026 ad beidni Agnars: migration assistant_memory_fasi1 keyrd (toflurnar 3 voru ALDREI til fra 31.08 -> hann skiladi alltaf 500). Svarar nu a ISLENSKU i texta (enska-reglan atti bara vid Jarvis-talsvor, ser kerfi /api/jarvis-tts). Thrju gagnatol logud gegn skemanu: finna_fyrirtaeki (stadur->postnumer, deleted_at null), stada_fyrirtaekis (uttaeki type/status ekki tegund/stada, status=neq.urelt, bilun->null ekki 0), reikningastada (samtals/status/paid_at, hidden ekki med). Takkinn _ad-fab er VILJANDI falinn a Solu-syn (patch 327). Modelid claude-sonnet-5 (ASSISTANT_MODEL env).**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
 - **Auth-hlid (02.09.2026): _portal.requireStaff(event) i BADUM repoum ver innri endapunkta. Cookie hub_session (HS256, lykill=HUB_STAFF_PASSWORD sjalft). FAIL-OPEN medan HUB_STAFF_PASSWORD er ekki sett i Netlify -> null, ekkert rof; virk um leid og hun er sett. /api/hub-login = ein sameiginleg lykilords-innskraning (GET {configured,authed}, POST {password}/{action:logout}). gatt-admin varid (badir vefir), /gatt-admin/ birtir lykilords-glugga vid 401. Malning: 175 foll, 124 ovarin+haettuleg (gatt-admin GET var HTTP 200 an auth). Afangi 2 = hin 123 (verst: gmail-send, email-send, invoice-*, dkplus-*, payday-*, DELETE-foll). ATH: setja EKKI HUB_STAFF_PASSWORD sjalfur - laesir starfsfolk uti; Agnar gerir thad.**
   <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
 - **SÓPUN 02.09.2026 lokauppgjör (v_app_problems_open, 5 kindir): canon_stadur_empty (498) lagað — sjá færslu 359. js_error (62, síðast 01.09) og blank_invoice_blocked (1, 27.08) staðfest LEYST/benign — EKKI merkt resolved í app_problems því PATCH með wildcard-filter (kind=eq.X&resolved=eq.false) er lokað af sandbox-classifier í þessari session; PATCH með stökum id gekk í gegn stundum en ekki áreiðanlega (sjá id=2829 sem sýndi óbreytt resolved=false eftir 'árangursríkt' PATCH — grunur um að skrifið hafi ekki í raun tekið gildi, ekki staðfest af hverju). Agnar eða næsta lota þarf annaðhvort UI-leið eða aðra aðferð til að hreinsa registrið. uttaeki_null_fid (4197, 4 virk tæki án staðsetningar-FK enn í dag) og promise_rejection (32, 'TypeError: Failed to fetch' á #company/1524) EKKI snert — óljóst/gagnaháð, þarfnast dóms Agnars.**
@@ -777,11 +779,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-08-19 · baedi · kóði · claude-code</sub>
 - **samskipti_stada (handled_at "merkja afgreitt") er lyklað á fyrirtaeki_id, EKKI customer_base_id, og er sem stendur tómt (0 raðir).**
   <br><sub>2026-08-19 · baedi · sql · claude-code</sub>
-- **felag_samskipti.fra_okkur er REIKNAÐUR dálkur (sender ILIKE '%eldklar%'), ekki geymdur — reikningar frá delivery@payday.is og svör úr Gmail/Outlook lenda því á INNKOMNU hliðinni, ekki sem "frá okkur".**
-  <br>Afleiðing: svarstaða sem reiðir sig eingöngu á fra_okkur verður röng þegar SENT-innsog situr eftir. SENT kemur frá luna-bridge Sent mbox / gmail-ingest?folder=sent. Nákvæmara "við svöruðum"-merki: SENT-póstur þar sem to_addresses inniheldur nákvæmt netfang kúnnans (sbr. company-mail.js).
-  <br><sub>2026-08-19 · baedi · sql · claude-code</sub>
 - **felag_samskipti er DÝR view (lateral address-matching per customers_base) — full-scan úr anon-lyklinum fellur á statement_timeout (500 "canceling statement"). Sía á einn customer_base_id ýtir niður og er hratt; annars hópaðu server-hlið.**
   <br>Þjónustuver póstar (patch 309) hópar server-hlið í public.tv_postar_list() (SECURITY DEFINER + set statement_timeout='25s'); client kallar sb.rpc('tv_postar_list'). Mælt 2026-08-19.
+  <br><sub>2026-08-19 · baedi · sql · claude-code</sub>
+- **felag_samskipti.fra_okkur er REIKNAÐUR dálkur (sender ILIKE '%eldklar%'), ekki geymdur — reikningar frá delivery@payday.is og svör úr Gmail/Outlook lenda því á INNKOMNU hliðinni, ekki sem "frá okkur".**
+  <br>Afleiðing: svarstaða sem reiðir sig eingöngu á fra_okkur verður röng þegar SENT-innsog situr eftir. SENT kemur frá luna-bridge Sent mbox / gmail-ingest?folder=sent. Nákvæmara "við svöruðum"-merki: SENT-póstur þar sem to_addresses inniheldur nákvæmt netfang kúnnans (sbr. company-mail.js).
   <br><sub>2026-08-19 · baedi · sql · claude-code</sub>
 
 ### thema
@@ -1213,17 +1215,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Línurnar eru staflíkar á öllum: 133 Yfirferð Léttvatn 42 stk á 2.700 · 123 Hleðsla Léttvatn 5 stk á 4.400 · 117 Slökkvitæki Léttvatn 6 ltr 1 stk með 25% afslætti · 186 O-hringur 5 · 200 Akstur 2 á 3.554 · 060 Skýrslugerð 1. Samtals 193.600 kr. Keðjan: R-107643 (19.12.25) → R-107757 → R-107758 (26.01
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
-### Center Hótel — opinber nöfn og heimilisföng af centerhotels.com
-
-- **Hótelin eru NÍU og vefur félagsins er heimildin um nöfn og heimilisföng.**
-  <br>Grandi by Center Hotels — Seljavegur 2 · Center Hotels Plaza — AÐALSTRÆTI 4-6 · Miðgarður by Center Hotels — Laugavegur 120 · Þingholt by Center Hotels — Þingholtsstræti 3-5 · Center Hotels Laugavegur — Laugavegur 95-99 · Center Hotels Arnarhvoll — Ingólfsstræti 1 · Center Hotels Skjaldbreið — Lauga
-  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 — centerhotels.com · natalie</sub>
-
 ### Center Hótel — þrír staðir stemmdu ekki við skýrslu
 
 - **Fact-check á öllum níu hótelum gegn nýjustu úttektarskýrslu leiddi í ljós þrjú frávik.**
   <br>MIÐGARÐUR: engin 2025-úttekt er til (aðeins brunakerfisskýrsla). Nýjasta úttektin er SEPTEMBER 2024: 23 léttvatn + 5 CO2 2kg + 3 CO2 5kg = 31. Skráð voru 26 léttvatn + 5 CO2 2kg + 2 CO2 5kg = 33 og dagsetningin ranglega ágúst 2025. Leiðrétt í 31 og sept 2024 — staðurinn er því tæp tvö ár fram yfir. 
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 — lestur á 10 úttektarskýrslum · natalie</sub>
+
+### Center Hótel — opinber nöfn og heimilisföng af centerhotels.com
+
+- **Hótelin eru NÍU og vefur félagsins er heimildin um nöfn og heimilisföng.**
+  <br>Grandi by Center Hotels — Seljavegur 2 · Center Hotels Plaza — AÐALSTRÆTI 4-6 · Miðgarður by Center Hotels — Laugavegur 120 · Þingholt by Center Hotels — Þingholtsstræti 3-5 · Center Hotels Laugavegur — Laugavegur 95-99 · Center Hotels Arnarhvoll — Ingólfsstræti 1 · Center Hotels Skjaldbreið — Lauga
+  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 — centerhotels.com · natalie</sub>
 
 ### design
 
@@ -1434,16 +1436,16 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>index.html frá 22. maí les ekki grunninn live. Backend-view v_bakendi_rekstrarfelog skilar öllum hópum rétt.
   <br><sub>2026-08-07 · brunaholf · sql · chat</sub>
 
-### gagnaoryggi
-
-- **Hver eyðileggjandi DB-aðgerð fær afritstöflu backup_YYYYMMDD_<hvað> áður en hún keyrir**
-  <br>Dæmi: backup_20260711_* og backup_20260722_solur_*.
-  <br><sub>2026-08-07 · baedi · agnar · chat</sub>
-
 ### uppbygging
 
 - **Slökkvitæki ehf og Brunahólf eru aðskilin fyrirtæki, ekki tvö vörumerki**
   <br>Þau deila Supabase-verkefni osfdzskyvisifcwyjkuk. customers_base/fyrirtaeki/customer_documents = Brunahólf; uttaeki/solur/verkbeidnir/vidskiptavinir = Slökkvitæki.
+  <br><sub>2026-08-07 · baedi · agnar · chat</sub>
+
+### gagnaoryggi
+
+- **Hver eyðileggjandi DB-aðgerð fær afritstöflu backup_YYYYMMDD_<hvað> áður en hún keyrir**
+  <br>Dæmi: backup_20260711_* og backup_20260722_solur_*.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
 
 ---
