@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-03 19:24 · 356 virkar staðreyndir
+Sótt 2026-09-03 20:02 · 357 virkar staðreyndir
 
 ---
 
@@ -79,8 +79,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [solur](#solur) | 18 |
 | [taeki](#taeki) | 18 |
 | [thjonustulisti](#thjonustulisti) | 15 |
+| [brunaholf](#brunaholf) | 13 |
 | [sameining](#sameining) | 13 |
-| [brunaholf](#brunaholf) | 12 |
 | [villuleit](#villuleit) | 12 |
 | [postur](#postur) | 10 |
 | [reikningar](#reikningar) | 8 |
@@ -304,11 +304,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Tækjaskrá 131 staðar endurbyggð 23.08.2026 úr úttektarskýrslum**
   <br>618 gömlum auto-tækjum eytt, 1.304 ný búin til úr sundurliðun arsskodun_report_facts, öll með fyrirtaeki_id og serial-forminu FC<fid>-<tegund>-<n>. Sannprófað: 131/131 passa við skýrslutölu. Log: cowork_taeki_rebuild_log_20260823, backup: uttaeki_backup_20260823b. Undanskilin: Bílabúð Benna (532/161
   <br><sub>2026-08-23 · slokkvitaeki · cowork 23.08.2026 · cowork</sub>
-- **Tækjafjöldi í kerfinu stemmir ekki við úttektarskýrslurnar hjá 44% staða 2026**
-  <br>Samanburður 23.08.2026 (tafla cowork_taeki_samanburdur_20260823) á arsskodun_report_facts vs uttaeki, parað á customer_base_id + location=heimilisfang. 2026: 111 passa, 97 staðir eiga tæki á kennitölunni en á öðru heimilisfangi (778 tæki), 40 staðir eiga engin tæki skráð (346 tæki), 13 staðir vantar
-  <br><sub>2026-08-23 · slokkvitaeki · cowork factcheck 23.08.2026 · cowork</sub>
 - **Bílabúð Benna: sjálfvirka tækjagerðin bjó til 14 tæki en skýrslan segir 17**
   <br>Raðnúmeraröðin AE20260626-0017 til -0030 er 14 slots og -0028 (brunaslanga) hefur verið eytt, svo 13 standa eftir á Krókhálsi 9. Skýrslan og R-000419 segja bæði 17: 9 léttvatn, 2 duft 6-12kg, 1 CO2 2kg, 1 CO2 5kg, 4 brunaslöngur. Vantar 1 léttvatn, 1 ABC duft og 2 brunaslöngur. Agnar valdi 23.08.202
+  <br><sub>2026-08-23 · slokkvitaeki · cowork factcheck 23.08.2026 · cowork</sub>
+- **Tækjafjöldi í kerfinu stemmir ekki við úttektarskýrslurnar hjá 44% staða 2026**
+  <br>Samanburður 23.08.2026 (tafla cowork_taeki_samanburdur_20260823) á arsskodun_report_facts vs uttaeki, parað á customer_base_id + location=heimilisfang. 2026: 111 passa, 97 staðir eiga tæki á kennitölunni en á öðru heimilisfangi (778 tæki), 40 staðir eiga engin tæki skráð (346 tæki), 13 staðir vantar
   <br><sub>2026-08-23 · slokkvitaeki · cowork factcheck 23.08.2026 · cowork</sub>
 - **RAÐNÚMER SKIPTA ENGU MÁLI — hvorki vélgerð né handgerð. Þau eru merkimiðar, ekki auðkenni, og mega aldrei ráða ákvörðun**
   <br>Agnar staðfesti 21.08.2026: „engin raðnúmer skipta máli." Sama og Sara segir: raðnúmerin eru sjálfgerð og það er engin eftirsjá í þeim. Af því leiðir: (1) ekki nota raðnúmeramynstur til að velja milli tveggja skráninga á sama húsi — notaðu KENNITÖLU GREIÐANDA, reikninginn og úttektarskýrsluna; (2) e
@@ -380,6 +380,40 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>fyrirtaeki.deleted_at markar eydd. Viewið v_fyrirtaeki_mail_stada tengir listann við póstinn á fyrirtaeki.netfang.
   <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 
+### brunaholf
+
+- **Vistunar-úttekt á Efnislista-ritlinum 03.09.2026 (Agnar: „passa upp á alla vistun"): allar leiðir prófaðar með raunverulegum breytingum + endurhleðslu. 💾 Vista skrifar í invoice_drafts (klst, taxtar, km/ferðir, efni, aukagjöld, afsláttur, fast verð, athugasemd) — staðfest að allt kemur til baka eftir reload. Smáhlutagjalds-hakið, eigin dagsetningartexti og afsláttur liggja í state.ui og fara á þjóninn gegnum /api/app-state (hub_state) svo þau fylgja milli tækja; afslátturinn er auk þess á drögunum sjálfum. Tímaskýrslu-panellinn í ritlinum vistar sig SJÁLFUR við hverja breytingu (state.ui.timabok_edits) — engin 💾 þar. Viðhengi/innra/skjáskot/PDF fara í efnislisti_documents. TVEIR gallar fundust og voru lagaðir: (1) hausinn sagði áfram „vistað HH:MM" þótt reitum væri breytt eftir vistun og „Loka" henti breytingunum þegjandi — nú kviknar „óvistað — ýttu á 💾 Vista" strax, lokun spyr og vafrinn varar við endurhleðslu; (2) ＋ í tímaskýrslunni vistaði ekki nýju línuna fyrr en reitur var fylltur.**
+  <br>Prófað á Austurhraun 3 · júlí 2026 (12,5 klst, 30 km, 7% afsláttur, efnislína, athugasemd, smáhlutagjald af, eigin dagsetning) — allt kom rétt til baka eftir endurhleðslu; prufudrögunum og prufuviðhenginu eytt á eftir. Commit e710624.
+  <br><sub>2026-09-03 · brunaholf · claude-code · claude-code</sub>
+- **Efnislistinn tekur nú við AÐSENDUM viðhengjum sem fara MEÐ skýrslu/kröfu: takkinn „📎 Viðhengi" (doc_type vidhengi) við hliðina á „🔒 Innra viðhengi" (sendist aldrei). pdf-store tekur við doc_type vidhengi/efnislisti með hvaða skráartegund sem er. Listinn „Vistuð PDF-skjöl" sýndi ÁÐUR aðeins efnislisti_pdf/timabok_pdf/innra — þess vegna sáust Landsspítala-uppgjörin (doc_type efnislisti, feb–ágúst) hvergi í viðmótinu; það er lagað og þau merkt „Viðhengi (fer með)". Landsspítala-uppgjörið fyrir ágúst 2026 var hengt á Landsspitalinn|2026-08 03.09.2026.**
+  <br>Agnar 03.09.2026: „þarf að geta fest þetta skjal inn á efnislistann á landsspitalanum sem reikninginn fyrir þetta verk". Uppgjörsskjalið ER reikningurinn fyrir Landsspítalann — hann er ekki rukkaður af klst × taxta í Efnislistanum (samtala 0 kr þar).
+  <br><sub>2026-09-03 · brunaholf · claude-code · claude-code</sub>
+- **Brunaþéttingar-appið (brunaholf brunathettingar.html, slóð /brunathettingar, PWA) er verkstaða-app starfsmanna frá 03.09.2026: Verkstaðir mánaðarins úr Tímaveru + Redder-innkaup, skrá EFNI AF LAGER úr Verðskrá (+ magn og athugasemd) og PUNKTA úr verkinu, MÆTING (💬 veikur/fjarverandi/kom of seint/fór snemma + starfsmaður sem er ekki í Tímaveru), BEIÐNIR (teikningar/efni/verkfæri) og DEILT (TurboPaint-borð og hlekkir frá Agnari + flísar á Landsspítala og Mætingu). Bakendi /api/field-app (netlify/functions/field-app.js) á töflunum field_entries og field_shares; vistar strax, biðröð í localStorage ef net dettur út og client_id er UNIQUE svo endursending tvítaki ekki. Hub-megin: nýr flipi „Frá verkstað" (renderVerkstadapostur) með stöðu nýtt→séð→lokið, og 🧰-kassi í Efnislistanum þar sem efni af lager forútfyllist eins og Redder-efni. Verðskrá efnis er nú ein heimild í js/gr-materials.js.**
+  <br>Prófað í gegnum viðmótið 03.09.2026: efni (Eldvarnar akríl × 4 = 6.496 kr), mætingar-athugasemd á alfred og beiðni skiluðu sér í hub-flipann og í Efnislistann; prófgögnum eytt á eftir. FIELD_APP_TOKEN (Netlify env) lokar appinu þegar það er sett — á að fara á um leið og HUB_STAFF_PASSWORD.
+  <br><sub>2026-09-03 · brunaholf · claude-code · claude-code</sub>
+- **Regla úr Boss-ritlinum: bossSums() má aldrei skrifa óvarið inn í undirtré sem MutationObserver vaktar (#gr-mats) — það hengdi vafrann í endalausri lykkju 03.09.2026 (textContent-skrif kveikir childList-mutation þótt gildið sé óbreytt). Skrifa aðeins ef gildi breytist + endurkvæmni-vörður (bsBusy).**
+  <br>Lagað í 90b8a3c. Sama gildir um allar „sums"-lykkjur sem lesa og skrifa sama DOM.
+  <br><sub>2026-09-03 · brunaholf · claude-code · claude-code</sub>
+- **Efnislista-ritillinn í Gerð reikninga (brunaholf index.html, grOpenWorksite) er í Boss-útliti frá 03.09.2026: svartur haus með gullplötu (DRÖG nr) og LED „vistað HH:MM", KPI-slab (Tími · Efni · Gjöld · Án vsk · Samtals með vsk í gull-texta), ATHUGA-flögur (02 Tímabók X klst ≠ reikningur Y · 03 vara: söluverð undir innkaupi) sem skruna að kaflanum, kaflar 01 Verk (2 dálkar + samsettur tímabils-brunnur) · 02 Tími & akstur (grind Klst/Kr/klst/Samtals, ein tímabókar-lína með gull-Fylla, Tímaskýrsla, Akstur með einingu í reit) · 03 Efni (dálkahausar, línusummur, Redder-kassi með „Sýna innkaup ›" sem opnar Efniskostnað sama mánaðar yfir ritlinum) · 04 Gjöld & verð (hak-spjöld með upphæðum, Afsláttur/Fast verð hlið við hlið) · 05 Athugasemd (innri). Reikningsblaðið sjálft (draw/prent/jsPDF) er ÓBREYTT — Agnar: „dont change the invoice".**
+  <br>Mockup: Claude Design „Efnislisti boss" + „Efnislisti boss sími" + smáatriða-skjáskot 03.09.2026. CSS scoped á .gr-modal-bg.boss, breakpoint 860 (sá sem gr-modal átti), form-dálkur minmax(460px,44%). Commits 558cdaf…73a4379.
+  <br><sub>2026-09-03 · brunaholf · claude-code · claude-code</sub>
+- **Boss-utlit i brunaholf (03.09.2026): honnunarkerfid er skill .claude/skills/boss-theme (tokens/gold/elevation/components + Thjonustubord-vidmidun) og css/theme.css v2 (index.html hledur; 30 af 32 sidum EKKI). Efnislista-ritillinn (grOpenWorksite) er nu i Boss-utliti eftir mockupum 'Efnislisti boss' + 'simi': svartur haus m/ gullplotu (DROG nr) og LED 'vistad HH:MM', KPI-slab (Timi/Efni/Gjold/An vsk/Samtals), kaflar 01 Verk-02 Timi&akstur (m/Timaskyrslu)-03 Efni-04 Gjold&verd-05 Athugasemd med gullplotum, fellanlegir (simi: 02+03 opnir), ATHUGA-kassi (timabok!=reikningur, efni undir innkaupi -> smellur skrunar ad kafla), simaflipar Breyta/Reikningur, takkabordi gull Vista / filabein PDF-Prenta-PDF+Timask-Vinnuskjal / obsidian Handvirkt-Timabok. CSS scoped a .gr-modal-bg.boss, breakpoint 860, oll id/handlerar obreytt. Athugasemd nu lika UR forskodun (var eftir). NYTT: Timavera-skjaskot (gr-tv-btn i Timaskyrslu-haus): eitt per (verkstad,manud), innra vidhengi titill 'Timavera-skjaskot …', opnast i lightbox til ad factchecka frumtima, skipt ut med stadfestingu, sendist aldrei.**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Efnislisti-ritill brunaholf (03.09.2026, Agnar): Athugasemd (gr-notes) er INNRI - prentast hvorki i forskodun/prentun ne jsPDF (Efnislisti og PDF+Timaskyrsla nota sama smid); merkt 'innri - birtist EKKI a skyrslu/PDF'. Ekki tengja hana aftur vid PDF. NYTT: takkinn 'Innra vidhengi' (gr-innra) - hvada skra sem er (<=4 MB, mynd/PDF) -> POST /api/pdf-store {doc_type:'innra', mimeType} -> efnislisti-pdf bucket + efnislisti_documents (doc_type innra, ending ur skraarnafni). Sest i 'Vistud PDF-skjol' med 🔒-merki (opna/saekja/eyda). Sendifaedid (Senda), Reikningagrid-📎 og Vinnubok SLEPPA 'innra' alltaf - fer aldrei ut ur husi.**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Storhofdi 29 (03.09.2026): EITT verk sem klofnadi a rithaetti - Timavera 'Storhofdi 29' (28.-31.08, 16,07 klst) og 'Storhofda29' (fra 31.08, 16,33 klst) -> tvo agust-drog. Lagad: project_aliases 'Storhofda29' og 'storhofdi 29' -> 'Storhofdi 29'; drog 304 sameinud (15,64 klst, 220.442 kr, stadfesting 20.000 EINU SINNI - 'Sameina drog'-takkinn leggur stadfestingu/smahlutagjald saman og tvitelur!), 308 skipped; Redder 0142816 faerdur undir retta ritt. worksites.js hopar nu Timavera-klst gegnum project_aliases (adur bara Ajour) svo 'Timi eftir' i Krofuyfirliti rennur saman. NYTT i Efniskostnadi: hak per Redder-linu 'Ekki a teng.' (redder_line_items.excluded; POST /api/redder-invoices {action:'exclude_line',line_id,excluded}); GET skilar effective_m_vsk = recharge_amount ?? m_vsk - undanskildar linur x vsk-studull og samantektin notar thad (Krofuyfirlit/Reikningagrid fylgja); Gerd reikninga sleppir undanskildum linum i efnislista-utfyllingu. Prófad i glugganum: 50.016 -> 47.791 vid hak, aftur 50.016 vid afhak. ATH: greidandi vantar a Storhofdi 29 (customer_name null, engin customer_worksite_map rod).**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **NLSH skyrslan i hub (03.09.2026): Agnar horfir a hub-FLIPANN brunaholf.netlify.app/#nlsh (renderNLSH i index.html - eigid afrit af NLSH-maelabordinu), ekki a /nlsh.html. Manadarlokaskyrslan er thvi EIN sameiginleg eining js/nlsh-stada.js (window.mountNlshStada / __nlStadaReload, eigin hjalparfoll+CSS, sama mynstur og nlsh-sections.js) montud i #nl-stada undir spjoldunum BAEDI i flipanum og a nlsh.html. ATH: renderNlsh() (litid n) er annad - Vinnustofu-spjald med foastri taxtatoflu. /Landsspitalinn (oll rithaetti) -> /nlsh.html (netlify.toml). Bumpa ?v= a script-tagi einingarinnar i badum HTML-skram vid breytingar.**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **PDF-skjol i brunaholf (03.09.2026, Agnar): skraarnafn er '<Verkstadur> - <Tegund> - <Manudur Ar>.pdf' t.d. 'Fjallabodin Thjorsardal - Efnislisti - Juli 2026.pdf' (bhPdfName + monthLabelFull i index.html; greidanda og kt SLEPPT; samsetta 2ja sidna skjalid heitir lika 'Efnislisti'). Nidurhal: vafrinn nefnir eftir slodinni i Supabase Storage og download-eigindid er hunsad milli lena -> pdf-store.js skilar download_url = public_url + '&download=<nafn>' (Content-Disposition, sannad med HEAD) og listinn Vistud PDF-skjol notar sama. Ekki breyta til baka i kt-nafn.**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **NLSH regla LEYST 03.09.2026 (Agnar: do what you think is best): maelt ur Adalskjalinu sjalfu (Downloads/Landsspitalinn - Adalskjal (1).xlsx, blad uppgjor Juli, dalkar G/H) - ADEINS 2.2 (168->168) og 1.2 (743->743) eru 1 staka = 1 heild; ALLT annad helmingad, lika 1.3 (1->0,5), 2.11 metrar (206->103) og 3.1 (470->235). full a 1.3 i hub kom med dashboard-flipanum 8e842a2 an rokstudnings; calibrada commit-id e232160 flaggadi adeins 1.2. Lagad e806d16: EIN VERK-tafla i nlsh-uppgjor.js (rate, target, full, metrar) sem nlsh-dashboard.js og nlsh-stada.js flytja inn. nlsh_manadarlok SAD med uppsofnudum lokatolum per verklid sept 2025 -> juli 2026 (165 radir, ur manadardalkum bladsins, stemmir vid Heildar lokanir: juli 8429/4670). Agust+ = Ajour thar til Agnar slaer inn (nefndi 9273 fyrir agust).**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **NLSH stafraen manadarlokaskyrsla (03.09.2026, brunaholf nlsh.html + /api/nlsh-stada): thrju log - (1) Ajour-tillaga: SQL nlsh_stada_manudir gefur nyjar Done-lokanir per manud/flokk (fyrsta Done-dags hvers serial), uppsafnad i JS = nakvaemlega sama og nlsh_stada per manud (sannad: jul 8266, agu 9232). (2) LOKATALA: tafla nlsh_manadarlok (month, verk_nr, lokatala numeric, RLS service_role) - talan sem Agnar SENDIR, aud = Ajour gildir, POST {month, lines} vistar/eydir. (3) Skyrslan reiknud eins og bladid: heilar = stakar/2 nema 2.2 og 1.2 (1=1), 2.11 og 3.1 METRAR; verd/heild m.vsk ur VERK i nlsh-uppgjor.js; Fjoldi ur nlsh-dashboard target. ATH MISRAEMI: nlsh-uppgjor/dashboard hafa full a 1.2+1.3 en ekki 2.2 - bladid (juli-xlsx) segir 2.2+1.2; skyrslan fylgir bladinu, aaetlunin i hub er obreytt - Agnar sker ur. UI: manadardalkar sept 2025->valinn (● = lokatolur vistadar), Stada-reitur fyrir valinn manud med lifandi endurreikningi, Vista/Ajour/Afrita.**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **NLSH manadarlok (02.09.2026): brunaholf /api/nlsh-stada?til=YYYY-MM skilar uppsafnadri Done-talningu per verklid (stakar) i lok manadar - reitur 'Stada i lok manadar' a nlsh.html med Afrita-takka. Agnar limir dalkinn i samningsbladid (Google Sheet) sem reiknar heildir/verd sjalft. Talan stemmir EKKI upp a stak vid bladid: ~510 skraningar halfkladar/ekki merktar Done (ekki_done i svarinu) - vitad og i lagi. SQL-fall nlsh_stada (service_role eingongu), VERK-kortlagning deild ur nlsh-uppgjor.js.**
+  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### sameining
 
 - **Austurberg: TVAER kennitolur a somu byggingu. id 291 (511115-1400) er virka husfelagid — rett heimilisfang, tengilidur, reikningar 2021/2023/2024/2026. id 499 (470486-7169) var stofnad SJALFVIRKT ur Skuldunautaskra 2026-05-17, ber posthólf sem heimilisfang og banner_note 'ATH - kanski kerfisvilla'. Uttektarskyrslur 2026 og 2024 eru SOMU skjolin a badum.**
@@ -421,37 +455,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Jaðarleiti 2-8, 103 Rvk sameinað (board 141e4f90): #495 (tómt, eytt) -> #704. Sami staður/kt 611117-0190/base 591.**
   <br>survivor=704 loser=495
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-
-### brunaholf
-
-- **Efnislistinn tekur nú við AÐSENDUM viðhengjum sem fara MEÐ skýrslu/kröfu: takkinn „📎 Viðhengi" (doc_type vidhengi) við hliðina á „🔒 Innra viðhengi" (sendist aldrei). pdf-store tekur við doc_type vidhengi/efnislisti með hvaða skráartegund sem er. Listinn „Vistuð PDF-skjöl" sýndi ÁÐUR aðeins efnislisti_pdf/timabok_pdf/innra — þess vegna sáust Landsspítala-uppgjörin (doc_type efnislisti, feb–ágúst) hvergi í viðmótinu; það er lagað og þau merkt „Viðhengi (fer með)". Landsspítala-uppgjörið fyrir ágúst 2026 var hengt á Landsspitalinn|2026-08 03.09.2026.**
-  <br>Agnar 03.09.2026: „þarf að geta fest þetta skjal inn á efnislistann á landsspitalanum sem reikninginn fyrir þetta verk". Uppgjörsskjalið ER reikningurinn fyrir Landsspítalann — hann er ekki rukkaður af klst × taxta í Efnislistanum (samtala 0 kr þar).
-  <br><sub>2026-09-03 · brunaholf · claude-code · claude-code</sub>
-- **Brunaþéttingar-appið (brunaholf brunathettingar.html, slóð /brunathettingar, PWA) er verkstaða-app starfsmanna frá 03.09.2026: Verkstaðir mánaðarins úr Tímaveru + Redder-innkaup, skrá EFNI AF LAGER úr Verðskrá (+ magn og athugasemd) og PUNKTA úr verkinu, MÆTING (💬 veikur/fjarverandi/kom of seint/fór snemma + starfsmaður sem er ekki í Tímaveru), BEIÐNIR (teikningar/efni/verkfæri) og DEILT (TurboPaint-borð og hlekkir frá Agnari + flísar á Landsspítala og Mætingu). Bakendi /api/field-app (netlify/functions/field-app.js) á töflunum field_entries og field_shares; vistar strax, biðröð í localStorage ef net dettur út og client_id er UNIQUE svo endursending tvítaki ekki. Hub-megin: nýr flipi „Frá verkstað" (renderVerkstadapostur) með stöðu nýtt→séð→lokið, og 🧰-kassi í Efnislistanum þar sem efni af lager forútfyllist eins og Redder-efni. Verðskrá efnis er nú ein heimild í js/gr-materials.js.**
-  <br>Prófað í gegnum viðmótið 03.09.2026: efni (Eldvarnar akríl × 4 = 6.496 kr), mætingar-athugasemd á alfred og beiðni skiluðu sér í hub-flipann og í Efnislistann; prófgögnum eytt á eftir. FIELD_APP_TOKEN (Netlify env) lokar appinu þegar það er sett — á að fara á um leið og HUB_STAFF_PASSWORD.
-  <br><sub>2026-09-03 · brunaholf · claude-code · claude-code</sub>
-- **Regla úr Boss-ritlinum: bossSums() má aldrei skrifa óvarið inn í undirtré sem MutationObserver vaktar (#gr-mats) — það hengdi vafrann í endalausri lykkju 03.09.2026 (textContent-skrif kveikir childList-mutation þótt gildið sé óbreytt). Skrifa aðeins ef gildi breytist + endurkvæmni-vörður (bsBusy).**
-  <br>Lagað í 90b8a3c. Sama gildir um allar „sums"-lykkjur sem lesa og skrifa sama DOM.
-  <br><sub>2026-09-03 · brunaholf · claude-code · claude-code</sub>
-- **Efnislista-ritillinn í Gerð reikninga (brunaholf index.html, grOpenWorksite) er í Boss-útliti frá 03.09.2026: svartur haus með gullplötu (DRÖG nr) og LED „vistað HH:MM", KPI-slab (Tími · Efni · Gjöld · Án vsk · Samtals með vsk í gull-texta), ATHUGA-flögur (02 Tímabók X klst ≠ reikningur Y · 03 vara: söluverð undir innkaupi) sem skruna að kaflanum, kaflar 01 Verk (2 dálkar + samsettur tímabils-brunnur) · 02 Tími & akstur (grind Klst/Kr/klst/Samtals, ein tímabókar-lína með gull-Fylla, Tímaskýrsla, Akstur með einingu í reit) · 03 Efni (dálkahausar, línusummur, Redder-kassi með „Sýna innkaup ›" sem opnar Efniskostnað sama mánaðar yfir ritlinum) · 04 Gjöld & verð (hak-spjöld með upphæðum, Afsláttur/Fast verð hlið við hlið) · 05 Athugasemd (innri). Reikningsblaðið sjálft (draw/prent/jsPDF) er ÓBREYTT — Agnar: „dont change the invoice".**
-  <br>Mockup: Claude Design „Efnislisti boss" + „Efnislisti boss sími" + smáatriða-skjáskot 03.09.2026. CSS scoped á .gr-modal-bg.boss, breakpoint 860 (sá sem gr-modal átti), form-dálkur minmax(460px,44%). Commits 558cdaf…73a4379.
-  <br><sub>2026-09-03 · brunaholf · claude-code · claude-code</sub>
-- **Boss-utlit i brunaholf (03.09.2026): honnunarkerfid er skill .claude/skills/boss-theme (tokens/gold/elevation/components + Thjonustubord-vidmidun) og css/theme.css v2 (index.html hledur; 30 af 32 sidum EKKI). Efnislista-ritillinn (grOpenWorksite) er nu i Boss-utliti eftir mockupum 'Efnislisti boss' + 'simi': svartur haus m/ gullplotu (DROG nr) og LED 'vistad HH:MM', KPI-slab (Timi/Efni/Gjold/An vsk/Samtals), kaflar 01 Verk-02 Timi&akstur (m/Timaskyrslu)-03 Efni-04 Gjold&verd-05 Athugasemd med gullplotum, fellanlegir (simi: 02+03 opnir), ATHUGA-kassi (timabok!=reikningur, efni undir innkaupi -> smellur skrunar ad kafla), simaflipar Breyta/Reikningur, takkabordi gull Vista / filabein PDF-Prenta-PDF+Timask-Vinnuskjal / obsidian Handvirkt-Timabok. CSS scoped a .gr-modal-bg.boss, breakpoint 860, oll id/handlerar obreytt. Athugasemd nu lika UR forskodun (var eftir). NYTT: Timavera-skjaskot (gr-tv-btn i Timaskyrslu-haus): eitt per (verkstad,manud), innra vidhengi titill 'Timavera-skjaskot …', opnast i lightbox til ad factchecka frumtima, skipt ut med stadfestingu, sendist aldrei.**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Efnislisti-ritill brunaholf (03.09.2026, Agnar): Athugasemd (gr-notes) er INNRI - prentast hvorki i forskodun/prentun ne jsPDF (Efnislisti og PDF+Timaskyrsla nota sama smid); merkt 'innri - birtist EKKI a skyrslu/PDF'. Ekki tengja hana aftur vid PDF. NYTT: takkinn 'Innra vidhengi' (gr-innra) - hvada skra sem er (<=4 MB, mynd/PDF) -> POST /api/pdf-store {doc_type:'innra', mimeType} -> efnislisti-pdf bucket + efnislisti_documents (doc_type innra, ending ur skraarnafni). Sest i 'Vistud PDF-skjol' med 🔒-merki (opna/saekja/eyda). Sendifaedid (Senda), Reikningagrid-📎 og Vinnubok SLEPPA 'innra' alltaf - fer aldrei ut ur husi.**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Storhofdi 29 (03.09.2026): EITT verk sem klofnadi a rithaetti - Timavera 'Storhofdi 29' (28.-31.08, 16,07 klst) og 'Storhofda29' (fra 31.08, 16,33 klst) -> tvo agust-drog. Lagad: project_aliases 'Storhofda29' og 'storhofdi 29' -> 'Storhofdi 29'; drog 304 sameinud (15,64 klst, 220.442 kr, stadfesting 20.000 EINU SINNI - 'Sameina drog'-takkinn leggur stadfestingu/smahlutagjald saman og tvitelur!), 308 skipped; Redder 0142816 faerdur undir retta ritt. worksites.js hopar nu Timavera-klst gegnum project_aliases (adur bara Ajour) svo 'Timi eftir' i Krofuyfirliti rennur saman. NYTT i Efniskostnadi: hak per Redder-linu 'Ekki a teng.' (redder_line_items.excluded; POST /api/redder-invoices {action:'exclude_line',line_id,excluded}); GET skilar effective_m_vsk = recharge_amount ?? m_vsk - undanskildar linur x vsk-studull og samantektin notar thad (Krofuyfirlit/Reikningagrid fylgja); Gerd reikninga sleppir undanskildum linum i efnislista-utfyllingu. Prófad i glugganum: 50.016 -> 47.791 vid hak, aftur 50.016 vid afhak. ATH: greidandi vantar a Storhofdi 29 (customer_name null, engin customer_worksite_map rod).**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **NLSH skyrslan i hub (03.09.2026): Agnar horfir a hub-FLIPANN brunaholf.netlify.app/#nlsh (renderNLSH i index.html - eigid afrit af NLSH-maelabordinu), ekki a /nlsh.html. Manadarlokaskyrslan er thvi EIN sameiginleg eining js/nlsh-stada.js (window.mountNlshStada / __nlStadaReload, eigin hjalparfoll+CSS, sama mynstur og nlsh-sections.js) montud i #nl-stada undir spjoldunum BAEDI i flipanum og a nlsh.html. ATH: renderNlsh() (litid n) er annad - Vinnustofu-spjald med foastri taxtatoflu. /Landsspitalinn (oll rithaetti) -> /nlsh.html (netlify.toml). Bumpa ?v= a script-tagi einingarinnar i badum HTML-skram vid breytingar.**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **PDF-skjol i brunaholf (03.09.2026, Agnar): skraarnafn er '<Verkstadur> - <Tegund> - <Manudur Ar>.pdf' t.d. 'Fjallabodin Thjorsardal - Efnislisti - Juli 2026.pdf' (bhPdfName + monthLabelFull i index.html; greidanda og kt SLEPPT; samsetta 2ja sidna skjalid heitir lika 'Efnislisti'). Nidurhal: vafrinn nefnir eftir slodinni i Supabase Storage og download-eigindid er hunsad milli lena -> pdf-store.js skilar download_url = public_url + '&download=<nafn>' (Content-Disposition, sannad med HEAD) og listinn Vistud PDF-skjol notar sama. Ekki breyta til baka i kt-nafn.**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **NLSH regla LEYST 03.09.2026 (Agnar: do what you think is best): maelt ur Adalskjalinu sjalfu (Downloads/Landsspitalinn - Adalskjal (1).xlsx, blad uppgjor Juli, dalkar G/H) - ADEINS 2.2 (168->168) og 1.2 (743->743) eru 1 staka = 1 heild; ALLT annad helmingad, lika 1.3 (1->0,5), 2.11 metrar (206->103) og 3.1 (470->235). full a 1.3 i hub kom med dashboard-flipanum 8e842a2 an rokstudnings; calibrada commit-id e232160 flaggadi adeins 1.2. Lagad e806d16: EIN VERK-tafla i nlsh-uppgjor.js (rate, target, full, metrar) sem nlsh-dashboard.js og nlsh-stada.js flytja inn. nlsh_manadarlok SAD med uppsofnudum lokatolum per verklid sept 2025 -> juli 2026 (165 radir, ur manadardalkum bladsins, stemmir vid Heildar lokanir: juli 8429/4670). Agust+ = Ajour thar til Agnar slaer inn (nefndi 9273 fyrir agust).**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **NLSH stafraen manadarlokaskyrsla (03.09.2026, brunaholf nlsh.html + /api/nlsh-stada): thrju log - (1) Ajour-tillaga: SQL nlsh_stada_manudir gefur nyjar Done-lokanir per manud/flokk (fyrsta Done-dags hvers serial), uppsafnad i JS = nakvaemlega sama og nlsh_stada per manud (sannad: jul 8266, agu 9232). (2) LOKATALA: tafla nlsh_manadarlok (month, verk_nr, lokatala numeric, RLS service_role) - talan sem Agnar SENDIR, aud = Ajour gildir, POST {month, lines} vistar/eydir. (3) Skyrslan reiknud eins og bladid: heilar = stakar/2 nema 2.2 og 1.2 (1=1), 2.11 og 3.1 METRAR; verd/heild m.vsk ur VERK i nlsh-uppgjor.js; Fjoldi ur nlsh-dashboard target. ATH MISRAEMI: nlsh-uppgjor/dashboard hafa full a 1.2+1.3 en ekki 2.2 - bladid (juli-xlsx) segir 2.2+1.2; skyrslan fylgir bladinu, aaetlunin i hub er obreytt - Agnar sker ur. UI: manadardalkar sept 2025->valinn (● = lokatolur vistadar), Stada-reitur fyrir valinn manud med lifandi endurreikningi, Vista/Ajour/Afrita.**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **NLSH manadarlok (02.09.2026): brunaholf /api/nlsh-stada?til=YYYY-MM skilar uppsafnadri Done-talningu per verklid (stakar) i lok manadar - reitur 'Stada i lok manadar' a nlsh.html med Afrita-takka. Agnar limir dalkinn i samningsbladid (Google Sheet) sem reiknar heildir/verd sjalft. Talan stemmir EKKI upp a stak vid bladid: ~510 skraningar halfkladar/ekki merktar Done (ekki_done i svarinu) - vitad og i lagi. SQL-fall nlsh_stada (service_role eingongu), VERK-kortlagning deild ur nlsh-uppgjor.js.**
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### villuleit
 
@@ -538,14 +541,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Master-reikningamappan á Drive er nánast fullkomlega samstíga kerfinu**
   <br>Afstemming 23.08.2026 á öllum 1.303 skjölum möppunnar 1FHHX99LRB_9w_LqwHIY57T4l9mLMID7p: 1.026 skráð með sama drive-id, 259 auka-eintök af þegar skráðum reikningum (tvítakaskrár á Drive, listi reiknanlegur úr stg_drive_invoices_20260823), 12 raunverulega nýir (skráðir, found_by=cowork-drive-invoice-
   <br><sub>2026-08-23 · slokkvitaeki · cowork 23.08.2026 · cowork</sub>
-- **13 aðfangareikningar (frá birgjum TIL Slökkvitækis) eru ranglega skráðir sem viðskiptavinareikningar**
-  <br>Fundust við flokkun 23.08.2026: Stólpi Viðskiptalausnir (bókhaldskerfi) doc 4912/5933/5934, Málmaendurvinnslan doc 2478/8064, N1 doc 2513, Rögg ehf doc 4909, Hringdu ehf doc 5800, Grimma Bókhaldsþjónusta doc 4906/5936. Þeir eiga ekki heima í customer_documents.
-  <br><sub>2026-08-23 · slokkvitaeki · cowork factcheck 23.08.2026 · cowork</sub>
 - **Rúmlega 100 úttektarreikningar 2025/26 eru án 060-línu (Skýrslugerð og vottun)**
   <br>Við flokkun 348 óvissra reikninga fundust 83+ reikningar með Yfirferð/Hleðslu en enga 060-línu. Stærstu dæmin: Hagvagnar 58 hleðslur 214.758 kr (doc 9584) og 30 hleðslur 113.728 kr (doc 9585), Teitur Jónasson 19 hleðslur (doc 8212). Þetta þýðir annaðhvort ógerða skýrslu eða órukkaða skýrslugerð.
   <br><sub>2026-08-23 · slokkvitaeki · cowork factcheck 23.08.2026 · cowork</sub>
 - **45 staðir voru rukkaðir fyrir úttekt 2025/26 án þess að úttektarskýrsla sé skráð**
   <br>35 tilvik 2025 og 10 tilvik 2026 eftir endurflokkun reikninga. Merkt með nótunni „RUKKAÐ ÁN SKÝRSLU" í year_factcheck. Þetta er alvarlegasti flokkurinn — annaðhvort er skýrslan óskráð eða hún var aldrei gerð.
+  <br><sub>2026-08-23 · slokkvitaeki · cowork factcheck 23.08.2026 · cowork</sub>
+- **13 aðfangareikningar (frá birgjum TIL Slökkvitækis) eru ranglega skráðir sem viðskiptavinareikningar**
+  <br>Fundust við flokkun 23.08.2026: Stólpi Viðskiptalausnir (bókhaldskerfi) doc 4912/5933/5934, Málmaendurvinnslan doc 2478/8064, N1 doc 2513, Rögg ehf doc 4909, Hringdu ehf doc 5800, Grimma Bókhaldsþjónusta doc 4906/5936. Þeir eiga ekki heima í customer_documents.
   <br><sub>2026-08-23 · slokkvitaeki · cowork factcheck 23.08.2026 · cowork</sub>
 - **Vélrás fékk sama reikninginn tvisvar í júní 2026: R-000259 (08.06) og R-000276 (09.06), báðir 53.824 kr fyrir 8x Duft 6 kg hleðslu**
   <br>Endurgreiðsla á R-000276 er á verkefnalistanum. Staðfest 20.08.2026 með samanburði á sölulínum — nákvæmlega sömu 8 línur, dagur á milli.
@@ -1111,17 +1114,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Sjá docs/SAMRAEMI-2026.md. Nýtt á listi E: doc 611 Sléttahraun 19-21 ber Vélrás-kt 491209-1270. Tækjanöfn án fyrirtaeki-raðar: Bríetartún 9-11 (48), Húsfélag Skaftahlíð 4-10 (27).
   <br><sub>2026-08-29 · slokkvitaeki · sql · claude-code</sub>
 
-### teikningar
-
-- **Landnúmer → aðaluppdrættir: skjalasafn.reykjavik.is/fotoweb/archives/5000-Aðaluppdrættir/?q=LANDNUMER opnar teikningar eignarinnar. Landeignaskrá-síða eignarinnar er geo.fasteignaskra.is/landeignaskra/LANDNUMER. Hvorugt má setja í iframe.**
-  <br>Tvívirki leitarhnappurinn (patch 325, window.Landnr) sameinar skrefin tvö: Landnr.mount(el) setur hann hvar sem er, Landnr.open() opnar fljótandi. Situr sjálfkrafa á Sölu; TurboPaint þarf bara Landnr.mount(...).
-  <br><sub>2026-08-28 · kerfi · patch 325 + netlify/functions/landnr.js, commit f9dfac8 · claude-code</sub>
-
 ### landnumer
 
 - **Heimilisfang → landnúmer: geo.fasteignaskra.is/landeignaskra/search?term=NAFN skilar JSON [{Landnr, Vef_Birting, Heinum, X, Y}] — EN sendir engin CORS-haus og setur Content-Type application/javascript, svo vafrinn getur ekki kallað beint og r.json() dugar ekki; textinn verður að þáttast sjálfur.**
   <br>Proxy: /.netlify/functions/landnr?leit=... (slokkvitaeki) skilar {results:[{landnr,label,heinum,x,y}]}. Staðfest í vafra + node 28.08.2026: "Skútuvogur 4" → 105166 og 105167.
   <br><sub>2026-08-28 · kerfi · vafra-úttekt + node-prófun 2026-08-28 · claude-code</sub>
+
+### teikningar
+
+- **Landnúmer → aðaluppdrættir: skjalasafn.reykjavik.is/fotoweb/archives/5000-Aðaluppdrættir/?q=LANDNUMER opnar teikningar eignarinnar. Landeignaskrá-síða eignarinnar er geo.fasteignaskra.is/landeignaskra/LANDNUMER. Hvorugt má setja í iframe.**
+  <br>Tvívirki leitarhnappurinn (patch 325, window.Landnr) sameinar skrefin tvö: Landnr.mount(el) setur hann hvar sem er, Landnr.open() opnar fljótandi. Situr sjálfkrafa á Sölu; TurboPaint þarf bara Landnr.mount(...).
+  <br><sub>2026-08-28 · kerfi · patch 325 + netlify/functions/landnr.js, commit f9dfac8 · claude-code</sub>
 
 ### stilla-utlit
 
@@ -1135,11 +1138,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Staðfest 28.8.2026 í patch 280 (Taka úr/Setja í þjónustu): watch() setti fylgjara á þann #companies-main sem fannst við ræsingu. Appið skiptir hnútnum út við sumar endurteikningar, og þá sat fylgjarinn á laustengdum hnút. Greining: #companies-main var tengt, Breyta-takkinn með onclick til staðar, en
   <br><sub>2026-08-28 · slokkvitaeki · kóði · claude-code</sub>
 
-### pdf
+### ajour
 
-- **pdf-parse v2 flytur út HLUT, ekki fall — gamla kallið pdf(buf) hrynur og þarf new PDFParse({data}).getText()**
-  <br>doc-indexer.js sat á main með v1-kallinu eftir að package.json var uppfært í ^2.4.5; hefði hrunið á fyrsta PDF. Lagað 28.8.2026 eftir mynstrinu sem redder.js notaði þegar.
-  <br><sub>2026-08-28 · kerfi · kóði · claude-code</sub>
+- **Ajour CSV-útflutningurinn er í raun eitt JSON-kall á /api/reporting/legacy/GetReportData — vafrinn býr CSV-ið til sjálfur úr svarinu**
+  <br>Enginn CSV-endapunktur er til server-megin. Auðkenning er EINGÖNGU setu-kaka (httpOnly), engin API-lykill, svo ómönnuð keyrsla þarf annaðhvort geymda köku eða forritaða innskráningu. NLSH-útflutningur er ~36-39 MB og ~120 þús. línur, 53 dálkar, semíkommu-aðskilið með UTF-8 BOM.
+  <br><sub>2026-08-28 · brunaholf · kóði · claude-code</sub>
 
 ### redder
 
@@ -1147,17 +1150,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Þögul villa: keyrslan lítur út fyrir að hafa tekist. IMAP-leiðin (imapflow) rekur UID í staðinn og þarf Thunderbird hvergi. Bætt við 28.8.2026 — valið er sjálfvirkt eftir því hvort IMAP_BOKHALD_* er í .env.
   <br><sub>2026-08-28 · kerfi · kóði · claude-code</sub>
 
+### pdf
+
+- **pdf-parse v2 flytur út HLUT, ekki fall — gamla kallið pdf(buf) hrynur og þarf new PDFParse({data}).getText()**
+  <br>doc-indexer.js sat á main með v1-kallinu eftir að package.json var uppfært í ^2.4.5; hefði hrunið á fyrsta PDF. Lagað 28.8.2026 eftir mynstrinu sem redder.js notaði þegar.
+  <br><sub>2026-08-28 · kerfi · kóði · claude-code</sub>
+
 ### timavera
 
 - **timavera-bridge.js er óvirkt og skilar strax nema TIMAVERA_BRIDGE_FORCE=1 — timavera-pull.js í brunaholf er eina heimildin fyrir timavera_entries**
   <br>Desktop-xlsx leiðin reiknaði annað time_in og þar með annan entry_key fyrir sömu færslu, sem tvítaldi tíma á móti API-línunum. Scheduled task LunaBridge-Timavera var fjarlægt 28.8.2026 og Tímavera tekin út úr setup-tasks.bat.
   <br><sub>2026-08-28 · kerfi · kóði · claude-code</sub>
-
-### ajour
-
-- **Ajour CSV-útflutningurinn er í raun eitt JSON-kall á /api/reporting/legacy/GetReportData — vafrinn býr CSV-ið til sjálfur úr svarinu**
-  <br>Enginn CSV-endapunktur er til server-megin. Auðkenning er EINGÖNGU setu-kaka (httpOnly), engin API-lykill, svo ómönnuð keyrsla þarf annaðhvort geymda köku eða forritaða innskráningu. NLSH-útflutningur er ~36-39 MB og ~120 þús. línur, 53 dálkar, semíkommu-aðskilið með UTF-8 BOM.
-  <br><sub>2026-08-28 · brunaholf · kóði · claude-code</sub>
 
 ### konva
 
@@ -1231,10 +1234,10 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Dæmi frá Endurvinnslunni 21.08.2026: fjórir reikningar lágu allir á Knarrarvogi og voru flokkaðir „óvisst". R-107798 sagði „Vegna Dalvegur" og línurnar (1 léttvatn + 2 duft 6-12 + 1 slanga) stemmdu nákvæmlega við Dalvegs-skýrsluna. R-107797 hafði ENGA vegna-línu en línurnar (1 hleðsla léttvatn + 1 h
   <br><sub>2026-08-23 · kerfi · Cowork 21.08.2026 · natalie</sub>
 
-### R-107758 (193.600 kr.) LEYST — það var Bríetartún, ekki Grensásvegur
+### Laugavegur 42 (Iðun Apartments) — húsfélagið greiðir
 
-- **Fjórir reikningar upp á nákvæmlega 193.600 kr. eru allir SAMA verkið: Bríetartún 9-11, desember 2025.**
-  <br>Línurnar eru staflíkar á öllum: 133 Yfirferð Léttvatn 42 stk á 2.700 · 123 Hleðsla Léttvatn 5 stk á 4.400 · 117 Slökkvitæki Léttvatn 6 ltr 1 stk með 25% afslætti · 186 O-hringur 5 · 200 Akstur 2 á 3.554 · 060 Skýrslugerð 1. Samtals 193.600 kr. Keðjan: R-107643 (19.12.25) → R-107757 → R-107758 (26.01
+- **Skýrslan er stíluð á Heimaleigu en reikningurinn á húsfélagið. Staðurinn liggur rétt.**
+  <br>Úttekt feb 2026: „Heimaleiga ehf. kt:510117-0690 vegna Laugavegur 42 101 Reykjavík (Iðun apartments)" — 9 léttvatn + 1 duft 6-12 kg = 10 tæki. Reikningur R-107860 (61.390 kr.) er á Húsfélagið Laugavegi 42, kt 611096-2599. Greiðandinn ræður: staðurinn tilheyrir húsfélaginu, Heimaleiga er rekstraraðil
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
 ### Heimaleiga — þrjár tómar raðir fjarlægðar
@@ -1243,17 +1246,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Allar þrjár báru engin tæki, engin skjöl, engar sölur og engar tengingar. Aegina er greiðandi Urðarhvarfs 4 og lifir sem customers_base 784 — hún þurfti ekki starfsstöð. SAB/U2 (Naustavör 18) var óvirk og gagnalaus. Ármúli 13 sameign var ágiskun — S30 er á Ármúla 13A og ekkert skjal nefnir sameign Á
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
-### Laugavegur 42 (Iðun Apartments) — húsfélagið greiðir
-
-- **Skýrslan er stíluð á Heimaleigu en reikningurinn á húsfélagið. Staðurinn liggur rétt.**
-  <br>Úttekt feb 2026: „Heimaleiga ehf. kt:510117-0690 vegna Laugavegur 42 101 Reykjavík (Iðun apartments)" — 9 léttvatn + 1 duft 6-12 kg = 10 tæki. Reikningur R-107860 (61.390 kr.) er á Húsfélagið Laugavegi 42, kt 611096-2599. Greiðandinn ræður: staðurinn tilheyrir húsfélaginu, Heimaleiga er rekstraraðil
-  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
-
 ### Bríetartún 9-11 er TVÖ verk í sama húsi
 
 - **Heimaleiga greiðir fyrir sameignina, húsfélagið fyrir íbúðirnar. 56 tæki alls, ekki 8.**
   <br>Heimaleiga ehf (510117-0690): úttekt okt 2025, 4 léttvatn + 4 brunaslöngur — „öll slökkvitæki í ALMENNU RÝMI yfirfarin". Bríetartún 9-11 húsfélag (540119-0660): úttekt des 2025, 48 léttvatn í ÍBÚÐUNUM — endurhleðslur í bygg. 9 íbúð 101 og 405, bygg. 11 íbúð 208, 411 og 608, nýtt tæki í íbúð 413. Hús
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 — lestur á tveimur úttektarskýrslum og fjórum reikningum · natalie</sub>
+
+### R-107758 (193.600 kr.) LEYST — það var Bríetartún, ekki Grensásvegur
+
+- **Fjórir reikningar upp á nákvæmlega 193.600 kr. eru allir SAMA verkið: Bríetartún 9-11, desember 2025.**
+  <br>Línurnar eru staflíkar á öllum: 133 Yfirferð Léttvatn 42 stk á 2.700 · 123 Hleðsla Léttvatn 5 stk á 4.400 · 117 Slökkvitæki Léttvatn 6 ltr 1 stk með 25% afslætti · 186 O-hringur 5 · 200 Akstur 2 á 3.554 · 060 Skýrslugerð 1. Samtals 193.600 kr. Keðjan: R-107643 (19.12.25) → R-107757 → R-107758 (26.01
+  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
 ### Center Hótel — opinber nöfn og heimilisföng af centerhotels.com
 
