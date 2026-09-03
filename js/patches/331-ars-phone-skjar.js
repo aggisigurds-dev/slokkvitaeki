@@ -406,11 +406,37 @@
         + W + '#view-arsskodun .data-table-wrap' + P + ','
         + 'html.ars-wide-table[data-viewmode="mobile"] #view-arsskodun ._ars-tblscroll' + P + ','
         + 'html.ars-wide-table[data-viewmode="mobile"] #view-arsskodun .data-table-scroll' + P
+        /* 03.09.2026 (Agnar: „festist alltaf í miðri töflu og kemst ekki alveg
+           upp né niður"). Þrennt bjó til gildruna og allt þrennt er farið:
+
+           1. `overscroll-behavior:contain` STÖÐVAR scroll-chaining. Þegar innri
+              kassinn var kominn í botn (eða topp) var strokan GLEYPT í stað þess
+              að ganga áfram til síðunnar — þess vegna komst hann hvorki alveg
+              upp né niður, sama hversu oft hann strauk. Nú aðeins á X-ásnum:
+              það stöðvar til-baka-strok vafrans þegar maður pannar töfluna til
+              hliðar, sem er gagnlegt, en lætur lóðrétta strok í friði.
+
+           2. `height:calc(100dvh - 180px)` — 180px var ÁGISKUN á hæð þess sem
+              situr fyrir ofan töfluna (borði + Sími|Tafla|Skjár rofinn + Passa-
+              takkinn). Sé raunveruleg hæð meiri nær kassinn niður fyrir
+              skjábrún, og neðstu línurnar eru þá utan sjónmáls — ólæsilegar því
+              (1) meinaði síðunni að skruna á eftir þeim. Föst hæð sem er ágiskuð
+              út frá öðru útliti er alltaf röng á einhverjum síma.
+
+           3. Zoom margfaldar skekkjuna: taflan ber `zoom:var(--ars-skjar-zoom)`,
+              svo á 200% tvöfaldast hæð hennar á meðan 100dvh-180px stendur í stað.
+
+           EIN lóðrétt skrunrenna á síma, og hún er SÍÐAN sjálf. Kassinn heldur
+           `overflow:auto` fyrir lárétta pönnun (taflan er min-width:1100px), en
+           án hæðartakmörkunar hefur lóðrétti ásinn ekkert að skruna og grípur
+           því ekkert. ATH: `overflow-x:auto` með `overflow-y:visible` er EKKI
+           hægt — CSS reiknar hinn ásinn sem `auto` um leið og annar er ekki
+           visible. Þess vegna er hæðin fjarlægð frekar en ásnum slökkt. */
         + '{width:100%!important;max-width:100vw!important;min-width:0!important;'
-        + 'max-height:calc(100dvh - 180px)!important;height:calc(100dvh - 180px)!important;'
+        + 'max-height:none!important;height:auto!important;'
         + 'overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
         + '-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom!important;'
-        + 'overscroll-behavior:contain}',
+        + 'overscroll-behavior-x:contain;overscroll-behavior-y:auto}',
       W + '#view-arsskodun table.data-table' + P + ','
         + W + '#view-arsskodun ._ars-tblscroll>table' + P
         + '{display:table!important;min-width:1100px!important;width:max-content!important;'
