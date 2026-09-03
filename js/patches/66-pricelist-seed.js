@@ -319,14 +319,36 @@
     }
 
     // ---- Step 1: insert any missing products/services ---------------------
-    if (!localStorage.getItem('_pricelist66Seeded')) {
-      // Respect user deletions — names in AppSettings.sala.deleted_product_names
-      // were explicitly removed and should never be re-seeded.
-      var tombstoned = {};
-      try{
-        var dpn = window.AppSettings && window.AppSettings.path && window.AppSettings.path('sala.deleted_product_names');
-        if (Array.isArray(dpn)) dpn.forEach(function(n){ tombstoned[String(n||'').trim().toLowerCase()] = true; });
-      } catch(_){}
+    // Legsteinarnir (nöfn sem Agnar eyddi viljandi) verða að koma ÚR
+    // GAGNAGRUNNINUM, ekki úr AppSettings-cache-inu.
+    //
+    // 03.09.2026 — af hverju: AppSettings.path() skilar innbyggða SJÁLFGEFNA
+    // gildinu ([]) þangað til asynkróna hleðslan úr app_settings klárast, og
+    // hvorugur sáningarpatchinn beið eftir henni. Lendi sáning á undan er
+    // legsteinalistinn tómur og eyddar vörur eru settar inn aftur — 24.08 (1
+    // röð), 02.09 (1) og 03.09 kl. 17:11:39 (11 raðir í einni lotu, úr
+    // 80-aux-products.js). RETIRED-listinn hér að neðan var plástur á nákvæmlega
+    // þetta einkenni 19.06; rótin var alltaf kapphlaupið, ekki þessi 17 nöfn.
+    //
+    // Beinn lestur getur ekki lent í kapphlaupi. Bregðist hann sáum við EKKI
+    // (fail closed) og merkjum ekkert í localStorage, svo næsta hleðsla reyni
+    // aftur — sáningarvél sem veit ekki hverju var eytt má ekki setja inn neitt.
+    var tombstoned = {};
+    var tombstonesOk = false;
+    try {
+      var tsRead = await DB.sb.from('app_settings').select('settings').eq('id', 1).maybeSingle();
+      if (tsRead && !tsRead.error) {
+        var salaCfg = (tsRead.data && tsRead.data.settings && tsRead.data.settings.sala) || {};
+        var dpn = Array.isArray(salaCfg.deleted_product_names) ? salaCfg.deleted_product_names : [];
+        dpn.forEach(function (n) { tombstoned[String(n || '').trim().toLowerCase()] = true; });
+        tombstonesOk = true;
+      }
+    } catch (_) {}
+    if (!localStorage.getItem('_pricelist66Seeded') && !tombstonesOk) {
+      console.warn('[pricelist-seed] gat ekki lesið eydd vöruheiti — sleppi sáningu');
+    }
+
+    if (!localStorage.getItem('_pricelist66Seeded') && tombstonesOk) {
       // 2026-06-19: permanently retired duplicate catalog entries — deleted
       // from `vorur` (ids 260–276) at Agnar's request. They duplicated the
       // canonical "<tegund> hleðsla/yfirferð" products and kept re-appearing
