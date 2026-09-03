@@ -42,8 +42,21 @@ const norm = s => String(s == null ? '' : s).trim().toLowerCase();
   const vorur = await get('vorur?select=id,nafn,created_at&order=id.asc');
   const back = (Array.isArray(vorur) ? vorur : []).filter(v => deadSet.has(norm(v.nafn)));
 
+  // Vörðurinn í grunninum (vorur_hafna_eyddum, 03.09.2026) skráir hverja
+  // innsetningu sem hann fellir. Tómur log = enginn gamall vafri er lengur að
+  // reyna að endurvekja eyddar vörur; línur þar = kóði frá því fyrir PR #845
+  // keyrir enn einhvers staðar (deploy-preview-lén, cache-uð index.html).
+  // Þetta er UPPLÝSING, ekki fall — vörðurinn stöðvaði það sem hann átti að stöðva.
+  const log = await get('vorur_hafnad_log?select=nafn,reynt_at&order=reynt_at.desc&limit=5');
+  const logN = Array.isArray(log) ? log.length : 0;
+
   if (!back.length) {
-    console.log(`✅ OK — ${dead.length} eydd vöruheiti, ekkert þeirra er í \`vorur\`. Sáningin virðir legsteinana.`);
+    console.log(`✅ OK — ${dead.length} eydd vöruheiti, ekkert þeirra er í \`vorur\`.`);
+    if (logN) {
+      console.log(`   ℹ️  vörðurinn hefur fellt ${logN >= 5 ? '5+' : logN} innsetningu(ar); nýjust: ` +
+        log.slice(0, 3).map(r => `${r.nafn} (${String(r.reynt_at || '').slice(0, 16).replace('T', ' ')})`).join(' · '));
+      console.log('      → gamall kóði keyrir enn einhvers staðar. Hverfur af sjálfu sér þegar sá vafri hleður upp á nýtt.');
+    }
     return;
   }
   console.log(`❌ RAUTT  ${back.length} eydd vara/vörur eru komnar aftur í \`vorur\` (baseline 0):`);
