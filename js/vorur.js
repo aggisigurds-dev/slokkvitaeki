@@ -465,6 +465,19 @@
       btn.disabled = true; btn.textContent = 'Vista...';
       try {
         if(isNew){
+          // 03.09.2026: gagnagrunns-vörður fellir innsetningu á nafni sem er á
+          // sala.deleted_product_names (sjá vorur_hafna_eyddum). Skrái maður
+          // vöruna HANDVIRKT vill maður hana augljóslega aftur — takum nafnið
+          // því af listanum ÁÐUR en við setjum inn, annars félli röðin hljóðlega
+          // og .single() skilaði villu sem enginn skildi.
+          try {
+            if(window.AppSettings && typeof window.AppSettings.save==='function'){
+              var eydd = (window.AppSettings.path('sala.deleted_product_names')||[]);
+              var nyttNafn = String(data.nafn||'').trim().toLowerCase();
+              var eftir = eydd.filter(function(n){ return String(n||'').trim().toLowerCase() !== nyttNafn; });
+              if(eftir.length !== eydd.length) await window.AppSettings.save({sala:{deleted_product_names: eftir}});
+            }
+          } catch(_){ /* best-effort — vörðurinn segir samt frá í vorur_hafnad_log */ }
           var ir = await DB.sb.from('vorur').insert(data).select().single();
           if(ir.error) throw ir.error;
         } else {
