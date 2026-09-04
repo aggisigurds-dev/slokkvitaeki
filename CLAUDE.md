@@ -100,6 +100,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Spurningin snýst um … | → Sérfræðingur |
 |---|---|
 | Sölu, reikninga, dkPlus/Payday, afslætti, PDF-vistun, reikninga-póst, úttektartexta | `sala-reikningar` |
+| Rukkunarmál beggja félaga — reikningalota, hvað er tilbúið að senda, punktar, póstur, tengingar (les ../brunaholf/docs/REIKNINGALOTA.md sjálfur, stjórnar sala-reikningar / bokari / eldklar-postur) | `rukkari` 🦆 |
 | Fylla úttektarskýrslur LIVE, úttektar-texta, verðin, skýrsla↔reikning (tækjafjöldi / vegna / tvær þjónustur), Cowork/MCP-flæðið 🤝 | `sara-coworker` |
 | Viðskiptavini, kennitölur, DB-skema, sameiningu, kerfis-kort, póst-merki | `kunnaskra` |
 | Flipa, borð, nav — Verkborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing, bakk, app-síður | `bord-flettur` |
