@@ -199,6 +199,17 @@
       #${SLOT_ID} .sb-co-btn:hover, #${SLOT_ID} .sb-eye-btn:hover { color:#2563eb !important; }
       /* Síminn hefur ekkert hover — hljóðlátu hnapparnir yrðu ósýnilegir að eilífu. */
       @media (hover:none){ #${SLOT_ID} .sb-co-btn, #${SLOT_ID} .sb-eye-btn { opacity:.55 !important; } }
+      /* 04.09.2026 (Agnar): „láta 3. línuna yfirskrifa punktavalið, að það þá
+         hverfi ef texti verður of mikill". Minnispunkta-spjald fær allt að
+         ÞRJÁR línur af texta: önnur línan étur „Bæta við nánar…"-vísbendinguna
+         og sú þriðja étur punktaröðina. Þannig vex spjaldið ekki — þriðja línan
+         sest nákvæmlega þar sem punktarnir voru.
+         Línurnar eru MÆLDAR eftir teikningu (maelaTexta) en ekki taldar úr
+         stöfum: breidd spjaldsins fer eftir dálkafjölda, zoom og leturstærð, svo
+         stafatalning myndi giska — og giska rangt á hverjum þriðja skjá. */
+      #${SLOT_ID} .sb-card.sb-l2 .sb-hint { display:none; }
+      #${SLOT_ID} .sb-card.sb-l3 .sb-hint,
+      #${SLOT_ID} .sb-card.sb-l3 .sb-dots { display:none; }
       #${SLOT_ID} .sb-type-dot {
         display:inline-block; border-radius:50%; cursor:pointer; flex:none;
         transition:transform .1s, box-shadow .1s;
@@ -233,7 +244,8 @@
 
   // ── Render ─────────────────────────────────────────────────────────────────
   function typeDotRow(card) {
-    return '<div style="display:flex;align-items:center;gap:4px;margin-top:auto;padding-top:5px;flex-wrap:nowrap">' +
+    return '<div class="sb-dots" style="display:flex;align-items:center;gap:4px;' +
+      'margin-top:auto;padding-top:5px;flex-wrap:nowrap">' +
       TYPES.map(function (t, i) {
         const sel = card.type === i;
         const sz  = sel ? '11' : '9';
@@ -291,6 +303,11 @@
     // þurfa að skrifa í þjónustubeiðnina á bak við — þau opna því málið áfram,
     // þar sem titillinn er ritanlegur í VALIÐ MÁL.
     const ritanlegt = card.verkbord_id == null;
+    // Hversu margar línur má NAFNIÐ taka? Minnispunktur án skýringar er allur
+    // í nafninu (fyrsta lína textareitsins) — hann fær þrjár. Sé skýring til
+    // staðar er nafnið fyrirsögn og heldur sinni einu línu; skýringin á tvær.
+    // Spjald sem hangir á máli speglar fyrirtækjanafn og heldur gamla sniðinu.
+    const nafnLinur = ritanlegt ? (title ? 1 : 3) : 1;
     // 04.09.2026 (ósk Agnars): skjáskot límt beint á spjaldið. Smámyndin situr
     // VINSTRA megin og passar í hæð spjaldsins (width:auto), svo textinn heldur
     // sínu plássi við hliðina — spjaldið stækkar ekki. Smellur á hana opnar
@@ -313,23 +330,28 @@
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">' +
           '<div class="' + (ritanlegt ? 'sb-rit' : '') + '"' +
             (ritanlegt ? ' data-sb-edit="' + esc(card.id) + '"' : '') +
-            ' style="display:flex;align-items:center;gap:5px;overflow:hidden;flex:1;min-width:0' +
+            ' style="display:flex;align-items:' + (nafnLinur > 1 ? 'flex-start' : 'center') +
+            ';gap:5px;overflow:hidden;flex:1;min-width:0' +
             (ritanlegt ? ';cursor:text;border-radius:5px' : '') + '">' +
             '<span style="width:9px;height:9px;border-radius:50%;background:' + tc + ';flex:none;' +
-              'margin-top:1px;transition:background .15s"></span>' +
-            '<span style="font-size:11.5px;font-weight:800;color:#1a1c22;overflow:hidden;' +
-              'text-overflow:ellipsis;white-space:nowrap;line-height:1.3">' + esc(name) + '</span>' +
+              'margin-top:' + (nafnLinur > 1 ? '3px' : '1px') + ';transition:background .15s"></span>' +
+            '<span' + (ritanlegt ? ' class="sb-nafn"' : '') +
+              ' style="font-size:11.5px;font-weight:800;color:#1a1c22;overflow:hidden;line-height:1.3;' +
+              (nafnLinur > 1
+                ? 'display:-webkit-box;-webkit-line-clamp:' + nafnLinur + ';' +
+                  '-webkit-box-orient:vertical;overflow-wrap:anywhere'
+                : 'text-overflow:ellipsis;white-space:nowrap') + '">' + esc(name) + '</span>' +
           '</div>' +
           '<button class="sb-x" data-sb-del="' + esc(card.id) + '" title="Fjarlægja">✕</button>' +
         '</div>' +
         // Title
         (title
-          ? '<div' + (ritanlegt ? ' class="sb-rit" data-sb-edit="' + esc(card.id) + '" style="cursor:text;border-radius:5px;' : ' style="') +
+          ? '<div' + (ritanlegt ? ' class="sb-rit sb-titill" data-sb-edit="' + esc(card.id) + '" style="cursor:text;border-radius:5px;' : ' style="') +
               'font-size:10.5px;color:#6b7280;line-height:1.4;overflow:hidden;' +
               'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' +
               esc(title) + '</div>'
           : (ritanlegt
-              ? '<div class="sb-rit" data-sb-edit="' + esc(card.id) + '" style="cursor:text;border-radius:5px;' +
+              ? '<div class="sb-rit sb-hint" data-sb-edit="' + esc(card.id) + '" style="cursor:text;border-radius:5px;' +
                   'font-size:10.5px;color:#c3c7cd;line-height:1.4">Bæta við nánar…</div>'
               : '')) +
         // Type picker dots
@@ -440,6 +462,31 @@
       '</div>';
 
     wireDrag();
+    maelaTexta();
+  }
+
+  // Hversu margar línur tekur textinn í raun? Mælt á teiknuðu spjaldi og
+  // niðurstaðan sett sem merki á það: `sb-l2` felur vísbendinguna, `sb-l3`
+  // felur líka punktaröðina svo þriðja línan fái plássið hennar.
+  // Aðeins minnispunkta-spjöld eru mæld — þau ein bera `.sb-nafn`.
+  function linufjoldi(n) {
+    if (!n) return 0;
+    const cs = (window.getComputedStyle && getComputedStyle(n)) || {};
+    const lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 11.5) * 1.35;
+    const h  = n.getBoundingClientRect().height;
+    if (!h) return 1;                 // falinn flipi: engin hæð → ekkert falið
+    return Math.max(1, Math.round(h / lh));
+  }
+  function maelaTexta() {
+    const el = document.getElementById(SLOT_ID);
+    if (!el) return;
+    el.querySelectorAll('.sb-card').forEach(kort => {
+      const nafn = kort.querySelector('.sb-nafn');
+      if (!nafn) return;              // spjald á máli — óbreytt snið
+      const linur = linufjoldi(nafn) + linufjoldi(kort.querySelector('.sb-titill'));
+      kort.classList.toggle('sb-l2', linur >= 2);
+      kort.classList.toggle('sb-l3', linur >= 3);
+    });
   }
 
   // ── Drag within board ──────────────────────────────────────────────────────
