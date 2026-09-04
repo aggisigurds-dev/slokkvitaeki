@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-04 18:06 · 372 virkar staðreyndir
+Sótt 2026-09-04 18:11 · 373 virkar staðreyndir
 
 ---
 
@@ -75,7 +75,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | Efni | Fjöldi |
 |---|---:|
 | [skjol](#skjol) | 27 |
-| [brunaholf](#brunaholf) | 18 |
+| [brunaholf](#brunaholf) | 19 |
 | [kerfi](#kerfi) | 18 |
 | [solur](#solur) | 18 |
 | [taeki](#taeki) | 18 |
@@ -181,6 +181,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### brunaholf
 
+- **Landsspítalinn ágúst 2026 er uppgjörsverk: upphæðin kemur ÚR uppgjörs-PDF-inu (6.435.896 kr m/vsk = 5.190.239 án vsk), ekki úr tímum eða efni. Sett inn 04.09.2026 sem fast verð m/vsk á invoice_drafts-röðina að beiðni Agnars, og uppgjörs-PDF-ið merkt ⭐ aðalskjal ágúst — þess vegna birtist verkið nú í Ósendum undir ÞG verktökum (kt 5811982569) og 📄-tengillinn opnar uppgjörið en ekki Efnislistann.**
+  <br>Tímaveru-tímarnir fyrir ágúst (586,92 klst) gefa 113% af uppgjörinu — áætlunin er hærri en samið uppgjör, svo klst-taflan er ekki grunnur reikningsins þar. Athuga: uppgjörsskjalið er til í TVEIMUR eintökum á mánuðinum („… Ágúst (1).pdf" og „… Ágúst.pdf"); ⭐ er á fyrra eintakinu og bæði fara með í bó
+  <br><sub>2026-09-04 · brunaholf · claude-code · claude-code</sub>
 - **Kröfu yfirlit (brunaholf) fékk „➕ Stofna nýtt verk"-takka 04.09.2026 — handvirkt verk sem er hvorki í Tímaveru né Ajour. Glugginn (openNyttVerkModal, við hlið openCombineModal) skrifar invoice_drafts-röð með source=handvirkt og reiknuðum netto/vsk/samtals; fast verð m/vsk yfirríður og bakreiknar nettóið. MIKILVÆGT: þrep 2 (Ósendar) sleppir röðum með total_m_vsk = 0, svo verk án upphæðar birtist EKKI þar (glugginn varar við því) — það er einmitt ástæðan fyrir að Landsspítalinn ágúst 2026 sést ekki í Kröfuyfirliti: drögin eru 0 kr. Samhliða kom ⭐ aðalskjals-takki í skjalalistann (efnislisti-docs set_primary; tómt drive_file_id tekur merkinguna af) sem ræður hvaða skjal birtist sem 📄 í Kröfuyfirliti og fer fremst í „Senda í bókun".**
   <br>Prófað lifandi: prufuverk stofnað (37.078 kr) → birtist í Ósendum með greiðanda og öllum vinnuflæði-tökkum → eytt aftur með DELETE /api/invoice-drafts. ⭐ sett á Hrafnistu Nesvelli 4 ágúst → titill 📄-tengilsins varð „⭐ Aðalskjal mánaðarins: …" → tekið af aftur. Landsspítalinn ágúst er eina aðalskjal
   <br><sub>2026-09-04 · brunaholf · claude-code · claude-code</sub>
@@ -490,12 +493,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Maelir sem les adeins EINA uppsprettu gefur ranga skilgreiningu, ekki ranga tolu. Talan 260 (i thjonustu an taekja) las adeins arsskodun_customers-blobbinn; 150 af 242 attu uttaeki-radir. Rett tala var 92.**
   <br>Adferdin sem fann thetta: Agnar sagdi 'NR5 er ennþa tomt' um faerslu sem eg hafdi nyskrifad. I stad thess ad utskyra var maelt hvad SIDAN les. Regla: adur en maelir er skilgreindur, finndu ALLA stadi sem geyma somu stadreynd. I thessu kerfi eru their oft tveir (blob + tafla) og appid velur milli the
   <br><sub>2026-09-01 · kerfi · 01.09.2026 · claude-code</sub>
-- **226 Tengd skýrsla má ekki sækja úttektarskýrslu á customer_base_id þegar kt á marga staði — annars fær Plaza nýjustu Center-skýrsluna í fótinn.**
-  <br>fetchReportDocs var eq(customer_base_id). computeSrc tók nýjasta ár. Lína: fyrirtaeki_id; óstaðsettar base-raðir aðeins ef kt_sites=1. Ekki 153/187.
-  <br><sub>2026-08-31 · slokkvitaeki · kóði · claude-code</sub>
 - **Systkini-kt án eigin 2026-úttektarskýrslu á fyrirtaeki_id: 23 þjónustustaðir. Join-leki #811 lokaður á 166/190/199/253/311/157; eftir stendur malarhaugur + 226 Tengd-skýrsla footer.**
   <br>31.08.2026 endurmæling. Nafnalisti docs/SAMRAEMI-2026.md §F. Níu bera last_year_inspected=2026 í blob án skýrslu á þessum fid (Plaza 193, Colas HQ 1616, Slippurinn 165, Heimaleiga HQ 269, Midtown 1486, bílageymsla 118, Borgarnes 623, Pizzan Strandgata 614, Benna Fiskislóð 1612). 153/187 óbreytt. Arn
   <br><sub>2026-08-31 · baedi · sql · claude-code</sub>
+- **226 Tengd skýrsla má ekki sækja úttektarskýrslu á customer_base_id þegar kt á marga staði — annars fær Plaza nýjustu Center-skýrsluna í fótinn.**
+  <br>fetchReportDocs var eq(customer_base_id). computeSrc tók nýjasta ár. Lína: fyrirtaeki_id; óstaðsettar base-raðir aðeins ef kt_sites=1. Ekki 153/187.
+  <br><sub>2026-08-31 · slokkvitaeki · kóði · claude-code</sub>
 - **brunaholf-tilbod.netlify.app er tilboðsform (public/tilbod), ekki Jarvis-HUD. Veiði-KPI og grunnlína 2026-07-30 búa á brunaholf.netlify.app/veidin.html og /api/veidin.**
   <br>31.08.2026 hunt: 297 staðir með 2026-úttektarskýrslu á fyrirtaeki_id í þjónustu (view v_veidin_tolur). 358 ráðir í customer_documents (úttektarskyrsla+2026) þar af 42 merkt dup, 305 distinct drive_file_id, 304 distinct fid. 39 reviewed. 1 skjal án árs = id 9233 Scan2026-07-12 brunakerfi.pdf (ár í na
   <br><sub>2026-08-31 · brunaholf · sql · claude-code</sub>
@@ -1253,17 +1256,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>13 tilvik 20.-22.08.2026, allt opid/oleyst i sweep 23.08. Bendir til ad kodinn geymir deferred beforeinstallprompt-atburdinn og kallar .prompt() eftir async biðtima (t.d. eftir await/setTimeout) i stad thess ad kalla hann beint inni i click-handler - thá er user-activation gluggin runninn ut og vafi
   <br><sub>2026-08-23 · slokkvitaeki · sql · claude-code</sub>
 
-### Brunakerfisreikningar Center Hótel — 6 fundnir
-
-- **Aðeins Center Hótel á brunakerfisreikninga meðal rekstrarfélaganna. Sex fundust af 41 óvissum.**
-  <br>R-107310 (Arnarhvoll, 158.263) · R-107312 (89.331, staður óstaðfestur — tilgáta Skjaldbreið) · R-107336 (236.093, 170 einingar, tilgáta Þingholt) · R-107337 (Laugavegur 95-99, 404.381, 301 eining) · R-107466 (Klöpp, 134.606, 91 eining) · R-108001 (Grandi, 579.424, 453 einingar). Auðkennið er línukóð
-  <br><sub>2026-08-23 · slokkvitaeki · Cowork 21.08.2026 — lestur á 41 reikningi · natalie</sub>
-
 ### Þrjú mynstur sem fela sig í reikningaskránni
 
 - **Kreditreikningar, fjölstaða reikningar og afrit líta öll út eins og venjulegir reikningar.**
   <br>KREDIT: R-108123 (Pizzan, -318.515) bakfærir R-108122 línu fyrir línu, Tilvísun S-108122. Telst ekki tekjur en liggur í skránni sem venjulegur reikningur. FJÖLSTAÐA: R-108124 nær yfir ÁTTA sölustaði Pizzunnar í einu (8x skýrslugerð), R-106567 nær yfir Gullhellu OG Álfhellu, R-106237 yfir Hringhellu 
   <br><sub>2026-08-23 · kerfi · Cowork 21.08.2026 · natalie</sub>
+
+### Brunakerfisreikningar Center Hótel — 6 fundnir
+
+- **Aðeins Center Hótel á brunakerfisreikninga meðal rekstrarfélaganna. Sex fundust af 41 óvissum.**
+  <br>R-107310 (Arnarhvoll, 158.263) · R-107312 (89.331, staður óstaðfestur — tilgáta Skjaldbreið) · R-107336 (236.093, 170 einingar, tilgáta Þingholt) · R-107337 (Laugavegur 95-99, 404.381, 301 eining) · R-107466 (Klöpp, 134.606, 91 eining) · R-108001 (Grandi, 579.424, 453 einingar). Auðkennið er línukóð
+  <br><sub>2026-08-23 · slokkvitaeki · Cowork 21.08.2026 — lestur á 41 reikningi · natalie</sub>
 
 ### Steypustöðin, Colas, Vélrás, Pizzan og Ormur — engir brunakerfisreikningar
 
