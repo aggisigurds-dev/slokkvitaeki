@@ -1,7 +1,7 @@
 /* === SKIPULAGSBORD — 12-rúða skipulagsgriðin (2026-08-09) ===
  *
  * Situr undir dagskráræmunni (#303) í Þjónustuborði (#231).
- * 12 rúður (3 raðir × 4 dálkar) — spjöld með fyrirtækjanafni og stuttri
+ * Stillanlegur raðafjöldi (1–10 raðir × 4 dálkar) — spjöld með fyrirtækjanafni og stuttri
  * lýsingu úr Þjónustuborðinu sem hægt er að draga á milli rúða og yfir í
  * dagskráræmuna til að bóka í ákveðinn dag.
  *
@@ -12,7 +12,9 @@
  *   • Draga yfir dagskrárrúðu → opna dagskrá-glugga forútfylltan; spjald
  *     hverfur af borðinu þegar verk er vistað.
  *   • Litaðir punktar á neðanverðu spjaldi = tegund verks; smella til að velja.
- *   • Markmið (t.d. 5 af 12) sýnir framgang — stillanlegt + / −.
+ *   • Hausinn sýnir FJÖLDA spjalda á borðinu og raðafjöldann; + / − fjölga
+ *     eða fækka sýnilegum röðum (1–10). Spjöld í röðum sem hverfa við fækkun
+ *     eru ALDREI hent — þau bíða og koma aftur við fjölgun (⤓-takkinn sýnir þau).
  *
  * GÖGN: AppSettings.path('skipulagsbord.cards')
  *   Spjald: { id, slot, verkbord_id, name, title, type }
@@ -25,8 +27,20 @@
   window.__skipulagsbord = true;
 
   const SLOT_ID = 'vb-skipulag';
-  const SLOTS   = 12;
   const COLS    = 4;
+
+  // 2026-09-04 (Agnar): Markmiðs-teljarinn var tekinn af og +/− stýra nú
+  // SÝNILEGUM RÖÐUM í staðinn — 1..10 raðir í stað fastra 12 rúða.
+  // Grunnreglan: spjald í röð sem hverfur við fækkun er ALDREI hent. Það
+  // heldur `slot`-inu sínu, telst áfram með í teljaranum og birtist aftur um
+  // leið og röðum er fjölgað (⤓-takkinn undir griðinu gerir það í einum smelli).
+  const ROWS_MIN  = 1;
+  const ROWS_MAX  = 10;
+  const ROWS_DEF  = 3;
+  const SLOTS_MAX = ROWS_MAX * COLS;
+  function synilegarRadir() {
+    return Math.max(ROWS_MIN, Math.min(ROWS_MAX, Number(state.rows) || ROWS_DEF));
+  }
 
   // Tegund verks — sama listi og í 303-vikudagskra og 231-verkbord
   const TYPES = [
@@ -54,7 +68,7 @@
   function writeOpenPref(open) {
     try { localStorage.setItem(OPEN_KEY, open ? '1' : '0'); } catch (_) {}
   }
-  const state = { cards: [], goal: 5, collapsed: !readOpenPref() };
+  const state = { cards: [], rows: ROWS_DEF, collapsed: !readOpenPref() };
   let _drag = null;         // id of card being dragged from the board
   let _pendingRemove = null; // card id to remove after calendar save
 
@@ -76,13 +90,13 @@
       if (g2 && Array.isArray(g2.cards)) return g2;
       try {
         const ls = JSON.parse(localStorage.getItem('bh_sb') || '{}');
-        if (Array.isArray(ls.cards)) return { cards: ls.cards, goal: ls.goal || 5 };
+        if (Array.isArray(ls.cards)) return { cards: ls.cards, rows: ls.rows };
       } catch (_) {}
     }
-    return { cards: [], goal: 5 };
+    return { cards: [], rows: ROWS_DEF };
   }
   async function persist() {
-    const data = { cards: state.cards, goal: state.goal };
+    const data = { cards: state.cards, rows: synilegarRadir() };
     render();
     if (!window.AppSettings || !AppSettings.save) return;
     // Sama vörn og í dagskránni (#303): spjöldin eru skrifuð sem HEILT fylki,
@@ -100,8 +114,14 @@
   function newId() { return 'sb' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
   function firstFreeSlot() {
     const used = new Set(state.cards.map(c => c.slot));
-    for (let i = 0; i < SLOTS; i++) if (!used.has(i)) return i;
-    return state.cards.length % SLOTS;
+    for (let i = 0; i < SLOTS_MAX; i++) if (!used.has(i)) return i;
+    return state.cards.length % SLOTS_MAX;
+  }
+  // Nýtt spjald má ALDREI lenda þegjandi í falinni röð — fjölgum röðum svo
+  // rúðan sjáist (upp að ROWS_MAX). Annars „gerðist ekkert" við að bæta við.
+  function opnaRadFyrir(slot) {
+    const tharf = Math.ceil((Number(slot) + 1) / COLS);
+    if (tharf > synilegarRadir()) state.rows = Math.min(ROWS_MAX, tharf);
   }
 
   // Try to detect a TYPES index from row tags/merki
@@ -323,7 +343,10 @@
     if (!el) return;
     injectCSS();
     const onBoard = state.cards.length;
-    const goalN   = state.goal || 5;
+    const radir   = synilegarRadir();
+    const rum     = radir * COLS;
+    const faldar  = state.cards.filter(c => (Number(c.slot) || 0) >= rum).length;
+    const spj     = n => n + (n === 1 ? ' spjald' : ' spjöld');
 
     if (state.collapsed) {
       el.innerHTML =
@@ -336,7 +359,7 @@
               '<span style="font-size:11px;font-weight:800;letter-spacing:1.4px;' +
                 'background:linear-gradient(180deg,#96c2a4,#4a8563 45%,#1e4631);' +
                 '-webkit-background-clip:text;background-clip:text;color:transparent">SKIPULAGSBORD</span>' +
-              '<span style="font-size:12px;color:#9aa0aa">' + onBoard + ' / ' + goalN + ' spjöld</span>' +
+              '<span style="font-size:12px;color:#9aa0aa">' + spj(onBoard) + '</span>' +
             '</div>' +
             '<span style="font-size:12px;color:#9aa0aa;font-weight:700">▼ Víkka</span>' +
           '</div>' +
@@ -345,7 +368,7 @@
     }
 
     const slots = [];
-    for (let i = 0; i < SLOTS; i++) slots.push(slotHTML(i));
+    for (let i = 0; i < rum; i++) slots.push(slotHTML(i));
 
     el.innerHTML =
       '<div style="background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);' +
@@ -360,17 +383,32 @@
               '-webkit-background-clip:text;background-clip:text;color:transparent">SKIPULAGSBORD</span>' +
             '<span style="font-size:13px;color:#9aa0aa">Dragðu spjöld á dagskrárrúður</span>' +
           '</div>' +
-          '<div style="display:flex;align-items:center;gap:8px">' +
-            '<div style="display:flex;align-items:center;gap:5px">' +
-              '<span style="font-size:11px;color:#9aa0aa">Markmið:</span>' +
+          // Hausinn er 4 hópar núna (fjöldi · raðir · prenta · fela) — á 390px
+          // síma verður að mega brjóta, annars ýtist „Fela" út fyrir kantinn.
+          '<div style="display:flex;align-items:center;justify-content:flex-end;' +
+            'flex-wrap:wrap;gap:8px;row-gap:6px">' +
+            // Fjöldi verkefna Á BORÐINU (kom í stað Markmiðs-teljarans)
+            '<div style="display:flex;align-items:baseline;gap:4px">' +
               '<span style="font-family:ui-monospace,monospace;font-size:14px;font-weight:800;color:#fff">' +
-                onBoard + ' / ' + goalN + '</span>' +
-              '<button data-sb="goal-minus" title="Minnka markmið" ' +
+                onBoard + '</span>' +
+              '<span style="font-size:11px;color:#9aa0aa">' +
+                (onBoard === 1 ? 'spjald' : 'spjöld') + '</span>' +
+            '</div>' +
+            // Sýnilegar raðir — 1..10. Fækkun hendir engu (sjá ⤓ undir griðinu).
+            '<div style="display:flex;align-items:center;gap:5px">' +
+              '<span style="font-size:11px;color:#9aa0aa">Raðir:</span>' +
+              '<span style="font-family:ui-monospace,monospace;font-size:14px;font-weight:800;color:#fff">' +
+                radir + '</span>' +
+              '<button data-sb="rows-minus" title="Færri sýnilegar raðir"' +
+                (radir <= ROWS_MIN ? ' disabled' : '') + ' ' +
                 'style="width:22px;height:22px;border:1px solid #3a3d45;border-radius:6px;' +
-                'background:#23252c;color:#9aa0aa;cursor:pointer;font-size:13px;font-family:inherit;padding:0">−</button>' +
-              '<button data-sb="goal-plus" title="Auka markmið" ' +
+                'background:#23252c;color:#9aa0aa;font-size:13px;font-family:inherit;padding:0;' +
+                (radir <= ROWS_MIN ? 'opacity:.35;cursor:default' : 'cursor:pointer') + '">−</button>' +
+              '<button data-sb="rows-plus" title="Fleiri sýnilegar raðir"' +
+                (radir >= ROWS_MAX ? ' disabled' : '') + ' ' +
                 'style="width:22px;height:22px;border:1px solid #3a3d45;border-radius:6px;' +
-                'background:#23252c;color:#9aa0aa;cursor:pointer;font-size:13px;font-family:inherit;padding:0">+</button>' +
+                'background:#23252c;color:#9aa0aa;font-size:13px;font-family:inherit;padding:0;' +
+                (radir >= ROWS_MAX ? 'opacity:.35;cursor:default' : 'cursor:pointer') + '">+</button>' +
             '</div>' +
             '<button data-sb="print-all" title="Prenta fyrirtækjablað fyrir öll spjöld á borðinu — eitt skjal, síða per fyrirtæki" ' +
               'style="height:26px;padding:0 10px;border:1px solid #3a3d45;border-radius:8px;' +
@@ -389,6 +427,14 @@
           (onBoard === 0
             ? '<div style="text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 2px">' +
                 'Veldu mál í Þjónustuborðinu og smelltu á <b>📋 Skipulag</b> til að bæta við.</div>'
+            : '') +
+          // Fækkun raða felur — hendir ekki. Þetta segir hversu mörg bíða.
+          (faldar
+            ? '<div style="text-align:center;padding:9px 0 2px">' +
+                '<button data-sb="rows-fit" style="border:1px solid #e2e8f0;border-radius:8px;' +
+                  'background:#f8fafc;color:#475569;cursor:pointer;font-family:inherit;' +
+                  'font-size:11.5px;font-weight:700;padding:5px 11px">⤓ ' + spj(faldar) +
+                  ' í földum röðum — sýna</button></div>'
             : '') +
         '</div>' +
       '</div>';
@@ -432,6 +478,7 @@
           window._vdCalDrag = null;
           const typeIdx = TYPES.findIndex(t => t[0] === job.type);
           const targetSlot = state.cards.find(c => c.slot === toSlot) ? firstFreeSlot() : toSlot;
+          opnaRadFyrir(targetSlot);
           state.cards.push({ id: newId(), slot: targetSlot, verkbord_id: null,
             name: job.name, title: job.note || '', type: typeIdx >= 0 ? typeIdx : null });
           persist();
@@ -673,8 +720,16 @@
         render();
         return;
       }
-      if (act === 'goal-plus')  { state.goal = Math.min(state.goal + 1, 12); persist(); return; }
-      if (act === 'goal-minus') { state.goal = Math.max(state.goal - 1, 1);  persist(); return; }
+      if (act === 'rows-plus')  { state.rows = Math.min(synilegarRadir() + 1, ROWS_MAX); persist(); return; }
+      if (act === 'rows-minus') { state.rows = Math.max(synilegarRadir() - 1, ROWS_MIN); persist(); return; }
+      if (act === 'rows-fit') {
+        // Sýna allar raðir sem eiga spjöld — einn smellur til baka eftir fækkun.
+        const tharf = state.cards.reduce(
+          (m, c) => Math.max(m, Math.ceil(((Number(c.slot) || 0) + 1) / COLS)), ROWS_MIN);
+        state.rows = Math.min(ROWS_MAX, tharf);
+        persist();
+        return;
+      }
       if (act === 'print-all') {
         // Dagsskammturinn í einum snöggskoðunar-glugga — page-break milli
         // fyrirtækja við prentun. Spjöld án beiðni-ids fylgja á nafni og
@@ -799,6 +854,7 @@
     }
     if (state.collapsed) { state.collapsed = false; writeOpenPref(true); }
     const slot = firstFreeSlot();
+    opnaRadFyrir(slot);
     state.cards.push({
       id: newId(),
       slot,
@@ -815,7 +871,7 @@
     if (!document.getElementById(SLOT_ID)) return;
     const data = readData();
     state.cards = data.cards || [];
-    state.goal  = data.goal  || 5;
+    state.rows  = Math.max(ROWS_MIN, Math.min(ROWS_MAX, Number(data.rows) || ROWS_DEF));
     state.collapsed = !readOpenPref();
     render();
   }
