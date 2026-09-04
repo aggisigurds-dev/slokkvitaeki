@@ -1,6 +1,6 @@
 # Hver gerir hvað
 
-Kanónísk agentaskrá (23 agentar, heim, slóð, kveikjur, aldrei): `docs/AGENTASKRA.md`. Kveikjuorð: `docs/TRIGGERS.md`. Þessi síða er Charlize-minni um hlutverk; listinn þar er sannleikurinn.
+Kanónísk agentaskrá (25 agentar, heim, slóð, kveikjur, aldrei): `docs/AGENTASKRA.md`. Kveikjuorð: `docs/TRIGGERS.md`. Þessi síða er Charlize-minni um hlutverk; listinn þar er sannleikurinn.
 
 | Agent | Svæði | Keyrir |
 |---|---|---|
@@ -8,6 +8,7 @@ Kanónísk agentaskrá (23 agentar, heim, slóð, kveikjur, aldrei): `docs/AGENT
 | **Cowork** | Brunahólfs-rekstur: Sheets, Apps Script, Tímavera, Ajour | alltaf-á PC-inn |
 | **Spjall** (þetta) | greining, hönnun, SQL-yfirferð, textagerð, ákvarðanir | hvar sem er, líka úr S26 |
 | **Sara** | úttektarskráning af vinnublöðum + skýrslutexti | spjall/Code |
+| **Rukkarinn** (`rukkari` 🦆) | öll rukkunarmál beggja félaga — kallað **sjálfkrafa** í beiðnum og vinnu sem tengist rukkunum (Charlize #400); les REIKNINGALOTA.md, Drög-stöð, póst | Claude Code / Cowork |
 | **Charlize** | þekkingin sjálf — allir lesa, allir skrifa | Supabase |
 
 Charlize er ekki agent sem framkvæmir. Hún er sameiginlega minnið sem hinir fjórir deila.
