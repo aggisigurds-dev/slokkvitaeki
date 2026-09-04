@@ -54,12 +54,22 @@
     const wrap = '#' + WRAP_ID + '#' + WRAP_ID;
     const clip =
       '{overflow-x:clip!important;max-width:100%!important;box-sizing:border-box!important}';
+    // 03.09.2026 (Agnar: „festist alltaf í miðri töflu og kemst ekki alveg upp
+    // né niður"). ÞESSI regla er sú sem vinnur á skrunaranum — hún ber tvöfalt
+    // auðkenni og hleðst á eftir 331 — svo hún varð að lagast hér líka, ekki
+    // bara í 331. `overscroll-behavior:contain` stöðvar scroll-chaining: þegar
+    // kassinn var kominn í botn var strokan GLEYPT í stað þess að ganga áfram
+    // til síðunnar. Nú aðeins á X-ásnum: það heldur til-baka-stroki vafrans
+    // frá þegar maður pannar töfluna til hliðar (sem var tilgangurinn), en
+    // lóðrétt strok fær að erfast upp í síðuna.
+    // Hæð er sett í 331 og er `auto` — hún má ALDREI verða viewport-bundin
+    // aftur hér eða þar: föst hæð + contain er nákvæmlega gildran.
     const pan =
       '{overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
       + 'width:100%!important;max-width:100%!important;min-width:0!important;'
       + 'box-sizing:border-box!important;'
       + '-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom!important;'
-      + 'overscroll-behavior:contain}';
+      + 'overscroll-behavior-x:contain;overscroll-behavior-y:auto}';
     return [
       /* View sits in the content box, never 100vw under the rail.
          Inherit --sidebar-w from html (263/app.css) — do not zero it here.

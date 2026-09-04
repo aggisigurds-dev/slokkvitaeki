@@ -1,7 +1,7 @@
 /* === SKIPULAGSBORD — 12-rúða skipulagsgriðin (2026-08-09) ===
  *
  * Situr undir dagskráræmunni (#303) í Þjónustuborði (#231).
- * 12 rúður (3 raðir × 4 dálkar) — spjöld með fyrirtækjanafni og stuttri
+ * Stillanlegur raðafjöldi (1–10 raðir × 4 dálkar) — spjöld með fyrirtækjanafni og stuttri
  * lýsingu úr Þjónustuborðinu sem hægt er að draga á milli rúða og yfir í
  * dagskráræmuna til að bóka í ákveðinn dag.
  *
@@ -12,7 +12,9 @@
  *   • Draga yfir dagskrárrúðu → opna dagskrá-glugga forútfylltan; spjald
  *     hverfur af borðinu þegar verk er vistað.
  *   • Litaðir punktar á neðanverðu spjaldi = tegund verks; smella til að velja.
- *   • Markmið (t.d. 5 af 12) sýnir framgang — stillanlegt + / −.
+ *   • Hausinn sýnir FJÖLDA spjalda á borðinu og raðafjöldann; + / − fjölga
+ *     eða fækka sýnilegum röðum (1–10). Spjöld í röðum sem hverfa við fækkun
+ *     eru ALDREI hent — þau bíða og koma aftur við fjölgun (⤓-takkinn sýnir þau).
  *
  * GÖGN: AppSettings.path('skipulagsbord.cards')
  *   Spjald: { id, slot, verkbord_id, name, title, type }
@@ -25,8 +27,20 @@
   window.__skipulagsbord = true;
 
   const SLOT_ID = 'vb-skipulag';
-  const SLOTS   = 12;
   const COLS    = 4;
+
+  // 2026-09-04 (Agnar): Markmiðs-teljarinn var tekinn af og +/− stýra nú
+  // SÝNILEGUM RÖÐUM í staðinn — 1..10 raðir í stað fastra 12 rúða.
+  // Grunnreglan: spjald í röð sem hverfur við fækkun er ALDREI hent. Það
+  // heldur `slot`-inu sínu, telst áfram með í teljaranum og birtist aftur um
+  // leið og röðum er fjölgað (⤓-takkinn undir griðinu gerir það í einum smelli).
+  const ROWS_MIN  = 1;
+  const ROWS_MAX  = 10;
+  const ROWS_DEF  = 3;
+  const SLOTS_MAX = ROWS_MAX * COLS;
+  function synilegarRadir() {
+    return Math.max(ROWS_MIN, Math.min(ROWS_MAX, Number(state.rows) || ROWS_DEF));
+  }
 
   // Tegund verks — sama listi og í 303-vikudagskra og 231-verkbord
   const TYPES = [
@@ -54,7 +68,7 @@
   function writeOpenPref(open) {
     try { localStorage.setItem(OPEN_KEY, open ? '1' : '0'); } catch (_) {}
   }
-  const state = { cards: [], goal: 5, collapsed: !readOpenPref() };
+  const state = { cards: [], rows: ROWS_DEF, collapsed: !readOpenPref() };
   let _drag = null;         // id of card being dragged from the board
   let _pendingRemove = null; // card id to remove after calendar save
 
@@ -76,13 +90,13 @@
       if (g2 && Array.isArray(g2.cards)) return g2;
       try {
         const ls = JSON.parse(localStorage.getItem('bh_sb') || '{}');
-        if (Array.isArray(ls.cards)) return { cards: ls.cards, goal: ls.goal || 5 };
+        if (Array.isArray(ls.cards)) return { cards: ls.cards, rows: ls.rows };
       } catch (_) {}
     }
-    return { cards: [], goal: 5 };
+    return { cards: [], rows: ROWS_DEF };
   }
   async function persist() {
-    const data = { cards: state.cards, goal: state.goal };
+    const data = { cards: state.cards, rows: synilegarRadir() };
     render();
     if (!window.AppSettings || !AppSettings.save) return;
     // Sama vörn og í dagskránni (#303): spjöldin eru skrifuð sem HEILT fylki,
@@ -100,8 +114,14 @@
   function newId() { return 'sb' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
   function firstFreeSlot() {
     const used = new Set(state.cards.map(c => c.slot));
-    for (let i = 0; i < SLOTS; i++) if (!used.has(i)) return i;
-    return state.cards.length % SLOTS;
+    for (let i = 0; i < SLOTS_MAX; i++) if (!used.has(i)) return i;
+    return state.cards.length % SLOTS_MAX;
+  }
+  // Nýtt spjald má ALDREI lenda þegjandi í falinni röð — fjölgum röðum svo
+  // rúðan sjáist (upp að ROWS_MAX). Annars „gerðist ekkert" við að bæta við.
+  function opnaRadFyrir(slot) {
+    const tharf = Math.ceil((Number(slot) + 1) / COLS);
+    if (tharf > synilegarRadir()) state.rows = Math.min(ROWS_MAX, tharf);
   }
 
   // Try to detect a TYPES index from row tags/merki
@@ -132,6 +152,32 @@
          rammi myndi hliðra textanum og láta spjaldið hoppa til við músina. */
       #${SLOT_ID} .sb-rit { transition:background .12s; }
       #${SLOT_ID} .sb-card:hover .sb-rit:hover { background:rgba(37,99,235,.09); }
+      /* Spjald MEÐ mynd: smámynd vinstra megin í fullri hæð, texti hægra megin.
+         align-items:stretch svo myndin fylli hæðina; min-width:0 á textanum svo
+         hann megi klippast í stað þess að ýta myndinni út (flex-börn eru annars
+         min-width:auto og neita að minnka). */
+      #${SLOT_ID} .sb-card.sb-hasimg { display:flex; align-items:stretch; gap:8px; }
+      #${SLOT_ID} .sb-card.sb-hasimg .sb-txt { flex:1 1 auto; min-width:0; }
+      #${SLOT_ID} .sb-thumb {
+        flex:0 0 auto; height:auto; align-self:stretch; width:auto; max-width:44%;
+        object-fit:cover; border-radius:7px; border:1px solid #e3e6ea;
+        cursor:zoom-in; background:#f6f7f9;
+      }
+      /* Stækkuð mynd */
+      #_sb-lightbox {
+        position:fixed; inset:0; z-index:99999; display:flex; align-items:center;
+        justify-content:center; background:rgba(12,13,16,.86); padding:20px;
+        cursor:zoom-out; -webkit-tap-highlight-color:transparent;
+      }
+      #_sb-lightbox img {
+        max-width:100%; max-height:100%; object-fit:contain; border-radius:10px;
+        box-shadow:0 18px 60px rgba(0,0,0,.5);
+      }
+      #_sb-lightbox .sb-lb-x {
+        position:absolute; top:14px; right:16px; width:40px; height:40px;
+        border-radius:50%; border:0; background:rgba(255,255,255,.14); color:#fff;
+        font:700 20px/1 system-ui, sans-serif; cursor:pointer;
+      }
       #${SLOT_ID} .sb-card {
         width:100%; min-height:70px; box-sizing:border-box;
         padding:8px 8px 7px; border-radius:9px;
@@ -153,6 +199,17 @@
       #${SLOT_ID} .sb-co-btn:hover, #${SLOT_ID} .sb-eye-btn:hover { color:#2563eb !important; }
       /* Síminn hefur ekkert hover — hljóðlátu hnapparnir yrðu ósýnilegir að eilífu. */
       @media (hover:none){ #${SLOT_ID} .sb-co-btn, #${SLOT_ID} .sb-eye-btn { opacity:.55 !important; } }
+      /* 04.09.2026 (Agnar): „láta 3. línuna yfirskrifa punktavalið, að það þá
+         hverfi ef texti verður of mikill". Minnispunkta-spjald fær allt að
+         ÞRJÁR línur af texta: önnur línan étur „Bæta við nánar…"-vísbendinguna
+         og sú þriðja étur punktaröðina. Þannig vex spjaldið ekki — þriðja línan
+         sest nákvæmlega þar sem punktarnir voru.
+         Línurnar eru MÆLDAR eftir teikningu (maelaTexta) en ekki taldar úr
+         stöfum: breidd spjaldsins fer eftir dálkafjölda, zoom og leturstærð, svo
+         stafatalning myndi giska — og giska rangt á hverjum þriðja skjá. */
+      #${SLOT_ID} .sb-card.sb-l2 .sb-hint { display:none; }
+      #${SLOT_ID} .sb-card.sb-l3 .sb-hint,
+      #${SLOT_ID} .sb-card.sb-l3 .sb-dots { display:none; }
       #${SLOT_ID} .sb-type-dot {
         display:inline-block; border-radius:50%; cursor:pointer; flex:none;
         transition:transform .1s, box-shadow .1s;
@@ -187,7 +244,8 @@
 
   // ── Render ─────────────────────────────────────────────────────────────────
   function typeDotRow(card) {
-    return '<div style="display:flex;align-items:center;gap:4px;margin-top:auto;padding-top:5px;flex-wrap:nowrap">' +
+    return '<div class="sb-dots" style="display:flex;align-items:center;gap:4px;' +
+      'margin-top:auto;padding-top:5px;flex-wrap:nowrap">' +
       TYPES.map(function (t, i) {
         const sel = card.type === i;
         const sz  = sel ? '11' : '9';
@@ -245,36 +303,60 @@
     // þurfa að skrifa í þjónustubeiðnina á bak við — þau opna því málið áfram,
     // þar sem titillinn er ritanlegur í VALIÐ MÁL.
     const ritanlegt = card.verkbord_id == null;
+    // Hversu margar línur má NAFNIÐ taka? Minnispunktur án skýringar er allur
+    // í nafninu (fyrsta lína textareitsins) — hann fær þrjár. Sé skýring til
+    // staðar er nafnið fyrirsögn og heldur sinni einu línu; skýringin á tvær.
+    // Spjald sem hangir á máli speglar fyrirtækjanafn og heldur gamla sniðinu.
+    const nafnLinur = ritanlegt ? (title ? 1 : 3) : 1;
+    // 04.09.2026 (ósk Agnars): skjáskot límt beint á spjaldið. Smámyndin situr
+    // VINSTRA megin og passar í hæð spjaldsins (width:auto), svo textinn heldur
+    // sínu plássi við hliðina — spjaldið stækkar ekki. Smellur á hana opnar
+    // hana í fullri stærð. Myndin sjálf fer í `verkbord-files`-fötuna (sama og
+    // spjallið og viðhengin nota); á spjaldinu er AÐEINS slóðin. Base64 hér
+    // hefði farið í skipulagsbord.cards → app_settings, sem er þegar 1,5 MB og
+    // er lesið og skrifað af öllu appinu.
+    const mynd = card.mynd || '';
 
     return '<div class="sb-slot" data-sb-slot="' + i + '">' +
-      '<div class="sb-card" draggable="true" data-sb-card="' + esc(card.id) + '" ' +
+      '<div class="sb-card' + (mynd ? ' sb-hasimg' : '') + '" draggable="true" data-sb-card="' + esc(card.id) + '" ' +
         'data-sb-vid="' + esc(card.verkbord_id) + '" title="' +
         (ritanlegt ? 'Smella á textann til að breyta honum' : 'Smella til að opna málið hér að neðan') + '">' +
+        (mynd
+          ? '<img class="sb-thumb" src="' + esc(mynd) + '" alt="" draggable="false" ' +
+              'data-sb-mynd="' + esc(mynd) + '" title="Smella til að stækka myndina">'
+          : '') +
+        '<div class="sb-txt">' +
         // Header: dot + name + delete
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">' +
           '<div class="' + (ritanlegt ? 'sb-rit' : '') + '"' +
             (ritanlegt ? ' data-sb-edit="' + esc(card.id) + '"' : '') +
-            ' style="display:flex;align-items:center;gap:5px;overflow:hidden;flex:1;min-width:0' +
+            ' style="display:flex;align-items:' + (nafnLinur > 1 ? 'flex-start' : 'center') +
+            ';gap:5px;overflow:hidden;flex:1;min-width:0' +
             (ritanlegt ? ';cursor:text;border-radius:5px' : '') + '">' +
             '<span style="width:9px;height:9px;border-radius:50%;background:' + tc + ';flex:none;' +
-              'margin-top:1px;transition:background .15s"></span>' +
-            '<span style="font-size:11.5px;font-weight:800;color:#1a1c22;overflow:hidden;' +
-              'text-overflow:ellipsis;white-space:nowrap;line-height:1.3">' + esc(name) + '</span>' +
+              'margin-top:' + (nafnLinur > 1 ? '3px' : '1px') + ';transition:background .15s"></span>' +
+            '<span' + (ritanlegt ? ' class="sb-nafn"' : '') +
+              ' style="font-size:11.5px;font-weight:800;color:#1a1c22;overflow:hidden;line-height:1.3;' +
+              (nafnLinur > 1
+                ? 'display:-webkit-box;-webkit-line-clamp:' + nafnLinur + ';' +
+                  '-webkit-box-orient:vertical;overflow-wrap:anywhere'
+                : 'text-overflow:ellipsis;white-space:nowrap') + '">' + esc(name) + '</span>' +
           '</div>' +
           '<button class="sb-x" data-sb-del="' + esc(card.id) + '" title="Fjarlægja">✕</button>' +
         '</div>' +
         // Title
         (title
-          ? '<div' + (ritanlegt ? ' class="sb-rit" data-sb-edit="' + esc(card.id) + '" style="cursor:text;border-radius:5px;' : ' style="') +
+          ? '<div' + (ritanlegt ? ' class="sb-rit sb-titill" data-sb-edit="' + esc(card.id) + '" style="cursor:text;border-radius:5px;' : ' style="') +
               'font-size:10.5px;color:#6b7280;line-height:1.4;overflow:hidden;' +
               'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' +
               esc(title) + '</div>'
           : (ritanlegt
-              ? '<div class="sb-rit" data-sb-edit="' + esc(card.id) + '" style="cursor:text;border-radius:5px;' +
+              ? '<div class="sb-rit sb-hint" data-sb-edit="' + esc(card.id) + '" style="cursor:text;border-radius:5px;' +
                   'font-size:10.5px;color:#c3c7cd;line-height:1.4">Bæta við nánar…</div>'
               : '')) +
         // Type picker dots
         typeDotRow(card) +
+        '</div>' +
       '</div></div>';
   }
 
@@ -283,7 +365,10 @@
     if (!el) return;
     injectCSS();
     const onBoard = state.cards.length;
-    const goalN   = state.goal || 5;
+    const radir   = synilegarRadir();
+    const rum     = radir * COLS;
+    const faldar  = state.cards.filter(c => (Number(c.slot) || 0) >= rum).length;
+    const spj     = n => n + (n === 1 ? ' spjald' : ' spjöld');
 
     if (state.collapsed) {
       el.innerHTML =
@@ -296,7 +381,7 @@
               '<span style="font-size:11px;font-weight:800;letter-spacing:1.4px;' +
                 'background:linear-gradient(180deg,#96c2a4,#4a8563 45%,#1e4631);' +
                 '-webkit-background-clip:text;background-clip:text;color:transparent">SKIPULAGSBORD</span>' +
-              '<span style="font-size:12px;color:#9aa0aa">' + onBoard + ' / ' + goalN + ' spjöld</span>' +
+              '<span style="font-size:12px;color:#9aa0aa">' + spj(onBoard) + '</span>' +
             '</div>' +
             '<span style="font-size:12px;color:#9aa0aa;font-weight:700">▼ Víkka</span>' +
           '</div>' +
@@ -305,7 +390,7 @@
     }
 
     const slots = [];
-    for (let i = 0; i < SLOTS; i++) slots.push(slotHTML(i));
+    for (let i = 0; i < rum; i++) slots.push(slotHTML(i));
 
     el.innerHTML =
       '<div style="background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);' +
@@ -320,17 +405,32 @@
               '-webkit-background-clip:text;background-clip:text;color:transparent">SKIPULAGSBORD</span>' +
             '<span style="font-size:13px;color:#9aa0aa">Dragðu spjöld á dagskrárrúður</span>' +
           '</div>' +
-          '<div style="display:flex;align-items:center;gap:8px">' +
-            '<div style="display:flex;align-items:center;gap:5px">' +
-              '<span style="font-size:11px;color:#9aa0aa">Markmið:</span>' +
+          // Hausinn er 4 hópar núna (fjöldi · raðir · prenta · fela) — á 390px
+          // síma verður að mega brjóta, annars ýtist „Fela" út fyrir kantinn.
+          '<div style="display:flex;align-items:center;justify-content:flex-end;' +
+            'flex-wrap:wrap;gap:8px;row-gap:6px">' +
+            // Fjöldi verkefna Á BORÐINU (kom í stað Markmiðs-teljarans)
+            '<div style="display:flex;align-items:baseline;gap:4px">' +
               '<span style="font-family:ui-monospace,monospace;font-size:14px;font-weight:800;color:#fff">' +
-                onBoard + ' / ' + goalN + '</span>' +
-              '<button data-sb="goal-minus" title="Minnka markmið" ' +
+                onBoard + '</span>' +
+              '<span style="font-size:11px;color:#9aa0aa">' +
+                (onBoard === 1 ? 'spjald' : 'spjöld') + '</span>' +
+            '</div>' +
+            // Sýnilegar raðir — 1..10. Fækkun hendir engu (sjá ⤓ undir griðinu).
+            '<div style="display:flex;align-items:center;gap:5px">' +
+              '<span style="font-size:11px;color:#9aa0aa">Raðir:</span>' +
+              '<span style="font-family:ui-monospace,monospace;font-size:14px;font-weight:800;color:#fff">' +
+                radir + '</span>' +
+              '<button data-sb="rows-minus" title="Færri sýnilegar raðir"' +
+                (radir <= ROWS_MIN ? ' disabled' : '') + ' ' +
                 'style="width:22px;height:22px;border:1px solid #3a3d45;border-radius:6px;' +
-                'background:#23252c;color:#9aa0aa;cursor:pointer;font-size:13px;font-family:inherit;padding:0">−</button>' +
-              '<button data-sb="goal-plus" title="Auka markmið" ' +
+                'background:#23252c;color:#9aa0aa;font-size:13px;font-family:inherit;padding:0;' +
+                (radir <= ROWS_MIN ? 'opacity:.35;cursor:default' : 'cursor:pointer') + '">−</button>' +
+              '<button data-sb="rows-plus" title="Fleiri sýnilegar raðir"' +
+                (radir >= ROWS_MAX ? ' disabled' : '') + ' ' +
                 'style="width:22px;height:22px;border:1px solid #3a3d45;border-radius:6px;' +
-                'background:#23252c;color:#9aa0aa;cursor:pointer;font-size:13px;font-family:inherit;padding:0">+</button>' +
+                'background:#23252c;color:#9aa0aa;font-size:13px;font-family:inherit;padding:0;' +
+                (radir >= ROWS_MAX ? 'opacity:.35;cursor:default' : 'cursor:pointer') + '">+</button>' +
             '</div>' +
             '<button data-sb="print-all" title="Prenta fyrirtækjablað fyrir öll spjöld á borðinu — eitt skjal, síða per fyrirtæki" ' +
               'style="height:26px;padding:0 10px;border:1px solid #3a3d45;border-radius:8px;' +
@@ -350,10 +450,43 @@
             ? '<div style="text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 2px">' +
                 'Veldu mál í Þjónustuborðinu og smelltu á <b>📋 Skipulag</b> til að bæta við.</div>'
             : '') +
+          // Fækkun raða felur — hendir ekki. Þetta segir hversu mörg bíða.
+          (faldar
+            ? '<div style="text-align:center;padding:9px 0 2px">' +
+                '<button data-sb="rows-fit" style="border:1px solid #e2e8f0;border-radius:8px;' +
+                  'background:#f8fafc;color:#475569;cursor:pointer;font-family:inherit;' +
+                  'font-size:11.5px;font-weight:700;padding:5px 11px">⤓ ' + spj(faldar) +
+                  ' í földum röðum — sýna</button></div>'
+            : '') +
         '</div>' +
       '</div>';
 
     wireDrag();
+    maelaTexta();
+  }
+
+  // Hversu margar línur tekur textinn í raun? Mælt á teiknuðu spjaldi og
+  // niðurstaðan sett sem merki á það: `sb-l2` felur vísbendinguna, `sb-l3`
+  // felur líka punktaröðina svo þriðja línan fái plássið hennar.
+  // Aðeins minnispunkta-spjöld eru mæld — þau ein bera `.sb-nafn`.
+  function linufjoldi(n) {
+    if (!n) return 0;
+    const cs = (window.getComputedStyle && getComputedStyle(n)) || {};
+    const lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 11.5) * 1.35;
+    const h  = n.getBoundingClientRect().height;
+    if (!h) return 1;                 // falinn flipi: engin hæð → ekkert falið
+    return Math.max(1, Math.round(h / lh));
+  }
+  function maelaTexta() {
+    const el = document.getElementById(SLOT_ID);
+    if (!el) return;
+    el.querySelectorAll('.sb-card').forEach(kort => {
+      const nafn = kort.querySelector('.sb-nafn');
+      if (!nafn) return;              // spjald á máli — óbreytt snið
+      const linur = linufjoldi(nafn) + linufjoldi(kort.querySelector('.sb-titill'));
+      kort.classList.toggle('sb-l2', linur >= 2);
+      kort.classList.toggle('sb-l3', linur >= 3);
+    });
   }
 
   // ── Drag within board ──────────────────────────────────────────────────────
@@ -392,6 +525,7 @@
           window._vdCalDrag = null;
           const typeIdx = TYPES.findIndex(t => t[0] === job.type);
           const targetSlot = state.cards.find(c => c.slot === toSlot) ? firstFreeSlot() : toSlot;
+          opnaRadFyrir(targetSlot);
           state.cards.push({ id: newId(), slot: targetSlot, verkbord_id: null,
             name: job.name, title: job.note || '', type: typeIdx >= 0 ? typeIdx : null });
           persist();
@@ -513,6 +647,16 @@
       return;
     }
 
+    // Smámynd → stækka. Verður að koma á undan spjald-smellinum, annars opnar
+    // hann málið að neðan í staðinn fyrir að sýna myndina.
+    const smamynd = e.target.closest('[data-sb-mynd]');
+    if (smamynd) {
+      e.stopPropagation();
+      e.preventDefault();
+      opnaMynd(smamynd.getAttribute('data-sb-mynd'));
+      return;
+    }
+
     // ── Breyta minnispunkta-spjaldi BEINT á borðinu ─────────────────────────
     // 03.09.2026 (ósk Agnars). Sama ritflæði og þegar spjaldið er búið til í
     // tómri rúðu: textareita ofan í spjaldinu, fyrsta línan er fyrirsögn og
@@ -565,6 +709,27 @@
       });
       ta.addEventListener('click', ev => ev.stopPropagation());
       ta.addEventListener('mousedown', ev => ev.stopPropagation());
+      // Líma skjáskot beint á spjaldið. Textinn sem þegar er í reitnum er
+      // vistaður FYRST — annars hefði render() eftir upphleðsluna hent honum.
+      ta.addEventListener('paste', async ev => {
+        const f = myndUrLimingu(ev);
+        if (!f) return;                       // venjuleg texta-líming: ósnert
+        ev.preventDefault();
+        ev.stopPropagation();
+        const texti = (ta.value || '').trim();
+        if (texti) {
+          const sk = texti.indexOf(String.fromCharCode(10));
+          card.name  = sk > 0 ? texti.slice(0, sk).trim() : texti;
+          card.title = sk > 0 ? texti.slice(sk + 1).trim() : '';
+        }
+        ta.disabled = true;
+        toast('Hleð upp mynd…');
+        const url = await hladaMynd(f, cid);
+        if (url) { card.mynd = url; toast('✓ Mynd vistuð á spjaldið'); }
+        vistad = true;                        // blur má ekki vista ofan í þetta
+        kort.setAttribute('draggable', dragAdur == null ? 'true' : dragAdur);
+        persist();
+      });
       ta.addEventListener('blur', () => vista(false));
       return;
     }
@@ -602,8 +767,16 @@
         render();
         return;
       }
-      if (act === 'goal-plus')  { state.goal = Math.min(state.goal + 1, 12); persist(); return; }
-      if (act === 'goal-minus') { state.goal = Math.max(state.goal - 1, 1);  persist(); return; }
+      if (act === 'rows-plus')  { state.rows = Math.min(synilegarRadir() + 1, ROWS_MAX); persist(); return; }
+      if (act === 'rows-minus') { state.rows = Math.max(synilegarRadir() - 1, ROWS_MIN); persist(); return; }
+      if (act === 'rows-fit') {
+        // Sýna allar raðir sem eiga spjöld — einn smellur til baka eftir fækkun.
+        const tharf = state.cards.reduce(
+          (m, c) => Math.max(m, Math.ceil(((Number(c.slot) || 0) + 1) / COLS)), ROWS_MIN);
+        state.rows = Math.min(ROWS_MAX, tharf);
+        persist();
+        return;
+      }
       if (act === 'print-all') {
         // Dagsskammturinn í einum snöggskoðunar-glugga — page-break milli
         // fyrirtækja við prentun. Spjöld án beiðni-ids fylgja á nafni og
@@ -663,6 +836,63 @@
   });
 
   // ── Public API ─────────────────────────────────────────────────────────────
+  /* ── Skjáskot á spjaldi (04.09.2026, ósk Agnars) ────────────────────────────
+     Myndin fer í `verkbord-files` (sama fata og spjallið #347 og viðhengin í
+     231 nota); spjaldið geymir AÐEINS slóðina. Base64 á spjaldinu hefði endað
+     inni í app_settings — 1,5 MB JSON sem allt appið les og skrifar. */
+  const MYND_FATA = 'verkbord-files';
+  const MYND_MAX_MB = 10;
+
+  async function hladaMynd(file, cardId) {
+    const sb = (window.DB && DB.sb) || null;
+    if (!sb) { toast('Enginn gagnagrunnur — mynd ekki vistuð'); return null; }
+    if (file.size > MYND_MAX_MB * 1024 * 1024) {
+      toast('Myndin er of stór (hámark ' + MYND_MAX_MB + ' MB)');
+      return null;
+    }
+    const endi = (file.type && file.type.split('/')[1] || 'png').replace(/[^a-z0-9]/gi, '') || 'png';
+    const slod = 'skipulag/' + String(cardId) + '-' + Date.now() + '.' + endi;
+    try {
+      const up = await sb.storage.from(MYND_FATA).upload(slod, file, {
+        contentType: file.type || 'image/png', upsert: false
+      });
+      if (up.error) { toast('Villa við upphleðslu: ' + (up.error.message || up.error)); return null; }
+      const { data: u } = sb.storage.from(MYND_FATA).getPublicUrl(slod);
+      return (u && u.publicUrl) || null;
+    } catch (e) {
+      toast('Villa við upphleðslu: ' + ((e && e.message) || e));
+      return null;
+    }
+  }
+
+  // Sækir mynd úr límingar-atburði. Skjáskot koma sem `file`-hlutur í items.
+  function myndUrLimingu(ev) {
+    try {
+      const items = (ev.clipboardData && ev.clipboardData.items) || [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file' && /^image\//.test(items[i].type || '')) {
+          const f = items[i].getAsFile();
+          if (f) return f;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function opnaMynd(url) {
+    const gamalt = document.getElementById('_sb-lightbox');
+    if (gamalt) gamalt.remove();
+    const lb = document.createElement('div');
+    lb.id = '_sb-lightbox';
+    lb.innerHTML = '<button class="sb-lb-x" type="button" title="Loka">✕</button>'
+      + '<img src="' + esc(url) + '" alt="">';
+    const loka = () => { lb.remove(); document.removeEventListener('keydown', esclykill); };
+    const esclykill = ev => { if (ev.key === 'Escape') loka(); };
+    lb.addEventListener('click', loka);
+    document.addEventListener('keydown', esclykill);
+    document.body.appendChild(lb);
+  }
+
   function addFromRow(row) {
     if (!row) return;
     if (state.cards.find(c => String(c.verkbord_id) === String(row.id))) {
@@ -671,6 +901,7 @@
     }
     if (state.collapsed) { state.collapsed = false; writeOpenPref(true); }
     const slot = firstFreeSlot();
+    opnaRadFyrir(slot);
     state.cards.push({
       id: newId(),
       slot,
@@ -687,7 +918,7 @@
     if (!document.getElementById(SLOT_ID)) return;
     const data = readData();
     state.cards = data.cards || [];
-    state.goal  = data.goal  || 5;
+    state.rows  = Math.max(ROWS_MIN, Math.min(ROWS_MAX, Number(data.rows) || ROWS_DEF));
     state.collapsed = !readOpenPref();
     render();
   }
