@@ -82,13 +82,13 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 
 ## Jarvis-roster (brunaholf)
 
-Áhöfnin á `jarvis.html` (spjaldið Sérfræðingar) er **16 sæti**. Hún stemmir við agent-skrárnar sem eiga roster-nafn. **Ekki** uppfært í þessari lotu.
+Áhöfnin á `jarvis.html` (spjaldið Sérfræðingar) er **17 sæti**. Hún stemmir við agent-skrárnar sem eiga roster-nafn. **Ekki** uppfært í þessari lotu.
 
-Sæti: Jarvis · Samantha · Sara · Charlize · Freeman · Statham · Willis · Samuel L. J. · Dr. House · Trump · Arnold · DeVito · Ramsay · Elon Musk · Natalie · Joker.
+Sæti: Jarvis · Samantha · Sara · Charlize · Freeman · Statham · Willis · Samuel L. J. · Dr. House · Trump · Arnold · DeVito · Ramsay · Elon Musk · Natalie · Joker · Jóakim aðalönd (🦆 rukkari, svið `rukkun`, 05.09.2026).
 
 Agentar **án** roster-sætis (notaðir samt): `adstod`, `bord-flettur`, `netvordur`, `sala-reikningar`, `thema`, `framendi`. Þeir eru í þessari skrá, ekki í HUD-listanum.
 
-Aðrar Jarvis-tölur sem `jarvis.md` telur ósamræmdar (ekki lagaðar hér): `js/jarvis-voice.js` AGENTS = 15 raddir; `svid-status.js` SVID = 12 svið. Roster er útlit, ekki loader.
+Aðrar Jarvis-tölur sem `jarvis.md` telur ósamræmdar (ekki lagaðar hér): `js/jarvis-voice.js` AGENTS = 16 raddir; `svid-status.js` SVID = 13 svið. Roster er útlit, ekki loader.
 
 ---
 
