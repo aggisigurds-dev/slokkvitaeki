@@ -281,7 +281,17 @@
         '<button type="button" data-ars-sjon="tafla" title="Tafla — þétt skjáborðstafla, pinch-zoom og skrun">Tafla</button>' +
         '<button type="button" data-ars-sjon="skjár" title="Skjár — full skjáborðstafla, pinch-zoom og skrun">Skjár</button>' +
       '</div>' +
+      // 04.09.2026 (Agnar: „get ekki zoomað út"). Zoom-vélin var HÁLFBYGGÐ:
+      // STEPS-ladderinn (0,15–3), stepScale() og paintZoomPct() voru öll til og
+      // CSS fyrir #_ars-z-pct var skrifað — en engin − / + / % element voru
+      // nokkurn tíma búin til, og meðhöndlarinn þekkti aðeins „fit". Eina
+      // zoom-stýringin sem eftir stóð var fljótandi síðuzoom-takkinn í 333, og
+      // hann fer aðeins niður í 70% (MIN=0.7). Á 1100px-breiðri töflu dugar það
+      // hvergi. Ladderinn hér nær niður í 15%; hann vantaði bara takka.
       '<div class="_ars-sjon-zoom" hidden>' +
+        '<button type="button" data-ars-z="out" title="Minnka töfluna">−</button>' +
+        '<span id="_ars-z-pct">100%</span>' +
+        '<button type="button" data-ars-z="in" title="Stækka töfluna">+</button>' +
         '<button type="button" data-ars-z="fit" title="Passa töfluna á skjáinn">Passa töflu</button>' +
       '</div>';
     wrap.querySelectorAll('[data-ars-sjon]').forEach(b => {
@@ -297,6 +307,7 @@
         e.stopPropagation();
         const k = b.getAttribute('data-ars-z');
         if (k === 'fit') applyCssScale(fitScale());
+        else if (k === 'out' || k === 'in') applyCssScale(stepScale(k === 'out' ? -1 : 1));
       });
     });
     return wrap;
