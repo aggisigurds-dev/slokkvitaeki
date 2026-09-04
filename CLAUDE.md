@@ -22,6 +22,11 @@ It contains everything Claude Code needs to know to be useful immediately.
 
 ---
 
+
+> **Reikningalota:** áður en reikningar, kröfur eða úttektir eru kláraðar með Agnari — lesa
+> `../brunaholf/docs/REIKNINGALOTA.md` (félögin, flæðin, afslættirnir, pósturinn) og opna
+> Drög-stöðina `brunaholf.netlify.app/#drogstod`. Sparar að útskýra allt upp á nýtt.
+
 ## ⛔ ÞRJÁR REGLUR — lesist fyrst
 
 Agnar eyðir of miklum tíma í að endurtaka sig, staðfesta aftur og biðja um sama
