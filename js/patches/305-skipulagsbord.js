@@ -132,6 +132,32 @@
          rammi myndi hliðra textanum og láta spjaldið hoppa til við músina. */
       #${SLOT_ID} .sb-rit { transition:background .12s; }
       #${SLOT_ID} .sb-card:hover .sb-rit:hover { background:rgba(37,99,235,.09); }
+      /* Spjald MEÐ mynd: smámynd vinstra megin í fullri hæð, texti hægra megin.
+         align-items:stretch svo myndin fylli hæðina; min-width:0 á textanum svo
+         hann megi klippast í stað þess að ýta myndinni út (flex-börn eru annars
+         min-width:auto og neita að minnka). */
+      #${SLOT_ID} .sb-card.sb-hasimg { display:flex; align-items:stretch; gap:8px; }
+      #${SLOT_ID} .sb-card.sb-hasimg .sb-txt { flex:1 1 auto; min-width:0; }
+      #${SLOT_ID} .sb-thumb {
+        flex:0 0 auto; height:auto; align-self:stretch; width:auto; max-width:44%;
+        object-fit:cover; border-radius:7px; border:1px solid #e3e6ea;
+        cursor:zoom-in; background:#f6f7f9;
+      }
+      /* Stækkuð mynd */
+      #_sb-lightbox {
+        position:fixed; inset:0; z-index:99999; display:flex; align-items:center;
+        justify-content:center; background:rgba(12,13,16,.86); padding:20px;
+        cursor:zoom-out; -webkit-tap-highlight-color:transparent;
+      }
+      #_sb-lightbox img {
+        max-width:100%; max-height:100%; object-fit:contain; border-radius:10px;
+        box-shadow:0 18px 60px rgba(0,0,0,.5);
+      }
+      #_sb-lightbox .sb-lb-x {
+        position:absolute; top:14px; right:16px; width:40px; height:40px;
+        border-radius:50%; border:0; background:rgba(255,255,255,.14); color:#fff;
+        font:700 20px/1 system-ui, sans-serif; cursor:pointer;
+      }
       #${SLOT_ID} .sb-card {
         width:100%; min-height:70px; box-sizing:border-box;
         padding:8px 8px 7px; border-radius:9px;
@@ -245,11 +271,24 @@
     // þurfa að skrifa í þjónustubeiðnina á bak við — þau opna því málið áfram,
     // þar sem titillinn er ritanlegur í VALIÐ MÁL.
     const ritanlegt = card.verkbord_id == null;
+    // 04.09.2026 (ósk Agnars): skjáskot límt beint á spjaldið. Smámyndin situr
+    // VINSTRA megin og passar í hæð spjaldsins (width:auto), svo textinn heldur
+    // sínu plássi við hliðina — spjaldið stækkar ekki. Smellur á hana opnar
+    // hana í fullri stærð. Myndin sjálf fer í `verkbord-files`-fötuna (sama og
+    // spjallið og viðhengin nota); á spjaldinu er AÐEINS slóðin. Base64 hér
+    // hefði farið í skipulagsbord.cards → app_settings, sem er þegar 1,5 MB og
+    // er lesið og skrifað af öllu appinu.
+    const mynd = card.mynd || '';
 
     return '<div class="sb-slot" data-sb-slot="' + i + '">' +
-      '<div class="sb-card" draggable="true" data-sb-card="' + esc(card.id) + '" ' +
+      '<div class="sb-card' + (mynd ? ' sb-hasimg' : '') + '" draggable="true" data-sb-card="' + esc(card.id) + '" ' +
         'data-sb-vid="' + esc(card.verkbord_id) + '" title="' +
         (ritanlegt ? 'Smella á textann til að breyta honum' : 'Smella til að opna málið hér að neðan') + '">' +
+        (mynd
+          ? '<img class="sb-thumb" src="' + esc(mynd) + '" alt="" draggable="false" ' +
+              'data-sb-mynd="' + esc(mynd) + '" title="Smella til að stækka myndina">'
+          : '') +
+        '<div class="sb-txt">' +
         // Header: dot + name + delete
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">' +
           '<div class="' + (ritanlegt ? 'sb-rit' : '') + '"' +
@@ -275,6 +314,7 @@
               : '')) +
         // Type picker dots
         typeDotRow(card) +
+        '</div>' +
       '</div></div>';
   }
 
@@ -513,6 +553,16 @@
       return;
     }
 
+    // Smámynd → stækka. Verður að koma á undan spjald-smellinum, annars opnar
+    // hann málið að neðan í staðinn fyrir að sýna myndina.
+    const smamynd = e.target.closest('[data-sb-mynd]');
+    if (smamynd) {
+      e.stopPropagation();
+      e.preventDefault();
+      opnaMynd(smamynd.getAttribute('data-sb-mynd'));
+      return;
+    }
+
     // ── Breyta minnispunkta-spjaldi BEINT á borðinu ─────────────────────────
     // 03.09.2026 (ósk Agnars). Sama ritflæði og þegar spjaldið er búið til í
     // tómri rúðu: textareita ofan í spjaldinu, fyrsta línan er fyrirsögn og
@@ -565,6 +615,27 @@
       });
       ta.addEventListener('click', ev => ev.stopPropagation());
       ta.addEventListener('mousedown', ev => ev.stopPropagation());
+      // Líma skjáskot beint á spjaldið. Textinn sem þegar er í reitnum er
+      // vistaður FYRST — annars hefði render() eftir upphleðsluna hent honum.
+      ta.addEventListener('paste', async ev => {
+        const f = myndUrLimingu(ev);
+        if (!f) return;                       // venjuleg texta-líming: ósnert
+        ev.preventDefault();
+        ev.stopPropagation();
+        const texti = (ta.value || '').trim();
+        if (texti) {
+          const sk = texti.indexOf(String.fromCharCode(10));
+          card.name  = sk > 0 ? texti.slice(0, sk).trim() : texti;
+          card.title = sk > 0 ? texti.slice(sk + 1).trim() : '';
+        }
+        ta.disabled = true;
+        toast('Hleð upp mynd…');
+        const url = await hladaMynd(f, cid);
+        if (url) { card.mynd = url; toast('✓ Mynd vistuð á spjaldið'); }
+        vistad = true;                        // blur má ekki vista ofan í þetta
+        kort.setAttribute('draggable', dragAdur == null ? 'true' : dragAdur);
+        persist();
+      });
       ta.addEventListener('blur', () => vista(false));
       return;
     }
@@ -663,6 +734,63 @@
   });
 
   // ── Public API ─────────────────────────────────────────────────────────────
+  /* ── Skjáskot á spjaldi (04.09.2026, ósk Agnars) ────────────────────────────
+     Myndin fer í `verkbord-files` (sama fata og spjallið #347 og viðhengin í
+     231 nota); spjaldið geymir AÐEINS slóðina. Base64 á spjaldinu hefði endað
+     inni í app_settings — 1,5 MB JSON sem allt appið les og skrifar. */
+  const MYND_FATA = 'verkbord-files';
+  const MYND_MAX_MB = 10;
+
+  async function hladaMynd(file, cardId) {
+    const sb = (window.DB && DB.sb) || null;
+    if (!sb) { toast('Enginn gagnagrunnur — mynd ekki vistuð'); return null; }
+    if (file.size > MYND_MAX_MB * 1024 * 1024) {
+      toast('Myndin er of stór (hámark ' + MYND_MAX_MB + ' MB)');
+      return null;
+    }
+    const endi = (file.type && file.type.split('/')[1] || 'png').replace(/[^a-z0-9]/gi, '') || 'png';
+    const slod = 'skipulag/' + String(cardId) + '-' + Date.now() + '.' + endi;
+    try {
+      const up = await sb.storage.from(MYND_FATA).upload(slod, file, {
+        contentType: file.type || 'image/png', upsert: false
+      });
+      if (up.error) { toast('Villa við upphleðslu: ' + (up.error.message || up.error)); return null; }
+      const { data: u } = sb.storage.from(MYND_FATA).getPublicUrl(slod);
+      return (u && u.publicUrl) || null;
+    } catch (e) {
+      toast('Villa við upphleðslu: ' + ((e && e.message) || e));
+      return null;
+    }
+  }
+
+  // Sækir mynd úr límingar-atburði. Skjáskot koma sem `file`-hlutur í items.
+  function myndUrLimingu(ev) {
+    try {
+      const items = (ev.clipboardData && ev.clipboardData.items) || [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file' && /^image\//.test(items[i].type || '')) {
+          const f = items[i].getAsFile();
+          if (f) return f;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function opnaMynd(url) {
+    const gamalt = document.getElementById('_sb-lightbox');
+    if (gamalt) gamalt.remove();
+    const lb = document.createElement('div');
+    lb.id = '_sb-lightbox';
+    lb.innerHTML = '<button class="sb-lb-x" type="button" title="Loka">✕</button>'
+      + '<img src="' + esc(url) + '" alt="">';
+    const loka = () => { lb.remove(); document.removeEventListener('keydown', esclykill); };
+    const esclykill = ev => { if (ev.key === 'Escape') loka(); };
+    lb.addEventListener('click', loka);
+    document.addEventListener('keydown', esclykill);
+    document.body.appendChild(lb);
+  }
+
   function addFromRow(row) {
     if (!row) return;
     if (state.cards.find(c => String(c.verkbord_id) === String(row.id))) {
