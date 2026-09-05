@@ -257,10 +257,24 @@
     card.insertAdjacentElement('afterend', box);
   }
 
+  // Kapphlaup sem var til fyrir: borðið teiknast þegar flipinn opnast, oft ÁÐUR en
+  // Companies.list er komið — og ekkert teiknar aftur (loadDocStatus o.fl. eru „einu sinni").
+  // Þá stendur borðið í „0 fyrirtæki" með tóma töflu. Sé FJÖLDI-spjaldið 0 en gögnin komin
+  // → teikna aftur. Snertir ekki síur/leit (FJÖLDI telur allt, óháð síu).
+  function vaktaTomtBord() {
+    const v = view(); if (!v || !v.classList.contains('active')) return;
+    const n = ((window.Companies && Companies.list) || []).length; if (!n) return;
+    const kpi = v.querySelector('[data-kpi="all"]'); if (!kpi) return;
+    const talan = (kpi.textContent.match(/\d[\d.]*/) || ['0'])[0].replace(/\./g, '');
+    if (talan !== '0') return;
+    if (window.AllirVidsk && AllirVidsk.show) AllirVidsk.show();
+  }
+
   function boot() {
     watchBoard();
     mountDetail();
     new MutationObserver(() => { watchBoard(); mountDetail(); }).observe(document.body, { childList: true, subtree: true });
+    setInterval(vaktaTomtBord, 1500);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
