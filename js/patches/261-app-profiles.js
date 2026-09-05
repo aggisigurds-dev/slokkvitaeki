@@ -43,6 +43,8 @@
     { k: 'br-vinnubok',      label: 'Vinnubók',              emoji: '📓', url: 'https://brunaholf.netlify.app/?embed=1#vinnubok' },
     { k: 'br-krofur',        label: 'Krófur & Tekjur',       short: 'Fjárhagur', emoji: '📊', url: 'https://brunaholf.netlify.app/?embed=1#krofur' },
     { k: 'br-krofuyfirlit',  label: 'Kröfu yfirlit (Brunahólf)', short: 'BH Kröfur', emoji: '📑', url: 'https://brunaholf.netlify.app/?embed=1#krofuyfirlit' },
+    // Drög-stöðin (05.09.2026): innhólf punkta + draft-körfur fyrir bæði félögin; „Senda í körfu" opnar söluborðið hér.
+    { k: 'br-drogstod',      label: 'Drög-stöð (punktar + draft-körfur)', short: 'Drög-stöð', emoji: '🧺', url: 'https://brunaholf.netlify.app/?embed=1#drogstod' },
     { k: 'br-maeting',       label: 'Mæting · verkstaðir (Tímavera)', short: 'Mæting', emoji: '🕒', url: 'https://brunaholf.netlify.app/?embed=1#tvmaeting' },
     { k: 'br-fjarmalyfirlit',label: 'Fjármála-yfirlit (Slökkv. + Brunahólf)', short: 'Yfirlit', emoji: '💰', url: 'https://brunaholf.netlify.app/fjarmalyfirlit.html' },
     // Fleiri Brunahólf-síður (fyrir Brunahólf-appið — allt í iframe, deep-link á tab).
@@ -135,7 +137,7 @@
     { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#fbe9ab', dark: '#b8860b',
       manifest: '/manifest-boss.json', home: 'br-fjarmalyfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
-      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
+      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
   // ── NOTENDA-BÚIN ÖPP (2026-08-26, ósk Agnars: „save as app page named …") ──
@@ -461,6 +463,7 @@
         insertOnce('__jv2b',  'br-jarvis',     'br-dagurinn', 'brunaholf');
         insertOnce('__tvks1', 'thjonustu-verkstaedi', 'thjonustuverk');
         insertOnce('__yfd1',  'br-yfirferd', 'br-fjarmalyfirlit', 'boss');
+        insertOnce('__ds1',   'br-drogstod', 'krofu-yfirlit', 'boss');   // Drög-stöð í Boss (05.09.2026)
         insertOnce('__bksl1', 'sala', 'brunayfirlit', 'brunakerfi');
         insertOnce('__tp1',   'turbopaint', 'sala', 'brunakerfi');
         insertOnce('__tp1b',  'turbopaint', 'br-maeting', 'brunaholf');
