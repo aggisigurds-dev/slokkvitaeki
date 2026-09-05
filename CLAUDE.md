@@ -308,6 +308,18 @@ curl -X POST \
 
 ## Conventions
 
+- **SAMSTILLT MILLI VÉLA — harðkóðuð regla (Agnar 05.09.2026):** fjórar tölvur í sama rými vinna
+  saman í sömu gögnum. **Hvert merki, takki, hnappur, textareitur eða upplýsing sem lýsir STÖÐU
+  gagna** (krafa send/staðfest/greidd/falin, nótur, drög, körfur, punktar, breytingar á tímum,
+  stillingar sem snerta reikninga) **VERÐUR að skrifast á þjóninn** (Supabase-tafla eða
+  `AppSettings.save` með sér-lykli eða Supabase-tafla) **og lesast þaðan** — aldrei aðeins í `localStorage`,
+  `sessionStorage` eða `state.ui`. `localStorage` er leyfilegt fyrir útlitsval eins vafra
+  (sía, röðun, samanbrot, þema, hver er við vélina) og fyrir skyndiminni sem þjónninn
+  endurhleður. Dæmi um rétta leið: `krofur_yfirlit_meta` (confirmed/sent/done/hidden/
+  paid/note), `invoice_drafts`, `reikningspunktar.karfa`, `app_kv` (`ky_settings`).
+  Úttekt á vafra-lyklum: `docs/UTTEKT-VAFRASTADA-20260905.txt` (brunaholf).
+
+
 - **UI language**: Icelandic. Don't translate to English unless asked.
 - **Currency formatting**: `1.234 kr` (Icelandic uses period as thousands separator)
 - **CSV exports**: UTF-8 BOM, semicolon separator, decimal comma — Icelandic Excel locale
