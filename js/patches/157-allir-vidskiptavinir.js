@@ -271,6 +271,9 @@
     if (state.xfilter.includes('has-email')) {
       result = result.filter(c => !!c.netfang);
     }
+    if (state.xfilter.includes('no-email')) {           // ÁN NETFANGS-spjaldið (05.09.2026)
+      result = result.filter(c => !c.netfang);
+    }
     if (state.xfilter.includes('has-gps')) {
       result = result.filter(c => c._hasGps);
     }
@@ -527,22 +530,22 @@
 
         <!-- Summary cards — spec §5 stat tiles -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px">
-          <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)">
+          <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)" data-kpi="all" title="Sýna alla">
             <div style="font-size:10.5px;font-weight:700;color:#8a93a5;letter-spacing:.14em">FJÖLDI</div>
             <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#11141c;margin-top:4px">${cntAll}</div>
             <div style="font-size:11.5px;color:#9098a6;margin-top:3px">viðskiptavinir</div>
           </div>
-          <div style="background:linear-gradient(180deg,#eaf7ef,#fff);border:1px solid #a7f3d0;border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)">
+          <div style="background:linear-gradient(180deg,#eaf7ef,#fff);border:1px solid #a7f3d0;border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)" data-kpi="fyrirt" title="Sía: fyrirtækjaþjónusta">
             <div style="font-size:10.5px;font-weight:700;color:#047857;letter-spacing:.14em">Í ÞJÓNUSTU</div>
             <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#1f9d57;margin-top:4px">${cntInService}</div>
             <div style="font-size:11.5px;color:#5b6472;margin-top:3px">${cntArs} fyrirtækjaþj. · ${cntBru} brunakerfi</div>
           </div>
-          <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)">
+          <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)" data-kpi="has-units" title="Sía: hefur tæki">
             <div style="font-size:10.5px;font-weight:700;color:#8a93a5;letter-spacing:.14em">MEÐ TÆKI</div>
             <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#11141c;margin-top:4px">${cntWithUnits}</div>
             <div style="font-size:11.5px;color:#9098a6;margin-top:3px">skráð slökkvitæki</div>
           </div>
-          <div style="background:linear-gradient(180deg,#fff7e6,#fff);border:1px solid #fde68a;border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)">
+          <div style="background:linear-gradient(180deg,#fff7e6,#fff);border:1px solid #fde68a;border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)" data-kpi="no-email" title="Sía: vantar netfang">
             <div style="font-size:10.5px;font-weight:700;color:#b45309;letter-spacing:.14em">ÁN NETFANGS</div>
             <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#c77a16;margin-top:4px">${cntNoEmail}</div>
             <div style="font-size:11.5px;color:#9098a6;margin-top:3px">vantar tölvupóst</div>
@@ -589,6 +592,7 @@
               ['has-uttekt-2026', '📝 Úttekt \'26', cntUttekt2026]
             ] : []),
             ['has-email',  '✉️ Netfang',      cntWithEmail],
+            ['no-email',   '✉️ Vantar netfang', cntNoEmail],
             ['has-gps',    '📍 GPS staðsetning', cntWithGps],
             ['has-units',  '🧯 Hefur tæki',   cntWithUnits],
             ['no-address', '❌ Vantar heimilisfang', cntNoAddress],
@@ -703,7 +707,11 @@
       el.addEventListener('click', e => {
         if (e.target.closest('button, a')) return;
         const id = +el.dataset.coId;
-        if (id) openDetail(id);
+        if (!id) return;
+        // 05.09.2026 (Agnar): röðin opnast Á STAÐNUM — nóta, viðhengi, skjáskot — í stað þess
+        // að senda mann á kúnna-síðuna (patch 351). Sé hann ekki hlaðinn: gamla leiðin.
+        if (window.VidskAStadnum && VidskAStadnum.toggle) return VidskAStadnum.toggle(id, el);
+        openDetail(id);
       });
     });
     // Subscribe/unsubscribe buttons — stop card-click propagation so we
