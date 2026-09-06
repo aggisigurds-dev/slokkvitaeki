@@ -45,6 +45,8 @@
     { k: 'br-krofuyfirlit',  label: 'Kröfu yfirlit (Brunahólf)', short: 'BH Kröfur', emoji: '📑', url: 'https://brunaholf.netlify.app/?embed=1#krofuyfirlit' },
     // Drög-stöðin (05.09.2026): innhólf punkta + draft-körfur fyrir bæði félögin; „Senda í körfu" opnar söluborðið hér.
     { k: 'br-drogstod',      label: 'Drög-stöð (punktar + draft-körfur)', short: 'Drög-stöð', emoji: '🧺', url: 'https://brunaholf.netlify.app/?embed=1#drogstod' },
+    // Kostnaðarreikningar úr símanum (Agnar 06.09.2026): droppa/mynda PDF, velja fyrirtæki, AI les — listinn = innkaupabók
+    { k: 'br-efniskostnadur', label: 'Efniskostnaður · kostnaðarreikningar (dropp úr síma)', short: 'Efniskostn.', emoji: '📥', url: 'https://brunaholf.netlify.app/?embed=1#efniskostnadur' },
     { k: 'br-maeting',       label: 'Mæting · verkstaðir (Tímavera)', short: 'Mæting', emoji: '🕒', url: 'https://brunaholf.netlify.app/?embed=1#tvmaeting' },
     { k: 'br-fjarmalyfirlit',label: 'Fjármála-yfirlit (Slökkv. + Brunahólf)', short: 'Yfirlit', emoji: '💰', url: 'https://brunaholf.netlify.app/fjarmalyfirlit.html' },
     // Fleiri Brunahólf-síður (fyrir Brunahólf-appið — allt í iframe, deep-link á tab).
@@ -103,7 +105,7 @@
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
       manifest: '/manifest-fjarmal.json', home: 'krofu-yfirlit',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
-      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'thjonustu-verkstaedi', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
+      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'thjonustu-verkstaedi', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-efniskostnadur', 'br-vinnubok', 'br-krofur'] },
     { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
       manifest: '/manifest-verkefni.json', home: 'verkbord',
       blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
@@ -137,7 +139,7 @@
     { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#fbe9ab', dark: '#b8860b',
       manifest: '/manifest-boss.json', home: 'br-fjarmalyfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
-      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
+      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'br-efniskostnadur', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
   // ── NOTENDA-BÚIN ÖPP (2026-08-26, ósk Agnars: „save as app page named …") ──
@@ -466,6 +468,8 @@
         insertOnce('__tvks1', 'thjonustu-verkstaedi', 'thjonustuverk');
         insertOnce('__yfd1',  'br-yfirferd', 'br-fjarmalyfirlit', 'boss');
         insertOnce('__ds1',   'br-drogstod', 'krofu-yfirlit', 'boss');   // Drög-stöð í Boss (05.09.2026)
+        insertOnce('__efk1',  'br-efniskostnadur', 'br-gerdreikninga', 'fjarmal');   // Efniskostnaður/dropp í Fjármál (06.09.2026)
+        insertOnce('__efk2',  'br-efniskostnadur', 'br-drogstod', 'boss');           // … og í Boss
         insertOnce('__bksl1', 'sala', 'brunayfirlit', 'brunakerfi');
         insertOnce('__tp1',   'turbopaint', 'sala', 'brunakerfi');
         insertOnce('__tp1b',  'turbopaint', 'br-maeting', 'brunaholf');
