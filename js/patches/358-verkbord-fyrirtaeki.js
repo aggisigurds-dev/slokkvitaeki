@@ -214,18 +214,27 @@
     }
   }, true);
 
-  // 231 teiknar VALIÐ MÁL upp á nýtt við tikk/vistun — fylgjast með DOM og setja reitinn aftur inn.
-  let bidin = null;
+  // 231 teiknar VALIÐ MÁL upp á nýtt við val/vistun — fylgjast með DOM og setja reitinn aftur inn.
+  // ATH: síðan mælist með ~1.750 DOM-breytingar/s (has-mobnav/vnav-stimplun, mesta bil 79 ms) svo
+  // debounce (bíða eftir ró) hleypur ALDREI — nota throttle: athuga í mesta lagi á 400 ms fresti.
+  function athuga() {
+    const a = findAnchor();
+    const host = document.getElementById(HOST_ID);
+    if (!a || !a.nafn) { if (host) host.remove(); return; }
+    if (!host || !host.isConnected || host.dataset.nafn !== a.nafn) byggja(a);
+  }
+  let bidin = null, sidast = 0;
+  function tikk() { bidin = null; sidast = Date.now(); try { athuga(); } catch (_) {} }
   const obs = new MutationObserver(function () {
-    clearTimeout(bidin);
-    bidin = setTimeout(function () {
-      const a = findAnchor();
-      const host = document.getElementById(HOST_ID);
-      if (!a || !a.nafn) { if (host) host.remove(); return; }
-      if (!host || !host.isConnected || host.dataset.nafn !== a.nafn) byggja(a);
-    }, 150);
+    if (bidin) return;
+    bidin = setTimeout(tikk, Math.max(60, 400 - (Date.now() - sidast)));
   });
   obs.observe(document.documentElement, { childList: true, subtree: true });
+  // val á röð (selrow) → athuga strax á eftir endurteikningu 231
+  document.addEventListener('click', function (e) {
+    const r = e.target.closest && e.target.closest('[data-act="selrow"],[data-act="expand"],[data-act="selco-save"]');
+    if (r) [350, 1200].forEach(t => setTimeout(() => { try { athuga(); } catch (_) {} }, t));
+  }, true);
   document.addEventListener('change', function (e) {
     if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'customer_nafn') setTimeout(() => byggja(), 300);
   });
@@ -234,7 +243,7 @@
   // og við sýnaskipti; MutationObserver sér um afganginn.
   [1200, 4000].forEach(t => setTimeout(() => { try { byggja(); } catch (_) {} }, t));
   window.addEventListener('hashchange', () => setTimeout(() => { try { byggja(); } catch (_) {} }, 800));
-  window.VbFyrirtaeki = { byggja, findAnchor, finnaFyrirtaeki, taekiFyrir, version: '358c' };
+  window.VbFyrirtaeki = { byggja, findAnchor, finnaFyrirtaeki, taekiFyrir, version: '358d' };
   console.log('[358-verkbord-fyrirtaeki] virkur');
 })();
 /* === END ÞJÓNUSTUBORÐ → FYRIRTÆKI === */
