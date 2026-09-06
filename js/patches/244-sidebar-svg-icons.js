@@ -247,7 +247,10 @@
         if (tag === 'SVG' || tag === 'svg') {
           if (n.getAttribute && n.getAttribute('data-sb-svg') === '1') {
             // Our own SVG — verify it's the right path; else replace.
-            const want = spec.d.replace(/\s+/g, '');
+            // 06.09.2026: bera saman við SERÍALÍSERAÐA útgáfu — vafrinn skrifar <path d="…"/> sem <path d="…"></path>,
+            // svo spec.d passaði ALDREI við innerHTML → táknið fjarlægt og sett aftur inn í hverri umferð → MutationObserver
+            // → rAF → aftur: ~1.170 remove+insertBefore á sekúndu á 62 tökkum (mælt), endalaust, á öllum tækjum.
+            const want = spec._ser || (spec._ser = buildSvg(spec).innerHTML.replace(/\s+/g, ''));
             const got = (n.innerHTML || '').replace(/\s+/g, '');
             if (got === want) {
               hasOurSvg = true;
