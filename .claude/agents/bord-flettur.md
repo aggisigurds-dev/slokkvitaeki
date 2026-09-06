@@ -338,3 +338,32 @@ fyrstu 12 sekúndurnar, svo `switchView` EFTIR shellið er kastað til baka.
 hún þjappaði skjáborðstöflunni sem birtist ekki lengur í síma, en reglur hennar
 á `._ars-mo` og `._ars-filterstrip` voru enn virkar og unnu inline-stíla tvisvar
 sama daginn. Tvö lög á sama borði — ekki endurtengja hana.
+
+## Króm-zoom fyrir síma + manifest notenda-búinna appa (06.09.2026, patch 353)
+
+**Rót:** Chrome á S26 Agnars keyrir síðuna í „Tölvusíða"-ham → layout-viewport ≈ 980 CSS-px
+á 411 dp skjá (Ársskoðun·Skjár ≈ 1110). Fasta króm-ið (`#_app-hdr` 48px, `#_app-nav`,
+`#bstal-banner`, `#_mnav_btn` 44px, `#_app-zoom`) birtist því á ~0,42 — 48px haus = 20 dp.
+Síðuzoomið (333) skalar aðeins `.view.active`. Fjármál-appið á símanum sýndi rétta stærð
+af því að það er sett upp af ÖÐRUM uppruna (Netlify deploy-preview → „Collaborate"-stika).
+
+**353 `js/patches/353-simi-krom-zoom.js`:** mælir `innerWidth / screen.width` (eða
+`1 / visualViewport.scale`) á snertitæki og setur CSS `zoom` = hlutfallið á króm-ið eitt
+(`html.app-krom-zoomed`, `--app-krom-zoom`). Fyllingar eru MÆLDAR (`getBoundingClientRect`
+= raunpixlar) og deilt með zoom `.view.active`: `window.__appHdrPad` (314 pinPad les það),
+`__peBannerPad` er getter/setter-shim (323 skrifar hrágildið, mobilenav.js + 314 lesa mælda).
+`#_app-frame` (iframe-síður, t.d. Boss-heimasíðan) fær `zoom: var(--app-page-zoom)` og
+`top` stimplað; 261 `syncFrameBottom` deilir með zoom og stimplar `bottom` !important
+(316 negldi 64px → stikan huldi neðstu 57px). Í raunstærð fá ÖLL öpp sömu botnstiku
+(76×62 px, emoji 24) — 316-þjöppun og 349 Boss-tvöföldun voru bætur fyrir 0,42-skalann og
+standa óbreytt þegar hlutfallið er 1. Handstilling/prófun: `AppKrom.set(2.4)` · `AppKrom.set('auto')`
+(`localStorage.app_krom_zoom`). Herming í Browser pane: `resize_window 980×1940` + `AppKrom.set(2.4)`.
+
+**336:** `desired()` skilar nú alltaf `initial-scale=1` — speglaði áður síðuzoomið í
+initial-scale (tvöföld stækkun á venjulegum síma: CSS-zoom × klípa).
+
+**Manifest fyrir notenda-búin öpp:** `netlify/functions/app-manifest.js` →
+`/api/app-manifest?key=&name=&emoji=&color=&dark=&blurb=` (id/start_url/scope = `/app/<key>/`,
+tákn = aðal-app-táknið `img/icon-192/512.png`). 261 `effectiveApp()` býr slóðina til fyrir
+`custom`-öpp (`customManifestUrl`) og launcher-kortið sýnir „⤓ Setja upp í síma" líka á þeim.
+Áður: ekkert manifest → Chrome bauð aldrei uppsetningu („get ekki installað Ársskoðun app").

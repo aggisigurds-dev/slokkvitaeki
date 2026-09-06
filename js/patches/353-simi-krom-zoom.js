@@ -182,7 +182,11 @@
       // Skúffan: mobilenav.js stimplar height:100vh !important — vh deilist ekki
       // með zoom, svo neðstu valmyndar-liðirnir yrðu óaðgengilegir. Deilt hér.
       const tb = document.querySelector('.topbar');
-      if (tb) stamp(tb, 'height', C !== 1 ? 'calc(100vh / ' + C + ')' : '100vh');
+      if (tb) {
+        // Mælt 06.09: stílblað setur líka min-height:100vh á .topbar → sama deiling þar.
+        stamp(tb, 'height', C !== 1 ? 'calc(100vh / ' + C + ')' : '100vh');
+        stamp(tb, 'min-height', C !== 1 ? 'calc(100vh / ' + C + ')' : '');
+      }
     } else {
       bannerPad = null;
     }
