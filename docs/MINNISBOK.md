@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-06 20:53 · 392 virkar staðreyndir
+Sótt 2026-09-06 20:59 · 393 virkar staðreyndir
 
 ---
 
@@ -69,7 +69,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 |---|---:|
 | [skjol](#skjol) | 27 |
 | [brunaholf](#brunaholf) | 21 |
-| [kerfi](#kerfi) | 18 |
+| [kerfi](#kerfi) | 19 |
 | [solur](#solur) | 18 |
 | [taeki](#taeki) | 18 |
 | [thjonustulisti](#thjonustulisti) | 15 |
@@ -232,6 +232,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kerfi
 
+- **Supabase-stífla 06.09.2026 (kvöld): 1.337 statement timeouts + 183 PGRST003 pool timeouts (30 tengingar), 504 á app_settings/solur/uttaeki fyrir alla. Rót: brunaholf /api/company-mail (5–6 s, skannar ~7.700 pósta, 2× tv_history_sites-RPC, 8 s statement_timeout á authenticator) var kallað við HVERJA hleðslu appsins (295 refresh() líka með ferskt cache) — 98 RPC/mín í toppi. Lagað: app_kv-cache company_mail_v2_<days> (15 mín, stampede-lás, gamalt svar við villu) + 295 kallar aðeins þegar cache >20 mín. Einkenni hjá Agnari: „Hleð póstsögu…" hangir, „Engin tæki skráð" á prófíl (uttaeki 504).**
+  <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
 - **v_uttaeki_fid_rollup (03.09.2026): view-id sem Rekstrarfelog (175) OG kunnavefur (gatt.js/_gatt-eq.cjs) telja taeki ur siadi ENN a status='active' inni i gagnagrunninum eftir ad allir 22 kodastadir voru lagadir 01.09 -> 228 taeki vantalin, 17 fyrirtaeki rong, 14 syndust tom (6 theirra Heimaleiga-stadir: Dalbrekka 48, Brietartun 48, bilskur 16, Iceland Comfort 15, Freyjugata 5). Lagad med create or replace view (status is distinct from urelt), sql/2026-09-03_v_uttaeki_fid_rollup_urelt.sql KEYRT. LAERDOMUR: kodasopun ser ekki view/RPC i grunni - vordurinn audit-status-gildi.cjs MAELIR nu summu view-s gegn beinni talningu (raudur 5100!=5328 fyrir, graenn eftir). Stadfest i Rekstrarfelaga-syninni. v_uttaeki_client_rollup (nafna-lyklad, 175:1015) siar EKKI urelt: telur 481 urelt taeki MED (5813 vs 5332) - omaelt hvort thad birtist notanda, skrad i gaedaskyrslu.**
   <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
 - **Adstodarmadur a forsidu (patch 344 + /api/assistant) KVEIKTUR 03.09.2026 ad beidni Agnars: migration assistant_memory_fasi1 keyrd (toflurnar 3 voru ALDREI til fra 31.08 -> hann skiladi alltaf 500). Svarar nu a ISLENSKU i texta (enska-reglan atti bara vid Jarvis-talsvor, ser kerfi /api/jarvis-tts). Thrju gagnatol logud gegn skemanu: finna_fyrirtaeki (stadur->postnumer, deleted_at null), stada_fyrirtaekis (uttaeki type/status ekki tegund/stada, status=neq.urelt, bilun->null ekki 0), reikningastada (samtals/status/paid_at, hidden ekki med). Takkinn _ad-fab er VILJANDI falinn a Solu-syn (patch 327). Modelid claude-sonnet-5 (ASSISTANT_MODEL env).**
@@ -477,8 +479,23 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Austurberg: TVAER kennitolur a somu byggingu. id 291 (511115-1400) er virka husfelagid — rett heimilisfang, tengilidur, reikningar 2021/2023/2024/2026. id 499 (470486-7169) var stofnad SJALFVIRKT ur Skuldunautaskra 2026-05-17, ber posthólf sem heimilisfang og banner_note 'ATH - kanski kerfisvilla'. Uttektarskyrslur 2026 og 2024 eru SOMU skjolin a badum.**
   <br>Badir bera sima 585-4800 og netfang reikningar@eignaumsjon.is (Eignaumsjon). 499 a adeins sitt eigid: reikning R-100585 fra 2021 (9.647 kr) og samning fra 2015 — allt fra 2023 er a 291. 470486-7169 er tvi gamla husfelags-kennitalan. EKKI sameinad: sameining kunnarada krefst Agnars (kunnaskra-reglan)
   <br><sub>2026-09-01 · slokkvitaeki · Agnar benti a, sannreynt 01.09.2026 · claude-code</sub>
+- **Skógarás 11 sameinað: #1274 (tómt, án kt/base) -> #329 (kt 610586-2019/base 579).**
+  <br>survivor=329 loser=1274
+  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
+- **Ármúli 21 Indverska matarfélagið sameinað: #1369 (gömul kt 510613-0310/base 878, eytt) + #912 -> #241 (núv. kt 610417-0350/base 575). Gamall samningur (doc 86) fluttur á 575/241; base 878 gleypt.**
+  <br>survivor=241 losers=1369,912
+  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Bíldshöfði 16 „Batik ehf" sameinað: #1319 (kt-innsláttarvilla 650706-0604, eytt) -> #804 (kt 650706-0640/base 692). MIKILVÆGT: Martex-Batik ehf #544 (kt 660707-1740/base 721, eigin reikningur R-107651) er AÐSKILIÐ félag — EKKI sameinað.**
   <br>survivor=804 loser=1319; EXCLUDE 544 Martex-Batik
+  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
+- **Álftamýri 36 sameinað: #1368+#1455+#947 -> #429 (ber sölur R-000317/380/492 + reikninga). 7 tæki+2 skýrslur færð; 2023 skýrsla afrit-merkt, 2023 par (1394) fjarlægt (afritað).**
+  <br>survivor=429 losers=1368,1455,947
+  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
+- **Jaðarleiti 2-8, 103 Rvk sameinað (board 141e4f90): #495 (tómt, eytt) -> #704. Sami staður/kt 611117-0190/base 591.**
+  <br>survivor=704 loser=495
+  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
+- **Leirubakki 4 sameinað: #1281 (tómt, eytt) -> #330 (kt 500585-0999/base 275).**
+  <br>survivor=330 loser=1281
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Kaplahraun 9 Bílasprautun Íslands sameinað: #1449 (eytt) -> #1329 (kt 650398-2389/base 904).**
   <br>survivor=1329 loser=1449
@@ -489,9 +506,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Ingólfsstræti 5 sameinað: #1271 (tómt, eytt) -> #342 (kt 570998-2509/base 490).**
   <br>survivor=342 loser=1271
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Leirubakki 4 sameinað: #1281 (tómt, eytt) -> #330 (kt 500585-0999/base 275).**
-  <br>survivor=330 loser=1281
-  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Hjallahraun 14 Bifreið.is sameinað: #1446 (eytt) -> #1321 (kt 710815-0700/base 901).**
   <br>survivor=1321 loser=1446
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
@@ -500,18 +514,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Engjahlíð 1 sameinað: #1359 (tómt) -> #1458 (ber öll tæki/skýrslu; kt 521094-2229/base 919), endurnefnt „Húsfélagið Engjahlíð 1". Hvorugt bar reikning; data-berandi röð valin.**
   <br>survivor=1458 loser=1359
-  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Skógarás 11 sameinað: #1274 (tómt, án kt/base) -> #329 (kt 610586-2019/base 579).**
-  <br>survivor=329 loser=1274
-  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Ármúli 21 Indverska matarfélagið sameinað: #1369 (gömul kt 510613-0310/base 878, eytt) + #912 -> #241 (núv. kt 610417-0350/base 575). Gamall samningur (doc 86) fluttur á 575/241; base 878 gleypt.**
-  <br>survivor=241 losers=1369,912
-  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Álftamýri 36 sameinað: #1368+#1455+#947 -> #429 (ber sölur R-000317/380/492 + reikninga). 7 tæki+2 skýrslur færð; 2023 skýrsla afrit-merkt, 2023 par (1394) fjarlægt (afritað).**
-  <br>survivor=429 losers=1368,1455,947
-  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Jaðarleiti 2-8, 103 Rvk sameinað (board 141e4f90): #495 (tómt, eytt) -> #704. Sami staður/kt 611117-0190/base 591.**
-  <br>survivor=704 loser=495
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 
 ### villuleit
@@ -933,14 +935,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### brunavarnir
 
-- **Álhella 7 er SEX aðskilin EI60-brunahólf — slökkvitækjakrafan (26A lágmark) reiknast á hvert hólf fyrir sig, ekki á hæðina í heild**
-  <br>Hólfin skv. brunavarnatexta Brunahönnunar slf (mál 16-179, uppf. 19.08.2026): 0101 verkstæði + milliloft 0106 ~340 m2 · 0102 geymsla 81 · 0103 verkstæði 79 · 0104 geymsla + milliloft 0107 ~85 · 0105 verkstæði + milliloft 0108 ~425 · 0109 inntaksrými 11. Hver leigjandi er á bak við læstan EI60-vegg o
+- **Við aðalrafmagnstöfluna í 0109 inntaksrými á að vera 5 kg KOLSÝRA, ekki léttvatn — brunahönnunin tilgreinir það sérstaklega**
+  <br>Orðrétt úr greinargerðinni: „Slökkvitæki skv. ÍST EN 3 skulu vera skv. teikningum, t.d. 6 L léttvatn og 5 kg kolsýra við aðalrafmagnstöflu." Táknið rafm.inntak-Tafla á grunnmynd 1. hæðar er þessi punktur. Undirtöflurnar í hverju bili fá léttvatn.
   <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
 - **Reyndarteikningin merkir sjálf sl.t.-punktana: 11 á 1. hæð — en 0102 og 0104 bera aðeins eitt tæki hvort og ná ekki 26A**
   <br>Talning af grunnmynd 1. hæðar: 0101=3 · 0102=1 · 0103=2 · 0104=1 · 0105=3 · 0109=1 (kolsýran). Geymsluloftin 0106/0107/0108 bera eitt hvert til viðbótar. Eitt 6 L léttvatn er 13A eða 21A — hvorugt nær 26A eitt og sér, svo 0102 og 0104 þurfa annað tæki.
   <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
-- **Við aðalrafmagnstöfluna í 0109 inntaksrými á að vera 5 kg KOLSÝRA, ekki léttvatn — brunahönnunin tilgreinir það sérstaklega**
-  <br>Orðrétt úr greinargerðinni: „Slökkvitæki skv. ÍST EN 3 skulu vera skv. teikningum, t.d. 6 L léttvatn og 5 kg kolsýra við aðalrafmagnstöflu." Táknið rafm.inntak-Tafla á grunnmynd 1. hæðar er þessi punktur. Undirtöflurnar í hverju bili fá léttvatn.
+- **Álhella 7 er SEX aðskilin EI60-brunahólf — slökkvitækjakrafan (26A lágmark) reiknast á hvert hólf fyrir sig, ekki á hæðina í heild**
+  <br>Hólfin skv. brunavarnatexta Brunahönnunar slf (mál 16-179, uppf. 19.08.2026): 0101 verkstæði + milliloft 0106 ~340 m2 · 0102 geymsla 81 · 0103 verkstæði 79 · 0104 geymsla + milliloft 0107 ~85 · 0105 verkstæði + milliloft 0108 ~425 · 0109 inntaksrými 11. Hver leigjandi er á bak við læstan EI60-vegg o
   <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
 
 ### ui
@@ -1234,17 +1236,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Sjá docs/SAMRAEMI-2026.md. Nýtt á listi E: doc 611 Sléttahraun 19-21 ber Vélrás-kt 491209-1270. Tækjanöfn án fyrirtaeki-raðar: Bríetartún 9-11 (48), Húsfélag Skaftahlíð 4-10 (27).
   <br><sub>2026-08-29 · slokkvitaeki · sql · claude-code</sub>
 
-### teikningar
-
-- **Landnúmer → aðaluppdrættir: skjalasafn.reykjavik.is/fotoweb/archives/5000-Aðaluppdrættir/?q=LANDNUMER opnar teikningar eignarinnar. Landeignaskrá-síða eignarinnar er geo.fasteignaskra.is/landeignaskra/LANDNUMER. Hvorugt má setja í iframe.**
-  <br>Tvívirki leitarhnappurinn (patch 325, window.Landnr) sameinar skrefin tvö: Landnr.mount(el) setur hann hvar sem er, Landnr.open() opnar fljótandi. Situr sjálfkrafa á Sölu; TurboPaint þarf bara Landnr.mount(...).
-  <br><sub>2026-08-28 · kerfi · patch 325 + netlify/functions/landnr.js, commit f9dfac8 · claude-code</sub>
-
 ### landnumer
 
 - **Heimilisfang → landnúmer: geo.fasteignaskra.is/landeignaskra/search?term=NAFN skilar JSON [{Landnr, Vef_Birting, Heinum, X, Y}] — EN sendir engin CORS-haus og setur Content-Type application/javascript, svo vafrinn getur ekki kallað beint og r.json() dugar ekki; textinn verður að þáttast sjálfur.**
   <br>Proxy: /.netlify/functions/landnr?leit=... (slokkvitaeki) skilar {results:[{landnr,label,heinum,x,y}]}. Staðfest í vafra + node 28.08.2026: "Skútuvogur 4" → 105166 og 105167.
   <br><sub>2026-08-28 · kerfi · vafra-úttekt + node-prófun 2026-08-28 · claude-code</sub>
+
+### teikningar
+
+- **Landnúmer → aðaluppdrættir: skjalasafn.reykjavik.is/fotoweb/archives/5000-Aðaluppdrættir/?q=LANDNUMER opnar teikningar eignarinnar. Landeignaskrá-síða eignarinnar er geo.fasteignaskra.is/landeignaskra/LANDNUMER. Hvorugt má setja í iframe.**
+  <br>Tvívirki leitarhnappurinn (patch 325, window.Landnr) sameinar skrefin tvö: Landnr.mount(el) setur hann hvar sem er, Landnr.open() opnar fljótandi. Situr sjálfkrafa á Sölu; TurboPaint þarf bara Landnr.mount(...).
+  <br><sub>2026-08-28 · kerfi · patch 325 + netlify/functions/landnr.js, commit f9dfac8 · claude-code</sub>
 
 ### stilla-utlit
 
