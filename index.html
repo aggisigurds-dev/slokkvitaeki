@@ -37,6 +37,13 @@
     var pm=(location.pathname||'').match(/^\/app\/([a-z]+)\/?/);
     var key=pm?pm[1]:'';
     if(!key){ var sp=new URLSearchParams(location.search); key=sp.get('app')||''; if(!key&&sp.has('driver')) key='bilstjori'; }
+    // Notenda-búin öpp (261 saveAsApp, lykill byrjar á x): manifestið kemur úr
+    // /api/app-manifest?key= — SAMSTUNDIS hér, ekki eftir ræsingu (annars sótti Chrome
+    // aðal-manifestið, id "/", og fyrsta uppsetta appið „vann" — 06.09.2026).
+    if(!MAN[key]&&/^x[a-z]{1,23}$/.test(key)){
+      var lc=document.querySelector('link[rel="manifest"]');
+      if(lc) lc.setAttribute('href','/api/app-manifest?key='+key);
+    }
     if(MAN[key]){
       var l=document.querySelector('link[rel="manifest"]');
       if(l) l.setAttribute('href',MAN[key]+'?v=sep2');
@@ -1201,6 +1208,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/351-vidsk-a-stadnum.js?v=20260905a"></script>
 <script defer src="/js/patches/352-karfa-ur-drogstod.js?v=20260905a"></script>
 <script defer src="/js/patches/353-simi-krom-zoom.js?v=20260906a"></script>
+<script defer src="/js/patches/354-opp-styribord.js?v=20260906a"></script>
     <script src="/js/tekjur.js?v=20260710grad"></script>
 <script src="/js/v9.js?v=20260817rodun"></script>
 <script src="/js/scanmode.js?v=20260510f"></script>

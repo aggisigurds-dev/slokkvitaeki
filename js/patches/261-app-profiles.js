@@ -485,12 +485,10 @@
   // Notenda-búin öpp hafa ekkert kyrrstætt manifest — /api/app-manifest býr það til úr
   // nafni/tákni/lit appsins (netlify/functions/app-manifest.js, 06.09.2026). Án þess
   // bauð Chrome aldrei uppsetningu („get ekki installað Ársskoðun app á heimaskjá").
+  // Key-only: SAMA slóð og <head>-veljarinn í index.html setur við hleðslu, svo
+  // manifest-hlekkurinn breytist aldrei eftir ræsingu (fallið les nafn/lit úr grunninum).
   function customManifestUrl(a) {
-    var p = new URLSearchParams();
-    p.set('key', a.key); p.set('name', a.name || a.key); p.set('emoji', a.emoji || '📱');
-    p.set('color', a.color || '#334155'); p.set('dark', a.dark || '#0f172a');
-    if (a.blurb) p.set('blurb', a.blurb);
-    return '/api/app-manifest?' + p.toString();
+    return '/api/app-manifest?key=' + encodeURIComponent(a.key);
   }
 
   // ── „The Big Boss" gold-foil skin — pure metal, not a flat yellow bar ────────
