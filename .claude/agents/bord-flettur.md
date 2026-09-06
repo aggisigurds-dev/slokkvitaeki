@@ -37,8 +37,11 @@ með „Hleður…" (mælt 06.09.2026): App.init lendir á Sala, 218 speglar þa
 `js/patches/357-fyrirtaeki-djuptenging.js` lagar það: grípur auðkennið VIÐ HLEÐSLU skriftunnar (líka úr
 navigation-entry), opnar með `_openCompanySafe` (mapfix.js) og tikkar í allt að 8 s (eða til fyrstu raunverulegu
 notendasnertingar) og opnar aftur ef Breyta-takkinn `Companies.openEdit(<id>)` er ekki lengur í `#companies-main`.
-Tekur líka `#companies/<id>` og `#fyrirtaeki/<id>` og samræmir í `#company/<id>`. Á `hashchange` (hubbinn í iframe
-— Drög-stöð/Efniskostnaður í Fjármál/Boss — setur `top.location.hash`) gerir 235 sitt og 357 lagar á eftir (3 s).
+Tekur líka `#companies/<id>` og `#fyrirtaeki/<id>` og samræmir í `#company/<id>`. Á `hashchange` (t.d. #company/1101 límt í slóðina) gerir 235 sitt og 357 lagar á eftir (3 s). INNI Í ÖPPUM
+(Fjármál/Boss) liggur hubbinn í iframe á ÖÐRUM uppruna og má ekki setja `top.location.hash` (SecurityError —
+„ekkert að þessum lista gerir nokkurn skapaðan hlut", Agnar 06.09.2026): hann sendir `postMessage
+{type:'slokk-open-company', id}` til foreldrisins; 357 svarar með `slokk-open-company-ack`, felur `#_app-frame` (liggur
+ofan á öllu, z-index 2147481000) og opnar prófílinn; komi ekkert ack innan 900 ms opnar hubbinn nýjan flipa.
 Hubbinn fær id-in úr `op=stada.kunnaIds` (nafn → id); í venjulegum vafra opnar hann appið í nýjum flipa.
 `window.CoDeeplink.open(id)` / `.detailOpen(id)`.
 
