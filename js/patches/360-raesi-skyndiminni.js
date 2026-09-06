@@ -116,7 +116,8 @@
     if (C && typeof C.load === 'function' && !C.load.__raesi360) {
       const origC = C.load;
       const wrappedC = async function () {
-        if (!stada.companiesHydrated && !(Array.isArray(C.list) && C.list.length) && !(window.DB && DB.online)) { try { await hydrateCompanies(); } catch (_) {} }
+        // vökva listann úr skyndiminni þótt DB sé „online" (DB var sjálft vökvað úr skyndiminni) — netið sækir svo ferskt á eftir
+        if (!stada.companiesHydrated && !(Array.isArray(C.list) && C.list.length)) { try { await hydrateCompanies(); } catch (_) {} }
         const r = await origC.apply(this, arguments);
         if (Array.isArray(C.list) && C.list.length && window.DB && DB.online) setTimeout(saveCompanies, 1200);
         return r;
@@ -130,7 +131,7 @@
   // eða loadAll er aldrei kallað á þessari sýn: reyna vökvun einu sinni sjálfstætt.
   setTimeout(() => { hydrateDb().catch(() => {}); hydrateCompanies().catch(() => {}); }, 60);
 
-  window.RaesiCache = { stada: () => Object.assign({}, stada), hreinsa, version: '360' };
+  window.RaesiCache = { stada: () => Object.assign({}, stada), hreinsa, version: '360b' };
   console.log('[360-raesi-skyndiminni] virkur');
 })();
 /* === END RÆSI-SKYNDIMINNI === */

@@ -71,6 +71,16 @@ læsti spjaldið úti). Ósk Agnars: „sjá seinasta póstinn strax", „samein
 var að debounce-vaktir hlupu aldrei (286 skjalfesti það sjálft 30.07). Aðferð + reglur: `.claude/skills/frontend-profiler`.
 Eftirstöðvar á Verkefnalista d9024a61.
 
+## Ræsi-skyndiminni (06.09.2026, patch 360)
+
+`js/patches/360-raesi-skyndiminni.js`: síðasta vel heppnaða `DB.loadAll` (jobs, units, schedule, history) og `Companies.list`
+geymd í IndexedDB (`slokk-boot`/`snap`) og sett í `DB.cache` um leið og appið ræsist (tugir ms) → `DB.online=true` →
+`App.refreshAll()`. Upprunalega `loadAll` keyrir svo ÓBREYTT í bakgrunni (mælt fyrir: ~4,3 s, 86 REST-köll við
+ræsingu) og skiptir öllu út fyrir ferskt; eftir hverja vel heppnaða hleðslu er myndin geymd aftur. Þetta er skyndiminni
+sem þjónninn endurhleður (SAMSTILLT-reglan heldur). uttaeki hefur ekki updated_at → „aðeins breytingar" ekki hægt án
+skemabreytingar. `window.RaesiCache.stada()` sýnir hydratedAt/snapAge; `RaesiCache.hreinsa()` tæmir. Bili IndexedDB
+gerist ekkert. Ástæða: Agnar „fyrirtækjasíður oft mjög lengi að opnast" → „já máttu reyna endurbæta".
+
 ## Bakk-takkinn — ÞRÍR patchar, ekki blanda þeim saman
 
 Bakk er leyst á þremur aðskildum lögum. Áður en þú breytir einhverju hér:
