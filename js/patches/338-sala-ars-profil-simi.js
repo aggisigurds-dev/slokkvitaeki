@@ -25,6 +25,7 @@
 
   const STYLE_ID = 'sala-ars-profil-simi-338';
   const P = ':not(#_p338a):not(#_p338b):not(#_p338c)';
+  const NOTSEC = ':not(._dyg-section):not(._dpb-company):not(._ufs-section):not(._cat-section):not(._cpr-section):not(._ahop-section):not(._cad-section):not(.sk-card)';
 
   function css() {
     const M = 'html[data-viewmode="mobile"] ';
@@ -129,7 +130,9 @@
         + both('#companies-main:has(.co-banner)>div:first-child button' + P)
         + '{flex:0 0 auto!important;min-height:36px!important;height:36px!important;'
         + 'padding:0 10px!important;font-size:13px!important;white-space:nowrap!important}',
-      both('#companies-main [data-co-id]' + P)
+      // 06.09.2026: [data-co-id] er lika a spjoldum 111/199/311/307 (Skjol, Stada eftir ari, Samningur) - thau urdu
+      // nowrap-flex-rod med 3.500px innihaldi (tomt spjald + Samningur ut fyrir brun a sima). Adeins adgerdastikan.
+      both('#companies-main [data-co-id]' + NOTSEC + P)
         + strip.slice(0, -1) + ';margin-bottom:10px!important;padding:2px 0 6px!important}',
       both('#companies-main [data-co-id] .btn:not(._co-edit-anchor)' + P) + ','
         + both('#companies-main [data-co-id] button:not(._co-edit-anchor)' + P) + ','

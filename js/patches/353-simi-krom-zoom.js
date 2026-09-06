@@ -104,9 +104,12 @@
     /* iframe-síður (Boss-heimasíðan = Brunahólf) fylgja síðuzoominu eins og .view.
        Sama bragð og 333: zoom deilir containing-block, svo left/right:0 fylla áfram. */
     'html.app-page-zoomed ' + A + '#_app-frame' + P4 + '{zoom:var(--app-page-zoom)!important}',
-    /* Zoom-stikan fer undir krómið í stað þess að liggja ofan á því */
-    K + A + '#_app-zoom' + P4 + '{top:calc(env(safe-area-inset-top,0px) + 58px)!important}',
-    KP + '#_app-zoom' + P4 + '{top:calc(env(safe-area-inset-top,0px) + 80px)!important}',
+    /* Zoom-stikan á síma/appi: neðst til hægri, ofan við 💬-kúluna / botnstikuna — efst lá hún ofan á
+       borðanum og „Vista/Klára"-stikum síðna (Agnar 06.09, fyrirtækjasíðan). --app-zoom-bottom stimplað í appham. */
+    'html.slokk-phone-nav #_app-zoom' + P4 + ',' + A + '#_app-zoom' + P4
+      + '{top:auto!important;bottom:calc(env(safe-area-inset-bottom,0px) + var(--app-zoom-bottom,84px))!important;right:8px!important}',
+    /* 🎨 (262) er position:absolute við hægri brún borðans á síma og lá ofan á 📱▦🖥-rofanum (166) */
+    'html[data-viewmode="mobile"] #bstal-banner .ky-vm,html.slokk-phone-dev #bstal-banner .ky-vm{margin-right:54px!important}',
 
     /* ── App-haus: hæfilega stærri í raunstærð ────────────────────────────── */
     K + A + '#_app-hdr' + P4 + '{height:52px!important;gap:5px!important}',
@@ -170,10 +173,14 @@
       views.forEach(v => { stamp(v, 'padding-top', window.__appHdrPad); stamp(v, 'padding-bottom', padBot); });
       const f = document.getElementById('_app-frame');
       if (f) stamp(f, 'top', Math.round((hr ? hr.bottom : 48) / elZoom(f)) + 'px');   // bottom: 261 syncFrameBottom
+      // zoom-stikan situr ofan við botnstikuna (í eigin zoom-hnitum: raunhæð ÷ C)
+      const zb = Math.round(((nr ? nr.height : 0) / C) + 12) + 'px';
+      if (document.documentElement.style.getPropertyValue('--app-zoom-bottom') !== zb) document.documentElement.style.setProperty('--app-zoom-bottom', zb);
       bannerPad = null;
       return;
     }
     window.__appHdrPad = null;
+    if (document.documentElement.style.getPropertyValue('--app-zoom-bottom')) document.documentElement.style.removeProperty('--app-zoom-bottom');
     if (phone) {
       const br = rect(document.getElementById('bstal-banner'));
       bannerPad = br ? Math.round((br.bottom + 12) / Z) + 'px' : null;
