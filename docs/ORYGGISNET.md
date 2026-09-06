@@ -337,3 +337,7 @@ baseline rows and lowering the constant is how the net tightens over time.
   Needs a `-background` probe that mints a token and alerts over an independent channel.
 - **Skýrslur freeze:** client‑side render cascade (whole `app_settings` blob cloned
   3–4× per finish + unpaginated 660‑card render). Central plumbing → careful.
+
+## Vörður: vafra-staða (06.09.2026)
+
+`tools/audit-vafrastada.cjs` — staða gagna má ekki búa aðeins í vafra (localStorage/sessionStorage/state.ui) og lagaði kóðinn frá 05.–06.09.2026 (Krafa send / hub_state heilt) má ekki koma aftur. Bannmynstur = RAUTT strax; fjöldi vafra-lykla má ekki vaxa yfir grunnlínu (nýr lykill = meðvituð ákvörðun). Keyrir á báðum repóum. Regla: CLAUDE.md „SAMSTILLT MILLI VÉLA". Úttekt: brunaholf/docs/UTTEKT-VAFRASTADA-20260905.txt.
