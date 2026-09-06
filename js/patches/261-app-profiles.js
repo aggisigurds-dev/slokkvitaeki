@@ -399,11 +399,13 @@
   function effectiveApp(key) {
     var a = APP_BY_KEY[key]; if (!a) return null;
     var ov = loadOverrides()[key] || {};
-    return {
-      key: a.key, manifest: a.manifest, home: a.home, standalone: a.standalone, defaults: a.defaults,
+    var e = {
+      key: a.key, manifest: a.manifest, home: a.home, standalone: a.standalone, defaults: a.defaults, custom: !!a.custom,
       emoji: ov.emoji || a.emoji, name: ov.name || a.name, blurb: ov.blurb || a.blurb,
       color: ov.color || a.color, dark: ov.dark || a.dark
     };
+    if (!e.manifest && a.custom) e.manifest = customManifestUrl(e);
+    return e;
   }
   function versionLine() {
     var b = window.BUILD;
@@ -480,6 +482,16 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function appLink(key) { return location.origin + '/app/' + key + '/'; }
+  // Notenda-búin öpp hafa ekkert kyrrstætt manifest — /api/app-manifest býr það til úr
+  // nafni/tákni/lit appsins (netlify/functions/app-manifest.js, 06.09.2026). Án þess
+  // bauð Chrome aldrei uppsetningu („get ekki installað Ársskoðun app á heimaskjá").
+  function customManifestUrl(a) {
+    var p = new URLSearchParams();
+    p.set('key', a.key); p.set('name', a.name || a.key); p.set('emoji', a.emoji || '📱');
+    p.set('color', a.color || '#334155'); p.set('dark', a.dark || '#0f172a');
+    if (a.blurb) p.set('blurb', a.blurb);
+    return '/api/app-manifest?' + p.toString();
+  }
 
   // ── „The Big Boss" gold-foil skin — pure metal, not a flat yellow bar ────────
   // The generic header/splash (emoji + flat linear-gradient(color,dark)) reads
@@ -931,7 +943,7 @@
           '<div><div class="op-nm">' + esc(a.name) + '</div><div class="op-bl">' + esc(a.blurb) + '</div></div></div>' +
         '<div class="op-acts">' +
           '<button class="op-btn prim _op-open" data-app="' + a.key + '" style="background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')" type="button">▶ Opna</button>' +
-          (a.custom ? '' : '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">⤓ Setja upp í síma</button>') +
+          '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">⤓ Setja upp í síma</button>' +
           '<button class="op-btn _op-link" data-app="' + a.key + '" type="button">🔗 Afrita hlekk</button>' +
           (a.custom ? '' : '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button">⚙ Þjónustuborð</button>') +
           (a.custom ? '<button class="op-btn _op-delapp" data-app="' + a.key + '" type="button" style="color:#b91c1c;border-color:#fecaca">🗑 Eyða appi</button>' : '') +
@@ -1091,7 +1103,13 @@
   function syncFrameBottom() {
     try {
       var nav = document.getElementById('_app-nav'), f = document.getElementById('_app-frame');
-      if (nav && f) f.style.bottom = Math.max(60, Math.round(nav.getBoundingClientRect().height)) + 'px';
+      // 353: rammi getur verið zoomaður (síðuzoom) → deilt með zoom; !important því 316
+      // negldi bottom:64px!important (stikan huldi neðstu 57px af iframe-síðunum).
+      if (nav && f) {
+        var fz = parseFloat(getComputedStyle(f).zoom) || 1;
+        var nh = getComputedStyle(nav).display === 'none' ? 0 : nav.getBoundingClientRect().height;
+        f.style.setProperty('bottom', Math.round(nh / fz) + 'px', 'important');
+      }
     } catch (_) {}
   }
   // Sjálf-heilun: EITTHVAÐ á símanum fjarlægir/felur botn-navið ("fliparnir niðri

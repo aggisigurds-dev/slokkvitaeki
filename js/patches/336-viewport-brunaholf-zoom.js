@@ -10,7 +10,9 @@
  *   • hreinsar html/body/#app/#app-zoom-root { zoom }
  *   • overflow-x:auto á html/body svo visual viewport geti pannað
  *
- * 333 −/+ stýrir initial-scale (sama og pinch). 336 varðveitir það.
+ * 333 −/+ skalar INNIHALDIÐ (CSS zoom á .view.active, síðan 01.09). Viewport er
+ * alltaf initial-scale=1 — 06.09.2026: þetta fall speglaði síðuzoomið áfram í
+ * initial-scale, svo venjulegur sími fékk tvöfalda stækkun (CSS-zoom × klípa).
  * 153/187 er ÓSNERT. Kröfuyfirlit-raðir (798 / 335) eru ÓSNERTAR.
  * ========================================================================== */
 (() => {
@@ -30,15 +32,8 @@
   }
 
   function desired() {
-    let scale = 1;
-    try {
-      if (window.AppPageZoom && typeof window.AppPageZoom.get === 'function') {
-        const z = +window.AppPageZoom.get();
-        if (isFinite(z) && z > 1) scale = z;
-      }
-    } catch (_) {}
-    if (scale === 1) return HUB_VP;
-    return 'width=device-width, initial-scale=' + scale + ', user-scalable=yes, viewport-fit=cover';
+    // Klípan á viewport-ið ein; 333 skalar innihaldið. Aldrei initial-scale ≠ 1 hér.
+    return HUB_VP;
   }
 
   function vpEl() {

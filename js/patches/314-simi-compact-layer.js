@@ -323,7 +323,8 @@
     // 86px = 66px slim banner + 12px loft. Stílstjórinn (323) getur mjókkað eða
     // falið bannerinn — þá verður þessi tala að fylgja, annars situr gat eftir
     // (eða efnið fer undir bannerinn). `__peBannerPad` er sett þar; ósett = 86px.
-    const pad = app ? '48px' : (window.__peBannerPad || '86px');
+    // __appHdrPad: 353 mælir app-hausinn (króm-zoom / síðuzoom) — ósett = 48px.
+    const pad = app ? (window.__appHdrPad || '48px') : (window.__peBannerPad || '86px');
     document.querySelectorAll('.view').forEach(function (v) {
       if (v.style.getPropertyValue('padding-top') !== pad) {
         v.style.setProperty('padding-top', pad, 'important');
