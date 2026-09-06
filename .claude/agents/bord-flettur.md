@@ -29,6 +29,16 @@ It ignores `key=value` hashes (`#device=`, `#portal=`, `#tab=`) and the legacy
 slug hash so a deep link is not overridden by the remembered last view — keep
 that cooperation if you touch either file. Add new pretty names to `ALIAS`.
 
+## Djúptenging á fyrirtækjaprófíl — `#companies/<id>` (06.09.2026, patch 357)
+
+`js/patches/357-fyrirtaeki-djuptenging.js`: `#companies/<fyrirtaeki.id>` (líka `#fyrirtaeki/<id>`) opnar prófílinn
+með `_openCompanySafe` (mapfix.js — skiptir á Fyrirtæki og bíður eftir `Companies.load()` svo endurteiknun
+listans skrifi ekki yfir prófílinn) og hreinsar slóðina í `#companies`. 218 hunsar path-lík hash (`cleanHash`
+→ '' fyrir `/`) og 154 víkur, svo enginn árekstur. Virkar á `hashchange` líka — hubbinn í iframe (Drög-stöð /
+Efniskostnaður í Fjármál/Boss) setur `top.location.hash` og prófíllinn opnast án endurhleðslu; í venjulegum
+vafra opnar hubbinn appið í nýjum flipa. Hubbinn fær id-in úr `op=stada.kunnaIds` (nafn → id).
+`window.CoDeeplink.open(id)`.
+
 ## Bakk-takkinn — ÞRÍR patchar, ekki blanda þeim saman
 
 Bakk er leyst á þremur aðskildum lögum. Áður en þú breytir einhverju hér:
