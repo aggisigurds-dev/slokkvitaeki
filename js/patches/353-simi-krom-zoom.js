@@ -216,7 +216,7 @@
       C = c;
       const html = document.documentElement;
       if (html.style.getPropertyValue('--app-krom-zoom') !== String(c)) html.style.setProperty('--app-krom-zoom', String(c));
-      html.classList.toggle('app-krom-zoomed', c !== 1);
+      if (html.classList.contains('app-krom-zoomed') !== (c !== 1)) html.classList.toggle('app-krom-zoomed', c !== 1);   // aðeins þegar breytist (MutationRecord annars í hverri umferð)
       mountCss();
       stampPads();
     } catch (_) {}

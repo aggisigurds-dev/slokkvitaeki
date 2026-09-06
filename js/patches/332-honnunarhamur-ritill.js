@@ -287,7 +287,7 @@
     if (framed()) stackPhoneOverlay();
     const p = document.getElementById('_hh-panel');
     if (p) enhance(p);
-    else if (!framed()) document.documentElement.classList.remove('_hh331-phone');
+    else if (!framed() && document.documentElement.classList.contains('_hh331-phone')) document.documentElement.classList.remove('_hh331-phone');   // 06.09.2026: aðeins þegar breytist
   }
 
   new MutationObserver(() => {

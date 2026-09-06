@@ -373,7 +373,7 @@
   // ── alltaf á — borðinn er hluti af frosna grunnútlitinu ─────────────────────
   function refresh() {
     fonts(); styles(); buildBanner();
-    document.documentElement.setAttribute('data-bstal-banner', 'on');
+    if (document.documentElement.getAttribute('data-bstal-banner') !== 'on') document.documentElement.setAttribute('data-bstal-banner', 'on');   // 06.09.2026: aðeins þegar breytist
     if (!clockTimer) { tickClock(); clockTimer = setInterval(tickClock, 1000); }
     // The eyebrow is a static „KASSAKERFI" label (LED-clock widget); no per-page
     // title update needed.
