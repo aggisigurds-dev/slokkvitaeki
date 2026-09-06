@@ -64,7 +64,7 @@
         POS.rerenderDynamic();
       } catch (_) {}
     }, 1800);
-    toast('🧺 Karfa #' + row.id + ' — ' + (st.customer.nafn || 'kúnni') + ' · ' + st.lines.length + ' lín' + (st.lines.length === 1 ? 'a' : 'ur'));
+    toast('🛒 Karfa #' + row.id + ' — ' + (st.customer.nafn || 'kúnni') + ' · ' + st.lines.length + ' lín' + (st.lines.length === 1 ? 'a' : 'ur'));
     return true;
   }
 

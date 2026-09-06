@@ -44,7 +44,7 @@
     { k: 'br-krofur',        label: 'Krófur & Tekjur',       short: 'Fjárhagur', emoji: '📊', url: 'https://brunaholf.netlify.app/?embed=1#krofur' },
     { k: 'br-krofuyfirlit',  label: 'Kröfu yfirlit (Brunahólf)', short: 'BH Kröfur', emoji: '📑', url: 'https://brunaholf.netlify.app/?embed=1#krofuyfirlit' },
     // Drög-stöðin (05.09.2026): innhólf punkta + draft-körfur fyrir bæði félögin; „Senda í körfu" opnar söluborðið hér.
-    { k: 'br-drogstod',      label: 'Drög-stöð (punktar + draft-körfur)', short: 'Drög-stöð', emoji: '🧺', url: 'https://brunaholf.netlify.app/?embed=1#drogstod' },
+    { k: 'br-drogstod',      label: 'Drög-stöð (punktar + draft-körfur)', short: 'Drög-stöð', emoji: '🛒', url: 'https://brunaholf.netlify.app/?embed=1#drogstod' },
     // Kostnaðarreikningar úr símanum (Agnar 06.09.2026): droppa/mynda PDF, velja fyrirtæki, AI les — listinn = innkaupabók
     { k: 'br-efniskostnadur', label: 'Efniskostnaður · kostnaðarreikningar (dropp úr síma)', short: 'Efniskostn.', emoji: '📥', url: 'https://brunaholf.netlify.app/?embed=1#efniskostnadur' },
     { k: 'br-maeting',       label: 'Mæting · verkstaðir (Tímavera)', short: 'Mæting', emoji: '🕒', url: 'https://brunaholf.netlify.app/?embed=1#tvmaeting' },

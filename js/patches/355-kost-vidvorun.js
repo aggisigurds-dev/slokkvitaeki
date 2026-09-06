@@ -6,7 +6,7 @@
  * Kostnaðarreikningar (birgjareikningar sem eru endurrukkaðir) búa í Drög-stöð hubbsins
  * (reikningspunktar.karfa.kostnadur). Hookurinn á endurrukkunaraðilann:
  *   1. SALA: þegar kúnni er valinn (kt / nafn) er spurt GET /api/reikningspunktar?op=bidur&kt=&kunni=
- *      og borði birtist í kúnnakassanum: hvað bíður, upphæð án vsk, „🧺 Sækja í körfu" (POST
+ *      og borði birtist í kúnnakassanum: hvað bíður, upphæð án vsk, „🛒 Sækja í körfu" (POST
  *      kost_til_korfu {sent:true} → línurnar á söluverði hlaðast í POS-körfuna með 352 hlada())
  *      og „Opna í Drög-stöð ↗".
  *   2. BRUNAKERFISSKÝRSLA (273): sama fyrirspurn þegar formið opnast fyrir fyrirtæki — viðvörunar-
@@ -76,7 +76,7 @@
     const first = j.rows[0]; const fleiri = j.rows.length - 1;
     b.innerHTML = '🧾 <b>' + esc(lysing(j)) + '</b>'
       + (first.kunni ? '<div style="font-size:12px;margin-top:2px">Á punkti #' + esc(first.punktur) + ' · ' + esc(first.kunni) + (fleiri > 0 ? ' · +' + fleiri + ' punkt' + (fleiri === 1 ? 'ur' : 'ar') + ' til viðbótar' : '') + '</div>' : '')
-      + '<div class="kb-acts"><button type="button" class="prim" data-kb="saekja" data-id="' + esc(first.punktur) + '" title="Setur línurnar á fullu listaverði í körfuna hér — kreditnótur sleppa">🧺 Sækja í körfu</button>'
+      + '<div class="kb-acts"><button type="button" class="prim" data-kb="saekja" data-id="' + esc(first.punktur) + '" title="Setur línurnar á fullu listaverði í körfuna hér — kreditnótur sleppa">🛒 Sækja í körfu</button>'
       + '<a class="kb-btn" href="' + HUB + '/?punktur=' + esc(first.punktur) + '#drogstod" target="_blank" rel="noopener">Opna í Drög-stöð ↗</a></div>';
     if (!b.dataset.wired) {
       b.dataset.wired = '1';
@@ -96,9 +96,9 @@
       if (!r.ok || !j.row) throw new Error(j.error || ('HTTP ' + r.status));
       const ok = await KarfaUrDrogstod.hlada(j.row);
       if (ok) { toast('🧾 ' + j.linur + ' lín' + (j.linur === 1 ? 'a' : 'ur') + ' úr kostnaðarreikningum komnar í körfuna'); gleyma(); lastSig = ''; setTimeout(athuga, 300); }
-      else if (btn) { btn.disabled = false; btn.textContent = '🧺 Sækja í körfu'; }
+      else if (btn) { btn.disabled = false; btn.textContent = '🛒 Sækja í körfu'; }
       return ok;
-    } catch (e) { alert('Tókst ekki að sækja: ' + (e.message || e)); if (btn) { btn.disabled = false; btn.textContent = '🧺 Sækja í körfu'; } return false; }
+    } catch (e) { alert('Tókst ekki að sækja: ' + (e.message || e)); if (btn) { btn.disabled = false; btn.textContent = '🛒 Sækja í körfu'; } return false; }
   }
   async function athuga() {
     const v = document.getElementById('view-sala'); if (!v || !v.classList.contains('active')) return;
