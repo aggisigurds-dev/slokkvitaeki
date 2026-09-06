@@ -113,14 +113,14 @@
        komst ekki fyrir. Orðmerkið („SLÖKKVITÆKI EHF.") fer, lógóið 26px, þrengri fyllingar; 🎨 er absolute
        við hægri brún (262) og andlitið heldur 50px fyrir hann. */
     'html[data-viewmode="mobile"] #bstal-banner .bb-word,html.slokk-phone-dev #bstal-banner .bb-word{display:none!important}',
-    'html[data-viewmode="mobile"] #bstal-banner .bb-logo img,html.slokk-phone-dev #bstal-banner .bb-logo img{height:26px!important}',
-    'html[data-viewmode="mobile"] #bstal-banner .bb-logo,html.slokk-phone-dev #bstal-banner .bb-logo{padding:3px 8px 3px 3px!important;margin:0!important}',
-    'html[data-viewmode="mobile"] #bstal-banner .bb-face,html.slokk-phone-dev #bstal-banner .bb-face{padding:0 50px 0 8px!important;gap:6px!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .bb-logo img,html.slokk-phone-dev #bstal-banner .bb-logo img{height:24px!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .bb-logo,html.slokk-phone-dev #bstal-banner .bb-logo{padding:2px 4px 2px 2px!important;margin:0!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .bb-face,html.slokk-phone-dev #bstal-banner .bb-face{padding:0 52px 0 6px!important;gap:4px!important}',
     'html[data-viewmode="mobile"] #bstal-banner .ky-vm,html.slokk-phone-dev #bstal-banner .ky-vm{margin:0 0 0 auto!important;flex:none!important}',
     /* Merkimiðar rofans („Sími/Tafla/Skjár") fela sig aðeins undir @media ≤760px í 166 — sem gildir ekki á 980px
        layout-viewporti símans í Tölvusíðu-ham; rofinn varð 200px og flæddi út fyrir borðann. Tákn ein á síma. */
     'html[data-viewmode="mobile"] #bstal-banner .ky-vm-lbl,html.slokk-phone-dev #bstal-banner .ky-vm-lbl{display:none!important}',
-    'html[data-viewmode="mobile"] #bstal-banner .ky-vm-seg,html.slokk-phone-dev #bstal-banner .ky-vm-seg{padding:7px 9px!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .ky-vm-seg,html.slokk-phone-dev #bstal-banner .ky-vm-seg{padding:6px 6px!important}',
 
     /* ── App-haus: hæfilega stærri í raunstærð ────────────────────────────── */
     K + A + '#_app-hdr' + P4 + '{height:52px!important;gap:5px!important}',
