@@ -367,3 +367,24 @@ initial-scale (tvöföld stækkun á venjulegum síma: CSS-zoom × klípa).
 tákn = aðal-app-táknið `img/icon-192/512.png`). 261 `effectiveApp()` býr slóðina til fyrir
 `custom`-öpp (`customManifestUrl`) og launcher-kortið sýnir „⤓ Setja upp í síma" líka á þeim.
 Áður: ekkert manifest → Chrome bauð aldrei uppsetningu („get ekki installað Ársskoðun app").
+
+## Öpp-stýriborð (354) + árekstrar uppsetninga (06.09.2026)
+
+**Árekstrarrót („get bara haft fyrsta sem ég installaði"):** `<link rel=manifest>` benti á
+aðal-manifestið (id „/") við hleðslu á `/app/<key>/` fyrir NOTENDA-BÚIN öpp; 261 skipti
+fyrst eftir ræsingu. Chrome sótti stundum manifestið á undan → öll slík öpp fengu sama id
+og aðeins fyrsta uppsetningin lifði. Lagað: head-veljarinn í `index.html` setur
+`/api/app-manifest?key=<key>` STRAX fyrir lykla sem byrja á `x` (261 `customKeyFor`), og
+261 `customManifestUrl()` notar SÖMU key-only slóð (fallið les nafn/lit úr
+`app_settings.settings.custom_apps_json` + `app_profiles_overrides_json` með service-role).
+Innbyggðu öppin voru þegar með sér manifest í head-veljaranum.
+
+**354 `js/patches/354-opp-styribord.js`:** spjald `#_op-styri` efst á `#view-opp` (sett inn
+aftur af MutationObserver þegar 261 `render()` endurteiknar). Tæki + útgáfa (skjár dp, síða
+CSS-px, Tölvusíðu-hamur greindur = `AppKrom.auto() ≥ 1,2`, króm, zoom, keyrir sem app/vafri,
+BUILD, SW), króm-stærð (`AppKrom.set`) og síðuzoom (`AppPageZoom.set`, sömu þrep og 333),
+öpp á tækinu með stöðu (`getInstalledRelatedApps` — `manifest.json` fékk
+`related_applications` fyrir innbyggðu sex; `appinstalled` → `localStorage.slokk_installed_apps_v1`;
+display-mode standalone), „Athuga öpp" (sækir manifest hvers apps, staðfestir
+id/start_url/scope = `/app/<key>/`, 512px tákn, standalone, og að engin tvö deili id),
+aðgerðir (endurhlaða, hreinsa skyndiminni + SW, afrita greiningu). `window.OppStyribord`.

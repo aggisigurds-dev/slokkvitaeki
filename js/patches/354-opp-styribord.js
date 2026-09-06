@@ -197,18 +197,20 @@
     '#view-opp #' + ID + ' .st-seg button{font:inherit;font-size:13px;font-weight:700;min-height:40px;min-width:44px;padding:0 12px;border:none;border-radius:9px;background:transparent;color:#475569;cursor:pointer}',
     '#view-opp #' + ID + ' .st-seg button.on{background:#0f172a;color:#fff}',
     '#view-opp #' + ID + ' .st-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}',
-    '#view-opp #' + ID + ' table{width:100%;border-collapse:collapse;font-size:13px}',
-    '#view-opp #' + ID + ' td{padding:8px 6px;border-top:1px solid #eef1f5;vertical-align:top}',
-    '#view-opp #' + ID + ' td.nm{font-weight:800;color:#11141c;white-space:nowrap}',
-    '#view-opp #' + ID + ' td.nm small{display:block;font-weight:500;color:#94a3b8;font-size:11px}',
+    /* öpp-listinn: staflað (nafn · staða · takkar) — tafla var of breið á 375px */
+    '#view-opp #' + ID + ' .st-apps{display:flex;flex-direction:column;gap:6px}',
+    '#view-opp #' + ID + ' .st-app{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 10px;border:1px solid #eef1f5;border-radius:12px;background:#fafbfc}',
+    '#view-opp #' + ID + ' .st-app .nm{font-size:14px;font-weight:800;color:#11141c;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '#view-opp #' + ID + ' .st-app .nm small{font-weight:500;color:#94a3b8;font-size:11px;margin-left:6px}',
+    '#view-opp #' + ID + ' .st-app .acts{display:flex;gap:4px;grid-row:span 2}',
+    '#view-opp #' + ID + ' .st-app .stat{grid-column:1;font-size:12.5px;line-height:1.35;min-width:0;word-break:break-word}',
     '#view-opp #' + ID + ' .st-ok{color:#166534;font-weight:700}',
     '#view-opp #' + ID + ' .st-no{color:#64748b}',
     '#view-opp #' + ID + ' .st-unk{color:#94a3b8}',
     '#view-opp #' + ID + ' .st-bad{color:#b91c1c;font-weight:700}',
-    '#view-opp #' + ID + ' .st-mini{font:inherit;font-size:12.5px;font-weight:700;min-height:36px;padding:0 10px;border-radius:9px;border:1px solid #d7dce4;background:#fff;color:#334155;cursor:pointer;white-space:nowrap}',
+    '#view-opp #' + ID + ' .st-mini{font:inherit;font-size:15px;font-weight:700;width:40px;height:40px;padding:0;border-radius:9px;border:1px solid #d7dce4;background:#fff;color:#334155;cursor:pointer;flex:none}',
     '#view-opp #' + ID + ' .st-msg{font-size:12.5px;color:#475569;margin-top:10px;white-space:pre-wrap;word-break:break-word}',
-    '#view-opp #' + ID + ' .op-btn{min-height:40px;padding:8px 13px;font-size:13px}',
-    '@media(max-width:560px){#view-opp #' + ID + ' td.acts{white-space:normal}#view-opp #' + ID + ' td.acts .st-mini{margin:2px 2px 2px 0}}'
+    '#view-opp #' + ID + ' .op-btn{min-height:40px;padding:8px 13px;font-size:13px}'
   ].join('\n');
 
   function mountCss() {
@@ -237,9 +239,11 @@
     const rows = apps().map(a => {
       const [cls, txt] = installedStatus(a, d);
       const c = state.checks[a.key];
-      return '<tr><td class="nm">' + esc(a.name) + '<small>/app/' + esc(a.key) + '/ · ' + (a.custom ? 'notenda-búið' : 'innbyggt') + '</small></td>' +
-        '<td><span class="st-' + cls + '">' + esc(txt) + '</span>' + (c ? '<br><span class="' + (c.ok ? 'st-ok' : 'st-bad') + '">' + esc(c.text) + '</span>' : '') + '</td>' +
-        '<td class="acts"><button type="button" class="st-mini" data-open="' + esc(a.key) + '">▶ Opna</button> <button type="button" class="st-mini" data-inst="' + esc(a.key) + '">⤓ Setja upp</button></td></tr>';
+      return '<div class="st-app">' +
+        '<div class="nm" title="/app/' + esc(a.key) + '/">' + esc(a.name) + '<small>' + (a.custom ? 'notenda-búið' : 'innbyggt') + '</small></div>' +
+        '<div class="acts"><button type="button" class="st-mini" data-open="' + esc(a.key) + '" title="Opna">▶</button><button type="button" class="st-mini" data-inst="' + esc(a.key) + '" title="Setja upp í síma">⤓</button></div>' +
+        '<div class="stat"><span class="st-' + cls + '">' + esc(txt) + '</span>' + (c ? '<br><span class="' + (c.ok ? 'st-ok' : 'st-bad') + '">' + esc(c.text) + '</span>' : '') + '</div>' +
+        '</div>';
     }).join('');
     const relLine = state.related
       ? (state.related.length ? '' : '<div class="st-msg">Chrome skráir ekkert innbyggt app uppsett á þessu tæki (getInstalledRelatedApps).</div>')
@@ -250,7 +254,7 @@
       '<div class="st-sec">Tæki og útgáfa</div><div class="st-chips">' + chips + '</div>' + note +
       '<div class="st-sec">Króm-stærð (haus · ☰ · botnstika · zoom-stika)</div>' + kromSeg +
       '<div class="st-sec">Síðuzoom (efnið)</div>' + zoomSeg +
-      '<div class="st-sec">Öpp á þessu tæki</div><table><tbody>' + (rows || '<tr><td>Engin öpp fundust á síðunni.</td></tr>') + '</tbody></table>' + relLine +
+      '<div class="st-sec">Öpp á þessu tæki</div><div class="st-apps">' + (rows || '<div class="st-msg">Engin öpp fundust á síðunni.</div>') + '</div>' + relLine +
       '<div class="st-sec">Aðgerðir</div><div class="st-row">' +
       '<button type="button" class="op-btn" data-act="reload">🔄 Endurhlaða</button>' +
       '<button type="button" class="op-btn" data-act="clear">🧹 Hreinsa skyndiminni + SW</button></div>' +
