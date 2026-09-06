@@ -21,7 +21,8 @@
   window.__arsgrindSimi356 = true;
 
   const STYLE_ID = 'arsgrind-simi-356';
-  const P = ':not(#_p356a):not(#_p356b)';
+  // fjórir falsk-id hlekkir: 338 notar þrjá á takka-reglunni sinni (#companies-main [data-co-id] button …)
+  const P = ':not(#_p356a):not(#_p356b):not(#_p356c):not(#_p356d)';
   const SCOPES = ['body.appmode #companies-main ', 'html[data-viewmode="mobile"] #companies-main ', 'html.slokk-phone-dev #companies-main '];
   const r = (sels, css) => SCOPES.map(s => sels.map(sel => s + sel + P).join(',')).join(',') + '{' + css + '}';
 
@@ -47,25 +48,37 @@
     r(['.sk-svc-card.sk-svc-empty .sk-svc-row'], 'display:inline-flex!important;margin:0 0 0 4px!important;font-size:12px!important;color:var(--ink4)!important;font-style:italic'),
 
     // ── haus: nafn · staða · takkar ──────────────────────────────────────
-    r(['.sk-svc-hd'], 'flex-wrap:wrap!important;gap:5px!important;margin-bottom:5px!important;font-size:13px!important'),
+    r(['.sk-svc-hd'], 'flex-wrap:wrap!important;gap:5px!important;margin-bottom:3px!important;padding-bottom:6px!important;border-bottom:1px solid var(--brd2,#f1f5f9)!important;min-height:36px!important;font-size:13px!important'),
     r(['.sk-svc-hd b'], 'font-size:14px!important'),
-    r(['.sk-svc-st'], 'margin-left:0!important;font-size:10.5px!important;padding:3px 9px!important'),
+    r(['.sk-svc-st'], 'margin-left:0!important;font-size:10px!important;padding:3px 8px!important;min-height:0!important'),
+    r(['.sk-svc-card'], 'display:flex!important;flex-direction:column!important'),   // jafnhá spjöld í röðinni, efni efst
     r(['.sk-svc-send'], 'margin-left:auto!important'),
     r(['.sk-svc-ws'], 'margin-left:0!important'),
     r(['.sk-svc-hd:has(.sk-svc-ws):not(:has(.sk-svc-send)) .sk-svc-ws'], 'margin-left:auto!important'),
 
-    // ── línur: punktur · flísar sem fylla breiddina · merkimiði aftast ───
-    r(['.sk-svc-row'], 'display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:5px!important;margin:4px 0!important'),
-    r(['.sk-svc-row .sk-svc-tag'], 'margin-left:auto!important;font-size:9.5px!important;padding:2px 7px!important'),
-    r(['.sk-svc-row .sk-att-wrap'], 'flex:1 1 120px!important;max-width:100%!important;min-width:0!important'),
-    r(['.sk-svc-row .sk-att-wrap .sk-doc'], 'flex:1 1 auto!important;min-width:0!important;max-width:100%!important'),
-    r(['.sk-svc-row > .sk-doc.rep', '.sk-svc-row > .sk-doc.inv', '.sk-svc-row > a.sk-doc'], 'max-width:100%!important;flex:1 1 120px!important;min-width:0!important'),
+    // ── línur sem FAST FORM (Agnar: „samt svo óreglulegt og dreift"): merkimiði í fastri breidd
+    //    vinstra megin · punktur · efni (JS vefur efni línunnar í .sk-svc-body svo það sé eitt hólf) ──
+    r(['.sk-svc-row'], 'display:grid!important;grid-template-columns:74px 10px minmax(0,1fr)!important;align-items:center!important;column-gap:6px!important;row-gap:0!important;margin:0!important;padding:5px 0!important;min-height:40px!important'),
+    r(['.sk-svc-row + .sk-svc-row'], 'border-top:1px solid var(--brd2,#f1f5f9)!important'),
+    r(['.sk-svc-row > .sk-svc-tag'], 'grid-column:1!important;grid-row:1!important;margin:0!important;padding:0!important;background:none!important;border:0!important;font-size:10px!important;font-weight:800!important;letter-spacing:.06em!important;text-transform:uppercase!important;color:var(--ink3)!important;justify-self:start!important;white-space:nowrap!important'),
+    r(['.sk-svc-row > .sk-svc-tag.inv'], 'color:#15803d!important'),
+    r(['.sk-svc-row > .sk-dot'], 'grid-column:2!important;grid-row:1!important;margin:0!important'),
+    r(['.sk-svc-row > .sk-svc-body'], 'grid-column:3!important;grid-row:1!important;display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:5px!important;min-width:0!important'),
+    // lína án merkimiða/punkts (tómt spjald): venjuleg lína
+    r(['.sk-svc-card.sk-svc-empty .sk-svc-row'], 'display:flex!important;min-height:0!important;padding:2px 0!important'),
+    r(['.sk-svc-body .sk-att-wrap'], 'flex:1 1 140px!important;max-width:100%!important;min-width:0!important'),
+    r(['.sk-svc-body .sk-att-wrap .sk-doc'], 'flex:1 1 auto!important;min-width:0!important;max-width:100%!important'),
+    r(['.sk-svc-body > .sk-doc.rep', '.sk-svc-body > .sk-doc.inv', '.sk-svc-body > a.sk-doc'], 'max-width:100%!important;flex:1 1 140px!important;min-width:0!important'),
+    r(['.sk-svc-body .sk-doc.add'], 'flex:0 0 auto!important'),
+    r(['.sk-svc-body .sk-svc-amt'], 'margin-left:auto!important;font-size:11.5px!important'),
     r(['.sk-link-wrap'], 'flex:1 1 100%!important;flex-wrap:wrap!important;gap:5px!important'),
     r(['.sk-link-wrap .sk-link-sel'], 'flex:1 1 120px!important;max-width:100%!important'),
 
     // ── flísar í flísastærð (261 blæs takka í .view í 50 px) ─────────────
-    r(['.sk-card button', '.sk-card .sk-doc', '.sk-card a.sk-doc'], 'min-height:32px!important;height:auto!important;padding:4px 9px!important;font-size:12px!important;line-height:1.25!important;border-radius:8px!important;box-sizing:border-box!important'),
-    r(['.sk-card .sk-att-x'], 'padding:4px 7px!important;border-radius:0 8px 8px 0!important;min-width:0!important'),
+    r(['.sk-card button', '.sk-card .sk-doc', '.sk-card a.sk-doc'], 'min-height:32px!important;height:32px!important;padding:0 9px!important;font-size:12px!important;line-height:1.2!important;border-radius:8px!important;box-sizing:border-box!important;display:inline-flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;width:auto!important;margin:0!important'),
+    r(['.sk-card .sk-att-x'], 'padding:0 7px!important;border-radius:0 8px 8px 0!important;min-width:0!important'),
+    r(['.sk-card .sk-dfc'], 'width:32px!important;padding:0!important;justify-content:center!important'),
+    r(['.sk-card .sk-doc.add'], 'min-width:32px!important;justify-content:center!important'),
     r(['.sk-card .sk-att-wrap .sk-doc'], 'border-radius:8px 0 0 8px!important'),
     r(['.sk-card .sk-doc.add'], 'font-weight:600!important;border-style:dashed!important'),
     r(['.sk-card .sk-dot'], 'flex:0 0 9px!important'),
@@ -89,11 +102,39 @@
     if (s.textContent !== CSS) s.textContent = CSS;
     // aftast í <head> — 199/261/330/338 skrifa á sömu velli
     if (s.parentNode && s.parentNode.lastElementChild !== s) s.parentNode.appendChild(s);
+    regla();
   }
-  mount();
+  // Efni hverrar línu (allt nema punktur og merkimiði) í eitt ílát .sk-svc-body svo línan geti verið
+  // grind með föstum dálkum. Hnútarnir eru FÆRÐIR (ekki afritaðir) — hlustarar 199 halda sér.
+  // Aðeins í síma-/app-ham; 199 endurteiknar með innerHTML og MutationObserver endurtekur.
+  function simiHamur() {
+    const h = document.documentElement;
+    return !!(document.body && document.body.classList.contains('appmode')) || h.getAttribute('data-viewmode') === 'mobile' || h.classList.contains('slokk-phone-dev');
+  }
+  function regla() {
+    if (!simiHamur()) return;
+    document.querySelectorAll('#companies-main .sk-svc-row:not([data-r356])').forEach(row => {
+      if (row.querySelector(':scope > .sk-svc-body')) { row.setAttribute('data-r356', '1'); return; }
+      row.setAttribute('data-r356', '1');
+      const body = document.createElement('div'); body.className = 'sk-svc-body';
+      [...row.childNodes].forEach(n => {
+        if (n.nodeType === 1 && (n.classList.contains('sk-dot') || n.classList.contains('sk-svc-tag'))) return;
+        body.appendChild(n);
+      });
+      row.appendChild(body);
+    });
+  }
+  let _rt = null;
+  function watch() {
+    const main = document.getElementById('companies-main');
+    if (!main || main.__r356) return;
+    main.__r356 = true;
+    try { new MutationObserver(() => { clearTimeout(_rt); _rt = setTimeout(regla, 60); }).observe(main, { childList: true, subtree: true }); } catch (_) {}
+  }
+  mount(); watch();
   document.addEventListener('slokk-viewmode', mount);
-  document.addEventListener('DOMContentLoaded', mount);
-  [400, 1500, 3000].forEach(ms => setTimeout(mount, ms));
+  document.addEventListener('DOMContentLoaded', () => { mount(); watch(); });
+  [400, 1500, 3000, 6000].forEach(ms => setTimeout(() => { mount(); watch(); }, ms));
   window.ArsgrindSimi = { mount, version: '356' };
   console.log('[patch-356] ársgrind á síma: snyrtilegra');
 })();
