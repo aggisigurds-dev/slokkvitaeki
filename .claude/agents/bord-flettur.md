@@ -388,3 +388,12 @@ BUILD, SW), króm-stærð (`AppKrom.set`) og síðuzoom (`AppPageZoom.set`, söm
 display-mode standalone), „Athuga öpp" (sækir manifest hvers apps, staðfestir
 id/start_url/scope = `/app/<key>/`, 512px tákn, standalone, og að engin tvö deili id),
 aðgerðir (endurhlaða, hreinsa skyndiminni + SW, afrita greiningu). `window.OppStyribord`.
+
+## App-síðan `br-efniskostnadur` (06.09.2026)
+
+Hubbinn í embed-ham (`https://brunaholf.netlify.app/?embed=1#efniskostnadur`) sem app-síða í Fjármál og Boss
+(defaults + `insertOnce('__efk1'/'__efk2')` í vistaðar stillingar). Þar er droppsvæðið fyrir kostnaðarreikninga:
+📁 Velja skrá / 📷 Mynda reikning (`<input capture="environment">` — opnar myndavélina í símanum, engin
+`allow="camera"` þörf því þetta er skráarval, ekki getUserMedia), fyrirtæki til endurrukkunar, AI-innlestur
+(`/api/reikningspunktar lesa_kostnad`) og listinn (innkaupabók með hook á kúnna, „📚 Í bókhald").
+Punktarnir sjálfir opnast í `br-drogstod` (sama hub-iframe, `sessionStorage.ds_open_karfa`).
