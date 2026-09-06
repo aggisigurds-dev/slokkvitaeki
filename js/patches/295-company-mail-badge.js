@@ -451,7 +451,10 @@
   const fresh = loadCache();
   stampAll();
   watch();
-  if (!fresh) refresh(); else { stampAll(); refresh(); }
+  // 06.09.2026: áður var refresh() kallað ALLTAF (líka með ferskt cache) → hver hleðsla appsins = eitt 5–6 s
+  // company-mail-kall + tvö tv_history_sites-RPC; á kvöldi með mörgum flipum/tækjum stíflaði það tengipott
+  // Supabase (PGRST003/504 á allt). Nú aðeins þegar cache-ið er eldra en TTL (20 mín); CompanyMail.refresh() handvirkt.
+  if (!fresh) refresh(); else stampAll();
   [800, 2500, 6000].forEach(t => setTimeout(() => { stampAll(); injectProfile(); }, t));
 
   // onListRender: called by patch 153 at the END of its render() so the badges
