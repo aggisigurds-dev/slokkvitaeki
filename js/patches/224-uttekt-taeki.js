@@ -500,9 +500,11 @@
          Hægri spjaldið var 560px — 7-dálka REIKNINGUR (Per stk input + Samtals)
          kramdist og „59.880 kr" klipptist. 780px rúmar línuna; min-width á
          töflunni + overflow-x (í 129) skrunar frekar en að klippa. */
-      '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',
+      // 06.09.2026: flex-wrap — á síma í Tölvusíðu-ham (breið layout-viewport, @media 1420 nær ekki) kreisti fasta 780px
+      // hægri dálkurinn tækjatöfluna niður í ~100px og hvarf sjálfur út af skjánum (Örkin, skjáskot Agnars). Nú vefur hann niður.
+      '.uttekt-cols{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}',
       '.uttekt-col-l{flex:1 1 0;min-width:0}',
-      '.uttekt-col-r{flex:0 0 780px;width:780px;max-width:780px;min-width:640px}',
+      '.uttekt-col-r{flex:0 0 780px;width:780px;max-width:100%;min-width:0}',
       '#_ctc-section{margin:0 !important}',
       '.uttekt-col-r #_ctc-section table{font-size:12px;min-width:740px}',
       '.uttekt-col-r #_ctc-section table th,.uttekt-col-r #_ctc-section table td{padding:8px 8px !important}',

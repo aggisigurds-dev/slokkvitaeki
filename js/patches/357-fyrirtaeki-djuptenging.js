@@ -77,6 +77,9 @@
       if (!ready()) return;
       // bíða eftir gagnagrunninum (Companies.load() skilar tómu meðan DB.online er false)
       while (!listReady() && Date.now() - t0 < 15000) await sl(250);
+      // 06.09.2026: bíða líka eftir DB.online (loadAll: uttaeki o.fl.) — annars opnast prófíllinn með „Slökkvitæki (0)"
+      // og endurteiknast ekki þegar tækin koma (Örkin: 57 tæki sýnd sem 0 í djúptengdri hleðslu).
+      while (!(window.DB && DB.online) && Date.now() - t0 < 20000) await sl(250);
       openNow(id);
       const deadline = Date.now() + ms;
       let reopened = 0;
@@ -102,7 +105,7 @@
     const start = () => setTimeout(() => go(BOOT_ID, 8000), 400);
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   }
-  window.CoDeeplink = { open: id => go(Number(id), 3000), parseHash, detailOpen, bootId: BOOT_ID, version: '357e' };
+  window.CoDeeplink = { open: id => go(Number(id), 3000), parseHash, detailOpen, bootId: BOOT_ID, version: '357f' };
   console.log('[patch-357] fyrirtæki djúptenging #company/<id>', BOOT_ID || '');
 })();
 /* === END FYRIRTÆKI DJÚPTENGING === */
