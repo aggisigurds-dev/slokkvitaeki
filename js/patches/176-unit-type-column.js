@@ -14,7 +14,7 @@
   window.__unitTypeColumnInstalled = true;
 
   // Canonical service types. Order = most common first.
-  const TYPES = ['Léttvatn', 'ABC Duft', 'Duft', 'CO₂', 'Brunaslanga', 'Slönguskápur', 'Reykskynjari', 'Eldvarnateppi'];
+  const TYPES = ['Léttvatn', 'ABC Duft', 'Duft', 'CO2', 'Brunaslanga', 'Slönguskápur', 'Reykskynjari', 'Eldvarnateppi'];
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>

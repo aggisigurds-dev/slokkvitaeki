@@ -976,7 +976,7 @@ function openAddDeviceModal(cust, onSaved){
       '<div><label style="display:block;font-size:12px;margin-bottom:4px;opacity:.7">Tegund</label>'+
         '<select id="_ad_type" style="width:100%;padding:10px;border:1px solid #334155;border-radius:6px;background:#0f172a;color:#fff;font-size:14px">'+
           '<option value="ABC">ABC Duft</option>'+
-          '<option value="CO2">CO\u00b2</option>'+
+          '<option value="CO2">CO\u2082</option>'+
           '<option value="Vatn">Vatn</option>'+
           '<option value="Fro\u00f0u">Fro\u00f0u</option>'+
           '<option value="Blautt">Blautt</option>'+

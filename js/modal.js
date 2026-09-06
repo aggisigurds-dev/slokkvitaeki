@@ -175,7 +175,7 @@ var Counter = {
   },
   addRow: function() {
     var r=document.createElement('div'); r.className='unit-row-form';
-    r.innerHTML='<select><option>ABC Duft</option><option>CO₂</option><option>Vatn</option><option>Froðu</option><option>Blautt efni</option></select><input placeholder="6 kg"/><select><option>Hlaðning</option><option>Skoðun</option><option>Viðgerð</option><option>Hlaðning + Skoðun</option></select><button class="rm-btn" onclick="this.parentElement.remove()">✕</button>';
+    r.innerHTML='<select><option>ABC Duft</option><option value="CO2">CO₂</option><option>Vatn</option><option>Froðu</option><option>Blautt efni</option></select><input placeholder="6 kg"/><select><option>Hlaðning</option><option>Skoðun</option><option>Viðgerð</option><option>Hlaðning + Skoðun</option></select><button class="rm-btn" onclick="this.parentElement.remove()">✕</button>';
     document.getElementById('nj-rows').appendChild(r);
   },
   submitNew: async function() {
