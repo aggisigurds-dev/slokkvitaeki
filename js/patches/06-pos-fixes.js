@@ -282,7 +282,11 @@
       }
       if (m.target.id === 'pos-services' || m.target.closest?.('#pos-services')) { touchedServices = true; }
     }
-    if (needRemove) removeToolButtons();
+    // 06.09.2026: EKKI fjarlægja í vaktinni — 01-sala-suite setur takkana aftur inn í eigin MutationObserver+rAF um leið
+    // og þeir hverfa, svo þessar tvær vaktir börðust ~34× á sekúndu á hvern takka (170 body-breytingar/s, mælt) —
+    // örgjörvi/rafhlaða á öllum tækjum og allar debounce-vaktir annarra pappa sváfu. CSS-reglan .sm-toolbtn{display:none}
+    // hér að ofan felur þá hvort eð er. (needRemove er látinn standa svo mælingin sjáist í kóðanum.)
+    if (needRemove) { /* removeToolButtons() — sjá athugasemd */ }
     bindInputs();
     if (touchedServices) reorderServices();
   });
