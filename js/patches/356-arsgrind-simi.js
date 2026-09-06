@@ -26,9 +26,15 @@
   const r = (sels, css) => SCOPES.map(s => sels.map(sel => s + sel + P).join(',')).join(',') + '{' + css + '}';
 
   const CSS = [
+    // ── öryggisnet fyrir alla síðuna: ekkert spjald víkkar síðuna — breitt efni skrunar innan síns spjalds ──
+    SCOPES.map(s => s + '> *' + P).join(',') + '{max-width:100%!important;box-sizing:border-box!important;overflow-x:auto!important}',
+    r(['._samskipti-card', '._samskipti-host', '.card.pad'], 'width:auto!important;max-width:100%!important;min-width:0!important'),
     // ── eitt spjald í röð ────────────────────────────────────────────────
-    r(['.sk-svc-grid'], 'grid-template-columns:1fr!important;gap:8px!important'),
-    r(['.sk-svc-card'], 'padding:9px 11px 8px!important;border-radius:10px!important'),
+    // minmax(0,1fr) + min-width:0: grid-hólf með min-width:auto stækka annars upp í min-content
+    // breiðasta barnsins (nowrap-flís) og spjaldið flæðir út fyrir skjáinn
+    r(['.sk-svc-grid'], 'grid-template-columns:minmax(0,1fr)!important;gap:8px!important;max-width:100%!important'),
+    r(['.sk-svc-card'], 'padding:9px 11px 8px!important;border-radius:10px!important;min-width:0!important;max-width:100%!important;overflow:hidden!important'),
+    r(['.sk-yrblock', '.sk-yrwrap'], 'max-width:100%!important;min-width:0!important'),
     // tómt spjald = ein lína: haus + „engin …" + „+ skýrsla" í sömu línu
     r(['.sk-svc-card.sk-svc-empty'], 'opacity:.85!important;padding:6px 11px!important'),
     r(['.sk-svc-card.sk-svc-empty .sk-svc-hd'], 'margin-bottom:0!important;flex-wrap:wrap!important;gap:6px!important'),
@@ -60,8 +66,13 @@
     r(['.sk-card .sk-svc-send', '.sk-card .sk-svc-ws', '.sk-card .sk-link-btn', '.sk-card .sk-link-peek', '.sk-card .sk-svc-btn'], 'font-size:11.5px!important;padding:5px 10px!important;min-height:34px!important'),
     r(['.sk-card .sk-add-btn'], 'padding:7px 12px!important;min-height:36px!important'),
     r(['.sk-card .sk-h'], 'padding:10px 12px!important;flex-wrap:wrap!important;gap:8px!important'),
-    r(['.sk-card .sk-strip'], 'gap:8px!important;padding:9px 12px!important'),
+    r(['.sk-card .sk-strip'], 'gap:8px!important;padding:9px 12px!important;flex-wrap:wrap!important'),
     r(['.sk-card .sk-strip-l'], 'min-width:0!important'),
+    // Samnings-/skjala-strimlar: innri flex-röð (nowrap) var 463 px — vefja og halda sig innan spjaldsins
+    r(['.sk-card .sk-strip-r'], 'min-width:0!important;max-width:100%!important;flex:1 1 100%!important'),
+    r(['.sk-card .sk-strip-r > div', '.sk-card .sk-strip-r > span'], 'flex-wrap:wrap!important;max-width:100%!important;min-width:0!important'),
+    r(['.sk-card .sk-strip-r .sk-att-wrap'], 'max-width:100%!important;min-width:0!important'),
+    r(['.sk-card .sk-strip-r .sk-att-wrap .sk-doc'], 'min-width:0!important;max-width:100%!important;flex:1 1 auto!important'),
     r(['.sk-yrwrap'], 'padding:2px 10px 10px!important'),
     r(['.sk-yr-label'], 'font-size:14px!important;margin-bottom:6px!important'),
   ].join('\n');
