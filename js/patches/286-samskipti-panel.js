@@ -571,12 +571,15 @@
     _timer = null;
     if (_running) return;                 // næsta DOM-breyting (eða tifið) endurræsir
     _running = true;
+    // 06.09.2026: hangi sókn (t.d. Supabase-pottstífla, 504) sat _running fast að eilífu → aldrei spjald aftur í flipanum;
+    // öryggisventill sleppir lásnum eftir 20 s.
+    const _vent = setTimeout(() => { _running = false; }, 20000);
     Promise.resolve()
       .then(() => decorate())
       .catch(e => console.warn("[samskipti-panel]", e))
       .then(() => decorateRF())
       .catch(e => console.warn("[samskipti-rf]", e))
-      .then(() => { _running = false; });
+      .then(() => { clearTimeout(_vent); _running = false; });
   }
   function schedule() { if (_timer) return; _timer = setTimeout(runNow, 250); }
   new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
