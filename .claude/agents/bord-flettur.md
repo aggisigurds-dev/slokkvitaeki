@@ -29,15 +29,18 @@ It ignores `key=value` hashes (`#device=`, `#portal=`, `#tab=`) and the legacy
 slug hash so a deep link is not overridden by the remembered last view — keep
 that cooperation if you touch either file. Add new pretty names to `ALIAS`.
 
-## Djúptenging á fyrirtækjaprófíl — `#companies/<id>` (06.09.2026, patch 357)
+## Djúptenging á fyrirtækjaprófíl — `#company/<id>` ræsingarþolin (06.09.2026, patch 357)
 
-`js/patches/357-fyrirtaeki-djuptenging.js`: `#companies/<fyrirtaeki.id>` (líka `#fyrirtaeki/<id>`) opnar prófílinn
-með `_openCompanySafe` (mapfix.js — skiptir á Fyrirtæki og bíður eftir `Companies.load()` svo endurteiknun
-listans skrifi ekki yfir prófílinn) og hreinsar slóðina í `#companies`. 218 hunsar path-lík hash (`cleanHash`
-→ '' fyrir `/`) og 154 víkur, svo enginn árekstur. Virkar á `hashchange` líka — hubbinn í iframe (Drög-stöð /
-Efniskostnaður í Fjármál/Boss) setur `top.location.hash` og prófíllinn opnast án endurhleðslu; í venjulegum
-vafra opnar hubbinn appið í nýjum flipa. Hubbinn fær id-in úr `op=stada.kunnaIds` (nafn → id).
-`window.CoDeeplink.open(id)`.
+235 (deeplink-subroutes) á `#company/<id>` → `Companies.openDetail`, en FERSK hleðsla með því hashi endaði á `#sala`
+með „Hleður…" (mælt 06.09.2026): App.init lendir á Sala, 218 speglar það strax í hashið, eitthvað kallar
+`switchView('sala')` um t≈1500 ms og `Companies.load()` endurteiknar listann yfir opinn prófíl (sama og 154 lýsir).
+`js/patches/357-fyrirtaeki-djuptenging.js` lagar það: grípur auðkennið VIÐ HLEÐSLU skriftunnar (líka úr
+navigation-entry), opnar með `_openCompanySafe` (mapfix.js) og tikkar í allt að 8 s (eða til fyrstu raunverulegu
+notendasnertingar) og opnar aftur ef Breyta-takkinn `Companies.openEdit(<id>)` er ekki lengur í `#companies-main`.
+Tekur líka `#companies/<id>` og `#fyrirtaeki/<id>` og samræmir í `#company/<id>`. Á `hashchange` (hubbinn í iframe
+— Drög-stöð/Efniskostnaður í Fjármál/Boss — setur `top.location.hash`) gerir 235 sitt og 357 lagar á eftir (3 s).
+Hubbinn fær id-in úr `op=stada.kunnaIds` (nafn → id); í venjulegum vafra opnar hann appið í nýjum flipa.
+`window.CoDeeplink.open(id)` / `.detailOpen(id)`.
 
 ## Bakk-takkinn — ÞRÍR patchar, ekki blanda þeim saman
 
