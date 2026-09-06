@@ -109,7 +109,14 @@
     'html.slokk-phone-nav #_app-zoom' + P4 + ',' + A + '#_app-zoom' + P4
       + '{top:auto!important;bottom:calc(env(safe-area-inset-bottom,0px) + var(--app-zoom-bottom,84px))!important;right:8px!important}',
     /* 🎨 (262) er position:absolute við hægri brún borðans á síma og lá ofan á 📱▦🖥-rofanum (166) */
-    'html[data-viewmode="mobile"] #bstal-banner .ky-vm,html.slokk-phone-dev #bstal-banner .ky-vm{margin-right:54px!important}',
+    /* Borðinn á síma (mælt 06.09 á 980px/×2,4): andlitið er ~327px; lógó+orðmerki tóku 238, rofinn 105, 🎨 44 →
+       komst ekki fyrir. Orðmerkið („SLÖKKVITÆKI EHF.") fer, lógóið 26px, þrengri fyllingar; 🎨 er absolute
+       við hægri brún (262) og andlitið heldur 50px fyrir hann. */
+    'html[data-viewmode="mobile"] #bstal-banner .bb-word,html.slokk-phone-dev #bstal-banner .bb-word{display:none!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .bb-logo img,html.slokk-phone-dev #bstal-banner .bb-logo img{height:26px!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .bb-logo,html.slokk-phone-dev #bstal-banner .bb-logo{padding:3px 8px 3px 3px!important;margin:0!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .bb-face,html.slokk-phone-dev #bstal-banner .bb-face{padding:0 50px 0 8px!important;gap:6px!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .ky-vm,html.slokk-phone-dev #bstal-banner .ky-vm{margin:0 0 0 auto!important;flex:none!important}',
     /* Merkimiðar rofans („Sími/Tafla/Skjár") fela sig aðeins undir @media ≤760px í 166 — sem gildir ekki á 980px
        layout-viewporti símans í Tölvusíðu-ham; rofinn varð 200px og flæddi út fyrir borðann. Tákn ein á síma. */
     'html[data-viewmode="mobile"] #bstal-banner .ky-vm-lbl,html.slokk-phone-dev #bstal-banner .ky-vm-lbl{display:none!important}',
