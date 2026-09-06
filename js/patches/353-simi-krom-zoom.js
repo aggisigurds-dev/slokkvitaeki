@@ -110,6 +110,10 @@
       + '{top:auto!important;bottom:calc(env(safe-area-inset-bottom,0px) + var(--app-zoom-bottom,84px))!important;right:8px!important}',
     /* 🎨 (262) er position:absolute við hægri brún borðans á síma og lá ofan á 📱▦🖥-rofanum (166) */
     'html[data-viewmode="mobile"] #bstal-banner .ky-vm,html.slokk-phone-dev #bstal-banner .ky-vm{margin-right:54px!important}',
+    /* Merkimiðar rofans („Sími/Tafla/Skjár") fela sig aðeins undir @media ≤760px í 166 — sem gildir ekki á 980px
+       layout-viewporti símans í Tölvusíðu-ham; rofinn varð 200px og flæddi út fyrir borðann. Tákn ein á síma. */
+    'html[data-viewmode="mobile"] #bstal-banner .ky-vm-lbl,html.slokk-phone-dev #bstal-banner .ky-vm-lbl{display:none!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .ky-vm-seg,html.slokk-phone-dev #bstal-banner .ky-vm-seg{padding:7px 9px!important}',
 
     /* ── App-haus: hæfilega stærri í raunstærð ────────────────────────────── */
     K + A + '#_app-hdr' + P4 + '{height:52px!important;gap:5px!important}',
