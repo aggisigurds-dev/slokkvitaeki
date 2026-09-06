@@ -230,7 +230,11 @@
     if (e.target && e.target.getAttribute && e.target.getAttribute('data-field') === 'customer_nafn') setTimeout(() => byggja(), 300);
   });
 
-  window.VbFyrirtaeki = { byggja, findAnchor, finnaFyrirtaeki, taekiFyrir, version: '358b' };
+  // VALIÐ MÁL getur verið teiknað ÁÐUR en þessi pappi hleðst (engin breyting á DOM á eftir) — byggja við ræsingu
+  // og við sýnaskipti; MutationObserver sér um afganginn.
+  [1200, 4000].forEach(t => setTimeout(() => { try { byggja(); } catch (_) {} }, t));
+  window.addEventListener('hashchange', () => setTimeout(() => { try { byggja(); } catch (_) {} }, 800));
+  window.VbFyrirtaeki = { byggja, findAnchor, finnaFyrirtaeki, taekiFyrir, version: '358c' };
   console.log('[358-verkbord-fyrirtaeki] virkur');
 })();
 /* === END ÞJÓNUSTUBORÐ → FYRIRTÆKI === */
