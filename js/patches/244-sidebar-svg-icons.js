@@ -115,6 +115,8 @@
     return EMOJI_CLUSTER_RE.test(str);
   }
 
+  // Nafn táknsins fylgir SVG-inu (data-sb-key) svo samanburðurinn sé á NAFNI, ekki HTML (Agnar 06.09.2026).
+  Object.keys(ICONS).forEach(k => { try { ICONS[k]._key = k; } catch (_) {} });
   function buildSvg(spec) {
     const svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('width', '16');
@@ -127,6 +129,7 @@
     svg.setAttribute('stroke-linejoin', 'round');
     svg.innerHTML = spec.d;
     svg.setAttribute('data-sb-svg', '1');
+    if (spec._key) svg.setAttribute('data-sb-key', spec._key);
     return svg;
   }
 
@@ -250,6 +253,7 @@
             // 06.09.2026: bera saman við SERÍALÍSERAÐA útgáfu — vafrinn skrifar <path d="…"/> sem <path d="…"></path>,
             // svo spec.d passaði ALDREI við innerHTML → táknið fjarlægt og sett aftur inn í hverri umferð → MutationObserver
             // → rAF → aftur: ~1.170 remove+insertBefore á sekúndu á 62 tökkum (mælt), endalaust, á öllum tækjum.
+            if (spec._key && n.getAttribute('data-sb-key') === spec._key) { hasOurSvg = true; break; }   // sama tákn — ekkert að gera
             const want = spec._ser || (spec._ser = buildSvg(spec).innerHTML.replace(/\s+/g, ''));
             const got = (n.innerHTML || '').replace(/\s+/g, '');
             if (got === want) {
