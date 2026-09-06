@@ -32,16 +32,20 @@
     // ── eitt spjald í röð ────────────────────────────────────────────────
     // minmax(0,1fr) + min-width:0: grid-hólf með min-width:auto stækka annars upp í min-content
     // breiðasta barnsins (nowrap-flís) og spjaldið flæðir út fyrir skjáinn
-    r(['.sk-svc-grid'], 'grid-template-columns:minmax(0,1fr)!important;gap:8px!important;max-width:100%!important'),
-    r(['.sk-svc-card'], 'padding:9px 11px 8px!important;border-radius:10px!important;min-width:0!important;max-width:100%!important;overflow:hidden!important'),
-    r(['.sk-yrblock', '.sk-yrwrap'], 'max-width:100%!important;min-width:0!important'),
+    // Agnar 06.09 (kvöld): „fannst nú betra að hafa hlið við hlið, finnst þetta taka svo mikið pláss" → tveir dálkar
+    // áfram, en þéttir; einn dálkur aðeins þegar grindin sjálf er þrengri en 520px (venjulegur sími án Tölvusíðu-hams).
+    r(['.sk-svc-grid'], 'grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important;max-width:100%!important'),
+    r(['.sk-svc-card'], 'padding:8px 9px 7px!important;border-radius:10px!important;min-width:0!important;max-width:100%!important;overflow:hidden!important'),
+    r(['.sk-yrblock'], 'max-width:100%!important;min-width:0!important;padding:8px 0!important'),
+    r(['.sk-yrwrap'], 'max-width:100%!important;min-width:0!important;container-type:inline-size'),
+    '@container (max-width:520px){' + r(['.sk-svc-grid'], 'grid-template-columns:minmax(0,1fr)!important') + '}',
     // tómt spjald = ein lína: haus + „engin …" + „+ skýrsla" í sömu línu
     r(['.sk-svc-card.sk-svc-empty'], 'opacity:.85!important;padding:6px 11px!important'),
     r(['.sk-svc-card.sk-svc-empty .sk-svc-hd'], 'margin-bottom:0!important;flex-wrap:wrap!important;gap:6px!important'),
     r(['.sk-svc-card.sk-svc-empty .sk-svc-row'], 'display:inline-flex!important;margin:0 0 0 4px!important;font-size:12px!important;color:var(--ink4)!important;font-style:italic'),
 
     // ── haus: nafn · staða · takkar ──────────────────────────────────────
-    r(['.sk-svc-hd'], 'flex-wrap:wrap!important;gap:6px!important;margin-bottom:8px!important;font-size:13.5px!important'),
+    r(['.sk-svc-hd'], 'flex-wrap:wrap!important;gap:5px!important;margin-bottom:5px!important;font-size:13px!important'),
     r(['.sk-svc-hd b'], 'font-size:14px!important'),
     r(['.sk-svc-st'], 'margin-left:0!important;font-size:10.5px!important;padding:3px 9px!important'),
     r(['.sk-svc-send'], 'margin-left:auto!important'),
@@ -49,17 +53,17 @@
     r(['.sk-svc-hd:has(.sk-svc-ws):not(:has(.sk-svc-send)) .sk-svc-ws'], 'margin-left:auto!important'),
 
     // ── línur: punktur · flísar sem fylla breiddina · merkimiði aftast ───
-    r(['.sk-svc-row'], 'display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:6px!important;margin:6px 0!important'),
-    r(['.sk-svc-row .sk-svc-tag'], 'margin-left:auto!important;font-size:10px!important;padding:2px 8px!important'),
-    r(['.sk-svc-row .sk-att-wrap'], 'flex:1 1 200px!important;max-width:100%!important;min-width:0!important'),
+    r(['.sk-svc-row'], 'display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:5px!important;margin:4px 0!important'),
+    r(['.sk-svc-row .sk-svc-tag'], 'margin-left:auto!important;font-size:9.5px!important;padding:2px 7px!important'),
+    r(['.sk-svc-row .sk-att-wrap'], 'flex:1 1 120px!important;max-width:100%!important;min-width:0!important'),
     r(['.sk-svc-row .sk-att-wrap .sk-doc'], 'flex:1 1 auto!important;min-width:0!important;max-width:100%!important'),
-    r(['.sk-svc-row > .sk-doc.rep', '.sk-svc-row > .sk-doc.inv', '.sk-svc-row > a.sk-doc'], 'max-width:100%!important;flex:1 1 200px!important;min-width:0!important'),
-    r(['.sk-link-wrap'], 'flex:1 1 100%!important;flex-wrap:wrap!important;gap:6px!important'),
-    r(['.sk-link-wrap .sk-link-sel'], 'flex:1 1 160px!important;max-width:100%!important'),
+    r(['.sk-svc-row > .sk-doc.rep', '.sk-svc-row > .sk-doc.inv', '.sk-svc-row > a.sk-doc'], 'max-width:100%!important;flex:1 1 120px!important;min-width:0!important'),
+    r(['.sk-link-wrap'], 'flex:1 1 100%!important;flex-wrap:wrap!important;gap:5px!important'),
+    r(['.sk-link-wrap .sk-link-sel'], 'flex:1 1 120px!important;max-width:100%!important'),
 
     // ── flísar í flísastærð (261 blæs takka í .view í 50 px) ─────────────
-    r(['.sk-card button', '.sk-card .sk-doc', '.sk-card a.sk-doc'], 'min-height:34px!important;height:auto!important;padding:5px 10px!important;font-size:12.5px!important;line-height:1.25!important;border-radius:8px!important;box-sizing:border-box!important'),
-    r(['.sk-card .sk-att-x'], 'padding:5px 8px!important;border-radius:0 8px 8px 0!important;min-width:0!important'),
+    r(['.sk-card button', '.sk-card .sk-doc', '.sk-card a.sk-doc'], 'min-height:32px!important;height:auto!important;padding:4px 9px!important;font-size:12px!important;line-height:1.25!important;border-radius:8px!important;box-sizing:border-box!important'),
+    r(['.sk-card .sk-att-x'], 'padding:4px 7px!important;border-radius:0 8px 8px 0!important;min-width:0!important'),
     r(['.sk-card .sk-att-wrap .sk-doc'], 'border-radius:8px 0 0 8px!important'),
     r(['.sk-card .sk-doc.add'], 'font-weight:600!important;border-style:dashed!important'),
     r(['.sk-card .sk-dot'], 'flex:0 0 9px!important'),
