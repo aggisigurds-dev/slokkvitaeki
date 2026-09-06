@@ -35,7 +35,8 @@
 
   if (!document.getElementById('_smx-css')) {
     const st = document.createElement('style'); st.id = '_smx-css';
-    st.textContent = '#companies-main ._co-mail-box{display:none !important}' +
+    // 295-boxið aðeins falið þegar 286-kortið er raunverulega á skjánum (klasi smx-eitt) — annars sést gamla boxið áfram
+    st.textContent = '#companies-main.smx-eitt ._co-mail-box{display:none !important}' +
       '._smx-strip{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:7px 0 2px}' +
       '._smx-sig{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700;white-space:nowrap}' +
       '._smx-old{padding:7px 9px;margin:5px 0;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;font-size:12.5px}';
@@ -130,6 +131,8 @@
   function athuga() {
     const host = document.querySelector('#companies-main ._samskipti-host[data-fid]');
     const card = host && host.querySelector('._samskipti-card');
+    const main = document.getElementById('companies-main');
+    if (main && main.classList.contains('smx-eitt') !== !!card) main.classList.toggle('smx-eitt', !!card);
     if (!card) return;
     inject(card, Number(host.dataset.fid));
   }
@@ -141,7 +144,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   setInterval(() => { try { athuga(); } catch (_) {} }, 3000);   // 295 endurnýjar gögnin án DOM-breytingar á kortinu
 
-  window.SamskiptiEitt = { athuga, version: '359' };
+  window.SamskiptiEitt = { athuga, version: '359b' };
   console.log('[359-samskipti-eitt-box] virkur');
 })();
 /* === END SAMSKIPTI EITT BOX === */
