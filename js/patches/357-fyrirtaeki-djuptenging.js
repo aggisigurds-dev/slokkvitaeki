@@ -1,20 +1,22 @@
-/* === FYRIRTÆKI: DJÚPTENGING #companies/<id> (357) ===============================
+/* === FYRIRTÆKI: DJÚPTENGING #company/<id> — ræsingarþolin (357) =====================
  *
  * Agnar 06.09.2026 (Drög-stöð): „geturðu linkað fyrirtækin inn á fyrirtækjaprófílinn". Hubbinn
- * (brunaholf.netlify.app, Drög-stöð + Efniskostnaður) vísar nú á
- *     https://slokkvitaeki.netlify.app/#companies/<fyrirtaeki.id>
- * Þessi pappi les hana og opnar prófílinn með `_openCompanySafe` (mapfix.js — skiptir á
- * Fyrirtæki-sýnina og bíður eftir Companies.load() svo endurteiknun listans skrifi ekki yfir
- * prófílinn), hreinsar svo slóðina í #companies svo 218-routing sjái hreint slug.
+ * (brunaholf.netlify.app, Drög-stöð + Efniskostnaður) vísar á
+ *     https://slokkvitaeki.netlify.app/#company/<fyrirtaeki.id>
+ * — sama snið og 235 (deeplink-subroutes) og 167 (hreyfingarlisti) nota. Líka #companies/<id>
+ * og #fyrirtaeki/<id> (samræmt í #company/<id>).
  *
- * Ræsingin er ekki róleg (sama og 154 lýsir): App.init lendir á Sala, 218 speglar það strax í
- * hashið (svo #companies/<id> er horfið áður en DOMContentLoaded-tímamælir les það), og
- * EITTHVAÐ kallar switchView('sala') um t≈1500ms. Þess vegna: (1) auðkennið er gripið við
- * HLEÐSLU skriftunnar, (2) tikk endurtekur opnunina ef sýnin rekur burt — þar til fyrsta
- * raunverulega notendasnerting eða 8 s. 218 hunsar path-lík hash (cleanHash → '') og 154 víkur
- * fyrir öllum hash án '=', svo enginn árekstur.
- * Virkar líka inni í öppunum (Fjármál/Boss): hubbinn í iframe setur hash á foreldrið →
- * hashchange hér → prófíllinn opnast án endurhleðslu. Líka #fyrirtaeki/<id>.
+ * Af hverju 235 dugar ekki eitt og sér: ræsingin er ekki róleg (154 lýsir því líka). App.init
+ * lendir á Sala, 218 speglar það strax í hashið (svo #company/<id> er horfið áður en nokkur
+ * tímamælir les það), EITTHVAÐ kallar switchView('sala') um t≈1500ms, og Companies.load()
+ * endurteiknar listann yfir opinn prófíl. Mælt 06.09.2026: ferskt #company/202 endaði á
+ * #sala með „Hleður…". Þess vegna hér: (1) auðkennið gripið við HLEÐSLU skriftunnar,
+ * (2) opnað með `_openCompanySafe` (mapfix.js — skiptir sýn án switchView-endurhleðslu og bíður
+ * eftir Companies.load() ef listinn er tómur), (3) tikk staðfestir að PRÓFÍLLINN sjálfur sé á
+ * skjánum (Breyta-takkinn `Companies.openEdit(<id>)` í #companies-main) og opnar aftur ef
+ * listinn/lendingin skrifaði yfir — þar til fyrsta raunverulega notendasnerting eða 8 s.
+ * Á hashchange (hubbinn í iframe setur top.location.hash) gerir 235 sitt; þetta tikkar á eftir
+ * og lagar ef endurteiknun klúðraði. 218 hunsar path-lík hash og 154 víkur → enginn árekstur.
  * Ekkert skrifað; 153/187 ÓSNERT.
  * ========================================================================== */
 (() => {
@@ -22,7 +24,7 @@
   window.__coDeeplink357 = true;
 
   function parseHash(h) {
-    const m = (h || '').match(/^#(?:companies|fyrirtaeki)\/(\d+)\b/);
+    const m = (h || '').match(/^#(?:company|companies|fyrirtaeki)\/(\d+)\b/);
     return m ? Number(m[1]) : null;
   }
   // gripið við hleðslu — áður en ræsingin skrifar yfir hashið
@@ -34,41 +36,46 @@
   let userTouched = false;
   ['mousedown', 'keydown', 'touchstart', 'pointerdown'].forEach(e => window.addEventListener(e, () => { userTouched = true; }, { capture: true, passive: true }));
 
+  function ready() { return !!(window.App && window.Companies && (window._openCompanySafe || Companies.openDetail)); }
+  function detailOpen(id) {
+    if (!document.querySelector('#view-companies.active')) return false;
+    const main = document.getElementById('companies-main');
+    return !!(main && main.querySelector('button[onclick*="Companies.openEdit(' + id + ')"]'));
+  }
   function openNow(id) {
-    try { if (location.hash !== '#companies') history.replaceState(null, '', location.pathname + location.search + '#companies'); } catch (_) {}
-    if (window._openCompanySafe) { window._openCompanySafe(id); return true; }
-    if (window.App && window.Companies && Companies.openDetail) {
+    if (window._openCompanySafe) { window._openCompanySafe(id); }
+    else {
       try { App.switchView('companies'); } catch (_) {}
       if (Companies.list && Companies.list.length) Companies.openDetail(id);
       else if (typeof Companies.load === 'function') Promise.resolve(Companies.load()).then(() => Companies.openDetail(id)).catch(() => {});
-      return true;
     }
-    return false;
+    // samræmt snið í slóðinni (235 speglar það sama úr openDetail)
+    try { const want = '#company/' + id; if (location.hash !== want) history.replaceState(null, '', location.pathname + location.search + want); } catch (_) {}
   }
-  function onCompanies() { return (window.App && App.view === 'companies') || !!document.querySelector('#view-companies.active'); }
 
   let busy = false;
-  async function go(id, boot) {
+  async function go(id, ms) {
     if (busy) return; busy = true;
     try {
       const t0 = Date.now();
-      while (!(window.App && window.Companies && (window._openCompanySafe || Companies.openDetail)) && Date.now() - t0 < 20000) await sl(250);
-      if (!openNow(id)) return;
-      if (!boot) return;
-      // ræsing: halda prófílnum opnum gegnum sjálfvirku lendingarnar (sala t≈1500ms)
-      const deadline = Date.now() + 8000;
+      while (!ready() && Date.now() - t0 < 20000) await sl(250);
+      if (!ready()) return;
+      openNow(id);
+      const deadline = Date.now() + ms;
+      let reopened = 0;
       while (Date.now() < deadline && !userTouched) {
         await sl(300);
-        if (!onCompanies()) { console.log('[357] sýnin rak burt — opna aftur'); openNow(id); }
+        if (!detailOpen(id)) { reopened++; openNow(id); }
       }
+      if (reopened) console.log('[357] prófíll #' + id + ' opnaður aftur ' + reopened + 'x gegnum ræsinguna');
     } finally { busy = false; }
   }
-  window.addEventListener('hashchange', () => { const id = parseHash(location.hash); if (id) go(id, false); });
+  window.addEventListener('hashchange', () => { const id = parseHash(location.hash); if (id) setTimeout(() => go(id, 3000), 350); });
   if (BOOT_ID) {
-    const start = () => setTimeout(() => go(BOOT_ID, true), 400);
+    const start = () => setTimeout(() => go(BOOT_ID, 8000), 400);
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   }
-  window.CoDeeplink = { open: id => go(id, false), parseHash, bootId: BOOT_ID, version: '357c' };
-  console.log('[patch-357] fyrirtæki djúptenging #companies/<id>', BOOT_ID || '');
+  window.CoDeeplink = { open: id => go(Number(id), 3000), parseHash, detailOpen, bootId: BOOT_ID, version: '357d' };
+  console.log('[patch-357] fyrirtæki djúptenging #company/<id>', BOOT_ID || '');
 })();
 /* === END FYRIRTÆKI DJÚPTENGING === */
