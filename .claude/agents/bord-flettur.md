@@ -45,6 +45,17 @@ ofan á öllu, z-index 2147481000) og opnar prófílinn; komi ekkert ack innan 9
 Hubbinn fær id-in úr `op=stada.kunnaIds` (nafn → id); í venjulegum vafra opnar hann appið í nýjum flipa.
 `window.CoDeeplink.open(id)` / `.detailOpen(id)`.
 
+## Þjónustuborð → fyrirtæki: spjaldið tengist fyrirtækinu (06.09.2026, patch 358)
+
+`js/patches/358-verkbord-fyrirtaeki.js` (Verkefnalisti e3e61225, skrifað í Cowork-lotu sem komst ekki að ýta; tillagan
+hét 350 en það númer var tekið). Undir `input[data-field="customer_nafn"]` á opnu spjaldi (231) kemur reitur:
+„🏢 Opna fyrirtæki" (`_openCompanySafe`, varaleið `#company/<id>` → 357), „📄 Fyrri viðskipti" (`SalaCustomerHistory.open`),
+LIFANDI tækjalisti talinn úr `uttaeki` (fyrirtaeki_id) í hvert sinn sem spjald opnast, viðvörun „telst hvergi" fyrir
+tæki á status sem síast burt úr öllum listum („Í lagi" 154 / „ok" 74 í grunni 06.09.2026 — Kirkjuvalla-gallinn),
+úrelt sýnd dauf (lögmæt staða), síðasta úttektarsala (`solur` source=uttekt, kt → nafn) og hvort hún sé óbókfærð.
+Nafnauppfletting afmáð (lágstafir, broddar burt) og segir berum orðum ef nafn finnst ekki / á við fleiri en eitt.
+Snertir EKKI 231. `window.VbFyrirtaeki`.
+
 ## Bakk-takkinn — ÞRÍR patchar, ekki blanda þeim saman
 
 Bakk er leyst á þremur aðskildum lögum. Áður en þú breytir einhverju hér:
