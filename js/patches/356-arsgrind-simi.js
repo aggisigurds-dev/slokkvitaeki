@@ -37,7 +37,9 @@
     r(['.sk-svc-grid'], 'grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important;max-width:100%!important'),
     r(['.sk-svc-card'], 'padding:8px 9px 7px!important;border-radius:10px!important;min-width:0!important;max-width:100%!important;overflow:hidden!important'),
     r(['.sk-yrblock'], 'max-width:100%!important;min-width:0!important;padding:8px 0!important'),
-    r(['.sk-yrwrap'], 'max-width:100%!important;min-width:0!important;container-type:inline-size'),
+    r(['.sk-yrwrap'], 'max-width:100%!important;min-width:0!important'),
+    // ílátið er spjaldið sjálft svo samnings-grindin (utan .sk-yrwrap) fylgi líka
+    r(['._dyg-section.sk-card'], 'container-type:inline-size'),
     '@container (max-width:520px){' + r(['.sk-svc-grid'], 'grid-template-columns:minmax(0,1fr)!important') + '}',
     // tómt spjald = ein lína: haus + „engin …" + „+ skýrsla" í sömu línu
     r(['.sk-svc-card.sk-svc-empty'], 'opacity:.85!important;padding:6px 11px!important'),
