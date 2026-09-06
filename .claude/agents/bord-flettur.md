@@ -56,6 +56,21 @@ tæki á status sem síast burt úr öllum listum („Í lagi" 154 / „ok" 74 �
 Nafnauppfletting afmáð (lágstafir, broddar burt) og segir berum orðum ef nafn finnst ekki / á við fleiri en eitt.
 Snertir EKKI 231. `window.VbFyrirtaeki`.
 
+## Eitt samskiptabox á fyrirtækjaprófílnum (06.09.2026, patch 359) + DOM-lykkjur
+
+`js/patches/359-samskipti-eitt-box.js`: 295-boxið („Póststaða & samskipti") er FALIÐ á prófílnum (CSS), og það sem það
+gaf umfram 286 („Samskiptasaga & beiðnir", les beint úr `felag_samskipti`, síðasti póstur strax) er fært sem ræma
+inn í 286-kortið: umferðarljós (`CompanyMail.status`), merkin (uppsögn/flutt/kvörtun…), ⭐ Mikilvægt / 🔕 slökkva
+ósvarað (`CompanyMail.setImportant/setMuted` → AppSettings, samstillt). „Öll póstsaga" varð „⬇ Eldri póstar" neðst í
+póstlistanum (`company-mail?co=`, bætir við þeim sem 286 sýnir ekki). Kortið er skreytt utan frá með undirskrift og
+throttle; listamerkin 🔴🟡🟢 á Fyrirtæki í þjónustu eru óbreytt. 286 fékk 20 s öryggisventil á `_running` (hangi sókn
+læsti spjaldið úti). Ósk Agnars: „sjá seinasta póstinn strax", „sameina bæði póstforritin í eitt".
+
+**DOM-lykkjur (sama kvöld):** síðan mældist með ~2.500 MutationRecords/s í kyrrstöðu — 01-sala-suite vs 06-pos-fixes
+(`.sm-toolbtn` 170×/s) og 244-sidebar-svg-icons (`<path/>` ≠ `<path></path>`, 1.170×/s) — lagað → ~25/s. Afleiðingin
+var að debounce-vaktir hlupu aldrei (286 skjalfesti það sjálft 30.07). Aðferð + reglur: `.claude/skills/frontend-profiler`.
+Eftirstöðvar á Verkefnalista d9024a61.
+
 ## Bakk-takkinn — ÞRÍR patchar, ekki blanda þeim saman
 
 Bakk er leyst á þremur aðskildum lögum. Áður en þú breytir einhverju hér:
