@@ -95,23 +95,36 @@
   // Reikningur = customer_documents reikningur (vidskiptategund uttekt/null) ∪ uttekt_reikningur_facts
   // (sama heimild og Fyrirtæki í þjónustu / v_uttekt_ar) ∪ solur (vidskiptategund=uttekt, final).
   let _lastRepByF = new Map(), _lastRepByBase = new Map(), _lastInvByF = new Map(), _lastInvByBase = new Map();
+  // Reikningar flokkaðir per stað: u = úttektarreikningar (vidskiptategund uttekt/∅) · b = búðarkaup (bud) · o = óvisst/annað.
+  let _reikCntByF = new Map(), _reikCntByBase = new Map();
   async function loadDocYears() {
     if (!window.DB || !window.DB.fetchAll || !window.DB.sb) return;
     try {
       const data = await window.DB.fetchAll((from, to) =>
         window.DB.sb.from('customer_documents')
           .select('customer_base_id,fyrirtaeki_id,year,doc_type,is_duplicate,vidskiptategund')
-          .not('year', 'is', null)
           .range(from, to)
       );
       _docYearsByBase = new Map(); _docYearsByFyrirtaeki = new Map();
       _uttektYearsByBase = new Map(); _uttektYearsByFyrirtaeki = new Map();
       _lastRepByF = new Map(); _lastRepByBase = new Map(); _lastInvByF = new Map(); _lastInvByBase = new Map();
+      _reikCntByF = new Map(); _reikCntByBase = new Map();
       (data || []).forEach(r => {
-        const yr = +r.year;
-        const isUttekt = (r.doc_type || '').toLowerCase().startsWith('uttekt');
+        const yr = +r.year || 0;
         if (r.is_duplicate === true) return;   // tvítök telja hvergi (sama regla og v_uttekt_ar)
-        const isReik = (r.doc_type || '').toLowerCase() === 'reikningur' && (r.vidskiptategund == null || r.vidskiptategund === 'uttekt');
+        const dt = (r.doc_type || '').toLowerCase();
+        const isUttekt = dt.startsWith('uttekt');
+        // 07.09.2026 (Agnar): „aðskilja búðarkaup frá úttektar-invoicum" — R/B/? í Skjöl-pillunum.
+        // Regla hans: reikningur með „Akstur" innan í er úttektarreikningur; skjalagrunnurinn ber þá
+        // flokkun í vidskiptategund, sölur appsins fara gegnum v_solur_uttektarreikningar (sama regla).
+        if (dt === 'reikningur') {
+          const cat = (r.vidskiptategund == null || r.vidskiptategund === 'uttekt') ? 'u' : r.vidskiptategund === 'bud' ? 'b' : 'o';
+          const cnt = (map, k) => { const o = map.get(k) || { u: 0, b: 0, o: 0 }; o[cat]++; map.set(k, o); };
+          if (r.fyrirtaeki_id != null) cnt(_reikCntByF, String(r.fyrirtaeki_id));
+          if (r.customer_base_id != null) cnt(_reikCntByBase, String(r.customer_base_id));
+        }
+        if (!yr) return;                        // árlausir seðlar telja í fjölda en ekki í ár
+        const isReik = dt === 'reikningur' && (r.vidskiptategund == null || r.vidskiptategund === 'uttekt');
         const bump = (map, k) => { if (yr > (map.get(k) || 0)) map.set(k, yr); };
         if (isUttekt) { if (r.fyrirtaeki_id != null) bump(_lastRepByF, String(r.fyrirtaeki_id)); if (r.customer_base_id != null) bump(_lastRepByBase, String(r.customer_base_id)); }
         if (isReik)   { if (r.fyrirtaeki_id != null) bump(_lastInvByF, String(r.fyrirtaeki_id)); if (r.customer_base_id != null) bump(_lastInvByBase, String(r.customer_base_id)); }
@@ -140,9 +153,10 @@
         window.DB.fetchAll((from, to) => window.DB.sb.from('uttekt_reikningur_facts').select('fyrirtaeki_id,invoice_year').not('invoice_year', 'is', null).range(from, to))
           .then(rows => (rows || []).forEach(r => { if (r.fyrirtaeki_id != null && +r.invoice_year) bumpF(String(r.fyrirtaeki_id), +r.invoice_year); }))
           .catch(e => console.warn('[allir-vidsk] uttekt_reikningur_facts', e)),
-        window.DB.fetchAll((from, to) => window.DB.sb.from('solur').select('customer_id,created_at').eq('vidskiptategund', 'uttekt').eq('status', 'final').range(from, to))
-          .then(rows => (rows || []).forEach(r => { const y = r.created_at ? new Date(r.created_at).getFullYear() : 0; if (r.customer_id != null && y) bumpF(String(r.customer_id), y); }))
-          .catch(e => console.warn('[allir-vidsk] solur uttekt', e))
+        // v_solur_uttektarreikningar = final-sölur með vidskiptategund=uttekt EÐA línu með Akstur/Skýrslugerð (regla Agnars)
+        window.DB.fetchAll((from, to) => window.DB.sb.from('v_solur_uttektarreikningar').select('customer_id,ar').range(from, to))
+          .then(rows => (rows || []).forEach(r => { if (r.customer_id != null && +r.ar) bumpF(String(r.customer_id), +r.ar); }))
+          .catch(e => console.warn('[allir-vidsk] v_solur_uttektarreikningar', e))
       ]);
       _docYearsLoaded = true;
     } catch (_) {}
@@ -220,17 +234,27 @@
       _bankLoaded = true;
     } catch (_) { /* column may not exist yet on older deploys */ }
   }
-  function docPill(text, ok) {
-    return '<span style="display:inline-block;padding:1px 5px;border-radius:5px;font-size:10px;font-weight:700;' +
-      (ok ? 'color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;' : 'color:#5b6472;background:#eef1f6;border:1px solid #d7dde6;') + '">' + text + '</span>';
+  function docPill(text, ok, kind) {
+    const st = kind === 'bud' ? 'color:#1d4ed8;background:#eef3ff;border:1px solid #c6d6ff;'
+      : ok ? 'color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;' : 'color:#5b6472;background:#eef1f6;border:1px solid #d7dde6;';
+    return '<span style="display:inline-block;padding:1px 5px;border-radius:5px;font-size:10px;font-weight:700;' + st + '">' + text + '</span>';
+  }
+  // Reikningaflokkun fyrir röð: staður fyrst, kennitala (base) til vara — sama mynstur og lastYearsFor.
+  function reikCntFor(c) {
+    return _reikCntByF.get(String(c.id)) || (c.customer_base_id != null ? _reikCntByBase.get(String(c.customer_base_id)) : null) || null;
   }
   function docBadge(c) {
-    const d = c._docs;
-    if (!d) return '<span style="color:#8891a0;font-size:11px">—</span>';
-    return '<span style="display:inline-flex;gap:3px;white-space:nowrap" title="Samningur · Úttektarskýrslur · Reikningar">' +
-      docPill('S' + (d.samningur ? '✓' : '✗'), d.samningur) +
-      docPill('Ú' + d.uttektir, d.uttektir > 0) +
-      docPill('R' + d.reikningar, d.reikningar > 0) + '</span>';
+    const d = c._docs, rc = c._reik;
+    if (!d && !rc) return '<span style="color:#8891a0;font-size:11px">—</span>';
+    const sam = !!(d && d.samningur), utt = d ? (+d.uttektir || 0) : 0;
+    // R = úttektarreikningar · B = búðarkaup · ? = óvisst — 07.09.2026 (Agnar: „aðskilja búðarkaup frá úttektar-invoicum")
+    const reik = rc
+      ? docPill('R' + rc.u, rc.u > 0) + (rc.b ? docPill('B' + rc.b, true, 'bud') : '') + (rc.o ? docPill('?' + rc.o, false) : '')
+      : docPill('R' + (d ? (+d.reikningar || 0) : 0), !!(d && d.reikningar > 0));
+    return '<span style="display:inline-flex;gap:3px;white-space:nowrap" title="Samningur · Úttektarskýrslur · R = úttektarreikningar · B = búðarkaup · ? = óvisst">' +
+      docPill('S' + (sam ? '✓' : '✗'), sam) +
+      docPill('Ú' + utt, utt > 0) +
+      reik + '</span>';
   }
 
   function getAll() {
@@ -278,7 +302,8 @@
         _bankOnly: _bankOnlyIds.has(+c.id),
         _docYears: docYearsFor(c),
         _uttektYears: uttektYearsFor(c),
-        _last: lastYearsFor(c)
+        _last: lastYearsFor(c),
+        _reik: reikCntFor(c)
       };
     });
   }
@@ -994,8 +1019,8 @@
         <div class="data-table-scroll">
         <table class="data-table _av-table no-skin">
           <colgroup>
-            <col style="width:212px"><col style="width:190px"><col style="width:96px">
-            <col style="width:52px"><col style="width:84px"><col style="width:108px">
+            <col style="width:210px"><col style="width:176px"><col style="width:96px">
+            <col style="width:52px"><col style="width:84px"><col style="width:124px">
             <col style="width:128px"><col style="width:146px"><col style="width:172px">
           </colgroup>
           <thead>
