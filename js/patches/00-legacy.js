@@ -818,12 +818,19 @@ function hookGreida(){
                   });
               });
             })();
-            // 2) Prompt for barcodes/serials
-            promptForBarcodes(sale, {
-              nafn: sale.customer_nafn || snap.customer.nafn || '',
-              simi: snap.customer.simi || '',
-              kennitala: snap.customer.kennitala || ''
-            });
+            // 2) Prompt for barcodes/serials — SLÖKKT 2026-09-07 (ósk Agnars).
+            // Glugginn „Skráðu raðnúmer tækja" opnaðist sjálfkrafa eftir hverja
+            // sölu sem innihélt ný slökkvitæki, með einum reit á hvert stykki
+            // (7 keypt tæki = 7 reitir) og tafði afgreiðsluna. Fallið sjálft
+            // stendur óhreyft fyrir neðan; til að kveikja aftur er nóg að
+            // afkommenta kallið hér.
+            // Afleiðing: ný seld tæki skrást ekki lengur sjálfkrafa í `uttaeki`
+            // út frá sölunni — þau eru skráð eftir venjulegum leiðum í staðinn.
+            // promptForBarcodes(sale, {
+            //   nafn: sale.customer_nafn || snap.customer.nafn || '',
+            //   simi: snap.customer.simi || '',
+            //   kennitala: snap.customer.kennitala || ''
+            // });
           }
         });
     },300);
