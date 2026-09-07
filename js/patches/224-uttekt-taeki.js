@@ -510,7 +510,10 @@
       '.uttekt-col-r #_ctc-section table th,.uttekt-col-r #_ctc-section table td{padding:8px 8px !important}',
       '.uttekt-col-r #_ctc-section table th:last-child,.uttekt-col-r #_ctc-section table td:last-child{white-space:nowrap}',
       '.uttekt-col-r #_ctc-section table td:nth-child(2),.uttekt-col-r #_ctc-section table td:nth-child(4),.uttekt-col-r #_ctc-section table td:nth-child(5),.uttekt-col-r #_ctc-section table td:nth-child(6){white-space:nowrap}',
-      '@media(max-width:1420px){.uttekt-cols{flex-direction:column}.uttekt-col-r{flex:1 1 auto;width:100%;max-width:none;min-width:0}}',
+      // 07.09.2026 (Agnar, S26 í tölvusíðu-ham = 980 px): í column-stefnu gildir flex-basis:0 um HÆÐINA og
+      // align-items:flex-start lét vinstri dálkinn skreppa í fit-content (106 px) — tækjataflan varð 1 dálkur
+      // með autt svæði til hægri. Stretch + width:100% á báða dálka þegar staflað er.
+      '@media(max-width:1420px){.uttekt-cols{flex-direction:column;align-items:stretch}.uttekt-col-l{flex:0 0 auto;width:100%;max-width:100%}.uttekt-col-r{flex:1 1 auto;width:100%;max-width:none;min-width:0}}',
       '.ut-bulk{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 15px;background:var(--ink1);color:#fff}',
       '.ut-bulk.show{display:flex}',
       '.ut-bulk-cnt{font-weight:800;font-size:13px}',
