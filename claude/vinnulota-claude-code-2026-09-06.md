@@ -74,3 +74,5 @@ Charlize-færslur 415–425. Commit-númer vísa í `slokkvitaeki` nema annað s
 ## Viðbót 07.09 (síðdegis) — deploy-reglan
 
 - Netlify-krítur fóru í deploy: 1.031 deploy 18.08–07.09 = 15.465 af 16.636 krítum. Nú birtir aðeins [deploy] í haus-commiti (deploy.yml) eða morgunkeyrsla 06:10 UTC; brunaholf sama með netlify.toml ignore + morning-deploy.yml. Þetta commit er prófun á ýtingu ÁN [deploy] — á ekki að birtast.
+
+- Athugið: merkið er bókstaflegt. Commit-skilaboð sem nefna það í texta („ÁN [deploy]") kveikja deploy — skrifið „deploy-merkið" í venjulegum skilaboðum. Prófunin 16:17 féll á þessu, ekki á reglunni.
