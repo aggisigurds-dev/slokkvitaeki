@@ -60,13 +60,13 @@
     const sb = SB(); if (!sb) return null;
     if (saleId) {
       try {
-        const r = await sb.from('solur').select('id,num,status,samtals').eq('id', saleId).limit(1);
+        const r = await sb.from('solur').select('id,num,status,samtals,paid_at,krafa_sent_at,invoiced_at').eq('id', saleId).limit(1);   // 07.09.2026: staða reiknings á ársyfirlit 274
         const row = r && r.data && r.data[0];
         if (row && row.status !== 'void') return row;
       } catch (_) {}
     }
     try {
-      const q = await sb.from('solur').select('id,num,status,samtals,created_at,athugasemdir')
+      const q = await sb.from('solur').select('id,num,status,samtals,created_at,athugasemdir,paid_at,krafa_sent_at,invoiced_at')
         .eq('source', 'brunakerfi').eq('customer_id', coId).neq('status', 'void')
         .order('created_at', { ascending: false }).limit(50);
       const rows = (q && q.data) || [];

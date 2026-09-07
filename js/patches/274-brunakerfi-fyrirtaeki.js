@@ -160,6 +160,18 @@
       '#_bkc-overlay ._bkc-tbl th{font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:5px 8px;border-bottom:1px solid #eef0f3}' +
       '#_bkc-overlay ._bkc-tbl td{padding:6px 8px;border-bottom:1px solid #eef0f3;font-size:12.5px}' +
       '#_bkc-overlay ._bkc-empty{font-size:12.5px;color:#8b93a1;font-style:italic;padding:8px 0}' +
+      '#_bkc-overlay ._bkc-legend{font-size:11px;color:#8b93a1;display:flex;align-items:center;gap:6px;margin:0 0 4px}' +
+      '#_bkc-overlay ._bkc-yr{border-top:1px solid #eef0f3;padding:9px 0 7px}#_bkc-overlay ._bkc-yr:first-of-type{border-top:0}' +
+      '#_bkc-overlay ._bkc-yrhd{display:flex;align-items:center;gap:8px;margin-bottom:5px}#_bkc-overlay ._bkc-yrhd small{color:#8b93a1;font-size:11px}' +
+      '#_bkc-overlay ._bkc-yrlbl{font-weight:800;font-size:15px;color:#1f2937}#_bkc-overlay ._bkc-yrlbl._ok{color:#166b3a}#_bkc-overlay ._bkc-yrlbl._warn{color:#8a6100}#_bkc-overlay ._bkc-yrlbl._miss{color:#b45309}' +
+      '#_bkc-overlay ._bkc-pill._ok{background:#dcf1e4;color:#166b3a}#_bkc-overlay ._bkc-pill._warn{background:#fdf3d7;color:#8a6100}#_bkc-overlay ._bkc-pill._doc{background:#e8ecf3;color:#3b4653}#_bkc-overlay ._bkc-pill._miss{background:#fff7ed;color:#b45309;border:1px dashed #f59e0b}' +
+      '#_bkc-overlay ._bkc-yrrow{display:grid;grid-template-columns:10px 84px minmax(0,1fr);align-items:center;column-gap:8px;padding:3px 0}' +
+      '#_bkc-overlay ._bkc-dot{width:9px;height:9px;border-radius:50%;display:inline-block}#_bkc-overlay ._bkc-dot.ok{background:#22c55e}#_bkc-overlay ._bkc-dot.miss{width:7px;height:7px;background:transparent;border:2px dashed #f59e0b}' +
+      '#_bkc-overlay ._bkc-tag{font-size:9px;font-weight:800;color:#6b7280;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:99px;padding:1px 7px;text-align:center;letter-spacing:.04em}' +
+      '#_bkc-overlay ._bkc-yrbody{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12.5px;min-width:0}' +
+      '#_bkc-overlay ._bkc-yrtxt{color:#334155}#_bkc-overlay ._bkc-yrmiss{color:#b45309;font-style:italic;font-size:12px}' +
+      '#_bkc-overlay ._bkc-invst{font-weight:800;font-size:10.5px;text-transform:uppercase;padding:1px 7px;border-radius:99px;background:#e8ecf3;color:#3b4653}#_bkc-overlay ._bkc-invst._greiddur{background:#dcf1e4;color:#166b3a}#_bkc-overlay ._bkc-invst._sendur{background:#dbeafe;color:#1e40af}#_bkc-overlay ._bkc-invst._stofnaður{background:#fdf3d7;color:#8a6100}' +
+      '@media (max-width:600px){#_bkc-overlay ._bkc-yrrow{grid-template-columns:10px 70px minmax(0,1fr)}}' +
       '@media (max-width:960px){#_bkc-overlay ._bkc-grid{grid-template-columns:1fr}}' +
       '</style>' +
       '<div class="_bkc-top">' +
@@ -259,45 +271,74 @@
     const oldDocs = C.docs.filter(d => !docIds.has(d.id));
     const newest = C.reports[0] || null;
 
-    // skýrslu-raðir (appsins)
-    const repRows = C.reports.map(r => {
-      const fin = r.status === 'final';
-      const doc = fin && r.doc_id ? C.docs.find(d => d.id === r.doc_id) : null;
-      const url = doc ? (driveUrl(doc.drive_file_id) || storageUrl(doc.storage_path)) : '';
-      const v = verdOf(r);
-      return '<div class="_bkc-row">' +
-        '<span class="_bkc-st" style="' + (fin ? 'background:#dcf1e4;color:#166b3a' : 'background:#fdf3d7;color:#8a6100') + '">' + (fin ? 'LOKIÐ' : 'DRÖG') + '</span>' +
-        '<div style="flex:1;min-width:150px"><div style="font-weight:700;font-size:13.5px">🔥 Brunakerfisskýrsla · ' + esc(r.year || '') + '</div>' +
-        '<div style="font-size:11px;color:#8b93a1">Úttekt ' + esc(r.uttekt_nr || '—') + ' · breytt ' + esc(String(r.updated_at || '').slice(0, 10)) + (v.lines ? ' · ' + v.lines + ' verðlínur' : '') + '</div></div>' +
-        (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna brunakerfisskýrsluna (PDF)">📄 Skýrsla</a>' : '') +
-        (r._inv && r._inv.id ? '<button type="button" class="_bkc-act _ghost" data-invpdf="' + r.id + '" title="Opna reikning ' + esc(r._inv.num || '') + ' (PDF)">🧾 Reikningur</button>' : '') +
-        (fin ? '<button type="button" class="_bkc-act" data-send="' + r.id + '" style="background:#0f766e" title="Senda skýrslu og/eða reikning í tölvupósti">📧 Senda</button>' : '') +
-        '<button type="button" class="_bkc-act _ghost" data-open="' + r.id + '">' + (fin ? '✏️ Breyta' : 'Halda áfram') + '</button>' +
-        (!fin ? '<button type="button" class="_bkc-act _del" data-del="' + r.id + '">🗑</button>' : '') +
-      '</div>';
-    }).join('');
-
-    // eldri söfnuð skjöl — mánaðar-val (ósk Agnars: „hvaða mánuði var síðasta
-    // skoðun"), 🗑 aftengja ranga skrá og ＋ bæta við réttri (sjá strip neðar)
+    // ── STAÐA EFTIR ÁRI (07.09.2026) — eins og Ársskoðun: eitt ár = ein blokk, skýrsla-lína + reikningur-lína,
+    //    grænn punktur = til, brotinn gulur = vantar. Skýrslur úr appinu og eldri Drive-skjöl í SÖMU röð, nýjast efst.
     const MONS = ['jan', 'feb', 'mar', 'apr', 'maí', 'jún', 'júl', 'ágú', 'sep', 'okt', 'nóv', 'des'];
-    const oldRows = oldDocs.map(d => {
-      const url = driveUrl(d.drive_file_id) || storageUrl(d.storage_path);
-      const curMon = d.doc_date ? +String(d.doc_date).slice(5, 7) : 0;
-      const monSel = d.year
-        ? '<select class="_bkc-monsel" data-doc="' + d.id + '" data-year="' + esc(d.year) + '" title="Mánuður skoðunar — vistast strax" ' +
-          'style="border:1px solid ' + (curMon ? '#a9dcbd' : '#d0d4da') + ';border-radius:8px;padding:6px 6px;font:inherit;font-size:12px;background:' + (curMon ? '#f2faf5' : '#fff') + '">' +
-          '<option value="">mán?</option>' +
-          MONS.map((m, i) => '<option value="' + (i + 1) + '"' + (curMon === i + 1 ? ' selected' : '') + '>' + m + '</option>').join('') +
-          '</select>'
-        : '';
-      return '<div class="_bkc-row">' +
-        '<span class="_bkc-st" style="background:#e8ecf3;color:#3b4653">' + esc(d.year || '—') + '</span>' +
-        '<div style="flex:1;min-width:130px"><div style="font-weight:600;font-size:13px">🔥 Brunakerfisskýrsla ' + esc(d.year || '') + '</div>' +
-        '<div style="font-size:11px;color:#8b93a1">' + esc(d.doc_date ? fmtDags(d.doc_date) : 'mánuð vantar') + (d.source ? ' · ' + esc(d.source) : '') + '</div></div>' +
-        monSel +
-        (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">Opna</a>' : '') +
-        (url ? '<button type="button" class="_bkc-act" data-docsend="' + d.id + '" data-sendkind="brunakerfi" style="background:#0f766e" title="Senda í tölvupósti">📧 Senda</button>' : '') +
-        '<button type="button" class="_bkc-act _del" data-docdel="' + d.id + '" title="Aftengja þetta skjal (röng skrá) — skráin sjálf helst í Drive">🗑</button>' +
+    const NOW = new Date().getFullYear();
+    const yrSet = new Set([NOW]);
+    C.reports.forEach(r => { if (+r.year) yrSet.add(+r.year); });
+    oldDocs.forEach(d => { if (+d.year) yrSet.add(+d.year); });
+    const yrs = [...yrSet].sort((a, b) => b - a);
+    const invLabel = inv => !inv ? '' : inv.paid_at ? 'greiddur' : inv.krafa_sent_at ? 'sendur' : (inv.invoiced_at || inv.status === 'final') ? 'stofnaður' : 'drög';
+    const dot = ok => '<span class="_bkc-dot ' + (ok ? 'ok' : 'miss') + '"></span>';
+    const tag = t => '<span class="_bkc-tag">' + t + '</span>';
+    const yearRows = yrs.map(y => {
+      const reps = C.reports.filter(r => +r.year === y);
+      const docs = oldDocs.filter(d => +d.year === y);
+      const fin = reps.find(r => r.status === 'final') || null;
+      const draft = reps.find(r => r.status !== 'final') || null;
+      const inv = (fin && fin._inv) || (draft && draft._inv) || null;
+      const hasRep = !!fin || docs.length > 0;
+      let pill, pc;
+      if (fin && inv && inv.paid_at) { pill = 'LOKIÐ · GREITT'; pc = 'ok'; }
+      else if (fin && inv) { pill = 'LOKIÐ ✓'; pc = 'ok'; }
+      else if (fin) { pill = 'SKÝRSLA LOKIÐ · VANTAR REIKNING'; pc = 'warn'; }
+      else if (draft) { pill = 'Í VINNSLU'; pc = 'warn'; }
+      else if (docs.length) { pill = 'SKÝRSLA (PDF)'; pc = 'doc'; }
+      else if (y === NOW) { pill = 'VANTAR'; pc = 'miss'; }
+      else { pill = 'EKKERT SKRÁÐ'; pc = 'miss'; }
+      // skýrsla-lína
+      let rep = '';
+      if (fin) {
+        const doc = fin.doc_id ? C.docs.find(d => d.id === fin.doc_id) : null;
+        const url = doc ? (driveUrl(doc.drive_file_id) || storageUrl(doc.storage_path)) : '';
+        const v = verdOf(fin);
+        rep += '<span class="_bkc-yrtxt"><b>Brunakerfisskýrsla ' + esc(fin.year || y) + '</b> · úttekt ' + esc(fin.uttekt_nr || '—') + ' · breytt ' + esc(String(fin.updated_at || '').slice(0, 10)) + (v.lines ? ' · ' + v.lines + ' verðlínur' : '') + '</span>' +
+          (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna skýrsluna (PDF)">📄 Skýrsla</a>' : '') +
+          '<button type="button" class="_bkc-act" data-send="' + fin.id + '" style="background:#0f766e" title="Senda skýrslu og/eða reikning í tölvupósti">📧 Senda</button>' +
+          '<button type="button" class="_bkc-act _ghost" data-open="' + fin.id + '">✏️ Breyta</button>';
+      }
+      if (draft) {
+        rep += (rep ? '<br>' : '') + '<span class="_bkc-yrtxt"><b>Drög</b> · úttekt ' + esc(draft.uttekt_nr || '—') + ' · breytt ' + esc(String(draft.updated_at || '').slice(0, 10)) + '</span>' +
+          '<button type="button" class="_bkc-act _ghost" data-open="' + draft.id + '">Halda áfram</button>' +
+          '<button type="button" class="_bkc-act _del" data-del="' + draft.id + '">🗑</button>';
+      }
+      docs.forEach(d => {
+        const url = driveUrl(d.drive_file_id) || storageUrl(d.storage_path);
+        const curMon = d.doc_date ? +String(d.doc_date).slice(5, 7) : 0;
+        const monSel = '<select class="_bkc-monsel" data-doc="' + d.id + '" data-year="' + esc(d.year) + '" title="Mánuður skoðunar — vistast strax" ' +
+          'style="border:1px solid ' + (curMon ? '#a9dcbd' : '#d0d4da') + ';border-radius:8px;padding:5px 6px;font:inherit;font-size:12px;background:' + (curMon ? '#f2faf5' : '#fff') + '">' +
+          '<option value="">mán?</option>' + MONS.map((m, i) => '<option value="' + (i + 1) + '"' + (curMon === i + 1 ? ' selected' : '') + '>' + m + '</option>').join('') + '</select>';
+        rep += (rep ? '<br>' : '') + '<span class="_bkc-yrtxt"><b>Brunakerfisskýrsla ' + esc(d.year || y) + '</b> (PDF) · ' + esc(d.doc_date ? fmtDags(d.doc_date) : 'mánuð vantar') + (d.source ? ' · ' + esc(d.source) : '') + '</span>' + monSel +
+          (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">Opna</a>' : '') +
+          (url ? '<button type="button" class="_bkc-act" data-docsend="' + d.id + '" data-sendkind="brunakerfi" style="background:#0f766e" title="Senda í tölvupósti">📧 Senda</button>' : '') +
+          '<button type="button" class="_bkc-act _del" data-docdel="' + d.id + '" title="Aftengja þetta skjal (röng skrá) — skráin sjálf helst í Drive">🗑</button>';
+      });
+      if (!rep) rep = '<span class="_bkc-yrmiss">' + (y === NOW ? 'engin skoðunarskýrsla enn — ＋ Ný skoðunarskýrsla hér að neðan' : 'vantar skýrslu') + '</span>';
+      // reikningur-lína
+      let invHtml;
+      if (inv) {
+        const lab = invLabel(inv);
+        const owner = (fin && fin._inv === inv) ? fin : draft;
+        invHtml = '<span class="_bkc-yrtxt"><b>' + esc(inv.num || 'reikningur') + '</b>' + (inv.samtals ? ' · ' + fmtKr(+inv.samtals) : '') + ' · <span class="_bkc-invst _' + lab + '">' + lab + '</span></span>' +
+          (owner ? '<button type="button" class="_bkc-act _ghost" data-invpdf="' + owner.id + '" title="Opna reikninginn (PDF)">🧾 Reikningur</button>' : '');
+      } else {
+        invHtml = '<span class="_bkc-yrmiss">' + (fin ? 'vantar reikning — stofnast með „Stofna drög" í stöðulínunni efst' : draft ? 'kemur þegar skýrslan er kláruð' : docs.length ? 'enginn reikningur skráður í appinu' : '—') + '</span>';
+      }
+      return '<div class="_bkc-yr">' +
+        '<div class="_bkc-yrhd"><span class="_bkc-yrlbl _' + pc + '">' + y + '</span><span class="_bkc-st _bkc-pill _' + pc + '">' + pill + '</span>' + (reps.length + docs.length > 1 ? '<small>' + (reps.length + docs.length) + ' færslur</small>' : '') + '</div>' +
+        '<div class="_bkc-yrrow">' + dot(hasRep) + tag('SKÝRSLA') + '<div class="_bkc-yrbody">' + rep + '</div></div>' +
+        '<div class="_bkc-yrrow">' + dot(!!inv) + tag('REIKNINGUR') + '<div class="_bkc-yrbody">' + invHtml + '</div></div>' +
       '</div>';
     }).join('');
     const addFileStrip =
@@ -366,12 +407,12 @@
       '</div>' +
       '<div class="_bkc-grid">' +
         '<div>' +
-          '<div class="_bkc-card"><div class="_bkc-ch">🔥 Brunakerfisskýrslur<small>' + C.reports.length + ' í appinu · ' + oldDocs.length + ' eldri skjöl</small></div><div class="_bkc-body">' +
-            (repRows || '<div class="_bkc-empty">Engin skýrsla í appinu enn.</div>') +
+          '<div class="_bkc-card"><div class="_bkc-ch">🔥 Brunakerfi — staða eftir ári<small>' + C.reports.length + ' í appinu · ' + oldDocs.length + ' eldri skjöl</small></div><div class="_bkc-body">' +
+            '<div class="_bkc-legend"><span class="_bkc-dot ok"></span> til &nbsp; <span class="_bkc-dot miss"></span> vantar</div>' +
+            yearRows +
             '<button type="button" class="_bkc-new" id="_bkc-new">＋ Ný skoðunarskýrsla</button>' +
-            (oldDocs.length ? '' : addFileStrip) +
+            addFileStrip +
           '</div></div>' +
-          (oldDocs.length ? '<div class="_bkc-card"><div class="_bkc-ch">Eldri skýrslur &amp; skjöl<small>söfnuð úr Drive/tölvum</small></div><div class="_bkc-body">' + oldRows + addFileStrip + '</div></div>' : '') +
         '</div>' +
         '<div>' +
           '<div class="_bkc-card"><div class="_bkc-ch">Þjónustusamningur<small>' + (C.samningar.length || 'enginn skráður') + '</small></div><div class="_bkc-body">' +
