@@ -81,6 +81,15 @@ sem þjónninn endurhleður (SAMSTILLT-reglan heldur). uttaeki hefur ekki update
 skemabreytingar. `window.RaesiCache.stada()` sýnir hydratedAt/snapAge; `RaesiCache.hreinsa()` tæmir. Bili IndexedDB
 gerist ekkert. Ástæða: Agnar „fyrirtækjasíður oft mjög lengi að opnast" → „já máttu reyna endurbæta".
 
+## Þjónustuborð: mál tengjast fyrirtæki með AUÐKENNI (07.09.2026)
+
+`thjonustubeidni.fyrirtaeki_id` (FK → fyrirtaeki, migration `thjonustubeidni_fyrirtaeki_id`, 142 mál bakfyllt þar sem
+nafnið passaði nákvæmlega við eitt fyrirtæki; 631 mál eru einstaklingar/frjáls texti og fá ekkert id). 231: `loadCompanies`
+ber nú `fid`+`src` á fyrirtækjaraðir, ✏️ Tengja (`selco-save`) og nýtt mál skrifa `fyrirtaeki_id` (null ef nafnið er
+ekki fyrirtæki). 358f: reiturinn les `fyrirtaeki_id` málsins fyrst (🔗 fest tenging), nafn til vara; finnist fyrirtækið
+aðeins eftir nafni býður hann „📌 Festa tengingu" sem skrifar id + customer_base_id á málið. `customer_nafn` er
+birtingarnafn, ekki lykill (villuleit-reglan „röng join"). Agnar: „uppfæra þjónustuborðið svo það sé hægt að vinna með það".
+
 ## Bakk-takkinn — ÞRÍR patchar, ekki blanda þeim saman
 
 Bakk er leyst á þremur aðskildum lögum. Áður en þú breytir einhverju hér:
