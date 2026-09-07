@@ -150,6 +150,17 @@
         (t.naesta ? '<div>📅 Næsta skoðun ' + dags(t.naesta) + (t.framYfir ? ' · <b style="' + S.warn + '">' + t.framYfir + ' tæki komin fram yfir</b>' : '') + '</div>' : '<div style="' + S.dim + '">📅 Engin skoðunardagsetning á virkum tækjum</div>') +
         (k.punktar ? '<div>📝 <b>' + k.punktar.n + ' punkt' + (k.punktar.n === 1 ? 'ur bíður' : 'ar bíða') + ' í Drög-stöð</b><div style="' + S.dim + ';padding-left:18px">' + k.punktar.linur.map(esc).join('<br>') + '</div></div>' : '<div style="' + S.dim + '">📝 Engir punktar í Drög-stöð</div>') +
         '</div></div>';
+    const v = d.vis;
+    const visHtml = !v ? '' :
+      '<div style="margin-top:6px;border-top:1px dashed var(--brd,#d9dee5);padding-top:6px"><span style="' + S.lbl + '">Vísbendingar um afgreiðslu</span> <span style="' + S.dim + '">— eftir að málið varð til ' + dags(d.malStofnad) + '. Sönnunargögn, ekki dómur: þú lokar.</span>' +
+        '<div style="display:grid;gap:3px;margin-top:3px">' +
+        (v.solur.length
+          ? v.solur.map(x => '<div>🧾 <b>' + esc(x.num) + '</b> · ' + dags(x.d) + ' · ' + isk(x.kr) + ' kr · <span style="' + (x.teg === 'úttekt' ? S.ok : S.warn) + '">' + esc(x.teg) + '</span>' + (x.linur.length ? '<div style="' + S.dim + ';padding-left:18px">' + esc(x.linur.join(' · ')) + '</div>' : '') + '</div>').join('')
+          : '<div style="' + S.dim + '">🧾 Engin sala á kúnnann eftir að málið varð til</div>') +
+        (v.skyrslur.length
+          ? v.skyrslur.map(x => '<div>📄 ' + esc(x.doc || 'skjal') + (x.ar ? ' ' + esc(x.ar) : '') + ' · ' + dags(x.d) + (x.nr ? ' · ' + esc(x.nr) : '') + '</div>').join('')
+          : '<div style="' + S.dim + '">📄 Engin skýrsla/skjal skráð eftir að málið varð til</div>') +
+        '</div></div>';
     const hooksHtml =
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
         '<button type="button" class="btn btn-sm" data-vbf="sala" data-fid="' + co.id + '" data-kt="' + esc(co.kennitala || '') + '" data-nafn="' + esc(co.nafn) + '" data-afsl="' + esc(co.afslattur_pct || 0) + '" title="Opna Sölu með þennan kúnna valinn">🧾 Nýr reikningur</button>' +
@@ -175,7 +186,7 @@
             ? esc(d.sala.num) + ' · ' + dags(d.sala.created_at) + ' · ' + isk(d.sala.samtals) + ' kr' + (d.sala.invoiced_at ? '' : ' · <span style="' + S.warn + '">óbókfærð</span>')
             : '<span style="' + S.warn + '">engin</span>') +
         '</div>' +
-        skynHtml + hooksHtml +
+        skynHtml + visHtml + hooksHtml +
       '</div>';
   }
 
@@ -186,8 +197,8 @@
     const c = TICKET.get(tid); if (c && Date.now() - c.t < 60000) return c;
     const SB = getSB(); if (!SB) return null;
     try {
-      const r = await SB.from('thjonustubeidni').select('fyrirtaeki_id,customer_nafn').eq('id', tid).maybeSingle();
-      const v = { t: Date.now(), fid: r.data ? (r.data.fyrirtaeki_id || null) : null, nafn: r.data ? (r.data.customer_nafn || '') : '' };
+      const r = await SB.from('thjonustubeidni').select('fyrirtaeki_id,customer_nafn,created_at,title').eq('id', tid).maybeSingle();
+      const v = { t: Date.now(), fid: r.data ? (r.data.fyrirtaeki_id || null) : null, nafn: r.data ? (r.data.customer_nafn || '') : '', created: r.data ? r.data.created_at : null, title: r.data ? (r.data.title || '') : '' };
       TICKET.set(tid, v); return v;
     } catch (_) { return null; }
   }
@@ -196,6 +207,27 @@
     const r = await SB.from('thjonustubeidni').update({ fyrirtaeki_id: co.id, customer_base_id: co.customer_base_id || null, updated_at: new Date().toISOString() }).eq('id', tid);
     if (r.error) throw r.error;
     TICKET.delete(tid); return true;
+  }
+
+  /* ── vísbendingar um afgreiðslu (07.09.2026): SÝNA sönnunargögn, aldrei loka sjálfkrafa ── */
+  const TEG = { uttekt: 'úttekt', bud: 'búðarsala', ovisst: 'óvisst', brunakerfi: 'brunakerfi' };
+  async function visbendingar(co, since) {
+    const SB = getSB(); if (!SB || !co || !since) return null;
+    const kt = String(co.kennitala || '').replace(/\D/g, '');
+    const out = { solur: [], skyrslur: [] };
+    await Promise.all([
+      (async () => { try {
+        let q = SB.from('solur').select('num,created_at,samtals,source,vidskiptategund,linur,customer_id,customer_kt').eq('status', 'final').gt('created_at', since);
+        q = kt.length >= 10 ? q.or('customer_id.eq.' + co.id + ',customer_kt.eq.' + kt) : q.eq('customer_id', co.id);
+        const r = await q.order('created_at', { ascending: true }).limit(8);
+        out.solur = (r.data || []).filter(x => !x.hidden).map(x => ({ num: x.num, d: x.created_at, kr: Number(x.samtals) || 0, teg: TEG[x.vidskiptategund] || x.vidskiptategund || x.source || '', linur: (Array.isArray(x.linur) ? x.linur : []).map(l => String(l.desc || l.lysing || '').trim()).filter(Boolean).slice(0, 4) }));
+      } catch (_) {} })(),
+      (async () => { try {
+        const r = await SB.from('customer_documents').select('doc_type,year,created_at,invoice_number').eq('fyrirtaeki_id', co.id).gt('created_at', since).order('created_at', { ascending: true }).limit(8);
+        out.skyrslur = (r.data || []).map(x => ({ doc: x.doc_type, ar: x.year, d: x.created_at, nr: x.invoice_number }));
+      } catch (_) {} })(),
+    ]);
+    return out;
   }
 
   /* ── akkeri: VALIÐ MÁL (#vb-sel-co) fyrst, annars textareiturinn í ritlinum ─ */
@@ -250,9 +282,9 @@
         html = htmlFor({ villa: 'Nafnið „' + nafn + '" á við ' + f.hits.length + ' fyrirtæki (' + f.hits.map(h => '#' + h.id).join(', ') + ').', hint: '✏️ Tengja og veldu nákvæmara nafn.' });
       } else {
         const co = f.hits[0];
-        const [taeki, sala, skyn] = await Promise.all([taekiFyrir(co.id), sidastaSala(co), skynjarar(co)]);
+        const [taeki, sala, skyn, vis] = await Promise.all([taekiFyrir(co.id), sidastaSala(co), skynjarar(co), (tinfo && tinfo.created) ? visbendingar(co, tinfo.created) : Promise.resolve(null)]);
         html = (taeki && taeki.villa) ? htmlFor({ villa: 'Náði ekki í tækjalistann: ' + taeki.villa })
-                                      : htmlFor({ co, taeki: taeki || { virk: {}, falin: {}, urelt: {}, falinSt: {}, alls: 0 }, sala, skyn, fest: !!f.fest, tid: a.tid || null });
+                                      : htmlFor({ co, taeki: taeki || { virk: {}, falin: {}, urelt: {}, falinSt: {}, alls: 0 }, sala, skyn, fest: !!f.fest, tid: a.tid || null, vis, malStofnad: tinfo && tinfo.created ? tinfo.created : null });
       }
     } catch (e) { html = htmlFor({ villa: 'Náði ekki í tækjalistann: ' + (e && e.message ? e.message : e) }); }
     if (my !== seq) return;
@@ -345,7 +377,7 @@
   // og við sýnaskipti; MutationObserver sér um afganginn.
   [1200, 4000].forEach(t => setTimeout(() => { try { byggja(); } catch (_) {} }, t));
   window.addEventListener('hashchange', () => setTimeout(() => { try { byggja(); } catch (_) {} }, 800));
-  window.VbFyrirtaeki = { byggja, findAnchor, finnaFyrirtaeki, taekiFyrir, skynjarar, version: '358f' };
+  window.VbFyrirtaeki = { byggja, findAnchor, finnaFyrirtaeki, taekiFyrir, skynjarar, version: '358g' };
   console.log('[358-verkbord-fyrirtaeki] virkur');
 })();
 /* === END ÞJÓNUSTUBORÐ → FYRIRTÆKI === */
