@@ -2773,7 +2773,13 @@ console.log('[patch-master] loaded with all fixes');
       // 2026-08-17: Fyrirtæki í Þjónustu-taflan (153) fékk „Staða 2026"-haus í
       // mockup-eftirmyndinni — þessi inndæling greip hann og setti enskan
       // Active-fellilista ofan í stöðu-pilluna. Sama undanþága og hinir.
-      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal, #view-bakendi, #view-brunakerfi-yfirlit, #view-arsskodun')) return;
+      // 2026-09-07: „Fyrri viðskipti" (patch 253, #_sch-modal) — pöruð kredit-
+      // röð (paired, undir foreldrisreikningnum) er forskeytt „↳" fyrir dagsetn-
+      // inguna í dálki 0 (t.d. „↳03/09/2026"), svo dagsetningar-varnarreglan
+      // fyrir neðan (byrjar á tölustaf) missti af henni og setti tækja-fellilista
+      // ofan í kredit-línuna („↩ Kredit" hvarf, R-000867 dæmi frá Agnari).
+      // Sama undanþága og hinir.
+      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal, #view-bakendi, #view-brunakerfi-yfirlit, #view-arsskodun, #_sch-modal')) return;
       // Check if this table has STAÐA column
       var ths = table.querySelectorAll('th');
       var statusIdx = -1;
