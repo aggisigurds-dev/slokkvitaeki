@@ -26,6 +26,7 @@
   // (deilt með patch 199 og Claude). 'human' → glóandi grænn depill · 'claude'
   // → blár depill (Claude yfirfór, bíður staðfestingar).
   let fcMap = null, fcLoading = false;   // co_id(str) → { year(str) → status }
+  let fcMeta = null;                     // co_id(str) → { year(str) → { at:ms, human:bool } } — hvenær flaggið var skrifað og hvort maður skrifaði það
   function fcStat(coId,y){ var m=fcMap&&fcMap[String(coId)]; return (m&&m[String(y)])||null; }
 
   // Slökkvitækja-ársmerki = úttektarskýrsla. Brunakerfi er ANNAÐ kerfi
@@ -159,7 +160,7 @@
     invLoading = false;
   }
 
-  let locMap = null, locLoading = false;
+  let locMap = null, locLoading = false, locAt = null;   // locAt: co_id(str) → { year(str) → created_at (ms) nýjustu staðréttu skýrslu }
   async function loadLoc(){
     if (locLoading || locMap) return; locLoading = true;
     try {
@@ -170,10 +171,10 @@
       // þær BEINT ÚT (.not drive_file_id is null) svo árs-dálkurinn sýndi grátt „·"
       // þótt skýrslan væri til — t.d. JDÓ ehf. 2026. Nú fylgja báðar gerðir með.
       const rows = await fetchAll(() => sb.from('customer_documents')
-        .select('fyrirtaeki_id,year,drive_file_id,storage_path')
+        .select('fyrirtaeki_id,year,drive_file_id,storage_path,created_at')
         .eq('doc_type','uttektarskyrsla').not('fyrirtaeki_id','is',null)
         .or('drive_file_id.not.is.null,storage_path.not.is.null'));
-      const map = {};
+      const map = {}, atMap = {};
       rows.forEach(x => {
         if (x.fyrirtaeki_id == null || !x.year) return;
         // 2026-08-20: storage-first + authed proxy (Drive rotnar / óskráðar skrár
@@ -184,8 +185,12 @@
         if (!u) return;
         const k = String(x.fyrirtaeki_id);
         (map[k] = map[k] || {})[String(x.year)] = u;
+        // 07.09.2026: hvenær skýrslan varð til — svo eldra gap-flagg geti vikið (sjá staleGap).
+        const _t = Date.parse(x.created_at) || 0;
+        atMap[k] = atMap[k] || {};
+        atMap[k][String(x.year)] = Math.max(atMap[k][String(x.year)] || 0, _t);
       });
-      locMap = map;
+      locMap = map; locAt = atMap;
       // rebuild the year cells so location-precise links replace kt-wide ones
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
@@ -265,10 +270,14 @@
     if (fcLoading || (fcMap && !force)) return; fcLoading = true;
     try {
       const sb = window.DB && DB.sb; if (!sb) { fcLoading = false; return; }
-      const rows = await fetchAll(() => sb.from('year_factcheck').select('co_id,year,status'));
-      const map = {};
-      rows.forEach(x => { if (x.co_id != null && x.year) (map[String(x.co_id)] = map[String(x.co_id)] || {})[String(x.year)] = x.status; });
-      fcMap = map;
+      const rows = await fetchAll(() => sb.from('year_factcheck').select('co_id,year,status,updated_at,human_by'));
+      const map = {}, meta = {};
+      rows.forEach(x => {
+        if (x.co_id == null || !x.year) return;
+        (map[String(x.co_id)] = map[String(x.co_id)] || {})[String(x.year)] = x.status;
+        (meta[String(x.co_id)] = meta[String(x.co_id)] || {})[String(x.year)] = { at: Date.parse(x.updated_at) || 0, human: !!x.human_by };
+      });
+      fcMap = map; fcMeta = meta;
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
       process();
@@ -419,7 +428,16 @@
         const fst = fcStat(coId, y);
         const confirmed = fst === 'human';
         const isClaude  = fst === 'claude';
-        const isGap     = fst === 'gap';
+        // 07.09.2026 (Agnar, Kirkjuvellir '26 rautt þótt skýrsla + reikningur væru til: „Afhverju er ekki
+        // hægt að láta þetta rusl bara virka"): VÉLSKRIFAÐ gap-flagg (year_factcheck, human_by tómt) sem er
+        // ELDRA en staðrétt úttektarskýrsla (customer_documents uttektarskyrsla á ÞESSUM fyrirtaeki_id) er
+        // úrelt — sönnunin kom á eftir dóminum. 13 slík fundust sama dag (Kirkjuvellir, Center Hótel ×5,
+        // Bleksmiðjan, Metal, Mítra …) og voru leiðrétt í grunninum; þessi vörn stoppar endurtekningu.
+        // Mannlegt gap stendur áfram. Skjal sem er ELDRA en flaggið stendur líka (sópurinn sá það og hafnaði).
+        const _fcm = (fcMeta && fcMeta[coId] && fcMeta[coId][y]) || null;
+        const _repAt = (locAt && locAt[coId] && locAt[coId][y]) || 0;
+        const staleGap = fst === 'gap' && !!_fcm && !_fcm.human && _repAt > 0 && _fcm.at > 0 && _repAt > _fcm.at;
+        const isGap     = fst === 'gap' && !staleGap;
         const isNow = (y === String(new Date().getFullYear()));
         const hasRepDoc = !!(u || f);
         const hasInvYear = hasReikYear(coId, kt, y, ktCount);
