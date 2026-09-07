@@ -76,7 +76,11 @@ function taekiAfLinu(desc) {
     .replace(/[óò]/g, 'o').replace(/[úù]/g, 'u').replace(/ý/g, 'y')
     .replace(/þ/g, 'th').replace(/æ/g, 'ae').replace(/ð/g, 'd').replace(/ö/g, 'o');
   // O-hringur má ALDREI lesast sem tæki þótt hann fylgi hverri hleðslu.
-  if (/o-?hring|udastut|limmid|skilti|rafhlod|sjukra/.test(t)) return null;
+  // 2026-09-07 (Agnar): CO₂ 100 gr. er búðarvara — „við notum aldrei CO2 100gr
+  // í úttektum". Hún nefnir tegundina og slapp því inn sem 50 „tæki" á einni
+  // búðarsölu (R-000488, Bílaverkstæði Íslands: 2 tæki á staðnum, 51 á mæli).
+  // Gjaldalínur fylgja með af sömu ástæðu: „CO₂ byrjunargjald" er gjald, ekki tæki.
+  if (/o-?hring|udastut|limmid|skilti|rafhlod|sjukra|gjald|\b100\s*gr/.test(t)) return null;
   if (/lettv|abf|frod/.test(t)) return 'lettvatn';
   if (/duft|abc|pfc/.test(t)) return 'duft';
   if (/co2|co₂|kolsyr/.test(t)) return 'co2';
@@ -127,7 +131,7 @@ function linurAf(s) {
        .eq('status','active'), which silently dropped any unit." */
     allar('uttaeki?select=id,fyrirtaeki_id&status=neq.urelt&order=id'),
     allar('arsskodun_report_facts?select=fyrirtaeki_id,report_year,total_devices,parse_ok&order=fyrirtaeki_id'),
-    allar('solur?select=customer_id,created_at,linur,is_credit,status&order=created_at.desc'),
+    allar('solur?select=customer_id,created_at,linur,is_credit,status,vidskiptategund&order=created_at.desc'),
   ]);
 
   const profill = new Map();
@@ -140,6 +144,11 @@ function linurAf(s) {
   const reikn = new Map();
   sol.forEach(s => {
     if (s.is_credit || s.status === 'void' || s.status === 'drog') return;
+    // 2026-09-07 (Agnar): búðarsala er ekki úttektarreikningur. Áður tók mælirinn
+    // SÍÐUSTU sölu með tækjalínum, svo ein lausasala yfir borðið gat rænt
+    // reikningstölunni af úttektinni — t.d. Colas Gullhella „1 tæki" 04.09 á móti
+    // 16 í skýrslu. Búðarsölur eru því hunsaðar hér.
+    if (s.vidskiptategund === 'bud') return;
     const k = String(s.customer_id);
     if (reikn.has(k)) return;                      // listinn er nýjast-fyrst
     const L = linurAf(s);
