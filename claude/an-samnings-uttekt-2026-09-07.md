@@ -2,6 +2,10 @@
 
 Slökkvitæki ehf · 7. september 2026 · unnið úr Allir viðskiptavinir (157) + skjalagrunni. Gagnvirka útgáfan: [an-samnings-uttekt-2026-09-07.html](an-samnings-uttekt-2026-09-07.html). **Engu breytt** — listinn er til yfirferðar; 🔥-takkinn á síðunni setur í þjónustu.
 
+## Staða 07.09.2026 kl. 12:30 — 36 sett aftur í þjónustu
+
+Að ósk Agnars („mátt kannski bara setja fyrirtækin aftur í þjónustu, ég hendi þeim aftur út þegar ég er búinn að skoða þau betur") voru **36 fyrirtæki** sett í þjónustu ( +  í stillingum + færsla í ). Afrit fyrir: . **Sleppt (5):** Gára ehf. (aukaþjónusta með skipakúta, óregluleg búðarsala), GK-bílar ehf. (rútufyrirtæki, koma með slatta á sumrin), Partýbær ehf. (annar greiðandi sem á heima í þjónustu), Staðgreitt (staðgreiðslukúnninn) og ICS ehf. (bank-greiðandi). Þau eru merkt ⏸ í töflunni.
+
 ## Hvernig var leitað
 
 - **Án samnings** = eins og síðan skilgreinir það: ekki `er_i_thjonustu`, engin skráning í fyrirtækjaþjónustu/brunakerfi/ferðaþjónustu í stillingum, engin virk tæki. 441 slíkir (bank-greiðendur faldir).
