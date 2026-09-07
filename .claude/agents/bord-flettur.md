@@ -90,6 +90,17 @@ ekki fyrirtæki). 358f: reiturinn les `fyrirtaeki_id` málsins fyrst (🔗 fest 
 aðeins eftir nafni býður hann „📌 Festa tengingu" sem skrifar id + customer_base_id á málið. `customer_nafn` er
 birtingarnafn, ekki lykill (villuleit-reglan „röng join"). Agnar: „uppfæra þjónustuborðið svo það sé hægt að vinna með það".
 
+## Brunakerfi-síða fyrirtækis: staða eftir ári (07.09.2026, 274 + 291)
+
+274 (`_bkc-overlay`) sýnir nú EITT kort „🔥 Brunakerfi — staða eftir ári" í stað tveggja (Brunakerfisskýrslur / Eldri
+skýrslur & skjöl): hvert ár er blokk með stöðupillu (LOKIÐ · GREITT / LOKIÐ ✓ / SKÝRSLA LOKIÐ · VANTAR REIKNING / Í VINNSLU /
+SKÝRSLA (PDF) / VANTAR / EKKERT SKRÁÐ), skýrsla-línu (app-skýrsla final/drög OG Drive-skjöl, mánaðarval, Opna/Senda/🗑) og
+reikningur-línu (`_inv` úr 291: num · kr · drög/stofnaður/sendur/greiddur). Grænn punktur = til, brotinn gulur = vantar —
+sama myndmál og Ársskoðun (199). Yfirstandandi ár er alltaf með (VANTAR ef ekkert). Sömu data-attributes og áður
+(`data-open/del/send/invpdf/docsend/docdel`, `._bkc-monsel`) svo víringin er óbreytt. 291 `findInvoice` ber nú
+paid_at/krafa_sent_at/invoiced_at og stöðulínan efst notar sama orðalag. Ósk Agnars: „óskýrt hvað er búið… 2026 niður
+hjá eldri skýrslum… líkara ársskoðun".
+
 ## Bakk-takkinn — ÞRÍR patchar, ekki blanda þeim saman
 
 Bakk er leyst á þremur aðskildum lögum. Áður en þú breytir einhverju hér:
