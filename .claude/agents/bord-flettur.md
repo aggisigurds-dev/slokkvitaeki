@@ -105,6 +105,13 @@ Gildra: bstal-content-skin + bstal-polish setja `.view table tbody td{padding:10
 vegna !important á td-padding og `no-skin` á töflunni (annars 49 px raðir og klipptur aðgerðadálkur).
 351 (á staðnum) reiknar colspan úr `row.children.length`, svo dálkafjöldinn er frjáls.
 
+**Reikningaflokkun (157c, sama dag):** Skjöl-pillurnar eru S/Ú/R/B/? — R = úttektarreikningar (reikningur með
+vidskiptategund uttekt eða ∅), B = búðarkaup (bud), ? = óvisst/annað; `_reikCntByF/_reikCntByBase` úr sömu
+customer_documents-sókn (nú án `year`-síu; árlausir seðlar telja í fjölda, ekki í ár). Regla Agnars: reikningur
+með „Akstur" innan í er úttektarreikningur → sýnin `v_solur_uttektarreikningar` (final-sölur með uttekt EÐA
+Akstur/Skýrslugerð-línu) gefur 🧾-árið. Payday-reikningar hafa engar línur í grunninum, svo reglan er aðeins
+sannreynanleg á sölum appsins og í uttekt_reikningur_facts (060). Yfirferðarlisti: `claude/an-samnings-uttekt-2026-09-07.md`.
+
 ## Brunakerfi-síða fyrirtækis: staða eftir ári (07.09.2026, 274 + 291)
 
 274 (`_bkc-overlay`) sýnir nú EITT kort „🔥 Brunakerfi — staða eftir ári" í stað tveggja (Brunakerfisskýrslur / Eldri
