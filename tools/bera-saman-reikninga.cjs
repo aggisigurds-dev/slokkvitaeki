@@ -141,10 +141,12 @@ async function allar(slod) {
   });
 
   if (listi && vikja.length) {
-    console.log('\n  reikn.  skýrsla  munur   kt / ár        staðir');
+    console.log('\n  reikn.  skýrsla  munur   kt / ár        staðir      (E = einstaða)');
     console.log('  ──────  ───────  ─────   ───────────    ─────────────────────────');
-    vikja.sort((a, b) => Math.abs(b.reikn - b.sky) - Math.abs(a.reikn - a.sky))
+    vikja.filter(v => !process.argv.includes('--einstada') || v.ein)
+      .sort((a, b) => Math.abs(b.reikn - b.sky) - Math.abs(a.reikn - a.sky))
       .forEach(v => {
+        process.stdout.write(v.ein ? 'E ' : '  ');
         console.log('  ' + String(v.reikn).padStart(6) + '  ' + String(v.sky).padStart(7) + '  ' +
           String(v.reikn - v.sky).padStart(5) + '   ' + v.k.replace('|', ' / ') + '   ' +
           [...new Set(v.stadir)].slice(0, 3).join(', ').slice(0, 60));
