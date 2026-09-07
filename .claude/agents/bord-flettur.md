@@ -90,6 +90,21 @@ ekki fyrirtæki). 358f: reiturinn les `fyrirtaeki_id` málsins fyrst (🔗 fest 
 aðeins eftir nafni býður hann „📌 Festa tengingu" sem skrifar id + customer_base_id á málið. `customer_nafn` er
 birtingarnafn, ekki lykill (villuleit-reglan „röng join"). Agnar: „uppfæra þjónustuborðið svo það sé hægt að vinna með það".
 
+## Allir viðskiptavinir (157): töflusnið eins og Fyrirtæki í þjónustu (07.09.2026)
+
+Listinn (`renderList`) notar nú `.data-table-wrap/.data-table.no-skin` með eigin CSS `_av-tbl-css` sem er afrit
+af `_ensureMockCss` í 153 (153 má ekki snerta): dökkt málm-band í haus, 44 px raðir, `._co`/`._kt` staflað,
+50 raðir á síðu (`state._page`, `_tfoot` SÝNI a–b AF n, #_av-pgprev/#_av-pgnext; ný sía/leit/röðun → síða 1).
+Athugasemd er ein-lína `input._av-note._note` (þunn punktalína — Agnar: „textaboxið svo yfirþyrmandi"), vistast
+800 ms eftir síðasta staf og strax við Enter/blur; `data-save` pending/saved/error litar línuna og `saveNote`
+skilar false þegar supabase-js skilar {error}. Dálkur SÍÐAST (`_last` úr `lastYearsFor`): 📝 síðasta
+úttektarskýrsla og 🧾 síðasti úttektarreikningur — customer_documents (uttektarskyrsla / reikningur uttekt|null,
+is_duplicate=false) á fyrirtaeki_id, ∪ uttekt_reikningur_facts, ∪ solur (uttekt, final); base-id aðeins til vara
+og þá strikað (via=kt). Litir eins og árs-perur 153: í ár grænt, í fyrra gull, eldra rautt. Röðun `last`.
+Gildra: bstal-content-skin + bstal-polish setja `.view table tbody td{padding:10px 14px!important}` — þess
+vegna !important á td-padding og `no-skin` á töflunni (annars 49 px raðir og klipptur aðgerðadálkur).
+351 (á staðnum) reiknar colspan úr `row.children.length`, svo dálkafjöldinn er frjáls.
+
 ## Brunakerfi-síða fyrirtækis: staða eftir ári (07.09.2026, 274 + 291)
 
 274 (`_bkc-overlay`) sýnir nú EITT kort „🔥 Brunakerfi — staða eftir ári" í stað tveggja (Brunakerfisskýrslur / Eldri
