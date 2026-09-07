@@ -51,7 +51,7 @@
     const SB = getSB(); if (!SB) return [];
     if (coCache && Date.now() - coCacheAt < 120000) return coCache;
     if (window.Companies && Array.isArray(Companies.list) && Companies.list.length) { coCache = Companies.list; coCacheAt = Date.now(); return coCache; }
-    const r = await SB.from('fyrirtaeki').select('id,nafn,kennitala,er_i_thjonustu,afslattur_pct,netfang').is('deleted_at', null).range(0, 2999);
+    const r = await SB.from('fyrirtaeki').select('id,nafn,kennitala,er_i_thjonustu,afslattur_pct,netfang,customer_base_id').is('deleted_at', null).range(0, 2999);
     coCache = r.data || []; coCacheAt = Date.now();
     return coCache;
   }
@@ -163,6 +163,8 @@
           '<button type="button" class="btn btn-outline btn-sm" data-vbf="saga" data-fid="' + co.id + '" data-src="fyrirtaeki" data-kt="' + esc(co.kennitala || '') + '" data-nafn="' + esc(co.nafn) + '">📄 Fyrri viðskipti</button>' +
           '<span style="' + S.dim + '">#' + co.id + ' · ' + esc(co.kennitala || 'kt vantar') + ' · ' +
             (co.er_i_thjonustu ? '<span style="' + S.ok + '">í þjónustu</span>' : '<span style="' + S.warn + '">EKKI í þjónustu</span>') + '</span>' +
+          (d.fest ? '<span style="' + S.ok + ';font-size:11.5px" title="Málið geymir auðkenni fyrirtækisins (fyrirtaeki_id) — tengingin er óháð stafsetningu nafnsins">🔗 fest tenging</span>'
+                  : (d.tid ? '<button type="button" class="btn btn-outline btn-sm" data-vbf="festa" data-tid="' + d.tid + '" data-fid="' + co.id + '" title="Skrifa auðkenni fyrirtækisins á málið — tengingin heldur þótt nafnið breytist">📌 Festa tengingu</button>' : '')) +
         '</div>' +
         '<div><span style="' + S.lbl + '">Tækjalisti núna</span> — ' + virkAlls + ' virk' + (ureltAlls ? ' <span style="' + S.dim + '">· ' + ureltAlls + ' úrelt</span>' : '') + '<br>' + talnalisti(t.virk) + '</div>' +
         (falinAlls
@@ -177,6 +179,25 @@
       '</div>';
   }
 
+  /* ── málið: fyrirtaeki_id (07.09.2026) — fest tenging trompar nafn ───────── */
+  const TICKET = new Map();   // tid → { t, fid, nafn }
+  async function ticketInfo(tid) {
+    if (!tid) return null;
+    const c = TICKET.get(tid); if (c && Date.now() - c.t < 60000) return c;
+    const SB = getSB(); if (!SB) return null;
+    try {
+      const r = await SB.from('thjonustubeidni').select('fyrirtaeki_id,customer_nafn').eq('id', tid).maybeSingle();
+      const v = { t: Date.now(), fid: r.data ? (r.data.fyrirtaeki_id || null) : null, nafn: r.data ? (r.data.customer_nafn || '') : '' };
+      TICKET.set(tid, v); return v;
+    } catch (_) { return null; }
+  }
+  async function festa(tid, co) {
+    const SB = getSB(); if (!SB || !tid || !co) return false;
+    const r = await SB.from('thjonustubeidni').update({ fyrirtaeki_id: co.id, customer_base_id: co.customer_base_id || null, updated_at: new Date().toISOString() }).eq('id', tid);
+    if (r.error) throw r.error;
+    TICKET.delete(tid); return true;
+  }
+
   /* ── akkeri: VALIÐ MÁL (#vb-sel-co) fyrst, annars textareiturinn í ritlinum ─ */
   function findAnchor() {
     const co = document.getElementById('vb-sel-co');
@@ -186,7 +207,8 @@
       const span = co.querySelector('span');
       const txt = span ? span.textContent.trim() : '';
       const nafn = /Engin tenging/.test(txt) ? '' : txt.replace(/^🗂\s*/, '').trim();
-      return { el: co, nafn, mode: 'sel' };
+      const eb = co.querySelector('[data-act="editco"][data-id]');
+      return { el: co, nafn, mode: 'sel', tid: eb ? Number(eb.getAttribute('data-id')) || null : null };
     }
     const inp = document.querySelector('input[data-field="customer_nafn"]');
     if (inp) return { el: inp, nafn: String(inp.value || '').trim(), mode: 'ed' };
@@ -206,16 +228,20 @@
   async function byggja(a) {
     a = a || findAnchor(); if (!a) return;
     const nafn = a.nafn;
-    if (!nafn) { const h = document.getElementById(HOST_ID); if (h) h.remove(); return; }
+    const tinfo = a.tid ? await ticketInfo(a.tid) : null;
+    const fid = tinfo && tinfo.fid ? tinfo.fid : null;
+    if (!nafn && !fid) { const h = document.getElementById(HOST_ID); if (h) h.remove(); return; }
     const host = placeHost(a);
-    host.dataset.nafn = nafn;
-    const c = CACHE[nafn];
+    const key = (a.tid ? 't' + a.tid + '|' : '') + (fid ? 'f' + fid : nafn);
+    host.dataset.nafn = key;
+    const c = CACHE[key];
     if (c) { host.innerHTML = c.html; if (Date.now() - c.t < CACHE_MS) return; }
     else host.innerHTML = '<div style="' + S.wrap + ';' + S.dim + '">Sæki tækjalista…</div>';
     const my = ++seq;
     let html;
     try {
-      const f = await finnaFyrirtaeki(nafn);
+      let f = await finnaFyrirtaeki(nafn);
+      if (fid) { const all = await companies(); const hit = all.find(x => Number(x.id) === Number(fid)); if (hit) f = { stada: 'eitt', hits: [hit], fest: true }; }
       if (f.stada === 'ekkert') {
         const e = await finnaEinstakling(nafn);
         html = e ? htmlFor({ einst: e })
@@ -226,13 +252,13 @@
         const co = f.hits[0];
         const [taeki, sala, skyn] = await Promise.all([taekiFyrir(co.id), sidastaSala(co), skynjarar(co)]);
         html = (taeki && taeki.villa) ? htmlFor({ villa: 'Náði ekki í tækjalistann: ' + taeki.villa })
-                                      : htmlFor({ co, taeki: taeki || { virk: {}, falin: {}, urelt: {}, falinSt: {}, alls: 0 }, sala, skyn });
+                                      : htmlFor({ co, taeki: taeki || { virk: {}, falin: {}, urelt: {}, falinSt: {}, alls: 0 }, sala, skyn, fest: !!f.fest, tid: a.tid || null });
       }
     } catch (e) { html = htmlFor({ villa: 'Náði ekki í tækjalistann: ' + (e && e.message ? e.message : e) }); }
     if (my !== seq) return;
-    CACHE[nafn] = { t: Date.now(), html };
+    CACHE[key] = { t: Date.now(), html };
     const a2 = findAnchor();
-    if (a2 && a2.nafn === nafn) { const h2 = placeHost(a2); h2.dataset.nafn = nafn; h2.innerHTML = html; }
+    if (a2 && (a2.tid === a.tid) && (a2.nafn === nafn || fid)) { const h2 = placeHost(a2); h2.dataset.nafn = key; h2.innerHTML = html; }
   }
 
   document.addEventListener('click', function (e) {
@@ -264,6 +290,16 @@
       }, 450);
       return;
     }
+    if (act === 'festa') {
+      const tid = Number(t.getAttribute('data-tid')), cfid = Number(t.getAttribute('data-fid'));
+      t.disabled = true;
+      companies().then(all => festa(tid, all.find(x => Number(x.id) === cfid))).then(ok => {
+        if (window.Toast && Toast.show) Toast.show(ok ? '🔗 Tenging fest við mál #' + tid : '⚠ Tókst ekki að festa');
+        Object.keys(CACHE).forEach(k => { if (k.startsWith('t' + tid + '|')) delete CACHE[k]; });
+        byggja();
+      }).catch(e => { t.disabled = false; if (window.Toast && Toast.show) Toast.show('⚠ ' + (e && e.message || e)); });
+      return;
+    }
     if (act === 'punktur') {
       const nafn = t.getAttribute('data-nafn') || '';
       const raw = prompt('Punktur á ' + nafn + ' (Drög-stöð):', '');
@@ -285,7 +321,8 @@
     const a = findAnchor();
     const host = document.getElementById(HOST_ID);
     if (!a || !a.nafn) { if (host) host.remove(); return; }
-    if (!host || !host.isConnected || host.dataset.nafn !== a.nafn) byggja(a);
+    const want = (a.tid ? 't' + a.tid + '|' : '');
+    if (!host || !host.isConnected || !(host.dataset.nafn || '').startsWith(want) || (!a.tid && host.dataset.nafn !== a.nafn)) byggja(a);
   }
   let bidin = null, sidast = 0;
   function tikk() { bidin = null; sidast = Date.now(); try { athuga(); } catch (_) {} }
@@ -297,6 +334,7 @@
   // val á röð (selrow) → athuga strax á eftir endurteikningu 231
   document.addEventListener('click', function (e) {
     const r = e.target.closest && e.target.closest('[data-act="selrow"],[data-act="expand"],[data-act="selco-save"]');
+    if (r && r.getAttribute('data-act') === 'selco-save') { TICKET.clear(); Object.keys(CACHE).forEach(k => { if (k.startsWith('t')) delete CACHE[k]; }); }
     if (r) [350, 1200].forEach(t => setTimeout(() => { try { athuga(); } catch (_) {} }, t));
   }, true);
   document.addEventListener('change', function (e) {
@@ -307,7 +345,7 @@
   // og við sýnaskipti; MutationObserver sér um afganginn.
   [1200, 4000].forEach(t => setTimeout(() => { try { byggja(); } catch (_) {} }, t));
   window.addEventListener('hashchange', () => setTimeout(() => { try { byggja(); } catch (_) {} }, 800));
-  window.VbFyrirtaeki = { byggja, findAnchor, finnaFyrirtaeki, taekiFyrir, skynjarar, version: '358e' };
+  window.VbFyrirtaeki = { byggja, findAnchor, finnaFyrirtaeki, taekiFyrir, skynjarar, version: '358f' };
   console.log('[358-verkbord-fyrirtaeki] virkur');
 })();
 /* === END ÞJÓNUSTUBORÐ → FYRIRTÆKI === */
