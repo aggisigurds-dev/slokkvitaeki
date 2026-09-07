@@ -62,3 +62,11 @@ Charlize-færslur 415–425. Commit-númer vísa í `slokkvitaeki` nema annað s
 2. Sala eftir á ≠ mál afgreitt. Tólin sýna sönnunargögn, Agnar lokar.
 3. Auto-sync `[skip ci]` gleypir deploy: committa strax eða tómt commit.
 4. Tugir deploy-a + prófunarhleðslur á einu kvöldi tæma Netlify-kvótann — og lokunin tekur ALLT niður.
+
+## Viðbót 07.09 — Brunakerfi-síða fyrirtækis (274 + 291)
+
+- Ósk Agnars: „óskýrt hvað er búið… setja 2026 niður hjá eldri skýrslum… líkara ársskoðun".
+- 274: tvö kort (Brunakerfisskýrslur / Eldri skýrslur & skjöl) → EITT „🔥 Brunakerfi — staða eftir ári": ár = blokk með stöðupillu, skýrsla-lína, reikningur-lína, grænn/brotinn punktur eins og Ársskoðun. Sömu data-attributes, víring óbreytt. Lifandi b43a6ef.
+- 291b (165ec08): stöðulínan efst segir greiddur/sendur (paid_at/krafa_sent_at) í stað „stofnaður" — sannreynt á Borealis (#202): „R-000743 greiddur 387.532 kr"; ársblokkir 2026 LOKIÐ · GREITT og 2025 SKÝRSLA (PDF).
+- Audit varð rautt á tvítaki #923 „Allt fyrir garðinn ehf." (0 tilvísanir) → mjúk-eytt, grænt.
+- Á vélinni er ócommittuð breyting í 00-legacy.js (undanþága fyrir #_sch-modal, kredit-röð R-000867) úr ANNARRI lotu — ekki snert; fer með næstu alvöru ýtingu.
