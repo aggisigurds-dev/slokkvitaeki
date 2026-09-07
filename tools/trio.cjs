@@ -120,7 +120,7 @@ function linurAf(s) {
     return;
   }
 
-  const [co, ut, facts, sol] = await Promise.all([
+  const [co, ut, facts, sol, rfacts] = await Promise.all([
     allar('fyrirtaeki?select=id,nafn,er_i_thjonustu&deleted_at=is.null&order=id'),
     /* Í NOTKUN = allt NEMA 'urelt'. Ekki .eq('status','active').
        Mælt 01.09.2026: status ber FJÖGUR gildi — active 4891, urelt 482,
@@ -132,6 +132,12 @@ function linurAf(s) {
     allar('uttaeki?select=id,fyrirtaeki_id&status=neq.urelt&order=id'),
     allar('arsskodun_report_facts?select=fyrirtaeki_id,report_year,total_devices,parse_ok&order=fyrirtaeki_id'),
     allar('solur?select=customer_id,created_at,linur,is_credit,status,vidskiptategund&order=created_at.desc'),
+    /* 2026-09-07 (Agnar: „ætti að vera 544 trio"): POS-salan nær aðeins yfir 125
+       af þeim 555 sem eiga bæði prófíl og skýrslu — 405 eru rukkuð annars staðar
+       (Payday/dkPlus, eða reikningurinn er aðeins skjal) og áttu því enga þriðju
+       heimild. `uttekt_reikningur_facts` ber tækjatölu LESNA ÚR reikningnum
+       sjálfum (301 raðir, 260 félög) og fyllir 181 þeirra. Mælt: 125 → 306. */
+    allar('uttekt_reikningur_facts?select=fyrirtaeki_id,total_devices,invoice_year,invoice_number,invoice_date&order=fyrirtaeki_id'),
   ]);
 
   const profill = new Map();
@@ -155,8 +161,23 @@ function linurAf(s) {
     if (!L.length) return;
     let n = 0, aTaeki = false;
     L.forEach(l => { if (taekiAfLinu(l.desc)) { n += (+l.qty || 0); aTaeki = true; } });
-    if (aTaeki) reikn.set(k, { n, dags: String(s.created_at).slice(0, 10) });
+    if (aTaeki) reikn.set(k, { n, dags: String(s.created_at).slice(0, 10), hvadan: 'sala' });
   });
+
+  /* Varaleið: reikningur sem er aðeins til sem SKJAL. `uttekt_reikningur_facts`
+     ber tækjatöluna lesna úr honum. Fyllir aðeins í eyður — POS-salan hefur
+     alltaf forgang, enda er hún nákvæmari (línur með magni, ekki lesin tala). */
+  const urSkjali = new Map();                      // fid -> nýjasta reikningsárið
+  rfacts.forEach(r => {
+    if (r.total_devices == null || r.fyrirtaeki_id == null) return;
+    const k = String(r.fyrirtaeki_id);
+    if (reikn.has(k)) return;                      // POS-salan á forgang
+    const ar = +r.invoice_year || 0;
+    const fyrri = urSkjali.get(k);
+    if (fyrri && fyrri.ar >= ar) return;
+    urSkjali.set(k, { ar, n: +r.total_devices, dags: r.invoice_date || (ar ? String(ar) : '—') });
+  });
+  urSkjali.forEach((v, k) => reikn.set(k, { n: v.n, dags: v.dags, hvadan: 'skjal' }));
 
   if (EITT != null) {
     const k = String(EITT);
