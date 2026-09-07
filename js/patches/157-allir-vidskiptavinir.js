@@ -88,20 +88,33 @@
   let _docYearsByBase = new Map(), _docYearsByFyrirtaeki = new Map(), _docYearsLoaded = false;
   // Parallel maps scoped to doc_type='uttektarskyrsla' only — for the úttektarskýrsla 2025/26 chips.
   let _uttektYearsByBase = new Map(), _uttektYearsByFyrirtaeki = new Map();
+  // 07.09.2026 (Agnar): „sýna hvenær síðasta úttektarskýrsla eða úttektar-reikningur var gerð —
+  // hvaða ár". Síðasta ár per STAÐ (fyrirtaeki_id — aldrei kennitala, sbr. villuleit/systkini-kt);
+  // customer_base_id aðeins til vara þegar staðurinn á ekkert skjal með fyrirtaeki_id, og þá
+  // merkt „kt" svo röðin sýni strikaðan ramma. Skýrsla = customer_documents uttektarskyrsla.
+  // Reikningur = customer_documents reikningur (vidskiptategund uttekt/null) ∪ uttekt_reikningur_facts
+  // (sama heimild og Fyrirtæki í þjónustu / v_uttekt_ar) ∪ solur (vidskiptategund=uttekt, final).
+  let _lastRepByF = new Map(), _lastRepByBase = new Map(), _lastInvByF = new Map(), _lastInvByBase = new Map();
   async function loadDocYears() {
     if (!window.DB || !window.DB.fetchAll || !window.DB.sb) return;
     try {
       const data = await window.DB.fetchAll((from, to) =>
         window.DB.sb.from('customer_documents')
-          .select('customer_base_id,fyrirtaeki_id,year,doc_type')
+          .select('customer_base_id,fyrirtaeki_id,year,doc_type,is_duplicate,vidskiptategund')
           .not('year', 'is', null)
           .range(from, to)
       );
       _docYearsByBase = new Map(); _docYearsByFyrirtaeki = new Map();
       _uttektYearsByBase = new Map(); _uttektYearsByFyrirtaeki = new Map();
+      _lastRepByF = new Map(); _lastRepByBase = new Map(); _lastInvByF = new Map(); _lastInvByBase = new Map();
       (data || []).forEach(r => {
         const yr = +r.year;
         const isUttekt = (r.doc_type || '').toLowerCase().startsWith('uttekt');
+        if (r.is_duplicate === true) return;   // tvítök telja hvergi (sama regla og v_uttekt_ar)
+        const isReik = (r.doc_type || '').toLowerCase() === 'reikningur' && (r.vidskiptategund == null || r.vidskiptategund === 'uttekt');
+        const bump = (map, k) => { if (yr > (map.get(k) || 0)) map.set(k, yr); };
+        if (isUttekt) { if (r.fyrirtaeki_id != null) bump(_lastRepByF, String(r.fyrirtaeki_id)); if (r.customer_base_id != null) bump(_lastRepByBase, String(r.customer_base_id)); }
+        if (isReik)   { if (r.fyrirtaeki_id != null) bump(_lastInvByF, String(r.fyrirtaeki_id)); if (r.customer_base_id != null) bump(_lastInvByBase, String(r.customer_base_id)); }
         if (r.customer_base_id != null) {
           const k = String(r.customer_base_id);
           if (!_docYearsByBase.has(k)) _docYearsByBase.set(k, new Set());
@@ -121,8 +134,26 @@
           }
         }
       });
+      // Reikningsár líka úr uttekt_reikningur_facts og sölum appsins — allt á fyrirtaeki_id.
+      const bumpF = (k, y) => { if (y > (_lastInvByF.get(k) || 0)) _lastInvByF.set(k, y); };
+      await Promise.all([
+        window.DB.fetchAll((from, to) => window.DB.sb.from('uttekt_reikningur_facts').select('fyrirtaeki_id,invoice_year').not('invoice_year', 'is', null).range(from, to))
+          .then(rows => (rows || []).forEach(r => { if (r.fyrirtaeki_id != null && +r.invoice_year) bumpF(String(r.fyrirtaeki_id), +r.invoice_year); }))
+          .catch(e => console.warn('[allir-vidsk] uttekt_reikningur_facts', e)),
+        window.DB.fetchAll((from, to) => window.DB.sb.from('solur').select('customer_id,created_at').eq('vidskiptategund', 'uttekt').eq('status', 'final').range(from, to))
+          .then(rows => (rows || []).forEach(r => { const y = r.created_at ? new Date(r.created_at).getFullYear() : 0; if (r.customer_id != null && y) bumpF(String(r.customer_id), y); }))
+          .catch(e => console.warn('[allir-vidsk] solur uttekt', e))
+      ]);
       _docYearsLoaded = true;
     } catch (_) {}
+  }
+  // Síðasta ár skýrslu/reiknings fyrir röð: staður fyrst, kennitala (base) til vara — merkt via='kt'.
+  function lastYearsFor(c) {
+    const fid = String(c.id), base = c.customer_base_id != null ? String(c.customer_base_id) : null;
+    const repF = _lastRepByF.get(fid) || 0, invF = _lastInvByF.get(fid) || 0;
+    const rep = repF || (base && _lastRepByBase.get(base)) || 0;
+    const inv = invF || (base && _lastInvByBase.get(base)) || 0;
+    return { rep, inv, max: Math.max(rep, inv), repVia: repF ? 'stadur' : (rep ? 'kt' : ''), invVia: invF ? 'stadur' : (inv ? 'kt' : '') };
   }
   function docYearsFor(c) {
     const byBase = c.customer_base_id != null ? _docYearsByBase.get(String(c.customer_base_id)) : null;
@@ -246,7 +277,8 @@
         _docs: docsFor(c),
         _bankOnly: _bankOnlyIds.has(+c.id),
         _docYears: docYearsFor(c),
-        _uttektYears: uttektYearsFor(c)
+        _uttektYears: uttektYearsFor(c),
+        _last: lastYearsFor(c)
       };
     });
   }
@@ -351,6 +383,10 @@
       case 'docs':
         // Fewest docs first (so gaps surface). Nulls (no base match) sort last.
         result.sort((a, b) => ((a._docs ? a._docs.total : 999) - (b._docs ? b._docs.total : 999)) || collator.compare(String(a.nafn || ''), String(b.nafn || '')));
+        break;
+      case 'last':
+        // Nýjasta úttektar-ár fyrst (skýrsla eða reikningur); þeir sem eiga ekkert neðst.
+        result.sort((a, b) => ((b._last ? b._last.max : 0) - (a._last ? a._last.max : 0)) || collator.compare(String(a.nafn || ''), String(b.nafn || '')));
         break;
       case 'nafn':
       default:
@@ -528,27 +564,27 @@
           </div>
         </div>
 
-        <!-- Summary cards — spec §5 stat tiles -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px">
-          <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)" data-kpi="all" title="Sýna alla">
-            <div style="font-size:10.5px;font-weight:700;color:#8a93a5;letter-spacing:.14em">FJÖLDI</div>
-            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#11141c;margin-top:4px">${cntAll}</div>
-            <div style="font-size:11.5px;color:#9098a6;margin-top:3px">viðskiptavinir</div>
+        <!-- Stat tiles — sömu stærðir og ._ars-statgrid í Fyrirtæki í þjónustu (153): 11/13 px, 22 px tala -->
+        <div class="_av-statgrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px">
+          <div style="background:#fff;border:1px solid rgba(20,24,34,.1);border-radius:10px;padding:11px 13px;cursor:pointer" data-kpi="all" title="Sýna alla">
+            <div style="font-size:10px;font-weight:700;color:#8a93a5;text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
+            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:800;color:#11141c;line-height:1.1;margin-top:2px">${cntAll}</div>
+            <div style="font-size:10.5px;color:#8a93a5">viðskiptavinir</div>
           </div>
-          <div style="background:linear-gradient(180deg,#eaf7ef,#fff);border:1px solid #a7f3d0;border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)" data-kpi="fyrirt" title="Sía: fyrirtækjaþjónusta">
-            <div style="font-size:10.5px;font-weight:700;color:#047857;letter-spacing:.14em">Í ÞJÓNUSTU</div>
-            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#1f9d57;margin-top:4px">${cntInService}</div>
-            <div style="font-size:11.5px;color:#5b6472;margin-top:3px">${cntArs} fyrirtækjaþj. · ${cntBru} brunakerfi</div>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px;cursor:pointer" data-kpi="fyrirt" title="Sía: fyrirtækjaþjónusta">
+            <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Í þjónustu</div>
+            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${cntInService}</div>
+            <div style="font-size:10.5px;color:#16a34a">${cntArs} fyrirtækjaþj. · ${cntBru} brunakerfi</div>
           </div>
-          <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)" data-kpi="has-units" title="Sía: hefur tæki">
-            <div style="font-size:10.5px;font-weight:700;color:#8a93a5;letter-spacing:.14em">MEÐ TÆKI</div>
-            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#11141c;margin-top:4px">${cntWithUnits}</div>
-            <div style="font-size:11.5px;color:#9098a6;margin-top:3px">skráð slökkvitæki</div>
+          <div style="background:#fff;border:1px solid rgba(20,24,34,.1);border-radius:10px;padding:11px 13px;cursor:pointer" data-kpi="has-units" title="Sía: hefur tæki">
+            <div style="font-size:10px;font-weight:700;color:#8a93a5;text-transform:uppercase;letter-spacing:.05em">Með tæki</div>
+            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:800;color:#11141c;line-height:1.1;margin-top:2px">${cntWithUnits}</div>
+            <div style="font-size:10.5px;color:#8a93a5">skráð slökkvitæki</div>
           </div>
-          <div style="background:linear-gradient(180deg,#fff7e6,#fff);border:1px solid #fde68a;border-radius:14px;padding:16px 18px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18)" data-kpi="no-email" title="Sía: vantar netfang">
-            <div style="font-size:10.5px;font-weight:700;color:#b45309;letter-spacing:.14em">ÁN NETFANGS</div>
-            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;color:#c77a16;margin-top:4px">${cntNoEmail}</div>
-            <div style="font-size:11.5px;color:#9098a6;margin-top:3px">vantar tölvupóst</div>
+          <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:11px 13px;cursor:pointer" data-kpi="no-email" title="Sía: vantar netfang">
+            <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Án netfangs</div>
+            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${cntNoEmail}</div>
+            <div style="font-size:10.5px;color:#b45309">vantar tölvupóst</div>
           </div>
         </div>
 
@@ -645,6 +681,9 @@
       state.sort = (k === 'nafn') ? (state.sort === 'nafn' ? 'nafn-desc' : 'nafn') : k;
       saveState(); render(main);
     }));
+    // Síðuflettir listans (50 í einu, sjá renderList)
+    main.querySelector('#_av-pgprev')?.addEventListener('click', () => { state._page = Math.max(1, (state._page || 1) - 1); render(main); });
+    main.querySelector('#_av-pgnext')?.addEventListener('click', () => { state._page = (state._page || 1) + 1; render(main); });
     main.querySelectorAll('._av-xft').forEach(b => b.addEventListener('click', () => {
       const key = b.dataset.xfilter;
       const idx = state.xfilter.indexOf(key);
@@ -729,19 +768,29 @@
     main.querySelectorAll('._av-flag').forEach(b => {
       b.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); toggleReview(+b.dataset.coId); });
     });
-    // Athugasemdir auto-save with 800ms debounce per row.
+    // Athugasemd — þunn lína (eins og ferðanótan í Fyrirtæki í þjónustu, 153). Vistast
+    // sjálfkrafa 800 ms eftir síðasta staf og STRAX við Enter/blur. Litur línunnar segir
+    // stöðuna (gul = óvistað · græn = vistað · rauð = villa) — CSS á data-save. Áður
+    // sagði græni ramminn „vistað" líka þegar Supabase skilaði villu (supabase-js kastar
+    // ekki, skilar {error}) — saveNote athugar það núna.
     main.querySelectorAll('._av-note').forEach(ta => {
-      ta.addEventListener('input', e => {
-        const coId = +ta.dataset.coId;
+      const coId = +ta.dataset.coId;
+      const flush = () => {
+        clearTimeout(_noteTimers[coId]); _noteTimers[coId] = null;
+        saveNote(coId, ta.value).then(ok => {
+          if (!document.contains(ta)) return;
+          ta.dataset.save = ok === false ? 'error' : 'saved';
+          ta.title = ta.value || 'Athugasemd — vistast sjálfkrafa';
+          setTimeout(() => { if (document.contains(ta) && ta.dataset.save !== 'pending') delete ta.dataset.save; }, 1500);
+        });
+      };
+      ta.addEventListener('input', () => {
         clearTimeout(_noteTimers[coId]);
-        ta.style.borderColor = '#fcd34d'; // amber = unsaved
-        _noteTimers[coId] = setTimeout(() => {
-          saveNote(coId, ta.value).then(() => {
-            if (document.contains(ta)) ta.style.borderColor = '#86efac'; // green = saved
-            setTimeout(() => { if (document.contains(ta)) ta.style.borderColor = 'rgba(20,24,34,.14)'; }, 1200);
-          });
-        }, 800);
+        ta.dataset.save = 'pending';
+        _noteTimers[coId] = setTimeout(flush, 800);
       });
+      ta.addEventListener('blur', () => { if (_noteTimers[coId]) flush(); });
+      ta.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ta.blur(); } });
       ta.addEventListener('click', e => e.stopPropagation());
     });
     // Bulk select mode
@@ -835,74 +884,185 @@
   }
 
   // ── List (table) view — compact alternative to cards ───────────────────
+  // ── Listi — sama töflusnið og Fyrirtæki í þjónustu (153 renderTable) ──────────
+  // Agnar 07.09.2026: „textaboxið svo yfirþyrmandi, mætti bara vera þunn lína eins og
+  // fyrirtæki í þjónustu" + „uppsetningin svipað eins og fyrirtæki í þjónustu".
+  // Dökkt málm-band í haus, 44 px raðir, nafn+kt staflað, athugasemd sem ÞUNN
+  // punktalína (var 2ja lína textarea með ramma → ~106 px röð), 50 raðir á síðu með
+  // SÝNI a–b AF n + Fyrri/Næsta. Tölurnar eru afrit af _ensureMockCss í 153 — 153 má
+  // ekki snerta (ORYGGISNET), svo þetta er haldið samhljóða henni handvirkt.
+  function _ensureAvTblCss() {
+    if (document.getElementById('_av-tbl-css')) return;
+    const s = document.createElement('style');
+    s.id = '_av-tbl-css';
+    const V = '#view-allir-vidsk ';
+    const MONO = "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace";
+    s.textContent = [
+      V+'.data-table-wrap{border-radius:16px;border:1px solid rgba(20,24,34,.08);background:#fff;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)}',
+      V+'.data-table-scroll{overflow-x:auto}',
+      // Dálkasumman í <colgroup> er 1188 px = innihaldsbreiddin við 1440 px skjá með hliðarstiku;
+      // breiðari skjár teygir dálkana hlutfallslega, mjórri skrunar inni í .data-table-scroll.
+      V+'.data-table{width:100%;min-width:1100px;border-collapse:collapse;table-layout:fixed;font:inherit}',
+      V+'.data-table thead{position:sticky;top:0;z-index:2}',
+      // 245 (Brunastál content-skin) málar `.view table th` ljósgrá með !important — sama vopn og 153.
+      V+'.data-table thead tr{background:linear-gradient(180deg,#3a3d45 0%,#2a2d33 45%,#1b1d22 100%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 #000!important}',
+      V+'.data-table th{background:transparent!important;color:#f0f2f5!important;text-shadow:0 1px 1px rgba(0,0,0,.4)!important;border:0!important;text-transform:uppercase!important;font-weight:700!important;text-align:left;padding:11px 12px;font-size:10.5px;letter-spacing:.15em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      V+'.data-table th.center{text-align:center}',
+      V+'.data-table th.right{text-align:right}',
+      V+'.data-table th[data-sort]{cursor:pointer;user-select:none}',
+      V+'.data-table .sort-ar{font-size:9px;color:rgba(255,255,255,.5)!important;margin-left:5px}',
+      // 245 (bstal-content-skin) og bstal-polish setja `.view table tbody td{padding:10px 14px!important}`
+      // — það gerði raðirnar 49 px og klippti aðgerðadálkinn; !important hér er sama vopn og 153 notar.
+      V+'.data-table tbody td{padding:7px 12px!important;border-top:1px solid #eceff4;line-height:1.25;height:44px;white-space:nowrap;font-size:13px;color:#3a4250;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}',
+      V+'.data-table tbody td.center{text-align:center}',
+      V+'.data-table tbody td.right{text-align:right;padding-left:6px!important;padding-right:8px!important}',   // 5 takkar (153 px) rúmast í 172 px dálki
+      V+'.data-table tbody tr._av-row{cursor:pointer;transition:background .12s ease}',
+      V+'.data-table tbody tr._av-row:hover{background:#f7f9fd}',
+      V+'.data-table tbody tr._av-row:focus-visible{outline:none;background:#eef3ff;box-shadow:inset 0 0 0 2px rgba(47,95,224,.35)}',
+      V+'._co{display:block;font-size:13px;font-weight:600;color:#11141c;white-space:normal;overflow:visible;overflow-wrap:break-word;word-break:normal;line-height:1.2}',
+      V+'._kt{display:block;font-family:'+MONO+';font-size:10px;color:#8a93a5;letter-spacing:.02em;white-space:nowrap;line-height:1.2}',
+      V+'._rvnote{display:block;font-size:10.5px;color:#b45309;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}',
+      V+'._addr{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      V+'._post{font-family:'+MONO+';font-size:11px;font-weight:700;color:#8a93a5;margin-right:8px}',
+      V+'.data-table td.mono{font-family:'+MONO+';font-size:11.5px;color:#3a4250}',
+      V+'.data-table td.num{font-family:'+MONO+';font-size:13px;font-weight:700;color:#11141c;text-align:center}',
+      V+'.data-table td.num.tom{color:#cbd2dc;font-weight:400}',
+      // Þunna athugasemdalínan — orðrétt sömu tölur og ._note / input._ars-plannote í 153.
+      V+'._note{display:block;width:100%;min-width:0;max-width:100%;height:22px!important;min-height:22px!important;max-height:22px!important;border:0!important;border-bottom:1px dotted #c3c9d3!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#3a4250;font:inherit;font-size:12px!important;line-height:20px!important;padding:0 2px!important;margin:0;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V+'._note::placeholder{color:#c7ccd6;letter-spacing:.14em}',
+      V+'._note:hover{border-bottom-color:#9aa3b2!important}',
+      V+'._note:focus{outline:none;border-bottom-color:#2f5fe0!important;border-bottom-style:solid!important;background:#fff!important;color:#0f172a}',
+      // vistunarstaða á línunni sjálfri: gul = óvistað · græn = vistað · rauð = villa
+      V+'._note[data-save="pending"]{border-bottom:1px solid #f59e0b!important}',
+      V+'._note[data-save="saved"]{border-bottom:1px solid #22c55e!important}',
+      V+'._note[data-save="error"]{border-bottom:1px solid #dc2626!important}',
+      // SÍÐAST — sömu málm-gljáar og ._yr.both / .penda / .now í 153
+      V+'._av-last{display:inline-flex;gap:7px;align-items:center;justify-content:center}',
+      V+'._av-yr{display:inline-flex;align-items:center;gap:3px;font-style:normal;font-size:11px;line-height:1}',
+      V+'._av-yr b{font-family:'+MONO+';font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;border:1px solid #e7eaf0;background:#f4f6f9;color:#aab3c0;line-height:1.2}',
+      V+'._av-yr.ok b{color:#fff;background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
+      V+'._av-yr.prev b{color:#fff8e6;background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border-color:rgba(255,220,130,.45);text-shadow:0 1px 1px rgba(0,0,0,.35)}',
+      V+'._av-yr.old b{color:#fff;background:linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);border-color:#4d0a08;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
+      V+'._av-yr.none b{color:#c3cad6}',
+      V+'._av-yr.kt b{border-style:dashed;opacity:.85}',
+      V+'._av-notacell{min-width:0;overflow:hidden;vertical-align:middle}',
+      V+'._av-act{display:inline-flex;gap:3px;justify-content:flex-end;white-space:nowrap}',
+      V+'._av-svc{display:inline-flex;gap:4px}',
+      V+'._tfoot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-top:1px solid #eceff4;background:#fbfcfe}',
+      V+'._tfoot > span{font-family:'+MONO+';font-size:11px;letter-spacing:.08em;color:#5b6472}',
+      V+'._pager{display:flex;gap:6px}',
+      V+'._pager button{height:26px;padding:0 11px;border-radius:7px;border:1px solid #e2e6ed;background:#fff;color:#5b6472;font:inherit;font-size:12px;cursor:pointer}',
+      V+'._pager button:hover{border-color:#c3cad6;color:#3a4250}',
+      V+'._pager button[disabled]{opacity:.45;cursor:default}',
+      // patch 261 (app-hamur) þvingar .view button/input í 50 px — sama vörn og 153 notar
+      'body.appmode '+V+'._note{height:22px!important;min-height:22px!important;font-size:12px!important;padding:0 2px!important}',
+      'body.appmode '+V+'._pager button{min-height:26px!important;height:26px!important;font-size:12px!important;padding:0 11px!important}'
+    ].join('\n');
+    document.head.appendChild(s);
+  }
+
   function renderList(arr) {
-    // Spec §4 table recipe — sticky header on tinted #eef1f6, mono numbers, surface card.
-    const headerStyle = 'text-align:left;padding:11px 14px;font-size:10px;font-weight:700;color:#8a93a5;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap';
-    // Clickable sort headers. Arrow shows the active column/direction.
-    const arrow = key => key === 'nafn' ? (state.sort === 'nafn' ? ' ▲' : state.sort === 'nafn-desc' ? ' ▼' : '')
-                       : (state.sort === key ? ' ▲' : '');
-    const sortTh = (label, key, extra) => `<th data-sort="${key}" title="Raða eftir ${esc(label)}" style="${headerStyle}${extra || ''};cursor:pointer;user-select:none">${esc(label)}<span style="color:#2f5fe0">${arrow(key)}</span></th>`;
-    const cellStyle = 'padding:12px 14px;font-size:13px;color:#3a4250;vertical-align:middle;border-bottom:1px solid rgba(20,24,34,.05)';
+    _ensureAvTblCss();
+    // Síðuskipting eins og í 153: 50 í einu (eða stilling Stílstjórans, __peTablePer).
+    // Ný sía / leit / röðun → alltaf aftur á fyrstu síðu; annars klemmt við fjöldann.
+    const PER = (typeof window.__peTablePer === 'number' && window.__peTablePer > 0) ? window.__peTablePer : 50;
+    const sig = [state.filter, state.xfilter.join(','), state.search, state.sort].join('|');
+    if (sig !== state._pageSig) { state._pageSig = sig; state._page = 1; }
+    const totalRows = arr.length;
+    const pages = Math.max(1, Math.ceil(totalRows / PER));
+    if (!state._page || state._page > pages) state._page = 1;
+    const p0 = (state._page - 1) * PER;
+    const pageArr = arr.slice(p0, p0 + PER);
+
+    const arrow = key => {
+      const on = key === 'nafn' ? (state.sort === 'nafn' || state.sort === 'nafn-desc') : state.sort === key;
+      return '<span class="sort-ar">' + (on ? (state.sort === 'nafn-desc' ? '▼' : '▲') : '⇅') + '</span>';
+    };
+    const sortTh = (label, key, cls) => `<th data-sort="${key}"${cls ? ' class="' + cls + '"' : ''} title="Raða eftir ${esc(label)}">${esc(label)}${arrow(key)}</th>`;
+    const curYear = new Date().getFullYear();
+    // 📝 síðasta úttektarskýrsla · 🧾 síðasti úttektarreikningur — litir eins og árs-perurnar í 153:
+    // yfirstandandi ár grænt, í fyrra gull, eldra rautt, ekkert grátt. Strikað = skráð á kennitölu.
+    const yTag = (ico, y, via, what) => {
+      if (!y) return `<i class="_av-yr none" title="${what}: engin skráð">${ico}<b>—</b></i>`;
+      const cls = y >= curYear ? 'ok' : y === curYear - 1 ? 'prev' : 'old';
+      return `<i class="_av-yr ${cls}${via === 'kt' ? ' kt' : ''}" title="${what} ${y}${via === 'kt' ? ' (skráð á kennitölu, ekki þennan stað)' : ''}">${ico}<b>’${String(y).slice(2)}</b></i>`;
+    };
+    const pill = (txt, bg, fg, bd, title) => `<span title="${esc(title)}" style="background:${bg};color:${fg};font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:7px;border:1px solid ${bd}">${txt}</span>`;
 
     return `
-      <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)">
-        <div style="overflow-x:auto">
-          <table style="width:100%;min-width:960px;border-collapse:collapse;font:inherit">
-            <thead style="position:sticky;top:0;z-index:2">
-              <tr style="background:#eef1f6;box-shadow:0 1px 0 rgba(20,24,34,.1)">
-                ${sortTh('Nafn', 'nafn')}
-                ${sortTh('Kennitala', 'kt')}
-                ${sortTh('Heimilisfang', 'addr')}
-                ${sortTh('Sími', 'simi')}
-                ${sortTh('Tæki', 'units', ';text-align:center')}
-                <th style="${headerStyle}">Þjónusta</th>
-                ${sortTh('📄 Skjöl', 'docs')}
-                <th style="${headerStyle};min-width:180px">Athugasemdir</th>
-                <th style="${headerStyle};text-align:right;width:90px">Aðgerð</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${arr.map(c => {
-                const badges = [];
-                if (c._hasArs) badges.push('<span style="background:#fdecec;color:#c0241f;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:7px;border:1px solid #f3c6c4">🔥</span>');
-                if (c._hasBru) badges.push('<span style="background:#eef3ff;color:#2f5fe0;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:7px;border:1px solid #c6d6ff">🚨</span>');
-                if (c._hasFerda) badges.push('<span style="background:#e0f2fe;color:#0369a1;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:7px;border:1px solid #bae6fd">🚌</span>');
-                if (!c._hasArs && !c._hasBru && !c._hasFerda) badges.push('<span style="background:#f1f5f9;color:#8a93a5;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:7px;border:1px solid #e2e8f0">—</span>');
-                const editing = state.editId === c.id;
-                const eInput = (k, v) => `<input class="_av-ei" data-k="${k}" value="${esc(v == null ? '' : v)}" onclick="event.stopPropagation()" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid #93c5fd;border-radius:5px;font:inherit;font-size:11.5px">`;
-                return `
-                  <tr class="_av-row" data-co-id="${c.id}" style="cursor:pointer;transition:background .12s" onmouseover="this.style.background='#f3f6fc'" onmouseout="this.style.background='transparent'">
-                    <td style="${cellStyle}"><div style="font-size:13.5px;font-weight:600;color:#11141c">${state.selectMode ? `<input type="checkbox" class="_av-sel" data-co-id="${c.id}" ${state.selected.has(c.id) ? 'checked' : ''} onclick="event.stopPropagation()" style="margin-right:6px;width:15px;height:15px;vertical-align:middle">` : ''}${c.review_flag ? '<span title="' + esc(c.review_note || 'Til skoðunar') + '" style="color:#c77a16;margin-right:4px">⚑</span>' : ''}${esc(c.nafn || '—')}</div>${c.review_flag && c.review_note ? '<div style="font-weight:500;font-size:10.5px;color:#b45309;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">' + esc(c.review_note) + '</div>' : ''}</td>
-                    <td style="${cellStyle};font-family:'JetBrains Mono',ui-monospace,monospace;color:${c.kennitala?'#5b6472':'#cbd2dc'};font-size:11px">${editing ? eInput('kennitala', c.kennitala) : (esc(fmtKt(c.kennitala) || '—'))}</td>
-                    <td style="${cellStyle};color:#3a4250;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.heimilisfang || '')}">${editing ? eInput('heimilisfang', c.heimilisfang) : (esc(c.heimilisfang || '—'))}</td>
-                    <td style="${cellStyle};color:#3a4250;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px">${editing ? eInput('simi', c.simi) : (esc(c.simi || c.farsimi || '—'))}</td>
-                    <td style="${cellStyle};text-align:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;color:${c._unitCount>0?'#11141c':'#cbd2dc'}">${c._unitCount || '·'}</td>
-                    <td style="${cellStyle}"><div style="display:flex;gap:4px">${badges.join('')}</div></td>
-                    <td style="${cellStyle}">${docBadge(c)}</td>
-                    <td style="${cellStyle};padding:8px 10px" onclick="event.stopPropagation()">
-                      <textarea class="_av-note" data-co-id="${c.id}" placeholder="Athugasemdir..." rows="2"
-                        style="width:100%;min-width:170px;box-sizing:border-box;padding:5px 8px;border:1px solid rgba(20,24,34,.14);border-radius:7px;font:inherit;font-size:12px;color:#3a4250;resize:vertical;background:#fdfdfe;line-height:1.4;outline:none"
-                        onfocus="this.style.borderColor='#93c5fd';this.style.background='#fff'"
-                        onblur="this.style.borderColor='rgba(20,24,34,.14)';this.style.background='#fdfdfe'"
-                      >${esc(c.athugasemdir || '')}</textarea>
-                    </td>
-                    <td style="${cellStyle};text-align:right;white-space:nowrap">
-                      ${editing ? `
-                      <button class="_av-esave" data-co-id="${c.id}" type="button" title="Vista breytingar" style="padding:3px 9px;border:1px solid #86efac;background:#16a34a;color:#fff;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✓ Vista</button>
-                      <button class="_av-ecancel" type="button" title="Hætta við" style="padding:3px 7px;border:1px solid #cbd5e1;background:#fff;color:#64748b;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✕</button>
-                      ` : `
-                      <button class="_av-edit" data-co-id="${c.id}" type="button" title="Breyta kt / heimilisfangi / síma" style="padding:3px 7px;border:1px dashed #cbd5e1;background:#fff;color:#94a3b8;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✏</button>
-                      <button class="_av-flag" data-co-id="${c.id}" type="button" title="${c.review_flag?'Afmerkja (til skoðunar)':'Merkja til skoðunar + nóta'}" style="padding:3px 7px;border:1px ${c.review_flag?'solid #fcd34d':'dashed #cbd5e1'};background:${c.review_flag?'#fef3c7':'#fff'};color:${c.review_flag?'#b45309':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">⚑</button>
-                      <button class="_av-toggle" data-co-id="${c.id}" data-svc="ars" data-action="${c._hasArs?'remove':'add'}" type="button" title="${c._hasArs?'Fjarlægja úr fyrirtækjaþj.':'Skrá í fyrirtækjaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasArs?'solid #fecaca':'dashed #cbd5e1'};background:${c._hasArs?'#fee2e2':'#fff'};color:${c._hasArs?'#b91c1c':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🔥</button>
-                      <button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="${c._hasBru?'remove':'add'}" type="button" title="${c._hasBru?'Fjarlægja úr brunakerfi':'Skrá í brunakerfi'}" style="padding:3px 7px;border:1px ${c._hasBru?'solid #93c5fd':'dashed #cbd5e1'};background:${c._hasBru?'#dbeafe':'#fff'};color:${c._hasBru?'#1d4ed8':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚨</button>
-                      <button class="_av-toggle" data-co-id="${c.id}" data-svc="ferda" data-action="${c._hasFerda?'remove':'add'}" type="button" title="${c._hasFerda?'Fjarlægja úr ferðaþjónustu':'Skrá í ferðaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasFerda?'solid #7dd3fc':'dashed #cbd5e1'};background:${c._hasFerda?'#e0f2fe':'#fff'};color:${c._hasFerda?'#0369a1':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚌</button>
-                      `}
-                    </td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
+      <div class="data-table-wrap">
+        <div class="data-table-scroll">
+        <table class="data-table _av-table no-skin">
+          <colgroup>
+            <col style="width:212px"><col style="width:190px"><col style="width:96px">
+            <col style="width:52px"><col style="width:84px"><col style="width:108px">
+            <col style="width:128px"><col style="width:146px"><col style="width:172px">
+          </colgroup>
+          <thead>
+            <tr>
+              ${sortTh('Nafn', 'nafn')}
+              ${sortTh('Heimilisfang', 'addr')}
+              ${sortTh('Sími', 'simi')}
+              ${sortTh('Tæki', 'units', 'center')}
+              <th>Þjónusta</th>
+              ${sortTh('Skjöl', 'docs')}
+              ${sortTh('Síðast', 'last', 'center')}
+              <th>Athugasemd</th>
+              <th class="right">Aðgerð</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageArr.map(c => {
+              const editing = state.editId === c.id;
+              const eInput = (k, v) => `<input class="_av-ei" data-k="${k}" value="${esc(v == null ? '' : v)}" onclick="event.stopPropagation()" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid #93c5fd;border-radius:5px;font:inherit;font-size:11.5px">`;
+              const svc = [];
+              if (c._hasArs) svc.push(pill('🔥', '#fdecec', '#c0241f', '#f3c6c4', 'Fyrirtækjaþjónusta'));
+              if (c._hasBru) svc.push(pill('🚨', '#eef3ff', '#2f5fe0', '#c6d6ff', 'Brunakerfi'));
+              if (c._hasFerda) svc.push(pill('🚌', '#e0f2fe', '#0369a1', '#bae6fd', 'Ferðaþjónusta'));
+              if (!svc.length) svc.push('<span style="color:#cbd2dc;font-size:11px">—</span>');
+              const addr = c.heimilisfang || '';
+              const post = (c.postnumer && !addr.includes(String(c.postnumer))) ? `<span class="_post">${esc(c.postnumer)}</span>` : '';
+              const nameStack =
+                `<span class="_co">${c.review_flag ? '<span title="' + esc(c.review_note || 'Til skoðunar') + '" style="color:#c77a16;margin-right:4px">⚑</span>' : ''}${esc(c.nafn || '—')}</span>` +
+                (editing ? eInput('kennitala', c.kennitala) : `<span class="_kt">${esc(fmtKt(c.kennitala) || '—')}</span>`) +
+                (c.review_flag && c.review_note ? `<span class="_rvnote" title="${esc(c.review_note)}">${esc(c.review_note)}</span>` : '');
+              const nameCell = state.selectMode
+                ? `<div style="display:flex;align-items:center;gap:7px;min-width:0"><input type="checkbox" class="_av-sel" data-co-id="${c.id}" ${state.selected.has(c.id) ? 'checked' : ''} onclick="event.stopPropagation()" style="margin:0;width:15px;height:15px;flex:none"><div style="min-width:0;flex:1">${nameStack}</div></div>`
+                : nameStack;
+              return `
+                <tr class="_av-row" data-co-id="${c.id}" tabindex="0">
+                  <td class="_av-namecell">${nameCell}</td>
+                  <td class="_av-addrcell" title="${esc(addr)}">${editing ? eInput('heimilisfang', addr) : `<span class="_addr">${post}${esc(addr || '—')}</span>`}</td>
+                  <td class="mono">${editing ? eInput('simi', c.simi) : esc(c.simi || c.farsimi || '—')}</td>
+                  <td class="num${c._unitCount > 0 ? '' : ' tom'}">${c._unitCount || '·'}</td>
+                  <td><span class="_av-svc">${svc.join('')}</span></td>
+                  <td>${docBadge(c)}</td>
+                  <td class="center"><span class="_av-last">${yTag('📝', (c._last || {}).rep, (c._last || {}).repVia, 'Síðasta úttektarskýrsla')}${yTag('🧾', (c._last || {}).inv, (c._last || {}).invVia, 'Síðasti úttektarreikningur')}</span></td>
+                  <td class="_av-notacell" onclick="event.stopPropagation()"><input class="_av-note _note" data-co-id="${c.id}" value="${esc(c.athugasemdir || '')}" placeholder="···" title="${esc(c.athugasemdir || 'Athugasemd — vistast sjálfkrafa')}"></td>
+                  <td class="right" onclick="event.stopPropagation()"><span class="_av-act">
+                    ${editing ? `
+                    <button class="_av-esave" data-co-id="${c.id}" type="button" title="Vista breytingar" style="padding:3px 9px;border:1px solid #86efac;background:#16a34a;color:#fff;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✓ Vista</button>
+                    <button class="_av-ecancel" type="button" title="Hætta við" style="padding:3px 7px;border:1px solid #cbd5e1;background:#fff;color:#64748b;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✕</button>
+                    ` : `
+                    <button class="_av-edit" data-co-id="${c.id}" type="button" title="Breyta kt / heimilisfangi / síma" style="padding:3px 7px;border:1px dashed #cbd5e1;background:#fff;color:#94a3b8;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✏</button>
+                    <button class="_av-flag" data-co-id="${c.id}" type="button" title="${c.review_flag?'Afmerkja (til skoðunar)':'Merkja til skoðunar + nóta'}" style="padding:3px 7px;border:1px ${c.review_flag?'solid #fcd34d':'dashed #cbd5e1'};background:${c.review_flag?'#fef3c7':'#fff'};color:${c.review_flag?'#b45309':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">⚑</button>
+                    <button class="_av-toggle" data-co-id="${c.id}" data-svc="ars" data-action="${c._hasArs?'remove':'add'}" type="button" title="${c._hasArs?'Fjarlægja úr fyrirtækjaþj.':'Skrá í fyrirtækjaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasArs?'solid #fecaca':'dashed #cbd5e1'};background:${c._hasArs?'#fee2e2':'#fff'};color:${c._hasArs?'#b91c1c':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🔥</button>
+                    <button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="${c._hasBru?'remove':'add'}" type="button" title="${c._hasBru?'Fjarlægja úr brunakerfi':'Skrá í brunakerfi'}" style="padding:3px 7px;border:1px ${c._hasBru?'solid #93c5fd':'dashed #cbd5e1'};background:${c._hasBru?'#dbeafe':'#fff'};color:${c._hasBru?'#1d4ed8':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚨</button>
+                    <button class="_av-toggle" data-co-id="${c.id}" data-svc="ferda" data-action="${c._hasFerda?'remove':'add'}" type="button" title="${c._hasFerda?'Fjarlægja úr ferðaþjónustu':'Skrá í ferðaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasFerda?'solid #7dd3fc':'dashed #cbd5e1'};background:${c._hasFerda?'#e0f2fe':'#fff'};color:${c._hasFerda?'#0369a1':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚌</button>
+                    `}
+                  </span></td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+        </div>
+        <div class="_tfoot">
+          <span>SÝNI ${totalRows ? (p0 + 1) : 0}–${Math.min(p0 + PER, totalRows)} AF ${totalRows}</span>
+          <div class="_pager">
+            <button id="_av-pgprev" type="button" ${state._page <= 1 ? 'disabled' : ''}>Fyrri</button>
+            <button id="_av-pgnext" type="button" ${state._page >= pages ? 'disabled' : ''}>Næsta</button>
+          </div>
         </div>
       </div>
     `;
@@ -1133,9 +1293,12 @@
     const idx = list.findIndex(c => +c.id === +coId);
     if (idx >= 0) list[idx].athugasemdir = val;
     if (SB) {
-      try { await SB.from('fyrirtaeki').update({ athugasemdir: val }).eq('id', coId); }
-      catch (e) { console.warn('[allir-vidsk] saveNote failed', e); }
+      try {
+        const r = await SB.from('fyrirtaeki').update({ athugasemdir: val }).eq('id', coId);
+        if (r && r.error) throw r.error;
+      } catch (e) { console.warn('[allir-vidsk] saveNote failed', e); return false; }
     }
+    return true;
   }
 
   // Inline-edit save → write kt / heimilisfang / sími to fyrirtaeki and update
