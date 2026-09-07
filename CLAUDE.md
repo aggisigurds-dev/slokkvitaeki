@@ -251,17 +251,30 @@ loader and its `module.exports` silently doesn't take effect (empty exports,
 
 ---
 
-## Deploy workflow — `git push` ONLY (4 machines, must stay in sync)
+## Deploy workflow — `git push` samstillir, `[deploy]` birtir (4 machines, must stay in sync)
 
-The ONLY supported way to deploy is to commit and push to `master`. GitHub
-Actions (`.github/workflows/deploy.yml`) then runs `build-dist.js` and publishes
-the static site **and the serverless functions together**, atomically:
+**Regla frá 07.09.2026 (Agnar: „næstum 10$ á dag í viðbótargjöld"):** hvert framleiðslu-
+deploy kostar 15 Netlify-krítur (≈ 10 sent). 1.031 deploy á 20 dögum — hver ýting var
+deploy — átu 15.465 af 16.636 krítum og keyptu $10 pakka nánast daglega. Þess vegna:
+
+- `git push` samstillir vélarnar fjórar **frjálst** og birtir EKKERT.
+- Síðan fer í loftið **aðeins** þegar haus-commit ýtingarinnar ber `[deploy]`, eða með
+  morgunkeyrslunni kl. 06:10 UTC (`deploy.yml` schedule) sem deployar aðeins ef live
+  `build.json` ≠ HEAD. Handvirkt: „Run workflow" í GitHub Actions.
+- **Loka hverju verki með einu [deploy]-commiti** — má vera tómt. Einu sinni í lok lotu,
+  ekki eftir hverja litla breytingu:
 
 ```bash
 git pull origin master      # ALWAYS pull first — never deploy stale code over a teammate's work
-# …make changes, commit…
-git push origin master      # CI deploys site + functions to slokkvitaeki.netlify.app
+# …make changes, test locally (preview_start), commit as often as you like…
+git push origin master      # samstillir vélarnar — EKKERT deploy
+git commit --allow-empty -m "[deploy] stutt lýsing á því sem fer út" && git push   # birtir
 ```
+
+Auto-sync (`OneDrive/ClaudeMemory/auto-sync-*.ps1`, sameiginlegt öllum vélum) merkir wip-
+commit `[skip ci]` nema óýtt `[deploy]`-commit bíði undir því — þá erfir wip-commitið
+`[deploy]`. GitHub Actions (`.github/workflows/deploy.yml`) keyrir `build-dist.js` og
+birtir static-síðuna **og föllin saman**, atómískt.
 
 ⚠️ **NEVER run `node deploy.js`.** It uploads only the *static* files from the
 local machine and **silently deletes every serverless function** (`kt-lookup`,

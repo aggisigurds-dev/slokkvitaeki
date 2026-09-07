@@ -15,17 +15,20 @@ description: >
 The app is edited from **4 machines**, each running Claude Code or Cursor. The single source
 of truth is `master` on GitHub. Deploy = commit + push. Nothing else.
 
-## The one rule
+## The one rule (07.09.2026: push samstillir, `[deploy]` birtir)
 ```bash
 git pull origin master     # ALWAYS first — never deploy stale code over a teammate
-# …edit, commit as Agnar…
-git push origin master     # GitHub Actions builds + publishes site + functions
+# …edit, test locally (preview_start slokkvitaeki-dev), commit as Agnar…
+git push origin master     # samstillir vélarnar fjórar — EKKERT deploy
+git commit --allow-empty -m "[deploy] hvað fer út" && git push   # birtir — EINU SINNI í lok verks
 ```
-Pushing to `master` triggers `.github/workflows/deploy.yml` → runs `build-dist.js`
-→ `netlify-cli` publishes the **static site and the serverless functions together,
-atomically**. A second path (Netlify's Git integration, `[build]` in `netlify.toml`)
-runs the same `build-dist`, so **PR deploy-previews are identical to production** —
-trust the preview.
+Hvert framleiðslu-deploy kostar 15 Netlify-krítur (≈ 10 sent); 1.031 deploy á 20 dögum
+(hver ýting = deploy) keyptu $10 pakka daglega. `deploy.yml` keyrir því aðeins þegar
+haus-commit ýtingar ber `[deploy]`, handvirkt (Run workflow), eða í morgunkeyrslu kl.
+06:10 UTC sem deployar aðeins ef live `build.json` ≠ HEAD. Keyrslan gerir `build-dist.js`
+→ `netlify-cli` og birtir **static-síðuna og föllin saman, atómískt**. Netlify's own Git
+build is switched off for production (`[context.production] ignore = "exit 0"`), so PR
+deploy-previews still build there but production comes only from Actions.
 
 ## ⚠️ NEVER run `node deploy.js`
 It uploads only the *static* files from one machine and **silently deletes every

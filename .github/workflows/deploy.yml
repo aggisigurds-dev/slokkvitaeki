@@ -1,8 +1,21 @@
 name: Deploy to Netlify
 
+# 07.09.2026 (Agnar: „næstum 10$ á dag í viðbótargjöld"): deploy AÐEINS þegar
+#   (a) haus-commit ýtingarinnar segir [deploy]   — `git commit -m "[deploy] …"` (má vera tómt:
+#       `git commit --allow-empty -m "[deploy] …"`),
+#   (b) keyrt handvirkt (workflow_dispatch), eða
+#   (c) morgunkeyrslan kl. 06:10 UTC finnur óbirtar breytingar (live /build.json ≠ HEAD).
+# Ástæða: hvert framleiðslu-deploy kostar 15 Netlify-krítur (≈ 10 sent). Frá 18.08 til 07.09 urðu
+# 1.031 deploy (hver ýting = deploy, tvöfalt fram að 07.09) = 15.465 af 16.636 krítum tímabilsins,
+# og sjálfvirk kaup á $10 pakka nánast daglega. Ýtingar samstilla vélarnar fjórar áfram frjálst;
+# birting er meðvituð ákvörðun. Auto-sync wip-commit ber [skip ci] nema [deploy] bíði óýtt.
+
 on:
   push:
     branches: [master]
+  schedule:
+    - cron: '10 6 * * *'
+  workflow_dispatch:
 
 # Never let two deploys race (a manual push + the 15-min auto-sync). Queue them.
 concurrency:
@@ -12,15 +25,39 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      contains(github.event.head_commit.message, '[deploy]')
     steps:
       - uses: actions/checkout@v4
+
+      # Morgunkeyrsla: sleppa ef síðan er þegar á HEAD. build.json (build-dist.js) ber stutta
+      # commit-hashið; berum það saman við fullt HEAD sem forskeyti.
+      - name: Athuga hvort eitthvað sé óbirt
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            live=$(curl -sf "https://slokkvitaeki.netlify.app/build.json?_=$(date +%s)" | sed -n 's/.*"commit":"\([0-9a-f]*\)".*/\1/p')
+            full=$(git rev-parse HEAD)
+            echo "live=$live head=$full"
+            if [ -n "$live" ]; then
+              case "$full" in
+                "$live"*) echo "Ekkert óbirt — sleppi deploy"; echo "run=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+              esac
+            fi
+          fi
+          echo "run=true" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
         with:
           node-version: '20'
 
       # Assemble the public bundle. Keeps CLAUDE.md, *.sql schema and _*
       # PII/source assets OUT of what gets published.
       - name: Build publish folder
+        if: steps.gate.outputs.run == 'true'
         run: node build-dist.js
 
       # Deploy the static site (./dist) AND the serverless functions in ONE
@@ -28,6 +65,7 @@ jobs:
       # email-send, geocode-all-background, tv-summary) correctly — which the old
       # `node deploy.js` never did, so every push silently wiped them.
       - name: Deploy to Netlify (static + functions)
+        if: steps.gate.outputs.run == 'true'
         run: npx --yes netlify-cli@latest deploy --prod --dir=dist --functions=netlify/functions --site=d22039b2-75f2-4206-b543-7c6176f2d181
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
