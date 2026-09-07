@@ -235,7 +235,11 @@
   // ── Data load ────────────────────────────────────────────────────────────
   // scope sjálfgefið 'all' (Allt) — ósk Agnars 2026-08-19: opnast á ÖLLUM
   // færslum, ekki bara mánuðinum. Notandinn getur enn valið Mán/Ár í seg-rofa.
-  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'created_at', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'all' };
+  // 2026-09-07 (ósk Agnars): sjálfgefið er raðað eftir SÍÐUSTU hreyfingu
+  // (lastAct = greitt/breytt/skráð, nýjast fyrst), ekki skráningardegi — salan sem
+  // var greidd í morgun á að vera efst þótt hún hafi verið skráð í síðasta mánuði.
+  // Röðunin er hvergi vistuð, svo án þessa þurfti að smella á dálkinn í hvert sinn.
+  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'greitt', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'all' };
   let _hlCreditedIds = new Set();  // 2026-08-19: id upprunareikninga sem hafa verið kreditfærðir (fyllt í render())
 
   // 2026-07-01: customer lookup by NAME or KENNITALA — pull a customer's WHOLE
