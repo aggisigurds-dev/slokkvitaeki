@@ -70,3 +70,7 @@ Charlize-færslur 415–425. Commit-númer vísa í `slokkvitaeki` nema annað s
 - 291b (165ec08): stöðulínan efst segir greiddur/sendur (paid_at/krafa_sent_at) í stað „stofnaður" — sannreynt á Borealis (#202): „R-000743 greiddur 387.532 kr"; ársblokkir 2026 LOKIÐ · GREITT og 2025 SKÝRSLA (PDF).
 - Audit varð rautt á tvítaki #923 „Allt fyrir garðinn ehf." (0 tilvísanir) → mjúk-eytt, grænt.
 - Á vélinni er ócommittuð breyting í 00-legacy.js (undanþága fyrir #_sch-modal, kredit-röð R-000867) úr ANNARRI lotu — ekki snert; fer með næstu alvöru ýtingu.
+
+## Viðbót 07.09 (síðdegis) — deploy-reglan
+
+- Netlify-krítur fóru í deploy: 1.031 deploy 18.08–07.09 = 15.465 af 16.636 krítum. Nú birtir aðeins [deploy] í haus-commiti (deploy.yml) eða morgunkeyrsla 06:10 UTC; brunaholf sama með netlify.toml ignore + morning-deploy.yml. Þetta commit er prófun á ýtingu ÁN [deploy] — á ekki að birtast.
