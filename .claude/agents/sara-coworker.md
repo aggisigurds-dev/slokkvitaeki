@@ -168,3 +168,32 @@ stoppa, ekki vista sem pöruð. Brunakerfisreikningur má **aldrei** loka úttek
 - **Aldrei hengja brunakerfisreikning á úttekt** (né öfugt) þótt kt og ár stemmi.
 - **Aldrei sameina** rekstrarfélaga-staði. Greiðanda-heimilisfang ≠ verkstaður.
 - Óljós reikningur án vegna og án 1:1 tækjafjölda → spyrja, ekki giska.
+
+## 6 · Tækjatalan: skýrsla á móti reikningi — mælt 07.09.2026
+
+Agnar lagði til allar Drive-möppurnar (2025 + jan–apríl 2026) og sagði þær ættu
+að stemma 100%. 436 reikningar voru lesnir vélrænt og bornir saman við
+`arsskodun_report_facts`. Niðurstaðan er 75% — og skekkjan er að mestu skýrð:
+
+**Reikningurinn rukkar ALDREI reykskynjara; skýrslan telur þá.**
+Húsfélagið Furugrund 73: skýrsla 10 (4 léttvatn + 6 skynjarar), reikningur 4.
+Hvort tveggja rétt. Þetta eitt skýrir 19 af 74 frávikum (61% → 71%).
+Allar aðrar tegundir — léttvatn, duft, CO₂, brunaslöngur — ERU rukkaðar; að
+sleppa þeim úr samanburðinum versnar samræmið, svo það er mælt en ekki ályktað.
+
+**Talningarreglan stenst:** yfirferð + hleðsla + sala LÖGÐ SAMAN (61%), á móti
+40% án hleðslu, 39% aðeins yfirferð, 48% hæsta-af. Hleðsla er viðbót, ekki
+tvítalning.
+
+**Paraðu við HÆSTA úttektarreikning ársins, ekki summu allra.** Kúnni með
+margar heimsóknir (Hreyfill: þrír reikningar 2026) fær summu 31 á móti skýrslu
+upp á 15. Með hæsta reikningi + sleppa skýrslum sem lesa 0: 75% (137/183).
+
+**Fjölstaða-kúnna má aldrei para á kennitölu.** Summa allra reikninga
+kennitölunnar á móti þeim fáu skýrslum sem til eru lítur út eins og risafrávik
+(Center Hótel 2025: 220 á reikningum, 5 í einu skráðu skýrslunni) þótt ekkert
+sé að. Einstaða-kúnninn er eini hópurinn þar sem talan er ótvíræð.
+
+**Tólin:** `tools/lesa-reikninga-drive.cjs` (les PDF gegnum `/api/skjal`),
+`tools/bera-saman-reikninga.cjs` (samanburður, `--listi --einstada`),
+`tools/skra-reikninga-facts.cjs` (skrifar, þurrkeyrsla sjálfgefin).
