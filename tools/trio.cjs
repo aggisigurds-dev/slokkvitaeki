@@ -167,12 +167,17 @@ function linurAf(s) {
   /* Varaleið: reikningur sem er aðeins til sem SKJAL. `uttekt_reikningur_facts`
      ber tækjatöluna lesna úr honum. Fyllir aðeins í eyður — POS-salan hefur
      alltaf forgang, enda er hún nákvæmari (línur með magni, ekki lesin tala). */
-  const urSkjali = new Map();                      // fid -> nýjasta reikningsárið
+  /* Aðeins reikningur SAMA ÁRS og skýrslan. Fyrsta útgáfan tók nýjasta
+     reikninginn óháð ári og bar 2023-reikning saman við 2026-skýrslu — samræmið
+     mældist þá 60% sem sagði ekkert. Ár-á-móti-ári er eina marktæka pörunin. */
+  const urSkjali = new Map();
   rfacts.forEach(r => {
     if (r.total_devices == null || r.fyrirtaeki_id == null) return;
     const k = String(r.fyrirtaeki_id);
     if (reikn.has(k)) return;                      // POS-salan á forgang
+    const sk = skyrsla.get(k);
     const ar = +r.invoice_year || 0;
+    if (!sk || +sk.ar !== ar) return;              // ekkert að bera saman við
     const fyrri = urSkjali.get(k);
     if (fyrri && fyrri.ar >= ar) return;
     urSkjali.set(k, { ar, n: +r.total_devices, dags: r.invoice_date || (ar ? String(ar) : '—') });
