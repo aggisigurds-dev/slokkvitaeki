@@ -16,6 +16,13 @@
   command = "node build-dist.js"
   publish = "dist"
 
+# --- 07.09.2026: Netlify byggir EKKI framleiðsluna lengur — GitHub Actions gerir það (netlify-cli, engar Netlify-
+# byggingarmínútur/credits). Tvöfalda byggingin að ofan (leið 2 ofan á leið 1, "All files already uploaded") átti þátt í
+# að tæma Netlify-kvótann 06.09 (Usage exceeded → báðar síðurnar niðri). `ignore` sem endar með exit 0 = Netlify hættir
+# við byggingu strax (telst ekki). Deploy-preview á PR-um og branch-deploy byggjast áfram (aðrir context-ar).
+[context.production]
+  ignore = "exit 0"
+
 [functions]
   directory = "netlify/functions"
   included_files = ["netlify/functions/_verkbord-sync.cjs"]
@@ -212,7 +219,7 @@
 # íslenska lýsingu í claude_notes svo næsti agent sjái hvað er á henni. Sópunin
 # tekur 5 verk í senn og gerir ekkert þegar ekkert nýtt er (ein Supabase-fyrirspurn).
 [functions."verkefnalisti-vision-cron"]
-  schedule = "*/15 * * * *"
+  schedule = "*/30 * * * *"   # 07.09.2026: var */15 — helmingi færri köll (Netlify-kvóti)
 
 # Trio-maelitaekid: ber saman profíl, úttektarskýrslu og reikning fyrir hvert
 # fyrirtæki og skráir hverja breytingu í trio_saga med alarmi þegar staðfest
