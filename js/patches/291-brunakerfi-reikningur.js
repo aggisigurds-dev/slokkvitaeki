@@ -258,7 +258,8 @@
       }
 
       if (inv) {
-        const stTxt = inv.status === 'draft' ? 'drög' : inv.status === 'final' ? 'stofnaður' : (inv.status || '');
+        // 07.09.2026: sama orðalag og ársyfirlitið (274) — greiddur/sendur trompar „stofnaður"
+        const stTxt = inv.paid_at ? 'greiddur' : inv.krafa_sent_at ? 'sendur' : inv.status === 'draft' ? 'drög' : inv.status === 'final' ? 'stofnaður' : (inv.status || '');
         span.innerHTML = '· Reikningur: <b style="color:#16181c">' + esc(inv.num || '') + '</b>' +
           ' <span style="padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:800;background:' +
           (inv.status === 'final' ? '#dcf1e4;color:#166b3a' : '#fdf3d7;color:#8a6100') + '">' + esc(stTxt) + '</span>' +
