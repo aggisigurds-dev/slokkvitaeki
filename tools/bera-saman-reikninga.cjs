@@ -9,12 +9,18 @@
  *
  * PÖRUNIN er á KENNITÖLU + ÁRI, ekki fyrirtaeki_id, af ásettu ráði: reikningur
  * er stílaður á greiðandann en skýrslan skráð á staðinn, og hjá rekstrarfélögum
- * eru það ekki sömu auðkenni. Kennitalan brúar það. Summan er tekin beggja megin
- * svo margir staðir undir sömu kt leggist rétt saman.
+ * eru það ekki sömu auðkenni. Kennitalan brúar það.
  *
- * Aðeins ÚTTEKTIR eru bornar saman (lína „Skýrslugerð og vottun"); búðarsölur
- * eiga ekki heima í samanburðinum. Eitt eintak per reikningsnúmer — Drive-afrit
- * ((2)/(3)) tvítaka sama reikninginn.
+ * ÚTTEKT = reikningur sem ber „Skýrslugerð og vottun" EÐA „Akstur" (regla
+ * Agnars 07.09.2026: „ef það stendur ekki Akstur eða skýrslugerð þá er
+ * reikningurinn líklega bara úr búð"). Hvort tveggja segir að farið hafi verið
+ * á staðinn. Búðarsölur eiga ekki heima í samanburðinum. Eitt eintak per
+ * reikningsnúmer — Drive-afrit ((2)/(3)) tvítaka sama reikninginn.
+ *
+ * ÞRJÁR LEIÐRÉTTINGAR, allar MÆLDAR 07.09.2026 (einstaða-kúnnar, 184 pör):
+ *   1. reykskynjarar dregnir frá skýrslunni (taldir, aldrei rukkaðir)  61%→71%
+ *   2. hæsti reikningur ársins í stað summu allra                      71%→73%
+ *   3. skýrslur sem lesa 0 tæki sleppt (gloppa, ekki mæling)           73%→75%
  *
  *   node tools/bera-saman-reikninga.cjs <lesnir.json> [--listi]
  */
@@ -57,22 +63,30 @@ async function allar(slod) {
     if (!einstakir.has(x.nr)) einstakir.set(x.nr, x);
   });
 
+  /* HÆSTI reikningur ársins, ekki summa — mælt 07.09.2026. Kúnni með margar
+     heimsóknir fær annars summu allra útkalla á móti EINNI árlegri skýrslu
+     (Hreyfill: þrír reikningar 2026 = 31 á móti skýrslu upp á 15). Hæsti
+     reikningurinn er sá sem ber árlegu úttektina. Mælt: summa 71%, hæsti 73%. */
   const reikn = new Map();                         // 'kt|ár' -> { taeki, nr:[] }
   einstakir.forEach(x => {
     const k = x.kt.replace(/-/g, '') + '|' + x.dags.slice(0, 4);
     const v = reikn.get(k) || { taeki: 0, nr: [] };
-    v.taeki += (x.total_devices || 0);
+    v.taeki = Math.max(v.taeki, x.total_devices || 0);
     v.nr.push(x.nr);
     reikn.set(k, v);
   });
 
   const [co, facts] = await Promise.all([
     allar('fyrirtaeki?select=id,nafn,kennitala&deleted_at=is.null'),
-    allar('arsskodun_report_facts?select=fyrirtaeki_id,report_year,total_devices'),
+    allar('arsskodun_report_facts?select=fyrirtaeki_id,report_year,total_devices,equipment'),
   ]);
   const ktAf = new Map(co.map(c => [c.id, String(c.kennitala || '').replace(/-/g, '')]));
   const nafnAf = new Map(co.map(c => [c.id, c.nafn]));
 
+  /* REYKSKYNJARAR eru dregnir frá skýrslunni: þeir eru taldir í úttektinni en
+     ALDREI rukkaðir (Furugrund 73: skýrsla 10 = 4 léttvatn + 6 skynjarar,
+     reikningur 4 — hvort tveggja rétt). Mælt 07.09.2026: 61% → 71%. Aðrar
+     tegundir eru rukkaðar; að draga þær frá versnar samræmið. */
   const sky = new Map();                           // 'kt|ár' -> { taeki, stadir:[] }
   facts.forEach(f => {
     if (f.total_devices == null) return;
@@ -80,7 +94,7 @@ async function allar(slod) {
     if (!kt) return;
     const k = kt + '|' + f.report_year;
     const v = sky.get(k) || { taeki: 0, stadir: [] };
-    v.taeki += +f.total_devices;
+    v.taeki += +f.total_devices - +((f.equipment && f.equipment.reykskynjarar) || 0);
     v.stadir.push(nafnAf.get(f.fyrirtaeki_id));
     sky.set(k, v);
   });
@@ -102,6 +116,7 @@ async function allar(slod) {
   reikn.forEach((r, k) => {
     const s = sky.get(k);
     if (!s) return;
+    if (s.taeki === 0) return;      // skýrsla sem les 0 er gloppa, ekki mæling
     const kt = k.split('|')[0];
     const ein = (stadirPerKt.get(kt) || 1) === 1;
     por++;

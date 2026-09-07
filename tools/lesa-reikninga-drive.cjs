@@ -74,7 +74,12 @@ function lesaReikning(texti) {
   let kt = null;
   for (const l of linurTexta) { const m = l.match(/^(\d{6}-\d{4})$/); if (m) { kt = m[1]; break; } }
 
-  const uttekt = /Sk[ýy]rslugerð og vottun/i.test(flatt);
+  /* ÚTTEKT eða BÚÐARSALA — regla Agnars 07.09.2026: „ef það stendur ekki Akstur
+     eða skýrslugerð þá er reikningurinn líklega bara úr búð". Hvort tveggja er
+     merki um að farið hafi verið á staðinn. Fyrri útgáfa leit AÐEINS á
+     skýrslugerð og flokkaði þá 36 af 40 útkallsreikningum ranglega sem búðarsölu
+     — þar á meðal 21 tækja verk hjá Teiti Jónassyni. */
+  const uttekt = /Sk[ýy]rslugerð og vottun/i.test(flatt) || /\bAkstur\b/i.test(flatt);
   const kredit = /kredit/i.test(flatt) && !/kreditf[æa]r/i.test(flatt);
   const vegna = (flatt.match(/Vegna:?\s+([A-ZÁÉÍÓÚÝÞÆÐÖ][^\n]{2,40}?)\s{2,}/i) || [])[1] || null;
 

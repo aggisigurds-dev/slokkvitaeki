@@ -194,6 +194,12 @@ kennitölunnar á móti þeim fáu skýrslum sem til eru lítur út eins og risa
 (Center Hótel 2025: 220 á reikningum, 5 í einu skráðu skýrslunni) þótt ekkert
 sé að. Einstaða-kúnninn er eini hópurinn þar sem talan er ótvíræð.
 
+**Úttekt eða búðarsala?** Agnar 07.09.2026: „ef það stendur ekki Akstur eða
+skýrslugerð þá er reikningurinn líklega bara úr búð". Hvort tveggja segir að
+farið hafi verið á staðinn. Fyrri reglan leit aðeins á skýrslugerð og flokkaði
+36 af 40 útkallsreikningum ranglega sem búðarsölu. Af 436 reikningum eru aðeins
+**fjórir** raunverulegar búðarsölur.
+
 **Tólin:** `tools/lesa-reikninga-drive.cjs` (les PDF gegnum `/api/skjal`),
 `tools/bera-saman-reikninga.cjs` (samanburður, `--listi --einstada`),
 `tools/skra-reikninga-facts.cjs` (skrifar, þurrkeyrsla sjálfgefin).
