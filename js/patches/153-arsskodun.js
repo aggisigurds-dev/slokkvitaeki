@@ -1506,6 +1506,17 @@
     // milli talnanna = skoðaðir staðir sem vantar skráða skýrslu.
     const buidTalin = all.filter(c => isDoneYear(c, curYear)).length;
     const allCount = skipHidden ? all.filter(c => !isSkippedLastYear(c, curYear)).length : all.length;
+    // 2026-09-08: fjöldi í endurheimt — talinn af ÖLLU borðinu, ekki undir síunni,
+    // svo flagan segi „svona margir bíða", ekki „svona margir bíða í mars".
+    const endurCount = all.filter(c => c._ovisst).length;
+    // Endurheimtu-kandídatar (ósk Agnars 08.09.2026): „síðasta skoðun 2023" — þeir
+    // sem eru líklega hættir. Talið á öllu borðinu, þeir sem eru ÞEGAR í endurheimt
+    // ekki taldir með svo talan sé „svona mörgum má bæta við".
+    const endurKandidatar = all.filter(c => {
+      if (c._ovisst) return false;
+      const ly = +((c._ars || {}).last_year_inspected) || 0;
+      return ly > 0 && ly <= curYear - 3;
+    });
     const monthCounts = Array(13).fill(0);
     // index 0 = fjöldi án skráðs mánaðar („Án mánaðar"-chippurinn)
     // 2026-09-08 (Agnar: „án mánaðar þar stendur 38 en er í raun 95"): teljarinn las
@@ -1676,7 +1687,7 @@
               { v: 'ivinnslu', label: '🔧 Í vinnslu' },
               { v: 'akstur', label: '🚗 Aksturslisti' },
               // 2026-09-08: faldir — endurskoðunarhólfið. Sama merki og 157.
-              { v: 'ovisst', label: '🕶 Faldir' }
+              { v: 'ovisst', label: '♻️ Endurheimt' + (endurCount ? ' ' + endurCount : '') }
             ].map(s => `
               <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'var(--brand)':'var(--surface)'};color:${state.status===s.v?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
               ${s.v !== 'skipped2025' ? '' : `
@@ -1689,6 +1700,15 @@
             `).join('')}
           </div>
         </div>
+
+        <!-- ♻️ Endurheimtu-stikan (2026-09-08, ósk Agnars): „smá endurheimtu
+             vinnulisti fyrir okkur svo sé ekki verið að trufla bílstjórann á meðan
+             það er verið að athuga". Birtist aðeins á flipanum sjálfum. -->
+        ${state.status === 'ovisst' ? `
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:-4px 0 12px;padding:10px 12px;border:1px solid #99f6e4;background:#f0fdfa;border-radius:10px">
+          <span style="font-size:12px;color:#115e59"><b>♻️ Endurheimt</b> — ${endurCount} félög eru tekin af vinnulista bílstjórans meðan staðan er könnuð. Taktu hakið aftast á röðinni af til að skila félagi í venjulega umferð.</span>
+          ${endurKandidatar.length ? `<button id="_ars-endur-bulk" type="button" title="Setur öll félög sem voru síðast skoðuð ${curYear - 3} eða fyrr í endurheimt" style="margin-left:auto;padding:7px 12px;border:1px solid #0f766e;background:#0d9488;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700;white-space:nowrap">➕ Bæta við ${endurKandidatar.length} með síðustu skoðun ${curYear - 3} eða fyrr</button>` : '<span style="margin-left:auto;font-size:11.5px;color:#0f766e">Engir ónotaðir kandídatar með síðustu skoðun ${curYear - 3} eða fyrr</span>'}
+        </div>` : ''}
 
         <!-- Month chip row (fjöl-val: veldu nokkra mánuði saman; „Án mánaðar" aftast)
              2026-08-29 (Agnar: „hafðu bara scroll möguleika á öllu sem passar illa",
@@ -1875,27 +1895,42 @@
       main.querySelectorAll('._ars-ovr-year').forEach(el => el.addEventListener('click', e => {
         e.stopPropagation(); ovrEditYear(el, +el.dataset.coId);
       }));
-      // 2026-09-08 (Agnar: „eða setja í Hide"): fela/sýna beint úr röðinni.
-      // Skrifar dálkinn `ovisst` á fyrirtækjaröðina — per-röð, svo tvær vélar
-      // geta ekki klóbberað hvor aðra eins og gerist í settings-blobbinu.
-      main.querySelectorAll('._ars-ovr-hide').forEach(el => el.addEventListener('click', async e => {
-        e.stopPropagation();
-        const coId = +el.dataset.coId; if (!coId) return;
-        const c = (_cache.byId && _cache.byId[coId]) || (_cache.list || []).find(x => +x.id === coId) || {};
-        const nu = !!(_cache.list || []).find(x => +x.id === coId && x._ovisst);
-        const spurt = nu
-          ? 'Sýna „' + (c.nafn || 'félagið') + '" aftur á listanum?'
-          : 'Fela „' + (c.nafn || 'félagið') + '“? Fer af vinnulistanum en helst í þjónustu — öll gögn standa, og það finnst áfram í Faldir-flipanum og í leit.';
-        const ok = (window.Confirm && Confirm.show) ? await Confirm.show(spurt) : window.confirm(spurt);
-        if (!ok) return;
-        const sb = getSB(); if (!sb) { alert('Engin nettenging'); return; }
-        const r = await sb.from('fyrirtaeki').update({ ovisst: !nu }).eq('id', coId);
-        if (r.error) { alert('Vista mistókst: ' + r.error.message); return; }
-        ovrLog(coId, 'ovisst', String(nu), String(!nu));
-        const row = (_cache.list || []).find(x => +x.id === coId); if (row) row._ovisst = !nu;
-        render();
-      }));
     }
+    // 2026-09-08 (Agnar): ENDURHEIMT-hakið aftast á röðinni. ALLTAF virkt, ekki
+    // bundið við ⚡ — félag á að fara af vinnulista bílstjórans í einum smelli
+    // meðan staðan er könnuð. Skrifar dálkinn `ovisst` á fyrirtækjaröðina
+    // (per-röð; settings-blobbið er last-write-wins með fjórum vélum).
+    main.querySelector('#_ars-endur-bulk')?.addEventListener('click', async () => {
+      const listi = endurKandidatar.slice();
+      if (!listi.length) return;
+      const spurt = 'Setja ' + listi.length + ' félög í endurheimt? Þau voru síðast skoðuð ' + (curYear - 3) + ' eða fyrr, hverfa af vinnulista bílstjórans og fara hingað. Ekkert er eytt og hvert og eitt má skila til baka með hakinu.';
+      const ok = (window.Confirm && Confirm.show) ? await Confirm.show(spurt) : window.confirm(spurt);
+      if (!ok) return;
+      const sb = getSB(); if (!sb) { alert('Engin nettenging'); return; }
+      // Skrifað í hollum svo ein löng beiðni geti ekki fallið á tíma.
+      for (let i = 0; i < listi.length; i += 50) {
+        const holl = listi.slice(i, i + 50).map(c => +c.id);
+        const r = await sb.from('fyrirtaeki').update({ ovisst: true }).in('id', holl);
+        if (r.error) { alert('Vista mistókst: ' + r.error.message); break; }
+        holl.forEach(id => {
+          ovrLog(id, 'ovisst', 'false', 'true');
+          const row = (_cache.list || []).find(x => +x.id === id); if (row) row._ovisst = true;
+        });
+      }
+      render();
+    });
+    main.querySelectorAll('._ars-endur-cb').forEach(el => el.addEventListener('change', async e => {
+      e.stopPropagation();
+      const coId = +el.dataset.coId; if (!coId) return;
+      const nu = !!(_cache.list || []).find(x => +x.id === coId && x._ovisst);
+      const sb = getSB();
+      if (!sb) { alert('Engin nettenging'); el.checked = nu; return; }
+      const r = await sb.from('fyrirtaeki').update({ ovisst: !nu }).eq('id', coId);
+      if (r.error) { alert('Vista mistókst: ' + r.error.message); el.checked = nu; return; }
+      ovrLog(coId, 'ovisst', String(nu), String(!nu));
+      const row = (_cache.list || []).find(x => +x.id === coId); if (row) row._ovisst = !nu;
+      render();
+    }));
     main.querySelectorAll('._ars-st').forEach(b => b.addEventListener('click', () => {
       state.status = b.dataset.status; saveState(); render();
     }));
@@ -3252,7 +3287,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                         : '<span></span>'}
                       <span style="display:inline-flex;align-items:center;gap:6px">
                         <span class="_st ${stState === 'done' ? '_st--done' : stState === 'work' ? '_st--work' : stState === 'skip' ? '_st--skip' : stState === 'over' ? '_st--late' : '_st--plan'}" title="${esc(stTitle)}">${stState === 'over' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.3 3.9-8.2 14.2a1.9 1.9 0 0 0 1.7 2.9h16.4a1.9 1.9 0 0 0 1.7-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>' : ''}${esc(stLabel)}</span>
-                        ${ovr ? `<span class="_ars-ovr-year" data-co-id="${c.id}" title="⚡ Síðast skoðað (ár) — smelltu til að breyta" style="display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border:1px dashed #d97706;background:#fffbeb;color:#92400e;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">📅 ${lastYr || '—'}</span>` : ''}${ovr ? `<span class="_ars-ovr-hide" data-co-id="${c.id}" title="${c._ovisst ? '🕶 Falið — smelltu til að sýna aftur' : '🕶 Fela þennan (fer í „Faldir“-flipann)'}" style="display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border:1px dashed ${c._ovisst ? '#475569' : '#94a3b8'};background:${c._ovisst ? '#e2e8f0' : 'transparent'};color:#475569;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;margin-left:4px">🕶</span>` : ''}
+                        ${ovr ? `<span class="_ars-ovr-year" data-co-id="${c.id}" title="⚡ Síðast skoðað (ár) — smelltu til að breyta" style="display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border:1px dashed #d97706;background:#fffbeb;color:#92400e;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">📅 ${lastYr || '—'}</span>` : ''}<label class="_ars-endur" title="${c._ovisst ? '♻️ Í endurheimt — tekið af vinnulista bílstjórans. Taktu hakið af til að setja aftur í venjulega umferð.' : 'Setja í endurheimt: fer af vinnulista bílstjórans og í ♻️-flipann þar til staðan skýrist.'}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-left:6px;border-radius:7px;border:1px solid ${c._ovisst ? '#0f766e' : 'var(--brd2)'};background:${c._ovisst ? '#ccfbf1' : 'var(--surface)'};cursor:pointer;flex:0 0 auto"><input type="checkbox" class="_ars-endur-cb" data-co-id="${c.id}" ${c._ovisst ? 'checked' : ''} style="width:15px;height:15px;margin:0;cursor:pointer;accent-color:#0d9488"></label>
                       </span>
                     </div>
                   </td>
