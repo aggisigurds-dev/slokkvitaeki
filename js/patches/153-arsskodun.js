@@ -1322,8 +1322,11 @@
       // svo næsta refresh teiknar þegar reiturinn er ekki lengur í fókus.
       const _editingNote = document.activeElement && document.activeElement.classList
         && document.activeElement.classList.contains('_ars-plannote');
+      // 08.09.2026: sjáanlegt í console hvort bakgrunns-sóknin teiknaði — „Búið"-talan
+      // sat föst á snapshot-gildinu og enginn vissi hvers vegna. Þögul catch var hluti.
+      try { console.info('[arsskodun] bg-refresh', { changed: ns !== _lastDataSig, editing: !!_editingNote, active: document.activeElement && (document.activeElement.className || document.activeElement.tagName) }); } catch (_) {}
       if (ns !== _lastDataSig && !_editingNote) { render(); _lastDataSig = ns; }  // only rebuild if data changed
-    } catch (_) {} finally { _bgRefreshing = false; }
+    } catch (e) { try { console.warn('[arsskodun] backgroundRefresh', e); } catch (_) {} } finally { _bgRefreshing = false; }
   }
 
   async function show() {
