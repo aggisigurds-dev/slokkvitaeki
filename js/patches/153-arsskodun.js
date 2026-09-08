@@ -1056,6 +1056,16 @@
   // með tvísmelli) TROMPAR blobbinn: gult (gap) = EKKI búið · grænt (human) =
   // búið · blátt/ekkert = last_year_inspected ræður. Tvísmellur á '26-merkið
   // er þar með rofinn fyrir Skoðað-stöðuna, síurnar og talnakortið.
+  // 2026-09-08: skilgreiningin var lokal inni í filteredSorted. Spjöldin þurfa
+  // hana líka (þau telja núna sömu raðir og taflan) og TVÖ afrit af sömu reglu
+  // er nákvæmlega hvernig tölur reka í sundur. Ein skilgreining, tveir lesendur.
+  function _erOvist(c, curYear) {
+    const a = (c && c._ars) || {};
+    if (+a.last_year_inspected || +a.inspect_month) return false;
+    if (+(a.field_inspected_year || 0) === curYear) return false;
+    const eqTot = Object.values(a.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
+    return eqTot === 0;
+  }
   function isDoneYear(c, curYear) {
     const fc = (_cache.fcCur || {})[String(c.id)];
     // 2026-08-19 (Agnar #11): klarad úttektar-par (skýrsla↔reikningur paruð, per
@@ -1143,13 +1153,7 @@
     // aldrei skoðað, enginn skoðunarmánuður og engin tæki. Þau eru sýnd í
     // „❓ Óvíst" flipanum og ÚTILOKUÐ úr báðum Eftir-listunum svo þeir sýni
     // bara alvöru þjónustukúnna. Tekin úr þjónustu inni á fyrirtækjasíðunni.
-    const isSuspect = (c) => {
-      const a = c._ars || {};
-      if (+a.last_year_inspected || +a.inspect_month) return false;
-      if (+(a.field_inspected_year || 0) === curYear) return false;
-      const eqTot = Object.values(a.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
-      return eqTot === 0;
-    };
+    const isSuspect = (c) => _erOvist(c, curYear);
     // 2026-07-28 (ósk Agnars — „leitin virðist biluð"): mánaðarsían vék þegar
     // fyrir leit (sjá að ofan) EN stöðusían gerði það ekki. Stöðuflipinn geymist
     // milli heimsókna, svo t.d. „Eftir"-flipinn tæmdi leitarniðurstöðurnar og
@@ -1659,6 +1663,28 @@
       finally { state.status = keepS; state.search = keepQ; }
     };
     const cnt = { all: countByStatus('all'), done: countByStatus('done'), pending: countByStatus('pending'), pending2026: countByStatus('pending2026') };
+    // 2026-09-08 (Agnar: „geturðu gert þessa grænu og rauðu samantektartakka bara
+    // sýna það sem þeir eru að telja í töflunni fyrir neðan … eða sýna nánari
+    // upplýsingar"): spjöldin töldu ALLTAF allt borðið, líka þegar taflan var síuð
+    // niður í einn mánuð eða eitt póstnúmer — þá sagði spjaldið 337 yfir töflu með
+    // sjö röðum. Nú telja þau RAÐIRNAR SEM SJÁST, og undirlínan heldur borð-tölunni
+    // svo yfirsýnin tapist ekki. Sé engin sía virk eru tölurnar þær sömu.
+    const _curMon = today.getMonth() + 1;   // curMonth er lokal í filteredSorted
+    const sy = {
+      all: filtered.length,
+      done: filtered.filter(c => isDoneYear(c, curYear)).length,
+      pending2026: filtered.filter(c => !isDoneYear(c, curYear) && !_erOvist(c, curYear)).length,
+      pending: filtered.filter(c => {
+        if (isDoneYear(c, curYear)) return false;
+        if (+(c._ars.field_inspected_year || 0) === curYear) return false;
+        const m = +c._ars.inspect_month || 0;
+        return isSkippedLastYear(c, curYear) || (m > 0 && m <= _curMon);
+      }).length,
+    };
+    // Er einhver sía virk? (staða, mánuður, póstnúmer eða leit)
+    const siaVirk = state.status !== 'all' || !!(state.months && state.months.length)
+      || (state.postnr !== null) || !!state.search.trim();
+    const afBordi = (n) => siaVirk ? ` · af ${n} á borðinu` : '';
     const misrCount = all.filter(c => c._ars && c._ars._misraemi).length;
     // Endurheimtu-kandídatar (ósk Agnars 08.09.2026): „síðasta skoðun 2023" — þeir
     // sem eru líklega hættir. Talið á öllu borðinu, þeir sem eru ÞEGAR í endurheimt
@@ -1806,18 +1832,18 @@
         <div class="_ars-statgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
           <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
-            <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${cnt.all}</div>
-            <div style="font-size:10.5px;color:var(--ink3)">= Allt-flagan · ${arsAll.length} með skráð tæki</div>
+            <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${sy.all}</div>
+            <div style="font-size:10.5px;color:var(--ink3)">${siaVirk ? 'raðir í töflunni' : '= Allt-flagan'}${afBordi(cnt.all)}</div>
           </div>
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px" title="Stóra talan = merkt Skoðað ${curYear} — sama tala og listinn sýnir. Neðri talan = ${curYear}-skýrsla skráð í skjalagrunninn. Munurinn = skoðaðir staðir sem vantar skráða skýrslu.">
             <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Búið ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${cnt.done}</div>
-            <div style="font-size:10.5px;color:#16a34a">= ✅ Búið-flagan · ${tv('buid_2026')} með ${curYear}-skýrslu skjalfesta</div>
+            <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${sy.done}</div>
+            <div style="font-size:10.5px;color:#16a34a">${siaVirk ? 'búið í töflunni' : `= ✅ Búið-flagan · ${tv('buid_2026')} með ${curYear}-skýrslu skjalfesta`}${afBordi(cnt.done)}</div>
           </div>
           <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Eftir ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${cnt.pending2026}</div>
-            <div style="font-size:10.5px;color:#b45309">= 🗓️ Eftir ${curYear}-flagan · þar af ⏳ Eftir (mánuður kominn) ${cnt.pending}</div>
+            <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${sy.pending2026}</div>
+            <div style="font-size:10.5px;color:#b45309">þar af ⏳ mánuður kominn ${sy.pending}${afBordi(cnt.pending2026)}</div>
           </div>
           <div class="bstal-hero" style="background:var(--thm-sumh);color:#fff;border:1px solid var(--brand);border-radius:10px;padding:11px 13px">
             <!-- 2026-09-08 (Agnar): talan er nú í ÞÚSUNDUM og byggir á RAUN-tölum
