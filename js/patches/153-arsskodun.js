@@ -224,6 +224,14 @@
     // parallel with the company + settings loads.
     const unitsP = loadActiveUnitsByFid(SB).catch(() => ({}));
     const nextInspP = loadNextInspByFid(SB).catch(() => ({}));
+    // 2026-09-08 (Agnar: „eða setja í Hide"): sama felu-merki og „🕶 Óvissir"
+    // í patch 157 (fyrirtaeki.ovisst). Eitt merki fyrir báðar síður — félag sem
+    // er falið í Allir viðskiptavinir á ekki að standa eftir á vinnulistanum í
+    // Ársskoðun. DB.fetchAll pagar (audit-pagination krefst þess).
+    const ovissP = (window.DB && DB.fetchAll)
+      ? DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('id').eq('ovisst', true).order('id').range(from, to))
+          .then(rows => new Set((rows || []).map(r => +r.id))).catch(() => new Set())
+      : Promise.resolve(new Set());
     const priceP = loadYfirferdPrices(SB).catch(() => ({}));
     // 2026-07-14: authoritative "last inspection" facts parsed from each
     // company's most-recent úttektarskýrsla PDF (inspection month + per-category
@@ -337,6 +345,7 @@
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
     const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
 
+    const _ovissSet = await ovissP;
     const allCompanies = await companiesP;
     if (!allCompanies) return;   // fetch failed — keep the previous cache (same early-out as before)
     _cache.allCompanies = allCompanies;
@@ -532,6 +541,7 @@
         return {
           ...c,
           _ars,
+          _ovisst: _ovissSet.has(+c.id),
           _bru: bruMap[String(c.id)] || null
         };
       })
@@ -1101,6 +1111,14 @@
       const _only = +state._akOnly || 0;
       arr = arr.filter(c => { const v = _AKof(c); return (_only >= 1 && _only <= 3) ? (v === _only) : (v > 0); });
     }
+    // 2026-09-08: faldir (🕶) hverfa úr ÖLLUM sýnum nema sinni eigin. Leitin sér
+    // þá áfram — sama regla og gildir um slepptu: kúnni má aldrei „hverfa" úr
+    // leit án skýringar, annars lítur leitin út fyrir að vera biluð.
+    if (state.status === 'ovisst') {
+      arr = arr.filter(c => c._ovisst);
+    } else if (!hasSearch) {
+      arr = arr.filter(c => !c._ovisst);
+    }
     // 2026-08-11: fela slepptu. Gildir EKKI á „🟡 Slepptir í fyrra" sjálfri (þar
     // eru þeir efnið) og ekki meðan leitað er (leitin fer alltaf yfir allt, sbr.
     // hasSearch að ofan) — annars myndi kúnni „hverfa" úr leit án skýringar.
@@ -1647,7 +1665,9 @@
               // 2026-07-30 (ósk Agnars): tvær síur í viðbót — vinnan sem er
               // hafin en óklárðuð, og allir sem eru á akstursleið.
               { v: 'ivinnslu', label: '🔧 Í vinnslu' },
-              { v: 'akstur', label: '🚗 Aksturslisti' }
+              { v: 'akstur', label: '🚗 Aksturslisti' },
+              // 2026-09-08: faldir — endurskoðunarhólfið. Sama merki og 157.
+              { v: 'ovisst', label: '🕶 Faldir' }
             ].map(s => `
               <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'var(--brand)':'var(--surface)'};color:${state.status===s.v?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
               ${s.v !== 'skipped2025' ? '' : `
@@ -1845,6 +1865,26 @@
       }));
       main.querySelectorAll('._ars-ovr-year').forEach(el => el.addEventListener('click', e => {
         e.stopPropagation(); ovrEditYear(el, +el.dataset.coId);
+      }));
+      // 2026-09-08 (Agnar: „eða setja í Hide"): fela/sýna beint úr röðinni.
+      // Skrifar dálkinn `ovisst` á fyrirtækjaröðina — per-röð, svo tvær vélar
+      // geta ekki klóbberað hvor aðra eins og gerist í settings-blobbinu.
+      main.querySelectorAll('._ars-ovr-hide').forEach(el => el.addEventListener('click', async e => {
+        e.stopPropagation();
+        const coId = +el.dataset.coId; if (!coId) return;
+        const c = (_cache.byId && _cache.byId[coId]) || (_cache.list || []).find(x => +x.id === coId) || {};
+        const nu = !!(_cache.list || []).find(x => +x.id === coId && x._ovisst);
+        const spurt = nu
+          ? 'Sýna „' + (c.nafn || 'félagið') + '" aftur á listanum?'
+          : 'Fela „' + (c.nafn || 'félagið') + '“? Fer af vinnulistanum en helst í þjónustu — öll gögn standa, og það finnst áfram í Faldir-flipanum og í leit.';
+        const ok = (window.Confirm && Confirm.show) ? await Confirm.show(spurt) : window.confirm(spurt);
+        if (!ok) return;
+        const sb = getSB(); if (!sb) { alert('Engin nettenging'); return; }
+        const r = await sb.from('fyrirtaeki').update({ ovisst: !nu }).eq('id', coId);
+        if (r.error) { alert('Vista mistókst: ' + r.error.message); return; }
+        ovrLog(coId, 'ovisst', String(nu), String(!nu));
+        const row = (_cache.list || []).find(x => +x.id === coId); if (row) row._ovisst = !nu;
+        render();
       }));
     }
     main.querySelectorAll('._ars-st').forEach(b => b.addEventListener('click', () => {
@@ -3203,7 +3243,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                         : '<span></span>'}
                       <span style="display:inline-flex;align-items:center;gap:6px">
                         <span class="_st ${stState === 'done' ? '_st--done' : stState === 'work' ? '_st--work' : stState === 'skip' ? '_st--skip' : stState === 'over' ? '_st--late' : '_st--plan'}" title="${esc(stTitle)}">${stState === 'over' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.3 3.9-8.2 14.2a1.9 1.9 0 0 0 1.7 2.9h16.4a1.9 1.9 0 0 0 1.7-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>' : ''}${esc(stLabel)}</span>
-                        ${ovr ? `<span class="_ars-ovr-year" data-co-id="${c.id}" title="⚡ Síðast skoðað (ár) — smelltu til að breyta" style="display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border:1px dashed #d97706;background:#fffbeb;color:#92400e;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">📅 ${lastYr || '—'}</span>` : ''}
+                        ${ovr ? `<span class="_ars-ovr-year" data-co-id="${c.id}" title="⚡ Síðast skoðað (ár) — smelltu til að breyta" style="display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border:1px dashed #d97706;background:#fffbeb;color:#92400e;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">📅 ${lastYr || '—'}</span>` : ''}${ovr ? `<span class="_ars-ovr-hide" data-co-id="${c.id}" title="${c._ovisst ? '🕶 Falið — smelltu til að sýna aftur' : '🕶 Fela þennan (fer í „Faldir“-flipann)'}" style="display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border:1px dashed ${c._ovisst ? '#475569' : '#94a3b8'};background:${c._ovisst ? '#e2e8f0' : 'transparent'};color:#475569;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;margin-left:4px">🕶</span>` : ''}
                       </span>
                     </div>
                   </td>
