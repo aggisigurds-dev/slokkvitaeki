@@ -997,6 +997,9 @@
   // þannig sýnir talan í „📍 Númer"-glugganum raunverulegan fjölda raða.
   function filteredSorted(opts) {
     const ignorePostnr = !!(opts && opts.ignorePostnr);
+    // opts.ignoreMonths: sleppa MÁNAÐAR-síunni en halda öllum hinum — notað til
+    // að telja hvað hver mánaðar-flaga myndi skila (sama hugsun og ignorePostnr).
+    const ignoreMonths = !!(opts && opts.ignoreMonths);
     const today = new Date();
     const curYear = today.getFullYear();
     const curMonth = today.getMonth() + 1;
@@ -1007,7 +1010,7 @@
     // address no matter which inspection month it sits in. The month filter
     // only applies when the search box is empty.
     const hasSearch = !!state.search.trim();
-    if (!hasSearch && state.months && state.months.length) {
+    if (!hasSearch && !ignoreMonths && state.months && state.months.length) {
       // Fjöl-val: sýna fyrirtæki hvers skoðunarmánuður er í valinu. 0 = „Án
       // mánaðar" (enginn mánuður skráður, m<1 eða >12).
       const set = new Set(state.months);
@@ -1478,7 +1481,15 @@
     const allCount = skipHidden ? all.filter(c => !isSkippedLastYear(c, curYear)).length : all.length;
     const monthCounts = Array(13).fill(0);
     // index 0 = fjöldi án skráðs mánaðar („Án mánaðar"-chippurinn)
-    arsAll.forEach(c => { const m = +c._ars.inspect_month || 0; if (m >= 1 && m <= 12) monthCounts[m]++; else monthCounts[0]++; });
+    // 2026-09-08 (Agnar: „án mánaðar þar stendur 38 en er í raun 95"): teljarinn las
+    // ÁÐUR úr `arsAll` = aðeins þá sem eiga skráðan tækjabúnað (`_ars.equipment`).
+    // Sjálf SÍAN (filteredSorted) keyrir hins vegar á ALLA í þjónustu, líka þá sem
+    // eiga engin tæki skráð enn — svo flagan sagði 38 en smellurinn skilaði 95 röðum.
+    // Talan er nú fengin úr NÁKVÆMLEGA sama úrvali og smellurinn gefur: allar hinar
+    // síurnar (staða, póstnúmer, fela slepptu, leit) gilda, aðeins mánaðar-sían sjálf
+    // er tekin út. Sama regla og „📍 Númer"-teljararnir nota (pnrPool).
+    const moPool = filteredSorted({ ignoreMonths: true });
+    moPool.forEach(c => { const m = +((c._ars || {}).inspect_month) || 0; if (m >= 1 && m <= 12) monthCounts[m]++; else monthCounts[0]++; });
 
     // Póstnúmerin í gögnunum + fjöldi á hvert (fyrir „📍 Númer"-gluggann).
     // Bæjarnafnið er lesið úr heimilisföngunum sjálfum (algengasti textinn
