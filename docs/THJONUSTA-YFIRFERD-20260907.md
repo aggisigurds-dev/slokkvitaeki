@@ -402,3 +402,48 @@ Systkinastaðir sem eiga að standa aðskildir (Center Hótel, Vélrás) eru lí
 `urelt`** þótt þau beri `last_insp 2025-05-15` og `next_insp 2026-05-15`. Það er
 eina félagið í öllum grunninum í þeirri stöðu — lítur út eins og slys. Ekki
 snert; bíður ákvörðunar.
+
+## ⛔ „Sameina það allt" — ekkert reyndist tvítekning (08.09.2026)
+
+Agnar samþykkti að sameina sex pör sem ég hafði kallað tvíteknar raðir. **Ekkert
+þeirra stóðst prófið.** Öll sex voru flett upp hjá Skatturinn gegnum
+`/api/kt-lookup` áður en nokkuð var snert:
+
+| Par | Niðurstaða |
+|---|---|
+| 257 Álfaskeið 78 ↔ 1409 Álfaskeið 78-80 | **Tvö skráð húsfélög**: „Álfaskeið 78,húsfélag" (601175-0459) og „Álfaskeið 78-80,húsfélag" (421008-1240) |
+| 301 Flétturima ↔ 656 Flétturimi 16 | **Tvö skráð húsfélög**: „Flétturimi 10-16,húsfélag" og „Flétturimi 16,húsfélag" |
+| 532 Bílabúð Benna ↔ 1612 Fiskislóð | **Sami kt, sama base, stadur_nr 1 og 2** — rekstrarfélags-staðir. Agnar staðfesti: „bílabúð benna séu á tveim stöðum fiskislóð og síðan eitthvað klett…" |
+| 265 Bílaleiga Flugleiða ↔ 1760 Flugvellir 11 | Sami kt, base, stadur_nr 1 og 2 — staðir |
+| 208 Lindaberg (T-10) ↔ 603 Lindaberg ehf. | Sitt hvor kennitalan, sitt hvort sveitarfélagið |
+| 697 Grasnytjar Hjarðarbóli ↔ 578 Hjarðarból ehf | Sitt hvor kennitalan |
+
+**Standandi reglan í `tools/sameina-stad.cjs` bjargaði þessu:** tólið EYÐIR
+tækjum tvítaksins (talan á ekki að tvöfaldast) og hefði því hent 17 tækjum
+Bílabúðar Benna og 6 hjá Hertz. Nafna- og heimilisfangsleit finnur SKYLDAR raðir,
+ekki tvíteknar — kennitalan er eina auðkennið sem sker úr.
+
+### Það sem var gert í staðinn — skjölin flutt á réttan eiganda
+
+| Skjal | Fært | Sönnun |
+|---|---|---|
+| doc 141 · úttektarskýrsla 2024 | 499 → **291** | Skráin heitir „Austurberg 2-4-6 2024.pdf", PDF ber kt 511115-1400 og segir í „Annað": *„Öll slökkvitæki í stigagangi 2-4 og 6 yfirfarin"* |
+| doc 548 · úttektarskýrsla 2026 | 499 → **291** | „Austurberg húsfélagið 2-4-6 2026.pdf" |
+| doc 386 · úttektarskýrsla 2025 | 721 → **447** | „Heimilisiðnaðarfélag Nethyl 2e 2025.pdf", PDF ber kt 600169-6619 |
+| doc 632 · → **brunakerfi** | 603 → **208** | PDF er brunaviðvörunarkerfis-skýrsla fyrir Lindaberg ehf (T-10 Hótel) kt 671222-0240 |
+| doc 1078 · → **samningur** | 1416 → **1631** | „þjónustus. Laugavegur 11 2024.pdf" — þjónustusamningur, ekki úttekt |
+| doc 663 · → **samningur** | (1264, óbreytt félag) | „Slökkvitæki ehf — Kynning á kerfinu (1).pdf" — kynningarglærur skráðar sem úttektarskýrsla |
+
+Þrjár `arsskodun_report_facts`-raðir sem byggðu EINGÖNGU á skjali sem fór burt
+voru fjarlægðar (499, 721, 1416). Afrit: `tools/bakk-rangskrad-2026-09-08.json`.
+
+### 499 Austurberg 2, húsfélag — falskt „Skoðað 2026"
+
+Eftir flutninginn kom í ljós að félagið á **enga sölu, engan reikning og enga
+skýrslu síðan janúar 2021** — öll 2024/2026-virknin tilheyrir 291. Samt bar
+blobbið `last_year_inspected: 2026` og `steps_2026: {uttekt, skyrsla}`, stimplað
+út frá skýrslunni sem var aldrei þess.
+
+Stimpillinn hreinsaður (afrit `tools/bakk-499-stimpill-2026-09-08.json`).
+**Félagið er nú fyrsti sjálfsagði 🕶-kandídatinn**: raunverulegt húsfélag sem er
+þjónustað undir kennitölu 2-4-6.
