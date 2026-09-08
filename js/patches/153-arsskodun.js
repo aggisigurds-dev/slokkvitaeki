@@ -199,7 +199,12 @@
     try { return await _loadAllInner(); } finally { _loadingAll = false; }
   }
   async function _loadAllInner() {
-    const SB = getSB();
+    // 08.09.2026: við ræsingu getur DB.sb verið óstofnað þegar fyrsta bakgrunns-sóknin
+    // (show → backgroundRefresh) fer af stað — þá skilaði þetta STRAX og tómt, undirskriftin
+    // stóð óbreytt („changed:false") og borðið sat á snapshot-tölunum („Búið 2026" 386 í
+    // stað 338) þar til eitthvað annað teiknaði. Bíðum eftir clientinum (allt að 10 s).
+    let SB = getSB();
+    for (let i = 0; !SB && i < 40; i++) { await new Promise(r => setTimeout(r, 250)); SB = getSB(); }
     if (!SB) return;
 
     // 2026-06-21 (perf): kick off the INDEPENDENT loads CONCURRENTLY instead of
@@ -241,6 +246,14 @@
     // uttaeki guess (auto-generated placeholders) and any stale blob month.
     const factsP = SB.from('arsskodun_report_facts')
       .select('fyrirtaeki_id,inspect_month,equipment,report_year,total_devices')
+      .then(r => (r && r.data) || [])
+      .catch(() => []);
+    // 08.09.2026: reikninga-staðreyndir (uttekt_reikningur_facts, heimild reikningur-060)
+    // fyrir EFTIRLITIÐ „prófíll stemmir við skýrslu EÐA reikning" — nýjasti reikningur per
+    // stað. Aðeins samanburður; yfirskrifar ALDREI TÆKI-töluna (sjá _misraemi að neðan).
+    const invFactsP = SB.from('uttekt_reikningur_facts')
+      .select('fyrirtaeki_id,invoice_year,invoice_date,equipment,total_devices')
+      .order('invoice_date', { ascending: false, nullsFirst: false })
       .then(r => (r && r.data) || [])
       .catch(() => []);
     // 2026-08-17 (Agnar — Pizzan: „everything yellow but still Skoðað 2026 …
@@ -343,6 +356,15 @@
 
     await appSettingsP;
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
+    // 2026-09-08 (Agnar: „láta reiknaðar upphæðir útfærast frá raun tölum"):
+    // reiknivélin á fyrirtækjasíðunni (patch 129) geymir SAMTALS m/vsk í
+    // `inspection_trips[coId].computed.total` — sama tala og stendur neðst á
+    // úttektinni. Hún er RAUNTALAN: hún ber þjónustuval hvers tækis, tilboðsverð,
+    // afslætti, aukalínur, skýrslugerð og réttan akstursfjölda. Áætlunin hér
+    // (`estimated_yearly`) er aftur á móti flatt Σ(tæki × verð) + skýrslugerð +
+    // einn akstur og skeikar því — Center Hótel Plaza: áætlun 371þ, raun 397þ.
+    // Við notum raun þegar hún er til og merkjum hana; annars áætlun.
+    const tripMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('inspection_trips')) || {};
     const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
 
     const _ovissSet = await ovissP;
@@ -356,6 +378,8 @@
     const PRICE = await priceP;
     const factsList = await factsP;
     const factsById = Object.fromEntries((factsList || []).map(f => [String(f.fyrirtaeki_id), f]));
+    const invFactsById = {};
+    ((await invFactsP) || []).forEach(f => { const k = String(f.fyrirtaeki_id); if (!invFactsById[k]) invFactsById[k] = f; });   // nýjasti fyrst
     const docYears = await docYearsP;
     _cache.docYears = docYears;
     _cache.tolur = await tolurP;
@@ -465,30 +489,33 @@
         // þegar ekkert ferskara er til. Handvirku yfirskriftirnar
         // (equipment_manual / inspect_month_manual) vinna ÁFRAM yfir allt.
         const fact = factsById[String(c.id)];
+        // 08.09.2026 (Agnar: „Tækjastaðan á forsíðunni verður að telja úr því sem inn á
+        // company profile … og company profill verður að stemma við annaðhvort invoice
+        // eða úttektarskýrslu"): TÆKI-dálkurinn telur AÐEINS prófílinn (uttaeki á
+        // fyrirtaeki_id, `units` að ofan) — eða handvirku yfirskriftina. Skýrslu- og
+        // reikninga-staðreyndir yfirskrifa töluna EKKI lengur (Hólabrú sýndi 5 SLT/1 BSL
+        // úr skýrslu meðan prófíllinn var tómur — „Slökkvitæki (0)" á fyrirtækjasíðunni).
+        // Þær eru í staðinn EFTIRLITIÐ: stemmi prófíllinn hvorki við skýrslu né reikning
+        // (SLT/BSL/RS) fær röðin ⚠-merki og síuna „⚠ Stemmir ekki". Fyrri regla (14.07/
+        // 08.09: skýrsla trompar, gömul skýrsla fyllir tóman lista) er þar með úr gildi.
+        // Vörður: tools/audit-taeki-profill.cjs.
+        const _profG = eqGroups(_ars.equipment || {});
+        const _factSrc = [];
+        const _addFact = (label, year, eqObj) => {
+          const g = eqGroups(normFactEq(eqObj));
+          if (!(g.slt || g.bsl || g.rs)) return;
+          _factSrc.push({ label, year: +year || 0, slt: g.slt, bsl: g.bsl, rs: g.rs,
+            ok: g.slt === _profG.slt && g.bsl === _profG.bsl && g.rs === _profG.rs });
+        };
+        if (fact) _addFact('skýrsla', fact.report_year, fact.equipment);
+        const invFact = invFactsById[String(c.id)];
+        if (invFact) _addFact('reikningur', invFact.invoice_year, invFact.equipment);
+        if (_factSrc.length) {
+          _factSrc.sort((a, b) => b.year - a.year);
+          _ars._factEq = _factSrc;
+          _ars._misraemi = !manual.equipment_manual && !_factSrc.some(f => f.ok);
+        }
         if (fact) {
-          const factFresh = +fact.report_year >= 2025;
-          // 2026-09-08 (Agnar: „um 40 sem eru ekki með nein tæki í prófíl"):
-          // ferskleika-vörnin hér að ofan er til að GAMLA skýrslan feli ekki tæki
-          // sem eru til í dag. Eigi félagið ENGIN lifandi tæki er ekkert að verja —
-          // og þá er gamla talan eina heimildin sem til er. Núll er verri ágiskun
-          // en tveggja ára gömul talning tæknimannsins. Mælt: 9 félög fá tölu í
-          // stað núlls, þar af 2 á borðinu (Hjarðarból 12, Soffía Jónsdóttir 16);
-          // ekkert félag sem á lifandi tæki breytist.
-          const ekkertLifandi = !units.length;
-          const eqp = fact.equipment && typeof fact.equipment === 'object' ? fact.equipment : null;
-          const eqTotal = eqp ? Object.values(eqp).reduce((s, v) => s + (+v || 0), 0) : 0;
-          if ((factFresh || ekkertLifandi) && eqp && eqTotal > 0 && !manual.equipment_manual) {
-            _ars.equipment = eqp;
-            let est2 = 0;
-            Object.entries(eqp).forEach(([cat, n]) => {
-              est2 += (PRICE[cat] != null ? PRICE[cat] : PRICE.annad) * (+n || 0);
-            });
-            if (est2 > 0) est2 += SKYRSLUGERD + AKSTUR_UNIT * (+manual.akstur_multiplier || 1);
-            _ars.estimated_yearly = Math.round(est2);
-            _ars._unit_count = eqTotal;
-            _ars._fromReport = true;
-            if (!factFresh) _ars._fromOldReport = +fact.report_year || true;
-          }
           // 2026-07-16 MÁNAÐAR-FORGANGSREGLA: inspect_month_manual > blob
           // inspect_month (hvaða gildi sem er, geymt af notanda) > fact.inspect_month
           // > afleiðsla. Skýrslu-mánuðurinn FYLLIR aðeins í eyðu — geymdur blob-
@@ -555,15 +582,23 @@
             _ars._year_from_report = true;
           }
         }
+        const _trip = tripMap[String(c.id)];
+        const _raun = (_trip && _trip.computed && +_trip.computed.total > 0)
+          ? Math.round(+_trip.computed.total) : 0;
         return {
           ...c,
           _ars,
+          _raun,
           _ovisst: _ovissSet.has(+c.id),
           _bru: bruMap[String(c.id)] || null
         };
       })
       .sort((a, b) => String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
     writeSnapshot();   // næsta kalda opnun málar strax úr þessu eintaki
+    // 08.09.2026: HVER sem hleður (190/304 kalla líka Arsskodun.loadAll) — sé borðið uppi
+    // og gögnin breytt, teiknum við. Áður teiknaði aðeins backgroundRefresh, og hleðsla sem
+    // annar kveikti skildi spjöldin eftir á gamla eintakinu (386 ↔ 338).
+    repaintIfChanged();
   }
 
   // ── Live-equipment helpers (2026-06-01) ───────────────────────────────────
@@ -580,6 +615,26 @@
     return foldName(s).replace(/[₀-₉]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x2080 + 48));
   }
   // Map a raw uttaeki.type to a canonical service category.
+  // 08.09.2026: staðreynda-lyklar úr skýrslum (co2_5, duft6_12, brunaslongur, reykskynjarar…)
+  // og reikningum (co2, duft, brunaslanga, reykskynjari…) felldir í sama lyklasett og
+  // categoryOf() gefur — svo eqGroups() telji þá nákvæmlega eins og prófílinn.
+  function normFactEq(obj) {
+    const out = {};
+    if (!obj || typeof obj !== 'object') return out;
+    Object.entries(obj).forEach(([k0, v]) => {
+      const n = +v || 0; if (!n) return;
+      const k = foldTok(k0);
+      let cat = 'annad';
+      if (/lettv|abf|frod/.test(k)) cat = 'lettvatn';
+      else if (/duft|abc|pfc/.test(k)) cat = (/2/.test(k) && !/6|12/.test(k)) ? 'duft2' : 'duft6_12';
+      else if (/co2|kolsyr/.test(k)) cat = /_2$|2kg$/.test(k) ? 'co2_2' : 'co2_5';
+      else if (/brunasl|hose/.test(k)) cat = 'brunaslongur';
+      else if (/reyksk|smoke/.test(k)) cat = 'reykskynjarar';
+      else if (/teppi|blanket|eldvarn/.test(k)) cat = 'eldvarnarteppi';
+      out[cat] = (out[cat] || 0) + n;
+    });
+    return out;
+  }
   function categoryOf(type, size) {
     const t = foldTok(type);
     const sizeNum = parseFloat(String(size || '').replace(',', '.')) || 0;
@@ -619,6 +674,16 @@
   }
   // Compact SLT/BSL/RS trio for a table cell. `mode`:'screen' → stacked mini
   // stats w/ theme tokens; 'print' → plain inline text for the print sheet.
+  // 08.09.2026: ⚠-merkið — prófíllinn (TÆKI-dálkurinn) stemmir hvorki við skýrslu né
+  // reikning. Sýnir nýjustu staðreyndina (SLT/BSL/RS); allar í title-textanum.
+  function misraemiMark(ars) {
+    if (!ars || !ars._misraemi || !Array.isArray(ars._factEq) || !ars._factEq.length) return '';
+    const tip = 'Prófíllinn stemmir hvorki við skýrslu né reikning (SLT/BSL/RS):\n' +
+      ars._factEq.map(f => f.label + ' ' + (f.year || '') + ': ' + f.slt + '/' + f.bsl + '/' + f.rs).join('\n') +
+      '\nLagaðu tækin á fyrirtækjasíðunni svo prófíllinn stemmi við annað hvort.';
+    const f = ars._factEq[0];
+    return '<span class="_ars-misr" title="' + esc(tip) + '" style="display:inline-flex;align-items:center;gap:3px;margin-left:5px;padding:1px 6px;border-radius:6px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;font-size:10px;font-weight:800;white-space:nowrap;vertical-align:top;line-height:1.5">⚠ ≠ ' + f.slt + '/' + f.bsl + '/' + f.rs + '</span>';
+  }
   function eqTrioHtml(equipment, mode) {
     const g = eqGroups(equipment);
     if (!g.total) return mode === 'print' ? '' : '—';
@@ -992,6 +1057,14 @@
     if (fc === 'human') return true;
     return (+((c._ars || {}).last_year_inspected) || 0) === curYear;
   }
+  // Talan sem sýnd er: RAUN úr reiknivélinni þegar hún er til, annars áætlun.
+  // Ein skilgreining — svo röðin, samantektin og spjaldið geti ekki sagt sitt hvað.
+  function virdiOf(c) {
+    if (!c) return 0;
+    return (+c._raun > 0) ? +c._raun : (+((c._ars || {}).estimated_yearly) || 0);
+  }
+  function erRaun(c) { return !!(c && +c._raun > 0); }
+
   function saveState() {
     localStorage.setItem(LS_VIEW, state.view);
     localStorage.setItem(LS_SORT, state.sort);
@@ -1078,6 +1151,9 @@
       arr = arr.filter(c => isDoneYear(c, curYear));
     } else if (state.status === 'suspect') {
       arr = arr.filter(isSuspect);
+    } else if (state.status === 'misraemi') {
+      // 08.09.2026: EFTIRLITIÐ — prófíll stemmir hvorki við skýrslu né reikning (SLT/BSL/RS).
+      arr = arr.filter(c => !!(c._ars && c._ars._misraemi));
     } else if (state.status === 'pending') {
       // 2026-07-17 (ósk Agnars): „Eftir" = AÐEINS raunverulega á eftir — rauða
       // „Á eftir" pillan (mánuður kominn/liðinn) + „Sleppt '24" (sleppt í fyrra).
@@ -1304,11 +1380,22 @@
     for (let i = 0; i < a.length; i++) {
       const c = a[i], x = c._ars || {};
       s += c.id + ',' + (x.last_year_inspected || '') + ',' + (x.inspect_month || '')
-         + ',' + (x._unit_count || '') + ',' + (x.estimated_yearly || '') + ',' + (x.priority || '') + ';';
+         + ',' + (x._unit_count || '') + ',' + (x.estimated_yearly || '') + ',' + (x.priority || '') + ',' + (x._misraemi ? 1 : 0) + ';';
     }
     return s;
   }
 
+  // 08.09.2026: ein regla um „teikna ef gögnin breyttust" — kölluð úr backgroundRefresh OG
+  // í lok hverrar hleðslu (_loadAllInner). Snertir ekki ferðanótu í ritun.
+  function repaintIfChanged() {
+    try {
+      if (!_rendered || !document.getElementById('ars-main') || !document.getElementById('_ars-search')) return;
+      const ns = dataSig();
+      const _editingNote = document.activeElement && document.activeElement.classList
+        && document.activeElement.classList.contains('_ars-plannote');
+      if (ns !== _lastDataSig && !_editingNote) { render(); _lastDataSig = ns; }
+    } catch (e) { try { console.warn('[arsskodun] repaintIfChanged', e); } catch (_) {} }
+  }
   async function backgroundRefresh() {
     if (_bgRefreshing) return;
     if (Date.now() - _lastLoad < 8000) return;   // rapid back-and-forth → skip the refetch
@@ -1543,6 +1630,22 @@
     // 2026-09-08: fjöldi í endurheimt — talinn af ÖLLU borðinu, ekki undir síunni,
     // svo flagan segi „svona margir bíða", ekki „svona margir bíða í mars".
     const endurCount = all.filter(c => c._ovisst).length;
+    // 08.09.2026 (Agnar: „þegar ég ýti á Eftir takkann þá kemur 157 en rauði kassinn segir
+    // 236 … látið stóru kassana sýna hvað þeir eru að telja eða telja rétt"): spjöldin og
+    // flögurnar telja nú ÚR SÖMU SÍU (filteredSorted) — mánaðar- og póstnúmera-síur teknar
+    // út, feluglerið heldur — svo talan á spjaldinu er nákvæmlega fjöldinn sem smellur á
+    // flöguna gefur (yfir allt árið). Undirlínan segir HVAÐ er talið. Rauða spjaldið las
+    // áður v_thjonustu_tolur.eftir_2026 (= í ársskoðun − 2026-skýrsla skráð), allt önnur
+    // skilgreining en ⏳ Eftir-flagan.
+    const countByStatus = (v) => {
+      const keepS = state.status, keepQ = state.search;
+      state.status = v; state.search = '';
+      try { return filteredSorted({ ignoreMonths: true, ignorePostnr: true }).length; }
+      catch (_) { return 0; }
+      finally { state.status = keepS; state.search = keepQ; }
+    };
+    const cnt = { all: countByStatus('all'), done: countByStatus('done'), pending: countByStatus('pending'), pending2026: countByStatus('pending2026') };
+    const misrCount = all.filter(c => c._ars && c._ars._misraemi).length;
     // Endurheimtu-kandídatar (ósk Agnars 08.09.2026): „síðasta skoðun 2023" — þeir
     // sem eru líklega hættir. Talið á öllu borðinu, þeir sem eru ÞEGAR í endurheimt
     // ekki taldir með svo talan sé „svona mörgum má bæta við".
@@ -1605,18 +1708,22 @@
     // _loadAllInner) — engir staðbundnir útreikningar mega birtast þar.
     const T = _cache.tolur || {};
     const tv = k => (T[k] == null ? '—' : T[k]);
-    const totalEstimate = arsAll.reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
+    const totalEstimate = arsAll.reduce((s, c) => s + virdiOf(c), 0);
+    // Hve stór hluti tölunnar er RAUN (úr reiknivélinni) og hve stór áætlun —
+    // svo kassinn geti sagt það hreint út í stað þess að láta líta út fyrir að
+    // allt sé reiknað.
+    const raunFjoldi = arsAll.filter(erRaun).length;
     const estDoneThisYear = arsAll
-      .filter(c => +c._ars.last_year_inspected === curYear)
-      .reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
+      .filter(c => isDoneYear(c, curYear))
+      .reduce((s, c) => s + virdiOf(c), 0);
 
     // 2026-05-17 (Luna): per-month / per-filter revenue summary shown below
     // the list. Lets the user see "if I do all of May's inspections, that's X kr".
     const filteredAars = filtered.filter(c => c._ars && c._ars.equipment);
-    const filteredTotal = filteredAars.reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
+    const filteredTotal = filteredAars.reduce((s, c) => s + virdiOf(c), 0);
     const filteredDone = filteredAars
       .filter(c => +c._ars.last_year_inspected === curYear)
-      .reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
+      .reduce((s, c) => s + virdiOf(c), 0);
     const filteredRemain = Math.max(0, filteredTotal - filteredDone);
     const filteredDonePct = filteredTotal > 0 ? Math.round(filteredDone / filteredTotal * 100) : 0;
     const filterLabel = (state.months && state.months.length)
@@ -1625,6 +1732,7 @@
        : state.status === 'pending' ? `Á eftir + sleppt (allir mánuðir)`
        : state.status === 'pending2026' ? `Eftir ${curYear} — allt óbúið (allir mánuðir)`
        : state.status === 'suspect' ? `Óvíst — líklega óvart í þjónustu (engin saga, enginn mánuður, engin tæki)`
+       : state.status === 'misraemi' ? `Stemmir ekki — prófíll ≠ skýrsla/reikningur (SLT/BSL/RS)`
        : state.status === 'ivinnslu'? `Í vinnslu`
        : state.status === 'akstur'  ? `Aksturslisti`
        : state.status === 'never'   ? `Aldrei skoðað`
@@ -1644,7 +1752,7 @@
             <div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🏢</div>
             <div style="min-width:0">
               <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Fyrirtæki í Þjónustu</h1>
-              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${tv('allar_i_thjonustu')} fyrirtæki · ${tv('i_arsskodun')} í árlegri slökkvitækjaskoðun${skipHidden ? ` · <span class="_ars-goskip" title="Opna listann yfir slepptu — þar má virkja einstaka aftur með ↩" style="color:#fcd34d;cursor:pointer;text-decoration:underline dotted">🟡 ${skippedCount} slepptir faldir</span>` : ''}</div>
+              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${cnt.all} fyrirtæki á borðinu · ${arsAll.length} með skráð tæki${skipHidden ? ` · <span class="_ars-goskip" title="Opna listann yfir slepptu — þar má virkja einstaka aftur með ↩" style="color:#fcd34d;cursor:pointer;text-decoration:underline dotted">🟡 ${skippedCount} slepptir faldir</span>` : ''}</div>
             </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1679,23 +1787,31 @@
         <div class="_ars-statgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
           <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
-            <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${tv('fjoldi')}</div>
-            <div style="font-size:10.5px;color:var(--ink3)">${tv('i_arsskodun')} í ársskoðun</div>
+            <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${cnt.all}</div>
+            <div style="font-size:10.5px;color:var(--ink3)">= Allt-flagan · ${arsAll.length} með skráð tæki</div>
           </div>
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px" title="Stóra talan = merkt Skoðað ${curYear} — sama tala og listinn sýnir. Neðri talan = ${curYear}-skýrsla skráð í skjalagrunninn. Munurinn = skoðaðir staðir sem vantar skráða skýrslu.">
             <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Búið ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${buidTalin}</div>
-            <div style="font-size:10.5px;color:#16a34a">þar af ${tv('buid_2026')} með skýrslu skjalfesta</div>
+            <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${cnt.done}</div>
+            <div style="font-size:10.5px;color:#16a34a">= ✅ Búið-flagan · ${tv('buid_2026')} með ${curYear}-skýrslu skjalfesta</div>
           </div>
           <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Eftir ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${tv('eftir_2026')}</div>
-            <div style="font-size:10.5px;color:#b45309">í pípunni</div>
+            <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${cnt.pending2026}</div>
+            <div style="font-size:10.5px;color:#b45309">= 🗓️ Eftir ${curYear}-flagan · þar af ⏳ Eftir (mánuður kominn) ${cnt.pending}</div>
           </div>
           <div class="bstal-hero" style="background:var(--thm-sumh);color:#fff;border:1px solid var(--brand);border-radius:10px;padding:11px 13px">
-            <div style="font-size:10px;font-weight:700;color:var(--brd2);text-transform:uppercase;letter-spacing:.05em">≈ Áætlað virði ársþjónustu ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums">${fmtKr(totalEstimate)}</div>
-            <div style="font-size:10.5px;color:#86efac">þar af ≈ ${fmtKr(estDoneThisYear)} búið</div>
+            <!-- 2026-09-08 (Agnar): talan er nú í ÞÚSUNDUM og byggir á RAUN-tölum
+                 reiknivélarinnar þar sem þær eru til (inspection_trips.computed.total,
+                 sama tala og stendur neðst á úttektinni), annars á áætluninni.
+                 ↻ sækir raun-tölurnar upp á nýtt — VILJANDI handvirkt, ekki við
+                 hverja opnun síðunnar. -->
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="font-size:10px;font-weight:700;color:var(--brd2);text-transform:uppercase;letter-spacing:.05em;flex:1">≈ Virði ársþjónustu ${curYear}</div>
+              <button id="_ars-virdi-refresh" type="button" title="Endurreikna út frá reiknivélinni inni í fyrirtækjunum (úttektarskýrslu/reikningi). Keyrist AÐEINS þegar ýtt er á hana." style="border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:7px;width:24px;height:24px;line-height:1;cursor:pointer;font-size:13px;padding:0;flex:0 0 auto">↻</button>
+            </div>
+            <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums">${fmtKrShort(totalEstimate)}</div>
+            <div style="font-size:10.5px;color:#86efac">þar af ${fmtKrShort(estDoneThisYear)} búið${raunFjoldi ? ` · <span title="Þessi félög bera töluna úr reiknivélinni sjálfri; hin bera áætlun (Σ tæki × verð + skýrslugerð + einn akstur)." style="border-bottom:1px dotted #86efac;cursor:help">${raunFjoldi} raunreiknuð</span>` : ''}</div>
           </div>
         </div>
 
@@ -1706,12 +1822,14 @@
           <div class="_ars-statusrow" style="display:flex;gap:5px;border:1px solid var(--brd2);border-radius:8px;overflow:hidden;background:var(--surface)">
             ${[
               { v: 'all', label: 'Allt' },
-              { v: 'done', label: '✅ Búið ' + curYear },
-              { v: 'pending', label: '⏳ Eftir' },
-              { v: 'pending2026', label: '🗓️ Eftir ' + curYear },
+              { v: 'done', label: '✅ Búið ' + curYear + ' ' + cnt.done },
+              { v: 'pending', label: '⏳ Eftir ' + cnt.pending },
+              { v: 'pending2026', label: '🗓️ Eftir ' + curYear + ' ' + cnt.pending2026 },
               { v: 'skipped2025', label: '🟡 Slepptir í fyrra' },
               { v: 'priority', label: '❗ Forgangur' },
               { v: 'suspect', label: '❓ Óvíst' },
+              // 08.09.2026: eftirlitið — prófíll ≠ skýrsla/reikningur (sjá _misraemi í loadAll).
+              { v: 'misraemi', label: '⚠ Stemmir ekki' + (misrCount ? ' ' + misrCount : '') },
               { v: 'never', label: '⛔ Aldrei' },
               // 2026-07-28: handvirka NÝTT-merkið (patch 281 — takki á
               // fyrirtækjaprófílnum). Sama merki og sía og í Brunakerfi yfirliti.
@@ -1890,6 +2008,21 @@
       else if (v === 'poststada') { state.sortCol = 'poststada'; state.sortDir = 'asc'; }
       else if (v === 'postavail') { state.sortCol = 'postavail'; state.sortDir = 'asc'; }
       state.sort = v; saveState(); render();
+    });
+    // ↻ Endurreikna virðið. Sækir `inspection_trips` FERSKT úr Supabase (ekki úr
+    // AppSettings-skyndiminninu) og keyrir loadAll svo raun-tölurnar rati inn.
+    // Handvirkt að ósk Agnars — ekki við hverja opnun.
+    main.querySelector('#_ars-virdi-refresh')?.addEventListener('click', async (e) => {
+      const b = e.currentTarget;
+      const fyrra = b.textContent; b.textContent = '…'; b.disabled = true;
+      try {
+        if (window.AppSettings && AppSettings.load) await AppSettings.load();
+        await loadAll();
+        render();
+        if (window.Toast && Toast.show) Toast.show('↻ Virðið endurreiknað');
+      } catch (err) {
+        alert('Endurreikning mistókst: ' + ((err && err.message) || err));
+      } finally { b.textContent = fyrra; b.disabled = false; }
     });
     main.querySelector('#_ars-print')?.addEventListener('click', printList);
     // 🚗▾ Prenta-aksturslista fellilisti (per bílstjóra, póstnúmeraröð). Gagnsæ bakgrunns-
@@ -2301,6 +2434,7 @@
        : state.status === 'pending'     ? 'Á eftir + sleppt'
        : state.status === 'pending2026' ? `Eftir ${curYear}`
        : state.status === 'suspect'     ? 'Óvíst — líklega óvart í þjónustu'
+       : state.status === 'misraemi'    ? 'Stemmir ekki — prófíll ≠ skýrsla/reikningur'
        : state.status === 'ivinnslu'    ? 'Í vinnslu'
        : state.status === 'akstur'      ? ('Aksturslisti' + ((+state._akOnly >= 1 && +state._akOnly <= 3) ? (' ' + state._akOnly + ' · póstnúmeraröð') : ''))
        : state.status === 'never'       ? 'Aldrei skoðað'
@@ -2317,7 +2451,7 @@
       const lastYr = +ars.last_year_inspected || 0;
       const fieldYr = +ars.field_inspected_year || 0;
       const totalEq = Object.values(ars.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
-      const est = +ars.estimated_yearly || 0;
+      const est = (typeof virdiOf === 'function' && typeof c !== 'undefined') ? virdiOf(c) : (+ars.estimated_yearly || 0);
       totalEst += est;
       // Mirror the on-screen "${curYear}" status dot exactly (same flags,
       // colours and meaning) so the printed list matches what's on screen.
@@ -2755,7 +2889,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       if (ktLine) subBits.push(esc(ktLine));
       if (pnr) subBits.push(esc(pnr));
       if (!email) subBits.push('✉ vantar');
-      const est = +ars.estimated_yearly || 0;
+      const est = (typeof virdiOf === 'function' && typeof c !== 'undefined') ? virdiOf(c) : (+ars.estimated_yearly || 0);
       const virdi = est ? esc(fmtKr(est)) : '<span style="color:#b6c0cc">—</span>';
       const sidast = ars.last_skodun
         ? esc(stuttSkodun(ars.last_skodun))
@@ -2828,7 +2962,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
           // 2025 was a chaotic year and several locations never got visited.
           const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
           const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
-          const est = +ars.estimated_yearly || 0;
+          const est = (typeof virdiOf === 'function' && typeof c !== 'undefined') ? virdiOf(c) : (+ars.estimated_yearly || 0);
 
           const statusBadge = isDone
             ? '<span style="background:#dcfce7;color:#15803d;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #bbf7d0">✅ ' + curYear + '</span>'
@@ -2877,7 +3011,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                 </div>
                 <div ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum"` : ''} style="background:${ovr ? '#fffbeb' : 'var(--bg)'};border:1px ${ovr ? 'dashed #d97706' : 'solid var(--brd)'};border-radius:6px;padding:4px 7px${ovr ? ';cursor:pointer;min-height:40px;box-sizing:border-box' : ''}">
                   <div style="font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase">Tæki</div>
-                  <div style="margin-top:1px">${manualMark(eqTrioHtml(eq, 'screen'), !!ars.equipment_manual)}</div>
+                  <div style="margin-top:1px">${manualMark(eqTrioHtml(eq, 'screen'), !!ars.equipment_manual)}${misraemiMark(ars)}</div>
                 </div>
                 <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:4px 7px">
                   <div style="font-size:9px;font-weight:700;color:#166534;text-transform:uppercase">Áætl.</div>
@@ -3292,7 +3426,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
               const isFieldOnly = !isDone && fieldYr === curYear;
               const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
               const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
-              const est = +ars.estimated_yearly || 0;
+              const est = (typeof virdiOf === 'function' && typeof c !== 'undefined') ? virdiOf(c) : (+ars.estimated_yearly || 0);
               const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
               const stLabel = isDone ? ('Skoðað ' + curYear)
                 : isFieldOnly ? 'Í vinnslu'
@@ -3327,7 +3461,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                       <div class="${g.bsl ? '' : 'off'}" title="Brunaslöngur"><b>${g.bsl || 0}</b><i>BSL</i></div>
                       <div class="${g.rs ? '' : 'off'}" title="Reykskynjarar"><b>${g.rs || 0}</b><i>RS</i></div>
                       <div class="_estcell" title="Áætlað virði ársþjónustu"><b>${fmtKrShort(est)}</b><i>ÁÆTL</i></div>
-                    </div>${ars.equipment_manual ? '<span title="Handvirkt yfirskrifað" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-left:4px;vertical-align:top"></span>' : ''}
+                    </div>${ars.equipment_manual ? '<span title="Handvirkt yfirskrifað" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-left:4px;vertical-align:top"></span>' : ''}${misraemiMark(ars)}
                   </td>
                   <td class="center _arsak-cell" onclick="event.stopPropagation()"></td>
                   <td class="center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
@@ -3369,7 +3503,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
     const m = +ars.inspect_month || 0;
     const history = ars.history || [];
     const aminning = cleanAminning(ars.aminning);
-    const est = +ars.estimated_yearly || 0;
+    const est = (typeof virdiOf === 'function' && typeof c !== 'undefined') ? virdiOf(c) : (+ars.estimated_yearly || 0);
     // 2026-06: linked inspection report (úttektarskýrsla) from the Drive master.
     const skyrsla = ars._skyrsla || '';
     const skyrslaName = skyrsla ? skyrsla.split('/').pop().replace(/\.(pdf|docx)$/i, '') : '';

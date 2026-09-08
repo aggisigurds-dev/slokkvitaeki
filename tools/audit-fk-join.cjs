@@ -48,7 +48,7 @@ async function pageAll(pathAndQuery) {
 }
 
 (async () => {
-  const companies = await pageAll('fyrirtaeki?select=id,nafn,er_i_thjonustu,deleted_at&order=id.asc');
+  const companies = await pageAll('fyrirtaeki?select=id,nafn,er_i_thjonustu,ovisst,deleted_at&order=id.asc');
   // 2026-09-01: Í NOTKUN = allt NEMA 'urelt'. Áður .eq('status','active').
   // `uttaeki.status` ber FJÖGUR gildi — active 4891 · urelt 482 · „Í lagi“ 154 · ok 74
   // — svo sían á 'active' faldi 228 tæki á 17 fyrirtækjum. FJÓRTÁN þeirra eiga
@@ -72,7 +72,14 @@ async function pageAll(pathAndQuery) {
 
   const live = companies.filter(c => c.deleted_at == null);
   // Would drop: live, not er_i_thjonustu, active-by-name > 0, active-by-fid == 0.
-  const drops = live.filter(c => c.er_i_thjonustu !== true
+  // 2026-09-08: félag í ENDURHEIMT (`ovisst`, ♻️-flipinn í 153) er MEÐVITAÐ tekið
+  // af vinnulistanum — það er ekki „raunverulegur þjónustukúnni sem er falinn".
+  // Tilvikið sem kallaði á þetta: TVEIR ólíkir einstaklingar heita „Sigrún Júlía
+  // Kristjánsdóttir" (kt 041159-2359 og 460720-1170). Tækið tilheyrir þeirri
+  // seinni; nafna-talningin fann það samt hjá þeirri fyrri, sem er í endurheimt
+  // og á engin tæki sjálf. Þau eru PRENTUÐ áfram svo þau hverfi ekki sjónum —
+  // en þau fella ekki vörðinn.
+  const drops = live.filter(c => c.er_i_thjonustu !== true && c.ovisst !== true
     && (byFoldClient.get(foldName(c.nafn)) || 0) > 0
     && (byFid.get(c.id) || 0) === 0);
 
@@ -80,6 +87,14 @@ async function pageAll(pathAndQuery) {
   console.log(`null-FK active devices (Cowork entry 13 backlog): ${nullFk} across ${nullFkClients.size} client(s) — shown at no location until linked`);
   console.log(`live in-service-by-units-only companies that would drop from the FK join: ${drops.length}`);
   drops.slice(0, 30).forEach(c => console.log(`    #${c.id} ${String(c.nafn).slice(0, 48)}  (by-name ${byFoldClient.get(foldName(c.nafn)) || 0}, by-fid 0)`));
+
+  const iEndurheimt = live.filter(c => c.er_i_thjonustu !== true && c.ovisst === true
+    && (byFoldClient.get(foldName(c.nafn)) || 0) > 0
+    && (byFid.get(c.id) || 0) === 0);
+  if (iEndurheimt.length) {
+    console.log(`  (${iEndurheimt.length} til viðbótar eru í ENDURHEIMT og teljast ekki: `
+      + iEndurheimt.map(c => '#' + c.id + ' ' + c.nafn).join(' · ') + ')');
+  }
 
   const BASELINE = 0;   // no live company may drop purely from the join swap
   if (drops.length > BASELINE) {

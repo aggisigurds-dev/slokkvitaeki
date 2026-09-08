@@ -78,7 +78,7 @@
             '<input id="nf-bokunarnumer" type="text" maxlength="100" placeholder="t.d. 4520 eða deildarheiti" ' +
               'style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;background:#fff;box-sizing:border-box">' +
             '<div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Ferðast í rafræna reikningnum (XML) svo hann bókist rétt hjá kúnnanum. Tómt = staðir rekstrarfélaga fá sjálfkrafa kennitölu + nr. (t.d. „450905-1430 nr. 8").</div>' +
-            '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin:10px 0 4px">#️⃣ Staðurinnúmer (innan rekstrarfélags)</label>' +
+            '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin:10px 0 4px">#️⃣ Staðurinnúmer (innan kennitölu)</label>' +
             '<input id="nf-stadur-nr" type="text" inputmode="numeric" maxlength="8" placeholder="t.d. 8" ' +
               'style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;background:#fff;box-sizing:border-box">' +
             '<div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Notað <b>með</b> kennitölunni — Plaza er nr. 2 hjá Center og Máni nr. 2 hjá Heimaleigu. Einkvæmt aðeins sem kt + nr.</div>';

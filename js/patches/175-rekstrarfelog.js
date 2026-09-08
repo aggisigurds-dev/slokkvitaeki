@@ -2029,7 +2029,7 @@
                  var bok = (b.bokunarnumer||(co&&co.bokunarnumer)||'').toString().trim();
                  var pd = co ? pdByCo[String(co.id)] : null;
                  var bits=[];
-                 if (!b.kt && nr!=null) bits.push('<span class="rf-bnr" title="Staðurinnúmer innan rekstrarfélagsins">nr. '+esc(String(nr))+'</span>');
+                 if (!b.kt && nr!=null) bits.push('<span class="rf-bnr" title="Staðurinnúmer innan kennitölunnar — sama kt á fleiri stöðum fær nr. 1, 2, 3 …; hver kennitala byrjar á 1">nr. '+esc(String(nr))+'</span>');
                  if (bok) bits.push('<span class="rf-bnr" title="Bókunarnúmer / kostnaðarstöð í Payday">'+esc(bok)+'</span>');
                  if (pd) bits.push('<span class="rf-bpd'+(pd.paid?' is-paid':'')+'" title="Nýjasta krafa ÞESSARAR byggingar (solur.customer_id='+esc(String(co.id))+') — ekki allar kröfur kennitölunnar">'+esc(pd.r)+(pd.pd?' · PD '+esc(pd.pd):'')+(pd.paid?' ✓':'')+'</span>');
                  return bits.join('');
