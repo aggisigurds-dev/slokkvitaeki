@@ -122,6 +122,10 @@
           inserts.push({
             serial: serialFor(o.dateIso, o.coId, b, have + i),
             type: spec.type, size: spec.size,
+            // 2026-09-08: raðirnar báru AÐEINS nafnið. Nýtt tæki varð þar með
+            // munaðarlaust (fyrirtaeki_id NULL) og hvarf úr hverri talningu sem
+            // telur á auðkenni — sama gat og audit-fk-join ver.
+            fyrirtaeki_id: o.coId,
             client: o.client, location: '',
             status: 'active',
             last_insp: o.dateIso, next_insp: o.nextIso,
@@ -197,23 +201,34 @@
         summary.facts = !(up && up.error);
       } catch (_) {}
 
-      // 2. Samræma uttaeki (client = fyrirtaeki.nafn, nákvæmt).
+      // 2. Samræma uttaeki.
+      // 2026-09-08: taldi ÁÐUR aðeins á `client = fyrirtaeki.nafn`. Nafnið getur
+      // verið staðnað (endurnefnt félag, eða tæki stofnað með gamla nafninu í
+      // minni — mælt á fid 1570 sama dag). Þá vantaldist `have`, og þetta fall
+      // BJÓ TIL tæki fyrir mismuninn: sjálfvirk tvítök. Talið er nú á
+      // `fyrirtaeki_id` og nafnið er AÐEINS varaleið fyrir raðir sem bera engan
+      // fyrirtaeki_id — svo systkinastaður með sama nafni dragist aldrei inn.
       let oldTotal = null;
       try {
         const c = await sb.from('fyrirtaeki').select('id,nafn').eq('id', coId).maybeSingle();
         const nafn = c && c.data && c.data.nafn;
         if (nafn) {
-          let rows = [];
-          let from = 0; const page = 1000;
-          while (true) {
-            const r = await sb.from('uttaeki')
-              .select('id,serial,type,size,status,custody_status')
-              .eq('client', nafn).range(from, from + page - 1);
-            if (r.error || !r.data) break;
-            rows = rows.concat(r.data);
-            if (r.data.length < page) break;
-            from += page;
-          }
+          const VELJA = 'id,serial,type,size,status,custody_status,fyrirtaeki_id';
+          const saekja = async (byggja) => {
+            let ut = [], from = 0; const page = 1000;
+            while (true) {
+              const r = await byggja().range(from, from + page - 1);
+              if (r.error || !r.data) break;
+              ut = ut.concat(r.data);
+              if (r.data.length < page) break;
+              from += page;
+            }
+            return ut;
+          };
+          const medId = await saekja(() => sb.from('uttaeki').select(VELJA).eq('fyrirtaeki_id', coId));
+          const munadarlaus = await saekja(() => sb.from('uttaeki').select(VELJA).eq('client', nafn).is('fyrirtaeki_id', null));
+          const seen = new Set(medId.map(u => u.id));
+          let rows = medId.concat(munadarlaus.filter(u => !seen.has(u.id)));
           oldTotal = rows.filter(u => !NONBILL[normStatus(u.status)]).length;
           const plan = computePlan(rows, eq, {
             coId, client: nafn, dateIso, nextIso: isoPlus1y(dateIso), year
