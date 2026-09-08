@@ -44,12 +44,7 @@ export default async (req) => {
     background_color: dark,
     theme_color: color,
     lang: 'is',
-    icons: [
-      { src: '/img/icon-192.png?v=flame1', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: '/img/icon-512.png?v=flame1', sizes: '512x512', type: 'image/png', purpose: 'any' },
-      { src: '/img/icon-192.png?v=flame1', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-      { src: '/img/icon-512.png?v=flame1', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-    ],
+    icons: ikonar(app),
   };
   return new Response(JSON.stringify(manifest, null, 2), {
     status: 200,
@@ -77,7 +72,28 @@ async function fromDb(key) {
   const a = Array.isArray(list) ? list.find((x) => x && x.key === key) : null;
   if (!a) return null;
   const o = (ov && ov[key]) || {};
-  return { name: o.name || a.name, emoji: o.emoji || a.emoji, color: o.color || a.color, dark: o.dark || a.dark, blurb: o.blurb || a.blurb };
+  return { name: o.name || a.name, emoji: o.emoji || a.emoji, color: o.color || a.color, dark: o.dark || a.dark, blurb: o.blurb || a.blurb, ikon: o.ikon || a.ikon || null };
+}
+// 2026-09-08 (Agnar: „opna á tákn gallery"): appið getur borið tákn úr
+// img/app-tokn/. Þá á heimaskjás-táknið að vera ÞAÐ, ekki aðal-logóið — annars
+// líta öll uppsett öpp eins út og notandinn finnur ekki sitt.
+// Skráarheitið er sannreynt hér (aðeins NN-nafn.svg) svo fyrirspurn geti ekki
+// vísað út fyrir möppuna.
+function ikonar(app) {
+  const f = app && typeof app.ikon === 'string' ? app.ikon : null;
+  if (f && /^[0-9]{2}-[a-z0-9-]{1,40}\.svg$/.test(f)) {
+    const src = "/img/app-tokn/" + f;
+    return [
+      { src, sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+      { src, sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+    ];
+  }
+  return [
+    { src: '/img/icon-192.png?v=flame1', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: '/img/icon-512.png?v=flame1', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: '/img/icon-192.png?v=flame1', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+    { src: '/img/icon-512.png?v=flame1', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+  ];
 }
 function parseJson(v, fallback) {
   if (v == null) return fallback;

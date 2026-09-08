@@ -164,7 +164,10 @@
     var changed = false;
     loadCustoms().forEach(function (c) {
       if (!c || !c.key || APP_BY_KEY[c.key]) return;
-      var a = { key: c.key, emoji: c.emoji || '📱', name: c.name || c.key, color: c.color || '#334155',
+      // 2026-09-08: `ikon` VARÐ AÐ FYLGJA MEÐ hér. Án þess týndist valda táknið
+      // milli custom-listans og APPS — spjaldið féll aftur á emoji og valið leit út
+      // fyrir að hafa ekki vistast (mælt í viðmótinu).
+      var a = { key: c.key, emoji: c.emoji || '📱', ikon: c.ikon || null, name: c.name || c.key, color: c.color || '#334155',
         dark: c.dark || '#0f172a', home: '', blurb: c.blurb || 'Notenda-búið app', custom: true,
         defaults: Array.isArray(c.defaults) ? c.defaults : [] };
       APPS.push(a); APP_BY_KEY[a.key] = a;
@@ -185,6 +188,59 @@
   // Stofna / uppfæra custom app án native prompt — Stilla útlit (262) og Öpp.
   // opts: { name, pageKey?, emoji?, blurb?, color?, dark?, key? }
   // Skilar { ok, key, name, updated } eða { ok:false, error }.
+  // ── TÁKNASAFN (2026-09-08, ósk Agnars: „opna á möguleikann að opna á tákn
+  // gallery og ég geti sett allskonar merki þar inn") ─────────────────────
+  // Skrárnar liggja í img/app-tokn/ — 512×512 SVG, teiknuð fyrir dökkan
+  // bakgrunn. Bæta við tákni = leggja SVG í möppuna og bæta einni línu hér.
+  // Ekkert annað þarf: valmyndin, spjaldið, manifestið og ræsiskjárinn lesa
+  // öll sama reitinn (`app.ikon`).
+  var IKON_MAPPA = '/img/app-tokn/';
+  var IKONSAFN = [
+    { f: '01-slokkvitaeki.svg',   h: 'Slökkvitæki' },
+    { f: '02-brunaholf.svg',      h: 'Brunahólf' },
+    { f: '03-brunakerfi.svg',     h: 'Brunakerfi' },
+    { f: '04-arsskodun.svg',      h: 'Ársskoðun' },
+    { f: '05-oryggi.svg',         h: 'Öryggi' },
+    { f: '06-taekjaskra.svg',     h: 'Tækjaskrá' },
+    { f: '07-reykskynjari.svg',   h: 'Reykskynjari' },
+    { f: '08-slongukefli.svg',    h: 'Slöngukefli' },
+    { f: '09-bigboss-gull.svg',   h: 'Big Boss — gull' },
+    { f: '10-bigboss-silfur.svg', h: 'Big Boss — silfur' },
+    { f: '11-boss-gull-ankrunu.svg', h: 'Boss — án krúnu' },
+    { f: '12-fjarmal.svg',        h: 'Fjármál' },
+    { f: '13-kjarni.svg',         h: 'Kjarni' },
+    { f: '14-kerfisstjorn.svg',   h: 'Kerfisstjórn' },
+    { f: '15-skyrslur.svg',       h: 'Skýrslur' },
+    { f: '16-vidskiptavinir.svg', h: 'Viðskiptavinir' },
+    { f: '17-verkefni.svg',       h: 'Verkefni' },
+    { f: '18-kort.svg',           h: 'Kort' },
+    { f: '19-dagatal.svg',        h: 'Dagatal' },
+    { f: '20-tolfraedi.svg',      h: 'Tölfræði' },
+    { f: '21-eldur-raunver.svg',  h: 'Eldur' },
+    { f: '22-eldur-metalraud.svg',h: 'Eldur — málmrautt' },
+    { f: '23-boss-larvidur.svg',  h: 'Boss — lárviður' },
+    { f: '24-boss-skjoldur.svg',  h: 'Boss — skjöldur' },
+    { f: '25-boss-innsigli.svg',  h: 'Boss — innsigli' },
+    { f: '26-driver-styri.svg',   h: 'Bílstjóri — stýri' },
+    { f: '27-driver-bill.svg',    h: 'Bílstjóri — bíll' },
+    { f: '28-driver-leid.svg',    h: 'Bílstjóri — leið' },
+  ];
+  function ikonSlod(app) {
+    var f = app && app.ikon;
+    if (!f) return null;
+    // Aðeins skráarheiti úr safninu — engin slóð utan möppunnar.
+    for (var i = 0; i < IKONSAFN.length; i++) if (IKONSAFN[i].f === f) return IKON_MAPPA + f;
+    return null;
+  }
+  // Táknið eins og það birtist: SVG þegar valið er úr safninu, annars emoji.
+  function ikonHtml(app, px) {
+    var slod = ikonSlod(app);
+    if (slod) return '<img src="' + slod + '" alt="" width="' + px + '" height="' + px + '" ' +
+      'style="display:block;border-radius:' + Math.round(px * 0.22) + 'px;flex:none">';
+    return '<span style="font-size:' + Math.round(px * 0.8) + 'px;line-height:1">' +
+      String((app && app.emoji) || '📱') + '</span>';
+  }
+
   function saveAsApp(opts) {
     opts = opts || {};
     var name = String(opts.name || '').trim().slice(0, 30);
@@ -214,12 +270,13 @@
     }
     if (app) {
       app.name = name; app.emoji = emoji; app.blurb = blurb; app.defaults = defaults;
+      if ('ikon' in opts) app.ikon = opts.ikon || null;
       if (opts.color) app.color = opts.color;
       if (opts.dark) app.dark = opts.dark;
       updated = true;
     } else {
       app = {
-        key: customKeyFor(name), name: name, emoji: emoji,
+        key: customKeyFor(name), name: name, emoji: emoji, ikon: opts.ikon || null,
         color: opts.color || '#334155', dark: opts.dark || '#0f172a',
         blurb: blurb, defaults: defaults
       };
@@ -246,8 +303,18 @@
         '<div style="padding:8px 18px 14px;display:flex;flex-direction:column;gap:10px">' +
           '<label style="display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:700;color:#475569">Nafn' +
             '<input id="_op-na-name" type="text" maxlength="30" placeholder="t.d. Ársskoðun sími" style="padding:10px 12px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:15px"></label>' +
-          '<label style="display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:700;color:#475569">Tákn' +
-            '<input id="_op-na-emoji" type="text" maxlength="4" value="📱" style="width:72px;padding:10px 12px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:20px;text-align:center"></label>' +
+          '<div style="font-size:12.5px;font-weight:700;color:#475569">Tákn</div>' +
+          '<div id="_op-na-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:7px;max-height:210px;overflow:auto;padding:8px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc">' +
+            IKONSAFN.map(function (x) {
+              return '<button type="button" class="_op-na-ik" data-ik="' + x.f + '" title="' + x.h + '" ' +
+                'style="padding:3px;border:2px solid transparent;border-radius:11px;background:#fff;cursor:pointer;line-height:0">' +
+                '<img src="' + IKON_MAPPA + x.f + '" alt="' + x.h + '" width="42" height="42" style="display:block;border-radius:9px">' +
+              '</button>';
+            }).join('') +
+          '</div>' +
+          '<label style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#475569">eða emoji' +
+            '<input id="_op-na-emoji" type="text" maxlength="4" value="📱" style="width:64px;padding:8px 10px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:20px;text-align:center">' +
+          '</label>' +
         '</div>' +
         '<div style="padding:11px 18px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;background:#f8fafc">' +
           '<button type="button" id="_op-na-cancel" style="padding:8px 16px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
@@ -257,6 +324,24 @@
     document.body.appendChild(dlg);
     var nameEl = dlg.querySelector('#_op-na-name');
     var emojiEl = dlg.querySelector('#_op-na-emoji');
+    // Eitt val í einu; endurval afvelur. Emoji-reiturinn er varaleiðin þegar
+    // ekkert tákn er valið — þess vegna deyfist hann þegar tákn er virkt.
+    var validIkon = null;
+    function maerkjaVal() {
+      dlg.querySelectorAll('._op-na-ik').forEach(function (b) {
+        var a = b.dataset.ik === validIkon;
+        b.style.borderColor = a ? '#2563eb' : 'transparent';
+        b.style.background = a ? '#eff6ff' : '#fff';
+      });
+      emojiEl.style.opacity = validIkon ? '.4' : '1';
+    }
+    dlg.querySelectorAll('._op-na-ik').forEach(function (b) {
+      b.addEventListener('click', function () {
+        validIkon = (validIkon === b.dataset.ik) ? null : b.dataset.ik;
+        maerkjaVal();
+      });
+    });
+    maerkjaVal();
     function close() { dlg.remove(); }
     dlg.querySelector('#_op-na-cancel').addEventListener('click', close);
     dlg.addEventListener('click', function (e) { if (e.target === dlg) close(); });
@@ -266,6 +351,7 @@
       var r = saveAsApp({
         name: name,
         emoji: (emojiEl.value || '📱').trim().slice(0, 4) || '📱',
+        ikon: validIkon,
         blurb: 'Notenda-búið app — hakaðu við síðurnar að neðan',
         pageKey: 'thjonustubord'
       });
@@ -330,7 +416,7 @@
     d.style.cssText = 'position:fixed;inset:0;z-index:2147483600;display:flex;flex-direction:column;' +
       'align-items:center;justify-content:center;gap:14px;' + (isBoss ? BOSS_BG_CSS : ('background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')')) + ';' +
       'color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif';
-    d.innerHTML = (isBoss ? bossCrownSvg(64) : '<div style="font-size:56px;line-height:1">' + esc(a.emoji) + '</div>') +
+    d.innerHTML = (isBoss ? bossCrownSvg(64) : '<div style="line-height:0;display:flex;justify-content:center">' + ikonHtml(a, 72) + '</div>') +
       '<div style="font-size:19px;font-weight:800;letter-spacing:.02em' + (isBoss ? ';' + BOSS_GOLD_CSS : '') + '">' + esc(a.name) + '</div>' +
       '<div style="width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;animation:_appspin .8s linear infinite"></div>' +
       '<style>@keyframes _appspin{to{transform:rotate(360deg)}}</style>';
@@ -404,6 +490,9 @@
     var e = {
       key: a.key, manifest: a.manifest, home: a.home, standalone: a.standalone, defaults: a.defaults, custom: !!a.custom,
       emoji: ov.emoji || a.emoji, name: ov.name || a.name, blurb: ov.blurb || a.blurb,
+      // 2026-09-08: táknið úr safninu fylgir sömu leið og hitt útlitið, svo það
+      // birtist samstundis á spjaldi, haus, splash OG í manifestinu.
+      ikon: ov.ikon || a.ikon || null,
       color: ov.color || a.color, dark: ov.dark || a.dark
     };
     if (!e.manifest && a.custom) e.manifest = customManifestUrl(e);
@@ -889,7 +978,7 @@
 
     var head = '<th class="mx-cnr">Síða</th>' + apps.map(function (a) {
       return '<th class="mx-ah" title="' + esc(a.name) + '">' +
-        '<div class="mx-ae">' + esc(a.emoji) + '</div>' +
+        '<div class="mx-ae">' + ikonHtml(a, 26) + '</div>' +
         '<div class="mx-an">' + esc(a.name) + '</div></th>';
     }).join('') + '<th class="mx-op"></th>';
 
@@ -941,7 +1030,7 @@
           '<span class="op-pgchev">▾</span>' +
         '</summary><div class="op-pages">' + pageRows + '</div></details>');
       return '<div class="op-card">' +
-        '<div class="op-top"><div class="op-ic" style="' + (a.key === 'boss' ? BOSS_BG_CSS : ('background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')')) + '">' + (a.key === 'boss' ? bossCrownSvg(30) : esc(a.emoji)) + '</div>' +
+        '<div class="op-top"><div class="op-ic" style="' + (a.key === 'boss' ? BOSS_BG_CSS : ('background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')')) + '">' + (a.key === 'boss' ? bossCrownSvg(30) : ikonHtml(a, 30)) + '</div>' +
           '<div><div class="op-nm">' + esc(a.name) + '</div><div class="op-bl">' + esc(a.blurb) + '</div></div></div>' +
         '<div class="op-acts">' +
           '<button class="op-btn prim _op-open" data-app="' + a.key + '" style="background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')" type="button">▶ Opna</button>' +
@@ -1049,7 +1138,7 @@
     var isBoss = a.key === 'boss';
     var hdr = document.getElementById('_app-hdr') || document.createElement('div');
     hdr.id = '_app-hdr'; hdr.style.display = ''; hdr.style.background = isBoss ? BOSS_BG_CSS.replace('background:', '') : ('linear-gradient(180deg,' + a.color + ',' + a.dark + ')');
-    hdr.innerHTML = '<div class="nm">' + (isBoss ? bossCrownSvg(26) + '<span style="' + BOSS_GOLD_CSS + '">' + esc(a.name) + '</span>' : esc(a.emoji) + ' ' + esc(a.name)) + '</div>' +
+    hdr.innerHTML = '<div class="nm">' + (isBoss ? bossCrownSvg(26) + '<span style="' + BOSS_GOLD_CSS + '">' + esc(a.name) + '</span>' : ikonHtml(a, 22) + ' ' + esc(a.name)) + '</div>' +
       // Textinn situr í ._applbl svo 316 geti falið hann og skilið EFTIR
       // táknið eitt í 36px reitnum (sjá athugasemd þar). Áður var klippt á
       // miðjum streng og hausinn sýndi „⚙ Þ" og „⤓ Se".
@@ -1168,6 +1257,18 @@
             '<div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">' +
               '<label style="display:flex;flex-direction:column;gap:4px">Tákn' +
                 '<input class="_pe-emoji" value="' + esc(a.emoji) + '" maxlength="4" style="width:64px;padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:20px;text-align:center"></label>' +
+              '<div style="grid-column:1/-1">' +
+                '<div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:5px">Táknasafn — smelltu til að velja, aftur til að afvelja</div>' +
+                '<div class="_pe-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:6px;max-height:168px;overflow:auto;padding:7px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc">' +
+                  IKONSAFN.map(function (x) {
+                    var valid = a.ikon === x.f;
+                    return '<button type="button" class="_pe-ik" data-ik="' + x.f + '" title="' + x.h + '" ' +
+                      'style="padding:3px;border:2px solid ' + (valid ? '#2563eb' : 'transparent') + ';border-radius:10px;background:' + (valid ? '#eff6ff' : '#fff') + ';cursor:pointer;line-height:0">' +
+                      '<img src="' + IKON_MAPPA + x.f + '" alt="" width="38" height="38" style="display:block;border-radius:8px">' +
+                    '</button>';
+                  }).join('') +
+                '</div>' +
+              '</div>' +
               '<label style="display:flex;flex-direction:column;gap:4px">Litur (efst)' +
                 '<input class="_pe-color" type="color" value="' + esc(a.color) + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
               '<label style="display:flex;flex-direction:column;gap:4px">Litur (neðst)' +
@@ -1209,6 +1310,16 @@
     bindLook('._pe-name', 'name');
     bindLook('._pe-blurb', 'blurb');
     bindLook('._pe-emoji', 'emoji');
+    // Táknið vistast eins og hinir útlitsreitirnir — í app_profiles_overrides,
+    // svo það gildi líka fyrir INNBYGGÐU öppin sem eiga enga custom-röð.
+    ov.querySelectorAll('._pe-ik').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var nytt = (a.ikon === b.dataset.ik) ? null : b.dataset.ik;
+        saveOverrides(a.key, { ikon: nytt });
+        refreshAfterEdit(a.key);
+        openControlPanel(a.key);
+      });
+    });
     bindLook('._pe-color', 'color');
     bindLook('._pe-dark', 'dark');
     var resetBtn = ov.querySelector('._pe-reset-look');
