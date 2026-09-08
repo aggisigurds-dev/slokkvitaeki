@@ -1,0 +1,1195 @@
+{
+ "radir": [
+  {
+   "fyrirtaeki_id": 1510,
+   "customer_base_id": 939,
+   "client": "Crinis ehf",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2026-04-01",
+   "next_insp": "2027-04-01",
+   "serial": "TMP-4531",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-108106 (2026) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1594,
+   "customer_base_id": 1023,
+   "client": "kt 660312-0800",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2026-04-01",
+   "next_insp": "2027-04-01",
+   "serial": "TMP-4532",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-108220 (2026) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 857,
+   "customer_base_id": 681,
+   "client": "Heimaleiga - EA Law Practice",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2026-04-01",
+   "next_insp": "2027-04-01",
+   "serial": "TMP-4533",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-108092 (2026) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 857,
+   "customer_base_id": 681,
+   "client": "Heimaleiga - EA Law Practice",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2026-04-01",
+   "next_insp": "2027-04-01",
+   "serial": "TMP-4534",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-108092 (2026) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 857,
+   "customer_base_id": 681,
+   "client": "Heimaleiga - EA Law Practice",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2026-04-01",
+   "next_insp": "2027-04-01",
+   "serial": "TMP-4535",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-108092 (2026) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 857,
+   "customer_base_id": 681,
+   "client": "Heimaleiga - EA Law Practice",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2026-04-01",
+   "next_insp": "2027-04-01",
+   "serial": "TMP-4536",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-108092 (2026) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1409,
+   "customer_base_id": 924,
+   "client": "Álfaskeið 78-80, húsfélag",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2026-03-01",
+   "next_insp": "2027-03-01",
+   "serial": "TMP-4537",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-108063 (2026) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 803,
+   "customer_base_id": 113,
+   "client": "Móðurást ehf.",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2026-04-01",
+   "next_insp": "2027-04-01",
+   "serial": "TMP-4538",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-108136 (2026) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1235,
+   "customer_base_id": 3,
+   "client": "Stefanía Unnarsdóttir",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2026-04-01",
+   "next_insp": "2027-04-01",
+   "serial": "TMP-4539",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-108236 (2026) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1531,
+   "customer_base_id": 917,
+   "client": "kt 650184-0259",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4540",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106990 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1531,
+   "customer_base_id": 917,
+   "client": "kt 650184-0259",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4541",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106990 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1531,
+   "customer_base_id": 917,
+   "client": "kt 650184-0259",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4542",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106990 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1531,
+   "customer_base_id": 917,
+   "client": "kt 650184-0259",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4543",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106990 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1531,
+   "customer_base_id": 917,
+   "client": "kt 650184-0259",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4544",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106990 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1531,
+   "customer_base_id": 917,
+   "client": "kt 650184-0259",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4545",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106990 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1531,
+   "customer_base_id": 917,
+   "client": "kt 650184-0259",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4546",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106990 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1531,
+   "customer_base_id": 917,
+   "client": "kt 650184-0259",
+   "type": "CO2",
+   "size": "2 kg",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4547",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106990 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1531,
+   "customer_base_id": 917,
+   "client": "kt 650184-0259",
+   "type": "CO2",
+   "size": "2 kg",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4548",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106990 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1735,
+   "customer_base_id": 1119,
+   "client": "Eyesland Spönginni",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4549",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106957 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 600,
+   "customer_base_id": 659,
+   "client": "Breiðvangur 9,húsfélag",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-07-01",
+   "next_insp": "2026-07-01",
+   "serial": "TMP-4550",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107040 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 600,
+   "customer_base_id": 659,
+   "client": "Breiðvangur 9,húsfélag",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-07-01",
+   "next_insp": "2026-07-01",
+   "serial": "TMP-4551",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107040 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 600,
+   "customer_base_id": 659,
+   "client": "Breiðvangur 9,húsfélag",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-07-01",
+   "next_insp": "2026-07-01",
+   "serial": "TMP-4552",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107040 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 600,
+   "customer_base_id": 659,
+   "client": "Breiðvangur 9,húsfélag",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-07-01",
+   "next_insp": "2026-07-01",
+   "serial": "TMP-4553",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107040 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 377,
+   "customer_base_id": 388,
+   "client": "Húsfélagið Eskivellir 5",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-07-01",
+   "next_insp": "2026-07-01",
+   "serial": "TMP-4554",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107085 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 377,
+   "customer_base_id": 388,
+   "client": "Húsfélagið Eskivellir 5",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-07-01",
+   "next_insp": "2026-07-01",
+   "serial": "TMP-4555",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107085 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 377,
+   "customer_base_id": 388,
+   "client": "Húsfélagið Eskivellir 5",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-07-01",
+   "next_insp": "2026-07-01",
+   "serial": "TMP-4556",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107085 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 377,
+   "customer_base_id": 388,
+   "client": "Húsfélagið Eskivellir 5",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-07-01",
+   "next_insp": "2026-07-01",
+   "serial": "TMP-4557",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107085 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 377,
+   "customer_base_id": 388,
+   "client": "Húsfélagið Eskivellir 5",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-07-01",
+   "next_insp": "2026-07-01",
+   "serial": "TMP-4558",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107085 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 377,
+   "customer_base_id": 388,
+   "client": "Húsfélagið Eskivellir 5",
+   "type": "Brunaslanga",
+   "size": null,
+   "status": "active",
+   "last_insp": "2025-07-01",
+   "next_insp": "2026-07-01",
+   "serial": "TMP-4559",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107085 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 751,
+   "customer_base_id": 554,
+   "client": "Húsfélagið Írabakki 26",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-02-01",
+   "next_insp": "2026-02-01",
+   "serial": "TMP-4560",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106318 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 751,
+   "customer_base_id": 554,
+   "client": "Húsfélagið Írabakki 26",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-02-01",
+   "next_insp": "2026-02-01",
+   "serial": "TMP-4561",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106318 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 751,
+   "customer_base_id": 554,
+   "client": "Húsfélagið Írabakki 26",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-02-01",
+   "next_insp": "2026-02-01",
+   "serial": "TMP-4562",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106318 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1737,
+   "customer_base_id": 1121,
+   "client": "Ragnheiður B Valgarðsdóttir",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-02-01",
+   "next_insp": "2026-02-01",
+   "serial": "TMP-4563",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106327 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 830,
+   "customer_base_id": 216,
+   "client": "Eignarekstur ehf.",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4564",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106991 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 830,
+   "customer_base_id": 216,
+   "client": "Eignarekstur ehf.",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4565",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106991 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 830,
+   "customer_base_id": 216,
+   "client": "Eignarekstur ehf.",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4566",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106991 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 830,
+   "customer_base_id": 216,
+   "client": "Eignarekstur ehf.",
+   "type": "Brunaslanga",
+   "size": null,
+   "status": "active",
+   "last_insp": "2025-06-01",
+   "next_insp": "2026-06-01",
+   "serial": "TMP-4567",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-106991 (2025) — skýrsla var aldrei gerð"
+  },
+  {
+   "fyrirtaeki_id": 1736,
+   "customer_base_id": 1120,
+   "client": "María Ingibjörg Kristinsdóttir",
+   "type": "Léttvatn",
+   "size": "6 L",
+   "status": "active",
+   "last_insp": "2025-10-01",
+   "next_insp": "2026-10-01",
+   "serial": "TMP-4568",
+   "notes": "Generað 2026-09-08 úr úttektarreikningi R-107369 (2025) — skýrsla var aldrei gerð"
+  }
+ ],
+ "por": [
+  {
+   "fid": 275,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1366,
+    "fyrirtaeki_id": 275,
+    "customer_base_id": 202,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1734,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1367,
+    "fyrirtaeki_id": 1734,
+    "customer_base_id": 1118,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 850,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1235,
+    "fyrirtaeki_id": 850,
+    "customer_base_id": 300,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 741,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1375,
+    "fyrirtaeki_id": 741,
+    "customer_base_id": 70,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 678,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1341,
+    "fyrirtaeki_id": 678,
+    "customer_base_id": 732,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 148,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 1531,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 1139,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1354,
+    "fyrirtaeki_id": 1139,
+    "customer_base_id": 281,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 138,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 727,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1374,
+    "fyrirtaeki_id": 727,
+    "customer_base_id": 274,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1510,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1247,
+    "fyrirtaeki_id": 1510,
+    "customer_base_id": 939,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 642,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1350,
+    "fyrirtaeki_id": 642,
+    "customer_base_id": 210,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 226,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1358,
+    "fyrirtaeki_id": 226,
+    "customer_base_id": 69,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 237,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 372,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 1144,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1356,
+    "fyrirtaeki_id": 1144,
+    "customer_base_id": 271,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 666,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 1504,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1259,
+    "fyrirtaeki_id": 1504,
+    "customer_base_id": 933,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1735,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1368,
+    "fyrirtaeki_id": 1735,
+    "customer_base_id": 1119,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 366,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1336,
+    "fyrirtaeki_id": 366,
+    "customer_base_id": 319,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 161,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 1616,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 471,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1211,
+    "fyrirtaeki_id": 471,
+    "customer_base_id": 404,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 388,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 673,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1337,
+    "fyrirtaeki_id": 673,
+    "customer_base_id": 548,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1417,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1344,
+    "fyrirtaeki_id": 1417,
+    "customer_base_id": 326,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 482,
+   "ar": 2025,
+   "fyrri": {
+    "id": 763,
+    "fyrirtaeki_id": 482,
+    "customer_base_id": 270,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1163,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1274,
+    "fyrirtaeki_id": 1163,
+    "customer_base_id": 819,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 453,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 1733,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1334,
+    "fyrirtaeki_id": 1733,
+    "customer_base_id": 1117,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 216,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 263,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1335,
+    "fyrirtaeki_id": 263,
+    "customer_base_id": 685,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 223,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1359,
+    "fyrirtaeki_id": 223,
+    "customer_base_id": 63,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 377,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 232,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 739,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 436,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 163,
+   "ar": 2026,
+   "fyrri": null
+  },
+  {
+   "fid": 701,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 1594,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1272,
+    "fyrirtaeki_id": 1594,
+    "customer_base_id": 1023,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 330,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1361,
+    "fyrirtaeki_id": 330,
+    "customer_base_id": 275,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 339,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1349,
+    "fyrirtaeki_id": 339,
+    "customer_base_id": 657,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 751,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1364,
+    "fyrirtaeki_id": 751,
+    "customer_base_id": 554,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 329,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1362,
+    "fyrirtaeki_id": 329,
+    "customer_base_id": 579,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 857,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1276,
+    "fyrirtaeki_id": 857,
+    "customer_base_id": 681,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1409,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1258,
+    "fyrirtaeki_id": 1409,
+    "customer_base_id": 924,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1367,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1357,
+    "fyrirtaeki_id": 1367,
+    "customer_base_id": 910,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1557,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 389,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 1327,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1495,
+    "fyrirtaeki_id": 1327,
+    "customer_base_id": 903,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1399,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1378,
+    "fyrirtaeki_id": 1399,
+    "customer_base_id": 885,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 710,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 717,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 225,
+   "ar": 2026,
+   "fyrri": null
+  },
+  {
+   "fid": 1510,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1339,
+    "fyrirtaeki_id": 1510,
+    "customer_base_id": 939,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 292,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1360,
+    "fyrirtaeki_id": 292,
+    "customer_base_id": 749,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1737,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1365,
+    "fyrirtaeki_id": 1737,
+    "customer_base_id": 1121,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1732,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1333,
+    "fyrirtaeki_id": 1732,
+    "customer_base_id": 1116,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1169,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1355,
+    "fyrirtaeki_id": 1169,
+    "customer_base_id": 555,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 477,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 135,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1352,
+    "fyrirtaeki_id": 135,
+    "customer_base_id": 272,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1373,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1370,
+    "fyrirtaeki_id": 1373,
+    "customer_base_id": 908,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 713,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1372,
+    "fyrirtaeki_id": 713,
+    "customer_base_id": 105,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 830,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 1570,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1265,
+    "fyrirtaeki_id": 1570,
+    "customer_base_id": 999,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 345,
+   "ar": 2026,
+   "fyrri": null
+  },
+  {
+   "fid": 308,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1317,
+    "fyrirtaeki_id": 308,
+    "customer_base_id": 527,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 443,
+   "ar": 2026,
+   "fyrri": null
+  },
+  {
+   "fid": 1366,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1363,
+    "fyrirtaeki_id": 1366,
+    "customer_base_id": 912,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 803,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1319,
+    "fyrirtaeki_id": 803,
+    "customer_base_id": 113,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 739,
+   "ar": 2026,
+   "fyrri": null
+  },
+  {
+   "fid": 1736,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1332,
+    "fyrirtaeki_id": 1736,
+    "customer_base_id": 1120,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 711,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1215,
+    "fyrirtaeki_id": 711,
+    "customer_base_id": 184,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 1235,
+   "ar": 2026,
+   "fyrri": {
+    "id": 1270,
+    "fyrirtaeki_id": 1235,
+    "customer_base_id": 3,
+    "year": 2026,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 250,
+   "ar": 2025,
+   "fyrri": null
+  },
+  {
+   "fid": 139,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1353,
+    "fyrirtaeki_id": 139,
+    "customer_base_id": 91,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  },
+  {
+   "fid": 328,
+   "ar": 2026,
+   "fyrri": null
+  },
+  {
+   "fid": 684,
+   "ar": 2025,
+   "fyrri": {
+    "id": 1345,
+    "fyrirtaeki_id": 684,
+    "customer_base_id": 860,
+    "year": 2025,
+    "service_type": "uttekt",
+    "status": "vantar_skyrslu"
+   }
+  }
+ ]
+}
