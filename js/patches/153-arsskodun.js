@@ -1085,6 +1085,34 @@
   }
   function erRaun(c) { return !!(c && +c._raun > 0); }
 
+  // 2026-09-08 (Agnar: „geturðu haldið í dekkri litina… mátt bara láta Allir
+  // viðskiptavinir líta eins út, með dekkri litunum"): talnaspjöldin voru með
+  // harðkóðaða ljósa pastelliti (#f0fdf4 / #fef3c7) sem stungu í stúf við dökka
+  // krómið. Ein palletta, skilgreind hér og notuð BÆÐI af 153 og 157 — svo
+  // síðurnar tvær geti ekki rekið í sundur.
+  window.KpiKort = window.KpiKort || {
+    css() {
+      if (document.getElementById('_kpi-kort-css')) return;
+      const s = document.createElement('style');
+      s.id = '_kpi-kort-css';
+      s.textContent = [
+        '._kpi{border-radius:10px;padding:11px 13px;border:1px solid rgba(255,255,255,.10);box-shadow:0 6px 18px -10px rgba(0,0,0,.55)}',
+        '._kpi ._kpi-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85}',
+        '._kpi ._kpi-n{font-size:22px;font-weight:800;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums}',
+        '._kpi ._kpi-s{font-size:10.5px;opacity:.8}',
+        '._kpi--hlut{background:linear-gradient(160deg,#1b2334,#121826 60%,#0d121d);color:#e6ebf5}',
+        '._kpi--hlut ._kpi-h,._kpi--hlut ._kpi-s{color:#9fb0cc}',
+        '._kpi--graent{background:linear-gradient(160deg,#12492c,#0d3520 58%,#08251616);color:#d7ffe8;border-color:rgba(134,239,172,.28)}',
+        '._kpi--graent ._kpi-h{color:#86efac}._kpi--graent ._kpi-n{color:#9df5c0}._kpi--graent ._kpi-s{color:#86efac}',
+        '._kpi--rautt{background:linear-gradient(160deg,#5a1a16,#3f100d 58%,#2a0a08);color:#ffd9d5;border-color:rgba(252,165,165,.26)}',
+        '._kpi--rautt ._kpi-h{color:#fca5a5}._kpi--rautt ._kpi-n{color:#ffb4ac}._kpi--rautt ._kpi-s{color:#fca5a5}',
+        '._kpi--gult{background:linear-gradient(160deg,#5a4310,#3f2f0a 58%,#2a1f06);color:#ffeec2;border-color:rgba(253,230,138,.26)}',
+        '._kpi--gult ._kpi-h{color:#fde68a}._kpi--gult ._kpi-n{color:#ffdf94}._kpi--gult ._kpi-s{color:#fde68a}',
+      ].join('');
+      document.head.appendChild(s);
+    },
+  };
+
   function saveState() {
     localStorage.setItem(LS_VIEW, state.view);
     localStorage.setItem(LS_SORT, state.sort);
@@ -1615,6 +1643,7 @@
     //   desktop (Skjár) / table (Tafla) → renderTable, jafnvel á 390px —
     //     taflan skrunar lárétt (325). Aldrei isPhone→card.
     // Bílstjóri = patch 317, ósnert.
+    try { window.KpiKort && KpiKort.css(); } catch (_) {}
     _ensureArsMobileCss();
     _ensureArsVmCss();
     _ensureArsStrimlarCss();
@@ -1842,20 +1871,20 @@
         </div>
 
         <div class="_ars-statgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-          <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:11px 13px">
-            <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
-            <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${sy.all}</div>
-            <div style="font-size:10.5px;color:var(--ink3)">${siaVirk ? 'raðir í töflunni' : '= Allt-flagan'}${afBordi(cnt.all)}</div>
+          <div class="_kpi _kpi--hlut">
+            <div class="_kpi-h">Fjöldi</div>
+            <div class="_kpi-n">${sy.all}</div>
+            <div class="_kpi-s">${siaVirk ? 'raðir í töflunni' : '= Allt-flagan'}${afBordi(cnt.all)}</div>
           </div>
-          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px" title="Stóra talan = merkt Skoðað ${curYear} — sama tala og listinn sýnir. Neðri talan = ${curYear}-skýrsla skráð í skjalagrunninn. Munurinn = skoðaðir staðir sem vantar skráða skýrslu.">
-            <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Búið ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${sy.done}</div>
-            <div style="font-size:10.5px;color:#16a34a">${siaVirk ? 'búið í töflunni' : `= ✅ Búið-flagan · ${tv('buid_2026')} með ${curYear}-skýrslu skjalfesta`}${afBordi(cnt.done)}</div>
+          <div class="_kpi _kpi--graent" title="Stóra talan = merkt Skoðað ${curYear} — sama tala og listinn sýnir. Neðri talan = ${curYear}-skýrsla skráð í skjalagrunninn. Munurinn = skoðaðir staðir sem vantar skráða skýrslu.">
+            <div class="_kpi-h">Búið ${curYear}</div>
+            <div class="_kpi-n">${sy.done}</div>
+            <div class="_kpi-s">${siaVirk ? 'búið í töflunni' : `= ✅ Búið-flagan · ${tv('buid_2026')} með ${curYear}-skýrslu skjalfesta`}${afBordi(cnt.done)}</div>
           </div>
-          <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:11px 13px">
-            <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Eftir ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${sy.pending2026}</div>
-            <div style="font-size:10.5px;color:#b45309" title="⏳ Komið á tíma = óbúið og skoðunarmánuðurinn er kominn eða liðinn (t.o.m. ${MAN_IS[_curMon - 1]}). Án mánaðar = óbúið en enginn mánuður skráður. Það sem eftir stendur bíður seinni hluta ársins.">⏳ ${sy.aTima} komin á tíma${sy.anManadar ? ` · ${sy.anManadar} án mánaðar` : ''}${afBordi(cnt.pending2026)}</div>
+          <div class="_kpi _kpi--rautt">
+            <div class="_kpi-h">Eftir ${curYear}</div>
+            <div class="_kpi-n">${sy.pending2026}</div>
+            <div class="_kpi-s" title="⏳ Komið á tíma = óbúið og skoðunarmánuðurinn er kominn eða liðinn (t.o.m. ${MAN_IS[_curMon - 1]}). Án mánaðar = óbúið en enginn mánuður skráður. Það sem eftir stendur bíður seinni hluta ársins.">⏳ ${sy.aTima} komin á tíma${sy.anManadar ? ` · ${sy.anManadar} án mánaðar` : ''}${afBordi(cnt.pending2026)}</div>
           </div>
           <div class="bstal-hero" style="background:var(--thm-sumh);color:#fff;border:1px solid var(--brand);border-radius:10px;padding:11px 13px">
             <!-- 2026-09-08 (Agnar): talan er nú í ÞÚSUNDUM og byggir á RAUN-tölum

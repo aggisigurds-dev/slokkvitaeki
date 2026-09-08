@@ -617,25 +617,28 @@
 
         <!-- Stat tiles — sömu stærðir og ._ars-statgrid í Fyrirtæki í þjónustu (153): 11/13 px, 22 px tala -->
         <div class="_av-statgrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px">
-          <div style="background:#fff;border:1px solid rgba(20,24,34,.1);border-radius:10px;padding:11px 13px;cursor:pointer" data-kpi="all" title="Sýna alla">
-            <div style="font-size:10px;font-weight:700;color:#8a93a5;text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
-            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:800;color:#11141c;line-height:1.1;margin-top:2px">${cntAll}</div>
-            <div style="font-size:10.5px;color:#8a93a5">viðskiptavinir</div>
+          <!-- 2026-09-08 (Agnar: „mátt bara láta Allir viðskiptavinir líta eins út,
+               með dekkri litunum"): sama palletta og Ársskoðun — window.KpiKort,
+               skilgreind í 153. Ein skilgreining, tvær síður. -->
+          <div class="_kpi _kpi--hlut" style="cursor:pointer" data-kpi="all" title="Sýna alla">
+            <div class="_kpi-h">Fjöldi</div>
+            <div class="_kpi-n">${cntAll}</div>
+            <div class="_kpi-s">viðskiptavinir</div>
           </div>
-          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px;cursor:pointer" data-kpi="fyrirt" title="Sía: fyrirtækjaþjónusta">
-            <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Í þjónustu</div>
-            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${cntInService}</div>
-            <div style="font-size:10.5px;color:#16a34a">${cntArs} fyrirtækjaþj. · ${cntBru} brunakerfi</div>
+          <div class="_kpi _kpi--graent" style="cursor:pointer" data-kpi="fyrirt" title="Sía: fyrirtækjaþjónusta">
+            <div class="_kpi-h">Í þjónustu</div>
+            <div class="_kpi-n">${cntInService}</div>
+            <div class="_kpi-s">${cntArs} fyrirtækjaþj. · ${cntBru} brunakerfi</div>
           </div>
-          <div style="background:#fff;border:1px solid rgba(20,24,34,.1);border-radius:10px;padding:11px 13px;cursor:pointer" data-kpi="has-units" title="Sía: hefur tæki">
-            <div style="font-size:10px;font-weight:700;color:#8a93a5;text-transform:uppercase;letter-spacing:.05em">Með tæki</div>
-            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:800;color:#11141c;line-height:1.1;margin-top:2px">${cntWithUnits}</div>
-            <div style="font-size:10.5px;color:#8a93a5">skráð slökkvitæki</div>
+          <div class="_kpi _kpi--hlut" style="cursor:pointer" data-kpi="has-units" title="Sía: hefur tæki">
+            <div class="_kpi-h">Með tæki</div>
+            <div class="_kpi-n">${cntWithUnits}</div>
+            <div class="_kpi-s">skráð slökkvitæki</div>
           </div>
-          <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:11px 13px;cursor:pointer" data-kpi="no-email" title="Sía: vantar netfang">
-            <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Án netfangs</div>
-            <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${cntNoEmail}</div>
-            <div style="font-size:10.5px;color:#b45309">vantar tölvupóst</div>
+          <div class="_kpi _kpi--gult" style="cursor:pointer" data-kpi="no-email" title="Sía: vantar netfang">
+            <div class="_kpi-h">Án netfangs</div>
+            <div class="_kpi-n">${cntNoEmail}</div>
+            <div class="_kpi-s">vantar tölvupóst</div>
           </div>
         </div>
 
@@ -1045,10 +1048,17 @@
       <div class="data-table-wrap">
         <div class="data-table-scroll">
         <table class="data-table _av-table no-skin">
+          <!-- 2026-09-08 (Agnar: „mátt láta fyllast betur upp í töfluna, gefa
+               textasvæðinu aðeins meira pláss, kannski bara setja athugasemdina
+               aftast"): Athugasemd var í 8. dálki með 146px og klipptist við
+               þriðja orð, á meðan auður flötur stóð hægra megin við töfluna.
+               Hún er nú AFTAST og BREIÐUST (240px). Með table-layout:fixed og width:100%
+               fær sá dálkur allt sem eftir stendur, svo taflan fyllir breiddina
+               og textinn fær plássið sem var ónotað. -->
           <colgroup>
             <col style="width:210px"><col style="width:176px"><col style="width:96px">
             <col style="width:52px"><col style="width:84px"><col style="width:124px">
-            <col style="width:128px"><col style="width:146px"><col style="width:172px">
+            <col style="width:128px"><col style="width:172px"><col style="width:240px">
           </colgroup>
           <thead>
             <tr>
@@ -1059,8 +1069,8 @@
               <th>Þjónusta</th>
               ${sortTh('Skjöl', 'docs')}
               ${sortTh('Síðast', 'last', 'center')}
-              <th>Athugasemd</th>
               <th class="right">Aðgerð</th>
+              <th>Athugasemd</th>
             </tr>
           </thead>
           <tbody>
@@ -1090,7 +1100,6 @@
                   <td><span class="_av-svc">${svc.join('')}</span></td>
                   <td>${docBadge(c)}</td>
                   <td class="center"><span class="_av-last">${yTag('📝', (c._last || {}).rep, (c._last || {}).repVia, 'Síðasta úttektarskýrsla')}${yTag('🧾', (c._last || {}).inv, (c._last || {}).invVia, 'Síðasti úttektarreikningur')}</span></td>
-                  <td class="_av-notacell" onclick="event.stopPropagation()"><input class="_av-note _note" data-co-id="${c.id}" value="${esc(c.athugasemdir || '')}" placeholder="···" title="${esc(c.athugasemdir || 'Athugasemd — vistast sjálfkrafa')}"></td>
                   <td class="right" onclick="event.stopPropagation()"><span class="_av-act">
                     ${editing ? `
                     <button class="_av-esave" data-co-id="${c.id}" type="button" title="Vista breytingar" style="padding:3px 9px;border:1px solid #86efac;background:#16a34a;color:#fff;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✓ Vista</button>
@@ -1103,6 +1112,7 @@
                     <button class="_av-toggle" data-co-id="${c.id}" data-svc="ferda" data-action="${c._hasFerda?'remove':'add'}" type="button" title="${c._hasFerda?'Fjarlægja úr ferðaþjónustu':'Skrá í ferðaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasFerda?'solid #7dd3fc':'dashed #cbd5e1'};background:${c._hasFerda?'#e0f2fe':'#fff'};color:${c._hasFerda?'#0369a1':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚌</button>
                     `}
                   </span></td>
+                  <td class="_av-notacell" onclick="event.stopPropagation()"><input class="_av-note _note" data-co-id="${c.id}" value="${esc(c.athugasemdir || '')}" placeholder="···" title="${esc(c.athugasemdir || 'Athugasemd — vistast sjálfkrafa')}"></td>
                 </tr>
               `;
             }).join('')}
