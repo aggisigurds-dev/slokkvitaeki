@@ -149,12 +149,39 @@ var DB = {
       // O(1) lookup instead of O(N) filter per company. At 456 companies
       // × 3000 units this saves 1.36M iterations on every render.
       this.cache.unitsByClient = Object.create(null);
+      // 2026-09-08: nafna-holfid eitt og ser er ekki nog. `client` getur verid
+      // stadnad (endurnefnt felag, eda taeki stofnad med gamla nafninu i minni)
+      // og tha hverfur taekid ur hverri talningu sem les thetta holf — mælt a
+      // fid 1570. Vid byggjum thvi BÆÐI holfin i somu ferd: `unitsByFid` er
+      // sannleikurinn, `unitsByClient` er varaleid fyrir radir sem bera engan
+      // fyrirtaeki_id. Kostnadurinn er ein onnur uppfletting a hverja rod.
+      this.cache.unitsByFid = Object.create(null);
       var arr = this.cache.units;
       for (var i = 0; i < arr.length; i++) {
+        var fid = arr[i].fyrirtaeki_id;
+        if (fid != null) {
+          (this.cache.unitsByFid[fid] = this.cache.unitsByFid[fid] || []).push(arr[i]);
+        }
         var k = arr[i].client || '';
         if (!k) continue;
         (this.cache.unitsByClient[k] = this.cache.unitsByClient[k] || []).push(arr[i]);
       }
+      // Ein leid sem allir kallendur eiga ad nota: auðkennið raedur, nafnid
+      // saekir AÐEINS munadarlausar radir (fyrirtaeki_id NULL) svo systkinastadur
+      // med sama nafni dragist aldrei inn.
+      this.unitsFor = function (co) {
+        if (!co) return [];
+        var id = (typeof co === 'object') ? co.id : co;
+        var nafn = (typeof co === 'object') ? co.nafn : null;
+        var medId = (id != null && this.cache.unitsByFid[id]) || [];
+        var vidNafn = (nafn && this.cache.unitsByClient[nafn]) || [];
+        if (id == null) return vidNafn.slice();
+        var ut = medId.slice();
+        for (var j = 0; j < vidNafn.length; j++) {
+          if (vidNafn[j].fyrirtaeki_id == null) ut.push(vidNafn[j]);
+        }
+        return ut;
+      };
       this.setSyncState('online');
       this.online = true;
       this._lastLoadOk = Date.now();

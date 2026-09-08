@@ -7,13 +7,24 @@
  *   • patch 156 geocode-prewarm  → never geocoded uttaeki-only companies, so
  *   • patch 161 Leiðsögn         → ~199 of 439 in-service addresses had no pin.
  *
- * This tiny shared module loads ONCE at boot the set of company names that
- * have ≥1 active unit in `uttaeki`, folded the same way patch 153 does
- * (fyrirtaeki.nafn ↔ uttaeki.client). Both consumers ask `has(nafn)`.
+ * This tiny shared module loads ONCE at boot which companies have ≥1 unit in
+ * use in `uttaeki` — BÆÐI á auðkenni (`fyrirtaeki_id`) og á folduðu nafni
+ * (`client`, foldað eins og patch 153 gerir).
  *
- *   window.InServiceClients.ready()  → Promise<Set<foldedName>>
- *   window.InServiceClients.has(nafn)→ boolean (false until loaded)
- *   window.InServiceClients.loaded() → boolean
+ * 2026-09-08: settið bar áður AÐEINS nafnið. Endurnefnt félag — eða tæki sem
+ * var stofnað með gamla nafninu í minni — datt því út úr „er í þjónustu" og þar
+ * með af akstursleiðum (219), korti (178), leiðsögn (161) og þjónustuyfirliti
+ * (185), þótt tækin væru til og rétt tengd. Mælt á fyrirtaeki 1570.
+ *
+ * NOTAÐU `hasCo(co)` — hún tekur félagshlutinn, lætur auðkennið ráða og fellur
+ * á nafnið aðeins þegar auðkennið þekkist ekki. `has(nafn)` stendur eftir fyrir
+ * kallendur sem hafa ekkert nema nafn.
+ *
+ *   window.InServiceClients.ready()   → Promise<Set<foldedName>>
+ *   window.InServiceClients.hasCo(co) → boolean  ← notaðu þessa
+ *   window.InServiceClients.hasId(id) → boolean
+ *   window.InServiceClients.has(nafn) → boolean (false until loaded)
+ *   window.InServiceClients.loaded()  → boolean
  *   window.InServiceClients.onReady(fn)
  */
 (() => {
@@ -29,12 +40,18 @@
       .replace(/\s+/g, ' ').trim();  // punctuation so renames don't break the name match
   }
 
+  // 2026-09-08: settið bar AÐEINS foldað nafn. Endurnefnt félag (eða tæki
+  // stofnað með gamla nafninu í minni) datt því út úr „er í þjónustu" og þar
+  // með af akstursleiðum, korti og leiðsögn — þótt tækin væru til og rétt
+  // tengd. Nú fylgir auðkennis-sett með og `hasId()` er rétta leiðin.
   let _set = null;            // Set<foldedName> with ≥1 active unit
+  let _ids = null;            // Set<fyrirtaeki_id> með ≥1 tæki í notkun
   let _promise = null;
   const _listeners = [];
 
   async function fetchSet() {
     const out = new Set();
+    const idOut = new Set();
     if (!window.SUPABASE_URL || !window.SUPABASE_KEY) return out;
     try {
       let from = 0; const page = 1000;
@@ -48,7 +65,7 @@
         // arsskodun-blobbinn sem þegar var réttur — sterkasta vísbendingin um að sían
         // var villan, ekki gögnin. Vörður: tools/audit-status-gildi.cjs.
         const r = await fetch(
-          window.SUPABASE_URL + '/rest/v1/uttaeki?select=client&status=neq.urelt',
+          window.SUPABASE_URL + '/rest/v1/uttaeki?select=client,fyrirtaeki_id&status=neq.urelt',
           {
             headers: {
               apikey: window.SUPABASE_KEY,
@@ -60,23 +77,27 @@
         if (!r.ok) break;
         const rows = await r.json();
         if (!Array.isArray(rows) || !rows.length) break;
-        rows.forEach(x => { if (x && x.client) out.add(foldName(x.client)); });
+        rows.forEach(x => {
+          if (!x) return;
+          if (x.client) out.add(foldName(x.client));
+          if (x.fyrirtaeki_id != null) idOut.add(+x.fyrirtaeki_id);
+        });
         if (rows.length < page) break;
         from += page;
       }
     } catch (e) {
       console.warn('[inservice] fetch error', e);
     }
-    return out;
+    return { nofn: out, ids: idOut };
   }
 
   function ready() {
     if (_promise) return _promise;
-    _promise = fetchSet().then(s => {
-      _set = s;
-      console.log('[inservice] loaded', s.size, 'active-unit clients');
+    _promise = fetchSet().then(r => {
+      _set = r.nofn; _ids = r.ids;
+      console.log('[inservice] loaded', _set.size, 'nöfn /', _ids.size, 'auðkenni með tæki í notkun');
       _listeners.splice(0).forEach(fn => { try { fn(); } catch (_) {} });
-      return s;
+      return _set;
     });
     return _promise;
   }
@@ -84,6 +105,14 @@
   window.InServiceClients = {
     ready,
     has: nafn => (_set ? _set.has(foldName(nafn)) : false),
+    // Auðkennið ræður. `hasCo(co)` er leiðin sem kallendur eiga að nota þegar
+    // þeir hafa félagshlutinn — hún þolir endurnefningu.
+    hasId: id => (_ids ? _ids.has(+id) : false),
+    hasCo: co => {
+      if (!co) return false;
+      if (_ids && co.id != null && _ids.has(+co.id)) return true;
+      return _set ? _set.has(foldName(co.nafn)) : false;
+    },
     loaded: () => _set !== null,
     onReady: fn => { if (_set) { try { fn(); } catch (_) {} } else _listeners.push(fn); },
   };

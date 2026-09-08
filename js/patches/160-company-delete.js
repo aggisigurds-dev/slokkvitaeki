@@ -18,9 +18,13 @@
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  function countLinkedUnits(name) {
-    if (!name || !window.DB || !DB.cache || !Array.isArray(DB.cache.units)) return 0;
-    return DB.cache.units.filter(u => u.client === name).length;
+  // 2026-09-08: taldi a NAFNI einu. Endurnefnt felag syndi „0 taeki skrad" og
+  // eydingar-vidvorunin log thvi um hvad var i hufi. DB.unitsFor lætur
+  // audkennid rada og fellur a nafnid adeins fyrir munadarlausar radir.
+  function countLinkedUnits(co) {
+    if (!co || !window.DB || !DB.cache || !Array.isArray(DB.cache.units)) return 0;
+    if (typeof co === 'string') return DB.cache.units.filter(u => u.client === co).length;
+    return (DB.unitsFor ? DB.unitsFor(co) : []).length;
   }
 
   async function deleteCompany(coId) {
@@ -29,7 +33,7 @@
       if (window.Toast && Toast.show) Toast.show('Fyrirtæki fannst ekki');
       return;
     }
-    const linkedUnits = countLinkedUnits(co.nafn);
+    const linkedUnits = countLinkedUnits(co);
     const warn = linkedUnits > 0
       ? '\n\n⚠ ' + linkedUnits + ' úttæki eru skráð á "' + co.nafn + '".'
         + '\nÞau halda sér í tækjalistanum — bara fyrirtækisspjaldið verður eytt.'

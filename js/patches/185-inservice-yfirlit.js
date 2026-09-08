@@ -106,7 +106,7 @@
       var a=arsMap[String(c.id)];
       if(a&&(a.subscribed===true||(a.equipment&&Object.values(a.equipment).some(function(v){return +v>0})))) return true;
       if(bruMap[String(c.id)]) return true;
-      if(window.InServiceClients&&InServiceClients.has) return InServiceClients.has(c.nafn);
+      if(window.InServiceClients&&InServiceClients.hasCo) return InServiceClients.hasCo(c);
       return false;
     });
   }

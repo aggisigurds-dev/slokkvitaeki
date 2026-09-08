@@ -164,7 +164,10 @@
     const co = (window.Companies && Companies.list || []).find(c => c.id === coId);
     if (!co) { alert('Fyrirtæki fannst ekki'); return; }
 
-    const allUnits = (window.DB && window.DB.cache && window.DB.cache.units || []).filter(u => u.client === co.nafn);
+    // 2026-09-08: sia a nafni faldi taeki endurnefnds felags — skyrslan sagdi
+    // „N af M i lagi" um rangt mengi. Audkennid raedur (DB.unitsFor).
+    const allUnits = (window.DB && DB.unitsFor) ? DB.unitsFor(co)
+      : (window.DB && window.DB.cache && window.DB.cache.units || []).filter(u => u.client === co.nafn);
     const cats = categorize(allUnits);
 
     const today = new Date().toISOString().slice(0,10);

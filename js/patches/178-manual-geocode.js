@@ -156,7 +156,7 @@
     return cos.filter(c => {
       const a = arsMap[String(c.id)];
       const b = bruMap[String(c.id)];
-      return (a && a.equipment) || !!b || (window.InServiceClients && window.InServiceClients.has(c.nafn));
+      return (a && a.equipment) || !!b || (window.InServiceClients && window.InServiceClients.hasCo(c));
     });
   }
   function hasCoord(c) {

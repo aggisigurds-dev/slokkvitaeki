@@ -119,7 +119,7 @@
     // source-of-truth; áður gat áskrifandi án tækja-blobs VANTAÐ á aksturslistann.
     if (c && c.er_i_thjonustu === true) return true;
     return (ars && (ars.subscribed === true || ars.equipment)) || !!bru ||
-      (window.InServiceClients && window.InServiceClients.has && window.InServiceClients.has(c.nafn));
+      (window.InServiceClients && window.InServiceClients.hasCo && window.InServiceClients.hasCo(c));
   }
   function statusFor(ars) {
     const a = ars || {};

@@ -285,17 +285,21 @@
     const gc = (() => { try { return JSON.parse(localStorage.getItem('_slokk_gc') || '{}'); } catch (_) { return {}; } })();
     // Pre-tally unit counts by client name once (much faster than filtering
     // per company for 444 cards).
+    // 2026-09-08: holfad a NAFNI eingongu — endurnefnt felag syndi 0 taeki a
+    // spjaldinu. Nu er talid a audkenni og nafnid telur AÐEINS radir sem bera
+    // ekkert audkenni, svo systkinastadur med sama nafni tvitelji ekki.
     const unitsByClient = {};
+    const unitsByFid = {};
     units.forEach(u => {
-      if (u.status !== 'urelt') {
-        unitsByClient[u.client] = (unitsByClient[u.client] || 0) + 1;
-      }
+      if (u.status === 'urelt') return;
+      if (u.fyrirtaeki_id != null) { unitsByFid[u.fyrirtaeki_id] = (unitsByFid[u.fyrirtaeki_id] || 0) + 1; return; }
+      unitsByClient[u.client] = (unitsByClient[u.client] || 0) + 1;
     });
     return companies.map(c => {
       const ars = arsMap[String(c.id)];
       const bru = brunMap[String(c.id)];
       const ferda = ferdaMap[String(c.id)];
-      const unitCount = unitsByClient[c.nafn] || 0;
+      const unitCount = (unitsByFid[c.id] || 0) + (unitsByClient[c.nafn] || 0);
       return {
         ...c,
         // 2026-07-09 (critical bug, Agnar): notaði BARA gamla equipment-blobbið

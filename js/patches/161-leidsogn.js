@@ -172,7 +172,7 @@
       // In service via manual snapshot OR real active tæki in uttaeki
       // (patch 177 — matches the Fyrirtæki í Þjónustu list).
       const hasContract = (ars && ars.equipment) || !!bru ||
-        (window.InServiceClients && window.InServiceClients.has(c.nafn));
+        (window.InServiceClients && window.InServiceClients.hasCo(c));
       if (!hasContract) return null;
       const coord = lookupCoord(gc, c);
       if (!coord) return null;
@@ -192,7 +192,7 @@
       const ars = arsMap[String(c.id)];
       const bru = bruMap[String(c.id)];
       const hasContract = (ars && ars.equipment) || !!bru ||
-        (window.InServiceClients && window.InServiceClients.has(c.nafn));
+        (window.InServiceClients && window.InServiceClients.hasCo(c));
       if (!hasContract) return null;
       return { co: c, ars: ars || {}, bru: bru || {}, coord: lookupCoord(gc, c), status: statusFor(c, ars) };
     }).filter(Boolean);
@@ -583,7 +583,7 @@
       const ars = arsMap[String(c.id)];
       const bru = bruMap[String(c.id)];
       const hasContract = (ars && ars.equipment) || !!bru ||
-        (window.InServiceClients && window.InServiceClients.has(c.nafn));
+        (window.InServiceClients && window.InServiceClients.hasCo(c));
       if (!hasContract) return;
       cnt.all++;
       const y = yearOf(ars);
@@ -702,7 +702,7 @@
       const ars = arsMap[String(c.id)];
       if (ars && (ars.subscribed === true || ars.equipment)) return true;
       if (bruMap[String(c.id)]) return true;
-      return !!(window.InServiceClients && window.InServiceClients.has(c.nafn));
+      return !!(window.InServiceClients && window.InServiceClients.hasCo(c));
     };
     const counts = {};
     cos.forEach(c => {

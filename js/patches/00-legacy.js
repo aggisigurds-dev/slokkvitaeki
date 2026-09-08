@@ -1741,7 +1741,10 @@ console.log('[patch-master] loaded with all fixes');
           nd.textContent = '\u23F3 Hle\u00f0ur...';
           nameDiv.parentNode.insertBefore(nd, nameDiv.nextSibling);
           // Fetch actual counts
-          window.DB.sb.from('uttaeki').select('type').eq('client',co.nafn).then(function(r){
+          // 2026-09-08: sotti a NAFNI — endurnefnt felag sagdi „Engin taeki skrad".
+          // Audkennid raedur; nafnid er notad thegar felagid ber ekkert audkenni.
+          (co.id != null ? window.DB.sb.from('uttaeki').select('type').eq('fyrirtaeki_id',co.id)
+                         : window.DB.sb.from('uttaeki').select('type').eq('client',co.nafn)).then(function(r){
             if(!r.data){nd.textContent='\uD83D\uDCCB Engin t\u00e6ki skr\u00e1\u00f0';return;}
             var sk=0,re=0,br=0;
             r.data.forEach(function(u){
