@@ -395,8 +395,16 @@
         (a.equipment && Object.values(a.equipment).some(v => +v > 0))
       ));
       const hasBru = !!bruMap[key];
-      const hasUnits = (unitsByFid[c.id] || []).length > 0;
-      return hasArs || hasBru || hasUnits;
+      // 08.09.2026 (Agnar: „fyrirtæki að þvælast inn á Fyrirtæki í þjónustu sem eru ekkert í
+      // þjónustu … stendur „Setja aftur í þjónustu" … næ ekki að losna við þetta af borðinu"):
+      // lifandi tæki EIN OG SÉR setja fyrirtæki ekki lengur á borðið. 17 raðir sem tækjaskrár-
+      // auditið 2026-06 stofnaði sjálfkrafa (Hótel Atlantic 32 tæki, Hlíðablóm 16, Eskihlíð 12,
+      // Kaplahraun 1/13 …) sátu hér með er_i_thjonustu=false, ekkert í blobbinu og engan ⬇-hnapp
+      // til að fjarlægja þær (hann krefst true). Flaggið á fyrirtaeki-röðinni ræður (STAÐREYNDIR:
+      // „er_i_thjonustu ER þjónustuflokks-merkið"); tæki án flaggs = „á tæki, ekki í þjónustu" —
+      // sést í Allir viðskiptavinir (🧯 Hefur tæki) og fer inn með „Setja í þjónustu". Sama regla
+      // í 157 (_hasArs) svo síðurnar tvær flokki eins.
+      return hasArs || hasBru;
     }
 
     // 2026-07-17: fjöldi staða per base — notað í sönnunar-stöðunni að neðan
@@ -3153,8 +3161,17 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       V+'._estcell i{font-style:normal;font-size:8px;letter-spacing:.1em;color:var(--muted)}',
       V+'.data-table tbody tr.overdue td:first-child{box-shadow:inset 2px 0 0 var(--accent)}',
       V+'.data-table tbody tr:focus-visible{outline:none;background:#eef3ff;box-shadow:inset 0 0 0 2px rgba(47,95,224,.35)}',
-      V+'._stcell{display:grid;grid-template-columns:32px 1fr;align-items:center;justify-items:start}',
-      V+'._st{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:7px;white-space:nowrap}',
+      // 2026-09-08 (Agnar: snyrtilegri linur nidur a vid, sama staerd a
+      // stodukossunum): dalkurinn var osamstaedur af thvi pillurnar eru
+      // mislangar (Skodad 2026 vs A dagskra) og hakid elti thaer. Nu fjorir
+      // FASTIR dalkar: check-hnappur, pilla i fastri breidd, ars-merki (adeins
+      // i lagfaeringarham) og hak — svo hvert stak standi i somu x-stodu i
+      // hverri einustu rod.
+      V+'._stcell{display:grid;grid-template-columns:30px 118px 1fr 30px;align-items:center;justify-items:start;gap:6px;width:100%}',
+      V+'._stcell>._st{width:100%;justify-content:center;padding-left:4px;padding-right:4px}',
+      V+'._stcell>._ars-endur{justify-self:end;margin-left:0}',
+      V+'._stcell>._ars-ovr-year{justify-self:start}',
+      V+'._st{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:7px;white-space:nowrap;min-height:26px;box-sizing:border-box}',
       V+'._st--work{color:#fff;background:linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%);border:1px solid #060f24;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.2)}',
       V+'._st--done{color:#fff;background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border:1px solid #041c0e;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.22),inset 0 -2px 4px rgba(0,0,0,.28),0 2px 5px -2px rgba(10,40,20,.5)}',
       V+'._st--plan{color:#fff;background:linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%);border:1px solid #12296b;text-shadow:0 1px 1px rgba(0,0,0,.3);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.35),inset 0 -2px 4px rgba(0,0,0,.22),0 2px 5px -2px rgba(20,40,90,.45)}',
@@ -3285,10 +3302,8 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                       ${!isDone
                         ? `<button class="_chk _ars-tu-toggle _ars-mark${isFieldOnly ? ' on' : ''}" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Í vinnslu (skýrslugerð) — smelltu til að hreinsa' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></button>`
                         : '<span></span>'}
-                      <span style="display:inline-flex;align-items:center;gap:6px">
                         <span class="_st ${stState === 'done' ? '_st--done' : stState === 'work' ? '_st--work' : stState === 'skip' ? '_st--skip' : stState === 'over' ? '_st--late' : '_st--plan'}" title="${esc(stTitle)}">${stState === 'over' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.3 3.9-8.2 14.2a1.9 1.9 0 0 0 1.7 2.9h16.4a1.9 1.9 0 0 0 1.7-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>' : ''}${esc(stLabel)}</span>
-                        ${ovr ? `<span class="_ars-ovr-year" data-co-id="${c.id}" title="⚡ Síðast skoðað (ár) — smelltu til að breyta" style="display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border:1px dashed #d97706;background:#fffbeb;color:#92400e;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">📅 ${lastYr || '—'}</span>` : ''}<label class="_ars-endur" title="${c._ovisst ? '♻️ Í endurheimt — tekið af vinnulista bílstjórans. Taktu hakið af til að setja aftur í venjulega umferð.' : 'Setja í endurheimt: fer af vinnulista bílstjórans og í ♻️-flipann þar til staðan skýrist.'}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-left:6px;border-radius:7px;border:1px solid ${c._ovisst ? '#0f766e' : 'var(--brd2)'};background:${c._ovisst ? '#ccfbf1' : 'var(--surface)'};cursor:pointer;flex:0 0 auto"><input type="checkbox" class="_ars-endur-cb" data-co-id="${c.id}" ${c._ovisst ? 'checked' : ''} style="width:15px;height:15px;margin:0;cursor:pointer;accent-color:#0d9488"></label>
-                      </span>
+                        ${ovr ? `<span class="_ars-ovr-year" data-co-id="${c.id}" title="⚡ Síðast skoðað (ár) — smelltu til að breyta" style="display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border:1px dashed #d97706;background:#fffbeb;color:#92400e;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">📅 ${lastYr || '—'}</span>` : '<span></span>'}<label class="_ars-endur" title="${c._ovisst ? '♻️ Í endurheimt — tekið af vinnulista bílstjórans. Taktu hakið af til að setja aftur í venjulega umferð.' : 'Setja í endurheimt: fer af vinnulista bílstjórans og í ♻️-flipann þar til staðan skýrist.'}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-left:6px;border-radius:7px;border:1px solid ${c._ovisst ? '#0f766e' : 'var(--brd2)'};background:${c._ovisst ? '#ccfbf1' : 'var(--surface)'};cursor:pointer;flex:0 0 auto"><input type="checkbox" class="_ars-endur-cb" data-co-id="${c.id}" ${c._ovisst ? 'checked' : ''} style="width:15px;height:15px;margin:0;cursor:pointer;accent-color:#0d9488"></label>
                     </div>
                   </td>
                 </tr>

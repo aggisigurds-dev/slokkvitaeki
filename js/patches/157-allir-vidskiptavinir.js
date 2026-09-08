@@ -303,10 +303,12 @@
         // subscribed-flaggið, eða með alvöru virk tæki) töldust „Án samnings".
         // Nú SAMA regla og inService() í patch 153 (Fyrirtæki í Þjónustu) —
         // síðurnar tvær mega aldrei flokka ólíkt.
+        // 08.09.2026: lifandi tæki ein og sér telja ekki lengur „í þjónustu" — sama breyting og
+        // inService() í 153 sama dag (Hótel Atlantic o.fl. þvældust inn á borðið). Flaggið ræður.
         _hasArs: c.er_i_thjonustu === true || !!(ars && (
           ars.subscribed === true ||
           (ars.equipment && Object.values(ars.equipment).some(v => +v > 0))
-        )) || unitCount > 0,
+        )),
         _hasBru: !!bru,
         _hasFerda: !!ferda,
         _ars: ars || {},
