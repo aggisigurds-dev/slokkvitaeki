@@ -1,8 +1,23 @@
 # Hverjir eiga í raun heima í þjónustu — yfirferð 07.09.2026
 
-> **Staða: BÍÐUR ÁKVÖRÐUNAR AGNARS. Engu hefur verið breytt.**
-> Enginn `er_i_thjonustu` hefur verið settur í `false`, ekkert `is_bank_only`
-> merkt. Þetta skjal er listinn sem beðið var um, ekki aðgerð.
+> **Staða: FRAMKVÆMT 08.09.2026. Öll 36 tekin úr þjónustu.**
+>
+> Agnar fór sjálfur yfir úrtak (NSN tæki, Klettás, Hugheimur) og staðfesti:
+> *„þeir sem ég kíkti á voru að virðist bara með búðarsölur og kerfið að halda
+> að þetta væru úttektar invoice… má bara taka þau öll úr þjónustu."*
+>
+> `er_i_thjonustu = false` sett á öll 36 auðkennin hér að neðan. **Í þjónustu fór
+> úr 683 í 647**, og öll 5.242 tækin standa eftir — ekkert þeirra 36 bar tæki.
+> Þrjú félög án sönnunar standa eftir og það eru systkinastaðirnir sem haldið var
+> eftir viljandi.
+>
+> **Afturköllun:** afritið er í töflunni `backup_thjonusta_ut_20260908` (36 raðir
+> með fyrri stöðu). Til að bakka öllu:
+> `update fyrirtaeki f set er_i_thjonustu = b.er_i_thjonustu from backup_thjonusta_ut_20260908 b where b.id = f.id;`
+>
+> **Rótin sem eftir stendur:** búðarsölur hengjast í úttektarreitinn á
+> fyrirtækjasíðunni (NSN tæki sýndi R-108215 sem „Slökkvitækjaþjónusta 2026"
+> þótt engin tæki væru skráð). Það er sjálfstæð villa og hún er ólöguð.
 
 ## Af hverju listinn er til
 
