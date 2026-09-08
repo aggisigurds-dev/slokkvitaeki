@@ -1674,13 +1674,25 @@
       all: filtered.length,
       done: filtered.filter(c => isDoneYear(c, curYear)).length,
       pending2026: filtered.filter(c => !isDoneYear(c, curYear) && !_erOvist(c, curYear)).length,
-      pending: filtered.filter(c => {
+      // 2026-09-08 (Agnar: „sýna líka fjöldann sem er svona kominn á tíma… eins og
+      // núna í sept er um 110 eftir"): ⏳ Eftir-flagan telur LÍKA þá sem var sleppt
+      // í fyrra, óháð mánuði — þess vegna bar hún 178 þótt aðeins 116 væru með
+      // liðinn mánuð. Hér er talan hrein: óbúið OG skoðunarmánuðurinn kominn.
+      aTima: filtered.filter(c => {
         if (isDoneYear(c, curYear)) return false;
         if (+(c._ars.field_inspected_year || 0) === curYear) return false;
         const m = +c._ars.inspect_month || 0;
-        return isSkippedLastYear(c, curYear) || (m > 0 && m <= _curMon);
+        return m > 0 && m <= _curMon;
+      }).length,
+      // Óbúið og ENGINN skráður mánuður — þau geta hvorki verið komin á tíma né
+      // bíða seinni hluta árs; þau eru einfaldlega óskipulögð.
+      anManadar: filtered.filter(c => {
+        if (isDoneYear(c, curYear)) return false;
+        if (_erOvist(c, curYear)) return false;
+        return !(+c._ars.inspect_month > 0);
       }).length,
     };
+    const MAN_IS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
     // Er einhver sía virk? (staða, mánuður, póstnúmer eða leit)
     const siaVirk = state.status !== 'all' || !!(state.months && state.months.length)
       || (state.postnr !== null) || !!state.search.trim();
@@ -1843,7 +1855,7 @@
           <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Eftir ${curYear}</div>
             <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${sy.pending2026}</div>
-            <div style="font-size:10.5px;color:#b45309">þar af ⏳ mánuður kominn ${sy.pending}${afBordi(cnt.pending2026)}</div>
+            <div style="font-size:10.5px;color:#b45309" title="⏳ Komið á tíma = óbúið og skoðunarmánuðurinn er kominn eða liðinn (t.o.m. ${MAN_IS[_curMon - 1]}). Án mánaðar = óbúið en enginn mánuður skráður. Það sem eftir stendur bíður seinni hluta ársins.">⏳ ${sy.aTima} komin á tíma${sy.anManadar ? ` · ${sy.anManadar} án mánaðar` : ''}${afBordi(cnt.pending2026)}</div>
           </div>
           <div class="bstal-hero" style="background:var(--thm-sumh);color:#fff;border:1px solid var(--brand);border-radius:10px;padding:11px 13px">
             <!-- 2026-09-08 (Agnar): talan er nú í ÞÚSUNDUM og byggir á RAUN-tölum

@@ -1,0 +1,200 @@
+[
+ {
+  "id": 610,
+  "nafn": "Aðaskoðun Grjótháls",
+  "kennitala": "540994-2269",
+  "deleted_at": "2026-06-05T14:50:35.87988+00:00"
+ },
+ {
+  "id": 1489,
+  "nafn": "Álfhella, 221 Hafnarfjörður.",
+  "kennitala": "420187-1499",
+  "deleted_at": "2026-07-11T13:43:32.919162+00:00"
+ },
+ {
+  "id": 352,
+  "nafn": "B Racing",
+  "kennitala": "430604-2790",
+  "deleted_at": "2026-07-14T10:01:19.977+00:00"
+ },
+ {
+  "id": 1446,
+  "nafn": "Bifreið.is",
+  "kennitala": "710815-0700",
+  "deleted_at": "2026-06-23T20:46:58.418983+00:00"
+ },
+ {
+  "id": 131,
+  "nafn": "Bilasmiðurinn",
+  "kennitala": "541298-2159",
+  "deleted_at": "2026-06-03T02:33:50.907341+00:00"
+ },
+ {
+  "id": 1449,
+  "nafn": "Bílasprautun Íslands",
+  "kennitala": "650398-2389",
+  "deleted_at": "2026-06-23T20:49:16.525361+00:00"
+ },
+ {
+  "id": 1428,
+  "nafn": "Bláa lónið",
+  "kennitala": "490792-2369",
+  "deleted_at": "2026-06-23T20:49:51.606417+00:00"
+ },
+ {
+  "id": 1102,
+  "nafn": "Bláa lónið",
+  "kennitala": "490792-2369",
+  "deleted_at": "2026-06-11T16:34:07.09868+00:00"
+ },
+ {
+  "id": 1185,
+  "nafn": "Brunahólf ehf.",
+  "kennitala": "520417-2300",
+  "deleted_at": "2026-07-14T14:17:18.637+00:00"
+ },
+ {
+  "id": 1316,
+  "nafn": "Brynja leigufélag ses.",
+  "kennitala": "420369-6979",
+  "deleted_at": "2026-06-05T11:32:42.21+00:00"
+ },
+ {
+  "id": 1492,
+  "nafn": "Colas (Gullhella)",
+  "kennitala": "420187-1499",
+  "deleted_at": "2026-07-11T13:43:32.919162+00:00"
+ },
+ {
+  "id": 1632,
+  "nafn": "Eignarhaldsfélagið Gerðuberg ehf",
+  "kennitala": "470202-3940",
+  "deleted_at": "2026-07-29T10:51:03.946643+00:00"
+ },
+ {
+  "id": 1432,
+  "nafn": "Estetik (tannlæknastofa)",
+  "kennitala": "690692-2529",
+  "deleted_at": "2026-06-23T20:51:10.026351+00:00"
+ },
+ {
+  "id": 1110,
+  "nafn": "Fiskbúð Suðurlands",
+  "kennitala": "610789-1109",
+  "deleted_at": "2026-06-11T16:40:24.918432+00:00"
+ },
+ {
+  "id": 893,
+  "nafn": "G 14 ehf.",
+  "kennitala": null,
+  "deleted_at": "2026-06-11T16:40:24.918432+00:00"
+ },
+ {
+  "id": 685,
+  "nafn": "GG sjósport",
+  "kennitala": "510211-0220",
+  "deleted_at": "2026-07-14T16:04:30.691+00:00"
+ },
+ {
+  "id": 513,
+  "nafn": "Golfbúðin ehf",
+  "kennitala": "631299-2539",
+  "deleted_at": "2026-07-15T11:40:50.282+00:00"
+ },
+ {
+  "id": 1348,
+  "nafn": "Heilsuvitund Sjúkraþjálfun",
+  "kennitala": "480402-2510",
+  "deleted_at": "2026-08-19T16:46:55.349+00:00"
+ },
+ {
+  "id": 694,
+  "nafn": "Henson",
+  "kennitala": "541191-1789",
+  "deleted_at": "2026-07-15T08:39:33.344+00:00"
+ },
+ {
+  "id": 583,
+  "nafn": "Húsasmiðjan ehf.",
+  "kennitala": "551211-0290",
+  "deleted_at": "2026-07-15T10:30:49.945+00:00"
+ },
+ {
+  "id": 1359,
+  "nafn": "Húsfélagið",
+  "kennitala": "521094-2229",
+  "deleted_at": "2026-08-26T15:20:34.51271+00:00"
+ },
+ {
+  "id": 1368,
+  "nafn": "Húsfélagið Álftamýri 36",
+  "kennitala": "430582-0549",
+  "deleted_at": "2026-08-26T15:21:01.844076+00:00"
+ },
+ {
+  "id": 1639,
+  "nafn": "Húsfélagið Sléttuvegur 7",
+  "kennitala": null,
+  "deleted_at": "2026-08-03T14:31:39.15+00:00"
+ },
+ {
+  "id": 1369,
+  "nafn": "Indverska Matarfélagið",
+  "kennitala": "510613-0310",
+  "deleted_at": "2026-08-10T22:43:45.233+00:00"
+ },
+ {
+  "id": 495,
+  "nafn": "Jaðarleiti",
+  "kennitala": "611117-0190",
+  "deleted_at": "2026-07-28T04:08:07.352797+00:00"
+ },
+ {
+  "id": 474,
+  "nafn": "Reykjavíkurvegur ehf.",
+  "kennitala": "470819-0490",
+  "deleted_at": "2026-07-17T15:58:02.305+00:00"
+ },
+ {
+  "id": 159,
+  "nafn": "Sætoppur",
+  "kennitala": "691106-0470",
+  "deleted_at": "2026-07-15T11:59:13.48+00:00"
+ },
+ {
+  "id": 731,
+  "nafn": "Satúrnus ehf (Amma Mús)",
+  "kennitala": "560269-6929",
+  "deleted_at": "2026-07-15T09:55:27.661+00:00"
+ },
+ {
+  "id": 1393,
+  "nafn": "Stokkhylur",
+  "kennitala": "430407-0310",
+  "deleted_at": "2026-07-15T16:36:18.43+00:00"
+ },
+ {
+  "id": 607,
+  "nafn": "Vélrás vr-5",
+  "kennitala": "491209-1270",
+  "deleted_at": "2026-06-03T02:33:50.907341+00:00"
+ },
+ {
+  "id": 287,
+  "nafn": "Vélrás Vr5",
+  "kennitala": "491209-1270",
+  "deleted_at": "2026-07-13T08:21:59.052051+00:00"
+ },
+ {
+  "id": 486,
+  "nafn": "Verkalýðsfélagið Hlíf",
+  "kennitala": "620169-3319",
+  "deleted_at": "2026-07-15T09:52:55.451+00:00"
+ },
+ {
+  "id": 1266,
+  "nafn": "Þórður Atli Guðnýjarson",
+  "kennitala": "060293-2879",
+  "deleted_at": "2026-09-04T09:09:18.626+00:00"
+ }
+]
