@@ -447,3 +447,33 @@ blobbið `last_year_inspected: 2026` og `steps_2026: {uttekt, skyrsla}`, stimpla
 Stimpillinn hreinsaður (afrit `tools/bakk-499-stimpill-2026-09-08.json`).
 **Félagið er nú fyrsti sjálfsagði 🕶-kandídatinn**: raunverulegt húsfélag sem er
 þjónustað undir kennitölu 2-4-6.
+
+## 🔢 Hausinn taldi mjúk-eydd félög — lagað 08.09.2026
+
+Þrjár tölur, þrjú svör: hausinn sagði **682**, dálkurinn `er_i_thjonustu` bar
+**649** og listinn undir hausnum **669**.
+
+`v_thjonustu_tolur` var lesið úr Supabase (`pg_get_viewdef`) — ekki endursmíðað
+eftir útkomunni — og orsökin var ein lína: grunn-CTE-ið `i_thj` síaði á
+`er_i_thjonustu` en sleppti `deleted_at IS NULL`. **Þrjátíu og þrjú mjúk-eydd
+félög báru flaggið enn**, þar af 18 sameiningar-leifar sem eiga lifandi tvíbura
+(Bláa lónið ×2, Vélrás vr-5 ×2, Aðaskoðun Grjótháls, Colas/Álfhella,
+Eignarhaldsfélagið Gerðuberg …). Sextán þeirra bera skráðan mánuð og lentu því
+líka í „Eftir 2026" — **vinnulisti ársins var ofmetinn um 16 dauð félög.**
+
+| | fyrir | eftir |
+|---|---|---|
+| allar_i_thjonustu | 682 | **649** |
+| i_arsskodun | 592 | **576** |
+| eftir_2026 | 252 | **236** |
+| buid_2026 | 340 | 340 (óbreytt) |
+
+SQL-ið er geymt í [`sql/2026-09-08_v_thjonustu_tolur_deleted_at.sql`](../sql/2026-09-08_v_thjonustu_tolur_deleted_at.sql)
+— orðrétt frumtextinn plús þessi eina lína.
+
+**Eftir stendur bilið 649 → 669:** 21 félag kemst á borðið án flaggsins, 17 þeirra
+eiga AÐEINS lifandi tæki úr fjöldainnflutningnum 03.06.2026 (Hótel Atlantic
+apartments 32 tæki, Hlíðablóm 16, Eskihlíð 12, Breytir 9, Kaplahraun 1 9,
+Suðurlandsbraut 30 8 …) — engin kt, engin skýrsla, engin skjöl, bara tæki.
+Annaðhvort eiga þau flaggið eða tækin eru rusl. Þetta er ákvörðun Agnars; þegar
+hún er tekin verða haus og listi sama talan.
