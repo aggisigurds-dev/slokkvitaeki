@@ -226,6 +226,14 @@
   // inflated "Allir" + "Vantar skjöl", so they're hidden from every view except
   // the dedicated "Greiðendur (bank)" filter. Reversible (the flag, not delete).
   let _bankOnlyIds = new Set(), _bankLoaded = false;
+  /* „Hide mode" (Agnar 08.09.2026: „getur kannski sett þau í hálfgert hide mode.
+     allt sem er smá óvissa með. filter."). Sama hugsun og bank-only: fyrirtæki
+     sem EKKERT tengist — hvorki tæki, sala, skjal né skýrsla — eru falin úr
+     venjulegum sýnum en lifa í sinni eigin síu með ÁSTÆÐU skráðri í
+     `ovisst_astaeda`. Þetta er ekki rusl: 173 raðir úr listainnflutningum,
+     flestar með gildri kennitölu og heimilisfangi, og 108 á höfuðborgarsvæðinu.
+     Þær eru mögulegir kúnnar — sjá docs/FACT-CHECK-YFIRFERD.md. Aldrei eyðing. */
+  let _ovissIds = new Set();
   async function loadBankOnly() {
     const SB = (window.DB && window.DB.sb); if (!SB) return;
     try {
@@ -233,6 +241,10 @@
       _bankOnlyIds = new Set((data || []).map(r => +r.id));
       _bankLoaded = true;
     } catch (_) { /* column may not exist yet on older deploys */ }
+    try {
+      const { data } = await SB.from('fyrirtaeki').select('id').eq('ovisst', true);
+      _ovissIds = new Set((data || []).map(r => +r.id));
+    } catch (_) { /* dálkurinn kann að vanta á eldri deploy */ }
   }
   function docPill(text, ok, kind) {
     const st = kind === 'bud' ? 'color:#1d4ed8;background:#eef3ff;border:1px solid #c6d6ff;'
@@ -300,6 +312,7 @@
         _hasGps: !!(c.heimilisfang && gc[c.heimilisfang]) || !!(c.nafn && gc[c.nafn]),
         _docs: docsFor(c),
         _bankOnly: _bankOnlyIds.has(+c.id),
+        _ovisst: _ovissIds.has(+c.id),
         _docYears: docYearsFor(c),
         _uttektYears: uttektYearsFor(c),
         _last: lastYearsFor(c),
@@ -316,8 +329,10 @@
     // every view except their own "Greiðendur (bank)" filter.
     if (state.filter === 'bank') {
       result = result.filter(c => c._bankOnly);
+    } else if (state.filter === 'ovisst') {
+      result = result.filter(c => c._ovisst);
     } else {
-      result = result.filter(c => !c._bankOnly);
+      result = result.filter(c => !c._bankOnly && !c._ovisst);
       if (state.filter === 'fyrirt') result = result.filter(c => c._hasArs);
       else if (state.filter === 'brunak') result = result.filter(c => c._hasBru);
       else if (state.filter === 'ferda') result = result.filter(c => c._hasFerda);
@@ -534,8 +549,9 @@
     const filtered = filterAll(all);
 
     // Headline counts exclude bank-import-only payers (they get their own chip).
-    const nonBank = all.filter(c => !c._bankOnly);
-    const cntBank = all.length - nonBank.length;
+    const nonBank = all.filter(c => !c._bankOnly && !c._ovisst);
+    const cntBank = all.filter(c => c._bankOnly).length;
+    const cntOvisst = all.filter(c => c._ovisst).length;
     const cntAll = nonBank.length;
     const cntArs = nonBank.filter(c => c._hasArs).length;
     const cntBru = nonBank.filter(c => c._hasBru).length;
@@ -633,7 +649,8 @@
             ['brunak', '🚨 Brunakerfi',          cntBru],
             ['ferda',  '🚌 Ferðaþjónusta',       cntFerda],
             ['onei',   'Án samnings',            cntOne]
-          ].concat(cntBank ? [['bank', '🏦 Greiðendur (bank)', cntBank]] : []).map(([key, lbl, n]) => {
+          ].concat(cntBank ? [['bank', '🏦 Greiðendur (bank)', cntBank]] : [])
+           .concat(cntOvisst ? [['ovisst', '🕶 Óvissir (faldir)', cntOvisst]] : []).map(([key, lbl, n]) => {
             const sel = state.filter === key;
             const inactive = 'background:linear-gradient(180deg,#fdfdfe,#e3e7ee);border:1px solid rgba(20,24,34,.14);color:#3a4250';
             const active   = 'background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;border:1px solid #0a0b0d';
@@ -688,7 +705,7 @@
         ` : (state.view === 'list' ? renderList(filtered) : renderCards(filtered))}
 
         <div style="margin-top:20px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#9098a6;text-align:center">
-          Sýni <strong style="color:#11141c">${filtered.length}</strong> af ${state.filter === 'bank' ? cntBank : cntAll} viðskiptavinum${cntBank && state.filter !== 'bank' ? ` · ${cntBank} bank-greiðendur faldir` : ''}
+          Sýni <strong style="color:#11141c">${filtered.length}</strong> af ${state.filter === 'bank' ? cntBank : state.filter === 'ovisst' ? cntOvisst : cntAll} viðskiptavinum${cntBank && state.filter !== 'bank' ? ` · ${cntBank} bank-greiðendur faldir` : ''}${cntOvisst && state.filter !== 'ovisst' ? ` · ${cntOvisst} óvissir faldir` : ''}
         </div>
       </main></div></div>
     `;
