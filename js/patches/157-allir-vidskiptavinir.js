@@ -242,8 +242,12 @@
       _bankLoaded = true;
     } catch (_) { /* column may not exist yet on older deploys */ }
     try {
-      const { data } = await SB.from('fyrirtaeki').select('id').eq('ovisst', true);
-      _ovissIds = new Set((data || []).map(r => +r.id));
+      // Pögun skylda: ópöguð fyrirspurn þegir við 1000 raðir og þá lækju
+      // faldar raðir aftur inn í „Allir" án þess að nokkur tæki eftir því.
+      const rows = await window.DB.fetchAll(function (from, to) {
+        return SB.from('fyrirtaeki').select('id').eq('ovisst', true).order('id').range(from, to);
+      });
+      _ovissIds = new Set((rows || []).map(r => +r.id));
     } catch (_) { /* dálkurinn kann að vanta á eldri deploy */ }
   }
   function docPill(text, ok, kind) {
