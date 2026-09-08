@@ -136,3 +136,35 @@ Agnar 08.09.2026: *„sum ný eða endurvakin."* Félag án sögu er ekki sjálf
 brottfall — það getur verið nýskráð eða endurvakið eftir hlé. Notaðu **fyrstu
 raunverulegu virkni** til að greina á milli og **taktu aldrei félag úr þjónustu
 á þeirri forsendu einni að sögu vanti.**
+
+## ⚠️ Þriðja geymslan: þjónustu-merkið er líka tvískrifað
+
+Sama gildran og með skýrslurnar, á öðrum stað. „Í þjónustu" býr á TVEIMUR
+stöðum og þeir geta rekið í sundur:
+
+- `fyrirtaeki.er_i_thjonustu` — dálkurinn, per-röð. **Aldrei NULL** (mælt
+  08.09.2026: 649 true, 629 false, 0 null).
+- `app_settings.arsskodun_customers[id].subscribed` — arfleifð frá 2026-06-02,
+  enn lesin sem varaleið í `inService()` (`153-arsskodun.js`).
+
+Takkinn „⬇ Úr þjónustu" (`280`) skrifar á BÁÐA staði. **Bulk-SQL gerir það
+ekki** — og þá heldur blobbið félaginu inni. Þannig komu 41 félag sem tekin
+höfðu verið úr þjónustu aftur á Ársskoðunarborðið (711 raðir á móti 649 í
+dálkinum). Sjá [`THJONUSTA-YFIRFERD-20260907.md`](THJONUSTA-YFIRFERD-20260907.md)
+kaflann „Framhald 08.09.2026".
+
+**Regla:** taktu aldrei félag úr þjónustu með SQL einu saman. Annaðhvort notaðu
+takkann, eða stimplaðu blobbið í sömu andrá
+(`{subscribed:false, removed_from_service_at}`).
+
+## ⚠️ Teljari sem les úr öðru úrvali en smellurinn skilar
+
+Þriðja afbrigðið af sama mynstri, fundið 08.09.2026: „🚫 Án mánaðar"-flagan á
+Ársskoðun sagði **38** en smellurinn skilaði **93 röðum**. Teljarinn las úr
+`arsAll` (aðeins félög með skráðan búnað) meðan sían keyrði á allt borðið —
+og félög án búnaðar eru einmitt þau sem oftast vantar mánuðinn, svo skekkjan
+var stærst nákvæmlega þar sem talan skipti mestu máli.
+
+**Regla:** teljari á síu-flögu skal fenginn úr sama fallinu og sían sjálf, með
+þeirri einu vídd sem flagan stýrir tekna út (`filteredSorted({ignoreMonths:true})`
+— sama mynstur og póstnúmera-teljararnir nota).

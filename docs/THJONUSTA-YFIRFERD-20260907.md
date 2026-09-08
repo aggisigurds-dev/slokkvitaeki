@@ -180,3 +180,66 @@ með grænum haka þótt félagið eigi engin tæki og reikningurinn sé búðar
 Reglan sem greinir á milli er þegar til í kóðanum (`tools/lesa-reikninga-drive.cjs`
 — „Skýrslugerð og vottun" EÐA „Akstur"); hún þarf að rata inn í pörunina á
 fyrirtækjasíðunni.
+
+## 🔁 Framhald 08.09.2026 — 41 draugar sem hreinsunin náði ekki
+
+Daginn eftir hreinsunina stóð Agnar frammi fyrir Ársskoðunarborðinu og sá 711
+fyrirtæki þar sem `er_i_thjonustu = true` bar aðeins **649**. Amrika, Art Hostel,
+NSN tæki, Íslandspóstur og „Test fyrirtæki" voru öll þarna enn — félög sem hann
+hafði sjálfur tekið úr þjónustu.
+
+**Ástæðan er tvískrifun sem bulk-SQL braut.** Takkinn „⬇ Úr þjónustu"
+(`280-company-service-toggle.js`) skrifar á TVO staði:
+
+1. `fyrirtaeki.er_i_thjonustu = false` — dálkurinn, per-röð
+2. `app_settings.arsskodun_customers[id] = { subscribed:false, removed_from_service_at }`
+
+Hreinsunin 08.09 var keyrð sem SQL-uppfærsla og snerti **aðeins fyrsta liðinn**.
+`inService()` í `153-arsskodun.js` telur félag áfram í þjónustu ef blobbið segir
+`subscribed: true` (arfleifð frá 2026-06-02, „fallback during the transition"),
+og úrtöku-neitunin þar fyrir ofan krefst `subscribed !== true` — svo hún gat ekki
+gripið inn í. Félögin komu því öll aftur við næstu hleðslu.
+
+Fjögur til viðbótar (Hugheimur, NSN tæki, HG kranar, Art Hostel) báru
+`removed_from_service_at: 2026-07-23` **en samt** `subscribed: true` — sama
+gildra, eldri dagsetning.
+
+**Lagað 08.09.2026:** blobbið stimplað eins og takkinn sjálfur gerir
+(`subscribed:false` + `removed_from_service_at`) fyrir **41 félag** sem uppfylltu
+ÖLL þessi skilyrði:
+
+- `er_i_thjonustu = false` (meðvituð úrtaka — dálkurinn er aldrei NULL, mælt)
+- engin lifandi tæki í `uttaeki` (`status != 'urelt'`)
+- engin tæki í blob-`equipment`
+- enginn brunakerfissamningur (`brunakerfi_customers`)
+
+Þrjátíu félög með `er_i_thjonustu = false` **en lifandi tæki** voru VILJANDI
+látin í friði (Þangbakki 8-10 með 55 tæki, Húsfélagið Ásholt 2 með 34, Hótel
+Atlantic apartments með 32 …). Tækin eru sönnun sem á að skoða, ekki hunsa.
+
+**Mælt í viðmótinu:** borðið fór úr **711 → 670**, og „🚫 Án mánaðar" úr
+**93 → 53**. Eftir standa 53 raunverulegir þjónustukúnnar sem vantar
+skoðunarmánuð — vinnulisti, ekki rusl.
+
+**Afturköllun:** heilt afrit af `app_settings.settings` fyrir aðgerð er í
+`C:\Users\Slokkvitaeki\backup_app_settings_20260908_fyrir-draugahreinsun.json`
+(1,4 MB). Til að bakka: PATCH-a `app_settings?id=eq.1` með `settings` úr afritinu.
+
+### ⚠️ Af hverju kóða-lagfæring var EKKI valin
+
+Fyrsta hugmyndin var að láta `er_i_thjonustu === false` einfaldlega slökkva á
+blob-merkinu í `inService()`. **Mæling stöðvaði það:** 30 félög með lifandi tæki
+hefðu horfið af borðinu. Önnur hugmynd — að hætta að lesa `subscribed` úr
+blobbinu — hefði brotið áskriftartakkann í `158-vidsk-detail.js`, sem skrifar
+`subscribed: true` **án** þess að snerta dálkinn; nýskráður kúnni hefði aldrei
+birst. Gagna-lagfæring sem notar sömu vél og takkinn var eina leiðin sem braut
+ekkert.
+
+### Það sem stendur eftir eftir þessa aðgerð
+
+- **`v_thjonustu_tolur.allar_i_thjonustu` segir 682** meðan dálkurinn ber 649 og
+  listinn 670. Hausinn á Ársskoðun les þá tölu, svo hann sýnir enn hærri tölu en
+  listinn undir honum. Viewið er server-megin og var ekki snert.
+- **„Test fyrirtæki" (1404)** er enn á borðinu — það ber 6 lifandi tæki og fellur
+  því undir vörnina hér að ofan. Þarf handvirka ákvörðun.
+- **Garðyrkjufélag Íslands (1198)** stendur eftir á brunakerfissamningi. Rétt.
