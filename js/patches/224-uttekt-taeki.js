@@ -183,7 +183,11 @@
     rerender: function(coId){
       var wrap = document.querySelector('.ut-list[data-uw-co="'+coId+'"]'); if(!wrap) return;
       var c = window.Companies && Companies.list && Companies.list.find(function(x){return x.id==coId;}); if(!c) return;
-      wrap.innerHTML = inner(coId, DB.cache.units.filter(function(u){return u.client===c.nafn;}));
+      // sama regla og unitsFor — annars stangast endurteikningin á við listann.
+      wrap.innerHTML = inner(coId, DB.cache.units.filter(function(u){
+        if(String(u.status)==='urelt') return false;
+        return (u.fyrirtaeki_id!=null) ? (Number(u.fyrirtaeki_id)===Number(c.id)) : (u.client===c.nafn);
+      }));
     },
     // Aðrir patchar (t.d. 270 sem læsir listanum sjálfkrafa við lok heimsóknar)
     // geta kveikt á sama skrefi án þess að afrita rökin.
@@ -237,7 +241,19 @@
       +'.ut-listlock.on{background:linear-gradient(180deg,#2f5d3f,#173524);color:#daffe8;border-color:#0e2417;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.25)}'
       +'.ut-list.locked .ut-svc,.ut-list.locked .ut-onytt,.ut-list.locked .ut-check,.ut-list.locked .ut-chk,.ut-list.locked .ut-selall,.ut-list.locked .ut-bulk-act,.ut-list.locked .ut-bulk-size,.ut-list.locked .ut-bulk-date,.ut-list.locked .ut-bulk-dateset,.ut-list.locked .ut-bulk-qr,.ut-list.locked .ut-bulk-del,.ut-list.locked .ut-bulk-clear,.ut-list.locked .ut-grp-h{pointer-events:none;opacity:.5}';
     document.head.appendChild(s); })();
-  function unitsFor(coId){ var c=Companies.list.find(function(x){return x.id==coId;}); return c?DB.cache.units.filter(function(u){return u.client===c.nafn;}):[]; }
+  // 2026-09-08: síaði á NAFNI og hleypti ÚRELTUM tækjum inn. Hvort tveggja er
+  // rangt: staðnað nafn faldi tæki sem á að skoða (mælt á fid 1570), og úrelt
+  // tæki á aldrei að birtast í úttektarlista — það er farið (sbr.
+  // audit-status-gildi: „í notkun er allt NEMA urelt"). Auðkennið ræður; nafnið
+  // sækir aðeins raðir sem bera ekkert auðkenni.
+  function unitsFor(coId){
+    var c=Companies.list.find(function(x){return x.id==coId;});
+    if(!c) return [];
+    return DB.cache.units.filter(function(u){
+      if(String(u.status)==='urelt') return false;
+      return (u.fyrirtaeki_id!=null) ? (Number(u.fyrirtaeki_id)===Number(c.id)) : (u.client===c.nafn);
+    });
+  }
   function recompute(){ try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){} }
 
   document.addEventListener('click', function(e){

@@ -101,7 +101,19 @@ var Companies = {
   openDetail: function(id) {
     var c = this.list.find(function(x) { return x.id === id; });
     if (!c) return;
-    var units = DB.cache.units.filter(function(u) { return u.client === c.nafn; });
+    // 2026-09-08: síaði AÐEINS á nafni. Tæki sem ber rétt `fyrirtaeki_id` en
+    // staðnað `client` (endurnefnt félag — mælt á fid 1570) hvarf af prófílnum
+    // þótt aðalyfirlitið teldi það. Notandinn hélt að vistun hefði mistekist og
+    // stofnaði annað tæki: draugafærsla. Auðkennið ræður; nafnið er AÐEINS
+    // varaleið fyrir raðir sem bera ekkert auðkenni, svo systkinastaður með
+    // sama nafni dragist aldrei inn.
+    // Úrelt tæki eru FARIN og eiga hvergi heima í úttektarlistanum — nafnasían
+    // faldi þau áður fyrir slysni, auðkennis-sían gerir það ekki. Sama regla og
+    // 129/168 nota (NONBILL) og audit-status-gildi ver.
+    var units = DB.cache.units.filter(function(u) {
+      if (String(u.status) === 'urelt') return false;
+      return (u.fyrirtaeki_id != null) ? (u.fyrirtaeki_id === c.id) : (u.client === c.nafn);
+    });
     var el = document.getElementById('companies-main');
     var nafn = U.e(c.nafn);
     var kt = c.kennitala ? U.e(c.kennitala) : '';

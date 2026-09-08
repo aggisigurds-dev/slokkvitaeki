@@ -338,15 +338,21 @@
     return 'yfirferd';
   }
 
-  async function fetchUnits(client) {
+  // 2026-09-08: sótti ÁÐUR aðeins á `client`-nafni. Staðnað nafn (endurnefnt
+  // félag, eða tæki stofnað með gamla nafninu í minni — mælt á fid 1570) þýddi
+  // að tækið datt ÚT ÚR REIKNINGNUM þegjandi. Auðkennið ræður núna; nafnið er
+  // aðeins sótt til viðbótar fyrir raðir sem bera EKKERT auðkenni, svo
+  // systkinastaður með sama nafni dragist aldrei inn (sbr. 175/239).
+  async function fetchUnits(client, coId) {
     const sb = window.DB && window.DB.sb;
     if (!sb) return [];
     let all = [];
     let from = 0, pageSize = 1000;
     while (true) {
-      const { data, error } = await sb.from('uttaeki')
-        .select('id,serial,type,size,status')
-        .eq('client', client)
+      const VELJA = 'id,serial,type,size,status,fyrirtaeki_id';
+      const { data, error } = await (coId != null
+        ? sb.from('uttaeki').select(VELJA).eq('fyrirtaeki_id', coId)
+        : sb.from('uttaeki').select(VELJA).eq('client', client))
         .order('id')
         .range(from, from + pageSize - 1);
       if (error || !data) break;
@@ -389,17 +395,29 @@
     if (mm === '02' && dd === '29') dd = '28'; // 2028-02-29 → 2029-02-28 (gilt dags.)
     return String(+m[1] + 1) + '-' + mm + '-' + dd;
   }
-  async function advanceInspectionDates(coNafn) {
+  // 2026-09-08: sama nafnagildra og í fetchUnits — og hér SKRIFAR fallið
+  // (last_insp/next_insp). Tæki með staðnað nafn fékk aldrei nýja dagsetningu
+  // og stóð eftir sem útrunnið þótt það hefði verið skoðað.
+  async function advanceInspectionDates(coNafn, coId) {
     const sb = window.DB && window.DB.sb;
-    if (!sb || !coNafn) return 0;
+    if (!sb || (!coNafn && coId == null)) return 0;
     const today = new Date().toISOString().slice(0, 10);
     const todayPlus1 = String(+today.slice(0, 4) + 1) + today.slice(4);
     let rows = [];
     try {
-      const r = await sb.from('uttaeki')
-        .select('id,next_insp,last_insp,status').eq('client', coNafn);
+      const velja = 'id,next_insp,last_insp,status,fyrirtaeki_id';
+      const r = (coId != null)
+        ? await sb.from('uttaeki').select(velja).eq('fyrirtaeki_id', coId)
+        : await sb.from('uttaeki').select(velja).eq('client', coNafn);
       if (r.error || !r.data) return 0;
       rows = r.data;
+      if (coId != null && coNafn) {
+        const m = await sb.from('uttaeki').select(velja).eq('client', coNafn).is('fyrirtaeki_id', null);
+        if (!m.error && m.data) {
+          const seen = new Set(rows.map(u => u.id));
+          m.data.forEach(u => { if (!seen.has(u.id)) rows.push(u); });
+        }
+      }
     } catch (_) { return 0; }
     const SKIP = { loaned: 1, broken: 1, onytt: 1, geymsla: 1, urelt: 1 };
     let n = 0;
@@ -459,7 +477,14 @@
     const coNafn = getCompanyName();
     if (!coId || !coNafn) return;
 
-    const units = await fetchUnits(coNafn);
+    const units = await fetchUnits(coNafn, coId);
+    // Munaðarlausar raðir (fyrirtaeki_id NULL) bera aðeins nafnið — þær eiga
+    // áfram heima hjá félaginu og mega ekki detta út við skiptin hér að ofan.
+    if (coId != null) {
+      const munadarlaus = (await fetchUnits(coNafn, null)).filter(u => u.fyrirtaeki_id == null);
+      const seen = new Set(units.map(u => u.id));
+      munadarlaus.forEach(u => { if (!seen.has(u.id)) units.push(u); });
+    }
     const services = await loadServices();
     const tier = await loadTierFor(coId);
     const tripState = loadTripState(coId);
@@ -1197,7 +1222,7 @@
         // 2026-07-14: að búa til úttektarskýrsluna færir líka næstu skoðun
         // 12 mánuði fram (afmælis-dagur tækisins varðveittur) — sama og að
         // ýta á „Merkja skoðun". Keyrt í bakgrunni svo skýrslan opnist strax.
-        advanceInspectionDates(coNafn).then(n => {
+        advanceInspectionDates(coNafn, coId).then(n => {
           if (n && window.Toast && Toast.show) Toast.show('✓ Næsta skoðun færð 12 mán fram á ' + n + ' tæki');
         }).catch(e => console.warn('[ctc] next_insp advance', e));
         if (window.CompanyInspectionReport && CompanyInspectionReport.open) {

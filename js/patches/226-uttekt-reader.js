@@ -240,9 +240,16 @@
     // only add the tæki that are missing (no duplicates).
     // Telja á AUÐKENNI þegar það er til, ekki á nafni. Tveir staðir geta
     // borið sama nafn; nafna-talning bætti þá við of fáum eða of mörgum.
+    // 2026-09-08: reglan var ANNAÐHVORT-EÐA — þegar auðkennið var til var nafnið
+    // hunsað alveg. Tæki sem ber rétt nafn en `fyrirtaeki_id` NULL var þá
+    // ósýnilegt, `have` vantaldist og lesarinn bætti við TVÍTAKI. Rétta reglan er
+    // BÆÐI: auðkennið ræður, og að auki teljast munaðarlausar raðir (ekkert
+    // auðkenni) sem bera nafnið — en aldrei rað annars staðar með sama nafni.
     var _fidNum=(coId!=null&&coId!=='')?Number(coId):null;
     var existing=((window.DB&&DB.cache&&DB.cache.units)||[]).filter(function(u){
-      return _fidNum!=null ? Number(u.fyrirtaeki_id)===_fidNum : u.client===nafn;
+      if(_fidNum==null) return u.client===nafn;
+      if(u.fyrirtaeki_id!=null) return Number(u.fyrirtaeki_id)===_fidNum;
+      return u.client===nafn;
     });
     var have={}; existing.forEach(function(u){ var c=catOf(u); if(c) have[c]=(have[c]||0)+1; });
     var rows=[], used={}, summary=[];

@@ -194,15 +194,20 @@
     return doc.output('blob');
   }
 
-  async function fetchUnits(client) {
+  // 2026-09-08: speglar fetchUnits í patch 129 (skráin segir það sjálf) og varð
+  // að hreyfast með henni. Þetta er ÚTTEKTARSKÝRSLAN sem kúnninn fær í hendur —
+  // víki hún frá reikningnum segja skjölin tvö sitt hvað. Auðkennið ræður;
+  // nafnið sækir aðeins raðir sem bera ekkert auðkenni.
+  async function fetchUnits(client, coId) {
     const sb = getSB();
     if (!sb) return [];
     let all = [];
     let from = 0, pageSize = 1000;
     while (true) {
-      const { data, error } = await sb.from('uttaeki')
-        .select('id,serial,type,size,status')
-        .eq('client', client)
+      const VELJA = 'id,serial,type,size,status,fyrirtaeki_id';
+      const { data, error } = await (coId != null
+        ? sb.from('uttaeki').select(VELJA).eq('fyrirtaeki_id', coId)
+        : sb.from('uttaeki').select(VELJA).eq('client', client))
         .range(from, from + pageSize - 1);
       if (error || !data) break;
       all = all.concat(data);
@@ -237,7 +242,12 @@
     if (c.error || !c.data) { alert('Fyrirtæki fannst ekki'); return; }
     const co = c.data;
 
-    const units = await fetchUnits(co.nafn);
+    const units = await fetchUnits(co.nafn, co.id);
+    if (co.id != null) {
+      const munadarlaus = (await fetchUnits(co.nafn, null)).filter(u => u.fyrirtaeki_id == null);
+      const seen = new Set(units.map(u => u.id));
+      munadarlaus.forEach(u => { if (!seen.has(u.id)) units.push(u); });
+    }
     const counts = {};
     CATEGORIES.forEach(c => counts[c.k] = 0);
     units.forEach(u => {

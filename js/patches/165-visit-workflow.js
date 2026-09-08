@@ -191,11 +191,29 @@
     const trip = loadTrip(coId);
     const choices = trip.units || {};
     // Fetch live unit list
-    const { data: units, error } = await sb
-      .from('uttaeki')
-      .select('id,serial,type,size,client,status,last_insp,next_insp')
-      .eq('client', coNafn);
-    if (error) throw error;
+    // 2026-09-08: sótti ÁÐUR aðeins á `client`-nafni. Tæki með rétt
+    // `fyrirtaeki_id` en staðnað nafn datt út — og þetta fall byggir LÍNUR
+    // REIKNINGSINS og ræður hvaða tæki fá nýja skoðunardagsetningu. Kúnninn var
+    // því rukkaður fyrir færri tæki en unnið var við. Auðkennið ræður; nafnið
+    // sækir aðeins munaðarlausar raðir (fyrirtaeki_id NULL) svo systkinastaður
+    // með sama nafni dragist aldrei inn.
+    const VELJA = 'id,serial,type,size,client,status,last_insp,next_insp,fyrirtaeki_id';
+    const q1 = (coId != null)
+      ? await sb.from('uttaeki').select(VELJA).eq('fyrirtaeki_id', coId)
+      : await sb.from('uttaeki').select(VELJA).eq('client', coNafn);
+    if (q1.error) throw q1.error;
+    let units = q1.data || [];
+    if (coId != null && coNafn) {
+      const q2 = await sb.from('uttaeki').select(VELJA).eq('client', coNafn).is('fyrirtaeki_id', null);
+      if (!q2.error && q2.data) {
+        const seen = new Set(units.map(u => u.id));
+        q2.data.forEach(u => { if (!seen.has(u.id)) units.push(u); });
+      }
+    }
+    // 2026-09-08: úrelt tæki voru ekki síuð út — þau gátu ratað í reikninginn
+    // og fengið nýja skoðunardagsetningu þótt þau séu farin. 129/168 sía þau
+    // þegar (NONBILL); þessi leið gerði það ekki.
+    units = units.filter(u => String(u.status) !== 'urelt');
     const servicedIds = [];
     const grouped = {}; // {type|size|kind: count}
     // 2026-08-05 (Agnar: refused to finish an invoice for a visit that was

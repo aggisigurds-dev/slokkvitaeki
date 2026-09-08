@@ -65,10 +65,16 @@
     const m = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
     return m[String(coId)] || null;
   }
-  function getUnitsFor(coName) {
-    if (!coName) return [];
+  // 2026-09-08: tók áðeins nafn. Sama draugagildra og í features.js — auðkennið
+  // ræður þegar það er til, nafnið aðeins fyrir munaðarlausar raðir.
+  function getUnitsFor(coName, coId) {
+    if (!coName && coId == null) return [];
     const units = (window.DB && window.DB.cache && window.DB.cache.units) || [];
-    return units.filter(u => u.status !== 'urelt' && u.client === coName);
+    return units.filter(u => {
+      if (u.status === 'urelt') return false;
+      if (coId != null && u.fyrirtaeki_id != null) return +u.fyrirtaeki_id === +coId;
+      return u.client === coName;
+    });
   }
   function ktDigits(kt) { return String(kt || '').replace(/[^0-9]/g, ''); }
 
@@ -273,7 +279,7 @@
     const c = getCompany(_currentId);
     if (!c) return;
 
-    const units = getUnitsFor(c.nafn);
+    const units = getUnitsFor(c.nafn, c.id);
     if (units.length === 0) {
       const ok = confirm('Engin tæki skráð á "' + c.nafn + '". Viltu samt skrá heimsóknina (uppfærir síðasta ár í Fyrirtækjaþjónustu) og opna úttektarskýrslu?');
       if (!ok) return;
@@ -535,7 +541,7 @@
     }
     const ars = getArs(_currentId);
     const bru = getBru(_currentId);
-    const units = getUnitsFor(c.nafn);
+    const units = getUnitsFor(c.nafn, c.id);
     // 2026-07-09 (critical bug, Agnar): horfði BARA á gamla equipment-blobbið —
     // kúnnar sem eru í þjónustu (er_i_thjonustu / subscribed / alvöru tæki)
     // sýndust „Ekki skráð" með „+ Skrá í fyrirtækjaþjónustu" takka. Nú sama
@@ -855,7 +861,7 @@
     main.querySelector('#_vd-action-floorplan')?.addEventListener('click', () => {
       const c = getCompany(_currentId);
       if (!c) return;
-      const units = getUnitsFor(c.nafn);
+      const units = getUnitsFor(c.nafn, c.id);
       if (window.FloorPlan && typeof window.FloorPlan.load === 'function' && typeof window.FloorPlan.open === 'function') {
         try { window.FloorPlan.load(_currentId); } catch (_) {}
         try { window.FloorPlan.open(_currentId, c.nafn, units); } catch (e) {
