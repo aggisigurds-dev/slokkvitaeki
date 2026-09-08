@@ -333,3 +333,72 @@ Ingibjörg Kristinsdóttir · Móðurást · Ragnheiður B Valgarðsdóttir · R
 **Halda óbreyttum (6):** Garðyrkjufélag Íslands og JM Veitingar (brunakerfis-
 samningur) · Center Hótel Hlaðvarpinn, Heimaleiga EA Law Practice, Vélrás
 Gullhella, Vélrás Klettagarðar (systkinastaðir sem bíða fyrstu úttektar).
+
+## 🧰 „Um 40 eru ekki með nein tæki í prófíl" — 08.09.2026
+
+Mælt: **59** af 670 á borðinu bera engin tæki (var 61 áður en gamla-skýrslu-
+reglan hér að neðan var lagfærð). Ástæðurnar eru fjórar og aðeins ein þeirra
+er „vantar gögn".
+
+| Ástæða | Fjöldi |
+|---|---|
+| Ekkert hvergi — engin tæki, engin skýrsla, ekkert skjal | 34 |
+| Skýrsluröð til en hún ber 0 tæki | 24 |
+| Öll tæki merkt `urelt` | 1 |
+| ~~Gömul skýrsla sem borðið hunsaði~~ **lagað** | ~~2~~ |
+
+### Lagað: gömul skýrsla fyllir tóman lista
+
+Ferskleika-vörnin (`report_year >= 2025`, sett 16.07.2026) er til að gömul
+skýrsla feli ekki tæki sem eru til **í dag**. Eigi félagið engin lifandi tæki
+hefur hún ekkert að verja — og þá er gamla talan eina heimildin sem til er.
+Skilyrðinu bætt við `|| !units.length`.
+
+Mælt á öllum grunninum fyrirfram: **9 félög fá tölu í stað núlls, ekkert félag
+sem á lifandi tæki breytist.** Á borðinu: Hjarðarból 12, Soffía Jónsdóttir 16
+(sýnir nú „14 SLT 2 BSL 74þ ÁÆTL" þar sem áður stóð „0 SLT — ÁÆTL").
+
+### ⚠️ Sex skýrslur eru skráðar á RANGT félag
+
+PDF-in voru lesin og kennitalan í þeim borin saman við félagið sem skjalið
+hangir á. Hver einasta „misræmis"-kennitala reyndist eiga sér raunverulegt
+annað félag í grunninum:
+
+| Skjalið hangir á | PDF segir kt | Kt tilheyrir í raun |
+|---|---|---|
+| 499 Austurberg 2, húsfélag | 511115-1400 | **291 Húsfélagið Austurberg 2-4-6** (á 6 tæki) |
+| 578 Hjarðarból ehf | 641097-2099 | **697 Grasnytjar ehf Hjarðarbóli** (á 12 tæki) |
+| 721 Nethylur ehf | 600169-6619 | **447 Heimilisiðnaðarfélag Íslands** (á 4 tæki) |
+| 835 Húsfélagið Laugavegi 42 | 510117-0690 | **Heimaleiga** (10 staðir) |
+| 1264 Þvottahúsið A. Smith | 681290-2499 | **743 Terma ehf** (á 6 tæki) |
+| 1416 S&L ehf. | 470202-3940 | **1631 Laugavegur 11 / 1632 Gerðuberg** |
+
+Austurberg-skýrslan segir sjálf í „Annað": *„Öll slökkvitæki í stigagangi 2-4
+og 6 yfirfarin"* — hún á ótvírætt við 291, ekki 499.
+
+Tvö skjalanna eru **ekki einu sinni úttektarskýrslur**: skjalið á S&L er
+þjónustusamningur Laugavegar 11, og skjalið á Lindaberg (603) er
+brunaviðvörunarkerfis-skýrsla. Þess vegna las lesarinn 0 tæki — það voru engin
+slökkvitæki í skjalinu.
+
+### 🧬 Nítján af 59 eiga systkinaröð sem BER tækin
+
+Þetta er stærsta einstaka skýringin á tómum prófíl: félagið er skráð tvisvar og
+tækin sitja á hinni röðinni.
+
+- 1409 Álfaskeið 78-80, húsfélag → **257 Húsfélagið Álfaskeið 78** (6 tæki)
+- 1612 Bílabúð Benna - Fiskislóð → **532 Bílabúð Benna ehf** (17)
+- 1760 Bílaleiga Flugleiða, Hertz - Flugvellir 11 → **265 Bílaleiga Flugleiða, Hertz** (6)
+- 656 Húsfélagið Flétturima 16 → **301 Flétturima** (15)
+- 603 Lindaberg ehf. → **208 Lindaberg ehf (T-10)** (8)
+- 578 Hjarðarból ehf → **697 Grasnytjar ehf Hjarðarbóli** (12)
+
+Systkinastaðir sem eiga að standa aðskildir (Center Hótel, Vélrás) eru líka í
+þessum hópi og eru ekki tvítekning.
+
+### Eitt til viðbótar
+
+**160 Húsfélag Sólvangsvegur 1** á þrjú ABC Duft 6 kg sem eru **öll merkt
+`urelt`** þótt þau beri `last_insp 2025-05-15` og `next_insp 2026-05-15`. Það er
+eina félagið í öllum grunninum í þeirri stöðu — lítur út eins og slys. Ekki
+snert; bíður ákvörðunar.
