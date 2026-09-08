@@ -459,9 +459,17 @@
         const fact = factsById[String(c.id)];
         if (fact) {
           const factFresh = +fact.report_year >= 2025;
+          // 2026-09-08 (Agnar: „um 40 sem eru ekki með nein tæki í prófíl"):
+          // ferskleika-vörnin hér að ofan er til að GAMLA skýrslan feli ekki tæki
+          // sem eru til í dag. Eigi félagið ENGIN lifandi tæki er ekkert að verja —
+          // og þá er gamla talan eina heimildin sem til er. Núll er verri ágiskun
+          // en tveggja ára gömul talning tæknimannsins. Mælt: 9 félög fá tölu í
+          // stað núlls, þar af 2 á borðinu (Hjarðarból 12, Soffía Jónsdóttir 16);
+          // ekkert félag sem á lifandi tæki breytist.
+          const ekkertLifandi = !units.length;
           const eqp = fact.equipment && typeof fact.equipment === 'object' ? fact.equipment : null;
           const eqTotal = eqp ? Object.values(eqp).reduce((s, v) => s + (+v || 0), 0) : 0;
-          if (factFresh && eqp && eqTotal > 0 && !manual.equipment_manual) {
+          if ((factFresh || ekkertLifandi) && eqp && eqTotal > 0 && !manual.equipment_manual) {
             _ars.equipment = eqp;
             let est2 = 0;
             Object.entries(eqp).forEach(([cat, n]) => {
@@ -471,6 +479,7 @@
             _ars.estimated_yearly = Math.round(est2);
             _ars._unit_count = eqTotal;
             _ars._fromReport = true;
+            if (!factFresh) _ars._fromOldReport = +fact.report_year || true;
           }
           // 2026-07-16 MÁNAÐAR-FORGANGSREGLA: inspect_month_manual > blob
           // inspect_month (hvaða gildi sem er, geymt af notanda) > fact.inspect_month
