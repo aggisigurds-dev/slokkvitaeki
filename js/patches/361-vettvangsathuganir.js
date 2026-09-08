@@ -53,10 +53,22 @@
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
   function arNu() { return new Date().getFullYear(); }
+  // 2026-09-08: las áður `slokk_starfsmadur` — LYKIL SEM ENGINN SETUR. Mælt á
+  // lifandi vafra: hvorki sá lykill né AppSettings-lyklarnir tveir voru til, svo
+  // `skrad_af` var ALLTAF tómt og engin athugun bar höfund. Appið geymir þetta í
+  // `vb_starfsmadur` (patch 231/347) með `starfsmadur` sem eldri varaleið
+  // (villuvakt.js). Sama röð og 347 notar, svo einn sannleikur gildi um allt.
   function hverErVid() {
     try {
-      return (window.AppSettings && AppSettings.get && (AppSettings.get('starfsmadur') || AppSettings.get('hver_er_vid')))
-        || localStorage.getItem('slokk_starfsmadur') || '';
+      let n = localStorage.getItem('vb_starfsmadur');
+      if (n && n.trim()) return n.trim();
+      if (window.BordStarfsmadur && typeof BordStarfsmadur.get === 'function') {
+        n = BordStarfsmadur.get();
+        if (n && String(n).trim()) return String(n).trim();
+      }
+      const p = window.UserAuth && UserAuth.getProfile && UserAuth.getProfile();
+      if (p && p.nafn) return p.nafn;
+      return localStorage.getItem('starfsmadur') || '';
     } catch (_) { return ''; }
   }
 
