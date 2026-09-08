@@ -6,8 +6,9 @@
 > *„þeir sem ég kíkti á voru að virðist bara með búðarsölur og kerfið að halda
 > að þetta væru úttektar invoice… má bara taka þau öll úr þjónustu."*
 >
-> `er_i_thjonustu = false` sett á öll 36 auðkennin hér að neðan. **Í þjónustu fór
-> úr 683 í 647**, og öll 5.242 tækin standa eftir — ekkert þeirra 36 bar tæki.
+> `er_i_thjonustu = false` sett á 36 — en **eitt var sett aftur inn samdægurs**,
+> sjá „Villa sem netið greip" hér að neðan. Endanlega fóru **35** út og í þjónustu
+> fór **úr 683 í 648**. Öll 5.242 tækin standa eftir.
 > Þrjú félög án sönnunar standa eftir og það eru systkinastaðirnir sem haldið var
 > eftir viljandi.
 >
@@ -140,10 +141,42 @@ og skjöl, en enga þjónustusönnun.
    R-10xxxx-númerum, ekki lesnir sem úttektir. Það mælir skort á gögnum hjá
    okkur, ekki skort á þjónustu.
 
-## Næsta skref þegar Agnar ákveður
+## ⛔ Villa sem öryggisnetið greip — lesist
 
-- **Taka úr þjónustu:** `update fyrirtaeki set er_i_thjonustu = false where id in (…)`
-  — afturkræft, og listinn hér að ofan er afritið.
-- **Eða fela eins og bankagreiðendur:** `is_bank_only = true`, sem heldur
-  kennitölu og skjölum en tekur þá úr sýnunum.
-- **Fyrst:** fletta upp fjórum nöfnunum að ofan.
+`audit-fk-join.cjs` fór RAUTT strax eftir aðgerðina og greip **mína villu**:
+
+> `#1638 Tannlæknastofa Skipholti 50d (by-name 4, by-fid 0)`
+
+Félagið **á fjögur virk tæki**. Þau voru bara ekki tengd með `fyrirtaeki_id`
+heldur með nafni í `uttaeki.client`. Öll flokkunin hér að ofan taldi tæki með
+`where u.fyrirtaeki_id = f.id` — og **sá þau því ekki**. Félagið var flokkað sem
+sönnunarlaust og tekið úr þjónustu að ósekju.
+
+**Lagað samdægurs:** félagið sett aftur í þjónustu og tækin fjögur (TMP-AVUBXM,
+TMP-2LFKS8, TMP-V2ZAEK, TMP-D4E7KE) tengd með auðkenni. Null-FK bakslagið fór
+úr 4 í 0 og allar 27 úttektir eru grænar.
+
+**Lærdómurinn, sem gildir um hverja einustu tækjatalningu:** tæki tengjast
+fyrirtæki á TVO vegu — `uttaeki.fyrirtaeki_id` OG `uttaeki.client` á nafni.
+Talning sem lítur aðeins á FK sýnir núll hjá félagi sem á tæki. Hin 35 voru
+sannreynd á báðum leiðum eftir á; ekkert þeirra bar nafntengd tæki.
+
+## Hvað var gert 08.09.2026
+
+36 fengu `er_i_thjonustu = false`, eitt var sett aftur inn (sjá að ofan), svo
+**35 fóru út: 683 → 648 í þjónustu**, 5.242 tæki óhreyfð. Fjögur nöfnin sem varað var við hér að ofan fóru út með hinum að ósk
+Agnars — hann fór yfir úrtak sjálfur og staðfesti mynstrið. Reynist eitthvert
+þeirra vera raunverulegur þjónustukúnni er það ein lína til baka úr
+`backup_thjonusta_ut_20260908`.
+
+## Það sem stendur eftir
+
+**Rótin er ólöguð:** búðarsala getur hengt sig í úttektarreit ársins á
+fyrirtækjasíðunni. NSN tæki sýndi `R-108215` sem „Slökkvitækjaþjónusta 2026"
+með grænum haka þótt félagið eigi engin tæki og reikningurinn sé búðarsala.
+Það er ástæðan fyrir að þessi 36 litu út eins og þjónustukúnnar í viðmótinu.
+Þangað til það er lagað mun sama misskilningi safnast upp aftur.
+
+Reglan sem greinir á milli er þegar til í kóðanum (`tools/lesa-reikninga-drive.cjs`
+— „Skýrslugerð og vottun" EÐA „Akstur"); hún þarf að rata inn í pörunina á
+fyrirtækjasíðunni.
