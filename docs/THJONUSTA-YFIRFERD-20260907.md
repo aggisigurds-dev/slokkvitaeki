@@ -243,3 +243,93 @@ ekkert.
 - **„Test fyrirtæki" (1404)** er enn á borðinu — það ber 6 lifandi tæki og fellur
   því undir vörnina hér að ofan. Þarf handvirka ákvörðun.
 - **Garðyrkjufélag Íslands (1198)** stendur eftir á brunakerfissamningi. Rétt.
+
+## 📋 Ársskoðunarborðið 08.09.2026 — mánuðir, tóm tækjalisti, Hide
+
+Agnar: *„sjá til að taflan virkar. og setja inn mánuðina og tóma tækjalista eða
+henda út félögum eða setja í Hide."*
+
+### Taflan virkar — prófað, ekki lesið
+
+⚡-hamurinn (`#_ars-ovr`) opnar þrjá ritla á röðinni. Allir prófaðir í viðmótinu:
+
+| Reitur | Prófun | Niðurstaða |
+|---|---|---|
+| Mánuður | Danshöllin → Maí → ↺ Hreinsa | Vistast (`inspect_month:5` + `manual:true`), hreinsast aftur í „—" |
+| Tæki | Danshöllin → Léttvatn 3 → 0 | Vistast (3 SLT, 20þ ÁÆTL), afturkallast |
+| 🕶 Hide (nýtt) | Test fyrirtæki fela → sýna | 670 → 669 → 670, birtist í „🕶 Faldir" |
+
+### 🕶 Hide — eitt merki, báðar síður
+
+Nýi takkinn skrifar `fyrirtaeki.ovisst` — **sama dálk og „🕶 Óvissir (faldir)"
+í patch 157**. Félag sem er falið í Allir viðskiptavinir á ekki að standa eftir
+á vinnulistanum í Ársskoðun, og öfugt.
+
+Þrennt var meðvitað valið:
+
+1. **Per-röð skrif, ekki settings-blobbið.** Blobbið er last-write-wins og fjórar
+   vélar vinna samtímis — sama gildra og felldi félög úr þjónustu áður (patch 198/280).
+2. **Faldir hverfa aldrei úr leit.** Sama regla og gildir um slepptu: kúnni sem
+   hverfur úr leit án skýringar lætur leitina líta út fyrir að vera bilaða
+   (mælt 28.07.2026 á stöðusíunni).
+3. **Ekkert var falið sjálfkrafa.** Sjá ástæðuna hér að neðan.
+
+### Hvað var fyllt
+
+- **15 mánuðir úr dagsetningu úttektarskjals** → blob `inspect_month` +
+  `manudur_ur_skjali` (uppruninn rekjanlegur). Álfaskeið 78-80 mars, Crinis apríl,
+  Eignarekstur júní, Fótaaðgerðarstofa apríl, Jörfabakki 32 ágúst, Sólvangsvegur 1
+  júní, Flétturimi 16 janúar, Leifsgata 10 júlí, Pad Thai apríl, Prennsýn apríl,
+  Sigrún Júlía júlí, Stefanía maí, Austurberg 2 janúar, kt 531014-1620 apríl,
+  kt 660312-0800 apríl.
+- **7 félög úr úttektarskýrslunni sjálfri** (`arsskodun_report_facts`, tækjatala
+  og/eða mánuður): Hellas 2 · Breiðvangur 9 4 · Soffía Jónsdóttir 16 + feb ·
+  Sléttahraun 9 · Herbergjaleiga 5 · Snóker 3 · K Apartments 41 + des.
+  **`report_year` var ekki snert** — engin readiness-breyting.
+- Haldið eftir: **Pure Deli** (51 tæki — bíður staðfestingar Agnars á að skýrslan
+  eigi við réttan stað) og **fimm skýrslur þar sem kt í PDF-inu stemmir ekki**
+  við félagið sem skjalið er tengt (m.a. Austurberg 2: PDF les 511115-1400,
+  félagið ber 470486-7169).
+
+„🚫 Án mánaðar" fór úr **53 í 36**.
+
+### ⛔ Af hverju ekkert var falið eða tekið út sjálfkrafa
+
+Master-mappan var talin upp í heild (`/api/drive-filelist`, **1.494 skrár**) og
+öll 63 félögin á vinnulistanum leituð uppi á kennitölu OG nafni.
+
+**Fjörutíu og eitt þeirra á enga skrá þar.** Og af 36 úttektarskýrslu-skjölum
+sem skráð eru á þennan hóp bera **26 hvorki `drive_file_id` né `storage_path`** —
+Drive-hlekkirnir voru dauðir og fjarlægðir 30.07.2026.
+
+Verra: athugasemdirnar sýna að tengingin var **nafnaágiskun sem kerfið sjálft
+merkti vafasama**:
+
+- `K.Rickter.pdf` → **K-50 ehf.**
+- `Lyfja Selfossi september 2023.pdf` → **SE ehf.** („fundna skráin segir kt
+  531095-2279 (= Lyfja hf.) en röðin er tengd SE ehf")
+- `Fiskbúð Suðurlands.pdf` → **Heilbrigðisstofnun Suðurlands**
+
+**Þar með er `report_year` hjá þessum hópi ekki traust heimild — þar á meðal sex
+2026-stimplar.** Þeir mála græn ár á fyrirtæki sem enginn veit hvort voru skoðuð.
+
+Þess vegna voru þessi 27 **ekki** falin og ekki tekin út: þau líta ekki út eins
+og rusl, þau líta út eins og félög sem vantar skjölin sín. Að fela þau væri að
+fela gagnagatið, ekki loka því. Heilbrigðisstofnun Suðurlands er ekki búðarkúnni.
+
+### Listinn sem bíður ákvörðunar (27)
+
+**Með skýrsluár sem byggir á nafnaágiskun (17)** — Fasteignasalan Garður (2026) ·
+Húsfélag Laufvangur 18 (2026) · K-50 (2026) · Pitstop þjónustan (2026) ·
+Suðurvangur 19a (2026) · Tveir hressir (2026) · Drífa (2025) · Friðfinnur
+v/bílaverkst (2025) · Hjördís dagmamma (2025) · KAT (2025) · Miðleiti 8,10 og 12
+(2024) · SE ehf (2024) · Engjahlíð 5 (2023) · Heilbrigðisstofnun Suðurlands (2023) ·
+Húsfélag Laufásvegur 10 (2023) · Kytra (2023) · Pure North (2023)
+
+**Engin skýrsla, engin skrá (10)** — Bílastjarnan · Danshöllin · Eyesland
+Spönginni · Húsfélagið Kjarrhólmi 18 · Laugavegur 11 · Lindaberg · María
+Ingibjörg Kristinsdóttir · Móðurást · Ragnheiður B Valgarðsdóttir · Reykjaklettur
+
+**Halda óbreyttum (6):** Garðyrkjufélag Íslands og JM Veitingar (brunakerfis-
+samningur) · Center Hótel Hlaðvarpinn, Heimaleiga EA Law Practice, Vélrás
+Gullhella, Vélrás Klettagarðar (systkinastaðir sem bíða fyrstu úttektar).
