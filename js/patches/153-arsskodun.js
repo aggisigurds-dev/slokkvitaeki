@@ -190,7 +190,17 @@
   function writeSnapshot() {
     // tolur fylgir með svo talnakortin sýni síðustu þekktu tölu STRAX á
     // snapshot-málun (í stað „—" þar til ferska sóknin klárar).
-    try { localStorage.setItem(SNAP_KEY, JSON.stringify({ t: Date.now(), list: _cache.list, tolur: _cache.tolur || null })); }
+    // 2026-09-08: fcCur + klaradCur FYLGJA MEÐ. Án þeirra dæmdi kalda málunin
+    // `isDoneYear` eingöngu út frá blobbinu — gap-flögg og klarad-pör vantaði —
+    // og „Búið 2026" birtist of hátt og hrapaði svo þegar ferska sóknin lenti.
+    // Talan á að vera RÉTT strax, ekki leiðrétta sig fyrir augunum á notandanum.
+    try {
+      localStorage.setItem(SNAP_KEY, JSON.stringify({
+        t: Date.now(), list: _cache.list, tolur: _cache.tolur || null,
+        fc: _cache.fcCur || null,
+        kl: _cache.klaradCur ? Array.from(_cache.klaradCur) : null,
+      }));
+    }
     catch (_) {}   // t.d. QuotaExceeded — snapshot er bara hraðabót
   }
 
@@ -1434,6 +1444,10 @@
       _cache.list = snap.list;
       _cache.byId = Object.fromEntries(snap.list.map(c => [c.id, c]));   // detail-smellir virka strax
       if (snap.tolur && !_cache.tolur) _cache.tolur = snap.tolur;        // talnakortin strax, ekki „—"
+      // Sömu dómsgögn og ferska sóknin notar — annars sýnir kalda málunin aðra
+      // „Búið"-tölu en sú sem stendur eftir tveimur sekúndum síðar.
+      if (snap.fc && !_cache.fcCur) _cache.fcCur = snap.fc;
+      if (snap.kl && !_cache.klaradCur) _cache.klaradCur = new Set(snap.kl);
       render();
       _rendered = true;
       _lastDataSig = dataSig();
@@ -1719,7 +1733,12 @@
 
     // 2026-05-17 (Luna): per-month / per-filter revenue summary shown below
     // the list. Lets the user see "if I do all of May's inspections, that's X kr".
-    const filteredAars = filtered.filter(c => c._ars && c._ars.equipment);
+    // 2026-09-08 (Agnar: „af hverju eru svona margar mismunandi tölur"): þetta
+    // taldi AÐEINS félög með skráðan búnað meðan listinn fyrir ofan telur allar
+    // raðir — svo fóturinn sagði 170 þar sem hausinn sagði 178, og 292 þar sem
+    // hausinn sagði 301. Sama skekkja og var í mánaðar-flögunum fyrr í dag.
+    // Samantektin á að lýsa ÞVÍ SEM SÉST; hún telur því sömu raðir og listinn.
+    const filteredAars = filtered;
     const filteredTotal = filteredAars.reduce((s, c) => s + virdiOf(c), 0);
     const filteredDone = filteredAars
       .filter(c => +c._ars.last_year_inspected === curYear)
@@ -1941,7 +1960,7 @@
         <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--surface2);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(effFilterLabel)}</div>
-            <div style="font-size:13px;color:var(--ink2);margin-top:3px">${filteredAars.length} fyrirtæki í ársskoðun</div>
+            <div style="font-size:13px;color:var(--ink2);margin-top:3px" title="Virðið að neðan er summa þessara — þau í sýninni sem eiga skráð tæki. Fjöldinn í sýninni sjálfri stendur fyrir ofan listann („Sýni N af …").">${filteredAars.length} af ${filtered.length} í sýninni með skráð tæki</div>
           </div>
           <div style="display:flex;gap:22px;flex-wrap:wrap">
             <div style="text-align:right">
