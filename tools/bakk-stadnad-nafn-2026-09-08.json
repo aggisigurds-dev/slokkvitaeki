@@ -1,0 +1,289 @@
+[
+ {
+  "id": 25042,
+  "serial": "TMP-64ES8T",
+  "client": "kt 531014-1620",
+  "fyrirtaeki_id": 1570,
+  "status": "urelt"
+ },
+ {
+  "id": 11593,
+  "serial": "AE20260626LOC-001130",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11594,
+  "serial": "AE20260626LOC-001131",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 277,
+  "serial": "TMP-0238",
+  "client": "Studi tönn",
+  "fyrirtaeki_id": 349,
+  "status": "urelt"
+ },
+ {
+  "id": 11489,
+  "serial": "AE20260626LOC-001026",
+  "client": "Vélsmiðja Orms og Víglundar - Slippurinn RVK",
+  "fyrirtaeki_id": 288,
+  "status": "active"
+ },
+ {
+  "id": 11490,
+  "serial": "AE20260626LOC-001027",
+  "client": "Vélsmiðja Orms og Víglundar - Slippurinn RVK",
+  "fyrirtaeki_id": 288,
+  "status": "active"
+ },
+ {
+  "id": 11491,
+  "serial": "AE20260626LOC-001028",
+  "client": "Vélsmiðja Orms og Víglundar - Slippurinn RVK",
+  "fyrirtaeki_id": 288,
+  "status": "active"
+ },
+ {
+  "id": 11492,
+  "serial": "AE20260626LOC-001029",
+  "client": "Vélsmiðja Orms og Víglundar - Slippurinn RVK",
+  "fyrirtaeki_id": 288,
+  "status": "active"
+ },
+ {
+  "id": 278,
+  "serial": "TMP-0239",
+  "client": "Studi tönn",
+  "fyrirtaeki_id": 349,
+  "status": "urelt"
+ },
+ {
+  "id": 279,
+  "serial": "TMP-0240",
+  "client": "Studi tönn",
+  "fyrirtaeki_id": 349,
+  "status": "urelt"
+ },
+ {
+  "id": 11493,
+  "serial": "AE20260626LOC-001030",
+  "client": "Vélsmiðja Orms og Víglundar - Slippurinn RVK",
+  "fyrirtaeki_id": 288,
+  "status": "active"
+ },
+ {
+  "id": 11494,
+  "serial": "AE20260626LOC-001031",
+  "client": "Vélsmiðja Orms og Víglundar - Slippurinn RVK",
+  "fyrirtaeki_id": 288,
+  "status": "active"
+ },
+ {
+  "id": 11579,
+  "serial": "AE20260626LOC-001116",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11580,
+  "serial": "AE20260626LOC-001117",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11581,
+  "serial": "AE20260626LOC-001118",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11582,
+  "serial": "AE20260626LOC-001119",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11583,
+  "serial": "AE20260626LOC-001120",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11584,
+  "serial": "AE20260626LOC-001121",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11585,
+  "serial": "AE20260626LOC-001122",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11586,
+  "serial": "AE20260626LOC-001123",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11587,
+  "serial": "AE20260626LOC-001124",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11588,
+  "serial": "AE20260626LOC-001125",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11589,
+  "serial": "AE20260626LOC-001126",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11590,
+  "serial": "AE20260626LOC-001127",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11591,
+  "serial": "AE20260626LOC-001128",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11592,
+  "serial": "AE20260626LOC-001129",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 280,
+  "serial": "TMP-0241",
+  "client": "Studi tönn",
+  "fyrirtaeki_id": 349,
+  "status": "urelt"
+ },
+ {
+  "id": 281,
+  "serial": "TMP-0242",
+  "client": "Studi tönn",
+  "fyrirtaeki_id": 349,
+  "status": "urelt"
+ },
+ {
+  "id": 11568,
+  "serial": "AE20260626LOC-001105",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11569,
+  "serial": "AE20260626LOC-001106",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11570,
+  "serial": "AE20260626LOC-001107",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11571,
+  "serial": "AE20260626LOC-001108",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11572,
+  "serial": "AE20260626LOC-001109",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11573,
+  "serial": "AE20260626LOC-001110",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11574,
+  "serial": "AE20260626LOC-001111",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11575,
+  "serial": "AE20260626LOC-001112",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11576,
+  "serial": "AE20260626LOC-001113",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11577,
+  "serial": "AE20260626LOC-001114",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 11578,
+  "serial": "AE20260626LOC-001115",
+  "client": "Húsfélag Skaftahlíð 4-10",
+  "fyrirtaeki_id": 848,
+  "status": "active"
+ },
+ {
+  "id": 194,
+  "serial": "SL-0155",
+  "client": "Húsfélag 17. Júní torg",
+  "fyrirtaeki_id": 203,
+  "status": "urelt"
+ },
+ {
+  "id": 195,
+  "serial": "SL-0156",
+  "client": "Húsfélag 17. Júní torg",
+  "fyrirtaeki_id": 203,
+  "status": "urelt"
+ }
+]

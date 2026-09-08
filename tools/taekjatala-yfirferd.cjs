@@ -7,19 +7,22 @@
  *
  * SEX PRÓF, öll á öllum félögum í þjónustu. Ekkert er skrifað.
  *
- *   1. PRÓFÍLL vs SKÝRSLA — talan sem viðmótið sýnir á móti
- *      `arsskodun_report_facts.total_devices`. Skýrslan ræður (tæknimaðurinn taldi
- *      á staðnum); víki prófíllinn er hann rangur, ekki öfugt.
+ *   1. PRÓFÍLL vs SKÝRSLA — talan sem VIÐMÓTIÐ sýnir á móti
+ *      `arsskodun_report_facts`. Talan er reiknuð eins og patch 153 gerir það:
+ *      lifandi tæki → skýrslu-búnaður → blob-búnaður. (Fyrsta útgáfa taldi aðeins
+ *      `uttaeki` og sagði því 13 félög „tóm" sem sýna réttar tölur úr skýrslunni.)
+ *      Skýrslan ræður — tæknimaðurinn taldi á staðnum.
  *   2. MUNAÐARLAUS TÆKI — `fyrirtaeki_id IS NULL`. Þau hverfa úr hverri talningu
  *      sem telur á auðkenni (audit-fk-join ver þessa tölu).
  *   3. STAÐNAÐ NAFN — `uttaeki.client` stemmir ekki við `fyrirtaeki.nafn`.
- *      Þetta er draugurinn frá 08.09: tækið er rétt tengt en ósýnilegt hverri
- *      leið sem síar á nafni.
+ *      Þetta er draugurinn frá 08.09: tækið er rétt tengt en var ósýnilegt hverri
+ *      leið sem síaði á nafni.
  *   4. TÆKI Á EYDDU FÉLAGI — mjúk-eytt félag sem ber enn lifandi tæki.
- *   5. TVÍTÖK — sama félag, sama tegund+stærð, TVÖ tæki skráð innan 5 mínútna.
- *      Það er mynstrið þegar notandi heldur að vistun hafi mistekist og reynir
- *      aftur (Greiðan hárgreiðslustofa, fid 1570).
- *   6. TÓMUR PRÓFÍLL MEÐ SKÝRSLU — félag sem á skýrslu með tækjum en sýnir núll.
+ *   5. UPPBLÁSIN TALA — prófíllinn HÆRRI en skýrslan. Fyrsta útgáfa leitaði í
+ *      staðinn að tveimur tækjum af sömu tegund innan fimm mínútna og fann 4.245
+ *      „tvítök": fjöldainnflutningur skráir tugi tækja á sömu sekúndu, svo það
+ *      mynstur mælir ekkert. Talan sem er of há er raunhæfa merkið.
+ *   6. VIÐMÓTIÐ SÝNIR NÚLL þótt skýrsla segi tæki.
  *
  *   node tools/taekjatala-yfirferd.cjs           (samantekt)
  *   node tools/taekjatala-yfirferd.cjs --allt    (öll tilvik, ekki bara 15 fyrstu)
@@ -77,8 +80,25 @@ const s = (x, n) => String(x == null ? '-' : x).slice(0, n).padEnd(n);
       munadarlausEftirNafni.set(k, (munadarlausEftirNafni.get(k) || 0) + 1);
     }
   });
-  const profilTala = (c) => (medFid.get(c.id) || 0)
+  // Talan sem VIÐMÓTIÐ sýnir — ekki bara uttaeki-talning. Patch 153 fellur í
+  // þrepum: lifandi tæki → skýrslu-búnaður (ferskur, EÐA hvaða ár sem er þegar
+  // félagið á engin tæki — reglan frá 08.09) → blob-búnaður. Fyrsta útgáfa
+  // þessa tóls taldi aðeins uttaeki og sagði því 13 félög „tóm" sem sýna
+  // réttar tölur úr skýrslunni sinni.
+  const taekiUrUttaeki = (c) => (medFid.get(c.id) || 0)
     + (munadarlausEftirNafni.get(String(c.nafn || '').trim().toLowerCase()) || 0);
+  const summa = (o) => (o && typeof o === 'object')
+    ? Object.values(o).reduce((a, v) => a + (+v || 0), 0) : 0;
+  const profilTala = (c) => {
+    const u = taekiUrUttaeki(c);
+    if (u > 0) return u;
+    const blob = ars[String(c.id)] || {};
+    if (blob.equipment_manual) return summa(blob.equipment);
+    const f = F.get(c.id);
+    const fEq = f ? summa(f.equipment) : 0;
+    if (fEq > 0) return fEq;                 // fersk EÐA eina heimildin
+    return summa(blob.equipment);
+  };
 
   const iThjonustu = co.filter(c => !c.deleted_at && (
     c.er_i_thjonustu === true ||
@@ -147,43 +167,32 @@ const s = (x, n) => String(x == null ? '-' : x).slice(0, n).padEnd(n);
     console.log('   fid ' + p(id, 5) + '  ' + s(c && c.nafn, 40) + '  ' + aEyddu.filter(u => u.fyrirtaeki_id === id).length + ' tæki');
   });
 
-  // ── 5. Tvítök — sama félag, sama tegund, innan 5 mínútna ─────────────────
-  const eftirLykli = new Map();
-  lifandi.forEach(u => {
-    if (u.fyrirtaeki_id == null) return;
-    const k = u.fyrirtaeki_id + '|' + (u.type || '') + '|' + (u.size || '');
-    (eftirLykli.get(k) || eftirLykli.set(k, []).get(k)).push(u);
+  // ── 5. Uppblásin tala — prófíll HÆRRI en skýrsla ────────────────────────
+  // Fyrsta útgáfa leitaði að tveimur tækjum af sömu tegund innan 5 mínútna og
+  // fann 4.245 „tvítök" — fjöldainnflutningur skráir tugi tækja á sömu sekúndu,
+  // svo það mynstur mælir ekkert. Raunhæfa merkið um draugafærslu er að talan
+  // sé HÆRRI en tæknimaðurinn taldi.
+  const uppblasid = vikja.filter(x => x.mismunur > 0);
+  console.log('\n5. UPPBLÁSIN TALA (prófíll > skýrsla): ' + uppblasid.length);
+  uppblasid.slice(0, TAK).forEach(x => {
+    const raddar = lifandi.filter(u => u.fyrirtaeki_id === x.c.id)
+      .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    const sidast = raddar.length ? String(raddar[raddar.length - 1].created_at).slice(0, 10) : null;
+    console.log('   fid ' + p(x.c.id, 5) + '  ' + s(x.c.nafn, 36) + '  prófíll ' + p(x.pr, 3)
+      + '  skýrsla ' + p(x.skyrsla, 3) + ' (' + x.ar + ')  síðasta tæki skráð ' + sidast);
   });
-  const tvitok = [];
-  eftirLykli.forEach((arr, k) => {
-    if (arr.length < 2) return;
-    const raddar = arr.slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
-    for (let i = 1; i < raddar.length; i++) {
-      const t1 = Date.parse(raddar[i - 1].created_at), t2 = Date.parse(raddar[i].created_at);
-      if (t1 && t2 && Math.abs(t2 - t1) <= 5 * 60 * 1000) {
-        tvitok.push({ fid: raddar[i].fyrirtaeki_id, a: raddar[i - 1], b: raddar[i] });
-      }
-    }
-  });
-  console.log('\n5. LÍKLEG TVÍTÖK (sama félag+tegund, <5 mín á milli): ' + tvitok.length);
-  tvitok.slice(0, TAK).forEach(t => {
-    const c = N.get(t.fid);
-    console.log('   fid ' + p(t.fid, 5) + '  ' + s(c && c.nafn, 30) + '  ' + s(t.a.type, 14)
-      + '  ' + t.a.serial + ' + ' + t.b.serial + '  ' + String(t.b.created_at).slice(0, 19));
-  });
-
   // ── 6. Tómur prófíll þótt skýrsla segi tæki ──────────────────────────────
   const tomirMedSkyrslu = iThjonustu.filter(c => {
     const f = F.get(c.id);
     return f && +f.total_devices > 0 && profilTala(c) === 0;
   });
-  console.log('\n6. TÓMUR PRÓFÍLL EN SKÝRSLA SEGIR TÆKI: ' + tomirMedSkyrslu.length);
+  console.log('\n6. VIÐMÓTIÐ SÝNIR NÚLL ÞÓTT SKÝRSLA SEGI TÆKI: ' + tomirMedSkyrslu.length);
   tomirMedSkyrslu.slice(0, TAK).forEach(c => {
     const f = F.get(c.id);
     console.log('   fid ' + p(c.id, 5) + '  ' + s(c.nafn, 40) + '  skýrsla ' + f.report_year + ': ' + f.total_devices + ' tæki');
   });
 
-  const draugar = munadarlaus.length + stadnad.length + aEyddu.length + tvitok.length + tomirMedSkyrslu.length;
+  const draugar = munadarlaus.length + stadnad.length + aEyddu.length + uppblasid.length + tomirMedSkyrslu.length;
   console.log('\n' + '─'.repeat(64));
   console.log('SAMANTEKT: ' + vikja.length + ' félög víkja frá skýrslu · ' + draugar + ' draugatilvik alls');
 })().catch(e => { console.error('VILLA: ' + e.message); process.exit(1); });
