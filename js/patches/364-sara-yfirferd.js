@@ -36,7 +36,16 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  function kr(n) { return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr'; }
+  // Ekki toLocaleString('is-IS') — Chromium í fjarlotum skilar KOMMU sem
+  // þúsundaskilju þegar ICU-gögnin vantar („43,228 kr"). Sami handvirki
+  // grúppari og js/pos.js og js/tekjur.js nota: 1.234 kr.
+  function kr(n) {
+    var v = Math.round(Number(n) || 0), neik = v < 0;
+    var t = String(Math.abs(v)), p = [];
+    while (t.length > 3) { p.unshift(t.slice(-3)); t = t.slice(0, -3); }
+    p.unshift(t);
+    return (neik ? '-' : '') + p.join('.') + ' kr';
+  }
   function hver() {
     try {
       return (window.AppSettings && AppSettings.path && AppSettings.path('vb_me')) ||
