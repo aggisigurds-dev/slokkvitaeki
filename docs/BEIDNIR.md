@@ -1,0 +1,27 @@
+# Beiðnalisti Agnars → Claude
+
+Hér skrái ég niður punktana sem Agnar hendir inn. Reglan: **ný beiðni stöðvar ekki
+það sem er í gangi** — hún fær númer og bíður, núverandi verk klárast fyrst
+(gert + prófað + staðreyndaskoðað). Sjá `feedback_request_dashboard`.
+
+Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eftir að fara yfir) · `KLÁRT` · `BÍÐUR AGNARS`
+
+---
+
+## 2026-09-09
+
+| # | Beiðni | Hver | Staða |
+|---|--------|------|-------|
+| B1 | Geta eytt/falið öppum — „þoli ekki að geta ekki stjórnað neinu" | Claude | Í VINNSLU |
+| B2 | Collapse-takki á teikningar (Teikning-borðinn á fyrirtækjasíðu) | agent | NÝ |
+| B3 | Texti á rekstrarfélögum helst ekki — dettur út við að fara af síðunni. Verður að festast og haldast milli tölva. **Finna hvað í reitnum veldur því + leita að sömu stillingu annars staðar á síðunni og laga þar líka** | agent | NÝ |
+| B4 | Þjónustuborð: breytingar mögulegar — en ekki á öllum. Athuga hverjir og af hverju | — | NÝ |
+
+### Bíður ákvörðunar Agnars (eldra)
+
+| # | Mál |
+|---|-----|
+| A1 | 11–14 félög þar sem prófíll og skýrsla stemma ekki — hvor talan er nýrri? |
+| A2 | Vélrás 1740/1741/1742 eru með `stadur_nr = null` |
+| A3 | Tæki ranglega merkt `urelt` hjá Sólvangsvegi 1 (160) og Heimaleigu Mannheimum (626) |
+| A4 | Á að draga reiknivélina úr patch 129 út svo öll ~595 félög fái raunverð (ekki bara 88)? |
