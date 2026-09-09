@@ -252,10 +252,34 @@
     }
     const num = prefix + String(seq).padStart(3, '0');
 
+    // ── 2026-09-09 (Agnar: „hverning var síðan með grillvagninn 542-543") ──
+    // Kreditfærslurnar hengu HVERGI: 11 af 36 báru `customer_id = NULL` og
+    // ENGIN þeirra bar `customer_kt` — hún var aldrei skrifuð hér. Þær fundust
+    // því ekki á fyrirtækinu og veltan leit út fyrir að vera hærri en hún var:
+    // Grillvagninn sýndi 480.478 kr þegar rétta talan var 172.033.
+    //
+    // Rótin er að `origSale` er MISMUNANDI hlutur eftir því hvaðan er kallað —
+    // 00-legacy:1205 og 26:356/380 senda snyrt view-model, 137-verk-actions:108
+    // sendir HRÁA gagnagrunnsröð (þar heitir nafnið `customer_nafn`, ekki
+    // `customer`). Enginn þeirra bar `customer_kt` né `customer_base_id`.
+    // Þess vegna treystum við ekki lengur á það sem berst: auðkennin eru sótt
+    // ÚR MÓÐURSÖLUNNI sjálfri. Hún er alltaf til — `credit_of` vísar á hana.
+    let modir = null;
+    try {
+      if (origSale && origSale.id) {
+        const mr = await SB.from('solur')
+          .select('customer_id,customer_kt,customer_nafn,customer_base_id')
+          .eq('id', origSale.id).maybeSingle();
+        if (mr && mr.data) modir = mr.data;
+      }
+    } catch (_) { /* fellur á það sem barst */ }
+
     const row = {
       num,
-      customer_id: origSale.customer_id || null,
-      customer_nafn: origSale.customer || '',
+      customer_id: (modir && modir.customer_id) || origSale.customer_id || null,
+      customer_kt: (modir && modir.customer_kt) || origSale.customer_kt || null,
+      customer_base_id: (modir && modir.customer_base_id) || origSale.customer_base_id || null,
+      customer_nafn: (modir && modir.customer_nafn) || origSale.customer || origSale.customer_nafn || '',
       linur: creditLines,
       upphaed_an_vsk: -ex,
       vsk_upphaed: -vsk,
@@ -277,9 +301,13 @@
       const msg = (error.message || '') + ' ' + (error.details || '');
       const isMissingCol = /column.*does not exist/i.test(msg)
         || /could not find the.*column.*in the schema cache/i.test(msg)
-        || /(is_credit|credit_of)/i.test(msg);
+        || /(is_credit|credit_of|customer_base_id|customer_kt)/i.test(msg);
       if (isMissingCol) {
         delete row.is_credit; delete row.credit_of;
+        // 09.09.2026: sömu varúð og að ofan — sé súlan ekki til má hún ekki
+        // fella innsetninguna, en customer_id heldur sér alltaf.
+        if (/customer_base_id/i.test(msg)) delete row.customer_base_id;
+        if (/customer_kt/i.test(msg)) delete row.customer_kt;
         const { data: d2, error: e2 } = await SB.from('solur').insert(row).select().single();
         if (e2) throw e2;
         return { ...d2, lines: creditLines, customer: origSale.customer };
