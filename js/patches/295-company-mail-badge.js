@@ -43,8 +43,12 @@
   let MAIL = {};  // { <fyrirtaeki_id>: {from,subject,snippet,received_at,is_question,unreplied,important,signals[]} }
   let HIST = new Set();  // fyrirtaeki_id sem við eigum EINHVERJA póstsögu við (nýlega EÐA eldri) — /api/company-mail histIds
 
-  const DOT = { red: '#dc2626', yellow: '#d97706', green: '#16a34a', hist: '#94a3b8' };
-  const ST_LABEL = { red: 'Ósvarað', yellow: 'Mikilvægt / breyting?', green: 'Í sambandi', hist: 'Eldri póstsaga' };
+  // 09.09.2026 (Agnar): BLÁTT bætist við — „beiðni um aukaþjónustu eða uppsögn
+  // á samningi". Það kemur úr bh_postflokkur í grunninum (v_kunni_postur_stada
+  // → /api/company-mail → d.vid_punktur), svo boxið á prófílnum og punkturinn í
+  // Ársskoðun lesa NÁKVÆMLEGA sömu skilgreiningu og geta ekki rekið í sundur.
+  const DOT = { blue: '#2563eb', red: '#dc2626', yellow: '#d97706', green: '#16a34a', hist: '#94a3b8' };
+  const ST_LABEL = { blue: 'Beiðni / uppsögn — svara', red: 'Ósvarað', yellow: 'Mikilvægt / breyting?', green: 'Í sambandi', hist: 'Eldri póstsaga' };
   // Merki úr póstsögunni — lífsferils-merkin (life:true) eru þau sem má ekki gleyma.
   const SIG = {
     uppsogn:    { t: 'Sagði upp þjónustu',          ic: '🚪', life: true },
@@ -78,6 +82,8 @@
   // 'red' | 'yellow' | 'green' | 'hist' | null
   function status(coId) {
     const d = data(coId);
+    // Blátt gengur fyrir rauðu: það er líka ósvarað, en segir HVAÐ bíður svars.
+    if (d && d.vid_punktur === 'blar' && !muted(coId)) return 'blue';
     if (d && d.unreplied && !muted(coId)) return 'red';
     if (manualImp(coId) || (d && d.important)) return 'yellow';
     if (d) return 'green';

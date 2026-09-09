@@ -25,8 +25,8 @@
   window.__samskiptiEitt359 = true;
 
   const API = 'https://brunaholf.netlify.app/api/company-mail';
-  const DOT = { red: '#dc2626', yellow: '#d97706', green: '#16a34a', hist: '#94a3b8', none: '#cbd5e1' };
-  const ST = { red: 'Ósvarað — kallar á svar', yellow: 'Mikilvægt / breyting?', green: 'Í sambandi', hist: 'Eldri póstsaga til', none: 'Engin nýleg póstmerki' };
+  const DOT = { blue: '#2563eb', red: '#dc2626', yellow: '#d97706', green: '#16a34a', hist: '#94a3b8', none: '#cbd5e1' };
+  const ST = { blue: 'Beiðni um aukaþjónustu eða uppsögn — svara', red: 'Ósvarað — kallar á svar', yellow: 'Mikilvægt / breyting?', green: 'Í sambandi', hist: 'Eldri póstsaga til', none: 'Engin nýleg póstmerki' };
   const SIG = { uppsogn: '🚪 Sagði upp þjónustu', flutt: '📦 Flutt / nýtt heimilisfang', eigandi: '🔑 Eigendaskipti / nýr rekstur', gjaldthrot: '🏚️ Gjaldþrot / þrotabú', kvortun: '😠 Kvörtun / óánægja', bilun: '🔧 Bilun / öryggismál', aridandi: '⏰ Áríðandi' };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmtD = d => { try { return new Date(d).toLocaleDateString('is-IS', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (_) { return ''; } };
