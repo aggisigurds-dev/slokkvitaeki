@@ -157,6 +157,9 @@
       const sb = SB();
       if (!sb) { toast('Engin gagnabankatenging.'); return; }
       render(sec, coId, v, true);
+      // Kennitalan sem var vistuð — notuð neðar til að uppfæra POS-eintakið
+      // aðeins ef opna salan er á SAMA kúnna. Sjá skýringuna þar.
+      let ktSemVarVistad = '';
       try {
         const r = await sb.from('fyrirtaeki').update({ afslattur_pct: v }).eq('id', coId);
         if (r.error) throw r.error;
@@ -167,6 +170,7 @@
         try {
           const co = await sb.from('fyrirtaeki').select('kennitala').eq('id', coId).single();
           const ktd = String((co.data && co.data.kennitala) || '').replace(/[^0-9]/g, '');
+          ktSemVarVistad = ktd;
           if (ktd.length === 10 && ktd !== '9999999999') {
             const pats = [ktd, ktd.slice(0, 6) + '-' + ktd.slice(6)];
             await sb.from('fyrirtaeki').update({ afslattur_pct: v }).in('kennitala', pats);
@@ -175,7 +179,29 @@
         } catch (_) {}
         render(sec, coId, v, false);
         toast(v > 0 ? ('🎯 Sjálfvirkur afsláttur vistaður: ' + v + '%') : 'Afsláttur núllstilltur.');
-        // If this customer is the one open in Sala, refresh the live discount.
+
+        // 09.09.2026 — PENINGAVILLA. Áður stóð hér aðeins `_lastKt = null; syncCartDiscount();`.
+        //
+        // syncCartDiscount() les prósentuna úr `st.customer.afslattur_pct` — POS-eintakinu
+        // sem var fyllt við kennitölu-uppflettingu og ENGINN uppfærði hér. `_lastKt = null`
+        // þvingar svo „kúnni skipti"-greinina, sem SKRIFAR gamla gildið yfir st.discount_pct.
+        //
+        // Afleiðing: starfsmaður lækkar kúnna úr 15% í 5%, sér „vistaður: 5%", gagnagrunnurinn
+        // segir 5% — og karfan hoppar aftur í 15% og selur á 15%. Á hverri línu, þar til
+        // flipinn er endurhlaðinn. Króna fyrir krónu úr rekstrinum.
+        //
+        // Lagfæringin: uppfæra POS-eintakið ÁÐUR en samstillt er. Aðeins ef opna salan er
+        // á sömu kennitölu — annars værum við að lauma afslætti á rangan kúnna.
+        try {
+          if (window.POS && typeof POS.getState === 'function') {
+            const st = POS.getState();
+            const ktNu = st && st.customer ? digits(st.customer.kt) : '';
+            const ktBreytt = digits(ktSemVarVistad);
+            if (st && st.customer && ktNu && ktBreytt && ktNu === ktBreytt) {
+              st.customer.afslattur_pct = v;
+            }
+          }
+        } catch (_) {}
         _lastKt = null; syncCartDiscount();
       } catch (err) {
         render(sec, coId, v, false);
