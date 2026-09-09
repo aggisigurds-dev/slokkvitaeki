@@ -18,6 +18,21 @@
   // hætti þögult — hýsillinn festist á prófílinn en kortið teiknaðist aldrei.
   const sb = () => (window.DB && window.DB.sb) || window.sb || null;
   const cache = {};
+  // SENT-ÞEKJAN — frá hvaða degi eigum við sendan póst? Sótt einu sinni.
+  // Nauðsynleg til að fullyrða ekki „ÓSVARAÐ" um póst sem er eldri en safnið
+  // okkar af SENDUM pósti (byrjar 18.07.2025 á meðan INBOX nær til 2015).
+  // Sama vörn og bláa/rauða merkið notar; án hennar hefðu 54 af 85 beiðnum
+  // verið merktar ósvaraðar að ósekju.
+  let _sentFra = null;
+  async function sentThekja() {
+    if (_sentFra !== null) return _sentFra;
+    try {
+      const c = sb(); if (!c) return (_sentFra = "");
+      const { data } = await c.from("v_sent_thekja").select("fra").limit(1).maybeSingle();
+      _sentFra = (data && data.fra) || "";
+    } catch (_) { _sentFra = ""; }
+    return _sentFra;
+  }
 
   async function fetchData(fid) {
     if (cache[fid] && Date.now() - cache[fid]._ts < 60000) return cache[fid];
@@ -35,10 +50,36 @@
       // fyrirspurnin skildi boxið eftir tómt. Póstur á aðra byggingu ber
       // 📍-merki hennar.
       if (f && f.customer_base_id) {
-        const { data: mails } = await client.from("felag_samskipti")
-          .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,fyrirtaeki_id,fyrirtaeki_nafn,via")
-          .eq("customer_base_id", f.customer_base_id).order("received_at", { ascending: false }).limit(30);
-        out.mails = mails || [];
+        // 09.09.2026 (Agnar: „ég vill hafa öll tölvupósta samskipti aðgengileg
+        // þarna … alveg 3 ár aftur í tímann"). TVÆR HEIMILDIR, sameinaðar á
+        // email_id:
+        //   • felag_samskipti — gamla sönnunar-tengingin. Hún ein veit HVAÐA
+        //     bygging á póstinn (fyrirtaeki_id → 📍-merkið), svo hún gengur fyrir
+        //     þegar sami póstur er í báðum.
+        //   • v_kunni_postur  — víða tengingin: netföng customers_base + lén sem
+        //     á sér nákvæmlega einn kúnna. Hún finnur póstinn sem nákvæma
+        //     netfangið missti af. Mælt: Granítsteinar er skráður
+        //     bokhald@granitsteinar.is en öll samskipti eru við
+        //     granitsteinar@granitsteinar.is — boxið var tómt. Á öllu safninu:
+        //     925 póstar á 206 kúnnum → 1.678 á 235.
+        // 30-þakið er farið; stærsti kúnninn á 207 pósta, svo öll sagan kemst
+        // í eitt kall (uppfletting mæld 61 ms eftir að postfang_tengsl kom til).
+        const [fsRes, vkRes] = await Promise.all([
+          client.from("felag_samskipti")
+            .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,fyrirtaeki_id,fyrirtaeki_nafn,via")
+            .eq("customer_base_id", f.customer_base_id).order("received_at", { ascending: false }).limit(400),
+          client.from("v_kunni_postur")
+            .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,flokkur,via")
+            .eq("customer_base_id", f.customer_base_id).order("received_at", { ascending: false }).limit(400),
+        ]);
+        const byId = new Map();
+        (vkRes.data || []).forEach(m => byId.set(String(m.email_id), m));
+        (fsRes.data || []).forEach(m => {
+          const k = String(m.email_id);
+          byId.set(k, Object.assign({}, byId.get(k) || {}, m));   // fs vinnur á sameiginlegum reitum
+        });
+        out.mails = [...byId.values()]
+          .sort((a, b) => String(b.received_at || "").localeCompare(String(a.received_at || "")));
         const { data: sib } = await client.from("fyrirtaeki")
           .select("id").eq("customer_base_id", f.customer_base_id).is("deleted_at", null);
         out.siblings = (sib || []).map(x => x.id);
@@ -49,6 +90,7 @@
           .eq("fyrirtaeki_id", fid).order("received_at", { ascending: false }).limit(30);
         out.mails = mails || [];
       }
+      out.sentFra = await sentThekja();
       // ✓-staðan (samskipti_stada) — spurning eldri en hún telst afgreidd
       const { data: h } = await client.from("samskipti_stada")
         .select("handled_at").eq("fyrirtaeki_id", fid).maybeSingle();
@@ -82,9 +124,30 @@
     data.handled = nu; return true;
   }
 
-  function keyPoints(f, mails, cut) {
+  function keyPoints(f, mails, cut, sentFra) {
     const pts = [];
     if (f.banner_note) pts.push(["📌", f.banner_note]);
+    // 09.09.2026 (Agnar: „allir mikilvægir punktar má koma í samantekt um
+    // fyrirtækið"). Beiðni um aukaþjónustu og uppsögn á samningi eru það sem
+    // MÁ ALLS EKKI gleymast fyrir árlegu heimsóknina — þau fara því hátt í
+    // samantektina sjálfa, ekki bara í punktinn á listanum.
+    // Flokkurinn kemur úr bh_postflokkur (v_kunni_postur.flokkur) — SAMA
+    // skilgreining og bláa merkið notar, svo þau geta ekki sagt sitt hvað.
+    // Reiknað hér úr póstunum sem þegar eru sóttir, svo þetta virkar líka áður
+    // en /api/company-mail fer í loftið.
+    const merkt = mails.filter(m => m.flokkur && !m.fra_okkur);
+    if (merkt.length) {
+      const m = merkt[0];                       // mails er raðað nýjast fyrst
+      const svarad = mails.some(x => x.fra_okkur &&
+        String(x.received_at || "") > String(m.received_at || ""));
+      // „ÓSVARAÐ" má aðeins fullyrða um póst sem er NÝRRI en sendi-safnið
+      // okkar nær — annars er þögnin gat í safninu, ekki vanræksla.
+      const metanlegt = !!sentFra && String(m.received_at || "") >= String(sentFra);
+      pts.push([m.flokkur === "uppsogn" ? "🚪" : "📩",
+        (m.flokkur === "uppsogn" ? "Uppsögn á samningi" : "Beiðni um aukaþjónustu") +
+        " — " + fmtD(m.received_at) + ": " + (m.subject || "(ekkert efni)") +
+        (svarad ? " (svarað)" : metanlegt ? " — ÓSVARAÐ" : " (svar óvíst — eldra en sendi-safnið)")]);
+    }
     const teng = f["tengiliður"] || f.tengilidur;
     if (teng || f.netfang || f.simi || f.farsimi) {
       let c = teng ? esc(teng) : "";
@@ -101,20 +164,29 @@
     const openQ = mails.filter(m => m.is_question && !m.fra_okkur && (!cut || m.received_at > cut)).length;
     if (warn) pts.push(["⚠️", warn.trim()]);
     else if (openQ) pts.push(["⚠️", openQ + " ósvöruð spurning" + (openQ > 1 ? "ar" : "") + " í pósti"]);
-    return pts.slice(0, 4);
+    // Fimm slott (var fjögur): beiðni/uppsögn bætist við án þess að ýta
+    // tengiliðnum eða síðasta póstinum út — hvort tveggja er notað daglega.
+    return pts.slice(0, 5);
   }
 
   function render(host, fid, data) {
     const f = data.f; if (!f) return;
     const cut = cutOf(data);
     const openQ = data.mails.filter(m => m.is_question && !m.fra_okkur && (!cut || m.received_at > cut)).length;
-    const pts = keyPoints(f, data.mails, cut);
+    const pts = keyPoints(f, data.mails, cut, data.sentFra || "");
     const card = document.createElement("div");
     card.className = "card pad _samskipti-card";
+    // Merki fyrir 359: ÖLL póstsagan er þegar í kortinu (bæði heimildirnar,
+    // ekkert 30-þak), svo „⬇ Eldri póstar"-takkinn hans á ekki lengur erindi.
+    card.dataset.ollSagan = "1";
     card.style.cssText = "margin:10px 0;border-left:4px solid #6366f1;background:#fff;border-radius:12px;padding:13px 15px;font-size:13.5px";
     const ptsHtml = pts.map(p => '<div style="display:flex;gap:8px;margin:4px 0;line-height:1.45"><span style="flex:none">' + p[0] + "</span><span>" + (p[2] ? p[1] : esc(p[1])) + "</span></div>").join("") ||
       '<div style="color:#94a3b8">Engin samskipti skráð enn — skráðu netfang tengiliðar til að sækja póstsögu.</div>';
-    const mailsHtml = data.mails.map(m => {
+    // Sýnum 20 nýjustu strax og földum restina á bak við takka (Agnar: „vill að
+    // hægt sé að expanda til að sjá öll samskiptin"). Allt er teiknað í einu —
+    // takkinn afhjúpar, sækir ekki, svo hann getur ekki hangið.
+    const SYNI = 20;
+    const mailRow = m => {
       const open = m.is_question && !m.fra_okkur && (!cut || m.received_at > cut);
       const via = (m.fyrirtaeki_nafn && m.fyrirtaeki_id !== fid)
         ? ' <span style="background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;border-radius:99px;padding:0 7px;font-size:10.5px;font-weight:700;white-space:nowrap">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
@@ -127,7 +199,15 @@
       '<div style="font-weight:600">' + esc(m.subject || "(ekkert efni)") +
         ' <span class="_ssk-caret" style="color:#94a3b8;font-weight:400;font-size:11px">▾</span></div>' +
       '<div class="_ssk-snip" style="color:#475569;font-size:12.5px">' + esc((m.snippet || "").slice(0, 220)) + "</div>" +
-      '<div class="_ssk-body" style="display:none"></div></div>'; }).join("") ||
+      '<div class="_ssk-body" style="display:none"></div></div>'; };
+    const eldri = data.mails.slice(SYNI);
+    const mailsHtml = (data.mails.slice(0, SYNI).map(mailRow).join("") +
+      (eldri.length
+        ? '<div class="_ssk-eldri" hidden>' + eldri.map(mailRow).join("") + "</div>" +
+          '<button type="button" class="_ssk-meira" style="margin:6px 0 2px;border:1px solid #c7d2fe;' +
+            'background:#eef2ff;color:#4338ca;border-radius:99px;padding:3px 12px;font-size:12px;' +
+            'cursor:pointer;font-weight:700">⬇ Sýna öll samskiptin (' + data.mails.length + ")</button>"
+        : "")) ||
       '<div style="color:#94a3b8;padding:6px 0">Engir póstar fundust á netfangi tengiliðar.</div>';
     const beidnirHtml = (data.beidnir || []).length
       ? data.beidnir.map(b => {
@@ -222,6 +302,17 @@
         });
       });
     }
+    // „Sýna öll samskiptin" — afhjúpar það sem er þegar teiknað.
+    const meira = card.querySelector("._ssk-meira");
+    if (meira) meira.addEventListener("click", e => {
+      e.stopPropagation();
+      const box = card.querySelector("._ssk-eldri");
+      if (!box) return;
+      box.hidden = !box.hidden;
+      meira.textContent = box.hidden
+        ? "⬇ Sýna öll samskiptin (" + data.mails.length + ")"
+        : "⬆ Sýna aðeins " + SYNI + " nýjustu";
+    });
     const bordBtn = card.querySelector("._ssk-bord");
     if (bordBtn) bordBtn.addEventListener("click", () => { try { Verkbord.open(); } catch (_) {} });
     // Smella á póstrað → sækja hann allan úr email_digest og fella út.

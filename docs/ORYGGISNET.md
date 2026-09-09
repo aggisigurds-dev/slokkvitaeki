@@ -145,6 +145,30 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑09** — **Blátt póstmerki og víð póst↔kúnna tenging.**
+  Engin ný vörðuð leið, en tvennt sem varð til við þessa vinnu og á heima hér.
+  **(1) Falskt rautt í póstmerkinu.** „Ósvarað" er reiknað sem „ekkert frá okkur
+  eftir síðasta innkomna" — en SENT-mappan í `email_digest` byrjar 18.07.2025 á
+  meðan INBOX nær til 2015. Allur eldri póstur leit því út fyrir að vera
+  ósvarað: **120 af 154 rauðum punktum**. `v_kunni_postur_stada` gildir nú rautt
+  og blátt AÐEINS innan þeirrar þekju (`v_sent_thekja` les mörkin úr gögnunum,
+  ekki harðkóðuð), eldra verður grænt. Sama regla og rauða umslagið hefur alltaf
+  fylgt: **röng viðvörun er verri en engin.**
+  **(2) Þjónustulén-gildran** (afbrigði af `a6e54eb`, Greenkey/Kirkjuvellir).
+  Netfang endurskoðanda sem er skráð sem netfang kúnna stenst einkvæmnispróf ef
+  enginn annar kúnni ber sama lén — og þá eignast SÁ kúnni hvern póst frá hverjum
+  starfsmanni þess fyrirtækis. Mælt: `bdo.is` var netfang Hjálpræðishersins
+  (bókarinn þeirra situr hjá BDO) og tveir BDO-starfsmenn hefðu verið lagðir til
+  sem tengiliðir hans. Vörnin er `v_thjonustulen` — **handvalinn** listi, og á að
+  vera það: `hertz.is` á sannarlega við Bílaleigu Flugleiða þótt nöfnin eigi
+  ekkert sameiginlegt, svo sjálfvirk nafna-líking myndi klippa réttar tengingar.
+  Nákvæmt netfang virkar áfram; aðeins LÉN-tengingin fellur út.
+  **(3) `charlize_contacts` hefur enga „tillögu"-stöðu.** `company-mail` les með
+  `kennitala not null AND status <> rejected`, svo kennitala á *pending*-færslu
+  telst full tenging strax. Aldrei skrifa ágiskun þangað „til samþykktar".
+  153 var snert (röðun + þrír textar) — `netvordur` staðfesti línur 1–1353
+  bæti-fyrir-bæti óbreyttar og 29/29 grænt fyrir og eftir.
+
 - **2026‑09‑01** — **Viðhengja-vörnin hert + registry-vírinn tengdur.**
   ⚠️ Fyrri útgáfa þessarar færslu sagði að vörnin hefði „aldrei verið til" og að
   `audit-attachment-forms` próf 4 hefði verið RAUTT. **Hvort tveggja var rangt**

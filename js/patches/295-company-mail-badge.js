@@ -5,6 +5,9 @@
  * til hvers kúnna, svo póstur frá því fyrir marga mánuði GLEYMIST — sérstaklega
  * ef kúnninn sagði upp, flutti, skipti um eiganda eða varð gjaldþrota. Merkið:
  *
+ *   🔵 BLÁTT   = beiðni um aukaþjónustu eða uppsögn á samningi — ósvarað og
+ *                við vitum HVAÐ bíður svars. Gengur fyrir rauðu (það er líka
+ *                ósvarað, bara nánar merkt). Kemur úr bh_postflokkur í grunninum.
  *   🔴 RAUTT   = síðasta póstsamskipti frá kúnna er ÓSVARAÐ (kallar á svar).
  *   🟡 GULT    = mikilvægt / möguleg breyting í póstsögunni (uppsögn, flutt,
  *                eigendaskipti, gjaldþrot, kvörtun, bilun, áríðandi) EÐA handvirkt
@@ -43,8 +46,12 @@
   let MAIL = {};  // { <fyrirtaeki_id>: {from,subject,snippet,received_at,is_question,unreplied,important,signals[]} }
   let HIST = new Set();  // fyrirtaeki_id sem við eigum EINHVERJA póstsögu við (nýlega EÐA eldri) — /api/company-mail histIds
 
-  const DOT = { red: '#dc2626', yellow: '#d97706', green: '#16a34a', hist: '#94a3b8' };
-  const ST_LABEL = { red: 'Ósvarað', yellow: 'Mikilvægt / breyting?', green: 'Í sambandi', hist: 'Eldri póstsaga' };
+  // 09.09.2026 (Agnar): BLÁTT bætist við — „beiðni um aukaþjónustu eða uppsögn
+  // á samningi". Það kemur úr bh_postflokkur í grunninum (v_kunni_postur_stada
+  // → /api/company-mail → d.vid_punktur), svo boxið á prófílnum og punkturinn í
+  // Ársskoðun lesa NÁKVÆMLEGA sömu skilgreiningu og geta ekki rekið í sundur.
+  const DOT = { blue: '#2563eb', red: '#dc2626', yellow: '#d97706', green: '#16a34a', hist: '#94a3b8' };
+  const ST_LABEL = { blue: 'Beiðni / uppsögn — svara', red: 'Ósvarað', yellow: 'Mikilvægt / breyting?', green: 'Í sambandi', hist: 'Eldri póstsaga' };
   // Merki úr póstsögunni — lífsferils-merkin (life:true) eru þau sem má ekki gleyma.
   const SIG = {
     uppsogn:    { t: 'Sagði upp þjónustu',          ic: '🚪', life: true },
@@ -78,6 +85,8 @@
   // 'red' | 'yellow' | 'green' | 'hist' | null
   function status(coId) {
     const d = data(coId);
+    // Blátt gengur fyrir rauðu: það er líka ósvarað, en segir HVAÐ bíður svars.
+    if (d && d.vid_punktur === 'blar' && !muted(coId)) return 'blue';
     if (d && d.unreplied && !muted(coId)) return 'red';
     if (manualImp(coId) || (d && d.important)) return 'yellow';
     if (d) return 'green';
@@ -138,7 +147,15 @@
     span.title = tipFor(coId, st, d);
     span.style.cssText = 'display:inline-flex;align-items:center;margin-right:6px;cursor:pointer;vertical-align:middle';
     const color = DOT[st] || '#94a3b8';
-    if (st === 'yellow') {
+    if (st === 'blue') {
+      // blátt = beiðni / uppsögn. Eigið tákn (📩) svo það þekkist frá rauða
+      // umslaginu á LÖGUN líka, ekki bara lit — dálkurinn er mjór og rautt/blátt
+      // umslag hlið við hlið á lista er of líkt.
+      span.innerHTML = '<span style="position:relative;display:inline-flex;font-size:13px;line-height:1;' +
+        'filter:drop-shadow(0 0 3px rgba(37,99,235,.55))">📩' +
+        '<span style="position:absolute;top:-3px;right:-4px;width:8px;height:8px;border-radius:50%;background:' +
+        color + ';box-shadow:0 0 0 1.5px var(--surface,#fff)"></span></span>';
+    } else if (st === 'yellow') {
       // gult = mikilvægt / möguleg breyting → ljósapera (ósk Agnars: 💡 fyrir
       // mikilvæg samskipti). Glóandi amber-skuggi svo hún „kviknar" á listanum.
       span.innerHTML = '<span style="display:inline-flex;font-size:15px;line-height:1;filter:drop-shadow(0 0 3px rgba(217,119,6,.6))">💡</span>';

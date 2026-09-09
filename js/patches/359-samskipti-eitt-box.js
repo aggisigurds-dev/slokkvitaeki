@@ -25,8 +25,8 @@
   window.__samskiptiEitt359 = true;
 
   const API = 'https://brunaholf.netlify.app/api/company-mail';
-  const DOT = { red: '#dc2626', yellow: '#d97706', green: '#16a34a', hist: '#94a3b8', none: '#cbd5e1' };
-  const ST = { red: 'Ósvarað — kallar á svar', yellow: 'Mikilvægt / breyting?', green: 'Í sambandi', hist: 'Eldri póstsaga til', none: 'Engin nýleg póstmerki' };
+  const DOT = { blue: '#2563eb', red: '#dc2626', yellow: '#d97706', green: '#16a34a', hist: '#94a3b8', none: '#cbd5e1' };
+  const ST = { blue: 'Beiðni um aukaþjónustu eða uppsögn — svara', red: 'Ósvarað — kallar á svar', yellow: 'Mikilvægt / breyting?', green: 'Í sambandi', hist: 'Eldri póstsaga til', none: 'Engin nýleg póstmerki' };
   const SIG = { uppsogn: '🚪 Sagði upp þjónustu', flutt: '📦 Flutt / nýtt heimilisfang', eigandi: '🔑 Eigendaskipti / nýr rekstur', gjaldthrot: '🏚️ Gjaldþrot / þrotabú', kvortun: '😠 Kvörtun / óánægja', bilun: '🔧 Bilun / öryggismál', aridandi: '⏰ Áríðandi' };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmtD = d => { try { return new Date(d).toLocaleDateString('is-IS', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (_) { return ''; } };
@@ -35,8 +35,16 @@
 
   if (!document.getElementById('_smx-css')) {
     const st = document.createElement('style'); st.id = '_smx-css';
-    // 295-boxið aðeins falið þegar 286-kortið er raunverulega á skjánum (klasi smx-eitt) — annars sést gamla boxið áfram
-    st.textContent = '#companies-main.smx-eitt ._co-mail-box{display:none !important}' +
+    // Tvær reglur fyrir sama hlutinn, viljandi:
+    //   :has()  — felur 295-boxið á SAMA AUGNABLIKI og hýsillinn birtist, án þess
+    //             að bíða eftir JS. Þrengingin (400 ms) á athuga() lagði annars
+    //             hálfri sekúndu ofan á blikkið sem Agnar sá.
+    //   .smx-eitt — sama regla fyrir vafra án :has() (Chrome <105); þar helst
+    //             gamla hegðunin: falið þegar kortið er komið.
+    // `.smx-gafst` slekkur á :has()-reglunni þegar tímavörðurinn gefst upp á
+    // sókninni, svo autt svæði verði aldrei útkoman.
+    st.textContent = '#companies-main:has(._samskipti-host[data-fid]):not(.smx-gafst) ._co-mail-box{display:none !important}' +
+      '#companies-main.smx-eitt ._co-mail-box{display:none !important}' +
       '._smx-strip{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:7px 0 2px}' +
       '._smx-sig{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700;white-space:nowrap}' +
       '._smx-old{padding:7px 9px;margin:5px 0;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;font-size:12.5px}';
@@ -89,6 +97,10 @@
     }
   }
   function eldriBtn(card, fid) {
+    // 09.09.2026: 286 sækir núna ALLA póstsöguna sjálft (báðar heimildirnar,
+    // ekkert 30-þak) og býður upp á „⬇ Sýna öll samskiptin". Þessi takki sótti
+    // gömlu, þrengri RPC-söguna og myndi aðeins tvítaka — sleppum honum þá.
+    if (card.dataset.ollSagan === '1') return;
     const full = card.querySelector('._ssk-full'); if (!full || full.querySelector('._smx-eldri, ._smx-oldwrap')) return;
     const beidnirHead = [...full.children].find(el => /BEIÐNIR/.test(el.textContent || '') && el.querySelector && el.querySelector('div'));
     const btn = document.createElement('button');
@@ -128,13 +140,54 @@
     retitle(card); eldriBtn(card, fid);
   }
 
+  // 09.09.2026 (Agnar: „það kemur öðruvísi gluggi fyrst, í hálfa sekúndu, síðan
+  // þessi"). KAPPHLAUPIÐ: 295-boxið teiknast STRAX (20 mín localStorage-skyndiminni)
+  // en 286-kortið bíður eftir Supabase-sókn — og `smx-eitt`, sem felur 295, var
+  // sett á fyrst þegar KORTIÐ var komið. Gamla boxið blikkaði því á meðan.
+  // Auk þess er MutationObserverinn þrengdur í 400 ms, sem lagði allt að hálfri
+  // sekúndu ofan á.
+  //
+  // Nú er falið um leið og HÝSILLINN er kominn — 286 býr hann til á undan
+  // sókninni (286:322 á undan 286:324), svo hann er í DOM-inu strax.
+  // Öryggisventillinn sem klasa-hliðið átti að vera er áfram til, bara sem
+  // tímavörður: skili sóknin engu korti innan 6 s er klasinn tekinn af og gamla
+  // boxið birtist aftur — hangi sókn má aldrei skilja eftir autt svæði (sbr.
+  // ade35d7, þar sem hangandi _running læsti spjaldið úti að eilífu).
+  let vaktTimer = null, vaktFid = null, gafstUpp = false;
   function athuga() {
     const host = document.querySelector('#companies-main ._samskipti-host[data-fid]');
     const card = host && host.querySelector('._samskipti-card');
     const main = document.getElementById('companies-main');
-    if (main && main.classList.contains('smx-eitt') !== !!card) main.classList.toggle('smx-eitt', !!card);
-    if (!card) return;
-    inject(card, Number(host.dataset.fid));
+    const fid  = host ? host.dataset.fid : null;
+
+    if (fid !== vaktFid) {                       // annað fyrirtæki opnað → nýtt bið
+      vaktFid = fid; gafstUpp = false;
+      const m0 = document.getElementById('companies-main');
+      if (m0) m0.classList.remove('smx-gafst');
+      if (vaktTimer) { clearTimeout(vaktTimer); vaktTimer = null; }
+    }
+    if (!host) {
+      if (main) main.classList.remove('smx-eitt');
+      if (vaktTimer) { clearTimeout(vaktTimer); vaktTimer = null; }
+      return;
+    }
+    if (card && vaktTimer) { clearTimeout(vaktTimer); vaktTimer = null; }
+    if (card && main) main.classList.remove('smx-gafst');
+
+    const fela = !!card || !gafstUpp;
+    if (main && main.classList.contains('smx-eitt') !== fela) main.classList.toggle('smx-eitt', fela);
+
+    if (!card) {
+      if (!vaktTimer && !gafstUpp) vaktTimer = setTimeout(() => {
+        vaktTimer = null;
+        if (document.querySelector('#companies-main ._samskipti-host[data-fid] ._samskipti-card')) return;
+        gafstUpp = true;                         // kortið kom ekki — sýnum gamla boxið
+        const m = document.getElementById('companies-main');
+        if (m) { m.classList.remove('smx-eitt'); m.classList.add('smx-gafst'); }
+      }, 6000);
+      return;
+    }
+    inject(card, Number(fid));
   }
   // throttle, ekki debounce (síðan er aldrei róleg — sjá frontend-profiler)
   let timer = null, last = 0;
@@ -144,7 +197,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   setInterval(() => { try { athuga(); } catch (_) {} }, 3000);   // 295 endurnýjar gögnin án DOM-breytingar á kortinu
 
-  window.SamskiptiEitt = { athuga, version: '359b' };
+  window.SamskiptiEitt = { athuga, version: '359c' };
   console.log('[359-samskipti-eitt-box] virkur');
 })();
 /* === END SAMSKIPTI EITT BOX === */
