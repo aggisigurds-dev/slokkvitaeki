@@ -1,0 +1,8 @@
+# Git-hookar VERÐA að hafa LF-línuskil.
+#
+# Repóið er CRLF á Windows (fjórar vélar). Skel-skrift með CRLF gefur
+# "/bin/sh^M: bad interpreter" og hookurinn deyr ÞÖGULT — sem er versta
+# tegundin af bilun: öryggisnetið liti út fyrir að vera tengt en keyrði ekki.
+# Nákvæmlega vandinn sem .githooks/pre-push var skrifaður til að leysa.
+.githooks/** text eol=lf
+*.sh         text eol=lf

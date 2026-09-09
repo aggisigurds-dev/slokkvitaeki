@@ -147,3 +147,40 @@ Add the printed path to your Windows PATH (Settings → System → About → Adv
 
 - Tell Claude Code: "Set up a private GitHub repo for this and push to it" — then your code is backed up on GitHub too.
 - Tell Claude Code: "Run the pending Verkdagbok attachments SQL on Supabase" — it can install `supabase` CLI and run it for you.
+
+---
+
+## Öryggisnetið — EITT skref sem þarf á hverri vél
+
+Repóið geymir `.githooks/pre-push`, sem keyrir kóða-verðina (~2,5 s) fyrir hverja
+ýtingu og stöðvar hana ef vörður fellur. **Git notar hann ekki sjálfkrafa** —
+`core.hooksPath` er stilling per vél og fylgir ekki með í git.
+
+Keyrðu þetta EINU SINNI í repó-möppunni á hverri nýrri vél:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Staðfesting — á að prenta `.githooks`:
+
+```bash
+git config core.hooksPath
+```
+
+Sé þetta ekki gert lítur netið út fyrir að vera tengt en keyrir ekki. Það er
+nákvæmlega bilunin sem hookurinn var skrifaður til að útrýma: 33 verðir skrifaðir
+og enginn tengdur, mánuðum saman.
+
+Handvirk keyrsla hvenær sem er:
+
+```bash
+npm run audit           # allir verðir, líka þeir sem spyrja Supabase
+npm run audit:static    # aðeins kóða-verðirnir, ~2,5 s, virkar án nets
+```
+
+Rautt er niðurstaða, ekki óþægindi. **Aldrei hækka grunnlínu til að fá grænt** —
+sjá `docs/VERKLAG.md` og `docs/ORYGGISNET.md`.
+
+Sjálfvirka samstillingin (Scheduled Task, 15 mín) er undanskilin: wip-commit ber
+`[skip ci]` og hookurinn sleppir þeim, svo vinna liggi aldrei ósamstillt.
