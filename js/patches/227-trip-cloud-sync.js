@@ -173,10 +173,70 @@
     try { origSet(PREFIX + coId, JSON.stringify(obj)); } catch (_) {}
   }
 
+  /* ── ÚTSKOLUN VIÐ LOKUN (09.09.2026) ─────────────────────────────────────
+   * Speglunin beið í 1200 ms. Lokaði starfsmaðurinn flipanum eða læsti símanum
+   * innan þess tíma fór `flush()` ALDREI af stað. Staðbundna eintakið lifði
+   * (origSet skrifar strax) — en skýjaeintakið varð aldrei til, svo heimsóknin
+   * var ósýnileg á hinum vélunum og glataðist alveg ef síminn hreinsaði vaframinni.
+   *
+   * Það sem er í húfi: hvert tæki með Hleðsla/Yfirferð/Nýtt, skoðunaraðili,
+   * akstur og AUKALÍNURNAR með magni, einingaverði og afslætti. Rukkanlegu
+   * línurnar sjálfar.
+   *
+   * Sama regla og papp 365 og flushSyncNow() í hubbnum: það sem bíður verður að
+   * fara af stað þegar síðan hverfur.
+   */
+  function skolaStrax() {
+    if (!Object.keys(pending).length) return;
+    clearTimeout(timer);
+    try { flush(); } catch (_) {}
+  }
+  window.addEventListener('pagehide', skolaStrax);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') skolaStrax();
+  });
+
+  /* ── KLUKKUSKEKKJA GERIR „NÝJAST VINNUR" AÐ LYGI ──────────────────────────
+   * Árekstrar leysast á `_ts = Date.now()`, tekið á HVERRI VÉL fyrir sig. Gangi
+   * klukkan á einni vél á eftir hinum tapar hún alltaf — sá tæknimaður missir
+   * sínar línur án þess að nokkur sjái það gerast.
+   *
+   * Rétt lausn er þjónstímastimpill á röð, sem er stærri breyting. Þangað til:
+   * mælum skekkjuna og segjum frá henni. Ósýnileg áhætta verður sýnileg.
+   * Date-hausinn fylgir hverju einasta Supabase-svari, svo þetta kostar ekkert.
+   */
+  async function athugaKlukku() {
+    try {
+      var cfgUrl = (window.SUPABASE_URL || '') + '/rest/v1/';
+      if (!window.SUPABASE_URL) return;
+      var r = await fetch(cfgUrl, { method: 'HEAD', headers: { apikey: window.SUPABASE_KEY || '' } });
+      var d = r.headers.get('date');
+      if (!d) return;
+      var skekkja = Math.abs(Date.now() - new Date(d).getTime());
+      window.__tripKlukkuskekkja = skekkja;
+      if (skekkja > 120000) {
+        var min = Math.round(skekkja / 60000);
+        console.warn('[patch-227] KLUKKUSKEKKJA ' + min + ' mín — „nýjast vinnur" er ekki áreiðanlegt á þessari vél');
+        var segja = function (m) {
+          if (window.Toast && typeof Toast.show === 'function') { Toast.show(m); return true; }
+          return false;
+        };
+        // Bíða þar til viðmótið er tilbúið; annars hverfur boðið í ræsingunni.
+        var reynt = 0;
+        var t2 = setInterval(function () {
+          if (segja('⏰ Klukkan á þessari vél skeikar um ' + min + ' mín. Vinna getur tapast við samstillingu — láttu Agnar vita.') || ++reynt > 20) clearInterval(t2);
+        }, 1500);
+      }
+    } catch (_) {}
+  }
+  setTimeout(athugaKlukku, 6000);
+
   window.TripCloudSync = {
     saveNow: saveNow,
     silentSet: silentSet,
-    flush: function () { clearTimeout(timer); flush(); }
+    flush: function () { clearTimeout(timer); flush(); },
+    skolaStrax: skolaStrax,
+    klukkuskekkja: function () { return window.__tripKlukkuskekkja; }
   };
 
   console.log('[patch-227] inspection trip-state cloud-sync installed');
