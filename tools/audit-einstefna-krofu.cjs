@@ -31,7 +31,15 @@
  *      (eins og 166 gerir annars staðar) slyppu ÞRJÁR bakfærðar mæður inn og
  *      litu út eins og ósótt vinna, þ.á m. 20.524 kr félag.
  *
- * Lesandi, opinber lykill. GRUNNLÍNA = 0 — hver frávik er raunveruleg afturför.
+ * 6. (bætt við 09.09.2026, sama dag) ALLT `js/`-tréð: engin skrá má skrifa
+ *    `greitt_med` aftur í 'greitt_sidar'. Fyrsta útgáfa varðarins NEFNDI
+ *    `197-bokhald-yfirferd.js` sem dæmi um brotið en MÆLDI það ekki — og þar var
+ *    það raunverulega, í `saveKrafa()`: að taka hakið af skrifaði
+ *    `greitt_med: row.greitt_med_prev || 'greitt_sidar'`. Einn smellur og salan
+ *    hvarf úr Kröfu yfirlitinu, án viðvörunar. Það var tekið út sama dag;
+ *    hakið kveikir núna en slekkur ekki. Reglan á við allan kóðann, ekki eina skrá.
+ *
+ * Lesandi, opinber lykill. GRUNNLÍNA = 0 — hvert frávik er raunveruleg afturför.
  */
 const fs = require('fs');
 const path = require('path');
@@ -39,6 +47,45 @@ const path = require('path');
 const SUPA = 'https://osfdzskyvisifcwyjkuk.supabase.co';
 const KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 const SKRA = path.join(__dirname, '..', 'js', 'patches', '166-krofu-yfirlit.js');
+const JS_ROT = path.join(__dirname, '..', 'js');
+// Nýtt gildi við STOFNUN sölu er löglegt — drög verða til sem `greitt_sidar`
+// (t.d. 122-samningshafar-receive:565, sem fyrsta útgáfa flaggaði ranglega).
+// Það sem er BANNAÐ er að SNÚA VIÐ sölu sem er þegar komin í `reikningur`.
+// Tvennt ber þess merki og hvorugt á sér löglega mynd:
+//   a) `greitt_med_prev` — geymsla á fyrra gildi er til þess EINS gerð að
+//      geta farið til baka. Það var vélbúnaðurinn í 197.
+//   b) `.update(...)` sem skrifar `greitt_med` í `greitt_sidar` í sömu setningu.
+// Blindi bletturinn (viljandi): patch-hlutur smíðaður í einni setningu og
+// uppfærður í annarri, án `greitt_med_prev`. Sá sem skrifar slíkt er ekki að
+// gera það óvart — og liður 1 grípur hann í 166, þar sem hættan er mest.
+function afturfaerslurITrenu() {
+  const brot = [];
+  (function ganga(dir) {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const f = path.join(dir, e.name);
+      if (/node_modules|[\\/]dist[\\/]|\.min\.js/.test(f)) continue;
+      if (e.isDirectory()) { ganga(f); continue; }
+      if (!f.endsWith('.js')) continue;
+      const rel = path.relative(path.join(__dirname, '..'), f).replace(/\\/g, '/');
+      const ls = fs.readFileSync(f, 'utf8').split(/\r?\n/);
+      ls.forEach((l, i) => {
+        const hreint = l.replace(/\/\/.*$/, '');
+        // a) vélbúnaður afturkalls
+        if (/greitt_med_prev\s*[:=]|\.greitt_med_prev/.test(hreint)) {
+          brot.push(rel + ':' + (i + 1) + '  [greitt_med_prev] ' + l.trim().slice(0, 90));
+          return;
+        }
+        // b) update sem skrifar greitt_sidar í sömu setningu
+        if (!/greitt_med\s*:/.test(hreint) || !/greitt_sidar/.test(hreint)) return;
+        const gluggi = ls.slice(Math.max(0, i - 4), i + 5).join(' ');
+        if (/\.update\s*\(/.test(gluggi)) {
+          brot.push(rel + ':' + (i + 1) + '  [update→greitt_sidar] ' + l.trim().slice(0, 84));
+        }
+      });
+    }
+  })(JS_ROT);
+  return brot;
+}
 
 async function sok(p) {
   const r = await fetch(SUPA + '/rest/v1/' + p, { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } });
@@ -107,6 +154,13 @@ async function allar(p) {
     fails.push("Greinin fyrir 'sesthvergi' fannst ekki í load() — fimmta sýnin á sína eigin leið og verður að taka við sjálf.");
   } else if (siaNr >= 0 && greinNr > siaNr) {
     fails.push(`'sesthvergi'-greinin (lína ${greinNr + 1}) kemur EFTIR kröfu-fyrirspurnina (lína ${siaNr + 1}) — þá lendir hún á röngu gagnasetti.`);
+  }
+
+  // ── 6 · ALLT js/-tréð: engin afturfærsla í greitt_sidar ───────────────────
+  const afturBrot = afturfaerslurITrenu();
+  if (afturBrot.length) {
+    fails.push('AFTURFÆRSLA Á greitt_med FANNST (' + afturBrot.length + ') — reglan er einstefna, sjá lið 6 efst:\n' +
+      afturBrot.map(b => '      ' + b).join('\n'));
   }
 
   // ── 5 · lifandi gögn: engin kreditfærsla, engin bakfærð móðir ─────────────

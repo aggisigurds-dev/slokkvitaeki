@@ -289,20 +289,38 @@
     const tr = inp && inp.closest('tr'); if (tr) tr.classList.toggle('rett', val);
     toast(val ? '✓ Merkt rétt' : 'Hak tekið af');
   }
-  // "Krafa" — set greitt_med='reikningur' so the sale flows into Kröfu yfirlit (reversible via greitt_med_prev)
+  // „Krafa" — setur greitt_med='reikningur' svo salan flæði inn í Kröfu yfirlitið.
+  //
+  // 2026-09-09: AFTURFÆRSLAN VAR TEKIN ÚT. Hér stóð
+  //     patch = { greitt_med: row.greitt_med_prev || 'greitt_sidar', greitt_med_prev: null }
+  // þegar hakið var tekið af — einn smellur sem færði sölu úr `reikningur` aftur
+  // í `greitt_sidar`. Reglan sem Agnar setti 20.05.2026 er afdráttarlaus:
+  // umbreytingin er EINSTEFNA og það má ALDREI vera viðmót sem snýr henni við.
+  //
+  // Ástæðan sást svart á hvítu 09.09.2026: Kröfu yfirlitið síar hart á
+  // `greitt_med = 'reikningur'` (166:614), svo sala sem er færð til baka verður
+  // ÓSÝNILEG öllum sýnum þess. Þannig hvarf 199.384 kr af félagavinnu úr
+  // yfirlitinu — enginn rakst á hana því ekkert borð sýndi hana. Afturfærslan
+  // var beinasta leiðin til að búa það ástand til, í einum smelli, án viðvörunar.
+  //
+  // Hakið er því einstefnu-hak: það kveikir, það slekkur ekki. Sé sala ranglega
+  // sett í kröfu er hún leiðrétt með kreditfærslu, ekki með því að fela hana.
   async function saveKrafa(id, val, inp) {
     const SB = getSB(); if (!SB) return;
     const row = ROWS.find(x => Number(x.id) === Number(id)); if (!row) return;
     let patch;
     if (val) {
       patch = { greitt_med: 'reikningur' };
-      if (row.greitt_med !== 'reikningur') patch.greitt_med_prev = row.greitt_med || null;
+      // `greitt_med_prev` var geymt hér til að geta farið til baka. Sú leið er
+      // farin, svo geymslan á ekki lengur erindi — hún byði bara næstu lotu
+      // upp á að endurvekja afturkallið.
     } else {
-      patch = { greitt_med: row.greitt_med_prev || 'greitt_sidar', greitt_med_prev: null };
+      if (inp) inp.checked = true;                       // hakið stendur
+      toast('Krafa verður ekki tekin til baka — leiðréttu með kreditfærslu.');
+      return;
     }
     const r = await SB.from('solur').update(patch).eq('id', id);
     if (r.error) { toast('Villa: ' + r.error.message); if (inp) inp.checked = !val; return; }
-    if ('greitt_med_prev' in patch) row.greitt_med_prev = patch.greitt_med_prev;
     row.greitt_med = patch.greitt_med;
     row._cat = cat(row);
     toast(val ? 'Merkt sem krafa → Kröfu yfirlit' : 'Tekið úr kröfum (' + row.greitt_med + ')');
@@ -395,7 +413,7 @@
     ROWS = (r.data || []).map(s => ({
       id: s.id, num: s.num || '', dags: (s.created_at || '').slice(0, 10),
       kunni: (s.customer_nafn && s.customer_nafn.trim()) || '(óþekktur)',
-      greitt_med: s.greitt_med || '', greitt_med_prev: s.greitt_med_prev || '', stada: s.status || '', amt: Number(s.samtals) || 0,
+      greitt_med: s.greitt_med || '', stada: s.status || '', amt: Number(s.samtals) || 0,
       base_id: s.customer_base_id, paid: s.paid_at != null, is_credit: !!s.is_credit,
       krafa_sent: s.krafa_sent_at != null, hidden: !!s.hidden, created_at: s.created_at,
       note: NOTES.sala[s.id] || '', resolved: !!(RESOLVED.sala && RESOLVED.sala[s.id])
