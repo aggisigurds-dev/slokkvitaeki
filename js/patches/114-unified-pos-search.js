@@ -345,17 +345,55 @@
       }
 
       try {
-        const r = await SB.from('vidskiptavinir').insert({
-          nafn, kennitala: ktClean || null,
-          simi: simi || null, netfang: email || null,
-          heimilisfang: addr || null
-        }).select().single();
+        const _kt10 = ktClean && ktClean.length === 10 && ktClean !== '9999999999';
+        let r;
+        if (_kt10) {
+          // 2026-09-09 (Agnar): ný kennitala → kanónísk leið eins og pos.js.
+          // customers_base (skráin) + fyrirtaeki ("Allir viðskiptavinir",
+          // er_i_thjonustu=false) — ALDREI munaðarlaus vidskiptavinir-röð
+          // (sbr. audit-solu-id). Símanúmer/netfang fyllt í base ef vantar.
+          const _dashed = ktClean.slice(0, 6) + '-' + ktClean.slice(6);
+          let _baseId = null;
+          const _cb = await SB.from('customers_base').select('id,simi,netfang')
+            .or('kennitala.eq.' + _dashed + ',kennitala.eq.' + ktClean).limit(1).maybeSingle();
+          if (_cb && _cb.data && _cb.data.id) {
+            _baseId = _cb.data.id;
+            const _p = {};
+            if (simi && !_cb.data.simi) _p.simi = simi;
+            if (email && !_cb.data.netfang) _p.netfang = email;
+            if (Object.keys(_p).length) await SB.from('customers_base').update(_p).eq('id', _baseId);
+          } else {
+            const _ci = await SB.from('customers_base')
+              .insert({ kennitala: _dashed, nafn, simi: simi || null, netfang: email || null }).select('id').single();
+            if (_ci.error) { showErr(_ci.error.message); return; }
+            _baseId = _ci.data.id;
+          }
+          const _junk = (!nafn || nafn === '.' || /^kt:/i.test(nafn) || /^[0-9]+$/.test(nafn) || nafn.toLowerCase() === 'viðskiptavinur');
+          r = await SB.from('fyrirtaeki').insert({
+            nafn, kennitala: _dashed, simi: simi || null, netfang: email || null,
+            heimilisfang: addr || null, customer_base_id: _baseId,
+            er_i_thjonustu: false, status: 'virkur',
+            review_flag: _junk, review_note: _junk ? 'Nafn vantar/rusl úr POS-leit — fletta upp' : null
+          }).select().single();
+        } else {
+          // Engin/ógild kennitala → lausasala helst í vidskiptavinir (vörður bítur ekki án kt).
+          r = await SB.from('vidskiptavinir').insert({
+            nafn, kennitala: ktClean || null,
+            simi: simi || null, netfang: email || null,
+            heimilisfang: addr || null
+          }).select().single();
+        }
         if (r.error) { showErr(r.error.message); return; }
         // Refresh local cache so it appears in future searches
         try {
-          if (window.Vidskiptavinir && Array.isArray(Vidskiptavinir.list)) Vidskiptavinir.list.push(r.data);
-          if (window.DB && DB.cache && Array.isArray(DB.cache.vidsk)) DB.cache.vidsk.push(r.data);
-          _vidskFallback.push(r.data);
+          if (!_kt10) {
+            if (window.Vidskiptavinir && Array.isArray(Vidskiptavinir.list)) Vidskiptavinir.list.push(r.data);
+            if (window.DB && DB.cache && Array.isArray(DB.cache.vidsk)) DB.cache.vidsk.push(r.data);
+            _vidskFallback.push(r.data);
+          } else {
+            if (window.Companies && Array.isArray(Companies.list)) Companies.list.push(r.data);
+            if (window.DB && DB.cache && Array.isArray(DB.cache.fyr)) DB.cache.fyr.push(r.data);
+          }
         } catch (_) {}
         // Push to POS state so the customer sticks immediately
         if (window.POS && typeof POS.getState === 'function') {
