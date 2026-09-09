@@ -1119,7 +1119,7 @@
 
     // 📝 Athugasemdir — vistast í fyrirtaeki.athugasemdir. 2026-09-09: ÁÐUR var
     // þetta 900 ms debounce á `input` EINGÖNGU og `catch(_){}` — innslátturinn
-    // tapaðist þgult ef notandinn fór af síðunni innan sekúndunnar og villa sást
+    // tapaðist þögult ef notandinn fór af síðunni innan sekúndunnar og villa sást
     // hvergi. Nú: EITT vistunarfall sem bæði debounce OG blur kalla í,
     // dataset.saved-far svo óbreytt gildi séu ekki skrifuð, og sýnileg villa.
     const athugaTa = main.querySelector('#_vd-athuga-ta');

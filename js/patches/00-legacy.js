@@ -3081,7 +3081,7 @@ console.log('[patch-master] loaded with all fixes');
       });
       // Auto-save. 2026-09-09: blur vistar STRAX og villa er SÝNILEG — áður var
       // þetta 1,5 s debounce á `input` eingöngu og villusvarið hunsað, svo
-      // innsláttur tapaðist þgult ef farið var af síðunni strax.
+      // innsláttur tapaðist þögult ef farið var af síðunni strax.
       var timer;
       ta.dataset.saved=ta.value;
       function saveMemo(){

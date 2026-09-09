@@ -70,7 +70,7 @@
     if (_vistT) { clearTimeout(_vistT); _vistT = null; }
     if (!window.AppSettings || !AppSettings.save) return;
     const ok = await AppSettings.save({ [KEY]: _state });
-      if (!ok) toast('Náði ekki að vista síðuna.');
+    if (!ok) toast('Náði ekki að vista síðuna.');
   }
   function vista() {
     if (_vistT) clearTimeout(_vistT);
