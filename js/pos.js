@@ -1332,10 +1332,20 @@
       // BEFORE INSERT trigger on solur assigns one.
       var preNum = window._pendingReikningurNum || '';
       var pmCode = window._pendingPaymentMethod || 'kort';
-      var pmLabel = pmCode === 'reikningur'   ? 'reikningur'
+      // 2026-09-09: `greitt_med` geymir KÓÐA, ekki birtingartexta. Áður skiluðu
+      // tvær greinar hér kóða ('reikningur','greitt_sidar') og tvær birtingartexta
+      // ('Kort','Pening') — hálfkláruð umbreyting sem skrifaði 'Kort' í dálk sem
+      // allir lesendur sía á lágstöfum. Afleiðingin: kort 253 / Kort 105 og
+      // reidufe 55 / Pening 15 — 120 sölur duttu úr hverri síu og hverri
+      // samantekt (Agnar: „þá finnst stundum þeir hverfa").
+      // Verst: gáttin í 121-pickup-checkout.js hendir tæki til baka af því
+      // 'Kort' fellur á lágstafa-hvítlistanum — sjá athugasemdina þar á línu 827.
+      // Birting fer í gegnum Counter._payLabel(); hér má aldrei standa texti.
+      var pmGildi = pmCode === 'reikningur'   ? 'reikningur'
                   : pmCode === 'greitt_sidar' ? 'greitt_sidar'
-                  : pmCode === 'pening'       ? 'Pening'
-                                              : 'Kort';
+                  : pmCode === 'pening'       ? 'reidufe'
+                                              : 'kort';
+      var pmLabel = pmGildi;
       // Store the total kr discount m. vsk (what the customer actually saved
       // off the final price) as `afslattur` on solur. Receipts list line
       // totals m. vsk, so this is the number that makes the receipt add up.
@@ -1871,7 +1881,8 @@
       '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:18px;font-weight:800"><span>Samtals:</span><span>'+fmtKr(totalsObj.total)+'</span></div>' +
     '</div>' +
     '<div style="text-align:center;padding:16px 0;border-top:1px dashed #ccc;color:#888;font-size:11px">' +
-      '<div>Greitt með: '+(sale.greitt_med||'Kort')+'</div>' +
+      // Kvittun sýnir MERKIMIÐA en dálkurinn geymir kóða (sjá checkout()).
+      '<div>Greitt með: '+esc((window.Counter&&Counter._payLabel)?Counter._payLabel(sale.greitt_med||'kort'):(sale.greitt_med||'Kort'))+'</div>' +
       (sale.athugasemdir ? '<div style="margin-top:4px">'+esc(sale.athugasemdir)+'</div>' : '') +
       '<div style="margin-top:8px;font-size:10px">Takk fyrir viðskiptin!</div>' +
     '</div>' +

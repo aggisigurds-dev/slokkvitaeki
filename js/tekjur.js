@@ -1,3 +1,10 @@
+// 2026-09-09: greitt_med geymir KODA (kort/reidufe/reikningur/greitt_sidar).
+// Adur var birt hratt gildi med fallback 'Kort', sem faldi thad ad pos.js
+// skrifadi sjalfur birtingartexta i dalkinn. Sja js/pos.js checkout().
+function _pmTexti(m){
+  if(window.Counter&&Counter._payLabel) return Counter._payLabel(m||'kort');
+  return m||'';
+}
 // Tekjur v2 — Sales history dashboard with monthly charts, detail view, CSV/Excel export
 (function(){
   'use strict';
@@ -142,7 +149,7 @@
             '</div>' +
             '<div style="text-align:right">' +
               '<div style="font-weight:700;font-size:15px;color:#0f172a">'+fmtKr(s.samtals||0)+'</div>' +
-              '<div style="font-size:11px;color:#94a3b8">'+(s.greitt_med||'Kort')+'</div>' +
+              '<div style="font-size:11px;color:#94a3b8">'+_pmTexti(s.greitt_med)+'</div>' +
             '</div>' +
           '</div>';
         }).join('') : '<div style="color:#94a3b8;text-align:center;padding:40px">Engar sölur skráðar</div>') +
@@ -205,7 +212,7 @@
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
         '<div style="font-size:13px"><span style="color:#64748b">Dags:</span> '+dStr+' '+tStr+'</div>' +
-        '<div style="font-size:13px"><span style="color:#64748b">Greiðsla:</span> '+(sale.greitt_med||'Kort')+'</div>' +
+        '<div style="font-size:13px"><span style="color:#64748b">Greiðsla:</span> '+_pmTexti(sale.greitt_med)+'</div>' +
         '<div style="font-size:13px"><span style="color:#64748b">Viðskiptavinur:</span> '+esc(sale.customer_nafn||'Óþekktur')+'</div>' +
         '<div style="font-size:13px"><span style="color:#64748b">Starfsmaður:</span> '+(sale.starfsmadur||'Kassi')+'</div>' +
       '</div>' +
