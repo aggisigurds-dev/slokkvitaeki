@@ -1,0 +1,48 @@
+name: Öryggisnet
+
+# Keyrir ALLA verði (tools/audit-*.cjs) við hverja ýtingu á master.
+#
+# Af hverju þetta flæði er til (09.09.2026): audit-all.cjs sagði í hausnum
+# "run before every push" og keyrði hvergi — hvorki í CI, git-hook né npm-skripti.
+# 33 verðir skrifaðir, enginn tengdur. Þess vegna komu sömu villurnar aftur.
+#
+# ÞETTA KOSTAR ENGAR NETLIFY-KRÍTUR.
+# deploy.yml birtir aðeins þegar haus-commit ber [deploy] (07.09: 1.031 deploy
+# = 15.465 krítur ≈ 10$ á dag). Þetta flæði BIRTIR EKKERT — það keyrir Node og
+# les gögn. GitHub Actions-mínútur eru ókeypis á þessum skala. Hliðið í
+# deploy.yml er ósnert.
+#
+# Verkaskipting við pre-push-hookinn (.githooks/pre-push):
+#   hookurinn  13 kóða-verðir, ~2,5 s, án nets — stöðvar ýtingu strax
+#   þetta      allir 35, líka þeir sem spyrja Supabase — grípur gagnavillur
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: oryggisnet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verdir:
+    runs-on: ubuntu-latest
+    # Sleppa wip-commitum sjálfvirku samstillingarinnar (15 mín fresti) — þau eru
+    # vistun milli vélanna fjögurra, ekki vinna sem er verið að skila.
+    if: >-
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[skip ci]')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Kóða-verðir (engin gagnatenging)
+        run: node tools/audit-all.cjs --static
+
+      - name: Allir verðir (líka gagnaverðir)
+        run: node tools/audit-all.cjs

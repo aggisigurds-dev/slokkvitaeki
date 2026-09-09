@@ -1,0 +1,46 @@
+#!/bin/sh
+# Öryggisnetið, keyrt sjálfkrafa fyrir hverja ýtingu.
+#
+# Af hverju þessi hookur er til (09.09.2026): tools/audit-all.cjs hefur sagt
+# "run before every push" í haus sínum frá upphafi og keyrði við ENGA ýtingu,
+# hvergi. 33 verðir skrifaðir, enginn tengdur. Þess vegna komu sömu villurnar
+# aftur mánuðum saman.
+#
+# Sama rök og Agnar skrifaði sjálfur í .claude/settings.json:
+#   "Tilmæli duga ekki; sjálfvirk keyrsla gerir það."
+#
+# AÐEINS KÓÐA-VERÐIR HÉR (--static, 13 af 35, ~2,5 s). Ástæður tvær:
+#   1. Enginn þarf net eða lykla, svo hookurinn fellur aldrei af tengingarleysi.
+#   2. Gagna-verðirnir keyra í GitHub Actions á eftir, þar sem þeir tefja engan.
+#
+# SJÁLFVIRKA SAMSTILLINGIN ER UNDANSKILIN. Scheduled Task ýtir wip-commiti á
+# 15 mínútna fresti með [skip ci]. Sá hookur má ALDREI stöðva þá ýtingu —
+# vinna sem liggur ósamstillt milli vélanna fjögurra er verri en rauður vörður.
+#
+# Framhjá í neyð:  git push --no-verify
+
+haus=$(git log -1 --pretty=%s 2>/dev/null)
+
+case "$haus" in
+  *"[skip ci]"*)
+    exit 0
+    ;;
+esac
+
+if [ ! -f tools/audit-all.cjs ]; then
+  exit 0
+fi
+
+echo ""
+node tools/audit-all.cjs --static
+kodi=$?
+
+if [ $kodi -ne 0 ]; then
+  echo ""
+  echo "  Ytingu stodvud: vordur fell. Sja docs/ORYGGISNET.md"
+  echo "  Lagadu villuna - ekki haekka grunnlinu til ad fa graent."
+  echo "  Neydarutgangur: git push --no-verify"
+  echo ""
+fi
+
+exit $kodi

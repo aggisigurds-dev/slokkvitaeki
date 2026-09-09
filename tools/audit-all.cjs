@@ -15,14 +15,26 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// --static: aðeins verðir sem lesa kóðann og þurfa hvorki net né lykla. Notað í
+// pre-push-hooknum svo ýting stöðvist ekki þótt netið sé niðri eða hægt — CI
+// keyrir allt settið á eftir. Greint á fetch( í skránni, ekki á handlista, svo
+// nýr vörður flokkist sjálfkrafa rétt.
+const adeinsStatic = process.argv.includes('--static');
+
 const dir = __dirname;
-const audits = fs.readdirSync(dir)
+let audits = fs.readdirSync(dir)
   .filter(f => /^audit-.*\.cjs$/.test(f) && f !== 'audit-all.cjs')
   .sort();
 
+const alls = audits.length;
+if (adeinsStatic) {
+  audits = audits.filter(f => !/fetch\s*\(/.test(fs.readFileSync(path.join(dir, f), 'utf8')));
+}
+
 if (!audits.length) { console.log('No audits found.'); process.exit(0); }
 
-console.log(`🔌 Öryggisnet — begin-to-end test (${audits.length} audits)\n`);
+console.log(`🔌 Öryggisnet — begin-to-end test (${audits.length}` +
+  (adeinsStatic ? ` af ${alls} — aðeins kóða-verðir` : ' audits') + ')\n');
 let failed = 0;
 for (const a of audits) {
   process.stdout.write('  ' + a.padEnd(30) + ' ');

@@ -5,8 +5,10 @@
   "description": "Internal web app for Slökkvitæki ehf — fire extinguisher inspection and service",
   "type": "module",
   "scripts": {
-    "deploy": "node deploy.js",
-    "verify": "node verify.js"
+    "audit": "node tools/audit-all.cjs",
+    "audit:static": "node tools/audit-all.cjs --static",
+    "verify": "node verify.js",
+    "deploy": "node -e \"console.error('\\n  BANNAD: node deploy.js thurrkar ut oll serverless-follin thogult.\\n  Birting fer um GitHub Actions: git commit -m \\\\\\\"[deploy] ...\\\\\\\" && git push\\n  Sja .claude/skills/deploy/SKILL.md\\n'); process.exit(1)\""
   },
   "engines": {
     "node": ">=18"
