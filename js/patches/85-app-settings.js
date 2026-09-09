@@ -376,8 +376,87 @@
     return dd + '.' + mm + '.' + yyyy; // default: dd.mm.yyyy
   }
 
+  /* ── MISTEKIN VISTUN MÁ EKKI ÞEGJA (09.09.2026) ──────────────────────────
+   * `save()` hér að ofan er vandað: það skilar `false` heiðarlega þegar það
+   * gefst upp eftir fjórar tilraunir, og skráir ástæðuna í console.
+   *
+   * Vandinn er að ENGINN HLUSTAR. Yfirferð 09.09.2026 fann átta kallstaði sem
+   * `await`-a ekki eða henda niðurstöðunni — þar á meðal nótur á fyrirtækjum
+   * (274:248) og skoðunarstöðu (224:236). Notandinn sá ekkert. Skrifin voru
+   * farin. Þetta er sama mynstrið og allt annað sem Agnar hefur kvartað yfir:
+   * „vistun segir ✓ en vistaði ekki".
+   *
+   * Þessi hjúpur gerir tvennt sem enginn kallstaður getur kyngt:
+   *   1. Segir notandanum frá — sýnilega, ekki bara í console.
+   *   2. Geymir skrifið í biðröð og reynir aftur. Fjögurra tilrauna uppgjöf
+   *      þýðir oftast að önnur vél var að skrifa á sama augnabliki; sekúndu
+   *      síðar gengur það. Vinnan á ekki að tapast við tímasetningaróheppni.
+   *
+   * Biðröðin er tæmd við sýnileika, á 20 s fresti, og við lokun síðunnar.
+   */
+  const _bidrod = [];
+  let _bidTimer = null;
+
+  function _segjaFra(skilabod) {
+    try {
+      // ⚠️ `window.toast` er OBJECT í þessu appi, ekki fall (mælt 09.09.2026).
+      // Papp 305 kallaði á það sem fall og villuboðin birtust því ALDREI — sú
+      // villa er skráð í textatap-sópinu. Þess vegna er typeof-tékkið hér, og
+      // þess vegna er `Toast.show` reynt næst (staðfest sýnilegt: position
+      // fixed, z-index 100100). Borðinn neðar er neyðarútgangur ef hvorugt er til.
+      if (typeof window.toast === 'function') { window.toast(skilabod); return; }
+      if (window.Toast && typeof Toast.show === 'function') { Toast.show(skilabod); return; }
+    } catch (_) {}
+    // Enginn toast til — þá má þetta ekki hverfa í console. Sjálfstæð borði.
+    try {
+      let b = document.getElementById('_as-vistvilla');
+      if (!b) {
+        b = document.createElement('div');
+        b.id = '_as-vistvilla';
+        b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:18px;' +
+          'z-index:2147483000;background:#7f1d1d;color:#fff;padding:10px 16px;border-radius:8px;' +
+          'font:600 13px/1.4 system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35);max-width:min(560px,92vw)';
+        b.addEventListener('click', () => b.remove());
+        document.body.appendChild(b);
+      }
+      b.textContent = skilabod + '  (smelltu til að loka)';
+    } catch (_) { console.error(skilabod); }
+  }
+
+  async function _tomaBidrod() {
+    if (!_bidrod.length) return;
+    const eftir = [];
+    while (_bidrod.length) {
+      const p = _bidrod.shift();
+      let ok = false;
+      try { ok = await save(p.patch); } catch (_) { ok = false; }
+      if (!ok) { p.tilraunir++; if (p.tilraunir < 12) eftir.push(p); }
+    }
+    _bidrod.push(...eftir);
+    if (!_bidrod.length) _segjaFra('✓ Vistun tókst — biðröðin er tóm.');
+  }
+
+  async function saveVordud(patch) {
+    const ok = await save(patch);
+    if (ok) return true;
+    _bidrod.push({ patch, tilraunir: 0 });
+    _segjaFra('⚠️ Vistun mistókst — geymt og reynt aftur. Ekki loka vafranum strax.');
+    if (!_bidTimer) {
+      _bidTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') _tomaBidrod();
+      }, 20000);
+    }
+    return false;
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') _tomaBidrod();
+  });
+  // Síðasta tilraun áður en síðan hverfur — sama regla og papp 365.
+  window.addEventListener('pagehide', () => { try { _tomaBidrod(); } catch (_) {} });
+
   window.AppSettings = {
-    get, path, save, load, onChange,
+    get, path, save: saveVordud, saveHrátt: save, bidrod: () => _bidrod.length, load, onChange,
     fmtPrice, fmtDate,
     defaults: DEFAULTS,
     isLoaded: () => _loaded,
