@@ -97,6 +97,10 @@
     }
   }
   function eldriBtn(card, fid) {
+    // 09.09.2026: 286 sækir núna ALLA póstsöguna sjálft (báðar heimildirnar,
+    // ekkert 30-þak) og býður upp á „⬇ Sýna öll samskiptin". Þessi takki sótti
+    // gömlu, þrengri RPC-söguna og myndi aðeins tvítaka — sleppum honum þá.
+    if (card.dataset.ollSagan === '1') return;
     const full = card.querySelector('._ssk-full'); if (!full || full.querySelector('._smx-eldri, ._smx-oldwrap')) return;
     const beidnirHead = [...full.children].find(el => /BEIÐNIR/.test(el.textContent || '') && el.querySelector && el.querySelector('div'));
     const btn = document.createElement('button');
