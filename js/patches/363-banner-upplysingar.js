@@ -143,9 +143,22 @@
   // ── Afsláttarlínan — lesin úr afsláttarkössunum (ein staðreynd) ──────────
   function afslattur(coId) {
     const main = document.getElementById('companies-main');
-    const sel = main && main.querySelector('._ahop-sel');          // 296 hópur
-    const inp = main && main.querySelector('._cad-inp');            // 255 %
-    const cpr = main && main.querySelector('._cpr-toggle');         // 113 tilboðsverð
+    // Kassarnir þrír bera `data-co-id`. Þeir mega ALDREI lesast fyrir annað
+    // félag en það sem bannerinn sýnir — meðan skipt er um fyrirtæki stendur
+    // gamli kassinn augnablik eftir, og þá hefði 15% frá fyrri kúnna birst á
+    // þeim næsta. Beri kaflinn annað auðkenni skilum við engu og föllum á
+    // fyrirtækjaröðina í staðinn.
+    const urKafla = (kafli, innri) => {
+      if (!main) return null;
+      const rettur = main.querySelector(kafli + '[data-co-id="' + coId + '"]');
+      if (rettur) return rettur.querySelector(innri);
+      const annar = main.querySelector(kafli);
+      if (annar && annar.getAttribute('data-co-id')) return null;   // tilheyrir ÖÐRU félagi
+      return main.querySelector(innri);                             // ómerktur kafli (eldra snið)
+    };
+    const sel = urKafla('._ahop-section', '._ahop-sel');            // 296 hópur
+    const inp = urKafla('._cad-section', '._cad-inp');              // 255 %
+    const cpr = urKafla('._cpr-section', '._cpr-toggle');           // 113 tilboðsverð
     let tilbod = 0;
     if (cpr) { const m = cpr.textContent.match(/Tilboðsverð\s*(\d+)/); if (m) tilbod = +m[1]; }
     const hopur = (sel && sel.value) ? (((sel.options[sel.selectedIndex] || {}).text) || '') : '';
@@ -192,6 +205,8 @@
     const P = ['html body #companies-main .' + HOLF + ' ',
                'html[data-thm-preset] body .view .co-banner .' + HOLF + ' '];
     const R = (endir, css) => P.map(p => p + endir + '{' + css + '}').join('\n      ');
+    // Sama vægi, en klasinn límdur á .co-bupp sjálft (ekkert bil).
+    const RB = (endir, css) => P.map(p => p.slice(0, -1) + endir + '{' + css + '}').join('\n      ');
     const s = document.createElement('style');
     s.id = '_bupp-css';
     s.textContent = `
@@ -217,12 +232,28 @@
         .${HOLF}{flex-basis:100%;margin-left:0;margin-top:10px}
       }
       html[data-viewmode="mobile"] .${HOLF},body.appmode .${HOLF}{flex-basis:100%;margin-left:0;margin-top:10px}
-      ${R('input.co-bupp-reitur._simi', 'font-size:16px;height:24px;line-height:24px')}
+      /* Hæðin kemur frá símalaginu (min-height 44px snertiflötur, mælt 48px) —
+         við setjum aðeins leturstærðina svo iOS þysji ekki inn. */
+      ${R('input.co-bupp-reitur._simi', 'font-size:16px')}
+      /* MÆLT 09.09.2026: sex línur bæta 271 px við bannerinn í símaham —
+         nær þrefalda hæð hans — og oftast eru þær AUÐAR. Agnar bað um daufar
+         línur, ekki 271 px af tómum merkimiðum ofan á hverju félagi í símanum.
+         Þar sýnum við því aðeins línur sem BERA eitthvað (auk afsláttarins);
+         víxl-takkinn opnar hinar þegar á að skrifa. Á tölvuskjá er nóg pláss
+         og allt sést. Þetta er útlitsval eins vafra → localStorage má. */
+      ${RB('._bupp-simi._bupp-thjappad ._bupp-lina._bupp-tomt', 'display:none')}
+      ${R('._bupp-vixl', 'display:none')}
+      ${RB('._bupp-simi ._bupp-vixl', 'display:block')}
+      ${R('._bupp-vixl', 'align-self:flex-start;margin-top:3px;padding:2px 0;background:none;border:0;font:inherit;font-size:11px;color:rgba(255,255,255,.5);cursor:pointer;text-decoration:underline;text-underline-offset:3px')}
+      ${R('._bupp-vixl:hover', 'color:rgba(255,255,255,.8)')}
     `;
     (document.head || document.documentElement).appendChild(s);
   }
   // Símahamur: 16px letur á reitina (annars þysjar iOS inn við fókus). Sett sem
   // klasi fremur en sér-regla svo uppblásna vægið gildi líka þar.
+  const OPID_LYKILL = 'bupp_opid';
+  function opid() { try { return localStorage.getItem(OPID_LYKILL) === '1'; } catch (_) { return false; } }
+  function setjaOpid(v) { try { localStorage.setItem(OPID_LYKILL, v ? '1' : '0'); } catch (_) {} }
   function simiHamur() {
     try {
       return document.documentElement.getAttribute('data-viewmode') === 'mobile' ||
@@ -241,7 +272,7 @@
             'value="' + esc(gildi(coId, l.merkiReitur)) + '" placeholder="' + esc(l.merkiHint) + '" ' +
             'title="Merki línunnar — þú ræður hvað fer hér">'
           : '<span class="_bupp-merki" title="' + esc(l.merki) + '">' + esc(l.merki) + '</span>';
-        return '<div class="_bupp-lina">' + merki +
+        return '<div class="_bupp-lina' + (v ? '' : ' _bupp-tomt') + '">' + merki +
           '<input class="co-bupp-reitur" data-reitur="' + l.reitur + '" maxlength="80" ' +
           'value="' + v + '" placeholder="' + esc(l.hint) + '" ' +
           'title="' + esc(l.merki || 'Frjáls lína') + ' — vistast strax"></div>';
@@ -249,7 +280,9 @@
       '<div class="_bupp-lina">' +
         '<span class="_bupp-merki">Afsláttur</span>' +
         '<span class="_bupp-afsl" title="' + esc(a.titill) + '">' + esc(a.texti) + '</span>' +
-      '</div>';
+      '</div>' +
+      '<button type="button" class="_bupp-vixl">' + (opid() ? '− Fela auðar línur' : '+ Fleiri upplýsingar') + '</button>';
+    thjappa(box);
 
     box.querySelectorAll('.co-bupp-reitur').forEach(inp => {
       inp.dataset.saved = inp.value;
@@ -264,6 +297,24 @@
       });
       inp.addEventListener('blur', () => { clearTimeout(inp._t); vista(inp); });
     });
+    const vixl = box.querySelector('._bupp-vixl');
+    if (vixl) {
+      vixl.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        setjaOpid(!opid());
+        vixl.textContent = opid() ? '− Fela auðar línur' : '+ Fleiri upplýsingar';
+        thjappa(box);
+      });
+      vixl.addEventListener('keydown', e => e.stopPropagation());
+    }
+  }
+
+  // Þjappað = auðar línur faldar. Báðir klasarnir eru settir í JS (ekki með
+  // ham-selectori í CSS) svo reglurnar geti farið gegnum R() og borið sama
+  // uppblásna vægi og hinar — annars tapa þær fyrir ._bupp-lina-reglunni.
+  function thjappa(box) {
+    box.classList.toggle('_bupp-simi', simiHamur());
+    box.classList.toggle('_bupp-thjappad', !opid());
   }
 
   // Uppfæra gildi sem komu að utan (önnur vél / AppSettings hlóðst) án þess að
@@ -277,7 +328,10 @@
       if (inp.value !== inp.dataset.saved) return;          // óvistuð breyting bíður
       const v = gildi(coId, inp.dataset.reitur);
       if (inp.value !== v) { inp.value = v; inp.dataset.saved = v; }
+      const lina = inp.closest('._bupp-lina');
+      if (lina && !inp.classList.contains('_bupp-merki-inp')) lina.classList.toggle('_bupp-tomt', !inp.value);
     });
+    thjappa(box);
     const afsl = box.querySelector('._bupp-afsl');
     if (afsl) {
       const a = afslattur(coId);
