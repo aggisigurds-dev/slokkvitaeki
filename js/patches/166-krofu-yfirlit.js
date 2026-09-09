@@ -552,6 +552,28 @@
     try { return localStorage.getItem(SORT_KEY) || 'updated_desc'; } catch (_) { return 'updated_desc'; }
   }
   function saveSort(v) { try { localStorage.setItem(SORT_KEY, v); } catch (_) {} }
+
+  // Sýnarsíu-flipar. Fyrstu FJÓRIR eru óbreyttir og keyra allir undir hörðu
+  // síunni `greitt_med = 'reikningur'` í load(). FIMMTI — 'sesthvergi'
+  // (2026-09-09) — er nákvæmlega hitt: allt sem sú sía getur ALDREI sýnt.
+  // Hann fer sína eigin leið (loadHvergi neðst í skránni) og snertir hvorki
+  // fyrirspurnina, bunkasendinguna né Payday-flæðið.
+  const VF_TABS = [
+    ['krofur',     '📋 Kröfur'],
+    ['osendar',    '📤 Ósendar'],
+    ['greiddar',   '✅ Greiddar'],
+    ['allt',       '📚 Allt'],
+    ['sesthvergi', '🔍 Sést hvergi'],
+  ];
+  // Sami flipa-borði fyrir allar sýnir — ein uppspretta svo þeir reki ekki í
+  // sundur. Skilar NÁKVÆMLEGA sama HTML og áður fyrir flipana fjóra.
+  function filterChipsHtml() {
+    return VF_TABS.map(([k, label]) => {
+      const on = (_state.viewFilter || 'krofur') === k;
+      return `<button class="_ky-vf filter-chip${on ? ' is-active' : ''}" data-vf="${k}" type="button" style="padding:6px 10px;font-size:12px">${label}</button>`;
+    }).join('');
+  }
+
   let _state = { month: null, all: [], vbByParent: {}, sort: loadSort(),
                  selected: new Set(), sending: false, stop: false, search: '',
                  // Sýnarsía: 'krofur' (útistandandi, eins og áður) · 'osendar' ·
@@ -605,6 +627,16 @@
 
     const m = filterMonth || new Date();
     _state.month = m;
+
+    // ── 🔍 Sést hvergi (2026-09-09) — FIMMTA sýnin, sjálfstæð leið ───────────
+    // Hún les allt ANNAÐ en `greitt_med='reikningur'` og má því ALDREI fara í
+    // gegnum fyrirspurnina hér að neðan. Greinin er tekin ÁÐUR en `q` er smíðuð
+    // svo hin fjögur sjónarhornin — og allt sem hangir á þeim (bunkaval,
+    // payday-push, Krafa send / Greitt / Afturkalla) — séu bókstaflega ósnert.
+    if ((_state.viewFilter || 'krofur') === 'sesthvergi') {
+      await loadHvergi(SB, main, thmWrap);
+      return;
+    }
 
     // ONLY reikningur — that's the "krafa í heimabanka 10 dagar" choice.
     // 'greitt_sidar' is excluded — it has its own page (Til að rukka).
@@ -1083,10 +1115,7 @@
           : ''}
 
         <div class="ky-filterbar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-          ${[['krofur','📋 Kröfur'],['osendar','📤 Ósendar'],['greiddar','✅ Greiddar'],['allt','📚 Allt']].map(([k, label]) => {
-            const on = (_state.viewFilter || 'krofur') === k;
-            return `<button class="_ky-vf filter-chip${on ? ' is-active' : ''}" data-vf="${k}" type="button" style="padding:6px 10px;font-size:12px">${label}</button>`;
-          }).join('')}
+          ${filterChipsHtml()}
           <button class="_ky-sync" type="button" title="Sækja greiðslustöðu úr Payday og merkja greiddar kröfur sjálfkrafa" style="padding:6px 10px;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;border:1px solid #0f7a43;background:linear-gradient(180deg,#17945a,#0f6e3a);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 3px 8px -4px rgba(0,0,0,.4)">🔄 Payday</button>
           <input class="_ky-search ky-navbtn darkfield" type="search" placeholder="🔍 Leita (nafn · kt · R-nr)…" value="${esc(_state.search)}" style="flex:1 1 160px;min-width:130px;margin-left:auto;padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:13px">
         </div>
@@ -2261,6 +2290,329 @@
       });
     }
   } catch (_) {}
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 🔍 SÉST HVERGI — fimmta sýnin (2026-09-09)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Hinar fjórar sýnirnar liggja allar undir hörðu síunni `greitt_med =
+  // 'reikningur'` (load(), ~lína 632). Allt sem er EKKI reikningur er þar með
+  // ÓSÝNILEGT í Kröfu yfirlitinu, sama hversu raunveruleg vinnan er — mælt
+  // 09.09.2026: 63 sölur, 614.018 kr sem enginn flipi getur sýnt.
+  //
+  //   • 12 sölur / 199.384 kr eru FÉLÖG  — þau eiga erindi í kröfu.
+  //   • 51 sala / 414.634 kr eru NÖFN/staðgreitt — nær örugglega afgreitt yfir
+  //     borðið, bara aldrei merkt greitt.
+  //
+  // Þessi sýn er VIÐBÓT: hún les sína eigin fyrirspurn, teiknar sína eigin síðu
+  // og hefur sínar tvær aðgerðir. Hún kallar hvorki render(), payday-push,
+  // bunkasendinguna né neitt af Krafa-send/Greitt/Afturkalla-flæðinu.
+  //
+  // EINSTEFNU-REGLAN (Agnar 2026-05-20, docs + minni): umbreytingin
+  // `greitt_sidar → reikningur` er EINSTEFNA. Hér er EIN skrifleið á
+  // `greitt_med` og hún skrifar EINGÖNGU strengbókstafinn 'reikningur'.
+  // Það er ENGINN afhökunar-takki, engin `greitt_med_prev`-geymsla og engin
+  // leið til baka — röð sem hefur verið breytt hverfur einfaldlega úr sýninni
+  // (hún er þá `reikningur` og fellur út úr fyrirspurninni).
+
+  // Félags-mynstur (sama og Agnar mældi með).
+  const HV_FELAG = /(ehf|hf|slf|sf|ses|ohf|húsfélag|husfelag|samtök|félag|verktakar|stofa)\b/i;
+  // „Sótt"-merkið er í dag FRJÁLS TEXTI inni í athugasemdum (t.d. „[Sótt
+  // 2026-08-24]"). LESIÐ hér, aldrei skrifað — hvort þetta eigi að verða
+  // alvöru dálkur er ákvörðun Agnars.
+  const HV_SOTT = /\[?\s*S[óo]tt\s*(\d{4}-\d{2}-\d{2})?/i;
+
+  let _hv = { felog: [], nofn: [], busy: false, villa: '', taldar: 0 };
+
+  function hvErFelag(nafn) { return HV_FELAG.test(String(nafn || '')); }
+  function hvSott(s) {
+    const a = String(s.athugasemdir || '');
+    const n = String(s.krafa_note || '');
+    const m = HV_SOTT.exec(a) || HV_SOTT.exec(n);
+    return m ? { found: true, dags: m[1] || '' } : { found: false, dags: '' };
+  }
+  function hvFinna(id) {
+    return (_hv.felog.concat(_hv.nofn)).find(x => String(x.id) === String(id)) || null;
+  }
+  function hvSum(arr) { return arr.reduce((s, x) => s + (parseFloat(x.samtals) || 0), 0); }
+
+  // ── Hleðsla ────────────────────────────────────────────────────────────────
+  async function loadHvergi(SB, main, thmWrap) {
+    _hv.villa = '';
+    try {
+      // Sían: allt sem hinar fjórar sýnirnar geta ALDREI sýnt.
+      //   greitt_med ≠ 'reikningur'  (null telst líka „ekki reikningur")
+      //   ógreitt (paid_at null) OG aldrei sent (krafa_sent_at / invoiced_at /
+      //   dk_invoice_id öll null) OG status ≠ 'void' OG samtals > 0.
+      const r = await SB.from('solur')
+        .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,status,athugasemdir,krafa_note,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of,source')
+        .or('greitt_med.is.null,greitt_med.neq.reikningur')
+        .is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null).is('dk_invoice_id', null)
+        .or('status.is.null,status.neq.void')
+        .gt('samtals', 0)
+        .order('created_at', { ascending: true });
+      if (r.error) throw new Error(r.error.message);
+      let rows = r.data || [];
+
+      // Kreditútilokun — sama regla og 166 gerir þegar (línur ~804-805): hvorki
+      // kreditfærslan sjálf né MÓÐIRIN sem hún bakfærir á heima hér, þær eru
+      // uppgerðar (nettó 0).
+      //
+      // ⚠️ Mæling 09.09.2026: kreditfærslurnar 36 bera ALLAR neikvæða `samtals`
+      // og detta því út á `.gt('samtals', 0)` hér að ofan. Væri `credit_of`
+      // safnað úr ÞESSU setti (eins og 804-805 gerir á sínu) yrði settið tómt
+      // og ÞRJÁR bakfærðar mæður slyppu inn — þar á meðal Tannlæknastofan
+      // Bæjarhrauni sf, 20.524 kr, sem hefði litið út eins og ósótt vinna.
+      // Þess vegna er `credit_of` sótt í sérfyrirspurn á allar kreditfærslur.
+      try {
+        const cr = await SB.from('solur').select('credit_of').eq('is_credit', true);
+        if (cr.error) throw new Error(cr.error.message);
+        const credited = new Set((cr.data || []).map(x => x.credit_of).filter(v => v != null).map(String));
+        rows = rows.filter(s => !s.is_credit && !credited.has(String(s.id)));
+      } catch (e) {
+        // Fail-LOUD: án kredit-útilokunar sýnir listinn uppgerðar sölur sem
+        // ósóttan pening. Þá er betra að segja það en að ljúga tölu.
+        throw new Error('Kredit-útilokun brást (' + (e.message || e) + ') — listinn er ekki birtur svo bakfærðar sölur líti ekki út fyrir að vera ósóttar.');
+      }
+
+      _hv.taldar = rows.length;
+      _hv.felog = rows.filter(s => hvErFelag(s.customer_nafn));
+      _hv.nofn  = rows.filter(s => !hvErFelag(s.customer_nafn));
+    } catch (e) {
+      _hv.felog = []; _hv.nofn = []; _hv.taldar = 0;
+      _hv.villa = String((e && e.message) || e);
+      try { if (window.logProblem) window.logProblem('sesthvergi_load_failed', _hv.villa.slice(0, 200)); } catch (_) {}
+    }
+    renderHvergi(main, thmWrap);
+  }
+
+  // ── Teikning ───────────────────────────────────────────────────────────────
+  function hvBadge(txt, tx, bg, bd, title) {
+    return '<span class="ky-num" title="' + esc(title || txt) + '" style="background:' + bg + ';color:' + tx + ';border:1px solid ' + bd +
+      ';padding:2px 7px;border-radius:99px;font-size:10.5px;font-weight:700;white-space:nowrap">' + esc(txt) + '</span>';
+  }
+
+  // Stílbútur fyrir sýnina EINA. Hann er lítill af ásettu ráði: nýja sýnin
+  // notar VILJANDI hvorki `.ky-row` né `.ky-card-rows`, því síma-CSS þeirra er
+  // `flex-wrap:nowrap !important; width:max-content !important` — raðirnar eru
+  // hannaðar til að skrunast lárétt inni í sínum kassa. Raðirnar hér eiga að
+  // BROTNA í staðinn (mælt: 820px röð í 375px skjá án skrunkassa = nafn,
+  // upphæð og báðir aðgerðahnappar úti í buskanum á símanum hans Agnars).
+  // Að sniðganga klasana er einfaldara og öruggara en að yfirbjóða `!important`.
+  function ensureHvStyle() {
+    if (document.getElementById('_hv-style')) return;
+    const st = document.createElement('style');
+    st.id = '_hv-style';
+    st.textContent =
+      '#view-krofu-yfirlit ._hv-row{display:flex;flex-wrap:wrap;align-items:center;gap:9px;' +
+        'padding:9px 16px;border-bottom:1px solid #f3f5f9;font-size:12.5px;box-sizing:border-box;width:100%}' +
+      '#view-krofu-yfirlit ._hv-row:hover{background:#f7f9fd}' +
+      '#view-krofu-yfirlit ._hv-row>*{flex-shrink:0}' +
+      '#view-krofu-yfirlit ._hv-nafn{flex:1 1 130px;min-width:0;font-weight:700;color:#11141c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '#view-krofu-yfirlit ._hv-msg{flex:0 0 100%;font-size:11.5px;font-weight:700;padding-top:4px}' +
+      '@media(max-width:640px){#view-krofu-yfirlit ._hv-nafn{flex:1 1 100%}' +
+        '#view-krofu-yfirlit ._hv-upph{margin-left:auto}}';
+    document.head.appendChild(st);
+  }
+
+  function hvRowHtml(s) {
+    const da = daysAgo(s.created_at);
+    const sott = hvSott(s);
+    const drog = String(s.status || '') === 'drog';
+    const gm = String(s.greitt_med || '—');
+    return `
+      <div class="_hv-row" data-id="${s.id}">
+        <div style="width:100px;flex-shrink:0;line-height:1.2">
+          <div class="ky-num" style="color:#1d4ed8;font-weight:700">${esc(s.num || '—')}</div>
+          <div class="ky-num" style="color:#64748b;font-size:11px">${fmtDate(s.created_at)}</div>
+        </div>
+        <span class="ky-num _hv-id" title="Söluauðkenni — solur.id" style="background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;padding:2px 7px;border-radius:6px;font-size:10.5px;font-weight:700;white-space:nowrap">id ${s.id}</span>
+        ${agingPill(da)}
+        ${hvBadge(gm, '#3730a3', '#eef2ff', '#c7d2fe', 'greitt_med = ' + gm)}
+        ${drog ? hvBadge('drög', '#9a3412', '#fff7ed', '#fed7aa', 'status = drog — kröfusending myndi lyfta henni í final') : ''}
+        ${sott.found
+          ? hvBadge('✅ Sótt' + (sott.dags ? ' ' + sott.dags : ''), '#047857', '#ecfdf5', '#a7f3d0', 'Fannst „Sótt" í athugasemdum/minnispunkti — FRJÁLS TEXTI, ekki alvöru dálkur')
+          : hvBadge('· ósótt?', '#94a3b8', '#f8fafc', '#e2e8f0', 'Ekkert „Sótt" í athugasemdum/minnispunkti. NB: merkið er frjáls texti — fjarvera þess sannar ekkert.')}
+        <div class="_hv-nafn" title="${esc(s.customer_nafn || '')}">${esc(s.customer_nafn || '(ekkert nafn)')}</div>
+        <span class="ky-num _hv-upph" style="min-width:88px;text-align:right;font-weight:700;color:#11141c;white-space:nowrap">${fmtKr(s.samtals)}</span>
+        <div style="display:flex;gap:6px">
+          ${kyAbtn('_hv-ikrofu', 'data-id="' + s.id + '"', '→', 'Í kröfu', '#1d4ed8', 'Setja greitt_med = „reikningur" svo salan komi inn í venjulega kröfuflæðið. EINSTEFNA — engin leið til baka.', false)}
+          ${kyAbtn('_hv-greitt', 'data-id="' + s.id + '"', '✓', 'Greitt', '#0f7a43', 'Merkja greidda: setur paid_at og paid_method = „' + gm + '". Fyrir kort/reiðufé sem gleymdist að merkja.', false)}
+        </div>
+        <div class="_hv-msg" style="display:none"></div>
+      </div>`;
+  }
+
+  function hvSectionHtml(titill, undirtitill, rows, litur, bg, bd) {
+    const total = hvSum(rows);
+    return `
+      <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)">
+        <div style="padding:13px 17px;border-bottom:1px solid #eef1f6;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:${bg};border-left:4px solid ${bd}">
+          <div>
+            <div style="font-weight:800;color:${litur};font-size:15px">${esc(titill)} · ${rows.length}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px">${esc(undirtitill)}</div>
+          </div>
+          <div class="ky-num" style="font-size:21px;font-weight:800;color:${litur};white-space:nowrap">${fmtKr(total)}</div>
+        </div>
+        <div class="_hv-rows">
+          ${rows.length
+            ? rows.slice().sort((a, b) => (parseFloat(b.samtals) || 0) - (parseFloat(a.samtals) || 0)).map(hvRowHtml).join('')
+            : '<div style="padding:26px;text-align:center;color:#94a3b8;font-style:italic">Ekkert í þessum flokki 🎉</div>'}
+        </div>
+      </div>`;
+  }
+
+  function renderHvergi(main, thmWrap) {
+    main = main || document.getElementById('ky-main');
+    if (!main) return;
+    ensureHvStyle();
+    if (inAppMode() && document.documentElement.dataset.viewmode !== 'mobile') {
+      try { applyViewMode('mobile', false); } catch (_) {}
+    }
+    const felog = _hv.felog, nofn = _hv.nofn;
+    const felogKr = hvSum(felog), nofnKr = hvSum(nofn);
+    const sottN = felog.concat(nofn).filter(s => hvSott(s).found).length;
+
+    main.innerHTML = `
+      <div class="thm"><div class="app-page"><main class="app-main">
+
+        <div class="page-title">
+          <div class="page-title__lead">
+            <span class="page-title__icon">🔍</span>
+            <div>
+              <h1>Sést hvergi</h1>
+              <p>Ógreidd, ósend vinna sem hinar fjórar sýnirnar geta ALDREI sýnt — af því að þær sía hart á greitt_med = „reikningur"</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-card stat-card--amber"><span class="stat-card__icon">🏢</span><div><div class="stat-card__label">Félög · ${felog.length} sölur</div><div class="stat-card__value ky-num">${fmtKr(felogKr)}</div></div></div>
+          <div class="stat-card"><span class="stat-card__icon">👤</span><div><div class="stat-card__label">Nöfn / staðgreitt · ${nofn.length} sölur</div><div class="stat-card__value ky-num">${fmtKr(nofnKr)}</div></div></div>
+          <div class="stat-card stat-card--hero"><span class="stat-card__icon">💰</span><div><div class="stat-card__label">Samtals ósýnilegt · ${felog.length + nofn.length} sölur · allir mánuðir</div><div class="stat-card__value ky-num">${fmtKr(felogKr + nofnKr)}</div></div></div>
+          <div class="stat-card stat-card--green"><span class="stat-card__icon">✅</span><div><div class="stat-card__label">Þar af merkt „Sótt" í texta</div><div class="stat-card__value ky-num">${sottN} af ${felog.length + nofn.length}</div></div></div>
+        </div>
+
+        <div class="ky-filterbar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+          ${filterChipsHtml()}
+          <button class="_hv-reload ky-navbtn" type="button" title="Endurhlaða listann" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:700;color:#475569">↻ Endurhlaða</button>
+        </div>
+
+        ${_hv.villa
+          ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:14px 17px;margin-bottom:14px;color:#b91c1c;font-size:13px;font-weight:700">⚠️ Listinn hlóðst EKKI: ${esc(_hv.villa)}</div>`
+          : ''}
+
+        <div class="ky-hint" style="font-size:12.5px;color:#1e293b;margin-bottom:14px;padding:11px 15px;background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18);line-height:1.5">
+          🔍 <b>Allir mánuðir</b> — óháð mánaðar-flettingunni. Sían er: greitt_med ≠ „reikningur" · ógreitt · aldrei sent · ekki void · upphæð &gt; 0 · hvorki kreditfærsla né bakfærð móðir.<br>
+          <b style="color:#1d4ed8">→ Í kröfu</b> setur greitt_med = „reikningur" svo salan komi inn í venjulega flæðið — <b>einstefna, engin leið til baka héðan</b>.
+          <b style="color:#0f7a43">✓ Greitt</b> stimplar paid_at fyrir kort/reiðufé sem gleymdist að merkja. Ein sala í einu, með staðfestingu.<br>
+          <span style="color:#64748b">„Sótt"-merkið er í dag <b>frjáls texti</b> í athugasemdum — það er LESIÐ hér, aldrei skrifað. Fjarvera þess sannar ekkert.</span>
+        </div>
+
+        ${hvSectionHtml('🏢 Félög', 'Þessi eiga erindi í kröfu — fyrirtæki borga sjaldnast yfir borðið', felog, '#b45309', '#fffbeb', '#f59e0b')}
+        ${hvSectionHtml('👤 Nöfn / staðgreitt', 'Líklega afgreitt yfir borðið — bara aldrei merkt greitt', nofn, '#0f172a', '#f8fafc', '#94a3b8')}
+
+      </main></div></div>
+      <div id="ky-bulkbar"></div>`;
+
+    // Flipar — sömu hlustarar og render() notar, svo skipt sé til baka.
+    main.querySelectorAll('._ky-vf').forEach(b => b.addEventListener('click', () => {
+      if (_state.viewFilter === b.dataset.vf) return;
+      _state.viewFilter = b.dataset.vf;
+      _state.selected.clear();
+      load(_state.month || new Date());
+    }));
+    main.querySelector('._hv-reload')?.addEventListener('click', () => load(_state.month || new Date()));
+    main.querySelectorAll('._hv-ikrofu').forEach(b => b.addEventListener('click', () => hvAdgerd(b, 'ikrofu')));
+    main.querySelectorAll('._hv-greitt').forEach(b => b.addEventListener('click', () => hvAdgerd(b, 'greitt')));
+  }
+
+  // ── Aðgerðir — EIN sala í einu, alltaf með staðfestingu ────────────────────
+  function hvSegja(btn, txt, litur) {
+    const row = btn.closest('._hv-row');
+    const box = row && row.querySelector('._hv-msg');
+    if (!box) { alert(txt); return; }
+    box.style.display = 'block';
+    box.style.color = litur;
+    box.textContent = txt;
+  }
+
+  async function hvAdgerd(btn, hvad) {
+    if (_hv.busy) {
+      hvSegja(btn, '⏳ Bíddu — önnur aðgerð er í gangi. Ein sala í einu.', '#b45309');
+      return;
+    }
+    const id = btn.dataset.id;
+    const s = hvFinna(id);
+    if (!s) { hvSegja(btn, '⚠️ Salan fannst ekki í listanum — endurhlaððu.', '#b91c1c'); return; }
+
+    const heiti = (s.num || '(ekkert nr.)') + ' · ' + (s.customer_nafn || '(ekkert nafn)');
+    const gm = String(s.greitt_med || '');
+    const drog = String(s.status || '') === 'drog';
+    let patch, spurn, godTxt;
+
+    if (hvad === 'ikrofu') {
+      // EINSTEFNA. Eina skrifleiðin á greitt_med í þessari skrá og hún skrifar
+      // eingöngu 'reikningur'. Ekkert greitt_med_prev, ekkert afturkall.
+      patch = { greitt_med: 'reikningur' };
+      // drög → final: sama regla og allar hinar frágangsleiðirnar fylgja —
+      // payday-push markSaleInvoiced (netlify/functions/payday-push.js ~467,
+      // „kröfusending LYFTIR stöðunni í final", Agnar 13.08.2026), patch 142
+      // „✅ Klára sölu" og patch 121 við Sótt ✓. Sat salan áfram sem 'drog'
+      // dytti hún út úr tekjuskýrslum sem sía á status='final'.
+      if (drog) patch.status = 'final';
+      spurn = '→ Í kröfu?\n\n' + heiti + '\n' + fmtKr(s.samtals) + '\n\n'
+        + 'Greiðslumáti fer úr „' + (gm || '(tómt)') + '" í „reikningur" svo salan komi inn í venjulega kröfuflæðið.\n'
+        + (drog ? 'Staðan fer úr „drög" í „final" — sama og kröfusending gerir.\n' : '')
+        + '\n⚠️ ÞETTA ER EINSTEFNA. Það er engin leið til baka héðan.';
+      godTxt = '✓ Komin í kröfu — birtist nú undir „📋 Kröfur"';
+    } else {
+      // paid_method speglar greitt_med, eins og POS gerir (js/pos.js:1410
+      // paid_method = pmLabel). ATH: sé greitt_med „greitt_sidar" er það EKKI
+      // raunverulegur greiðslumáti — staðfestingarglugginn segir það berum orðum.
+      patch = { paid_at: new Date().toISOString(), paid_method: s.greitt_med || null };
+      spurn = '✓ Merkja greitt?\n\n' + heiti + '\n' + fmtKr(s.samtals) + '\n\n'
+        + 'Skráður greiðslumáti (paid_method) verður: „' + (gm || '(tómt)') + '".\n'
+        + (/^(greitt_sidar)$/i.test(gm)
+            ? '\n⚠️ „greitt_sidar" segir ekki HVERNIG var greitt — það er staða, ekki greiðslumáti.\n   Viti sá sem merkir hvernig var borgað er réttara að skrá það í sölu-ritlinum.\n'
+            : '')
+        + '\nGreiðslumátinn (greitt_med) breytist EKKI.';
+      godTxt = '✓ Merkt greitt';
+    }
+
+    if (!confirm(spurn)) return;
+
+    const SB = getSB();
+    if (!SB) { hvSegja(btn, '⚠️ Engin gagnabankatenging — EKKERT var vistað.', '#b91c1c'); return; }
+
+    _hv.busy = true;
+    const orig = btn.innerHTML;
+    btn.disabled = true; btn.style.opacity = '.5';
+    // Læsa ÖLLUM aðgerðahnöppum meðan þessi eina keyrir.
+    const allir = Array.from(document.querySelectorAll('#ky-main ._hv-ikrofu, #ky-main ._hv-greitt'));
+    allir.forEach(x => { x.disabled = true; });
+    try {
+      let r;
+      try { r = await SB.from('solur').update(patch).eq('id', id); }
+      catch (e) { r = { error: e }; }
+      if (r && r.error) {
+        const msg = (r.error && r.error.message) || String(r.error);
+        hvSegja(btn, '⚠️ Vistaðist EKKI: ' + msg, '#b91c1c');
+        try { if (window.logProblem) window.logProblem('sesthvergi_' + hvad + '_failed', 'sala ' + id + ': ' + String(msg).slice(0, 160)); } catch (_) {}
+        btn.innerHTML = orig; btn.style.opacity = '';
+        return;
+      }
+      hvSegja(btn, godTxt, '#0f7a43');
+      if (window.Toast && Toast.show) Toast.show(godTxt);
+      _hv.busy = false;
+      await load(_state.month || new Date());
+      refreshBadge();
+      return;
+    } finally {
+      _hv.busy = false;
+      allir.forEach(x => { x.disabled = false; });
+      btn.disabled = false; btn.style.opacity = '';
+    }
+  }
 
   window.KrofuYfirlit = { show, load, refreshBadge, getViewMode, setViewMode: (m) => applyViewMode(m, true) };
   console.log('[patch-166] Kröfu yfirlit installed — krafa í heimabanka per fyrirtæki');

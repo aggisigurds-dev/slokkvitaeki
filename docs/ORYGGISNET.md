@@ -344,6 +344,44 @@ baseline rows and lowering the constant is how the net tightens over time.
   ⚠️ Sama gildra á við `._ars-morow` og `._ars-statusrow` — báðar hafa líka
   `overflow-x:auto`. Hengi einhver popup þar seinna þarf sömu meðferð.
   Invoice OUT / payday / kt-save / readiness (153/187) ósnert — `netvordur`: SAFE.
+- **2026‑09‑09** — **„🔍 Sést hvergi" + einstefnu‑vörður.**
+  Kröfu yfirlitið síar hart á `greitt_med = 'reikningur'` (`166` `load()`). Allt
+  annað er ÓSÝNILEGT þar, sama hversu raunveruleg vinnan er — mælt á lifandi
+  gögnum í dag: **63 sölur, 614.018 kr** sem enginn fliparnir fjórir gat sýnt
+  (12 félög / 199.384 kr · 51 nöfn‑staðgreitt / 414.634 kr). Fimmti flipinn
+  birtir nákvæmlega það mengi, í tveimur aðskildum flokkum, með söluauðkenni í
+  hverri línu og tveimur aðgerðum (**→ Í kröfu**, **✓ Merkja greitt**) — ein
+  sala í einu, alltaf með staðfestingu sem sýnir upphæð og nafn.
+  **Bætt VIÐ, ekki umskrifað:** greinin fyrir `'sesthvergi'` er tekin ÁÐUR en
+  kröfu‑fyrirspurnin er smíðuð og fer sína eigin leið (`loadHvergi`), svo
+  fyrirspurnin, bunkavalið, `payday-push`, Krafa‑send / Greitt / Afturkalla og
+  hinar fjórar sýnirnar eru bókstaflega ósnertar. Í nýju sýninni mælast
+  `._ky-pick` 0, `._ky-krafa-toggle` 0 og bunkaborðinn tómur.
+  **Einstefnan** (Agnar 20.05.2026: `greitt_sidar → reikningur` er EINSTEFNA):
+  í ALLRI skránni er nú nákvæmlega EIN skrifleið á `greitt_med` og hún skrifar
+  strengbókstafinn `'reikningur'` — ekkert `greitt_med_prev`, enginn afhökunar‑
+  takki, engin leið til baka. `drög → final` fylgir sömu reglu og allar hinar
+  frágangsleiðirnar (`payday-push` `markSaleInvoiced`, `142` „Klára sölu",
+  `121` við Sótt ✓) svo salan detti ekki úr tekjuskýrslum sem sía á `final`.
+  **Gildran sem fannst í leiðinni:** kreditfærslurnar 36 bera ALLAR neikvæða
+  `samtals` og detta út á `samtals > 0`. Væri `credit_of` safnað úr eigin setti
+  (eins og `166` gerir annars staðar, ~805) yrði settið tómt og **þrjár
+  bakfærðar mæður** slyppu inn og litu út eins og ósótt vinna — þ.á m.
+  Tannlæknastofan Bæjarhrauni sf, 20.524 kr. `credit_of` er því sótt í
+  sérfyrirspurn á `is_credit=true`, og útilokunin er fail‑LOUD.
+  **„Sótt"‑merkið er LESIÐ, aldrei skrifað** — það er enn frjáls texti í
+  `athugasemdir`/`krafa_note` (1 af 63 merkt). Fjarvera þess sannar ekkert og
+  sýnin segir það.
+  Nýtt audit `tools/audit-einstefna-krofu.cjs` (GRUNNLÍNA 0) sannar allt
+  ofangreint: ein skrifleið með réttu gildi, ekkert `greitt_med_prev`, harða
+  sían stendur, `'sesthvergi'` tekið fyrir fyrirspurnina, og engin kreditfærsla
+  né bakfærð móðir í mengi sýnarinnar. Hegðunarprófað með ígræddri afturkalls‑
+  línu → RAUTT, skrá skilað (md5 óbreytt) → GRÆNT. `audit-all` 33/33.
+  Prófað í viðmótinu á sölu 632 (R-000586 „test", 1.426 kr): báðar aðgerðir
+  keyrðar, staðfestingargluggarnir lesnir, DB staðfest, salan birtist í
+  „📋 Kröfur" eftir umbreytinguna, hermd Supabase‑villa sýndi rauða villu +
+  `logProblem` og skrifaði EKKERT — og prófgögnunum skilað í fyrra horf
+  (`greitt_sidar` / `drog` / `paid_at` null), staðfest bæði í DB og viðmóti.
 - *Add a line here every time you make something bulletproof.*
 
 ---
