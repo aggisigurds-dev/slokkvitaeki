@@ -56,12 +56,25 @@ if (!/_rows\.length === 1/.test(attachChunk)) {
   fail('invoice attach no longer requires a unique-kt match when co_id is missing.');
 }
 
-const autoLink = pos.slice(pos.indexOf('If this kt already belongs to a COMPANY'), pos.indexOf('If this kt already belongs to a COMPANY') + 1600);
+// 2026-09-09: auto-link block var endurskrifað í kanónísku leiðina (customers_base
+// + fyrirtaeki). Reglan stendur óbreytt: POS setur solur.customer_id AÐEINS þegar
+// nákvæmlega eitt fyrirtæki ber kt-ina; fjölstaða (rekstrarfélag) fær
+// customer_base_id (entity) en ALDREI giskaðan customer_id á fyrsta hótelið.
+const autoLink = pos.slice(pos.indexOf('Auto-stofna kúnna fyrir nýja kennitölu'), pos.indexOf('Auto-stofna kúnna fyrir nýja kennitölu') + 3700);
+if (!autoLink || autoLink.length < 200) {
+  fail('POS auto-create block not found (anchor "Auto-stofna kúnna fyrir nýja kennitölu").');
+}
 if (/from\('fyrirtaeki'\)[\s\S]{0,280}\.limit\(1\)\.maybeSingle\(\)/.test(autoLink)) {
   fail('POS auto-link still .limit(1).maybeSingle() a shared kt onto solur.customer_id.');
 }
 if (!/fyRows\.length===1/.test(autoLink) && !/fyRows.length === 1/.test(autoLink)) {
-  fail('POS auto-link no longer requires exactly one fyrirtaeki row.');
+  fail('POS auto-link no longer sets customer_id only for a unique (length===1) kt.');
+}
+if (!/else if\(fyRows\.length>1\)/.test(autoLink) && !/else if \(fyRows\.length > 1\)/.test(autoLink)) {
+  fail('POS auto-link lost the multi-site branch — a rekstrarfélag kt must set base_id only.');
+}
+if (!/if\(custId!=null\)_u\.customer_id/.test(autoLink) && !/if \(custId != null\) _u\.customer_id/.test(autoLink)) {
+  fail('POS auto-link no longer writes customer_id conditionally on a resolved unique id — could guess a site.');
 }
 
 if (!/pickBest/.test(pos) || !/arr\.length === 1/.test(pos.slice(pos.indexOf('function pickBest'), pos.indexOf('function pickBest') + 900))) {
