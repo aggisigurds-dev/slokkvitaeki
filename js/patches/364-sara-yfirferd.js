@@ -29,6 +29,8 @@
   var HOST_ID = 'vb-sara';
   var LS_OPIN = 'sara_yf_opin';      // samanbrot — útlitsval, má vera staðbundið
   var LS_KLARAD = 'sara_yf_klarad';  // „sýna kláruð" — sama
+  var LS_HAMUR = 'sara_yf_vinnuhamur'; // vinnuhamur — útlitsval eins vafra
+  var BUCKET = 'verkbord-files';       // sama geymsla og Þjónustuborðið notar
 
   function sb() { return window.DB && DB.sb; }
   function esc(s) {
@@ -55,17 +57,32 @@
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (_) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
 
-  var state = { rows: [], sott: false, villa: '', opin: lsGet(LS_OPIN, []), synaKlarad: lsGet(LS_KLARAD, false) };
+  var state = { rows: [], sott: false, villa: '', opin: lsGet(LS_OPIN, []),
+    synaKlarad: lsGet(LS_KLARAD, false), storMynd: [], vinnuhamur: lsGet(LS_HAMUR, false) };
 
   // ── Reikningur per mál ───────────────────────────────────────────────────
-  // Sömu tölur og reiknivélin á fyrirtækjasíðunni: línur + akstur × verð +
-  // skýrslugerð. Allt m/vsk (verðin í verðskránni eru m/vsk).
-  function linur(r) { return Array.isArray(r.linur) ? r.linur : []; }
-  function linaSamtals(l) { return (Number(l.n) || 0) * (Number(l.v) || 0); }
-  function samtals(r) {
-    var s = linur(r).reduce(function (a, l) { return a + linaSamtals(l); }, 0);
-    return s + (Number(r.akstur) || 0) * (Number(r.akstur_verd) || 0) + (Number(r.skyrslugerd) || 0);
+  // NÁKVÆMLEGA sama reikniaðferð og reiknivélin á fyrirtækjasíðunni (patch 129):
+  // einingaverð eru ÁN VSK, VSK leggst ofan á, akstur og skýrslugerð sömuleiðis.
+  // Borðið sagði áður 43.228 kr þar sem appið sagði 48.136 — af því það notaði
+  // m/vsk-verð og gömlu sjálfgildin 3.000/3.500 úr verd.md. Sjálfgildin eru nú
+  // lesin úr window.SlokkVisitDefaults, sem 129 lýsir sem EINU heimildinni.
+  function sjalfgildi() {
+    var d = window.SlokkVisitDefaults || {};
+    return { akstur: Number(d.akstur) || 3600, skyrslugerd: Number(d.skyrslugerd) || 5600 };
   }
+  function linur(r) { return Array.isArray(r.linur) ? r.linur : []; }
+  function linaEx(l) { return (Number(l.n) || 0) * (Number(l.v) || 0); }
+  function linaVsk(l) { return linaEx(l) * ((Number(l.vsk) == null ? 24 : Number(l.vsk)) / 100); }
+  function reikna(r) {
+    var ex = 0, vsk = 0;
+    linur(r).forEach(function (l) { ex += linaEx(l); vsk += linaVsk(l); });
+    var akEx = (Number(r.akstur) || 0) * (Number(r.akstur_verd) || 0);
+    var skEx = Number(r.skyrslugerd) || 0;
+    ex += akEx + skEx;
+    vsk += (akEx + skEx) * 0.24;
+    return { ex: ex, vsk: vsk, total: ex + vsk };
+  }
+  function samtals(r) { return reikna(r).total; }
   function synilegar() {
     return state.rows.filter(function (r) {
       return state.synaKlarad ? true : (r.stada === 'bidur' || r.stada === 'samthykkt');
@@ -148,6 +165,18 @@
       'font:inherit;font-size:11.5px;font-weight:700;cursor:pointer}',
       '.syf-btn:hover{background:#f1f5f9}',
       '.syf-merki{font-size:10px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:99px;white-space:nowrap;flex:none}',
+      // Vinnuhamur (ósk Agnars 09.09.2026: „gefa þessu meira pláss, taka burtu
+      // óþarfa hluti þegar ég er að vinna í þessu"). Klasinn situr á #vb-main
+      // sem 231 endurteiknar EKKI — aðeins innihaldið — svo hamurinn lifir af
+      // hverja endurteikningu borðsins.
+      '#vb-main.syf-hamur #vb-dagskra,#vb-main.syf-hamur #vb-skipulag,#vb-main.syf-hamur #vb-ai-slot,',
+      '#vb-main.syf-hamur #vb-composer,#vb-main.syf-hamur #vb-controls,#vb-main.syf-hamur #vb-toprow,',
+      '#vb-main.syf-hamur #vb-list,#vb-main.syf-hamur #vb-sel{display:none !important}',
+      '#vb-main.syf-hamur .vb-split{grid-template-columns:minmax(0,1fr) !important}',
+      '#vb-main.syf-hamur .syf-tvo{grid-template-columns:1fr 1fr}',
+      '#vb-main.syf-hamur .syf-body{padding:16px;gap:14px}',
+      '#vb-main.syf-hamur .syf-tafla{font-size:13.5px}',
+      '#vb-main.syf-hamur .syf-box pre{font-size:13px}',
     ].join('');
     document.head.appendChild(s);
   }
@@ -181,17 +210,43 @@
         '<div class="syf-box"><h5>🗄 Kerfið segir núna</h5><pre>' + esc(r.kerfi || '—') + '</pre></div>' +
       '</div>';
 
+    // Skannaða vinnublaðið — svo hægt sé að staðfesta lesturinn með eigin augum.
+    // Agnar 09.09.2026: „svona bara svo eg get verið 100% að sé rétt lesið".
+    var stor = state.storMynd.indexOf(r.id) !== -1;
+    h += '<div class="syf-box" style="background:#fff">' +
+      '<h5 style="display:flex;align-items:center;gap:8px">📎 Vinnublaðið' +
+        (r.mynd_url ? '<button class="syf-btn" style="padding:1px 8px;font-size:10.5px" data-act="stor-mynd" data-id="' + r.id + '">' +
+          (stor ? '⤡ Minnka' : '⤢ Stækka') + '</button>' +
+          '<a class="syf-btn" style="padding:1px 8px;font-size:10.5px;text-decoration:none" target="_blank" rel="noopener" href="' + esc(r.mynd_url) + '">↗ Opna</a>' : '') +
+        '<span style="flex:1"></span>' +
+        '<label class="syf-btn" style="padding:1px 8px;font-size:10.5px;cursor:pointer;font-weight:700">' +
+          (r.mynd_url ? '↻ Skipta um' : '＋ Setja inn skann') +
+          '<input type="file" accept="image/*,application/pdf" style="display:none" data-act="mynd-inn" data-id="' + r.id + '">' +
+        '</label>' +
+      '</h5>' +
+      (r.mynd_url
+        ? '<img src="' + esc(r.mynd_url) + '" alt="Vinnublað — ' + esc(r.fyrirtaeki) + '" ' +
+          'style="display:block;width:100%;max-height:' + (stor ? '1400px' : '260px') + ';object-fit:contain;object-position:top;' +
+          'border:1px solid #e5e9f0;border-radius:8px;background:#f8fafc;cursor:zoom-' + (stor ? 'out' : 'in') + '" ' +
+          'data-act="stor-mynd" data-id="' + r.id + '">'
+        : '<div style="padding:10px;color:#94a3b8;font-size:12px">Enginn skann tengdur. Blaðið kom sem mynd í spjalli og er hvergi vistað — settu það inn hér og þá stendur það með málinu.</div>') +
+      '</div>';
+
     // Línurnar — fjöldi og verð breytanleg, samtals reiknast.
+    var t = reikna(r);
     h += '<div style="overflow-x:auto"><table class="syf-tafla"><thead><tr>' +
       '<th>Liður</th><th style="width:66px;text-align:right">Fjöldi</th>' +
-      '<th style="width:96px;text-align:right">Verð</th><th style="width:96px;text-align:right">Samtals</th>' +
+      '<th style="width:104px;text-align:right">Per stk án vsk</th>' +
+      '<th style="width:52px;text-align:center">VSK</th>' +
+      '<th style="width:104px;text-align:right">Samtals án vsk</th>' +
       '<th style="width:26px"></th></tr></thead><tbody>';
     ls.forEach(function (l, i) {
       h += '<tr>' +
         '<td><input class="syf-inp" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="l" value="' + esc(l.l) + '"></td>' +
         '<td><input class="syf-inp n" type="number" min="0" step="1" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="n" value="' + (Number(l.n) || 0) + '"></td>' +
         '<td><input class="syf-inp n" type="number" min="0" step="1" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="v" value="' + (Number(l.v) || 0) + '"></td>' +
-        '<td class="n" style="font-weight:700">' + kr(linaSamtals(l)) + '</td>' +
+        '<td style="text-align:center"><input class="syf-inp n" style="width:44px;padding:4px 3px;text-align:center" type="number" min="0" max="100" step="1" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="vsk" value="' + (l.vsk == null ? 24 : Number(l.vsk)) + '"></td>' +
+        '<td class="n" style="font-weight:700">' + kr(linaEx(l)) + '</td>' +
         '<td><button class="syf-btn" style="padding:2px 6px" data-act="eyda-lina" data-id="' + r.id + '" data-i="' + i + '" title="Eyða línu">✕</button></td>' +
       '</tr>';
     });
@@ -199,17 +254,23 @@
         '<td style="color:#475569">🚗 Akstur</td>' +
         '<td><input class="syf-inp n" type="number" min="0" step="1" data-act="reit" data-id="' + r.id + '" data-f="akstur" value="' + (Number(r.akstur) || 0) + '"></td>' +
         '<td><input class="syf-inp n" type="number" min="0" step="1" data-act="reit" data-id="' + r.id + '" data-f="akstur_verd" value="' + (Number(r.akstur_verd) || 0) + '"></td>' +
+        '<td style="text-align:center;color:#94a3b8;font-size:11px">24%</td>' +
         '<td class="n" style="font-weight:700">' + kr((Number(r.akstur) || 0) * (Number(r.akstur_verd) || 0)) + '</td><td></td>' +
       '</tr>' +
       '<tr>' +
         '<td style="color:#475569">📋 Skýrslugerð</td><td class="n" style="color:#94a3b8">1</td>' +
         '<td><input class="syf-inp n" type="number" min="0" step="1" data-act="reit" data-id="' + r.id + '" data-f="skyrslugerd" value="' + (Number(r.skyrslugerd) || 0) + '"></td>' +
+        '<td style="text-align:center;color:#94a3b8;font-size:11px">24%</td>' +
         '<td class="n" style="font-weight:700">' + kr(r.skyrslugerd) + '</td><td></td>' +
       '</tr>' +
-      '</tbody><tfoot><tr>' +
-        '<td colspan="3" style="text-align:right;font-weight:800;padding-top:7px">SAMTALS m/vsk</td>' +
-        '<td class="n" style="font-weight:900;font-size:14px;padding-top:7px">' + kr(samtals(r)) + '</td><td></td>' +
-      '</tr></tfoot></table></div>' +
+      '</tbody><tfoot>' +
+        '<tr><td colspan="4" style="text-align:right;color:#475569;padding-top:7px">Án vsk</td>' +
+          '<td class="n syf-ex" style="font-weight:700;padding-top:7px">' + kr(t.ex) + '</td><td></td></tr>' +
+        '<tr><td colspan="4" style="text-align:right;color:#475569">VSK</td>' +
+          '<td class="n syf-vsk" style="font-weight:700">' + kr(t.vsk) + '</td><td></td></tr>' +
+        '<tr><td colspan="4" style="text-align:right;font-weight:800">SAMTALS m. vsk</td>' +
+          '<td class="n syf-tot" style="font-weight:900;font-size:14px">' + kr(t.total) + '</td><td></td></tr>' +
+      '</tfoot></table></div>' +
       '<div><button class="syf-btn" data-act="ny-lina" data-id="' + r.id + '">+ Bæta við línu</button></div>';
 
     // Skýrslutextinn
@@ -221,11 +282,13 @@
         'placeholder="Öll slökkvitæki yfirfarin og vottuð í lagi.">' + esc(r.texti || '') + '</textarea>' +
       '</div>';
 
-    // Athugasemd Agnars
+    // Athugasemd Agnars — þetta er reiturinn sem Sara LÆRIR af. Hann er lesinn
+    // þegar hakið kemur og fer inn í Charlize/skillinn ef hann segir reglu.
     h += '<div>' +
-      '<div style="font-size:10px;font-weight:800;letter-spacing:.08em;color:#64748b;text-transform:uppercase;margin-bottom:4px">✍ Athugasemd til Söru</div>' +
+      '<div style="font-size:10px;font-weight:800;letter-spacing:.08em;color:#64748b;text-transform:uppercase;margin-bottom:4px">' +
+        '✍ Til Söru — leiðréttingar og það sem hún á að læra</div>' +
       '<textarea class="syf-ta" rows="2" data-act="reit" data-id="' + r.id + '" data-f="athugasemd" ' +
-        'placeholder="t.d. „slöngurnar eru 25 m" eða „slepptu akstri"">' + esc(r.athugasemd || '') + '</textarea>' +
+        'placeholder="t.d. „bara eitt verð á slönguyfirferð" · „slepptu akstri" · „þetta er ekki búið"">' + esc(r.athugasemd || '') + '</textarea>' +
       '</div>';
 
     // Neðsta röð: skoðunarmaður · mánuður · dagsetning + tenglar
@@ -260,6 +323,9 @@
         (bidurN ? '<span class="syf-merki" style="background:#fef3c7;color:#854d0e">' + bidurN + ' bíða</span>' : '') +
         (samthN ? '<span class="syf-merki" style="background:#dbeafe;color:#1e40af">' + samthN + ' samþykkt</span>' : '') +
         '<span style="color:#e2e8f0;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums">' + kr(heild) + '</span>' +
+        '<button class="syf-btn" data-act="vinnuhamur" title="Fela síur, flokka og VALIÐ MÁL — borðið fær alla breiddina" ' +
+          'style="background:' + (state.vinnuhamur ? '#16a34a' : '#1f2937') + ';color:#e5e7eb;border-color:' + (state.vinnuhamur ? '#15803d' : '#374151') + '">' +
+          (state.vinnuhamur ? '⛶ Vinnuhamur á' : '⛶ Vinnuhamur') + '</button>' +
         '<button class="syf-btn" data-act="endurhlada" style="background:#1f2937;color:#e5e7eb;border-color:#374151">↻</button>' +
       '</div>' +
       '<div style="padding:12px;display:flex;flex-direction:column;gap:9px">';
@@ -286,6 +352,17 @@
     var row = state.rows.find(function (x) { return x.id === id; });
 
     if (act === 'endurhlada') { state.sott = false; teikna(); saekja(); return; }
+    if (act === 'vinnuhamur') {
+      state.vinnuhamur = !state.vinnuhamur; lsSet(LS_HAMUR, state.vinnuhamur);
+      settaHam(); teikna();
+      if (state.vinnuhamur) { var hst = document.getElementById(HOST_ID); if (hst) hst.scrollIntoView({ block: 'start' }); }
+      return;
+    }
+    if (act === 'stor-mynd') {
+      var mx = state.storMynd.indexOf(id);
+      if (mx === -1) state.storMynd.push(id); else state.storMynd.splice(mx, 1);
+      teikna(); return;
+    }
     if (act === 'toggle-klarad') { state.synaKlarad = !state.synaKlarad; lsSet(LS_KLARAD, state.synaKlarad); teikna(); return; }
     if (act === 'opna') {
       var ix = state.opin.indexOf(id);
@@ -364,15 +441,57 @@
     var ls = linur(row);
     var tds = mal.querySelectorAll('tbody tr');
     for (var i = 0; i < ls.length && i < tds.length; i++) {
-      var c = tds[i].querySelectorAll('td')[3];
-      if (c) c.textContent = kr(linaSamtals(ls[i]));
+      var c = tds[i].querySelectorAll('td')[4];
+      if (c) c.textContent = kr(linaEx(ls[i]));
     }
     var akstRow = tds[ls.length], skyrRow = tds[ls.length + 1];
-    if (akstRow) { var ac = akstRow.querySelectorAll('td')[3]; if (ac) ac.textContent = kr((Number(row.akstur) || 0) * (Number(row.akstur_verd) || 0)); }
-    if (skyrRow) { var sc = skyrRow.querySelectorAll('td')[3]; if (sc) sc.textContent = kr(row.skyrslugerd); }
-    var foot = mal.querySelector('tfoot .n'); if (foot) foot.textContent = kr(samtals(row));
-    var hd = mal.querySelector('.syf-tala'); if (hd) hd.textContent = kr(samtals(row));
+    if (akstRow) { var ac = akstRow.querySelectorAll('td')[4]; if (ac) ac.textContent = kr((Number(row.akstur) || 0) * (Number(row.akstur_verd) || 0)); }
+    if (skyrRow) { var sc = skyrRow.querySelectorAll('td')[4]; if (sc) sc.textContent = kr(row.skyrslugerd); }
+    var t = reikna(row);
+    var ex = mal.querySelector('.syf-ex'); if (ex) ex.textContent = kr(t.ex);
+    var vs = mal.querySelector('.syf-vsk'); if (vs) vs.textContent = kr(t.vsk);
+    var to = mal.querySelector('.syf-tot'); if (to) to.textContent = kr(t.total);
+    var hd = mal.querySelector('.syf-tala'); if (hd) hd.textContent = kr(t.total);
   }
+
+  // Vinnuhamurinn er klasi á #vb-main. 231 skrifar yfir innihaldið en ekki
+  // elementið sjálft, svo hann helst — en festa() setur hann samt aftur til
+  // öryggis ef borðið er byggt upp á nýtt frá grunni.
+  function settaHam() {
+    var main = document.getElementById('vb-main');
+    if (main) main.classList.toggle('syf-hamur', !!state.vinnuhamur);
+  }
+
+  // ── Skann af vinnublaðinu ───────────────────────────────────────────────
+  // Fer í sömu geymslu og viðhengi Þjónustuborðsins (verkbord-files) og
+  // slóðin geymist á málinu, svo hún sést á öllum vélum.
+  document.addEventListener('change', async function (e) {
+    var el = e.target;
+    if (!el || !el.dataset || el.dataset.act !== 'mynd-inn') return;
+    var host = document.getElementById(HOST_ID);
+    if (!host || !host.contains(el)) return;
+    var f = el.files && el.files[0]; if (!f) return;
+    var id = +el.dataset.id;
+    var s = sb(); if (!s) return;
+    var merki = el.parentNode;
+    var gamallTexti = merki ? merki.firstChild.textContent : '';
+    if (merki && merki.firstChild) merki.firstChild.textContent = '⏳ Hleð upp…';
+    try {
+      var hreint = String(f.name || 'skann').replace(/[^\w.\-]+/g, '_');
+      var slod = 'sara/' + id + '/' + Date.now() + '_' + hreint;
+      var up = await s.storage.from(BUCKET).upload(slod, f, { contentType: f.type || 'application/octet-stream', upsert: false });
+      if (up.error) throw up.error;
+      var pub = s.storage.from(BUCKET).getPublicUrl(slod);
+      var url = pub && pub.data && pub.data.publicUrl;
+      if (!url) throw new Error('Fékk enga slóð á skjalið');
+      vista(id, { mynd_url: url }, true);
+      teikna();
+      if (window.Toast && Toast.show) Toast.show('📎 Skann tengt við málið');
+    } catch (err) {
+      if (merki && merki.firstChild) merki.firstChild.textContent = gamallTexti;
+      alert('Upphleðsla brást: ' + ((err && err.message) || err));
+    }
+  }, false);
 
   // ── Festing á borðið ────────────────────────────────────────────────────
   // 231 skrifar yfir allt #vb-main við hverja renderAll, svo hýsingarreiturinn
@@ -384,6 +503,7 @@
     var host = document.createElement('div');
     host.id = HOST_ID;
     toprow.parentNode.insertBefore(host, toprow);
+    settaHam();
     teikna();
     if (!state.sott) saekja();
   }

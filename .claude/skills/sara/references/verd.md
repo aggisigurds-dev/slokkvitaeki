@@ -2,11 +2,26 @@
 
 ## Akstursreglan
 
-**Fari eitthvað tæki í hleðslu verður akstur `2 × 3.000 kr`.** Hleðsla þýðir að tækið er
+**Fari eitthvað tæki í hleðslu verður akstur `2 ×`.** Hleðsla þýðir að tækið er
 tekið á verkstæðið og skilað aftur — tvær ferðir. Sé allt yfirfarið á staðnum stendur
 akstur í `1`.
 
-Reiturinn er neðst í reikningsblokkinni, við hliðina á Skýrslugerð (3.500 kr).
+Reiturinn er neðst í reikningsblokkinni, við hliðina á Skýrslugerð.
+
+### Upphæðirnar — EIN heimild, ekki þessi skrá
+
+`window.SlokkVisitDefaults` í `129-company-total-cost.js`: **akstur 3.600 kr, skýrslugerð
+5.600 kr, hvort tveggja ÁN VSK.** Bæði kostnaðartaflan og reikningsleiðin (165) lesa þaðan.
+
+Þessi skrá sagði 3.000/3.500 fram til 09.09.2026 og var úrelt: Sara-borðið afritaði þær
+tölur og sagði Hagstál 43.228 kr þar sem appið sagði **48.136**. **Lestu breytuna, ekki
+töfluna.** Sama gildir um öll verð hér: þau eru til viðmiðunar, appið á síðasta orðið.
+
+### Án vsk vs m/vsk
+
+Reikningurinn færir **einingaverð ÁN VSK** og leggur 24% ofan á — líka á akstur og
+skýrslugerð. Verðin í töflunni hér að neðan eru m/vsk til viðmiðunar; deildu með 1,24
+til að fá töluna sem fer í reitinn.
 
 Sé akstur þegar handstilltur hærri en 2 — t.d. af því tækin voru sótt í einni ferð og skilað
 í annarri — láttu hann í friði.
@@ -66,8 +81,12 @@ Ekki allar samsetningar tegundar og stærðar eiga sér þjónustulínu. Velji m
 kemur viðvörun í „Bæta við tæki"-glugganum og línan verðleggst ekki.
 
 - **Duft yfirferð:** aðeins 6 kg og 9 kg. `2 kg yfirferð` verðlagast ekki.
-- **Brunaslanga:** verður að hafa stærð (30 / 25 / 20 m). **30 m er rétta verðið.**
-- Tilgreini vinnublaðið enga stærð, veldu þá sem verðlagast og **segðu Agnari frá valinu**.
+- **Brunaslanga:** það er **AÐEINS EITT verð** á yfirferð, hver sem lengdin er. „30 m" er
+  bara sjálfgefna merkingin. Agnar 09.09.2026: *„við erum bara með eitt verð á yfirferð á
+  brunaslöngum sem varð þá bara að 30m default, veit ekki raun lengdina."*
+  **Ekki spyrja um lengd á slöngu** — það er engin ákvörðun þar.
+- Tilgreini vinnublaðið enga stærð á ÖÐRUM tækjum, veldu þá sem verðlagast og **segðu
+  Agnari frá valinu**.
 
 ## Afslættir
 
