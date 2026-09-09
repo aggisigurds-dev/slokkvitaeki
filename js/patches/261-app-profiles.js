@@ -1059,7 +1059,13 @@
           '<button class="op-btn prim _op-open" data-app="' + a.key + '" style="background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')" type="button">▶ Opna</button>' +
           '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">⤓ Setja upp í síma</button>' +
           '<button class="op-btn _op-link" data-app="' + a.key + '" type="button">🔗 Afrita hlekk</button>' +
-          (a.custom ? '' : '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button">⚙ Þjónustuborð</button>') +
+          // 2026-09-09 (Agnar: „breytingar mögulegar inn á þjónustuborð, en það
+          // er samt ekki á öllum"): ⚙ birtist áður AÐEINS á innbyggðu öppunum.
+          // Öppin sem hann bjó til sjálfur fengu bara „Síður í appinu"-kassann,
+          // svo nafn, lýsing, tákn og litir voru ÓBREYTANLEG á þeim. Borðið er
+          // alfarið lykil-drifið (effectiveApp/saveOverrides/pagesFor) og kann
+          // þegar við standalone-öpp, svo það þurfti enga undantekningu.
+          '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button">⚙ Þjónustuborð</button>' +
           (a.custom ? '<button class="op-btn _op-delapp" data-app="' + a.key + '" type="button" style="color:#b91c1c;border-color:#fecaca">🗑 Eyða appi</button>' : '') +
           '<button class="op-btn _op-felaapp" data-app="' + a.key + '" type="button" title="' +
             (a.falid ? 'Sýna appið aftur í ræsaranum' : 'Fela appið úr ræsaranum — ekkert er eytt, það kemur aftur með einum smelli') + '">' +
