@@ -45,4 +45,6 @@ jobs:
         run: node tools/audit-all.cjs --static
 
       - name: Allir verðir (líka gagnaverðir)
-        run: node tools/audit-all.cjs
+        run: node tools/audit-all.cjs --skra --uppruni=ci
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
