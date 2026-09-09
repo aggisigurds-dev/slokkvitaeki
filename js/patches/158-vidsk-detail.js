@@ -982,9 +982,33 @@
           }
         } catch (_) {}
         c.afslattur_pct = v;
-        // keep the in-memory Companies.list row current so Sala picks it up
-        const row = ((window.Companies && Companies.list) || []).find(x => +x.id === +coId);
-        if (row) row.afslattur_pct = v;
+        // 09.09.2026 — TVÆR STAÐBUNDNAR AFRITUNARVILLUR á sömu aðgerð.
+        //
+        // (a) Skrifin hér að ofan snerta N RAÐIR á þjóninum (öll félög OG allir
+        //     viðskiptavinir með sömu kennitölu). Speglunin snerti aðeins EINA
+        //     (x.id === coId). Systurstaðir sama rekstrarfélags sátu því eftir
+        //     með gamla prósentu í minni, og POS les hæstu töluna af þeim öllum —
+        //     svo lækkun tók ekki gildi fyrr en flipinn var endurhlaðinn.
+        //     Rétta mynstrið var þegar til: 285-rekstrarfelag-tools.js:141.
+        //
+        // (b) AutoDiscount.sync() les st.customer.afslattur_pct, POS-eintakið sem
+        //     enginn uppfærði. Sama villa og var löguð í 255 sama dag: karfan
+        //     hoppaði aftur í gamla afsláttinn og seldi á honum.
+        const ktNorm = String(c.kennitala || '').replace(/[^0-9]/g, '');
+        const listi = (window.Companies && Companies.list) || [];
+        for (const x of listi) {
+          const samaKt = ktNorm.length === 10 && ktNorm !== '9999999999' &&
+            String(x.kennitala || '').replace(/[^0-9]/g, '') === ktNorm;
+          if (+x.id === +coId || samaKt) x.afslattur_pct = v;
+        }
+        try {
+          if (window.POS && typeof POS.getState === 'function' && ktNorm.length === 10 && ktNorm !== '9999999999') {
+            const st = POS.getState();
+            if (st && st.customer && String(st.customer.kt || '').replace(/[^0-9]/g, '') === ktNorm) {
+              st.customer.afslattur_pct = v;
+            }
+          }
+        } catch (_) {}
         if (window.Toast && Toast.show) Toast.show(v > 0 ? ('🎯 Sjálfvirkur afsláttur vistaður: ' + v + '%') : 'Afsláttur núllstilltur.');
         // Nudge the live Sala cart if this customer is open there.
         try { if (window.AutoDiscount && AutoDiscount.sync) { AutoDiscount.sync(); } } catch (_) {}
