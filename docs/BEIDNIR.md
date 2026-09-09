@@ -25,6 +25,35 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B10 | **KRITÍSKT: texti í athugasemdareitum hvarf við harða endurhleðslu.** POS-forsóknin skrifaði 10-súlna lista yfir `Companies.list` (32 súlur) — `banner_note`, `plan_note` o.fl. urðu `undefined` og reitir birtust tómir. Ekkert eyddist, það sást bara ekki | Claude | ✅ KLÁRT |
 | B11 | Center Hotels: bannerlínan sýnir „Afsláttur —" þótt félagið sé í hópi með 10–32% — hópurinn er lesinn of seint | — | NÝ |
 
+
+## Textatap-sópið 2026-09-09 — „enginn texti má nokkurntíma tínast"
+
+**Klárað og í loftinu.** 30. audit (`audit-textatap.cjs`) ver bæði mynstrin héðan í frá.
+
+| Fannst | Hvar |
+|---|---|
+| Nótan vistaðist ALDREI (óskilgreint `SB`) | 175 rekstrarfélög |
+| Mjó fyrirspurn skrifaði yfir breiðan lista | 114 POS-forsókn → `Companies.list`, `Vidskiptavinir.list` |
+| Allur listinn blankaðist (1310 → 0) | `Companies.load()` þegar `DB.online` var ósatt |
+| Drög að svari hurfu við stöðusmell | 287 póstar |
+| Titilreitur án `oninput`; lokun henti nótu | 306 þjónustuborð (mobíl) |
+| ✕/Esc hentu útfylltu eyðublaði | 94, 142, 273 |
+| „Vistað" þótt vistun mistækist | 306, 286, 308, 96, 305, 166 |
+| Debounce án blur-flush | 361, 166, 198, 97, 147, 158, 231, 302, 00-legacy |
+| `window.toast` er ekki til → villuboð birtust aldrei | 305 |
+| supabase-js notar ekki keepalive | 361 (sópað með `fetch(keepalive:true)`) |
+
+### Bíður ákvörðunar Agnars
+
+| # | Mál |
+|---|-----|
+| B12 | **Sala í vinnslu er aðeins í minni.** Nafn, sími, línulýsingar og báðar athugasemdirnar í `pos.js` lifa hvergi fyrr en `checkout()` keyrir — endurhleðsla í miðri sölu hendir öllu. Vörðuð leið, þarf þitt samþykki |
+| B13 | **Mobíl Þjónustuborð (306) er ekki opnanlegt** — skráir sig gegn `NavRegistry`/`registerNavItem`/`registerView` sem eru hvergi til í kerfinu. Heil síða dauð |
+| B14 | **Vaktlistinn (`adstod_watchlist_v1`) er frjáls texti aðeins í localStorage** — sést ekki milli tölvanna fjögurra, hverfur með vaframinni |
+| B15 | `customers_base.general_notes` — 6–8 raunverulegar nótur sem enginn kóði les (t.d. „SKYLDA: beiðnanúmer á reikninga til Reykjavíkurborgar" hjá Hitt húsið). Hvar á að birta þær? |
+| B16 | `js/vbu.js` „Viðbóta upplýsingar" skrifar í dálk sem er ekki til (`fyrirtaeki.vidbota_upplysingar`) og birtist bara ef félagið á teikningu. Fjarlægja eða laga? |
+| B17 | 231 þjónustuborð sækir viðskiptavini án `deleted_at`-síu → 247 eyddir í leitinni |
+
 ### Bíður ákvörðunar Agnars (eldra)
 
 | # | Mál |
