@@ -17,8 +17,9 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B3 | Texti á rekstrarfélögum helst ekki — dettur út við að fara af síðunni. Verður að festast og haldast milli tölva. **Finna hvað í reitnum veldur því + leita að sömu stillingu annars staðar á síðunni og laga þar líka** | agent | ✅ KLÁRT — yfirfarið |
 | B4 | Þjónustuborð: breytingar mögulegar — en ekki á öllum. Athuga hverjir og af hverju | Claude | ✅ KLÁRT |
 | B6 | Teikningar eru geymdar EINGÖNGU í `localStorage` (`fp_<id>`) — þær fylgja ekki milli tölva og glatast ef vaframinni er hreinsað. Brýtur samstillingarregluna í CLAUDE.md | — | NÝ |
+| B8 | Enginn „Stólpi-afsláttur" er til — talan er afsláttarstiginn á prófílnum (tilboðsverð → afsláttarhópur → sjálfvirkur %). **Aðeins einn hópur er til (Center Hotels) og hann geymir prósentur þótt raunsamningurinn sé föst verð.** Þarf ákvörðun Agnars | — | BÍÐUR AGNARS |
 | B7 | Villa í patch 109: „Engir tækjadottar enn"-kassinn bætist við á 1,5 s fresti án þess að sá fyrri sé fjarlægður — hleðst upp meðan teikning án dotta er opin | — | NÝ |
-| B5 | Daufar textalínur á fyrirtækjabannerinn fyrir upplýsingar um verin (fjöldi íbúða, fjöldi hæða, hringja á undan…) + grafa upp Stólpi-afsláttartöluna og sýna hana í einni línunni | agent | NÝ |
+| B5 | Daufar textalínur á fyrirtækjabannerinn fyrir upplýsingar um verin (fjöldi íbúða, fjöldi hæða, hringja á undan…) + grafa upp Stólpi-afsláttartöluna og sýna hana í einni línunni | agent | ✅ KLÁRT — yfirfarið |
 
 ### Bíður ákvörðunar Agnars (eldra)
 
