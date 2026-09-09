@@ -1440,47 +1440,56 @@
           })();
         })(sr.data, state.customer && state.customer.co_id, custKt);
       }
-      // Auto-create viðskiptavinur for new kennitala customers.
-      // 2026-05-08: Was incorrectly inserting into 'fyrirtaeki' (companies)
-      // which polluted the Fyrirtækjaþjónusta list with walk-in POS customers.
-      // Walk-ins from Sala belong in 'vidskiptavinir' (regular customers).
-      // Only B2B service companies should ever be in 'fyrirtaeki', and those
-      // are created manually via the "+ Nýtt fyrirtæki" button.
+      // Auto-stofna kúnna fyrir nýja kennitölu — 2026-09-09 (Agnar):
+      // KANÓNÍSKA leiðin. Áður fór þetta í 'vidskiptavinir' (dauði rusl-
+      // flokkurinn); nú fær HVER kennitala customer_base_id (skráin) OG
+      // fyrirtæki-record ("Allir viðskiptavinir") svo salan er aldrei skilin
+      // eftir án tengingar (sbr. bakfyllingu 2026-09-08). POS-kúnnar fá
+      // er_i_thjonustu=false → birtast í "Allir viðskiptavinir" en EKKI í
+      // Fyrirtækjaþjónustu-listanum (sbr. 280-company-service-toggle).
+      // Rusl-nöfn eru merkt review_flag svo hægt sé að hreinsa/flytja síðar.
       if(state.customer.mode==='kt'&&state.customer.kt&&!state.customer.co_id){
         var cleanKt=state.customer.kt.replace(/[^0-9]/g,'');
-        // 2026-05-08: Skip auto-create for the special "Staðgreitt" kennitala
-        // 999999-9999 — walk-in customers should NOT be saved to vidskiptavinir.
         if(cleanKt==='9999999999'){
-          // Just attach the name on the sale row for the receipt
+          // Staðgreitt walk-in án kennitölu — engin kúnnastofnun, bara nafn á kvittun.
           var walkinNm = state.customer.nafn || 'Staðgreitt';
           await DB.sb.from('solur').update({customer_nafn: walkinNm}).eq('id', sr.data.id);
         } else if(cleanKt.length===10){
           var custNm=state.customer.nafn||(state.customer.kt?'Viðskiptavinur':'Staðgreitt');
+          var custSimi=state.customer.simi||'';
           try{
-            var custId=null;
-            // If this kt already belongs to a COMPANY (fyrirtaeki), link the sale to it
-            // instead of creating a duplicate row in vidskiptavinir.
+            var custId=null, baseId=null;
             var dashedKt=cleanKt.slice(0,6)+'-'+cleanKt.slice(6);
-            var fyMatch=await DB.sb.from('fyrirtaeki').select('id,nafn').or('kennitala.eq.'+dashedKt+',kennitala.eq.'+cleanKt).is('deleted_at',null).limit(3);
+            // 1) Er kt þegar til sem fyrirtæki/staður? (fjölstaða deilir einu base)
+            var fyMatch=await DB.sb.from('fyrirtaeki').select('id,customer_base_id,stadur_nr').or('kennitala.eq.'+dashedKt+',kennitala.eq.'+cleanKt).is('deleted_at',null).order('stadur_nr',{ascending:true,nullsFirst:false}).limit(20);
             var fyRows=(fyMatch&&fyMatch.data)||[];
             if(fyRows.length===1){
-              custId=fyRows[0].id;
+              custId=fyRows[0].id; baseId=fyRows[0].customer_base_id||null;
             }else if(fyRows.length>1){
-              // Rekstrarfélag — ekki giska á fyrsta hótelið. Sala vistast
-              // með kt; starfsmaður velur nr. næst.
+              // Rekstrarfélag — ekki giska á staðinn. Tengjum ENTITY (base_id);
+              // starfsmaður getur valið réttan stað (customer_id) síðar.
+              baseId=fyRows[0].customer_base_id||null;
             }else{
-              // Re-use existing viðskiptavinur if same kennitala already in DB
-              var existing=await DB.sb.from('vidskiptavinir').select('id,nafn').eq('kennitala',cleanKt).limit(1).maybeSingle();
-              if(existing&&existing.data&&existing.data.id){
-                custId=existing.data.id;
+              // 2) Ekkert fyrirtæki. Finnum/stofnum í customers_base (skráin) …
+              var cbMatch=await DB.sb.from('customers_base').select('id,simi').or('kennitala.eq.'+dashedKt+',kennitala.eq.'+cleanKt).limit(1).maybeSingle();
+              if(cbMatch&&cbMatch.data&&cbMatch.data.id){
+                baseId=cbMatch.data.id;
+                if(custSimi && !cbMatch.data.simi){ await DB.sb.from('customers_base').update({simi:custSimi}).eq('id',baseId); }
               }else{
-                var cr=await DB.sb.from('vidskiptavinir').insert({nafn:custNm,kennitala:cleanKt,simi:state.customer.simi||''}).select().single();
-                if(cr.data) custId=cr.data.id;
+                var cbIns=await DB.sb.from('customers_base').insert({kennitala:dashedKt,nafn:custNm,simi:custSimi||null}).select('id').single();
+                if(cbIns&&cbIns.data) baseId=cbIns.data.id;
               }
+              // 3) … og stofnum fyrirtæki-record (Allir viðskiptavinir), utan þjónustu.
+              var _junk=(!custNm||custNm==='.'||/^kt:/i.test(custNm)||/^[0-9]+$/.test(custNm)||custNm.toLowerCase()==='viðskiptavinur'||custNm==='Staðgreitt');
+              var fyIns=await DB.sb.from('fyrirtaeki').insert({nafn:custNm,kennitala:dashedKt,simi:custSimi||null,customer_base_id:baseId,er_i_thjonustu:false,status:'virkur',review_flag:_junk,review_note:_junk?'Nafn vantar/rusl úr búðarsölu — fletta upp':null}).select('id').single();
+              if(fyIns&&fyIns.data) custId=fyIns.data.id;
             }
-            if(custId){
-              state.customer.co_id=custId;
-              await DB.sb.from('solur').update({customer_id:custId,customer_nafn:custNm}).eq('id',sr.data.id);
+            if(custId!=null||baseId!=null){
+              state.customer.co_id=custId||state.customer.co_id;
+              var _u={customer_nafn:custNm};
+              if(custId!=null)_u.customer_id=custId;
+              if(baseId!=null)_u.customer_base_id=baseId;
+              await DB.sb.from('solur').update(_u).eq('id',sr.data.id);
             }
           }catch(ce){console.warn('[POS] Auto-create customer:',ce);}
         }
