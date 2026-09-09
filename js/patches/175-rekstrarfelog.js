@@ -820,6 +820,24 @@
     return null;
   }
 
+  // Nótan (fyrirtaeki.plan_note) lifir á TVEIMUR stöðum í minni: Companies.list
+  // og lifandi rekstrarfélaga-vörpunni _liveRF (uppspretta byggingarraðanna —
+  // getData() afritar hana upp á nýtt í hverri teikningu, og companyForBld
+  // dettur á b.plan_note þegar Companies.list ber ekki röðina). Uppfærum BÁÐA
+  // við vistun, annars sýnir næsta endurteiknun gamla gildið.
+  function rfCachePlanNote(id, val){
+    var v = (val == null ? '' : val);
+    try {
+      var c = ((window.Companies && Companies.list) || []).find(function(x){ return +x.id === +id; });
+      if (c) c.plan_note = v;
+    } catch(_){}
+    try {
+      if (_liveRF) Object.keys(_liveRF).forEach(function(nm){
+        (_liveRF[nm]||[]).forEach(function(s){ if (s && s.co_id != null && +s.co_id === +id) s.plan_note = v; });
+      });
+    } catch(_){}
+  }
+
   // ── Stofna RAUNVERULEGT fyrirtæki í þjónustu (fyrirtaeki-röð) fyrir nýja
   //    byggingu/stað rekstrarfélags. Sama insert-mynstur og patch 188
   //    (promote-customer): find/create customers_base eftir kt, insert fyrirtaeki
@@ -2047,7 +2065,7 @@
              // vökvunar-/vistunar-lykkjan neðar nái í hann). Aðeins tengdar byggingar.
              '<td class="rf-notacell">'+(co
                ? '<input class="_rf-plannote rf-plannote" data-co-id="'+co.id+'" value="'+esc(co.plan_note||'')+'" placeholder="···" maxlength="140" title="Ferðanóta">'
-               : '<input class="rf-plannote" placeholder="···" disabled>')+'</td>'+
+               : '<input class="rf-plannote" placeholder="···" disabled title="Nóta krefst tengingar við fyrirtæki í þjónustu — tengdu bygginguna með ✏️ fyrst">')+'</td>'+
              summaryCell+
              detailCells+
              '</tr>';
@@ -2332,40 +2350,75 @@
       if(!coId) return;
       cell.appendChild(makeRfAksturChip([coId]));
     });
-    // ✈ Byggingar-nótan — vökvun + vistun (debounced í fyrirtaeki.plan_note,
-    // sama og ferðanótan í 153). Companies.list ber ekki alltaf plan_note svo
-    // gildin eru sótt fersk; reitur í notkun (focus) er ekki yfirskrifaður.
+    // ✈ Byggingar-nótan — vökvun + vistun í fyrirtaeki.plan_note (SAMI reitur og
+    // ferðanótan í 153-arsskodun). 2026-09-09 (beiðni Agnars „texti helst ekki“):
+    // ÁÐUR vísuðu bæði vökvunin og vistunin á `SB` sem er HVERGI skilgreint í
+    // þessu scope-i (aðeins staðbundið inni í ensureLiveRF / createServiceCompany /
+    // getEquipIndex — systkinaföllum, ekki umlykjandi). Í 'use strict' IIFE þýðir
+    // það ReferenceError sem try/catch kyrkti og console.warn faldi: nótan fór
+    // ALDREI í gagnagrunninn og vökvunin sótti hana aldrei aftur, svo hún hvarf
+    // við fyrstu endurteiknun. Nú: raunverulegur tengill + nákvæmlega sama örugga
+    // mynstur og savePlanNote í 153 — EITT vistunarfall sem bæði debounce OG blur
+    // kalla í, dataset.saved-far, sýnileg villa og minnis-cache uppfærður.
     (function(){
       var inputs = body.querySelectorAll('._rf-plannote');
       if(!inputs.length) return;
+      var SB = window.__vdaSB || (window.DB && DB.sb);
       var ids = Array.prototype.map.call(inputs, function(i){ return parseInt(i.getAttribute('data-co-id'),10); }).filter(Boolean);
-      try {
-        SB.from('fyrirtaeki').select('id,plan_note').in('id', ids).then(function(r){
-          if(r.error||!r.data) return;
-          var m={}; r.data.forEach(function(x){ m[x.id]=x.plan_note||''; });
-          inputs.forEach(function(inp){
-            var id=parseInt(inp.getAttribute('data-co-id'),10);
-            if(m[id]!=null && document.activeElement!==inp) inp.value=m[id];
-          });
-        });
-      } catch(_){}
+      function isDirty(inp){ return inp.value.trim() !== (inp.dataset.saved||''); }
+      if (SB && ids.length) {
+        try {
+          SB.from('fyrirtaeki').select('id,plan_note').in('id', ids).then(function(r){
+            if(r.error||!r.data) return;
+            var m={}; r.data.forEach(function(x){ m[x.id]=x.plan_note||''; });
+            inputs.forEach(function(inp){
+              var id=parseInt(inp.getAttribute('data-co-id'),10);
+              // aldrei yfirskrifa reit í notkun NÉ óvistaðan innslátt
+              if(m[id]==null || document.activeElement===inp || isDirty(inp)) return;
+              inp.value=m[id]; inp.dataset.saved=m[id];
+            });
+          }, function(err){ console.warn('[rekstrarfelog] plan_note hydrate', err); });
+        } catch(err){ console.warn('[rekstrarfelog] plan_note hydrate', err); }
+      }
       inputs.forEach(function(inp){
-        var t=null;
+        inp.dataset.saved = (inp.value.trim() || '');
+        function flagErr(msg){
+          inp.style.outline = '2px solid #dc2626';
+          inp.title = 'Nótan vistaðist EKKI — ' + msg;
+          try { if (window.logProblem) window.logProblem('plan_note_save_failed', 'rekstrarfelog co ' + (inp.getAttribute('data-co-id')||'?') + ' — ' + msg); } catch(_){}
+        }
+        // EITT vistunarfall — debounce OG blur nota sömu leið. Blur vistar STRAX
+        // svo textinn tapist ekki þótt farið sé beint af síðunni.
+        async function savePlanNote(){
+          var id = parseInt(inp.getAttribute('data-co-id'),10);
+          var val = inp.value.trim() || null;
+          if(!id) return;
+          if(inp.dataset.saved === (val==null?'':val)) return;   // óbreytt → sleppa
+          if(!SB){ flagErr('engin gagnagrunns-tenging'); return; }
+          try {
+            var r = await SB.from('fyrirtaeki').update({plan_note:val}).eq('id',id);
+            if(r && r.error) throw r.error;
+            inp.dataset.saved = (val==null?'':val);
+            inp.style.outline = ''; inp.title = 'Ferðanóta';
+            rfCachePlanNote(id, val);
+            // systkina-reitir sömu byggingar (fleiri en ein tafla opin) fylgja með
+            body.querySelectorAll('._rf-plannote[data-co-id="'+id+'"]').forEach(function(other){
+              if(other===inp || document.activeElement===other) return;
+              other.value = val || ''; other.dataset.saved = (val==null?'':val);
+            });
+          } catch(err){
+            console.warn('[rekstrarfelog] plan_note', err);
+            flagErr((err && err.message) || String(err));
+          }
+        }
         inp.addEventListener('click', function(e){ e.stopPropagation(); });
         inp.addEventListener('keydown', function(e){ e.stopPropagation(); if(e.key==='Enter') inp.blur(); });
         inp.addEventListener('input', function(){
-          if(t) clearTimeout(t);
-          t=setTimeout(async function(){
-            var id=parseInt(inp.getAttribute('data-co-id'),10);
-            var val=inp.value.trim()||null;
-            if(!id) return;
-            try {
-              var r=await SB.from('fyrirtaeki').update({plan_note:val}).eq('id',id);
-              if(r.error) throw r.error;
-              try { var c=((window.Companies&&Companies.list)||[]).find(function(x){return +x.id===id;}); if(c) c.plan_note=val; } catch(_){}
-            } catch(err){ console.warn('[rekstrarfelog] plan_note', err); }
-          },600);
+          inp.style.outline='';
+          if(inp._pnT) clearTimeout(inp._pnT);
+          inp._pnT = setTimeout(savePlanNote, 600);
         });
+        inp.addEventListener('blur', function(){ if(inp._pnT) clearTimeout(inp._pnT); inp._pnT = null; savePlanNote(); });
       });
     })();
 

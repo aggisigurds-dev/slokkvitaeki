@@ -464,9 +464,17 @@
   // ── útlits-yfirskrift (nafn/lýsing/tákn/litur) á hverju appi — sjálfgefið úr
   // APPS, notandi má breyta gegnum Þjónustuborðið. Sama vistunar-mynstur og cfg. ─
   var OV_KEY = 'app_profiles_overrides_json';
+  // 2026-09-09: AppSettings.save() er ÓSAMSTILLT — `_settings` uppfærist ekki
+  // fyrr en RPC-ið svarar, svo AppSettings.get() skilar GAMLA gildinu í render()
+  // sem keyrir strax á eftir. Fela-takkinn leit því út fyrir að gera ekki neitt:
+  // gildið var vistað (localStorage sýndi falid:true) en spjaldið stóð eftir.
+  // `_ovNy` heldur því sem VIÐ skrifuðum síðast þar til serverinn skilar sama
+  // gildi — þá er henni sleppt svo breyting af annarri vél nái í gegn.
+  var _ovNy = null;
   function loadOverrides() {
     var raw = null;
     try { if (window.AppSettings && AppSettings.get) raw = AppSettings.get(OV_KEY); } catch (_) {}
+    if (_ovNy) { if (raw === _ovNy) _ovNy = null; else raw = _ovNy; }
     if (!raw) { try { raw = localStorage.getItem(OV_KEY); } catch (_) {} }
     if (!raw) return {};
     try { return JSON.parse(raw) || {}; } catch (_) { return {}; }
@@ -478,6 +486,7 @@
     for (var k2 in cur) { if (cur[k2] === '' || cur[k2] == null) delete cur[k2]; }
     o[key] = cur;
     var s = JSON.stringify(o);
+    _ovNy = s;                                   // gildir strax, líka fyrir render() í sömu andrá
     try { localStorage.setItem(OV_KEY, s); } catch (_) {}
     try { if (window.AppSettings && AppSettings.save) { var payload = {}; payload[OV_KEY] = s; AppSettings.save(payload); } } catch (_) {}
   }
@@ -493,6 +502,11 @@
       // 2026-09-08: táknið úr safninu fylgir sömu leið og hitt útlitið, svo það
       // birtist samstundis á spjaldi, haus, splash OG í manifestinu.
       ikon: ov.ikon || a.ikon || null,
+      // 2026-09-09 (Agnar: „þoli ekki að geta ekki stjórnað neinu"): INNBYGGÐ öpp
+      // var hvorki hægt að eyða né fela — 🗑 birtist aðeins á notenda-búnum. Þau
+      // eiga ekki að hverfa úr kóðanum, en þau eiga að mega hverfa úr ræsaranum.
+      // `falid` er afturkræft og geymt með hinu útlitinu.
+      falid: !!ov.falid,
       color: ov.color || a.color, dark: ov.dark || a.dark
     };
     if (!e.manifest && a.custom) e.manifest = customManifestUrl(e);
@@ -1012,7 +1026,16 @@
   function render() {
     styles();
     var v = viewEl();
-    var cards = APPS.map(function (base) {
+    // Falin öpp hverfa úr ræsaranum en EKKI úr kerfinu — hlekkir, manifest og
+    // síðuvalið standa. Teljarinn að neðan skilar þeim til baka.
+    var faldirLyklar = APPS.map(function (b) { return effectiveApp(b.key); })
+      .filter(function (a) { return a && a.falid; }).map(function (a) { return a.key; });
+    var synaFalin = false;
+    try { synaFalin = localStorage.getItem('op_syna_falin') === '1'; } catch (_) {}
+    var cards = APPS.filter(function (base) {
+      if (synaFalin) return true;
+      return faldirLyklar.indexOf(base.key) < 0;
+    }).map(function (base) {
       var a = effectiveApp(base.key);
       var sel = pagesFor(a.key);
       var selSet = {}; sel.forEach(function (k) { selSet[k] = 1; });
@@ -1036,16 +1059,35 @@
           '<button class="op-btn prim _op-open" data-app="' + a.key + '" style="background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')" type="button">▶ Opna</button>' +
           '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">⤓ Setja upp í síma</button>' +
           '<button class="op-btn _op-link" data-app="' + a.key + '" type="button">🔗 Afrita hlekk</button>' +
-          (a.custom ? '' : '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button">⚙ Þjónustuborð</button>') +
+          // 2026-09-09 (Agnar: „breytingar mögulegar inn á þjónustuborð, en það
+          // er samt ekki á öllum"): ⚙ birtist áður AÐEINS á innbyggðu öppunum.
+          // Öppin sem hann bjó til sjálfur fengu bara „Síður í appinu"-kassann,
+          // svo nafn, lýsing, tákn og litir voru ÓBREYTANLEG á þeim. Borðið er
+          // alfarið lykil-drifið (effectiveApp/saveOverrides/pagesFor) og kann
+          // þegar við standalone-öpp, svo það þurfti enga undantekningu.
+          '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button">⚙ Þjónustuborð</button>' +
           (a.custom ? '<button class="op-btn _op-delapp" data-app="' + a.key + '" type="button" style="color:#b91c1c;border-color:#fecaca">🗑 Eyða appi</button>' : '') +
+          '<button class="op-btn _op-felaapp" data-app="' + a.key + '" type="button" title="' +
+            (a.falid ? 'Sýna appið aftur í ræsaranum' : 'Fela appið úr ræsaranum — ekkert er eytt, það kemur aftur með einum smelli') + '">' +
+            (a.falid ? '👁 Sýna aftur' : '🚫 Fela app') + '</button>' +
         '</div>' +
         pagesSection +
       '</div>';
     }).join('');
+    // Án þessarar línu væri falið app horfið að eilífu — spjaldið með
+    // „👁 Sýna aftur" er sjálft falið. Línan er eina leiðin til baka.
+    var falinLina = faldirLyklar.length
+      ? '<div style="display:flex;align-items:center;justify-content:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:rgba(255,255,255,.62)">' +
+          '<span>' + faldirLyklar.length + (faldirLyklar.length === 1 ? ' falið app' : ' falin \u00f6pp') + '</span>' +
+          '<button class="op-btn _op-synafalin" type="button" style="padding:4px 11px;font-size:12px">' +
+            (synaFalin ? '\ud83d\ude48 Fela þau aftur' : '\ud83d\udc41 Sýna þau') + '</button>' +
+        '</div>'
+      : '';
     var ver = versionLine();
     v.innerHTML = '<div class="op-main"><h1 class="op-h1">📱 Öpp</h1>' +
       '<p class="op-sub">Léttar, símavænar útgáfur með völdum síðum — hver með eigin hlekk og hægt að setja upp í símann.</p>' +
       matrixHtml() +
+      falinLina +
       cards +
       '<div class="op-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:170px;border:2px dashed #cbd5e1;background:rgba(255,255,255,.06)">' +
         '<div style="font-size:34px;line-height:1">➕</div>' +
@@ -1057,6 +1099,22 @@
     v.querySelectorAll('._op-open').forEach(function (b) { b.addEventListener('click', function () { location.href = appLink(b.dataset.app); }); });
     var nb = v.querySelector('#_op-newapp'); if (nb) nb.addEventListener('click', function (e) { e.preventDefault(); createCustomApp(); });
     v.querySelectorAll('._op-delapp').forEach(function (b) { b.addEventListener('click', function (e) { e.preventDefault(); deleteCustomApp(b.dataset.app); }); });
+    v.querySelectorAll('._op-felaapp').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.preventDefault();
+        var k = b.dataset.app;
+        var nuFalid = !!effectiveApp(k).falid;
+        saveOverrides(k, { falid: nuFalid ? null : true });   // null hreinsar yfirskriftina
+        render();
+      });
+    });
+    v.querySelectorAll('._op-synafalin').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.preventDefault();
+        try { localStorage.setItem('op_syna_falin', localStorage.getItem('op_syna_falin') === '1' ? '0' : '1'); } catch (_) {}
+        render();
+      });
+    });
     v.querySelectorAll('._op-install').forEach(function (b) { b.addEventListener('click', function () {
       // ALDREI nota deferredPrompt sem var fangaður HÉR á launcher-síðunni —
       // beforeinstallprompt er bundinn við manifestið sem gilti þegar hann

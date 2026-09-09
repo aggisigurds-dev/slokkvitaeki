@@ -2785,7 +2785,16 @@
     const tInp = document.getElementById('vb-sel-title');
     if (tInp) {
       let _tt = null;
-      const saveTitle = () => { clearTimeout(_tt); saveRow(Number(tInp.dataset.selid), { title: tInp.value.replace(/\s*\n+\s*/g, ' ').trim() }); };
+      // 2026-09-09: blur vistar STRAX + dataset.saved-far (áður aðeins 500 ms
+      // debounce og Enter — titilbreyting tapaðist ef smellt var beint annað).
+      tInp.dataset.saved = tInp.value.replace(/\s*\n+\s*/g, ' ').trim();
+      const saveTitle = () => {
+        clearTimeout(_tt); _tt = null;
+        const v = tInp.value.replace(/\s*\n+\s*/g, ' ').trim();
+        if (tInp.dataset.saved === v) return;
+        tInp.dataset.saved = v;
+        saveRow(Number(tInp.dataset.selid), { title: v });
+      };
       // Vex með innihaldinu — ein lína þegar titillinn er stuttur, tvær (eða
       // fleiri) þegar hann er langur. setProperty(...,'important') af sömu
       // ástæðu og hjá athugasemdunum: patch 245 setur height:auto !important á
@@ -2799,6 +2808,7 @@
       // Enter = vista, ekki línubil: titillinn á að BROTNA í tvær línur, ekki
       // geyma \n sem síðan birtist sem bil í listanum og í póstum.
       tInp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tInp.blur(); saveTitle(); } });
+      tInp.addEventListener('blur', saveTitle);
     }
     const dTa = document.getElementById('vb-draft-reply');
     if (dTa) {
@@ -2818,7 +2828,17 @@
     const nTa = document.getElementById('vb-sel-notes');
     if (nTa) {
       let _nt = null;
-      const saveNotes = () => { clearTimeout(_nt); saveRow(Number(nTa.dataset.selid), { notes: nTa.value }); };
+      // 2026-09-09: blur vistar STRAX (áður aðeins 500 ms debounce — nótan
+      // tapaðist ef spjaldið var lokað eða skipt um verk innan hálfrar sekúndu).
+      // dataset.saved kemur í veg fyrir skrif þegar ekkert breyttist.
+      nTa.dataset.saved = nTa.value;
+      const saveNotes = () => {
+        clearTimeout(_nt); _nt = null;
+        const v = nTa.value;
+        if (nTa.dataset.saved === v) return;
+        nTa.dataset.saved = v;
+        saveRow(Number(nTa.dataset.selid), { notes: v });
+      };
       const CAP = Math.min(880, Math.round(window.innerHeight * 0.7));
       const grow = () => {
         // Fellt (▾ Fella): fast ~3ja lína hæð með innra skruni — langa nótan
@@ -2832,6 +2852,7 @@
         grow();
         clearTimeout(_nt); _nt = setTimeout(saveNotes, 500);
       });
+      nTa.addEventListener('blur', saveNotes);
     }
     fixSelViewport();
   }

@@ -3076,23 +3076,34 @@ console.log('[patch-master] loaded with all fixes');
         wrap.dataset.cid=cid;
         window.DB.sb.from('fyrirtaeki').select('athugasemdir').eq('id',cid).single().then(function(r){
           if(r.data && r.data.athugasemdir) ta.value=r.data.athugasemdir;
+          ta.dataset.saved=ta.value;
         });
       });
-      // Auto-save
+      // Auto-save. 2026-09-09: blur vistar STRAX og villa er SÝNILEG — áður var
+      // þetta 1,5 s debounce á `input` eingöngu og villusvarið hunsað, svo
+      // innsláttur tapaðist þögult ef farið var af síðunni strax.
       var timer;
-      ta.addEventListener('input',function(){
-        clearTimeout(timer);
-        timer=setTimeout(function(){
-          var cid=wrap.dataset.cid||window._currentCompanyId;
-          if(!cid) return;
-          window.DB.sb.from('fyrirtaeki').update({athugasemdir:ta.value}).eq('id',cid).then(function(r){
-            if(!r.error){
-              var s=document.getElementById('_memo_saved');
-              if(s){s.style.opacity='1';setTimeout(function(){s.style.opacity='0';},2000);}
-            }
-          });
-        },1500);
-      });
+      ta.dataset.saved=ta.value;
+      function saveMemo(){
+        clearTimeout(timer); timer=null;
+        var cid=wrap.dataset.cid||window._currentCompanyId;
+        if(!cid) return;
+        if(ta.dataset.saved===ta.value) return;   // óbreytt → sleppa
+        var val=ta.value;
+        function fail(e){
+          console.warn('[pm] memo save', e);
+          ta.style.outline='2px solid #dc2626';
+          ta.title='Athugasemdin vistaðist EKKI — reyndu aftur';
+        }
+        window.DB.sb.from('fyrirtaeki').update({athugasemdir:val}).eq('id',cid).then(function(r){
+          if(r&&r.error){ fail(r.error); return; }
+          ta.dataset.saved=val; ta.style.outline=''; ta.title='';
+          var s=document.getElementById('_memo_saved');
+          if(s){s.style.opacity='1';setTimeout(function(){s.style.opacity='0';},2000);}
+        }, fail);
+      }
+      ta.addEventListener('input',function(){ ta.style.outline=''; clearTimeout(timer); timer=setTimeout(saveMemo,1500); });
+      ta.addEventListener('blur', saveMemo);
     });
   }
   setInterval(addMemoBox,2000);

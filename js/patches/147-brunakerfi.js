@@ -106,6 +106,10 @@
   function showSavedFlash() {
     const saved = document.querySelector('._bk-notes-saved');
     if (saved) {
+      // 2026-09-09: núllstilla líka texta+lit svo fyrri villuborði („⚠ vistaðist
+      // EKKI") standi ekki eftir þegar næsta vistun heppnast.
+      saved.textContent = '✓ Vistað';
+      saved.style.color = '#16a34a';
       saved.style.opacity = '1';
       setTimeout(() => { saved.style.opacity = '0'; }, 1500);
     }
@@ -117,9 +121,24 @@
     _notesTimer = null;
     const val = _notesPendingValue;
     _notesPendingValue = null;
-    const ok = await window.AppSettings.save({ [NOTES_KEY]: val });
-    if (ok) showSavedFlash();
-    if (!ok) _notesPendingValue = val; // keep pending so we can retry
+    let ok = false;
+    try { ok = await window.AppSettings.save({ [NOTES_KEY]: val }); }
+    catch (e) { ok = false; console.warn('[brunakerfi] notes save', e); }
+    // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"): mistökin voru
+    // ÓSÝNILEG — enginn borði, engin villa, aðeins þögult `_notesPendingValue`
+    // sem beið næstu innsláttar. Notandinn sá „ekkert gerðist" og fór.
+    // Nú sést villan á reitnum sjálfum og fer í vandamálaskrána.
+    const el = ta || document.getElementById('_bk-notes-ta');
+    if (ok) {
+      showSavedFlash();
+      if (el) { el.style.outline = ''; el.title = ''; }
+    } else {
+      _notesPendingValue = val;                       // keep pending so we can retry
+      if (el) { el.style.outline = '2px solid #dc2626'; el.title = 'Minnispunktarnir vistuðust EKKI — reyndu aftur'; }
+      const saved = document.querySelector('._bk-notes-saved');
+      if (saved) { saved.style.opacity = '1'; saved.textContent = '⚠ vistaðist EKKI'; saved.style.color = '#dc2626'; }
+      try { if (window.logProblem) window.logProblem('brunakerfi_notes_save_failed', 'brunakerfi_notes'); } catch (_) {}
+    }
     return ok;
   }
 
@@ -166,9 +185,13 @@
     window.__bkNotesFlushHooked = true;
     function flushAny() {
       const ta = document.getElementById('_bk-notes-ta');
-      // We can't await an async save during unload — but Supabase JS client
-      // uses fetch with keepalive, so the request completes even after the
-      // tab is closed.
+      // LEIÐRÉTTING 2026-09-09 (mælt á lifandi vafra þennan dag): fullyrðingin
+      // sem stóð hér — að supabase-js noti `keepalive` svo beiðnin klárist eftir
+      // að flipanum er lokað — er RÖNG. Hún gerir það ekki; beiðnin deyr með
+      // síðunni. Þetta dugar því fyrir flipa-skipti og app-skipti (þar sem
+      // síðan lifir áfram) en EKKI fyrir harða endurhleðslu. Sjá patch 361 þar
+      // sem sópunin er send með `fetch(..., {keepalive:true})` beint á PostgREST;
+      // hér er það ekki hægt án þess að endurgera deep-merge AppSettings.save.
       try { flushNotes(ta); } catch (_) {}
     }
     document.addEventListener('visibilitychange', () => {

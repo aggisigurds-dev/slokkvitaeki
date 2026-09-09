@@ -83,6 +83,10 @@
 
   const _stada = new Map();          // coId -> { raw, sott }
   let _vistTimer = null;
+  // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"): það sem bíður
+  // vistunar geymist hér svo blur / flipa-skipti / lokun geti sópað því inn
+  // STRAX í stað þess að treysta á 600 ms tímamælinn einan.
+  let _bidur = null;                 // { coId, gogn } sem á eftir að skrifa
 
   async function saekja(coId) {
     const S = sb(); if (!S) return null;
@@ -92,25 +96,87 @@
     return (r && r.data) || { neydarlysing: 'ekki_skodad', abendingar: [], nota: '' };
   }
 
+  // 2026-09-09 (Agnar: „það þarf að fara yfir allar síðurnar … enginn texti má
+  // nokkurntíma tínast"): áður gat netvilla hent úr `upsert` beint út í
+  // setTimeout-ið → óhöndluð höfnun, ENGIN sýnileg villa og nótan horfin.
+  // Nú er skrifið alltaf í try/catch, villan sést (rauð útlína + merki +
+  // logProblem) og það sem beið helst í `_bidur` svo næsti blur reyni aftur.
   async function vista(coId, gogn) {
-    const S = sb(); if (!S) return;
+    const merki = document.getElementById('_va-stada');
+    const ta = document.getElementById('_va-nota');
+    const villa = txt => {
+      if (merki) { merki.textContent = txt; merki.style.color = '#b91c1c'; }
+      if (ta) { ta.style.outline = '2px solid #dc2626'; ta.title = 'Vettvangsathugun vistaðist EKKI — reyndu aftur'; }
+    };
+    const S = sb();
+    if (!S) { villa('⚠ engin gagnabankatenging'); return false; }
     const rod = Object.assign({
       fyrirtaeki_id: coId, ar: arNu(), skrad_af: hverErVid(), updated_at: new Date().toISOString(),
     }, gogn);
-    const r = await S.from('vettvangsathuganir').upsert(rod, { onConflict: 'fyrirtaeki_id,ar' });
-    const merki = document.getElementById('_va-stada');
-    if (merki) {
-      merki.textContent = r && r.error ? '⚠ vistun mistókst' : '✓ vistað';
-      merki.style.color = r && r.error ? '#b91c1c' : '#15803d';
-      if (r && r.error) console.warn('[361] vistun mistókst', r.error);
+    try {
+      const r = await S.from('vettvangsathuganir').upsert(rod, { onConflict: 'fyrirtaeki_id,ar' });
+      if (r && r.error) throw r.error;
+    } catch (e) {
+      console.warn('[361] vistun mistókst', e);
+      try { if (window.logProblem) window.logProblem('vettvangsathugun_save_failed', 'co ' + coId + ' · ' + ((e && e.message) || e)); } catch (_) {}
+      villa('⚠ vistun mistókst');
+      return false;
     }
+    _bidur = null;
+    if (merki) { merki.textContent = '✓ vistað'; merki.style.color = '#15803d'; }
+    if (ta) { ta.style.outline = ''; ta.title = ''; ta.dataset.vistad = (gogn.nota == null ? '' : gogn.nota); }
+    return true;
   }
 
   function vistaSidar(coId, gogn) {
     clearTimeout(_vistTimer);
+    _bidur = { coId, gogn };
     const merki = document.getElementById('_va-stada');
     if (merki) { merki.textContent = 'vistar…'; merki.style.color = 'var(--ink3)'; }
-    _vistTimer = setTimeout(() => vista(coId, gogn), 600);
+    _vistTimer = setTimeout(() => { vista(coId, gogn); }, 600);
+  }
+
+  // Sópar því sem bíður inn STRAX — kallað úr blur og við flipa-skipti.
+  function vistaStrax() {
+    if (!_bidur) return;
+    clearTimeout(_vistTimer);
+    const b = _bidur;
+    try { vista(b.coId, b.gogn); } catch (_) {}
+  }
+
+  // 2026-09-09 — MÆLT Á LIFANDI VAFRA ÞENNAN DAG: venjulegt supabase-js fetch
+  // DEYR með síðunni (það notar EKKI keepalive, þrátt fyrir athugasemd um
+  // annað í patch 147). Prófun: slá inn og endurhlaða innan 600 ms → textinn
+  // tapaðist. Þess vegna fer sópunin við lokun beint á PostgREST með
+  // `keepalive:true` — sama bragð og `js/villuvakt.js` notar — svo skrifin
+  // lifi af að glugganum sé lokað í sömu andrá. Agnar: „enginn texti má
+  // nokkurntíma tínast".
+  function sopaVidLokun() {
+    try {
+      const ta = document.getElementById('_va-nota');
+      if (ta && ta.dataset.vistad !== ta.value && _bidur) {
+        _bidur = { coId: _bidur.coId, gogn: Object.assign({}, _bidur.gogn, { nota: ta.value }) };
+      }
+      if (!_bidur) return;
+      clearTimeout(_vistTimer);
+      const url = window.SUPABASE_URL && (window.SUPABASE_URL + '/rest/v1/vettvangsathuganir?on_conflict=fyrirtaeki_id,ar');
+      const key = window.SUPABASE_KEY;
+      if (!url || !key) { vistaStrax(); return; }
+      const rod = Object.assign({
+        fyrirtaeki_id: _bidur.coId, ar: arNu(), skrad_af: hverErVid(),
+        updated_at: new Date().toISOString(),
+      }, _bidur.gogn);
+      fetch(url, {
+        method: 'POST', keepalive: true,
+        headers: {
+          apikey: key, Authorization: 'Bearer ' + key,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify([rod])
+      }).catch(() => {});
+      _bidur = null;
+    } catch (_) {}
   }
 
   function teikna(box, coId, gogn) {
@@ -143,7 +209,11 @@
               'border:1px solid ' + (a ? '#0f172a' : '#cbd5e1') + '">' + esc(heiti) + '</button>';
           }).join('') +
         '</div>' +
-        '<textarea id="_va-nota" rows="2" placeholder="Hvað sást? t.d. „Neyðarljós á 2. hæð dautt" · „Gömul tafla í kjallara" · „Óþétt lagnagöt í bílskýli"" ' +
+        // 2026-09-09: LOKA-gæsalappirnar hér voru ASCII " — þær slitu
+        // placeholder-eigindið í sundur og hálf vísbendingin varð að rusl-
+        // eigindum á textareitnum (mælt í vafra þennan dag). Íslenska loka-
+        // gæsalappan U+201C er ekki HTML-afmarkari og heldur textanum heilum.
+        '<textarea id="_va-nota" rows="2" placeholder="Hvað sást? t.d. „Neyðarljós á 2. hæð dautt“ · „Gömul tafla í kjallara“ · „Óþétt lagnagöt í bílskýli“" ' +
           'style="width:100%;padding:8px 10px;border:1px solid #b4bcc8;border-radius:7px;font:inherit;font-size:13px;' +
           'line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' + esc(gogn.nota || '') + '</textarea>' +
       '</div>';
@@ -161,10 +231,29 @@
       vistaSidar(coId, { neydarlysing: gogn.neydarlysing || 'ekki_skodad', abendingar: gogn.abendingar, nota: gogn.nota || '' });
     }));
     const ta = box.querySelector('#_va-nota');
-    if (ta) ta.addEventListener('input', () => {
-      gogn.nota = ta.value;
-      vistaSidar(coId, { neydarlysing: gogn.neydarlysing || 'ekki_skodad', abendingar: gogn.abendingar || [], nota: gogn.nota });
-    });
+    if (ta) {
+      // 2026-09-09 (ósk Agnars): EITT vistunarfall sem bæði debounce OG blur
+      // nota — sama fyrirmynd og `savePlanNote` í 153-arsskodun.js. Áður var
+      // AÐEINS `input` með 600 ms bið: sá sem skrifaði og fór beint af síðunni
+      // (eða endurhlóð) innan gluggans tapaði nótunni þegjandi.
+      ta.dataset.vistad = (gogn.nota || '');
+      const safna = () => ({
+        neydarlysing: gogn.neydarlysing || 'ekki_skodad',
+        abendingar: gogn.abendingar || [],
+        nota: gogn.nota || ''
+      });
+      ta.addEventListener('input', () => {
+        gogn.nota = ta.value;
+        ta.style.outline = '';
+        vistaSidar(coId, safna());
+      });
+      ta.addEventListener('blur', () => {
+        gogn.nota = ta.value;
+        if (ta.dataset.vistad === ta.value) return;   // óbreytt → engin skrif
+        _bidur = { coId, gogn: safna() };
+        vistaStrax();
+      });
+    }
   }
 
   async function haldaVid() {
@@ -194,6 +283,16 @@
   }
 
   setInterval(haldaVid, 1200);
+
+  // Öryggisnet (2026-09-09): flipi falinn / síða lokuð / app-skipti í síma →
+  // sópa því sem beið inn áður en glugginn hverfur. Þessir atburðir eru þeir
+  // einu sem koma áreiðanlega í öllum vöfrum.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') sopaVidLokun();
+  });
+  window.addEventListener('pagehide', sopaVidLokun);
+  window.addEventListener('beforeunload', sopaVidLokun);
+
   window.Vettvangsathuganir = { haldaVid, saekja };
   console.log('[patch-361] Vettvangsathuganir virkar');
 })();

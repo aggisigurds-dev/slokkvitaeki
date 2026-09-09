@@ -334,11 +334,32 @@
     }
     if (act === 'punktur') {
       const nafn = t.getAttribute('data-nafn') || '';
-      const raw = prompt('Punktur á ' + nafn + ' (Drög-stöð):', '');
-      if (!raw || !raw.trim()) return;
-      fetch(HUB + '/api/reikningspunktar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'add', raw: raw.trim(), felag: 'slokkvitaeki', worksite_name: nafn, source: 'hub', author: 'Þjónustuborð' }) })
-        .then(r => r.json()).then(j => { if (window.Toast && Toast.show) Toast.show(j && j.row ? '📝 Punktur skráður á ' + nafn : '⚠ Tókst ekki að skrá punkt'); const host = document.getElementById(HOST_ID); if (host) { delete CACHE[nafn]; byggja(); } })
-        .catch(() => { if (window.Toast && Toast.show) Toast.show('⚠ Tókst ekki að skrá punkt'); });
+      // 09.09.2026 (ósk Agnars: „enginn texti má nokkurntíma tínast").
+      // Áður: eitt `prompt()`, og mistækist POST-ið var textinn horfinn með
+      // glugganum — notandinn fékk aðeins „⚠ Tókst ekki að skrá punkt" og varð
+      // að muna og skrifa allt upp á nýtt. Nú er reynt aftur með textann
+      // forskrifaðan, svo hann glatist ekki þótt netið eða hub-inn klikki.
+      (function skra(forskrift) {
+        const raw = prompt('Punktur á ' + nafn + ' (Drög-stöð):', forskrift || '');
+        if (raw == null || !raw.trim()) return;            // Hætta við = meðvituð ákvörðun
+        const texti = raw.trim();
+        fetch(HUB + '/api/reikningspunktar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'add', raw: texti, felag: 'slokkvitaeki', worksite_name: nafn, source: 'hub', author: 'Þjónustuborð' }) })
+          .then(r => r.json())
+          .then(j => {
+            if (j && j.row) {
+              if (window.Toast && Toast.show) Toast.show('📝 Punktur skráður á ' + nafn);
+              const host = document.getElementById(HOST_ID); if (host) { delete CACHE[nafn]; byggja(); }
+              return;
+            }
+            throw new Error((j && j.error) || 'hub tók ekki við punktinum');
+          })
+          .catch(e => {
+            try { if (window.logProblem) window.logProblem('verkbord_punktur_failed', nafn + ' — ' + ((e && e.message) || e)); } catch (_) {}
+            if (window.Toast && Toast.show) Toast.show('⚠ Punkturinn vistaðist EKKI — textinn kemur aftur');
+            // Aftur með textann inni: ekkert tapast þótt notandinn hætti við núna.
+            setTimeout(() => skra(texti), 250);
+          });
+      })('');
       return;
     }
     if (act === 'saga' && window.SalaCustomerHistory && SalaCustomerHistory.open) {

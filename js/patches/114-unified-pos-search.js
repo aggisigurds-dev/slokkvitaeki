@@ -74,7 +74,7 @@
       // fyrirtaeki is >1000 rows — page through the Supabase cap, then re-shape
       // to { data } so the consumer below stays unchanged.
       DB.fetchAll((from, to) => SB.from('fyrirtaeki')
-        .select('id,nafn,simi,kennitala,heimilisfang,netfang,afslattur_pct,athugasemdir,er_i_thjonustu,stadur_nr')
+        .select('id,nafn,simi,kennitala,heimilisfang,netfang,afslattur_pct,athugasemdir,er_i_thjonustu,stadur_nr,banner_note,plan_note')
         .is('deleted_at', null)
         .order('nafn')
         .range(from, to)).then(rows => ({ data: rows })),
@@ -85,8 +85,35 @@
     ]).then(results => {
       const fy = (results[0] && results[0].data) || [];
       const vk = (results[1] && results[1].data) || [];
-      // Always overwrite caches so renames / new rows are visible.
-      if (window.Companies) Companies.list = fy;
+      // 2026-09-09 (Agnar: „text in both text areas, cant keep inside if I hard
+      // refresh... really important informations that are getting lost and costing
+      // us a lot of money"). RÓTIN VAR HÉR.
+      //
+      // Companies.load() sækir `select('*')` — allar 32 súlurnar. Þessi
+      // forsókn sækir 10 (nú 12) og SKRIFAÐI ÞÆR YFIR listann. Eftir harða
+      // endurhleðslu vann forsóknin kapphlaupið, svo `c.banner_note` var
+      // `undefined` þegar fyrirtækjaspjaldið teiknaðist — ✍ Athugasemd birtist
+      // TÓM þótt textinn stæði óhreyfður í gagnagrunninum. Sama gilti um
+      // plan_note, review_note, ovisst, discount_tier_id, bokunarnumer o.fl.
+      // Ekkert eyddist; það SÁST bara ekki — sem er jafn dýrt, því þá er
+      // upplýsingin slegin inn aftur eða viðskiptavinurinn afgreiddur án hennar.
+      //
+      // Nú er SAMEINAÐ: raðir sem eru þegar til halda breiðu súlunum sínum og
+      // fá aðeins leitarsúlurnar uppfærðar (svo endurnefning sjáist áfram);
+      // nýjar raðir bætast við. Listinn getur því aldrei orðið mjórri en hann var.
+      if (window.Companies) {
+        const fyrri = Array.isArray(Companies.list) ? Companies.list : [];
+        if (!fyrri.length) { Companies.list = fy; }
+        else {
+          const eftirId = new Map(fyrri.map(c => [+c.id, c]));
+          Companies.list = fy.map(nyr => {
+            const gamall = eftirId.get(+nyr.id);
+            if (!gamall) return nyr;
+            eftirId.delete(+nyr.id);
+            return Object.assign(gamall, nyr);   // breiðu súlurnar standa
+          });
+        }
+      }
       if (window.Vidskiptavinir) Vidskiptavinir.list = vk;
       if (window.DB && window.DB.cache) DB.cache.vidsk = vk;
       _vidskFallback = vk;

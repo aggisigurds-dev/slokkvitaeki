@@ -278,27 +278,64 @@
             '<button type="button" class="_ssk-note-cancel" style="border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer">Hætta við</button>' +
           '</div>';
         const ta = body.querySelector("._ssk-note-ta"); if (ta) ta.focus();
+        // 09.09.2026 (ósk Agnars: „enginn texti má nokkurntíma tínast").
+        // Samantektin vistaðist AÐEINS þegar smellt var á Vista. Fari notandinn
+        // af prófílnum með reitinn opinn — eða loki flipanum — er textinn
+        // horfinn. Sjálfvirk vistun (debounce + blur) sér til þess að hann sé
+        // kominn á þjóninn löngu áður; Vista-takkinn er þá staðfesting, ekki
+        // eina leiðin. Sama fyrirmynd og `savePlanNote` í 153-arsskodun.js.
+        let sidast = (f.athugasemdir || "").trim();
+        let timer = null;
+        const vistaAths = async (fraTakka) => {
+          clearTimeout(timer); timer = null;
+          if (!ta) return false;
+          const val = ta.value.trim();
+          if (val === sidast) return true;                 // óbreytt → sleppa
+          const c = sb();
+          if (!c) {
+            ta.style.outline = "2px solid #dc2626";
+            ta.title = "Engin gagnagrunnstenging — textinn er enn hér, reyndu aftur.";
+            if (fraTakka) alert("Engin gagnagrunnstenging — reyndu aftur eftir smástund.");
+            return false;
+          }
+          try {
+            // supabase-js kastar EKKI við villu — hún kemur í `.error`. Áður var
+            // hún aldrei skoðuð, svo misheppnuð vistun leit út eins og hún hefði
+            // tekist: `f.athugasemdir` var uppfært og redraw() sýndi nýja textann.
+            const r = await c.from("fyrirtaeki").update({ athugasemdir: val }).eq("id", f.id);
+            if (r && r.error) throw r.error;
+          } catch (e) {
+            ta.style.outline = "2px solid #dc2626";
+            ta.title = "Samantektin vistaðist EKKI — textinn er enn hér, reyndu aftur.";
+            try { if (window.logProblem) window.logProblem("samskipti_athugasemdir_save_failed", "co " + f.id + " — " + ((e && e.message) || e)); } catch (_) {}
+            if (fraTakka) alert("Gat ekki vistað samantekt: " + ((e && e.message) || e));
+            return false;
+          }
+          sidast = val;
+          f.athugasemdir = val;
+          if (cache[f.id]) cache[f.id]._ts = 0;            // næsta opnun sækir ferskt
+          ta.style.outline = ""; ta.title = "";
+          return true;
+        };
+        if (ta) {
+          ta.addEventListener("input", () => { ta.style.outline = ""; clearTimeout(timer); timer = setTimeout(() => vistaAths(false), 700); });
+          ta.addEventListener("blur", () => { clearTimeout(timer); vistaAths(false); });
+        }
         const redraw = (val) => {
           const h = (val.split("\n")[0] || "").trim();
           const r = val.split("\n").slice(1).join("\n").trim();
           const hd = noteEl.querySelector("._ssk-note-head"); if (hd) hd.textContent = h;
           body.textContent = r || h;
         };
+        // „Hætta við" má ALDREI henda texta sem er þegar kominn á þjóninn
+        // (sjálfvirka vistunin er búin að skrifa hann) — teiknum því upp úr
+        // `f.athugasemdir`, sem er nýjasta staðfesta gildið.
         body.querySelector("._ssk-note-cancel").addEventListener("click", () => redraw((f.athugasemdir || "").trim()));
         body.querySelector("._ssk-note-save").addEventListener("click", async () => {
-          const val = ta.value.trim();
-          const client = sb();
           const btn = body.querySelector("._ssk-note-save"); if (btn) { btn.disabled = true; btn.textContent = "Vista…"; }
-          // 2026-08-06 fix: án gagnagrunnstengingar hunsaði þetta áður
-          // vistunina alveg en sýndi samt textann eins og hann væri
-          // vistaður — týndi breytingunni þegjandi. Sama vörn og aðrir
-          // skrifpunktar í þessari skrá (if (!client) return ...).
-          if (!client) { alert("Engin gagnagrunnstenging — reyndu aftur eftir smástund."); if (btn) { btn.disabled = false; btn.textContent = "Vista"; } return; }
-          try {
-            await client.from("fyrirtaeki").update({ athugasemdir: val }).eq("id", f.id);
-            f.athugasemdir = val; if (cache[f.id]) cache[f.id]._ts = 0;
-          } catch (e) { alert("Gat ekki vistað samantekt: " + (e.message || e)); if (btn) { btn.disabled = false; btn.textContent = "Vista"; } return; }
-          redraw(val);
+          const ok = await vistaAths(true);
+          if (!ok) { if (btn) { btn.disabled = false; btn.textContent = "Vista"; } return; }
+          redraw(ta.value.trim());
         });
       });
     }

@@ -104,15 +104,44 @@
 
     ta.addEventListener('input', scheduleSave);
 
-    // Save immediately on blur (in case user closes the page)
-    ta.addEventListener('blur', () => {
+    // Save immediately on blur (in case user closes the page).
+    // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"): blur-leiðin
+    // þagði áður yfir mistökum — `.then(ok => { if (ok) … })` sagði notandanum
+    // EKKERT þegar vistunin brást, svo hann fór af síðunni í góðri trú.
+    // Núna er sama sýnilega merkið notað og í debounce-leiðinni + logProblem.
+    async function vistaStrax() {
       if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-      if (ta.value !== lastSaved) {
-        saveNotes(ta.value).then(ok => {
-          if (ok) lastSaved = ta.value;
-        });
+      if (ta.value === lastSaved) return;
+      const val = ta.value;
+      const ok = await saveNotes(val);
+      if (ok) {
+        lastSaved = val;
+        setStatus('✓ vistað', '#16a34a');
+        setTimeout(() => { if (status.textContent === '✓ vistað') setStatus(''); }, 1800);
+      } else {
+        setStatus('✗ ekki vistað', '#dc2626');
+        ta.style.outline = '2px solid #dc2626';
+        ta.title = 'Punktarnir vistuðust EKKI — afritaðu textann og reyndu aftur';
+        try { if (window.logProblem) window.logProblem('samningar_notes_save_failed', 'blur/flush'); } catch (_) {}
       }
-    });
+    }
+    ta.addEventListener('focus', () => { ta.style.outline = ''; ta.title = ''; });
+    ta.addEventListener('blur', vistaStrax);
+    ta._vistaStrax = vistaStrax;
+    // Öryggisnet: flipi falinn / síða lokuð meðan bendillinn er enn í reitnum —
+    // þá kemur ekkert `blur`. Þessir atburðir koma áreiðanlega. Skráð EINU
+    // sinni (window-flagg) svo endur-teikning stafli ekki upp hlusturum;
+    // reiturinn er sóttur ferskur úr DOM-inu í hvert sinn.
+    if (!window.__npFlushHooked) {
+      window.__npFlushHooked = true;
+      const sopa = () => {
+        const live = document.querySelector('#view-samningar ._np-textarea');
+        if (live && typeof live._vistaStrax === 'function') { try { live._vistaStrax(); } catch (_) {} }
+      };
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sopa(); });
+      window.addEventListener('pagehide', sopa);
+      window.addEventListener('beforeunload', sopa);
+    }
 
     printBtn.addEventListener('click', () => {
       const text = ta.value;

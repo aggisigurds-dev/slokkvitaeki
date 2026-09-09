@@ -215,7 +215,11 @@
     }
     try {
       const r = await sb.from('thjonustubeidni').update(patch).eq('id', m.id); if (r.error) throw r.error; Object.assign(m, patch);
-      await sb.from('postur_ai_flokkun').update({ status: 'samthykkt', decided_at: nowIso(), decided_by: me() }).eq('beidni_id', m.id);
+      // 09.09.2026: `.error` var ekki skoðuð hér. Mistækist ákvörðunar-skrifið
+      // var `s.status` samt sett á 'samthykkt', svo tillagan hvarf af skjánum
+      // en kom aftur við endurhleðslu — sama vinnan tvisvar.
+      const r2 = await sb.from('postur_ai_flokkun').update({ status: 'samthykkt', decided_at: nowIso(), decided_by: me() }).eq('beidni_id', m.id);
+      if (r2 && r2.error) throw r2.error;
       s.status = 'samthykkt';
     } catch (e) { toast('Villa við að nota: ' + (e.message || e), true); return; }
     render();
@@ -224,7 +228,13 @@
   async function reject(id) {
     const sb = getSB(); if (!sb) return;
     const s = STATE.sugg.get(String(id)); if (!s) return;
-    try { await sb.from('postur_ai_flokkun').update({ status: 'hafnad', decided_at: nowIso(), decided_by: me() }).eq('beidni_id', Number(id)); s.status = 'hafnad'; }
+    // 09.09.2026: supabase-js kastar EKKI — villan kemur í `.error`. Án þessarar
+    // athugunar var höfnunin sögð tekin þótt hún hefði ekki farið á þjóninn.
+    try {
+      const r = await sb.from('postur_ai_flokkun').update({ status: 'hafnad', decided_at: nowIso(), decided_by: me() }).eq('beidni_id', Number(id));
+      if (r && r.error) throw r.error;
+      s.status = 'hafnad';
+    }
     catch (e) { toast('Villa: ' + (e.message || e), true); return; }
     render();
   }

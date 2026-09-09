@@ -68,6 +68,11 @@
   // the de-duped list this file's own render/search/selection code uses;
   // `allCustomers` is what Vidskiptavinir.list now exposes.
   const allCustomers = [];
+  // 2026-09-09: súlurnar sem `select('*')` ber en mjóar forsóknir (patch 114)
+  // gera ekki. Sé listinn settur án þeirra sækjum við þær EINU SINNI í bakgrunni
+  // og sameinum — sjá `breikka()` neðar. Ein fyrirspurn, ekki full endurhleðsla.
+  const BREIDAR_SULUR = ['vefsida', 'tengilidur', 'greidsluskilmali', 'customer_base_id', 'discount_tier_id', 'created_at'];
+  let _breikkad = false;   // aðeins ein tilraun á lotu
   let unitsByPhone = {};   // phone -> [units]
   let unitsByName = {};    // name -> [units]
   // 2026-06-10: signature of the last-rendered detail page. refresh() can fire
@@ -843,6 +848,35 @@
     }
   }
 
+  // 2026-09-09 — LESTRARLEIÐIN: fylla upp í súlur sem mjó forsókn skildi eftir.
+  // Sameiningin í setternum hér að neðan getur aðeins VARÐVEITT breiðar súlur sem
+  // þegar voru til. Við ræsingu keyrir POS-forsóknin (patch 114) hins vegar Á UNDAN
+  // `load()` — allCustomers verður til MJÓR og `load()` keyrir ekki fyrr en flipinn
+  // er opnaður. Því var `customer_base_id` o.fl. `undefined` alla lotuna hjá öllum
+  // sem lesa Vidskiptavinir.list. Hér sækjum við AÐEINS súlurnar sem vantar (ein
+  // fyrirspurn, í mesta lagi einu sinni á lotu — ræsingin þolir ekki fleiri köll,
+  // sbr. patch 360) og sameinum þær inn í raðirnar sem þegar eru í minni.
+  function breikka() {
+    if (_breikkad || !allCustomers.length) return;
+    const fyrsta = allCustomers[0];
+    if (!fyrsta || !BREIDAR_SULUR.some(k => fyrsta[k] === undefined)) return;   // þegar breitt
+    _breikkad = true;
+    let sb; try { sb = getSB(); } catch (_) { return; }
+    if (!sb) { _breikkad = false; return; }
+    sb.from('vidskiptavinir').select('id,' + BREIDAR_SULUR.join(',')).then(r => {
+      if (!r || r.error || !Array.isArray(r.data)) { _breikkad = false; return; }
+      const eftirId = new Map(allCustomers.filter(c => c && c.id != null).map(c => [String(c.id), c]));
+      let n = 0;
+      for (const rod of r.data) {
+        const c = eftirId.get(String(rod.id));
+        if (!c) continue;
+        // aldrei skrifa yfir gildi sem er þegar til — aðeins fylla í eyðurnar
+        for (const k of BREIDAR_SULUR) if (c[k] === undefined) { c[k] = rod[k]; n++; }
+      }
+      if (n) console.log('[VidskRevamp] breikkaði ' + n + ' súlugildi sem mjó forsókn skildi eftir');
+    }, () => { _breikkad = false; });
+  }
+
   // Public surface. `list` is a LIVE getter that returns the closure
   // `customers` array directly (which is now mutate-in-place — see
   // declaration). Setter mutates the same array so external prefetchers
@@ -855,8 +889,30 @@
     get list() { return allCustomers; },
     set list(v) {
       if (!Array.isArray(v)) return;
+      // 2026-09-09 — SYSTKINI AF 114-VILLUNNI (banner_note hvarf við harða
+      // endurhleðslu). Setterinn SKIPTI ÁÐUR ÖLLU ÚT. POS-forsóknin í patch 114
+      // sækir `vidskiptavinir` með NÍU súlum (id,nafn,kennitala,simi,farsimi,
+      // heimilisfang,netfang,afslattur_pct,athugasemdir) en `load()` hér að ofan
+      // sækir `select('*')` — SEXTÁN. Mælt í viðmótinu 09.09.2026 eftir harða
+      // endurhleðslu: Vidskiptavinir.list = 223 raðir með 9 súlum og
+      // `customer_base_id` === undefined ALLA lotuna, af því að forsóknin keyrir
+      // við ræsingu en `load()` aðeins þegar Viðskiptavina-flipinn er opnaður.
+      // Þar með týndust vefsida, tengilidur, greidsluskilmali (65 raðir),
+      // customer_base_id (152), discount_tier_id, deleted_at og created_at úr
+      // minni þótt þau stæðu óhreyfð í grunninum.
+      // Nú er SAMEINAÐ eins og patch 114 gerir fyrir Companies.list: rað sem er
+      // þegar til heldur breiðu súlunum sínum og fær aðeins nýju gildin ofan á.
+      // Listinn getur því ALDREI orðið mjórri en hann var — hver sem skrifar.
+      const eftirId = new Map();
+      for (const g of allCustomers) if (g && g.id != null) eftirId.set(String(g.id), g);
+      const sameinad = v.map(r => {
+        if (!r || r.id == null) return r;
+        const gamall = eftirId.get(String(r.id));
+        return gamall ? Object.assign(gamall, r) : r;   // breiðu súlurnar standa
+      });
       allCustomers.length = 0;
-      v.forEach(x => allCustomers.push(x));
+      sameinad.forEach(x => allCustomers.push(x));
+      breikka();   // vantar súlur? sækja þær einu sinni og sameina
     },
     openDetail: c => { if (c?.id) openDetailById(c.id); },
     openNew: () => window.SalaMottaka?.openNewCustomer?.(),

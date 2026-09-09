@@ -1067,6 +1067,14 @@
     let filledId = existing ? existing.id : null;
     let filledName = existing ? (existing.name || '') : '';
 
+    // 2026-09-09 (Agnar: „það þarf að fara yfir allar síðurnar … enginn texti
+    // má nokkurntíma tínast"): eyðublaðið lokaðist á ✕, „Loka" OG smell á
+    // dökka bakgrunninn — ÁN nokkurrar aðvörunar. Fullútfylltur þjónustu-
+    // samningur hvarf við eitt óviljandi smell utan gluggans. Hér er haldið
+    // utan um síðast VISTAÐA ástandið og spurt áður en glugganum er lokað.
+    let vistadGildi = JSON.stringify(values);
+    const erOvistad = () => JSON.stringify(values) !== vistadGildi;
+
     let dlg = document.getElementById('_dt-form-modal');
     if (dlg) dlg.remove();
     dlg = document.createElement('div');
@@ -1105,9 +1113,17 @@
     document.body.appendChild(dlg);
 
     function close() { dlg.remove(); }
+    function lokaOruggt() {
+      if (erOvistad() && !confirm('Loka án þess að vista? Útfyllti textinn glatast.')) return;
+      close();
+    }
+    // NB bakgrunns-smellurinn er ÞEGAR varinn af patch 177 (modal dirty-guard,
+    // capture-fasa). Þess vegna er `close` — ekki `lokaOruggt` — hér, annars
+    // væri spurt tvisvar. ✕ og „Loka" fóru hins vegar FRAMHJÁ 177 og eru
+    // varin hér (2026-09-09).
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
-    dlg.querySelector('#_dt-x').addEventListener('click', close);
-    dlg.querySelector('#_dt-cancel').addEventListener('click', close);
+    dlg.querySelector('#_dt-x').addEventListener('click', lokaOruggt);
+    dlg.querySelector('#_dt-cancel').addEventListener('click', lokaOruggt);
 
     const formEl = dlg.querySelector('#_dt-form');
     const previewEl = dlg.querySelector('#_dt-preview');
@@ -1413,6 +1429,7 @@
       if (!ok) { alert('Vistun mistókst.'); return; }
       filledId = rec.id;
       filledName = rec.name;
+      vistadGildi = JSON.stringify(values);   // 2026-09-09: nýtt viðmið eftir vistun
       if (window.Toast && Toast.show) Toast.show('✓ Vistað' + contractMsg);
       refreshFilledSection();
       // Refresh the patch-50 contracts list so the new/updated row appears
@@ -1540,9 +1557,20 @@
     document.body.appendChild(dlg);
 
     function close() { dlg.remove(); }
+    // 2026-09-09 (ósk Agnars: „enginn texti má nokkurntíma tínast"): sniðmáts-
+    // ritillinn er stór textareitur. Áður hentu ✕ / „Hætta við" / smellur á
+    // bakgrunninn öllu sem var skrifað, án aðvörunar.
+    function lokaOruggt() {
+      const nafnNu = (dlg.querySelector('#_dte-name') || {}).value || '';
+      const htmlNu = (dlg.querySelector('#_dte-html') || {}).value || '';
+      const breytt = nafnNu !== initialName || htmlNu !== initialHtml;
+      if (breytt && !confirm('Loka sniðmátsritlinum án þess að vista? Textinn glatast.')) return;
+      close();
+    }
+    // Bakgrunnurinn er varinn af patch 177 → `close` hér svo ekki sé spurt tvisvar.
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
-    dlg.querySelector('#_dte-x').addEventListener('click', close);
-    dlg.querySelector('#_dte-cancel').addEventListener('click', close);
+    dlg.querySelector('#_dte-x').addEventListener('click', lokaOruggt);
+    dlg.querySelector('#_dte-cancel').addEventListener('click', lokaOruggt);
 
     const ta = dlg.querySelector('#_dte-html');
     const prev = dlg.querySelector('#_dte-prev');

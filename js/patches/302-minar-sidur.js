@@ -63,13 +63,18 @@
     if (!_virk && _state.sidur.length) _virk = _state.sidur[0].id;
     return _state;
   }
+  // vista() = debounce (350 ms) svo hraður innsláttur verði EIN vistun.
+  // vistaStrax() = sama vistun án biðar; focusout-vörðurinn neðar kallar í hana
+  // svo síðasti stafurinn tapist ekki þótt farið sé beint af síðunni.
+  async function vistaStrax() {
+    if (_vistT) { clearTimeout(_vistT); _vistT = null; }
+    if (!window.AppSettings || !AppSettings.save) return;
+    const ok = await AppSettings.save({ [KEY]: _state });
+    if (!ok) toast('Náði ekki að vista síðuna.');
+  }
   function vista() {
     if (_vistT) clearTimeout(_vistT);
-    _vistT = setTimeout(async () => {
-      if (!window.AppSettings || !AppSettings.save) return;
-      const ok = await AppSettings.save({ [KEY]: _state });
-      if (!ok) toast('Náði ekki að vista síðuna.');
-    }, 350);
+    _vistT = setTimeout(vistaStrax, 350);
   }
   const sidan = () => (_state.sidur.find(s => s.id === _virk) || null);
 
@@ -518,6 +523,17 @@
       if (lnafn) l.nafn = el.value; else l.url = el.value.trim();
       vista();
     }
+  });
+
+  // 2026-09-09: yfirgefi notandinn reit með óvistaða breytingu í bið vistum við
+  // STRAX — 350 ms biðin gat étið síðasta innsláttinn ef farið var beint af
+  // síðunni. Aðeins þegar vistun er raunverulega í bið (_vistT), svo venjulegt
+  // flakk milli reita skrifi ekki að óþörfu.
+  document.addEventListener('focusout', e => {
+    if (!_vistT) return;
+    const v = document.getElementById(VIEW_ID);
+    if (!v || !e.target || !v.contains(e.target)) return;
+    vistaStrax();
   });
 
   document.addEventListener('change', e => {
