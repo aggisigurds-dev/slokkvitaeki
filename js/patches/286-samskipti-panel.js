@@ -18,6 +18,21 @@
   // hætti þögult — hýsillinn festist á prófílinn en kortið teiknaðist aldrei.
   const sb = () => (window.DB && window.DB.sb) || window.sb || null;
   const cache = {};
+  // SENT-ÞEKJAN — frá hvaða degi eigum við sendan póst? Sótt einu sinni.
+  // Nauðsynleg til að fullyrða ekki „ÓSVARAÐ" um póst sem er eldri en safnið
+  // okkar af SENDUM pósti (byrjar 18.07.2025 á meðan INBOX nær til 2015).
+  // Sama vörn og bláa/rauða merkið notar; án hennar hefðu 54 af 85 beiðnum
+  // verið merktar ósvaraðar að ósekju.
+  let _sentFra = null;
+  async function sentThekja() {
+    if (_sentFra !== null) return _sentFra;
+    try {
+      const c = sb(); if (!c) return (_sentFra = "");
+      const { data } = await c.from("v_sent_thekja").select("fra").limit(1).maybeSingle();
+      _sentFra = (data && data.fra) || "";
+    } catch (_) { _sentFra = ""; }
+    return _sentFra;
+  }
 
   async function fetchData(fid) {
     if (cache[fid] && Date.now() - cache[fid]._ts < 60000) return cache[fid];
@@ -75,6 +90,7 @@
           .eq("fyrirtaeki_id", fid).order("received_at", { ascending: false }).limit(30);
         out.mails = mails || [];
       }
+      out.sentFra = await sentThekja();
       // ✓-staðan (samskipti_stada) — spurning eldri en hún telst afgreidd
       const { data: h } = await client.from("samskipti_stada")
         .select("handled_at").eq("fyrirtaeki_id", fid).maybeSingle();
@@ -108,9 +124,30 @@
     data.handled = nu; return true;
   }
 
-  function keyPoints(f, mails, cut) {
+  function keyPoints(f, mails, cut, sentFra) {
     const pts = [];
     if (f.banner_note) pts.push(["📌", f.banner_note]);
+    // 09.09.2026 (Agnar: „allir mikilvægir punktar má koma í samantekt um
+    // fyrirtækið"). Beiðni um aukaþjónustu og uppsögn á samningi eru það sem
+    // MÁ ALLS EKKI gleymast fyrir árlegu heimsóknina — þau fara því hátt í
+    // samantektina sjálfa, ekki bara í punktinn á listanum.
+    // Flokkurinn kemur úr bh_postflokkur (v_kunni_postur.flokkur) — SAMA
+    // skilgreining og bláa merkið notar, svo þau geta ekki sagt sitt hvað.
+    // Reiknað hér úr póstunum sem þegar eru sóttir, svo þetta virkar líka áður
+    // en /api/company-mail fer í loftið.
+    const merkt = mails.filter(m => m.flokkur && !m.fra_okkur);
+    if (merkt.length) {
+      const m = merkt[0];                       // mails er raðað nýjast fyrst
+      const svarad = mails.some(x => x.fra_okkur &&
+        String(x.received_at || "") > String(m.received_at || ""));
+      // „ÓSVARAÐ" má aðeins fullyrða um póst sem er NÝRRI en sendi-safnið
+      // okkar nær — annars er þögnin gat í safninu, ekki vanræksla.
+      const metanlegt = !!sentFra && String(m.received_at || "") >= String(sentFra);
+      pts.push([m.flokkur === "uppsogn" ? "🚪" : "📩",
+        (m.flokkur === "uppsogn" ? "Uppsögn á samningi" : "Beiðni um aukaþjónustu") +
+        " — " + fmtD(m.received_at) + ": " + (m.subject || "(ekkert efni)") +
+        (svarad ? " (svarað)" : metanlegt ? " — ÓSVARAÐ" : " (svar óvíst — eldra en sendi-safnið)")]);
+    }
     const teng = f["tengiliður"] || f.tengilidur;
     if (teng || f.netfang || f.simi || f.farsimi) {
       let c = teng ? esc(teng) : "";
@@ -127,14 +164,16 @@
     const openQ = mails.filter(m => m.is_question && !m.fra_okkur && (!cut || m.received_at > cut)).length;
     if (warn) pts.push(["⚠️", warn.trim()]);
     else if (openQ) pts.push(["⚠️", openQ + " ósvöruð spurning" + (openQ > 1 ? "ar" : "") + " í pósti"]);
-    return pts.slice(0, 4);
+    // Fimm slott (var fjögur): beiðni/uppsögn bætist við án þess að ýta
+    // tengiliðnum eða síðasta póstinum út — hvort tveggja er notað daglega.
+    return pts.slice(0, 5);
   }
 
   function render(host, fid, data) {
     const f = data.f; if (!f) return;
     const cut = cutOf(data);
     const openQ = data.mails.filter(m => m.is_question && !m.fra_okkur && (!cut || m.received_at > cut)).length;
-    const pts = keyPoints(f, data.mails, cut);
+    const pts = keyPoints(f, data.mails, cut, data.sentFra || "");
     const card = document.createElement("div");
     card.className = "card pad _samskipti-card";
     // Merki fyrir 359: ÖLL póstsagan er þegar í kortinu (bæði heimildirnar,
