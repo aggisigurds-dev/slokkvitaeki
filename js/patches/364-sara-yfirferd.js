@@ -186,6 +186,12 @@
       // Hausinn loðir við toppinn — annars skrunast ⛶-takkinn (og heildartalan)
       // upp fyrir skjáinn um leið og maður byrjar að vinna í fyrsta málinu.
       '.syf-haus{position:sticky;top:0;z-index:40}',
+      // Kerfis-talan: læst, daufari, aðeins minni — sést en keppir ekki við
+      // reitinn sem verið er að vinna í. Rauð þegar hún stangast á við blaðið.
+      '.syf-par{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}',
+      '.syf-kerfi{font-size:11.5px;font-weight:700;color:#94a3b8;font-variant-numeric:tabular-nums;',
+      'background:#f1f5f9;border:1px solid #e2e8f0;border-radius:5px;padding:2px 6px;white-space:nowrap;cursor:default;user-select:none}',
+      '.syf-kerfi.oliku{color:#b91c1c;background:#fef2f2;border-color:#fecaca}',
     ].join('');
     document.head.appendChild(s);
   }
@@ -243,17 +249,35 @@
 
     // Línurnar — fjöldi og verð breytanleg, samtals reiknast.
     var t = reikna(r);
+    // Kerfis-tölurnar (Agnar 09.09.2026: „sýna líka tölurnar sem voru á
+    // tækjaspjaldinu fyrir, bara aðeins öðruvísi á litinn og ekki breytanlegt").
+    // Þetta er tækjalisti kerfisins eins og hann stóð — daufar, læstar tölur við
+    // hliðina á þeim breytanlegu, og rautt þar sem blaðið og kerfið stangast á.
+    var kl = Array.isArray(r.kerfi_linur) ? r.kerfi_linur : [];
+    function kerfiReitur(k, mitt, sufix) {
+      if (k == null || k === '') return '<span class="syf-kerfi">—</span>';
+      var oliku = Number(k) !== Number(mitt);
+      return '<span class="syf-kerfi' + (oliku ? ' oliku' : '') + '" title="' +
+        (oliku ? 'Kerfið segir ' + k + ' — blaðið segir ' + mitt : 'Sama og í kerfinu') + '">' +
+        (oliku ? '≠ ' : '') + k + (sufix || '') + '</span>';
+    }
     h += '<div style="overflow-x:auto"><table class="syf-tafla"><thead><tr>' +
-      '<th>Liður</th><th style="width:66px;text-align:right">Fjöldi</th>' +
-      '<th style="width:104px;text-align:right">Per stk án vsk</th>' +
+      '<th>Liður</th>' +
+      '<th style="width:120px;text-align:right">Fjöldi <span style="font-weight:600;color:#94a3b8">· kerfi</span></th>' +
+      '<th style="width:158px;text-align:right">Per stk án vsk <span style="font-weight:600;color:#94a3b8">· kerfi</span></th>' +
       '<th style="width:52px;text-align:center">VSK</th>' +
       '<th style="width:104px;text-align:right">Samtals án vsk</th>' +
       '<th style="width:26px"></th></tr></thead><tbody>';
     ls.forEach(function (l, i) {
+      var k = kl[i] || {};
       h += '<tr>' +
         '<td><input class="syf-inp" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="l" value="' + esc(l.l) + '"></td>' +
-        '<td><input class="syf-inp n" type="number" min="0" step="1" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="n" value="' + (Number(l.n) || 0) + '"></td>' +
-        '<td><input class="syf-inp n" type="number" min="0" step="1" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="v" value="' + (Number(l.v) || 0) + '"></td>' +
+        '<td class="n"><span class="syf-par">' +
+          '<input class="syf-inp n" style="width:52px" type="number" min="0" step="1" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="n" value="' + (Number(l.n) || 0) + '">' +
+          kerfiReitur(k.n, l.n) + '</span></td>' +
+        '<td class="n"><span class="syf-par">' +
+          '<input class="syf-inp n" style="width:76px" type="number" min="0" step="1" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="v" value="' + (Number(l.v) || 0) + '">' +
+          kerfiReitur(k.v, l.v) + '</span></td>' +
         '<td style="text-align:center"><input class="syf-inp n" style="width:44px;padding:4px 3px;text-align:center" type="number" min="0" max="100" step="1" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="vsk" value="' + (l.vsk == null ? 24 : Number(l.vsk)) + '"></td>' +
         '<td class="n" style="font-weight:700">' + kr(linaEx(l)) + '</td>' +
         '<td><button class="syf-btn" style="padding:2px 6px" data-act="eyda-lina" data-id="' + r.id + '" data-i="' + i + '" title="Eyða línu">✕</button></td>' +
