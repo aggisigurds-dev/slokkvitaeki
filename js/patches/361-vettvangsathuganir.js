@@ -209,7 +209,11 @@
               'border:1px solid ' + (a ? '#0f172a' : '#cbd5e1') + '">' + esc(heiti) + '</button>';
           }).join('') +
         '</div>' +
-        '<textarea id="_va-nota" rows="2" placeholder="Hvað sást? t.d. „Neyðarljós á 2. hæð dautt" · „Gömul tafla í kjallara" · „Óþétt lagnagöt í bílskýli"" ' +
+        // 2026-09-09: LOKA-gæsalappirnar hér voru ASCII " — þær slitu
+        // placeholder-eigindið í sundur og hálf vísbendingin varð að rusl-
+        // eigindum á textareitnum (mælt í vafra þennan dag). Íslenska loka-
+        // gæsalappan U+201C er ekki HTML-afmarkari og heldur textanum heilum.
+        '<textarea id="_va-nota" rows="2" placeholder="Hvað sást? t.d. „Neyðarljós á 2. hæð dautt“ · „Gömul tafla í kjallara“ · „Óþétt lagnagöt í bílskýli“" ' +
           'style="width:100%;padding:8px 10px;border:1px solid #b4bcc8;border-radius:7px;font:inherit;font-size:13px;' +
           'line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' + esc(gogn.nota || '') + '</textarea>' +
       '</div>';

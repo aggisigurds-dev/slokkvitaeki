@@ -185,9 +185,13 @@
     window.__bkNotesFlushHooked = true;
     function flushAny() {
       const ta = document.getElementById('_bk-notes-ta');
-      // We can't await an async save during unload — but Supabase JS client
-      // uses fetch with keepalive, so the request completes even after the
-      // tab is closed.
+      // LEIÐRÉTTING 2026-09-09 (mælt á lifandi vafra þennan dag): fullyrðingin
+      // sem stóð hér — að supabase-js noti `keepalive` svo beiðnin klárist eftir
+      // að flipanum er lokað — er RÖNG. Hún gerir það ekki; beiðnin deyr með
+      // síðunni. Þetta dugar því fyrir flipa-skipti og app-skipti (þar sem
+      // síðan lifir áfram) en EKKI fyrir harða endurhleðslu. Sjá patch 361 þar
+      // sem sópunin er send með `fetch(..., {keepalive:true})` beint á PostgREST;
+      // hér er það ekki hægt án þess að endurgera deep-merge AppSettings.save.
       try { flushNotes(ta); } catch (_) {}
     }
     document.addEventListener('visibilitychange', () => {
