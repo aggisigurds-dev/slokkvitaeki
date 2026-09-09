@@ -1354,14 +1354,17 @@
       },
       lastYr: (a, b) => (+a._ars.last_year_inspected || 0) - (+b._ars.last_year_inspected || 0)
                        || String(a.nafn).localeCompare(b.nafn, 'is'),
-      // Póst-staða: ósvarað (rautt) → mikilvægt (gult) → í sambandi (grænt) →
-      // eldri saga (grátt) → engin. Les stöðuna úr póst-merkinu (patch 295 /
+      // Póst-staða: beiðni/uppsögn (blátt) → ósvarað (rautt) → mikilvægt (gult)
+      // → í sambandi (grænt) → eldri saga (grátt) → engin. Blátt fremst af því
+      // það er LÍKA ósvarað, bara nánar merkt (beiðni um aukaþjónustu eða
+      // uppsögn á samningi — ósk Agnars 09.09.2026).
+      // Les stöðuna úr póst-merkinu (patch 295 /
       // CompanyMail.status); ef það er ekki hlaðið fellur allt í sama flokk og
       // röðin verður stafrófsröð (skaðlaust).
       poststada: (a, b) => {
         const rank = c => {
           const s = (window.CompanyMail && CompanyMail.status) ? CompanyMail.status(c.id) : null;
-          return s === 'red' ? 0 : s === 'yellow' ? 1 : s === 'green' ? 2 : s === 'hist' ? 3 : 4;
+          return s === 'blue' ? 0 : s === 'red' ? 1 : s === 'yellow' ? 2 : s === 'green' ? 3 : s === 'hist' ? 4 : 5;
         };
         return rank(a) - rank(b) || String(a.nafn || '').localeCompare(b.nafn || '', 'is');
       },
@@ -1852,7 +1855,7 @@
               <option value="postnumer" ${state.sort==='postnumer'?'selected':''}>📍 Póstnúmer</option>
               <option value="month" ${state.sort==='month'?'selected':''}>📅 Eftir skoðunarmánuði (næst fyrst)</option>
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
-              <option value="poststada" ${state.sort==='poststada'?'selected':''}>🚦 Póst-staða (ósvarað → saga → engin)</option>
+              <option value="poststada" ${state.sort==='poststada'?'selected':''}>🚦 Póst-staða (beiðni → ósvarað → saga)</option>
               <option value="postavail" ${state.sort==='postavail'?'selected':''}>📧 Póstsaga til (fyrst)</option>
             </select>
             <span id="_ars-print-wrap" style="position:relative;display:inline-flex;align-items:stretch">
@@ -3486,7 +3489,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                 const dir = state.sortDir;
                 const arrow = (col) => '<span class="sort-ar">' + (cur === col ? (dir === 'asc' ? '▲' : '▼') : '⇅') + '</span>';
                 return `
-                  <th class="_ars-mailhdr center _ars-mailsort" style="cursor:pointer" title="Póst-staða — raða eftir merkjunum í þessum dálki. 1× smellur: ósvarað fyrst · 2×: póstsaga fyrst · 3×: til baka í stafrófsröð. Smelltu á merkið í röðinni sjálfri til að sjá póstinn.">✉${(cur === 'poststada' || cur === 'postavail') ? '<span class="sort-ar" style="color:#60a5fa">' + (dir === 'asc' ? '▲' : '▼') + '</span>' : '<span class="sort-ar">⇅</span>'}</th>
+                  <th class="_ars-mailhdr center _ars-mailsort" style="cursor:pointer" title="Póst-staða — raða eftir merkjunum í þessum dálki. 1× smellur: beiðni/uppsögn og ósvarað fyrst · 2×: póstsaga fyrst · 3×: til baka í stafrófsröð. Smelltu á merkið í röðinni sjálfri til að sjá póstinn.">✉${(cur === 'poststada' || cur === 'postavail') ? '<span class="sort-ar" style="color:#60a5fa">' + (dir === 'asc' ? '▲' : '▼') + '</span>' : '<span class="sort-ar">⇅</span>'}</th>
                   <th data-sort="name" class="_ars-sort">Fyrirtæki${arrow('name')}</th>
                   <th data-notacol="1" title="✈ Ferðanóta — tímabundnar nótur við ferðaskipulag">Ferðanóta</th>
                   <th data-addrcol="1" data-sort="postnumer" class="_ars-sort" title="Raða eftir póstnúmeri (fyrir akstursleiðir)">Heimilisfang${arrow('postnumer')}</th>
