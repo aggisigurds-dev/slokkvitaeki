@@ -87,7 +87,9 @@
     if (!main) return;
     const coId = getCompanyId();
     if (!coId) return;
-    if (main.querySelector('._cpr-section')) return;
+    // Kafli sem tilheyrir ÖÐRU félagi má ekki standa eftir og loka á nýtt.
+    const fyrri = main.querySelector('._cpr-section');
+    if (fyrri) { if (+fyrri.dataset.coId === +coId) return; fyrri.remove(); }
 
     const section = document.createElement('div');
     section.className = '_cpr-section';
@@ -254,6 +256,23 @@
   }
   attach();
   setTimeout(injectSection, 1500);
+  // ── 2026-09-09, ÓSK AGNARS: „þar sem ég setti yfirleitt inn sjálfvirkur
+  // fastur afsláttur, er farið." MÆLT: á fyrirtækjasíðunni stóð aðeins
+  // „Hópur" eftir í 💸 Afslættir & verð — bæði Sjálfvirkt % (255) og
+  // Tilboðsverð (113) vantaði, líka við kalda hleðslu beint á #company/<id>.
+  //
+  // Orsök: MutationObserver-inn var EINA kveikjan og endurreyndi aldrei.
+  // Hætti innspýtingin þögult — t.d. af því [data-co-id] var ekki komið í
+  // DOM þegar SÍÐASTA hviðan barst — þá kom engin ný hviða og kaflinn
+  // birtist ALDREI. Patch 296 fékk nákvæmlega þessa lækningu 18.08.2026
+  // („bókað retry svo hann komi um leið og vélin er tilbúin") en 113 og 255
+  // sátu eftir. Tifarinn hér er sá vörður: hann kostar eitt querySelector
+  // og innspýtingin skilar sér strax þegar kaflinn er þegar á sínum stað.
+  setInterval(() => {
+    const v = document.getElementById('view-companies');
+    if (v && !v.classList.contains('active')) return;
+    injectSection();
+  }, 1200);
 
   // ── POS hook: apply company pricing to cart lines ──────────────────────
   function findOverrideForLine(desc, overrides) {

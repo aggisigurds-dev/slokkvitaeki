@@ -182,7 +182,27 @@
       (hopur ? ' · Afsláttarhópur: ' + hopur : '') +
       (tilbod > 0 ? ' · Tilboðsverð: ' + tilbod + ' vörur' : '') +
       ' — efsta virka þrepið ræður verðinu í Sölu. Breytt í 💸 Afslættir & verð neðar á síðunni.';
-    return { texti, titill };
+    return { texti, titill, pct, hopur, tilbod };
+  }
+
+  // 2026-09-09, LEIÐRÉTTING: fyrsta yfirferð sagði „enginn Stólpa-afsláttur er
+  // til" af því leitað var að töflu eða dálki. Agnar benti á að hann kemur
+  // „oftast undir sem svona Áminning (Stolpi)" — og það er rétt: 52 virk félög
+  // bera slíka línu í `athugasemdir`, 30 þeirra með prósentu. 23 stemma við
+  // `afslattur_pct` (einhver hefur flutt þær yfir), 7 ekki. Textinn er líka
+  // OFT AFMARKAÐUR („30% af vöru", „50% af Co2") meðan afslattur_pct er flatur
+  // á allt — þess vegna má hann ekki afritast sjálfkrafa; hann er sýndur.
+  function stolpi(coId) {
+    let ath = null;
+    try {
+      const c = ((window.Companies && Companies.list) || []).find(x => +x.id === +coId);
+      ath = c ? c.athugasemdir : null;
+    } catch (_) {}
+    const m = String(ath || '').match(/Áminning\s*\(Stolpi\)\s*:\s*([\s\S]*?)(?:\n\s*\n|$)/i);
+    if (!m) return null;
+    const texti = m[1].trim().replace(/\s*\n\s*/g, ' · ');
+    const pm = texti.match(/(\d{1,2})\s*%/);
+    return { texti, pct: pm ? +pm[1] : null };
   }
 
   // ── Stílar: DAUFT — hvítur texti með lágri ógegnsæi, þunn undirstrikun.
@@ -226,6 +246,10 @@
       ${R('input.co-bupp-reitur._villa:focus', 'border-bottom-color:#ef4444!important;color:#fee2e2!important;background:rgba(220,38,38,.14)!important')}
       ${R('input._bupp-merki-inp::placeholder', 'color:rgba(255,255,255,.25)!important;opacity:1')}
       ${R('._bupp-afsl', 'flex:1 1 auto;min-width:0;font-size:11.5px;line-height:19px;color:rgba(255,255,255,.62)!important;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}
+      /* Gult, ekki rautt — þetta er ábending um ósamræmi, ekki bilun. Bundið
+         við BÁÐA klasana svo það slái ._bupp-afsl út (jafnt vægi tapar fyrir
+         þeirri sem stendur síðar — mælt á lifandi síðu). */
+      ${R('._bupp-afsl._bupp-misr', 'color:#fcd34d!important')}
       /* Sími/app: bannerinn staflast, línurnar taka fulla breidd. 16px letur
          svo iOS þysji ekki inn þegar smellt er í reit. */
       @media (max-width:760px){
@@ -264,6 +288,14 @@
   // ── Teiknun ──────────────────────────────────────────────────────────────
   function teikna(box, coId) {
     const a = afslattur(coId);
+    const st = stolpi(coId);
+    // ⚠ aðeins þegar áminningin nefnir prósentu SEM ER ÖNNUR en sú virka og
+    // ekkert hærra þrep skýrir muninn (Center Hotels bera 0% í reitnum en fá
+    // sínar prósentur úr hópnum — það er ekki misræmi, bara önnur geymsla).
+    const stMisr = !!(st && st.pct != null && !a.hopur && st.pct !== a.pct);
+    const stTitill = 'Áminning úr Stólpa (gamla bókhaldinu), geymd í athugasemdum: ' + (st ? st.texti : '') +
+      (stMisr ? ' — ATH: áminningin segir ' + st.pct + '% en virki afslátturinn er ' +
+        (a.pct > 0 ? a.pct + '%' : 'enginn') + '. Textinn er oft afmarkaður við ákveðna vöru, svo hann er sýndur en aldrei afritaður sjálfkrafa.' : '');
     box.innerHTML =
       LINUR.map(l => {
         const v = esc(gildi(coId, l.reitur));
@@ -281,6 +313,13 @@
         '<span class="_bupp-merki">Afsláttur</span>' +
         '<span class="_bupp-afsl" title="' + esc(a.titill) + '">' + esc(a.texti) + '</span>' +
       '</div>' +
+      (st
+        ? '<div class="_bupp-lina">' +
+            '<span class="_bupp-merki">📌 Stólpi</span>' +
+            '<span class="_bupp-afsl' + (stMisr ? ' _bupp-misr' : '') + '" title="' + esc(stTitill) + '">' +
+              (stMisr ? '⚠ ' : '') + esc(st.texti) + '</span>' +
+          '</div>'
+        : '') +
       '<button type="button" class="_bupp-vixl">' + (opid() ? '− Fela auðar línur' : '+ Fleiri upplýsingar') + '</button>';
     thjappa(box);
 
@@ -337,6 +376,19 @@
       const a = afslattur(coId);
       if (afsl.textContent !== a.texti) afsl.textContent = a.texti;
       if (afsl.title !== a.titill) afsl.title = a.titill;
+    }
+    // Stólpi-línan verður til/hverfur með félaginu — hún er aðeins á þeim 52
+    // sem bera áminningu, svo endurteiknum þegar tilvist hennar breytist.
+    const stNu = stolpi(coId);
+    const erLina = Array.prototype.some.call(box.querySelectorAll('._bupp-merki'), e => /Stólpi/.test(e.textContent || ''));
+    if (!!stNu !== erLina) { teikna(box, coId); return; }
+    const stSpan = box.querySelector('._bupp-lina ._bupp-afsl[title*="Stólpa"]');
+    if (stNu && stSpan) {
+      const a2 = afslattur(coId);
+      const misr = !!(stNu.pct != null && !a2.hopur && stNu.pct !== a2.pct);
+      stSpan.classList.toggle('_bupp-misr', misr);
+      const nyr = (misr ? '⚠ ' : '') + stNu.texti;
+      if (stSpan.textContent !== nyr) stSpan.textContent = nyr;
     }
   }
 
