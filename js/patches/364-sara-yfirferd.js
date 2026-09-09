@@ -58,7 +58,13 @@
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
 
   var state = { rows: [], sott: false, villa: '', opin: lsGet(LS_OPIN, []),
-    synaKlarad: lsGet(LS_KLARAD, false), storMynd: [], vinnuhamur: lsGet(LS_HAMUR, false) };
+    synaKlarad: lsGet(LS_KLARAD, false), storMynd: [],
+    // Sjálfgefið Á. Agnar 09.09.2026, eftir að hafa beðið tvisvar um plássið:
+    // „helvítis ruslið er ennþá fyrir". Takkinn var í haus spjaldsins sem var
+    // skrunaður upp fyrir skjáinn — og #vb-controls er position:sticky, svo
+    // síuraðirnar svifu OFAN Á töflunni á meðan hann vann í henni. Hamurinn
+    // slekkur á öllu því; hann man valið eftir að honum er slökkt handvirkt.
+    vinnuhamur: lsGet(LS_HAMUR, null) === null ? true : lsGet(LS_HAMUR, true) };
 
   // ── Reikningur per mál ───────────────────────────────────────────────────
   // NÁKVÆMLEGA sama reikniaðferð og reiknivélin á fyrirtækjasíðunni (patch 129):
@@ -177,6 +183,9 @@
       '#vb-main.syf-hamur .syf-body{padding:16px;gap:14px}',
       '#vb-main.syf-hamur .syf-tafla{font-size:13.5px}',
       '#vb-main.syf-hamur .syf-box pre{font-size:13px}',
+      // Hausinn loðir við toppinn — annars skrunast ⛶-takkinn (og heildartalan)
+      // upp fyrir skjáinn um leið og maður byrjar að vinna í fyrsta málinu.
+      '.syf-haus{position:sticky;top:0;z-index:40}',
     ].join('');
     document.head.appendChild(s);
   }
@@ -316,7 +325,7 @@
     var heild = syn.reduce(function (a, r) { return a + samtals(r); }, 0);
 
     var h = '<div style="' + CARD + '">' +
-      '<div style="' + HEAD + '">' +
+      '<div class="syf-haus" style="' + HEAD + '">' +
         '<span style="color:#f8fafc;font-weight:900;font-size:15px;letter-spacing:.3px">📋 SARA · VINNUBLÖÐ</span>' +
         '<span style="color:#94a3b8;font-size:11.5px">blað ↔ kerfi · hakaðu við og Sara klárar</span>' +
         '<span style="flex:1"></span>' +
