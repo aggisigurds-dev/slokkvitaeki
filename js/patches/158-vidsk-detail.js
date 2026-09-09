@@ -1117,24 +1117,37 @@
       }
     }
 
-    // 📝 Athugasemdir — debounce-vista í fyrirtaeki.athugasemdir
+    // 📝 Athugasemdir — vistast í fyrirtaeki.athugasemdir. 2026-09-09: ÁÐUR var
+    // þetta 900 ms debounce á `input` EINGÖNGU og `catch(_){}` — innslátturinn
+    // tapaðist þgult ef notandinn fór af síðunni innan sekúndunnar og villa sást
+    // hvergi. Nú: EITT vistunarfall sem bæði debounce OG blur kalla í,
+    // dataset.saved-far svo óbreytt gildi séu ekki skrifuð, og sýnileg villa.
     const athugaTa = main.querySelector('#_vd-athuga-ta');
     const athugaSaved = main.querySelector('#_vd-athuga-saved');
     if (athugaTa && sb) {
       let _athugaTimer = null;
+      athugaTa.dataset.saved = (athugaTa.value.trim() || '');
+      const saveAthuga = async () => {
+        clearTimeout(_athugaTimer); _athugaTimer = null;
+        const val = athugaTa.value.trim() || null;
+        if (athugaTa.dataset.saved === (val == null ? '' : val)) return;   // óbreytt → sleppa
+        try {
+          const r = await sb.from('fyrirtaeki').update({ athugasemdir: val }).eq('id', coId);
+          if (r && r.error) throw r.error;
+          athugaTa.dataset.saved = (val == null ? '' : val);
+          athugaTa.style.outline = ''; athugaTa.title = '';
+          c.athugasemdir = val;
+          if (athugaSaved) { athugaSaved.style.opacity = '1'; setTimeout(() => { if (athugaSaved) athugaSaved.style.opacity = '0'; }, 2000); }
+        } catch (err) {
+          console.warn('[vidsk-detail] athugasemdir', err);
+          try { if (window.logProblem) window.logProblem('athugasemdir_save_failed', 'co ' + coId); } catch (_) {}
+          athugaTa.style.outline = '2px solid #dc2626';
+          athugaTa.title = 'Athugasemdin vistaðist EKKI — reyndu aftur';
+        }
+      };
       athugaTa.addEventListener('focus', () => { athugaTa.style.borderColor = 'var(--blu)'; athugaTa.style.background = 'var(--surface)'; });
-      athugaTa.addEventListener('blur',  () => { athugaTa.style.borderColor = 'var(--brd2)'; athugaTa.style.background = 'var(--surface2)'; });
-      athugaTa.addEventListener('input', () => {
-        clearTimeout(_athugaTimer);
-        _athugaTimer = setTimeout(async () => {
-          const val = athugaTa.value.trim() || null;
-          try {
-            await sb.from('fyrirtaeki').update({ athugasemdir: val }).eq('id', coId);
-            c.athugasemdir = val;
-            if (athugaSaved) { athugaSaved.style.opacity = '1'; setTimeout(() => { if (athugaSaved) athugaSaved.style.opacity = '0'; }, 2000); }
-          } catch (_) {}
-        }, 900);
-      });
+      athugaTa.addEventListener('blur',  () => { athugaTa.style.borderColor = 'var(--brd2)'; athugaTa.style.background = 'var(--surface2)'; saveAthuga(); });
+      athugaTa.addEventListener('input', () => { athugaTa.style.outline = ''; clearTimeout(_athugaTimer); _athugaTimer = setTimeout(saveAthuga, 900); });
     }
 
     // 📁 Skjöl & Skýrslur — sækja customer_documents eftir fyrirtaeki_id
