@@ -464,9 +464,17 @@
   // ── útlits-yfirskrift (nafn/lýsing/tákn/litur) á hverju appi — sjálfgefið úr
   // APPS, notandi má breyta gegnum Þjónustuborðið. Sama vistunar-mynstur og cfg. ─
   var OV_KEY = 'app_profiles_overrides_json';
+  // 2026-09-09: AppSettings.save() er ÓSAMSTILLT — `_settings` uppfærist ekki
+  // fyrr en RPC-ið svarar, svo AppSettings.get() skilar GAMLA gildinu í render()
+  // sem keyrir strax á eftir. Fela-takkinn leit því út fyrir að gera ekki neitt:
+  // gildið var vistað (localStorage sýndi falid:true) en spjaldið stóð eftir.
+  // `_ovNy` heldur því sem VIÐ skrifuðum síðast þar til serverinn skilar sama
+  // gildi — þá er henni sleppt svo breyting af annarri vél nái í gegn.
+  var _ovNy = null;
   function loadOverrides() {
     var raw = null;
     try { if (window.AppSettings && AppSettings.get) raw = AppSettings.get(OV_KEY); } catch (_) {}
+    if (_ovNy) { if (raw === _ovNy) _ovNy = null; else raw = _ovNy; }
     if (!raw) { try { raw = localStorage.getItem(OV_KEY); } catch (_) {} }
     if (!raw) return {};
     try { return JSON.parse(raw) || {}; } catch (_) { return {}; }
@@ -478,6 +486,7 @@
     for (var k2 in cur) { if (cur[k2] === '' || cur[k2] == null) delete cur[k2]; }
     o[key] = cur;
     var s = JSON.stringify(o);
+    _ovNy = s;                                   // gildir strax, líka fyrir render() í sömu andrá
     try { localStorage.setItem(OV_KEY, s); } catch (_) {}
     try { if (window.AppSettings && AppSettings.save) { var payload = {}; payload[OV_KEY] = s; AppSettings.save(payload); } } catch (_) {}
   }
