@@ -90,7 +90,34 @@ function oskilgreindKoll(skra) {
   const gloss = new Set();                       // window.SB = ... → hnattrænt
   l.forEach(t => { const m = t.match(/window\.(SB|sb)\s*=/); if (m) gloss.add(m[1]); });
 
-  const virk = [];                               // { nafn, dypt }  — let/const/viðföng
+  // Viðfangalistar geta spannað margar línur og verið afbyggðir
+  // (`function f({ coId, sb, ... })`). Lesum þá með svigajöfnun og skráum á
+  // hvaða línu hvert nafn birtist sem viðfang.
+  const vidfongALinu = new Map();                 // línuvísir → Set(nöfn)
+  {
+    const heild = l.join("\n");
+    const rx = /function\b/g;
+    let m;
+    while ((m = rx.exec(heild))) {
+      const opna = heild.indexOf("(", m.index);
+      if (opna < 0) continue;
+      let d = 0, j = opna;
+      for (; j < heild.length; j++) {
+        if (heild[j] === "(") d++;
+        else if (heild[j] === ")") { d--; if (!d) break; }
+      }
+      const blokk = heild.slice(opna, j + 1);
+      const lina = heild.slice(0, m.index).split("\n").length - 1;
+      for (const nafn of NOFN) {
+        if (new RegExp('(?:^|[^\\w.$])' + nafn + '\\s*(?:[,:}=)]|$)').test(blokk)) {
+          if (!vidfongALinu.has(lina)) vidfongALinu.set(lina, new Set());
+          vidfongALinu.get(lina).add(nafn);
+        }
+      }
+    }
+  }
+
+  const virk = [];                               // { nafn, dypt }  — let/const/catch
   const follStafli = [{ dypt: 0, vars: new Set() }];   // innsta fall síðast
   let dypt = 0;
   const brot = [];
@@ -98,8 +125,20 @@ function oskilgreindKoll(skra) {
     const t = l[i];
 
     // Ný fall-svið: hver `function` eða `=>` á línunni opnar eitt.
+    // Fall-sviðið er skráð á dýpt LYKILORÐSINS, ekki líkamans. Ástæðan er
+    // afbyggð viðföng: `function f({ a, sb })` opnar og lokar slaufusviga í
+    // hausnum, og með dýpt+1 poppaðist sviðið um leið og hausnum lauk — rétt
+    // áður en líkaminn opnaðist. 165-visit-workflow lenti í því (fimm fölsk
+    // flögg). Systkinaföll eru samt aðskilin: nýtt svið á sömu dýpt POPPAR
+    // það fyrra, svo `var SB` í einu falli lekur ekki í næsta — sem er
+    // einmitt gildran sem 175 féll í.
     const nyFoll = (t.match(/function\b|=>/g) || []).length;
-    for (let k = 0; k < nyFoll; k++) follStafli.push({ dypt: dypt + 1, vars: new Set() });
+    for (let k = 0; k < nyFoll; k++) {
+      while (follStafli.length > 1 && follStafli[follStafli.length - 1].dypt >= dypt) follStafli.pop();
+      follStafli.push({ dypt, vars: new Set() });
+    }
+    const vf = vidfongALinu.get(i);
+    if (vf && follStafli.length) vf.forEach(nafn => follStafli[follStafli.length - 1].vars.add(nafn));
 
     for (const n of NOFN) {
       if (new RegExp('\\bvar\\s+' + n + '\\b').test(t)) {
@@ -109,7 +148,11 @@ function oskilgreindKoll(skra) {
       // viðfang falls eða ör-falls: (SB, ...) / (sb) =>
       const vidf = new RegExp('(?:function[^(]*|=>\\s*|\\()\\s*\\([^)]*\\b' + n + '\\b[^)]*\\)');
       if (vidf.test(t) || new RegExp('function[^(]*\\([^)]*\\b' + n + '\\b').test(t)) {
-        virk.push({ nafn: n, dypt });
+        // Viðfang gildir í LÍKAMA fallsins — ekki á þeirri dýpt sem hausinn
+        // stendur á. Fyrsta útgáfa ýtti því líka í `virk` á núverandi dýpt; í 175
+        // stendur `function fetchAllRows(SB, ...)` á dýpt 1 og gerði SB þar með
+        // „í gildi" út alla skrána — svo raunverulegi gallinn á línu 2343/2363
+        // slapp í gegn. Aðeins fall-staflinn heldur viðföngum héðan af.
         follStafli[follStafli.length - 1].vars.add(n);
       }
       if (new RegExp('catch\\s*\\(\\s*' + n + '\\s*\\)').test(t)) virk.push({ nafn: n, dypt });
