@@ -60,13 +60,32 @@ var Companies = {
     // DB.online=false + Companies.load() → Companies.list 1310 → 0.
     // Nú höldum við síðustu góðu mynd (og teiknum hana aftur) — tómur listi er
     // aðeins settur ef við HÖFÐUM aldrei neitt.
-    if (!DB.online) {
+    //
+    // OG: hliðið er nú `DB.sb` (er tengill til?) en EKKI `DB.online`. `DB.online`
+    // verður satt fyrst ÞEGAR DB.loadAll hefur klárað fimm töflur; á meðan
+    // (og alltaf ef sú hleðsla brestur — sbr. Supabase-504 06.09.2026) sagði
+    // gamla hliðið „ekki sækja" þótt tengillinn virkaði fullkomlega. POS-
+    // forsóknin í patch 114 notar `DB.sb` beint og skrifar SÍNAR TÓLF súlur í
+    // Companies.list — svo í slíkri ræsingu stóð listinn MJÓR alla lotuna:
+    // customer_base_id, status, review_note, tengiliður, postnumer, ovisst,
+    // discount_tier_id … öll `undefined`. Mælt 09.09.2026: ræsing þar sem
+    // DB.online var ósatt → Companies.list 1310 raðir en aðeins 12 súlur.
+    if (!DB.sb) {
       if (!Array.isArray(this.list)) this.list = [];
       this.render();
       return;
     }
     // Page through — Supabase caps each response at 1000 rows.
-    var nyr = await DB.fetchAll(function(from, to){ return DB.sb.from('fyrirtaeki').select('*').is('deleted_at', null).order('nafn').order('id').range(from, to); });  // .order('id') tiebreaker — samnefnd fyrirtæki mega ekki fella raðir milli síðna
+    var nyr;
+    try {
+      nyr = await DB.fetchAll(function(from, to){ return DB.sb.from('fyrirtaeki').select('*').is('deleted_at', null).order('nafn').order('id').range(from, to); });  // .order('id') tiebreaker — samnefnd fyrirtæki mega ekki fella raðir milli síðna
+    } catch (e) {
+      // Sóknin brást (net/RLS/504). Höldum síðustu góðu mynd — aldrei blanka.
+      console.warn('[Companies.load] sókn brást — held eldri lista (' + ((this.list && this.list.length) || 0) + '):', e && e.message || e);
+      if (!Array.isArray(this.list)) this.list = [];
+      this.render();
+      return;
+    }
     // 0 raðir úr VEL HEPPNAÐRI sókn er í reynd alltaf bilun (RLS/lykill), aldrei
     // raunveruleiki — `fyrirtaeki` er aldrei tómt. Að taka slíkt svar gilt blankar
     // allt viðmótið þegjandi. Höldum síðustu góðu mynd og gerum bilunina SÝNILEGA.
