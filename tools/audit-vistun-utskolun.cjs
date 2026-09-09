@@ -25,8 +25,9 @@
  *   fetch(keepalive:true) svo vafrinn klári beiðnina þótt flipinn sé farinn.
  *   `beforeunload` sem birtir AÐEINS aðvörun telst ekki útskolun.
  *
- * ENGIN GRUNNLÍNA fyrir nýjar skrár. Þekktu tilvikin eru NAFNGREIND hér að neðan
- * með ástæðu; sá listi á aðeins að styttast. Ný skrá í honum er RAUTT.
+ * ENGAR UNDANÞÁGUR. Fyrsta útgáfa fann sjö skrár og ég ætlaði að frysta fimm sem
+ * „þekktar". Svo kom papp 365 og þá voru þær allar varðar — mælt með tómum lista:
+ * grænt. Vörður án undanþága er sá eini sem hægt er að treysta.
  *
  * Keyrsla:  node tools/audit-vistun-utskolun.cjs
  * Les aðeins kóða — engin gagnatenging.
@@ -37,14 +38,13 @@ const path = require('path');
 const ROT = path.join(__dirname, '..');
 const HITT_REPO = path.join(ROT, '..', 'brunaholf');
 
-// Þekkt og óafgreitt 09.09.2026. Hver færsla þarf ástæðu.
-const THEKKT = {
-  'js/patches/00-legacy.js':        'gamli grunnurinn — sópað 09.09 en á eftir að fara í gegn aftur',
-  'js/patches/01-sala-suite.js':    'sölusvítan — bíður yfirferðar',
-  'js/patches/06-pos-fixes.js':     'POS-lagfæringar — bíður yfirferðar',
-  'js/features.js':                 'bíður yfirferðar',
-  'js/vbu.js':                      'skrifar í dálk sem er ekki til (á verkefnalista) — tekið með því verki',
-};
+// ENGAR UNDANÞÁGUR. Fyrsta útgáfa fann sjö skrár og ég ætlaði að frysta fimm
+// þeirra sem "þekktar". Svo kom papp 365 sem sendir blur/change/focusout á
+// reitinn í fókus þegar síðan hverfur — og þá voru þær allar varðar. Mælt með
+// því að keyra vörðinn með TÓMAN lista: grænt.
+// Vörður án undanþága er sá eini sem hægt er að treysta. Komi ný skrá hér inn
+// er hún löguð, ekki skráð á lista.
+const THEKKT = {};
 
 // Skrár sem eru söfn, ekki okkar kóði.
 const ER_SAFN = f => /\.min\.js$|jspdf|leaflet|jsqr|qrcode|supabase|chart|pdf-lib/i.test(f);
@@ -72,7 +72,43 @@ const TEFUR_SKRIF = [
 // Skrifar hún raunverulega á þjón?
 const SKRIFAR_A_THJON = /fetch\s*\([^)]*\/api\/|\.from\s*\(['"][a-z_]+['"]\)\s*\.\s*(?:upsert|insert|update)|AppSettings\.save/;
 // Skolar hún út?
-const SKOLAR_UT = /addEventListener\s*\(\s*['"]pagehide['"]|visibilityState\s*===?\s*['"]hidden['"]|keepalive\s*:\s*true|sendBeacon/;
+// Frá 09.09.2026 telst BLUR-VISTUN fullnægjandi útskolun, því papp 365
+// (js/patches/365-vistun-utskolun.js) sendir blur/change/focusout á reitinn í
+// fókus þegar síðan hverfur — og ræsir þar með alla blur-vistara í öllum pöppum.
+// Skrá sem vistar aðeins á tímamæli, án blur-leiðar, er ÁFRAM óvarin: enginn
+// blur berst henni og tímamælirinn fer aldrei af stað.
+const SKOLAR_UT = new RegExp([
+  "addEventListener\\s*\\(\\s*['\"]pagehide['\"]",
+  "visibilityState\\s*===?\\s*['\"]hidden['\"]",
+  'keepalive\\s*:\\s*true',
+  'sendBeacon',
+  // blur-vistun — varin af papp 365
+  "addEventListener\\s*\\(\\s*['\"](?:blur|focusout)['\"]",
+  '\\bon(?:blur|focusout)\\s*=',
+].join('|'));
+
+// Skrifar ÞETTA fall á þjón? Ekki nóg að skráin geri það einhvers staðar.
+//
+// Hvers vegna þetta skiptir máli (09.09.2026): fyrsta útgáfa varðarins flaggaði
+// 255-auto-discount.js af því skráin bæði tefur kall OG skrifar á þjón — en það
+// eru ÓSKYLDAR leiðir. Tímamælirinn þar endurreiknar afslátt í minni; skrifin
+// hanga á skýrum vistunartakka. Vörður sem gelgir að ósekju verður þaggaður, og
+// þá er hann verri en enginn. Þess vegna: fallið sem er tafið verður sjálft að
+// skrifa á þjón.
+function fallSkrifar(txt, nafn) {
+  const re = new RegExp(
+    '(?:async\\s+)?function\\s+' + nafn + '\\s*\\([^)]*\\)\\s*\\{|' +
+    '\\b' + nafn + '\\s*=\\s*(?:async\\s*)?(?:function\\s*\\([^)]*\\)|\\([^)]*\\)\\s*=>)\\s*\\{');
+  const m = re.exec(txt);
+  if (!m) return true;               // finnum ekki fallið — verum varkár
+  // Lesum líkama fallsins með svigatalningu.
+  let i = txt.indexOf('{', m.index + m[0].length - 1), djupt = 0, byrjun = i;
+  for (; i < txt.length && i < byrjun + 20000; i++) {
+    if (txt[i] === '{') djupt++;
+    else if (txt[i] === '}') { djupt--; if (djupt === 0) break; }
+  }
+  return SKRIFAR_A_THJON.test(txt.slice(byrjun, i));
+}
 
 const fundnir = [];
 for (const [merki, rot, undir] of [
@@ -83,9 +119,16 @@ for (const [merki, rot, undir] of [
   for (const f of skrarUndir(rot, undir)) {
     let txt;
     try { txt = fs.readFileSync(f, 'utf8'); } catch { continue; }
-    if (!TEFUR_SKRIF.some(re => re.test(txt))) continue;
     if (!SKRIFAR_A_THJON.test(txt)) continue;
     if (SKOLAR_UT.test(txt)) continue;
+
+    // Nöfn fallanna sem eru tafin — og aðeins þau sem skrifa sjálf á þjón telja.
+    const tafin = [...txt.matchAll(/setTimeout\s*\(\s*([A-Za-z_$][\w$]*)\s*,\s*\d+/g)]
+      .map(m => m[1])
+      .filter(n => /sync|save|vista|persist/i.test(n));
+    const hraSetTimeout = TEFUR_SKRIF.some(re => re.test(txt)) && !tafin.length;
+
+    if (!tafin.some(n => fallSkrifar(txt, n)) && !hraSetTimeout) continue;
     fundnir.push({ merki, slod: path.relative(rot, f).replace(/\\/g, '/') });
   }
 }
@@ -100,5 +143,5 @@ if (nyir.length) {
   process.exit(1);
 }
 
-console.log(`✅ GRÆNT útskolun: ${fundnir.length} skrár tefja vistun, engin NÝ án útskolunar` +
-  ` (${Object.keys(THEKKT).length} þekktar bíða yfirferðar)`);
+console.log('✅ GRÆNT útskolun: engin skrá tefur skrif á þjón án útskolunar við lokun ' +
+  '(engar undanþágur — sjá haus)');
