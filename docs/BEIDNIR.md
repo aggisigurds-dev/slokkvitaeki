@@ -21,6 +21,10 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B7 | Villa í patch 109: „Engir tækjadottar enn"-kassinn bætist við á 1,5 s fresti án þess að sá fyrri sé fjarlægður — hleðst upp meðan teikning án dotta er opin | — | NÝ |
 | B5 | Daufar textalínur á fyrirtækjabannerinn fyrir upplýsingar um verin (fjöldi íbúða, fjöldi hæða, hringja á undan…) + grafa upp Stólpi-afsláttartöluna og sýna hana í einni línunni | agent | ✅ KLÁRT — yfirfarið |
 
+| B9 | **Sjálfvirkt % og Tilboðsverð vantaði í afsláttarkassann** — aðeins „Hópur" stóð eftir | Claude | ✅ KLÁRT |
+| B10 | **KRITÍSKT: texti í athugasemdareitum hvarf við harða endurhleðslu.** POS-forsóknin skrifaði 10-súlna lista yfir `Companies.list` (32 súlur) — `banner_note`, `plan_note` o.fl. urðu `undefined` og reitir birtust tómir. Ekkert eyddist, það sást bara ekki | Claude | ✅ KLÁRT |
+| B11 | Center Hotels: bannerlínan sýnir „Afsláttur —" þótt félagið sé í hópi með 10–32% — hópurinn er lesinn of seint | — | NÝ |
+
 ### Bíður ákvörðunar Agnars (eldra)
 
 | # | Mál |
