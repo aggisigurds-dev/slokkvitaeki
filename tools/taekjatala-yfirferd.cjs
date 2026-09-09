@@ -80,24 +80,24 @@ const s = (x, n) => String(x == null ? '-' : x).slice(0, n).padEnd(n);
       munadarlausEftirNafni.set(k, (munadarlausEftirNafni.get(k) || 0) + 1);
     }
   });
-  // Talan sem VIÐMÓTIÐ sýnir — ekki bara uttaeki-talning. Patch 153 fellur í
-  // þrepum: lifandi tæki → skýrslu-búnaður (ferskur, EÐA hvaða ár sem er þegar
-  // félagið á engin tæki — reglan frá 08.09) → blob-búnaður. Fyrsta útgáfa
-  // þessa tóls taldi aðeins uttaeki og sagði því 13 félög „tóm" sem sýna
-  // réttar tölur úr skýrslunni sinni.
+  // Talan sem VIÐMÓTIÐ sýnir. REGLAN BREYTTIST 08.09.2026 kl. 15:49 (0283a7e,
+  // Charlize #461): TÆKI-dálkurinn telur AÐEINS prófílinn — `uttaeki` á
+  // fyrirtaeki_id (status ≠ urelt) eða handvirka yfirskrift. Skýrslu- og
+  // reikninga-staðreyndir yfirskrifa töluna EKKI lengur; þær eru orðnar
+  // EFTIRLIT (⚠ ≠-merkið og „Stemmir ekki"-sían), ekki heimild.
+  // Ástæðan sem Agnar gaf: Hólabrú sýndi 5 SLT/1 BSL úr skýrslu meðan
+  // fyrirtækjasíðan sagði „Slökkvitæki (0)" — borðið og prófíllinn sögðu sitt hvað.
+  // Tólið hermdi eftir GÖMLU reglunni og faldi því frávik: félag með 0 lifandi
+  // tæki en skýrslu fékk skýrslutöluna og taldist stemma. Nú er hermt eftir
+  // réttri reglu, svo talan hér er sú sem sést. Vörður: audit-taeki-profill.cjs.
   const taekiUrUttaeki = (c) => (medFid.get(c.id) || 0)
     + (munadarlausEftirNafni.get(String(c.nafn || '').trim().toLowerCase()) || 0);
   const summa = (o) => (o && typeof o === 'object')
     ? Object.values(o).reduce((a, v) => a + (+v || 0), 0) : 0;
   const profilTala = (c) => {
-    const u = taekiUrUttaeki(c);
-    if (u > 0) return u;
     const blob = ars[String(c.id)] || {};
-    if (blob.equipment_manual) return summa(blob.equipment);
-    const f = F.get(c.id);
-    const fEq = f ? summa(f.equipment) : 0;
-    if (fEq > 0) return fEq;                 // fersk EÐA eina heimildin
-    return summa(blob.equipment);
+    if (blob.equipment_manual) return summa(blob.equipment);   // handvirk yfirskrift ræður
+    return taekiUrUttaeki(c);                                   // annars AÐEINS prófíllinn
   };
 
   const iThjonustu = co.filter(c => !c.deleted_at && (
@@ -186,7 +186,7 @@ const s = (x, n) => String(x == null ? '-' : x).slice(0, n).padEnd(n);
     const f = F.get(c.id);
     return f && +f.total_devices > 0 && profilTala(c) === 0;
   });
-  console.log('\n6. VIÐMÓTIÐ SÝNIR NÚLL ÞÓTT SKÝRSLA SEGI TÆKI: ' + tomirMedSkyrslu.length);
+  console.log('\n6. VIÐMÓTIÐ SÝNIR NÚLL ÞÓTT SKÝRSLA SEGI TÆKI: ' + tomirMedSkyrslu.length + (tomirMedSkyrslu.length ? '  ← prófíllinn er tómur; skýrslan er eftirlit, ekki heimild' : ''));
   tomirMedSkyrslu.slice(0, TAK).forEach(c => {
     const f = F.get(c.id);
     console.log('   fid ' + p(c.id, 5) + '  ' + s(c.nafn, 40) + '  skýrsla ' + f.report_year + ': ' + f.total_devices + ' tæki');
