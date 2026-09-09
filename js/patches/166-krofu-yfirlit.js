@@ -1146,19 +1146,74 @@
     // 🔄 Athuga greiðslur í Payday → merkja greiddar sjálfkrafa + summary popup
     main.querySelector('._ky-sync')?.addEventListener('click', (e) => runPaydaySync(e.currentTarget));
     // Per-krafa minnispunktur → EIGIN reitur solur.krafa_note (EKKI athugasemd
-    // reikningsins) þegar farið er úr reitnum (change = eftir edit, ekki hvern
-    // staf). Uppfærir líka _state svo texti helst við endur-render.
+    // reikningsins). Uppfærir líka _state svo texti helst við endur-render.
+    //
+    // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"): áður var
+    // vistað AÐEINS á `change`. `change` kemur ekki fyrr en reiturinn missir
+    // fókus — sá sem skrifaði minnispunkt og endurhlóð (eða lokaði flipanum)
+    // með bendilinn enn í reitnum tapaði honum þegjandi. Nú er EITT
+    // vistunarfall sem debounce (600 ms), `change` OG `blur` kalla öll í —
+    // sama fyrirmynd og `savePlanNote` í 153-arsskodun.js:
+    //   • `dataset.vistad` sleppir óbreyttu gildi (engin óþörf skrif)
+    //   • _state er EKKI uppfært fyrr en skrifin heppnast (áður sagði skjá-
+    //     cache-inn „vistað" eftir misheppnaða skrif og næsta tilraun slapp)
+    //   • villan SÉST (rauð undirlína + rauður texti + logProblem)
     main.querySelectorAll('._ky-note').forEach(inp => {
-      inp.addEventListener('change', async () => {
-        const SB = getSB(); if (!SB) return;
-        const val = inp.value.trim();
+      inp.dataset.vistad = (inp.value || '').trim();
+      const vistaNote = async () => {
+        const val = (inp.value || '').trim();
+        if (inp.dataset.vistad === val) return;             // óbreytt → sleppa
+        const SB = getSB();
+        if (!SB) {
+          inp.style.borderBottomColor = '#fca5a5';
+          inp.style.color = '#b91c1c';
+          inp.title = 'Minnispunktur vistaðist EKKI — engin gagnabankatenging';
+          return;
+        }
+        let w = null;
+        try { w = await SB.from('solur').update({ krafa_note: val || null }).eq('id', inp.dataset.id); }
+        catch (e) { w = { error: e }; }
+        if (w && w.error) {
+          inp.style.borderBottomColor = '#fca5a5';
+          inp.style.color = '#b91c1c';
+          inp.title = 'Minnispunktur vistaðist EKKI: ' + ((w.error && w.error.message) || w.error);
+          try { if (window.logProblem) window.logProblem('krafa_note_save_failed', 'sala ' + inp.dataset.id); } catch (_) {}
+          return;
+        }
+        inp.dataset.vistad = val;
+        inp.style.borderBottomColor = '#a7f3d0';
+        inp.style.color = '';
+        inp.title = 'Minnispunktur fyrir þessa kröfu — vistaður ✓';
         const row = (_state.all || []).find(x => String(x.id) === String(inp.dataset.id));
         if (row) row.krafa_note = val;
-        inp.style.borderBottomColor = '#a7f3d0';
-        const w = await SB.from('solur').update({ krafa_note: val }).eq('id', inp.dataset.id);
-        if (w && w.error) { inp.style.borderBottomColor = '#fca5a5'; inp.title = 'Villa við vistun: ' + w.error.message; }
+      };
+      inp.addEventListener('input', () => {
+        inp.style.borderBottomColor = '';
+        clearTimeout(inp._noteT);
+        inp._noteT = setTimeout(vistaNote, 600);
       });
+      inp.addEventListener('change', () => { clearTimeout(inp._noteT); vistaNote(); });
+      inp.addEventListener('blur',   () => { clearTimeout(inp._noteT); vistaNote(); });
+      inp._vistaNote = vistaNote;
     });
+    // Öryggisnet (2026-09-09): flipi lokaður / falinn meðan bendillinn er ENN
+    // í reitnum — þá kemur hvorki `blur` né `change`. Þessir tveir atburðir
+    // koma áreiðanlega, svo hér er sópað inn öllu sem er óvistað. Skráð EINU
+    // sinni (window-flagg) svo endur-render stafli ekki upp hlusturum.
+    if (!window.__kyNoteFlushHooked) {
+      window.__kyNoteFlushHooked = true;
+      const sopa = () => {
+        document.querySelectorAll('._ky-note').forEach(i => {
+          if (typeof i._vistaNote !== 'function') return;
+          if (i.dataset.vistad === (i.value || '').trim()) return;
+          clearTimeout(i._noteT);
+          try { i._vistaNote(); } catch (_) {}
+        });
+      };
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sopa(); });
+      window.addEventListener('pagehide', sopa);
+      window.addEventListener('beforeunload', sopa);
+    }
 
     // 2026-06-30: smella á nafn fyrirtækisins → opna fyrirtækjasíðu
     main.querySelectorAll('._ky-co-link').forEach(a => {

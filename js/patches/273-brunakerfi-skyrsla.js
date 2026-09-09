@@ -257,11 +257,26 @@
       : BASE_PRICES.map(p => ({ name: p[0], price: p[1], link: DEFAULT_LINKS[p[0]] || '' }));
     return _pricelist;
   }
+  // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"): liða-HEITIN í
+  // verðlistanum eru innsleginn texti. Áður var þjóns-vistunin gleypt í
+  // `catch { console.warn }` á meðan localStorage var þegar skrifað — notandinn
+  // fékk „Verðlisti vistaður ✓" og listinn lifði AÐEINS í þessum vafra
+  // (CLAUDE.md: localStorage má bara fyrir útlitsval eins vafra). Skilar núna
+  // satt/ósatt svo kallarinn geti sagt satt frá.
   async function savePriceItems(items) {
     _pricelist = items;
     const payload = { items, custom_bunadur: customBunadurList(), updated_at: new Date().toISOString() };
     try { localStorage.setItem('brunakerfi_verdlisti', JSON.stringify(payload)); } catch (_) {}
-    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ brunakerfi_verdlisti: payload }); } catch (e) { console.warn('[bks] verðlisti save', e); }
+    try {
+      if (!(window.AppSettings && AppSettings.save)) throw new Error('AppSettings ekki tiltækt');
+      const ok = await AppSettings.save({ brunakerfi_verdlisti: payload });
+      if (!ok) throw new Error('AppSettings.save skilaði ósatt');
+      return true;
+    } catch (e) {
+      console.warn('[bks] verðlisti save', e);
+      try { if (window.logProblem) window.logProblem('bks_verdlisti_save_failed', String((e && e.message) || e)); } catch (_) {}
+      return false;
+    }
   }
 
   // ── yfirbygging ─────────────────────────────────────────────────────────────
@@ -607,17 +622,27 @@
 
   function wireAthForm(w) {
     const form = w.querySelector('#_bks-athform');
+    // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"): reitirnir hér
+    // skrifuðu í `S.data.cNew` EN kölluðu aldrei markDirty(). cNew er hluti af
+    // vistaða líkaninu (blank() býr hann til, openForm les hann aftur), svo
+    // hálfskrifuð athugasemd ÁTTI að lifa af — en án markDirty fór hvorki
+    // localStorage-spegillinn né 2,5 s sjálfvirka vistunin af stað, og
+    // closeOverlay() vistar aðeins `if (_dirty)`. Sá sem sló inn lýsingu og
+    // fór til baka án þess að ýta á „+ Bæta við" tapaði henni þegjandi.
     const flSel = form.querySelector('#_bks-a-fl');
     flSel.addEventListener('change', () => {
-      S.data.cNew.fl = flSel.value;
+      S.data.cNew.fl = flSel.value; markDirty();
       form.innerHTML = athFormHtml(); wireAthForm(w);
       form.querySelector('#_bks-a-num').focus();
     });
     const tegSel = form.querySelector('#_bks-a-teg');
-    tegSel.addEventListener('change', () => { S.data.cNew.teg = tegSel.value; });
+    tegSel.addEventListener('change', () => { S.data.cNew.teg = tegSel.value; markDirty(); });
     ['num', 'sv', 'lys'].forEach(k => {
       const inp = form.querySelector('#_bks-a-' + k);
-      if (inp) inp.addEventListener('input', () => { S.data.cNew[k === 'num' ? 'numer' : k === 'sv' ? 'svaedi' : 'lysing'] = inp.value; });
+      if (inp) inp.addEventListener('input', () => {
+        S.data.cNew[k === 'num' ? 'numer' : k === 'sv' ? 'svaedi' : 'lysing'] = inp.value;
+        markDirty();
+      });
     });
     const add = form.querySelector('#_bks-a-add');
     add.addEventListener('click', () => {
@@ -834,6 +859,15 @@
     p = document.createElement('div'); p.id = '_bks-pedit';
     p.style.cssText = 'position:fixed;inset:0;z-index:9700;background:rgba(8,12,20,.55);display:flex;align-items:center;justify-content:center;padding:16px';
     const items = priceItems().map(x => ({ ...x }));
+    // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"): ✕ / „Hætta við"
+    // / smellur á bakgrunninn hentu áður öllum innslegnum liðaheitum án
+    // aðvörunar. Berum saman við upphaflega listann og spyrjum fyrst.
+    const upphaf = JSON.stringify(items);
+    const obreytt = () => JSON.stringify(items.filter(x => (x.name || '').trim() || +x.price)) === JSON.stringify(JSON.parse(upphaf).filter(x => (x.name || '').trim() || +x.price));
+    const lokaOruggt = () => {
+      if (!obreytt() && !confirm('Loka verðlistanum án þess að vista? Breytingarnar glatast.')) return;
+      p.remove();
+    };
     const row = (it, i) =>
       '<div style="display:flex;gap:8px;padding:4px 0;align-items:center;flex-wrap:wrap">' +
         '<input class="_bks-in" data-pk="name" data-pi="' + i + '" value="' + esc(it.name) + '" style="flex:1;min-width:170px;border:1px solid #d0d4da;border-radius:8px;padding:7px 10px;font-size:13px">' +
@@ -859,8 +893,8 @@
             '<button type="button" id="_bks-p-cancel" style="padding:9px 16px;border-radius:8px;border:1px solid #d0d4da;background:#fff;color:#334155;font-size:13px;font-weight:700;cursor:pointer">Hætta við</button>' +
             '<button type="button" id="_bks-p-save" style="padding:9px 18px;border-radius:8px;border:0;background:#1f8a4c;color:#fff;font-size:13px;font-weight:800;cursor:pointer">💾 Vista verðlista</button>' +
           '</div></div>';
-      p.querySelector('#_bks-p-x').addEventListener('click', () => p.remove());
-      p.querySelector('#_bks-p-cancel').addEventListener('click', () => p.remove());
+      p.querySelector('#_bks-p-x').addEventListener('click', lokaOruggt);
+      p.querySelector('#_bks-p-cancel').addEventListener('click', lokaOruggt);
       p.querySelector('#_bks-p-add').addEventListener('click', () => { items.push({ name: '', price: 0, link: '' }); render(); });
       p.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', () => { items.splice(+b.dataset.pdel, 1); render(); }));
       p.querySelectorAll('[data-pk]').forEach(inp => {
@@ -874,12 +908,16 @@
         inp.addEventListener('change', apply);
       });
       p.querySelector('#_bks-p-save').addEventListener('click', async () => {
-        await savePriceItems(items.filter(x => x.name.trim()));
+        // 2026-09-09: loka ALDREI glugganum þegar vistun mistókst — annars
+        // hverfa innslegnu liðaheitin af skjánum og eru hvergi á þjóninum.
+        const ok = await savePriceItems(items.filter(x => x.name.trim()));
+        if (!ok) { toast('Verðlisti vistaðist EKKI — athugaðu nettengingu og reyndu aftur', true); return; }
         toast('Verðlisti vistaður ✓'); p.remove();
         if (onDone) onDone();
       });
     };
     render();
+    // Bakgrunnurinn er varinn af patch 177 → p.remove() hér svo ekki sé spurt tvisvar.
     p.addEventListener('click', e => { if (e.target === p) p.remove(); });
     document.body.appendChild(p);
   }

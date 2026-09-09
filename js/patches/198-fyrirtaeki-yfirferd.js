@@ -334,7 +334,23 @@
   }
   function bindFyrRows(scope) {
     scope.querySelectorAll('.ab[data-act]').forEach(b => b.onclick = () => armBtn(b, () => fyrAct(b.dataset.act, Number(b.dataset.id))));
-    scope.querySelectorAll('.note-in').forEach(inp => inp.addEventListener('change', () => fyrNote(Number(inp.dataset.id), inp.value, inp)));
+    // 09.09.2026 (ósk Agnars: „enginn texti má nokkurntíma tínast").
+    // Áður var AÐEINS `change`. `change` kviknar við blur — en EKKI þegar
+    // reiturinn er fjarlægður úr DOM-inu með fókus á sér (endurteikning
+    // töflunnar, sýnaskipti, flipi lokaður). Þá fór athugasemdin aldrei neitt.
+    // Nú: debounce við innslátt (textinn er á þjóninum innan 600 ms), blur-skol
+    // og `dataset.saved`-far svo sama gildi sé ekki skrifað tvisvar.
+    scope.querySelectorAll('.note-in').forEach(inp => {
+      inp.dataset.saved = inp.value;
+      const vista = () => {
+        clearTimeout(inp._t); inp._t = null;
+        if (inp.dataset.saved === inp.value) return;      // óbreytt → sleppa
+        fyrNote(Number(inp.dataset.id), inp.value, inp);
+      };
+      inp.addEventListener('input', () => { inp.style.outline = ''; clearTimeout(inp._t); inp._t = setTimeout(vista, 600); });
+      inp.addEventListener('change', vista);
+      inp.addEventListener('blur', vista);
+    });
   }
   async function fyrAct(act, id) {
     const SB = getSB(); if (!SB) return;
@@ -352,13 +368,19 @@
     renderFyr();
   }
   async function fyrNote(id, text, inp) {
-    const SB = getSB(); if (!SB) return;
+    const SB = getSB();
+    if (!SB) { if (inp) { inp.style.outline = '2px solid #dc2626'; inp.title = 'Engin gagnagrunnstenging — textinn er enn hér.'; } toast('Villa: engin gagnagrunnstenging'); return; }
     const patch = { review_note: text };
     if (String(text).trim()) patch.review_flag = true;
     const r = await SB.from('fyrirtaeki').update(patch).eq('id', id);
-    if (r.error) { toast('Villa: ' + r.error.message); return; }
+    if (r.error) {
+      // Sýnileg villa OG textinn skilinn eftir í reitnum — aldrei þögult fall.
+      if (inp) { inp.style.outline = '2px solid #dc2626'; inp.title = 'Athugasemdin vistaðist EKKI — textinn er enn hér, reyndu aftur.'; }
+      try { if (window.logProblem) window.logProblem('yfirferd_review_note_failed', 'co ' + id + ' — ' + r.error.message); } catch (_) {}
+      toast('Villa: ' + r.error.message); return;
+    }
     const f = FROWS.find(x => Number(x.id) === id); if (f) { f.review_note = text; if (String(text).trim()) f.review_flag = true; }
-    if (inp) inp.classList.toggle('has', !!String(text).trim());
+    if (inp) { inp.dataset.saved = text; inp.style.outline = ''; inp.title = ''; inp.classList.toggle('has', !!String(text).trim()); }
     toast('Athugasemd vistuð ✓');
   }
   function bindVidRows(scope) {

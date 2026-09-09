@@ -118,11 +118,23 @@
       '<div class="pv-detail" id="pv-detail">' + detailH() + '</div>' +
       '</div>';
 
+    // 09.09.2026: BÆÐI þessi flakk-atriði teiknuðu áður upp á nýtt STRAX —
+    // og endurteikningin las DATA, ekki reitina. Óvistað svarbréf hvarf því við
+    // einn smell á síu eða á annað erindi. Nú er vistað fyrst (og beðið eftir
+    // svari) áður en nokkuð er teiknað.
     host.querySelectorAll('.pv-chip').forEach(function (el) {
-      el.addEventListener('click', function () { filt = el.getAttribute('data-pf'); renderPanel(); });
+      el.addEventListener('click', async function () {
+        if (oskilad) { if (!await vistaNu(false)) return; }
+        filt = el.getAttribute('data-pf'); renderPanel();
+      });
     });
     host.querySelectorAll('.pv-card').forEach(function (el) {
-      el.addEventListener('click', function () { curId = +el.getAttribute('data-pid'); renderPanel(); });
+      el.addEventListener('click', async function () {
+        // Uppskera + vista NÚVERANDI erindi áður en curId færist — annars er
+        // textinn í reitunum orðinn munaðarlaus og enginn les hann framar.
+        if (oskilad) { if (!await vistaNu(false)) return; }
+        curId = +el.getAttribute('data-pid'); renderPanel();
+      });
     });
     wireDetail();
   }
@@ -156,22 +168,133 @@
       '<div class="pv-row"><button class="pv-save" id="pv-save">💾 Vista</button><span class="pv-st" id="pv-savest"></span></div>';
   }
 
+  // ── TEXTAVÖRN (09.09.2026, ósk Agnars: „enginn texti má nokkurntíma tínast") ──
+  // Þrír textareitar hanga hér: DRÖG AÐ SVARI (heilt svarbréf), SKJÖL og
+  // ATHUGASEMD. Áður vistuðust þeir AÐEINS þegar smellt var á 💾 Vista.
+  // Mælt 09.09.2026: hver einasta endurteikning (`renderPanel`) byggir
+  // `detailH()` upp úr DATA — sem veit ekkert um óvistaðan innslátt. Því dugði
+  //   • smellur á stöðutakka (Ósvarað/Tilbúið/Klárað)  → renderPanel()
+  //   • smellur á annað erindi í listanum               → renderPanel()
+  //   • smellur á síu-flipa                             → renderPanel()
+  // til að ÞURRKA ÚT fullskrifað svarbréf, þegjandi og án viðvörunar.
+  // Úrbætur, sama fyrirmynd og `savePlanNote` í 153-arsskodun.js:
+  //   1. `uppskera()` les reitina í minnisröðina ÁÐUR en nokkuð er teiknað upp.
+  //   2. EITT vistunarfall (`vistaNu`) sem debounce, blur OG Vista-takkinn nota.
+  //   3. Villa er SÝNILEG (rauð útlína + texti + logProblem) — aldrei þögul.
+  //   4. `beforeunload` stöðvar flakk á meðan óvistað efni situr í reitunum.
+  var VIST_MS = 700;
+  var vistTimer = null;
+  var oskilad = false;          // er eitthvað óvistað í reitunum núna?
+
+  function reitir() {
+    return {
+      drog: document.getElementById('pv-drog'),
+      skjol: document.getElementById('pv-skjol'),
+      athugasemd: document.getElementById('pv-ath')
+    };
+  }
+  // Færa það sem stendur í reitunum yfir í minnisröðina. VERÐUR að keyra á
+  // undan hverri endurteikningu, annars les detailH() gamla gildið og textinn
+  // sem notandinn var að skrifa hverfur.
+  function uppskera() {
+    var r = DATA.find(function (x) { return x.id === curId; });
+    if (!r) return null;
+    var e = reitir();
+    if (e.drog) r.drog = e.drog.value;
+    if (e.skjol) r.skjol = e.skjol.value;
+    if (e.athugasemd) r.athugasemd = e.athugasemd.value;
+    return r;
+  }
+
+  function stada(txt, villa) {
+    var st = document.getElementById('pv-savest');
+    if (!st) return;
+    st.textContent = txt;
+    st.style.color = villa ? '#dc2626' : '';
+    st.style.fontWeight = villa ? '700' : '';
+  }
+  function merkjaVillu(a) {
+    var e = reitir();
+    ['drog', 'skjol', 'athugasemd'].forEach(function (k) {
+      if (!e[k]) return;
+      e[k].style.outline = a ? '2px solid #dc2626' : '';
+      e[k].title = a ? 'Textinn vistaðist EKKI — hann er enn hér, reyndu aftur.' : '';
+    });
+  }
+
+  // Eina vistunarleiðin. Skilar true/false; hendir ALDREI textanum úr reitnum.
+  async function vistaNu(þögul) {
+    clearTimeout(vistTimer); vistTimer = null;
+    var r = uppskera();
+    if (!r) return false;
+    var id = r.id;
+    var patch = {
+      drog: r.drog || '', skjol: r.skjol || '', athugasemd: r.athugasemd || '',
+      status: r.status, updated_at: new Date().toISOString()
+    };
+    // Óbreytt frá síðustu staðfestu vistun → sleppa (enginn óþarfa skrifgangur).
+    var far = JSON.stringify([patch.drog, patch.skjol, patch.athugasemd, patch.status]);
+    if (r._vistad === far) { oskilad = false; return true; }
+    if (!þögul) stada('Vista…');
+    var q;
+    try {
+      if (!window.DB || !window.DB.sb) throw new Error('Engin gagnagrunnstenging');
+      q = await window.DB.sb.from('cowork_postsvor').update(patch).eq('id', id);
+      // supabase-js KASTAR EKKI — villan kemur til baka í .error. Án þessarar
+      // athugunar leit misheppnuð vistun út eins og hún hefði tekist.
+      if (q && q.error) throw q.error;
+    } catch (err) {
+      oskilad = true;
+      merkjaVillu(true);
+      stada('⚠ Vistaðist EKKI: ' + ((err && err.message) || err) + ' — textinn er enn hér', true);
+      try { if (window.logProblem) window.logProblem('postar_queue_save_failed', 'id ' + id + ' — ' + ((err && err.message) || err)); } catch (_) {}
+      return false;
+    }
+    r._vistad = far;
+    oskilad = false;
+    merkjaVillu(false);
+    if (!þögul) stada('✓ Vistað ' + new Date().toLocaleTimeString('is-IS'));
+    return true;
+  }
+
   function wireDetail() {
     var d = document.getElementById('pv-detail'); if (!d) return;
-    var skj = document.getElementById('pv-skjol');
-    if (skj) skj.addEventListener('input', function () {
-      document.getElementById('pv-attprev').innerHTML = links(this.value);
+    var e = reitir();
+    var r = DATA.find(function (x) { return x.id === curId; });
+    if (r && r._vistad === undefined) {
+      r._vistad = JSON.stringify([r.drog || '', r.skjol || '', r.athugasemd || '', r.status]);
+    }
+    // Sjálfvirk vistun á öllum þremur reitunum: debounce við innslátt OG
+    // tafarlaus vistun við blur. Blur-leiðin er sú sem bjargar textanum þegar
+    // notandinn fer STRAX úr reitnum — debounce-tíminn nær þá aldrei að renna.
+    ['drog', 'skjol', 'athugasemd'].forEach(function (k) {
+      var el = e[k]; if (!el) return;
+      el.addEventListener('input', function () {
+        oskilad = true;
+        merkjaVillu(false);
+        if (k === 'skjol') {
+          var pv = document.getElementById('pv-attprev');
+          if (pv) pv.innerHTML = links(el.value);
+        }
+        clearTimeout(vistTimer);
+        vistTimer = setTimeout(function () { vistaNu(true); }, VIST_MS);
+      });
+      el.addEventListener('blur', function () { vistaNu(true); });
     });
     var cpy = document.getElementById('pv-cpy');
     if (cpy) cpy.addEventListener('click', function () {
       var t = document.getElementById('pv-drog').value;
       navigator.clipboard.writeText(t);
-      var st = document.getElementById('pv-savest'); if (st) { st.textContent = '✓ Afritað'; setTimeout(function () { st.textContent = ''; }, 1500); }
+      stada('✓ Afritað');
+      setTimeout(function () { stada(''); }, 1500);
     });
     d.querySelectorAll('.pv-stbtns button').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var r = DATA.find(function (x) { return x.id === curId; });
-        if (r) r.status = b.getAttribute('data-ps');
+      b.addEventListener('click', async function () {
+        // Uppskera FYRST — annars henti endurteikningin á eftir öllu sem var
+        // skrifað í reitina síðan síðast var vistað.
+        var row = uppskera();
+        if (row) row.status = b.getAttribute('data-ps');
+        await vistaNu(false);
         renderPanel();
       });
     });
@@ -180,22 +303,18 @@
   }
 
   async function saveCur() {
-    var r = DATA.find(function (x) { return x.id === curId; });
-    if (!r) return;
-    var patch = {
-      drog: document.getElementById('pv-drog').value,
-      skjol: document.getElementById('pv-skjol').value,
-      athugasemd: document.getElementById('pv-ath').value,
-      status: r.status,
-      updated_at: new Date().toISOString()
-    };
-    var st = document.getElementById('pv-savest'); if (st) st.textContent = 'Vista…';
-    var q = await window.DB.sb.from('cowork_postsvor').update(patch).eq('id', curId);
-    if (q.error) { if (st) st.textContent = 'Villa: ' + q.error.message; return; }
-    Object.assign(r, patch);
-    if (st) st.textContent = '✓ Vistað ' + new Date().toLocaleTimeString('is-IS');
-    renderPanel();
+    var ok = await vistaNu(false);
+    if (ok) renderPanel();
   }
+
+  // Síðasta vörnin: loka/endurhlaða vafraglugga með óvistað svarbréf í reitnum.
+  window.addEventListener('beforeunload', function (ev) {
+    if (!active || !oskilad) return;
+    uppskera();
+    vistaNu(true);                       // reynum enn (fer oft í gegn)
+    ev.preventDefault(); ev.returnValue = '';
+    return '';
+  });
 
   async function activate() {
     css();
@@ -251,7 +370,12 @@
   // Deactivate my chip when a native queue chip is chosen (the app re-renders #vb-list itself).
   document.addEventListener('click', function (e) {
     var t = e.target.closest && e.target.closest('[data-act="queue"]');
-    if (t) { active = false; setTimeout(function () { styleChip(false); }, 0); }
+    if (!t) return;
+    // 09.09.2026: appið skiptir sjálft út #vb-list hérna — reitirnir hverfa úr
+    // DOM-inu í sama tikki. Vista áður en þeir gufa upp (capture-fasi, svo
+    // þetta gerist á undan endurteikningu appsins).
+    if (active && oskilad) { try { vistaNu(true); } catch (_) {} }
+    active = false; setTimeout(function () { styleChip(false); }, 0);
   }, true);
 
   var obs = new MutationObserver(function () {

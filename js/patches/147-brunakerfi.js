@@ -106,6 +106,10 @@
   function showSavedFlash() {
     const saved = document.querySelector('._bk-notes-saved');
     if (saved) {
+      // 2026-09-09: núllstilla líka texta+lit svo fyrri villuborði („⚠ vistaðist
+      // EKKI") standi ekki eftir þegar næsta vistun heppnast.
+      saved.textContent = '✓ Vistað';
+      saved.style.color = '#16a34a';
       saved.style.opacity = '1';
       setTimeout(() => { saved.style.opacity = '0'; }, 1500);
     }
@@ -117,9 +121,24 @@
     _notesTimer = null;
     const val = _notesPendingValue;
     _notesPendingValue = null;
-    const ok = await window.AppSettings.save({ [NOTES_KEY]: val });
-    if (ok) showSavedFlash();
-    if (!ok) _notesPendingValue = val; // keep pending so we can retry
+    let ok = false;
+    try { ok = await window.AppSettings.save({ [NOTES_KEY]: val }); }
+    catch (e) { ok = false; console.warn('[brunakerfi] notes save', e); }
+    // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"): mistökin voru
+    // ÓSÝNILEG — enginn borði, engin villa, aðeins þögult `_notesPendingValue`
+    // sem beið næstu innsláttar. Notandinn sá „ekkert gerðist" og fór.
+    // Nú sést villan á reitnum sjálfum og fer í vandamálaskrána.
+    const el = ta || document.getElementById('_bk-notes-ta');
+    if (ok) {
+      showSavedFlash();
+      if (el) { el.style.outline = ''; el.title = ''; }
+    } else {
+      _notesPendingValue = val;                       // keep pending so we can retry
+      if (el) { el.style.outline = '2px solid #dc2626'; el.title = 'Minnispunktarnir vistuðust EKKI — reyndu aftur'; }
+      const saved = document.querySelector('._bk-notes-saved');
+      if (saved) { saved.style.opacity = '1'; saved.textContent = '⚠ vistaðist EKKI'; saved.style.color = '#dc2626'; }
+      try { if (window.logProblem) window.logProblem('brunakerfi_notes_save_failed', 'brunakerfi_notes'); } catch (_) {}
+    }
     return ok;
   }
 

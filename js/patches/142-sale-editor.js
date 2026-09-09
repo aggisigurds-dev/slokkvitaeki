@@ -37,6 +37,42 @@
   let _afslKr = 0;        // sale-level kr discount (gross, m. vsk) — editable
   let _origCustomer = null; // {nafn, kt} snapshot for cascade
   let _dlg = null;
+  // 2026-09-09 (Agnar: „það þarf að fara yfir allar síðurnar … enginn texti má
+  // nokkurntíma tínast"): ✕ og Escape lokuðu ritlinum ÞEGJANDI. Línulýsingar,
+  // afsláttur, athugasemdir sem búið var að bæta við — og texti sem stóð
+  // óskráður í „+ Bæta við athugasemd" reitnum — hurfu án aðvörunar af því
+  // ekkert af þessu er skrifað í grunninn fyrr en ýtt er á Vista. Hér er
+  // tekin mynd við opnun og borin saman áður en lokað er.
+  let _snap = null;
+  function snapOf() {
+    if (!_sale) return '';
+    try {
+      return JSON.stringify({
+        linur: _sale.linur || [],
+        aths: _sale.athugasemdir || '',
+        afsl: _afslKr
+      });
+    } catch (_) { return ''; }
+  }
+  function erOvistad() {
+    if (!_sale || !_dlg || !_snap) return false;
+    if (_snap !== snapOf()) return true;
+    const q = s => _dlg.querySelector(s);
+    const ni = q('#_se-note-new');
+    if (ni && (ni.value || '').trim()) return true;      // óskráð athugasemd í reitnum
+    const nf = q('#_se-nafn');
+    if (nf && (nf.value || '').trim() !== String((_origCustomer && _origCustomer.nafn) || '').trim()) return true;
+    const kt = q('#_se-kt');
+    if (kt) {
+      const d = v => String(v || '').replace(/[^0-9]/g, '');
+      if (d(kt.value) !== d(_origCustomer && _origCustomer.kt)) return true;
+    }
+    return false;
+  }
+  function lokaOruggt() {
+    if (erOvistad() && !confirm('Loka sölu-ritlinum án þess að vista? Breytingarnar (línur, afsláttur, athugasemdir) glatast.')) return;
+    close();
+  }
 
   function isDraft(sale) {
     if (!sale) return false;
@@ -128,6 +164,7 @@
       nafn: _sale.customer_nafn || '',
       kt: ''  // we'll fill from customer lookup if needed
     };
+    _snap = snapOf();   // 2026-09-09: viðmið fyrir „óvistað?"-spurninguna
     buildDialog();
   }
 
@@ -153,19 +190,20 @@
         <div id="_se-foot" style="padding:14px 22px;border-top:1px solid #e2e8f0;background:#fff;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"></div>
       </div>`;
     document.body.appendChild(_dlg);
-    _dlg.querySelector('#_se-x').addEventListener('click', close);
+    _dlg.querySelector('#_se-x').addEventListener('click', lokaOruggt);
     document.addEventListener('keydown', escHandler);
     renderBody();
     renderFooter();
     renderVerkBadge();
   }
 
-  function escHandler(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
+  function escHandler(e) { if (e.key === 'Escape') { e.preventDefault(); lokaOruggt(); } }
   function close() {
     document.removeEventListener('keydown', escHandler);
     _dlg?.remove();
     _dlg = null;
     _sale = null;
+    _snap = null;
   }
 
   function stateBadge() {
@@ -715,7 +753,7 @@
       html += '<button id="_se-credit" type="button" style="padding:9px 18px;background:#c2410c;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">↩ Kreditfæra</button>';
     }
     f.innerHTML = html;
-    f.querySelector('#_se-close').addEventListener('click', close);
+    f.querySelector('#_se-close').addEventListener('click', lokaOruggt);
     const s = f.querySelector('#_se-save'); if (s) s.addEventListener('click', () => commit({ finalize: false }));
     const fin = f.querySelector('#_se-finalize'); if (fin) fin.addEventListener('click', () => commit({ finalize: true }));
     const cr = f.querySelector('#_se-credit'); if (cr) cr.addEventListener('click', () => {

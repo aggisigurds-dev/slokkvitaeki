@@ -136,12 +136,62 @@
     refreshBadge();
   }
 
+  // 09.09.2026 (ósk Agnars: „enginn texti má nokkurntíma tínast").
+  // Hér stóð áður `await SB...update(patch)` — ENGIN athugun á `.error`.
+  // supabase-js kastar ekki undantekningu, það skilar `{ data, error }`. Því
+  // hélt fallið áfram, skrifaði patchið í `state.items` og viðmótið teiknaði
+  // nýja titilinn/nótuna eins og allt hefði gengið eftir — meira að segja með
+  // „Vistað"-tilkynningu. Við harða endurhleðslu var textinn horfinn.
+  // Nú: villan stöðvar staðbundnu uppfærsluna (svo skjárinn ljúgi ekki),
+  // birtist notandanum og fer í logProblem. Skilar true/false.
   async function saveRow(id, patch) {
-    const SB = getSB(); if (!SB) return;
+    const SB = getSB();
+    if (!SB) { toast('⚠ Engin gagnabankatenging — EKKI vistað'); return false; }
     patch.updated_at = nowIso();
-    await SB.from('thjonustubeidni').update(patch).eq('id', id);
+    let r;
+    try {
+      r = await SB.from('thjonustubeidni').update(patch).eq('id', id);
+      if (r && r.error) throw r.error;
+    } catch (e) {
+      toast('⚠ Vistaðist EKKI: ' + ((e && e.message) || e));
+      try { if (window.logProblem) window.logProblem('thjonustu_mob_save_failed', 'id ' + id + ' — ' + ((e && e.message) || e)); } catch (_) {}
+      return false;
+    }
     const idx = state.items.findIndex(x => x.id == id);
     if (idx !== -1) state.items[idx] = Object.assign({}, state.items[idx], patch);
+    return true;
+  }
+
+  // Skola óvistaðan innslátt (titill + nótur) á þjóninn. Kallað úr blur,
+  // úr „Vista breytingar" OG úr öllu sem lokar/teiknar spjaldið upp á nýtt.
+  // Án þessa dugði einn smellur á ✕, á dökka bakgrunninn eða á „▶ Lokað" til
+  // að `state.sheetEdit = {}` henti nótunni sem var verið að skrifa.
+  async function flushSheetEdits() {
+    const id = state.selId;
+    if (!id) return true;
+    const r = state.items.find(x => String(x.id) === String(id));
+    if (!r) return true;
+    // Lesa beint úr DOM-inu líka — titilreiturinn hefur ekkert oninput fyrr en
+    // núna, og reiturinn getur átt nýrra gildi en `sheetEdit`.
+    const inp = document.getElementById('tbm-sh-title-inp');
+    if (inp && document.getElementById('tbm-sh-title-edit') &&
+        document.getElementById('tbm-sh-title-edit').style.display !== 'none') {
+      state.sheetEdit.title = inp.value;
+    }
+    const ta = document.getElementById('tbm-sh-notes');
+    if (ta) state.sheetEdit.notes = ta.value;
+    const patch = {};
+    if (state.sheetEdit.title !== undefined) {
+      const t = String(state.sheetEdit.title).trim();
+      if (t && t !== r.title) patch.title = t;
+    }
+    if (state.sheetEdit.notes !== undefined && state.sheetEdit.notes !== (r.notes || '')) {
+      patch.notes = state.sheetEdit.notes;
+    }
+    if (!Object.keys(patch).length) return true;
+    const ok = await saveRow(id, patch);
+    if (ok) state.sheetEdit = {};
+    return ok;
   }
 
   async function quickAdd(title, type) {
@@ -381,6 +431,10 @@
   }
 
   window.__tbmCloseSheet = function () {
+    // 09.09.2026: hér stóð `state.sheetEdit = {}` fyrst — smellur á ✕ eða á
+    // dökka bakgrunninn (auðveldasti mis-smellurinn í síma) henti þar með
+    // nótunni sem var í ritun. Nú fer hún á þjóninn fyrst.
+    try { flushSheetEdits(); } catch (_) {}
     state.selId = null;
     state.sheetEdit = {};
     const overlay = document.getElementById('tbm-sheet-overlay');
@@ -426,7 +480,12 @@
             (r.customer_nafn ? '<div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:4px">' + esc(r.customer_nafn) + '</div>' : '') +
             '<div id="tbm-sh-title-view" style="font-size:17px;font-weight:700;color:#111827;line-height:1.3;cursor:pointer" onclick="window.__tbmEditTitle()" title="Smella til að breyta">' + esc(r.title || '—') + ' <span style="font-size:12px;color:#d1d5db">✏</span></div>' +
             '<div id="tbm-sh-title-edit" style="display:none;margin-top:4px">' +
-              '<input id="tbm-sh-title-inp" type="text" value="' + esc(titleVal) + '" style="width:100%;box-sizing:border-box;border:1px solid #2563eb;border-radius:8px;padding:8px 10px;font-size:16px;font-weight:700;outline:none" />' +
+              // 09.09.2026: titilreiturinn hafði ENGAN oninput. `titleVal` las
+              // `state.sheetEdit.title` sem enginn skrifaði nokkurn tíma í, svo
+              // hver endurteikning (stjarna, merki, flokkur, staða) skilaði
+              // gamla titlinum aftur og innslátturinn hvarf. Nú er hann geymdur
+              // við hvern staf og skolað á þjóninn við blur.
+              '<input id="tbm-sh-title-inp" type="text" value="' + esc(titleVal) + '" oninput="window.__tbmEditTitleVal(this.value)" onblur="window.__tbmFlush()" style="width:100%;box-sizing:border-box;border:1px solid #2563eb;border-radius:8px;padding:8px 10px;font-size:16px;font-weight:700;outline:none" />' +
             '</div>' +
           '</div>' +
           '<button onclick="window.__tbmCloseSheet()" style="border:none;background:none;cursor:pointer;font-size:22px;color:#9ca3af;padding:0 4px;line-height:1;margin-left:4px">✕</button>' +
@@ -453,7 +512,9 @@
       // notes
       '<div style="padding:0 16px 12px">' +
         '<label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">📝 Nótur</label>' +
-        '<textarea id="tbm-sh-notes" placeholder="Athugasemdir…" style="width:100%;box-sizing:border-box;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;font-size:14px;min-height:80px;resize:vertical;outline:none;font-family:inherit" oninput="window.__tbmEditNotes(this.value)">' + esc(notesVal) + '</textarea>' +
+        // onblur → skola strax á þjóninn. Fyrir 09.09.2026 lifðu nóturnar
+        // aðeins í `state.sheetEdit` og hurfu um leið og spjaldinu var lokað.
+        '<textarea id="tbm-sh-notes" placeholder="Athugasemdir…" style="width:100%;box-sizing:border-box;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;font-size:14px;min-height:80px;resize:vertical;outline:none;font-family:inherit" oninput="window.__tbmEditNotes(this.value)" onblur="window.__tbmFlush()">' + esc(notesVal) + '</textarea>' +
       '</div>' +
       // tags
       '<div style="padding:0 16px 12px">' +
@@ -505,10 +566,15 @@
     if (edit) { edit.style.display = 'block'; const inp = document.getElementById('tbm-sh-title-inp'); if (inp) inp.focus(); }
   };
   window.__tbmEditNotes = function (v) { state.sheetEdit.notes = v; };
+  window.__tbmEditTitleVal = function (v) { state.sheetEdit.title = v; };
+  window.__tbmFlush = function () { return flushSheetEdits(); };
 
   window.__tbmAdvance = async function (id) {
     const r = state.items.find(x => String(x.id) === String(id));
     if (!r) return;
+    // Óvistaður texti FYRST — „▶ Lokað" lokaði spjaldinu og `sheetEdit` var
+    // hreinsað, svo nótan sem var verið að skrifa fór aldrei neitt (09.09.2026).
+    await flushSheetEdits();
     const ns = nextStatus(r.status);
     await saveRow(id, { status: ns });
     if (ns === 'lokad') {
@@ -523,6 +589,7 @@
   window.__tbmToggleStar = async function (id) {
     const r = state.items.find(x => String(x.id) === String(id));
     if (!r) return;
+    await flushSheetEdits();       // renderSheet() á eftir myndi annars henda innslættinum
     await saveRow(id, { important: !r.important });
     renderSheet();
     renderList();
@@ -533,21 +600,22 @@
     if (!id) return;
     const r = state.items.find(x => String(x.id) === String(id));
     if (!r) return;
-    const patch = {};
-    // title from input
+    // 09.09.2026: ein leið að vistuninni (flushSheetEdits) svo takkinn, blur og
+    // lokun spjaldsins geti ekki lengur gert sitt hvað. Og: „Vistað" er aðeins
+    // sagt ef það var raunverulega vistað — áður sagði það ✓ óháð útkomu.
     const inp = document.getElementById('tbm-sh-title-inp');
-    if (inp) {
-      const t = inp.value.trim();
-      if (t && t !== r.title) patch.title = t;
-    }
-    // notes from edit state
-    if (state.sheetEdit.notes !== undefined && state.sheetEdit.notes !== r.notes) patch.notes = state.sheetEdit.notes;
-    if (!Object.keys(patch).length) { toast('Engar breytingar'); return; }
+    if (inp) state.sheetEdit.title = inp.value;
+    const ta = document.getElementById('tbm-sh-notes');
+    if (ta) state.sheetEdit.notes = ta.value;
+    const breyting =
+      (state.sheetEdit.title !== undefined && String(state.sheetEdit.title).trim() && String(state.sheetEdit.title).trim() !== r.title) ||
+      (state.sheetEdit.notes !== undefined && state.sheetEdit.notes !== (r.notes || ''));
+    if (!breyting) { toast('Engar breytingar'); return; }
     const btn = document.getElementById('tbm-save-btn');
     if (btn) btn.textContent = 'Vistar…';
-    await saveRow(id, patch);
-    state.sheetEdit = {};
+    const ok = await flushSheetEdits();
     if (btn) btn.textContent = 'Vista breytingar';
+    if (!ok) return;                       // saveRow hefur þegar sýnt villuna
     toast('Vistað');
     renderSheet();
     renderList();
@@ -556,8 +624,11 @@
   window.__tbmDelete = async function (id) {
     const delBeidniOk = (window.Confirm && Confirm.show) ? await Confirm.show('Eyða þessum beiðni?') : window.confirm('Eyða þessum beiðni?');
     if (!delBeidniOk) return;
-    const SB = getSB(); if (!SB) return;
-    await SB.from('thjonustubeidni').update({ deleted_at: nowIso() }).eq('id', id);
+    const SB = getSB(); if (!SB) { toast('⚠ Engin gagnabankatenging'); return; }
+    // 09.09.2026: `.error` var ekki skoðuð — misheppnuð eyðing fjarlægði samt
+    // línuna af skjánum, svo hún „hvarf" og kom aftur við endurhleðslu.
+    const r = await SB.from('thjonustubeidni').update({ deleted_at: nowIso() }).eq('id', id);
+    if (r && r.error) { toast('⚠ Eyðing mistókst: ' + r.error.message); return; }
     state.items = state.items.filter(x => String(x.id) !== String(id));
     window.__tbmCloseSheet();
     renderList();
@@ -672,7 +743,9 @@
         if (r) {
           const cur = rowTags(r);
           const next = cur.indexOf(t) !== -1 ? cur.filter(x => x !== t) : cur.concat([t]);
-          saveRow(id, { tags: next }).then(() => renderSheet());
+          // Skola innslátt á undan — renderSheet() á eftir teiknar upp úr
+          // `state.items` og myndi annars sýna gamla titilinn/nótuna aftur.
+          flushSheetEdits().then(() => saveRow(id, { tags: next })).then(() => renderSheet());
         }
         return;
       }
@@ -684,7 +757,7 @@
         const field = sel.getAttribute('data-tbmfield');
         const id = sel.getAttribute('data-tbmfieldid');
         const val = sel.value;
-        saveRow(id, { [field]: val }).then(() => { renderSheet(); renderList(); });
+        flushSheetEdits().then(() => saveRow(id, { [field]: val })).then(() => { renderSheet(); renderList(); });
       }
     });
   }

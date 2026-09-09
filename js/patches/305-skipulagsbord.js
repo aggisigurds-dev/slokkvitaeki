@@ -95,6 +95,25 @@
     }
     return { cards: [], rows: ROWS_DEF };
   }
+  // Sýnileg vistunarvilla — rauður borði ofan á borðinu sem hverfur ekki af
+  // sjálfu sér, svo enginn haldi að minnispunkturinn hafi ratað á þjóninn.
+  function vistunVilla(hvad) {
+    try { if (window.Toast && Toast.show) Toast.show('⚠ Borðið vistaðist EKKI — ' + hvad); } catch (_) {}
+    try { if (window.logProblem) window.logProblem('skipulagsbord_save_failed', hvad + ' (starfsm. ' + nafnStarfsm() + ')'); } catch (_) {}
+    try {
+      const el = document.getElementById(SLOT_ID);
+      if (!el) return;
+      let b = el.querySelector('._sb-villa');
+      if (!b) {
+        b = document.createElement('div');
+        b.className = '_sb-villa';
+        b.style.cssText = 'background:#7f1d1d;color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px;margin:0 0 6px';
+        el.insertBefore(b, el.firstChild);
+      }
+      b.textContent = '⚠ Borðið vistaðist EKKI (' + hvad + ') — afritaðu textann áður en þú endurhleður.';
+    } catch (_) {}
+  }
+
   async function persist() {
     const data = { cards: state.cards, rows: synilegarRadir() };
     render();
@@ -104,9 +123,21 @@
     // vélin vistaði. Bíða þar til stillingar hafa hlaðist.
     if (AppSettings.isLoaded && !AppSettings.isLoaded()) {
       for (let i = 0; i < 40 && !AppSettings.isLoaded(); i++) await new Promise(r => setTimeout(r, 150));
-      if (!AppSettings.isLoaded()) { if (window.toast) toast('Stillingar hlóðust ekki — borðið vistaðist ekki'); return; }
+      // 09.09.2026: hér stóð `if (window.toast) toast(...)`. `window.toast` er
+      // EKKI til í þessu appi (hjálparinn heitir `Toast` og er skilgreindur í
+      // js/utils.js), svo skilyrðið var alltaf ósatt og eina viðvörunin um
+      // glataðan minnispunkt birtist aldrei. Nú er hún alltaf sýnd.
+      if (!AppSettings.isLoaded()) { vistunVilla('Stillingar hlóðust ekki'); return; }
     }
-    await AppSettings.save({ skipulagsbord: { by_staff: { [nafnStarfsm()]: data } } });
+    // 09.09.2026 (ósk Agnars: „enginn texti má nokkurntíma tínast").
+    // Skilagildi `AppSettings.save` var hunsað. Það skilar `false` þegar
+    // vistun mistekst (árekstur við aðra vél eftir 4 tilraunir, lestrarvilla,
+    // RPC-villa) — og af því að `render()` keyrir hér að ofan úr STAÐBUNDNU
+    // `state.cards`, sat minnispunkturinn áfram á skjánum eins og hann væri
+    // vistaður. Hann hvarf svo við næstu hörðu endurhleðslu. Nú er sagt frá.
+    const ok = await AppSettings.save({ skipulagsbord: { by_staff: { [nafnStarfsm()]: data } } });
+    if (ok === false) { vistunVilla('Þjónninn tók ekki við borðinu'); return; }
+    try { const b = document.querySelector('#' + SLOT_ID + ' ._sb-villa'); if (b) b.remove(); } catch (_) {}
     // localStorage-afritið er AÐEINS fyrir Agnar (gamla sameiginlega borðið);
     // annars myndi afgreiðslutölvan skrifa sitt borð yfir afrit hans.
     if (nafnStarfsm() === 'Agnar') { try { localStorage.setItem('bh_sb', JSON.stringify(data)); } catch (_) {} }

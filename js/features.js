@@ -49,13 +49,34 @@ var Companies = {
     el.innerHTML = html;
   },
   load: async function() {
+    // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"). ÁÐUR stóð hér
+    // `this.list = []` þegar DB.online var ósatt. Companies.load() er kallað úr
+    // mörgum áttum (patch 146 á 2 mín fresti, 147 eftir stofnun, ræsi-
+    // skyndiminnið í 360 …) og lendi EITT slíkt kall áður en DB.loadAll hefur
+    // náð sambandi þurrkaðist ALLUR listinn út — 1310 raðir → 0 — og hvert
+    // einasta fyrirtækjaspjald, Allir viðskiptavinir, Rekstrarfélög, banner-
+    // athugasemdin og afsláttar-uppflettingin las tóman lista. Textinn stóð
+    // óhreyfður í grunninum en SÁST hvergi. Mælt í viðmótinu 09.09.2026:
+    // DB.online=false + Companies.load() → Companies.list 1310 → 0.
+    // Nú höldum við síðustu góðu mynd (og teiknum hana aftur) — tómur listi er
+    // aðeins settur ef við HÖFÐUM aldrei neitt.
     if (!DB.online) {
-      this.list = [];
+      if (!Array.isArray(this.list)) this.list = [];
       this.render();
       return;
     }
     // Page through — Supabase caps each response at 1000 rows.
-    this.list = await DB.fetchAll(function(from, to){ return DB.sb.from('fyrirtaeki').select('*').is('deleted_at', null).order('nafn').order('id').range(from, to); });  // .order('id') tiebreaker — samnefnd fyrirtæki mega ekki fella raðir milli síðna
+    var nyr = await DB.fetchAll(function(from, to){ return DB.sb.from('fyrirtaeki').select('*').is('deleted_at', null).order('nafn').order('id').range(from, to); });  // .order('id') tiebreaker — samnefnd fyrirtæki mega ekki fella raðir milli síðna
+    // 0 raðir úr VEL HEPPNAÐRI sókn er í reynd alltaf bilun (RLS/lykill), aldrei
+    // raunveruleiki — `fyrirtaeki` er aldrei tómt. Að taka slíkt svar gilt blankar
+    // allt viðmótið þegjandi. Höldum síðustu góðu mynd og gerum bilunina SÝNILEGA.
+    if ((!nyr || !nyr.length) && Array.isArray(this.list) && this.list.length) {
+      try { if (window.logProblem) window.logProblem('companies_load_tomt', 'fyrirtaeki skilaði 0 röðum en ' + this.list.length + ' voru í minni — hélt eldri lista'); } catch(_) {}
+      console.warn('[Companies.load] 0 raðir úr grunni — held eldri lista (' + this.list.length + ')');
+      this.render();
+      return;
+    }
+    this.list = nyr;
     this.render();
   },
   openNew: function() {

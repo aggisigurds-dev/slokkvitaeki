@@ -128,7 +128,16 @@
       };
       const list = getFilesList();
       list.unshift(meta);
-      await saveFilesList(list);
+      // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"): skilagildi
+      // saveFilesList var hunsað. Ef skráin fór í geymsluna en LISTINN
+      // vistaðist ekki sagði appið „✓ Skjal hlaðið inn" á meðan skjalið var
+      // hvergi sýnilegt — og hvarf alveg við næstu hleðslu. Nú sést það.
+      const ok = await saveFilesList(list);
+      if (!ok) {
+        try { if (window.logProblem) window.logProblem('doc_attachment_list_save_failed', meta.name); } catch (_) {}
+        alert('Skráin hlóðst upp EN skjalalistinn vistaðist ekki — hún gæti horfið úr listanum. Athugaðu nettengingu og hlaðið henni upp aftur.');
+        return null;
+      }
       return meta;
     } catch (e) {
       alert('Villa: ' + (e.message || String(e)));

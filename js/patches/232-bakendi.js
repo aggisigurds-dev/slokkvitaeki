@@ -409,11 +409,20 @@
     if (rows.length > cap) tb.innerHTML += '<tr><td colspan="7" style="text-align:center;color:var(--ink3,#94a3b8);font-size:12px">Sýni ' + cap + ' af ' + fmtNum(rows.length) + '.</td></tr>';
     tb.querySelectorAll('[data-coid]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openCompany(a.getAttribute('data-coid')); }));
     // 2026-06-23: inline kennitölu-fix — type kt + Vista writes to the source table.
+    // 09.09.2026 (ósk Agnars: „enginn texti má nokkurntíma tínast").
+    // Kennitalan sem er slegin inn hér lifði AÐEINS í DOM-inu. Smellur á flipa
+    // eða síu kallar `render()`, sem byggir töfluna upp á nýtt — og hálfslegin
+    // kennitala hvarf þegjandi. Nú er hún geymd í `state` meðan á lotunni
+    // stendur og sett aftur í reitinn við endurteikningu.
+    state.ktDrog = state.ktDrog || {};
     tb.querySelectorAll('._bk-kt-inp').forEach(inp => {
+      const lykill = inp.getAttribute('data-src') + '|' + inp.getAttribute('data-id');
+      if (state.ktDrog[lykill]) inp.value = state.ktDrog[lykill];
       inp.addEventListener('input', () => {
         let v = inp.value.replace(/[^0-9]/g, '').slice(0, 10);
         if (v.length > 6) v = v.slice(0, 6) + '-' + v.slice(6);
         inp.value = v;
+        if (v) state.ktDrog[lykill] = v; else delete state.ktDrog[lykill];
       });
       inp.addEventListener('keydown', e => {
         if (e.key === 'Enter') { const b = inp.parentNode.querySelector('._bk-kt-save'); if (b) saveMissingKt(b); }
@@ -440,6 +449,7 @@
       const r = await SB.from(table).update({ kennitala: ktDashed }).eq('id', id);
       if (r.error) throw r.error;
       state.missing = (state.missing || []).filter(x => !(String(x.id) === String(id) && x.src === src));
+      if (state.ktDrog) delete state.ktDrog[src + '|' + id];       // vistað → drögin óþörf
       if (state.overview) {
         if (src === 'fyrirtaeki' && state.overview.fyrirtaeki_no_kt > 0) state.overview.fyrirtaeki_no_kt--;
         else if (src === 'vidskiptavinir' && state.overview.vidskiptavinir_no_kt > 0) state.overview.vidskiptavinir_no_kt--;
