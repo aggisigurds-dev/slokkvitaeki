@@ -36,7 +36,9 @@
   }
   function afstada(iso) {
     const d = new Date(iso); if (isNaN(d.getTime())) return "";
-    const dagar = Math.floor((Date.now() - d.getTime()) / 864e5);
+    // Almanaksdagar (miðnætti til miðnættis): póstur frá því í gærkvöldi er „í gær", ekki „í dag".
+    const nu = new Date();
+    const dagar = Math.round((new Date(nu.getFullYear(), nu.getMonth(), nu.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
     if (dagar <= 0) return "í dag";
     if (dagar === 1) return "í gær";
     if (dagar < 14) return "fyrir " + dagar + " dögum";
@@ -45,7 +47,14 @@
     const ar = Math.floor(dagar / 365);
     return "fyrir " + ar + (ar === 1 ? " ári" : " árum");
   }
-  window.SamskiptiTexti = { hreintEfni, eiginTexti, afstada };
+  // Sendandanafn sem er í raun áframsendur haus („Has attachments JON … Begin forwarded message:
+  // From: …", mælt á Álhellu 7) — netfangið segir þá meira en „nafnið".
+  function hreintNafn(nafn, netfang) {
+    const t = String(nafn == null ? "" : nafn).replace(/\s+/g, " ").trim();
+    if (!t || t.length > 60 || /forwarded|from:|subject:|sent:|<[^>]*@/i.test(t)) return String(netfang || "") || "(óþekktur sendandi)";
+    return t;
+  }
+  window.SamskiptiTexti = { hreintEfni, eiginTexti, afstada, hreintNafn };
   if (!document.getElementById("_skx-css")) {
     const BSTAL = "linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)";
     const st = document.createElement("style"); st.id = "_skx-css";
@@ -304,7 +313,7 @@
     const mailRow = (m, nyj) => {
       const open = erOpin(m);
       const via = (m.fyrirtaeki_nafn && m.fyrirtaeki_id !== fid) ? '<span class="_skx-chip">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
-      const hver = m.fra_okkur ? "Slökkvitæki ehf" : (m.sender_name || m.sender_email || "");
+      const hver = m.fra_okkur ? "Slökkvitæki ehf" : T.hreintNafn(m.sender_name, m.sender_email);
       const texti = T.eiginTexti(m.snippet);
       return '<div class="_ssk-mail ' + (nyj ? "_skx-nyjast" : "_skx-rod") + (m.fra_okkur ? " fra-okkur" : "") + (open ? " opin" : "") + '" data-eid="' + (m.email_id || "") + '">' +
         (nyj ? "" : '<span class="_skx-dot ' + (m.fra_okkur ? "okkur" : "kunni") + '"></span>') +

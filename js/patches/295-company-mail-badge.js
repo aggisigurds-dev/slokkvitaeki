@@ -302,7 +302,7 @@
     const dir = out
       ? { ic: '📤', t: 'Frá okkur', c: '#0369a1' }
       : { ic: '📥', t: 'Frá kúnna', c: '#166534' };
-    const who = out ? 'Slökkvitæki ehf' : (m.sender_name || m.sender_email || '');
+    const who = out ? 'Slökkvitæki ehf' : (TX().hreintNafn ? TX().hreintNafn(m.sender_name, m.sender_email) : (m.sender_name || m.sender_email || ''));
     return '<div style="display:flex;gap:10px;padding:9px 4px;border-bottom:1px solid #f4f6f9">' +
       '<div style="flex:0 0 auto;text-align:center;width:56px">' +
         '<div style="font-size:15px;line-height:1.1">' + dir.ic + '</div>' +
