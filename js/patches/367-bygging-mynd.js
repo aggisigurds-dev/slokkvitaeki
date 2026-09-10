@@ -7,11 +7,14 @@
  * Og strax á eftir: „ekki hafa dótið með teikningunni þarna,,, það kemur bara
  * þegar maður ýtir á teikninga takkann". Fyrsta útgáfan sýndi TVÆR flísar —
  * bygging og forsýn teikningar með tækjadottum. Teikningin á sinn eigin takka og
- * sitt eigið spjald; hún var tekin út. Byggingin stendur ein og fær því stærri
+ * sitt eigið spjald; hún var tekin út. („ok kanski bara default hide teikninguna —
+ * verður kanski fínt seinna meir“: prófuð útgáfa með dottum er í git-sögunni, fyrsta
+ * commit þessarar skrár, svo auðvelt er að endurvekja hana.) Byggingin stendur ein og fær því stærri
  * ramma sem fyllir svæðið sem Agnar merkti.
  *
  * Flísin situr í auða svæðinu vinstra megin við upplýsingalínurnar (363):
- *   • tóm: daufur brotinn rammi — límdu (Ctrl+V yfir flísinni), dragðu inn, eða smelltu
+ *   • tóm: AÐEINS daufur brotinn rammi, enginn texti (ósk Agnars) — límdu (Ctrl+V
+ *     yfir flísinni), dragðu inn, eða smelltu; leiðbeiningin er í title-texta
  *   • með mynd: smellur stækkar; myndin passar í rammann og teygist ALDREI
  *
  * ── GEYMSLA ───────────────────────────────────────────────────────────────
@@ -213,7 +216,9 @@
       });
     } else {
       flis.title = 'Límdu mynd af byggingunni (Ctrl+V með músina hér), dragðu hana inn, eða smelltu';
-      flis.innerHTML = '<div class="co-mynd-tomt"><b>📷</b>Mynd af byggingunni<small>Ctrl+V · dragðu · smelltu</small></div>';
+      // Agnar: „og ekki hafa neinn texta þarna með að líma mynd“. Tóm flís er
+      // AÐEINS daufi ramminn; leiðbeiningin lifir í title (sést við hover).
+      flis.innerHTML = '';
       flis.addEventListener('click', function () {
         var inp = document.createElement('input');
         inp.type = 'file'; inp.accept = 'image/*';
