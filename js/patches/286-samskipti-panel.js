@@ -134,6 +134,11 @@
   // hætti þögult — hýsillinn festist á prófílinn en kortið teiknaðist aldrei.
   const sb = () => (window.DB && window.DB.sb) || window.sb || null;
   const cache = {};
+  // Opin/lokuð staða kortsins per félag (póstsaga, „öll samskiptin", samantekt). Lifir endurteikningu
+  // á meðan notandinn er á sama félagi; hreinsuð þegar annað félag er opnað (decorate).
+  const _opid = {};
+  const uiLesa = fid => _opid[fid] || {};
+  const uiSetja = (fid, k, v) => { (_opid[fid] = _opid[fid] || {})[k] = !!v; };
   // ── GEYMD SAMSKIPTI (10.09.2026) ─────────────────────────────────────────
   // Agnar: „láta samskiptin geymast í kerfinu svo það taki ekki of langan tíma að uppfærast,
   // setja frekar loadmerki á gluggann og það komi þegar það er klárt". Síðasta HEILA sókn hvers
@@ -538,7 +543,7 @@
     const noteEl = card.querySelector("._ssk-note");
     if (noteEl) {
       const car = noteEl.querySelector("._ssk-note-car");
-      noteEl.addEventListener("toggle", () => { if (car) car.textContent = noteEl.open ? "▾" : "▸"; });
+      noteEl.addEventListener("toggle", () => { if (car) car.textContent = noteEl.open ? "▾" : "▸"; uiSetja(fid, "aths", noteEl.open); });
       const edBtn = noteEl.querySelector("._ssk-note-edit");
       if (edBtn) edBtn.addEventListener("click", (ev) => {
         ev.preventDefault(); ev.stopPropagation();
@@ -628,6 +633,7 @@
       meira.textContent = box.hidden
         ? "⬇ Sýna öll samskiptin (" + data.mails.length + ")"
         : "⬆ Sýna aðeins " + SYNI + " nýjustu";
+      uiSetja(fid, "eldri", !box.hidden);
     });
     const bordBtn = card.querySelector("._ssk-bord");
     if (bordBtn) bordBtn.addEventListener("click", () => { try { Verkbord.open(); } catch (_) {} });
@@ -691,6 +697,7 @@
       const full = card.querySelector("._ssk-full"), open = full.style.display === "none";
       full.style.display = open ? "" : "none";
       e.target.textContent = open ? "Loka póstsögu ▴" : "Póstsaga ▾";
+      uiSetja(fid, "saga", open);
     });
     const mk = card.querySelector("._ssk-mark");
     if (mk) mk.addEventListener("click", async e => {
@@ -703,6 +710,12 @@
       host.innerHTML = "";             // teikna kortið strax upp á nýtt
       render(host, fid, data);
     });
+    // 10.09.2026: opin/lokuð staða lifir endurteikningu — fersk gögn, ✓ afgreitt, eða prófíllinn
+    // teiknaður aftur (mælt: 357 opnar djúptengdan prófíl tvisvar og póstsagan lokaðist ~1 s eftir smell).
+    const ui = uiLesa(fid);
+    if (ui.saga) { const fu = card.querySelector("._ssk-full"), tg = card.querySelector("._ssk-toggle"); if (fu) fu.style.display = ""; if (tg) tg.textContent = "Loka póstsögu ▴"; }
+    if (ui.eldri && meira) { const bx = card.querySelector("._ssk-eldri"); if (bx) { bx.hidden = false; meira.textContent = "⬆ Sýna aðeins " + SYNI + " nýjustu"; } }
+    if (ui.aths && noteEl) noteEl.open = true;
     host.appendChild(card);
   }
 
@@ -749,7 +762,9 @@
   // Ein sókn í einu á hvert félag — fram og til baka milli prófíla tvísækir ekki.
   const _isokn = {};
   function saekja(fid) {
-    if (!_isokn[fid]) _isokn[fid] = fetchData(fid).finally(() => { delete _isokn[fid]; });
+    if (!_isokn[fid]) _isokn[fid] = fetchData(fid)
+      .then(d => { if (d && d.ok) GEYMSLA.skrifa(fid, geymsluHluti(d), d._ts); return d; })   // geymt EINU sinni á sókn
+      .finally(() => { delete _isokn[fid]; });
     return _isokn[fid];
   }
   async function uppfaera(host, fid, lagrad) {
@@ -757,7 +772,6 @@
     try { data = await medTima(saekja(fid), 20000, null); } catch (_) {}
     if (!data) delete _isokn[fid];                        // hangandi sókn má ekki læsa „Reyna aftur"
     const tokst = !!(data && data.ok);
-    if (tokst) GEYMSLA.skrifa(fid, geymsluHluti(data));
     if (!document.contains(host) || host.dataset.fid !== String(fid)) return;   // farið af prófílnum á meðan
     if (!data && !sb()) { host.innerHTML = ""; return; }  // enginn klíent enn → næsta tif reynir aftur (eins og áður)
     const card = host.querySelector("._samskipti-card");
@@ -787,18 +801,10 @@
   function teiknaAftur(host, fid, data, opt) {
     const gamalt = host.querySelector("._samskipti-card");
     if (gamalt && gamalt.querySelector("._ssk-note-ta")) return;     // aldrei henda texta sem er í ritun
-    const opid = gamalt ? {
-      saga: !!gamalt.querySelector('._ssk-full:not([style*="none"])'),
-      eldri: !!gamalt.querySelector("._ssk-eldri:not([hidden])"),
-      aths: !!(gamalt.querySelector("._ssk-note") || {}).open,
-    } : {};
     host.innerHTML = "";
-    render(host, fid, data, opt);
+    render(host, fid, data, opt);                                   // opin/lokuð staða kemur úr _opid (render)
     const card = host.querySelector("._samskipti-card");
     if (card) {
-      if (opid.saga) { const t = card.querySelector("._ssk-toggle"); if (t) t.click(); }
-      if (opid.eldri) { const t = card.querySelector("._ssk-meira"); if (t) t.click(); }
-      if (opid.aths) { const n = card.querySelector("._ssk-note"); if (n) n.open = true; }
       if (opt && opt.hluti) merkjaKort(card, "villa", "⚠ Hluti gagna náðist ekki",
         "Ein eða fleiri fyrirspurnir brugðust (" + (data.villur || []).join(" · ") + ") — listinn gæti verið ófullkominn.");
     }
@@ -844,6 +850,7 @@
     if (host) host.remove();
     host = document.createElement("div");
     host.className = "_samskipti-host"; host.dataset.fid = fid; host.dataset.ts = String(Date.now());
+    Object.keys(_opid).forEach(k => { if (k !== String(fid)) delete _opid[k]; });   // annað félag → sjálfgefin staða
     (row && row.parentElement ? row.parentElement : anchor).insertBefore(host, row ? row.nextSibling : null);
     // 10.09.2026 — minni (60 s) → tækisgeymsla → hleðslukort. Tif-lásnum er sleppt um leið og
     // eitthvað er komið á skjáinn; ferska sóknin gengur í bakgrunni (uppfaera).
