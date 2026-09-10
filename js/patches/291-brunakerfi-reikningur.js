@@ -192,11 +192,32 @@
   //    Ekkert nýtt reikningsdrag stofnað og ENGUM reikningi breytt — aðeins
   //    fletta upp og geyma id/num svo stöðulínan sýni hann (findInvoice tekur
   //    saleId beint). Aftengja setur null. ──────────────────────────────────────
+  // 2026-09-10 (Agnar: „þooooooooli ekki að geta ekki gert neitt i þessu kerfi",
+  // „geturðu opnað fyrir það að ég geti tengt reikninginn sjálfuuurrr"):
+  // tengingin er nú líka boðin á hverri árslínu í STAÐA EFTIR ÁRI (patch 274),
+  // ekki bara í stöðulínunni efst. Hjálparföllin eru FLUTT ÚT hér svo bæði
+  // spjöldin noti sömu geymslu — afrit myndi reka í sundur og þá sýndu
+  // spjöldin sitt hvorn reikninginn á sama ári.
+  //
+  // `_nyskrifad` lokar ósamstilltu gati: AppSettings.save() er async og
+  // AppSettings.path() skilar GAMLA gildinu þar til RPC-ið svarar. Án þess
+  // liti endurteikning strax á eftir út fyrir að tengingin hefði ekki vistast
+  // (sama gildra og í 261-app-profiles 09.09.2026).
+  const _nyskrifad = new Map();
   function getInvLink(coId, year) {
-    try { const m = (window.AppSettings && AppSettings.path && AppSettings.path('bk_inv_links')) || {}; return m[coId + '_' + year] || null; }
-    catch (_) { return null; }
+    const lykill = coId + '_' + year;
+    try { const m = (window.AppSettings && AppSettings.path && AppSettings.path('bk_inv_links')) || {};
+      const server = m[lykill] || null;
+      if (_nyskrifad.has(lykill)) {
+        const okkar = _nyskrifad.get(lykill);
+        if (JSON.stringify(server) === JSON.stringify(okkar)) _nyskrifad.delete(lykill);   // serverinn kominn með okkar
+        else return okkar;
+      }
+      return server;
+    } catch (_) { return _nyskrifad.get(lykill) || null; }
   }
   async function setInvLink(coId, year, val) {
+    _nyskrifad.set(coId + '_' + year, val);
     try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ bk_inv_links: { [coId + '_' + year]: val } }); } catch (_) {}
   }
   // Fletta upp sölu eftir reikningsnúmeri — tekur „R-000651", „000651" eða „651".
@@ -290,7 +311,7 @@
     } catch (e) { console.warn('[bkr] decorateProfile', e); }
   }
 
-  window.BrunakerfiReikningur = { onFinal, decorateProfile, findInvoice };
+  window.BrunakerfiReikningur = { onFinal, decorateProfile, findInvoice, getInvLink, setInvLink, findSaleByNum };
   console.log('[patch-291] Brunakerfi reikningsdrög við LOKIÐ + stöðulína installed');
 })();
 /* === END BRUNAKERFI REIKNINGSDRÖG === */

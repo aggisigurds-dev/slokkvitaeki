@@ -154,6 +154,13 @@
       '#_bkc-overlay ._bkc-act{padding:7px 13px;border-radius:8px;border:0;background:#2a78d6;color:#fff;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:34px;text-decoration:none;display:inline-flex;align-items:center}' +
       '#_bkc-overlay ._bkc-act._ghost{background:#fff;border:1px solid #d0d4da;color:#334155}' +
       '#_bkc-overlay ._bkc-act._del{background:#fff;border:1px solid #efb9ab;color:#c93c1d;padding:7px 10px}' +
+      // 2026-09-10 (Agnar: „taktu þessa ruslatunnu burt óþarfi að láta hana fá
+      // svona mikið pláss" / „lítið x er nóg"). 🗑 var jafn stór og Opna og Senda
+      // og bar rauðan ramma — eyðingin hrópaði hærra en aðgerðirnar sem eru
+      // notaðar daglega. Nú dauft × sem verður rautt við hover. Sami hnappur,
+      // sama aðgerð, sama staðfesting — bara ekki lengur aðalatriðið á línunni.
+      '#_bkc-overlay ._bkc-act._x{background:transparent;border:0;color:#b9c0c9;padding:0 5px;min-height:0;font-size:16px;line-height:1;font-weight:600}' +
+      '#_bkc-overlay ._bkc-act._x:hover{color:#c93c1d;background:#fdeeee;border-radius:6px}' +
       '#_bkc-overlay ._bkc-new{width:100%;padding:12px;border-radius:10px;border:0;background:#1f8a4c;color:#fff;font:inherit;font-size:14px;font-weight:800;cursor:pointer;margin-top:12px}' +
       '#_bkc-overlay ._bkc-new:hover{background:#187a41}' +
       '#_bkc-overlay table._bkc-tbl{width:100%;border-collapse:collapse}' +
@@ -211,7 +218,7 @@
     const samOr = 'fyrirtaeki_id.eq.' + coId + (co.customer_base_id ? ',customer_base_id.eq.' + co.customer_base_id : '');
     const [repR, docR, samR] = await Promise.all([
       sb.from('brunakerfi_skyrslur').select('id,year,uttekt_nr,status,doc_id,data,updated_at').eq('fyrirtaeki_id', coId).order('updated_at', { ascending: false }),
-      sb.from('customer_documents').select('id,year,drive_file_id,storage_path,doc_date,source,notes,is_duplicate').eq('doc_type', 'brunakerfi').eq('fyrirtaeki_id', coId).order('year', { ascending: false }),
+      sb.from('customer_documents').select('id,year,doc_type,drive_file_id,storage_path,doc_date,source,notes,is_duplicate').in('doc_type', ['brunakerfi', 'reikningur']).eq('fyrirtaeki_id', coId).order('year', { ascending: false }),
       sb.from('customer_documents').select('id,fyrirtaeki_id,drive_file_id,storage_path,doc_date,customer_name,notes,is_duplicate').eq('doc_type', 'samningur').or(samOr).order('id', { ascending: false })
     ]);
     let note = '';
@@ -220,7 +227,13 @@
     // eldri hreinsunar-sópun (`is_duplicate`) voru samt teiknuð hér — fellum
     // þau burt, halda þeim gögnum sem aldrei fóru gegnum sópunina (NULL).
     const dropDupes = arr => (arr || []).filter(d => !d.is_duplicate);
-    const docs = dropDupes((docR && docR.data) || []);
+    // 2026-09-10 (Agnar: „kanski bara bæta við vali á skýrslu eða reikning").
+    // Fyrirspurnin sótti AÐEINS `brunakerfi`, svo reikningur sem var hlaðinn
+    // upp handvirkt hvarf sjónum — hann fór í töfluna en ekkert spjald sýndi
+    // hann. Nú koma báðar gerðir og eru flokkaðar hér.
+    const allirDocs = dropDupes((docR && docR.data) || []);
+    const docs = allirDocs.filter(d => (d.doc_type || 'brunakerfi') === 'brunakerfi');
+    const invDocs = allirDocs.filter(d => d.doc_type === 'reikningur');
     const samningar = dropDupes((samR && samR.data) || []);
     const reports = (repR && repR.data) || [];
     // Reikningur (solur) hverrar skýrslu (patch 291) — svo hann sjáist Í SÖMU LÍNU
@@ -233,7 +246,7 @@
         } catch (_) { r._inv = null; }
       }));
     }
-    return { co, reports, docs, samningar, note };
+    return { co, reports, docs, invDocs, samningar, note };
   }
 
   // Persist the pending note to the company it was TYPED on. Called from the
@@ -285,6 +298,7 @@
     const yearRows = yrs.map(y => {
       const reps = C.reports.filter(r => +r.year === y);
       const docs = oldDocs.filter(d => +d.year === y);
+      const invSkjol = (C.invDocs || []).filter(d => +d.year === y);
       const fin = reps.find(r => r.status === 'final') || null;
       const draft = reps.find(r => r.status !== 'final') || null;
       const inv = (fin && fin._inv) || (draft && draft._inv) || null;
@@ -311,7 +325,7 @@
       if (draft) {
         rep += (rep ? '<br>' : '') + '<span class="_bkc-yrtxt"><b>Drög</b> · úttekt ' + esc(draft.uttekt_nr || '—') + ' · breytt ' + esc(String(draft.updated_at || '').slice(0, 10)) + '</span>' +
           '<button type="button" class="_bkc-act _ghost" data-open="' + draft.id + '">Halda áfram</button>' +
-          '<button type="button" class="_bkc-act _del" data-del="' + draft.id + '">🗑</button>';
+          '<button type="button" class="_bkc-act _x" data-del="' + draft.id + '" title="Eyða drögunum">×</button>';
       }
       docs.forEach(d => {
         const url = driveUrl(d.drive_file_id) || storageUrl(d.storage_path);
@@ -322,7 +336,7 @@
         rep += (rep ? '<br>' : '') + '<span class="_bkc-yrtxt"><b>Brunakerfisskýrsla ' + esc(d.year || y) + '</b> (PDF) · ' + esc(d.doc_date ? fmtDags(d.doc_date) : 'mánuð vantar') + (d.source ? ' · ' + esc(d.source) : '') + '</span>' + monSel +
           (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">Opna</a>' : '') +
           (url ? '<button type="button" class="_bkc-act" data-docsend="' + d.id + '" data-sendkind="brunakerfi" style="background:#0f766e" title="Senda í tölvupósti">📧 Senda</button>' : '') +
-          '<button type="button" class="_bkc-act _del" data-docdel="' + d.id + '" title="Aftengja þetta skjal (röng skrá) — skráin sjálf helst í Drive">🗑</button>';
+          '<button type="button" class="_bkc-act _x" data-docdel="' + d.id + '" title="Aftengja þetta skjal (röng skrá) — skráin sjálf helst í Drive">×</button>';
       });
       if (!rep) rep = '<span class="_bkc-yrmiss">' + (y === NOW ? 'engin skoðunarskýrsla enn — ＋ Ný skoðunarskýrsla hér að neðan' : 'vantar skýrslu') + '</span>';
       // reikningur-lína
@@ -330,10 +344,31 @@
       if (inv) {
         const lab = invLabel(inv);
         const owner = (fin && fin._inv === inv) ? fin : draft;
+        // Handtengdur reikningur má alltaf vera aftengjanlegur — annars situr
+        // röng tenging föst og eina leiðin til baka er að láta forrita hana burt.
+        const handtengt = !!(window.BrunakerfiReikningur && BrunakerfiReikningur.getInvLink && BrunakerfiReikningur.getInvLink(C.co.id, y));
         invHtml = '<span class="_bkc-yrtxt"><b>' + esc(inv.num || 'reikningur') + '</b>' + (inv.samtals ? ' · ' + fmtKr(+inv.samtals) : '') + ' · <span class="_bkc-invst _' + lab + '">' + lab + '</span></span>' +
-          (owner ? '<button type="button" class="_bkc-act _ghost" data-invpdf="' + owner.id + '" title="Opna reikninginn (PDF)">🧾 Reikningur</button>' : '');
+          (owner ? '<button type="button" class="_bkc-act _ghost" data-invpdf="' + owner.id + '" title="Opna reikninginn (PDF)">🧾 Reikningur</button>' : '') +
+          (handtengt ? '<button type="button" class="_bkc-act _x" data-invunlink="' + y + '" title="Aftengja handtengda reikninginn — reikningurinn sjálfur helst óbreyttur">×</button>' : '');
       } else {
-        invHtml = '<span class="_bkc-yrmiss">' + (fin ? 'vantar reikning — stofnast með „Stofna drög" í stöðulínunni efst' : draft ? 'kemur þegar skýrslan er kláruð' : docs.length ? 'enginn reikningur skráður í appinu' : '—') + '</span>';
+        // 2026-09-10 (Agnar: „geturðu opnað fyrir það að ég geti tengt reikninginn
+        // sjálfuuurrr"). Hér stóð AÐEINS textinn „enginn reikningur skráður í
+        // appinu" — engin leið til að bregðast við. Tengingin var til, en aðeins
+        // efst í stöðulínunni og aðeins fyrir YFIRSTANDANDI ár; eldri ár (2024,
+        // 2025) voru dauður texti. Nú má tengja hvaða ár sem er héðan.
+        invHtml = '<span class="_bkc-yrmiss">' + (fin ? 'vantar reikning — stofnast með „Stofna drög" í stöðulínunni efst' : draft ? 'kemur þegar skýrslan er kláruð' : docs.length ? 'enginn reikningur skráður í appinu' : '—') + '</span>' +
+          '<button type="button" class="_bkc-act _ghost" data-invlink="' + y + '" title="Tengja reikning sem er þegar til við þetta ár">🔗 Tengja reikning</button>';
+      }
+      // Uppáhlaðin reikningsskjöl ársins bætast við línuna hvort sem sölu-
+      // reikningur fannst eða ekki — PDF sem Agnar hengir sjálfur á að sjást.
+      invSkjol.forEach(d => {
+        const u = driveUrl(d.drive_file_id) || storageUrl(d.storage_path);
+        invHtml += '<br><span class="_bkc-yrtxt"><b>Reikningur ' + esc(d.year || y) + '</b> (PDF)' + (d.doc_date ? ' · ' + esc(fmtDags(d.doc_date)) : '') + '</span>' +
+          (u ? '<a class="_bkc-act _ghost" href="' + esc(u) + '" target="_blank" rel="noopener">Opna</a>' : '') +
+          (u ? '<button type="button" class="_bkc-act" data-docsend="' + d.id + '" data-sendkind="reikningur" style="background:#0f766e" title="Senda í tölvupósti">📧 Senda</button>' : '') +
+          '<button type="button" class="_bkc-act _x" data-docdel="' + d.id + '" title="Aftengja þetta skjal — skráin sjálf helst í Drive">×</button>';
+      });
+      {
       }
       return '<div class="_bkc-yr">' +
         '<div class="_bkc-yrhd"><span class="_bkc-yrlbl _' + pc + '">' + y + '</span><span class="_bkc-st _bkc-pill _' + pc + '">' + pill + '</span>' + (reps.length + docs.length > 1 ? '<small>' + (reps.length + docs.length) + ' færslur</small>' : '') + '</div>' +
@@ -344,6 +379,9 @@
     const addFileStrip =
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px dashed #d7dade;font-size:12.5px;color:#59606c">' +
         '＋ Bæta við skjali:' +
+        '<select id="_bkc-addkind" style="border:1px solid #d0d4da;border-radius:8px;padding:6px 8px;font:inherit;font-size:12.5px">' +
+          '<option value="brunakerfi">Skýrsla</option><option value="reikningur">Reikningur</option>' +
+        '</select>' +
         '<select id="_bkc-addyear" style="border:1px solid #d0d4da;border-radius:8px;padding:6px 8px;font:inherit;font-size:12.5px">' +
           (function () { const y = new Date().getFullYear(); let o = ''; for (let i = y; i >= y - 6; i--) o += '<option' + (i === y ? ' selected' : '') + '>' + i + '</option>'; return o; })() +
         '</select>' +
@@ -426,7 +464,7 @@
                 '<div style="font-size:11px;color:#8b93a1">' + (chain ? 'sameiginlegur (öll keðjan)' : 'þessi staður') + (s.doc_date ? ' · ' + esc(fmtDags(s.doc_date)) : '') + '</div></div>' +
                 (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">Opna</a>' : '') +
                 (url ? '<button type="button" class="_bkc-act" data-docsend="' + s.id + '" data-sendkind="samningur" style="background:#0f766e" title="Senda samning í tölvupósti">📧 Senda</button>' : '') +
-                '<button type="button" class="_bkc-act _del" data-docdel="' + s.id + '" title="Aftengja samninginn — skráin helst í Drive">🗑</button>' +
+                '<button type="button" class="_bkc-act _x" data-docdel="' + s.id + '" title="Aftengja samninginn — skráin helst í Drive">×</button>' +
               '</div>';
             }).join('') : '<div class="_bkc-empty">Enginn þjónustusamningur skráður á fyrirtækið.</div>') +
             '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding-top:8px;border-top:1px dashed #d7dade;font-size:12.5px;color:#59606c">' +
@@ -503,6 +541,26 @@
       } catch (e) { alert('Vistun mistókst: ' + (e.message || e)); }
     }));
     // 🗑 aftengja rangt skjal (röðin fer, skráin sjálf helst í Drive)
+    // 🔗 Tengja / aftengja reikning á ársnótu. Geymslan er 291 — EITT fall,
+    // ekki afrit, svo stöðulínan efst og ársblokkin segi alltaf það sama.
+    w.querySelectorAll('[data-invlink]').forEach(b => b.addEventListener('click', async () => {
+      const BR = window.BrunakerfiReikningur;
+      if (!BR || !BR.setInvLink || !BR.findSaleByNum) { alert('Reikningstengingin er ekki tiltæk (patch 291 hlóðst ekki).'); return; }
+      const y = +b.dataset.invlink;
+      const raw = prompt('Reikningsnúmer til að tengja við brunakerfi ' + y + ' (t.d. R-000651):', '');
+      if (raw == null || !String(raw).trim()) return;
+      const sale = await BR.findSaleByNum(raw);
+      if (!sale) { alert('Reikningur „' + String(raw).trim() + '" fannst ekki.'); return; }
+      await BR.setInvLink(C.co.id, y, { id: sale.id, num: sale.num });
+      reload();
+    }));
+    w.querySelectorAll('[data-invunlink]').forEach(b => b.addEventListener('click', async () => {
+      const BR = window.BrunakerfiReikningur; if (!BR || !BR.setInvLink) return;
+      const y = +b.dataset.invunlink;
+      if (!confirm('Aftengja reikninginn af brunakerfi ' + y + '?\n(Reikningurinn sjálfur helst óbreyttur — bara tengingin fer.)')) return;
+      await BR.setInvLink(C.co.id, y, null);
+      reload();
+    }));
     w.querySelectorAll('[data-docdel]').forEach(b => b.addEventListener('click', async () => {
       if (!confirm('Aftengja þetta skjal af fyrirtækinu?\n(Skráin sjálf helst óbreytt í Drive — bara tengingin fer.)')) return;
       try {
@@ -552,7 +610,10 @@
         const up = await sb.storage.from('samningar').upload(path, f, { contentType: f.type || 'application/pdf', upsert: false });
         if (up.error) throw up.error;
         const ins = await sb.from('customer_documents').insert({
-          doc_type: 'brunakerfi', fyrirtaeki_id: co.id, year: yr,
+          // Gerðin er VALIN, ekki gefin. Áður var allt skráð sem `brunakerfi`,
+          // svo reikningur sem var hengdur á lenti í skýrslu-línunni.
+          doc_type: ((w.querySelector('#_bkc-addkind') || {}).value === 'reikningur' ? 'reikningur' : 'brunakerfi'),
+          fyrirtaeki_id: co.id, year: yr,
           storage_path: 'samningar/' + path, customer_name: co.nafn || null,
           source: 'app', found_by: 'manual-upload', notes: 'Handvirkt viðhengt: ' + f.name
         });
