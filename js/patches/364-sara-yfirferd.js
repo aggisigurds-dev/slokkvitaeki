@@ -152,14 +152,16 @@
       // Vörulistinn í Liður-dálkinn (ósk Agnars 10.09.2026: „dropdown val af
       // tækjum i lidur"). Sömu heiti og verð og fara á reikninginn — sótt úr
       // `vorur`, ekki afrituð, svo þau geti ekki rekið í sundur við verðskrána.
+      //
+      // ENGIN FLOKKASÍA. Fyrsta útgáfan hleypti aðeins fimm flokkum í gegn og
+      // faldi þar með „Léttvatn 2L slökkvitæki" sem Agnar bjó til sama kvöld —
+      // hún er í flokknum Slökkvitæki. Sía sem þegir um það sem hún fjarlægir
+      // er verri en enginn listi; virkar vörur eru aðeins 113 og komast allar
+      // fyrir. Óvirkar vörur (virkt = false) eru það eina sem er sleppt.
       try {
         var v = await s.from('vorur').select('nafn,verd_an_vsk,vsk_prosenta,flokkur')
-          .not('nafn', 'is', null).order('nafn');
-        if (!v.error) {
-          state.vorur = (v.data || []).filter(function (x) {
-            return ['Þjónusta', 'Fylgihlutir', 'Varahlutir', 'Vinna', 'Vinna og akstur'].indexOf(x.flokkur) !== -1;
-          });
-        }
+          .not('nafn', 'is', null).neq('virkt', false).order('nafn');
+        if (!v.error) state.vorur = v.data || [];
       } catch (_) {}
     } catch (e) {
       state.villa = (e && e.message) || String(e);
@@ -482,7 +484,8 @@
       // Datalistinn aftast — sem fyrsta barn listans braut hann `.syf-mal:first-child`.
       '<datalist id="syf-man-dl">' + MANUDIR.map(function (m) { return '<option value="' + m + '">'; }).join('') + '</datalist>' +
       '<datalist id="syf-vorur-dl">' + state.vorur.map(function (v) {
-        return '<option value="' + esc(v.nafn) + '">' + Math.round(v.verd_an_vsk || 0) + ' kr án vsk</option>';
+        return '<option value="' + esc(v.nafn) + '">' + Math.round(v.verd_an_vsk || 0) + ' kr án vsk' +
+          (v.flokkur ? ' · ' + esc(v.flokkur) : '') + '</option>';
       }).join('') + '</datalist>' +
       '</div>';
 
