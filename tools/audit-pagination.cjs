@@ -43,10 +43,10 @@ const BIG = ['email_digest', 'ajour_registrations', 'uttaeki', 'timavera_entries
  * hækkuð til að fá grænt er ekki vörður, hún er slökkvari. (Sbr. audit-invoice-guard
  * sem stóð grænn á BASELINE = 40 yfir 40 tómum sölum.)
  *
- * ÞETTA ER ÞVÍ ÓVARIN HLIÐ, VITANDI VITS: daginn sem thjonustubeidni fer yfir
- * 1000 byrja 3 fyrirspurnir að sleppa röðum þögult og ENGINN vörður segir frá.
- * Rétta lausnin er ekki að giska í kóða heldur að MÆLA raðafjöldann — sá vörður
- * þarf net og á því heima í netkeyrslunni, ekki hér. Skráð sem verk.
+ * ÞESSI HLIÐ ER NÚ MÆLD (10.09.2026): tools/audit-rodafjoldi.cjs telur þessar
+ * þrjár töflur í hverri netkeyrslu og verður RAUÐUR daginn sem ein fer yfir 1000
+ * — áður en fyrsta röðin týnist. Rétta lausnin var ekki að giska í kóða heldur
+ * að MÆLA raðafjöldann; sá vörður þarf net og á því heima þar, ekki hér.
  *
  * Þegar tafla fer yfir 1000: færðu hana upp í BIG og lagaðu það sem hún flaggar.
  *   select relname, n_live_tup from pg_stat_user_tables
@@ -72,9 +72,12 @@ const ALLOW = [
   // 10.09.2026 — síðustu fjórar „þekktu" fyrirspurnirnar, hver MÆLD. Þær stóðu á
   // BASELINE = 4: vörðurinn þagði um þessi fjögur tilvik og hefði þagað um fjögur
   // NÝ til viðbótar. Hver fær nú sína mældu ástæðu, og BASELINE fer í 0.
-  [/\.or\(\s*['"]kennitala\.eq\./,            'ein kennitala í tveimur stafsetningum — mest 11 fyrirtæki á kt (175, 226)'],
+  // Kennitölu-færslan grípur AÐEINS nákvæmlega tvær kennitala.eq-greinar og ekkert
+  // annað: .or('kennitala.eq.X,nafn.ilike.*Y*') er ekki afmarkað og sleppur ekki hér.
+  [/\.or\(\s*['"]kennitala\.eq\.['"]\s*\+\s*[\w.$]+\s*\+\s*['"],kennitala\.eq\.['"]\s*\+\s*[\w.$]+\s*\)/,
+                                              'ein kennitala í tveimur stafsetningum — mest 11 fyrirtæki á kt (175, 226)'],
   [/eq\(\s*['"]rekstrarfelag['"]/,            'eitt rekstrarfélag — stærsti hópur 65 raðir í customers_base (285)'],
-  [/eq\(\s*['"]doc_type['"]\s*,\s*['"]samningur['"]/, 'samningar — 360 raðir ALLS í customer_documents (274)'],
+  [/eq\(\s*['"]doc_type['"]\s*,\s*['"]samningur['"]/, 'samningar — 360 raðir ALLS í customer_documents (274); VEX — mælt í hverri keyrslu í audit-rodafjoldi'],
 ];
 
 const root = process.argv[2] || 'js';
@@ -172,11 +175,13 @@ if (ofstor.length) {
   process.exit(1);
 }
 
-// Þekktar, fyrirliggjandi fyrirspurnir 2026-08-20 (skráðar í docs/ORYGGISNET.md).
-// RED AÐEINS ef fjöldinn VEX — þ.e. NÝ ópöguð fyrirspurn bætist við. Lækkaðu þegar
-// þær fyrirliggjandi eru fetchAll-vafðar. (2 líta út fyrir að vera raunverulegar:
-// 03-vidsk-revamp fyrirtaeki-allt, 274 customer_documents eftir doc_type.)
-const BASELINE = 4;
+// BASELINE 0 frá 10.09.2026. Stóð á 4 frá 20.08 og þaggaði fjórar þekktar
+// fyrirspurnir í einu lagi — og hefði þaggað HVERJAR fjórar sem er, líka nýjar.
+// Hver var mæld og fékk eigin ALLOW-færslu að ofan (175, 226, 285, 274); sú eina
+// sem vex með rekstrinum (samningar) er mæld í hverri keyrslu í audit-rodafjoldi.
+// Ný ópöguð fyrirspurn á BIG-töflu er nú RAUÐ frá fyrstu línu. Hækkaðu þetta
+// ALDREI til að fá grænt: lagaðu fyrirspurnina, eða MÆLDU hana inn í ALLOW.
+const BASELINE = 0;
 if (!risky.length) {
   console.log('✅ audit-pagination: ekkert grunsamlegt (' + files.length + ' skrár skoðaðar).');
   process.exit(0);
