@@ -26,6 +26,15 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B11 | Center Hotels: bannerlínan sýnir „Afsláttur —" þótt félagið sé í hópi með 10–32% — hópurinn er lesinn of seint | — | NÝ |
 
 
+## 2026-09-10
+
+| # | Beiðni | Hver | Staða |
+|---|--------|------|-------|
+| B18 | Brunakerfi-spjaldið: tengja reikning sjálfur, lítið × í stað ruslatunnu, ein „bæta við skjali"-rönd neðst (Skýrslu/Reikningi), velja aðal-reikning ársins — „stílhreint og skýrt" | Claude | ✅ KLÁRT |
+| B19 | Collapse-takki á Sara vinnublöð svo restin af Þjónustuborðinu nýtist | Claude | ✅ KLÁRT |
+| B20 | Mynd af byggingunni í fyrirtækjabannernum — ein flís, enginn texti, stækkar við smell án teygingar; teikningin falin sjálfgefið | Claude | ✅ KLÁRT |
+| B21 | Sameina POS-greinarnar tvær frá 9. sept. (kanónísk kúnnastofnun). Netvörður fann slitinn vír 3 (þögul bilun → sala án kúnna) — tengdur í `logProblem` án kennitölu; `audit-stadur-nr` hert og sannreynt í báðar áttir; 43/43 græn; live `13b3fb8` | Claude | ✅ KLÁRT |
+
 ## Textatap-sópið 2026-09-09 — „enginn texti má nokkurntíma tínast"
 
 **Klárað og í loftinu.** 30. audit (`audit-textatap.cjs`) ver bæði mynstrin héðan í frá.
