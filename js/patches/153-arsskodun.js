@@ -451,6 +451,35 @@
       }
     });
 
+    // 10.09.2026 (Agnar: „dettur alltaf aftur í rugl") — SYSTKINI-VÍSITALA.
+    // Félag með NÚLL tæki hverfur af báðum listunum og er þá hvorki á aksturslista
+    // né rukkað. Áður en það er kallað gat verður að svara: hvar eru tækin þá?
+    // Systurstaður (sama rekstrarfélag / sama kennitala) sem BER tækin er gild
+    // skýring — Agnar leiðrétti okkur um það sjálfur (Center Hótel Hlaðvarpinn,
+    // Vélrás Gullhella/Klettagarðar). Vísitalan er byggð úr ÖLLUM fyrirtækjum,
+    // ekki bara borðinu, svo systurstaður utan þjónustu teljist líka.
+    const _sysByBase = {}, _sysByKt = {};
+    allCompanies.forEach(c => {
+      const rec = { id: c.id, nafn: c.nafn, u: (unitsByFid[c.id] || []).length };
+      if (c.customer_base_id != null) {
+        const k = String(c.customer_base_id);
+        (_sysByBase[k] = _sysByBase[k] || []).push(rec);
+      }
+      const kt = String(c.kennitala || '').replace(/\D/g, '');
+      if (kt.length >= 10) (_sysByKt[kt] = _sysByKt[kt] || []).push(rec);
+    });
+    // Systurstaðir MEÐ tæki, fyrir félag sem sjálft á engin. Skilar null annars.
+    function systkiniMedTaeki(c) {
+      const kt = String(c.kennitala || '').replace(/\D/g, '');
+      const fundin = new Map();
+      const skoda = arr => (arr || []).forEach(s => { if (s.id !== c.id && s.u > 0) fundin.set(s.id, s); });
+      if (c.customer_base_id != null) skoda(_sysByBase[String(c.customer_base_id)]);
+      if (kt.length >= 10) skoda(_sysByKt[kt]);
+      if (!fundin.size) return null;
+      const stadir = [...fundin.values()].sort((a, b) => b.u - a.u);
+      return { taeki: stadir.reduce((s, x) => s + x.u, 0), stadir: stadir.map(x => x.nafn + ' (' + x.u + ')') };
+    }
+
     _cache.list = allCompanies
       .filter(inService)
       .map(c => {
@@ -458,6 +487,12 @@
         const _ars = Object.assign({}, manual);
         const units = unitsByFid[c.id] || [];
         _ars._units = units;   // keep the raw uttaeki rows so the modal can list + delete individual tæki
+        // 10.09.2026: félag með NÚLL tæki — hvar eru tækin þá? Systurstaður sem ber þau
+        // er skýring, ekki gat (sjá systkiniMedTaeki). Merkið „⚠ Engin tæki skráð" les þetta.
+        if (!units.length) {
+          const _sys = systkiniMedTaeki(c);
+          if (_sys) { _ars._sysTaeki = _sys.taeki; _ars._sysStadir = _sys.stadir; }
+        }
         // Skýrslu-ár úr customer_documents (fyrir Óvíst-sönnunarmerkin)
         // Rekstrarfélags-vörn (sama og last_year_inspected hér að neðan):
         // base-munaðar skýrslur gilda AÐEINS þegar base á nákvæmlega EINN stað.
@@ -488,6 +523,38 @@
           _ars.estimated_yearly = Math.round(est);
           _ars._unit_count = units.length;
           _ars._derived = true;
+        } else if (!manual.equipment_manual && manual.equipment) {
+          // 09.09.2026 — T=S=I (Agnar, orðrétt): „Tækin inn á prófíl er jafnt úttektarskýrslu
+          // og jafnt við invoice. T=S=I. Það sé líka grunnurinn sem restin af síðunni á að
+          // líta til." Einkennið sem hann lýsti: „tækjalistinn hefur oft verið að detta út úr
+          // fyrirtækjaprófílunum en samt sýna tölu á ársskoðunarsíðunni."
+          //
+          // ÞETTA er gatið. Afleiðslan að ofan hljóp AÐEINS þegar `units.length` var > 0.
+          // Væri prófíllinn tómur datt hún út og AFRITIÐ sem `Object.assign({}, manual)` bar
+          // með sér — arsskodun_customers[fid].equipment, talið upp úr úttektarskýrslu og
+          // uppfært af ENGUM — stóð eftir sem talan á borðinu. Færist tæki eða hverfur fylgir
+          // afritið ekki. TÓMUR PRÓFÍLL ER LÍKA SVAR: lifandi talan (uttaeki á fyrirtaeki_id,
+          // status <> 'urelt' — NÁKVÆMLEGA sami lykill og sama sía og loadActiveUnitsByFid
+          // gefur prófílnum) gildir hér eins og annars staðar.
+          //
+          // AFRITINU ER ALDREI EYTT (mælt: arsskodun_customers er skrifað úr 12 skrám og
+          // 862 færslur hanga í því, þar af 110 á fyrirtæki sem eru eytt eða ekki lengur til).
+          // Það er geymt í _blobEq/_blobTotal og misræmið SÝNT með ⚠-merki (misraemiMark) +
+          // síunni „⚠ Stemmir ekki" — stangist þau á á það að sjást, ekki þagga niður.
+          // Vörður: tools/audit-t-s-i.cjs.
+          const _blobTot = Object.values(manual.equipment).reduce((s, v) => s + (+v || 0), 0);
+          _ars.equipment = {};
+          _ars._unit_count = 0;
+          _ars._derived = true;
+          if (_blobTot > 0) {
+            _ars._blobEq = manual.equipment;
+            _ars._blobTotal = _blobTot;
+            _ars._blobMisraemi = true;
+            // 0 tæki mega aldrei bera áætlun — það væri sama tvítalning aftur, bara í krónum.
+            // Gamla áætlunin geymd í _blobEst svo hún sjáist í skýringunni.
+            _ars._blobEst = +manual.estimated_yearly || 0;
+            _ars.estimated_yearly = 0;
+          }
         }
         // 2026-07-14: report facts win over the name-matched uttaeki guess.
         // The úttektarskýrsla is the ground truth for what was actually inspected.
@@ -687,7 +754,19 @@
   // 08.09.2026: ⚠-merkið — prófíllinn (TÆKI-dálkurinn) stemmir hvorki við skýrslu né
   // reikning. Sýnir nýjustu staðreyndina (SLT/BSL/RS); allar í title-textanum.
   function misraemiMark(ars) {
-    if (!ars || !ars._misraemi || !Array.isArray(ars._factEq) || !ars._factEq.length) return '';
+    if (!ars) return '';
+    // 09.09.2026 (T=S): prófíllinn er TÓMUR en gamla skýrslu-afritið í stillingunum
+    // (arsskodun_customers[fid].equipment) segir tölu. Lifandi talan gildir — en afritið
+    // er ekki þaggað niður, það stendur hér svo Agnar sjái NÁKVÆMLEGA hvað stangast á.
+    if (ars._blobMisraemi) {
+      const tipT = 'Prófíllinn er TÓMUR — engin tæki skráð á þennan stað í uttaeki.\n'
+        + 'Gamalt skýrslu-afrit í stillingunum segir ' + ars._blobTotal + ' tæki'
+        + (ars._blobEst ? ' (áætlun ' + ars._blobEst + ' kr)' : '') + '.\n'
+        + 'Lifandi talan gildir (T=S=I). Annaðhvort vantar tækin á fyrirtækjasíðuna '
+        + 'eða afritið er úrelt — afritinu er ekki eytt sjálfkrafa.';
+      return '<span class="_ars-misr _ars-misr-afrit" title="' + esc(tipT) + '" style="display:inline-flex;align-items:center;gap:3px;margin-left:5px;padding:1px 6px;border-radius:6px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:10px;font-weight:800;white-space:nowrap;vertical-align:top;line-height:1.5">⚠ afrit ' + ars._blobTotal + '</span>';
+    }
+    if (!ars._misraemi || !Array.isArray(ars._factEq) || !ars._factEq.length) return '';
     const tip = 'Prófíllinn stemmir hvorki við skýrslu né reikning (SLT/BSL/RS):\n' +
       ars._factEq.map(f => f.label + ' ' + (f.year || '') + ': ' + f.slt + '/' + f.bsl + '/' + f.rs).join('\n') +
       '\nLagaðu tækin á fyrirtækjasíðunni svo prófíllinn stemmi við annað hvort.';
@@ -1066,6 +1145,15 @@
     const eqTot = Object.values(a.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
     return eqTot === 0;
   }
+  // 10.09.2026 (Agnar, verk a1105f3c): „félag án tækja á ekki að HVERFA".
+  // EIN skilgreining á „engin tæki skráð" — flagan, teljarinn og merkið lesa hana
+  // öll, svo þau geti ekki rekið í sundur (sama regla og _erOvist hér að ofan).
+  // Talan sem sýnd er í TÆKI-dálknum er 0 OG prófíllinn (uttaeki) er tómur.
+  function _enginTaeki(c) {
+    const a = (c && c._ars) || {};
+    if (((a._units) || []).length) return false;
+    return Object.values(a.equipment || {}).reduce((s, v) => s + (+v || 0), 0) === 0;
+  }
   function isDoneYear(c, curYear) {
     const fc = (_cache.fcCur || {})[String(c.id)];
     // 2026-08-19 (Agnar #11): klarad úttektar-par (skýrsla↔reikningur paruð, per
@@ -1193,9 +1281,16 @@
       arr = arr.filter(c => isDoneYear(c, curYear));
     } else if (state.status === 'suspect') {
       arr = arr.filter(isSuspect);
+    } else if (state.status === 'entaeki') {
+      // 10.09.2026: ALLIR á borðinu sem sýna 0 tæki — víðari en ❓ Óvíst (sem krefst
+      // þess LÍKA að hvorki saga né mánuður sé til). Félag með skráðan mánuð en engin
+      // tæki fer á aksturslistann og er svo ekki hægt að rukka; það á að sjást hér.
+      arr = arr.filter(_enginTaeki);
     } else if (state.status === 'misraemi') {
       // 08.09.2026: EFTIRLITIÐ — prófíll stemmir hvorki við skýrslu né reikning (SLT/BSL/RS).
-      arr = arr.filter(c => !!(c._ars && c._ars._misraemi));
+      // 09.09.2026 (T=S): og LÍKA tómur prófíll á móti gömlu skýrslu-afriti í stillingunum
+      // (_blobMisraemi) — sama tegund misræmis, tvær heimildir fyrir sömu tölu.
+      arr = arr.filter(c => !!(c._ars && (c._ars._misraemi || c._ars._blobMisraemi)));
     } else if (state.status === 'pending') {
       // 2026-07-17 (ósk Agnars): „Eftir" = AÐEINS raunverulega á eftir — rauða
       // „Á eftir" pillan (mánuður kominn/liðinn) + „Sleppt '24" (sleppt í fyrra).
@@ -1694,7 +1789,11 @@
       catch (_) { return 0; }
       finally { state.status = keepS; state.search = keepQ; }
     };
-    const cnt = { all: countByStatus('all'), done: countByStatus('done'), pending: countByStatus('pending'), pending2026: countByStatus('pending2026') };
+    // 10.09.2026: ❓ Óvíst og ⚠ Engin tæki fá LÍKA tölu. Óvíst-flagan var eina flagan án
+    // tölu og hún geymdi nákvæmlega mismuninn sem lét Búið + Eftir ekki ná borðinu
+    // (341 + 297 = 638 af 650). Ótalinn hópur er ósýnilegur hópur.
+    const cnt = { all: countByStatus('all'), done: countByStatus('done'), pending: countByStatus('pending'), pending2026: countByStatus('pending2026'),
+      suspect: countByStatus('suspect'), entaeki: countByStatus('entaeki') };
     // 2026-09-08 (Agnar: „geturðu gert þessa grænu og rauðu samantektartakka bara
     // sýna það sem þeir eru að telja í töflunni fyrir neðan … eða sýna nánari
     // upplýsingar"): spjöldin töldu ALLTAF allt borðið, líka þegar taflan var síuð
@@ -1706,6 +1805,10 @@
       all: filtered.length,
       done: filtered.filter(c => isDoneYear(c, curYear)).length,
       pending2026: filtered.filter(c => !isDoneYear(c, curYear) && !_erOvist(c, curYear)).length,
+      // 10.09.2026 (Agnar: „dettur alltaf aftur í rugl"): ÞRIÐJI hópurinn. Búið + Eftir
+      // ná ekki borðinu því pending2026 sigtar ❓ Óvíst burt — 12 félög sem voru hvorki
+      // talin né sýnd neins staðar. Talan er hér svo reikningsdæmið gangi upp á skjánum.
+      ovist: filtered.filter(c => !isDoneYear(c, curYear) && _erOvist(c, curYear)).length,
       // 2026-09-08 (Agnar: „sýna líka fjöldann sem er svona kominn á tíma… eins og
       // núna í sept er um 110 eftir"): ⏳ Eftir-flagan telur LÍKA þá sem var sleppt
       // í fyrra, óháð mánuði — þess vegna bar hún 178 þótt aðeins 116 væru með
@@ -1729,7 +1832,7 @@
     const siaVirk = state.status !== 'all' || !!(state.months && state.months.length)
       || (state.postnr !== null) || !!state.search.trim();
     const afBordi = (n) => siaVirk ? ` · af ${n} á borðinu` : '';
-    const misrCount = all.filter(c => c._ars && c._ars._misraemi).length;
+    const misrCount = all.filter(c => c._ars && (c._ars._misraemi || c._ars._blobMisraemi)).length;
     // Endurheimtu-kandídatar (ósk Agnars 08.09.2026): „síðasta skoðun 2023" — þeir
     // sem eru líklega hættir. Talið á öllu borðinu, þeir sem eru ÞEGAR í endurheimt
     // ekki taldir með svo talan sé „svona mörgum má bæta við".
@@ -1821,6 +1924,7 @@
        : state.status === 'pending' ? `Á eftir + sleppt (allir mánuðir)`
        : state.status === 'pending2026' ? `Eftir ${curYear} — allt óbúið (allir mánuðir)`
        : state.status === 'suspect' ? `Óvíst — líklega óvart í þjónustu (engin saga, enginn mánuður, engin tæki)`
+       : state.status === 'entaeki' ? `Engin tæki skráð — 0 tæki á prófílnum (systurstaðir og brunakerfi merkt sér)`
        : state.status === 'misraemi' ? `Stemmir ekki — prófíll ≠ skýrsla/reikningur (SLT/BSL/RS)`
        : state.status === 'ivinnslu'? `Í vinnslu`
        : state.status === 'akstur'  ? `Aksturslisti`
@@ -1874,10 +1978,11 @@
         </div>
 
         <div class="_ars-statgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-          <div class="_kpi _kpi--hlut">
+          <div class="_kpi _kpi--hlut" title="Þrír hópar, ekki tveir: Búið + Eftir + Óvíst = allt borðið. ❓ Óvíst er sigtað út úr „Eftir ${curYear}“ (engin saga, enginn mánuður, engin tæki) — þess vegna nægðu Búið og Eftir aldrei til að ná tölunni.">
             <div class="_kpi-h">Fjöldi</div>
             <div class="_kpi-n">${sy.all}</div>
             <div class="_kpi-s">${siaVirk ? 'raðir í töflunni' : '= Allt-flagan'}${afBordi(cnt.all)}</div>
+            <div class="_kpi-s" style="margin-top:1px;font-variant-numeric:tabular-nums">✅ ${sy.done} + 🗓️ ${sy.pending2026}${sy.ovist ? ` + ❓ ${sy.ovist}` : ''} = ${sy.done + sy.pending2026 + sy.ovist}</div>
           </div>
           <div class="_kpi _kpi--graent" title="Stóra talan = merkt Skoðað ${curYear} — sama tala og listinn sýnir. Neðri talan = ${curYear}-skýrsla skráð í skjalagrunninn. Munurinn = skoðaðir staðir sem vantar skráða skýrslu.">
             <div class="_kpi-h">Búið ${curYear}</div>
@@ -1916,7 +2021,11 @@
               { v: 'pending2026', label: '🗓️ Eftir ' + curYear + ' ' + cnt.pending2026 },
               { v: 'skipped2025', label: '🟡 Slepptir í fyrra' },
               { v: 'priority', label: '❗ Forgangur' },
-              { v: 'suspect', label: '❓ Óvíst' },
+              { v: 'suspect', label: '❓ Óvíst' + (cnt.suspect ? ' ' + cnt.suspect : '') },
+              // 10.09.2026 (Agnar: „félag án tækja á ekki að HVERFA"): allir sem sýna 0 tæki.
+              // Listinn greinir systurstaði og brunakerfis-kúnna frá þeim sem raunverulega
+              // vantar tækjaskrá (sjá suspectVerdict) — munurinn á að sjást, ekki spyrjast.
+              { v: 'entaeki', label: '⚠ Engin tæki' + (cnt.entaeki ? ' ' + cnt.entaeki : '') },
               // 08.09.2026: eftirlitið — prófíll ≠ skýrsla/reikningur (sjá _misraemi í loadAll).
               { v: 'misraemi', label: '⚠ Stemmir ekki' + (misrCount ? ' ' + misrCount : '') },
               { v: 'never', label: '⛔ Aldrei' },
@@ -2024,7 +2133,7 @@
             <div style="font-size:14px;font-weight:600;color:var(--ink1);margin-bottom:3px">Engin fyrirtæki passa við þessa síu</div>
             <div style="font-size:12px">Reyndu að breyta sía eða leitarstreng.</div>
           </div>
-        `) : (state.status === 'suspect' ? renderSuspectList(filtered) : (effView === 'mrows' ? renderMobileRows(filtered) : renderTable(filtered)))}
+        `) : ((state.status === 'suspect' || state.status === 'entaeki') ? renderSuspectList(filtered) : (effView === 'mrows' ? renderMobileRows(filtered) : renderTable(filtered)))}
 
         ${filteredAars.length > 0 ? `
         <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--surface2);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
@@ -2523,6 +2632,7 @@
        : state.status === 'pending'     ? 'Á eftir + sleppt'
        : state.status === 'pending2026' ? `Eftir ${curYear}`
        : state.status === 'suspect'     ? 'Óvíst — líklega óvart í þjónustu'
+       : state.status === 'entaeki'     ? 'Engin tæki skráð'
        : state.status === 'misraemi'    ? 'Stemmir ekki — prófíll ≠ skýrsla/reikningur'
        : state.status === 'ivinnslu'    ? 'Í vinnslu'
        : state.status === 'akstur'      ? ('Aksturslisti' + ((+state._akOnly >= 1 && +state._akOnly <= 3) ? (' ' + state._akOnly + ' · póstnúmeraröð') : ''))
@@ -2720,39 +2830,70 @@
     const maxYr = yrs.length ? Math.max(...yrs) : 0;
     const units = ((c._ars && c._ars._units) || []).length;
     const isNew = c.created_at && String(c.created_at) >= '2026-01-01';
-    if (maxYr >= 2025) return { key: 'skyrsla', badge: `📄 Skýrsla ${maxYr} til`, color: '#166534', bg: '#dcfce7', hint: 'Alvöru þjónustukúnni — skýrsla ' + yrs.join(', ') + ' í skjalakerfinu. Vantar bara mánuð/merkingu.' };
-    if (maxYr > 0) return { key: 'gomul', badge: `📁 Gömul saga (síðast ${maxYr})`, color: '#92400e', bg: '#fef3c7', hint: 'Skýrslur ' + yrs.join(', ') + ' — ekkert síðan. Dottinn úr þjónustu eða gleymdur?' };
+    // 10.09.2026 (Agnar: „dettur alltaf aftur í rugl") — SYSTURSTAÐUR FYRST.
+    // Félag án tækja er ekki sjálfkrafa gat. Beri systurstaður (sama rekstrarfélag
+    // eða sama kennitala) tækin er talan 0 RÉTT og skýrð. Þetta merki er það sem
+    // greinir Center Hótel Hlaðvarpinn / Vélrás Gullhella / Klettagarðar frá þeim
+    // sem raunverulega vantar tækjaskrá — Agnar á að sjá muninn, ekki spyrja.
+    const sysT = +((c._ars && c._ars._sysTaeki) || 0);
+    if (sysT > 0) {
+      const stadir = (c._ars && c._ars._sysStadir) || [];
+      return { key: 'systur', glabel: '🏢 Systurstaður — tækin á hinum stöðunum', badge: `🏢 Systurstaður — tækin á hinum stöðunum (${sysT})`, color: '#155e75', bg: '#cffafe',
+        hint: 'Engin tæki á ÞESSUM stað, en systurstaðir sama rekstrarfélags/kennitölu bera ' + sysT + ' tæki: ' + stadir.join(' · ') + '. Talan 0 er rétt hér.' };
+    }
     // 2026-07-29: brunakerfis-skýrsla sannar að kúnninn sé raunverulegur, en
     // hún er ÖNNUR þjónusta — merkið segir það hreint út í stað þess að láta
     // líta út fyrir að slökkvitækin hafi verið skoðuð.
+    // 10.09.2026: LÍKA virk brunakerfis-áskrift (c._bru) þegar staðurinn á engin
+    // slökkvitæki — „á kerfi, ekki slökkvitæki" er skýring, ekki gat.
     const bYrs = (c._ars && c._ars._bruYears) || [];
-    if (bYrs.length) {
-      const bMax = Math.max(...bYrs);
-      return { key: 'brunakerfi', badge: `🚨 Brunakerfi ${bMax} — engin slökkvitækjaskýrsla`, color: '#9a3412', bg: '#ffedd5',
-        hint: 'Í brunakerfisþjónustu (skýrslur ' + bYrs.join(', ') + ') en ENGIN úttektarskýrsla fyrir slökkvitæki. Önnur þjónusta — ekki sönnun um slökkvitækjaskoðun.' };
+    if (bYrs.length || (!units && c._bru)) {
+      const bMax = bYrs.length ? Math.max(...bYrs) : 0;
+      return { key: 'brunakerfi', glabel: '🚨 Brunakerfi — engin slökkvitæki', badge: `🚨 Brunakerfi${bMax ? ' ' + bMax : ''} — engin slökkvitæki`, color: '#9a3412', bg: '#ffedd5',
+        hint: bYrs.length
+          ? 'Í brunakerfisþjónustu (skýrslur ' + bYrs.join(', ') + ') en ENGIN úttektarskýrsla fyrir slökkvitæki. Önnur þjónusta — ekki sönnun um slökkvitækjaskoðun.'
+          : 'Skráður í brunakerfisþjónustu (brunakerfi_customers) en á engin slökkvitæki. Önnur þjónusta — ekki sönnun um slökkvitækjaskoðun.' };
     }
-    // 2026-07-23 (ósk Agnars): handvirk „Nýtt"-merking þegar engin skýrsla er til —
-    // fjólublátt, opnar mánaðarval á fyrirtækjasíðunni (arsskodun_customers.nytt_manual).
-    if (c._ars && c._ars.nytt_manual) return { key: 'nytt', badge: '🆕 Nýtt — bíður skoðunar', color: '#7c3aed', bg: '#ede9fe', hint: 'Merkt handvirkt sem nýr þjónustukúnni — bíður fyrstu skoðunar.' };
-    if (isNew) return { key: 'nytt', badge: '🆕 Nýtt — bíður fyrstu skoðunar', color: '#1d4ed8', bg: '#dbeafe', hint: 'Stofnað ' + String(c.created_at).slice(0, 10) + ' — engin skýrsla enn, eðlilegt fyrir nýjan kúnna.' };
-    if (units > 0) return { key: 'taeki', badge: `🧯 Bara tæki (${units})`, color: '#7c3aed', bg: '#ede9fe', hint: 'Engin skýrsla nokkru sinni — bara sjálfvirk tæki á nafninu. Óvíst hvort þau eru raunveruleg.' };
-    return { key: 'ekkert', badge: '⬜ Engin gögn', color: '#64748b', bg: '#f1f5f9', hint: 'Engin skýrsla, engin tæki, engin saga — líklega óvart í þjónustu.' };
+    if (maxYr >= 2025) return { key: 'skyrsla', glabel: '📄 Skýrsla til — vantar bara tækjaskrá/merkingu', badge: `📄 Skýrsla ${maxYr} til`, color: '#166534', bg: '#dcfce7', hint: 'Alvöru þjónustukúnni — skýrsla ' + yrs.join(', ') + ' í skjalakerfinu. Vantar bara mánuð/merkingu.' };
+    if (maxYr > 0) return { key: 'gomul', glabel: '📁 Gömul saga — ekkert nýlegt', badge: `📁 Gömul saga (síðast ${maxYr})`, color: '#92400e', bg: '#fef3c7', hint: 'Skýrslur ' + yrs.join(', ') + ' — ekkert síðan. Dottinn úr þjónustu eða gleymdur?' };
+    if (units > 0) return { key: 'taeki', glabel: '🧯 Bara tæki — engin skýrsla', badge: `🧯 Bara tæki (${units})`, color: '#7c3aed', bg: '#ede9fe', hint: 'Engin skýrsla nokkru sinni — bara sjálfvirk tæki á nafninu. Óvíst hvort þau eru raunveruleg.' };
+    // 10.09.2026 — ÞETTA ER GATIÐ. Engin tæki, engin skýrsla, enginn systurstaður,
+    // ekkert brunakerfisskjal: staðurinn fer aldrei á aksturslista og verður ALDREI
+    // RUKKAÐUR, því hann sést hvergi. Merkið segir hvað er að í stað þess að fela það.
+    // „🆕 nýtt" (handvirk merking eða stofnað á árinu) er BÆTT VIÐ, ekki sett í staðinn —
+    // áður át það merkið og öll félögin litu eins út, líka þau sem voru mánuðum gömul.
+    // 2026-07-23 (ósk Agnars): handvirka „Nýtt"-merkingin (arsskodun_customers.nytt_manual)
+    // opnar mánaðarval á fyrirtækjasíðunni.
+    const nyttM = !!(c._ars && c._ars.nytt_manual);
+    const nyttTxt = nyttM ? ' · 🆕 merkt nýtt' : (isNew ? ' · 🆕 stofnað ' + String(c.created_at).slice(0, 10) : '');
+    return { key: 'entaeki', glabel: '⚠ Engin tæki skráð — kemst hvorki á aksturslista né í rukkun', badge: '⚠ Engin tæki skráð' + nyttTxt, color: '#b91c1c', bg: '#fee2e2',
+      hint: 'Engin tæki á prófílnum, engin úttektarskýrsla, enginn systurstaður með tæki og ekkert brunakerfisskjal. '
+        + 'Staðurinn kemst hvorki á aksturslista né í rukkun fyrr en tækjaskráin er sett inn — eða hann tekinn úr þjónustu.' };
   }
   function renderSuspectList(arr) {
     const groups = {};
     arr.forEach(c => { const v = suspectVerdict(c); (groups[v.key] = groups[v.key] || { v, list: [] }).list.push(c); });
-    const ORDER = ['ekkert', 'taeki', 'gomul', 'nytt', 'skyrsla'];
+    // 10.09.2026 — ORDER er AÐEINS RÖÐUN, aldrei sía. Hér stóð
+    // `ORDER.filter(k => groups[k])` með ORDER = ['ekkert','taeki','gomul','nytt','skyrsla'];
+    // lykillinn `brunakerfi` var aldrei í listanum, svo JM Veitingar ehf (585) hvarf
+    // ÞÖGULT af Óvíst-listanum — nákvæmlega einkennið („sjást hvergi") sem verkið átti
+    // að laga, í kóðanum sem átti að sýna það. Nú fer allt sem ORDER nefnir ekki aftast.
+    const ORDER = ['entaeki', 'systur', 'brunakerfi', 'ekkert', 'taeki', 'gomul', 'nytt', 'skyrsla'];
+    const KEYS = ORDER.filter(k => groups[k]).concat(Object.keys(groups).filter(k => !ORDER.includes(k)));
+    const _alls = arr.length;
     return `
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:11px 14px;margin-bottom:12px;font-size:12.5px;color:#92400e">
-        Þessi fyrirtæki hafa <b>enga skráða skoðunarsögu</b>. Merkin sýna hvaða sönnunargögn fundust.
+        <b>${_alls}</b> fyrirtæki — hvert og eitt talið hér að neðan. Merkin sýna hvaða sönnunargögn fundust:
+        <b>⚠ Engin tæki skráð</b> = raunverulegt gat (kemst hvorki á aksturslista né í rukkun) ·
+        <b>🏢 Systurstaður</b> og <b>🚨 Brunakerfi</b> = talan 0 er rétt og skýrð.
         „⬇ Úr þjónustu" færir fyrirtæki niður í Allir viðskiptavinir (afturkræft — kveikt aftur á fyrirtækjasíðunni).
       </div>
-      ${ORDER.filter(k => groups[k]).map(k => {
+      ${KEYS.map(k => {
         const g = groups[k];
         return `
         <div style="margin-bottom:16px">
           <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
-            <span style="background:${g.v.bg};color:${g.v.color};font-size:12px;font-weight:800;padding:4px 11px;border-radius:99px">${g.v.badge.replace(/ \d{4}.*$/, '')} · ${g.list.length}</span>
+            <span style="background:${g.v.bg};color:${g.v.color};font-size:12px;font-weight:800;padding:4px 11px;border-radius:99px">${g.v.glabel || g.v.badge.replace(/ \d{4}.*$/, '')} · ${g.list.length}</span>
             <span style="font-size:11.5px;color:var(--ink3)">${esc(g.v.hint)}</span>
           </div>
           <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;overflow:hidden">

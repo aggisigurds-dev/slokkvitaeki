@@ -86,10 +86,27 @@
     else if (when==='tomorrow') { from=new Date(today); from.setDate(from.getDate()+1); to=new Date(from); to.setDate(to.getDate()+1); }
     else { from=today; to=new Date(today); to.setDate(to.getDate()+7); }
 
-    const { data: cal } = await SB.from('dagbok')
+    /* 10.09.2026: taflan `dagbok` ER EKKI TIL í Supabase (PGRST205 — PostgREST
+     * stingur sjálft upp á `verkdagbok`, sem er allt annað: dagbók per
+     * FYRIRTÆKI með duft/léttvatn/kolsýru-talningu, engin `scheduled_start`,
+     * ekkert tímaplan). Villan var þögguð af því að hér var aðeins `data`
+     * afþáttað og `error` hunsuð — svo skjárinn sagði „🌴 Engar færslur — frí?"
+     * á hverjum einasta degi frá upphafi, sem lítur nákvæmlega eins út og
+     * rólegur dagur. Dagskrártaflan er einfaldlega ekki til: hana þarf að
+     * smíða (eða tengja við `dagskra`) áður en þessi skjár getur virkað.
+     * Þangað til segir hann satt frá í stað þess að þykjast tómur. */
+    const { data: cal, error: calErr } = await SB.from('dagbok')
       .select('*').gte('scheduled_start', from.toISOString()).lt('scheduled_start', to.toISOString())
       .order('scheduled_start', { ascending:true });
     stops = cal || [];
+    if (calErr) {
+      main.innerHTML = '<div class="rt-wrap"><div class="rt-day"><h1>📍 Leiðin</h1></div>' +
+        '<div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:9px">' +
+        '⚠️ Dagskráin er ekki tengd: ' + esc(calErr.message || String(calErr)) +
+        '<div style="margin-top:6px;font-size:12px">Taflan <code>dagbok</code> er ekki til í gagnagrunninum. ' +
+        'Þessi skjár sýndi áður „engar færslur" og leit út eins og frídagur.</div></div></div>';
+      return;
+    }
 
     const dayName = new Date().toLocaleDateString('is-IS', { weekday:'long', day:'numeric', month:'long' });
 

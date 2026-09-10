@@ -50,7 +50,11 @@
   async function findCandidates() {
     const SB = getSB();
     if (!SB) return [];
-    const companies = await DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,heimilisFang,athugasemdir').is('deleted_at', null).range(from, to));  // page through 1000-row cap
+    // 10.09.2026: `heimilisFang` (stór F) var í .select() við hliðina á réttum
+    // `heimilisfang`. Sá dálkur er ekki til — PostgREST svaraði 400 «column
+    // fyrirtaeki.heimilisFang does not exist» og ALLT tólið skilaði engum
+    // frambjóðendum. Einn hástafur felldi heila hreinsun.
+    const companies = await DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,athugasemdir').is('deleted_at', null).range(from, to));  // page through 1000-row cap
     const candidates = (companies || []).filter(looksLikeWalkin);
     if (!candidates.length) return [];
     // Annotate candidates with unit count so the user can see what they're migrating.

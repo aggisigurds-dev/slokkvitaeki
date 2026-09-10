@@ -165,16 +165,6 @@
       const svc  = dlg.querySelector('#_wau-svc').value;
       const note = dlg.querySelector('#_wau-note').value.trim();
 
-      const newLine = {
-        serial,
-        name: type + (size ? ' · ' + size : ''),
-        type,
-        size,
-        service: svc,
-        notes: note,
-        added_at: new Date().toISOString()
-      };
-
       const SB = getSB();
       if (!SB) { alert('Engin gagnabankatenging'); return; }
 
@@ -182,18 +172,43 @@
       SaveBtn.disabled = true; SaveBtn.textContent = 'Vistar...';
 
       try {
-        // Read latest job state
-        const r = await SB.from('verkbeidnir').select('units').eq('id', job.id).single();
-        if (r.error) { throw r.error; }
-        const units = Array.isArray(r.data && r.data.units) ? r.data.units.slice() : [];
-        units.push(newLine);
-        const u = await SB.from('verkbeidnir').update({ units }).eq('id', job.id);
-        if (u.error) { throw u.error; }
+        /* 10.09.2026 — ÞESSI TAKKI GAT ALDREI VISTAÐ.
+         *
+         * Hann las `verkbeidnir.units` og skrifaði `verkbeidnir.units` til
+         * baka. Sá dálkur ER EKKI TIL: verkbeidnir er id, num, status,
+         * customer, phone, dropoff, pickup, notes, created_at, verd,
+         * signature_url, signed_by, signed_at. Bæði lestur og skrif svöruðu
+         * 400 «column verkbeidnir.units does not exist», `throw` fór í
+         * catch og notandinn fékk «Villa: …» — í hvert einasta sinn.
+         *
+         * Verklínurnar eru í `verklidur` (job_id → verkbeidnir.id), eins og
+         * db.js:311-314 og 122-samningshafar-receive.js:623-635 gera. Sama
+         * raðaform notað hér svo verkstæðisborðið lesi línuna eins og hinar.
+         */
+        const ins = await SB.from('verklidur').insert({
+          job_id: job.id,
+          serial,
+          type,
+          size,
+          service: svc,
+          status: 'received',
+          notes: note || null
+        }).select().single();
+        if (ins.error) { throw ins.error; }
+        const newLine = ins.data;
+
         // Update local cache
+        let units = null;
         if (window.DB && window.DB.cache && Array.isArray(window.DB.cache.jobs)) {
           const idx = window.DB.cache.jobs.findIndex(j => j.id === job.id);
-          if (idx >= 0) window.DB.cache.jobs[idx].units = units;
+          if (idx >= 0) {
+            const cached = window.DB.cache.jobs[idx];
+            units = (Array.isArray(cached.units) ? cached.units.slice() : []);
+            units.push(newLine);
+            cached.units = units;
+          }
         }
+        if (!units) units = [newLine];
         if (window.Toast && Toast.show) Toast.show('✓ Tæki bætt við verkbeiðni');
         close();
         // Re-render the workshop modal so the new unit appears with action buttons

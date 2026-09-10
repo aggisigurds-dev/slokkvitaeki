@@ -56,6 +56,16 @@
   function todayISO() { return new Date().toISOString().slice(0, 10); }
   function daysAgoISO(n) { return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10); }
 
+  // Bilaður kafli á ALDREI að líta út eins og rólegur kafli. Þrjár af sjö
+  // fyrirspurnum þessarar síðu köstuðu villu frá fyrsta degi (dálkar sem eru
+  // ekki til), `catch` skilaði [] og kaflinn sagði „Allt í gegn." — í meira en
+  // tvo mánuði. Héðan í frá skilar bilun SÝNILEGRI röð í staðinn.
+  function villuAbending(kind, hvad, e) {
+    return { kind: kind, id: 'err_' + kind,
+      title: '⚠️ Gat ekki lesið ' + hvad,
+      sub: 'Fyrirspurnin brást: ' + ((e && e.message) || String(e)) };
+  }
+
   const state = {
     loading: false, loaded: false, err: null,
     urgent: [],
@@ -158,12 +168,18 @@
   }
 
   async function findStaleDrafts() {
-    // Sales with status='draft' older than 7 days
+    // Sölu-drög eldri en 7 daga.
+    //
+    // 10.09.2026 — VAR .eq('status','draft'). Það gildi er ekki til á `solur`:
+    // raungildin eru 'final' (729) · 'drog' (51) · 'void' (24). Enska orðið
+    // hitti 0 raðir af 804, engin villa kom (dálkurinn er til, bara gildið
+    // ekki), og kaflinn sagði „Engin gömul drög." meðan 51 drög lágu í kerfinu.
+    // Nákvæmlega sama lögun og 'kort' vs 'Kort' á greitt_med.
     const SB = getSB(); if (!SB) return [];
     try {
       const cutoff = daysAgoISO(7);
       const r = await SB.from('solur').select('id,num,customer_nafn,samtals,created_at,status')
-        .eq('status', 'draft').lt('created_at', cutoff).order('created_at', { ascending: true }).limit(50);
+        .eq('status', 'drog').lt('created_at', cutoff).order('created_at', { ascending: true }).limit(50);
       if (r.error) throw r.error;
       return (r.data || []).map(s => ({
         kind: 'stale', id: 'stale_' + s.id,
@@ -171,24 +187,76 @@
         sub: 'R-' + (s.num || '?') + ' frá ' + relTime(s.created_at) + ' · ' + fmtKr(s.samtals),
         sale_id: s.id,
       }));
-    } catch (e) { console.warn('findStaleDrafts', e); return []; }
+    } catch (e) { console.warn('findStaleDrafts', e); return [villuAbending('stale', 'sölu-drögin', e)]; }
   }
 
+  // Verkstæðis-lífsferillinn á `uttaeki` er `custody_status` (patch 179/210):
+  //     'móttekið' → 'á verkstæði' → 'tilbúið' → 'afhent'
+  // Fyrstu þrjú = tækið er Á BORÐINU. 'afhent' = farið út aftur.
+  const BEKKUR = ['móttekið', 'á verkstæði', 'tilbúið'];
+
   async function findStaleWorkshop() {
-    // Equipment on the bench (status='loaned' = á verkstæði) loaned > 14 daga.
+    // 10.09.2026 — ÞESSI FYRIRSPURN HAFÐI ALDREI VIRKAÐ. Hún var:
+    //     .or('status.eq.loaned,custody_status.eq.workshop')
+    //     .lt('loaned_at', cutoff).is('deleted_at', null)
+    // og af því er ÞRENNT rangt, staðfest á lifandi skema 10.09.2026:
+    //   • `loaned_at`  er EKKI til á uttaeki — hann er á `lanstaeki`. Röng tafla.
+    //   • `deleted_at` er EKKI til á uttaeki  (sami galli og 237 lýsir, lína 74).
+    //   • `custody_status='workshop'` er ekki til í neinu gildasetti; enginn
+    //     kóði skrifar það. Raungildin eru íslensk: móttekið / á verkstæði /
+    //     tilbúið / afhent (165 / 2 / 0 / 3 raðir).
+    // PostgREST svaraði því 400 «column uttaeki.loaned_at does not exist» í
+    // HVERT einasta sinn, `catch` gleypti villuna og kaflinn skilaði tómu.
+    // Þögult tómt lítur eins út og „ekkert að" — þess vegna tók enginn eftir.
+    //
+    // Aldursstimpillinn er `received_at` (dagsetning móttöku, sett af 179/210).
+    // Ekkert Íslenskt gildi fer í slóðina: við sækjum allar raðir sem HAFA
+    // custody_status og síum bekkinn í JS. Það sparar líka broddstafa-kóðun.
     const SB = getSB(); if (!SB) return [];
+    const cutoff = daysAgoISO(14);
+    const VELJA = 'id,serial,type,client,custody_status,status,received_at,picked_up_at';
     try {
-      const cutoff = daysAgoISO(14);
-      const r = await SB.from('uttaeki').select('id,serial,type,client,loaned_at,custody_status,status')
-        .or('status.eq.loaned,custody_status.eq.workshop').lt('loaned_at', cutoff).is('deleted_at', null).limit(100);
-      if (r.error) throw r.error;
-      const out = (r.data || []).map(u => ({
-        kind: 'workshop', id: 'ws_' + u.id,
-        title: '🔧 ' + (u.serial || '?') + ' · ' + (u.type || '') + ' í verkstæði',
-        sub: (u.client || '?') + ' · síðan ' + relTime(u.loaned_at),
-      }));
-      return out.sort((a, b) => a.sub.localeCompare(b.sub));
-    } catch (e) { console.warn('findStaleWorkshop', e); return []; }
+      const [csRes, lnRes] = await Promise.all([
+        // Vertíðar-/móttökuborðið (179/210) — 170 raðir í dag.
+        SB.from('uttaeki').select(VELJA).not('custody_status', 'is', null).limit(1000),
+        // Bílstjóra-verkstæðið (219/268/269) skrifar status='loaned'. 0 raðir í
+        // dag en skrifleiðin er lifandi, svo hún fylgir með.
+        SB.from('uttaeki').select(VELJA).eq('status', 'loaned').limit(1000),
+      ]);
+      if (csRes.error) throw csRes.error;
+      if (lnRes.error) throw lnRes.error;
+
+      const seen = new Set(), units = [];
+      for (const u of [].concat(csRes.data || [], lnRes.data || [])) {
+        if (seen.has(u.id)) continue; seen.add(u.id); units.push(u);
+      }
+      const aBordi = units.filter(u =>
+        !u.picked_up_at && (BEKKUR.indexOf(u.custody_status) >= 0 || u.status === 'loaned'));
+
+      const out = [];
+      for (const u of aBordi) {
+        const heiti = (u.serial || '?') + ' · ' + (u.type || '');
+        const stada = u.custody_status || (u.status === 'loaned' ? 'á verkstæði' : '?');
+        if (u.received_at && u.received_at < cutoff) {
+          out.push({ kind: 'workshop', id: 'ws_' + u.id,
+            title: '🔧 ' + heiti + ' — ' + stada,
+            sub: (u.client || '?') + ' · síðan ' + relTime(u.received_at),
+            _at: u.received_at });
+        } else if (!u.received_at) {
+          // Á borðinu en ENGIN móttökudagsetning. Þetta hefði dottið þögult út
+          // úr `.lt('received_at', …)` (SQL: NULL < x er NULL) — nákvæmlega
+          // sama þöggun og olli upphaflegu villunni. Sýnum það frekar.
+          out.push({ kind: 'workshop', id: 'ws_' + u.id,
+            title: '🔧 ' + heiti + ' — ' + stada,
+            sub: (u.client || '?') + ' · ⚠️ engin móttökudagsetning skráð',
+            _at: '' });
+        }
+      }
+      return out.sort((a, b) => String(a._at).localeCompare(String(b._at)));
+    } catch (e) {
+      console.warn('findStaleWorkshop', e);
+      return [villuAbending('workshop', 'verkstæðis-tækin', e)];
+    }
   }
 
   async function findPriorityEmails() {
@@ -211,11 +279,22 @@
 
   async function findOverdueEquipment() {
     // Customers with overdue uttaeki count > 3 (only flag a heavy load)
+    //
+    // 10.09.2026 — TVEIR gallar lágu ofan á hvor öðrum hér:
+    //   1) `.is('deleted_at', null)` — sá dálkur er EKKI til á uttaeki. 400 í
+    //      hvert sinn, catch gleypti, kaflinn var ALLTAF tómur. Sama rót og
+    //      verkstæðis-kaflinn að ofan.
+    //   2) `.limit(5000)` hnekkir ekki 1000-raða þaki PostgREST. Fyrirspurnin
+    //      hittir 1.882 raðir (mælt 10.09.2026) og hefði því — eftir að (1) var
+    //      lagað — þagað yfir 47% af þeim. Þess vegna DB.fetchAll.
     const SB = getSB(); if (!SB) return [];
     try {
       const today = todayISO();
-      const r = await SB.from('uttaeki').select('fyrirtaeki_id,client').lte('next_insp', today)
-        .is('deleted_at', null).limit(5000);
+      const rows = (window.DB && DB.fetchAll)
+        ? await DB.fetchAll((from, to) => SB.from('uttaeki').select('fyrirtaeki_id,client')
+            .lte('next_insp', today).order('id').range(from, to))
+        : ((await SB.from('uttaeki').select('fyrirtaeki_id,client').lte('next_insp', today).limit(1000)).data || []);
+      const r = { data: rows, error: null };
       if (r.error) throw r.error;
       // Only count rows that point to a concrete fyrirtaeki — falling back to
       // free-text `client` collapsed distinct rekstrarfélög-locations sharing
@@ -243,7 +322,7 @@
       }
       out.sort((a, b) => parseInt(b.title.match(/(\d+) útrunnin/)?.[1] || 0) - parseInt(a.title.match(/(\d+) útrunnin/)?.[1] || 0));
       return out.slice(0, 30);
-    } catch (e) { console.warn('findOverdueEquipment', e); return []; }
+    } catch (e) { console.warn('findOverdueEquipment', e); return [villuAbending('overdue', 'útrunnu tækin', e)]; }
   }
 
   function loadWatch() {

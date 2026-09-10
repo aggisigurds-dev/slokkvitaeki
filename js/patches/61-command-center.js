@@ -130,7 +130,13 @@
         .or('created_at.gte.' + fetchSince.toISOString() + ',paid_at.gte.' + fetchSince.toISOString())),
       // void teljist ALDREI skuld (2026-08-14, R-000232 lexían) — drog var þegar síað.
       safe(SB.from('solur').select('id,samtals,customer_nafn').neq('status','drog').neq('status','void').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
-      safe(SB.from('verkbeidnir').select('id,num,customer,status').neq('status','done').neq('status','cancelled')),
+      // „Opin verk" = ekki sótt og ekki eytt. 10.09.2026: hér stóð
+      // .neq('done').neq('cancelled') — HVORUGT gildið er til á verkbeidnir
+      // (raunsettið er collected 602 · eytt 85 · ready 32 · received 5), svo
+      // sían henti engu og Stjórnstöðin taldi ÖLL 724 verkin sem opin. Það er
+      // hin hliðin á sama pening: sía sem hittir ekkert skilar tómu, en
+      // .neq sem hittir ekkert skilar ÖLLU. Röng tala, ekki tómur listi.
+      safe(SB.from('verkbeidnir').select('id,num,customer,status').neq('status','collected').neq('status','eytt')),
       safe(SB.from('verkdagbok').select('id,fyrirtaeki,job_date,athugasemdir').gte('job_date', today.toISOString().slice(0,10)).lt('job_date', tomorrow.toISOString().slice(0,10)).order('job_date')),
       // 3.749 tæki eru á gjalddaga innan 30 daga — stök .select() skilaði 1000,
       // svo Stjórnstöðin sýndi aðeins ~27% af því sem er að falla á tíma.

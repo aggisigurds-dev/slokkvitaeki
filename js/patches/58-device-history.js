@@ -50,36 +50,57 @@
       </div>`;
     document.body.appendChild(m);
 
+    /* 10.09.2026 — ÞETTA SPJALD HAFÐI ALDREI SÝNT NEITT.
+     *
+     * Það voru þrjár villur ofan í hvor annarri, allar staðfestar á lifandi
+     * skema 10.09.2026:
+     *
+     *  1) `skodunar_saga` var síuð á `uttaeki_id` og raðað á `dagsetning`.
+     *     HVORUGUR dálkurinn er til. Taflan er: id, unit_id, date, tech,
+     *     result, pressure, weight, notes, created_at.  → 400 í hvert sinn.
+     *
+     *  2) Reitirnir sem birtust (`taeknimadur`, `athugasemd`, `kostnadur`)
+     *     tilheyra `afyllingar`, ALLT ANNARRI töflu — sem er tóm (0 raðir).
+     *     Spjaldið var m.ö.o. skrifað eftir röngu skema frá byrjun. Þess vegna
+     *     var „Heildarkostnaður" alltaf 0 kr: `kostnadur` er ekki til á
+     *     `skodunar_saga` og verður aldrei reiknanlegur þaðan. Reiturinn er
+     *     tekinn út frekar en að sýna falska núllið.
+     *
+     *  3) `verkdagbok` var join-uð á `equipment_ids` / `equipment_id`. Hvorugur
+     *     er til, og það er ekki stafsetningarvilla: `verkdagbok` er
+     *     DAGBÓK PER FYRIRTÆKI (fyrirtaeki, job_date, duft/lettvatn/kolsyra
+     *     stærðir og fjöldi) — hún geymir ENGA tilvísun í einstakt tæki.
+     *     Tengingin er því ekki til í skemanu og fyrirspurnin er felld niður.
+     *     Ef Agnar vill tæki-tengda dagbók þarf nýjan dálk; ekki skálda hann.
+     *
+     * `_gk_audit` raðirnar (1.829 af 1.834) eru vélrænar vörður-færslur, ekki
+     * skoðanir — sama útilokun og js/detailview.js:74 notar.
+     */
     const safe = async p => { try { return await p; } catch (e) { return { data:[], error:e }; } };
-    const [hist, vd] = await Promise.all([
-      safe(SB.from('skodunar_saga').select('*').eq('uttaeki_id', device.id).order('dagsetning',{ascending:false})),
-      safe(SB.from('verkdagbok').select('*').or(`equipment_ids.cs.{${device.id}},equipment_id.eq.${device.id}`).order('created_at',{ascending:false}).limit(20))
-    ]);
+    const hist = await safe(
+      SB.from('skodunar_saga').select('*')
+        .eq('unit_id', device.id).neq('result','_gk_audit')
+        .order('date',{ascending:false}).limit(100)
+    );
 
-    const inspections = hist.data || [];
-    const diary = vd.data || [];
-
-    const totalCost = inspections.reduce((s,r)=>s+(parseFloat(r.kostnadur)||0),0);
+    const inspections = (hist.data || []);
+    const histErr = hist.error || null;
 
     document.getElementById('dh-body').innerHTML = `
       <div class="dh-stats">
         <div class="dh-stat"><div class="lbl">Síðasta skoðun</div><div class="val">${fmtDate(device.last_insp)}</div></div>
         <div class="dh-stat"><div class="lbl">Næsta skoðun</div><div class="val">${fmtDate(device.next_insp)}</div></div>
         <div class="dh-stat"><div class="lbl">Skoðanir alls</div><div class="val">${inspections.length}</div></div>
-        <div class="dh-stat"><div class="lbl">Heildarkostnaður</div><div class="val">${fmtKr(totalCost)}</div></div>
+        <div class="dh-stat"><div class="lbl">Staða</div><div class="val">${esc(device.status||'—')}</div></div>
       </div>
       <h3 style="margin:18px 0 10px;font-size:14px">📋 Saga</h3>
-      ${inspections.length||diary.length ? `<div class="dh-timeline">
+      ${histErr ? `<div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px">⚠️ Gat ekki lesið skoðunarsögu: ${esc(histErr.message||String(histErr))}</div>`
+       : inspections.length ? `<div class="dh-timeline">
         ${inspections.map(r=>`<div class="dh-tl-item">
-          <div class="dh-tl-date">${fmtDate(r.dagsetning)}</div>
-          <div class="dh-tl-title">🔧 Skoðun ${r.taeknimadur?'· '+esc(r.taeknimadur):''}</div>
-          ${r.athugasemd?`<div class="dh-tl-meta">${esc(r.athugasemd)}</div>`:''}
-          ${r.kostnadur?`<div class="dh-tl-meta">Kostnaður: ${fmtKr(r.kostnadur)}</div>`:''}
-        </div>`).join('')}
-        ${diary.map(r=>`<div class="dh-tl-item">
-          <div class="dh-tl-date">${fmtDate(r.created_at)}</div>
-          <div class="dh-tl-title">📔 Verkdagbók</div>
-          ${r.athugasemdir?`<div class="dh-tl-meta">${esc(r.athugasemdir)}</div>`:''}
+          <div class="dh-tl-date">${fmtDate(r.date)}</div>
+          <div class="dh-tl-title">🔧 Skoðun ${r.tech?'· '+esc(r.tech):''}${r.result?' — '+esc(r.result):''}</div>
+          ${r.notes?`<div class="dh-tl-meta">${esc(r.notes)}</div>`:''}
+          ${(r.pressure||r.weight)?`<div class="dh-tl-meta">${r.pressure?'Þrýstingur: '+esc(r.pressure):''}${(r.pressure&&r.weight)?' · ':''}${r.weight?'Þyngd: '+esc(r.weight):''}</div>`:''}
         </div>`).join('')}
       </div>` : '<div style="padding:20px;text-align:center;color:#94a3b8">Engin saga skráð enn</div>'}`;
   }

@@ -433,30 +433,40 @@
     } catch (_) { /* audit_log may not exist */ }
 
     // 4. Verkbeidnir (work orders) — find jobs that include this serial
-    try {
-      const r = await SB.from('verkbeidnir')
-        .select('id,num,customer,created_at,status,linur')
-        .order('created_at', { ascending: false })
-        .limit(80);
-      (r.data || []).forEach(j => {
-        const linur = Array.isArray(j.linur) ? j.linur : [];
-        const hit = linur.some(l => {
-          if (!l) return false;
-          if (l.serial === unit.serial) return true;
-          if (typeof l === 'string' && l.includes(unit.serial)) return true;
-          return false;
-        });
-        if (hit) {
+    //
+    // 10.09.2026: þetta las `verkbeidnir.linur` og las hverja línu úr JSON.
+    // `linur` ER EKKI TIL á verkbeidnir (dálkarnir eru id, num, status,
+    // customer, phone, dropoff, pickup, notes, created_at, verd,
+    // signature_url, signed_by, signed_at). PostgREST svaraði 400, `catch (_)`
+    // gleypti það og tækjasagan sýndi ALDREI verkbeiðni — í öll skiptin.
+    // Verklínurnar búa í sinni eigin töflu, `verklidur` (job_id → verkbeidnir.id,
+    // serial), nákvæmlega eins og js/detailview.js:79 gerir.
+    if (unit.serial) try {
+      const li = await SB.from('verklidur')
+        .select('id,job_id,serial,service,status')
+        .eq('serial', unit.serial).limit(50);
+      if (li.error) throw li.error;
+      const jobIds = [...new Set((li.data || []).map(l => l.job_id).filter(Boolean))];
+      if (jobIds.length) {
+        const r = await SB.from('verkbeidnir')
+          .select('id,num,customer,created_at,status')
+          .in('id', jobIds)
+          .order('created_at', { ascending: false });
+        if (r.error) throw r.error;
+        (r.data || []).forEach(j => {
+          const lina = (li.data || []).find(l => l.job_id === j.id) || {};
           entries.push({
             ts: j.created_at,
             kind: 'verkbeidni',
             label: '🔨 Verkbeiðni ' + esc(j.num || '#' + j.id),
-            detail: (j.customer ? esc(j.customer) : '') + (j.status ? ' · ' + esc(j.status) : ''),
+            detail: (j.customer ? esc(j.customer) : '') +
+              (lina.service ? ' · ' + esc(lina.service) : '') +
+              (j.status ? ' · ' + esc(j.status) : ''),
             color: '#b45309'
           });
-        }
-      });
-    } catch (_) {}
+        });
+      }
+    } catch (e) { console.warn('[unit-detail] verklidur', e && e.message); }
 
     // Sort by ts desc
     entries.sort((a, b) => {

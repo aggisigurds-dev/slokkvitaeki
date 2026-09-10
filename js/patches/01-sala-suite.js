@@ -1347,16 +1347,37 @@
     const name = customer.nafn || customer.name || '';
     if (!name) return { taeki: [], openVerks: [], billable: [], paid: [] };
 
+    /* 10.09.2026 — ÞESSAR FJÓRAR SÍUR HITTU ALLAR NÚLL RAÐIR.
+     *
+     * Þær síuðu á BIRTINGARTEXTANN en ekki á gildið sem er geymt. `js/utils.js:2`
+     * er kanónan:  received:'Móttekið' · inprogress:'Í vinnslu' · ready:'Tilbúið'
+     *              · collected:'Sótt' · done:'Lokið'
+     * Í gagnagrunninum stendur `received`, ekki `Móttekið`. Mælt 10.09.2026:
+     * verkbeidnir.status = collected 602 · eytt 85 · ready 32 · received 5.
+     * „Móttekið" / „Í vinnslu" / „Tilbúið" / „Afhent" / „Selt" / „Greitt"
+     * hittu 0 af 724 — engin villa, bara tómur listi. Sama lögun og 'kort' vs
+     * 'Kort' á greitt_med.
+     *
+     * uttaeki-línan var að auki á RÖNGUM DÁLKI: `status` á uttaeki er
+     * active/urelt/ok/„Í lagi" — verkstæðis-þrepin búa í `custody_status`
+     * (móttekið / á verkstæði / tilbúið / afhent, patch 179/210, lágstafir).
+     */
+    const VERKST_UTT = ['móttekið', 'á verkstæði', 'tilbúið'];   // uttaeki.custody_status
+    const VERKST_JOB = ['received', 'inprogress', 'ready'];      // verkbeidnir.status
+    const AFHENT_JOB = ['collected'];                            // 'Sótt' = afhent/rukkanlegt
     const [taekiRes, openRes, billRes, paidRes] = await Promise.all([
       c.from('uttaeki').select('*').eq('client', name)
-        .in('status', ['Móttekið', 'Í vinnslu', 'Tilbúið'])
+        .in('custody_status', VERKST_UTT)
         .order('created_at', { ascending: false }),
       c.from('verkbeidnir').select('*').eq('customer', name)
-        .in('status', ['Í vinnslu', 'Móttekið', 'Tilbúið'])
+        .in('status', VERKST_JOB)
         .order('num', { ascending: false }),
       c.from('verkbeidnir').select('*').eq('customer', name)
-        .in('status', ['Afhent', 'Selt'])
+        .in('status', AFHENT_JOB)
         .order('num', { ascending: false }),
+      // ATH: 'Greitt' á sér ENGA samsvörun á verkbeidnir — greiðslustaðan býr á
+      // `solur.paid_at`, ekki hér. Upplýsingarnar eru ekki til í þessari töflu,
+      // svo listinn verður áfram tómur. Skálda EKKI dálk; skráð til Agnars.
       c.from('verkbeidnir').select('*').eq('customer', name)
         .eq('status', 'Greitt')
         .order('num', { ascending: false })
@@ -1644,9 +1665,10 @@
     const refresh = async () => {
       list.innerHTML = '<div class="sm-empty">Sæki…</div>';
       const c = sb();
+      // Geymd gildi, ekki birtingartexti — sjá skýringu í fetchC360.
       const { data } = await c.from('verkbeidnir')
         .select('*').eq('customer', customer.nafn || customer.name || '')
-        .in('status', ['Í vinnslu', 'Móttekið', 'Tilbúið'])
+        .in('status', ['inprogress', 'received', 'ready'])
         .order('num', { ascending: false });
       verks = data || [];
       list.innerHTML = '';
@@ -1867,9 +1889,10 @@
     const refresh = async () => {
       list.innerHTML = '<div class="sm-empty">Sæki…</div>';
       const c = sb();
+      // Geymd gildi, ekki birtingartexti — sjá skýringu í fetchC360.
       const { data } = await c.from('verkbeidnir')
         .select('*').eq('customer', customer.nafn || customer.name || '')
-        .in('status', ['Afhent', 'Selt'])
+        .in('status', ['collected'])
         .order('num', { ascending: true });
       billable = data || [];
       list.innerHTML = '';
@@ -1972,9 +1995,10 @@
   async function fetchMonthlyBillable() {
     const c = sb();
     if (!c) return [];
+    // Geymd gildi, ekki birtingartexti — sjá skýringu í fetchC360.
     const { data } = await c.from('verkbeidnir')
       .select('*')
-      .in('status', ['Afhent', 'Selt'])
+      .in('status', ['collected'])
       .order('customer', { ascending: true });
     if (!data) return [];
     // Group by customer
@@ -2189,9 +2213,10 @@
     const c = sb();
     if (!c) return [];
     const cutoff = new Date(Date.now() - minDays * 86400000).toISOString();
+    // Verkstæðis-þrepin eru á `custody_status`, ekki `status` — sjá fetchC360.
     const { data, error } = await c.from('uttaeki')
       .select('*')
-      .in('status', ['Móttekið', 'Í vinnslu', 'Tilbúið'])
+      .in('custody_status', ['móttekið', 'á verkstæði', 'tilbúið'])
       .lte('created_at', cutoff)
       .order('created_at', { ascending: true });
     if (error) { warn(error); return []; }

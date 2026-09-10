@@ -1212,8 +1212,13 @@
             label: 'Reikningur' + (invDoc.invoice_number ? ' ' + invDoc.invoice_number : '')
           };
         }
+        // 10.09.2026: `invoice_number` var í þessu .select() — sá dálkur er
+        // EKKI til á `solur` (reikningsnúmerið þar heitir `num`; `invoice_number`
+        // er á `customer_documents`, sbr. invDoc að ofan). Fyrirspurnin skilaði
+        // því 400 í hvert sinn, `sales.error` var sett, `ss` varð [] og
+        // Reikningur-flagan á verkborðinu fann ALDREI sölu-reikning.
         const sales = await SB.from('solur')
-          .select('id,created_at,samtals,status,paid_at,source,vidskiptategund,invoice_number')
+          .select('id,created_at,samtals,status,paid_at,source,vidskiptategund,num')
           .eq('customer_id', fid)
           .eq('is_credit', false)
           .order('created_at', { ascending: false })
@@ -1224,7 +1229,7 @@
           pack.invoice = {
             id: utt.id, saleId: utt.id, date: utt.created_at,
             url: pack.invoice && pack.invoice.url ? pack.invoice.url : '',
-            label: 'Reikningur' + (utt.invoice_number ? ' ' + utt.invoice_number : '') +
+            label: 'Reikningur' + (utt.num ? ' ' + utt.num : '') +
               ' · ' + fmtKr(utt.samtals) + (utt.paid_at ? ' (greitt)' : '')
           };
         }

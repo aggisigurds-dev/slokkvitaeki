@@ -130,9 +130,13 @@
   async function loadReadyJobs() {
     const SB = getSB();
     if (!SB) return [];
+    // 10.09.2026: síaði á 'Tilbúið' — það er BIRTINGARTEXTINN (js/utils.js:2),
+    // geymda gildið er 'ready'. 'Tilbúið' hitti 0 af 724 verkbeiðnum, listinn
+    // var alltaf tómur og SMS-áminningin gat aldrei stungið upp á neinum.
+    // 'ready' = 32 raðir (mælt 10.09.2026).
     const { data } = await SB.from('verkbeidnir')
       .select('id,num,customer,phone,status,dropoff')
-      .eq('status', 'Tilbúið')
+      .eq('status', 'ready')
       .order('dropoff', { ascending: true });
     return (data || []).filter(j => j.phone && j.phone.trim());
   }

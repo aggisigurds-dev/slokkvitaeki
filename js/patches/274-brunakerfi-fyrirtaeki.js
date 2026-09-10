@@ -357,7 +357,13 @@
         // efst í stöðulínunni og aðeins fyrir YFIRSTANDANDI ár; eldri ár (2024,
         // 2025) voru dauður texti. Nú má tengja hvaða ár sem er héðan.
         invHtml = '<span class="_bkc-yrmiss">' + (fin ? 'vantar reikning — stofnast með „Stofna drög" í stöðulínunni efst' : draft ? 'kemur þegar skýrslan er kláruð' : docs.length ? 'enginn reikningur skráður í appinu' : '—') + '</span>' +
-          '<button type="button" class="_bkc-act _ghost" data-invlink="' + y + '" title="Tengja reikning sem er þegar til við þetta ár">🔗 Tengja reikning</button>';
+          '';
+        // 2026-09-10 (Agnar: „Þetta er rosalega subbulegt svona... og
+        // ruglingslegt... kanski bara hafa bæta við skjali bara neðst").
+        // Hér stóð „🔗 Tengja reikning" á HVERRI árslínu — þrír eins takkar
+        // hlið við hlið á sama spjaldi. Aðgerðin er ein og á heima á EINUM
+        // stað: röndinni neðst, þar sem árið er hvort eð er valið. Línurnar
+        // segja frá; röndin gerir.
       }
       // Uppáhlaðin reikningsskjöl ársins bætast við línuna hvort sem sölu-
       // reikningur fannst eða ekki — PDF sem Agnar hengir sjálfur á að sjást.
@@ -378,14 +384,22 @@
     }).join('');
     const addFileStrip =
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px dashed #d7dade;font-size:12.5px;color:#59606c">' +
-        '＋ Bæta við skjali:' +
+        '＋ Bæta við:' +
         '<select id="_bkc-addkind" style="border:1px solid #d0d4da;border-radius:8px;padding:6px 8px;font:inherit;font-size:12.5px">' +
-          '<option value="brunakerfi">Skýrsla</option><option value="reikningur">Reikningur</option>' +
+          '<option value="brunakerfi">Skýrslu</option><option value="reikningur">Reikningi</option>' +
         '</select>' +
         '<select id="_bkc-addyear" style="border:1px solid #d0d4da;border-radius:8px;padding:6px 8px;font:inherit;font-size:12.5px">' +
           (function () { const y = new Date().getFullYear(); let o = ''; for (let i = y; i >= y - 6; i--) o += '<option' + (i === y ? ' selected' : '') + '>' + i + '</option>'; return o; })() +
         '</select>' +
         '<label class="_bkc-act _ghost" style="cursor:pointer">📎 Velja PDF<input type="file" id="_bkc-addfile" accept="application/pdf" style="display:none"></label>' +
+        // Reikningur sem er ÞEGAR til í appinu þarf enga skrá — bara númer.
+        // Reiturinn birtist aðeins þegar „Reikningi" er valið, svo röndin sé
+        // jafn stutt og áður í daglegri notkun.
+        '<span id="_bkc-linkwrap" style="display:none;align-items:center;gap:6px">' +
+          '<span style="color:#9aa2ae">eða tengja nr.</span>' +
+          '<input id="_bkc-linknum" type="text" placeholder="R-000651" style="width:104px;border:1px solid #d0d4da;border-radius:8px;padding:6px 8px;font:inherit;font-size:12.5px">' +
+          '<button type="button" class="_bkc-act _ghost" id="_bkc-linkgo">🔗 Tengja</button>' +
+        '</span>' +
         '<span id="_bkc-addstatus" style="color:#8b93a1"></span>' +
       '</div>';
 
@@ -543,17 +557,28 @@
     // 🗑 aftengja rangt skjal (röðin fer, skráin sjálf helst í Drive)
     // 🔗 Tengja / aftengja reikning á ársnótu. Geymslan er 291 — EITT fall,
     // ekki afrit, svo stöðulínan efst og ársblokkin segi alltaf það sama.
-    w.querySelectorAll('[data-invlink]').forEach(b => b.addEventListener('click', async () => {
+    // Gerðin ræður því hvað röndin býður: skrá (PDF) eða númer.
+    const kindSel = w.querySelector('#_bkc-addkind');
+    const linkWrap = w.querySelector('#_bkc-linkwrap');
+    if (kindSel && linkWrap) {
+      const syncKind = () => { linkWrap.style.display = kindSel.value === 'reikningur' ? 'inline-flex' : 'none'; };
+      kindSel.addEventListener('change', syncKind); syncKind();
+    }
+    const linkGo = w.querySelector('#_bkc-linkgo');
+    if (linkGo) linkGo.addEventListener('click', async () => {
       const BR = window.BrunakerfiReikningur;
-      if (!BR || !BR.setInvLink || !BR.findSaleByNum) { alert('Reikningstengingin er ekki tiltæk (patch 291 hlóðst ekki).'); return; }
-      const y = +b.dataset.invlink;
-      const raw = prompt('Reikningsnúmer til að tengja við brunakerfi ' + y + ' (t.d. R-000651):', '');
-      if (raw == null || !String(raw).trim()) return;
+      const st = w.querySelector('#_bkc-addstatus');
+      if (!BR || !BR.setInvLink || !BR.findSaleByNum) { if (st) st.textContent = 'Reikningstengingin er ekki tiltæk.'; return; }
+      const y = +(w.querySelector('#_bkc-addyear') || {}).value || new Date().getFullYear();
+      const raw = (w.querySelector('#_bkc-linknum') || {}).value || '';
+      if (!String(raw).trim()) { if (st) st.textContent = 'Sláðu inn reikningsnúmer.'; return; }
+      if (st) st.textContent = 'Leita…';
       const sale = await BR.findSaleByNum(raw);
-      if (!sale) { alert('Reikningur „' + String(raw).trim() + '" fannst ekki.'); return; }
+      if (!sale) { if (st) st.textContent = 'Reikningur „' + String(raw).trim() + '" fannst ekki.'; return; }
       await BR.setInvLink(C.co.id, y, { id: sale.id, num: sale.num });
+      if (st) st.textContent = '🔗 ' + (sale.num || '') + ' tengdur við ' + y;
       reload();
-    }));
+    });
     w.querySelectorAll('[data-invunlink]').forEach(b => b.addEventListener('click', async () => {
       const BR = window.BrunakerfiReikningur; if (!BR || !BR.setInvLink) return;
       const y = +b.dataset.invunlink;
