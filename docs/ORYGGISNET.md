@@ -147,6 +147,27 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑10** — **POS kanónísk kúnnastofnun sameinuð + vír 3 tengdur.**
+  Greinarnar `claude/pos-canonical-customer-id` (`js/pos.js`) og
+  `claude/pos-canonical-followup` (`114` + `audit-stadur-nr`) sameinaðar SAMAN, A→B.
+  Þær eru óháðar í git en B endurskrifar `audit-stadur-nr` á akkeri sem aðeins er til
+  eftir A — sín í hvoru lagi verður vörðurinn rauður.
+  netvörður: **CUTS‑A‑WIRE → tengt → SAFE.** Liður 3 slitnaði í A: nýju skrifin í
+  `customers_base` og `fyrirtaeki` voru í `try{…}catch{console.warn}` og `.error` aldrei
+  lesið, svo sala gat vistast án tengingar (draugafærsla). Tengt: `_logP` →
+  `pos_kunni_base_failed` / `_fyrirtaeki_failed` / `_tenging_failed` / `_otengd` / `_villa`.
+  Detail ber sölu-id, **aldrei kennitölu** (regla 6) — kt-mynstur hreinsað úr villuboðum
+  Supabase, sem geta innihaldið gildið sjálft.
+  Varnir halda: 999999 stofnar engan kúnna; rekstrarfélag fær aðeins `customer_base_id`,
+  aldrei giskaðan `customer_id`.
+  `audit-stadur-nr` hert: sneiðin var föst 3700 stafir og vírinn ýtti
+  `if(custId!=null)_u.customer_id` út fyrir hana (falskt rautt). Nú afmörkuð af
+  blokkinni (athugasemd → `catch`). **Sannreynt í báðar áttir:** plantað
+  `_u.customer_id=custId;` án skilyrðis → RAUTT; raunskrá → GRÆNT.
+  `?v=` hækkað á `pos.js` og `114` (greinarnar gerðu það ekki).
+  `audit-all`: 43/43. (Eitt tilfallandi rautt á `audit-canon-stadur` — les aðeins lifandi
+  gögn, snertir hvorki pos.js né 114; stóðst eitt og sér og á master, grænt í endurkeyrslu.)
+
 - **2026‑09‑09** — **Blátt póstmerki og víð póst↔kúnna tenging.**
   Engin ný vörðuð leið, en tvennt sem varð til við þessa vinnu og á heima hér.
   **(1) Falskt rautt í póstmerkinu.** „Ósvarað" er reiknað sem „ekkert frá okkur

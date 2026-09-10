@@ -1469,6 +1469,10 @@
           var custSimi=state.customer.simi||'';
           try{
             var custId=null, baseId=null;
+            // 2026-09-10 netvörður (liður 3): nýju skrifin gátu brugðist ÞEGJANDI — supabase-js
+            // kastar ekki, og .error var aldrei lesið. Þá vistaðist salan en tengdist engum
+            // kúnna (draugafærsla). Hver bilun fer nú í registry-ið. Aldrei kennitala í loggið.
+            var _logP=function(k,m){try{if(window.logProblem)window.logProblem(k,'sala '+sr.data.id+(m?' — '+String(m).replace(/\d{6}-?\d{4}/g,'[kt]'):''));}catch(_){}};
             var dashedKt=cleanKt.slice(0,6)+'-'+cleanKt.slice(6);
             // 1) Er kt þegar til sem fyrirtæki/staður? (fjölstaða deilir einu base)
             var fyMatch=await DB.sb.from('fyrirtaeki').select('id,customer_base_id,stadur_nr').or('kennitala.eq.'+dashedKt+',kennitala.eq.'+cleanKt).is('deleted_at',null).order('stadur_nr',{ascending:true,nullsFirst:false}).limit(20);
@@ -1487,11 +1491,13 @@
                 if(custSimi && !cbMatch.data.simi){ await DB.sb.from('customers_base').update({simi:custSimi}).eq('id',baseId); }
               }else{
                 var cbIns=await DB.sb.from('customers_base').insert({kennitala:dashedKt,nafn:custNm,simi:custSimi||null}).select('id').single();
+                if(cbIns&&cbIns.error) _logP('pos_kunni_base_failed', cbIns.error.message);
                 if(cbIns&&cbIns.data) baseId=cbIns.data.id;
               }
               // 3) … og stofnum fyrirtæki-record (Allir viðskiptavinir), utan þjónustu.
               var _junk=(!custNm||custNm==='.'||/^kt:/i.test(custNm)||/^[0-9]+$/.test(custNm)||custNm.toLowerCase()==='viðskiptavinur'||custNm==='Staðgreitt');
               var fyIns=await DB.sb.from('fyrirtaeki').insert({nafn:custNm,kennitala:dashedKt,simi:custSimi||null,customer_base_id:baseId,er_i_thjonustu:false,status:'virkur',review_flag:_junk,review_note:_junk?'Nafn vantar/rusl úr búðarsölu — fletta upp':null}).select('id').single();
+              if(fyIns&&fyIns.error) _logP('pos_kunni_fyrirtaeki_failed', fyIns.error.message);
               if(fyIns&&fyIns.data) custId=fyIns.data.id;
             }
             if(custId!=null||baseId!=null){
@@ -1499,9 +1505,10 @@
               var _u={customer_nafn:custNm};
               if(custId!=null)_u.customer_id=custId;
               if(baseId!=null)_u.customer_base_id=baseId;
-              await DB.sb.from('solur').update(_u).eq('id',sr.data.id);
-            }
-          }catch(ce){console.warn('[POS] Auto-create customer:',ce);}
+              var _tr=await DB.sb.from('solur').update(_u).eq('id',sr.data.id);
+              if(_tr&&_tr.error) _logP('pos_kunni_tenging_failed', _tr.error.message);
+            }else{ _logP('pos_kunni_otengd', 'gild kennitala en engin tenging (hvorki staður né base)'); }
+          }catch(ce){console.warn('[POS] Auto-create customer:',ce); _logP('pos_kunni_villa', ce&&ce.message);}
         }
       }
       // 2026-07-01: manual-name safety net. A sale saved from the "Án kennitölu"

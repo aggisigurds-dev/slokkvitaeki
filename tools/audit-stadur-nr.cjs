@@ -60,7 +60,15 @@ if (!/_rows\.length === 1/.test(attachChunk)) {
 // + fyrirtaeki). Reglan stendur óbreytt: POS setur solur.customer_id AÐEINS þegar
 // nákvæmlega eitt fyrirtæki ber kt-ina; fjölstaða (rekstrarfélag) fær
 // customer_base_id (entity) en ALDREI giskaðan customer_id á fyrsta hótelið.
-const autoLink = pos.slice(pos.indexOf('Auto-stofna kúnna fyrir nýja kennitölu'), pos.indexOf('Auto-stofna kúnna fyrir nýja kennitölu') + 3700);
+// 2026-09-10: sneiðin er AFMÖRKUÐ AF BLOKKINNI (athugasemd -> catch), ekki föstum
+// 3700 stöfum. Netvörður bætti logProblem-vír inn í blokkina (~570 stafir) og
+// if(custId!=null)_u.customer_id lenti utan gluggans -> falskt RAUTT, þótt hegðunin
+// væri óbreytt. Blokkarmörk eru strangari: missa ekki mynstur sem færist innan
+// blokkarinnar og lesa ekki óskyldan kóða fyrir utan hana.
+const _alA = pos.indexOf('Auto-stofna kúnna fyrir nýja kennitölu');
+const _alB = _alA >= 0 ? pos.indexOf("'[POS] Auto-create customer:'", _alA) : -1;
+if (_alA >= 0 && _alB < 0) fail('POS auto-create block end marker ("[POS] Auto-create customer:") not found after the anchor.');
+const autoLink = (_alA >= 0 && _alB > _alA) ? pos.slice(_alA, _alB) : '';
 if (!autoLink || autoLink.length < 200) {
   fail('POS auto-create block not found (anchor "Auto-stofna kúnna fyrir nýja kennitölu").');
 }
