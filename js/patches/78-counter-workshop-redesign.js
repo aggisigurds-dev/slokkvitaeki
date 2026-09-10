@@ -1130,10 +1130,32 @@
       const SB = (window.DB && DB.sb) || (window.supabase && window.SUPABASE_URL && window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY));
       if (!SB) { Counter._companies = []; return []; }
       try {
+        // 2026-09-10 — `.range(0, 2999)` þýðir EKKI 3000 raðir. PostgREST sker í
+        // db-max-rows (1000) og skilar HTTP 200 án nokkurrar vísbendingar. Mælt
+        // beint á lifandi grunni sama dag: Range 0-2999 á `fyrirtaeki` skilaði
+        // nákvæmlega 1000 raðir af 1.311 óeyddum (1.460 alls); næsta síða skilaði
+        // afganginn. Þessi uppfletting er sú sem „➕ Ný verk" notar til að forfylla
+        // nafn og kennitölu — 311 fyrirtæki og 142 customers_base-raðir voru því
+        // ófinnanlegar þótt þær séu til. Kúnninn „finnst ekki" og maður stofnar
+        // afrit. Síðuskiptum því alltaf; fetchAll kostar ekkert aukakall þegar
+        // taflan rúmast í einni síðu.
+        // `.order('id')` er nauðsyn, ekki snyrtimennska: án einkvæmrar röðunar má
+        // PostgREST sleppa röð eða skila henni tvisvar milli síðna. Röðin skiptir
+        // engu hér — niðurstaðan fer í Map sem lyklar á nafn.
+        const sida = (tafla, dalkar, sia) => (a, b) => {
+          let q = SB.from(tafla).select(dalkar);
+          if (sia) q = sia(q);
+          return q.order('id').range(a, b);
+        };
+        const allar = async (tafla, dalkar, sia) => {
+          const mk = sida(tafla, dalkar, sia);
+          if (window.DB && DB.fetchAll) return { data: await DB.fetchAll(mk) };
+          return await mk(0, 999);
+        };
         const [fy, vk, cb] = await Promise.all([
-          SB.from('fyrirtaeki').select('nafn,kennitala,simi,heimilisfang').is('deleted_at', null).range(0, 2999),
-          SB.from('vidskiptavinir').select('nafn,kennitala,simi,heimilisfang').range(0, 2999),
-          SB.from('customers_base').select('nafn,kennitala').range(0, 2999)
+          allar('fyrirtaeki', 'nafn,kennitala,simi,heimilisfang', q => q.is('deleted_at', null)),
+          allar('vidskiptavinir', 'nafn,kennitala,simi,heimilisfang'),
+          allar('customers_base', 'nafn,kennitala')
         ]);
         const seen = new Map();
         const push = c => {

@@ -24,14 +24,34 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 
-// Töflur sem eru (eða verða fljótt) yfir 1000 raðir.
-// Mælt 10.09.2026: fyrirtaeki 1460 · customers_base 1142 · thjonustubeidni 854
-// · arsskodun_report_facts 649. Síðustu tvær eru UNDIR þakinu en teljast með —
-// thjonustubeidni á 146 raðir eftir í klettinn og enginn tekur eftir því daginn
-// sem hún fer yfir. Það er einmitt mynstrið sem þessi vörður á að stöðva.
+// Töflur sem eru YFIR 1000 raðir í dag — fyrirspurn án .range() á þær tapar
+// gögnum núna. Mælt 10.09.2026: fyrirtaeki 1460 (1311 óeydd) · customers_base 1142.
 const BIG = ['email_digest', 'ajour_registrations', 'uttaeki', 'timavera_entries',
-             'customer_documents', 'geocode_cache', 'fyrirtaeki', 'customers_base',
-             'thjonustubeidni', 'arsskodun_report_facts', 'solur'];
+             'customer_documents', 'geocode_cache', 'fyrirtaeki', 'customers_base'];
+
+/* NÆSTU Í RÖÐINNI — mælt 10.09.2026, ALLAR UNDIR ÞAKINU ENN:
+ *     thjonustubeidni          854   (146 raðir eftir)
+ *     solur                    806   (194 raðir eftir)
+ *     arsskodun_report_facts   649   (351 raðir eftir — ein röð á fyrirtæki,
+ *                                     svo þakið hennar er fjöldi fyrirtækja: 1311)
+ *
+ * ÉG SETTI ÞÆR INN Í BIG OG TÓK ÞÆR ÚT AFTUR — og það er þess virði að skrá
+ * hvers vegna. Með þeim inni fór talningin úr 4 í 22. Þessar 18 eru ekki villur
+ * í dag; töflurnar rúmast allar í einni síðu. Eini kosturinn til að halda þeim
+ * inni hefði verið að hækka BASELINE úr 4 í 22 — og þar með að þagga niður
+ * nákvæmlega jafn mörg raunveruleg tilvik og hún hefði afhjúpað. Baseline sem er
+ * hækkuð til að fá grænt er ekki vörður, hún er slökkvari. (Sbr. audit-invoice-guard
+ * sem stóð grænn á BASELINE = 40 yfir 40 tómum sölum.)
+ *
+ * ÞETTA ER ÞVÍ ÓVARIN HLIÐ, VITANDI VITS: daginn sem thjonustubeidni fer yfir
+ * 1000 byrja 3 fyrirspurnir að sleppa röðum þögult og ENGINN vörður segir frá.
+ * Rétta lausnin er ekki að giska í kóða heldur að MÆLA raðafjöldann — sá vörður
+ * þarf net og á því heima í netkeyrslunni, ekki hér. Skráð sem verk.
+ *
+ * Þegar tafla fer yfir 1000: færðu hana upp í BIG og lagaðu það sem hún flaggar.
+ *   select relname, n_live_tup from pg_stat_user_tables
+ *    where schemaname='public' and n_live_tup > 900 order by n_live_tup desc;
+ */
 
 // Mældar undanþágur — fyrirspurnir sem skila örugglega vel undir 1000 röðum.
 // Hver færsla ber ástæðu svo hægt sé að endurmeta þegar gögnin vaxa.
