@@ -276,7 +276,7 @@
         // 887 → 314 ms, Center Hótel (350 póstar, 214 KB) 776 → 444 ms, auk fyrirtaeki-raðarinnar
         // hér að ofan sem hinar þurfa customer_base_id úr.
         const base = f.customer_base_id;
-        const [fsRes, vkRes, sibRes, bsRes, hRes, sentFra] = await Promise.all([
+        const [fsRes, vkRes, sibRes, bsRes, hRes, sentFra, umRes] = await Promise.all([
           client.from("felag_samskipti")
             .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,fyrirtaeki_id,fyrirtaeki_nafn,via")
             .eq("customer_base_id", base).order("received_at", { ascending: false }).limit(400),
@@ -296,9 +296,19 @@
           client.from("samskipti_stada")
             .select("handled_at").eq("fyrirtaeki_id", fid).maybeSingle(),
           sentThekja(),
+          // 10.09.2026: póstur umsjónaraðila (Eignaumsjón, Rekstrarumsjón, Eignarekstur) sem gatan í
+          // honum tengir á húsið. Reiknað á klukkutíma fresti í umsjonarpostur_tengsl (pg_cron :50).
+          client.from("felag_umsjonarpostur")
+            .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,fyrirtaeki_id,fyrirtaeki_nafn,via,lyklar")
+            .eq("customer_base_id", base).order("received_at", { ascending: false }).limit(400),
         ]);
         const byId = new Map();
         (skra(vkRes, "v_kunni_postur") || []).forEach(m => byId.set(String(m.email_id), m));
+        // umsjón á undan felag_samskipti: sami póstur í báðum → felag_samskipti ræður (hún veit hvaða bygging)
+        (skra(umRes, "felag_umsjonarpostur") || []).forEach(m => {
+          const k = String(m.email_id);
+          byId.set(k, Object.assign({}, byId.get(k) || {}, m));
+        });
         (skra(fsRes, "felag_samskipti") || []).forEach(m => {
           const k = String(m.email_id);
           byId.set(k, Object.assign({}, byId.get(k) || {}, m));   // fs vinnur á sameiginlegum reitum
@@ -437,6 +447,7 @@
     const mailRow = (m, nyj) => {
       const open = erOpin(m);
       const via = (m.fyrirtaeki_nafn && m.fyrirtaeki_id !== fid) ? '<span class="_skx-chip">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
+      const umsjon = m.via === "umsjon" ? '<span class="_skx-chip" title="Póstur umsjónaraðila — tengdur húsinu af því að „' + esc(m.lyklar || "") + '" stendur í honum">🔑 Umsjón</span>' : "";
       const hver = m.fra_okkur ? "Slökkvitæki ehf" : T.hreintNafn(m.sender_name, m.sender_email);
       const texti = T.eiginTexti(m.snippet);
       return '<div class="_ssk-mail ' + (nyj ? "_skx-nyjast" : "_skx-rod") + (m.fra_okkur ? " fra-okkur" : "") + (open ? " opin" : "") + '" data-eid="' + (m.email_id || "") + '">' +
@@ -445,7 +456,7 @@
           '<div class="_skx-meta">' +
             '<span class="_skx-chip ' + (m.fra_okkur ? "okkur" : "kunni") + '">' + (m.fra_okkur ? "Frá okkur" : "Frá kúnna") + "</span>" +
             (open ? '<span class="_skx-chip osvarad">Ósvarað</span>' : "") +
-            "<span>" + esc(hver) + "</span><span>·</span><span>" + esc(fmtD(m.received_at)) + " · " + esc(T.afstada(m.received_at)) + "</span>" + via +
+            "<span>" + esc(hver) + "</span><span>·</span><span>" + esc(fmtD(m.received_at)) + " · " + esc(T.afstada(m.received_at)) + "</span>" + via + umsjon +
           "</div>" +
           '<div class="_skx-subj">' + esc(T.hreintEfni(m.subject)) + ' <span class="_ssk-caret">▾</span></div>' +
           '<div class="_ssk-snip _skx-txt">' + (texti

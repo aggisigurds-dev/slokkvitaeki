@@ -540,10 +540,27 @@
     const url = r.customer_base_id
       ? U + "/rest/v1/felag_samskipti?" + sel + "&customer_base_id=eq." + r.customer_base_id + "&order=received_at.desc&limit=40"
       : U + "/rest/v1/fyrirtaeki_samskipti?select=email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at&fyrirtaeki_id=eq." + r.fyrirtaeki_id + "&order=received_at.desc&limit=40";
-    const res = await fetch(url, { headers: H });
+    // 10.09.2026: póstur umsjónaraðila sem gatan tengir á húsið (felag_umsjonarpostur) bætist við
+    // félags-söguna. Sami póstur í báðum → felag_samskipti ræður. Bregðist umsjónar-sóknin sést
+    // félags-sagan samt, og það er skráð í stjórnborðið.
+    const [res, umRes] = await Promise.all([
+      fetch(url, { headers: H }),
+      r.customer_base_id
+        ? fetch(U + "/rest/v1/felag_umsjonarpostur?" + sel + ",lyklar&customer_base_id=eq." + r.customer_base_id + "&order=received_at.desc&limit=40", { headers: H })
+            .catch(e => { console.warn("[crm-board] umsjónarpóstur", e); return null; })
+        : Promise.resolve(null),
+    ]);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const rows = await res.json();
-    SAGA_CACHE[key] = Array.isArray(rows) ? rows : [];
+    let um = [];
+    if (umRes && umRes.ok) { try { const j = await umRes.json(); if (Array.isArray(j)) um = j; } catch (e) { console.warn("[crm-board] umsjónarpóstur", e); } }
+    else if (umRes) console.warn("[crm-board] umsjónarpóstur HTTP " + umRes.status);
+    const byId = new Map();
+    um.forEach(m => byId.set(String(m.email_id), m));
+    (Array.isArray(rows) ? rows : []).forEach(m => { const k = String(m.email_id); byId.set(k, Object.assign({}, byId.get(k) || {}, m)); });
+    SAGA_CACHE[key] = [...byId.values()]
+      .sort((a, b) => String(b.received_at || "").localeCompare(String(a.received_at || "")))
+      .slice(0, 40);
     return SAGA_CACHE[key];
   }
   function tSagaHtml(r, mails) {
@@ -574,7 +591,8 @@
     if (!mails.length) return head + '<div class="tbord-note" style="padding:8px 2px">Engin póstsaga — ekkert netfang tengt, eða enginn póstur enn.</div>';
     const list = mails.map(m => {
       const open = m.is_question && !m.fra_okkur && (!cut || m.received_at > cut);
-      const via = m.fyrirtaeki_nafn ? '<span class="tbord-via" title="Tengt á byggingu (' + esc(m.via || "") + ')">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
+      const via = (m.fyrirtaeki_nafn ? '<span class="tbord-via" title="Tengt á byggingu (' + esc(m.via || "") + ')">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "") +
+        (m.via === "umsjon" ? ' <span class="tbord-via" title="Póstur umsjónaraðila — tengdur húsinu af því að „' + esc(m.lyklar || "") + '" stendur í honum">🔑 Umsjón</span>' : "");
       const svarB = open && m.sender_email
         ? ' <button class="tbord-minireply" data-reply="' + esc(m.email_id) + '" title="Svara þessum pósti">✉️ Svara</button>' : "";
       return '<div class="tbord-mail' + (open ? " open" : "") + '">' +
