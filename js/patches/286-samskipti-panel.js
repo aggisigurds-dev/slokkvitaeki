@@ -59,7 +59,7 @@
     const BSTAL = "linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)";
     const st = document.createElement("style"); st.id = "_skx-css";
     st.textContent =
-      "#companies-main ._samskipti-card._skx,#companies-main ._co-mail-box{background:#fff !important;border:1px solid rgba(20,24,34,.1) !important;border-radius:12px !important;box-shadow:0 10px 28px -16px rgba(25,35,60,.22) !important;padding:14px 16px !important;margin:12px 0 !important;font-size:13.5px;color:var(--ink,#0f172a)}" +
+      "#companies-main ._samskipti-card._skx,#companies-main ._skx-hledur._skx,#companies-main ._skx-villa._skx,#companies-main ._co-mail-box{background:#fff !important;border:1px solid rgba(20,24,34,.1) !important;border-radius:12px !important;box-shadow:0 10px 28px -16px rgba(25,35,60,.22) !important;padding:14px 16px !important;margin:12px 0 !important;font-size:13.5px;color:var(--ink,#0f172a)}" +
       "._skx-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}" +
       "._skx-title{font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink,#0f172a)}" +
       "._skx-acts{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center}" +
@@ -106,7 +106,21 @@
       "._samskipti-card ._smx-imp,._samskipti-card ._smx-mute{border-radius:9px !important;background:#fff !important;border:1px solid var(--brd,#e3e7ee) !important;color:var(--ink,#0f172a) !important}" +
       "._co-mail-box ._cmb-reply{background:" + BSTAL + " !important;border:1px solid rgba(190,32,28,.55) !important;border-radius:9px !important}" +
       "._co-mail-box ._cmb-imp,._co-mail-box ._cmb-mute,._co-mail-box ._cmb-hist{background:#fff !important;border:1px solid var(--brd,#e3e7ee) !important;border-radius:9px !important;color:var(--ink,#0f172a) !important}" +
-      "._co-mail-box ._skx-title-alt{color:var(--ink,#0f172a) !important;font-weight:700 !important;letter-spacing:.08em !important}";
+      "._co-mail-box ._skx-title-alt{color:var(--ink,#0f172a) !important;font-weight:700 !important;letter-spacing:.08em !important}" +
+      // 10.09.2026 — hleðslukort, „Uppfæri…"-merkið og lás á skrif-tökkum á meðan geymd útgáfa sést
+      "._skx-uppf{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;font-size:11.5px;font-weight:600;color:var(--ink2,#5b6573);background:#f7f8fa;border:1px solid var(--brd,#e3e7ee);border-radius:99px;padding:2px 10px 2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      "._skx-uppf.ok{color:#166534;background:#f0fdf4;border-color:#bbf7d0}" +
+      "._skx-uppf.villa{color:#9a3412;background:#fff7ed;border-color:#fed7aa}" +
+      "._skx-snuda{flex:none;width:10px;height:10px;border-radius:50%;border:2px solid rgba(201,42,42,.22);border-top-color:var(--accent,#c92a2a);animation:_skxSnu .8s linear infinite}" +
+      "@keyframes _skxSnu{to{transform:rotate(360deg)}}" +
+      "._skx-bein{position:relative;overflow:hidden;background:#eef0f4 !important;border-color:#eef0f4 !important}" +
+      "._skx-bein>*{visibility:hidden}" +
+      "._skx-bein::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.75),rgba(255,255,255,0));transform:translateX(-100%);animation:_skxGlit 1.3s ease-in-out infinite}" +
+      "@keyframes _skxGlit{to{transform:translateX(100%)}}" +
+      "._skx-bein-blokk{height:74px;border-radius:10px;border:1px solid #eef0f4}" +
+      "._skx[data-lagrad='1'] ._skx-svara,._skx[data-lagrad='1'] ._ssk-mark{opacity:.5;pointer-events:none}" +
+      "._skx[data-lagrad='1'] ._ssk-note-edit{opacity:.2 !important;pointer-events:none}" +
+      "@media (prefers-reduced-motion:reduce){._skx-snuda,._skx-bein::after{animation:none}}";
     document.head.appendChild(st);
   }
 
@@ -120,6 +134,86 @@
   // hætti þögult — hýsillinn festist á prófílinn en kortið teiknaðist aldrei.
   const sb = () => (window.DB && window.DB.sb) || window.sb || null;
   const cache = {};
+  // ── GEYMD SAMSKIPTI (10.09.2026) ─────────────────────────────────────────
+  // Agnar: „láta samskiptin geymast í kerfinu svo það taki ekki of langan tíma að uppfærast,
+  // setja frekar loadmerki á gluggann og það komi þegar það er klárt". Síðasta HEILA sókn hvers
+  // félags er geymd í IndexedDB á tækinu (slokk-samskipti/kort, lykill = fyrirtaeki.id). Næsta
+  // opnun teiknar kortið strax úr geymslunni með „Uppfæri…"-merki, sækir ferskt í bakgrunni og
+  // teiknar aðeins upp á nýtt ef eitthvað breyttist. Ekkert geymt → hleðslukort þar til gögnin
+  // eru klár. Geymslan er skyndiminni, ekki heimild: í hana fer aðeins það sem þjónninn skilaði
+  // (og staðfest eigin skrif), og á meðan geymd útgáfa sést eru skrif-takkarnir læstir — annars
+  // gæti sjálfvirka vistun samantektarinnar skrifað eldri texta yfir nýrri frá annarri vél.
+  // Bili IndexedDB (einkaflipi o.þ.h.) hegðar kortið sér eins og áður, bara með hleðslukorti.
+  // Mest HAMARK félög; þau sem lengst er síðan voru sótt víkja.
+  const GEYMSLA = (() => {
+    const DBN = "slokk-samskipti", ST = "kort", UTG = 1, HAMARK = 300;
+    let _db = null, _klippt = false;
+    function opna() {
+      if (_db) return _db;
+      const p = new Promise((res, rej) => {
+        if (!("indexedDB" in window)) return rej(new Error("ekkert indexedDB"));
+        const r = indexedDB.open(DBN, 1);
+        r.onupgradeneeded = () => { try { r.result.createObjectStore(ST).createIndex("savedAt", "savedAt"); } catch (_) {} };
+        r.onsuccess = () => { const db = r.result; db.onversionchange = () => { try { db.close(); } catch (_) {} _db = null; }; res(db); };
+        r.onerror = () => rej(r.error || new Error("idb"));
+        r.onblocked = () => rej(new Error("idb læst"));
+      });
+      _db = p;
+      p.catch(() => { if (_db === p) _db = null; });
+      return p;
+    }
+    const bida = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+    async function lesa(fid) {
+      try {
+        const db = await bida(opna(), 600); if (!db) return null;
+        const v = await bida(new Promise(res => {
+          const rq = db.transaction(ST, "readonly").objectStore(ST).get(+fid);
+          rq.onsuccess = () => res(rq.result || null); rq.onerror = () => res(null);
+        }), 600);
+        return v && v.utg === UTG && v.data && v.data.f && +v.data.f.id === +fid && Array.isArray(v.data.mails) ? v : null;
+      } catch (_) { return null; }
+    }
+    async function skrifa(fid, data, savedAt) {
+      try {
+        const db = await opna();
+        const ok = await new Promise(res => {
+          const tx = db.transaction(ST, "readwrite");
+          tx.objectStore(ST).put({ utg: UTG, fid: +fid, savedAt: savedAt || Date.now(), data }, +fid);
+          tx.oncomplete = () => res(true); tx.onerror = () => res(false); tx.onabort = () => res(false);
+        });
+        if (ok && !_klippt) { _klippt = true; klippa(db); }
+        return ok;
+      } catch (_) { return false; }
+    }
+    function klippa(db) {
+      try {
+        const os = db.transaction(ST, "readwrite").objectStore(ST);
+        const cq = os.count();
+        cq.onsuccess = () => {
+          let umfram = cq.result - HAMARK; if (umfram <= 0) return;
+          const kq = os.index("savedAt").openKeyCursor();
+          kq.onsuccess = () => { const c = kq.result; if (!c || umfram <= 0) return; os.delete(c.primaryKey); umfram--; c.continue(); };
+        };
+      } catch (_) {}
+    }
+    // Staðfest eigin skrif (samantekt vistuð, merkt afgreitt) færð inn í geymdu útgáfuna; savedAt óbreytt.
+    async function laga(fid, breyta) {
+      const v = await lesa(fid); if (!v) return false;
+      try { breyta(v.data); } catch (_) { return false; }
+      return skrifa(fid, v.data, v.savedAt);
+    }
+    async function hreinsa() {
+      try { const db = await opna(); return await new Promise(res => { const tx = db.transaction(ST, "readwrite"); tx.objectStore(ST).clear(); tx.oncomplete = () => res(true); tx.onerror = () => res(false); }); }
+      catch (_) { return false; }
+    }
+    async function fjoldi() {
+      try { const db = await opna(); return await new Promise(res => { const q = db.transaction(ST, "readonly").objectStore(ST).count(); q.onsuccess = () => res(q.result); q.onerror = () => res(-1); }); }
+      catch (_) { return -1; }
+    }
+    return { lesa, skrifa, laga, hreinsa, fjoldi };
+  })();
+  window.SamskiptiGeymsla = { lesa: GEYMSLA.lesa, hreinsa: GEYMSLA.hreinsa, fjoldi: GEYMSLA.fjoldi };
+  const klukka = t => { const d = new Date(t); return isNaN(d.getTime()) ? "" : fmtD(d) + " kl. " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
   // SENT-ÞEKJAN — frá hvaða degi eigum við sendan póst? Sótt einu sinni.
   // Nauðsynleg til að fullyrða ekki „ÓSVARAÐ" um póst sem er eldri en safnið
   // okkar af SENDUM pósti (byrjar 18.07.2025 á meðan INBOX nær til 2015).
@@ -139,12 +233,18 @@
   async function fetchData(fid) {
     if (cache[fid] && Date.now() - cache[fid]._ts < 60000) return cache[fid];
     const client = sb(); if (!client) return null;
-    const out = { _ts: Date.now(), f: null, mails: [], beidnir: [], handled: "", siblings: [fid] };
+    // ok = ALLAR fyrirspurnir tókust. supabase-js kastar ekki — villan kemur í .error, og áður var
+    // hún hunsuð: brostin felag_samskipti-sókn sýndi „Engir póstar fundust". Aðeins heil sókn fer
+    // í minnið og tækisgeymsluna; villur segja frá sér á kortinu (uppfaera).
+    const out = { _ts: Date.now(), f: null, mails: [], beidnir: [], handled: "", siblings: [fid], sentFra: "", ok: false, villur: [] };
+    const skra = (r, hvad) => { if (r && r.error) out.villur.push(hvad + ": " + (r.error.message || r.error.code || "villa")); return (r && r.data) || null; };
     try {
-      const { data: f } = await client.from("fyrirtaeki")
+      const fRes = await client.from("fyrirtaeki")
         .select('id,nafn,customer_base_id,banner_note,athugasemdir,netfang,simi,farsimi,"tengiliður",tengilidur')
         .eq("id", fid).maybeSingle();
+      const f = skra(fRes, "fyrirtaeki");
       out.f = f || null;
+      if (!f) { if (!out.villur.length) out.villur.push("fyrirtæki " + fid + " fannst ekki"); return out; }
       // 2026-07-30 (ósk Agnars — „skilaboða boxið í fyrirtækin", sama og
       // Heimaleigu-skúffan á Þjónustuborðinu): sagan er lesin á FÉLAGINU
       // (felag_samskipti) þegar byggingin á base. Eftir sönnunar-tenginguna á
@@ -166,49 +266,65 @@
         //     925 póstar á 206 kúnnum → 1.678 á 235.
         // 30-þakið er farið; stærsti kúnninn á 207 pósta, svo öll sagan kemst
         // í eitt kall (uppfletting mæld 61 ms eftir að postfang_tengsl kom til).
-        const [fsRes, vkRes] = await Promise.all([
+        // 10.09.2026 (Agnar: „svo það taki ekki of langan tíma að uppfærast"): allt sem kortið
+        // þarf er sótt SAMHLIÐA í einni umferð. Áður fimm ferðir í röð — mælt: Suðurhellu 9
+        // 887 → 314 ms, Center Hótel (350 póstar, 214 KB) 776 → 444 ms, auk fyrirtaeki-raðarinnar
+        // hér að ofan sem hinar þurfa customer_base_id úr.
+        const base = f.customer_base_id;
+        const [fsRes, vkRes, sibRes, bsRes, hRes, sentFra] = await Promise.all([
           client.from("felag_samskipti")
             .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,fyrirtaeki_id,fyrirtaeki_nafn,via")
-            .eq("customer_base_id", f.customer_base_id).order("received_at", { ascending: false }).limit(400),
+            .eq("customer_base_id", base).order("received_at", { ascending: false }).limit(400),
           client.from("v_kunni_postur")
             .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,flokkur,via")
-            .eq("customer_base_id", f.customer_base_id).order("received_at", { ascending: false }).limit(400),
+            .eq("customer_base_id", base).order("received_at", { ascending: false }).limit(400),
+          client.from("fyrirtaeki")
+            .select("id").eq("customer_base_id", base).is("deleted_at", null),
+          // 2026-07-30 (ósk Agnars — „þyrfti að geta séð meira um þessi mál"): hausinn lofaði
+          // BEIÐNUM en þær sáust hvergi — aðeins fjöldinn rataði í punktana. Hér koma sjálf
+          // málin af Þjónustuborðinu (sama tafla, 231).
+          client.from("thjonustubeidni")
+            .select("id,title,notes,summary,status,type,flokkur,important,due_at,created_at,source,channel_ref")
+            .eq("customer_base_id", base).is("deleted_at", null)
+            .order("created_at", { ascending: false }).limit(12),
+          // ✓-staðan (samskipti_stada) — spurning eldri en hún telst afgreidd
+          client.from("samskipti_stada")
+            .select("handled_at").eq("fyrirtaeki_id", fid).maybeSingle(),
+          sentThekja(),
         ]);
         const byId = new Map();
-        (vkRes.data || []).forEach(m => byId.set(String(m.email_id), m));
-        (fsRes.data || []).forEach(m => {
+        (skra(vkRes, "v_kunni_postur") || []).forEach(m => byId.set(String(m.email_id), m));
+        (skra(fsRes, "felag_samskipti") || []).forEach(m => {
           const k = String(m.email_id);
           byId.set(k, Object.assign({}, byId.get(k) || {}, m));   // fs vinnur á sameiginlegum reitum
         });
         out.mails = [...byId.values()]
           .sort((a, b) => String(b.received_at || "").localeCompare(String(a.received_at || "")));
-        const { data: sib } = await client.from("fyrirtaeki")
-          .select("id").eq("customer_base_id", f.customer_base_id).is("deleted_at", null);
-        out.siblings = (sib || []).map(x => x.id);
+        // raðað: röð án ORDER BY getur flakkað milli kalla og liti þá út eins og breyting á kortinu
+        out.siblings = (skra(sibRes, "systkini") || []).map(x => x.id).sort((a, b) => a - b);
         if (!out.siblings.length) out.siblings = [fid];
+        out.beidnir = skra(bsRes, "thjonustubeidni") || [];
+        const h = skra(hRes, "samskipti_stada");
+        out.handled = (h && h.handled_at) || "";
+        out.sentFra = sentFra || "";
       } else {
-        const { data: mails } = await client.from("fyrirtaeki_samskipti")
-          .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at")
-          .eq("fyrirtaeki_id", fid).order("received_at", { ascending: false }).limit(30);
-        out.mails = mails || [];
+        const [mRes, hRes, sentFra] = await Promise.all([
+          client.from("fyrirtaeki_samskipti")
+            .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at")
+            .eq("fyrirtaeki_id", fid).order("received_at", { ascending: false }).limit(30),
+          client.from("samskipti_stada")
+            .select("handled_at").eq("fyrirtaeki_id", fid).maybeSingle(),
+          sentThekja(),
+        ]);
+        out.mails = skra(mRes, "fyrirtaeki_samskipti") || [];
+        const h = skra(hRes, "samskipti_stada");
+        out.handled = (h && h.handled_at) || "";
+        out.sentFra = sentFra || "";
       }
-      out.sentFra = await sentThekja();
-      // ✓-staðan (samskipti_stada) — spurning eldri en hún telst afgreidd
-      const { data: h } = await client.from("samskipti_stada")
-        .select("handled_at").eq("fyrirtaeki_id", fid).maybeSingle();
-      out.handled = (h && h.handled_at) || "";
-      // 2026-07-30 (ósk Agnars — „þyrfti að geta séð meira um þessi mál"):
-      // hausinn lofaði BEIÐNUM en þær sáust hvergi — aðeins fjöldinn rataði í
-      // punktana. Hér koma sjálf málin af Þjónustuborðinu (sama tafla, 231).
-      if (f && f.customer_base_id) {
-        const { data: bs } = await client.from("thjonustubeidni")
-          .select("id,title,notes,summary,status,type,flokkur,important,due_at,created_at,source,channel_ref")
-          .eq("customer_base_id", f.customer_base_id).is("deleted_at", null)
-          .order("created_at", { ascending: false }).limit(12);
-        out.beidnir = bs || [];
-      }
-    } catch (e) { console.warn("[samskipti-panel]", e); }
-    cache[fid] = out; return out;
+    } catch (e) { out.villur.push(String((e && e.message) || e)); console.warn("[samskipti-panel]", e); }
+    out.ok = !!out.f && !out.villur.length;
+    if (out.ok) cache[fid] = out;
+    return out;
   }
   // Opið erindi = spurning frá kúnna sem er nýrri en BÆÐI síðasta frá-okkur
   // sending og ✓-merkingin (sama regla og Þjónustuborðið).
@@ -271,7 +387,8 @@
     return pts.slice(0, 5);
   }
 
-  function render(host, fid, data) {
+  function render(host, fid, data, opt) {
+    opt = opt || {};
     const f = data.f; if (!f) return;
     const cut = cutOf(data);
     const erOpin = m => m.is_question && !m.fra_okkur && (!cut || m.received_at > cut);
@@ -284,6 +401,8 @@
     card.className = "card pad _samskipti-card _skx";
     // Merki fyrir 359: ÖLL póstsagan er þegar í kortinu, svo „⬇ Eldri póstar" á ekki erindi.
     card.dataset.ollSagan = "1";
+    // 10.09.2026: teiknað úr tækisgeymslu → skrif-takkar læstir þar til ferska sóknin staðfestir (uppfaera).
+    if (opt.lagrad) card.dataset.lagrad = "1";
     const SYNI = 20;
     const nyjast = data.mails[0] || null;
     const arFra = Date.now() - 365 * 864e5;
@@ -372,6 +491,7 @@
     card.innerHTML =
       '<div class="_skx-head">' +
         '<div class="_skx-title">💬 Samskipti</div>' +
+        (opt.lagrad ? '<span class="_skx-uppf" title="Sýni samskiptin eins og þau voru sótt ' + esc(klukka(opt.lagrad)) + ' á þessu tæki, á meðan nýjustu eru sótt."><i class="_skx-snuda"></i>Uppfæri…</span>' : "") +
         '<div class="_skx-acts">' +
           (svaraM && window.ReikningaPostur && ReikningaPostur.replyTo ? '<button type="button" class="_skx-btn _skx-svara" title="Svara nýjasta pósti kúnnans — svarið fer í sama þráð">↩ Svara</button>' : "") +
           (openQ > 0
@@ -397,6 +517,7 @@
     const svaraB = card.querySelector("._skx-svara");
     if (svaraB) svaraB.addEventListener("click", async (ev) => {
       ev.stopPropagation();
+      if (card.dataset.lagrad === "1") return;   // geymd útgáfa — nýrri póstur gæti verið á leiðinni
       svaraB.disabled = true;
       let m = null;
       try {
@@ -421,6 +542,8 @@
       const edBtn = noteEl.querySelector("._ssk-note-edit");
       if (edBtn) edBtn.addEventListener("click", (ev) => {
         ev.preventDefault(); ev.stopPropagation();
+        // geymd útgáfa: sjálfvirka vistunin gæti annars skrifað eldri texta yfir nýrri frá annarri vél
+        if (card.dataset.lagrad === "1") return;
         noteEl.open = true; if (car) car.textContent = "▾";
         const body = noteEl.querySelector("._ssk-note-body");
         if (!body || body.querySelector("textarea")) return;
@@ -469,6 +592,7 @@
           sidast = val;
           f.athugasemdir = val;
           if (cache[f.id]) cache[f.id]._ts = 0;            // næsta opnun sækir ferskt
+          GEYMSLA.laga(f.id, d => { if (d.f) d.f.athugasemdir = val; });   // og tækisgeymslan sýnir nýja textann
           ta.style.outline = ""; ta.title = "";
           return true;
         };
@@ -570,14 +694,115 @@
     });
     const mk = card.querySelector("._ssk-mark");
     if (mk) mk.addEventListener("click", async e => {
+      if (card.dataset.lagrad === "1") return;
       e.target.disabled = true; e.target.textContent = "⏳ …";
       const ok = await markHandled(data);
       if (!ok) { e.target.disabled = false; e.target.textContent = "✓ Merkja afgreitt"; alert("Tókst ekki að merkja — reyndu aftur."); return; }
       delete cache[fid];               // ferskt við næstu opnun
+      GEYMSLA.laga(fid, d => { d.handled = data.handled; });
       host.innerHTML = "";             // teikna kortið strax upp á nýtt
       render(host, fid, data);
     });
     host.appendChild(card);
+  }
+
+  // ── HLEÐSLUKORT, BAKGRUNNSUPPFÆRSLA, ENDURTEIKNING (10.09.2026, sjá GEYMSLA) ──
+  const medTima = (p, ms, vara) => Promise.race([p, new Promise(r => setTimeout(() => r(vara), ms))]);
+  const eittBox = () => { try { if (window.SamskiptiEitt && SamskiptiEitt.athuga) SamskiptiEitt.athuga(); } catch (_) {} };
+  const geymsluHluti = d => ({ f: d.f, mails: d.mails, beidnir: d.beidnir, handled: d.handled || "", siblings: d.siblings, sentFra: d.sentFra || "" });
+  const undirskrift = d => { try { return JSON.stringify(geymsluHluti(d)); } catch (_) { return String(Math.random()); } };
+
+  // Sami rammi og kortið (sömu flísar, svipuð hæð) svo ekkert hoppi þegar gögnin koma. Viljandi
+  // EKKI ._samskipti-card: 359 skreytir aðeins alvöru kort og bíður á meðan þetta sést.
+  function hledsla(host) {
+    const flis = '<div class="_skx-tile _skx-bein"><b>&nbsp;</b><span>&nbsp;</span><small>&nbsp;</small></div>';
+    host.innerHTML =
+      '<div class="card pad _skx _skx-hledur" aria-busy="true">' +
+        '<div class="_skx-head"><div class="_skx-title">💬 Samskipti</div>' +
+          '<span class="_skx-uppf"><i class="_skx-snuda"></i>Sæki samskipti…</span></div>' +
+        '<div class="_skx-tiles">' + flis + flis + flis + flis + "</div>" +
+        '<div class="_skx-lbl">Nýjasta uppfærsla</div>' +
+        '<div class="_skx-bein _skx-bein-blokk"></div>' +
+      "</div>";
+  }
+  function villaKort(host, fid, hvad) {
+    host.innerHTML =
+      '<div class="card pad _skx _skx-villa">' +
+        '<div class="_skx-head"><div class="_skx-title">💬 Samskipti</div>' +
+          '<div class="_skx-acts"><button type="button" class="_skx-btn ljos _skx-reyna">↻ Reyna aftur</button></div></div>' +
+        '<div class="_skx-txt" style="margin-top:8px;color:#9a3412">⚠ Náði ekki í samskiptin. Ekkert hefur glatast — reyndu aftur eftir smástund.</div>' +
+        (hvad ? '<div class="_skx-daufur" style="font-size:11px;margin-top:4px">' + esc(hvad) + "</div>" : "") +
+      "</div>";
+    const b = host.querySelector("._skx-reyna");
+    if (b) b.addEventListener("click", () => { hledsla(host); eittBox(); uppfaera(host, fid, null).catch(() => {}); });
+  }
+  function merkjaKort(card, gerd, texti, titill) {
+    const head = card && card.querySelector("._skx-head"); if (!head) return null;
+    let p = head.querySelector("._skx-uppf");
+    if (!gerd) { if (p) p.remove(); return null; }
+    if (!p) { p = document.createElement("span"); head.insertBefore(p, head.querySelector("._skx-acts")); }
+    p.className = "_skx-uppf" + (gerd === "snuda" ? "" : " " + gerd);
+    p.title = titill || "";
+    p.innerHTML = (gerd === "snuda" ? '<i class="_skx-snuda"></i>' : "") + esc(texti);
+    return p;
+  }
+  // Ein sókn í einu á hvert félag — fram og til baka milli prófíla tvísækir ekki.
+  const _isokn = {};
+  function saekja(fid) {
+    if (!_isokn[fid]) _isokn[fid] = fetchData(fid).finally(() => { delete _isokn[fid]; });
+    return _isokn[fid];
+  }
+  async function uppfaera(host, fid, lagrad) {
+    let data = null;
+    try { data = await medTima(saekja(fid), 20000, null); } catch (_) {}
+    if (!data) delete _isokn[fid];                        // hangandi sókn má ekki læsa „Reyna aftur"
+    const tokst = !!(data && data.ok);
+    if (tokst) GEYMSLA.skrifa(fid, geymsluHluti(data));
+    if (!document.contains(host) || host.dataset.fid !== String(fid)) return;   // farið af prófílnum á meðan
+    if (!data && !sb()) { host.innerHTML = ""; return; }  // enginn klíent enn → næsta tif reynir aftur (eins og áður)
+    const card = host.querySelector("._samskipti-card");
+    if (tokst) {
+      if (card && card.dataset.lagrad === "1" && lagrad && undirskrift(lagrad.data) === undirskrift(data)) {
+        delete card.dataset.lagrad;                       // óbreytt → aflæsa og staðfesta, engin endurteiknun
+        merkjaKort(card, "ok", "✓ Nýjasta staða");
+        setTimeout(() => { if (!card.dataset.lagrad) merkjaKort(card, null); }, 1600);
+        return;
+      }
+      teiknaAftur(host, fid, data);
+      return;
+    }
+    if (card && lagrad) {                                 // geymd saga á skjánum en ferskt náðist ekki
+      const p = merkjaKort(card, "villa", "⚠ Síðast sótt " + klukka(lagrad.savedAt) + " — náði ekki að uppfæra",
+        "Sýni samskiptin eins og þau voru síðast sótt á þessu tæki. Smelltu til að reyna aftur.");
+      if (p && !p.dataset.reyna) {
+        p.dataset.reyna = "1"; p.style.cursor = "pointer";
+        p.addEventListener("click", () => { merkjaKort(card, "snuda", "Uppfæri…"); uppfaera(host, fid, lagrad).catch(() => {}); });
+      }
+      return;
+    }
+    if (data && data.f) { teiknaAftur(host, fid, data, { hluti: true }); return; }   // hluti náðist — sýna og segja frá
+    villaKort(host, fid, data && data.villur ? data.villur.join(" · ") : "tímamörk (20 s)"); eittBox();
+  }
+  // Nýtt kort í stað þess gamla — opin póstsaga, „öll samskiptin" og samantekt haldast opin.
+  function teiknaAftur(host, fid, data, opt) {
+    const gamalt = host.querySelector("._samskipti-card");
+    if (gamalt && gamalt.querySelector("._ssk-note-ta")) return;     // aldrei henda texta sem er í ritun
+    const opid = gamalt ? {
+      saga: !!gamalt.querySelector('._ssk-full:not([style*="none"])'),
+      eldri: !!gamalt.querySelector("._ssk-eldri:not([hidden])"),
+      aths: !!(gamalt.querySelector("._ssk-note") || {}).open,
+    } : {};
+    host.innerHTML = "";
+    render(host, fid, data, opt);
+    const card = host.querySelector("._samskipti-card");
+    if (card) {
+      if (opid.saga) { const t = card.querySelector("._ssk-toggle"); if (t) t.click(); }
+      if (opid.eldri) { const t = card.querySelector("._ssk-meira"); if (t) t.click(); }
+      if (opid.aths) { const n = card.querySelector("._ssk-note"); if (n) n.open = true; }
+      if (opt && opt.hluti) merkjaKort(card, "villa", "⚠ Hluti gagna náðist ekki",
+        "Ein eða fleiri fyrirspurnir brugðust (" + (data.villur || []).join(" · ") + ") — listinn gæti verið ófullkominn.");
+    }
+    eittBox();
   }
 
   async function decorate() {
@@ -620,8 +845,19 @@
     host = document.createElement("div");
     host.className = "_samskipti-host"; host.dataset.fid = fid; host.dataset.ts = String(Date.now());
     (row && row.parentElement ? row.parentElement : anchor).insertBefore(host, row ? row.nextSibling : null);
-    const data = await fetchData(fid);
-    if (data) render(host, fid, data);
+    // 10.09.2026 — minni (60 s) → tækisgeymsla → hleðslukort. Tif-lásnum er sleppt um leið og
+    // eitthvað er komið á skjáinn; ferska sóknin gengur í bakgrunni (uppfaera).
+    const minni = cache[fid] && Date.now() - cache[fid]._ts < 60000 ? cache[fid] : null;
+    if (minni) { render(host, fid, minni); eittBox(); return; }
+    const lagrad = await GEYMSLA.lesa(fid);
+    if (!document.contains(host) || host.childElementCount) return;
+    let notad = null;
+    if (lagrad) {
+      try { render(host, fid, lagrad.data, { lagrad: lagrad.savedAt }); notad = lagrad; eittBox(); }
+      catch (e) { console.warn("[samskipti-panel] geymd útgáfa ónothæf", e); host.innerHTML = ""; }
+    }
+    if (!notad) hledsla(host);
+    uppfaera(host, fid, notad).catch(e => console.warn("[samskipti-panel] uppfæra", e));
   }
 
   // ── Rekstrarfélags-síðan (#view-rekstrarfelog, patch 175) ─────────────────

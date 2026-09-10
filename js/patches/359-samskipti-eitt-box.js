@@ -171,6 +171,28 @@
       if (vaktTimer) { clearTimeout(vaktTimer); vaktTimer = null; }
       return;
     }
+    // 10.09.2026 (Agnar: „setja frekar loadmerki á gluggann og það komi þegar það er klárt").
+    // 286 sýnir hleðslukort (._skx-hledur) á meðan sótt er. Það er ekki „autt svæði", svo gamla
+    // boxið á EKKI að blikka inn eftir 6 s — 286 á sjálft tímamörk (20 s) og skiptir þá í
+    // villukort (._skx-villa). Villukort = sóknin brást → gamla boxið strax sem varaleið.
+    if (!card && host.querySelector('._skx-hledur')) {
+      if (vaktTimer) { clearTimeout(vaktTimer); vaktTimer = null; }
+      gafstUpp = false;
+      if (main) {
+        if (main.classList.contains('smx-gafst')) main.classList.remove('smx-gafst');
+        if (!main.classList.contains('smx-eitt')) main.classList.add('smx-eitt');
+      }
+      return;
+    }
+    if (!card && host.querySelector('._skx-villa')) {
+      if (vaktTimer) { clearTimeout(vaktTimer); vaktTimer = null; }
+      gafstUpp = true;
+      if (main) {
+        if (main.classList.contains('smx-eitt')) main.classList.remove('smx-eitt');
+        if (!main.classList.contains('smx-gafst')) main.classList.add('smx-gafst');
+      }
+      return;
+    }
     if (card && vaktTimer) { clearTimeout(vaktTimer); vaktTimer = null; }
     if (card && main) main.classList.remove('smx-gafst');
 
@@ -197,7 +219,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   setInterval(() => { try { athuga(); } catch (_) {} }, 3000);   // 295 endurnýjar gögnin án DOM-breytingar á kortinu
 
-  window.SamskiptiEitt = { athuga, version: '359c' };
+  window.SamskiptiEitt = { athuga, version: '359d' };
   console.log('[359-samskipti-eitt-box] virkur');
 })();
 /* === END SAMSKIPTI EITT BOX === */
