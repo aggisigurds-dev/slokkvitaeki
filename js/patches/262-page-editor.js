@@ -215,19 +215,37 @@
   // Aðeins þau sem frumur eiga sjálfar — ekki t.d. border/breidd á töflunni.
   const CELL_PROPS = ['font-size', 'line-height', 'font-weight', 'font-family',
     'letter-spacing', 'color', 'padding-top', 'padding-bottom', 'padding-left', 'padding-right'];
-  // Á valinn velji við TÖFLU? Flett upp í DOM-inu og svarið geymt per applyCss-
-  // keyrslu (sami velji kemur oft fyrir og querySelector er ekki ókeypis).
+  // Nær valinn velji YFIR töflu? Flett upp í DOM-inu og svarið geymt per
+  // applyCss-keyrslu (sami velji kemur oft fyrir og querySelector er ekki ókeypis).
+  //
+  // 2026-09-10 (Agnar 27.08: „FELLUR ENN: Letur 9→23, taflan breytist EKKERT").
+  // Spurningin var áður hvort veljarinn VÆRI tafla (`el.tagName === 'TABLE'`).
+  // En í gegnum „🎯 Velja hlut" lendir smellurinn nánast alltaf á UMLYKJANDI
+  // DIV-inu (breadcrumb Agnars: „…div > div.thm…"), ekki á <table> sjálfri.
+  // Þá var þetta false, frumu-speglunin sleppt ÞEGJANDI, letrið lenti á div-inu
+  // og frumurnar héldu sínu eigin font-size — sleðinn hreyfðist en ekkert sást.
+  // Mælt á lifandi síðu (#arsskodun, 1 tafla / 51 tr / 700 td):
+  //   valið div.thm, Letur 14→23  ⇒  div 14→23px, td 13→13px  (ekkert gerðist)
+  //   valin taflan sjálf, Letur 11→23 ⇒  tafla 11→23px, td 13→23px  (virkaði)
+  // Núna spyrjum við hvort veljarinn SÉ tafla EÐA INNIHALDI töflu.
   let _tblCache = null;
   function selHitsTable(sel) {
     if (_tblCache && sel in _tblCache) return _tblCache[sel];
     let hit = false;
-    try {
-      paintDocs().forEach(d => {
-        if (hit) return;
-        const el = d.querySelector(sel);
-        if (el && el.tagName === 'TABLE') hit = true;
-      });
-    } catch (_) {}
+    paintDocs().forEach(d => {
+      if (hit) return;
+      try {
+        const els = d.querySelectorAll(sel);
+        if (!els.length) return;
+        // 1) veljarinn sjálfur er tafla (t.d. „📊 Taflan"-takkinn)
+        for (let i = 0; i < els.length && i < 40; i++) {
+          if (els[i].tagName === 'TABLE') { hit = true; return; }
+        }
+        // 2) …eða hann UMLYKUR töflu (töfluramminn, .thm, .data-table-wrap …).
+        //    Ein fyrirspurn í stað lykkju — querySelector hættir við fyrsta hitt.
+        if (d.querySelector(sel + ' table')) hit = true;
+      } catch (_) {}
+    });
     if (_tblCache) _tblCache[sel] = hit;
     return hit;
   }
