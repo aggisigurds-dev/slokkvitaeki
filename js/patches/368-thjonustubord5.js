@@ -1,4 +1,4 @@
-/* === ÞJÓNUSTUBORÐ 5 — Master borð, mitt borð, hamir og einingar (368) =======================
+/* === ÞJÓNUSTUBORÐ 5 — Master borð, mitt borð, hamir, einingar og flýtileiðir (368) ============
  *
  * Agnar 10.09.2026: „þjónustuborðið er ekki alveg að virka núna, og margt þar sem þarf ekki að vera
  * … væri gott að hafa það smá skipt svo sé ekki jafn yfirþyrmandi, að hver starfsmaður geti haft sitt
@@ -6,14 +6,26 @@
  * borði" · „jafnvel skipta um mode … skýrslumode … kröfumode … akstursskipulags mode … samskiptamode"
  * · Boss-útlitið. Tillagan (artifact „Þjónustuborð Boss v5") samþykkt. Lógóið er ekki endurtekið
  * hér — haus appsins ber það þegar.
+ * Síðar sama kvöld: vinnuskjáirnir eru bogadregnir og um þrefalt breiðari en 1920 px, með tugi flipa
+ * opna („Keldan, Drive, Brunahólf, Turbopaint, Payday, kröfuyfirlit, Tímavera …") — „kveikja á
+ * hliðar viðbótum … festa linka eins og favorite bar í chrome" · „mode yrði alveg snilld í það,
+ * með mismunandi opnur" · „gatt-admin og kanski link á þjónustugáttina líka".
  *
- * FALIN SLÓÐ #bord — ekki í valmynd fyrr en Agnar hefur prófað. Gamla borðið (231) er ÓBREYTT.
+ * FALIN SLÓÐ #bord — ekki í valmynd fyrr en Agnar hefur prófað. Gamla borðið (231) er ÓBREYTT og
+ * verður fjarlægt þegar nýja borðið hefur verið reynsluekið („eyða hinu þegar við erum búin").
  *
  * EINANGRAÐ (Shadow DOM): Brunastál-þemað þvingar `.view .btn` í hvítt á svörtu og `.view h1/h2/h3`
  *   í næstum svart með !important (mælt 10.09.2026) — gullhnappurinn varð svartur og titill valins
  *   máls hefði orðið svartur á svörtu. Borðið býr því í eigin skuggarót: stílar appsins ná ekki inn,
  *   stílar borðsins leka ekki út, og observerar annarra patcha sjá ekki hnappana. Atburðir eru
  *   hlustaðir á rótinni (click/change/keydown), ekki á document.
+ *
+ * BREIDD (gámafyrirspurnir, ekki skjástærð — borðið lagar sig að plássinu sem það fær):
+ *   ≤ 760 px    sími: einn dálkur, Master/Mitt borð sem flipar, valið mál opnast undir línunni.
+ *   761–1599    einn dálkur af einingum, borðið í tveimur dálkum.
+ *   ≥ 1600      einingar hamsins í dálki vinstra megin, aðrar einingar hægra megin, borðið í miðju.
+ *   miðja ≥1500 Master · Mitt borð · Valið mál hlið við hlið (bogaskjárinn).
+ *   Hver hamur er sín „opna": einingar hamsins (MODES.first) fara vinstra megin og opnar.
  *
  * HVAÐ ER Á MASTER (mælt 10.09.2026): 82 opin mál — 77 á Charlize, 3 án starfsmanns, 2 á Bjarndísi.
  *   231 setur óúthlutuð mál eldri en 30 daga sjálfkrafa á AI_WORKER = 'Charlize' (claimOldJobs).
@@ -26,8 +38,9 @@
  *   Lokið   status = 'lokad'.     Svarað  svarad_at + status i_vinnslu, eins og 231 gerir.
  *   Nýtt    sömu reitir og hraðlína 231 (quickAdd).
  *
- * LESIÐ ANNARS STAÐAR FRÁ (engin ný tafla):
- *   Vinnuborð hvers og eins  AppSettings thjonustubord5.by_staff.<nafn> = { mode, mods } — smá-plástrar
+ * LESIÐ OG VISTAÐ ANNARS STAÐAR (engin ný tafla):
+ *   Vinnuborð hvers og eins  AppSettings thjonustubord5.by_staff.<nafn> = { mode, mods, links }
+ *                            mode/mods sem smá-plástrar; links byggt á NÝJASTA lista við vistun
  *   Dagskrá                  vikudagskra.by_staff.<nafn>.jobs (303); skráð og breytt í glugga 303
  *   Skipulagsborð            skipulagsbord.by_staff.<nafn>.cards (305)
  *   Vinnublöð                sara_yfirferd.stada (364)
@@ -56,9 +69,15 @@
   const SB_TEG = [['Árskoðun', '#c3271c'], ['Hleðsla', '#b8770e'], ['Uppsetning', '#2c6e9e'], ['Verkstæði', '#5b6470'], ['Annað', '#8a8f98']];
   const vdLitur = t => (VD_TEG.find(x => x[0] === t) || [0, '#8f8776'])[1];
   const MAL_TEG = { tilbod: 'Tilboð', email: 'Póstur', skyrsla: 'Skýrsla', heimsokn: 'Heimsókn', hringja: 'Hringja', samningur: 'Samningur', skjalabeidni: 'Skjöl', verkdagbok: 'Verkdagbók', annad: 'Annað', skodun_tilbod: 'Skoðun & tilboð', nyr_samningur: 'Nýr samningur', uttekt_eftirfylgni: 'Úttekt / eftirfylgni' };
+  // Síður í kerfinu sem hægt er að festa með einum smelli. Gáttirnar eru sér síður á sama vef.
+  const TILLOGUR = [
+    ['Gátt-admin', '/gatt-admin/'], ['Þjónustugáttin', '/gatt/'],
+    ['Kröfu yfirlit', '#krofu-yfirlit'], ['Pósthólf', '#thjonustuver-postar'], ['Reikninga-póstur', '#reikninga-postur'],
+    ['Aksturslisti', '#aksturslisti'], ['Gamla borðið', '#verkbord']
+  ];
 
   const MODS = {
-    dagskra:   { n: '01', t: 'Dagskrá', d: 'Vikan í einni línu. Plús skráir verk á daginn.' },
+    dagskra:   { n: '01', t: 'Dagskrá', d: 'Vikan í einni sýn. Plús skráir verk á daginn.' },
     skipulag:  { n: '05', t: 'Skipulagsborð', d: 'Spjöldin þín af skipulagsborðinu.' },
     vinnublod: { n: '06', t: 'Vinnublöð', d: 'Bíða yfirferðar og samþykkt.' },
     postsvor:  { n: '07', t: 'Póstsvörun', d: 'Póstmál sem bíða svars.' },
@@ -84,7 +103,7 @@
   const S = {
     rows: [], names: {}, loaded: false, loading: false, err: '', loadedAt: null,
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
-    counts: { sara: null, krofur: null }, composer: false, busy: {}
+    counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false
   };
 
   /* ── starfsmaður ── */
@@ -141,6 +160,33 @@
     const key = openKey(k);
     if (!(key in S.open)) S.open[key] = inMode(k) ? true : !!cfg().mods[k][1];
     return S.open[key];
+  }
+
+  /* ── flýtileiðir: festir tenglar hvers og eins, eins og bókamerkjastika ── */
+  const linksFor = n => { const l = P(CFG_KEY + '.by_staff.' + n + '.links'); return Array.isArray(l) ? l.filter(x => x && x.id && x.nafn && x.slod) : []; };
+  // Aðeins síður í appinu (#…), síður á sama vef (/…) og http(s). „keldan.is" fær https:// framan við.
+  function lagaSlod(s) {
+    s = String(s || '').trim();
+    if (/^#[a-z0-9-]+$/i.test(s)) return s;
+    if (/^\/(?!\/)\S*$/.test(s)) return s;
+    if (/^https?:\/\/\S+$/i.test(s)) return s;
+    if (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/\S*)?$/i.test(s)) return 'https://' + s;
+    return '';
+  }
+  // Listinn er fylki og fylki eru skrifuð heil — því er breytingin reiknuð á NÝJASTA lista
+  // stillinganna við vistun, ekki á það sem var teiknað (sama lærdómur og í 303).
+  async function vistaLinks(breyta, skilabod) {
+    if (!stillingarTilbunar()) { toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; }
+    const n = nu();
+    const nyr = breyta(linksFor(n).slice());
+    _vistar++;
+    let ok = false;
+    try { ok = !!(await AppSettings.save({ [CFG_KEY]: { by_staff: { [n]: { links: nyr } } } })); } catch (_) {}
+    _vistar--;
+    if (!ok) toast('Flýtileiðin vistaðist ekki. Reyndu aftur.', true);
+    else if (skilabod) toast(skilabod);
+    render();
+    return ok;
   }
 
   /* ── gögn ── */
@@ -413,6 +459,7 @@
       '.btn.iv{border:1px solid var(--edge);border-bottom-color:var(--edge2);background:var(--key);color:var(--ink);box-shadow:var(--keysh)}',
       '.btn.gold{border:1px solid #5a4410;border-top-color:#f7e6b8;border-bottom-color:#2e2004;border-radius:5px;background:var(--gface);color:var(--ink);font-weight:800;text-shadow:0 1px 0 rgba(255,255,255,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 3px rgba(60,40,0,.45),0 3px 6px rgba(22,21,19,.45),0 0 12px rgba(184,137,46,.35)}',
       '.btn[disabled]{cursor:progress;filter:grayscale(.35) brightness(.95);opacity:.8}',
+      '.btn[aria-pressed="true"]{background:var(--gside);font-weight:800}',
       '.seg{display:inline-flex;border:1px solid var(--edge2);border-radius:5px;overflow:hidden;box-shadow:var(--keysh);background:var(--key)}',
       '.seg button{height:30px;padding:0 12px;border:0;border-left:1px solid var(--edge);background:transparent;font:600 12px var(--body);color:var(--ink);cursor:pointer;white-space:nowrap}',
       '.seg button:first-child{border-left:0}',
@@ -420,7 +467,19 @@
       '.seg.modeseg button{height:36px;padding:0 16px;font-size:13px}',
       '.seg.sm button{height:26px;padding:0 9px;font-size:11.5px}',
       '.seg .c{font-family:var(--mono);font-size:10.5px;margin-left:5px;font-variant-numeric:tabular-nums}',
+      // Síurnar í haus Master-borðs voru 17 px breiðari en síminn (mælt á 375 px) — skruna í sínum reit.
+      '.phead .seg{max-width:100%;overflow-x:auto}',
       '.modes{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.links{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;padding:8px 12px;border:1px solid var(--rule3);border-radius:5px;background:var(--strip);box-shadow:var(--stripsh),0 1px 2px rgba(22,21,19,.08)}',
+      '.lkw{display:inline-flex;align-items:center;gap:3px}',
+      '.lk{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px 0 5px;border:1px solid var(--edge);border-bottom-color:var(--edge2);border-radius:15px;background:var(--key);box-shadow:var(--keysh);color:var(--ink);font:600 12.5px var(--body);text-decoration:none;cursor:pointer;white-space:nowrap}',
+      '.lk:hover{filter:brightness(1.04)}',
+      '.lk-ic{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--gside);color:#3e2c06;font:800 11px/1 var(--body);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}',
+      '.lk-m{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}',
+      '.lk-x{width:22px;height:22px;border:1px solid var(--edge);border-radius:50%;background:#fff;color:var(--terra);font:700 11px/1 var(--body);cursor:pointer;padding:0}',
+      '.lk-tomt{font-size:12px;color:var(--mute)}',
+      '.lk-ham{display:flex;align-items:center;gap:8px;padding:0 16px 10px;font-size:12px;color:var(--ink2)}',
+      '.lk-till{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 16px 12px;border-top:1px solid var(--rule2)}',
       '.panel{background:var(--panel);border:1px solid var(--rule3);border-radius:5px;box-shadow:var(--panelsh);min-width:0}',
       '.phead{display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;padding:11px 16px;background:var(--strip);box-shadow:var(--stripsh);border-bottom:1px solid transparent;border-image:var(--gline) 1;border-image-width:0 0 1px 0;border-radius:5px 5px 0 0}',
       '.mod:not(.open):not(.alltaf) .phead{border-image-width:0;border-radius:5px}',
@@ -435,13 +494,17 @@
       '.kv{font-family:var(--disp);font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1;margin-top:8px;font-variant-numeric:lining-nums tabular-nums}',
       '.kv small{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--mute);margin-left:3px}',
       '.km{font-size:11.5px;color:var(--mute);margin-top:6px}.kpi.dark .km{color:var(--on2)}',
-      '.board{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);gap:18px;align-items:start}',
+      '.layout{display:flex;flex-direction:column;gap:16px;min-width:0}',
+      '.rail{display:flex;flex-direction:column;gap:14px;min-width:0;container:rail / inline-size}',
+      '.main{min-width:0;container:main / inline-size}',
+      '.board{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"master mine" "master sel";gap:18px;align-items:start}',
+      '.colmaster{grid-area:master}.colmine{grid-area:mine}.colsel{grid-area:sel}',
       '.phone-seg{display:none}',
       '.psub{padding:9px 16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);border-bottom:1px solid var(--rule2);overflow-wrap:anywhere}',
       '.age{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--mute);font-variant-numeric:tabular-nums}',
       '.age.warm{color:var(--gink)}.age.hot{color:var(--terra)}',
       '.kick{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);overflow-wrap:anywhere}',
-      '.frow{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:start;padding:13px 16px;border-top:1px solid var(--rule2)}',
+      '.frow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:start;padding:13px 16px;border-top:1px solid var(--rule2)}',
       '.frow:first-child{border-top:0}',
       '.rt{font-family:var(--disp);font-size:17px;font-weight:700;line-height:1.25;margin:4px 0 3px;overflow-wrap:anywhere;color:var(--ink)}',
       '.ai{max-width:62ch;font-size:12.5px;line-height:1.5;color:var(--ink2)}',
@@ -473,12 +536,12 @@
       '.well p{margin:7px 0 0;font-size:13px;line-height:1.6;color:#efe9da;white-space:pre-line;overflow-wrap:anywhere;max-height:260px;overflow:auto}',
       '.sacts{display:flex;gap:8px;flex-wrap:wrap}',
       '.sel .empty{color:var(--on3)}',
-      '.mods{display:flex;flex-direction:column;gap:14px}',
       '.tog{min-width:34px;padding:0 9px}',
       '.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;padding:12px 14px}',
       '.day{display:flex;flex-direction:column;gap:6px;min-width:0;padding:8px 9px 9px;border:1px solid var(--rule);border-bottom-color:var(--edge);border-radius:4px;background:var(--key);box-shadow:var(--keysh);color:var(--ink)}',
       '.day.today{background:var(--slab);border-color:#000;color:var(--on)}',
       '.dh{display:flex;align-items:center;gap:4px}',
+      '.djobs{display:flex;flex-direction:column;gap:6px;min-width:0}',
       '.dlink{display:flex;align-items:baseline;gap:6px;padding:0;border:0;background:none;font:inherit;color:inherit;cursor:pointer}',
       '.dn{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em}.day:not(.today) .dn{color:var(--mute)}',
       '.dd{font-family:var(--disp);font-size:16px;font-weight:800;line-height:1}',
@@ -496,9 +559,9 @@
       '.pcard{display:flex;flex-direction:column;gap:4px;padding:10px 11px;border:1px solid var(--rule);border-bottom-color:var(--edge);border-radius:4px;background:linear-gradient(180deg,#fff,#fbf9f5);box-shadow:var(--keysh);min-width:0}',
       '.pcard b{font-size:13px;line-height:1.3;overflow-wrap:anywhere}.pcard span{font-size:12px;color:var(--ink2);line-height:1.4;overflow-wrap:anywhere}',
       '.pcard .pt{display:flex;align-items:center;gap:6px;margin-top:4px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}',
-      '.lrow{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--rule2)}',
+      '.lrow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--rule2)}',
       '.lrow:first-child{border-top:0}.lrow b{display:block;font-size:13px;overflow-wrap:anywhere}.lrow .s{display:block;font-size:12px;color:var(--mute)}',
-      '.kboxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:12px 14px}',
+      '.kboxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:12px 14px}',
       '.kbox{padding:10px 12px;border-radius:4px;background:var(--well);box-shadow:var(--wellsh);border:1px solid var(--edge)}',
       '.kbox .v{font-family:var(--disp);font-size:24px;font-weight:800;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}',
       '.more{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px 12px;font-size:12px;color:var(--mute)}',
@@ -512,25 +575,32 @@
       '.boardstrip{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;width:100%;min-height:50px;padding:9px 16px;border:1px solid var(--rule3);border-radius:5px;background:var(--strip);box-shadow:var(--stripsh),0 1px 2px rgba(22,21,19,.1);font:inherit;color:var(--ink);text-align:left;cursor:pointer}',
       '.boardstrip b{font-family:var(--disp);font-size:16px;font-weight:700}.boardstrip .v{font-family:var(--mono);font-size:11px;color:var(--mute);margin-right:10px}',
       '.composer{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto auto;gap:8px;padding:12px 16px}',
-      '.composer input{height:34px;padding:0 10px;border:1px solid var(--edge);border-radius:4px;background:#fff;font:14px var(--body);color:var(--ink);min-width:0}',
+      '.composer input[type="text"]{height:34px;padding:0 10px;border:1px solid var(--edge);border-radius:4px;background:#fff;font:14px var(--body);color:var(--ink);min-width:0}',
       '.err{padding:10px 14px;border:1px solid rgba(181,82,42,.45);border-radius:4px;background:#fff7f2;color:var(--terra);font-size:12.5px}',
       '.t5toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99990;max-width:min(92vw,520px);padding:11px 16px;border:1px solid #000;border-radius:5px;background:var(--slab);color:var(--on);font:600 12.5px var(--body);box-shadow:var(--slabsh)}',
       '.t5toast.warn{border-top:3px solid var(--terra)}',
+      // Breiðir skjáir: einingar hamsins vinstra megin, aðrar hægra megin, borðið í miðjunni.
+      '@container t5 (min-width: 1600px){.layout{display:grid;grid-template-columns:minmax(280px,320px) minmax(0,1fr) minmax(300px,360px);gap:18px;align-items:start}' +
+        '.layout.nol{grid-template-columns:minmax(0,1fr) minmax(300px,360px)}.layout.nor{grid-template-columns:minmax(280px,320px) minmax(0,1fr)}.layout.nol.nor{grid-template-columns:minmax(0,1fr)}}',
+      '@container t5 (min-width: 2600px){.layout{grid-template-columns:minmax(320px,380px) minmax(0,1fr) minmax(340px,420px)}' +
+        '.layout.nol{grid-template-columns:minmax(0,1fr) minmax(340px,420px)}.layout.nor{grid-template-columns:minmax(320px,380px) minmax(0,1fr)}.layout.nol.nor{grid-template-columns:minmax(0,1fr)}}',
+      '@container main (min-width: 1500px){.board{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"master mine sel"}}',
+      // Mjór dálkur (hliðardálkur á breiðum skjá eða sími): vikan sem listi, eitt spjald í röð.
+      '@container rail (max-width: 560px){.week{display:flex;flex-direction:column;gap:6px;padding:10px 12px}.day{flex-direction:row;align-items:flex-start;gap:10px}.dh{flex:0 0 100px}.djobs{flex:1}' +
+        '.cards{grid-template-columns:minmax(0,1fr)}.lrow{grid-template-columns:44px minmax(0,1fr)}.lrow .btn,.lrow .lock{grid-column:2;justify-self:start}}',
       '@container t5 (min-width: 761px){.sel.inline{display:none}}',
       '@container t5 (max-width: 760px){' +
         '.t5{padding:12px 10px 24px}.h1{font-size:30px}' +
         '.acts{width:100%}.who{flex:1 1 100%}.who select{width:100%}.acts .btn{flex:1}' +
         '.modes .lbl{display:none}.seg.modeseg{display:flex;width:100%;overflow-x:auto}.seg.modeseg button{flex:1 0 auto;height:38px;padding:0 12px}' +
         '.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kv{font-size:26px}' +
-        '.board{grid-template-columns:minmax(0,1fr);gap:14px}' +
+        '.board{display:flex;flex-direction:column;gap:14px}.board>*{min-width:0;max-width:100%}' +
         '.phone-seg{display:flex;width:100%}.phone-seg button{flex:1;height:40px;font-size:13px}' +
         '.board[data-view="master"] .colmine{display:none}.board[data-view="mitt"] .colmaster{display:none}' +
         '.sel.side{display:none}' +
         '.frow{grid-template-columns:minmax(0,1fr) auto;padding:12px}.frow .age{grid-column:1 / -1}' +
-        '.week{display:flex;overflow-x:auto;padding:10px 12px}.day{flex:0 0 118px}' +
         '.cfgrow{grid-template-columns:30px minmax(0,1fr) auto;padding:10px 12px}.cfgrow .seg{grid-column:2 / -1;justify-self:start}' +
         '.composer{grid-template-columns:minmax(0,1fr)}' +
-        '.lrow{grid-template-columns:40px minmax(0,1fr);padding:10px 12px}.lrow .btn,.lrow .lock{grid-column:2;justify-self:start}' +
       '}',
       '@media (prefers-reduced-motion: reduce){.btn{transition:none}}'
     ].join('\n');
@@ -661,9 +731,10 @@
         '<div class="dh"><button type="button" class="dlink" data-t5="mod-open" data-m="dagskra" aria-label="' + d.d + ' ' + d.n + '., ' + d.jobs.length + ' verk">' +
           '<span class="dn">' + d.d + '</span><span class="dd">' + d.n + '</span></button><span class="grow"></span>' +
           '<button type="button" class="dplus" data-t5="job-new" data-date="' + d.key + '" aria-label="Skrá verk ' + d.d + ' ' + d.n + '.">+</button></div>' +
-        (open
+        '<div class="djobs">' + (open
           ? (d.jobs.length ? d.jobs.map(jobHtml).join('') : '<span class="dnone">Ekkert skráð</span>')
           : '<span class="dots">' + d.jobs.map(j => '<i class="dot" style="background:' + vdLitur(j.type) + '" title="' + esc((j.time ? j.time + ' ' : '') + (j.name || '')) + '"></i>').join('') + '</span>') +
+        '</div>' +
       '</div>').join('') + '</div>' +
       (open ? '<div class="legend">' + VD_TEG.map(t => '<span><i class="dot" style="background:' + t[1] + '"></i>' + t[0] + '</span>').join('') + '</div>' : '');
     const action = '<button type="button" class="btn gold sm" data-t5="job-new" data-date="' + days[0].key + '">+ Skrá verk</button>';
@@ -744,6 +815,38 @@
     return card('Á Master', master.length, newToday + ' ný í dag') + mitt + card('Bíða svars', unanswered, 'póstmál án svars') + heitt;
   }
 
+  function linksHtml(mode) {
+    const all = linksFor(nu());
+    const synileg = all.filter(l => !Array.isArray(l.modes) || !l.modes.length || l.modes.indexOf(mode) >= 0);
+    const falin = all.length - synileg.length;
+    const chips = synileg.map(l => {
+      const inni = '<span class="lk-ic" aria-hidden="true">' + esc(String(l.nafn).trim().charAt(0).toUpperCase() || '·') + '</span><span>' + esc(l.nafn) + '</span>' +
+        (Array.isArray(l.modes) && l.modes.length && MODES[l.modes[0]] ? '<span class="lk-m">' + esc(MODES[l.modes[0]].l) + '</span>' : '');
+      const tengill = l.slod.charAt(0) === '#'
+        ? '<button type="button" class="lk" data-t5="go" data-view="' + esc(l.slod.slice(1)) + '" title="Opna ' + esc(l.nafn) + '">' + inni + '</button>'
+        : '<a class="lk" href="' + esc(l.slod) + '" target="_blank" rel="noopener noreferrer" title="' + esc(l.slod) + '">' + inni + '</a>';
+      return '<span class="lkw">' + tengill + (S.linkEdit ? '<button type="button" class="lk-x" data-t5="link-del" data-lid="' + esc(l.id) + '" aria-label="Fjarlægja ' + esc(l.nafn) + '">✕</button>' : '') + '</span>';
+    }).join('');
+    const form = !S.linkForm ? '' :
+      '<section class="panel" aria-label="Festa flýtileið"><div class="composer">' +
+        '<input type="text" data-k="ln" placeholder="Nafn, t.d. Keldan" aria-label="Nafn flýtileiðar">' +
+        '<input type="text" data-k="lu" placeholder="Slóð, t.d. keldan.is" aria-label="Slóð" inputmode="url">' +
+        '<button type="button" class="btn gold sm" data-t5="link-save">Festa</button>' +
+        '<button type="button" class="btn iv sm" data-t5="link-add">Hætta við</button></div>' +
+      '<label class="lk-ham"><input type="checkbox" data-k="lm"> Aðeins í hamnum „' + esc(MODES[mode].l) + '“</label>' +
+      '<div class="lk-till"><span class="lbl">Síður í kerfinu</span>' +
+        TILLOGUR.filter(t => !all.some(l => l.slod === t[1])).map(t =>
+          '<button type="button" class="btn iv sm" data-t5="link-quick" data-nafn="' + esc(t[0]) + '" data-slod="' + esc(t[1]) + '">+ ' + esc(t[0]) + '</button>').join('') +
+      '</div></section>';
+    return '<section class="links" aria-label="Flýtileiðir"><span class="lbl">Flýtileiðir</span>' +
+      (chips || '<span class="lk-tomt">Festu síðurnar sem þú hoppar á milli — Keldan, Drive, Payday, Tímavera …</span>') +
+      (falin ? '<span class="lk-m">+ ' + falin + ' í öðrum hömum</span>' : '') +
+      '<span class="grow"></span>' +
+      '<button type="button" class="btn iv sm" data-t5="link-add" aria-expanded="' + S.linkForm + '">+ Festa tengil</button>' +
+      (all.length ? '<button type="button" class="btn iv sm" data-t5="link-edit" aria-pressed="' + S.linkEdit + '">' + (S.linkEdit ? 'Búið' : 'Breyta') + '</button>' : '') +
+      '</section>' + form;
+  }
+
   function cfgHtml() {
     const c = cfg();
     const core = [['02', 'Master borð'], ['03', 'Mitt borð'], ['04', 'Valið mál']].map(x =>
@@ -760,7 +863,7 @@
         '<button type="button" class="btn gold sm" data-t5="cfg">Loka ›</button></header>' +
       core + rows +
       '<div class="cfgrow"><span class="plate">—</span><div class="cfgt"><b>Spjall</b><span>Slökkt í bili fyrir alla.</span></div><span></span><span class="lock">Slökkt</span></div>' +
-      '<div class="cfgfoot">Breytingar vistast strax og fylgja þér á milli tölva og í appið. Hamirnir efst raða borðinu fyrir daginn.</div>';
+      '<div class="cfgfoot">Breytingar vistast strax og fylgja þér á milli tölva og í appið. Hver hamur er sín opna: einingar hamsins fara efst — á breiðum skjá í dálkinn vinstra megin.</div>';
   }
 
   let _frestad = 0;
@@ -815,21 +918,25 @@
               ppl.map(x => esc(x) + ' ' + S.rows.filter(r => onBoardOf(r, x)).length).join(' · ') + '</div>' +
             feed +
           '</section>' +
-          '<div class="col colmine">' +
-            '<section class="panel" aria-label="Mitt borð">' +
-              '<header class="phead">' + plate('03') + '<h2 class="ptitle">Mitt borð</h2>' +
-                '<span class="slots" aria-label="' + mine.length + ' af ' + LIMIT + '">' + slots + '<span class="slotn' + (mine.length > LIMIT ? ' over' : '') + '">' + mine.length + '/' + LIMIT + '</span></span>' +
-                '<span class="grow"></span><button type="button" class="btn iv sm" data-t5="take-next">Taka næsta ›</button></header>' +
-              (mine.length > LIMIT ? '<div class="psub" style="color:var(--terra)">' + mine.length + ' mál á borðinu — skilaðu því sem bíður á Master</div>' : '') +
-              (mine.length
-                ? mine.map(r => mineRow(r, r.id === selId) + (r.id === selId ? '<div class="sel inline">' + selMarkup + '</div>' : '')).join('')
-                : emptyHtml('Borðið þitt er autt.')) +
-            '</section>' +
-            '<section class="sel side" aria-live="polite">' + selMarkup + '</section>' +
-          '</div>' +
+          '<section class="panel colmine" aria-label="Mitt borð">' +
+            '<header class="phead">' + plate('03') + '<h2 class="ptitle">Mitt borð</h2>' +
+              '<span class="slots" aria-label="' + mine.length + ' af ' + LIMIT + '">' + slots + '<span class="slotn' + (mine.length > LIMIT ? ' over' : '') + '">' + mine.length + '/' + LIMIT + '</span></span>' +
+              '<span class="grow"></span><button type="button" class="btn iv sm" data-t5="take-next">Taka næsta ›</button></header>' +
+            (mine.length > LIMIT ? '<div class="psub" style="color:var(--terra)">' + mine.length + ' mál á borðinu — skilaðu því sem bíður á Master</div>' : '') +
+            (mine.length
+              ? mine.map(r => mineRow(r, r.id === selId) + (r.id === selId ? '<div class="sel inline">' + selMarkup + '</div>' : '')).join('')
+              : emptyHtml('Borðið þitt er autt.')) +
+          '</section>' +
+          '<section class="sel side colsel" aria-live="polite">' + selMarkup + '</section>' +
         '</div>'
       : '<button type="button" class="boardstrip" data-t5="mode" data-mode="thjonusta">' + plate('02') + '<b>Master borð</b><span class="v">' + master.length + ' mál</span>' +
           plate('03') + '<b>Mitt borð</b><span class="v">' + mine.length + ' / ' + LIMIT + '</span><span class="grow"></span><span class="v">Aftur í Þjónustu ›</span></button>';
+
+    const layout = '<div class="layout' + (topHtml ? '' : ' nol') + (bottom ? '' : ' nor') + '">' +
+      (topHtml ? '<aside class="rail left" aria-label="Einingar hamsins">' + topHtml + '</aside>' : '') +
+      '<div class="main">' + board + '</div>' +
+      (bottom ? '<aside class="rail right" aria-label="Aðrar einingar">' + bottom + '</aside>' : '') +
+    '</div>';
 
     const html =
       '<div class="t5"><div class="col">' +
@@ -855,30 +962,30 @@
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
           Object.keys(MODES).map(k => '<button type="button" data-t5="mode" data-mode="' + k + '" aria-pressed="' + (c.mode === k) + '">' + MODES[k].l + '</button>').join('') +
         '</div></div>' +
+        linksHtml(c.mode) +
         (ppl.indexOf(n) < 0 ? '<p class="err">„' + esc(n) + '“ er ekki starfsmaður á þessu borði' + (n === AI_WORKER ? ' — Charlize er bunkinn á Master' : '') + '. Veldu þitt nafn í „Ég er“.</p>' : '') +
         (S.cfgOpen ? '<section class="panel" aria-label="Mitt vinnuborð">' + cfgHtml() + '</section>' : '') +
         (S.err ? '<p class="err">Náði ekki í málin: ' + esc(S.err) + ' <button type="button" class="btn iv sm" data-t5="reload">Reyna aftur</button></p>' : '') +
         '<div class="kpis">' + kpiHtml(master, mine) + '</div>' +
-        topHtml + board +
-        '<div class="mods">' + bottom + '</div>' +
+        layout +
       '</div></div>';
 
+    // Hálfskrifaður texti (nýtt mál, flýtileið) og fókus lifa endurteikningu af.
     const fokus = ae && ae.dataset ? ae.dataset.k : null;
-    const nt = root.querySelector('[data-k="nt"]'), nc = root.querySelector('[data-k="nc"]');
-    const draft = { nt: nt ? nt.value : '', nc: nc ? nc.value : '' };
-    // Skrun innan pósts og vikuræmu heldur sér ef sama mál er enn valið.
+    const drog = {};
+    root.querySelectorAll('input[data-k]').forEach(i => { drog[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value; });
+    // Skrun innan pósts og vikunnar heldur sér ef sama mál er enn valið.
     const SKRUN = '.well p, .week, .seg.modeseg';
     const skrunSel = v.dataset.t5sel === String(selId);
     const skrun = [...root.querySelectorAll(SKRUN)].map(x => [x.scrollTop, x.scrollLeft]);
     mount.innerHTML = html;
     v.dataset.t5sel = String(selId);
     if (skrunSel) root.querySelectorAll(SKRUN).forEach((x, i) => { if (skrun[i]) { x.scrollTop = skrun[i][0]; x.scrollLeft = skrun[i][1]; } });
-    if (S.composer) {
-      const a = root.querySelector('[data-k="nt"]'), b = root.querySelector('[data-k="nc"]');
-      if (a) a.value = draft.nt;
-      if (b) b.value = draft.nc;
-      if (fokus) { const f = root.querySelector('[data-k="' + fokus + '"]'); if (f) f.focus(); }
-    }
+    root.querySelectorAll('input[data-k]').forEach(i => {
+      const k = i.dataset.k;
+      if (k in drog) { if (i.type === 'checkbox') i.checked = drog[k]; else i.value = drog[k]; }
+    });
+    if (fokus) { const f = root.querySelector('[data-k="' + fokus + '"]'); if (f) f.focus(); }
   }
 
   /* ── skilaboð ── */
@@ -903,6 +1010,7 @@
     const a = el.dataset.t5, id = el.dataset.id ? Number(el.dataset.id) : null, m = el.dataset.m;
     const c = cfg();
     const krefstStillinga = () => { if (stillingarTilbunar()) return true; toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; };
+    const nyttId = () => 'lk' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
     switch (a) {
       case 'take': take(id); return;
       case 'take-next': {
@@ -958,6 +1066,31 @@
         });
         return;
       }
+      case 'link-add':
+        S.linkForm = !S.linkForm;
+        render();
+        if (S.linkForm) { const f = root.querySelector('[data-k="ln"]'); if (f) f.focus(); }
+        return;
+      case 'link-edit': S.linkEdit = !S.linkEdit; render(); return;
+      case 'link-save': {
+        const ln = root.querySelector('[data-k="ln"]'), lu = root.querySelector('[data-k="lu"]'), lm = root.querySelector('[data-k="lm"]');
+        const nafn = ln ? ln.value.trim().slice(0, 40) : '', slod = lagaSlod(lu ? lu.value : '');
+        if (!nafn) { toast('Gefðu flýtileiðinni nafn.', true); if (ln) ln.focus(); return; }
+        if (!slod) { toast('Slóðin þarf að vera vefslóð (t.d. keldan.is), /síða eða #síða í appinu.', true); if (lu) lu.focus(); return; }
+        const modes = lm && lm.checked ? [c.mode] : [];
+        el.disabled = true;
+        vistaLinks(l => l.concat([{ id: nyttId(), nafn, slod, modes }]), 'Fest: ' + nafn).then(ok => {
+          if (ok) { S.linkForm = false; render(); } else el.disabled = false;
+        });
+        return;
+      }
+      case 'link-quick': {
+        const lm = root.querySelector('[data-k="lm"]');
+        const modes = lm && lm.checked ? [c.mode] : [];
+        vistaLinks(l => l.some(x => x.slod === el.dataset.slod) ? l : l.concat([{ id: nyttId(), nafn: el.dataset.nafn, slod: el.dataset.slod, modes }]), 'Fest: ' + el.dataset.nafn);
+        return;
+      }
+      case 'link-del': vistaLinks(l => l.filter(x => x.id !== el.dataset.lid), 'Flýtileið fjarlægð'); return;
       case 'job-new':
         try { if (window.Vikudagskra && Vikudagskra.open) Vikudagskra.open(el.dataset.date); else toast('Dagskrárglugginn er ekki hlaðinn.', true); }
         catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
@@ -986,7 +1119,8 @@
     if (!root || !v.classList.contains('active')) return;
     const k = e.target && e.target.dataset ? e.target.dataset.k : null;
     if (e.key === 'Enter' && (k === 'nt' || k === 'nc')) { e.preventDefault(); const b = root.querySelector('[data-t5="composer-save"]'); if (b && !b.disabled) b.click(); }
-    if (e.key === 'Escape' && (S.composer || S.cfgOpen)) { S.composer = false; S.cfgOpen = false; render(); }
+    if (e.key === 'Enter' && (k === 'ln' || k === 'lu')) { e.preventDefault(); const b = root.querySelector('[data-t5="link-save"]'); if (b && !b.disabled) b.click(); }
+    if (e.key === 'Escape' && (S.composer || S.cfgOpen || S.linkForm)) { S.composer = false; S.cfgOpen = false; S.linkForm = false; render(); }
   }
 
   /* ── sýnin (sama mynstur og 310) ── */
@@ -1060,12 +1194,12 @@
         render();
       });
     } catch (_) {}
-    const aSkiptum = () => { S.view = 'master'; render(); };
+    const aSkiptum = () => { S.view = 'master'; S.linkForm = false; S.linkEdit = false; render(); };
     if (window.BordStarfsmadur && BordStarfsmadur.onChange) BordStarfsmadur.onChange(aSkiptum);
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368c' };
+    window.Thjonustubord5 = { show, load, render, version: '368e' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
