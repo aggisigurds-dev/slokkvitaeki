@@ -104,6 +104,60 @@ async function sb(slod) {
     }
   }
 
+  // ---- 3. RANGT auðkenni er verra en ekkert -------------------------------
+  // 10.09.2026. Vörðurinn hér að ofan finnur sölur sem VANTAR base_id. Í dag kom
+  // í ljós verri villa: sölur sem BERA base_id — rangs greiðanda. Fimm fundust
+  // (162.901 kr + 40.500), t.d. „Norður Travel Services ehf" sem hékk á Stálorku.
+  // Krafa á þær hefði farið á rangan aðila. Vörðurinn hér að ofan kallaði þær
+  // grænar af því reiturinn var ekki tómur.
+  //
+  // RÓTIN: solur.customer_id er lesið sem fyrirtaeki.id (svo gerir triggerinn
+  // solur_fill_base_id, skref 1), en 114-unified-pos-search gat sett þar
+  // vidskiptavinir.id — og 321 id-númer eru til í BÁÐUM töflum. Röng tafla gefur
+  // þá base_id ALLT ANNARS kúnna. Kóðahliðin var lagfærð sama dag (361a00d).
+  //
+  // AF HVERJU ÞESSI VÖRÐUR MÆLIR ÁREKSTURINN EN EKKI BARA KT-MISRÆMI:
+  // greiðandi er ekki alltaf sá sem verkið var unnið fyrir. Rekstrarfélag borgar
+  // fyrir húsfélag; „Herbergjaleiga (2h.BJB)" er BJB sem greiðandi. Vörður sem
+  // flaggaði hvert kt-misræmi yrði rauður á löglegu mynstri — og rauður vörður
+  // sem lýgur verður þaggaður. Þess vegna er skilyrðið ÞRENNT og lýsir árekstri
+  // sem getur aldrei verið viljandi:
+  //   (a) customer_id finnst í vidskiptavinir MEÐ kennitölu sölunnar, OG
+  //   (b) sama id finnst í fyrirtaeki með ANNARRI kennitölu, OG
+  //   (c) base-lykill sölunnar er sá sem FYRIRTÆKIS-röðin ber.
+  // Þá kom auðkennið sannanlega úr rangri töflu. Engin grunnlína.
+  const meAlvoruKt = x => x && String(x).replace(/\D/g, '').length === 10;
+  const solurAllar = await sb('solur?select=num,samtals,customer_nafn,customer_kt,' +
+    'customer_id,customer_base_id,created_at&customer_id=not.is.null&order=created_at.desc');
+  const cids = [...new Set(solurAllar.map(s => s.customer_id))];
+  const bit = (tafla, hluti) => sb(tafla + '?select=id,nafn,kennitala,customer_base_id&id=in.(' +
+    hluti.join(',') + ')');
+  const kort = { fyrirtaeki: new Map(), vidskiptavinir: new Map() };
+  for (const tafla of ['fyrirtaeki', 'vidskiptavinir']) {
+    for (let i = 0; i < cids.length; i += 200) {
+      for (const r of await bit(tafla, cids.slice(i, i + 200))) kort[tafla].set(r.id, r);
+    }
+  }
+  const hreint = x => String(x || '').replace(/\D/g, '');
+  const arekstur = solurAllar.filter(s => {
+    if (!meAlvoruKt(s.customer_kt) || s.customer_base_id == null) return false;
+    const v = kort.vidskiptavinir.get(s.customer_id);
+    const f = kort.fyrirtaeki.get(s.customer_id);
+    if (!v || !f || !meAlvoruKt(v.kennitala) || !meAlvoruKt(f.kennitala)) return false;
+    return hreint(v.kennitala) === hreint(s.customer_kt) &&
+           hreint(f.kennitala) !== hreint(s.customer_kt) &&
+           s.customer_base_id === f.customer_base_id;
+  });
+  if (arekstur.length) {
+    arekstur.slice(0, 8).forEach(s => {
+      const f = kort.fyrirtaeki.get(s.customer_id);
+      console.log(`   ${s.num}  ${s.samtals} kr  „${s.customer_nafn}" kt ${s.customer_kt}` +
+        `  -> base ${s.customer_base_id} kom frá fyrirtaeki #${s.customer_id} „${f.nafn}" kt ${f.kennitala}`);
+    });
+    villur.push(`${arekstur.length} sala/sölur bera auðkenni RANGS greiðanda ` +
+      '(customer_id lesið úr rangri töflu — sjá skref 3 í haus)');
+  }
+
   if (villur.length) {
     fail(villur.join(' · ') +
       '. Sjá js/pos.js:1477 og js/patches/114-unified-pos-search.js:348 — hvorug setur customer_base_id.');
