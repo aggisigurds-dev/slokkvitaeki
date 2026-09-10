@@ -2131,7 +2131,7 @@
     try {
       const r = await SB.from('solur').select('id', { count: 'exact', head: true })
         .eq('greitt_med', 'reikningur')
-        .is('paid_at', null);
+        .is('paid_at', null).neq('status', 'void'); // teljari = sömu útistandandi og listinn (void telst aldrei skuld)
       const badge = btn.querySelector('.ky-badge');
       if (!badge) return;
       const n = r.count || 0;

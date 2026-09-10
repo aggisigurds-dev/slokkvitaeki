@@ -33,6 +33,10 @@
 (() => {
   if (window.__spjall347) return;
   window.__spjall347 = true;
+  // SPJALL_SLOKKT 10.09.2026 — Agnar: „mátt slökkva á spjallinu í bili“. Héðan af snertir
+  // spjallið hvorki töflur, stíla né DOM; db.js kallar SpjallRefresh aðeins ef fallið er til.
+  // Til að kveikja aftur: eyða þessum fjórum línum.
+  return;
 
   const BUCKET = 'verkbord-files';
   const OPIN_KEY = '_spjall_opid';
