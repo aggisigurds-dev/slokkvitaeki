@@ -256,8 +256,8 @@
         '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">' +
           '<div style="font-size:11px;color:#475569;margin-bottom:2px">Nýjasti póstur · ' + esc(d.from || '') + '</div>' +
           '<div style="font-size:12px;color:#334155"><b>' + esc(fmtDate(d.received_at)) + '</b> · ' + esc(relDay(d.received_at)) + (d.unreplied ? ' · <span style="color:#dc2626;font-weight:800">ósvarað</span>' : ' · svarað') + '</div>' +
-          '<div style="font-weight:700;font-size:13px;margin:5px 0 3px">' + esc(d.subject || '(engin efnislína)') + '</div>' +
-          (d.snippet ? '<div style="font-size:12px;color:#64748b;line-height:1.4;max-height:80px;overflow:auto">' + esc(d.snippet) + '</div>' : '') +
+          '<div style="font-weight:700;font-size:13px;margin:5px 0 3px">' + esc(TX().hreintEfni(d.subject)) + '</div>' +
+          (d.snippet ? '<div style="font-size:12px;color:#64748b;line-height:1.4;max-height:80px;overflow:auto">' + esc(TX().eiginTexti(d.snippet) || d.snippet) + '</div>' : '') +
         '</div>' : '<div style="font-size:12px;color:#94a3b8;margin-top:6px">' + (st === 'hist' ? 'Eldri póstsaga skráð — smelltu „📜 Sjá alla póstsöguna" til að opna hana.' : 'Engin póstsamskipti fundust.') + '</div>') +
       '<div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">' +
         (d ? '<a href="' + mailto + '" id="_mp-reply" style="flex:1 1 auto;text-align:center;background:#1a7f4b;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700">↩️ Svara</a>' : '') +
@@ -294,6 +294,9 @@
   // Fetches the whole thread for one company from the hub
   // (/api/company-mail?co=<id> → felag_samskipti via tv_company_history) and
   // shows it as a scrollable modal — in/out direction, date, subject, snippet.
+  // 10.09.2026: sama textahreinsun og Samskipti-kortið (286) — brenglaðar efnislínur og
+  // tilvitnanir/undirskriftir fylltu línurnar hér og í varaboxinu.
+  const TX = () => window.SamskiptiTexti || { eiginTexti: (x) => String(x == null ? '' : x), hreintEfni: (x) => String(x || '') || '(engin efnislína)' };
   function histRow(m) {
     const out = !!m.fra_okkur;
     const dir = out
@@ -307,8 +310,8 @@
         '<div style="font-size:10px;color:#94a3b8;margin-top:3px">' + esc(fmtDate(m.received_at)) + '</div>' +
       '</div>' +
       '<div style="min-width:0;flex:1">' +
-        '<div style="font-weight:700;font-size:12.5px;color:#0f172a;line-height:1.3">' + esc(m.subject || '(engin efnislína)') + (m.is_question && !out ? ' <span title="Spurning" style="color:#b45309">❓</span>' : '') + '</div>' +
-        (m.snippet ? '<div style="font-size:11.5px;color:#64748b;line-height:1.4;margin-top:2px;max-height:56px;overflow:hidden">' + esc(String(m.snippet).slice(0, 240)) + '</div>' : '') +
+        '<div style="font-weight:700;font-size:12.5px;color:#0f172a;line-height:1.3">' + esc(TX().hreintEfni(m.subject)) + (m.is_question && !out ? ' <span title="Spurning" style="color:#b45309">❓</span>' : '') + '</div>' +
+        (m.snippet ? '<div style="font-size:11.5px;color:#64748b;line-height:1.4;margin-top:2px;max-height:56px;overflow:hidden">' + esc((TX().eiginTexti(m.snippet) || '(tilvitnun eða áframsendur póstur)').slice(0, 240)) + '</div>' : '') +
         '<div style="font-size:10px;color:#94a3b8;margin-top:3px">' + esc(who) + ' · ' + esc(relDay(m.received_at)) + '</div>' +
       '</div>' +
     '</div>';
@@ -388,7 +391,7 @@
       box = document.createElement('div');
       box.className = 'card pad _co-mail-box';
       box.dataset.co = String(coId);
-      box.style.cssText = 'margin:10px 0;border:1px solid var(--brd,#e2e8f0);border-left:4px solid #6366f1;border-radius:12px;padding:12px 15px;font-size:13.5px;background:var(--surface,#fff)';
+      box.style.cssText = 'margin:12px 0;font-size:13.5px';   // rammi úr _skx-css (286) — sama útlit og Samskipti-kortið
       // Akkeri: helst hnapparöðin með „Merkja mikilvægt" (sama og samskipti-
       // spjaldið 286 notar) svo kortið lendir beint undir aðgerðahnöppunum;
       // annars röðin með Breyta-takkanum.
@@ -413,7 +416,7 @@
     box.innerHTML =
       '<div style="display:flex;align-items:center;gap:8px">' +
         '<span style="width:11px;height:11px;border-radius:50%;background:' + stColor + ';flex:0 0 auto;box-shadow:0 0 0 2px var(--surface,#fff)"></span>' +
-        '<div style="font-weight:800;font-size:11.5px;letter-spacing:.06em;color:#4f46e5">📬 PÓSTSTAÐA &amp; SAMSKIPTI</div>' +
+        '<div class="_skx-title-alt" style="font-weight:800;font-size:11.5px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTI</div>' +
         '<div style="margin-left:auto;font-size:11.5px;font-weight:700;color:' + stColor + '">' + esc(stTxt) + '</div>' +
       '</div>' +
       signalsHtml(d) +
@@ -421,8 +424,8 @@
         '<div style="margin-top:8px">' +
           '<div style="font-size:11.5px;color:#64748b">Nýjasti póstur · ' + esc(d.from || '') + '</div>' +
           '<div style="font-size:12.5px;color:#334155"><b>' + esc(fmtDate(d.received_at)) + '</b> · ' + esc(relDay(d.received_at)) + (d.unreplied ? ' · <span style="color:#dc2626;font-weight:800">ósvarað</span>' : ' · svarað') + '</div>' +
-          '<div style="font-weight:700;font-size:13px;margin:4px 0 3px">' + esc(d.subject || '(engin efnislína)') + '</div>' +
-          (d.snippet ? '<div style="font-size:12px;color:#64748b;line-height:1.4;max-height:66px;overflow:auto">' + esc(d.snippet) + '</div>' : '') +
+          '<div style="font-weight:700;font-size:13px;margin:4px 0 3px">' + esc(TX().hreintEfni(d.subject)) + '</div>' +
+          (d.snippet ? '<div style="font-size:12px;color:#64748b;line-height:1.4;max-height:66px;overflow:auto">' + esc(TX().eiginTexti(d.snippet) || d.snippet) + '</div>' : '') +
         '</div>'
         : '<div style="margin-top:7px;font-size:12.5px;color:#94a3b8;line-height:1.45">' + (st === 'hist' ? 'Eldri póstsaga er til við þennan kúnna (ekkert nýlegt merki). Smelltu á <b>📜 Öll póstsaga</b> til að opna hana.' : 'Engin nýleg póstmerki á þessum kúnna. Smelltu á <b>📜 Öll póstsaga</b> til að sjá hvort einhver samskipti eru skráð.') + '</div>') +
       '<div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">' +

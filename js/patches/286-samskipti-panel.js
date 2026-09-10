@@ -11,8 +11,101 @@
   if (window.__samskiptiPanelInstalled) return;
   window.__samskiptiPanelInstalled = true;
 
+  // ── 10.09.2026: útlit + textahreinsun ─────────────────────────────────────
+  // Agnar: „more detailed samskiptabox so it shows the newest update and summary" og „smá
+  // fallegri í stíl við síðuna". Sami rammi og önnur spjöld prófílsins (hvítt, 12px horn,
+  // mjúkur skuggi), sömu Brunastáls-hnappar og IBM Plex. Stílblaðið er sett strax við
+  // hleðslu svo 295-varaboxið (sem birtist ef kortið nær ekki að teiknast innan 6 s) fái
+  // sama útlit — tvö ólík box litu út eins og „tvö forrit".
+  function hreintEfni(s) {
+    const t = String(s == null ? "" : s).replace(/\s+/g, " ").trim();
+    if (!t) return "(ekkert efni)";
+    // Brengluð efnislína: áframsendir hausar sem lentu í efninu, t.d.
+    // „2026 at 3:40:47 PM GMT To: Erling … Cc: …" (mælt í Öll póstsaga 10.09.2026).
+    if (/\b(GMT|UTC)\b[^]*\b(To|Til):/i.test(t) || /^(from|frá|to|til|cc|sent):/i.test(t)) return "(ekkert efni)";
+    return t;
+  }
+  // Aðeins það sem sendandinn skrifaði sjálfur: skorið við fyrstu tilvitnun, áframsendingu,
+  // undirskrift eða kveðju. Útdrættirnir eru ein lína, svo leitað er innan línu. Dæmi sem
+  // fylltu kortið: „… kveðja/Regards Alexander … ____ Frá: Slökkvitæki ehf <…> Sent: …".
+  const KLIPPA_TXT = /\s(?:(?:frá|from|sent|til|to|cc|efni|subject)\s*:\s|-{3,}\s*(?:original|upprunaleg|forwarded|áframsent)|_{5,}|begin forwarded message|(?:kveðja|kv\.|kv,|bestu kveðjur|með kveðju|með bestu kveðju|virðingarfyllst|best regards|kind regards|regards)[\s,.!\/]|on .{3,80} wrote:|on (?:mon|tue|wed|thu|fri|sat|sun), |(?:mán|þri|mið|fim|fös|lau|sun)\.,? \d{1,2}\. \S+ \d{4}|þann .{3,80} skrifaði|\S+ skrifaði .{0,120}:)/i;
+  function eiginTexti(s) {
+    const t = " " + String(s == null ? "" : s).replace(/\s+/g, " ").trim();
+    const m = KLIPPA_TXT.exec(t);
+    return (m ? t.slice(0, m.index) : t).trim();
+  }
+  function afstada(iso) {
+    const d = new Date(iso); if (isNaN(d.getTime())) return "";
+    const dagar = Math.floor((Date.now() - d.getTime()) / 864e5);
+    if (dagar <= 0) return "í dag";
+    if (dagar === 1) return "í gær";
+    if (dagar < 14) return "fyrir " + dagar + " dögum";
+    if (dagar < 60) return "fyrir " + Math.round(dagar / 7) + " vikum";
+    if (dagar < 365) return "fyrir " + Math.round(dagar / 30) + " mán.";
+    const ar = Math.floor(dagar / 365);
+    return "fyrir " + ar + (ar === 1 ? " ári" : " árum");
+  }
+  window.SamskiptiTexti = { hreintEfni, eiginTexti, afstada };
+  if (!document.getElementById("_skx-css")) {
+    const BSTAL = "linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)";
+    const st = document.createElement("style"); st.id = "_skx-css";
+    st.textContent =
+      "#companies-main ._samskipti-card._skx,#companies-main ._co-mail-box{background:#fff !important;border:1px solid rgba(20,24,34,.1) !important;border-radius:12px !important;box-shadow:0 10px 28px -16px rgba(25,35,60,.22) !important;padding:14px 16px !important;margin:12px 0 !important;font-size:13.5px;color:var(--ink,#0f172a)}" +
+      "._skx-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}" +
+      "._skx-title{font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink,#0f172a)}" +
+      "._skx-acts{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center}" +
+      "._skx-btn{border:1px solid rgba(190,32,28,.55);background:" + BSTAL + ";color:#fff;border-radius:9px;padding:5px 12px;font:inherit;font-size:12px;font-weight:600;line-height:1.3;cursor:pointer;box-shadow:0 0 16px -4px rgba(160,16,16,.55),inset 0 1px 0 rgba(255,255,255,.16);white-space:nowrap}" +
+      "._skx-btn.ljos{background:#fff;color:var(--ink,#0f172a);border-color:var(--brd,#e3e7ee);box-shadow:none}" +
+      "._skx-btn.ljos:hover{background:#f7f8fa}._skx-btn:disabled{opacity:.6;cursor:default}" +
+      "._skx-afgreitt{font-size:12px;font-weight:700;color:#166534}" +
+      "._skx-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:12px 0 4px}" +
+      "._skx-tile{background:#f7f8fa;border:1px solid var(--brd,#e3e7ee);border-radius:10px;padding:8px 11px;min-width:0}" +
+      "._skx-tile b{display:block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2,#5b6573);margin-bottom:2px}" +
+      "._skx-tile span{display:block;font-size:13.5px;font-weight:600;color:var(--ink,#0f172a);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      "._skx-tile small{display:block;font-size:11.5px;color:var(--ink2,#5b6573);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      "._skx-tile small a{color:inherit}" +
+      "._skx-tile.vidv{background:#fef2f2;border-color:#fecaca}._skx-tile.vidv span{color:#b91c1c}" +
+      "._skx-lbl{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2,#5b6573);margin:14px 0 6px}" +
+      "._skx ._ssk-mail{cursor:pointer}" +
+      "._skx-nyjast{border:1px solid var(--brd,#e3e7ee);border-left:3px solid var(--accent,#c92a2a);border-radius:10px;padding:10px 13px;background:#fff}" +
+      "._skx-nyjast.fra-okkur{border-left-color:#16365c}._skx-nyjast:hover{background:#fcfcfd}" +
+      "._skx-rod{display:flex;gap:10px;align-items:flex-start;padding:8px 6px;border-bottom:1px solid #f1f3f6;border-radius:8px}" +
+      "._skx-rod:hover{background:#f8fafc}._skx-rod.opin{background:#fef2f2}" +
+      "._skx-rod-inni{min-width:0;flex:1}" +
+      "._skx-dot{flex:none;width:8px;height:8px;border-radius:50%;margin-top:7px;background:var(--accent,#c92a2a)}._skx-dot.okkur{background:#16365c}" +
+      "._skx-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px;color:var(--ink2,#5b6573)}" +
+      "._skx-chip{display:inline-flex;align-items:center;gap:4px;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:700;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;white-space:nowrap}" +
+      "._skx-chip.kunni{background:#fff1f2;color:#9f1239;border-color:#fecdd3}" +
+      "._skx-chip.okkur{background:#eff6ff;color:#1e3a8a;border-color:#bfdbfe}" +
+      "._skx-chip.osvarad{background:#fef2f2;color:#b91c1c;border-color:#fecaca}" +
+      "._skx-subj{font-weight:700;font-size:14px;margin:4px 0 2px;color:var(--ink,#0f172a);overflow-wrap:anywhere}" +
+      "._skx-subj ._ssk-caret{color:#94a3b8;font-weight:400;font-size:11px}" +
+      "._skx-txt{font-size:13px;line-height:1.5;color:#334155;overflow-wrap:anywhere}" +
+      "._skx-rod ._skx-subj{font-size:13px}._skx-rod ._skx-txt{font-size:12.5px;color:#475569}" +
+      "._skx-daufur{color:#94a3b8;font-style:normal}" +
+      "._skx-pts{margin:12px 0 2px;display:grid;gap:5px}" +
+      "._skx-pt{display:flex;gap:8px;font-size:12.5px;line-height:1.45;color:#334155}._skx-pt>span:first-child{flex:none;width:18px;text-align:center}" +
+      "._skx-note{margin:10px 0 2px}" +
+      "._skx-note summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;background:#f7f8fa;border:1px solid var(--brd,#e3e7ee);border-radius:10px;padding:8px 12px;color:var(--ink,#0f172a);font-size:12.5px;font-weight:600}" +
+      "._skx-note summary::-webkit-details-marker{display:none}" +
+      "._skx-note ._ssk-note-head{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      "._skx-note ._ssk-note-edit{opacity:.7;cursor:pointer}._skx-note ._ssk-note-car{opacity:.6;font-size:11px}" +
+      "._skx-note ._ssk-note-body{white-space:pre-wrap;background:#fffdf5;border:1px solid #f1e3b5;border-top:0;border-radius:0 0 10px 10px;padding:10px 12px;color:#334155;font-size:12.5px;line-height:1.55}" +
+      "._skx-beidni{padding:8px 10px;margin:6px 0;border-radius:10px;background:#f7f8fa;border:1px solid var(--brd,#e3e7ee)}" +
+      "._skx-beidni.lokid ._skx-subj{text-decoration:line-through;color:#94a3b8}" +
+      "._samskipti-card ._smx-strip{margin:10px 0 0}" +
+      "._samskipti-card ._smx-imp,._samskipti-card ._smx-mute{border-radius:9px !important;background:#fff !important;border:1px solid var(--brd,#e3e7ee) !important;color:var(--ink,#0f172a) !important}" +
+      "._co-mail-box ._cmb-reply{background:" + BSTAL + " !important;border:1px solid rgba(190,32,28,.55) !important;border-radius:9px !important}" +
+      "._co-mail-box ._cmb-imp,._co-mail-box ._cmb-mute,._co-mail-box ._cmb-hist{background:#fff !important;border:1px solid var(--brd,#e3e7ee) !important;border-radius:9px !important;color:var(--ink,#0f172a) !important}" +
+      "._co-mail-box ._skx-title-alt{color:var(--ink,#0f172a) !important;font-weight:700 !important;letter-spacing:.08em !important}";
+    document.head.appendChild(st);
+  }
+
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const fmtD = d => { try { const t = new Date(d); return t.toLocaleDateString("is-IS", { day: "numeric", month: "short", year: "numeric" }); } catch { return "" } };
+  // 10.09.2026: Chrome á Windows fellur í en-US fyrir is-IS („Oct 13, 2025") — sami vandi og
+  // 61 leysti með íslenskum mánaðaheitum. Smíðað í höndunum svo dagsetningin sé alltaf íslensk.
+  const MAN_IS = ["jan.", "feb.", "mar.", "apr.", "maí", "jún.", "júl.", "ágú.", "sep.", "okt.", "nóv.", "des."];
+  const fmtD = d => { const t = new Date(d); return isNaN(t.getTime()) ? "" : t.getDate() + ". " + MAN_IS[t.getMonth()] + " " + t.getFullYear(); };
   // 2026-07-30 — RÓTIN að „boxið kom aldrei": klíentinn í þessu appi heitir
   // DB.sb (js/db.js), EKKI window.sb. fetchData fékk því null og decorate
   // hætti þögult — hýsillinn festist á prófílinn en kortið teiknaðist aldrei.
@@ -172,92 +265,145 @@
   function render(host, fid, data) {
     const f = data.f; if (!f) return;
     const cut = cutOf(data);
-    const openQ = data.mails.filter(m => m.is_question && !m.fra_okkur && (!cut || m.received_at > cut)).length;
-    const pts = keyPoints(f, data.mails, cut, data.sentFra || "");
+    const erOpin = m => m.is_question && !m.fra_okkur && (!cut || m.received_at > cut);
+    const openQ = data.mails.filter(erOpin).length;
+    // Tengiliður og síðasti póstur eru komnir í flísarnar og „Nýjasta uppfærslu" — punktarnir
+    // halda aðeins því sem þar er ekki (festur miði, beiðni/uppsögn, viðvörun).
+    const pts = keyPoints(f, data.mails, cut, data.sentFra || "").filter(p => p[0] !== "👤" && p[0] !== "✉️");
+    const T = window.SamskiptiTexti;
     const card = document.createElement("div");
-    card.className = "card pad _samskipti-card";
-    // Merki fyrir 359: ÖLL póstsagan er þegar í kortinu (bæði heimildirnar,
-    // ekkert 30-þak), svo „⬇ Eldri póstar"-takkinn hans á ekki lengur erindi.
+    card.className = "card pad _samskipti-card _skx";
+    // Merki fyrir 359: ÖLL póstsagan er þegar í kortinu, svo „⬇ Eldri póstar" á ekki erindi.
     card.dataset.ollSagan = "1";
-    card.style.cssText = "margin:10px 0;border-left:4px solid #6366f1;background:#fff;border-radius:12px;padding:13px 15px;font-size:13.5px";
-    const ptsHtml = pts.map(p => '<div style="display:flex;gap:8px;margin:4px 0;line-height:1.45"><span style="flex:none">' + p[0] + "</span><span>" + (p[2] ? p[1] : esc(p[1])) + "</span></div>").join("") ||
-      '<div style="color:#94a3b8">Engin samskipti skráð enn — skráðu netfang tengiliðar til að sækja póstsögu.</div>';
-    // Sýnum 20 nýjustu strax og földum restina á bak við takka (Agnar: „vill að
-    // hægt sé að expanda til að sjá öll samskiptin"). Allt er teiknað í einu —
-    // takkinn afhjúpar, sækir ekki, svo hann getur ekki hangið.
     const SYNI = 20;
-    const mailRow = m => {
-      const open = m.is_question && !m.fra_okkur && (!cut || m.received_at > cut);
-      const via = (m.fyrirtaeki_nafn && m.fyrirtaeki_id !== fid)
-        ? ' <span style="background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;border-radius:99px;padding:0 7px;font-size:10.5px;font-weight:700;white-space:nowrap">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
-      // Röðin er smellanleg — opnast í ALLAN póstinn (body_preview + viðtakendur
-      // + viðhengi) sóttan úr email_digest, og svar-takka. Áður sást aðeins
-      // 220 stafa snippet og engin leið að lesa málið til enda.
-      return '<div class="_ssk-mail" data-eid="' + (m.email_id || "") + '" style="padding:7px 9px;margin:5px 0;border-radius:8px;cursor:pointer;background:' + (open ? "#fef2f2;border:1px solid #fecaca" : "#f8fafc") + '">' +
-      '<div style="font-size:11.5px;color:#64748b">' + fmtD(m.received_at) + " · " + esc(m.fra_okkur ? "Slökkvitæki ehf → viðskiptavinur" : (m.sender_name || m.sender_email)) +
-      (open ? ' · <b style="color:#dc2626">spurning — ósvarað</b>' : "") + via + "</div>" +
-      '<div style="font-weight:600">' + esc(m.subject || "(ekkert efni)") +
-        ' <span class="_ssk-caret" style="color:#94a3b8;font-weight:400;font-size:11px">▾</span></div>' +
-      '<div class="_ssk-snip" style="color:#475569;font-size:12.5px">' + esc((m.snippet || "").slice(0, 220)) + "</div>" +
-      '<div class="_ssk-body" style="display:none"></div></div>'; };
+    const nyjast = data.mails[0] || null;
+    const arFra = Date.now() - 365 * 864e5;
+    const sidastaAr = data.mails.filter(m => new Date(m.received_at).getTime() >= arFra);
+    const fraKunna = sidastaAr.filter(m => !m.fra_okkur).length, fraOkkur = sidastaAr.length - fraKunna;
+    const opnarBeidnir = (data.beidnir || []).filter(b => b.status !== "lokid").length;
+    const teng = f["tengiliður"] || f.tengilidur || "";
+    const simi = f.farsimi || f.simi || "";
+
+    // ── Samantekt: fjórar flísar ──
+    const flis = (lbl, gildi, smatt, kl) => '<div class="_skx-tile' + (kl ? " " + kl : "") + '"><b>' + esc(lbl) + "</b><span>" + gildi + "</span>" + (smatt ? "<small>" + smatt + "</small>" : "") + "</div>";
+    const tilesHtml =
+      flis("Síðasti póstur", nyjast ? esc(fmtD(nyjast.received_at)) : "—",
+        nyjast ? esc(T.afstada(nyjast.received_at) + " · " + (nyjast.fra_okkur ? "frá okkur" : "frá kúnna")) : "enginn póstur skráður") +
+      flis("Síðustu 12 mánuðir", esc(sidastaAr.length + (sidastaAr.length === 1 ? " póstur" : " póstar")),
+        sidastaAr.length ? esc(fraKunna + " frá kúnna · " + fraOkkur + " frá okkur") : "") +
+      flis("Opin mál", esc(openQ ? openQ + " ósvarað" : "Ekkert ósvarað"),
+        opnarBeidnir ? esc(opnarBeidnir + (opnarBeidnir === 1 ? " opin beiðni" : " opnar beiðnir"))
+          : (data.handled ? esc("✓ afgreitt " + fmtD(data.handled)) : ""), openQ ? "vidv" : "") +
+      flis("Tengiliður", esc(teng || f.netfang || "—"),
+        [simi ? '<a href="tel:' + esc(simi.replace(/[^\d+]/g, "")) + '">📞 ' + esc(simi) + "</a>" : "",
+         f.netfang && teng ? '<a href="mailto:' + esc(f.netfang) + '">' + esc(f.netfang) + "</a>" : ""].filter(Boolean).join(" · "));
+
+    // ── Póstur: nýjasta uppfærslan (stór) og röð í póstsögunni (lína) ──
+    // Sömu klasar og áður (_ssk-mail / _ssk-snip / _ssk-body / _ssk-caret) — smellurinn sem
+    // sækir allan póstinn og býður svar er óbreyttur hér neðar.
+    const mailRow = (m, nyj) => {
+      const open = erOpin(m);
+      const via = (m.fyrirtaeki_nafn && m.fyrirtaeki_id !== fid) ? '<span class="_skx-chip">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
+      const hver = m.fra_okkur ? "Slökkvitæki ehf" : (m.sender_name || m.sender_email || "");
+      const texti = T.eiginTexti(m.snippet);
+      return '<div class="_ssk-mail ' + (nyj ? "_skx-nyjast" : "_skx-rod") + (m.fra_okkur ? " fra-okkur" : "") + (open ? " opin" : "") + '" data-eid="' + (m.email_id || "") + '">' +
+        (nyj ? "" : '<span class="_skx-dot ' + (m.fra_okkur ? "okkur" : "kunni") + '"></span>') +
+        '<div class="_skx-rod-inni">' +
+          '<div class="_skx-meta">' +
+            '<span class="_skx-chip ' + (m.fra_okkur ? "okkur" : "kunni") + '">' + (m.fra_okkur ? "Frá okkur" : "Frá kúnna") + "</span>" +
+            (open ? '<span class="_skx-chip osvarad">Ósvarað</span>' : "") +
+            "<span>" + esc(hver) + "</span><span>·</span><span>" + esc(fmtD(m.received_at)) + " · " + esc(T.afstada(m.received_at)) + "</span>" + via +
+          "</div>" +
+          '<div class="_skx-subj">' + esc(T.hreintEfni(m.subject)) + ' <span class="_ssk-caret">▾</span></div>' +
+          '<div class="_ssk-snip _skx-txt">' + (texti
+            ? esc(texti.slice(0, nyj ? 420 : 180))
+            : '<span class="_skx-daufur">Tilvitnun eða áframsendur póstur — smelltu til að lesa</span>') + "</div>" +
+          '<div class="_ssk-body" style="display:none"></div>' +
+        "</div></div>";
+    };
     const eldri = data.mails.slice(SYNI);
-    const mailsHtml = (data.mails.slice(0, SYNI).map(mailRow).join("") +
-      (eldri.length
-        ? '<div class="_ssk-eldri" hidden>' + eldri.map(mailRow).join("") + "</div>" +
-          '<button type="button" class="_ssk-meira" style="margin:6px 0 2px;border:1px solid #c7d2fe;' +
-            'background:#eef2ff;color:#4338ca;border-radius:99px;padding:3px 12px;font-size:12px;' +
-            'cursor:pointer;font-weight:700">⬇ Sýna öll samskiptin (' + data.mails.length + ")</button>"
-        : "")) ||
-      '<div style="color:#94a3b8;padding:6px 0">Engir póstar fundust á netfangi tengiliðar.</div>';
+    const mailsHtml = data.mails.length
+      ? data.mails.slice(0, SYNI).map(m => mailRow(m, false)).join("") +
+        (eldri.length
+          ? '<div class="_ssk-eldri" hidden>' + eldri.map(m => mailRow(m, false)).join("") + "</div>" +
+            '<button type="button" class="_ssk-meira _skx-btn ljos" style="margin-top:8px">⬇ Sýna öll samskiptin (' + data.mails.length + ")</button>"
+          : "")
+      : '<div class="_skx-daufur" style="padding:6px 0">Engir póstar fundust á netfangi tengiliðar.</div>';
     const beidnirHtml = (data.beidnir || []).length
       ? data.beidnir.map(b => {
           const lokid = b.status === "lokid";
-          const merki = [b.flokkur, b.type].filter(Boolean).map(t =>
-            '<span style="background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;border-radius:99px;padding:0 7px;font-size:10.5px;font-weight:700">' + esc(t) + "</span>").join(" ");
+          const merki = [b.flokkur, b.type].filter(Boolean).map(t => '<span class="_skx-chip">' + esc(t) + "</span>").join(" ");
           const txt = (b.summary || b.notes || "").trim();
-          return '<div style="padding:7px 9px;margin:5px 0;border-radius:8px;background:' + (lokid ? "#f8fafc" : "#f0fdf4;border:1px solid #bbf7d0") + '">' +
-            '<div style="font-size:11.5px;color:#64748b">' + fmtD(b.created_at) +
-              (b.due_at ? " · gjalddagi " + fmtD(b.due_at) : "") +
-              " · " + esc(lokid ? "✓ lokið" : b.status === "i_vinnslu" ? "í vinnslu" : "nýtt") +
-              (b.important ? ' · <b style="color:#dc2626">áríðandi</b>' : "") + "</div>" +
-            '<div style="font-weight:600' + (lokid ? ";text-decoration:line-through;color:#94a3b8" : "") + '">' + esc(b.title || "(ónefnt)") + "</div>" +
-            (merki ? '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">' + merki + "</div>" : "") +
-            (txt ? '<div style="color:#475569;font-size:12.5px;margin-top:3px;white-space:pre-wrap">' + esc(txt.slice(0, 300)) + "</div>" : "") +
-            "</div>"; }).join("")
-      : '<div style="color:#94a3b8;padding:6px 0">Engar beiðnir skráðar á þetta félag.</div>';
+          return '<div class="_skx-beidni' + (lokid ? " lokid" : "") + '">' +
+            '<div class="_skx-meta"><span class="_skx-chip' + (lokid ? "" : " okkur") + '">' + esc(lokid ? "✓ lokið" : b.status === "i_vinnslu" ? "í vinnslu" : "nýtt") + "</span>" +
+              "<span>" + esc(fmtD(b.created_at)) + "</span>" + (b.due_at ? "<span>· gjalddagi " + esc(fmtD(b.due_at)) + "</span>" : "") +
+              (b.important ? '<span class="_skx-chip osvarad">áríðandi</span>' : "") + merki + "</div>" +
+            '<div class="_skx-subj" style="font-size:13px">' + esc(b.title || "(ónefnt)") + "</div>" +
+            (txt ? '<div class="_skx-txt" style="white-space:pre-wrap">' + esc(txt.slice(0, 300)) + "</div>" : "") +
+          "</div>"; }).join("")
+      : '<div class="_skx-daufur" style="padding:6px 0">Engar beiðnir skráðar á þetta félag.</div>';
+
+    // ── Samantektarreiturinn (athugasemdir) — sama vistunarvirkni og áður hér neðar ──
     const aths = (f.athugasemdir || "").trim();
     const athsHead = aths ? aths.split("\n")[0].trim() : "";
     const athsRest = aths ? aths.split("\n").slice(1).join("\n").trim() : "";
     const athsBlock = aths
-      ? '<details class="_ssk-note" style="margin:9px 0 2px">' +
-          '<summary class="_ssk-note-sum" style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:7px 11px;color:#4338ca;font-size:12px;font-weight:600;user-select:none">' +
-            '<span style="opacity:.7">📋</span>' +
-            '<span class="_ssk-note-head" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(athsHead) + '</span>' +
-            '<span class="_ssk-note-edit" title="Breyta samantekt" style="opacity:.75;cursor:pointer">✎</span>' +
-            '<span class="_ssk-note-car" style="opacity:.6;font-size:11px">▸</span>' +
-          '</summary>' +
-          '<div class="_ssk-note-body" style="white-space:pre-wrap;background:#fefce8;border:1px solid #fde68a;border-top:0;border-radius:0 0 8px 8px;padding:10px 12px;color:#334155;font-size:12.5px;line-height:1.55">' + esc(athsRest || athsHead) + '</div>' +
-        '</details>'
-      : '';
+      ? '<details class="_ssk-note _skx-note">' +
+          '<summary class="_ssk-note-sum"><span style="opacity:.7">📋</span>' +
+            '<span class="_ssk-note-head">' + esc(athsHead) + "</span>" +
+            '<span class="_ssk-note-edit" title="Breyta samantekt">✎</span>' +
+            '<span class="_ssk-note-car">▸</span>' +
+          "</summary>" +
+          '<div class="_ssk-note-body">' + esc(athsRest || athsHead) + "</div>" +
+        "</details>"
+      : "";
+    const ptsHtml = pts.map(p => '<div class="_skx-pt"><span>' + p[0] + "</span><span>" + (p[2] ? p[1] : esc(p[1])) + "</span></div>").join("");
+    const svaraM = data.mails.find(m => !m.fra_okkur && m.sender_email) || null;
+
     card.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
-      '<div style="font-weight:800;font-size:12px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA &amp; BEIÐNIR</div>' +
-      '<div style="display:flex;gap:7px;align-items:center">' +
-      (openQ > 0
-        ? '<button type="button" class="_ssk-mark" style="border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">✓ Merkja afgreitt</button>'
-        : (data.handled ? '<span style="color:#0f6e3a;font-weight:700;font-size:11.5px">✓ Afgreitt</span>' : "")) +
-      '<button type="button" class="_ssk-toggle" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">Póstar ▾</button></div></div>' +
-      '<div class="_ssk-pts" style="margin-top:6px">' + ptsHtml + "</div>" +
-      // Punktarnir ALLTAF sýnilegir (ósk Agnars 29.07: „ég mun aldrei fatta að
-      // checka inn í edit" — textinn úr athugasemdareitnum birtist hér beint).
+      '<div class="_skx-head">' +
+        '<div class="_skx-title">💬 Samskipti</div>' +
+        '<div class="_skx-acts">' +
+          (svaraM && window.ReikningaPostur && ReikningaPostur.replyTo ? '<button type="button" class="_skx-btn _skx-svara" title="Svara nýjasta pósti kúnnans — svarið fer í sama þráð">↩ Svara</button>' : "") +
+          (openQ > 0
+            ? '<button type="button" class="_ssk-mark _skx-btn ljos">✓ Merkja afgreitt</button>'
+            : (data.handled ? '<span class="_skx-afgreitt">✓ Afgreitt</span>' : "")) +
+          '<button type="button" class="_ssk-toggle _skx-btn ljos">Póstsaga ▾</button>' +
+        "</div>" +
+      "</div>" +
+      '<div class="_skx-tiles">' + tilesHtml + "</div>" +
+      (nyjast ? '<div class="_skx-lbl">Nýjasta uppfærsla</div>' + mailRow(nyjast, true) : "") +
+      '<div class="_ssk-pts _skx-pts">' + ptsHtml + "</div>" +
       athsBlock +
-      '<div class="_ssk-full" style="display:none;margin-top:10px;border-top:1px dashed #e2e8f0;padding-top:9px">' +
-      '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em;margin-bottom:3px">✉️ SÍÐUSTU PÓSTAR <span style="font-weight:400;text-transform:none;letter-spacing:0">— smelltu á póst til að lesa hann allan</span></div>' + mailsHtml +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:11px 0 3px">' +
-        '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em">📋 BEIÐNIR &amp; MÁL</div>' +
-        (window.Verkbord ? '<button type="button" class="_ssk-bord" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:2px 10px;font-size:11.5px;cursor:pointer;font-weight:700">Opna Þjónustuborðið ↗</button>' : "") +
-      "</div>" + beidnirHtml +
+      '<div class="_ssk-full" style="display:none">' +
+        '<div class="_skx-lbl">Póstsaga · ' + data.mails.length + ' <span class="_skx-daufur" style="text-transform:none;letter-spacing:0;font-weight:400">— smelltu á póst til að lesa hann allan</span></div>' +
+        mailsHtml +
+        '<div class="_skx-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:8px">Beiðnir &amp; mál' +
+          (window.Verkbord ? '<button type="button" class="_ssk-bord _skx-btn ljos">Opna Þjónustuborð</button>' : "") +
+        "</div>" +
+        beidnirHtml +
       "</div>";
+
+    // ↩ Svara — nýjasti póstur kúnnans; Message-ID sótt svo svarið fari í sama þráð.
+    const svaraB = card.querySelector("._skx-svara");
+    if (svaraB) svaraB.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+      svaraB.disabled = true;
+      let m = null;
+      try {
+        const client = sb();
+        const r = client ? await client.from("v_samskipti_postur")
+          .select("id,message_id,sender_name,sender_email,subject,body_preview,snippet")
+          .eq("id", +svaraM.email_id).maybeSingle() : null;
+        m = (r && r.data) || null;
+      } catch (_) {}
+      svaraB.disabled = false;
+      const src = m || svaraM;
+      try {
+        ReikningaPostur.replyTo({ sender_name: src.sender_name, from: src.sender_email, subject: src.subject,
+          body_preview: (m && (m.body_preview || m.snippet)) || svaraM.snippet, message_id: m ? m.message_id : undefined });
+      } catch (e) { console.warn("[samskipti-panel] svara", e); }
+    });
     // Samantektar-glugginn: örin snýst við opnun/lokun + innbyggð ritun (vistast beint).
     const noteEl = card.querySelector("._ssk-note");
     if (noteEl) {
@@ -411,7 +557,7 @@
     card.querySelector("._ssk-toggle").addEventListener("click", e => {
       const full = card.querySelector("._ssk-full"), open = full.style.display === "none";
       full.style.display = open ? "" : "none";
-      e.target.textContent = open ? "Loka ▴" : "Póstar ▾";
+      e.target.textContent = open ? "Loka póstsögu ▴" : "Póstsaga ▾";
     });
     const mk = card.querySelector("._ssk-mark");
     if (mk) mk.addEventListener("click", async e => {
