@@ -349,6 +349,9 @@
       subject: payload.subject || '',
       html: payload.html || '',
       attachments: payload.attachments || [],
+      // 10.09.2026: svar í sama þræði — Message-ID upprunalega póstsins (240 sendReply).
+      // undefined fellur út í JSON, svo allar aðrar sendingar eru óbreyttar.
+      inReplyTo: payload.inReplyTo || undefined,
     };
     let r, j;
     try {

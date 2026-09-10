@@ -128,7 +128,11 @@
     const arr = filtered();
     if (!arr.length) { host.innerHTML = '<div class="tgl-empty">Engir tengiliðir í þessu sjónarhorni.</div>'; return; }
     host.innerHTML = arr.map(rowHtml).join('');
-    host.querySelectorAll('[data-open]').forEach((el) => el.addEventListener('click', () => { try { Companies.openDetail(+el.dataset.open); } catch (_) {} }));
+    // 10.09.2026: Companies.openDetail skiptir ekki um sýn — Tengiliða-síðan stóð áfram opin
+    // FYRIR AFTAN prófílinn (tvær sýnir sýnilegar, mælt á lifandi vef). Sama mynstur og 114/147.
+    host.querySelectorAll('[data-open]').forEach((el) => el.addEventListener('click', () => {
+      try { if (window.App && App.switchView) App.switchView('companies'); Companies.openDetail(+el.dataset.open); } catch (_) {}
+    }));
     host.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); onAct(b.dataset.act, +b.dataset.id); }));
   }
 

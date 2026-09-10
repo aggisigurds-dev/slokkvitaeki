@@ -1203,7 +1203,9 @@
     const html = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0f172a;white-space:pre-wrap;line-height:1.6">' + esc(bodyTxt) + '</div>';
     try {
       // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
-      const payload = { from: emailFrom(), to: [to], subject, html };
+      // 10.09.2026 — Agnar: „svarað póstum úr kerfinu og það haldi sama samtalinu".
+      // Message-ID upprunalega póstsins → gmail-send setur In-Reply-To/References og threadId.
+      const payload = { from: emailFrom(), to: [to], subject, html, inReplyTo: m.message_id || undefined };
       const r = await (window.AppMail ? AppMail.send(payload)
         : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
       if (!r.ok) {
