@@ -31,6 +31,7 @@
   var LS_KLARAD = 'sara_yf_klarad';  // „sýna kláruð" — sama
   var LS_HAMUR = 'sara_yf_vinnuhamur'; // vinnuhamur — útlitsval eins vafra
   var LS_ROD = 'sara_yf_rodun';        // röðunarval — útlitsval eins vafra
+  var LS_FELLT = 'sara_yf_fellt';      // spjaldið fellt saman — útlitsval eins vafra
   var MANUDIR = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
   var BUCKET = 'verkbord-files';       // sama geymsla og Þjónustuborðið notar
 
@@ -67,7 +68,10 @@
     // síuraðirnar svifu OFAN Á töflunni á meðan hann vann í henni. Hamurinn
     // slekkur á öllu því; hann man valið eftir að honum er slökkt handvirkt.
     vinnuhamur: lsGet(LS_HAMUR, null) === null ? true : lsGet(LS_HAMUR, true),
-    rodun: lsGet(LS_ROD, { f: 'rod', d: 1 }) };
+    rodun: lsGet(LS_ROD, { f: 'rod', d: 1 }),
+    // 2026-09-10 (Agnar: „put a collapse button on the Sara vinnublöð — so I can
+    // use the rest of the Þjónustuborð"). Fellt = aðeins hausinn með tölunum.
+    fellt: lsGet(LS_FELLT, false) };
 
   // ── Reikningur per mál ───────────────────────────────────────────────────
   // NÁKVÆMLEGA sama reikniaðferð og reiknivélin á fyrirtækjasíðunni (patch 129):
@@ -452,13 +456,17 @@
 
     var h = '<div style="' + CARD + '">' +
       '<div class="syf-haus" style="' + HEAD + '">' +
-        '<span style="color:#f8fafc;font-weight:900;font-size:15px;letter-spacing:.3px">📋 SARA · VINNUBLÖÐ</span>' +
-        '<span style="color:#94a3b8;font-size:11.5px">blað ↔ kerfi · hakaðu við og Sara klárar</span>' +
+        // Titillinn fellir líka — stærsti smellflöturinn í hausnum.
+        '<span data-act="fella" title="' + (state.fellt ? 'Opna vinnublöðin' : 'Fella vinnublöðin saman') + '" style="color:#f8fafc;font-weight:900;font-size:15px;letter-spacing:.3px;cursor:pointer">📋 SARA · VINNUBLÖÐ</span>' +
+        (state.fellt ? '' : '<span style="color:#94a3b8;font-size:11.5px">blað ↔ kerfi · hakaðu við og Sara klárar</span>') +
         '<span style="flex:1"></span>' +
+        // Takkinn situr þar sem Agnar merkti — vinstra megin við tölurnar.
+        '<button class="syf-btn" data-act="fella" title="' + (state.fellt ? 'Opna vinnublöðin' : 'Fella saman og nota restina af Þjónustuborðinu') + '" ' +
+          'style="background:#1f2937;color:#e5e7eb;border-color:#374151;min-width:78px">' + (state.fellt ? '▸ Opna' : '▾ Fella') + '</button>' +
         (bidurN ? '<span class="syf-merki" style="background:#fef3c7;color:#854d0e">' + bidurN + ' bíða</span>' : '') +
         (samthN ? '<span class="syf-merki" style="background:#dbeafe;color:#1e40af">' + samthN + ' samþykkt</span>' : '') +
         '<span style="color:#e2e8f0;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums">' + kr(heild) + '</span>' +
-        '<select class="syf-btn" data-act="rodun" title="Raða listanum" style="background:#1f2937;color:#e5e7eb;border-color:#374151;padding:5px 8px">' +
+        (state.fellt ? '' : '<select class="syf-btn" data-act="rodun" title="Raða listanum" style="background:#1f2937;color:#e5e7eb;border-color:#374151;padding:5px 8px">' +
           [['rod', '↕ Röð'], ['manudur', '📅 Mánuður'], ['blad', '📄 Blað nr.'], ['nafn', '🔤 Fyrirtæki'],
            ['upphaed', '💰 Upphæð'], ['stada', '🚦 Staða']].map(function (o) {
             return '<option value="' + o[0] + '"' + (state.rodun.f === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
@@ -469,9 +477,13 @@
         '<button class="syf-btn" data-act="vinnuhamur" title="Fela síur, flokka og VALIÐ MÁL — borðið fær alla breiddina" ' +
           'style="background:' + (state.vinnuhamur ? '#16a34a' : '#1f2937') + ';color:#e5e7eb;border-color:' + (state.vinnuhamur ? '#15803d' : '#374151') + '">' +
           (state.vinnuhamur ? '⛶ Vinnuhamur á' : '⛶ Vinnuhamur') + '</button>' +
-        '<button class="syf-btn" data-act="endurhlada" style="background:#1f2937;color:#e5e7eb;border-color:#374151">↻</button>' +
-      '</div>' +
-      '<div style="padding:12px;display:flex;flex-direction:column;gap:9px">';
+        '<button class="syf-btn" data-act="endurhlada" style="background:#1f2937;color:#e5e7eb;border-color:#374151">↻</button>') +
+      '</div>';
+
+    // Fellt: hausinn einn. Engin lína, engir listar, ekkert pláss tekið.
+    if (state.fellt) { host.innerHTML = h + '</div>'; return; }
+
+    h += '<div style="padding:12px;display:flex;flex-direction:column;gap:9px">';
 
     if (!state.sott) h += '<div style="padding:14px;color:#64748b;font-size:12.5px">Sæki vinnublöðin…</div>';
     else if (state.villa) h += '<div style="padding:12px;color:#991b1b;font-size:12.5px">⚠ ' + esc(state.villa) + '</div>';
@@ -500,6 +512,14 @@
     var act = b.dataset.act, id = +b.dataset.id;
     var row = state.rows.find(function (x) { return x.id === id; });
 
+    if (act === 'fella') {
+      state.fellt = !state.fellt; lsSet(LS_FELLT, state.fellt);
+      // Vinnuhamurinn felur síur, flokka og valið mál. Sé honum haldið á
+      // meðan spjaldið er fellt stendur eftir mjó lína yfir borði sem er
+      // enn falið — nákvæmlega það sem Agnar vildi losna við.
+      settaHam(); teikna();
+      return;
+    }
     if (act === 'endurhlada') { state.sott = false; teikna(); saekja(); return; }
     if (act === 'vinnuhamur') {
       state.vinnuhamur = !state.vinnuhamur; lsSet(LS_HAMUR, state.vinnuhamur);
@@ -643,7 +663,7 @@
   // öryggis ef borðið er byggt upp á nýtt frá grunni.
   function settaHam() {
     var main = document.getElementById('vb-main');
-    if (main) main.classList.toggle('syf-hamur', !!state.vinnuhamur);
+    if (main) main.classList.toggle('syf-hamur', !!state.vinnuhamur && !state.fellt);
   }
 
   // ── Skann af vinnublaðinu ───────────────────────────────────────────────
