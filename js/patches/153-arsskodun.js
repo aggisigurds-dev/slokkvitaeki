@@ -773,6 +773,31 @@
     const f = ars._factEq[0];
     return '<span class="_ars-misr" title="' + esc(tip) + '" style="display:inline-flex;align-items:center;gap:3px;margin-left:5px;padding:1px 6px;border-radius:6px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;font-size:10px;font-weight:800;white-space:nowrap;vertical-align:top;line-height:1.5">⚠ ≠ ' + f.slt + '/' + f.bsl + '/' + f.rs + '</span>';
   }
+  // 10.09.2026 (Agnar: „félag án tækja á ekki að HVERFA") — merkið á RÖÐINNI sjálfri.
+  // Núll í TÆKI-dálknum sagði ekkert um hvers vegna. Þrjú ólík svör fela sig á bak við
+  // sömu núlluna og aðeins eitt þeirra er vandamál:
+  //   🏢 systurstaður ber tækin  → talan 0 er RÉTT
+  //   🚨 brunakerfi, engin slökkvitæki → talan 0 er RÉTT
+  //   ⚠ engin tæki skráð        → staðurinn kemst hvorki á aksturslista né í rukkun
+  // Sama flokkun og suspectVerdict/„⚠ Engin tæki"-flagan nota, svo merkið og listinn
+  // geti ekki sagt sitt hvað. Þagnar þegar „⚠ afrit N" er þegar á röðinni (sama saga).
+  function enginTaekiMark(ars, c) {
+    if (!ars || ars._blobMisraemi) return '';
+    if (((ars._units) || []).length) return '';
+    if (Object.values(ars.equipment || {}).reduce((s, v) => s + (+v || 0), 0) !== 0) return '';
+    const st = 'display:inline-flex;align-items:center;margin-left:5px;padding:1px 6px;border-radius:6px;font-size:10px;font-weight:800;white-space:nowrap;vertical-align:top;line-height:1.5;';
+    const sysT = +(ars._sysTaeki || 0);
+    if (sysT > 0) {
+      const tip = 'Engin tæki á ÞESSUM stað — systurstaðir sama rekstrarfélags/kennitölu bera ' + sysT + ' tæki:\n'
+        + ((ars._sysStadir || []).join('\n')) + '\nTalan 0 er rétt hér.';
+      return '<span title="' + esc(tip) + '" style="' + st + 'background:#cffafe;color:#155e75;border:1px solid #a5f3fc">🏢 systur ' + sysT + '</span>';
+    }
+    const bYrs = ars._bruYears || [];
+    if (bYrs.length || (c && c._bru)) {
+      return '<span title="' + esc('Skráður í brunakerfisþjónustu' + (bYrs.length ? ' (skýrslur ' + bYrs.join(', ') + ')' : '') + ' en á engin slökkvitæki. Önnur þjónusta — talan 0 er rétt hér.') + '" style="' + st + 'background:#ffedd5;color:#9a3412;border:1px solid #fed7aa">🚨 brunakerfi</span>';
+    }
+    return '<span title="' + esc('Engin tæki skráð á prófílnum og engin skýring (enginn systurstaður með tæki, ekkert brunakerfisskjal). Staðurinn kemst hvorki á aksturslista né í rukkun fyrr en tækjaskráin er sett inn — eða hann tekinn úr þjónustu.') + '" style="' + st + 'background:#fee2e2;color:#b91c1c;border:1px solid #fecaca">⚠ engin tæki</span>';
+  }
   function eqTrioHtml(equipment, mode) {
     const g = eqGroups(equipment);
     if (!g.total) return mode === 'print' ? '' : '—';
@@ -3241,7 +3266,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                 </div>
                 <div ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum"` : ''} style="background:${ovr ? '#fffbeb' : 'var(--bg)'};border:1px ${ovr ? 'dashed #d97706' : 'solid var(--brd)'};border-radius:6px;padding:4px 7px${ovr ? ';cursor:pointer;min-height:40px;box-sizing:border-box' : ''}">
                   <div style="font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase">Tæki</div>
-                  <div style="margin-top:1px">${manualMark(eqTrioHtml(eq, 'screen'), !!ars.equipment_manual)}${misraemiMark(ars)}</div>
+                  <div style="margin-top:1px">${manualMark(eqTrioHtml(eq, 'screen'), !!ars.equipment_manual)}${misraemiMark(ars)}${enginTaekiMark(ars, c)}</div>
                 </div>
                 <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:4px 7px">
                   <div style="font-size:9px;font-weight:700;color:#166534;text-transform:uppercase">Áætl.</div>
@@ -3691,7 +3716,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                       <div class="${g.bsl ? '' : 'off'}" title="Brunaslöngur"><b>${g.bsl || 0}</b><i>BSL</i></div>
                       <div class="${g.rs ? '' : 'off'}" title="Reykskynjarar"><b>${g.rs || 0}</b><i>RS</i></div>
                       <div class="_estcell" title="Áætlað virði ársþjónustu"><b>${fmtKrShort(est)}</b><i>ÁÆTL</i></div>
-                    </div>${ars.equipment_manual ? '<span title="Handvirkt yfirskrifað" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-left:4px;vertical-align:top"></span>' : ''}${misraemiMark(ars)}
+                    </div>${ars.equipment_manual ? '<span title="Handvirkt yfirskrifað" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-left:4px;vertical-align:top"></span>' : ''}${misraemiMark(ars)}${enginTaekiMark(ars, c)}
                   </td>
                   <td class="center _arsak-cell" onclick="event.stopPropagation()"></td>
                   <td class="center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
