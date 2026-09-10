@@ -822,8 +822,23 @@
     load._waits = 0;
     state.loading = true; renderList();
     try {
-      const a = await SB.from('thjonustubeidni').select('*').is('deleted_at', null)
-        .order('created_at', { ascending: false }).range(0, 1499);
+      // 10.09.2026: `.range(0, 1499)` var ekki gluggi upp á 1500 raðir heldur
+      // ósk sem PostgREST hunsar — það sker í 1000, skilar status 200 og engri
+      // villu. Þetta er BORÐIÐ sjálft: dyttu raðir út hér væru málin einfaldlega
+      // ekki til á skjánum, án nokkurrar vísbendingar. Mælt á lifandi grunni:
+      // thjonustubeidni = 854 raðir alls, 659 með `deleted_at is null` — undir
+      // þakinu í dag, svo fetchAll kostar hér EKKI aukakall (fyrsta síðan er
+      // stutt og lykkjan hættir). Taflan vex hins vegar við hverja beiðni og
+      // ekkert grisjar hana; 146 raðir voru eftir í klettinn og enginn hefði
+      // tekið eftir deginum sem hún fór yfir.
+      // `.order('id')` er aukaröðun undir created_at: samstundis stofnaðar
+      // raðir hafa sama created_at og án einkvæms þáttar getur síðuskipting
+      // sleppt röð eða skilað henni tvisvar. Aðalröðunin (nýjast fyrst) helst.
+      const beidniSel = (from, to) => SB.from('thjonustubeidni').select('*').is('deleted_at', null)
+        .order('created_at', { ascending: false }).order('id').range(from, to);
+      const a = (window.DB && DB.fetchAll)
+        ? { data: await DB.fetchAll(beidniSel), error: null }
+        : await beidniSel(0, 999);
       if (a.error) throw a.error;
       state.items = a.data || [];
     } catch (e) {
@@ -3748,7 +3763,20 @@
   async function quietCount() {
     const SB = getSB(); if (!SB) return;
     try {
-      const a = await SB.from('thjonustubeidni').select('*').is('deleted_at', null).range(0, 1499);
+      // Sama tafla og í load() — og sama villan: `.range(0, 1499)` fékk aldrei
+      // nema 1000 raðir. Þessi sókn fóðrar TÖLUNA á merkinu („Í dag"), svo
+      // þöglu raðirnar hefðu birst sem of lág tala en aldrei sem villa.
+      // Mælt 10.09.2026: 659 raðir með `deleted_at is null` (854 alls) — ein
+      // síða í dag, ekkert aukakall. .order('id') er hér EINA röðunin (áður var
+      // engin) svo síðuskiptingin verði endurtakanleg; state.items er aðeins
+      // talið og flokkað hér, aldrei birt í þessari röð.
+      const beidniSel = (from, to) => SB.from('thjonustubeidni').select('*').is('deleted_at', null).order('id').range(from, to);
+      let a;
+      try {
+        a = (window.DB && DB.fetchAll)
+          ? { data: await DB.fetchAll(beidniSel), error: null }
+          : await beidniSel(0, 999);
+      } catch (e) { a = { data: null, error: e }; }   // bilun má ekki stöðva merkið
       if (!a.error) { state.items = a.data || []; }
       const b = await SB.from('verkdagbok').select('*').eq('done', false).eq('archived', false).range(0, 499);
       if (b && !b.error) state.vd = b.data || [];

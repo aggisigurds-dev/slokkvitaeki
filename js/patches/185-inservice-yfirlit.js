@@ -44,9 +44,21 @@
       try{ while(true){ var r=await SB.from('uttaeki').select('client,last_insp,next_insp,worksite_id').order('id').range(from,from+999);
         if(r.error)break; rows=rows.concat(r.data||[]); if(!r.data||r.data.length<1000)break; from+=1000; if(from>20000)break; } }catch(e){}
       // Per-staðar sannleikur síðustu skýrslu (PK fyrirtaeki_id) — trompa talninguna.
+      // 10.09.2026: hér stóð `.range(0,1999)`. Sú tala er ekki beiðni um 2000
+      // raðir heldur ósk sem PostgREST hunsar: það sker í 1000, skilar status
+      // 200 og segir EKKERT. Taflan er ÓSÍUÐ hér og ber nákvæmlega eina röð á
+      // fyrirtæki (mælt: 649 raðir = 649 ólík fyrirtæki, mest 1 hver), svo
+      // þakið hennar er fjöldi fyrirtækja = 1313 — YFIR 1000. Í dag rúmast hún
+      // (649) og fetchAll kostar því ekkert aukakall, en daginn sem hún fer
+      // yfir hefðu horfnu raðirnar birst sem tæki sem „detta út úr prófílnum“
+      // þótt Ársskoðun sýni sína tölu. .order('fyrirtaeki_id') gefur
+      // einkvæma röðun svo síðuskipting sleppi engri röð (PK, engin tvítekning
+      // — röðunin breytir því engri niðurstöðu í facts{}).
       var factRows=[];
-      try{ var fr=await SB.from('arsskodun_report_facts').select('fyrirtaeki_id,total_devices,report_year').range(0,1999);
-        if(!fr.error) factRows=fr.data||[]; }catch(e){}
+      try{
+        var factSel=function(a,b){ return SB.from('arsskodun_report_facts').select('fyrirtaeki_id,total_devices,report_year').order('fyrirtaeki_id').range(a,b); };
+        factRows=(window.DB&&DB.fetchAll)?await DB.fetchAll(factSel):((await factSel(0,999)).data||[]);
+      }catch(e){ factRows=[]; }
       var base={},comp={},street={},ws={},facts={};
       rows.forEach(function(u){ var b=_norm(u.client); if(!b)return; var c=_compact(u.client),s=_streetnum(u.client);
         (base[b]||(base[b]=_blank())); _add(base[b],u);

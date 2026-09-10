@@ -30,6 +30,29 @@
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
   function getSB() { return (window.DB && window.DB.sb) || null; }
+
+  /* allarRadir — blaðsíðuflettir gegnum 1000-raða þak PostgREST og skilar
+   * ÁFRAM `{ data, error }` eins og supabase-js sjálft, svo kallendur hér að
+   * neðan (sem lesa `.error` og láta sumar sóknir falla mjúklega) haldi sömu
+   * hegðun. `DB.fetchAll` kastar á villu; við grípum og skilum henni í `error`.
+   *
+   * Ástæðan (mælt 10.09.2026): `.range(0, 2999)` er EKKI beiðni um 3000 raðir.
+   * PostgREST sker í 1000, skilar status 200 og `content-range: 0-999/*` — engin
+   * villa, engin viðvörun. `fyrirtaeki` með `deleted_at is null` = 1313 raðir,
+   * svo 313 fyrirtæki duttu þöglt út. Þau fengu þá „vantar skýrslu/reikning“-
+   * meðferð sem á ekki við, og Þjónustuborðið skrifaði `fyrirtaeki_id = null`
+   * á þau við tengingu.
+   */
+  async function allarRadir(sel) {
+    try {
+      const rows = (window.DB && DB.fetchAll)
+        ? await DB.fetchAll(sel)
+        : ((await sel(0, 999)).data || []);
+      return { data: rows, error: null };
+    } catch (e) {
+      return { data: null, error: e };
+    }
+  }
   function toast(m) { if (window.Toast && Toast.show) Toast.show(m); else console.log('[verkbord-ai]', m); }
   function fold(s) {
     return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -204,12 +227,21 @@
     if (!SB) { state.err = 'Engin gagnabankatenging'; return; }
     state.loading = true; state.err = ''; draw();
     try {
+      // Allar þrjár blaðsíðuflettar (sjá allarRadir). `.order('id')` er ekki
+      // skraut: án einkvæmrar röðunar getur PostgREST skilað sömu röð tvisvar
+      // — eða sleppt henni — milli síðna. deriveUttekt er röðunar-óháð (Map/Set
+      // + hæsta dagsetning) svo röðunin breytir engri niðurstöðu.
+      // Mælt 10.09.2026: fyrirtaeki(deleted_at is null) = 1313  ← YFIR þakinu,
+      // customer_documents(ár+uttektarskyrsla) = 330 (mest 381 nokkurt ár),
+      // solur(þetta ár) = 806. Síðustu tvær rúmast í einni síðu í dag, svo
+      // fetchAll kostar þar EKKI aukakall — en þakið er ein skýrsla/sala á
+      // fyrirtæki (1313) frá þeim báðum, svo fastur gluggi væri tímasprengja.
       const [fy, docs, sales] = await Promise.all([
-        SB.from('fyrirtaeki').select('id,nafn,customer_base_id,er_i_thjonustu,kennitala').is('deleted_at', null).range(0, 2999),
-        SB.from('customer_documents').select('id,fyrirtaeki_id,doc_date,created_at').eq('year', YEAR).eq('doc_type', 'uttektarskyrsla')
-          .eq('is_duplicate', false).not('fyrirtaeki_id', 'is', null).range(0, 1999),
-        SB.from('solur').select('id,customer_id,source,vidskiptategund,status,is_credit,created_at')
-          .gte('created_at', YEAR + '-01-01T00:00:00').lt('created_at', (YEAR + 1) + '-01-01T00:00:00').range(0, 1999)
+        allarRadir((a, b) => SB.from('fyrirtaeki').select('id,nafn,customer_base_id,er_i_thjonustu,kennitala').is('deleted_at', null).order('id').range(a, b)),
+        allarRadir((a, b) => SB.from('customer_documents').select('id,fyrirtaeki_id,doc_date,created_at').eq('year', YEAR).eq('doc_type', 'uttektarskyrsla')
+          .eq('is_duplicate', false).not('fyrirtaeki_id', 'is', null).order('id').range(a, b)),
+        allarRadir((a, b) => SB.from('solur').select('id,customer_id,source,vidskiptategund,status,is_credit,created_at')
+          .gte('created_at', YEAR + '-01-01T00:00:00').lt('created_at', (YEAR + 1) + '-01-01T00:00:00').order('id').range(a, b))
       ]);
       if (fy.error) throw fy.error;
       state.sites = fy.data || [];
@@ -236,7 +268,10 @@
     state.loading = true; state.err = ''; draw();
     try {
       if (!state.sites.length) {
-        const fy = await SB.from('fyrirtaeki').select('id,nafn,customer_base_id,er_i_thjonustu,kennitala').is('deleted_at', null).range(0, 2999);
+        // Sama og í loadDerived: 1313 raðir > 1000-raða þakið. Þessi listi er
+        // sá sem `sites`-hlutinn í /api/verkbord-sync fær — vantaði fyrirtæki
+        // hér, gat módelið aldrei parað póst við réttan stað.
+        const fy = await allarRadir((a, b) => SB.from('fyrirtaeki').select('id,nafn,customer_base_id,er_i_thjonustu,kennitala').is('deleted_at', null).order('id').range(a, b));
         if (fy.error) throw fy.error;
         state.sites = fy.data || [];
       }

@@ -127,8 +127,19 @@
     load._w = 0;
     state.loading = true; renderList();
     try {
-      const r = await SB.from('thjonustubeidni').select('*').is('deleted_at', null)
-        .order('created_at', { ascending: false }).range(0, 1499);
+      // Farsíma-útgáfa sama borðs og 231 — og sama villan: `.range(0, 1499)`
+      // fékk aldrei nema 1000 raðir. PostgREST sker í þakið, skilar status 200
+      // og hvorki villu né viðvörun; raðirnar sem duttu út hefðu einfaldlega
+      // ekki verið til í símanum. Mælt 10.09.2026: thjonustubeidni = 854 raðir
+      // alls, 659 með `deleted_at is null` — ein síða í dag, svo fetchAll
+      // kostar ekkert aukakall, en taflan vex við hverja beiðni.
+      // .order('id') sem aukaröðun: samstundis stofnaðar raðir deila
+      // created_at og án einkvæms þáttar getur síðuskipting sleppt röð.
+      const beidniSel = (from, to) => SB.from('thjonustubeidni').select('*').is('deleted_at', null)
+        .order('created_at', { ascending: false }).order('id').range(from, to);
+      const r = (window.DB && DB.fetchAll)
+        ? { data: await DB.fetchAll(beidniSel) }
+        : await beidniSel(0, 999);
       state.items = (r.data || []).filter(x => x.type !== 'verkdagbok');
     } catch (e) { console.warn('[thjonustu-mob]', e); state.items = []; }
     state.loading = false;

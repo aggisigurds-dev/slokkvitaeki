@@ -53,10 +53,16 @@
     if (window.Companies && Array.isArray(Companies.list) && Companies.list.length) { coCache = Companies.list; coCacheAt = Date.now(); return coCache; }
     // Varaleiðin (Companies.list ekki hlaðinn enn): `.range(0, 2999)` skilar aðeins
     // 1000 röðum — PostgREST-þakið, þögult og villulaust. Mælt 10.09.2026: fyrirtaeki
-    // = 1311 raðir. Þau 311 sem duttu út hefðu fengið „finnst hvorki í fyrirtækjaskrá
-    // né viðskiptavinaskrá" í reitnum þótt fyrirtækið sé til. Síðuskipta því alltaf.
-    const sel = (a, b) => SB.from('fyrirtaeki').select('id,nafn,kennitala,er_i_thjonustu,afslattur_pct,netfang,customer_base_id').is('deleted_at', null).range(a, b);
-    coCache = (window.DB && DB.fetchAll) ? await DB.fetchAll(sel) : ((await sel(0, 2999)).data || []);
+    // með `deleted_at is null` = 1313 raðir. Þau 313 sem duttu út hefðu fengið
+    // „finnst hvorki í fyrirtækjaskrá né viðskiptavinaskrá" í reitnum þótt
+    // fyrirtækið sé til. Síðuskipta því alltaf.
+    // Neyðar-varaleiðin (DB.fetchAll ekki til) bað sjálf um 2999 og fékk 1000 —
+    // sama villan bakdyramegin, bara ósýnileg verðinum af því hún er ekki
+    // `.range(`-kall á fyrirspurnina sjálfa. Nú biður hún um 999: hún tekur
+    // fyrstu síðuna heiðarlega í stað þess að þykjast hafa tekið allt.
+    // .order('id') svo síðuskiptingin (2 síður) sleppi engri röð og tvítelji enga.
+    const sel = (a, b) => SB.from('fyrirtaeki').select('id,nafn,kennitala,er_i_thjonustu,afslattur_pct,netfang,customer_base_id').is('deleted_at', null).order('id').range(a, b);
+    coCache = (window.DB && DB.fetchAll) ? await DB.fetchAll(sel) : ((await sel(0, 999)).data || []);
     coCacheAt = Date.now();
     return coCache;
   }
@@ -80,7 +86,15 @@
   }
   async function taekiFyrir(fid) {
     const SB = getSB(); if (!SB) return null;
-    const r = await SB.from('uttaeki').select('type,size,status,next_insp').eq('fyrirtaeki_id', fid).range(0, 1999);
+    // Fastur gluggi er ÖRUGGUR hér — og hann er nú heiðarlegur (≤ 999).
+    // Sían er `.eq('fyrirtaeki_id', fid)`: tæki EINS fyrirtækis. Mælt
+    // 10.09.2026 á lifandi grunni — flest tæki á einu fyrirtaeki_id er 177
+    // (uttaeki alls = 6.092 raðir á öll fyrirtæki). 999 er því ~5,6× hausinn.
+    // `.range(0, 1999)` var ekki hættulegri í reynd, en hún LAUG: PostgREST
+    // sker í 1000 hvað sem beðið er um, svo talan 1999 gaf falskt öryggi um að
+    // stærri staður myndi rúmast. Færi eitt fyrirtæki einhvern tíma yfir 999
+    // tæki þarf hér DB.fetchAll — ekki hærri tölu.
+    const r = await SB.from('uttaeki').select('type,size,status,next_insp').eq('fyrirtaeki_id', fid).range(0, 999);
     const rows = r.data || [];
     const virk = {}, falin = {}, urelt = {}, falinSt = {};
     rows.forEach(u => {

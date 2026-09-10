@@ -112,8 +112,16 @@ for (const f of files) {
  */
 const FAST = /\.range\(\s*(\d+)\s*,\s*(\d+)\s*\)/g;
 const ofstor = [];
+// Athugasemd sem LÝSIR villunni er ekki villan. Fyrsta útgáfa þessarar reglu
+// flaggaði skýringarnar sem voru skrifaðar við hliðina á lagfæringunum í
+// 231/358 — vörður sem gelgir að ósekju verður þaggaður. Því eru blokkar- og
+// línuathugasemdir fjarlægðar fyrst, en línunúmerin varðveitt með því að skipta
+// þeim út fyrir jafnmörg bil. (Sama aðferð og í tools/audit-thema-frosid.cjs.)
+const anAthugasemda = s => s
+  .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
+  .replace(/(^|[^:])\/\/[^\n]*/g, (m, p1) => p1 + m.slice(p1.length).replace(/[^\n]/g, ' '));
 for (const f of files) {
-  const src = fs.readFileSync(f, 'utf8');
+  const src = anAthugasemda(fs.readFileSync(f, 'utf8'));
   let mm;
   FAST.lastIndex = 0;
   while ((mm = FAST.exec(src)) !== null) {

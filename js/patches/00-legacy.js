@@ -766,16 +766,16 @@ function hookGreida(){
             if(/^kt:\s*\d{6}[- ]?\d{4}$/i.test(custNafn) || /^\d{6}[- ]?\d{4}$/.test(custNafn)) custNafn='';
             if(custKt || custNafn){
               if(custKt){
-                // 2026-09-10 \u2014 S\u00cd\u00d0ASTA VERKSMI\u00d0JAN SEM BJ\u00d3 TIL MUNA\u00d0ARLAUSAR RA\u00d0IR.
-                // pos.js og 114 voru laga\u00f0ar 09.09 (kan\u00f3n\u00edska lei\u00f0in: customers_base
-                // + fyrirtaeki), en \u00feessi speglun h\u00e9lt \u00e1fram a\u00f0 UPSERT-a hverja n\u00fdja
-                // kennit\u00f6lu inn \u00ed `vidskiptavinir` \u00c1N customer_base_id. Sannreynt \u00ed
-                // vi\u00f0m\u00f3tinu 10.09: sala R-000909 (n\u00fd kt 991299-9999) f\u00e9kk r\u00e9tt
-                // customer_base_id=1164 \u2014 og samt var\u00f0 til vidskiptavinir-r\u00f6\u00f0 1534
-                // me\u00f0 customer_base_id NULL. audit-solu-id var\u00f0 rautt af \u00feeirri einu r\u00f6\u00f0.
-                // Regla Agnars: \u201evidskiptavinir m\u00e1 EKKI ver\u00f0a endast\u00f6\u00f0 fyrir n\u00fdskr\u00e1ningu."
-                // \u00dev\u00ed: SPEGLA \u00e1fram \u00e1 ra\u00f0ir sem ERU til (nafn/s\u00edmi haldast vi\u00f0), en
-                // ALDREI stofna n\u00fdja. Kan\u00f3n\u00edska r\u00f6\u00f0in er \u00feegar til \u00ed customers_base.
+                // 2026-09-10 — SÍÐASTA VERKSMIÐJAN SEM BJÓ TIL MUNAÐARLAUSAR RAÐIR.
+                // pos.js og 114 voru lagaðar 09.09 (kanóníska leiðin: customers_base
+                // + fyrirtaeki), en þessi speglun hélt áfram að UPSERT-a hverja nýja
+                // kennitölu inn í `vidskiptavinir` ÁN customer_base_id. Sannreynt í
+                // viðmótinu 10.09: sala R-000909 (ný kt 991299-9999) fékk rétt
+                // customer_base_id=1164 — og samt varð til vidskiptavinir-röð 1534
+                // með customer_base_id NULL. audit-solu-id varð rautt af þeirri einu röð.
+                // Regla Agnars: „vidskiptavinir má EKKI verða endastöð fyrir nýskráningu."
+                // Því: SPEGLA áfram á raðir sem ERU til (nafn/sími haldast við), en
+                // ALDREI stofna nýja. Kanóníska röðin er þegar til í customers_base.
                 var _ktD = String(custKt).replace(/[^0-9]/g,'');
                 var _ktOr = _ktD.length === 10
                   ? 'kennitala.eq.' + _ktD.slice(0,6) + '-' + _ktD.slice(6) + ',kennitala.eq.' + _ktD
@@ -783,19 +783,19 @@ function hookGreida(){
                 window.DB.sb.from('vidskiptavinir').select('id,nafn').or(_ktOr).limit(1)
                   .then(function(existing){
                     var existingRow = existing && existing.data && existing.data[0];
-                    // Engin r\u00f6\u00f0 fyrir = n\u00fd kennitala. H\u00fan \u00e1 heima \u00ed customers_base
-                    // (kan\u00f3n\u00edska lei\u00f0in s\u00e1 um \u00fea\u00f0) \u2014 ekki h\u00e9r. H\u00e6ttum.
+                    // Engin röð fyrir = ný kennitala. Hún á heima í customers_base
+                    // (kanóníska leiðin sá um það) — ekki hér. Hættum.
                     if(!existingRow) return;
                     var existingHasRealName = existingRow.nafn && !/^Vi(\u00f0|d)skiptavinur\s/.test(existingRow.nafn);
                     if(existingHasRealName && !custNafn){
-                      // Existing has a real name and we have nothing better \u2014 don't touch.
+                      // Existing has a real name and we have nothing better — don't touch.
                       return;
                     }
                     var payload = {
                       nafn: custNafn || existingRow.nafn || ('Vi\u00f0skiptavinur ' + custKt),
                       simi: snap.customer.simi || null
                     };
-                    // UPDATE \u00e1 id \u2014 getur ekki stofna\u00f0 r\u00f6\u00f0 (\u00f6fugt vi\u00f0 upsert).
+                    // UPDATE á id — getur ekki stofnað röð (öfugt við upsert).
                     window.DB.sb.from('vidskiptavinir').update(payload).eq('id', existingRow.id).then(function(){});
                   });
               } else if(custNafn){
