@@ -218,7 +218,7 @@
     const samOr = 'fyrirtaeki_id.eq.' + coId + (co.customer_base_id ? ',customer_base_id.eq.' + co.customer_base_id : '');
     const [repR, docR, samR] = await Promise.all([
       sb.from('brunakerfi_skyrslur').select('id,year,uttekt_nr,status,doc_id,data,updated_at').eq('fyrirtaeki_id', coId).order('updated_at', { ascending: false }),
-      sb.from('customer_documents').select('id,year,doc_type,drive_file_id,storage_path,doc_date,source,notes,is_duplicate').in('doc_type', ['brunakerfi', 'reikningur']).eq('fyrirtaeki_id', coId).order('year', { ascending: false }),
+      sb.from('customer_documents').select('id,year,doc_type,invoice_number,drive_file_id,storage_path,doc_date,source,notes,is_duplicate').in('doc_type', ['brunakerfi', 'reikningur']).eq('fyrirtaeki_id', coId).order('year', { ascending: false }),
       sb.from('customer_documents').select('id,fyrirtaeki_id,drive_file_id,storage_path,doc_date,customer_name,notes,is_duplicate').eq('doc_type', 'samningur').or(samOr).order('id', { ascending: false })
     ]);
     let note = '';
@@ -339,41 +339,43 @@
           '<button type="button" class="_bkc-act _x" data-docdel="' + d.id + '" title="Aftengja þetta skjal (röng skrá) — skráin sjálf helst í Drive">×</button>';
       });
       if (!rep) rep = '<span class="_bkc-yrmiss">' + (y === NOW ? 'engin skoðunarskýrsla enn — ＋ Ný skoðunarskýrsla hér að neðan' : 'vantar skýrslu') + '</span>';
-      // reikningur-lína
-      let invHtml;
+      // ── reikningur-lína ────────────────────────────────────────────────
+      // 2026-09-10 (Agnar: „reyna að hafa þetta eins stílhreint og skýrt og
+      // hægt er"). Fyrri útgáfa límdi saman texta og skjöl og gat sagt
+      // „enginn reikningur skráður í appinu" og talið upp reikning Í SÖMU
+      // LÍNU. Nú er byggt upp úr bitum: vanti-textinn birtist AÐEINS þegar
+      // ekkert er til. Ein staðhæfing per línu.
+      const invBitar = [];
       if (inv) {
         const lab = invLabel(inv);
         const owner = (fin && fin._inv === inv) ? fin : draft;
         // Handtengdur reikningur má alltaf vera aftengjanlegur — annars situr
         // röng tenging föst og eina leiðin til baka er að láta forrita hana burt.
         const handtengt = !!(window.BrunakerfiReikningur && BrunakerfiReikningur.getInvLink && BrunakerfiReikningur.getInvLink(C.co.id, y));
-        invHtml = '<span class="_bkc-yrtxt"><b>' + esc(inv.num || 'reikningur') + '</b>' + (inv.samtals ? ' · ' + fmtKr(+inv.samtals) : '') + ' · <span class="_bkc-invst _' + lab + '">' + lab + '</span></span>' +
+        invBitar.push('<span class="_bkc-yrtxt"><b>' + esc(inv.num || 'reikningur') + '</b>' + (inv.samtals ? ' · ' + fmtKr(+inv.samtals) : '') + ' · <span class="_bkc-invst _' + lab + '">' + lab + '</span></span>' +
           (owner ? '<button type="button" class="_bkc-act _ghost" data-invpdf="' + owner.id + '" title="Opna reikninginn (PDF)">🧾 Reikningur</button>' : '') +
-          (handtengt ? '<button type="button" class="_bkc-act _x" data-invunlink="' + y + '" title="Aftengja handtengda reikninginn — reikningurinn sjálfur helst óbreyttur">×</button>' : '');
-      } else {
-        // 2026-09-10 (Agnar: „geturðu opnað fyrir það að ég geti tengt reikninginn
-        // sjálfuuurrr"). Hér stóð AÐEINS textinn „enginn reikningur skráður í
-        // appinu" — engin leið til að bregðast við. Tengingin var til, en aðeins
-        // efst í stöðulínunni og aðeins fyrir YFIRSTANDANDI ár; eldri ár (2024,
-        // 2025) voru dauður texti. Nú má tengja hvaða ár sem er héðan.
-        invHtml = '<span class="_bkc-yrmiss">' + (fin ? 'vantar reikning — stofnast með „Stofna drög" í stöðulínunni efst' : draft ? 'kemur þegar skýrslan er kláruð' : docs.length ? 'enginn reikningur skráður í appinu' : '—') + '</span>' +
-          '';
-        // 2026-09-10 (Agnar: „Þetta er rosalega subbulegt svona... og
-        // ruglingslegt... kanski bara hafa bæta við skjali bara neðst").
-        // Hér stóð „🔗 Tengja reikning" á HVERRI árslínu — þrír eins takkar
-        // hlið við hlið á sama spjaldi. Aðgerðin er ein og á heima á EINUM
-        // stað: röndinni neðst, þar sem árið er hvort eð er valið. Línurnar
-        // segja frá; röndin gerir.
+          (handtengt ? '<button type="button" class="_bkc-act _x" data-invunlink="' + y + '" title="Aftengja handtengda reikninginn — reikningurinn sjálfur helst óbreyttur">×</button>' : ''));
       }
-      // Uppáhlaðin reikningsskjöl ársins bætast við línuna hvort sem sölu-
-      // reikningur fannst eða ekki — PDF sem Agnar hengir sjálfur á að sjást.
       invSkjol.forEach(d => {
         const u = driveUrl(d.drive_file_id) || storageUrl(d.storage_path);
-        invHtml += '<br><span class="_bkc-yrtxt"><b>Reikningur ' + esc(d.year || y) + '</b> (PDF)' + (d.doc_date ? ' · ' + esc(fmtDags(d.doc_date)) : '') + '</span>' +
+        // Númerið fram yfir árið: tvö skjöl sama árs litu áður EINS út
+        // („Reikningur 2025 (PDF)" tvisvar) og ekkert sagði hvort var hvað.
+        invBitar.push('<span class="_bkc-yrtxt"><b>' + esc(d.invoice_number || ('Reikningur ' + (d.year || y))) + '</b> (PDF)' + (d.doc_date ? ' · ' + esc(fmtDags(d.doc_date)) : '') + '</span>' +
           (u ? '<a class="_bkc-act _ghost" href="' + esc(u) + '" target="_blank" rel="noopener">Opna</a>' : '') +
           (u ? '<button type="button" class="_bkc-act" data-docsend="' + d.id + '" data-sendkind="reikningur" style="background:#0f766e" title="Senda í tölvupósti">📧 Senda</button>' : '') +
-          '<button type="button" class="_bkc-act _x" data-docdel="' + d.id + '" title="Aftengja þetta skjal — skráin sjálf helst í Drive">×</button>';
+          '<button type="button" class="_bkc-act _x" data-docdel="' + d.id + '" title="Aftengja þetta skjal — skráin sjálf helst í Drive">×</button>');
       });
+      // Vanti-textinn er VARASVAR — hann á aldrei að standa við hliðina á
+      // reikningi sem er til.
+      if (!invBitar.length) {
+        invBitar.push('<span class="_bkc-yrmiss">' + (fin ? 'vantar reikning — stofnast með „Stofna drög" í stöðulínunni efst' : draft ? 'kemur þegar skýrslan er kláruð' : 'enginn reikningur skráður') + '</span>');
+      }
+      // `<br>` gerir EKKERT inni í _bkc-yrbody — hún er flex-kassi, svo tveir
+      // reikningar sama árs runnu saman í eina línu sem vafðist í miðju
+      // („R-107260 … R-107337 … Senda ×"). Hver færsla fær sína eigin röð.
+      const invHtml = invBitar.length > 1
+        ? invBitar.map(x => '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%">' + x + '</div>').join('')
+        : invBitar.join('');
       {
       }
       return '<div class="_bkc-yr">' +
