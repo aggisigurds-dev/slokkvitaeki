@@ -69,6 +69,12 @@ const ALLOW = [
   [/ilike\(\s*['"]nafn['"]/,                  'nafnaleit (fá svör)'],
   [/custFilter/,                              'leitarsía notanda'],
   [/orParts|ors\.join/,                       'afmarkað við sýnileg fyrirtæki'],
+  // 10.09.2026 — síðustu fjórar „þekktu" fyrirspurnirnar, hver MÆLD. Þær stóðu á
+  // BASELINE = 4: vörðurinn þagði um þessi fjögur tilvik og hefði þagað um fjögur
+  // NÝ til viðbótar. Hver fær nú sína mældu ástæðu, og BASELINE fer í 0.
+  [/\.or\(\s*['"]kennitala\.eq\./,            'ein kennitala í tveimur stafsetningum — mest 11 fyrirtæki á kt (175, 226)'],
+  [/eq\(\s*['"]rekstrarfelag['"]/,            'eitt rekstrarfélag — stærsti hópur 65 raðir í customers_base (285)'],
+  [/eq\(\s*['"]doc_type['"]\s*,\s*['"]samningur['"]/, 'samningar — 360 raðir ALLS í customer_documents (274)'],
 ];
 
 const root = process.argv[2] || 'js';
