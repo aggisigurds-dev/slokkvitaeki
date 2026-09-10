@@ -59,7 +59,7 @@
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (_) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
 
-  var state = { rows: [], sott: false, villa: '', opin: lsGet(LS_OPIN, []),
+  var state = { rows: [], vorur: [], sott: false, villa: '', opin: lsGet(LS_OPIN, []),
     synaKlarad: lsGet(LS_KLARAD, false), storMynd: [],
     // Sjálfgefið Á. Agnar 09.09.2026, eftir að hafa beðið tvisvar um plássið:
     // „helvítis ruslið er ennþá fyrir". Takkinn var í haus spjaldsins sem var
@@ -149,6 +149,18 @@
       if (r.error) throw r.error;
       state.rows = r.data || [];
       state.villa = '';
+      // Vörulistinn í Liður-dálkinn (ósk Agnars 10.09.2026: „dropdown val af
+      // tækjum i lidur"). Sömu heiti og verð og fara á reikninginn — sótt úr
+      // `vorur`, ekki afrituð, svo þau geti ekki rekið í sundur við verðskrána.
+      try {
+        var v = await s.from('vorur').select('nafn,verd_an_vsk,vsk_prosenta,flokkur')
+          .not('nafn', 'is', null).order('nafn');
+        if (!v.error) {
+          state.vorur = (v.data || []).filter(function (x) {
+            return ['Þjónusta', 'Fylgihlutir', 'Varahlutir', 'Vinna', 'Vinna og akstur'].indexOf(x.flokkur) !== -1;
+          });
+        }
+      } catch (_) {}
     } catch (e) {
       state.villa = (e && e.message) || String(e);
       console.warn(TAG, 'sótti ekki:', state.villa);
@@ -359,7 +371,8 @@
     ls.forEach(function (l, i) {
       var k = kl[i] || {};
       h += '<tr>' +
-        '<td><input class="syf-inp" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="l" value="' + esc(l.l) + '"></td>' +
+        '<td><input class="syf-inp" list="syf-vorur-dl" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="l" ' +
+          'placeholder="Veldu tæki eða skrifaðu" value="' + esc(l.l) + '"></td>' +
         '<td class="n"><span class="syf-par">' +
           '<input class="syf-inp n" style="width:52px" type="number" min="0" step="1" data-act="lina" data-id="' + r.id + '" data-i="' + i + '" data-f="n" value="' + (Number(l.n) || 0) + '">' +
           kerfiReitur(k.n, l.n) + '</span></td>' +
@@ -468,6 +481,9 @@
       '<span style="font-size:11px;color:#94a3b8">Hakið er grænt ljós — Sara býr ekki til reikning fyrr en það er komið.</span>' +
       // Datalistinn aftast — sem fyrsta barn listans braut hann `.syf-mal:first-child`.
       '<datalist id="syf-man-dl">' + MANUDIR.map(function (m) { return '<option value="' + m + '">'; }).join('') + '</datalist>' +
+      '<datalist id="syf-vorur-dl">' + state.vorur.map(function (v) {
+        return '<option value="' + esc(v.nafn) + '">' + Math.round(v.verd_an_vsk || 0) + ' kr án vsk</option>';
+      }).join('') + '</datalist>' +
       '</div>';
 
     h += '</div></div>';
@@ -530,7 +546,7 @@
     }
     if (act === 'ny-lina') {
       if (!row) return;
-      var ls = linur(row).slice(); ls.push({ l: '', n: 1, v: 0 });
+      var ls = linur(row).slice(); ls.push({ l: '', n: 1, v: 0, vsk: 24 });
       vista(id, { linur: ls }, true); teikna(); return;
     }
     if (act === 'eyda-lina') {
@@ -568,6 +584,20 @@
       if (!ls[i]) return;
       ls[i] = Object.assign({}, ls[i]);
       ls[i][f] = (f === 'l') ? el.value : (Number(el.value) || 0);
+      // Val úr vörulistanum fyllir VERÐ og VSK líka. Nafn eitt og sér er
+      // gagnslaust ef maður þarf svo að fletta verðinu upp handvirkt — og það
+      // er einmitt leiðin til að fá skakkar tölur á reikninginn.
+      if (f === 'l') {
+        var vara = state.vorur.find(function (v) { return v.nafn === el.value; });
+        if (vara) {
+          ls[i].v = Math.round(Number(vara.verd_an_vsk) || 0);
+          ls[i].vsk = Number(vara.vsk_prosenta) || 24;
+          var verdReitur = el.closest('tr') && el.closest('tr').querySelector('input[data-f="v"]');
+          var vskReitur = el.closest('tr') && el.closest('tr').querySelector('input[data-f="vsk"]');
+          if (verdReitur) verdReitur.value = ls[i].v;
+          if (vskReitur) vskReitur.value = ls[i].vsk;
+        }
+      }
       row.linur = ls;
       vista(id, { linur: ls });
       uppfaeraTolur(id);
