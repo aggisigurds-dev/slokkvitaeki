@@ -34,6 +34,7 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B19 | Collapse-takki á Sara vinnublöð svo restin af Þjónustuborðinu nýtist | Claude | ✅ KLÁRT |
 | B20 | Mynd af byggingunni í fyrirtækjabannernum — ein flís, enginn texti, stækkar við smell án teygingar; teikningin falin sjálfgefið | Claude | ✅ KLÁRT |
 | B21 | Sameina POS-greinarnar tvær frá 9. sept. (kanónísk kúnnastofnun). Netvörður fann slitinn vír 3 (þögul bilun → sala án kúnna) — tengdur í `logProblem` án kennitölu; `audit-stadur-nr` hert og sannreynt í báðar áttir; 43/43 græn; live `13b3fb8` | Claude | ✅ KLÁRT |
+| B22 | Kjarni Stjórnstöð (`slokkvitaeki.vercel.app/kjarni`): Teikningar-spjaldið huldi flipana Yfirlit/Vefir/Einingar/Aðstoð og heimilisfangaleitin var ómótuð — niðurstöðurnar lentu ~3.000 px neðar á síðunni. Tvær rætur: þemaregla `.ms > *` (26.08) felldi sticky-hausinn; Tailwind aðeins hlaðið á TurboPaint. Lagað í kjarni `8a0054b` + leitarspjaldið bundið við gluggahæðina (skarst ~70 px); prófað á build, localhost og framleiðslu í Chrome | Claude | ✅ KLÁRT |
 
 ## Textatap-sópið 2026-09-09 — „enginn texti má nokkurntíma tínast"
 
