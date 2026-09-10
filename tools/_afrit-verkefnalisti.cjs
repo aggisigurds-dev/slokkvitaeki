@@ -24,7 +24,7 @@ const KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 
   const dir = path.join(__dirname, '..', 'backups');
   fs.mkdirSync(dir, { recursive: true });
-  const out = path.join(dir, 'verkefnalisti-fyrir-hreinsun-20260909.json');
+  const out = path.join(dir, 'verkefnalisti-fyrir-hreinsun-20260910.json');
   fs.writeFileSync(out, JSON.stringify(rows, null, 1), 'utf8');
 
   const eftirStodu = {};
