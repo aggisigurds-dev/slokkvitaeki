@@ -40,6 +40,30 @@
   function fmtKr(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr'; }
   function fmtKt(kt) { const d = String(kt || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : (kt || ''); }
   function fmtDags(iso) { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '.' + m[2] + '.' + m[1] : String(iso || ''); }
+
+  // ── Aðal-reikningur ársins (2026-09-10) ──────────────────────────────────
+  // Agnar: „það þarf ekki 2 reikninga tengda, og 2 sendu takka,, leyfðu mér
+  // bara að velja hver er aðal". Ár með fleiri en eitt reikningsskjal sýndi
+  // hvert þeirra í sinni röð, hvert með eigin Opna/Senda — tvöfaldir takkar
+  // sem gerðu nákvæmlega það sama. Nú er EITT sýnt og hin valin úr lista.
+  //
+  // Valið er gagnastaða (hvaða reikningur fer út), ekki útlit — það skrifast
+  // því á þjóninn í AppSettings `bk_inv_adal`, ekki í localStorage, svo allar
+  // fjórar tölvurnar sendi sama reikninginn. `_adalNy` lokar ósamstillta
+  // gatinu: AppSettings.save er async og AppSettings.path skilar gamla
+  // gildinu þar til RPC-ið svarar (sama gildra og 261 og 291).
+  const _adalNy = new Map();
+  function adalReikn(coId, y) {
+    const k = coId + '_' + y;
+    let server = null;
+    try { const m = (window.AppSettings && AppSettings.path && AppSettings.path('bk_inv_adal')) || {}; server = m[k] != null ? +m[k] : null; } catch (_) {}
+    if (_adalNy.has(k)) { const o = _adalNy.get(k); if (server === o) _adalNy.delete(k); else return o; }
+    return server;
+  }
+  async function setAdalReikn(coId, y, docId) {
+    _adalNy.set(coId + '_' + y, docId);
+    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ bk_inv_adal: { [coId + '_' + y]: docId } }); } catch (_) {}
+  }
   // Gegnum brunahólf /api/skjal (server-OAuth) — enginn „Select an account"
   function driveUrl(id) { return id && String(id).indexOf('sb:') !== 0 ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(id) : ''; }
   function storageUrl(p) {
@@ -356,15 +380,24 @@
           (owner ? '<button type="button" class="_bkc-act _ghost" data-invpdf="' + owner.id + '" title="Opna reikninginn (PDF)">🧾 Reikningur</button>' : '') +
           (handtengt ? '<button type="button" class="_bkc-act _x" data-invunlink="' + y + '" title="Aftengja handtengda reikninginn — reikningurinn sjálfur helst óbreyttur">×</button>' : ''));
       }
-      invSkjol.forEach(d => {
+      if (invSkjol.length) {
+        const nafnA = d => d.invoice_number || ('Reikningur ' + (d.year || y));
+        // Aðal = það sem Agnar valdi; annars nýjasta skjalið (dags, svo id).
+        const valid = adalReikn(C.co.id, y);
+        const radad = invSkjol.slice().sort((a, b) => String(b.doc_date || '').localeCompare(String(a.doc_date || '')) || b.id - a.id);
+        const d = radad.find(x => x.id === valid) || radad[0];
         const u = driveUrl(d.drive_file_id) || storageUrl(d.storage_path);
-        // Númerið fram yfir árið: tvö skjöl sama árs litu áður EINS út
-        // („Reikningur 2025 (PDF)" tvisvar) og ekkert sagði hvort var hvað.
-        invBitar.push('<span class="_bkc-yrtxt"><b>' + esc(d.invoice_number || ('Reikningur ' + (d.year || y))) + '</b> (PDF)' + (d.doc_date ? ' · ' + esc(fmtDags(d.doc_date)) : '') + '</span>' +
+        // Eitt skjal: nafnið feitletrað. Fleiri: nafnið ER valið — listi í
+        // stað auka-raða, svo línan sé alltaf ein og takkarnir einir.
+        const heiti = invSkjol.length > 1
+          ? '<select class="_bkc-adalsel" data-year="' + y + '" title="' + invSkjol.length + ' reikningsskjöl á árinu — veldu aðal" style="border:1px solid #d0d4da;border-radius:8px;padding:5px 7px;font:inherit;font-size:12.5px;font-weight:700;background:#fff">' +
+              radad.map(x => '<option value="' + x.id + '"' + (x.id === d.id ? ' selected' : '') + '>' + esc(nafnA(x)) + '</option>').join('') + '</select>'
+          : '<b>' + esc(nafnA(d)) + '</b>';
+        invBitar.push('<span class="_bkc-yrtxt">' + heiti + ' (PDF)' + (d.doc_date ? ' · ' + esc(fmtDags(d.doc_date)) : '') + '</span>' +
           (u ? '<a class="_bkc-act _ghost" href="' + esc(u) + '" target="_blank" rel="noopener">Opna</a>' : '') +
           (u ? '<button type="button" class="_bkc-act" data-docsend="' + d.id + '" data-sendkind="reikningur" style="background:#0f766e" title="Senda í tölvupósti">📧 Senda</button>' : '') +
           '<button type="button" class="_bkc-act _x" data-docdel="' + d.id + '" title="Aftengja þetta skjal — skráin sjálf helst í Drive">×</button>');
-      });
+      }
       // Vanti-textinn er VARASVAR — hann á aldrei að standa við hliðina á
       // reikningi sem er til.
       if (!invBitar.length) {
@@ -559,6 +592,10 @@
     // 🗑 aftengja rangt skjal (röðin fer, skráin sjálf helst í Drive)
     // 🔗 Tengja / aftengja reikning á ársnótu. Geymslan er 291 — EITT fall,
     // ekki afrit, svo stöðulínan efst og ársblokkin segi alltaf það sama.
+    w.querySelectorAll('._bkc-adalsel').forEach(sel => sel.addEventListener('change', async () => {
+      await setAdalReikn(C.co.id, +sel.dataset.year, +sel.value);
+      reload();
+    }));
     // Gerðin ræður því hvað röndin býður: skrá (PDF) eða númer.
     const kindSel = w.querySelector('#_bkc-addkind');
     const linkWrap = w.querySelector('#_bkc-linkwrap');
