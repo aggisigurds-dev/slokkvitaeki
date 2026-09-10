@@ -249,7 +249,13 @@
       '#vb-main.syf-hamur .syf-box pre{font-size:13px}',
       // Hausinn loðir við toppinn — annars skrunast ⛶-takkinn (og heildartalan)
       // upp fyrir skjáinn um leið og maður byrjar að vinna í fyrsta málinu.
-      '.syf-haus{position:sticky;top:0;z-index:40}',
+      // 2026-09-10: AÐEINS í vinnuham. Tækjastika borðsins (#vb-controls) er
+      // líka sticky (top:8px, z 30). Þær hittust aldrei, því vinnuhamurinn faldi
+      // stikuna á meðan Sara var opin — en samanbrotið slekkur á hamnum og þá
+      // lenti fellda Sara-línan (z 40) OFAN Á stikunni og huldi Snjallröðun,
+      // Þétt og starfsmannavalið. Sama árekstur var til áður ef hamnum var
+      // slökkt handvirkt. Hausinn þarf aðeins að loða þegar stikan er falin.
+      '#vb-main.syf-hamur .syf-haus{position:sticky;top:0;z-index:40}',
       // Kerfis-talan: læst, daufari, aðeins minni — sést en keppir ekki við
       // reitinn sem verið er að vinna í. Rauð þegar hún stangast á við blaðið.
       '.syf-man{flex:none;width:96px;font-size:12px;padding:3px 7px}',
