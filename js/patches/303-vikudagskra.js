@@ -113,8 +113,14 @@
     if (nafn === 'Agnar') { const g = AppSettings.path('vikudagskra.jobs'); if (Array.isArray(g)) return g; }
     return [];
   }
+  // 10.09.2026: `next` er FALL (listi → nýr listi) í öllum köllum hér. Það er reiknað AFTUR á
+  // nýjasta lista stillinganna eftir að þær hafa hlaðist, ekki bara á `state.jobs`. `state.jobs`
+  // fyllist aðeins þegar reiturinn á Verkborðinu er teiknaður (mount). Glugginn er líka opnaður af
+  // Þjónustuborði 5 (368) þar sem reiturinn er ekki til, og þá hefði „Vista á dagskrá" skrifað
+  // `[] + nýja verkið` yfir öll verk starfsmannsins.
   async function persist(next) {
-    state.jobs = next;
+    const reikna = typeof next === 'function' ? next : () => next;
+    state.jobs = reikna(state.jobs);
     render();
     if (!window.AppSettings || !AppSettings.save) { toast('Stillingar ekki tilbúnar — dagskráin vistaðist ekki'); return; }
     // ── 2026-09-02: BÍÐA EFTIR AÐ STILLINGAR HAFI HLAÐIST. Þetta er rótin á
@@ -126,8 +132,9 @@
       for (let i = 0; i < 40 && !AppSettings.isLoaded(); i++) await new Promise(r => setTimeout(r, 150));
       if (!AppSettings.isLoaded()) { toast('Stillingar hlóðust ekki — dagskráin vistaðist ekki'); return; }
     }
+    if (typeof next === 'function') { state.jobs = reikna(readJobs()); render(); }
     const nafn = (window.BordStarfsmadur && BordStarfsmadur.get) ? BordStarfsmadur.get() : 'Agnar';
-    const patch = { vikudagskra: { by_staff: { [nafn]: { jobs: next } } } };
+    const patch = { vikudagskra: { by_staff: { [nafn]: { jobs: state.jobs } } } };
     const ok = await AppSettings.save(patch);
     if (!ok) toast('Náði ekki að vista dagskrána');
   }
@@ -442,7 +449,7 @@
     state.editingId = null;
     renderModal();
     if (editId) {
-      persist(state.jobs.map(j => j.id !== editId ? j : {
+      persist(jobs => jobs.map(j => j.id !== editId ? j : {
         ...j, date, time: f.time || '09:00', name: f.name.trim(), type: f.type || 'Annað', note: (f.note || '').trim(), allday: !!f.allday
       }));
     } else {
@@ -450,7 +457,7 @@
         id: 'vd' + Date.now() + Math.random().toString(36).slice(2, 6),
         date, time: f.time || '09:00', name: f.name.trim(), type: f.type || 'Annað', note: (f.note || '').trim(), allday: !!f.allday
       };
-      persist(state.jobs.concat([job]));
+      persist(jobs => jobs.concat([job]));
     }
   }
 
@@ -472,8 +479,8 @@
     if (act === 'today')    { state.offset = 0; render(); return; }
     if (act === 'add')      { ev.stopPropagation(); openModal(fmt(new Date())); return; }
     if (act === 'save')     { ev.preventDefault(); saveJob(); return; }
-    if (act === 'del')      { ev.stopPropagation(); persist(state.jobs.filter(j => j && j.id !== hit.getAttribute('data-vd-id'))); return; }
-    if (act === 'del-edit') { ev.stopPropagation(); const delId = state.editingId; state.modal = false; state.editingId = null; renderModal(); persist(state.jobs.filter(j => j && j.id !== delId)); return; }
+    if (act === 'del')      { ev.stopPropagation(); { const vid = hit.getAttribute('data-vd-id'); persist(jobs => jobs.filter(j => j && j.id !== vid)); } return; }
+    if (act === 'del-edit') { ev.stopPropagation(); const delId = state.editingId; state.modal = false; state.editingId = null; renderModal(); persist(jobs => jobs.filter(j => j && j.id !== delId)); return; }
     if (act === 'job')      { ev.stopPropagation(); const j = state.jobs.find(x => x && x.id === hit.getAttribute('data-vd-id')); if (j) openModal(j.date, j); return; }
     if (act === 'close')    { if (!throughSolid) closeModal(); return; }
     if (act === 'day')      { if (!throughSolid) openModal(hit.getAttribute('data-vd-date')); return; }
@@ -524,7 +531,7 @@
   // og borðið skipti aldrei um starfsmann. Biðröðin er óháð hleðsluröð.
   (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(mount);
 
-  window.Vikudagskra = { mount, render, open: openModal, removeJob: id => persist(state.jobs.filter(j => j && j.id !== id)) };
+  window.Vikudagskra = { mount, render, open: openModal, removeJob: id => persist(jobs => jobs.filter(j => j && j.id !== id)) };
 
   // Samningur við Verkborðið (#231, hönnun V3): „🗓 Á dagskrá" á röð — og
   // „Setja á dagskrá" í VALIÐ MÁL — senda st-skra-verk og bannerinn opnar
