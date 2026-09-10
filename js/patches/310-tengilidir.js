@@ -184,7 +184,7 @@
     while ((m = re.exec(t)) !== null) {
       const stofn = m[1].slice(0, 5);
       ut.push({ lykill: stofn + '|' + m[2], texti: m[0] });
-      if (m[3]) ut.push({ lykill: stofn + '|' + m[3], texti: m[0] });
+      if (m[3]) ut.push({ lykill: stofn + '|' + m[3], texti: m[0], endi: true });
     }
     return ut;
   }
@@ -221,6 +221,30 @@
     return data || [];
   }
 
+  // Aðeins það sem viðmælandinn skrifaði sjálfur: skorið við fyrstu undirskrift eða
+  // tilvitnun. Mælt 10.09.2026: svör bryndis@ og solrun@ vitna í undirskriftina okkar
+  // („-- Með bestu kveðju / Helluhrauni 10 / … eldklar@eldklar.is"), og það gerði
+  // Brunahólf Slökkvitæki ehf. og Sleed ehf. (bæði að Helluhrauni 10) að „húsum" sem
+  // netfangið skrifaði um. Sama um undirskrift viðmælandans: „Laugavegi 178" í undirskrift
+  // dalli@eignarekstur.is gerði Móðurást og SyNord (sama heimilisfang) að „húsum". Því er
+  // líka skorið við kveðjulínu.
+  const KLIPPA = [
+    /\n[ \t]*--[ \t]*\n/,
+    /\n[ \t]*-{3,}[ \t]*(original message|upprunaleg)/i,
+    /\n[ \t]*(from|frá|sent|sendandi)[ \t]*:/i,
+    /skrifaði[^\n]{0,160}:/i,
+    /wrote:/i,
+    /\n[ \t]*>/,
+    /\n[ \t]*(kveðja|kv[.,]|bestu kveðjur|með kveðju|með bestu kveðju|virðingarfyllst|best regards|kind regards|regards)/i,
+    /eldklar@eldklar\.is/i,
+  ];
+  function eiginTexti(t) {
+    const s = String(t || '');
+    let skurdur = s.length;
+    for (const re of KLIPPA) { const m = re.exec(s); if (m && m.index < skurdur) skurdur = m.index; }
+    return s.slice(0, skurdur);
+  }
+
   function reiknaTillogur(x, postar, skra) {
     const hus = new Map();
     const fa = (c) => {
@@ -229,8 +253,9 @@
       return h;
     };
     const utanSkrar = new Map();
+    const goturUtan = new Map();
     for (const p of postar) {
-      const texti = [p.subject, p.snippet, p.body_preview].filter(Boolean).join('\n');
+      const texti = (p.subject || '') + '\n' + eiginTexti(p.body_preview || p.snippet || '');
       const ktRe = /(?<![\d+])(\d{6})[- ]?(\d{4})(?!\d)/g;
       let m;
       while ((m = ktRe.exec(texti)) !== null) {
@@ -240,8 +265,15 @@
         if (cs) cs.forEach((c) => { const h = fa(c); h.kt.add(p.id); h.daemi.add('kt. ' + ktSnid(d)); });
         else { if (!utanSkrar.has(d)) utanSkrar.set(d, new Set()); utanSkrar.get(d).add(p.id); }
       }
-      for (const g of gotuLyklar((p.subject || '') + '\n' + (p.body_preview || p.snippet || ''))) {
+      for (const g of gotuLyklar(texti)) {
         (skra.eftirGotu.get(g.lykill) || []).forEach((c) => { const h = fa(c); h.gata.add(p.id); h.daemi.add('„' + g.texti.trim() + '“'); });
+      }
+      // Hús í EFNISLÍNU sem finnast ekki í skránni — dalli@eignarekstur.is skrifaði t.d. um
+      // Hraunbæ 140 í 7 póstum. Aðeins efnislína (lítið suð) og húsnúmer með 1–3 stöfum.
+      for (const g of gotuLyklar(p.subject)) {
+        if (g.endi || skra.eftirGotu.has(g.lykill) || !/\|\d{1,3}[a-z]?$/.test(g.lykill)) continue;
+        if (!goturUtan.has(g.lykill)) goturUtan.set(g.lykill, { texti: g.texti.trim(), postar: new Set() });
+        goturUtan.get(g.lykill).postar.add(p.id);
       }
     }
     const lenX = String(x.len || '').toLowerCase();
@@ -254,7 +286,7 @@
       sjalf: stofn.length >= 4 && aDiakrit(h.c.nafn).includes(stofn),
       stig: h.kt.size * 100 + h.gata.size * 10 + (h.len ? 1 : 0),
     })).sort((a, b) => b.stig - a.stig || String(a.c.nafn || '').localeCompare(String(b.c.nafn || ''), 'is'));
-    return { listi, utanSkrar };
+    return { listi, utanSkrar, goturUtan };
   }
 
   function openPicker(x) {
@@ -282,12 +314,13 @@
 
     const skra = husaSkra();
     let husMedRokum = [];   // hús (ekki umsjónaraðilinn sjálfur) sem póstarnir fjalla um
+    let goturUtanNofn = []; // hús í efnislínum sem eru ekki í skránni
 
     const tengja = async (kt, nm) => {
       if (!kt) { toast('⚠ Fyrirtæki vantar kennitölu'); return; }
-      const onnur = husMedRokum.filter((h) => String(h.c.kennitala || '') !== kt);
-      if (husMedRokum.length >= 2 && onnur.length) {
-        const nofn = onnur.slice(0, 4).map((h) => h.c.nafn).join(', ') + (onnur.length > 4 ? ' …' : '');
+      const onnur = husMedRokum.filter((h) => String(h.c.kennitala || '') !== kt).map((h) => h.c.nafn).concat(goturUtanNofn);
+      if (husMedRokum.length + goturUtanNofn.length >= 2 && onnur.length) {
+        const nofn = onnur.slice(0, 4).join(', ') + (onnur.length > 4 ? ' …' : '');
         if (!confirm('Tengja ' + x.netfang + ' við „' + nm + '“?\n\nNetfangið skrifar líka um ' + onnur.length + ' önnur hús (' + nofn + '). ' +
           'Tengt einu húsi getur það hús fengið póst netfangsins um hin húsin líka.')) return;
       }
@@ -322,11 +355,14 @@
       const host = wrap.querySelector('#tgl-till');
       const rok = t.listi.filter((h) => h.kt.size || h.gata.size);
       husMedRokum = rok.filter((h) => !h.sjalf);
+      goturUtanNofn = [...t.goturUtan.values()].sort((a, b) => b.postar.size - a.postar.size)
+        .map((u) => u.texti.charAt(0).toUpperCase() + u.texti.slice(1));
       const adeinsLen = t.listi.filter((h) => !h.kt.size && !h.gata.size && h.len);
       const fjoldi = (n, eitt, fleiri) => n + ' ' + (n === 1 ? eitt : fleiri);
       let html = '';
-      if (husMedRokum.length >= 2) {
-        html += '<div class="tgl-advorun">⚠ Þetta netfang skrifar um <b>' + husMedRokum.length + ' ólík hús</b> og er líklega umsjónaraðili. ' +
+      const husFjoldi = husMedRokum.length + goturUtanNofn.length;
+      if (husFjoldi >= 2) {
+        html += '<div class="tgl-advorun">⚠ Þetta netfang skrifar um <b>' + husFjoldi + ' ólík hús</b> og er líklega umsjónaraðili. ' +
           'Veldu húsið sem pósturinn á við, eða láttu vera að tengja netfangið við eitt hús.</div>';
       }
       html += rok.slice(0, 12).map((h) => {
@@ -343,6 +379,11 @@
       if (t.utanSkrar.size) {
         html += '<div class="tgl-till-r" style="margin:6px 2px">Kennitölur í póstunum sem eru EKKI í skránni: ' +
           esc([...t.utanSkrar.entries()].map(([k, s]) => ktSnid(k) + ' (' + fjoldi(s.size, 'póstur', 'póstar') + ')').join(', ')) + '</div>';
+      }
+      if (t.goturUtan.size) {
+        const utan = [...t.goturUtan.values()].sort((a, b) => b.postar.size - a.postar.size).slice(0, 8);
+        html += '<div class="tgl-till-r" style="margin:6px 2px">Hús í efnislínum sem finnast EKKI í skránni: ' +
+          esc(utan.map((u) => u.texti.charAt(0).toUpperCase() + u.texti.slice(1) + ' (' + fjoldi(u.postar.size, 'póstur', 'póstar') + ')').join(', ')) + '</div>';
       }
       if (adeinsLen.length) {
         html += '<details class="tgl-len"><summary>Fyrirtæki á sama léni án stoðar í póstunum (' + adeinsLen.length + ')</summary>' +
