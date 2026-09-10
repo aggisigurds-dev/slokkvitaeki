@@ -246,7 +246,10 @@
   var _q = '';
   function matchesQ(d) {
     if (!_q) return true;
-    return [d.num, d.customer_nafn, d.greitt_med, d._loc]
+    // 2026-09-10: _loc er LOC-hlutur ({label,emoji,…}), ekki strengur. String(hlutur)
+    // gaf "[object Object]" — svo staðsetningarleitin sem commit 3b19e28 lofaði virkaði
+    // aldrei, og leitarstrengurinn „object“ skilaði ÖLLUM röðum. Leitum í merkinu sjálfu.
+    return [d.num, d.customer_nafn, d.greitt_med, d._loc && d._loc.label]
       .map(function (x) { return String(x == null ? '' : x).toLowerCase(); })
       .join(' ').indexOf(_q) > -1;
   }
