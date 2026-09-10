@@ -96,9 +96,12 @@
         setBadge('field', due.count || 0, 'orange');
       }
 
-      // Afgreiðsla: active jobs not yet collected
+      // Afgreiðsla: opin verk — ekki sótt, ekki eydd, ekki aflýst.
+      // 10.09.2026: hér stóð aðeins .neq('status','collected'), svo EYDD verk töldust
+      // með — 122 í stað 37 (mælt sama dag). Sama skilgreining og „Verk í gangi" á
+      // Stjórnstöð (61-command-center.js).
       const af = await sb.from('verkbeidnir').select('id', { count: 'exact', head: true })
-        .neq('status', 'collected');
+        .not('status', 'in', '(collected,eytt,cancelled)');
       setBadge('counter', af.count || 0, 'blue');
 
       // Verkstæði: jobs in workshop

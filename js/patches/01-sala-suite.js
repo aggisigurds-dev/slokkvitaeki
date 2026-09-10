@@ -817,6 +817,9 @@
     const like = `%${q.replace(/[%_]/g, m => '\\' + m)}%`;
     const filters = [];
     if (!isNaN(Number(q)) && q.trim() !== '') filters.push(`num.eq.${Number(q)}`);
+    // 10.09.2026 — leit á R-númeri (t.d. R-000634) fann ekkert: num er TEXTI
+    // („R-000634-V1") og aðeins hrein tala var borin saman (num.eq).
+    filters.push(`num.ilike.${like}`);
     filters.push(`customer.ilike.${like}`);
     filters.push(`phone.ilike.${like}`);
     const { data, error } = await c.from('verkbeidnir')

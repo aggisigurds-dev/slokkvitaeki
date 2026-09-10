@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-/* VERKSTAÐA — verkbeiðni fær aðeins kanónískt stöðugildi.
+/* VERKSTAÐA — verkbeiðni fær aðeins stöðugildi sem kerfið skilur.
  *
  * Af hverju hann er til (10.09.2026): 01-sala-suite.js skrifaði BIRTINGARTEXTA
  * sem stöðu — 'Tilbúið', 'Í vinnslu', 'Afhent', 'Greitt', 'Selt' — í stað geymdu
@@ -9,11 +9,12 @@
  * OPIÐ á Stjórnstöð. Leiðirnar voru dauðar meðan síur Sölu-svítunnar hittu engar
  * raðir. Þegar síurnar voru lagaðar sama dag urðu takkarnir virkir — og þessi
  * skrif með. Enginn vörður sá það; prófunaragent fann það í viðmótinu.
+ * Á kóðanum fyrir lagfæringu var þessi vörður RAUÐUR á 9 stöðum (6 í 01).
  *
  * REGLAN: hvert stöðugildi sem kóðinn SKRIFAR á verkbeidnir — .update/.insert/
  * .upsert á .from('verkbeidnir'), updateVerkStatus(id, { status }) og
- * DB.updateJobStatus(id, status) — verður að vera í KANON hér að neðan.
- * Rautt frá fyrsta broti — engin grunnlína.
+ * DB.updateJobStatus(id, status) — verður að vera í KANON eða SERGILDI hér að
+ * neðan. Rautt frá fyrsta broti — engin grunnlína.
  *
  * Takmörk: grípur aðeins stöðugildi skrifuð sem strengur beint í kallinu.
  * Stöðu sem er sett saman í breytu annars staðar (t.d. updates-hlutur í 137)
@@ -34,6 +35,16 @@ const mappa = process.argv[2] || path.join(rot, 'js');
 // 'eytt', mjúk eyðing í 78) verður að vera til sem lykill í U.sl; annars er listinn
 // orðinn úreltur og vörðurinn segir það í stað þess að segja grænt.
 const KANON = ['received', 'inprogress', 'ready', 'collected', 'done', 'eytt'];
+
+// Gildi sem eru SKRIFUÐ á einum stað og LESIN á öðrum — ekki birtingartexti, heldur
+// stöður sem ákveðinn hluti kerfisins skilur. Mælt 10.09.2026: 0 raðir með hvoru.
+// Hvert ber lesandann sinn, eins og ALLOW-ástæða; finnist enginn lesandi lengur á
+// gildið heima í brotalistanum.
+const SERGILDI = {
+  cancelled: 'aflýst — 137-verk-actions skrifar, 143-drog-list les (LOC.afturkallad)',
+  i_geymslu: 'í geymslu — settigeymslu.js skrifar, features.js _normStatus og U.sl lesa',
+};
+
 const utils = fs.readFileSync(path.join(rot, 'js/utils.js'), 'utf8');
 const sl = /\bsl\s*:\s*function\s*\(\s*\w+\s*\)\s*\{\s*var\s+\w+\s*=\s*\{([^}]*)\}/.exec(utils);
 if (!sl) {
@@ -48,7 +59,7 @@ if (vantar.length) {
     'vantar þar: ' + vantar.join(', ') + '. Uppfærðu KANON áður en treyst er á vörðinn.');
   process.exit(1);
 }
-const KANON_SET = new Set(KANON);
+const LEYFT = new Set([...KANON, ...Object.keys(SERGILDI)]);
 
 const skrar = [];
 (function ganga(d) {
@@ -68,7 +79,7 @@ const anAthugasemda = s => s
 const STADA = /(?:^|[,{\s])status\s*:\s*['"]([^'"]+)['"]/;
 const brot = [];
 const skra = (f, src, idx, gildi, leid) => {
-  if (KANON_SET.has(gildi)) return;
+  if (LEYFT.has(gildi)) return;
   brot.push({
     f: path.relative(rot, f).split(path.sep).join('/'),
     lina: src.slice(0, idx).split('\n').length, gildi, leid,
@@ -98,16 +109,16 @@ for (const f of skrar) {
   while ((m = ujs.exec(src)) !== null) skra(f, src, m.index, m[1], 'updateJobStatus');
 }
 
-const kanonTexti = KANON.join(' · ');
+const leyftTexti = [...LEYFT].join(' · ');
 if (brot.length) {
-  console.log('❌ audit-verk-stada: ' + brot.length + ' skrif á verkbeidnir.status utan kanónunnar:\n');
+  console.log('❌ audit-verk-stada: ' + brot.length + ' skrif á verkbeidnir.status sem kerfið skilur ekki:\n');
   for (const b of brot) {
     console.log('  ' + ("'" + b.gildi + "'").padEnd(13) + b.leid.padEnd(30) + b.f + ':' + b.lina);
   }
-  console.log('\nKanónan: ' + kanonTexti);
+  console.log('\nLeyfð gildi: ' + leyftTexti);
   console.log('RED: ' + brot.length + ' stöðugildi sem ekkert annað í kerfinu les — verkið hverfur úr ' +
     'listum og telst opið á Stjórnstöð. Notaðu geymda gildið, ekki birtingartextann.');
   process.exit(1);
 }
-console.log('✅ GRÆNT verkstaða: öll skrif á verkbeidnir.status nota kanónuna (' + kanonTexti + ') — ' +
-  skrar.length + ' skrár.');
+console.log('✅ GRÆNT verkstaða: öll skrif á verkbeidnir.status nota gildi sem kerfið les (' +
+  leyftTexti + ') — ' + skrar.length + ' skrár.');

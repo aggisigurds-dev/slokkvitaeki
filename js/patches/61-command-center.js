@@ -136,7 +136,9 @@
       // sían henti engu og Stjórnstöðin taldi ÖLL 724 verkin sem opin. Það er
       // hin hliðin á sama pening: sía sem hittir ekkert skilar tómu, en
       // .neq sem hittir ekkert skilar ÖLLU. Röng tala, ekki tómur listi.
-      safe(SB.from('verkbeidnir').select('id,num,customer,status').neq('status','collected').neq('status','eytt')),
+      // Aflýst verk ('cancelled', skrifað af 137-verk-actions) telst heldur ekki í
+      // gangi: gamla sían útilokaði það, og án þess bættist hvert aflýst verk við.
+      safe(SB.from('verkbeidnir').select('id,num,customer,status').not('status','in','(collected,eytt,cancelled)')),
       safe(SB.from('verkdagbok').select('id,fyrirtaeki,job_date,athugasemdir').gte('job_date', today.toISOString().slice(0,10)).lt('job_date', tomorrow.toISOString().slice(0,10)).order('job_date')),
       // 3.749 tæki eru á gjalddaga innan 30 daga — stök .select() skilaði 1000,
       // svo Stjórnstöðin sýndi aðeins ~27% af því sem er að falla á tíma.
