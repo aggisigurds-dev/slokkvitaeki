@@ -30,6 +30,8 @@
   var LS_OPIN = 'sara_yf_opin';      // samanbrot — útlitsval, má vera staðbundið
   var LS_KLARAD = 'sara_yf_klarad';  // „sýna kláruð" — sama
   var LS_HAMUR = 'sara_yf_vinnuhamur'; // vinnuhamur — útlitsval eins vafra
+  var LS_ROD = 'sara_yf_rodun';        // röðunarval — útlitsval eins vafra
+  var MANUDIR = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
   var BUCKET = 'verkbord-files';       // sama geymsla og Þjónustuborðið notar
 
   function sb() { return window.DB && DB.sb; }
@@ -64,7 +66,8 @@
     // skrunaður upp fyrir skjáinn — og #vb-controls er position:sticky, svo
     // síuraðirnar svifu OFAN Á töflunni á meðan hann vann í henni. Hamurinn
     // slekkur á öllu því; hann man valið eftir að honum er slökkt handvirkt.
-    vinnuhamur: lsGet(LS_HAMUR, null) === null ? true : lsGet(LS_HAMUR, true) };
+    vinnuhamur: lsGet(LS_HAMUR, null) === null ? true : lsGet(LS_HAMUR, true),
+    rodun: lsGet(LS_ROD, { f: 'rod', d: 1 }) };
 
   // ── Reikningur per mál ───────────────────────────────────────────────────
   // NÁKVÆMLEGA sama reikniaðferð og reiknivélin á fyrirtækjasíðunni (patch 129):
@@ -89,10 +92,53 @@
     return { ex: ex, vsk: vsk, total: ex + vsk };
   }
   function samtals(r) { return reikna(r).total; }
+  // Mánuður raðast eftir MÁNAÐARNÚMERI, ekki stafrófi („Ágúst" á ekki að lenda
+  // á undan „Febrúar"). Tómt fer alltaf aftast, í hvora áttina sem raðað er.
+  function manIx(v) {
+    var t = String(v == null ? '' : v).trim().toLowerCase();
+    if (!t) return 99;
+    for (var i = 0; i < MANUDIR.length; i++) if (t.indexOf(MANUDIR[i].toLowerCase()) === 0) return i;
+    return 98;
+  }
+  function bladNr(v) {
+    var m = /\d+/.exec(String(v == null ? '' : v));
+    return m ? +m[0] : 9999;
+  }
+  function radlykill(r, f) {
+    if (f === 'manudur') return manIx(r.manudur);
+    if (f === 'blad') return bladNr(r.blad_nr);
+    if (f === 'upphaed') return samtals(r);
+    if (f === 'nafn') return String(r.fyrirtaeki || '');
+    if (f === 'stada') return r.stada === 'samthykkt' ? 0 : r.stada === 'bidur' ? 1 : 2;
+    return Number(r.rod) || 0;
+  }
+  // Tómur reitur er ekki gildi — hann er óútfyllt. Hann fer því ALLTAF aftast,
+  // í hvora áttina sem raðað er. (Fyrsta útgáfan gaf tómu lykilinn 99 og þá
+  // stukku fjörutíu auðir mánuðir fremst um leið og snúið var við.)
+  function tomt(r, f) {
+    if (f === 'manudur') return !String(r.manudur || '').trim();
+    if (f === 'blad') return !String(r.blad_nr || '').trim();
+    if (f === 'nafn') return !String(r.fyrirtaeki || '').trim();
+    return false;
+  }
   function synilegar() {
-    return state.rows.filter(function (r) {
+    var listi = state.rows.filter(function (r) {
       return state.synaKlarad ? true : (r.stada === 'bidur' || r.stada === 'samthykkt');
     });
+    var f = (state.rodun && state.rodun.f) || 'rod';
+    var d = (state.rodun && state.rodun.d) || 1;
+    function bera(a, b) {
+      var x = radlykill(a, f), y = radlykill(b, f), c;
+      if (typeof x === 'string') c = x.localeCompare(y, 'is');
+      else c = x - y;
+      if (c) return c * d;
+      return (Number(a.rod) || 0) - (Number(b.rod) || 0);   // fast band svo röðin flökti ekki
+    }
+    var med = [], an = [];
+    listi.forEach(function (r) { (tomt(r, f) ? an : med).push(r); });
+    med.sort(bera);
+    an.sort(function (a, b) { return (Number(a.rod) || 0) - (Number(b.rod) || 0); });
+    return med.concat(an);
   }
 
   // ── Gögn ────────────────────────────────────────────────────────────────
@@ -188,6 +234,10 @@
       '.syf-haus{position:sticky;top:0;z-index:40}',
       // Kerfis-talan: læst, daufari, aðeins minni — sést en keppir ekki við
       // reitinn sem verið er að vinna í. Rauð þegar hún stangast á við blaðið.
+      '.syf-man{flex:none;width:96px;font-size:12px;padding:3px 7px}',
+      '.syf-blad{flex:none;width:56px;font-size:12px;padding:3px 7px;text-align:center}',
+      '.syf-man:placeholder-shown,.syf-blad:placeholder-shown{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0}',
+      '@media(max-width:820px){.syf-man,.syf-blad{display:none}}',
       '.syf-par{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}',
       '.syf-kerfi{font-size:11.5px;font-weight:700;color:#94a3b8;font-variant-numeric:tabular-nums;',
       'background:#f1f5f9;border:1px solid #e2e8f0;border-radius:5px;padding:2px 6px;white-space:nowrap;cursor:default;user-select:none}',
@@ -211,6 +261,14 @@
       '<div class="syf-hd" data-act="opna" data-id="' + r.id + '">' +
         '<span style="flex:none;color:#94a3b8;font-size:11px;width:10px">' + (opid ? '▾' : '▸') + '</span>' +
         '<span class="syf-nafn">' + esc(r.fyrirtaeki) + '</span>' +
+        // Mánuður og blaðnúmer beint í línunni — breytanlegt án þess að opna
+        // málið, og raðanlegt úr hausnum. data-act="reit" gerir tvennt: vistar
+        // innsláttinn OG stöðvar opnunar-smellinn (closest finnur reitinn, ekki
+        // hausinn), svo það þarf enga sér-stopPropagation.
+        '<input class="syf-inp syf-man" data-act="reit" data-id="' + r.id + '" data-f="manudur" ' +
+          'list="syf-man-dl" placeholder="Mánuður" title="Mánuðurinn sem skoðunin fór fram" value="' + esc(r.manudur || '') + '">' +
+        '<input class="syf-inp syf-blad" data-act="reit" data-id="' + r.id + '" data-f="blad_nr" ' +
+          'placeholder="Blað" title="Númer vinnublaðsins" value="' + esc(r.blad_nr || '') + '">' +
         merki(r) +
         '<span class="syf-tala">' + kr(samtals(r)) + '</span>' +
         '<button class="syf-hak' + (samth ? ' on' : '') + '" data-act="hak" data-id="' + r.id + '" ' +
@@ -327,7 +385,6 @@
     // Neðsta röð: skoðunarmaður · mánuður · dagsetning + tenglar
     h += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
       '<input class="syf-inp" style="width:110px" data-act="reit" data-id="' + r.id + '" data-f="skodunarmadur" placeholder="Skoðunarmaður" value="' + esc(r.skodunarmadur || '') + '">' +
-      '<input class="syf-inp" style="width:100px" data-act="reit" data-id="' + r.id + '" data-f="manudur" placeholder="Framkvæmd" value="' + esc(r.manudur || '') + '">' +
       '<input class="syf-inp" style="width:110px" data-act="reit" data-id="' + r.id + '" data-f="dagsetning" placeholder="dd.mm.áááá" value="' + esc(r.dagsetning || '') + '">' +
       (r.fyrirtaeki_id ? '<a class="syf-btn" style="text-decoration:none" href="#company/' + r.fyrirtaeki_id + '">🏢 Opna fyrirtæki</a>' : '') +
       '<span style="flex:1"></span>' +
@@ -356,6 +413,14 @@
         (bidurN ? '<span class="syf-merki" style="background:#fef3c7;color:#854d0e">' + bidurN + ' bíða</span>' : '') +
         (samthN ? '<span class="syf-merki" style="background:#dbeafe;color:#1e40af">' + samthN + ' samþykkt</span>' : '') +
         '<span style="color:#e2e8f0;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums">' + kr(heild) + '</span>' +
+        '<select class="syf-btn" data-act="rodun" title="Raða listanum" style="background:#1f2937;color:#e5e7eb;border-color:#374151;padding:5px 8px">' +
+          [['rod', '↕ Röð'], ['manudur', '📅 Mánuður'], ['blad', '📄 Blað nr.'], ['nafn', '🔤 Fyrirtæki'],
+           ['upphaed', '💰 Upphæð'], ['stada', '🚦 Staða']].map(function (o) {
+            return '<option value="' + o[0] + '"' + (state.rodun.f === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+          }).join('') +
+        '</select>' +
+        '<button class="syf-btn" data-act="snua" title="Snúa röðinni við" ' +
+          'style="background:#1f2937;color:#e5e7eb;border-color:#374151">' + (state.rodun.d < 0 ? '↓' : '↑') + '</button>' +
         '<button class="syf-btn" data-act="vinnuhamur" title="Fela síur, flokka og VALIÐ MÁL — borðið fær alla breiddina" ' +
           'style="background:' + (state.vinnuhamur ? '#16a34a' : '#1f2937') + ';color:#e5e7eb;border-color:' + (state.vinnuhamur ? '#15803d' : '#374151') + '">' +
           (state.vinnuhamur ? '⛶ Vinnuhamur á' : '⛶ Vinnuhamur') + '</button>' +
@@ -371,6 +436,8 @@
     h += '<div style="display:flex;align-items:center;gap:8px;padding-top:3px">' +
       '<button class="syf-btn" data-act="toggle-klarad">' + (state.synaKlarad ? '🙈 Fela kláruð' : '👁 Sýna kláruð (' + kladN + ')') + '</button>' +
       '<span style="font-size:11px;color:#94a3b8">Hakið er grænt ljós — Sara býr ekki til reikning fyrr en það er komið.</span>' +
+      // Datalistinn aftast — sem fyrsta barn listans braut hann `.syf-mal:first-child`.
+      '<datalist id="syf-man-dl">' + MANUDIR.map(function (m) { return '<option value="' + m + '">'; }).join('') + '</datalist>' +
       '</div>';
 
     h += '</div></div>';
@@ -390,6 +457,10 @@
       settaHam(); teikna();
       if (state.vinnuhamur) { var hst = document.getElementById(HOST_ID); if (hst) hst.scrollIntoView({ block: 'start' }); }
       return;
+    }
+    if (act === 'snua') {
+      state.rodun = { f: state.rodun.f, d: (state.rodun.d || 1) * -1 };
+      lsSet(LS_ROD, state.rodun); teikna(); return;
     }
     if (act === 'stor-mynd') {
       var mx = state.storMynd.indexOf(id);
@@ -431,6 +502,15 @@
     }
     if (act === 'sleppa') { vista(id, { stada: 'klarad' }, true); teikna(); return; }
     if (act === 'opna-aftur') { vista(id, { stada: 'bidur', samthykkt_at: null, samthykkt_by: null }, true); teikna(); return; }
+  }, false);
+
+  document.addEventListener('change', function (e) {
+    var el = e.target;
+    if (!el || !el.dataset || el.dataset.act !== 'rodun') return;
+    var host = document.getElementById(HOST_ID);
+    if (!host || !host.contains(el)) return;
+    state.rodun = { f: el.value, d: state.rodun.d || 1 };
+    lsSet(LS_ROD, state.rodun); teikna();
   }, false);
 
   // Innsláttur — vistar jafnóðum (debounce). ALLTAF LEYFA VISTUN: engin
