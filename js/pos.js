@@ -1709,7 +1709,12 @@
           // the saved reikningur exactly.
           lines: linur,
           totals: t,
-          method: pmLabel,
+          // 2026-09-10: `method` er KÓÐINN (fer óbreyttur í fakeSale.greitt_med svo
+          // SalaInvoice.paymentTermsFor lesi hann rétt); `methodLabel` er það sem
+          // starfsmaðurinn sér. Eftir kóða-umbreytinguna 09.09 stóð „reidufe" í
+          // „Sala kláruð"-glugganum — sannreynt í viðmótinu 10.09 (R-000909).
+          method: pmGildi,
+          methodLabel: (window.Counter && Counter._payLabel) ? Counter._payLabel(pmGildi) : pmGildi,
           phone: state.customer.simi || '',
           // 2026-05-18: snapshot discount so "Prenta aftur" shows it on the receipt.
           // Without these, fakeSale below hardcodes afslattur=0 and the re-print
@@ -1750,7 +1755,7 @@
         '<div style="padding:20px 26px;font-size:14px;color:#0f172a">' +
           '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="color:#64748b">Reikningsnúmer:</span><span style="font-weight:700;font-family:monospace">' + esc(info.num) + '</span></div>' +
           '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="color:#64748b">Viðskiptavinur:</span><span style="font-weight:600">' + esc(info.customer) + '</span></div>' +
-          '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="color:#64748b">Greitt með:</span><span style="font-weight:600">' + esc(info.method) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="color:#64748b">Greitt með:</span><span style="font-weight:600">' + esc(info.methodLabel || ((window.Counter && Counter._payLabel) ? Counter._payLabel(info.method) : info.method))+ '</span></div>' +
           '<div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:#64748b">Verkstæði:</span><span style="font-weight:600;color:#1e40af">' + esc(info.verkMsg) + '</span></div>' +
         '</div>' +
         '<div style="padding:12px 22px 18px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">' +

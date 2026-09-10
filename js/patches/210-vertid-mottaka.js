@@ -323,12 +323,43 @@
     if (error) { toast('Villa: ' + (error.message || error)); return null; }
     return created ? created.id : null;
   }
+  // Custody-stöður sem halda tæki á móttökuborðinu (patch 179). 'afhent' og
+  // null eru EKKI á borðinu.
+  const A_BORDI = ['móttekið', 'á verkstæði', 'tilbúið'];
+
+  // 10.09.2026 — „afgreiðsluborðið tæmist aldrei" (Agnar). Að loka vertíð
+  // slökkti bara á `seasonal_job` — tækin sátu áfram með custody 'móttekið' og
+  // stóðu því á móttökuborðinu að eilífu. Mælt: vertíð 1 („Test fyrirtæki")
+  // var LOKUÐ og tækið hennar hafði samt staðið 92 daga á borðinu. Lokun
+  // skilar núna tækjunum líka: custody → 'afhent' og sóknardagur stimplaður
+  // (aðeins ef hann vantaði). Notandinn sér töluna í staðfestingunni fyrst.
   async function closeJob(job) {
     const SB = getSB(); if (!SB) return;
-    if (!await Confirm.show('Loka vertíð fyrir „' + (job.base ? job.base.nafn : '') + '“? Tækin haldast skráð, en fyrirtækið dettur af borðinu.')) return;
-    await SB.from('seasonal_job').update({ status: 'closed', closed_at: new Date().toISOString() }).eq('id', job.id);
+    const aBordi = (job.units || []).filter(u => A_BORDI.indexOf(u.custody_status) >= 0);
+    const spurt = 'Loka vertíð fyrir „' + (job.base ? job.base.nafn : '') + '“? Tækin haldast skráð, en fyrirtækið dettur af borðinu.' +
+      (aBordi.length ? '\n\n' + aBordi.length + ' tæki standa enn á móttökuborðinu — þau verða merkt afhent (sótt í dag) svo borðið tæmist.' : '');
+    if (!await Confirm.show(spurt)) return;
+    if (aBordi.length) {
+      const today = todayIso();
+      const utan = aBordi.filter(u => !u.picked_up_at).map(u => u.id);
+      const allir = aBordi.map(u => u.id);
+      // Sóknardagur aðeins á þau sem hafa hann ekki — dagsetning sem þegar er
+      // skráð á ekki að færast fram við lokun.
+      if (utan.length) {
+        const r1 = await SB.from('uttaeki').update({ custody_status: 'afhent', picked_up_at: today }).in('id', utan);
+        if (r1.error) { toast('Villa við að skila tækjum: ' + (r1.error.message || r1.error)); return; }
+      }
+      const eftir = allir.filter(id => utan.indexOf(id) < 0);
+      if (eftir.length) {
+        const r2 = await SB.from('uttaeki').update({ custody_status: 'afhent' }).in('id', eftir);
+        if (r2.error) { toast('Villa við að skila tækjum: ' + (r2.error.message || r2.error)); return; }
+      }
+      for (const u of aBordi) await logEvent(u, 'pickup', 'afhent');
+    }
+    const rj = await SB.from('seasonal_job').update({ status: 'closed', closed_at: new Date().toISOString() }).eq('id', job.id);
+    if (rj.error) { toast('Villa: ' + (rj.error.message || rj.error)); return; }
     state.selectedJobId = null;
-    toast('Vertíð lokað');
+    toast('Vertíð lokað' + (aBordi.length ? ' · ' + aBordi.length + ' tæki afhent' : ''));
     await loadAll();
   }
 
@@ -543,17 +574,22 @@
   }
 
   // Check-out / check-in toggle for a single tæki.
+  // 10.09.2026: `.update()` hendir ekki villu — hún var aldrei lesin, svo
+  // hnappurinn gat orðið grænn („✓ Sótt") án þess að nokkuð vistaðist og
+  // datt aftur í „Sækja" við næstu hleðslu. Villan er lesin núna.
   async function togglePickup(unitId) {
     const SB = getSB(); if (!SB) return;
     const job = selectedJob(); if (!job) return;
     const u = job.units.find(x => String(x.id) === String(unitId)); if (!u) return;
     if (u.picked_up_at) {
-      await SB.from('uttaeki').update({ picked_up_at: null, custody_status: 'móttekið' }).eq('id', unitId);
+      const { error } = await SB.from('uttaeki').update({ picked_up_at: null, custody_status: 'móttekið' }).eq('id', unitId);
+      if (error) { toast('Villa við vistun: ' + (error.message || error)); return; }
       u.picked_up_at = null; u.custody_status = 'móttekið';
       await logEvent(u, 'custody', 'móttekið');
     } else {
       const today = todayIso();
-      await SB.from('uttaeki').update({ picked_up_at: today, custody_status: 'afhent' }).eq('id', unitId);
+      const { error } = await SB.from('uttaeki').update({ picked_up_at: today, custody_status: 'afhent' }).eq('id', unitId);
+      if (error) { toast('Villa við vistun: ' + (error.message || error)); return; }
       u.picked_up_at = today; u.custody_status = 'afhent';
       await logEvent(u, 'pickup', 'afhent');
       toast('📦 Sótt: ' + (u.serial || ''));

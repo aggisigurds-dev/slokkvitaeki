@@ -927,6 +927,21 @@
     return Object.keys(out).length > 0;
   }
 
+  // `.range(0, 2999)` þýðir EKKI 3000 raðir. PostgREST er með þak (db-max-rows) og
+  // skilaði nákvæmlega 1000 röðum — ÁN villu, án nokkurrar vísbendingar um að meira
+  // væri til. Mælt 10.09.2026 á lifandi grunni: fyrirtaeki = 1311 raðir, fyrirspurnin
+  // skilaði 1000; customers_base = 1141 → 1000. Þau 311 fyrirtæki sem duttu út (þ.á m.
+  // Dynsalir #678) fundust því ALDREI í `state.companies`, svo „✏️ Tengja" (selco-save)
+  // og „nýtt mál" (quickAdd) skrifuðu `fyrirtaeki_id: null` á málið — og þurrkuðu út
+  // festa tengingu sem var þegar rétt. Nafnið vistaðist, auðkennið hvarf: nákvæmlega
+  // sami gallaflokkur og „vistun segir ✓ en vistaði ekki".
+  // Þess vegna er sótt með DB.fetchAll, sem síðuskiptir þangað til síðan skilar minna
+  // en fullri síðu — eina leiðin sem sér allar raðirnar.
+  function allRows(q) {
+    return (window.DB && DB.fetchAll)
+      ? DB.fetchAll((a, b) => q(a, b))
+      : Promise.resolve(q(0, 2999)).then(r => (r && r.data) || []);
+  }
   async function loadCompanies() {
     if (state.companies) return state.companies;
     const SB = getSB(); if (!SB) { state.companies = []; return []; }
@@ -935,14 +950,14 @@
       // viðskiptavini + customers_base (2026-07-13). Sameinað + tvítök felld
       // (lækkuð nöfn), kýs röð sem ber customer_base_id.
       const [fy, vk, cb] = await Promise.all([
-        SB.from('fyrirtaeki').select('id,nafn,kennitala,customer_base_id').is('deleted_at', null).range(0, 2999),   // id → fyrirtaeki_id á málið (07.09.2026)
-        SB.from('vidskiptavinir').select('nafn,kennitala,customer_base_id').range(0, 2999),
-        SB.from('customers_base').select('nafn,kennitala,id').range(0, 2999)
+        allRows((a, b) => SB.from('fyrirtaeki').select('id,nafn,kennitala,customer_base_id').is('deleted_at', null).range(a, b)),   // id → fyrirtaeki_id á málið (07.09.2026)
+        allRows((a, b) => SB.from('vidskiptavinir').select('nafn,kennitala,customer_base_id').range(a, b)),
+        allRows((a, b) => SB.from('customers_base').select('nafn,kennitala,id').range(a, b))
       ]);
       const rows = [];
-      (fy.data || []).forEach(c => c.nafn && rows.push({ nafn: c.nafn, kennitala: c.kennitala, customer_base_id: c.customer_base_id, fid: c.id, src: 'fyrirtaeki' }));
-      (vk.data || []).forEach(c => c.nafn && rows.push({ nafn: c.nafn, kennitala: c.kennitala, customer_base_id: c.customer_base_id }));
-      (cb.data || []).forEach(c => c.nafn && rows.push({ nafn: c.nafn, kennitala: c.kennitala, customer_base_id: c.id }));
+      (fy || []).forEach(c => c.nafn && rows.push({ nafn: c.nafn, kennitala: c.kennitala, customer_base_id: c.customer_base_id, fid: c.id, src: 'fyrirtaeki' }));
+      (vk || []).forEach(c => c.nafn && rows.push({ nafn: c.nafn, kennitala: c.kennitala, customer_base_id: c.customer_base_id }));
+      (cb || []).forEach(c => c.nafn && rows.push({ nafn: c.nafn, kennitala: c.kennitala, customer_base_id: c.id }));
       const seen = new Map();
       rows.forEach(r => {
         const k = String(r.nafn).trim().toLowerCase();
@@ -950,7 +965,13 @@
         if (!ex || (!ex.fid && r.fid) || (!ex.customer_base_id && r.customer_base_id && !ex.fid)) seen.set(k, r);
       });
       state.companies = Array.from(seen.values());
-    } catch (_) { state.companies = []; }
+    } catch (_) {
+      // EKKI geyma tóma listann: `if (state.companies) return` hefði fest hann út
+      // lotuna, og þá skrifar selco-save `fyrirtaeki_id: null` á hvert einasta mál
+      // sem snert er eftir eina augnabliksbilun. Skila tómu núna, reyna aftur næst.
+      state.companies = null;
+      return [];
+    }
     return state.companies;
   }
 
@@ -3089,10 +3110,10 @@
         return;
       }
       // Fyrirtækjanafnið fremst í hausnum → fyrirtækjaspjaldið.
-      // NB: loadCompanies() dugar EKKI hér. Hún sækir nafn/kennitölu/
-      // customer_base_id en ALDREI fyrirtækis-id, svo co.id er alltaf undefined
-      // og _openCompanySafe(undefined) hættir þegjandi. Þess vegna er flett upp
-      // beint í fyrirtaeki-töflunni — sömu töflu og Companies.openDetail vinnur á.
+      // NB: loadCompanies() ber fyrirtækis-id síðan 07.09.2026 (`fid`) — gamla
+      // athugasemdin hér sagði annað og var röng. Uppflettingin situr samt beint í
+      // fyrirtaeki-töflunni af því að hún er nafn-óháð (ilike) og þarf ekkert
+      // skyndiminni — sama tafla og Companies.openDetail vinnur á.
       // Finnist nafnið ekki þar opnast „fyrri viðskipti" á nafninu í staðinn, svo
       // smellurinn skili alltaf einhverju.
       if (act === 'openco') {
@@ -3175,12 +3196,21 @@
         e.stopPropagation();
         const inp = document.getElementById('vb-sel-co-inp'); if (!inp) return;
         const nafn = inp.value.trim();
-        const match = (state.companies || []).find(c => c.nafn === nafn);
-        // 07.09.2026: fyrirtaeki_id fylgir með — málið tengist STAÐNUM með auðkenni, ekki bara nafni (358-reiturinn og
-        // skynjararnir nota það fyrst; nafnið er birtingarnafn).
-        const patch = { customer_nafn: nafn || null, customer_base_id: match ? (match.customer_base_id || null) : null, fyrirtaeki_id: match && match.fid ? match.fid : null };
-        saveRow(Number(id), patch);
-        renderSel(); renderList();
+        const saveId = Number(id);
+        // Beðið eftir fyrirtækjaskránni ÁÐUR en samsvörun er reiknuð. Áður var lesið
+        // beint úr `state.companies`, sem er null þangað til `loadCompanies()` skilar:
+        // smellur á ✓ innan við sekúndu frá „✏️ Tengja" hitti tóman lista og skrifaði
+        // `fyrirtaeki_id: null` — sem sagt þurrkaði út tenginguna sem verið var að staðfesta.
+        loadCompanies().then(cos => {
+          const list = cos || [];
+          // 07.09.2026: fyrirtaeki_id fylgir með — málið tengist STAÐNUM með auðkenni, ekki bara nafni (358-reiturinn og
+          // skynjararnir nota það fyrst; nafnið er birtingarnafn).
+          const match = list.find(c => c.nafn === nafn) ||
+                        list.find(c => String(c.nafn || '').trim().toLowerCase() === nafn.toLowerCase());
+          const patch = { customer_nafn: nafn || null, customer_base_id: match ? (match.customer_base_id || null) : null, fyrirtaeki_id: match && match.fid ? match.fid : null };
+          saveRow(saveId, patch);
+          renderSel(); renderList();
+        });
         return;
       }
       if (act === 'tagtoggle') {
@@ -3489,8 +3519,22 @@
       if (f === 'due_at') val = val ? new Date(val + 'T00:00:00').toISOString() : null;
       if (f === 'assigned_to') val = assignedForNew(val);
       if (f === 'customer_nafn') {
-        const match = (state.companies || []).find(c => c.nafn === val);
-        saveRow(id, { customer_nafn: val || null, customer_base_id: match ? match.customer_base_id : null });
+        // Textareiturinn í fulla ritlinum (⋯ Meira) skrifaði áður NAFN + base en snerti
+        // aldrei `fyrirtaeki_id`. Væri máli breytt af einu fyrirtæki yfir á annað sat
+        // gamla auðkennið eftir — og af því að 358-reiturinn (og skynjararnir) lesa
+        // auðkennið FYRST og nafnið aðeins til vara, sýndi spjaldið áfram RANGA
+        // fyrirtækið: tæki, ógreiddar sölur og skoðunardagsetningar af öðrum kúnna.
+        // Sama regla og í selco-save: auðkennið eltir nafnið, alltaf.
+        loadCompanies().then(cos => {
+          const list = cos || [];
+          const match = list.find(c => c.nafn === val) ||
+                        list.find(c => String(c.nafn || '').trim().toLowerCase() === String(val || '').trim().toLowerCase());
+          saveRow(id, {
+            customer_nafn: val || null,
+            customer_base_id: match ? (match.customer_base_id || null) : null,
+            fyrirtaeki_id: match && match.fid ? match.fid : null
+          });
+        });
       } else if (f === 'assigned_to') {
         const row = state.items.find(x => String(x.id) === String(id));
         const patch = { assigned_to: val };

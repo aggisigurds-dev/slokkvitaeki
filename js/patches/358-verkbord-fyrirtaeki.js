@@ -51,8 +51,13 @@
     const SB = getSB(); if (!SB) return [];
     if (coCache && Date.now() - coCacheAt < 120000) return coCache;
     if (window.Companies && Array.isArray(Companies.list) && Companies.list.length) { coCache = Companies.list; coCacheAt = Date.now(); return coCache; }
-    const r = await SB.from('fyrirtaeki').select('id,nafn,kennitala,er_i_thjonustu,afslattur_pct,netfang,customer_base_id').is('deleted_at', null).range(0, 2999);
-    coCache = r.data || []; coCacheAt = Date.now();
+    // Varaleiðin (Companies.list ekki hlaðinn enn): `.range(0, 2999)` skilar aðeins
+    // 1000 röðum — PostgREST-þakið, þögult og villulaust. Mælt 10.09.2026: fyrirtaeki
+    // = 1311 raðir. Þau 311 sem duttu út hefðu fengið „finnst hvorki í fyrirtækjaskrá
+    // né viðskiptavinaskrá" í reitnum þótt fyrirtækið sé til. Síðuskipta því alltaf.
+    const sel = (a, b) => SB.from('fyrirtaeki').select('id,nafn,kennitala,er_i_thjonustu,afslattur_pct,netfang,customer_base_id').is('deleted_at', null).range(a, b);
+    coCache = (window.DB && DB.fetchAll) ? await DB.fetchAll(sel) : ((await sel(0, 2999)).data || []);
+    coCacheAt = Date.now();
     return coCache;
   }
   async function finnaFyrirtaeki(nafn) {

@@ -303,13 +303,31 @@
       // already exists in vidskiptavinir or fyrirtaeki, warn and offer
       // "Velja eldri" instead of silently creating a duplicate row that
       // confuses the kt-lookup later.
-      if (ktClean) {
+      // 2026-09-10: þessi vörn var DAUÐ. `.eq('kennitala', ktClean)` bar hreinar
+      // tölur saman við dálk sem geymir BANDSTRIK — mælt: fyrirtaeki 1.210 raðir
+      // með bandstriki / 0 án, vidskiptavinir 422 / 0. Fyrirspurnin skilaði því
+      // ALDREI röð, aðvörunin birtist aldrei og hver „Stofna nýjan" bjó til nýtt
+      // afrit af kennitölu sem var þegar til (t.d. Tomas 280471-3059 og
+      // Norðnorðvestur 491209-0970 sem eiga nú röð í BÁÐUM töflum).
+      // Sama tveggja-forma .or og pos.js checkout notar (1238/1268).
+      // Enn fremur: `existing` tók vidskiptavinir-röðina FRAM YFIR fyrirtaeki, svo
+      // co_id gat orðið vidskiptavinir.id. solur.customer_id er lesið sem
+      // fyrirtaeki.id (DB-triggerinn solur_fill_base_id flettir því upp þar) og
+      // 321 id-númer eru til í BÁÐUM töflum — röng tafla þýðir því ekki „ekkert
+      // base_id" heldur base_id RANGS kúnna. fyrirtaeki gengur nú fyrir.
+      if (ktClean && ktClean.length === 10) {
         try {
+          const _dash = ktClean.slice(0, 6) + '-' + ktClean.slice(6);
+          const _ktOr = 'kennitala.eq.' + _dash + ',kennitala.eq.' + ktClean;
           const [existVi, existFy] = await Promise.all([
-            SB.from('vidskiptavinir').select('id,nafn,kennitala').eq('kennitala', ktClean).maybeSingle(),
-            SB.from('fyrirtaeki').select('id,nafn,kennitala').eq('kennitala', ktClean).maybeSingle()
+            SB.from('vidskiptavinir').select('id,nafn,kennitala').or(_ktOr).is('deleted_at', null).limit(1),
+            SB.from('fyrirtaeki').select('id,nafn,kennitala').or(_ktOr).is('deleted_at', null).limit(1)
           ]);
-          const existing = (existVi && existVi.data) || (existFy && existFy.data);
+          const _viRow = (existVi && existVi.data && existVi.data[0]) || null;
+          const _fyRow = (existFy && existFy.data && existFy.data[0]) || null;
+          // fyrirtaeki FYRST — aðeins sú tafla má gefa co_id.
+          const existing = _fyRow || _viRow;
+          const _existingIsCompany = !!_fyRow;
           if (existing) {
             const useExisting = await Confirm.show(
               'Þessi kennitala (' + ktClean.slice(0,6) + '-' + ktClean.slice(6) + ') er þegar skráð á:\n\n' +
@@ -324,7 +342,10 @@
                 if (st && st.customer) {
                   st.customer.nafn = existing.nafn || '';
                   st.customer.kt = existing.kennitala || '';
-                  st.customer.co_id = existing.id;
+                  // Aðeins fyrirtaeki.id má fara í co_id → solur.customer_id.
+                  // Vidskiptavinir-röð: skildu co_id eftir tómt og láttu
+                  // kt-uppflettinguna í pos.js finna réttan stað (eða engan).
+                  st.customer.co_id = _existingIsCompany ? existing.id : null;
                   st.customer.mode = 'kt';
                 }
               }
@@ -402,7 +423,12 @@
             st.customer.nafn = r.data.nafn || '';
             st.customer.kt = r.data.kennitala || '';
             st.customer.simi = r.data.simi || '';
-            st.customer.co_id = r.data.id;
+            // 2026-09-10: aðeins kanóníska leiðin (_kt10 → fyrirtaeki) skilar id
+            // sem má standa í solur.customer_id. Lausasölu-röð úr vidskiptavinir
+            // á ekki heima þar — DB-triggerinn flettir customer_id upp í
+            // `fyrirtaeki`, og 321 id-númer eru til í báðum töflum, svo röng
+            // tafla gefur base_id RANGS kúnna í stað þess að gefa ekkert.
+            st.customer.co_id = _kt10 ? r.data.id : null;
             st.customer.mode = 'kt';
           }
         }

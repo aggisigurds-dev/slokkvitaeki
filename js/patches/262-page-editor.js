@@ -374,6 +374,15 @@
       else if (prop === 'line-height') { r.decls['line-height'] = String(val / 100); }
       else if (unit === '%') { r.decls[prop] = val + '%'; }
       else if (unit === '' || UNITLESS_PROPS.has(prop)) { r.decls[prop] = String(val); }
+      // BREIDD: `width` eitt og sér er MARKLAUST þegar appið á `max-width` á
+      // hlutnum — vafrinn klemmir án þess að segja neitt. Mælt á lifandi #opp
+      // 2026-09-10: `html[data-viewmode="desktop"] #view-opp .op-main` hefur
+      // `max-width:min(1280px,100% - 40px)`; Breidd-sleðinn 1280→3840 skilaði
+      // reglunni `width:3840px !important` en raunbreiddin sat í 925px allan
+      // tímann. Það er „fasta þakið 1280" sem Agnar sá — ekki sleðinn sjálfur
+      // (hann nær 3840, sjá sliderRow). Losum því þakið um leið og notandinn
+      // velur breidd sjálfur. Það sést í reglunni og hverfur með ↺ Resetta.
+      else if (prop === 'width') { r.decls['width'] = val + 'px'; r.decls['max-width'] = 'none'; }
       else { if (prop === 'border-width') r.decls['border-style'] = 'solid'; r.decls[prop] = val + 'px'; }
     });
     if (!r0) return;
@@ -1250,11 +1259,47 @@
   //     reiknast af rangri breidd. Þess vegna er endurstaðsett við fonts.ready
   //     (sjá renderPageLinks) — ekki bara við fyrstu teikningu.
   // xPct = hlutfall af breidd skjals, yPx = px frá toppi SKJALS (ekki gluggans).
+  //
+  // 2026-09-10 — SKRUN-GÁMURINN ER EKKI GLUGGINN. Mælt á lifandi #opp:
+  // hjólað niður um 500px ⇒ `#view-opp.scrollTop` 0→500, efnið (.op-main)
+  // færðist −500px … en `window.scrollY` var ÁFRAM 0 og takkinn hreyfðist um
+  // 0px. Hver `.view` er sitt eigið `overflow-y:auto` svæði, svo lag sem er
+  // `position:absolute` á `body` hangir á upphaflega gáminum og hegðar sér
+  // nákvæmlega eins og `fixed` gagnvart efninu. Þess vegna er hér spurt hvaða
+  // gámur skrunar í raun — og `window.scrollY` er aðeins varaleiðin.
+  function plScrollHost() {
+    try {
+      const v = document.querySelector('.view.active');
+      if (v && v.scrollHeight > v.clientHeight + 4 && /auto|scroll/.test(getComputedStyle(v).overflowY)) return v;
+    } catch (_) {}
+    return document.scrollingElement || document.documentElement;
+  }
+  function plScrollTop() {
+    try {
+      const h = plScrollHost();
+      if (h === document.scrollingElement || h === document.documentElement)
+        return window.scrollY || h.scrollTop || 0;
+      return h.scrollTop || 0;
+    } catch (_) { return window.scrollY || 0; }
+  }
+  // Lagið sjálft situr fast í glugganum en er FÆRT um −scrollTop, svo takkarnir
+  // standa kyrrir MIÐAÐ VIÐ EFNIÐ. Sama sjónræna útkoma og „absolute inni í
+  // skrun-gáminum" — en án þess að snerta `position` á `.view`, sem myndi
+  // færa til alla absolute-afkomendur síðunnar í leiðinni.
+  function plSyncScroll() {
+    const dbox = document.getElementById('pe-pagelinks-doc');
+    if (!dbox) return;
+    dbox.style.transform = 'translate3d(0,' + (-plScrollTop()) + 'px,0)';
+  }
   function plClamp(el, xPct, yPx) {
     const d = document.documentElement;
+    const host = plScrollHost();
     const w = el.offsetWidth || 120, h = el.offsetHeight || 32;
     const dw = d.clientWidth || window.innerWidth || 1024;
-    const dh = Math.max(d.scrollHeight || 0, d.clientHeight || window.innerHeight || 768);
+    // Hæðin sem má staðsetja innan er hæð SKRUN-EFNISINS, ekki gluggans —
+    // annars klemmdist takki sem dreginn var niður eftir langri síðu upp í
+    // gluggahæð (845px) og stökk til baka við næstu teikningu.
+    const dh = Math.max(host.scrollHeight || 0, d.scrollHeight || 0, d.clientHeight || window.innerHeight || 768);
     let left = (xPct / 100) * dw;
     let top = +yPx || 0;
     left = Math.max(4, Math.min(left, dw - w - 4));
@@ -1299,7 +1344,9 @@
       dbox.id = 'pe-pagelinks-doc';
       document.body.appendChild(dbox);
     }
-    dbox.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:0;z-index:99500;pointer-events:none';
+    // fixed + translateY(−scrollTop): sjá plSyncScroll — skrun-gámurinn er
+    // `.view`, ekki glugginn, svo `absolute` á body skrunaði aldrei með.
+    dbox.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:0;z-index:99500;pointer-events:none;will-change:transform';
     dbox.innerHTML = '';
     const editMode = plEditMode();
     // Stíllinn er settur í HVERT sinn (ekki bara við stofnun): annars situr eldra
@@ -1357,6 +1404,7 @@
     });
     // Dráttur aðeins í ritilham — utan hans haggast takkinn ekki.
     if (editMode) chips('[data-pl-chip]').forEach(el => plDraggable(el, arr));
+    plSyncScroll();   // stilla lagið strax af við skrunstöðu síðunnar
     // Endurstaðsetja þegar letrið er komið: fyrsta mælingin á breidd takkans er
     // gerð með fallback-letri og skeikar nógu miklu til að klemman við brúnina
     // reiknist skakkt. Þetta keyrir einu sinni per teikningu og hreyfir ekkert
@@ -1402,10 +1450,10 @@
         }
         ev.preventDefault();
         // clientX/Y eru miðuð við GLUGGANN; skjal-lagið vill hnit frá toppi
-        // SKJALSINS, svo skrunstaðan bætist við. Án hennar stökk takkinn upp á
-        // við sem nam skruninu um leið og hann var sleppt.
+        // SKRUN-EFNISINS, svo skrunstaðan bætist við. Án hennar stökk takkinn
+        // upp á við sem nam skruninu um leið og hann var sleppt.
         const dw = document.documentElement.clientWidth || window.innerWidth || 1024;
-        plClamp(el, ((ev.clientX - offX) / dw) * 100, (ev.clientY - offY) + (window.scrollY || 0));
+        plClamp(el, ((ev.clientX - offX) / dw) * 100, (ev.clientY - offY) + plScrollTop());
       };
       const onUp = ev => {
         document.removeEventListener('pointermove', onMove, true);
@@ -2182,6 +2230,9 @@
     window.addEventListener('scroll', () => { if (picking) hideHighlight(); }, true);
     // link-takkar á síðum: teikna við ræsingu og elta síðu-skipti
     renderPageLinks(true);
+    // Skrun: capture=true því scroll BOBLAR EKKI — atburðurinn frá `.view`
+    // (raunverulega skrun-gámnum, sjá plScrollHost) næst aðeins í niðurleið.
+    document.addEventListener('scroll', plSyncScroll, { capture: true, passive: true });
     window.addEventListener('hashchange', () => setTimeout(() => renderPageLinks(true), 120));
     // Snúningur/stærðarbreyting: dregnir takkar eru geymdir sem hlutfall, svo
     // teiknum upp á nýtt til að klemma þá aftur inn í gluggann.

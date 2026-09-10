@@ -43,6 +43,7 @@
   function fold(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim(); }
   function getTech() { try { return localStorage.getItem('mt_tech') || ''; } catch (_) { return ''; } }
   function setTech(v) { try { localStorage.setItem('mt_tech', v || ''); } catch (_) {} }
+  function todayIso() { return new Date().toISOString().slice(0, 10); }
 
   function sinceLabel(at) {
     if (!at) return '';
@@ -164,11 +165,18 @@
     const SB = getSB(); if (!SB) return;
     const jobId = await findOrCreateJob(unit.customer_base_id);
     try {
-      await SB.from('uttaeki').update({
+      // received_at/picked_up_at fylgja með: tækið er komið aftur í hús, svo
+      // gamli sóknardagurinn má ekki standa (vertíðarborðið les hann).
+      const { error } = await SB.from('uttaeki').update({
         custody_status: 'móttekið',
         seasonal_job_id: jobId || unit.seasonal_job_id || null,
+        received_at: todayIso(),
+        picked_up_at: null,
       }).eq('id', unit.id);
+      if (error) throw error;
       unit.custody_status = 'móttekið';
+      unit.received_at = todayIso();
+      unit.picked_up_at = null;
       unit.seasonal_job_id = jobId || unit.seasonal_job_id || null;
       await logEvent(unit, 'arrival', 'móttekið');
       toast('📥 Móttekið: ' + (unit.serial || '') + (state.baseById[unit.customer_base_id] ? ' · ' + state.baseById[unit.customer_base_id].nafn : ''));
@@ -177,12 +185,28 @@
   }
 
   // ── Advance / step back custody ──────────────────────────────────────────────
+  // 10.09.2026 — „afgreiðsluborðið tæmist aldrei" (Agnar: „auk ef sótt og gengið
+  // frá að það fari ekki af afgreiðsluborðinu, eins og það sé ennþá eftir að
+  // sækja tækin"). Afhendingin hér skrifaði AÐEINS `custody_status`. En
+  // `picked_up_at` er reiturinn sem vertíðarborðið (patch 210) les fyrir
+  // „í húsi / sótt" — svo tæki sem var afhent HÉR stóð þar áfram sem ósótt.
+  // Mælt 10.09.2026: `picked_up_at` var tómt á öllum 6.092 röðum í `uttaeki`
+  // þótt 3 væru merkt 'afhent'. Afhending skrifar nú BÁÐA reiti, og skref til
+  // baka inn á borðið hreinsa sóknardaginn (tækið er þá aftur í húsi).
+  // `.update()` hendir ekki villu — hún er lesin, annars grænkar viðmótið án
+  // þess að nokkuð hafi vistast.
   async function advance(unit, toState) {
     const SB = getSB(); if (!SB) return;
+    const patch = {
+      custody_status: toState,
+      picked_up_at: toState === 'afhent' ? todayIso() : null,
+    };
     try {
-      await SB.from('uttaeki').update({ custody_status: toState }).eq('id', unit.id);
+      const { error } = await SB.from('uttaeki').update(patch).eq('id', unit.id);
+      if (error) throw error;
       unit.custody_status = toState;
-      await logEvent(unit, 'custody', toState);
+      unit.picked_up_at = patch.picked_up_at;
+      await logEvent(unit, toState === 'afhent' ? 'pickup' : 'custody', toState);
       if (toState === 'tilbúið') toast('✅ Tilbúið (rukkanlegt): ' + (unit.serial || ''));
       else if (toState === 'afhent') toast('📦 Afhent: ' + (unit.serial || ''));
       await load();
@@ -311,6 +335,7 @@
       serial, type: type || null, size: size || null,
       client: clientName || null, customer_base_id: baseId || null,
       seasonal_job_id: jobId || null, custody_status: 'móttekið', status: 'ok',
+      received_at: todayIso(), picked_up_at: null,
     };
     let saved = null;
     try {
@@ -365,6 +390,7 @@
       serial, type: type || null, size: size || null,
       client: clientName || null, customer_base_id: baseId || null,
       seasonal_job_id: jobId || null, custody_status: 'móttekið', status: 'ok',
+      received_at: todayIso(), picked_up_at: null,
     }));
     let saved = [];
     try {

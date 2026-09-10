@@ -25,8 +25,13 @@
 const fs = require('fs'), path = require('path');
 
 // Töflur sem eru (eða verða fljótt) yfir 1000 raðir.
+// Mælt 10.09.2026: fyrirtaeki 1460 · customers_base 1142 · thjonustubeidni 854
+// · arsskodun_report_facts 649. Síðustu tvær eru UNDIR þakinu en teljast með —
+// thjonustubeidni á 146 raðir eftir í klettinn og enginn tekur eftir því daginn
+// sem hún fer yfir. Það er einmitt mynstrið sem þessi vörður á að stöðva.
 const BIG = ['email_digest', 'ajour_registrations', 'uttaeki', 'timavera_entries',
-             'customer_documents', 'geocode_cache', 'fyrirtaeki', 'customers_base'];
+             'customer_documents', 'geocode_cache', 'fyrirtaeki', 'customers_base',
+             'thjonustubeidni', 'arsskodun_report_facts', 'solur'];
 
 // Mældar undanþágur — fyrirspurnir sem skila örugglega vel undir 1000 röðum.
 // Hver færsla ber ástæðu svo hægt sé að endurmeta þegar gögnin vaxa.
@@ -81,6 +86,56 @@ for (const f of files) {
     risky.push({ file: f.split(path.sep).join('/'), line: src.slice(0, m.index).split('\n').length,
                  tbl, seg: seg.replace(/\s+/g, ' ').slice(0, 140) });
   }
+}
+
+/* ── FASTUR GLUGGI STÆRRI EN ÞAKIÐ ───────────────────────────────────────────
+ * Gatið sem hleypti villunni í loftið 10.09.2026.
+ *
+ * Fyrri útgáfa taldi HVAÐA `.range(` sem er sem blaðsíðuflettingu (lína ~76) og
+ * hleypti því `.range(0, 2999)` beint í gegn. Það kall lítur út eins og vörn en
+ * er það ekki: PostgREST sker í 1000 óháð því hvað beðið er um, skilar status
+ * 200 og `content-range: 0-999/*`. Mælt á lifandi grunni sama dag —
+ * `Range: 0-2999` á `fyrirtaeki` (1460 raðir) skilaði nákvæmlega 1000. Engin
+ * villa. Þögult tap á 460 fyrirtækjum.
+ *
+ * Afleiðingin í reynd: Þjónustuborðið skrifaði `fyrirtaeki_id = null` fyrir
+ * hvert fyrirtæki sem lenti utan fyrstu 1000 — „✏️ Tengja" virtist virka og
+ * tengingin varð aldrei til. Fyrirtæki INNAN sneiðarinnar virkuðu, sem er
+ * ástæðan fyrir að þetta leit út eins og duttlungar.
+ *
+ * REGLAN: fastur `.range(a, b)` þar sem b-a+1 > 1000 er ALLTAF rangur, óháð
+ * töflu. Talan sjálf er yfirlýsing höfundarins um að hann búist við fleiri en
+ * 1000 röðum — og hann fær þær aldrei. Annaðhvort skilar fyrirspurnin færri en
+ * 1000 (þá er talan óþörf lygi) eða nákvæmlega 1000 (þá vantar gögn). Í báðum
+ * tilvikum á að blaðsíðufletta. Engin ALLOW-undanþága á við hér, og þess vegna
+ * er engin grunnlína á þessari reglu — hún er RAUÐ frá fyrsta broti.
+ */
+const FAST = /\.range\(\s*(\d+)\s*,\s*(\d+)\s*\)/g;
+const ofstor = [];
+for (const f of files) {
+  const src = fs.readFileSync(f, 'utf8');
+  let mm;
+  FAST.lastIndex = 0;
+  while ((mm = FAST.exec(src)) !== null) {
+    const bad = (+mm[2]) - (+mm[1]) + 1;
+    if (bad <= 1000) continue;
+    const fyrir = src.slice(Math.max(0, mm.index - 900), mm.index);
+    const t = [...fyrir.matchAll(/\.from\(\s*['"]([a-z_0-9]+)['"]\s*\)/g)].pop();
+    ofstor.push({ file: f.split(path.sep).join('/'),
+                  line: src.slice(0, mm.index).split('\n').length,
+                  tbl: t ? t[1] : '(óþekkt)', bad });
+  }
+}
+if (ofstor.length) {
+  console.log('❌ audit-pagination: ' + ofstor.length +
+    ' fyrirspurn(ir) biðja um FLEIRI en 1000 raðir í einum glugga — og fá 1000:\n');
+  ofstor.sort((a, b) => b.bad - a.bad).forEach(h =>
+    console.log('  bað um ' + String(h.bad).padStart(5) + '  ' + h.tbl.padEnd(24) +
+                h.file + ':' + h.line));
+  console.log('\nPostgREST sker í 1000 og segir EKKI frá. Blaðsíðuflettu í staðinn:');
+  console.log('    DB.fetchAll((from, to) => <fyrirspurn>.range(from, to))');
+  console.log('RED: fastur gluggi > 1000 er alltaf rangur — engin grunnlína á þessari reglu.');
+  process.exit(1);
 }
 
 // Þekktar, fyrirliggjandi fyrirspurnir 2026-08-20 (skráðar í docs/ORYGGISNET.md).
