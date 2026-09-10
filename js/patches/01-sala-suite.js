@@ -834,11 +834,8 @@
     if (error) throw error;
   }
 
-  async function updateTaekiStatus(serial, status) {
-    const c = sb();
-    const { error } = await c.from('uttaeki').update({ status }).eq('serial', serial);
-    if (error) throw error;
-  }
+  // updateTaekiStatus(serial, status) fjarlægt 10.09.2026: skrifaði verkstæðisþrep á
+  // uttaeki.status (active/urelt) eftir raðnúmeri. Sjá afhendinguna í openVerkDetail.
 
   function parseSerialsFromNotes(notes) {
     return (notes || '').split('\n')
@@ -947,9 +944,13 @@
     }
 
     const errBox = el('div'); body.appendChild(errBox);
-    const status = (v.status || '').toLowerCase();
-    const isAfhent = status.includes('afh') || status.includes('sótt');
-    const isTilbuid = status.includes('tilb');
+    // 10.09.2026 — geymd gildi (js/utils.js), ekki birtingartexti. 'afh'/'sótt'/'tilb'
+    // hittu aldrei 'collected'/'ready', svo „📦 Skrá afhendingu" birtist líka á verkum
+    // sem voru löngu sótt. Eydd verk ('eytt') fá enga aðgerð.
+    const status = String(v.status || '');
+    const isEytt = status === 'eytt';
+    const isAfhent = status === 'collected' || status === 'done' || isEytt;
+    const isTilbuid = status === 'ready';
 
     const back = el('button', {
       class: 'sm-btn',
@@ -964,7 +965,7 @@
         errBox.innerHTML = '';
         ready.disabled = true;
         try {
-          await updateVerkStatus(v.id, { status: 'Tilbúið' });
+          await updateVerkStatus(v.id, { status: 'ready' });   // geymt gildi, ekki 'Tilbúið'
           closeModal();
           if (onBack) onBack();
         } catch (e) {
@@ -982,13 +983,13 @@
         handover.disabled = true;
         handover.textContent = 'Vistar…';
         try {
-          await updateVerkStatus(v.id, { status: 'Afhent', pickup: todayISO() });
-          // Best-effort: update linked uttaeki by serial parsed from notes
-          const serials = parseSerialsFromNotes(v.notes);
-          for (const s of serials) {
-            try { await updateTaekiStatus(s, 'Sótt'); }
-            catch (e) { warn('taeki status update failed for', s, e); }
-          }
+          // 10.09.2026 — kanónískt, eins og afhendingin í 121-pickup-checkout.js:1062.
+          // Áður: status 'Afhent', sem ekkert annað í kerfinu les (verkið hvarf úr öllum
+          // listum og taldist opið á Stjórnstöð), OG uttaeki.status='Sótt' eftir
+          // raðnúmeri lesnu úr athugasemd. uttaeki.status er active/urelt — talning
+          // tækja hvílir á því — og raðnúmer úr frjálsum texta er ekki traustur lykill.
+          // Verkstæðisþrep tækjanna eiga 179/210 (custody_status).
+          await updateVerkStatus(v.id, { status: 'collected', pickup: todayISO() });
           closeModal();
           if (onBack) onBack();
         } catch (e) {
@@ -1023,14 +1024,10 @@
           const today = todayISO();
           const stamp = '\n\n[' + today + ' · Aftur til verkstæðis] ' + (reason.trim() || '(engin ástæða gefin)');
           const newNotes = (v.notes || '') + stamp;
-          await updateVerkStatus(v.id, { status: 'Í vinnslu', notes: newNotes });
-          // Best-effort: also reset linked uttaeki status back to active
-          // so the workshop row shows up correctly
-          const serials = parseSerialsFromNotes(v.notes);
-          for (const s of serials) {
-            try { await updateTaekiStatus(s, 'active'); }
-            catch (e) { warn('taeki status reset failed for', s, e); }
-          }
+          // Geymt gildi 'inprogress' (ekki 'Í vinnslu'). uttaeki er ekki snert: afhendingin
+          // skrifar ekki lengur á uttaeki.status, svo ekkert er að núllstilla — og 'active'
+          // eftir raðnúmeri hefði getað vakið úrelt tæki aftur.
+          await updateVerkStatus(v.id, { status: 'inprogress', notes: newNotes });
           closeModal();
           if (onBack) onBack();
         } catch (e) {
@@ -1341,6 +1338,27 @@
   }
 
   /* ---------- Data layer ---------- */
+  /* 10.09.2026 — „TIL REIKNINGS" = SÓTT VERK SEM EKKI ER Á LOKINNI SÖLU.
+   *
+   * Síurnar hér að neðan voru lagaðar fyrr í dag (hittu áður 0 raðir) og „Til
+   * reiknings (allir)" fylltist: 604 verk · 4.083.814 kr. En 'collected' segir aðeins
+   * að tækið sé sótt, ekki að verkið sé óreiknað. Mælt sama dag gegn solur
+   * (verk R-000914-V1 → sala R-000914):
+   *     523 verk á lokinni sölu (3.533.025 kr), þar af 498 líka greidd
+   *      81 verk án lokinnar sölu (550.789 kr, 26 viðskiptavinir)
+   * Talan á skjánum var því 3,5 milljónum of há. Verk telst til reiknings aðeins ef
+   * engin sala með status 'final' ber númerið þess. Verk án R-númers (t.d. #2026-65)
+   * finnur enga sölu og HELST inni — óvíst er ekki sama og reiknað.
+   * Kastar ef sölurnar nást ekki: þá er talan óþekkt og má ekki birtast sem 0.
+   */
+  async function sottOgOreiknad(c, rows) {
+    if (!rows.length) return rows;
+    const lokin = await DB.fetchAll((from, to) => c.from('solur').select('num')
+      .eq('status', 'final').order('id').range(from, to));
+    const numer = new Set(lokin.map(r => r.num));
+    return rows.filter(v => !numer.has(String(v.num || '').split('-V')[0]));
+  }
+
   async function fetchC360(customer) {
     const c = sb();
     if (!c) return { taeki: [], openVerks: [], billable: [], paid: [] };
@@ -1384,77 +1402,43 @@
         .limit(20),
     ]);
 
+    // „Til reiknings" = sótt verk sem EKKI eru á lokinni sölu — sjá sottOgOreiknad.
+    let billable = [], billableVilla = billRes?.error || null;
+    if (!billableVilla) {
+      try { billable = await sottOgOreiknad(c, billRes?.data || []); }
+      catch (e) { billableVilla = e; warn('til reiknings: samanburður við sölur mistókst', e); }
+    }
     return {
       taeki:     taekiRes?.data || [],
       openVerks: openRes?.data  || [],
-      billable:  billRes?.data  || [],
+      billable,
+      billableVilla,
       paid:      paidRes?.data  || [],
     };
   }
 
-  async function createSale({ customer, lines, total }) {
-    const c = sb();
-    if (!c) throw new Error('Engin Supabase tenging');
-    // Get next num
-    const { data: maxData } = await c.from('verkbeidnir')
-      .select('num').order('num', { ascending: false }).limit(1);
-    const nextNum = (maxData && maxData[0] && Number(maxData[0].num)) ?
-      Number(maxData[0].num) + 1 : 1001;
+  // createSale fjarlægt 10.09.2026 — skráði „sölu" sem VERKBEIÐNI með status 'Selt'
+  // (og num 1001 í hvert sinn: max(num) á textadálki gaf NaN). Hún komst aldrei í
+  // solur, svo bókhald, Payday og kröfur hefðu aldrei séð hana. Sala fer fram í Sölu.
 
-    const notes = lines
-      .map(l => `${l.qty} × ${l.desc} @ ${fmtKr(l.unit)} = ${fmtKr(l.qty * l.unit)}`)
-      .join('\n');
-
-    const { data, error } = await c.from('verkbeidnir').insert({
-      num:      nextNum,
-      status:   'Selt',
-      customer: customer.nafn || customer.name,
-      phone:    customer.simi || null,
-      dropoff:  todayISO(),
-      pickup:   todayISO(),
-      notes,
-      verd:     total,
-    }).select().single();
-    if (error) throw error;
-    return data;
-  }
-
-  async function pickupVerks(verkIds, serialsByVerk) {
+  async function pickupVerks(verkIds) {
     const c = sb();
     if (!c) throw new Error('Engin Supabase tenging');
     const today = todayISO();
-
-    // Update each verk to Afhent
+    // 10.09.2026 — 'collected' + pickup, eins og 121-pickup-checkout.js:1062. Áður
+    // 'Afhent' + uttaeki.status='Sótt' eftir raðnúmeri; sjá openVerkDetail ofar.
     for (const id of verkIds) {
       const { error } = await c.from('verkbeidnir')
-        .update({ status: 'Afhent', pickup: today })
-        .eq('id', id);
-      if (error) throw error;
-    }
-    // Update linked uttaeki
-    const allSerials = Object.values(serialsByVerk).flat();
-    for (const s of allSerials) {
-      try {
-        await c.from('uttaeki').update({ status: 'Sótt' }).eq('serial', s);
-      } catch (e) { warn('taeki update fail', s, e); }
-    }
-  }
-
-  async function markGreitt(verkIds, invoiceLabel) {
-    const c = sb();
-    if (!c) throw new Error('Engin Supabase tenging');
-    for (const id of verkIds) {
-      // Read current notes to prepend invoice marker
-      const { data: row } = await c.from('verkbeidnir').select('notes').eq('id', id).single();
-      const newNotes = invoiceLabel
-        ? `[${invoiceLabel}] ` + (row?.notes || '')
-        : row?.notes || null;
-      const { error } = await c.from('verkbeidnir')
-        .update({ status: 'Greitt', notes: newNotes })
+        .update({ status: 'collected', pickup: today })
         .eq('id', id);
       if (error) throw error;
     }
   }
+
+  // markGreitt fjarlægt 10.09.2026 — skrifaði status 'Greitt' á verkbeidnir. Það gildi
+  // er ekki til í kanónunni: verkið hvarf úr „Til reiknings" og taldist OPIÐ á
+  // Stjórnstöð. Greiðslustaða býr á solur.paid_at. Hvort „Reikningur" eigi að stofna
+  // sölu í solur er ákvörðun Agnars.
 
   function parseSerialsFromNotes(notes) {
     return (notes || '').split('\n')
@@ -1539,18 +1523,22 @@
       const hasBill = data.billable.length > 0;
 
       // Toggle action enable states
-      actPickup.disabled = data.openVerks.length === 0 && !data.openVerks.some(v => (v.status || '').toLowerCase().includes('tilb'));
+      actPickup.disabled = data.openVerks.length === 0;
       actInvoice.disabled = !hasBill;
 
       // Bill row
       billRow.innerHTML = '';
+      if (data.billableVilla) {
+        billRow.appendChild(el('div', { class: 'sm-err',
+          text: '⚠ Náði ekki að bera sótt verk saman við sölur — „Til reiknings" er óþekkt, ekki 0.' }));
+      }
       if (hasBill) {
         billRow.appendChild(el('div', { class: 'c360-bill-row' }, [
           el('div', {}, [
             el('div', { style: 'font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#92400e;font-weight:600',
               text: 'Til reiknings' }),
             el('div', { style: 'font-size:12px;color:#92400e;margin-top:2px',
-              text: data.billable.length + ' verk · ekki á reikning' }),
+              text: data.billable.length + ' verk · engin lokin sala fannst' }),
           ]),
           el('strong', { style: 'font-size:20px', text: fmtKr(billTotal) }),
         ]));
@@ -1564,7 +1552,7 @@
         el('div', { class: 'c360-stat',
           html: `<span class="c360-stat-num">${data.openVerks.length}</span>Verk í gangi` }),
         el('div', { class: 'c360-stat c360-stat-bill',
-          html: `<span class="c360-stat-num">${data.billable.length}</span>Til reiknings` }),
+          html: `<span class="c360-stat-num">${data.billableVilla ? "?" : data.billable.length}</span>Til reiknings` }),
       );
 
       // Billable section
@@ -1677,7 +1665,7 @@
         return;
       }
       verks.forEach(v => {
-        const isReady = (v.status || '').toLowerCase().includes('tilb');
+        const isReady = v.status === 'ready';   // geymt gildi — 'tilb' hitti aldrei neitt
         const row = el('div', {
           class: 'c360-pickline' + (isReady ? ' checked' : ''),
         }, [
@@ -1721,12 +1709,7 @@
         }
         submit.disabled = true; submit.textContent = 'Vistar…';
         try {
-          const ids = Array.from(checked);
-          const serialMap = {};
-          verks.filter(v => checked.has(v.id)).forEach(v => {
-            serialMap[v.id] = parseSerialsFromNotes(v.notes);
-          });
-          await pickupVerks(ids, serialMap);
+          await pickupVerks(Array.from(checked));
           closeModal();
           openCustomer360(customer);
         } catch (e) {
@@ -1742,87 +1725,13 @@
   }
 
   /* ---------- UI: Sale ---------- */
+  // 10.09.2026 — „🛒 Selja" opnaði form sem skráði söluna sem verkbeiðni (sjá
+  // createSale ofar) og náði aldrei í solur. Nú fer takkinn beint í Sölu (POS),
+  // sömu leið og 120/137 nota.
   function openSale(customer) {
-    const body = el('div');
-    body.appendChild(el('label', { class: 'sm-label',
-      text: 'Skráðu vörur sem viðskiptavinurinn er að kaupa (færist á reikning)' }));
-
-    const lines = [];
-    const list = el('div'); body.appendChild(list);
-    const totalRow = el('div', {
-      style: 'display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-top:2px solid #e5e7eb;margin-top:8px;font-weight:700;font-size:16px',
-    }, [
-      el('span', { text: 'Samtals' }),
-      el('span', { id: 'sm-sale-total', text: fmtKr(0) }),
-    ]);
-    body.appendChild(totalRow);
-
-    const calcTotal = () => lines.reduce((s, l) =>
-      s + ((Number(l.qty) || 0) * (Number(l.unit) || 0)), 0);
-
-    const renderLines = () => {
-      list.innerHTML = '';
-      if (!lines.length) {
-        list.appendChild(el('div', { class: 'sm-empty', text: 'Engar línur — bættu við hér að neðan' }));
-      }
-      lines.forEach((l, idx) => {
-        const desc = el('input', { class: 'sm-input', placeholder: 'Lýsing (t.d. CO2 6kg)', value: l.desc });
-        const qty  = el('input', { class: 'sm-input', type: 'number', step: '1', min: '1', value: l.qty || 1, inputMode: 'numeric' });
-        const unit = el('input', { class: 'sm-input', type: 'number', step: '1', placeholder: 'kr', value: l.unit, inputMode: 'numeric' });
-        desc.addEventListener('input', () => { l.desc = desc.value; });
-        qty .addEventListener('input', () => { l.qty  = Number(qty.value)  || 0; updateTotal(); });
-        unit.addEventListener('input', () => { l.unit = Number(unit.value) || 0; updateTotal(); });
-        const rm = el('button', {
-          class: 'sm-btn sm-btn-danger', type: 'button', text: '×',
-          on: { click: () => { lines.splice(idx, 1); renderLines(); updateTotal(); }},
-        });
-        list.appendChild(el('div', { class: 'c360-saleline' }, [desc, qty, unit, rm]));
-      });
-    };
-    const updateTotal = () => {
-      totalRow.querySelector('#sm-sale-total').textContent = fmtKr(calcTotal());
-    };
-
-    const addBtn = el('button', {
-      class: 'sm-btn', type: 'button',
-      style: 'width:100%;margin-top:8px',
-      text: '+ Bæta við línu',
-      on: { click: () => { lines.push({ desc: '', qty: 1, unit: 0 }); renderLines(); updateTotal(); }},
-    });
-    body.appendChild(addBtn);
-    lines.push({ desc: '', qty: 1, unit: 0 });
-    renderLines();
-
-    const errBox = el('div'); body.appendChild(errBox);
-
-    const back = el('button', { class: 'sm-btn', text: '← Til baka',
-      on: { click: () => { closeModal(); openCustomer360(customer); }}});
-    const submit = el('button', {
-      class: 'sm-btn sm-btn-pri',
-      text: 'Skrá sölu',
-      on: { click: async () => {
-        errBox.innerHTML = '';
-        const valid = lines.filter(l => (l.desc || '').trim() && Number(l.unit) > 0);
-        if (!valid.length) {
-          errBox.appendChild(el('div', { class: 'sm-err',
-            text: 'Bættu við að minnsta kosti einni línu með lýsingu og verði' }));
-          return;
-        }
-        submit.disabled = true; submit.textContent = 'Vistar…';
-        try {
-          const total = calcTotal();
-          await createSale({ customer, lines: valid, total });
-          closeModal();
-          openCustomer360(customer);
-        } catch (e) {
-          submit.disabled = false; submit.textContent = 'Skrá sölu';
-          errBox.appendChild(el('div', { class: 'sm-err', text: 'Villa: ' + (e.message || e) }));
-        }
-      }},
-    });
-
-    openModal('Sala — ' + (customer.nafn || customer.name || ''), body, [back, submit]);
-    setTimeout(() => list.querySelector('input')?.focus(), 50);
+    closeModal();
+    if (window.App && typeof App.switchView === 'function') App.switchView('sala');
+    else location.hash = 'sala';
   }
 
   /* ---------- UI: Invoice ---------- */
@@ -1875,7 +1784,7 @@
         el('div', {}, [
           el('div', { style: 'font-weight:600', text: r.count + ' verk valið' }),
           el('div', { style: 'font-size:12px;color:#92400e',
-            text: 'Verður merkt sem Greitt eftir staðfestingu' }),
+            text: 'Reikningurinn sjálfur er gerður í Sölu — hér er yfirlit til að afrita eða prenta' }),
         ]),
         el('strong', { style: 'font-size:22px', text: fmtKr(r.total) }),
       ]));
@@ -1890,11 +1799,20 @@
       list.innerHTML = '<div class="sm-empty">Sæki…</div>';
       const c = sb();
       // Geymd gildi, ekki birtingartexti — sjá skýringu í fetchC360.
-      const { data } = await c.from('verkbeidnir')
+      const { data, error } = await c.from('verkbeidnir')
         .select('*').eq('customer', customer.nafn || customer.name || '')
         .in('status', ['collected'])
         .order('num', { ascending: true });
-      billable = data || [];
+      try {
+        if (error) throw error;
+        billable = await sottOgOreiknad(c, data || []);   // sótt verk sem EKKI eru á lokinni sölu
+      } catch (e) {
+        list.innerHTML = '';
+        list.appendChild(el('div', { class: 'sm-err',
+          text: 'Náði ekki að bera verkin saman við sölur — listinn er óþekktur, ekki tómur. ' + (e.message || e) }));
+        summary.innerHTML = '';
+        return;
+      }
       list.innerHTML = '';
       if (!billable.length) {
         list.appendChild(el('div', { class: 'sm-empty', text: 'Ekkert til reiknings' }));
@@ -1964,30 +1882,10 @@
       }},
     });
 
-    const finalize = el('button', {
-      class: 'sm-btn sm-btn-pri c360-act-bill', text: '✓ Skrá reikning',
-      on: { click: async () => {
-        errBox.innerHTML = '';
-        if (!checked.size) {
-          errBox.appendChild(el('div', { class: 'sm-err', text: 'Ekkert valið' }));
-          return;
-        }
-        if (!await Confirm.show('Skrá ' + checked.size + ' verk sem Greitt? Þetta er ekki auðveldlega afturkallað.')) return;
-        finalize.disabled = true; finalize.textContent = 'Vistar…';
-        try {
-          const label = 'REIKN-' + todayISO().replace(/-/g, '').slice(2);
-          await markGreitt(Array.from(checked), label);
-          closeModal();
-          openCustomer360(customer);
-        } catch (e) {
-          finalize.disabled = false; finalize.textContent = '✓ Skrá reikning';
-          errBox.appendChild(el('div', { class: 'sm-err', text: 'Villa: ' + (e.message || e) }));
-        }
-      }},
-    });
+    // „✓ Skrá reikning" fjarlægt 10.09.2026 — það skrifaði status 'Greitt' (sjá markGreitt).
 
     openModal('Reikningur — ' + (customer.nafn || customer.name || ''),
-      body, [back, copy, printBtn, finalize]);
+      body, [back, copy, printBtn]);
     refresh();
   }
 
@@ -1996,14 +1894,15 @@
     const c = sb();
     if (!c) return [];
     // Geymd gildi, ekki birtingartexti — sjá skýringu í fetchC360.
-    const { data } = await c.from('verkbeidnir')
+    const { data, error } = await c.from('verkbeidnir')
       .select('*')
       .in('status', ['collected'])
       .order('customer', { ascending: true });
-    if (!data) return [];
+    if (error) throw error;
+    const oreiknud = await sottOgOreiknad(c, data || []);   // kastar ef sölur nást ekki
     // Group by customer
     const byCust = new Map();
-    data.forEach(v => {
+    oreiknud.forEach(v => {
       const k = v.customer || '—';
       if (!byCust.has(k)) byCust.set(k, { customer: k, phone: v.phone, items: [], total: 0 });
       const e = byCust.get(k);
@@ -2016,7 +1915,7 @@
   function openMonthly() {
     const body = el('div');
     body.appendChild(el('label', { class: 'sm-label',
-      text: 'Viðskiptavinir með ógreidd verk' }));
+      text: 'Sótt verk sem engin lokin sala fannst fyrir' }));
     const list = el('div'); body.appendChild(list);
     const totalRow = el('div', {
       style: 'display:flex;justify-content:space-between;padding:12px 4px;border-top:2px solid #e5e7eb;margin-top:8px;font-weight:700',
@@ -2028,10 +1927,18 @@
 
     const refresh = async () => {
       list.innerHTML = '<div class="sm-empty">Sæki…</div>';
-      const groups = await fetchMonthlyBillable();
+      let groups;
+      try { groups = await fetchMonthlyBillable(); }
+      catch (e) {
+        list.innerHTML = '';
+        list.appendChild(el('div', { class: 'sm-err',
+          text: 'Náði ekki að bera verkin saman við sölur — upphæðin er óþekkt, ekki 0. ' + (e.message || e) }));
+        totalRow.querySelector('#sm-month-total').textContent = '?';
+        return;
+      }
       list.innerHTML = '';
       if (!groups.length) {
-        list.appendChild(el('div', { class: 'sm-empty', text: 'Engin ógreidd verk' }));
+        list.appendChild(el('div', { class: 'sm-empty', text: 'Engin sótt verk utan lokinnar sölu' }));
         totalRow.querySelector('#sm-month-total').textContent = fmtKr(0);
         return;
       }

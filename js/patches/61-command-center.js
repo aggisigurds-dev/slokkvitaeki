@@ -141,7 +141,11 @@
       // 3.749 tæki eru á gjalddaga innan 30 daga — stök .select() skilaði 1000,
       // svo Stjórnstöðin sýndi aðeins ~27% af því sem er að falla á tíma.
       safe(DB.fetchAll((from, to) => SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).order('id').range(from, to)).then(rows => ({ data: rows }))),
-      safe(SB.from('birgdir').select('id,nafn,magn,lagmark').filter('magn','lt','lagmark')),
+      // 10.09.2026 — .filter('magn','lt','lagmark') bar magn saman við STRENGINN 'lagmark'
+      // (PostgREST ber ekki saman tvo dálka): 400 við hverja hleðslu, villan gleypt, og
+      // spjaldið sagði „0 · Allt í lagi" meðan F-Vökvi stóð í 0 af lágmarki 5.
+      safe(DB.fetchAll((from, to) => SB.from('birgdir').select('id,nafn,magn,lagmark').order('id').range(from, to))
+        .then(rows => ({ data: rows.filter(r => r.lagmark != null && Number(r.magn || 0) < Number(r.lagmark)) }))),
       safe(SB.from('thjonustusamningar').select('id,company_nafn,upphaed_an_vsk,next_due').lte('next_due', in30.toISOString().slice(0,10)).eq('status','virkur'))
     ]);
 
@@ -163,6 +167,11 @@
 
     _ccChart = buildChart14(_ccSales);
     _ccSelDay = null; _ccSelCat = null;
+
+    // 10.09.2026 — villa má ALDREI birtast sem 0. safe() skilar { error } bæði þegar kallið
+    // kastar og þegar Supabase svarar 400 án þess að kasta; áður varð það „0 · Allt í lagi".
+    const VILLA = '⚠ Náði ekki að lesa';
+    const tala = r => r.error ? '?' : (r.data || []).length;
 
     const greeting = (() => {
       const h = new Date().getHours();
@@ -189,13 +198,13 @@
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:20px">
-          ${cardHtml('💰', 'Tekjur þessa mánaðar', fmtKr(monthRev), '#16a34a', '#dcfce7')}
-          ${cardHtml('⚠️', 'Útistandandi kröfur', fmtKr(unpaidTotal), '#dc2626', '#fee2e2', `${unpaidRows.length} reikningar`)}
-          ${cardHtml('🔧', 'Verk í gangi', (openJobs.data||[]).length, '#3b82f6', '#dbeafe')}
-          ${cardHtml('📍', 'Verk í dag', (todayJobs.data||[]).length, '#8b5cf6', '#ede9fe', `${techs.size} tæknimenn úti`)}
-          ${cardHtml('🔥', 'Tæki sem þurfa skoðun', (dueInsp.data||[]).length, '#f59e0b', '#fef3c7', 'Næstu 30 daga')}
-          ${cardHtml('📦', 'Lág-birgðir', (lowStock.data||[]).length, '#ec4899', '#fce7f3', (lowStock.data||[]).length?'Þarf að panta':'Allt í lagi')}
-          ${cardHtml('📑', 'Samningar á rukkun', (contractsDue.data||[]).length, '#0ea5e9', '#e0f2fe', 'Næstu 30 daga')}
+          ${cardHtml('💰', 'Tekjur þessa mánaðar', sales.error ? '?' : fmtKr(monthRev), '#16a34a', '#dcfce7', sales.error ? VILLA : '')}
+          ${cardHtml('⚠️', 'Útistandandi kröfur', unpaid.error ? '?' : fmtKr(unpaidTotal), '#dc2626', '#fee2e2', unpaid.error ? VILLA : `${unpaidRows.length} reikningar`)}
+          ${cardHtml('🔧', 'Verk í gangi', tala(openJobs), '#3b82f6', '#dbeafe', openJobs.error ? VILLA : '')}
+          ${cardHtml('📍', 'Verk í dag', tala(todayJobs), '#8b5cf6', '#ede9fe', todayJobs.error ? VILLA : `${techs.size} tæknimenn úti`)}
+          ${cardHtml('🔥', 'Tæki sem þurfa skoðun', tala(dueInsp), '#f59e0b', '#fef3c7', dueInsp.error ? VILLA : 'Næstu 30 daga')}
+          ${cardHtml('📦', 'Lág-birgðir', tala(lowStock), '#ec4899', '#fce7f3', lowStock.error ? VILLA : ((lowStock.data||[]).length ? 'Þarf að panta' : 'Allt í lagi'))}
+          ${cardHtml('📑', 'Samningar á rukkun', tala(contractsDue), '#0ea5e9', '#e0f2fe', contractsDue.error ? VILLA : 'Næstu 30 daga')}
         </div>
 
         <div id="cc-revenue" style="margin-bottom:14px">${renderChartSection()}</div>

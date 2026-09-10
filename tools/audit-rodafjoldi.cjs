@@ -11,6 +11,8 @@
  * hvað töflurnar eru stórar. Þrjár töflur voru mældar undir þakinu sama dag og
  * eiga ópagaðar fyrirspurnir í kóðanum:
  *     thjonustubeidni 854 · solur 806 · arsskodun_report_facts 649
+ *     (+ verkbeidnir 726, bætt við sama dag: „Til reiknings (allir)" í
+ *      01-sala-suite les öll sótt verk í einni fyrirspurn)
  * Daginn sem ein þeirra fer yfir 1000 byrja þær fyrirspurnir að sleppa röðum
  * ÞÖGULT. Ég setti þær ekki í BIG-listann í audit-pagination — það hefði kallað
  * á að hækka BASELINE úr 4 í 22, þ.e. að þagga jafn mörg tilvik og reglan
@@ -48,7 +50,7 @@ const VIDVORUN = Math.round(GRENS * 0.9);
 // Töflur UNDIR þakinu sem eiga ópagaðar fyrirspurnir í kóðanum (mælt 10.09.2026).
 // Fari tafla yfir: færðu hana í BIG í tools/audit-pagination.cjs og lagaðu það sem
 // hann flaggar (DB.fetchAll). Taktu hana þá út héðan.
-const VAKTA = ['thjonustubeidni', 'solur', 'arsskodun_report_facts'];
+const VAKTA = ['thjonustubeidni', 'solur', 'arsskodun_report_facts', 'verkbeidnir'];
 
 // ALLOW-færslur í tools/audit-pagination.cjs sem hvíla á tölu sem VEX. `slod` er
 // nákvæmlega sú afmörkun sem undanþágan lofar að haldist undir þakinu.
