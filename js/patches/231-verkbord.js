@@ -2029,15 +2029,8 @@
       #view-verkbord [style*="color:#64748b"] { color: #64748b !important; }
       #view-verkbord [style*="color:#6b7280"] { color: #6b7280 !important; }
       #view-verkbord [style*="color:#94a3b8"] { color: #94a3b8 !important; }
-      /* Patch 66 dekkir líka input/select/textarea og .card með element-reglum
-         (án [style*=…]) — leitarreiturinn og stjórnkortin haldast ljós: */
-      html[data-theme="dark"] #view-verkbord input,
-      html[data-theme="dark"] #view-verkbord select,
-      html[data-theme="dark"] #view-verkbord textarea {
-        background: #fff !important; color: #141822 !important; border-color: #d8dadf !important; }
-      html[data-theme="dark"] #view-verkbord .card,
-      html[data-theme="dark"] #view-verkbord table {
-        background: #fff !important; color: #11141c !important; border-color: #e5e7eb !important; }
+      /* 2026-09-10: dökk-þema mótreglur fjarlægðar — patch 66 er ekki til og
+         ekkert setur html[data-theme="dark"]. Sjá 220-theme-system (frosið). */
       /* Staff chrome: hide AI borð slot so 343 cannot leave a 16px hole. */
       #view-verkbord.vb-staff #vb-ai-slot { display: none !important; margin: 0 !important; height: 0 !important;
         overflow: hidden !important; padding: 0 !important; }

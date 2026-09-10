@@ -724,35 +724,12 @@
       ".tbord-minireply{border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px}" +
       ".tbord-contact{margin-left:auto;font-size:12px;color:#475569;white-space:nowrap}" +
       ".tbord-contact a{color:#1d4ed8;text-decoration:none;font-weight:600}" +
-      ".tbord-efni{color:#475569;font-size:12.5px;max-width:520px}" +
-      // Dökk-þema mótreglur (patch 66 setur html[data-theme="dark"] og flippar
-      // töflunni/inntökum sjálfur í dökkt með !important — hér snúa gráir og
-      // hvít-hörðu fletirnir okkar við svo ekkert verði svart-á-svörtu):
-      'html[data-theme="dark"] #' + VIEW_ID + "{color:#e2e8f0}" +
-      'html[data-theme="dark"] .tbord-tbl,html[data-theme="dark"] .tbord-tbl td{color:#e2e8f0}' +
-      'html[data-theme="dark"] .tbord-nafn,html[data-theme="dark"] .tbord-mailsubj{color:#f1f5f9}' +
-      'html[data-theme="dark"] .tbord-sub,html[data-theme="dark"] .tbord-mut,html[data-theme="dark"] .tbord-mailmeta,html[data-theme="dark"] .tbord-mailsnip,html[data-theme="dark"] .tbord-empty{color:#94a3b8}' +
-      'html[data-theme="dark"] .tbord-tblwrap{background:#1e293b;border-color:#334155}' +
-      'html[data-theme="dark"] .tbord-mail{background:#1e293b;border-color:#334155;color:#e2e8f0}' +
-      'html[data-theme="dark"] .tbord-mail.open{background:rgba(220,38,38,.15);border-color:#7f1d1d}' +
-      'html[data-theme="dark"] .tbord-dbox{color:#cbd5e1}' +
-      'html[data-theme="dark"] .tbord-efni,html[data-theme="dark"] .tbord-contact{color:#cbd5e1}' +
-      'html[data-theme="dark"] .tbord-contact a{color:#93c5fd}' +
-      'html[data-theme="dark"] .tbord-osv{background:rgba(220,38,38,.2);color:#fca5a5}' +
-      'html[data-theme="dark"] .tbord-red{color:#fca5a5}' +
-      'html[data-theme="dark"] .tbord-ok{color:#4ade80}' +
-      'html[data-theme="dark"] .tbord-cnt{background:#334155;color:#94a3b8}' +
-      'html[data-theme="dark"] .tbord-cnt.on{background:rgba(34,197,94,.15);color:#4ade80}' +
-      'html[data-theme="dark"] .tbord-row:hover td{background:#0f172a}' +
-      'html[data-theme="dark"] .tbord-row.is-open td{background:#312e81}' +
-      'html[data-theme="dark"] .tbord-drawer td{background:#0f172a;border-bottom-color:#4338ca}' +
-      'html[data-theme="dark"] .tbord-btn,html[data-theme="dark"] .tbord-seg button,html[data-theme="dark"] .tbord-fchip{background:#1e293b;color:#cbd5e1;border-color:#334155}' +
-      'html[data-theme="dark"] .tbord-seg button.on,html[data-theme="dark"] .tbord-fchip.on{background:#e2e8f0;color:#0f172a;border-color:#e2e8f0}' +
-      'html[data-theme="dark"] .tbord-note{color:#94a3b8}' +
-      // Lit-hnapparnir halda stiglunum sínum líka í dökku (annars flatti
-      // .tbord-btn-mótreglan þá út — þeir bera báða klasana):
-      'html[data-theme="dark"] .tbord-markbtn{border-color:#156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff}' +
-      'html[data-theme="dark"] .tbord-replybtn{border-color:#3730a3;background:linear-gradient(150deg,#6366f1,#4338ca);color:#fff}';
+      ".tbord-efni{color:#475569;font-size:12.5px;max-width:520px}";
+      // 2026-09-10: ~28 dökk-þema mótreglur fjarlægðar. Þær vísuðu í patch 66
+      // (66-dark-mode.js) sem er EKKI TIL lengur og í html[data-theme="dark"]
+      // sem ekkert setur — patch 220 fjarlægir það eigindi beinlínis við ræsingu.
+      // Þemað er fryst á Brunastáli síðan 17.08.2026. Reglurnar voru dauður
+      // vefur sem birtist í hverri leit og leit út eins og lifandi þemakerfi.
     document.head.appendChild(s);
   }
 
