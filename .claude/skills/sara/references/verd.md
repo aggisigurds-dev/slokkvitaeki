@@ -88,6 +88,20 @@ kemur viðvörun í „Bæta við tæki"-glugganum og línan verðleggst ekki.
 - Tilgreini vinnublaðið enga stærð á ÖÐRUM tækjum, veldu þá sem verðlagast og **segðu
   Agnari frá valinu**.
 
+## Reykskynjarar — rafhlaðan er innifalin
+
+**„Yfirferð Reykskynjari“ ber rafhlöðuna.** Agnar 10.09.2026: *„það er innifalið
+rafhlaða í reykskynjara yfirferð.“*
+
+Vinnublöð skrifa þetta gjarnan sem *„skipti um 2 skynjara og batterí í 1“*. Þá eru
+skynjararnir tveir ný tæki (vara úr verðskránni) og „batterí í 1“ er **ein yfirferð** —
+ekki varahlutasala. `9V Rafhlaða` (466 kr án vsk) fer aðeins á reikning þegar rafhlaða
+er seld ein og sér, án yfirferðar.
+
+Ódýrasti reykskynjarinn í listanum heitir **`Reykskynjari 2`** (2.195 kr án vsk);
+hinir eru `Reykskynjari` 3.621 og `Reykskynjari 3` 5.363. Segi blaðið „ódýrasti“, er
+það sá fyrstnefndi.
+
 ## Afslættir
 
 Sérverð (tilboðsverð) er endanlegt — prósentuafsláttur nær aðeins á línur án sérverðs.
