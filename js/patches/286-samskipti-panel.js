@@ -436,18 +436,34 @@
     // núna (sjá „ÞROT-varið tif" neðst) svo þetta má ekki kosta neitt þegar
     // spjaldið er þegar á sínum stað.
     let host = document.querySelector("._samskipti-host");
-    if (host && document.contains(host) && host.dataset.fid === String(fid) && host.childElementCount) return;
+    if (host && document.contains(host) && host.dataset.fid === String(fid) && host.childElementCount) {
+      // 10.09.2026 — Agnar: „sometimes the Samskipti is up to the right, and sometimes down in
+      // the middle — is it a different program?" Sama kort. Það festist við þá hnapparöð sem var
+      // komin á FYRSTA tifi: „Merkja mikilvægt"-röðina (óskastaður 29.07) eða, væri hún ekki
+      // komin, Breyta-röðina efst — og þessi snemm-útgangur hélt því þar að eilífu. Nú er það
+      // FÆRT á óskastaðinn um leið og röðin birtist, án nýrrar sóknar. Ódýrt: á réttum stað er
+      // aðeins borið saman við næsta systkini, og leitin hættir 15 s eftir að kortið var sett upp.
+      const fyrir = host.previousElementSibling;
+      if (fyrir && /Merkja mikilvægt/.test(fyrir.textContent || "")) return;
+      if (Date.now() - (+host.dataset.ts || 0) > 15000) return;
+      const mk2 = [...document.querySelectorAll("button")].find(b => /Merkja mikilvægt/.test(b.textContent || "") && !b.closest("._samskipti-host"));
+      const rett = mk2 && mk2.parentElement;
+      if (rett && rett.parentElement && !host.contains(rett)) rett.parentElement.insertBefore(host, rett.nextSibling);
+      return;
+    }
     // Besta akkerið (ósk Agnars 29.07): auða svæðið við hlið aðgerðahnappanna
     // („Merkja mikilvægt" o.fl.) — spjaldið fer beint fyrir aftan þá röð svo
     // punktarnir BLASI VIÐ án þess að opna Breyta-gluggann.
     let row = null;
-    const mk = [...document.querySelectorAll("button")].find(b => /Merkja mikilvægt/.test(b.textContent || ""));
+    // Hnappur INNI í kortinu sjálfu (359: „★ Merkja mikilvægt") má ekki verða akkeri — þá hefði
+    // nýja kortið lent inni í gamla hýslinum sem er fjarlægður línum neðar, og horfið.
+    const mk = [...document.querySelectorAll("button")].find(b => /Merkja mikilvægt/.test(b.textContent || "") && !b.closest("._samskipti-host"));
     if (mk) row = mk.parentElement;
     if (!row) row = btn.closest('[style*="display:flex"]') || btn.parentElement;
     const anchor = row ? (row.parentElement || row) : btn.parentElement;
     if (host) host.remove();
     host = document.createElement("div");
-    host.className = "_samskipti-host"; host.dataset.fid = fid;
+    host.className = "_samskipti-host"; host.dataset.fid = fid; host.dataset.ts = String(Date.now());
     (row && row.parentElement ? row.parentElement : anchor).insertBefore(host, row ? row.nextSibling : null);
     const data = await fetchData(fid);
     if (data) render(host, fid, data);

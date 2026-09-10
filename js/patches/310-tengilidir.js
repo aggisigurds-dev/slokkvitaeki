@@ -249,7 +249,7 @@
     const hus = new Map();
     const fa = (c) => {
       let h = hus.get(c.id);
-      if (!h) { h = { c, kt: new Set(), gata: new Set(), daemi: new Set(), len: false }; hus.set(c.id, h); }
+      if (!h) { h = { c, kt: new Set(), gata: new Set(), gataEfni: new Set(), daemi: new Set(), len: false }; hus.set(c.id, h); }
       return h;
     };
     const utanSkrar = new Map();
@@ -265,8 +265,12 @@
         if (cs) cs.forEach((c) => { const h = fa(c); h.kt.add(p.id); h.daemi.add('kt. ' + ktSnid(d)); });
         else { if (!utanSkrar.has(d)) utanSkrar.set(d, new Set()); utanSkrar.get(d).add(p.id); }
       }
+      const efnisLyklar = new Set(gotuLyklar(p.subject).map((g) => g.lykill));
       for (const g of gotuLyklar(texti)) {
-        (skra.eftirGotu.get(g.lykill) || []).forEach((c) => { const h = fa(c); h.gata.add(p.id); h.daemi.add('„' + g.texti.trim() + '“'); });
+        (skra.eftirGotu.get(g.lykill) || []).forEach((c) => {
+          const h = fa(c); h.gata.add(p.id); h.daemi.add('„' + g.texti.trim() + '“');
+          if (efnisLyklar.has(g.lykill)) h.gataEfni.add(p.id);
+        });
       }
       // Hús í EFNISLÍNU sem finnast ekki í skránni — dalli@eignarekstur.is skrifaði t.d. um
       // Hraunbæ 140 í 7 póstum. Aðeins efnislína (lítið suð) og húsnúmer með 1–3 stöfum.
@@ -284,7 +288,7 @@
     const stofn = aDiakrit(lenX.split('.')[0]);
     const listi = [...hus.values()].map((h) => Object.assign(h, {
       sjalf: stofn.length >= 4 && aDiakrit(h.c.nafn).includes(stofn),
-      stig: h.kt.size * 100 + h.gata.size * 10 + (h.len ? 1 : 0),
+      stig: h.kt.size * 100 + h.gataEfni.size * 20 + h.gata.size * 10 + (h.len ? 1 : 0),
     })).sort((a, b) => b.stig - a.stig || String(a.c.nafn || '').localeCompare(String(b.c.nafn || ''), 'is'));
     return { listi, utanSkrar, goturUtan };
   }
@@ -354,7 +358,10 @@
     const teiknaTillogur = (t) => {
       const host = wrap.querySelector('#tgl-till');
       const rok = t.listi.filter((h) => h.kt.size || h.gata.size);
-      husMedRokum = rok.filter((h) => !h.sjalf);
+      // Hús TELJAST aðeins með kennitölu eða götu í efnislínu. Gata sem sést bara í meginmáli er
+      // oft heimilisfang umsjónaraðilans í undirskrift („Laugavegi 178" hjá dalli@eignarekstur.is
+      // gaf Móðurást og SyNord) — hún birtist áfram sem tillaga en hækkar ekki húsafjöldann.
+      husMedRokum = rok.filter((h) => !h.sjalf && (h.kt.size || h.gataEfni.size));
       goturUtanNofn = [...t.goturUtan.values()].sort((a, b) => b.postar.size - a.postar.size)
         .map((u) => u.texti.charAt(0).toUpperCase() + u.texti.slice(1));
       const adeinsLen = t.listi.filter((h) => !h.kt.size && !h.gata.size && h.len);
