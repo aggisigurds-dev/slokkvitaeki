@@ -58,6 +58,21 @@ Sjálfgefið er „🟢 Hleðsla — full áfylling". Ný tæki koma því inn �
 
 Magn-reiturinn er sjálfgefið **20** — mundu að breyta honum.
 
+## „📄 Búa til úttektarskýrslu" eyðileggur dagsetningarnar
+
+Græni takkinn í reikningsblokkinni gerir tvennt: opnar skýrslumótið **og** keyrir
+`advanceInspectionDates` í bakgrunni. Sú fall setur á ÖLL tæki fyrirtækisins:
+
+    last_insp = Í DAG          next_insp = núverandi next_insp + 1 ár
+
+**Það þurrkar út skoðunardagsetninguna sem verið er að skrá.** Hagstál 10.09.2026:
+20.08.2026 hefði orðið 10.09.2026 og 20.08.2027 orðið 2028 — heimsóknin í ágúst
+hefði horfið úr gögnunum.
+
+Reglan: **sé skoðunin í öðrum mánuði en í dag, ekki snerta þennan takka.** Skýrslan
+verður til hvort eð er þegar Agnar klárar heimsóknina. Sama mynstur og
+„Merkja skoðun" hér að neðan — báðir takkarnir stimpla í dag án þess að spyrja.
+
 ## „Merkja skoðun" gerir meira en að haka
 
 Fjöldaaðgerðin efst („Merkja öll tæki sem skoðuð í dag") setur líka *síðasta skoðun = í dag*

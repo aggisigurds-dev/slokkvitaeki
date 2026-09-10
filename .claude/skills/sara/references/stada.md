@@ -47,13 +47,13 @@ sem þú lagðir til í upphafi. Athugasemdareiturinn (`athugasemd`) er skilabo�
 
 | Fyrirtæki | id | Hvað stendur út af |
 |---|---|---|
-| **Hagstál** | 692 | Tilbúið. 8/8 stemma, 20.08.2026 skráð, Hákon, allt á yfirferð. Eftir: hökun, texti, staðfesta lista, í vinnslu. ≈ 43.228 kr. Slöngurnar eru án stærðar — verð miðað við 30 m. |
-| **Álfaborg** | 661 | Þrjú ónýt tæki (2×9 L léttvatn, kolsýra, duft) — skrá ⊘ eða taka út? 9 L er ekki til í kerfinu. Heimilisfang leiðrétt í Skútuvog 4, en **öll 16 tækin bera enn „Skútuvogi 6"**. |
+| ~~**Hagstál**~~ | 692 | ✅ **KLÁRAÐ 10.09.2026** — 8/8 hökuð, listi læstur, „í vinnslu". Appið reiknar 38.819 án vsk → **48.136 m/vsk**. Bíður Agnars í kröfuyfirlit. |
+| **Álfaborg** | 661 | **EKKI BÚIN** — eftir að fara með rest af tækjum (Agnar 09.09). Þrjú ónýt tæki (2×9 L léttvatn, kolsýra, duft) — skrá ⊘ eða taka út? 9 L er ekki til í kerfinu. Heimilisfang leiðrétt í Skútuvog 4, en **öll 16 tækin bera enn „Skútuvogi 6"**. |
 | **Endurskoðun og reikningshald** | 1190 | Blaðið segir 6 tæki (3 slöngur + 3 léttvatn), kerfið á 2 og enga slöngu. kt á blaði 581216 vs 581219 í kerfi. |
 | **Naust Marine** | 659 | Blaðið nefnir CO₂ 2 kg sem er ekki til; „búið að minnka við sig". Hvað var raunverulega yfirfarið? |
-| **Hótel Hjarðarból** | 697? | 697 (Grasnytjar, 12 tæki) eða 578 (Hjarðarból ehf, tómt)? |
-| **Kirkjan Þorlákshöfn** | — | Finnst ekki í kerfinu. Stofna? Kennitölu vantar. |
-| **„Sumarbústaðir" — blað 5** | — | Ekkert fyrirtækjanafn á blaðinu. 37 léttvatnstæki. Hvaða fyrirtæki? |
+| **Grasnytjar ehf Hjarðarbóli** | 697 | Agnar staðfesti 09.09: Grasnytjar, ekki Hjarðarból ehf (578). Blaðið nefnir 2 L léttvatn sem kerfið þekkir ekki. |
+| ~~**Kirkjan Þorlákshöfn**~~ | 707 | ✅ Send af Agnari — R-000905, 52.002 kr. Var TIL í kerfinu; ég leitaði of þröngt. |
+| **Sameignarfélag Ölfusborga** | 482 | Blað 5 (Agnar 10.09). 42 tæki í kerfi (41 léttvatn + 1 duft), blaðið telur 37 — fjórum munar. „Engin lykill í Nr 27". |
 
 ### Klárað 09.09.2026
 
