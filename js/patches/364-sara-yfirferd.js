@@ -238,6 +238,21 @@
       '.syf-blad{flex:none;width:56px;font-size:12px;padding:3px 7px;text-align:center}',
       '.syf-man:placeholder-shown,.syf-blad:placeholder-shown{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0}',
       '@media(max-width:820px){.syf-man,.syf-blad{display:none}}',
+      // Myndaröndin: fleiri bútar af sama blaði hlið við hlið. Þétt sjálfgefið
+      // svo þeir steli ekki plássinu, ⤢ Stækka gefur þeim fulla breidd.
+      '.syf-myndir{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}',
+      '.syf-myndir.stor{grid-template-columns:1fr}',
+      '.syf-mynd{margin:0;position:relative;border:1px solid #e5e9f0;border-radius:8px;overflow:hidden;background:#f8fafc}',
+      '.syf-mynd img{display:block;width:100%;height:150px;object-fit:cover;object-position:top;cursor:zoom-in}',
+      '.syf-myndir.stor .syf-mynd img{height:auto;max-height:1200px;object-fit:contain;cursor:zoom-out}',
+      '.syf-pdf{display:flex;align-items:center;justify-content:center;height:150px;font-weight:800;color:#334155;text-decoration:none}',
+      '.syf-mynd figcaption{position:absolute;top:5px;right:5px;display:flex;align-items:center;gap:4px}',
+      '.syf-mynd figcaption a,.syf-mynd figcaption button,.syf-mynd figcaption span{',
+      'display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;',
+      'border-radius:5px;border:1px solid rgba(15,23,42,.15);background:rgba(255,255,255,.92);color:#334155;',
+      'font:inherit;font-size:11px;font-weight:800;line-height:1;cursor:pointer;text-decoration:none}',
+      '.syf-mynd figcaption span{cursor:default;color:#64748b}',
+      '.syf-mynd figcaption button:hover{background:#fee2e2;color:#991b1b;border-color:#fecaca}',
       '.syf-par{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}',
       '.syf-kerfi{font-size:11.5px;font-weight:700;color:#94a3b8;font-variant-numeric:tabular-nums;',
       'background:#f1f5f9;border:1px solid #e2e8f0;border-radius:5px;padding:2px 6px;white-space:nowrap;cursor:default;user-select:none}',
@@ -284,25 +299,40 @@
       '</div>';
 
     // Skannaða vinnublaðið — svo hægt sé að staðfesta lesturinn með eigin augum.
-    // Agnar 09.09.2026: „svona bara svo eg get verið 100% að sé rétt lesið".
+    // Agnar 09.09.2026: „svona bara svo eg get verið 100% að sé rétt lesið" og
+    // 10.09: „bætt við fleirri screenshots af partinum úr vinnubladinu". Þess
+    // vegna FYLKI af myndum, ekki ein — eitt blað er oft margir bútar (framhlið,
+    // bakhlið, aðdráttur á einn dálk) og einn reitur neyddi mann til að velja.
+    var myndir = Array.isArray(r.myndir) ? r.myndir : [];
     var stor = state.storMynd.indexOf(r.id) !== -1;
     h += '<div class="syf-box" style="background:#fff">' +
       '<h5 style="display:flex;align-items:center;gap:8px">📎 Vinnublaðið' +
-        (r.mynd_url ? '<button class="syf-btn" style="padding:1px 8px;font-size:10.5px" data-act="stor-mynd" data-id="' + r.id + '">' +
-          (stor ? '⤡ Minnka' : '⤢ Stækka') + '</button>' +
-          '<a class="syf-btn" style="padding:1px 8px;font-size:10.5px;text-decoration:none" target="_blank" rel="noopener" href="' + esc(r.mynd_url) + '">↗ Opna</a>' : '') +
+        (myndir.length ? '<span style="font-weight:700;color:#475569">' + myndir.length + '</span>' +
+          '<button class="syf-btn" style="padding:1px 8px;font-size:10.5px" data-act="stor-mynd" data-id="' + r.id + '">' +
+          (stor ? '⤡ Minnka' : '⤢ Stækka') + '</button>' : '') +
         '<span style="flex:1"></span>' +
         '<label class="syf-btn" style="padding:1px 8px;font-size:10.5px;cursor:pointer;font-weight:700">' +
-          (r.mynd_url ? '↻ Skipta um' : '＋ Setja inn skann') +
-          '<input type="file" accept="image/*,application/pdf" style="display:none" data-act="mynd-inn" data-id="' + r.id + '">' +
+          (myndir.length ? '＋ Bæta við mynd' : '＋ Setja inn skann') +
+          '<input type="file" accept="image/*,application/pdf" multiple style="display:none" data-act="mynd-inn" data-id="' + r.id + '">' +
         '</label>' +
       '</h5>' +
-      (r.mynd_url
-        ? '<img src="' + esc(r.mynd_url) + '" alt="Vinnublað — ' + esc(r.fyrirtaeki) + '" ' +
-          'style="display:block;width:100%;max-height:' + (stor ? '1400px' : '260px') + ';object-fit:contain;object-position:top;' +
-          'border:1px solid #e5e9f0;border-radius:8px;background:#f8fafc;cursor:zoom-' + (stor ? 'out' : 'in') + '" ' +
-          'data-act="stor-mynd" data-id="' + r.id + '">'
-        : '<div style="padding:10px;color:#94a3b8;font-size:12px">Enginn skann tengdur. Blaðið kom sem mynd í spjalli og er hvergi vistað — settu það inn hér og þá stendur það með málinu.</div>') +
+      (myndir.length
+        ? '<div class="syf-myndir' + (stor ? ' stor' : '') + '">' + myndir.map(function (m, i) {
+            var u = esc(m && m.url ? m.url : m);
+            var pdf = /\.pdf(\?|$)/i.test(u);
+            return '<figure class="syf-mynd">' +
+              (pdf
+                ? '<a href="' + u + '" target="_blank" rel="noopener" class="syf-pdf">📄 PDF</a>'
+                : '<img src="' + u + '" alt="Vinnublað ' + (i + 1) + ' — ' + esc(r.fyrirtaeki) + '" loading="lazy" ' +
+                  'data-act="stor-mynd" data-id="' + r.id + '">') +
+              '<figcaption>' +
+                '<a href="' + u + '" target="_blank" rel="noopener" title="Opna í nýjum flipa">↗</a>' +
+                '<span>' + (i + 1) + '</span>' +
+                '<button data-act="eyda-mynd" data-id="' + r.id + '" data-i="' + i + '" title="Fjarlægja þessa mynd">✕</button>' +
+              '</figcaption>' +
+            '</figure>';
+          }).join('') + '</div>'
+        : '<div style="padding:10px;color:#94a3b8;font-size:12px">Enginn skann tengdur. Settu inn myndir af blaðinu — þú mátt velja margar í einu, t.d. framhlið, bakhlið og aðdrátt á einstaka dálk.</div>') +
       '</div>';
 
     // Línurnar — fjöldi og verð breytanleg, samtals reiknast.
@@ -462,6 +492,14 @@
       state.rodun = { f: state.rodun.f, d: (state.rodun.d || 1) * -1 };
       lsSet(LS_ROD, state.rodun); teikna(); return;
     }
+    if (act === 'eyda-mynd') {
+      if (!row) return;
+      var ms = (Array.isArray(row.myndir) ? row.myndir : []).slice();
+      ms.splice(+b.dataset.i, 1);
+      // mynd_url helst í takt við fyrstu myndina (eldri lesarar horfa á hana)
+      vista(id, { myndir: ms, mynd_url: ms.length ? (ms[0].url || ms[0]) : null }, true);
+      teikna(); return;
+    }
     if (act === 'stor-mynd') {
       var mx = state.storMynd.indexOf(id);
       if (mx === -1) state.storMynd.push(id); else state.storMynd.splice(mx, 1);
@@ -583,23 +621,32 @@
     if (!el || !el.dataset || el.dataset.act !== 'mynd-inn') return;
     var host = document.getElementById(HOST_ID);
     if (!host || !host.contains(el)) return;
-    var f = el.files && el.files[0]; if (!f) return;
+    var skrar = el.files ? [].slice.call(el.files) : [];
+    if (!skrar.length) return;
     var id = +el.dataset.id;
     var s = sb(); if (!s) return;
+    var row = state.rows.find(function (x) { return x.id === id; });
     var merki = el.parentNode;
-    var gamallTexti = merki ? merki.firstChild.textContent : '';
-    if (merki && merki.firstChild) merki.firstChild.textContent = '⏳ Hleð upp…';
+    var gamallTexti = merki && merki.firstChild ? merki.firstChild.textContent : '';
     try {
-      var hreint = String(f.name || 'skann').replace(/[^\w.\-]+/g, '_');
-      var slod = 'sara/' + id + '/' + Date.now() + '_' + hreint;
-      var up = await s.storage.from(BUCKET).upload(slod, f, { contentType: f.type || 'application/octet-stream', upsert: false });
-      if (up.error) throw up.error;
-      var pub = s.storage.from(BUCKET).getPublicUrl(slod);
-      var url = pub && pub.data && pub.data.publicUrl;
-      if (!url) throw new Error('Fékk enga slóð á skjalið');
-      vista(id, { mynd_url: url }, true);
+      var nyjar = [];
+      for (var i = 0; i < skrar.length; i++) {
+        var f = skrar[i];
+        if (merki && merki.firstChild) merki.firstChild.textContent = '⏳ ' + (i + 1) + '/' + skrar.length + '…';
+        var hreint = String(f.name || 'skann').replace(/[^\w.\-]+/g, '_');
+        var slod = 'sara/' + id + '/' + Date.now() + '_' + i + '_' + hreint;
+        var up = await s.storage.from(BUCKET).upload(slod, f, { contentType: f.type || 'application/octet-stream', upsert: false });
+        if (up.error) throw up.error;
+        var pub = s.storage.from(BUCKET).getPublicUrl(slod);
+        var url = pub && pub.data && pub.data.publicUrl;
+        if (!url) throw new Error('Fékk enga slóð á ' + hreint);
+        nyjar.push({ url: url, nafn: f.name || 'skann' });
+      }
+      var allar = (row && Array.isArray(row.myndir) ? row.myndir : []).concat(nyjar);
+      vista(id, { myndir: allar, mynd_url: allar[0].url || allar[0] }, true);
+      el.value = '';
       teikna();
-      if (window.Toast && Toast.show) Toast.show('📎 Skann tengt við málið');
+      if (window.Toast && Toast.show) Toast.show('📎 ' + nyjar.length + (nyjar.length === 1 ? ' mynd tengd' : ' myndir tengdar') + ' við málið');
     } catch (err) {
       if (merki && merki.firstChild) merki.firstChild.textContent = gamallTexti;
       alert('Upphleðsla brást: ' + ((err && err.message) || err));
