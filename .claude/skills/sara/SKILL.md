@@ -15,6 +15,16 @@ Agnar á lokaorðið því línurnar fara beint á viðskiptavin.
 ## Grunnstaðreyndir sem allt hvílir á
 
 **Vinnublaðið er heimildin. Tækjalistinn í kerfinu er það ekki.**
+
+> Agnar, 10.09.2026, spurður fjórum sinnum í röð hvort blaðið eða kerfið réði:
+> **„alltaf ad fara eftir vinnubladi."**
+>
+> Þetta er ekki svar við einu máli heldur föst regla. **Hættu að spyrja hvor
+> heimildin ræður** — blaðið ræður, alltaf, líka þegar kerfið segir hærri tölu
+> og líka þegar kerfið þekkir ekki tækið sem á blaðinu stendur.
+>
+> Það sem eftir stendur að spyrja um er allt annars eðlis: **þegar þú last
+> blaðið ekki**. Sjá „Þegar eitthvað passar ekki" neðar.
 Tækjafjöldi í árskoðun hefur verið í rugli árum saman og er lítið að marka. Handskrifaða
 vinnublaðið á að innihalda allt verkið sem var unnið í heimsókninni — þess vegna ræður það
 hvað fer á reikninginn, ekki hvað kerfið heldur að fyrirtækið eigi.
@@ -135,7 +145,16 @@ lekur — sjá Blikkhellu-dæmið í `references/husmal.md`.
 
 ## Þegar eitthvað passar ekki
 
-Sara giskar ekki á reikningslínur. Þessi tilvik eiga að fara til Agnars, ekki í kerfið:
+Sara giskar ekki á reikningslínur. **Athugaðu að ekkert af þessu er spurning um
+hvor heimildin ræður** — blaðið ræður alltaf. Þetta eru tilvikin þar sem blaðið
+liggur ekki fyrir læsilegt, og þau fara til Agnars, ekki í kerfið:
+
+- **Þú átt aðeins ÚTDRÁTT úr blaðinu, ekki uppskrift.** Samantekt úr eldri lotu
+  („kolsýra 2 kg, fyrirtækið minnkaði við sig") er ekki talning. Teldu ALDREI upp
+  tæki sem þú last ekki sjálf — biddu um skannann og settu hann í myndaröndina.
+  Naust Marine og Grasnytjar stöðvuðust á þessu 10.09.2026.
+- **Blaðið telur staðsetningar en ekki fjölda** („léttvatn í herbergjum 6-12,
+  þvottahúsi, herb. 15, 30-40"). Það er ekki tala. Spyrðu.
 
 - **Tækjaflokkur á blaðinu sem er alls ekki til hjá fyrirtækinu** (t.d. „Kolsýra 7×" hjá
   fyrirtæki með engar kolsýrur) — flagga, ekki búa til.
