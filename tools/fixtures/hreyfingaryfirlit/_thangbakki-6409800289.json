@@ -1,0 +1,27 @@
+{
+"_heimild": "Supabase execute_sql 11.09.2026 (osfdzskyvisifcwyjkuk) — Þangbakki 8-10: R-000017 ber kt Ferðafélags í sölu en var gefinn út á Þangbakka í Payday (CANCELLED + CREDIT 104 = R-000527); R-000716 CANCELLED + CREDIT 212 + kredit R-000723 í appinu.",
+"kt10": "6409800289",
+"stolpi_hreyfingar": [
+{"id":15487,"nafn":"Þangbakki 8-10,húsfélag","dags":"2016-01-01","eindagi":"2016-01-01","texti":null,"runa":0,"upphaed":0,"tegund":"opnunarlina","reikn_nr":null,"krafa_nr":null}
+],
+"stolpi_reikningar": [],
+"customers_base": [
+{"id":671,"kennitala":"640980-0289","nafn":"Þangbakki 8-10,húsfélag","heimilisfang":"Pósthólf 8940, 128 Reykjavík"}
+],
+"fyrirtaeki": [
+{"id":1261,"nafn":"Þangbakki 8-10,húsfélag","kennitala":"640980-0289","heimilisfang":"Pósthólf 8940, 128 Reykjavík","deleted_at":null}
+],
+"payday": [
+{"payday_id":"a3fbc870-8a87-4ff1-87f7-8bafb147a3d6","number":"104","kt":"6409800289","customer_name":"Þangbakki 8-10,húsfélag","amount_total":-59520,"created_date":"2026-07-02","due_date":"2026-07-09","paid_date":"2026-07-03","status":"CREDIT","reference":"R-000017"},
+{"payday_id":"eb688c61-8f68-4326-93b2-ba28aae24cdf","number":"47","kt":"6409800289","customer_name":"Þangbakki 8-10,húsfélag","amount_total":59520,"created_date":"2026-07-02","due_date":"2026-07-09","paid_date":null,"status":"CANCELLED","reference":"R-000017"},
+{"payday_id":"73df6a18-0172-4469-af38-ba199fe8d9d5","number":"207","kt":"6409800289","customer_name":"Þangbakki 8-10,húsfélag","amount_total":190987,"created_date":"2026-08-07","due_date":"2026-08-14","paid_date":null,"status":"CANCELLED","reference":"R-000716"},
+{"payday_id":"c3c34e36-bc78-42e2-93f6-b035da6e94c4","number":"212","kt":"6409800289","customer_name":"Þangbakki 8-10,húsfélag","amount_total":-190987,"created_date":"2026-08-07","due_date":"2026-08-14","paid_date":"2026-08-10","status":"CREDIT","reference":"R-000716"}
+],
+"solur": [
+{"id":75,"num":"R-000017","customer_nafn":"Ferðafélag Íslands","customer_kt":"530169-3759","customer_id":179,"customer_base_id":359,"cb_kt":"530169-3759","fy_kt":"530169-3759","samtals":59520,"greitt_med":"reikningur","status":"final","is_credit":false,"credit_of":null,"created_at":"2026-05-05T11:29:34.332467+00:00","paid_at":"2026-07-03T00:00:00+00:00","krafa_sent_at":"2026-07-22T02:25:58.45324+00:00","invoiced_at":"2026-07-02T15:22:07.228+00:00","dk_invoice_id":"eb688c61-8f68-4326-93b2-ba28aae24cdf"},
+{"id":572,"num":"R-000527","customer_nafn":"Ferðafélag Íslands","customer_kt":"530169-3759","customer_id":179,"customer_base_id":359,"cb_kt":"530169-3759","fy_kt":"530169-3759","samtals":-59520,"greitt_med":"reikningur","status":"final","is_credit":false,"credit_of":null,"created_at":"2026-07-11T15:31:53.325241+00:00","paid_at":"2026-07-03T00:00:00+00:00","krafa_sent_at":null,"invoiced_at":"2026-07-11T15:31:53.325241+00:00","dk_invoice_id":"a3fbc870-8a87-4ff1-87f7-8bafb147a3d6"},
+{"id":763,"num":"R-000716","customer_nafn":"Þangbakki 8-10,húsfélag","customer_kt":"640980-0289","customer_id":1261,"customer_base_id":671,"cb_kt":"640980-0289","fy_kt":"640980-0289","samtals":190987,"greitt_med":"reikningur","status":"final","is_credit":false,"credit_of":null,"created_at":"2026-08-07T23:29:49.639175+00:00","paid_at":"2026-08-10T00:00:00+00:00","krafa_sent_at":"2026-08-07T23:30:48.761+00:00","invoiced_at":"2026-08-07T23:30:48.761+00:00","dk_invoice_id":"73df6a18-0172-4469-af38-ba199fe8d9d5"},
+{"id":770,"num":"R-000723","customer_nafn":"Þangbakki 8-10,húsfélag","customer_kt":null,"customer_id":1261,"customer_base_id":671,"cb_kt":"640980-0289","fy_kt":"640980-0289","samtals":-190987,"greitt_med":"reikningur","status":"final","is_credit":true,"credit_of":763,"created_at":"2026-08-10T10:59:59.453837+00:00","paid_at":null,"krafa_sent_at":null,"invoiced_at":null,"dk_invoice_id":null}
+],
+"solur_nafn": []
+}

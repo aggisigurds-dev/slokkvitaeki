@@ -1,0 +1,21 @@
+{
+"_heimild": "Supabase execute_sql 11.09.2026 (osfdzskyvisifcwyjkuk) — Oscuro ehf.: 108164 greiddur í banka 0528 27.04.2026 (80%, 295 kr kostnaður), 108113 opinn við yfirtöku.",
+"kt10": "5003171670",
+"stolpi_hreyfingar": [
+{"id":177,"nafn":"Oscuro ehf.","dags":"2026-04-08","eindagi":"2026-04-08","texti":"Reikningur: 108113","runa":8479,"upphaed":16534,"tegund":"reikningur","reikn_nr":"108113","krafa_nr":null},
+{"id":138,"nafn":"Oscuro ehf.","dags":"2026-04-14","eindagi":"2026-04-24","texti":"Reikningur: 108164","runa":8530,"upphaed":16819,"tegund":"reikningur","reikn_nr":"108164","krafa_nr":null}
+],
+"stolpi_reikningar": [
+{"reikn_nr":"108113","tegund":"reikningur","dags":"2026-04-08","eindagi":"2026-04-08","upphaed":16534,"stada":"opid_vid_yfirtoku","opid_upphaed":16534,"greitt_dags":null,"greitt_upphaed":null,"krafa_nr":null,"samsvorun":null},
+{"reikn_nr":"108164","tegund":"reikningur","dags":"2026-04-14","eindagi":"2026-04-24","upphaed":16819,"stada":"greitt","opid_upphaed":0,"greitt_dags":"2026-04-27","greitt_upphaed":13750,"krafa_nr":"104626","samsvorun":"banki_0528:80%"}
+],
+"customers_base": [
+{"id":934,"kennitala":"500317-1670","nafn":"Oscuro ehf","heimilisfang":null}
+],
+"fyrirtaeki": [
+{"id":1505,"nafn":"Oscuro ehf","kennitala":"500317-1670","heimilisfang":null,"deleted_at":null}
+],
+"payday": [],
+"solur": [],
+"solur_nafn": []
+}
