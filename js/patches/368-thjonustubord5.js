@@ -40,6 +40,9 @@
  *   Lokið   status = 'lokad'.     Svarað  svarad_at + status i_vinnslu, eins og 231 gerir.
  *   Breyta  title/notes/due_at/status/important · Eyða deleted_at (með afturköllun).
  *   Tillaga summary = ein lína frá /api/tv-summary (Haiku) með sögu fyrirtækis og pósti; „Afturkalla" setur fyrri aftur.
+ *   Hamur   tags += ham:<id> (skilyrt á updated_at). Hver hamur sýnir borðið með sínum málum: beint merki, eða flokkur/merki
+ *           hamsins, og Samskipti tekur líka pósta. Þjónusta = ekki beint tengt öðrum ham. Sérsniðnir hamir:
+ *           AppSettings thjonustubord5.hamir (Agnar 11.09.2026: „tengt málefni við ham.. ekki allt bara við þjónustu").
  *   Nýtt    á mig (sjálfgefið), Master eða annan; fyrirtæki valið úr tillögum (Companies.list).
  *
  * FLÆÐI (Agnar 11.09.2026: „pirrandi að geta ekki skoðað neitt nema sín 5 mál" · „burt með allar svona
@@ -105,12 +108,25 @@
   const I_VOLDU = ['saga', 'breyta'];
   const STODUR = [['nytt', 'Nýtt'], ['i_vinnslu', 'Í vinnslu'], ['bedid', 'Bíður'], ['tilbuid', 'Tilbúið'], ['lokad', 'Lokað']];
   const MODES = {
-    thjonusta: { l: 'Þjónusta', board: true, first: [], filter: 'allt' },
-    samskipti: { l: 'Samskipti', board: true, first: ['postsvor'], filter: 'post' },
-    skyrslur:  { l: 'Skýrslur', board: false, first: ['vinnublod', 'skipulag'] },
-    krofur:    { l: 'Kröfur', board: false, first: ['krofur'] },
-    akstur:    { l: 'Akstur', board: false, first: ['akstur', 'dagskra'] }
+    thjonusta: { l: 'Þjónusta', board: true, first: [], filter: 'allt', flokkar: [], merki: [] },
+    samskipti: { l: 'Samskipti', board: true, first: ['postsvor'], filter: 'allt', flokkar: ['samskipti'], merki: ['senda_tolvupost', 'hringja'] },
+    skyrslur:  { l: 'Skýrslur', board: true, first: ['vinnublod', 'skipulag'], filter: 'allt', flokkar: [], merki: ['senda_skyrslur'] },
+    krofur:    { l: 'Kröfur', board: true, first: ['krofur'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
+    akstur:    { l: 'Akstur', board: true, first: ['akstur', 'dagskra'], filter: 'allt', flokkar: [], merki: ['uppsetning'] }
   };
+  // Gömlu flokkarnir (thjonustubeidni.flokkur) og merkin (tags) úr 231 — sama orðaforði, svo hamir fyllast strax.
+  const FLOKKAR = { thjonusta: 'Þjónusta', rukkun: 'Rukkun', tilbod: 'Tilboð', samskipti: 'Samskipti', brunakerfi: 'Brunakerfi' };
+  const MERKI = { thjonusta: 'Þjónusta', eftir_ad_rukka: 'Eftir að rukka', bokhald: 'Bókhald', senda_skyrslur: 'Senda skýrslur', senda_tolvupost: 'Senda tölvupóst',
+    thjonustusamningur: 'Þjónustusamningur', gera_tilbod: 'Gera tilboð', brunakerfi: 'Brunakerfi', hringja: 'Hringja', uppsetning: 'Uppsetning', draft: 'Draft', kvortun: 'Kvörtun' };
+  const HAM_MERKI = 'ham:';
+  const serHamir = () => { const l = P(CFG_KEY + '.hamir'); return Array.isArray(l) ? l.filter(h => h && h.id && h.l && !MODES[h.id]) : []; };
+  function M(id) {
+    if (MODES[id]) return MODES[id];
+    const h = serHamir().find(x => x.id === id);
+    return h ? { l: String(h.l), board: true, filter: 'allt', ser: true, first: (Array.isArray(h.first) ? h.first : []).filter(k => MODS[k]),
+      flokkar: Array.isArray(h.flokkar) ? h.flokkar : [], merki: Array.isArray(h.merki) ? h.merki : [] } : null;
+  }
+  const hamaListi = () => Object.keys(MODES).concat(serHamir().map(h => h.id));
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
   const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0] };
   const FYRIR = {
@@ -154,7 +170,7 @@
       const x = v && v.mods && Array.isArray(v.mods[k]) ? v.mods[k] : base[k];
       mods[k] = [x[0] ? 1 : 0, x[1] ? 1 : 0];
     });
-    return { mode: v && MODES[v.mode] ? v.mode : 'thjonusta', mods, baraMitt: !!(v && v.bara_mitt) };
+    return { mode: v && M(v.mode) ? v.mode : 'thjonusta', mods, baraMitt: !!(v && v.bara_mitt) };
   }
   function cfg() {
     const n = nu();
@@ -175,7 +191,7 @@
     else if (skilabod) toast(skilabod);
   }
   const isOn = k => !!cfg().mods[k][0];
-  const inMode = k => MODES[cfg().mode].first.indexOf(k) >= 0;
+  const inMode = k => (M(cfg().mode) || MODES.thjonusta).first.indexOf(k) >= 0;
   const openKey = k => nu() + ':' + (inMode(k) ? cfg().mode + ':' : '') + k;
   function isOpen(k) {
     const key = openKey(k);
@@ -211,7 +227,7 @@
   }
 
   /* ── gögn ── */
-  const SEL = 'id,title,notes,summary,status,type,important,due_at,created_at,updated_at,source,channel_ref,assigned_to,customer_base_id,fyrirtaeki_id,customer_nafn,svarad_at';
+  const SEL = 'id,title,notes,summary,status,type,important,due_at,created_at,updated_at,source,channel_ref,assigned_to,customer_base_id,fyrirtaeki_id,customer_nafn,svarad_at,tags,flokkur';
   let _sig = '', _aftur = false, _dbBid = 0, _dbT = 0;
   // Könnunin á 60 s fresti teiknar AÐEINS ef eitthvað breyttist — annars myndi hún rugla skrun
   // í pósti sem verið er að lesa. Sóttímanum er skipt út beint.
@@ -264,7 +280,7 @@
         (rv.data || []).forEach(x => { S.virkni[x.customer_base_id] = x; });
         breytt = true;
       }
-      const sig = JSON.stringify([rows.map(x => [x.id, x.assigned_to, x.status, x.updated_at, x.svarad_at, x.important, x.title, x.summary]), sara, krofur]);
+      const sig = JSON.stringify([rows.map(x => [x.id, x.assigned_to, x.status, x.updated_at, x.svarad_at, x.important, x.title, x.summary, JSON.stringify(x.tags || []), x.flokkur]), sara, krofur]);
       if (sig !== _sig || S.err || !S.loaded) breytt = true;
       _sig = sig;
       S.rows = rows;
@@ -296,8 +312,23 @@
   const rodun = (a, b) => (b.important ? 1 : 0) - (a.important ? 1 : 0)
     || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity)
     || tStamp(b.created_at) - tStamp(a.created_at);
-  const masterRows = () => S.rows.filter(isFree).sort(rodun);
-  const mineRows = () => S.rows.filter(r => onBoardOf(r, nu())).sort(rodun);
+  const tagList = r => (Array.isArray(r.tags) ? r.tags : []).filter(t => typeof t === 'string');
+  const skyrirHamir = r => tagList(r).filter(t => t.indexOf(HAM_MERKI) === 0).map(t => t.slice(HAM_MERKI.length)).filter(id => !!M(id));
+  // Beint merki ræður. Þjónusta = ekki beint tengt öðrum ham. Aðrir hamir taka líka sinn flokk/merki (og Samskipti pósta).
+  function iHam(r, id) {
+    const sk = skyrirHamir(r);
+    if (sk.indexOf(id) >= 0) return true;
+    if (id === 'thjonusta') return !sk.length;
+    const h = M(id);
+    if (!h) return false;
+    if (id === 'samskipti' && isPost(r)) return true;
+    if (r.flokkur && h.flokkar.indexOf(r.flokkur) >= 0) return true;
+    const tags = tagList(r);
+    return h.merki.some(t => tags.indexOf(t) >= 0);
+  }
+  const hamRows = () => { const m = cfg().mode; return S.rows.filter(r => iHam(r, m)); };
+  const masterRows = () => hamRows().filter(isFree).sort(rodun);
+  const mineRows = () => hamRows().filter(r => onBoardOf(r, nu())).sort(rodun);
   const ageDays = r => { const t = tStamp(r.created_at); return t ? Math.max(0, Math.floor((Date.now() - t) / 864e5)) : 0; };
   const ageCls = a => (a >= 14 ? 'hot' : a <= 2 ? 'warm' : '');
   const whereOf = r => r.customer_nafn || S.names[r.customer_base_id] || '';
@@ -394,14 +425,14 @@
     const n = nu(), eigandi = normW(o.eigandi) || null, nuna = new Date().toISOString();
     const obj = {
       title: o.title, notes: o.lysing || '', type: 'annad', status: 'nytt', priority: 'venjulegur',
-      customer_nafn: nafn, customer_base_id: baseId, fyrirtaeki_id: fid, assigned_to: eigandi, tags: [],
+      customer_nafn: nafn, customer_base_id: baseId, fyrirtaeki_id: fid, assigned_to: eigandi, tags: o.ham && o.ham !== 'thjonusta' && M(o.ham) ? [HAM_MERKI + o.ham] : [],
       source: 'beint', important: !!o.aridandi, due_at: /^\d{4}-\d{2}-\d{2}$/.test(o.frestur || '') ? new Date(o.frestur + 'T12:00:00').toISOString() : null,
       created_at: nuna, created_by: n, updated_at: nuna
     };
     const r = await c.from('thjonustubeidni').insert(obj).select('id').single();
     if (r.error || !r.data) { toast('Málið vistaðist ekki: ' + ((r.error && r.error.message) || 'ekkert svar'), true); return false; }
     S.sel[n] = r.data.id;
-    toast((!eigandi ? 'Komið á Master borð' : lagt(eigandi) === lagt(n) ? 'Komið á borðið þitt' : 'Komið á borð ' + eigandi) + (fid ? ' · tengt ' + nafn : ''));
+    toast((!eigandi ? 'Komið á Master borð' : lagt(eigandi) === lagt(n) ? 'Komið á borðið þitt' : 'Komið á borð ' + eigandi) + (fid ? ' · tengt ' + nafn : '') + (o.ham && o.ham !== 'thjonusta' && M(o.ham) ? ' · ' + M(o.ham).l : ''));
     await load(true);
     return true;
   }
@@ -700,6 +731,13 @@
       '.bm label{display:flex;flex-direction:column;gap:3px;min-width:0}.bm-r{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end}',
       '.bm input,.bm textarea,.bm select{padding:6px 9px;border:1px solid #3a3732;border-radius:4px;background:#1c1b18;color:var(--on);font:13px var(--body)}.bm textarea{resize:vertical;min-height:70px}',
       '.bm .bm-c{flex-direction:row;align-items:center;gap:6px;color:var(--on2);font-size:13px}',
+      '.hchips{display:flex;align-items:center;flex-wrap:wrap;gap:6px}',
+      '.hchip{height:26px;padding:0 10px;border:1px solid #3a3732;border-radius:13px;background:#1c1b18;color:var(--on2);font:600 11.5px var(--body);cursor:pointer}',
+      '.hchip.on{background:var(--gside);border-color:#5a4410;color:#1b1405}.hchip.auto{border-style:dashed;border-color:rgba(232,203,122,.6);color:#e8cb7a}',
+      '.tag.ham{border-color:rgba(184,137,46,.55);color:var(--g8)}',
+      '.hamform .hf{display:flex;flex-direction:column;gap:12px;padding:12px 16px}.hamform .nylbl{max-width:360px}',
+      '.hgrp{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}.hgrp .lbl{flex-basis:100%}',
+      '.hchk{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink2)}.hnote{font-size:12px;color:var(--mute)}',
       '.err{padding:10px 14px;border:1px solid rgba(181,82,42,.45);border-radius:4px;background:#fff7f2;color:var(--terra);font-size:12.5px}',
       '.t5toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99990;max-width:min(92vw,520px);padding:11px 16px;border:1px solid #000;border-radius:5px;background:var(--slab);color:var(--on);font:600 12.5px var(--body);box-shadow:var(--slabsh)}',
       '.t5toast.warn{border-top:3px solid var(--terra)}',
@@ -880,7 +918,8 @@
       (r.status === 'i_vinnslu' ? '<span class="tag">Í vinnslu</span>' : '') +
       (isPost(r) && r.svarad_at ? '<span class="tag ok">Svarað</span>' : '') +
       (virkniEftir(r) ? '<span class="tag ok" title="Reikningur, sala eða skýrsla eftir að málið varð til">Líklega afgreitt</span>' : '') +
-      (!isFree(r) ? '<span class="tag">' + esc(eigandaTexti(r, n)) + '</span>' : '');
+      (!isFree(r) ? '<span class="tag">' + esc(eigandaTexti(r, n)) + '</span>' : '') +
+      skyrirHamir(r).filter(k => k !== cfg().mode).map(k => '<span class="tag ham">' + esc(M(k).l) + '</span>').join('');
     const hlid = onBoardOf(r, n) ? '<span class="lock">Þitt</span>'
       : '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) +
         (isFree(r) ? '>' : ' title="Færa málið af borði ' + esc(normW(r.assigned_to)) + ' á þitt borð">') +
@@ -983,7 +1022,7 @@
       '<div class="sacts">' + taka + svara + lokid + skila + fyr + '</div>' +
       '<div class="sacts sm2">' + setja + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
-          ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + breytaHtml(r);
+          ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + hamirHtml(r) + breytaHtml(r);
   }
 
   function modPanel(k, summary, body, action, alltaf) {
@@ -1125,7 +1164,7 @@
     const falin = all.length - synileg.length;
     const chips = synileg.map(l => {
       const inni = '<span class="lk-ic" aria-hidden="true">' + esc(String(l.nafn).trim().charAt(0).toUpperCase() || '·') + '</span><span>' + esc(l.nafn) + '</span>' +
-        (Array.isArray(l.modes) && l.modes.length && MODES[l.modes[0]] ? '<span class="lk-m">' + esc(MODES[l.modes[0]].l) + '</span>' : '');
+        (Array.isArray(l.modes) && l.modes.length && M(l.modes[0]) ? '<span class="lk-m">' + esc(M(l.modes[0]).l) + '</span>' : '');
       const tengill = l.slod.charAt(0) === '#'
         ? '<button type="button" class="lk" data-t5="go" data-view="' + esc(l.slod.slice(1)) + '" title="Opna ' + esc(l.nafn) + '">' + inni + '</button>'
         : '<a class="lk" href="' + esc(l.slod) + '" target="_blank" rel="noopener noreferrer" title="' + esc(l.slod) + '">' + inni + '</a>';
@@ -1137,7 +1176,7 @@
         '<input type="text" data-k="lu" placeholder="Slóð, t.d. keldan.is" aria-label="Slóð" inputmode="url">' +
         '<button type="button" class="btn gold sm" data-t5="link-save">Festa</button>' +
         '<button type="button" class="btn iv sm" data-t5="link-add">Hætta við</button></div>' +
-      '<label class="lk-ham"><input type="checkbox" data-k="lm"> Aðeins í hamnum „' + esc(MODES[mode].l) + '“</label>' +
+      '<label class="lk-ham"><input type="checkbox" data-k="lm"> Aðeins í hamnum „' + esc((M(mode) || MODES.thjonusta).l) + '“</label>' +
       '<div class="lk-till"><span class="lbl">Síður í kerfinu</span>' +
         TILLOGUR.filter(t => !all.some(l => l.slod === t[1])).map(t =>
           '<button type="button" class="btn iv sm" data-t5="link-quick" data-nafn="' + esc(t[0]) + '" data-slod="' + esc(t[1]) + '">+ ' + esc(t[0]) + '</button>').join('') +
@@ -1240,6 +1279,8 @@
       '<label class="nylbl"><span class="lbl">Setja á</span><select data-k="ne" aria-label="Setja málið á">' +
         (ppl.indexOf(n) >= 0 ? '<option value="' + esc(n) + '" selected>Mitt borð (' + esc(n) + ')</option>' : '') +
         '<option value="">Master</option>' + ppl.filter(x => x !== n).map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join('') + '</select></label>' +
+      '<label class="nylbl"><span class="lbl">Hamur</span><select data-k="nh" aria-label="Hamur">' +
+        hamaListi().map(k => '<option value="' + esc(k) + '"' + (k === cfg().mode ? ' selected' : '') + '>' + esc(M(k).l) + '</option>').join('') + '</select></label>' +
       '<textarea data-k="nl" rows="2" placeholder="Lýsing (valfrjálst)" aria-label="Lýsing"></textarea>' +
       '<label class="nylbl"><span class="lbl">Frestur</span><input type="date" data-k="nd" aria-label="Frestur"></label>' +
       '<label class="nychk"><input type="checkbox" data-k="ni"> Áríðandi</label>' +
@@ -1267,7 +1308,7 @@
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði truflast ef teiknað er undir — bíða.
     if (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm)))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
-    const n = nu(), c = cfg(), mode = MODES[c.mode];
+    const n = nu(), c = cfg(), mode = M(c.mode) || MODES.thjonusta;
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // Hvaða opið mál sem er má skoða — ekki aðeins þau á mínu borði. 0 = lokað viljandi (✕).
     let selId = S.sel[n];
@@ -1297,11 +1338,12 @@
         : emptyHtml(master.length ? 'Ekkert í þessari síu.' : (S.loaded ? 'Master borðið er tómt.' : 'Engin mál sótt enn.'));
 
     const siuHeiti = S.filter === 'oll' ? 'Öll opin mál' : /^p:/.test(S.filter) ? 'Borð · ' + S.filter.slice(2)
-      : /^f:/.test(S.filter) ? 'Fyrirtæki · ' + (whereOf(S.rows.find(r => String(r.fyrirtaeki_id) === S.filter.slice(2)) || {}) || 'mál') : 'Master borð';
+      : /^f:/.test(S.filter) ? 'Fyrirtæki · ' + (whereOf(S.rows.find(r => String(r.fyrirtaeki_id) === S.filter.slice(2)) || {}) || 'mál') : c.mode === 'thjonusta' ? 'Master borð' : 'Master · ' + mode.l;
     // Á síma: mál til skoðunar sem er ekki í sýnilega listanum (t.d. opnað úr leit) birtist efst.
     const selUtan = selRow && !selMinn && !visible.slice(0, S.synd).some(r => r.id === selId) ? '<div class="sel inline">' + selMarkup + '</div>' : '';
     const mineHtml = '<section class="panel colmine" aria-label="Mitt borð">' +
         '<header class="phead">' + plate('03') + '<h2 class="ptitle">Mitt borð</h2><span class="sum">' + mine.length + ' mál</span>' +
+          (S.rows.filter(r => onBoardOf(r, n)).length > mine.length ? '<button type="button" class="pchip" data-t5="filter" data-f="p:' + esc(n) + '" title="Sýna öll þín mál, í öllum hömum">+ ' + (S.rows.filter(r => onBoardOf(r, n)).length - mine.length) + ' í öðrum hömum</button>' : '') +
           '<span class="grow"></span><button type="button" class="btn iv sm" data-t5="take-next">Taka næsta ›</button></header>' +
         (feedFalinn ? selUtan : '') +
         (mine.length
@@ -1354,10 +1396,14 @@
         leitHtml() +
         (S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
-          Object.keys(MODES).map(k => '<button type="button" data-t5="mode" data-mode="' + k + '" aria-pressed="' + (c.mode === k) + '">' + MODES[k].l + '</button>').join('') +
-        '</div><span class="grow"></span><div class="seg" role="group" aria-label="Borðið">' +
+          hamaListi().map(k => '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
+            '<span class="c">' + S.rows.filter(r => iHam(r, k)).length + '</span></button>').join('') +
+        '</div><button type="button" class="btn iv sm" data-t5="ham-ny" aria-expanded="' + !!(S.hamForm && !S.hamForm.id) + '">+ Hamur</button>' +
+        (mode.ser ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '">✎ Breyta ham</button>' : '') +
+        '<span class="grow"></span><div class="seg" role="group" aria-label="Borðið">' +
           '<button type="button" data-t5="bara-mitt" data-v="0" aria-pressed="' + !baraMitt + '">Master + mitt borð</button>' +
           '<button type="button" data-t5="bara-mitt" data-v="1" aria-pressed="' + baraMitt + '">Bara mitt borð</button></div></div>' +
+        hamFormHtml() +
         linksHtml(c.mode) +
         (ppl.indexOf(n) < 0 ? '<p class="err">„' + esc(n) + '“ er ekki starfsmaður á þessu borði' + (n === AI_WORKER ? ' — Charlize er bunkinn á Master' : '') + '. Veldu þitt nafn í „Ég er“.</p>' : '') +
         (S.cfgOpen ? '<section class="panel" aria-label="Mitt vinnuborð">' + cfgHtml() + '</section>' : '') +
@@ -1534,6 +1580,72 @@
     } catch (err) { toast('Myndin vistaðist ekki: ' + ((err && err.message) || err), true); }
   }
 
+  /* ── hamir: stofna, breyta, eyða (samstillt) og tengja mál ── */
+  async function vistaHamir(breyta, skilabod) {
+    if (!stillingarTilbunar()) { toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; }
+    const nyr = breyta(serHamir().map(h => Object.assign({}, h)));
+    _vistar++;
+    let ok = false;
+    try { ok = !!(await AppSettings.save({ [CFG_KEY]: { hamir: nyr } })); } catch (_) {}
+    _vistar--;
+    if (!ok) toast('Hamurinn vistaðist ekki. Reyndu aftur.', true);
+    else if (skilabod) toast(skilabod);
+    render();
+    return ok;
+  }
+  function hamFormHtml() {
+    const F = S.hamForm;
+    if (!F) return '';
+    const h = F.id ? M(F.id) : null;
+    const hak = (pre, k, lbl, on) => '<label class="hchk"><input type="checkbox" data-k="' + pre + k + '"' + (on ? ' checked' : '') + '> ' + esc(lbl) + '</label>';
+    return '<section class="panel hamform" aria-label="' + (h ? 'Breyta ham' : 'Nýr hamur') + '">' +
+      '<header class="phead"><span class="plate">' + (h ? '✎' : '+') + '</span><h2 class="ptitle">' + (h ? 'Breyta ham · ' + esc(h.l) : 'Nýr hamur') + '</h2><span class="grow"></span>' +
+        '<button type="button" class="btn iv sm" data-t5="ham-loka">Hætta við</button></header>' +
+      '<div class="hf">' +
+        '<label class="nylbl"><span class="lbl">Nafn hamsins</span><input type="text" data-k="hn" value="' + esc(h ? h.l : '') + '" placeholder="t.d. Brunakerfi, Tilboð, Uppsetningar" maxlength="30"></label>' +
+        '<div class="hgrp"><span class="lbl">Einingar sem opnast með hamnum</span>' + Object.keys(MODS).map(k => hak('hm_', k, MODS[k].t, h && h.first.indexOf(k) >= 0)).join('') + '</div>' +
+        '<div class="hgrp"><span class="lbl">Taka sjálfkrafa með mál í flokki</span>' + Object.keys(FLOKKAR).map(k => hak('hf_', k, FLOKKAR[k], h && h.flokkar.indexOf(k) >= 0)).join('') + '</div>' +
+        '<div class="hgrp"><span class="lbl">… eða með merki</span>' + Object.keys(MERKI).map(k => hak('hg_', k, MERKI[k], h && h.merki.indexOf(k) >= 0)).join('') + '</div>' +
+        '<p class="hnote">Mál tengjast líka beint: opnaðu mál og smelltu á haminn undir „Hamir". Beint tengt mál fer af Þjónustu.</p>' +
+        '<div class="nybtn">' + (h ? '<button type="button" class="btn iv sm" data-t5="ham-eyda" data-mode="' + esc(F.id) + '">🗑 Eyða ham</button><span class="grow"></span>' : '') +
+          '<button type="button" class="btn gold sm" data-t5="ham-vista">' + (h ? 'Vista breytingar' : 'Stofna ham') + '</button></div>' +
+      '</div></section>';
+  }
+  function hamirHtml(r) {
+    const tags = tagList(r);
+    return '<div class="hchips"><span class="slabel">Hamir</span>' + hamaListi().map(k => {
+      const h = M(k), beint = tags.indexOf(HAM_MERKI + k) >= 0, inni = iHam(r, k);
+      const skyring = beint ? 'Tengt beint — smelltu til að aftengja'
+        : inni ? (k === 'thjonusta' ? 'Sjálfgefið: ekki tengt öðrum ham — smelltu til að tengja beint' : 'Sjálfkrafa (flokkur, merki eða póstur) — smelltu til að tengja beint')
+        : 'Smelltu til að tengja málið við haminn';
+      return '<button type="button" class="hchip' + (beint ? ' on' : inni ? ' auto' : '') + '" data-t5="ham-tengja" data-id="' + r.id + '" data-mode="' + esc(k) + '"' + dis(r.id) + ' title="' + esc(skyring) + '">' + esc(h.l) + '</button>';
+    }).join('') + '</div>';
+  }
+  // Tengja/aftengja = merkið ham:<id> í tags. Fylkið lesið nýtt og skrifað skilyrt á updated_at, svo merki sem
+  // gamla borðið eða önnur vél setti á sama augnabliki étist ekki.
+  function tengjaHam(id, hamId) {
+    const c = sb();
+    if (!c || !M(hamId)) return;
+    return act(id, async () => {
+      for (let tilraun = 0; tilraun < 3; tilraun++) {
+        const cur = await c.from('thjonustubeidni').select('tags,updated_at').eq('id', id).single();
+        if (cur.error) throw cur.error;
+        const tags = (Array.isArray(cur.data.tags) ? cur.data.tags : []).filter(t => typeof t === 'string');
+        const merki = HAM_MERKI + hamId, var_ = tags.indexOf(merki) >= 0;
+        const nyr = var_ ? tags.filter(t => t !== merki) : tags.concat([merki]);
+        const r = await c.from('thjonustubeidni').update({ tags: nyr, updated_at: new Date().toISOString() }).eq('id', id).eq('updated_at', cur.data.updated_at).select('id,tags');
+        if (r.error) throw r.error;
+        if (r.data && r.data.length) {
+          const row = S.rows.find(x => x.id === id);
+          if (row) row.tags = r.data[0].tags;
+          toast((var_ ? 'Tekið úr hamnum ' : 'Tengt við haminn ') + M(hamId).l);
+          return;
+        }
+      }
+      throw new Error('málið breyttist á meðan — reyndu aftur');
+    });
+  }
+
   /* ── skilaboð ── */
   let _toastT = 0;
   function toast(msg, warn, afturkalla) {
@@ -1608,7 +1720,7 @@
       case 'mode':
         if (!krefstStillinga()) return;
         c.mode = el.dataset.mode;
-        S.filter = MODES[c.mode].filter || 'allt';
+        S.filter = (M(c.mode) || MODES.thjonusta).filter || 'allt';
         S.synd = PAGE;
         S.view = 'master';
         render();
@@ -1643,7 +1755,7 @@
         const cust = String(gildi('nc')).trim();
         el.disabled = true;
         createCase({ title, cust, fyr: S.ny.fyr && S.ny.fyr.nafn === cust ? S.ny.fyr : null, eigandi: String(gildi('ne')),
-          lysing: String(gildi('nl')).trim(), frestur: String(gildi('nd')), aridandi: !!gildi('ni') }).then(ok => {
+          lysing: String(gildi('nl')).trim(), frestur: String(gildi('nd')), aridandi: !!gildi('ni'), ham: String(gildi('nh')) }).then(ok => {
           if (!ok) { el.disabled = false; return; }
           root.querySelectorAll('.composer [data-k]').forEach(x => { if (x.type === 'checkbox') x.checked = false; else if (x.tagName !== 'SELECT') x.value = ''; });
           S.composer = false;
@@ -1737,6 +1849,43 @@
         if (f) f();
         return;
       }
+      case 'ham-ny':
+        S.hamForm = S.hamForm && !S.hamForm.id ? null : { id: null };
+        render();
+        if (S.hamForm) { const f = root.querySelector('[data-k="hn"]'); if (f) f.focus(); }
+        return;
+      case 'ham-breyta': S.hamForm = { id: el.dataset.mode }; render(); return;
+      case 'ham-loka': S.hamForm = null; render(); return;
+      case 'ham-vista': {
+        const nafn = String((root.querySelector('[data-k="hn"]') || {}).value || '').trim().slice(0, 30);
+        if (!nafn) { toast('Gefðu hamnum nafn.', true); const f = root.querySelector('[data-k="hn"]'); if (f) f.focus(); return; }
+        const F = S.hamForm || {}, hid = F.id || ('h' + Date.now().toString(36));
+        if (hamaListi().some(k => k !== hid && lagt(M(k).l) === lagt(nafn))) { toast('Hamur með þessu nafni er þegar til.', true); return; }
+        const valin = pre => [...root.querySelectorAll('.hamform input[data-k^="' + pre + '"]')].filter(x => x.checked).map(x => x.dataset.k.slice(pre.length));
+        const gildi = { id: hid, l: nafn, first: valin('hm_'), flokkar: valin('hf_'), merki: valin('hg_') };
+        el.disabled = true;
+        vistaHamir(l => { const i = l.findIndex(x => x.id === hid); if (i >= 0) l[i] = gildi; else l.push(gildi); return l; },
+          F.id ? 'Hamurinn uppfærður' : 'Hamurinn „' + nafn + '" stofnaður').then(ok => {
+          if (!ok) { el.disabled = false; return; }
+          S.hamForm = null;
+          c.mode = hid; S.filter = 'allt'; S.synd = PAGE; S.view = 'master';
+          render();
+          vistaCfg({ mode: hid });
+        });
+        return;
+      }
+      case 'ham-eyda': {
+        const hid = el.dataset.mode, h = M(hid);
+        if (!h || !h.ser || !window.confirm('Eyða hamnum „' + h.l + '"? Málin haldast — þau sem voru aðeins í honum birtast aftur undir Þjónustu.')) return;
+        vistaHamir(l => l.filter(x => x.id !== hid), 'Hamnum var eytt').then(ok => {
+          if (!ok) return;
+          S.hamForm = null;
+          if (c.mode === hid) { c.mode = 'thjonusta'; S.filter = 'allt'; vistaCfg({ mode: 'thjonusta' }); }
+          render();
+        });
+        return;
+      }
+      case 'ham-tengja': tengjaHam(id, el.dataset.mode); return;
       case 'ai-tillaga': aiTillaga(id); return;
       case 'virkni-uppf': uppfaeraVirkni(); return;
       case 'bm-opna': S.bmOpid[id] = !S.bmOpid[id]; render(); return;
@@ -1822,6 +1971,7 @@
       if (k === 'lq') { if (e.key === 'Enter') e.preventDefault(); return; }
     }
     if (e.key === 'Enter' && (k === 'nt' || k === 'nc')) { e.preventDefault(); const b = root.querySelector('[data-t5="composer-save"]'); if (b && !b.disabled) b.click(); }
+    if (e.key === 'Enter' && k === 'hn') { e.preventDefault(); const b = root.querySelector('[data-t5="ham-vista"]'); if (b && !b.disabled) b.click(); }
     if (e.key === 'Enter' && (k === 'ln' || k === 'lu')) { e.preventDefault(); const b = root.querySelector('[data-t5="link-save"]'); if (b && !b.disabled) b.click(); }
     if (e.key === 'Escape' && (S.leit.opid || S.ny.opid)) { S.leit.opid = false; S.ny.opid = false; render(); return; }
     if (e.key === 'Escape' && (S.composer || S.cfgOpen || S.linkForm)) { S.composer = false; S.cfgOpen = false; S.linkForm = false; render(); }
@@ -1852,7 +2002,7 @@
     lysaNav();
     setTimeout(() => { const vv = document.getElementById(VIEW_ID); if (vv && vv.classList.contains('active')) lysaNav(); }, 60);
     try { if (location.hash !== '#' + NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
-    S.filter = MODES[cfg().mode].filter || 'allt';
+    S.filter = (M(cfg().mode) || MODES.thjonusta).filter || 'allt';
     render();
     load(S.loaded);
     clearInterval(_poll);
@@ -1881,7 +2031,7 @@
     if (window.App && App.switchView) App.switchView(NAV_KEY); else show();
   }
   let _stSig = '';
-  const stillingaSig = () => { const n = nu(); try { return JSON.stringify([n, P(CFG_KEY + '.by_staff.' + n), jobsFor(n), cardsFor(n), folk()]); } catch (_) { return String(Date.now()); } };
+  const stillingaSig = () => { const n = nu(); try { return JSON.stringify([n, P(CFG_KEY + '.by_staff.' + n), jobsFor(n), cardsFor(n), folk(), P(CFG_KEY + '.hamir')]); } catch (_) { return String(Date.now()); } };
   function boot() {
     patchSwitchView();
     ensureView();
@@ -1907,7 +2057,7 @@
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368k' };
+    window.Thjonustubord5 = { show, load, render, version: '368l' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
