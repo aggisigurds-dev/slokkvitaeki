@@ -1735,6 +1735,17 @@
   var _t=0;
   var mo=new MutationObserver(function(){ clearTimeout(_t); _t=setTimeout(inject, 500); });
   (function start(){ var main=document.getElementById('companies-main'); if(!main){ setTimeout(start,800); return; } mo.observe(main,{childList:true}); inject(); })();
+  // 2026-09-11 — „📁 Skjöl & viðhengi" birtist EKKI á prófílnum, hvorki á framleiðslu né staðbundið
+  // (#company/848 mælt: ._dyg-section ekki til; tilbúin breyting beint á #companies-main kveikti ekkert).
+  // Sama rót og 113/255 fengu lækningu við 09.09.2026: MutationObserver-inn var EINA kveikjan og
+  // endurreyndi aldrei — hér er hann bundinn við #companies-main-hnútinn sem var til við ræsingu,
+  // og þegar þeim hnúti er skipt út heyrir hann aldrei aftur neitt. Sami vörður og 113: tifari sem
+  // kostar eitt querySelector; inject() skilar strax þegar spjaldið á sama félagi er þegar á sínum stað.
+  setInterval(function(){
+    var v=document.getElementById('view-companies');
+    if(v && !v.classList.contains('active')) return;
+    inject();
+  }, 1200);
   // Re-render when a manual attachment is added/changed (patch 111 dispatches this).
   document.addEventListener('attachment-year-changed', function(){
     var s=document.querySelector('._dyg-section'); if(s) render(s, +s.dataset.coId);
