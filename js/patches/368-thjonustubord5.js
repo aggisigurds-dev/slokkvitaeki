@@ -97,7 +97,7 @@
     vinnublod: { n: '06', t: 'Vinnublöð', d: 'Yfirferð vinnublaða: samþykkja, merkja klárað, sjá skýrslu og reikning.' },
     postsvor:  { n: '07', t: 'Póstsvörun', d: 'Póstmál sem bíða svars.' },
     akstur:    { n: '08', t: 'Aksturslistar', d: 'Listar 1–3 fyrir bílstjóra: færa á milli, prenta með samantekt, leið í korti.' },
-    krofur:    { n: '09', t: 'Kröfur', d: 'Útistandandi kröfur í Kröfu yfirliti.' },
+    krofur:    { n: '09', t: 'Kröfur', d: 'Útistandandi kröfur: yfir gjalddaga, ósendar og fjárhæðir.' },
     // Úr gamla borðinu (231) — kveikt og slökkt í ⚙ Mitt vinnuborð (Agnar 11.09.2026).
     frestir:   { n: '10', t: 'Frestir', d: 'Opin mál með frest — liðnir fyrst.' },
     nyjast:    { n: '11', t: 'Nýjast', d: 'Nýjustu opnu málin, sama hver á þau.' },
@@ -107,16 +107,19 @@
     nymal:     { n: '15', t: 'Ný mál — greining', d: 'Mál merkt ný: aldur, útköll og það sem vantar heimilisfang.' },
     brunakerfi: { n: '16', t: 'Brunakerfi — hvert þarf að fara', d: 'Kerfi sem eru komin á tíma, á leiðinni eða í vinnslu.' },
     starfsmenn: { n: '17', t: 'Starfsmenn', d: 'Staðan hjá hverjum og einum: mál, ný, frestir og verk.' },
-    ivinnslu:  { n: '18', t: 'Í vinnslu — er það búið?', d: 'Það sem er merkt í vinnslu, borið saman við skýrslur og reikninga.' }
+    ivinnslu:  { n: '18', t: 'Í vinnslu — er það búið?', d: 'Það sem er merkt í vinnslu, borið saman við skýrslur og reikninga.' },
+    gleymt:    { n: '19', t: 'Gleymst að rukka?', d: 'Úttekt án reiknings, greitt síðar sem bíður, kort og reiðufé ekki merkt greitt.' },
+    bakfaersla: { n: '20', t: 'Bakfærslur og breytingar', d: 'Beiðnir um bakfærslu eða breyttan reikning — mál, póstar og kreditreikningar.' },
+    afgreidsla: { n: '21', t: 'Staðan í afgreiðslu', d: 'Kassinn: sala dagsins og vikunnar, opin drög og ógreitt.' }
   };
-  const BOTTOM = ['skipulag', 'frestir', 'nyjast', 'vinnublod', 'postsvor', 'akstur', 'krofur', 'forgangur', 'nymal', 'brunakerfi', 'starfsmenn', 'ivinnslu'];
+  const BOTTOM = ['skipulag', 'frestir', 'nyjast', 'vinnublod', 'postsvor', 'akstur', 'krofur', 'forgangur', 'nymal', 'brunakerfi', 'starfsmenn', 'ivinnslu', 'gleymt', 'bakfaersla', 'afgreidsla'];
   const I_VOLDU = ['saga', 'breyta'];
   const STODUR = [['nytt', 'Nýtt'], ['i_vinnslu', 'Í vinnslu'], ['bedid', 'Bíður'], ['tilbuid', 'Tilbúið'], ['lokad', 'Lokað']];
   const MODES = {
     thjonusta: { l: 'Þjónusta', board: true, first: [], filter: 'allt', flokkar: [], merki: [] },
     samskipti: { l: 'Samskipti', board: true, first: ['postsvor'], filter: 'allt', flokkar: ['samskipti'], merki: ['senda_tolvupost', 'hringja'] },
     skyrslur:  { l: 'Skýrslur', board: true, first: ['ivinnslu', 'vinnublod', 'skipulag'], filter: 'allt', flokkar: [], merki: ['senda_skyrslur'] },
-    krofur:    { l: 'Kröfur', board: true, first: ['krofur'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
+    krofur:    { l: 'Kröfur', board: true, first: ['krofur', 'gleymt', 'bakfaersla', 'afgreidsla'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
     akstur:    { l: 'Akstur', board: true, first: ['forgangur', 'akstur', 'brunakerfi', 'nymal', 'starfsmenn', 'dagskra'], filter: 'allt', flokkar: ['brunakerfi'], merki: ['uppsetning', 'brunakerfi', 'arskodun'], tegundir: ['heimsokn', 'skodun_tilbod'] }
   };
   // Gömlu flokkarnir (thjonustubeidni.flokkur) og merkin (tags) úr 231 — sama orðaforði, svo hamir fyllast strax.
@@ -133,7 +136,7 @@
   }
   const hamaListi = () => Object.keys(MODES).concat(serHamir().map(h => h.id));
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -1321,6 +1324,69 @@
     load(true);
   }
 
+  /* ── Kröfur-hamur: gögn ── */
+  async function saekjaKrofur() {
+    const c = sb();
+    if (!c) throw new Error('Engin tenging við gagnagrunn');
+    const [ro, rc] = await Promise.all([
+      c.from('solur').select('id,num,customer_nafn,customer_base_id,samtals,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit').eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void'),
+      c.from('solur').select('credit_of').eq('is_credit', true).not('credit_of', 'is', null)
+    ]);
+    if (ro.error) throw ro.error;
+    const bakfaert = new Set((rc.data || []).map(x => x.credit_of));
+    const krofur = (ro.data || []).filter(s => !s.is_credit && !bakfaert.has(s.id));
+    const nums = krofur.map(s => s.num).filter(Boolean), gjald = {};
+    if (nums.length) {
+      try {
+        const rp = await c.from('payday_invoices_slokk').select('reference,due_date,final_due_date,status').in('reference', nums);
+        (rp.data || []).forEach(p => { gjald[p.reference] = p; });
+      } catch (_) {}
+    }
+    return krofur.map(s => Object.assign({}, s, { gjald: gjald[s.num] || null, send: !!(s.krafa_sent_at || s.invoiced_at || s.dk_invoice_id) }));
+  }
+  async function saekjaGleymt() {
+    const c = sb();
+    if (!c) throw new Error('Engin tenging við gagnagrunn');
+    const fjortan = new Date(Date.now() - 14 * 864e5).toISOString();
+    const [ru, rg, rk] = await Promise.all([
+      c.from('v_gleymt_ad_rukka_uttekt').select('fyrirtaeki_id,nafn,heimilisfang,postnumer,skyrslur,skyrsla_dags').order('skyrsla_dags', { ascending: true }),
+      c.from('solur').select('id,num,customer_nafn,samtals,created_at,starfsmadur').eq('greitt_med', 'greitt_sidar').eq('status', 'drog').is('paid_at', null).lt('created_at', fjortan).order('created_at', { ascending: true }),
+      c.from('solur').select('id,num,customer_nafn,samtals,created_at,greitt_med,starfsmadur').in('greitt_med', ['kort', 'reidufe']).is('paid_at', null).eq('status', 'final').not('is_credit', 'is', true).order('created_at', { ascending: true })
+    ]);
+    if (ru.error) throw ru.error;
+    return { uttekt: ru.data || [], sidar: rg.data || [], kort: rk.data || [] };
+  }
+  const BAKF_ORD = ['bakfær', 'kreditreikn', 'kredit', 'leiðrétt', 'endurgreið', 'tvírukk', 'breyta reikn', 'rangur reikn', 'afrit af reikn', 'fella niður'];
+  async function saekjaBakfaerslur() {
+    const c = sb();
+    if (!c) throw new Error('Engin tenging við gagnagrunn');
+    const fra60 = new Date(Date.now() - 60 * 864e5).toISOString();
+    const or = BAKF_ORD.map(o => 'subject.ilike."%' + o + '%",snippet.ilike."%' + o + '%"').join(',');
+    const [rp, rc] = await Promise.all([
+      c.from('email_digest').select('id,subject,snippet,sender_name,sender_email,received_at,folder').eq('account', 'eldklar@eldklar.is').gte('received_at', fra60).or(or).order('received_at', { ascending: false }).limit(40),
+      c.from('solur').select('id,num,customer_nafn,samtals,created_at,credit_of').eq('is_credit', true).gte('created_at', fra60).order('created_at', { ascending: false })
+    ]);
+    if (rp.error) throw rp.error;
+    return { postar: (rp.data || []).filter(m => m.folder !== 'SENT'), kredit: rc.data || [] };
+  }
+  async function saekjaAfgreidslu() {
+    const c = sb();
+    if (!c) throw new Error('Engin tenging við gagnagrunn');
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+    const vika = new Date(d0); vika.setDate(vika.getDate() - ((vika.getDay() + 6) % 7));
+    const SEL_S = 'id,num,customer_nafn,samtals,created_at,greitt_med,status,paid_at,is_credit';
+    const [rv, ro] = await Promise.all([
+      c.from('solur').select(SEL_S).eq('starfsmadur', 'Kassi').gte('created_at', vika.toISOString()).neq('status', 'void'),
+      c.from('solur').select(SEL_S).eq('starfsmadur', 'Kassi').is('paid_at', null).neq('status', 'void').not('is_credit', 'is', true)
+    ]);
+    if (rv.error) throw rv.error;
+    return { vika: (rv.data || []).filter(s => !s.is_credit), opin: ro.data || [], dagur: d0.getTime() };
+  }
+  const summa = l => l.reduce((s, x) => s + (+x.samtals || 0), 0);
+  const daga = t => Math.max(0, Math.floor((Date.now() - tStamp(t)) / 864e5));
+  const soluLina = (x, merki) => '<div class="lrow"><span class="age">' + esc(x.num || '—') + '</span><div><b>' + esc(x.customer_nafn || '(ónefnt)') + '</b>' +
+    '<span class="s">' + kr(x.samtals) + ' · ' + esc(fmtD(x.created_at)) + (x.starfsmadur ? ' · ' + esc(x.starfsmadur) : '') + (x.krafa_note ? ' · ' + esc(String(x.krafa_note).slice(0, 60)) : '') + '</span></div>' + (merki || '<span></span>') + '</div>';
+
   function lrowHtml(r, merki) {
     const a = ageDays(r), w = fyrLink(r);
     return '<div class="lrow"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
@@ -1514,10 +1580,78 @@
       return modPanel(k, 'Listi 1 · ' + listar[1].length + '  ·  Listi 2 · ' + listar[2].length + '  ·  Listi 3 · ' + listar[3].length, body, action);
     }
     if (k === 'krofur') {
-      const c = S.counts.krofur;
-      return modPanel(k, c == null ? 'talning náðist ekki' : c + ' útistandandi',
-        '<div class="kboxes"><div class="kbox"><div class="lbl">Útistandandi kröfur</div><div class="v">' + (c == null ? '—' : c) + '</div></div></div>',
-        '<button type="button" class="btn gold sm" data-t5="go" data-view="krofu-yfirlit">Opna Kröfu yfirlit ›</button>');
+      const g = isOpen(k) ? gogn('krofur', saekjaKrofur) : null, nuna = Date.now();
+      let body, sum;
+      if (!g || (!g.data && !g.villa)) { body = emptyHtml('Sæki kröfurnar…'); sum = S.counts.krofur == null ? 'Kröfur' : S.counts.krofur + ' í talningu'; }
+      else if (g.villa) { body = '<p class="err">Náði ekki í kröfurnar: ' + esc(g.villa) + '</p>'; sum = 'Kröfur'; }
+      else {
+        const d = g.data;
+        const yfir = d.filter(x => x.gjald && x.gjald.due_date && tStamp(x.gjald.due_date) < nuna).sort((a, b) => tStamp(a.gjald.due_date) - tStamp(b.gjald.due_date));
+        const osendar = d.filter(x => !x.send);
+        const kb = (l, listi) => '<div class="kbox"><div class="lbl">' + l + '</div><div class="v">' + listi.length + '</div><div class="km">' + kr(summa(listi)) + '</div></div>';
+        body = '<div class="kboxes">' + kb('Útistandandi', d) + kb('Yfir gjalddaga', yfir) + kb('Ósendar', osendar) + '</div>' +
+          (yfir.length ? '<div class="sect">Yfir gjalddaga — elstu fyrst (' + yfir.length + ')</div>' + yfir.slice(0, 10).map(x => soluLina(x, '<span class="tag hot">' + daga(x.gjald.due_date) + ' d. yfir</span>')).join('') : '') +
+          (osendar.length ? '<div class="sect">Ósendar kröfur (' + osendar.length + ')</div>' + osendar.slice(0, 8).map(x => soluLina(x, '<span class="tag">' + daga(x.created_at) + ' d.</span>')).join('') : '');
+        sum = d.length + ' útistandandi · ' + kr(summa(d)) + ' · ' + yfir.length + ' yfir gjalddaga';
+      }
+      return modPanel(k, sum, body, uppfTakki('krofur') + '<button type="button" class="btn gold sm" data-t5="go" data-view="krofu-yfirlit">Kröfu yfirlit ›</button>');
+    }
+    if (k === 'gleymt') {
+      const g = isOpen(k) ? gogn('gleymt', saekjaGleymt) : null, AR = new Date().getFullYear();
+      let body, sum = 'Gleymst að rukka?';
+      if (!g || (!g.data && !g.villa)) body = emptyHtml('Ber saman skýrslur, sölur og drög…');
+      else if (g.villa) body = '<p class="err">Náði ekki í samanburðinn: ' + esc(g.villa) + '</p>';
+      else {
+        const d = g.data;
+        body = '<div class="sect">Úttekt ' + AR + ' án reiknings (' + d.uttekt.length + ')</div>' +
+          (d.uttekt.length ? '<div class="aklist">' + d.uttekt.slice(0, 15).map(x => '<div class="akrow"><span class="aknr">' + esc(x.skyrsla_dags && !/-01-01$/.test(x.skyrsla_dags) ? fmtD(x.skyrsla_dags) : String(AR)) + '</span><div class="akinfo">' +
+              '<a class="clink" href="#company/' + x.fyrirtaeki_id + '" data-t5="fyr-id" data-fid="' + x.fyrirtaeki_id + '">' + esc(x.nafn || '(ónefnt)') + '</a>' +
+              '<span class="s">' + esc([x.heimilisfang, x.postnumer].filter(Boolean).join(', ')) + ' · ' + x.skyrslur + (x.skyrslur === 1 ? ' skýrsla' : ' skýrslur') + ', enginn reikningur á stað, kúnna né systurstað</span></div></div>').join('') + '</div>' +
+            (d.uttekt.length > 15 ? '<div class="more">+ ' + (d.uttekt.length - 15) + ' til viðbótar</div>' : '') : '<div class="more">Engin úttekt án reiknings.</div>') +
+          '<div class="sect">Greitt síðar — drög eldri en 14 daga (' + d.sidar.length + ' · ' + kr(summa(d.sidar)) + ')</div>' +
+          (d.sidar.length ? d.sidar.slice(0, 8).map(x => soluLina(x, '<span class="tag">' + daga(x.created_at) + ' d.</span>')).join('') : '<div class="more">Engin gömul drög.</div>') +
+          '<div class="sect">Kort eða reiðufé — aldrei merkt greitt (' + d.kort.length + ' · ' + kr(summa(d.kort)) + ')</div>' +
+          (d.kort.length ? d.kort.slice(0, 8).map(x => soluLina(x, '<span class="tag">' + esc(x.greitt_med === 'kort' ? 'Kort' : 'Reiðufé') + '</span>')).join('') : '<div class="more">Allt merkt greitt.</div>');
+        sum = d.uttekt.length + ' úttektir án reiknings · ' + d.sidar.length + ' greitt síðar · ' + d.kort.length + ' ómerkt greitt';
+      }
+      return modPanel(k, sum, body, uppfTakki('gleymt') + '<button type="button" class="btn iv sm" data-t5="go" data-view="krofu-yfirlit">Kröfu yfirlit ›</button>');
+    }
+    if (k === 'bakfaersla') {
+      const g = isOpen(k) ? gogn('bakf', saekjaBakfaerslur, 600000) : null;
+      const ORD = new RegExp(BAKF_ORD.join('|'), 'i'), mal = S.rows.filter(r => ORD.test([r.title, r.notes, r.summary].join(' ')));
+      let body = '<div class="sect">Opin mál (' + mal.length + ')</div>' + (mal.length ? mal.map(r => lrowHtml(r, '')).join('') : '<div class="more">Ekkert opið mál nefnir bakfærslu eða breyttan reikning.</div>');
+      let sum = mal.length + ' mál';
+      if (g && g.data) {
+        const d = g.data;
+        body += '<div class="sect">Póstar síðustu 60 daga (' + d.postar.length + ')</div>' +
+          (d.postar.length ? d.postar.slice(0, 10).map(m => {
+            const r = S.rows.find(x => x.channel_ref === 'email:' + m.id);
+            return '<div class="lrow"><span class="age">' + esc(fmtD(m.received_at)) + '</span><div>' +
+              (r ? '<button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '"><b>' + esc(m.subject || '(ekkert efni)') + '</b></button>' : '<b>' + esc(m.subject || '(ekkert efni)') + '</b>') +
+              '<span class="s">' + esc(m.sender_name || m.sender_email || '') + ' · ' + (r ? esc(eigandaTexti(r, nu())) : 'ekki á borðinu') + '</span></div><span></span></div>';
+          }).join('') : '<div class="more">Enginn póstur með þessum orðum.</div>') +
+          '<div class="sect">Kreditreikningar gerðir síðustu 60 daga (' + d.kredit.length + ' · ' + kr(summa(d.kredit)) + ')</div>' +
+          d.kredit.slice(0, 6).map(x => soluLina(x, '')).join('');
+        sum = mal.length + ' mál · ' + d.postar.length + ' póstar · ' + d.kredit.length + ' kreditreikningar';
+      } else body += g && g.villa ? '<p class="err">Náði ekki í póstinn: ' + esc(g.villa) + '</p>' : '<div class="more">Les póstinn…</div>';
+      return modPanel(k, sum, body, uppfTakki('bakf') + '<button type="button" class="btn iv sm" data-t5="go" data-view="thjonustuver-postar">Pósthólfið ›</button>');
+    }
+    if (k === 'afgreidsla') {
+      const g = isOpen(k) ? gogn('afgr', saekjaAfgreidslu) : null;
+      let body, sum = 'Kassinn';
+      if (!g || (!g.data && !g.villa)) body = emptyHtml('Sæki stöðuna á kassanum…');
+      else if (g.villa) body = '<p class="err">Náði ekki í kassann: ' + esc(g.villa) + '</p>';
+      else {
+        const d = g.data, idag = d.vika.filter(s => tStamp(s.created_at) >= d.dagur);
+        const drog = d.opin.filter(s => s.status === 'drog').sort((a, b) => tStamp(a.created_at) - tStamp(b.created_at));
+        const ogreitt = d.opin.filter(s => s.greitt_med === 'reikningur' && s.status !== 'drog');
+        const omerkt = d.opin.filter(s => (s.greitt_med === 'kort' || s.greitt_med === 'reidufe') && s.status === 'final');
+        const kb = (l, listi) => '<div class="kbox"><div class="lbl">' + l + '</div><div class="v">' + listi.length + '</div><div class="km">' + kr(summa(listi)) + '</div></div>';
+        body = '<div class="kboxes">' + kb('Í dag', idag) + kb('Þessi vika', d.vika) + kb('Opin drög', drog) + kb('Ógreiddir reikningar', ogreitt) + kb('Kort/reiðufé ómerkt', omerkt) + '</div>' +
+          (drog.length ? '<div class="sect">Elstu opnu drögin</div>' + drog.slice(0, 6).map(x => soluLina(x, '<span class="tag">' + daga(x.created_at) + ' d.</span>')).join('') : '');
+        sum = idag.length + ' sölur í dag · ' + drog.length + ' opin drög · ' + ogreitt.length + ' ógreiddir reikningar';
+      }
+      return modPanel(k, sum, body, uppfTakki('afgr') + '<button type="button" class="btn iv sm" data-t5="go" data-view="sala">Sala ›</button>');
     }
     return '';
   }
@@ -1533,7 +1667,7 @@
     const mode = cfg().mode, sara = S.counts.sara;
     const mitt = card('Mitt borð', mine.length, 'mál á þínu borði');
     const heitt = card('Áríðandi', hot, 'opin áríðandi mál', true);
-    if (mode === 'krofur') return card('Útistandandi kröfur', S.counts.krofur == null ? '—' : S.counts.krofur, 'ógreiddir reikningar') + card('Á Master', master.length, 'opin mál án starfsmanns') + mitt + heitt;
+    if (mode === 'krofur') return card('Útistandandi kröfur', G.krofur && G.krofur.data ? G.krofur.data.length : S.counts.krofur == null ? '—' : S.counts.krofur, 'ógreiddir reikningar') + card('Á Master', master.length, 'opin mál án starfsmanns') + mitt + heitt;
     if (mode === 'skyrslur') return card('Bíða yfirferðar', sara ? (sara.bidur || 0) : '—', 'vinnublöð') + card('Samþykkt', sara ? (sara.samthykkt || 0) : '—', 'tilbúin í skýrslu og reikning') + card('Skipulagsspjöld', cardsFor(nu()).length, 'á þínu borði') + card('Verk í dag', jobsToday, jobsWeek + ' næstu 7 daga', true);
     if (mode === 'akstur') return card('Verk í dag', jobsToday, 'á dagskránni þinni') + card('Næstu 7 daga', jobsWeek, 'á dagskránni þinni') + mitt + heitt;
     if (mode === 'samskipti') return card('Bíða svars', unanswered, 'póstmál án svars') + card('Póstar á Master', master.filter(isPost).length, 'taktu næsta') + card('Svarað', answered, 'bíður kúnnans') + heitt;
@@ -2447,7 +2581,7 @@
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368m' };
+    window.Thjonustubord5 = { show, load, render, version: '368n' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
