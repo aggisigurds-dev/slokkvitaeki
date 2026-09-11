@@ -872,10 +872,18 @@
     _autoSyncing = true;
     try { localStorage.setItem('_ky_paysync_at', String(Date.now())); } catch (_) {}
     try {
-      const res = await fetch('/api/payday-sync-paid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      // 11.09.2026: spegillinn (drög / send / greitt) uppfærist samhliða — sjá runPaydaySync og 372.
+      const [res, spegill] = await Promise.all([
+        fetch('/api/payday-sync-paid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }),
+        window.PaydaySpegill ? PaydaySpegill.uppfaera() : Promise.resolve(null)
+      ]);
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.marked_count) {
-        if (window.Toast && Toast.show) Toast.show('✓ ' + data.marked_count + ' greiddar (Payday)');
+      const greiddar = !!(res.ok && data.marked_count);
+      if (greiddar && window.Toast && Toast.show) Toast.show('✓ ' + data.marked_count + ' greiddar (Payday)');
+      // Endurteiknað aðeins ef enginn er að skrifa í reit á síðunni (t.d. minnispunkt kröfu) — annars týnist textinn.
+      const a = document.activeElement;
+      const iRitun = !!(a && a.closest && a.closest('#ky-main') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+      if ((greiddar || (spegill && spegill.ok && !spegill.nylegt)) && !iRitun) {
         _autoSyncing = false;          // leyfa endur-render án þess að læsa
         await load(_state.month); refreshBadge();
         return;
@@ -935,11 +943,20 @@
     const orig = btn.textContent;
     btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = '⏳ Sæki úr Payday…';
     try {
-      const res = await fetch('/api/payday-sync-paid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      // 11.09.2026: tvennt samhliða — greiðslur (merkir greiddar) og spegillinn (drög / send / greitt), sem
+      // „Drög í Payday"-spjaldið og borðin lesa. Áður uppfærðist spegillinn aðeins kl. 10 og 15 (payday-sync-cron).
+      const [res, spegill] = await Promise.all([
+        fetch('/api/payday-sync-paid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }),
+        window.PaydaySpegill ? PaydaySpegill.uppfaera({ afl: true }) : Promise.resolve({ ok: false, villa: 'Payday-spegillinn (372) hlóðst ekki — endurhlaðið síðuna' })
+      ]);
       const data = await res.json().catch(() => ({ error: 'Ógilt svar frá þjóni (HTTP ' + res.status + ')' }));
       if (!res.ok && !data.error) data.error = 'HTTP ' + res.status;
       showSyncSummary(data);
-      if (!data.error && data.marked_count) await load(_state.month || new Date()); // ný render → nýr takki
+      const kassi = document.querySelector('#_ky-sync-modal > div');
+      if (kassi && kassi.lastElementChild) kassi.lastElementChild.insertAdjacentHTML('beforebegin', spegill.ok
+        ? '<div style="margin-top:12px;font-size:12.5px;color:#0f7a43">✓ Staða reikninga uppfærð úr Payday (drög / send / greitt) — ' + (spegill.upserted || 0) + ' reikningar lesnir</div>'
+        : '<div style="margin-top:12px;font-size:12.5px;color:#b45309">⚠ Staða reikninga (drög / send) uppfærðist ekki: ' + esc(String(spegill.villa || 'óþekkt villa')) + '</div>');
+      if ((!data.error && data.marked_count) || spegill.ok) await load(_state.month || new Date()); // ný render → nýr takki
     } catch (e) {
       showSyncSummary({ error: String(e.message || e) });
     } finally {
@@ -1139,7 +1156,7 @@
 
         <div class="ky-filterbar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px">
           ${filterChipsHtml()}
-          <button class="_ky-sync" type="button" title="Sækja greiðslustöðu úr Payday og merkja greiddar kröfur sjálfkrafa" style="padding:6px 10px;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;border:1px solid #0f7a43;background:linear-gradient(180deg,#17945a,#0f6e3a);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 3px 8px -4px rgba(0,0,0,.4)">🔄 Payday</button>
+          <button class="_ky-sync" type="button" title="Uppfæra úr Payday: sækja stöðu reikninga (drög / send / greitt) og merkja greiddar kröfur sjálfkrafa" style="padding:6px 10px;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;border:1px solid #0f7a43;background:linear-gradient(180deg,#17945a,#0f6e3a);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 3px 8px -4px rgba(0,0,0,.4)">🔄 Payday</button>
           <input class="_ky-search ky-navbtn darkfield" type="search" placeholder="🔍 Leita (nafn · kt · R-nr)…" value="${esc(_state.search)}" style="flex:1 1 160px;min-width:130px;margin-left:auto;padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:13px">
         </div>
 
