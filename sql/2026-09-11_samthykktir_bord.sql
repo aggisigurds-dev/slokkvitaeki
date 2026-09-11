@@ -42,4 +42,9 @@
 --   customer_base_id 821 fylltist og document_pairs 1158 varð „klarad".
 --
 -- ── #910 / #911 Drive-tvítök (254 reikninga-PDF, 106 skýrslu-PDF) ──────────────────────────────────
---   Færð í möppuna „Eyđa - dublicates" (1CnnNHm1xCukiTs806z9Ha1nZnSELM9k8) — sjá niðurstöðu neðst þegar lokið.
+--   Færð í möppuna „Eyđa - dublicates" (1CnnNHm1xCukiTs806z9Ha1nZnSELM9k8) með Drive update_file (parentId) — agent, kl. ~20:50.
+--   Reikningar: 254 af 254 úr 1FHHX99LRB_9w_LqwHIY57T4l9mLMID7p; undanþágurnar 6 (R-105223, R-108266, R-107257, R-107270 ×2,
+--   R-107308) ósnertar og staðfestar á gamla staðnum. Skýrslur: 106 af 106 úr 1VSRRw6O8U6lU8WzZxA8CkLtrAmiU07mg.
+--   0 villur, 10 skrár staðfestar í nýju möppunni. Listarnir: sql/2026-09-11_drive_tvitok_fluttir.txt.
+--   Engu eytt; til baka = færa aftur í upprunamöppuna.
+--   Verkefnalisti 877effaf og cd092745 → klarad; factcheck_akvardanir 2 → svar 'ja'.
