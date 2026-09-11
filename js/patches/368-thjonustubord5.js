@@ -39,6 +39,7 @@
  *   Skila   assigned_to = null (231 setur það aftur á Charlize ef það er eldra en 30 daga).
  *   Lokið   status = 'lokad'.     Svarað  svarad_at + status i_vinnslu, eins og 231 gerir.
  *   Breyta  title/notes/due_at/status/important · Eyða deleted_at (með afturköllun).
+ *   Tillaga summary = ein lína frá /api/tv-summary (Haiku) með sögu fyrirtækis og pósti; „Afturkalla" setur fyrri aftur.
  *   Nýtt    á mig (sjálfgefið), Master eða annan; fyrirtæki valið úr tillögum (Companies.list).
  *
  * FLÆÐI (Agnar 11.09.2026: „pirrandi að geta ekki skoðað neitt nema sín 5 mál" · „burt með allar svona
@@ -123,7 +124,7 @@
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
-    skDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}
+    skDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {}
   };
 
   /* ── starfsmaður ── */
@@ -812,6 +813,43 @@
       (v && v.reiknad_at ? '<div class="sg-m">Uppfært ' + esc(fmtD(v.reiknad_at)) + ' kl. ' + klukka(new Date(v.reiknad_at)) + ' · uppfærist sjálfkrafa á hverjum morgni</div>' : '') +
     '</div>';
   }
+  // ✨ Tillaga — sami endapunktur og gamla borðið (/api/tv-summary, Haiku): ein stutt lína um næsta skref,
+  // vistuð í summary. Nýja borðið sendir sögu fyrirtækisins og póstinn með (dagsetningar fullar svo líkanið geti
+  // borið saman „Stofnað" og SAGA), svo „búið og greitt" sjáist. Fyrri samantekt glatast ekki: „Afturkalla".
+  async function aiTillaga(id) {
+    const r = S.rows.find(x => x.id === id);
+    if (!r || S.aiBid[id]) return;
+    S.aiBid[id] = true;
+    render();
+    const fyrri = r.summary || '';
+    const dd = s => { const d = new Date(s); return isNaN(d.getTime()) ? '' : String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear(); };
+    try {
+      if (isPost(r) && postOf(r) === undefined) await loadPost(r);
+      const v = r.customer_base_id ? S.virkni[r.customer_base_id] : null, p = isPost(r) ? postOf(r) : null, saga = [];
+      if (v && v.sidasti_reikningur) saga.push('reikningur ' + (v.sidasti_reikningur.num || '') + ' ' + dd(v.sidasti_reikningur.dags) + (v.sidasti_reikningur.paid_at ? ' greiddur ' + dd(v.sidasti_reikningur.paid_at) : ' ógreiddur'));
+      if (v && v.sidasta_skyrsla) saga.push((v.sidasta_skyrsla.doc_type === 'brunakerfi' ? 'brunakerfisskýrsla ' : 'úttektarskýrsla ') + dd(v.sidasta_skyrsla.dags));
+      const texti = String((p && (p.body_preview || p.snippet)) || r.notes || '').replace(/\s+/g, ' ').trim();
+      const notes = ['Stofnað ' + dd(r.created_at), eigandaTexti(r, nu()), r.due_at ? 'frestur ' + dd(r.due_at) : '',
+        isPost(r) ? (r.svarad_at ? 'svarað ' + dd(r.svarad_at) : 'ósvarað') : '',
+        saga.length ? 'SAGA: ' + saga.join(', ') : '', texti ? 'TEXTI: ' + texti : ''].filter(Boolean).join(' · ');
+      const res = await fetch('/api/tv-summary', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ items: [{ id: r.id, customer_nafn: whereOf(r), type: tegMals(r), title: r.title || '', notes }] }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || ('HTTP ' + res.status));
+      const txt = String((data.summaries || {})[String(r.id)] || '').trim();
+      if (!txt) { toast('Engin tillaga kom til baka.', true); return; }
+      const rows = await patchRow(id, { summary: txt });
+      if (!rows.length) throw new Error('málið fannst ekki');
+      r.summary = txt;
+      toast('✨ ' + txt, false, fyrri ? () => act(id, async () => { await patchRow(id, { summary: fyrri }); toast('Fyrri samantekt er komin aftur'); }) : null);
+    } catch (e) {
+      toast('Tillagan kom ekki: ' + ((e && e.message) || e), true);
+    } finally {
+      delete S.aiBid[id];
+      render();
+      load(true);
+    }
+  }
   async function uppfaeraVirkni() {
     const c = sb();
     if (!c || S.virkniBid) return;
@@ -934,7 +972,9 @@
       (r.summary ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(String(r.summary).slice(0, 600)) + '</div>' : '') +
       sagaHtml(r) + well +
       '<div class="sacts">' + taka + svara + lokid + skila + fyr + '</div>' +
-      '<div class="sacts sm2">' + setja + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') + '</div>' + breytaHtml(r);
+      '<div class="sacts sm2">' + setja + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') +
+        '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
+          ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + breytaHtml(r);
   }
 
   function modPanel(k, summary, body, action, alltaf) {
@@ -1688,6 +1728,7 @@
         if (f) f();
         return;
       }
+      case 'ai-tillaga': aiTillaga(id); return;
       case 'virkni-uppf': uppfaeraVirkni(); return;
       case 'bm-opna': S.bmOpid[id] = !S.bmOpid[id]; render(); return;
       case 'bm-vista': {
@@ -1857,7 +1898,7 @@
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368h' };
+    window.Thjonustubord5 = { show, load, render, version: '368i' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
