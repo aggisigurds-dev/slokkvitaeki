@@ -108,6 +108,8 @@
       var slugs = { }; slugs[view] = 1; slugs[slugForView(view)] = 1;
       // field/leidsogn are the same page under two ids
       if (view === 'field' || view === 'leidsogn') { slugs.field = 1; slugs.leidsogn = 1; }
+      // Þjónustuborð 2 (368, 'bord') situr á hnappnum „🔧 Þjónustuborð“ sem ber data-view 'verkbord' (231).
+      if (view === 'bord') slugs.verkbord = 1;
       document.querySelectorAll('.vnav-btn').forEach(function (b) {
         b.classList.toggle('active', !!slugs[b.getAttribute('data-view')]);
       });

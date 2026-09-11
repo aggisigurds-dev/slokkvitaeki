@@ -30,7 +30,7 @@
     { k: 'hreyfingarlisti',  label: 'Hreyfingarlisti',       short: 'Hreyfingar', emoji: '📄' },
     { k: 'vidskiptavinir',   label: 'Viðskiptavinir',        short: 'Kúnnar',     emoji: '👤' },
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
-    { k: 'bord',             label: 'Þjónustuborð',          short: 'Þjónusta',   emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
+    { k: 'bord',             label: 'Þjónustuborð',          short: 'Borð',       emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
     { k: 'verkbord',         label: 'Verkefnalisti',         short: 'Verkefni',   emoji: '📋' },
     { k: 'thjonustubord',    label: 'Gamla þjónustuborðið (mobíl)', short: 'Gamla þj.', emoji: '🔧' },
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
