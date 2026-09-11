@@ -34,8 +34,11 @@
 --     afritað og fjarlægt; skjöl 646 á 668, skýrsla 129 merkt tvítekin (dup_of 1817). Sala R-000431 (solur 479) fékk rétta kt
 --     — röng kt er líkleg ástæða þess að bankakrafa stofnaðist ekki. Kúnni #268 merktur.
 --   DRA ehf. (Downtown Reykjavík Apartments, Rauðarárstíg 31): #1334 (Dra ehf, kt 651003-2560) → #490 (kt 691003-2560).
---     37 tæki #1334 (skoðun 15.11.2025) flutt á 490; 34 eldri tæki 490 (okt. 2025) → urelt. Ársskoðun segir 33 léttvatn —
---     athuga hvor talan er rétt. Kúnni #961 sameinaður í #815 og merktur.
+--     Fyrst: 37 tæki #1334 (skoðun 15.11.2025) flutt á 490 og 34 tæki 490 → urelt. LEIÐRÉTT sama kvöld eftir svar Agnars
+--     („Ársskodun rædur alltaf"): 34 tæki 490 endurvakin úr audit_vernd (fyrri staða + notes) = Ársskoðun 33 léttvatn +
+--     1 brunaslanga; 37 tæki tvískráningarinnar → urelt og skilað á #1334. Kúnni #961 sameinaður í #815 og merktur.
+--     Aðrir sameinaðir staðir stemma við Ársskoðun: Skaptahlíð 29, Tjarnasel 35, Gullhamrar 20, Barónsstígur 43 4
+--     (Árakur 5: Ársskoðun án tækja, prófíll 2).
 --   Munaðarlausir kúnnar halda röngu kt (customers_base.kennitala er NOT NULL + UNIQUE) en bera „(sameinað í #…)" í nafni.
 --
 -- ── 5. Óleyst (engin kennitala með einni innsláttarvillu fannst hjá Skattinum) ──────────────
