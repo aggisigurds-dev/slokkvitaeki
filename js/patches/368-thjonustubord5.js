@@ -61,7 +61,8 @@
  *                            beint hér: texti, litur, röð, mynd, eyða; drög lifa þar til þjónninn tekur við
  *   Saga fyrirtækis          fyrirtaeki_virkni (pg_cron 05:30 UTC + „↻ Uppfæra", sql/2026-09-11_fyrirtaeki_virkni.sql)
  *   Vinnublöð                sara_yfirferd.stada (364)
- *   Kröfur                   solur reikningur, ógreitt, ekki void (sama og listinn í 166)
+ *   Kröfur                   solur reikningur, ógreitt, ekki void (sama og listinn í 166); DRAFT í Payday telst EKKI sent
+ *   Forgangslisti krafna     369 KrofuVinnugluggi (eining 22 í Kröfur-ham) — framvinda mála í krofu_verkferli
  *   Póstur í völdu máli      email_digest eftir channel_ref 'email:<id>' (sama og 231; sýnin
  *                            v_samskipti_postur sleppir 8 af 18 opnum póstmálum)
  * ============================================================================================== */
@@ -100,6 +101,8 @@
     postsvor:  { n: '07', t: 'Póstsvörun', d: 'Póstmál sem bíða svars.' },
     akstur:    { n: '08', t: 'Aksturslistar', d: 'Listar 1–3 fyrir bílstjóra: færa á milli, prenta með samantekt, leið í korti.' },
     krofur:    { n: '09', t: 'Kröfur', d: 'Útistandandi kröfur: yfir gjalddaga, ósendar og fjárhæðir.' },
+    // Forgangslisti og vinnugluggi krafna búa í 369 (KrofuVinnugluggi) — hér er aðeins einingin.
+    krofumal:  { n: '22', t: 'Forgangslisti krafna', d: 'Allt sem þarf að gera til að ná inn peningum, stærsta upphæð fyrst. Smellur opnar vinnuglugga með þrepum.' },
     // Úr gamla borðinu (231) — kveikt og slökkt í ⚙ Mitt vinnuborð (Agnar 11.09.2026).
     frestir:   { n: '10', t: 'Frestir', d: 'Opin mál með frest — liðnir fyrst.' },
     nyjast:    { n: '11', t: 'Nýjast', d: 'Nýjustu opnu málin, sama hver á þau.' },
@@ -114,14 +117,14 @@
     bakfaersla: { n: '20', t: 'Bakfærslur og breytingar', d: 'Beiðnir um bakfærslu eða breyttan reikning — mál, póstar og kreditreikningar.' },
     afgreidsla: { n: '21', t: 'Staðan í afgreiðslu', d: 'Kassinn: sala dagsins og vikunnar, opin drög og ógreitt.' }
   };
-  const BOTTOM = ['skipulag', 'frestir', 'nyjast', 'vinnublod', 'postsvor', 'akstur', 'krofur', 'forgangur', 'nymal', 'brunakerfi', 'starfsmenn', 'ivinnslu', 'gleymt', 'bakfaersla', 'afgreidsla'];
+  const BOTTOM = ['skipulag', 'frestir', 'nyjast', 'vinnublod', 'postsvor', 'akstur', 'krofur', 'krofumal', 'forgangur', 'nymal', 'brunakerfi', 'starfsmenn', 'ivinnslu', 'gleymt', 'bakfaersla', 'afgreidsla'];
   const I_VOLDU = ['saga', 'breyta'];
   const STODUR = [['nytt', 'Nýtt'], ['i_vinnslu', 'Í vinnslu'], ['bedid', 'Bíður'], ['tilbuid', 'Tilbúið'], ['lokad', 'Lokað']];
   const MODES = {
     thjonusta: { l: 'Þjónusta', board: true, first: [], filter: 'allt', flokkar: [], merki: [] },
     samskipti: { l: 'Samskipti', board: true, first: ['postsvor'], filter: 'allt', flokkar: ['samskipti'], merki: ['senda_tolvupost', 'hringja'] },
     skyrslur:  { l: 'Skýrslur', board: true, first: ['ivinnslu', 'vinnublod', 'skipulag'], filter: 'allt', flokkar: [], merki: ['senda_skyrslur'] },
-    krofur:    { l: 'Kröfur', board: true, first: ['krofur', 'gleymt', 'bakfaersla', 'afgreidsla'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
+    krofur:    { l: 'Kröfur', board: true, first: ['krofumal', 'krofur', 'gleymt', 'bakfaersla', 'afgreidsla'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
     akstur:    { l: 'Akstur', board: true, first: ['forgangur', 'akstur', 'brunakerfi', 'nymal', 'starfsmenn', 'dagskra'], filter: 'allt', flokkar: ['brunakerfi'], merki: ['uppsetning', 'brunakerfi', 'arskodun'], tegundir: ['heimsokn', 'skodun_tilbod'] }
   };
   // Gömlu flokkarnir (thjonustubeidni.flokkur) og merkin (tags) úr 231 — sama orðaforði, svo hamir fyllast strax.
@@ -138,7 +141,7 @@
   }
   const hamaListi = () => Object.keys(MODES).concat(serHamir().map(h => h.id));
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -1373,14 +1376,19 @@
     if (ro.error) throw ro.error;
     const bakfaert = new Set((rc.data || []).map(x => x.credit_of));
     const krofur = (ro.data || []).filter(s => !s.is_credit && !bakfaert.has(s.id));
-    const nums = krofur.map(s => s.num).filter(Boolean), gjald = {};
-    if (nums.length) {
+    const ids = krofur.map(s => s.dk_invoice_id).filter(Boolean), gjald = {};
+    if (ids.length) {
       try {
-        const rp = await c.from('payday_invoices_slokk').select('reference,due_date,final_due_date,status').in('reference', nums);
-        (rp.data || []).forEach(p => { gjald[p.reference] = p; });
+        // Parað á payday_id = dk_invoice_id, ekki reference: ógildur reikningur og kreditreikningur hans deila reference í Payday.
+        const rp = await c.from('payday_invoices_slokk').select('payday_id,due_date,final_due_date,status').in('payday_id', ids);
+        (rp.data || []).forEach(p => { gjald[p.payday_id] = p; });
       } catch (_) {}
     }
-    return krofur.map(s => Object.assign({}, s, { gjald: gjald[s.num] || null, send: !!(s.krafa_sent_at || s.invoiced_at || s.dk_invoice_id) }));
+    // DRAFT í Payday er EKKI sent: kúnninn fékk ekkert og engin krafa er í banka (11.09.2026: 13 sölur, 446.805 kr).
+    return krofur.map(s => {
+      const p = (s.dk_invoice_id && gjald[s.dk_invoice_id]) || null, drog = !!(p && p.status === 'DRAFT');
+      return Object.assign({}, s, { gjald: p, drog, send: !!(s.krafa_sent_at || s.invoiced_at || s.dk_invoice_id) && !drog });
+    });
   }
   async function saekjaGleymt() {
     const c = sb();
@@ -1827,6 +1835,13 @@
         uppfTakki('akstur:') + '<button type="button" class="btn iv sm" data-t5="go" data-view="aksturslisti">Vaktin ›</button>';
       return modPanel(k, 'Listi 1 · ' + listar[1].length + '  ·  Listi 2 · ' + listar[2].length + '  ·  Listi 3 · ' + listar[3].length, body, action);
     }
+    if (k === 'krofumal') {
+      // Forgangslisti krafna + vinnugluggi (369). Hér er aðeins spjaldið; 369 festir stíl, smelli og gluggann á rótina.
+      const KV = window.KrofuVinnugluggi, opin = isOpen(k);
+      if (!KV) return modPanel(k, 'Ekki hlaðið', emptyHtml('Vinnugluggi krafna (369) hefur ekki hlaðist — endurhlaðið síðuna.'), '');
+      KV.festa(rot());
+      return modPanel(k, KV.samantekt(), opin ? KV.listi() : '', KV.takkar());
+    }
     if (k === 'krofur') {
       const g = isOpen(k) ? gogn('krofur', saekjaKrofur) : null, nuna = Date.now();
       let body, sum;
@@ -1834,13 +1849,14 @@
       else if (g.villa) { body = '<p class="err">Náði ekki í kröfurnar: ' + esc(g.villa) + '</p>'; sum = 'Kröfur'; }
       else {
         const d = g.data;
-        const yfir = d.filter(x => x.gjald && x.gjald.due_date && tStamp(x.gjald.due_date) < nuna).sort((a, b) => tStamp(a.gjald.due_date) - tStamp(b.gjald.due_date));
-        const osendar = d.filter(x => !x.send);
+        const yfir = d.filter(x => !x.drog && x.gjald && x.gjald.due_date && tStamp(x.gjald.due_date) < nuna).sort((a, b) => tStamp(a.gjald.due_date) - tStamp(b.gjald.due_date));
+        const drog = d.filter(x => x.drog), osendar = d.filter(x => !x.send && !x.drog);
         const kb = (l, listi) => '<div class="kbox"><div class="lbl">' + l + '</div><div class="v">' + listi.length + '</div><div class="km">' + kr(summa(listi)) + '</div></div>';
-        body = '<div class="kboxes">' + kb('Útistandandi', d) + kb('Yfir gjalddaga', yfir) + kb('Ósendar', osendar) + '</div>' +
+        body = '<div class="kboxes">' + kb('Útistandandi', d) + kb('Yfir gjalddaga', yfir) + kb('Ósendar', osendar) + kb('Payday-drög', drog) + '</div>' +
           (yfir.length ? '<div class="sect">Yfir gjalddaga — elstu fyrst (' + yfir.length + ')</div>' + yfir.slice(0, 10).map(x => soluLina(x, '<span class="tag hot">' + daga(x.gjald.due_date) + ' d. yfir</span>')).join('') : '') +
-          (osendar.length ? '<div class="sect">Ósendar kröfur (' + osendar.length + ')</div>' + osendar.slice(0, 8).map(x => soluLina(x, '<span class="tag">' + daga(x.created_at) + ' d.</span>')).join('') : '');
-        sum = d.length + ' útistandandi · ' + kr(summa(d)) + ' · ' + yfir.length + ' yfir gjalddaga';
+          (osendar.length ? '<div class="sect">Ósendar kröfur (' + osendar.length + ')</div>' + osendar.slice(0, 8).map(x => soluLina(x, '<span class="tag">' + daga(x.created_at) + ' d.</span>')).join('') : '') +
+          (drog.length ? '<div class="sect">Aðeins drög í Payday — kúnninn hefur ekki fengið reikninginn (' + drog.length + ')</div>' + drog.slice(0, 8).map(x => soluLina(x, '<span class="tag hot">Drög</span>')).join('') : '');
+        sum = d.length + ' útistandandi · ' + kr(summa(d)) + ' · ' + yfir.length + ' yfir gjalddaga' + (drog.length ? ' · ' + drog.length + ' aðeins drög' : '');
       }
       return modPanel(k, sum, body, uppfTakki('krofur') + '<button type="button" class="btn gold sm" data-t5="go" data-view="krofu-yfirlit">Kröfu yfirlit ›</button>');
     }
@@ -2883,7 +2899,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368p' };
+    window.Thjonustubord5 = { show, load, render, version: '368q' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

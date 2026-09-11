@@ -405,6 +405,18 @@ baseline rows and lowering the constant is how the net tightens over time.
   „📋 Kröfur" eftir umbreytinguna, hermd Supabase‑villa sýndi rauða villu +
   `logProblem` og skrifaði EKKERT — og prófgögnunum skilað í fyrra horf
   (`greitt_sidar` / `drog` / `paid_at` null), staðfest bæði í DB og viðmóti.
+- **2026‑09‑11** — **Vinnugluggi krafna (369) sendir aldrei neitt + Payday-drög teljast ekki send (368).**
+  Nýr forgangslisti í Kröfur-ham Þjónustuborðsins opnar vinnuglugga með þrepum á hvert mál
+  (ítreka, senda kröfu, Payday-drög, krafa ekki stofnuð, færa á aðra kt., gleymd úttekt, greitt síðar,
+  auð sala, staðfesta greiðslu, annað). Glugginn er LEIÐSÖGN + FRAMVINDA: eina skrifleiðin er nýja
+  taflan `krofu_verkferli` (SQL í `sql/2026-09-11_krofu_verkferli.sql`, ekki beitt), „Tilbúið í vinnslu"
+  breytir aðeins stöðu, og lokasending er alltaf Agnars. Vörður `tools/audit-krofu-vinnugluggi.cjs`
+  (GRUNNLÍNA 0) sannar: engin fetch/XHR/sendBeacon/rpc//api/ í 369, skrif aðeins á krofu_verkferli,
+  ekkert `.delete(`, engin vafra-staða — og að 368 `saekjaKrofur` pari á `payday_id` og telji DRAFT
+  ekki sent. **Sannreynt í báðar áttir:** óbreytt 368 → RAUTT (3 brot); afrit af 369 með plantaðri
+  `fetch('/api/payday-push')`, `.from('solur').update`, `.delete(` og `localStorage` → RAUTT (5 brot);
+  raunskrár → GRÆNT. `audit-daudar-siur` fékk undanþágu fyrir `krofu_verkferli` MEÐ ÁSTÆÐU — taka út
+  þegar SQL-inu er beitt. Varðir vírar (`10/233/254`, `121`, `payday-push`, `153/187`) ósnertir.
 - *Add a line here every time you make something bulletproof.*
 
 ---

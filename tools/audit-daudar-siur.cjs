@@ -81,6 +81,11 @@ const UNDANTHAGA = [
    'á localStorage (catch á línu 43). ATH: það þýðir að þessi minnispunktar ' +
    'SAMSTILLAST EKKI milli véla — brot á SAMSTILLT-reglunni í CLAUDE.md. ' +
    'Lagast með dálki í fyrirtaeki; bíður ákvörðunar Agnars. Mælt 10.09.2026.'],
+  ['krofu_verkferli', null,
+   'Framvindutafla vinnuglugga krafna (369). Hún verður til með sql/2026-09-11_krofu_verkferli.sql, sem bíður ' +
+   'yfirferðar og er EKKI beitt. 369 greinir PGRST205/42P01, sýnir „Framvinda vistast ekki — taflan er ekki til" og ' +
+   'læsir vistun í stað þess að þykjast tómt. TAKA ÚT þegar SQL-inu hefur verið beitt, svo dálkarnir verði vaktaðir. ' +
+   'Mælt 11.09.2026: PGRST205.'],
 ];
 function undanthegid(tafla, dalkur) {
   return UNDANTHAGA.some(([t, d]) => t === tafla && (d === null || d === dalkur));
