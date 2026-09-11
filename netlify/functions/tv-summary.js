@@ -33,10 +33,11 @@ export default async (req) => {
     'Þú ert aðstoð fyrir þjónustuver slökkvitækjafyrirtækis (Slökkvitæki ehf). ' +
     'Fyrir hverja beiðni hér að neðan, skrifaðu EINA mjög stutta íslenska setningu (hámark 14 orð) ' +
     'sem segir hver staðan er / hvað þarf að gera næst (t.d. "Vantar: senda reikning fyrir Laugaveg"). ' +
-    // 11.09.2026 — Þjónustuborð 2 (368) sendir sögu fyrirtækisins með. Búið verk má ekki fá „fara af stað"-tillögu.
-    'Ef „SAGA EFTIR STOFNUN" fylgir beiðninni (reikningur eða skýrsla sem kom eftir að beiðnin var stofnuð), er verkið líklega búið: ' +
-    'segðu það, nefndu reikningsnúmerið og hvort hann er greiddur, og leggðu til að loka málinu (t.d. "Líklega búið: R-000703 greiddur 14.08 — loka máli"). ' +
-    '„ELDRI SAGA" er fyrra verk og segir EKKERT um hvort þessi beiðni er búin — þá skal segja hvað þarf að gera. ' +
+    // 11.09.2026 — Þjónustuborð 2 (368) sendir línuna „SAGA EFTIR STOFNUN:" AÐEINS þegar reikningur eða skýrsla kom
+    // eftir að beiðnin varð til. Búið verk má ekki fá „fara af stað"-tillögu — og nýtt verk má ekki fá „búið".
+    'Ef og AÐEINS ef línan „SAGA EFTIR STOFNUN:" stendur í beiðninni er verkið líklega búið: byrjaðu þá á „Líklega búið:", ' +
+    'nefndu reikningsnúmerið og hvort hann er greiddur, og leggðu til að loka málinu. ' +
+    'Án þeirrar línu máttu ALDREI segja að verkið sé búið — segðu hvað þarf að gera út frá titli og texta. ' +
     'Ef reikningur er ógreiddur, nefndu það. ' +
     'Svaraðu EINGÖNGU sem JSON fylki af strengjum, í sömu röð og beiðnirnar, ekkert annað.\n\n' +
     'Beiðnir:\n' + list;
@@ -46,7 +47,7 @@ export default async (req) => {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, temperature: 0, messages: [{ role: 'user', content: prompt }] }),
     });
     data = await r.json();
     if (!r.ok) return j(r.status, { error: (data && data.error && data.error.message) || 'anthropic error' });

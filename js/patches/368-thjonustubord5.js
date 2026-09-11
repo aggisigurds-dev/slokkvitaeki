@@ -833,7 +833,8 @@
       const texti = String((p && (p.body_preview || p.snippet)) || r.notes || '').replace(/\s+/g, ' ').trim();
       const notes = ['Stofnað ' + dd(r.created_at), eigandaTexti(r, nu()), r.due_at ? 'frestur ' + dd(r.due_at) : '',
         isPost(r) ? (r.svarad_at ? 'svarað ' + dd(r.svarad_at) : 'ósvarað') : '',
-        eftir.length ? 'SAGA EFTIR STOFNUN: ' + eftir.join(', ') : '', eldri.length ? 'ELDRI SAGA: ' + eldri.join(', ') : '',
+        // Eldri saga er EKKI send: líkanið las hana sem „búið" (prófað 11.09, 6/6 röng). Hún sést í spjaldinu.
+        eftir.length ? 'SAGA EFTIR STOFNUN: ' + eftir.join(', ') : '',
         texti ? 'TEXTI: ' + texti : ''].filter(Boolean).join(' · ');
       const res = await fetch('/api/tv-summary', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ items: [{ id: r.id, customer_nafn: whereOf(r), type: tegMals(r), title: r.title || '', notes }] }) });
@@ -841,6 +842,11 @@
       if (!res.ok || data.error) throw new Error(data.error || ('HTTP ' + res.status));
       const txt = String((data.summaries || {})[String(r.id)] || '').trim();
       if (!txt) { toast('Engin tillaga kom til baka.', true); return; }
+      // Borðið veit hvort eitthvað kom eftir stofnun — það ræður, ekki líkanið.
+      if (!eftir.length && /l[ií]klega\s+b[uú]i[ðd]/i.test(txt)) {
+        toast('Tillagan sagði „Líklega búið" en engin sala eða skýrsla kom eftir að málið varð til — ekki vistað.', true);
+        return;
+      }
       const rows = await patchRow(id, { summary: txt });
       if (!rows.length) throw new Error('málið fannst ekki');
       r.summary = txt;
@@ -1901,7 +1907,7 @@
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368j' };
+    window.Thjonustubord5 = { show, load, render, version: '368k' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
