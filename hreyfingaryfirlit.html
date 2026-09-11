@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light"/>
+<!-- Ljós að hönnun; `only light` ver gegn Chrome Android Force Dark (sama og aðrar síður). -->
+<style>html{color-scheme:light}html,body{color-scheme:only light}</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hreyfingaryfirlit — Slökkvitæki ehf.</title>
+<!--
+  hreyfingaryfirlit.html — Viðskiptahreyfingar per KENNITÖLU (greiðanda), aldrei per stað.
+  ?kt=540319-1540&fra=2025-01-01&til=2026-09-11&stolpi=opid|fyrri_eigandi
+  Gögn: /api/hreyfingaryfirlit (netlify/functions/hreyfingaryfirlit.js). Sótt við hleðslu
+  og við smell á „Sækja" / Stólpa-rofann — aldrei sjálfkrafa (Netlify-kostnaður).
+  Snið eftir yfirliti Orku náttúrunnar: A4 langsum, haus endurtekinn á hverri síðu (thead).
+  Stjórnstikan og innri reitirnir (Ósent, Athugasemdir) prentast ekki.
+-->
+<style>
+@page { size: A4 landscape; margin: 9mm 10mm 10mm; }
+:root{ --stal:#1b212a; --stal2:#2c3440; --rautt:#c8302f; --lina:#d6dae0; --dauft:#5f6773; --bak:#e8ebef; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bak);color:#111;font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+
+/* ── stjórnstika (skjár) — Brunastál + rautt ── */
+.stika{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 16px;
+  background:linear-gradient(180deg,var(--stal2),var(--stal));color:#fff;border-bottom:3px solid var(--rautt);box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.stika h1{font-size:15px;margin:0 6px 0 0;font-weight:700;white-space:nowrap}
+.stika label{display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d0da}
+.stika input{font:inherit;font-size:13px;padding:6px 8px;border-radius:7px;border:1px solid #9aa3af;background:#fff;color:#111}
+.stika input.kt{width:120px}
+.hnappur{font:inherit;font-size:13px;font-weight:700;padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.25);
+  background:linear-gradient(180deg,#4a5461,#343c47);color:#fff;cursor:pointer;white-space:nowrap}
+.hnappur:hover{filter:brightness(1.12)}
+.hnappur:disabled{opacity:.6;cursor:default}
+.hnappur.rautt{background:linear-gradient(180deg,#d63c3a,#b02624);border-color:#8f1d1b}
+.rofi{display:inline-flex;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.28)}
+.rofi button{font:inherit;font-size:12px;padding:6px 10px;border:0;background:#2a323d;color:#c9d0da;cursor:pointer;white-space:nowrap}
+.rofi button+button{border-left:1px solid rgba(255,255,255,.18)}
+.rofi button[aria-pressed="true"]{background:#fff;color:#111;font-weight:700}
+.stadatexti{font-size:12px;color:#c9d0da;margin-left:auto}
+
+/* ── blaðið ── */
+.blad{background:#fff;width:277mm;max-width:calc(100% - 24px);margin:16px auto;padding:9mm 10mm;box-shadow:0 2px 14px rgba(0,0,0,.18)}
+table.yf{width:100%;border-collapse:collapse;font-size:10.5px}
+table.yf thead{display:table-header-group}
+.haus{display:grid;grid-template-columns:1fr auto;gap:2px 24px;padding-bottom:8px}
+.vidskm{min-height:3.6em;min-width:40%}
+.vidskm .nafn{font-size:14px;font-weight:700}
+.vidskm .heimili{font-style:italic;min-height:1.2em}
+.utgefandi{text-align:right}
+.utgefandi img{height:46px;width:auto;display:block;margin-left:auto}
+.utgefandi .un{font-weight:700;font-size:11.5px;margin-top:2px}
+.titill{font-size:17px;font-weight:700;align-self:end;margin-top:6px}
+.dagskt{text-align:right;align-self:end;font-size:11px;line-height:1.5}
+table.yf th{font-size:9.5px;font-weight:700;text-align:left;padding:4px 5px;border-top:1.5px solid #000;border-bottom:1px solid #000;white-space:nowrap}
+table.yf td{padding:2.5px 5px;border-bottom:.5px solid #e1e4e8;vertical-align:top}
+table.yf td.hausreitur{border:0;padding:0}
+.t{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.byrjun td{font-weight:700;background:#f3f4f6}
+tr.arslok td{font-weight:700;background:#eceef1;border-top:1px solid #8f959d;border-bottom:1px solid #8f959d}
+tr.lok td{font-weight:700;border-top:1.5px solid #000;border-bottom:1.5px solid #000}
+tr.obekraeft td{font-style:italic}
+.fotur{margin-top:10px;page-break-inside:avoid}
+.fotur table{border-collapse:collapse;font-size:10.5px}
+.fotur th,.fotur td{padding:3px 14px 3px 0;border:0;white-space:nowrap;text-align:right}
+.fotur th{border-bottom:1px solid #000;font-weight:700}
+.fotur td{font-variant-numeric:tabular-nums}
+.fotur th.lok,.fotur td.lok{padding-left:10px;border-left:1px solid #000}
+.bokari{margin-top:8px;font-size:10.5px;page-break-inside:avoid}
+.obekraeft-skyring{font-size:9.5px;margin-top:4px}
+[contenteditable]{border-radius:3px}
+[contenteditable]:hover{outline:1px dashed #b7bdc6;outline-offset:2px}
+[contenteditable]:focus{outline:1px dashed #6b7280;outline-offset:2px}
+
+/* ── innri reitir (skjár) ── */
+.innri{background:#fff;width:277mm;max-width:calc(100% - 24px);margin:0 auto 16px;padding:12px 16px;border-left:5px solid var(--rautt);box-shadow:0 1px 8px rgba(0,0,0,.12)}
+.innri h2{font-size:14px;margin:0 0 4px}
+.innri h3{font-size:13px;margin:12px 0 4px}
+.innri .skyr{font-size:12px;color:var(--dauft);margin:0 0 8px}
+.innri table{border-collapse:collapse;font-size:12px;width:100%}
+.innri th{text-align:left;border-bottom:1px solid #c9ced6;font-size:11px;padding:3px 6px;color:#333}
+.innri td{border-bottom:1px solid #eceef2;padding:3px 6px;vertical-align:top}
+.innri ul{margin:0;padding-left:18px;font-size:12px;line-height:1.5}
+.villa{width:277mm;max-width:calc(100% - 24px);margin:16px auto;padding:12px 16px;background:#fff4f4;border:1px solid #f1b5b4;border-radius:8px;color:#7f1d1d}
+.hledur{width:277mm;max-width:calc(100% - 24px);margin:40px auto;text-align:center;color:var(--dauft)}
+
+@media print{
+  body{background:#fff}
+  .ekki-prenta{display:none!important}
+  .blad{box-shadow:none;margin:0;padding:0;width:auto;max-width:none}
+  table.yf tr{page-break-inside:avoid}
+  [contenteditable]:hover,[contenteditable]:focus{outline:none!important}
+}
+</style>
+</head>
+<body>
+<div class="stika ekki-prenta">
+  <h1>📄 Hreyfingaryfirlit</h1>
+  <label>Kennitala <input id="kt" class="kt" inputmode="numeric" autocomplete="off" placeholder="000000-0000"></label>
+  <label>Frá <input id="fra" type="date"></label>
+  <label>Til <input id="til" type="date"></label>
+  <span class="rofi" role="group" aria-label="Stólpa-tímabil">
+    <button type="button" data-stolpi="opid" aria-pressed="true" title="Stólpa-reikningar eins og þeir voru skráðir — opnir standa opnir">Stólpi: eins og skráð</button>
+    <button type="button" data-stolpi="fyrri_eigandi" aria-pressed="false" title="Opin Stólpa-staða gerð upp við fyrri eigendur 07.05.2026">Stólpi: uppgert við fyrri eigendur</button>
+  </span>
+  <button type="button" class="hnappur" id="saekja">Sækja</button>
+  <button type="button" class="hnappur rautt" id="prenta">🖨 Prenta</button>
+  <span class="stadatexti" id="stadatexti"></span>
+</div>
+<div id="villa" class="villa ekki-prenta" hidden></div>
+<div id="hledur" class="hledur ekki-prenta" hidden>Sæki hreyfingar…</div>
+<main id="blad" class="blad" hidden></main>
+<section id="osent" class="innri ekki-prenta" hidden></section>
+<section id="athugasemdir" class="innri ekki-prenta" hidden></section>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
+  function kr(n) { var r = Math.round(Number(n) || 0); return (r < 0 ? '-' : '') + String(Math.abs(r)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function dags(iso) { return iso ? String(iso).slice(8, 10) + '.' + String(iso).slice(5, 7) + '.' + String(iso).slice(0, 4) : ''; }
+  function ktSnid(v) { var d = String(v || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : String(v || '').trim(); }
+  function idagIso() { return new Date().toISOString().slice(0, 10); }
+
+  // ── Starfsmanna-hlið: 401 { need_login } → lykilorðs-gluggi → POST /api/hub-login → reyna aftur.
+  //    Sama mynstur og gatt-admin/admin.js. Óvirkt nema HUB_STAFF_PASSWORD sé sett server-megin.
+  var hubLoginP = null;
+  function hubLogin() {
+    if (hubLoginP) return hubLoginP;
+    hubLoginP = new Promise(function (resolve) {
+      var ov = document.createElement('div');
+      ov.className = 'ekki-prenta';
+      ov.setAttribute('style', 'position:fixed;inset:0;z-index:99999;background:rgba(10,12,16,.72);display:flex;align-items:center;justify-content:center');
+      ov.innerHTML = '<form style="background:#14181f;color:#fff;padding:24px 22px;border-radius:14px;border:1px solid rgba(255,255,255,.14);min-width:290px">' +
+        '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Starfsmanna-innskráning</div>' +
+        '<div style="font-size:12px;color:#9aa3b2;margin-bottom:14px">Þessi síða er varin. Sláðu inn sameiginlega lykilorðið.</div>' +
+        '<input type="password" autocomplete="current-password" placeholder="Lykilorð" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:#0e1116;color:#fff;font:inherit;font-size:15px">' +
+        '<div class="hv" style="color:#ff6b6b;font-size:12px;min-height:16px;margin:8px 2px 0"></div>' +
+        '<button type="submit" style="margin-top:8px;width:100%;padding:10px;border:0;border-radius:9px;background:#c8302f;color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer">Skrá inn</button></form>';
+      var form = ov.querySelector('form'), inp = ov.querySelector('input'), err = ov.querySelector('.hv'), btn = ov.querySelector('button');
+      form.onsubmit = function (e) {
+        e.preventDefault(); if (!inp.value) return;
+        btn.disabled = true; err.textContent = '';
+        fetch('/api/hub-login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: inp.value }) })
+          .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+          .then(function (res) {
+            if (res.ok) { document.body.removeChild(ov); hubLoginP = null; resolve(); }
+            else { err.textContent = (res.j && res.j.error) || 'Villa'; btn.disabled = false; inp.select(); }
+          })
+          .catch(function () { err.textContent = 'Netvilla'; btn.disabled = false; });
+      };
+      document.body.appendChild(ov); setTimeout(function () { inp.focus(); }, 30);
+    });
+    return hubLoginP;
+  }
+  function saekjaJson(url) {
+    var opts = { credentials: 'same-origin', headers: { Accept: 'application/json' } };
+    return fetch(url, opts).then(function (r) {
+      if (r.status !== 401) return r;
+      return r.clone().json().catch(function () { return {}; }).then(function (j) {
+        return j && j.need_login ? hubLogin().then(function () { return fetch(url, opts); }) : r;
+      });
+    });
+  }
+
+  var st = { stolpi: 'opid', bokari: null, hleður: false };
+  var p = new URLSearchParams(location.search);
+  st.stolpi = p.get('stolpi') === 'fyrri_eigandi' ? 'fyrri_eigandi' : 'opid';
+  $('kt').value = ktSnid(p.get('kt') || '');
+  var til0 = /^\d{4}-\d{2}-\d{2}$/.test(p.get('til') || '') ? p.get('til') : idagIso();
+  $('til').value = til0;
+  $('fra').value = /^\d{4}-\d{2}-\d{2}$/.test(p.get('fra') || '') ? p.get('fra') : (Number(til0.slice(0, 4)) - 1) + '-01-01';
+
+  function merkjaRofa() {
+    [].forEach.call(document.querySelectorAll('.rofi button'), function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-stolpi') === st.stolpi));
+    });
+  }
+  function synaVillu(t) { var v = $('villa'); v.textContent = t; v.hidden = false; }
+
+  function saekja() {
+    if (st.hleður) return;
+    var kt = $('kt').value.replace(/\D/g, '');
+    if (kt.length !== 10) { synaVillu('Sláðu inn kennitölu (10 tölustafir).'); $('kt').focus(); return; }
+    var fra = $('fra').value, til = $('til').value;
+    if (!fra || !til || fra > til) { synaVillu('Veldu gilt tímabil (frá ≤ til).'); return; }
+    var q = new URLSearchParams({ kt: ktSnid(kt), fra: fra, til: til, stolpi: st.stolpi });
+    try { history.replaceState(null, '', location.pathname + '?' + q.toString()); } catch (_) {}
+    st.hleður = true;
+    $('villa').hidden = true; $('hledur').hidden = false; $('saekja').disabled = true;
+    $('stadatexti').textContent = 'Sæki…';
+    saekjaJson('/api/hreyfingaryfirlit?' + q.toString())
+      .then(function (r) {
+        return r.json().catch(function () { return { error: 'Ógilt svar (' + r.status + ')' }; })
+          .then(function (j) { return { ok: r.ok, j: j }; });
+      })
+      .then(function (res) {
+        if (!res.ok || !res.j || res.j.error) throw new Error((res.j && res.j.error) || 'Villa');
+        teikna(res.j);
+        $('stadatexti').textContent = 'Sótt kl. ' + new Date().toTimeString().slice(0, 5);
+      })
+      .catch(function (e) {
+        // Fyrra yfirlit er falið svo enginn prenti yfirlit sem stemmir ekki við reitina að ofan.
+        $('blad').hidden = true; $('osent').hidden = true; $('athugasemdir').hidden = true;
+        synaVillu('Náði ekki í yfirlitið: ' + (e && e.message ? e.message : e));
+        $('stadatexti').textContent = '';
+      })
+      .then(function () { st.hleður = false; $('hledur').hidden = true; $('saekja').disabled = false; });
+  }
+
+  function linaHtml(l) {
+    var tomt = '<td></td>';
+    if (l.tegund === 'byrjun') {
+      return '<tr class="byrjun"><td>' + dags(l.dags) + '</td><td>Byrjunarstaða</td>' + tomt + tomt + tomt +
+        '<td class="t">' + kr(l.stada) + '</td><td class="t"></td><td class="t">' + kr(l.stada) + '</td></tr>';
+    }
+    if (l.tegund === 'arslok' || l.tegund === 'lok') {
+      return '<tr class="' + l.tegund + '"><td>' + dags(l.dags) + '</td><td>' + esc(l.texti) + '</td>' + tomt + tomt + tomt +
+        '<td class="t"></td><td class="t"></td><td class="t">' + kr(l.stada) + '</td></tr>';
+    }
+    return '<tr' + (l.obekraeft ? ' class="obekraeft" title="Óstaðfest"' : '') + '>' +
+      '<td>' + dags(l.dags) + '</td>' +
+      '<td>' + esc(l.texti) + (l.obekraeft ? ' *' : '') + '</td>' +
+      '<td>' + dags(l.gjalddagi) + '</td>' +
+      '<td>' + esc(l.skyring) + '</td>' +
+      '<td>' + esc(l.nr) + '</td>' +
+      '<td class="t">' + kr(l.upphaed) + '</td>' +
+      '<td class="t">' + (l.eftirstodvar == null ? '' : kr(l.eftirstodvar)) + '</td>' +
+      '<td class="t">' + kr(l.stada) + '</td></tr>';
+  }
+
+  function foturHtml(d) {
+    var s = d.samantekt;
+    var dalkar = [['Byrjunarstaða', s.byrjunarstada], ['Reikningar tímabils', s.reikningar], ['Greiðslur tímabils', s.greidslur], ['Vextir / vanskilagjöld tímabils', s.vextir]];
+    if (Math.round(s.laekkun)) dalkar.push(['Lækkun krafna (óstaðfest)', s.laekkun]);
+    if (Math.round(s.uppgjor)) dalkar.push(['Uppgjör við fyrri eigendur', s.uppgjor]);
+    if (Math.round(s.annad)) dalkar.push(['Aðrar færslur', s.annad]);
+    var stodur = (d.arslok || []).map(function (a) { return ['Staða ' + dags(a.dags), a.stada]; });
+    stodur.push(['Lokastaða ' + dags(d.haus.til), s.lokastada]);
+    return '<div class="fotur"><table><tr>' +
+      dalkar.map(function (c) { return '<th>' + esc(c[0]) + '</th>'; }).join('') +
+      stodur.map(function (c, i) { return '<th' + (i === 0 ? ' class="lok"' : '') + '>' + esc(c[0]) + '</th>'; }).join('') +
+      '</tr><tr>' +
+      dalkar.map(function (c) { return '<td>' + kr(c[1]) + '</td>'; }).join('') +
+      stodur.map(function (c, i) { return '<td' + (i === 0 ? ' class="lok"' : '') + '>' + kr(c[1]) + '</td>'; }).join('') +
+      '</tr></table></div>';
+  }
+
+  function teikna(d) {
+    var h = d.haus;
+    document.title = 'Hreyfingaryfirlit ' + (h.nafn || h.kt) + ' ' + dags(h.fra) + '-' + dags(h.til);
+    var bokari = st.bokari != null ? st.bokari : h.bokari;
+    var obekraeft = d.linur.some(function (l) { return l.obekraeft; });
+    $('blad').innerHTML =
+      '<table class="yf"><thead>' +
+        '<tr><td colspan="8" class="hausreitur"><div class="haus">' +
+          '<div class="vidskm" contenteditable="true" spellcheck="false" title="Má breyta fyrir prentun">' +
+            '<div class="nafn">' + esc(h.nafn) + '</div>' +
+            '<div class="heimili">' + esc(h.gata) + '</div>' +
+            '<div class="heimili">' + esc(h.postnr_baer) + '</div>' +
+          '</div>' +
+          '<div class="utgefandi"><img src="' + esc(h.utgefandi.merki) + '" alt="' + esc(h.utgefandi.nafn) + '"><div class="un">' + esc(h.utgefandi.nafn) + '</div></div>' +
+          '<div class="titill">' + esc(h.titill) + '</div>' +
+          '<div class="dagskt">Dags: ' + esc(dags(h.dags)) + '<br>Kennitala: ' + esc(h.kt) + '</div>' +
+        '</div></td></tr>' +
+        '<tr><th>Færsludagur</th><th>Færslutexti</th><th>Gjalddagi</th><th>Skýring</th><th>Reikningsnúmer</th>' +
+        '<th class="t">Færsluupphæð</th><th class="t">Eftirstöðvar</th><th class="t">Staða</th></tr>' +
+      '</thead><tbody>' + d.linur.map(linaHtml).join('') + '</tbody></table>' +
+      foturHtml(d) +
+      '<div class="bokari"><b>Upplýsingar til bókara –</b> <span id="bokaritexti" contenteditable="true" spellcheck="false" title="Má breyta fyrir prentun">' + esc(bokari) + '</span>' +
+      (obekraeft ? '<div class="obekraeft-skyring">* Óstaðfest lækkun kröfu.</div>' : '') + '</div>';
+    $('blad').hidden = false;
+    $('bokaritexti').addEventListener('input', function () { st.bokari = this.textContent; });
+    teiknaOsent(d.osent || []);
+    teiknaAthugasemdir(d);
+  }
+
+  function radaPorum(rows) {
+    var ut = [];
+    rows.forEach(function (r) {
+      if (r.par && rows.some(function (m) { return m.num === r.par && !m.par; })) return;
+      ut.push(r);
+      rows.forEach(function (k) { if (k.par && k.par === r.num) ut.push(k); });
+    });
+    return ut;
+  }
+  function osentTafla(rows) {
+    return '<table><thead><tr><th>Sala</th><th>Dags.</th><th class="t">Upphæð</th><th>Ástæða</th></tr></thead><tbody>' +
+      radaPorum(rows).map(function (o) {
+        return '<tr><td>' + (o.par ? '↳ ' : '') + esc(o.num) + '</td><td>' + dags(o.dags) + '</td><td class="t">' + kr(o.upphaed) + '</td><td>' + esc(o.astaeda) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+  function teiknaOsent(listi) {
+    var el = $('osent');
+    if (!listi.length) { el.hidden = true; el.innerHTML = ''; return; }
+    var kt = listi.filter(function (o) { return o.tenging !== 'nafn'; });
+    var nafn = listi.filter(function (o) { return o.tenging === 'nafn'; });
+    el.innerHTML = '<h2>Ósent — ekki á yfirliti</h2>' +
+      '<p class="skyr">Sölur á þessari kennitölu sem fóru aldrei til viðskiptavinar (Payday-drög, aldrei sendar, eða kredit sem fór aldrei í Payday). Prentast ekki.</p>' +
+      (kt.length ? osentTafla(kt) : '<p class="skyr">Engar.</p>') +
+      (nafn.length ? '<h3>Aðeins nafnið passar — engin kennitala á sölunni</h3>' +
+        '<p class="skyr">Ekki tengt kennitölunni og ekki talið með í neinni tölu. Til athugunar (t.d. leiðrétta kennitölu á sölunni).</p>' + osentTafla(nafn) : '');
+    el.hidden = false;
+  }
+  function teiknaAthugasemdir(d) {
+    var el = $('athugasemdir');
+    var a = (d.athugasemdir || []).slice();
+    var sp = d.samantekt && d.samantekt.stolpi;
+    var stolpiTexti = '';
+    if (sp && (sp.opnir_reikningar.length || Math.round(sp.stada_alls))) {
+      stolpiTexti = '<p class="skyr">Stólpa-staða 07.05.2026: <b>' + kr(sp.stada_vid_yfirtoku) + ' kr</b> · opnir Stólpa-reikningar: ' +
+        (sp.opnir_reikningar.length ? sp.opnir_reikningar.map(function (r) { return esc(r.reikn_nr) + ' (' + kr(r.opid) + ')'; }).join(', ') + ' = <b>' + kr(sp.opid_alls) + ' kr</b>' : 'engir') + '</p>';
+    }
+    if (!a.length && !stolpiTexti) { el.hidden = true; el.innerHTML = ''; return; }
+    el.innerHTML = '<h2>Athugasemdir</h2>' + stolpiTexti +
+      (a.length ? '<ul>' + a.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '');
+    el.hidden = false;
+  }
+
+  [].forEach.call(document.querySelectorAll('.rofi button'), function (b) {
+    b.addEventListener('click', function () {
+      var v = b.getAttribute('data-stolpi');
+      if (v === st.stolpi) return;
+      st.stolpi = v; merkjaRofa(); st.bokari = null; saekja();
+    });
+  });
+  $('saekja').addEventListener('click', function () { saekja(); });
+  ['kt', 'fra', 'til'].forEach(function (id) {
+    $(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') saekja(); });
+  });
+  $('prenta').addEventListener('click', function () { window.print(); });
+
+  merkjaRofa();
+  if ($('kt').value.replace(/\D/g, '').length === 10) saekja(); else $('kt').focus();
+})();
+</script>
+</body>
+</html>

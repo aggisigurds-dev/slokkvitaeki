@@ -1,0 +1,24 @@
+{
+"_heimild": "Supabase execute_sql 11.09.2026 (osfdzskyvisifcwyjkuk) — Fótaaðgerðarstofa Reykjavíkur: 108237 greiddur í banka 0528 26.05.2026 (80% + vextir), eftir yfirtöku 07.05.2026. Krafa 103880 (2025) greidd með 295 kr kostnaði sem vantar í Stólpa-bókina.",
+"kt10": "7010062910",
+"stolpi_hreyfingar": [
+{"id":3205,"nafn":"Fótaaðgerðarstofa Reykjavíkur ehf.","dags":"2025-05-14","eindagi":"2025-05-24","texti":"Reikningur: 106788","runa":7101,"upphaed":7304,"tegund":"reikningur","reikn_nr":"106788","krafa_nr":null},
+{"id":2966,"nafn":"Fótaaðgerðarstofa Reykjavíkur ehf.","dags":"2025-05-30","eindagi":"2025-05-30","texti":"Dráttarvextir krafa: 103880","runa":7369,"upphaed":50,"tegund":"drattarvextir","reikn_nr":null,"krafa_nr":"103880"},
+{"id":2967,"nafn":"Fótaaðgerðarstofa Reykjavíkur ehf.","dags":"2025-05-30","eindagi":"2025-05-30","texti":"Greiðsla á kröfu: 103880","runa":7369,"upphaed":-7599,"tegund":"greidd_krafa","reikn_nr":null,"krafa_nr":"103880"},
+{"id":2968,"nafn":"Fótaaðgerðarstofa Reykjavíkur ehf.","dags":"2025-05-30","eindagi":"2025-05-30","texti":"Greiddir vextir","runa":7369,"upphaed":-50,"tegund":"greiddir_vextir","reikn_nr":null,"krafa_nr":null},
+{"id":54,"nafn":"Fótaaðgerðarstofa Reykjavíkur ehf.","dags":"2026-04-28","eindagi":"2026-05-08","texti":"Reikningur: 108237","runa":8603,"upphaed":8313,"tegund":"reikningur","reikn_nr":"108237","krafa_nr":null}
+],
+"stolpi_reikningar": [
+{"reikn_nr":"106788","tegund":"reikningur","dags":"2025-05-14","eindagi":"2025-05-24","upphaed":7304,"stada":"greitt","opid_upphaed":0,"greitt_dags":"2025-05-30","greitt_upphaed":7304,"krafa_nr":"103880","samsvorun":"krafa"},
+{"reikn_nr":"108237","tegund":"reikningur","dags":"2026-04-28","eindagi":"2026-05-08","upphaed":8313,"stada":"greitt","opid_upphaed":0,"greitt_dags":"2026-05-26","greitt_upphaed":6978,"krafa_nr":"104647","samsvorun":"banki_0528:80%+vextir"}
+],
+"customers_base": [
+{"id":933,"kennitala":"701006-2910","nafn":"Fótaaðgerðarstofa Reykjavíkur ehf.","heimilisfang":null}
+],
+"fyrirtaeki": [
+{"id":1504,"nafn":"Fótaaðgerðarstofa Reykjavíkur ehf.","kennitala":"701006-2910","heimilisfang":null,"deleted_at":null}
+],
+"payday": [],
+"solur": [],
+"solur_nafn": []
+}

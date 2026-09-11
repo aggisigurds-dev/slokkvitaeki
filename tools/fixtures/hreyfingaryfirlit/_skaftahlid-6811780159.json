@@ -1,0 +1,31 @@
+{
+"_heimild": "Supabase execute_sql 11.09.2026 (osfdzskyvisifcwyjkuk) — Skaftahlíð 4-10, húsfélag (Eignaumsjón).",
+"kt10": "6811780159",
+"stolpi_hreyfingar": [
+{"id":11167,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2023-04-19","eindagi":"2023-04-29","texti":"Reikningur: 103610","runa":3832,"upphaed":88021,"tegund":"reikningur","reikn_nr":"103610","krafa_nr":null},
+{"id":11026,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2023-05-03","eindagi":"2023-05-03","texti":"Innheimtukostnaður krafa: 102358","runa":4201,"upphaed":295,"tegund":"innheimtukostnadur","reikn_nr":null,"krafa_nr":"102358"},
+{"id":11027,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2023-05-03","eindagi":"2023-05-03","texti":"Greiðsla á kröfu: 102358","runa":4201,"upphaed":-88316,"tegund":"greidd_krafa","reikn_nr":null,"krafa_nr":"102358"},
+{"id":7078,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2024-05-17","eindagi":"2024-05-27","texti":"Reikningur: 105172","runa":5444,"upphaed":74264,"tegund":"reikningur","reikn_nr":"105172","krafa_nr":null},
+{"id":6840,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2024-06-04","eindagi":"2024-06-04","texti":"Greiðsla á kröfu: 103194","runa":5829,"upphaed":-74559,"tegund":"greidd_krafa","reikn_nr":null,"krafa_nr":"103194"},
+{"id":6841,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2024-06-04","eindagi":"2024-06-04","texti":"Innheimtukostnaður krafa: 103194","runa":5829,"upphaed":295,"tegund":"innheimtukostnadur","reikn_nr":null,"krafa_nr":"103194"},
+{"id":774,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2026-01-29","eindagi":"2026-02-08","texti":"Reikningur: 107780","runa":8135,"upphaed":124892,"tegund":"reikningur","reikn_nr":"107780","krafa_nr":null},
+{"id":591,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2026-02-10","eindagi":"2026-02-10","texti":"Greiddir vextir","runa":8417,"upphaed":-520,"tegund":"greiddir_vextir","reikn_nr":null,"krafa_nr":null},
+{"id":592,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2026-02-10","eindagi":"2026-02-10","texti":"Greiðsla á kröfu: 104389","runa":8417,"upphaed":-125187,"tegund":"greidd_krafa","reikn_nr":null,"krafa_nr":"104389"},
+{"id":593,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2026-02-10","eindagi":"2026-02-10","texti":"Dráttarvextir krafa: 104389","runa":8417,"upphaed":520,"tegund":"drattarvextir","reikn_nr":null,"krafa_nr":"104389"},
+{"id":594,"nafn":"Skaftahlíð 4-10,húsfélag","dags":"2026-02-10","eindagi":"2026-02-10","texti":"Innheimtukostnaður krafa: 104389","runa":8417,"upphaed":295,"tegund":"innheimtukostnadur","reikn_nr":null,"krafa_nr":"104389"}
+],
+"stolpi_reikningar": [
+{"reikn_nr":"103610","tegund":"reikningur","dags":"2023-04-19","eindagi":"2023-04-29","upphaed":88021,"stada":"greitt","opid_upphaed":0,"greitt_dags":"2023-05-03","greitt_upphaed":88021,"krafa_nr":"102358","samsvorun":"krafa"},
+{"reikn_nr":"105172","tegund":"reikningur","dags":"2024-05-17","eindagi":"2024-05-27","upphaed":74264,"stada":"greitt","opid_upphaed":0,"greitt_dags":"2024-06-04","greitt_upphaed":74264,"krafa_nr":"103194","samsvorun":"krafa"},
+{"reikn_nr":"107780","tegund":"reikningur","dags":"2026-01-29","eindagi":"2026-02-08","upphaed":124892,"stada":"greitt","opid_upphaed":0,"greitt_dags":"2026-02-10","greitt_upphaed":124892,"krafa_nr":"104389","samsvorun":"krafa"}
+],
+"customers_base": [
+{"id":787,"kennitala":"681178-0159","nafn":"Skaftahlíð 4-10,húsfélag","heimilisfang":"Pósthólf 8940, 128 Reykjavík"}
+],
+"fyrirtaeki": [
+{"id":848,"nafn":"Skaftahlíð 4-10,húsfélag","kennitala":"681178-0159","heimilisfang":"Skaftahlíð 4-10, 104 Reykjavík","deleted_at":null}
+],
+"payday": [],
+"solur": [],
+"solur_nafn": []
+}

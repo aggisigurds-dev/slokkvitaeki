@@ -1,0 +1,34 @@
+{
+"_heimild": "Supabase execute_sql 11.09.2026 (osfdzskyvisifcwyjkuk) — Strandasel 9: tveir Payday-reikningar CANCELLED + CREDIT, einn kreditreikningur í appinu (K2606002).",
+"kt10": "5110877679",
+"stolpi_hreyfingar": [
+{"id":8710,"nafn":"Strandasel 9,húsfélag","dags":"2023-12-30","eindagi":"2024-01-09","texti":"Reikningur: 104567","runa":4829,"upphaed":29903,"tegund":"reikningur","reikn_nr":"104567","krafa_nr":null},
+{"id":8606,"nafn":"Strandasel 9,húsfélag","dags":"2024-01-10","eindagi":"2024-01-10","texti":"Innheimtukostnaður krafa: 102931","runa":5250,"upphaed":295,"tegund":"innheimtukostnadur","reikn_nr":null,"krafa_nr":"102931"},
+{"id":8607,"nafn":"Strandasel 9,húsfélag","dags":"2024-01-10","eindagi":"2024-01-10","texti":"Greiðsla á kröfu: 102931","runa":5250,"upphaed":-30198,"tegund":"greidd_krafa","reikn_nr":null,"krafa_nr":"102931"},
+{"id":2638,"nafn":"Strandasel 9,húsfélag","dags":"2025-07-07","eindagi":"2025-07-17","texti":"Reikningur: 107035","runa":7353,"upphaed":26474,"tegund":"reikningur","reikn_nr":"107035","krafa_nr":null},
+{"id":2637,"nafn":"Strandasel 9,húsfélag","dags":"2025-07-07","eindagi":"2025-07-17","texti":"Kredit: 107075","runa":7398,"upphaed":-26474,"tegund":"kredit","reikn_nr":"107075","krafa_nr":null}
+],
+"stolpi_reikningar": [
+{"reikn_nr":"104567","tegund":"reikningur","dags":"2023-12-30","eindagi":"2024-01-09","upphaed":29903,"stada":"greitt","opid_upphaed":0},
+{"reikn_nr":"107035","tegund":"reikningur","dags":"2025-07-07","eindagi":"2025-07-17","upphaed":26474,"stada":"kreditfaert","opid_upphaed":0},
+{"reikn_nr":"107075","tegund":"kredit","dags":"2025-07-07","eindagi":"2025-07-17","upphaed":-26474,"stada":"kreditreikningur","opid_upphaed":0}
+],
+"customers_base": [
+{"id":315,"kennitala":"511087-7679","nafn":"Strandasel 9","heimilisfang":"Strandasel 9, 109 Reykjavík"}
+],
+"fyrirtaeki": [
+{"id":372,"nafn":"Strandasel 9","kennitala":"511087-7679","heimilisfang":"Strandasel 9, 109 Reykjavík","deleted_at":null}
+],
+"payday": [
+{"payday_id":"4a85ca40-4db3-4ddd-8913-4b3b7f03482f","number":"76","kt":"5110877679","customer_name":"Strandasel 9,húsfélag","amount_total":39638,"created_date":"2026-07-03","due_date":"2026-07-10","paid_date":null,"status":"CANCELLED","reference":"R-000397"},
+{"payday_id":"c56e2d52-5554-4ee6-b97e-a743c7f375ee","number":"205","kt":"5110877679","customer_name":"Strandasel 9,húsfélag","amount_total":-39638,"created_date":"2026-07-03","due_date":"2026-07-10","paid_date":"2026-08-07","status":"CREDIT","reference":"R-000397"},
+{"payday_id":"28a8039b-a809-4810-bb05-3acf2ad12647","number":"206","kt":"5110877679","customer_name":"Strandasel 9,húsfélag","amount_total":-39638,"created_date":"2026-07-06","due_date":"2026-07-13","paid_date":"2026-08-07","status":"CREDIT","reference":"R-000418"},
+{"payday_id":"317f82ec-832d-4600-a13c-40e03a320f5d","number":"108","kt":"5110877679","customer_name":"Strandasel 9,húsfélag","amount_total":39638,"created_date":"2026-07-06","due_date":"2026-07-13","paid_date":null,"status":"CANCELLED","reference":"R-000418"}
+],
+"solur": [
+{"id":445,"num":"R-000397","customer_nafn":"Strandasel 9","customer_kt":"511087-7679","customer_id":372,"customer_base_id":315,"cb_kt":"511087-7679","fy_kt":"511087-7679","samtals":39638,"greitt_med":"reikningur","status":"final","is_credit":false,"credit_of":null,"created_at":"2026-06-24T12:37:34.67681+00:00","paid_at":"2026-08-07T00:00:00+00:00","krafa_sent_at":"2026-07-03T10:37:50.221+00:00","invoiced_at":"2026-07-03T10:37:50.221+00:00","dk_invoice_id":"4a85ca40-4db3-4ddd-8913-4b3b7f03482f"},
+{"id":466,"num":"R-000418","customer_nafn":"Strandasel 9","customer_kt":"511087-7679","customer_id":372,"customer_base_id":315,"cb_kt":"511087-7679","fy_kt":"511087-7679","samtals":39638,"greitt_med":"reikningur","status":"final","is_credit":false,"credit_of":null,"created_at":"2026-06-25T10:32:14.025598+00:00","paid_at":"2026-08-07T00:00:00+00:00","krafa_sent_at":"2026-07-06T12:08:23.268+00:00","invoiced_at":"2026-07-06T12:08:23.268+00:00","dk_invoice_id":"317f82ec-832d-4600-a13c-40e03a320f5d"},
+{"id":473,"num":"K2606002","customer_nafn":"Strandasel 9","customer_kt":"511087-7679","customer_id":372,"customer_base_id":315,"cb_kt":"511087-7679","fy_kt":"511087-7679","samtals":-39638,"greitt_med":"reikningur","status":"final","is_credit":true,"credit_of":445,"created_at":"2026-06-25T21:10:29.454962+00:00","paid_at":null,"krafa_sent_at":null,"invoiced_at":null,"dk_invoice_id":null}
+],
+"solur_nafn": []
+}
