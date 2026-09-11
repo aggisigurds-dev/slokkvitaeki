@@ -1,8 +1,9 @@
 -- 2026-09-11 — krofu_verkferli: framvinda vinnuglugga krafna (patch 369, Þjónustuborð → Kröfur)
 --
--- ⚠ TIL YFIRFERÐAR — EKKI BEITT. Verkefnastjórinn beitir þessu (apply_migration) eftir yfirferð.
---    Þegar því hefur verið beitt: taka 'krofu_verkferli' út af UNDANTHAGA í tools/audit-daudar-siur.cjs
---    svo dálkarnir sem 369 notar verði vaktaðir.
+-- ✅ BEITT 11.09.2026 (migration krofu_verkferli, kaflar 1–4) eftir yfirferð verkefnastjóra.
+--    Staðfest: 5 upphafsmál (4 × krafa_ekki_stofnud + solur:454:faera_kt), öll 'opid', saga = 1; RLS kveikt;
+--    anon: INSERT,SELECT,UPDATE. Prófað sem anon í afturkallaðri færslu: insert ok, update ok, saga skráði
+--    stöðubreytinguna, DELETE → „permission denied". Undanþágan í tools/audit-daudar-siur.cjs tekin út.
 --
 -- Hvað taflan geymir: EINA röð á mál („solur:454:faera_kt", „fyrirtaeki:1175:gleymt:2026", …).
 --   • stada  opid → tilbuid_i_vinnslu (takki Agnars, engar aðrar afleiðingar) → i_vinnslu (Claude)
