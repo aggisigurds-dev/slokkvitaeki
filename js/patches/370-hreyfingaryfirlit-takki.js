@@ -1,4 +1,4 @@
-/* 369 — 📄 HREYFINGARYFIRLIT-TAKKI Á FYRIRTÆKJAPRÓFÍL (11.09.2026)
+/* 370 — 📄 HREYFINGARYFIRLIT-TAKKI Á FYRIRTÆKJAPRÓFÍL (11.09.2026)
  *
  * Einn takki í aðgerðaröð prófílsins (features.js teiknar hana sem div[data-co-id]
  * í #companies-main) sem opnar /hreyfingaryfirlit.html?kt=<kennitala> í nýjum flipa.
@@ -63,6 +63,14 @@
     return true;
   }
   if (!vakta()) document.addEventListener('DOMContentLoaded', vakta, { once: true });
+  // Vörður (sama og 113/199, 11.09.2026): #companies-main-hnútnum er skipt út eftir ræsingu, svo
+  // MutationObserver-inn hér að ofan heyrir þá ekki neitt og takkinn birtist aldrei. Tifarinn kostar
+  // eitt querySelector og setja() skrifar ekkert þegar takkinn er þegar á réttu félagi.
+  setInterval(() => {
+    const v = document.getElementById('view-companies');
+    if (v && !v.classList.contains('active')) return;
+    setja();
+  }, 1200);
 
   window.HreyfingaryfirlitTakki = { opna, setja };
 })();
