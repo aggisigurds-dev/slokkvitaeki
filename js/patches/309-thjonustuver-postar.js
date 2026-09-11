@@ -177,6 +177,10 @@
       #tvp-modal .mmsg{ font-size:12px; font-weight:700; }
       #tvp-modal .mmsg.ok{ color:#047857; } #tvp-modal .mmsg.bad{ color:#b91c1c; }
       #tvp-modal .mx{ margin-left:auto; }
+      .tvp-fyr{ color:inherit; text-decoration:underline; text-decoration-color:rgba(15,23,42,.28); text-underline-offset:3px; }
+      .tvp-fyr:hover{ text-decoration-color:currentColor; }
+      .tvp-virkni{ margin:0 0 10px; padding:8px 11px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; font-size:12.5px; color:#334155; }
+      .tvp-virkni.ok{ border-color:#86efac; background:#f0fdf4; color:#14532d; }
       @media (max-width:640px){ .tvp-wrap{ padding:12px 11px 90px; } .tvp-state{ margin-left:0; } #tvp-modal{ top:0; width:100vw; max-height:100vh; border-radius:0; } }
     `;
     document.head.appendChild(s);
@@ -190,7 +194,13 @@
     g.last_in = realIn.length ? realIn[0].received_at : '';
     g.last_out = outs.length ? outs[0].received_at : '';
     const hm = (handled && handled[g.base_id]) || '';
-    g.cut = [g.last_out, hm].filter(Boolean).sort().pop() || '';   // seinni af: svar okkar / handvirkt merki
+    const v = STATE.virkni ? STATE.virkni.get(String(g.base_id)) : null;
+    const iso = (x) => { const t = Date.parse(x); return isNaN(t) ? '' : new Date(t).toISOString(); };
+    g.virkni = v || null;
+    g.virkni_dags = v ? [v.sidasti_reikningur, v.sidasta_sala, v.sidasta_skyrsla].filter(Boolean).map((x) => iso(x.dags)).filter(Boolean).sort().pop() || '' : '';
+    // seinni af: svar okkar / handvirkt merki / reikningur, sala eða skýrsla (fyrirtaeki_virkni, 11.09.2026)
+    g.cut = [g.last_out, hm, g.virkni_dags].filter(Boolean).map(iso).filter(Boolean).sort().pop() || '';
+    g.afgreitt_med_virkni = !!(g.virkni_dags && g.virkni_dags === g.cut && g.virkni_dags > iso(g.last_in || 0));
     g.open = realIn.filter((m) => m.is_question && String(m.received_at) > String(g.cut) && (daysAgo(m.received_at) == null || daysAgo(m.received_at) <= RECENCY_DAYS));
     g.needs_reply = actionableOpen(g).length > 0;
   }
@@ -222,6 +232,23 @@
     try {
       const { data } = await sb.from('thjonustubeidni').select('channel_ref').eq('source', 'email').is('deleted_at', null).limit(5000);
       (data || []).forEach((r) => { if (r.channel_ref) STATE.promoted.add(r.channel_ref); });
+    } catch (_) {}
+
+    // 2b) Saga fyrirtækja (fyrirtaeki_virkni — uppfærð á hverjum morgni og með „🔄 Uppfæra") og auðkenni
+    //     fyrirtækis svo nafnið sé smellanlegt.
+    STATE.virkni = new Map();
+    STATE.fyrId = new Map();
+    try {
+      const ids = (payload.customers || []).map((c) => c.base_id).filter(Boolean);
+      for (let i = 0; i < ids.length; i += 150) {
+        const hluti = ids.slice(i, i + 150);
+        const [rv, rf] = await Promise.all([
+          sb.from('fyrirtaeki_virkni').select('customer_base_id,fyrirtaeki_id,sidasta_sala,sidasti_reikningur,sidasta_skyrsla,reiknad_at').in('customer_base_id', hluti),
+          sb.from('fyrirtaeki').select('id,customer_base_id').in('customer_base_id', hluti).is('deleted_at', null).order('id')
+        ]);
+        (rv.data || []).forEach((x) => STATE.virkni.set(String(x.customer_base_id), x));
+        (rf.data || []).forEach((x) => { if (!STATE.fyrId.has(String(x.customer_base_id))) STATE.fyrId.set(String(x.customer_base_id), x.id); });
+      }
     } catch (_) {}
 
     // 3) Byggja hópa + reikna svarstöðu client-hlið (handled-marks, needs_action, recency).
@@ -430,6 +457,18 @@
       (m.fra_okkur ? '' : briefHtml(m)) +
     '</div>';
   }
+  function virkniHtml(g) {
+    const v = g.virkni;
+    if (!v) return '';
+    const d = (s) => { const t = Date.parse(s); if (isNaN(t)) return ''; const x = new Date(t); return String(x.getDate()).padStart(2, '0') + '.' + String(x.getMonth() + 1).padStart(2, '0') + '.' + x.getFullYear(); };
+    const rk = v.sidasti_reikningur, sk = v.sidasta_skyrsla, sl = v.sidasta_sala, parts = [];
+    if (rk) parts.push('🧾 Reikningur ' + esc(rk.num || '') + ' ' + d(rk.dags) + (rk.paid_at ? ' · greiddur ' + d(rk.paid_at) : ' · ógreiddur'));
+    else if (sl) parts.push('🛒 Sala ' + esc(sl.num || '') + ' ' + d(sl.dags));
+    if (sk) parts.push('📄 ' + (sk.doc_type === 'brunakerfi' ? 'Brunakerfisskýrsla' : 'Úttektarskýrsla') + ' ' + d(sk.dags));
+    if (!parts.length) return '';
+    return '<div class="tvp-virkni' + (g.afgreitt_med_virkni ? ' ok' : '') + '">' +
+      (g.afgreitt_med_virkni ? '<b>✓ Líklega afgreitt</b> — eftir síðasta póst kúnnans: ' : 'Síðast hjá fyrirtækinu: ') + parts.join(' · ') + '</div>';
+  }
   function groupHtml(g) {
     const open = g._open === true;
     const initials = (g.nafn || '?').trim().slice(0, 2).toUpperCase();
@@ -443,11 +482,14 @@
     return '<div class="tvp-card ' + (g.needs_reply ? 'need' : 'done') + (open ? ' open' : '') + '" data-base="' + esc(g.base_id) + '">' +
       '<div class="tvp-chead" data-toggle="' + esc(g.base_id) + '">' +
         '<div class="tvp-cbadge">' + esc(initials) + '</div>' +
-        '<div style="min-width:0"><div class="tvp-cname">🏢 ' + esc(g.nafn) + '</div><div class="tvp-cmeta">' + esc(meta.join(' · ')) + '</div></div>' +
-        '<span class="tvp-state ' + (g.needs_reply ? 'need' : 'done') + '">' + (g.needs_reply ? '⚠️ Vantar svar' + (actN > 1 ? ' (' + actN + ')' : '') : '✅ Svarað') + '</span>' +
+        '<div style="min-width:0"><div class="tvp-cname">🏢 ' + (STATE.fyrId && STATE.fyrId.get(String(g.base_id))
+          ? '<a class="tvp-fyr" href="#company/' + STATE.fyrId.get(String(g.base_id)) + '" data-fyr="' + STATE.fyrId.get(String(g.base_id)) + '" title="Opna fyrirtækið">' + esc(g.nafn) + '</a>'
+          : esc(g.nafn)) + '</div><div class="tvp-cmeta">' + esc(meta.join(' · ')) + '</div></div>' +
+        '<span class="tvp-state ' + (g.needs_reply ? 'need' : 'done') + '">' + (g.needs_reply ? '⚠️ Vantar svar' + (actN > 1 ? ' (' + actN + ')' : '') : g.afgreitt_med_virkni ? '✅ Afgreitt' : '✅ Svarað') + '</span>' +
         '<span class="tvp-caret">▶</span>' +
       '</div>' +
       '<div class="tvp-body">' +
+        virkniHtml(g) +
         shown.map((m) => mailHtml(g, m)).join('') +
         '<div class="tvp-acts">' +
           '<button class="tvp-btn prim" data-act="reply" data-base="' + esc(g.base_id) + '">✍️ Svara</button>' +
@@ -490,6 +532,13 @@
     host.innerHTML = groups.map(groupHtml).join('');
     const byBase = (el) => STATE.groups.find((x) => String(x.base_id) === el.getAttribute('data-base'));
     host.querySelectorAll('[data-toggle]').forEach((el) => el.addEventListener('click', () => { const g = STATE.groups.find((x) => String(x.base_id) === el.getAttribute('data-toggle')); if (g) { g._open = !g._open; render(); } }));
+    host.querySelectorAll('[data-fyr]').forEach((a) => a.addEventListener('click', (e) => {
+      e.stopPropagation();                                      // opnar ekki/lokar spjaldinu
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return;         // nýr flipi: vafrinn sér um #company/<id>
+      e.preventDefault();
+      try { if (window.App && App.switchView) App.switchView('companies'); if (window.Companies && Companies.openDetail) Companies.openDetail(+a.getAttribute('data-fyr')); }
+      catch (_) { location.hash = '#company/' + a.getAttribute('data-fyr'); }
+    }));
     host.querySelectorAll('[data-act="reply"]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); const g = byBase(b); if (g) openReply(g); }));
     host.querySelectorAll('[data-act="ai"]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); const g = byBase(b); if (g) analyzeGroup(g, b); }));
     host.querySelectorAll('[data-act="mark"]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); const g = byBase(b); if (g) markHandled(g); }));
@@ -521,7 +570,11 @@
     sample.parentElement.appendChild(v);
     v.querySelector('#tvp-seg-need').addEventListener('click', () => { STATE.filter = 'need'; render(); });
     v.querySelector('#tvp-seg-all').addEventListener('click', () => { STATE.filter = 'all'; render(); });
-    v.querySelector('#tvp-refresh').addEventListener('click', () => reload());
+    // Handvirkt: reikna sögu fyrirtækja upp á nýtt (morgunkeyrslan sér annars um það), svo sækja allt.
+    v.querySelector('#tvp-refresh').addEventListener('click', async () => {
+      try { if (window.DB && DB.sb) await DB.sb.rpc('bh_fyrirtaeki_virkni_uppfaera'); } catch (_) {}
+      reload();
+    });
     const si = v.querySelector('#tvp-search');
     si.addEventListener('input', () => { STATE.search = si.value; render(); });
   }

@@ -35,15 +35,25 @@
  *
  * SKRIF — beint á thjonustubeidni, lesið til baka með .select():
  *   Taka    assigned_to = ég, AÐEINS ef málið er enn laust (skilyrt) — tveir fá ekki sama málið.
+ *   Setja á assigned_to = hver sem er / Master, skilyrt á eigandann sem var á skjánum („Færa á mig").
  *   Skila   assigned_to = null (231 setur það aftur á Charlize ef það er eldra en 30 daga).
  *   Lokið   status = 'lokad'.     Svarað  svarad_at + status i_vinnslu, eins og 231 gerir.
- *   Nýtt    sömu reitir og hraðlína 231 (quickAdd).
+ *   Breyta  title/notes/due_at/status/important · Eyða deleted_at (með afturköllun).
+ *   Nýtt    á mig (sjálfgefið), Master eða annan; fyrirtæki valið úr tillögum (Companies.list).
+ *
+ * FLÆÐI (Agnar 11.09.2026: „pirrandi að geta ekki skoðað neitt nema sín 5 mál" · „burt með allar svona
+ *   asnalegar hömlur" · „vill geta ýtt á fyrirtækin og skoðað að vild" · „allir eiga að geta sett sitt
+ *   nafn á sín verk"): engin mörk á fjölda mála; hvaða opið mál sem er opnast í „Valið mál" (Master,
+ *   annarra, leit, einingar); síur Öll opin / borð starfsmanns / fyrirtæki / Líklega búin; „Bara mitt
+ *   borð"; fyrirtækið alltaf smellanlegt (#company/<id>, Ctrl-smellur = nýr flipi); leit í haus.
  *
  * LESIÐ OG VISTAÐ ANNARS STAÐAR (engin ný tafla):
  *   Vinnuborð hvers og eins  AppSettings thjonustubord5.by_staff.<nafn> = { mode, mods, links }
  *                            mode/mods sem smá-plástrar; links byggt á NÝJASTA lista við vistun
  *   Dagskrá                  vikudagskra.by_staff.<nafn>.jobs (303); skráð og breytt í glugga 303
- *   Skipulagsborð            skipulagsbord.by_staff.<nafn>.cards (305)
+ *   Skipulagsborð            skipulagsbord.by_staff.<nafn>.cards + .krass (sömu gögn og 305) — skrifað
+ *                            beint hér: texti, litur, röð, mynd, eyða; drög lifa þar til þjónninn tekur við
+ *   Saga fyrirtækis          fyrirtaeki_virkni (pg_cron 05:30 UTC + „↻ Uppfæra", sql/2026-09-11_fyrirtaeki_virkni.sql)
  *   Vinnublöð                sara_yfirferd.stada (364)
  *   Kröfur                   solur reikningur, ógreitt, ekki void (sama og listinn í 166)
  *   Póstur í völdu máli      email_digest eftir channel_ref 'email:<id>' (sama og 231; sýnin
@@ -83,9 +93,16 @@
     vinnublod: { n: '06', t: 'Vinnublöð', d: 'Bíða yfirferðar og samþykkt.' },
     postsvor:  { n: '07', t: 'Póstsvörun', d: 'Póstmál sem bíða svars.' },
     akstur:    { n: '08', t: 'Akstursskipulag', d: 'Aksturslisti og vakt.' },
-    krofur:    { n: '09', t: 'Kröfur', d: 'Útistandandi kröfur í Kröfu yfirliti.' }
+    krofur:    { n: '09', t: 'Kröfur', d: 'Útistandandi kröfur í Kröfu yfirliti.' },
+    // Úr gamla borðinu (231) — kveikt og slökkt í ⚙ Mitt vinnuborð (Agnar 11.09.2026).
+    frestir:   { n: '10', t: 'Frestir', d: 'Opin mál með frest — liðnir fyrst.' },
+    nyjast:    { n: '11', t: 'Nýjast', d: 'Nýjustu opnu málin, sama hver á þau.' },
+    saga:      { n: '12', t: 'Saga fyrirtækis', d: 'Síðustu reikningar, greiðslur og skýrslur í völdu máli.' },
+    breyta:    { n: '13', t: 'Breyta máli', d: 'Titill, lýsing, frestur, staða og áríðandi í völdu máli.' }
   };
-  const BOTTOM = ['skipulag', 'vinnublod', 'postsvor', 'akstur', 'krofur'];
+  const BOTTOM = ['skipulag', 'frestir', 'nyjast', 'vinnublod', 'postsvor', 'akstur', 'krofur'];
+  const I_VOLDU = ['saga', 'breyta'];
+  const STODUR = [['nytt', 'Nýtt'], ['i_vinnslu', 'Í vinnslu'], ['bedid', 'Bíður'], ['tilbuid', 'Tilbúið'], ['lokad', 'Lokað']];
   const MODES = {
     thjonusta: { l: 'Þjónusta', board: true, first: [], filter: 'allt' },
     samskipti: { l: 'Samskipti', board: true, first: ['postsvor'], filter: 'post' },
@@ -94,7 +111,7 @@
     akstur:    { l: 'Akstur', board: false, first: ['akstur', 'dagskra'] }
   };
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -106,7 +123,7 @@
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
-    skDrog: {}, undo: null, saga: {}
+    skDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}
   };
 
   /* ── starfsmaður ── */
@@ -235,6 +252,17 @@
         (rb.data || []).forEach(b => { S.names[b.id] = b.nafn; });
         breytt = true;
       }
+      // Saga fyrirtækja (fyrirtaeki_virkni) — aðeins fyrir viðskiptavini sem hafa ekki verið sóttir; morgunkeyrslan
+      // og „↻ Uppfæra" sjá um að gögnin séu ný.
+      const cbs = [...new Set(rows.map(x => x.customer_base_id).filter(Boolean))].filter(id => !(id in S.virkni));
+      for (let i = 0; i < cbs.length; i += 150) {
+        const hluti = cbs.slice(i, i + 150);
+        const rv = await c.from('fyrirtaeki_virkni').select('customer_base_id,fyrirtaeki_id,sidasta_sala,sidasti_reikningur,sidasta_skyrsla,reiknad_at').in('customer_base_id', hluti);
+        if (rv.error) break;
+        hluti.forEach(id => { S.virkni[id] = null; });
+        (rv.data || []).forEach(x => { S.virkni[x.customer_base_id] = x; });
+        breytt = true;
+      }
       const sig = JSON.stringify([rows.map(x => [x.id, x.assigned_to, x.status, x.updated_at, x.svarad_at, x.important, x.title, x.summary]), sara, krofur]);
       if (sig !== _sig || S.err || !S.loaded) breytt = true;
       _sig = sig;
@@ -281,7 +309,7 @@
   // Síur: allt/post/beidni/hot velja úr Master · 'oll' = öll opin mál · 'p:<nafn>' = borð eins
   // starfsmanns · 'f:<id>' = opin mál eins fyrirtækis.
   const serSia = f => f === 'oll' || /^[pf]:/.test(f);
-  const matchFilter = (r, f) => f === 'allt' || serSia(f) || (f === 'hot' ? !!r.important : f === 'post' ? isPost(r) : !isPost(r));
+  const matchFilter = (r, f) => f === 'allt' || serSia(f) || (f === 'buid' ? !!virkniEftir(r) : f === 'hot' ? !!r.important : f === 'post' ? isPost(r) : !isPost(r));
   function feedRows(master) {
     const f = S.filter;
     if (f === 'oll') return S.rows.slice().sort(rodun);
@@ -561,6 +589,7 @@
       '.fbody{min-width:0}',
       '.fpick{display:block;width:100%;min-width:0;padding:0;margin:0;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}',
       '.fpick .rt,.fpick .ai{display:block}',
+      '.fpick .rt,.mt,.lpick b{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}',
       '.fpick:hover .rt,.mpick:hover .mt{text-decoration:underline;text-decoration-color:var(--g6);text-underline-offset:3px}',
       '.frow[aria-current="true"]{background:rgba(241,237,228,.75);box-shadow:inset 3px 0 0 var(--g6)}',
       '.clink{display:inline;padding:0;margin:0;border:0;background:none;font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--g8);text-decoration:underline;text-decoration-color:rgba(184,137,46,.45);text-underline-offset:2px;cursor:pointer}',
@@ -659,6 +688,17 @@
       '.skm{display:flex;flex-direction:column;align-items:flex-start;gap:4px}.skm img{max-width:100%;max-height:160px;border-radius:3px;border:1px solid var(--rule2)}',
       '.skf{font-size:11.5px;color:var(--mute)}.skstada{font-size:11.5px;color:var(--mute)}',
       '.sknew{min-height:96px;border:1px dashed var(--edge2);border-radius:4px;background:transparent;font:600 13px var(--body);color:var(--mute);cursor:pointer}.sknew:hover{background:#fffdf7;color:var(--ink)}',
+      '.saga{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
+      '.saga.buid{border-color:rgba(74,160,106,.6);box-shadow:inset 3px 0 0 #4aa06a}',
+      '.sg-h{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}.sg-buid{font-size:12px;font-weight:700;color:#8fd3a6}',
+      '.sg-r{height:26px;padding:0 10px;border:1px solid #3a3732;border-radius:4px;background:#1c1b18;color:var(--on2);font:600 11.5px var(--body);cursor:pointer}.sg-r[disabled]{opacity:.6;cursor:progress}',
+      '.sg-l{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--on2)}.sg-l b{color:var(--on)}',
+      '.sg-l em{font-style:normal;font-weight:700}.sg-l em.ok{color:#8fd3a6}.sg-l em.bid{color:#e8b06a}.sg-m{font-size:11px;color:var(--on3)}',
+      '.lpick{display:block;padding:0;margin:0;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}.lpick:hover b{text-decoration:underline;text-decoration-color:var(--g6);text-underline-offset:3px}',
+      '.bm-t{align-self:flex-start}.bm{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
+      '.bm label{display:flex;flex-direction:column;gap:3px;min-width:0}.bm-r{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end}',
+      '.bm input,.bm textarea,.bm select{padding:6px 9px;border:1px solid #3a3732;border-radius:4px;background:#1c1b18;color:var(--on);font:13px var(--body)}.bm textarea{resize:vertical;min-height:70px}',
+      '.bm .bm-c{flex-direction:row;align-items:center;gap:6px;color:var(--on2);font-size:13px}',
       '.err{padding:10px 14px;border:1px solid rgba(181,82,42,.45);border-radius:4px;background:#fff7f2;color:var(--terra);font-size:12.5px}',
       '.t5toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99990;max-width:min(92vw,520px);padding:11px 16px;border:1px solid #000;border-radius:5px;background:var(--slab);color:var(--on);font:600 12.5px var(--body);box-shadow:var(--slabsh)}',
       '.t5toast.warn{border-top:3px solid var(--terra)}',
@@ -670,7 +710,7 @@
       '@container main (min-width: 1500px){.board{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"master mine sel"}}',
       // Mjór dálkur (hliðardálkur á breiðum skjá eða sími): vikan sem listi, eitt spjald í röð.
       '@container rail (max-width: 560px){.week{display:flex;flex-direction:column;gap:6px;padding:10px 12px}.day{flex-direction:row;align-items:flex-start;gap:10px}.dh{flex:0 0 100px}.djobs{flex:1}' +
-        '.cards{grid-template-columns:minmax(0,1fr)}.lrow{grid-template-columns:44px minmax(0,1fr)}.lrow .btn,.lrow .lock{grid-column:2;justify-self:start}}',
+        '.cards{grid-template-columns:minmax(0,1fr)}.lrow{grid-template-columns:44px minmax(0,1fr)}.lrow .btn,.lrow .lock,.lrow .tag{grid-column:2;justify-self:start}}',
       '@container t5 (min-width: 761px){.sel.inline{display:none}}',
       '@container t5 (max-width: 760px){' +
         '.t5{padding:12px 10px 24px}.h1{font-size:30px}' +
@@ -739,7 +779,52 @@
       : '<button type="button" class="' + k + '" data-t5="fyr" data-id="' + r.id + '" title="Finna ' + esc(w) + '">' + esc(w) + '</button>';
   }
   const eigandaTexti = (r, n) => isFree(r) ? 'Á Master' : onBoardOf(r, n) ? 'Á þínu borði' : 'Hjá ' + normW(r.assigned_to);
-  function sagaHtml(r) { return ''; }
+  // Sönnun þess að verkið sé líklega búið: reikningur, sala eða skýrsla hjá sama viðskiptavini EFTIR að málið
+  // varð til (Engjasel 31: uppsetningarmálið stóð opið þótt reikningurinn hefði verið greiddur 14.08).
+  function virkniEftir(r) {
+    const v = r && r.customer_base_id ? S.virkni[r.customer_base_id] : null;
+    if (!v) return null;
+    const upphaf = tStamp(r.created_at), eftir = [];
+    const rk = v.sidasti_reikningur, sl = v.sidasta_sala, sk = v.sidasta_skyrsla;
+    if (rk && tStamp(rk.dags) > upphaf) eftir.push('reikningur');
+    else if (sl && tStamp(sl.dags) > upphaf) eftir.push('sala');
+    if (sk && tStamp(sk.dags) > upphaf) eftir.push('skýrsla');
+    return eftir.length ? eftir : null;
+  }
+  const kr = x => Math.round(Number(x) || 0).toLocaleString('is-IS').replace(/,/g, '.') + ' kr.';
+  function sagaHtml(r) {
+    if (!isOn('saga') || !r.customer_base_id) return '';
+    const v = S.virkni[r.customer_base_id], eftir = virkniEftir(r), linur = [];
+    if (v === undefined) linur.push('<span class="sg-m">Sæki sögu fyrirtækisins…</span>');
+    else if (!v) linur.push('<span class="sg-m">Engin sala né skýrsla skráð hjá þessu fyrirtæki.</span>');
+    else {
+      const rk = v.sidasti_reikningur, sl = v.sidasta_sala, sk = v.sidasta_skyrsla;
+      if (rk) linur.push('<span>🧾 <b>Reikningur ' + esc(rk.num || '') + '</b> · ' + esc(fmtD(rk.dags)) + ' · ' + kr(rk.samtals) + ' · ' +
+        (rk.paid_at ? '<em class="ok">greiddur ' + esc(fmtD(rk.paid_at)) + '</em>' : (rk.krafa_sent_at ? 'krafa send ' + esc(fmtD(rk.krafa_sent_at)) + ' · ' : '') + '<em class="bid">ógreiddur</em>') + '</span>');
+      if (sl && (!rk || sl.id !== rk.id)) linur.push('<span>🛒 <b>Sala ' + esc(sl.num || '') + '</b> · ' + esc(fmtD(sl.dags)) + ' · ' + kr(sl.samtals) + '</span>');
+      if (sk) linur.push('<span>📄 <b>' + (sk.doc_type === 'brunakerfi' ? 'Brunakerfisskýrsla' : 'Úttektarskýrsla') + '</b> · ' + esc(fmtD(sk.dags)) + '</span>');
+    }
+    return '<div class="saga' + (eftir ? ' buid' : '') + '">' +
+      '<div class="sg-h"><span class="slabel">Saga fyrirtækisins</span>' +
+        (eftir ? '<span class="sg-buid">✓ Líklega afgreitt — ' + esc(eftir.join(' og ')) + ' eftir að málið varð til</span>' : '') +
+        '<span class="grow"></span><button type="button" class="sg-r" data-t5="virkni-uppf"' + (S.virkniBid ? ' disabled' : '') + ' title="Reikna sölur, reikninga og skýrslur upp á nýtt">' + (S.virkniBid ? 'Uppfæri…' : '↻ Uppfæra') + '</button></div>' +
+      '<div class="sg-l">' + linur.join('') + '</div>' +
+      (v && v.reiknad_at ? '<div class="sg-m">Uppfært ' + esc(fmtD(v.reiknad_at)) + ' kl. ' + klukka(new Date(v.reiknad_at)) + ' · uppfærist sjálfkrafa á hverjum morgni</div>' : '') +
+    '</div>';
+  }
+  async function uppfaeraVirkni() {
+    const c = sb();
+    if (!c || S.virkniBid) return;
+    S.virkniBid = true;
+    render();
+    let skil = null;
+    try { const r = await c.rpc('bh_fyrirtaeki_virkni_uppfaera'); if (r.error) throw r.error; skil = r.data; }
+    catch (e) { toast('Uppfærslan tókst ekki: ' + ((e && e.message) || e), true); }
+    S.virkni = {};
+    S.virkniBid = false;
+    await load(true);
+    if (skil != null) toast(skil === -1 ? 'Sagan var uppfærð fyrir innan við mínútu — sýni nýjustu stöðu.' : 'Saga fyrirtækja uppfærð');
+  }
 
   function feedRow(r, valid) {
     const a = ageDays(r), ai = aiLine(r), n = nu(), w = fyrLink(r);
@@ -747,6 +832,7 @@
       (r.due_at ? '<span class="tag">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
       (r.status === 'i_vinnslu' ? '<span class="tag">Í vinnslu</span>' : '') +
       (isPost(r) && r.svarad_at ? '<span class="tag ok">Svarað</span>' : '') +
+      (virkniEftir(r) ? '<span class="tag ok" title="Reikningur, sala eða skýrsla eftir að málið varð til">Líklega afgreitt</span>' : '') +
       (!isFree(r) ? '<span class="tag">' + esc(eigandaTexti(r, n)) + '</span>' : '');
     const hlid = onBoardOf(r, n) ? '<span class="lock">Þitt</span>'
       : '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) +
@@ -774,10 +860,34 @@
           (r.due_at ? '<span class="lock">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
           (r.important ? '<span class="tag hot">Áríðandi</span>' : '') +
           (isPost(r) ? (r.svarad_at ? '<span class="tag ok">Svarað</span>' : '<span class="tag">Bíður svars</span>') : '') +
+          (virkniEftir(r) ? '<span class="tag ok">Líklega afgreitt</span>' : '') +
           '<span class="grow"></span>' +
           '<button type="button" class="btn iv sm" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + '>✓ Lokið</button>' +
           '<button type="button" class="btn iv sm" data-t5="giveback" data-id="' + r.id + '"' + dis(r.id) + '>↩ Skila</button>' +
         '</div></div></div>';
+  }
+  // Breyta máli — sömu reitir og „⋯ Meira" á gamla borðinu. Drög lifa í S.bmDrog (valið mál er teiknað
+  // tvisvar: hliðarspjald og í línunni í síma) og teikning bíður á meðan skrifað er.
+  function breytaHtml(r) {
+    if (!isOn('breyta')) return '';
+    if (!S.bmOpid[r.id]) return '<button type="button" class="sg-r bm-t" data-t5="bm-opna" data-id="' + r.id + '">✏️ Breyta máli</button>';
+    const d = S.bmDrog[r.id] || {}, g = (k, v) => (d[k] != null ? d[k] : v), reitur = (k, x) => ' data-bm="' + k + '" data-id="' + r.id + '"' + (x || '');
+    return '<div class="bm">' +
+      '<label><span class="slabel">Titill</span><input' + reitur('title') + ' value="' + esc(g('title', r.title || '')) + '"></label>' +
+      '<label><span class="slabel">Lýsing og athugasemdir</span><textarea' + reitur('notes') + ' rows="4">' + esc(g('notes', r.notes || '')) + '</textarea></label>' +
+      '<div class="bm-r">' +
+        '<label><span class="slabel">Frestur</span><input type="date"' + reitur('due') + ' value="' + esc(g('due', r.due_at ? ymd(new Date(r.due_at)) : '')) + '"></label>' +
+        '<label><span class="slabel">Staða</span><select' + reitur('status') + '>' +
+          STODUR.map(s => '<option value="' + s[0] + '"' + (g('status', r.status || 'nytt') === s[0] ? ' selected' : '') + '>' + s[1] + '</option>').join('') + '</select></label>' +
+        '<label class="bm-c"><input type="checkbox"' + reitur('important', g('important', !!r.important) ? ' checked' : '') + '> Áríðandi</label></div>' +
+      '<div class="sacts"><button type="button" class="btn gold" data-t5="bm-vista" data-id="' + r.id + '"' + dis(r.id) + '>Vista breytingar</button>' +
+        '<button type="button" class="btn iv" data-t5="bm-opna" data-id="' + r.id + '">Loka</button><span class="grow"></span>' +
+        '<button type="button" class="btn iv" data-t5="bm-eyda" data-id="' + r.id + '"' + dis(r.id) + '>🗑 Eyða máli</button></div>' +
+    '</div>';
+  }
+  function bmSkra(el) {
+    const id = Number(el.dataset.id);
+    if (id) (S.bmDrog[id] = S.bmDrog[id] || {})[el.dataset.bm] = el.type === 'checkbox' ? el.checked : el.value;
   }
   function selHtml(r) {
     if (!r) return emptyHtml('Smelltu á hvaða mál sem er til að skoða það — eða taktu næsta af Master.<button type="button" class="btn gold" data-t5="take-next">Taka næsta af Master ›</button>');
@@ -824,7 +934,7 @@
       (r.summary ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(String(r.summary).slice(0, 600)) + '</div>' : '') +
       sagaHtml(r) + well +
       '<div class="sacts">' + taka + svara + lokid + skila + fyr + '</div>' +
-      '<div class="sacts sm2">' + setja + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') + '</div>';
+      '<div class="sacts sm2">' + setja + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') + '</div>' + breytaHtml(r);
   }
 
   function modPanel(k, summary, body, action, alltaf) {
@@ -858,6 +968,12 @@
     const action = '<button type="button" class="btn gold sm" data-t5="job-new" data-date="' + days[0].key + '">+ Skrá verk</button>';
     return modPanel('dagskra', days[0].jobs.length + ' í dag · ' + total + ' næstu 7 daga', body, action, true);
   }
+  function lrowHtml(r, merki) {
+    const a = ageDays(r), w = fyrLink(r);
+    return '<div class="lrow"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
+      '<div><button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '" title="Skoða málið"><b>' + esc(r.title || '(ónefnt mál)') + '</b></button>' +
+      '<span class="s">' + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + '</span></div>' + (merki || '<span></span>') + '</div>';
+  }
   function bottomHtml(k) {
     const n = nu();
     if (k === 'skipulag') {
@@ -890,6 +1006,22 @@
         '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot beint í spjald.') + '</div></div>';
       return modPanel(k, cards.length + ' spjöld', body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
     }
+    if (k === 'frestir') {
+      const dagur = ymd(new Date());
+      const flokkur = r => { const d = ymd(new Date(r.due_at)); return d < dagur ? 'lidid' : d === dagur ? 'idag' : 'seinna'; };
+      const rows = S.rows.filter(r => r.due_at).sort((a, b) => tStamp(a.due_at) - tStamp(b.due_at));
+      const lidnir = rows.filter(r => flokkur(r) === 'lidid').length, idag = rows.filter(r => flokkur(r) === 'idag').length;
+      return modPanel(k, lidnir + ' liðnir · ' + idag + ' í dag · ' + rows.length + ' alls', rows.length
+        ? rows.slice(0, 12).map(r => { const f = flokkur(r); return lrowHtml(r, '<span class="tag' + (f === 'lidid' ? ' hot' : '') + '">' + (f === 'lidid' ? 'Liðinn ' + esc(fmtD(r.due_at)) : f === 'idag' ? 'Í dag' : esc(fmtD(r.due_at))) + '</span>'); }).join('') +
+          (rows.length > 12 ? '<div class="more">+ ' + (rows.length - 12) + ' til viðbótar</div>' : '')
+        : emptyHtml('Engin opin mál með frest.'));
+    }
+    if (k === 'nyjast') {
+      const rows = S.rows.slice().sort((a, b) => tStamp(b.created_at) - tStamp(a.created_at)).slice(0, 10);
+      return modPanel(k, S.rows.filter(r => ageDays(r) <= 7).length + ' ný síðustu 7 daga', rows.length
+        ? rows.map(r => lrowHtml(r, '<span class="tag">' + esc(tegMals(r)) + '</span>')).join('')
+        : emptyHtml('Engin opin mál.'));
+    }
     if (k === 'vinnublod') {
       const c = S.counts.sara;
       return modPanel(k, c ? (c.bidur || 0) + ' bíða yfirferðar · ' + (c.samthykkt || 0) + ' samþykkt' : 'talning náðist ekki',
@@ -902,14 +1034,8 @@
     if (k === 'postsvor') {
       const rows = S.rows.filter(r => isPost(r) && !r.svarad_at).sort(rodun);
       return modPanel(k, rows.length + ' bíða svars', rows.length
-        ? rows.slice(0, 8).map(r => {
-            const a = ageDays(r), free = isFree(r), me = onBoardOf(r, n);
-            return '<div class="lrow"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
-              '<div><b>' + esc(r.title || '(ónefnt)') + '</b><span class="s">' + esc([whereOf(r), free ? 'á Master' : 'á borði ' + normW(r.assigned_to)].filter(Boolean).join(' · ')) + '</span></div>' +
-              (free ? '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) + '>Taka ›</button>'
-                : me ? '<button type="button" class="btn iv sm" data-t5="select" data-id="' + r.id + '">Opna ›</button>'
-                : '<span class="lock">' + esc(normW(r.assigned_to)) + '</span>') + '</div>';
-          }).join('') + (rows.length > 8 ? '<div class="more">+ ' + (rows.length - 8) + ' til viðbótar</div>' : '')
+        ? rows.slice(0, 8).map(r => lrowHtml(r, isFree(r) ? '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) + '>Taka ›</button>' : '')).join('') +
+          (rows.length > 8 ? '<div class="more">+ ' + (rows.length - 8) + ' til viðbótar</div>' : '')
         : emptyHtml('Enginn póstur bíður svars.'),
         '<button type="button" class="btn gold sm" data-t5="go" data-view="thjonustuver-postar">Opna pósthólfið ›</button>');
     }
@@ -991,6 +1117,8 @@
     return '<header class="phead"><span class="plate">⚙</span><h2 class="ptitle">Mitt vinnuborð · ' + esc(nu()) + '</h2><span class="grow"></span>' +
         '<button type="button" class="btn gold sm" data-t5="cfg">Loka ›</button></header>' +
       core + rows +
+      I_VOLDU.map(k => '<div class="cfgrow">' + plate(MODS[k].n) + '<div class="cfgt"><b>' + MODS[k].t + '</b><span>' + MODS[k].d + '</span></div><span class="lock">Í völdu máli</span>' +
+        '<button type="button" class="sw" role="switch" aria-checked="' + !!c.mods[k][0] + '" data-t5="cfg-on" data-m="' + k + '" aria-label="' + MODS[k].t + '"></button></div>').join('') +
       '<div class="cfgrow"><span class="plate">—</span><div class="cfgt"><b>Spjall</b><span>Slökkt í bili fyrir alla.</span></div><span></span><span class="lock">Slökkt</span></div>' +
       '<div class="cfgfoot">Breytingar vistast strax og fylgja þér á milli tölva og í appið. Hver hamur er sín opna: einingar hamsins fara efst — á breiðum skjá í dálkinn vinstra megin.</div>';
   }
@@ -1089,7 +1217,7 @@
     // Opinn fellilisti lokast ef teiknað er undir honum — bíða þar til hann er frá.
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði truflast ef teiknað er undir — bíða.
-    if (ae && (ae.tagName === 'SELECT' || (ae.dataset && ae.dataset.sk))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
+    if (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm)))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     const n = nu(), c = cfg(), mode = MODES[c.mode];
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // Hvaða opið mál sem er má skoða — ekki aðeins þau á mínu borði. 0 = lokað viljandi (✕).
@@ -1139,7 +1267,7 @@
           '<section class="panel colmaster" aria-label="' + esc(siuHeiti) + '">' +
             '<header class="phead">' + plate('02') + '<h2 class="ptitle">' + esc(siuHeiti) + '</h2><span class="sum">' + visible.length + ' mál</span><span class="grow"></span>' +
               (/^[pf]:/.test(S.filter) ? '<button type="button" class="btn iv sm" data-t5="filter" data-f="allt">✕ Aftur á Master</button>' : '') +
-              '<div class="seg" role="group" aria-label="Sía">' + [['allt', 'Allt'], ['post', 'Póstar'], ['beidni', 'Beiðnir'], ['hot', 'Áríðandi'], ['oll', 'Öll opin']].map(f =>
+              '<div class="seg" role="group" aria-label="Sía">' + [['allt', 'Allt'], ['post', 'Póstar'], ['beidni', 'Beiðnir'], ['hot', 'Áríðandi'], ['buid', 'Líklega búin'], ['oll', 'Öll opin']].map(f =>
                 '<button type="button" data-t5="filter" data-f="' + f[0] + '" aria-pressed="' + (S.filter === f[0]) + '">' + f[1] + '<span class="c">' + fjoldi(f[0]) + '</span></button>').join('') + '</div>' +
               '<button type="button" class="btn gold sm" data-t5="take-next">Taka næsta ›</button></header>' +
             '<div class="psub">' + nyleg + ' síðustu 30 daga · ' + bunki + ' í bunka Charlize · Á borðum:' +
@@ -1560,6 +1688,40 @@
         if (f) f();
         return;
       }
+      case 'virkni-uppf': uppfaeraVirkni(); return;
+      case 'bm-opna': S.bmOpid[id] = !S.bmOpid[id]; render(); return;
+      case 'bm-vista': {
+        const r = S.rows.find(x => x.id === id), d = S.bmDrog[id] || {};
+        if (!r) return;
+        const patch = {};
+        if (d.title != null && d.title.trim() && d.title.trim() !== (r.title || '')) patch.title = d.title.trim();
+        if (d.notes != null && d.notes !== (r.notes || '')) patch.notes = d.notes;
+        if (d.due != null && d.due !== (r.due_at ? ymd(new Date(r.due_at)) : '')) patch.due_at = /^\d{4}-\d{2}-\d{2}$/.test(d.due) ? new Date(d.due + 'T12:00:00').toISOString() : null;
+        if (d.important != null && !!d.important !== !!r.important) patch.important = !!d.important;
+        if (d.status != null && d.status !== (r.status || 'nytt')) patch.status = d.status;
+        if (!Object.keys(patch).length) { toast('Engin breyting til að vista.'); return; }
+        act(id, async () => {
+          const rows = await patchRow(id, patch);
+          if (!rows.length) throw new Error('málið fannst ekki');
+          if (patch.status && rows[0].status !== patch.status) throw new Error('las til baka stöðuna „' + rows[0].status + '“');
+          delete S.bmDrog[id];
+          S.bmOpid[id] = false;
+          toast(patch.status === 'lokad' ? 'Breytingar vistaðar · málið er lokað' : 'Breytingar vistaðar');
+        });
+        return;
+      }
+      case 'bm-eyda': {
+        const r = S.rows.find(x => x.id === id);
+        if (!r || !window.confirm('Eyða málinu „' + (r.title || '(ónefnt mál)') + '“? Það hverfur af öllum borðum.')) return;
+        act(id, async () => {
+          const rows = await patchRow(id, { deleted_at: new Date().toISOString() });
+          if (!rows.length) throw new Error('málið fannst ekki');
+          delete S.bmDrog[id];
+          S.bmOpid[id] = false;
+          toast('Málinu var eytt', false, () => act(id, async () => { await patchRow(id, { deleted_at: null }); toast('Málið er komið aftur'); }));
+        });
+        return;
+      }
       case 'ny-fyr': veljaNyFyr(Number(el.dataset.i)); return;
       case 'vd-add': {
         // Sama samningur og gamla borðið: 303 hlerar st-skra-verk og opnar dagskrárgluggann forútfylltan.
@@ -1577,6 +1739,7 @@
     const el = e.target, v = document.getElementById(VIEW_ID);
     if (!v || !el || !el.dataset) return;
     if (el.dataset.t5 === 'assign') { el.blur(); setjaA(Number(el.dataset.id), el.value); return; }
+    if (el.dataset.bm) { bmSkra(el); return; }
     if (el.dataset.t5 !== 'who' || !el.value) return;
     el.blur();
     skolaAllt();                                           // texti í ritun vistast á réttan starfsmann
@@ -1589,6 +1752,7 @@
     const el = e.target, k = el && el.dataset ? el.dataset.k : null;
     if (k === 'lq' || k === 'nc') leita(k, el.value);
     else if (el && el.dataset && el.dataset.sk) skrifaSk(el);
+    else if (el && el.dataset && el.dataset.bm) bmSkra(el);
   }
   function onKey(e) {
     const v = document.getElementById(VIEW_ID), root = v && v.shadowRoot;
@@ -1693,7 +1857,7 @@
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368g' };
+    window.Thjonustubord5 = { show, load, render, version: '368h' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
