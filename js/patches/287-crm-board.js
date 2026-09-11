@@ -615,10 +615,10 @@
     // Reyna að ná fullri digest-röð (body_preview + message_id) — RLS getur
     // falið hluta email_digest fyrir anon-lyklinum, þá duga saga-reitirnir.
     try {
-      const res = await fetch(U + "/rest/v1/email_digest?select=message_id,sender_name,sender_email,subject,snippet,body_preview&id=eq." + (+mail.email_id) + "&limit=1", { headers: H });
+      const res = await fetch(U + "/rest/v1/email_digest?select=message_id,account,sender_name,sender_email,subject,snippet,body_preview&id=eq." + (+mail.email_id) + "&limit=1", { headers: H });
       if (res.ok) { const a = await res.json(); if (Array.isArray(a) && a[0]) {
         const e = a[0];
-        m = { message_id: e.message_id, sender_name: e.sender_name || "", from: e.sender_email || "",
+        m = { message_id: e.message_id, account: e.account || "", sender_name: e.sender_name || "", from: e.sender_email || "",
           subject: e.subject || "", body_preview: e.body_preview || "", snippet: e.snippet || "" };
       } }
     } catch (_) {}

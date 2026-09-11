@@ -1205,15 +1205,22 @@
       // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
       // 10.09.2026 — Agnar: „svarað póstum úr kerfinu og það haldi sama samtalinu".
       // Message-ID upprunalega póstsins → gmail-send setur In-Reply-To/References og threadId.
-      const payload = { from: emailFrom(), to: [to], subject, html, inReplyTo: m.message_id || undefined };
+      // 11.09.2026: svarið fer frá pósthólfinu sem TÓK VIÐ póstinum (bokhald@ eða eldklar@). Áður fór
+      // hvert svar frá eldklar@, og þráðaleit gmail-send fann ekki póst sem kom inn á bokhald@.
+      const postholf = String(m.account || '').trim();
+      const payload = { from: /^(eldklar|bokhald)@eldklar\.is$/i.test(postholf) ? postholf : emailFrom(), to: [to], subject, html, inReplyTo: m.message_id || undefined };
       const r = await (window.AppMail ? AppMail.send(payload)
         : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
       if (!r.ok) {
         const e = await r.json().catch(() => ({}));
         throw new Error(e.message || e.error || ('HTTP ' + r.status));
       }
-      setMsg('✓ Svar sent á ' + to, 'ok');
-      if (window.Toast && Toast.show) Toast.show('✓ Svar sent á ' + to);
+      // gmail-send segir hvort svarið lenti í sama þræði hjá okkur (threaded) — sýnt svo það sjáist.
+      let svar = {};
+      try { svar = (await r.json()) || {}; } catch (_) {}
+      const thradur = svar.threaded === true ? ' · í sama þræði' : (m.message_id ? ' · þráðurinn fannst ekki hjá okkur' : '');
+      setMsg('✓ Svar sent á ' + to + thradur, 'ok');
+      if (window.Toast && Toast.show) Toast.show('✓ Svar sent á ' + to + thradur);
       logActivity(m.message_id, 'reply');
       // Þjónustuborð v2: borðið (231) hengir _onSent á m-hlutinn í replyTo —
       // látum það vita svo beiðnin fái svarad_at og „✓ svarað"-merkið strax.

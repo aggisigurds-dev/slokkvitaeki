@@ -348,7 +348,7 @@
     if (id == null || (id in S.post)) return;
     S.post[id] = null;
     try {
-      const res = await sb().from('email_digest').select('id,message_id,sender_name,sender_email,subject,snippet,body_preview,received_at').eq('id', id).maybeSingle();
+      const res = await sb().from('email_digest').select('id,message_id,account,sender_name,sender_email,subject,snippet,body_preview,received_at').eq('id', id).maybeSingle();
       S.post[id] = res.error ? false : (res.data || false);
     } catch (_) { S.post[id] = false; }
     render();
@@ -361,7 +361,7 @@
     if (!window.ReikningaPostur || !ReikningaPostur.replyTo) { toast('Svar-glugginn (Reikninga-póstur) er ekki hlaðinn.', true); return; }
     if (!p || !p.sender_email) { toast('Ekkert sendandanetfang fannst á þessu máli.', true); return; }
     const m = {
-      message_id: p.message_id, sender_name: p.sender_name || r.customer_nafn || '', from: p.sender_email,
+      message_id: p.message_id, account: p.account || '', sender_name: p.sender_name || r.customer_nafn || '', from: p.sender_email,
       subject: p.subject || r.title || '', body_preview: p.body_preview || '', snippet: p.snippet || r.notes || ''
     };
     // 240 kallar á þetta þegar svarið er SENT — sama merking og á gamla borðinu.
@@ -1199,7 +1199,7 @@
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368e' };
+    window.Thjonustubord5 = { show, load, render, version: '368f' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

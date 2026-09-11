@@ -539,7 +539,7 @@
       try {
         const client = sb();
         const r = client ? await client.from("v_samskipti_postur")
-          .select("id,message_id,sender_name,sender_email,subject,body_preview,snippet")
+          .select("id,message_id,account,sender_name,sender_email,subject,body_preview,snippet")
           .eq("id", +svaraM.email_id).maybeSingle() : null;
         m = (r && r.data) || null;
       } catch (_) {}
@@ -547,7 +547,7 @@
       const src = m || svaraM;
       try {
         ReikningaPostur.replyTo({ sender_name: src.sender_name, from: src.sender_email, subject: src.subject,
-          body_preview: (m && (m.body_preview || m.snippet)) || svaraM.snippet, message_id: m ? m.message_id : undefined });
+          body_preview: (m && (m.body_preview || m.snippet)) || svaraM.snippet, message_id: m ? m.message_id : undefined, account: m ? m.account : undefined });
       } catch (e) { console.warn("[samskipti-panel] svara", e); }
     });
     // Samantektar-glugginn: örin snýst við opnun/lokun + innbyggð ritun (vistast beint).
@@ -699,7 +699,7 @@
           ev.stopPropagation();
           try {
             ReikningaPostur.replyTo({ sender_name: m.sender_name, from: m.sender_email, subject: m.subject,
-              body_preview: m.body_preview || m.snippet, message_id: m.message_id });
+              body_preview: m.body_preview || m.snippet, message_id: m.message_id, account: m.account });
           } catch (e) { console.warn("[samskipti-panel] svara", e); }
         });
       });

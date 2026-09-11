@@ -3648,11 +3648,11 @@
     if (digestId && SB) {
       try {
         const r = await SB.from('email_digest')
-          .select('message_id,sender_name,sender_email,subject,snippet,body_preview')
+          .select('message_id,account,sender_name,sender_email,subject,snippet,body_preview')
           .eq('id', digestId).maybeSingle();
         if (r && r.data) {
           const e = r.data;
-          m = { message_id: e.message_id, sender_name: e.sender_name || row.customer_nafn || '',
+          m = { message_id: e.message_id, account: e.account || '', sender_name: e.sender_name || row.customer_nafn || '',
             from: e.sender_email || '', subject: e.subject || row.title || '',
             body_preview: e.body_preview || '', snippet: e.snippet || row.notes || '' };
         }
