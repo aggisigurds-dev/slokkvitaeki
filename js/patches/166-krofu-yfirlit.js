@@ -835,9 +835,26 @@
       let rows = (sr.data || []);
       const cids = new Set(rows.filter(s => s.is_credit && s.credit_of != null).map(s => String(s.credit_of)));
       rows = rows.filter(s => !s.is_credit && !cids.has(String(s.id)));
-      _state.paydayUnpaid = rows.filter(s => s.dk_invoice_id);                                   // sent í Payday, ógreitt (59)
+      // 2026-09-11 (Agnar: „afhverju fóru allar kröfur þennan dag bara í drög en ekki sent"): 10 kröfur
+      // 07.09 fóru með „📤 Í Payday sem drög" og payday-push merkir drög eins og senda kröfu (krafa_sent_at),
+      // svo þær sátu hér sem „Ógreiddar í Payday" og „sendar" — enginn sá að þær höfðu aldrei farið.
+      // Payday-spegillinn (payday_invoices_slokk, parað á payday_id = dk_invoice_id) segir DRAFT: þær fá
+      // sér spjald „📝 Drög í Payday — ósend" og teljast ekki sendar. Klikki spegillinn → gamla hegðunin.
+      const medPayday = rows.filter(s => s.dk_invoice_id);
+      let drogIds = new Set();
+      try {
+        const ids = medPayday.map(s => String(s.dk_invoice_id));
+        for (let i = 0; i < ids.length; i += 150) {
+          const pr = await SB.from('payday_invoices_slokk').select('payday_id,status').in('payday_id', ids.slice(i, i + 150));
+          if (pr.error) throw pr.error;
+          (pr.data || []).forEach(p => { if (String(p.status || '').toUpperCase() === 'DRAFT') drogIds.add(String(p.payday_id)); });
+        }
+      } catch (_) { drogIds = new Set(); }
+      _state.paydayDraftIds = drogIds;
+      _state.paydayDrog   = medPayday.filter(s => drogIds.has(String(s.dk_invoice_id)));              // aðeins drög í Payday — ósend
+      _state.paydayUnpaid = medPayday.filter(s => !drogIds.has(String(s.dk_invoice_id)));             // sent í Payday, ógreitt
       _state.osendar      = rows.filter(s => !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id); // aldrei send
-    } catch (_) { _state.paydayUnpaid = _state.paydayUnpaid || []; _state.osendar = _state.osendar || []; }
+    } catch (_) { _state.paydayUnpaid = _state.paydayUnpaid || []; _state.osendar = _state.osendar || []; _state.paydayDrog = _state.paydayDrog || []; }
 
     render();
     maybeAutoSync();   // athuga greiðslur í Payday sjálfkrafa (throttlað) → Greitt kviknar sjálft
@@ -990,14 +1007,18 @@
     const olderTotal = sum(older);
     const grandTotal = thisMonthTotal + olderTotal;
     // 2026-06-30: telja sendar kröfur (úr Payday eða manual toggle á krafa_sent_at)
-    const sent = (all || []).filter(s => s.krafa_sent_at);
+    // 2026-09-11: drög í Payday (DRAFT í speglinum) eru EKKI sendar þótt payday-push hafi sett krafa_sent_at.
+    const _drogIds = _state.paydayDraftIds || new Set();
+    const sent = (all || []).filter(s => s.krafa_sent_at && !_drogIds.has(String(s.dk_invoice_id || '')));
     const sentTotal = sum(sent);
     const sentCompanies = new Set(sent.map(s => normName(s.customer_nafn) || '(ekkert)')).size;
 
     // Stækkanleg samantektarspjöld (óháð view-síunni) — smelltu til að sjá listann.
     const paydayUnpaid = _state.paydayUnpaid || [];
+    const paydayDrog   = _state.paydayDrog || [];
     const osendarRows  = _state.osendar || [];
     const paydayUnpaidTotal = sum(paydayUnpaid);
+    const paydayDrogTotal = sum(paydayDrog);
     const osendarTotal = sum(osendarRows);
 
     // Group by company across the whole dataset for the per-company section.
@@ -1108,9 +1129,11 @@
 
         <div class="ky-exprow">
           ${expCardHtml('payday', '⏳', 'Ógreiddar í Payday', paydayUnpaid.length, paydayUnpaidTotal, '#b45309', '#fff7ed', '#fed7aa', 'Allir mánuðir — ekki hluti af Heildarkröfum')}
+          ${paydayDrog.length ? expCardHtml('drog', '📝', 'Drög í Payday — ósend', paydayDrog.length, paydayDrogTotal, '#7c3aed', '#f5f3ff', '#ddd6fe', 'Aðeins drög — sendu þau úr Payday') : ''}
           ${expCardHtml('osendar', '📤', 'Ósendar kröfur', osendarRows.length, osendarTotal, '#1d4ed8', '#eff6ff', '#bfdbfe', 'Allir mánuðir — ekki hluti af Heildarkröfum')}
         </div>
         ${_state.expandCard === 'payday' ? expDetailHtml('payday', '⏳ Ógreiddar kröfur í Payday', paydayUnpaid, paydayUnpaidTotal, '#b45309')
+          : _state.expandCard === 'drog' ? expDetailHtml('drog', '📝 Drög í Payday — ósend (aldrei farin til kúnna; sendu úr Payday)', paydayDrog, paydayDrogTotal, '#7c3aed')
           : _state.expandCard === 'osendar' ? expDetailHtml('osendar', '📤 Ósendar kröfur (aldrei sendar í banka/Payday)', osendarRows, osendarTotal, '#1d4ed8')
           : ''}
 
@@ -1934,6 +1957,7 @@
           <td>
             <div style="display:flex;gap:4px;align-items:center;flex-wrap:nowrap">
               ${skyrslaIconFor(s)}
+              ${(_state.paydayDraftIds && s.dk_invoice_id && _state.paydayDraftIds.has(String(s.dk_invoice_id))) ? '<span class="ky-drog-pill" title="Aðeins drög í Payday — krafan hefur ekki farið til kúnna. Sendu hana úr Payday." style="font-size:11px;font-weight:800;color:#6d28d9;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:99px;padding:2px 8px;white-space:nowrap">📝 Drög</span>' : ''}
               ${kyIcon('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday', !!s.krafa_sent_at)}
               ${kyIcon('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
               ${kyIcon('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', '#2f5fe0', 'Skoða / prenta reikning', false)}
@@ -2021,6 +2045,7 @@
                 <div class="ky-row-end" style="display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;justify-content:flex-end">
                   <span class="ky-num" style="width:90px;text-align:right;font-weight:700;color:#11141c;white-space:nowrap;flex-shrink:0">${fmtKr(s.samtals)}</span>
                   <div style="display:flex;gap:6px;flex-shrink:0">
+                    ${(_state.paydayDraftIds && s.dk_invoice_id && _state.paydayDraftIds.has(String(s.dk_invoice_id))) ? '<span class="ky-drog-pill" title="Aðeins drög í Payday — krafan hefur ekki farið til kúnna. Sendu hana úr Payday." style="align-self:center;font-size:11px;font-weight:800;color:#6d28d9;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:99px;padding:2px 8px;white-space:nowrap">📝 Drög</span>' : ''}
                     ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', s.krafa_sent_at ? 'Krafa send' : 'Senda Kröfu', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
                     ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
                     ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
