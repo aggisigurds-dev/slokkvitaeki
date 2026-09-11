@@ -2112,8 +2112,11 @@
 
     const top = mode.first.slice();
     if (isOn('dagskra') && top.indexOf('dagskra') < 0) top.unshift('dagskra');
-    const topHtml = top.map(k => (k === 'dagskra' ? dagskraHtml() : bottomHtml(k))).join('');
-    const bottom = BOTTOM.filter(k => isOn(k) && top.indexOf(k) < 0).map(bottomHtml).join('');
+    // „Bara mitt borð" = tómt vinnusvæði (Agnar 11.09.2026: „Þegar bara starfsmannaborð er valið, þá á allt að vera
+    // tómt"): engar einingar hvorugum megin (dagskrá meðtalin) og engin KPI-spjöld — aðeins borðið manns sjálfs.
+    // Einingarnar eru þá heldur ekki teiknaðar, svo latar gagnasóknir þeirra fara ekki af stað.
+    const topHtml = baraMitt ? '' : top.map(k => (k === 'dagskra' ? dagskraHtml() : bottomHtml(k))).join('');
+    const bottom = baraMitt ? '' : BOTTOM.filter(k => isOn(k) && top.indexOf(k) < 0).map(bottomHtml).join('');
 
     const selMarkup = selHtml(selRow);
     const nyleg = master.filter(r => ageDays(r) <= 30).length;
@@ -2200,7 +2203,7 @@
         (ppl.indexOf(n) < 0 ? '<p class="err">„' + esc(n) + '“ er ekki starfsmaður á þessu borði' + (n === AI_WORKER ? ' — Charlize er bunkinn á Master' : '') + '. Veldu þitt nafn í „Ég er“.</p>' : '') +
         (S.cfgOpen ? '<section class="panel" aria-label="Mitt vinnuborð">' + cfgHtml() + '</section>' : '') +
         (S.err ? '<p class="err">Náði ekki í málin: ' + esc(S.err) + ' <button type="button" class="btn iv sm" data-t5="reload">Reyna aftur</button></p>' : '') +
-        '<div class="kpis">' + kpiHtml(master, mine) + '</div>' +
+        (baraMitt ? '' : '<div class="kpis">' + kpiHtml(master, mine) + '</div>') +
         layout +
       '</div></div>';
 
@@ -2501,7 +2504,7 @@
         c.baraMitt = el.dataset.v === '1';
         S.view = c.baraMitt ? 'mitt' : 'master';
         render();
-        vistaCfg({ bara_mitt: c.baraMitt }, c.baraMitt ? 'Bara þitt borð — Master falinn' : 'Master borð sýnt aftur');
+        vistaCfg({ bara_mitt: c.baraMitt }, c.baraMitt ? 'Bara þitt borð — allt annað falið' : 'Master og einingar sýnd aftur');
         return;
       case 'done': done(id); return;
       case 'giveback': giveBack(id); return;
