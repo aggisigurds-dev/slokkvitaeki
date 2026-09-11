@@ -30,5 +30,16 @@
 --   1MNmojcpnza4PRJCjvbB3Qezj6Bqmevpb), arsskodun_report_facts 2026/6 = 3 tæki; doc_date færð á 2026-06-19 og
 --   storage_path sett. Parað sjálfkrafa við reikninginn: document_pairs 1081 „klarad".
 --
+-- ── #899 5 greidd drög í final (264.302 kr) ───────────────────────────────────────────────────────
+--   solur 440 R-000391 · 88 R-000034 · 154 R-000109 · 218 R-000164 · 106 R-000057: status drog → final. Endurstaðfest
+--   fyrir skrif: drog, paid_at til, dk_invoice_id til og Payday-spegillinn PAID. Engin peningahreyfing.
+--
+-- ── #904 Bílaverk (#674): úttektarskýrsla 2026 eftir reikningi R-000471 ─────────────────────────────
+--   Tækjalistinn stemmdi þegar (1 léttvatn + 2 duft 6 kg = reikningur = Ársskoðun). Skýrslan búin til í appinu fyrir
+--   Júlí 2026, skoðunaraðili Elías: customer_documents 9968 (doc_date 2026-07-01, storage_path sett),
+--   arsskodun_report_facts 2026/7 = 3. Glugganum var lokað meðan vistun stóð yfir, svo Drive-afritið fór ekki —
+--   sent eftir á með POST brunaholf /api/uttekt-upload (public_url): Drive 1G5dBQkexfPrWbxdF1fF-CPtjERJpqkE_,
+--   customer_base_id 821 fylltist og document_pairs 1158 varð „klarad".
+--
 -- ── #910 / #911 Drive-tvítök (254 reikninga-PDF, 106 skýrslu-PDF) ──────────────────────────────────
 --   Færð í möppuna „Eyđa - dublicates" (1CnnNHm1xCukiTs806z9Ha1nZnSELM9k8) — sjá niðurstöðu neðst þegar lokið.
