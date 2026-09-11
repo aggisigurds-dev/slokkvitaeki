@@ -1,0 +1,48 @@
+-- 2026-09-11 (kvöld) — Gagnaleiðréttingar samþykktar af Agnari: „1 ja 2 ja. 3 nei" og „ja matt endilega laga allt"
+--
+-- ÞETTA ER SKRÁ YFIR ÞAÐ SEM VAR GERT (keyrt beint með execute_sql, lesið til baka), ekki skrifta til að keyra aftur.
+-- Afrit: audit_vernd (gikkur á fyrirtaeki, customers_base, customer_documents, solur, uttaeki; handvirkt fyrir
+-- document_pairs og payday_invoices_slokk) og cowork_merge_backups (merge_customers). Engu var eytt varanlega.
+--
+-- ── 1. Þrettán rangar úttektarskýrslur aftengdar ("1 ja") ────────────────────────────────
+--   customer_documents 555, 389, 477, 370, 480, 390, 767, 255, 954, 1052, 911, 870, 940:
+--   sjálfvirk Drive-samsvörun við skrá af ÖÐRUM stað (t.d. K-50 ← „K.Rickter.pdf", Staðgreitt ← „Aðalskoðun
+--   Hafnarfirði 2025"), skráin horfin, staðurinn úr þjónustu án tækja.
+--   → fyrirtaeki_id = null, customer_base_id = null, reviewed = true, skýring aftast í notes.
+--   → 13 „vantar_reikning"-pör í document_pairs afrituð í audit_vernd (table_name 'document_pairs', op 'DELETE') og fjarlægð.
+--
+-- ── 2. CampEasy R-000247 (170.000 kr) — Payday-drögum eytt í Payday ("3 nei") ─────────────
+--   payday_invoices_slokk efa8a58d-7f03-4776-8cdb-afd87cbfe438: DRAFT → CANCELLED (afrit í audit_vernd), skýring í description.
+--   solur 299: krafa_sent_at, invoiced_at, dk_invoice_id → null; krafa_note: „Payday-drögum var eytt … bíður endursendingar
+--   eftir verðathugun". Salan birtist nú sem ÓSEND krafa (lokasending Agnars). Fyrri athugasemd: „Ath hvort það sé tilboðsverð".
+--
+-- ── 3. Ógildar kennitölur (vartala) — staðfest hjá Skattinum með /api/kt-lookup?kt= ──────────
+--   Korner (fyrirtaeki 1375, kúnni 890): 441199-2827 → 441199-2879 (Hársnyrtistofan Korner ehf).
+--   Hlíðasmári 19 (fyrirtaeki 190): 541099-2059 → 540199-2059; staður og öll gögn kúnna #417 flutt á nafnlausa kúnnann #916
+--     sem bar réttu kt (8 skjöl, 3 pör, 1 mál); #916 fékk nafn og heimilisfang, #417 merktur „(sameinað í #916)".
+--
+-- ── 4. Tvískráðir staðir sameinaðir (nýjasta tækjaskráning ræður; eldri tæki → status 'urelt') ──
+--   Skaptahlíð 4-10: #848 → #245. 245 fékk kt 681178-0159 (var 681179-0159), kúnna #787 og netfang Eignaumsjónar.
+--     7 skjöl og 3 pör af 848 á 245; par 1148 (tvítekið 2026) afritað og fjarlægt; skýrsla 669 merkt tvítekin (dup_of 9418).
+--     29 tæki 245 (skoðun jan. 2026) gilda; 27 tæki 848 (apríl 2024) → urelt. 848.stadur_nr → null (einkvæmni kt+stadur_nr).
+--   Mission á Íslandi: #1382 → #246 (Tjarnasel 2, kt 550103-3970). 7 tæki frá 2023 → urelt; pör 334 og 1511 afrituð og
+--     fjarlægð; skjöl 9928 og 1289 á 246, merkt tvítekin (dup_of 5920 / 891). Kúnni #894 merktur „(sameinað í #427)".
+--   Gullhamrar: tómur #1644 (kt 660304-2550, úr þjónustu) → #465 (Gullhamrar veitingar, 660304-2580). Kúnni #1099 merktur.
+--   Árakur 5: tómur #537 (rétta kt 510707-0280, úr þjónustu) → #145; 145 fékk kt 510707-0280 og kúnna #307; öll gögn #43 á
+--     #307 (4 skjöl, 2 pör, 2 tæki). Kúnni #43 merktur „(sameinað í #307)".
+--   Barónsstígur 43: #646 → #668. 668 fékk kt 501096-2619 (var 500196-2619) og kúnna #288; 4 tæki 646 (2024) → urelt; par 465
+--     afritað og fjarlægt; skjöl 646 á 668, skýrsla 129 merkt tvítekin (dup_of 1817). Sala R-000431 (solur 479) fékk rétta kt
+--     — röng kt er líkleg ástæða þess að bankakrafa stofnaðist ekki. Kúnni #268 merktur.
+--   DRA ehf. (Downtown Reykjavík Apartments, Rauðarárstíg 31): #1334 (Dra ehf, kt 651003-2560) → #490 (kt 691003-2560).
+--     37 tæki #1334 (skoðun 15.11.2025) flutt á 490; 34 eldri tæki 490 (okt. 2025) → urelt. Ársskoðun segir 33 léttvatn —
+--     athuga hvor talan er rétt. Kúnni #961 sameinaður í #815 og merktur.
+--   Munaðarlausir kúnnar halda röngu kt (customers_base.kennitala er NOT NULL + UNIQUE) en bera „(sameinað í #…)" í nafni.
+--
+-- ── 5. Óleyst (engin kennitala með einni innsláttarvillu fannst hjá Skattinum) ──────────────
+--   Hárbeitt (1355) · Húsfélagið Laufásvegi 10 (1363) · Three Sisters ehf – Ránargata 16 (1660, úr þjónustu)
+--   · Vogarcamping ehf (747, mánuður 83) · Batik ehf (kúnni 918, enginn staður) · kúnni 914 (nafnlaus, ekkert tengt).
+--
+-- ── Afturköllun ──────────────────────────────────────────────────────────────────────────
+--   select * from audit_vernd where changed_at >= '2026-09-11 15:30+00' order by id;   -- gamlar raðir (old_row)
+--   select * from cowork_merge_backups where created_at >= '2026-09-11 15:30+00';        -- raðir fyrir sameiningu
+--   Sameining afturkölluð: deleted_at = null á dauða staðnum + færa til baka eftir old_row.
