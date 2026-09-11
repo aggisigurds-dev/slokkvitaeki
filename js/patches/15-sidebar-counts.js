@@ -109,9 +109,10 @@
         .in('status', ['received', 'inprogress']);
       setBadge('workshop', ws.count || 0, 'orange');
 
-      // Lánstæki: loaned-out
+      // Lánstæki: loaned-out. 11.09.2026: 'til_radstofunar' er „laus" og 'verkstadi' er á
+      // verkstæði (v9.js:553) — merkið taldi öll 12 lausu tækin sem útlánuð.
       const ln = await sb.from('lanstaeki').select('id', { count: 'exact', head: true })
-        .neq('status', 'available').neq('status', 'Laust');
+        .not('status', 'in', '(available,Laust,til_radstofunar,verkstadi)');
       setBadge('lanstaeki', ln.count || 0, 'gray');
 
       // Geymsla: items in storage (no archived flag, count all)

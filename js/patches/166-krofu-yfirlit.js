@@ -357,10 +357,19 @@
       try {
         if (!localStorage.getItem('slokk_viewmode_phone_v1')) {
           localStorage.setItem('slokk_viewmode_phone_v1', '1');
-          if (m === 'desktop' || m === 'table') m = 'mobile';
+          if (m === 'desktop' || m === 'table') { m = 'mobile'; localStorage.setItem(VM_KEY, m); }
         }
       } catch (_) {}
     }
+    // 2026-09-11 (Verkefnalisti b5bb83da): sjálfvalin sýn var VISTUÐ við hverja
+    // ræsingu, svo gluggi sem var mjórri en 640 px eitt augnablik festi Síma-ham á
+    // tölvunni (mælt: 1289 px skjár í símaham). Nú vistast aðeins val notandans
+    // (applyViewMode(…, save)). Gamalt 'mobile' á tölvu án valmerkisins er líklegast
+    // sjálfvistað og víkur fyrir sjálfvali; eitt smell á Sími vistar það aftur.
+    try {
+      if (m === 'mobile' && !isPhoneDevice() && !localStorage.getItem('slokk_viewmode_valid_v1') &&
+          !(window.matchMedia && window.matchMedia('(max-width:640px)').matches)) m = null;
+    } catch (_) {}
     if (VM_MODES.indexOf(m) < 0) {
       m = (isPhoneDevice() || (window.matchMedia && window.matchMedia('(max-width:640px)').matches)) ? 'mobile' : 'desktop';
     }
@@ -384,7 +393,8 @@
       if (vp.getAttribute('content') !== open) vp.setAttribute('content', open);
     } catch (_) {}
   }
-  function applyViewMode(mode, rerender) {
+  // save=true AÐEINS þegar notandinn velur sjálfur (rofinn / setViewMode) — sjá b5bb83da í loadViewMode.
+  function applyViewMode(mode, rerender, save) {
     if (VM_MODES.indexOf(mode) < 0) mode = 'desktop';
     document.documentElement.dataset.viewmode = mode;
     // Vélbúnaðar-flagg (óháð valinni sýn) — banner-reglurnar í injectVmStyle
@@ -397,7 +407,7 @@
     try { document.dispatchEvent(new CustomEvent('slokk-viewmode', { detail: mode })); } catch (_) {}
     // Í app-ham vistum við EKKI — annars skrifaði þvingaða 'mobile' yfir raunverulegt
     // Sími/Tafla/Skjár val notandans í vafranum/hubbinu.
-    if (!inAppMode()) { try { localStorage.setItem(VM_KEY, mode); } catch (_) {} }
+    if (save && !inAppMode()) { try { localStorage.setItem(VM_KEY, mode); localStorage.setItem('slokk_viewmode_valid_v1', '1'); } catch (_) {} }
     const wrap = document.getElementById(VM_ID);
     if (wrap) wrap.querySelectorAll('[data-vm]').forEach(b => b.classList.toggle('on', b.dataset.vm === mode));
     if (rerender) {
@@ -419,7 +429,7 @@
         '<span class="ky-vm-ico">' + ico + '</span><span class="ky-vm-lbl">' + lbl + '</span></button>'
     ).join('');
     wrap.querySelectorAll('[data-vm]').forEach(b => b.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation(); applyViewMode(b.dataset.vm, true);
+      e.preventDefault(); e.stopPropagation(); applyViewMode(b.dataset.vm, true, true);
     }));
     return wrap;
   }
@@ -2656,7 +2666,7 @@
     }
   }
 
-  window.KrofuYfirlit = { show, load, refreshBadge, getViewMode, setViewMode: (m) => applyViewMode(m, true) };
+  window.KrofuYfirlit = { show, load, refreshBadge, getViewMode, setViewMode: (m) => applyViewMode(m, true, true) };
   console.log('[patch-166] Kröfu yfirlit installed — krafa í heimabanka per fyrirtæki');
 })();
 /* === END KRÖFU YFIRLIT === */

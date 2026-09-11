@@ -40,6 +40,12 @@
           if(ta) ta.value = supaVal;
         }
       }
+      // 2026-09-11: dálkurinn var ekki til fyrr en í dag, svo textinn bjó aðeins í vafra
+      // einnar vélar. Texti sem er til hér en ekki á þjóninum fer upp einu sinni.
+      else if(!r.error && r.data && r.data.vidbota_upplysingar === null && local){
+        var up = await DB.sb.from('fyrirtaeki').update({ vidbota_upplysingar: local }).eq('id', coId);
+        if(up && up.error && window.logProblem) window.logProblem('vbu-upload', 'fyrirtaeki ' + coId + ': ' + (up.error.message || up.error));
+      }
     } catch(e){ /* column doesn't exist - localStorage only */ }
     return local;
   }
@@ -49,7 +55,8 @@
     // Try Supabase sync in background
     try {
       var r = await DB.sb.from('fyrirtaeki').update({ vidbota_upplysingar: val }).eq('id', coId);
-      // Silent fail if column doesn't exist
+      // Villa er skráð — þögul bilun hér þýddi að textinn samstilltist aldrei (11.09.2026).
+      if(r.error && window.logProblem) window.logProblem('vbu-save', 'fyrirtaeki ' + coId + ': ' + (r.error.message || r.error));
       return !r.error;
     } catch(e){ return false; }
   }
