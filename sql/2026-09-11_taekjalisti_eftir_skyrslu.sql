@@ -47,6 +47,13 @@
 --   99 listar sem víkja frá prófíl+skýrslu (26 með 5+ mun, t.d. Steypustöðin 29 á hverjum af þremur stöðum — líklega
 --   samtala fyrir alla staðina). Þeir 99 eru EKKI snertir: bíða svars Agnars.
 --
+-- ── 6. Tómir Ársskoðunarlistar ÁN skýrslu fylltir þar sem prófíll = reikningur — 15 staðir (kl. ~21:10) ──
+--   Af 21 tómum lista án úttektarskýrslu stemmdi nýjasti úttektarreikningurinn (sala eða uttekt_reikningur_facts, ekki
+--   búðarsala) við prófílinn á 15: 803, 850, 1163, 1235, 1262, 1497, 1504, 1510, 1531, 1557, 1570, 1594, 1626, 1733, 1761.
+--   Listinn = tegundir prófílsins (type+size → 8 lyklar); engin „annad"-tæki. Afrit: audit_vernd 63456.
+--   Sleppt: 2 án reiknings (1638 Tannlæknastofa Skipholti 50d, 1799 Efnalaugin Glæsir) og 4 þar sem reikningur ≠ prófíll
+--   (830 Eignarekstur 4/7, 857 Heimaleiga EA Law 4/5, 1409 Álfaskeið 78-80 1/6, 1732 Berjarimi 14 6/2).
+--
 -- ── Afturköllun ────────────────────────────────────────────────────────────────────────────────
 --   select * from audit_vernd where changed_at >= '2026-09-11 18:30+00' and table_name in ('uttaeki', 'app_settings');
 --   Úrelt tæki: status aftur í old_row->>'status'. Ný tæki: status 'urelt' where serial like 'AE20260911-%' (ekki eyða).
