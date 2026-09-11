@@ -351,25 +351,28 @@
     if (!rows.length || rows[0].status !== 'lokad') throw new Error('málið fannst ekki');
     toast('Merkt lokið');
   });
-  async function createCase(title, cust) {
+  async function createCase(o) {
     const c = sb();
     if (!c) { toast('Engin tenging við gagnagrunn', true); return false; }
-    let nafn = cust || null, baseId = null, fid = null;
-    if (nafn) {
-      try {
-        const rf = await c.from('fyrirtaeki').select('id,nafn,customer_base_id').ilike('nafn', nafn.replace(/[%_\\]/g, x => '\\' + x)).is('deleted_at', null).limit(2);
-        if (rf.data && rf.data.length === 1) { nafn = rf.data[0].nafn; baseId = rf.data[0].customer_base_id || null; fid = rf.data[0].id; }
-      } catch (_) {}
-    }
-    const nuna = new Date().toISOString();
+    let nafn = o.cust || null, baseId = null, fid = null;
+    try {
+      const q = o.fyr && o.fyr.id
+        ? c.from('fyrirtaeki').select('id,nafn,customer_base_id').eq('id', o.fyr.id).limit(1)
+        : nafn ? c.from('fyrirtaeki').select('id,nafn,customer_base_id').ilike('nafn', nafn.replace(/[%_\\]/g, x => '\\' + x)).is('deleted_at', null).limit(2) : null;
+      const rf = q ? await q : null;
+      if (rf && rf.data && rf.data.length === 1) { nafn = rf.data[0].nafn; baseId = rf.data[0].customer_base_id || null; fid = rf.data[0].id; }
+    } catch (_) {}
+    const n = nu(), eigandi = normW(o.eigandi) || null, nuna = new Date().toISOString();
     const obj = {
-      title, notes: '', type: 'annad', status: 'nytt', priority: 'venjulegur',
-      customer_nafn: nafn, customer_base_id: baseId, fyrirtaeki_id: fid, assigned_to: null, tags: [],
-      source: 'beint', important: false, created_at: nuna, created_by: nu(), updated_at: nuna
+      title: o.title, notes: o.lysing || '', type: 'annad', status: 'nytt', priority: 'venjulegur',
+      customer_nafn: nafn, customer_base_id: baseId, fyrirtaeki_id: fid, assigned_to: eigandi, tags: [],
+      source: 'beint', important: !!o.aridandi, due_at: /^\d{4}-\d{2}-\d{2}$/.test(o.frestur || '') ? new Date(o.frestur + 'T12:00:00').toISOString() : null,
+      created_at: nuna, created_by: n, updated_at: nuna
     };
     const r = await c.from('thjonustubeidni').insert(obj).select('id').single();
     if (r.error || !r.data) { toast('Málið vistaðist ekki: ' + ((r.error && r.error.message) || 'ekkert svar'), true); return false; }
-    toast('Komið á Master borð' + (fid ? ' · tengt ' + nafn : ''));
+    S.sel[n] = r.data.id;
+    toast((!eigandi ? 'Komið á Master borð' : lagt(eigandi) === lagt(n) ? 'Komið á borðið þitt' : 'Komið á borð ' + eigandi) + (fid ? ' · tengt ' + nafn : ''));
     await load(true);
     return true;
   }
@@ -423,6 +426,7 @@
     }
     return [];
   }
+  const spjold = n => cardsFor(n).slice().sort((a, b) => (+a.slot || 0) - (+b.slot || 0));
   const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   function week() {
     const jobs = jobsFor(nu()), out = [], d0 = new Date();
@@ -627,6 +631,34 @@
       '.boardstrip b{font-family:var(--disp);font-size:16px;font-weight:700}.boardstrip .v{font-family:var(--mono);font-size:11px;color:var(--mute);margin-right:10px}',
       '.composer{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto auto;gap:8px;padding:12px 16px}',
       '.composer input[type="text"]{height:34px;padding:0 10px;border:1px solid var(--edge);border-radius:4px;background:#fff;font:14px var(--body);color:var(--ink);min-width:0}',
+      '.leit{position:relative;max-width:640px}',
+      '.leit input{width:100%;height:40px;padding:0 14px;border:1px solid var(--edge);border-radius:5px;background:var(--well);box-shadow:var(--wellsh);font:14px var(--body);color:var(--ink)}',
+      '.pop{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:60;max-height:min(60vh,520px);overflow:auto;background:#fff;border:1px solid var(--rule3);border-radius:5px;box-shadow:0 18px 40px -12px rgba(22,21,19,.45)}',
+      '.plbl{padding:8px 14px 4px;font:600 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}',
+      '.pitem{display:flex;align-items:center;gap:10px;width:100%;padding:8px 14px;border:0;border-top:1px solid var(--rule2);background:none;text-align:left;font:inherit;color:var(--ink);cursor:pointer}',
+      '.pitem.on,.pitem:hover{background:#f6f2e8}',
+      '.pmain{display:flex;flex-direction:column;flex:1;min-width:0;color:inherit;text-decoration:none}',
+      '.pitem b{font-size:13.5px;overflow-wrap:anywhere}.pitem span{font-size:12px;color:var(--mute)}.pmal{flex-direction:column;align-items:flex-start;gap:1px}',
+      '.pnone{padding:10px 14px;font-size:12.5px;color:var(--mute)}',
+      '.composer.ny{grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) auto;align-items:start}',
+      '.nyfyr{position:relative;min-width:0}.nyfyr input{width:100%}.valid{display:block;margin-top:3px;font-size:11.5px;font-weight:600;color:var(--green)}',
+      '.nylbl{display:flex;flex-direction:column;gap:3px}.nylbl select,.nylbl input{height:34px;padding:0 8px;border:1px solid var(--edge);border-radius:4px;background:#fff;font:13px var(--body);color:var(--ink)}',
+      '.composer textarea{grid-column:1 / 3;min-height:34px;padding:7px 10px;border:1px solid var(--edge);border-radius:4px;background:#fff;font:13px var(--body);color:var(--ink);resize:vertical}',
+      '.nychk{display:flex;align-items:center;gap:6px;font-size:13px}.nybtn{display:flex;gap:8px;grid-column:1 / -1;justify-content:flex-end}',
+      '.t5toast .undo{margin-left:12px;height:26px;padding:0 10px;border:1px solid #5a4410;border-radius:4px;background:var(--gside);color:#1b1405;font:700 12px var(--body);cursor:pointer}',
+      '.skwrap{display:flex;flex-direction:column;gap:12px;padding:12px 14px}.krass{display:flex;flex-direction:column;gap:4px}',
+      '.krass textarea{width:100%;min-height:70px;padding:10px 12px;border:1px solid var(--edge);border-radius:4px;background:#fffdf7;box-shadow:var(--wellsh);font:13.5px/1.55 var(--body);color:var(--ink);resize:vertical}',
+      '.skgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;align-items:start}',
+      '.skc{display:flex;flex-direction:column;gap:4px;padding:6px 8px 8px;border:1px solid var(--rule);border-top:4px solid var(--rule3);border-radius:4px;background:linear-gradient(180deg,#fff,#fbf9f5);box-shadow:var(--keysh);min-width:0}',
+      '.skc.yfir{outline:2px dashed var(--g6);outline-offset:2px}.skh{display:flex;align-items:center;gap:4px}',
+      '.skgrip{cursor:grab;color:var(--mute);font-size:15px;padding:0 4px 0 0;user-select:none}',
+      '.skdot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.2);padding:0;cursor:pointer;opacity:.4}.skdot.on{opacity:1;box-shadow:0 0 0 2px #fff,0 0 0 3px var(--ink2)}',
+      '.skb{min-width:24px;height:24px;padding:0 6px;border:1px solid var(--edge);border-radius:3px;background:var(--key);font:600 12px/1 var(--body);color:var(--ink2);cursor:pointer}.skb[disabled]{opacity:.35;cursor:default}.skx{color:var(--terra)}',
+      '.skn{width:100%;border:0;border-bottom:1px dashed transparent;background:transparent;font:700 14px var(--body);color:var(--ink);padding:3px 2px}.skn:focus{outline:none;border-bottom-color:var(--g6)}',
+      '.skt{width:100%;border:0;background:transparent;font:13px/1.45 var(--body);color:var(--ink2);padding:2px;resize:vertical;min-height:38px}.skt:focus{outline:none;background:#fffdf7}',
+      '.skm{display:flex;flex-direction:column;align-items:flex-start;gap:4px}.skm img{max-width:100%;max-height:160px;border-radius:3px;border:1px solid var(--rule2)}',
+      '.skf{font-size:11.5px;color:var(--mute)}.skstada{font-size:11.5px;color:var(--mute)}',
+      '.sknew{min-height:96px;border:1px dashed var(--edge2);border-radius:4px;background:transparent;font:600 13px var(--body);color:var(--mute);cursor:pointer}.sknew:hover{background:#fffdf7;color:var(--ink)}',
       '.err{padding:10px 14px;border:1px solid rgba(181,82,42,.45);border-radius:4px;background:#fff7f2;color:var(--terra);font-size:12.5px}',
       '.t5toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99990;max-width:min(92vw,520px);padding:11px 16px;border:1px solid #000;border-radius:5px;background:var(--slab);color:var(--on);font:600 12.5px var(--body);box-shadow:var(--slabsh)}',
       '.t5toast.warn{border-top:3px solid var(--terra)}',
@@ -651,7 +683,7 @@
         '.sel.side{display:none}' +
         '.frow{grid-template-columns:minmax(0,1fr) auto;padding:12px}.frow .age{grid-column:1 / -1}' +
         '.cfgrow{grid-template-columns:30px minmax(0,1fr) auto;padding:10px 12px}.cfgrow .seg{grid-column:2 / -1;justify-self:start}' +
-        '.composer{grid-template-columns:minmax(0,1fr)}' +
+        '.composer,.composer.ny{grid-template-columns:minmax(0,1fr)}.composer textarea{grid-column:auto}.leit{max-width:none}' +
       '}',
       '@media (prefers-reduced-motion: reduce){.btn{transition:none}}'
     ].join('\n');
@@ -679,6 +711,12 @@
     r.addEventListener('click', onClick);
     r.addEventListener('change', onChange);
     r.addEventListener('keydown', onKey);
+    r.addEventListener('input', onInput);
+    r.addEventListener('focusout', e => { const el = e.target; if (el && el.dataset && el.dataset.sk) skola(el.dataset.sk === 'krass' ? '__krass' : el.dataset.skid); });
+    ['dragstart', 'dragover', 'drop', 'dragend'].forEach(t => r.addEventListener(t, onDrag));
+    r.addEventListener('paste', onPaste);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) skolaAllt(); });
+    window.addEventListener('pagehide', skolaAllt);
     return r;
   }
 
@@ -823,23 +861,34 @@
   function bottomHtml(k) {
     const n = nu();
     if (k === 'skipulag') {
-      const cards = cardsFor(n).slice().sort((a, b) => (+a.slot || 0) - (+b.slot || 0));
-      const body = cards.length
-        ? '<div class="cards">' + cards.slice(0, 12).map(cd => {
-            const row = cd.verkbord_id != null ? S.rows.find(x => String(x.id) === String(cd.verkbord_id)) : null;
-            const nafn = (row && row.customer_nafn) || cd.name || '';
-            const titill = (row && row.title) || cd.title || '';
-            const t = cd.type != null && SB_TEG[cd.type] ? SB_TEG[cd.type] : null;
-            const stada = cd.verkbord_id != null
-              ? (row ? (isFree(row) ? 'Á Master' : 'Á borði ' + normW(row.assigned_to)) : 'Mál lokað eða í geymslu')
-              : 'Minnispunktur';
-            return '<div class="pcard">' + (nafn ? '<b>' + esc(nafn) + '</b>' : '') + (titill ? '<span>' + esc(titill) + '</span>' : '') +
-              '<span class="pt">' + (t ? '<i class="dot" style="background:' + t[1] + '"></i>' + esc(t[0]) + ' · ' : '') + esc(stada) + '</span></div>';
-          }).join('') + '</div>' +
-          (cards.length > 12 ? '<div class="more">+ ' + (cards.length - 12) + ' spjöld til viðbótar á skipulagsborðinu</div>' : '')
-        : emptyHtml('Engin spjöld á skipulagsborðinu þínu.');
-      return modPanel(k, cards.length + ' spjöld', body,
-        '<button type="button" class="btn gold sm" data-t5="go" data-view="verkbord" data-anchor="vb-skipulag">Opna skipulagsborð ›</button>');
+      // Agnar 11.09.2026: „algjörlega læst og tilgangslaust" · „opna á allt og customizable, geta eytt hlutum
+      // og skrifað þar sem maður vill skrifa". Sömu gögn og 305: skipulagsbord.by_staff.<nafn> = { cards, krass }.
+      const cards = spjold(n);
+      const krass = S.skDrog.__krass != null ? S.skDrog.__krass : String(P('skipulagsbord.by_staff.' + n + '.krass') || '');
+      const kort = cards.map((cd, i) => {
+        const d = S.skDrog[cd.id] || {}, id = esc(cd.id);
+        const nafn = d.name != null ? d.name : (cd.name || ''), texti = d.title != null ? d.title : (cd.title || '');
+        const row = cd.verkbord_id != null ? S.rows.find(x => String(x.id) === String(cd.verkbord_id)) : null;
+        const t = cd.type != null && SB_TEG[cd.type] ? SB_TEG[cd.type] : null;
+        return '<div class="skc" data-skid="' + id + '" style="border-top-color:' + (t ? t[1] : 'var(--rule3)') + '">' +
+          '<div class="skh"><span class="skgrip" draggable="true" data-skdrag="' + id + '" title="Dragðu til að færa">⠿</span>' +
+            SB_TEG.map((x, ti) => '<button type="button" class="skdot' + (cd.type === ti ? ' on' : '') + '" data-t5="sk-type" data-skid="' + id + '" data-i="' + ti + '" style="background:' + x[1] + '" title="' + esc(x[0]) + '" aria-label="' + esc(x[0]) + '"></button>').join('') +
+            '<span class="grow"></span>' +
+            '<button type="button" class="skb" data-t5="sk-faera" data-skid="' + id + '" data-v="-1" aria-label="Færa framar"' + (i === 0 ? ' disabled' : '') + '>‹</button>' +
+            '<button type="button" class="skb" data-t5="sk-faera" data-skid="' + id + '" data-v="1" aria-label="Færa aftar"' + (i === cards.length - 1 ? ' disabled' : '') + '>›</button>' +
+            '<button type="button" class="skb skx" data-t5="sk-del" data-skid="' + id + '" aria-label="Eyða spjaldi">✕</button></div>' +
+          '<input class="skn" data-sk="name" data-skid="' + id + '" value="' + esc(nafn) + '" placeholder="Fyrirsögn" aria-label="Fyrirsögn">' +
+          '<textarea class="skt" data-sk="title" data-skid="' + id + '" rows="' + Math.min(8, Math.max(2, String(texti).split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er…" aria-label="Texti">' + esc(texti) + '</textarea>' +
+          (cd.mynd ? '<div class="skm"><a href="' + esc(cd.mynd) + '" target="_blank" rel="noopener"><img src="' + esc(cd.mynd) + '" alt="Mynd á spjaldi" loading="lazy"></a>' +
+            '<button type="button" class="skb" data-t5="sk-mynd-x" data-skid="' + id + '">Fjarlægja mynd</button></div>' : '') +
+          (cd.verkbord_id != null ? '<div class="skf">' + (row ? '<button type="button" class="clink" data-t5="skoda" data-id="' + row.id + '">Opna mál ›</button> · ' + esc(eigandaTexti(row, n)) : 'Málið er lokað eða í geymslu') + '</div>' : '') +
+        '</div>';
+      }).join('');
+      const body = '<div class="skwrap">' +
+        '<label class="krass"><span class="lbl">Krassblað</span><textarea data-sk="krass" rows="' + Math.min(14, Math.max(3, krass.split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er — vistast sjálfkrafa og fylgir þér á milli tölva.">' + esc(krass) + '</textarea></label>' +
+        '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny">+ Nýtt spjald</button></div>' +
+        '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot beint í spjald.') + '</div></div>';
+      return modPanel(k, cards.length + ' spjöld', body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
     }
     if (k === 'vinnublod') {
       const c = S.counts.sara;
@@ -946,6 +995,90 @@
       '<div class="cfgfoot">Breytingar vistast strax og fylgja þér á milli tölva og í appið. Hver hamur er sín opna: einingar hamsins fara efst — á breiðum skjá í dálkinn vinstra megin.</div>';
   }
 
+  /* ── leit: fyrirtæki og opin mál ── */
+  // Fyrirtækjalistinn er þegar í minni (Companies.list — fyrirtaeki án eyddra, 114 endurnýjar á 60 s).
+  // Sé hann ekki kominn er spurt beint í fyrirtaeki.
+  const fold = s => String(s || '').toLocaleLowerCase('is').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ð/g, 'd').replace(/þ/g, 'th').replace(/æ/g, 'ae');
+  let _leitT = 0, _leitNr = 0;
+  async function finnaFyrirtaeki(q) {
+    const f = fold(q), tolur = q.replace(/\D/g, '');
+    let listi = [];
+    try { listi = window.Companies && Array.isArray(Companies.list) ? Companies.list : []; } catch (_) {}
+    let nidur = [];
+    if (listi.length) {
+      nidur = listi.filter(x => x && !x.deleted_at && (fold(x.nafn).indexOf(f) >= 0 || fold(x.heimilisfang).indexOf(f) >= 0 ||
+        (tolur.length >= 4 && String(x.kennitala || '').replace(/\D/g, '').indexOf(tolur) >= 0)));
+    } else if (sb()) {
+      const h = q.replace(/[,()"%*\\]/g, ' ').trim();
+      try {
+        const r = await sb().from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,postnumer').is('deleted_at', null)
+          .or('nafn.ilike."%' + h + '%",heimilisfang.ilike."%' + h + '%"' + (tolur.length >= 4 ? ',kennitala.ilike."%' + tolur + '%"' : '')).limit(40);
+        nidur = r.data || [];
+      } catch (_) {}
+    }
+    const byrjar = x => (fold(x.nafn).indexOf(f) === 0 ? 0 : 1);
+    return nidur.sort((a, b) => byrjar(a) - byrjar(b) || String(a.nafn || '').length - String(b.nafn || '').length).slice(0, 12)
+      .map(x => ({ id: x.id, nafn: x.nafn || '', kt: x.kennitala || '', heim: [x.heimilisfang, x.postnumer].filter(Boolean).join(' ') }));
+  }
+  function leita(k, q) {
+    const st = k === 'nc' ? S.ny : S.leit, nr = ++_leitNr;
+    st.q = q;
+    st.idx = -1;
+    if (k === 'nc') st.fyr = null;                         // nýr innsláttur = ekkert fyrirtæki valið
+    clearTimeout(_leitT);
+    if (String(q || '').trim().length < 2) { if (k === 'nc') st.tillogur = []; else st.fyr = []; st.opid = false; render(); return; }
+    _leitT = setTimeout(async () => {
+      const nidur = await finnaFyrirtaeki(String(q).trim());
+      if (nr !== _leitNr) return;
+      if (k === 'nc') S.ny.tillogur = nidur; else S.leit.fyr = nidur;
+      st.opid = true;
+      render();
+    }, 160);
+  }
+  const malLeit = q => { const f = fold(q); return f.length < 2 ? [] : S.rows.filter(r => fold([r.title, whereOf(r), r.summary].join(' ')).indexOf(f) >= 0).sort(rodun).slice(0, 8); };
+  function leitHtml() {
+    const L = S.leit, q = String(L.q || '').trim();
+    let pop = '';
+    if (L.opid && q.length >= 2) {
+      const opin = fid => S.rows.filter(r => String(r.fyrirtaeki_id) === String(fid)).length;
+      const fyr = L.fyr.map((x, i) => '<div class="pitem' + (L.idx === i ? ' on' : '') + '">' +
+          '<a class="pmain" href="#company/' + x.id + '" data-t5="fyr-id" data-fid="' + x.id + '"><b>' + esc(x.nafn) + '</b><span>' + esc([x.heim, x.kt].filter(Boolean).join(' · ')) + '</span></a>' +
+          (opin(x.id) ? '<button type="button" class="btn iv sm" data-t5="filter" data-f="f:' + x.id + '">' + opin(x.id) + ' opin mál ›</button>' : '') + '</div>').join('');
+      const mal = malLeit(q).map(r => '<button type="button" class="pitem pmal" data-t5="skoda" data-id="' + r.id + '"><b>' + esc(r.title || '(ónefnt mál)') + '</b>' +
+          '<span>' + esc([whereOf(r), eigandaTexti(r, nu())].filter(Boolean).join(' · ')) + '</span></button>').join('');
+      pop = '<div class="pop"><div class="plbl">Fyrirtæki</div>' + (fyr || '<div class="pnone">Ekkert fyrirtæki fannst.</div>') +
+        (mal ? '<div class="plbl">Opin mál</div>' + mal : '') + '</div>';
+    }
+    return '<div class="leit"><input type="search" data-k="lq" value="' + esc(L.q) + '" placeholder="Leita að fyrirtæki, kennitölu eða máli…" aria-label="Leita að fyrirtæki eða máli" autocomplete="off">' + pop + '</div>';
+  }
+  function composerHtml() {
+    const n = nu(), ppl = folk(), N = S.ny, q = String(N.q || '').trim();
+    const pop = !N.opid || q.length < 2 ? '' : '<div class="pop">' + (N.tillogur.length
+      ? N.tillogur.map((x, i) => '<button type="button" class="pitem pmal' + (N.idx === i ? ' on' : '') + '" data-t5="ny-fyr" data-i="' + i + '"><b>' + esc(x.nafn) + '</b><span>' + esc([x.heim, x.kt].filter(Boolean).join(' · ')) + '</span></button>').join('')
+      : '<div class="pnone">Ekkert fyrirtæki fannst — málið vistast með nafninu eins og það er skrifað.</div>') + '</div>';
+    return '<section class="panel" aria-label="Nýtt mál"><div class="composer ny">' +
+      '<input type="text" data-k="nt" placeholder="Hvað þarf að gera?" aria-label="Titill máls">' +
+      '<div class="nyfyr"><input type="text" data-k="nc" value="' + esc(N.q) + '" placeholder="Fyrirtæki — byrjaðu að skrifa" aria-label="Fyrirtæki" autocomplete="off">' +
+        (N.fyr ? '<span class="valid">✓ ' + esc(N.fyr.nafn) + '</span>' : '') + pop + '</div>' +
+      '<label class="nylbl"><span class="lbl">Setja á</span><select data-k="ne" aria-label="Setja málið á">' +
+        (ppl.indexOf(n) >= 0 ? '<option value="' + esc(n) + '" selected>Mitt borð (' + esc(n) + ')</option>' : '') +
+        '<option value="">Master</option>' + ppl.filter(x => x !== n).map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join('') + '</select></label>' +
+      '<textarea data-k="nl" rows="2" placeholder="Lýsing (valfrjálst)" aria-label="Lýsing"></textarea>' +
+      '<label class="nylbl"><span class="lbl">Frestur</span><input type="date" data-k="nd" aria-label="Frestur"></label>' +
+      '<label class="nychk"><input type="checkbox" data-k="ni"> Áríðandi</label>' +
+      '<div class="nybtn"><button type="button" class="btn gold sm" data-t5="composer-save">Vista mál</button>' +
+        '<button type="button" class="btn iv sm" data-t5="composer">Hætta við</button></div>' +
+    '</div></section>';
+  }
+  function veljaNyFyr(i) {
+    const x = S.ny.tillogur[i], root = rot();
+    if (!x) return;
+    const f = root && root.querySelector('[data-k="nc"]');
+    if (f) f.value = x.nafn;                               // áður en teiknað er — drögin taka gildið með sér
+    S.ny.fyr = x; S.ny.q = x.nafn; S.ny.opid = false; S.ny.idx = -1;
+    render();
+  }
+
   let _frestad = 0;
   function render() {
     const v = document.getElementById(VIEW_ID);
@@ -955,7 +1088,8 @@
     const mount = root.querySelector('.t5-mount');
     // Opinn fellilisti lokast ef teiknað er undir honum — bíða þar til hann er frá.
     const ae = root.activeElement;
-    if (ae && ae.tagName === 'SELECT') { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
+    // Opinn fellilisti lokast og texti í ritun á skipulagsborði truflast ef teiknað er undir — bíða.
+    if (ae && (ae.tagName === 'SELECT' || (ae.dataset && ae.dataset.sk))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     const n = nu(), c = cfg(), mode = MODES[c.mode];
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // Hvaða opið mál sem er má skoða — ekki aðeins þau á mínu borði. 0 = lokað viljandi (✕).
@@ -964,6 +1098,7 @@
     const selRow = selId ? S.rows.find(r => r.id === selId) || null : null;
     const selMinn = !!(selRow && onBoardOf(selRow, n));
     const visible = feedRows(master);
+    const feedFalinn = baraMitt && !serSia(S.filter);      // síað á fyrirtæki/starfsmann/öll sýnir listann líka í „bara mitt"
     const now = new Date();
     const hot = S.rows.filter(r => r.important).length;
     const ppl = folk();
@@ -991,14 +1126,14 @@
     const mineHtml = '<section class="panel colmine" aria-label="Mitt borð">' +
         '<header class="phead">' + plate('03') + '<h2 class="ptitle">Mitt borð</h2><span class="sum">' + mine.length + ' mál</span>' +
           '<span class="grow"></span><button type="button" class="btn iv sm" data-t5="take-next">Taka næsta ›</button></header>' +
-        (baraMitt ? selUtan : '') +
+        (feedFalinn ? selUtan : '') +
         (mine.length
           ? mine.map(r => mineRow(r, r.id === selId) + (r.id === selId ? '<div class="sel inline">' + selMarkup + '</div>' : '')).join('')
           : emptyHtml('Borðið þitt er autt. Taktu mál af Master eða skráðu nýtt mál á þig.')) +
       '</section>';
     const board = mode.board
-      ? '<div class="board' + (baraMitt ? ' bara' : '') + '" data-view="' + (baraMitt ? 'mitt' : S.view) + '">' +
-          (baraMitt ? '' : '<div class="seg phone-seg" role="group" aria-label="Borð">' +
+      ? '<div class="board' + (feedFalinn ? ' bara' : '') + '" data-view="' + (feedFalinn ? 'mitt' : S.view) + '">' +
+          (feedFalinn ? '' : '<div class="seg phone-seg" role="group" aria-label="Borð">' +
             '<button type="button" data-t5="view" data-v="master" aria-pressed="' + (S.view === 'master') + '">' + esc(siuHeiti) + '<span class="c">' + visible.length + '</span></button>' +
             '<button type="button" data-t5="view" data-v="mitt" aria-pressed="' + (S.view === 'mitt') + '">Mitt borð<span class="c">' + mine.length + '</span></button></div>' +
           '<section class="panel colmaster" aria-label="' + esc(siuHeiti) + '">' +
@@ -1039,11 +1174,8 @@
           '<button type="button" class="btn iv" data-t5="cfg" aria-expanded="' + S.cfgOpen + '">⚙ Mitt vinnuborð</button>' +
           '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' +
         '</div></div>' +
-        (S.composer ? '<section class="panel" aria-label="Nýtt mál"><div class="composer">' +
-            '<input type="text" data-k="nt" placeholder="Hvað þarf að gera?" aria-label="Titill máls">' +
-            '<input type="text" data-k="nc" placeholder="Fyrirtæki (valfrjálst)" aria-label="Fyrirtæki">' +
-            '<button type="button" class="btn gold sm" data-t5="composer-save">Setja á Master</button>' +
-            '<button type="button" class="btn iv sm" data-t5="composer">Hætta við</button></div></section>' : '') +
+        leitHtml() +
+        (S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
           Object.keys(MODES).map(k => '<button type="button" data-t5="mode" data-mode="' + k + '" aria-pressed="' + (c.mode === k) + '">' + MODES[k].l + '</button>').join('') +
         '</div><span class="grow"></span><div class="seg" role="group" aria-label="Borðið">' +
@@ -1059,8 +1191,9 @@
 
     // Hálfskrifaður texti (nýtt mál, flýtileið) og fókus lifa endurteikningu af.
     const fokus = ae && ae.dataset ? ae.dataset.k : null;
+    const bendill = ae && typeof ae.selectionStart === 'number' ? [ae.selectionStart, ae.selectionEnd] : null;
     const drog = {};
-    root.querySelectorAll('input[data-k]').forEach(i => { drog[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value; });
+    root.querySelectorAll('input[data-k], textarea[data-k], select[data-k]').forEach(i => { drog[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value; });
     // Skrun innan pósts og vikunnar heldur sér ef sama mál er enn valið.
     const SKRUN = '.well p, .week, .seg.modeseg';
     const skrunSel = v.dataset.t5sel === String(selId);
@@ -1068,11 +1201,11 @@
     mount.innerHTML = html;
     v.dataset.t5sel = String(selId);
     if (skrunSel) root.querySelectorAll(SKRUN).forEach((x, i) => { if (skrun[i]) { x.scrollTop = skrun[i][0]; x.scrollLeft = skrun[i][1]; } });
-    root.querySelectorAll('input[data-k]').forEach(i => {
+    root.querySelectorAll('input[data-k], textarea[data-k], select[data-k]').forEach(i => {
       const k = i.dataset.k;
       if (k in drog) { if (i.type === 'checkbox') i.checked = drog[k]; else i.value = drog[k]; }
     });
-    if (fokus) { const f = root.querySelector('[data-k="' + fokus + '"]'); if (f) f.focus(); }
+    if (fokus) { const f = root.querySelector('[data-k="' + fokus + '"]'); if (f) { f.focus(); try { if (bendill && f.setSelectionRange) f.setSelectionRange(bendill[0], bendill[1]); } catch (_) {} } }
   }
 
   // Eftir smell á mál: tryggja að valið mál sjáist (hliðarspjaldið á tölvu, spjaldið undir línunni í síma).
@@ -1104,17 +1237,139 @@
     if (f) { f.focus(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
   }
 
+  /* ── skipulagsborð: vistun ── */
+  // Spjöldin eru skrifuð sem heilt fylki, svo hver breyting er reiknuð á NÝJASTA lista stillinganna og vistanir
+  // fara í röð. Texti í ritun lifir í S.skDrog þar til þjónninn hefur tekið við honum og fer með í hverja vistun.
+  const nyttSkId = () => 'sb' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const naestaSlot = l => l.reduce((m, x) => Math.max(m, Number(x.slot) || 0), -1) + 1;
+  let _skRod = Promise.resolve();
+  function vistaSpjold(breyta, skilabod) {
+    const verk = _skRod.then(async () => {
+      if (!stillingarTilbunar()) { toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; }
+      const n = nu();
+      const nyr = breyta(cardsFor(n).map(x => Object.assign({}, x, S.skDrog[x.id] || {})));
+      _vistar++;
+      S.skStada = 'Vista…';
+      stimplaSk();
+      let ok = false;
+      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { cards: nyr } } } })); } catch (_) {}
+      _vistar--;
+      S.skStada = ok ? 'Vistað kl. ' + klukka(new Date()) : '⚠ Vistaðist ekki — textinn er enn á skjánum og reynt verður aftur.';
+      stimplaSk();
+      if (!ok) toast('Skipulagsborðið vistaðist ekki. Afritaðu textann ef þú ert að loka.', true);
+      else if (skilabod) toast(skilabod);
+      return ok;
+    });
+    _skRod = verk.catch(() => false);
+    return verk;
+  }
+  function stimplaSk() { const root = rot(), el = root && root.querySelector('.skstada'); if (el) el.textContent = S.skStada || ''; }
+  const _skT = {}, _skBid = {};
+  function bida(lykill, fn) { clearTimeout(_skT[lykill]); _skBid[lykill] = fn; _skT[lykill] = setTimeout(() => { delete _skBid[lykill]; fn(); }, 700); }
+  function skola(lykill) { if (!_skBid[lykill]) return; clearTimeout(_skT[lykill]); const fn = _skBid[lykill]; delete _skBid[lykill]; fn(); }
+  const skolaAllt = () => Object.keys(_skBid).forEach(skola);
+  function skrifaSk(el) {
+    const n = nu(), reitur = el.dataset.sk, id = el.dataset.skid;
+    if (reitur === 'krass') {
+      S.skDrog.__krass = el.value;
+      bida('__krass', async () => {
+        const texti = S.skDrog.__krass;
+        if (texti == null) return;
+        _vistar++;
+        let ok = false;
+        try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { krass: texti } } } })); } catch (_) {}
+        _vistar--;
+        if (ok && S.skDrog.__krass === texti) delete S.skDrog.__krass;
+        S.skStada = ok ? 'Vistað kl. ' + klukka(new Date()) : '⚠ Krassblaðið vistaðist ekki — reynt verður aftur.';
+        stimplaSk();
+      });
+      return;
+    }
+    if (!id) return;
+    (S.skDrog[id] = S.skDrog[id] || {})[reitur] = el.value;
+    bida(id, async () => {
+      const drog = Object.assign({}, S.skDrog[id]);
+      const ok = await vistaSpjold(l => {
+        const cd = l.find(x => x.id === id);
+        // Eytt á annarri vél á meðan skrifað var: textinn lifir sem nýtt spjald.
+        if (!cd) l.push(Object.assign({ id, slot: naestaSlot(l), verkbord_id: null, name: '', title: '', type: null, minnispunktur: true }, drog));
+        return l;
+      });
+      const nuna = S.skDrog[id];
+      if (ok && nuna && Object.keys(drog).every(kk => nuna[kk] === drog[kk])) delete S.skDrog[id];
+    });
+  }
+  function faeraSpjald(l, fraId, tilId) {
+    const rod = l.slice().sort((x, y) => (+x.slot || 0) - (+y.slot || 0));
+    const i = rod.findIndex(x => x.id === fraId), j = rod.findIndex(x => x.id === tilId);
+    if (i < 0 || j < 0) return l;
+    const raufar = rod.map(x => +x.slot || 0);
+    for (let q = 1; q < raufar.length; q++) if (raufar[q] <= raufar[q - 1]) raufar[q] = raufar[q - 1] + 1;
+    rod.splice(j, 0, rod.splice(i, 1)[0]);
+    rod.forEach((x, q) => { x.slot = raufar[q]; });
+    return l;
+  }
+  function onDrag(e) {
+    const t = e.target, root = rot();
+    if (e.type === 'dragstart') {
+      const g = t && t.closest ? t.closest('[data-skdrag]') : null;
+      if (!g) return;
+      S.skDrag = g.dataset.skdrag;
+      try { e.dataTransfer.setData('text/plain', S.skDrag); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setDragImage(g.closest('.skc'), 16, 16); } catch (_) {}
+      return;
+    }
+    if (!S.skDrag || !root) return;
+    const kort = t && t.closest ? t.closest('.skc') : null;
+    if (e.type === 'dragover') {
+      if (!kort) return;
+      e.preventDefault();
+      root.querySelectorAll('.skc.yfir').forEach(x => { if (x !== kort) x.classList.remove('yfir'); });
+      kort.classList.add('yfir');
+    } else if (e.type === 'drop') {
+      e.preventDefault();
+      const fra = S.skDrag, til = kort && kort.dataset.skid;
+      S.skDrag = null;
+      if (til && til !== fra) vistaSpjold(l => faeraSpjald(l, fra, til)).then(render); else render();
+    } else if (e.type === 'dragend') {
+      S.skDrag = null;
+      root.querySelectorAll('.skc.yfir').forEach(x => x.classList.remove('yfir'));
+    }
+  }
+  async function onPaste(e) {
+    const el = e.target, sid = el && el.dataset ? el.dataset.skid : null;
+    if (!sid) return;
+    let f = null;
+    try { for (const it of (e.clipboardData && e.clipboardData.items) || []) if (it.kind === 'file' && /^image\//.test(it.type || '')) { f = it.getAsFile(); break; } } catch (_) {}
+    if (!f) return;                                        // venjuleg líming á texta: ósnert
+    e.preventDefault();
+    if (f.size > 10 * 1024 * 1024) { toast('Myndin er of stór (hámark 10 MB).', true); return; }
+    const c = sb();
+    if (!c) { toast('Engin tenging — myndin vistaðist ekki.', true); return; }
+    const slod = 'skipulag/' + sid + '-' + Date.now() + '.' + ((((f.type || '').split('/')[1]) || 'png').replace(/[^a-z0-9]/gi, '') || 'png');
+    toast('Hleð upp mynd…');
+    try {
+      const up = await c.storage.from('verkbord-files').upload(slod, f, { contentType: f.type || 'image/png', upsert: false });
+      if (up.error) throw up.error;
+      const url = ((c.storage.from('verkbord-files').getPublicUrl(slod) || {}).data || {}).publicUrl;
+      if (!url) throw new Error('engin slóð');
+      await vistaSpjold(l => { const cd = l.find(x => x.id === sid); if (cd) cd.mynd = url; return l; }, 'Myndin er komin á spjaldið');
+      render();
+    } catch (err) { toast('Myndin vistaðist ekki: ' + ((err && err.message) || err), true); }
+  }
+
   /* ── skilaboð ── */
   let _toastT = 0;
-  function toast(msg, warn) {
+  function toast(msg, warn, afturkalla) {
     const host = rot() || document.body;
     let t = host.querySelector('.t5toast');
     if (!t) { t = document.createElement('div'); t.className = 't5toast'; t.setAttribute('role', 'status'); host.appendChild(t); }
     t.textContent = msg;
+    S.undo = typeof afturkalla === 'function' ? afturkalla : null;
+    if (S.undo) { const b = document.createElement('button'); b.type = 'button'; b.className = 'undo'; b.dataset.t5 = 'undo'; b.textContent = 'Afturkalla'; t.appendChild(b); }
     t.className = 't5toast' + (warn ? ' warn' : '');
     t.hidden = false;
     clearTimeout(_toastT);
-    _toastT = setTimeout(() => { t.hidden = true; }, warn ? 4200 : 2600);
+    _toastT = setTimeout(() => { t.hidden = true; S.undo = null; }, S.undo ? 7000 : warn ? 4200 : 2600);
   }
 
   /* ── atburðir (hlustað á skuggarótinni) ── */
@@ -1122,6 +1377,12 @@
     const v = document.getElementById(VIEW_ID), root = v && v.shadowRoot;
     if (!root || !v.classList.contains('active')) return;
     const el = e.target && e.target.closest ? e.target.closest('[data-t5]') : null;
+    // Leitarniðurstöður lokast við smell utan leitarinnar.
+    if ((S.leit.opid || S.ny.opid) && !(e.target.closest && e.target.closest('.leit, .nyfyr'))) {
+      S.leit.opid = false;
+      S.ny.opid = false;
+      if (!el) { render(); return; }
+    }
     if (!el || el.tagName === 'SELECT') return;
     const a = el.dataset.t5, id = el.dataset.id ? Number(el.dataset.id) : null, m = el.dataset.m;
     const c = cfg();
@@ -1134,12 +1395,37 @@
         if (next) take(next.id); else toast('Ekkert á Master í þessari síu.');
         return;
       }
-      case 'select': S.sel[nu()] = id; S.view = 'mitt'; render(); return;
+      case 'select': S.sel[nu()] = id; if (!c.baraMitt) S.view = 'mitt'; render(); synaVal(); return;
+      case 'skoda': {
+        S.sel[nu()] = id;
+        const sr = S.rows.find(x => x.id === id);
+        if (sr && !c.baraMitt) S.view = onBoardOf(sr, nu()) ? 'mitt' : 'master';
+        S.leit.opid = false;
+        render();
+        synaVal();
+        return;
+      }
+      case 'sel-close': S.sel[nu()] = 0; render(); return;
+      case 'fyr':
+      case 'fyr-id':
+        // Tengill með Ctrl/Shift/Cmd opnast í nýjum flipa (#company/<id>) — vafrinn sér um það.
+        if (el.tagName === 'A' && (e.ctrlKey || e.metaKey || e.shiftKey)) return;
+        e.preventDefault();
+        S.leit.opid = false;
+        if (a === 'fyr-id') openCompany(el.dataset.fid); else opnaFyrirtaekiMals(S.rows.find(x => x.id === id));
+        return;
+      case 'bara-mitt':
+        if (!krefstStillinga()) return;
+        c.baraMitt = el.dataset.v === '1';
+        S.view = c.baraMitt ? 'mitt' : 'master';
+        render();
+        vistaCfg({ bara_mitt: c.baraMitt }, c.baraMitt ? 'Bara þitt borð — Master falinn' : 'Master borð sýnt aftur');
+        return;
       case 'done': done(id); return;
       case 'giveback': giveBack(id); return;
       case 'reply': reply(id); return;
       case 'company': openCompany(el.dataset.fid); return;
-      case 'filter': S.filter = el.dataset.f; S.synd = PAGE; render(); return;
+      case 'filter': S.filter = el.dataset.f; S.synd = PAGE; S.leit.opid = false; if (!c.baraMitt) S.view = 'master'; render(); return;
       case 'more': S.synd += PAGE; render(); return;
       case 'view': S.view = el.dataset.v; render(); return;
       case 'mode':
@@ -1169,16 +1455,23 @@
         return;
       case 'composer':
         S.composer = !S.composer;
+        if (!S.composer) S.ny = { q: '', fyr: null, tillogur: [], opid: false, idx: -1 };
         render();
         if (S.composer) { const f = root.querySelector('[data-k="nt"]'); if (f) f.focus(); }
         return;
       case 'composer-save': {
-        const t = root.querySelector('[data-k="nt"]'), cu = root.querySelector('[data-k="nc"]');
-        const title = t ? t.value.trim() : '';
-        if (!title) { toast('Skrifaðu hvað þarf að gera.', true); if (t) t.focus(); return; }
+        const gildi = kk => { const x = root.querySelector('[data-k="' + kk + '"]'); return x ? (x.type === 'checkbox' ? x.checked : x.value) : ''; };
+        const title = String(gildi('nt')).trim();
+        if (!title) { toast('Skrifaðu hvað þarf að gera.', true); const t = root.querySelector('[data-k="nt"]'); if (t) t.focus(); return; }
+        const cust = String(gildi('nc')).trim();
         el.disabled = true;
-        createCase(title, cu ? cu.value.trim() : '').then(ok => {
-          if (ok) { S.composer = false; render(); } else el.disabled = false;
+        createCase({ title, cust, fyr: S.ny.fyr && S.ny.fyr.nafn === cust ? S.ny.fyr : null, eigandi: String(gildi('ne')),
+          lysing: String(gildi('nl')).trim(), frestur: String(gildi('nd')), aridandi: !!gildi('ni') }).then(ok => {
+          if (!ok) { el.disabled = false; return; }
+          root.querySelectorAll('.composer [data-k]').forEach(x => { if (x.type === 'checkbox') x.checked = false; else if (x.tagName !== 'SELECT') x.value = ''; });
+          S.composer = false;
+          S.ny = { q: '', fyr: null, tillogur: [], opid: false, idx: -1 };
+          render();
         });
         return;
       }
@@ -1217,25 +1510,106 @@
         try { Vikudagskra.open(j.date, j); } catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
         return;
       }
+      case 'sk-ny': {
+        const nid = nyttSkId();
+        S.open[openKey('skipulag')] = true;
+        vistaSpjold(l => l.concat([{ id: nid, slot: naestaSlot(l), verkbord_id: null, name: '', title: '', type: null, minnispunktur: true }])).then(() => {
+          render();
+          const f = rot() && rot().querySelector('[data-sk="name"][data-skid="' + nid + '"]');
+          if (f) { f.focus(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        });
+        return;
+      }
+      case 'sk-del': {
+        const sid = el.dataset.skid, gamalt = cardsFor(nu()).find(x => x.id === sid);
+        const afrit = gamalt ? Object.assign({}, gamalt, S.skDrog[sid] || {}) : null;
+        clearTimeout(_skT[sid]); delete _skBid[sid]; delete S.skDrog[sid];
+        vistaSpjold(l => l.filter(x => x.id !== sid)).then(ok => {
+          render();
+          if (ok && afrit) toast('Spjaldinu var eytt', false, () => vistaSpjold(l => l.some(x => x.id === afrit.id) ? l : l.concat([afrit]), 'Spjaldið er komið aftur').then(render));
+        });
+        return;
+      }
+      case 'sk-type': {
+        const sid = el.dataset.skid, ti = Number(el.dataset.i);
+        vistaSpjold(l => { const cd = l.find(x => x.id === sid); if (cd) cd.type = cd.type === ti ? null : ti; return l; }).then(render);
+        return;
+      }
+      case 'sk-faera': {
+        const sid = el.dataset.skid, rod = spjold(nu()), i = rod.findIndex(x => x.id === sid), til = rod[i + Number(el.dataset.v)];
+        if (til) vistaSpjold(l => faeraSpjald(l, sid, til.id)).then(render);
+        return;
+      }
+      case 'sk-mynd-x': {
+        const sid = el.dataset.skid;
+        vistaSpjold(l => { const cd = l.find(x => x.id === sid); if (cd) delete cd.mynd; return l; }, 'Myndin var tekin af spjaldinu').then(render);
+        return;
+      }
+      case 'sk-add': {
+        const r = S.rows.find(x => x.id === id);
+        if (!r) return;
+        if (cardsFor(nu()).some(x => String(x.verkbord_id) === String(r.id))) { toast('Þetta mál er þegar á skipulagsborðinu þínu.'); return; }
+        if (!isOn('skipulag') && stillingarTilbunar()) { c.mods.skipulag[0] = 1; vistaCfg({ mods: { skipulag: c.mods.skipulag.slice() } }); }
+        vistaSpjold(l => l.concat([{ id: nyttSkId(), slot: naestaSlot(l), verkbord_id: r.id, name: whereOf(r), title: r.title || '', type: null }]), '📋 Komið á skipulagsborðið').then(render);
+        return;
+      }
+      case 'undo': {
+        const f = S.undo, t = root.querySelector('.t5toast');
+        S.undo = null;
+        if (t) t.hidden = true;
+        if (f) f();
+        return;
+      }
+      case 'ny-fyr': veljaNyFyr(Number(el.dataset.i)); return;
+      case 'vd-add': {
+        // Sama samningur og gamla borðið: 303 hlerar st-skra-verk og opnar dagskrárgluggann forútfylltan.
+        const r = S.rows.find(x => x.id === id);
+        if (!r) return;
+        try { window.dispatchEvent(new CustomEvent('st-skra-verk', { detail: { name: whereOf(r) || r.title || '', note: [r.title, aiLine(r)].filter(Boolean).join(' — '), id: r.id } })); }
+        catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
+        return;
+      }
       case 'go': goView(el.dataset.view, el.dataset.anchor); return;
       case 'reload': load(); return;
     }
   }
   function onChange(e) {
     const el = e.target, v = document.getElementById(VIEW_ID);
-    if (!v || !el || !el.dataset || el.dataset.t5 !== 'who' || !el.value) return;
+    if (!v || !el || !el.dataset) return;
+    if (el.dataset.t5 === 'assign') { el.blur(); setjaA(Number(el.dataset.id), el.value); return; }
+    if (el.dataset.t5 !== 'who' || !el.value) return;
     el.blur();
+    skolaAllt();                                           // texti í ritun vistast á réttan starfsmann
     S.view = 'master';
     S.synd = PAGE;
     try { if (window.BordStarfsmadur && BordStarfsmadur.set) BordStarfsmadur.set(el.value); } catch (_) {}
     render();
   }
+  function onInput(e) {
+    const el = e.target, k = el && el.dataset ? el.dataset.k : null;
+    if (k === 'lq' || k === 'nc') leita(k, el.value);
+    else if (el && el.dataset && el.dataset.sk) skrifaSk(el);
+  }
   function onKey(e) {
     const v = document.getElementById(VIEW_ID), root = v && v.shadowRoot;
     if (!root || !v.classList.contains('active')) return;
     const k = e.target && e.target.dataset ? e.target.dataset.k : null;
+    // Örvar og Enter í niðurstöðum (leitin í hausnum og fyrirtæki í nýju máli).
+    if ((k === 'lq' || k === 'nc') && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) {
+      const st = k === 'lq' ? S.leit : S.ny, listi = k === 'lq' ? S.leit.fyr : S.ny.tillogur;
+      if (st.opid && listi.length) {
+        if (e.key !== 'Enter') { e.preventDefault(); st.idx = (st.idx + (e.key === 'ArrowDown' ? 1 : -1) + listi.length) % listi.length; render(); return; }
+        e.preventDefault();
+        const i = st.idx >= 0 ? st.idx : 0;
+        if (k === 'nc') veljaNyFyr(i);
+        else if (st.idx >= 0 || listi.length === 1) { S.leit.opid = false; openCompany(listi[i].id); }
+        return;
+      }
+      if (k === 'lq') { if (e.key === 'Enter') e.preventDefault(); return; }
+    }
     if (e.key === 'Enter' && (k === 'nt' || k === 'nc')) { e.preventDefault(); const b = root.querySelector('[data-t5="composer-save"]'); if (b && !b.disabled) b.click(); }
     if (e.key === 'Enter' && (k === 'ln' || k === 'lu')) { e.preventDefault(); const b = root.querySelector('[data-t5="link-save"]'); if (b && !b.disabled) b.click(); }
+    if (e.key === 'Escape' && (S.leit.opid || S.ny.opid)) { S.leit.opid = false; S.ny.opid = false; render(); return; }
     if (e.key === 'Escape' && (S.composer || S.cfgOpen || S.linkForm)) { S.composer = false; S.cfgOpen = false; S.linkForm = false; render(); }
   }
 
