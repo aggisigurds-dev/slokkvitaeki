@@ -52,6 +52,12 @@
  *           staðfest; bilun skilur textann eftir í reitnum. Flipi hverfur / starfsmaður skiptir / farið af borðinu / línan
  *           hverfur úr listanum → vistað strax, og við pagehide líka með keepalive beint á PostgREST.
  *
+ * BÍÐUR SAMÞYKKIS (368u · Agnar 11.09.2026: „setja inn á mitt Agnar heimaborð sem þú þarft mig til að samþykkja eða
+ *   staðfesta … eða setja tag á mig þá sé ég það"): merkið `samthykki` í thjonustubeidni.tags. Mál sem ber það og er á
+ *   borði einhvers birtist á Mitt borð eigandans í ÖLLUM hömum (ekki „+ N í öðrum hömum"), efst, með flögunni
+ *   „Bíður samþykkis". Hamaflögurnar í völdu máli sýna áfram raunverulega hama-aðild (iHamGrunnur). Claude stofnar
+ *   slík mál (created_by 'claude') með fullrannsökuðum spurningum. Laust mál (Master/bunki Charlize) fær enga sérmeðferð.
+ *
  * SKRIF — beint á thjonustubeidni, lesið til baka með .select():
  *   Taka    assigned_to = ég, AÐEINS ef málið er enn laust (skilyrt) — tveir fá ekki sama málið.
  *   Setja á assigned_to = hver sem er / Master, skilyrt á eigandann sem var á skjánum („Færa á mig").
@@ -153,6 +159,7 @@
   const MERKI = { thjonusta: 'Þjónusta', eftir_ad_rukka: 'Eftir að rukka', bokhald: 'Bókhald', senda_skyrslur: 'Senda skýrslur', senda_tolvupost: 'Senda tölvupóst',
     thjonustusamningur: 'Þjónustusamningur', gera_tilbod: 'Gera tilboð', brunakerfi: 'Brunakerfi', hringja: 'Hringja', uppsetning: 'Uppsetning', draft: 'Draft', kvortun: 'Kvörtun' };
   const HAM_MERKI = 'ham:';
+  const SAMTHYKKI = 'samthykki';       // bíður samþykkis/staðfestingar eigandans → á borði hans í öllum hömum (368u)
   const serHamir = () => { const l = P(CFG_KEY + '.hamir'); return Array.isArray(l) ? l.filter(h => h && h.id && h.l && !MODES[h.id]) : []; };
   function M(id) {
     if (MODES[id]) return MODES[id];
@@ -375,13 +382,17 @@
   const isPost = r => r.source === 'email' || /^email:/.test(String(r.channel_ref || ''));
   const postId = r => { const m = /^email:(\d+)/.exec(String(r.channel_ref || '')); return m ? +m[1] : null; };
   const postOf = r => { const id = postId(r); return id == null ? false : S.post[id]; };
-  const rodun = (a, b) => (b.important ? 1 : 0) - (a.important ? 1 : 0)
+  const erSamthykki = r => Array.isArray(r.tags) && r.tags.indexOf(SAMTHYKKI) >= 0;
+  const rodun = (a, b) => (erSamthykki(b) ? 1 : 0) - (erSamthykki(a) ? 1 : 0)
+    || (b.important ? 1 : 0) - (a.important ? 1 : 0)
     || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity)
     || tStamp(b.created_at) - tStamp(a.created_at);
   const tagList = r => (Array.isArray(r.tags) ? r.tags : []).filter(t => typeof t === 'string');
   const skyrirHamir = r => tagList(r).filter(t => t.indexOf(HAM_MERKI) === 0).map(t => t.slice(HAM_MERKI.length)).filter(id => !!M(id));
   // Beint merki ræður. Þjónusta = ekki beint tengt öðrum ham. Aðrir hamir taka líka sinn flokk/merki (og Samskipti pósta).
-  function iHam(r, id) {
+  // Bíður samþykkis eigandans: á borði hans í öllum hömum (368u). Hamaflögurnar í völdu máli nota grunnregluna.
+  function iHam(r, id) { return (erSamthykki(r) && !isFree(r)) || iHamGrunnur(r, id); }
+  function iHamGrunnur(r, id) {
     const sk = skyrirHamir(r);
     if (sk.indexOf(id) >= 0) return true;
     if (id === 'thjonusta') return !sk.length;
@@ -816,6 +827,7 @@
       '.hchip{height:26px;padding:0 10px;border:1px solid #3a3732;border-radius:13px;background:#1c1b18;color:var(--on2);font:600 11.5px var(--body);cursor:pointer}',
       '.hchip.on{background:var(--gside);border-color:#5a4410;color:#1b1405}.hchip.auto{border-style:dashed;border-color:rgba(232,203,122,.6);color:#e8cb7a}',
       '.tag.ham{border-color:rgba(184,137,46,.55);color:var(--g8)}',
+      '.tag.samt{border-color:rgba(184,137,46,.9);color:var(--g8);background:rgba(232,203,122,.28)}',
       '.hamform .hf{display:flex;flex-direction:column;gap:12px;padding:12px 16px}.hamform .nylbl{max-width:360px}',
       '.hgrp{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}.hgrp .lbl{flex-basis:100%}',
       '.hchk{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink2)}.hnote{font-size:12px;color:var(--mute)}',
@@ -1020,7 +1032,8 @@
 
   function feedRow(r, valid) {
     const a = ageDays(r), ai = aiLine(r), n = nu(), w = fyrLink(r);
-    const tags = (r.important ? '<span class="tag hot">Áríðandi</span>' : '') +
+    const tags = (erSamthykki(r) ? '<span class="tag samt">Bíður samþykkis</span>' : '') +
+      (r.important ? '<span class="tag hot">Áríðandi</span>' : '') +
       (r.due_at ? '<span class="tag">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
       (r.status === 'i_vinnslu' ? '<span class="tag">Í vinnslu</span>' : '') +
       (isPost(r) && r.svarad_at ? '<span class="tag ok">Svarað</span>' : '') +
@@ -1051,6 +1064,7 @@
         '</button>' +
         '<div class="mfoot"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
           (r.due_at ? '<span class="lock">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
+          (erSamthykki(r) ? '<span class="tag samt">Bíður samþykkis</span>' : '') +
           (r.important ? '<span class="tag hot">Áríðandi</span>' : '') +
           (isPost(r) ? (r.svarad_at ? '<span class="tag ok">Svarað</span>' : '<span class="tag">Bíður svars</span>') : '') +
           (virkniEftir(r) ? '<span class="tag ok">Líklega afgreitt</span>' : '') +
@@ -1117,7 +1131,7 @@
       (canonW(r.assigned_to) && !folk().some(x => lagt(x) === lagt(canonW(r.assigned_to))) ? '<option selected>' + esc(canonW(r.assigned_to)) + '</option>' : '') +
       '</select></label>';
     const stada = minn ? 'Á þínu borði' : laust ? 'Á Master' : 'Á borði ' + eigandi;
-    const meta = [tegMals(r), stada, r.due_at ? 'Frestur ' + fmtD(r.due_at) : '', r.important ? 'Áríðandi' : '', post ? (r.svarad_at ? 'Svarað ' + fmtD(r.svarad_at) : 'Bíður svars') : ''].filter(Boolean).join(' · ');
+    const meta = [tegMals(r), erSamthykki(r) ? 'Bíður samþykkis' : '', stada, r.due_at ? 'Frestur ' + fmtD(r.due_at) : '', r.important ? 'Áríðandi' : '', post ? (r.svarad_at ? 'Svarað ' + fmtD(r.svarad_at) : 'Bíður svars') : ''].filter(Boolean).join(' · ');
     const w = fyrLink(r, 'dk');
     return '<div class="shead"><span class="plate dark">04</span><span class="slabel">' + (minn ? 'Valið mál' : 'Til skoðunar') + '</span><span class="grow"></span>' +
         '<span class="age ' + ageCls(a) + '">' + a + 'D</span><button type="button" class="sx" data-t5="sel-close" aria-label="Loka málinu">✕</button></div>' +
@@ -2868,7 +2882,7 @@
   function hamirHtml(r) {
     const tags = tagList(r);
     return '<div class="hchips"><span class="slabel">Hamir</span>' + hamaListi().map(k => {
-      const h = M(k), beint = tags.indexOf(HAM_MERKI + k) >= 0, inni = iHam(r, k);
+      const h = M(k), beint = tags.indexOf(HAM_MERKI + k) >= 0, inni = iHamGrunnur(r, k);
       const skyring = beint ? 'Tengt beint — smelltu til að aftengja'
         : inni ? (k === 'thjonusta' ? 'Sjálfgefið: ekki tengt öðrum ham — smelltu til að tengja beint' : 'Sjálfkrafa (flokkur, merki eða póstur) — smelltu til að tengja beint')
         : 'Smelltu til að tengja málið við haminn';
@@ -3418,7 +3432,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368t' };
+    window.Thjonustubord5 = { show, load, render, version: '368u' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
