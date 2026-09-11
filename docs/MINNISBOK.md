@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-11 03:07 · 484 virkar staðreyndir
+Sótt 2026-09-11 03:48 · 485 virkar staðreyndir
 
 ---
 
@@ -1103,12 +1103,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Samantekt úr eldri lotu er EKKI blað-lestur — Sara má ekki telja upp tæki sem hún las ekki sjálf, jafnvel þótt blaðið ráði**
   <br>Naust Marine og Grasnytjar stöðvuðust á þessu 10.09.2026: minnisblaðið sagði „kolsýra 2 kg" og „léttvatn í herbergjum 6-12, þvottahúsi, herb. 15, 30-40" — staðsetningar og útdráttur, ekki talning. Rétt viðbragð er að biðja um skannann í myndaröndina á Sara-borðinu, ekki að giska.
   <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
-- **Cowork skrifaði 19 „Úttektarskýrsla — X" mál í thjonustubeidni 06.09.2026 (source=cowork) þar sem lestur vinnublaðsins stendur í notes undir hausunum ■ LESIÐ AF BLAÐI / ■ TÆKJALISTI Í KERFINU / ■ NIÐURSTAÐA, með skanni sem viðhengi**
-  <br>Agnar 09.09.2026: „það er helling inn á þjónustuborði en það er bara útum allt, sem Cowork hefur sett inn". Þau eru enn ólesin inn í sara_yfirferd.
-  <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
 - **Þegar hakið kemur skal lesa fjölda og verð úr sara_yfirferd.linur — ekki tillöguna sem Sara lagði fram; Agnar breytir tölunum áður en hann hakar**
   <br>Reitirnir linur (jsonb [{l,n,v}]), akstur, akstur_verd, skyrslugerd og texti eru allir breytanlegir í borðinu. athugasemd-reiturinn er skilaboð Agnars til Söru.
   <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
+- **Cowork skrifaði 19 „Úttektarskýrsla — X" mál í thjonustubeidni 06.09.2026 (source=cowork) þar sem lestur vinnublaðsins stendur í notes undir hausunum ■ LESIÐ AF BLAÐI / ■ TÆKJALISTI Í KERFINU / ■ NIÐURSTAÐA, með skanni sem viðhengi**
+  <br>Agnar 09.09.2026: „það er helling inn á þjónustuborði en það er bara útum allt, sem Cowork hefur sett inn". Þau eru enn ólesin inn í sara_yfirferd.
+  <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
 - **Sara-borðið (tafla sara_yfirferd + spjaldið „SARA · VINNUBLÖÐ" á Þjónustuborðinu) er hliðið: ekkert fer í kerfið fyrr en Agnar hakar við og staðan fer úr bidur í samthykkt**
   <br>Agnar 09.09.2026: „check mark sem ég get sett sem þú mátt þá klára að gera skýrsluna og invoicið.. ég síðan sendi hana af stað í kröfuyfirlit". Patch 364-sara-yfirferd.js. Stöður: bidur → samthykkt → klarad. Aðeins bidur/samthykkt sjást; kláruð eru falin.
   <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
@@ -1150,17 +1150,26 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Nota alltaf húslitina í inline-texta: #0f172a (aðal), #334155/#475569 (auka), #64748b (daufur), #94a3b8 (dauflegastur). Uppgötvað 7.8.2026 á Aksturslistanum (268) — INK var #111827 og sat eftir svartur á flippuðum dökkum kortum. Lagað í PR #609.
   <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
 
+### thjonustubord
+
+- **Þjónustuborð 2 (368i, 11.09.2026): ✨ Tillaga í völdu máli kallar á /api/tv-summary (Haiku, aðeins við smell) með sögu fyrirtækis, eiganda, fresti og pósti; vistar í summary og Afturkalla setur fyrri samantekt aftur. Prompt tv-summary fékk reglu: reikningur eða skýrsla dagsett eftir Stofnað = Líklega búið, loka máli (líkanið hafði lagt til að bóka uppsetningu í Engjaseli 31 þótt reikningur væri greiddur). notes-þak 700 stafir.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (368h, 11.09.2026): engin mörk á fjölda mála; hvaða opið mál sem er opnast í Valið mál (Master, annarra, leit); mál sett á hvern sem er eða Master, skilyrt á eigandann sem var á skjánum; fyrirtækið alltaf smellanlegt (#company/<id>); skipulagsborðið skrifanlegt í 368 (skipulagsbord.by_staff.<nafn>.cards + krass, sömu gögn og 305); rofar úr gamla borðinu í ⚙: Frestir, Nýjast, Saga fyrirtækis, Breyta máli. 305 addFromRow þurrkar borð ef 305 er ekki mountað — ekki kalla það úr 368.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (patch 368) er á falinni slóð #bord síðan 11.09.2026 (49d345f): Master = opin mál án starfsmanns EÐA á Charlize (231 claimOldJobs setur óúthlutað eldra en 30 daga á Charlize). Borðið býr í Shadow DOM því Brunastál-þemað þvingar .view .btn og .view h1–h3 með !important. Gamla borðið 231 og spjallið 347 víkja eftir samþykki Agnars.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### variant
 
 - **MYNSTUR 2 — heilt object/fylki lesið → breytt í minni → skrifað til baka (read-modify-write án útgáfu-varðar): vél með gamalt eintak þurrkar út breytingar hinna**
   <br>Hub lagað 06.09.2026: hub_state sameinað per lykil OG per undirlykil (RPC hub_state_merge p_deep), wf_state per reit (ky_wf_merge), invoice_drafts með expected_updated_at (409 + spurning). Eftir (slokkvitaeki, úttekt sala-reikningar/kunnaskra/elon): 142 SaleEditor + 121 Sótt skrifa heilt solur.linur
   <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
-- **MYNSTUR 3 — AppSettings: hlutir sameinast per lykil en FYLKI og strengir skiptast út í heilu lagi (jsonb_deep_merge sql:34), og engin vél FÆR breytingar annarra fyrr en hún endurhleður (engin realtime/sókn á app_settings, js/db.js:250)**
-  <br>Heit fylki: skipulagsbord.by_staff.*.cards (305:99, 148 skrif/30 d), vikudagskra.jobs (303:112, 74), company_pricing/vidsk_pricing (113/116/285), sala.*_product_ids (vorur.js), thjonustuverk.cases (172:70), skjalasnidmat (94), tilbod_hub (201), page_editor_v1_json (262:124 strengur), app_profiles_js
-  <br><sub>2026-09-06 · slokkvitaeki · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
   <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
   <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
+- **MYNSTUR 3 — AppSettings: hlutir sameinast per lykil en FYLKI og strengir skiptast út í heilu lagi (jsonb_deep_merge sql:34), og engin vél FÆR breytingar annarra fyrr en hún endurhleður (engin realtime/sókn á app_settings, js/db.js:250)**
+  <br>Heit fylki: skipulagsbord.by_staff.*.cards (305:99, 148 skrif/30 d), vikudagskra.jobs (303:112, 74), company_pricing/vidsk_pricing (113/116/285), sala.*_product_ids (vorur.js), thjonustuverk.cases (172:70), skjalasnidmat (94), tilbod_hub (201), page_editor_v1_json (262:124 strengur), app_profiles_js
+  <br><sub>2026-09-06 · slokkvitaeki · villuleit 06.09.2026 · claude-code</sub>
 
 ### redder
 
@@ -1269,13 +1278,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Rekstrarfélög deila kennitölu — uppfletting á kt lætur eina skýrslu líta út fyrir að duga öllum stöðum félagsins**
   <br>Aðalskoðun er fjórir staðir á 540994-2269. Staðfestu á HEIMILISFANGI þegar kt á fleiri en einn stað.
   <br><sub>2026-08-07 · baedi · greining · chat</sub>
-
-### thjonustubord
-
-- **Þjónustuborð 2 (368h, 11.09.2026): engin mörk á fjölda mála; hvaða opið mál sem er opnast í Valið mál (Master, annarra, leit); mál sett á hvern sem er eða Master, skilyrt á eigandann sem var á skjánum; fyrirtækið alltaf smellanlegt (#company/<id>); skipulagsborðið skrifanlegt í 368 (skipulagsbord.by_staff.<nafn>.cards + krass, sömu gögn og 305); rofar úr gamla borðinu í ⚙: Frestir, Nýjast, Saga fyrirtækis, Breyta máli. 305 addFromRow þurrkar borð ef 305 er ekki mountað — ekki kalla það úr 368.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (patch 368) er á falinni slóð #bord síðan 11.09.2026 (49d345f): Master = opin mál án starfsmanns EÐA á Charlize (231 claimOldJobs setur óúthlutað eldra en 30 daga á Charlize). Borðið býr í Shadow DOM því Brunastál-þemað þvingar .view .btn og .view h1–h3 með !important. Gamla borðið 231 og spjallið 347 víkja eftir samþykki Agnars.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### automation
 
