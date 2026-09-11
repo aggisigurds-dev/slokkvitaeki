@@ -36,6 +36,13 @@
  *   stadfesta_greidslu kort/reiðufé aldrei merkt greitt — eða Payday segir greitt en salan er ómerkt
  *   annad              annað, m.a. ósamræmi milli sölu og Payday
  *   Eitt virkt mál á sölu: handvirkt mál víkur reiknuðu máli sömu sölu af listanum.
+ *
+ * OPNAÐ ÚR ÖÐRUM LISTUM (369b — Agnar 11.09.2026: „þetta er svoldið bara upplýsingablað en ekki vinnustofa")
+ *   opnaSolu(solurId) · opnaGleymt(fyrirtaekiId) · malFyrirSolu(solurId). 368 setur „Vinna ›" á raðir í Kröfum og
+ *   „Gleymst að rukka?". Vanti listann er hann sóttur og glugginn opnast þegar gögnin koma. Mál er ALDREI stofnað
+ *   hér: finnist ekkert mál segir skýringin af hverju (t.d. send krafa sem er ekki komin á gjalddaga).
+ *   Gleymdar úttektir sýna skoðunarmánuð, vinnublað og síðasta Stólpa-reikning (sql/2026-09-11_gleymt_uttekt_stolpi.sql);
+ *   Stólpa-upphæðin er verðviðmið þegar enginn fyrri reikningur finnst — aldrei krafa.
  * ============================================================================================== */
 (() => {
   if (window.KrofuVinnugluggi) return;
@@ -84,6 +91,14 @@
     (/krofu_verkferli/.test(String(e.message || '')) && /does not exist|schema cache|Could not find/i.test(String(e.message || ''))));
   const merktSend = s => !!(s && (s.krafa_sent_at || s.invoiced_at || s.dk_invoice_id));
   const hefurLinur = s => !!(s && Array.isArray(s.linur) && s.linur.length);
+  const MAN_NOFN = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
+  const VB_STODUR = { bidur: 'bíður', samthykkt: 'samþykkt', klarad: 'klárað' };
+  // Skoðun gleymdrar úttektar: dagsetning skýrslu þegar hún er skráð, annars mánuður úr tækjaskrá (uttaeki.last_insp).
+  function skodunTexti(g) {
+    const d = /^(\d{4})-(\d{2})-(\d{2})/.exec(String((g && g.skodun_dags) || ''));
+    if (!d) return g && g.skyrsla_dags && !/-01-01$/.test(g.skyrsla_dags) ? dags(g.skyrsla_dags) : AR() + ' (mánuður óþekktur)';
+    return g.skodun_heimild === 'skyrsla' ? dags(g.skodun_dags) : MAN_NOFN[+d[2] - 1] + ' ' + d[1];
+  }
 
   const STODUR = { opid: 'Opið', tilbuid_i_vinnslu: 'Tilbúið í vinnslu', i_vinnslu: 'Í vinnslu', i_yfirferd_agnars: 'Í yfirferð Agnars', lokid: 'Lokið', sleppt: 'Sleppt' };
   const LOKAD = { lokid: 1, sleppt: 1 };
@@ -151,7 +166,7 @@
         .in('greitt_med', ['kort', 'reidufe']).eq('status', 'final').is('paid_at', null).not('is_credit', 'is', true),
       c.from('solur').select('id,num,customer_nafn,customer_kt,customer_base_id,customer_id,samtals,status,greitt_med,paid_at,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit,credit_of,source,linur')
         .in('status', ['final', 'sott']).or('linur.is.null,linur.eq.[]'),
-      c.from('v_gleymt_ad_rukka_uttekt').select('fyrirtaeki_id,nafn,kennitala,heimilisfang,postnumer,customer_base_id,skyrslur,skyrsla_dags'),
+      c.from('v_gleymt_ad_rukka_uttekt').select('fyrirtaeki_id,nafn,kennitala,heimilisfang,postnumer,customer_base_id,skyrslur,skyrsla_dags,skodun_dags,skodun_heimild,vinnublad_id,vinnublad_manudur,vinnublad_dags,vinnublad_stada,stolpi_sidast_nr,stolpi_sidast_dags,stolpi_sidast_stada,stolpi_sidast_upphaed'),
       c.from('krofu_verkferli').select('*')
     ]);
     // Aðalsettið og kredit-útilokunin eru fail-LOUD: án credit_of slyppu bakfærðar mæður inn sem ógreiddar.
@@ -196,14 +211,17 @@
       kredit: new Set((rk.data || []).map(x => x.credit_of)), taflaVantar, vantar });
   }
 
-  // Verðviðmið gleymdrar úttektar: nýjasti reikningur staðarins, annars kúnnans. Kreditfærðir sleppa.
+  // Verðviðmið gleymdrar úttektar: nýjasti reikningur staðarins, annars kúnnans, annars síðasti Stólpa-reikningur á
+  // kennitölunni (v_gleymt_ad_rukka_uttekt.stolpi_sidast_*). Kreditfærðir sleppa. Viðmið er aldrei krafa.
   function vidmid(g, skjol) {
     const gilt = d => d && +d.amount > 0 && d.stolpi_stada !== 'kreditfaert' && d.stolpi_stada !== 'kreditreikningur';
     const rod = (a, b) => tStamp(b.doc_date || (b.year + '-01-01')) - tStamp(a.doc_date || (a.year + '-01-01'));
     const afStad = skjol.filter(d => gilt(d) && d.fyrirtaeki_id === g.fyrirtaeki_id).sort(rod);
     if (afStad.length) return Object.assign({ af: 'staðnum' }, afStad[0]);
     const afKunna = g.customer_base_id ? skjol.filter(d => gilt(d) && d.customer_base_id === g.customer_base_id).sort(rod) : [];
-    return afKunna.length ? Object.assign({ af: 'kúnnanum' }, afKunna[0]) : null;
+    if (afKunna.length) return Object.assign({ af: 'kúnnanum' }, afKunna[0]);
+    return +g.stolpi_sidast_upphaed > 0 ? { af: 'Stólpa (fyrri eigendum)', stolpi: true, amount: +g.stolpi_sidast_upphaed, invoice_number: ('Stólpi ' + (g.stolpi_sidast_nr || '')).trim(),
+      doc_date: g.stolpi_sidast_dags || null, year: g.stolpi_sidast_dags ? +String(g.stolpi_sidast_dags).slice(0, 4) : null } : null;
   }
 
   function flokka(r) {
@@ -216,6 +234,8 @@
       if (v.solur_id && HANDVIRK[v.tegund] && !LOKAD[v.stada]) handvirkSala[v.solur_id] = v;
     });
     const mal = [], iInnheimtu = [], sed = {};
+    // Sölur sem fá ekkert mál fá skýringu — „Vinna ›" í 368 segir hana í stað „fannst ekki".
+    const utan = {}, KREDIT = 'Salan er bakfærð með kreditreikningi — ekkert að rukka.';
     const kreditfaert = s => !!(s.is_credit || r.kredit.has(s.id));
     const grunnur = s => ({ solur_id: s.id, num: s.num || '', nafn: s.customer_nafn || '(ónefnt)', kt: s.customer_kt || '', upphaed: +s.samtals || 0,
       customer_base_id: s.customer_base_id || null, fyrirtaeki_id: s.customer_id || null, stofnad: s.created_at });
@@ -225,7 +245,8 @@
       mal.push(Object.assign(m, { tegund, lykill, vf: vfLykill[lykill] || null }, auka || {}));
     };
     r.opin.forEach(s => {
-      if (kreditfaert(s) || handvirkSala[s.id]) return;
+      if (kreditfaert(s)) { utan[s.id] = KREDIT; return; }
+      if (handvirkSala[s.id]) return;
       const id = 'solur:' + s.id + ':';
       if (!merktSend(s)) { const t = hefurLinur(s) ? 'senda_krofu' : 'aud_sala'; baeta(grunnur(s), t, id + t); return; }
       const p = s.dk_invoice_id ? pd[s.dk_invoice_id] || null : null;
@@ -235,9 +256,10 @@
       if (p.status !== 'SENT') { baeta(grunnur(s), 'annad', id + 'osamraemi', { astaeda: 'Payday-reikningurinn er ' + p.status + ' en salan er enn merkt send og ógreidd. Stemma þarf af sölu og Payday.' }); return; }
       if (p.due_date && p.due_date < idag) { baeta(grunnur(s), 'itreka', id + 'itreka'); return; }
       iInnheimtu.push(s);                   // SENT og ekki kominn á gjalddaga: ekkert að gera í dag
+      utan[s.id] = 'Krafan er send (Payday nr. ' + (p.number || '—') + ') og ' + (p.due_date ? 'gjalddaginn ' + dags(p.due_date) + ' er ekki liðinn' : 'enginn gjalddagi er skráður') + ' — ekkert að gera enn.';
     });
-    r.sidar.forEach(s => { if (!kreditfaert(s) && !handvirkSala[s.id]) baeta(grunnur(s), 'greitt_sidar', 'solur:' + s.id + ':greitt_sidar'); });
-    r.kort.forEach(s => { if (!kreditfaert(s) && !handvirkSala[s.id]) baeta(grunnur(s), 'stadfesta_greidslu', 'solur:' + s.id + ':stadfesta_greidslu'); });
+    r.sidar.forEach(s => { if (kreditfaert(s)) utan[s.id] = KREDIT; else if (!handvirkSala[s.id]) baeta(grunnur(s), 'greitt_sidar', 'solur:' + s.id + ':greitt_sidar'); });
+    r.kort.forEach(s => { if (kreditfaert(s)) utan[s.id] = KREDIT; else if (!handvirkSala[s.id]) baeta(grunnur(s), 'stadfesta_greidslu', 'solur:' + s.id + ':stadfesta_greidslu'); });
     r.audar.forEach(s => { if (!handvirkSala[s.id]) baeta(grunnur(s), 'aud_sala', 'solur:' + s.id + ':aud_sala'); });
     r.gleymt.forEach(g => {
       const v = vidmid(g, r.skjol);
@@ -252,7 +274,8 @@
       const m = s ? grunnur(s) : { solur_id: v.solur_id || null, num: g.num || '', nafn: g.nafn || '(mál #' + v.id + ')', kt: '', upphaed: +v.upphaed || 0,
         customer_base_id: v.customer_base_id || null, fyrirtaeki_id: v.fyrirtaeki_id || null, stofnad: v.created_at };
       baeta(m, TEG[v.tegund] ? v.tegund : 'annad', v.mal_lykill, HANDVIRK[v.tegund] ? null
-        : { breytt: 'Gögnin sýna þetta mál ekki lengur (' + (s ? (s.paid_at ? 'salan er greidd' : 'staða sölunnar breyttist') : 'salan fannst ekki') + ') — athugaðu hvort því sé lokið.' });
+        : { breytt: 'Gögnin sýna þetta mál ekki lengur (' + (s ? (s.paid_at ? 'salan er greidd' : 'staða sölunnar breyttist')
+          : v.tegund === 'gleymt' ? 'úttektin er ekki lengur á lista gleymdra — reikningur gerður eða rukkuð gegnum Stólpa' : 'salan fannst ekki') + ') — athugaðu hvort því sé lokið.' });
     });
     mal.forEach(m => {
       m.s = m.solur_id ? r.solurById[m.solur_id] || null : null;
@@ -261,7 +284,7 @@
       m.p = dkId ? pd[dkId] || null : null;
     });
     mal.sort((a, b) => (b.upphaed - a.upphaed) || (tStamp(a.stofnad) - tStamp(b.stofnad)));
-    return { mal, iInnheimtu, taflaVantar: r.taflaVantar, vantar: r.vantar };
+    return { mal, iInnheimtu, utan, taflaVantar: r.taflaVantar, vantar: r.vantar };
   }
 
   function tryggja(afl) {
@@ -269,7 +292,7 @@
     if (!afl && S.at && Date.now() - S.at < MAX_ALDUR) return;
     S.bid = true;
     saekja().then(d => { S.d = d; S.villa = ''; }, e => { S.villa = (e && e.message) || String(e); skraVillu('krofumal_saekja', S.villa); })
-      .then(() => { S.bid = false; S.at = Date.now(); teiknaBord(); if (S.gl) teiknaGlugga(); });
+      .then(() => { S.bid = false; S.at = Date.now(); teiknaBord(); if (S.gl) teiknaGlugga(); vinnaBidur(); });
   }
   async function endurhlada() {
     S.bid = true;
@@ -277,6 +300,7 @@
     S.bid = false;
     S.at = Date.now();
     teiknaBord();
+    vinnaBidur();
   }
 
   /* ── forgangslistinn (teiknaður inni í einingu 368) ── */
@@ -290,7 +314,7 @@
       case 'payday_drog': return 'aðeins drög í Payday' + (p && p.due_date && p.due_date < idag ? ' · gjalddagi dróganna liðinn' : '');
       case 'krafa_ekki_stofnud': return 'engin bankakrafa' + (p && p.due_date ? ' · gjalddagi ' + dags(p.due_date) : '');
       case 'faera_kt': { const g = (m.vf && m.vf.gogn) || {}; return 'á ' + (g.markkt ? 'kt. ' + ktBirt(g.markkt) : '(kennitölu vantar)'); }
-      case 'gleymt': return 'skýrsla ' + (m.gleymt && m.gleymt.skyrsla_dags && !/-01-01$/.test(m.gleymt.skyrsla_dags) ? dags(m.gleymt.skyrsla_dags) : AR()) +
+      case 'gleymt': return 'skoðun ' + skodunTexti(m.gleymt) + (m.gleymt && m.gleymt.vinnublad_id ? ' · á vinnublaði' : '') +
         ' · ' + (m.aaetlad ? 'áætlað út frá ' + (m.vidmid.invoice_number || 'fyrri reikningi') : 'upphæð óþekkt');
       case 'greitt_sidar': return 'drög frá ' + dags(m.stofnad) + ' · ' + dagaMunur(m.stofnad) + ' d.';
       case 'aud_sala': return (s ? s.status + ' · ' : '') + 'engar línur';
@@ -413,6 +437,48 @@
     S.gl.bid = true;
     teiknaGlugga();
     saekjaGlugga();
+  }
+  /* ── opnun úr öðrum listum (368 „Vinna ›"): sala eða gleymd úttekt → vinnugluggi málsins ── */
+  // 368 getur kallað áður en listinn hefur hlaðist: beiðnin bíður og er afgreidd þegar gögnin koma, svo „fannst ekki"
+  // birtist aldrei fyrir það eitt að listinn var ekki kominn. Mál er ALDREI stofnað hér — finnist ekkert segir skýringin af hverju.
+  let _bidur = null;
+  function finnaSoluMal(solurId) {
+    if (!S.d || solurId == null || solurId === '') return null;
+    const l = S.d.mal.filter(m => m.solur_id != null && String(m.solur_id) === String(solurId));
+    return l.find(m => !LOKAD[stadaMals(m)]) || l[0] || null;
+  }
+  function malFyrirSolu(solurId) {
+    const m = finnaSoluMal(solurId);
+    return m ? { lykill: m.lykill, tegund: m.tegund, stada: stadaMals(m) } : null;
+  }
+  const opnaSolu = solurId => beida({ teg: 'sala', id: solurId });
+  const opnaGleymt = fyrirtaekiId => beida({ teg: 'gleymt', id: fyrirtaekiId });
+  function beida(b) {
+    if (b.id == null || b.id === '' || !rotOgLag()) return;
+    // Gögn yngri en 5 mín. svara strax (flokkun málsins gæti annars verið úrelt). Finnist málið ekki í gögnum eldri en
+    // 20 s er sótt aftur áður en sagt er að ekkert sé að gera.
+    const aldur = Date.now() - S.at;
+    if (S.d && !S.bid && aldur < MAX_ALDUR && afgreida(b, aldur < 20000)) return;
+    _bidur = Object.assign({ kl: Date.now() }, b);
+    toast(S.d ? 'Sæki nýjustu kröfumálin…' : 'Sæki kröfumálin — glugginn opnast eftir augnablik…');
+    tryggja(true);
+  }
+  function afgreida(b, lokasvar) {
+    const m = b.teg === 'gleymt' ? (S.d.mal.find(x => x.lykill === 'fyrirtaeki:' + b.id + ':gleymt:' + AR()) || null) : finnaSoluMal(b.id);
+    if (m) { opna(m.lykill); return true; }
+    if (!lokasvar) return false;
+    toast(S.villa ? 'Náði ekki í nýjustu kröfumálin: ' + S.villa
+      : b.teg === 'gleymt' ? 'Engin gleymd úttekt á þessum stað lengur — reikningur hefur verið gerður eða hún var rukkuð gegnum Stólpa. Ýttu á ↻ til að uppfæra listann.'
+        : (S.d.utan && S.d.utan[b.id]) || 'Ekkert opið kröfumál á þessari sölu — hún er líklega greidd, bakfærð eða komin af kröfulistunum. Ýttu á ↻ til að uppfæra listann.', true);
+    return true;
+  }
+  function vinnaBidur() {
+    const b = _bidur;
+    if (!b) return;
+    _bidur = null;
+    if (Date.now() - b.kl > 60000) return;          // svo gömul beiðni opnar ekki glugga upp úr þurru
+    if (!S.d) { toast('Náði ekki í kröfumálin' + (S.villa ? ': ' + S.villa : '') + ' — reyndu aftur.', true); return; }
+    afgreida(b, true);
   }
   function opnaNytt() {
     if (!rotOgLag()) return;
@@ -611,9 +677,11 @@
       case 'gleymt': {
         const gg = m.gleymt || {}, v = m.vidmid;
         kerfi('skyrsla', 'Úttektarskýrsla ' + AR() + ' skráð á staðnum', true,
-          gg.skyrsla_dags ? (/-01-01$/.test(gg.skyrsla_dags) ? 'Skýrsla ársins (dagsetning óskráð)' : 'Dagsett ' + dags(gg.skyrsla_dags)) + ' · ' + (gg.skyrslur || 1) + (gg.skyrslur > 1 ? ' skýrslur' : ' skýrsla') : '');
-        kerfi('enginn_reikningur', 'Enn enginn reikningur ' + AR() + ' — á stað, kúnna né systurstað', x.iSyn === undefined ? null : x.iSyn,
-          x.iSyn === false ? 'Staðurinn er horfinn úr v_gleymt_ad_rukka_uttekt — reikningur eða sala hefur bæst við.' : 'Sama regla og „Gleymst að rukka?" (v_gleymt_ad_rukka_uttekt).');
+          [gg.skyrsla_dags ? (/-01-01$/.test(gg.skyrsla_dags) ? 'Skýrsla ársins (dagsetning óskráð)' : 'Dagsett ' + dags(gg.skyrsla_dags)) + ' · ' + (gg.skyrslur || 1) + (gg.skyrslur > 1 ? ' skýrslur' : ' skýrsla') : '',
+            gg.skodun_dags ? 'Skoðun ' + skodunTexti(gg) + (gg.skodun_heimild === 'skyrsla' ? '' : ' (mánuður úr tækjaskrá)') : ''].filter(Boolean).join(' · '));
+        kerfi('enginn_reikningur', 'Enn enginn reikningur ' + AR() + ' — á stað, kúnna, systurstað né í Stólpa', x.iSyn === undefined ? null : x.iSyn,
+          x.iSyn === false ? 'Staðurinn er horfinn úr v_gleymt_ad_rukka_uttekt — reikningur eða sala hefur bæst við, eða úttektin var rukkuð gegnum Stólpa (fyrri eigendur).'
+            : 'Sama regla og „Gleymst að rukka?" (v_gleymt_ad_rukka_uttekt).');
         kerfi('upphaed', 'Upphæð áætluð út frá fyrri reikningi', v ? true : null,
           v ? '≈ ' + kr(v.amount) + ' — ' + (v.invoice_number || 'reikningur') + ' (' + (v.doc_date ? dags(v.doc_date) : v.year) + ', af ' + v.af + '). Stólpa-reikningur er aðeins verðviðmið, aldrei krafa.'
             : 'Enginn fyrri reikningur fannst — verðleggja þarf eftir tækjafjölda skýrslunnar.');
@@ -700,7 +768,7 @@
       case 'payday_drog': return 'Salan er merkt send, en reikningurinn er aðeins DRAFT í Payday: kúnninn hefur ekki fengið hann og engin krafa er í banka.';
       case 'krafa_ekki_stofnud': return 'Reikningurinn var sendur en bankakrafa stofnaðist ekki („Krafa stofnuð" = Nei). Greiðandinn sér enga kröfu í heimabanka og getur ekki greitt — algengt hjá húsfélögum í umsjón (Eignaumsjón: „engin krafa").';
       case 'faera_kt': return 'Reikningurinn á að greiðast af öðrum aðila en honum var sendur á' + (g.markkt ? ' (kt. ' + ktBirt(g.markkt) + (g.marknafn ? ', ' + g.marknafn : '') + ')' : '') + '. Hann er afturkallaður, greiðandinn færður á sölunni og krafan send aftur á rétta kennitölu.' + (g.texti ? ' ' + g.texti : '');
-      case 'gleymt': return 'Úttektarskýrsla ' + AR() + ' er skráð á staðnum en enginn reikningur — hvorki á staðnum, kúnnanum né systurstað á sömu kennitölu.';
+      case 'gleymt': return 'Úttektarskýrsla ' + AR() + ' er skráð á staðnum en enginn reikningur — hvorki á staðnum, kúnnanum né systurstað á sömu kennitölu — og úttektin var ekki rukkuð gegnum Stólpa (fyrri eigendur).';
       case 'greitt_sidar': return 'Sala í „greitt síðar" síðan ' + dags(s && s.created_at) + ' (' + dagaMunur(s && s.created_at) + ' dagar). Hún er hvorki greidd né komin í kröfu.';
       case 'aud_sala': return 'Salan er ' + ((s && s.status) || '') + ' en ber engar línur. Reikningur yrði auður — verðirnir í 233/254 stöðva sendingu, en upphæðin sem átti að rukka er óþekkt.';
       case 'stadfesta_greidslu': return s && s.greitt_med === 'reikningur'
@@ -778,6 +846,13 @@
     }
     if (st) r('Staður', [st.nafn, st.heimilisfang, st.netfang].filter(Boolean).join(' · '));
     else if (m.gleymt) r('Staður', [m.gleymt.nafn, m.gleymt.heimilisfang].filter(Boolean).join(' · '));
+    if (m.gleymt) {
+      const gg = m.gleymt;
+      r('Skoðun', gg.skodun_dags ? skodunTexti(gg) + (gg.skodun_heimild === 'skyrsla' ? ' · dagsetning skýrslu' : ' · mánuður úr tækjaskrá') : 'óþekkt');
+      r('Vinnublað', gg.vinnublad_id ? [gg.vinnublad_manudur || gg.vinnublad_dags || '#' + gg.vinnublad_id, VB_STODUR[gg.vinnublad_stada] || gg.vinnublad_stada].filter(Boolean).join(' · ') : 'ekki á vinnublaði');
+      if (gg.stolpi_sidast_nr) r('Síðast rukkað í Stólpa', ['nr. ' + gg.stolpi_sidast_nr, dags(gg.stolpi_sidast_dags), gg.stolpi_sidast_stada === 'opid_vid_yfirtoku' ? 'opið við yfirtöku' : gg.stolpi_sidast_stada,
+        kr(gg.stolpi_sidast_upphaed)].filter(Boolean).join(' · ') + ' — aðeins verðviðmið');
+    }
     if (x.umsjon && x.umsjon.length) {
       L.push('<div class="kvsect">Póstur frá umsjónaraðila</div>');
       x.umsjon.slice(0, 3).forEach(e => r(dags(e.received_at), (e.sender_email || '') + ' — ' + String(e.subject || '').slice(0, 90)));
@@ -1296,7 +1371,7 @@
     ].join('\n');
   }
 
-  window.KrofuVinnugluggi = { version: '369a', listi, samantekt, takkar, festa, opna, uppfaera: () => { tryggja(true); teiknaBord(); } };
+  window.KrofuVinnugluggi = { version: '369b', listi, samantekt, takkar, festa, opna, opnaSolu, opnaGleymt, malFyrirSolu, uppfaera: () => { tryggja(true); teiknaBord(); } };
   console.log('[369-krofu-vinnugluggi] installed');
 })();
 /* === END KRÖFU-VINNUGLUGGI === */

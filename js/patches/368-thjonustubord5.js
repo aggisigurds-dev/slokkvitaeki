@@ -35,6 +35,17 @@
  *   Charlize er því bunki, ekki manneskja: Master = opið, ekki í geymslu, og enginn starfsmaður EÐA
  *   Charlize. Mitt borð = assigned_to er sá sem situr við tölvuna (BordStarfsmadur, 350).
  *
+ * FELA OG VINNA (Agnar 11.09.2026: „Geturðu sett daufa textalínu allstaðar sem safnast, og ég geti ýtt á hide" ·
+ *   „þetta er svoldið bara upplýsingablað en ekki vinnustofa"):
+ *   Fela    hver röð í einingum sem safnast fær dauft „Fela" aftast í gráu línunni. Staða gagna → þjónninn:
+ *           thjonustubord_falid (lykill <eining>:<hluti>:<auðkenni>[:<fingrafar>]), upsert lesið til baka, aldrei eytt —
+ *           „Sýna aftur" skrifar falid = false. Síað ÁÐUR en sneitt er; kbox-staðreyndir telja áfram allt. Ekki á
+ *           Master/Mitt borð, akstri (✕), vinnublöðum, skipulagi, forgangslista (369 „sleppt") né starfsmannatöflu.
+ *   Vinna   raðir í Kröfum og „Gleymst að rukka?" fá „Vinna ›" → vinnugluggi 369 (opnaSolu / opnaGleymt); opin drög
+ *           og kreditreikningar „Opna sölu ›" → 371 OpnaSolu (annars yfir á Sölu).
+ *   Gleymt  úttektir sýna skoðunarmánuð, vinnublað og síðasta Stólpa-reikning; úttektir rukkaðar gegnum Stólpa (fyrri
+ *           eigendur) eru sér og samanbrotnar — aldrei rukka þær aftur (sql/2026-09-11_gleymt_uttekt_stolpi.sql).
+ *
  * SKRIF — beint á thjonustubeidni, lesið til baka með .select():
  *   Taka    assigned_to = ég, AÐEINS ef málið er enn laust (skilyrt) — tveir fá ekki sama málið.
  *   Setja á assigned_to = hver sem er / Master, skilyrt á eigandann sem var á skjánum („Færa á mig").
@@ -157,7 +168,9 @@
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
-    skDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {}
+    skDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
+    falidBid: {},      // Fela-skrif sem bíða eða kláruðust nýlega: { lykill: { falid, row, tok, lokid } }
+    synaHluta: {}      // „Sýna" falin atriði / Stólpa-hlutann — val á skjánum, ekki staða gagna
   };
 
   /* ── starfsmaður ── */
@@ -729,6 +742,13 @@
       '.kbox{padding:10px 12px;border-radius:4px;background:var(--well);box-shadow:var(--wellsh);border:1px solid var(--edge)}',
       '.kbox .v{font-family:var(--disp);font-size:24px;font-weight:800;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}',
       '.more{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px 12px;font-size:12px;color:var(--mute)}',
+      // FELA (11.09.2026): dauft en lyklaborðsnothæft — full sýn og undirstrik við sveimun og fókus.
+      '.fela{display:inline;padding:0;margin:0;border:0;background:none;font:500 11px var(--body);letter-spacing:0;text-transform:none;color:var(--mute);opacity:.6;cursor:pointer}',
+      '.fela:hover,.fela:focus-visible{opacity:1;text-decoration:underline;text-underline-offset:2px}',
+      '.fela.syna{font-size:12px;opacity:1;text-decoration:underline;text-decoration-color:var(--rule3);text-underline-offset:2px}.fela.syna:hover,.fela.syna:focus-visible{color:var(--ink);text-decoration-color:var(--g6)}',
+      '.lrow.falid,.akrow.falid,.vbrow.falid{opacity:.55}.lrow.falid:hover,.akrow.falid:hover,.vbrow.falid:hover,.lrow.falid:focus-within,.akrow.falid:focus-within,.vbrow.falid:focus-within{opacity:.9}',
+      '.lakt{display:inline-flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px 8px}',
+      '.sectm{padding:0 14px 6px;font-size:12px;color:var(--mute)}.lrow .s .tag{display:inline-block;padding:1px 5px;margin:1px 0}',
       '.cfgrow{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--rule2)}',
       '.cfgt b{display:block;font-family:var(--disp);font-size:15px;font-weight:700}.cfgt span{display:block;font-size:12px;color:var(--mute)}',
       '.lock{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}',
@@ -819,7 +839,8 @@
       '@container main (min-width: 1500px){.board{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"master mine sel"}}',
       // Mjór dálkur (hliðardálkur á breiðum skjá eða sími): vikan sem listi, eitt spjald í röð.
       '@container rail (max-width: 560px){.week{display:flex;flex-direction:column;gap:6px;padding:10px 12px}.day{flex-direction:row;align-items:flex-start;gap:10px}.dh{flex:0 0 100px}.djobs{flex:1}' +
-        '.cards{grid-template-columns:minmax(0,1fr)}.lrow{grid-template-columns:44px minmax(0,1fr)}.lrow .btn,.lrow .lock,.lrow .tag{grid-column:2;justify-self:start}}',
+        '.cards{grid-template-columns:minmax(0,1fr)}.lrow{grid-template-columns:44px minmax(0,1fr)}' +
+        '.lrow .btn,.lrow .lock,.lrow .tag,.lrow .lakt,.lrow .akacts{grid-column:2;justify-self:start}.lrow .lakt{justify-content:flex-start}}',
       '@container t5 (min-width: 761px){.sel.inline{display:none}}',
       '@container t5 (max-width: 760px){' +
         '.t5{padding:12px 10px 24px}.h1{font-size:30px}' +
@@ -1132,7 +1153,9 @@
   const G = {};
   function gogn(lykill, saekja, maxAldur) {
     const g = G[lykill] || (G[lykill] = {});
-    if (!g.bid && (!g.at || Date.now() - g.at > (maxAldur || 300000))) {
+    // Engin sókn fyrr en tengingin er til: djúptengill (#bord) teiknar borðið á undan DB.sb, og þá geymdist „Engin tenging"
+    // í allt að 5 mín. (falin atriði birtust aftur í mínútu). load() teiknar aftur þegar tengingin kemur og sóknin fer af stað.
+    if (!g.bid && (!g.at || Date.now() - g.at > (maxAldur || 300000)) && sb()) {
       g.bid = true;
       Promise.resolve().then(saekja).then(d => { g.data = d; g.villa = ''; }, e => { g.villa = (e && e.message) || String(e); })
         .then(() => { g.bid = false; g.at = Date.now(); render(); });
@@ -1141,6 +1164,102 @@
   }
   const gleyma = forskeyti => Object.keys(G).forEach(x => { if (x.indexOf(forskeyti) === 0) delete G[x]; });
   const uppfTakki = forskeyti => '<button type="button" class="btn iv sm tog" data-t5="g-uppf" data-g="' + esc(forskeyti) + '" title="Sækja nýjustu gögn" aria-label="Uppfæra">↻</button>';
+
+  /* ── FELA: dauf „Fela"-lína á hverju atriði sem safnast — samstillt á allar vélar (thjonustubord_falid) ── */
+  const FALID_LYKILL = /^[a-z_]+:[a-z_]+:\S+$/;          // sama regla og check-skorðan í töflunni
+  const _falidKedja = {};
+  async function saekjaFalid() {
+    const c = sb();
+    if (!c) throw new Error('Engin tenging við gagnagrunn');
+    const byrjun = Date.now();
+    const r = await c.from('thjonustubord_falid').select('lykill,eining,falid,lysing,falid_af,updated_at').eq('falid', true);
+    if (r.error) throw r.error;
+    const kort = {};
+    (r.data || []).forEach(x => { kort[x.lykill] = x; });
+    // Sókn sem fór af stað áður en smellur vistaðist má hvorki vekja atriðið upp né fela það aftur: skrif sem bíða — eða
+    // kláruðust eftir að sóknin hófst — ráða. Skrif sem kláruðust fyrr eru komin í svarið og víkja.
+    Object.keys(S.falidBid).forEach(k => {
+      const b = S.falidBid[k];
+      if (b.lokid && b.lokid < byrjun) { delete S.falidBid[k]; return; }
+      if (b.falid) kort[k] = b.row; else delete kort[k];
+    });
+    return kort;
+  }
+  const falidKort = () => gogn('falid', saekjaFalid, 60000).data || {};
+  const erFalid = lykill => { const b = S.falidBid[lykill]; return b ? !!b.falid : !!falidKort()[lykill]; };
+  // Skipt í sýnilegt og falið ÁÐUR en sneitt er (slice), svo næsta atriði færist upp.
+  function fela(listi, lykill) {
+    const synd = [], falin = [], kort = falidKort();
+    (listi || []).forEach(x => { const l = lykill(x), b = S.falidBid[l]; ((b ? b.falid : kort[l]) ? falin : synd).push(x); });
+    return { synd, falin };
+  }
+  const falinSum = n => (n ? ' · ' + n + ' falin' : '');
+  // f = { l: lykill, e: eining, d: lýsing (fer í töfluna svo sagan skiljist), falinn: sýnt í „Sýna"-ham }.
+  const felaTakki = f => (!f || typeof f !== 'object') ? '' : ' · <button type="button" class="fela" data-t5="' + (f.falinn ? 'fela-aftur' : 'fela') + '" data-fl="' + esc(f.l) +
+    '" data-fe="' + esc(f.e) + '" data-fd="' + esc(String(f.d || '').slice(0, 200)) + '" title="' + (f.falinn ? 'Sýna aftur í listanum — á öllum vélum' : 'Fela úr listanum — á öllum vélum. Birtist aftur ef það breytist.') + '">' +
+    (f.falinn ? 'Sýna aftur' : 'Fela') + '</button>';
+  // „N falin · Sýna" undir hluta með földum atriðum; faldar raðir birtast undir takkanum. Sýna er val á skjánum (S).
+  function falinHtml(h, fjoldi, teikna, vefja) {
+    if (!fjoldi) return '';
+    const syna = !!S.synaHluta[h], rodir = syna ? teikna() : '';
+    return '<div class="more">' + fjoldi + ' falin · <button type="button" class="fela syna" data-t5="fela-syna" data-h="' + esc(h) + '" aria-expanded="' + syna + '">' +
+      (syna ? 'Fela þau aftur' : 'Sýna') + '</button></div>' + (syna ? (vefja ? '<div class="' + vefja + '">' + rodir + '</div>' : rodir) : '');
+  }
+  // Teiknað strax; skrifað á þjóninn og lesið til baka. Mistakist það er fyrri staða sett aftur og villan sýnd.
+  async function setjaFalid(lykill, eining, lysing, falid) {
+    if (!FALID_LYKILL.test(String(lykill || ''))) { toast('Ógildur lykill — ekkert var vistað.', true); return false; }
+    const c = sb();
+    if (!c) { toast('Engin tenging við gagnagrunn — ekkert var vistað.', true); return false; }
+    const fyrri = erFalid(lykill), fyrriRod = falidKort()[lykill] || null, tok = {};
+    const row = { lykill, eining: eining || lykill.split(':')[0], falid, lysing: lysing ? String(lysing).slice(0, 200) : null, falid_af: nu() };
+    S.falidBid[lykill] = { falid, row, tok };
+    render();
+    // Skrif á sama lykil fara í röð, svo síðasti smellur ræður líka á þjóninum.
+    const verk = (_falidKedja[lykill] || Promise.resolve()).then(async () => {
+      const r = await c.from('thjonustubord_falid').upsert(row, { onConflict: 'lykill' }).select('lykill,falid').single();
+      if (r.error) throw r.error;
+      if (!r.data || r.data.falid !== falid) throw new Error('las ekki til baka');
+    });
+    _falidKedja[lykill] = verk.catch(() => {});
+    const minn = () => !!S.falidBid[lykill] && S.falidBid[lykill].tok === tok;
+    try {
+      await verk;
+    } catch (e) {
+      if (minn()) {
+        delete S.falidBid[lykill];
+        const g0 = G.falid;
+        if (g0 && g0.data) { if (fyrri) g0.data[lykill] = fyrriRod || Object.assign({}, row, { falid: true }); else delete g0.data[lykill]; }
+      }
+      render();
+      toast((falid ? 'Faldist ekki' : 'Birtist ekki aftur') + ': ' + ((e && e.message) || e), true);
+      return false;
+    }
+    if (minn()) S.falidBid[lykill].lokid = Date.now();
+    const g = G.falid;
+    if (g && g.data) { if (falid) g.data[lykill] = row; else delete g.data[lykill]; }
+    if (falid) toast('Falið úr listanum', false, () => setjaFalid(lykill, eining, lysing, false));
+    else toast('Sýnt aftur í listanum');
+    return true;
+  }
+
+  /* ── VINNA: raðir í kröfulistunum opna vinnuglugga kröfunnar (369) eða söluna sjálfa (371) ── */
+  const lakt = (...hlutar) => '<span class="lakt">' + hlutar.join('') + '</span>';
+  const vinnaSoluTakki = x => '<button type="button" class="btn iv sm" data-t5="vinna-sala" data-sid="' + x.id + '" title="Opna vinnuglugga kröfunnar — þrep, gögn og tenglar">Vinna ›</button>';
+  const opnaSoluTakki = x => '<button type="button" class="btn iv sm" data-t5="opna-solu" data-sid="' + x.id + '" data-num="' + esc(x.num || '') + '" title="Opna söluna' + (x.num ? ' ' + esc(x.num) : '') + '">Opna sölu ›</button>';
+  function vinnaKrofu(teg, id) {
+    const KV = window.KrofuVinnugluggi, fall = KV && (teg === 'gleymt' ? KV.opnaGleymt : KV.opnaSolu);
+    if (typeof fall !== 'function') { toast('Vinnugluggi krafna (369) hefur ekki hlaðist — endurhlaðið síðuna.', true); return; }
+    try { fall(id); } catch (e) { toast('Vinnuglugginn opnaðist ekki: ' + ((e && e.message) || e), true); }
+  }
+  function opnaSolu(id, num) {
+    if (window.OpnaSolu && typeof OpnaSolu.opna === 'function') {
+      try { OpnaSolu.opna(id); return; } catch (e) { console.warn('[368-thjonustubord5] OpnaSolu.opna', e); }
+    }
+    // Án 371: yfir á Sölu. Borðið felst við skiptin og skilaboð í skuggarót þess sæjust ekki — því showToast síðunnar.
+    const texti = 'Leitaðu að ' + (num || 'sölu #' + id) + ' á Sölu.';
+    goView('sala');
+    try { if (typeof window.showToast === 'function') window.showToast(texti); else toast(texti); } catch (_) {}
+  }
 
   /* ── aksturslistar (267 ArsAkstur: arsskodun_customers[fid].akstur = 1–3) ── */
   function aksturslistar() {
@@ -1333,16 +1452,16 @@
       (b.spurning ? '<div class="vbspurn">❓ ' + esc(b.spurning) + '</div>' : '') +
       (b.athugasemd ? '<div class="vbtexti">📝 ' + esc(b.athugasemd) + '</div>' : '');
   }
-  function vbRow(x) {
+  function vbRow(x, f) {
     const b = x.b, samt = b.stada === 'samthykkt', opid = !!(S.vbOpin || {})[b.id], upph = vbSamtals(b), bid = S.busy['vb' + b.id] ? ' disabled' : '';
     const nafn = b.fyrirtaeki_id ? '<a class="clink" href="#company/' + b.fyrirtaeki_id + '" data-t5="fyr-id" data-fid="' + b.fyrirtaeki_id + '">' + esc(b.fyrirtaeki || x.nafn || '(ónefnt)') + '</a>' : '<b>' + esc(b.fyrirtaeki || '(ónefnt)') + '</b>';
     const sonn = (x.sk ? '<span class="tag ok">📄 Skýrsla ' + esc(x.sk.doc_date ? fmtD(x.sk.doc_date) : String(x.sk.year)) + '</span>' : '<span class="tag">Engin skýrsla ' + new Date().getFullYear() + '</span>') +
       (x.rk ? '<span class="tag ok">🧾 ' + esc(x.rk.num || 'Sala') + ' · ' + esc(fmtD(x.rk.created_at)) + (x.rk.paid_at ? ' · greitt' : '') + '</span>' : '<span class="tag">Enginn reikningur</span>') +
       (!x.fra ? '<span class="tag" title="Hvorki dagsetning né mánuður á blaðinu — allt árið borið saman">Dagsetning vantar</span>' : '') +
       (x.systkin > 1 && x.rk ? '<span class="tag hot" title="Fleiri staðir á sama viðskiptavini — reikningurinn gæti átt við annan stað">⚠ ' + x.systkin + ' staðir á kúnna</span>' : '');
-    return '<div class="vbrow' + (x.buid ? ' buid' : '') + '"><div class="vbhead">' +
+    return '<div class="vbrow' + (x.buid ? ' buid' : '') + (f && f.falinn ? ' falid' : '') + '"><div class="vbhead">' +
         '<span class="tag' + (samt ? ' ok' : '') + '">' + (samt ? 'Samþykkt' : 'Bíður') + '</span>' + nafn +
-        '<span class="s">' + esc(b.dagsetning || b.manudur || 'Dagsetning vantar') + (b.skodunarmadur ? ' · ' + esc(b.skodunarmadur) : '') + (upph ? ' · ' + kr(upph) : '') + '</span>' +
+        '<span class="s">' + esc(b.dagsetning || b.manudur || 'Dagsetning vantar') + (b.skodunarmadur ? ' · ' + esc(b.skodunarmadur) : '') + (upph ? ' · ' + kr(upph) : '') + felaTakki(f) + '</span>' +
         '<span class="grow"></span><button type="button" class="btn iv sm tog" data-t5="vb-opna" data-vb="' + b.id + '" aria-expanded="' + opid + '" aria-label="Innihald blaðsins">' + (opid ? '▴' : '▾') + '</button></div>' +
       '<div class="tags">' + sonn + '</div>' + (opid ? vbInnihald(b) : '') +
       '<div class="sacts">' +
@@ -1398,17 +1517,21 @@
       return Object.assign({}, s, { gjald: p, drog, send: !!(s.krafa_sent_at || s.invoiced_at || s.dk_invoice_id) && !drog });
     });
   }
+  // Úttektir með skoðunarmánuði, vinnublaði og síðasta Stólpa-reikningi (sql/2026-09-11_gleymt_uttekt_stolpi.sql). Úttektir
+  // rukkaðar gegnum Stólpa (fyrri eigendur) eru í sér sýn — teljast greiddar fyrri eigendum, aldrei rukkaðar aftur.
   async function saekjaGleymt() {
     const c = sb();
     if (!c) throw new Error('Engin tenging við gagnagrunn');
     const fjortan = new Date(Date.now() - 14 * 864e5).toISOString();
-    const [ru, rg, rk] = await Promise.all([
-      c.from('v_gleymt_ad_rukka_uttekt').select('fyrirtaeki_id,nafn,heimilisfang,postnumer,skyrslur,skyrsla_dags').order('skyrsla_dags', { ascending: true }),
+    const [ru, rg, rk, rs] = await Promise.all([
+      c.from('v_gleymt_ad_rukka_uttekt').select('fyrirtaeki_id,nafn,heimilisfang,postnumer,skyrslur,skyrsla_dags,skodun_dags,skodun_heimild,vinnublad_id,vinnublad_manudur,vinnublad_dags,vinnublad_stada,stolpi_sidast_nr,stolpi_sidast_dags,stolpi_sidast_stada,stolpi_sidast_upphaed').order('skodun_dags', { ascending: true }),
       c.from('solur').select('id,num,customer_nafn,samtals,created_at,starfsmadur').eq('greitt_med', 'greitt_sidar').eq('status', 'drog').is('paid_at', null).lt('created_at', fjortan).order('created_at', { ascending: true }),
-      c.from('solur').select('id,num,customer_nafn,samtals,created_at,greitt_med,starfsmadur').in('greitt_med', ['kort', 'reidufe']).is('paid_at', null).eq('status', 'final').not('is_credit', 'is', true).order('created_at', { ascending: true })
+      c.from('solur').select('id,num,customer_nafn,samtals,created_at,greitt_med,starfsmadur').in('greitt_med', ['kort', 'reidufe']).is('paid_at', null).eq('status', 'final').not('is_credit', 'is', true).order('created_at', { ascending: true }),
+      c.from('v_gleymt_uttekt_stolpi').select('fyrirtaeki_id,nafn,heimilisfang,postnumer,skodun_dags,skodun_heimild,stolpi_nr,stolpi_dags,stolpi_stada,stolpi_upphaed').order('skodun_dags', { ascending: true })
     ]);
     if (ru.error) throw ru.error;
-    return { uttekt: ru.data || [], sidar: rg.data || [], kort: rk.data || [] };
+    return { uttekt: (ru.data || []).slice().sort(rodSkodun), sidar: rg.data || [], kort: rk.data || [],
+      stolpi: rs.error ? null : (rs.data || []).slice().sort(rodSkodun), stolpiVilla: rs.error ? (rs.error.message || String(rs.error)) : '' };
   }
   const BAKF_ORD = ['bakfær', 'kreditreikn', 'kredit', 'leiðrétt', 'endurgreið', 'tvírukk', 'breyta reikn', 'rangur reikn', 'afrit af reikn', 'fella niður'];
   async function saekjaBakfaerslur() {
@@ -1438,8 +1561,23 @@
   }
   const summa = l => l.reduce((s, x) => s + (+x.samtals || 0), 0);
   const daga = t => Math.max(0, Math.floor((Date.now() - tStamp(t)) / 864e5));
-  const soluLina = (x, merki) => '<div class="lrow"><span class="age">' + esc(x.num || '—') + '</span><div><b>' + esc(x.customer_nafn || '(ónefnt)') + '</b>' +
-    '<span class="s">' + kr(x.samtals) + ' · ' + esc(fmtD(x.created_at)) + (x.starfsmadur ? ' · ' + esc(x.starfsmadur) : '') + (x.krafa_note ? ' · ' + esc(String(x.krafa_note).slice(0, 60)) : '') + '</span></div>' + (merki || '<span></span>') + '</div>';
+  const soluLina = (x, merki, f) => '<div class="lrow' + (f && f.falinn ? ' falid' : '') + '"><span class="age">' + esc(x.num || '—') + '</span><div><b>' + esc(x.customer_nafn || '(ónefnt)') + '</b>' +
+    '<span class="s">' + kr(x.samtals) + ' · ' + esc(fmtD(x.created_at)) + (x.starfsmadur ? ' · ' + esc(x.starfsmadur) : '') + (x.krafa_note ? ' · ' + esc(String(x.krafa_note).slice(0, 60)) : '') + felaTakki(f) + '</span></div>' + (merki || '<span></span>') + '</div>';
+  const soluLysing = x => [x.num, x.customer_nafn, kr(x.samtals)].filter(Boolean).join(' · ');
+  // Gleymst að rukka? (Agnar 11.09.2026: „hvaða mánuð skýrslan var gerð, er hún á vinnublaði, eða kanski greitt gegnum
+  // fyrri eigendur"): vinstra megin dagsetning skýrslu þegar hún er skráð, annars mánuður úr tækjaskrá (uttaeki.last_insp).
+  const MAN_STUTT = ['jan.', 'feb.', 'mars', 'apr.', 'maí', 'júní', 'júlí', 'ágú.', 'sep.', 'okt.', 'nóv.', 'des.'];
+  const VB_STADA_HEITI = { bidur: 'Bíður', samthykkt: 'Samþykkt', klarad: 'Klárað' };
+  const dagsFull = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; };
+  function skodunHtml(x) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(x.skodun_dags || ''));
+    if (!m) return '<span class="age" title="Skoðunardagur óþekktur">—</span>';
+    const skyrsla = x.skodun_heimild === 'skyrsla';
+    return '<span class="age" title="' + (skyrsla ? 'Dagsetning skýrslu ' + dagsFull(x.skodun_dags) : 'Skoðunarmánuður úr tækjaskrá') + '">' +
+      (skyrsla ? (+m[3]) + '. ' : '') + MAN_STUTT[+m[2] - 1] + '</span>';
+  }
+  const rodSkodun = (a, b) => (a.skodun_dags ? 0 : 1) - (b.skodun_dags ? 0 : 1) || String(a.skodun_dags || '').localeCompare(String(b.skodun_dags || '')) ||
+    String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is');
 
   /* ── Hreinsa Master ── */
   const HR_FLOKKAR = [['tvitekid', 'Tvítekið'], ['buid', 'Líklega búið'], ['ekkertfyr', 'Vantar fyrirtæki'], ['gamalt', 'Gamalt og óhreyft'], ['opid', 'Enn opið']];
@@ -1651,11 +1789,12 @@
     render();
   }
 
-  function lrowHtml(r, merki) {
+  // f (valfrjálst) = { l: lykill, e: eining, d: lýsing, falinn } — dauft „Fela" aftast í gráu línunni.
+  function lrowHtml(r, merki, f) {
     const a = ageDays(r), w = fyrLink(r);
-    return '<div class="lrow"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
+    return '<div class="lrow' + (f && f.falinn ? ' falid' : '') + '"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
       '<div><button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '" title="Skoða málið"><b>' + esc(r.title || '(ónefnt mál)') + '</b></button>' +
-      '<span class="s">' + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + '</span></div>' + (merki || '<span></span>') + '</div>';
+      '<span class="s">' + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + felaTakki(f) + '</span></div>' + (merki || '<span></span>') + '</div>';
   }
   function bottomHtml(k) {
     const n = nu();
@@ -1692,40 +1831,56 @@
     if (k === 'frestir') {
       const dagur = ymd(new Date());
       const flokkur = r => { const d = ymd(new Date(r.due_at)); return d < dagur ? 'lidid' : d === dagur ? 'idag' : 'seinna'; };
-      const rows = S.rows.filter(r => r.due_at).sort((a, b) => tStamp(a.due_at) - tStamp(b.due_at));
+      // Fresturinn er fingrafar: nýr frestur → atriðið birtist aftur.
+      const lyk = r => 'frestir:mal:' + r.id + ':' + ymd(new Date(r.due_at));
+      const { synd: rows, falin } = fela(S.rows.filter(r => r.due_at).sort((a, b) => tStamp(a.due_at) - tStamp(b.due_at)), lyk);
       const lidnir = rows.filter(r => flokkur(r) === 'lidid').length, idag = rows.filter(r => flokkur(r) === 'idag').length;
-      return modPanel(k, lidnir + ' liðnir · ' + idag + ' í dag · ' + rows.length + ' alls', rows.length
-        ? rows.slice(0, 12).map(r => { const f = flokkur(r); return lrowHtml(r, '<span class="tag' + (f === 'lidid' ? ' hot' : '') + '">' + (f === 'lidid' ? 'Liðinn ' + esc(fmtD(r.due_at)) : f === 'idag' ? 'Í dag' : esc(fmtD(r.due_at))) + '</span>'); }).join('') +
-          (rows.length > 12 ? '<div class="more">+ ' + (rows.length - 12) + ' til viðbótar</div>' : '')
-        : emptyHtml('Engin opin mál með frest.'));
+      const rod = (r, falinn) => { const f = flokkur(r); return lrowHtml(r, '<span class="tag' + (f === 'lidid' ? ' hot' : '') + '">' + (f === 'lidid' ? 'Liðinn ' + esc(fmtD(r.due_at)) : f === 'idag' ? 'Í dag' : esc(fmtD(r.due_at))) + '</span>', { l: lyk(r), e: k, d: r.title, falinn }); };
+      return modPanel(k, lidnir + ' liðnir · ' + idag + ' í dag · ' + rows.length + ' alls' + falinSum(falin.length),
+        (rows.length ? rows.slice(0, 12).map(r => rod(r)).join('') + (rows.length > 12 ? '<div class="more">+ ' + (rows.length - 12) + ' til viðbótar</div>' : '')
+          : falin.length ? '' : emptyHtml('Engin opin mál með frest.')) +
+        falinHtml('frestir:mal', falin.length, () => falin.map(r => rod(r, true)).join('')));
     }
     if (k === 'nyjast') {
-      const rows = S.rows.slice().sort((a, b) => tStamp(b.created_at) - tStamp(a.created_at)).slice(0, 10);
-      return modPanel(k, S.rows.filter(r => ageDays(r) <= 7).length + ' ný síðustu 7 daga', rows.length
-        ? rows.map(r => lrowHtml(r, '<span class="tag">' + esc(tegMals(r)) + '</span>')).join('')
-        : emptyHtml('Engin opin mál.'));
+      const lyk = r => 'nyjast:mal:' + r.id;
+      const { synd, falin } = fela(S.rows.slice().sort((a, b) => tStamp(b.created_at) - tStamp(a.created_at)), lyk);
+      const rod = (r, falinn) => lrowHtml(r, '<span class="tag">' + esc(tegMals(r)) + '</span>', { l: lyk(r), e: k, d: r.title, falinn });
+      return modPanel(k, synd.filter(r => ageDays(r) <= 7).length + ' ný síðustu 7 daga' + falinSum(falin.length),
+        (synd.length ? synd.slice(0, 10).map(r => rod(r)).join('') : falin.length ? '' : emptyHtml('Engin opin mál.')) +
+        falinHtml('nyjast:mal', falin.length, () => falin.map(r => rod(r, true)).join('')));
     }
     if (k === 'forgangur') {
       const g = isOpen(k) ? gogn('elt', saekjaElt, 600000) : null, nuna = Date.now();
-      const lidnir = S.rows.filter(r => r.due_at && tStamp(r.due_at) < nuna - 12 * 3600e3).sort((a, b) => tStamp(a.due_at) - tStamp(b.due_at));
-      const aridandi = S.rows.filter(r => r.important && lidnir.indexOf(r) < 0).sort(rodun);
-      const eltRow = (m, merki) => {
+      const lidnirAll = S.rows.filter(r => r.due_at && tStamp(r.due_at) < nuna - 12 * 3600e3).sort((a, b) => tStamp(a.due_at) - tStamp(b.due_at));
+      const aridandiAll = S.rows.filter(r => r.important && lidnirAll.indexOf(r) < 0).sort(rodun);
+      const lidLyk = r => 'forgangur:lidinn:' + r.id + ':' + ymd(new Date(r.due_at)), ariLyk = r => 'forgangur:aridandi:' + r.id;
+      const lid = fela(lidnirAll, lidLyk), ari = fela(aridandiAll, ariLyk);
+      const eltRow = (m, merki, f) => {
         const r = S.rows.find(x => x.channel_ref === 'email:' + m.id), a = Math.max(0, Math.floor((nuna - tStamp(m.received_at)) / 864e5));
-        return '<div class="lrow"><span class="age ' + ageCls(a) + '">' + a + 'D</span><div>' +
+        return '<div class="lrow' + (f.falinn ? ' falid' : '') + '"><span class="age ' + ageCls(a) + '">' + a + 'D</span><div>' +
           (r ? '<button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '"><b>' + esc(m.subject || '(ekkert efni)') + '</b></button>' : '<b>' + esc(m.subject || '(ekkert efni)') + '</b>') +
-          '<span class="s">' + esc(m.sender_name || m.sender_email || '') + ' · ' + (r ? esc(eigandaTexti(r, nu())) : 'ekki á borðinu') + '</span></div>' + merki + '</div>';
+          '<span class="s">' + esc(m.sender_name || m.sender_email || '') + ' · ' + (r ? esc(eigandaTexti(r, nu())) : 'ekki á borðinu') + felaTakki(f) + '</span></div>' + merki + '</div>';
       };
-      let body = '', elt = 0;
+      const lidRod = (r, falinn) => lrowHtml(r, '<span class="tag hot">' + esc(fmtD(r.due_at)) + '</span>', { l: lidLyk(r), e: k, d: r.title, falinn });
+      const ariRod = (r, falinn) => lrowHtml(r, '<span class="tag hot">Áríðandi</span>', { l: ariLyk(r), e: k, d: r.title, falinn });
+      let body = '', elt = 0, eltFalin = 0;
       if (g && g.data) {
-        elt = g.data.eltir.length + g.data.itrek.length;
-        if (elt) body += '<div class="sect">Rekur á eftir okkur</div>' +
-          g.data.eltir.map(h => eltRow(h.mails[0], '<span class="tag hot">' + h.mails.length + ' póstar án svars</span>')).join('') +
-          g.data.itrek.map(m => eltRow(m, '<span class="tag hot">Ítrekun</span>')).join('');
+        const eltLyk = h => 'forgangur:elt:' + h.mails[0].id, itrLyk = m => 'forgangur:itrek:' + m.id;
+        const elF = fela(g.data.eltir, eltLyk), itF = fela(g.data.itrek, itrLyk);
+        const eRod = (h, falinn) => eltRow(h.mails[0], '<span class="tag hot">' + h.mails.length + ' póstar án svars</span>',
+          { l: eltLyk(h), e: k, d: (h.mails[0].sender_name || h.netfang) + ' — ' + (h.mails[0].subject || ''), falinn });
+        const iRod = (m, falinn) => eltRow(m, '<span class="tag hot">Ítrekun</span>', { l: itrLyk(m), e: k, d: (m.sender_name || m.sender_email || '') + ' — ' + (m.subject || ''), falinn });
+        elt = elF.synd.length + itF.synd.length;
+        eltFalin = elF.falin.length + itF.falin.length;
+        if (elt || eltFalin) body += '<div class="sect">Rekur á eftir okkur</div>' + elF.synd.map(h => eRod(h)).join('') + itF.synd.map(m => iRod(m)).join('') +
+          falinHtml('forgangur:elt', eltFalin, () => elF.falin.map(h => eRod(h, true)).join('') + itF.falin.map(m => iRod(m, true)).join(''));
       } else body += g && g.villa ? '<p class="err">Náði ekki í póstinn: ' + esc(g.villa) + '</p>' : '<div class="more">Les póstinn…</div>';
-      if (lidnir.length) body += '<div class="sect">Frestur liðinn (' + lidnir.length + ')</div>' + lidnir.slice(0, 8).map(r => lrowHtml(r, '<span class="tag hot">' + esc(fmtD(r.due_at)) + '</span>')).join('');
-      if (aridandi.length) body += '<div class="sect">Áríðandi (' + aridandi.length + ')</div>' + aridandi.slice(0, 8).map(r => lrowHtml(r, '<span class="tag hot">Áríðandi</span>')).join('');
-      if (g && g.data && !elt && !lidnir.length && !aridandi.length) body = emptyHtml('Enginn rekur á eftir, engir liðnir frestir og ekkert áríðandi.');
-      return modPanel(k, elt + ' reka á eftir · ' + lidnir.length + ' liðnir frestir · ' + aridandi.length + ' áríðandi', body,
+      if (lid.synd.length || lid.falin.length) body += '<div class="sect">Frestur liðinn (' + lid.synd.length + ')</div>' + lid.synd.slice(0, 8).map(r => lidRod(r)).join('') +
+        falinHtml('forgangur:lidinn', lid.falin.length, () => lid.falin.map(r => lidRod(r, true)).join(''));
+      if (ari.synd.length || ari.falin.length) body += '<div class="sect">Áríðandi (' + ari.synd.length + ')</div>' + ari.synd.slice(0, 8).map(r => ariRod(r)).join('') +
+        falinHtml('forgangur:aridandi', ari.falin.length, () => ari.falin.map(r => ariRod(r, true)).join(''));
+      if (g && g.data && !elt && !eltFalin && !lid.synd.length && !lid.falin.length && !ari.synd.length && !ari.falin.length) body = emptyHtml('Enginn rekur á eftir, engir liðnir frestir og ekkert áríðandi.');
+      return modPanel(k, elt + ' reka á eftir · ' + lid.synd.length + ' liðnir frestir · ' + ari.synd.length + ' áríðandi' + falinSum(eltFalin + lid.falin.length + ari.falin.length), body,
         uppfTakki('elt') + '<button type="button" class="btn iv sm" data-t5="go" data-view="thjonustuver-postar">Pósthólfið ›</button>');
     }
     if (k === 'nymal') {
@@ -1733,30 +1888,44 @@
       const utkall = r => ['heimsokn', 'skodun_tilbod'].indexOf(r.type) >= 0 || r.flokkur === 'brunakerfi' || tagList(r).some(t => ['uppsetning', 'arskodun', 'brunakerfi'].indexOf(t) >= 0);
       const utk = ny.filter(utkall).sort(rodun), vantar = ny.filter(r => !r.fyrirtaeki_id && !r.customer_base_id), buin = ny.filter(r => virkniEftir(r));
       const kb = (l, v, m) => '<div class="kbox"><div class="lbl">' + l + '</div><div class="v">' + v + '</div>' + (m ? '<div class="km">' + m + '</div>' : '') + '</div>';
+      const uLyk = r => 'nymal:utkall:' + r.id, vLyk = r => 'nymal:vantar:' + r.id, uF = fela(utk, uLyk), vF = fela(vantar, vLyk);
+      const uRod = (r, falinn) => lrowHtml(r, r.fyrirtaeki_id ? '<span class="akacts">' + akTakki(r.fyrirtaeki_id) + '</span>' : '<span class="tag">Vantar fyrirtæki</span>', { l: uLyk(r), e: k, d: r.title, falinn });
+      const vRod = (r, falinn) => lrowHtml(r, '', { l: vLyk(r), e: k, d: r.title, falinn });
       const body = '<div class="kboxes">' + kb('≤ 7 dagar', ny.filter(r => ageDays(r) <= 7).length) + kb('8–30 dagar', ny.filter(r => ageDays(r) > 7 && ageDays(r) <= 30).length) +
           kb('Eldri en 30', ny.filter(r => ageDays(r) > 30).length, ny.filter(r => normW(r.assigned_to) === AI_WORKER).length + ' í bunka Charlize') + kb('Líklega búin', buin.length) + '</div>' +
-        (utk.length ? '<div class="sect">Útköll — þarf að fara (' + utk.length + ')</div>' + utk.slice(0, 10).map(r => lrowHtml(r, r.fyrirtaeki_id ? '<span class="akacts">' + akTakki(r.fyrirtaeki_id) + '</span>' : '<span class="tag">Vantar fyrirtæki</span>')).join('') : '') +
-        (vantar.length ? '<div class="sect">Vantar fyrirtæki og heimilisfang (' + vantar.length + ')</div>' + vantar.slice(0, 6).map(r => lrowHtml(r, '')).join('') +
-          (vantar.length > 6 ? '<div class="more">+ ' + (vantar.length - 6) + ' til viðbótar — tengdu fyrirtæki í „Breyta máli" eða með leitinni</div>' : '') : '');
-      return modPanel(k, ny.length + ' ný · ' + utk.length + ' útköll · ' + vantar.length + ' án fyrirtækis', body);
+        (uF.synd.length || uF.falin.length ? '<div class="sect">Útköll — þarf að fara (' + uF.synd.length + ')</div>' + uF.synd.slice(0, 10).map(r => uRod(r)).join('') +
+          falinHtml('nymal:utkall', uF.falin.length, () => uF.falin.map(r => uRod(r, true)).join('')) : '') +
+        (vF.synd.length || vF.falin.length ? '<div class="sect">Vantar fyrirtæki og heimilisfang (' + vF.synd.length + ')</div>' + vF.synd.slice(0, 6).map(r => vRod(r)).join('') +
+          (vF.synd.length > 6 ? '<div class="more">+ ' + (vF.synd.length - 6) + ' til viðbótar — tengdu fyrirtæki í „Breyta máli" eða með leitinni</div>' : '') +
+          falinHtml('nymal:vantar', vF.falin.length, () => vF.falin.map(r => vRod(r, true)).join('')) : '');
+      return modPanel(k, ny.length + ' ný · ' + uF.synd.length + ' útköll · ' + vF.synd.length + ' án fyrirtækis' + falinSum(uF.falin.length + vF.falin.length), body);
     }
     if (k === 'brunakerfi') {
       const g = isOpen(k) ? gogn('bk', saekjaBrunakerfi, 600000) : null, AR = new Date().getFullYear();
-      let body;
+      let body, falinAlls = 0;
+      const synd = { due: 0 };
       if (!g || (!g.data && !g.villa)) body = emptyHtml('Les brunakerfin…');
       else if (g.villa) body = '<p class="err">Náði ekki í brunakerfin: ' + esc(g.villa) + '</p>';
       else {
         const d = g.data, pnr = (a, b) => String(a.postnumer || '').localeCompare(String(b.postnumer || ''));
-        const stopp = x => '<div class="akrow"><span class="aknr">' + (x.latestMonth ? esc(MAN[x.latestMonth - 1].slice(0, 3)) : '—') + '</span><div class="akinfo">' +
+        const stopp = (x, f) => '<div class="akrow' + (f.falinn ? ' falid' : '') + '"><span class="aknr">' + (x.latestMonth ? esc(MAN[x.latestMonth - 1].slice(0, 3)) : '—') + '</span><div class="akinfo">' +
             '<a class="clink" href="#company/' + x.id + '" data-t5="fyr-id" data-fid="' + x.id + '">' + esc(x.nafn || '(ónefnt)') + '</a>' +
-            '<span class="s">' + esc([x.heimilisfang, x.postnumer].filter(Boolean).join(', ') || 'Vantar heimilisfang') + (simiAf(x) ? ' · ' + esc(simiAf(x)) : '') + (x.latest ? ' · síðasta skýrsla ' + x.latest : '') + '</span></div>' +
+            '<span class="s">' + esc([x.heimilisfang, x.postnumer].filter(Boolean).join(', ') || 'Vantar heimilisfang') + (simiAf(x) ? ' · ' + esc(simiAf(x)) : '') + (x.latest ? ' · síðasta skýrsla ' + x.latest : '') + felaTakki(f) + '</span></div>' +
           '<div class="akacts">' + akTakki(x.id) + '</div></div>';
-        const hluti = (heiti, listi) => listi.length ? '<div class="sect">' + heiti + ' (' + listi.length + ')</div><div class="aklist">' + listi.map(stopp).join('') + '</div>' : '';
-        body = hluti('Komið á tíma — þarf að fara', d.filter(x => x.due).sort(pnr)) + hluti('Í vinnslu', d.filter(x => x.wip)) +
-          hluti('Ný — bíða fyrstu skoðunar', d.filter(x => x.nytt && !x.done && !x.wip)) + hluti('Á næstunni', d.filter(x => x.upcoming).sort((a, b) => a.latestMonth - b.latestMonth));
+        // Hlutinn er í lyklinum: kerfi sem færist t.d. úr „Á næstunni" í „Komið á tíma" birtist aftur.
+        const hluti = (heiti, h, listi) => {
+          const lyk = x => 'brunakerfi:' + h + ':' + x.id + ':' + AR, F = fela(listi, lyk), rod = (x, falinn) => stopp(x, { l: lyk(x), e: k, d: x.nafn, falinn });
+          synd[h] = F.synd.length;
+          falinAlls += F.falin.length;
+          if (!F.synd.length && !F.falin.length) return '';
+          return '<div class="sect">' + heiti + ' (' + F.synd.length + ')</div>' + (F.synd.length ? '<div class="aklist">' + F.synd.map(x => rod(x)).join('') + '</div>' : '') +
+            falinHtml('brunakerfi:' + h, F.falin.length, () => F.falin.map(x => rod(x, true)).join(''), 'aklist');
+        };
+        body = hluti('Komið á tíma — þarf að fara', 'due', d.filter(x => x.due).sort(pnr)) + hluti('Í vinnslu', 'wip', d.filter(x => x.wip)) +
+          hluti('Ný — bíða fyrstu skoðunar', 'nytt', d.filter(x => x.nytt && !x.done && !x.wip)) + hluti('Á næstunni', 'upcoming', d.filter(x => x.upcoming).sort((a, b) => a.latestMonth - b.latestMonth));
         if (!body) body = emptyHtml('Ekkert brunakerfi komið á tíma.');
       }
-      return modPanel(k, g && g.data ? g.data.filter(x => x.due).length + ' komin á tíma · ' + g.data.filter(x => x.done).length + ' búin ' + AR : 'Brunakerfi', body,
+      return modPanel(k, g && g.data ? synd.due + ' komin á tíma · ' + g.data.filter(x => x.done).length + ' búin ' + AR + falinSum(falinAlls) : 'Brunakerfi', body,
         uppfTakki('bk') + '<button type="button" class="btn iv sm" data-t5="go" data-view="brunayfirlit">Brunakerfi ›</button>');
     }
     if (k === 'starfsmenn') {
@@ -1783,39 +1952,49 @@
         const synd = listi.filter(x => passar(x, sia)).sort((a, b) => (b.buid - a.buid) || ((b.b.stada === 'samthykkt') - (a.b.stada === 'samthykkt')) || String(a.b.fyrirtaeki || '').localeCompare(String(b.b.fyrirtaeki || ''), 'is'));
         body = '<div class="vbsia"><div class="seg sm" role="group" aria-label="Sía vinnublaða">' + [['allt', 'Öll'], ['bidur', 'Bíða'], ['samthykkt', 'Samþykkt'], ['buid', 'Líklega búin']].map(f =>
             '<button type="button" data-t5="vb-sia" data-v="' + f[0] + '" aria-pressed="' + (sia === f[0]) + '">' + f[1] + '<span class="c">' + listi.filter(x => passar(x, f[0])).length + '</span></button>').join('') + '</div></div>' +
-          (synd.length ? synd.map(vbRow).join('') : emptyHtml('Ekkert vinnublað í þessari síu.'));
+          (synd.length ? synd.map(x => vbRow(x)).join('') : emptyHtml('Ekkert vinnublað í þessari síu.'));
       }
       const sum = g && g.data ? g.data.blod.filter(b => b.stada === 'bidur').length + ' bíða · ' + g.data.blod.filter(b => b.stada === 'samthykkt').length + ' samþykkt · ' + vbListi(g.data).filter(x => x.buid).length + ' líklega búin'
         : c0 ? (c0.bidur || 0) + ' bíða yfirferðar · ' + (c0.samthykkt || 0) + ' samþykkt' : 'vinnublöð';
       return modPanel(k, sum, body, uppfTakki('skyrslur'));
     }
     if (k === 'ivinnslu') {
-      const g = isOpen(k) ? gogn('skyrslur', saekjaSkyrslur) : null, mal = S.rows.filter(r => r.status === 'i_vinnslu').sort(rodun);
-      let body = '<div class="sect">Mál merkt í vinnslu (' + mal.length + ')</div>' +
-        (mal.length ? mal.map(r => lrowHtml(r, virkniEftir(r) ? '<span class="tag ok">Líklega búið</span>' : '<span class="tag">' + ageDays(r) + ' dagar</span>')).join('') : '<div class="more">Ekkert mál er merkt í vinnslu.</div>');
+      const g = isOpen(k) ? gogn('skyrslur', saekjaSkyrslur) : null;
+      const mLyk = r => 'ivinnslu:mal:' + r.id, mF = fela(S.rows.filter(r => r.status === 'i_vinnslu').sort(rodun), mLyk);
+      const mRod = (r, falinn) => lrowHtml(r, virkniEftir(r) ? '<span class="tag ok">Líklega búið</span>' : '<span class="tag">' + ageDays(r) + ' dagar</span>', { l: mLyk(r), e: k, d: r.title, falinn });
+      let body = '<div class="sect">Mál merkt í vinnslu (' + mF.synd.length + ')</div>' +
+        (mF.synd.length ? mF.synd.map(r => mRod(r)).join('') : mF.falin.length ? '' : '<div class="more">Ekkert mál er merkt í vinnslu.</div>') +
+        falinHtml('ivinnslu:mal', mF.falin.length, () => mF.falin.map(r => mRod(r, true)).join(''));
       if (!g || !g.data) {
         body += g && g.villa ? '<p class="err">' + esc(g.villa) + '</p>' : '<div class="more">Sæki vinnublöð og Ársskoðun…</div>';
-        return modPanel(k, mal.length + ' mál í vinnslu', body, uppfTakki('skyrslur'));
+        return modPanel(k, mF.synd.length + ' mál í vinnslu' + falinSum(mF.falin.length), body, uppfTakki('skyrslur'));
       }
-      const D = g.data, buin = vbListi(D).filter(x => x.buid);
-      body += '<div class="sect">Vinnublöð með bæði skýrslu og reikningi — líklega búin (' + buin.length + ')</div>' +
-        (buin.length ? buin.map(vbRow).join('') : '<div class="more">Ekkert vinnublað með bæði skýrslu og reikningi.</div>');
-      const ars = D.iVinnslu.map(fid => Object.assign({ fid }, sonnun(fid, new Date(D.AR, 0, 1).getTime(), D))).sort((a, b) => (!!(b.sk || b.rk)) - (!!(a.sk || a.rk)));
-      const arsMed = ars.filter(x => x.sk || x.rk).length;
-      body += '<div class="sect">Ársskoðun merkt í vinnslu (' + ars.length + ' · ' + arsMed + ' með skýrslu eða reikningi ' + D.AR + ')</div>' +
-        (ars.length ? '<div class="aklist">' + ars.slice(0, 12).map(x => '<div class="akrow"><span class="aknr">' + (x.sk && x.rk ? '✓' : x.sk || x.rk ? '½' : '·') + '</span><div class="akinfo">' +
-            '<a class="clink" href="#company/' + x.fid + '" data-t5="fyr-id" data-fid="' + x.fid + '">' + esc(x.nafn || '#' + x.fid) + '</a>' +
-            '<span class="s">' + (x.sk ? '📄 skýrsla ' + D.AR : 'engin skýrsla ' + D.AR) + ' · ' + (x.rk ? '🧾 ' + esc(x.rk.num || 'sala') + ' ' + esc(fmtD(x.rk.created_at)) : 'enginn reikningur ' + D.AR) + '</span></div></div>').join('') + '</div>' +
-          (ars.length > 12 ? '<div class="more">+ ' + (ars.length - 12) + ' til viðbótar — sjá Ársskoðun</div>' : '') : '<div class="more">Ekkert merkt í vinnslu í Ársskoðun.</div>');
-      return modPanel(k, mal.length + ' mál · ' + buin.length + ' vinnublöð líklega búin · ' + ars.length + ' í Ársskoðun', body,
+      const D = g.data, bLyk = x => 'ivinnslu:vb:' + x.b.id, bF = fela(vbListi(D).filter(x => x.buid), bLyk);
+      const bRod = (x, falinn) => vbRow(x, { l: bLyk(x), e: k, d: (x.b.fyrirtaeki || x.nafn || '') + ' — vinnublað ' + (x.b.dagsetning || x.b.manudur || ''), falinn });
+      body += '<div class="sect">Vinnublöð með bæði skýrslu og reikningi — líklega búin (' + bF.synd.length + ')</div>' +
+        (bF.synd.length ? bF.synd.map(x => bRod(x)).join('') : bF.falin.length ? '' : '<div class="more">Ekkert vinnublað með bæði skýrslu og reikningi.</div>') +
+        falinHtml('ivinnslu:vb', bF.falin.length, () => bF.falin.map(x => bRod(x, true)).join(''));
+      const aLyk = x => 'ivinnslu:ars:' + x.fid + ':' + D.AR;
+      const aF = fela(D.iVinnslu.map(fid => Object.assign({ fid }, sonnun(fid, new Date(D.AR, 0, 1).getTime(), D))).sort((a, b) => (!!(b.sk || b.rk)) - (!!(a.sk || a.rk))), aLyk);
+      const arsMed = aF.synd.filter(x => x.sk || x.rk).length;
+      const aRod = (x, falinn) => '<div class="akrow' + (falinn ? ' falid' : '') + '"><span class="aknr">' + (x.sk && x.rk ? '✓' : x.sk || x.rk ? '½' : '·') + '</span><div class="akinfo">' +
+          '<a class="clink" href="#company/' + x.fid + '" data-t5="fyr-id" data-fid="' + x.fid + '">' + esc(x.nafn || '#' + x.fid) + '</a>' +
+          '<span class="s">' + (x.sk ? '📄 skýrsla ' + D.AR : 'engin skýrsla ' + D.AR) + ' · ' + (x.rk ? '🧾 ' + esc(x.rk.num || 'sala') + ' ' + esc(fmtD(x.rk.created_at)) : 'enginn reikningur ' + D.AR) +
+            felaTakki({ l: aLyk(x), e: k, d: (x.nafn || '#' + x.fid) + ' — Ársskoðun ' + D.AR, falinn }) + '</span></div></div>';
+      body += '<div class="sect">Ársskoðun merkt í vinnslu (' + aF.synd.length + ' · ' + arsMed + ' með skýrslu eða reikningi ' + D.AR + ')</div>' +
+        (aF.synd.length ? '<div class="aklist">' + aF.synd.slice(0, 12).map(x => aRod(x)).join('') + '</div>' +
+          (aF.synd.length > 12 ? '<div class="more">+ ' + (aF.synd.length - 12) + ' til viðbótar — sjá Ársskoðun</div>' : '') : aF.falin.length ? '' : '<div class="more">Ekkert merkt í vinnslu í Ársskoðun.</div>') +
+        falinHtml('ivinnslu:ars', aF.falin.length, () => aF.falin.map(x => aRod(x, true)).join(''), 'aklist');
+      return modPanel(k, mF.synd.length + ' mál · ' + bF.synd.length + ' vinnublöð líklega búin · ' + aF.synd.length + ' í Ársskoðun' + falinSum(mF.falin.length + bF.falin.length + aF.falin.length), body,
         uppfTakki('skyrslur') + '<button type="button" class="btn iv sm" data-t5="go" data-view="arsskodun">Ársskoðun ›</button>');
     }
     if (k === 'postsvor') {
-      const rows = S.rows.filter(r => isPost(r) && !r.svarad_at).sort(rodun);
-      return modPanel(k, rows.length + ' bíða svars', rows.length
-        ? rows.slice(0, 8).map(r => lrowHtml(r, isFree(r) ? '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) + '>Taka ›</button>' : '')).join('') +
-          (rows.length > 8 ? '<div class="more">+ ' + (rows.length - 8) + ' til viðbótar</div>' : '')
-        : emptyHtml('Enginn póstur bíður svars.'),
+      const lyk = r => 'postsvor:mal:' + r.id, pF = fela(S.rows.filter(r => isPost(r) && !r.svarad_at).sort(rodun), lyk);
+      const rod = (r, falinn) => lrowHtml(r, isFree(r) ? '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) + '>Taka ›</button>' : '', { l: lyk(r), e: k, d: r.title, falinn });
+      return modPanel(k, pF.synd.length + ' bíða svars' + falinSum(pF.falin.length),
+        (pF.synd.length ? pF.synd.slice(0, 8).map(r => rod(r)).join('') + (pF.synd.length > 8 ? '<div class="more">+ ' + (pF.synd.length - 8) + ' til viðbótar</div>' : '')
+          : pF.falin.length ? '' : emptyHtml('Enginn póstur bíður svars.')) +
+        falinHtml('postsvor:mal', pF.falin.length, () => pF.falin.map(r => rod(r, true)).join('')),
         '<button type="button" class="btn gold sm" data-t5="go" data-view="thjonustuver-postar">Opna pósthólfið ›</button>');
     }
     if (k === 'akstur') {
@@ -1860,11 +2039,21 @@
         const yfir = d.filter(x => !x.drog && x.gjald && x.gjald.due_date && tStamp(x.gjald.due_date) < nuna).sort((a, b) => tStamp(a.gjald.due_date) - tStamp(b.gjald.due_date));
         const drog = d.filter(x => x.drog), osendar = d.filter(x => !x.send && !x.drog);
         const kb = (l, listi) => '<div class="kbox"><div class="lbl">' + l + '</div><div class="v">' + listi.length + '</div><div class="km">' + kr(summa(listi)) + '</div></div>';
+        // Staðreyndaboxin telja ALLT; listarnir fyrir neðan sleppa földu og hver röð fær „Vinna ›" (369).
+        const yLyk = x => 'krofur:yfir:solur:' + x.id, oLyk = x => 'krofur:osend:solur:' + x.id, dLyk = x => 'krofur:drog:solur:' + x.id;
+        const yF = fela(yfir, yLyk), oF = fela(osendar, oLyk), dF = fela(drog, dLyk);
+        const yRod = (x, falinn) => soluLina(x, lakt('<span class="tag hot">' + daga(x.gjald.due_date) + ' d. yfir</span>', vinnaSoluTakki(x)), { l: yLyk(x), e: k, d: soluLysing(x), falinn });
+        const oRod = (x, falinn) => soluLina(x, lakt('<span class="tag">' + daga(x.created_at) + ' d.</span>', vinnaSoluTakki(x)), { l: oLyk(x), e: k, d: soluLysing(x), falinn });
+        const dRod = (x, falinn) => soluLina(x, lakt('<span class="tag hot">Drög</span>', vinnaSoluTakki(x)), { l: dLyk(x), e: k, d: soluLysing(x), falinn });
         body = '<div class="kboxes">' + kb('Útistandandi', d) + kb('Yfir gjalddaga', yfir) + kb('Ósendar', osendar) + kb('Payday-drög', drog) + '</div>' +
-          (yfir.length ? '<div class="sect">Yfir gjalddaga — elstu fyrst (' + yfir.length + ')</div>' + yfir.slice(0, 10).map(x => soluLina(x, '<span class="tag hot">' + daga(x.gjald.due_date) + ' d. yfir</span>')).join('') : '') +
-          (osendar.length ? '<div class="sect">Ósendar kröfur (' + osendar.length + ')</div>' + osendar.slice(0, 8).map(x => soluLina(x, '<span class="tag">' + daga(x.created_at) + ' d.</span>')).join('') : '') +
-          (drog.length ? '<div class="sect">Aðeins drög í Payday — kúnninn hefur ekki fengið reikninginn (' + drog.length + ')</div>' + drog.slice(0, 8).map(x => soluLina(x, '<span class="tag hot">Drög</span>')).join('') : '');
-        sum = d.length + ' útistandandi · ' + kr(summa(d)) + ' · ' + yfir.length + ' yfir gjalddaga' + (drog.length ? ' · ' + drog.length + ' aðeins drög' : '');
+          (yF.synd.length || yF.falin.length ? '<div class="sect">Yfir gjalddaga — elstu fyrst (' + yF.synd.length + ')</div>' + yF.synd.slice(0, 10).map(x => yRod(x)).join('') +
+            falinHtml('krofur:yfir', yF.falin.length, () => yF.falin.map(x => yRod(x, true)).join('')) : '') +
+          (oF.synd.length || oF.falin.length ? '<div class="sect">Ósendar kröfur (' + oF.synd.length + ')</div>' + oF.synd.slice(0, 8).map(x => oRod(x)).join('') +
+            falinHtml('krofur:osend', oF.falin.length, () => oF.falin.map(x => oRod(x, true)).join('')) : '') +
+          (dF.synd.length || dF.falin.length ? '<div class="sect">Aðeins drög í Payday — kúnninn hefur ekki fengið reikninginn (' + dF.synd.length + ')</div>' + dF.synd.slice(0, 8).map(x => dRod(x)).join('') +
+            falinHtml('krofur:drog', dF.falin.length, () => dF.falin.map(x => dRod(x, true)).join('')) : '');
+        sum = d.length + ' útistandandi · ' + kr(summa(d)) + ' · ' + yF.synd.length + ' yfir gjalddaga' + (dF.synd.length ? ' · ' + dF.synd.length + ' aðeins drög' : '') +
+          falinSum(yF.falin.length + oF.falin.length + dF.falin.length);
       }
       return modPanel(k, sum, body, uppfTakki('krofur') + '<button type="button" class="btn gold sm" data-t5="go" data-view="krofu-yfirlit">Kröfu yfirlit ›</button>');
     }
@@ -1875,36 +2064,72 @@
       else if (g.villa) body = '<p class="err">Náði ekki í samanburðinn: ' + esc(g.villa) + '</p>';
       else {
         const d = g.data;
-        body = '<div class="sect">Úttekt ' + AR + ' án reiknings (' + d.uttekt.length + ')</div>' +
-          (d.uttekt.length ? '<div class="aklist">' + d.uttekt.slice(0, 15).map(x => '<div class="akrow"><span class="aknr">' + esc(x.skyrsla_dags && !/-01-01$/.test(x.skyrsla_dags) ? fmtD(x.skyrsla_dags) : String(AR)) + '</span><div class="akinfo">' +
-              '<a class="clink" href="#company/' + x.fyrirtaeki_id + '" data-t5="fyr-id" data-fid="' + x.fyrirtaeki_id + '">' + esc(x.nafn || '(ónefnt)') + '</a>' +
-              '<span class="s">' + esc([x.heimilisfang, x.postnumer].filter(Boolean).join(', ')) + ' · ' + x.skyrslur + (x.skyrslur === 1 ? ' skýrsla' : ' skýrslur') + ', enginn reikningur á stað, kúnna né systurstað</span></div></div>').join('') + '</div>' +
-            (d.uttekt.length > 15 ? '<div class="more">+ ' + (d.uttekt.length - 15) + ' til viðbótar</div>' : '') : '<div class="more">Engin úttekt án reiknings.</div>') +
-          '<div class="sect">Greitt síðar — drög eldri en 14 daga (' + d.sidar.length + ' · ' + kr(summa(d.sidar)) + ')</div>' +
-          (d.sidar.length ? d.sidar.slice(0, 8).map(x => soluLina(x, '<span class="tag">' + daga(x.created_at) + ' d.</span>')).join('') : '<div class="more">Engin gömul drög.</div>') +
-          '<div class="sect">Kort eða reiðufé — aldrei merkt greitt (' + d.kort.length + ' · ' + kr(summa(d.kort)) + ')</div>' +
-          (d.kort.length ? d.kort.slice(0, 8).map(x => soluLina(x, '<span class="tag">' + esc(x.greitt_med === 'kort' ? 'Kort' : 'Reiðufé') + '</span>')).join('') : '<div class="more">Allt merkt greitt.</div>');
-        sum = d.uttekt.length + ' úttektir án reiknings · ' + d.sidar.length + ' greitt síðar · ' + d.kort.length + ' ómerkt greitt';
+        const uLyk = x => 'gleymt:uttekt:fyr:' + x.fyrirtaeki_id + ':' + AR, sLyk = x => 'gleymt:sidar:solur:' + x.id, kLyk = x => 'gleymt:kort:solur:' + x.id;
+        const uF = fela(d.uttekt, uLyk), sF = fela(d.sidar, sLyk), kF = fela(d.kort, kLyk);
+        // Úttekt: skoðun vinstra megin; vinnublað og síðasti Stólpa-reikningur (aðeins verðviðmið) sem flögur í gráu línunni.
+        const uRod = (x, falinn) => '<div class="lrow' + (falinn ? ' falid' : '') + '">' + skodunHtml(x) + '<div>' +
+            '<a class="clink" href="#company/' + x.fyrirtaeki_id + '" data-t5="fyr-id" data-fid="' + x.fyrirtaeki_id + '">' + esc(x.nafn || '(ónefnt)') + '</a>' +
+            '<span class="s">' + esc([x.heimilisfang, x.postnumer && String(x.heimilisfang || '').indexOf(x.postnumer) < 0 ? x.postnumer : ''].filter(Boolean).join(', ') || 'Vantar heimilisfang') +
+              (x.skyrslur > 1 ? ' · ' + x.skyrslur + ' skýrslur' : '') +
+              (x.vinnublad_id ? ' · <span class="tag" title="Vinnublað í yfirferð">Á vinnublaði ' + esc(x.vinnublad_manudur || x.vinnublad_dags || '') + ' · ' + esc(VB_STADA_HEITI[x.vinnublad_stada] || x.vinnublad_stada || '—') + '</span>' : '') +
+              (x.stolpi_sidast_nr ? ' · <span class="tag" title="Síðasti Stólpa-reikningur á kennitölunni (nr. ' + esc(x.stolpi_sidast_nr) + ') — aðeins verðviðmið, aldrei krafa">Síðast rukkað í Stólpa ' +
+                esc(dagsFull(x.stolpi_sidast_dags)) + ' · ' + kr(x.stolpi_sidast_upphaed) + '</span>' : '') +
+              felaTakki({ l: uLyk(x), e: k, d: (x.nafn || '') + ' — úttekt ' + AR + ' án reiknings', falinn }) + '</span></div>' +
+          lakt('<button type="button" class="btn iv sm" data-t5="vinna-gleymt" data-fid="' + x.fyrirtaeki_id + '" title="Opna vinnuglugga: rukka gleymda úttekt">Vinna ›</button>') + '</div>';
+        const sRod = (x, falinn) => soluLina(x, lakt('<span class="tag">' + daga(x.created_at) + ' d.</span>', vinnaSoluTakki(x)), { l: sLyk(x), e: k, d: soluLysing(x), falinn });
+        const kRod = (x, falinn) => soluLina(x, lakt('<span class="tag">' + esc(x.greitt_med === 'kort' ? 'Kort' : 'Reiðufé') + '</span>', vinnaSoluTakki(x)), { l: kLyk(x), e: k, d: soluLysing(x), falinn });
+        // Rukkað gegnum Stólpa — teljast greiddar fyrri eigendum (Agnar): samanbrotið, hvorki Vinna né Fela.
+        const st = d.stolpi, stSyna = !!S.synaHluta['gleymt:stolpi'];
+        const stRod = x => '<div class="lrow">' + skodunHtml(x) + '<div>' +
+            '<a class="clink" href="#company/' + x.fyrirtaeki_id + '" data-t5="fyr-id" data-fid="' + x.fyrirtaeki_id + '">' + esc(x.nafn || '(ónefnt)') + '</a>' +
+            '<span class="s">Stólpa-reikningur ' + esc(x.stolpi_nr || '—') + ' · ' + esc(dagsFull(x.stolpi_dags)) + ' · ' + kr(x.stolpi_upphaed) + '</span></div>' +
+          '<span class="tag' + (x.stolpi_stada === 'greitt' ? ' ok' : '') + '">' + (x.stolpi_stada === 'greitt' ? 'Greitt' : x.stolpi_stada === 'opid_vid_yfirtoku' ? 'Opið við yfirtöku' : esc(x.stolpi_stada || '—')) + '</span></div>';
+        body = '<div class="sect">Úttekt ' + AR + ' án reiknings (' + uF.synd.length + ')</div>' +
+          (uF.synd.length || uF.falin.length ? '<div class="sectm">Enginn reikningur á stað, kúnna né systurstað — og ekki rukkað gegnum Stólpa.</div>' : '') +
+          (uF.synd.length ? uF.synd.slice(0, 15).map(x => uRod(x)).join('') + (uF.synd.length > 15 ? '<div class="more">+ ' + (uF.synd.length - 15) + ' til viðbótar</div>' : '')
+            : uF.falin.length ? '' : '<div class="more">Engin úttekt án reiknings.</div>') +
+          falinHtml('gleymt:uttekt', uF.falin.length, () => uF.falin.map(x => uRod(x, true)).join('')) +
+          (st === null ? '<p class="err">Náði ekki í úttektir rukkaðar gegnum Stólpa: ' + esc(d.stolpiVilla) + '</p>'
+            : st.length ? '<div class="sect">Rukkað gegnum Stólpa — fyrri eigendur (' + st.length + ')</div>' +
+              '<div class="more">Teljast greiddar fyrri eigendum — aldrei rukka aftur · <button type="button" class="fela syna" data-t5="syna-hluta" data-h="gleymt:stolpi" aria-expanded="' + stSyna + '">' +
+                (stSyna ? 'Fela' : 'Sýna') + '</button></div>' + (stSyna ? st.map(x => stRod(x)).join('') : '') : '') +
+          '<div class="sect">Greitt síðar — drög eldri en 14 daga (' + sF.synd.length + ' · ' + kr(summa(sF.synd)) + ')</div>' +
+          (sF.synd.length ? sF.synd.slice(0, 8).map(x => sRod(x)).join('') : sF.falin.length ? '' : '<div class="more">Engin gömul drög.</div>') +
+          falinHtml('gleymt:sidar', sF.falin.length, () => sF.falin.map(x => sRod(x, true)).join('')) +
+          '<div class="sect">Kort eða reiðufé — aldrei merkt greitt (' + kF.synd.length + ' · ' + kr(summa(kF.synd)) + ')</div>' +
+          (kF.synd.length ? kF.synd.slice(0, 8).map(x => kRod(x)).join('') : kF.falin.length ? '' : '<div class="more">Allt merkt greitt.</div>') +
+          falinHtml('gleymt:kort', kF.falin.length, () => kF.falin.map(x => kRod(x, true)).join(''));
+        sum = uF.synd.length + ' úttektir án reiknings · ' + sF.synd.length + ' greitt síðar · ' + kF.synd.length + ' ómerkt greitt' + falinSum(uF.falin.length + sF.falin.length + kF.falin.length);
       }
       return modPanel(k, sum, body, uppfTakki('gleymt') + '<button type="button" class="btn iv sm" data-t5="go" data-view="krofu-yfirlit">Kröfu yfirlit ›</button>');
     }
     if (k === 'bakfaersla') {
       const g = isOpen(k) ? gogn('bakf', saekjaBakfaerslur, 600000) : null;
-      const ORD = new RegExp(BAKF_ORD.join('|'), 'i'), mal = S.rows.filter(r => ORD.test([r.title, r.notes, r.summary].join(' ')));
-      let body = '<div class="sect">Opin mál (' + mal.length + ')</div>' + (mal.length ? mal.map(r => lrowHtml(r, '')).join('') : '<div class="more">Ekkert opið mál nefnir bakfærslu eða breyttan reikning.</div>');
-      let sum = mal.length + ' mál';
+      const ORD = new RegExp(BAKF_ORD.join('|'), 'i'), mLyk = r => 'bakfaersla:mal:' + r.id;
+      const mF = fela(S.rows.filter(r => ORD.test([r.title, r.notes, r.summary].join(' '))), mLyk);
+      const mRod = (r, falinn) => lrowHtml(r, '', { l: mLyk(r), e: k, d: r.title, falinn });
+      let body = '<div class="sect">Opin mál (' + mF.synd.length + ')</div>' +
+        (mF.synd.length ? mF.synd.map(r => mRod(r)).join('') : mF.falin.length ? '' : '<div class="more">Ekkert opið mál nefnir bakfærslu eða breyttan reikning.</div>') +
+        falinHtml('bakfaersla:mal', mF.falin.length, () => mF.falin.map(r => mRod(r, true)).join(''));
+      let sum = mF.synd.length + ' mál' + falinSum(mF.falin.length);
       if (g && g.data) {
-        const d = g.data;
-        body += '<div class="sect">Póstar síðustu 60 daga (' + d.postar.length + ')</div>' +
-          (d.postar.length ? d.postar.slice(0, 10).map(m => {
-            const r = S.rows.find(x => x.channel_ref === 'email:' + m.id);
-            return '<div class="lrow"><span class="age">' + esc(fmtD(m.received_at)) + '</span><div>' +
-              (r ? '<button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '"><b>' + esc(m.subject || '(ekkert efni)') + '</b></button>' : '<b>' + esc(m.subject || '(ekkert efni)') + '</b>') +
-              '<span class="s">' + esc(m.sender_name || m.sender_email || '') + ' · ' + (r ? esc(eigandaTexti(r, nu())) : 'ekki á borðinu') + '</span></div><span></span></div>';
-          }).join('') : '<div class="more">Enginn póstur með þessum orðum.</div>') +
-          '<div class="sect">Kreditreikningar gerðir síðustu 60 daga (' + d.kredit.length + ' · ' + kr(summa(d.kredit)) + ')</div>' +
-          d.kredit.slice(0, 6).map(x => soluLina(x, '')).join('');
-        sum = mal.length + ' mál · ' + d.postar.length + ' póstar · ' + d.kredit.length + ' kreditreikningar';
+        const d = g.data, pLyk = m => 'bakfaersla:postur:' + m.id, cLyk = x => 'bakfaersla:kredit:solur:' + x.id;
+        const pF = fela(d.postar, pLyk), cF = fela(d.kredit, cLyk);
+        const pRod = (m, falinn) => {
+          const r = S.rows.find(x => x.channel_ref === 'email:' + m.id);
+          return '<div class="lrow' + (falinn ? ' falid' : '') + '"><span class="age">' + esc(fmtD(m.received_at)) + '</span><div>' +
+            (r ? '<button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '"><b>' + esc(m.subject || '(ekkert efni)') + '</b></button>' : '<b>' + esc(m.subject || '(ekkert efni)') + '</b>') +
+            '<span class="s">' + esc(m.sender_name || m.sender_email || '') + ' · ' + (r ? esc(eigandaTexti(r, nu())) : 'ekki á borðinu') +
+              felaTakki({ l: pLyk(m), e: k, d: (m.sender_name || m.sender_email || '') + ' — ' + (m.subject || ''), falinn }) + '</span></div><span></span></div>';
+        };
+        const cRod = (x, falinn) => soluLina(x, lakt(opnaSoluTakki(x)), { l: cLyk(x), e: k, d: soluLysing(x), falinn });
+        body += '<div class="sect">Póstar síðustu 60 daga (' + pF.synd.length + ')</div>' +
+          (pF.synd.length ? pF.synd.slice(0, 10).map(m => pRod(m)).join('') : pF.falin.length ? '' : '<div class="more">Enginn póstur með þessum orðum.</div>') +
+          falinHtml('bakfaersla:postur', pF.falin.length, () => pF.falin.map(m => pRod(m, true)).join('')) +
+          '<div class="sect">Kreditreikningar gerðir síðustu 60 daga (' + cF.synd.length + ' · ' + kr(summa(cF.synd)) + ')</div>' +
+          cF.synd.slice(0, 6).map(x => cRod(x)).join('') +
+          falinHtml('bakfaersla:kredit', cF.falin.length, () => cF.falin.map(x => cRod(x, true)).join(''));
+        sum = mF.synd.length + ' mál · ' + pF.synd.length + ' póstar · ' + cF.synd.length + ' kreditreikningar' + falinSum(mF.falin.length + pF.falin.length + cF.falin.length);
       } else body += g && g.villa ? '<p class="err">Náði ekki í póstinn: ' + esc(g.villa) + '</p>' : '<div class="more">Les póstinn…</div>';
       return modPanel(k, sum, body, uppfTakki('bakf') + '<button type="button" class="btn iv sm" data-t5="go" data-view="thjonustuver-postar">Pósthólfið ›</button>');
     }
@@ -1919,9 +2144,12 @@
         const ogreitt = d.opin.filter(s => s.greitt_med === 'reikningur' && s.status !== 'drog');
         const omerkt = d.opin.filter(s => (s.greitt_med === 'kort' || s.greitt_med === 'reidufe') && s.status === 'final');
         const kb = (l, listi) => '<div class="kbox"><div class="lbl">' + l + '</div><div class="v">' + listi.length + '</div><div class="km">' + kr(summa(listi)) + '</div></div>';
+        const dLyk = x => 'afgreidsla:drog:solur:' + x.id, dF = fela(drog, dLyk);
+        const dRod = (x, falinn) => soluLina(x, lakt('<span class="tag">' + daga(x.created_at) + ' d.</span>', opnaSoluTakki(x)), { l: dLyk(x), e: k, d: soluLysing(x), falinn });
         body = '<div class="kboxes">' + kb('Í dag', idag) + kb('Þessi vika', d.vika) + kb('Opin drög', drog) + kb('Ógreiddir reikningar', ogreitt) + kb('Kort/reiðufé ómerkt', omerkt) + '</div>' +
-          (drog.length ? '<div class="sect">Elstu opnu drögin</div>' + drog.slice(0, 6).map(x => soluLina(x, '<span class="tag">' + daga(x.created_at) + ' d.</span>')).join('') : '');
-        sum = idag.length + ' sölur í dag · ' + drog.length + ' opin drög · ' + ogreitt.length + ' ógreiddir reikningar';
+          (dF.synd.length || dF.falin.length ? '<div class="sect">Elstu opnu drögin</div>' + dF.synd.slice(0, 6).map(x => dRod(x)).join('') +
+            falinHtml('afgreidsla:drog', dF.falin.length, () => dF.falin.map(x => dRod(x, true)).join('')) : '');
+        sum = idag.length + ' sölur í dag · ' + dF.synd.length + ' opin drög · ' + ogreitt.length + ' ógreiddir reikningar' + falinSum(dF.falin.length);
       }
       return modPanel(k, sum, body, uppfTakki('afgr') + '<button type="button" class="btn iv sm" data-t5="go" data-view="sala">Sala ›</button>');
     }
@@ -2203,6 +2431,8 @@
         (ppl.indexOf(n) < 0 ? '<p class="err">„' + esc(n) + '“ er ekki starfsmaður á þessu borði' + (n === AI_WORKER ? ' — Charlize er bunkinn á Master' : '') + '. Veldu þitt nafn í „Ég er“.</p>' : '') +
         (S.cfgOpen ? '<section class="panel" aria-label="Mitt vinnuborð">' + cfgHtml() + '</section>' : '') +
         (S.err ? '<p class="err">Náði ekki í málin: ' + esc(S.err) + ' <button type="button" class="btn iv sm" data-t5="reload">Reyna aftur</button></p>' : '') +
+        (!baraMitt && G.falid && G.falid.villa ? '<p class="err">Náði ekki í falin atriði' + (G.falid.data ? ' — sýni síðustu stöðu' : ' — allt er sýnt') + ': ' + esc(G.falid.villa) +
+          ' <button type="button" class="btn iv sm" data-t5="fela-endurlesa">Reyna aftur</button></p>' : '') +
         (baraMitt ? '' : '<div class="kpis">' + kpiHtml(master, mine) + '</div>') +
         layout +
       '</div></div>';
@@ -2682,7 +2912,28 @@
         return;
       }
       case 'ham-tengja': tengjaHam(id, el.dataset.mode); return;
-      case 'g-uppf': gleyma(el.dataset.g); render(); return;
+      case 'g-uppf': gleyma(el.dataset.g); if (G.falid) G.falid.at = 0; render(); return;       // ↻ sækir líka falin atriði
+      case 'fela':
+      case 'fela-aftur': {
+        const felaTakkar = () => [...root.querySelectorAll('[data-t5="fela"],[data-t5="fela-aftur"]')];
+        const i = felaTakkar().indexOf(el), lyklabord = e.detail === 0;
+        setjaFalid(el.dataset.fl, el.dataset.fe, el.dataset.fd, a === 'fela');
+        // Lyklaborð: fókusinn fer á næsta „Fela" í stað þess að týnast með línunni sem hvarf.
+        if (lyklabord && i >= 0) { const naesti = felaTakkar()[i]; if (naesti) naesti.focus(); }
+        return;
+      }
+      case 'fela-syna':
+      case 'syna-hluta': {
+        const h = el.dataset.h, lyklabord = e.detail === 0;
+        S.synaHluta[h] = !S.synaHluta[h];
+        render();
+        if (lyklabord) { const sami = [...root.querySelectorAll('[data-t5="' + a + '"]')].find(x => x.dataset.h === h); if (sami) sami.focus(); }
+        return;
+      }
+      case 'fela-endurlesa': if (G.falid) G.falid.at = 0; render(); return;
+      case 'vinna-sala': vinnaKrofu('sala', Number(el.dataset.sid)); return;
+      case 'vinna-gleymt': vinnaKrofu('gleymt', Number(el.dataset.fid)); return;
+      case 'opna-solu': opnaSolu(Number(el.dataset.sid), el.dataset.num); return;
       case 'skjal-velja': S.skjalVal = true; window.addEventListener('focus', () => setTimeout(() => { S.skjalVal = false; }, 1500), { once: true }); return;
       case 'skjal-eyda': eydaSkjali(+el.dataset.id, +el.dataset.fid); return;
       case 'hr-opna':
@@ -2913,7 +3164,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368r' };
+    window.Thjonustubord5 = { show, load, render, version: '368s' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
