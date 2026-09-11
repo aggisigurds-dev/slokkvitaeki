@@ -627,9 +627,35 @@
     }));
     w.querySelectorAll('[data-docdel]').forEach(b => b.addEventListener('click', async () => {
       if (!confirm('Aftengja þetta skjal af fyrirtækinu?\n(Skráin sjálf helst óbreytt í Drive — bara tengingin fer.)')) return;
+      // 11.09.2026: „Aftengja" EYDDI skráningunni (customer_documents.delete) þótt textinn lofaði að aðeins
+      // tengingin færi — og eydd röð skráðist svo aftur í næsta Drive-sópi (sbr. R-107802). Nú er röðin
+      // AFTENGD: pör sem vísa í hana losuð eins og í 199 (tómt par fer, annars hafnar FK-in), staður og
+      // kúnni tekin af, needs_site = true svo hún birtist í „Tengja stað"-biðröðinni, og lesið til baka.
+      // Vörður: tools/audit-aftengja-eydir.cjs.
       try {
-        const r = await SB().from('customer_documents').delete().eq('id', +b.dataset.docdel);
+        const sb = SB(), did = +b.dataset.docdel;
+        const pr = await sb.from('document_pairs').select('id,report_doc_id,invoice_doc_id')
+          .or('report_doc_id.eq.' + did + ',invoice_doc_id.eq.' + did);
+        if (pr.error) throw pr.error;
+        for (const p of (pr.data || [])) {
+          const keepRep = String(p.report_doc_id) === String(did) ? null : p.report_doc_id;
+          const keepInv = String(p.invoice_doc_id) === String(did) ? null : p.invoice_doc_id;
+          const res = (keepRep == null && keepInv == null)
+            ? await sb.from('document_pairs').delete().eq('id', p.id)
+            : await sb.from('document_pairs').update({ report_doc_id: keepRep, invoice_doc_id: keepInv,
+                status: keepInv == null ? 'vantar_reikning' : 'vantar_skyrslu', matched_by: 'manual_unlink' }).eq('id', p.id);
+          if (res.error) throw res.error;
+        }
+        const cur = await sb.from('customer_documents').select('notes').eq('id', did).maybeSingle();
+        if (cur.error) throw cur.error;
+        const nu = new Date();
+        const dags = String(nu.getDate()).padStart(2, '0') + '.' + String(nu.getMonth() + 1).padStart(2, '0') + '.' + nu.getFullYear();
+        const r = await sb.from('customer_documents').update({
+          fyrirtaeki_id: null, customer_base_id: null, needs_site: true,
+          notes: ((cur.data && cur.data.notes) ? cur.data.notes + ' · ' : '') + 'Aftengt af ' + (co.nafn || ('#' + co.id)) + ' ' + dags
+        }).eq('id', did).select('id,fyrirtaeki_id');
         if (r.error) throw r.error;
+        if (!r.data || !r.data.length || r.data[0].fyrirtaeki_id != null) throw new Error('las til baka — tengingin fór ekki af');
         reload();
         try { if (window.BrunakerfiYfirlit && BrunakerfiYfirlit.reload) BrunakerfiYfirlit.reload(); } catch (_) {}
       } catch (e) { alert('Tókst ekki: ' + (e.message || e)); }
