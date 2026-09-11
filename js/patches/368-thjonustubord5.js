@@ -45,6 +45,12 @@
  *           og kreditreikningar „Opna sölu ›" → 371 OpnaSolu (annars yfir á Sölu).
  *   Gleymt  úttektir sýna skoðunarmánuð, vinnublað og síðasta Stólpa-reikning; úttektir rukkaðar gegnum Stólpa (fyrri
  *           eigendur) eru sér og samanbrotnar — aldrei rukka þær aftur (sql/2026-09-11_gleymt_uttekt_stolpi.sql).
+ *   Skýring (Agnar 11.09.2026: „máttu leyfa mér allstaðar að setja inn skýringar"): „· Skýring" / „· Breyta skýringu" aftan
+ *           við Fela — sami lykill, sama röð: skyring/skyring_af (gikkurinn stimplar skyring_at og söguna). falid er sjálfgefið
+ *           false, svo röð sem ber aðeins skýringu felur ekkert: „falið" er AÐEINS falid = true. Dauf lína „📝 texti — hver ·
+ *           dags." undir efni línunnar, sýnilegrar og falinnar. Ritillinn (einn í einu) lokast aðeins þegar þjónninn hefur
+ *           staðfest; bilun skilur textann eftir í reitnum. Flipi hverfur / starfsmaður skiptir / farið af borðinu / línan
+ *           hverfur úr listanum → vistað strax, og við pagehide líka með keepalive beint á PostgREST.
  *
  * SKRIF — beint á thjonustubeidni, lesið til baka með .select():
  *   Taka    assigned_to = ég, AÐEINS ef málið er enn laust (skilyrt) — tveir fá ekki sama málið.
@@ -170,6 +176,8 @@
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
     skDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
     falidBid: {},      // Fela-skrif sem bíða eða kláruðust nýlega: { lykill: { falid, row, tok, lokid } }
+    skyrBid: {},       // Skýringar-skrif sem bíða eða kláruðust nýlega: { lykill: { skyring, af, at, rod, tok, lokid } }
+    skyrOpid: null,    // opinn skýringarritill (einn í einu): { l, e, d, texti, upphaf, vistar, villa }
     synaHluta: {}      // „Sýna" falin atriði / Stólpa-hlutann — val á skjánum, ekki staða gagna
   };
 
@@ -747,6 +755,11 @@
       '.fela:hover,.fela:focus-visible{opacity:1;text-decoration:underline;text-underline-offset:2px}',
       '.fela.syna{font-size:12px;opacity:1;text-decoration:underline;text-decoration-color:var(--rule3);text-underline-offset:2px}.fela.syna:hover,.fela.syna:focus-visible{color:var(--ink);text-decoration-color:var(--g6)}',
       '.lrow.falid,.akrow.falid,.vbrow.falid{opacity:.55}.lrow.falid:hover,.akrow.falid:hover,.vbrow.falid:hover,.lrow.falid:focus-within,.akrow.falid:focus-within,.vbrow.falid:focus-within{opacity:.9}',
+      // SKÝRING (11.09.2026): eigin dauf lína undir efni línunnar og lítill ritill — engir nýir litir (þemað er frosið).
+      '.skyr{display:block;margin-top:2px;font-size:12px;line-height:1.45;color:var(--mute);white-space:pre-wrap;overflow-wrap:anywhere}.skyr.villa{color:var(--terra)}',
+      '.skyrrit{display:flex;flex-direction:column;gap:6px;margin-top:6px;min-width:0}.lrow:has(.skyrrit){align-items:start}',
+      '.skyrrit textarea{display:block;width:100%;min-height:52px;padding:7px 10px;border:1px solid var(--edge);border-radius:4px;background:#fff;font:13px/1.45 var(--body);color:var(--ink);resize:vertical}',
+      '.skyrrit textarea[readonly]{opacity:.7}.skyrtakkar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}',
       '.lakt{display:inline-flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px 8px}',
       '.sectm{padding:0 14px 6px;font-size:12px;color:var(--mute)}.lrow .s .tag{display:inline-block;padding:1px 5px;margin:1px 0}',
       '.cfgrow{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--rule2)}',
@@ -887,6 +900,7 @@
     r.addEventListener('paste', onPaste);
     document.addEventListener('visibilitychange', () => { if (document.hidden) skolaAllt(); });
     window.addEventListener('pagehide', skolaAllt);
+    window.addEventListener('pagehide', skyrVidLokun);      // á eftir skolaAllt: skrif sem útskolunin hóf fara líka með keepalive
     return r;
   }
 
@@ -1172,32 +1186,41 @@
     const c = sb();
     if (!c) throw new Error('Engin tenging við gagnagrunn');
     const byrjun = Date.now();
-    const r = await c.from('thjonustubord_falid').select('lykill,eining,falid,lysing,falid_af,updated_at').eq('falid', true);
+    // Falin atriði OG atriði með skýringu. Röð sem ber aðeins skýringu hefur falid = false og felur ekkert.
+    const r = await c.from('thjonustubord_falid').select('lykill,eining,falid,lysing,falid_af,updated_at,skyring,skyring_af,skyring_at').or('falid.eq.true,skyring.not.is.null');
     if (r.error) throw r.error;
     const kort = {};
     (r.data || []).forEach(x => { kort[x.lykill] = x; });
     // Sókn sem fór af stað áður en smellur vistaðist má hvorki vekja atriðið upp né fela það aftur: skrif sem bíða — eða
-    // kláruðust eftir að sóknin hófst — ráða. Skrif sem kláruðust fyrr eru komin í svarið og víkja.
+    // kláruðust eftir að sóknin hófst — ráða. Skrif sem kláruðust fyrr eru komin í svarið og víkja. Aðeins dálkar skrifsins
+    // eru lagðir yfir röðina, svo „Fela" í bið þurrkar ekki skýringu af henni og skýring í bið ekki falid.
     Object.keys(S.falidBid).forEach(k => {
       const b = S.falidBid[k];
       if (b.lokid && b.lokid < byrjun) { delete S.falidBid[k]; return; }
-      if (b.falid) kort[k] = b.row; else delete kort[k];
+      if (kort[k] || b.falid) kort[k] = Object.assign({}, kort[k] || b.row, { falid: b.falid });
+    });
+    Object.keys(S.skyrBid).forEach(k => {
+      const b = S.skyrBid[k];
+      if (b.lokid && b.lokid < byrjun) { delete S.skyrBid[k]; return; }
+      if (kort[k] || b.skyring) kort[k] = Object.assign({ lykill: k, eining: b.rod.eining, falid: false, lysing: b.rod.lysing || null }, kort[k], { skyring: b.skyring, skyring_af: b.af, skyring_at: b.at });
     });
     return kort;
   }
   const falidKort = () => gogn('falid', saekjaFalid, 60000).data || {};
-  const erFalid = lykill => { const b = S.falidBid[lykill]; return b ? !!b.falid : !!falidKort()[lykill]; };
+  // Röð í kortinu getur borið skýringu eina — falið er AÐEINS falid = true.
+  const rodFalin = x => !!x && x.falid === true;
+  const erFalid = lykill => { const b = S.falidBid[lykill]; return b ? !!b.falid : rodFalin(falidKort()[lykill]); };
   // Skipt í sýnilegt og falið ÁÐUR en sneitt er (slice), svo næsta atriði færist upp.
   function fela(listi, lykill) {
     const synd = [], falin = [], kort = falidKort();
-    (listi || []).forEach(x => { const l = lykill(x), b = S.falidBid[l]; ((b ? b.falid : kort[l]) ? falin : synd).push(x); });
+    (listi || []).forEach(x => { const l = lykill(x), b = S.falidBid[l]; ((b ? b.falid : rodFalin(kort[l])) ? falin : synd).push(x); });
     return { synd, falin };
   }
   const falinSum = n => (n ? ' · ' + n + ' falin' : '');
   // f = { l: lykill, e: eining, d: lýsing (fer í töfluna svo sagan skiljist), falinn: sýnt í „Sýna"-ham }.
   const felaTakki = f => (!f || typeof f !== 'object') ? '' : ' · <button type="button" class="fela" data-t5="' + (f.falinn ? 'fela-aftur' : 'fela') + '" data-fl="' + esc(f.l) +
     '" data-fe="' + esc(f.e) + '" data-fd="' + esc(String(f.d || '').slice(0, 200)) + '" title="' + (f.falinn ? 'Sýna aftur í listanum — á öllum vélum' : 'Fela úr listanum — á öllum vélum. Birtist aftur ef það breytist.') + '">' +
-    (f.falinn ? 'Sýna aftur' : 'Fela') + '</button>';
+    (f.falinn ? 'Sýna aftur' : 'Fela') + '</button>' + skyrTakki(f);
   // „N falin · Sýna" undir hluta með földum atriðum; faldar raðir birtast undir takkanum. Sýna er val á skjánum (S).
   function falinHtml(h, fjoldi, teikna, vefja) {
     if (!fjoldi) return '';
@@ -1227,8 +1250,9 @@
     } catch (e) {
       if (minn()) {
         delete S.falidBid[lykill];
-        const g0 = G.falid;
-        if (g0 && g0.data) { if (fyrri) g0.data[lykill] = fyrriRod || Object.assign({}, row, { falid: true }); else delete g0.data[lykill]; }
+        // Fyrri staða aftur — aðeins falid: skýring á röðinni (líka sú sem vistaðist á meðan) lifir.
+        const g0 = G.falid, nuna = g0 && g0.data ? g0.data[lykill] : null;
+        if (g0 && g0.data && (nuna || fyrri)) g0.data[lykill] = Object.assign({}, fyrriRod || row, nuna, { falid: fyrri });
       }
       render();
       toast((falid ? 'Faldist ekki' : 'Birtist ekki aftur') + ': ' + ((e && e.message) || e), true);
@@ -1236,10 +1260,205 @@
     }
     if (minn()) S.falidBid[lykill].lokid = Date.now();
     const g = G.falid;
-    if (g && g.data) { if (falid) g.data[lykill] = row; else delete g.data[lykill]; }
+    // „Sýna aftur" tekur röðina ekki úr kortinu — hún getur borið skýringu; falid = false dugar.
+    if (g && g.data && (falid || g.data[lykill])) g.data[lykill] = Object.assign({}, g.data[lykill], row);
     if (falid) toast('Falið úr listanum', false, () => setjaFalid(lykill, eining, lysing, false));
     else toast('Sýnt aftur í listanum');
     return true;
+  }
+
+  /* ── SKÝRING: stutt skýring á sama atriði og „Fela" — sami lykill, sama röð í thjonustubord_falid, samstillt ── */
+  // Upsert { lykill, eining, skyring, skyring_af }: PostgREST uppfærir aðeins dálka skrifsins, svo skýring snertir aldrei falid
+  // (sjálfgefið false — ný röð felur ekkert) og „Fela" aldrei skýringu. Gikkurinn stimplar skyring_at og bætir í söguna.
+  const _skyrKedja = {};
+  const hreinsaSkyr = t => { const s = String(t == null ? '' : t).trim(); return s || null; };     // '' telst engin skýring
+  const skyrBreytt = o => !!o && hreinsaSkyr(o.texti) !== hreinsaSkyr(o.upphaf);
+  function skyrOf(l) {
+    const b = S.skyrBid[l];
+    if (b) return b.skyring ? { skyring: b.skyring, af: b.af, at: b.at, bid: !b.lokid } : null;
+    const x = falidKort()[l];
+    return x && x.skyring ? { skyring: x.skyring, af: x.skyring_af, at: x.skyring_at } : null;
+  }
+  const dagsStutt = iso => {
+    const d = new Date(iso);
+    if (!iso || isNaN(d.getTime())) return '';
+    const s = String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.';
+    return d.getFullYear() === new Date().getFullYear() ? s : s + d.getFullYear();
+  };
+  // „Skýring" / „Breyta skýringu" aftan við „Fela" — sama daufa útlit og sömu gögn á takkanum.
+  const skyrTakki = f => {
+    const s = skyrOf(f.l);
+    return ' · <button type="button" class="fela" data-t5="skyr-opna" data-fl="' + esc(f.l) + '" data-fe="' + esc(f.e) + '" data-fd="' + esc(String(f.d || '').slice(0, 200)) +
+      '" aria-expanded="' + !!(S.skyrOpid && S.skyrOpid.l === f.l) + '" title="' + (s ? 'Breyta skýringunni' : 'Skrifa stutta skýringu á atriðið') + ' — sést á öllum vélum og felur ekkert">' +
+      (s ? 'Breyta skýringu' : 'Skýring') + '</button>';
+  };
+  // Eigin dauf lína undir efni línunnar, sýnilegrar og falinnar: „📝 texti — Agnar · 11.09." Opinn ritill kemur í hennar stað.
+  function skyrLina(f) {
+    if (!f || typeof f !== 'object') return '';
+    if (S.skyrOpid && S.skyrOpid.l === f.l) return skyrRitill(S.skyrOpid, skyrOf(f.l));
+    const s = skyrOf(f.l);
+    if (!s) return '';
+    const hver = [s.af, s.bid ? 'vistar…' : dagsStutt(s.at)].filter(Boolean).join(' · ');
+    return '<span class="skyr">📝 ' + esc(s.skyring) + (hver ? ' — ' + esc(hver) : '') + '</span>';
+  }
+  function skyrRitill(o, s) {
+    const bid = !!o.vistar, t = String(o.texti == null ? '' : o.texti), af = bid ? ' disabled' : '';
+    return '<div class="skyrrit">' +
+      // Fremsta línubil í <textarea> étur HTML-þáttarinn — eitt aukalegt heldur textanum eins og hann var skrifaður.
+      '<textarea data-skyr="1" rows="' + Math.min(6, Math.max(2, t.split('\n').length + 1)) + '" placeholder="Stutt skýring, t.d. „bíður svars frá Eignaumsjón“" aria-label="Skýring á atriðinu"' +
+        (bid ? ' readonly' : '') + '>' + (t.charAt(0) === '\n' ? '\n' : '') + esc(t) + '</textarea>' +
+      (o.villa ? '<span class="skyr villa" role="alert">⚠ Vistaðist ekki: ' + esc(o.villa) + ' — textinn er enn í reitnum.</span>' : '') +
+      '<div class="skyrtakkar">' +
+        '<button type="button" class="btn gold sm" data-t5="skyr-vista" title="Ctrl+Enter"' + af + '>' + (bid ? 'Vista…' : 'Vista') + '</button>' +
+        '<button type="button" class="btn iv sm" data-t5="skyr-haetta" title="Esc"' + af + '>Hætta við</button>' +
+        (s ? '<button type="button" class="fela" data-t5="skyr-eyda"' + af + '>Eyða skýringu</button>' : '') +
+      '</div></div>';
+  }
+  const skyrRot = () => { const v = document.getElementById(VIEW_ID); return v && v.shadowRoot; };
+  function skyrFokus() {
+    const root = skyrRot(), t = root && root.querySelector('.skyrrit textarea');
+    if (!t) return;
+    t.focus();
+    try { t.setSelectionRange(t.value.length, t.value.length); } catch (_) {}
+  }
+  function skyrBlur() { const root = skyrRot(), ae = root && root.activeElement; if (ae && ae.dataset && ae.dataset.skyr) ae.blur(); }
+  function skyrFokusTakki(l) {
+    const root = skyrRot(), b = root && [...root.querySelectorAll('[data-t5="skyr-opna"]')].find(x => x.dataset.fl === l);
+    if (b) b.focus({ preventScroll: true });
+  }
+  // Borðið getur verið falið þegar vistað er við brottför — skilaboð í skuggarót þess sæjust ekki, því showToast síðunnar.
+  function skyrToast(msg, warn, afturkalla) {
+    const v = document.getElementById(VIEW_ID);
+    if (v && v.classList.contains('active')) { toast(msg, warn, afturkalla); return; }
+    try { if (typeof window.showToast === 'function') { window.showToast(msg); return; } } catch (_) {}
+    if (warn) console.warn('[368-thjonustubord5] ' + msg);
+  }
+  // Sama röð fyrir „Vista", útskolun og keepalive við lokun. lysing aðeins á NÝJA röð: hún lýsir því sem var falið og á
+  // ekki að yfirskrifast þegar skýring bætist við.
+  function skyrRod(f, skyring) {
+    const lykill = String(f.l || ''), til = ((G.falid && G.falid.data) || {})[lykill];
+    const rod = { lykill, eining: f.e || lykill.split(':')[0], skyring, skyring_af: nu() };
+    if (!til && f.d) rod.lysing = String(f.d).slice(0, 200);
+    return rod;
+  }
+  // Teiknað strax (S.skyrBid) og skrifað á þjóninn, lesið til baka. Mistakist það víkur skýringin í bið og fyrri skýring fer
+  // aftur í kortið (sókn sem kláraðist á meðan gæti hafa tekið skýringuna í bið með sér).
+  async function skrifaSkyringu(f, skyring) {
+    const lykill = String((f && f.l) || '');
+    if (!FALID_LYKILL.test(lykill)) return { ok: false, villa: 'ógildur lykill' };
+    const c = sb();
+    if (!c) return { ok: false, villa: 'engin tenging við gagnagrunn' };
+    const til = ((G.falid && G.falid.data) || {})[lykill], tok = {}, rod = skyrRod(f, skyring);
+    const fyrri = { skyring: til ? til.skyring || null : null, skyring_af: til ? til.skyring_af || null : null, skyring_at: til ? til.skyring_at || null : null };
+    S.skyrBid[lykill] = { skyring, af: rod.skyring_af, at: new Date().toISOString(), rod, tok };
+    render();
+    // Skrif á sama lykil fara í röð, svo síðasta vistun ræður líka á þjóninum.
+    const verk = (_skyrKedja[lykill] || Promise.resolve()).then(async () => {
+      const r = await c.from('thjonustubord_falid').upsert(rod, { onConflict: 'lykill' }).select('lykill,skyring,skyring_af,skyring_at').single();
+      if (r.error) throw r.error;
+      if (!r.data || (r.data.skyring == null ? null : r.data.skyring) !== skyring) throw new Error('las ekki til baka');
+      return r.data;
+    });
+    _skyrKedja[lykill] = verk.catch(() => {});
+    const minn = () => !!S.skyrBid[lykill] && S.skyrBid[lykill].tok === tok;
+    let d;
+    try {
+      d = await verk;
+    } catch (e) {
+      if (minn()) {
+        delete S.skyrBid[lykill];
+        const g0 = G.falid;
+        if (g0 && g0.data && g0.data[lykill]) g0.data[lykill] = Object.assign({}, g0.data[lykill], fyrri);
+      }
+      render();
+      return { ok: false, villa: (e && e.message) || String(e) };
+    }
+    if (minn()) Object.assign(S.skyrBid[lykill], { lokid: Date.now(), af: d.skyring_af, at: d.skyring_at });
+    const g = G.falid;
+    if (g && g.data) g.data[lykill] = Object.assign({ lykill, eining: rod.eining, falid: false, lysing: rod.lysing || null }, g.data[lykill], { skyring: d.skyring, skyring_af: d.skyring_af, skyring_at: d.skyring_at });
+    render();
+    return { ok: true };
+  }
+  // Ritillinn: S.skyrOpid = { l, e, d, texti, upphaf, vistar, villa } — upphaf er skýringin eins og hún er vistuð.
+  function skyrOpna(f, drog) {
+    const o = S.skyrOpid;
+    if (o && o.vistar) { skyrToast('Augnablik — skýringin er að vistast.'); return; }
+    if (o && o.l === f.l) { if (drog && !skyrBreytt(o)) o.texti = drog.texti; render(); skyrFokus(); return; }
+    // Annar ritill opinn með óvistuðum texta: hann vistast fyrst og nýi ritillinn opnast aðeins ef það tókst.
+    if (o && skyrBreytt(o)) { vistaSkyringu(true).then(ok => { if (ok) skyrOpna(f, drog); }); return; }
+    const s = skyrOf(f.l), vistud = s ? s.skyring : '';
+    S.skyrOpid = { l: f.l, e: f.e, d: f.d, texti: drog ? drog.texti : vistud, upphaf: vistud, vistar: false, villa: '' };
+    render();
+    skyrFokus();
+  }
+  // loka = „Vista"/„Eyða": ritillinn lokast þegar þjónninn hefur staðfest. Annars útskolun sem skilur ritilinn eftir opinn.
+  // gildi = null eyðir skýringunni. Bilun: ritillinn stendur opinn með textanum og villan sést — engu er hent.
+  async function vistaSkyringu(loka, gildi) {
+    const o = S.skyrOpid;
+    if (!o || o.vistar) return false;
+    const skyring = gildi === undefined ? hreinsaSkyr(o.texti) : gildi, fyrri = skyrOf(o.l);
+    if (gildi === undefined && skyring === hreinsaSkyr(o.upphaf)) {            // ekkert breyttist — engin skrif
+      if (loka) { skyrBlur(); S.skyrOpid = null; render(); skyrFokusTakki(o.l); }
+      return true;
+    }
+    o.vistar = true;
+    o.villa = '';
+    if (loka) skyrBlur();
+    const r = await skrifaSkyringu(o, skyring);
+    o.vistar = false;
+    if (!r.ok) {
+      o.villa = r.villa;
+      o.villaTexti = o.texti;
+      render();
+      if (loka && S.skyrOpid === o) skyrFokus();
+      skyrToast('Skýringin vistaðist ekki: ' + r.villa + ' — textinn er enn í reitnum.', true);
+      return false;
+    }
+    if (S.skyrOpid === o) { if (loka) S.skyrOpid = null; else o.upphaf = skyring || ''; }
+    render();
+    if (!loka) return true;
+    skyrFokusTakki(o.l);
+    if (skyring !== null) skyrToast('Skýring vistuð');
+    else skyrToast('Skýringu eytt', false, fyrri ? () => skrifaSkyringu(o, fyrri.skyring).then(x => skyrToast(x.ok ? 'Skýringin er komin aftur' : 'Skýringin kom ekki aftur: ' + x.villa, !x.ok)) : null);
+    return true;
+  }
+  function skyrHaetta() {
+    const o = S.skyrOpid;
+    if (!o || o.vistar) return;
+    skyrBlur();
+    S.skyrOpid = null;
+    render();
+    skyrFokusTakki(o.l);
+    // Rangt Esc týnir engu: „Afturkalla" opnar ritilinn aftur með því sem var skrifað.
+    if (skyrBreytt(o)) skyrToast('Hætt við — skýringin var ekki vistuð', false, () => skyrOpna(o, { texti: o.texti }));
+  }
+  // Útskolun — flipinn hverfur, starfsmaður skiptir eða farið er af borðinu: óvistaður texti vistast STRAX (enginn tímamælir).
+  function skolaSkyringu() { const o = S.skyrOpid; if (o && !o.vistar && skyrBreytt(o)) vistaSkyringu(false); }
+  // Ritillinn hvarf úr teikningunni (atriðið fór úr listanum, einingin felld saman, faldar raðir faldar aftur): óvistaður texti
+  // vistast strax og ritillinn lokast. Sama bilun er ekki reynd aftur við hverja teikningu — næsta útskolun reynir aftur.
+  function skyrEftirTeikningu(root) {
+    const o = S.skyrOpid;
+    if (!o || o.vistar || root.querySelector('.skyrrit')) return;
+    if (!skyrBreytt(o)) { S.skyrOpid = null; return; }
+    if (o.villa && o.villaTexti === o.texti) return;
+    vistaSkyringu(true);
+  }
+  // Síðunni lokað eða hún endurhlaðin: fetch supabase-js deyr með síðunni (mælt 09.09.2026, sjá 361), svo skrif sem eru enn á
+  // leiðinni og óvistaður texti fara líka beint á PostgREST með keepalive. Sama upsert — tvöföld skrif eru skaðlaus.
+  function skyrVidLokun() {
+    const url = window.SUPABASE_URL, key = window.SUPABASE_KEY, rodir = {}, o = S.skyrOpid;
+    if (!url || !key) return;
+    Object.keys(S.skyrBid).forEach(l => { if (!S.skyrBid[l].lokid) rodir[l] = S.skyrBid[l].rod; });
+    if (o && !o.vistar && skyrBreytt(o) && FALID_LYKILL.test(String(o.l || ''))) rodir[o.l] = skyrRod(o, hreinsaSkyr(o.texti));
+    Object.keys(rodir).forEach(l => {
+      try {
+        fetch(url + '/rest/v1/thjonustubord_falid?on_conflict=lykill', {
+          method: 'POST', keepalive: true,
+          headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify(rodir[l])
+        }).catch(() => {});
+      } catch (_) {}
+    });
   }
 
   /* ── VINNA: raðir í kröfulistunum opna vinnuglugga kröfunnar (369) eða söluna sjálfa (371) ── */
@@ -1463,7 +1682,8 @@
         '<span class="tag' + (samt ? ' ok' : '') + '">' + (samt ? 'Samþykkt' : 'Bíður') + '</span>' + nafn +
         '<span class="s">' + esc(b.dagsetning || b.manudur || 'Dagsetning vantar') + (b.skodunarmadur ? ' · ' + esc(b.skodunarmadur) : '') + (upph ? ' · ' + kr(upph) : '') + felaTakki(f) + '</span>' +
         '<span class="grow"></span><button type="button" class="btn iv sm tog" data-t5="vb-opna" data-vb="' + b.id + '" aria-expanded="' + opid + '" aria-label="Innihald blaðsins">' + (opid ? '▴' : '▾') + '</button></div>' +
-      '<div class="tags">' + sonn + '</div>' + (opid ? vbInnihald(b) : '') +
+      // Undir hauslínunni, ekki inni í henni: hún brotnar um línur og skýringin ýtti ▾ niður fyrir sig.
+      skyrLina(f) + '<div class="tags">' + sonn + '</div>' + (opid ? vbInnihald(b) : '') +
       '<div class="sacts">' +
         '<button type="button" class="btn iv sm" data-t5="vb-stada" data-vb="' + b.id + '" data-v="' + (samt ? 'bidur' : 'samthykkt') + '"' + bid + '>' + (samt ? '↩ Aftur í bið' : '✓ Samþykkja') + '</button>' +
         '<button type="button" class="btn ' + (x.buid ? 'gold' : 'iv') + ' sm" data-t5="vb-stada" data-vb="' + b.id + '" data-v="klarad"' + bid + '>' + (x.buid ? 'Líklega búið — merkja klárað' : 'Merkja klárað') + '</button>' +
@@ -1562,7 +1782,7 @@
   const summa = l => l.reduce((s, x) => s + (+x.samtals || 0), 0);
   const daga = t => Math.max(0, Math.floor((Date.now() - tStamp(t)) / 864e5));
   const soluLina = (x, merki, f) => '<div class="lrow' + (f && f.falinn ? ' falid' : '') + '"><span class="age">' + esc(x.num || '—') + '</span><div><b>' + esc(x.customer_nafn || '(ónefnt)') + '</b>' +
-    '<span class="s">' + kr(x.samtals) + ' · ' + esc(fmtD(x.created_at)) + (x.starfsmadur ? ' · ' + esc(x.starfsmadur) : '') + (x.krafa_note ? ' · ' + esc(String(x.krafa_note).slice(0, 60)) : '') + felaTakki(f) + '</span></div>' + (merki || '<span></span>') + '</div>';
+    '<span class="s">' + kr(x.samtals) + ' · ' + esc(fmtD(x.created_at)) + (x.starfsmadur ? ' · ' + esc(x.starfsmadur) : '') + (x.krafa_note ? ' · ' + esc(String(x.krafa_note).slice(0, 60)) : '') + felaTakki(f) + '</span>' + skyrLina(f) + '</div>' + (merki || '<span></span>') + '</div>';
   const soluLysing = x => [x.num, x.customer_nafn, kr(x.samtals)].filter(Boolean).join(' · ');
   // Gleymst að rukka? (Agnar 11.09.2026: „hvaða mánuð skýrslan var gerð, er hún á vinnublaði, eða kanski greitt gegnum
   // fyrri eigendur"): vinstra megin dagsetning skýrslu þegar hún er skráð, annars mánuður úr tækjaskrá (uttaeki.last_insp).
@@ -1789,12 +2009,12 @@
     render();
   }
 
-  // f (valfrjálst) = { l: lykill, e: eining, d: lýsing, falinn } — dauft „Fela" aftast í gráu línunni.
+  // f (valfrjálst) = { l: lykill, e: eining, d: lýsing, falinn } — dauft „Fela · Skýring" aftast í gráu línunni, skýringin undir.
   function lrowHtml(r, merki, f) {
     const a = ageDays(r), w = fyrLink(r);
     return '<div class="lrow' + (f && f.falinn ? ' falid' : '') + '"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
       '<div><button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '" title="Skoða málið"><b>' + esc(r.title || '(ónefnt mál)') + '</b></button>' +
-      '<span class="s">' + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + felaTakki(f) + '</span></div>' + (merki || '<span></span>') + '</div>';
+      '<span class="s">' + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + felaTakki(f) + '</span>' + skyrLina(f) + '</div>' + (merki || '<span></span>') + '</div>';
   }
   function bottomHtml(k) {
     const n = nu();
@@ -1859,7 +2079,7 @@
         const r = S.rows.find(x => x.channel_ref === 'email:' + m.id), a = Math.max(0, Math.floor((nuna - tStamp(m.received_at)) / 864e5));
         return '<div class="lrow' + (f.falinn ? ' falid' : '') + '"><span class="age ' + ageCls(a) + '">' + a + 'D</span><div>' +
           (r ? '<button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '"><b>' + esc(m.subject || '(ekkert efni)') + '</b></button>' : '<b>' + esc(m.subject || '(ekkert efni)') + '</b>') +
-          '<span class="s">' + esc(m.sender_name || m.sender_email || '') + ' · ' + (r ? esc(eigandaTexti(r, nu())) : 'ekki á borðinu') + felaTakki(f) + '</span></div>' + merki + '</div>';
+          '<span class="s">' + esc(m.sender_name || m.sender_email || '') + ' · ' + (r ? esc(eigandaTexti(r, nu())) : 'ekki á borðinu') + felaTakki(f) + '</span>' + skyrLina(f) + '</div>' + merki + '</div>';
       };
       const lidRod = (r, falinn) => lrowHtml(r, '<span class="tag hot">' + esc(fmtD(r.due_at)) + '</span>', { l: lidLyk(r), e: k, d: r.title, falinn });
       const ariRod = (r, falinn) => lrowHtml(r, '<span class="tag hot">Áríðandi</span>', { l: ariLyk(r), e: k, d: r.title, falinn });
@@ -1910,7 +2130,7 @@
         const d = g.data, pnr = (a, b) => String(a.postnumer || '').localeCompare(String(b.postnumer || ''));
         const stopp = (x, f) => '<div class="akrow' + (f.falinn ? ' falid' : '') + '"><span class="aknr">' + (x.latestMonth ? esc(MAN[x.latestMonth - 1].slice(0, 3)) : '—') + '</span><div class="akinfo">' +
             '<a class="clink" href="#company/' + x.id + '" data-t5="fyr-id" data-fid="' + x.id + '">' + esc(x.nafn || '(ónefnt)') + '</a>' +
-            '<span class="s">' + esc([x.heimilisfang, x.postnumer].filter(Boolean).join(', ') || 'Vantar heimilisfang') + (simiAf(x) ? ' · ' + esc(simiAf(x)) : '') + (x.latest ? ' · síðasta skýrsla ' + x.latest : '') + felaTakki(f) + '</span></div>' +
+            '<span class="s">' + esc([x.heimilisfang, x.postnumer].filter(Boolean).join(', ') || 'Vantar heimilisfang') + (simiAf(x) ? ' · ' + esc(simiAf(x)) : '') + (x.latest ? ' · síðasta skýrsla ' + x.latest : '') + felaTakki(f) + '</span>' + skyrLina(f) + '</div>' +
           '<div class="akacts">' + akTakki(x.id) + '</div></div>';
         // Hlutinn er í lyklinum: kerfi sem færist t.d. úr „Á næstunni" í „Komið á tíma" birtist aftur.
         const hluti = (heiti, h, listi) => {
@@ -1977,10 +2197,13 @@
       const aLyk = x => 'ivinnslu:ars:' + x.fid + ':' + D.AR;
       const aF = fela(D.iVinnslu.map(fid => Object.assign({ fid }, sonnun(fid, new Date(D.AR, 0, 1).getTime(), D))).sort((a, b) => (!!(b.sk || b.rk)) - (!!(a.sk || a.rk))), aLyk);
       const arsMed = aF.synd.filter(x => x.sk || x.rk).length;
-      const aRod = (x, falinn) => '<div class="akrow' + (falinn ? ' falid' : '') + '"><span class="aknr">' + (x.sk && x.rk ? '✓' : x.sk || x.rk ? '½' : '·') + '</span><div class="akinfo">' +
+      const aRod = (x, falinn) => {
+        const f = { l: aLyk(x), e: k, d: (x.nafn || '#' + x.fid) + ' — Ársskoðun ' + D.AR, falinn };
+        return '<div class="akrow' + (falinn ? ' falid' : '') + '"><span class="aknr">' + (x.sk && x.rk ? '✓' : x.sk || x.rk ? '½' : '·') + '</span><div class="akinfo">' +
           '<a class="clink" href="#company/' + x.fid + '" data-t5="fyr-id" data-fid="' + x.fid + '">' + esc(x.nafn || '#' + x.fid) + '</a>' +
           '<span class="s">' + (x.sk ? '📄 skýrsla ' + D.AR : 'engin skýrsla ' + D.AR) + ' · ' + (x.rk ? '🧾 ' + esc(x.rk.num || 'sala') + ' ' + esc(fmtD(x.rk.created_at)) : 'enginn reikningur ' + D.AR) +
-            felaTakki({ l: aLyk(x), e: k, d: (x.nafn || '#' + x.fid) + ' — Ársskoðun ' + D.AR, falinn }) + '</span></div></div>';
+            felaTakki(f) + '</span>' + skyrLina(f) + '</div></div>';
+      };
       body += '<div class="sect">Ársskoðun merkt í vinnslu (' + aF.synd.length + ' · ' + arsMed + ' með skýrslu eða reikningi ' + D.AR + ')</div>' +
         (aF.synd.length ? '<div class="aklist">' + aF.synd.slice(0, 12).map(x => aRod(x)).join('') + '</div>' +
           (aF.synd.length > 12 ? '<div class="more">+ ' + (aF.synd.length - 12) + ' til viðbótar — sjá Ársskoðun</div>' : '') : aF.falin.length ? '' : '<div class="more">Ekkert merkt í vinnslu í Ársskoðun.</div>') +
@@ -2069,15 +2292,18 @@
         const uLyk = x => 'gleymt:uttekt:fyr:' + x.fyrirtaeki_id + ':' + AR, sLyk = x => 'gleymt:sidar:solur:' + x.id, kLyk = x => 'gleymt:kort:solur:' + x.id;
         const uF = fela(d.uttekt, uLyk), sF = fela(d.sidar, sLyk), kF = fela(d.kort, kLyk);
         // Úttekt: skoðun vinstra megin; vinnublað og síðasti Stólpa-reikningur (aðeins verðviðmið) sem flögur í gráu línunni.
-        const uRod = (x, falinn) => '<div class="lrow' + (falinn ? ' falid' : '') + '">' + skodunHtml(x) + '<div>' +
+        const uRod = (x, falinn) => {
+          const f = { l: uLyk(x), e: k, d: (x.nafn || '') + ' — úttekt ' + AR + ' án reiknings', falinn };
+          return '<div class="lrow' + (falinn ? ' falid' : '') + '">' + skodunHtml(x) + '<div>' +
             '<a class="clink" href="#company/' + x.fyrirtaeki_id + '" data-t5="fyr-id" data-fid="' + x.fyrirtaeki_id + '">' + esc(x.nafn || '(ónefnt)') + '</a>' +
             '<span class="s">' + esc([x.heimilisfang, x.postnumer && String(x.heimilisfang || '').indexOf(x.postnumer) < 0 ? x.postnumer : ''].filter(Boolean).join(', ') || 'Vantar heimilisfang') +
               (x.skyrslur > 1 ? ' · ' + x.skyrslur + ' skýrslur' : '') +
               (x.vinnublad_id ? ' · <span class="tag" title="Vinnublað í yfirferð">Á vinnublaði ' + esc(x.vinnublad_manudur || x.vinnublad_dags || '') + ' · ' + esc(VB_STADA_HEITI[x.vinnublad_stada] || x.vinnublad_stada || '—') + '</span>' : '') +
               (x.stolpi_sidast_nr ? ' · <span class="tag" title="Síðasti Stólpa-reikningur á kennitölunni (nr. ' + esc(x.stolpi_sidast_nr) + ') — aðeins verðviðmið, aldrei krafa">Síðast rukkað í Stólpa ' +
                 esc(dagsFull(x.stolpi_sidast_dags)) + ' · ' + kr(x.stolpi_sidast_upphaed) + '</span>' : '') +
-              felaTakki({ l: uLyk(x), e: k, d: (x.nafn || '') + ' — úttekt ' + AR + ' án reiknings', falinn }) + '</span></div>' +
+              felaTakki(f) + '</span>' + skyrLina(f) + '</div>' +
           lakt('<button type="button" class="btn iv sm" data-t5="vinna-gleymt" data-fid="' + x.fyrirtaeki_id + '" title="Opna vinnuglugga: rukka gleymda úttekt">Vinna ›</button>') + '</div>';
+        };
         const sRod = (x, falinn) => soluLina(x, lakt('<span class="tag">' + daga(x.created_at) + ' d.</span>', vinnaSoluTakki(x)), { l: sLyk(x), e: k, d: soluLysing(x), falinn });
         const kRod = (x, falinn) => soluLina(x, lakt('<span class="tag">' + esc(x.greitt_med === 'kort' ? 'Kort' : 'Reiðufé') + '</span>', vinnaSoluTakki(x)), { l: kLyk(x), e: k, d: soluLysing(x), falinn });
         // Rukkað gegnum Stólpa — teljast greiddar fyrri eigendum (Agnar): samanbrotið, hvorki Vinna né Fela.
@@ -2118,11 +2344,11 @@
         const d = g.data, pLyk = m => 'bakfaersla:postur:' + m.id, cLyk = x => 'bakfaersla:kredit:solur:' + x.id;
         const pF = fela(d.postar, pLyk), cF = fela(d.kredit, cLyk);
         const pRod = (m, falinn) => {
-          const r = S.rows.find(x => x.channel_ref === 'email:' + m.id);
+          const r = S.rows.find(x => x.channel_ref === 'email:' + m.id), f = { l: pLyk(m), e: k, d: (m.sender_name || m.sender_email || '') + ' — ' + (m.subject || ''), falinn };
           return '<div class="lrow' + (falinn ? ' falid' : '') + '"><span class="age">' + esc(fmtD(m.received_at)) + '</span><div>' +
             (r ? '<button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '"><b>' + esc(m.subject || '(ekkert efni)') + '</b></button>' : '<b>' + esc(m.subject || '(ekkert efni)') + '</b>') +
             '<span class="s">' + esc(m.sender_name || m.sender_email || '') + ' · ' + (r ? esc(eigandaTexti(r, nu())) : 'ekki á borðinu') +
-              felaTakki({ l: pLyk(m), e: k, d: (m.sender_name || m.sender_email || '') + ' — ' + (m.subject || ''), falinn }) + '</span></div><span></span></div>';
+              felaTakki(f) + '</span>' + skyrLina(f) + '</div><span></span></div>';
         };
         const cRod = (x, falinn) => soluLina(x, lakt(opnaSoluTakki(x)), { l: cLyk(x), e: k, d: soluLysing(x), falinn });
         body += '<div class="sect">Póstar síðustu 60 daga (' + pF.synd.length + ')</div>' +
@@ -2324,9 +2550,9 @@
     const mount = root.querySelector('.t5-mount');
     // Opinn fellilisti lokast ef teiknað er undir honum — bíða þar til hann er frá.
     const ae = root.activeElement;
-    // Opinn fellilisti lokast og texti í ritun á skipulagsborði truflast ef teiknað er undir — bíða.
+    // Opinn fellilisti lokast og texti í ritun á skipulagsborði eða í skýringu truflast ef teiknað er undir — bíða.
     // Skráarval opið: teikning myndi skipta út <input type="file"> og skrárnar tapast.
-    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
+    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.skyr))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     const n = nu(), c = cfg(), mode = M(c.mode) || MODES.thjonusta;
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // Hvaða opið mál sem er má skoða — ekki aðeins þau á mínu borði. 0 = lokað viljandi (✕).
@@ -2456,6 +2682,7 @@
       if (k in drog) { if (i.type === 'checkbox') i.checked = drog[k]; else i.value = drog[k]; }
     });
     if (fokus) { const f = root.querySelector('[data-k="' + fokus + '"]'); if (f) { f.focus(); try { if (bendill && f.setSelectionRange) f.setSelectionRange(bendill[0], bendill[1]); } catch (_) {} } }
+    skyrEftirTeikningu(root);
   }
 
   // Eftir smell á mál: tryggja að valið mál sjáist (hliðarspjaldið á tölvu, spjaldið undir línunni í síma).
@@ -2517,7 +2744,7 @@
   const _skT = {}, _skBid = {};
   function bida(lykill, fn) { clearTimeout(_skT[lykill]); _skBid[lykill] = fn; _skT[lykill] = setTimeout(() => { delete _skBid[lykill]; fn(); }, 700); }
   function skola(lykill) { if (!_skBid[lykill]) return; clearTimeout(_skT[lykill]); const fn = _skBid[lykill]; delete _skBid[lykill]; fn(); }
-  const skolaAllt = () => Object.keys(_skBid).forEach(skola);
+  const skolaAllt = () => { Object.keys(_skBid).forEach(skola); skolaSkyringu(); };
   function skrifaSk(el) {
     const n = nu(), reitur = el.dataset.sk, id = el.dataset.skid;
     if (reitur === 'krass') {
@@ -2940,6 +3167,10 @@
         return;
       }
       case 'fela-endurlesa': if (G.falid) G.falid.at = 0; render(); return;
+      case 'skyr-opna': skyrOpna({ l: el.dataset.fl, e: el.dataset.fe, d: el.dataset.fd }); return;
+      case 'skyr-vista': vistaSkyringu(true); return;
+      case 'skyr-haetta': skyrHaetta(); return;
+      case 'skyr-eyda': vistaSkyringu(true, null); return;
       case 'vinna-sala': vinnaKrofu('sala', Number(el.dataset.sid)); return;
       case 'vinna-gleymt': vinnaKrofu('gleymt', Number(el.dataset.fid)); return;
       case 'opna-solu': opnaSolu(Number(el.dataset.sid), el.dataset.num); return;
@@ -3047,11 +3278,18 @@
     if (k === 'lq' || k === 'nc') leita(k, el.value);
     else if (el && el.dataset && el.dataset.sk) skrifaSk(el);
     else if (el && el.dataset && el.dataset.bm) bmSkra(el);
+    else if (el && el.dataset && el.dataset.skyr && S.skyrOpid) S.skyrOpid.texti = el.value;
   }
   function onKey(e) {
     const v = document.getElementById(VIEW_ID), root = v && v.shadowRoot;
     if (!root || !v.classList.contains('active')) return;
     const k = e.target && e.target.dataset ? e.target.dataset.k : null;
+    // Skýringarritill: Ctrl/Cmd+Enter vistar, Esc hættir við — og lyklarnir fara ekki lengra (Esc lokar ekki öðru á síðunni).
+    if (e.target && e.target.dataset && e.target.dataset.skyr) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); e.stopPropagation(); vistaSkyringu(true); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); skyrHaetta(); }
+      return;
+    }
     // Örvar og Enter í niðurstöðum (leitin í hausnum og fyrirtæki í nýju máli).
     if ((k === 'lq' || k === 'nc') && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) {
       const st = k === 'lq' ? S.leit : S.ny, listi = k === 'lq' ? S.leit.fyr : S.ny.tillogur;
@@ -3114,6 +3352,7 @@
     window.App.switchView = function (view) {
       if (view === NAV_KEY || view === 'verkbord' || view === 'verkefni') { show(); return; }
       const mine = document.getElementById(VIEW_ID);
+      if (mine && mine.classList.contains('active')) skolaSkyringu();          // farið af borðinu: óvistuð skýring vistast strax
       if (mine) { mine.style.display = 'none'; mine.classList.remove('active'); }
       clearInterval(_poll);
       return orig.apply(this, arguments);
@@ -3179,7 +3418,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368s' };
+    window.Thjonustubord5 = { show, load, render, version: '368t' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
