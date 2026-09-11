@@ -153,11 +153,11 @@
     function add(rows){ (rows||[]).forEach(function(d){ if(d&&d.id!=null&&!seen[d.id]){ seen[d.id]=1; out.push(d); } }); }
     try{
       if(coId){
-        var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund').eq('fyrirtaeki_id', coId);
+        var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund,stolpi_stada,stolpi_skyring').eq('fyrirtaeki_id', coId);
         add(r.data);
       }
       if(baseId){
-        var r2=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund').eq('customer_base_id', baseId);
+        var r2=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund,stolpi_stada,stolpi_skyring').eq('customer_base_id', baseId);
         add(r2.data);
       }
     }catch(e){}
@@ -170,7 +170,7 @@
   async function fetchBrunakerfiDocs(coId){
     var sb=SB(); if(!sb||!coId) return [];
     try{ var r=await sb.from('customer_documents')
-        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund')
+        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund,stolpi_stada,stolpi_skyring')
         .eq('fyrirtaeki_id', coId).eq('doc_type','brunakerfi');
       return r.data||[]; }catch(e){ return soknVilla('brunakerfisskjöl', e); }
   }
@@ -504,7 +504,16 @@
     } else {
       chip = '<span class="sk-doc inv" title="Skráning úr eldra bókhaldi — ekkert PDF-skjal né sölureikningur í kerfinu">'+_ico+' '+esc(lab)+'</span>';
     }
+    chip += stolpiMerki(d);
     return docWrapFc(chip, d.id);
+  }
+  // 2026-09-11 (Agnar): reikningar úr Stólpa (tímabil fyrri eigenda) bera stöðu úr Stólpa-bókinni og
+  // bankayfirliti 0528-26-006005 — customer_documents.stolpi_stada/stolpi_skyring (sql/2026-09-11_stolpi_bok.sql).
+  // „Opinn við yfirtöku" telst greiddur fyrri eigendum (regla Agnars) — aldrei eitthvað til að rukka.
+  function stolpiMerki(d){
+    var st=d&&d.stolpi_stada; if(!st) return '';
+    var txt = st==='greitt' ? '✓ Stólpi' : st==='opid_vid_yfirtoku' ? 'Stólpi · fyrri eig.' : 'Stólpi · kredit';
+    return '<span class="sk-doc stolpi s-'+esc(st)+'" title="'+esc(d.stolpi_skyring||'Stólpi')+'">'+txt+'</span>';
   }
   function repAttChip(a){ var nm=String(a.name||'Skoðun'); var disp=nm.length>46?nm.slice(0,44)+'…':nm; return attWrap('<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(nm)+'">📄 '+esc(disp)+'</button>', a.id); }
   function invAttChip(a){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i); return attWrap('<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>', a.id); }
@@ -1768,6 +1777,10 @@
       '.sk-doc.inv.miss{cursor:help;opacity:.62;border-style:dashed;color:#92400e;background:#fffbeb;border-color:#fcd34d;padding:4px 7px}',
       '.sk-doc.inv{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}',
       '.sk-doc.pd{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe;cursor:default}',
+      '.sk-doc.stolpi{cursor:help;font-weight:600;font-size:10.5px;padding:3px 7px}',
+      '.sk-doc.stolpi.s-greitt{background:#f0fdf4;color:#166534;border-color:#bbf7d0}',
+      '.sk-doc.stolpi.s-opid_vid_yfirtoku{background:#f8fafc;color:#475569;border-color:#cbd5e1}',
+      '.sk-doc.stolpi.s-kreditfaert,.sk-doc.stolpi.s-kreditreikningur{background:#faf5ff;color:#6b21a8;border-color:#e9d5ff}',
       '.sk-doc.prog{background:#fef3c7;color:#92400e;border-color:#fcd34d;font-weight:700}',
       '.sk-doc.add{background:var(--surface);color:var(--ink4);border:1px dashed var(--brd2);font-weight:600}',
       '.sk-doc.add:hover{color:var(--brand);border-color:var(--brand)}',
