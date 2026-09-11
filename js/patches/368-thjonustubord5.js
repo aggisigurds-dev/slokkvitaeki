@@ -2036,7 +2036,9 @@
       else if (g.villa) { body = '<p class="err">Náði ekki í kröfurnar: ' + esc(g.villa) + '</p>'; sum = 'Kröfur'; }
       else {
         const d = g.data;
-        const yfir = d.filter(x => !x.drog && x.gjald && x.gjald.due_date && tStamp(x.gjald.due_date) < nuna).sort((a, b) => tStamp(a.gjald.due_date) - tStamp(b.gjald.due_date));
+        // Gjalddaginn sjálfur er ekki liðinn — sama regla og 369 („itreka" þegar due_date < í dag), svo „Vinna ›" finni málið.
+        const idagYmd = ymd(new Date());
+        const yfir = d.filter(x => !x.drog && x.gjald && x.gjald.due_date && String(x.gjald.due_date).slice(0, 10) < idagYmd).sort((a, b) => tStamp(a.gjald.due_date) - tStamp(b.gjald.due_date));
         const drog = d.filter(x => x.drog), osendar = d.filter(x => !x.send && !x.drog);
         const kb = (l, listi) => '<div class="kbox"><div class="lbl">' + l + '</div><div class="v">' + listi.length + '</div><div class="km">' + kr(summa(listi)) + '</div></div>';
         // Staðreyndaboxin telja ALLT; listarnir fyrir neðan sleppa földu og hver röð fær „Vinna ›" (369).
@@ -2912,7 +2914,14 @@
         return;
       }
       case 'ham-tengja': tengjaHam(id, el.dataset.mode); return;
-      case 'g-uppf': gleyma(el.dataset.g); if (G.falid) G.falid.at = 0; render(); return;       // ↻ sækir líka falin atriði
+      case 'g-uppf':
+        gleyma(el.dataset.g); if (G.falid) G.falid.at = 0; render();       // ↻ sækir líka falin atriði
+        // Kröfur: staða reikninga (drög / send / greitt) sótt í Payday líka — 372 sendir 'payday-spegill' og listinn sækist aftur.
+        if (el.dataset.g === 'krofur' && window.PaydaySpegill) {
+          toast('Sæki stöðu reikninga úr Payday…');
+          PaydaySpegill.uppfaera({ afl: true }).then(r => toast(r.ok ? 'Staða reikninga uppfærð úr Payday — ' + (r.upserted || 0) + ' reikningar' : 'Staða úr Payday uppfærðist ekki: ' + (r.villa || 'óþekkt villa'), !r.ok));
+        }
+        return;
       case 'fela':
       case 'fela-aftur': {
         const felaTakkar = () => [...root.querySelectorAll('[data-t5="fela"],[data-t5="fela-aftur"]')];
@@ -3161,6 +3170,12 @@
     const aSkiptum = () => { S.view = 'master'; S.linkForm = false; S.linkEdit = false; render(); };
     if (window.BordStarfsmadur && BordStarfsmadur.onChange) BordStarfsmadur.onChange(aSkiptum);
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
+    // 372: staða reikninga uppfærð úr Payday (hvaðan sem er í appinu) → Kröfur sækja aftur; teiknað aðeins ef borðið er opið.
+    window.addEventListener('payday-spegill', () => {
+      gleyma('krofur');
+      const v = document.getElementById(VIEW_ID);
+      if (v && v.classList.contains('active')) render();
+    });
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);

@@ -292,7 +292,7 @@
     if (!afl && S.at && Date.now() - S.at < MAX_ALDUR) return;
     S.bid = true;
     saekja().then(d => { S.d = d; S.villa = ''; }, e => { S.villa = (e && e.message) || String(e); skraVillu('krofumal_saekja', S.villa); })
-      .then(() => { S.bid = false; S.at = Date.now(); teiknaBord(); if (S.gl) teiknaGlugga(); vinnaBidur(); });
+      .then(() => { S.bid = false; S.at = Date.now(); teiknaBord(); if (S.gl) teiknaGlugga(); vinnaBidur(); if (S.aftur) { S.aftur = false; tryggja(true); } });
   }
   async function endurhlada() {
     S.bid = true;
@@ -422,7 +422,12 @@
     if (a === 'syna-tegund') { S.rod = 'tegund'; S.opinTegund = el.dataset.t; teiknaBord(); return; }
     if (a === 'tegund-allt') { S.opinTegund = el.dataset.t; teiknaBord(); return; }
     if (a === 'fleiri') { S.synd += SYND; teiknaBord(); return; }
-    if (a === 'uppf') { tryggja(true); teiknaBord(); return; }
+    if (a === 'uppf') {
+      tryggja(true); teiknaBord();
+      // Staða reikninga úr Payday líka — 'payday-spegill' sækir listann aftur þegar hún er komin.
+      if (window.PaydaySpegill) PaydaySpegill.uppfaera({ afl: true }).then(r => { if (!r.ok) toast('Staða úr Payday uppfærðist ekki: ' + (r.villa || 'óþekkt villa'), true); });
+      return;
+    }
     if (a === 'nytt') opnaNytt();
   }
   const rotOgLag = () => { const v = document.getElementById(VIEW_ID), r = v && v.shadowRoot; if (r) festa(r); return r; };
@@ -1370,6 +1375,9 @@
         '.kv-haus{padding:12px 14px}.kv-titill{font-size:21px}.kv-upph{font-size:20px}.kv-body{padding:12px}.kv-fot{padding:10px 12px}.kv-gl .btn.gold.lg{min-width:0;flex:1}.kvg{grid-template-columns:minmax(80px,.7fr) minmax(0,2fr)}}'
     ].join('\n');
   }
+
+  // 372: staða reikninga uppfærð úr Payday → listinn sóttur aftur (strax á eftir sókn sem er í gangi). Aðeins ef hann hefur hlaðist.
+  window.addEventListener('payday-spegill', () => { if (S.bid) S.aftur = true; else if (S.d) tryggja(true); });
 
   window.KrofuVinnugluggi = { version: '369b', listi, samantekt, takkar, festa, opna, opnaSolu, opnaGleymt, malFyrirSolu, uppfaera: () => { tryggja(true); teiknaBord(); } };
   console.log('[369-krofu-vinnugluggi] installed');
