@@ -54,7 +54,7 @@
   window.__thjonustubord368 = true;
 
   const VIEW_ID = 'view-bord', NAV_KEY = 'bord', CFG_KEY = 'thjonustubord5';
-  const LIMIT = 5, PAGE = 15, POLL_MS = 60000;
+  const PAGE = 15, POLL_MS = 60000;     // engin mörk á fjölda mála á borði (Agnar 11.09.2026)
   const AI_WORKER = 'Charlize';                                        // sama nafn og í 231
   const SENTINELS = { '': 1, Allir: 1, allir: 1, nema_agnar: 1, nema_ai: 1 };
   const LAUS_SIA = 'assigned_to.is.null,assigned_to.in.("",Allir,allir,nema_agnar,nema_ai,' + AI_WORKER + ')';
@@ -104,7 +104,9 @@
   const S = {
     rows: [], names: {}, loaded: false, loading: false, err: '', loadedAt: null,
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
-    counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false
+    counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
+    leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
+    skDrog: {}, undo: null, saga: {}
   };
 
   /* ── starfsmaður ── */
@@ -134,7 +136,7 @@
       const x = v && v.mods && Array.isArray(v.mods[k]) ? v.mods[k] : base[k];
       mods[k] = [x[0] ? 1 : 0, x[1] ? 1 : 0];
     });
-    return { mode: v && MODES[v.mode] ? v.mode : 'thjonusta', mods };
+    return { mode: v && MODES[v.mode] ? v.mode : 'thjonusta', mods, baraMitt: !!(v && v.bara_mitt) };
   }
   function cfg() {
     const n = nu();
@@ -276,14 +278,26 @@
     if (s) return s.slice(0, 220);
     return (String(r.notes || '').split('\n').map(x => x.trim()).find(Boolean) || '').slice(0, 220);
   }
-  const matchFilter = (r, f) => f === 'allt' || (f === 'hot' ? !!r.important : f === 'post' ? isPost(r) : !isPost(r));
+  // Síur: allt/post/beidni/hot velja úr Master · 'oll' = öll opin mál · 'p:<nafn>' = borð eins
+  // starfsmanns · 'f:<id>' = opin mál eins fyrirtækis.
+  const serSia = f => f === 'oll' || /^[pf]:/.test(f);
+  const matchFilter = (r, f) => f === 'allt' || serSia(f) || (f === 'hot' ? !!r.important : f === 'post' ? isPost(r) : !isPost(r));
+  function feedRows(master) {
+    const f = S.filter;
+    if (f === 'oll') return S.rows.slice().sort(rodun);
+    if (/^p:/.test(f)) return S.rows.filter(r => onBoardOf(r, f.slice(2))).sort(rodun);
+    if (/^f:/.test(f)) return S.rows.filter(r => String(r.fyrirtaeki_id) === f.slice(2)).sort(rodun);
+    return master.filter(r => matchFilter(r, f));
+  }
 
   /* ── skrif (lesið til baka) ── */
-  async function patchRow(id, patch, baraEfLaust) {
+  // sia: true = aðeins ef málið er enn laust · { adur } = aðeins ef eigandinn er enn sá sem var á skjánum.
+  async function patchRow(id, patch, sia) {
     const c = sb();
     if (!c) throw new Error('Engin tenging við gagnagrunn');
     let q = c.from('thjonustubeidni').update(Object.assign({ updated_at: new Date().toISOString() }, patch)).eq('id', id);
-    if (baraEfLaust) q = q.or(LAUS_SIA);
+    if (sia === true) q = q.or(LAUS_SIA);
+    else if (sia && 'adur' in sia) q = sia.adur == null ? q.is('assigned_to', null) : q.eq('assigned_to', sia.adur);
     const r = await q.select('id,assigned_to,status,svarad_at');
     if (r.error) throw r.error;
     return r.data || [];
@@ -297,17 +311,34 @@
     render();
     await load(true);
   }
+  // Engin mörk á fjölda mála (Agnar 11.09.2026: „burt með allar svona asnalegar hömlur").
   function take(id) {
     const n = nu();
     if (folk().indexOf(n) < 0) { toast('Veldu þitt nafn í „Ég er“ fyrst.', true); return; }
-    if (mineRows().length >= LIMIT) { toast('Borðið þitt er fullt (' + LIMIT + '). Kláraðu eða skilaðu máli fyrst.', true); S.view = 'mitt'; render(); return; }
+    const r = S.rows.find(x => x.id === id);
+    if (r && !isFree(r)) return setjaA(id, n);
     return act(id, async () => {
       const rows = await patchRow(id, { assigned_to: n }, true);
       if (!rows.length) { toast('Einhver annar tók þetta mál rétt í þessu.', true); return; }
       if (normW(rows[0].assigned_to) !== n) throw new Error('las til baka „' + rows[0].assigned_to + '“');
       S.sel[n] = id;
-      S.view = 'mitt';
+      if (!cfg().baraMitt) S.view = 'mitt';
       toast('Komið á borðið þitt');
+    });
+  }
+  // Setja mál á hvern sem er — mig, annan starfsmann eða Master (tómt). Skilyrt á eigandann sem var
+  // á skjánum, svo breyting á annarri vél á sama augnabliki étist ekki þegjandi.
+  function setjaA(id, hver) {
+    const r = S.rows.find(x => x.id === id);
+    if (!r) return;
+    const n = nu(), nyr = normW(hver) || null;
+    if ((normW(r.assigned_to) || null) === nyr) return;
+    return act(id, async () => {
+      const rows = await patchRow(id, { assigned_to: nyr }, { adur: r.assigned_to == null ? null : r.assigned_to });
+      if (!rows.length) { toast('Málið hafði breyst á annarri vél — sýni nýjustu stöðu.', true); return; }
+      if ((normW(rows[0].assigned_to) || null) !== nyr) throw new Error('las til baka „' + rows[0].assigned_to + '“');
+      S.sel[n] = id;
+      toast(!nyr ? 'Sett á Master' : lagt(nyr) === lagt(n) ? 'Komið á borðið þitt' : 'Sett á borð ' + nyr);
     });
   }
   const giveBack = id => act(id, async () => {
@@ -523,11 +554,30 @@
       '.mrow:first-child{border-top:0}.mrow[aria-current="true"]{background:rgba(241,237,228,.6)}',
       '.pin{visibility:hidden;font-size:9px;color:var(--g6);padding-top:3px}.mrow[aria-current="true"] .pin{visibility:visible}',
       '.mpick{display:block;width:100%;padding:0;margin:0;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}',
+      '.fbody{min-width:0}',
+      '.fpick{display:block;width:100%;min-width:0;padding:0;margin:0;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}',
+      '.fpick .rt,.fpick .ai{display:block}',
+      '.fpick:hover .rt,.mpick:hover .mt{text-decoration:underline;text-decoration-color:var(--g6);text-underline-offset:3px}',
+      '.frow[aria-current="true"]{background:rgba(241,237,228,.75);box-shadow:inset 3px 0 0 var(--g6)}',
+      '.clink{display:inline;padding:0;margin:0;border:0;background:none;font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--g8);text-decoration:underline;text-decoration-color:rgba(184,137,46,.45);text-underline-offset:2px;cursor:pointer}',
+      '.clink:hover{color:var(--ink);text-decoration-color:var(--g6)}',
+      '.clink.dk{color:#e8cb7a;text-decoration-color:rgba(232,203,122,.5)}.clink.dk:hover{color:#fff3b0}',
+      '.shead{display:flex;align-items:center;gap:10px}',
+      '.sx{width:28px;height:28px;flex:none;border:1px solid #3a3732;border-radius:4px;background:#1c1b18;color:var(--on2);font:700 13px/1 var(--body);cursor:pointer;padding:0}',
+      '.sfyr{font-size:14px;font-weight:600;color:var(--on)}',
+      '.sacts.sm2{align-items:center;padding-top:10px;border-top:1px solid #2a2823}',
+      '.setja{display:inline-flex;align-items:center;gap:8px}',
+      '.setja select{height:36px;min-width:140px;padding:0 10px;border:1px solid #3a3732;border-radius:4px;background:#1c1b18;color:var(--on);font:600 13px var(--body)}',
+      '.pchip{margin:2px 0 0 6px;padding:1px 7px;border:1px solid var(--edge);border-radius:10px;background:var(--key);font:600 10.5px var(--mono);letter-spacing:.06em;color:var(--ink2);cursor:pointer;text-transform:uppercase}',
+      '.pchip[aria-pressed="true"]{background:var(--gside);color:var(--ink)}',
+      '.board.bara{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);grid-template-rows:auto;grid-template-areas:"mine sel"}',
       '.mt{display:block;font-family:var(--disp);font-size:16px;font-weight:700;line-height:1.25;margin:4px 0 2px;overflow-wrap:anywhere;color:var(--ink)}',
       '.mn{display:block;margin:0 0 8px;font-size:12.5px;color:var(--ink2)}',
       '.mfoot{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px}',
       '.sel{background:var(--slab);border:1px solid #000;border-top:3px solid transparent;border-image:var(--gline) 1;border-image-width:3px 0 0 0;border-radius:5px;color:var(--on);box-shadow:var(--slabsh);padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}',
       '.sel.inline{margin:0 10px 12px}',
+      // Á tölvu límist valið mál við skjáinn á meðan skrunað er niður listann.
+      '.sel.side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}',
       '.sel .age{color:var(--on3)}.sel .age.warm{color:#d9b25a}.sel .age.hot{color:#e08a60}',
       '.slabel{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--g5)}',
       '.stitle{font-family:var(--disp);font-size:23px;font-weight:800;line-height:1.15;color:var(--on);overflow-wrap:anywhere}',
@@ -640,27 +690,45 @@
   const klukka = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   const dis = id => (S.busy[id] ? ' disabled' : '');
 
-  function feedRow(r) {
-    const a = ageDays(r), w = whereOf(r), ai = aiLine(r);
+  // Fyrirtækið er alltaf smellanlegt. Tengt fyrirtæki fær raunverulega slóð (#company/<id>, 357), svo
+  // Ctrl-smellur eða miðjuhnappur opnar það í nýjum flipa; annars er flett upp eftir viðskiptavini.
+  function fyrLink(r, cls) {
+    const w = whereOf(r);
+    if (!w) return '';
+    const k = 'clink' + (cls ? ' ' + cls : '');
+    return r.fyrirtaeki_id
+      ? '<a class="' + k + '" href="#company/' + r.fyrirtaeki_id + '" data-t5="fyr" data-id="' + r.id + '" title="Opna ' + esc(w) + '">' + esc(w) + '</a>'
+      : '<button type="button" class="' + k + '" data-t5="fyr" data-id="' + r.id + '" title="Finna ' + esc(w) + '">' + esc(w) + '</button>';
+  }
+  const eigandaTexti = (r, n) => isFree(r) ? 'Á Master' : onBoardOf(r, n) ? 'Á þínu borði' : 'Hjá ' + normW(r.assigned_to);
+  function sagaHtml(r) { return ''; }
+
+  function feedRow(r, valid) {
+    const a = ageDays(r), ai = aiLine(r), n = nu(), w = fyrLink(r);
     const tags = (r.important ? '<span class="tag hot">Áríðandi</span>' : '') +
       (r.due_at ? '<span class="tag">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
       (r.status === 'i_vinnslu' ? '<span class="tag">Í vinnslu</span>' : '') +
-      (isPost(r) && r.svarad_at ? '<span class="tag ok">Svarað</span>' : '');
-    return '<article class="frow">' +
+      (isPost(r) && r.svarad_at ? '<span class="tag ok">Svarað</span>' : '') +
+      (!isFree(r) ? '<span class="tag">' + esc(eigandaTexti(r, n)) + '</span>' : '');
+    const hlid = onBoardOf(r, n) ? '<span class="lock">Þitt</span>'
+      : '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) +
+        (isFree(r) ? '>' : ' title="Færa málið af borði ' + esc(normW(r.assigned_to)) + ' á þitt borð">') +
+        (S.busy[r.id] ? 'Augnablik…' : isFree(r) ? 'Taka ›' : 'Færa á mig ›') + '</button>';
+    return '<article class="frow" aria-current="' + !!valid + '">' +
       '<div class="age ' + ageCls(a) + '" title="' + a + ' dagar síðan málið varð til">' + a + 'D</div>' +
-      '<div><div class="kick">' + esc(tegMals(r)) + (w ? ' · ' + esc(w) : '') + '</div>' +
-        '<h3 class="rt">' + esc(r.title || '(ónefnt mál)') + '</h3>' +
-        (ai ? '<p class="ai">' + esc(ai) + '</p>' : '') +
-        (tags ? '<div class="tags">' + tags + '</div>' : '') + '</div>' +
-      '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) + '>' + (S.busy[r.id] ? 'Augnablik…' : 'Taka ›') + '</button>' +
+      '<div class="fbody"><div class="kick">' + esc(tegMals(r)) + (w ? ' · ' + w : '') + '</div>' +
+        '<button type="button" class="fpick" data-t5="skoda" data-id="' + r.id + '" title="Skoða málið">' +
+          '<span class="rt">' + esc(r.title || '(ónefnt mál)') + '</span>' +
+          (ai ? '<span class="ai">' + esc(ai) + '</span>' : '') + '</button>' +
+        (tags ? '<div class="tags">' + tags + '</div>' : '') + '</div>' + hlid +
     '</article>';
   }
   function mineRow(r, valid) {
-    const a = ageDays(r), w = whereOf(r), ai = aiLine(r);
+    const a = ageDays(r), w = fyrLink(r), ai = aiLine(r);
     return '<div class="mrow" aria-current="' + valid + '">' +
       '<span class="pin" aria-hidden="true">◆</span>' +
-      '<div><button type="button" class="mpick" data-t5="select" data-id="' + r.id + '">' +
-          '<span class="kick">' + esc(tegMals(r)) + (w ? ' · ' + esc(w) : '') + '</span>' +
+      '<div><div class="kick">' + esc(tegMals(r)) + (w ? ' · ' + w : '') + '</div>' +
+        '<button type="button" class="mpick" data-t5="select" data-id="' + r.id + '">' +
           '<span class="mt">' + esc(r.title || '(ónefnt mál)') + '</span>' +
           (ai && !valid ? '<span class="mn">' + esc(ai) + '</span>' : '') +
         '</button>' +
@@ -674,8 +742,8 @@
         '</div></div></div>';
   }
   function selHtml(r) {
-    if (!r) return emptyHtml('Veldu mál af borðinu þínu eða taktu næsta af Master.<button type="button" class="btn gold" data-t5="take-next">Taka næsta af Master ›</button>');
-    const a = ageDays(r), w = whereOf(r), post = isPost(r);
+    if (!r) return emptyHtml('Smelltu á hvaða mál sem er til að skoða það — eða taktu næsta af Master.<button type="button" class="btn gold" data-t5="take-next">Taka næsta af Master ›</button>');
+    const n = nu(), a = ageDays(r), post = isPost(r), minn = onBoardOf(r, n), laust = isFree(r), eigandi = normW(r.assigned_to);
     let well;
     if (post) {
       const p = postOf(r);
@@ -696,18 +764,29 @@
     }
     const p = post ? postOf(r) : null;
     const getaSvarad = !!(post && p && p.sender_email);
-    const acts = (getaSvarad
-        ? '<button type="button" class="btn gold lg" data-t5="reply" data-id="' + r.id + '"' + dis(r.id) + '>↩ Svara í sama þræði</button>' +
-          '<button type="button" class="btn iv" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + '>✓ Lokið</button>'
-        : '<button type="button" class="btn gold lg" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + '>✓ Merkja lokið</button>') +
-      '<button type="button" class="btn iv" data-t5="giveback" data-id="' + r.id + '"' + dis(r.id) + '>↩ Skila á Master</button>' +
-      (r.fyrirtaeki_id ? '<button type="button" class="btn iv" data-t5="company" data-fid="' + r.fyrirtaeki_id + '">Opna fyrirtæki ›</button>' : '');
-    const meta = [w, tegMals(r), r.due_at ? 'Frestur ' + fmtD(r.due_at) : '', r.important ? 'Áríðandi' : '', post ? (r.svarad_at ? 'Svarað ' + fmtD(r.svarad_at) : 'Bíður svars') : ''].filter(Boolean).join(' · ');
-    return '<div style="display:flex;align-items:center;gap:10px"><span class="plate dark">04</span><span class="slabel">Valið mál</span><span class="grow"></span><span class="age ' + ageCls(a) + '">' + a + 'D</span></div>' +
+    const b = (cls, t5, txt) => '<button type="button" class="btn ' + cls + '" data-t5="' + t5 + '" data-id="' + r.id + '"' + dis(r.id) + '>' + txt + '</button>';
+    const taka = minn ? '' : b('gold lg', 'take', S.busy[r.id] ? 'Augnablik…' : laust ? 'Taka á mitt borð ›' : 'Færa á mitt borð ›');
+    const svara = getaSvarad ? b(minn ? 'gold lg' : 'iv', 'reply', '↩ Svara í sama þræði') : '';
+    const lokid = minn && !getaSvarad ? b('gold lg', 'done', '✓ Merkja lokið') : b('iv', 'done', '✓ Lokið');
+    const skila = minn ? b('iv', 'giveback', '↩ Skila á Master') : '';
+    const fyr = whereOf(r) ? b('iv', 'fyr', '🏢 Opna fyrirtæki ›') : '';
+    const setja = '<label class="setja"><span class="slabel">Setja á</span><select data-t5="assign" data-id="' + r.id + '"' + dis(r.id) + ' aria-label="Setja málið á">' +
+      '<option value=""' + (laust ? ' selected' : '') + '>Master</option>' +
+      folk().map(x => '<option' + (!laust && lagt(x) === lagt(eigandi) ? ' selected' : '') + '>' + esc(x) + '</option>').join('') +
+      (!laust && !folk().some(x => lagt(x) === lagt(eigandi)) ? '<option selected>' + esc(eigandi) + '</option>' : '') +
+      '</select></label>';
+    const stada = minn ? 'Á þínu borði' : laust ? 'Á Master' : 'Á borði ' + eigandi;
+    const meta = [tegMals(r), stada, r.due_at ? 'Frestur ' + fmtD(r.due_at) : '', r.important ? 'Áríðandi' : '', post ? (r.svarad_at ? 'Svarað ' + fmtD(r.svarad_at) : 'Bíður svars') : ''].filter(Boolean).join(' · ');
+    const w = fyrLink(r, 'dk');
+    return '<div class="shead"><span class="plate dark">04</span><span class="slabel">' + (minn ? 'Valið mál' : 'Til skoðunar') + '</span><span class="grow"></span>' +
+        '<span class="age ' + ageCls(a) + '">' + a + 'D</span><button type="button" class="sx" data-t5="sel-close" aria-label="Loka málinu">✕</button></div>' +
       '<h3 class="stitle">' + esc(r.title || '(ónefnt mál)') + '</h3>' +
+      (w ? '<div class="sfyr">🏢 ' + w + '</div>' : '') +
       '<div class="smeta">' + esc(meta) + '</div>' +
       (r.summary ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(String(r.summary).slice(0, 600)) + '</div>' : '') +
-      well + '<div class="sacts">' + acts + '</div>';
+      sagaHtml(r) + well +
+      '<div class="sacts">' + taka + svara + lokid + skila + fyr + '</div>' +
+      '<div class="sacts sm2">' + setja + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') + '</div>';
   }
 
   function modPanel(k, summary, body, action, alltaf) {
@@ -807,7 +886,7 @@
     const newToday = master.filter(r => ymd(new Date(tStamp(r.created_at))) === todayKey).length;
     const days = week(), jobsToday = days[0].jobs.length, jobsWeek = days.reduce((s, d) => s + d.jobs.length, 0);
     const mode = cfg().mode, sara = S.counts.sara;
-    const mitt = card('Mitt borð', mine.length, 'haltu því stuttu', false, '/ ' + LIMIT);
+    const mitt = card('Mitt borð', mine.length, 'mál á þínu borði');
     const heitt = card('Áríðandi', hot, 'opin áríðandi mál', true);
     if (mode === 'krofur') return card('Útistandandi kröfur', S.counts.krofur == null ? '—' : S.counts.krofur, 'ógreiddir reikningar') + card('Á Master', master.length, 'opin mál án starfsmanns') + mitt + heitt;
     if (mode === 'skyrslur') return card('Bíða yfirferðar', sara ? (sara.bidur || 0) : '—', 'vinnublöð') + card('Samþykkt', sara ? (sara.samthykkt || 0) : '—', 'tilbúin í skýrslu og reikning') + card('Skipulagsspjöld', cardsFor(nu()).length, 'á þínu borði') + card('Verk í dag', jobsToday, jobsWeek + ' næstu 7 daga', true);
@@ -878,11 +957,13 @@
     const ae = root.activeElement;
     if (ae && ae.tagName === 'SELECT') { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     const n = nu(), c = cfg(), mode = MODES[c.mode];
-    const master = masterRows(), mine = mineRows();
+    const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
+    // Hvaða opið mál sem er má skoða — ekki aðeins þau á mínu borði. 0 = lokað viljandi (✕).
     let selId = S.sel[n];
-    if (!mine.some(r => r.id === selId)) selId = S.sel[n] = mine.length ? mine[0].id : null;
-    const selRow = mine.find(r => r.id === selId) || null;
-    const visible = master.filter(r => matchFilter(r, S.filter));
+    if (selId !== 0 && !S.rows.some(r => r.id === selId)) selId = S.sel[n] = mine.length ? mine[0].id : null;
+    const selRow = selId ? S.rows.find(r => r.id === selId) || null : null;
+    const selMinn = !!(selRow && onBoardOf(selRow, n));
+    const visible = feedRows(master);
     const now = new Date();
     const hot = S.rows.filter(r => r.important).length;
     const ppl = folk();
@@ -892,46 +973,49 @@
     const topHtml = top.map(k => (k === 'dagskra' ? dagskraHtml() : bottomHtml(k))).join('');
     const bottom = BOTTOM.filter(k => isOn(k) && top.indexOf(k) < 0).map(bottomHtml).join('');
 
-    let slots = '';
-    for (let i = 0; i < LIMIT; i++) slots += '<span class="slot' + (i < mine.length ? ' on' : '') + '"></span>';
     const selMarkup = selHtml(selRow);
     const nyleg = master.filter(r => ageDays(r) <= 30).length;
     const bunki = master.filter(r => normW(r.assigned_to) === AI_WORKER).length;
-    const fjoldi = f => master.filter(r => matchFilter(r, f)).length;
+    const fjoldi = f => f === 'oll' ? S.rows.length : master.filter(r => matchFilter(r, f)).length;
 
     const feed = !S.loaded && (S.loading || _dbBid) ? emptyHtml('Sæki mál…')
       : visible.length
-        ? visible.slice(0, S.synd).map(feedRow).join('') +
+        ? visible.slice(0, S.synd).map(r => feedRow(r, r.id === selId) + (r.id === selId && !selMinn ? '<div class="sel inline">' + selMarkup + '</div>' : '')).join('') +
           (visible.length > S.synd ? '<div class="pager"><button type="button" class="btn iv sm" data-t5="more">Sýna fleiri · ' + (visible.length - S.synd) + ' eftir</button></div>' : '')
         : emptyHtml(master.length ? 'Ekkert í þessari síu.' : (S.loaded ? 'Master borðið er tómt.' : 'Engin mál sótt enn.'));
 
+    const siuHeiti = S.filter === 'oll' ? 'Öll opin mál' : /^p:/.test(S.filter) ? 'Borð · ' + S.filter.slice(2)
+      : /^f:/.test(S.filter) ? 'Fyrirtæki · ' + (whereOf(S.rows.find(r => String(r.fyrirtaeki_id) === S.filter.slice(2)) || {}) || 'mál') : 'Master borð';
+    // Á síma: mál til skoðunar sem er ekki í sýnilega listanum (t.d. opnað úr leit) birtist efst.
+    const selUtan = selRow && !selMinn && !visible.slice(0, S.synd).some(r => r.id === selId) ? '<div class="sel inline">' + selMarkup + '</div>' : '';
+    const mineHtml = '<section class="panel colmine" aria-label="Mitt borð">' +
+        '<header class="phead">' + plate('03') + '<h2 class="ptitle">Mitt borð</h2><span class="sum">' + mine.length + ' mál</span>' +
+          '<span class="grow"></span><button type="button" class="btn iv sm" data-t5="take-next">Taka næsta ›</button></header>' +
+        (baraMitt ? selUtan : '') +
+        (mine.length
+          ? mine.map(r => mineRow(r, r.id === selId) + (r.id === selId ? '<div class="sel inline">' + selMarkup + '</div>' : '')).join('')
+          : emptyHtml('Borðið þitt er autt. Taktu mál af Master eða skráðu nýtt mál á þig.')) +
+      '</section>';
     const board = mode.board
-      ? '<div class="board" data-view="' + S.view + '">' +
-          '<div class="seg phone-seg" role="group" aria-label="Borð">' +
-            '<button type="button" data-t5="view" data-v="master" aria-pressed="' + (S.view === 'master') + '">Master borð<span class="c">' + master.length + '</span></button>' +
+      ? '<div class="board' + (baraMitt ? ' bara' : '') + '" data-view="' + (baraMitt ? 'mitt' : S.view) + '">' +
+          (baraMitt ? '' : '<div class="seg phone-seg" role="group" aria-label="Borð">' +
+            '<button type="button" data-t5="view" data-v="master" aria-pressed="' + (S.view === 'master') + '">' + esc(siuHeiti) + '<span class="c">' + visible.length + '</span></button>' +
             '<button type="button" data-t5="view" data-v="mitt" aria-pressed="' + (S.view === 'mitt') + '">Mitt borð<span class="c">' + mine.length + '</span></button></div>' +
-          '<section class="panel colmaster" aria-label="Master borð">' +
-            '<header class="phead">' + plate('02') + '<h2 class="ptitle">Master borð</h2><span class="sum">' + master.length + ' mál</span><span class="grow"></span>' +
-              '<div class="seg" role="group" aria-label="Sía">' + [['allt', 'Allt'], ['post', 'Póstar'], ['beidni', 'Beiðnir'], ['hot', 'Áríðandi']].map(f =>
+          '<section class="panel colmaster" aria-label="' + esc(siuHeiti) + '">' +
+            '<header class="phead">' + plate('02') + '<h2 class="ptitle">' + esc(siuHeiti) + '</h2><span class="sum">' + visible.length + ' mál</span><span class="grow"></span>' +
+              (/^[pf]:/.test(S.filter) ? '<button type="button" class="btn iv sm" data-t5="filter" data-f="allt">✕ Aftur á Master</button>' : '') +
+              '<div class="seg" role="group" aria-label="Sía">' + [['allt', 'Allt'], ['post', 'Póstar'], ['beidni', 'Beiðnir'], ['hot', 'Áríðandi'], ['oll', 'Öll opin']].map(f =>
                 '<button type="button" data-t5="filter" data-f="' + f[0] + '" aria-pressed="' + (S.filter === f[0]) + '">' + f[1] + '<span class="c">' + fjoldi(f[0]) + '</span></button>').join('') + '</div>' +
               '<button type="button" class="btn gold sm" data-t5="take-next">Taka næsta ›</button></header>' +
-            '<div class="psub">' + nyleg + ' síðustu 30 daga · ' + bunki + ' í bunka Charlize · Á borðum: ' +
-              ppl.map(x => esc(x) + ' ' + S.rows.filter(r => onBoardOf(r, x)).length).join(' · ') + '</div>' +
-            feed +
-          '</section>' +
-          '<section class="panel colmine" aria-label="Mitt borð">' +
-            '<header class="phead">' + plate('03') + '<h2 class="ptitle">Mitt borð</h2>' +
-              '<span class="slots" aria-label="' + mine.length + ' af ' + LIMIT + '">' + slots + '<span class="slotn' + (mine.length > LIMIT ? ' over' : '') + '">' + mine.length + '/' + LIMIT + '</span></span>' +
-              '<span class="grow"></span><button type="button" class="btn iv sm" data-t5="take-next">Taka næsta ›</button></header>' +
-            (mine.length > LIMIT ? '<div class="psub" style="color:var(--terra)">' + mine.length + ' mál á borðinu — skilaðu því sem bíður á Master</div>' : '') +
-            (mine.length
-              ? mine.map(r => mineRow(r, r.id === selId) + (r.id === selId ? '<div class="sel inline">' + selMarkup + '</div>' : '')).join('')
-              : emptyHtml('Borðið þitt er autt.')) +
-          '</section>' +
+            '<div class="psub">' + nyleg + ' síðustu 30 daga · ' + bunki + ' í bunka Charlize · Á borðum:' +
+              ppl.map(x => '<button type="button" class="pchip" data-t5="filter" data-f="p:' + esc(x) + '" aria-pressed="' + (S.filter === 'p:' + x) + '">' + esc(x) + ' ' + S.rows.filter(r => onBoardOf(r, x)).length + '</button>').join('') + '</div>' +
+            selUtan + feed +
+          '</section>') +
+          mineHtml +
           '<section class="sel side colsel" aria-live="polite">' + selMarkup + '</section>' +
         '</div>'
       : '<button type="button" class="boardstrip" data-t5="mode" data-mode="thjonusta">' + plate('02') + '<b>Master borð</b><span class="v">' + master.length + ' mál</span>' +
-          plate('03') + '<b>Mitt borð</b><span class="v">' + mine.length + ' / ' + LIMIT + '</span><span class="grow"></span><span class="v">Aftur í Þjónustu ›</span></button>';
+          plate('03') + '<b>Mitt borð</b><span class="v">' + mine.length + ' mál</span><span class="grow"></span><span class="v">Aftur í Þjónustu ›</span></button>';
 
     const layout = '<div class="layout' + (topHtml ? '' : ' nol') + (bottom ? '' : ' nor') + '">' +
       (topHtml ? '<aside class="rail left" aria-label="Einingar hamsins">' + topHtml + '</aside>' : '') +
@@ -962,7 +1046,9 @@
             '<button type="button" class="btn iv sm" data-t5="composer">Hætta við</button></div></section>' : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
           Object.keys(MODES).map(k => '<button type="button" data-t5="mode" data-mode="' + k + '" aria-pressed="' + (c.mode === k) + '">' + MODES[k].l + '</button>').join('') +
-        '</div></div>' +
+        '</div><span class="grow"></span><div class="seg" role="group" aria-label="Borðið">' +
+          '<button type="button" data-t5="bara-mitt" data-v="0" aria-pressed="' + !baraMitt + '">Master + mitt borð</button>' +
+          '<button type="button" data-t5="bara-mitt" data-v="1" aria-pressed="' + baraMitt + '">Bara mitt borð</button></div></div>' +
         linksHtml(c.mode) +
         (ppl.indexOf(n) < 0 ? '<p class="err">„' + esc(n) + '“ er ekki starfsmaður á þessu borði' + (n === AI_WORKER ? ' — Charlize er bunkinn á Master' : '') + '. Veldu þitt nafn í „Ég er“.</p>' : '') +
         (S.cfgOpen ? '<section class="panel" aria-label="Mitt vinnuborð">' + cfgHtml() + '</section>' : '') +
@@ -987,6 +1073,35 @@
       if (k in drog) { if (i.type === 'checkbox') i.checked = drog[k]; else i.value = drog[k]; }
     });
     if (fokus) { const f = root.querySelector('[data-k="' + fokus + '"]'); if (f) f.focus(); }
+  }
+
+  // Eftir smell á mál: tryggja að valið mál sjáist (hliðarspjaldið á tölvu, spjaldið undir línunni í síma).
+  function synaVal() {
+    const v = document.getElementById(VIEW_ID), root = v && v.shadowRoot;
+    if (!root) return;
+    const el = [...root.querySelectorAll('.sel.side, .sel.inline')].find(x => x.offsetParent !== null);
+    if (!el) return;
+    const b = el.getBoundingClientRect();
+    if (b.top < 0 || b.top > window.innerHeight - 140) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+  // Fyrirtæki máls: beint ef málið er tengt fyrirtæki, annars eftir viðskiptavini (customers_base);
+  // annars opnast leitin með nafninu svo hægt sé að velja rétta fyrirtækið.
+  async function opnaFyrirtaekiMals(r) {
+    if (!r) return;
+    if (r.fyrirtaeki_id) { openCompany(r.fyrirtaeki_id); return; }
+    const c = sb();
+    if (c && r.customer_base_id) {
+      try {
+        const q = await c.from('fyrirtaeki').select('id').eq('customer_base_id', r.customer_base_id).is('deleted_at', null).limit(2);
+        if (q.data && q.data.length === 1) { openCompany(q.data[0].id); return; }
+      } catch (_) {}
+    }
+    const nafn = whereOf(r);
+    if (!nafn) { toast('Þetta mál er ekki tengt fyrirtæki.', true); return; }
+    S.leit.q = nafn;
+    leita('lq', nafn);
+    const root = rot(), f = root && root.querySelector('[data-k="lq"]');
+    if (f) { f.focus(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
   }
 
   /* ── skilaboð ── */
