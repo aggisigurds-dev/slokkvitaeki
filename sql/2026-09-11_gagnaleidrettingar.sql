@@ -44,6 +44,10 @@
 -- ── 5. Óleyst (engin kennitala með einni innsláttarvillu fannst hjá Skattinum) ──────────────
 --   Hárbeitt (1355) · Húsfélagið Laufásvegi 10 (1363) · Three Sisters ehf – Ránargata 16 (1660, úr þjónustu)
 --   · Vogarcamping ehf (747, mánuður 83) · Batik ehf (kúnni 918, enginn staður) · kúnni 914 (nafnlaus, ekkert tengt).
+--   LEIÐRÉTTING (kl. ~18:30): Three Sisters VAR ein innsláttarvilla — 660716-0300 → 660716-0330 (9. stafur), staðfest hjá
+--   Skattinum („Three Sisters ehf., Ránargötu 16") og á 6 Stólpa-reikningum 2024–2026. Rétta kt er þegar á kúnna #722
+--   („Three sisters", staðir #194 Ægisgata 4 og eyddur #191 Ránargata 16), svo #1660/#1102 er tvískráning → sameining
+--   bíður samþykkis Agnars (Þjónustuborð, mál #885). Fyrri leitin prófaði ekki þennan staf.
 --
 -- ── 6. Viðbót (kl. ~17) — vafasamar línur í „Gleymst að rukka?" bornar saman við Ársskoðun ────────
 --   Rauði kross Íslands #1387 (kt 530269-2649, Skútuvogi 1b) = tvískráning af #284 Rauði kross fataflokkun (kt 520700-2930):
