@@ -1,0 +1,42 @@
+-- 2026-09-11 (kvöld) — Tækjalistinn fylgir skýrslu/reikningi
+--
+-- Agnar 11.09.2026: „Ef það er misræmi milli skýrslu/invoice og tækjalista þá á alltaf að uppfæra tækjalistann
+-- miðað við það... tækjalistinn skiptir minnst máli. Núna er hann bara reikningsaðstoð til áminningar. Númer á
+-- tækjum eru dauð eins og er."  (Sama regla og 07.09.: skýrsla → reikningur → tækjaskrá; sjá tools/trio.cjs.)
+--
+-- ÞETTA ER SKRÁ YFIR ÞAÐ SEM VAR GERT (keyrt með execute_sql og lesið til baka), ekki skrifta til að keyra aftur.
+-- Afrit: audit_vernd (gikkur á uttaeki; handvirkar raðir fyrir app_settings). Engu var eytt.
+--
+-- ── 1. Fornhagi 11-17 (#394) ──────────────────────────────────────────────────────────────────
+--   Tækjalisti Ársskoðunar: reykskynjarar 22 → 15 (= skýrsla 2026, doc 1839, og reikningur R-000845).
+--   Prófíllinn var þegar 15. Ekkert rukkað eftir á. audit_vernd 63334. Mál #902 lokað.
+--
+-- ── 2. Kirkjuvellir (#708) ────────────────────────────────────────────────────────────────────
+--   uttaeki 25033–25037 (sömu 5 ABC-dufttæki skráð aftur 07.09.) → urelt. Prófíll 24 = R-000843 = Ársskoðun.
+--   Skýrslulesturinn (29, doc 2102) er af röngu skýrslunni („MÁ EKKI SENDA"), svo hann ræður ekki hér.
+--
+-- ── 3. Prófíll færður að nýjustu úttektarskýrslu (arsskodun_report_facts) — 7 staðir ──────────────
+--   Aðeins þar sem prófíll ≠ skýrsla og skýrslan stemmir við Ársskoðun (eða Ársskoðun var færð að skýrslunni).
+--   Tegund fyrir tegund; umfram tæki → urelt (nýjustu raðir fyrst, notes „umfram úttektarskýrslu"),
+--   vantandi tæki → ný röð (serial AE20260911-0001…0025, notes „auto-equip 20260911").
+--     #202 Sveitahótelið Brú (Borealis)  19 → 8   8 léttvatn, 2 duft 6-12 kg og 1 slanga → urelt
+--     #274 JP innréttingar                 3 → 6   slanga + duft → urelt; +3 léttvatn, +1 CO2 2 kg, +1 CO2 5 kg
+--     #432 Kirkjulundur 12-14              4 → 6   2 slöngur → urelt; +4 léttvatn · Ársskoðun léttvatn 5 → 6 (audit_vernd 63367)
+--     #238 H.Jónsson ehf                   2 → 4   +2 ABC-duft 6 kg · Ársskoðun duft6_12 0 → 2 (audit_vernd 63368)
+--     #687 Granitsmiðjan                   5 → 3   2 léttvatn → urelt (skýrsla 2024 = Ársskoðun)
+--     #262 BJB                            10 → 11  1 slanga → urelt; +1 léttvatn, +1 ABC-duft 6 kg
+--     #411 Jarðboranir hf.                28 → 27  13 ABC-duft → urelt; +5 CO2 5 kg, +5 léttvatn, +2 slöngur
+--   Samtals 31 tæki → urelt og 25 ný.
+--
+-- ── 4. Látið ósnert — ekki augljóst hver víkur ─────────────────────────────────────────────────
+--   #269 Heimaleiga – Höfuðstöðvar  prófíll 5, skýrsla 10, Ársskoðun 54; 9 systkinastaðir → skjal gæti verið á röngum stað
+--   #708 Kirkjuvellir               sjá lið 2
+--   #138 Húsf. Berjarimi 10-16      prófíll 9, skýrsla 6, reikningur 3, Ársskoðun 1 — allt ólíkt; skarast mögulega við #137
+--   #242 JHM sport ehf              prófíll = Ársskoðun (5), skýrsla 6 með aðra samsetningu — mögulega leslvilla
+--   #345 Markus Lifenet             prófíll = reikningur = Ársskoðun (6), skýrsla 7
+--   #1197 Garðabær                  skýrslulestur frá 2023 (12); prófíll 2 kom úr úttektarskýrslu 14.07.2026 — nýrri heimild
+--
+-- ── Afturköllun ────────────────────────────────────────────────────────────────────────────────
+--   select * from audit_vernd where changed_at >= '2026-09-11 18:30+00' and table_name in ('uttaeki', 'app_settings');
+--   Úrelt tæki: status aftur í old_row->>'status'. Ný tæki: status 'urelt' where serial like 'AE20260911-%' (ekki eyða).
+--   Ársskoðun: jsonb_set aftur í old_row úr audit_vernd 63334 / 63367 / 63368.
