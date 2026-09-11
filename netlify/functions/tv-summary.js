@@ -34,9 +34,10 @@ export default async (req) => {
     'Fyrir hverja beiðni hér að neðan, skrifaðu EINA mjög stutta íslenska setningu (hámark 14 orð) ' +
     'sem segir hver staðan er / hvað þarf að gera næst (t.d. "Vantar: senda reikning fyrir Laugaveg"). ' +
     // 11.09.2026 — Þjónustuborð 2 (368) sendir sögu fyrirtækisins með. Búið verk má ekki fá „fara af stað"-tillögu.
-    'Ef SAGA sýnir reikning eða skýrslu dagsetta EFTIR „Stofnað", er verkið líklega búið: segðu það, nefndu ' +
-    'reikningsnúmerið og hvort hann er greiddur, og leggðu til að loka málinu (t.d. "Líklega búið: R-000703 greiddur 14.08 — loka máli"). ' +
-    'Ef reikningur í SAGA er ógreiddur, nefndu það. ' +
+    'Ef „SAGA EFTIR STOFNUN" fylgir beiðninni (reikningur eða skýrsla sem kom eftir að beiðnin var stofnuð), er verkið líklega búið: ' +
+    'segðu það, nefndu reikningsnúmerið og hvort hann er greiddur, og leggðu til að loka málinu (t.d. "Líklega búið: R-000703 greiddur 14.08 — loka máli"). ' +
+    '„ELDRI SAGA" er fyrra verk og segir EKKERT um hvort þessi beiðni er búin — þá skal segja hvað þarf að gera. ' +
+    'Ef reikningur er ógreiddur, nefndu það. ' +
     'Svaraðu EINGÖNGU sem JSON fylki af strengjum, í sömu röð og beiðnirnar, ekkert annað.\n\n' +
     'Beiðnir:\n' + list;
 

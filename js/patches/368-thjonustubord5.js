@@ -825,13 +825,16 @@
     const dd = s => { const d = new Date(s); return isNaN(d.getTime()) ? '' : String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear(); };
     try {
       if (isPost(r) && postOf(r) === undefined) await loadPost(r);
-      const v = r.customer_base_id ? S.virkni[r.customer_base_id] : null, p = isPost(r) ? postOf(r) : null, saga = [];
-      if (v && v.sidasti_reikningur) saga.push('reikningur ' + (v.sidasti_reikningur.num || '') + ' ' + dd(v.sidasti_reikningur.dags) + (v.sidasti_reikningur.paid_at ? ' greiddur ' + dd(v.sidasti_reikningur.paid_at) : ' ógreiddur'));
-      if (v && v.sidasta_skyrsla) saga.push((v.sidasta_skyrsla.doc_type === 'brunakerfi' ? 'brunakerfisskýrsla ' : 'úttektarskýrsla ') + dd(v.sidasta_skyrsla.dags));
+      // Borið saman HÉR, ekki af líkaninu (prófað 11.09: nýtt mál með eldri greiddum reikningi fékk „Líklega búið").
+      const v = r.customer_base_id ? S.virkni[r.customer_base_id] : null, p = isPost(r) ? postOf(r) : null, eftir = [], eldri = [];
+      const upphaf = tStamp(r.created_at), rada = (x, lysing) => (tStamp(x.dags) > upphaf ? eftir : eldri).push(lysing);
+      if (v && v.sidasti_reikningur) rada(v.sidasti_reikningur, 'reikningur ' + (v.sidasti_reikningur.num || '') + ' ' + dd(v.sidasti_reikningur.dags) + (v.sidasti_reikningur.paid_at ? ' greiddur ' + dd(v.sidasti_reikningur.paid_at) : ' ógreiddur'));
+      if (v && v.sidasta_skyrsla) rada(v.sidasta_skyrsla, (v.sidasta_skyrsla.doc_type === 'brunakerfi' ? 'brunakerfisskýrsla ' : 'úttektarskýrsla ') + dd(v.sidasta_skyrsla.dags));
       const texti = String((p && (p.body_preview || p.snippet)) || r.notes || '').replace(/\s+/g, ' ').trim();
       const notes = ['Stofnað ' + dd(r.created_at), eigandaTexti(r, nu()), r.due_at ? 'frestur ' + dd(r.due_at) : '',
         isPost(r) ? (r.svarad_at ? 'svarað ' + dd(r.svarad_at) : 'ósvarað') : '',
-        saga.length ? 'SAGA: ' + saga.join(', ') : '', texti ? 'TEXTI: ' + texti : ''].filter(Boolean).join(' · ');
+        eftir.length ? 'SAGA EFTIR STOFNUN: ' + eftir.join(', ') : '', eldri.length ? 'ELDRI SAGA: ' + eldri.join(', ') : '',
+        texti ? 'TEXTI: ' + texti : ''].filter(Boolean).join(' · ');
       const res = await fetch('/api/tv-summary', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ items: [{ id: r.id, customer_nafn: whereOf(r), type: tegMals(r), title: r.title || '', notes }] }) });
       const data = await res.json().catch(() => ({}));
@@ -1898,7 +1901,7 @@
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368i' };
+    window.Thjonustubord5 = { show, load, render, version: '368j' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
