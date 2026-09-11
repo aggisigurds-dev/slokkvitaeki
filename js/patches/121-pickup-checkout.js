@@ -1098,6 +1098,17 @@
             last_insp: today,
             next_insp: next12mo
           }).eq('id', uid);
+          // 11.09.2026 (Verkefnalisti e8caa730): afhending í Sótt tekur tækið
+          // líka af afgreiðsluborðinu — sömu reitir og Móttaka (179) og
+          // vertíðarlokun (210) skrifa. Aðeins tæki sem standa á borðinu eru
+          // snert, og villa er skráð en stöðvar ekki afhendinguna.
+          const af = await SB.from('uttaeki')
+            .update({ custody_status: 'afhent', picked_up_at: today })
+            .eq('id', uid)
+            .in('custody_status', ['móttekið', 'á verkstæði', 'tilbúið']);
+          if (af && af.error && window.logProblem) {
+            window.logProblem('sott-afhent', 'uttaeki ' + uid + ': ' + (af.error.message || af.error));
+          }
         }
         // s.checked === false (customer didn't take it back) → leave uttaeki
         // alone; the field-service record stays as-is.
