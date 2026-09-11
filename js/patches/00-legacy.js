@@ -2029,11 +2029,13 @@ console.log('[patch-master] loaded with all fixes');
     // and not "any deep div under #view-vorur". The old depth-based selector
     // (#view-vorur>div>div>div) was matching the new category-section wrappers
     // and forcing them to width:180px, which broke the grouped layout.
+    // 2026-09-11: myndin 140 → 72px. Agnar bað 29.08 um kortin „um helming“ minni og js/vorur.js
+    // setti 72px inline, en !important hér vann svo kortin minnkuðu aldrei (Verkefnalisti bce5b394).
     css.textContent =
       '#view-vorur{background:#fff !important;min-height:100vh;padding:0 !important}' +
       '#view-vorur > div{max-width:100% !important;padding:12px 16px !important;box-sizing:border-box !important}' +
       '#view-vorur .vorur-card{background:#fff !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;box-shadow:0 1px 4px rgba(0,0,0,0.06) !important;overflow:hidden !important;box-sizing:border-box !important}' +
-      '#view-vorur .vorur-card img{width:100% !important;height:140px !important;object-fit:contain !important;display:block !important;background:#fff !important;padding:8px !important;box-sizing:border-box !important}';
+      '#view-vorur .vorur-card img{width:100% !important;height:72px !important;object-fit:contain !important;display:block !important;background:#fff !important;padding:4px !important;box-sizing:border-box !important}';
     document.head.appendChild(css);
   }
   console.log('[pm] vorur styling fix active');
