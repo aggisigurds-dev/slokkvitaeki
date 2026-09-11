@@ -769,6 +769,8 @@
     return 'annad';
   }
   async function ingestEmail() {
+    // POSTUR_SJALFVIRKT 11.09.2026: sjálfvirka innsogið (bh_postur_inn_a_bord) kemur í stað þessa hnapps — sjá 231.
+    toast('Pósturinn kemur nú sjálfkrafa inn á Þjónustuborðið á 15 mínútna fresti.'); return;
     const SB = getSB(); if (!SB) return;
     await loadCompanies();
     const idx = buildCoIndex();

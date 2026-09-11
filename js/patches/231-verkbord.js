@@ -3626,6 +3626,9 @@
   // ✉️ Sækja tölvupóst — endurnýtir póst-innsogið úr Þjónustuveri (182, sama
   // tafla thjonustubeidni, idempotent á channel_ref) og endurhleður borðið.
   async function ingestEmailHere(btn) {
+    // POSTUR_SJALFVIRKT 11.09.2026: pósturinn kemur sjálfkrafa inn á Þjónustuborð 2 (bh_postur_inn_a_bord, pg_cron á
+    // 15 mín fresti, aðeins nýr póstur). Handvirka innsogið sótti allt að 500 gamla pósta og hefði tvítekið þræði.
+    toast('Pósturinn kemur nú sjálfkrafa inn á Þjónustuborðið á 15 mínútna fresti.'); return;
     if (!window.Thjonustuver || !Thjonustuver.ingestEmail) { toast('Póst-innsogið (182) er ekki hlaðið'); return; }
     const old = btn.textContent;
     btn.disabled = true; btn.textContent = '✉️ Sæki…';
