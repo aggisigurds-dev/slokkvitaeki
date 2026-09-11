@@ -156,14 +156,20 @@
   const folk = () => {
     let l = [];
     try { l = (window.BordStarfsmadur && BordStarfsmadur.list()) || []; } catch (_) {}
-    if (!l.length) l = ['Agnar', 'Afgreiðsla', 'Bjarndís', 'Anni', 'Elías'];
-    return l.filter((x, i) => x && x !== AI_WORKER && l.indexOf(x) === i);
+    if (!l.length) l = ['Agnar', 'Bjarndís', 'Binni', 'Anni', 'Hákon', 'Afgreiðsla', 'Charlize', 'Allir'];
+    return l.filter((x, i) => x && l.indexOf(x) === i);
   };
   const canonW = v => { const s = String(v == null ? '' : v).trim(); return s === 'Sara' ? 'Bjarndís' : s; };
   const normW = v => { const s = canonW(v); return SENTINELS[s] ? '' : s; };
   const lagt = s => String(s || '').toLocaleLowerCase('is');
   const isFree = r => { const w = normW(r.assigned_to); return !w || w === AI_WORKER; };
-  const onBoardOf = (r, n) => { const w = normW(r.assigned_to); return !!w && w !== AI_WORKER && lagt(w) === lagt(n); };
+  // Sýndarborðin: „Charlize" = bunkinn, „Allir" = sameiginleg verk. Önnur nöfn eins og áður.
+  const onBoardOf = (r, n) => {
+    const skr = lagt(canonW(r.assigned_to)), nn = lagt(n);
+    if (nn === 'allir' || nn === lagt(AI_WORKER)) return !!skr && skr === nn;
+    const w = normW(r.assigned_to);
+    return !!w && w !== AI_WORKER && lagt(w) === nn;
+  };
 
   /* ── stillingar: vinnuborð hvers og eins (samstillt milli véla) ── */
   const P = k => { try { return (window.AppSettings && AppSettings.path) ? AppSettings.path(k) : null; } catch (_) { return null; } };
@@ -336,7 +342,7 @@
     return h.merki.some(t => tags.indexOf(t) >= 0);
   }
   const hamRows = () => { const m = cfg().mode; return S.rows.filter(r => iHam(r, m)); };
-  const masterRows = () => hamRows().filter(isFree).sort(rodun);
+  const masterRows = () => hamRows().filter(r => isFree(r) && !onBoardOf(r, nu())).sort(rodun);
   const mineRows = () => hamRows().filter(r => onBoardOf(r, nu())).sort(rodun);
   const ageDays = r => { const t = tStamp(r.created_at); return t ? Math.max(0, Math.floor((Date.now() - t) / 864e5)) : 0; };
   const ageCls = a => (a >= 14 ? 'hot' : a <= 2 ? 'warm' : '');
@@ -389,7 +395,7 @@
     return act(id, async () => {
       const rows = await patchRow(id, { assigned_to: n }, true);
       if (!rows.length) { toast('Einhver annar tók þetta mál rétt í þessu.', true); return; }
-      if (normW(rows[0].assigned_to) !== n) throw new Error('las til baka „' + rows[0].assigned_to + '“');
+      if (lagt(canonW(rows[0].assigned_to)) !== lagt(n)) throw new Error('las til baka „' + rows[0].assigned_to + '“');
       S.sel[n] = id;
       if (!cfg().baraMitt) S.view = 'mitt';
       toast('Komið á borðið þitt');
@@ -400,12 +406,12 @@
   function setjaA(id, hver) {
     const r = S.rows.find(x => x.id === id);
     if (!r) return;
-    const n = nu(), nyr = normW(hver) || null;
-    if ((normW(r.assigned_to) || null) === nyr) return;
+    const n = nu(), nyr = canonW(hver) || null;
+    if ((canonW(r.assigned_to) || null) === nyr) return;
     return act(id, async () => {
       const rows = await patchRow(id, { assigned_to: nyr }, { adur: r.assigned_to == null ? null : r.assigned_to });
       if (!rows.length) { toast('Málið hafði breyst á annarri vél — sýni nýjustu stöðu.', true); return; }
-      if ((normW(rows[0].assigned_to) || null) !== nyr) throw new Error('las til baka „' + rows[0].assigned_to + '“');
+      if ((canonW(rows[0].assigned_to) || null) !== nyr) throw new Error('las til baka „' + rows[0].assigned_to + '“');
       S.sel[n] = id;
       toast(!nyr ? 'Sett á Master' : lagt(nyr) === lagt(n) ? 'Komið á borðið þitt' : 'Sett á borð ' + nyr);
     });
@@ -431,7 +437,7 @@
       const rf = q ? await q : null;
       if (rf && rf.data && rf.data.length === 1) { nafn = rf.data[0].nafn; baseId = rf.data[0].customer_base_id || null; fid = rf.data[0].id; }
     } catch (_) {}
-    const n = nu(), eigandi = normW(o.eigandi) || null, nuna = new Date().toISOString();
+    const n = nu(), eigandi = canonW(o.eigandi) || null, nuna = new Date().toISOString();
     const obj = {
       title: o.title, notes: o.lysing || '', type: 'annad', status: 'nytt', priority: 'venjulegur',
       customer_nafn: nafn, customer_base_id: baseId, fyrirtaeki_id: fid, assigned_to: eigandi, tags: o.ham && o.ham !== 'thjonusta' && M(o.ham) ? [HAM_MERKI + o.ham] : [],
@@ -761,6 +767,11 @@
       '.vbhead{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}.vbhead .clink,.vbhead b{font-weight:700;font-size:14px;text-transform:none;letter-spacing:0}.vbhead .s{font-size:12px;color:var(--mute)}',
       '.vbl{margin:0;padding:8px 12px;list-style:none;border:1px solid var(--rule2);border-radius:4px;background:var(--well);font-size:12.5px}.vbl li{display:flex;gap:8px;justify-content:space-between;padding:2px 0}',
       '.vbtexti{font-size:12.5px;white-space:pre-line;color:var(--ink2)}.vbspurn{font-size:12.5px;color:var(--terra);font-weight:600}',
+      '.hreinsun .hrsia{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 14px;border-bottom:1px solid var(--rule2)}.hrlist{max-height:60vh;overflow:auto}',
+      '.hrrow{display:grid;grid-template-columns:20px 44px minmax(0,1fr);gap:10px;align-items:start;padding:9px 14px;border-top:1px solid var(--rule2)}.hrrow:first-child{border-top:0}',
+      '.hrrow input{margin:3px 0 0;width:16px;height:16px;cursor:pointer}.hrinfo{display:flex;flex-direction:column;gap:2px;min-width:0}.hrinfo .s{font-size:12px;color:var(--mute);overflow-wrap:anywhere}',
+      '.tfbanner{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:0 0 6px;padding:8px 12px;border:1px solid var(--g6);border-radius:5px;background:#fff8e6;font-size:13px;font-weight:600;color:var(--ink)}',
+      '.tftak{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}',
       '.err{padding:10px 14px;border:1px solid rgba(181,82,42,.45);border-radius:4px;background:#fff7f2;color:var(--terra);font-size:12.5px}',
       '.t5toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99990;max-width:min(92vw,520px);padding:11px 16px;border:1px solid #000;border-radius:5px;background:var(--slab);color:var(--on);font:600 12.5px var(--body);box-shadow:var(--slabsh)}',
       '.t5toast.warn{border-top:3px solid var(--terra)}',
@@ -840,7 +851,9 @@
       ? '<a class="' + k + '" href="#company/' + r.fyrirtaeki_id + '" data-t5="fyr" data-id="' + r.id + '" title="Opna ' + esc(w) + '">' + esc(w) + '</a>'
       : '<button type="button" class="' + k + '" data-t5="fyr" data-id="' + r.id + '" title="Finna ' + esc(w) + '">' + esc(w) + '</button>';
   }
-  const eigandaTexti = (r, n) => isFree(r) ? 'Á Master' : onBoardOf(r, n) ? 'Á þínu borði' : 'Hjá ' + normW(r.assigned_to);
+  const eigandaTexti = (r, n) => onBoardOf(r, n) ? 'Á þínu borði'
+    : isFree(r) ? (normW(r.assigned_to) === AI_WORKER ? 'Í bunka Charlize' : lagt(canonW(r.assigned_to)) === 'allir' ? 'Á borði Allir' : 'Á Master')
+    : 'Hjá ' + normW(r.assigned_to);
   // Sönnun þess að verkið sé líklega búið: reikningur, sala eða skýrsla hjá sama viðskiptavini EFTIR að málið
   // varð til (Engjasel 31: uppsetningarmálið stóð opið þótt reikningurinn hefði verið greiddur 14.08).
   function virkniEftir(r) {
@@ -1028,9 +1041,9 @@
     const skila = minn ? b('iv', 'giveback', '↩ Skila á Master') : '';
     const fyr = whereOf(r) ? b('iv', 'fyr', '🏢 Opna fyrirtæki ›') : '';
     const setja = '<label class="setja"><span class="slabel">Setja á</span><select data-t5="assign" data-id="' + r.id + '"' + dis(r.id) + ' aria-label="Setja málið á">' +
-      '<option value=""' + (laust ? ' selected' : '') + '>Master</option>' +
-      folk().map(x => '<option' + (!laust && lagt(x) === lagt(eigandi) ? ' selected' : '') + '>' + esc(x) + '</option>').join('') +
-      (!laust && !folk().some(x => lagt(x) === lagt(eigandi)) ? '<option selected>' + esc(eigandi) + '</option>' : '') +
+      '<option value=""' + (!canonW(r.assigned_to) ? ' selected' : '') + '>Master</option>' +
+      folk().map(x => '<option' + (lagt(x) === lagt(canonW(r.assigned_to)) ? ' selected' : '') + '>' + esc(x) + '</option>').join('') +
+      (canonW(r.assigned_to) && !folk().some(x => lagt(x) === lagt(canonW(r.assigned_to))) ? '<option selected>' + esc(canonW(r.assigned_to)) + '</option>' : '') +
       '</select></label>';
     const stada = minn ? 'Á þínu borði' : laust ? 'Á Master' : 'Á borði ' + eigandi;
     const meta = [tegMals(r), stada, r.due_at ? 'Frestur ' + fmtD(r.due_at) : '', r.important ? 'Áríðandi' : '', post ? (r.svarad_at ? 'Svarað ' + fmtD(r.svarad_at) : 'Bíður svars') : ''].filter(Boolean).join(' · ');
@@ -1043,7 +1056,7 @@
       (r.summary ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(String(r.summary).slice(0, 600)) + '</div>' : '') +
       sagaHtml(r) + well +
       '<div class="sacts">' + taka + svara + lokid + skila + fyr + '</div>' +
-      '<div class="sacts sm2">' + setja + aksturVal(r) + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') +
+      '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
           ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + hamirHtml(r) + breytaHtml(r);
   }
@@ -1386,6 +1399,157 @@
   const daga = t => Math.max(0, Math.floor((Date.now() - tStamp(t)) / 864e5));
   const soluLina = (x, merki) => '<div class="lrow"><span class="age">' + esc(x.num || '—') + '</span><div><b>' + esc(x.customer_nafn || '(ónefnt)') + '</b>' +
     '<span class="s">' + kr(x.samtals) + ' · ' + esc(fmtD(x.created_at)) + (x.starfsmadur ? ' · ' + esc(x.starfsmadur) : '') + (x.krafa_note ? ' · ' + esc(String(x.krafa_note).slice(0, 60)) : '') + '</span></div>' + (merki || '<span></span>') + '</div>';
+
+  /* ── Hreinsa Master ── */
+  const HR_FLOKKAR = [['tvitekid', 'Tvítekið'], ['buid', 'Líklega búið'], ['ekkertfyr', 'Vantar fyrirtæki'], ['gamalt', 'Gamalt og óhreyft'], ['opid', 'Enn opið']];
+  const titilLykill = t => fold(String(t || '').replace(/^\s*((re|fw|fwd|sv|tr)\s*:\s*)+/i, '')).replace(/[^a-z0-9]+/g, ' ').trim();
+  function flokkaMaster() {
+    const rows = S.rows.filter(isFree), nyrriTil = {}, nuna = Date.now();
+    const merkjaEldri = hopur => {
+      if (hopur.length < 2) return;
+      const rod = hopur.slice().sort((a, b) => tStamp(b.created_at) - tStamp(a.created_at));
+      rod.slice(1).forEach(r => { if (!nyrriTil[r.id]) nyrriTil[r.id] = rod[0]; });
+    };
+    const hopar = {}, thraedir = {};
+    rows.forEach(r => {
+      const k = (r.fyrirtaeki_id || r.customer_base_id || fold(whereOf(r)) || '-') + '|' + titilLykill(r.title);
+      if (titilLykill(r.title)) (hopar[k] = hopar[k] || []).push(r);
+      if (r.channel_ref) (thraedir[r.channel_ref] = thraedir[r.channel_ref] || []).push(r);
+    });
+    Object.values(hopar).forEach(merkjaEldri);
+    Object.values(thraedir).forEach(merkjaEldri);
+    return rows.map(r => {
+      const hreyft = Math.floor((nuna - tStamp(r.updated_at || r.created_at)) / 864e5), vk = virkniEftir(r);
+      if (nyrriTil[r.id]) return { r, fl: 'tvitekid', astaeda: 'Nýrra eintak til: #' + nyrriTil[r.id].id + ' ' + String(nyrriTil[r.id].title || '').slice(0, 50) };
+      if (vk) return { r, fl: 'buid', astaeda: 'Eftir að málið varð til: ' + vk.join(' og ') };
+      if (!r.fyrirtaeki_id && !r.customer_base_id) return { r, fl: 'ekkertfyr', astaeda: 'Ekki tengt fyrirtæki' };
+      if (ageDays(r) > 90 && hreyft > 60) return { r, fl: 'gamalt', astaeda: 'Ekki hreyft í ' + hreyft + ' daga' };
+      return { r, fl: 'opid', astaeda: ageDays(r) + ' daga gamalt' };
+    });
+  }
+  function hreinsunHtml() {
+    if (!S.hreinsa) return '';
+    const listi = flokkaMaster(), sia = S.hrSia || 'tvitekid', val = S.hrVal || (S.hrVal = {});
+    const synd = listi.filter(x => x.fl === sia).sort((a, b) => tStamp(a.r.created_at) - tStamp(b.r.created_at));
+    if (sia === 'ekkertfyr') gogn('tf-post', saekjaSendendur, 600000);
+    const valin = Object.keys(val).filter(id => val[id] && S.rows.some(r => String(r.id) === id)).length;
+    const allir = synd.length > 0 && synd.every(x => val[x.r.id]);
+    return '<section class="panel hreinsun" aria-label="Hreinsa Master">' +
+      '<header class="phead"><span class="plate">🧹</span><h2 class="ptitle">Hreinsa Master</h2><span class="sum">' + listi.length + ' mál á Master · þú velur hverju er lokað</span><span class="grow"></span>' +
+        '<button type="button" class="btn iv sm" data-t5="hr-opna">Loka hreinsun</button></header>' +
+      '<div class="hrsia"><div class="seg sm" role="group" aria-label="Flokkar">' + HR_FLOKKAR.map(f =>
+          '<button type="button" data-t5="hr-sia" data-v="' + f[0] + '" aria-pressed="' + (sia === f[0]) + '">' + f[1] + '<span class="c">' + listi.filter(x => x.fl === f[0]).length + '</span></button>').join('') + '</div>' +
+        '<span class="grow"></span>' +
+        '<button type="button" class="btn iv sm" data-t5="hr-allir" data-v="' + (allir ? '0' : '1') + '"' + (synd.length ? '' : ' disabled') + '>' + (allir ? 'Afvelja flokkinn' : 'Velja allan flokkinn') + '</button>' +
+        '<button type="button" class="btn gold sm" data-t5="hr-loka"' + (valin && !S.hrBid ? '' : ' disabled') + '>' + (S.hrBid ? 'Loka…' : '✓ Loka völdum (' + valin + ')') + '</button></div>' +
+      (synd.length ? '<div class="hrlist">' + synd.map(x => '<div class="hrrow">' +
+          '<input type="checkbox" data-t5="hr-val" data-id="' + x.r.id + '"' + (val[x.r.id] ? ' checked' : '') + ' aria-label="Velja mál #' + x.r.id + '">' +
+          '<span class="age ' + ageCls(ageDays(x.r)) + '">' + ageDays(x.r) + 'D</span><span class="hrinfo">' +
+          '<button type="button" class="lpick" data-t5="skoda" data-id="' + x.r.id + '"><b>' + esc(x.r.title || '(ónefnt mál)') + '</b></button>' +
+          '<span class="s">' + [fyrLink(x.r), esc(eigandaTexti(x.r, nu())), esc(x.astaeda)].filter(Boolean).join(' · ') + '</span>' + (x.fl === 'ekkertfyr' ? tfTakkar(x.r) : '') + '</span></div>').join('') + '</div>'
+        : emptyHtml('Ekkert mál í þessum flokki.')) +
+    '</section>';
+  }
+  async function lokaVoldum() {
+    const c = sb();
+    const ids = Object.keys(S.hrVal || {}).filter(id => S.hrVal[id]).map(Number).filter(id => S.rows.some(r => r.id === id));
+    if (!c || !ids.length || S.hrBid) return;
+    if (!window.confirm('Loka ' + ids.length + (ids.length === 1 ? ' máli' : ' málum') + '? Þau hverfa af borðunum en eyðast ekki — „Afturkalla" opnar þau aftur.')) return;
+    const fyrri = {};
+    ids.forEach(id => { const r = S.rows.find(x => x.id === id); fyrri[id] = (r && r.status) || 'nytt'; });
+    S.hrBid = true;
+    render();
+    try {
+      const r = await c.from('thjonustubeidni').update({ status: 'lokad', updated_at: new Date().toISOString() }).in('id', ids).select('id,status');
+      if (r.error) throw r.error;
+      const lokud = (r.data || []).filter(x => x.status === 'lokad').map(x => x.id);
+      S.hrVal = {};
+      toast('Lokað: ' + lokud.length + (lokud.length === 1 ? ' mál' : ' mál') + (lokud.length < ids.length ? ' — ' + (ids.length - lokud.length) + ' vistuðust ekki' : ''), lokud.length < ids.length,
+        lokud.length ? () => opnaAftur(lokud, fyrri) : null);
+    } catch (e) { toast('Lokunin vistaðist ekki: ' + ((e && e.message) || e), true); }
+    S.hrBid = false;
+    await load(true);
+  }
+  async function opnaAftur(ids, fyrri) {
+    const c = sb();
+    if (!c) return;
+    const eftirStodu = {};
+    ids.forEach(id => { (eftirStodu[fyrri[id]] = eftirStodu[fyrri[id]] || []).push(id); });
+    let ok = 0;
+    for (const st of Object.keys(eftirStodu)) {
+      const r = await c.from('thjonustubeidni').update({ status: st, updated_at: new Date().toISOString() }).in('id', eftirStodu[st]).select('id');
+      if (!r.error) ok += (r.data || []).length;
+    }
+    toast(ok === ids.length ? 'Málin eru opin aftur' : 'Aðeins ' + ok + ' af ' + ids.length + ' opnuðust aftur', ok !== ids.length);
+    await load(true);
+  }
+
+  /* ── tengja mál við fyrirtæki ── */
+  let _fyrFold = null, _fyrFoldLen = -1;
+  function fyrirtaekjaFold() {
+    const listi = window.Companies && Array.isArray(Companies.list) ? Companies.list : [];
+    if (_fyrFold && _fyrFoldLen === listi.length) return _fyrFold;
+    _fyrFoldLen = listi.length;
+    const hreinsa = s => fold(s).replace(/\b(ehf|hf|sf|slf|husfelagid|husfelag)\b\.?/g, ' ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+    _fyrFold = listi.filter(c => c && c.id && c.nafn && !c.deleted_at)
+      .map(c => ({ c, n: hreinsa(c.nafn), h: fold(c.heimilisfang || '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(), e: String(c.netfang || '').toLowerCase().trim() }));
+    return _fyrFold;
+  }
+  async function saekjaSendendur() {
+    const c = sb(), ids = S.rows.filter(r => isPost(r) && !r.fyrirtaeki_id && !r.customer_base_id).map(postId).filter(x => x != null);
+    if (!c || !ids.length) return {};
+    const r = await c.from('email_digest').select('id,sender_email,sender_name').in('id', ids);
+    const m = {};
+    (r.data || []).forEach(x => { m[x.id] = x; });
+    return m;
+  }
+  const _tillogur = {};
+  function tillogurFyrirtaekis(r) {
+    const g = G['tf-post'], p = isPost(r) && g && g.data ? g.data[postId(r)] : null;
+    const lykill = (r.updated_at || '') + '|' + fyrirtaekjaFold().length + '|' + !!p;
+    if (_tillogur[r.id] && _tillogur[r.id].k === lykill) return _tillogur[r.id].t;
+    const netfang = p && p.sender_email ? String(p.sender_email).toLowerCase() : '';
+    const texti = ' ' + fold([r.title, r.notes, r.summary, r.customer_nafn, p && p.sender_name].filter(Boolean).join(' ')).replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ') + ' ';
+    const stig = [];
+    fyrirtaekjaFold().forEach(x => {
+      let s = 0;
+      if (netfang && x.e && x.e === netfang) s += 100;
+      if (x.n.length >= 5 && texti.indexOf(' ' + x.n + ' ') >= 0) s += 30 + x.n.length;
+      if (x.h.length >= 6 && texti.indexOf(' ' + x.h) >= 0) s += 20 + x.h.length;
+      if (s) stig.push({ c: x.c, s });
+    });
+    const t = stig.sort((a, b) => b.s - a.s).slice(0, 3).map(x => x.c);
+    _tillogur[r.id] = { k: lykill, t };
+    return t;
+  }
+  function tfTakkar(r) {
+    return '<span class="tftak">' + tillogurFyrirtaekis(r).map(c => '<button type="button" class="skb" data-t5="tf-tengja" data-id="' + r.id + '" data-fid="' + c.id + '" title="Tengja við ' + esc(c.nafn) + (c.heimilisfang ? ', ' + esc(c.heimilisfang) : '') + '">🏢 ' + esc(String(c.nafn).slice(0, 40)) + '</button>').join('') +
+      '<button type="button" class="skb" data-t5="tf-leita" data-id="' + r.id + '">🔍 Leita að fyrirtæki</button></span>';
+  }
+  function tfBanner() {
+    const r = S.rows.find(x => x.id === S.tengjaVid);
+    if (!r) { S.tengjaVid = null; return ''; }
+    return '<p class="tfbanner">🏢 Veldu fyrirtæki í leitinni til að tengja við „' + esc(String(r.title || '(ónefnt mál)').slice(0, 70)) + '"' +
+      '<button type="button" class="btn iv sm" data-t5="tf-haetta">Hætta við</button></p>';
+  }
+  function tengjaFyrirtaeki(id, fid) {
+    const c = sb(), r = S.rows.find(x => x.id === id);
+    if (!c || !r || !fid) return;
+    return act(id, async () => {
+      const rf = await c.from('fyrirtaeki').select('id,nafn,customer_base_id').eq('id', fid).single();
+      if (rf.error || !rf.data) throw new Error('fyrirtækið fannst ekki');
+      const fyrri = { fyrirtaeki_id: r.fyrirtaeki_id || null, customer_base_id: r.customer_base_id || null, customer_nafn: r.customer_nafn || null };
+      const patch = { fyrirtaeki_id: rf.data.id, customer_base_id: rf.data.customer_base_id || null, customer_nafn: rf.data.nafn };
+      const ru = await c.from('thjonustubeidni').update(Object.assign({ updated_at: new Date().toISOString() }, patch)).eq('id', id).select('id,fyrirtaeki_id');
+      if (ru.error) throw ru.error;
+      if (!ru.data || !ru.data.length || ru.data[0].fyrirtaeki_id !== rf.data.id) throw new Error('las ekki til baka');
+      S.tengjaVid = null;
+      toast('Tengt við ' + rf.data.nafn, false, () => act(id, async () => {
+        const rb = await c.from('thjonustubeidni').update(Object.assign({ updated_at: new Date().toISOString() }, fyrri)).eq('id', id).select('id');
+        toast(rb.error || !(rb.data || []).length ? 'Afturköllun tókst ekki' : 'Tengingin var tekin af', !!rb.error);
+      }));
+    });
+  }
 
   function lrowHtml(r, merki) {
     const a = ageDays(r), w = fyrLink(r);
@@ -1781,7 +1945,7 @@
       pop = '<div class="pop"><div class="plbl">Fyrirtæki</div>' + (fyr || '<div class="pnone">Ekkert fyrirtæki fannst.</div>') +
         (mal ? '<div class="plbl">Opin mál</div>' + mal : '') + '</div>';
     }
-    return '<div class="leit"><input type="search" data-k="lq" value="' + esc(L.q) + '" placeholder="Leita að fyrirtæki, kennitölu eða máli…" aria-label="Leita að fyrirtæki eða máli" autocomplete="off">' + pop + '</div>';
+    return (S.tengjaVid ? tfBanner() : '') + '<div class="leit"><input type="search" data-k="lq" value="' + esc(L.q) + '" placeholder="Leita að fyrirtæki, kennitölu eða máli…" aria-label="Leita að fyrirtæki eða máli" autocomplete="off">' + pop + '</div>';
   }
   function composerHtml() {
     const n = nu(), ppl = folk(), N = S.ny, q = String(N.q || '').trim();
@@ -1876,6 +2040,7 @@
               (/^[pf]:/.test(S.filter) ? '<button type="button" class="btn iv sm" data-t5="filter" data-f="allt">✕ Aftur á Master</button>' : '') +
               '<div class="seg" role="group" aria-label="Sía">' + [['allt', 'Allt'], ['post', 'Póstar'], ['beidni', 'Beiðnir'], ['hot', 'Áríðandi'], ['buid', 'Líklega búin'], ['oll', 'Öll opin']].map(f =>
                 '<button type="button" data-t5="filter" data-f="' + f[0] + '" aria-pressed="' + (S.filter === f[0]) + '">' + f[1] + '<span class="c">' + fjoldi(f[0]) + '</span></button>').join('') + '</div>' +
+              '<button type="button" class="btn iv sm" data-t5="hr-opna" aria-pressed="' + !!S.hreinsa + '" title="Fara yfir Master: tvítekið, líklega búið, vantar fyrirtæki, gamalt">🧹 Hreinsa</button>' +
               '<button type="button" class="btn gold sm" data-t5="take-next">Taka næsta ›</button></header>' +
             '<div class="psub">' + nyleg + ' síðustu 30 daga · ' + bunki + ' í bunka Charlize · Á borðum:' +
               ppl.map(x => '<button type="button" class="pchip" data-t5="filter" data-f="p:' + esc(x) + '" aria-pressed="' + (S.filter === 'p:' + x) + '">' + esc(x) + ' ' + S.rows.filter(r => onBoardOf(r, x)).length + '</button>').join('') + '</div>' +
@@ -1919,7 +2084,7 @@
         '<span class="grow"></span><div class="seg" role="group" aria-label="Borðið">' +
           '<button type="button" data-t5="bara-mitt" data-v="0" aria-pressed="' + !baraMitt + '">Master + mitt borð</button>' +
           '<button type="button" data-t5="bara-mitt" data-v="1" aria-pressed="' + baraMitt + '">Bara mitt borð</button></div></div>' +
-        hamFormHtml() +
+        hamFormHtml() + hreinsunHtml() +
         linksHtml(c.mode) +
         (ppl.indexOf(n) < 0 ? '<p class="err">„' + esc(n) + '“ er ekki starfsmaður á þessu borði' + (n === AI_WORKER ? ' — Charlize er bunkinn á Master' : '') + '. Veldu þitt nafn í „Ég er“.</p>' : '') +
         (S.cfgOpen ? '<section class="panel" aria-label="Mitt vinnuborð">' + cfgHtml() + '</section>' : '') +
@@ -2217,7 +2382,8 @@
         if (el.tagName === 'A' && (e.ctrlKey || e.metaKey || e.shiftKey)) return;
         e.preventDefault();
         S.leit.opid = false;
-        if (a === 'fyr-id') openCompany(el.dataset.fid); else opnaFyrirtaekiMals(S.rows.find(x => x.id === id));
+        if (a === 'fyr-id' && S.tengjaVid) tengjaFyrirtaeki(S.tengjaVid, +el.dataset.fid);
+        else if (a === 'fyr-id') openCompany(el.dataset.fid); else opnaFyrirtaekiMals(S.rows.find(x => x.id === id));
         return;
       case 'bara-mitt':
         if (!krefstStillinga()) return;
@@ -2403,6 +2569,34 @@
       }
       case 'ham-tengja': tengjaHam(id, el.dataset.mode); return;
       case 'g-uppf': gleyma(el.dataset.g); render(); return;
+      case 'hr-opna':
+        S.hreinsa = !S.hreinsa;
+        render();
+        if (S.hreinsa) { const p = root.querySelector('.hreinsun'); if (p) p.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+        return;
+      case 'hr-sia': S.hrSia = el.dataset.v; render(); return;
+      case 'hr-val': S.hrVal = S.hrVal || {}; S.hrVal[id] = !S.hrVal[id]; render(); return;
+      case 'hr-allir': {
+        const kveikja = el.dataset.v === '1', sia = S.hrSia || 'tvitekid';
+        S.hrVal = S.hrVal || {};
+        flokkaMaster().filter(x => x.fl === sia).forEach(x => { S.hrVal[x.r.id] = kveikja; });
+        render();
+        return;
+      }
+      case 'hr-loka': lokaVoldum(); return;
+      case 'tf-tengja': tengjaFyrirtaeki(id, +el.dataset.fid); return;
+      case 'tf-leita': {
+        const r = S.rows.find(x => x.id === id);
+        if (!r) return;
+        S.tengjaVid = id;
+        const q = whereOf(r) || String(r.title || '').slice(0, 40), f0 = root.querySelector('[data-k="lq"]');
+        if (f0) f0.value = q;                                  // áður en teiknað er — drögin taka gildið með sér
+        leita('lq', q);
+        const f = root.querySelector('[data-k="lq"]');
+        if (f) { f.focus(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        return;
+      }
+      case 'tf-haetta': S.tengjaVid = null; render(); return;
       case 'vb-sia': S.vbSia = el.dataset.v; render(); return;
       case 'vb-opna': S.vbOpin = S.vbOpin || {}; S.vbOpin[el.dataset.vb] = !S.vbOpin[el.dataset.vb]; render(); return;
       case 'vb-stada': vbStada(+el.dataset.vb, el.dataset.v); return;
@@ -2489,7 +2683,7 @@
         e.preventDefault();
         const i = st.idx >= 0 ? st.idx : 0;
         if (k === 'nc') veljaNyFyr(i);
-        else if (st.idx >= 0 || listi.length === 1) { S.leit.opid = false; openCompany(listi[i].id); }
+        else if (st.idx >= 0 || listi.length === 1) { S.leit.opid = false; if (S.tengjaVid) tengjaFyrirtaeki(S.tengjaVid, listi[i].id); else openCompany(listi[i].id); }
         return;
       }
       if (k === 'lq') { if (e.key === 'Enter') e.preventDefault(); return; }
@@ -2497,6 +2691,7 @@
     if (e.key === 'Enter' && (k === 'nt' || k === 'nc')) { e.preventDefault(); const b = root.querySelector('[data-t5="composer-save"]'); if (b && !b.disabled) b.click(); }
     if (e.key === 'Enter' && k === 'hn') { e.preventDefault(); const b = root.querySelector('[data-t5="ham-vista"]'); if (b && !b.disabled) b.click(); }
     if (e.key === 'Enter' && (k === 'ln' || k === 'lu')) { e.preventDefault(); const b = root.querySelector('[data-t5="link-save"]'); if (b && !b.disabled) b.click(); }
+    if (e.key === 'Escape' && S.tengjaVid && !S.leit.opid) { S.tengjaVid = null; render(); return; }
     if (e.key === 'Escape' && (S.leit.opid || S.ny.opid)) { S.leit.opid = false; S.ny.opid = false; render(); return; }
     if (e.key === 'Escape' && (S.composer || S.cfgOpen || S.linkForm)) { S.composer = false; S.cfgOpen = false; S.linkForm = false; render(); }
   }
@@ -2581,7 +2776,7 @@
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368n' };
+    window.Thjonustubord5 = { show, load, render, version: '368o' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
