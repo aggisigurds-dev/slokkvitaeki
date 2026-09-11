@@ -51,7 +51,7 @@
     sala: 'sala', vorur: 'vorur', geymsla: 'geymsla', beidnir: 'beidnir',
     drog: 'drog',                                 // 📝 Drög (patch 143)
     payrev: 'payrev', greidslur: 'payrev',        // 🧾 Yfirferð greiðslna (patch 193; #greidslur = fallegri slóð)
-    verkbord: 'verkbord', verkefni: 'verkbord',   // sameinað verkborð (patch 231)
+    bord: 'bord', verkbord: 'bord', verkefni: 'bord',   // Þjónustuborð 2 (368); gamla verkborðið (231) er farið — #verkbord opnar #bord
     brunakerfi: 'brunakerfi', verkdagbok: 'verkdagbok', arsskodun: 'arsskodun',
     vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit',
     bilstjori: 'bilstjori', drivers: 'bilstjori', bakendi: 'bakendi',

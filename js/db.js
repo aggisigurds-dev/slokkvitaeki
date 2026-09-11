@@ -258,11 +258,12 @@ var DB = {
       if (tables.indexOf('spjall') >= 0 && typeof window.SpjallRefresh === 'function') {
         try { window.SpjallRefresh(); } catch(e){}
       }
+      // Þjónustuborð 2 (368) — gamla verkborðið (231) er farið 11.09.2026.
       if (tables.indexOf('thjonustubeidni') >= 0
-          && window.Verkbord && typeof Verkbord.reload === 'function') {
-        var _vbOpen = document.getElementById('view-verkbord');
-        _vbOpen = _vbOpen && _vbOpen.classList.contains('active');
-        if (_vbOpen) { try { Verkbord.reload(); } catch(e){} }
+          && window.Thjonustubord5 && typeof Thjonustubord5.load === 'function') {
+        var _t5Open = document.getElementById('view-bord');
+        _t5Open = _t5Open && _t5Open.classList.contains('active');
+        if (_t5Open) { try { Thjonustubord5.load(true); } catch(e){} }
       }
       // Other tables (solur, app_settings, etc.) — let observers/views
       // refetch lazily when they become active.

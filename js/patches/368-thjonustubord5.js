@@ -11,6 +11,8 @@
  * hliðar viðbótum … festa linka eins og favorite bar í chrome" · „mode yrði alveg snilld í það,
  * með mismunandi opnur" · „gatt-admin og kanski link á þjónustugáttina líka".
  *
+ * GAMLA BORÐIÐ FARIÐ 11.09.2026 (231 + 347 út): 368 festir hliðarstikuhnappinn sjálft (festaHnapp, data-view
+ * 'verkbord'), tekur við #verkbord/#verkefni, setur óúthlutað > 30 d. í bunka Charlize (saekjaBunka) og sýnir fylgiskjöl.
  * KVEIKT 11.09.2026 („þá mátt kveikja á þjónustuborð 2"): hnappurinn „🔧 Þjónustuborð" (231 injectNav,
  * data-view 'verkbord') opnar #bord og Verkefnalista-appið byrjar hér (261). Gamla borðið (231) er
  * áfram á #verkbord og verður fjarlægt þegar Agnar segir til („eyða hinu þegar við erum búin").
@@ -88,7 +90,7 @@
   const TILLOGUR = [
     ['Gátt-admin', '/gatt-admin/'], ['Þjónustugáttin', '/gatt/'],
     ['Kröfu yfirlit', '#krofu-yfirlit'], ['Pósthólf', '#thjonustuver-postar'], ['Reikninga-póstur', '#reikninga-postur'],
-    ['Aksturslisti', '#aksturslisti'], ['Gamla borðið', '#verkbord']
+    ['Aksturslisti', '#aksturslisti']
   ];
 
   const MODS = {
@@ -302,6 +304,7 @@
       S.counts.krofur = krofur;
       S.err = '';
       S.loaded = true;
+      saekjaBunka(rows);
     } catch (e) {
       const msg = (e && e.message) || String(e);
       if (S.err !== msg) breytt = true;
@@ -312,6 +315,25 @@
     S.loading = false;
     if (breytt) render(); else stimpla();
     if (_aftur) { _aftur = false; load(true); }
+  }
+  // Óúthlutuð mál eldri en 30 daga fara í bunka Charlize — áður gert af 231 (claimOldJobs). Aðeins null/tómt (ekki
+  // „Allir", sem er nú sameiginlegt borð), skilyrt svo úthlutun annarrar vélar étist ekki, og á 10 mín. fresti í vafra.
+  let _bunkiVid = 0;
+  async function saekjaBunka(rows) {
+    const c = sb();
+    if (!c || Date.now() - _bunkiVid < 600000) return;
+    _bunkiVid = Date.now();
+    const skil = Date.now() - 30 * 864e5;
+    const ids = rows.filter(r => !canonW(r.assigned_to) && tStamp(r.created_at) && tStamp(r.created_at) < skil).map(r => r.id);
+    if (!ids.length) return;
+    let alls = 0;
+    for (let i = 0; i < ids.length; i += 100) {
+      const r = await c.from('thjonustubeidni').update({ assigned_to: AI_WORKER, updated_at: new Date().toISOString() })
+        .in('id', ids.slice(i, i + 100)).or('assigned_to.is.null,assigned_to.eq.').select('id');
+      if (r.error) { console.warn('[368] bunki Charlize', r.error.message); break; }
+      alls += (r.data || []).length;
+    }
+    if (alls) load(true);
   }
   function stimpla() {
     const v = document.getElementById(VIEW_ID);
@@ -772,6 +794,9 @@
       '.hrrow input{margin:3px 0 0;width:16px;height:16px;cursor:pointer}.hrinfo{display:flex;flex-direction:column;gap:2px;min-width:0}.hrinfo .s{font-size:12px;color:var(--mute);overflow-wrap:anywhere}',
       '.tfbanner{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:0 0 6px;padding:8px 12px;border:1px solid var(--g6);border-radius:5px;background:#fff8e6;font-size:13px;font-weight:600;color:var(--ink)}',
       '.tftak{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}',
+      '.fskjol{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
+      '.fsupp{display:inline-flex;align-items:center;cursor:pointer}.fslist{display:flex;flex-direction:column;gap:4px}',
+      '.fsrow{display:flex;align-items:center;gap:8px;min-width:0}.fsrow .clink{overflow-wrap:anywhere}',
       '.err{padding:10px 14px;border:1px solid rgba(181,82,42,.45);border-radius:4px;background:#fff7f2;color:var(--terra);font-size:12.5px}',
       '.t5toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99990;max-width:min(92vw,520px);padding:11px 16px;border:1px solid #000;border-radius:5px;background:var(--slab);color:var(--on);font:600 12.5px var(--body);box-shadow:var(--slabsh)}',
       '.t5toast.warn{border-top:3px solid var(--terra)}',
@@ -1054,7 +1079,7 @@
       (w ? '<div class="sfyr">🏢 ' + w + '</div>' : '') +
       '<div class="smeta">' + esc(meta) + '</div>' +
       (r.summary ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(String(r.summary).slice(0, 600)) + '</div>' : '') +
-      sagaHtml(r) + well +
+      sagaHtml(r) + skjolHtml(r) + well +
       '<div class="sacts">' + taka + svara + lokid + skila + fyr + '</div>' +
       '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
@@ -1551,6 +1576,65 @@
     });
   }
 
+  /* ── fylgiskjöl (thjonustubeidni_files + verkbord-files — sama geymsla og 231/306) ── */
+  async function saekjaSkjol(id) {
+    const c = sb();
+    if (!c) return [];
+    const r = await c.from('thjonustubeidni_files').select('*').eq('beidni_id', id).order('created_at');
+    if (r.error) throw r.error;
+    return r.data || [];
+  }
+  const staerd = b => !b ? '' : b < 1024 ? b + ' B' : b < 1048576 ? Math.round(b / 1024) + ' KB' : (b / 1048576).toFixed(1).replace('.', ',') + ' MB';
+  function skjolHtml(r) {
+    const g = gogn('skjol:' + r.id, () => saekjaSkjol(r.id), 120000), bid = !!(S.skjolBid && S.skjolBid[r.id]), listi = g.data || [];
+    return '<div class="fskjol"><div class="sg-h"><span class="slabel">📎 Fylgiskjöl' + (g.data ? ' (' + listi.length + ')' : '') + '</span><span class="grow"></span>' +
+        '<label class="sg-r fsupp" data-t5="skjal-velja">' + (bid ? 'Hleð upp…' : '+ Bæta við skjölum') + '<input type="file" multiple data-t5-skjal="' + r.id + '" hidden' + (bid ? ' disabled' : '') + '></label></div>' +
+      (g.villa ? '<div class="sg-m">Náði ekki í fylgiskjölin: ' + esc(g.villa) + '</div>'
+        : !g.data ? '<div class="sg-m">Sæki fylgiskjöl…</div>'
+        : listi.length ? '<div class="fslist">' + listi.map(f => '<div class="fsrow">' +
+            '<a class="clink dk" href="' + esc(f.url || '') + '" target="_blank" rel="noopener">' + esc(f.name || 'skjal') + '</a>' +
+            '<span class="sg-m">' + esc([staerd(f.size), f.created_at ? fmtD(f.created_at) : ''].filter(Boolean).join(' · ')) + '</span><span class="grow"></span>' +
+            '<button type="button" class="sx" data-t5="skjal-eyda" data-id="' + r.id + '" data-fid="' + f.id + '" aria-label="Eyða ' + esc(f.name || 'skjali') + '">✕</button></div>').join('') + '</div>'
+        : '<div class="sg-m">Engin fylgiskjöl á þessu máli.</div>') +
+    '</div>';
+  }
+  async function hladaSkjolum(id, files) {
+    const c = sb();
+    if (!c || !files.length) return;
+    S.skjolBid = S.skjolBid || {};
+    S.skjolBid[id] = true;
+    render();
+    let ok = 0;
+    for (const file of files) {
+      if (file.size > 25 * 1048576) { toast(file.name + ' er of stór (hámark 25 MB).', true); continue; }
+      const slod = id + '/' + Date.now() + '-' + String(file.name).replace(/[^a-zA-Z0-9._-]/g, '_');
+      try {
+        const up = await c.storage.from('verkbord-files').upload(slod, file, { contentType: file.type || 'application/octet-stream', upsert: false });
+        if (up.error) throw up.error;
+        const url = ((c.storage.from('verkbord-files').getPublicUrl(slod) || {}).data || {}).publicUrl;
+        const ins = await c.from('thjonustubeidni_files').insert({ beidni_id: Number(id), name: file.name, path: slod, url, mime_type: file.type || null, size: file.size || null }).select('id');
+        if (ins.error) throw ins.error;
+        ok++;
+      } catch (e) { toast(file.name + ' vistaðist ekki: ' + ((e && e.message) || e), true); }
+    }
+    delete S.skjolBid[id];
+    gleyma('skjol:' + id);
+    if (ok) toast(ok === 1 ? 'Skjalið er komið á málið' : ok + ' skjöl komin á málið');
+    render();
+  }
+  async function eydaSkjali(id, fileId) {
+    const c = sb(), g = G['skjol:' + id], f = g && g.data ? g.data.find(x => x.id === fileId) : null;
+    if (!c || !f || !window.confirm('Eyða skjalinu „' + (f.name || '') + '"? Það er ekki hægt að afturkalla.')) return;
+    try {
+      if (f.path) { const rm = await c.storage.from('verkbord-files').remove([f.path]); if (rm.error) throw rm.error; }
+      const del = await c.from('thjonustubeidni_files').delete().eq('id', fileId).select('id');
+      if (del.error) throw del.error;
+      toast('Skjalinu var eytt');
+    } catch (e) { toast('Eyðing tókst ekki: ' + ((e && e.message) || e), true); }
+    gleyma('skjol:' + id);
+    render();
+  }
+
   function lrowHtml(r, merki) {
     const a = ageDays(r), w = fyrLink(r);
     return '<div class="lrow"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
@@ -1987,7 +2071,8 @@
     // Opinn fellilisti lokast ef teiknað er undir honum — bíða þar til hann er frá.
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði truflast ef teiknað er undir — bíða.
-    if (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm)))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
+    // Skráarval opið: teikning myndi skipta út <input type="file"> og skrárnar tapast.
+    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     const n = nu(), c = cfg(), mode = M(c.mode) || MODES.thjonusta;
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // Hvaða opið mál sem er má skoða — ekki aðeins þau á mínu borði. 0 = lokað viljandi (✕).
@@ -2065,8 +2150,7 @@
           '<h1 class="h1">Þjónustuborð</h1>' +
           '<p class="meta">' + (c.mode !== 'thjonusta' ? 'Hamur: ' + mode.l + ' · ' : '') + master.length + ' á Master · ' + mine.length + ' á þínu borði · ' + hot + ' áríðandi' +
             '<span class="t5-sott">' + (S.loadedAt ? ' · sótt kl. ' + klukka(S.loadedAt) : '') + '</span></p>' +
-          '<div class="beta">' +
-            '<button type="button" class="btn iv sm" data-t5="go" data-view="verkbord">Gamla borðið ›</button></div>' +
+          '' +
         '</div><div class="acts">' +
           '<label class="who"><span class="lbl">Ég er</span><select data-t5="who" aria-label="Starfsmaður">' +
             (ppl.indexOf(n) < 0 ? '<option value="" selected disabled>Veldu nafn…</option>' : '') +
@@ -2569,6 +2653,8 @@
       }
       case 'ham-tengja': tengjaHam(id, el.dataset.mode); return;
       case 'g-uppf': gleyma(el.dataset.g); render(); return;
+      case 'skjal-velja': S.skjalVal = true; window.addEventListener('focus', () => setTimeout(() => { S.skjalVal = false; }, 1500), { once: true }); return;
+      case 'skjal-eyda': eydaSkjali(+el.dataset.id, +el.dataset.fid); return;
       case 'hr-opna':
         S.hreinsa = !S.hreinsa;
         render();
@@ -2654,6 +2740,7 @@
   function onChange(e) {
     const el = e.target, v = document.getElementById(VIEW_ID);
     if (!v || !el || !el.dataset) return;
+    if (el.dataset.t5Skjal) { const files = [...(el.files || [])]; el.value = ''; S.skjalVal = false; hladaSkjolum(+el.dataset.t5Skjal, files); return; }
     if (el.dataset.t5 === 'assign') { el.blur(); setjaA(Number(el.dataset.id), el.value); return; }
     if (el.dataset.bm) { bmSkra(el); return; }
     if (el.dataset.t5 === 'ak-mal') { el.blur(); setjaAkstur(+el.dataset.fid, +el.value); return; }
@@ -2735,7 +2822,7 @@
     if (!window.App || window.App._t5SwitchPatched) return;
     const orig = window.App.switchView;
     window.App.switchView = function (view) {
-      if (view === NAV_KEY) { show(); return; }
+      if (view === NAV_KEY || view === 'verkbord' || view === 'verkefni') { show(); return; }
       const mine = document.getElementById(VIEW_ID);
       if (mine) { mine.style.display = 'none'; mine.classList.remove('active'); }
       clearInterval(_poll);
@@ -2744,10 +2831,29 @@
     window.App._t5SwitchPatched = true;
   }
   function openFromHash() {
-    if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) return;
+    if (['bord', 'verkbord', 'verkefni'].indexOf((location.hash || '').replace(/^#/, '')) < 0) return;
     const v = document.getElementById(VIEW_ID);
     if (v && v.classList.contains('active')) return;
     if (window.App && App.switchView) App.switchView(NAV_KEY); else show();
+  }
+  // Hliðarstikuhnappurinn „🔧 Þjónustuborð" — áður í 231 (injectNav), sem er farið. data-view er VILJANDI 'verkbord':
+  // röðun (sidebar_order) og faldir hnappar (sidebar_hidden) í 68 eru vistuð eftir data-view á öllum vélum, og
+  // 261 navTo smellir á .vnav-btn[data-view=lykill].
+  let _hnappTilraunir = 0;
+  function festaHnapp() {
+    const nav = document.querySelector('nav.view-nav, .view-nav'), tpl = nav && nav.querySelector('.vnav-btn');
+    if (!nav || !tpl) { if (++_hnappTilraunir < 60) setTimeout(festaHnapp, 500); return; }
+    if (nav.querySelector('[data-view="verkbord"]')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = (tpl.className || 'vnav-btn').replace(/\bactive\b/g, '').trim();
+    btn.setAttribute('data-view', 'verkbord');
+    btn.style.cssText += ';position:relative;z-index:5;display:flex;align-items:center';
+    btn.innerHTML = '<span style="margin-right:6px">🔧</span>Þjónustuborð';
+    btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (window.App && App.switchView) App.switchView(NAV_KEY); else show(); });
+    nav.insertBefore(btn, nav.firstChild);
+    const v = document.getElementById(VIEW_ID);
+    if (v && v.classList.contains('active')) btn.classList.add('active');
   }
   let _stSig = '';
   const stillingaSig = () => { const n = nu(); try { return JSON.stringify([n, P(CFG_KEY + '.by_staff.' + n), jobsFor(n), cardsFor(n), folk(), P(CFG_KEY + '.hamir')]); } catch (_) { return String(Date.now()); } };
@@ -2774,9 +2880,10 @@
     const aSkiptum = () => { S.view = 'master'; S.linkForm = false; S.linkEdit = false; render(); };
     if (window.BordStarfsmadur && BordStarfsmadur.onChange) BordStarfsmadur.onChange(aSkiptum);
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
+    festaHnapp();
     openFromHash();
-    setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368o' };
+    setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
+    window.Thjonustubord5 = { show, load, render, version: '368p' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

@@ -21,8 +21,9 @@
 
   const VIEW_ID = 'view-aksturslisti';
   const NAV_KEY = 'aksturslisti';
-  const EMPLOYEES = ['Hákon', 'Binni', 'Elías', 'Agnar'];
-  const EMP_COL = { 'Hákon': '#2563eb', 'Binni': '#059669', 'Elías': '#d97706', 'Agnar': '#dc2626' };
+  // Starfsmenn úr sameiginlega listanum (350, bord_starfsmenn) — fólkið, án „Charlize" og „Allir" (Agnar 11.09.2026).
+  const folkid = () => { try { const l = window.BordStarfsmadur && BordStarfsmadur.list ? BordStarfsmadur.list() : []; const f = l.filter(n => n && n !== 'Charlize' && String(n).toLowerCase() !== 'allir'); if (f.length) return f; } catch (_) {} return ['Agnar', 'Bjarndís', 'Binni', 'Anni', 'Hákon', 'Afgreiðsla']; };
+  const EMP_COL = { 'Hákon': '#2563eb', 'Binni': '#059669', 'Elías': '#d97706', 'Agnar': '#dc2626', 'Bjarndís': '#7c3aed', 'Anni': '#db2777', 'Afgreiðsla': '#0891b2' };
   const empColor = (n) => EMP_COL[n] || '#64748b';
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -138,11 +139,11 @@
 
   function aggregate() {
     const agg = {};
-    EMPLOYEES.forEach(n => agg[n] = { emp: n, cos: new Set(), yf: 0, vs: 0, done: 0, last: null, geo: null, trail: [] });
+    folkid().forEach(n => agg[n] = { emp: n, cos: new Set(), yf: 0, vs: 0, done: 0, last: null, geo: null, trail: [] });
     // _rows is newest-first; build trail oldest-first
     const asc = _rows.slice().reverse();
     asc.forEach(x => {
-      const a = agg[x.employee]; if (!a) return;
+      const a = agg[x.employee] || (x.employee ? (agg[x.employee] = { emp: x.employee, cos: new Set(), yf: 0, vs: 0, done: 0, last: null, geo: null, trail: [] }) : null); if (!a) return;
       if (x.co_id && x.action !== 'ping') a.cos.add(x.co_id);
       if (x.action === 'yfirfarid') a.yf++;
       if (x.action === 'verkstaedi') a.vs++;
@@ -177,7 +178,7 @@
     _layers.forEach(l => { try { _map.removeLayer(l); } catch (_) {} });
     _layers = [];
     const pts = [];
-    EMPLOYEES.forEach(n => {
+    Object.keys(agg).forEach(n => {
       if (_emp !== 'all' && _emp !== n) return;
       const a = agg[n]; const col = empColor(n);
       if (a.trail.length > 1) {
@@ -262,7 +263,7 @@
           '</div>' +
           (_day !== todayStr() ? '<button id="_al-today" type="button" style="' + METALBTN + '">Í dag</button>' : '') +
           '<div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap">' +
-            [['all', 'Allir', '#334155']].concat(EMPLOYEES.map(n => [n, n, empColor(n)])).map(([k, lab, col]) => {
+            [['all', 'Allir', '#334155']].concat(folkid().map(n => [n, n, empColor(n)])).map(([k, lab, col]) => {
               const on = _emp === k;
               return '<button type="button" class="_al-emp" data-emp="' + esc(k) + '" style="' + (on
                 ? 'background:' + col + ';color:#fff;border:1px solid ' + col + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.25)'
@@ -329,7 +330,7 @@
 
         // starfsmenn
         secHdr('👷 STARFSMENN Í DAG') +
-        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">' + EMPLOYEES.map(n => card(agg[n])).join('') + '</div>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">' + (Object.keys(agg).filter(n => agg[n].last).map(n => card(agg[n])).join('') || '<span style="color:#64748b;font-size:13px">Engin virkni skráð þennan dag.</span>') + '</div>' +
 
         // kort
         '<div style="border-radius:14px;overflow:hidden;border:1px solid #0c0e12;margin-bottom:18px;background:#dfe3e8;box-shadow:0 2px 6px rgba(0,0,0,.25)">' +

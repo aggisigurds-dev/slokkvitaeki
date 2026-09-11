@@ -152,8 +152,9 @@
   // Bílstjóri velur nafn sitt (geymt á tæki). Hver aðgerð (heimsókn, yfirfarið,
   // á verkstæði, klárað) er skráð í `bilstjori_vakt` með staðsetningu → skrifstofan
   // sér daglega samantekt + hvar hver er, á aðal-síðu Bílstjóra.
-  const EMPLOYEES = ['Hákon', 'Binni', 'Elías', 'Agnar'];
-  const EMP_COL = { 'Hákon': '#2563eb', 'Binni': '#059669', 'Elías': '#d97706', 'Agnar': '#dc2626' };
+  // Starfsmenn úr sameiginlega listanum (350, bord_starfsmenn) — fólkið, án „Charlize" og „Allir" (Agnar 11.09.2026).
+  const folkid = () => { try { const l = window.BordStarfsmadur && BordStarfsmadur.list ? BordStarfsmadur.list() : []; const f = l.filter(n => n && n !== 'Charlize' && String(n).toLowerCase() !== 'allir'); if (f.length) return f; } catch (_) {} return ['Agnar', 'Bjarndís', 'Binni', 'Anni', 'Hákon', 'Afgreiðsla']; };
+  const EMP_COL = { 'Hákon': '#2563eb', 'Binni': '#059669', 'Elías': '#d97706', 'Agnar': '#dc2626', 'Bjarndís': '#7c3aed', 'Anni': '#db2777', 'Afgreiðsla': '#0891b2' };
   const EMP_KEY = 'bs_employee';
   const empColor = (n) => EMP_COL[n] || '#64748b';
   function getEmp() { try { return localStorage.getItem(EMP_KEY) || ''; } catch (_) { return ''; } }
@@ -193,7 +194,7 @@
       '<div style="background:#1b1e24;border:1px solid #2b2f37;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;box-shadow:0 20px 60px -20px #000">' +
         '<div style="font-size:20px;font-weight:800;color:#eef1f4;margin-bottom:16px">Hver ert þú?</div>' +
         '<div style="display:flex;flex-direction:column;gap:10px">' +
-          EMPLOYEES.map(n => '<button class="_bs-emp" data-n="' + esc(n) + '" type="button" style="padding:15px;border-radius:12px;border:0;background:' + empColor(n) + ';color:#fff;font:inherit;font-size:17px;font-weight:800;cursor:pointer">' + esc(n) + '</button>').join('') +
+          folkid().map(n => '<button class="_bs-emp" data-n="' + esc(n) + '" type="button" style="padding:15px;border-radius:12px;border:0;background:' + empColor(n) + ';color:#fff;font:inherit;font-size:17px;font-weight:800;cursor:pointer">' + esc(n) + '</button>').join('') +
           (force ? '' : '<button class="_bs-emp" data-n="" type="button" style="padding:12px;border-radius:12px;border:1px solid #3a3f48;background:transparent;color:#aeb4be;font:inherit;font-size:14px;cursor:pointer">Skrifstofa / sleppa</button>') +
         '</div>' +
       '</div>';
@@ -223,16 +224,17 @@
       rows = r.data || [];
     } catch (_) { return; }
     const agg = {};
-    EMPLOYEES.forEach(n => agg[n] = { emp: n, cos: new Set(), yf: 0, vs: 0, last: null, geo: null });
+    folkid().forEach(n => agg[n] = { emp: n, cos: new Set(), yf: 0, vs: 0, last: null, geo: null });
     rows.forEach(x => {
-      const a = agg[x.employee]; if (!a) return;
+      // Nafn sem er ekki lengur á listanum (t.d. Elías) heldur sögu sinni í samantektinni.
+      const a = agg[x.employee] || (x.employee ? (agg[x.employee] = { emp: x.employee, cos: new Set(), yf: 0, vs: 0, last: null, geo: null }) : null); if (!a) return;
       if (x.co_id && x.action !== 'ping') a.cos.add(x.co_id);
       if (x.action === 'yfirfarid') a.yf++;
       if (x.action === 'verkstaedi') a.vs++;
       if (!a.last) a.last = x.created_at;
       if (!a.geo && x.lat != null) a.geo = { lat: x.lat, lng: x.lng };
     });
-    _vaktGeo = {}; EMPLOYEES.forEach(n => { if (agg[n].geo) _vaktGeo[n] = agg[n].geo; });
+    _vaktGeo = {}; Object.keys(agg).forEach(n => { if (agg[n].geo) _vaktGeo[n] = agg[n].geo; });
     const me = getEmp();
     const card = (a) => {
       const tot = a.yf + a.vs, active = !!a.last;
@@ -257,7 +259,7 @@
         '<button id="_bs-empchip" type="button" style="margin-left:auto;border:1px solid ' + (me ? empColor(me) : '#3a3f48') + ';background:' + (me ? empColor(me) : 'transparent') + ';color:#fff;border-radius:99px;padding:4px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">👤 ' + esc(me || 'Velja nafn') + '</button>' +
       '</div>' +
       '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px">' +
-        EMPLOYEES.map(n => card(agg[n])).join('') +
+        Object.keys(agg).filter(n => agg[n].last || n === me).map(n => card(agg[n])).join('') +
       '</div>';
     const chip = document.getElementById('_bs-empchip');
     if (chip) chip.addEventListener('click', () => pickEmp(false));

@@ -51,7 +51,7 @@
   // bs_employee) svo starfsmaður velji sig einu sinni — hvort sem hann byrjar
   // í bílnum eða á skrifstofunni.
   const EMP_KEY = 'bs_employee';
-  const EMPLOYEES = ['Hákon', 'Binni', 'Elías', 'Agnar'];
+  const folkid = () => { try { const l = window.BordStarfsmadur && BordStarfsmadur.list ? BordStarfsmadur.list() : []; const f = l.filter(n => n && n !== 'Charlize' && String(n).toLowerCase() !== 'allir'); if (f.length) return f; } catch (_) {} return ['Agnar', 'Bjarndís', 'Binni', 'Anni', 'Hákon', 'Afgreiðsla']; };   // sameiginlegi listinn (350), fólkið án Charlize og Allir
   function whoAmI() { try { return localStorage.getItem(EMP_KEY) || ''; } catch (_) { return ''; } }
   function setWhoAmI(n) { try { localStorage.setItem(EMP_KEY, n || ''); } catch (_) {} }
   // „Hákon · 14:03" — eða „14:03" ef enginn hefur valið nafn (þá er tíminn þó
@@ -1040,8 +1040,8 @@
     // Nafnaval — einfalt hringval gegnum starfsmannalistann (sami og 219).
     v.querySelectorAll('._sv-emp').forEach(bn => bn.addEventListener('click', () => {
       const cur = whoAmI();
-      const i = EMPLOYEES.indexOf(cur);
-      const next = EMPLOYEES[(i + 1) % (EMPLOYEES.length + 1)] || '';
+      const L = folkid(), i = L.indexOf(cur);
+      const next = L[(i + 1) % (L.length + 1)] || '';
       setWhoAmI(next);
       toast(next ? '👤 ' + next : 'Nafn hreinsað');
       render();

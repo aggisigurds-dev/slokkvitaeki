@@ -39,7 +39,8 @@
   // Nofnin sem eru THEGAR i notkun i thjonustubeidni.assigned_to (maelt
   // 02.09.2026: Charlize 66, Agnar 49, Bjarndis 3, Elias 2, Anni 1) plus
   // Afgreidsla sem er stadur en ekki manneskja.
-  const SJALFGEFNIR = ['Agnar', 'Afgreiðsla', 'Charlize', 'Bjarndís', 'Anni', 'Elías'];
+  // Agnar 11.09.2026: „Hafðu starfsmennina alla. Agnar. Bjarndís. Binni. Anni. Hákon. Afgreiðsla. Charlize. Allir".
+  const SJALFGEFNIR = ['Agnar', 'Bjarndís', 'Binni', 'Anni', 'Hákon', 'Afgreiðsla', 'Charlize', 'Allir'];
   const listeners = [];
 
   const esc = s => String(s == null ? '' : s)
@@ -179,9 +180,11 @@
   }
 
   const mo = new MutationObserver(() => { setja(); });
+  let _raesaTilraunir = 0;
   function ræsa() {
     const v = document.getElementById('view-verkbord');
-    if (!v) { setTimeout(ræsa, 600); return; }
+    // Gamla verkborðið (231) er farið 11.09.2026 — hætta eftir 20 tilraunir (lykkjan snerist annars endalaust).
+    if (!v) { if (++_raesaTilraunir < 20) setTimeout(ræsa, 600); else flytjaGomul(); return; }
     mo.observe(v, { childList: true, subtree: true });
     setja();
     flytjaGomul();

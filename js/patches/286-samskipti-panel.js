@@ -524,7 +524,7 @@
         '<div class="_skx-lbl">Póstsaga · ' + data.mails.length + ' <span class="_skx-daufur" style="text-transform:none;letter-spacing:0;font-weight:400">— smelltu á póst til að lesa hann allan</span></div>' +
         mailsHtml +
         '<div class="_skx-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:8px">Beiðnir &amp; mál' +
-          (window.Verkbord ? '<button type="button" class="_ssk-bord _skx-btn ljos">Opna Þjónustuborð</button>' : "") +
+          (window.Verkbord || window.Thjonustubord5 ? '<button type="button" class="_ssk-bord _skx-btn ljos">Opna Þjónustuborð</button>' : "") +
         "</div>" +
         beidnirHtml +
       "</div>";
