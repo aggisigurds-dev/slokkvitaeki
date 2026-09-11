@@ -1,0 +1,34 @@
+-- 2026-09-11 (kvöld) — Mál sem Agnar samþykkti á Þjónustuborðinu (merki samthykki → svar:samthykkt, kl. 19:38–19:40)
+--
+-- ÞETTA ER SKRÁ YFIR ÞAÐ SEM VAR GERT (keyrt með execute_sql / í appinu og lesið til baka), ekki skrifta til að keyra aftur.
+-- Allt innra og afturkræft; afrit í audit_vernd (gikkir á fyrirtaeki, customer_documents, uttaeki; handvirkt fyrir
+-- app_settings og document_pairs). Engu eytt.
+--
+-- ── #912 Grunnur: 28 reikningar skráðir oftar en einu sinni ─────────────────────────────────────
+--   32 aukaraðir í customer_documents → is_duplicate = true, dup_of = aðalröð (pör endurstaðfest fyrir skrif:
+--   sama reikningsnúmer, staður, kúnni og ár; ekkert þegar merkt). 3 skjalapör (document_pairs 1529, 1442, 1518)
+--   færð á aðalröðina; gömlu pörin afrituð í audit_vernd. Aðalraðir → aukaraðir:
+--   R-000163 3077←6035 · R-000243 3076←6033 · R-000370 3078←6034 · R-106053 2619←105 · R-106322 2870←117 ·
+--   R-106361 2580←124 · R-106410 126←2922 · R-106416 2836←121 · R-106441 2797←123 · R-106446 2699←115 ·
+--   R-106473 119←2519 · R-106483 122←2627 · R-106486 118←2765 · R-106489 2923←128 · R-106507 114←2554 ·
+--   R-106547 125←2852 · R-106551 2841←127 · R-106563 2655←116 · R-106744 2732←103 · R-106990 3015←3273 ·
+--   R-106991 2380←3546 · R-107041 2381←3275 · R-107073 6804←6805,7940,9417,9554 · R-107074 2471←3019 ·
+--   R-107127 6806←7941,9416 · R-107308 2473←2975 · R-107340 2472←2974 · R-107600 2447←2355
+--
+-- ── #907 13 óvirkir staðir teknir úr þjónustu ────────────────────────────────────────────────────
+--   160, 578, 585, 586, 783, 828, 1140, 1146, 1147, 1148, 1416, 1420, 1631 — endurmælt fyrir skrif: 0 tæki,
+--   engin skjöl/sölur/Stólpi frá 2025, engin opin mál. Sama og takkinn „Taka úr þjónustu" (patch 280):
+--   fyrirtaeki.er_i_thjonustu = false · arsskodun_customers[fid] += {subscribed:false, removed_from_service_at:'2026-09-11'}
+--   (afrit audit_vernd 63420) · override_log 7680–7692 (page 'thjonustubord-samthykki-907').
+--
+-- ── #905 Granítsteinar (#153): úttektarskýrsla 2026 eftir reikningi R-000357 ───────────────────────
+--   Tækjalisti færður að reikningnum (heimsókn 19.06.2026, Elías): uttaeki 20711, 20712 (léttvatn) og 20713
+--   (brunaslanga, úr skýrslu 2024) → urelt; nýtt CO2 2 kg 25343 (AE20260911-0026). Ársskoðun {lettvatn 2, co2_2 1}
+--   (afrit audit_vernd 63425).
+--   Skýrslan búin til í appinu (CompanyInspectionReport.open(153) með skoðunarmánuð Júní 2026 og skoðunaraðila Elías í
+--   ferðastöðu vafrans): vistuð sjálfkrafa í skjalakassa staðarins, customer_documents 9967 (Drive-afrit
+--   1MNmojcpnza4PRJCjvbB3Qezj6Bqmevpb), arsskodun_report_facts 2026/6 = 3 tæki; doc_date færð á 2026-06-19 og
+--   storage_path sett. Parað sjálfkrafa við reikninginn: document_pairs 1081 „klarad".
+--
+-- ── #910 / #911 Drive-tvítök (254 reikninga-PDF, 106 skýrslu-PDF) ──────────────────────────────────
+--   Færð í möppuna „Eyđa - dublicates" (1CnnNHm1xCukiTs806z9Ha1nZnSELM9k8) — sjá niðurstöðu neðst þegar lokið.
