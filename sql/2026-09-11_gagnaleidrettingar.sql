@@ -45,6 +45,17 @@
 --   Hárbeitt (1355) · Húsfélagið Laufásvegi 10 (1363) · Three Sisters ehf – Ránargata 16 (1660, úr þjónustu)
 --   · Vogarcamping ehf (747, mánuður 83) · Batik ehf (kúnni 918, enginn staður) · kúnni 914 (nafnlaus, ekkert tengt).
 --
+-- ── 6. Viðbót (kl. ~17) — vafasamar línur í „Gleymst að rukka?" bornar saman við Ársskoðun ────────
+--   Rauði kross Íslands #1387 (kt 530269-2649, Skútuvogi 1b) = tvískráning af #284 Rauði kross fataflokkun (kt 520700-2930):
+--     sama skýrsla („Rauði kross Skútuvogi 1b 2026.pdf"), sömu 10 tæki (7 léttvatn + 3 brunaslöngur, skoðun feb. 2026),
+--     Ársskoðun aðeins á #284 og stemmir, rukkað í Stólpa 107925 (27.02.2026).
+--     → 10 tæki #1387 → urelt; pör 320 og 1172 afrituð í audit_vernd og fjarlægð; skjöl 660 (2026, dup_of 1631) og 1137 (2023)
+--       flutt á #284; 1 mál flutt; #1387 deleted_at = now(). Kúnni #880 (Rauði kross Íslands) óhreyfður nema general_notes.
+--   Suðurvangur 19a #512: skýrsla 544 var „suðurvangur 12 húsfélag 2026.pdf" (Húsfélagið Suðurvangi 12, #254) og skráin horfin
+--     → aftengd (fyrirtaeki_id/customer_base_id null, reviewed); par 927 afritað og fjarlægt.
+--   Bíður Agnars (Ársskoðun tóm eða óljós): Snóker og Poolstofan #738 (skýrslan er Umslags), Árakur 5 #145 (skýrslan er
+--     Víðivangs 5 2025), Flétturima 16 #656 (engin tæki, skrá horfin).
+--
 -- ── Afturköllun ──────────────────────────────────────────────────────────────────────────
 --   select * from audit_vernd where changed_at >= '2026-09-11 15:30+00' order by id;   -- gamlar raðir (old_row)
 --   select * from cowork_merge_backups where created_at >= '2026-09-11 15:30+00';        -- raðir fyrir sameiningu
