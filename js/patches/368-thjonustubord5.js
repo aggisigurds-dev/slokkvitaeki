@@ -1491,7 +1491,7 @@
     if (_fyrFold && _fyrFoldLen === listi.length) return _fyrFold;
     _fyrFoldLen = listi.length;
     const hreinsa = s => fold(s).replace(/\b(ehf|hf|sf|slf|husfelagid|husfelag)\b\.?/g, ' ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-    _fyrFold = listi.filter(c => c && c.id && c.nafn && !c.deleted_at)
+    _fyrFold = listi.filter(c => c && c.id && c.nafn && !c.deleted_at && String(c.kennitala || '').replace(/D/g, '') !== '9999999999' && !/^sta.greit/i.test(String(c.nafn).trim()))
       .map(c => ({ c, n: hreinsa(c.nafn), h: fold(c.heimilisfang || '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(), e: String(c.netfang || '').toLowerCase().trim() }));
     return _fyrFold;
   }
@@ -1514,7 +1514,7 @@
     fyrirtaekjaFold().forEach(x => {
       let s = 0;
       if (netfang && x.e && x.e === netfang) s += 100;
-      if (x.n.length >= 5 && texti.indexOf(' ' + x.n + ' ') >= 0) s += 30 + x.n.length;
+      if (x.n.length >= 6 && texti.indexOf(' ' + x.n + ' ') >= 0) s += 30 + x.n.length;
       if (x.h.length >= 6 && texti.indexOf(' ' + x.h) >= 0) s += 20 + x.h.length;
       if (s) stig.push({ c: x.c, s });
     });
