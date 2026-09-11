@@ -57,6 +57,11 @@
  *   borði einhvers birtist á Mitt borð eigandans í ÖLLUM hömum (ekki „+ N í öðrum hömum"), efst, með flögunni
  *   „Bíður samþykkis". Hamaflögurnar í völdu máli sýna áfram raunverulega hama-aðild (iHamGrunnur). Claude stofnar
  *   slík mál (created_by 'claude') með fullrannsökuðum spurningum. Laust mál (Master/bunki Charlize) fær enga sérmeðferð.
+ *   SVAR (368v · Agnar 11.09.2026: „eitt mál á mig í hverjum lið. Tag eða álíka svo ég geti bara samþykkt hvert og eitt.
+ *   Eða setja í vinnslu"): á slíku máli á eigin borði koma „✓ Samþykkja" / „▶ Í vinnslu" / „✕ Hafna" í stað Lokið/Skila.
+ *   Svarið skrifar merkið svar:samthykkt|vinnsla|hafnad í stað samthykki, stöðuna tilbuid|i_vinnslu|lokad og línu aftast í
+ *   lýsingu — lesið ferskt, skilyrt á updated_at, lesið til baka, „Afturkalla" í 7 s. Samþykkt mál og mál í vinnslu bíða
+ *   Claude og halda sér efst á borðinu í öllum hömum („Samþykkt · bíður Claude"); Claude lokar þeim þegar verkinu lýkur.
  *
  * SKRIF — beint á thjonustubeidni, lesið til baka með .select():
  *   Taka    assigned_to = ég, AÐEINS ef málið er enn laust (skilyrt) — tveir fá ekki sama málið.
@@ -383,15 +388,27 @@
   const postId = r => { const m = /^email:(\d+)/.exec(String(r.channel_ref || '')); return m ? +m[1] : null; };
   const postOf = r => { const id = postId(r); return id == null ? false : S.post[id]; };
   const erSamthykki = r => Array.isArray(r.tags) && r.tags.indexOf(SAMTHYKKI) >= 0;
-  const rodun = (a, b) => (erSamthykki(b) ? 1 : 0) - (erSamthykki(a) ? 1 : 0)
+  // Svar við slíku máli (368v): merkið svar:<svar> + staða. Samþykkt og í vinnslu bíða Claude og halda sér á borðinu.
+  const SVOR = {
+    samthykkt: { status: 'tilbuid', l: 'Samþykkt', merki: 'Samþykkt · bíður Claude' },
+    vinnsla: { status: 'i_vinnslu', l: 'Sett í vinnslu', merki: 'Í vinnslu hjá Claude' },
+    hafnad: { status: 'lokad', l: 'Hafnað', merki: 'Hafnað' }
+  };
+  const svarMals = r => { const t = (Array.isArray(r.tags) ? r.tags : []).find(x => typeof x === 'string' && x.indexOf('svar:') === 0); return t && SVOR[t.slice(5)] ? t.slice(5) : null; };
+  const svarBidur = r => { const s = svarMals(r); return (s === 'samthykkt' || s === 'vinnsla') && r.status !== 'lokad'; };
+  const samtMerki = r => erSamthykki(r) ? '<span class="tag samt">Bíður samþykkis</span>'
+    : svarBidur(r) ? '<span class="tag ok">' + SVOR[svarMals(r)].merki + '</span>' : '';
+  const samtRod = r => (erSamthykki(r) ? 2 : svarBidur(r) ? 1 : 0);
+  const rodun = (a, b) => samtRod(b) - samtRod(a)
     || (b.important ? 1 : 0) - (a.important ? 1 : 0)
     || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity)
     || tStamp(b.created_at) - tStamp(a.created_at);
   const tagList = r => (Array.isArray(r.tags) ? r.tags : []).filter(t => typeof t === 'string');
   const skyrirHamir = r => tagList(r).filter(t => t.indexOf(HAM_MERKI) === 0).map(t => t.slice(HAM_MERKI.length)).filter(id => !!M(id));
   // Beint merki ræður. Þjónusta = ekki beint tengt öðrum ham. Aðrir hamir taka líka sinn flokk/merki (og Samskipti pósta).
-  // Bíður samþykkis eigandans: á borði hans í öllum hömum (368u). Hamaflögurnar í völdu máli nota grunnregluna.
-  function iHam(r, id) { return (erSamthykki(r) && !isFree(r)) || iHamGrunnur(r, id); }
+  // Bíður samþykkis eigandans, eða samþykkt og bíður Claude: á borði hans í öllum hömum (368u/v). Hamaflögurnar í völdu
+  // máli nota grunnregluna.
+  function iHam(r, id) { return ((erSamthykki(r) || svarBidur(r)) && !isFree(r)) || iHamGrunnur(r, id); }
   function iHamGrunnur(r, id) {
     const sk = skyrirHamir(r);
     if (sk.indexOf(id) >= 0) return true;
@@ -489,6 +506,40 @@
     if (!rows.length || rows[0].status !== 'lokad') throw new Error('málið fannst ekki');
     toast('Merkt lokið');
   });
+  // Svar við máli sem bíður samþykkis (368v). Lesið ferskt, skrifað skilyrt á updated_at (sama og hama-tenging) og lesið
+  // til baka; „Afturkalla" skrifar fyrri merki, stöðu og lýsingu aftur, skilyrt á svarið.
+  function svaraSamthykki(id, svar) {
+    const s = SVOR[svar], c = sb();
+    if (!s || !id) return;
+    if (!c) { toast('Engin tenging við gagnagrunn', true); return; }
+    const n = nu();
+    return act(id, async () => {
+      const cur = await c.from('thjonustubeidni').select('id,title,tags,status,notes,updated_at').eq('id', id).limit(1);
+      if (cur.error) throw cur.error;
+      const r = (cur.data || [])[0];
+      if (!r) throw new Error('málið fannst ekki');
+      if (!erSamthykki(r)) { toast('Málinu hefur þegar verið svarað — sýni nýjustu stöðu.', true); return; }
+      const nuna = new Date();
+      const tags = r.tags.filter(t => t !== SAMTHYKKI && !(typeof t === 'string' && t.indexOf('svar:') === 0)).concat(['svar:' + svar]);
+      const lina = '— ' + s.l + ': ' + n + ' · ' + String(nuna.getDate()).padStart(2, '0') + '.' + String(nuna.getMonth() + 1).padStart(2, '0') + '. kl. ' + klukka(nuna);
+      const notes = (r.notes ? String(r.notes).replace(/\s+$/, '') + '\n\n' : '') + lina;
+      let q = c.from('thjonustubeidni').update({ tags, status: s.status, notes, updated_at: nuna.toISOString() }).eq('id', id);
+      q = r.updated_at ? q.eq('updated_at', r.updated_at) : q.is('updated_at', null);
+      const u = await q.select('id,tags,status,updated_at');
+      if (u.error) throw u.error;
+      const row = (u.data || [])[0];
+      if (!row) { toast('Málið breyttist á annarri vél rétt í þessu — sýni nýjustu stöðu.', true); return; }
+      if (row.status !== s.status || !(row.tags || []).includes('svar:' + svar)) throw new Error('las til baka „' + row.status + '“');
+      const adur = { tags: r.tags, status: r.status, notes: r.notes };
+      toast(s.l + ' — ' + (r.title || 'málið'), false, () => act(id, async () => {
+        const b = await c.from('thjonustubeidni').update(Object.assign({}, adur, { updated_at: new Date().toISOString() }))
+          .eq('id', id).eq('updated_at', row.updated_at).select('id,tags');
+        if (b.error) throw b.error;
+        if (!(b.data || []).length) { toast('Málið breyttist á annarri vél — svarið var ekki afturkallað.', true); return; }
+        toast('Svarið afturkallað');
+      }));
+    });
+  }
   async function createCase(o) {
     const c = sb();
     if (!c) { toast('Engin tenging við gagnagrunn', true); return false; }
@@ -1032,7 +1083,7 @@
 
   function feedRow(r, valid) {
     const a = ageDays(r), ai = aiLine(r), n = nu(), w = fyrLink(r);
-    const tags = (erSamthykki(r) ? '<span class="tag samt">Bíður samþykkis</span>' : '') +
+    const tags = samtMerki(r) +
       (r.important ? '<span class="tag hot">Áríðandi</span>' : '') +
       (r.due_at ? '<span class="tag">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
       (r.status === 'i_vinnslu' ? '<span class="tag">Í vinnslu</span>' : '') +
@@ -1053,6 +1104,13 @@
         (tags ? '<div class="tags">' + tags + '</div>' : '') + '</div>' + hlid +
     '</article>';
   }
+  // Svartakkar á máli sem bíður samþykkis (368v).
+  const samtTakkar = (r, staerd) => {
+    const k = (v, cls, texti, titill) => '<button type="button" class="btn ' + cls + staerd + '" data-t5="samt-svar" data-v="' + v + '" data-id="' + r.id + '"' + dis(r.id) + ' title="' + titill + '">' + texti + '</button>';
+    return k('samthykkt', 'gold', '✓ Samþykkja', 'Samþykkja tillöguna — Claude vinnur málið; lokasending er alltaf þín') +
+      k('vinnsla', 'iv', '▶ Í vinnslu', 'Setja málið í vinnslu hjá Claude') +
+      k('hafnad', 'iv', '✕ Hafna', 'Hafna — málinu er lokað og ekkert gert');
+  };
   function mineRow(r, valid) {
     const a = ageDays(r), w = fyrLink(r), ai = aiLine(r);
     return '<div class="mrow" aria-current="' + valid + '">' +
@@ -1064,13 +1122,14 @@
         '</button>' +
         '<div class="mfoot"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
           (r.due_at ? '<span class="lock">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
-          (erSamthykki(r) ? '<span class="tag samt">Bíður samþykkis</span>' : '') +
+          samtMerki(r) +
           (r.important ? '<span class="tag hot">Áríðandi</span>' : '') +
           (isPost(r) ? (r.svarad_at ? '<span class="tag ok">Svarað</span>' : '<span class="tag">Bíður svars</span>') : '') +
           (virkniEftir(r) ? '<span class="tag ok">Líklega afgreitt</span>' : '') +
           '<span class="grow"></span>' +
-          '<button type="button" class="btn iv sm" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + '>✓ Lokið</button>' +
-          '<button type="button" class="btn iv sm" data-t5="giveback" data-id="' + r.id + '"' + dis(r.id) + '>↩ Skila</button>' +
+          (erSamthykki(r) ? samtTakkar(r, ' sm') :
+            '<button type="button" class="btn iv sm" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + '>✓ Lokið</button>' +
+            '<button type="button" class="btn iv sm" data-t5="giveback" data-id="' + r.id + '"' + dis(r.id) + '>↩ Skila</button>') +
         '</div></div></div>';
   }
   // Breyta máli — sömu reitir og „⋯ Meira" á gamla borðinu. Drög lifa í S.bmDrog (valið mál er teiknað
@@ -1131,7 +1190,7 @@
       (canonW(r.assigned_to) && !folk().some(x => lagt(x) === lagt(canonW(r.assigned_to))) ? '<option selected>' + esc(canonW(r.assigned_to)) + '</option>' : '') +
       '</select></label>';
     const stada = minn ? 'Á þínu borði' : laust ? 'Á Master' : 'Á borði ' + eigandi;
-    const meta = [tegMals(r), erSamthykki(r) ? 'Bíður samþykkis' : '', stada, r.due_at ? 'Frestur ' + fmtD(r.due_at) : '', r.important ? 'Áríðandi' : '', post ? (r.svarad_at ? 'Svarað ' + fmtD(r.svarad_at) : 'Bíður svars') : ''].filter(Boolean).join(' · ');
+    const meta = [tegMals(r), erSamthykki(r) ? 'Bíður samþykkis' : svarBidur(r) ? SVOR[svarMals(r)].merki : '', stada, r.due_at ? 'Frestur ' + fmtD(r.due_at) : '', r.important ? 'Áríðandi' : '', post ? (r.svarad_at ? 'Svarað ' + fmtD(r.svarad_at) : 'Bíður svars') : ''].filter(Boolean).join(' · ');
     const w = fyrLink(r, 'dk');
     return '<div class="shead"><span class="plate dark">04</span><span class="slabel">' + (minn ? 'Valið mál' : 'Til skoðunar') + '</span><span class="grow"></span>' +
         '<span class="age ' + ageCls(a) + '">' + a + 'D</span><button type="button" class="sx" data-t5="sel-close" aria-label="Loka málinu">✕</button></div>' +
@@ -1140,7 +1199,7 @@
       '<div class="smeta">' + esc(meta) + '</div>' +
       (r.summary ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(String(r.summary).slice(0, 600)) + '</div>' : '') +
       sagaHtml(r) + skjolHtml(r) + well +
-      '<div class="sacts">' + taka + svara + lokid + skila + fyr + '</div>' +
+      '<div class="sacts">' + (minn && erSamthykki(r) ? samtTakkar(r, ' lg') + fyr : taka + svara + lokid + skila + fyr) + '</div>' +
       '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
           ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + hamirHtml(r) + breytaHtml(r);
@@ -2981,6 +3040,7 @@
         return;
       case 'done': done(id); return;
       case 'giveback': giveBack(id); return;
+      case 'samt-svar': svaraSamthykki(id, el.dataset.v); return;
       case 'reply': reply(id); return;
       case 'company': openCompany(el.dataset.fid); return;
       case 'filter': S.filter = el.dataset.f; S.synd = PAGE; S.leit.opid = false; if (!c.baraMitt) S.view = 'master'; render(); return;
@@ -3432,7 +3492,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368u' };
+    window.Thjonustubord5 = { show, load, render, version: '368v' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
