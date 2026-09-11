@@ -147,6 +147,23 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑11** — **Sótt tekur tækið af afgreiðsluborðinu (`121`, Verkefnalisti e8caa730).**
+  Afhending í Sölu („Sótt ✓") uppfærði `uttaeki.status`/`last_insp`/`next_insp` en hvorki
+  `custody_status` né `picked_up_at`, svo tæki stóðu áfram á afgreiðsluborðinu (179 og 210
+  skrifa báða reiti síðan 10.09). Nú fá tæki sem viðskiptavinurinn tók og standa á borðinu
+  (`móttekið`/`á verkstæði`/`tilbúið`) `custody_status='afhent'` og `picked_up_at`; önnur tæki
+  eru ósnert. Villa → `logProblem('sott-afhent', …)` (uttaeki-id, engin kt) en stöðvar ekki
+  afhendinguna.
+  netvörður: **SAFE.** kt-vistunarleiðir 121 ósnertar; engin ný vörn á vistun; nýja
+  invariantið varið með `tools/audit-sott-afhent.cjs` (GRUNNLÍNA 0). **Sannreynt í báðar
+  áttir:** sama mæling á `broken`-verkliðum í sóttri verkbeiðni → RAUTT (3 tæki, verkbeiðni 424);
+  raunmæling → GRÆNT 0/0. `?v=` hækkað á `121`.
+  `audit-all`: 44/47 — þrjú rauð eru eldri gagnastaða, óháð 121: `audit-osendar-krofur`
+  (5 ósendar kröfur eldri en 30 daga, 235.467 kr), `audit-solu-id` (R-000922, mál #875) og
+  `audit-t-s-i` (Berjarimi 16, mál #879).
+  Rót borðsins sjálfs: 164 af 167 tækjum eru í tveimur OPNUM vertíðum (Hagvagnar 156,
+  Ferðafélag Íslands 8) og 3 eru prófunartæki — lokunin bíður máls #914.
+
 - **2026‑09‑10** — **POS kanónísk kúnnastofnun sameinuð + vír 3 tengdur.**
   Greinarnar `claude/pos-canonical-customer-id` (`js/pos.js`) og
   `claude/pos-canonical-followup` (`114` + `audit-stadur-nr`) sameinaðar SAMAN, A→B.
