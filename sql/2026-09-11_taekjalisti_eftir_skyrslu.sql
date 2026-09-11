@@ -36,6 +36,17 @@
 --   #345 Markus Lifenet             prófíll = reikningur = Ársskoðun (6), skýrsla 7
 --   #1197 Garðabær                  skýrslulestur frá 2023 (12); prófíll 2 kom úr úttektarskýrslu 14.07.2026 — nýrri heimild
 --
+-- ── 5. Tómir tækjalistar Ársskoðunar fylltir úr úttektarskýrslu — 162 staðir (kl. ~19:10) ──────────
+--   Skilyrði: staður í þjónustu, Ársskoðunarfærsla til en tækjalistinn tómur (summa 0), prófíll > 0, nýjasta skýrsla
+--   (arsskodun_report_facts) með SÖMU heildartölu og prófíllinn, og engin „annad"-tæki. Listinn = tegundir skýrslunnar
+--   (8 lyklar); aðrir reitir færslunnar (skref, akstur o.fl.) óhreyfðir. Summuprófun fyrir skrif: 0 frávik.
+--   Afrit: audit_vernd 63370 (old_row = {fid: gamli listinn} fyrir alla 162).
+--   Mælt eftir: Ársskoðun = prófíll 301 → 463 af 603; audit-t-s-i þekkt brot 217 → 159. Ársskoðunarsíðan staðfest á
+--   lifandi vef (hleðst, stillingar lesnar, Fornhagi sýnir 15 reykskynjara).
+--   Eftir standa 37 tómir listar (skýrsla vantar, skýrslan stemmir ekki við prófíl, eða engin Ársskoðunarfærsla) og
+--   99 listar sem víkja frá prófíl+skýrslu (26 með 5+ mun, t.d. Steypustöðin 29 á hverjum af þremur stöðum — líklega
+--   samtala fyrir alla staðina). Þeir 99 eru EKKI snertir: bíða svars Agnars.
+--
 -- ── Afturköllun ────────────────────────────────────────────────────────────────────────────────
 --   select * from audit_vernd where changed_at >= '2026-09-11 18:30+00' and table_name in ('uttaeki', 'app_settings');
 --   Úrelt tæki: status aftur í old_row->>'status'. Ný tæki: status 'urelt' where serial like 'AE20260911-%' (ekki eyða).
