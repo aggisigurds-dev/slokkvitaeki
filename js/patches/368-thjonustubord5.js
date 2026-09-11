@@ -62,7 +62,9 @@
  *   Saga fyrirtækis          fyrirtaeki_virkni (pg_cron 05:30 UTC + „↻ Uppfæra", sql/2026-09-11_fyrirtaeki_virkni.sql)
  *   Vinnublöð                sara_yfirferd.stada (364)
  *   Kröfur                   solur reikningur, ógreitt, ekki void (sama og listinn í 166); DRAFT í Payday telst EKKI sent
- *   Forgangslisti krafna     369 KrofuVinnugluggi (eining 22 í Kröfur-ham) — framvinda mála í krofu_verkferli
+ *   Forgangslisti krafna     369 KrofuVinnugluggi (eining 22) — framvinda mála í krofu_verkferli. FYLGIR MASTER
+ *                            (Agnar 11.09.2026): efst í Master-dálkinum í Þjónustu og Kröfum (FORG_HAMIR); „Bara mitt
+ *                            borð" felur hann með Master; víkur þegar Master er síaður á starfsmann/fyrirtæki.
  *   Póstur í völdu máli      email_digest eftir channel_ref 'email:<id>' (sama og 231; sýnin
  *                            v_samskipti_postur sleppir 8 af 18 opnum póstmálum)
  * ============================================================================================== */
@@ -117,14 +119,16 @@
     bakfaersla: { n: '20', t: 'Bakfærslur og breytingar', d: 'Beiðnir um bakfærslu eða breyttan reikning — mál, póstar og kreditreikningar.' },
     afgreidsla: { n: '21', t: 'Staðan í afgreiðslu', d: 'Kassinn: sala dagsins og vikunnar, opin drög og ógreitt.' }
   };
-  const BOTTOM = ['skipulag', 'frestir', 'nyjast', 'vinnublod', 'postsvor', 'akstur', 'krofur', 'krofumal', 'forgangur', 'nymal', 'brunakerfi', 'starfsmenn', 'ivinnslu', 'gleymt', 'bakfaersla', 'afgreidsla'];
+  // krofumal (Forgangslisti krafna) er EKKI hér — hann fylgir Master-borðinu (render: colmaster), sjá FORG_HAMIR.
+  const BOTTOM = ['skipulag', 'frestir', 'nyjast', 'vinnublod', 'postsvor', 'akstur', 'krofur', 'forgangur', 'nymal', 'brunakerfi', 'starfsmenn', 'ivinnslu', 'gleymt', 'bakfaersla', 'afgreidsla'];
+  const FORG_HAMIR = ['thjonusta', 'krofur'];   // hamir þar sem Forgangslisti krafna birtist efst í Master
   const I_VOLDU = ['saga', 'breyta'];
   const STODUR = [['nytt', 'Nýtt'], ['i_vinnslu', 'Í vinnslu'], ['bedid', 'Bíður'], ['tilbuid', 'Tilbúið'], ['lokad', 'Lokað']];
   const MODES = {
     thjonusta: { l: 'Þjónusta', board: true, first: [], filter: 'allt', flokkar: [], merki: [] },
     samskipti: { l: 'Samskipti', board: true, first: ['postsvor'], filter: 'allt', flokkar: ['samskipti'], merki: ['senda_tolvupost', 'hringja'] },
     skyrslur:  { l: 'Skýrslur', board: true, first: ['ivinnslu', 'vinnublod', 'skipulag'], filter: 'allt', flokkar: [], merki: ['senda_skyrslur'] },
-    krofur:    { l: 'Kröfur', board: true, first: ['krofumal', 'krofur', 'gleymt', 'bakfaersla', 'afgreidsla'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
+    krofur:    { l: 'Kröfur', board: true, first: ['krofur', 'gleymt', 'bakfaersla', 'afgreidsla'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
     akstur:    { l: 'Akstur', board: true, first: ['forgangur', 'akstur', 'brunakerfi', 'nymal', 'starfsmenn', 'dagskra'], filter: 'allt', flokkar: ['brunakerfi'], merki: ['uppsetning', 'brunakerfi', 'arskodun'], tegundir: ['heimsokn', 'skodun_tilbod'] }
   };
   // Gömlu flokkarnir (thjonustubeidni.flokkur) og merkin (tags) úr 231 — sama orðaforði, svo hamir fyllast strax.
@@ -211,10 +215,12 @@
   }
   const isOn = k => !!cfg().mods[k][0];
   const inMode = k => (M(cfg().mode) || MODES.thjonusta).first.indexOf(k) >= 0;
-  const openKey = k => nu() + ':' + (inMode(k) ? cfg().mode + ':' : '') + k;
+  // Forgangslisti krafna (krofumal) fylgir Master-borðinu (Agnar 11.09.2026) — opið/lokað er haldið sér
+  // eftir ham: sjálfgefið opið í Kröfur-ham, samanbrotið annars staðar.
+  const openKey = k => nu() + ':' + (inMode(k) || k === 'krofumal' ? cfg().mode + ':' : '') + k;
   function isOpen(k) {
     const key = openKey(k);
-    if (!(key in S.open)) S.open[key] = inMode(k) ? true : !!cfg().mods[k][1];
+    if (!(key in S.open)) S.open[key] = inMode(k) ? true : k === 'krofumal' ? cfg().mode === 'krofur' : !!cfg().mods[k][1];
     return S.open[key];
   }
 
@@ -637,6 +643,8 @@
       '.colmaster{grid-area:master}.colmine{grid-area:mine}.colsel{grid-area:sel}',
       '.phone-seg{display:none}',
       '.psub{padding:9px 16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);border-bottom:1px solid var(--rule2);overflow-wrap:anywhere}',
+      // Forgangslisti krafna inni í Master-dálkinum (11.09.2026): spjald í spjaldi — enginn tvöfaldur skuggi.
+      '.mforg{padding:10px 12px;border-bottom:1px solid var(--rule2)}.mforg>.panel{box-shadow:none}',
       '.age{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--mute);font-variant-numeric:tabular-nums}',
       '.age.warm{color:var(--gink)}.age.hot{color:var(--terra)}',
       '.kick{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);overflow-wrap:anywhere}',
@@ -2145,6 +2153,9 @@
               '<button type="button" class="btn gold sm" data-t5="take-next">Taka næsta ›</button></header>' +
             '<div class="psub">' + nyleg + ' síðustu 30 daga · ' + bunki + ' í bunka Charlize · Á borðum:' +
               ppl.map(x => '<button type="button" class="pchip" data-t5="filter" data-f="p:' + esc(x) + '" aria-pressed="' + (S.filter === 'p:' + x) + '">' + esc(x) + ' ' + S.rows.filter(r => onBoardOf(r, x)).length + '</button>').join('') + '</div>' +
+            // Forgangslisti krafna fylgir Master (Agnar 11.09.2026): efst í Master í Þjónustu og Kröfum; „Bara mitt
+            // borð" felur hann með Master, og hann víkur þegar Master er síaður á starfsmann eða fyrirtæki.
+            (FORG_HAMIR.indexOf(c.mode) >= 0 && !/^[pf]:/.test(S.filter) ? '<div class="mforg">' + bottomHtml('krofumal') + '</div>' : '') +
             selUtan + feed +
           '</section>') +
           mineHtml +
@@ -2899,7 +2910,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368q' };
+    window.Thjonustubord5 = { show, load, render, version: '368r' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
