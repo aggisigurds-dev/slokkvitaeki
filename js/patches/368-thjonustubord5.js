@@ -11,8 +11,9 @@
  * hliðar viðbótum … festa linka eins og favorite bar í chrome" · „mode yrði alveg snilld í það,
  * með mismunandi opnur" · „gatt-admin og kanski link á þjónustugáttina líka".
  *
- * FALIN SLÓÐ #bord — ekki í valmynd fyrr en Agnar hefur prófað. Gamla borðið (231) er ÓBREYTT og
- * verður fjarlægt þegar nýja borðið hefur verið reynsluekið („eyða hinu þegar við erum búin").
+ * KVEIKT 11.09.2026 („þá mátt kveikja á þjónustuborð 2"): hnappurinn „🔧 Þjónustuborð" (231 injectNav,
+ * data-view 'verkbord') opnar #bord og Verkefnalista-appið byrjar hér (261). Gamla borðið (231) er
+ * áfram á #verkbord og verður fjarlægt þegar Agnar segir til („eyða hinu þegar við erum búin").
  *
  * EINANGRAÐ (Shadow DOM): Brunastál-þemað þvingar `.view .btn` í hvítt á svörtu og `.view h1/h2/h3`
  *   í næstum svart með !important (mælt 10.09.2026) — gullhnappurinn varð svartur og titill valins
@@ -945,7 +946,7 @@
           '<h1 class="h1">Þjónustuborð</h1>' +
           '<p class="meta">' + (c.mode !== 'thjonusta' ? 'Hamur: ' + mode.l + ' · ' : '') + master.length + ' á Master · ' + mine.length + ' á þínu borði · ' + hot + ' áríðandi' +
             '<span class="t5-sott">' + (S.loadedAt ? ' · sótt kl. ' + klukka(S.loadedAt) : '') + '</span></p>' +
-          '<div class="beta"><span class="note">Prufa · gamla borðið er óbreytt</span>' +
+          '<div class="beta">' +
             '<button type="button" class="btn iv sm" data-t5="go" data-view="verkbord">Gamla borðið ›</button></div>' +
         '</div><div class="acts">' +
           '<label class="who"><span class="lbl">Ég er</span><select data-t5="who" aria-label="Starfsmaður">' +
@@ -1142,7 +1143,11 @@
     const v = document.getElementById(VIEW_ID);
     v.style.display = 'block';
     v.classList.add('active');
-    document.querySelectorAll('.vnav-btn').forEach(b => b.classList.remove('active'));
+    // Hnappurinn „🔧 Þjónustuborð" ber data-view 'verkbord' (231 injectNav). 218 syncNav tekur
+    // lýsinguna af eftir hash-leiðsögn, svo hún er sett aftur augnabliki síðar.
+    const lysaNav = () => document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'verkbord' || b.dataset.view === NAV_KEY));
+    lysaNav();
+    setTimeout(() => { const vv = document.getElementById(VIEW_ID); if (vv && vv.classList.contains('active')) lysaNav(); }, 60);
     try { if (location.hash !== '#' + NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
     S.filter = MODES[cfg().mode].filter || 'allt';
     render();
@@ -1199,7 +1204,7 @@
     else (window.__bordStarfsmadurAskrift = window.__bordStarfsmadurAskrift || []).push(aSkiptum);
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368f' };
+    window.Thjonustubord5 = { show, load, render, version: '368g' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

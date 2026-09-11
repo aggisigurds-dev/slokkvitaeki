@@ -1801,7 +1801,11 @@
       ' <span class="vb-badge" style="margin-left:auto;background:#fff;color:#b91c1c;font-size:10px;font-weight:800;padding:1px 7px;border-radius:99px;display:none"></span>';
     btn.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
-      if (window.App && App.switchView) App.switchView(NAV_KEY); else show();
+      // 11.09.2026 — Agnar: „þá mátt kveikja á þjónustuborð 2". Hnappurinn opnar nú nýja borðið
+      // (368, #bord). data-view er VILJANDI áfram 'verkbord': röðun hliðarstikunnar (sidebar_order)
+      // og faldir hnappar (sidebar_hidden) í patch 68 eru vistuð eftir data-view á öllum vélum.
+      // Gamla borðið er áfram á #verkbord og á „Gamla borðið ›" í nýja borðinu.
+      if (window.App && App.switchView) App.switchView(window.Thjonustubord5 ? 'bord' : NAV_KEY); else show();
     });
     nav.insertBefore(btn, nav.firstChild); // efst — patch 68 heldur svo röðinni
     refreshBadge();

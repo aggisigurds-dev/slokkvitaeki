@@ -30,8 +30,9 @@
     { k: 'hreyfingarlisti',  label: 'Hreyfingarlisti',       short: 'Hreyfingar', emoji: '📄' },
     { k: 'vidskiptavinir',   label: 'Viðskiptavinir',        short: 'Kúnnar',     emoji: '👤' },
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
+    { k: 'bord',             label: 'Þjónustuborð',          short: 'Þjónusta',   emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
     { k: 'verkbord',         label: 'Verkefnalisti',         short: 'Verkefni',   emoji: '📋' },
-    { k: 'thjonustubord',    label: 'Þjónustuborð (mobíl)', short: 'Þjónusta',   emoji: '🔧' },
+    { k: 'thjonustubord',    label: 'Gamla þjónustuborðið (mobíl)', short: 'Gamla þj.', emoji: '🔧' },
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
     { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
     { k: 'thjonustu-verkstaedi', label: 'ÞjónustuVerkstæði', short: 'Verkstæði', emoji: '🔧' },
@@ -107,9 +108,9 @@
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
       defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'thjonustu-verkstaedi', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-efniskostnadur', 'br-vinnubok', 'br-krofur'] },
     { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
-      manifest: '/manifest-verkefni.json', home: 'verkbord',
-      blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
-      defaults: ['thjonustubord', 'verkbord', 'arsskodun', 'reikninga-postur'] },
+      manifest: '/manifest-verkefni.json', home: 'bord',
+      blurb: 'Þjónustuborð — Master borð, mitt borð og eftirfylgni',
+      defaults: ['bord', 'verkbord', 'arsskodun', 'reikninga-postur'] },
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#6d28d9', dark: '#4c1d95',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
@@ -139,7 +140,7 @@
     { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#fbe9ab', dark: '#b8860b',
       manifest: '/manifest-boss.json', home: 'br-fjarmalyfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
-      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'br-efniskostnadur', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
+      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'br-efniskostnadur', 'income', 'bokhalds-yfirlit', 'bord', 'verkbord', 'rekstrarfelog'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
   // ── NOTENDA-BÚIN ÖPP (2026-08-26, ósk Agnars: „save as app page named …") ──
@@ -576,6 +577,25 @@
         insertOnce('__bksl1', 'sala', 'brunayfirlit', 'brunakerfi');
         insertOnce('__tp1',   'turbopaint', 'sala', 'brunakerfi');
         insertOnce('__tp1b',  'turbopaint', 'br-maeting', 'brunaholf');
+        // __bord1 (11.09.2026): Þjónustuborð 2 ('bord', patch 368) kemur í stað gamla mobíl-borðsins
+        // ('thjonustubord', 306) í öllum vistuðum öppum og fer á undan 'verkbord' í Verkefni og Boss.
+        // Flaggið brennur aðeins ef einhver vistuð app-stilling er til (annars sjá `defaults` um það).
+        if (!c.__bord1 && Object.keys(c).some(function (k) { return Array.isArray(c[k]); })) {
+          Object.keys(c).forEach(function (k) {
+            var arr = c[k];
+            if (!Array.isArray(arr)) return;
+            var i = arr.indexOf('thjonustubord');
+            if (i === -1) return;
+            if (arr.indexOf('bord') === -1) arr.splice(i, 1, 'bord'); else arr.splice(i, 1);
+          });
+          ['verkefni', 'boss'].forEach(function (k) {
+            var arr = c[k];
+            if (!Array.isArray(arr) || arr.indexOf('bord') !== -1) return;
+            var i = arr.indexOf('verkbord');
+            arr.splice(i === -1 ? 0 : i, 0, 'bord');
+          });
+          c.__bord1 = 1; changed = true;
+        }
         if (changed) {
           var s = JSON.stringify(c);
           try { localStorage.setItem(CFG_KEY, s); } catch (_) {}

@@ -647,7 +647,8 @@
       uiSetja(fid, "eldri", !box.hidden);
     });
     const bordBtn = card.querySelector("._ssk-bord");
-    if (bordBtn) bordBtn.addEventListener("click", () => { try { Verkbord.open(); } catch (_) {} });
+    // 11.09.2026: Þjónustuborð 2 (368) er aðalborðið — gamla (231) aðeins ef 368 hefur ekki hlaðist.
+    if (bordBtn) bordBtn.addEventListener("click", () => { try { if (window.Thjonustubord5 && window.App && App.switchView) App.switchView("bord"); else Verkbord.open(); } catch (_) {} });
     // Smella á póstrað → sækja hann allan úr email_digest og fella út.
     card.querySelectorAll("._ssk-mail").forEach(row => {
       row.addEventListener("click", async () => {
