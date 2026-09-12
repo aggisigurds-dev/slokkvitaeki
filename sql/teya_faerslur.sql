@@ -8,7 +8,7 @@
 --
 -- Why this exists: n8n les Teya-CSV, staðlar dálkana og skrifar hverja færslu
 -- hingað (service-role → fer framhjá RLS). Appið les töfluna (anon).
--- �þETTA ER NÝ, EINANGRUÐ TAFLA — engin skrif í varðar leiðir (invoice OUT
+-- ÞETTA ER NÝ, EINANGRUÐ TAFLA — engin skrif í varðar leiðir (invoice OUT
 -- 10/233/254, payday-push). Ekkert rukkað eða breytt sjálfvirkt.
 --
 -- Raunverulegt CSV-snið (staðfest 2026-09-12 á 683 línum, kommu-skil, UTF-8):

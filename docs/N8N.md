@@ -53,22 +53,27 @@ sjálfgefið; VPS: kveikja owner-reikning + TLS, aldrei opið án auth).
 
 ## 3. Fyrsta flæðið — „Teya kortagreiðslur" (sönnun)
 
-Peningaflæði (fókus #1), engin OAuth, prófanlegt með einu sýnishorni.
+Peningaflæði (fókus #1), engin OAuth. CSV móttekið og greint 2026-09-12 (683 línur).
 
-**Ég þarf frá þér:** eitt **sýnishorn af Teya-CSV** (mátt afmá viðkvæmt — 5–10 línur duga)
-svo ég vörpuðu dálkana rétt.
+**Raunverulegt CSV-snið (kommu-skil, UTF-8, heiltölu-upphæðir):**
+`Tegund greiðslu, Dagsetning, Tími, Heiti samnings, Greiðslumáti, Nafn posa, Auðkenni tækis, Staða, Upphæð`.
+Staða = SAMÞYKKT (659) / HAFNAÐ (23) / Í BIÐ (1). Tegund = PAYMENT (682) / REFUND (1).
+
+⚠️ **Mikilvægt:** skýrslan hefur **ekkert færslunúmer, ekkert kortanúmer, enga reikninga-/kt-vísun.**
+Því er **ekki hægt að para sjálfvirkt við reikninga.** Það sem flæðið GETUR: (áfangi 1) skráð
+kortatekjur með dags/tíma + heildartölur; (áfangi 2, síðar) parað við POS/sölur appsins eftir
+**upphæð + tímastimpli** — báðir hafa nákvæman tíma — ekki reikninga.
 
 **Flæðið (nóða fyrir nóðu, ég byggi það):**
-1. **Trigger** — handvirkt/„Upload" fyrst; síðar `Schedule` (t.d. daglega) eða `Webhook`.
-2. **Read/Parse CSV** — UTF-8 BOM, `;` skil, tugabrot með kommu (skv. reglu appsins).
-3. **Set/Map** — staðla í: `faerslunumer, faersludagur, upphaed, kortategund, kort_last4, heiti`
-   (öll upprunalínan geymd í `raw`).
-4. **Postgres: upsert** í `teya_faerslur` (á `faerslunumer` → engin tvítalning við endur-innflutning).
-5. **Match (les-eingöngu)** — ber saman við ógreidda reikninga/`invoice_drafts`, setur
-   `matched_invoice_id`/`matched_ref` og `stada`. **Engin skrif í varðar reikninga-töflur.**
+1. **Trigger** — Form/„Upload file" fyrst; síðar Gmail-trigger (senda Teya-skýrsluna í hólf sem n8n vaktar) eða `Schedule`.
+2. **Extract from File → CSV** — kommu-skil, UTF-8; sleppa haus og auðum línum.
+3. **Set/Map** í dálka töflunnar: `tegund, faersludagur, timi, heiti_samnings, greidslumati, nafn_posa, audkenni_taekis, teya_stada, upphaed`; `dedupe_key` = `dags|tími|tæki|tegund|upphæð|staða`; öll línan geymd í `raw`, `skra` = skráarheiti.
+4. **Postgres: upsert** í `teya_faerslur` á `dedupe_key` → engin tvítalning við endur-innflutning eða skörun tímabila.
+5. **(Áfangi 2, síðar) Pörun (les-eingöngu)** — bera SAMÞYKKT-færslur við POS/sölur appsins eftir upphæð+tíma, setja `matched_sala_id`/`matched_ref`. Aðeins SAMÞYKKT telst peningur; HAFNAÐ/Í BIÐ geymt en ekki talið; REFUND dregst frá. **Engin skrif í varðar reikninga-töflur.**
 
-Taflan er tilbúin: keyrðu [`sql/teya_faerslur.sql`](../sql/teya_faerslur.sql) í Supabase (eða
-segðu mér að keyra hana). Appa-sýn sem les töfluna kemur með brúnni (kafli 4).
+Taflan er **búin til í Supabase** (staðfest 2026-09-12: 20 dálkar, RLS á, tvær anon-reglur).
+Skema-uppspretta: [`sql/teya_faerslur.sql`](../sql/teya_faerslur.sql). Appa-sýn sem les töfluna
+kemur með brúnni (kafli 4).
 
 ---
 
