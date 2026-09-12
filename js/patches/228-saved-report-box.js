@@ -46,10 +46,29 @@
     return Math.round(h/24)+' daga síðan';
   }
 
+  // 2026-09-12 (Verkefnalisti d4bd85dc): kláruð ferð er EKKI óklárað drög. 165 merkir ferðina
+  // _locked + _invoice við „Klára heimsókn"; eldri ferðir bera hvorugt og stóðu því sem
+  // „Óklárað úttekt vistuð" ofan á greiddri úttekt (mælt: 124 af 167 opnum ferðum á stöðum
+  // með úttektarsölu ársins, t.d. Klaki Tech #466 / R-000677). Gömul ferð (enginn _invoice-
+  // lykill) víkur þegar árið er frágengið skv. 271. Ferð sem 328 núllstillti fyrir NÝJA úttekt
+  // ber _invoice:null og sést áfram.
+  function finished(t, coId){
+    if (!t || typeof t!=='object') return false;
+    if (t._locked===true || (t._invoice && typeof t._invoice==='object')) return true;
+    if (!('_invoice' in t)) {
+      try { return !!(window.VisitYearLock && VisitYearLock.isComplete && VisitYearLock.isComplete(coId, new Date().getFullYear())); } catch(_){}
+    }
+    return false;
+  }
+  function openSummary(coId){
+    var t=tripFor(coId);
+    return finished(t, coId) ? null : summarize(t);
+  }
+
   window.SavedReports = {
     get: tripFor,
-    summary: function(coId){ return summarize(tripFor(coId)); },
-    has: function(coId){ return !!summarize(tripFor(coId)); }
+    summary: openSummary,
+    has: function(coId){ return !!openSummary(coId); }
   };
 
   // ── company-page special box ──────────────────────────────────────────────
@@ -78,7 +97,7 @@
     var coId=getCoId();
     var existing=main.querySelector('._sr-box');
     if(!coId){ if(existing) existing.remove(); return; }
-    var s=summarize(tripFor(coId));
+    var s=openSummary(coId);
     if(!s){ if(existing) existing.remove(); return; }
     if(existing){
       if(existing.dataset.co!==String(coId) || existing.dataset.ts!==String(s.ts)){
