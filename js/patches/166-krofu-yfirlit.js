@@ -864,6 +864,18 @@
       _state.paydayDrog   = medPayday.filter(s => drogIds.has(String(s.dk_invoice_id)));              // aðeins drög í Payday — ósend
       _state.paydayUnpaid = medPayday.filter(s => !drogIds.has(String(s.dk_invoice_id)));             // sent í Payday, ógreitt
       _state.osendar      = rows.filter(s => !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id); // aldrei send
+      // 2026-09-12 (Verkefnalisti 9037f691 — „Agnar þorir ekki að senda kröfur af ótta við villur"): forskoðun
+      // úr v_krofu_forskodun (sama skilgreining á ósendri kröfu og hér að ofan). ⛔ = kemst ekki rétt til skila
+      // (void, 999999-9999, ógild eða óþekkt kt, ótengd sala, tvíýtt úttekt); ⚠ = skoða fyrst (bíður á
+      // Þjónustuborði, ekkert netfang, önnur kt staðar, gömul); ✓ = í lagi. Bili sóknin sést listinn án merkja.
+      try {
+        const fr = await SB.from('v_krofu_forskodun').select('id,litur,rautt,gult,bord_mal');
+        if (fr.error) throw fr.error;
+        _state.forskodun = new Map((fr.data || []).map(x => [String(x.id), x]));
+      } catch (e) {
+        _state.forskodun = null;
+        try { if (window.logProblem) window.logProblem('krofu-forskodun', String((e && e.message) || e).slice(0, 200)); } catch (_) {}
+      }
     } catch (_) { _state.paydayUnpaid = _state.paydayUnpaid || []; _state.osendar = _state.osendar || []; _state.paydayDrog = _state.paydayDrog || []; }
 
     render();
@@ -991,17 +1003,33 @@
   }
   function expDetailHtml(key, title, rows, total, color) {
     const fmtD = iso => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; };
+    // Forskoðun (9037f691): aðeins á „Ósendar kröfur". Rautt efst, svo gult, svo grænt — innan hvers eftir upphæð.
+    const forsk = key === 'osendar' && _state.forskodun ? _state.forskodun : null;
+    const LITIR = { rautt: ['#fef2f2', '#fecaca', '#b91c1c', '⛔ Stöðva'], gult: ['#fffbeb', '#fde68a', '#92400e', '⚠ Athuga'], graent: ['#f0fdf4', '#bbf7d0', '#15803d', '✓ Í lagi að senda'] };
+    const rodLitar = s => { const f = forsk && forsk.get(String(s.id)); return !f ? 3 : f.litur === 'rautt' ? 0 : f.litur === 'gult' ? 1 : 2; };
+    const forskMerki = s => {
+      const f = forsk && forsk.get(String(s.id));
+      if (!f) return '';
+      const c = LITIR[f.litur] || LITIR.gult;
+      const astaedur = [].concat(f.rautt || [], f.gult || []);
+      return '<span style="display:block;margin-top:4px;font-size:11.5px;line-height:1.35;color:' + c[2] + '">' +
+        '<span style="display:inline-block;font-weight:800;padding:1px 7px;margin-right:6px;border-radius:999px;background:' + c[0] + ';border:1px solid ' + c[1] + '">' + c[3] + '</span>' +
+        esc(astaedur.join(' · ')) + '</span>';
+    };
     const body = rows.length
-      ? rows.slice().sort((a, b) => (parseFloat(b.samtals) || 0) - (parseFloat(a.samtals) || 0)).map(s =>
+      ? rows.slice().sort((a, b) => (rodLitar(a) - rodLitar(b)) || ((parseFloat(b.samtals) || 0) - (parseFloat(a.samtals) || 0))).map(s =>
           '<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #eef1f6;font-size:13px">' +
             '<span style="min-width:0"><b style="color:#11141c">' + esc(s.customer_nafn || '—') + '</b> <span style="font-family:monospace;color:#94a3b8;font-size:11px">' + esc(s.num || '') + '</span>' +
-              (fmtD(s.created_at) ? ' <span style="color:#94a3b8;font-size:11px">· ' + fmtD(s.created_at) + '</span>' : '') + '</span>' +
+              (fmtD(s.created_at) ? ' <span style="color:#94a3b8;font-size:11px">· ' + fmtD(s.created_at) + '</span>' : '') + forskMerki(s) + '</span>' +
             '<span style="font-family:monospace;font-weight:700;color:' + color + ';white-space:nowrap">' + fmtKr(parseFloat(s.samtals) || 0) + '</span>' +
           '</div>').join('')
       : '<div style="padding:14px;text-align:center;color:#94a3b8;font-style:italic">Ekkert í þessum flokki 🎉</div>';
     return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:14px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">' +
-        '<span style="font-weight:800;font-size:13.5px;color:#11141c">' + esc(title) + ' · ' + rows.length + '</span>' +
+        '<span style="font-weight:800;font-size:13.5px;color:#11141c">' + esc(title) + ' · ' + rows.length +
+          (forsk ? (() => { const t = { rautt: 0, gult: 0, graent: 0 }; rows.forEach(s => { const f = forsk.get(String(s.id)); if (f && t[f.litur] != null) t[f.litur]++; });
+            return ' <span style="font-weight:700;font-size:12px;margin-left:6px"><span style="color:#b91c1c">⛔ ' + t.rautt + '</span> · <span style="color:#92400e">⚠ ' + t.gult + '</span> · <span style="color:#15803d">✓ ' + t.graent + '</span></span>'; })() : '') +
+        '</span>' +
         '<span style="font-family:monospace;font-weight:800;font-size:15px;color:' + color + '">' + fmtKr(total) + '</span>' +
       '</div>' +
       '<div style="max-height:340px;overflow:auto">' + body + '</div>' +

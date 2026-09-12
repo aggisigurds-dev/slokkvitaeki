@@ -99,7 +99,10 @@
       // Include if subscribed to either service (arsskodun needs equipment —
       // the legacy "is contract holder" flag; brunakerfi just needs a row) OR
       // the company has real active tæki in uttaeki (matches patch 153's list).
-      return (ars && ars.equipment) || bru || (ISC && ISC.has(c.nafn));
+      // 2026-09-12: staður á aksturslista (267, akstur 1–3) er þangað sem á að keyra, líka nýr samningshafi
+      // án tækjaskrár — án hnita datt hann af leiðinni í Leiðsögn (6 af 19 mældust án hnita).
+      const aksturslisti = !!(ars && +ars.akstur >= 1 && +ars.akstur <= 3);
+      return (ars && ars.equipment) || aksturslisti || bru || (ISC && ISC.has(c.nafn));
     });
   }
 
