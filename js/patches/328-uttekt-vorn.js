@@ -295,7 +295,8 @@
     }
     const res = await confirmSecond(st, year);
     if (!res) return;                             // Hætta við — sjálfgefið
-    window.__uvSecondReason = res.why;            // 165 má skrá þetta ef það vill
+    // 165 skráir ástæðuna í solur.krafa_note (2026-09-12) — bundin við staðinn og 30 mínútur.
+    window.__uvSecondReason = { why: res.why, coId, at: Date.now() };
     btn.dataset.uvOk = '1';
     btn.click();
     delete btn.dataset.uvOk;
