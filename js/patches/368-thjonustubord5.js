@@ -2045,9 +2045,19 @@
   async function saekjaSkjol(id) {
     const c = sb();
     if (!c) return [];
-    const r = await c.from('thjonustubeidni_files').select('*').eq('beidni_id', id).order('created_at');
+    // 2026-09-12: eldri viðhengi (thjonustubeidni_attachments úr gamla Þjónustuverinu 182/183 — Drive-afrit af
+    // skýrslum og reikningum) sáust hvergi á þessu borði; málið sagði „Engin fylgiskjöl". Lesin með, aðeins til skoðunar.
+    const [r, e] = await Promise.all([
+      c.from('thjonustubeidni_files').select('*').eq('beidni_id', id).order('created_at'),
+      c.from('thjonustubeidni_attachments').select('id,name,url,drive_file_id,size,created_at').eq('beidni_id', id).order('created_at')
+    ]);
     if (r.error) throw r.error;
-    return r.data || [];
+    const drif = f => f.drive_file_id && String(f.drive_file_id).indexOf('sb:') !== 0;
+    const eldri = e && !e.error ? (e.data || []).map(f => Object.assign({}, f, {
+      _eldra: true,
+      url: drif(f) ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(f.drive_file_id) : (f.url || '')
+    })) : [];
+    return (r.data || []).concat(eldri);
   }
   const staerd = b => !b ? '' : b < 1024 ? b + ' B' : b < 1048576 ? Math.round(b / 1024) + ' KB' : (b / 1048576).toFixed(1).replace('.', ',') + ' MB';
   function skjolHtml(r) {
@@ -2059,7 +2069,9 @@
         : listi.length ? '<div class="fslist">' + listi.map(f => '<div class="fsrow">' +
             '<a class="clink dk" href="' + esc(f.url || '') + '" target="_blank" rel="noopener">' + esc(f.name || 'skjal') + '</a>' +
             '<span class="sg-m">' + esc([staerd(f.size), f.created_at ? fmtD(f.created_at) : ''].filter(Boolean).join(' · ')) + '</span><span class="grow"></span>' +
-            '<button type="button" class="sx" data-t5="skjal-eyda" data-id="' + r.id + '" data-fid="' + f.id + '" aria-label="Eyða ' + esc(f.name || 'skjali') + '">✕</button></div>').join('') + '</div>'
+            (f._eldra
+              ? '<span class="sg-m" title="Úr gamla Þjónustuverinu — aðeins til skoðunar">eldra</span></div>'
+              : '<button type="button" class="sx" data-t5="skjal-eyda" data-id="' + r.id + '" data-fid="' + f.id + '" aria-label="Eyða ' + esc(f.name || 'skjali') + '">✕</button></div>')).join('') + '</div>'
         : '<div class="sg-m">Engin fylgiskjöl á þessu máli.</div>') +
     '</div>';
   }
@@ -2088,7 +2100,7 @@
     render();
   }
   async function eydaSkjali(id, fileId) {
-    const c = sb(), g = G['skjol:' + id], f = g && g.data ? g.data.find(x => x.id === fileId) : null;
+    const c = sb(), g = G['skjol:' + id], f = g && g.data ? g.data.find(x => x.id === fileId && !x._eldra) : null;
     if (!c || !f || !window.confirm('Eyða skjalinu „' + (f.name || '') + '"? Það er ekki hægt að afturkalla.')) return;
     try {
       if (f.path) { const rm = await c.storage.from('verkbord-files').remove([f.path]); if (rm.error) throw rm.error; }
