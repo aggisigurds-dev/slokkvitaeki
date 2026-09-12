@@ -1386,7 +1386,10 @@
     const VERKST_UTT = ['móttekið', 'á verkstæði', 'tilbúið'];   // uttaeki.custody_status
     const VERKST_JOB = ['received', 'inprogress', 'ready'];      // verkbeidnir.status
     const AFHENT_JOB = ['collected'];                            // 'Sótt' = afhent/rukkanlegt
-    const [taekiRes, openRes, billRes, paidRes] = await Promise.all([
+    // 2026-09-12 (Verkefnalisti 92e205f7): fjórða fyrirspurnin („Greitt" á verkbeidnir) er farin. Gildið er ekki
+    // til á verkbeidnir (greiðslan býr á solur.paid_at), svo hún skilaði alltaf 0 röðum, og ekkert teiknar `paid`
+    // lengur síðan markGreitt og „Greitt"-listinn fóru 10.09. Ein Supabase-beiðni sparast við hverja opnun.
+    const [taekiRes, openRes, billRes] = await Promise.all([
       c.from('uttaeki').select('*').eq('client', name)
         .in('custody_status', VERKST_UTT)
         .order('created_at', { ascending: false }),
@@ -1396,13 +1399,6 @@
       c.from('verkbeidnir').select('*').eq('customer', name)
         .in('status', AFHENT_JOB)
         .order('num', { ascending: false }),
-      // ATH: 'Greitt' á sér ENGA samsvörun á verkbeidnir — greiðslustaðan býr á
-      // `solur.paid_at`, ekki hér. Upplýsingarnar eru ekki til í þessari töflu,
-      // svo listinn verður áfram tómur. Skálda EKKI dálk; skráð til Agnars.
-      c.from('verkbeidnir').select('*').eq('customer', name)
-        .eq('status', 'Greitt')
-        .order('num', { ascending: false })
-        .limit(20),
     ]);
 
     // „Til reiknings" = sótt verk sem EKKI eru á lokinni sölu — sjá sottOgOreiknad.
@@ -1416,7 +1412,7 @@
       openVerks: openRes?.data  || [],
       billable,
       billableVilla,
-      paid:      paidRes?.data  || [],
+      paid:      [],   // 12.09.2026: engin „Greitt"-sýn teiknar þetta; greiðslan býr á solur.paid_at
     };
   }
 

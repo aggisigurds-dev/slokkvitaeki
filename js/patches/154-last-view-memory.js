@@ -31,7 +31,7 @@
   // race-update localStorage.
   // 2026-09-12: síður teknar úr umferð (182 Þjónustuver, 194 Eftirfylgni). Vafri sem opnaði þær síðast fengi
   // annars auðan skjá í allt að 10 s meðan tikkið reynir að opna síðu sem er ekki lengur til.
-  const HORFNAR = { thjonustuver: 1, eftirfylgni: 1 };
+  const HORFNAR = { thjonustuver: 1, eftirfylgni: 1, dagskratm: 1 };
   const TARGET = (() => {
     try { const t = localStorage.getItem(LS_KEY); return t && HORFNAR[t] ? null : t; } catch (_) { return null; }
   })();
