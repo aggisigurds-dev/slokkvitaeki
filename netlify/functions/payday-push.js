@@ -324,7 +324,27 @@ function buildPayload(sale, customer, opts) {
     ? [_site.nafn, _nrBit, _site.heimilisfang].filter(Boolean).join(' – ')
     : (sale.customer_nafn || '');
   const _vegna = _vegnaLabel ? ('Vegna: ' + _vegnaLabel) : '';
-  const _notes = (sale.athugasemdir || '').trim();
+  // 2026-09-12 (Verkefnalisti c091f2ff): sölunótan bar innri bókhaldsmerki inn á Payday-kröfu kúnnans —
+  // „Kt: … [Sótt …] Greiðsla: reikningur" (Sótt-slóð 121), líka „Payday #N PAID", „(leiðrétt …)", „Sótt ✓".
+  // Reikningurinn (10) og Sótt-glugginn (121 extractSaleNote) klippa þau þegar; sama klipping hér. Nótan
+  // sem var slegin í KÖRFU (t.d. „Beiðni nr: …") stendur á undan merkjunum og heldur sér. Mælt 12.09.:
+  // 42 reikningar frá 01.06. báru merkin, 3 þeirra ósendir. Vörður: tools/audit-payday-lysing.cjs.
+  /* hreinsaNotu:byrjun */
+  const hreinsaNotu = (raw) => {
+    let s = String(raw == null ? '' : raw).replace(/\r/g, '');
+    const i = s.search(/\n\s*Kt:|\[Sótt|\nGreiðsla:|\nViðbót:|\nAfsláttur:|\nEkki afhent:|\n?\[20\d\d-\d\d-\d\d/);
+    if (i >= 0) s = s.slice(0, i);
+    return s
+      .replace(/\bPayday\s*#?\s*\d+\s*(?:PAID|SENT|CREDIT|CANCELL?ED|DRAFT|greitt|ógreitt|kredit)?\.?/gi, '')
+      .replace(/\((?:leiðrétt|leidrett)[^)]*\)\.?/gi, '')
+      .replace(/\bSótt\s*✓/gi, '')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{2,}/g, '\n')
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim();
+  };
+  /* hreinsaNotu:endir */
+  const _notes = hreinsaNotu(sale.athugasemdir);
   // Afhending (sjálfgefið, 2026-08-13 — Center Hótel-lexían): rafræn krafa OG
   // póstafrit þegar hvort tveggja er hægt. Áður drap rafrænt póstafritið
   // (emailSend = !electronic && email) — rafræni reikningurinn „fór" en enginn
