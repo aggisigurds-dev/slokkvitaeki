@@ -797,8 +797,94 @@
     }));
   }
 
-  function launchNav() {
-    const r = readRoute();
+  // ── Aksturslistar (2026-09-12, Verkefnalisti 5e8af41e) ─────────────────
+  // Listinn er arsskodun_customers[id].akstur (1–3), settur með 🚗-flögunni í
+  // Ársskoðun (267) og lesinn líka af Bílstjóra (219). Einn smellur fyllir
+  // leiðina með stöðum listans, raðað eftir nálægð. Staður á lista er tekinn
+  // með þótt tækjaskrá vanti — hann var settur þar handvirkt. „Sleppa skoðuðum"
+  // fylgir Bílstjóra (219): bæði „Í lagi <ár>" og „Tekið út — skjöl eftir"
+  // teljast afgreidd heimsókn. Staðir án hnita eru nefndir með 📍 Setja.
+  const LS_AK_OPIN = 'leidsogn_ak_opin';   // útlitsval vafrans: '0' = taka skoðaða með
+  function aksturAf(c, ars) {
+    let v = +((ars || {}).akstur) || 0;
+    try { if (window.ArsAkstur && ArsAkstur.of) v = +ArsAkstur.of(c.id) || 0; } catch (_) {}
+    return (v >= 1 && v <= 3) ? v : 0;
+  }
+  function aksturStops(n, sleppaSkodudum) {
+    const cos = (window.Companies && Companies.list) || [];
+    const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+    const gc = readGc();
+    const stops = [], anHnita = [];
+    let skodadir = 0;
+    cos.forEach(c => {
+      const ars = arsMap[String(c.id)] || {};
+      if (aksturAf(c, ars) !== n) return;
+      const k = statusFor(c, ars).key;
+      if (sleppaSkodudum && (k === 'done' || k === 'in_progress')) { skodadir++; return; }
+      const p = lookupCoord(gc, c);
+      if (p) stops.push({ id: c.id, name: c.nafn, addr: c.heimilisfang || '', lat: p.lat, lng: p.lng });
+      else anHnita.push(c);
+    });
+    return { stops: tspNearestNeighbor(stops), anHnita, skodadir };
+  }
+  function renderAksturRow() {
+    const row = document.getElementById('_lds-akstur-row');
+    if (!row) return;
+    let sleppa = true;
+    try { sleppa = localStorage.getItem(LS_AK_OPIN) !== '0'; } catch (_) {}
+    const listar = [1, 2, 3].map(n => aksturStops(n, sleppa));
+    const anHnita = [];
+    listar.forEach((x, i) => x.anHnita.forEach(c => anHnita.push({ c, n: i + 1 })));
+    const skodadir = listar.reduce((s, x) => s + x.skodadir, 0);
+    const takki = (x, i) => {
+      const virkur = x.stops.length > 0;
+      return '<button class="_lds-ak-go" data-ak="' + i + '" type="button"' + (virkur ? '' : ' disabled') +
+        ' title="' + (virkur ? 'Setja ' + x.stops.length + ' stopp á leið, raðað eftir nálægð' : 'Enginn staður með hnit á þessum lista') + '" style="' +
+        'padding:6px 11px;border:1px solid ' + (virkur ? '#0ea5e9' : '#cbd5e1') + ';background:' + (virkur ? '#f0f9ff' : '#fff') +
+        ';color:' + (virkur ? '#0c4a6e' : '#94a3b8') + ';border-radius:99px;cursor:' + (virkur ? 'pointer' : 'default') +
+        ';font:inherit;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px">' +
+        '🚗 Akstur ' + (i + 1) + ' <span style="background:' + (virkur ? '#0c4a6e' : '#94a3b8') + ';color:#fff;border-radius:99px;font-size:10px;padding:1px 6px">' +
+        (x.stops.length + x.anHnita.length) + '</span></button>';
+    };
+    row.innerHTML =
+      '<div style="font-size:12px;font-weight:600;color:#475569;margin-right:4px">🗂 Aksturslisti →</div>' +
+      listar.map(takki).join('') +
+      '<label style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:#475569;margin-left:6px;cursor:pointer" title="„Í lagi" og „Tekið út — skjöl eftir" teljast skoðaðir í ár">' +
+        '<input type="checkbox" class="_lds-ak-opin"' + (sleppa ? ' checked' : '') + '> Sleppa skoðuðum í ár' +
+        (sleppa && skodadir ? ' <span style="color:#94a3b8">(' + skodadir + ' sleppt)</span>' : '') +
+      '</label>' +
+      (anHnita.length
+        ? '<div style="flex-basis:100%;font-size:11.5px;color:#92400e;display:flex;gap:8px;flex-wrap:wrap;align-items:center">⚠ Án hnita, fara ekki á leið: ' +
+            anHnita.map(({ c, n }) => '<span style="display:inline-flex;align-items:center;gap:4px">' + esc(c.nafn || '—') + ' (🚗' + n + ')' +
+              '<button class="_lds-setloc" data-co-id="' + c.id + '" type="button" style="padding:1px 7px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">📍 Setja</button></span>').join('') +
+          '</div>'
+        : '');
+    row.querySelector('._lds-ak-opin').addEventListener('change', e => {
+      try { localStorage.setItem(LS_AK_OPIN, e.target.checked ? '1' : '0'); } catch (_) {}
+      renderAksturRow();
+    });
+    row.querySelectorAll('._lds-ak-go').forEach(b => b.addEventListener('click', () => {
+      const i = +b.dataset.ak, x = listar[i];
+      if (!x || !x.stops.length) return;
+      const nuverandi = readRoute();
+      if (nuverandi.length && !confirm('Skipta núverandi leið (' + nuverandi.length + ' stopp) út fyrir Akstur ' + (i + 1) + ' (' + x.stops.length + ' stopp)?')) return;
+      saveRoute(x.stops);
+      renderRoutePanel();
+      renderDueList();
+      if (_map && window.L) { try { _map.fitBounds(L.latLngBounds(x.stops.map(s => [s.lat, s.lng])).pad(0.15), { maxZoom: 14 }); } catch (_) {} }
+      const panel = document.getElementById('_lds-route-panel');
+      if (panel) { try { panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_) {} }
+    }));
+  }
+
+  // Google Maps-slóð tekur mest 9 millistopp + áfangastað (3 í símavafra án Maps-appsins).
+  // Lengri leið skiptist í leggi; hver leggur byrjar þar sem bílstjórinn er staddur.
+  const LEGGUR = 10;
+  function launchNav(leggur) {
+    const allt = readRoute();
+    if (!allt.length) return;
+    const li = Math.max(0, Math.floor(+leggur) || 0);
+    const r = allt.slice(li * LEGGUR, (li + 1) * LEGGUR);
     if (!r.length) return;
     let url;
     if (r.length === 1) {
@@ -826,13 +912,20 @@
     panel.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #e2e8f0;background:#f8fafc">' +
         '<div style="font-weight:700;color:#0f172a;font-size:13px">📋 Áætlaðar heimsóknir <span style="color:#94a3b8;font-weight:500">(' + r.length + ')</span></div>' +
-        '<div style="display:flex;gap:6px">' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
           '<button id="_lds-clear" type="button" style="padding:5px 10px;background:#fff;color:#dc2626;border:1px solid #fecaca;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">🗑 Hreinsa</button>' +
-          '<button id="_lds-drive" type="button" style="padding:5px 14px;background:#16a34a;color:#fff;border:1px solid #15803d;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">🚗 Keyra núna</button>' +
+          (r.length <= LEGGUR
+            ? '<button id="_lds-drive" type="button" style="padding:5px 14px;background:#16a34a;color:#fff;border:1px solid #15803d;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">🚗 Keyra núna</button>'
+            : Array.from({ length: Math.ceil(r.length / LEGGUR) }, (_, li) =>
+                '<button class="_lds-drive-leg" data-leg="' + li + '" type="button" title="Google Maps tekur ' + LEGGUR + ' stopp í einu" style="padding:5px 12px;background:#16a34a;color:#fff;border:1px solid #15803d;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">🚗 Leggur ' + (li + 1) + ' · ' + (li * LEGGUR + 1) + '–' + Math.min(r.length, (li + 1) * LEGGUR) + '</button>'
+              ).join('')) +
         '</div>' +
       '</div>' +
-      '<div style="max-height:200px;overflow-y:auto">' +
+      '<div style="max-height:' + (r.length > LEGGUR ? 320 : 200) + 'px;overflow-y:auto">' +
         r.map((s, i) => (
+          (r.length > LEGGUR && i % LEGGUR === 0
+            ? '<div style="padding:5px 14px;background:#f0fdf4;border-bottom:1px solid #dcfce7;font-size:10.5px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.04em">Leggur ' + (i / LEGGUR + 1) + '</div>'
+            : '') +
           '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #f1f5f9;font-size:12.5px">' +
             '<span style="background:#0f172a;color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0">' + (i+1) + '</span>' +
             '<div style="flex:1;min-width:0">' +
@@ -848,7 +941,8 @@
         )).join('') +
       '</div>';
 
-    panel.querySelector('#_lds-drive')?.addEventListener('click', launchNav);
+    panel.querySelector('#_lds-drive')?.addEventListener('click', () => launchNav(0));
+    panel.querySelectorAll('._lds-drive-leg').forEach(b => b.addEventListener('click', () => launchNav(+b.dataset.leg)));
     panel.querySelector('#_lds-clear')?.addEventListener('click', () => { if (confirm('Hreinsa alla leið?')) clearRoute(); });
     panel.querySelectorAll('._lds-move').forEach(b => b.addEventListener('click', () => moveRouteStop(b.dataset.coId, b.dataset.dir)));
     panel.querySelectorAll('._lds-rm').forEach(b => b.addEventListener('click', () => removeFromRoute(b.dataset.coId)));
@@ -879,7 +973,7 @@
       if (setBtn) {
         e.preventDefault(); e.stopPropagation();
         const co = (window.Companies && Companies.list || []).find(c => String(c.id) === String(setBtn.dataset.coId));
-        if (co && window.ManualGeocode) window.ManualGeocode.open(co, () => { try { renderPins({ fit: false }); renderDueList(); } catch (_) {} });
+        if (co && window.ManualGeocode) window.ManualGeocode.open(co, () => { try { renderPins({ fit: false }); renderDueList(); renderAksturRow(); } catch (_) {} });
         return;
       }
       const openBtn = e.target.closest && e.target.closest('._lds-open-co');
@@ -987,6 +1081,8 @@
           // 2026-05-26: city-pick row — Aggi can fill the route with all
           // overdue customers in a single city, sorted nearest-neighbor.
           '<div id="_lds-city-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center"></div>' +
+          // 2026-09-12 (Verkefnalisti 5e8af41e): aksturslistar 1–3 úr Ársskoðun (267) → leiðin í einum smelli.
+          '<div id="_lds-akstur-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center"></div>' +
           '<div id="_lds-mapcanvas" style="width:100%;height:480px;background:#f1f5f9;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden"></div>' +
           '<div id="_lds-due-panel" style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"></div>' +
           '<div id="_lds-route-panel" style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"></div>' +
@@ -1021,9 +1117,15 @@
       renderDueList();
       renderRoutePanel();
       renderCityRow();
+      renderAksturRow();
       renderMonthRow();
     }, 100);
     hookPopupDelegate();
+    // Aksturslistarnir (267) vistast í AppSettings — breyting í Ársskoðun eða á annarri vél telur upp á nýtt.
+    if (!show._akAskrift && window.AppSettings && AppSettings.onChange) {
+      show._akAskrift = true;
+      AppSettings.onChange(() => { try { renderAksturRow(); } catch (_) {} });
+    }
   }
 
   // ── Filter chip bar (ár + flokkur) — re-rendered each show() so the
@@ -1077,7 +1179,7 @@
     // refresh pins + counts if the map is already on screen.
     if (window.InServiceClients && window.InServiceClients.onReady) {
       window.InServiceClients.onReady(() => {
-        if (_map) { try { renderPins(); renderDueList(); } catch (_) {} }
+        if (_map) { try { renderPins(); renderDueList(); renderAksturRow(); } catch (_) {} }
       });
     }
   }
@@ -1090,7 +1192,10 @@
   // Expose
   window.Leidsogn = {
     show, addToRoute, removeFromRoute, clearRoute, launchNav,
-    getCustomers, version: 'v1'
+    getCustomers, renderAksturRow,
+    // 156, 178 og 219 kalla Leidsogn.refresh() — hún hvarf þegar þessi hlutur leysti þann í línu ~557 af hólmi.
+    refresh: () => { try { if (_map) { renderPins({ fit: false }); renderDueList(); } renderAksturRow(); } catch (_) {} },
+    version: 'v1'
   };
   console.log('[leidsogn v1] installed');
 })();
