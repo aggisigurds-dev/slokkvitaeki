@@ -341,7 +341,7 @@ var Companies = {
     // skráð með nafni einu saman og varð draugur (fyrirtaeki_id NULL). Geymt á
     // forminu svo submitAddUnit geti sent það með.
     var _f = document.getElementById('modal-addunit');
-    if (_f) _f.dataset.coId = String(id == null ? '' : id);
+    if (_f) { _f.dataset.coId = String(id == null ? '' : id); _f.dataset.coNafn = String(nafn == null ? '' : nafn); }
     document.getElementById('au-client').value = nafn;
     document.getElementById('au-loc').value = '';
     var t = U.today(), n = (parseInt(t.slice(0, 4)) + 1) + t.slice(4);

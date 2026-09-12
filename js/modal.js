@@ -323,6 +323,10 @@ var Field = {
     setTimeout(function(){Print.showQR(DB.getUnit(u.id));},400);
   },
   openAddUnit: function() {
+    // 2026-09-12 (Verkefnalisti 8a6f7957): almenni „Nýtt tæki"-glugginn erfði fyrirtækis-id frá síðustu opnun af
+    // fyrirtækjasíðu (dataset.coId stóð eftir), svo tæki slegið inn á ANNAN stað tengdist fyrra fyrirtækinu og
+    // fór á rangan reikning. Hér er ekkert fyrirtæki valið.
+    var _f0=document.getElementById('modal-addunit'); if(_f0){ delete _f0.dataset.coId; delete _f0.dataset.coNafn; }
     var t=U.today(), n=(parseInt(t.slice(0,4))+1)+t.slice(4);
     document.getElementById('au-inst').value=t; document.getElementById('au-next').value=n;
     ['au-type','au-size','au-client','au-loc'].forEach(function(id){var el=document.getElementById(id);if(el.tagName==='INPUT')el.value='';});
@@ -334,7 +338,12 @@ var Field = {
     // 2026-08-30 (regla 0): fyrirtækis-id fylgir nú með úr Companies.addUnit.
     var _f=document.getElementById('modal-addunit');
     var _co=_f&&_f.dataset.coId?parseInt(_f.dataset.coId,10):null;
+    // 2026-09-12 (8a6f7957): nafni staðarins breytt í glugganum → tækið á ekki lengur við fyrirtækið sem glugginn
+    // var opnaður frá. Það fer þá ótengt inn og viðvörunin hér að neðan segir frá því, í stað rangrar tengingar.
+    var _lag=function(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');};
+    if(_co&&_f.dataset.coNafn&&_lag(client)!==_lag(_f.dataset.coNafn)) _co=null;
     var u=await DB.addUnit({type:document.getElementById('au-type').value,size:document.getElementById('au-size').value||'6 kg',client,location:document.getElementById('au-loc').value,inst:document.getElementById('au-inst').value,next:document.getElementById('au-next').value,fyrirtaeki_id:(_co||null)});
+    if(_f){ delete _f.dataset.coId; delete _f.dataset.coNafn; }
     Modal.close('modal-addunit'); Field.render();
     setTimeout(function(){Print.showQR(u);},200);
     // Regla 2 — allt sjáanlegt: tækist ekki að tengja tækið á það að SJÁST,

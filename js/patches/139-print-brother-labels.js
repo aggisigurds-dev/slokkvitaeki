@@ -158,7 +158,10 @@
     // showJob note above). One module for every QR label, errors surfaced.
     showUnitBrother(unit).catch(err => {
       console.error('[patch-139] showQR:', err);
-      alert('Villa við að prenta QR-miða: ' + (err && err.message ? err.message : err));
+      const msg = 'Villa við að prenta QR-miða: ' + (err && err.message ? err.message : err);
+      // 2026-09-12 (8a6f7957): alert() frysti setuna (líka sjálfvirkar keyrslur) eftir hvert nýtt tæki.
+      try { if (window.logProblem) window.logProblem('qr-prentun', msg.slice(0, 200)); } catch (_) {}
+      if (window.Toast && typeof Toast.show === 'function') Toast.show('⚠ ' + msg); else alert(msg);
     });
   };
 
