@@ -1,48 +1,58 @@
 -- =============================================================
--- teya_faerslur — kortagreiðslur (Teya) fluttar inn af n8n.
+-- teya_faerslur — kortagreiðslur (Teya "Færsluskýrsla") fluttar inn af n8n.
 -- =============================================================
 -- Run this ONCE in Supabase SQL editor:
 --   https://supabase.com/dashboard/project/osfdzskyvisifcwyjkuk/sql/new
--- Paste the whole file and click Run. Idempotent — safe to re-run.
+-- Paste the whole file and click Run. Idempotent-ish (DROP + CREATE) — það er
+-- ÓHÆTT á meðan taflan er tóm; EKKI keyra aftur eftir að gögn eru komin inn.
 --
--- Why this exists: n8n les Teya-CSV (kortafærslur), staðlar dálkana og
--- skrifar hverja færslu hingað (service-role → fer framhjá RLS). Appið les
--- töfluna (anon) til að sýna færslur og pörun við ógreidda reikninga.
--- ÞETTA ER NÝ, EINANGRUÐ TAFLA — engin skrif í varðar leiðir (invoice OUT
--- 10/233/254, payday-push). Pörun er aðeins LESIN úr reikningagögnum og
--- flögguð hér; ekkert er rukkað eða breytt sjálfvirkt.
+-- Why this exists: n8n les Teya-CSV, staðlar dálkana og skrifar hverja færslu
+-- hingað (service-role → fer framhjá RLS). Appið les töfluna (anon).
+-- �þETTA ER NÝ, EINANGRUÐ TAFLA — engin skrif í varðar leiðir (invoice OUT
+-- 10/233/254, payday-push). Ekkert rukkað eða breytt sjálfvirkt.
 --
--- NB (2026-09-12): endanleg dálka-vörpun bíður sýnishorns af Teya-CSV.
--- `raw` geymir upprunalínuna óskerta svo ekkert tapist þótt vörpun breytist.
+-- Raunverulegt CSV-snið (staðfest 2026-09-12 á 683 línum, kommu-skil, UTF-8):
+--   Tegund greiðslu (PAYMENT/REFUND), Dagsetning, Tími, Heiti samnings,
+--   Greiðslumáti (TERMINAL), Nafn posa, Auðkenni tækis, Staða
+--   (SAMÞYKKT/HAFNAÐ/Í BIÐ), Upphæð (heiltala, engir aukastafir).
+--   ⚠ EKKERT færslunúmer, EKKERT kortanúmer/tegund, ENGIN reikninga-/kt-vísun
+--   → ekki hægt að para sjálfvirkt við reikning. Aðeins SAMÞYKKT = peningar.
+--   Afeitrun (engin stöðug auðkenni) gerð með dedupe_key.
 -- Notað af n8n-flæðinu „Teya kortagreiðslur" (docs/N8N.md).
 
-CREATE TABLE IF NOT EXISTS teya_faerslur (
-  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  faerslunumer       TEXT UNIQUE,                 -- stöðugt auðkenni frá Teya (afeitrun við endur-innflutning)
-  faersludagur       DATE,                        -- dagsetning færslu
-  upphaed            NUMERIC(12,2),               -- fjárhæð í ISK
-  kortategund        TEXT,                        -- t.d. VISA / MASTERCARD
-  kort_last4         TEXT,                        -- 4 síðustu í kortanúmeri (ef gefið)
-  heiti              TEXT,                        -- lýsing / posi / söluaðili (ef gefið)
-  uppruni            TEXT NOT NULL DEFAULT 'teya',
-  skra               TEXT,                        -- heiti CSV-skrárinnar sem færslan kom úr
-  raw                JSONB,                       -- upprunalega línan óskert (öryggi/villuleit)
-  matched_invoice_id TEXT,                        -- auðkenni pöraðs reiknings (texti — engin FK í varðar töflur)
-  matched_ref        TEXT,                        -- hvað var parað (t.d. reikningsnr / kt)
-  stada              TEXT NOT NULL DEFAULT 'nytt', -- nytt | porun | stadfest | hunsad
-  nota               TEXT,
-  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+DROP TABLE IF EXISTS teya_faerslur CASCADE;
+
+CREATE TABLE teya_faerslur (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  dedupe_key       TEXT UNIQUE NOT NULL,         -- dags|tími|tæki|tegund|upphæð|staða (afeitrun)
+  tegund           TEXT,                         -- PAYMENT | REFUND
+  faersludagur     DATE,
+  timi             TIME,
+  heiti_samnings   TEXT,
+  greidslumati     TEXT,                         -- TERMINAL
+  nafn_posa        TEXT,
+  audkenni_taekis  TEXT,
+  teya_stada       TEXT,                         -- SAMÞYKKT | HAFNAÐ | Í BIÐ  (aðeins SAMÞYKKT = peningar)
+  upphaed          NUMERIC(12,2),
+  uppruni          TEXT NOT NULL DEFAULT 'teya',
+  skra             TEXT,                         -- heiti CSV-skrárinnar
+  raw              JSONB,                        -- upprunalega línan óskert
+  matched_sala_id  TEXT,                         -- (áfangi 2) pörun við POS/sölu, ekki reikning
+  matched_ref      TEXT,
+  stada            TEXT NOT NULL DEFAULT 'nytt', -- vinnslustaða appsins: nytt | parad | stadfest | hunsad
+  nota             TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS teya_faerslur_dagur_idx  ON teya_faerslur (faersludagur);
-CREATE INDEX IF NOT EXISTS teya_faerslur_stada_idx  ON teya_faerslur (stada);
-CREATE INDEX IF NOT EXISTS teya_faerslur_match_idx  ON teya_faerslur (matched_invoice_id);
+CREATE INDEX teya_faerslur_dagur_idx      ON teya_faerslur (faersludagur);
+CREATE INDEX teya_faerslur_teya_stada_idx ON teya_faerslur (teya_stada);
+CREATE INDEX teya_faerslur_stada_idx      ON teya_faerslur (stada);
+CREATE INDEX teya_faerslur_tegund_idx     ON teya_faerslur (tegund);
 
--- Single-tenant app. Innflutningur er AÐEINS gerður af n8n með service-role
--- (fer framhjá RLS), svo anon fær ekki INSERT/DELETE á peningafærslur.
--- Appið má LESA allt og UPPFÆRA stöðu/nótu/pörun (staða verður að vistast á
--- þjóni skv. samstillingarreglunni).
+-- Single-tenant app. Innflutningur AÐEINS af n8n með service-role (framhjá RLS),
+-- svo anon fær ekki INSERT/DELETE á peningafærslur. Appið les allt og uppfærir
+-- stöðu/nótu/pörun (staða verður að vistast á þjóni skv. samstillingarreglunni).
 ALTER TABLE teya_faerslur ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS teya_faerslur_anon_read   ON teya_faerslur;
