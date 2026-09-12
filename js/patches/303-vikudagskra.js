@@ -334,13 +334,14 @@
 
   function openModal(dateStr, editJob) {
     state.modal = true;
+    state.malId = null;   // st-skra-verk setur málið strax á eftir (853efc10)
     state.editingId = editJob ? editJob.id : null;
     state.form = editJob
       ? { date: editJob.date, time: editJob.time || '09:00', name: editJob.name, type: editJob.type || 'Árskoðun', note: editJob.note || '', allday: !!editJob.allday }
       : { date: dateStr || fmt(new Date()), time: '09:00', name: '', type: 'Árskoðun', note: '', allday: false };
     renderModal();
   }
-  function closeModal() { state.modal = false; state.editingId = null; renderModal(); }
+  function closeModal() { state.modal = false; state.editingId = null; state.malId = null; renderModal(); }
 
   function renderModal() {
     const h = modalHost();
@@ -445,8 +446,10 @@
     }
     const date = f.date || fmt(new Date());
     const editId = state.editingId;
+    const malId = state.malId;
     state.modal = false;
     state.editingId = null;
+    state.malId = null;
     renderModal();
     if (editId) {
       persist(jobs => jobs.map(j => j.id !== editId ? j : {
@@ -457,6 +460,8 @@
         id: 'vd' + Date.now() + Math.random().toString(36).slice(2, 6),
         date, time: f.time || '09:00', name: f.name.trim(), type: f.type || 'Annað', note: (f.note || '').trim(), allday: !!f.allday
       };
+      // 853efc10: verk stofnað úr máli á Þjónustuborði ber númer málsins — borðið sýnir þá daginn og hoppar á hann.
+      if (malId != null) job.mal_id = malId;
       persist(jobs => jobs.concat([job]));
     }
   }
@@ -541,6 +546,7 @@
     const nafn = String(d.name || '').trim();
     const note = String(d.note || '').trim();
     openModal(fmt(new Date()));
+    state.malId = d.id != null && d.id !== '' ? d.id : null;   // 853efc10: verkið man úr hvaða máli það kom
     // 2026-08-29 (Agnar): athugasemd málsins fylgir núna með. Gildin fara í
     // state.form — ekki bara í DOM — því renderModal les ALLTAF úr state.form;
     // væri þetta aðeins sett í reitinn hyrfi það við fyrstu endurteikningu

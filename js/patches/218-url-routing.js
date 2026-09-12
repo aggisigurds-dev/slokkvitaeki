@@ -39,7 +39,7 @@
   // ascii slug -> internal view id. Only the pages that want a prettier name
   // need to be here; the reverse map prefers the FIRST slug listed per view.
   var ALIAS = {
-    leidsogn:      'field',            // Leiðsögn (þjónustukortið)
+    leidsogn:      'leidsogn',         // Leiðsögn (161). Áður 'field' — það er falda Þjónustutæki-kortið (12.09.2026)
     afgreidsla:    'counter',          // Afgreiðsla
     verkstaedi:    'workshop',         // Verkstæði
     fyrirtaeki:    'companies',        // Fyrirtæki í þjónustu
@@ -69,9 +69,9 @@
   // internal view id -> preferred ascii slug (first alias wins).
   var SLUG = {};
   Object.keys(ALIAS).forEach(function (s) { if (!(ALIAS[s] in SLUG)) SLUG[ALIAS[s]] = s; });
-  // Leiðsögn has two historical view ids (field / leidsogn) — both get the
-  // same pretty slug so the URL is stable whichever one the app renders.
-  SLUG.field = 'leidsogn'; SLUG.leidsogn = 'leidsogn';
+  // 2026-09-12: field og leidsogn eru ekki lengur sama síðan. view-field er Þjónustutæki-kortið (falið í
+  // valmynd) og view-leidsogn er Leiðsögn (161). Hvor fær sína slóð svo endurhleðsla lendi á sömu síðu.
+  SLUG.field = 'field'; SLUG.leidsogn = 'leidsogn';
 
   function slugForView(v) { return SLUG[v] || v; }
 
@@ -81,7 +81,8 @@
     var v = ALIAS[s] || s;
     if (document.getElementById('view-' + v)) return v;
     if (v === 'field' && document.getElementById('view-leidsogn')) return 'leidsogn';
-    if (v === 'leidsogn' && document.getElementById('view-field')) return 'field';
+    // Leiðsögn (161) býr til view-leidsogn sjálf í switchView — aldrei falla á falda Þjónustutæki-kortið meðan 161 er til.
+    if (v === 'leidsogn' && !window.__leidsognInstalled && document.getElementById('view-field')) return 'field';
     return v;
   }
 
@@ -120,7 +121,8 @@
     try {
       var s = cleanHash(); if (!s) return;
       var view = resolveView(s);
-      if (!document.getElementById('view-' + view)) return; // unknown slug -> ignore
+      var smidar = view === 'leidsogn' && window.App && App._leidsognPatched; // 161 býr síðuna til við fyrstu opnun
+      if (!document.getElementById('view-' + view) && !smidar) return; // unknown slug -> ignore
       if (!window.App || typeof App.switchView !== 'function') return;
       var active = document.querySelector('.view.active');
       if (active && active.id === 'view-' + view) { syncNav(view); return; }   // already there — just fix the highlight

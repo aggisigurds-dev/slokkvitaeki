@@ -604,6 +604,24 @@
     if (n === 'Agnar') { const g = P('vikudagskra.jobs'); if (Array.isArray(g)) return g.filter(Boolean); }
     return [];
   }
+  // 2026-09-12 (Verkefnalisti 853efc10): verk sem 303 stofnar úr máli ber mal_id. Leitað á eigin dagskrá fyrst,
+  // svo hjá hinum — málið getur verið sett á dagskrá þess sem valdi það, ekki endilega eiganda málsins.
+  function jobOfMal(id) {
+    if (id == null) return null;
+    const me = nu();
+    for (const n of [me].concat(folk().filter(x => x !== me))) {
+      const j = jobsFor(n).find(x => x && x.mal_id != null && String(x.mal_id) === String(id));
+      if (j) return Object.assign({ _n: n }, j);
+    }
+    return null;
+  }
+  // 🗓-takkinn: „Á dagskrá" setur málið á dagskrá; sé það komið þangað sýnir hann daginn og hoppar á hann.
+  function dagskrarTakki(r) {
+    const j = jobOfMal(r.id);
+    return j
+      ? '<button type="button" class="btn iv sm" data-t5="vd-opna" data-id="' + r.id + '" title="Opna daginn í Dagskrá">🗓 ' + esc(fmtD(j.date)) + (j._n !== nu() ? ' · ' + esc(j._n) : '') + '</button>'
+      : '<button type="button" class="btn iv sm" data-t5="vd-add" data-id="' + r.id + '" title="Setja málið á dagskrá">🗓 Á dagskrá</button>';
+  }
   function cardsFor(n) {
     const v = P('skipulagsbord.by_staff.' + n);
     if (v && Array.isArray(v.cards)) return v.cards.filter(Boolean);
@@ -1200,7 +1218,7 @@
       (r.summary ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(String(r.summary).slice(0, 600)) + '</div>' : '') +
       sagaHtml(r) + skjolHtml(r) + well +
       '<div class="sacts">' + (minn && erSamthykki(r) ? samtTakkar(r, ' lg') + fyr : taka + svara + lokid + skila + fyr) + '</div>' +
-      '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + b('iv', 'vd-add', '🗓 Á dagskrá') +
+      '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + (jm => jm ? b('iv', 'vd-opna', '🗓 ' + fmtD(jm.date) + (jm._n !== nu() ? ' · ' + jm._n : '')) : b('iv', 'vd-add', '🗓 Á dagskrá'))(jobOfMal(r.id)) +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
           ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + hamirHtml(r) + breytaHtml(r);
   }
@@ -2112,14 +2130,21 @@
           '<textarea class="skt" data-sk="title" data-skid="' + id + '" rows="' + Math.min(8, Math.max(2, String(texti).split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er…" aria-label="Texti">' + esc(texti) + '</textarea>' +
           (cd.mynd ? '<div class="skm"><a href="' + esc(cd.mynd) + '" target="_blank" rel="noopener"><img src="' + esc(cd.mynd) + '" alt="Mynd á spjaldi" loading="lazy"></a>' +
             '<button type="button" class="skb" data-t5="sk-mynd-x" data-skid="' + id + '">Fjarlægja mynd</button></div>' : '') +
-          (cd.verkbord_id != null ? '<div class="skf">' + (row ? '<button type="button" class="clink" data-t5="skoda" data-id="' + row.id + '">Opna mál ›</button> · ' + esc(eigandaTexti(row, n)) : 'Málið er lokað eða í geymslu') + '</div>' : '') +
+          (cd.verkbord_id != null ? '<div class="skf">' + (row ? (row.important ? '<span class="tag hot">★ Áríðandi</span> ' : '') + '<button type="button" class="clink" data-t5="skoda" data-id="' + row.id + '">Opna mál ›</button> · ' + esc(eigandaTexti(row, n)) + ' ' + dagskrarTakki(row) : 'Málið er lokað eða í geymslu') + '</div>' : '') +
         '</div>';
       }).join('');
-      const body = '<div class="skwrap">' +
+      // 853efc10 (Agnar 27.08: „beðið um þetta ENDALAUST"): áríðandi mál efst svo þau gleymist ekki þegar vikan er
+      // skipulögð. 🗓-takkinn setur málið á dagskrá eða hoppar á daginn í Dagskrá (01) sé það komið þangað.
+      const ari = S.rows.filter(r => r.important).sort(rodun);
+      const ariHtml = ari.length
+        ? '<div class="sect">★ Áríðandi (' + ari.length + ')</div>' + ari.slice(0, 12).map(r => lrowHtml(r, dagskrarTakki(r))).join('') +
+          (ari.length > 12 ? '<div class="more">+ ' + (ari.length - 12) + ' til viðbótar</div>' : '')
+        : '';
+      const body = ariHtml + '<div class="skwrap">' +
         '<label class="krass"><span class="lbl">Krassblað</span><textarea data-sk="krass" rows="' + Math.min(14, Math.max(3, krass.split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er — vistast sjálfkrafa og fylgir þér á milli tölva.">' + esc(krass) + '</textarea></label>' +
         '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny">+ Nýtt spjald</button></div>' +
         '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot beint í spjald.') + '</div></div>';
-      return modPanel(k, cards.length + ' spjöld', body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
+      return modPanel(k, cards.length + ' spjöld' + (ari.length ? ' · ' + ari.length + ' áríðandi' : ''), body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
     }
     if (k === 'frestir') {
       const dagur = ymd(new Date());
@@ -3320,6 +3345,25 @@
         return;
       }
       case 'ny-fyr': veljaNyFyr(Number(el.dataset.i)); return;
+      case 'vd-opna': {
+        // 853efc10: málið er á dagskrá → opna Dagskrá (01) og renna að deginum. Utan 7 daga gluggans (eða sé
+        // Dagskrá falin) opnast verkið sjálft. Verk á annarra dagskrá er aðeins nefnt — 303 vistar alltaf á
+        // dagskrá þess sem er valinn, svo breyting héðan færi á rangt borð.
+        const j = jobOfMal(id);
+        if (!j) { toast('Málið er ekki lengur á dagskrá.', true); render(); return; }
+        if (j._n !== nu()) { toast('Á dagskrá hjá ' + j._n + ' ' + fmtD(j.date) + ' — veldu ' + j._n + ' í starfsmannavalinu til að sjá daginn.'); return; }
+        S.open[openKey('dagskra')] = true;
+        render();
+        const dplus = root.querySelector('.dplus[data-date="' + String(j.date || '').slice(0, 10) + '"]');
+        const dagur = dplus && dplus.closest('.day');
+        if (!dagur) { try { Vikudagskra.open(j.date, j); } catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); } return; }
+        try { dagur.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) {}
+        const verk = [...dagur.querySelectorAll('[data-jid]')].find(x => x.dataset.jid === String(j.id)) || dagur;
+        verk.style.transition = 'box-shadow .25s';
+        verk.style.boxShadow = '0 0 0 3px #d4a017';
+        setTimeout(() => { try { verk.style.boxShadow = ''; } catch (_) {} }, 2600);
+        return;
+      }
       case 'vd-add': {
         // Sama samningur og gamla borðið: 303 hlerar st-skra-verk og opnar dagskrárgluggann forútfylltan.
         const r = S.rows.find(x => x.id === id);
