@@ -258,12 +258,14 @@
     // Default the service to Yfirferð for families that never get a Hleðsla
     // (Brunaslanga, skynjarar, teppi) and for CO₂/Léttvatn/ABF — matches the
     // cost-calculator defaults so a slanga doesn't bill as Hleðsla/new.
+    // 12.09.2026 (Agnar, Þjónustuborð #942): í úttekt er Yfirferð sjálfgefin
+    // LÍKA fyrir duft/ABC. Mælt frá 01.05.2026: duft rukkað sem Yfirferð á 110
+    // tækjum en sem Hleðsla á 88, svo Hleðslu-sjálfgildið rukkaði oft áfyllingu
+    // sem var ekki gerð. Hleðsla er valin handvirkt. Afgreiðslan er óbreytt.
     function syncChoiceDefault() {
       const sel = modal.querySelector('#_bap-choice');
-      const t = (modal.querySelector('#_ba_type') || {}).value || '';
       if (!sel) return;
-      const yfirferdDefault = SIZELESS_SVC.test(t) || /co2|co₂|kolsýr|kolsyr|léttv|lettv|abf|vatn|froð|frod/i.test(t);
-      sel.value = yfirferdDefault ? 'yfirferd' : 'hledsla';
+      sel.value = 'yfirferd';
     }
     const typeEl = modal.querySelector('#_ba_type');
     if (typeEl) typeEl.addEventListener('change', () => { syncChoiceDefault(); recompute(modal, nafn); });

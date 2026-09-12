@@ -333,8 +333,8 @@
     }
     const st = loadTripState(coId);
     if (st.units && st.units[unitId]) return st.units[unitId];
-    const t = String(typeText || '').toLowerCase();
-    if (/\bduft\b|\babc\b|\bpfc\b/.test(t)) return 'hledsla';
+    // 12.09.2026 (Agnar, Þjónustuborð #942): Yfirferð er sjálfgefin í úttekt —
+    // líka á duft/ABC. Hleðsla er valin handvirkt á tækin sem þurfa áfyllingu.
     return 'yfirferd';
   }
 

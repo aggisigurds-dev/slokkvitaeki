@@ -2,8 +2,8 @@
  *
  * Bætir dálk við hliðina á "Staða" í tæki-töflu á Companies.openDetail.
  * Notandi getur fyrir hvert tæki valið:
- *   • Hleðsla    — full hleðsla (sjálfgefið)
- *   • Yfirferð   — bara skoðun
+ *   • Hleðsla    — full hleðsla
+ *   • Yfirferð   — bara skoðun (sjálfgefið fyrir allar tegundir frá 12.09.2026, mál #942)
  *   • Sleppa     — fer ekki í þessari ferð
  *
  * Vistast í localStorage[`slokk_trip_<coId>`].units[unitId] og patch 129
@@ -29,9 +29,13 @@
   // 2026-05-19: type-aware default per Agnar's workflow. The Stolpi/Slökkvitæki
   // billing model differs per agent — Duft tends to need full hleðsla, while
   // Léttvatn and CO₂ usually only get a yfirferð.
+  // 12.09.2026 (Agnar, Þjónustuborð #942): í úttekt er Yfirferð sjálfgefin LÍKA
+  // fyrir duft/ABC. Mælt frá 01.05.2026: duft rukkað sem Yfirferð á 110 tækjum en
+  // sem Hleðsla á 88, svo Hleðslu-sjálfgildið rukkaði oft áfyllingu sem var ekki
+  // gerð. Hleðsla er valin handvirkt. Afgreiðslan (búðarsala) notar ekki þetta.
   function defaultForType(typeText) {
     const t = (typeText || '').toLowerCase();
-    if (/\bduft\b|\babc\b|\bpfc\b/.test(t)) return 'hledsla';
+    if (/\bduft\b|\babc\b|\bpfc\b/.test(t)) return 'yfirferd';
     if (/co2|co₂|co_?2|kolsýr|kolsyr/.test(t)) return 'yfirferd';
     if (/léttv|lettv|abf|vatn|water/.test(t)) return 'yfirferd';
     return 'yfirferd'; // safe default for unknowns
