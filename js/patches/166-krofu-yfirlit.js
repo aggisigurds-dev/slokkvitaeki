@@ -852,6 +852,7 @@
       // sér spjald „📝 Drög í Payday — ósend" og teljast ekki sendar. Klikki spegillinn → gamla hegðunin.
       const medPayday = rows.filter(s => s.dk_invoice_id);
       let drogIds = new Set();
+      let spegillOk = true;   // 664205fc: CG-S01/S03 skráð aðeins ef spegillinn las
       try {
         const ids = medPayday.map(s => String(s.dk_invoice_id));
         for (let i = 0; i < ids.length; i += 150) {
@@ -859,7 +860,7 @@
           if (pr.error) throw pr.error;
           (pr.data || []).forEach(p => { if (String(p.status || '').toUpperCase() === 'DRAFT') drogIds.add(String(p.payday_id)); });
         }
-      } catch (_) { drogIds = new Set(); }
+      } catch (_) { drogIds = new Set(); spegillOk = false; }
       _state.paydayDraftIds = drogIds;
       _state.paydayDrog   = medPayday.filter(s => drogIds.has(String(s.dk_invoice_id)));              // aðeins drög í Payday — ósend
       _state.paydayUnpaid = medPayday.filter(s => !drogIds.has(String(s.dk_invoice_id)));             // sent í Payday, ógreitt
@@ -869,13 +870,18 @@
       // (void, 999999-9999, ógild eða óþekkt kt, ótengd sala, tvíýtt úttekt); ⚠ = skoða fyrst (bíður á
       // Þjónustuborði, ekkert netfang, önnur kt staðar, gömul); ✓ = í lagi. Bili sóknin sést listinn án merkja.
       try {
-        const fr = await SB.from('v_krofu_forskodun').select('id,litur,rautt,gult,bord_mal');
+        const fr = await SB.from('v_krofu_forskodun').select('id,litur,rautt,gult,bord_mal,source');
         if (fr.error) throw fr.error;
         _state.forskodun = new Map((fr.data || []).map(x => [String(x.id), x]));
       } catch (e) {
         _state.forskodun = null;
         try { if (window.logProblem) window.logProblem('krofu-forskodun', String((e && e.message) || e).slice(0, 200)); } catch (_) {}
       }
+      // 664205fc: gildin fara í sameiginlega CG-safnið sem Skýrslur í Brunahólfi lesa.
+      const summa = a => a.reduce((s, x) => s + (parseFloat(x.samtals) || 0), 0);
+      cgSkra('CG-S02', summa(_state.osendar));
+      if (spegillOk) { cgSkra('CG-S01', summa(_state.paydayUnpaid)); cgSkra('CG-S03', summa(_state.paydayDrog)); }
+      if (_state.forskodun) cgSkra('CG-S04', summa(_state.osendar.filter(s => (_state.forskodun.get(String(s.id)) || {}).source === 'uttekt')));
     } catch (_) { _state.paydayUnpaid = _state.paydayUnpaid || []; _state.osendar = _state.osendar || []; _state.paydayDrog = _state.paydayDrog || []; }
 
     render();
@@ -987,11 +993,46 @@
     }
   }
 
+  // ── CG-auðkenni (Verkefnalisti 664205fc, Agnar 02.08.2026) ──────────────────────────────────────────────
+  // Samantektargluggar sem gilda fyrir ALLA mánuði fá fast CG-auðkenni, og gildið fer beint í sameiginlega
+  // CG-safnið (cg_entries) sem Skýrslur í Brunahólfi lesa. Áður stóðu CG-S01/S02 þar handskráð 07.08.2026
+  // (2.960.843 / 86.791 kr) eins og þau væru ný. Mánaðarháðu spjöldin fá ekki CG, því gildi þeirra fer eftir
+  // völdum mánuði á hverri vél. Skrifað aðeins þegar gildið breytist eða 30 mín eru liðnar (skyndiminni á tæki).
+  const CG_KY = {
+    'CG-S01': { label: '⏳ Ógreiddar kröfur í Payday', formula: 'Σ samtals: reikningar í Payday (dk_invoice_id) sem spegillinn telur ekki drög, ógreiddir, ekki kredit — Kröfuyfirlit Slökkvitækja' },
+    'CG-S02': { label: '📤 Ósendar kröfur', formula: 'Σ samtals: reikningar án krafa_sent_at, invoiced_at og dk_invoice_id, ógreiddir, ekki kredit — Kröfuyfirlit Slökkvitækja' },
+    'CG-S03': { label: '📝 Drög í Payday — ósend', formula: 'Σ samtals: reikningar í Payday sem spegillinn telur DRAFT — Kröfuyfirlit Slökkvitækja' },
+    'CG-S04': { label: '📤 Ósendar úttektarkröfur', formula: 'Σ samtals: ósendar kröfur með source=uttekt (v_krofu_forskodun) — Kröfuyfirlit Slökkvitækja' },
+  };
+  async function cgSkra(id, value) {
+    const meta = CG_KY[id], c = window.DB && DB.sb;
+    if (!meta || !c) return;
+    const v = Math.round(Number(value) || 0);
+    let sidast = {};
+    try { sidast = JSON.parse(localStorage.getItem('cg_ky_skrad') || '{}'); } catch (_) {}
+    if (sidast[id] && sidast[id].v === v && Date.now() - sidast[id].t < 30 * 60e3) return;
+    const nuna = new Date().toISOString();
+    const patch = { label: meta.label, value: v, source_app: 'slokkvitaeki', tab: 'krofu-yfirlit', url: 'https://slokkvitaeki.netlify.app/#krofu-yfirlit', formula: meta.formula, manual: false, updated_at: nuna };
+    try {
+      const u = await c.from('cg_entries').update(patch).eq('id', id).select('id');
+      if (u.error) throw u.error;
+      if (!(u.data || []).length) {
+        const ins = await c.from('cg_entries').insert(Object.assign({ id: id, captured_at: nuna }, patch)).select('id');
+        if (ins.error) throw ins.error;
+      }
+      // Lesið aftur rétt fyrir skrif: fjögur köll keyra samhliða og hefðu annars skrifað yfir skráningu hvers annars.
+      try { const nyjast = JSON.parse(localStorage.getItem('cg_ky_skrad') || '{}'); nyjast[id] = { v: v, t: Date.now() }; localStorage.setItem('cg_ky_skrad', JSON.stringify(nyjast)); } catch (_) {}
+    } catch (e) {
+      try { if (window.logProblem) window.logProblem('cg-skra', id + ': ' + String((e && e.message) || e).slice(0, 160)); } catch (_) {}
+    }
+  }
+
   // Stækkanleg samantektarspjöld (Payday-ógreitt / Ósendar) — smellur víxlar
   // _state.expandCard og endurteiknar → listinn birtist undir.
-  function expCardHtml(key, icon, label, count, total, color, bg, border, sub) {
+  function expCardHtml(key, icon, label, count, total, color, bg, border, sub, cgId) {
     const open = _state.expandCard === key;
-    return '<button type="button" class="_ky-exp" data-exp="' + key + '" title="Smelltu til að sjá listann" style="text-align:left;cursor:pointer;background:' + bg + ';border:1px solid ' + border + ';border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px;font:inherit;box-shadow:' + (open ? 'inset 0 0 0 2px ' + color : '0 1px 3px rgba(0,0,0,.04)') + '">' +
+    return '<button type="button" class="_ky-exp" data-exp="' + key + '" title="Smelltu til að sjá listann" style="position:relative;text-align:left;cursor:pointer;background:' + bg + ';border:1px solid ' + border + ';border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px;font:inherit;box-shadow:' + (open ? 'inset 0 0 0 2px ' + color : '0 1px 3px rgba(0,0,0,.04)') + '">' +
+      (cgId ? '<span class="_ky-cg" title="' + cgId + ' — reikni-auðkenni. Talan fer sjálfkrafa í Brunahólf → Skýrslur." style="position:absolute;top:6px;right:8px;font:700 9.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.05em;color:' + color + ';opacity:.65;border:1px solid ' + border + ';border-radius:6px;padding:2px 4px;background:rgba(255,255,255,.7)">' + cgId + '</span>' : '') +
       '<span style="font-size:22px">' + icon + '</span>' +
       '<div style="flex:1;min-width:0">' +
         '<div style="font-size:11px;color:' + color + ';font-weight:700;text-transform:uppercase;letter-spacing:.04em">' + esc(label) + ' · ' + count + '</div>' +
@@ -1183,9 +1224,9 @@
         </div>
 
         <div class="ky-exprow">
-          ${expCardHtml('payday', '⏳', 'Ógreiddar í Payday', paydayUnpaid.length, paydayUnpaidTotal, '#b45309', '#fff7ed', '#fed7aa', 'Allir mánuðir — ekki hluti af Heildarkröfum')}
-          ${paydayDrog.length ? expCardHtml('drog', '📝', 'Drög í Payday — ósend', paydayDrog.length, paydayDrogTotal, '#7c3aed', '#f5f3ff', '#ddd6fe', 'Aðeins drög — sendu þau úr Payday') : ''}
-          ${expCardHtml('osendar', '📤', 'Ósendar kröfur', osendarRows.length, osendarTotal, '#1d4ed8', '#eff6ff', '#bfdbfe', 'Allir mánuðir — ekki hluti af Heildarkröfum')}
+          ${expCardHtml('payday', '⏳', 'Ógreiddar í Payday', paydayUnpaid.length, paydayUnpaidTotal, '#b45309', '#fff7ed', '#fed7aa', 'Allir mánuðir — ekki hluti af Heildarkröfum', 'CG-S01')}
+          ${paydayDrog.length ? expCardHtml('drog', '📝', 'Drög í Payday — ósend', paydayDrog.length, paydayDrogTotal, '#7c3aed', '#f5f3ff', '#ddd6fe', 'Aðeins drög — sendu þau úr Payday', 'CG-S03') : ''}
+          ${expCardHtml('osendar', '📤', 'Ósendar kröfur', osendarRows.length, osendarTotal, '#1d4ed8', '#eff6ff', '#bfdbfe', 'Allir mánuðir — ekki hluti af Heildarkröfum' + (_state.forskodun ? ' · þar af úttektir ' + fmtKr(osendarRows.filter(s => (_state.forskodun.get(String(s.id)) || {}).source === 'uttekt').reduce((a, s) => a + (parseFloat(s.samtals) || 0), 0)) + ' (CG-S04)' : ''), 'CG-S02')}
         </div>
         ${_state.expandCard === 'payday' ? expDetailHtml('payday', '⏳ Ógreiddar kröfur í Payday', paydayUnpaid, paydayUnpaidTotal, '#b45309')
           : _state.expandCard === 'drog' ? expDetailHtml('drog', '📝 Drög í Payday — ósend (aldrei farin til kúnna; sendu úr Payday)', paydayDrog, paydayDrogTotal, '#7c3aed')
