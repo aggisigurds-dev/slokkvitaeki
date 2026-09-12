@@ -215,19 +215,28 @@
   async function syncSharedToLocal() {
     if (!window.SUPABASE_URL || !window.SUPABASE_KEY) return;
     try {
-      // PostgREST defaults to 1000 rows, plenty for any realistic cache size.
-      const r = await fetch(window.SUPABASE_URL + '/rest/v1/geocode_cache?select=query,lat,lng,display_name', {
-        headers: {
-          apikey: window.SUPABASE_KEY,
-          Authorization: 'Bearer ' + window.SUPABASE_KEY
+      // 2026-09-12: PostgREST skilar mest 1.000 röðum í einu og geocode_cache er 1.566 raðir. Án síðuflettingar
+      // náðu 566 hnit, sem aðrar vélar höfðu þegar fundið, aldrei inn í vafrann (t.d. Helluhraun 22 og
+      // Hrísmýri 8 á aksturslistum) — staðirnir stóðu „án hnita" í Leiðsögn og voru geocode-aðir upp á nýtt.
+      const rows = [];
+      for (let from = 0; from < 50000; from += 1000) {
+        const r = await fetch(window.SUPABASE_URL + '/rest/v1/geocode_cache?select=query,lat,lng,display_name&order=query&offset=' + from + '&limit=1000', {
+          headers: {
+            apikey: window.SUPABASE_KEY,
+            Authorization: 'Bearer ' + window.SUPABASE_KEY
+          }
+        });
+        if (!r.ok) {
+          console.warn('[geocode-prewarm] shared->local sync HTTP', r.status, 'offset', from);
+          if (!rows.length) return;
+          break;
         }
-      });
-      if (!r.ok) {
-        console.warn('[geocode-prewarm] shared->local sync HTTP', r.status);
-        return;
+        const page = await r.json();
+        if (!Array.isArray(page) || !page.length) break;
+        for (const row of page) rows.push(row);
+        if (page.length < 1000) break;
       }
-      const rows = await r.json();
-      if (!Array.isArray(rows) || !rows.length) return;
+      if (!rows.length) return;
       const gc = readGc();
       let added = 0;
       let updated = 0;
