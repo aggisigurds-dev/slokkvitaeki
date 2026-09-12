@@ -47,6 +47,9 @@ const DAEMI = [
   ['\nKt: 570585-0379\n\n[Sótt 2026-08-24]\nAfsláttur úr sölu: −8091 kr\nGreiðsla: reikningur', ''],
   ['Sótt ✓ (leiðrétt 31.07 — var ranglega merkt „Drög — bíður"). Payday #6 PAID.', ''],
   ['Beiðni nr: 9847265', 'Beiðni nr: 9847265'],
+  // Netvörður 12.09.: án þessara tveggja hélst vörðurinn grænn þótt [Sótt]- eða dags-klippingin væri tekin út.
+  ['\n\n[Sótt 2026-05-29]\nAthugasemd: greitt við komu\nGreiðsla: kort', ''],
+  ['[2026-06-24 10:13] greitt með peningi', ''],
   ['Verk: skipt um slöngu\nAfhent á staðnum', 'Verk: skipt um slöngu\nAfhent á staðnum'],
   [null, ''],
 ];

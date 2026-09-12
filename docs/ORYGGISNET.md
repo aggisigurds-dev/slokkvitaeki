@@ -147,6 +147,17 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑12** — **Payday-krafan ber ekki lengur innri bókhaldsmerki (`payday-push.js`, Verkefnalisti c091f2ff).**
+  `buildPayload` setti `solur.athugasemdir` óhreinsaða í `description`. Sótt-slóðin (121) skrifar
+  „Kt: … [Sótt …] Afsláttur úr sölu: … Greiðsla: reikningur" aftast í nótuna, og það prentaðist á
+  reikning kúnnans í Payday (dæmi #249 Colas 04.09.). Lifandi dry-run 12.09. sýndi það á R-000781 og
+  R-000328. `_notes = hreinsaNotu(sale.athugasemdir)`: klippt við fyrsta merki eins og 121
+  `extractSaleNote`, og „Payday #N PAID", „(leiðrétt …)" og „Sótt ✓" fjarlægð eins og PDF-reikningurinn
+  (10) gerir. Nóta slegin í KÖRFU („Beiðni nr: …") stendur á undan merkjunum og heldur sér (5 af 5).
+  Engin gátt snert (void 409, base_id 422, tvítök 409, per-line afsláttur, credit-strip, accountingCost).
+  Nýr vörður `tools/audit-payday-lysing.cjs` (GRUNNLÍNA 0): tekur fallið úr skránni milli merkjanna
+  `hreinsaNotu:byrjun/endir` og keyrir á 8 raundæmum; `--gogn` á allar sölunótur: 670 frá 01.06., 233
+  með merkjum, 0 eftir hreinsun. Netvörður: ✅ SAFE — gamli og nýi `buildPayload` bornir saman á 817 raunsölum: aðeins `description` breyttist (317), ekkert annað í payload; `hreinsaNotu` kastar ekki á neinu JSON-gildi og keyrir á undan öllum skrifum; `audit-all` 45/48 grænt, sömu 3 gömlu rauðu (osendar-krofur, solu-id R-000922, t-s-i). Vörðurinn hertur með tveimur raundæmum sem netvörður sýndi að sluppu ([Sótt]-klipping og dagsett innri lína).
 - **2026‑09‑11** — **Sótt tekur tækið af afgreiðsluborðinu (`121`, Verkefnalisti e8caa730).**
   Afhending í Sölu („Sótt ✓") uppfærði `uttaeki.status`/`last_insp`/`next_insp` en hvorki
   `custody_status` né `picked_up_at`, svo tæki stóðu áfram á afgreiðsluborðinu (179 og 210
