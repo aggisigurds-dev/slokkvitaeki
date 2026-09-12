@@ -17,6 +17,15 @@
  *     yfir flísinni), dragðu inn, eða smelltu; leiðbeiningin er í title-texta
  *   • með mynd: smellur stækkar; myndin passar í rammann og teygist ALDREI
  *
+ * ── v2 12.09.2026: SKIPTA UM MYND Í SÍMA ─────────────────────────────────────
+ * Agnar (úr símanum): „Geturðu opnað á að ég geti breytt um mynd í company
+ * profile". Í síma er hvorki músarsveima (× fjarlægja birtist aðeins við hover)
+ * né líming/dráttur, og smellur á mynd stækkaði hana bara — þar var því engin
+ * leið til að skipta um mynd. Nú ber stækkunin takkana „📷 Skipta um mynd“
+ * (vafrinn býður myndavél eða myndasafn) og „🗑 Fjarlægja“, og × sést alltaf á
+ * snertiskjá. Handvalin mynd fær `uppspretta: 'handvirkt'` svo sjálfsótt
+ * loftmynd (borgarvefsjá) sé ekki talin uppruninn.
+ *
  * ── GEYMSLA ───────────────────────────────────────────────────────────────
  * Byggingarmyndin er GÖGN, ekki útlitsval — hún á að sjást á öllum fjórum
  * vélunum. Skráin fer í Supabase-geymsluna `verkbord-files` (sama og 364 notar)
@@ -109,15 +118,20 @@
       '.co-mynd-x{position:absolute;top:4px;right:5px;width:20px;height:20px;border-radius:50%;border:0;padding:0;' +
         'background:rgba(0,0,0,.55);color:#fff;font-size:13px;line-height:20px;cursor:pointer;opacity:0;transition:opacity .15s}',
       '.co-mynd-flis:hover .co-mynd-x{opacity:1}',
+      // v2: snertiskjár á enga sveimu — × sést þá alltaf (og er stærra).
+      '@media (hover:none){.co-mynd-flis .co-mynd-x{opacity:1;width:28px;height:28px;line-height:28px;font-size:16px}}',
       '.co-mynd-x:hover{background:#dc2626}',
       // Stækkun
       '#co-mynd-ljos{position:fixed;inset:0;z-index:99999;background:rgba(8,10,14,.88);display:flex;flex-direction:column;' +
         'align-items:center;justify-content:center;gap:14px;padding:20px;box-sizing:border-box;cursor:zoom-out}',
-      '#co-mynd-ljos img{display:block;max-width:92vw;max-height:82vh;width:auto;height:auto;border-radius:8px;' +
+      '#co-mynd-ljos img{display:block;max-width:92vw;max-height:74vh;width:auto;height:auto;border-radius:8px;' +
         'box-shadow:0 20px 60px rgba(0,0,0,.6);cursor:default}',
+      '#co-mynd-ljos .co-mynd-takkar{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}',
       '#co-mynd-ljos button{font:inherit;font-size:13px;font-weight:700;padding:8px 14px;border-radius:9px;border:1px solid #475569;' +
-        'background:#1e293b;color:#f1f5f9;cursor:pointer}',
+        'background:#1e293b;color:#f1f5f9;cursor:pointer;min-height:40px}',
       '#co-mynd-ljos button:hover{background:#334155}',
+      '#co-mynd-ljos button.co-mynd-eyda{border-color:#7f1d1d;background:#3b1111;color:#fecaca}',
+      '#co-mynd-ljos button.co-mynd-eyda:hover{background:#991b1b;color:#fff}',
       // Sími/app: bannerinn staflast — flísin tekur fulla breidd.
       'html[data-viewmode="mobile"] .' + HOLF + ',body.appmode .' + HOLF + '{flex-basis:100%;margin-left:0;margin-top:10px}',
       'html[data-viewmode="mobile"] .co-mynd-flis,body.appmode .co-mynd-flis{width:100%;height:140px}',
@@ -128,20 +142,58 @@
 
   // ── Stækkun ─────────────────────────────────────────────────────────────
   function lokaLjos() { var o = document.getElementById('co-mynd-ljos'); if (o) o.remove(); }
-  function opnaLjos(url) {
+  function opnaLjos(url, coId) {
     lokaLjos();
     var o = document.createElement('div');
     o.id = 'co-mynd-ljos';
-    o.innerHTML = '<img alt="Bygging"><button type="button">✕ Loka</button>';
+    o.innerHTML = '<img alt="Bygging">' +
+      '<div class="co-mynd-takkar">' +
+        (coId
+          ? '<button type="button" data-a="skipta" title="Taka mynd eða velja úr myndasafni">📷 Skipta um mynd</button>' +
+            '<button type="button" data-a="eyda" class="co-mynd-eyda" title="Fjarlægja myndina af byggingunni">🗑 Fjarlægja</button>'
+          : '') +
+        '<button type="button" data-a="loka">✕ Loka</button>' +
+      '</div>';
     var img = o.querySelector('img');
     img.src = url;
-    o.querySelector('button').addEventListener('click', function (e) { e.stopPropagation(); lokaLjos(); });
+    Array.prototype.forEach.call(o.querySelectorAll('button[data-a]'), function (b) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var a = b.getAttribute('data-a');
+        if (a === 'loka') { lokaLjos(); return; }
+        if (a === 'skipta') { veljaMynd(coId); return; }
+        if (a === 'eyda') fjarlaegja(coId);
+      });
+    });
     // Smellur á bakgrunn lokar; smellur á myndina sjálfa gerir það ekki.
     o.addEventListener('click', function (e) { if (e.target === o) lokaLjos(); });
     img.addEventListener('click', function (e) { e.stopPropagation(); });
     document.body.appendChild(o);
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') lokaLjos(); });
+
+  // v2: velja nýja mynd — í síma býður vafrinn upp á myndavél eða myndasafn.
+  function veljaMynd(coId) {
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.addEventListener('change', function () {
+      var f = inp.files && inp.files[0];
+      if (!f) return;
+      lokaLjos();
+      var flis = document.querySelector('.' + HOLF + ' .co-mynd-flis');
+      if (flis) hladaUpp(coId, f, flis);
+    });
+    inp.click();
+  }
+  async function fjarlaegja(coId) {
+    if (!confirm('Fjarlægja myndina af byggingunni?\n(Skráin sjálf helst í geymslunni.)')) return;
+    lokaLjos();
+    try { await skrifaMynd(coId, null); endurteikna(true); }
+    catch (err) {
+      var flis = document.querySelector('.' + HOLF + ' .co-mynd-flis');
+      if (flis) villaA(flis, 'Mistókst — ' + ((err && err.message) || ''));
+    }
+  }
 
   // ── Minnka mynd fyrir upphleðslu ────────────────────────────────────────
   function minnka(skra) {
@@ -179,7 +231,7 @@
       var pub = s.storage.from(BUCKET).getPublicUrl(slod);
       var url = pub && pub.data && pub.data.publicUrl;
       if (!url) throw new Error('fékk enga slóð á myndina');
-      await skrifaMynd(coId, { url: url, slod: BUCKET + '/' + slod, ts: new Date().toISOString() });
+      await skrifaMynd(coId, { url: url, slod: BUCKET + '/' + slod, ts: new Date().toISOString(), uppspretta: 'handvirkt' });
       endurteikna(true);
     } catch (err) {
       console.warn(TAG, err);
@@ -200,31 +252,24 @@
     flis.tabIndex = 0;
     var m = lesaMynd(coId);
     if (m && m.url) {
-      flis.title = 'Mynd af byggingunni — smelltu til að stækka · límdu nýja yfir til að skipta';
+      flis.title = 'Mynd af byggingunni — smelltu til að stækka, skipta um eða fjarlægja · límdu nýja yfir til að skipta';
       flis.innerHTML = '<div class="co-mynd-vefja"><img alt="Bygging"></div>' +
         '<button type="button" class="co-mynd-x" title="Fjarlægja myndina">×</button>';
       flis.querySelector('img').src = m.url;
       flis.addEventListener('click', function (e) {
         if (e.target.closest('.co-mynd-x')) return;
-        opnaLjos(m.url);
+        opnaLjos(m.url, coId);
       });
-      flis.querySelector('.co-mynd-x').addEventListener('click', async function (e) {
+      flis.querySelector('.co-mynd-x').addEventListener('click', function (e) {
         e.stopPropagation();
-        if (!confirm('Fjarlægja myndina af byggingunni?\n(Skráin sjálf helst í geymslunni.)')) return;
-        try { await skrifaMynd(coId, null); endurteikna(true); }
-        catch (err) { villaA(flis, 'Mistókst — ' + ((err && err.message) || '')); }
+        fjarlaegja(coId);
       });
     } else {
       flis.title = 'Límdu mynd af byggingunni (Ctrl+V með músina hér), dragðu hana inn, eða smelltu';
       // Agnar: „og ekki hafa neinn texta þarna með að líma mynd“. Tóm flís er
       // AÐEINS daufi ramminn; leiðbeiningin lifir í title (sést við hover).
       flis.innerHTML = '';
-      flis.addEventListener('click', function () {
-        var inp = document.createElement('input');
-        inp.type = 'file'; inp.accept = 'image/*';
-        inp.addEventListener('change', function () { if (inp.files && inp.files[0]) hladaUpp(coId, inp.files[0], flis); });
-        inp.click();
-      });
+      flis.addEventListener('click', function () { veljaMynd(coId); });
     }
     // Draga inn — virkar líka yfir mynd sem er fyrir (skiptir um).
     flis.addEventListener('dragover', function (e) { e.preventDefault(); flis.classList.add('drag'); });
@@ -278,6 +323,6 @@
   document.addEventListener('DOMContentLoaded', function () { endurteikna(false); });
   endurteikna(false);
 
-  window.ByggingMynd = { endurteikna: endurteikna, lesaMynd: lesaMynd };
-  console.log(TAG, 'virkt — mynd af byggingunni í bannernum');
+  window.ByggingMynd = { endurteikna: endurteikna, lesaMynd: lesaMynd, opnaLjos: opnaLjos };
+  console.log(TAG, 'virkt v2 — mynd af byggingunni í bannernum (skipta/fjarlægja úr stækkun)');
 })();
