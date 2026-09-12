@@ -62,6 +62,11 @@
  *   Svarið skrifar merkið svar:samthykkt|vinnsla|hafnad í stað samthykki, stöðuna tilbuid|i_vinnslu|lokad og línu aftast í
  *   lýsingu — lesið ferskt, skilyrt á updated_at, lesið til baka, „Afturkalla" í 7 s. Samþykkt mál og mál í vinnslu bíða
  *   Claude og halda sér efst á borðinu í öllum hömum („Samþykkt · bíður Claude"); Claude lokar þeim þegar verkinu lýkur.
+ *   SKÝRING (368w · Agnar 12.09.2026: „bæta við einum viðbótar takka … að ég geti sett inn einhverja skýringu á málinu
+ *   og látið þig síðan fara aftur yfir það og endurmeta"): „💬 Skýring" við hlið svartakkanna opnar ritil í Völdu máli.
+ *   „Senda til Claude" skrifar svar:endurmeta (staða i_vinnslu) og skýringuna aftast í lýsingu — sömu skilyrtu skrif og
+ *   hin svörin, lesið til baka, „Afturkalla" setur textann aftur í ritilinn. Claude les skýringuna, endurmetur tillöguna
+ *   og setur samthykki aftur á málið, svo takkarnir birtast á ný. Óvistuð drög lifa í minni og localStorage þar til send.
  *
  * SKRIF — beint á thjonustubeidni, lesið til baka með .select():
  *   Taka    assigned_to = ég, AÐEINS ef málið er enn laust (skilyrt) — tveir fá ekki sama málið.
@@ -187,6 +192,7 @@
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
     skDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
+    samtSkyOpid: {}, samtSkyDrog: {},   // 368w: opinn skýringarritill á samþykkismáli + óvistuð drög
     falidBid: {},      // Fela-skrif sem bíða eða kláruðust nýlega: { lykill: { falid, row, tok, lokid } }
     skyrBid: {},       // Skýringar-skrif sem bíða eða kláruðust nýlega: { lykill: { skyring, af, at, rod, tok, lokid } }
     skyrOpid: null,    // opinn skýringarritill (einn í einu): { l, e, d, texti, upphaf, vistar, villa }
@@ -392,10 +398,12 @@
   const SVOR = {
     samthykkt: { status: 'tilbuid', l: 'Samþykkt', merki: 'Samþykkt · bíður Claude' },
     vinnsla: { status: 'i_vinnslu', l: 'Sett í vinnslu', merki: 'Í vinnslu hjá Claude' },
-    hafnad: { status: 'lokad', l: 'Hafnað', merki: 'Hafnað' }
+    hafnad: { status: 'lokad', l: 'Hafnað', merki: 'Hafnað' },
+    // 368w: skýring til endurmats — bíður Claude eins og samþykkt mál og mál í vinnslu.
+    endurmeta: { status: 'i_vinnslu', l: 'Skýring send til Claude', merki: 'Skýring · Claude endurmetur' }
   };
   const svarMals = r => { const t = (Array.isArray(r.tags) ? r.tags : []).find(x => typeof x === 'string' && x.indexOf('svar:') === 0); return t && SVOR[t.slice(5)] ? t.slice(5) : null; };
-  const svarBidur = r => { const s = svarMals(r); return (s === 'samthykkt' || s === 'vinnsla') && r.status !== 'lokad'; };
+  const svarBidur = r => { const s = svarMals(r); return (s === 'samthykkt' || s === 'vinnsla' || s === 'endurmeta') && r.status !== 'lokad'; };
   const samtMerki = r => erSamthykki(r) ? '<span class="tag samt">Bíður samþykkis</span>'
     : svarBidur(r) ? '<span class="tag ok">' + SVOR[svarMals(r)].merki + '</span>' : '';
   const samtRod = r => (erSamthykki(r) ? 2 : svarBidur(r) ? 1 : 0);
@@ -508,7 +516,7 @@
   });
   // Svar við máli sem bíður samþykkis (368v). Lesið ferskt, skrifað skilyrt á updated_at (sama og hama-tenging) og lesið
   // til baka; „Afturkalla" skrifar fyrri merki, stöðu og lýsingu aftur, skilyrt á svarið.
-  function svaraSamthykki(id, svar) {
+  function svaraSamthykki(id, svar, skyring) {
     const s = SVOR[svar], c = sb();
     if (!s || !id) return;
     if (!c) { toast('Engin tenging við gagnagrunn', true); return; }
@@ -521,7 +529,8 @@
       if (!erSamthykki(r)) { toast('Málinu hefur þegar verið svarað — sýni nýjustu stöðu.', true); return; }
       const nuna = new Date();
       const tags = r.tags.filter(t => t !== SAMTHYKKI && !(typeof t === 'string' && t.indexOf('svar:') === 0)).concat(['svar:' + svar]);
-      const lina = '— ' + s.l + ': ' + n + ' · ' + String(nuna.getDate()).padStart(2, '0') + '.' + String(nuna.getMonth() + 1).padStart(2, '0') + '. kl. ' + klukka(nuna);
+      const stimpill = n + ' · ' + String(nuna.getDate()).padStart(2, '0') + '.' + String(nuna.getMonth() + 1).padStart(2, '0') + '. kl. ' + klukka(nuna);
+      const lina = skyring ? '— Skýring til endurmats: ' + stimpill + '\n' + skyring : '— ' + s.l + ': ' + stimpill;
       const notes = (r.notes ? String(r.notes).replace(/\s+$/, '') + '\n\n' : '') + lina;
       let q = c.from('thjonustubeidni').update({ tags, status: s.status, notes, updated_at: nuna.toISOString() }).eq('id', id);
       q = r.updated_at ? q.eq('updated_at', r.updated_at) : q.is('updated_at', null);
@@ -531,12 +540,14 @@
       if (!row) { toast('Málið breyttist á annarri vél rétt í þessu — sýni nýjustu stöðu.', true); return; }
       if (row.status !== s.status || !(row.tags || []).includes('svar:' + svar)) throw new Error('las til baka „' + row.status + '“');
       const adur = { tags: r.tags, status: r.status, notes: r.notes };
+      if (skyring) { delete S.samtSkyDrog[id]; S.samtSkyOpid[id] = false; skyDrogVista(id, null); }
       toast(s.l + ' — ' + (r.title || 'málið'), false, () => act(id, async () => {
         const b = await c.from('thjonustubeidni').update(Object.assign({}, adur, { updated_at: new Date().toISOString() }))
           .eq('id', id).eq('updated_at', row.updated_at).select('id,tags');
         if (b.error) throw b.error;
         if (!(b.data || []).length) { toast('Málið breyttist á annarri vél — svarið var ekki afturkallað.', true); return; }
         toast('Svarið afturkallað');
+        if (skyring) { S.samtSkyDrog[id] = skyring; S.samtSkyOpid[id] = true; skyDrogVista(id, skyring); render(); }
       }));
     });
   }
@@ -1127,8 +1138,29 @@
     const k = (v, cls, texti, titill) => '<button type="button" class="btn ' + cls + staerd + '" data-t5="samt-svar" data-v="' + v + '" data-id="' + r.id + '"' + dis(r.id) + ' title="' + titill + '">' + texti + '</button>';
     return k('samthykkt', 'gold', '✓ Samþykkja', 'Samþykkja tillöguna — Claude vinnur málið; lokasending er alltaf þín') +
       k('vinnsla', 'iv', '▶ Í vinnslu', 'Setja málið í vinnslu hjá Claude') +
-      k('hafnad', 'iv', '✕ Hafna', 'Hafna — málinu er lokað og ekkert gert');
+      k('hafnad', 'iv', '✕ Hafna', 'Hafna — málinu er lokað og ekkert gert') +
+      '<button type="button" class="btn iv' + staerd + '" data-t5="samt-sky" data-id="' + r.id + '"' + dis(r.id) + ' title="Skrifa skýringu — Claude fer aftur yfir málið og endurmetur tillöguna">💬 Skýring</button>';
   };
+  // 368w: óvistuð drög skýringar — val eins vafra, því má localStorage geyma þau þar til þau eru send.
+  const SKY_LYKILL = 'bord_samt_skyring_drog';
+  function skyDrogVista(id, texti) {
+    try {
+      const o = JSON.parse(localStorage.getItem(SKY_LYKILL) || '{}');
+      if (texti) o[id] = texti; else delete o[id];
+      localStorage.setItem(SKY_LYKILL, JSON.stringify(o));
+    } catch (_) {}
+  }
+  function skyDrogLesa(id) {
+    try { return JSON.parse(localStorage.getItem(SKY_LYKILL) || '{}')[id] || ''; } catch (_) { return ''; }
+  }
+  function skyRitillHtml(r) {
+    if (!S.samtSkyOpid[r.id]) return '';
+    if (S.samtSkyDrog[r.id] == null) S.samtSkyDrog[r.id] = skyDrogLesa(r.id);
+    return '<div class="bm samt-sky"><label><span class="slabel">Skýring til Claude — hvað vantar, hvað er rangt eða hvað viltu frekar?</span>' +
+      '<textarea data-samtsky="1" data-id="' + r.id + '" rows="4" placeholder="Claude les skýringuna, fer aftur yfir málið og setur endurmetna tillögu á borðið.">' + esc(S.samtSkyDrog[r.id] || '') + '</textarea></label>' +
+      '<div class="sacts"><button type="button" class="btn gold" data-t5="samt-sky-senda" data-id="' + r.id + '"' + dis(r.id) + '>Senda til Claude</button>' +
+      '<button type="button" class="btn iv" data-t5="samt-sky" data-id="' + r.id + '">Hætta við</button></div></div>';
+  }
   function mineRow(r, valid) {
     const a = ageDays(r), w = fyrLink(r), ai = aiLine(r);
     return '<div class="mrow" aria-current="' + valid + '">' +
@@ -1217,7 +1249,7 @@
       '<div class="smeta">' + esc(meta) + '</div>' +
       (r.summary ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(String(r.summary).slice(0, 600)) + '</div>' : '') +
       sagaHtml(r) + skjolHtml(r) + well +
-      '<div class="sacts">' + (minn && erSamthykki(r) ? samtTakkar(r, ' lg') + fyr : taka + svara + lokid + skila + fyr) + '</div>' +
+      '<div class="sacts">' + (minn && erSamthykki(r) ? samtTakkar(r, ' lg') + fyr : taka + svara + lokid + skila + fyr) + '</div>' + (minn && erSamthykki(r) ? skyRitillHtml(r) : '') +
       '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + (jm => jm ? b('iv', 'vd-opna', '🗓 ' + fmtD(jm.date) + (jm._n !== nu() ? ' · ' + jm._n : '')) : b('iv', 'vd-add', '🗓 Á dagskrá'))(jobOfMal(r.id)) +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
           ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + hamirHtml(r) + breytaHtml(r);
@@ -2662,7 +2694,7 @@
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði eða í skýringu truflast ef teiknað er undir — bíða.
     // Skráarval opið: teikning myndi skipta út <input type="file"> og skrárnar tapast.
-    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.skyr))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
+    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.skyr || ae.dataset.samtsky))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     const n = nu(), c = cfg(), mode = M(c.mode) || MODES.thjonusta;
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // Hvaða opið mál sem er má skoða — ekki aðeins þau á mínu borði. 0 = lokað viljandi (✕).
@@ -3078,6 +3110,18 @@
       case 'done': done(id); return;
       case 'giveback': giveBack(id); return;
       case 'samt-svar': svaraSamthykki(id, el.dataset.v); return;
+      case 'samt-sky':
+        S.samtSkyOpid[id] = !S.samtSkyOpid[id];
+        if (S.samtSkyOpid[id]) { S.sel[nu()] = id; if (!c.baraMitt) S.view = 'mitt'; }
+        render();
+        if (S.samtSkyOpid[id]) setTimeout(() => { try { const t = rot().querySelector('textarea[data-samtsky][data-id="' + id + '"]'); if (t) t.focus(); } catch (_) {} }, 60);
+        return;
+      case 'samt-sky-senda': {
+        const txt = String(S.samtSkyDrog[id] || '').trim();
+        if (!txt) { toast('Skrifaðu skýringuna fyrst — svo fer málið til Claude', true); return; }
+        svaraSamthykki(id, 'endurmeta', txt);
+        return;
+      }
       case 'reply': reply(id); return;
       case 'company': openCompany(el.dataset.fid); return;
       case 'filter': S.filter = el.dataset.f; S.synd = PAGE; S.leit.opid = false; if (!c.baraMitt) S.view = 'master'; render(); return;
@@ -3409,6 +3453,7 @@
     else if (el && el.dataset && el.dataset.sk) skrifaSk(el);
     else if (el && el.dataset && el.dataset.bm) bmSkra(el);
     else if (el && el.dataset && el.dataset.skyr && S.skyrOpid) S.skyrOpid.texti = el.value;
+    else if (el && el.dataset && el.dataset.samtsky) { const sid = Number(el.dataset.id); if (sid) { S.samtSkyDrog[sid] = el.value; skyDrogVista(sid, el.value); } }
   }
   function onKey(e) {
     const v = document.getElementById(VIEW_ID), root = v && v.shadowRoot;
