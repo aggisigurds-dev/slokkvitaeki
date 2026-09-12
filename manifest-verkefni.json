@@ -1,8 +1,8 @@
 {
   "id": "/app/verkefni/",
-  "name": "Verkefnalisti — Slökkvitæki",
-  "short_name": "Verkefni",
-  "description": "Verkborð — beiðnir, verkefni og eftirfylgni á einum stað.",
+  "name": "Þjónustuborð — Slökkvitæki",
+  "short_name": "Þjónustuborð",
+  "description": "Þjónustuborð — Master borð, mitt borð og eftirfylgni. Opnast beint á borðinu.",
   "start_url": "/app/verkefni/",
   "scope": "/app/verkefni/",
   "display": "standalone",

@@ -107,7 +107,10 @@
       manifest: '/manifest-fjarmal.json', home: 'krofu-yfirlit',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
       defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'thjonustu-verkstaedi', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-efniskostnadur', 'br-vinnubok', 'br-krofur'] },
-    { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
+    // Agnar 12.09.2026: „setja þjónustuborð síðuna á skjáinn í símanum" — appið
+    // opnast hvort eð er á #bord, svo það heitir nú Þjónustuborð (lykill, id og
+    // slóð /app/verkefni/ óbreytt, svo uppsett eintök haldast sama appið).
+    { key: 'verkefni', emoji: '📋', name: 'Þjónustuborð', color: '#3b82f6', dark: '#1d4ed8',
       manifest: '/manifest-verkefni.json', home: 'bord',
       blurb: 'Þjónustuborð — Master borð, mitt borð og eftirfylgni',
       defaults: ['bord', 'verkbord', 'arsskodun', 'reikninga-postur'] },
