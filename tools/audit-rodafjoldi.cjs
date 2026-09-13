@@ -50,7 +50,11 @@ const VIDVORUN = Math.round(GRENS * 0.9);
 // Töflur UNDIR þakinu sem eiga ópagaðar fyrirspurnir í kóðanum (mælt 10.09.2026).
 // Fari tafla yfir: færðu hana í BIG í tools/audit-pagination.cjs og lagaðu það sem
 // hann flaggar (DB.fetchAll). Taktu hana þá út héðan.
-const VAKTA = ['thjonustubeidni', 'solur', 'arsskodun_report_facts', 'verkbeidnir'];
+// 13.09.2026: thjonustubeidni fór yfir (1026 raðir, 821 óeyddar) — þessi vörður varð
+// rauður eins og til var ætlast. Hún er nú í BIG og audit-pagination flaggar ekkert:
+// allar 25 `.from('thjonustubeidni')` í js/ eru skrif, afmarkaðar (id / customer_base_id /
+// .in) eða í fetchAll, og ai-context.js blaðsíðuflettir (allar). Því tekin út héðan.
+const VAKTA = ['solur', 'arsskodun_report_facts', 'verkbeidnir'];
 
 // ALLOW-færslur í tools/audit-pagination.cjs sem hvíla á tölu sem VEX. `slod` er
 // nákvæmlega sú afmörkun sem undanþágan lofar að haldist undir þakinu.

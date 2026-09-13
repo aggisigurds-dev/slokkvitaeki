@@ -26,8 +26,9 @@ const fs = require('fs'), path = require('path');
 
 // Töflur sem eru YFIR 1000 raðir í dag — fyrirspurn án .range() á þær tapar
 // gögnum núna. Mælt 10.09.2026: fyrirtaeki 1460 (1311 óeydd) · customers_base 1142.
+// 13.09.2026: thjonustubeidni fór yfir þakið — 1026 raðir (821 óeyddar); audit-rodafjoldi varð rauður.
 const BIG = ['email_digest', 'ajour_registrations', 'uttaeki', 'timavera_entries',
-             'customer_documents', 'geocode_cache', 'fyrirtaeki', 'customers_base'];
+             'customer_documents', 'geocode_cache', 'fyrirtaeki', 'customers_base', 'thjonustubeidni'];
 
 /* NÆSTU Í RÖÐINNI — mælt 10.09.2026, ALLAR UNDIR ÞAKINU ENN:
  *     thjonustubeidni          854   (146 raðir eftir)
