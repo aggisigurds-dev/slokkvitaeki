@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stjórnborð — frumgerð</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@11/dist/gridstack.min.css">
+<style>
+  :root{
+    --bg:#0e0f13; --panel:#171922; --panel2:#1e2130; --border:#2a2f40;
+    --text:#e7e9f0; --sub:#8b90a3; --gold:#d9b45b; --red:#d64545; --green:#4bbf73;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:"Space Grotesk",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
+  .topbar{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,#14161f,#101219);position:sticky;top:0;z-index:50}
+  .brand{display:flex;align-items:baseline;gap:9px;font-weight:600;font-size:17px;letter-spacing:.2px}
+  .brand .dot{color:var(--gold)}
+  .badge{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;
+    color:#111;background:var(--gold);border-radius:999px;padding:2px 9px}
+  .spacer{flex:1}
+  .tbtn{all:unset;cursor:pointer;font-size:13px;font-weight:600;padding:8px 13px;border-radius:9px;
+    border:1px solid var(--border);background:var(--panel2);color:var(--text)}
+  .tbtn:hover{border-color:var(--gold);color:var(--gold)}
+  .tbtn.primary{background:var(--gold);color:#141414;border-color:var(--gold)}
+  .tbtn.primary:hover{filter:brightness(1.08)}
+  .hint{font-size:12px;color:var(--sub)}
+  .grid-stack{background:transparent;min-height:calc(100vh - 56px)}
+  .grid-stack-item-content{inset:0;overflow:visible!important;background:transparent!important;border:0!important}
+  .tile{display:flex;flex-direction:column;height:100%;background:var(--panel);
+    border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .tile-head{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);
+    background:var(--panel2);flex:none}
+  .drag{cursor:move;color:var(--sub);font-size:15px;line-height:1;user-select:none;padding:0 2px}
+  .drag:hover{color:var(--gold)}
+  .tile-title{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile-actions{display:flex;gap:2px}
+  .ic{all:unset;cursor:pointer;width:24px;height:24px;display:grid;place-items:center;border-radius:7px;
+    color:var(--sub);font-size:13px}
+  .ic:hover{background:#00000040;color:var(--text)}
+  .tile-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px;gap:6px;overflow:auto}
+  .tile-embed .tile-body{padding:0}
+  .big-link,.big-btn{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+    text-align:center;font-size:15px;font-weight:600;flex:1;border-radius:10px;border:1px dashed var(--border);
+    color:var(--text)}
+  .big-link:hover,.big-btn:hover{border-color:var(--gold);color:var(--gold);border-style:solid}
+  .big-btn{background:var(--panel2)}
+  .arw{color:var(--gold)}
+  .sub{font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+  .data-val{font-size:34px;font-weight:700;color:var(--gold);line-height:1.05;margin-top:auto}
+  .data-label{font-size:13px;color:var(--text)}
+  .data-body{margin-top:auto;margin-bottom:auto}
+  iframe{flex:1;width:100%;border:0;background:#fff}
+  .embed-bar{display:flex;align-items:center;gap:6px;padding:5px 8px;font-size:11px;color:var(--sub);
+    background:var(--panel2);border-bottom:1px solid var(--border)}
+  .embed-bar span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .embed-bar a{color:var(--gold);text-decoration:none;font-size:13px}
+  .note{flex:1;outline:none;font-size:13px;line-height:1.5;color:var(--text)}
+  .note:empty:before{content:"Skrifaðu…";color:var(--sub)}
+  /* modal */
+  .ovl{position:fixed;inset:0;background:#000000aa;display:none;align-items:flex-start;justify-content:center;
+    padding:60px 16px;z-index:100;overflow:auto}
+  .ovl.open{display:flex}
+  .modal{width:min(720px,96vw);background:var(--panel);border:1px solid var(--border);border-radius:16px;
+    padding:18px 20px}
+  .modal h2{margin:0 0 4px;font-size:18px;font-weight:600}
+  .modal p{margin:0 0 14px;font-size:13px;color:var(--sub)}
+  .gal-group{margin:14px 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold)}
+  .gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .gal-item{all:unset;cursor:pointer;border:1px solid var(--border);border-radius:10px;padding:10px 12px;
+    background:var(--panel2)}
+  .gal-item:hover{border-color:var(--gold)}
+  .gal-item b{display:block;font-size:13px;font-weight:600}
+  .gal-item small{color:var(--sub);font-size:11px}
+  .fld{display:block;margin:10px 0}
+  .fld label{display:block;font-size:12px;color:var(--sub);margin-bottom:4px}
+  .fld input{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--border);
+    background:var(--bg);color:var(--text);font:inherit;font-size:13px}
+  .fld input:focus{outline:none;border-color:var(--gold)}
+  .modal-ft{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);
+    border:1px solid var(--gold);color:var(--text);padding:10px 16px;border-radius:10px;font-size:13px;
+    z-index:200;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+  .err-banner{display:none;padding:10px 16px;background:#3a1c1c;color:#f3c0c0;font-size:13px}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot">◧</span> Stjórnborð <span class="badge">frumgerð</span></div>
+    <span class="hint">Dragðu reiti með ⠿ · breyttu stærð í neðra horni · útlit vistast sjálfkrafa (þessi vafri)</span>
+    <span class="spacer"></span>
+    <button class="tbtn primary" id="btn-add">+ Reitur</button>
+    <button class="tbtn" id="btn-reset">Núllstilla</button>
+  </div>
+  <div class="err-banner" id="errb"></div>
+  <div class="grid-stack"></div>
+
+  <!-- Gallery -->
+  <div class="ovl" id="ovl-gal">
+    <div class="modal">
+      <h2>Bæta við reit</h2>
+      <p>Veldu tilbúinn reit. Þú getur breytt honum eftir á (✎) og fært/stækkað hann.</p>
+      <div id="gal-body"></div>
+      <div class="modal-ft"><button class="tbtn" data-close>Loka</button></div>
+    </div>
+  </div>
+
+  <!-- Edit -->
+  <div class="ovl" id="ovl-edit">
+    <div class="modal">
+      <h2>Breyta reit</h2>
+      <p id="edit-type"></p>
+      <div id="edit-fields"></div>
+      <div class="modal-ft">
+        <button class="tbtn" data-close>Hætta við</button>
+        <button class="tbtn primary" id="edit-save">Vista</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gridstack@11/dist/gridstack-all.js"></script>
+<script>
+(function(){
+  "use strict";
+  var SB_URL='https://osfdzskyvisifcwyjkuk.supabase.co';
+  var SB_KEY='sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+  var LS_KEY='stjornbord_proto_v1';
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function $(s,r){return (r||document).querySelector(s);}
+  function uid(){return 't'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);}
+
+  if(typeof GridStack==='undefined'){
+    var eb=$('#errb'); eb.style.display='block';
+    eb.textContent='Náði ekki að hlaða Gridstack (nettenging?). Opnaðu síðuna aftur með nettengingu.';
+    return;
+  }
+
+  var DEF={link:{w:3,h:2},button:{w:2,h:2},embed:{w:6,h:6},data:{w:2,h:3},note:{w:3,h:3}};
+
+  var GALLERY=[
+    {group:'Lifandi gögn (úr Supabase)',items:[
+      {type:'data',title:'Fyrirtæki',label:'í kerfinu',source:'count',table:'fyrirtaeki'},
+      {type:'data',title:'Viðskiptavinir',label:'customers_base',source:'count',table:'customers_base'},
+      {type:'data',title:'Teya færslur',label:'fjöldi alls',source:'count',table:'teya_faerslur'},
+      {type:'data',title:'Teya kortatekjur',label:'þennan mánuð',source:'teya_month'},
+      {type:'data',title:'Opin verk',label:'Verkefnalisti',source:'tasks'}
+    ]},
+    {group:'Tenglar',items:[
+      {type:'link',title:'Slökkvitæki',label:'Opna appið',url:'https://slokkvitaeki.netlify.app'},
+      {type:'link',title:'Brunahólf hub',label:'Stjórnstöð',url:'https://brunaholf.netlify.app'},
+      {type:'link',title:'Drög-stöð',label:'Reikningar',url:'https://brunaholf.netlify.app/#drogstod'},
+      {type:'link',title:'n8n',label:'Sjálfvirkni',url:'https://brunaholf.app.n8n.cloud'},
+      {type:'link',title:'Supabase',label:'Gagnagrunnur',url:'https://supabase.com/dashboard/project/osfdzskyvisifcwyjkuk'},
+      {type:'link',title:'Gmail',label:'Póstur',url:'https://mail.google.com'}
+    ]},
+    {group:'Innfelldar síður (iframe)',items:[
+      {type:'embed',title:'Slökkvitæki (innfellt)',url:'https://slokkvitaeki.netlify.app'},
+      {type:'embed',title:'Brunahólf hub (innfellt)',url:'https://brunaholf.netlify.app'}
+    ]},
+    {group:'Sjálfvirkni-hnappar (stubbar — tengjast n8n)',items:[
+      {type:'button',title:'Teya innflutningur',label:'Keyra'},
+      {type:'button',title:'Sækja pósta á borð',label:'Keyra'},
+      {type:'button',title:'Payday ↻',label:'Keyra'}
+    ]},
+    {group:'Annað',items:[
+      {type:'note',title:'Minnismiði',text:''}
+    ]}
+  ];
+
+  var FIELDS={
+    link:[['title','Titill'],['label','Hnappa-texti'],['url','Slóð (URL)']],
+    button:[['title','Titill'],['label','Hnappa-texti'],['webhook','n8n webhook (valfrjálst)']],
+    embed:[['title','Titill'],['url','Slóð (URL)']],
+    data:[['title','Titill'],['label','Merki']],
+    note:[['title','Titill']]
+  };
+
+  function defaults(){return [
+    {type:'data',title:'Fyrirtæki',label:'í kerfinu',source:'count',table:'fyrirtaeki',x:0,y:0,w:2,h:3},
+    {type:'data',title:'Viðskiptavinir',label:'customers_base',source:'count',table:'customers_base',x:2,y:0,w:2,h:3},
+    {type:'data',title:'Teya kortatekjur',label:'þennan mánuð',source:'teya_month',x:4,y:0,w:3,h:3},
+    {type:'data',title:'Opin verk',label:'Verkefnalisti',source:'tasks',x:7,y:0,w:2,h:3},
+    {type:'link',title:'Slökkvitæki',label:'Opna appið',url:'https://slokkvitaeki.netlify.app',x:9,y:0,w:3,h:2},
+    {type:'link',title:'Brunahólf hub',label:'Stjórnstöð',url:'https://brunaholf.netlify.app',x:9,y:2,w:3,h:1},
+    {type:'note',title:'Minnismiði',text:'Dæmi-borð. Dragðu með ⠿, stækkaðu í horninu, bættu við með „+ Reitur". Allt vistast í þessum vafra.',x:0,y:3,w:4,h:3},
+    {type:'button',title:'Teya innflutningur',label:'Keyra',x:4,y:3,w:2,h:2},
+    {type:'embed',title:'Slökkvitæki (innfellt)',url:'https://slokkvitaeki.netlify.app',x:6,y:3,w:6,h:6}
+  ];}
+
+  var state={tiles:[]};
+  try{var raw=localStorage.getItem(LS_KEY); if(raw) state.tiles=JSON.parse(raw);}catch(e){}
+  if(!state.tiles || !state.tiles.length) state.tiles=defaults();
+  state.tiles.forEach(function(t){if(!t.id)t.id=uid();});
+
+  var grid=GridStack.init({column:12,cellHeight:64,margin:8,float:true,
+    handle:'.drag',resizable:{handles:'se,e,s'},animate:true});
+
+  function getTile(id){for(var i=0;i<state.tiles.length;i++)if(String(state.tiles[i].id)===String(id))return state.tiles[i];return null;}
+
+  function headHTML(t){
+    return '<div class="tile-head"><span class="drag" title="Draga">⠿</span>'+
+      '<span class="tile-title">'+esc(t.title)+'</span><span class="tile-actions">'+
+      (t.type==='data'?'<button class="ic" data-act="refresh" title="Uppfæra">↻</button>':'')+
+      '<button class="ic" data-act="edit" title="Breyta">✎</button>'+
+      '<button class="ic" data-act="remove" title="Fjarlægja">✕</button></span></div>';
+  }
+  function bodyHTML(t){
+    if(t.type==='link') return '<div class="tile-body"><a class="big-link" href="'+esc(t.url)+'" target="_blank" rel="noopener">'+esc(t.label||'Opna')+' <span class="arw">↗</span></a><div class="sub">'+esc(t.url)+'</div></div>';
+    if(t.type==='button') return '<div class="tile-body"><button class="big-btn" data-act="run">'+esc(t.label||'Keyra')+'</button><div class="sub">'+(t.webhook?esc(t.webhook):'stubbur — engin webhook')+'</div></div>';
+    if(t.type==='embed') return '<div class="embed-bar"><span>'+esc(t.url)+'</span><a href="'+esc(t.url)+'" target="_blank" rel="noopener" title="Opna í flipa">↗</a></div><iframe src="'+esc(t.url)+'" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>';
+    if(t.type==='data') return '<div class="tile-body"><div class="data-body"><div class="data-val" id="val-'+t.id+'">…</div><div class="data-label">'+esc(t.label||'')+'</div></div><div class="sub" id="sub-'+t.id+'"></div></div>';
+    if(t.type==='note') return '<div class="tile-body"><div class="note" contenteditable="true" data-id="'+t.id+'">'+(t.text||'')+'</div></div>';
+    return '<div class="tile-body"></div>';
+  }
+  function innerHTML(t){return '<div class="tile tile-'+t.type+'">'+headHTML(t)+bodyHTML(t)+'</div>';}
+
+  function renderTile(t,auto){
+    var el=document.createElement('div');
+    el.className='grid-stack-item';
+    el.setAttribute('gs-id',t.id);
+    el.setAttribute('gs-w',t.w||DEF[t.type].w);
+    el.setAttribute('gs-h',t.h||DEF[t.type].h);
+    if(!auto && t.x!=null){el.setAttribute('gs-x',t.x);el.setAttribute('gs-y',t.y);}
+    el.innerHTML='<div class="grid-stack-item-content">'+innerHTML(t)+'</div>';
+    $('.grid-stack').appendChild(el);
+    grid.makeWidget(el);
+    if(t.type==='data') loadData(t);
+  }
+
+  function persist(){
+    try{
+      var nodes=grid.save(false)||[];
+      var by={}; nodes.forEach(function(n){by[String(n.id)]=n;});
+      state.tiles.forEach(function(t){var n=by[String(t.id)]; if(n){t.x=n.x;t.y=n.y;t.w=n.w;t.h=n.h;}});
+      localStorage.setItem(LS_KEY,JSON.stringify(state.tiles));
+    }catch(e){}
+  }
+
+  function addTile(tpl){
+    var t={}; for(var k in tpl) t[k]=tpl[k];
+    t.id=uid();
+    if(t.w==null){t.w=DEF[t.type].w;t.h=DEF[t.type].h;}
+    state.tiles.push(t);
+    renderTile(t,true);
+    persist();
+    toast('Reit bætt við: '+(t.title||t.type));
+  }
+  function removeTile(id){
+    var t=getTile(id); if(!t)return;
+    var el=$('.grid-stack-item[gs-id="'+id+'"]');
+    if(el) grid.removeWidget(el);
+    state.tiles=state.tiles.filter(function(x){return String(x.id)!==String(id);});
+    persist();
+  }
+
+  /* ---- live data ---- */
+  function sbFetch(path,extra){
+    var h={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};
+    if(extra)for(var k in extra)h[k]=extra[k];
+    return fetch(SB_URL+'/rest/v1/'+path,{headers:h});
+  }
+  function sbCount(table){
+    return sbFetch(table+'?select=id',{Prefer:'count=exact',Range:'0-0'}).then(function(r){
+      var cr=r.headers.get('content-range');
+      if(cr&&cr.indexOf('/')>-1){var tot=cr.split('/')[1]; if(tot&&tot!=='*')return Number(tot);}
+      return r.json().then(function(j){return Array.isArray(j)?j.length:0;});
+    });
+  }
+  function teyaMonth(){
+    var d=new Date(); var f=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+    return sbFetch('teya_faerslur?select=upphaed,tegund,teya_stada&faersludagur=gte.'+f).then(function(r){return r.json();}).then(function(rows){
+      var s=0;(rows||[]).forEach(function(x){if(x.teya_stada==='SAMÞYKKT')s+=(x.tegund==='REFUND'?-1:1)*Number(x.upphaed||0);});
+      return s;
+    });
+  }
+  function hubTasks(){
+    return fetch('https://brunaholf.netlify.app/api/verkefnalisti').then(function(r){return r.json();}).then(function(j){
+      var arr=Array.isArray(j)?j:(j.items||j.tasks||j.data||j.rows||[]);
+      return arr.filter(function(x){var s=String(x.status||x.stada||'').toLowerCase();return s==='beidni'||s==='i_vinnu';}).length;
+    });
+  }
+  function loadData(t){
+    var val=$('#val-'+t.id), sub=$('#sub-'+t.id);
+    if(val)val.textContent='…';
+    var p;
+    if(t.source==='count')p=sbCount(t.table).then(function(n){return n.toLocaleString('is-IS');});
+    else if(t.source==='teya_month')p=teyaMonth().then(function(n){return n.toLocaleString('is-IS')+' kr';});
+    else if(t.source==='tasks')p=hubTasks().then(function(n){return n.toLocaleString('is-IS');});
+    else p=Promise.resolve('—');
+    p.then(function(v){if(val)val.textContent=v; if(sub)sub.textContent='uppfært '+new Date().toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'});})
+     .catch(function(){if(val)val.textContent='—'; if(sub)sub.textContent='náði ekki gögnum';});
+  }
+  function runTile(t){
+    if(!t)return;
+    if(!t.webhook){toast('Stubbur: „'+(t.title||'')+'" — tengist n8n webhook síðar');return;}
+    toast('Keyri „'+(t.title||'')+'"…');
+    fetch(t.webhook,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:'stjornbord',tile:t.title})})
+      .then(function(){toast('Sent ✓');}).catch(function(){toast('Villa við keyrslu');});
+  }
+
+  /* ---- events ---- */
+  var gEl=$('.grid-stack');
+  gEl.addEventListener('click',function(e){
+    var act=e.target.closest('[data-act]'); if(!act)return;
+    var item=e.target.closest('.grid-stack-item'); var id=item&&item.getAttribute('gs-id');
+    var a=act.getAttribute('data-act');
+    if(a==='remove'){e.preventDefault();removeTile(id);}
+    else if(a==='edit'){e.preventDefault();openEdit(id);}
+    else if(a==='refresh'){e.preventDefault();var t=getTile(id);if(t)loadData(t);}
+    else if(a==='run'){e.preventDefault();runTile(getTile(id));}
+  });
+  gEl.addEventListener('input',function(e){
+    var n=e.target.closest('.note'); if(!n)return;
+    var t=getTile(n.getAttribute('data-id')); if(t){t.text=n.innerHTML;persist();}
+  });
+  grid.on('change',function(){persist();});
+
+  /* ---- gallery ---- */
+  function openGallery(){
+    var b=$('#gal-body'); b.innerHTML='';
+    GALLERY.forEach(function(g){
+      var h=document.createElement('div'); h.className='gal-group'; h.textContent=g.group; b.appendChild(h);
+      var grid2=document.createElement('div'); grid2.className='gal-grid';
+      g.items.forEach(function(it){
+        var btn=document.createElement('button'); btn.className='gal-item';
+        btn.innerHTML='<b>'+esc(it.title)+'</b><small>'+esc(it.type)+'</small>';
+        btn.onclick=function(){addTile(it);close('#ovl-gal');};
+        grid2.appendChild(btn);
+      });
+      b.appendChild(grid2);
+    });
+    open('#ovl-gal');
+  }
+
+  /* ---- edit ---- */
+  var editId=null;
+  function openEdit(id){
+    var t=getTile(id); if(!t)return; editId=id;
+    $('#edit-type').textContent='Tegund: '+t.type;
+    var f=$('#edit-fields'); f.innerHTML='';
+    (FIELDS[t.type]||[]).forEach(function(pair){
+      var wrap=document.createElement('div'); wrap.className='fld';
+      wrap.innerHTML='<label>'+esc(pair[1])+'</label><input data-k="'+pair[0]+'" value="'+esc(t[pair[0]]||'')+'">';
+      f.appendChild(wrap);
+    });
+    open('#ovl-edit');
+  }
+  $('#edit-save').onclick=function(){
+    var t=getTile(editId); if(!t){close('#ovl-edit');return;}
+    $('#edit-fields').querySelectorAll('input[data-k]').forEach(function(inp){t[inp.getAttribute('data-k')]=inp.value;});
+    var content=$('.grid-stack-item[gs-id="'+editId+'"] .grid-stack-item-content');
+    if(content){content.innerHTML=innerHTML(t); if(t.type==='data')loadData(t);}
+    persist(); close('#ovl-edit'); toast('Vistað');
+  };
+
+  /* ---- modal helpers ---- */
+  function open(sel){$(sel).classList.add('open');}
+  function close(sel){$(sel).classList.remove('open');}
+  document.querySelectorAll('[data-close]').forEach(function(b){b.onclick=function(){b.closest('.ovl').classList.remove('open');};});
+  document.querySelectorAll('.ovl').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});});
+
+  $('#btn-add').onclick=openGallery;
+  $('#btn-reset').onclick=function(){
+    if(!confirm('Núllstilla útlit og byrja með dæmi-borðið?'))return;
+    try{localStorage.removeItem(LS_KEY);}catch(e){}
+    location.reload();
+  };
+
+  /* ---- toast ---- */
+  var toEl=$('#toast'),toT=null;
+  function toast(msg){toEl.textContent=msg;toEl.classList.add('show');clearTimeout(toT);toT=setTimeout(function(){toEl.classList.remove('show');},2600);}
+
+  /* ---- boot ---- */
+  grid.batchUpdate();
+  state.tiles.forEach(function(t){renderTile(t,false);});
+  grid.commit();
+})();
+</script>
+</body>
+</html>
