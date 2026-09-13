@@ -68,6 +68,19 @@
  *   hin svörin, lesið til baka, „Afturkalla" setur textann aftur í ritilinn. Claude les skýringuna, endurmetur tillöguna
  *   og setur samthykki aftur á málið, svo takkarnir birtast á ný. Óvistuð drög lifa í minni og localStorage þar til send.
  *
+ * VINNUBLÖÐ — VINNUSVÆÐI (368y · Agnar 13.09.2026: „geturðu kanski fjölgað hömum, eða gert þetta eitthvað aðgengilegra.
+ *   svo mikið þarna núna... líka með vinnublöð að sýna screenshotið sem er í attachments,, og gefa þeirri vinnu meiri pláss
+ *   í kanski sér Ham" · „svo lítið vinnuplássið fyrir svona yfirferðarverkefni"): hamurinn vinnublod er board:false og
+ *   teiknar vinnusvæði í fullri breidd í stað borðsins — engar einingar til hliðar og engin KPI-spjöld. Vinstra megin
+ *   listi blaðanna (bíða efst, svöruð dauf neðst); hægra megin skannmyndin í fullri breidd (smellur opnar frumritið),
+ *   spurningin, „Svona las ég blaðið" og „Kerfið segir" hlið við hlið, tillögðu línurnar á móti tækjatölu kerfisins og
+ *   svartakkarnir (sömu og 368v/w) í límdri stiku neðst. Eftir svar opnast næsta blað sem bíður (ekki ef vistun mistókst).
+ *   Gögn: málin bera merkin ham:vinnublod og sara:<id> → sara_yfirferd (blad, kerfi, spurning, linur, kerfi_linur,
+ *   mynd_url/myndir); án sara-raðar er lýsingin lesin (SVONA LAS ÉG BLAÐIÐ / KERFIÐ SEGIR) og mynd málsins notuð.
+ *   Mál með beint merki á vinnusvæðis-ham eiga heima ÞAR: iHam dregur þau ekki inn í aðra hami þótt þau bíði samþykkis
+ *   (30 blöð fylltu annars Mitt borð í hverjum ham). Í öðrum hömum vísar ein lína á haminn: „N bíða yfirferðar".
+ *   Fylgiskjöl sem eru myndir fá forsýn í Völdu máli (áður aðeins hlekkur); eldri Drive-viðhengi ekki (kalla á fall).
+ *
  * SKRIF — beint á thjonustubeidni, lesið til baka með .select():
  *   Taka    assigned_to = ég, AÐEINS ef málið er enn laust (skilyrt) — tveir fá ekki sama málið.
  *   Setja á assigned_to = hver sem er / Master, skilyrt á eigandann sem var á skjánum („Færa á mig").
@@ -161,6 +174,8 @@
     thjonusta: { l: 'Þjónusta', board: true, first: [], filter: 'allt', flokkar: [], merki: [] },
     samskipti: { l: 'Samskipti', board: true, first: ['postsvor'], filter: 'allt', flokkar: ['samskipti'], merki: ['senda_tolvupost', 'hringja'] },
     skyrslur:  { l: 'Skýrslur', board: true, first: ['ivinnslu', 'vinnublod', 'skipulag'], filter: 'allt', flokkar: [], merki: ['senda_skyrslur'] },
+    // 368y: vinnusvæði (board:false) — mál merkt ham:vinnublod, yfirferð eins blaðs í einu með skannmynd í fullri breidd.
+    vinnublod: { l: 'Vinnublöð', board: false, rymi: 'vinnublod', first: [], filter: 'allt', flokkar: [], merki: [] },
     krofur:    { l: 'Kröfur', board: true, first: ['krofur', 'gleymt', 'bakfaersla', 'afgreidsla'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
     akstur:    { l: 'Akstur', board: true, first: ['forgangur', 'akstur', 'brunakerfi', 'nymal', 'starfsmenn', 'dagskra'], filter: 'allt', flokkar: ['brunakerfi'], merki: ['uppsetning', 'brunakerfi', 'arskodun'], tegundir: ['heimsokn', 'skodun_tilbod'] }
   };
@@ -293,7 +308,7 @@
   }
 
   /* ── gögn ── */
-  const SEL = 'id,title,notes,summary,status,type,important,due_at,created_at,updated_at,source,channel_ref,assigned_to,customer_base_id,fyrirtaeki_id,customer_nafn,svarad_at,tags,flokkur';
+  const SEL = 'id,title,notes,summary,status,type,important,due_at,created_at,updated_at,source,channel_ref,assigned_to,customer_base_id,fyrirtaeki_id,customer_nafn,svarad_at,tags,flokkur,attachment_url';
   let _sig = '', _aftur = false, _dbBid = 0, _dbT = 0;
   // Könnunin á 60 s fresti teiknar AÐEINS ef eitthvað breyttist — annars myndi hún rugla skrun
   // í pósti sem verið er að lesa. Sóttímanum er skipt út beint.
@@ -418,7 +433,16 @@
   // Beint merki ræður. Þjónusta = ekki beint tengt öðrum ham. Aðrir hamir taka líka sinn flokk/merki (og Samskipti pósta).
   // Bíður samþykkis eigandans, eða samþykkt og bíður Claude: á borði hans í öllum hömum (368u/v). Hamaflögurnar í völdu
   // máli nota grunnregluna.
-  function iHam(r, id) { return ((erSamthykki(r) || svarBidur(r)) && !isFree(r)) || iHamGrunnur(r, id); }
+  // 368y: mál með beint merki á vinnusvæðis-ham (board:false) eiga heima ÞAR — undanþága samþykkismála dregur þau ekki inn
+  // í aðra hami (Agnar 13.09.2026: „svo mikið þarna núna … gefa þeirri vinnu meiri pláss í kanski sér Ham").
+  const rymisHamir = r => skyrirHamir(r).filter(h => (M(h) || {}).board === false);
+  function iHam(r, id) {
+    const rh = rymisHamir(r);
+    if (rh.length) return rh.indexOf(id) >= 0;
+    // Vinnusvæði tekur AÐEINS sín merktu mál — samþykkismál annarra verka eiga ekki erindi þangað (mælt 13.09.: 103 í stað 30).
+    if ((M(id) || {}).board === false) return false;
+    return ((erSamthykki(r) || svarBidur(r)) && !isFree(r)) || iHamGrunnur(r, id);
+  }
   function iHamGrunnur(r, id) {
     const sk = skyrirHamir(r);
     if (sk.indexOf(id) >= 0) return true;
@@ -939,6 +963,33 @@
       '.err{padding:10px 14px;border:1px solid rgba(181,82,42,.45);border-radius:4px;background:#fff7f2;color:var(--terra);font-size:12.5px}',
       '.t5toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99990;max-width:min(92vw,520px);padding:11px 16px;border:1px solid #000;border-radius:5px;background:var(--slab);color:var(--on);font:600 12.5px var(--body);box-shadow:var(--slabsh)}',
       '.t5toast.warn{border-top:3px solid var(--terra)}',
+      // 368y: myndaforsýn í fylgiskjölum og vinnusvæði Vinnublaða — sömu litir og tákn og annars staðar (þemað er frosið).
+      '.fsmynd{display:block;margin-top:4px;border:1px solid #2a2823;border-radius:3px;background:#000;overflow:hidden;cursor:zoom-in}.fsmynd img{display:block;width:100%;height:auto;max-height:240px;object-fit:contain;background:#fff}',
+      '.vbstrip{min-height:44px}',
+      '.vbr{display:grid;grid-template-columns:minmax(230px,290px) minmax(0,1fr);gap:18px;align-items:start}',
+      '.vbr-list{position:sticky;top:12px;max-height:calc(100vh - 24px);display:flex;flex-direction:column;overflow:hidden}',
+      '.vbr-items{overflow:auto;min-height:0}',
+      '.vbr-sect{padding:9px 14px 4px;font:600 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);border-top:1px solid var(--rule2)}.vbr-sect:first-child{border-top:0}',
+      '.vbr-item{display:flex;flex-direction:column;gap:2px;width:100%;padding:9px 14px;border:0;border-top:1px solid var(--rule2);background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}',
+      '.vbr-item b{font-size:13px;line-height:1.3;overflow-wrap:anywhere}.vbr-item .s{font-size:11.5px;color:var(--mute);overflow-wrap:anywhere}',
+      '.vbr-item:hover b{text-decoration:underline;text-decoration-color:var(--g6);text-underline-offset:3px}',
+      '.vbr-item[aria-current="true"]{background:rgba(241,237,228,.85);box-shadow:inset 3px 0 0 var(--g6)}.vbr-item.svarad{opacity:.62}',
+      '.vbr-main{display:flex;flex-direction:column;gap:14px;min-width:0}',
+      '.vbr-top{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}',
+      '.vbr-titill{font-family:var(--disp);font-size:28px;font-weight:800;line-height:1.1;letter-spacing:-.01em;overflow-wrap:anywhere;color:var(--ink)}',
+      '.vbr-meta{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}',
+      '.vbr-mynd{margin:0;padding:10px;border:1px solid #000;border-radius:5px;background:var(--slab);box-shadow:var(--slabsh)}',
+      '.vbr-mynd a{display:block;cursor:zoom-in}.vbr-mynd img{display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;background:#fff;border-radius:3px}',
+      '.vbr-mynd figcaption{margin-top:7px;font:600 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--on3)}',
+      '.vbr-engin{padding:22px 16px;border:1px dashed var(--edge2);border-radius:5px;text-align:center;font-size:13px;color:var(--mute)}',
+      '.vbr-spurn{padding:12px 16px;border:1px solid rgba(181,82,42,.45);border-left:4px solid var(--terra);border-radius:4px;background:#fff7f2;font-size:14px;line-height:1.55;color:var(--ink);white-space:pre-line;overflow-wrap:anywhere}',
+      '.vbr-spurn .lbl{display:block;margin-bottom:4px;color:var(--terra)}',
+      '.vbr-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}',
+      '.vbr-txt{padding:12px 16px 14px;font-size:13.5px;line-height:1.6;white-space:pre-line;overflow-wrap:anywhere;color:var(--ink)}',
+      '.vbr-linur th.ath,.vbr-linur td.ath{text-align:right}.vbr-linur td.munur{color:var(--terra);font-weight:700}',
+      '.vbr-svar{position:sticky;bottom:10px;z-index:5;display:flex;flex-direction:column;gap:10px;padding:12px 16px;border:1px solid #000;border-top:3px solid transparent;border-image:var(--gline) 1;border-image-width:3px 0 0 0;border-radius:5px;background:var(--slab);box-shadow:var(--slabsh);color:var(--on)}',
+      '.vbr-svar .sacts{align-items:center}.vbr-svar .smeta{color:var(--on2)}',
+      '@container t5 (max-width: 900px){.vbr{grid-template-columns:minmax(0,1fr)}.vbr-list{position:static;max-height:none}.vbr-items{max-height:260px}.vbr-cols{grid-template-columns:minmax(0,1fr)}.vbr-titill{font-size:22px}}',
       // Breiðir skjáir: einingar hamsins vinstra megin, aðrar hægra megin, borðið í miðjunni.
       '@container t5 (min-width: 1600px){.layout{display:grid;grid-template-columns:minmax(280px,320px) minmax(0,1fr) minmax(300px,360px);gap:18px;align-items:start}' +
         '.layout.nol{grid-template-columns:minmax(0,1fr) minmax(300px,360px)}.layout.nor{grid-template-columns:minmax(280px,320px) minmax(0,1fr)}.layout.nol.nor{grid-template-columns:minmax(0,1fr)}}',
@@ -1256,6 +1307,133 @@
       '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + (jm => jm ? b('iv', 'vd-opna', '🗓 ' + fmtD(jm.date) + (jm._n !== nu() ? ' · ' + jm._n : '')) : b('iv', 'vd-add', '🗓 Á dagskrá'))(jobOfMal(r.id)) +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
           ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + hamirHtml(r) + breytaHtml(r);
+  }
+
+  /* ── 368y: VINNUBLÖÐ — vinnusvæði (hamurinn vinnublod, board:false) ── */
+  const VBR_HAM = 'vinnublod';
+  const vbrMal = () => S.rows.filter(r => rymisHamir(r).indexOf(VBR_HAM) >= 0);
+  const vbrBidur = r => erSamthykki(r);
+  const saraIdMals = r => { const t = tagList(r).find(x => /^sara:\d+$/.test(x)); return t ? Number(t.slice(5)) : null; };
+  const vbrNafn = (r, s) => (s && s.fyrirtaeki) || whereOf(r) || String(r.title || '').replace(/^Vinnublað — staðfesta lestur:\s*/, '') || '(ónefnt)';
+  // Röð blaðanna eins og þau voru lesin (sara_yfirferd.rod) — sama röð og bunkinn sjálfur; nafn þegar röð vantar.
+  const vbrSaraRod = r => { const s = (S._vbrSara || []).find(x => x.id === saraIdMals(r)); return s && s.rod != null ? Number(s.rod) : 1e9; };
+  const vbrRod = (a, b) => (vbrBidur(b) ? 1 : 0) - (vbrBidur(a) ? 1 : 0) || vbrSaraRod(a) - vbrSaraRod(b) || vbrNafn(a).localeCompare(vbrNafn(b), 'is');
+  const bladNr = s => { const b = String((s && s.blad_nr) || '').trim(); return !b ? '' : /^blað/i.test(b) ? b : 'Blað ' + b; };
+  // Blöðin á borði þess sem er við vélina; eigi hann ekkert blað sjást öll (til skoðunar — svartakkar aðeins eigandans).
+  function vbrListi(n) {
+    const allt = vbrMal(), minn = allt.filter(r => onBoardOf(r, n));
+    return (minn.length ? minn : allt).slice().sort(vbrRod);
+  }
+  // Lýsingin ber lesturinn og kerfið í köflum („SVONA LAS ÉG BLAÐIÐ (…)" / „KERFIÐ SEGIR") — notað þegar sara-röð vantar.
+  function vbrKaflar(notes) {
+    const t = String(notes || ''), i = t.indexOf('SVONA LAS ÉG BLAÐIÐ'), j = t.indexOf('KERFIÐ SEGIR');
+    const an = x => x.replace(/^[^\n]*(\n|$)/, '').trim();
+    return {
+      haus: i >= 0 ? t.slice(i).split('\n')[0].replace('SVONA LAS ÉG BLAÐIÐ', '').replace(/^\s*\(|\)\s*$/g, '').trim() : '',
+      blad: i >= 0 ? an(t.slice(i, j > i ? j : t.length)) : '',
+      kerfi: j >= 0 ? an(t.slice(j)) : ''
+    };
+  }
+  async function saekjaVbrRadir(ids) {
+    const c = sb();
+    if (!c || !ids.length) return [];
+    const r = await c.from('sara_yfirferd').select('id,fyrirtaeki_id,fyrirtaeki,blad,kerfi,spurning,linur,kerfi_linur,akstur,akstur_verd,manudur,dagsetning,blad_nr,mynd_url,myndir,stada,rod').in('id', ids);
+    if (r.error) throw r.error;
+    return r.data || [];
+  }
+  function vbrMyndir(r, s) {
+    const l = [], baeta = (url, nafn) => { if (url && !l.some(x => x.url === String(url))) l.push({ url: String(url), nafn: nafn || '' }); };
+    if (s) { baeta(s.mynd_url, 'Skann'); (Array.isArray(s.myndir) ? s.myndir : []).forEach(m => { if (m) baeta(m.url, m.nafn || m.name); }); }
+    baeta(r.attachment_url, 'Skann');
+    return l;
+  }
+  function vbrLinurHtml(s) {
+    const linur = s && Array.isArray(s.linur) ? s.linur : [];
+    if (!linur.length) return '';
+    const kerfi = Array.isArray(s.kerfi_linur) ? s.kerfi_linur : [];
+    const tala = v => (v == null || v === '' ? '—' : esc(String(v)));
+    const kr = v => (v == null || v === '' || isNaN(Number(v)) ? '—' : Number(v).toLocaleString('is-IS') + ' kr');
+    return '<section class="panel"><header class="phead">' + plate('C') + '<h3 class="ptitle">Tillaga að línum</h3><span class="sum">blaðið á móti tækjaskrá kerfisins</span></header>' +
+      '<div class="stbl-w"><table class="stbl vbr-linur"><thead><tr><th>Lína</th><th class="ath">Blaðið</th><th class="ath">Kerfið</th><th class="ath">Einingaverð</th></tr></thead><tbody>' +
+      linur.map((x, i) => {
+        const k = kerfi[i] || {}, munur = !!x && k.n != null && x.n != null && Number(k.n) !== Number(x.n);
+        return '<tr><td>' + esc((x && x.l) || '') + '</td><td class="ath' + (munur ? ' munur' : '') + '">' + tala(x && x.n) + '</td><td class="ath">' + tala(k.n) + '</td><td class="ath">' + kr(x && x.v) + '</td></tr>';
+      }).join('') +
+      (s.akstur ? '<tr><td>Akstur</td><td class="ath">' + tala(s.akstur) + '</td><td class="ath">—</td><td class="ath">' + kr(s.akstur_verd) + '</td></tr>' : '') +
+      '</tbody></table></div></section>';
+  }
+  function vbRymiHtml(n) {
+    if (!S.loaded) return emptyHtml('Sæki vinnublöð…');
+    const ids = [...new Set(vbrMal().map(saraIdMals).filter(Boolean))].sort((a, b) => a - b);
+    const g = gogn('vbrymi:' + ids.join(','), () => saekjaVbrRadir(ids));
+    if (g.data) S._vbrSara = g.data;                     // fyrri gögn standa á meðan ný sókn er í gangi — enginn blossi
+    const listi = vbrListi(n);
+    if (!listi.length) return emptyHtml('Engin vinnublöð bíða yfirferðar. Ný blöð birtast hér þegar þau hafa verið lesin.');
+    let val = listi.find(r => r.id === S.vbrVal);
+    // Sjálfgefið val bíður eftir sara-röðinni, svo fyrsta blaðið sé fyrsta blaðið í bunkanum en ekki fyrsta nafnið.
+    if (!val) { val = listi.find(vbrBidur) || listi[0]; if (S._vbrSara) S.vbrVal = val.id; }
+    const sara = new Map((g.data || S._vbrSara || []).map(x => [x.id, x]));
+    const s = sara.get(saraIdMals(val)) || null;
+    const bida = listi.filter(vbrBidur), svorud = listi.filter(r => !vbrBidur(r)), nr = listi.indexOf(val);
+    const item = r => {
+      const sr = sara.get(saraIdMals(r)) || null;
+      const undir = [sr && sr.manudur, bladNr(sr), vbrBidur(r) ? '' : svarBidur(r) ? SVOR[svarMals(r)].l : 'Svarað'].filter(Boolean).join(' · ');
+      return '<button type="button" class="vbr-item' + (vbrBidur(r) ? '' : ' svarad') + '" data-t5="vbr-velja" data-id="' + r.id + '" aria-current="' + (r.id === val.id) + '">' +
+        '<b>' + esc(vbrNafn(r, sr)) + '</b>' + (undir ? '<span class="s">' + esc(undir) + '</span>' : '') + '</button>';
+    };
+    const k = vbrKaflar(val.notes);
+    const blad = (s && s.blad) || k.blad, kerfiTexti = (s && s.kerfi) || k.kerfi, spurn = s && s.spurning;
+    const myndir = vbrMyndir(val, s), titill = vbrNafn(val, s), fid = val.fyrirtaeki_id || (s && s.fyrirtaeki_id);
+    const meta = [s && s.manudur, s && s.dagsetning, bladNr(s) || k.haus, (nr + 1) + ' af ' + listi.length].filter(Boolean).join(' · ');
+    const eigin = onBoardOf(val, n);
+    const svar = vbrBidur(val)
+      ? (eigin ? '<div class="sacts">' + samtTakkar(val, ' lg') + '</div>' + skyRitillHtml(val)
+        : '<div class="smeta">Bíður samþykkis hjá ' + esc(normW(val.assigned_to) || 'Master') + ' — aðeins eigandinn svarar</div>')
+      : '<div class="smeta">' + esc(svarBidur(val) ? SVOR[svarMals(val)].merki : 'Svarað') + ' · veldu næsta blað í listanum</div>';
+    return '<div class="vbr">' +
+      '<aside class="panel vbr-list" aria-label="Vinnublöð">' +
+        '<header class="phead">' + plate('06') + '<h2 class="ptitle">Vinnublöð</h2><span class="sum">' + bida.length + ' bíða · ' + svorud.length + ' svarað</span></header>' +
+        '<div class="vbr-items">' +
+          (bida.length ? '<div class="vbr-sect">Bíða yfirferðar · ' + bida.length + '</div>' + bida.map(item).join('') : '') +
+          (svorud.length ? '<div class="vbr-sect">Svarað · ' + svorud.length + '</div>' + svorud.map(item).join('') : '') +
+        '</div>' +
+      '</aside>' +
+      '<div class="vbr-main">' +
+        '<div class="vbr-top">' +
+          '<button type="button" class="btn iv sm" data-t5="vbr-fara" data-v="-1"' + (nr <= 0 ? ' disabled' : '') + '>‹ Fyrra</button>' +
+          '<button type="button" class="btn iv sm" data-t5="vbr-fara" data-v="1"' + (nr >= listi.length - 1 ? ' disabled' : '') + '>Næsta ›</button>' +
+          '<span class="vbr-meta">' + esc(meta) + '</span><span class="grow"></span>' +
+          (fid ? '<a class="btn iv sm" href="#company/' + fid + '" data-t5="fyr-id" data-fid="' + fid + '">🏢 Opna fyrirtæki ›</a>' : '') +
+        '</div>' +
+        '<h2 class="vbr-titill">' + esc(titill) + '</h2>' +
+        (myndir.length
+          ? myndir.map(m => '<figure class="vbr-mynd"><a href="' + esc(m.url) + '" target="_blank" rel="noopener" title="Opna skannið í fullri stærð">' +
+              '<img src="' + esc(m.url) + '" alt="Skann af vinnublaði — ' + esc(titill) + '"></a><figcaption>' + esc(m.nafn || 'Skann') + ' · smelltu til að opna í fullri stærð</figcaption></figure>').join('')
+          : '<div class="vbr-engin">Engin skannmynd fylgir þessu blaði' + (bladNr(s) ? ' — ' + esc(bladNr(s)) : '') + '.</div>') +
+        (spurn ? '<div class="vbr-spurn"><span class="lbl">Spurningin til þín</span>' + esc(spurn) + '</div>' : '') +
+        '<div class="vbr-cols">' +
+          '<section class="panel"><header class="phead">' + plate('A') + '<h3 class="ptitle">Svona las ég blaðið</h3></header><div class="vbr-txt">' + esc(blad || 'Lesturinn fannst ekki í málinu.') + '</div></section>' +
+          '<section class="panel"><header class="phead">' + plate('B') + '<h3 class="ptitle">Kerfið segir</h3></header><div class="vbr-txt">' + esc(kerfiTexti || 'Ekkert skráð um kerfið í málinu.') + '</div></section>' +
+        '</div>' +
+        vbrLinurHtml(s) +
+        (g.villa ? '<p class="err">Náði ekki í gögn vinnublaðsins: ' + esc(g.villa) + '</p>' : '') +
+        '<div class="vbr-svar" aria-label="Svar">' + svar + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  // Í Vinnublöðum opnast næsta blað sem bíður þegar svarið hefur skilað sér — blaðið stendur kyrrt ef vistun mistókst.
+  function vbrEftirSvar(id, bid) {
+    if ((M(cfg().mode) || {}).rymi !== VBR_HAM) return;
+    const listi = vbrListi(nu()), i = listi.findIndex(r => r.id === id);
+    const naesta = listi.slice(i + 1).concat(listi.slice(0, Math.max(0, i))).find(r => r.id !== id && vbrBidur(r));
+    Promise.resolve(bid).then(() => {
+      const r = S.rows.find(x => x.id === id);
+      if (r && erSamthykki(r)) return;
+      if (naesta && S.vbrVal === id) { S.vbrVal = naesta.id; render(); vbrTilBaka(); }
+    });
+  }
+  function vbrTilBaka() {
+    setTimeout(() => { try { const t = rot().querySelector('.vbr-main'); if (t && t.getBoundingClientRect().top < 0) t.scrollIntoView({ block: 'start' }); } catch (_) {} }, 40);
   }
 
   function modPanel(k, summary, body, action, alltaf) {
@@ -2095,6 +2273,8 @@
     return (r.data || []).concat(eldri);
   }
   const staerd = b => !b ? '' : b < 1024 ? b + ' B' : b < 1048576 ? Math.round(b / 1024) + ' KB' : (b / 1048576).toFixed(1).replace('.', ',') + ' MB';
+  // 368y: myndir fá forsýn undir listanum (Agnar 13.09.2026 merkti hlekkinn „vinnublad-53.jpg" — myndin sjálf sást hvergi).
+  const erMynd = f => !!(f && f.url) && (/^image\//.test(String(f.mime_type || '')) || /\.(jpe?g|png|gif|webp)(\?|$)/i.test(String(f.name || f.url || '')));
   function skjolHtml(r) {
     const g = gogn('skjol:' + r.id, () => saekjaSkjol(r.id), 120000), bid = !!(S.skjolBid && S.skjolBid[r.id]), listi = g.data || [];
     return '<div class="fskjol"><div class="sg-h"><span class="slabel">📎 Fylgiskjöl' + (g.data ? ' (' + listi.length + ')' : '') + '</span><span class="grow"></span>' +
@@ -2106,7 +2286,9 @@
             '<span class="sg-m">' + esc([staerd(f.size), f.created_at ? fmtD(f.created_at) : ''].filter(Boolean).join(' · ')) + '</span><span class="grow"></span>' +
             (f._eldra
               ? '<span class="sg-m" title="Úr gamla Þjónustuverinu — aðeins til skoðunar">eldra</span></div>'
-              : '<button type="button" class="sx" data-t5="skjal-eyda" data-id="' + r.id + '" data-fid="' + f.id + '" aria-label="Eyða ' + esc(f.name || 'skjali') + '">✕</button></div>')).join('') + '</div>'
+              : '<button type="button" class="sx" data-t5="skjal-eyda" data-id="' + r.id + '" data-fid="' + f.id + '" aria-label="Eyða ' + esc(f.name || 'skjali') + '">✕</button></div>')).join('') + '</div>' +
+          listi.filter(f => !f._eldra && erMynd(f)).map(f => '<a class="fsmynd" href="' + esc(f.url) + '" target="_blank" rel="noopener" title="Opna ' + esc(f.name || 'myndina') + ' í fullri stærð">' +
+            '<img src="' + esc(f.url) + '" alt="' + esc(f.name || 'Mynd') + '" loading="lazy"></a>').join('')
         : '<div class="sg-m">Engin fylgiskjöl á þessu máli.</div>') +
     '</div>';
   }
@@ -2700,6 +2882,9 @@
     if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.skyr || ae.dataset.samtsky))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     const n = nu(), c = cfg(), mode = M(c.mode) || MODES.thjonusta;
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
+    // 368y: vinnusvæðis-hamur (board:false með rymi) fær alla breiddina — engar einingar til hliðar, engin KPI-spjöld.
+    const rymi = mode.board === false && mode.rymi ? mode.rymi : '';
+    const vbrBida = rymi ? 0 : S.rows.filter(r => erSamthykki(r) && onBoardOf(r, n) && rymisHamir(r).indexOf(VBR_HAM) >= 0).length;
     // Hvaða opið mál sem er má skoða — ekki aðeins þau á mínu borði. 0 = lokað viljandi (✕).
     let selId = S.sel[n];
     if (selId !== 0 && !S.rows.some(r => r.id === selId)) selId = S.sel[n] = mine.length ? mine[0].id : null;
@@ -2716,10 +2901,10 @@
     // „Bara mitt borð" = tómt vinnusvæði (Agnar 11.09.2026: „Þegar bara starfsmannaborð er valið, þá á allt að vera
     // tómt"): engar einingar hvorugum megin (dagskrá meðtalin) og engin KPI-spjöld — aðeins borðið manns sjálfs.
     // Einingarnar eru þá heldur ekki teiknaðar, svo latar gagnasóknir þeirra fara ekki af stað.
-    const topHtml = baraMitt ? '' : top.map(k => (k === 'dagskra' ? dagskraHtml() : bottomHtml(k))).join('');
-    const bottom = baraMitt ? '' : BOTTOM.filter(k => isOn(k) && top.indexOf(k) < 0).map(bottomHtml).join('');
+    const topHtml = baraMitt || rymi ? '' : top.map(k => (k === 'dagskra' ? dagskraHtml() : bottomHtml(k))).join('');
+    const bottom = baraMitt || rymi ? '' : BOTTOM.filter(k => isOn(k) && top.indexOf(k) < 0).map(bottomHtml).join('');
 
-    const selMarkup = selHtml(selRow);
+    const selMarkup = rymi ? '' : selHtml(selRow);
     const nyleg = master.filter(r => ageDays(r) <= 30).length;
     const bunki = master.filter(r => normW(r.assigned_to) === AI_WORKER).length;
     const fjoldi = f => f === 'oll' ? S.rows.length : master.filter(r => matchFilter(r, f)).length;
@@ -2738,7 +2923,7 @@
     const mittSb = !!S.mittSamanbrotid;
     const mineHtml = '<section class="panel colmine' + (mittSb ? ' samanbrotid' : '') + '" aria-label="Mitt borð">' +
         '<header class="phead">' + plate('03') + '<h2 class="ptitle">Mitt borð</h2><span class="sum">' + mine.length + ' mál</span>' +
-          (S.rows.filter(r => onBoardOf(r, n)).length > mine.length ? '<button type="button" class="pchip" data-t5="filter" data-f="p:' + esc(n) + '" title="Sýna öll þín mál, í öllum hömum">+ ' + (S.rows.filter(r => onBoardOf(r, n)).length - mine.length) + ' í öðrum hömum</button>' : '') +
+          (S.rows.filter(r => onBoardOf(r, n) && !rymisHamir(r).length).length > mine.length ? '<button type="button" class="pchip" data-t5="filter" data-f="p:' + esc(n) + '" title="Sýna öll þín mál, í öllum hömum">+ ' + (S.rows.filter(r => onBoardOf(r, n) && !rymisHamir(r).length).length - mine.length) + ' í öðrum hömum</button>' : '') +
           '<span class="grow"></span><button type="button" class="btn iv sm" data-t5="take-next">Taka næsta ›</button>' +
           '<button type="button" class="btn iv sm tog" data-t5="mitt-fella" aria-expanded="' + !mittSb + '" aria-label="' + (mittSb ? 'Opna' : 'Fella saman') + ' Mitt borð" title="' + (mittSb ? 'Opna Mitt borð' : 'Fella Mitt borð saman') + '">' + (mittSb ? '▾' : '▴') + '</button></header>' +
         (mittSb ? '' : (feedFalinn ? selUtan : '') +
@@ -2746,7 +2931,7 @@
           ? mine.map(r => mineRow(r, r.id === selId) + (r.id === selId ? '<div class="sel inline">' + selMarkup + '</div>' : '')).join('')
           : emptyHtml('Borðið þitt er autt. Taktu mál af Master eða skráðu nýtt mál á þig.'))) +
       '</section>';
-    const board = mode.board
+    const board = rymi === VBR_HAM ? vbRymiHtml(n) : mode.board
       ? '<div class="board' + (feedFalinn ? ' bara' : '') + '" data-view="' + (feedFalinn ? 'mitt' : S.view) + '">' +
           (feedFalinn ? '' : '<div class="seg phone-seg" role="group" aria-label="Borð">' +
             '<button type="button" data-t5="view" data-v="master" aria-pressed="' + (S.view === 'master') + '">' + esc(siuHeiti) + '<span class="c">' + visible.length + '</span></button>' +
@@ -2809,7 +2994,8 @@
         (S.err ? '<p class="err">Náði ekki í málin: ' + esc(S.err) + ' <button type="button" class="btn iv sm" data-t5="reload">Reyna aftur</button></p>' : '') +
         (!baraMitt && G.falid && G.falid.villa ? '<p class="err">Náði ekki í falin atriði' + (G.falid.data ? ' — sýni síðustu stöðu' : ' — allt er sýnt') + ': ' + esc(G.falid.villa) +
           ' <button type="button" class="btn iv sm" data-t5="fela-endurlesa">Reyna aftur</button></p>' : '') +
-        (baraMitt ? '' : '<div class="kpis">' + kpiHtml(master, mine) + '</div>') +
+        (rymi || !vbrBida ? '' : '<button type="button" class="boardstrip vbstrip" data-t5="mode" data-mode="' + VBR_HAM + '">' + plate('06') + '<b>Vinnublöð</b><span class="v">' + vbrBida + ' bíða yfirferðar</span><span class="grow"></span><span class="v">Opna Vinnublöð ›</span></button>') +
+        (baraMitt || rymi ? '' : '<div class="kpis">' + kpiHtml(master, mine) + '</div>') +
         layout +
       '</div></div>';
 
@@ -2819,7 +3005,7 @@
     const drog = {};
     root.querySelectorAll('input[data-k], textarea[data-k], select[data-k]').forEach(i => { drog[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value; });
     // Skrun innan pósts og vikunnar heldur sér ef sama mál er enn valið.
-    const SKRUN = '.well p, .week, .seg.modeseg';
+    const SKRUN = '.well p, .week, .seg.modeseg, .vbr-items';
     const skrunSel = v.dataset.t5sel === String(selId);
     const skrun = [...root.querySelectorAll(SKRUN)].map(x => [x.scrollTop, x.scrollLeft]);
     mount.innerHTML = html;
@@ -3115,7 +3301,14 @@
         return;
       case 'done': done(id); return;
       case 'giveback': giveBack(id); return;
-      case 'samt-svar': svaraSamthykki(id, el.dataset.v); return;
+      case 'samt-svar': vbrEftirSvar(id, svaraSamthykki(id, el.dataset.v)); return;
+      case 'vbr-velja': S.vbrVal = id; render(); vbrTilBaka(); return;
+      case 'vbr-fara': {
+        const listi = vbrListi(nu()), i = listi.findIndex(r => r.id === S.vbrVal);
+        const j = Math.min(listi.length - 1, Math.max(0, i + Number(el.dataset.v || 0)));
+        if (listi[j]) { S.vbrVal = listi[j].id; render(); vbrTilBaka(); }
+        return;
+      }
       case 'samt-sky':
         S.samtSkyOpid[id] = !S.samtSkyOpid[id];
         if (S.samtSkyOpid[id]) { S.sel[nu()] = id; if (!c.baraMitt) S.view = 'mitt'; }
@@ -3125,7 +3318,7 @@
       case 'samt-sky-senda': {
         const txt = String(S.samtSkyDrog[id] || '').trim();
         if (!txt) { toast('Skrifaðu skýringuna fyrst — svo fer málið til Claude', true); return; }
-        svaraSamthykki(id, 'endurmeta', txt);
+        vbrEftirSvar(id, svaraSamthykki(id, 'endurmeta', txt));
         return;
       }
       case 'reply': reply(id); return;
@@ -3604,7 +3797,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368v' };
+    window.Thjonustubord5 = { show, load, render, version: '368y' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
