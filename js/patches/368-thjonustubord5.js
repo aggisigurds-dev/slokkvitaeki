@@ -1004,7 +1004,7 @@
       '.vbt-rond{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;padding:12px 14px 6px}',
       '.vbt-kort{display:flex;flex-direction:column;gap:6px;min-width:0;padding:8px 6px 7px;border:1px solid var(--rule2);border-radius:4px;background:rgba(241,237,228,.55)}',
       '.vbt-kort.breytt{border-color:var(--g6);box-shadow:inset 0 0 0 1px var(--g6)}',
-      '.vbt-nafn{min-height:2.5em;display:flex;align-items:center;justify-content:center;text-align:center;font:700 11px/1.2 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--ink);overflow-wrap:anywhere}',
+      '.vbt-nafn{min-height:2.5em;display:flex;align-items:center;justify-content:center;text-align:center;font:700 12px/1.2 var(--body);color:var(--ink);hyphens:auto;overflow-wrap:anywhere}',
       '.vbt-dalkar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.vbt-kort.einn .vbt-dalkar{grid-template-columns:minmax(0,1fr)}',
       '.vbt-dalkur{display:flex;flex-direction:column;gap:3px;min-width:0}',
       '.vbt-hy{font:700 10px var(--mono);letter-spacing:.12em;text-align:center;color:var(--mute)}',
@@ -1015,7 +1015,7 @@
       '.vbt-kerfi{text-align:center;font:600 10px var(--mono);letter-spacing:.04em;color:var(--mute)}',
       '.vbt-fot{padding:4px 14px 12px;font-size:12.5px;color:var(--mute)}.vbt-fot b{color:var(--ink);font-variant-numeric:tabular-nums}.vbt-fot .villa{color:var(--terra);font-weight:700}',
       '@container t5 (max-width: 1250px){.vbt-rond{grid-template-columns:repeat(4,minmax(0,1fr))}}',
-      '@container t5 (max-width: 560px){.vbt-rond{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px 10px 4px}.vbt-btn{height:40px}}',
+      '@container t5 (max-width: 560px){.vbt-rond{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px 8px 4px}.vbt-kort{padding:7px 4px 6px}.vbt-dalkar{gap:4px}.vbt-btn{height:40px}.vbt-nafn{font-size:10.5px}}',
       '@container t5 (max-width: 900px){.vbr{grid-template-columns:minmax(0,1fr)}.vbr-list{position:static;max-height:none}.vbr-items{max-height:260px}.vbr-cols{grid-template-columns:minmax(0,1fr)}.vbr-titill{font-size:22px}}',
       // Breiðir skjáir: einingar hamsins vinstra megin, aðrar hægra megin, borðið í miðjunni.
       '@container t5 (min-width: 1600px){.layout{display:grid;grid-template-columns:minmax(280px,320px) minmax(0,1fr) minmax(300px,360px);gap:18px;align-items:start}' +
@@ -1466,7 +1466,7 @@
   ];
   const vbtSvid = l => { const x = String(l || '').toLowerCase(); return /yfirfer/.test(x) ? 'y' : /hle[ðd]sl|(^|\s)hl\./.test(x) ? 'h' : null; };
   const vbtTeg = l => { const x = String(l || '').toLowerCase(); return VBT.find(t => t.m.test(x) && (!t.st || t.st.test(x))) || null; };
-  const vbtNrm = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ð/g, 'd').replace(/₂/g, '2').replace(/[^a-z0-9]/g, '');
+  const vbtNrm = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/ð/g, 'd').replace(/₂/g, '2').replace(/[^a-z0-9]/g, '');
   const vbtKr = v => String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr';
   const vbtSara = sid => (S._vbrSara || []).find(x => x.id === sid) || null;
   const vbtOvistad = malId => { const r = S.rows.find(x => x.id === malId), sid = r && saraIdMals(r), e = sid && S.vbt && S.vbt[sid]; return e && (e.dirty || e.vistar) ? sid : null; };
@@ -1636,7 +1636,7 @@
         '<div class="vbt-kerfi">× ' + vbtKr(s.akstur_verd) + '</div></div>';
     const samtals = e.linur.reduce((a, x) => a + (Number(x && x.n) || 0) * (Number(x && x.v) || 0), 0) + o.akstur * (Number(s.akstur_verd) || 0) + (Number(s.skyrslugerd) || 0);
     const stada = e.vistar ? 'Vista…' : e.villa ? '<span class="villa">' + esc(e.villa) + '</span>' : e.dirty ? 'Óvistað' : e.timi ? 'Vistað kl. ' + klukka(e.timi) : 'Breytingar vistast strax';
-    return '<section class="panel vbt" aria-label="Leiðrétta tölur">' +
+    return '<section class="panel vbt" lang="is" aria-label="Leiðrétta tölur">' +
       '<header class="phead">' + plate('D') + '<h3 class="ptitle">Leiðrétta tölur</h3><span class="sum">H = hleðsla · Y = yfirferð</span></header>' +
       '<div class="vbt-rond">' + kort + '</div>' +
       '<div class="vbt-fot" aria-live="polite">Samtals án vsk <b>' + vbtKr(samtals) + '</b> · ' + stada + '</div>' +
