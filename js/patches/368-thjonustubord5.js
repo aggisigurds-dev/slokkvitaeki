@@ -81,6 +81,17 @@
  *   (30 blöð fylltu annars Mitt borð í hverjum ham). Í öðrum hömum vísar ein lína á haminn: „N bíða yfirferðar".
  *   Fylgiskjöl sem eru myndir fá forsýn í Völdu máli (áður aðeins hlekkur); eldri Drive-viðhengi ekki (kalla á fall).
  *
+ * LEIÐRÉTTA TÖLUR (368z · Agnar 13.09.2026: „geturðu sett inn vinnufeature þegar ég er að fara yfir vinnublöðin og þarf
+ *   að breyta … duft, léttvatn, brunaslöngur, reykskynjara, co2 5kg og co2 2kg … í einni rönd og passi í mobile view og
+ *   apps … síðan bara staðfesta og setja í vinnslu"): eigandi blaðs sem bíður fær H/Y-teljara (+ / tala / −) fyrir
+ *   tegundirnar sex og akstur — í einni rönd á breiðum skjá, fjögur í röð á mjórri og þrjú í síma. Hver smellur breytir
+ *   sara_yfirferd.linur (tillögunni) og vistast eftir 0,8 s, skilyrt á updated_at og stada='bidur' og lesið til baka.
+ *   kerfi_linur fylgir linur sæti fyrir sæti (tafla C ber þær saman), svo línur bætast við og hverfa í báðum í einu.
+ *   Ný lína fær verð fyrirtækis (company_pricing), annars verðskrárinnar (vorur), annars fast viðmið. Fyrsta hleðsla
+ *   hækkar akstur í 2 (verd.md); akstur lækkar aldrei sjálfkrafa. Brunaslöngur og reykskynjarar eiga enga hleðslu í
+ *   verðskránni, svo H er autt þar. Svartakkarnir heita „✓ Staðfesta" og „▶ Setja í vinnslu" í vinnusvæðinu og vista
+ *   óvistaðar tölur fyrst — mistakist vistun er ekki svarað. Breytti önnur vél blaðinu á meðan eru nýjustu tölur sýndar.
+ *
  * SKRIF — beint á thjonustubeidni, lesið til baka með .select():
  *   Taka    assigned_to = ég, AÐEINS ef málið er enn laust (skilyrt) — tveir fá ekki sama málið.
  *   Setja á assigned_to = hver sem er / Master, skilyrt á eigandann sem var á skjánum („Færa á mig").
@@ -989,6 +1000,22 @@
       '.vbr-linur th.ath,.vbr-linur td.ath{text-align:right}.vbr-linur td.munur{color:var(--terra);font-weight:700}',
       '.vbr-svar{position:sticky;bottom:10px;z-index:5;display:flex;flex-direction:column;gap:10px;padding:12px 16px;border:1px solid #000;border-top:3px solid transparent;border-image:var(--gline) 1;border-image-width:3px 0 0 0;border-radius:5px;background:var(--slab);box-shadow:var(--slabsh);color:var(--on)}',
       '.vbr-svar .sacts{align-items:center}.vbr-svar .smeta{color:var(--on2)}',
+      // 368z: Leiðrétta tölur — H/Y-teljarar í einni rönd; fjögur í röð á mjórri skjá, þrjú í síma.
+      '.vbt-rond{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;padding:12px 14px 6px}',
+      '.vbt-kort{display:flex;flex-direction:column;gap:6px;min-width:0;padding:8px 6px 7px;border:1px solid var(--rule2);border-radius:4px;background:rgba(241,237,228,.55)}',
+      '.vbt-kort.breytt{border-color:var(--g6);box-shadow:inset 0 0 0 1px var(--g6)}',
+      '.vbt-nafn{min-height:2.5em;display:flex;align-items:center;justify-content:center;text-align:center;font:700 11px/1.2 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--ink);overflow-wrap:anywhere}',
+      '.vbt-dalkar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.vbt-kort.einn .vbt-dalkar{grid-template-columns:minmax(0,1fr)}',
+      '.vbt-dalkur{display:flex;flex-direction:column;gap:3px;min-width:0}',
+      '.vbt-hy{font:700 10px var(--mono);letter-spacing:.12em;text-align:center;color:var(--mute)}',
+      '.vbt-btn{height:36px;min-width:0;padding:0;border:1px solid var(--edge);border-bottom-color:var(--edge2);border-radius:4px;background:var(--key);box-shadow:var(--keysh);color:var(--ink);font:700 18px/1 var(--mono);cursor:pointer;touch-action:manipulation}',
+      '.vbt-btn:disabled{opacity:.35;cursor:default}.vbt-btn:focus-visible{outline:2px solid var(--g6);outline-offset:1px}',
+      '.vbt-tala{padding:2px 0;text-align:center;font:800 22px/1.15 var(--disp);font-variant-numeric:tabular-nums;color:var(--ink)}.vbt-tala.breytt{color:var(--terra)}',
+      '.vbt-ekki{flex:1;display:flex;align-items:center;justify-content:center;font:600 13px var(--mono);color:var(--mute)}',
+      '.vbt-kerfi{text-align:center;font:600 10px var(--mono);letter-spacing:.04em;color:var(--mute)}',
+      '.vbt-fot{padding:4px 14px 12px;font-size:12.5px;color:var(--mute)}.vbt-fot b{color:var(--ink);font-variant-numeric:tabular-nums}.vbt-fot .villa{color:var(--terra);font-weight:700}',
+      '@container t5 (max-width: 1250px){.vbt-rond{grid-template-columns:repeat(4,minmax(0,1fr))}}',
+      '@container t5 (max-width: 560px){.vbt-rond{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px 10px 4px}.vbt-btn{height:40px}}',
       '@container t5 (max-width: 900px){.vbr{grid-template-columns:minmax(0,1fr)}.vbr-list{position:static;max-height:none}.vbr-items{max-height:260px}.vbr-cols{grid-template-columns:minmax(0,1fr)}.vbr-titill{font-size:22px}}',
       // Breiðir skjáir: einingar hamsins vinstra megin, aðrar hægra megin, borðið í miðjunni.
       '@container t5 (min-width: 1600px){.layout{display:grid;grid-template-columns:minmax(280px,320px) minmax(0,1fr) minmax(300px,360px);gap:18px;align-items:start}' +
@@ -1188,10 +1215,11 @@
     '</article>';
   }
   // Svartakkar á máli sem bíður samþykkis (368v).
-  const samtTakkar = (r, staerd) => {
+  // 368z: í Vinnublöðum heita tveir fyrstu „✓ Staðfesta" og „▶ Setja í vinnslu" (orð Agnars) — sömu svör og annars staðar.
+  const samtTakkar = (r, staerd, vbr) => {
     const k = (v, cls, texti, titill) => '<button type="button" class="btn ' + cls + staerd + '" data-t5="samt-svar" data-v="' + v + '" data-id="' + r.id + '"' + dis(r.id) + ' title="' + titill + '">' + texti + '</button>';
-    return k('samthykkt', 'gold', '✓ Samþykkja', 'Samþykkja tillöguna — Claude vinnur málið; lokasending er alltaf þín') +
-      k('vinnsla', 'iv', '▶ Í vinnslu', 'Setja málið í vinnslu hjá Claude') +
+    return k('samthykkt', 'gold', vbr ? '✓ Staðfesta' : '✓ Samþykkja', 'Samþykkja tillöguna — Claude vinnur málið; lokasending er alltaf þín') +
+      k('vinnsla', 'iv', vbr ? '▶ Setja í vinnslu' : '▶ Í vinnslu', 'Setja málið í vinnslu hjá Claude') +
       k('hafnad', 'iv', '✕ Hafna', 'Hafna — málinu er lokað og ekkert gert') +
       '<button type="button" class="btn iv' + staerd + '" data-t5="samt-sky" data-id="' + r.id + '"' + dis(r.id) + ' title="Skrifa skýringu — Claude fer aftur yfir málið og endurmetur tillöguna">💬 Skýring</button>';
   };
@@ -1337,7 +1365,7 @@
   async function saekjaVbrRadir(ids) {
     const c = sb();
     if (!c || !ids.length) return [];
-    const r = await c.from('sara_yfirferd').select('id,fyrirtaeki_id,fyrirtaeki,blad,kerfi,spurning,linur,kerfi_linur,akstur,akstur_verd,manudur,dagsetning,blad_nr,mynd_url,myndir,stada,rod').in('id', ids);
+    const r = await c.from('sara_yfirferd').select('id,fyrirtaeki_id,fyrirtaeki,blad,kerfi,spurning,linur,kerfi_linur,akstur,akstur_verd,skyrslugerd,manudur,dagsetning,blad_nr,mynd_url,myndir,stada,rod,updated_at').in('id', ids);
     if (r.error) throw r.error;
     return r.data || [];
   }
@@ -1387,7 +1415,7 @@
     const meta = [s && s.manudur, s && s.dagsetning, bladNr(s) || k.haus, (nr + 1) + ' af ' + listi.length].filter(Boolean).join(' · ');
     const eigin = onBoardOf(val, n);
     const svar = vbrBidur(val)
-      ? (eigin ? '<div class="sacts">' + samtTakkar(val, ' lg') + '</div>' + skyRitillHtml(val)
+      ? (eigin ? '<div class="sacts">' + samtTakkar(val, ' lg', true) + '</div>' + skyRitillHtml(val)
         : '<div class="smeta">Bíður samþykkis hjá ' + esc(normW(val.assigned_to) || 'Master') + ' — aðeins eigandinn svarar</div>')
       : '<div class="smeta">' + esc(svarBidur(val) ? SVOR[svarMals(val)].merki : 'Svarað') + ' · veldu næsta blað í listanum</div>';
     return '<div class="vbr">' +
@@ -1418,11 +1446,201 @@
           '<section class="panel"><header class="phead">' + plate('A') + '<h3 class="ptitle">Svona las ég blaðið</h3></header><div class="vbr-txt">' + esc(blad || 'Lesturinn fannst ekki í málinu.') + '</div></section>' +
           '<section class="panel"><header class="phead">' + plate('B') + '<h3 class="ptitle">Kerfið segir</h3></header><div class="vbr-txt">' + esc(kerfiTexti || 'Ekkert skráð um kerfið í málinu.') + '</div></section>' +
         '</div>' +
-        vbrLinurHtml(s) +
+        vbrLinurHtml(vbtSyn(s)) +
+        (s && eigin && vbrBidur(val) ? vbtHtml(val, s) : '') +
         (g.villa ? '<p class="err">Náði ekki í gögn vinnublaðsins: ' + esc(g.villa) + '</p>' : '') +
         '<div class="vbr-svar" aria-label="Svar">' + svar + '</div>' +
       '</div>' +
     '</div>';
+  }
+  /* ── 368z: LEIÐRÉTTA TÖLUR — H/Y-teljarar í Vinnublöðum ── */
+  // Tegundirnar sex eins og á blaðinu. m/st þekkja línu tegundarinnar (líka Stólpa-heiti eins og „Hleðsla Duft 6-12 kg."),
+  // h/y eru heiti nýrra lína eins og verðskráin (vorur) skrifar þau og hv/yv fast viðmið ef verðskráin næst ekki.
+  const VBT = [
+    { k: 'duft6', t: 'Duft 6 kg', m: /duft/, st: /(^|\D)6(-12)?\s*kg/, h: 'Duft 6 kg. ABC hleðsla', hv: 6782, y: 'Duft 6 kg. ABC yfirferð', yv: 3387 },
+    { k: 'lv6', t: 'Léttvatn', m: /l[ée]ttvatn/, st: /(^|\D)6(-9)?\s*l/, h: 'Léttvatnstækis 6L. hleðsla', hv: 6782, y: 'Léttvatnstæki 6L. yfirferð', yv: 3150 },
+    { k: 'slanga', t: 'Brunaslöngur', m: /brunaslang/, st: null, h: null, hv: 0, y: 'Yfirferð Brunaslanga', yv: 4346 },
+    { k: 'reyk', t: 'Reykskynjarar', m: /reykskynj/, st: null, h: null, hv: 0, y: 'Yfirferð Reykskynjari', yv: 2346 },
+    { k: 'co5', t: 'CO₂ 5 kg', m: /co₂|co2|kols[ýy]r/, st: /(^|\D)5\s*kg/, h: 'CO₂ 5 kg. hleðsla', hv: 6900, y: 'CO₂ 5 kg. yfirferð', yv: 3270 },
+    { k: 'co2', t: 'CO₂ 2 kg', m: /co₂|co2|kols[ýy]r/, st: /(^|\D)2\s*kg/, h: 'CO₂ 2 kg. hleðsla', hv: 3400, y: 'CO₂ 2 kg. yfirferð', yv: 3270 }
+  ];
+  const vbtSvid = l => { const x = String(l || '').toLowerCase(); return /yfirfer/.test(x) ? 'y' : /hle[ðd]sl|(^|\s)hl\./.test(x) ? 'h' : null; };
+  const vbtTeg = l => { const x = String(l || '').toLowerCase(); return VBT.find(t => t.m.test(x) && (!t.st || t.st.test(x))) || null; };
+  const vbtNrm = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ð/g, 'd').replace(/₂/g, '2').replace(/[^a-z0-9]/g, '');
+  const vbtKr = v => String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr';
+  const vbtSara = sid => (S._vbrSara || []).find(x => x.id === sid) || null;
+  const vbtOvistad = malId => { const r = S.rows.find(x => x.id === malId), sid = r && saraIdMals(r), e = sid && S.vbt && S.vbt[sid]; return e && (e.dirty || e.vistar) ? sid : null; };
+  // Tafla C sýnir vinnueintakið á meðan breytt er, svo taflan og teljararnir segi það sama.
+  const vbtSyn = s => { const e = s && S.vbt && S.vbt[s.id]; return e ? Object.assign({}, s, { linur: e.linur, kerfi_linur: e.kerfi, akstur: e.akstur }) : s; };
+  async function saekjaVorurVerd() {
+    const c = sb();
+    if (!c) throw new Error('Engin tenging við gagnagrunn');
+    const r = await c.from('vorur').select('nafn,verd_an_vsk').eq('virkt', true);
+    if (r.error) throw r.error;
+    return r.data || [];
+  }
+  // Verð nýrrar línu: fyrirtækisverð, svo verðskrá, svo fast viðmið — heilar krónur eins og línur Söru.
+  function vbtVerd(fid, nafn, vidmid) {
+    const lykill = vbtNrm(nafn);
+    try {
+      const cp = window.AppSettings && typeof window.AppSettings.get === 'function' ? window.AppSettings.get('company_pricing') : null;
+      const listi = cp && fid != null ? (cp[fid] || cp[String(fid)]) : null;
+      const f = Array.isArray(listi) ? listi.find(p => p && vbtNrm(p.name) === lykill && Number(p.price_ex_vat) > 0) : null;
+      if (f) return Math.round(Number(f.price_ex_vat));
+    } catch (_) {}
+    const vorur = G['vbt-vorur'] && Array.isArray(G['vbt-vorur'].data) ? G['vbt-vorur'].data : [];
+    const v = vorur.find(p => vbtNrm(p.nafn) === lykill && Number(p.verd_an_vsk) > 0);
+    return v ? Math.round(Number(v.verd_an_vsk)) : vidmid;
+  }
+  function vbtTolur(e) {
+    const o = { akstur: e.akstur };
+    VBT.forEach(t => { o[t.k] = { h: 0, y: 0, kerfi: null }; });
+    e.linur.forEach((x, i) => {
+      const t = vbtTeg(x && x.l), sv = vbtSvid(x && x.l);
+      if (!t || !sv || (sv === 'h' && !t.h)) return;
+      o[t.k][sv] += Number(x.n) || 0;
+      const kn = e.kerfi[i] && e.kerfi[i].n;
+      if (kn != null) o[t.k].kerfi = Math.max(o[t.k].kerfi || 0, Number(kn) || 0);
+    });
+    return o;
+  }
+  // Vinnueintak tillögunnar, lykill er sara-röðin. Nýrri gögn úr grunninum (önnur vél, Claude) koma í stað óbreytts
+  // eintaks; eintak með óvistuðum breytingum stendur þar til það hefur verið vistað.
+  function vbtEintak(s) {
+    S.vbt = S.vbt || {};
+    let e = S.vbt[s.id];
+    if (!e || (!e.dirty && !e.vistar && e.updated_at !== s.updated_at)) {
+      e = S.vbt[s.id] = {
+        linur: (Array.isArray(s.linur) ? s.linur : []).map(x => Object.assign({}, x)),
+        kerfi: (Array.isArray(s.kerfi_linur) ? s.kerfi_linur : []).map(x => Object.assign({}, x)),
+        akstur: Number(s.akstur) || 0, updated_at: s.updated_at, dirty: false, vistar: false, aftur: false, villa: '', timi: null, t: null, bid: null
+      };
+      e.upphaf = vbtTolur(e);
+    }
+    return e;
+  }
+  function vbtBreyta(s, k, sv, d) {
+    const e = vbtEintak(s);
+    if (!d) return;
+    if (k === 'akstur') e.akstur = Math.max(0, e.akstur + d);
+    else {
+      const t = VBT.find(x => x.k === k);
+      if (!t || (sv !== 'h' && sv !== 'y') || (sv === 'h' && !t.h)) return;
+      let i = e.linur.findIndex(x => x && vbtTeg(x.l) === t && vbtSvid(x.l) === sv);
+      if (i < 0) {
+        if (d < 0) return;
+        const nafn = sv === 'h' ? t.h : t.y;
+        let j = -1;
+        e.linur.forEach((x, n) => { if (x && vbtTeg(x.l) === t) j = n; });      // H og Y sömu tegundar standa saman
+        i = j >= 0 ? j + 1 : e.linur.length;
+        while (e.kerfi.length < i) e.kerfi.push({ n: null, v: null });
+        e.linur.splice(i, 0, { l: nafn, n: 0, v: vbtVerd(s.fyrirtaeki_id, nafn, sv === 'h' ? t.hv : t.yv), vsk: 24 });
+        e.kerfi.splice(i, 0, { n: null, v: null });
+      }
+      const nytt = Math.max(0, (Number(e.linur[i].n) || 0) + d);
+      // Lína sem fer í 0 hverfur, nema kerfið eigi tölu á móti henni — þá stendur 0 á móti tölu kerfisins.
+      if (nytt === 0 && !(e.kerfi[i] && e.kerfi[i].n != null)) { e.linur.splice(i, 1); if (i < e.kerfi.length) e.kerfi.splice(i, 1); }
+      else e.linur[i].n = nytt;
+      if (sv === 'h' && d > 0 && e.akstur < 2) e.akstur = 2;                      // verd.md: hleðsla → akstur 2
+    }
+    e.dirty = true;
+    e.villa = '';
+    clearTimeout(e.t);
+    e.t = setTimeout(() => { vbtVista(s.id); }, 800);
+  }
+  const vbtSpor = linur => (linur || []).map(x => [x && x.l, Number(x && x.n), Number(x && x.v)].join('|')).join('¦');
+  // Vistun: skilyrt á updated_at og stada='bidur', lesin til baka. Breyting sem kemur á meðan vistað er fer strax á eftir.
+  function vbtVista(sid) {
+    const e = S.vbt && S.vbt[sid], c = sb();
+    if (!e) return Promise.resolve(true);
+    clearTimeout(e.t);
+    if (e.vistar) { e.aftur = true; return e.bid; }
+    if (!e.dirty) return Promise.resolve(!e.villa);
+    if (!c) { e.villa = 'Engin tenging við gagnagrunn'; render(); return Promise.resolve(false); }
+    const linur = e.linur.map(x => Object.assign({}, x)), kerfi = e.kerfi.map(x => Object.assign({}, x)), akstur = e.akstur;
+    e.vistar = true;
+    e.dirty = false;
+    render();
+    e.bid = (async () => {
+      let ok = false;
+      try {
+        let q = c.from('sara_yfirferd').update({ linur, kerfi_linur: kerfi, akstur, updated_at: new Date().toISOString() }).eq('id', sid).eq('stada', 'bidur');
+        q = e.updated_at ? q.eq('updated_at', e.updated_at) : q.is('updated_at', null);
+        const r = await q.select('id,linur,kerfi_linur,akstur,updated_at');
+        if (r.error) throw r.error;
+        const row = (r.data || [])[0];
+        if (!row) {
+          // Önnur vél eða Claude breytti blaðinu (eða það var samþykkt) — ekkert skrifað yfir, nýjustu tölur sýndar.
+          e.vistar = false;
+          delete S.vbt[sid];
+          toast('Blaðinu var breytt annars staðar rétt í þessu — sýni nýjustu tölur. Breyttu aftur ef þarf.', true);
+          gleyma('vbrymi:');
+          render();
+          return false;
+        }
+        if (vbtSpor(row.linur) !== vbtSpor(linur) || Number(row.akstur) !== akstur) throw new Error('las ekki til baka');
+        e.updated_at = row.updated_at;
+        e.timi = new Date();
+        e.villa = '';
+        Object.keys(G).forEach(x => {
+          const s2 = x.indexOf('vbrymi:') === 0 && G[x] && Array.isArray(G[x].data) ? G[x].data.find(y => y.id === sid) : null;
+          if (s2) Object.assign(s2, { linur: row.linur, kerfi_linur: row.kerfi_linur, akstur: row.akstur, updated_at: row.updated_at });
+        });
+        ok = true;
+      } catch (err) {
+        e.dirty = true;
+        e.villa = 'Vistaðist ekki: ' + ((err && err.message) || err);
+        toast(e.villa, true);
+      }
+      e.vistar = false;
+      render();
+      if (ok && (e.aftur || e.dirty)) { e.aftur = false; return vbtVista(sid); }
+      return ok;
+    })();
+    return e.bid;
+  }
+  // Fyrir svar: bíða vistunar sem er í gangi og vista það sem eftir er. false = tölurnar komust ekki í grunninn.
+  async function vbtFyrst(sid) {
+    const e = S.vbt && S.vbt[sid];
+    if (!e) return true;
+    clearTimeout(e.t);
+    if (e.vistar) await e.bid;
+    const e2 = S.vbt && S.vbt[sid];
+    if (!e2) return false;                   // önnur vél breytti blaðinu — nýjustu tölur sýndar, ekki svarað
+    return e2.dirty ? vbtVista(sid) : !e2.villa;
+  }
+  // Farið á annað blað: óvistaðar tölur fara strax, ekki eftir 0,8 s.
+  function vbtFlytja() {
+    Object.keys(S.vbt || {}).forEach(k => { const e = S.vbt[k]; if (e && e.dirty && !e.vistar) vbtVista(Number(k)); });
+  }
+  function vbtHtml(r, s) {
+    gogn('vbt-vorur', saekjaVorurVerd, 3600000);
+    const e = vbtEintak(s), o = vbtTolur(e), u = e.upphaf || o;
+    const takki = (k, sv, d, texti, merki, af) => '<button type="button" class="vbt-btn" data-t5="vbt" data-id="' + r.id + '" data-k="' + k + '" data-s="' + sv + '" data-v="' + d + '" aria-label="' + esc(merki) + '"' + (af ? ' disabled' : '') + '>' + texti + '</button>';
+    const dalkur = (t, sv) => {
+      if (sv === 'h' && !t.h) return '<div class="vbt-dalkur"><span class="vbt-hy">H</span><span class="vbt-ekki" title="Engin hleðsla í verðskránni fyrir ' + esc(t.t.toLowerCase()) + '">—</span></div>';
+      const n = o[t.k][sv], heiti = t.t + ', ' + (sv === 'h' ? 'hleðsla' : 'yfirferð');
+      return '<div class="vbt-dalkur"><span class="vbt-hy">' + sv.toUpperCase() + '</span>' +
+        takki(t.k, sv, 1, '+', heiti + ': bæta við einu') +
+        '<span class="vbt-tala' + (n !== u[t.k][sv] ? ' breytt' : '') + '">' + n + '</span>' +
+        takki(t.k, sv, -1, '−', heiti + ': fækka um eitt', n <= 0) + '</div>';
+    };
+    const kort = VBT.map(t => '<div class="vbt-kort' + (o[t.k].h !== u[t.k].h || o[t.k].y !== u[t.k].y ? ' breytt' : '') + '" role="group" aria-label="' + esc(t.t) + '">' +
+        '<div class="vbt-nafn">' + esc(t.t) + '</div><div class="vbt-dalkar">' + dalkur(t, 'h') + dalkur(t, 'y') + '</div>' +
+        '<div class="vbt-kerfi">' + (o[t.k].kerfi != null ? 'kerfið ' + o[t.k].kerfi : '&nbsp;') + '</div></div>').join('') +
+      '<div class="vbt-kort einn' + (o.akstur !== u.akstur ? ' breytt' : '') + '" role="group" aria-label="Akstur">' +
+        '<div class="vbt-nafn">Akstur</div><div class="vbt-dalkar"><div class="vbt-dalkur"><span class="vbt-hy">FERÐIR</span>' +
+        takki('akstur', '', 1, '+', 'Akstur: bæta við ferð') +
+        '<span class="vbt-tala' + (o.akstur !== u.akstur ? ' breytt' : '') + '">' + o.akstur + '</span>' +
+        takki('akstur', '', -1, '−', 'Akstur: fækka um ferð', o.akstur <= 0) + '</div></div>' +
+        '<div class="vbt-kerfi">× ' + vbtKr(s.akstur_verd) + '</div></div>';
+    const samtals = e.linur.reduce((a, x) => a + (Number(x && x.n) || 0) * (Number(x && x.v) || 0), 0) + o.akstur * (Number(s.akstur_verd) || 0) + (Number(s.skyrslugerd) || 0);
+    const stada = e.vistar ? 'Vista…' : e.villa ? '<span class="villa">' + esc(e.villa) + '</span>' : e.dirty ? 'Óvistað' : e.timi ? 'Vistað kl. ' + klukka(e.timi) : 'Breytingar vistast strax';
+    return '<section class="panel vbt" aria-label="Leiðrétta tölur">' +
+      '<header class="phead">' + plate('D') + '<h3 class="ptitle">Leiðrétta tölur</h3><span class="sum">H = hleðsla · Y = yfirferð</span></header>' +
+      '<div class="vbt-rond">' + kort + '</div>' +
+      '<div class="vbt-fot" aria-live="polite">Samtals án vsk <b>' + vbtKr(samtals) + '</b> · ' + stada + '</div>' +
+    '</section>';
   }
   // Í Vinnublöðum opnast næsta blað sem bíður þegar svarið hefur skilað sér — blaðið stendur kyrrt ef vistun mistókst.
   function vbrEftirSvar(id, bid) {
@@ -3304,12 +3522,27 @@
         return;
       case 'done': done(id); return;
       case 'giveback': giveBack(id); return;
-      case 'samt-svar': vbrEftirSvar(id, svaraSamthykki(id, el.dataset.v)); return;
-      case 'vbr-velja': S.vbrVal = id; render(); vbrTilBaka(); return;
+      case 'samt-svar': {
+        // 368z: óvistaðar tölur fara fyrst í grunninn — mistakist það er ekki svarað og blaðið stendur kyrrt.
+        const sid = vbtOvistad(id), v = el.dataset.v;
+        vbrEftirSvar(id, sid ? vbtFyrst(sid).then(ok => (ok ? svaraSamthykki(id, v) : null)) : svaraSamthykki(id, v));
+        return;
+      }
+      case 'vbt': {
+        const r = S.rows.find(x => x.id === id), sid = r && saraIdMals(r), s = sid ? vbtSara(sid) : null;
+        if (!s) { toast('Tölur blaðsins eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return; }
+        vbtBreyta(s, el.dataset.k, el.dataset.s, Number(el.dataset.v) || 0);
+        render();
+        // Fókusinn fylgir takkanum eftir endurteikningu, svo lyklaborð og skjálesari haldi sínum stað.
+        const leit = '[data-t5="vbt"][data-k="' + el.dataset.k + '"][data-s="' + (el.dataset.s || '') + '"][data-v="' + el.dataset.v + '"]';
+        setTimeout(() => { try { const b = rot().querySelector(leit); if (b && !b.disabled) b.focus({ preventScroll: true }); } catch (_) {} }, 0);
+        return;
+      }
+      case 'vbr-velja': vbtFlytja(); S.vbrVal = id; render(); vbrTilBaka(); return;
       case 'vbr-fara': {
         const listi = vbrListi(nu()), i = listi.findIndex(r => r.id === S.vbrVal);
         const j = Math.min(listi.length - 1, Math.max(0, i + Number(el.dataset.v || 0)));
-        if (listi[j]) { S.vbrVal = listi[j].id; render(); vbrTilBaka(); }
+        if (listi[j]) { vbtFlytja(); S.vbrVal = listi[j].id; render(); vbrTilBaka(); }
         return;
       }
       case 'samt-sky':
@@ -3321,7 +3554,8 @@
       case 'samt-sky-senda': {
         const txt = String(S.samtSkyDrog[id] || '').trim();
         if (!txt) { toast('Skrifaðu skýringuna fyrst — svo fer málið til Claude', true); return; }
-        vbrEftirSvar(id, svaraSamthykki(id, 'endurmeta', txt));
+        const sidS = vbtOvistad(id);
+        vbrEftirSvar(id, sidS ? vbtFyrst(sidS).then(ok => (ok ? svaraSamthykki(id, 'endurmeta', txt) : null)) : svaraSamthykki(id, 'endurmeta', txt));
         return;
       }
       case 'reply': reply(id); return;
@@ -3800,7 +4034,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368y' };
+    window.Thjonustubord5 = { show, load, render, version: '368z' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
