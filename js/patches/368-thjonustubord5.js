@@ -88,8 +88,8 @@
  *   sara_yfirferd.linur (tillögunni) og vistast eftir 0,8 s, skilyrt á updated_at og stada='bidur' og lesið til baka.
  *   kerfi_linur fylgir linur sæti fyrir sæti (tafla C ber þær saman), svo línur bætast við og hverfa í báðum í einu.
  *   Ný lína fær verð fyrirtækis (company_pricing), annars verðskrárinnar (vorur), annars fast viðmið. Fyrsta hleðsla
- *   hækkar akstur í 2 (verd.md); akstur lækkar aldrei sjálfkrafa. Brunaslöngur og reykskynjarar eiga enga hleðslu í
- *   verðskránni, svo H er autt þar. Svartakkarnir heita „✓ Staðfesta" og „▶ Setja í vinnslu" í vinnusvæðinu og vista
+ *   hækkar akstur í 2 (verd.md); akstur lækkar aldrei sjálfkrafa. Brunaslöngur og reykskynjarar fá aðeins Y-dálk
+ *   (368z3 · Agnar: „H þarf ekki að vera þar"). Svartakkarnir heita „✓ Staðfesta" og „▶ Setja í vinnslu" í vinnusvæðinu og vista
  *   óvistaðar tölur fyrst — mistakist vistun er ekki svarað. Breytti önnur vél blaðinu á meðan eru nýjustu tölur sýndar.
  *   Röðun (368z2 · „geturðu sorted listann með hvað er nýjast tekið út efst"): innan „Bíða" og „Svarað" raðast blöðin
  *   eftir úttektardegi, nýjast efst — dagsetning blaðsins, annars dagur í blaðnúmeri („30.08-bunki"), annars mánuður.
@@ -1013,7 +1013,6 @@
       '.vbt-btn{height:36px;min-width:0;padding:0;border:1px solid var(--edge);border-bottom-color:var(--edge2);border-radius:4px;background:var(--key);box-shadow:var(--keysh);color:var(--ink);font:700 18px/1 var(--mono);cursor:pointer;touch-action:manipulation}',
       '.vbt-btn:disabled{opacity:.35;cursor:default}.vbt-btn:focus-visible{outline:2px solid var(--g6);outline-offset:1px}',
       '.vbt-tala{padding:2px 0;text-align:center;font:800 22px/1.15 var(--disp);font-variant-numeric:tabular-nums;color:var(--ink)}.vbt-tala.breytt{color:var(--terra)}',
-      '.vbt-ekki{flex:1;display:flex;align-items:center;justify-content:center;font:600 13px var(--mono);color:var(--mute)}',
       '.vbt-kerfi{text-align:center;font:600 10px var(--mono);letter-spacing:.04em;color:var(--mute)}',
       '.vbt-fot{padding:4px 14px 12px;font-size:12.5px;color:var(--mute)}.vbt-fot b{color:var(--ink);font-variant-numeric:tabular-nums}.vbt-fot .villa{color:var(--terra);font-weight:700}',
       '@container t5 (max-width: 1250px){.vbt-rond{grid-template-columns:repeat(4,minmax(0,1fr))}}',
@@ -1642,15 +1641,16 @@
     const e = vbtEintak(s), o = vbtTolur(e), u = e.upphaf || o;
     const takki = (k, sv, d, texti, merki, af) => '<button type="button" class="vbt-btn" data-t5="vbt" data-id="' + r.id + '" data-k="' + k + '" data-s="' + sv + '" data-v="' + d + '" aria-label="' + esc(merki) + '"' + (af ? ' disabled' : '') + '>' + texti + '</button>';
     const dalkur = (t, sv) => {
-      if (sv === 'h' && !t.h) return '<div class="vbt-dalkur"><span class="vbt-hy">H</span><span class="vbt-ekki" title="Engin hleðsla í verðskránni fyrir ' + esc(t.t.toLowerCase()) + '">—</span></div>';
       const n = o[t.k][sv], heiti = t.t + ', ' + (sv === 'h' ? 'hleðsla' : 'yfirferð');
       return '<div class="vbt-dalkur"><span class="vbt-hy">' + sv.toUpperCase() + '</span>' +
         takki(t.k, sv, 1, '+', heiti + ': bæta við einu') +
         '<span class="vbt-tala' + (n !== u[t.k][sv] ? ' breytt' : '') + '">' + n + '</span>' +
         takki(t.k, sv, -1, '−', heiti + ': fækka um eitt', n <= 0) + '</div>';
     };
-    const kort = VBT.map(t => '<div class="vbt-kort' + (o[t.k].h !== u[t.k].h || o[t.k].y !== u[t.k].y ? ' breytt' : '') + '" role="group" aria-label="' + esc(t.t) + '">' +
-        '<div class="vbt-nafn">' + esc(t.t) + '</div><div class="vbt-dalkar">' + dalkur(t, 'h') + dalkur(t, 'y') + '</div>' +
+    // 368z3 (Agnar 13.09.2026: „H þarf ekki að vera þar. Bara Y yfirferð á reykskynjurum og brunaslöngum"):
+    // tegund án hleðslu fær einn Y-dálk í fullri breidd spjaldsins, eins og aksturinn.
+    const kort = VBT.map(t => '<div class="vbt-kort' + (t.h ? '' : ' einn') + (o[t.k].h !== u[t.k].h || o[t.k].y !== u[t.k].y ? ' breytt' : '') + '" role="group" aria-label="' + esc(t.t) + '">' +
+        '<div class="vbt-nafn">' + esc(t.t) + '</div><div class="vbt-dalkar">' + (t.h ? dalkur(t, 'h') : '') + dalkur(t, 'y') + '</div>' +
         '<div class="vbt-kerfi">' + (o[t.k].kerfi != null ? 'kerfið ' + o[t.k].kerfi : '&nbsp;') + '</div></div>').join('') +
       '<div class="vbt-kort einn' + (o.akstur !== u.akstur ? ' breytt' : '') + '" role="group" aria-label="Akstur">' +
         '<div class="vbt-nafn">Akstur</div><div class="vbt-dalkar"><div class="vbt-dalkur"><span class="vbt-hy">FERÐIR</span>' +
@@ -4058,7 +4058,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368z2' };
+    window.Thjonustubord5 = { show, load, render, version: '368z3' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
