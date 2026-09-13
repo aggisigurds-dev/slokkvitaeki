@@ -3,153 +3,245 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stjórnborð — frumgerð</title>
+<title>Stjórnborð — Ragnarök</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@11/dist/gridstack.min.css">
 <style>
-  :root{
-    --bg:#0e0f13; --panel:#171922; --panel2:#1e2130; --border:#2a2f40;
-    --text:#e7e9f0; --sub:#8b90a3; --gold:#d9b45b; --red:#d64545; --green:#4bbf73;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
-    font-family:"Space Grotesk",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
-  .topbar{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--border);
-    background:linear-gradient(180deg,#14161f,#101219);position:sticky;top:0;z-index:50}
-  .brand{display:flex;align-items:baseline;gap:9px;font-weight:600;font-size:17px;letter-spacing:.2px}
-  .brand .dot{color:var(--gold)}
-  .badge{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;
-    color:#111;background:var(--gold);border-radius:999px;padding:2px 9px}
-  .spacer{flex:1}
-  .tbtn{all:unset;cursor:pointer;font-size:13px;font-weight:600;padding:8px 13px;border-radius:9px;
-    border:1px solid var(--border);background:var(--panel2);color:var(--text)}
-  .tbtn:hover{border-color:var(--gold);color:var(--gold)}
-  .tbtn.primary{background:var(--gold);color:#141414;border-color:var(--gold)}
-  .tbtn.primary:hover{filter:brightness(1.08)}
-  .hint{font-size:12px;color:var(--sub)}
-  .grid-stack{background:transparent;min-height:calc(100vh - 56px)}
-  .grid-stack-item-content{inset:0;overflow:visible!important;background:transparent!important;border:0!important}
-  .tile{display:flex;flex-direction:column;height:100%;background:var(--panel);
-    border:1px solid var(--border);border-radius:13px;overflow:hidden}
-  .tile-head{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);
-    background:var(--panel2);flex:none}
-  .drag{cursor:move;color:var(--sub);font-size:15px;line-height:1;user-select:none;padding:0 2px}
-  .drag:hover{color:var(--gold)}
-  .tile-title{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .tile-actions{display:flex;gap:2px}
-  .ic{all:unset;cursor:pointer;width:24px;height:24px;display:grid;place-items:center;border-radius:7px;
-    color:var(--sub);font-size:13px}
-  .ic:hover{background:#00000040;color:var(--text)}
-  .tile-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px;gap:6px;overflow:auto}
-  .tile-embed .tile-body{padding:0}
-  .big-link,.big-btn{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-    text-align:center;font-size:15px;font-weight:600;flex:1;border-radius:10px;border:1px dashed var(--border);
-    color:var(--text)}
-  .big-link:hover,.big-btn:hover{border-color:var(--gold);color:var(--gold);border-style:solid}
-  .big-btn{background:var(--panel2)}
-  .arw{color:var(--gold)}
-  .sub{font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
-  .data-val{font-size:34px;font-weight:700;color:var(--gold);line-height:1.05;margin-top:auto}
-  .data-label{font-size:13px;color:var(--text)}
-  .data-body{margin-top:auto;margin-bottom:auto}
-  iframe{flex:1;width:100%;border:0;background:#fff}
-  .embed-bar{display:flex;align-items:center;gap:6px;padding:5px 8px;font-size:11px;color:var(--sub);
-    background:var(--panel2);border-bottom:1px solid var(--border)}
-  .embed-bar span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .embed-bar a{color:var(--gold);text-decoration:none;font-size:13px}
-  .note{flex:1;outline:none;font-size:13px;line-height:1.5;color:var(--text)}
-  .note:empty:before{content:"Skrifaðu…";color:var(--sub)}
-  /* modal */
-  .ovl{position:fixed;inset:0;background:#000000aa;display:none;align-items:flex-start;justify-content:center;
-    padding:60px 16px;z-index:100;overflow:auto}
-  .ovl.open{display:flex}
-  .modal{width:min(720px,96vw);background:var(--panel);border:1px solid var(--border);border-radius:16px;
-    padding:18px 20px}
-  .modal h2{margin:0 0 4px;font-size:18px;font-weight:600}
-  .modal p{margin:0 0 14px;font-size:13px;color:var(--sub)}
-  .gal-group{margin:14px 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold)}
-  .gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-  .gal-item{all:unset;cursor:pointer;border:1px solid var(--border);border-radius:10px;padding:10px 12px;
-    background:var(--panel2)}
-  .gal-item:hover{border-color:var(--gold)}
-  .gal-item b{display:block;font-size:13px;font-weight:600}
-  .gal-item small{color:var(--sub);font-size:11px}
-  .fld{display:block;margin:10px 0}
-  .fld label{display:block;font-size:12px;color:var(--sub);margin-bottom:4px}
-  .fld input{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--border);
-    background:var(--bg);color:var(--text);font:inherit;font-size:13px}
-  .fld input:focus{outline:none;border-color:var(--gold)}
-  .modal-ft{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
-  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);
-    border:1px solid var(--gold);color:var(--text);padding:10px 16px;border-radius:10px;font-size:13px;
-    z-index:200;opacity:0;transition:opacity .2s;pointer-events:none}
-  .toast.show{opacity:1}
-  .err-banner{display:none;padding:10px 16px;background:#3a1c1c;color:#f3c0c0;font-size:13px}
+/* ===== RAGNARÖK theme (inlined from prototypes/ragnarok.css) ===== */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+:root{
+  --rg-gold-100:#fff4d1;--rg-gold-200:#ffe7a8;--rg-gold-300:#ffd98a;--rg-gold-400:#ffcf6a;
+  --rg-gold-500:#e6b04a;--rg-gold-600:#c9982f;--rg-gold-700:#b5651d;--rg-gold-800:#7a3a0c;--rg-gold-900:#3e1a06;
+  --rg-ember-100:#fff0c0;--rg-ember-300:#ffb347;--rg-ember-500:#ff9a3a;--rg-ember-600:#ff8c2a;--rg-ember-700:#d2691e;--rg-ember-900:#5a2a08;
+  --rg-red:#ff5a2a;
+  --rg-black:#020202;--rg-steel-900:#030303;--rg-steel-800:#070707;--rg-steel-700:#0c0c0c;--rg-steel-600:#141414;--rg-steel-500:#1c1c1c;
+  --rg-text:#f3e4bf;--rg-text-gold:#ffcf6a;--rg-text-dim:#bf9a5d;--rg-text-muted:#9c7a45;--rg-text-faint:#7d6238;
+  --rg-font:'Chakra Petch',monospace;--rg-mono:'JetBrains Mono',monospace;
+  --rg-glow:0 0 22px rgba(255,120,40,.3);--rg-glow-strong:0 0 22px rgba(255,120,40,.5);--rg-glow-text:0 0 10px rgba(255,140,40,.7);--rg-shadow:0 8px 24px rgba(0,0,0,.7);
+  --rg-steel:repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 3px),linear-gradient(180deg,#141414 0%,#030303 100%);
+  --rg-steel-deep:repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 3px),linear-gradient(180deg,#1c1c1c,#070707);
+  --rg-steel-lit:linear-gradient(180deg,#3a2a10,#141414);
+  --rg-ground:radial-gradient(ellipse 30% 12% at 8% 62%,rgba(140,60,12,.35),transparent 70%),radial-gradient(ellipse 26% 10% at 92% 18%,rgba(160,70,15,.3),transparent 70%),radial-gradient(ellipse 40% 8% at 50% 88%,rgba(120,50,10,.3),transparent 70%),repeating-linear-gradient(45deg,rgba(255,255,255,.02) 0 2px,transparent 2px 14px),radial-gradient(ellipse 120% 40% at 50% 28%,#1a1408 0%,#080808 40%,#020202 100%);
+  --rg-frame:repeating-linear-gradient(90deg,transparent 0 41px,rgba(5,5,5,.85) 41px 46px,transparent 46px 97px,rgba(5,5,5,.85) 97px 100px,transparent 100px 163px),repeating-linear-gradient(0deg,transparent 0 53px,rgba(5,5,5,.85) 53px 57px,transparent 57px 131px),linear-gradient(135deg,#fff0c0 0%,#ffb347 12%,#7a3a0c 26%,#ffcf6a 40%,#c9982f 52%,#ff8c2a 64%,#3e1a06 76%,#ffd98a 88%,#d2691e 100%);
+  --rg-frame-thin:repeating-linear-gradient(90deg,transparent 0 23px,rgba(5,5,5,.9) 23px 26px,transparent 26px 61px),linear-gradient(135deg,#ffcf6a,#ff8c2a 30%,#5a2a08 50%,#ffd98a 70%,#d2691e);
+  --rg-frame-dim:linear-gradient(135deg,#6e5520,#1a1a1a 50%,#4a3210);
+  --rg-gold-fill:linear-gradient(180deg,#ffd98a,#e6b04a 50%,#b5651d);
+  --rg-gold-text:linear-gradient(180deg,#fff4d1,#ffcf6a 35%,#b5651d 55%,#ffe7a8 75%,#ff8c2a);
+  --rg-hazard:repeating-linear-gradient(135deg,#ff8c2a 0 6px,#ffcf6a 6px 9px,#0a0a0a 9px 20px);
+  --rg-cut:14px;--rg-cut-sm:8px;
+}
+.rg-body,body.rg{margin:0;min-height:100vh;background:var(--rg-ground);background-color:var(--rg-black);color:var(--rg-text);font-family:var(--rg-font)}
+.rg a{color:var(--rg-gold-500);text-decoration:none}.rg a:hover{color:var(--rg-gold-200)}
+.rg-scanlines{position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,200,90,.04) 0 1px,transparent 1px 4px);z-index:999}
+.rg-mono{font-family:var(--rg-mono)}
+.rg-gold-text{background:var(--rg-gold-text);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 12px rgba(255,140,40,.45))}
+.rg-kicker{font:700 10px var(--rg-mono);letter-spacing:.3em;color:var(--rg-gold-500)}
+.rg-panel{position:relative;padding:2px;background:var(--rg-frame);box-shadow:var(--rg-glow),var(--rg-shadow);clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.rg-panel::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:radial-gradient(circle at 11px 11px,#fff0c0 0 1.5px,#ff8c2a 2.5px,#3e1a06 3.5px,transparent 4.5px),radial-gradient(circle at calc(100% - 11px) 11px,#fff0c0 0 1.5px,#ff8c2a 2.5px,#3e1a06 3.5px,transparent 4.5px),radial-gradient(circle at 11px calc(100% - 11px),#fff0c0 0 1.5px,#ff8c2a 2.5px,#3e1a06 3.5px,transparent 4.5px),radial-gradient(circle at calc(100% - 11px) calc(100% - 11px),#fff0c0 0 1.5px,#ff8c2a 2.5px,#3e1a06 3.5px,transparent 4.5px)}
+.rg-panel>.rg-face{padding:18px 20px;background:var(--rg-steel);clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);height:100%;box-sizing:border-box}
+.rg-panel.hot{box-shadow:var(--rg-glow-strong),var(--rg-shadow)}
+.rg-panel.hot>.rg-face{background:radial-gradient(ellipse at 20% 100%,rgba(255,110,30,.35),transparent 60%),linear-gradient(180deg,#2a1608,#0a0604)}
+.rg-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:1.5px;border:0;background:var(--rg-frame-thin);color:var(--rg-text);cursor:pointer;font:600 12px var(--rg-font);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:filter .15s;text-decoration:none}
+.rg-btn>span{white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:8px;height:100%;width:100%;padding:0 18px;box-sizing:border-box;background:var(--rg-steel-deep);color:var(--rg-text);clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+.rg-btn:hover{filter:brightness(1.2)}.rg-btn:active{filter:brightness(.9)}
+.rg-btn.gold{background:var(--rg-gold-fill);padding:0;color:#0a0a0a;box-shadow:0 0 12px rgba(255,140,40,.5)}.rg-btn.gold>span{background:transparent;color:#0a0a0a;font-weight:700}
+.rg-btn.sm{height:34px;font-size:11px}.rg-btn.sm>span{padding:0 12px}
+.rg-tag{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;font:700 9px var(--rg-mono);letter-spacing:.2em;color:var(--rg-ember-500);border:1px solid currentColor}
+.rg-tag.glow{box-shadow:0 0 8px currentColor}
+.rg-dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.rg-input-wrap{padding:1px;background:var(--rg-frame-thin)}
+.rg-input{width:100%;box-sizing:border-box;height:42px;padding:0 14px;border:0;outline:0;background:#050505;color:var(--rg-text);font:500 13px var(--rg-mono);letter-spacing:.04em}
+.rg-input:focus{box-shadow:inset 0 0 0 1px var(--rg-ember-500)}
+.rg-input::placeholder{color:var(--rg-text-faint)}
+.rg-stat{display:flex;align-items:center;gap:12px}
+.rg-stat .ic{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--rg-text-gold);background:#050505;border:1px solid rgba(255,154,58,.45);box-shadow:inset 0 0 10px rgba(255,120,30,.3);flex-shrink:0}
+.rg-stat .lbl{font:500 9.5px var(--rg-mono);letter-spacing:.1em;color:var(--rg-text-dim)}
+.rg-stat .val{font:700 22px/1 var(--rg-mono);color:var(--rg-text);text-shadow:0 0 10px rgba(255,140,40,.4)}
+.rg ::-webkit-scrollbar,.rg-body ::-webkit-scrollbar{width:10px;height:10px}
+.rg ::-webkit-scrollbar-track{background:#050505}
+.rg ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#c9982f,#6e4a12);border:2px solid #050505}
+.rg ::selection{background:rgba(255,140,40,.35);color:#fff0c0}
+</style>
+<style>
+/* ===== dashboard glue over Ragnarök ===== */
+.st-topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid rgba(201,160,74,.35);background:linear-gradient(180deg,#0c0c0c,#040404);position:sticky;top:0;z-index:50}
+.st-topbar .sp{flex:1}
+.st-badge{font:700 9px var(--rg-mono);letter-spacing:.2em;color:#0a0a0a;background:var(--rg-gold-fill);padding:3px 9px;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+.st-hint{font:400 11px var(--rg-font);color:var(--rg-text-muted)}
+.grid-stack{min-height:calc(100vh - 112px);padding:10px}
+.grid-stack-item-content{overflow:visible!important;background:transparent!important;padding:0!important;border:0!important}
+.st-tile{height:100%}
+.st-tile>.rg-face{padding:0!important;display:flex;flex-direction:column;height:100%;overflow:hidden}
+.st-head{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid rgba(201,160,74,.28);background:#050505;flex:none}
+.st-drag{cursor:move;color:var(--rg-text-muted);font-size:14px;line-height:1;user-select:none}
+.st-drag:hover{color:var(--rg-gold-400)}
+.st-title{flex:1;min-width:0;font:600 11.5px var(--rg-font);letter-spacing:.08em;text-transform:uppercase;color:var(--rg-text-gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 8px rgba(255,140,40,.35)}
+.st-ic{width:24px;height:24px;display:grid;place-items:center;border:0;background:transparent;color:var(--rg-text-dim);cursor:pointer;font-size:12px}
+.st-ic:hover{color:var(--rg-ember-100);text-shadow:0 0 8px rgba(255,140,40,.7)}
+.st-body{flex:1;min-height:0;padding:12px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.st-sub{font:400 10px var(--rg-mono);letter-spacing:.05em;color:var(--rg-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-tile .val{font:700 18px/1.05 var(--rg-mono);color:var(--rg-text);text-shadow:0 0 10px rgba(255,140,40,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-embed .rg-face>iframe{flex:1;min-height:0;width:100%;border:0;background:#0a0a0a}
+.st-ring-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:6px}
+.st-tile .note{flex:1;outline:none;color:var(--rg-text);font:400 13px/1.55 var(--rg-font);overflow:auto}
+.st-tile .note:empty:before{content:"Skrifaðu…";color:var(--rg-text-faint)}
+.grid-stack-item>.ui-resizable-se{width:16px;height:16px;right:3px;bottom:3px;background:linear-gradient(135deg,transparent 42%,var(--rg-ember-500) 42% 58%,transparent 58%);opacity:.6}
+.grid-stack-item>.ui-resizable-se:hover{opacity:1}
+.st-ovl{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:flex-start;justify-content:center;padding:56px 16px;z-index:100;overflow:auto}
+.st-ovl.open{display:flex}
+.st-modal{width:min(760px,96vw)}
+.st-modal>.rg-face{padding:18px 20px}
+.st-gal-group{display:block;margin:14px 0 6px}
+.st-gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.st-gal-item{text-align:left;cursor:pointer;border:1px solid rgba(201,160,74,.3);background:#0a0a0a;color:var(--rg-text);padding:10px 12px;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.st-gal-item:hover{border-color:var(--rg-ember-500);box-shadow:0 0 10px rgba(255,120,40,.3)}
+.st-gal-item b{display:block;font:600 12.5px var(--rg-font);color:var(--rg-text-gold)}
+.st-gal-item small{font:400 9.5px var(--rg-mono);letter-spacing:.14em;color:var(--rg-text-muted);text-transform:uppercase}
+.st-fld{display:block;margin:10px 0}
+.st-fld label{display:block;font:500 10px var(--rg-mono);letter-spacing:.1em;color:var(--rg-text-dim);margin-bottom:5px;text-transform:uppercase}
+.st-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0a0a0a;border:1px solid var(--rg-ember-500);color:var(--rg-text);padding:10px 16px;font:500 12px var(--rg-font);z-index:200;opacity:0;transition:opacity .2s;pointer-events:none;box-shadow:0 0 16px rgba(255,120,40,.4);clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.st-toast.show{opacity:1}
+.st-errb{display:none;padding:10px 16px;color:var(--rg-red);font:500 12px var(--rg-mono)}
 </style>
 </head>
-<body>
-  <div class="topbar">
-    <div class="brand"><span class="dot">◧</span> Stjórnborð <span class="badge">frumgerð</span></div>
-    <span class="hint">Dragðu reiti með ⠿ · breyttu stærð í neðra horni · útlit vistast sjálfkrafa (þessi vafri)</span>
-    <span class="spacer"></span>
-    <button class="tbtn primary" id="btn-add">+ Reitur</button>
-    <button class="tbtn" id="btn-reset">Núllstilla</button>
-  </div>
-  <div class="err-banner" id="errb"></div>
-  <div class="grid-stack"></div>
+<body class="rg-body rg">
+<div class="rg-scanlines"></div>
+<div class="st-topbar">
+  <span class="rg-kicker">◆ STJÓRNBORÐ</span>
+  <span class="st-badge">FRUMGERÐ</span>
+  <span class="st-hint">Dragðu með ⠿ · stækkaðu í horninu · vistast í vafra</span>
+  <span class="sp"></span>
+  <button class="rg-btn gold" id="btn-add"><span>+ REITUR</span></button>
+  <button class="rg-btn sm" id="btn-reset"><span>Núllstilla</span></button>
+</div>
+<div class="st-errb" id="errb"></div>
+<div class="grid-stack"></div>
 
-  <!-- Gallery -->
-  <div class="ovl" id="ovl-gal">
-    <div class="modal">
-      <h2>Bæta við reit</h2>
-      <p>Veldu tilbúinn reit. Þú getur breytt honum eftir á (✎) og fært/stækkað hann.</p>
-      <div id="gal-body"></div>
-      <div class="modal-ft"><button class="tbtn" data-close>Loka</button></div>
-    </div>
-  </div>
+<div class="st-ovl" id="ovl-gal"><div class="st-modal rg-panel"><div class="rg-face">
+  <div class="rg-kicker">◆ BÆTA VIÐ REIT</div>
+  <p class="rg-muted" style="font:400 12px var(--rg-font);color:var(--rg-text-muted);margin:6px 0 2px">Veldu tilbúinn reit — þú getur breytt honum (✎) og fært/stækkað hann eftir á.</p>
+  <div id="gal-body"></div>
+  <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="rg-btn sm" data-close><span>Loka</span></button></div>
+</div></div></div>
 
-  <!-- Edit -->
-  <div class="ovl" id="ovl-edit">
-    <div class="modal">
-      <h2>Breyta reit</h2>
-      <p id="edit-type"></p>
-      <div id="edit-fields"></div>
-      <div class="modal-ft">
-        <button class="tbtn" data-close>Hætta við</button>
-        <button class="tbtn primary" id="edit-save">Vista</button>
-      </div>
-    </div>
+<div class="st-ovl" id="ovl-edit"><div class="st-modal rg-panel"><div class="rg-face">
+  <div class="rg-kicker">◆ BREYTA REIT</div>
+  <p id="edit-type" style="font:400 12px var(--rg-mono);color:var(--rg-text-muted);margin:6px 0 8px"></p>
+  <div id="edit-fields"></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+    <button class="rg-btn sm" data-close><span>Hætta við</span></button>
+    <button class="rg-btn sm gold" id="edit-save"><span>Vista</span></button>
   </div>
+</div></div></div>
 
-  <div class="toast" id="toast"></div>
+<div class="st-toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/gridstack@11/dist/gridstack-all.js"></script>
 <script>
+/* ===== ragnarok-ring web component (inlined from prototypes/ragnarok-ring.js) ===== */
+(() => {
+  const CSS = `
+  :host{display:inline-block;position:relative;contain:layout}
+  .w{position:relative;width:100%;height:100%;font-family:'Chakra Petch','JetBrains Mono',monospace;cursor:default}
+  .l{position:absolute;border-radius:50%}
+  .haze{inset:3%;background:radial-gradient(circle,rgba(255,150,40,.5) 0%,rgba(210,80,20,.22) 32%,transparent 64%);animation:pulse 3s ease-in-out infinite}
+  .r1{inset:10%;background:conic-gradient(from 0deg,#ffb347 0 38deg,transparent 38deg 52deg,#c9982f 52deg 70deg,transparent 70deg 74deg,#ff8c2a 74deg 140deg,transparent 140deg 168deg,#e6b04a 168deg 176deg,transparent 176deg 190deg,#ffcf6a 190deg 262deg,transparent 262deg 300deg,#d2691e 300deg 318deg,transparent 318deg 324deg,#ffb347 324deg 360deg);-webkit-mask:radial-gradient(circle,transparent calc(50% - 7px),#000 calc(50% - 6px),#000 calc(50% - 1px),transparent 50%);mask:radial-gradient(circle,transparent calc(50% - 7px),#000 calc(50% - 6px),#000 calc(50% - 1px),transparent 50%);filter:drop-shadow(0 0 8px rgba(255,140,40,.9));animation:spin 140s linear infinite}
+  .r2{inset:13%;background:conic-gradient(from 90deg,transparent 0 20deg,#ff9a3a 20deg 30deg,transparent 30deg 95deg,#ffd98a 95deg 160deg,transparent 160deg 200deg,#b5651d 200deg 215deg,transparent 215deg 250deg,#ffb347 250deg 330deg,transparent 330deg);-webkit-mask:radial-gradient(circle,transparent calc(50% - 3px),#000 calc(50% - 2px),#000 50%);mask:radial-gradient(circle,transparent calc(50% - 3px),#000 calc(50% - 2px),#000 50%);filter:drop-shadow(0 0 6px rgba(255,170,60,.9));animation:spinr 110s linear infinite}
+  .r3{inset:8%;background:repeating-conic-gradient(from 0deg,#ff8c2a 0deg 1deg,transparent 1deg 5.5deg,#ffcf6a 5.5deg 6deg,transparent 6deg 17deg);-webkit-mask:radial-gradient(circle,transparent calc(50% - 5px),#000 calc(50% - 4px),#000 50%);mask:radial-gradient(circle,transparent calc(50% - 5px),#000 calc(50% - 4px),#000 50%);opacity:.8;animation:spin 300s linear infinite,flicker 8s steps(1) infinite}
+  .face{inset:17%;background:radial-gradient(circle at 50% 50%,#050505 55%,rgba(60,20,5,.9) 80%,rgba(120,40,8,.5) 100%);box-shadow:inset 0 0 40px rgba(255,120,30,.35)}
+  .comet{inset:13%;border:4px solid transparent;border-top-color:#fff0c0;border-right-color:rgba(255,120,40,.6);animation:spin 18s linear infinite;filter:drop-shadow(0 0 10px rgba(255,140,40,1))}
+  canvas{position:absolute;inset:6%;width:100%;height:100%;border-radius:50%}
+  .txt{position:absolute;inset:32%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:12%;box-sizing:border-box;gap:4px;text-align:center;pointer-events:none;color:#ffcf6a;text-shadow:0 0 3px #000,0 0 6px #000,0 0 10px rgba(255,140,40,.9);font-weight:600;letter-spacing:.3em}
+  .txt small{font-size:.6em;letter-spacing:.2em;color:#ffcf6a;font-weight:600;text-shadow:0 0 3px #000,0 0 6px #000}
+  .b{position:absolute;transform:translate(-50%,-50%);font-size:9px;letter-spacing:.14em;color:#ff9a3a;text-shadow:0 0 6px rgba(255,120,30,.8)}
+  :host([active]) .r1{animation-duration:30s}:host([active]) .r2{animation-duration:22s}:host([active]) .comet{animation-duration:4s}
+  @keyframes spin{to{transform:rotate(360deg)}}@keyframes spinr{to{transform:rotate(-360deg)}}
+  @keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
+  @keyframes flicker{0%,92%,100%{opacity:1}93%{opacity:.4}95%{opacity:1}97%{opacity:.6}}`;
+  class RagnarokRing extends HTMLElement {
+    static get observedAttributes(){return ['size','label','sub','mode','value','active','bearings','density'];}
+    constructor(){super();this.attachShadow({mode:'open'});}
+    get active(){return this.hasAttribute('active');}
+    set active(v){v?this.setAttribute('active',''):this.removeAttribute('active');}
+    connectedCallback(){this.render();}
+    disconnectedCallback(){cancelAnimationFrame(this.raf);}
+    attributeChangedCallback(n){if(n==='active')return;if(this.isConnected)this.render();}
+    render(){
+      cancelAnimationFrame(this.raf);
+      const size=+this.getAttribute('size')||300,mode=this.getAttribute('mode')||'core';
+      const label=this.getAttribute('label')||'',sub=this.getAttribute('sub')||'';
+      const fs=Math.round(size*0.04);
+      this.style.width=this.style.height=size+'px';
+      let bearings='';
+      if(this.hasAttribute('bearings'))for(let i=0;i<12;i++){const d=i*30,r=(d-90)*Math.PI/180,R=44;bearings+=`<span class="b" style="left:${50+Math.cos(r)*R}%;top:${50+Math.sin(r)*R}%">${String(d).padStart(3,'0')}</span>`;}
+      this.shadowRoot.innerHTML=`<style>${CSS}</style><div class="w">
+        <div class="l haze"></div><div class="l r1"></div><div class="l r2"></div><div class="l r3"></div><div class="l face"></div><div class="l comet"></div>
+        <canvas width="${size*2}" height="${size*2}"></canvas>${bearings}
+        <div class="txt" style="font-size:${fs}px">${label}${sub?`<small>${sub}</small>`:''}</div></div>`;
+      this.startCanvas(this.shadowRoot.querySelector('canvas'),+this.getAttribute('density')||(mode==='core'?1:0.3));
+    }
+    startCanvas(cv,k){
+      const ctx=cv.getContext('2d'),W=cv.width,C=W/2,R=W*0.35;
+      const pts=Array.from({length:Math.round(700*k)},()=>({a:Math.random()*6.28,r:Math.sqrt(Math.random())*R,s:0.6+Math.random()*1.6,w:(Math.random()-0.5)*0.004,ph:Math.random()*6.28}));
+      const arcs=Array.from({length:Math.round(42*Math.max(k,0.6))},()=>({r:R*(0.55+Math.random()*0.55),a:Math.random()*6.28,len:0.1+Math.random()*1.2,w:1+Math.random()*3,sp:(Math.random()-0.5)*0.0025,ph:Math.random()*6.28,hot:Math.random()>0.6}));
+      const embers=Array.from({length:Math.round(90*Math.max(k,0.5))},()=>({x:Math.random()*W,y:Math.random()*W,vy:0.3+Math.random()*0.9,s:0.5+Math.random()*1.5,ph:Math.random()*6.28}));
+      const sc=W/680;let t=0;
+      const draw=()=>{
+        t+=0.016;ctx.clearRect(0,0,W,W);
+        const sp=this.active?3:1;
+        for(const a of arcs){
+          a.a+=a.sp*sp;const fl=0.5+0.5*Math.sin(t*(0.8+a.w*0.3)+a.ph);if(fl<0.12)continue;
+          ctx.beginPath();ctx.arc(C,C,a.r+Math.sin(t+a.ph)*2,a.a,a.a+a.len);ctx.lineWidth=a.w*sc;
+          ctx.strokeStyle=a.hot?`rgba(255,${200+40*fl|0},140,${(0.35+0.6*fl).toFixed(2)})`:`rgba(${230+25*fl|0},${110+60*fl|0},30,${(0.25+0.5*fl).toFixed(2)})`;
+          ctx.shadowBlur=14*sc;ctx.shadowColor='rgba(255,140,40,0.9)';ctx.stroke();
+        }
+        ctx.shadowBlur=0;
+        for(const e of embers){
+          e.y-=e.vy*sp*sc;e.x+=Math.sin(t*2+e.ph)*0.4;if(e.y<0){e.y=W;e.x=Math.random()*W;}
+          if(Math.hypot(e.x-C,e.y-C)>R*1.15)continue;
+          const q=0.4+0.6*Math.abs(Math.sin(t*3+e.ph));
+          ctx.fillStyle=`rgba(255,${120+100*q|0},40,${(0.3+0.6*q).toFixed(2)})`;ctx.beginPath();ctx.arc(e.x,e.y,e.s*sc,0,6.28);ctx.fill();
+        }
+        for(const p of pts){
+          p.a+=p.w*sp;const x=C+Math.cos(p.a)*p.r,y=C+Math.sin(p.a)*p.r,q=1-p.r/R,tw=0.5+0.5*Math.sin(t*2+p.ph);
+          ctx.fillStyle=`rgba(255,${Math.round(175+60*q)},${Math.round(70+90*q)},${(0.25+0.7*q*tw).toFixed(2)})`;
+          ctx.beginPath();ctx.arc(x,y,p.s*sc*(this.active?1.4:1),0,6.28);ctx.fill();
+        }
+        const g=ctx.createRadialGradient(C,C,0,C,C,(40+(this.active?14*Math.sin(t*6):6*Math.sin(t*2)))*sc);
+        g.addColorStop(0,'rgba(255,250,225,1)');g.addColorStop(0.3,'rgba(255,190,80,0.8)');g.addColorStop(0.7,'rgba(230,90,20,0.35)');g.addColorStop(1,'rgba(200,60,10,0)');
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(C,C,90*sc,0,6.28);ctx.fill();
+        ctx.lineWidth=2.5*sc;ctx.shadowBlur=18*sc;ctx.shadowColor='rgba(255,200,90,1)';
+        for(let i=0;i<5;i++){const rr=(14+i*9+Math.sin(t*2+i)*4)*sc,st=t*(1.2+i*0.3)+i;ctx.beginPath();ctx.arc(C,C,rr,st,st+1.6+Math.sin(t+i));ctx.strokeStyle=`rgba(255,${210-i*20},${120-i*18},${0.9-i*0.12})`;ctx.stroke();}
+        ctx.shadowBlur=0;
+        this.raf=requestAnimationFrame(draw);
+      };
+      draw();
+    }
+  }
+  if(!customElements.get('ragnarok-ring'))customElements.define('ragnarok-ring',RagnarokRing);
+})();
+</script>
+<script>
+/* ===== Stjórnborð app ===== */
 (function(){
   "use strict";
   var SB_URL='https://osfdzskyvisifcwyjkuk.supabase.co';
   var SB_KEY='sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
-  var LS_KEY='stjornbord_proto_v1';
-
-  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  var LS_KEY='stjornbord_rg_v1';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function $(s,r){return (r||document).querySelector(s);}
   function uid(){return 't'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);}
 
-  if(typeof GridStack==='undefined'){
-    var eb=$('#errb'); eb.style.display='block';
-    eb.textContent='Náði ekki að hlaða Gridstack (nettenging?). Opnaðu síðuna aftur með nettengingu.';
-    return;
-  }
+  if(typeof GridStack==='undefined'){var eb=$('#errb');eb.style.display='block';eb.textContent='Náði ekki að hlaða Gridstack (nettenging?).';return;}
 
-  var DEF={link:{w:3,h:2},button:{w:2,h:2},embed:{w:6,h:6},data:{w:2,h:3},note:{w:3,h:3}};
+  var DEF={link:{w:3,h:2},button:{w:2,h:2},embed:{w:6,h:6},data:{w:2,h:3},note:{w:3,h:3},ring:{w:3,h:6}};
 
   var GALLERY=[
-    {group:'Lifandi gögn (úr Supabase)',items:[
-      {type:'data',title:'Fyrirtæki',label:'í kerfinu',source:'count',table:'fyrirtaeki'},
-      {type:'data',title:'Viðskiptavinir',label:'customers_base',source:'count',table:'customers_base'},
-      {type:'data',title:'Teya færslur',label:'fjöldi alls',source:'count',table:'teya_faerslur'},
-      {type:'data',title:'Teya kortatekjur',label:'þennan mánuð',source:'teya_month'},
-      {type:'data',title:'Opin verk',label:'Verkefnalisti',source:'tasks'}
+    {group:'Lifandi gögn',items:[
+      {type:'data',title:'Fyrirtæki',label:'í kerfinu',source:'count',table:'fyrirtaeki',icon:'▤'},
+      {type:'data',title:'Viðskiptavinir',label:'customers_base',source:'count',table:'customers_base',icon:'◉'},
+      {type:'data',title:'Teya færslur',label:'fjöldi alls',source:'count',table:'teya_faerslur',icon:'▦'},
+      {type:'data',title:'Teya kortatekjur',label:'þennan mánuð',source:'teya_month',icon:'⧗'},
+      {type:'data',title:'Opin verk',label:'Verkefnalisti',source:'tasks',icon:'◈'}
     ]},
     {group:'Tenglar',items:[
       {type:'link',title:'Slökkvitæki',label:'Opna appið',url:'https://slokkvitaeki.netlify.app'},
@@ -159,14 +251,17 @@
       {type:'link',title:'Supabase',label:'Gagnagrunnur',url:'https://supabase.com/dashboard/project/osfdzskyvisifcwyjkuk'},
       {type:'link',title:'Gmail',label:'Póstur',url:'https://mail.google.com'}
     ]},
-    {group:'Innfelldar síður (iframe)',items:[
+    {group:'Innfelldar síður',items:[
       {type:'embed',title:'Slökkvitæki (innfellt)',url:'https://slokkvitaeki.netlify.app'},
       {type:'embed',title:'Brunahólf hub (innfellt)',url:'https://brunaholf.netlify.app'}
     ]},
-    {group:'Sjálfvirkni-hnappar (stubbar — tengjast n8n)',items:[
+    {group:'Sjálfvirkni-hnappar (stubbar)',items:[
       {type:'button',title:'Teya innflutningur',label:'Keyra'},
       {type:'button',title:'Sækja pósta á borð',label:'Keyra'},
       {type:'button',title:'Payday ↻',label:'Keyra'}
+    ]},
+    {group:'Jarvis',items:[
+      {type:'ring',title:'Kjarni',label:'KJARNI',sub:'SYS · ONLINE',size:240}
     ]},
     {group:'Annað',items:[
       {type:'note',title:'Minnismiði',text:''}
@@ -178,208 +273,89 @@
     button:[['title','Titill'],['label','Hnappa-texti'],['webhook','n8n webhook (valfrjálst)']],
     embed:[['title','Titill'],['url','Slóð (URL)']],
     data:[['title','Titill'],['label','Merki']],
-    note:[['title','Titill']]
+    note:[['title','Titill']],
+    ring:[['title','Titill'],['label','Miðju-texti'],['sub','Undirtexti']]
   };
 
   function defaults(){return [
-    {type:'data',title:'Fyrirtæki',label:'í kerfinu',source:'count',table:'fyrirtaeki',x:0,y:0,w:2,h:3},
-    {type:'data',title:'Viðskiptavinir',label:'customers_base',source:'count',table:'customers_base',x:2,y:0,w:2,h:3},
-    {type:'data',title:'Teya kortatekjur',label:'þennan mánuð',source:'teya_month',x:4,y:0,w:3,h:3},
-    {type:'data',title:'Opin verk',label:'Verkefnalisti',source:'tasks',x:7,y:0,w:2,h:3},
-    {type:'link',title:'Slökkvitæki',label:'Opna appið',url:'https://slokkvitaeki.netlify.app',x:9,y:0,w:3,h:2},
-    {type:'link',title:'Brunahólf hub',label:'Stjórnstöð',url:'https://brunaholf.netlify.app',x:9,y:2,w:3,h:1},
-    {type:'note',title:'Minnismiði',text:'Dæmi-borð. Dragðu með ⠿, stækkaðu í horninu, bættu við með „+ Reitur". Allt vistast í þessum vafra.',x:0,y:3,w:4,h:3},
-    {type:'button',title:'Teya innflutningur',label:'Keyra',x:4,y:3,w:2,h:2},
-    {type:'embed',title:'Slökkvitæki (innfellt)',url:'https://slokkvitaeki.netlify.app',x:6,y:3,w:6,h:6}
+    {type:'data',title:'Fyrirtæki',label:'í kerfinu',source:'count',table:'fyrirtaeki',icon:'▤',x:0,y:0,w:3,h:3},
+    {type:'data',title:'Viðskiptavinir',label:'customers_base',source:'count',table:'customers_base',icon:'◉',x:3,y:0,w:3,h:3},
+    {type:'data',title:'Teya kortatekjur',label:'þennan mánuð',source:'teya_month',icon:'⧗',x:6,y:0,w:3,h:3},
+    {type:'data',title:'Opin verk',label:'Verkefnalisti',source:'tasks',icon:'◈',x:9,y:0,w:3,h:3},
+    {type:'link',title:'Slökkvitæki',label:'Opna appið',url:'https://slokkvitaeki.netlify.app',x:0,y:3,w:3,h:2},
+    {type:'link',title:'Brunahólf hub',label:'Stjórnstöð',url:'https://brunaholf.netlify.app',x:3,y:3,w:3,h:2},
+    {type:'button',title:'Teya innflutningur',label:'Keyra',x:6,y:3,w:3,h:2},
+    {type:'ring',title:'Kjarni',label:'KJARNI',sub:'SYS · ONLINE',size:240,x:9,y:3,w:3,h:6},
+    {type:'note',title:'Minnismiði',text:'Ragnarök-þema. Dragðu með ⠿, stækkaðu í horninu, „+ Reitur" bætir við. Vistast í vafra.',x:0,y:5,w:9,h:3}
   ];}
 
   var state={tiles:[]};
-  try{var raw=localStorage.getItem(LS_KEY); if(raw) state.tiles=JSON.parse(raw);}catch(e){}
-  if(!state.tiles || !state.tiles.length) state.tiles=defaults();
+  try{var raw=localStorage.getItem(LS_KEY);if(raw)state.tiles=JSON.parse(raw);}catch(e){}
+  if(!state.tiles||!state.tiles.length)state.tiles=defaults();
   state.tiles.forEach(function(t){if(!t.id)t.id=uid();});
 
-  var grid=GridStack.init({column:12,cellHeight:64,margin:8,float:true,
-    handle:'.drag',resizable:{handles:'se,e,s'},animate:true});
+  var grid=GridStack.init({column:12,cellHeight:60,margin:8,float:true,handle:'.st-drag',resizable:{handles:'se,e,s'},animate:true});
 
   function getTile(id){for(var i=0;i<state.tiles.length;i++)if(String(state.tiles[i].id)===String(id))return state.tiles[i];return null;}
 
   function headHTML(t){
-    return '<div class="tile-head"><span class="drag" title="Draga">⠿</span>'+
-      '<span class="tile-title">'+esc(t.title)+'</span><span class="tile-actions">'+
-      (t.type==='data'?'<button class="ic" data-act="refresh" title="Uppfæra">↻</button>':'')+
-      '<button class="ic" data-act="edit" title="Breyta">✎</button>'+
-      '<button class="ic" data-act="remove" title="Fjarlægja">✕</button></span></div>';
+    return '<div class="st-head"><span class="st-drag" title="Draga">⠿</span><span class="st-title">'+esc(t.title)+'</span>'+
+      (t.type==='data'?'<button class="st-ic" data-act="refresh" title="Uppfæra">↻</button>':'')+
+      '<button class="st-ic" data-act="edit" title="Breyta">✎</button>'+
+      '<button class="st-ic" data-act="remove" title="Fjarlægja">✕</button></div>';
   }
   function bodyHTML(t){
-    if(t.type==='link') return '<div class="tile-body"><a class="big-link" href="'+esc(t.url)+'" target="_blank" rel="noopener">'+esc(t.label||'Opna')+' <span class="arw">↗</span></a><div class="sub">'+esc(t.url)+'</div></div>';
-    if(t.type==='button') return '<div class="tile-body"><button class="big-btn" data-act="run">'+esc(t.label||'Keyra')+'</button><div class="sub">'+(t.webhook?esc(t.webhook):'stubbur — engin webhook')+'</div></div>';
-    if(t.type==='embed') return '<div class="embed-bar"><span>'+esc(t.url)+'</span><a href="'+esc(t.url)+'" target="_blank" rel="noopener" title="Opna í flipa">↗</a></div><iframe src="'+esc(t.url)+'" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>';
-    if(t.type==='data') return '<div class="tile-body"><div class="data-body"><div class="data-val" id="val-'+t.id+'">…</div><div class="data-label">'+esc(t.label||'')+'</div></div><div class="sub" id="sub-'+t.id+'"></div></div>';
-    if(t.type==='note') return '<div class="tile-body"><div class="note" contenteditable="true" data-id="'+t.id+'">'+(t.text||'')+'</div></div>';
-    return '<div class="tile-body"></div>';
+    if(t.type==='link')return '<div class="st-body" style="justify-content:center;align-items:center;gap:10px"><a class="rg-btn gold" href="'+esc(t.url)+'" target="_blank" rel="noopener"><span>'+esc(t.label||'Opna')+' ↗</span></a><div class="st-sub" style="text-align:center;max-width:100%">'+esc(t.url)+'</div></div>';
+    if(t.type==='button')return '<div class="st-body" style="justify-content:center;align-items:center;gap:10px"><button class="rg-btn" data-act="run"><span>'+esc(t.label||'Keyra')+'</span></button><div class="st-sub" style="text-align:center">'+(t.webhook?esc(t.webhook):'stubbur — engin webhook')+'</div></div>';
+    if(t.type==='embed')return '<div class="st-sub" style="padding:5px 8px;background:#050505;border-bottom:1px solid rgba(201,160,74,.25)">'+esc(t.url)+' <a href="'+esc(t.url)+'" target="_blank" rel="noopener" style="color:var(--rg-gold-400);float:right">↗</a></div><iframe src="'+esc(t.url)+'" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>';
+    if(t.type==='data')return '<div class="st-body"><div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--rg-text-gold);background:#050505;border:1px solid rgba(255,154,58,.45);box-shadow:inset 0 0 10px rgba(255,120,30,.3);flex-shrink:0">'+esc(t.icon||'◉')+'</span><span style="min-width:0;font:500 9.5px var(--rg-mono);letter-spacing:.1em;color:var(--rg-text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(t.label||'')+'</span></div><div class="val" id="val-'+t.id+'" style="margin-top:auto">…</div><div class="st-sub" id="sub-'+t.id+'"></div></div>';
+    if(t.type==='note')return '<div class="st-body"><div class="note" contenteditable="true" data-id="'+t.id+'">'+(t.text||'')+'</div></div>';
+    if(t.type==='ring')return '<div class="st-ring-wrap"><ragnarok-ring size="'+(+t.size||240)+'" label="'+esc(t.label||'KJARNI')+'" sub="'+esc(t.sub||'')+'" bearings></ragnarok-ring></div>';
+    return '<div class="st-body"></div>';
   }
-  function innerHTML(t){return '<div class="tile tile-'+t.type+'">'+headHTML(t)+bodyHTML(t)+'</div>';}
+  function innerHTML(t){return '<div class="rg-panel st-tile st-'+t.type+'"><div class="rg-face">'+headHTML(t)+bodyHTML(t)+'</div></div>';}
 
   function renderTile(t,auto){
-    var el=document.createElement('div');
-    el.className='grid-stack-item';
-    el.setAttribute('gs-id',t.id);
-    el.setAttribute('gs-w',t.w||DEF[t.type].w);
-    el.setAttribute('gs-h',t.h||DEF[t.type].h);
-    if(!auto && t.x!=null){el.setAttribute('gs-x',t.x);el.setAttribute('gs-y',t.y);}
+    var el=document.createElement('div');el.className='grid-stack-item';el.setAttribute('gs-id',t.id);
+    el.setAttribute('gs-w',t.w||DEF[t.type].w);el.setAttribute('gs-h',t.h||DEF[t.type].h);
+    if(!auto&&t.x!=null){el.setAttribute('gs-x',t.x);el.setAttribute('gs-y',t.y);}
     el.innerHTML='<div class="grid-stack-item-content">'+innerHTML(t)+'</div>';
-    $('.grid-stack').appendChild(el);
-    grid.makeWidget(el);
-    if(t.type==='data') loadData(t);
+    $('.grid-stack').appendChild(el);grid.makeWidget(el);
+    if(t.type==='data')loadData(t);
   }
+  function persist(){try{var nodes=grid.save(false)||[];var by={};nodes.forEach(function(n){by[String(n.id)]=n;});state.tiles.forEach(function(t){var n=by[String(t.id)];if(n){t.x=n.x;t.y=n.y;t.w=n.w;t.h=n.h;}});localStorage.setItem(LS_KEY,JSON.stringify(state.tiles));}catch(e){}}
+  function addTile(tpl){var t={};for(var k in tpl)t[k]=tpl[k];t.id=uid();if(t.w==null){t.w=DEF[t.type].w;t.h=DEF[t.type].h;}state.tiles.push(t);renderTile(t,true);persist();toast('Reit bætt við: '+(t.title||t.type));}
+  function removeTile(id){var t=getTile(id);if(!t)return;var el=$('.grid-stack-item[gs-id="'+id+'"]');if(el)grid.removeWidget(el);state.tiles=state.tiles.filter(function(x){return String(x.id)!==String(id);});persist();}
 
-  function persist(){
-    try{
-      var nodes=grid.save(false)||[];
-      var by={}; nodes.forEach(function(n){by[String(n.id)]=n;});
-      state.tiles.forEach(function(t){var n=by[String(t.id)]; if(n){t.x=n.x;t.y=n.y;t.w=n.w;t.h=n.h;}});
-      localStorage.setItem(LS_KEY,JSON.stringify(state.tiles));
-    }catch(e){}
-  }
+  function sbFetch(path,extra){var h={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};if(extra)for(var k in extra)h[k]=extra[k];return fetch(SB_URL+'/rest/v1/'+path,{headers:h});}
+  function sbCount(table){return sbFetch(table+'?select=id',{Prefer:'count=exact',Range:'0-0'}).then(function(r){var cr=r.headers.get('content-range');if(cr&&cr.indexOf('/')>-1){var tot=cr.split('/')[1];if(tot&&tot!=='*')return Number(tot);}return r.json().then(function(j){return Array.isArray(j)?j.length:0;});});}
+  function teyaMonth(){var d=new Date();var f=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';return sbFetch('teya_faerslur?select=upphaed,tegund,teya_stada&faersludagur=gte.'+f).then(function(r){return r.json();}).then(function(rows){var s=0;(rows||[]).forEach(function(x){if(x.teya_stada==='SAMÞYKKT')s+=(x.tegund==='REFUND'?-1:1)*Number(x.upphaed||0);});return s;});}
+  function hubTasks(){return fetch('https://brunaholf.netlify.app/api/verkefnalisti').then(function(r){return r.json();}).then(function(j){var arr=Array.isArray(j)?j:(j.items||j.tasks||j.data||j.rows||[]);return arr.filter(function(x){var s=String(x.status||x.stada||'').toLowerCase();return s==='beidni'||s==='i_vinnu';}).length;});}
+  function loadData(t){var val=$('#val-'+t.id),sub=$('#sub-'+t.id);if(val)val.textContent='…';var p;if(t.source==='count')p=sbCount(t.table).then(function(n){return n.toLocaleString('is-IS');});else if(t.source==='teya_month')p=teyaMonth().then(function(n){return n.toLocaleString('is-IS')+' kr';});else if(t.source==='tasks')p=hubTasks().then(function(n){return n.toLocaleString('is-IS');});else p=Promise.resolve('—');p.then(function(v){if(val)val.textContent=v;if(sub)sub.textContent='uppfært '+new Date().toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'});}).catch(function(){if(val)val.textContent='—';if(sub)sub.textContent='náði ekki gögnum';});}
+  function runTile(t){if(!t)return;if(!t.webhook){toast('Stubbur: „'+(t.title||'')+'" — tengist n8n webhook síðar');return;}toast('Keyri „'+(t.title||'')+'"…');fetch(t.webhook,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:'stjornbord',tile:t.title})}).then(function(){toast('Sent ✓');}).catch(function(){toast('Villa við keyrslu');});}
 
-  function addTile(tpl){
-    var t={}; for(var k in tpl) t[k]=tpl[k];
-    t.id=uid();
-    if(t.w==null){t.w=DEF[t.type].w;t.h=DEF[t.type].h;}
-    state.tiles.push(t);
-    renderTile(t,true);
-    persist();
-    toast('Reit bætt við: '+(t.title||t.type));
-  }
-  function removeTile(id){
-    var t=getTile(id); if(!t)return;
-    var el=$('.grid-stack-item[gs-id="'+id+'"]');
-    if(el) grid.removeWidget(el);
-    state.tiles=state.tiles.filter(function(x){return String(x.id)!==String(id);});
-    persist();
-  }
-
-  /* ---- live data ---- */
-  function sbFetch(path,extra){
-    var h={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};
-    if(extra)for(var k in extra)h[k]=extra[k];
-    return fetch(SB_URL+'/rest/v1/'+path,{headers:h});
-  }
-  function sbCount(table){
-    return sbFetch(table+'?select=id',{Prefer:'count=exact',Range:'0-0'}).then(function(r){
-      var cr=r.headers.get('content-range');
-      if(cr&&cr.indexOf('/')>-1){var tot=cr.split('/')[1]; if(tot&&tot!=='*')return Number(tot);}
-      return r.json().then(function(j){return Array.isArray(j)?j.length:0;});
-    });
-  }
-  function teyaMonth(){
-    var d=new Date(); var f=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
-    return sbFetch('teya_faerslur?select=upphaed,tegund,teya_stada&faersludagur=gte.'+f).then(function(r){return r.json();}).then(function(rows){
-      var s=0;(rows||[]).forEach(function(x){if(x.teya_stada==='SAMÞYKKT')s+=(x.tegund==='REFUND'?-1:1)*Number(x.upphaed||0);});
-      return s;
-    });
-  }
-  function hubTasks(){
-    return fetch('https://brunaholf.netlify.app/api/verkefnalisti').then(function(r){return r.json();}).then(function(j){
-      var arr=Array.isArray(j)?j:(j.items||j.tasks||j.data||j.rows||[]);
-      return arr.filter(function(x){var s=String(x.status||x.stada||'').toLowerCase();return s==='beidni'||s==='i_vinnu';}).length;
-    });
-  }
-  function loadData(t){
-    var val=$('#val-'+t.id), sub=$('#sub-'+t.id);
-    if(val)val.textContent='…';
-    var p;
-    if(t.source==='count')p=sbCount(t.table).then(function(n){return n.toLocaleString('is-IS');});
-    else if(t.source==='teya_month')p=teyaMonth().then(function(n){return n.toLocaleString('is-IS')+' kr';});
-    else if(t.source==='tasks')p=hubTasks().then(function(n){return n.toLocaleString('is-IS');});
-    else p=Promise.resolve('—');
-    p.then(function(v){if(val)val.textContent=v; if(sub)sub.textContent='uppfært '+new Date().toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'});})
-     .catch(function(){if(val)val.textContent='—'; if(sub)sub.textContent='náði ekki gögnum';});
-  }
-  function runTile(t){
-    if(!t)return;
-    if(!t.webhook){toast('Stubbur: „'+(t.title||'')+'" — tengist n8n webhook síðar');return;}
-    toast('Keyri „'+(t.title||'')+'"…');
-    fetch(t.webhook,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:'stjornbord',tile:t.title})})
-      .then(function(){toast('Sent ✓');}).catch(function(){toast('Villa við keyrslu');});
-  }
-
-  /* ---- events ---- */
   var gEl=$('.grid-stack');
-  gEl.addEventListener('click',function(e){
-    var act=e.target.closest('[data-act]'); if(!act)return;
-    var item=e.target.closest('.grid-stack-item'); var id=item&&item.getAttribute('gs-id');
-    var a=act.getAttribute('data-act');
-    if(a==='remove'){e.preventDefault();removeTile(id);}
-    else if(a==='edit'){e.preventDefault();openEdit(id);}
-    else if(a==='refresh'){e.preventDefault();var t=getTile(id);if(t)loadData(t);}
-    else if(a==='run'){e.preventDefault();runTile(getTile(id));}
-  });
-  gEl.addEventListener('input',function(e){
-    var n=e.target.closest('.note'); if(!n)return;
-    var t=getTile(n.getAttribute('data-id')); if(t){t.text=n.innerHTML;persist();}
-  });
+  gEl.addEventListener('click',function(e){var act=e.target.closest('[data-act]');if(!act)return;var item=e.target.closest('.grid-stack-item');var id=item&&item.getAttribute('gs-id');var a=act.getAttribute('data-act');if(a==='remove'){e.preventDefault();removeTile(id);}else if(a==='edit'){e.preventDefault();openEdit(id);}else if(a==='refresh'){e.preventDefault();var t=getTile(id);if(t)loadData(t);}else if(a==='run'){e.preventDefault();runTile(getTile(id));}});
+  gEl.addEventListener('input',function(e){var n=e.target.closest('.note');if(!n)return;var t=getTile(n.getAttribute('data-id'));if(t){t.text=n.innerHTML;persist();}});
   grid.on('change',function(){persist();});
 
-  /* ---- gallery ---- */
-  function openGallery(){
-    var b=$('#gal-body'); b.innerHTML='';
-    GALLERY.forEach(function(g){
-      var h=document.createElement('div'); h.className='gal-group'; h.textContent=g.group; b.appendChild(h);
-      var grid2=document.createElement('div'); grid2.className='gal-grid';
-      g.items.forEach(function(it){
-        var btn=document.createElement('button'); btn.className='gal-item';
-        btn.innerHTML='<b>'+esc(it.title)+'</b><small>'+esc(it.type)+'</small>';
-        btn.onclick=function(){addTile(it);close('#ovl-gal');};
-        grid2.appendChild(btn);
-      });
-      b.appendChild(grid2);
-    });
-    open('#ovl-gal');
-  }
+  function openGallery(){var b=$('#gal-body');b.innerHTML='';GALLERY.forEach(function(g){var h=document.createElement('div');h.className='rg-kicker st-gal-group';h.textContent=g.group;b.appendChild(h);var gr=document.createElement('div');gr.className='st-gal-grid';g.items.forEach(function(it){var btn=document.createElement('button');btn.className='st-gal-item';btn.innerHTML='<b>'+esc(it.title)+'</b><small>'+esc(it.type)+'</small>';btn.onclick=function(){addTile(it);closeOvl('#ovl-gal');};gr.appendChild(btn);});b.appendChild(gr);});openOvl('#ovl-gal');}
 
-  /* ---- edit ---- */
   var editId=null;
-  function openEdit(id){
-    var t=getTile(id); if(!t)return; editId=id;
-    $('#edit-type').textContent='Tegund: '+t.type;
-    var f=$('#edit-fields'); f.innerHTML='';
-    (FIELDS[t.type]||[]).forEach(function(pair){
-      var wrap=document.createElement('div'); wrap.className='fld';
-      wrap.innerHTML='<label>'+esc(pair[1])+'</label><input data-k="'+pair[0]+'" value="'+esc(t[pair[0]]||'')+'">';
-      f.appendChild(wrap);
-    });
-    open('#ovl-edit');
-  }
-  $('#edit-save').onclick=function(){
-    var t=getTile(editId); if(!t){close('#ovl-edit');return;}
-    $('#edit-fields').querySelectorAll('input[data-k]').forEach(function(inp){t[inp.getAttribute('data-k')]=inp.value;});
-    var content=$('.grid-stack-item[gs-id="'+editId+'"] .grid-stack-item-content');
-    if(content){content.innerHTML=innerHTML(t); if(t.type==='data')loadData(t);}
-    persist(); close('#ovl-edit'); toast('Vistað');
-  };
+  function openEdit(id){var t=getTile(id);if(!t)return;editId=id;$('#edit-type').textContent='Tegund: '+t.type;var f=$('#edit-fields');f.innerHTML='';(FIELDS[t.type]||[]).forEach(function(pair){var w=document.createElement('div');w.className='st-fld';w.innerHTML='<label>'+esc(pair[1])+'</label><div class="rg-input-wrap"><input class="rg-input" data-k="'+pair[0]+'" value="'+esc(t[pair[0]]||'')+'"></div>';f.appendChild(w);});openOvl('#ovl-edit');}
+  $('#edit-save').onclick=function(){var t=getTile(editId);if(!t){closeOvl('#ovl-edit');return;}$('#edit-fields').querySelectorAll('input[data-k]').forEach(function(inp){t[inp.getAttribute('data-k')]=inp.value;});var content=$('.grid-stack-item[gs-id="'+editId+'"] .grid-stack-item-content');if(content){content.innerHTML=innerHTML(t);if(t.type==='data')loadData(t);}persist();closeOvl('#ovl-edit');toast('Vistað');};
 
-  /* ---- modal helpers ---- */
-  function open(sel){$(sel).classList.add('open');}
-  function close(sel){$(sel).classList.remove('open');}
-  document.querySelectorAll('[data-close]').forEach(function(b){b.onclick=function(){b.closest('.ovl').classList.remove('open');};});
-  document.querySelectorAll('.ovl').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});});
+  function openOvl(sel){$(sel).classList.add('open');}
+  function closeOvl(sel){$(sel).classList.remove('open');}
+  document.querySelectorAll('[data-close]').forEach(function(b){b.onclick=function(){b.closest('.st-ovl').classList.remove('open');};});
+  document.querySelectorAll('.st-ovl').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});});
 
   $('#btn-add').onclick=openGallery;
-  $('#btn-reset').onclick=function(){
-    if(!confirm('Núllstilla útlit og byrja með dæmi-borðið?'))return;
-    try{localStorage.removeItem(LS_KEY);}catch(e){}
-    location.reload();
-  };
+  $('#btn-reset').onclick=function(){if(!confirm('Núllstilla útlit og byrja með dæmi-borðið?'))return;try{localStorage.removeItem(LS_KEY);}catch(e){}location.reload();};
 
-  /* ---- toast ---- */
-  var toEl=$('#toast'),toT=null;
-  function toast(msg){toEl.textContent=msg;toEl.classList.add('show');clearTimeout(toT);toT=setTimeout(function(){toEl.classList.remove('show');},2600);}
+  var toEl=$('#toast'),toT=null;function toast(m){toEl.textContent=m;toEl.classList.add('show');clearTimeout(toT);toT=setTimeout(function(){toEl.classList.remove('show');},2600);}
 
-  /* ---- boot ---- */
-  grid.batchUpdate();
-  state.tiles.forEach(function(t){renderTile(t,false);});
-  grid.commit();
+  grid.batchUpdate();state.tiles.forEach(function(t){renderTile(t,false);});grid.commit();
 })();
 </script>
 </body>
