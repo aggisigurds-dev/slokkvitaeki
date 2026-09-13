@@ -110,3 +110,35 @@ update customers_base c set heimilisfang = 'Breiðvangi 9, 220 Hafnarfjörður',
   general_notes = coalesce(c.general_notes, '') || E'\n13.09.2026 (mál #747): heimilisfang leiðrétt eftir Skattinum — var „200 Kópavogur“ úr tvítekna staðnum #600.'
 from afrit
 where c.id = 659 and afrit.row_id = '659';
+
+-- Kvöld 13.09.: samþykkt vinnublöð unnin í appinu (#1008 Hjarðarból, #1014 Ölfusborgir, #1023 Hraunbær 64).
+-- Tækjaval, hök, akstur, lás og „Vista / í Vinnslu“ fóru gegnum viðmótið (sara-skill); aðeins gagnabreytingarnar hér.
+
+-- Ölfusborgir (#482): Agnar í spjalli — „ölfus eyða umfram tækjum“ og „Henda öllu … tækjum sem eiga ekki að vera þarna“.
+-- Blaðið: 39 léttvatn; kerfið hafði 41 léttvatn + 1 duft. Hörð eyðing er Agnars, svo umframtækin eru merkt úrelt (224 felur þau).
+update uttaeki set status = 'urelt'
+where fyrirtaeki_id = 482 and status = 'active' and id in (24716, 24717, 24718);
+
+-- Hjarðarból (#697): nýtt 2 L léttvatnstæki af blaðinu („1x 2L léttvatns“, Agnar 10.09.: nýtt tæki).
+-- Stærð „2L“ (ekki „2 L“) svo findReplacementProduct (129) pari það við vöruna „Léttvatn 2L slökkvitæki“ (5.000 kr).
+insert into uttaeki (serial, type, size, client, location, status, fyrirtaeki_id, customer_base_id)
+select 'AE20260913-0011', 'Léttvatn', '2L', 'Grasnytjar ehf Hjarðarbóli', 'Hjarðarbóli, 816 Ölfus', 'active', 697, 674
+where not exists (select 1 from uttaeki where serial = 'AE20260913-0011')
+  and not exists (select 1 from uttaeki where fyrirtaeki_id = 697 and status = 'active' and type = 'Léttvatn' and size ilike '2%');
+
+-- Hraunbær 64 (#130 / grunnur 227): Agnar í spjalli — „Hraunbær 64 er í 110 Reykjavík“. Tækin báru þegar 110 Reykjavík.
+-- payday-push sendir customers_base.heimilisfang á kröfuna. Staðfest á fyrirtækissíðunni eftir breytingu.
+with afrit as (
+  insert into audit_vernd (table_name, op, row_id, old_row, changed_at)
+  select 'customers_base', 'UPDATE', c.id::text, to_jsonb(c), now()
+  from customers_base c where c.id = 227 and c.heimilisfang = 'Hraunbær 64, 220 Hafnarfjörður'
+  returning row_id
+), cb as (
+  update customers_base c set heimilisfang = 'Hraunbær 64, 110 Reykjavík',
+    general_notes = coalesce(c.general_notes, '') || E'\n13.09.2026: heimilisfang leiðrétt í 110 Reykjavík (Agnar staðfesti) — var „220 Hafnarfjörður“.'
+  from afrit where c.id = 227 and afrit.row_id = '227'
+  returning c.id
+)
+update fyrirtaeki f set heimilisfang = 'Hraunbær 64, 110 Reykjavík',
+  athugasemdir = coalesce(f.athugasemdir, '') || E'\n13.09.2026: heimilisfang leiðrétt í 110 Reykjavík (Agnar staðfesti) — var „220 Hafnarfjörður“.'
+where f.id = 130 and f.heimilisfang = 'Hraunbær 64, 220 Hafnarfjörður';
