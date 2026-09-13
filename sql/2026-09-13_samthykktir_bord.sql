@@ -98,3 +98,15 @@ where id = 319 and kennitala = '511281-0409';
 -- Endurútgáfa (R-000938), kreditfærsla (R-000939) og „greitt"-merki af R-000415 í einni CTE-setningu, skilyrt á updated_at R-000415
 -- (sjá lotuna í samtali 13.09.; númerin koma úr reikningur_seq gegnum gikkinn solur_set_num).
 -- Sannreynt í sömu færslu með DO-blokk sem hefði afturkallað allt ef eitthvert skilyrði brást.
+-- Viðbót eftir yfirferð: greiðandinn #659 bar heimilisfang tvítaksins #600 („200 Kópavogur").
+-- Skatturinn (/api/kt-lookup?kt=6403760319): Breiðvangi 9, 220 Hafnarfjörður. payday-push sendir customers_base.heimilisfang á kröfuna.
+with afrit as (
+  insert into audit_vernd (table_name, op, row_id, old_row, changed_at)
+  select 'customers_base', 'UPDATE', c.id::text, to_jsonb(c), now()
+  from customers_base c where c.id = 659 and c.heimilisfang = 'Breiðvangi 9, 200 Kópavogur'
+  returning row_id
+)
+update customers_base c set heimilisfang = 'Breiðvangi 9, 220 Hafnarfjörður',
+  general_notes = coalesce(c.general_notes, '') || E'\n13.09.2026 (mál #747): heimilisfang leiðrétt eftir Skattinum — var „200 Kópavogur“ úr tvítekna staðnum #600.'
+from afrit
+where c.id = 659 and afrit.row_id = '659';
