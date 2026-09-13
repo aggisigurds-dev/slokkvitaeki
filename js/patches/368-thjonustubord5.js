@@ -91,6 +91,8 @@
  *   hækkar akstur í 2 (verd.md); akstur lækkar aldrei sjálfkrafa. Brunaslöngur og reykskynjarar eiga enga hleðslu í
  *   verðskránni, svo H er autt þar. Svartakkarnir heita „✓ Staðfesta" og „▶ Setja í vinnslu" í vinnusvæðinu og vista
  *   óvistaðar tölur fyrst — mistakist vistun er ekki svarað. Breytti önnur vél blaðinu á meðan eru nýjustu tölur sýndar.
+ *   Röðun (368z2 · „geturðu sorted listann með hvað er nýjast tekið út efst"): innan „Bíða" og „Svarað" raðast blöðin
+ *   eftir úttektardegi, nýjast efst — dagsetning blaðsins, annars dagur í blaðnúmeri („30.08-bunki"), annars mánuður.
  *
  * SKRIF — beint á thjonustubeidni, lesið til baka með .select():
  *   Taka    assigned_to = ég, AÐEINS ef málið er enn laust (skilyrt) — tveir fá ekki sama málið.
@@ -1345,7 +1347,29 @@
   const vbrNafn = (r, s) => (s && s.fyrirtaeki) || whereOf(r) || String(r.title || '').replace(/^Vinnublað — staðfesta lestur:\s*/, '') || '(ónefnt)';
   // Röð blaðanna eins og þau voru lesin (sara_yfirferd.rod) — sama röð og bunkinn sjálfur; nafn þegar röð vantar.
   const vbrSaraRod = r => { const s = (S._vbrSara || []).find(x => x.id === saraIdMals(r)); return s && s.rod != null ? Number(s.rod) : 1e9; };
-  const vbrRod = (a, b) => (vbrBidur(b) ? 1 : 0) - (vbrBidur(a) ? 1 : 0) || vbrSaraRod(a) - vbrSaraRod(b) || vbrNafn(a).localeCompare(vbrNafn(b), 'is');
+  // 368z2: innan „Bíða" og „Svarað" er nýjast tekið út efst. Úttektardagur = dagsetning blaðsins, annars dagur í blaðnúmeri
+  // („30.08-bunki"), annars mánuður — bil („Maí-Júní") og ályktaður mánuður teljast degi á undan föstum mánuði, og mánuður
+  // seinna á árinu en núna er frá í fyrra. Óþekktur dagur fer neðst; jafn dagur heldur röð bunkans.
+  const MAN_IS = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'agust', 'september', 'oktober', 'november', 'desember'];
+  const vbrFella = x => String(x || '').toLowerCase().replace(/[áà]/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/[óö]/g, 'o').replace(/ú/g, 'u').replace(/ý/g, 'y').replace(/ð/g, 'd').replace(/þ/g, 'th').replace(/æ/g, 'ae');
+  function vbrTekidUt(s) {
+    if (!s) return -1;
+    const nuna = new Date(), manNu = nuna.getMonth() + 1;
+    const ar = m => (m > manNu ? nuna.getFullYear() - 1 : nuna.getFullYear());
+    const d = String(s.dagsetning || '').match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+    if (d) return Number(d[3]) * 10000 + Number(d[2]) * 100 + Number(d[1]);
+    const iso = String(s.dagsetning || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return Number(iso[1]) * 10000 + Number(iso[2]) * 100 + Number(iso[3]);
+    const b = String(s.blad_nr || '').match(/(^|\D)(\d{1,2})\.(\d{1,2})(?![.\d])/);
+    if (b && Number(b[3]) >= 1 && Number(b[3]) <= 12 && Number(b[2]) >= 1 && Number(b[2]) <= 31) return ar(Number(b[3])) * 10000 + Number(b[3]) * 100 + Number(b[2]);
+    const t = vbrFella(s.manudur);
+    let m = 0;
+    (t.match(/[a-z]+/g) || []).forEach(w => { const i = MAN_IS.indexOf(w) + 1; if (i > m) m = i; });
+    if (!m) return -1;
+    return ar(m) * 10000 + m * 100 + (/-|alyktad|\?/.test(t) ? 14 : 15);
+  }
+  const vbrTekidUtMals = r => vbrTekidUt((S._vbrSara || []).find(x => x.id === saraIdMals(r)));
+  const vbrRod = (a, b) => (vbrBidur(b) ? 1 : 0) - (vbrBidur(a) ? 1 : 0) || vbrTekidUtMals(b) - vbrTekidUtMals(a) || vbrSaraRod(a) - vbrSaraRod(b) || vbrNafn(a).localeCompare(vbrNafn(b), 'is');
   const bladNr = s => { const b = String((s && s.blad_nr) || '').trim(); return !b ? '' : /^blað/i.test(b) ? b : 'Blað ' + b; };
   // Blöðin á borði þess sem er við vélina; eigi hann ekkert blað sjást öll (til skoðunar — svartakkar aðeins eigandans).
   function vbrListi(n) {
@@ -1405,7 +1429,7 @@
     const bida = listi.filter(vbrBidur), svorud = listi.filter(r => !vbrBidur(r)), nr = listi.indexOf(val);
     const item = r => {
       const sr = sara.get(saraIdMals(r)) || null;
-      const undir = [sr && sr.manudur, bladNr(sr), vbrBidur(r) ? '' : svarBidur(r) ? SVOR[svarMals(r)].l : 'Svarað'].filter(Boolean).join(' · ');
+      const undir = [sr && (sr.dagsetning || sr.manudur), bladNr(sr), vbrBidur(r) ? '' : svarBidur(r) ? SVOR[svarMals(r)].l : 'Svarað'].filter(Boolean).join(' · ');
       return '<button type="button" class="vbr-item' + (vbrBidur(r) ? '' : ' svarad') + '" data-t5="vbr-velja" data-id="' + r.id + '" aria-current="' + (r.id === val.id) + '">' +
         '<b>' + esc(vbrNafn(r, sr)) + '</b>' + (undir ? '<span class="s">' + esc(undir) + '</span>' : '') + '</button>';
     };
@@ -1420,7 +1444,7 @@
       : '<div class="smeta">' + esc(svarBidur(val) ? SVOR[svarMals(val)].merki : 'Svarað') + ' · veldu næsta blað í listanum</div>';
     return '<div class="vbr">' +
       '<aside class="panel vbr-list" aria-label="Vinnublöð">' +
-        '<header class="phead">' + plate('06') + '<h2 class="ptitle">Vinnublöð</h2><span class="sum">' + bida.length + ' bíða · ' + svorud.length + ' svarað</span></header>' +
+        '<header class="phead">' + plate('06') + '<h2 class="ptitle">Vinnublöð</h2><span class="sum">' + bida.length + ' bíða · ' + svorud.length + ' svarað · nýjast efst</span></header>' +
         '<div class="vbr-items">' +
           (bida.length ? '<div class="vbr-sect">Bíða yfirferðar · ' + bida.length + '</div>' + bida.map(item).join('') : '') +
           (svorud.length ? '<div class="vbr-sect">Svarað · ' + svorud.length + '</div>' + svorud.map(item).join('') : '') +
@@ -4034,7 +4058,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368z' };
+    window.Thjonustubord5 = { show, load, render, version: '368z2' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
