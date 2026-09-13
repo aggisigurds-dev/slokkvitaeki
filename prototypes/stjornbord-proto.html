@@ -60,7 +60,7 @@
 .st-canvas{overflow:auto;height:calc(100vh - 112px)}
 .st-zoom{transform-origin:0 0;min-height:100%}
 .st-zoom.st-mobile{padding:14px 0}
-.st-zoom.st-mobile .grid-stack{max-width:430px;margin:0 auto;box-shadow:0 0 0 2px rgba(201,160,74,.22),0 0 30px rgba(255,120,40,.15)}
+.st-zoom.st-mobile .grid-stack{max-width:600px;margin:0 auto;box-shadow:0 0 0 2px rgba(201,160,74,.22),0 0 30px rgba(255,120,40,.15)}
 .grid-stack{min-height:calc(100vh - 132px);padding:10px;background-image:linear-gradient(to right,rgba(201,160,74,.09) 1px,transparent 1px),linear-gradient(to bottom,rgba(201,160,74,.06) 1px,transparent 1px);background-position:10px 10px;background-size:calc((100% - 20px)/12) 68px}
 .st-mobile .grid-stack{background-size:calc((100% - 20px)/12) 68px}
 .grid-stack.st-dragging{background-image:linear-gradient(to right,rgba(255,154,58,.30) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,154,58,.22) 1px,transparent 1px)}
@@ -83,6 +83,8 @@
 .st-tile .note:empty:before{content:"Skrifaðu…";color:var(--rg-text-faint)}
 .grid-stack-item>.ui-resizable-se{width:16px;height:16px;right:3px;bottom:3px;background:linear-gradient(135deg,transparent 42%,var(--rg-ember-500) 42% 58%,transparent 58%);opacity:.6}
 .grid-stack-item>.ui-resizable-se:hover{opacity:1}
+.st-locked .st-drag{opacity:.2;pointer-events:none}
+.st-locked .grid-stack-item>.ui-resizable-se{display:none}
 .st-ovl{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:flex-start;justify-content:center;padding:56px 16px;z-index:100;overflow:auto}
 .st-ovl.open{display:flex}
 .st-modal{width:min(760px,96vw)}
@@ -113,6 +115,7 @@
     <button class="st-ic" id="z-in" title="Auka aðdrátt">+</button>
     <button class="st-ic" id="z-fit" title="Núlla aðdrátt">⤢</button>
   </div>
+  <button class="rg-btn sm" id="btn-lock" title="Læsa / opna útlit"><span>🔓 Opið</span></button>
   <button class="rg-btn gold" id="btn-add"><span>+ REITUR</span></button>
   <button class="rg-btn sm" id="btn-reset"><span>Núllstilla</span></button>
 </div>
@@ -311,6 +314,7 @@
   if(!Array.isArray(layouts.mobile)||!layouts.mobile.length)layouts.mobile=defaultsMobile();
   [layouts.desktop,layouts.mobile].forEach(function(list){list.forEach(function(t){if(!t.id)t.id=uid();});});
   var zoom=saved.zoom||{desktop:1,mobile:1};
+  var locked=!!saved.locked;
 
   var zoomEl=$('#zoom'),canvasEl=$('#canvas'),gEl=$('.grid-stack');
   var grid;
@@ -348,7 +352,7 @@
   }
   function renderAll(){grid.batchUpdate();tiles().forEach(function(t){renderTile(t,false);});grid.commit();}
 
-  function persist(){try{var nodes=grid.save(false)||[];var by={};nodes.forEach(function(n){by[String(n.id)]=n;});tiles().forEach(function(t){var n=by[String(t.id)];if(n){t.x=n.x;t.y=n.y;t.w=n.w;t.h=n.h;}});localStorage.setItem(LS_KEY,JSON.stringify({mode:mode,layouts:layouts,zoom:zoom}));}catch(e){}}
+  function persist(){try{var nodes=grid.save(false)||[];var by={};nodes.forEach(function(n){by[String(n.id)]=n;});tiles().forEach(function(t){var n=by[String(t.id)];if(n){t.x=n.x;t.y=n.y;t.w=n.w;t.h=n.h;}});localStorage.setItem(LS_KEY,JSON.stringify({mode:mode,layouts:layouts,zoom:zoom,locked:locked}));}catch(e){}}
   function addTile(tpl){var t={};for(var k in tpl)t[k]=tpl[k];t.id=uid();var d=DEF[t.type]||{w:3,h:3};if(t.w==null){t.w=d.w;t.h=d.h;}tiles().push(t);renderTile(t,true);persist();toast('Reit bætt við: '+(t.title||t.type));return t.id;}
   function removeTile(id){var el=$('.grid-stack-item[gs-id="'+id+'"]');if(el)grid.removeWidget(el);layouts[mode]=tiles().filter(function(x){return String(x.id)!==String(id);});persist();}
 
@@ -360,9 +364,14 @@
   $('#z-fit').onclick=function(){setZoom(1);};
   canvasEl.addEventListener('wheel',function(e){if(e.ctrlKey){e.preventDefault();setZoom(zoom[mode]+(e.deltaY<0?0.1:-0.1));}},{passive:false});
 
+  /* ---- lock / unlock ---- */
+  function applyLock(){if(grid)grid.setStatic(locked);gEl.classList.toggle('st-locked',locked);var b=$('#btn-lock');if(b)b.innerHTML='<span>'+(locked?'🔒 Læst':'🔓 Opið')+'</span>';}
+  function toggleLock(){locked=!locked;applyLock();persist();toast(locked?'Læst — reitir hreyfast ekki':'Opið — má færa og stækka');}
+  $('#btn-lock').onclick=toggleLock;
+
   /* ---- mode (Skjár / Sími) ---- */
   function setModeBtns(){document.querySelectorAll('#mode-seg button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-mode')===mode);});}
-  function setMode(m){if(m===mode)return;persist();mode=m;if(grid)grid.destroy(false);initGrid();zoomEl.classList.toggle('st-mobile',mode==='mobile');setModeBtns();renderAll();applyZoom();persist();}
+  function setMode(m){if(m===mode)return;persist();mode=m;if(grid)grid.destroy(false);initGrid();zoomEl.classList.toggle('st-mobile',mode==='mobile');setModeBtns();renderAll();applyZoom();applyLock();persist();}
   document.querySelectorAll('#mode-seg button').forEach(function(b){b.onclick=function(){setMode(b.getAttribute('data-mode'));};});
 
   /* ---- live data ---- */
@@ -403,6 +412,7 @@
   initGrid();
   renderAll();
   applyZoom();
+  applyLock();
 })();
 </script>
 </body>
