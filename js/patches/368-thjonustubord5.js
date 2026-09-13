@@ -1343,8 +1343,8 @@
   }
   function vbrMyndir(r, s) {
     const l = [], baeta = (url, nafn) => { if (url && !l.some(x => x.url === String(url))) l.push({ url: String(url), nafn: nafn || '' }); };
+    baeta(r.attachment_url, 'Skann');          // mynd málsins fyrst — klippan sem fylgir þessu verki
     if (s) { baeta(s.mynd_url, 'Skann'); (Array.isArray(s.myndir) ? s.myndir : []).forEach(m => { if (m) baeta(m.url, m.nafn || m.name); }); }
-    baeta(r.attachment_url, 'Skann');
     return l;
   }
   function vbrLinurHtml(s) {
@@ -1407,8 +1407,11 @@
         '</div>' +
         '<h2 class="vbr-titill">' + esc(titill) + '</h2>' +
         (myndir.length
-          ? myndir.map(m => '<figure class="vbr-mynd"><a href="' + esc(m.url) + '" target="_blank" rel="noopener" title="Opna skannið í fullri stærð">' +
-              '<img src="' + esc(m.url) + '" alt="Skann af vinnublaði — ' + esc(titill) + '"></a><figcaption>' + esc(m.nafn || 'Skann') + ' · smelltu til að opna í fullri stærð</figcaption></figure>').join('')
+          ? '<figure class="vbr-mynd"><a href="' + esc(myndir[0].url) + '" target="_blank" rel="noopener" title="Opna skannið í fullri stærð">' +
+              '<img src="' + esc(myndir[0].url) + '" alt="Skann af vinnublaði — ' + esc(titill) + '"></a><figcaption>Skann · smelltu til að opna í fullri stærð' +
+              // Eldri eintök sömu klippu (úr fyrra máli, oft í hærri upplausn) — hlekkur, ekki önnur mynd í fullri breidd.
+              myndir.slice(1).map((m, i) => ' · <a class="clink dk" href="' + esc(m.url) + '" target="_blank" rel="noopener">Annað eintak' + (myndir.length > 2 ? ' ' + (i + 1) : '') + ' ›</a>').join('') +
+            '</figcaption></figure>'
           : '<div class="vbr-engin">Engin skannmynd fylgir þessu blaði' + (bladNr(s) ? ' — ' + esc(bladNr(s)) : '') + '.</div>') +
         (spurn ? '<div class="vbr-spurn"><span class="lbl">Spurningin til þín</span>' + esc(spurn) + '</div>' : '') +
         '<div class="vbr-cols">' +
