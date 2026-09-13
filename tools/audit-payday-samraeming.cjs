@@ -20,9 +20,9 @@ const SUPA = 'https://osfdzskyvisifcwyjkuk.supabase.co';
 const KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 
 const KVITTAD = {
-  'T3:R-000363': 'mál #821 — afturkallað í Payday, nýr reikningur á réttan greiðanda vantar',
-  'T3:R-000407': 'mál #821 + verk a6fbabbe — FF7/BJB, nýr reikningur vantar',
-  'T3:R-000415': 'mál #821 / #747 — Breiðvangur 9, reikningur á rétta kt vantar',
+  'T3:R-000363': 'endurrukkað á ProLan ehf. á sama stað (R-000401, 93.464 kr, greitt 10.07) — sameining staða í máli á borði',
+  'T3:R-000407': 'mál #987 — Herbergjaleiga Flatahrauni: nýr reikningur á FF7 eða BJB',
+  'T3:R-000415': 'mál #747 — nýr reikningur á Breiðvang 9, húsfélag (640376-0319)',
   'T3:R-000418': 'endurrukkað sem R-000717 (Strandasel 9-11, greitt 18.08) — mál #821',
   'T3:R-000778': 'mál #955 — tvítak R-000740, afturkallað 04.09, ekkert að endurgreiða',
   'T3:R-000017': 'endurgerður sem R-000528 og greiddur (Payday nr. 159)',
@@ -33,8 +33,8 @@ const KVITTAD = {
   'T4:R-000690': 'viðbót eftir að reikningur fór — aldrei rukka mismun eftir á (Agnar 11.09)',
   'T4:R-000476': 'viðbót eftir að reikningur fór — aldrei rukka mismun eftir á (Agnar 11.09)',
   'T5:R-000728': 'mál #984 — Eclipse: kemur nýr reikningur?',
-  'T5:R-000716': 'mál #821 — Þangbakki 8-10, nýr reikningur vantar',
-  'T5:R-000310': 'mál #821 — Prinsinn, röng kt, nýr reikningur vantar',
+  'T5:R-000716': 'mál #986 — Þangbakki 8-10: ný bankakrafa (Eignaumsjón greiðir)',
+  'T5:R-000310': 'mál #771 — Prinsinn Mjódd: rétt kennitala óþekkt',
   'T5:R-000866': 'í staðinn kom minni reikningur R-000873 (23.391 kr, sendur í Payday nr. 251) — „þurfti einungis að yfirfara tæki"',
 };
 
