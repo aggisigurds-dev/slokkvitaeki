@@ -185,6 +185,11 @@
       // Sími/app: bannerinn staflast — flísin tekur fulla breidd.
       'html[data-viewmode="mobile"] .' + HOLF + ',body.appmode .' + HOLF + '{flex-basis:100%;max-width:none;margin-left:0;margin-top:10px}',
       'html[data-viewmode="mobile"] .co-mynd-flis,body.appmode .co-mynd-flis{width:100%;height:140px}',
+      // MÆLT 13.09.2026 í 375 px: mobile-baseline-css setur `.view … img{height:auto}` með
+      // vægi (0,6,2), svo myndin fékk eðlilega hæð og skarst neðst (2:1 → 154 px í 140 px
+      // flís; standandi símamynd hefði sýnt aðeins efsta hlutann). !important heldur henni í rammanum.
+      'html[data-viewmode="mobile"] .co-mynd-vefja img,body.appmode .co-mynd-vefja img{width:100%!important;height:100%!important;' +
+        'max-width:none!important;object-fit:cover}',
     ].join('\n');
     (document.head || document.documentElement).appendChild(s);
   }
