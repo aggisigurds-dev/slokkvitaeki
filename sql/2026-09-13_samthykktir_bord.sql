@@ -47,3 +47,16 @@ where id = 1 and settings->'arsskodun_customers' ? '1410' and settings->'arsskod
 update fyrirtaeki set er_i_thjonustu = false where id in (1410, 372) and er_i_thjonustu = true;
 
 -- Ekki unnið, bíður staðfestingar í spjalli (óafturkræft í Payday): #980 R-000356 (Payday nr. 73), #982 R-000357 (nr. 72).
+
+-- #991–#994 (samþykkt í spjalli 13.09.: „mátt merkja greitt"): fjórar kortasölur greiddar á Teya-posanum en aldrei merktar greiddar.
+-- paid_at = tími kortafærslunnar (Teya-færsluskrá 05.01.–11.09.2026); paid_method = 'kort'.
+with v(num, mal, greitt, kr_txt, tima_txt, uppf) as (values
+  ('R-000192', 991, timestamptz '2026-05-27 14:16:22+00', '8.500', '27.05. kl. 14:16', timestamptz '2026-08-14 16:14:15.688373+00'),
+  ('R-000167', 992, timestamptz '2026-05-21 11:09:49+00', '12.325', '21.05. kl. 11:09', timestamptz '2026-08-14 16:14:15.688373+00'),
+  ('R-000218', 993, timestamptz '2026-05-29 14:54:41+00', '9.360', '29.05. kl. 14:54', timestamptz '2026-08-14 16:14:15.688373+00'),
+  ('R-000202', 994, timestamptz '2026-05-28 14:31:32+00', '11.662', '28.05. kl. 14:31', timestamptz '2026-09-08 23:26:42.234296+00')
+)
+update solur so set paid_at = v.greitt, paid_method = 'kort',
+  athugasemdir = coalesce(so.athugasemdir, '') || E'\n[2026-09-13] Merkt greidd með korti (mál #' || v.mal || ', samþykkt Agnar í spjalli 13.09.): Teya-posinn ' || v.tima_txt || ', ' || v.kr_txt || ' kr.'
+from v
+where so.num = v.num and so.greitt_med = 'kort' and so.status = 'final' and so.paid_at is null and so.updated_at = v.uppf;
