@@ -196,6 +196,8 @@
     falidBid: {},      // Fela-skrif sem bíða eða kláruðust nýlega: { lykill: { falid, row, tok, lokid } }
     skyrBid: {},       // Skýringar-skrif sem bíða eða kláruðust nýlega: { lykill: { skyring, af, at, rod, tok, lokid } }
     skyrOpid: null,    // opinn skýringarritill (einn í einu): { l, e, d, texti, upphaf, vistar, villa }
+    // 368x (Agnar 13.09.2026): „Mitt borð" má fella saman — 75 mála listinn fyllti skjáinn. Útlitsval vafrans, ekki staða gagna.
+    mittSamanbrotid: (() => { try { return localStorage.getItem('t5_mitt_samanbrotid') === '1'; } catch (_) { return false; } })(),
     synaHluta: {}      // „Sýna" falin atriði / Stólpa-hlutann — val á skjánum, ekki staða gagna
   };
 
@@ -753,6 +755,7 @@
       '.main{min-width:0;container:main / inline-size}',
       '.board{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"master mine" "master sel";gap:18px;align-items:start}',
       '.colmaster{grid-area:master}.colmine{grid-area:mine}.colsel{grid-area:sel}',
+      '.colmine.samanbrotid{align-self:start}.colmine.samanbrotid .phead{border-image-width:0;border-radius:5px}',
       '.phone-seg{display:none}',
       '.psub{padding:9px 16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);border-bottom:1px solid var(--rule2);overflow-wrap:anywhere}',
       // Forgangslisti krafna inni í Master-dálkinum (11.09.2026): spjald í spjaldi — enginn tvöfaldur skuggi.
@@ -2731,14 +2734,17 @@
       : /^f:/.test(S.filter) ? 'Fyrirtæki · ' + (whereOf(S.rows.find(r => String(r.fyrirtaeki_id) === S.filter.slice(2)) || {}) || 'mál') : c.mode === 'thjonusta' ? 'Master borð' : 'Master · ' + mode.l;
     // Á síma: mál til skoðunar sem er ekki í sýnilega listanum (t.d. opnað úr leit) birtist efst.
     const selUtan = selRow && !selMinn && !visible.slice(0, S.synd).some(r => r.id === selId) ? '<div class="sel inline">' + selMarkup + '</div>' : '';
-    const mineHtml = '<section class="panel colmine" aria-label="Mitt borð">' +
+    // 368x: „Mitt borð" samanbrjótanlegt, eins og einingarnar (modPanel) — haus og talning standa, listinn víkur.
+    const mittSb = !!S.mittSamanbrotid;
+    const mineHtml = '<section class="panel colmine' + (mittSb ? ' samanbrotid' : '') + '" aria-label="Mitt borð">' +
         '<header class="phead">' + plate('03') + '<h2 class="ptitle">Mitt borð</h2><span class="sum">' + mine.length + ' mál</span>' +
           (S.rows.filter(r => onBoardOf(r, n)).length > mine.length ? '<button type="button" class="pchip" data-t5="filter" data-f="p:' + esc(n) + '" title="Sýna öll þín mál, í öllum hömum">+ ' + (S.rows.filter(r => onBoardOf(r, n)).length - mine.length) + ' í öðrum hömum</button>' : '') +
-          '<span class="grow"></span><button type="button" class="btn iv sm" data-t5="take-next">Taka næsta ›</button></header>' +
-        (feedFalinn ? selUtan : '') +
+          '<span class="grow"></span><button type="button" class="btn iv sm" data-t5="take-next">Taka næsta ›</button>' +
+          '<button type="button" class="btn iv sm tog" data-t5="mitt-fella" aria-expanded="' + !mittSb + '" aria-label="' + (mittSb ? 'Opna' : 'Fella saman') + ' Mitt borð" title="' + (mittSb ? 'Opna Mitt borð' : 'Fella Mitt borð saman') + '">' + (mittSb ? '▾' : '▴') + '</button></header>' +
+        (mittSb ? '' : (feedFalinn ? selUtan : '') +
         (mine.length
           ? mine.map(r => mineRow(r, r.id === selId) + (r.id === selId ? '<div class="sel inline">' + selMarkup + '</div>' : '')).join('')
-          : emptyHtml('Borðið þitt er autt. Taktu mál af Master eða skráðu nýtt mál á þig.')) +
+          : emptyHtml('Borðið þitt er autt. Taktu mál af Master eða skráðu nýtt mál á þig.'))) +
       '</section>';
     const board = mode.board
       ? '<div class="board' + (feedFalinn ? ' bara' : '') + '" data-view="' + (feedFalinn ? 'mitt' : S.view) + '">' +
@@ -3137,6 +3143,11 @@
         vistaCfg({ mode: c.mode });
         return;
       case 'mod-open': S.open[openKey(m)] = !isOpen(m); render(); return;
+      case 'mitt-fella':
+        S.mittSamanbrotid = !S.mittSamanbrotid;
+        try { localStorage.setItem('t5_mitt_samanbrotid', S.mittSamanbrotid ? '1' : '0'); } catch (_) {}
+        render();
+        return;
       case 'cfg': S.cfgOpen = !S.cfgOpen; render(); return;
       case 'cfg-on':
         if (!krefstStillinga()) return;
