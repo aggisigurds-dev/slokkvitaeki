@@ -23,6 +23,7 @@ const API_BASE = (process.env.PAYDAY_API_BASE || 'https://api.payday.is').replac
 const TOKEN_PATH = process.env.PAYDAY_TOKEN_PATH || '/auth/token';
 const INVOICES_PATH = process.env.PAYDAY_INVOICES_PATH || '/invoices';
 const API_VERSION = process.env.PAYDAY_API_VERSION || 'alpha';
+const { erGreidsla } = require('./_payday-greidsla.cjs');   // 13.09.2026: kreditreikningur er aldrei greiðsla
 
 function cors() {
   return {
@@ -83,9 +84,10 @@ exports.handler = async (event) => {
       checked += items.length; pagesFetched++;
       for (const raw of items) {
         const paidDate = pickPaidDate(raw);
-        const status = String(pickStr(raw, 'status', 'state', 'paymentStatus') || '').toLowerCase();
-        const isPaid = !!paidDate || /paid|greid|greitt/.test(status);
-        if (!isPaid) continue;
+        // 13.09.2026: kreditreikningur ber greiðsludagsetningu og sama R-númer — hann er
+        // ALDREI greiðsla. Gamla reglan merkti afturkallaðar sölur greiddar (R-000716,
+        // R-000778, R-000728 …). Sjá _payday-greidsla.cjs + tools/audit-payday-greidsla.cjs.
+        if (!erGreidsla(raw, paidDate)) continue;
         const keys = [raw.id, raw.invoiceId, raw.number, raw.invoiceNumber, raw.reference, raw.tilvisun]
           .map(x => (x == null ? '' : String(x).trim())).filter(Boolean);
         let sale = null;

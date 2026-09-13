@@ -656,7 +656,7 @@
       .eq('greitt_med', 'reikningur');
     const vf = _state.viewFilter || 'krofur';
     if (vf === 'krofur')        q = q.is('paid_at', null).neq('status', 'void'); // útistandandi — void telst ALDREI skuld (2026-08-14, R-000232)
-    else if (vf === 'osendar')  q = q.is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null).is('dk_invoice_id', null); // ósendar
+    else if (vf === 'osendar')  q = q.is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null).is('dk_invoice_id', null).neq('status', 'void'); // ósendar — ógild sala er aldrei krafa (13.09.2026: prufan R-000597 sat hér)
     else if (vf === 'greiddar') q = q.not('paid_at', 'is', null);              // greiddar kröfur
     // 'allt' → engin paid_at-sía (bæði ógreiddar OG greiddar)
     const r = await q.order('updated_at', { ascending: false });
@@ -839,7 +839,7 @@
     // með dk_invoice_id = sent í Payday en óuppgert; ósendar = engin send-merki).
     try {
       const sr = await SB.from('solur')
-        .select('id,num,customer_nafn,customer_kt,samtals,created_at,paid_at,krafa_sent_at,invoiced_at,dk_invoice_id,is_credit,credit_of')
+        .select('id,num,customer_nafn,customer_kt,samtals,upphaed_an_vsk,status,created_at,paid_at,krafa_sent_at,invoiced_at,dk_invoice_id,is_credit,credit_of')
         .eq('greitt_med', 'reikningur').is('paid_at', null)
         .order('created_at', { ascending: true });
       let rows = (sr.data || []);
@@ -853,18 +853,21 @@
       const medPayday = rows.filter(s => s.dk_invoice_id);
       let drogIds = new Set();
       let spegillOk = true;   // 664205fc: CG-S01/S03 skráð aðeins ef spegillinn las
+      const anVskPayday = new Map();   // 13.09.2026: Payday sýnir „Ógreiddir reikningar" ÁN VSK — sama tala á spjaldinu hér
       try {
         const ids = medPayday.map(s => String(s.dk_invoice_id));
         for (let i = 0; i < ids.length; i += 150) {
-          const pr = await SB.from('payday_invoices_slokk').select('payday_id,status').in('payday_id', ids.slice(i, i + 150));
+          const pr = await SB.from('payday_invoices_slokk').select('payday_id,status,amount_ex').in('payday_id', ids.slice(i, i + 150));
           if (pr.error) throw pr.error;
-          (pr.data || []).forEach(p => { if (String(p.status || '').toUpperCase() === 'DRAFT') drogIds.add(String(p.payday_id)); });
+          (pr.data || []).forEach(p => { if (String(p.status || '').toUpperCase() === 'DRAFT') drogIds.add(String(p.payday_id)); anVskPayday.set(String(p.payday_id), parseFloat(p.amount_ex) || 0); });
         }
       } catch (_) { drogIds = new Set(); spegillOk = false; }
       _state.paydayDraftIds = drogIds;
       _state.paydayDrog   = medPayday.filter(s => drogIds.has(String(s.dk_invoice_id)));              // aðeins drög í Payday — ósend
       _state.paydayUnpaid = medPayday.filter(s => !drogIds.has(String(s.dk_invoice_id)));             // sent í Payday, ógreitt
-      _state.osendar      = rows.filter(s => !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id); // aldrei send
+      // Án VSK: upphæð Payday-spegilsins þar sem hann las, annars upphaed_an_vsk sölunnar.
+      _state.paydayUnpaidAnVsk = _state.paydayUnpaid.reduce((a, s) => a + (spegillOk && anVskPayday.has(String(s.dk_invoice_id)) ? anVskPayday.get(String(s.dk_invoice_id)) : (parseFloat(s.upphaed_an_vsk) || 0)), 0);
+      _state.osendar      = rows.filter(s => s.status !== 'void' && !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id); // aldrei send · ógild sala telst aldrei krafa (13.09.2026)
       // 2026-09-12 (Verkefnalisti 9037f691 — „Agnar þorir ekki að senda kröfur af ótta við villur"): forskoðun
       // úr v_krofu_forskodun (sama skilgreining á ósendri kröfu og hér að ofan). ⛔ = kemst ekki rétt til skila
       // (void, 999999-9999, ógild eða óþekkt kt, ótengd sala, tvíýtt úttekt); ⚠ = skoða fyrst (bíður á
@@ -882,7 +885,7 @@
       cgSkra('CG-S02', summa(_state.osendar));
       if (spegillOk) { cgSkra('CG-S01', summa(_state.paydayUnpaid)); cgSkra('CG-S03', summa(_state.paydayDrog)); }
       if (_state.forskodun) cgSkra('CG-S04', summa(_state.osendar.filter(s => (_state.forskodun.get(String(s.id)) || {}).source === 'uttekt')));
-    } catch (_) { _state.paydayUnpaid = _state.paydayUnpaid || []; _state.osendar = _state.osendar || []; _state.paydayDrog = _state.paydayDrog || []; }
+    } catch (_) { _state.paydayUnpaid = _state.paydayUnpaid || []; _state.osendar = _state.osendar || []; _state.paydayDrog = _state.paydayDrog || []; _state.paydayUnpaidAnVsk = null; }
 
     render();
     maybeAutoSync();   // athuga greiðslur í Payday sjálfkrafa (throttlað) → Greitt kviknar sjálft
@@ -1224,7 +1227,7 @@
         </div>
 
         <div class="ky-exprow">
-          ${expCardHtml('payday', '⏳', 'Ógreiddar í Payday', paydayUnpaid.length, paydayUnpaidTotal, '#b45309', '#fff7ed', '#fed7aa', 'Allir mánuðir — ekki hluti af Heildarkröfum', 'CG-S01')}
+          ${expCardHtml('payday', '⏳', 'Ógreiddar í Payday', paydayUnpaid.length, paydayUnpaidTotal, '#b45309', '#fff7ed', '#fed7aa', 'Með VSK' + (_state.paydayUnpaidAnVsk != null ? ' · í Payday án VSK: ' + fmtKr(_state.paydayUnpaidAnVsk) : '') + ' · allir mánuðir, ekki hluti af Heildarkröfum', 'CG-S01')}
           ${paydayDrog.length ? expCardHtml('drog', '📝', 'Drög í Payday — ósend', paydayDrog.length, paydayDrogTotal, '#7c3aed', '#f5f3ff', '#ddd6fe', 'Aðeins drög — sendu þau úr Payday', 'CG-S03') : ''}
           ${expCardHtml('osendar', '📤', 'Ósendar kröfur', osendarRows.length, osendarTotal, '#1d4ed8', '#eff6ff', '#bfdbfe', 'Allir mánuðir — ekki hluti af Heildarkröfum' + (_state.forskodun ? ' · þar af úttektir ' + fmtKr(osendarRows.filter(s => (_state.forskodun.get(String(s.id)) || {}).source === 'uttekt').reduce((a, s) => a + (parseFloat(s.samtals) || 0), 0)) + ' (CG-S04)' : ''), 'CG-S02')}
         </div>
