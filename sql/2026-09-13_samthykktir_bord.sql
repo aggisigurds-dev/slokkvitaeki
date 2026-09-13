@@ -60,3 +60,41 @@ update solur so set paid_at = v.greitt, paid_method = 'kort',
   athugasemdir = coalesce(so.athugasemdir, '') || E'\n[2026-09-13] Merkt greidd með korti (mál #' || v.mal || ', samþykkt Agnar í spjalli 13.09.): Teya-posinn ' || v.tima_txt || ', ' || v.kr_txt || ' kr.'
 from v
 where so.num = v.num and so.greitt_med = 'kort' and so.status = 'final' and so.paid_at is null and so.updated_at = v.uppf;
+
+-- #747 (samþykkt í spjalli 13.09.: „mátt gera á réttu kennitöluna"): Breiðvangur 9.
+-- Staðurinn #366 bar kt Víðivangs 5 (511281-0409) og R-000415 fór á hana; Payday afturkallaði (nr. 43 + kredit nr. 120).
+-- Skatturinn: 640376-0319 = Breiðvangur 9,húsfélag; 511281-0409 = Víðivangur 5,húsfélag. #600 var tvítekinn staður með réttu kt.
+-- Niðurstaða (lesið til baka): ný sala R-000938 (35.320 kr, kt 640376-0319, grunnur 659), kredit R-000939 á R-000415,
+-- #366 kt 640376-0319 / grunnur 659, #600 sameinaður (eyddur, stadur_nr null), kúnni #319 = Víðivangur 5.
+insert into audit_vernd (table_name, op, row_id, old_row, changed_at)
+select 'document_pairs', 'UPDATE', p.id::text, to_jsonb(p), now() from document_pairs p where p.id in (1392, 608, 1014);
+insert into audit_vernd (table_name, op, row_id, old_row, changed_at)
+select 'reikningslestur', 'UPDATE', r.reikningur_nr, to_jsonb(r), now() from reikningslestur r where r.fyrirtaeki_id = 600;
+insert into audit_vernd (table_name, op, row_id, old_row, changed_at)
+select 'uttekt_reikningur_facts', 'UPDATE', u.id::text, to_jsonb(u), now() from uttekt_reikningur_facts u where u.id = 109;
+update fyrirtaeki set stadur_nr = null, deleted_at = now(), er_i_thjonustu = false,
+  athugasemdir = coalesce(athugasemdir, '') || E'\n13.09.2026 (mál #747): sameinað í #366 Breiðvangur 9. Netfang hér: sigurrossig@gmail.com.'
+where id = 600 and deleted_at is null;
+update fyrirtaeki set kennitala = '640376-0319', customer_base_id = 659,
+  athugasemdir = coalesce(athugasemdir, '') || E'\n13.09.2026 (mál #747): rétt kennitala 640376-0319 (Breiðvangur 9, húsfélag skv. Skattinum) — var ranglega 511281-0409, sem er Víðivangur 5. Sameinað við #600. Annað netfang: sigurrossig@gmail.com.'
+where id = 366 and kennitala = '511281-0409';
+update uttaeki set status = 'urelt',
+  notes = coalesce(notes, '') || ' · 13.09.2026 úrelt: tvítak — sami staður og #366 Breiðvangur 9, sem heldur 2026-tækjalistanum (mál #747)'
+where fyrirtaeki_id = 600 and status <> 'urelt';
+update uttaeki set customer_base_id = 659 where fyrirtaeki_id = 366 and status <> 'urelt';
+update customer_documents set fyrirtaeki_id = 366 where id in (478, 1881, 3539) and fyrirtaeki_id = 600;
+update customer_documents set customer_base_id = 659 where id in (5942, 1875) and fyrirtaeki_id = 366;
+update document_pairs set fyrirtaeki_id = 366, updated_at = now() where id in (1392, 608) and fyrirtaeki_id = 600;
+update document_pairs set customer_base_id = 659, updated_at = now() where id = 1014 and customer_base_id = 319;
+update reikningslestur set fyrirtaeki_id = 366 where fyrirtaeki_id = 600;
+update uttekt_reikningur_facts set fyrirtaeki_id = 366 where id = 109 and fyrirtaeki_id = 600;
+update app_settings
+set settings = jsonb_set(settings, '{arsskodun_customers,600}',
+  (settings->'arsskodun_customers'->'600') || jsonb_build_object('subscribed', false, '_sameinad_i', 366, '_sameinad', '13.09.2026 mál #747'))
+where id = 1 and settings->'arsskodun_customers' ? '600';
+update customers_base set nafn = 'Víðivangur 5,húsfélag', heimilisfang = 'Víðivangi 5, 220 Hafnarfjörður',
+  general_notes = coalesce(general_notes, '') || E'\n13.09.2026 (mál #747): kennitalan 511281-0409 er Víðivangur 5, húsfélag skv. Skattinum. Breiðvangur 9 (#366) var ranglega á þessum kúnna og er nú á #659. Hér standa eftir afturkallaður reikningur R-000415 og skjöl Víðivangs 5 — sjá mál #990.'
+where id = 319 and kennitala = '511281-0409';
+-- Endurútgáfa (R-000938), kreditfærsla (R-000939) og „greitt"-merki af R-000415 í einni CTE-setningu, skilyrt á updated_at R-000415
+-- (sjá lotuna í samtali 13.09.; númerin koma úr reikningur_seq gegnum gikkinn solur_set_num).
+-- Sannreynt í sömu færslu með DO-blokk sem hefði afturkallað allt ef eitthvert skilyrði brást.
