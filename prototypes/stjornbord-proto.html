@@ -226,10 +226,19 @@
 
   if(typeof GridStack==='undefined'){var eb=$('#errb');eb.style.display='block';eb.textContent='Náði ekki að hlaða Gridstack (nettenging?).';return;}
 
-  var DEF={link:{w:3,h:2},button:{w:2,h:2},embed:{w:6,h:6},data:{w:2,h:3},note:{w:3,h:3},ring:{w:3,h:6}};
+  var DEF={link:{w:3,h:2},button:{w:2,h:2},embed:{w:6,h:6},data:{w:2,h:3},note:{w:3,h:3},ring:{w:3,h:6},clock:{w:3,h:2}};
   var COLS={desktop:12,mobile:12};
 
   var GALLERY=[
+    {group:'Búa til nýtt (frá grunni)',_new:true,items:[
+      {type:'link',title:'Nýr tengill',label:'Opna',url:''},
+      {type:'button',title:'Nýr hnappur',label:'Keyra',webhook:''},
+      {type:'data',title:'Ný gagna-teljari',label:'',source:'count',table:''},
+      {type:'embed',title:'Ný innfelld síða',url:''},
+      {type:'clock',title:'Klukka'},
+      {type:'note',title:'Nýr minnismiði',text:''},
+      {type:'ring',title:'Nýr Kjarni-hringur',label:'KJARNI',sub:''}
+    ]},
     {group:'Lifandi gögn',items:[
       {type:'data',title:'Fyrirtæki',label:'í kerfinu',source:'count',table:'fyrirtaeki',icon:'▤'},
       {type:'data',title:'Viðskiptavinir',label:'customers_base',source:'count',table:'customers_base',icon:'◉'},
@@ -266,9 +275,10 @@
     link:[['title','Titill'],['label','Hnappa-texti'],['url','Slóð (URL)']],
     button:[['title','Titill'],['label','Hnappa-texti'],['webhook','n8n webhook (valfrjálst)']],
     embed:[['title','Titill'],['url','Slóð (URL)']],
-    data:[['title','Titill'],['label','Merki']],
+    data:[['title','Titill'],['label','Merki'],['source','Gagnalind','select',[['count','Fjöldi í töflu'],['teya_month','Teya kortatekjur (mán.)'],['tasks','Opin verk (Verkefnalisti)']]],['table','Tafla (t.d. fyrirtaeki · uttaeki · reikningar) — fyrir „Fjölda"']],
     note:[['title','Titill']],
-    ring:[['title','Titill'],['label','Miðju-texti'],['sub','Undirtexti']]
+    ring:[['title','Titill'],['label','Miðju-texti'],['sub','Undirtexti']],
+    clock:[['title','Titill']]
   };
 
   function defaultsDesktop(){return [
@@ -323,6 +333,7 @@
     if(t.type==='data')return '<div class="st-body"><div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--rg-text-gold);background:#050505;border:1px solid rgba(255,154,58,.45);box-shadow:inset 0 0 10px rgba(255,120,30,.3);flex-shrink:0">'+esc(t.icon||'◉')+'</span><span style="min-width:0;font:500 9.5px var(--rg-mono);letter-spacing:.1em;color:var(--rg-text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(t.label||'')+'</span></div><div class="val" id="val-'+t.id+'" style="margin-top:auto">…</div><div class="st-sub" id="sub-'+t.id+'"></div></div>';
     if(t.type==='note')return '<div class="st-body"><div class="note" contenteditable="true" data-id="'+t.id+'">'+(t.text||'')+'</div></div>';
     if(t.type==='ring')return '<div class="st-ring-wrap"><ragnarok-ring size="'+(+t.size||240)+'" label="'+esc(t.label||'KJARNI')+'" sub="'+esc(t.sub||'')+'" bearings></ragnarok-ring></div>';
+    if(t.type==='clock')return '<div class="st-body" style="justify-content:center;align-items:center;gap:4px"><div class="st-clock" data-clock style="font:700 26px var(--rg-mono);color:var(--rg-gold-300);text-shadow:0 0 10px rgba(255,140,40,.5)">–</div><div class="st-sub" data-clockdate></div></div>';
     return '<div class="st-body"></div>';
   }
   function innerHTML(t){return '<div class="rg-panel st-tile st-'+t.type+'"><div class="rg-face">'+headHTML(t)+bodyHTML(t)+'</div></div>';}
@@ -338,7 +349,7 @@
   function renderAll(){grid.batchUpdate();tiles().forEach(function(t){renderTile(t,false);});grid.commit();}
 
   function persist(){try{var nodes=grid.save(false)||[];var by={};nodes.forEach(function(n){by[String(n.id)]=n;});tiles().forEach(function(t){var n=by[String(t.id)];if(n){t.x=n.x;t.y=n.y;t.w=n.w;t.h=n.h;}});localStorage.setItem(LS_KEY,JSON.stringify({mode:mode,layouts:layouts,zoom:zoom}));}catch(e){}}
-  function addTile(tpl){var t={};for(var k in tpl)t[k]=tpl[k];t.id=uid();if(t.w==null){t.w=DEF[t.type].w;t.h=DEF[t.type].h;}tiles().push(t);renderTile(t,true);persist();toast('Reit bætt við: '+(t.title||t.type));}
+  function addTile(tpl){var t={};for(var k in tpl)t[k]=tpl[k];t.id=uid();var d=DEF[t.type]||{w:3,h:3};if(t.w==null){t.w=d.w;t.h=d.h;}tiles().push(t);renderTile(t,true);persist();toast('Reit bætt við: '+(t.title||t.type));return t.id;}
   function removeTile(id){var el=$('.grid-stack-item[gs-id="'+id+'"]');if(el)grid.removeWidget(el);layouts[mode]=tiles().filter(function(x){return String(x.id)!==String(id);});persist();}
 
   /* ---- zoom ---- */
@@ -368,10 +379,10 @@
   /* grid events are bound in bindGrid() (re-bound on each mode re-init) */
 
   /* ---- gallery + edit ---- */
-  function openGallery(){var b=$('#gal-body');b.innerHTML='';GALLERY.forEach(function(g){var h=document.createElement('div');h.className='rg-kicker st-gal-group';h.textContent=g.group;b.appendChild(h);var gr=document.createElement('div');gr.className='st-gal-grid';g.items.forEach(function(it){var btn=document.createElement('button');btn.className='st-gal-item';btn.innerHTML='<b>'+esc(it.title)+'</b><small>'+esc(it.type)+'</small>';btn.onclick=function(){addTile(it);closeOvl('#ovl-gal');};gr.appendChild(btn);});b.appendChild(gr);});openOvl('#ovl-gal');}
+  function openGallery(){var b=$('#gal-body');b.innerHTML='';GALLERY.forEach(function(g){var isNew=!!g._new;var h=document.createElement('div');h.className='rg-kicker st-gal-group';h.textContent=g.group;b.appendChild(h);var gr=document.createElement('div');gr.className='st-gal-grid';g.items.forEach(function(it){var btn=document.createElement('button');btn.className='st-gal-item';btn.innerHTML='<b>'+esc(it.title)+'</b><small>'+esc(it.type)+(isNew?' · nýr':'')+'</small>';btn.onclick=function(){var id=addTile(it);closeOvl('#ovl-gal');if(isNew&&id)openEdit(id);};gr.appendChild(btn);});b.appendChild(gr);});openOvl('#ovl-gal');}
   var editId=null;
-  function openEdit(id){var t=getTile(id);if(!t)return;editId=id;$('#edit-type').textContent='Tegund: '+t.type;var f=$('#edit-fields');f.innerHTML='';(FIELDS[t.type]||[]).forEach(function(pair){var w=document.createElement('div');w.className='st-fld';w.innerHTML='<label>'+esc(pair[1])+'</label><div class="rg-input-wrap"><input class="rg-input" data-k="'+pair[0]+'" value="'+esc(t[pair[0]]||'')+'"></div>';f.appendChild(w);});openOvl('#ovl-edit');}
-  $('#edit-save').onclick=function(){var t=getTile(editId);if(!t){closeOvl('#ovl-edit');return;}$('#edit-fields').querySelectorAll('input[data-k]').forEach(function(inp){t[inp.getAttribute('data-k')]=inp.value;});var content=$('.grid-stack-item[gs-id="'+editId+'"] .grid-stack-item-content');if(content){content.innerHTML=innerHTML(t);if(t.type==='data')loadData(t);}persist();closeOvl('#ovl-edit');toast('Vistað');};
+  function openEdit(id){var t=getTile(id);if(!t)return;editId=id;$('#edit-type').textContent='Tegund: '+t.type;var f=$('#edit-fields');f.innerHTML='';(FIELDS[t.type]||[]).forEach(function(pair){var w=document.createElement('div');w.className='st-fld';var cur=t[pair[0]]==null?'':t[pair[0]];if(pair[2]==='select'){var opts=(pair[3]||[]).map(function(o){return '<option value="'+esc(o[0])+'"'+(String(cur)===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>';}).join('');w.innerHTML='<label>'+esc(pair[1])+'</label><div class="rg-input-wrap"><select class="rg-input" data-k="'+pair[0]+'">'+opts+'</select></div>';}else{w.innerHTML='<label>'+esc(pair[1])+'</label><div class="rg-input-wrap"><input class="rg-input" data-k="'+pair[0]+'" value="'+esc(cur)+'"></div>';}f.appendChild(w);});openOvl('#ovl-edit');}
+  $('#edit-save').onclick=function(){var t=getTile(editId);if(!t){closeOvl('#ovl-edit');return;}$('#edit-fields').querySelectorAll('[data-k]').forEach(function(inp){t[inp.getAttribute('data-k')]=inp.value;});var content=$('.grid-stack-item[gs-id="'+editId+'"] .grid-stack-item-content');if(content){content.innerHTML=innerHTML(t);if(t.type==='data')loadData(t);}persist();closeOvl('#ovl-edit');toast('Vistað');};
 
   function openOvl(sel){$(sel).classList.add('open');}
   function closeOvl(sel){$(sel).classList.remove('open');}
@@ -382,6 +393,9 @@
   $('#btn-reset').onclick=function(){if(!confirm('Núllstilla BÆÐI útlit (Skjár + Sími) og aðdrátt?'))return;try{localStorage.removeItem(LS_KEY);}catch(e){}location.reload();};
 
   var toEl=$('#toast'),toT=null;function toast(m){toEl.textContent=m;toEl.classList.add('show');clearTimeout(toT);toT=setTimeout(function(){toEl.classList.remove('show');},2600);}
+
+  function updateClocks(){var now=new Date();var tm=now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',second:'2-digit'});var dt=now.toLocaleDateString('is-IS',{weekday:'long',day:'numeric',month:'long'});document.querySelectorAll('[data-clock]').forEach(function(e){e.textContent=tm;});document.querySelectorAll('[data-clockdate]').forEach(function(e){e.textContent=dt;});}
+  setInterval(updateClocks,1000);updateClocks();
 
   /* ---- boot ---- */
   setModeBtns();
