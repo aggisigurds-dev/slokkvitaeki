@@ -26,6 +26,22 @@
  * snertiskjá. Handvalin mynd fær `uppspretta: 'handvirkt'` svo sjálfsótt
  * loftmynd (borgarvefsjá) sé ekki talin uppruninn.
  *
+ * ── v3 13.09.2026: MYNDIN Í HÆÐ BANNERSINS + HLEKKIR Á GÖTUMYND ──────────────
+ * Agnar: „geturðu kanski lagað hlutföllinn á fyrirtækjabanner. kanski stækkað
+ * myndina í samræmi við hæð bannersins". Flísin var föst 190×108 og stóð fyrir
+ * miðju í ~190 px hárri línu. Nú teygir hún sig í hæð línunnar (align-self:
+ * stretch) og vex í laust pláss upp að HAMARK_B (flex-grow). Línurnar raðast enn
+ * á grunnbreiddinni FLIS_B, svo stærri mynd ýtir engu niður í nýja línu. Myndin
+ * fyllir rammann (object-fit:cover): hlutföllin haldast, jaðrar skerast og
+ * stækkunin sýnir alla myndina — hún teygist enn ALDREI.
+ *
+ * Og: „eða bara link sem sýnir myndina frá google maps". Flísin fær hlekkina
+ * Google og Já á heimilisfang félagsins (sjást við sveimu, alltaf á snertiskjá).
+ * Opinberar hlekkjaslóðir: enginn lykill, ekkert sótt sjálfvirkt. Þar má afrita
+ * myndina og líma yfir flísina. Sjálfvirk sókn frá Já var prófuð 13.09: myndin
+ * sjálf hleðst inn á okkar síðu, en til að finna rétta mynd þarf innri leit Já
+ * sem robots.txt bannar vélum og engir birtir skilmálar leyfa — bíður Agnars.
+ *
  * ── GEYMSLA ───────────────────────────────────────────────────────────────
  * Byggingarmyndin er GÖGN, ekki útlitsval — hún á að sjást á öllum fjórum
  * vélunum. Skráin fer í Supabase-geymsluna `verkbord-files` (sama og 364 notar)
@@ -51,7 +67,8 @@
   var LYKILL = 'co_bygging_mynd';
   var BUCKET = 'verkbord-files';
   var HOLF = 'co-mynd';
-  var FLIS_B = 190, FLIS_H = 108;         // ein flís — fyllir svæðið; myndin passar INN í hana
+  var FLIS_B = 190, FLIS_H = 108;         // lágmark flísar — línurnar raðast á þessari breidd
+  var HAMARK_B = 340;                     // v3: flísin vex í laust pláss upp að þessu (≈ 16:9 í fullri hæð)
   var HAMARK = 1600;                      // lengsta hlið eftir minnkun
 
   function sbKlient() { return window.DB && DB.sb; }
@@ -66,6 +83,25 @@
     var el = document.querySelector('#companies-main [data-co-id]');
     var v = el && +el.getAttribute('data-co-id');
     return v || null;
+  }
+
+  // v3: heimilisfangið eins og bannerinn sýnir það (features.js: „📍 <b>…</b>“).
+  function heimilisfangNu() {
+    var b = document.querySelector('#companies-main .co-banner .co-banner-facts b') ||
+      document.querySelector('.co-banner .co-banner-facts b');
+    return b ? String(b.textContent || '').trim() : '';
+  }
+  // Opinberar hlekkjaslóðir: Google Maps sýnir götumynd efst í spjaldinu, Já sýnir
+  // mynd af húsinu. Ekkert er sótt héðan — notandinn opnar og afritar sjálfur.
+  function hlekkirHtml(adr) {
+    if (!adr) return '';
+    var q = encodeURIComponent(adr);
+    return '<div class="co-mynd-hlekkir">' +
+      '<a href="https://www.google.com/maps/search/?api=1&amp;query=' + q + '" target="_blank" rel="noopener" ' +
+        'title="Opna heimilisfangið í Google Maps (götumynd efst)">Google</a>' +
+      '<a href="https://ja.is/kort/?q=' + q + '" target="_blank" rel="noopener" ' +
+        'title="Opna heimilisfangið á Já-korti (mynd af húsinu)">Já</a>' +
+    '</div>';
   }
 
   // ── Lesa / skrifa ───────────────────────────────────────────────────────
@@ -98,20 +134,27 @@
     var s = document.createElement('style');
     s.id = 'co-mynd-css';
     s.textContent = [
-      '.' + HOLF + '{display:flex;margin-left:auto;flex:none;align-self:center}',
+      // v3: flísin teygir sig í hæð línunnar og vex í laust pláss upp að HAMARK_B.
+      // Línurnar raðast á grunnbreiddinni (flex-basis FLIS_B), svo stærri mynd
+      // ýtir engu niður í nýja línu; afgangurinn fer í margin-left:auto.
+      '.' + HOLF + '{display:flex;margin-left:auto;flex:1 1 ' + FLIS_B + 'px;min-width:' + FLIS_B + 'px;' +
+        'max-width:' + HAMARK_B + 'px;align-self:stretch}',
       // 363 setur margin-left:auto á .co-bupp; standi myndin á undan tekur
       // bilið hennar við og línurnar sitja þétt við hliðina.
       '.' + HOLF + ' + .co-bupp{margin-left:16px}',
       // „almost transparent lines" — daufur brotinn rammi, lýsist við hover.
-      '.co-mynd-flis{position:relative;width:' + FLIS_B + 'px;height:' + FLIS_H + 'px;border:1px dashed rgba(255,255,255,.22);' +
+      '.co-mynd-flis{position:relative;flex:1 1 auto;min-height:' + FLIS_H + 'px;border:1px dashed rgba(255,255,255,.22);' +
         'border-radius:10px;background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;' +
         'overflow:hidden;cursor:pointer;outline:none;transition:border-color .15s,background .15s}',
       '.co-mynd-flis:hover,.co-mynd-flis:focus{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.07)}',
+      // Með mynd boðar brotni ramminn ekki lengur tóman reit — daufur heill rammi.
+      '.co-mynd-flis.med{border-style:solid;border-color:rgba(255,255,255,.14)}',
       '.co-mynd-flis.drag{border-color:#93c5fd;border-style:solid;background:rgba(147,197,253,.12)}',
       '.co-mynd-flis.villa{border-color:#f87171}',
-      // Vefjan faðmar myndina; max-stærð í px svo hún passi INN og teygist aldrei.
-      '.co-mynd-vefja{position:relative;display:inline-block;line-height:0}',
-      '.co-mynd-vefja img{display:block;max-width:' + FLIS_B + 'px;max-height:' + FLIS_H + 'px;width:auto;height:auto}',
+      // v3: myndin fyllir rammann og heldur hlutföllum (cover) — jaðrar skerast,
+      // ekkert teygist; stækkunin sýnir alla myndina.
+      '.co-mynd-vefja{position:absolute;inset:0;line-height:0}',
+      '.co-mynd-vefja img{display:block;width:100%;height:100%;max-width:none;max-height:none;object-fit:cover}',
       '.co-mynd-tomt{font-size:11px;line-height:1.4;color:rgba(255,255,255,.45);text-align:center;padding:8px}',
       '.co-mynd-tomt b{display:block;font-size:20px;margin-bottom:3px;color:rgba(255,255,255,.6)}',
       '.co-mynd-tomt small{display:block;font-size:9.5px;color:rgba(255,255,255,.32);margin-top:2px}',
@@ -121,6 +164,13 @@
       // v2: snertiskjár á enga sveimu — × sést þá alltaf (og er stærra).
       '@media (hover:none){.co-mynd-flis .co-mynd-x{opacity:1;width:28px;height:28px;line-height:28px;font-size:16px}}',
       '.co-mynd-x:hover{background:#dc2626}',
+      // v3: hlekkir á götumynd — sjást við sveimu/fókus, alltaf á snertiskjá.
+      '.co-mynd-hlekkir{position:absolute;left:6px;bottom:6px;display:flex;gap:4px;line-height:normal;opacity:0;transition:opacity .15s}',
+      '.co-mynd-flis:hover .co-mynd-hlekkir,.co-mynd-flis:focus-within .co-mynd-hlekkir{opacity:1}',
+      '@media (hover:none){.co-mynd-flis .co-mynd-hlekkir{opacity:1}}',
+      '.co-mynd-hlekkir a{font-size:10.5px;font-weight:700;line-height:18px;padding:0 7px;border-radius:9px;' +
+        'background:rgba(0,0,0,.62);color:#fff;text-decoration:none;white-space:nowrap}',
+      '.co-mynd-hlekkir a:hover{background:#1d4ed8;color:#fff}',
       // Stækkun
       '#co-mynd-ljos{position:fixed;inset:0;z-index:99999;background:rgba(8,10,14,.88);display:flex;flex-direction:column;' +
         'align-items:center;justify-content:center;gap:14px;padding:20px;box-sizing:border-box;cursor:zoom-out}',
@@ -133,9 +183,8 @@
       '#co-mynd-ljos button.co-mynd-eyda{border-color:#7f1d1d;background:#3b1111;color:#fecaca}',
       '#co-mynd-ljos button.co-mynd-eyda:hover{background:#991b1b;color:#fff}',
       // Sími/app: bannerinn staflast — flísin tekur fulla breidd.
-      'html[data-viewmode="mobile"] .' + HOLF + ',body.appmode .' + HOLF + '{flex-basis:100%;margin-left:0;margin-top:10px}',
+      'html[data-viewmode="mobile"] .' + HOLF + ',body.appmode .' + HOLF + '{flex-basis:100%;max-width:none;margin-left:0;margin-top:10px}',
       'html[data-viewmode="mobile"] .co-mynd-flis,body.appmode .co-mynd-flis{width:100%;height:140px}',
-      'html[data-viewmode="mobile"] .co-mynd-vefja img,body.appmode .co-mynd-vefja img{max-width:100%;max-height:140px}',
     ].join('\n');
     (document.head || document.documentElement).appendChild(s);
   }
@@ -251,13 +300,15 @@
     flis.className = 'co-mynd-flis';
     flis.tabIndex = 0;
     var m = lesaMynd(coId);
+    var hlekkir = hlekkirHtml(heimilisfangNu());
     if (m && m.url) {
+      flis.classList.add('med');
       flis.title = 'Mynd af byggingunni — smelltu til að stækka, skipta um eða fjarlægja · límdu nýja yfir til að skipta';
       flis.innerHTML = '<div class="co-mynd-vefja"><img alt="Bygging"></div>' +
-        '<button type="button" class="co-mynd-x" title="Fjarlægja myndina">×</button>';
+        '<button type="button" class="co-mynd-x" title="Fjarlægja myndina">×</button>' + hlekkir;
       flis.querySelector('img').src = m.url;
       flis.addEventListener('click', function (e) {
-        if (e.target.closest('.co-mynd-x')) return;
+        if (e.target.closest('.co-mynd-x') || e.target.closest('.co-mynd-hlekkir')) return;
         opnaLjos(m.url, coId);
       });
       flis.querySelector('.co-mynd-x').addEventListener('click', function (e) {
@@ -265,11 +316,15 @@
         fjarlaegja(coId);
       });
     } else {
-      flis.title = 'Límdu mynd af byggingunni (Ctrl+V með músina hér), dragðu hana inn, eða smelltu';
+      flis.title = 'Límdu mynd af byggingunni (Ctrl+V með músina hér), dragðu hana inn, eða smelltu · Google/Já opna götumynd af heimilisfanginu';
       // Agnar: „og ekki hafa neinn texta þarna með að líma mynd“. Tóm flís er
       // AÐEINS daufi ramminn; leiðbeiningin lifir í title (sést við hover).
-      flis.innerHTML = '';
-      flis.addEventListener('click', function () { veljaMynd(coId); });
+      // v3: hlekkirnir eru ósýnilegir þar til músin fer yfir flísina.
+      flis.innerHTML = hlekkir;
+      flis.addEventListener('click', function (e) {
+        if (e.target.closest('.co-mynd-hlekkir')) return;
+        veljaMynd(coId);
+      });
     }
     // Draga inn — virkar líka yfir mynd sem er fyrir (skiptir um).
     flis.addEventListener('dragover', function (e) { e.preventDefault(); flis.classList.add('drag'); });
@@ -290,7 +345,8 @@
     stilar();
     var box = banner.querySelector('.' + HOLF);
     var m = lesaMynd(coId);
-    var sig = coId + '|' + ((m && m.url) || '');
+    // v3: heimilisfangið er í undirskriftinni svo hlekkirnir fylgi breyttu heimilisfangi.
+    var sig = coId + '|' + ((m && m.url) || '') + '|' + heimilisfangNu();
     if (box && !thvinga && box.dataset.sig === sig) return;   // ekkert breyst — engin DOM-skrif
     if (box) box.remove();
     box = document.createElement('div');
@@ -324,5 +380,5 @@
   endurteikna(false);
 
   window.ByggingMynd = { endurteikna: endurteikna, lesaMynd: lesaMynd, opnaLjos: opnaLjos };
-  console.log(TAG, 'virkt v2 — mynd af byggingunni í bannernum (skipta/fjarlægja úr stækkun)');
+  console.log(TAG, 'virkt v3 — mynd í hæð bannersins + Google/Já-hlekkir á götumynd');
 })();
