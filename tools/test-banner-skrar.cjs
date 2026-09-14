@@ -88,7 +88,8 @@ async function opna(page, coId) {
       check(/Úr skrám \(Kortasjá Garðabæjar/.test(titill || ''), 'flísin segir hvaðan tillagan kemur', titill);
       const teikn = box.locator('a._bupp-teikn');
       const tt = (await teikn.textContent() || '').trim();
-      check(/1052 teikningar · Kortasjá Garðabæjar/.test(tt), 'Teikningar-línan: „1052 teikningar · Kortasjá Garðabæjar"', tt);
+      const nT = Number((tt.match(/(\d{3,4}) teikningar · Kortasjá Garðabæjar/) || [])[1]);
+      check(nT >= 500, 'Teikningar-línan: „≥500 teikningar · Kortasjá Garðabæjar" (1052 þann 14.09.2026)', tt);
 
       // Smellur á „8 hæðir" → reiturinn hæðir fær 8 og vistast → sett aftur STRAX
       // (viljandi án biðar: tvær vistanir á sama reit í kapphlaupi var raunveruleg

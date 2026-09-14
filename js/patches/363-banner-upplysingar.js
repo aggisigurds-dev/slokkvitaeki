@@ -179,11 +179,12 @@
   // ── Úr skrám: Staðfangaskrá + teikningasafn → hæðir/kjallari/jarðhæð ─────
   const SKRAR_MINNI = 'bupp_skrar_v1_';           // sessionStorage, per fyrirtæki
   const skrar = new Map();                         // coId -> { svar, sott } | { bid:true }
+  /** Heimilisfang félagsins — null þegar félagið er ekki (enn) í Companies.list, '' þegar það er til en heimilisfangslaust. */
   function heimilisfangFyrir(coId) {
     try {
       const c = ((window.Companies && Companies.list) || []).find(x => +x.id === +coId);
-      return c ? String(c.heimilisfang || '').trim() : '';
-    } catch (_) { return ''; }
+      return c ? String(c.heimilisfang || '').trim() : null;
+    } catch (_) { return null; }
   }
   function skrarSvar(coId) {
     const k = String(coId);
@@ -206,21 +207,29 @@
   // + tenglinum með error/reynaAftur) — slík svör fara EKKI í sessionStorage og
   // eru sótt aftur eftir REYNA_AFTUR_MS; þá er allt orðið heitt.
   const REYNA_AFTUR_MS = 45 * 1000;
+  const HAMARK_TILRAUNA = 3;                       // svo tóm lóð spyrji ekki endalaust
   function saekjaSkrar(coId) {
     const k = String(coId);
     const m = skrar.get(k);
     if (m && (m.bid || !m.reynaAftur || Date.now() - m.sott < REYNA_AFTUR_MS)) return;
     const heimilisfang = heimilisfangFyrir(coId);
+    // Companies.list getur komið á EFTIR bannernum (hægt net, önnur síða á undan):
+    // þá er ekkert skráð og reynt aftur á næsta samstillingar-takti (engin netumferð).
+    // Fannst það sem tómar flísar á framleiðslu 14.09.2026 (2 af 3 keyrslum).
+    if (heimilisfang == null) return;
     if (!heimilisfang || !/\d/.test(heimilisfang)) { skrar.set(k, { svar: { engin: true }, sott: Date.now() }); return; }
-    skrar.set(k, { bid: true });
+    const tilraunir = ((m && m.tilraunir) || 0) + 1;
+    skrar.set(k, { bid: true, tilraunir });
     fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(heimilisfang))
       .then(r => r.json().then(svar => ({ ok: r.ok, svar })))
       .then(({ ok, svar }) => {
-        const geymt = { svar: svar || {}, sott: Date.now(), reynaAftur: !!(svar && svar.reynaAftur) || (!ok && !(svar && svar.eign) && !(svar && svar.ogilt)) };
+        const ottrygg = !!(svar && svar.reynaAftur) || (!ok && !(svar && svar.eign) && !(svar && svar.ogilt));
+        const geymt = { svar: svar || {}, sott: Date.now(), tilraunir, reynaAftur: ottrygg && tilraunir < HAMARK_TILRAUNA };
         skrar.set(k, geymt);
-        if (!geymt.reynaAftur) { try { sessionStorage.setItem(SKRAR_MINNI + k, JSON.stringify({ heimilisfang, svar: geymt.svar, sott: geymt.sott })); } catch (_) {} }
+        // Ótryggt svar fer aldrei í sessionStorage — næsta síðuskoðun spyr upp á nýtt.
+        if (!ottrygg) { try { sessionStorage.setItem(SKRAR_MINNI + k, JSON.stringify({ heimilisfang, svar: geymt.svar, sott: geymt.sott })); } catch (_) {} }
       })
-      .catch(() => { skrar.set(k, { svar: { error: 'Náði ekki í skrár' }, sott: Date.now(), reynaAftur: true }); });
+      .catch(() => { skrar.set(k, { svar: { error: 'Náði ekki í skrár' }, sott: Date.now(), tilraunir, reynaAftur: tilraunir < HAMARK_TILRAUNA }); });
   }
   /** Flísar úr skránum — sama snið og athugasemda-tillögurnar, merktar skra:true. */
   function skraTillogur(coId) {

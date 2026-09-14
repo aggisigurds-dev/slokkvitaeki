@@ -303,11 +303,15 @@ export async function husUpplysingar(heimilisfang, frestMs = FRESTUR_MS) {
     return { eign, tillogur: {}, teikningar: null, heimild: hm.nafn, turbopaint, error: timi ? 'Teikningaþjónustan svaraði ekki í tæka tíð' : 'Náði ekki í teikningaþjónustuna', reynaAftur: true };
   }
   const { tillogur, teikningar } = tillogurUrTeikningum(d.results, oviss ? null : label);
+  // Tómur listi frá map.is er tortryggilegur (Garðatorg 7 skilaði 0 í stað ~1050 einu
+  // sinni 14.09.2026) — svarið er gefið en merkt reynaAftur og ekki geymt í minni,
+  // svo bannerinn spyrji aftur (hann hættir eftir þrjár tilraunir).
+  const tomt = hm.heimild === 'map.is' && teikningar.fjoldi === 0;
   if (oviss) {
     // Lóðin er ágiskun — teikningarnar má skoða, en engar tillögur í reitina.
     return { eign, tillogur: {}, teikningar, heimild: `${hm.nafn} · ${h.gata} ${h.husnr} er ekki í Staðfangaskrá; næsta lóð er ${label} (${teikningar.fjoldi} teikningar) — engar tillögur`, turbopaint };
   }
-  return { eign, tillogur, teikningar, heimild: teikningar.fjoldi ? lysaHeimild(hm.nafn, teikningar, label) : `${hm.nafn} · engar teikningar skráðar`, turbopaint };
+  return { eign, tillogur, teikningar, heimild: teikningar.fjoldi ? lysaHeimild(hm.nafn, teikningar, label) : `${hm.nafn} · engar teikningar skráðar`, turbopaint, ...(tomt ? { reynaAftur: true, tomt: true } : {}) };
 }
 
 export default async (req) => {
