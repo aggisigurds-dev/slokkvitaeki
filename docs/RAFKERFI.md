@@ -594,6 +594,7 @@ Slug → `js/patches/218-url-routing.js`. Gesture = hvernig Agnar opnar.
 | **Brunakerfi yfirlit** | `#brunakerfi` | **272** + 273 + 274 | brunakerfi_* , docs | sidebar |
 | **Aðstoðarmiðstöð** | `#adstod` | `adstod` agent | watchlist | sidebar |
 | **Banner Sími/Tafla/Skjár** | `html[data-viewmode]` | **166** + **263** + **314** + **316** | — | 📱 í borða |
+| **Banner-upplýsingar** (hús/tæki/aðkoma + tillögur) | `.co-banner` á fyrirtækjaspjaldi | **363** + `netlify/functions/hus-upplysingar.js` | AppSettings `banner_upplysingar` · Staðfangaskrá HMS + teikningasöfn (RVK FotoWeb, map.is HFJ/GB/KP) | fyrirtækjaspjald · 📐 → TurboPaint `?leit=` |
 | **Póstur** | `#postur` | 240 + 254 + 308 | email | Reikninga-póstur |
 | **Stillingar** | `#stillingar` | 300 + 301 | AppSettings | sidebar |
 | **Kennitala-gildra** | Sala checkout | **121** + pos.js | solur.customer_kt | **vörð** |
