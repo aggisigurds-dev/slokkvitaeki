@@ -69,6 +69,23 @@
  * `ibudir`, `haedir` og `hringja` halda lyklunum sínum; `hringja` heitir nú
  * „Tengiliður" í viðmótinu (sama gildi).
  *
+ * ── v3 14.09.2026: ÚR SKRÁM (Agnar: „details of the buildings that could
+ * benefit us here as well") ────────────────────────────────────────────────
+ * /.netlify/functions/hus-upplysingar flettir heimilisfangi félagsins upp í
+ * Staðfangaskrá HMS (nefnifall OG þágufall — „Dalshrauni 1b" finnst) og les svo
+ * teikningasafn sveitarfélagsins (Reykjavík, Kópavogur, Garðabær, Hafnarfjörður
+ * — sama þjónusta og TurboPaint) til að stinga upp á HÆÐUM, KJALLARA og
+ * JARÐHÆÐ út frá grunnmyndunum. Flísarnar eru bláar með brotalínu í sömu
+ * „Tillaga"-línu og athugasemda-tillögurnar, sama smell-leið (nota = vista) —
+ * ALDREI vistað sjálfkrafa, því söfnin eru ekki alltaf með nýjustu breytingar.
+ * Línan „Teikningar" tengir beint í leitina í TurboPaint (?leit=). Finnist
+ * heimilisfangið ekki nákvæmlega í Staðfangaskrá (t.d. „Borgartún 12" sem er
+ * lóðin „Borgartún 8-16A") sýnir línan „Næsta lóð … · óvisst" og ENGAR flísar —
+ * ágiskuð lóð má aldrei stinga upp á hæðum. Sömuleiðis þegar lóð með mörgum
+ * húsum (Höfðatorg) á engar teikningar merktar húsinu sjálfu. Íbúða-,
+ * stigaganga- og herbergjafjöldi er ekki opinber (Fasteignaskrá er í áskrift)
+ * og stendur áfram handvirkur.
+ *
  * TILLÖGUR: það sem finnst í athugasemdum staðarins („51 íbúð", „~40 herbergi",
  * „14 stigagöngum", „Betra að hringja á undan", „slökkvitæki í sameign",
  * „hringja í 8623425") birtist sem gul flís með brotalínu í línunni „Tillaga"
@@ -159,8 +176,72 @@
     return sv;
   }
 
+  // ── Úr skrám: Staðfangaskrá + teikningasafn → hæðir/kjallari/jarðhæð ─────
+  const SKRAR_MINNI = 'bupp_skrar_v1_';           // sessionStorage, per fyrirtæki
+  const skrar = new Map();                         // coId -> { svar, sott } | { bid:true }
+  function heimilisfangFyrir(coId) {
+    try {
+      const c = ((window.Companies && Companies.list) || []).find(x => +x.id === +coId);
+      return c ? String(c.heimilisfang || '').trim() : '';
+    } catch (_) { return ''; }
+  }
+  function skrarSvar(coId) {
+    const k = String(coId);
+    const m = skrar.get(k);
+    if (m && m.svar) return m.svar;
+    if (m && m.bid) return null;
+    try {
+      const raw = sessionStorage.getItem(SKRAR_MINNI + k);
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (o && o.sott && Date.now() - o.sott < 6 * 3600 * 1000 && o.heimilisfang === heimilisfangFyrir(coId)) {
+          skrar.set(k, { svar: o.svar, sott: o.sott });
+          return o.svar;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+  function saekjaSkrar(coId) {
+    const k = String(coId);
+    if (skrar.has(k)) return;
+    const heimilisfang = heimilisfangFyrir(coId);
+    if (!heimilisfang || !/\d/.test(heimilisfang)) { skrar.set(k, { svar: { engin: true }, sott: Date.now() }); return; }
+    skrar.set(k, { bid: true });
+    fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(heimilisfang))
+      .then(r => r.json().then(svar => ({ ok: r.ok, svar })))
+      .then(({ svar }) => {
+        const geymt = { svar: svar || {}, sott: Date.now() };
+        skrar.set(k, geymt);
+        try { sessionStorage.setItem(SKRAR_MINNI + k, JSON.stringify({ heimilisfang, svar: geymt.svar, sott: geymt.sott })); } catch (_) {}
+      })
+      .catch(() => { skrar.set(k, { svar: { error: 'Náði ekki í skrár' }, sott: Date.now() }); });
+  }
+  /** Flísar úr skránum — sama snið og athugasemda-tillögurnar, merktar skra:true. */
+  function skraTillogur(coId) {
+    const svar = skrarSvar(coId);
+    if (!svar || !svar.tillogur) return [];
+    const ut = [];
+    const heimild = String(svar.heimild || 'skrár');
+    const baeta = (reitur, g, merki) => {
+      if (!g || gildi(coId, reitur)) return;                  // þegar skráð → engin tillaga
+      ut.push({ reitur, gildi: g, merki, heimild, skra: true });
+    };
+    const t = svar.tillogur;
+    baeta('haedir', t.haedir, t.haedir + ' hæðir');
+    baeta('kjallari', t.kjallari, 'kjallari');
+    baeta('jardhaed', t.jardhaed, 'jarðhæð');
+    return ut;
+  }
+
   // ── Tillögur úr athugasemdum — sýndar, ALDREI vistaðar sjálfkrafa ────────
   function tillogur(coId) {
+    const urSkram = skraTillogur(coId);
+    const urTexta = tillogurUrTexta(coId);
+    // Skrárnar víkja fyrir athugasemd um sama reit — athugasemdin er nýrri þekking.
+    return urTexta.concat(urSkram.filter(s => !urTexta.some(t => t.reitur === s.reitur)));
+  }
+  function tillogurUrTexta(coId) {
     let texti = '';
     try {
       const c = ((window.Companies && Companies.list) || []).find(x => +x.id === +coId);
@@ -192,12 +273,24 @@
   }
 
   // ── Vistun — EITT fall fyrir reiti og flísar ─────────────────────────────
-  async function vistaReit(coId, reitur, val) {
-    _ny.set(coId + '|' + reitur, val);                       // gildir strax, líka fyrir næstu teiknun
+  // Vistanir á SAMA reit fara í röð (v3 14.09.2026): tvær í einu — t.d. smellur á
+  // tillögu og svo strax leiðrétting í reitinn — enduðu sem tvö RPC-köll í kapphlaupi;
+  // hvort þeirra lenti síðast á þjóninum réðst af netinu og gildið sem stóð eftir
+  // hér gat verið hitt. Nú bíður sú seinni þangað til sú fyrri er afgreidd.
+  const _bidrod = new Map();                    // "coId|reitur" -> loforð síðustu vistunar
+  function vistaReit(coId, reitur, val) {
+    const k = coId + '|' + reitur;
+    _ny.set(k, val);                                          // gildir strax, líka fyrir næstu teiknun
     const patch = {};
     patch[LYKILL] = {}; patch[LYKILL][String(coId)] = {}; patch[LYKILL][String(coId)][reitur] = val;
-    try { return !!(await AppSettings.save(patch)); }
-    catch (e) { console.warn('[363] vistun kastaði', e); return false; }
+    const fyrri = _bidrod.get(k) || Promise.resolve();
+    const min = fyrri.catch(() => {}).then(async () => {
+      try { return !!(await AppSettings.save(patch)); }
+      catch (e) { console.warn('[363] vistun kastaði', e); return false; }
+    });
+    _bidrod.set(k, min);
+    min.then(() => { if (_bidrod.get(k) === min) _bidrod.delete(k); }, () => {});
+    return min;
   }
   async function vista(inp) {
     const box = inp.closest('.' + HOLF);
@@ -205,7 +298,10 @@
     const reitur = inp.dataset.reitur;
     if (!coId || !reitur) return;
     const val = inp.value.trim();
-    if (inp.dataset.saved === val) return;                  // óbreytt → sleppa
+    // Óbreytt → sleppa. Borið saman við það sem ER Á LEIÐINNI líka (gildi() sér _ny):
+    // smellur á tillögu og strax leiðrétting í reitinn (áður en vistun smellsins er
+    // afgreidd) leit annars út sem „sama gildi og var" og leiðréttingin tapaðist.
+    if (inp.dataset.saved === val && gildi(coId, reitur) === val) return;
     if (!window.AppSettings || !AppSettings.save) { villa(inp, 'Engar stillingar tiltækar'); return; }
     const ok = await vistaReit(coId, reitur, val);
     if (ok) {
@@ -234,8 +330,10 @@
   // ── Flísar ───────────────────────────────────────────────────────────────
   function flisHtml(coId, f, till) {
     const on = !till && gildi(coId, f.reitur) === f.gildi;
-    const titill = till ? 'Tillaga úr athugasemd: ' + f.heimild + ' — smelltu til að nota' : f.titill;
-    return '<button type="button" class="_bupp-flis' + (on ? ' _on' : '') + (till ? ' _till' : '') + '"' +
+    const titill = till
+      ? (f.skra ? 'Úr skrám (' + f.heimild + ') — smelltu til að nota' : 'Tillaga úr athugasemd: ' + f.heimild + ' — smelltu til að nota')
+      : f.titill;
+    return '<button type="button" class="_bupp-flis' + (on ? ' _on' : '') + (till ? ' _till' : '') + (till && f.skra ? ' _skra' : '') + '"' +
       ' data-reitur="' + esc(f.reitur) + '" data-gildi="' + esc(f.gildi) + '" data-titill="' + esc(titill) + '"' +
       ' aria-pressed="' + (on ? 'true' : 'false') + '" title="' + esc(titill) + '">' + esc(f.merki) + '</button>';
   }
@@ -261,6 +359,10 @@
       // Tillaga fer í sinn eigin reit — sama vistunarleið og þegar skrifað er.
       const inp = box.querySelector('input.co-bupp-reitur[data-reitur="' + reitur + '"]');
       btn.remove();
+      // Flísin er farin úr DOM en undirskrift tillagnanna (tillSig) segir enn að hún
+      // sé þar — tæmist reiturinn strax aftur sá samstilla() engan mun og flísin kom
+      // aldrei til baka (fannst í vafraprófi 14.09.2026). Ógildum undirskriftina.
+      box.dataset.tillSig = '';
       const tl = box.querySelector('._bupp-till-lina');
       if (tl && !tl.querySelector('._bupp-flis')) tl.remove();
       if (inp) { inp.value = g; inp.classList.remove('_villa'); await vista(inp); return; }
@@ -379,6 +481,10 @@
     s.id = '_bupp-css';
     s.textContent = `
       .${HOLF}{display:flex;flex-direction:column;gap:2px;margin-left:auto;min-width:0;flex:0 1 300px;align-self:flex-start;padding-top:2px}
+      ${R('button._bupp-flis._till._skra', 'border-color:rgba(96,165,250,.85)!important;color:#93c5fd!important')}
+      ${R('button._bupp-flis._till._skra:hover', 'border-color:#93c5fd!important;color:#dbeafe!important')}
+      ${R('._bupp-teikn', 'font-size:11.5px;color:#93c5fd;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0')}
+      ${R('._bupp-teikn:hover', 'color:#fff;text-decoration:underline')}
       ${R('._bupp-lina', 'display:flex;align-items:center;gap:8px;min-width:0')}
       ${R('._bupp-merki', 'flex:none;width:96px;text-align:right;font-size:10.5px;line-height:1.5;color:rgba(255,255,255,.45)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}
       ${R('input.co-bupp-reitur', 'flex:1 1 auto;min-width:0;height:19px;background:transparent!important;background-color:transparent!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.20)!important;border-radius:0!important;box-shadow:none!important;color:rgba(255,255,255,.85)!important;font:inherit;font-size:11.5px;line-height:19px;padding:0 2px;margin:0;box-sizing:border-box;outline:none;overflow:hidden;text-overflow:ellipsis')}
@@ -482,8 +588,19 @@
     const stTitill = 'Áminning úr Stólpa (gamla bókhaldinu), geymd í athugasemdum: ' + (st ? st.texti : '') +
       (stMisr ? ' — ATH: áminningin segir ' + st.pct + '% en virki afslátturinn er ' +
         (a.pct > 0 ? a.pct + '%' : 'enginn') + '. Textinn er oft afmarkaður við ákveðna vöru, svo hann er sýndur en aldrei afritaður sjálfkrafa.' : '');
+    saekjaSkrar(coId);
     const till = tillogur(coId);
-    box.dataset.tillSig = till.map(t => t.reitur + '=' + t.gildi).join('|');
+    box.dataset.tillSig = tillSig(coId, till);
+    const sk = skrarSvar(coId);
+    const teikn = (sk && sk.turbopaint && sk.eign)
+      ? '<div class="_bupp-lina _bupp-teikn-lina"><span class="_bupp-merki">Teikningar</span>' +
+        '<a class="_bupp-teikn" href="' + esc(sk.turbopaint) + '" target="_blank" rel="noopener" ' +
+        'title="' + esc((sk.heimild || 'Teikningasafn') + ' — opnar leitina í TurboPaint með ' + sk.eign.label) + '">📐 ' +
+        esc(sk.eign.oviss
+          ? 'Næsta lóð ' + sk.eign.label + (sk.teikningar && sk.teikningar.fjoldi ? ' · ' + sk.teikningar.fjoldi + ' teikningar' : '') + ' · óvisst'
+          : (sk.teikningar && sk.teikningar.fjoldi ? sk.teikningar.fjoldi + ' teikningar · ' + (sk.eign.heimildNafn || '') : 'Leita í TurboPaint · ' + sk.eign.label)) +
+        '</a></div>'
+      : '';
     box.innerHTML =
       TOLUR.map(t => linaHtml(t.merki,
         t.reitir.map(r => r.reitur).concat((t.flisar || []).map(f => f.reitur)),
@@ -491,6 +608,7 @@
       VALLINUR.map(v => linaHtml(v.merki, [v.flisar[0].reitur], v.flisar.map(f => flisHtml(coId, f)).join(''))).join('') +
       LINUR_ADKOMA.map(l => textalinaHtml(coId, l)).join('') +
       (till.length ? linaHtml('Tillaga', null, till.map(f => flisHtml(coId, f, true)).join(''), '_bupp-till-lina') : '') +
+      teikn +
       LINUR_FRJALS.map(l => textalinaHtml(coId, l)).join('') +
       '<div class="_bupp-lina">' +
         '<span class="_bupp-merki">Afsláttur</span>' +
@@ -547,6 +665,11 @@
   // Uppfæra gildi sem komu að utan (önnur vél / AppSettings hlóðst) án þess að
   // sópa burt því sem notandinn er að skrifa: aldrei snerta reit í fókus og
   // aldrei reit sem á óvistaða breytingu.
+  function tillSig(coId, till) {
+    const sk = skrarSvar(coId);
+    return till.map(t => (t.skra ? 's:' : '') + t.reitur + '=' + t.gildi).join('|') +
+      '#' + (sk ? (sk.turbopaint ? 't' : '') + (sk.error ? 'e' : '') : '');
+  }
   function samstilla(box, coId) {
     const simi = simiHamur();
     box.querySelectorAll('.co-bupp-reitur').forEach(inp => {
@@ -561,7 +684,7 @@
     thjappa(box);
     // Tillögurnar breytast þegar reitur fyllist (hér eða á annarri vél) eða
     // athugasemd breytist — teiknum þá upp á nýtt, en aldrei ofan í innslátt.
-    const sig = tillogur(coId).map(t => t.reitur + '=' + t.gildi).join('|');
+    const sig = tillSig(coId, tillogur(coId));
     if ((box.dataset.tillSig || '') !== sig && !box.contains(document.activeElement)) { teikna(box, coId); return; }
     const afsl = box.querySelector('._bupp-afsl');
     if (afsl) {
@@ -606,6 +729,6 @@
   document.addEventListener('DOMContentLoaded', haldaVid);
   haldaVid();
 
-  window.BannerUpplysingar = { haldaVid, gildi, tillogur, LYKILL };
+  window.BannerUpplysingar = { haldaVid, gildi, tillogur, skrarSvar, saekjaSkrar, LYKILL };
   console.log('[patch-363] 🏢 Banner-upplýsingar v2 — hús, tæki, aðkoma, tillögur + afsláttarlína');
 })();
