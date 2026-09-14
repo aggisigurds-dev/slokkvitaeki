@@ -288,7 +288,7 @@ exports.handler = async (event) => {
     let bord_mal_id = null;
     if (fellBackToNonElectronic) {
       bord_mal_id = await skraXmlHofnun(event, sale, xmlVilla,
-        'reikningur ' + ((created && (created.number || created.invoiceNumber || created.id)) || '?') + ' búinn til ÁN XML'
+        'reikningur' + ((created && (created.number || created.invoiceNumber)) ? ' ' + (created.number || created.invoiceNumber) : '') + ' búinn til ÁN XML'
         + (mode === 'draft' ? ' sem drög (ekkert afhent).'
           : payload.sendEmail ? ' og sendur í pósti.' : ' og EKKI sendur í pósti (ekkert netfang) — aðeins krafa í netbanka.'),
         { created, fyrirtaeki_id: _siteTrusted ? site.id : null });
@@ -590,14 +590,16 @@ async function skraXmlHofnun(event, sale, paydayVilla, nidurstada, auka) {
         title: fela_kt((nr ? 'Payday ' + nr : ((sale && sale.num) || 'Payday')) + ' · ' + ((sale && sale.customer_nafn) || '?')
           + (kr ? ' · ' + kr : '') + (created ? ' — XML hafnað' : ' — XML hafnað, enginn reikningur')).slice(0, 200),
         summary: fela_kt(((sale && sale.num) ? sale.num + ': ' : '') + nidurstada).slice(0, 300),
+        // Payday-tengillinn fer ÓHREINSAÐUR aftast: auðkenni reikningsins (uuid) getur innihaldið
+        // talnarunu sem kt-hreinsunin myndi skemma (sást í app_problems 14.09.: „2c[kt]-49ef-…").
         notes: fela_kt([
           [nr ? 'Payday nr. ' + nr : null, sale && sale.num, kr || null].filter(Boolean).join(' · '),
           'Payday hafnaði rafrænum reikningi (XML): ' + nidurstada,
           'Villa frá Payday: ' + villa,
-          paydayUrl ? 'Payday: ' + paydayUrl : 'Payday: enginn reikningur staðfestur — athugaðu reikningalistann í Payday.',
           'Tillaga: taki viðskiptavinurinn við rafrænum reikningum — sendu XML handvirkt úr Payday. Segi Payday að hann taki ekki við rafrænum dugar pósturinn; lokaðu þá málinu.',
           'Stofnað sjálfkrafa af payday-push ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC.',
-        ].join('\n')).slice(0, 4000),
+        ].join('\n')).slice(0, 3800)
+          + '\n' + (paydayUrl ? 'Payday: ' + paydayUrl : 'Payday: enginn reikningur staðfestur — athugaðu reikningalistann í Payday.'),
         fyrirtaeki_id: (auka && auka.fyrirtaeki_id) || null,
         customer_base_id: (sale && sale.customer_base_id) || null,
         customer_nafn: (sale && sale.customer_nafn) || null,
