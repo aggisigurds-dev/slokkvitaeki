@@ -110,8 +110,13 @@ async function opna(page, coId) {
         const aftur = await page.evaluate((id) => window.BannerUpplysingar.gildi(id, 'haedir'), co);
         check(!aftur, 'hæðir sett aftur á tómt eins og fyrir prófið', String(aftur));
         // Þjónninn á líka að enda á tómu — lesum ferskt eintak framhjá skyndiminni patch 85.
-        const server = await page.evaluate(async () => { const r = await window.DB.sb.from('app_settings').select('settings').eq('id', 1).maybeSingle(); const b = r.data && r.data.settings && r.data.settings.banner_upplysingar || {}; return (b[String(147)] || {}).haedir; });
-        check(!server, 'þjónninn (app_settings) ber líka tómt gildi eftir prófið', String(server));
+        // Vistanirnar fara í röð („8" og svo „") svo þjónninn getur verið hálfnaður — bíðum allt að 25 s.
+        let server = '8';
+        for (let i = 0; i < 25 && server; i++) {
+          server = await page.evaluate(async (id) => { const r = await window.DB.sb.from('app_settings').select('settings').eq('id', 1).maybeSingle(); const b = r.data && r.data.settings && r.data.settings.banner_upplysingar || {}; return (b[String(id)] || {}).haedir; }, co);
+          if (server) await page.waitForTimeout(1000);
+        }
+        check(!server, 'þjónninn (app_settings) ber líka tómt gildi eftir prófið (innan 25 s)', String(server));
         // Eftir endurteiknun kemur flísin aftur.
         await page.waitForFunction((id) => Array.from(document.querySelectorAll('.co-banner [data-co="' + id + '"] ._bupp-flis._skra')).some(b => /8 hæðir/.test(b.textContent || '')), co, { timeout: 30000 }).catch(() => {});
         check((await box.locator('._bupp-flis._skra', { hasText: '8 hæðir' }).count()) >= 1, 'tillagan „8 hæðir" birtist aftur þegar reiturinn tæmist');
