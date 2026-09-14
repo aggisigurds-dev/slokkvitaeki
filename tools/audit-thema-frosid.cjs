@@ -72,10 +72,9 @@ for (const f of skrar(ROT, SKODA)) {
   // skýringar. Vörður sem gelgir að ósekju verður þaggaður — svo hér eru
   // blokkarathugasemdir og línuathugasemdir fjarlægðar úr öllum textanum fyrst,
   // en línunúmerin varðveitt með því að skipta þeim út fyrir jafnmörg bil.
-  const geymaLinur = s => s.replace(/[^\n]/g, ' ');
-  const hreinnTxt = txt
-    .replace(/\/\*[\s\S]*?\*\//g, geymaLinur)
-    .replace(/(^|[^:])\/\/[^\n]*/g, (m0, p1) => p1 + geymaLinur(m0.slice(p1.length)));
+  // 14.09.2026: sameiginlegi hreinsirinn (tools/_athugasemdir.cjs) les strengi, sniðmát og
+  // regex; í CSS aðeins /* */, því `//` er ekki athugasemd þar (url(//…)).
+  const hreinnTxt = /\.css$/.test(f) ? anAthugasemdaCss(txt) : anAthugasemdaJs(txt);
   const linur = hreinnTxt.split('\n');
 
   linur.forEach((l, i) => {

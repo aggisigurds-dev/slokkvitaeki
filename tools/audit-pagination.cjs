@@ -63,7 +63,6 @@ const ALLOW = [
   [/gte\(\s*['"]last_insp/,                   'dagsetningargluggi (vikuskýrsla)'],
   [/gte\(\s*['"]created_at/,                  'aðeins nýlegar raðir'],
   [/eq\(\s*['"]year['"]/,                     'eitt ár (~547 raðir)'],
-  [/not\(\s*['"]netfang['"]\s*,\s*['"]is['"]/, 'm/netfang = 620 raðir'],
   [/like\(\s*['"]serial['"]/,                 'eitt raðnúmera-forskeyti'],
   [/ilike\(\s*['"]client['"]|client\.ilike|client\.eq/, 'eitt fyrirtæki'],
   [/eq\(\s*['"]client['"]/,                   'tæki EINS fyrirtækis'],
@@ -162,66 +161,9 @@ const ofstor = [];
 // flaggaði skýringarnar sem voru skrifaðar við hliðina á lagfæringunum í
 // 231/358 — vörður sem gelgir að ósekju verður þaggaður. Því eru blokkar- og
 // línuathugasemdir fjarlægðar fyrst, en línunúmerin varðveitt með því að skipta
-// þeim út fyrir jafnmörg bil.
-//
-// 14.09.2026: hreinsirinn les nú strengi, sniðmát og regex-lesgildi. Sá fyrri var
-// tvö regex (sama og tools/audit-thema-frosid.cjs) og tók `/*` inni í streng sem
-// upphaf athugasemdar: `accept="image/*"` í 09 tæmdi línur 265–459, svo
-// `.limit(2000)` á línu 399 sást aldrei. Mælt á 369 skrám í js/: úttak gamla
-// hreinsisins þýddist ekki í 20 skrám (hann klippti raunverulegan kóða), úttak
-// þess nýja þýðist í þeim öllum (vm.Script).
-const anAthugasemda = s => {
-  const ut = s.split('');
-  const n = s.length;
-  const tomt = (a, b) => { for (let k = a; k < b; k++) if (s[k] !== '\n' && s[k] !== '\r') ut[k] = ' '; };
-  const stafli = [];                  // dýpt slaufusviga þar sem hvert opið ${ … } hófst
-  let dypt = 0, i = 0, sidast = '';   // sidast = síðasti marktæki stafur í kóða
-  const snidmat = () => {             // les sniðmát þar til ` lokar því eða ${ opnar kóða
-    while (i < n) {
-      if (s[i] === '\\') { i += 2; continue; }
-      if (s[i] === '`') { i++; return; }
-      if (s[i] === '$' && s[i + 1] === '{') { stafli.push(dypt); dypt++; i += 2; return; }
-      i++;
-    }
-  };
-  while (i < n) {
-    const c = s[i], d = s[i + 1];
-    if (c === '/' && d === '/') { let e = s.indexOf('\n', i); if (e < 0) e = n; tomt(i, e); i = e; continue; }
-    if (c === '/' && d === '*') { let e = s.indexOf('*/', i + 2); e = e < 0 ? n : e + 2; tomt(i, e); i = e; continue; }
-    if (c === '"' || c === "'") {
-      i++;
-      while (i < n && s[i] !== c && s[i] !== '\n') i += s[i] === '\\' ? 2 : 1;
-      i++; sidast = c; continue;
-    }
-    if (c === '`') { i++; snidmat(); sidast = '`'; continue; }
-    if (c === '}' && stafli.length && stafli[stafli.length - 1] === dypt - 1) {
-      stafli.pop(); dypt--; i++; snidmat(); sidast = '`'; continue;
-    }
-    if (c === '{') dypt++;
-    else if (c === '}') dypt--;
-    if (c === '/') {                  // regex-lesgildi eða deiling? Ræðst af því sem fór á undan.
-      const fyrir = ut.slice(Math.max(0, i - 12), i).join('');
-      if (!sidast || '(,=:[!&|?{};+-*%<>~^'.includes(sidast) ||
-          /(?:^|[^\w$])(?:return|typeof|case|do|else|in|of|new|delete|void|throw|instanceof|yield|await)\s*$/.test(fyrir)) {
-        i++;
-        let flokkur = false;
-        while (i < n && s[i] !== '\n') {
-          if (s[i] === '\\') { i += 2; continue; }
-          if (s[i] === '[') flokkur = true;
-          else if (s[i] === ']') flokkur = false;
-          else if (s[i] === '/' && !flokkur) { i++; break; }
-          i++;
-        }
-        while (i < n && /[a-z]/i.test(s[i])) i++;
-        sidast = ')';
-        continue;
-      }
-    }
-    if (!/\s/.test(c)) sidast = c;
-    i++;
-  }
-  return ut.join('');
-};
+// þeim út fyrir jafnmörg bil. Hreinsirinn les strengi, sniðmát og regex og er
+// sameiginlegur fjórum vörðum — sjá haus tools/_athugasemdir.cjs (14.09.2026).
+const { anAthugasemdaJs: anAthugasemda } = require('./_athugasemdir.cjs');
 for (const f of files) {
   const src = anAthugasemda(fs.readFileSync(f, 'utf8'));
   const skra = (idx, bad, form) => {

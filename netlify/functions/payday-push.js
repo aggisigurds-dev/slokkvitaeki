@@ -249,14 +249,24 @@ exports.handler = async (event) => {
       // rafræns svo reikningurinn lendi samt í Payday (senda frekar í tölvupósti
       // ef netfang er til). Þetta lagar „Customer does not accept electronic invoices".
       if (payload.createElectronicInvoice && /electronic invoice/i.test(msg)) {
+        // 2026-09-14 (Agnar): höfnunin má aldrei vera þögul. Sendingin heldur áfram eins og
+        // áður (ekkert tapast), en hún skráist á Kerfisheilsu — bæði þegar endurtilraun án
+        // XML tekst og þegar hún mistekst. Plaza R-000852 og Austurberg 20 R-000769 fóru
+        // 31.08. í Payday án XML og enginn vissi fyrr en 14.09. Vörður: audit-payday-xml-skraning.
         payload.createElectronicInvoice = false;
         payload.sendEmail = !!custEmail;
         fellBackToNonElectronic = true;
         try {
           created = await createInvoice(token, payload, attachment);
         } catch (invErr2) {
-          return json(502, { error: String(invErr2.message || invErr2), retriedWithoutElectronic: true, customerId, payload });
+          const msg2 = String(invErr2.message || invErr2);
+          await skraXmlHofnun(event, sale, msg,
+            'endurtilraun án XML mistókst líka — enginn reikningur búinn til. Payday (án XML): ' + msg2.slice(0, 400));
+          return json(502, { error: msg2, retriedWithoutElectronic: true, customerId, payload });
         }
+        await skraXmlHofnun(event, sale, msg,
+          'reikningur ' + ((created && (created.number || created.invoiceNumber || created.id)) || '?') + ' búinn til ÁN XML'
+          + (payload.sendEmail ? ' og sendur í pósti.' : ' og EKKI sendur í pósti (ekkert netfang) — aðeins krafa í netbanka.'));
       } else {
         return json(502, {
           error: msg,

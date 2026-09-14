@@ -71,10 +71,9 @@ const skrar = [];
 })(mappa);
 
 // Athugasemd sem LÝSIR gömlu villunni er ekki villan (sama aðferð og audit-pagination):
-// athugasemdir út, línunúmer varðveitt.
-const anAthugasemda = s => s
-  .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
-  .replace(/(^|[^:])\/\/[^\n]*/g, (m, p1) => p1 + m.slice(p1.length).replace(/[^\n]/g, ' '));
+// athugasemdir út, línunúmer varðveitt. 14.09.2026: sameiginlegi hreinsirinn les strengi,
+// sniðmát og regex — sá fyrri tók `/*` inni í streng sem athugasemd og faldi kóða.
+const { anAthugasemdaJs: anAthugasemda } = require('./_athugasemdir.cjs');
 
 const STADA = /(?:^|[,{\s])status\s*:\s*['"]([^'"]+)['"]/;
 const brot = [];
