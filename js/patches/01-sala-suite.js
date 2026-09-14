@@ -2120,11 +2120,12 @@
     if (!c) return [];
     const cutoff = new Date(Date.now() - minDays * 86400000).toISOString();
     // Verkstæðis-þrepin eru á `custody_status`, ekki `status` — sjá fetchC360.
-    const { data, error } = await c.from('uttaeki')
+    const { data, error } = await DB.fetchAll((from, to) => c.from('uttaeki')
       .select('*')
       .in('custody_status', ['móttekið', 'á verkstæði', 'tilbúið'])
       .lte('created_at', cutoff)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true }).order('id').range(from, to))
+      .then(data => ({ data, error: null }), error => ({ data: null, error }));
     if (error) { warn(error); return []; }
     return data || [];
   }

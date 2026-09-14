@@ -177,7 +177,32 @@ baseline rows and lowering the constant is how the net tightens over time.
   athugasemdir og `.limit(≤1000)` → grænt, vinnutréð → grænt. `153` (vörðuð leið): netvörður **SAFE** —
   `skManById` fyllir aðeins eyðu (153:612); hermt yfir 629 staði breytist enginn birtur mánuður í dag og
   tilbúið-staða er ósnert. `audit-all` 48/51, sömu 3 gömlu rauðu (osendar-krofur, solu-id, t-s-i). Sami
-  regex-hreinsir er enn í `audit-thema-frosid`, `audit-verk-stada` og `audit-status-gildi`.
+  regex-hreinsir var í þremur öðrum vörðum — lagað í færslunni hér á eftir.
+- **2026‑09‑14 (seinni lota)** — **Tæki á gjalddaga töpuðu röðum; `solur` í BIG áður en hún nær þakinu; vörðurinn sér nú fyrirspurnir í `Promise.all` og föstum `.in`-listum.**
+  `48-notifications` sótti tæki með `next_insp` ≤ í dag+30 ópöguð: 2.118 raðir, bjallan sá 1.000 („1055 alls" í
+  framleiðslu, „2173 alls" eftir). `solur` er 832 raðir (+5,5/dag, 1000 um miðjan október). Hert regla fann 32
+  staði: 28 ópöguð `solur`-svör (00-legacy ×2, `tekjur.js`, 166 ×4, 197, 199 ×2, 20, 23 ×2, 368 ×5, 369 ×5, 48, 51,
+  61 ×2, 92) og 2 á `uttaeki` (48:86, 01:2123) fara í `DB.fetchAll` með `.order('id')` og sama `{ data, error }`-formi;
+  11 og 143 fá `audit-pagination:ok` (afmarkað í öðru skrefi). **Tvö göt í verðinum sjálfum lokuð:** (1) segmentið
+  náði yfir allt `Promise.all`-fylkið, svo `.range`/`.in` í SEINNI fyrirspurn lét þá fyrri líta út fyrir að vera
+  afmörkuð — nú endar það við næsta `.from(`; (2) `.in(` taldist afmörkun hvað sem var í listanum, en
+  `.in('greitt_med', ['kort', 'reidufe'])` afmarkar ekkert — nú aðeins `.in(dálkur, breyta)`. Hreinsirinn er
+  sameiginlegur (`tools/_athugasemdir.cjs`) í audit-pagination, -thema-frosid (+ CSS), -verk-stada og -status-gildi;
+  gamli hreinsirinn braut úttak 26 af 474 JS-skrám og tæmdi raunverulegt CSS í öllum 6 CSS-skrám. Úrelt
+  netfang-ALLOW („620 raðir", mælt 652) fjarlægt, 240 blaðsíðuflett; `audit-rodafjoldi` tekur `solur` af VAKTA.
+  **Sannreynt í báðar áttir:** hert regla á 6c288bd → 32 brot; plantað → 2 (Promise.all + fastur `.in`-listi) og
+  `.in('id', ids)` grænt; lotan → grænt. Tekjur, Bókhald·yfirferð, Aldursgreining, Stjórnstöð, Kröfu yfirlit,
+  Þjónustuborð-Kröfur og prófíll 179 sýndu sömu tölur og framleiðslan (borið saman hlið við hlið). `153` (vörðuð
+  leið): villa í `v_skodunar_manudur`-sókninni skráð (`skodunar_manudur_failed`) í stað þagnar. `audit-all` 49/52,
+  sömu 3 gömlu rauðu. **Utan kóðans:** gáttin (`gatt.js` → `v_next_inspection`) les handvirkan skoðunarmánuð úr
+  `app_kv` en appið vistar hann í `app_settings` — 63 staðir sýna viðskiptavinum rangan eða engan mánuð; lagfæring
+  í `sql/2026-09-14_v_next_inspection_app_settings.sql`, ÓBEITT.
+  **Netvörður: SAFE** — villuhegðun eins í 53 hermdum tilvikum, raungögn eins nema 48 (1.000 → 2.118). Lagfært eftir
+  ábendingum hans: `368` `saekjaKrofur` las ekki `rc.error`, svo brást kredit-sóknin birtust bakfærðar kröfur sem
+  útistandandi (69 í stað 58) — nú fail-LOUD eins og `369`; `tekjur.js` skráir sóknarvillu (`solur_load_failed`) í
+  stað þess að gleypa hana og `00-legacy`-tekjuspjaldið lætur hana falla í sinn `catch`; `tools/audit-solu-id.cjs:130`
+  las allar sölur með `customer_id` (824) í einu kalli — blaðsíðuflett. Röðun eftir `id` ræður nú hvaða sala vinnur
+  þegar tvær bera sama reikningsnúmer: R-000528 er á sölum 573 og 575 (sama kt) — tvínúmer, á heima í hreinsun.
 - **2026‑09‑14** — **Canonical skoðunarmánuður tæmist ekki lengur í ræsingu (`312 CanonStadur` + `89`).**
   `app_problems` hafði 987 `canon_stadur_empty` („v_stadur_yfirlit skilaði 0 röðum", 24.08–14.09) á meðan
   viewið hafði 1179 raðir. Rót: `CanonStadur.ready()` var kallað áður en `DB.init` (modal.js, DOMContentLoaded)

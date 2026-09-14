@@ -66,7 +66,7 @@
     const coRes = await safe(SB.from('fyrirtaeki').select('*').eq('id', companyId).single());
     const coNafn = coRes.data ? coRes.data.nafn : null;
     const [invRes, unitRes] = await Promise.all([
-      safe(SB.from('solur').select('*').eq('customer_id', companyId).order('created_at',{ascending:false})),
+      safe(DB.fetchAll((from, to) => SB.from('solur').select('*').eq('customer_id', companyId).order('created_at',{ascending:false}).order('id').range(from, to)).then(data => ({ data, error: null }))),
       coNafn
         ? safe(SB.from('uttaeki').select('*').eq('client', coNafn).order('serial',{ascending:true}))
         : Promise.resolve({ data: [] })

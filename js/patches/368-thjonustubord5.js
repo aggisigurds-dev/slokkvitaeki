@@ -2266,10 +2266,12 @@
     const c = sb();
     if (!c) throw new Error('Engin tenging við gagnagrunn');
     const [ro, rc] = await Promise.all([
-      c.from('solur').select('id,num,customer_nafn,customer_base_id,samtals,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit').eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void'),
-      c.from('solur').select('credit_of').eq('is_credit', true).not('credit_of', 'is', null)
+      DB.fetchAll((from, to) => c.from('solur').select('id,num,customer_nafn,customer_base_id,samtals,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit').eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void').order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error })),
+      DB.fetchAll((from, to) => c.from('solur').select('credit_of').eq('is_credit', true).not('credit_of', 'is', null).order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error }))
     ]);
     if (ro.error) throw ro.error;
+    // 14.09.2026: kredit-útilokunin er fail-LOUD eins og í 369 — án hennar birtust bakfærðar kröfur sem útistandandi (69 í stað 58).
+    if (rc.error) throw rc.error;
     const bakfaert = new Set((rc.data || []).map(x => x.credit_of));
     const krofur = (ro.data || []).filter(s => !s.is_credit && !bakfaert.has(s.id));
     const ids = krofur.map(s => s.dk_invoice_id).filter(Boolean), gjald = {};
@@ -2294,8 +2296,8 @@
     const fjortan = new Date(Date.now() - 14 * 864e5).toISOString();
     const [ru, rg, rk, rs] = await Promise.all([
       c.from('v_gleymt_ad_rukka_uttekt').select('fyrirtaeki_id,nafn,heimilisfang,postnumer,skyrslur,skyrsla_dags,skodun_dags,skodun_heimild,vinnublad_id,vinnublad_manudur,vinnublad_dags,vinnublad_stada,stolpi_sidast_nr,stolpi_sidast_dags,stolpi_sidast_stada,stolpi_sidast_upphaed').order('skodun_dags', { ascending: true }),
-      c.from('solur').select('id,num,customer_nafn,samtals,created_at,starfsmadur').eq('greitt_med', 'greitt_sidar').eq('status', 'drog').is('paid_at', null).lt('created_at', fjortan).order('created_at', { ascending: true }),
-      c.from('solur').select('id,num,customer_nafn,samtals,created_at,greitt_med,starfsmadur').in('greitt_med', ['kort', 'reidufe']).is('paid_at', null).eq('status', 'final').not('is_credit', 'is', true).order('created_at', { ascending: true }),
+      DB.fetchAll((from, to) => c.from('solur').select('id,num,customer_nafn,samtals,created_at,starfsmadur').eq('greitt_med', 'greitt_sidar').eq('status', 'drog').is('paid_at', null).lt('created_at', fjortan).order('created_at', { ascending: true }).order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error })),
+      DB.fetchAll((from, to) => c.from('solur').select('id,num,customer_nafn,samtals,created_at,greitt_med,starfsmadur').in('greitt_med', ['kort', 'reidufe']).is('paid_at', null).eq('status', 'final').not('is_credit', 'is', true).order('created_at', { ascending: true }).order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error })),
       c.from('v_gleymt_uttekt_stolpi').select('fyrirtaeki_id,nafn,heimilisfang,postnumer,skodun_dags,skodun_heimild,stolpi_nr,stolpi_dags,stolpi_stada,stolpi_upphaed').order('skodun_dags', { ascending: true })
     ]);
     if (ru.error) throw ru.error;
@@ -2323,7 +2325,7 @@
     const SEL_S = 'id,num,customer_nafn,samtals,created_at,greitt_med,status,paid_at,is_credit';
     const [rv, ro] = await Promise.all([
       c.from('solur').select(SEL_S).eq('starfsmadur', 'Kassi').gte('created_at', vika.toISOString()).neq('status', 'void'),
-      c.from('solur').select(SEL_S).eq('starfsmadur', 'Kassi').is('paid_at', null).neq('status', 'void').not('is_credit', 'is', true)
+      DB.fetchAll((from, to) => c.from('solur').select(SEL_S).eq('starfsmadur', 'Kassi').is('paid_at', null).neq('status', 'void').not('is_credit', 'is', true).order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error }))
     ]);
     if (rv.error) throw rv.error;
     return { vika: (rv.data || []).filter(s => !s.is_credit), opin: ro.data || [], dagur: d0.getTime() };

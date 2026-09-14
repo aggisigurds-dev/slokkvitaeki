@@ -27,8 +27,10 @@ const fs = require('fs'), path = require('path');
 // Töflur sem eru YFIR 1000 raðir í dag — fyrirspurn án .range() á þær tapar
 // gögnum núna. Mælt 10.09.2026: fyrirtaeki 1460 (1311 óeydd) · customers_base 1142.
 // 13.09.2026: thjonustubeidni fór yfir þakið — 1026 raðir (821 óeyddar); audit-rodafjoldi varð rauður.
+// 14.09.2026: solur sett hér ÁÐUR en hún fer yfir — 832 raðir, +5,5 á dag, 1000 um miðjan október.
+// Allar ópöguðu solur-fyrirspurnirnar voru blaðsíðuflettar sama dag, svo BASELINE helst 0.
 const BIG = ['email_digest', 'ajour_registrations', 'uttaeki', 'timavera_entries',
-             'customer_documents', 'geocode_cache', 'fyrirtaeki', 'customers_base', 'thjonustubeidni'];
+             'customer_documents', 'geocode_cache', 'fyrirtaeki', 'customers_base', 'thjonustubeidni', 'solur'];
 
 /* NÆSTU Í RÖÐINNI — mælt 10.09.2026, ALLAR UNDIR ÞAKINU ENN:
  *     thjonustubeidni          854   (146 raðir eftir)
@@ -100,7 +102,10 @@ for (const f of files) {
     if (!BIG.includes(tbl)) continue;
     // Horfum líka aðeins AFTUR fyrir — fyrirspurnin gæti verið vafin í fetchAll(...)
     const pre = src.slice(Math.max(0, m.index - 120), m.index);
-    const seg = src.slice(m.index, m.index + 700).split(/;\s*\n/)[0];
+    // 14.09.2026: segmentið endar líka við næsta .from( — fyrirspurnir í sama Promise.all-fylki
+    // földu hver aðra (.range/.in í SEINNI fyrirspurn lét þá fyrri líta út fyrir að vera afmörkuð).
+    let seg = src.slice(m.index, m.index + 700).split(/;\s*\n/)[0];
+    { const k = seg.slice(6).search(/\.from\(\s*['"]/); if (k >= 0) seg = seg.slice(0, 6 + k); }
     const ctx = pre + seg;
     if (/\.(insert|update|upsert|delete)\(/.test(seg)) continue;             // skriftir
     if (/\.range\(|\.limit\(|maybeSingle\(|\.single\(/.test(ctx)) continue;  // afmarkað — .limit(N>1000) grípur FAST-reglan neðar
@@ -110,7 +115,9 @@ for (const f of files) {
     if (/audit-pagination:ok/.test(pre) || /audit-pagination:ok/.test(seg)) continue;
     if (/count:\s*['"]exact['"]/.test(seg) && /head:\s*true/.test(seg)) continue; // bara talning
     if (/\.eq\(\s*['"](id|kennitala|kt|customer_base_id|fyrirtaeki_id|serial)['"]/.test(seg)) continue;
-    if (/\.in\(/.test(seg)) continue;
+    // .in(dálkur, breyta) afmarkar (t.d. id-listi); .in(dálkur, ['föst', 'gildi']) gerir það EKKI.
+    // 14.09.2026: .in('greitt_med', ['kort', 'reidufe']) hafði falið ópöguð svör í 01, 23, 48, 61, 368 og 369.
+    if (/\.in\(\s*['"][^'"]+['"]\s*,\s*[^\s\[]/.test(seg)) continue;
     if (ALLOW.some(([re2]) => re2.test(seg))) continue;
     risky.push({ file: f.split(path.sep).join('/'), line: src.slice(0, m.index).split('\n').length,
                  tbl, seg: seg.replace(/\s+/g, ' ').slice(0, 140) });

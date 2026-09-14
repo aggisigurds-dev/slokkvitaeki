@@ -651,15 +651,17 @@
     // ONLY reikningur — that's the "krafa í heimabanka 10 dagar" choice.
     // 'greitt_sidar' is excluded — it has its own page (Til að rukka).
     // 2026-05-21: pull updated_at too so the sort options can use it.
-    let q = SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,athugasemdir,krafa_note,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of,source')
-      .eq('greitt_med', 'reikningur');
     const vf = _state.viewFilter || 'krofur';
-    if (vf === 'krofur')        q = q.is('paid_at', null).neq('status', 'void'); // útistandandi — void telst ALDREI skuld (2026-08-14, R-000232)
-    else if (vf === 'osendar')  q = q.is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null).is('dk_invoice_id', null).neq('status', 'void'); // ósendar — ógild sala er aldrei krafa (13.09.2026: prufan R-000597 sat hér)
-    else if (vf === 'greiddar') q = q.not('paid_at', 'is', null);              // greiddar kröfur
-    // 'allt' → engin paid_at-sía (bæði ógreiddar OG greiddar)
-    const r = await q.order('updated_at', { ascending: false });
+    const r = await DB.fetchAll((from, to) => {
+      let q = SB.from('solur')
+        .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,athugasemdir,krafa_note,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of,source')
+        .eq('greitt_med', 'reikningur');
+      if (vf === 'krofur')        q = q.is('paid_at', null).neq('status', 'void'); // útistandandi — void telst ALDREI skuld (2026-08-14, R-000232)
+      else if (vf === 'osendar')  q = q.is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null).is('dk_invoice_id', null).neq('status', 'void'); // ósendar — ógild sala er aldrei krafa (13.09.2026: prufan R-000597 sat hér)
+      else if (vf === 'greiddar') q = q.not('paid_at', 'is', null);              // greiddar kröfur
+      // 'allt' → engin paid_at-sía (bæði ógreiddar OG greiddar)
+      return q.order('updated_at', { ascending: false }).order('id').range(from, to);
+    }).then(data => ({ data, error: null }), error => ({ data: null, error }));
     if (r.error) { main.innerHTML = thmWrap('<div style="padding:32px;color:#fca5a5">Villa: ' + esc(r.error.message) + '</div>'); return; }
     _state.all = r.data || [];
 
@@ -838,10 +840,11 @@
     // ALLTAF réttar heildartölur (sama regla og payday-sync-paid: ógreitt reikn.
     // með dk_invoice_id = sent í Payday en óuppgert; ósendar = engin send-merki).
     try {
-      const sr = await SB.from('solur')
+      const sr = await DB.fetchAll((from, to) => SB.from('solur')
         .select('id,num,customer_nafn,customer_kt,samtals,upphaed_an_vsk,status,created_at,paid_at,krafa_sent_at,invoiced_at,dk_invoice_id,is_credit,credit_of')
         .eq('greitt_med', 'reikningur').is('paid_at', null)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }).order('id').range(from, to))
+        .then(data => ({ data, error: null }), error => ({ data: null, error }));
       let rows = (sr.data || []);
       const cids = new Set(rows.filter(s => s.is_credit && s.credit_of != null).map(s => String(s.credit_of)));
       rows = rows.filter(s => !s.is_credit && !cids.has(String(s.id)));
@@ -2467,13 +2470,14 @@
       //   greitt_med ≠ 'reikningur'  (null telst líka „ekki reikningur")
       //   ógreitt (paid_at null) OG aldrei sent (krafa_sent_at / invoiced_at /
       //   dk_invoice_id öll null) OG status ≠ 'void' OG samtals > 0.
-      const r = await SB.from('solur')
+      const r = await DB.fetchAll((from, to) => SB.from('solur')
         .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,status,athugasemdir,krafa_note,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of,source')
         .or('greitt_med.is.null,greitt_med.neq.reikningur')
         .is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null).is('dk_invoice_id', null)
         .or('status.is.null,status.neq.void')
         .gt('samtals', 0)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }).order('id').range(from, to))
+        .then(data => ({ data, error: null }), error => ({ data: null, error }));
       if (r.error) throw new Error(r.error.message);
       let rows = r.data || [];
 
@@ -2488,7 +2492,8 @@
       // Bæjarhrauni sf, 20.524 kr, sem hefði litið út eins og ósótt vinna.
       // Þess vegna er `credit_of` sótt í sérfyrirspurn á allar kreditfærslur.
       try {
-        const cr = await SB.from('solur').select('credit_of').eq('is_credit', true);
+        const cr = await DB.fetchAll((from, to) => SB.from('solur').select('credit_of').eq('is_credit', true).order('id').range(from, to))
+          .then(data => ({ data, error: null }), error => ({ data: null, error }));
         if (cr.error) throw new Error(cr.error.message);
         const credited = new Set((cr.data || []).map(x => x.credit_of).filter(v => v != null).map(String));
         rows = rows.filter(s => !s.is_credit && !credited.has(String(s.id)));

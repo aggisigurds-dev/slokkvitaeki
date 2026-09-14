@@ -127,8 +127,19 @@ async function sb(slod) {
   //   (c) base-lykill sölunnar er sá sem FYRIRTÆKIS-röðin ber.
   // Þá kom auðkennið sannanlega úr rangri töflu. Engin grunnlína.
   const meAlvoruKt = x => x && String(x).replace(/\D/g, '').length === 10;
-  const solurAllar = await sb('solur?select=num,samtals,customer_nafn,customer_kt,' +
-    'customer_id,customer_base_id,created_at&customer_id=not.is.null&order=created_at.desc');
+  // 14.09.2026: allar sölur með customer_id (824 í dag) — blaðsíðuflett, því solur fer yfir
+  // 1000-raða þakið um miðjan október og eitt kall sæi þá aðeins nýjustu 1000.
+  const solurAllar = [];
+  for (let fra = 0; ; fra += 1000) {
+    const r = await fetch(URL_ + '/rest/v1/solur?select=num,samtals,customer_nafn,customer_kt,' +
+      'customer_id,customer_base_id,created_at&customer_id=not.is.null&order=created_at.desc,id.desc', {
+      headers: { ...H, Range: `${fra}-${fra + 999}` }
+    });
+    if (!r.ok) throw new Error('solur (allar með customer_id) -> ' + r.status);
+    const b = await r.json();
+    solurAllar.push(...b);
+    if (b.length < 1000) break;
+  }
   const cids = [...new Set(solurAllar.map(s => s.customer_id))];
   const bit = (tafla, hluti) => sb(tafla + '?select=id,nafn,kennitala,customer_base_id&id=in.(' +
     hluti.join(',') + ')');

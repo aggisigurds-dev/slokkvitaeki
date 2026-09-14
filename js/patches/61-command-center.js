@@ -126,10 +126,10 @@
       // ALLAR raðir (líka drög) — við flokkum sjálf; drög fyrir 'greitt_sidar' eru
       // væntanleg innheimta, önnur drög eru sleppt í tekjum. Tökum bæði raðir sem
       // voru SKRÁÐAR og raðir sem voru GREIDDAR í glugganum (gömul drög sótt í dag).
-      safe(SB.from('solur').select('samtals,created_at,paid_at,greitt_med,source,status')
-        .or('created_at.gte.' + fetchSince.toISOString() + ',paid_at.gte.' + fetchSince.toISOString())),
+      safe(DB.fetchAll((from, to) => SB.from('solur').select('samtals,created_at,paid_at,greitt_med,source,status')
+        .or('created_at.gte.' + fetchSince.toISOString() + ',paid_at.gte.' + fetchSince.toISOString()).order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error }))),
       // void teljist ALDREI skuld (2026-08-14, R-000232 lexían) — drog var þegar síað.
-      safe(SB.from('solur').select('id,samtals,customer_nafn').neq('status','drog').neq('status','void').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
+      safe(DB.fetchAll((from, to) => SB.from('solur').select('id,samtals,customer_nafn').neq('status','drog').neq('status','void').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null).order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error }))),
       // „Opin verk" = ekki sótt og ekki eytt. 10.09.2026: hér stóð
       // .neq('done').neq('cancelled') — HVORUGT gildið er til á verkbeidnir
       // (raunsettið er collected 602 · eytt 85 · ready 32 · received 5), svo

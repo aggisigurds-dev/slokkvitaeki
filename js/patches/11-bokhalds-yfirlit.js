@@ -417,6 +417,7 @@
     // eyeball recent reikningar/drög immediately; date presets/ranges re-query
     // server-side (bounded) and „Allt" loads the full history on demand — so the
     // accounting periods stay complete.
+    // audit-pagination:ok — afmarkað í allSalesIn / .limit(400)
     const solurQ = () => SB.from('solur')
       .select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,paid_method,status,vidskiptategund')
       // Röðum eftir SÍÐUSTU AÐGERÐ (updated_at) svo sjálfgefna „nýjustu 400"

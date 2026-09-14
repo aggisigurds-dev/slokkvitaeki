@@ -103,6 +103,7 @@
     const SB = getSB();
     if (!SB) return;
     try {
+      // audit-pagination:ok — drög, .limit(100) í næsta skrefi
       let q = SB.from('solur')
         .select('id,num,customer_nafn,samtals,greitt_med,created_at,updated_at,athugasemdir,hidden')
         .eq('status', 'drog');

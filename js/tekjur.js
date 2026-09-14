@@ -19,8 +19,11 @@ function _pmTexti(m){
 
   async function loadSales(force){
     if(_loaded && !force) return;   // cache — don't refetch the whole table on every poll
-    var r = await DB.sb.from('solur').select('id,num,customer_nafn,starfsmadur,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,status').neq('status','drog').order('created_at',{ascending:false});
-    _sales = r.data || [];
+    var rows = await DB.fetchAll(function(from, to){ return DB.sb.from('solur').select('id,num,customer_nafn,starfsmadur,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,status').neq('status','drog').order('created_at',{ascending:false}).order('id').range(from, to); }).catch(function(e){
+      if (typeof window.logProblem === 'function') window.logProblem('tekjur', 'solur_load_failed: ' + String((e && e.message) || e).slice(0, 160));
+      return null;
+    });
+    _sales = rows || [];
     _loaded = true;
   }
 

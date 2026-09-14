@@ -1168,12 +1168,13 @@ function openReikModal(){
   // yfir \u00ed `solur` me\u00f0 r\u00e9ttri filter: reikningur / greitt_sidar, ekki greiddar,
   // ekki dr\u00f6g.
   Promise.all([
-    window.DB.sb.from('solur')
+    window.DB.fetchAll(function(from, to){ return window.DB.sb.from('solur')
       .select('id,num,customer_nafn,customer_id,samtals,greitt_med,created_at,paid_at,status')
       .in('greitt_med',['reikningur','greitt_sidar'])
       .is('paid_at',null)
       .neq('status','drog')
-      .order('created_at',{ascending:false}),
+      .order('created_at',{ascending:false}).order('id').range(from, to); })
+      .then(function(rows){ return { data: rows, error: null }; }, function(e){ return { data: null, error: e }; }),
     window.DB.sb.from('vidskiptavinir').select('id,kennitala,nafn')
   ]).then(function(results){
     var sr=results[0], cr=results[1];
@@ -2207,7 +2208,9 @@ console.log('[patch-master] loaded with all fixes');
     if(main.querySelector('._pm_fin')) return;
     _finInjected = true;
     // Fetch all solur records
-    var r = await window.DB.sb.from('solur').select('*').neq('status','drog').order('created_at',{ascending:false});
+    // 14.09.2026: solur nálgast 1000-raða þakið (832, +5,5 á dag) — blaðsíðuflett svo engin sala detti úr tekjunum.
+    var r = await window.DB.fetchAll(function(from, to){ return window.DB.sb.from('solur').select('*').neq('status','drog').order('created_at',{ascending:false}).order('id').range(from, to); })
+      .then(function(rows){ return { data: rows }; });   // villa fellur í catch hér að neðan (console.warn + _finInjected = false)
     main = document.getElementById('income-main');
     if(!main || !main.isConnected || _tekjurOwnsIncome()) { _finInjected = false; return; }
     if(!r.data) { _finInjected = false; return; }

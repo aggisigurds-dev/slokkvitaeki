@@ -81,9 +81,11 @@
     // cheap HEAD query and caching the result.
     const tilbodExists = await checkTilbodTable(SB);
 
+    const eldraEn30 = new Date(Date.now()-30*86400000).toISOString();
+    // 14.09.2026: tæki á gjalddaga næstu 30 daga voru 2.118 — ópöguð sókn sá aðeins 1.000.
     const queries = [
-      safe(SB.from('solur').select('id,num,customer_nafn,samtals,created_at,paid_at,greitt_med').neq('status','drog').neq('status','void').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null).lte('created_at', new Date(Date.now()-30*86400000).toISOString())),
-      safe(SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).order('next_insp',{ascending:true})),
+      safe(DB.fetchAll((from, to) => SB.from('solur').select('id,num,customer_nafn,samtals,created_at,paid_at,greitt_med').neq('status','drog').neq('status','void').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null).lte('created_at', eldraEn30).order('id').range(from, to)).then(data => ({ data, error: null }))),
+      safe(DB.fetchAll((from, to) => SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).order('next_insp',{ascending:true}).order('id').range(from, to)).then(data => ({ data, error: null }))),
       safe(SB.from('birgdir').select('id,nafn,magn,lagmark,eining').limit(500)),
       safe(SB.from('verkbeidnir').select('id,num,customer,created_at,status').gte('created_at', last7.toISOString()).order('created_at',{ascending:false}).limit(10)),
       tilbodExists

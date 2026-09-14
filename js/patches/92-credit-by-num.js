@@ -79,10 +79,12 @@
     // Duplicate-credit check only works when credit_of column exists.
     if (!data._kreditColsMissing) {
       try {
-        const { data: existingCredits } = await SB
+        const { data: existingCredits } = await DB.fetchAll((from, to) => SB
           .from('solur')
           .select('id,num')
-          .eq('credit_of', data.id);
+          .eq('credit_of', data.id)
+          .order('id').range(from, to))
+          .then(rows => ({ data: rows }), () => ({ data: null }));
         if (existingCredits && existingCredits.length) {
           const proceed = confirm('Reikningur ' + num + ' var áður kreditfærður (' +
             existingCredits.map(c => c.num).join(', ') +

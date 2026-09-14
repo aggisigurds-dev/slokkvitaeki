@@ -406,9 +406,11 @@
     NOTES = { sala: {}, verk: {} }; RESOLVED = { sala: {}, verk: {} };
     (n.data || []).forEach(x => { (NOTES[x.kind] || (NOTES[x.kind] = {}))[x.sale_id] = x.note; (RESOLVED[x.kind] || (RESOLVED[x.kind] = {}))[x.sale_id] = !!x.resolved; });
     // sales
-    const r = await SB.from('solur')
+    // 14.09.2026: allar sölur í einni sókn — blaðsíðuflett áður en solur fer yfir 1000 raðir.
+    const r = await DB.fetchAll((from, to) => SB.from('solur')
       .select('id,num,created_at,customer_nafn,greitt_med,greitt_med_prev,status,samtals,customer_base_id,paid_at,is_credit,krafa_sent_at,hidden')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }).order('id').range(from, to))
+      .then(data => ({ data, error: null }), error => ({ data: null, error }));
     if (r.error) { if (appS) appS.innerHTML = '<div class="skel" style="color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     ROWS = (r.data || []).map(s => ({
       id: s.id, num: s.num || '', dags: (s.created_at || '').slice(0, 10),

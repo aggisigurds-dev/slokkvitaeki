@@ -157,15 +157,15 @@
     if (!c) throw new Error('Engin tenging við gagnagrunn');
     const fjortan = new Date(Date.now() - 14 * 864e5).toISOString();
     const [ro, rk, rs, rkort, raud, rg, rv] = await Promise.all([
-      c.from('solur').select('id,num,customer_nafn,customer_kt,customer_base_id,customer_id,samtals,status,greitt_med,paid_at,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit,credit_of,source,linur')
-        .eq('greitt_med', 'reikningur').is('paid_at', null).or('status.is.null,status.neq.void'),
-      c.from('solur').select('credit_of').eq('is_credit', true).not('credit_of', 'is', null),
-      c.from('solur').select('id,num,customer_nafn,customer_kt,customer_base_id,customer_id,samtals,status,greitt_med,paid_at,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit,credit_of,source,linur')
-        .eq('greitt_med', 'greitt_sidar').eq('status', 'drog').is('paid_at', null).lt('created_at', fjortan),
-      c.from('solur').select('id,num,customer_nafn,customer_kt,customer_base_id,customer_id,samtals,status,greitt_med,paid_at,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit,credit_of,source,linur')
-        .in('greitt_med', ['kort', 'reidufe']).eq('status', 'final').is('paid_at', null).not('is_credit', 'is', true),
-      c.from('solur').select('id,num,customer_nafn,customer_kt,customer_base_id,customer_id,samtals,status,greitt_med,paid_at,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit,credit_of,source,linur')
-        .in('status', ['final', 'sott']).or('linur.is.null,linur.eq.[]'),
+      DB.fetchAll((from, to) => c.from('solur').select('id,num,customer_nafn,customer_kt,customer_base_id,customer_id,samtals,status,greitt_med,paid_at,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit,credit_of,source,linur')
+        .eq('greitt_med', 'reikningur').is('paid_at', null).or('status.is.null,status.neq.void').order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error })),
+      DB.fetchAll((from, to) => c.from('solur').select('credit_of').eq('is_credit', true).not('credit_of', 'is', null).order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error })),
+      DB.fetchAll((from, to) => c.from('solur').select('id,num,customer_nafn,customer_kt,customer_base_id,customer_id,samtals,status,greitt_med,paid_at,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit,credit_of,source,linur')
+        .eq('greitt_med', 'greitt_sidar').eq('status', 'drog').is('paid_at', null).lt('created_at', fjortan).order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error })),
+      DB.fetchAll((from, to) => c.from('solur').select('id,num,customer_nafn,customer_kt,customer_base_id,customer_id,samtals,status,greitt_med,paid_at,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit,credit_of,source,linur')
+        .in('greitt_med', ['kort', 'reidufe']).eq('status', 'final').is('paid_at', null).not('is_credit', 'is', true).order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error })),
+      DB.fetchAll((from, to) => c.from('solur').select('id,num,customer_nafn,customer_kt,customer_base_id,customer_id,samtals,status,greitt_med,paid_at,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,krafa_note,is_credit,credit_of,source,linur')
+        .in('status', ['final', 'sott']).or('linur.is.null,linur.eq.[]').order('id').range(from, to)).then(data => ({ data, error: null }), error => ({ data: null, error })),
       c.from('v_gleymt_ad_rukka_uttekt').select('fyrirtaeki_id,nafn,kennitala,heimilisfang,postnumer,customer_base_id,skyrslur,skyrsla_dags,skodun_dags,skodun_heimild,vinnublad_id,vinnublad_manudur,vinnublad_dags,vinnublad_stada,stolpi_sidast_nr,stolpi_sidast_dags,stolpi_sidast_stada,stolpi_sidast_upphaed'),
       c.from('krofu_verkferli').select('*')
     ]);

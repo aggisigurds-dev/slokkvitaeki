@@ -54,7 +54,9 @@ const VIDVORUN = Math.round(GRENS * 0.9);
 // rauður eins og til var ætlast. Hún er nú í BIG og audit-pagination flaggar ekkert:
 // allar 25 `.from('thjonustubeidni')` í js/ eru skrif, afmarkaðar (id / customer_base_id /
 // .in) eða í fetchAll, og ai-context.js blaðsíðuflettir (allar). Því tekin út héðan.
-const VAKTA = ['solur', 'arsskodun_report_facts', 'verkbeidnir'];
+// 14.09.2026: solur fór í BIG í audit-pagination ÁÐUR en hún náði þakinu (832 raðir) og allar ópöguðu
+// fyrirspurnirnar á hana voru lagaðar; kóðahliðin er því varin þar og taflan tekin út héðan.
+const VAKTA = ['arsskodun_report_facts', 'verkbeidnir'];
 
 // ALLOW-færslur í tools/audit-pagination.cjs sem hvíla á tölu sem VEX. `slod` er
 // nákvæmlega sú afmörkun sem undanþágan lofar að haldist undir þakinu.

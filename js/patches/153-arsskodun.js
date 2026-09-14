@@ -328,7 +328,12 @@
     // 14.09.2026: .limit(3000) skilaði samt 1000 af 1.250 röðum (PostgREST-þakið).
     // Blaðsíðuflett; viewið ber enga id, fyrirtaeki_id er einkvæmt (ein röð á stað).
     const skManP = DB.fetchAll((from, to) => SB.from('v_skodunar_manudur').select('fyrirtaeki_id,inspect_month,heimild').order('fyrirtaeki_id').range(from, to))
-      .catch(() => []);
+      .catch(e => {
+        if (typeof window.logProblem === 'function') {
+          window.logProblem('arsskodun', 'skodunar_manudur_failed', { detail: String((e && e.message) || e).slice(0, 200) });
+        }
+        return [];
+      });
     // 2026-07-17 (❓ Óvíst triage): skýrslu-ÁR hvers félags úr customer_documents
     // (Drive-hryggnum) — knýr sönnunar-merkin á Óvíst-flipanum. Síðuskipt (töflurnar
     // eru komnar yfir 1000-raða klippingu Supabase) og fail-safe (tómt map á villu).

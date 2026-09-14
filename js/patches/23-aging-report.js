@@ -103,7 +103,7 @@
     // Try with paid_at column; if missing, fall back without it
     let data, error;
     try {
-      const res = await SB
+      const res = await DB.fetchAll((from, to) => SB
         .from('solur')
         .select('id,num,customer_nafn,customer_id,samtals,created_at,paid_at,paid_method,athugasemdir,greitt_med')
         .in('greitt_med', ['reikningur', 'greitt_sidar'])
@@ -112,14 +112,16 @@
         // bakfærður/ósendur reikningur er ekki útistandandi krafa.
         .neq('status', 'void')
         .neq('status', 'drog')
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }).order('id').range(from, to))
+        .then(data => ({ data, error: null }), error => ({ data: null, error }));
       data = res.data; error = res.error;
     } catch (_) {
-      const res2 = await SB
+      const res2 = await DB.fetchAll((from, to) => SB
         .from('solur')
         .select('id,num,customer_nafn,customer_id,samtals,created_at,athugasemdir,greitt_med')
         .in('greitt_med', ['reikningur', 'greitt_sidar'])
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }).order('id').range(from, to))
+        .then(data => ({ data, error: null }), error => ({ data: null, error }));
       data = res2.data; error = res2.error;
     }
     if (error) { console.warn('[aging-report] load:', error.message); return; }

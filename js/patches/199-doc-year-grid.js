@@ -565,7 +565,7 @@
     var d=String(kt).replace(/\D/g,''); if(d.length<7) return {};
     var dash=d.length===10?(d.slice(0,6)+'-'+d.slice(6)):d;
     try{
-      var r=await sb.from('solur').select('num,source,vidskiptategund,samtals').or('customer_kt.eq.'+d+',customer_kt.eq.'+dash);
+      var r=await DB.fetchAll(function(from,to){ return sb.from('solur').select('num,source,vidskiptategund,samtals').or('customer_kt.eq.'+d+',customer_kt.eq.'+dash).order('id').range(from,to); }).then(function(rows){ return { data: rows }; }, function(e){ return { error: e }; });
       if(r.error||!r.data) return {};
       // Pakki 7: vidskiptategund (uttekt/bud/ovisst) er nákvæmari en source —
       // geymum bæði; chipInvSrc lætur tegundina ráða þegar hún er til.
@@ -581,10 +581,10 @@
     var d=String(kt).replace(/\D/g,''); if(d.length<7) return [];
     var dash=d.length===10?(d.slice(0,6)+'-'+d.slice(6)):d;
     try{
-      var r=await sb.from('solur')
+      var r=await DB.fetchAll(function(from,to){ return sb.from('solur')
         .select('id,num,samtals,created_at,customer_id,greitt_med,source,vidskiptategund')
         .eq('greitt_med','reikningur')
-        .or('customer_kt.eq.'+d+',customer_kt.eq.'+dash);
+        .or('customer_kt.eq.'+d+',customer_kt.eq.'+dash).order('id').range(from,to); }).then(function(rows){ return { data: rows }; }, function(e){ return { error: e }; });
       if(r.error||!r.data) return [];
       var sibs=await siblingsForKt(kt);
       var multi=sibs.length>1;

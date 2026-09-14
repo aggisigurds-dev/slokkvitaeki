@@ -262,12 +262,13 @@
     const SB = getSB();
     if (!SB) return [];
     try {
-      const { data, error } = await SB
+      const { data, error } = await DB.fetchAll((from, to) => SB
         .from('solur')
         .select('id,num,customer_nafn,customer_id,samtals,greitt_med,paid_at,paid_method,created_at,linur,upphaed_an_vsk,vsk_upphaed')
         .in('greitt_med', ['reikningur', 'greitt_sidar'])
         .is('paid_at', null)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }).order('id').range(from, to))
+        .then(data => ({ data, error: null }), error => ({ data: null, error }));
       if (error) throw error;
       _unpaid = (data || []).map(s => ({
         id: s.id,
