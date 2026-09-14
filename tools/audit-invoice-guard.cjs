@@ -38,7 +38,9 @@ const KEY  = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
   blanks.slice(0, 60).forEach(s => console.log(`  ${s.num}  ${s.status}  samtals=${s.samtals}`));
   if (blanks.length > 60) console.log(`  … +${blanks.length - 60} more`);
 
-  const BASELINE = 40;   // already-existing blank sales on 2026-08-20; RED only if it grows
+  // 40 blank sales on 2026-08-20. 14.09.2026 (mál #918, Agnar samþykkti 13.09.): 22 of them voided — 8 billed later on the
+  // same kt/name, 14 test sales — so 18 remain. RED only if it grows; lower again as the 18 are cleaned.
+  const BASELINE = 18;
   if (blanks.length) {
     console.log('\nThe 2026-08-20 send guards BLOCK these from reaching a customer.');
     console.log('Remaining action: void/clean these rows, then lower BASELINE.');
