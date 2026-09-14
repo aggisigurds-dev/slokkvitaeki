@@ -104,7 +104,7 @@ for (const f of files) {
     const seg = src.slice(m.index, m.index + 700).split(/;\s*\n/)[0];
     const ctx = pre + seg;
     if (/\.(insert|update|upsert|delete)\(/.test(seg)) continue;             // skriftir
-    if (/\.range\(|\.limit\(|maybeSingle\(|\.single\(/.test(ctx)) continue;  // blaðsíðuflett
+    if (/\.range\(|\.limit\(|maybeSingle\(|\.single\(/.test(ctx)) continue;  // afmarkað — .limit(N>1000) grípur FAST-reglan neðar
     if (/fetchAll\s*\(/.test(pre)) continue;                                 // vafið í fetchAll
     // Handvirk undanþága: settu  // audit-pagination:ok — <ástæða>  beint fyrir ofan
     // fyrirspurn sem er afmörkuð í ÖÐRU skrefi (t.d. q = q.eq(...) síðar).
@@ -141,38 +141,116 @@ for (const f of files) {
  * er engin grunnlína á þessari reglu — hún er RAUÐ frá fyrsta broti.
  */
 const FAST = /\.range\(\s*(\d+)\s*,\s*(\d+)\s*\)/g;
+/* ── .limit(N) MEÐ N > 1000 — SAMA GILDRAN (14.09.2026) ───────────────────────
+ * Aðalreglan að ofan telur hvert `.limit(` sem afmörkun og hleypti því
+ * `.limit(5000)` í gegn. PostgREST sker þar líka í 1000, skilar 200 og segir
+ * ekkert. Mælt á lifandi grunni 14.09.2026: 20 slík köll í js/, og fjögur voru
+ * þegar að tapa röðum —
+ *   • 153 v_skodunar_manudur .limit(3000): 1000 af 1.250 — allir staðir eftir
+ *     id 1544 duttu úr uppflettingunni, og gatið stækkar með hverjum nýjum stað
+ *   • 236 customers_base .limit(5000): 1000 af 1.152 — Sameining sá ekki 152
+ *     grunna og bauð „🆕 Ný base" þar sem grunnur var þegar til
+ *   • 27 fyrirtaeki .limit(2000) ×2: 1000 af 1.250 / 1.180 — nafnalistar Tilboðs
+ *     og Sérverðs enduðu í „S"
+ * Talan N > 1000 er sjálf yfirlýsing um að fleiri raðir séu væntanlegar, óháð
+ * BIG-listanum. Sama regla og um fastan glugga: RAUTT frá fyrsta broti, engin
+ * grunnlína, engin ALLOW. `.limit(N ≤ 1000)` er áfram lögmæt afmörkun.
+ */
+const FAST_LIMIT = /\.limit\(\s*(\d+)\s*\)/g;
 const ofstor = [];
 // Athugasemd sem LÝSIR villunni er ekki villan. Fyrsta útgáfa þessarar reglu
 // flaggaði skýringarnar sem voru skrifaðar við hliðina á lagfæringunum í
 // 231/358 — vörður sem gelgir að ósekju verður þaggaður. Því eru blokkar- og
 // línuathugasemdir fjarlægðar fyrst, en línunúmerin varðveitt með því að skipta
-// þeim út fyrir jafnmörg bil. (Sama aðferð og í tools/audit-thema-frosid.cjs.)
-const anAthugasemda = s => s
-  .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
-  .replace(/(^|[^:])\/\/[^\n]*/g, (m, p1) => p1 + m.slice(p1.length).replace(/[^\n]/g, ' '));
+// þeim út fyrir jafnmörg bil.
+//
+// 14.09.2026: hreinsirinn les nú strengi, sniðmát og regex-lesgildi. Sá fyrri var
+// tvö regex (sama og tools/audit-thema-frosid.cjs) og tók `/*` inni í streng sem
+// upphaf athugasemdar: `accept="image/*"` í 09 tæmdi línur 265–459, svo
+// `.limit(2000)` á línu 399 sást aldrei. Mælt á 369 skrám í js/: úttak gamla
+// hreinsisins þýddist ekki í 20 skrám (hann klippti raunverulegan kóða), úttak
+// þess nýja þýðist í þeim öllum (vm.Script).
+const anAthugasemda = s => {
+  const ut = s.split('');
+  const n = s.length;
+  const tomt = (a, b) => { for (let k = a; k < b; k++) if (s[k] !== '\n' && s[k] !== '\r') ut[k] = ' '; };
+  const stafli = [];                  // dýpt slaufusviga þar sem hvert opið ${ … } hófst
+  let dypt = 0, i = 0, sidast = '';   // sidast = síðasti marktæki stafur í kóða
+  const snidmat = () => {             // les sniðmát þar til ` lokar því eða ${ opnar kóða
+    while (i < n) {
+      if (s[i] === '\\') { i += 2; continue; }
+      if (s[i] === '`') { i++; return; }
+      if (s[i] === '$' && s[i + 1] === '{') { stafli.push(dypt); dypt++; i += 2; return; }
+      i++;
+    }
+  };
+  while (i < n) {
+    const c = s[i], d = s[i + 1];
+    if (c === '/' && d === '/') { let e = s.indexOf('\n', i); if (e < 0) e = n; tomt(i, e); i = e; continue; }
+    if (c === '/' && d === '*') { let e = s.indexOf('*/', i + 2); e = e < 0 ? n : e + 2; tomt(i, e); i = e; continue; }
+    if (c === '"' || c === "'") {
+      i++;
+      while (i < n && s[i] !== c && s[i] !== '\n') i += s[i] === '\\' ? 2 : 1;
+      i++; sidast = c; continue;
+    }
+    if (c === '`') { i++; snidmat(); sidast = '`'; continue; }
+    if (c === '}' && stafli.length && stafli[stafli.length - 1] === dypt - 1) {
+      stafli.pop(); dypt--; i++; snidmat(); sidast = '`'; continue;
+    }
+    if (c === '{') dypt++;
+    else if (c === '}') dypt--;
+    if (c === '/') {                  // regex-lesgildi eða deiling? Ræðst af því sem fór á undan.
+      const fyrir = ut.slice(Math.max(0, i - 12), i).join('');
+      if (!sidast || '(,=:[!&|?{};+-*%<>~^'.includes(sidast) ||
+          /(?:^|[^\w$])(?:return|typeof|case|do|else|in|of|new|delete|void|throw|instanceof|yield|await)\s*$/.test(fyrir)) {
+        i++;
+        let flokkur = false;
+        while (i < n && s[i] !== '\n') {
+          if (s[i] === '\\') { i += 2; continue; }
+          if (s[i] === '[') flokkur = true;
+          else if (s[i] === ']') flokkur = false;
+          else if (s[i] === '/' && !flokkur) { i++; break; }
+          i++;
+        }
+        while (i < n && /[a-z]/i.test(s[i])) i++;
+        sidast = ')';
+        continue;
+      }
+    }
+    if (!/\s/.test(c)) sidast = c;
+    i++;
+  }
+  return ut.join('');
+};
 for (const f of files) {
   const src = anAthugasemda(fs.readFileSync(f, 'utf8'));
+  const skra = (idx, bad, form) => {
+    const fyrir = src.slice(Math.max(0, idx - 900), idx);
+    const t = [...fyrir.matchAll(/\.from\(\s*['"]([a-z_0-9]+)['"]\s*\)/g)].pop();
+    ofstor.push({ file: f.split(path.sep).join('/'),
+                  line: src.slice(0, idx).split('\n').length,
+                  tbl: t ? t[1] : '(óþekkt)', bad, form });
+  };
   let mm;
   FAST.lastIndex = 0;
   while ((mm = FAST.exec(src)) !== null) {
     const bad = (+mm[2]) - (+mm[1]) + 1;
-    if (bad <= 1000) continue;
-    const fyrir = src.slice(Math.max(0, mm.index - 900), mm.index);
-    const t = [...fyrir.matchAll(/\.from\(\s*['"]([a-z_0-9]+)['"]\s*\)/g)].pop();
-    ofstor.push({ file: f.split(path.sep).join('/'),
-                  line: src.slice(0, mm.index).split('\n').length,
-                  tbl: t ? t[1] : '(óþekkt)', bad });
+    if (bad > 1000) skra(mm.index, bad, '.range(' + mm[1] + ', ' + mm[2] + ')');
+  }
+  FAST_LIMIT.lastIndex = 0;
+  while ((mm = FAST_LIMIT.exec(src)) !== null) {
+    if (+mm[1] > 1000) skra(mm.index, +mm[1], '.limit(' + mm[1] + ')');
   }
 }
 if (ofstor.length) {
   console.log('❌ audit-pagination: ' + ofstor.length +
-    ' fyrirspurn(ir) biðja um FLEIRI en 1000 raðir í einum glugga — og fá 1000:\n');
+    ' fyrirspurn(ir) biðja um FLEIRI en 1000 raðir í einu kalli — og fá 1000:\n');
   ofstor.sort((a, b) => b.bad - a.bad).forEach(h =>
     console.log('  bað um ' + String(h.bad).padStart(5) + '  ' + h.tbl.padEnd(24) +
-                h.file + ':' + h.line));
-  console.log('\nPostgREST sker í 1000 og segir EKKI frá. Blaðsíðuflettu í staðinn:');
-  console.log('    DB.fetchAll((from, to) => <fyrirspurn>.range(from, to))');
-  console.log('RED: fastur gluggi > 1000 er alltaf rangur — engin grunnlína á þessari reglu.');
+                (h.file + ':' + h.line).padEnd(48) + h.form));
+  console.log('\nPostgREST sker í 1000 og segir EKKI frá — hvorki við .range() né .limit(). Blaðsíðuflettu í staðinn:');
+  console.log('    DB.fetchAll((from, to) => <fyrirspurn>.order(<einkvæmur dálkur>).range(from, to))');
+  console.log('RED: fastur gluggi eða .limit() yfir 1000 er alltaf rangur — engin grunnlína á þessari reglu.');
   process.exit(1);
 }
 

@@ -325,8 +325,9 @@
     // sameinar skýrslu- OG reikninga-mánuði (44 staðir eiga mánuð sem kemur
     // AÐEINS úr úttektar-reikningi, t.d. Norðurbrú 1 → maí). Fyllir aðeins í
     // eyðu, á undan next_insp-ágiskuninni.
-    const skManP = SB.from('v_skodunar_manudur').select('fyrirtaeki_id,inspect_month,heimild').limit(3000)
-      .then(r => (r && r.data) || [])
+    // 14.09.2026: .limit(3000) skilaði samt 1000 af 1.250 röðum (PostgREST-þakið).
+    // Blaðsíðuflett; viewið ber enga id, fyrirtaeki_id er einkvæmt (ein röð á stað).
+    const skManP = DB.fetchAll((from, to) => SB.from('v_skodunar_manudur').select('fyrirtaeki_id,inspect_month,heimild').order('fyrirtaeki_id').range(from, to))
       .catch(() => []);
     // 2026-07-17 (❓ Óvíst triage): skýrslu-ÁR hvers félags úr customer_documents
     // (Drive-hryggnum) — knýr sönnunar-merkin á Óvíst-flipanum. Síðuskipt (töflurnar
