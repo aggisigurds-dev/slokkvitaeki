@@ -7,43 +7,50 @@
  * höfnunin fór AÐEINS í svar vafrans og gleymdist. Plaza R-000852 og Austurberg 20
  * R-000769 fóru þannig 31.08. í Payday án XML; enginn vissi fyrr en 14.09. þegar
  * Plaza var enn ógreitt. Agnar 14.09.: sendingin heldur áfram, en höfnunin skal
- * skráð á Kerfisheilsu (app_problems) svo hægt sé að senda XML handvirkt úr Payday.
+ * skráð í app_problems svo hægt sé að senda XML handvirkt úr Payday.
  *
  * Les aðeins kóðann (ekkert net). RED ef:
- *   1) varaleiðin (/electronic invoice/i) er horfin — þá þarf að endurskoða
- *      vörðinn með kóðanum, ekki þagga hann,
- *   2) varaleiðin skráir ekki höfnunina bæði þegar endurtilraun án XML tekst og
- *      þegar hún mistekst (502),
- *   3) skraXmlHofnun skrifar ekki kind 'payday_xml_hafnad' í app_problems,
- *   4) skraXmlHofnun getur fellt kröfusendinguna (gleypir ekki villur) eða hefur
- *      ekkert tímaþak (hæg Supabase má ekki halda sendingu í gíslingu),
- *   5) kennitala ratar í skráninguna (netvörður: aldrei persónu-kt í log).
+ *   1) varaleiðin (/electronic invoice/i) eða markSaleInvoiced-kallið er horfið —
+ *      þá þarf að endurskoða vörðinn með kóðanum, ekki þagga hann,
+ *   2) mistekin endurtilraun án XML (invErr2) skilar 502 án skráningar,
+ *   3) reikningur búinn til án XML skráist ekki, eða skráist ÁÐUR en salan er merkt
+ *      send — skráningin (≤3 s) má aldrei standa á milli þess að Payday býr reikninginn
+ *      til og markSaleInvoiced (netvörður 14.09.: deyi fallið þar er salan ómerkt og
+ *      endurtilraun býr til annan reikning),
+ *   4) skraXmlHofnun skrifar ekki kind 'payday_xml_hafnad' í app_problems, gleypir ekki
+ *      villur, eða hefur ekki raunverulegt tímaþak (setTimeout → ctl.abort + signal),
+ *   5) kt getur ratað í skráninguna: fallið les kt, detail fer ekki gegnum fela_kt, eða
+ *      fela_kt notar annað mynstur en gmail-send (\b-mynstrið lak 01.09.).
+ * Stökkbreytingar M5 (þak fjarlægt) og M6 (fela_kt ekki beitt á detail) verða RAUÐAR.
  */
 const fs = require('fs');
 const path = require('path');
 
-const src = fs.readFileSync(path.join(__dirname, '..', 'netlify/functions/payday-push.js'), 'utf8');
+const src = fs.readFileSync(path.join(__dirname, '..', 'netlify/functions/payday-push.js'), 'utf8').replace(/\r\n/g, '\n');
 const brot = [];
 
 const iGrein = src.indexOf('/electronic invoice/i.test(msg)');
-if (iGrein < 0) {
-  brot.push('fann ekki XML-varaleiðina (/electronic invoice/i.test(msg)) í payday-push.js — vörðurinn þarf að uppfærast með kóðanum');
-} else {
+const iMerkt = src.indexOf('await markSaleInvoiced(sale.id, created);');
+if (iGrein < 0) brot.push('fann ekki XML-varaleiðina (/electronic invoice/i.test(msg)) í payday-push.js — vörðurinn þarf að uppfærast með kóðanum');
+if (iMerkt < 0) brot.push('fann ekki await markSaleInvoiced(sale.id, created) í payday-push.js — vörðurinn þarf að uppfærast með kóðanum');
+
+if (iGrein > -1 && iMerkt > iGrein) {
   const iElse = src.indexOf('} else {', iGrein);
-  const grein = src.slice(iGrein, iElse > iGrein ? iElse : iGrein + 4000);
-  const kallanir = (grein.match(/await\s+skraXmlHofnun\s*\(/g) || []).length;
-  if (kallanir < 2) {
-    brot.push(`varaleiðin skráir XML-höfnun ${kallanir}× — á að skrá bæði þegar endurtilraun án XML tekst og þegar hún mistekst`);
-  }
+  const grein = src.slice(iGrein, iElse > iGrein && iElse < iMerkt ? iElse : iMerkt);
+  if (!/fellBackToNonElectronic\s*=\s*true/.test(grein)) brot.push('varaleiðin merkir ekki fellBackToNonElectronic = true');
+  if (!/xmlVilla\s*=\s*msg\b/.test(grein)) brot.push('varaleiðin geymir ekki Payday-villuna (xmlVilla = msg) fyrir skráninguna');
+
   const iCatch = grein.indexOf('catch (invErr2)');
   const iRetur = grein.indexOf('retriedWithoutElectronic');
   const misheppnud = iCatch > -1 && iRetur > iCatch ? grein.slice(iCatch, iRetur) : '';
-  if (!/await\s+skraXmlHofnun\s*\(/.test(misheppnud)) {
-    brot.push('mistekin endurtilraun (invErr2) skilar 502 án þess að skrá höfnunina');
-  }
-  const eftirEndurtilraun = iRetur > -1 ? grein.slice(iRetur) : '';
-  if (!/await\s+skraXmlHofnun\s*\(/.test(eftirEndurtilraun)) {
-    brot.push('reikningur búinn til án XML (endurtilraun tókst) skráist ekki');
+  if (!/await\s+skraXmlHofnun\s*\(/.test(misheppnud)) brot.push('mistekin endurtilraun (invErr2) skilar 502 án þess að skrá höfnunina');
+
+  const kallFyrir = (src.slice(iGrein, iMerkt).match(/await\s+skraXmlHofnun\s*\(/g) || []).length;
+  if (kallFyrir !== 1) brot.push(`${kallFyrir} skráningarköll á milli varaleiðar og markSaleInvoiced — aðeins 502-greinin (invErr2) má skrá þar`);
+
+  const eftir = src.slice(iMerkt, iMerkt + 900);
+  if (!/if\s*\(\s*fellBackToNonElectronic\s*\)\s*\{\s*await\s+skraXmlHofnun\s*\(\s*event\s*,\s*sale\s*,\s*xmlVilla\b/.test(eftir)) {
+    brot.push('reikningur búinn til án XML skráist ekki á eftir markSaleInvoiced (if (fellBackToNonElectronic) { await skraXmlHofnun(event, sale, xmlVilla, …) })');
   }
 }
 
@@ -54,9 +61,14 @@ if (!fall) {
   if (!/\/rest\/v1\/app_problems/.test(fall)) brot.push('skraXmlHofnun skrifar ekki í app_problems');
   if (!/kind:\s*'payday_xml_hafnad'/.test(fall)) brot.push("skraXmlHofnun skráir ekki kind 'payday_xml_hafnad'");
   if (!/\bcatch\s*\(/.test(fall)) brot.push('skraXmlHofnun gleypir ekki villur — skráning gæti fellt kröfusendingu');
-  if (!/AbortController/.test(fall) || !/signal/.test(fall)) brot.push('skraXmlHofnun hefur ekkert tímaþak (AbortController + signal)');
+  if (!/setTimeout\(\s*\(\)\s*=>\s*ctl\.abort\(\)/.test(fall) || !/signal:\s*ctl\.signal/.test(fall)) {
+    brot.push('skraXmlHofnun hefur ekkert raunverulegt tímaþak (setTimeout(() => ctl.abort(), …) + signal: ctl.signal)');
+  }
   if (/customer_kt|kennitala|\.ssn\b/.test(fall)) brot.push('skraXmlHofnun les kennitölu — kt má aldrei rata í app_problems');
-  if (!/fela_kt|\\d\{6\}/.test(fall)) brot.push('skraXmlHofnun hreinsar ekki kennitölur úr Payday-villutextanum');
+  if (!/detail:\s*fela_kt\(/.test(fall)) brot.push('detail fer ekki gegnum fela_kt — kt-líkar tölur geta ratað í app_problems');
+  if (!fall.includes('(?<!\\d)\\d{6}[-\\s_]?\\d{4}(?!\\d)')) {
+    brot.push('fela_kt notar ekki kt-mynstrið úr gmail-send ((?<!\\d)\\d{6}[-\\s_]?\\d{4}(?!\\d)) — \\b-mynstrið lak 01.09.');
+  }
 }
 
 if (brot.length) {
@@ -64,4 +76,4 @@ if (brot.length) {
   console.log(`RED: ${brot.length} brot — XML-höfnun í Payday getur aftur orðið þögul. Sjá netlify/functions/payday-push.js (skraXmlHofnun).`);
   process.exit(1);
 }
-console.log('✅ GRÆNT payday-xml-skráning: varaleiðin skráir höfnun (tekst/mistekst) í app_problems, gleypir villur, 3 s þak, engin kt.');
+console.log('✅ GRÆNT payday-xml-skráning: höfnun skráð (502 í greininni, án-XML á eftir markSaleInvoiced), gleypir villur, 3 s þak, engin kt.');
