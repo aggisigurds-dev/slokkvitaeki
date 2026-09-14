@@ -71,7 +71,9 @@ async function opna(page, coId) {
       const co = coGb[0].id;
       const box = await opna(page, co);
       const skra = box.locator('._bupp-flis._skra');
-      await skra.first().waitFor({ state: 'visible', timeout: 60000 }).catch(() => {});
+      // Fyrsta svar fyrir stóra lóð (Garðatorg 7 = 1052 teikningar) getur tekið drjúga
+      // stund þegar fallið, kjarni-API-ið og map.is-setan eru öll köld — bíðum lengur.
+      await skra.first().waitFor({ state: 'attached', timeout: 120000 }).catch(() => {});
       const merki = await skra.allTextContents();
       const fyrir = await page.evaluate((id) => ({ haedir: window.BannerUpplysingar.gildi(id, 'haedir'), kjallari: window.BannerUpplysingar.gildi(id, 'kjallari') }), co);
       console.log('  gildi fyrir próf:', JSON.stringify(fyrir), '· skrá-flísar:', JSON.stringify(merki));

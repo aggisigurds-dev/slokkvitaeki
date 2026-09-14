@@ -188,7 +188,7 @@
   function skrarSvar(coId) {
     const k = String(coId);
     const m = skrar.get(k);
-    if (m && m.svar) return m.svar;
+    if (m && m.svar) return m.svar;                 // líka error-svör (tengill sýnist ef eign fylgdi)
     if (m && m.bid) return null;
     try {
       const raw = sessionStorage.getItem(SKRAR_MINNI + k);
@@ -202,20 +202,25 @@
     } catch (_) {}
     return null;
   }
+  // Fyrsta svar fyrir stóra lóð getur runnið út á tíma (fallið skilar þá eigninni
+  // + tenglinum með error/reynaAftur) — slík svör fara EKKI í sessionStorage og
+  // eru sótt aftur eftir REYNA_AFTUR_MS; þá er allt orðið heitt.
+  const REYNA_AFTUR_MS = 45 * 1000;
   function saekjaSkrar(coId) {
     const k = String(coId);
-    if (skrar.has(k)) return;
+    const m = skrar.get(k);
+    if (m && (m.bid || !m.reynaAftur || Date.now() - m.sott < REYNA_AFTUR_MS)) return;
     const heimilisfang = heimilisfangFyrir(coId);
     if (!heimilisfang || !/\d/.test(heimilisfang)) { skrar.set(k, { svar: { engin: true }, sott: Date.now() }); return; }
     skrar.set(k, { bid: true });
     fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(heimilisfang))
       .then(r => r.json().then(svar => ({ ok: r.ok, svar })))
-      .then(({ svar }) => {
-        const geymt = { svar: svar || {}, sott: Date.now() };
+      .then(({ ok, svar }) => {
+        const geymt = { svar: svar || {}, sott: Date.now(), reynaAftur: !!(svar && svar.reynaAftur) || (!ok && !(svar && svar.eign) && !(svar && svar.ogilt)) };
         skrar.set(k, geymt);
-        try { sessionStorage.setItem(SKRAR_MINNI + k, JSON.stringify({ heimilisfang, svar: geymt.svar, sott: geymt.sott })); } catch (_) {}
+        if (!geymt.reynaAftur) { try { sessionStorage.setItem(SKRAR_MINNI + k, JSON.stringify({ heimilisfang, svar: geymt.svar, sott: geymt.sott })); } catch (_) {} }
       })
-      .catch(() => { skrar.set(k, { svar: { error: 'Náði ekki í skrár' }, sott: Date.now() }); });
+      .catch(() => { skrar.set(k, { svar: { error: 'Náði ekki í skrár' }, sott: Date.now(), reynaAftur: true }); });
   }
   /** Flísar úr skránum — sama snið og athugasemda-tillögurnar, merktar skra:true. */
   function skraTillogur(coId) {
@@ -671,6 +676,7 @@
       '#' + (sk ? (sk.turbopaint ? 't' : '') + (sk.error ? 'e' : '') : '');
   }
   function samstilla(box, coId) {
+    saekjaSkrar(coId);                            // endursókn eftir tímaþrot (skilar strax annars)
     const simi = simiHamur();
     box.querySelectorAll('.co-bupp-reitur').forEach(inp => {
       inp.classList.toggle('_simi', simi);          // hamur má skipta án endurteiknunar

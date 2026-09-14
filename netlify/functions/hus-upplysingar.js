@@ -47,6 +47,12 @@
  *   upp á (teikningafjöldinn og tengillinn í TurboPaint sýnast samt). Söfn
  *   map.is merkja ekki götu; þar er lóðin tekin sem heild.
  *
+ * TÍMAFRESTUR: Netlify sker samstillt fall við 10 s. Fyrsta kall fyrir stóra lóð
+ * (kalt kjarni-API + ný map.is-seta + 1000 raðir) mældist 10,7 s í heild 14.09.2026.
+ * Því fær hvert kall sameiginlegan 8,5 s frest (FRESTUR_MS): renni hann út skilar
+ * fallið eigninni + tenglinum með `error` og 200 — bannerinn sýnir tengilinn og
+ * reynir aftur eftir smástund (þá er allt orðið heitt og svarið kemur á <1 s).
+ *
  * Fjöldi íbúða/stigaganga/herbergja er EKKI opinber: Fasteignaskrá HMS selur
  * þær upplýsingar í áskrift (api.hms.is svarar 403) og hms.is er læst á bak við
  * botvörn. Þeir reitir standa því áfram handvirkir.
@@ -75,6 +81,9 @@ const json = (body, status = 200) =>
 // í fallinu sjálfu (lifir meðan Netlify heldur tilvikinu vakandi).
 const minni = new Map();
 const MINNI_MS = 10 * 60 * 1000;
+const FRESTUR_MS = 8500;
+/** Tímamerki sem virðir sameiginlega frestinn: minnst 800 ms, mest það sem eftir er. */
+const frestur = (deadline, hamark) => AbortSignal.timeout(Math.max(800, Math.min(hamark, deadline - Date.now())));
 
 /** „Dalshrauni 1b, 220 Hafnarfirði" → { gata:'Dalshrauni', husnr:1, bokst:'b', postnr:220, husnr2:null } */
 export function thattaHeimilisfang(raw) {
@@ -95,12 +104,12 @@ export function thattaHeimilisfang(raw) {
 
 const cqlStr = (s) => "'" + String(s).replace(/'/g, "''") + "'";
 
-async function wfsStadfang(h, medBokst, medPostnr) {
+async function wfsStadfang(h, medBokst, medPostnr, deadline) {
   const bitar = [`(HEITI_NF ILIKE ${cqlStr(h.gata)} OR HEITI_TGF ILIKE ${cqlStr(h.gata)})`, `HUSNR=${h.husnr}`];
   if (medBokst && h.bokst) bitar.push(`BOKST ILIKE ${cqlStr(h.bokst)}`);
   if (medPostnr && h.postnr) bitar.push(`POSTNR=${h.postnr}`);
   const url = `${WFS}?service=WFS&version=1.1.0&request=GetFeature&typename=fasteignaskra:VSTADF_ALLT&outputFormat=application/json&maxFeatures=10&CQL_FILTER=${encodeURIComponent(bitar.join(' AND '))}`;
-  const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Slokkvitaeki/1.0)' }, signal: AbortSignal.timeout(15000) });
+  const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Slokkvitaeki/1.0)' }, signal: frestur(deadline, 6000) });
   if (!r.ok) throw new Error('Staðfangaskrá svaraði ' + r.status);
   const d = await r.json();
   const fs = Array.isArray(d.features) ? d.features : [];
@@ -108,11 +117,11 @@ async function wfsStadfang(h, medBokst, medPostnr) {
 }
 
 /** Nákvæm uppfletting; sleppir bókstaf, svo póstnúmeri, ef nákvæma leitin finnur ekkert. */
-async function finnaStadfang(h) {
+async function finnaStadfang(h, deadline) {
   const tilraunir = [[true, true], [true, false], [false, true], [false, false]];
   for (const [b, p] of tilraunir) {
     if (!b && !h.bokst && !p && !h.postnr) continue;
-    const rows = (await wfsStadfang(h, b, p)).filter((r) => samaSvaedi(h, r));
+    const rows = (await wfsStadfang(h, b, p, deadline)).filter((r) => samaSvaedi(h, r));
     if (rows.length) {
       // Bókstafslaust heimilisfang: taka bókstafslausu röðina fram yfir 1A/1B.
       rows.sort((x, y) => (x.BOKST ? 1 : 0) - (y.BOKST ? 1 : 0));
@@ -131,8 +140,8 @@ function husbil(label) {
 
 /** Fallvörn: lausa leitin (sama og /.netlify/functions/landnr). Tekur aðeins lóð sem ber
  *  húsnúmerið sem leitað var að (eða bil sem það lendir í) í sama sveitarfélagi. */
-async function landeignLeit(texti, postnr, husnr) {
-  const r = await fetch(`${LANDEIGN}?term=${encodeURIComponent(texti)}`, { headers: { 'User-Agent': 'Mozilla/5.0 (Slokkvitaeki/1.0)', Accept: 'application/json, */*' }, signal: AbortSignal.timeout(15000) });
+async function landeignLeit(texti, postnr, husnr, deadline) {
+  const r = await fetch(`${LANDEIGN}?term=${encodeURIComponent(texti)}`, { headers: { 'User-Agent': 'Mozilla/5.0 (Slokkvitaeki/1.0)', Accept: 'application/json, */*' }, signal: frestur(deadline, 5000) });
   if (!r.ok) return null;
   let raw;
   try { raw = JSON.parse(await r.text()); } catch (_) { return null; }
@@ -252,14 +261,15 @@ function lysaHeimild(nafn, teik, label) {
   return `${nafn} · ${teik.grunnmyndir} grunnmynd${teik.grunnmyndir === 1 ? '' : 'ir'}${bitar.length ? ' (' + bitar.join(', ') + ')' : ''} af ${teik.sia === 'hus' ? teik.husid : teik.fjoldi} teikningum${hus}${teik.sia === 'hus' && teik.husid !== teik.fjoldi ? ` (${teik.fjoldi} á lóðinni)` : ''}`;
 }
 
-export async function husUpplysingar(heimilisfang) {
+export async function husUpplysingar(heimilisfang, frestMs = FRESTUR_MS) {
   const h = thattaHeimilisfang(heimilisfang);
   if (!h) return { error: 'Heimilisfangið er ekki á sniðinu „Gata 12, 220 Bær"', ogilt: true };
+  const deadline = Date.now() + frestMs;
 
   let st = null;
-  try { st = await finnaStadfang(h); } catch (_) { st = null; }
+  try { st = await finnaStadfang(h, deadline); } catch (_) { st = null; }
   if (!st) {
-    try { st = await landeignLeit(`${h.gata} ${h.husnr}${h.bokst ? h.bokst : ''}`, h.postnr, h.husnr); } catch (_) { st = null; }
+    try { st = await landeignLeit(`${h.gata} ${h.husnr}${h.bokst ? h.bokst : ''}`, h.postnr, h.husnr, deadline); } catch (_) { st = null; }
   }
   if (!st) return { error: 'Fann ekki heimilisfangið í Staðfangaskrá HMS', eign: null };
 
@@ -285,11 +295,12 @@ export async function husUpplysingar(heimilisfang) {
     : `landnr=${eign.landnr}&heitinr=${eign.heitinr || 0}&svf=${hm.svf}`;
   let d;
   try {
-    const r = await fetch(`${KJARNI}?${q}`, { headers: { 'User-Agent': 'Slokkvitaeki-banner/1.0' }, signal: AbortSignal.timeout(25000) });
+    const r = await fetch(`${KJARNI}?${q}`, { headers: { 'User-Agent': 'Slokkvitaeki-banner/1.0' }, signal: frestur(deadline, 25000) });
     d = await r.json();
-    if (!r.ok || d.error) return { eign, tillogur: {}, teikningar: null, heimild: hm.nafn, turbopaint, error: d.error || ('Teikningaþjónustan svaraði ' + r.status) };
+    if (!r.ok || d.error) return { eign, tillogur: {}, teikningar: null, heimild: hm.nafn, turbopaint, error: d.error || ('Teikningaþjónustan svaraði ' + r.status), reynaAftur: true };
   } catch (e) {
-    return { eign, tillogur: {}, teikningar: null, heimild: hm.nafn, turbopaint, error: 'Náði ekki í teikningaþjónustuna' };
+    const timi = e && (e.name === 'TimeoutError' || e.name === 'AbortError');
+    return { eign, tillogur: {}, teikningar: null, heimild: hm.nafn, turbopaint, error: timi ? 'Teikningaþjónustan svaraði ekki í tæka tíð' : 'Náði ekki í teikningaþjónustuna', reynaAftur: true };
   }
   const { tillogur, teikningar } = tillogurUrTeikningum(d.results, oviss ? null : label);
   if (oviss) {
@@ -310,7 +321,7 @@ export default async (req) => {
   try {
     const v = await husUpplysingar(heimilisfang);
     v.utgafa = '2026-09-14';
-    if (!v.error || v.eign) minni.set(lykill, { t: Date.now(), v });
+    if ((!v.error || v.eign) && !v.reynaAftur) minni.set(lykill, { t: Date.now(), v });
     return json(v, v.ogilt ? 400 : v.error && !v.eign ? 404 : 200);
   } catch (e) {
     return json({ error: 'Uppfletting mistókst: ' + (e && e.message ? e.message : e) }, 502);
