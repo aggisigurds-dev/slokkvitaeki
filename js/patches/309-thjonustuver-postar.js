@@ -230,7 +230,7 @@
     // 2) Hvað er þegar á Þjónustuborðinu (channel_ref='email:<id>') → forðast tvítak.
     STATE.promoted = new Set();
     try {
-      const { data } = await sb.from('thjonustubeidni').select('channel_ref').eq('source', 'email').is('deleted_at', null).limit(5000);
+      const data = await DB.fetchAll((from, to) => sb.from('thjonustubeidni').select('channel_ref').eq('source', 'email').is('deleted_at', null).order('id').range(from, to));
       (data || []).forEach((r) => { if (r.channel_ref) STATE.promoted.add(r.channel_ref); });
     } catch (_) {}
 

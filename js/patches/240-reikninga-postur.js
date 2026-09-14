@@ -81,8 +81,11 @@
     state.loading = true; render();
     try {
       const sinceIso = new Date(Date.now() - WINDOW_DAYS * 86400000).toISOString();
+      // 14.09.2026: .limit(1500)/.limit(2500) hnekkja ekki 1000-raða þaki PostgREST.
+      // Blaðsíðuflett; villur skila sér í sama { data, error }-formi og áður.
+      const asResult = p => p.then(data => ({ data, error: null }), error => ({ data: null, error }));
       const [em, fy, cb, vd, sl, hd, rl, ac, mt] = await Promise.all([
-        SB.from('email_digest')
+        asResult(DB.fetchAll((from, to) => SB.from('email_digest')
           .select('message_id,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,is_question,has_attachment,attachment_names,received_at')
           .in('account', ['eldklar@eldklar.is', 'bokhald@eldklar.is'])
           // SENT-ingest (2026-07-10): okkar eigin svör mega ekki birtast sem
@@ -91,11 +94,12 @@
           .neq('folder', 'SENT')
           .gte('received_at', sinceIso)   // deep-analyse the last ~2 months only
           .order('received_at', { ascending: false })
-          .limit(1500),
+          .order('id')
+          .range(from, to))),
         SB.from('fyrirtaeki').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
         SB.from('customers_base').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
         SB.from('vidskiptavinir').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
-        SB.from('solur').select('id,num,customer_nafn,customer_kt,samtals,created_at,greitt_med,paid_at').order('created_at', { ascending: false }).limit(2500),
+        asResult(DB.fetchAll((from, to) => SB.from('solur').select('id,num,customer_nafn,customer_kt,samtals,created_at,greitt_med,paid_at').order('created_at', { ascending: false }).order('id').range(from, to))),
         SB.from('reikninga_postur_hidden').select('message_id'),
         SB.from('reikninga_postur_rules').select('*').order('created_at', { ascending: false }),
         SB.from('reikninga_postur_activity').select('message_id'),

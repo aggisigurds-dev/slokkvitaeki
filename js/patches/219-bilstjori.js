@@ -219,9 +219,8 @@
     const start = new Date(); start.setHours(0, 0, 0, 0);
     let rows = [];
     try {
-      const r = await DB.sb.from('bilstjori_vakt').select('employee,action,co_id,lat,lng,created_at')
-        .gte('created_at', start.toISOString()).order('created_at', { ascending: false }).limit(5000);
-      rows = r.data || [];
+      rows = await DB.fetchAll((from, to) => DB.sb.from('bilstjori_vakt').select('employee,action,co_id,lat,lng,created_at')
+        .gte('created_at', start.toISOString()).order('created_at', { ascending: false }).order('id').range(from, to));
     } catch (_) { return; }
     const agg = {};
     folkid().forEach(n => agg[n] = { emp: n, cos: new Set(), yf: 0, vs: 0, last: null, geo: null });

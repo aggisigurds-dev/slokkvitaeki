@@ -396,7 +396,7 @@
     if (!(await checkSetup())) return;
     const SB = getSB();
     try {
-      const { data } = await SB.from('verkdagbok_attachments').select('entry_id').limit(2000);
+      const data = await DB.fetchAll((from, to) => SB.from('verkdagbok_attachments').select('entry_id').order('id').range(from, to));
       const m = new Map();
       for (const r of (data || [])) m.set(r.entry_id, (m.get(r.entry_id) || 0) + 1);
       badgeCounts = m;

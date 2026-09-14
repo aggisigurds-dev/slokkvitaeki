@@ -29,8 +29,8 @@
     if (!(window.DB && DB.sb)) { _shop = []; return; }
     if (!force && Date.now() - _loadedAt < 8000) return;
     try {
-      const r = await DB.sb.from('uttaeki').select('id,client,type,size,serial,status,custody_status,service_choice').eq('status', 'loaned').limit(2000);
-      _shop = r.data || []; _loadedAt = Date.now();
+      _shop = await DB.fetchAll((from, to) => DB.sb.from('uttaeki').select('id,client,type,size,serial,status,custody_status,service_choice').eq('status', 'loaned').order('id').range(from, to));
+      _loadedAt = Date.now();
     } catch (_) {}
   }
   async function saveCustody(id, patch) {

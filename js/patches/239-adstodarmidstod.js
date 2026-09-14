@@ -131,10 +131,8 @@
     const SB = getSB(); if (!SB) return [];
     try {
       const since = daysAgoISO(60);
-      const r = await SB.from('solur').select('id,num,customer_id,customer_nafn,samtals,created_at,status')
-        .gte('created_at', since).eq('status', 'final').limit(2000);
-      if (r.error) throw r.error;
-      const rows = r.data || [];
+      const rows = await DB.fetchAll((from, to) => SB.from('solur').select('id,num,customer_id,customer_nafn,samtals,created_at,status')
+        .gte('created_at', since).eq('status', 'final').order('id').range(from, to));
       const byKey = new Map(); // "coId|YYYY-MM-DD" → list
       for (const s of rows) {
         if (!s.customer_id) continue;

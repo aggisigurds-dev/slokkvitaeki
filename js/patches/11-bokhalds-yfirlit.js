@@ -417,21 +417,29 @@
     // eyeball recent reikningar/drög immediately; date presets/ranges re-query
     // server-side (bounded) and „Allt" loads the full history on demand — so the
     // accounting periods stay complete.
-    let salesQ = SB.from('solur')
+    const solurQ = () => SB.from('solur')
       .select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,paid_method,status,vidskiptategund')
       // Röðum eftir SÍÐUSTU AÐGERÐ (updated_at) svo sjálfgefna „nýjustu 400"
       // sóknin nái líka gömlum sölum sem voru sóttar/greiddar/kredittaðar nýlega
       // (t.d. tæki úr hleðslu frá því fyrir 2 mánuðum) — annars duttu þær út.
       .neq('status','void').neq('hidden', true).order('updated_at', { ascending: false });
+    // 14.09.2026: „Allt" (engin mörk) og tímabil (.limit(3000)) skáru bæði í 1000
+    // hjá PostgREST. Blaðsíðuflett; `id` raðar sölum með sama updated_at.
+    const allSalesIn = (fromDate, toDate) => DB.fetchAll((from, to) => {
+      let q = solurQ();
+      if (fromDate) q = q.gte('created_at', fromDate + 'T00:00:00');
+      if (toDate)   q = q.lte('created_at', toDate + 'T23:59:59.999');
+      return q.order('id').range(from, to);
+    }).then(rows => ({ data: rows }));
+    let salesQ;
     if (range === 'all') {
-      _loadedMode = 'all';                       // full history, no limit
+      salesQ = allSalesIn();
+      _loadedMode = 'all';                       // full history
     } else if (range && (range.from || range.to)) {
-      if (range.from) salesQ = salesQ.gte('created_at', range.from + 'T00:00:00');
-      if (range.to)   salesQ = salesQ.lte('created_at', range.to + 'T23:59:59.999');
-      salesQ = salesQ.limit(3000);
+      salesQ = allSalesIn(range.from, range.to);
       _loadedMode = 'range';
     } else {
-      salesQ = salesQ.limit(400);                // fast default: newest 400
+      salesQ = solurQ().limit(400);              // fast default: newest 400
       _loadedMode = 'recent';
     }
     const [salesRes, custRes, prodRes, vbRes, coRes] = await Promise.all([

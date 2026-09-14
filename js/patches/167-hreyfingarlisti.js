@@ -343,21 +343,26 @@
     _state.month = m;
 
     // 2026-07-01: scope — Mánuður · Ár (whole year) · Allt (all time, default).
-    let q = SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of,starfsmadur,status')
-      .order('created_at', { ascending: false });
-    if (_state.scope === 'all') {
-      q = q.limit(5000);
-    } else if (_state.scope === 'year') {
-      const ys = new Date(m.getFullYear(), 0, 1), ye = new Date(m.getFullYear() + 1, 0, 1);
-      q = q.gte('created_at', ys.toISOString()).lt('created_at', ye.toISOString()).limit(5000);
-    } else {
-      const { start, end } = monthBounds(m);
-      q = q.gte('created_at', start.toISOString()).lt('created_at', end.toISOString());
-    }
-    const r = await q;
-    if (r.error) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
-    _state.all = r.data || [];
+    // 14.09.2026: .limit(5000) hnekkti ekki 1000-raða þaki PostgREST — allir hamir
+    // blaðsíðufletta nú; `id` raðar sölum sem deila created_at.
+    const scope = _state.scope;
+    let rows;
+    try {
+      rows = await DB.fetchAll((from, to) => {
+        let q = SB.from('solur')
+          .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of,starfsmadur,status')
+          .order('created_at', { ascending: false }).order('id');
+        if (scope === 'year') {
+          const ys = new Date(m.getFullYear(), 0, 1), ye = new Date(m.getFullYear() + 1, 0, 1);
+          q = q.gte('created_at', ys.toISOString()).lt('created_at', ye.toISOString());
+        } else if (scope !== 'all') {
+          const { start, end } = monthBounds(m);
+          q = q.gte('created_at', start.toISOString()).lt('created_at', end.toISOString());
+        }
+        return q.range(from, to);
+      });
+    } catch (e) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc((e && e.message) || e) + '</div>'; return; }
+    _state.all = rows;
 
     render();
   }

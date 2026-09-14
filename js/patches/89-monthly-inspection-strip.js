@@ -274,7 +274,9 @@
     // hlaðinn og endurteikna þegar hann kemur (annars sæist tómur listi fyrsta augnablikið).
     try{
       if (window.CanonStadur && !window.__misCanonLoaded) {
-        CanonStadur.ready().then(function(){ window.__misCanonLoaded = true; rebuildStrip(); });
+        // Merkja hlaðið AÐEINS þegar kortið hefur raðir; annars reynir næsta view-shown aftur
+        // (áður gat tómt kort í ræsingu fest mánaðar-listann tóman).
+        CanonStadur.ready().then(function(m){ if (m && Object.keys(m).length) window.__misCanonLoaded = true; rebuildStrip(); });
       }
     }catch(e){}
   }

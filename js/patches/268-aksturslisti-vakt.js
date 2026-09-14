@@ -55,8 +55,7 @@
   async function loadWorkshop() {
     if (!(window.DB && DB.sb)) { _shop = []; return; }
     try {
-      const r = await DB.sb.from('uttaeki').select('id,client,type,size,serial,status,custody_status,service_choice').eq('status', 'loaned').limit(2000);
-      _shop = r.data || [];
+      _shop = await DB.fetchAll((from, to) => DB.sb.from('uttaeki').select('id,client,type,size,serial,status,custody_status,service_choice').eq('status', 'loaned').order('id').range(from, to));
     } catch (_) { _shop = []; }
   }
   async function saveCustody(id, patch) {
@@ -129,11 +128,10 @@
     const start = new Date(_day + 'T00:00:00');
     const end = new Date(_day + 'T00:00:00'); end.setDate(end.getDate() + 1);
     try {
-      const r = await DB.sb.from('bilstjori_vakt')
+      _rows = await DB.fetchAll((from, to) => DB.sb.from('bilstjori_vakt')
         .select('id,employee,action,co_id,co_nafn,uttaeki_id,lat,lng,created_at')
         .gte('created_at', start.toISOString()).lt('created_at', end.toISOString())
-        .order('created_at', { ascending: false }).limit(6000);
-      _rows = r.data || [];
+        .order('created_at', { ascending: false }).order('id').range(from, to));
     } catch (_) { _rows = []; }
   }
 

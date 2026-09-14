@@ -1222,10 +1222,9 @@
   async function fetchExisting() {
     const SB = getSB();
     if (!SB) return new Map();
-    const r = await SB.from('vidskiptavinir').select('id, kennitala, nafn').limit(10000);
-    if (r.error) throw r.error;
+    const rows = await DB.fetchAll((from, to) => SB.from('vidskiptavinir').select('id, kennitala, nafn').order('id').range(from, to));
     const map = new Map();
-    for (const row of (r.data || [])) {
+    for (const row of rows) {
       const k = normKt(row.kennitala);
       if (k) map.set(k, row);
     }

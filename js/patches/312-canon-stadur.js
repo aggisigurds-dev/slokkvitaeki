@@ -35,32 +35,44 @@
 
   function _sb(){ return (window.DB && DB.sb) || window.__vdaSB || null; }
 
+  // 2026-09-14: ready() var kallað í ræsingu ÁÐUR en DB.init (á DOMContentLoaded) bjó til
+  // Supabase-biðlarann. _load skilaði þá {} án þess að spyrja viewið → falskt
+  // canon_stadur_empty (987 raðir 24.08–14.09 á meðan viewið hafði 1179 raðir; edge_logs sýna
+  // skráninguna á undan fyrsta GET) og kallendur (t.d. 89) fengu tómt kort. Nú er beðið eftir
+  // biðlaranum. Komi hann ekki innan WAIT_SB_MS er það raunveruleg bilun → load_failed.
+  var WAIT_SB_MS = 20000;
+  function _waitSb(){
+    return new Promise(function(resolve){
+      var t0 = Date.now();
+      (function tick(){
+        var S = _sb();
+        if(S) return resolve(S);
+        if(Date.now() - t0 >= WAIT_SB_MS) return resolve(null);
+        setTimeout(tick, 100);
+      })();
+    });
+  }
+
+  // Kastar við villu — ready() skráir canon_stadur_load_failed og heldur fyrra korti.
   async function _load(){
-    var SB = _sb();
-    if(!SB) return {};
+    var SB = _sb() || await _waitSb();
+    if(!SB) throw new Error('Supabase-biðlari ekki tilbúinn eftir ' + (WAIT_SB_MS/1000) + ' s');
     var cols = 'fyrirtaeki_id,taeki_count,inspect_month,report_year,invoice_year,count_source';
     var rows = [];
-    try {
-      if(window.DB && DB.fetchAll){
-        rows = await DB.fetchAll(function(from,to){
-          return SB.from('v_stadur_yfirlit').select(cols).order('fyrirtaeki_id').range(from,to);
-        });
-      } else {
-        var from = 0;
-        while(true){
-          var r = await SB.from('v_stadur_yfirlit').select(cols).order('fyrirtaeki_id').range(from, from+999);
-          if(r.error) break;
-          rows = rows.concat(r.data || []);
-          if(!r.data || r.data.length < 1000) break;
-          from += 1000; if(from > 50000) break;
-        }
+    if(window.DB && DB.fetchAll){
+      rows = await DB.fetchAll(function(from,to){
+        return SB.from('v_stadur_yfirlit').select(cols).order('fyrirtaeki_id').range(from,to);
+      });
+    } else {
+      var from = 0;
+      while(true){
+        var r = await SB.from('v_stadur_yfirlit').select(cols).order('fyrirtaeki_id').range(from, from+999);
+        // Villa má aldrei verða að „0 röðum" — þá sæist hún sem canon_stadur_empty.
+        if(r.error) throw r.error;
+        rows = rows.concat(r.data || []);
+        if(!r.data || r.data.length < 1000) break;
+        from += 1000; if(from > 50000) break;
       }
-    } catch(e){
-      console.warn('[CanonStadur] load villa', e);
-      // 2026-08-24 (netvordur vír 3): þögult tap á canonical brunninum tæmir mánaðar-
-      // listann (89) og skilar öðrum flötum í fyrra gisk — skrá í vandamála-registrið
-      // (309) svo það sjáist á Kerfisheilsu í stað þess að hverfa hljóðlaust.
-      try{ if(window.logProblem) window.logProblem('canon_stadur_load_failed', String((e&&e.message)||e), {severity:'error'}); }catch(_){}
     }
     var m = {};
     (rows||[]).forEach(function(c){ if(c && c.fyrirtaeki_id != null) m[String(c.fyrirtaeki_id)] = c; });
@@ -74,14 +86,18 @@
     if(_p) return _p;
     _p = _load().then(function(m){
       _p = null;
-      _map = m || {};
-      var n = Object.keys(_map).length;
-      _at = n ? Date.now() : 0;   // _at=0 → endurles næst
-      // v_stadur_yfirlit hefur alltaf raðir (>1000). 0 raðir = brotið view/þekja →
+      var n = Object.keys(m || {}).length;
+      if(n){ _map = m; _at = Date.now(); }
+      else { _map = _map || {}; _at = 0; }   // tómt svar skrifar ekki yfir fyrra góða kort; _at=0 → endurles næst
+      // v_stadur_yfirlit hefur alltaf raðir (>1000). 0 raðir frá lifandi biðlara = brotið view/þekja →
       // mánaðar-listinn (89) tæmist. Skrá svo það sjáist (netvordur vír 3).
       if(!n){ try{ if(window.logProblem) window.logProblem('canon_stadur_empty','v_stadur_yfirlit skilaði 0 röðum',{severity:'error'}); }catch(_){} }
       return _map;
     }).catch(function(e){
+      // 2026-08-24 (netvordur vír 3): þögult tap á canonical brunninum tæmir mánaðar-listann (89)
+      // og skilar öðrum flötum í fyrra gisk — skrá í vandamála-registrið (309) svo það sjáist á
+      // Kerfisheilsu í stað þess að hverfa hljóðlaust.
+      console.warn('[CanonStadur] load villa', e);
       _p = null; _map = _map || {}; _at = 0;
       try{ if(window.logProblem) window.logProblem('canon_stadur_load_failed', String((e&&e.message)||e), {severity:'error'}); }catch(_){}
       return _map;

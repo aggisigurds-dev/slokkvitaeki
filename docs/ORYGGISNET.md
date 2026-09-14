@@ -147,6 +147,20 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑14** — **Canonical skoðunarmánuður tæmist ekki lengur í ræsingu (`312 CanonStadur` + `89`).**
+  `app_problems` hafði 987 `canon_stadur_empty` („v_stadur_yfirlit skilaði 0 röðum", 24.08–14.09) á meðan
+  viewið hafði 1179 raðir. Rót: `CanonStadur.ready()` var kallað áður en `DB.init` (modal.js, DOMContentLoaded)
+  bjó til `DB.sb`, og `_load()` skilaði `{}` án fyrirspurnar. edge_logs 14.09.: POST á `app_problems` kom á
+  undan fyrsta GET á viewið, eða ≤1,5 s eftir hann (útskolunarbiðröð 309). Hermt á lifandi síðu með biðlarann
+  tekinn af í 1,5 s: gamli kóðinn skilaði 0 röðum strax og skráði falska villu; nýi beið, skilaði 1180 röðum
+  og skráði ekkert. `_load` bíður nú eftir biðlaranum (`_waitSb`, hám. 20 s) og kastar ef hann kemur ekki;
+  villa í síðuflettingu kastar (var `break` → „0 raðir"); tómt svar skrifar ekki yfir fyrra kort; `89` merkir
+  mánaðar-listann hlaðinn aðeins þegar kortið hefur raðir. Vír 3 stendur: raunveruleg bilun →
+  `canon_stadur_load_failed` (einu sinni — var áður tvískráð með `_empty`), 0 raðir frá lifandi biðlara →
+  `canon_stadur_empty`. Nýr kóða-vörður `tools/audit-canon-raesing.cjs` (með í `--static`/pre-push). `audit-all`
+  48/51 — sömu 3 gömlu rauðu (osendar-krofur, solu-id, t-s-i), engin ný. netvörður: **SAFE** — engin vörðuð
+  leið snert, báðir vírar standa, `ready()` hafnar aldrei og enginn kallandi hangir; vörðurinn hertur eftir
+  tveimur ábendingum hans (gleyptur `catch` í `_load` og óvarið `__misCanonLoaded` í 89 verða RED).
 - **2026‑09‑12** — **Payday-krafan ber ekki lengur innri bókhaldsmerki (`payday-push.js`, Verkefnalisti c091f2ff).**
   `buildPayload` setti `solur.athugasemdir` óhreinsaða í `description`. Sótt-slóðin (121) skrifar
   „Kt: … [Sótt …] Afsláttur úr sölu: … Greiðsla: reikningur" aftast í nótuna, og það prentaðist á

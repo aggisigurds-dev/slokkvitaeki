@@ -531,9 +531,10 @@
     try {
       const SB = getSB();
       if (SB) {
-        const { data } = await SB.from('fyrirtaeki')
-          .select('id,nafn,kennitala,netfang,simi,heimilisfang').order('nafn').limit(2000);
-        cos = data || [];
+        // 14.09.2026: .limit(2000) skilaði samt 1000 af 1.250 (PostgREST-þakið) — allt
+        // frá „S&H Invest" í stafrófinu vantaði í listann og sjálfvirku útfyllinguna.
+        cos = await DB.fetchAll((from, to) => SB.from('fyrirtaeki')
+          .select('id,nafn,kennitala,netfang,simi,heimilisfang').order('nafn').order('id').range(from, to));
       }
     } catch (_) {}
     if (!cos.length && window.Companies && Companies.list) cos = Companies.list;
@@ -793,7 +794,8 @@
     // Vörur + fyrirtæki fyrir datalist
     try { const SB = getSB(); if (SB) { const { data } = await SB.from('vorur').select('nafn,verd_an_vsk,vsk_prosenta').eq('virkt', true).order('nafn'); svProducts = data || []; } } catch (_) {}
     let cos = [];
-    try { const SB = getSB(); if (SB) { const { data } = await SB.from('fyrirtaeki').select('nafn').is('deleted_at', null).order('nafn').limit(2000); cos = data || []; } } catch (_) {}
+    // 14.09.2026: .limit(2000) skilaði samt 1000 af 1.180 — nöfn frá „Sléttahraun" til „Þ" vantaði.
+    try { const SB = getSB(); if (SB) { cos = await DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('nafn').is('deleted_at', null).order('nafn').order('id').range(from, to)); } } catch (_) {}
 
     document.getElementById('sv-body').innerHTML = `
       <div style="margin-bottom:12px">

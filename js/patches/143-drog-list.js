@@ -77,7 +77,7 @@
   }
   async function attachLocations(SB) {
     try {
-      const { data } = await SB.from('verkbeidnir').select('num,status').limit(5000);
+      const data = await DB.fetchAll((from, to) => SB.from('verkbeidnir').select('num,status').order('id').range(from, to));
       const map = {};
       (data || []).forEach(v => {
         const parent = String(v.num || '').replace(/-V\d+$/, '');

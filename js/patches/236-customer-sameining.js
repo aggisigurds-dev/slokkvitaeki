@@ -83,10 +83,14 @@
     if (!SB) { state.err = 'Enginn gagnagrunnur tengdur (DB.sb vantar).'; state.loaded = true; render(); return; }
     state.loading = true; state.err = null; render();
     try {
+      // 14.09.2026: .limit(5000)/.limit(2000) hnekkja ekki 1000-raða þaki PostgREST.
+      // customers_base er 1.152 raðir, svo 152 grunnar sáust aldrei í kt-/nafnapöruninni.
+      // Villur skila sér í sama { data, error }-formi og áður.
+      const asResult = p => p.then(data => ({ data, error: null }), error => ({ data: null, error }));
       const [bs, fy, vi, so] = await Promise.all([
-        SB.from('customers_base').select('id,kennitala,nafn').limit(5000),
-        SB.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,customer_base_id,deleted_at').is('customer_base_id', null).is('deleted_at', null).limit(2000),
-        SB.from('vidskiptavinir').select('id,nafn,kennitala,customer_base_id').is('customer_base_id', null).limit(2000),
+        asResult(DB.fetchAll((from, to) => SB.from('customers_base').select('id,kennitala,nafn').order('id').range(from, to))),
+        asResult(DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,customer_base_id,deleted_at').is('customer_base_id', null).is('deleted_at', null).order('id').range(from, to))),
+        asResult(DB.fetchAll((from, to) => SB.from('vidskiptavinir').select('id,nafn,kennitala,customer_base_id').is('customer_base_id', null).order('id').range(from, to))),
         SB.from('solur').select('id,num,customer_id,customer_nafn,customer_kt,customer_base_id,created_at').is('customer_base_id', null).order('created_at', { ascending: false }).limit(500),
       ]);
       if (bs.error) throw bs.error;
