@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skipanir — Skipanaborð</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0b0d; --panel:#121418; --panel2:#171a1f; --line:#2a2f37;
+    --gold:#e8a33d; --gold2:#ffc266; --gold-dim:#8a6a2f;
+    --txt:#e8e6e1; --muted:#9aa0a8;
+    --green:#5fd08a; --amber:#e8a33d; --red:#e0706a;
+    --chamf:10px;
+    --f-head:"Chakra Petch",system-ui,sans-serif;
+    --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:
+      radial-gradient(1200px 500px at 70% -10%,#1a1409 0%,transparent 60%),
+      var(--bg);
+    color:var(--txt);font-family:var(--f-head);line-height:1.45;
+    min-height:100vh;padding:22px clamp(14px,3vw,40px) 60px}
+  a{color:var(--gold2)}
+  h1,h2,h3{font-weight:700;letter-spacing:.02em;margin:0}
+
+  /* header */
+  .top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px}
+  .brand h1{font-size:26px;color:var(--gold2);
+    text-shadow:0 0 18px rgba(232,163,61,.25)}
+  .brand .sub{color:var(--muted);font-family:var(--f-mono);font-size:12.5px;margin-top:4px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+  .legend b{color:var(--txt);font-weight:600}
+
+  /* shared input bar */
+  .inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:26px}
+  .field{background:var(--panel);border:1px solid var(--line);
+    clip-path:polygon(var(--chamf) 0,100% 0,100% calc(100% - var(--chamf)),calc(100% - var(--chamf)) 100%,0 100%,0 var(--chamf));
+    padding:12px 14px}
+  .field label{display:block;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+  .field input{width:100%;background:#0c0e11;border:1px solid var(--line);color:var(--txt);
+    font-family:var(--f-mono);font-size:15px;padding:9px 11px;outline:none}
+  .field input:focus{border-color:var(--gold-dim);box-shadow:0 0 0 2px rgba(232,163,61,.15)}
+
+  /* groups */
+  .grp{margin:0 0 30px}
+  .grp>h2{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);
+    display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .grp>h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--gold-dim),transparent)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+
+  /* command card */
+  .cmd{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    clip-path:polygon(var(--chamf) 0,100% 0,100% calc(100% - var(--chamf)),calc(100% - var(--chamf)) 100%,0 100%,0 var(--chamf));
+    padding:15px 16px 14px;display:flex;flex-direction:column;gap:10px;position:relative}
+  .cmd::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold-dim)}
+  .cmd--live::before{background:var(--green)}
+  .cmd--semi::before{background:var(--amber)}
+  .cmd--manual::before{background:var(--red)}
+  .cmd__head{display:flex;align-items:center;gap:9px}
+  .cmd__head h3{font-size:16.5px;color:var(--txt)}
+  .badge{font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;padding:3px 7px;border:1px solid var(--line);
+    white-space:nowrap;color:var(--muted)}
+  .cmd--live .badge{color:var(--green);border-color:rgba(95,208,138,.4)}
+  .cmd--semi .badge{color:var(--amber);border-color:rgba(232,163,61,.4)}
+  .cmd--manual .badge{color:var(--red);border-color:rgba(224,112,106,.4)}
+  .cmd__out{color:var(--muted);font-size:13px;margin:0}
+  .cmd__actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+  button.act{font-family:var(--f-head);font-weight:600;font-size:13.5px;cursor:pointer;
+    background:linear-gradient(180deg,#1d1a12,#14120c);color:var(--gold2);
+    border:1px solid var(--gold-dim);padding:8px 13px;letter-spacing:.02em;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+    transition:.12s}
+  button.act:hover{background:linear-gradient(180deg,#2a2413,#1d1a12);color:#fff;
+    box-shadow:0 0 14px rgba(232,163,61,.3);border-color:var(--gold)}
+  button.act.ghost{background:transparent;color:var(--muted);border-color:var(--line)}
+  button.act.ghost:hover{color:var(--txt);border-color:var(--gold-dim);box-shadow:none}
+  details.steps{border-top:1px dashed var(--line);padding-top:9px;margin-top:2px}
+  details.steps summary{cursor:pointer;font-family:var(--f-mono);font-size:11.5px;color:var(--gold);
+    letter-spacing:.1em;text-transform:uppercase;list-style:none}
+  details.steps summary::-webkit-details-marker{display:none}
+  details.steps summary::before{content:"▸ ";color:var(--gold-dim)}
+  details.steps[open] summary::before{content:"▾ "}
+  details.steps ol{margin:9px 0 2px;padding-left:20px;font-size:12.5px;color:var(--txt)}
+  details.steps li{margin:4px 0}
+  details.steps code{font-family:var(--f-mono);background:#0c0e11;border:1px solid var(--line);
+    padding:1px 5px;font-size:11.5px;color:var(--gold2)}
+  .cmd__src{margin:0;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+
+  /* add-goal card */
+  .cmd--add{border-style:dashed;justify-content:center;align-items:flex-start;min-height:150px}
+  .cmd--add::before{background:transparent}
+  #goalList{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:6px;width:100%}
+  #goalList li{font-family:var(--f-mono);font-size:12px;color:var(--txt);background:#0c0e11;
+    border:1px solid var(--line);padding:6px 9px;display:flex;justify-content:space-between;gap:8px}
+  #goalList button{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;line-height:1}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(120%);
+    background:#14120c;border:1px solid var(--gold-dim);color:var(--gold2);
+    font-family:var(--f-mono);font-size:13px;padding:11px 18px;max-width:90vw;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+    box-shadow:0 8px 30px rgba(0,0,0,.5);transition:transform .25s;z-index:50}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+
+  .note{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);
+    border-left:2px solid var(--gold-dim);padding:8px 12px;margin:0 0 24px;background:rgba(232,163,61,.04)}
+</style>
+</head>
+<body>
+
+  <div class="top">
+    <div class="brand">
+      <h1>◆ SKIPANIR</h1>
+      <div class="sub">Skipanaborð · slá inn einu sinni → keyra margar skipanir · v0 frumgerð</div>
+    </div>
+    <div class="legend">
+      <span><b style="color:var(--green)">🟢 Sjálfvirkt</b> — sækir gögnin</span>
+      <span><b style="color:var(--amber)">🟡 Hálft</b> — opnar rétta gluggann + afritar</span>
+      <span><b style="color:var(--red)">🔴 Handvirkt</b> — engin hrein heimild</span>
+    </div>
+  </div>
+
+  <div class="inputs">
+    <div class="field">
+      <label>Heimilisfang</label>
+      <input id="f-addr" placeholder="t.d. Skútuvogur 4, 104 Reykjavík" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Kennitala / nafn fyrirtækis</label>
+      <input id="f-kt" placeholder="t.d. 5811131650 eða Slökkvitæki ehf" autocomplete="off">
+    </div>
+  </div>
+
+  <p class="note">Hver takki les úr reitunum að ofan. 🟡-takkar afrita gildið í klemmuspjald og opna réttu
+    síðuna — svo límirðu með <b>Ctrl+V</b> í leitina (skrefin standa undir hverri skipun). 🟢-takkar verða
+    alvöru „sæki sjálfkrafa"-takkar þegar borðið flyst inn í brunahólf-hubbinn.</p>
+
+  <div id="board"></div>
+
+  <div id="toast"></div>
+
+<script>
+(function(){
+  var G = "https://www.google.com/maps/search/?api=1&query=";
+
+  // ---- command definitions -------------------------------------------------
+  var COMMANDS = [
+    { group:"Út frá heimilisfangi", items:[
+      { id:"teik", stada:"live", title:"Teikningar / uppdrættir",
+        out:"Byggingar- og aðaluppdrættir hússins, nýjast efst.",
+        actions:[
+          {label:"Opna í TurboPaint", kind:"link", url:"https://kjarni.vercel.app/kjarni/turbopaint"}
+        ],
+        skref:["Opna TurboPaint.","Slá / líma heimilisfangið í leitina.","Velja hús → velja teikningu → hún kemur á borðið."],
+        src:"FotoWeb (Reykjavík) · map.is-tengill fyrir Kóp/Garð/Hafn." },
+
+      { id:"fasteign", stada:"semi", title:"Fasteignagögn",
+        out:"m², byggingarár, fjöldi rýma/íbúða, fasteignamat.",
+        actions:[
+          {label:"Afrita + opna Fasteignaskrá", kind:"copyopen", field:"addr", url:"https://fasteignaskra.is/"}
+        ],
+        skref:["Ýta á takkann — heimilisfangið afritast og Fasteignaskrá opnast.","Líma (<code>Ctrl+V</code>) í fasteignaleitina.","Lesa <b>Stærð</b>, <b>Byggingarár</b>, <b>Fjöldi rýma</b>."],
+        src:"HMS Fasteignaskrá — verður 🟢 sjálfvirkt með litlum proxy (eins og teikningarnar)." },
+
+      { id:"myndir", stada:"manual", title:"Myndir af húsi",
+        out:"Götumynd (Street View) + loftmynd af staðnum.",
+        actions:[
+          {label:"Opna á korti", kind:"maps", field:"addr"},
+          {label:"Afrita + opna ja.is", kind:"copyopen", field:"addr", url:"https://ja.is/", cls:"ghost"}
+        ],
+        skref:["„Opna á korti" opnar Google Maps á staðnum.","Smella á gula karlinn (pegman) fyrir götumynd.","Loftmynd: skipta í gervihnattasýn."],
+        src:"Google Street View / loftmyndir — engin opin mynda-API til að sækja beint." }
+    ]},
+
+    { group:"Út frá kennitölu / nafni", items:[
+      { id:"fyrirt", stada:"live", title:"Fyrirtæki",
+        out:"Nafn, lögheimili, staða (virkt/afskráð), ÍSAT-flokkur.",
+        actions:[
+          {label:"Afrita + opna RSK", kind:"copyopen", field:"kt", url:"https://www.rsk.is/fyrirtaekjaskra/leit/"}
+        ],
+        skref:["Ýta á takkann — kennitalan afritast og RSK-leitin opnast.","Líma (<code>Ctrl+V</code>) og leita.","Sjálfvirki takkinn (kt-lookup, RSK) er til — tengist hér í v1 svo þetta birtist beint á borðinu."],
+        src:"RSK fyrirtækjaskrá (kt-lookup fall er þegar til í appinu)." },
+
+      { id:"tengsl", stada:"semi", title:"Sími · starfsstöðvar",
+        out:"Símanúmer og staðsetningar fyrirtækisins.",
+        actions:[
+          {label:"Afrita + opna ja.is", kind:"copyopen", field:"kt", url:"https://ja.is/"}
+        ],
+        skref:["Ýta á takkann — nafn/kt afritast og já.is opnast.","Líma (<code>Ctrl+V</code>) í leitina.","Sími + heimilisfang birtast; fleiri starfsstöðvar neðar."],
+        src:"já.is — sími og heimilisfang eru þar; oft skrapanlegt í 🟢 síðar." },
+
+      { id:"vefpost", stada:"manual", title:"Vefur · netfang",
+        out:"Heimasíða og netfang fyrirtækis.",
+        actions:[
+          {label:"Leita á Google", kind:"search", field:"kt"}
+        ],
+        skref:["Google-leit að nafninu opnast → smella á heimasíðuna.","Netfang er nær alltaf á heimasíðunni („Hafðu samband").","Netfang er sjaldan í opnum skrám — þennan þarf oftast að lesa af vefnum."],
+        src:"Heimasíða fyrirtækis — ekkert opið netfangaskrárkerfi." }
+    ]}
+  ];
+
+  // ---- render --------------------------------------------------------------
+  var badgeText = {live:"🟢 Sjálfvirkt", semi:"🟡 Hálft", manual:"🔴 Handvirkt"};
+  var board = document.getElementById("board");
+  var html = "";
+  COMMANDS.forEach(function(g){
+    html += '<section class="grp"><h2>'+g.group+'</h2><div class="grid">';
+    g.items.forEach(function(c){
+      html += '<article class="cmd cmd--'+c.stada+'">';
+      html += '<div class="cmd__head"><h3>'+c.title+'</h3><span class="badge">'+badgeText[c.stada]+'</span></div>';
+      html += '<p class="cmd__out">'+c.out+'</p>';
+      html += '<div class="cmd__actions">';
+      c.actions.forEach(function(a,i){
+        html += '<button class="act '+(a.cls||'')+'" data-cmd="'+c.id+'" data-i="'+i+'">'+a.label+'</button>';
+      });
+      html += '</div>';
+      html += '<details class="steps"><summary>Skref</summary><ol>';
+      c.skref.forEach(function(s){ html += '<li>'+s+'</li>'; });
+      html += '</ol></details>';
+      html += '<p class="cmd__src">Heimild: '+c.src+'</p>';
+      html += '</article>';
+    });
+    html += '</div></section>';
+  });
+
+  // add-goal card group
+  html += '<section class="grp"><h2>Vantar heimild — mín markmið</h2><div class="grid">';
+  html += '<article class="cmd cmd--add"><div class="cmd__head"><h3>+ Bæta við markmiði</h3></div>'
+       +  '<p class="cmd__out">Veistu ekki hvar á að finna eitthvað? Skráðu markmiðið — ég finn heimildina og bæti við skipun.</p>'
+       +  '<div class="cmd__actions"><button class="act" id="addGoal">Skrá markmið</button></div>'
+       +  '<ul id="goalList"></ul></article>';
+  html += '</div></section>';
+
+  board.innerHTML = html;
+
+  // ---- helpers -------------------------------------------------------------
+  function val(field){ return (document.getElementById(field==="kt"?"f-kt":"f-addr").value||"").trim(); }
+  function toast(msg){
+    var t=document.getElementById("toast"); t.innerHTML=msg; t.classList.add("show");
+    clearTimeout(t._h); t._h=setTimeout(function(){t.classList.remove("show");},3200);
+  }
+  function copy(text){
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text); return true; } }catch(e){}
+    try{ var ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); return true; }catch(e){}
+    return false;
+  }
+  function needField(field){
+    var v=val(field);
+    if(!v){ toast("✍️ Sláðu fyrst inn "+(field==="kt"?"kennitölu / nafn":"heimilisfang")+".");
+      document.getElementById(field==="kt"?"f-kt":"f-addr").focus(); }
+    return v;
+  }
+
+  function find(id){ for(var i=0;i<COMMANDS.length;i++){var it=COMMANDS[i].items;for(var j=0;j<it.length;j++)if(it[j].id===id)return it[j];} }
+
+  // ---- actions -------------------------------------------------------------
+  board.addEventListener("click",function(e){
+    var b=e.target.closest("button.act[data-cmd]"); if(!b) return;
+    var c=find(b.getAttribute("data-cmd")); var a=c.actions[+b.getAttribute("data-i")];
+    if(a.kind==="link"){ window.open(a.url,"_blank","noopener"); return; }
+    var v=needField(a.field); if(!v) return;
+    if(a.kind==="maps"){ window.open(G+encodeURIComponent(v),"_blank","noopener"); toast("🗺️ Opna kortið á „"+v+"“…"); return; }
+    if(a.kind==="search"){ window.open("https://www.google.com/search?q="+encodeURIComponent(v),"_blank","noopener"); toast("🔎 Google-leit að „"+v+"“…"); return; }
+    if(a.kind==="copyopen"){
+      var ok=copy(v); window.open(a.url,"_blank","noopener");
+      toast((ok?"📋 Afritað":"⚠️ Afrita handvirkt")+": „"+v+"“ — límdu með Ctrl+V í leitina.");
+    }
+  });
+
+  // ---- add-goal (localStorage) --------------------------------------------
+  var LS="skipanir_markmid";
+  function loadGoals(){ try{return JSON.parse(localStorage.getItem(LS)||"[]");}catch(e){return [];} }
+  function saveGoals(a){ try{localStorage.setItem(LS,JSON.stringify(a));}catch(e){} }
+  function renderGoals(){
+    var ul=document.getElementById("goalList"), arr=loadGoals(); ul.innerHTML="";
+    arr.forEach(function(g,i){ var li=document.createElement("li");
+      li.innerHTML='<span>'+g.replace(/</g,"&lt;")+'</span>'; var x=document.createElement("button");
+      x.textContent="✕"; x.title="Fjarlægja"; x.onclick=function(){arr.splice(i,1);saveGoals(arr);renderGoals();};
+      li.appendChild(x); ul.appendChild(li); });
+  }
+  document.getElementById("addGoal").onclick=function(){
+    var g=prompt("Hvað viltu geta sótt? (t.d. „heimilisfang → fjöldi hæða", „kt → veltuflokkur")");
+    if(g&&g.trim()){ var arr=loadGoals(); arr.push(g.trim()); saveGoals(arr); renderGoals();
+      toast("✅ Skráð — ég finn heimildina."); }
+  };
+  renderGoals();
+})();
+</script>
+</body>
+</html>
