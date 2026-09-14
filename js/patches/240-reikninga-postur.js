@@ -96,9 +96,9 @@
           .order('received_at', { ascending: false })
           .order('id')
           .range(from, to))),
-        SB.from('fyrirtaeki').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
-        SB.from('customers_base').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
-        SB.from('vidskiptavinir').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
+        asResult(DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('id,nafn,kennitala,netfang').not('netfang', 'is', null).order('id').range(from, to))),
+        asResult(DB.fetchAll((from, to) => SB.from('customers_base').select('id,nafn,kennitala,netfang').not('netfang', 'is', null).order('id').range(from, to))),
+        asResult(DB.fetchAll((from, to) => SB.from('vidskiptavinir').select('id,nafn,kennitala,netfang').not('netfang', 'is', null).order('id').range(from, to))),
         asResult(DB.fetchAll((from, to) => SB.from('solur').select('id,num,customer_nafn,customer_kt,samtals,created_at,greitt_med,paid_at').order('created_at', { ascending: false }).order('id').range(from, to))),
         SB.from('reikninga_postur_hidden').select('message_id'),
         SB.from('reikninga_postur_rules').select('*').order('created_at', { ascending: false }),

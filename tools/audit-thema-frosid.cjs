@@ -37,6 +37,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { anAthugasemdaJs, anAthugasemdaCss } = require('./_athugasemdir.cjs');
 
 const ROT = path.join(__dirname, '..');
 const SKODA = ['js', 'js/patches', 'css'];

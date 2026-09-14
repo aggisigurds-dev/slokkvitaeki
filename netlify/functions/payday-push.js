@@ -508,6 +508,46 @@ async function clearSaleInvoiced(saleId) {
   });
 }
 
+// 2026-09-14 (Agnar): Payday-höfnun á rafrænum reikningi (XML) skráist í app_problems
+// (Kerfisheilsa). Áður fór hún AÐEINS í svar vafrans og gleymdist. „Customer does not
+// accept electronic invoices" er vænt (kúnni utan skeytamiðlunar) → 'warn'; allar aðrar
+// XML-hafnanir eru óvæntar → 'error'. Skráningin fellir ALDREI kröfusendinguna: villur
+// gleyptar og 3 s þak. Engin kt í skráningunni (netvörður: aldrei persónu-kt í log) —
+// R-númer og nafn duga, og kt-líkar tölur eru hreinsaðar úr Payday-textanum.
+async function skraXmlHofnun(event, sale, paydayVilla, nidurstada) {
+  const fela_kt = s => String(s || '').replace(/\b\d{6}-?\d{4}\b/g, '[kt]');
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 3000);
+  try {
+    const h = (event && event.headers) || {};
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/app_problems`, {
+      method: 'POST',
+      signal: ctl.signal,
+      headers: {
+        apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json', Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        source_app: 'slokkvitaeki',
+        kind: 'payday_xml_hafnad',
+        severity: /does not accept/i.test(String(paydayVilla)) ? 'warn' : 'error',
+        detail: fela_kt([sale && sale.num, sale && sale.customer_nafn].filter(Boolean).join(' · ')
+          + ' — Payday hafnaði rafrænum reikningi (XML); ' + nidurstada
+          + ' Payday: ' + String(paydayVilla).slice(0, 500)).slice(0, 1500),
+        page: 'payday-push',
+        who: 'netlify:payday-push',
+        ua: String(h['user-agent'] || h['User-Agent'] || '').slice(0, 300) || null,
+        fingerprint: 'payday_xml_hafnad|' + (sale && sale.id),
+      }),
+    });
+    if (!r.ok) console.error('[payday-push] XML-höfnun náðist ekki í app_problems:', r.status);
+  } catch (e) {
+    console.error('[payday-push] XML-höfnun náðist ekki í app_problems:', String((e && e.message) || e));
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ---- Payday auth + create --------------------------------------------------
 
 async function getAccessToken() {

@@ -103,9 +103,9 @@ function skrarnar(dir, ut) {
 // að hverfa í heild, ekki bara fyrsta línan: annars féll vörðurinn á sjálfum
 // sér og á tveimur skjölum sem gerðu ekkert rangt. Línuskil eru varðveitt svo
 // línunúmerin haldist rétt.
-function anAthugasemda(s) {
-  return s.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
-}
+// 14.09.2026: sameiginlegi hreinsirinn les strengi, sniðmát og regex. Regexið sem
+// stóð hér tók `/*` inni í streng sem upphaf athugasemdar og faldi kóðann á eftir.
+const { anAthugasemdaJs: anAthugasemda } = require('./_athugasemdir.cjs');
 
 function leitaISkra(p) {
   const rel = path.relative(rot, p).replace(/\\/g, '/');
