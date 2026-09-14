@@ -148,6 +148,17 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑14 (kvöld)** — **XML-höfnun birtist strax á skjánum og stofnar mál á Þjónustuborðinu (`payday-push.js` vörðuð leið + `166`).**
+  Agnar: „poppa upp villa strax upp á skjáinn og setja á þjónustuborð". `skraXmlHofnun` stofnar nú líka eitt mál per
+  sölu í `thjonustubeidni` (á Agnar; merkin `samthykki`, `payday-xml`, `payday-xml-sala:<id>`). Fyrst er leitað eftir
+  merkinu, svo endurtekin sending tvítekur ekki málið (#1048–#1054 standa). Sama 3 s þak og `Promise.allSettled`; kt
+  hreinsuð með `fela_kt` úr titli, samantekt og lýsingu. Payday-slóðin er ekki hreinsuð — uuid-ið í henni skemmdist í
+  færslunni kl. 17:09. Svörin bera `xml_villa` og `bord_mal_id` (aðeins viðbót). `166` sýnir `synaXmlHofnun`, fastan
+  `alertdialog` í stað Toast, bæði í stakri sendingu og fjöldasendingu. Harness 14 atburðarásir, 68/68;
+  `audit-payday-xml-skraning.cjs` hertur og 15/15 stökkbreytingar netvarðar RAUÐAR. `audit-all` 49/52 — rauðu eru gögn:
+  `audit-solu-id` og `audit-t-s-i` (gömul) og `audit-kredit-tenging` (prófkreditnóta R-000951, −52 kr, bíður Agnars).
+  netvörður: **SAFE**. Fimm göt í verðinum sem aðeins harnessið nær (leitarsvar, merki án sölu-id, `signal` á
+  málsstofnun, `skraVillu` aldrei kallað, `esc`) — herða næst.
 - **2026‑09‑14** — **Payday-höfnun á rafrænum reikningi (XML) er ekki lengur þögul (`payday-push.js`, vörðuð leið).**
   Varaleiðin (`/electronic invoice/i`) bjó reikninginn til aftur án XML og sendi í pósti, eins og á að vera, en
   Payday-villan fór aðeins í svar vafrans og gleymdist. Mælt í Payday 14.09. (Saga-flipar, aðeins lesið): af 36
