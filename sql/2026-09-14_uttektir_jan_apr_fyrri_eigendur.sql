@@ -1,0 +1,44 @@
+-- 2026-09-14 (kvöld) — Úttektir jan.–apr. 2026 með skýrslu en engum reikningi teljast greiddar fyrri eigendum
+--
+-- Agnar 14.09.2026: „allar úttektir sem eru með skýrslu en ekkert invoice fyrir janúar til apríl má merkja sem
+--   greitt til eldri eiganda og taka út". Fyrri regla hans (11.09.): það sem Stólpi sendi telst greitt fyrri
+--   eigendum (sql/2026-09-11_gleymt_uttekt_stolpi.sql). Yfirtakan var 07.05.2026.
+--
+-- Mælt fyrir breytingu: v_gleymt_ad_rukka_uttekt 14 raðir, v_gleymt_uttekt_stolpi 20. Fimm úttektir með
+--   skoðun jan.–apr. höfðu hvorki reikning né Stólpa-reikning:
+--     #1419 Efnalaugin Björg (01.01 — tækjadagsetning, mánuður óviss)
+--     #738  Snóker og Poolstofan (01.02; skýrslan er líklega Umslags, sjá mál #878)
+--     #270  Hljóðfærahúsið (01.02)
+--     #303  Hagvagnar hf (01.03; greiðandamál #969)
+--     #344  Krosshólmi (01.04)
+--   Flétturima 16 (#656, engin skoðunardagsetning) fellur EKKI undir regluna — mál #877.
+--   Í v_uttektarplan voru allar fimm „reikningur_a_arinu = false" (💰).
+--
+-- Breytingin var keyrð sem DO-blokk sem les lifandi skilgreiningarnar (pg_get_viewdef), afritar þær í
+--   audit_vernd (table_name 'view:<nafn>', old_row->>'def') og breytir þeim með nákvæmri textaskipti:
+--   1. v_uttekt_an_reiknings_grunnur — nýr dálkur aftast:
+--        COALESCE(sp.reikn_nr IS NULL AND g.skodun_dags >= '2026-01-01' AND g.skodun_dags < '2026-05-01', false) AS fyrri_eigendur
+--      (skodun_dags = doc_date skýrslu, annars uttaeki.last_insp á árinu; sp = Stólpa-reikningur sem nær yfir skoðunina)
+--   2. v_gleymt_ad_rukka_uttekt — sömu dálkar; WHERE bætir við „and not fyrri_eigendur".
+--   3. v_gleymt_uttekt_stolpi — WHERE „stolpi_nr is not null or fyrri_eigendur"; stolpi_stada verður
+--      'fyrri_eigendur_an_reiknings' þegar enginn Stólpa-reikningur er; nýr dálkur fyrri_eigendur aftast.
+--   4. v_uttektarplan — CTE reikn_fid fær „UNION SELECT u.fyrirtaeki_id FROM v_uttekt_an_reiknings_grunnur u
+--      WHERE u.fyrri_eigendur", svo slík úttekt telst reikningur á árinu.
+--   368 („Gleymst að rukka?") sýnir þessar línur í hlutanum „Fyrri eigendur" með „Skoðun jan.–apr. án reiknings".
+--
+-- ── Staðfesting (lesið) ──────────────────────────────────────────────────────────────────
+-- select count(*) from public.v_gleymt_ad_rukka_uttekt;                          → 9 (var 14)
+-- select count(*) from public.v_gleymt_uttekt_stolpi;                            → 25 (var 20)
+-- select fyrirtaeki_id from public.v_gleymt_uttekt_stolpi where fyrri_eigendur;  → 270, 303, 344, 738, 1419
+-- select fid, reikningur_a_arinu from public.v_uttektarplan where fid in (270, 303, 344, 738, 1419); → allar true
+--
+-- ── Afturköllun ──────────────────────────────────────────────────────────────────────────
+-- Fyrri skilgreiningarnar eru í audit_vernd. Í þessari röð (háðar sýnir fyrst, því dálkur fer af grunninum):
+--   do $$ declare d text; begin
+--     select old_row->>'def' into d from audit_vernd where table_name = 'view:v_uttektarplan' order by changed_at desc limit 1;
+--     execute 'create or replace view public.v_uttektarplan as ' || rtrim(d, E'; \n');
+--     drop view public.v_gleymt_uttekt_stolpi; drop view public.v_gleymt_ad_rukka_uttekt;
+--     -- grunnurinn: CREATE OR REPLACE nær ekki að fjarlægja dálk — drop view public.v_uttekt_an_reiknings_grunnur cascade er
+--     -- EKKI leyft (v_uttektarplan háð); keyrðu frekar skilgreiningarnar úr audit_vernd fyrir grunn, gleymt og stolpi
+--     -- eftir að v_uttektarplan hefur verið sett aftur, og láttu dálkinn fyrri_eigendur standa ónotaðan.
+--   end $$;

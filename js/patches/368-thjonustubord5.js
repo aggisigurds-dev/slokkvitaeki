@@ -3014,15 +3014,18 @@
         const st = d.stolpi, stSyna = !!S.synaHluta['gleymt:stolpi'];
         const stRod = x => '<div class="lrow">' + skodunHtml(x) + '<div>' +
             '<a class="clink" href="#company/' + x.fyrirtaeki_id + '" data-t5="fyr-id" data-fid="' + x.fyrirtaeki_id + '">' + esc(x.nafn || '(ónefnt)') + '</a>' +
-            '<span class="s">Stólpa-reikningur ' + esc(x.stolpi_nr || '—') + ' · ' + esc(dagsFull(x.stolpi_dags)) + ' · ' + kr(x.stolpi_upphaed) + '</span></div>' +
-          '<span class="tag' + (x.stolpi_stada === 'greitt' ? ' ok' : '') + '">' + (x.stolpi_stada === 'greitt' ? 'Greitt' : x.stolpi_stada === 'opid_vid_yfirtoku' ? 'Opið við yfirtöku' : esc(x.stolpi_stada || '—')) + '</span></div>';
+            // Agnar 14.09.2026: skoðun jan.–apr. með skýrslu en engum reikningi telst líka greidd fyrri eigendum (stolpi_nr autt).
+            '<span class="s">' + (x.stolpi_nr ? 'Stólpa-reikningur ' + esc(x.stolpi_nr) + ' · ' + esc(dagsFull(x.stolpi_dags)) + ' · ' + kr(x.stolpi_upphaed)
+              : 'Skoðun jan.–apr. án reiknings — telst greidd fyrri eigendum') + '</span></div>' +
+          '<span class="tag' + (x.stolpi_stada === 'greitt' ? ' ok' : '') + '">' + (x.stolpi_stada === 'greitt' ? 'Greitt' : x.stolpi_stada === 'opid_vid_yfirtoku' ? 'Opið við yfirtöku'
+            : x.stolpi_stada === 'fyrri_eigendur_an_reiknings' ? 'Fyrri eigendur' : esc(x.stolpi_stada || '—')) + '</span></div>';
         body = '<div class="sect">Úttekt ' + AR + ' án reiknings (' + uF.synd.length + ')</div>' +
-          (uF.synd.length || uF.falin.length ? '<div class="sectm">Enginn reikningur á stað, kúnna né systurstað — og ekki rukkað gegnum Stólpa.</div>' : '') +
+          (uF.synd.length || uF.falin.length ? '<div class="sectm">Enginn reikningur á stað, kúnna né systurstað — og ekki rukkað gegnum Stólpa. Skoðanir jan.–apr. teljast greiddar fyrri eigendum.</div>' : '') +
           (uF.synd.length ? uF.synd.slice(0, 15).map(x => uRod(x)).join('') + (uF.synd.length > 15 ? '<div class="more">+ ' + (uF.synd.length - 15) + ' til viðbótar</div>' : '')
             : uF.falin.length ? '' : '<div class="more">Engin úttekt án reiknings.</div>') +
           falinHtml('gleymt:uttekt', uF.falin.length, () => uF.falin.map(x => uRod(x, true)).join('')) +
           (st === null ? '<p class="err">Náði ekki í úttektir rukkaðar gegnum Stólpa: ' + esc(d.stolpiVilla) + '</p>'
-            : st.length ? '<div class="sect">Rukkað gegnum Stólpa — fyrri eigendur (' + st.length + ')</div>' +
+            : st.length ? '<div class="sect">Fyrri eigendur — Stólpa-reikningur eða skoðun jan.–apr. (' + st.length + ')</div>' +
               '<div class="more">Teljast greiddar fyrri eigendum — aldrei rukka aftur · <button type="button" class="fela syna" data-t5="syna-hluta" data-h="gleymt:stolpi" aria-expanded="' + stSyna + '">' +
                 (stSyna ? 'Fela' : 'Sýna') + '</button></div>' + (stSyna ? st.map(x => stRod(x)).join('') : '') : '') +
           '<div class="sect">Greitt síðar — drög eldri en 14 daga (' + sF.synd.length + ' · ' + kr(summa(sF.synd)) + ')</div>' +
