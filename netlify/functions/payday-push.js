@@ -263,9 +263,10 @@ exports.handler = async (event) => {
           created = await createInvoice(token, payload, attachment);
         } catch (invErr2) {
           const msg2 = String(invErr2.message || invErr2);
-          await skraXmlHofnun(event, sale, msg,
-            'endurtilraun án XML mistókst líka — salan er EKKI merkt send; athugaðu í Payday hvort reikningur varð samt til. Payday (án XML): ' + msg2.slice(0, 400));
-          return json(502, { error: msg2, retriedWithoutElectronic: true, customerId, payload });
+          const bord_mal_id = await skraXmlHofnun(event, sale, msg,
+            'endurtilraun án XML mistókst líka — salan er EKKI merkt send; athugaðu í Payday hvort reikningur varð samt til. Payday (án XML): ' + msg2.slice(0, 400),
+            { created: null, fyrirtaeki_id: _siteTrusted ? site.id : null });
+          return json(502, { error: msg2, retriedWithoutElectronic: true, xml_villa: msg.slice(0, 500), bord_mal_id, customerId, payload });
         }
       } else {
         return json(502, {
@@ -282,15 +283,21 @@ exports.handler = async (event) => {
     await markSaleInvoiced(sale.id, created);
 
     // XML-höfnun sem endaði með reikningi án XML — skráð EFTIR að salan er merkt send.
+    // Agnar 14.09.: villan sprettur líka upp á skjánum (166 les xml_villa + bord_mal_id) og
+    // fer á Þjónustuborðið (skraXmlHofnun stofnar málið).
+    let bord_mal_id = null;
     if (fellBackToNonElectronic) {
-      await skraXmlHofnun(event, sale, xmlVilla,
+      bord_mal_id = await skraXmlHofnun(event, sale, xmlVilla,
         'reikningur ' + ((created && (created.number || created.invoiceNumber || created.id)) || '?') + ' búinn til ÁN XML'
         + (mode === 'draft' ? ' sem drög (ekkert afhent).'
-          : payload.sendEmail ? ' og sendur í pósti.' : ' og EKKI sendur í pósti (ekkert netfang) — aðeins krafa í netbanka.'));
+          : payload.sendEmail ? ' og sendur í pósti.' : ' og EKKI sendur í pósti (ekkert netfang) — aðeins krafa í netbanka.'),
+        { created, fyrirtaeki_id: _siteTrusted ? site.id : null });
     }
 
     return json(200, {
       ok: true, mode, fellBackToNonElectronic, payload, created, customerId,
+      xml_villa: fellBackToNonElectronic ? xmlVilla.slice(0, 500) : null,
+      bord_mal_id,
       // Hvað var raunverulega afhent + á hvaða netfang — svo UI og log sýni það.
       delivery: deliveryLabel(),
       email_used: payload.sendEmail ? (custEmail || null) : null,
@@ -526,41 +533,97 @@ async function clearSaleInvoiced(saleId) {
   });
 }
 
-// 2026-09-14 (Agnar): Payday-höfnun á rafrænum reikningi (XML) skráist í app_problems
-// (Kerfisheilsa). Áður fór hún AÐEINS í svar vafrans og gleymdist. „Customer does not
-// accept electronic invoices" er vænt (kúnni utan skeytamiðlunar) → 'warn'; allar aðrar
-// XML-hafnanir eru óvæntar → 'error'. Skráningin fellir ALDREI kröfusendinguna: villur
-// gleyptar og 3 s þak. Engin kt í skráningunni (netvörður: aldrei persónu-kt í log) —
-// R-númer og nafn duga, og kt-líkar tölur eru hreinsaðar úr Payday-textanum.
-async function skraXmlHofnun(event, sale, paydayVilla, nidurstada) {
+// 2026-09-14 (Agnar): Payday-höfnun á rafrænum reikningi (XML) skráist í app_problems OG stofnar
+// mál á Þjónustuborðinu (thjonustubeidni, merkt samthykki, á Agnar); 166 sýnir villuna strax í
+// glugga. Áður fór hún AÐEINS í svar vafrans (smá-toast) og gleymdist (Plaza 31.08.).
+// „Customer does not accept electronic invoices" er vænt (kúnni utan skeytamiðlunar) → 'warn';
+// allar aðrar XML-hafnanir eru óvæntar → 'error'. Eitt mál per sölu (tagg payday-xml-sala:<id>;
+// endurtekin tilraun stofnar ekki annað). Skráningin fellir ALDREI kröfusendinguna: villur
+// gleyptar, bæði skrif samhliða undir sameiginlegu 3 s þaki. Engin kt (netvörður: aldrei
+// persónu-kt í log) — kt-líkar tölur hreinsaðar úr öllum texta. Skilar id málsins, eða null.
+async function skraXmlHofnun(event, sale, paydayVilla, nidurstada, auka) {
   const fela_kt = s => String(s || '').replace(/(?<!\d)\d{6}[-\s_]?\d{4}(?!\d)/g, '[kt]');
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 3000);
-  try {
-    const h = (event && event.headers) || {};
+  const hdr = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
+  const h = (event && event.headers) || {};
+  const villa = String(paydayVilla || '').slice(0, 500);
+  const vegna = [sale && sale.num, sale && sale.customer_nafn].filter(Boolean).join(' · ');
+  const created = (auka && auka.created) || null;
+  const nr = (created && (created.number || created.invoiceNumber)) || null;
+  const paydayUrl = created && created.id ? 'https://app.payday.is/is/invoice/' + encodeURIComponent(created.id) + '/' : null;
+  const upphaed = Number(sale && sale.samtals);
+  const kr = Number.isFinite(upphaed) && upphaed ? String(Math.round(upphaed)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr' : '';
+  const merki = 'payday-xml-sala:' + (sale && sale.id);
+
+  const skraVillu = async () => {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/app_problems`, {
       method: 'POST',
       signal: ctl.signal,
-      headers: {
-        apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json', Prefer: 'return=minimal',
-      },
+      headers: { ...hdr, Prefer: 'return=minimal' },
       body: JSON.stringify({
         source_app: 'slokkvitaeki',
         kind: 'payday_xml_hafnad',
-        severity: /does not accept/i.test(String(paydayVilla)) ? 'warn' : 'error',
-        detail: fela_kt([sale && sale.num, sale && sale.customer_nafn].filter(Boolean).join(' · ')
-          + ' — Payday hafnaði rafrænum reikningi (XML); ' + nidurstada
-          + ' Payday: ' + String(paydayVilla).slice(0, 500)).slice(0, 1500),
+        severity: /does not accept/i.test(villa) ? 'warn' : 'error',
+        detail: fela_kt(vegna + ' — Payday hafnaði rafrænum reikningi (XML); ' + nidurstada + ' Payday: ' + villa).slice(0, 1500),
         page: 'payday-push',
         who: 'netlify:payday-push',
         ua: String(h['user-agent'] || h['User-Agent'] || '').slice(0, 300) || null,
         fingerprint: 'payday_xml_hafnad|' + (sale && sale.id),
       }),
     });
-    if (!r.ok) console.error('[payday-push] XML-höfnun náðist ekki í app_problems:', r.status);
+    if (!r.ok) throw new Error('app_problems HTTP ' + r.status);
+  };
+
+  const stofnaMal = async () => {
+    const leit = `${SUPABASE_URL}/rest/v1/thjonustubeidni?deleted_at=is.null&tags=cs.${encodeURIComponent(JSON.stringify([merki]))}&select=id&limit=1`;
+    const q = await fetch(leit, { headers: hdr, signal: ctl.signal });
+    if (q.ok) {
+      const til = await q.json();
+      if (Array.isArray(til) && til.length) return til[0].id;   // eitt mál per sölu
+    }
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/thjonustubeidni`, {
+      method: 'POST',
+      signal: ctl.signal,
+      headers: { ...hdr, Prefer: 'return=representation' },
+      body: JSON.stringify({
+        title: fela_kt((nr ? 'Payday ' + nr : ((sale && sale.num) || 'Payday')) + ' · ' + ((sale && sale.customer_nafn) || '?')
+          + (kr ? ' · ' + kr : '') + (created ? ' — XML hafnað' : ' — XML hafnað, enginn reikningur')).slice(0, 200),
+        summary: fela_kt(((sale && sale.num) ? sale.num + ': ' : '') + nidurstada).slice(0, 300),
+        notes: fela_kt([
+          [nr ? 'Payday nr. ' + nr : null, sale && sale.num, kr || null].filter(Boolean).join(' · '),
+          'Payday hafnaði rafrænum reikningi (XML): ' + nidurstada,
+          'Villa frá Payday: ' + villa,
+          paydayUrl ? 'Payday: ' + paydayUrl : 'Payday: enginn reikningur staðfestur — athugaðu reikningalistann í Payday.',
+          'Tillaga: taki viðskiptavinurinn við rafrænum reikningum — sendu XML handvirkt úr Payday. Segi Payday að hann taki ekki við rafrænum dugar pósturinn; lokaðu þá málinu.',
+          'Stofnað sjálfkrafa af payday-push ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC.',
+        ].join('\n')).slice(0, 4000),
+        fyrirtaeki_id: (auka && auka.fyrirtaeki_id) || null,
+        customer_base_id: (sale && sale.customer_base_id) || null,
+        customer_nafn: (sale && sale.customer_nafn) || null,
+        source: 'claude',
+        created_by: 'payday-push',
+        assigned_to: 'Agnar',
+        type: 'annad',
+        status: 'nytt',
+        priority: 'venjulegur',
+        important: true,
+        tags: ['samthykki', 'payday-xml', merki].concat(nr ? ['payday:' + nr] : []),
+      }),
+    });
+    if (!r.ok) throw new Error('thjonustubeidni HTTP ' + r.status);
+    const rows = await r.json();
+    return (Array.isArray(rows) && rows[0] && rows[0].id) || null;
+  };
+
+  try {
+    const [v, m] = await Promise.allSettled([skraVillu(), stofnaMal()]);
+    if (v.status === 'rejected') console.error('[payday-push] XML-höfnun náðist ekki í app_problems:', String((v.reason && v.reason.message) || v.reason));
+    if (m.status === 'rejected') console.error('[payday-push] mál á Þjónustuborði náðist ekki:', String((m.reason && m.reason.message) || m.reason));
+    return m.status === 'fulfilled' ? m.value : null;
   } catch (e) {
-    console.error('[payday-push] XML-höfnun náðist ekki í app_problems:', String((e && e.message) || e));
+    console.error('[payday-push] XML-skráning brást:', String((e && e.message) || e));
+    return null;
   } finally {
     clearTimeout(timer);
   }

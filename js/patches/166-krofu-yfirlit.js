@@ -1434,9 +1434,14 @@
             }),
           });
           const j = await r.json().catch(() => ({}));
-          if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+          if (!r.ok || !j.ok) {
+            // XML hafnað og endurtilraun án XML mistókst líka → glugginn strax (málið er á borðinu).
+            if (j && j.retriedWithoutElectronic) { synaXmlHofnun(sale, j); b.disabled = false; return; }
+            throw new Error(j.error || ('HTTP ' + r.status));
+          }
           markWorkflowSent(sale, j);
-          if (window.Toast && Toast.show) Toast.show('🏦 ✓ Krafa send í Payday' + deliveryNote(j));
+          if (j.fellBackToNonElectronic) synaXmlHofnun(sale, j);
+          else if (window.Toast && Toast.show) Toast.show('🏦 ✓ Krafa send í Payday' + deliveryNote(j));
           await load(_state.month);
         } catch (e) {
           alert('Payday push villa: ' + (e.message || e));
@@ -1747,8 +1752,12 @@
             body: JSON.stringify({ sale_id: sale.id, mode }),
           });
           const j = await r.json().catch(() => ({}));
-          if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+          if (!r.ok || !j.ok) {
+            if (j && j.retriedWithoutElectronic) synaXmlHofnun(sale, j);   // glugginn strax; sendingin heldur áfram
+            throw new Error(j.error || ('HTTP ' + r.status));
+          }
           markWorkflowSent(sale, j);
+          if (j.fellBackToNonElectronic) synaXmlHofnun(sale, j);
           sent++; results.push({ num: sale.num, ok: true, dlv: deliveryNote(j) });
           _state.selected.delete(String(sale.id));
         }
@@ -1779,6 +1788,60 @@
     if (j.delivery === 'email') return ' — ✉ ' + (j.email_used || 'tölvupóstur');
     if (j.delivery === 'none' && j.mode !== 'draft') return ' — ⚠ engin afhending';
     return '';
+  }
+
+  // 2026-09-14 (Agnar): „það mætti poppa upp villa strax upp á skjáinn og setja á þjónustuborð".
+  // Þegar payday-push segir að Payday hafi hafnað rafrænum reikningi (XML) — fellBackToNonElectronic
+  // (reikningur fór án XML) eða retriedWithoutElectronic (enginn reikningur) — opnast þessi gluggi
+  // STRAX, í stað smá-toasts sem hvarf (Plaza 31.08.). Málið á Þjónustuborðinu stofnar payday-push
+  // sjálft og skilar bord_mal_id. Í fjöldasendingu bætast færslur í sama glugga meðan sendingin
+  // heldur áfram. Vörður: tools/audit-payday-xml-skraning.cjs.
+  function synaXmlHofnun(sale, j) {
+    j = j || {};
+    let box = document.getElementById('_ky-xml-hofnun');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = '_ky-xml-hofnun';
+      box.setAttribute('role', 'alertdialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-labelledby', '_ky-xml-hofnun-titill');
+      box.style.cssText = 'position:fixed;inset:0;z-index:100080;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+      box.innerHTML =
+        '<div style="background:#fff;color:#0f172a;max-width:560px;width:100%;max-height:85vh;overflow:auto;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.35);border-top:6px solid #dc2626">'
+        + '<div style="padding:16px 18px 6px">'
+        + '<div id="_ky-xml-hofnun-titill" style="font-size:17px;font-weight:800;color:#b91c1c">⚠ Payday hafnaði rafrænum reikningi (XML)</div>'
+        + '<div style="font-size:12.5px;color:#475569;margin-top:4px">Mál er stofnað á Þjónustuborðinu. Taki viðskiptavinurinn við rafrænum reikningum: sendu XML handvirkt úr Payday.</div>'
+        + '</div>'
+        + '<div class="_ky-xml-listi" style="padding:6px 18px"></div>'
+        + '<div style="padding:10px 18px 16px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">'
+        + '<a href="#bord" class="_ky-xml-bord" style="padding:9px 14px;border:1px solid #cbd5e1;border-radius:8px;color:#0f172a;text-decoration:none;font-size:13px;font-weight:700">Opna Þjónustuborð</a>'
+        + '<button type="button" class="_ky-xml-loka" style="padding:9px 16px;border:0;background:#b91c1c;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700">Ég skil</button>'
+        + '</div></div>';
+      document.body.appendChild(box);
+      const loka = () => box.remove();
+      box.querySelector('._ky-xml-loka').addEventListener('click', loka);
+      box.querySelector('._ky-xml-bord').addEventListener('click', loka);
+      try { box.querySelector('._ky-xml-loka').focus(); } catch (_) {}
+    }
+    const created = j.created || null;
+    const nr = created && (created.number || created.invoiceNumber);
+    const paydayUrl = created && created.id ? 'https://app.payday.is/is/invoice/' + encodeURIComponent(created.id) + '/' : null;
+    const hvad = j.retriedWithoutElectronic
+      ? 'Enginn reikningur var búinn til — salan er EKKI merkt send. Athugaðu í Payday.'
+      : 'Reikningur' + (nr ? ' ' + nr : '') + ' fór ÁN XML'
+        + (j.mode === 'draft' ? ' — sem drög.' : j.email_used ? ' — sendur í pósti á ' + j.email_used + '.' : ' — enginn tölvupóstur fór, aðeins krafa í netbanka.');
+    const rad = document.createElement('div');
+    rad.className = '_ky-xml-rad';
+    rad.style.cssText = 'border:1px solid #fecaca;background:#fef2f2;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:13px;line-height:1.45';
+    rad.innerHTML =
+      '<div style="font-weight:700">' + esc([(sale && sale.num) || '', (sale && sale.customer_nafn) || ''].filter(Boolean).join(' · ') || 'Krafa') + '</div>'
+      + '<div>' + esc(hvad) + '</div>'
+      + ((j.xml_villa || j.error) ? '<div style="color:#7f1d1d;font-size:12px;margin-top:4px;word-break:break-word">Villa frá Payday: ' + esc(String(j.xml_villa || j.error).slice(0, 300)) + '</div>' : '')
+      + '<div style="margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px">'
+      + (paydayUrl ? '<a href="' + esc(paydayUrl) + '" target="_blank" rel="noopener" style="color:#1d4ed8;font-weight:700">Opna í Payday ↗</a>' : '')
+      + (j.bord_mal_id ? '<span style="color:#334155">Mál #' + esc(String(j.bord_mal_id)) + ' á Þjónustuborði</span>' : '<span style="color:#b45309">Mál náðist ekki á Þjónustuborðið — láttu vita</span>')
+      + '</div>';
+    box.querySelector('._ky-xml-listi').appendChild(rad);
   }
 
   // ── Shared per-company / per-row builders (used by all three view modes) ────
@@ -2743,7 +2806,7 @@
     }
   }
 
-  window.KrofuYfirlit = { show, load, refreshBadge, getViewMode, setViewMode: (m) => applyViewMode(m, true, true) };
+  window.KrofuYfirlit = { show, load, refreshBadge, getViewMode, setViewMode: (m) => applyViewMode(m, true, true), synaXmlHofnun };
   console.log('[patch-166] Kröfu yfirlit installed — krafa í heimabanka per fyrirtæki');
 })();
 /* === END KRÖFU YFIRLIT === */
