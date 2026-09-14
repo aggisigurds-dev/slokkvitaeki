@@ -1828,6 +1828,13 @@
   }
   const gleyma = forskeyti => Object.keys(G).forEach(x => { if (x.indexOf(forskeyti) === 0) delete G[x]; });
   const uppfTakki = forskeyti => '<button type="button" class="btn iv sm tog" data-t5="g-uppf" data-g="' + esc(forskeyti) + '" title="Sækja nýjustu gögn" aria-label="Uppfæra">↻</button>';
+  // 368ab (Agnar 14.09.2026: „er hægt að setja einhvern trigger á þjónustuborða punktana"): þegar borðið opnast aftur — úr
+  // prófíl, öðrum flipa eða eftir hlé — sækjast opnar einingar aftur ef gögnin eru eldri en 15 s, svo skýrsla eða reikningur
+  // sem var að verða til sjáist strax (áður allt að 5 mín.). Aðeins opnar einingar sækja; lokaðar kalla ekki á gogn().
+  function ferskaEiningar(eldriEn) {
+    const nuna = Date.now();
+    Object.keys(G).forEach(k => { const g = G[k]; if (g && g.at && !g.bid && nuna - g.at > (eldriEn || 15000)) g.at = 0; });
+  }
 
   /* ── FELA: dauf „Fela"-lína á hverju atriði sem safnast — samstillt á allar vélar (thjonustubord_falid) ── */
   const FALID_LYKILL = /^[a-z_]+:[a-z_]+:\S+$/;          // sama regla og check-skorðan í töflunni
@@ -2274,21 +2281,36 @@
     const blod = rv.data || [], ars = P('arsskodun_customers') || {};
     const iVinnslu = Object.keys(ars).filter(id => +((ars[id] || {}).field_inspected_year) === AR && +((ars[id] || {}).last_year_inspected) !== AR).map(Number).filter(Boolean);
     const fids = [...new Set(blod.map(b => b.fyrirtaeki_id).filter(Boolean).concat(iVinnslu))];
-    const D = { blod, iVinnslu, fyr: [], skjol: [], solur: [], systkin: {}, AR };
+    const D = { blod, iVinnslu, fyr: [], skjol: [], solur: [], systkin: {}, stadir: {}, AR };
     if (!fids.length) return D;
-    const rf = await c.from('fyrirtaeki').select('id,nafn,customer_base_id').in('id', fids);
+    const rf = await c.from('fyrirtaeki').select('id,nafn,customer_base_id,deleted_at').in('id', fids);
     if (rf.error) throw rf.error;
     D.fyr = rf.data || [];
+    // 368ab (Agnar 14.09.2026: Breiðvangur 9 „er tilbúinn líka, er búinn að gera skýrslu"): sameinaður (eyddur) staður bar enn
+    // „í vinnslu" í Ársskoðun og sýndist án skýrslu, því skýrslan er á staðnum sem hann var sameinaður í. Eyddir staðir detta út.
+    D.iVinnslu = iVinnslu.filter(id => D.fyr.some(f => f.id === id && !f.deleted_at));
     const bases = [...new Set(D.fyr.map(f => f.customer_base_id).filter(Boolean))];
     const tomt = Promise.resolve({ data: [] });
     const [rd, rs, rsy] = await Promise.all([
       c.from('customer_documents').select('fyrirtaeki_id,doc_type,doc_date,year').in('fyrirtaeki_id', fids).in('doc_type', ['uttektarskyrsla', 'brunakerfi']).eq('year', AR).not('is_duplicate', 'is', true),
-      bases.length ? c.from('solur').select('num,customer_base_id,created_at,samtals,greitt_med,paid_at,is_credit').in('customer_base_id', bases).eq('status', 'final').gte('created_at', AR + '-01-01') : tomt,
+      bases.length ? c.from('solur').select('id,num,customer_base_id,customer_id,created_at,samtals,greitt_med,paid_at,is_credit,credit_of,dk_invoice_id').in('customer_base_id', bases).eq('status', 'final').gte('created_at', AR + '-01-01') : tomt,
       bases.length ? c.from('fyrirtaeki').select('id,customer_base_id').in('customer_base_id', bases).is('deleted_at', null) : tomt
     ]);
     D.skjol = rd.data || [];
-    D.solur = (rs.data || []).filter(s => !s.is_credit);
-    (rsy.data || []).forEach(x => { D.systkin[x.customer_base_id] = (D.systkin[x.customer_base_id] || 0) + 1; });
+    // 368ab: bakfærður reikningur telst ekki með — kreditreikningur í appinu eða afturkallaður í Payday (Pizzan R-000778 04.09).
+    const allar = rs.data || [], bakfaert = new Set(allar.filter(s => s.is_credit && s.credit_of).map(s => s.credit_of));
+    const dk = [...new Set(allar.map(s => s.dk_invoice_id).filter(Boolean))];
+    if (dk.length) {
+      const rp = await c.from('payday_invoices_slokk').select('payday_id,status').in('payday_id', dk);
+      if (rp.error) throw rp.error;
+      const afturkallad = new Set((rp.data || []).filter(p => p.status === 'CANCELLED').map(p => p.payday_id));
+      allar.forEach(s => { if (s.dk_invoice_id && afturkallad.has(s.dk_invoice_id)) bakfaert.add(s.id); });
+    }
+    D.solur = allar.filter(s => !s.is_credit && !bakfaert.has(s.id));
+    (rsy.data || []).forEach(x => {
+      D.systkin[x.customer_base_id] = (D.systkin[x.customer_base_id] || 0) + 1;
+      (D.stadir[x.customer_base_id] = D.stadir[x.customer_base_id] || new Set()).add(x.id);
+    });
     return D;
   }
   // Dagsetning vinnublaðs: dagsetning (dd.mm.áááá), annars 1. dagur mánaðarins (manudur), annars 0 = óþekkt.
@@ -2301,8 +2323,13 @@
   function sonnun(fid, fra, D) {
     const f = D.fyr.find(x => x.id === fid) || null;
     const sk = D.skjol.filter(d => d.fyrirtaeki_id === fid && (!d.doc_date || tStamp(d.doc_date) >= fra)).sort((a, b) => tStamp(b.doc_date) - tStamp(a.doc_date))[0] || null;
-    const rk = f && f.customer_base_id ? D.solur.filter(s => s.customer_base_id === f.customer_base_id && tStamp(s.created_at) >= fra).sort((a, b) => tStamp(b.created_at) - tStamp(a.created_at))[0] || null : null;
-    return { sk, rk, nafn: f ? f.nafn : '', systkin: f && f.customer_base_id ? (D.systkin[f.customer_base_id] || 0) : 0 };
+    const systkin = f && f.customer_base_id ? (D.systkin[f.customer_base_id] || 0) : 0, stadir = f && D.stadir ? D.stadir[f.customer_base_id] : null;
+    // 368ab: reikningur á SAMA stað (solur.customer_id — 723 af 761 sölum 2026 vísa á stað sama kúnna). Vísi salan á engan
+    // lifandi stað kúnnans (enginn, eyddur eða sameinaður) telst hún aðeins ef kúnninn á einn stað: Pizzan á 11 staði og
+    // R-000842 (Núpalind) sýndist reikningur Háholts.
+    const aStad = s => s.customer_id === fid || (systkin <= 1 && !(s.customer_id && stadir && stadir.has(s.customer_id)));
+    const rk = f && f.customer_base_id ? D.solur.filter(s => s.customer_base_id === f.customer_base_id && aStad(s) && tStamp(s.created_at) >= fra).sort((a, b) => tStamp(b.created_at) - tStamp(a.created_at))[0] || null : null;
+    return { sk, rk, nafn: f ? f.nafn : '', systkin };
   }
   const vbListi = D => D.blod.map(b => { const fra = blodDags(b, D.AR), x = sonnun(b.fyrirtaeki_id, fra, D); return Object.assign(x, { b, fra, buid: !!(x.sk && x.rk) }); });
   function vbSamtals(b) {
@@ -4078,13 +4105,18 @@
     setTimeout(() => { const vv = document.getElementById(VIEW_ID); if (vv && vv.classList.contains('active')) lysaNav(); }, 60);
     try { if (location.hash !== '#' + NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
     S.filter = (M(cfg().mode) || MODES.thjonusta).filter || 'allt';
+    ferskaEiningar();
     render();
     load(S.loaded);
     clearInterval(_poll);
     _poll = setInterval(() => {
       const vv = document.getElementById(VIEW_ID);
       if (!vv || !vv.classList.contains('active')) { clearInterval(_poll); return; }
-      if (!document.hidden) load(true);
+      if (document.hidden) return;
+      // Punktarnir í „Í vinnslu — er það búið?" (skýrsla/reikningur) fylgja líka mínútu-könnuninni, ekki bara 5 mín. geymslu.
+      const gs = G.skyrslur;
+      if (gs && gs.at && !gs.bid && Date.now() - gs.at > POLL_MS) { gs.at = 0; render(); }
+      load(true);
     }, POLL_MS);
   }
   function patchSwitchView() {
@@ -4135,7 +4167,7 @@
     window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(render, 200); });
     document.addEventListener('visibilitychange', () => {
       const v = document.getElementById(VIEW_ID);
-      if (!document.hidden && v && v.classList.contains('active')) load(true);
+      if (!document.hidden && v && v.classList.contains('active')) { ferskaEiningar(); render(); load(true); }
     });
     // Stillingar breytast þegar HVAÐ SEM ER í appinu vistar — teiknað aðeins ef það snertir þetta borð.
     try {
