@@ -147,6 +147,21 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑14** — **`.limit(N>1000)` er sama gildran og fastur `.range` — 20 fyrirspurnir blaðsíðuflettar og vörðurinn grípur þær (`audit-pagination.cjs`).**
+  PostgREST sker hvert svar í 1000 raðir, skilar 200 og segir ekkert. Aðalregla varðarins taldi hvert `.limit(`
+  afmörkun, svo `.limit(5000)` slapp. Mælt með publishable-lyklinum: fjórar af 20 slíkum fyrirspurnum í `js/`
+  töpuðu þegar röðum — `153` `v_skodunar_manudur` 1000/1.250 (allir staðir eftir id 1544), `236` `customers_base`
+  1000/1.152 (Sameining sýndi „Grunnskrár til: 1,000" og bauð „🆕 Ný base" þar sem grunnur var til), `27`
+  `fyrirtaeki` ×2 1000/1.250 og 1000/1.180 (nafnalistar Tilboðs og Sérverðs enduðu í „S"). Allar 20 fara nú í
+  gegnum `DB.fetchAll` með einkvæmri röðun (`id`; `fyrirtaeki_id` í viewinu), villumeðferð óbreytt. FAST-reglan
+  flaggar nú `.limit(N>1000)` — RAUTT, engin grunnlína, engin ALLOW. **Hreinsirinn var sjálfur gat:** regex-
+  hreinsirinn tók `/*` í `accept="image/*"` (09:265) sem athugasemd og faldi línur 265–459, þ.á m. `.limit(2000)`
+  á 399; úttak hans þýddist ekki í 20 af 369 skrám. Nýi hreinsirinn les strengi, sniðmát og regex (úttak þýðist
+  í 369/369). **Sannreynt í báðar áttir:** 61a3a81 → 20 brot (09 með), plantað → 3 (líka á eftir `image/*`-streng),
+  athugasemdir og `.limit(≤1000)` → grænt, vinnutréð → grænt. `153` (vörðuð leið): netvörður **SAFE** —
+  `skManById` fyllir aðeins eyðu (153:612); hermt yfir 629 staði breytist enginn birtur mánuður í dag og
+  tilbúið-staða er ósnert. `audit-all` 48/51, sömu 3 gömlu rauðu (osendar-krofur, solu-id, t-s-i). Sami
+  regex-hreinsir er enn í `audit-thema-frosid`, `audit-verk-stada` og `audit-status-gildi`.
 - **2026‑09‑14** — **Canonical skoðunarmánuður tæmist ekki lengur í ræsingu (`312 CanonStadur` + `89`).**
   `app_problems` hafði 987 `canon_stadur_empty` („v_stadur_yfirlit skilaði 0 röðum", 24.08–14.09) á meðan
   viewið hafði 1179 raðir. Rót: `CanonStadur.ready()` var kallað áður en `DB.init` (modal.js, DOMContentLoaded)
