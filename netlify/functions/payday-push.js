@@ -240,7 +240,7 @@ exports.handler = async (event) => {
     const customerId = custResult.customerId;
     // Payday wants customer object with guid id (docs verified 2026-06-30).
     payload.customer = { id: customerId };
-    let created, fellBackToNonElectronic = false;
+    let created, fellBackToNonElectronic = false, xmlVilla = '';
     try {
       created = await createInvoice(token, payload, attachment);
     } catch (invErr) {
@@ -250,23 +250,23 @@ exports.handler = async (event) => {
       // ef netfang er til). Þetta lagar „Customer does not accept electronic invoices".
       if (payload.createElectronicInvoice && /electronic invoice/i.test(msg)) {
         // 2026-09-14 (Agnar): höfnunin má aldrei vera þögul. Sendingin heldur áfram eins og
-        // áður (ekkert tapast), en hún skráist á Kerfisheilsu — bæði þegar endurtilraun án
-        // XML tekst og þegar hún mistekst. Plaza R-000852 og Austurberg 20 R-000769 fóru
-        // 31.08. í Payday án XML og enginn vissi fyrr en 14.09. Vörður: audit-payday-xml-skraning.
+        // áður (ekkert tapast), en hún skráist í app_problems: hér ef endurtilraun án XML
+        // mistekst, og á eftir markSaleInvoiced ef hún tekst — skráningin má aldrei standa á
+        // milli þess að Payday býr reikninginn til og salan er merkt send (netvörður 14.09.).
+        // Plaza R-000852 og Austurberg 20 R-000769 fóru 31.08. í Payday án XML og enginn vissi
+        // fyrr en 14.09. Vörður: tools/audit-payday-xml-skraning.cjs.
         payload.createElectronicInvoice = false;
         payload.sendEmail = !!custEmail;
         fellBackToNonElectronic = true;
+        xmlVilla = msg;
         try {
           created = await createInvoice(token, payload, attachment);
         } catch (invErr2) {
           const msg2 = String(invErr2.message || invErr2);
           await skraXmlHofnun(event, sale, msg,
-            'endurtilraun án XML mistókst líka — enginn reikningur búinn til. Payday (án XML): ' + msg2.slice(0, 400));
+            'endurtilraun án XML mistókst líka — salan er EKKI merkt send; athugaðu í Payday hvort reikningur varð samt til. Payday (án XML): ' + msg2.slice(0, 400));
           return json(502, { error: msg2, retriedWithoutElectronic: true, customerId, payload });
         }
-        await skraXmlHofnun(event, sale, msg,
-          'reikningur ' + ((created && (created.number || created.invoiceNumber || created.id)) || '?') + ' búinn til ÁN XML'
-          + (payload.sendEmail ? ' og sendur í pósti.' : ' og EKKI sendur í pósti (ekkert netfang) — aðeins krafa í netbanka.'));
       } else {
         return json(502, {
           error: msg,
@@ -280,6 +280,14 @@ exports.handler = async (event) => {
 
     // Writeback: merkja söluna sem invoiced
     await markSaleInvoiced(sale.id, created);
+
+    // XML-höfnun sem endaði með reikningi án XML — skráð EFTIR að salan er merkt send.
+    if (fellBackToNonElectronic) {
+      await skraXmlHofnun(event, sale, xmlVilla,
+        'reikningur ' + ((created && (created.number || created.invoiceNumber || created.id)) || '?') + ' búinn til ÁN XML'
+        + (mode === 'draft' ? ' sem drög (ekkert afhent).'
+          : payload.sendEmail ? ' og sendur í pósti.' : ' og EKKI sendur í pósti (ekkert netfang) — aðeins krafa í netbanka.'));
+    }
 
     return json(200, {
       ok: true, mode, fellBackToNonElectronic, payload, created, customerId,
@@ -525,7 +533,7 @@ async function clearSaleInvoiced(saleId) {
 // gleyptar og 3 s þak. Engin kt í skráningunni (netvörður: aldrei persónu-kt í log) —
 // R-númer og nafn duga, og kt-líkar tölur eru hreinsaðar úr Payday-textanum.
 async function skraXmlHofnun(event, sale, paydayVilla, nidurstada) {
-  const fela_kt = s => String(s || '').replace(/\b\d{6}-?\d{4}\b/g, '[kt]');
+  const fela_kt = s => String(s || '').replace(/(?<!\d)\d{6}[-\s_]?\d{4}(?!\d)/g, '[kt]');
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 3000);
   try {

@@ -148,6 +148,21 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑14** — **Payday-höfnun á rafrænum reikningi (XML) er ekki lengur þögul (`payday-push.js`, vörðuð leið).**
+  Varaleiðin (`/electronic invoice/i`) bjó reikninginn til aftur án XML og sendi í pósti, eins og á að vera, en
+  Payday-villan fór aðeins í svar vafrans og gleymdist. Mælt í Payday 14.09. (Saga-flipar, aðeins lesið): af 36
+  ógreiddum reikningum fengu 15 ekkert XML, samtals 1.504.935 kr; Plaza R-000852 og tveir aðrir tóku við XML þegar
+  það var sent handvirkt síðar, svo fyrsta höfnunin var tímabundin. Nú kallar varaleiðin `skraXmlHofnun` →
+  `app_problems` kind `payday_xml_hafnad` (`warn` við „does not accept", annars `error`): í 502-greininni ef
+  endurtilraun án XML mistekst, og **á eftir** `markSaleInvoiced` ef hún tekst, svo skráningin standi aldrei á milli
+  Payday-reiknings og merkingar sölunnar. Hún gleypir villur, hefur 3 s `AbortController`-þak og hreinsar kt með
+  mynstri gmail-send; 200/502-svör kallenda óbreytt. Stubbað harness: 10 atburðarásir, 47/47. Nýr vörður
+  `tools/audit-payday-xml-skraning.cjs`: RAUÐUR á a0b632d (4 brot), GRÆNN nú; hertur eftir ábendingu netvarðar svo
+  stökkbreytingarnar M5 (þak fjarlægt) og M6 (`fela_kt` ekki beitt) eru RAUÐAR. `audit-all` 49/52 — sömu 3 gömlu
+  rauðu. netvörður: **SAFE**. **Tvennt að vita:** engin síða les `app_problems` enn — merkið berst aðeins í sópuninni;
+  og GitHub seinkaði 06:10-tímakeyrslu `deploy.yml` til 12:37, sem birti wip-hausinn 0a3f978 með óvirku millistigi
+  þessarar breytingar (fall án kalla). Sama dag stillti Agnar 74 staði Eignaumsjónar á `payday_delivery='electronic'`;
+  8 ógreiddir reikningar án XML fóru á borðið (#1039–#1046).
 - **2026‑09‑14** — **`.limit(N>1000)` er sama gildran og fastur `.range` — 20 fyrirspurnir blaðsíðuflettar og vörðurinn grípur þær (`audit-pagination.cjs`).**
   PostgREST sker hvert svar í 1000 raðir, skilar 200 og segir ekkert. Aðalregla varðarins taldi hvert `.limit(`
   afmörkun, svo `.limit(5000)` slapp. Mælt með publishable-lyklinum: fjórar af 20 slíkum fyrirspurnum í `js/`
