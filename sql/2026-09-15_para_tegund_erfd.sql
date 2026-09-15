@@ -1,0 +1,93 @@
+-- 2026-09-15 — Búðarsala pöruð sem úttekt: reikningsskjal úr appinu vistaðist ÁN tegundar
+--
+-- Fundið 15.09.2026 þegar tools/audit-para-tegund.cjs varð rauður (2 > 0): par 1564 (R-000941) og
+--   par 1565 (R-000944), bæði uttekt ← bud. Samhliða lota (slokkvitaeki-bc) tilkynnti rauða vörðinn.
+--
+-- RÓTIN: brunaholf/netlify/functions/uttekt-upload.js (reikningur úr appinu → Drive → customer_documents)
+--   setur ekki `vidskiptategund`. Hinar innlestrarleiðirnar stimpla hana við vistun (doc-index,
+--   drive-multitool, reikningar-read → vidskiptategundSkjals í brunaholf/netlify/functions/_spine.js).
+--   auto_pair_customer_document() las tóma tegund sem „óvisst", sem má parast (undanþágan frá 02.09),
+--   og stofnaði úttektarpar. Tegundin var fyllt inn síðar (15.09 kl. 03:13 fyrir þrjú skjöl), en
+--   triggerinn hlustaði ekki á þann dálk og losaði ekkert.
+--
+-- UMFANG (mælt): 7 röng pör, ekki 2. Vörðurinn las aðeins tegund SKJALSINS og fimm skjöl voru enn
+--   óstimpluð, svo hann sá þau ekki. Tvö voru merkt `klarad`, og v_stadur_yfirlit taldi staðinn þá
+--   „done" fyrir 2026 út á búðarsölu:
+--     par 935   Colas - Gullhella   R-000875  klarad          3 yfirferðir + 2 ný tæki 03.09; skýrsla 5906 frá 01.02 (á fid 1490)
+--     par 1128  Pitstop þjónustan   R-000931  klarad          4 yfirferðir í búð 11.09; skýrsla 656 „Aðalskoðun Hjallahrauni 4" úr Drive-sópi 06.06
+--     par 1506  Fjörukráin          R-000869  vantar_skyrslu  2 skilti
+--     par 1551  Ívar Örn            R-000911  vantar_skyrslu  CO₂-hleðsla
+--     par 1557  Sáning ehf.         R-000920  vantar_skyrslu  3 hleðslur + 1 yfirferð
+--     par 1564  Árni Matthíasson    R-000941  vantar_skyrslu  1 hleðsla
+--     par 1565  BL ehf.             R-000944  vantar_skyrslu  3 ný tæki, festingar, sjúkratöskur
+--   Óstimpluð reikningsskjöl sem áttu sölu: 34 (búð 10 · óvisst 4 · úttekt 20).
+--
+-- LAGFÆRING — ein DO-blokk, prufukeyrð fyrst í færslu sem var afturkölluð:
+--   0. Gildandi skilgreining auto_pair_customer_document afrituð í audit_vernd
+--      (table_name 'function:auto_pair_customer_document', old_row->>'def').
+--   1. Pörin sjö afrituð í audit_vernd (table_name 'document_pairs', row_id = par-id); document_pairs
+--      hefur engan audit-trigger.
+--   2. Skjölin 34 fengu tegund sölunnar með sama númeri; audit_vernd_trg afritaði gömlu raðirnar.
+--   3. Pörin losuð með UPDATE, engu eytt: invoice_doc_id og solur_id = null, status vantar_reikning ef
+--      skýrsla er í parinu annars vantar_skyrslu, matched_by += '+teg_hreinsun_20260915'.
+--   4. NÝTT: trg_customer_documents_erfa_tegund (BEFORE INSERT OR UPDATE OF invoice_number) —
+--      reikningsskjal án tegundar erfir tegund sölunnar (sala sama staðar fyrst, svo nýjasta).
+--      Kastar aldrei; skjalið vistast alltaf.
+--   5. auto_pair_customer_document: ný grein — breytist tegund reikningsskjals eftir pörun
+--      (bud / brunakerfi / uttekt) losnar reikningurinn úr pari af rangri tegund
+--      (matched_by += '+teg_breyting'). Triggerinn hlustar nú líka á `vidskiptategund`.
+--      Annað í fallinu er óbreytt — textaskipti á einu akkeri, v_teg-línunni.
+--   Skjal úr appinu fer því ekki lengur fram hjá: sama niðurstaða og hinar innlestrarleiðirnar.
+--
+-- PRÓFUN (afturkölluð færsla, fjórir staðir án skjala og para 2026):
+--   T1  búðarsala R-000958          → tegund bud, 0 pör
+--   T2  úttektarsala R-000938       → tegund uttekt, par uttekt/vantar_skyrslu (pörun virkar áfram)
+--   T3  óþekkt reikningsnúmer       → tegund tóm, par uttekt/vantar_skyrslu (óvissa parast áfram)
+--   T4  skýrsla bætist við          → klarad/auto_standby; reikningur svo flokkaður bud → par losað,
+--                                     vantar_reikning, matched_by auto_standby+teg_breyting
+--   T5  skýrsla fyrst               → vantar_reikning; úttektarreikningur bætist við → klarad
+--   Eftir lagfæringu: röng pör 0 · óstimpluð skjöl með sölu 0.
+--
+-- EKKI GERT, og af hverju:
+--   v_uttekt_an_reiknings_grunnur („Gleymst að rukka?") og v_uttektarplan telja búðarsölu sem reikning
+--   á árinu. Mælt: 8 af 315 skýrslustöðum 2026 teljast rukkaðir eingöngu út á búðarsölu. En Hamraborg ehf
+--   (R-000577: 4 CO₂-yfirferðir + 4 slöngur; 4 tæki) og JDÓ ehf. (R-000531: 13 hleðslur + 2 slöngur;
+--   15 tæki) sýna að úttekt þar sem tækin koma í búðina er rukkuð með yfirferðar- og hleðslulínum og
+--   flokkast `bud`. Að sía búð þar út setti rukkaða staði á peningalistann. Sýnirnar standa óbreyttar.
+--   Sömu reikningar (þegar stimplaðir bud, ekki hluti af þessari lagfæringu) parast ekki við skýrslurnar
+--   — regla Agnars 26.08: búð er ekki slökkvitækjaþjónusta.
+--
+-- VÖRÐUR: tools/audit-para-tegund.cjs
+--   T1  par af rangri tegund — tegund skjalsins, annars tegund sölunnar með sama númeri (grunnlína 0)
+--   T2  óstimpluð reikningsskjöl sem eiga sölu (grunnlína 0)
+--
+-- ── Staðfesting (lesið) ──────────────────────────────────────────────────────────────────
+-- select count(*) from document_pairs p join customer_documents d on d.id = p.invoice_doc_id
+--  where (p.service_type = 'uttekt'     and lower(coalesce(d.vidskiptategund, '')) in ('bud','brunakerfi'))
+--     or (p.service_type = 'brunakerfi' and lower(coalesce(d.vidskiptategund, '')) in ('bud','uttekt'));  → 0
+-- select count(*) from customer_documents d where d.doc_type = 'reikningur' and d.vidskiptategund is null
+--    and exists (select 1 from solur s where s.num = d.invoice_number and s.vidskiptategund is not null);  → 0
+-- select tgname, pg_get_triggerdef(oid) from pg_trigger
+--  where tgrelid = 'public.customer_documents'::regclass and not tgisinternal;
+--    → trg_auto_pair_customer_document (… vidskiptategund) + trg_customer_documents_erfa_tegund
+--
+-- ── Afturköllun ──────────────────────────────────────────────────────────────────────────
+-- do $$ declare d text; begin
+--   select old_row->>'def' into d from audit_vernd
+--    where table_name = 'function:auto_pair_customer_document' order by changed_at desc limit 1;
+--   execute d;
+--   drop trigger trg_auto_pair_customer_document on public.customer_documents;
+--   create trigger trg_auto_pair_customer_document
+--     after insert or update of doc_type, year, customer_base_id, is_duplicate on public.customer_documents
+--     for each row execute function auto_pair_customer_document();
+--   drop trigger trg_customer_documents_erfa_tegund on public.customer_documents;
+-- end $$;
+-- Pörin sjö:
+-- update document_pairs p
+--    set invoice_doc_id = (a.old_row->>'invoice_doc_id')::bigint, solur_id = (a.old_row->>'solur_id')::bigint,
+--        status = a.old_row->>'status', matched_by = a.old_row->>'matched_by', updated_at = now()
+--   from audit_vernd a
+--  where a.table_name = 'document_pairs' and a.row_id = p.id::text
+--    and a.changed_at >= '2026-09-15' and a.changed_at < '2026-09-16'
+--    and p.matched_by like '%+teg_hreinsun_20260915';
+-- Tegund skjalanna 34: old_row í audit_vernd (table_name 'customer_documents', sama dag).

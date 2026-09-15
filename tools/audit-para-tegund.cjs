@@ -54,16 +54,44 @@ async function allar(q) {
   return out;
 }
 
+// 15.09.2026 — BLINDI BLETTURINN. Vörðurinn las aðeins tegund SKJALSINS. uttekt-upload
+// (reikningur úr appinu) vistaði skjalið ÁN tegundar; triggerinn las það sem „óvisst",
+// paraði búðarsöluna sem úttekt og tegundin kom síðar — eða aldrei. Vörðurinn sá 2 pör;
+// þau voru 7, þar af 2 merkt `klarad` (Pitstop, Colas-Gullhella). Losuð með UPDATE
+// (afrit í audit_vernd, matched_by '+teg_hreinsun_20260915'). Nú tvær mælingar:
+//   T1  par af rangri tegund — tegund skjalsins, annars tegund SÖLUNNAR með sama númeri
+//   T2  óstimpluð reikningsskjöl sem eiga sölu (rótin) — trg_customer_documents_erfa_tegund
+//       heldur henni í 0; mæld 34 fyrir lagfæringu
+// Lagfæringin: sql/2026-09-15_para_tegund_erfd.sql.
+const GRUNNLINA_OSTIMPLUD = 0;
+
 (async () => {
   const pairs = await allar('document_pairs?select=id,year,service_type,invoice_doc_id,status,matched_by&order=id');
-  const docs = await allar('customer_documents?select=id,vidskiptategund,invoice_number&doc_type=eq.reikningur&order=id');
+  const docs = await allar('customer_documents?select=id,vidskiptategund,invoice_number,fyrirtaeki_id&doc_type=eq.reikningur&order=id');
+  const solur = await allar('solur?select=id,num,vidskiptategund,customer_id,created_at&num=not.is.null&order=id');
   const byId = new Map(docs.map(d => [d.id, d]));
+
+  // Tegund sölunnar með sama númeri — sama val og trg_customer_documents_erfa_tegund:
+  // sala sama staðar fyrst, svo nýjasta.
+  const solurByNum = new Map();
+  for (const s of solur) {
+    const k = String(s.num).trim();
+    if (!solurByNum.has(k)) solurByNum.set(k, []);
+    solurByNum.get(k).push(s);
+  }
+  const salaTeg = d => {
+    const l = (solurByNum.get(String(d.invoice_number || '').trim()) || []).filter(s => s.vidskiptategund);
+    l.sort((a, b) => ((b.customer_id === d.fyrirtaeki_id) - (a.customer_id === d.fyrirtaeki_id))
+      || String(b.created_at).localeCompare(String(a.created_at)));
+    return l.length ? l[0].vidskiptategund : null;
+  };
+  const tegund = d => String(d.vidskiptategund || salaTeg(d) || '').toLowerCase();
 
   const rangt = pairs.filter(p => {
     if (p.invoice_doc_id == null) return false;
     const d = byId.get(p.invoice_doc_id);
     if (!d) return false;
-    const t = String(d.vidskiptategund || '').toLowerCase();
+    const t = tegund(d);
     // Óflokkað (null/ovisst) er EKKI talið rangt — 77 reikningar eru óvissir og
     // sama undanþága gildir í patch 187, annars slokknaði á Hamraborg 7 o.fl.
     if (p.service_type === 'uttekt') return t === 'bud' || t === 'brunakerfi';
@@ -72,24 +100,32 @@ async function allar(q) {
   });
 
   const klarad = rangt.filter(p => p.status === 'klarad').length;
+  const ostimplud = docs.filter(d => !d.vidskiptategund && d.invoice_number && salaTeg(d));
+  let rautt = false;
 
   if (rangt.length > GRUNNLINA) {
-    console.log(`❌ Pörun með rangri reikningategund: ${rangt.length} (grunnlína ${GRUNNLINA})\n`);
-    console.log(`   ${rangt.length - GRUNNLINA} NÝ tilvik síðan grunnlínan var mæld 01.09.2026.`);
-    console.log('   Triggerinn auto_pair_customer_document() skoðar ekki vidskiptategund.');
-    console.log('   Lagfæring: sql/2026-09-01_auto_pair_vidskiptategund.sql\n');
+    rautt = true;
+    console.log(`❌ T1 Pörun með rangri reikningategund: ${rangt.length} (grunnlína ${GRUNNLINA}), þar af ${klarad} merkt "klarad"\n`);
+    console.log('   Tegund = tegund skjalsins, annars tegund sölunnar með sama númeri.');
+    console.log('   Triggerinn hafnar búðarsölu og losar reikning þegar tegundin breytist');
+    console.log('   (sql/2026-09-15_para_tegund_erfd.sql). Nýtt tilvik = par sem varð til framhjá');
+    console.log('   triggernum (cowork, handvirk pörun) eða triggerinn hefur verið tekinn af.\n');
     rangt.slice(-8).forEach(p => {
       const d = byId.get(p.invoice_doc_id);
       console.log(`   par ${String(p.id).padEnd(6)}${p.service_type.padEnd(11)}${p.year}  `
-        + `${String(d.invoice_number || '—').padEnd(12)}teg=${String(d.vidskiptategund).padEnd(11)}${p.status}`);
+        + `${String(d.invoice_number || '—').padEnd(12)}teg=${tegund(d).padEnd(11)}${d.vidskiptategund ? '' : '(úr sölu) '}${p.status}`);
     });
-    process.exit(1);
   }
 
-  console.log(`✅ Pörun-tegund heldur — ${rangt.length}/${GRUNNLINA} (${klarad} merkt "klarad").`);
-  if (rangt.length) {
-    console.log('   Þetta eru ÞEKKT tilvik sem bíða lagfæringar, ekki ný.');
-    console.log('   Búðarsala telst kláruð úttekt í ' + klarad + ' pörum — sjá tools/laga-para-tegund.cjs.');
+  if (ostimplud.length > GRUNNLINA_OSTIMPLUD) {
+    rautt = true;
+    console.log(`❌ T2 Óstimpluð reikningsskjöl sem eiga sölu: ${ostimplud.length} (grunnlína ${GRUNNLINA_OSTIMPLUD})\n`);
+    console.log('   trg_customer_documents_erfa_tegund á að láta skjalið erfa tegund sölunnar við vistun.');
+    console.log('   Er triggerinn á sínum stað? Óstimplað skjal parast sem úttekt þótt salan sé búðarsala.\n');
+    ostimplud.slice(-8).forEach(d => console.log(`   skjal ${String(d.id).padEnd(7)}${String(d.invoice_number).padEnd(12)}sala=${salaTeg(d)}`));
   }
+
+  if (rautt) process.exit(1);
+  console.log(`✅ Pörun-tegund heldur — T1 ${rangt.length}/${GRUNNLINA} röng pör (${klarad} "klarad") · T2 ${ostimplud.length}/${GRUNNLINA_OSTIMPLUD} óstimpluð skjöl með sölu.`);
   process.exit(0);
 })().catch(e => { console.log('❌ Vörðurinn keyrði ekki: ' + e.message); process.exit(1); });
