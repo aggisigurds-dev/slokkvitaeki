@@ -63,6 +63,7 @@ automation health and pings Agnar *only* when something needs him.
 | **Ársskoðun blár reiknings-punktur er per stað + úttekt** | `187` `hasReikYear`: `byCo` + unique-kt orphan; `hasConfirmedInvYear` = `v_uttekt_ar` / POS `solur.customer_id` (ekki Drive-einn); `vidskiptategund` sleppir brunakerfi/búð | — | `audit-arsskodun-inv-dot.cjs` |
 | **Ársskoðun 🧾 er úttekt, ekki brunakerfi** | `187` `isUttektInvoiceTeg` + pair-skip; `isReportKind` telur ekki brunakerfi-PDF; `199` `invUtByY`/`invoiceServiceKind`; `175` `tegByInv` | — | `audit-arsskodun-inv-dot.cjs` / `audit-rekstrarfelog-sites.cjs` |
 | **Slökk og brunakerfi mála ekki hvort annað** | Gátt `ar_slokk` / `bru_i_thjonustu` (ekki `sidasta_ar` fill-forward, ekki `er_i_thjonustu` sem Brunak.); `190` `isUttektInvoiceTeg` + `_pdByCo`; `175` hero/footer = `inService` | — | `audit-service-unmesh.cjs` |
+| **Búðarsala parast aldrei sem úttekt — heldur ekki þegar reikningsskjalið kemur óstimplað úr appinu** (15.09.2026) | Gagnagrunnur: `trg_customer_documents_erfa_tegund` (BEFORE INSERT / UPDATE OF invoice_number) lætur reikningsskjal án tegundar erfa `solur.vidskiptategund` og kastar aldrei; `auto_pair_customer_document()` hafnar `bud` og losar reikning úr pari af rangri tegund þegar tegund skjals breytist (`+teg_breyting`) | — | `audit-para-tegund.cjs` (T1 röng pör, tegund sölunnar þegar skjalið er óstimplað · T2 óstimpluð skjöl með sölu) |
 
 ---
 
@@ -148,6 +149,25 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑15 (kvöld)** — **Búðarsala parast ekki lengur sem úttekt þótt reikningsskjalið komi óstimplað úr appinu (gagnagrunnur + `audit-para-tegund`).**
+  `audit-para-tegund` varð rauður (2 > 0: par 1564 R-000941, par 1565 R-000944), og færslan hér fyrir neðan skráði hann
+  sem „2 pörun frá 01.09-triggernum". Raunumfangið var **7 pör**, þar af 2 merkt `klarad`: Pitstop #543 og
+  Colas-Gullhella #218 töldust „done" í `v_stadur_yfirlit` út á búðarsölu. **Rótin er ekki triggerinn frá 01.09** heldur
+  `brunaholf/netlify/functions/uttekt-upload.js`: reikningur úr appinu vistast án `vidskiptategund`, en hinar
+  innlestrarleiðirnar stimpla hana (`_spine.js` `vidskiptategundSkjals`). Triggerinn las tómt sem „óvisst", sem má
+  parast, og tegundin barst síðar. Vörðurinn las aðeins tegund skjalsins og sá ekki fimm óstimpluð. **Lagað í
+  gagnagrunni** (ein DO-blokk, prufukeyrð fyrst í afturkallaðri færslu; `sql/2026-09-15_para_tegund_erfd.sql`):
+  `trg_customer_documents_erfa_tegund` erfir tegund sölunnar við vistun og kastar aldrei; `auto_pair_customer_document()`
+  losar reikning úr pari af rangri tegund þegar tegundin breytist og hlustar nú á `vidskiptategund`; 34 skjöl stimpluð og
+  7 pör losuð með UPDATE (engu eytt, afrit í `audit_vernd`). **Sannreynt:** T1–T5 í afturkölluðu færslunni (búðarsala →
+  bud og 0 pör · úttektarsala parast · óþekkt númer parast áfram · endurflokkun losar parið · skýrsla + úttektarreikningur
+  → klarad); eftir keyrslu 0 röng pör og 0 óstimpluð skjöl með sölu; á lifandi prófíl Pitstop stendur 2026-úttektin
+  „+ reikningur" og R-000931 aðeins undir 🏪 Búð. **Vörðurinn hertur:** T1 notar tegund sölunnar þegar skjalið er
+  óstimplað, T2 telur óstimpluð reikningsskjöl sem eiga sölu (grunnlína 0). `audit-all` 48/52 — rauðu eru gögn:
+  `solu-id`, `t-s-i`, `kredit-tenging` (3 > 2), `osendar-krofur`. netvörður ekki kallaður: engin vörðuð skrá snert;
+  gátlistanum fylgt (vistun stöðvast aldrei, nýtt invariant fékk vörð). **Ekki gert:** `bud` er ekki öruggt merki um
+  „ekki úttekt" í peningasýnum. Hamraborg ehf (R-000577) og JDÓ ehf. (R-000531) eru úttektir þar sem tækin komu í
+  búðina og voru rukkaðar með yfirferðar- og hleðslulínum, svo „Gleymst að rukka?" síar búð ekki út.
 - **2026‑09‑15** — **XML-höfnunarmál lenda undir „Þarf svar frá þér" með samantekt — og vörðurinn keyrir föllin í stað þess að lesa aðeins textann (`payday-push.js` vörðuð leið).**
   XML-höfnun þarf alltaf svar eða handtak frá Agnari (netfang, XML handvirkt úr Payday eða ákvörðun um að loka), en
   `skraXmlHofnun` stofnaði málin án `spurning` og með `nidurstada` sem samantekt. #1057 (R-000929 Berjarimi 14, 14.09.
