@@ -534,7 +534,7 @@ async function clearSaleInvoiced(saleId) {
 }
 
 // 2026-09-14 (Agnar): Payday-höfnun á rafrænum reikningi (XML) skráist í app_problems OG stofnar
-// mál á Þjónustuborðinu (thjonustubeidni, merkt samthykki, á Agnar); 166 sýnir villuna strax í
+// mál á Þjónustuborðinu (thjonustubeidni, merkt samthykki + spurning, á Agnar); 166 sýnir villuna strax í
 // glugga. Áður fór hún AÐEINS í svar vafrans (smá-toast) og gleymdist (Plaza 31.08.).
 // „Customer does not accept electronic invoices" er vænt (kúnni utan skeytamiðlunar) → 'warn';
 // allar aðrar XML-hafnanir eru óvæntar → 'error'. Eitt mál per sölu (tagg payday-xml-sala:<id>;
@@ -555,6 +555,16 @@ async function skraXmlHofnun(event, sale, paydayVilla, nidurstada, auka) {
   const upphaed = Number(sale && sale.samtals);
   const kr = Number.isFinite(upphaed) && upphaed ? String(Math.round(upphaed)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr' : '';
   const merki = 'payday-xml-sala:' + (sale && sale.id);
+  // 2026-09-15 (Agnar): XML-höfnun þarf ALLTAF svar eða handtak frá Agnari — netfang sem vantar, XML handvirkt úr
+  // Payday eða ákvörðun um að loka. Málið fer því undir „Þarf svar frá þér" í Samþykkja-hamnum (368aa, merkið spurning)
+  // og samantektin segir hvað vantar. Án merkisins lenti #1057 (R-000929) undir „Tilbúið — bara samþykkja".
+  const tilAgnars = 'Þarf frá þér: ' + (!created
+    ? 'Payday hafnaði XML og endurtilraun án XML mistókst — salan er ekki merkt send; athugaðu í Payday hvort reikningur varð til.'
+    : auka && auka.drog
+      ? 'Payday tók ekki við XML — drögin eru án XML og ekkert fór út; veldu XML handvirkt eða póst þegar þú sendir þau úr Payday.'
+      : auka && auka.postur
+        ? 'Payday tók ekki við XML — pósturinn fór; sendu XML handvirkt ef viðskiptavinurinn þarf rafrænt, annars lokaðu.'
+        : 'Vantar netfang á ' + ((sale && sale.customer_nafn) || 'viðskiptavininn') + ' — XML er hafnað, svo reikningurinn fór aðeins sem krafa í banka.');
 
   const skraVillu = async () => {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/app_problems`, {
