@@ -148,6 +148,32 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑15** — **XML-höfnunarmál lenda undir „Þarf svar frá þér" með samantekt — og vörðurinn keyrir föllin í stað þess að lesa aðeins textann (`payday-push.js` vörðuð leið).**
+  XML-höfnun þarf alltaf svar eða handtak frá Agnari (netfang, XML handvirkt úr Payday eða ákvörðun um að loka), en
+  `skraXmlHofnun` stofnaði málin án `spurning` og með `nidurstada` sem samantekt. #1057 (R-000929 Berjarimi 14, 14.09.
+  21:45) lenti því undir „Tilbúið — bara samþykkja" í 368aa; Claude merkti #1048–#1050 og #1057 í höndunum. Nú ber
+  málið `spurning` og samantektin (um `fela_kt`) segir hvað vantar: *pósturinn fór* → „Þarf frá þér: Payday tók ekki
+  við XML — pósturinn fór; sendu XML handvirkt ef viðskiptavinurinn þarf rafrænt, annars lokaðu."; *ekkert netfang* →
+  „Þarf frá þér: Vantar netfang á <nafn> — XML er hafnað, svo reikningurinn fór aðeins sem krafa í banka."; *drög* og
+  *enginn reikningur (502)* fá eigin texta svo samantektin segi aldrei „krafa í banka" þegar ekkert fór. Kallið á eftir
+  `markSaleInvoiced` sendir `postur: !!payload.sendEmail` og `drog: mode === 'draft'` (sama skilyrði og `nidurstada`).
+  200/502-svör, röðin, tvítekningarvörnin, þakið og 166 óbreytt. Engin gagnaskrif — öll 12 opnu XML-málin bera þegar
+  `spurning`. **Vörðurinn hertur í tveimur umferðum:** (1) krefst `spurning` og samantektar sem passar við greinina, og
+  lokar götunum fimm frá 14.09. með því að keyra `skraXmlHofnun` á gervineti (leitin skilar `til[0].id`, merkið ber
+  sölu-id í leit og á málinu, hvert kall — app_problems, leit, stofnun — fellur á þakinu, `app_problems` er raunverulega
+  kallað) og `synaXmlHofnun` + `esc` úr 166 í gervi-DOM með `<x-…>` í hverjum reit; (2) netvörður sýndi að 17 af 19
+  stökkbreytingum hans sluppu samt, m.a. **tvítekið fall** (vörðurinn prófaði fyrstu skilgreininguna en í JavaScript
+  keyrir sú síðasta), þak 1 ms, raðkeyrsla á eftir hangandi kalli og `postur: !!payload.sendEmail && …`. Herðing hans
+  tekin inn (ein skilgreining á hverju falli, þak 1–3 s, gervinetið hafnar kalli með þegar-aborted `signal`,
+  `created: null` í 502-kallinu, óskilyrt `markSaleInvoiced`, málið sýnilegt á borði Agnars, titill, severity og
+  fingerprint, `deleted_at`-sía), auk `severity: error` við óvænta XML-villu. Ekkert net og enginn `fetch(`-texti, svo
+  vörðurinn helst í `--static`/pre-push. **Sannreynt:** harness 16 atburðarásir, 87/87 (stubbað, engin Payday-sending);
+  44 stökkbreytingar RAUÐAR (26 þeirra GRÆNAR á gamla verðinum) og 19 stökkbreytingar netvarðar RAUÐAR; grunnlína
+  GRÆN. `audit-all` 47/52 fyrir og eftir — sömu fimm gagna-rauðu: `solu-id`, `t-s-i`, `kredit-tenging` (3 > 2),
+  `osendar-krofur` (8 > 3), `para-tegund` (2 pörun frá 01.09-triggernum). netvörður: **SAFE** (keyrður sem
+  general-purpose með `.claude/agents/netvordur.md` orðrétt, því agent-tegundin var ekki skráð í lotunni).
+  **Utan umfangs, bíður Agnars:** tillögulínan í `notes` segir „dugar pósturinn; lokaðu þá málinu" líka þegar enginn
+  póstur fór (samantektin segir rétt til).
 - **2026‑09‑14 (kvöld)** — **XML-höfnun birtist strax á skjánum og stofnar mál á Þjónustuborðinu (`payday-push.js` vörðuð leið + `166`).**
   Agnar: „poppa upp villa strax upp á skjáinn og setja á þjónustuborð". `skraXmlHofnun` stofnar nú líka eitt mál per
   sölu í `thjonustubeidni` (á Agnar; merkin `samthykki`, `payday-xml`, `payday-xml-sala:<id>`). Fyrst er leitað eftir

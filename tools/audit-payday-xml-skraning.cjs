@@ -14,14 +14,18 @@
  * spurning og án samantektar, svo #1057 (R-000929 Berjarimi 14) lenti undir „Tilbúið —
  * bara samþykkja" í Samþykkja-hamnum (368aa). Netvörður fann 14.09. líka fimm göt sem
  * aðeins harnessið sá. Því keyrir vörðurinn nú skraXmlHofnun á gervineti og synaXmlHofnun
- * í gervi-DOM, í stað þess að lesa aðeins textann.
+ * í gervi-DOM, í stað þess að lesa aðeins textann. Netvörður fann 15.09. 17 stökkbreytingar
+ * til viðbótar sem sluppu (m.a. tvítekið fall: vörðurinn prófaði fyrstu skilgreininguna en
+ * sú síðasta keyrir) — þær eru nú allar RAUÐAR.
  *
  * Ekkert net. RED ef:
- *   1) varaleiðin (/electronic invoice/i) eða markSaleInvoiced-kallið er horfið,
+ *   1) varaleiðin (/electronic invoice/i) eða markSaleInvoiced-kallið er horfið, eða
+ *      markSaleInvoiced er ekki óskilyrt skipun,
  *   2) mistekin endurtilraun án XML (invErr2) skilar 502 án skráningar eða án bord_mal_id,
+ *      eða skráir ekki með created: null,
  *   3) reikningur búinn til án XML skráist ekki, skráist ÁÐUR en salan er merkt send,
  *      200-svarið ber ekki xml_villa + bord_mal_id, eða kallið segir ekki hvort pósturinn
- *      fór (postur) og hvort þetta voru drög (drog),
+ *      fór (postur: !!payload.sendEmail) og hvort þetta voru drög (drog: mode === 'draft'),
  *   4) skraXmlHofnun skrifar ekki kind 'payday_xml_hafnad' í app_problems, stofnar ekki
  *      mál á Þjónustuborðinu (eitt per sölu, á Agnar, samthykki + spurning), gleypir ekki
  *      villur, eða hefur ekki raunverulegt tímaþak (setTimeout → ctl.abort + signal),
@@ -30,13 +34,17 @@
  *      bæði við fellBackToNonElectronic og retriedWithoutElectronic — eða glugginn er
  *      aðeins toast (verður að vera fastur alertdialog sem notandinn lokar),
  *   7) keyrt á gervineti: málið ber ekki merkin samthykki + spurning + payday-xml-sala:<id>,
- *      eða samantektin er ekki „Þarf frá þér: …" sem passar við það sem gerðist (pósturinn
- *      fór / vantar netfang / drög / enginn reikningur),
- *   8) keyrt á gervineti: leitin skilar ekki id fyrra máls (tvítekin mál), merkið ber ekki
- *      sölu-id, leit eða stofnun máls hangir fram yfir þakið (signal vantar), eða
- *      app_problems-skrifin eru aldrei kölluð,
+ *      sést ekki á borði Agnars (lokað, eytt), titillinn segir rangt til um hvort reikningur
+ *      varð til, eða samantektin er ekki „Þarf frá þér: …" sem passar við það sem gerðist
+ *      (pósturinn fór / vantar netfang / drög / enginn reikningur),
+ *   8) keyrt á gervineti: leitin skilar ekki id fyrra máls (tvítekin mál) eða síar ekki eydd
+ *      mál, merkið ber ekki sölu-id, leit eða stofnun máls hangir fram yfir þakið (signal
+ *      vantar, eða kall fer af stað eftir að þakið er fallið), þakið er utan 1–3 s, eða
+ *      app_problems-skrifin eru aldrei kölluð eða bera ranga severity/fingerprint,
  *   9) keyrt í gervi-DOM: breytilegur texti í glugganum í 166 fer óhreinsaður (án esc)
- *      í innerHTML.
+ *      í innerHTML,
+ *  10) skraXmlHofnun, synaXmlHofnun eða esc er skilgreint oftar en einu sinni — vörðurinn
+ *      prófar þá fyrstu, en í JavaScript keyrir sú síðasta.
  */
 const fs = require('fs');
 const path = require('path');
@@ -53,6 +61,11 @@ const iMerkt = src.indexOf('await markSaleInvoiced(sale.id, created);');
 if (iGrein < 0) brot.push('fann ekki XML-varaleiðina (/electronic invoice/i.test(msg)) í payday-push.js — vörðurinn þarf að uppfærast með kóðanum');
 if (iMerkt < 0) brot.push('fann ekki await markSaleInvoiced(sale.id, created) í payday-push.js — vörðurinn þarf að uppfærast með kóðanum');
 
+if (iMerkt > -1) {
+  // markSaleInvoiced verður að vera sjálfstæð, óskilyrt skipun: á undan henni kemur ; { eða } (athugasemdir hunsaðar).
+  const undan = src.slice(0, iMerkt).replace(/[ \t]*\/\/[^\n]*\n/g, '\n').replace(/\s+$/, '');
+  if (!/[;{}]$/.test(undan)) brot.push('markSaleInvoiced er ekki óskilyrt skipun (…' + undan.slice(-40).replace(/\s+/g, ' ').trim() + ') — salan gæti sleppt merkingu í varaleiðinni');
+}
 if (iGrein > -1 && iMerkt > iGrein) {
   const iElse = src.indexOf('} else {', iGrein);
   const grein = src.slice(iGrein, iElse > iGrein && iElse < iMerkt ? iElse : iMerkt);
@@ -63,6 +76,7 @@ if (iGrein > -1 && iMerkt > iGrein) {
   const iRetur = grein.indexOf('retriedWithoutElectronic');
   const misheppnud = iCatch > -1 && iRetur > iCatch ? grein.slice(iCatch, iRetur) : '';
   if (!KALL.test(misheppnud)) brot.push('mistekin endurtilraun (invErr2) skilar 502 án þess að skrá höfnunina');
+  else if (!/await\s+skraXmlHofnun\s*\([\s\S]*?\{\s*created:\s*null\s*,/.test(misheppnud)) brot.push('502-kallið (invErr2) sendir ekki created: null — samantektin gæti sagt „krafa í banka" þótt enginn reikningur yrði til');
   const retur502 = iRetur > -1 ? grein.slice(iRetur, grein.indexOf('}', iRetur) + 1) : '';
   if (!/bord_mal_id/.test(retur502)) brot.push('502-svarið (retriedWithoutElectronic) ber ekki bord_mal_id — 166 getur ekki vísað á málið');
 
@@ -74,14 +88,23 @@ if (iGrein > -1 && iMerkt > iGrein) {
     brot.push('reikningur búinn til án XML skráist ekki á eftir markSaleInvoiced (if (fellBackToNonElectronic) { … await skraXmlHofnun(event, sale, xmlVilla, …) })');
   }
   // 15.09.: samantektin segir Agnari hvað vantar — til þess þarf fallið að vita hvort pósturinn fór og hvort þetta voru drög.
+  // Gildin eru fest við endann (, eða }) svo „!!payload.sendEmail && …" sleppi ekki í gegn.
   const iKall = eftir.search(/await\s+skraXmlHofnun\s*\(\s*event\s*,\s*sale\s*,\s*xmlVilla\b/);
   const kallid = iKall > -1 ? eftir.slice(iKall, eftir.indexOf('});', iKall) + 3) : '';
-  if (!/postur:\s*!!\s*payload\.sendEmail\b/.test(kallid)) brot.push('kallið á eftir markSaleInvoiced segir ekki hvort pósturinn fór (postur: !!payload.sendEmail) — samantektin gæti sagt „Vantar netfang" þótt pósturinn hafi farið');
-  if (!/drog:\s*mode\s*===\s*'draft'/.test(kallid)) brot.push("kallið á eftir markSaleInvoiced segir ekki hvort þetta voru drög (drog: mode === 'draft')");
+  if (!/postur:\s*!!\s*payload\.sendEmail\s*[,}]/.test(kallid)) brot.push('kallið á eftir markSaleInvoiced segir ekki hvort pósturinn fór (postur: !!payload.sendEmail) — samantektin gæti sagt „Vantar netfang" þótt pósturinn hafi farið');
+  if (!/drog:\s*mode\s*===\s*'draft'\s*[,}]/.test(kallid)) brot.push("kallið á eftir markSaleInvoiced segir ekki hvort þetta voru drög (drog: mode === 'draft')");
   const i200 = eftir.indexOf('return json(200, {');
   const svar200 = i200 > -1 ? eftir.slice(i200, eftir.indexOf('delivery:', i200)) : '';
   if (!/xml_villa\s*:/.test(svar200) || !/bord_mal_id/.test(svar200)) brot.push('200-svarið ber ekki xml_villa + bord_mal_id — glugginn í 166 fær ekki villuna/málið');
 }
+
+// ── Ein skilgreining á hverju falli ────────────────────────────────────────
+// Vörðurinn tekur fyrstu skilgreininguna úr skránni, en í JavaScript keyrir sú síðasta (netvörður 15.09.:
+// gamla skraXmlHofnun aftan við þá nýju eða tvítekið esc í 166 sluppu í gegn).
+const fjoldiFalla = (src.match(/function\s+skraXmlHofnun\s*\(/g) || []).length;
+if (fjoldiFalla !== 1) brot.push(fjoldiFalla + ' skilgreiningar á skraXmlHofnun í payday-push.js — vörðurinn prófar þá fyrstu en sú síðasta keyrir');
+const tvitekid166 = ['synaXmlHofnun', 'esc'].map(n => [n, (ky.match(new RegExp('function\\s+' + n + '\\s*\\(', 'g')) || []).length]).filter(x => x[1] !== 1);
+if (tvitekid166.length) brot.push('166 ber ' + tvitekid166.map(x => x[1] + '× ' + x[0]).join(', ') + ' — vörðurinn prófar fyrstu skilgreininguna en sú síðasta keyrir');
 
 // ── payday-push: skraXmlHofnun (textinn) ───────────────────────────────────
 const fallTexti = (src.match(/async function skraXmlHofnun\([^)]*\)\s*\{[\s\S]*?\n\}/) || [])[0] || '';
@@ -129,7 +152,7 @@ if (retriedKoll < 2) brot.push(`166 sýnir gluggann við retriedWithoutElectroni
 // Textagreining sér ekki hvort leitin skilar id fyrra máls, hvort merkið ber sölu-id, hvort signal er á
 // hverju kalli eða hvort app_problems-skrifin eru yfirhöfuð kölluð (netvörður 14.09.). Fallið er tekið úr
 // skránni og keyrt með gervineti. Í „hangir"-tilvikum skellur þakið (gervi-setTimeout) á eftir 20 ms svo
-// vörðurinn bíði ekki í 3 s; tafarlengdin sem kóðinn biður um er borin saman við 3000.
+// vörðurinn bíði ekki í 3 s; tafarlengdin sem kóðinn biður um er borin saman við 1000–3000.
 const HANGIR = Symbol('hangir');
 const KT = '010203-4059';
 const VILLA = 'Customer does not accept electronic invoices (' + KT + ')';
@@ -154,6 +177,8 @@ async function keyraSkra(t) {
     k.hvar = /\/rest\/v1\/app_problems\b/.test(url) ? 'app_problems' : /\/rest\/v1\/thjonustubeidni\b/.test(url) ? (k.adferd === 'GET' ? 'leit' : 'mal') : 'annad';
     koll.push(k);
     if (t.kastar || k.hvar === 'annad') return Promise.reject(new Error('gervinet: ' + k.hvar));
+    // Eins og raunverulegt net: kall sem fer af stað eftir að þakið er fallið hafnar strax (raðkeyrsla á eftir hangandi kalli).
+    if (opts.signal && opts.signal.aborted) return Promise.reject(new Error('gervinet: signal þegar aborted'));
     if (t.hangir === k.hvar) return new Promise((_, hafna) => { if (opts.signal) opts.signal.addEventListener('abort', () => hafna(new Error('aborted'))); });
     if (k.hvar === 'app_problems') return Promise.resolve(svar(201, null));
     if (k.hvar === 'leit') return Promise.resolve(svar(200, t.leitSkilar || []));
@@ -165,7 +190,7 @@ async function keyraSkra(t) {
   let vaktTimi;
   const vakt = new Promise(r => { vaktTimi = setTimeout(() => r(HANGIR), 1500); });
   let skilad, kastad = null;
-  try { skilad = await Promise.race([fn({ headers: { 'user-agent': 'vordur/1.0' } }, t.sala, VILLA, 'prófun', t.auka), vakt]); }
+  try { skilad = await Promise.race([fn({ headers: { 'user-agent': 'vordur/1.0' } }, t.sala, t.villa || VILLA, 'prófun', t.auka), vakt]); }
   catch (e) { kastad = e; }
   clearTimeout(vaktTimi);
   return { skilad, kastad, koll, timar,
@@ -192,14 +217,18 @@ async function hegdunSkra() {
     if (r.kastad) { brot.push(nafn + ' kastaði: ' + r.kastad.message + ' — skráningin má aldrei fella kröfusendinguna'); continue; }
     if (r.app.length !== 1 || !r.app[0].body || r.app[0].body.kind !== 'payday_xml_hafnad') {
       brot.push(nafn + `: ${r.app.length} skrif í app_problems (á að vera 1 með kind payday_xml_hafnad) — skráningin er ekki kölluð`);
+    } else if (r.app[0].body.severity !== 'warn' || r.app[0].body.fingerprint !== 'payday_xml_hafnad|' + t.sala.id) {
+      brot.push(nafn + ': app_problems ber ekki severity warn („does not accept") og fingerprint payday_xml_hafnad|<sölu-id> — fékk ' + JSON.stringify([r.app[0].body.severity, r.app[0].body.fingerprint]));
     }
     const merkid = 'payday-xml-sala:' + t.sala.id;
     if (r.leit.length !== 1 || !r.leit[0].url.includes('tags=cs.' + JSON.stringify([merkid]))) {
       brot.push(nafn + ': leitin að fyrra máli ber ekki merkið ' + merkid + ' — ' + (r.leit[0] ? r.leit[0].url.replace(/^https:\/\/[^/]+/, '') : 'engin leit'));
+    } else if (!r.leit[0].url.includes('deleted_at=is.null')) {
+      brot.push(nafn + ': leitin að fyrra máli síar ekki eydd mál (deleted_at=is.null) — eytt mál gæti gleypt nýja höfnun');
     }
     const ansignal = r.koll.filter(k => !(k.signal instanceof AbortSignal));
     if (ansignal.length) brot.push(nafn + ': ' + ansignal.map(k => k.hvar + ' (' + k.adferd + ')').join(', ') + ' án signal — tímaþakið nær ekki til þess kalls');
-    if (r.timar.length !== 1 || !(r.timar[0] > 0 && r.timar[0] <= 3000)) brot.push(nafn + ': tímaþakið er ' + JSON.stringify(r.timar) + ' ms (á að vera eitt þak ≤ 3000 ms)');
+    if (r.timar.length !== 1 || !(r.timar[0] >= 1000 && r.timar[0] <= 3000)) brot.push(nafn + ': tímaþakið er ' + JSON.stringify(r.timar) + ' ms (á að vera eitt þak, 1000–3000 ms: styttra fellir málsstofnunina, lengra tefur kröfusendinguna)');
     // Frjáls texti (detail/title/summary/notes) er hreinsaður — customer_nafn er gagnadálkur afritaður af sölunni.
     const textar = r.app.map(k => k.body && k.body.detail).concat(...r.mal.map(k => k.body ? [k.body.title, k.body.summary, k.body.notes] : []));
     if (textar.join('\n').includes('010203')) brot.push(nafn + ': kennitala rataði í texta skráningarinnar eða málsins (detail/title/summary/notes)');
@@ -208,10 +237,24 @@ async function hegdunSkra() {
     const taggar = Array.isArray(mal.tags) ? mal.tags : [];
     const vantar = ['samthykki', 'spurning', 'payday-xml', merkid].filter(x => !taggar.includes(x));
     if (vantar.length) brot.push(nafn + ': málið vantar merkin ' + vantar.join(', ') + (vantar.includes('spurning') ? ' — lendir undir „Tilbúið — bara samþykkja" (#1057)' : ''));
+    if (mal.assigned_to !== 'Agnar' || mal.status === 'lokad' || mal.deleted_at != null || mal.archived_at != null) {
+      brot.push(nafn + ': málið sést ekki á borði Agnars — assigned_to=' + JSON.stringify(mal.assigned_to) + ', status=' + JSON.stringify(mal.status)
+        + (mal.deleted_at != null ? ', deleted_at' : '') + (mal.archived_at != null ? ', archived_at' : '') + ' (368 hleður aðeins óeydd mál með status≠lokad)');
+    }
+    if (typeof mal.title !== 'string' || (t.auka.created ? /enginn reikningur/.test(mal.title) : !/enginn reikningur/.test(mal.title))) {
+      brot.push(nafn + ': titillinn segir rangt til um hvort reikningur varð til — ' + JSON.stringify(mal.title));
+    }
     if (typeof mal.summary !== 'string' || !t.samantekt.test(mal.summary) || t.bannad.test(mal.summary)) {
       brot.push(nafn + ': samantektin segir ekki hvað vantar frá Agnari — fékk ' + JSON.stringify(mal.summary === undefined ? null : mal.summary));
     }
     if (r.skilad !== 5001) brot.push(nafn + ': skilaði ' + String(r.skilad) + ' í stað id nýja málsins (5001)');
+  }
+
+  // 4: óvænt XML-villa (ekki „does not accept") → severity error
+  {
+    const r = await keyraSkra({ sala: SALA(965, 'Óvænt villa'), auka: { created: REIKN, postur: true, drog: false }, villa: 'Electronic invoice rejected: AccountingCost invalid' });
+    const s = r.app[0] && r.app[0].body ? r.app[0].body.severity : null;
+    if (s !== 'error') brot.push('óvænt XML-villa (ekki „does not accept") skráist með severity ' + JSON.stringify(s === undefined ? null : s) + ' — á að vera error (warn er aðeins fyrir vænta „does not accept"-höfnun)');
   }
 
   // 8(a): mál til fyrir söluna → id þess, ekkert nýtt mál
