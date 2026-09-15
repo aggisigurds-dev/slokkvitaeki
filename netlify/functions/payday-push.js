@@ -291,7 +291,7 @@ exports.handler = async (event) => {
         'reikningur' + ((created && (created.number || created.invoiceNumber)) ? ' ' + (created.number || created.invoiceNumber) : '') + ' búinn til ÁN XML'
         + (mode === 'draft' ? ' sem drög (ekkert afhent).'
           : payload.sendEmail ? ' og sendur í pósti.' : ' og EKKI sendur í pósti (ekkert netfang) — aðeins krafa í netbanka.'),
-        { created, fyrirtaeki_id: _siteTrusted ? site.id : null });
+        { created, fyrirtaeki_id: _siteTrusted ? site.id : null, postur: !!payload.sendEmail, drog: mode === 'draft' });
     }
 
     return json(200, {
@@ -599,7 +599,7 @@ async function skraXmlHofnun(event, sale, paydayVilla, nidurstada, auka) {
       body: JSON.stringify({
         title: fela_kt((nr ? 'Payday ' + nr : ((sale && sale.num) || 'Payday')) + ' · ' + ((sale && sale.customer_nafn) || '?')
           + (kr ? ' · ' + kr : '') + (created ? ' — XML hafnað' : ' — XML hafnað, enginn reikningur')).slice(0, 200),
-        summary: fela_kt(((sale && sale.num) ? sale.num + ': ' : '') + nidurstada).slice(0, 300),
+        summary: fela_kt(tilAgnars).slice(0, 300),
         // Payday-tengillinn fer ÓHREINSAÐUR aftast: auðkenni reikningsins (uuid) getur innihaldið
         // talnarunu sem kt-hreinsunin myndi skemma (sást í app_problems 14.09.: „2c[kt]-49ef-…").
         notes: fela_kt([
@@ -620,7 +620,7 @@ async function skraXmlHofnun(event, sale, paydayVilla, nidurstada, auka) {
         status: 'nytt',
         priority: 'venjulegur',
         important: true,
-        tags: ['samthykki', 'payday-xml', merki].concat(nr ? ['payday:' + nr] : []),
+        tags: ['samthykki', 'spurning', 'payday-xml', merki].concat(nr ? ['payday:' + nr] : []),
       }),
     });
     if (!r.ok) throw new Error('thjonustubeidni HTTP ' + r.status);
