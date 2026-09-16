@@ -167,7 +167,7 @@
     if (!_map) {
       _map = L.map(canvas, { zoomControl: false }).setView(_mapView ? _mapView.c : [64.13, -21.90], _mapView ? _mapView.z : 11);
       L.control.zoom({ position: 'bottomright' }).addTo(_map);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(_map);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19 }).addTo(_map);
       setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} }, 80);
       setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} }, 400);
     } else {
