@@ -156,6 +156,11 @@
       '.co-mynd-vefja{position:absolute;inset:0;line-height:0}',
       '.co-mynd-vefja img{display:block;width:100%;height:100%;max-width:none;max-height:none;object-fit:cover}',
       '.co-mynd-tomt{font-size:11px;line-height:1.4;color:rgba(255,255,255,.45);text-align:center;padding:8px}',
+      // Loftmyndin er sjálfvirk — hún á að sjást aðeins daufari en mynd sem Agnar setti inn,
+      // og bera merki svo hún sé aldrei ruglað við hana (sjá loftmynd() neðar).
+      '.co-mynd-loft img{opacity:.9}',
+      '.co-mynd-loftmerki{position:absolute;left:7px;bottom:7px;background:rgba(0,0,0,.55);color:#fff;' +
+        'font:600 10px/1 system-ui,sans-serif;padding:3px 7px;border-radius:999px;letter-spacing:.02em}',
       '.co-mynd-tomt b{display:block;font-size:20px;margin-bottom:3px;color:rgba(255,255,255,.6)}',
       '.co-mynd-tomt small{display:block;font-size:9.5px;color:rgba(255,255,255,.32);margin-top:2px}',
       '.co-mynd-x{position:absolute;top:4px;right:5px;width:20px;height:20px;border-radius:50%;border:0;padding:0;' +
@@ -299,6 +304,48 @@
     setTimeout(function () { endurteikna(true); }, 4000);
   }
 
+  // ── Loftmynd ────────────────────────────────────────────────────────────
+  // 2026-09-16 (ósk Agnars: „ef þú finnur aðra lausn á myndamálinu"). Tóma flísin er
+  // ekki lengur tóm: við teiknum loftmynd af heimilisfanginu úr SÖMU Esri-þjónustu og
+  // kortið notar — ein fyrirspurn, enginn lykill, ekkert afrit af Google eða Já.
+  // Myndin er MERKT „Loftmynd" svo hún sé aldrei ruglað við mynd sem Agnar límdi inn
+  // (regla hans 16.09.: sjálfsótt gögn bera merki og taka aldrei fram yfir okkar eigin).
+  // Hnitin koma úr okkar eigin /api/geocode (Nominatim + skyndiminni í grunni). Finnist
+  // heimilisfangið ekki stendur flísin tóm eins og áður — engin ágiskun.
+  var _loftHnit = {};
+  function loftmynd(flis, adr) {
+    if (!adr || !flis) return;
+    var setja = function (lat, lon) {
+      if (!lat || !lon || !flis.isConnected) return;
+      var d = 0.00085;                                  // ~190 m breiður rammi
+      var bbox = (lon - d * 2.2) + ',' + (lat - d) + ',' + (lon + d * 2.2) + ',' + (lat + d);
+      var vefja = document.createElement('div');
+      vefja.className = 'co-mynd-vefja co-mynd-loft';
+      var img = document.createElement('img');
+      img.alt = 'Loftmynd af heimilisfanginu';
+      img.src = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export' +
+        '?bbox=' + bbox + '&bboxSR=4326&imageSR=3857&size=600,320&format=jpg&f=image';
+      img.addEventListener('error', function () { try { vefja.remove(); } catch (_) {} });
+      vefja.appendChild(img);
+      var merki = document.createElement('span');
+      merki.className = 'co-mynd-loftmerki';
+      merki.textContent = '🛰 Loftmynd';
+      merki.title = 'Sjálfvirk loftmynd af heimilisfanginu (Esri) — ekki mynd sem þú settir inn. ' +
+        'Límdu mynd yfir til að skipta.';
+      vefja.appendChild(merki);
+      flis.insertBefore(vefja, flis.firstChild);
+    };
+    if (_loftHnit[adr]) { setja(_loftHnit[adr].lat, _loftHnit[adr].lon); return; }
+    fetch('/api/geocode?q=' + encodeURIComponent(adr))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (g) {
+        if (!g || !g.lat) return;
+        _loftHnit[adr] = { lat: +g.lat, lon: +g.lon };
+        setja(+g.lat, +g.lon);
+      })
+      .catch(function () {});
+  }
+
   // ── Flísin ──────────────────────────────────────────────────────────────
   function smidaFlis(coId) {
     var flis = document.createElement('div');
@@ -326,6 +373,7 @@
       // AÐEINS daufi ramminn; leiðbeiningin lifir í title (sést við hover).
       // v3: hlekkirnir eru ósýnilegir þar til músin fer yfir flísina.
       flis.innerHTML = hlekkir;
+      loftmynd(flis, heimilisfangNu());
       flis.addEventListener('click', function (e) {
         if (e.target.closest('.co-mynd-hlekkir')) return;
         veljaMynd(coId);
