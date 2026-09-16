@@ -30,6 +30,10 @@
 const SUPABASE_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 
+// Staðfangaskrá HMS — opið WFS, enginn lykill. Sama heimild og
+// netlify/functions/hus-upplysingar.js notar fyrir bannerinn.
+const WFS_STADFANG = 'https://geo.fasteignaskra.is/ws/geoserver/wfs';
+
 async function readCache(q) {
   try {
     const u = `${SUPABASE_URL}/rest/v1/geocode_cache?query=eq.${encodeURIComponent(q)}&select=lat,lng,display_name&limit=1`;
@@ -45,7 +49,7 @@ async function readCache(q) {
   } catch (_) { return null; }
 }
 
-async function writeCache(q, lat, lon, displayName) {
+async function writeCache(q, lat, lon, displayName, source) {
   try {
     const u = `${SUPABASE_URL}/rest/v1/geocode_cache`;
     await fetch(u, {
@@ -57,7 +61,7 @@ async function writeCache(q, lat, lon, displayName) {
         // Upsert on PK conflict so concurrent writes don't error.
         Prefer: 'resolution=merge-duplicates',
       },
-      body: JSON.stringify({ query: q, lat, lng: lon, display_name: displayName || null }),
+      body: JSON.stringify({ query: q, lat, lng: lon, display_name: displayName || null, ...(source ? { source } : {}) }),
     });
   } catch (_) {}
 }
@@ -174,7 +178,70 @@ export default async (req) => {
     };
   }
 
+  // ── Staðfangaskrá HMS (16.09.2026) ────────────────────────────────────────
+  // Nominatim ræður ekki við íslenskt þágufall og giskar þá á samnefnda götu í
+  // öðrum landshluta: „Fjarðargötu 17 220 Hafnarfirði" lenti á 65,874/−23,485 —
+  // Fjarðargötu á Flateyri — og níu staðir sátu þannig á röngum stað á kortinu.
+  // Staðfangaskrá ber götuheitið saman í NEFNIFALLI OG ÞÁGUFALLI (HEITI_NF /
+  // HEITI_TGF) og skilar hnitum staðfangsins sjálfs í EPSG:4326.
+  // Öryggi: sé póstnúmer þekkt verður svarið að bera SAMA póstnúmer; sé það
+  // óþekkt er svarið aðeins tekið gilt þegar það er ótvírætt (ein niðurstaða).
+  // Annars fellur leitin áfram á Nominatim eins og áður.
+  async function tryStadfangaskra(query) {
+    try {
+      const s = String(query).replace(/\s+/g, ' ').trim();
+      const m = /^([^0-9,]+?)\s+(\d{1,4})\s*([A-Za-zÁÐÉÍÓÚÝÞÆÖáðéíóúýþæö])?(?=[\s,]|$)/.exec(s);
+      if (!m) return null;
+      const gata = m[1].replace(/[.,]+$/, '').trim();
+      const husnr = +m[2];
+      const bokst = (m[3] || '').trim();
+      const pn = s.slice(m[0].length).match(/\b(\d{3})\b/);
+      const postnr = pn ? +pn[1] : null;
+      if (gata.length < 3 || !husnr) return null;
+      const esc = (x) => String(x).replace(/'/g, "''");
+      const cql = (medBokst, medPostnr) => {
+        const b = [`(HEITI_NF ILIKE '${esc(gata)}' OR HEITI_TGF ILIKE '${esc(gata)}')`, `HUSNR=${husnr}`];
+        if (medBokst && bokst) b.push(`BOKST ILIKE '${esc(bokst)}'`);
+        if (medPostnr && postnr) b.push(`POSTNR=${postnr}`);
+        return b.join(' AND ');
+      };
+      const tilraunir = [];
+      if (bokst && postnr) tilraunir.push([true, true]);
+      if (postnr) tilraunir.push([false, true]);
+      if (bokst) tilraunir.push([true, false]);
+      tilraunir.push([false, false]);
+      for (const [mb, mp] of tilraunir) {
+        const url = `${WFS_STADFANG}?service=WFS&version=1.1.0&request=GetFeature`
+          + `&typename=fasteignaskra:VSTADF_ALLT&outputFormat=application/json&maxFeatures=10`
+          + `&srsName=EPSG:4326&CQL_FILTER=${encodeURIComponent(cql(mb, mp))}`;
+        const r = await fetch(url, { headers: { 'User-Agent': 'Slokkvitaeki/1.0 (+https://slokkvitaeki.netlify.app)' } });
+        if (!r.ok) continue;
+        const d = await r.json().catch(() => null);
+        let fs = (d && Array.isArray(d.features) ? d.features : [])
+          .filter((f) => f && f.geometry && Array.isArray(f.geometry.coordinates) && f.geometry.coordinates.length >= 2);
+        if (postnr) fs = fs.filter((f) => +((f.properties || {}).POSTNR) === postnr);
+        if (!fs.length) continue;
+        if (!postnr && fs.length > 1) continue;      // óvíst án póstnúmers — láta Nominatim um það
+        const f = fs[0], p = f.properties || {};
+        const lon = +f.geometry.coordinates[0], lat = +f.geometry.coordinates[1];
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+        const heiti = `${p.HEITI_NF || gata} ${p.HUSNR || husnr}${p.BOKST || ''}`.trim();
+        const stadur = [p.POSTNR, p.SVFHEITI || p.SVEITARFELAG || p.SVF_HEITI || ''].filter(Boolean).join(' ').trim();
+        return { lat, lon, display_name: [heiti, stadur].filter(Boolean).join(', ') };
+      }
+      return null;
+    } catch (_) { return null; }
+  }
+
   try {
+    const stadfang = await tryStadfangaskra(q);
+    if (stadfang) {
+      await writeCache(q, stadfang.lat, stadfang.lon, stadfang.display_name, 'stadfangaskra');
+      return new Response(JSON.stringify({ ...stadfang, source: 'stadfangaskra' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=86400' },
+      });
+    }
     const variants = cleanVariants(q);
     let hit = null;
     let usedVariant = q;
