@@ -168,13 +168,30 @@ var Companies = {
       ? 'https://www.google.com/maps/search/?api=1&amp;query=' +
         encodeURIComponent(/ísland|iceland/i.test(addrHreint) ? addrHreint : addrHreint + ', Ísland')
       : '';
-    // 2026-09-16 (ósk Agnars): lítið K við kennitöluna opnar skráninguna á Keldan.is.
-    // Aðeins fyrir FÉLÖG: kennitala félags ber dag + 40, svo fyrstu tveir stafirnir eru
-    // 41 eða hærri. Einstaklingar fá engan hlekk — hann myndi enda í 404 hjá Keldunni.
+    // 2026-09-16 (ósk Agnars): lítil merki við kennitöluna opna uppflettingarnar sem hann
+    // slær annars inn í höndunum — Keldan (fjárhagur), 1819 (símanúmer, opnunartími,
+    // netfang) og Fyrirtækjaskrá Skattsins (skráð heimilisfang, forráðamaður).
+    // Keldan og Fyrirtækjaskrá eru AÐEINS fyrir félög: kennitala félags ber dag + 40, svo
+    // fyrstu tveir stafirnir eru 41 eða hærri. Einstaklingur fengi hlekk sem endar í 404.
+    // 1819 er símaskrá og á við hvort tveggja.
     var ktTolur = String(c.kennitala || '').replace(/\D/g, '');
-    var keldanUrl = (ktTolur.length === 10 && +ktTolur.slice(0, 2) >= 41)
-      ? 'https://keldan.is/Fyrirtaeki/Yfirlit/' + ktTolur
-      : '';
+    var ktMerki = '';
+    if (ktTolur.length === 10) {
+      var ktStrik = ktTolur.slice(0, 6) + '-' + ktTolur.slice(6);
+      var erFelag = +ktTolur.slice(0, 2) >= 41;
+      var ktHlekkur = function (slod, texti, titill, bakgr) {
+        return '<a href="' + slod + '" target="_blank" rel="noopener" title="' + titill + '"' +
+          ' style="display:inline-flex;align-items:center;justify-content:center;height:15px;padding:0 4px;' +
+          'border-radius:3px;background:' + bakgr + ';color:#fff;font:800 9.5px/1 system-ui,sans-serif;' +
+          'margin-left:5px;text-decoration:none;vertical-align:middle">' + texti + '</a>';
+      };
+      if (erFelag) ktMerki += ktHlekkur('https://keldan.is/Fyrirtaeki/Yfirlit/' + ktTolur,
+        'K', 'Keldan — fjárhagsupplýsingar og ársreikningar', '#123a6b');
+      ktMerki += ktHlekkur('https://1819.is/?q=' + ktStrik,
+        '1819', '1819 — símanúmer, opnunartími, vefsíða og netfang', '#1c5975');
+      if (erFelag) ktMerki += ktHlekkur('https://www.skatturinn.is/fyrirtaekjaskra/leit/kennitala/' + ktTolur,
+        'FS', 'Fyrirtækjaskrá Skattsins — skráð heimilisfang og forráðamaður', '#3f5161');
+    }
     var simi = c.simi ? U.e(c.simi) : '';
     var netfang = c.netfang ? U.e(c.netfang) : '';
     // Inspection-month chip for the banner (from the visit-date helper if present).
@@ -211,12 +228,7 @@ var Companies = {
           '<div class="co-banner-mono">' + c.nafn.slice(0, 2).toUpperCase() + '</div>' +
           '<div style="min-width:0">' +
             '<div class="co-banner-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + nafn + ((window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : '') + '</div>' +
-            (kt ? '<div class="co-banner-kt">kt. ' + kt +
-              (keldanUrl ? ' <a href="' + keldanUrl + '" target="_blank" rel="noopener" title="Opna skráninguna á Keldan.is" ' +
-                'style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:3px;' +
-                'background:#123a6b;color:#fff;font:800 10px/1 system-ui,sans-serif;margin-left:6px;text-decoration:none;' +
-                'vertical-align:middle">K</a>' : '') +
-              '</div>' : '') +
+            (kt ? '<div class="co-banner-kt">kt. ' + kt + ktMerki + '</div>' : '') +
             '<div class="co-banner-facts">' +
               (addr    ? '<span><a href="' + addrMaps + '" data-adr-maps="1" target="_blank" rel="noopener" title="Opna heimilisfangi\u00f0 \u00ed Google Maps">\ud83d\udccd <b>' + addr + '</b></a></span>' : '') +
               (simi    ? '<span>\ud83d\udcde <a href="tel:' + simi + '">' + simi + '</a></span>' : '') +

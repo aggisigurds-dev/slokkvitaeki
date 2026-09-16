@@ -87,6 +87,25 @@ export default async (req) => {
       stadur       = addrMatch[3].trim();
     }
 
+    // 2026-09-16 (ósk Agnars: „langar svolítið að geta séð sem flestar upplýsingar inn í
+    // þessum banner"). Sama síða ber fleira en við vorum að lesa: stofndag, rekstrarform,
+    // forráðamenn og ÍSAT-flokk. Þessu er BÆTT VIÐ — engum reit er breytt og ekkert fjarlægt,
+    // svo kennitölu-uppflettingin í POS (19/14) og reikningshausinn haldast óbreytt.
+    const stofnadM = html.match(/<h2 class="subtitle">\s*Stofna[^:<]*:\s*([0-9.]+)\s*<\/h2>/);
+    const stofnad = stofnadM ? stofnadM[1] : '';
+    const formM = html.match(/<td>\s*([A-Z]\d)\s*<br\s*\/?>\s*([^<]+?)\s*<\/td>/);
+    const rekstrarform = formM ? formM[2].trim() : '';
+    const listiUndir = (fyrirsogn) => {
+      const m = html.match(new RegExp('<h3>\\s*' + fyrirsogn + '[^<]*<\\/h3>\\s*<ul>([\\s\\S]*?)<\\/ul>'));
+      if (!m) return [];
+      return (m[1].match(/<li>[\s\S]*?<\/li>/g) || [])
+        .map(s => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .slice(0, 5);
+    };
+    const forradamenn = listiUndir('Forráðama');
+    const isat = listiUndir('ÍSAT');
+
     if (!nafn) {
       return new Response(JSON.stringify({ error: 'not-found', kt }), {
         status: 404,
