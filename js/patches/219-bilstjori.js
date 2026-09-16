@@ -828,7 +828,7 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
         if (_map) return;
         _map = L.map(canvas, { zoomControl: false }).setView([64.1355, -21.8954], 11);
         L.control.zoom({ position: 'bottomright' }).addTo(_map);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19 }).addTo(_map);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Flísar © Esri, HERE, Garmin, © OpenStreetMap contributors', maxZoom: 19 }).addTo(_map);
         setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} renderPins(); }, 60);
       });
     } else if (_map) {

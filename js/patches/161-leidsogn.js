@@ -1094,8 +1094,8 @@
     if (canvas && !_map) {
       await ensureLeaflet();
       _map = L.map(canvas).setView([64.1355, -21.8954], 11);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors © CARTO',
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Flísar © Esri, HERE, Garmin, © OpenStreetMap contributors',
         maxZoom: 19
       }).addTo(_map);
     } else if (_map && !document.body.contains(_map.getContainer())) {
@@ -1105,8 +1105,8 @@
       _markers = {};
       await ensureLeaflet();
       _map = L.map(canvas).setView([64.1355, -21.8954], 11);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors © CARTO',
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Flísar © Esri, HERE, Garmin, © OpenStreetMap contributors',
         maxZoom: 19
       }).addTo(_map);
     }

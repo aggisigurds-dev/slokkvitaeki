@@ -64,7 +64,7 @@ automation health and pings Agnar *only* when something needs him.
 | **Ársskoðun 🧾 er úttekt, ekki brunakerfi** | `187` `isUttektInvoiceTeg` + pair-skip; `isReportKind` telur ekki brunakerfi-PDF; `199` `invUtByY`/`invoiceServiceKind`; `175` `tegByInv` | — | `audit-arsskodun-inv-dot.cjs` / `audit-rekstrarfelog-sites.cjs` |
 | **Slökk og brunakerfi mála ekki hvort annað** | Gátt `ar_slokk` / `bru_i_thjonustu` (ekki `sidasta_ar` fill-forward, ekki `er_i_thjonustu` sem Brunak.); `190` `isUttektInvoiceTeg` + `_pdByCo`; `175` hero/footer = `inService` | — | `audit-service-unmesh.cjs` |
 | **Búðarsala parast aldrei sem úttekt — heldur ekki þegar reikningsskjalið kemur óstimplað úr appinu** (15.09.2026) | Gagnagrunnur: `trg_customer_documents_erfa_tegund` (BEFORE INSERT / UPDATE OF invoice_number) lætur reikningsskjal án tegundar erfa `solur.vidskiptategund` og kastar aldrei; `auto_pair_customer_document()` hafnar `bud` og losar reikning úr pari af rangri tegund þegar tegund skjals breytist (`+teg_breyting`) | — | `audit-para-tegund.cjs` (T1 röng pör, tegund sölunnar þegar skjalið er óstimplað · T2 óstimpluð skjöl með sölu) |
-| **Kortið sækir aldrei flísar á sjálfboðaliðaþjóna OSM** (16.09.2026) | Sjö kóðastaðir (`155`, `161`×2, `178`, `219`, `268`, `newfeatures.js`) sækja flísar á `basemaps.cartocdn.com/rastertiles/voyager` með höfundarmerkinu `© OpenStreetMap contributors © CARTO`. OSM lokaði á appið og skilaði „Access blocked"-mynd með stöðu **200** á hverja flís, svo ekkert kall féll og ekkert log sagði frá — kortið var einfaldlega ólæsilegt | — | `audit-kort-flisar.cjs` |
+| **Kortið sækir flísar á þjónustu sem svarar okkur — hvorki lokaða né lykil-kræfa** (16.09.2026) | Sjö kóðastaðir (`155`, `161`×2, `178`, `219`, `268`, `newfeatures.js`) sækja flísar á `server.arcgisonline.com/.../World_Street_Map` með höfundarmerkinu `Flísar © Esri, HERE, Garmin, © OpenStreetMap contributors`. OSM lokaði á appið („Access blocked"-mynd) og CARTO prentar „API KEY REQUIRED" yfir flísarnar án lykils — **bæði skila stöðu 200**, svo kortið verður ólæsilegt án þess að nokkurt kall falli | — | `audit-kort-flisar.cjs` |
 
 ---
 
@@ -150,6 +150,20 @@ baseline rows and lowering the constant is how the net tightens over time.
 
 ## Session log — what was made bulletproof
 
+- **2026‑09‑16** — **Kortið datt út alls staðar: OSM lokaði á appið og blokkin kemur sem MYND með stöðu 200 (`155`, `161`×2, `178`, `219`, `268`, `newfeatures.js` + nýr vörður).**
+  Agnar sendi skjámynd af tómum kortum: „403 · Access blocked — App is not following the tile usage policy of
+  OpenStreetMap's volunteer-run servers". Ekkert kall féll, ekkert log sagði frá og enginn vörður sá neitt, því OSM
+  skilar blokkinni sem PNG með stöðu **200**. Sannreynt með því að sækja tvö ólík hnit og slóð án undirléns: sama
+  6,8 kB myndin í öllum tilvikum — blokk, ekki bilun. Sjö kóðastaðir báðu um `{s}.tile.openstreetmap.org`, sem er
+  bæði úrelt undirlénsform og bönnuð fjöldanotkun á sjálfboðaliðaþjónum. **Fyrri tilraunin var CARTO** (79ef524):
+  flísar komu með stöðu 200, 12 af 12 hlóðust, tölurnar litu vel út — og á skjámynd af appinu stóð „API KEY REQUIRED"
+  þvert yfir kortið. Þaðan kemur reglan sem stendur nú í haus varðarins: **flísabreyting telst ekki prófuð fyrr en
+  kortið hefur verið SKOÐAÐ, ekki bara talið.** **Niðurstaða: Esri World Street Map** — enginn lykill, íslensk
+  örnefni; prófað lifandi í z12, z15, z17 (Hafnarfjörður) og z18 (Reykjavík), allar flísar, engin villa.
+  Hnitaleitin var ÓSNERT: Nominatim fer gegnum okkar eigið `/api/geocode` (réttur User-Agent + skyndiminni) og
+  svaraði 200 í lifandi prófi. **Vörður:** `audit-kort-flisar.cjs` (grunnlína 0, kyrrstæður svo hann keyri í
+  pre-push) fellur á OSM-, wmflabs- og CARTO-slóðum. Landmælingar Íslands bjóða aðeins EPSG:3057 í sínu WMTS
+  (`gis.lmi.is/mapcache`), svo opinbera íslenska kortið krefst Proj4-vörpunar í Leaflet — óunnið.
 - **2026‑09‑15 (kvöld)** — **Búðarsala parast ekki lengur sem úttekt þótt reikningsskjalið komi óstimplað úr appinu (gagnagrunnur + `audit-para-tegund`).**
   `audit-para-tegund` varð rauður (2 > 0: par 1564 R-000941, par 1565 R-000944), og færslan hér fyrir neðan skráði hann
   sem „2 pörun frá 01.09-triggernum". Raunumfangið var **7 pör**, þar af 2 merkt `klarad`: Pitstop #543 og

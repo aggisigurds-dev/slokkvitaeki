@@ -242,7 +242,7 @@
       const el = $('_mg-map');
       if (!el) return;
       map = L.map(el).setView(_coord ? [_coord.lat, _coord.lng] : RVK, _coord ? 15 : 11);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19 }).addTo(map);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Flísar © Esri, HERE, Garmin, © OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
       map.on('click', e => { _display = ''; setMarker({ lat: e.latlng.lat, lng: e.latlng.lng }); });
       if (_coord) setMarker(_coord);
       setTimeout(() => { try { map.invalidateSize(); } catch (_) {} }, 120);
