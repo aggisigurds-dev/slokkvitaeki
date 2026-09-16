@@ -345,7 +345,9 @@ var Companies = {
         if (d.stofnad) bitar.push('skráð ' + d.stofnad);
         if (d.isat && d.isat.length) bitar.push(d.isat[0]);
         if (d.forradamenn && d.forradamenn.length) bitar.push(d.forradamenn.join(' · '));
-        if (!bitar.length) return;
+        // Afskráð félag hefur ENGA heimilisfangsröð í skránni (mælt á Bílanaust 411112-0390),
+        // svo línan má ekki hanga á bitunum einum — staðan ein og sér verður að birtast.
+        if (!bitar.length && !(d.stada && d.stada.length)) return;
         var lina = document.createElement('div');
         lina.className = 'co-banner-skra';
         lina.style.cssText = 'margin-top:5px;font-size:11.5px;color:rgba(255,255,255,.72);' +
@@ -381,7 +383,7 @@ var Companies = {
       fetch('/api/kt-lookup?kt=' + kt + '&skra=' + UTGAFA)
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
-          if (!d || (!d.heimilisfang_full && !d.rekstrarform)) return;
+          if (!d || d.error) return;
           try { localStorage.setItem(lykill, JSON.stringify({ d: d, t: Date.now() })); } catch (_) {}
           syna(d);
         })
