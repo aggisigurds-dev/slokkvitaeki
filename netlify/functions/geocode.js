@@ -225,6 +225,11 @@ export default async (req) => {
         if (postnr) fs = fs.filter((f) => +((f.properties || {}).POSTNR) === postnr);
         if (!fs.length) continue;
         if (!postnr && fs.length > 1) continue;      // óvíst án póstnúmers — láta Nominatim um það
+        // „Hverfisgata 4" og „Hverfisgata 4A" eru bæði til: veldu nákvæmlega þann
+        // bókstaf sem beðið var um (eða húsnúmerið sjálft þegar enginn fylgdi).
+        const vil = bokst.toUpperCase();
+        const skor = (x) => (String(x || '').toUpperCase() === vil ? 0 : (String(x || '') ? 2 : 1));
+        fs.sort((a, b) => skor((a.properties || {}).BOKST) - skor((b.properties || {}).BOKST));
         const f = fs[0], p = f.properties || {};
         const lon = +f.geometry.coordinates[0], lat = +f.geometry.coordinates[1];
         if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
