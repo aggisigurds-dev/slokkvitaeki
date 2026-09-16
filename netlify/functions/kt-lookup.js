@@ -107,6 +107,17 @@ export default async (req) => {
         .filter(Boolean)
         .slice(0, 5);
     };
+    // Staða félags (ósk Agnars 16.09.2026: „inn á skatturinn þá myndi sjást þarna hvort
+    // fyrirtækið sé afskráð eða gjaldþrota"). Skatturinn setur stöðuna sem <p class="highlight">
+    // beint undir stofndaginn: „(Úrskurðað gjaldþrota 18.01.2019)", „(Skiptum lokið 11.12.2020)",
+    // „(Félag afskráð 17.12.2020)". Virkt félag ber ENGA slíka línu (sannreynt á N1 ehf.).
+    const stada = (html.match(/<p class="highlight">[\s\S]*?<\/p>/g) || [])
+      .map(s => s.replace(/<[^>]*>/g, '').replace(/[()]/g, '').replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .slice(0, 5);
+    const btM = html.match(/<h2 class="subtitle">\s*b\.t\.\s*aðili:\s*([^<]+)<\/h2>/);
+    const bt_adili = btM ? btM[1].replace(/\s+/g, ' ').trim() : '';
+
     const forradamenn = listiUndir('Forráðama');
     const isat = listiUndir('ÍSAT Atvinnugreina');   // full fyrirsögn — „ÍSAT nr." stendur líka í VSK-töflunni
 

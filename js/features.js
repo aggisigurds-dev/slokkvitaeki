@@ -311,8 +311,16 @@ var Companies = {
     // félag. Bregðist kallið stendur okkar heimilisfang — hlekkurinn verður aldrei dauður.
     (function (kt, rot, okkarAdr) {
       if (!kt) return;
-      var lykill = 'ktskra:' + kt;
-      try { localStorage.removeItem('ktadr:' + kt); } catch (_) {}   // eldri lykill (aðeins heimilisfang)
+      // UTGAFA hækkar þegar kt-lookup fer að skila fleiri reitum. Hún þarf að vera bæði í
+      // geymslulyklinum OG í fyrirspurninni: 16.09 var aðeins fyrirspurnin útgáfumerkt og þá
+      // sat gamla svarið eftir í localStorage — línan sýndi áfram bara heimilisfangið.
+      var UTGAFA = 3;
+      var lykill = 'ktskra' + UTGAFA + ':' + kt;
+      try {
+        localStorage.removeItem('ktadr:' + kt);      // eldri lyklar — aðeins heimilisfang
+        localStorage.removeItem('ktskra:' + kt);
+        for (var eldri = 2; eldri < UTGAFA; eldri++) localStorage.removeItem('ktskra' + eldri + ':' + kt);
+      } catch (_) {}
       // Samanburður sem þolir þágufall: gatan (5 stafir) + allar tölur. „Fjarðargötu 17 220
       // Hafnarfirði" og „Fjarðargötu 17, 220 Hafnarfjörður" gefa bæði fjarð|17-220.
       var stafir = function (s) {
@@ -343,6 +351,15 @@ var Companies = {
         lina.style.cssText = 'margin-top:5px;font-size:11.5px;color:rgba(255,255,255,.72);' +
           'display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center';
         lina.textContent = bitar.join('  ·  ');
+        // Afskráð eða gjaldþrota félag — rautt og fremst. Slíkt félag á ekki að fá reikning.
+        if (d.stada && d.stada.length) {
+          var stadaFlagg = document.createElement('span');
+          stadaFlagg.textContent = '⛔ ' + d.stada.join(' · ');
+          stadaFlagg.title = 'Staða hjá fyrirtækjaskrá' + (d.bt_adili ? '\n' + d.bt_adili : '');
+          stadaFlagg.style.cssText = 'background:rgba(239,68,68,.22);color:#fecaca;' +
+            'border:1px solid rgba(239,68,68,.5);border-radius:999px;padding:1px 9px;font-weight:700';
+          lina.insertBefore(stadaFlagg, lina.firstChild);
+        }
         if (adr && okkarAdr && stafir(adr) !== stafir(okkarAdr)) {
           var flagg = document.createElement('span');
           flagg.textContent = '⚠ stemmir ekki við okkar heimilisfang';
@@ -361,7 +378,7 @@ var Companies = {
       // svo vafri sem sótti kennitöluna fyrir viðbótina fengi annars gamla svarið í sólarhring
       // (það gerðist 16.09: línan sýndi bara heimilisfangið). Hækkaðu töluna þegar kt-lookup
       // fer að skila fleiri reitum.
-      fetch('/api/kt-lookup?kt=' + kt + '&skra=2')
+      fetch('/api/kt-lookup?kt=' + kt + '&skra=' + UTGAFA)
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
           if (!d || (!d.heimilisfang_full && !d.rekstrarform)) return;
