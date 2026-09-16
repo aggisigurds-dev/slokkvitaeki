@@ -142,6 +142,8 @@ export default async (req) => {
       rekstrarform,
       forradamenn,
       isat,
+      stada,        // („Úrskurðað gjaldþrota …", „Félag afskráð …") — tómt fylki = virkt félag
+      bt_adili,     // skiptastjóri eða annar b.t. aðili þegar félagið er í slitum
       source: 'skatturinn',
     }), {
       status: 200,
