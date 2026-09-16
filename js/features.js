@@ -389,6 +389,46 @@ var Companies = {
         })
         .catch(function () {});
     })(ktTolur, el, addrHreint);
+
+    // ── Skýrslupunktar ────────────────────────────────────────────────────────
+    // 2026-09-16 (ósk Agnars: „jafnvel góða punkta sem eru í skýrslunum sem gefa góða mynd").
+    // `uttekt_skyrsla_lines` geymir það sem lesið var úr úttektarskýrslunum: flokk, fjölda og
+    // hvort allt var í lagi — 470 staðir, árin 2023–2026. VARÚÐ: 1001 af 1078 línum eru aðeins
+    // lyklaðar á `customer_base_id` og 14 base eiga fleiri en einn virkan stað. Slík lína er því
+    // birt AÐEINS þegar baseið á einn stað — annars lenti skýrsla systurstaðar á röngum prófíl.
+    (function (co, rot) {
+      try {
+        if (!co || !window.DB || !DB.sb) return;
+        var fid = co.id, base = co.customer_base_id || null;
+        var systkini = base ? (Companies.list || []).filter(function (x) { return x.customer_base_id === base; }).length : 1;
+        var sia = 'fyrirtaeki_id.eq.' + fid + (base && systkini <= 1 ? ',customer_base_id.eq.' + base : '');
+        DB.sb.from('uttekt_skyrsla_lines')
+          .select('year,category,category_label,cnt,in_order,fyrirtaeki_id,customer_base_id')
+          .or(sia).order('year', { ascending: false }).limit(80)
+          .then(function (r) {
+            var radir = (r && r.data) || [];
+            if (!radir.length || !rot.isConnected || rot.querySelector('.co-banner-skyrsla')) return;
+            var ar = Math.max.apply(null, radir.map(function (x) { return +x.year || 0; }));
+            var nu = radir.filter(function (x) { return +x.year === ar && (x.fyrirtaeki_id === fid || !x.fyrirtaeki_id); });
+            if (!nu.length) return;
+            var hlutar = nu.map(function (x) { return (x.cnt ? x.cnt + '× ' : '') + (x.category_label || x.category || '?'); });
+            var ekki = nu.filter(function (x) { return String(x.in_order).toLowerCase() === 'no' || x.in_order === false; }).length;
+            var lina = document.createElement('div');
+            lina.className = 'co-banner-skyrsla';
+            lina.style.cssText = 'margin-top:5px;font-size:11.5px;color:rgba(255,255,255,.72);' +
+              'display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center';
+            lina.textContent = '📋 Skýrsla ' + ar + ': ' + hlutar.join(' · ');
+            var flagg = document.createElement('span');
+            flagg.textContent = ekki ? '⚠ ' + ekki + ' ekki í lagi' : '✓ allt í lagi';
+            flagg.style.cssText = 'border-radius:999px;padding:1px 8px;font-weight:600;' + (ekki
+              ? 'background:rgba(251,191,36,.18);color:#fde68a;border:1px solid rgba(251,191,36,.35)'
+              : 'background:rgba(34,197,94,.16);color:#bbf7d0;border:1px solid rgba(34,197,94,.3)');
+            lina.appendChild(flagg);
+            var eftir = rot.querySelector('.co-banner-skra') || rot.querySelector('.co-banner-facts');
+            if (eftir && eftir.parentNode) eftir.parentNode.insertBefore(lina, eftir.nextSibling);
+          }, function () {});
+      } catch (_) {}
+    })(c, el);
   },
   // Banner note (the black box in the company header) — saves immediately.
   // oninput debounces ~500ms; onblur flushes. Writes fyrirtaeki.banner_note
