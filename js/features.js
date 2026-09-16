@@ -158,6 +158,16 @@ var Companies = {
     var nafn = U.e(c.nafn);
     var kt = c.kennitala ? U.e(c.kennitala) : '';
     var addr = U.e(c.heimilisFang || c.heimilisfang || '');
+    // 2026-09-16 (ósk Agnars): pinninn og heimilisfangið opna Google Maps á staðnum,
+    // eins og síminn og netfangið hér fyrir neðan opna síma og póst. ATH: `addr` er
+    // þegar HTML-varið með U.e og má því ekki fara í slóð — fyrirspurnin notar hráa
+    // heimilisfangið. „, Ísland" er bætt við þegar landið vantar, svo Google rugli
+    // ekki saman götum með sama nafni erlendis.
+    var addrHreint = String(c.heimilisFang || c.heimilisfang || '').trim();
+    var addrMaps = addrHreint
+      ? 'https://www.google.com/maps/search/?api=1&amp;query=' +
+        encodeURIComponent(/ísland|iceland/i.test(addrHreint) ? addrHreint : addrHreint + ', Ísland')
+      : '';
     var simi = c.simi ? U.e(c.simi) : '';
     var netfang = c.netfang ? U.e(c.netfang) : '';
     // Inspection-month chip for the banner (from the visit-date helper if present).
@@ -196,7 +206,7 @@ var Companies = {
             '<div class="co-banner-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + nafn + ((window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : '') + '</div>' +
             (kt ? '<div class="co-banner-kt">kt. ' + kt + '</div>' : '') +
             '<div class="co-banner-facts">' +
-              (addr    ? '<span>\ud83d\udccd <b>' + addr + '</b></span>' : '') +
+              (addr    ? '<span><a href="' + addrMaps + '" target="_blank" rel="noopener" title="Opna heimilisfangi\u00f0 \u00ed Google Maps">\ud83d\udccd <b>' + addr + '</b></a></span>' : '') +
               (simi    ? '<span>\ud83d\udcde <a href="tel:' + simi + '">' + simi + '</a></span>' : '') +
               (netfang ? '<span>\u2709 <a href="mailto:' + netfang + '">' + netfang + '</a></span>' : '') +
             '</div>' +
