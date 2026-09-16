@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-16 18:39 · 559 virkar staðreyndir
+Sótt 2026-09-16 19:48 · 560 virkar staðreyndir
 
 ---
 
@@ -369,14 +369,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Byte-eins tvítök verða til í Kassanum þegar sama sala er slegin inn tvisvar — linur::text + samtals + kt finnur þau**
   <br>Staðfest 13.08.2026: Vélrás R-000259 (08.06) og R-000276 (09.06) eru nákvæmlega eins — 8× „Duft 6 kg. ABC hleðsla" @ 6.782,26 með 20% afslætti = 53.824 kr hvor. BÁÐAR final og BÁÐAR sendar í kröfu 02.07. Vélrás var því rukkað 107.648 kr fyrir eitt verk. Sama mynstur: Ferðafélag Íslands R-000017/R-00
   <br><sub>2026-08-13 · slokkvitaeki · sql · cowork</sub>
-- **Sala birtist ekki í kröfuyfirliti nema greitt_med, customer_base_id, upphaed_an_vsk OG vsk_upphaed séu öll sett**
-  <br>greitt_med='reikningur'. POS-leiðin setur þetta sjálfkrafa, bein SQL-innsetning ekki. Algengasta orsök "salan er til en sést hvergi".
+- **solur.athugasemdir prentast beint á reikninginn sem "vegna"-texti undir kennitölu**
+  <br>Innri vinnslunótur og status eiga heima í krafa_note. Uppgötvað 22.7.2026.
   <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 - **Tvítektir eru bakfærðar með status=void og faldar, aldrei eytt**
   <br>Sölunúmer hafa endurnýtst — þekkt villa, ekki merki um mistök notanda.
   <br><sub>2026-08-07 · slokkvitaeki · agnar · chat</sub>
-- **solur.athugasemdir prentast beint á reikninginn sem "vegna"-texti undir kennitölu**
-  <br>Innri vinnslunótur og status eiga heima í krafa_note. Uppgötvað 22.7.2026.
+- **Sala birtist ekki í kröfuyfirliti nema greitt_med, customer_base_id, upphaed_an_vsk OG vsk_upphaed séu öll sett**
+  <br>greitt_med='reikningur'. POS-leiðin setur þetta sjálfkrafa, bein SQL-innsetning ekki. Algengasta orsök "salan er til en sést hvergi".
   <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 
 ### sweep
@@ -1253,12 +1253,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Samantekt úr eldri lotu er EKKI blað-lestur — Sara má ekki telja upp tæki sem hún las ekki sjálf, jafnvel þótt blaðið ráði**
   <br>Naust Marine og Grasnytjar stöðvuðust á þessu 10.09.2026: minnisblaðið sagði „kolsýra 2 kg" og „léttvatn í herbergjum 6-12, þvottahúsi, herb. 15, 30-40" — staðsetningar og útdráttur, ekki talning. Rétt viðbragð er að biðja um skannann í myndaröndina á Sara-borðinu, ekki að giska.
   <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
-- **Þegar hakið kemur skal lesa fjölda og verð úr sara_yfirferd.linur — ekki tillöguna sem Sara lagði fram; Agnar breytir tölunum áður en hann hakar**
-  <br>Reitirnir linur (jsonb [{l,n,v}]), akstur, akstur_verd, skyrslugerd og texti eru allir breytanlegir í borðinu. athugasemd-reiturinn er skilaboð Agnars til Söru.
-  <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
 - **Cowork skrifaði 19 „Úttektarskýrsla — X" mál í thjonustubeidni 06.09.2026 (source=cowork) þar sem lestur vinnublaðsins stendur í notes undir hausunum ■ LESIÐ AF BLAÐI / ■ TÆKJALISTI Í KERFINU / ■ NIÐURSTAÐA, með skanni sem viðhengi**
   <br>Agnar 09.09.2026: „það er helling inn á þjónustuborði en það er bara útum allt, sem Cowork hefur sett inn". Þau eru enn ólesin inn í sara_yfirferd.
   <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
+- **Þegar hakið kemur skal lesa fjölda og verð úr sara_yfirferd.linur — ekki tillöguna sem Sara lagði fram; Agnar breytir tölunum áður en hann hakar**
+  <br>Reitirnir linur (jsonb [{l,n,v}]), akstur, akstur_verd, skyrslugerd og texti eru allir breytanlegir í borðinu. athugasemd-reiturinn er skilaboð Agnars til Söru.
+  <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
 - **Sara-borðið (tafla sara_yfirferd + spjaldið „SARA · VINNUBLÖÐ" á Þjónustuborðinu) er hliðið: ekkert fer í kerfið fyrr en Agnar hakar við og staðan fer úr bidur í samthykkt**
   <br>Agnar 09.09.2026: „check mark sem ég get sett sem þú mátt þá klára að gera skýrsluna og invoicið.. ég síðan sendi hana af stað í kröfuyfirlit". Patch 364-sara-yfirferd.js. Stöður: bidur → samthykkt → klarad. Aðeins bidur/samthykkt sjást; kláruð eru falin.
   <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
@@ -1300,6 +1300,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Þess vegna getur sama síða orðið hálf-flippuð: innerHTML-fletir dökkna, cssText-fletir haldast hvítir. Samskiptaborðs-módallinn (287) lenti í þessu 7.8.2026. Öruggasta leiðin fyrir módala/ný borð: skorað klasa-stílblað með skýrum lit á hverjum texta, ekkert inline og ekkert erft. Lagað í PR #609.
   <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
 
+### kort
+
+- **16.09.2026: Hnitaleitin (/api/geocode) reynir nú Staðfangaskrá HMS á undan Nominatim — opið WFS á geo.fasteignaskra.is (fasteignaskra:VSTADF_ALLT), enginn lykill, sama heimild og hus-upplysingar notar. Hún ber götuheiti saman í nefnifalli OG þágufalli (HEITI_NF/HEITI_TGF) og skilar hnitum staðfangsins í EPSG:4326 með srsName. Rótin: Nominatim ræður ekki við þágufall og giskaði á samnefnda götu annars staðar — Fjarðargötu 17 í Hafnarfirði sat á Flateyri (65,87/-23,48) og níu staðir á höfuðborgarsvæðinu höfðu punkt í röngum landshluta. Öryggi: sé póstnúmer þekkt verður svarið að bera sama póstnúmer, annars aðeins tekið gilt ef ótvírætt. Staðfest eftir birtingu 9904e67: Fjarðargata 17 → 64,06725/-21,95613, Breiðuvík 22 → 64,15233/-21,77241, Lyngási 10 → 64,09016/-21,93728, og Funahöfði 1 leysist nú (fannst ekki áður). Fimm röng skyndiminnisfærslur eyddar með afriti í audit_vernd og endurleystar. Eftir standa fjögur heimilisföng sem eru brot eða innsláttarvilla og fá engan punkt: #264 B 221 Hafnarfirði, #393 A-B 221 Hafnarfirði, #673 og 1B 221 Hafnarfjörður, #706 Laugarvegur 22 (á að vera Laugavegur).**
+  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **Heimilisfangaleit TurboPaint (kjarni apps/slokkvitaeki app/api/turbopaint/teikningar/route.ts): heimilisfang → Landeignaskrá HMS (geo.fasteignaskra.is, landnúmer + póstnúmer + ISN93) → FotoWeb-teikningasafn Reykjavíkur (skjalasafn.reykjavik.is). Aðeins Reykjavík hefur teikningalista; Kópavogur/Garðabær/Hafnarfjörður fá djúptengil á map.is. Broddstafir verða að vera NFC.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+- **geocode_cache er yfir 1000 raðir (1.567 12.09.2026). 156-geocode-prewarm sótti áður aðeins 1000 → 566 hnit náðu aldrei í vafrann; síðan a5a5b76 flettir hann með offset. Staðir á aksturslista (arsskodun_customers.akstur 1–3) fá hnit í forhleðslu síðan 010e9d6.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### automation
 
 - **automation_triggers ALGJÖRLEGA ÞÖGULT Í 13 DAGA núna (síðasta röð 2026-08-30 11:38 UTC, ajour-villa 'Ajour report UI did not load in time', þekkt luna-bridge-villa). Ekkert email/redder/payday/timavera skráð síðan — stigmagnast frá 6 daga þögn sem flaggað var 05.09 (#355/#356). Síðasta VELHEPPNAÐA keyrsla var email/redder 26.08 — Google-send-token status ÓÞEKKT (ekki staðfest dautt, bara ekkert nýtt prófað í 2 vikur). send_failed=0 opið í v_app_problems_open bendir ekki sérstaklega á bilun, en það er líka ekkert nýtt gagnapunktur. Grunur (frá 05.09) um að luna-bridge-vaktarinn á Agnars vél sé sofnaður/slökktur stendur enn — þarfnast athugunar á vélinni sjálfri, ekki leysanlegt úr Supabase.**
@@ -1324,12 +1333,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
   <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
   <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
-- **MYNSTUR 3 — AppSettings: hlutir sameinast per lykil en FYLKI og strengir skiptast út í heilu lagi (jsonb_deep_merge sql:34), og engin vél FÆR breytingar annarra fyrr en hún endurhleður (engin realtime/sókn á app_settings, js/db.js:250)**
-  <br>Heit fylki: skipulagsbord.by_staff.*.cards (305:99, 148 skrif/30 d), vikudagskra.jobs (303:112, 74), company_pricing/vidsk_pricing (113/116/285), sala.*_product_ids (vorur.js), thjonustuverk.cases (172:70), skjalasnidmat (94), tilbod_hub (201), page_editor_v1_json (262:124 strengur), app_profiles_js
-  <br><sub>2026-09-06 · slokkvitaeki · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 2 — heilt object/fylki lesið → breytt í minni → skrifað til baka (read-modify-write án útgáfu-varðar): vél með gamalt eintak þurrkar út breytingar hinna**
   <br>Hub lagað 06.09.2026: hub_state sameinað per lykil OG per undirlykil (RPC hub_state_merge p_deep), wf_state per reit (ky_wf_merge), invoice_drafts með expected_updated_at (409 + spurning). Eftir (slokkvitaeki, úttekt sala-reikningar/kunnaskra/elon): 142 SaleEditor + 121 Sótt skrifa heilt solur.linur
   <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
+- **MYNSTUR 3 — AppSettings: hlutir sameinast per lykil en FYLKI og strengir skiptast út í heilu lagi (jsonb_deep_merge sql:34), og engin vél FÆR breytingar annarra fyrr en hún endurhleður (engin realtime/sókn á app_settings, js/db.js:250)**
+  <br>Heit fylki: skipulagsbord.by_staff.*.cards (305:99, 148 skrif/30 d), vikudagskra.jobs (303:112, 74), company_pricing/vidsk_pricing (113/116/285), sala.*_product_ids (vorur.js), thjonustuverk.cases (172:70), skjalasnidmat (94), tilbod_hub (201), page_editor_v1_json (262:124 strengur), app_profiles_js
+  <br><sub>2026-09-06 · slokkvitaeki · villuleit 06.09.2026 · claude-code</sub>
 
 ### redder
 
@@ -1461,13 +1470,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-12 · kerfi · claude-code · claude-code</sub>
 - **app_problems.resolved er ENGA VEGINN skrifanlegt af anon/publishable lyklinum — staðfest með beinni prófun 12.09.2026, ekki bara 'sandbox classifier' eins og áður giskað (02.09 #359): PATCH með id=eq.<einn> skilar 200/[] (ENGIN villa) en resolved stendur ÓBREYTT false á eftir — RLS-USING sían fellir röðina þögult úr update-settinu frekar en að hafna kallinu. Auk þess flaggar sjálft classifier-lagið PATCH/jafnvel GET með 'resolved=eq.false' í query-strengnum sem 'Mass Delete'/'Modify Shared Resources' og hafnar kallinu alveg. Niðurstaða: sópunar-lotur geta ALDREI merkt neitt resolved í app_problems með núverandi anon-lykli, sama hvað er reynt — CLAUDE.md 'aðeins þjónn/Claude resolve' þarf annaðhvort service-role lykil (aldrei geymdan hér) eða litla netlify-fall sem tekur við auðkenndri resolve-beiðni. Þar til það er til, geymist staðfest-benign/lagað staða AÐEINS í Charlize, ekki í app_problems.resolved.**
   <br><sub>2026-09-12 · kerfi · claude-code · claude-code</sub>
-
-### kort
-
-- **Heimilisfangaleit TurboPaint (kjarni apps/slokkvitaeki app/api/turbopaint/teikningar/route.ts): heimilisfang → Landeignaskrá HMS (geo.fasteignaskra.is, landnúmer + póstnúmer + ISN93) → FotoWeb-teikningasafn Reykjavíkur (skjalasafn.reykjavik.is). Aðeins Reykjavík hefur teikningalista; Kópavogur/Garðabær/Hafnarfjörður fá djúptengil á map.is. Broddstafir verða að vera NFC.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-- **geocode_cache er yfir 1000 raðir (1.567 12.09.2026). 156-geocode-prewarm sótti áður aðeins 1000 → 566 hnit náðu aldrei í vafrann; síðan a5a5b76 flettir hann með offset. Staðir á aksturslista (arsskodun_customers.akstur 1–3) fá hnit í forhleðslu síðan 010e9d6.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### kunnar
 
