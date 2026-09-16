@@ -309,33 +309,63 @@ var Companies = {
     // eftir neti) og Google-slóðin uppfærist þegar skráða heimilisfangið berst. Svarið
     // geymist í 30 daga per kennitölu, svo uppflettingin fer aðeins einu sinni út á hvert
     // félag. Bregðist kallið stendur okkar heimilisfang — hlekkurinn verður aldrei dauður.
-    (function (kt, rot) {
+    (function (kt, rot, okkarAdr) {
       if (!kt) return;
-      var lykill = 'ktadr:' + kt;
-      var setja = function (adr) {
-        if (!adr) return;
+      var lykill = 'ktskra:' + kt;
+      try { localStorage.removeItem('ktadr:' + kt); } catch (_) {}   // eldri lykill (aðeins heimilisfang)
+      // Samanburður sem þolir þágufall: gatan (5 stafir) + allar tölur. „Fjarðargötu 17 220
+      // Hafnarfirði" og „Fjarðargötu 17, 220 Hafnarfjörður" gefa bæði fjarð|17-220.
+      var stafir = function (s) {
+        s = String(s || '').toLowerCase();
+        var ord = (s.match(/[a-záðéíóúýþæö]+/g) || [])[0] || '';
+        return ord.slice(0, 5) + '|' + (s.match(/\d+/g) || []).join('-');
+      };
+      var syna = function (d) {
+        if (!d) return;
+        var adr = d.heimilisfang_full || '';
         var a = rot.querySelector('a[data-adr-maps]');
-        if (!a) return;
-        a.href = 'https://www.google.com/maps/search/?api=1&query=' +
-          encodeURIComponent(/ísland|iceland/i.test(adr) ? adr : adr + ', Ísland');
-        a.title = 'Opna í Google Maps — skráð hjá fyrirtækjaskrá: ' + adr;
+        if (a && adr) {
+          a.href = 'https://www.google.com/maps/search/?api=1&query=' +
+            encodeURIComponent(/ísland|iceland/i.test(adr) ? adr : adr + ', Ísland');
+          a.title = 'Opna í Google Maps — skráð hjá fyrirtækjaskrá: ' + adr;
+        }
+        var fetur = rot.querySelector('.co-banner-facts');
+        if (!fetur || rot.querySelector('.co-banner-skra')) return;
+        var bitar = [];
+        if (adr) bitar.push('🏛 ' + adr);
+        if (d.rekstrarform) bitar.push(d.rekstrarform);
+        if (d.stofnad) bitar.push('skráð ' + d.stofnad);
+        if (d.isat && d.isat.length) bitar.push(d.isat[0]);
+        if (d.forradamenn && d.forradamenn.length) bitar.push(d.forradamenn.join(' · '));
+        if (!bitar.length) return;
+        var lina = document.createElement('div');
+        lina.className = 'co-banner-skra';
+        lina.style.cssText = 'margin-top:5px;font-size:11.5px;color:rgba(255,255,255,.72);' +
+          'display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center';
+        lina.textContent = bitar.join('  ·  ');
+        if (adr && okkarAdr && stafir(adr) !== stafir(okkarAdr)) {
+          var flagg = document.createElement('span');
+          flagg.textContent = '⚠ stemmir ekki við okkar heimilisfang';
+          flagg.title = 'Fyrirtækjaskrá: ' + adr + '\nHjá okkur: ' + okkarAdr;
+          flagg.style.cssText = 'background:rgba(251,191,36,.18);color:#fde68a;' +
+            'border:1px solid rgba(251,191,36,.35);border-radius:999px;padding:1px 8px;font-weight:600';
+          lina.appendChild(flagg);
+        }
+        fetur.parentNode.insertBefore(lina, fetur.nextSibling);
       };
       try {
         var geymt = JSON.parse(localStorage.getItem(lykill) || 'null');
-        if (geymt && geymt.adr && Date.now() - geymt.t < 2592e6) { setja(geymt.adr); return; }
+        if (geymt && geymt.d && Date.now() - geymt.t < 2592e6) { syna(geymt.d); return; }
       } catch (_) {}
       fetch('/api/kt-lookup?kt=' + kt)
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
-          var adr = d && (d.heimilisfang_full || (d.heimilisfang
-            ? [d.heimilisfang, [d.postnumer, d.stadur].filter(Boolean).join(' ')].filter(Boolean).join(', ')
-            : ''));
-          if (!adr) return;
-          try { localStorage.setItem(lykill, JSON.stringify({ adr: adr, t: Date.now() })); } catch (_) {}
-          setja(adr);
+          if (!d || (!d.heimilisfang_full && !d.rekstrarform)) return;
+          try { localStorage.setItem(lykill, JSON.stringify({ d: d, t: Date.now() })); } catch (_) {}
+          syna(d);
         })
         .catch(function () {});
-    })(ktTolur, el);
+    })(ktTolur, el, addrHreint);
   },
   // Banner note (the black box in the company header) — saves immediately.
   // oninput debounces ~500ms; onblur flushes. Writes fyrirtaeki.banner_note

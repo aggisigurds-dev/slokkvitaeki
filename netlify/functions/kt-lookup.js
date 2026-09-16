@@ -95,16 +95,20 @@ export default async (req) => {
     const stofnad = stofnadM ? stofnadM[1] : '';
     const formM = html.match(/<td>\s*([A-Z]\d)\s*<br\s*\/?>\s*([^<]+?)\s*<\/td>/);
     const rekstrarform = formM ? formM[2].trim() : '';
+    // Listarnir eru „<h3>Fyrirsögn</h3> … <ul><li>…</li></ul>" með óreglulegu bili á milli.
+    // Vísitölu-leitin er ónæmari fyrir því en regex yfir alla bygginguna (prófað á 5208150230).
     const listiUndir = (fyrirsogn) => {
-      const m = html.match(new RegExp('<h3>\\s*' + fyrirsogn + '[^<]*<\\/h3>\\s*<ul>([\\s\\S]*?)<\\/ul>'));
-      if (!m) return [];
-      return (m[1].match(/<li>[\s\S]*?<\/li>/g) || [])
+      const a = html.indexOf(fyrirsogn);
+      if (a < 0) return [];
+      const b = html.indexOf('</ul>', a);
+      if (b < 0) return [];
+      return (html.slice(a, b).match(/<li>[\s\S]*?<\/li>/g) || [])
         .map(s => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim())
         .filter(Boolean)
         .slice(0, 5);
     };
     const forradamenn = listiUndir('Forráðama');
-    const isat = listiUndir('ÍSAT');
+    const isat = listiUndir('ÍSAT Atvinnugreina');   // full fyrirsögn — „ÍSAT nr." stendur líka í VSK-töflunni
 
     if (!nafn) {
       return new Response(JSON.stringify({ error: 'not-found', kt }), {
@@ -122,6 +126,11 @@ export default async (req) => {
       // Combined address suitable for the bill-to block on receipts:
       heimilisfang_full: [heimilisfang, postnumer && stadur ? `${postnumer} ${stadur}` : (postnumer || stadur)]
         .filter(Boolean).join(', '),
+      // Viðbót 2026-09-16 — birtist í bannernum á fyrirtækjaprófíl:
+      stofnad,
+      rekstrarform,
+      forradamenn,
+      isat,
       source: 'skatturinn',
     }), {
       status: 200,
