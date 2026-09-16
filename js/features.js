@@ -357,7 +357,11 @@ var Companies = {
         var geymt = JSON.parse(localStorage.getItem(lykill) || 'null');
         if (geymt && geymt.d && Date.now() - geymt.t < 2592e6) { syna(geymt.d); return; }
       } catch (_) {}
-      fetch('/api/kt-lookup?kt=' + kt)
+      // `skra`-talan er útgáfa reitanna sem við lesum. Svarið ber Cache-Control max-age=86400,
+      // svo vafri sem sótti kennitöluna fyrir viðbótina fengi annars gamla svarið í sólarhring
+      // (það gerðist 16.09: línan sýndi bara heimilisfangið). Hækkaðu töluna þegar kt-lookup
+      // fer að skila fleiri reitum.
+      fetch('/api/kt-lookup?kt=' + kt + '&skra=2')
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
           if (!d || (!d.heimilisfang_full && !d.rekstrarform)) return;
