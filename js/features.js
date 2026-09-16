@@ -168,6 +168,13 @@ var Companies = {
       ? 'https://www.google.com/maps/search/?api=1&amp;query=' +
         encodeURIComponent(/ísland|iceland/i.test(addrHreint) ? addrHreint : addrHreint + ', Ísland')
       : '';
+    // 2026-09-16 (ósk Agnars): lítið K við kennitöluna opnar skráninguna á Keldan.is.
+    // Aðeins fyrir FÉLÖG: kennitala félags ber dag + 40, svo fyrstu tveir stafirnir eru
+    // 41 eða hærri. Einstaklingar fá engan hlekk — hann myndi enda í 404 hjá Keldunni.
+    var ktTolur = String(c.kennitala || '').replace(/\D/g, '');
+    var keldanUrl = (ktTolur.length === 10 && +ktTolur.slice(0, 2) >= 41)
+      ? 'https://keldan.is/Fyrirtaeki/Yfirlit/' + ktTolur
+      : '';
     var simi = c.simi ? U.e(c.simi) : '';
     var netfang = c.netfang ? U.e(c.netfang) : '';
     // Inspection-month chip for the banner (from the visit-date helper if present).
@@ -204,9 +211,14 @@ var Companies = {
           '<div class="co-banner-mono">' + c.nafn.slice(0, 2).toUpperCase() + '</div>' +
           '<div style="min-width:0">' +
             '<div class="co-banner-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + nafn + ((window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : '') + '</div>' +
-            (kt ? '<div class="co-banner-kt">kt. ' + kt + '</div>' : '') +
+            (kt ? '<div class="co-banner-kt">kt. ' + kt +
+              (keldanUrl ? ' <a href="' + keldanUrl + '" target="_blank" rel="noopener" title="Opna skráninguna á Keldan.is" ' +
+                'style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:3px;' +
+                'background:#123a6b;color:#fff;font:800 10px/1 system-ui,sans-serif;margin-left:6px;text-decoration:none;' +
+                'vertical-align:middle">K</a>' : '') +
+              '</div>' : '') +
             '<div class="co-banner-facts">' +
-              (addr    ? '<span><a href="' + addrMaps + '" target="_blank" rel="noopener" title="Opna heimilisfangi\u00f0 \u00ed Google Maps">\ud83d\udccd <b>' + addr + '</b></a></span>' : '') +
+              (addr    ? '<span><a href="' + addrMaps + '" data-adr-maps="1" target="_blank" rel="noopener" title="Opna heimilisfangi\u00f0 \u00ed Google Maps">\ud83d\udccd <b>' + addr + '</b></a></span>' : '') +
               (simi    ? '<span>\ud83d\udcde <a href="tel:' + simi + '">' + simi + '</a></span>' : '') +
               (netfang ? '<span>\u2709 <a href="mailto:' + netfang + '">' + netfang + '</a></span>' : '') +
             '</div>' +
@@ -278,6 +290,40 @@ var Companies = {
     }
     html += '</div><div class="uttekt-col-r" id="_ctc-slot"></div></div>';
     el.innerHTML = html;
+    // 2026-09-16 (ósk Agnars: „heimilisfangið er rétt skrifað á Keldunni, ef þú getur gert
+    // forward því inn á maps.google"). Skráningin sem Keldan birtir kemur úr fyrirtækjaskrá
+    // Skattsins og við sækjum hana nú þegar gegnum /api/kt-lookup — ekkert er sótt af
+    // keldan.is sjálfri. Bannerinn teiknast STRAX með okkar heimilisfangi (ekkert bíður
+    // eftir neti) og Google-slóðin uppfærist þegar skráða heimilisfangið berst. Svarið
+    // geymist í 30 daga per kennitölu, svo uppflettingin fer aðeins einu sinni út á hvert
+    // félag. Bregðist kallið stendur okkar heimilisfang — hlekkurinn verður aldrei dauður.
+    (function (kt, rot) {
+      if (!kt) return;
+      var lykill = 'ktadr:' + kt;
+      var setja = function (adr) {
+        if (!adr) return;
+        var a = rot.querySelector('a[data-adr-maps]');
+        if (!a) return;
+        a.href = 'https://www.google.com/maps/search/?api=1&query=' +
+          encodeURIComponent(/ísland|iceland/i.test(adr) ? adr : adr + ', Ísland');
+        a.title = 'Opna í Google Maps — skráð hjá fyrirtækjaskrá: ' + adr;
+      };
+      try {
+        var geymt = JSON.parse(localStorage.getItem(lykill) || 'null');
+        if (geymt && geymt.adr && Date.now() - geymt.t < 2592e6) { setja(geymt.adr); return; }
+      } catch (_) {}
+      fetch('/api/kt-lookup?kt=' + kt)
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var adr = d && (d.heimilisfang_full || (d.heimilisfang
+            ? [d.heimilisfang, [d.postnumer, d.stadur].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+            : ''));
+          if (!adr) return;
+          try { localStorage.setItem(lykill, JSON.stringify({ adr: adr, t: Date.now() })); } catch (_) {}
+          setja(adr);
+        })
+        .catch(function () {});
+    })(ktTolur, el);
   },
   // Banner note (the black box in the company header) — saves immediately.
   // oninput debounces ~500ms; onblur flushes. Writes fyrirtaeki.banner_note
