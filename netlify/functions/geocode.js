@@ -190,7 +190,10 @@ export default async (req) => {
   async function tryStadfangaskra(query) {
     try {
       const s = String(query).replace(/\s+/g, ' ').trim();
-      const m = /^([^0-9,]+?)\s+(\d{1,4})\s*([A-Za-zÁÐÉÍÓÚÝÞÆÖáðéíóúýþæö])?(?=[\s,]|$)/.exec(s);
+      // Bandstrik má fylgja á eftir — „Miðleiti 2-6" (74 slík heimilisföng) og
+      // „Burknavellir 5A-B" fóru annars öll fram hjá Staðfangaskrá. Fyrsta númerið
+      // gildir, sama regla og hus-upplysingar notar fyrir bannerinn („9-11" → 9).
+      const m = /^([^0-9,]+?)\s+(\d{1,4})\s*([A-Za-zÁÐÉÍÓÚÝÞÆÖáðéíóúýþæö])?(?=[\s,\-–]|$)/.exec(s);
       if (!m) return null;
       const gata = m[1].replace(/[.,]+$/, '').trim();
       const husnr = +m[2];
