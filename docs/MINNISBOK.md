@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-16 19:48 · 560 virkar staðreyndir
+Sótt 2026-09-16 22:28 · 561 virkar staðreyndir
 
 ---
 
@@ -1233,6 +1233,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Villan: "Route segment config \"dynamic\" is not compatible with nextConfig.cacheComponents". PR #38 (3dwork GitHub-sync, Cursor) setti force-dynamic í 4 API-routes → ÖLL production-deploy á kjarni-3dwork rauð frá #38 þar til PR #44 fjarlægði línurnar (26.08). Route handlers eru dynamic sjálfgefið u
   <br><sub>2026-08-26 · kerfi · kóði · claude-code</sub>
 
+### kort
+
+- **16.09.2026 (framhald hnitaleitar): Fjögur heimilisföng sem voru brot leiðrétt að ósk Agnars („Fyrstu 3 taktu núna rétt .. og 4 er í Reykjavík") — götuheitið hafði lent í nafni staðarins og framhaldslínan stóð ein eftir. #264 → Burknavellir 5A-B, 221 Hafnarfjörður · #393 → Daggarvellir 4A-B, 221 Hafnarfjörður · #673 → Burknavellir 1A og 1B, 221 Hafnarfjörður · #706 Kaffi 22 → Laugavegur 22, 101 Reykjavík (var Laugarvegur). Ritháttur staðfestur í Staðfangaskrá, afrit sjálfkrafa í audit_vernd, og öll fjögur leysast nú á höfuðborgarsvæðinu. Tvær lagfæringar á lesaranum í /api/geocode: bandstrik má fylgja húsnúmeri eða bókstaf (Miðleiti 2-6 — 74 slík heimilisföng — fóru annars fram hjá Staðfangaskrá; fyrsta númerið gildir) og þegar bæði Hverfisgata 4 og 4A eru til vinnur sá bókstafur sem beðið var um. Staðfest á óskyndiminntum heimilisföngum: Bíldshöfði 18-20 og Stórhöfði 33A-B leysast báðir gegnum stadfangaskra.**
+  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **16.09.2026: Hnitaleitin (/api/geocode) reynir nú Staðfangaskrá HMS á undan Nominatim — opið WFS á geo.fasteignaskra.is (fasteignaskra:VSTADF_ALLT), enginn lykill, sama heimild og hus-upplysingar notar. Hún ber götuheiti saman í nefnifalli OG þágufalli (HEITI_NF/HEITI_TGF) og skilar hnitum staðfangsins í EPSG:4326 með srsName. Rótin: Nominatim ræður ekki við þágufall og giskaði á samnefnda götu annars staðar — Fjarðargötu 17 í Hafnarfirði sat á Flateyri (65,87/-23,48) og níu staðir á höfuðborgarsvæðinu höfðu punkt í röngum landshluta. Öryggi: sé póstnúmer þekkt verður svarið að bera sama póstnúmer, annars aðeins tekið gilt ef ótvírætt. Staðfest eftir birtingu 9904e67: Fjarðargata 17 → 64,06725/-21,95613, Breiðuvík 22 → 64,15233/-21,77241, Lyngási 10 → 64,09016/-21,93728, og Funahöfði 1 leysist nú (fannst ekki áður). Fimm röng skyndiminnisfærslur eyddar með afriti í audit_vernd og endurleystar. Eftir standa fjögur heimilisföng sem eru brot eða innsláttarvilla og fá engan punkt: #264 B 221 Hafnarfirði, #393 A-B 221 Hafnarfirði, #673 og 1B 221 Hafnarfjörður, #706 Laugarvegur 22 (á að vera Laugavegur).**
+  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **Heimilisfangaleit TurboPaint (kjarni apps/slokkvitaeki app/api/turbopaint/teikningar/route.ts): heimilisfang → Landeignaskrá HMS (geo.fasteignaskra.is, landnúmer + póstnúmer + ISN93) → FotoWeb-teikningasafn Reykjavíkur (skjalasafn.reykjavik.is). Aðeins Reykjavík hefur teikningalista; Kópavogur/Garðabær/Hafnarfjörður fá djúptengil á map.is. Broddstafir verða að vera NFC.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+- **geocode_cache er yfir 1000 raðir (1.567 12.09.2026). 156-geocode-prewarm sótti áður aðeins 1000 → 566 hnit náðu aldrei í vafrann; síðan a5a5b76 flettir hann með offset. Staðir á aksturslista (arsskodun_customers.akstur 1–3) fá hnit í forhleðslu síðan 010e9d6.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### verd
 
 - **Rafhlaðan er INNIFALIN í „Yfirferð Reykskynjari" (2.346 kr án vsk) — 9V Rafhlaða fer ekki á reikninginn sem sér lína**
@@ -1299,15 +1310,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Attribute-selectorar þemanna ([style*=…]) grípa bara stíla setta með innerHTML — stílar settir með element.style.cssText serialiserast sem rgb() í style-attributinu og sleppa alveg við þema-flippið.**
   <br>Þess vegna getur sama síða orðið hálf-flippuð: innerHTML-fletir dökkna, cssText-fletir haldast hvítir. Samskiptaborðs-módallinn (287) lenti í þessu 7.8.2026. Öruggasta leiðin fyrir módala/ný borð: skorað klasa-stílblað með skýrum lit á hverjum texta, ekkert inline og ekkert erft. Lagað í PR #609.
   <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
-
-### kort
-
-- **16.09.2026: Hnitaleitin (/api/geocode) reynir nú Staðfangaskrá HMS á undan Nominatim — opið WFS á geo.fasteignaskra.is (fasteignaskra:VSTADF_ALLT), enginn lykill, sama heimild og hus-upplysingar notar. Hún ber götuheiti saman í nefnifalli OG þágufalli (HEITI_NF/HEITI_TGF) og skilar hnitum staðfangsins í EPSG:4326 með srsName. Rótin: Nominatim ræður ekki við þágufall og giskaði á samnefnda götu annars staðar — Fjarðargötu 17 í Hafnarfirði sat á Flateyri (65,87/-23,48) og níu staðir á höfuðborgarsvæðinu höfðu punkt í röngum landshluta. Öryggi: sé póstnúmer þekkt verður svarið að bera sama póstnúmer, annars aðeins tekið gilt ef ótvírætt. Staðfest eftir birtingu 9904e67: Fjarðargata 17 → 64,06725/-21,95613, Breiðuvík 22 → 64,15233/-21,77241, Lyngási 10 → 64,09016/-21,93728, og Funahöfði 1 leysist nú (fannst ekki áður). Fimm röng skyndiminnisfærslur eyddar með afriti í audit_vernd og endurleystar. Eftir standa fjögur heimilisföng sem eru brot eða innsláttarvilla og fá engan punkt: #264 B 221 Hafnarfirði, #393 A-B 221 Hafnarfirði, #673 og 1B 221 Hafnarfjörður, #706 Laugarvegur 22 (á að vera Laugavegur).**
-  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **Heimilisfangaleit TurboPaint (kjarni apps/slokkvitaeki app/api/turbopaint/teikningar/route.ts): heimilisfang → Landeignaskrá HMS (geo.fasteignaskra.is, landnúmer + póstnúmer + ISN93) → FotoWeb-teikningasafn Reykjavíkur (skjalasafn.reykjavik.is). Aðeins Reykjavík hefur teikningalista; Kópavogur/Garðabær/Hafnarfjörður fá djúptengil á map.is. Broddstafir verða að vera NFC.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-- **geocode_cache er yfir 1000 raðir (1.567 12.09.2026). 156-geocode-prewarm sótti áður aðeins 1000 → 566 hnit náðu aldrei í vafrann; síðan a5a5b76 flettir hann með offset. Staðir á aksturslista (arsskodun_customers.akstur 1–3) fá hnit í forhleðslu síðan 010e9d6.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### automation
 
