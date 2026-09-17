@@ -17,7 +17,14 @@
   const VSK = 0.24;
 
   // Verð ÁN vsk (ISK) — úr Verðskrá brunaviðvörunarkerfa.
+  // Akstur stendur EFST og utan „Skoðun á …"-raðarinnar: hann er ekki skoðunarliður
+  // og á að vera fyrsti hluturinn sem sést, ekki grafinn í 40 línum (Agnar 17.09.2026:
+  // „ég þarf að bæta inn Akstri inn á þetta, en ekki til slíkur liður"). Verðið kemur
+  // frá honum — 3.500 án vsk; það er líka ritanlegt í reitnum eins og aðrar línur.
+  // Mælt um leið: ENGIN brunakerfis-sala 2026 bar akstursline, svo þetta er nýtt verð
+  // en ekki breyting á neinu sem fyrir var. Verðskrárformið (patch 150) er ósnert.
   const PRICE_LIST = [
+    ['Akstur', 3500],
     ['Samantekt og gerð skoðunarskýrslu', 16670],
     ['Skoðun á aðalafli og varaafli', 1210],
     ['Skoðun á aðalstöð brunaviðvörunarkerfis', 10080],
