@@ -226,7 +226,8 @@
   function M(id) {
     if (MODES[id]) return MODES[id];
     const h = serHamir().find(x => x.id === id);
-    return h ? { l: String(h.l), board: true, filter: 'allt', ser: true, first: (Array.isArray(h.first) ? h.first : []).filter(k => MODS[k]),
+    // board vantar á hömum sem voru til fyrir 17.09.2026 -> true, so þeir haldast óbreyttir.
+    return h ? { l: String(h.l), board: h.board !== false, filter: 'allt', ser: true, first: (Array.isArray(h.first) ? h.first : []).filter(k => MODS[k]),
       flokkar: Array.isArray(h.flokkar) ? h.flokkar : [], merki: Array.isArray(h.merki) ? h.merki : [] } : null;
   }
   const hamaListi = () => Object.keys(MODES).concat(serHamir().map(h => h.id));
@@ -1002,6 +1003,8 @@
       '.hamform .hf{display:flex;flex-direction:column;gap:12px;padding:12px 16px}.hamform .nylbl{max-width:360px}',
       '.hgrp{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}.hgrp .lbl{flex-basis:100%}',
       '.hchk{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink2)}.hnote{font-size:12px;color:var(--mute)}',
+      '.pprev{display:block;font-size:12px;line-height:1.4;color:var(--ink2);margin-top:4px;max-height:2.8em;overflow:hidden;text-overflow:ellipsis}',
+      '.hnote2{display:block;width:100%;font-size:11.5px;color:var(--mute);margin-top:4px}',
       '.aklist{display:flex;flex-direction:column}.akrow{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:10px;align-items:start;padding:9px 14px;border-top:1px solid var(--rule2)}',
       '.akrow:first-child{border-top:0}.aknr{font:700 12px var(--mono);color:var(--mute);padding-top:2px}',
       '.akinfo{display:flex;flex-direction:column;gap:2px;min-width:0}.akinfo .s{font-size:12px;color:var(--mute);overflow-wrap:anywhere}.akacts{display:flex;gap:4px}',
@@ -2705,11 +2708,24 @@
   }
 
   // f (valfrjálst) = { l: lykill, e: eining, d: lýsing, falinn } — dauft „Fela · Skýring" aftast í gráu línunni, skýringin undir.
-  function lrowHtml(r, merki, f) {
+  // 17.09.2026: fjórða viðfangið `forsk` er valfrjáls forskoðun undir línunni.
+  // Allir eldri kallstaðir senda það ekki og fá nákvæmlega sömu línu og áður.
+  function lrowHtml(r, merki, f, forsk) {
     const a = ageDays(r), w = fyrLink(r);
     return '<div class="lrow' + (f && f.falinn ? ' falid' : '') + '"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
       '<div><button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '" title="Skoða málið"><b>' + esc(r.title || '(ónefnt mál)') + '</b></button>' +
-      '<span class="s">' + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + felaTakki(f) + '</span>' + skyrLina(f) + '</div>' + (merki || '<span></span>') + '</div>';
+      '<span class="s">' + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + felaTakki(f) + '</span>' + skyrLina(f) + (forsk || '') + '</div>' + (merki || '<span></span>') + '</div>';
+  }
+  // Byrjun skilaboðanna, án tilvitnaðs texta. Sama hugsun og KLIPPA_TXT í 286:
+  // það sem stendur NEÐAN við „-----", „Frá:", „On … wrote:" er gamall póstur.
+  const KLIPPA = /\n\s*(?:-{3,}\s*(?:original|upprunaleg|forwarded|áframsent)|_{5,}|(?:frá|from|sent|til|to|cc|efni|subject)\s*:|(?:á|on)\b[^\n]{0,80}\b(?:skrifaði|wrote)\s*:)/i;
+  function postForskodun(r) {
+    let s = String(r.notes || '').trim();
+    if (!s) return '';
+    const m = KLIPPA.exec(s); if (m) s = s.slice(0, m.index).trim();
+    s = s.replace(/\s+/g, ' ').trim();
+    if (!s) return '';
+    return '<span class="pprev" title="Byrjun skilaboðanna — smelltu á titilinn til að sjá allt">' + esc(s.slice(0, 260)) + (s.length > 260 ? '…' : '') + '</span>';
   }
   function bottomHtml(k) {
     const n = nu();
@@ -2917,7 +2933,7 @@
     }
     if (k === 'postsvor') {
       const lyk = r => 'postsvor:mal:' + r.id, pF = fela(S.rows.filter(r => isPost(r) && !r.svarad_at).sort(rodun), lyk);
-      const rod = (r, falinn) => lrowHtml(r, isFree(r) ? '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) + '>Taka ›</button>' : '', { l: lyk(r), e: k, d: r.title, falinn });
+      const rod = (r, falinn) => lrowHtml(r, isFree(r) ? '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) + '>Taka ›</button>' : '', { l: lyk(r), e: k, d: r.title, falinn }, postForskodun(r));
       return modPanel(k, pF.synd.length + ' bíða svars' + falinSum(pF.falin.length),
         (pF.synd.length ? pF.synd.slice(0, 8).map(r => rod(r)).join('') + (pF.synd.length > 8 ? '<div class="more">+ ' + (pF.synd.length - 8) + ' til viðbótar</div>' : '')
           : pF.falin.length ? '' : emptyHtml('Enginn póstur bíður svars.')) +
@@ -3560,6 +3576,9 @@
         '<button type="button" class="btn iv sm" data-t5="ham-loka">Hætta við</button></header>' +
       '<div class="hf">' +
         '<label class="nylbl"><span class="lbl">Nafn hamsins</span><input type="text" data-k="hn" value="' + esc(h ? h.l : '') + '" placeholder="t.d. Brunakerfi, Tilboð, Uppsetningar" maxlength="30"></label>' +
+        '<div class="hgrp"><span class="lbl">Borðið sjálft</span>'
+          + hak('', 'hb', 'Master, mitt borð og valið mál fylgja hamnum', h ? h.board !== false : true)
+          + '<span class="hnote2">Taktu hakið af til að hafa AÐEINS einingarnar hér að neðan — t.d. bara skipulagsborðið.</span></div>' +
         '<div class="hgrp"><span class="lbl">Einingar sem opnast með hamnum</span>' + Object.keys(MODS).map(k => hak('hm_', k, MODS[k].t, h && h.first.indexOf(k) >= 0)).join('') + '</div>' +
         '<div class="hgrp"><span class="lbl">Taka sjálfkrafa með mál í flokki</span>' + Object.keys(FLOKKAR).map(k => hak('hf_', k, FLOKKAR[k], h && h.flokkar.indexOf(k) >= 0)).join('') + '</div>' +
         '<div class="hgrp"><span class="lbl">… eða með merki</span>' + Object.keys(MERKI).map(k => hak('hg_', k, MERKI[k], h && h.merki.indexOf(k) >= 0)).join('') + '</div>' +
@@ -3868,7 +3887,9 @@
         const F = S.hamForm || {}, hid = F.id || ('h' + Date.now().toString(36));
         if (hamaListi().some(k => k !== hid && lagt(M(k).l) === lagt(nafn))) { toast('Hamur með þessu nafni er þegar til.', true); return; }
         const valin = pre => [...root.querySelectorAll('.hamform input[data-k^="' + pre + '"]')].filter(x => x.checked).map(x => x.dataset.k.slice(pre.length));
-        const gildi = { id: hid, l: nafn, first: valin('hm_'), flokkar: valin('hf_'), merki: valin('hg_') };
+        const bordMed = !!((root.querySelector('.hamform input[data-k="hb"]') || {}).checked);
+        const gildi = { id: hid, l: nafn, board: bordMed, first: valin('hm_'), flokkar: valin('hf_'), merki: valin('hg_') };
+        if (!bordMed && !gildi.first.length) { toast('Veldu að minnsta kosti eina einingu — hamurinn yrði annars auður.', true); return; }
         el.disabled = true;
         vistaHamir(l => { const i = l.findIndex(x => x.id === hid); if (i >= 0) l[i] = gildi; else l.push(gildi); return l; },
           F.id ? 'Hamurinn uppfærður' : 'Hamurinn „' + nafn + '" stofnaður').then(ok => {
