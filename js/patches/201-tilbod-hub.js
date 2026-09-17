@@ -128,7 +128,20 @@
     document.body.appendChild(ov);
     const frame = ov.querySelector('#_th-frame'); frame.srcdoc = html;
     ov.querySelector('#_th-pc').onclick = () => ov.remove();
-    ov.querySelector('#_th-pp').onclick = () => { try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) {} };
+    ov.querySelector('#_th-pp').onclick = () => {
+      // Chrome tekur skráarnafnið úr titli AÐALSKJALSINS, ekki iframe-sins.
+      // Við lánum því titilinn á meðan prentað er og skilum honum strax aftur.
+      const gamallTitill = document.title;
+      let skjalTitill = '';
+      try { skjalTitill = (frame.contentDocument && frame.contentDocument.title) || ''; } catch (_) {}
+      if (skjalTitill) document.title = skjalTitill;
+      let skilad = false;
+      const skila = () => { if (skilad) return; skilad = true; document.title = gamallTitill; };
+      try { frame.contentWindow.addEventListener('afterprint', skila, { once: true }); } catch (_) {}
+      window.addEventListener('afterprint', skila, { once: true });
+      setTimeout(skila, 60000);   // öryggisnet: titillinn má aldrei sitja fastur
+      try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) { skila(); }
+    };
   }
 
   // ====================== SLÖKKVITÆKI TILBOÐ (free lines) ======================
