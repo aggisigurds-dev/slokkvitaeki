@@ -380,14 +380,24 @@ var Companies = {
       // svo vafri sem sótti kennitöluna fyrir viðbótina fengi annars gamla svarið í sólarhring
       // (það gerðist 16.09: línan sýndi bara heimilisfangið). Hækkaðu töluna þegar kt-lookup
       // fer að skila fleiri reitum.
-      fetch('/api/kt-lookup?kt=' + kt + '&skra=' + UTGAFA)
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (d) {
-          if (!d || d.error) return;
-          try { localStorage.setItem(lykill, JSON.stringify({ d: d, t: Date.now() })); } catch (_) {}
-          syna(d);
-        })
-        .catch(function () {});
+      // 17.09.2026 — MÆLT: prófílsopnun kallaði á þessa slóð ÞRISVAR með sömu
+      // kennitölu, 2.541 + 2.449 + 2.048 ms = ~7 sekúndur. Ástæðan er að borðinn
+      // teiknast oftar en einu sinni í ræsingunni og localStorage-geymslan hér að
+      // ofan er tóm þangað til FYRSTA svarið skilar sér — svo öll þrjú fóru af stað
+      // áður en nokkurt þeirra gat vistað. Biðin er því geymd sjálf: seinni
+      // teikningar hengja sig á sama loforð í stað þess að sækja upp á nýtt.
+      var bid = (window.__ktBid = window.__ktBid || {});
+      if (!bid[lykill]) {
+        bid[lykill] = fetch('/api/kt-lookup?kt=' + kt + '&skra=' + UTGAFA)
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            if (!d || d.error) return null;
+            try { localStorage.setItem(lykill, JSON.stringify({ d: d, t: Date.now() })); } catch (_) {}
+            return d;
+          })
+          .catch(function () { return null; });
+      }
+      bid[lykill].then(function (d) { if (d) syna(d); });
     })(ktTolur, el, addrHreint);
 
     // ── Skýrslupunktar ────────────────────────────────────────────────────────
