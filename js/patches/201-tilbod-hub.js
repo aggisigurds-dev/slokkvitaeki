@@ -80,8 +80,11 @@
       <label style="font-size:11px;color:#64748b;font-weight:700">Kennitala<input id="_th-kt" type="text" value="${esc(c.kennitala || '')}" placeholder="000000-0000" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box"></label>
       <label style="font-size:11px;color:#64748b;font-weight:700">Dagsetning<input id="_th-date" type="date" value="${esc(c._date || todayISO())}" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box"></label>
       <label style="font-size:11px;color:#64748b;font-weight:700;grid-column:1 / -1">Heimilisfang<input id="_th-addr" type="text" value="${esc(c.heimilisfang || '')}" placeholder="Heimilisfang" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box"></label>
+            <label style="font-size:11px;color:#64748b;font-weight:700;grid-column:1 / -1">Nánari skil (valfrjálst)<textarea id="_th-skyring" rows="3" placeholder="Það sem á að koma fram í tilboðinu — umfang, fyrirvarar, hvað er innifalið…" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;font-weight:400;color:#0f172a;resize:vertical">${esc(c.skyring || '')}</textarea></label>
     </div>`;
   const readCust = ov => ({ nafn: ov.querySelector('#_th-nafn').value.trim(), kennitala: ov.querySelector('#_th-kt').value.trim(), heimilisfang: ov.querySelector('#_th-addr').value.trim() });
+  // 17.09.2026: nánari skil — einn reitur, öll þrjú skjölin (custFields er sameiginlegur).
+  const readSkyring = ov => ((ov.querySelector('#_th-skyring') || {}).value || '').trim();
   const footBtns = `<button id="_th-cancel" type="button" style="padding:10px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Loka</button>
     <button id="_th-print" type="button" style="padding:10px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#0f172a;font-weight:700">🖨 Prenta PDF</button>
     <button id="_th-save" type="button" style="padding:10px 20px;border:none;border-radius:8px;background:var(--th-gb);color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.22)">💾 Vista</button>`;
@@ -95,7 +98,7 @@
 
   // 17.09.2026: `skjalHeiti` er AÐEINS <title> (og þar með skráarnafnið);
   // `titleBadge` er áfram merkið sem sést á skjalinu sjálfu.
-  function docShell(titleBadge, dateStr, custBlock, inner, skjalHeiti) {
+  function docShell(titleBadge, dateStr, custBlock, inner, skjalHeiti, skyring) {
     const b = branding();
     const primary = theme().primary, dark = theme().dark;
     const logo = (b.logo_url || '').trim();
@@ -113,6 +116,8 @@
         '<div style="text-align:right"><div style="display:inline-block;background:' + primary + ';color:#fff;padding:3px 12px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">' + esc(titleBadge) + '</div>' +
           '<div style="font-size:11px;color:#64748b;margin-top:8px">' + esc(dateStr) + '</div></div>' +
       '</div>' + custBlock + inner +
+      // 17.09.2026: nánari skil frá Agnari. Tómt gildi prentar ekkert.
+      (skyring ? '<div style="margin-top:20px;padding:11px 13px;background:#fbfaf7;border:1px solid #e7e2d7;border-radius:8px;font-size:12px;line-height:1.55;color:#334155;white-space:pre-wrap">' + esc(skyring) + '</div>' : '') +
       '<div class="no-print" style="margin-top:24px;text-align:center"><button class="btn" style="background:' + primary + ';color:#fff" onclick="window.print()">🖨 Prenta / vista PDF</button></div>' +
       '</div></body></html>';
   }
@@ -166,7 +171,7 @@
   }
   async function openSlokk(existing) {
     const o = existing ? JSON.parse(JSON.stringify(existing)) : null;
-    const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO() });
+    const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO(), skyring: (o && o.skyring) || '' });
     // New tilboð: prefill with the live vörur price list (editable); editing: saved lines.
     let lines = (o && o.lines && o.lines.length) ? o.lines.map(l => ({ ...l, primary: true })) : await loadVorur();
     if (!lines.length) lines = [{ lysing: '', magn: 1, verd: 0, afsl: 0, primary: true }];
@@ -222,7 +227,7 @@
     function build() {
       const ls = collect().filter(l => l.lysing && l.verd >= 0 && (l.magn > 0));
       const t = totals(ls, pn(ov.querySelector('#_th-tdisc').value));
-      return { id: (o && o.id) || ('S' + Date.now()), type: 'slokkvitaeki', created_at: (o && o.created_at) || new Date().toISOString(), updated_at: new Date().toISOString(), date: ov.querySelector('#_th-date').value || todayISO(), customer: readCust(ov), lines: ls, total_disc: num(ov.querySelector('#_th-tdisc').value), an_vsk: Math.round(t.an), vsk: Math.round(t.vsk), m_vsk: Math.round(t.m_vsk) };
+      return { skyring: readSkyring(ov), id: (o && o.id) || ('S' + Date.now()), type: 'slokkvitaeki', created_at: (o && o.created_at) || new Date().toISOString(), updated_at: new Date().toISOString(), date: ov.querySelector('#_th-date').value || todayISO(), customer: readCust(ov), lines: ls, total_disc: num(ov.querySelector('#_th-tdisc').value), an_vsk: Math.round(t.an), vsk: Math.round(t.vsk), m_vsk: Math.round(t.m_vsk) };
     }
     ov.querySelector('#_th-print').onclick = () => printDoc(slokkHtml(build()));
     ov.querySelector('#_th-save').onclick = async () => {
@@ -251,13 +256,13 @@
       '</tr></thead><tbody>' + rows + '</tbody></table>' + totRows(t, o.total_disc) +
       '<div style="margin-top:24px;font-size:11px;color:#64748b">Tilboð þetta gildir í 30 daga.</div>';
     return docShell('Tilboð', fmtDate(o.date), custPrintBlock(o.customer), inner,
-      skjalNafn(['Tilboð', o.customer && o.customer.nafn, 'Slökkvitæki']));
+      skjalNafn(['Tilboð', o.customer && o.customer.nafn, 'Slökkvitæki']), o.skyring);
   }
 
   // ====================== SLÖKKVITÆKI SÉRVERÐ (per-unit, no grand total) ======================
   async function openServerd(existing) {
     const o = existing ? JSON.parse(JSON.stringify(existing)) : null;
-    const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO() });
+    const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO(), skyring: (o && o.skyring) || '' });
     let lines;
     if (o && o.lines && o.lines.length) lines = o.lines.map(l => ({ ...l, primary: true }));
     else { const v = await loadVorur(); lines = v.map(p => ({ n: p.lysing, full: Math.round((p.verd || 0) * (1 + VSK)), afsl: 0, include: false, primary: p.primary })); }
@@ -315,7 +320,7 @@
     draw();
     function build() {
       const ls = collect().filter(l => l.include && l.n);
-      return { id: (o && o.id) || ('V' + Date.now()), type: 'serverd', created_at: (o && o.created_at) || new Date().toISOString(), updated_at: new Date().toISOString(), date: ov.querySelector('#_th-date').value || todayISO(), customer: readCust(ov), lines: ls, m_vsk: 0 };
+      return { skyring: readSkyring(ov), id: (o && o.id) || ('V' + Date.now()), type: 'serverd', created_at: (o && o.created_at) || new Date().toISOString(), updated_at: new Date().toISOString(), date: ov.querySelector('#_th-date').value || todayISO(), customer: readCust(ov), lines: ls, m_vsk: 0 };
     }
     ov.querySelector('#_th-print').onclick = () => printDoc(serverdHtml(build()));
     ov.querySelector('#_th-save').onclick = async () => {
@@ -342,13 +347,13 @@
       '</tr></thead><tbody>' + rows + '</tbody></table>' +
       '<div style="margin-top:20px;font-size:11px;color:#64748b">Verð eru m. vsk og gilda á meðan samningur er í gildi. Ekkert heildarverð — verð per tæki.</div>';
     return docShell('Sérverð', fmtDate(o.date), custPrintBlock(o.customer), inner,
-      skjalNafn(['Sérverð', o.customer && o.customer.nafn, 'Slökkvitæki']));
+      skjalNafn(['Sérverð', o.customer && o.customer.nafn, 'Slökkvitæki']), o.skyring);
   }
 
   // ====================== ÞJÓNUSTUSAMNINGUR ======================
   function openSamn(existing) {
     const o = existing ? JSON.parse(JSON.stringify(existing)) : null;
-    const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO() });
+    const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO(), skyring: (o && o.skyring) || '' });
     const d = o || {};
     const inp = (id, val, ph) => `<input id="${id}" type="text" value="${esc(val || '')}" placeholder="${esc(ph || '')}" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box">`;
     const body = custFields(c) +
@@ -375,7 +380,7 @@
     recompute();
     function build() {
       const an = pn(ov.querySelector('#_th-verd').value);
-      return { id: (o && o.id) || ('M' + Date.now()), type: 'samningur', created_at: (o && o.created_at) || new Date().toISOString(), updated_at: new Date().toISOString(), date: ov.querySelector('#_th-date').value || todayISO(), customer: readCust(ov), thjonusta: ov.querySelector('#_th-thjon').value.trim(), tidni: ov.querySelector('#_th-tidni').value.trim(), gildir_fra: ov.querySelector('#_th-fra').value, uppsogn: ov.querySelector('#_th-upps').value.trim(), skilmalar: ov.querySelector('#_th-skilm').value.trim(), verd: an, an_vsk: Math.round(an), vsk: Math.round(an * VSK), m_vsk: Math.round(an * (1 + VSK)) };
+      return { skyring: readSkyring(ov), id: (o && o.id) || ('M' + Date.now()), type: 'samningur', created_at: (o && o.created_at) || new Date().toISOString(), updated_at: new Date().toISOString(), date: ov.querySelector('#_th-date').value || todayISO(), customer: readCust(ov), thjonusta: ov.querySelector('#_th-thjon').value.trim(), tidni: ov.querySelector('#_th-tidni').value.trim(), gildir_fra: ov.querySelector('#_th-fra').value, uppsogn: ov.querySelector('#_th-upps').value.trim(), skilmalar: ov.querySelector('#_th-skilm').value.trim(), verd: an, an_vsk: Math.round(an), vsk: Math.round(an * VSK), m_vsk: Math.round(an * (1 + VSK)) };
     }
     ov.querySelector('#_th-print').onclick = () => printDoc(samnHtml(build()));
     ov.querySelector('#_th-save').onclick = async () => {
@@ -401,7 +406,7 @@
         '<div style="flex:1;border-top:1px solid ' + tdk + ';padding-top:6px;font-size:11px;color:#64748b">Viðskiptavinur</div>' +
       '</div>';
     return docShell('Þjónustusamningur', fmtDate(o.date), custPrintBlock(o.customer), inner,
-      skjalNafn(['Þjónustusamningur', o.customer && o.customer.nafn, 'Slökkvitæki']));
+      skjalNafn(['Þjónustusamningur', o.customer && o.customer.nafn, 'Slökkvitæki']), o.skyring);
   }
 
   // ---------- totals helpers (shared) ----------

@@ -146,6 +146,7 @@
             <label style="font-size:11px;color:#64748b;font-weight:700">Kennitala<input id="_bt-kt" type="text" value="${esc(cust.kennitala || '')}" placeholder="000000-0000" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box"></label>
             <label style="font-size:11px;color:#64748b;font-weight:700">Dagsetning<input id="_bt-date" type="date" value="${esc((offer && offer.date) || todayISO())}" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box"></label>
             <label style="font-size:11px;color:#64748b;font-weight:700;grid-column:1 / -1">Heimilisfang<input id="_bt-addr" type="text" value="${esc(cust.heimilisfang || '')}" placeholder="Heimilisfang" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box"></label>
+            <label style="font-size:11px;color:#64748b;font-weight:700;grid-column:1 / -1">Nánari skil (valfrjálst)<textarea id="_bt-skyring" rows="3" placeholder="Það sem á að koma fram í tilboðinu — umfang, fyrirvarar, hvað er innifalið…" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;font-weight:400;color:#0f172a;resize:vertical">${esc(offer && offer.skyring || '')}</textarea></label>
           </div>
           <div style="overflow:auto;border:1px solid #e2e8f0;border-radius:10px;max-height:42vh">
             <table style="width:100%;border-collapse:collapse">
@@ -237,6 +238,7 @@
         date: ov.querySelector('#_bt-date').value || todayISO(),
         customer: { nafn: ov.querySelector('#_bt-nafn').value.trim(), kennitala: ov.querySelector('#_bt-kt').value.trim(), heimilisfang: ov.querySelector('#_bt-addr').value.trim() },
         lines, total_disc: td,
+        skyring: (ov.querySelector('#_bt-skyring') || {}).value.trim(),
         an_vsk: Math.round(t.an), vsk: Math.round(t.vsk), m_vsk: Math.round(t.m_vsk),
       };
     }
@@ -325,6 +327,7 @@
         totRow('VSK 24%', fmtKr(t.vsk)) +
         totRow('Samtals m. vsk', fmtKr(t.m_vsk), true) +
       '</div></div>' +
+      (o.skyring ? '<div style="margin-top:20px;padding:11px 13px;background:#fbfaf7;border:1px solid #e7e2d7;border-radius:8px;font-size:12px;line-height:1.55;color:#334155;white-space:pre-wrap">' + esc(o.skyring) + '</div>' : '') +
       '<div style="margin-top:24px;font-size:11px;color:#64748b">Tilboð þetta gildir í 30 daga. Verð eru með fyrirvara um breytingar á umfangi kerfis.</div>' +
       '<div class="no-print" style="margin-top:24px;text-align:center"><button class="btn" style="background:' + primary + ';color:#fff" onclick="window.print()">🖨 Prenta / vista PDF</button></div>' +
       '</div></body></html>';
