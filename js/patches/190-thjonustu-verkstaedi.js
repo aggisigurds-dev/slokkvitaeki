@@ -599,15 +599,27 @@
   }
 
   async function setFlag(coId, patch, opts) {
-    if (!window.AppSettings || !AppSettings.save) { toast('Engar stillingar'); return; }
+    if (!window.AppSettings || !AppSettings.save) { toast('Engar stillingar'); return false; }
     // ÞRÖNGUR patch: EITT fyrirtæki. Gamla heil-vörpu-skrifið setti stöðu allra
     // hinna aftur í það sem ÞESSI flipi las síðast. `_delete` er fellt burt —
     // deepMerge getur aldrei fjarlægt lykil, svo það var alltaf núll-verk (og
     // enginn kallandi sendir það; sjá athugasemdina hér fyrir neðan).
     const p = Object.assign({}, patch);
     delete p._delete;
-    await AppSettings.save({ [KEY]: { [String(coId)]: p } });
+    // 17.09.2026 (Agnar: „takkinn gerir ekki það sem hann segist gera"):
+    // AppSettings.save skilar true/false — gildinu var hent. Mistækist skrifið
+    // sagði borðið samt „Fært í Búið í ár" og kortið hoppaði; við endurhleðslu
+    // var allt óbreytt og úttektin taldist óunnin. Þetta er rót fjölskyldunnar:
+    // markBuid, startVinnsla, reopen og unVinnsla fara öll hér í gegn.
+    let ok = false;
+    try { ok = await AppSettings.save({ [KEY]: { [String(coId)]: p } }); }
+    catch (e) { ok = false; console.warn('[190] setFlag', e); }
+    if (!ok) {
+      toast('⚠ Vistaðist EKKI — staðan er óbreytt á þjóninum. Reyndu aftur.');
+      try { if (window.logProblem) window.logProblem('thjonustu_setflag_failed', 'co:' + coId); } catch (_) {}
+    }
     if (!(opts && opts.silent)) render();   // note edits save silently (keep focus)
+    return ok;
   }
   // NB: AppSettings.save() DEEP-MERGES — deleting a key does NOT propagate to
   // the server (see patches 157/158). So every transition must SET the flags to
@@ -1026,7 +1038,7 @@
       else if (act === 'buid') markBuid(id);
       else if (act === 'reopen') reopen(id);
       else if (act === 'unstart') unVinnsla(id);
-      else if (act === 'removedone') { toast('Fært í „Búið í ár“ — komið með skýrslu + reikning'); markBuid(id); }
+      else if (act === 'removedone') { markBuid(id).then((ok) => { if (ok) toast('Fært í „Búið í ár“ — komið með skýrslu + reikning'); }); }
     }));
     // ✉️ Senda úttektarskýrslu ársins í tölvupósti (ReceiptSender-gluggi)
     v.querySelectorAll('._sv-send').forEach(bn => bn.addEventListener('click', e => {

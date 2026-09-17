@@ -439,7 +439,11 @@
       const up = await SB.storage.from(BUCKET).upload(path, f, { contentType:f.type, upsert:false });
       if (up.error) throw up.error;
       const { data: pub } = SB.storage.from(BUCKET).getPublicUrl(path);
-      await SB.from('thjonustusamningar').update({ photo_url: pub.publicUrl, photo_path: path }).eq('id', id);
+      // 17.09.2026: `.error` ólesin — myndin fór í geymsluna en tengingin við
+      // samninginn gat brugðist, og reiturinn sagði samt „✓ Vistað". Myndin varð
+      // munaðarlaus: hvergi sýnileg, en upptekin í bucketinu.
+      const upd = await SB.from('thjonustusamningar').update({ photo_url: pub.publicUrl, photo_path: path }).eq('id', id);
+      if (upd && upd.error) throw upd.error;
       if (status) status.textContent = '✓ Vistað';
       load();
       setTimeout(() => _open(id), 400);

@@ -1173,12 +1173,21 @@
     const vistaBtn = section.querySelector('#_ctc-vista');
     if (vistaBtn) {
       vistaBtn.addEventListener('click', () => {
-        const p = (window.TripCloudSync && window.TripCloudSync.saveNow)
-          ? window.TripCloudSync.saveNow(coId) : Promise.resolve(true);
+        // 17.09.2026: án patch 227 skilaði þetta Promise.resolve(true) og sagði
+        // „✓ Vistað" þótt EKKERT færi í skýið — ferðin lá aðeins í localStorage
+        // þessa tækis og hvarf við hreinsun. saveNow skilar true/false; nú ræður
+        // sú niðurstaða því hvað takkinn segir. Þetta eru rukkanlegu línurnar.
+        const hefurSky = !!(window.TripCloudSync && window.TripCloudSync.saveNow);
+        const p = hefurSky ? window.TripCloudSync.saveNow(coId) : Promise.resolve(false);
         vistaBtn.disabled = true; vistaBtn.textContent = '⏳ Vista…';
-        Promise.resolve(p).then(() => {
-          vistaBtn.textContent = '✓ Vistað';
-          if (window.Toast && Toast.show) Toast.show('💾 Óklárað vistað — opnast sjálfkrafa næst (líka í síma).');
+        Promise.resolve(p).catch(() => false).then((ok) => {
+          vistaBtn.textContent = ok ? '✓ Vistað' : '⚠ Bara á þessu tæki';
+          if (window.Toast && Toast.show) {
+            Toast.show(ok
+              ? '💾 Óklárað vistað — opnast sjálfkrafa næst (líka í síma).'
+              : '⚠ Vistaðist AÐEINS á þessu tæki — komst ekki í skýið. Ekki loka flipanum.');
+          }
+          if (!ok) { try { if (window.logProblem) window.logProblem('trip_saveNow_failed', 'co:' + coId); } catch (_) {} }
           setTimeout(() => { vistaBtn.disabled = false; vistaBtn.textContent = '💾 Vista óklárað'; }, 1800);
         });
       });

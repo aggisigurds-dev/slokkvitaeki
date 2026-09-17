@@ -134,9 +134,16 @@
       if (!m.kts.length) { msg.textContent = '⚠ Engar kennitölur fundust'; btn.disabled = false; return; }
       var pats = ktPats(m.kts), s = sb();
       try {
-        await s.from('fyrirtaeki').update({ afslattur_pct: v }).in('kennitala', pats);
-        await s.from('vidskiptavinir').update({ afslattur_pct: v }).in('kennitala', pats);
-        var disc = Object.assign({}, apGet('rekstrarfelag_discount')); disc[m.name] = v; await apSave({ rekstrarfelag_discount: disc });
+        // 17.09.2026: supabase-js KASTAR EKKI — villan kemur í `.error`, svo
+        // catch-blokkin hér fyrir neðan sá aldrei neitt og „✓ Vistað" birtist
+        // þótt afslátturinn hefði hvergi farið inn. Peningalína: hann ræður verði
+        // á öllum stöðum félagsins og skekkjan sést ekki fyrr en á reikningi.
+        var r1 = await s.from('fyrirtaeki').update({ afslattur_pct: v }).in('kennitala', pats);
+        if (r1 && r1.error) throw r1.error;
+        var r2 = await s.from('vidskiptavinir').update({ afslattur_pct: v }).in('kennitala', pats);
+        if (r2 && r2.error) throw r2.error;
+        var disc = Object.assign({}, apGet('rekstrarfelag_discount')); disc[m.name] = v;
+        if ((await apSave({ rekstrarfelag_discount: disc })) === false) throw new Error('Stillingar vistuðust ekki');
         ((window.Companies && Companies.list) || []).forEach(function (c) { if (pats.indexOf(digits(c.kennitala)) >= 0 || pats.indexOf(c.kennitala) >= 0) c.afslattur_pct = v; });
         msg.textContent = '✓ Vistað'; toast('🎯 Afsláttur ' + v + '% á alla staði (' + m.kts.length + ' kt).');
       } catch (e) { msg.textContent = '⚠ Villa: ' + (e.message || e); }

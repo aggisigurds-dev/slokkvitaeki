@@ -221,8 +221,11 @@
       const r2 = await sb.from('postur_ai_flokkun').update({ status: 'samthykkt', decided_at: nowIso(), decided_by: me() }).eq('beidni_id', m.id);
       if (r2 && r2.error) throw r2.error;
       s.status = 'samthykkt';
-    } catch (e) { toast('Villa við að nota: ' + (e.message || e), true); return; }
+    } catch (e) { toast('Villa við að nota: ' + (e.message || e), true); return false; }
     render();
+    // 17.09.2026: apply() skilar nú hvort það tókst — applyAll gat áður ekki séð
+    // muninn og taldi allar reyndar sem samþykktar.
+    return true;
   }
 
   async function reject(id) {
@@ -243,8 +246,12 @@
     const list = toReview();
     if (!list.length) return;
     if (!window.confirm('Nota allar ' + list.length + ' AI-tillögur? (yfirskrifar flokk/merki/samantekt með tillögunni; tengir ótengd mál við kúnna þegar nafn stemmir nákvæmlega)')) return;
-    for (const m of list) { await apply(m.id); }  // eslint gott: sequential á tilgangi (fá köll, forðast DB-þrýsting)
-    toast('✓ Samþykkti ' + list.length + ' tillögur');
+    // 17.09.2026: hér var talið hve margar voru REYNDAR, ekki hve margar tókust.
+    // Mistækjust tíu af tólf sagði borðið samt „✓ Samþykkti 12 tillögur".
+    let tokst = 0, brast = 0;
+    for (const m of list) { if (await apply(m.id)) tokst++; else brast++; }  // sequential á tilgangi (fá köll, forðast DB-þrýsting)
+    if (brast) toast('⚠ Samþykkti ' + tokst + ' af ' + list.length + ' — ' + brast + ' mistókust', true);
+    else toast('✓ Samþykkti ' + tokst + ' tillögur');
   }
 
   // ── Render ────────────────────────────────────────────────────────────────────
