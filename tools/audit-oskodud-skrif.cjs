@@ -43,10 +43,19 @@ for (const m of MOPPUR) {
     const rel = m + '/' + f;
     let t;
     try { t = fs.readFileSync(path.join(d, f), 'utf8'); } catch (_) { continue; }
-    t.split('\n').forEach((lina, i) => {
-      if (!BERT.test(lina) || !SKRIF.test(lina)) return;
+    const L = t.split('\n');
+    L.forEach((lina, i) => {
+      if (!BERT.test(lina)) return;
       // Bundin niðurstaða eða meðhöndlun í sömu línu telst lesin.
       if (/=\s*await|\.then\(|\.catch\(|return\s+await/.test(lina)) return;
+      // 17.09.2026: keðjan má liggja á fleiri en einni línu —
+      //     await SB.from('fyrirtaeki')
+      //       .update({ ... })
+      // Fyrri útgáfa krafðist þess að .from( og skrifsögnin væru á SÖMU línu og
+      // sá því ekki tvö slík (js/modal.js, 157-allir-vidskiptavinir.js).
+      const svid = SKRIF.test(lina) ? lina : L.slice(i + 1, i + 5).join(' ');
+      if (!SKRIF.test(svid)) return;
+      if (svid !== lina && /=\s*await|\.then\(|\.catch\(/.test(svid)) return;
       fundid.push({ rel, nr: i + 1, txt: lina.trim().replace(/\s+/g, ' ').slice(0, 96) });
     });
   }

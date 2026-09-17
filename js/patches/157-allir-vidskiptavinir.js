@@ -1151,11 +1151,17 @@
     }
     company.review_flag = turningOn;
     if (SB) {
-      try {
-        await SB.from('fyrirtaeki')
-          .update({ review_flag: turningOn, review_note: company.review_note || null })
-          .eq('id', coId);
-      } catch (e) { if (window.Toast && Toast.show) Toast.show('Náði ekki að vista: ' + (e.message || e)); }
+      // 17.09.2026: catch-blokkin hér var rétt hugsuð en náði aldrei að keyra —
+      // supabase-js kastar ekki, villan kemur í `.error`. Merkið var þegar sett
+      // staðbundið (línu ofar), svo viðmótið sýndi það kveikt meðan þjónninn
+      // vissi ekkert. Nú les hún niðurstöðuna og notar sama skilaboð.
+      const r = await SB.from('fyrirtaeki')
+        .update({ review_flag: turningOn, review_note: company.review_note || null })
+        .eq('id', coId);
+      if (r && r.error) {
+        company.review_flag = !turningOn;                    // taka staðbundnu breytinguna til baka
+        if (window.Toast && Toast.show) Toast.show('Náði ekki að vista: ' + (r.error.message || r.error));
+      }
     }
     const main = document.getElementById('_av-main'); if (main) render(main);
   }

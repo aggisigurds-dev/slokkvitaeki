@@ -224,13 +224,19 @@ var Counter = {
     Toast.show('Verk merkt sem sótt ✓');
     // Mark the matching solur as paid (Greitt síðar → paid on pickup)
     if (saleNum && DB.sb) {
-      try {
-        await DB.sb.from('solur')
-          .update({ paid_at: new Date().toISOString(), paid_method: 'greitt_sidar_pickup' })
-          .eq('num', saleNum)
-          .eq('greitt_med', 'greitt_sidar')
-          .is('paid_at', null);
-      } catch (e) { /* non-fatal */ }
+      // 17.09.2026 — PENINGALÍNA. Tvennt var að: supabase-js kastar ekki, svo
+      // `catch` sá aldrei neitt, og „/* non-fatal */" var rangt mat. Mistakist
+      // þetta skrif er verkið merkt sótt og borðinn sagði ✓, en salan situr
+      // eftir í „greitt síðar" — órukkuð og ósýnileg. Nú sést það.
+      const r = await DB.sb.from('solur')
+        .update({ paid_at: new Date().toISOString(), paid_method: 'greitt_sidar_pickup' })
+        .eq('num', saleNum)
+        .eq('greitt_med', 'greitt_sidar')
+        .is('paid_at', null);
+      if (r && r.error) {
+        Toast.show('⚠ Verkið er sótt, en salan ' + saleNum + ' merktist EKKI greidd — hún situr enn í „greitt síðar". Merktu hana handvirkt.');
+        try { if (window.logProblem) window.logProblem('pickup_paid_failed', 'sala:' + saleNum); } catch (_) {}
+      }
     }
   },
   editVerd: async function(id) {

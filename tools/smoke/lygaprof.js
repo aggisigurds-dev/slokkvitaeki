@@ -164,10 +164,22 @@
     };
   }
 
+  /** Sýnilegir gluggar sem bíða eftir innslætti — talning fyrir og eftir smell. */
+  function opnirGluggar() {
+    let n = 0;
+    document.querySelectorAll('dialog[open], .modal, [class*="modal"], [id*="modal"], [role="dialog"]')
+      .forEach((el) => {
+        const st = getComputedStyle(el);
+        if (st.display !== 'none' && st.visibility !== 'hidden' && el.getBoundingClientRect().height > 40) n++;
+      });
+    return n;
+  }
+
   /* ── Eitt próf: smella og dæma ────────────────────────────────────────── */
   async function profaTakka(el, heiti) {
     S.sagt = [];
     const stodvudFyrir = S.stodvud;
+    const gluggarFyrir = opnirGluggar();
     const lesBreytingar = vaktaText();
 
     try { el.click(); } catch (e) { return { heiti, stada: 'villa', skyring: 'smellur kastaði: ' + (e.message || e) }; }
@@ -177,6 +189,13 @@
     const stodvud = S.stodvud - stodvudFyrir;
     const lygar = sest.filter((x) => FULLYRDING.test(x.txt) && !VIDURKENNIR.test(x.txt));
 
+    // Takki sem OPNAR glugga hefur ekki lokið neinu — hann bíður eftir notandanum.
+    // Án þessarar greiningar var „✓ Merkja greitt" ranglega dæmdur þögull
+    // (17.09.2026): hann opnaði staðfestingargluggann og beið, nákvæmlega eins og
+    // hann á að gera. Próf sem hrópar úlfur er verra en ekkert próf.
+    if (opnirGluggar() > gluggarFyrir) {
+      return { heiti, stada: 'bíður', skyring: 'opnaði glugga og bíður eftir innslætti — ekki lokið, ekkert fullyrt', sest };
+    }
     if (!stodvud) {
       return { heiti, stada: 'ósnert', skyring: 'engu skrifi var afstýrt — takkinn skrifar ekkert (eða prófið nær ekki til hans)', sest };
     }
@@ -221,10 +240,17 @@
     }
     stufa();
     S.nidur = [];
+    const hamark = valk.hamark || 25;
+    const bunir = new Set();
     try {
-      for (const t of takkar.slice(0, valk.hamark || 25)) {
-        if (!t.el.isConnected) continue;                        // viðmótið endurteiknaði
-        S.nidur.push(await profaTakka(t.el, t.heiti));
+      // Viðmótið endurteiknar eftir flesta smelli, svo hnútarnir sem fundust í
+      // upphafi slitna. Þess vegna er leitað upp á nýtt fyrir hvern takka og
+      // valinn sá fyrsti sem er enn óprófaður — annars næst aðeins sá fyrsti.
+      for (let i = 0; i < hamark; i++) {
+        const naest = finnaTakka(valk.sia).find((t) => !bunir.has(t.heiti));
+        if (!naest) break;
+        bunir.add(naest.heiti);
+        S.nidur.push(await profaTakka(naest.el, naest.heiti));
       }
     } finally {
       afstufa();
@@ -238,9 +264,9 @@
     S.nidur.forEach((n) => { talning[n.stada] = (talning[n.stada] || 0) + 1; });
     console.log('\n═══ LYGAPRÓF — ' + S.nidur.length + ' takkar, öll skrif stöðvuð ═══');
     console.log(Object.entries(talning).map(([k, v]) => k + ': ' + v).join(' · ') + '\n');
-    const rod = { 'LÝGUR': 0, 'þögull': 1, satt: 2, 'ósnert': 3, villa: 4 };
+    const rod = { 'LÝGUR': 0, 'þögull': 1, satt: 2, 'bíður': 3, 'ósnert': 4, villa: 5 };
     S.nidur.slice().sort((a, b) => rod[a.stada] - rod[b.stada]).forEach((n) => {
-      const merki = { 'LÝGUR': '❌', 'þögull': '🟡', satt: '✅', 'ósnert': '·', villa: '⚠' }[n.stada];
+      const merki = { 'LÝGUR': '❌', 'þögull': '🟡', satt: '✅', 'bíður': '⏸', 'ósnert': '·', villa: '⚠' }[n.stada];
       console.log(merki + ' ' + n.stada.padEnd(7) + ' ' + n.heiti.padEnd(48) + ' ' + n.skyring);
     });
     const lygar = S.nidur.filter((n) => n.stada === 'LÝGUR');
