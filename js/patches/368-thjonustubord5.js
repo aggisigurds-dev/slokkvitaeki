@@ -673,6 +673,23 @@
     } catch (_) { S.post[id] = false; }
     render();
   }
+  // 17.09.2026: sömu reitir og loadPost sækir — hlutirnir verða eins, svo
+  // svarglugginn og valið mál geta notað þá beint án annarrar sóknar.
+  let _postBunki = false;
+  async function loadPostBunki(rows) {
+    if (_postBunki) return;
+    const ids = [...new Set(rows.map(postId).filter(id => id != null && !(id in S.post)))];
+    if (!ids.length) return;
+    _postBunki = true;
+    ids.forEach(id => { S.post[id] = null; });   // merkt sótt strax svo endurteikning kalli ekki aftur
+    try {
+      const res = await sb().from('email_digest').select('id,message_id,account,sender_name,sender_email,subject,snippet,body_preview,received_at').in('id', ids);
+      if (!res.error) (res.data || []).forEach(p => { S.post[p.id] = p; });
+    } catch (_) { /* engin forskoðun er ekki villa — línan stendur eftir sem áður */ }
+    ids.forEach(id => { if (S.post[id] == null) S.post[id] = false; });
+    _postBunki = false;
+    render();
+  }
   function reply(id) {
     const r = S.rows.find(x => x.id === id);
     if (!r) return;
@@ -2720,7 +2737,8 @@
   // það sem stendur NEÐAN við „-----", „Frá:", „On … wrote:" er gamall póstur.
   const KLIPPA = /\n\s*(?:-{3,}\s*(?:original|upprunaleg|forwarded|áframsent)|_{5,}|(?:frá|from|sent|til|to|cc|efni|subject)\s*:|(?:á|on)\b[^\n]{0,80}\b(?:skrifaði|wrote)\s*:)/i;
   function postForskodun(r) {
-    let s = String(r.notes || '').trim();
+    const p = postOf(r);
+    let s = String((p && (p.snippet || p.body_preview)) || r.notes || '').trim();
     if (!s) return '';
     const m = KLIPPA.exec(s); if (m) s = s.slice(0, m.index).trim();
     s = s.replace(/\s+/g, ' ').trim();
@@ -2933,6 +2951,7 @@
     }
     if (k === 'postsvor') {
       const lyk = r => 'postsvor:mal:' + r.id, pF = fela(S.rows.filter(r => isPost(r) && !r.svarad_at).sort(rodun), lyk);
+      loadPostBunki(pF.synd.slice(0, 8));
       const rod = (r, falinn) => lrowHtml(r, isFree(r) ? '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) + '>Taka ›</button>' : '', { l: lyk(r), e: k, d: r.title, falinn }, postForskodun(r));
       return modPanel(k, pF.synd.length + ' bíða svars' + falinSum(pF.falin.length),
         (pF.synd.length ? pF.synd.slice(0, 8).map(r => rod(r)).join('') + (pF.synd.length > 8 ? '<div class="more">+ ' + (pF.synd.length - 8) + ' til viðbótar</div>' : '')
