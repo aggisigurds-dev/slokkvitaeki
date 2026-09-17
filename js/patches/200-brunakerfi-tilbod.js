@@ -93,12 +93,19 @@
 
   // ---- compute totals from a list of {magn, verd, afsl} + total discount ----
   function compute(lines, totalDiscPct) {
-    let subAn = 0;
-    lines.forEach(l => { subAn += num(l.magn) * num(l.verd) * (1 - num(l.afsl) / 100); });
+    // 17.09.2026: brúttó og línuafsláttur reiknuð sér svo fóturinn geti SÝNT
+    // afsláttinn. Áður sást aðeins nettó-talan og Agnar hélt (eðlilega) að
+    // línuafslátturinn hefði ekki skilað sér — hann var réttur en ósýnilegur.
+    let brutto = 0, subAn = 0;
+    lines.forEach(l => {
+      const b = num(l.magn) * num(l.verd);
+      brutto += b;
+      subAn += b * (1 - num(l.afsl) / 100);
+    });
     const td = Math.max(0, Math.min(100, num(totalDiscPct)));
     const anAfter = subAn * (1 - td / 100);
     const vsk = anAfter * VSK;
-    return { sub_an: subAn, disc_kr: subAn - anAfter, an: anAfter, vsk, m_vsk: anAfter + vsk };
+    return { brutto, lina_kr: brutto - subAn, sub_an: subAn, disc_kr: subAn - anAfter, an: anAfter, vsk, m_vsk: anAfter + vsk };
   }
 
   // ====================== EDITOR MODAL ======================
@@ -154,7 +161,9 @@
           </div>
           <div style="display:flex;justify-content:flex-end;margin-top:16px">
             <div style="min-width:320px">
-              <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569"><span>Samtals án vsk</span><span id="_bt-sub" style="font-variant-numeric:tabular-nums">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569"><span>Samtals án vsk (fyrir afslátt)</span><span id="_bt-brutto" style="font-variant-numeric:tabular-nums">—</span></div>
+              <div id="_bt-linarod" style="display:none;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569"><span>Afsláttur á línum</span><span id="_bt-lina" style="color:#dc2626;font-variant-numeric:tabular-nums">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569;border-top:1px solid #e2e8f0"><span>Samtals án vsk</span><span id="_bt-sub" style="font-variant-numeric:tabular-nums">—</span></div>
               <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px;color:#475569">
                 <span>Heildarafsláttur</span>
                 <span><input id="_bt-tdisc" type="number" min="0" max="100" step="1" value="${totalDisc || ''}" placeholder="0" style="width:56px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"> %
@@ -192,6 +201,9 @@
         tr.style.background = num(l.magn) > 0 ? '#f0fdf4' : '';
       });
       const t = compute(lines, ov.querySelector('#_bt-tdisc').value);
+      ov.querySelector('#_bt-brutto').textContent = fmtKr(t.brutto);
+      ov.querySelector('#_bt-lina').textContent = t.lina_kr > 0 ? '− ' + fmtKr(t.lina_kr) : '—';
+      ov.querySelector('#_bt-linarod').style.display = t.lina_kr > 0 ? 'flex' : 'none';
       ov.querySelector('#_bt-sub').textContent = fmtKr(t.sub_an);
       ov.querySelector('#_bt-disc').textContent = t.disc_kr > 0 ? '− ' + fmtKr(t.disc_kr) : '—';
       ov.querySelector('#_bt-an').textContent = fmtKr(t.an);
@@ -292,6 +304,9 @@
         '<th style="text-align:right;padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">Samtals án vsk</th>' +
       '</tr></thead><tbody>' + lineRows + '</tbody></table>' +
       '<div style="display:flex;justify-content:flex-end;margin-top:16px"><div style="min-width:300px">' +
+        // 17.09.2026: afslátturinn á stökum línum sést nú á prentaða tilboðinu líka —
+        // áður var hann þagður inn í „Samtals án vsk" og kúnninn sá engan afslátt.
+        (t.lina_kr > 0 ? totRow('Samtals án vsk (fyrir afslátt)', fmtKr(t.brutto)) + totRow('Afsláttur á línum', '− ' + fmtKr(t.lina_kr)) : '') +
         totRow('Samtals án vsk', fmtKr(t.sub_an)) +
         (t.disc_kr > 0 ? totRow('Heildarafsláttur (' + o.total_disc + '%)', '− ' + fmtKr(t.disc_kr)) : '') +
         totRow('Án vsk', fmtKr(t.an)) +
