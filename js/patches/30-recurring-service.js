@@ -36,7 +36,7 @@
   function fmtDate(iso) {
     if (!iso) return '';
     const d = new Date(iso);
-    return d.getDate() + '.' + (d.getMonth()+1) + '.' + d.getFullYear();
+    return d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
   }
 
   // ── CSS ───────────────────────────────────────────────────────────────────

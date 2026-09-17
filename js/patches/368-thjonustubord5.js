@@ -613,7 +613,7 @@
       if (!erSamthykki(r)) { toast('Málinu hefur þegar verið svarað — sýni nýjustu stöðu.', true); return; }
       const nuna = new Date();
       const tags = r.tags.filter(t => t !== SAMTHYKKI && !(typeof t === 'string' && t.indexOf('svar:') === 0)).concat(['svar:' + svar]);
-      const stimpill = n + ' · ' + String(nuna.getDate()).padStart(2, '0') + '.' + String(nuna.getMonth() + 1).padStart(2, '0') + '. kl. ' + klukka(nuna);
+      const stimpill = n + ' · ' + String(nuna.getDate()).padStart(2, '0') + '/' + String(nuna.getMonth() + 1).padStart(2, '0') + ' kl. ' + klukka(nuna);
       const lina = skyring ? '— Skýring til endurmats: ' + stimpill + '\n' + skyring : '— ' + s.l + ': ' + stimpill;
       const notes = (r.notes ? String(r.notes).replace(/\s+$/, '') + '\n\n' : '') + lina;
       let q = c.from('thjonustubeidni').update({ tags, status: s.status, notes, updated_at: nuna.toISOString() }).eq('id', id);
@@ -1195,7 +1195,7 @@
     S.aiBid[id] = true;
     render();
     const fyrri = r.summary || '';
-    const dd = s => { const d = new Date(s); return isNaN(d.getTime()) ? '' : String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear(); };
+    const dd = s => { const d = new Date(s); return isNaN(d.getTime()) ? '' : String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(); };
     try {
       if (isPost(r) && postOf(r) === undefined) await loadPost(r);
       // Borið saman HÉR, ekki af líkaninu (prófað 11.09: nýtt mál með eldri greiddum reikningi fékk „Líklega búið").
@@ -1939,8 +1939,8 @@
   const dagsStutt = iso => {
     const d = new Date(iso);
     if (!iso || isNaN(d.getTime())) return '';
-    const s = String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.';
-    return d.getFullYear() === new Date().getFullYear() ? s : s + d.getFullYear();
+    const s = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    return d.getFullYear() === new Date().getFullYear() ? s : s + '/' + d.getFullYear();
   };
   // „Skýring" / „Breyta skýringu" aftan við „Fela" — sama daufa útlit og sömu gögn á takkanum.
   const skyrTakki = f => {

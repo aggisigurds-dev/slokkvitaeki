@@ -201,7 +201,7 @@
     $('#portal').classList.remove('hidden');
     var lo = $('#logoutBtn'); if (lo) lo.style.display = state.open ? 'none' : '';  // ekkert að útskrá í opnum ham
     var d = new Date();
-    var today = ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear();
+    var today = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
     $('#yf-kicker').textContent = 'Staða brunavarna · uppfært ' + today;
     renderCards(data.stats);
     renderYfirlit(data.buildings);

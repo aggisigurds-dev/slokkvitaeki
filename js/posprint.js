@@ -1,7 +1,7 @@
 /* POS Receipt printing - dedicated sales receipt format */
 (function(){'use strict';
 function fmtKr(n){return Math.round(Number(n)||0).toLocaleString('is-IS')+' kr';}
-function fmtDate(d){var dt=d?new Date(d):new Date();var p=function(n){return String(n).padStart(2,'0');};return p(dt.getDate())+'.'+p(dt.getMonth()+1)+'.'+dt.getFullYear()+' '+p(dt.getHours())+':'+p(dt.getMinutes());}
+function fmtDate(d){var dt=d?new Date(d):new Date();var p=function(n){return String(n).padStart(2,'0');};return p(dt.getDate())+'/'+p(dt.getMonth()+1)+'/'+dt.getFullYear()+' '+p(dt.getHours())+':'+p(dt.getMinutes());}
 function pad(text,width){text=String(text||'');if(text.length>=width)return text.substring(0,width);return text+' '.repeat(width-text.length);}
 function padL(text,width){text=String(text||'');if(text.length>=width)return text.substring(0,width);return ' '.repeat(width-text.length)+text;}
 function buildReceipt(sale,lines,totals,method){

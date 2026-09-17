@@ -784,7 +784,7 @@
     if (!iso) return '';
     const d = new Date(iso);
     if (isNaN(d)) return '';
-    return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
+    return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
   }
 
   // ── UI: Section in Samningar view ──────────────────────────────────────────
@@ -1044,7 +1044,7 @@
       : null;
 
     const today = new Date();
-    const dStr = String(today.getDate()).padStart(2,'0') + '.' + String(today.getMonth()+1).padStart(2,'0') + '.' + today.getFullYear();
+    const dStr = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
 
     const fields = extractFields(t.html);
     const values = {};

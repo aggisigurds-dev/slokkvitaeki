@@ -185,7 +185,7 @@
       el.innerHTML = visits.map(function(v){
         var d=new Date(v.date); var m=v.date.slice(5,7);
         var col = monthColors[m]||'#059669';
-        var ds = d.getDate()+'.'+(d.getMonth()+1)+'.';
+        var ds = d.getDate()+'/'+(d.getMonth()+1);
         return '<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid #eee;">'+
           '<div style="background:'+col+';color:#fff;font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;white-space:nowrap;">'+ds+'</div>'+
           '<div style="min-width:0;"><div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_e(v.client)+'</div>'+

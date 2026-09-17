@@ -219,7 +219,7 @@
     if (!jobs.length) { alert('Engin tilbúin verk á listanum.'); return; }
     const shelves = (window.AppSettings && AppSettings.path && AppSettings.path('job_shelves')) || {};
     const today = new Date();
-    const dstr = String(today.getDate()).padStart(2, '0') + '.' + String(today.getMonth() + 1).padStart(2, '0') + '.' + today.getFullYear();
+    const dstr = String(today.getDate()).padStart(2, '0') + '/' + String(today.getMonth() + 1).padStart(2, '0') + '/' + today.getFullYear();
     const rows = jobs.map(j => {
       const phone = digitsOnly(j.phone);
       return '<tr>' +

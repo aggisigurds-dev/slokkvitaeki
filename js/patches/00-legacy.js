@@ -205,7 +205,7 @@
 /* ===== 0. HELPERS ===== */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fmtKr(n){return Math.round(n||0).toLocaleString('is-IS');}
-function fmtDate(s){if(!s)return'';try{var d=new Date(s);if(isNaN(d))return s;return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();}catch(e){return s;}}
+function fmtDate(s){if(!s)return'';try{var d=new Date(s);if(isNaN(d))return s;return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}catch(e){return s;}}
 function toast(m,c,ms){
   var t=document.createElement('div');
   t.style.cssText='position:fixed;top:80px;left:50%;transform:translateX(-50%);background:'+(c||'#1e293b')+';color:#fff;padding:14px 22px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:99999;font-weight:600;font-size:14px';

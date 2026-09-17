@@ -649,7 +649,7 @@
         const cur = await sb.from('customer_documents').select('notes').eq('id', did).maybeSingle();
         if (cur.error) throw cur.error;
         const nu = new Date();
-        const dags = String(nu.getDate()).padStart(2, '0') + '.' + String(nu.getMonth() + 1).padStart(2, '0') + '.' + nu.getFullYear();
+        const dags = String(nu.getDate()).padStart(2, '0') + '/' + String(nu.getMonth() + 1).padStart(2, '0') + '/' + nu.getFullYear();
         const r = await sb.from('customer_documents').update({
           fyrirtaeki_id: null, customer_base_id: null, needs_site: true,
           notes: ((cur.data && cur.data.notes) ? cur.data.notes + ' · ' : '') + 'Aftengt af ' + (co.nafn || ('#' + co.id)) + ' ' + dags

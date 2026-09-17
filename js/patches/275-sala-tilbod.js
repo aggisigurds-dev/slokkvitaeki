@@ -30,7 +30,7 @@
   function toast(m) { if (window.Toast && Toast.show) Toast.show(m); else alert(m); }
   function fmtKr(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr'; }
   function fmtKt(kt) { const d = String(kt || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : (kt || ''); }
-  function today() { const d = new Date(); return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear(); }
+  function today() { const d = new Date(); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(); }
   // jsPDF innbyggða letrið er CP1252 — stafir utan þess (₂ í „CO₂", U+2212 o.fl.)
   // brjóta línuna („C O , 5 k g …" ruslið, Agnar 2026-07-21). Undirskriftar-
   // tölustafir verða venjulegir, týpó-mínus verður '-', annað óstutt fellt burt.

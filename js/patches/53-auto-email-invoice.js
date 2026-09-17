@@ -13,7 +13,7 @@
 
   function esc(s){return String(s==null?'':s);}
   function fmtKr(n){if(!n&&n!==0)return'—';const s=Math.round(n).toString();const r=[];let t=s;while(t.length>3){r.unshift(t.slice(-3));t=t.slice(0,-3);}r.unshift(t);return r.join('.')+' kr';}
-  function fmtDate(d){if(!d)return'';const x=new Date(d);return x.getDate()+'.'+(x.getMonth()+1)+'.'+x.getFullYear();}
+  function fmtDate(d){if(!d)return'';const x=new Date(d);return x.getDate()+'/'+(x.getMonth()+1)+'/'+x.getFullYear();}
 
   function getSetting(k, def) { return localStorage.getItem('cfg_'+k) || localStorage.getItem(k) || def || ''; }
 

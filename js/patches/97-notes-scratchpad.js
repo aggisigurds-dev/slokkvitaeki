@@ -149,7 +149,7 @@
       const win = window.open('', 'notes-print', 'width=900,height=1100');
       if (!win) { alert('Sprettigluggi var lokaður — leyfðu sprettiglugga til að prenta.'); return; }
       const today = new Date();
-      const dateStr = String(today.getDate()).padStart(2,'0') + '.' + String(today.getMonth()+1).padStart(2,'0') + '.' + today.getFullYear();
+      const dateStr = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
       win.document.write(
         '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Punktar og verð</title>' +
         '<style>' +

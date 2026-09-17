@@ -949,8 +949,8 @@
     // line), e.g. "Vinna vegna skoðunar á Dalvegi 10". Overrides the default.
     const invoiceText   = (tripState.invoice_text != null) ? String(tripState.invoice_text) : '';
     const _td = new Date();
-    const todayDDMM = String(_td.getDate()).padStart(2, '0') + '.' +
-      String(_td.getMonth() + 1).padStart(2, '0') + '.' + _td.getFullYear();
+    const todayDDMM = String(_td.getDate()).padStart(2, '0') + '/' +
+      String(_td.getMonth() + 1).padStart(2, '0') + '/' + _td.getFullYear();
     // 2026-08-17 (ósk Agnars): valmöguleikar á reitina þrjá í stað blinds
     // innsláttar — mánuðurinn býður líðandi + tvo síðustu, starfsmenn fasta
     // listann (+ AppSettings.starfsmenn), dagsetningin „í dag" og síðasta dag

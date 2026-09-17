@@ -23,7 +23,7 @@
   const pn = v => { const s = String(v == null ? '' : v).replace(/[.\s]/g, '').replace(',', '.'); const n = parseFloat(s); return isFinite(n) ? n : 0; };
   const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : 0; };
   const todayISO = () => new Date().toISOString().slice(0, 10);
-  const fmtDate = iso => { if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return iso; return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear(); };
+  const fmtDate = iso => { if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return iso; return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(); };
   const branding = () => (window.AppSettings && window.AppSettings.path && window.AppSettings.path('branding')) || {};
   const BRAND = { black: '#1b1b1b', red: '#C0341D', orange: '#F07A1E' };
 

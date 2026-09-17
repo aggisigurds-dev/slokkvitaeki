@@ -59,7 +59,7 @@
   const tvo = n => String(n).padStart(2, '0');
   const ymd = d => d.getFullYear() + '-' + tvo(d.getMonth() + 1) + '-' + tvo(d.getDate());
   const dagsHlutur = iso => (/^\d{4}-\d{2}-\d{2}$/.test(String(iso || '')) ? new Date(iso + 'T12:00:00') : new Date(iso));
-  const dags = iso => { if (!iso) return ''; const d = dagsHlutur(iso); return isNaN(d.getTime()) ? '' : tvo(d.getDate()) + '.' + tvo(d.getMonth() + 1) + '.' + d.getFullYear(); };
+  const dags = iso => { if (!iso) return ''; const d = dagsHlutur(iso); return isNaN(d.getTime()) ? '' : tvo(d.getDate()) + '/' + tvo(d.getMonth() + 1) + '/' + d.getFullYear(); };
   const klukka = iso => { if (!iso) return ''; const d = new Date(iso); return isNaN(d.getTime()) ? '' : dags(iso) + ' kl. ' + tvo(d.getHours()) + ':' + tvo(d.getMinutes()); };
   // Heilir dagar frá dagsetningu til dagsins í dag (staðartími) — sama tala og `current_date - dags` í SQL.
   const dagaMunur = iso => {

@@ -29,7 +29,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function ktDigits(s) { return String(s == null ? '' : s).replace(/\D/g, ''); }
   function nrm(s) { return String(s || '').trim().toLowerCase(); }
-  function fmtD(iso) { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear(); }
+  function fmtD(iso) { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(); }
   function listFilled() {
     try { return (window.DocTemplates && DocTemplates.listFilled && DocTemplates.listFilled()) || []; } catch (_) { return []; }
   }

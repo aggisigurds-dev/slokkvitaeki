@@ -24,7 +24,7 @@
   const CA = () => window.CompanyAttachments || null;
   const toast = (t) => { if (window.Toast && Toast.show) Toast.show(t); };
   const pad = (n) => String(n).padStart(2, '0');
-  const fmtDate = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear(); };
+  const fmtDate = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(); };
   const fmtSize = (b) => !b ? '' : b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(0) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
   const isImg = (f) => /^image\//.test(f.content_type || '') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(f.name || '');
   const isPdf = (f) => /pdf/.test(f.content_type || '') || /\.pdf$/i.test(f.name || '');

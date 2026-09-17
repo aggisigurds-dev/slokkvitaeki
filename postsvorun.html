@@ -94,7 +94,7 @@ button.save{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border
 var SB=window.supabase.createClient("https://osfdzskyvisifcwyjkuk.supabase.co","sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f");
 var DATA=[],filt='opin',tfilt='allir',sortBy='forg',curId=null;
 function dts(r){return r.dags||r.created_at||'';}
-function fmtd(s){if(!s)return '';var d=new Date(s);if(isNaN(d))return '';return ('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+(''+d.getFullYear()).slice(-2);}
+function fmtd(s){if(!s)return '';var d=new Date(s);if(isNaN(d))return '';return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+(''+d.getFullYear()).slice(-2);}
 function setsort(el){sortBy=el.dataset.s;document.querySelectorAll('.schip').forEach(function(c){c.classList.remove('on')});el.classList.add('on');render();}
 var TAGRX={tilbod:/tilbo|svara/i, nyr:/úttekt|uttekt/i, skyrsla:/skýrsl|skyrsl/i, reikn:/reikn|bakfær|bakfaer/i};
 function passTag(r){if(tfilt==='allir')return true;var rx=TAGRX[tfilt];return rx?rx.test(r.flokkur||''):true;}

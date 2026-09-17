@@ -460,7 +460,7 @@
   function virkniHtml(g) {
     const v = g.virkni;
     if (!v) return '';
-    const d = (s) => { const t = Date.parse(s); if (isNaN(t)) return ''; const x = new Date(t); return String(x.getDate()).padStart(2, '0') + '.' + String(x.getMonth() + 1).padStart(2, '0') + '.' + x.getFullYear(); };
+    const d = (s) => { const t = Date.parse(s); if (isNaN(t)) return ''; const x = new Date(t); return String(x.getDate()).padStart(2, '0') + '/' + String(x.getMonth() + 1).padStart(2, '0') + '/' + x.getFullYear(); };
     const rk = v.sidasti_reikningur, sk = v.sidasta_skyrsla, sl = v.sidasta_sala, parts = [];
     if (rk) parts.push('🧾 Reikningur ' + esc(rk.num || '') + ' ' + d(rk.dags) + (rk.paid_at ? ' · greiddur ' + d(rk.paid_at) : ' · ógreiddur'));
     else if (sl) parts.push('🛒 Sala ' + esc(sl.num || '') + ' ' + d(sl.dags));

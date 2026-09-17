@@ -55,7 +55,7 @@
   function isoYear(s) { var m = /(\d{4})/.exec(String(s || '')); return m ? m[1] : String(new Date().getFullYear()); }
   function ddmmyyyy(s) {
     var d = s ? new Date(s) : new Date(); if (isNaN(d)) d = new Date();
-    return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear();
+    return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
   }
   function lineArray(sale) {
     var l = sale && sale.linur;

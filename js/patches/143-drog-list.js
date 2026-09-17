@@ -36,7 +36,7 @@
     if (!iso) return '—';
     const d = new Date(iso);
     if (isNaN(d)) return '—';
-    return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
+    return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
   }
   function daysSince(iso) {
     if (!iso) return 0;

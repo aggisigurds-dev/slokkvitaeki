@@ -78,7 +78,7 @@
 
     const existingNotes = unit.notes || '';
     const today = new Date();
-    const dateStamp = String(today.getDate()).padStart(2,'0') + '.' + String(today.getMonth()+1).padStart(2,'0') + '.' + today.getFullYear();
+    const dateStamp = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
     const lastTech = localStorage.getItem('_vr_last_tech') || '';
 
     dlg.innerHTML =
@@ -470,7 +470,7 @@
     dlg.style.cssText = 'position:fixed;inset:0;z-index:100050;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;padding:16px';
 
     const today = new Date();
-    const dateStamp = String(today.getDate()).padStart(2,'0') + '.' + String(today.getMonth()+1).padStart(2,'0') + '.' + today.getFullYear();
+    const dateStamp = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
     const lastTech = localStorage.getItem('_vr_last_tech') || '';
 
     dlg.innerHTML =
