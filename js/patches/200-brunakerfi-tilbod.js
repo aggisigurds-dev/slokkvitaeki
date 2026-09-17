@@ -169,7 +169,7 @@
                 <span><input id="_bt-tdisc" type="number" min="0" max="100" step="1" value="${totalDisc || ''}" placeholder="0" style="width:56px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"> %
                 <span id="_bt-disc" style="margin-left:8px;color:#dc2626;font-variant-numeric:tabular-nums">—</span></span>
               </div>
-              <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569;border-top:1px solid #e2e8f0"><span>Án vsk eftir afslátt</span><span id="_bt-an" style="font-variant-numeric:tabular-nums">—</span></div>
+              <div id="_bt-anrod" style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569;border-top:1px solid #e2e8f0"><span>Án vsk eftir afslátt</span><span id="_bt-an" style="font-variant-numeric:tabular-nums">—</span></div>
               <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569"><span>VSK 24%</span><span id="_bt-vsk" style="font-variant-numeric:tabular-nums">—</span></div>
               <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:18px;font-weight:800;color:#C0341D;border-top:3px solid #1b1b1b;margin-top:4px"><span>Samtals m. vsk</span><span id="_bt-tot" style="font-variant-numeric:tabular-nums">—</span></div>
             </div>
@@ -207,6 +207,8 @@
       ov.querySelector('#_bt-sub').textContent = fmtKr(t.sub_an);
       ov.querySelector('#_bt-disc').textContent = t.disc_kr > 0 ? '− ' + fmtKr(t.disc_kr) : '—';
       ov.querySelector('#_bt-an').textContent = fmtKr(t.an);
+      // Sama tala og „Samtals án vsk" nema heildarafsláttur sé settur — þá er hún falin.
+      ov.querySelector('#_bt-anrod').style.display = t.disc_kr > 0 ? 'flex' : 'none';
       ov.querySelector('#_bt-vsk').textContent = fmtKr(t.vsk);
       ov.querySelector('#_bt-tot').textContent = fmtKr(t.m_vsk);
     }
@@ -315,7 +317,7 @@
         (t.lina_kr > 0 ? totRow('Samtals án vsk (fyrir afslátt)', fmtKr(t.brutto)) + totRow('Afsláttur á línum', '− ' + fmtKr(t.lina_kr)) : '') +
         totRow('Samtals án vsk', fmtKr(t.sub_an)) +
         (t.disc_kr > 0 ? totRow('Heildarafsláttur (' + o.total_disc + '%)', '− ' + fmtKr(t.disc_kr)) : '') +
-        totRow('Án vsk', fmtKr(t.an)) +
+        (t.disc_kr > 0 ? totRow('Án vsk eftir afslátt', fmtKr(t.an)) : '') +
         totRow('VSK 24%', fmtKr(t.vsk)) +
         totRow('Samtals m. vsk', fmtKr(t.m_vsk), true) +
       '</div></div>' +
