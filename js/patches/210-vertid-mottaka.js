@@ -42,7 +42,7 @@
   function setTech(v) { try { localStorage.setItem('mt_tech', v || ''); } catch (_) {} }
   function todayIso() { return new Date().toISOString().slice(0, 10); }
   function addMonthsIso(iso, m) { const d = new Date(iso); d.setMonth(d.getMonth() + m); return d.toISOString().slice(0, 10); }
-  function ddmm(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? m[3] + '.' + m[2] : ''; }
+  function ddmm(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? m[3] + '/' + m[2] : ''; }
 
   // ── per-unit service choices (mirror patch 131) ──────────────────────────
   const CHOICES = [

@@ -31,6 +31,10 @@
   function fmtKr(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr'; }
   function fmtKt(kt) { const d = String(kt || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : (kt || ''); }
   function today() { const d = new Date(); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(); }
+  // Skráarnafn MÁ EKKI bera skástrik: póstforrit lesa nafnið eftir síðasta '/' og
+  // viðhengið heitir þá bara „2026.pdf" hjá kúnnanum. Birting og skráarnafn eru
+  // því aðskilin — netvörður 17.09.2026.
+  function todaySkra() { return today().replace(/\//g, '-'); }
   // jsPDF innbyggða letrið er CP1252 — stafir utan þess (₂ í „CO₂", U+2212 o.fl.)
   // brjóta línuna („C O , 5 k g …" ruslið, Agnar 2026-07-21). Undirskriftar-
   // tölustafir verða venjulegir, týpó-mínus verður '-', annað óstutt fellt burt.
@@ -223,7 +227,7 @@
     if (!snap.lines.length) { toast('Karfan er tóm — ekkert tilboð að senda.'); return false; }
     const cu = snap.customer || {};
     const to = await resolveEmail(cu);
-    const fname = 'Tilboð - ' + (cu.nafn || 'Brunahólf slökkvitæki ehf') + ' - ' + today() + '.pdf';
+    const fname = 'Tilboð - ' + (cu.nafn || 'Brunahólf slökkvitæki ehf') + ' - ' + todaySkra() + '.pdf';
     return ReceiptSender.compose({
       title: 'Senda tilboð' + (cu.nafn ? ' — ' + cu.nafn : ''),
       to: to,

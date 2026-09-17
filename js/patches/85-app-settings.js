@@ -72,7 +72,7 @@
       default_vsk_pct: 24,
       default_due_days: 10,
       default_pickup_offset_days: 7,
-      date_format: 'dd.mm.yyyy',
+      date_format: 'dd/mm/yyyy',   // 17.09.2026: eitt snið alls staðar (Agnar)
       time_format: '24h',
       currency: 'kr',
       starting_view: 'sala'
@@ -367,13 +367,14 @@
     const d = (iso instanceof Date) ? iso : new Date(iso);
     if (isNaN(d)) return '';
     const a = (_settings && _settings.almennt) || {};
-    const fmt = a.date_format || 'dd.mm.yyyy';
+    const fmt = a.date_format || 'dd/mm/yyyy';
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
     if (fmt === 'yyyy-mm-dd') return yyyy + '-' + mm + '-' + dd;
     if (fmt === 'dd/mm/yyyy') return dd + '/' + mm + '/' + yyyy;
-    return dd + '.' + mm + '.' + yyyy; // default: dd.mm.yyyy
+    if (fmt === 'dd.mm.yyyy') return dd + '.' + mm + '.' + yyyy;
+    return dd + '/' + mm + '/' + yyyy; // sjálfgefið: dd/mm/yyyy
   }
 
   /* ── MISTEKIN VISTUN MÁ EKKI ÞEGJA (09.09.2026) ──────────────────────────

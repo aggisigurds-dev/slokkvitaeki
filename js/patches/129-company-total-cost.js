@@ -982,7 +982,7 @@
       }
       if (mIx >= 0 && !(y === _yNow && mIx === _mNow)) {
         const last = new Date(y, mIx + 1, 0).getDate();
-        dagsOpts += '<option value="' + String(last).padStart(2, '0') + '.' + String(mIx + 1).padStart(2, '0') + '.' + y +
+        dagsOpts += '<option value="' + String(last).padStart(2, '0') + '/' + String(mIx + 1).padStart(2, '0') + '/' + y +
           '" label="síðasti dagur ' + MONTHS_IS[mIx].toLowerCase() + '"></option>';
       }
     })();
