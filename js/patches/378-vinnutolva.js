@@ -36,6 +36,14 @@
   if (window.Vinnutolva) return;
 
   const LYKILL = 'vinnutolva_ultra';
+  // 17.09.2026 — MÆLT: fyrsta útgáfa endurnýjaði ALLTAF í bakgrunni, svo
+  // endurkoma á fyrirtæki kostaði 55 netköll áfram. Það var ekki það sem beðið
+  // var um („fer fram og til baka og alltaf svo mikið reload"). Þess vegna tvö þrep:
+  //   • yngra en STUTT  → sýnt úr minni og EKKERT spurt. Fram-og-til-baka flakk
+  //     kostar þá núll. 30 sekúndur af hugsanlegri skekkju í flakki er ásættanlegt
+  //     — og hvert skrif hreinsar sína töflu samstundis, svo vistun sést alltaf.
+  //   • STUTT–MAX_ALDUR → sýnt úr minni OG ferskt sótt í bakgrunni.
+  const STUTT = 30 * 1000;
   const MAX_ALDUR = 10 * 60 * 1000;      // eldra en þetta → sótt eins og áður
   const REST = '/rest/v1/';
 
@@ -124,6 +132,9 @@
     } catch (_) {}
 
     const geymt = minni.get(lykill);
+    if (geymt && Date.now() - geymt.t < STUTT) {
+      return Promise.resolve(svarAf(geymt));       // nýtt nóg → ekkert spurt
+    }
     if (geymt && Date.now() - geymt.t < MAX_ALDUR) {
       // Ferskt sótt í bakgrunni; sé svarið annað er teiknað upp á nýtt.
       upprunalegt(inn, valk)
