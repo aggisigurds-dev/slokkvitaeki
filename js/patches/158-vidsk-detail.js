@@ -973,14 +973,27 @@
         // 2026-07-08 (afsláttar-úttekt): POS lookupKt takes the HIGHEST
         // afslattur_pct across ALL rows sharing the kt — propagate so
         // lowering/clearing actually takes effect (see patch 255).
+        // 17.09.2026: supabase-js KASTAR EKKI — villan kemur í `.error`. Tómi
+        // catch-blokkin hér fyrir neðan gleypti auk þess raunveruleg köst, svo
+        // dreifingin gat mistekist ÞÖGUL og notandinn fékk samt staðfestingu.
+        // Sala les hæstu prósentu allra raða kennitölunnar: misheppnist dreifingin
+        // heldur gamla (hærri) prósentan velli og rangt verð fer á reikning.
+        let dreifOk = true;
         try {
           const ktd = String(c.kennitala || '').replace(/[^0-9]/g, '');
           if (ktd.length === 10 && ktd !== '9999999999') {
             const pats = [ktd, ktd.slice(0, 6) + '-' + ktd.slice(6)];
-            await sb.from('fyrirtaeki').update({ afslattur_pct: v }).in('kennitala', pats);
-            await sb.from('vidskiptavinir').update({ afslattur_pct: v }).in('kennitala', pats);
+            const r1 = await sb.from('fyrirtaeki').update({ afslattur_pct: v }).in('kennitala', pats);
+            if (r1 && r1.error) throw r1.error;
+            const r2 = await sb.from('vidskiptavinir').update({ afslattur_pct: v }).in('kennitala', pats);
+            if (r2 && r2.error) throw r2.error;
           }
-        } catch (_) {}
+        } catch (e) { dreifOk = false; console.warn('[158] afsláttardreifing', e); }
+        if (!dreifOk) {
+          if (window.Toast && Toast.show) Toast.show(
+            '⚠ Afslátturinn vistaðist HÉR en barst EKKI á aðra staði sömu kennitölu — Sala getur lesið gamla prósentu.');
+          try { if (window.logProblem) window.logProblem('afslattur_dreifing_failed', 'kt:' + (c.kennitala || '?')); } catch (_) {}
+        }
         c.afslattur_pct = v;
         // 09.09.2026 — TVÆR STAÐBUNDNAR AFRITUNARVILLUR á sömu aðgerð.
         //

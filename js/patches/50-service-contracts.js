@@ -462,7 +462,9 @@
     const up = await SB.storage.from(BUCKET).upload(path, f, { contentType:f.type, upsert:false });
     if (up.error) throw up.error;
     const { data: pub } = SB.storage.from(BUCKET).getPublicUrl(path);
-    await SB.from('thjonustusamningar').update({ photo_url: pub.publicUrl, photo_path: path }).eq('id', recordId);
+    // 17.09.2026: tvíburi _uploadToExisting — sama ólesna `.error`.
+    const upd = await SB.from('thjonustusamningar').update({ photo_url: pub.publicUrl, photo_path: path }).eq('id', recordId);
+    if (upd && upd.error) throw upd.error;
     _pendingPhoto = null;
     return pub.publicUrl;
   }
@@ -585,16 +587,27 @@
     if (!c) return;
     if (!await Confirm.show(`Marka sem rukkað og færa næstu rukkun fram um ${c.tidni_man||12} mán?`)) return;
     const SB = getSB();
-    await SB.from('thjonustusamningar').update({
+    // 17.09.2026 — PENINGALÍNA. Ólesin `.error`: mistækist skrifið færðist
+    // next_due ekki fram og samningurinn var ýmist rukkaður tvisvar eða aldrei,
+    // án þess að nokkur fengi að vita. Nú er sagt hreint frá.
+    const r = await SB.from('thjonustusamningar').update({
       last_billed: new Date().toISOString().slice(0,10),
       next_due: addMonths(c.next_due || new Date().toISOString().slice(0,10), c.tidni_man||12)
     }).eq('id', id);
+    if (r && r.error) {
+      alert('⚠ Rukkunin skráðist EKKI: ' + (r.error.message || r.error) + '\n\nSamningurinn stendur óbreyttur — reyndu aftur.');
+      try { if (window.logProblem) window.logProblem('samningur_bill_failed', 'samn:' + id); } catch (_) {}
+      return;
+    }
     load();
   }
 
   async function _delete(id) {
     if (!await Confirm.show('Eyða þessum samning?')) return;
-    await getSB().from('thjonustusamningar').delete().eq('id', id);
+    // 17.09.2026: ólesin `.error` — eyðingin gat mistekist og samningurinn
+    // birtist aftur við load() án nokkurrar skýringar.
+    const r = await getSB().from('thjonustusamningar').delete().eq('id', id);
+    if (r && r.error) { alert('⚠ Eyðingin tókst EKKI: ' + (r.error.message || r.error)); return; }
     load();
   }
 

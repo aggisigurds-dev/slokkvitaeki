@@ -337,10 +337,19 @@
       const co = await sb.from('fyrirtaeki').select('kennitala').eq('id', coId).single();
       const pats = ktPatterns(co.data && co.data.kennitala);
       if (pats) {
-        await sb.from('fyrirtaeki').update({ discount_tier_id: val }).in('kennitala', pats);
-        await sb.from('vidskiptavinir').update({ discount_tier_id: val }).in('kennitala', pats);
+        const r1 = await sb.from('fyrirtaeki').update({ discount_tier_id: val }).in('kennitala', pats);
+        if (r1 && r1.error) throw r1.error;
+        const r2 = await sb.from('vidskiptavinir').update({ discount_tier_id: val }).in('kennitala', pats);
+        if (r2 && r2.error) throw r2.error;
       }
-    } catch (_) {}
+    // 17.09.2026: supabase-js KASTAR EKKI — villan kemur í `.error`. Tómi
+    // catch-blokkin hér fyrir neðan gleypti auk þess raunveruleg köst, svo
+    // dreifingin gat mistekist ÞÖGUL og notandinn fékk samt staðfestingu.
+    // Sala les hæstu prósentu allra raða kennitölunnar: misheppnist dreifingin
+    // heldur gamla (hærri) prósentan velli og rangt verð fer á reikning.
+    // Kallandinn (change-hlustarinn) hefur rétta villumeðhöndlun með toast —
+    // hann fékk bara aldrei að vita. Nú berst villan alla leið til hans.
+    } catch (e) { console.warn('[296] hópdreifing', e); throw e; }
     forgetCustomerCache();
     return true;
   }

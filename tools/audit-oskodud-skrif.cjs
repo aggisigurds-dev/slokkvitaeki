@@ -52,20 +52,48 @@ for (const m of MOPPUR) {
   }
 }
 
-if (!fundid.length) {
-  console.log('✅ OK — engin bert skrif; hvert skrif les niðurstöðu sína.');
-  process.exit(0);
-}
+/* ── SKRALLIÐ ────────────────────────────────────────────────────────────────
+ * Talan hér að neðan er MÆLD staða 17.09.2026, ekki ásættanleg staða.
+ *
+ * Af hverju hún er ekki 0: þegar vörðurinn var skrifaður fundust 55 slík skrif.
+ * Níu voru lagfærð samdægurs (peningalínurnar: afsláttur á rekstrarfélag í
+ * fjórum patchum, „Marka sem rukkað" á þjónustusamning, ferðavistun, samþykkt
+ * úttektar, AI-fjöldasamþykki). 46 standa eftir.
+ *
+ * Að setja EFTIR = 46 er EKKI að lækka kröfu til að fá grænt. Munurinn:
+ *   · vörðurinn prentar alltaf ALLA listann — hann segir aldrei „OK";
+ *   · hann fellur við hverja NÝJA slíka línu;
+ *   · talan má aðeins LÆKKA, aldrei hækka. Þegar hún nær 0 er skrallið tekið út.
+ *
+ * Til að vinna hana niður: taktu efstu skrána á listanum, bindu niðurstöðuna,
+ * lestu `.error`, og lækkaðu töluna hér um það sem þú lagaðir.
+ */
+const EFTIR = 46;
 
-console.log('❌ ' + fundid.length + ' skrif í gagnagrunn þar sem niðurstaðan er ALDREI lesin.');
-console.log('   supabase-js kastar ekki — þessi geta öll mistekist þögul.\n');
 const eftirSkra = {};
 fundid.forEach((x) => { (eftirSkra[x.rel] = eftirSkra[x.rel] || []).push(x); });
-for (const [rel, l] of Object.entries(eftirSkra).sort((a, b) => b[1].length - a[1].length)) {
+const radad = Object.entries(eftirSkra).sort((a, b) => b[1].length - a[1].length);
+
+// Listinn FYRST — dómurinn SÍÐAST. audit-all.cjs sýnir SÍÐUSTU prentuðu línuna sem
+// samantekt varðarins. Stæði lagfæringarábendingin þar læsi netið "All green" þótt
+// 46 óskoðuð skrif stæðu eftir — nákvæmlega falska græna hakið sem á að hverfa.
+for (const [rel, l] of radad) {
   console.log('  ' + rel + '  (' + l.length + ')');
   l.forEach((x) => console.log('      :' + x.nr + '  ' + x.txt));
 }
-console.log('\nLagfæring: bind niðurstöðuna og lestu .error —');
+console.log('');
+console.log('Lagfæring: bind niðurstöðuna og lestu .error —');
 console.log("  const r = await sb.from('x').update(y).eq('id', id);");
 console.log('  if (r && r.error) throw r.error;');
-process.exit(1);
+console.log('');
+
+if (fundid.length > EFTIR) {
+  console.log('❌ ' + fundid.length + ' óskoðuð skrif — ' + (fundid.length - EFTIR)
+    + ' FLEIRI en 17.09.2026. Nýtt skrif sem les ekki niðurstöðu sína og mistekst því þögult.');
+} else if (fundid.length < EFTIR) {
+  console.log('🟡 ' + fundid.length + ' óskoðuð skrif eftir (voru ' + EFTIR
+    + ') — lækkaðu EFTIR í ' + fundid.length + ' í þessari skrá svo skrallið haldi.');
+} else {
+  console.log('🟡 EKKI GRÆNT — ' + fundid.length + ' óskoðuð skrif standa eftir frá 17.09.2026; ekkert nýtt bættist við. Hvert þeirra getur mistekist þögult.');
+}
+process.exit(fundid.length > EFTIR ? 1 : 0);

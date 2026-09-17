@@ -167,18 +167,31 @@
         // afslattur_pct across ALL rows sharing the kt (fyrirtaeki OG
         // vidskiptavinir) — so lowering/clearing here only took effect if
         // every same-kt row was updated too. Propagate to them all.
+        let dreifOk = true;
         try {
           const co = await sb.from('fyrirtaeki').select('kennitala').eq('id', coId).single();
           const ktd = String((co.data && co.data.kennitala) || '').replace(/[^0-9]/g, '');
           ktSemVarVistad = ktd;
           if (ktd.length === 10 && ktd !== '9999999999') {
             const pats = [ktd, ktd.slice(0, 6) + '-' + ktd.slice(6)];
-            await sb.from('fyrirtaeki').update({ afslattur_pct: v }).in('kennitala', pats);
-            await sb.from('vidskiptavinir').update({ afslattur_pct: v }).in('kennitala', pats);
+            const r1 = await sb.from('fyrirtaeki').update({ afslattur_pct: v }).in('kennitala', pats);
+            if (r1 && r1.error) throw r1.error;
+            const r2 = await sb.from('vidskiptavinir').update({ afslattur_pct: v }).in('kennitala', pats);
+            if (r2 && r2.error) throw r2.error;
           }
-        } catch (_) {}
+        // 17.09.2026: supabase-js KASTAR EKKI — villan kemur í `.error`. Tómi
+        // catch-blokkin hér fyrir neðan gleypti auk þess raunveruleg köst, svo
+        // dreifingin gat mistekist ÞÖGUL og notandinn fékk samt staðfestingu.
+        // Sala les hæstu prósentu allra raða kennitölunnar: misheppnist dreifingin
+        // heldur gamla (hærri) prósentan velli og rangt verð fer á reikning.
+        } catch (e) { dreifOk = false; console.warn('[255] afsláttardreifing', e); }
         render(sec, coId, v, false);
-        toast(v > 0 ? ('🎯 Sjálfvirkur afsláttur vistaður: ' + v + '%') : 'Afsláttur núllstilltur.');
+        if (!dreifOk) {
+          toast('⚠ Afslátturinn barst EKKI á alla staði kennitölunnar — Sala getur lesið gamla prósentu. Reyndu aftur.');
+          try { if (window.logProblem) window.logProblem('afslattur_dreifing_failed', 'co:' + coId); } catch (_) {}
+        } else {
+          toast(v > 0 ? ('🎯 Sjálfvirkur afsláttur vistaður: ' + v + '%') : 'Afsláttur núllstilltur.');
+        }
 
         // 09.09.2026 — PENINGAVILLA. Áður stóð hér aðeins `_lastKt = null; syncCartDiscount();`.
         //
