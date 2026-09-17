@@ -25,7 +25,7 @@
 
   function getSB() { return window.DB && window.DB.sb; }
   function esc(s)  { return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  function fmtDate(d) { if(!d)return''; const x=new Date(d); return x.getDate()+'/'+(x.getMonth()+1)+'/'+x.getFullYear(); }
+  function fmtDate(d) { if(!d)return''; const x=new Date(d); return String(x.getDate()).padStart(2, '0')+'/'+String(x.getMonth() + 1).padStart(2, '0')+'/'+x.getFullYear(); }
   function fmtKr(n) { if(!n&&n!==0)return'—'; const s=Math.round(n).toString(); const r=[]; let t=s; while(t.length>3){r.unshift(t.slice(-3));t=t.slice(0,-3);}r.unshift(t);return r.join('.')+' kr'; }
   function fmtKm(n) { return (n||0).toFixed(1)+' km'; }
 

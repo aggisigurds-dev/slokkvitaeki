@@ -61,7 +61,7 @@
     const d = new Date(m.at), now = new Date();
     const hhmm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     const sameDay = d.toDateString() === now.toDateString();
-    const when = sameDay ? hhmm : (d.getDate() + '/' + (d.getMonth() + 1) + ' ' + hhmm);
+    const when = sameDay ? hhmm : (String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + hhmm);
     return (m.by ? m.by + ' · ' : '') + when;
   }
   // 2026-07-30 (ósk Agnars): „Tækjalisti staðfestur" milli þess að vera á
