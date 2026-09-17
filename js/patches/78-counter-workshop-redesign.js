@@ -48,7 +48,7 @@
     if (!d) return '';
     if (window.U && typeof U.fd === 'function') { try { const s = U.fd(d); if (s) return s; } catch (_) {} }
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));
-    return m ? m[3] + '.' + m[2] + '.' + m[1] : String(d);
+    return m ? m[3] + '/' + m[2] + '/' + m[1] : String(d);
   }
   function jobDate(j) { return fmtD(j && (j.dropoff || j.created_at)); }
   function groupDate(jobs) {

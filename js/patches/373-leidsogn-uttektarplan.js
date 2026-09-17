@@ -76,7 +76,7 @@
     return saeki;
   }
 
-  const dagsIs = d => String(d || '').slice(0, 10).split('-').reverse().join('.');
+  const dagsIs = d => String(d || '').slice(0, 10).split('-').reverse().join('/');
   const skodadAnReiknings = r => (r.stada === 'merkt_buid' || r.stada === 'tekid_ut' || !!r.taeki_skodud) && !r.reikningur_a_arinu;
   const stadfestOgert = r => !!(OGERT[r.stada] && r.sonnun);
 

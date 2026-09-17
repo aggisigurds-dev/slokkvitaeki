@@ -2467,7 +2467,7 @@
   // fyrri eigendur"): vinstra megin dagsetning skýrslu þegar hún er skráð, annars mánuður úr tækjaskrá (uttaeki.last_insp).
   const MAN_STUTT = ['jan.', 'feb.', 'mars', 'apr.', 'maí', 'júní', 'júlí', 'ágú.', 'sep.', 'okt.', 'nóv.', 'des.'];
   const VB_STADA_HEITI = { bidur: 'Bíður', samthykkt: 'Samþykkt', klarad: 'Klárað' };
-  const dagsFull = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; };
+  const dagsFull = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
   function skodunHtml(x) {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(x.skodun_dags || ''));
     if (!m) return '<span class="age" title="Skoðunardagur óþekktur">—</span>';

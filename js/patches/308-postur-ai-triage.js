@@ -27,7 +27,7 @@
     try { return localStorage.getItem('bh_me') || localStorage.getItem('me') || localStorage.getItem('slokk_me') || 'Slökkvitæki'; }
     catch (_) { return 'Slökkvitæki'; }
   };
-  const dt = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; };
+  const dt = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
   const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
   // Orðaforði borðsins — verður að stemma við js/patches/231-verkbord.js.

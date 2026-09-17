@@ -1116,7 +1116,7 @@
               '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--brd)">Staða</th>' +
               '</tr></thead><tbody>' +
               data.map(s => {
-                const d = (s.created_at || '').slice(0, 10).split('-').reverse().join('.');
+                const d = (s.created_at || '').slice(0, 10).split('-').reverse().join('/');
                 const amt = fmtKr(s.samtals);
                 const isCredit = !!s.is_credit;
                 const isDraft = s.status === 'drog';
@@ -1206,7 +1206,7 @@
             '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--brd)">Skrá</th>' +
             '</tr></thead><tbody>' +
             data.map(d => {
-              const docDate = (d.doc_date || '').split('-').reverse().join('.');
+              const docDate = (d.doc_date || '').split('-').reverse().join('/');
               const amt = d.amount ? fmtKr(+d.amount) : '—';
               const fileCell = d.drive_file_id
                 ? '<a href="https://drive.google.com/file/d/' + esc(d.drive_file_id) + '/view" target="_blank" rel="noopener" style="color:var(--blu);text-decoration:none;font-weight:600" title="' + esc(d.file_name || 'Opna í Drive') + '">↗ Drive</a>'

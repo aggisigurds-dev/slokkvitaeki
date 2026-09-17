@@ -1049,7 +1049,7 @@
     '</button>';
   }
   function expDetailHtml(key, title, rows, total, color) {
-    const fmtD = iso => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; };
+    const fmtD = iso => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
     // Forskoðun (9037f691): aðeins á „Ósendar kröfur". Rautt efst, svo gult, svo grænt — innan hvers eftir upphæð.
     const forsk = key === 'osendar' && _state.forskodun ? _state.forskodun : null;
     const LITIR = { rautt: ['#fef2f2', '#fecaca', '#b91c1c', '⛔ Stöðva'], gult: ['#fffbeb', '#fde68a', '#92400e', '⚠ Athuga'], graent: ['#f0fdf4', '#bbf7d0', '#15803d', '✓ Í lagi að senda'] };

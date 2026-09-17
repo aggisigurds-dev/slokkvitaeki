@@ -180,7 +180,7 @@
   function vegnaLine(athugasemdir) {
     var s = String(athugasemdir || '');
     var m = /(\d{4})-(\d{2})-(\d{2})/.exec(s);
-    if (/heims[oó]kn/i.test(s) && m) return 'Vegna heimsókn ' + m[3] + '.' + m[2] + '.' + m[1];
+    if (/heims[oó]kn/i.test(s) && m) return 'Vegna heimsókn ' + m[3] + '/' + m[2] + '/' + m[1];
     // 2026-07-23: match the printed reikningur (SalaInvoice) — drop the pickup
     // audit trail (patch 121: "[Sótt …] Ekki afhent: … Viðbót: … Afsláttur við
     // afhendingu: … Athugasemd: … Greiðsla: …") plus Kt/Greiðsla bookkeeping, so

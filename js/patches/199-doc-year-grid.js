@@ -1193,7 +1193,7 @@
     // building/period a candidate invoice actually belongs to). Options now
     // show the invoice date too, and a 👁 button opens the selected candidate's
     // actual file so it can be checked before committing to "Tengja".
-    function fmtDagsShort(iso){ var m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m? m[3]+'.'+m[2]+'.'+m[1] : ''; }
+    function fmtDagsShort(iso){ var m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m? m[3] + '/' + m[2] + '/' + m[1] : ''; }
     function manualLinkHtml(y, svc, invArr){
       if(!invArr.length) return '';
       var opts=invArr.map(function(x,i){

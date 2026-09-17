@@ -54,6 +54,20 @@
     return orig.call(this, locale, options);
   };
 
+  // 17.09.2026 — same rule for the date+time call. `toLocaleString('is-IS')` was
+  // never intercepted, so a timestamp rendered "9.3.2026, 14:05" (or the en-US
+  // fallback "3/9/2026, 2:05 PM") right next to a date this patch had already
+  // turned into "09/03/2026". One format everywhere means both go through here.
+  const origBoth = Date.prototype.toLocaleString;
+  Date.prototype.toLocaleString = function (locale, options) {
+    if (!options && isIcelandicLocale(locale)) {
+      if (isNaN(this)) return '';
+      return ddmmyyyy(this) + ', ' + String(this.getHours()).padStart(2, '0')
+             + ':' + String(this.getMinutes()).padStart(2, '0');
+    }
+    return origBoth.call(this, locale, options);
+  };
+
   // Expose a globally-callable helper for new code (cleaner than calling
   // `(new Date(x)).toLocaleDateString('is-IS')` everywhere).
   window.fmtDateIS = function (d) {

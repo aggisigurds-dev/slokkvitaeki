@@ -60,7 +60,7 @@
   const me = () => { try { return localStorage.getItem('bh_me') || localStorage.getItem('me') || localStorage.getItem('slokk_me') || 'Slökkvitæki'; } catch (_) { return 'Slökkvitæki'; } };
   const emailFrom = () => { try { return localStorage.getItem('email_from') || 'Brunahólf Slökkvitæki ehf <reikningar@eldklar.is>'; } catch (_) { return 'Brunahólf Slökkvitæki ehf <reikningar@eldklar.is>'; } };
   const nowIso = () => new Date().toISOString();
-  const dt = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; };
+  const dt = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
   const dtime = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/); return m ? (m[3] + '.' + m[2] + '. ' + m[4] + ':' + m[5]) : dt(s); };
   const daysAgo = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return null; const then = Date.parse(m[1] + '-' + m[2] + '-' + m[3]); if (isNaN(then)) return null; return Math.floor((Date.now() - then) / 86400000); };
   const isAuto = (m) => AUTO_RE.test(m.sender_email || '');

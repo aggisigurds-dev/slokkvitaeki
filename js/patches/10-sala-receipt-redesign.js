@@ -120,7 +120,7 @@
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yy = String(d.getFullYear()).slice(-2);
-    return `${dd}.${mm}.${yy}`;
+    return `${dd}/${mm}/${yy}`;
   }
 
   // 2026-05-21: lookupCustomer used to blindly trust `co_id` against
@@ -588,7 +588,7 @@
           const d = sottMatch[1];
           // Convert YYYY-MM-DD → DD.MM.YYYY for Icelandic format
           const [y, m, dd] = d.split('-');
-          customerRows.push(`<div class="bt-line">Sótt: ${dd}.${m}.${y}</div>`);
+          customerRows.push(`<div class="bt-line">Sótt: ${dd}/${m}/${y}</div>`);
         }
         if (remainder) {
           customerRows.push(`<div class="vegna">vegna ${esc(remainder)}</div>`);

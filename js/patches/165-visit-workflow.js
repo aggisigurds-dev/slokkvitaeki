@@ -117,7 +117,7 @@
   // YYYY-MM-DD → DD.MM.YYYY for the printed "Vegna heimsókn" reference line.
   function isoToDDMM(iso) {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
-    return m ? m[3] + '.' + m[2] + '.' + m[1] : String(iso || '');
+    return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso || '');
   }
   function addMonthsIso(iso, months) {
     const d = new Date(iso);

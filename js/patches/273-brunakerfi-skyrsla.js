@@ -95,7 +95,7 @@
   function fmt(n, d) { return (n === null || !isFinite(n)) ? '—' : (Math.round(n * 100) / 100).toFixed(d); }
   function fmtKr(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr'; }
   function fmtKt(kt) { const d = String(kt || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : (kt || ''); }
-  function fmtDags(iso) { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; }
+  function fmtDags(iso) { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }
   function toast(msg, bad) {
     let t = document.getElementById('_bks-toast');
     if (!t) { t = document.createElement('div'); t.id = '_bks-toast'; document.body.appendChild(t); }

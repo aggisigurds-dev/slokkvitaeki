@@ -41,7 +41,7 @@
   function fmtDate(d) {
     if (!d) return '—';
     const s = String(d).slice(0, 10), p = s.split('-');
-    return p.length === 3 ? p[2] + '.' + p[1] + '.' + p[0] : s;
+    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : s;
   }
   function relTime(iso) {
     if (!iso) return '—';
