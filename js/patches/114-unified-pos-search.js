@@ -222,6 +222,12 @@
     const emailInp = dlg.querySelector('#_ups-new-email');
     const addrInp = dlg.querySelector('#_ups-new-addr');
     const errEl = dlg.querySelector('#_ups-new-err');
+    // 17.09.2026 (Agnar: „geturðu einhvernvegin gert öflugri leitarvél … sem getur
+    // líka leitað frá Fyrirtækjanöfnum ekki bara kennitölu"): „🔍 Fletta upp" krafðist
+    // þess að kennitalan væri þegar til. Nú má skrifa NAFNIÐ og fá bæði okkar kúnna og
+    // fyrirtækjaskrá RSK — valið fyllir kennitölu og heimilisfang.
+    // Sjá js/patches/377-fyrirtaekjaleit.js.
+    try { if (window.FyrirtaekjaLeit) FyrirtaekjaLeit.tengja(nafnInp, { kt: ktInp, addr: addrInp }); } catch (_) {}
     setTimeout(() => { (initialNafn ? simiInp : nafnInp).focus(); }, 30);
 
     // Auto-format kt as user types: 6 digits + dash + 4 digits

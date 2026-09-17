@@ -40,8 +40,32 @@ export default async (req) => {
       let m;
       while ((m = rowRe.exec(html)) && results.length < 15) {
         const clean = (s) => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        results.push({ kennitala: m[1], nafn: clean(m[2]), heimilisfang_full: clean(m[3]) });
+        const heiti = clean(m[2]);
+        results.push({
+          kennitala: m[1],
+          nafn: heiti,
+          heimilisfang_full: clean(m[3]),
+          // Skráin skrifar „(Félag afskráð)" aftan við nafnið og skilar engu heimilisfangi.
+          afskrad: /afskr[aá]/i.test(heiti),
+        });
       }
+      // Eitt svar → skatturinn vísar BEINT á fyrirtækjasíðuna og taflan er ekki til
+      // („byko" skilaði 0 þótt Byko ehf. sé til). Sú síða ER fyrirtækið og er lesin
+      // hér með sömu reglum og kennitölu-greinin að neðan notar.
+      if (!results.length) {
+        const h1 = html.match(/<h1>\s*([^<(]+?)\s*\((\d{10})\)\s*<\/h1>/);
+        if (h1) {
+          const a = html.match(/<td>\s*([^<>]+?)\s*<br\s*\/?>\s*(\d{3})\s+([^<>]+?)\s*<\/td>/);
+          results.push({
+            kennitala: h1[2],
+            nafn: h1[1].trim(),
+            heimilisfang_full: a ? (a[1].trim() + ', ' + a[2] + ' ' + a[3].trim()) : '',
+            afskrad: /Félag afskráð/i.test(html),
+          });
+        }
+      }
+      // Virk félög fyrst — afskráð eru sjaldnast það sem leitað er að.
+      results.sort((x, y) => (x.afskrad ? 1 : 0) - (y.afskrad ? 1 : 0));
       return new Response(JSON.stringify({ query: nafn, results, source: 'skatturinn' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=3600' },

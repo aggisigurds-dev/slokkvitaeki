@@ -66,6 +66,10 @@
       <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid #e2e8f0;position:sticky;bottom:0;background:#fff;border-radius:0 0 14px 14px">${footHtml}</div>
     </div>`;
     document.body.appendChild(ov);
+    // 17.09.2026: leit að fyrirtæki beint úr nafnreitnum — okkar kúnnar (líka eftir
+    // heimilisfangi) + fyrirtækjaskrá RSK. Fyllir nafn, kennitölu og heimilisfang.
+    // Sjá js/patches/377-fyrirtaekjaleit.js.
+    try { if (window.FyrirtaekjaLeit) FyrirtaekjaLeit.tengja('_th-nafn', { kt: '_th-kt', addr: '_th-addr' }); } catch (_) {}
     const close = () => ov.remove();
     ov.querySelector('#_th-x').onclick = close;
     ov.addEventListener('click', e => { if (e.target === ov) close(); });

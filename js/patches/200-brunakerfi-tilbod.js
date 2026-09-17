@@ -182,6 +182,10 @@
         </div>
       </div>`;
     document.body.appendChild(ov);
+    // 17.09.2026: leit að fyrirtæki beint úr nafnreitnum — okkar kúnnar (líka eftir
+    // heimilisfangi) + fyrirtækjaskrá RSK. Fyllir nafn, kennitölu og heimilisfang.
+    // Sjá js/patches/377-fyrirtaekjaleit.js.
+    try { if (window.FyrirtaekjaLeit) FyrirtaekjaLeit.tengja('_bt-nafn', { kt: '_bt-kt', addr: '_bt-addr' }); } catch (_) {}
 
     const tbody = ov.querySelector('#_bt-tbody');
     function collect() {
