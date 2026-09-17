@@ -83,12 +83,20 @@
     <button id="_th-save" type="button" style="padding:10px 20px;border:none;border-radius:8px;background:var(--th-gb);color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.22)">💾 Vista</button>`;
 
   // ---------- print (A4 sheet, brand) ----------
-  function docShell(titleBadge, dateStr, custBlock, inner) {
+  // Skráarnafn: Chrome tekur það úr <title>. Skástrik, tvípunktur o.fl. mega ekki
+  // fara þangað — kúnnanafn getur borið þau („Húsfélagið A/B").
+  const skjalNafn = (hlutar) => hlutar.filter(Boolean)
+    .map(s => String(s).replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim())
+    .filter(Boolean).join(' - ');
+
+  // 17.09.2026: `skjalHeiti` er AÐEINS <title> (og þar með skráarnafnið);
+  // `titleBadge` er áfram merkið sem sést á skjalinu sjálfu.
+  function docShell(titleBadge, dateStr, custBlock, inner, skjalHeiti) {
     const b = branding();
     const primary = theme().primary, dark = theme().dark;
     const logo = (b.logo_url || '').trim();
     const head = logo ? `<img src="${esc(logo)}" alt="" style="max-height:56px;max-width:240px">` : `<div style="font-size:24px;font-weight:800;color:${dark}">${esc(b.company_name || 'Slökkvitæki ehf')}</div>`;
-    return '<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><title>' + esc(titleBadge) + '</title>' +
+    return '<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><title>' + esc(skjalHeiti || titleBadge) + '</title>' +
       '<style>@page{size:A4;margin:12mm}html,body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;background:#eef1f4}' +
       '.sheet{max-width:760px;margin:22px auto;background:#fff;padding:28px 34px;box-shadow:0 6px 24px rgba(0,0,0,.14);border-radius:5px}' +
       'table{width:100%;border-collapse:collapse}.btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700}' +
@@ -225,7 +233,8 @@
         '<th style="text-align:right;padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">Samtals án vsk</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table>' + totRows(t, o.total_disc) +
       '<div style="margin-top:24px;font-size:11px;color:#64748b">Tilboð þetta gildir í 30 daga.</div>';
-    return docShell('Tilboð', fmtDate(o.date), custPrintBlock(o.customer), inner);
+    return docShell('Tilboð', fmtDate(o.date), custPrintBlock(o.customer), inner,
+      skjalNafn(['Tilboð', o.customer && o.customer.nafn, 'Slökkvitæki']));
   }
 
   // ====================== SLÖKKVITÆKI SÉRVERÐ (per-unit, no grand total) ======================
@@ -315,7 +324,8 @@
         '<th style="text-align:right;padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">Sérverð</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table>' +
       '<div style="margin-top:20px;font-size:11px;color:#64748b">Verð eru m. vsk og gilda á meðan samningur er í gildi. Ekkert heildarverð — verð per tæki.</div>';
-    return docShell('Sérverð', fmtDate(o.date), custPrintBlock(o.customer), inner);
+    return docShell('Sérverð', fmtDate(o.date), custPrintBlock(o.customer), inner,
+      skjalNafn(['Sérverð', o.customer && o.customer.nafn, 'Slökkvitæki']));
   }
 
   // ====================== ÞJÓNUSTUSAMNINGUR ======================
@@ -373,7 +383,8 @@
         '<div style="flex:1;border-top:1px solid ' + tdk + ';padding-top:6px;font-size:11px;color:#64748b">Verktaki</div>' +
         '<div style="flex:1;border-top:1px solid ' + tdk + ';padding-top:6px;font-size:11px;color:#64748b">Viðskiptavinur</div>' +
       '</div>';
-    return docShell('Þjónustusamningur', fmtDate(o.date), custPrintBlock(o.customer), inner);
+    return docShell('Þjónustusamningur', fmtDate(o.date), custPrintBlock(o.customer), inner,
+      skjalNafn(['Þjónustusamningur', o.customer && o.customer.nafn, 'Slökkvitæki']));
   }
 
   // ---------- totals helpers (shared) ----------

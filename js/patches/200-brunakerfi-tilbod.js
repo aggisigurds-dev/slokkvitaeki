@@ -251,6 +251,12 @@
     };
   }
 
+  // Skráarnafn: Chrome tekur það úr <title>. Skástrik, tvípunktur o.fl. mega ekki
+  // fara þangað — kúnnanafn getur borið þau („Húsfélagið A/B").
+  const skjalNafn = (hlutar) => hlutar.filter(Boolean)
+    .map(s => String(s).replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim())
+    .filter(Boolean).join(' - ');
+
   // ====================== PRINT (iframe) ======================
   function offerHtml(o) {
     const b = branding();
@@ -272,7 +278,7 @@
         '</tr>';
     }).join('');
     const totRow = (l, v, big) => '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:' + (big ? '17px;font-weight:800;border-top:2px solid #1b1b1b;color:#C0341D;margin-top:4px;padding-top:8px' : '12.5px;color:#475569') + '"><span>' + l + '</span><span>' + v + '</span></div>';
-    return '<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><title>Tilboð — ' + esc(o.customer.nafn || '') + '</title>' +
+    return '<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><title>' + esc(skjalNafn(['Tilboð', o.customer.nafn, 'Brunaviðvörunarkerfi'])) + '</title>' +
       '<style>@page{size:A4;margin:12mm}html,body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;background:#eef1f4}' +
       '.sheet{max-width:760px;margin:22px auto;background:#fff;padding:28px 34px;box-shadow:0 6px 24px rgba(0,0,0,.14);border-radius:5px}' +
       '.btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700}' +
