@@ -1001,6 +1001,24 @@
       '.skm{display:flex;flex-direction:column;align-items:flex-start;gap:4px}.skm img{max-width:100%;max-height:160px;border-radius:3px;border:1px solid var(--rule2)}',
       '.skf{font-size:11.5px;color:var(--mute)}.skstada{font-size:11.5px;color:var(--mute)}',
       '.sknew{min-height:96px;border:1px dashed var(--edge2);border-radius:4px;background:transparent;font:600 13px var(--body);color:var(--mute);cursor:pointer}.sknew:hover{background:#fffdf7;color:var(--ink)}',
+      // 17.09.2026 (Agnar: „svolítið chaoslegt"): færri hnappar, meiri andrými,
+      // sterkari texti — og leiðbeinandi stafirnir næstum ósýnilegir.
+      '.krassbox{border:1px solid var(--rule);border-radius:4px;background:#fffdf7;box-shadow:var(--wellsh);padding:10px 12px}',
+      '.krassbox .krass textarea{border:0;background:transparent;box-shadow:none;padding:6px 2px;min-height:64px}',
+      '.skskil{display:flex;align-items:center;gap:10px;margin-top:2px;font:600 11px/1 var(--body);letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}',
+      '.skskil:after{content:"";flex:1;height:1px;background:var(--rule)}',
+      '.skc{gap:2px;padding:0 0 10px;border-top:1px solid var(--rule);overflow:hidden}',
+      '.skstrip{display:block;width:100%;height:5px;border:0;padding:0;cursor:pointer;opacity:.85}.skstrip:hover{opacity:1}',
+      '.skh{padding:3px 6px 0;min-height:20px;cursor:grab}.skh:active{cursor:grabbing}',
+      '.skgrip{font-size:13px;padding:0;opacity:.25}.skh:hover .skgrip{opacity:.55}',
+      '.skx{min-width:18px;width:18px;height:18px;padding:0;border:0;border-radius:3px;background:transparent;font:400 12px/1 var(--body);color:var(--mute);cursor:pointer;opacity:.3}',
+      '.skx:hover{opacity:1;color:var(--terra);background:var(--key)}',
+      '.skn{padding:2px 10px;font:700 14.5px var(--body);color:var(--ink)}',
+      '.skt{padding:2px 10px 0;font:13px/1.5 var(--body);color:var(--ink)}',
+      '.skc .skm,.skc .skf{margin:0 10px}',
+      '.skn::placeholder,.skt::placeholder,.krass textarea::placeholder{color:var(--mute);opacity:.14}',
+      '.skgrid.yfir{outline:2px dashed var(--g6);outline-offset:4px;border-radius:6px}',
+      '.sknew{cursor:grab}.sknew:active{cursor:grabbing}',
       '.saga{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
       '.saga.buid{border-color:rgba(74,160,106,.6);box-shadow:inset 3px 0 0 #4aa06a}',
       '.sg-h{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}.sg-buid{font-size:12px;font-weight:700;color:#8fd3a6}',
@@ -2757,13 +2775,14 @@
         const nafn = d.name != null ? d.name : (cd.name || ''), texti = d.title != null ? d.title : (cd.title || '');
         const row = cd.verkbord_id != null ? S.rows.find(x => String(x.id) === String(cd.verkbord_id)) : null;
         const t = cd.type != null && SB_TEG[cd.type] ? SB_TEG[cd.type] : null;
-        return '<div class="skc" data-skid="' + id + '" style="border-top-color:' + (t ? t[1] : 'var(--rule3)') + '">' +
-          '<div class="skh"><span class="skgrip" draggable="true" data-skdrag="' + id + '" title="Dragðu til að færa">⠿</span>' +
-            SB_TEG.map((x, ti) => '<button type="button" class="skdot' + (cd.type === ti ? ' on' : '') + '" data-t5="sk-type" data-skid="' + id + '" data-i="' + ti + '" style="background:' + x[1] + '" title="' + esc(x[0]) + '" aria-label="' + esc(x[0]) + '"></button>').join('') +
-            '<span class="grow"></span>' +
-            '<button type="button" class="skb" data-t5="sk-faera" data-skid="' + id + '" data-v="-1" aria-label="Færa framar"' + (i === 0 ? ' disabled' : '') + '>‹</button>' +
-            '<button type="button" class="skb" data-t5="sk-faera" data-skid="' + id + '" data-v="1" aria-label="Færa aftar"' + (i === cards.length - 1 ? ' disabled' : '') + '>›</button>' +
-            '<button type="button" class="skb skx" data-t5="sk-del" data-skid="' + id + '" aria-label="Eyða spjaldi">✕</button></div>' +
+        // 17.09.2026: punktaröðin (6 hnappar) og örvarnar tvær fóru — liturinn er nú
+        // ein ræma efst sem smellt er á til að skipta, og fært er með því að draga
+        // hausinn sjálfan (ekki bara ⠿). Það tók fjóra hnappa af hverju spjaldi.
+        return '<div class="skc" data-skid="' + id + '">' +
+          '<button type="button" class="skstrip" data-t5="sk-type" data-skid="' + id + '" style="background:' + (t ? t[1] : 'var(--rule3)') + '" title="' + (t ? esc(t[0]) : 'Enginn litur') + ' — smelltu til að skipta um lit" aria-label="Litur spjalds"></button>' +
+          '<div class="skh" draggable="true" data-skdrag="' + id + '" title="Dragðu spjaldið til að færa það">' +
+            '<span class="skgrip" aria-hidden="true">⠿</span><span class="grow"></span>' +
+            '<button type="button" class="skx" data-t5="sk-del" data-skid="' + id + '" aria-label="Eyða spjaldi" title="Eyða spjaldi">✕</button></div>' +
           '<input class="skn" data-sk="name" data-skid="' + id + '" value="' + esc(nafn) + '" placeholder="Fyrirsögn" aria-label="Fyrirsögn">' +
           '<textarea class="skt" data-sk="title" data-skid="' + id + '" rows="' + Math.min(8, Math.max(2, String(texti).split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er…" aria-label="Texti">' + esc(texti) + '</textarea>' +
           (cd.mynd ? '<div class="skm"><a href="' + esc(cd.mynd) + '" target="_blank" rel="noopener"><img src="' + esc(cd.mynd) + '" alt="Mynd á spjaldi" loading="lazy"></a>' +
@@ -2779,8 +2798,9 @@
           (ari.length > 12 ? '<div class="more">+ ' + (ari.length - 12) + ' til viðbótar</div>' : '')
         : '';
       const body = ariHtml + '<div class="skwrap">' +
-        '<label class="krass"><span class="lbl">Krassblað</span><textarea data-sk="krass" rows="' + Math.min(14, Math.max(3, krass.split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er — vistast sjálfkrafa og fylgir þér á milli tölva.">' + esc(krass) + '</textarea></label>' +
-        '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny">+ Nýtt spjald</button></div>' +
+        '<div class="krassbox"><label class="krass"><span class="lbl">Krassblað</span><textarea data-sk="krass" rows="' + Math.min(14, Math.max(3, krass.split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er — vistast sjálfkrafa og fylgir þér á milli tölva.">' + esc(krass) + '</textarea></label></div>' +
+        '<div class="skskil"><span>Spjöld</span></div>' +
+        '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny" draggable="true" data-skdrag="__ny" title="Smelltu — eða dragðu autt spjald þangað sem þú vilt hafa það">+ Nýtt spjald</button></div>' +
         '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot beint í spjald.') + '</div></div>';
       return modPanel(k, cards.length + ' spjöld' + (ari.length ? ' · ' + ari.length + ' áríðandi' : ''), body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
     }
@@ -3524,32 +3544,63 @@
     rod.forEach((x, q) => { x.slot = raufar[q]; });
     return l;
   }
+  // 17.09.2026: þrennt bættist við. (1) Hausinn allur er dragflöturinn, ekki bara ⠿.
+  // (2) Autt svæði í grindinni tekur við falli — spjaldið fer þá aftast, sem áður var
+  // ekki hægt nema með örvunum sem Agnar bað um að fjarlægja. (3) „+ Nýtt spjald" má
+  // draga: fellur það á spjald verður nýtt autt spjald til á þeim stað.
+  const NYTT_DRAG = '__ny';
+  function nyttSpjaldHlutur(l) {
+    return { id: nyttSkId(), slot: naestaSlot(l), verkbord_id: null, name: '', title: '', type: null, minnispunktur: true };
+  }
+  function faeraAftast(l, fraId) {
+    const cd = l.find(x => x.id === fraId);
+    if (cd) cd.slot = naestaSlot(l);
+    return l;
+  }
   function onDrag(e) {
     const t = e.target, root = rot();
     if (e.type === 'dragstart') {
       const g = t && t.closest ? t.closest('[data-skdrag]') : null;
       if (!g) return;
       S.skDrag = g.dataset.skdrag;
-      try { e.dataTransfer.setData('text/plain', S.skDrag); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setDragImage(g.closest('.skc'), 16, 16); } catch (_) {}
+      try {
+        e.dataTransfer.setData('text/plain', S.skDrag);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setDragImage(g.closest('.skc') || g, 16, 16);
+      } catch (_) {}
       return;
     }
     if (!S.skDrag || !root) return;
     const kort = t && t.closest ? t.closest('.skc') : null;
+    const grind = t && t.closest ? t.closest('.skgrid') : null;
     if (e.type === 'dragover') {
-      if (!kort) return;
+      if (!kort && !grind) return;
       e.preventDefault();
       root.querySelectorAll('.skc.yfir').forEach(x => { if (x !== kort) x.classList.remove('yfir'); });
-      kort.classList.add('yfir');
-    } else if (e.type === 'drop') {
+      root.querySelectorAll('.skgrid.yfir').forEach(x => x.classList.remove('yfir'));
+      if (kort) kort.classList.add('yfir'); else grind.classList.add('yfir');
+      return;
+    }
+    if (e.type === 'drop') {
       e.preventDefault();
       const fra = S.skDrag, til = kort && kort.dataset.skid;
       S.skDrag = null;
-      if (til && til !== fra) vistaSpjold(l => faeraSpjald(l, fra, til)).then(render); else render();
-    } else if (e.type === 'dragend') {
+      if (fra === NYTT_DRAG) {
+        S.open[openKey('skipulag')] = true;
+        vistaSpjold(l => { const ny = nyttSpjaldHlutur(l); l.push(ny); return til ? faeraSpjald(l, ny.id, til) : l; }).then(render);
+        return;
+      }
+      if (til && til !== fra) vistaSpjold(l => faeraSpjald(l, fra, til)).then(render);
+      else if (!til && grind) vistaSpjold(l => faeraAftast(l, fra)).then(render);
+      else render();
+      return;
+    }
+    if (e.type === 'dragend') {
       S.skDrag = null;
-      root.querySelectorAll('.skc.yfir').forEach(x => x.classList.remove('yfir'));
+      root.querySelectorAll('.skc.yfir, .skgrid.yfir').forEach(x => x.classList.remove('yfir'));
     }
   }
+
   async function onPaste(e) {
     const el = e.target, sid = el && el.dataset ? el.dataset.skid : null;
     if (!sid) return;
@@ -3864,13 +3915,9 @@
         return;
       }
       case 'sk-type': {
-        const sid = el.dataset.skid, ti = Number(el.dataset.i);
-        vistaSpjold(l => { const cd = l.find(x => x.id === sid); if (cd) cd.type = cd.type === ti ? null : ti; return l; }).then(render);
-        return;
-      }
-      case 'sk-faera': {
-        const sid = el.dataset.skid, rod = spjold(nu()), i = rod.findIndex(x => x.id === sid), til = rod[i + Number(el.dataset.v)];
-        if (til) vistaSpjold(l => faeraSpjald(l, sid, til.id)).then(render);
+        // Ræman hringar: enginn litur -> fyrsti -> … -> síðasti -> enginn litur.
+        const sid = el.dataset.skid;
+        vistaSpjold(l => { const cd = l.find(x => x.id === sid); if (cd) { const nyr = cd.type == null ? 0 : cd.type + 1; cd.type = nyr >= SB_TEG.length ? null : nyr; } return l; }).then(render);
         return;
       }
       case 'sk-mynd-x': {
