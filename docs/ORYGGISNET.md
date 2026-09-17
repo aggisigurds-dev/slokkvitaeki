@@ -149,6 +149,18 @@ baseline rows and lowering the constant is how the net tightens over time.
 ---
 
 ## Session log — what was made bulletproof
+- **2026‑09‑17** — **Samþykkt vinnublöð sem enduðu aldrei í kröfu: 270.654 kr án vsk þögul síðan 13.09**
+  (`audit-vinnublad-an-solu`, GRUNNLÍNA 0). Agnar spurði af hverju Grasnytjar ehf Hjarðarbóli hefði ekki farið
+  í kröfu. Blaðið var samþykkt af honum sjálfum 13.09 kl. 16:01 og merkt klárað — en engin sala var til. Sama
+  átti við um Ölfusborgir (154.178) og Hraunbæ 64 (32.664), öll samþykkt sama dag.
+  **Orsökin er ekki gleymska:** „✓ Samþykkja" skrifar aðeins `stada` og `samthykkt_at` á `sara_yfirferd`
+  (`368:2412`) og tilkynningin segir sjálf „Sara MÁ klára skýrslu og reikning". Samþykktin er LEYFI, ekki
+  aðgerð — ekkert býr til sölu og ekkert minnti á það. „Merkja klárað" setur bara `stada=klarad` og býr heldur
+  ekkert til, svo staðan gat sagt „búið" án þess að króna hefði verið rukkuð.
+  Vörðurinn ber hvert blað með `samthykkt_at` saman við sölur viðskiptavinarins í 30 daga glugga (rúmur
+  viljandi, því salan er stundum stofnuð á undan). Blað sem á EKKI að rukka fær `stada=hafnad` — grunnlínan
+  má aldrei hækka.
+
 
 - **2026‑09‑16** — **Kortið datt út alls staðar: OSM lokaði á appið og blokkin kemur sem MYND með stöðu 200 (`155`, `161`×2, `178`, `219`, `268`, `newfeatures.js` + nýr vörður).**
   Agnar sendi skjámynd af tómum kortum: „403 · Access blocked — App is not following the tile usage policy of
