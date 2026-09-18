@@ -848,7 +848,10 @@
       // aðeins borið saman við næsta systkini, og leitin hættir 15 s eftir að kortið var sett upp.
       const fyrir = host.previousElementSibling;
       if (fyrir && /Merkja mikilvægt/.test(fyrir.textContent || "")) return;
-      if (Date.now() - (+host.dataset.ts || 0) > 15000) return;
+      // 18.09.2026 (Agnar: "samskiptakassinn stundum ad fara fyrir ofan profilbannerinn"): 15 sek
+      // thakid gafst upp ef "Merkja mikilvaegt"-rodin birtist seinna en thad, og kortid sat tha
+      // afram vid Breyta-rodina OFAN vid bannerinn. Nu er leitad afram, en mest einu sinni a sekundu.
+      const _nu = Date.now(); if (_nu - (+host.dataset.leit || 0) < 1000) return; host.dataset.leit = String(_nu);
       const mk2 = [...document.querySelectorAll("button")].find(b => /Merkja mikilvægt/.test(b.textContent || "") && !b.closest("._samskipti-host"));
       const rett = mk2 && mk2.parentElement;
       if (rett && rett.parentElement && !host.contains(rett)) rett.parentElement.insertBefore(host, rett.nextSibling);
@@ -862,6 +865,8 @@
     // nýja kortið lent inni í gamla hýslinum sem er fjarlægður línum neðar, og horfið.
     const mk = [...document.querySelectorAll("button")].find(b => /Merkja mikilvægt/.test(b.textContent || "") && !b.closest("._samskipti-host"));
     if (mk) row = mk.parentElement;
+    // Varaakkeri: BANNERINN sjalfur (kortid fer beint undir hann) - aldrei Breyta-rodin, hun er ofan vid bannerinn.
+    if (!row) { const bn = document.querySelector('#companies-main .co-banner'); if (bn) row = bn; }
     if (!row) row = btn.closest('[style*="display:flex"]') || btn.parentElement;
     const anchor = row ? (row.parentElement || row) : btn.parentElement;
     if (host) host.remove();

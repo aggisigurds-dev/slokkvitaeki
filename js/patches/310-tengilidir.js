@@ -331,17 +331,24 @@
     const postar = r.postar || [], listi = (r.till && r.till.listi) || [];
     if (!postar.length) { el.innerHTML = '<span class="tgl-ctx-bid">Enginn póstur frá þessu netfangi í ' + esc(POSTHOLF) + ' — ekkert til að byggja á.</span>'; return; }
     let h = '';
-    const medRokum = listi.filter((t) => t.kt.size || t.gata.size);
-    if (!x.kennitala) {
-      if (medRokum.length) h += medRokum.slice(0, 3).map((t, i) => {
-        const sterk = t.kt.size > 0;
-        const rok = [t.kt.size ? 'kennitalan stendur í ' + t.kt.size + (t.kt.size === 1 ? ' pósti' : ' póstum') : '', t.gataEfni.size ? 'gatan í efnislínu ' + t.gataEfni.size + '×' : '', (!t.gataEfni.size && t.gata.size) ? 'gatan í texta ' + t.gata.size + '×' : ''].filter(Boolean).join(' · ');
-        return '<div class="tgl-till' + (sterk ? '' : ' veik') + '">' + (i === 0 ? '💡 ' : '') + '<b>' + esc(t.c.nafn) + '</b><span class="rok">' + esc(t.c.kennitala || '') + ' · ' + esc(rok) + '</span>' +
-          '<button type="button" data-ctx-link="' + x.id + '" data-kt="' + esc(t.c.kennitala || '') + '" data-nm="' + esc(t.c.nafn || '') + '">🔗 Tengja við þetta</button></div>';
-      }).join('');
-      else h += '<div class="tgl-till veik">Engin kennitala eða gata úr skránni fannst í póstunum — lestu póstana hér að neðan og notaðu „🔗 Tengja".</div>';
-      if (medRokum.length > 3) h += '<div class="tgl-ctx-bid" style="margin:-3px 0 8px">+ ' + (medRokum.length - 3) + ' hús í viðbót — líklega umsjónaraðili sem skrifar um mörg hús; „🔗 Tengja" sýnir þau öll.</div>';
-    }
+    // 18.09.2026 (Agnar: „bryndis@ — allt í lagi þó sama samskiptasamtalið tengist á fleiri"): umsjónaraðili
+    // skrifar um mörg hús. Tillögurnar standa því ÁFRAM eftir fyrstu tengingu — húsin sem netfangið er
+    // þegar tengt við eru tekin út og hin bjóða „＋ Tengja líka við þetta" (link_add = ný röð, skiptir ekki um hús).
+    const tolur = (v) => String(v || '').replace(/\D/g, '');
+    const thegar = new Set(STATE.contacts.filter((c) => String(c.netfang || '').toLowerCase() === String(x.netfang || '').toLowerCase() && c.kennitala).map((c) => tolur(c.kennitala)));
+    const medRokum = listi.filter((t) => (t.kt.size || t.gata.size) && !thegar.has(tolur(t.c.kennitala)));
+    const tengt = !!x.kennitala;
+    if (tengt && thegar.size > 1) h += '<div class="tgl-ctx-bid" style="margin-bottom:6px">Þetta netfang er tengt við ' + thegar.size + ' hús.</div>';
+    if (medRokum.length) h += medRokum.slice(0, tengt ? 5 : 3).map((t, i) => {
+      const sterk = t.kt.size > 0;
+      const rok = [t.kt.size ? 'kennitalan stendur í ' + t.kt.size + (t.kt.size === 1 ? ' pósti' : ' póstum') : '', t.gataEfni.size ? 'gatan í efnislínu ' + t.gataEfni.size + '×' : '', (!t.gataEfni.size && t.gata.size) ? 'gatan í texta ' + t.gata.size + '×' : ''].filter(Boolean).join(' · ');
+      // þegar tengt: aðeins STERKAR viðbótartillögur (kennitala eða gata í efnislínu) — annars suð
+      if (tengt && !sterk && !t.gataEfni.size) return '';
+      return '<div class="tgl-till' + (sterk ? '' : ' veik') + '">' + (i === 0 && !tengt ? '💡 ' : '') + '<b>' + esc(t.c.nafn) + '</b><span class="rok">' + esc(t.c.kennitala || '') + ' · ' + esc(rok) + '</span>' +
+        '<button type="button" data-ctx-link="' + x.id + '" data-ctx-act="' + (tengt ? 'link_add' : 'link') + '" data-kt="' + esc(t.c.kennitala || '') + '" data-nm="' + esc(t.c.nafn || '') + '">' + (tengt ? '＋ Tengja líka við þetta' : '🔗 Tengja við þetta') + '</button></div>';
+    }).join('');
+    else if (!tengt) h += '<div class="tgl-till veik">Engin kennitala eða gata úr skránni fannst í póstunum — lestu póstana hér að neðan og notaðu „🔗 Tengja".</div>';
+    if (!tengt && medRokum.length > 3) h += '<div class="tgl-ctx-bid" style="margin:-3px 0 8px">+ ' + (medRokum.length - 3) + ' hús í viðbót — líklega umsjónaraðili sem skrifar um mörg hús. Tengdu fyrsta húsið; hin bjóðast þá sem „＋ Tengja líka".</div>';
     h += postar.slice(0, 4).map((p) => {
       const sent = p.folder === 'SENT';
       const eigin = eiginTexti(p.body_preview || p.snippet || '').replace(/\s+/g, ' ').trim();
@@ -352,7 +359,11 @@
     el.innerHTML = h;
     el.querySelectorAll('[data-ctx-link]').forEach((b) => b.addEventListener('click', async (e) => {
       e.stopPropagation(); b.disabled = true;
-      try { const j = await post({ action: 'link', id: +b.dataset.ctxLink, kennitala: b.dataset.kt, fyrirtaeki: b.dataset.nm }); apply(j.contact); toast('🔗 Tengt: ' + b.dataset.nm); }
+      try {
+        const j = await post({ action: b.dataset.ctxAct || 'link', id: +b.dataset.ctxLink, kennitala: b.dataset.kt, fyrirtaeki: b.dataset.nm });
+        if (j.added && j.contact) { STATE.contacts.push(j.contact); STATE.stats = null; render(); } else apply(j.contact);
+        toast((j.added ? '＋ Líka tengt: ' : '🔗 Tengt: ') + b.dataset.nm);
+      }
       catch (err) { b.disabled = false; toast('⚠ ' + err.message); }
     }));
   }

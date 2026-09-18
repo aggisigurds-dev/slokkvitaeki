@@ -331,8 +331,14 @@ var Companies = {
       var syna = function (d) {
         if (!d) return;
         var adr = d.heimilisfang_full || '';
+        // 18.09.2026 (Agnar, Árskógar 6-8): húsfélög í umsjón eru skráð „b.t." (berist til)
+        // umsjónaraðilans hjá fyrirtækjaskrá — heimilisfangið þar er skrifstofa Eignareksturs
+        // (Krókhálsi 5a), EKKI húsið. Uppflettingin er á kennitölunni og er rétt; það er
+        // SKRÁNINGIN sem vísar á umsjónaraðilann. Þá má hvorki senda Google-pinnann þangað né
+        // flagga misræmi — okkar heimilisfang er húsið sjálft og það ræður.
+        var bt = String(d.bt_adili || '').trim();
         var a = rot.querySelector('a[data-adr-maps]');
-        if (a && adr) {
+        if (a && adr && !bt) {
           a.href = 'https://www.google.com/maps/search/?api=1&query=' +
             encodeURIComponent(/ísland|iceland/i.test(adr) ? adr : adr + ', Ísland');
           a.title = 'Opna í Google Maps — skráð hjá fyrirtækjaskrá: ' + adr;
@@ -340,7 +346,7 @@ var Companies = {
         var fetur = rot.querySelector('.co-banner-facts');
         if (!fetur || rot.querySelector('.co-banner-skra')) return;
         var bitar = [];
-        if (adr) bitar.push('🏛 ' + adr);
+        if (adr) bitar.push('🏛 ' + (bt ? 'b.t. ' + bt + ' · ' : '') + adr);
         if (d.rekstrarform) bitar.push(d.rekstrarform);
         if (d.stofnad) bitar.push('skráð ' + d.stofnad);
         if (d.isat && d.isat.length) bitar.push(d.isat[0]);
@@ -350,9 +356,20 @@ var Companies = {
         if (!bitar.length && !(d.stada && d.stada.length)) return;
         var lina = document.createElement('div');
         lina.className = 'co-banner-skra';
+        // 18.09.2026 (Agnar: „prófíllinn voða gjarn á því að liðast til ef það kemur löng lína á
+        // skattaskráningunni. hún má frekar fara niður á við í fleiri línur"). Línan var EINN
+        // textahnútur → eitt óbrjótanlegt flex-atriði sem breikkaði dálkinn og ýtti myndinni og
+        // reitunum til hægri. Nú er hver biti sitt atriði (brotnar milli bita og innan þeirra)
+        // og línan má aldrei verða breiðari en dálkurinn.
         lina.style.cssText = 'margin-top:5px;font-size:11.5px;color:rgba(255,255,255,.72);' +
-          'display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center';
-        lina.textContent = bitar.join('  ·  ');
+          'display:flex;flex-wrap:wrap;gap:2px 12px;align-items:center;' +
+          'max-width:min(100%,560px);min-width:0;line-height:1.45';
+        bitar.forEach(function (b, i) {
+          var sp = document.createElement('span');
+          sp.textContent = (i ? '· ' : '') + b;
+          sp.style.cssText = 'min-width:0;overflow-wrap:anywhere;white-space:normal';
+          lina.appendChild(sp);
+        });
         // Afskráð eða gjaldþrota félag — rautt og fremst. Slíkt félag á ekki að fá reikning.
         if (d.stada && d.stada.length) {
           var stadaFlagg = document.createElement('span');
@@ -362,12 +379,12 @@ var Companies = {
             'border:1px solid rgba(239,68,68,.5);border-radius:999px;padding:1px 9px;font-weight:700';
           lina.insertBefore(stadaFlagg, lina.firstChild);
         }
-        if (adr && okkarAdr && stafir(adr) !== stafir(okkarAdr)) {
+        if (adr && okkarAdr && !bt && stafir(adr) !== stafir(okkarAdr)) {
           var flagg = document.createElement('span');
-          flagg.textContent = '⚠ stemmir ekki við okkar heimilisfang';
-          flagg.title = 'Fyrirtækjaskrá: ' + adr + '\nHjá okkur: ' + okkarAdr;
+          flagg.textContent = '⚠';   // 18.09.2026 (Agnar): aðeins þríhyrningurinn — skýringin er í tooltip
+          flagg.title = 'Stemmir ekki við okkar heimilisfang\nFyrirtækjaskrá: ' + adr + '\nHjá okkur: ' + okkarAdr;
           flagg.style.cssText = 'background:rgba(251,191,36,.18);color:#fde68a;' +
-            'border:1px solid rgba(251,191,36,.35);border-radius:999px;padding:1px 8px;font-weight:600';
+            'border:1px solid rgba(251,191,36,.35);border-radius:999px;padding:1px 8px;font-weight:600;cursor:help';
           lina.appendChild(flagg);
         }
         fetur.parentNode.insertBefore(lina, fetur.nextSibling);
