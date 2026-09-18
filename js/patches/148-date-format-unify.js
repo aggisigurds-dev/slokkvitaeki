@@ -56,6 +56,32 @@
     && !TEXT[o.month] && !o.weekday && !o.era && !o.timeZoneName && !o.dayPeriod
     && !(o.dateStyle && o.dateStyle !== 'short') && !(o.timeStyle && o.timeStyle !== 'short' && o.timeStyle !== 'medium');
 
+
+  // 18.09.2026: LANGFORM á vélum án íslenskrar staðfærslu. Þar skilaði
+  // toLocaleDateString('is-IS', {day:'numeric', month:'long', year:'numeric'}) „September 18, 2026".
+  // Styðji vafrinn ekki is-IS smíðum við textann sjálf: „föstudagur, 18. september 2026 kl. 16:15".
+  // Vafrar MEÐ is-IS fara áfram sína leið (útkoman er sú sama).
+  const hasIs = (() => { try { return Intl.DateTimeFormat.supportedLocalesOf('is-IS').length > 0; } catch (_) { return true; } })();
+  const MONTHS_IS = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
+  const WEEKDAYS_IS = ['sunnudagur', 'mánudagur', 'þriðjudagur', 'miðvikudagur', 'fimmtudagur', 'föstudagur', 'laugardagur'];
+  const longIs = (d, o, medTima) => {
+    if (isNaN(d)) return '';
+    // tímabelti: Ísland = UTC allt árið; „UTC"/„Atlantic/Reykjavik" lesa því UTC-reitina.
+    const utc = o.timeZone && /^(utc|atlantic\/reykjavik)$/i.test(String(o.timeZone));
+    const g = (l, u) => (utc ? d[u]() : d[l]());
+    const tvo = (n) => String(n).padStart(2, '0');
+    let s = '';
+    if (o.weekday) { const w = WEEKDAYS_IS[g('getDay', 'getUTCDay')]; s += (o.weekday === 'long' ? w : w.slice(0, 3) + '.') + (o.day || o.month || o.year ? ', ' : ''); }
+    if (o.day) s += g('getDate', 'getUTCDate') + '. ';
+    if (o.month) { const m = MONTHS_IS[g('getMonth', 'getUTCMonth')]; s += (o.month === 'long' ? m : o.month === 'short' ? m.slice(0, 3) + '.' : m[0].toUpperCase()); }
+    if (o.year) s += ' ' + (o.year === '2-digit' ? String(g('getFullYear', 'getUTCFullYear')).slice(2) : g('getFullYear', 'getUTCFullYear'));
+    if (medTima && (o.hour || o.minute)) s += ' kl. ' + tvo(g('getHours', 'getUTCHours')) + ':' + tvo(g('getMinutes', 'getUTCMinutes')) + (o.second ? ':' + tvo(g('getSeconds', 'getUTCSeconds')) : '');
+    return s.trim();
+  };
+  const textFormat = (o) => !!o && typeof o === 'object' && !o.dateStyle && !o.timeStyle && !o.era && !o.timeZoneName
+    && (o.month === 'long' || o.month === 'short' || o.month === 'narrow' || !!o.weekday)
+    && (!o.timeZone || /^(utc|atlantic\/reykjavik)$/i.test(String(o.timeZone)));
+
   const orig = Date.prototype.toLocaleDateString;
   Date.prototype.toLocaleDateString = function (locale, options) {
     // Only intercept the "bare" call (no options). Anything with options
@@ -64,6 +90,7 @@
       return ddmmyyyy(this);
     }
     if (isIcelandicLocale(locale) && numericOnly(options)) return orig.call(this, 'en-GB', options);
+    if (!hasIs && isIcelandicLocale(locale) && textFormat(options)) return longIs(this, options, false);
     return orig.call(this, locale, options);
   };
 
@@ -79,6 +106,7 @@
              + ':' + String(this.getMinutes()).padStart(2, '0');
     }
     if (isIcelandicLocale(locale) && numericOnly(options)) return origBoth.call(this, 'en-GB', options);
+    if (!hasIs && isIcelandicLocale(locale) && textFormat(options)) return longIs(this, options, true);
     return origBoth.call(this, locale, options);
   };
 
