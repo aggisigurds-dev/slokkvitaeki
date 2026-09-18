@@ -1572,6 +1572,11 @@
         var meta=section._sendCo||{}; var nafn=meta.nafn||'';
         // Netfang forfyllt af fyrirtækinu (má breyta í glugganum).
         var email=''; try{ var sb=SB(); if(sb && meta.coId){ var er=await sb.from('fyrirtaeki').select('netfang').eq('id', meta.coId).maybeSingle(); if(er&&er.data&&er.data.netfang) email=String(er.data.netfang).trim(); } }catch(_){}
+        // 2026-09-18 (Agnar): tengiliður hússins sjálfs er FYRSTUR; umsjónaraðili sem vill engan póst
+        // (Eignaumsjón — aðeins rafræn skjöl í heimabanka) fær engan. Sjá 381-vidtakandi.js. Aðeins
+        // forfylling — Agnar sér viðtakandann í glugganum og getur breytt áður en sent er.
+        var _vt=null; try{ if(window.Vidtakandi && meta.coId){ _vt=await Vidtakandi.fyrir({ coId: meta.coId, netfang: email }); if(_vt) email=_vt.to||''; } }catch(_){ _vt=null; }
+        if(_vt && _vt.heimild==='enginn' && !confirm(_vt.skyring+'\n\nOpna póstgluggann samt (án viðtakanda)?')) return;
         // Hakað val — notandinn velur hvað fer með (🧯 úttektarskýrsla ·
         // 🔥 brunakerfisskýrsla · 🧾 reikningur) og svo opnast venjulegi póst-glugginn.
         var hasFile=function(x){ return x && ((x.drive_file_id && String(x.drive_file_id).indexOf('sb:')!==0) || x.storage_path || (x._att && x._att.path)); };
