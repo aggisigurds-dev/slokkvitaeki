@@ -177,7 +177,6 @@
         nota: String(f.notes || '').trim(),
       });
     });
-    try { window.__alDebug = { day: _day, fjoldi: ut.length, allarTil: !!(window.AppSettings && AppSettings.path && AppSettings.path("inspection_trips")), kallad: (window.__alDebug ? window.__alDebug.kallad : 0) + 1 }; } catch(_){}
     return ut.sort((a, b) => b.ts - a.ts);
   }
 
@@ -408,7 +407,13 @@
             a.yf += x.talning.yfirferd; a.hl += x.talning.hledsla; a.ny += x.talning.nytt;
             if (x.reikningur) a.reikningar.push(x.reikningur);
           });
-          const nafnFyrirtaekis = id => { const c = (_cos || []).find(y => +y.id === +id); return c ? c.nafn : ('#' + id); };
+          // 18.09.2026 — MÍN VILLA, mæld: hér stóð `(_cos || []).find(...)`.
+          // `_cos` er UPPFLETTIHLUTUR (id → röð, sjá :49), ekki fylki, svo þetta
+          // kastaði „.find is not a function". Þá dó ÖLL render() og gamla
+          // teikningin sat eftir — kaflinn sagði „0 ferðir" þótt ferðin fyndist.
+          // Villan kom AÐEINS fram þegar ferð VAR til, því tóma greinin skilar
+          // á undan. Þess vegna leit þetta út eins og „sían finnur ekkert".
+          const nafnFyrirtaekis = id => { const c = _cos && _cos[id]; return (c && c.nafn) || ('#' + id); };
           const bitar = Object.keys(perMann).map(k => {
             const a = perMann[k];
             return '<div style="' + CARD + ';padding:11px 14px;flex:1 1 220px">' +
