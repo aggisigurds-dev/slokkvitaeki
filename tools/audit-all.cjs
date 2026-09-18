@@ -45,6 +45,16 @@ console.log(`🔌 Öryggisnet — begin-to-end test (${audits.length}` +
   (adeinsStatic ? ` af ${alls} — aðeins kóða-verðir` : ' audits') + ')\n');
 let failed = 0;
 const nidurstodur = [];
+// 18.09.2026 — CI-bilanir voru ólæsilegar utan frá: logg-endapunkturinn krefst
+// admin-réttinda (403), svo eina sem sást var „Process completed with exit code 1".
+// `annotations` er hins vegar opið á opinberu repói, svo hver rauð niðurstaða er
+// skrifuð þangað. Aðeins í CI; staðbundin keyrsla er óbreytt.
+const iCI = !!process.env.GITHUB_ACTIONS;
+const einLina = s => String(s).replace(/\r?\n/g, ' ').replace(/%/g, '%25').slice(0, 800);
+const merkja = (teg, titill, texti) => {
+  if (!iCI) return;
+  console.log('::' + teg + ' title=' + einLina(titill).replace(/[,:]/g, ' ') + '::' + einLina(texti));
+};
 for (const a of audits) {
   process.stdout.write('  ' + a.padEnd(30) + ' ');
   const t0 = Date.now();
@@ -58,6 +68,7 @@ for (const a of audits) {
     const out = String((e.stdout || '') + (e.stderr || '')).trim();
     const last = out.split('\n').filter(Boolean).slice(-1)[0] || (e.message || 'error');
     console.log('❌  ' + last.slice(0, 90));
+    merkja('error', a, last);
     nidurstodur.push({
       audit: a,
       stada: /^RED:/.test(last) || /\bRED\b/.test(last) ? 'rautt' : 'villa',
@@ -67,6 +78,9 @@ for (const a of audits) {
 }
 console.log(`\n${failed ? '❌ ' + failed + ' of ' + audits.length + ' RED — a guarantee broke. Fix before pushing (see docs/ORYGGISNET.md).'
                        : '✅ All ' + audits.length + ' green — the net holds.'}`);
+merkja(failed ? 'error' : 'notice', 'Öryggisnet',
+  (failed ? failed + ' af ' + audits.length + ' RAUÐIR: ' : 'Allir ' + audits.length + ' grænir. ') +
+  nidurstodur.filter(x => x.stada !== 'graent').map(x => x.audit + ' -> ' + x.skilabod.slice(0, 120)).join(' | '));
 
 if (skra) {
   (async () => {
