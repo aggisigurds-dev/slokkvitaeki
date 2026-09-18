@@ -140,31 +140,40 @@ for (const rel of Object.keys(LEYFT)) {
   }
 }
 
-/* Misræmið sjálft: 106 segist keyra fyrst en gerir það ekki. */
+/* ── MISRÆMIÐ SJÁLFT ───────────────────────────────────────────────────────
+ * 18.09.2026: fyrri útgáfa leitaði að ATHUGASEMDINNI „capture phase, runs first".
+ * Athugasemdin var leiðrétt sama dag (hún segir nú satt: þetta er bubble), og þá
+ * hefði vörðurinn þagnað þótt SJÁLF RÖÐIN væri óbreytt — hann hefði verðlaunað
+ * það eitt að hætta að ljúga í texta. Nú prófar hann KÓÐANN:
+ *
+ *   Hliðin á kassatakkanum sem virka nota öll sama mynstur — umboð á `document`
+ *   í CAPTURE-fasa. Hlið sem hengir sig á HNÚTINN í bubble kemst að á eftir
+ *   checkout() og getur ekki stöðvað söluna, en stöðvar hins vegar speglunina.
+ */
 const rel106 = 'js/patches/106-checkout-unit-prompt.js';
 if (fundnir[rel106]) {
-  let t106 = '';
-  try { t106 = fs.readFileSync(path.join(ROT, rel106), 'utf8'); } catch (_) {}
-  const segistCapture = /capture phase, runs first|capture-fasa, keyrir fyrst/i.test(t106);
-  const erCapture = fundnir[rel106].some((x) => x.capture);
-  if (segistCapture && !erCapture) {
-    kvartanir.push('SKJALFEST MISRÆMI (17.09.2026, óleyst): ' + rel106 + ' segir '
-      + '„capture phase, runs first" en skráir sig í bubble-fasa á eftir js/pos.js.\n'
+  const erHlid = fundnir[rel106].some((x) => !x.capture && !x.umbod);
+  if (erHlid) {
+    kvartanir.push('SKJALFEST MISRÆMI (17.09.2026, óleyst): ' + rel106 + ' er HLIÐ á '
+      + 'kassatakkanum en skráir sig í bubble-fasa á hnútinn, ekki í capture á document '
+      + 'eins og hin tvö hliðin (07, 264).\n'
       + '     Afleiðing: preventDefault stöðvar ekki checkout(), en '
       + 'stopImmediatePropagation stöðvar speglun sölunnar í 00-legacy.js:720.\n'
       + '     Hætti notandinn við tækjagluggann er salan orðin til án speglunar og '
       + 'án kúnnaskráningar.\n'
-      + '     Þetta er EKKI lagað — kassinn er ekki staður fyrir ágiskanir. Þegar '
-      + 'lagfæringin kemur: fjarlægðu þessa athugun um leið.');
+      + '     EKKI LAGAÐ, meðvitað: keðjan er sönnuð (skráningarröð mæld + DOM-staðall), '
+      + 'en bilunin var ekki framkölluð enda til enda — 106 flokkar þjónustulínur eftir '
+      + 'TÁKNI í DOM-inu, svo tilbúin karfa dugði ekki.\n'
+      + '     Til að setja þetta á hreint þarf EINA raunverulega sölu með línu sem krefst '
+      + 'verkbeiðni, þar sem hætt er við tækjagluggann; svo athuga hvort röð bættist í '
+      + '`sala_transactions`. Þegar lagfæringin kemur: fjarlægðu þessa athugun um leið.');
   }
 }
-
 /*
- * Misræmið í 106 er MEÐVITAÐ ólagað: kassinn er ekki staður fyrir ágiskanir að
- * næturlagi. Vörður sem stendur rauður út af þekktu máli stöðvar hverja einustu
- * ýtingu og verður þá slökktur — það er nákvæmlega hvernig verðir deyja hér.
- * Þess vegna skrall: misræmið er prentað HÁTT í hverri keyrslu, en fellur ekki.
- * Nýr eða horfinn þátttakandi fellir hins vegar strax.
+ * Skrall: þekkta misræmið er MEÐVITAÐ ólagað og fellir því ekki. Vörður sem
+ * stendur rauður út af þekktu máli stöðvar hverja ýtingu og verður þá slökktur —
+ * það er nákvæmlega hvernig verðir deyja hér. Hann prentar það hátt í hverri
+ * keyrslu; NÝR eða HORFINN hlustari fellir hins vegar strax.
  */
 const NYTT = kvartanir.filter((k) => !k.startsWith('SKJALFEST MISRÆMI'));
 const thekkt = kvartanir.filter((k) => k.startsWith('SKJALFEST MISRÆMI'));

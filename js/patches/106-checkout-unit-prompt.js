@@ -320,7 +320,39 @@
     });
   }
 
-  // ── Hook the GREIÐA button — capture phase, runs first ────────────────────
+  /* ── Hook the GREIÐA button ────────────────────────────────────────────────
+   *
+   * ⚠️ 18.09.2026 — HÉR STÓÐ „capture phase, runs first". ÞAÐ VAR RANGT.
+   * `addEventListener` hér að neðan fær ekkert þriðja rök, svo þetta er BUBBLE.
+   * Mælt með tools/smoke/arekstrar.js í lifandi viðmóti: skráningarröðin á
+   * #pos-checkout er js/pos.js FYRST, þessi pappi ANNAR. Bubble-hlustarar á sama
+   * hnút keyra í skráningarröð, svo þetta keyrir Á EFTIR checkout(), ekki á undan.
+   *
+   * Tvennt leiðir af því:
+   *   · `e.preventDefault()` / `stopPropagation()` hér að neðan stöðva EKKI
+   *     checkout() — það er þegar farið af stað (checkout er async og skilar við
+   *     fyrsta await, svo salan verður til hvort sem er);
+   *   · `e.stopImmediatePropagation()` stöðvar hins vegar hlustara sem skráðust
+   *     SEINNA — þar á meðal 00-legacy.js:720, sem speglar söluna í
+   *     `sala_transactions` og skráir viðskiptavininn (sá staður er sjálfur
+   *     merktur „síðasta verksmiðjan sem bjó til munaðarlausar raðir").
+   *
+   * Hin tvö hliðin á sama takka gera þetta RÉTT og eru fyrirmyndin:
+   *   07-sala-checkout-dialog.js:546  document + CAPTURE + dataset.scdProceed
+   *   264-beidni-gate.js:92           document + CAPTURE + endurkomuflagg
+   * Bæði komast að á undan checkout() og geta því raunverulega stöðvað söluna.
+   *
+   * RÖÐINNI VAR EKKI BREYTT. Ástæðan: keðjan er sönnuð (skráningarröð mæld +
+   * DOM-staðall), en sjálf bilunin var ekki framkölluð enda til enda — 106
+   * flokkar þjónustulínur eftir TÁKNI í DOM-inu, svo tilbúin karfa dugði ekki.
+   * Til að setja þetta á hreint þarf EINA raunverulega sölu með línu sem krefst
+   * verkbeiðni, þar sem hætt er við tækjagluggann; svo er athugað hvort röð
+   * bættist í `sala_transactions`. Kassinn er ekki staður fyrir ágiskanir.
+   *
+   * Vörður heldur utan um þetta: tools/audit-kassa-hlustarar.cjs — hann prentar
+   * misræmið í hverri keyrslu og fellur ef NÝR hlustari bætist á takkann.
+   * Þegar röðin verður lagfærð: fjarlægðu athugunina úr verðinum um leið.
+   */
   function attachToCheckout() {
     const btn = document.getElementById('pos-checkout');
     if (!btn) { setTimeout(attachToCheckout, 800); return; }
