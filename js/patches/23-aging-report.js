@@ -313,6 +313,9 @@
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
+    // 18.09.2026: GEYMT gildi — skráarnafn, ekki notandatexti. Heldur YYYY-MM-DD:
+    // skástrik í skráarnafni er klippt af pósti/niðurhali og eftir stendur árið eitt
+    // (vörður tools/audit-skraarnofn-dags.cjs). Dálkurinn í skránni fer um fmtDate.
     a.download = 'aldursgreining-' + new Date().toISOString().slice(0,10) + '.csv';
     document.body.appendChild(a); a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

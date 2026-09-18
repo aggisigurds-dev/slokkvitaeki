@@ -209,6 +209,11 @@
   function saveDone(coId){
     try{
       var ids = Object.keys(_done).filter(function(k){return _done[k];}).map(Number);
+      // 18.09.2026 (yfirferð): þetta ER staða — og hún ER samstillt. `sk_ut_done_`
+      // er staðbundinn hraðreitur; línan neðar skrifar sömu auðkenni í slokk_trip_*,
+      // sem patch 227 speglar í Supabase (AppSettings.inspection_trips) og les til
+      // baka á aðrar vélar (227:114). Engin staða lifir hér ein — en breytist þetta
+      // fall verður speglunarlínan að fylgja með, annars slitnar samstillingin.
       localStorage.setItem(doneKey(coId), JSON.stringify(ids));
       // 2026-08-17: hökin speglast í samstillta ferðahlutinn (slokk_trip_*,
       // patch 227 mirrorar í skýið) svo þau fylgi milli véla — voru tækjabundin.

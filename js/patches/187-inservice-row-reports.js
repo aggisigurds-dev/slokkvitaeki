@@ -115,9 +115,20 @@
   // SAMHLIÐA → ein umferðartíð. Skilar sömu röðum; öryggisventillinn helst.
   async function fetchAll(mk){
     const PAGE = 1000;
+    // 18.09.2026 (óskoðaður lestur): brostin síða skilaði TÓMUM lista sem las
+    // eins og „fleiri raðir eru ekki til" — og stutt síða slítur lykkjuna, svo
+    // EIN misheppnuð síða gat þaggað niður í öllu sem á eftir kom. Ár sem á sér
+    // skýrslu/reikning/par birtist þá grátt (og 153 sagði „ekki skoðað") án þess
+    // að nokkurs staðar sæist af hverju. Skilagildin eru ÓBREYTT — sýnin má enn
+    // opnast með því sem náðist — en þögnin er farin.
+    const kvarta = (hvar, villa) => {
+      const m = String((villa && villa.message) || villa || '').slice(0, 160);
+      console.warn('[inservice-rows] fetchAll ' + hvar + ' — listinn getur verið ófullgerður:', m);
+      try { if (window.logProblem) window.logProblem('inservice_rows_fetch_incomplete', hvar + ': ' + m); } catch (_) {}
+    };
     try {
       const r0 = await mk().range(0, PAGE - 1);
-      if (r0.error) return [];
+      if (r0.error) { kvarta('fyrsta síða', r0.error); return []; }
       let out = (r0.data || []).slice();
       if (out.length < PAGE) return out;
       // heildarfjöldi óþekktur hér (mk býr til fyrirspurn án count) → sækjum
@@ -125,12 +136,14 @@
       for (let base = PAGE; base <= 60000; base += PAGE * 4) {
         const offs = [base, base + PAGE, base + PAGE * 2, base + PAGE * 3];
         const pages = await Promise.all(offs.map(o =>
-          mk().range(o, o + PAGE - 1).then(r => (r.error ? [] : (r.data || []))).catch(() => [])));
+          mk().range(o, o + PAGE - 1)
+            .then(r => { if (r.error) { kvarta('síða frá ' + o, r.error); return []; } return r.data || []; })
+            .catch(e => { kvarta('síða frá ' + o, e); return []; })));
         pages.forEach(p => { out = out.concat(p); });
         if (pages.some(p => p.length < PAGE)) break;   // náðum enda
       }
       return out;
-    } catch (e) { console.warn('[inservice-rows] fetchAll', e); return []; }
+    } catch (e) { kvarta('sókn', e); return []; }
   }
 
   // 2026-08-14 (Norðurbrú-lexían): úttekt sem við eigum BARA reikning fyrir
@@ -584,13 +597,22 @@
     const path = a.dataset.path;
     if (!path || !window.DB || !DB.sb) return;
     const w = window.open('', '_blank');
+    // 18.09.2026: þetta er LESTUR og bilunin var þegar sýnileg — glugginn lokast
+    // og notandinn fær skilaboð, svo engin staða varð ósönn. Ástæðan var hins
+    // vegar alveg kyngd: createSignedUrl kastar ekki, villan kom í .error og
+    // enginn las hana, svo „Náði ekki að opna skjalið" sagði aldrei hvort skráin
+    // væri horfin úr hólfinu eða tengingin niðri. Ástæðan fylgir nú með.
+    let astaeda = '';
     try {
       const r = await DB.sb.storage.from(BUCKET).createSignedUrl(path, 3600);
       const url = r && r.data && r.data.signedUrl;
       if (url) { if (w) w.location = url; else window.open(url, '_blank'); return; }
-    } catch (_) {}
+      astaeda = (r && r.error && (r.error.message || String(r.error))) || 'engin slóð fékkst';
+    } catch (e) { astaeda = (e && e.message) || String(e); }
     if (w) w.close();
-    alert('Náði ekki að opna skjalið.');
+    console.warn('[inservice-rows] createSignedUrl', path, astaeda);
+    alert('Náði ekki að opna skjalið.\n\nÁstæða: ' + astaeda +
+      '\n\nReyndu aftur. Haldi þetta áfram er skráin líklega ekki lengur í geymslunni — opnaðu prófíl fyrirtækisins og athugaðu viðhengin.');
   });
 
   // 2026-08-11 (ósk Agnars — „Manual override"): TVÍSMELLUR á árs-reit í

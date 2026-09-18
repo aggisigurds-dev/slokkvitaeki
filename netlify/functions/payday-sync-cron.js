@@ -78,18 +78,30 @@ exports.handler = async () => {
         push(lst('sott_ekki_final'), '🔴', 'Sótt verk með sölu sem er EKKI final', x => x.verk + ' → ' + x.sala + ' (' + x.status + ')');
         if (issues.length) {
           console.warn('[payday-sync-cron] eftirlit frávik:', issues.length);
+          // 18.09.2026: efnislínan er NOTANDATEXTI — Agnar les hana í pósthólfinu —
+          // svo dagsetningin birtist DD/MM/YYYY (../brunaholf/docs/DAGSETNINGAR.md).
+          // ISO-gildið er aðeins uppsprettan; ekkert geymt gildi breytist.
+          const dagsIso = new Date().toISOString().slice(0, 10);
+          const dagsBirt = dagsIso.slice(8, 10) + '/' + dagsIso.slice(5, 7) + '/' + dagsIso.slice(0, 4);
           try {
-            await fetch(base + '/api/email-send', {
+            const pr = await fetch(base + '/api/email-send', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 from: 'onboarding@resend.dev',
                 to: ['aggisigurds@gmail.com'],
-                subject: '⚠ Rukkunar-eftirlit: ' + issues.length + ' frávik (' + new Date().toISOString().slice(0, 10) + ')',
+                subject: '⚠ Rukkunar-eftirlit: ' + issues.length + ' frávik (' + dagsBirt + ')',
                 html: '<h3>Rukkunar-eftirlit Slökkvitækja</h3><ul>' + issues.map(i => '<li>' + i + '</li>').join('') + '</ul>'
                   + '<p style="color:#64748b;font-size:12px">Full sundurliðun: SELECT jsonb_pretty(rukkun_eftirlit()); — sjá docs/RUKKUNARKEDJAN.md í slokkvitaeki-repo.</p>',
               }),
             });
+            // 18.09.2026: fetch kastar EKKI á 4xx/5xx. Hafnaður póstur (t.d. 500 frá
+            // email-send) leit því út eins og sendur póstur og frávikin hefðu þagnað.
+            // Staðan og svartextinn fara nú í loggið. Eftirlitið má aldrei fella
+            // greiðslusamstillinguna, svo hér er ekki kastað áfram — aðeins sagt frá.
+            const psvar = await pr.text().catch(() => '');
+            if (!pr.ok) console.error('[payday-sync-cron] eftirlit-póstur HAFNAÐ', pr.status, psvar.slice(0, 500));
+            else console.log('[payday-sync-cron] eftirlit-póstur sendur', pr.status);
           } catch (e4) { console.error('[payday-sync-cron] eftirlit-póstur brást', e4); }
         }
       }

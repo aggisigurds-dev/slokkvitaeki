@@ -1239,6 +1239,10 @@
     localStorage.setItem(LS_SORTDIR, state.sortDir || 'asc');
     localStorage.setItem(LS_MONTHS, JSON.stringify(state.months || []));
     localStorage.setItem(LS_POSTNR, state.postnr === null ? 'all' : JSON.stringify(state.postnr));
+    // 18.09.2026 (yfirferð): ÚTLITSVAL, ekki staða. `arsskodun_status` geymir hvaða
+    // sía er valin í flipanum ('all' | 'done' | 'pending' | 'never' | 'akstur' …) —
+    // hún lýsir því hvað ÞESSI vafri sýnir, ekki stöðu gagna. Staða ársskoðunar býr
+    // í arsskodun_customers á þjóninum. Má því vera staðbundið.
     localStorage.setItem(LS_STATUS, state.status);
     localStorage.setItem(LS_SKIPHIDE, state.hideSkipped ? '1' : '0');
   }

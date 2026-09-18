@@ -149,6 +149,10 @@
       const have = new Set((r.data || []).map(p => String(p.nafn || '').trim().toLowerCase()));
       const missing = AUX_PRODUCTS.filter(p => !have.has(p.nafn.toLowerCase()) && !tombstoned.has(p.nafn.toLowerCase()));
       if (!missing.length) {
+        // 18.09.2026 (yfirferð): ekki staða heldur staðbundin sáningarvörn. Sannleikurinn
+        // um vörurnar er `vorur`-taflan (lesin hér að ofan í hverri lotu); merkið sparar
+        // aðeins endurtekna fyrirspurn í þessum vafra. Vanti það tapast engin upplýsing —
+        // sáningin er idempotent. Má því vera staðbundið.
         localStorage.setItem('_auxProductsSeededV1', 'all-present-' + Date.now());
         return;
       }

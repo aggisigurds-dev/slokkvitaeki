@@ -332,6 +332,9 @@
     const csv = bom + hdr.join(';') + '\n' + rows.join('\n');
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    // 18.09.2026: GEYMT gildi — skráarnafn, ekki notandatexti. Heldur YYYY-MM-DD;
+    // skástrik í skráarnafni klippir nafnið í pósti/niðurhali
+    // (vörður tools/audit-skraarnofn-dags.cjs).
     a.download = 'birgdir_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
   }

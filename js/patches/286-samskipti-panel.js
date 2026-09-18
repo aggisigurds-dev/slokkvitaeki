@@ -190,6 +190,11 @@
         return ok;
       } catch (_) { return false; }
     }
+    // 18.09.2026: þögnin er RÉTT. Þetta snyrtir AÐEINS tækisgeymsluna niður í
+    // HAMARK kort — hún er spegill af því sem þjónninn á (skrifað eftir sókn,
+    // og `laga` speglar aðeins staðfest skrif). Bregðist snyrtingin situr
+    // eftir of stór skyndiminnisskrá sem næsta sókn skrifar yfir hvort eð er;
+    // engin gögn notandans eru hér og ekkert verður ósatt á skjánum.
     function klippa(db) {
       try {
         const os = db.transaction(ST, "readwrite").objectStore(ST);

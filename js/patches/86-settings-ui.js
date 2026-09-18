@@ -1090,6 +1090,8 @@
     }
     body.querySelector('#_su-export-settings').addEventListener('click', async () => {
       const data = (window.AppSettings && window.AppSettings.get()) || {};
+      // 18.09.2026: GEYMT gildi — skráarnafn, ekki notandatexti. Heldur YYYY-MM-DD;
+      // skástrik í skráarnafni klippir nafnið (vörður tools/audit-skraarnofn-dags.cjs).
       dl('settings-' + new Date().toISOString().slice(0,10) + '.json', data);
       _draft.backup = _draft.backup || {};
       _draft.backup.last_export_at = new Date().toISOString();
@@ -1098,6 +1100,8 @@
       if (!window.DB || !window.DB.sb) { alert('Engin DB tenging'); return; }
       const r = await window.DB.sb.from(table).select('*');
       if (r.error) { alert('Villa: ' + r.error.message); return; }
+      // 18.09.2026: GEYMT gildi á báðum stöðum — skráarnafn (YYYY-MM-DD, aldrei
+      // skástrik) og exported_at sem er vélalesið ISO inni í afritinu sjálfu.
       dl(fname + '-' + new Date().toISOString().slice(0,10) + '.json', { table: table, exported_at: new Date().toISOString(), rows: r.data || [] });
     }
     body.querySelector('#_su-export-vorur').addEventListener('click', () => exportTable('vorur', 'vorur'));

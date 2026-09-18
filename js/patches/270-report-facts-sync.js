@@ -172,13 +172,21 @@
       const eq = normalizeCounts(counts);
 
       // 1. arsskodun_report_facts — les fyrst, aldrei niðurfærsla.
-      let existingFacts = null;
+      // 18.09.2026 (óskoðaður lestur → rangt skrif): .select() kastar ekki, svo
+      // brostin fyrirspurn skilaði `data:null` sem las nákvæmlega eins og „engin
+      // facts-röð er til". Þá duttu BÁÐAR varnirnar hér að neðan þegjandi úr
+      // sambandi: niðurfærslu-vörnin (eldri skýrsla mátti þá yfirskrifa nýrri) og
+      // `annad`-yfirfærslan — og `annad` lifir HVERGI nema í þessari röð, því
+      // 168-skýrslan býr það ekki til, svo upsert ofan í misheppnaðan lestur
+      // hefði núllað það endanlega. Villan er nú munuð og skrifinu sleppt.
+      let existingFacts = null, factsLesVilla = null;
       try {
         const r = await sb.from('arsskodun_report_facts')
           .select('fyrirtaeki_id,report_year,inspect_month,equipment,total_devices')
           .eq('fyrirtaeki_id', coId).maybeSingle();
-        existingFacts = r && r.data ? r.data : null;
-      } catch (_) {}
+        if (r && r.error) factsLesVilla = r.error;
+        else existingFacts = (r && r.data) || null;
+      } catch (e) { factsLesVilla = e; }
       if (existingFacts && +existingFacts.report_year > year) {
         // Eldri skýrsla en það sem þegar er skráð — snertum EKKERT.
         summary.skipped = 'older_report';
@@ -189,17 +197,42 @@
         eq.annad = +existingFacts.equipment.annad;
       }
       const total = BUCKETS.reduce((s, b) => s + (+eq[b] || 0), 0);
-      try {
-        const up = await sb.from('arsskodun_report_facts').upsert({
-          fyrirtaeki_id: coId,
-          report_year: year,
-          inspect_month: month,
-          total_devices: total,
-          parse_ok: true,
-          equipment: eq
-        }, { onConflict: 'fyrirtaeki_id' });
-        summary.facts = !(up && up.error);
-      } catch (_) {}
+      // 18.09.2026: `summary.facts` fór hvergi nema í console.log — sync() er
+      // fire-and-forget úr 168 og enginn les skilagildið. Mistækist þetta skrif
+      // hélt kerfið því ÁFRAM gömlu tækjatölunum (Ársskoðun, prófíll, listar,
+      // reikningsgrunnur) á meðan skýrslan sem notandinn var að vista sýndi þær
+      // nýju — og ekkert sagði frá. Vistun skýrslunnar má aldrei stöðvast, svo
+      // hér er sagt frá án þess að grípa fram fyrir hendurnar á neinu.
+      if (factsLesVilla) {
+        summary.skipped = summary.skipped || 'facts_lestur_brast';
+        const m = String((factsLesVilla && factsLesVilla.message) || factsLesVilla).slice(0, 160);
+        console.warn('[270] arsskodun_report_facts lestur brást — tækjatölur EKKI skrifaðar (vörn gegn niðurfærslu):', m);
+        try { if (window.logProblem) window.logProblem('report_facts_lestur_brast', 'co ' + coId + ' ár ' + year + ': ' + m); } catch (_) {}
+        try {
+          if (window.Toast && Toast.show) Toast.show('⚠ Náði ekki að lesa fyrri tækjatölur — tölur skýrslunnar (' + year + ') fóru EKKI inn í kerfið. Skýrslan sjálf er vistuð; opnaðu hana og vistaðu aftur.');
+        } catch (_) {}
+      } else {
+        try {
+          const up = await sb.from('arsskodun_report_facts').upsert({
+            fyrirtaeki_id: coId,
+            report_year: year,
+            inspect_month: month,
+            total_devices: total,
+            parse_ok: true,
+            equipment: eq
+          }, { onConflict: 'fyrirtaeki_id' });
+          if (up && up.error) throw up.error;
+          summary.facts = true;
+        } catch (e) {
+          summary.facts = false;
+          const m = String((e && e.message) || e).slice(0, 160);
+          console.warn('[270] arsskodun_report_facts upsert brást:', m);
+          try { if (window.logProblem) window.logProblem('report_facts_upsert_failed', 'co ' + coId + ' ár ' + year + ': ' + m); } catch (_) {}
+          try {
+            if (window.Toast && Toast.show) Toast.show('⚠ Tækjatölur skýrslunnar (' + year + ') vistuðust EKKI í kerfið — það sýnir áfram eldri tölur. Skýrslan sjálf er vistuð; opnaðu hana og vistaðu aftur.');
+          } catch (_) {}
+        }
+      }
 
       // 2. Samræma uttaeki.
       // 2026-09-08: taldi ÁÐUR aðeins á `client = fyrirtaeki.nafn`. Nafnið getur
@@ -433,16 +466,25 @@
         }
       } catch (_) {}
       if (Object.keys(patch).length) {
+        // Skilagildið er vísvitandi ólesið: AppSettings.save ER saveVordud — hún
+        // setur misheppnað skrif sjálf í biðröð, segir notandanum frá og reynir
+        // aftur. Tvöföld tilkynning hér væri hávaði (18.09.2026).
         await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: patch } });
-        try {
-          if (sb) await sb.from('override_log').insert({
-            co_id: coId, field: 'visit_complete',
-            old_value: 'field:' + (+rec.field_inspected_year || 0) + ' last:' + curLast,
-            new_value: 'lokid ' + year + ' (skyrsla+reikningur)' +
-              (listAuto ? ' + listi_stadfestur_auto' : ''),
-            page: 'uttekt'
-          });
-        } catch (_) {}
+        // 18.09.2026: sama og report_sync-röðin ofar í skránni — .insert() kastar
+        // ekki, svo catch-ið var dautt og rekjanleikaröðin gat horfið án þess að
+        // nokkurs staðar sæist. Staðan sjálf er þegar vistuð hér að ofan, svo
+        // ekkert er sagt við notandann; villan fer í annálinn.
+        const ol = sb ? await sb.from('override_log').insert({
+          co_id: coId, field: 'visit_complete',
+          old_value: 'field:' + (+rec.field_inspected_year || 0) + ' last:' + curLast,
+          new_value: 'lokid ' + year + ' (skyrsla+reikningur)' +
+            (listAuto ? ' + listi_stadfestur_auto' : ''),
+          page: 'uttekt'
+        }) : null;
+        if (ol && ol.error) {
+          console.warn('[270] override_log (visit_complete)', ol.error);
+          try { if (window.logProblem) window.logProblem('visit_complete_override_log_failed', 'co ' + coId + ' ár ' + year + ': ' + String(ol.error.message || ol.error).slice(0, 160)); } catch (_) {}
+        }
         try { if (window.CustomerBrief && CustomerBrief.invalidate) CustomerBrief.invalidate(coId); } catch (_) {}
         console.log('[report-facts-sync] visit complete', coId, year);
       }

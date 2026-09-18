@@ -298,12 +298,29 @@
       var q = sb.from('document_pairs').select('id').eq('customer_base_id', baseId).eq('year', +year).eq('service_type', serviceType);
       q = (fyrirtaekiId!=null) ? q.eq('fyrirtaeki_id', fyrirtaekiId) : q.is('fyrirtaeki_id', null);
       var existing = await q.maybeSingle();
+      // 18.09.2026 — TVÆR þagnir á sama stað, báðar alvarlegar:
+      // 1) .maybeSingle() kastar ekki. Brostin uppfletting skilaði `data:null`
+      //    sem las NÁKVÆMLEGA eins og „ekkert par er til fyrir þetta ár" — og
+      //    næsta lína bjó þá til NÝTT par í stað þess að uppfæra það sem fyrir
+      //    var. (maybeSingle skilar líka villu þegar raðirnar eru fleiri en ein,
+      //    þ.e. einmitt þegar tvítak er þegar orðið — sjálfnærandi hringur.)
+      // 2) Hvorki update né insert var lesið, svo fallið skilaði `true` þótt
+      //    skrifið hefði verið hafnað (einkvæmnisvísirinn er EXPRESSION-vísir og
+      //    hafnar tvítaki með villu í .error, ekki kasti). Handvirka leiðin í
+      //    „🔗 Tengja" á línu ~1624 athugar skilagildið og segir „Tenging
+      //    vistaðist ekki" — sú aðvörun gat aldrei birst. Takkinn fullyrti því
+      //    alltaf að tengingin væri komin, og pörunin ræður `klarad` (Úttektarplan,
+      //    „gleymt að rukka"). Nákvæmlega sama einkenni og lýst er hér að ofan
+      //    frá 2026-08-10 — það var lagað, en þögnin var eftir.
+      if(existing && existing.error) throw existing.error;
       var row = Object.assign({
         customer_base_id: baseId, year: +year, service_type: serviceType,
         fyrirtaeki_id: (fyrirtaekiId!=null?fyrirtaekiId:null), updated_at: new Date().toISOString(),
       }, patch);
-      if(existing && existing.data && existing.data.id) await sb.from('document_pairs').update(row).eq('id', existing.data.id);
-      else await sb.from('document_pairs').insert(row);
+      var w = (existing && existing.data && existing.data.id)
+        ? await sb.from('document_pairs').update(row).eq('id', existing.data.id)
+        : await sb.from('document_pairs').insert(row);
+      if(w && w.error) throw w.error;
       return true;
     }catch(e){ console.warn('[savePair]', e); return false; } // auto-path is best-effort; manual path checks this
   }
@@ -714,19 +731,27 @@
       var m={}; (r.data||[]).forEach(function(x){ m[String(x.year)]={status:x.status,note:x.note}; }); _fc[String(coId)]=m;
     }catch(_){ _fcFail[String(coId)]=true; _fc[String(coId)]={}; }
   }
+  // 18.09.2026: hvorug þessara las niðurstöðuna (.upsert()/.delete() kasta ekki),
+  // svo alert-in hér að neðan gátu ALDREI birst. Verra: staðbundna staðan á
+  // línunni á eftir var uppfærð hvort sem skrifið tókst eða ekki og
+  // 'attachment-year-changed' sent — reiturinn varð grænn á skjánum á meðan
+  // gagnagrunnurinn hélt gömlu stöðunni, og næsta endurhleðsla tók hann til baka
+  // þegjandi. Staðbundna breytingin gerist nú AÐEINS eftir staðfest skrif.
   async function fcSet(coId,y,status,note){
     var sb=SB(); if(!sb) return;
-    try{ await sb.from('year_factcheck').upsert({co_id:coId, year:+y, status:status, note:(note||null), updated_at:new Date().toISOString()}, {onConflict:'co_id,year'});
+    try{ var r=await sb.from('year_factcheck').upsert({co_id:coId, year:+y, status:status, note:(note||null), updated_at:new Date().toISOString()}, {onConflict:'co_id,year'});
+      if(r && r.error) throw r.error;
       (_fc[String(coId)]=_fc[String(coId)]||{})[String(y)]={status:status,note:note||''};
       try{ document.dispatchEvent(new Event('attachment-year-changed')); }catch(_){}
-    }catch(e){ alert('Villa við vistun: '+(e.message||e)); }
+    }catch(e){ alert('Merkingin á árinu '+y+' vistaðist EKKI — reiturinn stendur óbreyttur.\n\nReyndu aftur; haldi þetta áfram er tengingin líklega niðri.\n\nVilla: '+(e&&e.message||e)); }
   }
   async function fcClear(coId,y){
     var sb=SB(); if(!sb) return;
-    try{ await sb.from('year_factcheck').delete().eq('co_id',coId).eq('year',+y);
+    try{ var r=await sb.from('year_factcheck').delete().eq('co_id',coId).eq('year',+y);
+      if(r && r.error) throw r.error;
       if(_fc[String(coId)]) delete _fc[String(coId)][String(y)];
       try{ document.dispatchEvent(new Event('attachment-year-changed')); }catch(_){}
-    }catch(e){ alert('Villa: '+(e.message||e)); }
+    }catch(e){ alert('Ekki tókst að hreinsa merkinguna á árinu '+y+' — hún stendur óbreytt.\n\nReyndu aftur; haldi þetta áfram er tengingin líklega niðri.\n\nVilla: '+(e&&e.message||e)); }
   }
   // Tvísmella hringar nú í FJÓRUM stigum (2026-08-17, Agnar: „double click …
   // to toggle the status. green yellow, blue"). Blátt varð handvirkt aðgengilegt
@@ -828,6 +853,12 @@
           if(r&&r.error){ console.warn('[199] flutningur grænna mistókst — reynt aftur síðar:', r.error.message||r.error); return; }
           localStorage.setItem('fc_migrated_v1','1');
         },function(e){ console.warn('[199] flutningur grænna mistókst — reynt aftur síðar:', e); });
+      // 18.09.2026: þögnin hér er RÉTT. Skrifið sjálft (upsert) segir frá sinni
+      // villu í .then-inu hér að ofan; þessi ytri catch nær aðeins til
+      // localStorage/AppSettings-lestranna. Bregðist þeir er 'fc_migrated_v1'
+      // ALDREI sett, svo flutningurinn er einfaldlega reyndur aftur við næsta
+      // onChange (upsert er idempotent) — engin græn merking tapast og ekkert
+      // er sagt búið sem er ógert.
       }catch(_){}
     }
     // Keyra EFTIR að AppSettings er hlaðið. Áður keyrði þetta við parse (áður en
