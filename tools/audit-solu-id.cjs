@@ -55,14 +55,35 @@ async function sb(slod) {
   // ---- 1. Sölur -----------------------------------------------------------
   const solur = await sb(
     'solur?select=num,status,samtals,customer_nafn,customer_id,customer_base_id,' +
-    'krafa_sent_at,created_at,updated_at&created_at=gte.' + fra + '&order=created_at.desc'
+    'krafa_sent_at,paid_at,greitt_med,created_at,updated_at&created_at=gte.' + fra + '&order=created_at.desc'
   );
 
+  // 18.09.2026 — ÞRENGT: greidd sala þarf enga tengingu.
+  // Mælt: allar átta sem féllu hér voru búðarsölur greiddar með korti eða
+  // reiðufé (R-000963, 958, 953, 950, 948, 947, 942, 922). Þær hafa engan
+  // viðskiptavin og þurfa engan — peningurinn er kominn. Vörðurinn var að telja
+  // þær sem fasta peninga, sem kenndi manni að hunsa hann.
+  //
+  // Talan er EKKI fryst sem grunnlína; skilyrðinu er breytt úr „á ekki tengingu"
+  // í „á ekki tengingu OG er ógreidd". Tengingin skiptir aðeins máli fyrir sölu
+  // sem á eftir að rukka. Með þrengra skilyrði eru tilvikin núll — grænt af
+  // réttri ástæðu, ekki af þögn.
   const orukkanlegar = solur.filter(s =>
     ['final', 'sott'].includes(s.status) && Number(s.samtals) > 0 &&
-    !s.krafa_sent_at && s.customer_base_id == null);
+    !s.krafa_sent_at && s.customer_base_id == null && !s.paid_at);
 
-  const soluAnAudkennis = solur.filter(s => s.customer_id == null || s.customer_base_id == null);
+  // 18.09.2026 — ÞRENGT: aðeins NAFNGREINDUR viðskiptavinur án tengingar.
+  // `customer_id == null || customer_base_id == null` er satt um hverja einustu
+  // staðgreiddu búðarsölu — hún hefur engan viðskiptavin og þarf engan. Greinin
+  // var því rauð að eilífu meðan verslað er yfir borðið, og vörður sem er alltaf
+  // rauður er vörður sem enginn les.
+  //
+  // Það sem vörðurinn var skrifaður fyrir er hitt: nafn var slegið inn í POS og
+  // engin tenging varð til. Mælt: 7 slíkar af 77 nafngreindum á 14 dögum, þar af
+  // þrjár ógreiddar (Ingólfur og þórdís, Þorgeir Jónsson, kreditfærsla Ármanns).
+  const NAFNLAUST = /^(staðgreitt|stadgreitt|reiðufé|reidufe|kort|nafnlaus)\s*$/i;
+  const nafngreind = s => { const n = String(s.customer_nafn || '').trim(); return !!n && !NAFNLAUST.test(n); };
+  const soluAnAudkennis = solur.filter(s => nafngreind(s) && s.customer_base_id == null);
 
   if (orukkanlegar.length) {
     orukkanlegar.slice(0, 8).forEach(s =>
@@ -73,7 +94,7 @@ async function sb(slod) {
       console.log(`   ${s.num}  ${s.customer_nafn || '(nafnlaus)'}  ` +
         `${s.customer_id == null ? 'customer_id VANTAR ' : ''}` +
         `${s.customer_base_id == null ? 'customer_base_id VANTAR' : ''}`));
-    villur.push(`${soluAnAudkennis.length} af ${solur.length} sölum síðustu ${GLUGGI} daga vantar auðkenni`);
+    villur.push(`${soluAnAudkennis.length} nafngreindar sölur síðustu ${GLUGGI} daga eiga enga tengingu við customers_base`);
   }
 
   // Handlagfærðar sölur líta út eins og heilbrigðar. Aðgreinum þær.
