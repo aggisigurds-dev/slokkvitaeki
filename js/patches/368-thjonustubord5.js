@@ -1682,6 +1682,21 @@
     const lokid = minn && !getaSvarad ? b('gold lg', 'done', '✓ Merkja lokið') : b('iv', 'done', '✓ Lokið');
     const skila = minn ? b('iv', 'giveback', '↩ Skila á Master') : '';
     const fyr = whereOf(r) ? b('iv', 'fyr', '🏢 Opna fyrirtæki ›') : '';
+    // 18.09.2026 — BEINT Í SKÝRSLU OG REIKNING.
+    // Hnappurinn birtist aðeins þegar fyrirtækið stendur sannanlega í
+    // `v_gleymt_ad_rukka_uttekt`; annars fyndi vinnuglugginn ekkert og hnappurinn
+    // yrði enn einn sem lofar og skilar engu. Listinn er sóttur (5 mín geymsla)
+    // aðeins fyrir mál sem bera bæði fyrirtæki og upphæð.
+    const rukkaTakki = (() => {
+      const fid = r.fyrirtaeki_id || null;
+      if (!fid || !upphaedMals(r)) return '';
+      const g = gogn('gleymt', saekjaGleymt);
+      if (!g || !g.data) return '';   // enn að sækja, eða sókn brást — ekkert lofað
+      const a = (g.data.uttekt || []).some(x => +x.fyrirtaeki_id === +fid);
+      if (!a) return '';
+      return '<button type="button" class="btn gold" data-t5="vinna-gleymt" data-fid="' + fid +
+        '" title="Skýrsla + reikningur — reikningurinn endar ÓSENDUR í Kröfuyfirliti, þú ferð yfir og sendir">🧾 Gera skýrslu og reikning ›</button>';
+    })();
     const setja = '<label class="setja"><span class="slabel">Setja á</span><select data-t5="assign" data-id="' + r.id + '"' + dis(r.id) + ' aria-label="Setja málið á">' +
       '<option value=""' + (!canonW(r.assigned_to) ? ' selected' : '') + '>Master</option>' +
       folk().map(x => '<option' + (lagt(x) === lagt(canonW(r.assigned_to)) ? ' selected' : '') + '>' + esc(x) + '</option>').join('') +
@@ -1697,7 +1712,7 @@
       '<div class="smeta">' + esc(meta) + '</div>' +
       (samantekt(r) ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(samantekt(r).slice(0, 600)) + '</div>' : '') +
       sagaHtml(r) + skjolHtml(r) + well +
-      '<div class="sacts">' + (minn && erSamthykki(r) ? samtTakkar(r, ' lg') + fyr : taka + svara + lokid + skila + fyr) + '</div>' + (minn && erSamthykki(r) ? skyRitillHtml(r) : '') +
+      '<div class="sacts">' + (minn && erSamthykki(r) ? samtTakkar(r, ' lg') + rukkaTakki + fyr : taka + svara + lokid + skila + rukkaTakki + fyr) + '</div>' + (minn && erSamthykki(r) ? skyRitillHtml(r) : '') +
       '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + (jm => jm ? b('iv', 'vd-opna', '🗓 ' + fmtD(jm.date) + (jm._n !== nu() ? ' · ' + jm._n : '')) : b('iv', 'vd-add', '🗓 Á dagskrá'))(jobOfMal(r.id)) +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
           ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + hamirHtml(r) + breytaHtml(r);
