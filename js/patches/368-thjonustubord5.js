@@ -494,10 +494,41 @@
   const samtMerki = r => erSamthykki(r) ? '<span class="tag samt">Bíður samþykkis</span>'
     : svarBidur(r) ? '<span class="tag ok">' + SVOR[svarMals(r)].merki + '</span>' : '';
   const samtRod = r => (erSamthykki(r) ? 2 : svarBidur(r) ? 1 : 0);
+  /* 18.09.2026 — UPPHÆÐIN ER Í TEXTANUM, EKKI Í DÁLKI.
+   * Mælt: af 77 málum sem biðu samþykkis báru 43 upphæð í titlinum, en röðunin
+   * leit aldrei á hana. Efst stóð sameiningarspurning án upphæðar meðan stærsta
+   * málið (Eclipse ehf., 1.226.121 kr) lá langt niðri.
+   *
+   * Hér er STÆRSTA talan sem stendur á undan „kr" lesin úr titli og samantekt.
+   * Hún er ÁÆTLUN úr texta — hún er sýnd á röðinni svo röðin sé læsileg, en hún
+   * er aldrei lögð saman við neitt og aldrei notuð sem staðreynd um fjárhæð.
+   */
+  const UPPH_RE = /(\d{1,3}(?:[.\s]\d{3})+|\d{4,})\s*kr/gi;
+  function upphaedMals(r) {
+    const t = String(r.title || '') + ' ' + String(r.summary || '');
+    // Geymt á röðinni: `rodun` kallar á þetta O(n log n) sinnum í hverri teikningu,
+    // og svarið breytist ekki nema textinn geri það.
+    if (r.__upphStimpill === r.updated_at && r.__upphTexti === t) return r.__upph;
+    let mest = 0, m;
+    UPPH_RE.lastIndex = 0;
+    while ((m = UPPH_RE.exec(t))) { const v = +String(m[1]).replace(/[.\s]/g, ''); if (v > mest) mest = v; }
+    try {
+      Object.defineProperty(r, '__upph', { value: mest, writable: true, configurable: true, enumerable: false });
+      Object.defineProperty(r, '__upphStimpill', { value: r.updated_at, writable: true, configurable: true, enumerable: false });
+      Object.defineProperty(r, '__upphTexti', { value: t, writable: true, configurable: true, enumerable: false });
+    } catch (_) {}
+    return mest;
+  }
+  // 18.09.2026: upphæðin kom inn á eftir áríðandi-hakinu (Agnar: „mikilvægustu
+  // eða auðveldustu fyrst"). Hakið er hans dómur og gengur fyrir; upphæðin er
+  // næsta besta mæling á því hvað skiptir máli. Frestur og aldur ráða svo eins
+  // og áður — en elsta málið fer nú fremst meðal jafningja í stað þess nýjasta,
+  // svo það sem hefur beðið lengst sökkvi ekki endalaust.
   const rodun = (a, b) => samtRod(b) - samtRod(a)
     || (b.important ? 1 : 0) - (a.important ? 1 : 0)
+    || upphaedMals(b) - upphaedMals(a)
     || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity)
-    || tStamp(b.created_at) - tStamp(a.created_at);
+    || tStamp(a.created_at) - tStamp(b.created_at);
   const tagList = r => (Array.isArray(r.tags) ? r.tags : []).filter(t => typeof t === 'string');
   const skyrirHamir = r => tagList(r).filter(t => t.indexOf(HAM_MERKI) === 0).map(t => t.slice(HAM_MERKI.length)).filter(id => !!M(id));
   // 368aa: hvert mál á einn stað. Merki á vinnusvæðis-ham (ham:vinnublod, 368y) ræður fyrst; bíði málið svars á borði þess
@@ -901,6 +932,7 @@
       '.mres::after{content:"";position:absolute;top:34%;bottom:34%;left:5px;width:4px;border-radius:2px;background:var(--edge2)}',
       '.mres:hover::after,.mres.virk::after{background:var(--g5)}',
       '.samt-ef{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere;color:var(--ink)}',
+      '.samt-kr{display:inline-block;margin:0 0 3px;padding:1px 6px;border-radius:3px;background:var(--rule2);font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.03em;color:var(--gink)}',
       '.board{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"master mine" "master sel";gap:18px;align-items:start}',
       '.colmaster{grid-area:master}.colmine{grid-area:mine}.colsel{grid-area:sel}',
       '.colmine.samanbrotid{align-self:start}.colmine.samanbrotid .phead{border-image-width:0;border-radius:5px}',
@@ -1688,7 +1720,11 @@
     const hlutar = [['Tilbúið — bara samþykkja', 0], ['Þarf svar frá þér', 1], ['Svarað · bíður Claude', 2]].map(h => [h[0], listi.filter(r => samtHluti(r) === h[1])]);
     const item = r => {
       const ef = aiLine(r), undir = [whereOf(r), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : ''].filter(Boolean).join(' · ');
+      // 18.09.2026: upphæðin sést, svo röðin sé læsileg. „≈" af því hún er lesin
+      // úr textanum og getur verið áætlun — hún er vísbending, ekki bókhald.
+      const u = upphaedMals(r);
       return '<button type="button" class="vbr-item' + (erSamthykki(r) ? '' : ' svarad') + '" data-t5="samt-velja" data-id="' + r.id + '" aria-current="' + (r.id === val.id) + '">' +
+        (u ? '<span class="samt-kr" title="Upphæð lesin úr texta málsins — vísbending, ekki bókhald">≈ ' + esc(kr(u)) + '</span>' : '') +
         '<b>' + esc(r.title || '(ónefnt mál)') + '</b>' + (ef ? '<span class="s samt-ef">' + esc(ef) + '</span>' : '') + '<span class="s">' + esc(undir) + '</span></button>';
     };
     return '<div class="vbr samt">' +
