@@ -44,6 +44,18 @@
            d.getFullYear();
   };
 
+  // 18.09.2026 (Agnar: "Allar dagsetningar eiga ad vera DD/MM en ekki manudurinn a undan"):
+  // calls WITH an options object passed through untouched, so on machines without the
+  // Icelandic locale data { day:'2-digit', month:'2-digit', hour:... } fell back to en-US
+  // -> "09/18, 04:15 PM". When the options are purely numeric (no month/weekday text) we
+  // now format with en-GB, which every browser ships: day first, slashes, 24h clock.
+  // Time zone and the other options are preserved. Text formats ("17. september 2026")
+  // still pass through unchanged. Sister file: brunaholf/js/dags-snid.js.
+  const TEXT = { long: 1, short: 1, narrow: 1 };
+  const numericOnly = (o) => !!o && typeof o === 'object'
+    && !TEXT[o.month] && !o.weekday && !o.era && !o.timeZoneName && !o.dayPeriod
+    && !(o.dateStyle && o.dateStyle !== 'short') && !(o.timeStyle && o.timeStyle !== 'short' && o.timeStyle !== 'medium');
+
   const orig = Date.prototype.toLocaleDateString;
   Date.prototype.toLocaleDateString = function (locale, options) {
     // Only intercept the "bare" call (no options). Anything with options
@@ -51,6 +63,7 @@
     if (!options && isIcelandicLocale(locale)) {
       return ddmmyyyy(this);
     }
+    if (isIcelandicLocale(locale) && numericOnly(options)) return orig.call(this, 'en-GB', options);
     return orig.call(this, locale, options);
   };
 
@@ -65,7 +78,15 @@
       return ddmmyyyy(this) + ', ' + String(this.getHours()).padStart(2, '0')
              + ':' + String(this.getMinutes()).padStart(2, '0');
     }
+    if (isIcelandicLocale(locale) && numericOnly(options)) return origBoth.call(this, 'en-GB', options);
     return origBoth.call(this, locale, options);
+  };
+
+  // Clock: always 24h (never "04:15 PM").
+  const origTime = Date.prototype.toLocaleTimeString;
+  Date.prototype.toLocaleTimeString = function (locale, options) {
+    if (isIcelandicLocale(locale) && (!options || numericOnly(options))) return origTime.call(this, 'en-GB', options);
+    return origTime.call(this, locale, options);
   };
 
   // Expose a globally-callable helper for new code (cleaner than calling
