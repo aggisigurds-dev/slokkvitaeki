@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-18 18:27 · 578 virkar staðreyndir
+Sótt 2026-09-18 18:28 · 579 virkar staðreyndir
 
 ---
 
@@ -93,8 +93,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [sameining](#sameining) | 15 |
 | [oryggisnet](#oryggisnet) | 13 |
 | [arsskodun](#arsskodun) | 13 |
+| [bord](#bord) | 11 |
 | [reikningar](#reikningar) | 11 |
-| [bord](#bord) | 10 |
 | [deploy](#deploy) | 10 |
 | [uttektir](#uttektir) | 10 |
 | [bord-flettur](#bord-flettur) | 10 |
@@ -802,6 +802,31 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Lagað #669 (patch 153-arsskodun.js): blur-vistun strax + fókus-varnaglar sem sleppa render() meðan reitur er í ritun + logProblem(plan_note_save_failed) og rauð útlína á bilun. Mynstur að varast: debounce-only vistun + full endurteikning = tapaður innsláttur.
   <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
 
+### bord
+
+- **18.09.2026 (slokkvitaeki d292c83): Fyrirtæki · yfirferð (patch 198) fékk yfirflokkinn „🧯 Í ársskoðun“ (sama tafla/síur, þrengð með iArsskodun() = SAMA regla og inService() í 153 — breytist hún þar þarf hún að breytast hér; 631 fyrirtæki 18.09) og fimm nýjar síur sem mæla hvað vantar á prófílinn: Vantar síma (simi+farsimi tómt, 448), Vantar mynd (AppSettings co_bygging_mynd, 372), Tómur tækjalisti (uttaeki á fyrirtaeki_id, allt nema urelt, 27), Vantar teikningu (teikning_bord: image_url eða markers, 631 — enginn kominn), Ekki í Samskiptum (taflan samskipti_tengd = næturafrit kl. 05:35 af sýninni fyrirtaeki_samskipti, sem er of þung fyrir vafra: anon fær 500 eftir 3 s; 446). Nafnið í töflunni er hlekkur á #company/<id>. „↻ Endurhlaða allt“ sækir AppSettings + öll gögn upp á nýtt. load() bíður nú eftir DB.sb (bein slóð sýndi áður „Engin gagnabankatenging“). Prófað í vafra á lifandi síðunni.**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Útlit hams er geymt sem { first: [einingalyklar í röð], breidd: { lykill: 1|2|3 } } þar sem 1=þriðjungur, 2=hálft, 3=fullt. Sett með útlitsritlinum í Breyta ham (18.09.2026). VARÚÐ: M(id) í 368 byggir haminn upp á nýtt úr geymslunni og tekur AÐEINS þá reiti sem eru nefndir þar - reitur sem gleymist í M() vistast en birtist aldrei.**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Mál birtist í hamnum Samþykkja aðeins ef það ber merkið samthykki (og spurning ef það þarf svar). Mál sem bera bara eigin merki (t.d. klara-heimsokn) sitja á Master og sjást aldrei í Samþykkja, þótt þau bíði svars Agnars.**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Að samþykkja vinnublað skrifar AÐEINS stöðu - það býr enga sölu til (368). Mælt 18.09.2026: þrjú vinnublöð samþykkt 13.09. af Agnari áttu enga sölu, 270.654 kr án vsk / 335.611 kr með vsk sem enginn hafði rukkað. Vörðurinn er tools/audit-vinnublad-an-solu.cjs.**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Drög-stöðin er EKKI Drög (38) í valstikunni. Drög (38) = ókláraðar sölur, solur með status=drog, sýn #drog í js/patches/143-drog-list.js. Drög-stöðin = taflan reikningspunktar í Brunahólfs-hubbnum, aðeins aðgengileg um 📱 Öpp -> The Big Boss -> 🛒 Drög-stöð. Aldrei lofa Agnari að setja eitthvað í Drög-stöðina á máli á Þjónustuborðinu; rétta leiðin er skýrsla + reikningur sem endar ÓSENDUR í Kröfuyfirliti (patch 369).**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **368ab 14.09.2026: punktar Þjónustuborðs (Í vinnslu — er það búið?) — eyddir/sameinaðir staðir sleppt, reikningur telst aðeins á sama stað (solur.customer_id), bakfærðir reikningar (kredit í appi eða CANCELLED í Payday) telja ekki, og einingar sækjast aftur þegar borðið opnast (>15 s). Lokun á „Klára heimsókn“-máli býr EKKI til reikning — það gerir takkinn á prófílnum.**
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **368aa 14.09.2026: Þjónustuborð — hvert atriði á EINN ham. Samþykkja = samthykki-mál á mínu borði (Tilbúið / Þarf svar (merki spurning) / Svarað · bíður Claude); Master og mitt borð = eina borðið; Samskipti, Kröfur, Vinnublöð, Skýrslur, Akstur og skipulag = aðeins sínar einingar. Samþykkismál birtast EKKI lengur á Mitt borð. summary 'Ef já: …' segir hvað Claude gerir við ✓; 'Þarf frá þér: …' er spurning.**
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð sem heimaskjás-app = /app/verkefni/ (manifest-verkefni.json, lykill verkefni, home bord). Endurnefnt úr „Verkefnalisti“ í „Þjónustuborð“ 12.09.2026 (ea26f22); id/start_url/scope óbreytt svo uppsett eintök haldast sama appið.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+- **182-thjonustuver, 183-thjonustuver-attachments og 194-eftirfylgni í dvala í _attic/patches síðan 12.09.2026 (d0d182c). 368 sýnir gömlu viðhengin (thjonustubeidni_attachments) sem „eldra". 145-todo-board stendur (41 minnismiði Agnars í settings.todo), 172 stendur (Fjármál-app).**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (368): Agnar er með bara_mitt=true (12.09.2026) og þá eru engar einingar teiknaðar — hvorki Skipulagsborð (með Áríðandi-lista frá ef7aef5) né Dagskrá. Verk sem stofnað er úr máli ber mal_id (303) og 🗓-takkinn hoppar á daginn.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+- **#leidsogn opnar Leiðsögn (161, view-leidsogn) síðan 12.09.2026 (218); áður leystist slóðin í view-field (falda Þjónustutæki-kortið). Leiðsögn hefur aksturslista-röð (Akstur 1/2/3) og skiptir Google Maps-leið í leggi með 9 millistoppum.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### reikningar
 
 - **Stólpa-reikningur stílaður á greiðanda getur verið „Vegna <staður>“ — tækin tilheyra staðnum, ekki greiðandanum. R-108092 (EA Law Practice ehf. → Vegna Freyjugötu 16) bjó til 4 tvítalin léttvatnstæki á #857 08.09.2026 (mál #943). 13 aðrar reikningsstaðreyndir (heimild reikningur-060) eru á höfuðstöðvum/greiðanda meðan skjalið er tengt stað: Heimaleiga HQ #269 ×7, Endurvinnslan Knarrarvogur #605 ×4, Colas Gulhella, O&V (12.09.2026).**
@@ -835,29 +860,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Vélrás fékk sama reikninginn tvisvar í júní 2026: R-000259 (08.06) og R-000276 (09.06), báðir 53.824 kr fyrir 8x Duft 6 kg hleðslu**
   <br>Endurgreiðsla á R-000276 er á verkefnalistanum. Staðfest 20.08.2026 með samanburði á sölulínum — nákvæmlega sömu 8 línur, dagur á milli.
   <br><sub>2026-08-21 · kunni · sql · cowork</sub>
-
-### bord
-
-- **Útlit hams er geymt sem { first: [einingalyklar í röð], breidd: { lykill: 1|2|3 } } þar sem 1=þriðjungur, 2=hálft, 3=fullt. Sett með útlitsritlinum í Breyta ham (18.09.2026). VARÚÐ: M(id) í 368 byggir haminn upp á nýtt úr geymslunni og tekur AÐEINS þá reiti sem eru nefndir þar - reitur sem gleymist í M() vistast en birtist aldrei.**
-  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Mál birtist í hamnum Samþykkja aðeins ef það ber merkið samthykki (og spurning ef það þarf svar). Mál sem bera bara eigin merki (t.d. klara-heimsokn) sitja á Master og sjást aldrei í Samþykkja, þótt þau bíði svars Agnars.**
-  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Að samþykkja vinnublað skrifar AÐEINS stöðu - það býr enga sölu til (368). Mælt 18.09.2026: þrjú vinnublöð samþykkt 13.09. af Agnari áttu enga sölu, 270.654 kr án vsk / 335.611 kr með vsk sem enginn hafði rukkað. Vörðurinn er tools/audit-vinnublad-an-solu.cjs.**
-  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Drög-stöðin er EKKI Drög (38) í valstikunni. Drög (38) = ókláraðar sölur, solur með status=drog, sýn #drog í js/patches/143-drog-list.js. Drög-stöðin = taflan reikningspunktar í Brunahólfs-hubbnum, aðeins aðgengileg um 📱 Öpp -> The Big Boss -> 🛒 Drög-stöð. Aldrei lofa Agnari að setja eitthvað í Drög-stöðina á máli á Þjónustuborðinu; rétta leiðin er skýrsla + reikningur sem endar ÓSENDUR í Kröfuyfirliti (patch 369).**
-  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **368ab 14.09.2026: punktar Þjónustuborðs (Í vinnslu — er það búið?) — eyddir/sameinaðir staðir sleppt, reikningur telst aðeins á sama stað (solur.customer_id), bakfærðir reikningar (kredit í appi eða CANCELLED í Payday) telja ekki, og einingar sækjast aftur þegar borðið opnast (>15 s). Lokun á „Klára heimsókn“-máli býr EKKI til reikning — það gerir takkinn á prófílnum.**
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **368aa 14.09.2026: Þjónustuborð — hvert atriði á EINN ham. Samþykkja = samthykki-mál á mínu borði (Tilbúið / Þarf svar (merki spurning) / Svarað · bíður Claude); Master og mitt borð = eina borðið; Samskipti, Kröfur, Vinnublöð, Skýrslur, Akstur og skipulag = aðeins sínar einingar. Samþykkismál birtast EKKI lengur á Mitt borð. summary 'Ef já: …' segir hvað Claude gerir við ✓; 'Þarf frá þér: …' er spurning.**
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð sem heimaskjás-app = /app/verkefni/ (manifest-verkefni.json, lykill verkefni, home bord). Endurnefnt úr „Verkefnalisti“ í „Þjónustuborð“ 12.09.2026 (ea26f22); id/start_url/scope óbreytt svo uppsett eintök haldast sama appið.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-- **182-thjonustuver, 183-thjonustuver-attachments og 194-eftirfylgni í dvala í _attic/patches síðan 12.09.2026 (d0d182c). 368 sýnir gömlu viðhengin (thjonustubeidni_attachments) sem „eldra". 145-todo-board stendur (41 minnismiði Agnars í settings.todo), 172 stendur (Fjármál-app).**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (368): Agnar er með bara_mitt=true (12.09.2026) og þá eru engar einingar teiknaðar — hvorki Skipulagsborð (með Áríðandi-lista frá ef7aef5) né Dagskrá. Verk sem stofnað er úr máli ber mal_id (303) og 🗓-takkinn hoppar á daginn.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-- **#leidsogn opnar Leiðsögn (161, view-leidsogn) síðan 12.09.2026 (218); áður leystist slóðin í view-field (falda Þjónustutæki-kortið). Leiðsögn hefur aksturslista-röð (Akstur 1/2/3) og skiptir Google Maps-leið í leggi með 9 millistoppum.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### deploy
 
@@ -1192,18 +1194,18 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### teikningar
 
-- **Heitinúmerið sem map.is þarf er Heinum-reiturinn í Landeignaskrár-leitinni (geo.fasteignaskra.is/landeignaskra/search?term=) — kemur með landnúmerinu, engin auka-uppfletting.**
-  <br>Sama gildir um Staðfangaskrár-WFS (HEINUM). TurboPaint-leitin skilar nú landnr + heitinr + svf með hverri eign.
-  <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
+- **Staðfangaskrá HMS er opin sem WFS: https://geo.fasteignaskra.is/ws/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typename=fasteignaskra:VSTADF_ALLT&outputFormat=application/json&CQL_FILTER=… — nákvæm uppfletting á götu+húsnúmeri, engir CORS-hausar (aðeins af þjóni).**
+  <br>Reitir: HEITI_NF (nefnifall) og HEITI_TGF (þágufall — „Dalshrauni" finnst), HUSNR, BOKST, POSTNR, LANDNR, HEINUM, SVFNR (0000 = Reykjavík, 1000 Kópavogur, 1300 Garðabær, 1400 Hafnarfjörður), VEF_BIRTING, HUSMERKING. Gildrur: bil eins og „Bríetartún 9-11" er skráð undir fyrra númerinu; „Borgartún 12"
+  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **Fjöldi íbúða, stigaganga og herbergja í húsi er EKKI opinber: api.hms.is/ords svarar 403 (áskrift) og hms.is er læst á bak við Vercel-botvörn (429). Þeir reitir á fyrirtækjabannernum eru handvirkir áfram.**
   <br>Kannað 14.09.2026 þegar húsupplýsingar úr skrám voru settar á bannerinn (patch 363 v3). Það sem ER opið: hæðir/kjallari/jarðhæð/ris úr grunnmyndum teikningasafnanna.
   <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **Eitt landnúmer getur átt mörg hús: L 199350 (Höfðatorg) ber Bríetartún 9-11, Katrínartún 2 (19 hæða turn) og Borgartún 8-16A — hæðatillögur út frá teikningum lóðar má aldrei taka án þess að sía á húsið.**
   <br>FotoWeb Reykjavíkur merkir hverja teikningu heimilisfangi (gata-reitur), oft SÖGULEGU lóðarheiti („Borgartún 8-16A"); teikningar merktar „Bríetartún" eru engar → hus-upplysingar gefur engar tillögur fyrir Bríetartún 9 (aðeins tengil), í stað þess að segja 19 hæðir. map.is-söfnin merkja ekki götu — þ
   <br><sub>2026-09-14 · kerfi · sql · claude-code</sub>
-- **Staðfangaskrá HMS er opin sem WFS: https://geo.fasteignaskra.is/ws/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typename=fasteignaskra:VSTADF_ALLT&outputFormat=application/json&CQL_FILTER=… — nákvæm uppfletting á götu+húsnúmeri, engir CORS-hausar (aðeins af þjóni).**
-  <br>Reitir: HEITI_NF (nefnifall) og HEITI_TGF (þágufall — „Dalshrauni" finnst), HUSNR, BOKST, POSTNR, LANDNR, HEINUM, SVFNR (0000 = Reykjavík, 1000 Kópavogur, 1300 Garðabær, 1400 Hafnarfjörður), VEF_BIRTING, HUSMERKING. Gildrur: bil eins og „Bríetartún 9-11" er skráð undir fyrra númerinu; „Borgartún 12"
-  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
+- **Heitinúmerið sem map.is þarf er Heinum-reiturinn í Landeignaskrár-leitinni (geo.fasteignaskra.is/landeignaskra/search?term=) — kemur með landnúmerinu, engin auka-uppfletting.**
+  <br>Sama gildir um Staðfangaskrár-WFS (HEINUM). TurboPaint-leitin skilar nú landnr + heitinr + svf með hverri eign.
+  <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
 - **Teikningasöfn Hafnarfjarðar (svf 1400), Garðabæjar (1300) og Kópavogs (1000) eru öll sami map.is-hlutinn „Teikningar af byggingum": GET https://www.map.is/webservice/queryTeiknigrunn.php?landnumer=&svfnr=&heitinumer=&t=<token> skilar JSON-lista með beinum PDF-slóðum.**
   <br>Þarf PHP-setu (cookies PHPSESSID + TS…) OG config.t-lykil sem hvaða kortasjár-síða map.is sem er gefur út (t.d. https://www.map.is/hafnarfjordur/); ein seta dugar öllum þremur bæjum. heitinumer=0 gefur „Engar niðurstöður". Raðir: lysing, dagsetning, hofundur_nafn, tegund, gerd, status (null/F/Ó = úr
   <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
@@ -1541,11 +1543,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### fjarmal
 
-- **/api/debtors inniheldur AÐEINS þrep 1 (ógreitt) — ósend drög (þrep 2) eru bara í /api/krofu-yfirlit-bru**
-  <br>CG_REGISTRY í index.html sagði ranglega að CG-02 kæmi úr /api/debtors. Leiðrétt 11.09.2026 (PR #445). Ef þú þarft ósend drög, sæktu tier2 úr krofu-yfirlit-bru — tier2.debtors[].invoices[] með hidden-merkingunni sem borðið sjálft notar.
-  <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
 - **Fjármála-yfirlit endurreiknar EKKI „Ósent" (CG-02) — það sækir /api/krofu-yfirlit-bru og les tier2.total/tier2.n beint**
   <br>Fram til 11.09.2026 var þrep-2 reglan skrifuð upp aftur í netlify/functions/fjarmal-yfirlit.js (C1), með athugasemd sem bað næsta mann að breyta báðum hliðum. Það entist ekki: borðið sagði 14.854.855 á 15 röðum, spjaldið 14.996.115 á 16 — austurströnd 2026-07 (141.260 kr) var falin á borðinu en sást
+  <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
+- **/api/debtors inniheldur AÐEINS þrep 1 (ógreitt) — ósend drög (þrep 2) eru bara í /api/krofu-yfirlit-bru**
+  <br>CG_REGISTRY í index.html sagði ranglega að CG-02 kæmi úr /api/debtors. Leiðrétt 11.09.2026 (PR #445). Ef þú þarft ósend drög, sæktu tier2 úr krofu-yfirlit-bru — tier2.debtors[].invoices[] með hidden-merkingunni sem borðið sjálft notar.
   <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
 
 ### agentar
