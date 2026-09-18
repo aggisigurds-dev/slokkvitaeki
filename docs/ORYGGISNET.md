@@ -68,6 +68,60 @@ automation health and pings Agnar *only* when something needs him.
 
 ---
 
+## Þögnin sjálf — sex verðir bættust við 17.–18.09.2026
+
+Agnar: *„takkinn gerir ekki það sem hann segist gera. Þetta hefur verid gegnumgangandi
+rugl fra upphafi."*
+
+Rótin reyndist vera EIN staðreynd um supabase-js, ekki mörg slys:
+
+> `.update()` · `.insert()` · `.upsert()` · `.delete()` · `.select()` **kasta aldrei.**
+> Villan kemur í `.error`. `try/catch` í kringum þau gerir því **ekkert**.
+
+Afleiðingin var alltaf sú sama: „✓ Vistað" birtist hvort sem skrifið komst inn eða ekki.
+**95 slíkir staðir voru gerðir heiðarlegir** og 67 þagnir skoðaðar og staðfestar réttar.
+
+| Varið útkoma | Vörður | Athugasemd |
+|---|---|---|
+| **Ekkert skrif má standa ólesið** — annars segir viðmótið „✓ Vistað" um eitthvað sem gerðist aldrei | `audit-oskodud-skrif.cjs` | 55 fundust, 53 lagfærðir. Skrall: má aðeins lækka |
+| **Brostinn LESTUR má aldrei lesast sem „ekki til"** — það býr til tvítekið tæki / fyrirtæki / verkbeiðni, þ.e. tvítekna reikningslínu | `audit-lestur-fyrir-innsetningu.cjs` | Verra en óskoðað skrif: misheppnað skrif skilur ekkert eftir sig, hér verður til **röng röð**. Saklausir staðir eru nafngreindir með ástæðu, ekki taldir |
+| **`window.supabase` er SAFNIÐ, ekki biðlarinn** | `audit-supabase-safn.cjs` | `02-vidsk-tab.js` hafði þetta — viðskiptavinalistinn hlóðst **aldrei** og villan var ólæsileg í þrjár vikur (`w.from is not a function` í þjöppuðum búnti) |
+| **`DB.sb` má ekki grípa við hleðslu** — hann er `null` þá (`DB.init` keyrir á DOMContentLoaded) | `audit-bidlari-vid-hledslu.cjs` | Pappi sem gerir það slekkur á sjálfum sér og heil sýn hverfur án villu |
+| **Villuskýrslur úr raunnotkun verða að vera læsilegar** | `audit-sourcemap.cjs` | Án korts sagði hver skýrsla `_bundle-2.abc.js:343:7899` og nefndi hvorki skrá né línu. 75 óleystar villur voru ólæsilegar af þeirri ástæðu **einni**. Varpa með `tools/varpa-villu.cjs` |
+| **Röðin á GREIÐA-takkanum má ekki breytast óvart** | `audit-kassa-hlustarar.cjs` | Kassinn ber **sex** smellihlustara. Sjá þekkta misræmið hér að neðan |
+
+### Þekkt og ÓLAGAÐ, meðvitað: `106-checkout-unit-prompt.js`
+
+Mælt með `tools/smoke/arekstrar.js` í lifandi viðmóti. `#pos-checkout` ber sex hlustara.
+Tvö hliðin sem virka (`07-sala-checkout-dialog.js`, `264-beidni-gate.js`) nota sama rétta
+mynstrið: **umboð á `document` í capture-fasa + endurkomuflagg**. Þau komast að á undan
+`checkout()` og geta því raunverulega stöðvað söluna.
+
+`106` ætlar sér það sama — athugasemdin segir „capture phase, runs first" — en er sá EINI
+sem hengir sig á hnútinn í **bubble**-fasa, á eftir `js/pos.js`. Afleiðingar:
+
+- `preventDefault()` stöðvar **ekki** `checkout()` (það er þegar farið af stað — `checkout`
+  er `async` og skilar við fyrsta `await`, svo salan verður til hvort sem er);
+- `stopImmediatePropagation()` stöðvar hins vegar `00-legacy.js:720`, sem speglar söluna í
+  `sala_transactions` og skráir viðskiptavininn.
+
+Endurræsingin (`SKIP_ATTR` + `btn.click()`) felur þetta í flestum tilvikum. **Hætti
+notandinn við tækjagluggann er engin endurræsing:** salan er orðin til og `720` keyrði aldrei.
+
+**Þetta er ekki lagað.** Kassinn er ekki staður fyrir ágiskanir. Vörðurinn prentar misræmið
+í hverri keyrslu og fellur á **nýjum** hlustara, en stöðvar ekki ýtingar. Þegar lagfæringin
+kemur: taktu athugunina út úr verðinum um leið.
+
+### Prófunartól (ekki verðir — keyrast í vafra)
+
+| Tól | Hvað það gerir |
+|---|---|
+| `tools/smoke/lygaprof.js` | Lætur **öll** skrif mistakast, smellir á alvöru takka, og fellur ef eitthvað sem **sést** fullyrðir árangur. Engin gögn snert |
+| `tools/smoke/arekstrar.js` | Hvaða pappar slást um sama hnútinn. Svarið við „takkar virka ekki — mjög random" |
+| `tools/varpa-villu.cjs` | `_bundle-2.78a.js:1:15919` → `js/patches/00-legacy.js:732` |
+
+---
+
 ## The rules — do not cut the power line
 
 0. **Go through the map before you touch the network.** Any Claude session or
