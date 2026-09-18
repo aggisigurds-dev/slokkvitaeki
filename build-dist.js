@@ -154,7 +154,19 @@ function bundleIndexHtml() {
       const fpath = join(OUT, fname);
       writeFileSync(fpath, code);
       try {
-        execSync('npx --yes esbuild "' + fpath + '" --minify --legal-comments=none --allow-overwrite "--outfile=' + fpath + '"', { stdio: ['ignore', 'ignore', 'ignore'] });
+        // 17.09.2026 — SOURCEMAP. Án korts sagði hver einasta villuskýrsla
+        // „_bundle-2.295f69cd26.js:343:7899" og nefndi hvorki skrá né línu; 75
+        // óleystar villur í `villur`-töflunni eru ólæsilegar af þeirri ástæðu
+        // einni. Vafrar beita EKKI korti á `error.stack`, svo kortið eitt dugar
+        // ekki — það er `tools/varpa-villu.cjs` sem varpar stöðunni til baka.
+        // `sources-content` fellir frumtextann INN í kortið, því þjappaða skráin
+        // skrifar yfir samsteypuna (--allow-overwrite) og hún er annars horfin.
+        execSync('npx --yes esbuild "' + fpath + '" --minify --legal-comments=none --allow-overwrite'
+          // `external` skrifar kortið en SLEPPIR `//# sourceMappingURL`-línunni:
+          // vafrinn sækir það því ekki og auglýsir ekki frumkóðann, en tólið veit
+          // nafnið (<búntur>.map) og nær í það. Millivegur milli læsileika og þess
+          // að setja allan kóðann fyrir framan hvern sem opnar devtools.
+          + ' --sourcemap=external --sources-content=true "--outfile=' + fpath + '"', { stdio: ['ignore', 'ignore', 'ignore'] });
       } catch (e) {
         console.warn('[bundle] esbuild unavailable — shipping ' + fname + ' unminified');
       }
