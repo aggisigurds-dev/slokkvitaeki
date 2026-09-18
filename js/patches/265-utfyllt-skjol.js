@@ -68,13 +68,24 @@
     }
     return '';
   }
+  // 18.09.2026 — MÆLT eftir að vörnin neðar hætti að endurteikna: hnútarnir lifa nú
+  // af, en wireOpen keyrir áfram í hvert sinn sem byggja()/injectBrunakerfi() er
+  // kallað — svo hver hnappur safnaði HLUSTARA Í HVERT SKIPTI. Mælt á #brunakerfi:
+  // 5 köll → 5 „click“-hlustarar á hvern ._ufs-open OG ._ufs-send, þ.e. eitt smell
+  // hefði opnað skjalið 5× og smíðað 5 PDF + 5 póstglugga. Áður faldist þetta af því
+  // að `innerHTML =` fleygði gömlu hnútunum með hlusturunum sínum. EFTIR: 5 köll →
+  // 1 hlustari á hnapp. Merkið situr á hnappinum og hverfur með honum, svo nýir
+  // hnappar fá alltaf sinn hlustara.
+  function nyir(root, vel) {
+    return Array.from(root.querySelectorAll(vel)).filter(b => (b.__ufsWired ? false : (b.__ufsWired = 1, true)));
+  }
   function wireOpen(root) {
-    root.querySelectorAll('._ufs-open').forEach(b => b.addEventListener('click', e => {
+    nyir(root, '._ufs-open').forEach(b => b.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       if (window.DocTemplates && DocTemplates.openFilled) DocTemplates.openFilled(b.dataset.fid);
     }));
     // 📧 Senda — teiknar vistuðu skýrsluna sem PDF og opnar póst-ritilinn (254).
-    root.querySelectorAll('._ufs-send').forEach(b => b.addEventListener('click', async e => {
+    nyir(root, '._ufs-send').forEach(b => b.addEventListener('click', async e => {
       e.preventDefault(); e.stopPropagation();
       if (!window.ReceiptSender || !ReceiptSender.compose || !window.DocTemplates || !DocTemplates.buildFilledPdfBase64) {
         alert('Póst-ritillinn hlóðst ekki — endurhladdu síðunni.'); return;
@@ -142,12 +153,10 @@
     }
     sec.dataset.coId = coId;
     sec.style.cssText = sec.style.cssText || 'margin-top:14px';
-    // 18.09.2026 — MÆLT með tools/smoke/arekstrar.js: #_ufs-reports var endurteiknað
-    // á ~125 ms fresti á kyrrstæðri síðu (64 DOM-breytingar á 8 sek), þótt vaktin hér
-    // fyrir neðan hafi vörn. Eitthvað annað kallar hingað endurtekið.
-    // `innerHTML =` skiptir út ÖLLUM börnum líka þegar efnið er stafrétt eins, og hver
-    // slík breyting getur kveikt á næstu vakt í röðinni. Samanburður fyrst: sama
-    // útkoma, engin hreyfing þegar ekkert breyttist.
+    // 18.09.2026 — `innerHTML =` skiptir út ÖLLUM börnum líka þegar efnið er stafrétt
+    // eins, og hver slík breyting er childList-breyting í #companies-main sem kveikir á
+    // næstu vakt í röðinni. Samanburður fyrst: sama útkoma, engin hreyfing þegar ekkert
+    // breyttist.
     const _html =
       '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-top:14px">' +
         '<div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:8px">📑 Samningar &amp; útfyllt skjöl <span style="font-weight:500;color:#94a3b8;font-size:11px">(úr Samningar-flipanum)</span></div>' +
@@ -156,10 +165,27 @@
           : '<div style="font-size:12px;color:#94a3b8;font-style:italic">Engin útfyllt skjöl fundust á þessa kennitölu/nafn. Skjöl vistuð með „💾 Vista í kerfi" í Samningum birtast hér.</div>') +
       '</div>';
     // 18.09.2026 — LEIÐRÉTT samdægurs. Fyrri útgáfa mín bar saman við
-    // `sec.innerHTML`, sem les til baka STAÐLAÐA útgáfu vafrans (bil í
-    // rgba(), !important sem þemapappi bætti við) — aldrei það sem við
-    // skrifuðum. Samanburðurinn var því alltaf sannur og hreyfingin hélt
-    // áfram. Berum saman við okkar eigin streng, geymdan á hnútnum.
+    // `sec.innerHTML`, sem les DOM-ið TIL BAKA, ekki það sem við skrifuðum: vafrinn
+    // staðlar style-strenginn (`rgba(255,255,255,.12)` → `rgba(255, 255, 255, 0.12)`,
+    // hex → rgb) og þema-pappi getur bætt inline `!important`-lit ofan á. Í 328 gaf
+    // það 474 stafi á móti 370 — samanburðurinn ALLTAF ósatt og vörnin gagnslaus.
+    // Berum því saman við okkar eigin streng, geymdan á hnútnum; hann hverfur með
+    // hnútnum svo ný ._ufs-section fær alltaf sína teikningu.
+    //
+    // MÆLT 18.09.2026 (localhost:5599, „5S ehf.“ id 825, njósn á innerHTML-setternum
+    // + tools/smoke/arekstrar.js). Vörnin einangruð með 20 köllum í injectProfile():
+    //     vörn ónýt : 20 skrif, 40 DOM-hreyfingar
+    //     vörn virk :  0 skrif,  0 DOM-hreyfingar
+    // Álagspróf: 40 gervi-DOM-breytingar í #companies-main á 150 ms fresti → 0 skrif.
+    // Kyrrðarpróf 8 s á opnum prófíl → 0 hreyfingar. Útkoman er stafrétt sú sama:
+    // 495 stafir, sami hnútur — aðeins hreyfingin hvarf.
+    //
+    // ATH tvennt fyrir næsta mann: (a) á þessari sýn stöðvar `sec.dataset.coId`-vörnin
+    // í injectProfile() kallið ÁÐUR en hingað er komið (mælt: 0 uppflettingar á
+    // __ufsHtml í álagsprófinu), svo þetta er önnur varnarlínan — hún grípur þegar
+    // byggja() er kallað beint. (b) Mæling í földu vafraspjaldi þarf rAF-hermi:
+    // 252-mo-throttle vefur allar vaktir í requestAnimationFrame, sem keyrir ekki í
+    // faldri síðu, og þá sýnist allt kyrrt af rangri ástæðu.
     if (sec.__ufsHtml !== _html) { sec.__ufsHtml = _html; sec.innerHTML = _html; }
     wireOpen(sec);
   }
@@ -298,16 +324,24 @@
     // síðu (64 DOM-breytingar á 8 sek). `innerHTML =` skiptir út öllum börnum líka
     // þegar efnið er stafrétt eins, og hver slík breyting kveikir á næstu vakt.
     // Samanburður fyrst: sama útkoma, engin hreyfing þegar ekkert breyttist.
+    // Hér er engin dataset-vörn ofar í kallinu, svo samanburðurinn neðar er EINA
+    // vörnin á þessum hnút.
     const _html =
       '<div style="font-size:14px;font-weight:800;color:#0f172a;margin:8px 0 8px">📄 Vistaðar skýrslur <span style="font-weight:500;color:#94a3b8;font-size:11px">' + reports.length + ' — prófunarskýrslur brunaviðvörunarkerfa, opnast til að prenta/vista PDF</span></div>' +
       (reports.length
         ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">' + reports.map(docRow).join('') + '</div>'
         : '<div style="background:#fff;border:1px dashed #e2e8f0;border-radius:12px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic">Engar skýrslur vistaðar enn — „📄 Skýrsla" takkinn hér að ofan býr til nýja.</div>');
     // 18.09.2026 — LEIÐRÉTT samdægurs. Fyrri útgáfa mín bar saman við
-    // `sec.innerHTML`, sem les til baka STAÐLAÐA útgáfu vafrans (bil í
-    // rgba(), !important sem þemapappi bætti við) — aldrei það sem við
-    // skrifuðum. Samanburðurinn var því alltaf sannur og hreyfingin hélt
-    // áfram. Berum saman við okkar eigin streng, geymdan á hnútnum.
+    // `sec.innerHTML`, sem les DOM-ið TIL BAKA, ekki það sem við skrifuðum (vafrinn
+    // staðlar style-strenginn, þema-pappi bætir við `!important`) — sjá 328:210 og
+    // 307:127. Sami eiginleiki á hnútnum hér.
+    //
+    // MÆLT 18.09.2026 (#brunakerfi, 40 köll í injectBrunakerfi() á 150 ms fresti,
+    // njósn á innerHTML-setternum + tools/smoke/arekstrar.js):
+    //     vörn ónýt : 40 skrif, 160 DOM-hreyfingar (tvær rætur, bætt við + fjarlægt)
+    //     vörn virk :  0 skrif,   1 hreyfing — „📄 Skýrsla“ takkinn, réttmæt
+    // Kyrrðarpróf 8 s á #brunakerfi → 0 hreyfingar. Innihaldið er stafrétt það sama
+    // fyrir og eftir (2.488 stafir, sami hnútur).
     if (sec.__ufsHtml !== _html) { sec.__ufsHtml = _html; sec.innerHTML = _html; }
     wireOpen(sec);
   }
