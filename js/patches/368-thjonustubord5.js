@@ -1069,7 +1069,14 @@
       '.t5toast .undo{margin-left:12px;height:26px;padding:0 10px;border:1px solid #5a4410;border-radius:4px;background:var(--gside);color:#1b1405;font:700 12px var(--body);cursor:pointer}',
       '.skwrap{display:flex;flex-direction:column;gap:12px;padding:12px 14px}.krass{display:flex;flex-direction:column;gap:4px}',
       '.krass textarea{width:100%;min-height:70px;padding:10px 12px;border:1px solid var(--edge);border-radius:4px;background:#fffdf7;box-shadow:var(--wellsh);font:13.5px/1.55 var(--body);color:var(--ink);resize:vertical}',
-      '.skgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;align-items:start}',
+      // 18.09.2026 (Agnar: „kannski 5 spjöld á breiddina og 2-3 spjöld niður").
+      // `minmax(210px,1fr)` gaf EINN dálk í 300 px reininni. Ristin stefnir nú á
+      // fimm dálka þegar breiddin leyfir og fellur sjálf niður í færri á mjórra.
+      '.skgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr));gap:10px;align-items:start}',
+      '@container rail (min-width: 1240px){.skgrid{grid-template-columns:repeat(5,minmax(0,1fr))}}',
+      // Þak á textareitinn svo eitt langt spjald teygi ekki alla röðina — raðirnar
+      // standast á og 2–3 sjást í einu. Handfangið í horninu stækkar það áfram.
+      '.skgrid .skc .skt{max-height:120px}',
       '.skc{display:flex;flex-direction:column;gap:4px;padding:6px 8px 8px;border:1px solid var(--rule);border-top:4px solid var(--rule3);border-radius:4px;background:linear-gradient(180deg,#fff,#fbf9f5);box-shadow:var(--keysh);min-width:0}',
       '.skc.yfir{outline:2px dashed var(--g6);outline-offset:2px}.skh{display:flex;align-items:center;gap:4px}',
       '.skgrip{cursor:grab;color:var(--mute);font-size:15px;padding:0 4px 0 0;user-select:none}',
@@ -3722,8 +3729,11 @@
           '<button type="button" class="btn iv" data-t5="cfg" aria-expanded="' + S.cfgOpen + '">⚙ Mitt vinnuborð</button>' +
           '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' +
         '</div></div>' +
+        // 18.09.2026: hér stóð Krassblaðs-ræma sem ég bætti við fyrr í dag og tók
+        // svo út aftur — Agnar: „Þarf ekki þetta krassblað". Blaðið er áfram á
+        // Skipulagsborðinu og áfram hægt að setja sem einingu í ham; það stendur
+        // bara ekki lengur ofan á borðinu óumbeðið.
         leitHtml() +
-        krassHtml(n) +
         (S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
           hamaListi().map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
