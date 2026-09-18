@@ -39,11 +39,30 @@
       if (sed[lykill] || sent >= MAX_SENDINGAR) return;
       sed[lykill] = 1; sent++;
 
+      // 17.09.2026 — TENGINGIN FYLGIR MEÐ. 227 „Náði ekki í img" komu af símanum
+      // á #thjonustu-verkstaedi, en nákvæmlega sömu slóðir svara 200 af skrifborði
+      // og þjónustuvinnungurinn geymir ekkert. Það var ekki hægt að greina, því
+      // skýrslan sagði ekkert um ástand tækisins þegar hún varð til. Auðlindavillur
+      // bera engan stafla, svo hann er notaður undir þessar upplýsingar: næsta
+      // tilvik segir hvort síminn var án nets, á hægri tengingu eða í gagnasparnaði.
+      var astand = null;
+      try {
+        var c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        astand = 'net=' + (navigator.onLine ? 'á' : 'AF')
+          + (c ? ' · gerð=' + (c.effectiveType || '?')
+               + ' · niðurhal=' + (c.downlink != null ? c.downlink + 'Mb/s' : '?')
+               + ' · töf=' + (c.rtt != null ? c.rtt + 'ms' : '?')
+               + ' · gagnasparnaður=' + (c.saveData ? 'JÁ' : 'nei')
+             : ' · engar tengingarupplýsingar')
+          + ' · sýnilegt=' + (document.visibilityState || '?');
+      } catch (_) { astand = null; }
+
       var gogn = {
         uppruni: UPPRUNI, tegund: tegund, skilabod: skilabod,
         slod: (location.pathname + location.hash).slice(0, 300),
         skra: skra || null,
-        stafli: stafli ? String(stafli).slice(0, 4000) : null,
+        stafli: stafli ? String(stafli).slice(0, 4000)
+                       : (astand ? '[ástand tækis] ' + astand : null),
         vafri: navigator.userAgent.slice(0, 300),
         notandi: notandi(),
       };
