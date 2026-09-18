@@ -46,6 +46,8 @@
   async function getPublicUrl(path) {
     const SB = getSB();
     if (!SB) return null;
+    // 17.09.2026 yfirferð: þögnin er RÉTT hér — keðja varaleiða (undirrituð slóð →
+    // opinber slóð → null). Ekkert vistast; kallandinn fær null og segir frá.
     try {
       const r = await SB.storage.from(BUCKET).createSignedUrl(path, 3600);
       if (r && r.data && r.data.signedUrl) return r.data.signedUrl;
@@ -173,7 +175,14 @@
       };
       const list = getFilesList();
       list.unshift(meta);
-      await saveFilesList(list);
+      // 17.09.2026: AppSettings.save skilar false og kastar ekki — niðurstaðan var
+      // aldrei lesin. Myndin fór þá í geymsluna en birtist hvergi í skjalalistanum:
+      // útfyllta skjalið leit út fyrir að hafa horfið.
+      const vistad = await saveFilesList(list);
+      if (!vistad) {
+        try { if (window.logProblem) window.logProblem('fillin_list_save_failed', 'skjal ' + meta.name + ' (' + path + ')'); } catch (_) {}
+        alert('Skjalið hlóðst upp EN skráningin í skjalalistann vistaðist ekki.\n\nÞað birtist því ekki í listanum. Reyndu aftur — eða láttu vita af slóðinni:\n' + path);
+      }
       return meta;
     } catch (e) {
       alert('Villa: ' + (e.message || String(e)));

@@ -173,9 +173,18 @@
       } catch (_) {}
       d.verd = d.verd || { linur: [] };
       d.verd.sale_id = row.id; d.verd.sale_num = row.num;
-      await sb.from('brunakerfi_skyrslur').update({ data: d, updated_at: new Date().toISOString() }).eq('id', rep.id);
+      // 2026-09-17: .error var aldrei lesið (supabase-js kastar ekki). Mistækist þetta
+      // ÞÖGULT vissi skýrslan ekki af reikningnum — stöðulínan sagði áfram „Reikningur:
+      // enginn ＋ Stofna drög" og næsti smellur bjó til ANNAN reikning fyrir sömu úttekt.
+      // rep.data er aðeins uppfært ef skrifið komst inn, svo skjárinn haldi ekki hinu.
+      const r = await sb.from('brunakerfi_skyrslur').update({ data: d, updated_at: new Date().toISOString() }).eq('id', rep.id);
+      if (r && r.error) throw r.error;
       rep.data = d;
-    } catch (e) { console.warn('[bkr] linkSaleToReport', e); }
+    } catch (e) {
+      console.warn('[bkr] linkSaleToReport', e);
+      try { if (window.logProblem) window.logProblem('bkr-tengja-reikning-brast', 'skýrsla ' + (rep && rep.id) + ' → sala ' + (row && row.num) + ': ' + ((e && e.message) || e)); } catch (_) {}
+      toast('⚠ Reikningur ' + ((row && row.num) || '') + ' var stofnaður EN tengdist ekki brunakerfis-skýrslunni — ekki smella „Stofna drög" aftur, það býr til tvöfaldan reikning.', true);
+    }
   }
 
   function openSale(inv) {
@@ -216,9 +225,17 @@
       return server;
     } catch (_) { return _nyskrifad.get(lykill) || null; }
   }
+  // 2026-09-17: AppSettings.save KASTAR ekki — það skilar true/false. Svarið var hunsað,
+  // svo tengingin gat lifað AÐEINS í _nyskrifad (þessum vafra) á meðan takkinn sagði
+  // „🔗 tengdur" — og horfið við næstu hleðslu. Skilar nú hvort vistun komst inn.
+  // Bendillinn er EKKI tekinn úr _nyskrifad við bilun: AppSettings geymir skrifið í
+  // biðröð og reynir aftur, svo það á ekki að hverfa af skjánum á meðan.
   async function setInvLink(coId, year, val) {
     _nyskrifad.set(coId + '_' + year, val);
-    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ bk_inv_links: { [coId + '_' + year]: val } }); } catch (_) {}
+    try {
+      if (window.AppSettings && AppSettings.save) return await AppSettings.save({ bk_inv_links: { [coId + '_' + year]: val } }) !== false;
+    } catch (_) { return false; }
+    return false;
   }
   // Fletta upp sölu eftir reikningsnúmeri — tekur „R-000651", „000651" eða „651".
   async function findSaleByNum(raw) {
@@ -273,8 +290,10 @@
         if (raw == null || !String(raw).trim()) return;
         const sale = await findSaleByNum(raw);
         if (!sale) { toast('Reikningur „' + String(raw).trim() + '" fannst ekki.', true); return; }
-        await setInvLink(C.co.id, yr, { id: sale.id, num: sale.num });
-        toast('🔗 Reikningur ' + (sale.num || '') + ' tengdur við brunakerfi ' + yr);
+        const vistad = await setInvLink(C.co.id, yr, { id: sale.id, num: sale.num });
+        toast(vistad
+          ? ('🔗 Reikningur ' + (sale.num || '') + ' tengdur við brunakerfi ' + yr)
+          : ('⚠ Tengingin við reikning ' + (sale.num || '') + ' vistaðist EKKI á þjóninn — hún sést hér en hverfur við endurhleðslu. Prófaðu aftur.'), !vistad);
         decorateProfile(C, w);
       }
 
@@ -289,7 +308,11 @@
           (manual ? ' <button type="button" id="_bkr-unlink" title="Aftengja handtengdan reikning" style="padding:5px 10px;border-radius:8px;border:1px solid #e6c6c6;background:#fdeeee;color:#b23b3b;font:inherit;font-size:12px;font-weight:700;cursor:pointer">Aftengja</button>' : '');
         const b = span.querySelector('#_bkr-open'); if (b) b.addEventListener('click', () => openSale(inv));
         const u = span.querySelector('#_bkr-unlink');
-        if (u) u.addEventListener('click', async () => { await setInvLink(C.co.id, yr, null); toast('Reikningur aftengdur.'); decorateProfile(C, w); });
+        if (u) u.addEventListener('click', async () => {
+          const vistad = await setInvLink(C.co.id, yr, null);
+          toast(vistad ? 'Reikningur aftengdur.' : '⚠ Aftengingin vistaðist EKKI á þjóninn — reikningurinn birtist aftur við endurhleðslu.', !vistad);
+          decorateProfile(C, w);
+        });
       } else if (finalRep) {
         span.innerHTML = '· Reikningur: <b style="color:#c93c1d">enginn</b> ' +
           '<button type="button" id="_bkr-make" style="padding:5px 12px;border-radius:8px;border:0;background:#1f8a4c;color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer">＋ Stofna drög</button> ' + LINKBTN;

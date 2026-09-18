@@ -21,6 +21,10 @@
   // handskráð í AppSettings fengu EKKERT merki í ársskoðun/prófíl — sama villa og 184
   // var lagað út af 2026-07-12. Fallback á AppSettings ef 175 (RekstrarfelagData) er
   // ekki komið.
+  // 17.09.2026 (yfirferð á þöglum villum): þagnirnar hér eru RÉTTAR — þetta er
+  // lestur með tveimur varaleiðum (lifandi DB → AppSettings → {}). Mistakist
+  // báðar birtist einfaldlega ekkert merki, og forKt() endurreynir einu sinni
+  // því bæði gögnin hlaðast async. Ekkert skrif og ekkert gildi sem gæti tapast.
   function readData() {
     try {
       if (window.RekstrarfelagData && typeof window.RekstrarfelagData.getMerged === 'function') {

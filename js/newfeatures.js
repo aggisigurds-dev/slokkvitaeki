@@ -16,6 +16,10 @@ setTimeout(_iQR,1000);
 (function(){
 var _done=false,_map=null,_gc=window._mapGc=(function(){try{var s=localStorage.getItem("_slokk_gc");return s?JSON.parse(s):{};}catch(e){return{};}}());
 function _col(u){if(!u||!u.length)return'#9ca3af';var now=new Date(),eT=new Date(now.getFullYear(),now.getMonth()+1,0),eN=new Date(now.getFullYear(),now.getMonth()+2,0);var c='#1a7f4b',hd=false;u.forEach(function(x){var d=x.next_insp;if(!d)return;hd=true;var dt=new Date(d);if(dt<=eT)c='#dc2626';else if(dt<=eN&&c!=='#dc2626')c='#b45309';});return hd?c:'#9ca3af';}
+// 17.09.2026 yfirferð: þagnirnar hér inni eru RÉTTAR — þetta er uppfletting sem
+// skilar null þegar hún tekst ekki, og kallandinn sleppir þá einum kortapunkti.
+// Ekkert vistast. Auk þess er _geo óvirkt í dag: eini notandinn var _markers, sem
+// var aftengt 07.05.2026 (mapfix.js á kortamerkin).
 async function _geo(addr){
   if(_gc[addr])return _gc[addr];
   // Look up address from fyrirtaeki table

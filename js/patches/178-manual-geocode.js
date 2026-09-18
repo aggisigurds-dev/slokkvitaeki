@@ -99,6 +99,10 @@
       return (d && d.results) || [];
     } catch (_) { return []; }
   }
+  // 17.09.2026 (yfirferð á þöglum villum): þagnirnar í suggest/geocodeOne eru
+  // RÉTTAR — bilun skilar tómu/null sem kallendur telja sem „fannst ekki", og
+  // teljarinn („Fann N af M") segir þá satt. Ekkert er sagt vistað sem
+  // vistaðist ekki og engin gögn tapast.
   async function geocodeOne(q) {
     try {
       const r = await fetch('/api/geocode?q=' + encodeURIComponent(q));
@@ -111,6 +115,12 @@
     return null;
   }
 
+  // Skilar true þegar hnitið komst í SAMEIGINLEGU skrána (geocode_cache), false
+  // þegar það liggur aðeins í localStorage þessa vafra.
+  // 17.09.2026: fetch kastar EKKI á 401/403/500 — svarið var einfaldlega hunsað
+  // og tóma catch-ið náði aldrei utan um neitt. Hnitið sat þá bara í þessum
+  // vafra meðan glugginn sagði „📍 Staðsetning vistuð": hinar vélarnar sáu
+  // engan pinna og sami staður var handsettur aftur og aftur.
   async function saveCoord(co, coord, displayName) {
     const val = { lat: coord.lat, lng: coord.lng, display_name: displayName || null };
     const gc = readGc();
@@ -118,12 +128,13 @@
     if (co.heimilisfang) gc[co.heimilisfang] = val;
     if (co.nafn) gc[co.nafn] = val;
     writeGc(gc);
+    let iSky = false;
     if (SB_URL && SB_KEY) {
       const rows = [{ query: coKey(co.id), lat: coord.lat, lng: coord.lng, display_name: displayName || null, source: 'manual' }];
       if (co.heimilisfang) rows.push({ query: co.heimilisfang, lat: coord.lat, lng: coord.lng, display_name: displayName || null, source: 'manual' });
       if (co.nafn) rows.push({ query: co.nafn, lat: coord.lat, lng: coord.lng, display_name: displayName || null, source: 'manual' });
       try {
-        await fetch(SB_URL + '/rest/v1/geocode_cache', {
+        const r = await fetch(SB_URL + '/rest/v1/geocode_cache', {
           method: 'POST',
           headers: {
             apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY,
@@ -131,9 +142,12 @@
           },
           body: JSON.stringify(rows),
         });
-      } catch (_) {}
+        iSky = !!(r && r.ok);
+        if (!iSky) console.warn('[manual-geocode] geocode_cache svaraði HTTP ' + (r && r.status));
+      } catch (e) { console.warn('[manual-geocode] geocode_cache', e); }
     }
     refreshMaps();
+    return iSky;
   }
   function refreshMaps() {
     try { window.Leidsogn && window.Leidsogn.refresh && window.Leidsogn.refresh(); } catch (_) {}
@@ -304,8 +318,13 @@
     saveBtn.addEventListener('click', async () => {
       if (!_coord) return;
       saveBtn.disabled = true; saveBtn.textContent = 'Vista…';
-      await saveCoord(co, _coord, _display);
-      toast('📍 Staðsetning vistuð fyrir ' + (co.nafn || ''));
+      const iSky = await saveCoord(co, _coord, _display);
+      if (iSky) {
+        toast('📍 Staðsetning vistuð fyrir ' + (co.nafn || ''));
+      } else {
+        toast('⚠ Staðsetningin komst EKKI í sameiginlegu skrána — hún sést aðeins í þessum vafra. Reyndu aftur.');
+        try { if (window.logProblem) window.logProblem('geocode_cache_write_failed', 'co ' + co.id + ' ' + (co.nafn || '')); } catch (_) {}
+      }
       close();
       if (typeof onSaved === 'function') onSaved();
     });
@@ -371,11 +390,15 @@
       autoBtn.textContent = '⏹ Stöðva'; autoBtn.classList.remove('pri');
       const prog = $('_mg-prog'); prog.style.display = 'block';
       const bar = prog.querySelector('i');
-      let done = 0, hit = 0;
+      let done = 0, hit = 0, skyVillur = 0;
       for (const c of list) {
         if (_cancelAuto) break;
         const res = await geocodeOne(c.heimilisfang);
-        if (res) { await saveCoord(c, { lat: res.lat, lng: res.lng }, res.display_name); hit++; }
+        if (res) {
+          const iSky = await saveCoord(c, { lat: res.lat, lng: res.lng }, res.display_name);
+          hit++;
+          if (!iSky) skyVillur++;
+        }
         done++;
         bar.style.width = Math.round(done / list.length * 100) + '%';
         $('_mg-mcount').textContent = 'Leita… ' + done + '/' + list.length + ' (fann ' + hit + ')';
@@ -384,7 +407,11 @@
       prog.style.display = 'none';
       autoBtn.textContent = '🔍 Sjálfvirkt allar'; autoBtn.classList.add('pri');
       _running = false;
-      toast('Fann ' + hit + ' af ' + list.length + ' staðsetningum.');
+      // 17.09.2026: talan sagði áður „fann N" þótt ENGIN þeirra hefði komist í
+      // sameiginlegu skrána — pinnarnir voru þá aðeins til í þessum vafra.
+      toast('Fann ' + hit + ' af ' + list.length + ' staðsetningum.'
+        + (skyVillur ? ' ⚠ ' + skyVillur + ' komust EKKI í sameiginlegu skrána (sjást aðeins í þessum vafra).' : ''));
+      if (skyVillur) { try { if (window.logProblem) window.logProblem('geocode_cache_write_failed', skyVillur + ' af ' + hit + ' hnitum komust ekki í geocode_cache'); } catch (_) {} }
       render();
     });
   }

@@ -24,6 +24,9 @@
 
   const DEFAULT_URL = '/img/logo.png?v=20260520b';
 
+  // 17.09.2026 (yfirferð á þöglum villum): þögnin er RÉTT — lestur með
+  // varaleið. Mistakist AppSettings er prentað með sjálfgefna merkinu
+  // (DEFAULT_URL) í stað þess sérvalda; ekkert skrif, ekkert tapast.
   function getUrl() {
     try {
       if (window.AppSettings && typeof AppSettings.path === 'function') {

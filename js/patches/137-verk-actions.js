@@ -135,9 +135,19 @@
     // Cancel the verkbeidni
     const note = '[' + todayISO() + ' · ENDURGERÐ] Notandi opnaði aftur í Sölu til að breyta línum.';
     const newNotes = (job.notes || '') + '\n\n' + note;
+    // 2026-09-17: .error var aldrei lesið (supabase-js kastar ekki) og flæðið hélt
+    // áfram inn í Sölu. Mistækist aflýsingin ÞÖGULT stóð gamla verkbeiðnin áfram
+    // virk OG ný sala var lögð fram ofan á hana — tvítekið verk og tvítekin rukkun.
+    // Því er stöðvað hér: ekkert opnast í Sölu nema aflýsingin hafi komist inn.
     try {
-      await SB.from('verkbeidnir').update({ status: 'cancelled', notes: newNotes }).eq('id', job.id);
-    } catch (e) { console.warn('[verk-actions] cancel failed:', e); }
+      const rc = await SB.from('verkbeidnir').update({ status: 'cancelled', notes: newNotes }).eq('id', job.id);
+      if (rc && rc.error) throw rc.error;
+    } catch (e) {
+      console.warn('[verk-actions] cancel failed:', e);
+      try { if (window.logProblem) window.logProblem('verk-aflysing-brast', 'verkbeiðni ' + (job.num || job.id) + ': ' + ((e && e.message) || e)); } catch (_) {}
+      alert('Verkbeiðnin ' + (job.num || job.id) + ' var EKKI aflýst (' + ((e && e.message) || e) + ').\n\nLínurnar voru því ekki opnaðar í Sölu — annars hefðu orðið til tvær verkbeiðnir fyrir sama verk. Reyndu aftur.');
+      return;
+    }
     // Push lines back into POS state
     if (!window.POS && !window.Sala) {
       alert('Sala mátinn ekki tilbúinn.');
@@ -204,12 +214,24 @@
       // Going from collected back to ready — clear pickup date so it doesn't
       // look like it was picked up.
       if (fromStatus === 'collected') updates.pickup = null;
-      await SB.from('verkbeidnir').update(updates).eq('id', job.id);
+      // 2026-09-17: .error var aldrei lesið — mistækist afturköllunin sagði appið samt
+      // „↶ Afturkallað" og skyndiminnið var lagfært, svo staðan leit rétt út þangað til
+      // næst var hlaðið. Nú fer villan í catch-ið hér að neðan (alert) og ekkert er sagt.
+      const rj = await SB.from('verkbeidnir').update(updates).eq('id', job.id);
+      if (rj && rj.error) throw rj.error;
       // Reset verklidur from 'done' → 'received'. Keep 'broken' alone.
+      let _verklidurEkki = 0;
       if (Array.isArray(job.units)) {
         for (const u of job.units) {
           if (u.status === 'done') {
-            try { await SB.from('verklidur').update({ status: 'received' }).eq('id', u.id); } catch(_){}
+            // Hér er EKKI kastað: verkbeiðnin er þegar afturkölluð. Talið og sagt frá.
+            try {
+              const ru = await SB.from('verklidur').update({ status: 'received' }).eq('id', u.id);
+              if (ru && ru.error) throw ru.error;
+            } catch (e) {
+              _verklidurEkki++;
+              try { if (window.logProblem) window.logProblem('afturkalla-verklidur', 'verkliður ' + (u.serial || u.id) + ': ' + ((e && e.message) || e)); } catch (_) {}
+            }
           }
         }
       }
@@ -218,7 +240,8 @@
         const j = DB.cache.jobs.find(x => x.id === job.id);
         if (j) { j.status = toStatus; j.notes = newNotes; if (fromStatus === 'collected') j.pickup = null; }
       }
-      if (window.Toast && Toast.show) Toast.show('↶ Afturkallað: ' + fromStatus + ' → ' + toStatus);
+      if (window.Toast && Toast.show) Toast.show('↶ Afturkallað: ' + fromStatus + ' → ' + toStatus
+        + (_verklidurEkki ? ' — ⚠ ' + _verklidurEkki + ' tæki standa ENN á „búið"' : ''));
       if (typeof App.refreshAll === 'function') App.refreshAll();
     } catch (e) {
       alert('Villa: ' + (e.message || e));

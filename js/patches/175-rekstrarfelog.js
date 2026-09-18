@@ -489,6 +489,8 @@
 
   // ---- data load/save via AppSettings (fallback to localStorage) ----
   function getRawData(){
+    // 17.09.2026 yfirferð: þögnin er RÉTT hér — þetta er LESTUR með þrepaskiptu
+    // varaplani (AppSettings → localStorage → SEED). Ekkert glatast við bilun.
     try {
       if (window.AppSettings && typeof AppSettings.path==='function'){
         var b = AppSettings.path('rekstrarfelog');
@@ -738,13 +740,32 @@
       }
       clean[k] = copy;
     });
+    // localStorage-afritið er staðbundið hjálpargagn — bregðist það (t.d. fullur
+    // kvóti) breytir það engu um sannleikann á þjóninum. Þögnin er rétt hér.
     try { localStorage.setItem('_slokk_rekstrarfelog', JSON.stringify(clean)); } catch(e){}
     var patch = clean;
     if (onlyKey != null) {
       patch = {};
       if (Object.prototype.hasOwnProperty.call(clean, onlyKey)) patch[onlyKey] = clean[onlyKey];
     }
-    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ rekstrarfelog: patch }); } catch(e){}
+    // 17.09.2026: AppSettings.save skilar false — það KASTAR ekki. Áður var
+    // niðurstaðan aldrei lesin, svo nótur, netföng, Drive-slóðir og byggingar
+    // gátu horfið á þjóninum meðan „✓ Vistað" birtist og hinar vélarnar sáu
+    // ekkert. Skilar nú true/false og segir frá þegar vistun mistekst.
+    if (!(window.AppSettings && AppSettings.save)) {
+      try { if (window.logProblem) window.logProblem('rf_save_failed', 'AppSettings.save ekki til — ' + (onlyKey || '(öll félög)')); } catch(_){}
+      if (window.Toast && Toast.show) Toast.show('⚠ Vistun komst EKKI á þjóninn — stillingakerfið er ekki tiltækt. Endurhlaðið síðuna.');
+      return false;
+    }
+    var ok = false;
+    try { ok = await AppSettings.save({ rekstrarfelog: patch }); }
+    catch(e){ ok = false; try { if (window.logProblem) window.logProblem('rf_save_failed', (onlyKey || '(öll félög)') + ': ' + String((e&&e.message)||e)); } catch(_){} }
+    if (!ok) {
+      try { if (window.logProblem) window.logProblem('rf_save_failed', 'AppSettings.save skilaði false — ' + (onlyKey || '(öll félög)')); } catch(_){}
+      if (window.Toast && Toast.show) Toast.show('⚠ Vistaðist EKKI' + (onlyKey ? (' — ' + onlyKey) : '') + '. Breytingin er aðeins á þessum skjá; reyndu aftur.');
+      return false;
+    }
+    return true;
   }
 
   function companyByKt(kt){
@@ -969,6 +990,8 @@
            list.find(function(x){ return x.year==null && new RegExp('\\b'+y+'\\b').test(String(x.name||'')); }) || null;
   }
   function getCaMap(){
+    // 17.09.2026 yfirferð: lestur úr staðbundnu blobi; tómt kort er gild niðurstaða
+    // (engin skjöl fundin) og ekkert skrif hangir á henni. Þögnin er rétt.
     try { if(window.AppSettings&&AppSettings.path) return AppSettings.path('company_attachments')||{}; } catch(e){}
     return {};
   }
@@ -1159,6 +1182,8 @@
     _bruPromise=(async function(){
       var byCo={};
       function rec(id){ var k=String(id); return byCo[k]||(byCo[k]={inService:false,units:0,years:{},months:{},latest:0,last:'',month:0,next:null}); }
+      // 17.09.2026 yfirferð: lestur úr staðbundnu blobi — bregðist hann stendur
+      // eftir tómt kort (enginn í brunakerfisþjónustu), sem er gild staða. Ekkert skrif.
       try{
         var map=(window.AppSettings&&AppSettings.path&&AppSettings.path('brunakerfi_customers'))||{};
         Object.keys(map).forEach(function(k){
@@ -1556,8 +1581,10 @@
         var d=getData(); if(!d[name]) d[name]=info;
         if((d[name].notes||'')===val) return;
         d[name].notes=val; info.notes=val;
-        await saveData(d, name);
-        if(window.Toast&&Toast.show) Toast.show('✓ Vistað');
+        // 17.09.2026: „✓ Vistað" birtist líka þegar vistun mistókst — nótan var þá
+        // aðeins á þessum skjá og horfin við næstu hleðslu. saveData segir frá.
+        var okNote = await saveData(d, name);
+        if(okNote && window.Toast&&Toast.show) Toast.show('✓ Vistað');
       });
       // Rotandi akstursleið-chip á félaginu (úthlutar öllum stöðum þess) — situr
       // fremst í pillu-röðinni, vinstra megin við ⌄. Smellur flettur (stopPropagation).
@@ -1601,6 +1628,8 @@
       return String(a.nafn||'').localeCompare(String(c.nafn||''),'is');
     });
     var equip=await getEquipIndex();
+    // 17.09.2026 yfirferð: báðir eru LESTRAR með tómt kort sem gilt varaplan
+    // (engin viðhengi / engir hlekkir). Þögnin er rétt — ekkert vistast hér.
     var attMap={}; try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; } }catch(e){}
     var linkMap={}; try{ if(window.AppSettings&&AppSettings.path){ linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
     var caMap=getCaMap();
@@ -1927,7 +1956,12 @@
                 if (n.indexOf('yfirfer') >= 0) { _y = +o.price_ex_vat || _y; _ovY = true; }
                 if (n.indexOf('hleðsl') >= 0 || n.indexOf('hledsl') >= 0) { _h = +o.price_ex_vat || _h; _ovH = true; }
               });
-            } catch(_) {}
+            } catch(e) {
+              // 17.09.2026: lestur — reikningurinn heldur áfram á listaverði, sem er
+              // rétt varaplan. EN þá er tekjuspáin of há fyrir þá sem eiga sérverð,
+              // og það sást hvergi. Ekki stöðvað, en skráð.
+              try { if (window.logProblem) window.logProblem('rf_pricing_read_failed', 'company_pricing co ' + (co && co.id) + ': ' + String((e&&e.message)||e), { severity: 'warn' }); } catch(_) {}
+            }
           }
           if (_ovY || _ovH || _d > 0) estOvN++;
           estMix += _estUnits*_y*(_ovY?1:(1-_d/100)) + Math.round(_estUnits*(revHpct/100))*_h*(_ovH?1:(1-_d/100));
@@ -2258,10 +2292,12 @@
       var d=getData(); if(!d[name]) d[name]=info;
       d[name].kt=kt; d[name].domain=domain; d[name].emails=emailsArr; d[name].notes=notes;
       d[name].simi=simi; d[name].tengilidur=tengil;
-      try{ await saveData(d, name); }catch(e){}
+      // 17.09.2026: kt, netföng og tengiliður voru sögð vistuð þótt AppSettings.save
+      // hefði skilað false — reikninga-netfangið var þá aðeins til á þessum skjá.
+      var okInfo=false; try{ okInfo = await saveData(d, name); }catch(e){ okInfo=false; }
       info.kt=kt; info.domain=domain; info.emails=emailsArr; info.notes=notes;
       info.simi=simi; info.tengilidur=tengil;
-      if(window.Toast&&Toast.show) Toast.show('✓ Upplýsingar vistaðar');
+      if(okInfo && window.Toast&&Toast.show) Toast.show('✓ Upplýsingar vistaðar');
       fillBody(body,name,info); // re-render with the new values
     });
 
@@ -2283,9 +2319,11 @@
         revSave.disabled=true; revSave.textContent='Vista…';
         var d=getData(); if(!d[name]) d[name]=info;
         d[name].rev_yfirferd=y; d[name].rev_hledsla=h; d[name].rev_hledsla_pct=p;
-        try{ await saveData(d, name); }catch(e){}
+        // 17.09.2026: tekjuforsendur (verð + hleðsluhlutfall) voru sagðar vistaðar
+        // án þess að niðurstaðan væri lesin — tekjuspáin var þá röng í hinum vélunum.
+        var okRev=false; try{ okRev = await saveData(d, name); }catch(e){ okRev=false; }
         info.rev_yfirferd=y; info.rev_hledsla=h; info.rev_hledsla_pct=p;
-        if(window.Toast&&Toast.show) Toast.show('✓ Tekjuforsendur vistaðar');
+        if(okRev && window.Toast&&Toast.show) Toast.show('✓ Tekjuforsendur vistaðar');
         fillBody(body,name,info);   // endurteikna með nýju tölunum
       });
     }
@@ -2480,9 +2518,11 @@
         delete arr[bi]._live;
         if (pv && co_id != null) arr[bi].co_id = co_id;
         else if (!pv) delete arr[bi].co_id;   // tómt = aftur í sjálfvirka uppflettingu
-        await saveData(d, name);
+        // 17.09.2026: handfest fyrirtækja-tenging (co_id) var sögð uppfærð þótt
+        // hún hefði ekki vistast — byggingin datt þá aftur í sjálfvirka uppflettingu.
+        var okBld = await saveData(d, name);
         info.buildings = arr;
-        if(window.Toast&&Toast.show) Toast.show('✓ Bygging uppfærð');
+        if(okBld && window.Toast&&Toast.show) Toast.show('✓ Bygging uppfærð');
         fillBody(body, name, info);
       });
     });
@@ -2503,7 +2543,9 @@
         }
         if(!confirm('Fjarlægja "'+(b.nafn||'')+'" úr félaginu?')) return;
         var d = getData();
-        if(d[name] && Array.isArray(d[name].buildings)){ d[name].buildings.splice(bi,1); await saveData(d, name); info.buildings=d[name].buildings; }
+        // 17.09.2026: byggingin hvarf af skjánum þótt vistun mistækist og kom aftur
+        // við næstu hleðslu. Nú fjarlægð úr sýninni AÐEINS þegar vistun tókst.
+        if(d[name] && Array.isArray(d[name].buildings)){ d[name].buildings.splice(bi,1); if(await saveData(d, name)) info.buildings=d[name].buildings; }
         fillBody(body, name, info);
       });
     });

@@ -69,20 +69,30 @@
     }
     var byId = {}; ((window.Companies && Companies.list) || []).forEach(function (c) { byId[String(c.id)] = c; });
     Object.keys(coIds).forEach(function (id) { var c = byId[id]; if (c && c.kennitala) kts[digits(c.kennitala)] = 1; });
+    // 17.09.2026: .select() kastar ekki — villan kom í .error og var aldrei lesin.
+    // Þá vantaði staði í listann ÞÖGULT og afsláttur/tilboðsverð fóru aðeins á þá
+    // sem sáust í töflunni. Toastið sagði samt „á alla staði (N kt)". Peningalína:
+    // hinir staðirnir héldu áfram á fullu verði og það sást ekki fyrr en á reikningi.
+    var ofullkomid = null;
     if (name && s) {
       try {
         var b = await s.from('customers_base').select('id,kennitala').eq('rekstrarfelag', name);
+        if (b && b.error) throw b.error;
         var bases = (b && b.data) || [];
         var baseIds = bases.map(function (x) { return x.id; });
         bases.forEach(function (x) { if (x.kennitala) kts[digits(x.kennitala)] = 1; });
         if (baseIds.length) {
           var f = await s.from('fyrirtaeki').select('id,kennitala').in('customer_base_id', baseIds);
+          if (f && f.error) throw f.error;
           ((f && f.data) || []).forEach(function (x) { coIds[String(x.id)] = 1; if (x.kennitala) kts[digits(x.kennitala)] = 1; });
         }
-      } catch (e) {}
+      } catch (e) {
+        ofullkomid = e;
+        try { if (window.logProblem) window.logProblem('rf_members_read_failed', 'félag ' + name + ': ' + String((e && e.message) || e)); } catch (_) {}
+      }
     }
     delete kts[WALKIN]; delete kts[''];
-    return { name: name, coIds: Object.keys(coIds), kts: Object.keys(kts).filter(Boolean) };
+    return { name: name, coIds: Object.keys(coIds), kts: Object.keys(kts).filter(Boolean), ofullkomid: ofullkomid };
   }
 
   // ── AppSettings helpers ──────────────────────────────────────────────────
@@ -132,6 +142,9 @@
       btn.disabled = true; msg.textContent = 'Vista…';
       var m = await felagMembers();
       if (!m.kts.length) { msg.textContent = '⚠ Engar kennitölur fundust'; btn.disabled = false; return; }
+      // 17.09.2026: hálfur listi = hálfur afsláttur. Betra að skrifa ekkert en að
+      // setja afsláttinn á suma staði og segja „á alla staði".
+      if (m.ofullkomid) { msg.textContent = '⚠ Náði ekki öllum stöðum félagsins — ekkert vistað (annars færi afslátturinn aðeins á hluta þeirra). Reyndu aftur.'; btn.disabled = false; return; }
       var pats = ktPats(m.kts), s = sb();
       try {
         // 17.09.2026: supabase-js KASTAR EKKI — villan kemur í `.error`, svo
@@ -171,10 +184,19 @@
 
   async function savePricing(name, list) {
     var m = await felagMembers();
+    // 17.09.2026: sama peningalína og afslátturinn — ófullkominn staðalisti þýðir
+    // að tilboðsverðin fara aðeins á suma staði. Þá er ekkert vistað.
+    if (m.ofullkomid) { toast('⚠ Náði ekki öllum stöðum félagsins — tilboðsverð EKKI vistuð. Reyndu aftur.'); return; }
     var cp = Object.assign({}, apGet('company_pricing'));
     m.coIds.forEach(function (id) { cp[id] = list; });
     var rfp = Object.assign({}, apGet('rekstrarfelag_pricing')); rfp[name] = list;
-    await apSave({ company_pricing: cp, rekstrarfelag_pricing: rfp });
+    // 17.09.2026: apSave skilar false og kastar ekki — niðurstaðan var aldrei lesin
+    // og „💰 N tilboðsverð á alla staði" birtist þótt ekkert hefði vistast.
+    if ((await apSave({ company_pricing: cp, rekstrarfelag_pricing: rfp })) === false) {
+      try { if (window.logProblem) window.logProblem('rf_pricing_save_failed', 'félag ' + name + ' (' + m.coIds.length + ' staðir)'); } catch (_) {}
+      toast('⚠ Tilboðsverðin vistuðust EKKI — verðin gilda enn óbreytt. Reyndu aftur.');
+      return;
+    }
     toast(list.length ? ('💰 ' + list.length + ' tilboðsverð á alla staði (' + m.coIds.length + ').') : 'Tilboðsverð hreinsuð.');
   }
 

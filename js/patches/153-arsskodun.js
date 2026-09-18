@@ -1639,13 +1639,18 @@
       const c = (_cache.byId && _cache.byId[coId]) || {};
       const sb = getSB();
       if (!sb) return;
+      // 17.09.2026: rétt að ÞETTA stöðvi ekki vistunina — yfirskriftin sjálf er
+      // vistuð annars staðar. Rangt var að þagga niður tapaða slóð: .insert()
+      // kastar ekki, svo villan kom í .error og engin þeirra sást. Nú skráð í
+      // app_problems svo hægt sé að sjá að breytingaskráin er götótt.
+      const _ovrFail = e => { try { if (window.logProblem) window.logProblem('override_log_failed', 'arsskodun co ' + coId + ' reitur ' + field + ': ' + String((e && e.message) || e), { severity: 'warn' }); } catch (_) {} };
       sb.from('override_log').insert({
         co_id: coId, co_nafn: c.nafn || null, field: field,
         old_value: oldV == null ? null : String(oldV),
         new_value: newV == null ? null : String(newV),
         page: 'arsskodun'
-      }).then(() => {}, () => {});
-    } catch (_) {}
+      }).then(r => { if (r && r.error) _ovrFail(r.error); }, _ovrFail);
+    } catch (e) { try { if (window.logProblem) window.logProblem('override_log_failed', 'arsskodun co ' + coId + ' reitur ' + field + ': ' + String((e && e.message) || e), { severity: 'warn' }); } catch (_) {} }
   }
   // Gildi sem ber handvirka yfirskrift fær gult strikamerki + punkt.
   function manualMark(html, isManual) {
@@ -2950,14 +2955,26 @@
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
     try {
       const SB = window.DB && DB.sb;
-      await SB.from('fyrirtaeki').update({ er_i_thjonustu: false }).eq('id', coId);
+      // 17.09.2026: .update() kastar ekki — villan kom í .error og var aldrei lesin.
+      // Áður: fyrirtækið hvarf af Óvíst-listanum og „tekið úr þjónustu" birtist þótt
+      // það væri enn í þjónustu í gagnagrunninum — og kom aftur við næstu hleðslu.
+      const rUpd = await SB.from('fyrirtaeki').update({ er_i_thjonustu: false }).eq('id', coId);
+      if (rUpd && rUpd.error) throw rUpd.error;
       if (window.AppSettings && AppSettings.save) {
         const ok = await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { subscribed: false, removed_from_service_at: new Date().toISOString().slice(0, 10) } } });
-        if (!ok) { alert('Vista mistókst'); if (btn) { btn.disabled = false; btn.textContent = '⬇ Úr þjónustu'; } return; }
+        // 17.09.2026: „Vista mistókst" sagði ekki hvað stóð eftir — fyrirtækið er
+        // þá þegar komið úr þjónustu í fyrirtaeki, aðeins áskriftarnótan vantar.
+        if (!ok) { alert(name + ' var tekið úr þjónustu, EN áskriftarnótan (dagsetning + subscribed:false) vistaðist ekki.\n\nSmelltu aftur til að reyna, eða lagaðu stöðuna á fyrirtækjasíðunni.'); if (btn) { btn.disabled = false; btn.textContent = '⬇ Úr þjónustu'; } return; }
       }
-      try {   // audit-slóð: sama override_log og ⚡-hamurinn notar
-        await SB.from('override_log').insert({ co_id: +coId, co_nafn: name, field: 'er_i_thjonustu', old_value: 'true', new_value: 'false', page: 'arsskodun-ovist' });
-      } catch (_) {}
+      // audit-slóð: sama override_log og ⚡-hamurinn notar. Má EKKI stöðva aðgerðina
+      // — breytingin sjálf er þegar komin inn. En 17.09.2026: hún þagði líka þegar
+      // slóðin glataðist, svo breytingin leit út fyrir að koma úr engu. Nú skráð.
+      try {
+        const rLog = await SB.from('override_log').insert({ co_id: +coId, co_nafn: name, field: 'er_i_thjonustu', old_value: 'true', new_value: 'false', page: 'arsskodun-ovist' });
+        if (rLog && rLog.error) throw rLog.error;
+      } catch (e) {
+        try { if (window.logProblem) window.logProblem('override_log_failed', 'arsskodun-ovist co ' + coId + ': ' + String((e && e.message) || e), { severity: 'warn' }); } catch (_) {}
+      }
       _cache.list = (_cache.list || []).filter(x => String(x.id) !== String(coId));
       render();
       if (window.Toast && Toast.show) Toast.show('⬇ ' + name + ' tekið úr þjónustu');

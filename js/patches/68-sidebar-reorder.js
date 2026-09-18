@@ -83,6 +83,11 @@
   // cache makes the user's order available SYNCHRONOUSLY from the first reorder,
   // so the nav lands in its final order immediately and never jumps. The cache
   // is refreshed every time AppSettings does have the value.
+  // 17.09.2026 (yfirferð á þöglum villum): tómu catch-in í getCustomOrder og
+  // getHidden eru RÉTT. Þau umlykja LESTUR með innbyggðri varaleið: mistakist
+  // AppSettings/localStorage fær notandinn sjálfgefna röð hliðarstikunnar —
+  // ekkert tapast og engin staða verður ósönn. Vistunin sjálf (þar sem röðin
+  // gæti raunverulega glatast) er annars staðar og er athuguð þar.
   function getCustomOrder() {
     try {
       if (window.AppSettings && AppSettings.path) {

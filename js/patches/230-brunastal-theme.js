@@ -354,6 +354,9 @@
 
   // ── live clock ──────────────────────────────────────────────────────────────
   let clockTimer = null;
+  // 17.09.2026 (yfirferð á þöglum villum): þögnin er RÉTT — nafnið er skraut
+  // aftan við klukkuna í borðanum. Mistakist lesturinn birtist dagsetningin ein
+  // og sér; ekkert skrif, engin staða, ekkert tapast.
   function staffName() {
     try {
       const l = window.AppSettings && AppSettings.path && AppSettings.path('starfsmenn');

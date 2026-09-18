@@ -255,7 +255,11 @@
     // user is currently typing, the onChange listener guards against
     // stomping their in-flight edit.
     if (!_notesIsTyping && window.AppSettings && typeof window.AppSettings.load === 'function') {
-      try { await window.AppSettings.load(); } catch (_) {}
+      // 17.09.2026: bregðist endurhleðslan er teiknað úr eldra skyndiminni — það er
+      // rétt varaplan (betra en auður skjár), en þá er nákvæmlega sá gamli-gögn-
+      // vandi kominn upp sem kallið átti að leysa. Ekki stöðvað, en skráð.
+      try { await window.AppSettings.load(); }
+      catch (e) { try { if (window.logProblem) window.logProblem('brunakerfi_settings_reload_failed', String((e && e.message) || e), { severity: 'warn' }); } catch (_) {} }
     }
     await loadAll();
     renderList();
@@ -1109,15 +1113,20 @@
     async function openAttachmentByPath(path, name) {
       const SB = getSB();
       if (!SB) { alert('Engin gagnabankatenging'); return; }
+      // 17.09.2026 yfirferð: þögnin í þessum tveimur er RÉTT — þetta er keðja
+      // varaleiða (undirritað slóð → opinber slóð) og síðasta þrepið segir frá.
+      // Eina breytingin: ástæðan fylgir nú skilaboðunum svo hún sé ekki týnd.
+      let sidasta = null;
       try {
         const r = await SB.storage.from('samningar').createSignedUrl(path, 3600);
         if (r && r.data && r.data.signedUrl) { window.open(r.data.signedUrl, '_blank', 'noopener'); return; }
-      } catch (_) {}
+        if (r && r.error) sidasta = r.error;
+      } catch (e) { sidasta = e; }
       try {
         const r = SB.storage.from('samningar').getPublicUrl(path);
         if (r && r.data && r.data.publicUrl) { window.open(r.data.publicUrl, '_blank', 'noopener'); return; }
-      } catch (_) {}
-      alert('Gat ekki opnað skrá: ' + (name || path));
+      } catch (e) { sidasta = sidasta || e; }
+      alert('Gat ekki opnað skrá: ' + (name || path) + (sidasta ? ('\n\nÁstæða: ' + String((sidasta && sidasta.message) || sidasta)) : ''));
     }
 
     function renderAtts(list) {

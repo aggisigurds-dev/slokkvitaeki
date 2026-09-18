@@ -398,9 +398,15 @@
   // 2026-09-08: sama nafnagildra og í fetchUnits — og hér SKRIFAR fallið
   // (last_insp/next_insp). Tæki með staðnað nafn fékk aldrei nýja dagsetningu
   // og stóð eftir sem útrunnið þótt það hefði verið skoðað.
+  // 17.09.2026: fallið skilaði AÐEINS fjölda tækja sem tókst að uppfæra og át
+  // hverja villu (.update() kastar ekki — villan kom í .error sem var aldrei
+  // lesin). Mistækist skrifið varð talan 0, kallandinn sýndi þá engan borða og
+  // starfsmaðurinn hélt að skoðunin væri skráð: tækin stóðu áfram útrunnin og
+  // úttektin taldist óunnin. Skilar núna { n, mistokst, villa } svo kallandinn
+  // geti sagt frá. Árangursleiðin er óbreytt.
   async function advanceInspectionDates(coNafn, coId) {
     const sb = window.DB && window.DB.sb;
-    if (!sb || (!coNafn && coId == null)) return 0;
+    if (!sb || (!coNafn && coId == null)) return { n: 0, mistokst: 0, villa: null };
     const today = new Date().toISOString().slice(0, 10);
     const todayPlus1 = String(+today.slice(0, 4) + 1) + today.slice(4);
     let rows = [];
@@ -409,7 +415,10 @@
       const r = (coId != null)
         ? await sb.from('uttaeki').select(velja).eq('fyrirtaeki_id', coId)
         : await sb.from('uttaeki').select(velja).eq('client', coNafn);
-      if (r.error || !r.data) return 0;
+      // Mistakist lesturinn er EKKERT tæki uppfært — það má ekki líta út eins
+      // og „engin tæki þurftu færslu".
+      if (r.error) return { n: 0, mistokst: 0, villa: (r.error.message || String(r.error)) };
+      if (!r.data) return { n: 0, mistokst: 0, villa: 'engin svör úr tækjaskrá' };
       rows = r.data;
       if (coId != null && coNafn) {
         const m = await sb.from('uttaeki').select(velja).eq('client', coNafn).is('fyrirtaeki_id', null);
@@ -418,25 +427,29 @@
           m.data.forEach(u => { if (!seen.has(u.id)) rows.push(u); });
         }
       }
-    } catch (_) { return 0; }
+    } catch (e) { return { n: 0, mistokst: 0, villa: (e && e.message) || String(e) }; }
     const SKIP = { loaned: 1, broken: 1, onytt: 1, geymsla: 1, urelt: 1 };
-    let n = 0;
+    let n = 0, mistokst = 0, villa = null;
     for (const u of rows) {
       const st = String(u.status == null ? '' : u.status).toLowerCase();
       if (SKIP[st]) continue;
       if (u.last_insp === today) continue; // þegar stimplað í dag
       const next = _plusOneYearKeepDay(u.next_insp) || todayPlus1;
       try {
-        await sb.from('uttaeki').update({ last_insp: today, next_insp: next, status: 'active' }).eq('id', u.id);
+        const upd = await sb.from('uttaeki').update({ last_insp: today, next_insp: next, status: 'active' }).eq('id', u.id);
+        if (upd && upd.error) {
+          mistokst++; villa = villa || (upd.error.message || String(upd.error));
+          continue;   // ekkert staðbundið cache heldur — skjárinn má ekki ljúga
+        }
         n++;
         // uppfæra staðbundið cache svo dagarnir birtist strax
         try {
           const c = (window.DB && DB.cache && Array.isArray(DB.cache.units)) ? DB.cache.units.find(x => x.id === u.id) : null;
           if (c) { c.last_insp = today; c.next_insp = next; c.status = 'active'; }
         } catch (_) {}
-      } catch (_) {}
+      } catch (e) { mistokst++; villa = villa || ((e && e.message) || String(e)); }
     }
-    return n;
+    return { n: n, mistokst: mistokst, villa: villa };
   }
 
   // 2026-08-17 (ósk Agnars: afslættir sjálfvirkir líka í úttektum): afsláttar-
@@ -964,6 +977,9 @@
       monthOpts += '<option value="' + MONTHS_IS[ix] + '" label="' + MONTHS_IS[ix] + ' ' + yr + '"></option>';
     }
     const STAFF = ['Hákon', 'Agnar', 'Binni', 'Andri', 'Elías'];
+    // 17.09.2026: þögnin hér er RÉTT — þetta eru aðeins TILLÖGUR í <datalist>.
+    // Mistakist lesturinn stendur fasti listinn eftir og reiturinn er áfram
+    // frjáls innsláttur; ekkert gildi tapast og engin staða verður ósönn.
     try {
       const extra = (window.AppSettings && AppSettings.path && AppSettings.path('starfsmenn')) || [];
       extra.forEach(s => { const n = s && String(s.name || '').trim(); if (n && STAFF.indexOf(n) < 0) STAFF.push(n); });
@@ -1231,8 +1247,18 @@
         // 2026-07-14: að búa til úttektarskýrsluna færir líka næstu skoðun
         // 12 mánuði fram (afmælis-dagur tækisins varðveittur) — sama og að
         // ýta á „Merkja skoðun". Keyrt í bakgrunni svo skýrslan opnist strax.
-        advanceInspectionDates(coNafn, coId).then(n => {
+        advanceInspectionDates(coNafn, coId).then(r => {
+          const n = (r && r.n) || 0, mistokst = (r && r.mistokst) || 0, villa = r && r.villa;
           if (n && window.Toast && Toast.show) Toast.show('✓ Næsta skoðun færð 12 mán fram á ' + n + ' tæki');
+          // 17.09.2026: áður sást EKKERT þegar skrifið mistókst — skýrslan
+          // opnaðist og tækin stóðu áfram útrunnin.
+          if (mistokst || (villa && !n)) {
+            const txt = mistokst
+              ? ('⚠ Næsta skoðun FÆRÐIST EKKI á ' + mistokst + ' tæki — þau standa áfram sem útrunnin. ' + (villa || ''))
+              : ('⚠ Náði ekki að færa skoðunardagsetningar fram (' + villa + ') — tækin standa óbreytt.');
+            if (window.Toast && Toast.show) Toast.show(txt);
+            try { if (window.logProblem) window.logProblem('next_insp_advance_failed', 'co:' + coId + ' mistókst:' + mistokst + ' ' + String(villa || '').slice(0, 140)); } catch (_) {}
+          }
         }).catch(e => console.warn('[ctc] next_insp advance', e));
         if (window.CompanyInspectionReport && CompanyInspectionReport.open) {
           CompanyInspectionReport.open(coId);

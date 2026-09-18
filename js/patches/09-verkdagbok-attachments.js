@@ -214,6 +214,11 @@
 
   async function deleteAttachment(att) {
     const SB = getSB();
+    // 17.09.2026 (yfirferð á þöglum villum): þögnin er RÉTT hér — og er í raun
+    // aðeins skraut, því .remove() kastar ekki heldur skilar { error }.
+    // Mistakist hún situr eftir munaðarlaus skrá í hólfinu sem enginn sér og
+    // engin sýn telur. Röðin hér að neðan er það sem notandinn SÉR, og hún ER
+    // athuguð (kastar upp í „Villa við að eyða: …" í listanum).
     try { await SB.storage.from(BUCKET).remove([att.storage_path]); } catch(e) {}
     const { error } = await SB.from('verkdagbok_attachments').delete().eq('id', att.id);
     if (error) throw error;

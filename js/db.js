@@ -64,6 +64,9 @@ var DB = {
   // on screen (with a small "offline, data from HH:MM" note) or, if nothing has
   // loaded yet this session, show a full-width error state with a retry button.
   showLoadError: function(err) {
+    // 17.09.2026 (yfirferð á þöglum villum): þagnirnar utan um setSyncState hér
+    // og í retry-hnappnum eru RÉTTAR — punkturinn er skraut og getur vantað í
+    // DOM; villan sjálf er þegar sýnd í borðanum sem byggður er hér að neðan.
     try { this.setSyncState('error'); } catch(_) {}
     var self = this;
     var hadData = !!this._lastLoadOk;
@@ -240,6 +243,10 @@ var DB = {
       }
       // For companies/vidskiptavinir table changes, just nudge the
       // module-level reloaders if available — much cheaper than loadAll.
+      // 17.09.2026: tómu catch-in í þessum fjórum ýtingum eru RÉTT — þetta eru
+      // valkvæðar endurhleðslur á einingum sem gætu verið óhlaðnar; mistakist
+      // ein hleðst hún hvort eð er þegar viðkomandi flipi er opnaður. Ekkert
+      // skrif og engin staða ræðst af þeim.
       if (tables.indexOf('fyrirtaeki') >= 0 && window.Companies && typeof Companies.load === 'function') {
         try { Companies.load(); } catch(e){}
       }
@@ -312,7 +319,16 @@ var DB = {
     var unitInserts = data.units.map(function(u, i) {
       return { job_id: jobId, serial: data.num.replace('#','SÆ-').replace('-','-') + String.fromCharCode(65+i), type: u.type, size: u.size, service: u.service, status: 'received' };
     });
-    await this.sb.from('verklidur').insert(unitInserts);
+    // 17.09.2026: .insert() kastar ekki — villan kom í .error og var hunsuð.
+    // Verkbeiðnin varð þá til TÓM (engir verkliðir) og notandinn fékk enga
+    // viðvörun: tækin sem hann sló inn voru hvergi til og verkið birtist autt
+    // á verkstæðinu. Verkbeiðnin sjálf er komin inn, svo við skilum henni
+    // áfram (annars stofnar notandinn hana tvisvar) en segjum hreint frá.
+    var unitRes = await this.sb.from('verklidur').insert(unitInserts);
+    if (unitRes && unitRes.error) {
+      if (window.Toast && Toast.show) Toast.show('Verkbeiðnin var stofnuð en TÆKIN vistuðust ekki: ' + (unitRes.error.message || 'óþekkt villa') + ' — opnaðu verkið og skráðu tækin aftur.');
+      try { if (window.logProblem) window.logProblem('verklidur_insert_failed', 'verk ' + data.num + ': ' + String(unitRes.error.message || unitRes.error).slice(0, 160)); } catch (_) {}
+    }
     await this.loadAll();
     return this.getJob(jobId);
   },
@@ -387,6 +403,9 @@ var DB = {
     // Base-id-ið er sótt af fyrirtækinu ef það fylgdi ekki — ein uppfletting,
     // engin ágiskun.
     if (_fid != null && _bid == null) {
+      // 17.09.2026: þögnin hér er RÉTT — uppflettingin er í minnislista sem
+      // getur verið óhlaðinn. Mistakist hún fer röðin inn með fyrirtaeki_id
+      // (aðalslóðin) og base-id-ið vantar bara; ekkert skrif tapast.
       try {
         var _c = (window.Companies && Companies.list || []).find(function (x) { return +x.id === _fid; });
         if (_c && _c.customer_base_id != null) _bid = Number(_c.customer_base_id);
@@ -412,10 +431,30 @@ var DB = {
     var unit = this.getUnit(unitId);
     if (!unit) return;
     var newStatus = data.result === 'pass' ? 'ok' : 'overdue';
+    // 17.09.2026: hvorki .update() né .insert() kasta — villan kom í .error og
+    // var hunsuð. Skjárinn sýndi tækið skoðað (reitirnir hér að neðan eru
+    // settir ÁÐUR en skrifað er) en dagsetningin komst aldrei í gagnagrunninn:
+    // við næstu hleðslu stóð tækið aftur sem óskoðað/útrunnið og úttektin taldist
+    // óunnin þótt starfsmaðurinn hefði klárað hana. Geymum fyrri gildin svo
+    // staðbundna breytingin sé tekin til baka mistakist skrifið.
+    var fyrri = { last_insp: unit.last_insp, next_insp: unit.next_insp, status: unit.status, pressure: unit.pressure };
     unit.last_insp = today; unit.next_insp = nextYear; unit.status = newStatus; unit.pressure = parseInt(data.pressure)||unit.pressure;
     if (this.online) {
-      await this.sb.from('uttaeki').update({ last_insp: today, next_insp: nextYear, status: newStatus, pressure: unit.pressure }).eq('id', unitId);
-      await this.sb.from('skodunar_saga').insert({ unit_id: unitId, date: today, tech: 'Jón S.', result: data.result, pressure: unit.pressure, weight: data.weight, notes: data.notes });
+      var uRes = await this.sb.from('uttaeki').update({ last_insp: today, next_insp: nextYear, status: newStatus, pressure: unit.pressure }).eq('id', unitId);
+      if (uRes && uRes.error) {
+        unit.last_insp = fyrri.last_insp; unit.next_insp = fyrri.next_insp; unit.status = fyrri.status; unit.pressure = fyrri.pressure;
+        if (window.Toast && Toast.show) Toast.show('Skoðunin vistaðist EKKI á tækið (' + (uRes.error.message || 'óþekkt villa') + '). Tækið stendur óbreytt — reyndu aftur.');
+        try { if (window.logProblem) window.logProblem('skodun_uttaeki_update_failed', 'tæki ' + unitId + ': ' + String(uRes.error.message || uRes.error).slice(0, 160)); } catch (_) {}
+        App.refreshAll();
+        return;
+      }
+      var sRes = await this.sb.from('skodunar_saga').insert({ unit_id: unitId, date: today, tech: 'Jón S.', result: data.result, pressure: unit.pressure, weight: data.weight, notes: data.notes });
+      if (sRes && sRes.error) {
+        // Dagsetningarnar eru komnar inn (það er peninga-/skipulagsatriðið) en
+        // sagan vantar — segjum frá, rúllum EKKI dagsetningunum til baka.
+        if (window.Toast && Toast.show) Toast.show('Skoðunardagsetningin vistaðist, en skoðunin skráðist ekki í sögu tækisins (' + (sRes.error.message || 'óþekkt villa') + ').');
+        try { if (window.logProblem) window.logProblem('skodunar_saga_insert_failed', 'tæki ' + unitId + ': ' + String(sRes.error.message || sRes.error).slice(0, 160)); } catch (_) {}
+      }
     }
     this.cache.history.unshift({ id: Date.now(), date: today, client: unit.client, tech: 'Jón S.', result: data.result, notes: data.notes });
     App.refreshAll();

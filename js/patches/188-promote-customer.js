@@ -73,6 +73,19 @@
     } catch (e) { console.warn('[promote] ensureBase', e); return null; }
   }
 
+  // 17.09.2026: sameiginleg leið fyrir tenginguna vidskiptavinir → customer_base.
+  // Skilar true aðeins þegar skrifið komst raunverulega inn.
+  async function linkBase(sb, vidskId, baseId, hvar) {
+    let r = null;
+    try { r = await sb.from('vidskiptavinir').update({ customer_base_id: baseId }).eq('id', vidskId); }
+    catch (e) { r = { error: e }; }
+    if (r && r.error) {
+      try { if (window.logProblem) window.logProblem('promote_link_base_failed', hvar + ' vidsk ' + vidskId + ' → base ' + baseId + ': ' + String((r.error && r.error.message) || r.error)); } catch (_) {}
+      return false;
+    }
+    return true;
+  }
+
   async function doCreate(ktDash, seed) {
     const sb = SB(); if (!sb) return;
     const baseId = await ensureBase(ktDash, seed);
@@ -85,8 +98,12 @@
       fy = data;
     } catch (e) { toast('Villa: ' + (e.message || e)); return; }
     // Keep the originating vidskiptavinir row, just link it to the same base.
+    // 17.09.2026: .update() kastar ekki. Bregðist tengingin situr gamla
+    // vidskiptavinir-röðin eftir ÓTENGD — sami aðili verður tvískráður og enginn
+    // sér af hverju. Fyrirtækið er samt stofnað, svo ekkert er tekið til baka.
     if (seed.vidsk_id && baseId) {
-      try { await sb.from('vidskiptavinir').update({ customer_base_id: baseId }).eq('id', seed.vidsk_id); } catch (_) {}
+      const lok = await linkBase(sb, seed.vidsk_id, baseId, 'doCreate');
+      if (!lok) { toast('✓ ' + (seed.nafn || 'Fyrirtæki') + ' skráð — EN gamla viðskiptavinaröðin tengdist ekki (hætta á tvískráningu). Athugaðu í Sameiningu.'); afterPromote(fy); return; }
     }
     toast('✓ ' + (seed.nafn || 'Fyrirtæki') + ' skráð í viðskipti');
     afterPromote(fy);
@@ -100,11 +117,17 @@
     const baseId = existing.customer_base_id || await ensureBase(dash(existing.kennitala || seed.kennitala), seed);
     if (!existing.customer_base_id && baseId) upd.customer_base_id = baseId;
     if (Object.keys(upd).length) {
-      try { await sb.from('fyrirtaeki').update(upd).eq('id', existing.id); Object.assign(existing, upd); }
-      catch (e) { toast('Villa við sameiningu: ' + (e.message || e)); return; }
+      // 17.09.2026: .update() kastar ekki — catch-ið hér var dautt. Reitirnir voru
+      // settir á staðbundna hlutinn og „✓ Upplýsingar sameinaðar" birt þótt ekkert
+      // hefði skrifast; við næstu hleðslu voru þeir auðir aftur.
+      let r = null;
+      try { r = await sb.from('fyrirtaeki').update(upd).eq('id', existing.id); } catch (e) { r = { error: e }; }
+      if (r && r.error) { toast('Sameining mistókst — ekkert vistaðist: ' + ((r.error && r.error.message) || r.error)); return; }
+      Object.assign(existing, upd);
     }
     if (seed.vidsk_id && baseId) {
-      try { await sb.from('vidskiptavinir').update({ customer_base_id: baseId }).eq('id', seed.vidsk_id); } catch (_) {}
+      const lok = await linkBase(sb, seed.vidsk_id, baseId, 'doMerge');
+      if (!lok) { toast('✓ Upplýsingar sameinaðar — EN gamla viðskiptavinaröðin tengdist ekki (hætta á tvískráningu). Athugaðu í Sameiningu.'); afterPromote(existing); return; }
     }
     toast('✓ Upplýsingar sameinaðar í ' + (existing.nafn || 'fyrirtæki'));
     afterPromote(existing);

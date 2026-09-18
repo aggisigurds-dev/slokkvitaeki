@@ -28,13 +28,21 @@ function showShelfDialog(jobId,jobLabel,onConfirm){
   };
 }
 
+// 17.09.2026: EKKERT hér las .error — supabase-js kastar ekki á skrifum. Áður
+// gat glugginn sagt „✓ Tilbúið — flutt í geymslu G3" þótt ekkert tæki hefði
+// færst, verkbeiðnin ekki merkst og tækin því horfið úr skrá (eða tvítalist:
+// mistækist leitin að raðnúmerinu fór kóðinn í insert-greinina og bjó til
+// ANNAÐ eintak af tæki sem var þegar til). Nú kastast hver villa upp í
+// status-reitinn í glugganum („Villa: …") og ekkert er sagt tilbúið að ósekju.
 async function moveJobToStorage(jobId,shelf){
   // Get job + its verklidur (line items)
   var jobRes=await DB.sb.from('verkbeidnir').select('*').eq('id',jobId).single();
+  if(jobRes&&jobRes.error)throw jobRes.error;
   if(!jobRes.data)throw new Error('Verkbeiðni fannst ekki');
   var job=jobRes.data;
   // Get verklidur
   var lineRes=await DB.sb.from('verklidur').select('*').eq('job_id',jobId);
+  if(lineRes&&lineRes.error)throw lineRes.error;
   var lines=lineRes.data||[];
   // For each line item, find or create the matching uttaeki row, set status=geymsla + location
   var loc='Geymsla - '+shelf;
@@ -43,17 +51,23 @@ async function moveJobToStorage(jobId,shelf){
     if(!ln.serial)continue;
     // Try to find matching uttaeki by serial
     var matchRes=await DB.sb.from('uttaeki').select('id').eq('serial',ln.serial);
+    // Mistakist leitin má ALLS EKKI detta í insert-greinina — þá yrði til
+    // tvítekið tæki á fyrirtækinu (og tvítalið á næsta reikningi).
+    if(matchRes&&matchRes.error)throw matchRes.error;
     if(matchRes.data&&matchRes.data.length>0){
       // Update existing row
-      await DB.sb.from('uttaeki').update({status:'geymsla',location:loc,client:job.customer,phone:job.phone||null}).eq('id',matchRes.data[0].id);
+      var upd=await DB.sb.from('uttaeki').update({status:'geymsla',location:loc,client:job.customer,phone:job.phone||null}).eq('id',matchRes.data[0].id);
+      if(upd&&upd.error)throw upd.error;
     } else {
       // Insert new uttaeki row for this line
-      await DB.sb.from('uttaeki').insert({serial:ln.serial,type:ln.type||'Óþekkt',size:ln.size||'-',client:job.customer,location:loc,status:'geymsla',last_insp:new Date().toISOString().slice(0,10),next_insp:new Date(Date.now()+365*86400000).toISOString().slice(0,10),phone:job.phone||null,notes:'Flutt í geymslu úr verki #'+job.num});
+      var ins=await DB.sb.from('uttaeki').insert({serial:ln.serial,type:ln.type||'Óþekkt',size:ln.size||'-',client:job.customer,location:loc,status:'geymsla',last_insp:new Date().toISOString().slice(0,10),next_insp:new Date(Date.now()+365*86400000).toISOString().slice(0,10),phone:job.phone||null,notes:'Flutt í geymslu úr verki #'+job.num});
+      if(ins&&ins.error)throw ins.error;
     }
   }
   // Update job notes to reflect storage transfer
   var newNotes=(job.notes||'')+(job.notes?'\n':'')+'[Geymsla: '+shelf+' · '+(new Date()).toLocaleDateString('is-IS')+']';
-  await DB.sb.from('verkbeidnir').update({notes:newNotes,status:'i_geymslu'}).eq('id',jobId);
+  var jobUpd=await DB.sb.from('verkbeidnir').update({notes:newNotes,status:'i_geymslu'}).eq('id',jobId);
+  if(jobUpd&&jobUpd.error)throw jobUpd.error;
   // Refresh UI
   if(window.App && App.refresh) App.refresh();
   else if(window.Counter && Counter.refresh) Counter.refresh();

@@ -329,6 +329,10 @@
         updated = ids.length;
         // Best-effort skodunar_saga history rows. Failure here doesn't block
         // the visit completion — the unit updates already landed.
+        // 17.09.2026: .insert() kastar ekki, svo console.warn-ið hér fyrir neðan
+        // gat ALDREI keyrt — sagan gat vantað án þess að nokkurs staðar sæist.
+        // Dagsetningarnar (peninga-/skipulagsatriðið) eru komnar inn, svo við
+        // stöðvum ekki heimsóknina; en bilunin má ekki vera ósýnileg.
         try {
           const histRows = ids.map(uid => ({
             unit_id: uid,
@@ -336,7 +340,12 @@
             tech: tech,
             result: 'pass'
           }));
-          await SB.from('skodunar_saga').insert(histRows);
+          const sagaRes = await SB.from('skodunar_saga').insert(histRows);
+          if (sagaRes && sagaRes.error) {
+            console.warn('[vidsk-detail] saga insert failed', sagaRes.error);
+            if (window.Toast && Toast.show) Toast.show('⚠ Dagsetningar tækjanna vistuðust, en skoðunin skráðist ekki í sögu þeirra (' + (sagaRes.error.message || 'óþekkt villa') + ').');
+            try { if (window.logProblem) window.logProblem('skodunar_saga_insert_failed', 'co ' + (c && c.id) + ': ' + String(sagaRes.error.message || sagaRes.error).slice(0, 160)); } catch (_) {}
+          }
         } catch (e) { console.warn('[vidsk-detail] saga insert failed', e); }
       } catch (e) {
         failed = units.length;

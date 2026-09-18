@@ -1274,7 +1274,18 @@
       const res = await doMerge(keeper, loser);
       close();
       if (res && res.ok) {
-        if (window.Toast && Toast.show) Toast.show('🔗 Sameinað → ' + keeper.nafn + (res.units ? ' (' + res.units + ' tæki færð)' : ''));
+        // 2026-09-17: áður stóð alltaf „🔗 Sameinað →" — líka þegar ekkert hafði
+        // færst (doMerge las aldrei .error). Hálfkláruð sameining segir nú hvað
+        // komst ekki yfir, því annars sætu tæki eða skjöl eftir á geymdri skrá.
+        if (res.vandi && res.vandi.length) {
+          alert('⚠ Sameiningin komst aðeins hálfa leið. Þetta færðist EKKI:\n\n• '
+            + res.vandi.join('\n• ')
+            + '\n\n' + (res.geymtOk
+              ? '„' + loser.nafn + '" er komið í geymslu, svo það sem sat eftir sést ekki í listanum. Endurheimtu skrána eða færðu þetta handvirkt.'
+              : '„' + loser.nafn + '" stendur enn — þú getur prófað aftur.'));
+        } else if (window.Toast && Toast.show) {
+          Toast.show('🔗 Sameinað → ' + keeper.nafn + (res.units ? ' (' + res.units + ' tæki færð)' : ''));
+        }
         state.selected.clear(); state.selectMode = false;
       } else if (window.Toast && Toast.show) Toast.show('Sameining mistókst: ' + ((res && res.error) || 'óþekkt'));
       const main = document.getElementById('_av-main'); if (main) render(main);
@@ -1283,28 +1294,51 @@
 
   async function doMerge(keeper, loser) {
     const SB = (window.DB && window.DB.sb); if (!SB) return { error: 'DB ekki tilbúið' };
+    // 2026-09-17: ENGIN af færslunum hér las .error (supabase-js kastar ekki) og
+    // AppSettings.save skilar true/false án þess að kasta. Sameining gat því fært
+    // ekkert — tæki, skjöl, kt, ársskoðunar-merki — og samt sagt „🔗 Sameinað →".
+    // Verst: skref 5 gat geymt tapaða félagið EFTIR að tækjaflutningur brást, svo
+    // tækin sátu eftir á skrá sem enginn sér. Hvert skref er nú kannað og talið upp.
+    const vandi = [];
+    const skra = (hvad, villa) => {
+      vandi.push(hvad);
+      try { if (window.logProblem) window.logProblem('sameining-hluti-brast', hvad + ': ' + ((villa && villa.message) || villa)); } catch (_) {}
+      console.warn('[Sameining] ' + hvad, villa);
+    };
+    const kanna = (r) => { if (r && r.error) throw r.error; return r; };
     try {
       let units = 0;
       // 1) Equipment + name-based history → keeper's name.
       if (loser.nafn && keeper.nafn && loser.nafn !== keeper.nafn) {
-        const moved = await SB.from('uttaeki').update({ client: keeper.nafn }).eq('client', loser.nafn).select('id');
+        let moved = null;
+        try { moved = kanna(await SB.from('uttaeki').update({ client: keeper.nafn }).eq('client', loser.nafn).select('id')); }
+        catch (e) { skra('TÆKI færðust ekki yfir á „' + keeper.nafn + '"', e); }
         units = (moved && moved.data && moved.data.length) || 0;
-        await SB.from('lanstaeki').update({ client: keeper.nafn }).eq('client', loser.nafn);
+        try { kanna(await SB.from('lanstaeki').update({ client: keeper.nafn }).eq('client', loser.nafn)); }
+        catch (e) { skra('lánstæki færðust ekki', e); }
         for (const [tbl, colName] of [['solur', 'customer_nafn'], ['verkbeidnir', 'customer'], ['sala_transactions', 'customer']]) {
-          try { await SB.from(tbl).update({ [colName]: keeper.nafn }).eq(colName, loser.nafn); } catch (_) {}
+          try { kanna(await SB.from(tbl).update({ [colName]: keeper.nafn }).eq(colName, loser.nafn)); }
+          catch (e) { skra('saga í ' + tbl + ' fluttist ekki (stendur enn á „' + loser.nafn + '")', e); }
         }
       }
       // 2) Documents + beiðnir → keeper's base id (only when both have one).
       if (loser.customer_base_id && keeper.customer_base_id && loser.customer_base_id !== keeper.customer_base_id) {
-        try { await SB.from('customer_documents').update({ customer_base_id: keeper.customer_base_id }).eq('customer_base_id', loser.customer_base_id); } catch (_) {}
-        try { await SB.from('thjonustubeidni').update({ customer_base_id: keeper.customer_base_id }).eq('customer_base_id', loser.customer_base_id); } catch (_) {}
+        try { kanna(await SB.from('customer_documents').update({ customer_base_id: keeper.customer_base_id }).eq('customer_base_id', loser.customer_base_id)); }
+        catch (e) { skra('SKJÖL færðust ekki yfir', e); }
+        try { kanna(await SB.from('thjonustubeidni').update({ customer_base_id: keeper.customer_base_id }).eq('customer_base_id', loser.customer_base_id)); }
+        catch (e) { skra('þjónustubeiðnir færðust ekki yfir', e); }
       }
       // 3) Fill the keeper's empty identity/contact fields from the loser.
       const fill = {};
       ['kennitala', 'heimilisfang', 'simi', 'farsimi', 'netfang', 'tengiliður', 'customer_base_id'].forEach(k => {
         if ((keeper[k] == null || keeper[k] === '') && loser[k]) fill[k] = loser[k];
       });
-      if (Object.keys(fill).length) { try { await SB.from('fyrirtaeki').update(fill).eq('id', keeper.id); Object.assign(keeper, fill); } catch (_) {} }
+      if (Object.keys(fill).length) {
+        // Object.assign AÐEINS ef skrifið komst inn — annars laug listinn á skjánum
+        // um að kt/heimilisfang væri komið á skrána sem heldur.
+        try { kanna(await SB.from('fyrirtaeki').update(fill).eq('id', keeper.id)); Object.assign(keeper, fill); }
+        catch (e) { skra('auðkenni/tengiliðir (' + Object.keys(fill).join(', ') + ') færðust ekki á „' + keeper.nafn + '"', e); }
+      }
       // 4) Move service-subscription marks (AppSettings maps keyed by company id).
       if (window.AppSettings && window.AppSettings.save) {
         const patch = {};
@@ -1318,17 +1352,30 @@
             patch[key] = sub;
           }
         });
-        if (Object.keys(patch).length) { try { await window.AppSettings.save(patch); } catch (_) {} }
+        // AppSettings.save KASTAR ekki — það skilar true/false (85-app-settings
+        // segir sjálft frá og setur í biðröð). Hér er svarið lesið svo listinn í
+        // lokin sé sannur um hvað er komið yfir og hvað ekki.
+        if (Object.keys(patch).length) {
+          let ok = false;
+          try { ok = await window.AppSettings.save(patch); } catch (e) { ok = false; skra('þjónustumerki (ársskoðun/brunakerfi/ferðaþjónusta) fluttust ekki', e); }
+          if (ok === false) vandi.push('þjónustumerki (ársskoðun/brunakerfi/ferðaþjónusta) eru enn í vistunarbiðröð');
+        }
       }
       // 5) Soft-archive the loser with a merge note (recoverable).
       const stamp = new Date().toISOString();
       const note = '[sameinað ' + stamp.slice(0, 10) + '] → ' + keeper.nafn + ' (#' + keeper.id + ')';
-      try { await SB.from('fyrirtaeki').update({ deleted_at: stamp, review_flag: false, review_note: note }).eq('id', loser.id); } catch (_) {}
+      let geymtOk = true;
+      try { kanna(await SB.from('fyrirtaeki').update({ deleted_at: stamp, review_flag: false, review_note: note }).eq('id', loser.id)); }
+      catch (e) { geymtOk = false; skra('„' + loser.nafn + '" fór EKKI í geymslu — báðar skrárnar standa enn', e); }
       // 6) Drop the loser from the in-memory list so the UI updates immediately.
-      const list = (window.Companies && Companies.list) || [];
-      const li = list.findIndex(c => +c.id === +loser.id); if (li >= 0) list.splice(li, 1);
-      return { ok: true, units };
-    } catch (e) { return { error: (e && e.message) || String(e) }; }
+      // Aðeins ef geymslan komst inn: annars hvarf skráin úr listanum á skjánum en
+      // var enn í gagnagrunninum og birtist aftur við næstu hleðslu.
+      if (geymtOk) {
+        const list = (window.Companies && Companies.list) || [];
+        const li = list.findIndex(c => +c.id === +loser.id); if (li >= 0) list.splice(li, 1);
+      }
+      return { ok: true, units, vandi, geymtOk };
+    } catch (e) { return { error: (e && e.message) || String(e), vandi }; }
   }
 
   // Bulk tag selected rows as Ferðaþjónusta (additive AppSettings map, like the

@@ -648,15 +648,30 @@
       //     + steps „Farið á verkstað"/„Á verkstæði" so it shows the ✓ on the
       //     main board (153) and pops into Þjónustuverkstæði (190). Best-effort:
       //     a failure here never rolls back the verkbeiðni that already saved.
+      // 17.09.2026: „best-effort" stendur — hér er EKKI bakkað út úr verkbeiðninni
+      // sem er þegar vistuð. En það var líka ÞÖGULT: .update() kastar ekki, svo
+      // catch-ið keyrði aldrei, og varaleiðin (án custody_status) var að auki
+      // óskoðuð. Mistókst þetta stóðu tækin ekki sem 'loaned' og birtust hvergi
+      // í verkstæðis-lífsferlinum, Bílstjóra né Aksturslista — á meðan sagði
+      // toastið „✓ Stofnað … með N tækjum". Nú er það sagt í lokaskilaboðunum.
+      let taekiVilla = '';
       try {
         const ids = picked.map(s => s.u && s.u.id).filter(Boolean);
         if (ids.length) {
           let up = await SB.from('uttaeki').update({ status: 'loaned', custody_status: null }).in('id', ids);
           if (up.error && /custody_status/i.test(up.error.message || '')) {
-            await SB.from('uttaeki').update({ status: 'loaned' }).in('id', ids);
+            up = await SB.from('uttaeki').update({ status: 'loaned' }).in('id', ids);
           }
+          if (up && up.error) throw up.error;
         }
-      } catch (_) {}
+      } catch (e) {
+        console.warn('[samningshafar-receive] uttaeki loaned', e);
+        taekiVilla = String((e && e.message) || e);
+        try { if (window.logProblem) window.logProblem('samningshafar_loaned_failed', num + ': ' + taekiVilla.slice(0, 160)); } catch (_) {}
+      }
+      // Þögnin hér er rétt (17.09.2026): AppSettings.save ER saveVordud (patch 85)
+      // — misheppnað skrif fer í biðröð, er reynt aftur á 20 sek fresti og
+      // notandinn fær aðvörun þaðan. Tvítekin skilaboð hér bættu engu við.
       try {
         if (window.AppSettings && AppSettings.save && _selectedCompany.id) {
           const curYear = new Date().getFullYear();
@@ -689,6 +704,13 @@
           (overrideCount ? ' · 💰 ' + overrideCount + ' Tilboðsverð notuð' : '') +
           (unmatched.length ? ' (verð vantar fyrir ' + unmatched.length + ' tæki)' : '');
         Toast.show(msg);
+      }
+      // Verkbeiðnin stendur — en tækin komust ekki í verkstæðis-flæðið. Sér
+      // skilaboð svo þetta hverfi ekki undir ✓-toastinu hér að ofan.
+      if (taekiVilla) {
+        alert('Verkið ' + num + ' var stofnað, EN tækin ' + picked.length + ' merktust ekki „á verkstæði".\n'
+            + 'Þau birtast því ekki í verkstæðis-lífsferlinum, hjá Bílstjóra né á Aksturslista.\n'
+            + 'Merktu þau handvirkt á Verkstæði.\n\n' + taekiVilla);
       }
     } catch (e) {
       alert('Villa: ' + (e.message || e));

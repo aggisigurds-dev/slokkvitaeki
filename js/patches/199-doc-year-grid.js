@@ -806,8 +806,18 @@
         var sb=SB(); if(!sb){ return; }                    // reynt aftur síðar (næsta onChange)
         var old=(window.AppSettings&&AppSettings.path&&AppSettings.path('year_factcheck'))||{};
         var rows=[]; Object.keys(old).forEach(function(co){ Object.keys(old[co]||{}).forEach(function(yr){ if(old[co][yr]) rows.push({co_id:+co, year:+yr, status:'human'}); }); });
-        localStorage.setItem('fc_migrated_v1','1');
-        if(rows.length) sb.from('year_factcheck').upsert(rows,{onConflict:'co_id,year'}).then(function(){},function(){});
+        if(!rows.length){ localStorage.setItem('fc_migrated_v1','1'); return; }
+        // 17.09.2026: flaggið „búið" var sett ÁÐUR en upsert-ið keyrði og
+        // niðurstaðan var aldrei lesin (.upsert() kastar ekki). Mistækist
+        // skrifið töldust grænin flutt og flutningurinn keyrði aldrei aftur —
+        // handmerktu grænu reitirnir hefðu horfið endanlega. Nákvæmlega sama
+        // villa og lagfærð var 22.08 hér að neðan, einu þrepi neðar.
+        // Nú er flaggið sett AÐEINS eftir staðfest skrif; annars er reynt aftur
+        // við næsta onChange (upsert er idempotent á co_id,year).
+        sb.from('year_factcheck').upsert(rows,{onConflict:'co_id,year'}).then(function(r){
+          if(r&&r.error){ console.warn('[199] flutningur grænna mistókst — reynt aftur síðar:', r.error.message||r.error); return; }
+          localStorage.setItem('fc_migrated_v1','1');
+        },function(e){ console.warn('[199] flutningur grænna mistókst — reynt aftur síðar:', e); });
       }catch(_){}
     }
     // Keyra EFTIR að AppSettings er hlaðið. Áður keyrði þetta við parse (áður en
@@ -1419,6 +1429,12 @@
           var saveObj={}; saveObj[ARS_KEY]=patchWrap;
           var ok=(window.AppSettings&&AppSettings.save) ? await AppSettings.save(saveObj) : false;
           if(!ok){ alert('Vista mistókst'); render(section, coId); return; }
+          // 17.09.2026 (yfirferð á þöglum villum): þögnin hér er RÉTT. Gildið
+          // sjálft er ÞEGAR vistað og staðfest hér að ofan (ok-athugunin á
+          // AppSettings.save, með „Vista mistókst" ef illa fer). Þetta er
+          // aðeins auka-færsla í override_log; mistakist hún vantar línu í
+          // sögu yfirskrifta en ekkert gildi notandans tapast og ekkert er
+          // sagt vistað sem vistaðist ekki.
           try{
             var sbx=SB();
             if(sbx){

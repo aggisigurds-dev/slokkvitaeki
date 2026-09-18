@@ -196,19 +196,26 @@
     if (box.style.display !== "none") { box.style.display = "none"; return; }
     box.style.display = "";
     box.innerHTML = '<div class="crm-faint" style="font-size:12px;padding:6px 0">Sæki póstsögu…</div>';
-    let mails = [];
+    // 17.09.2026: fetch kastar ekki á 4xx/5xx og villan endaði í tómum lista, svo
+    // reiturinn sagði „Engir póstar." þegar sannleikurinn var „náði ekki í söguna".
+    // Það lítur eins út og þögull viðskiptavinur — og þá er ekki fylgt eftir.
+    let mails = [], saekjaVilla = null;
     try {
       const res = await fetch(U + "/rest/v1/fyrirtaeki_samskipti?fyrirtaeki_id=eq." + r.fyrirtaeki_id +
         "&select=received_at,sender_name,subject,snippet,is_question,fra_okkur&order=received_at.desc&limit=5", { headers: H });
+      if (!res.ok) throw new Error("HTTP " + res.status);
       mails = await res.json();
-    } catch (e) { }
+      if (!Array.isArray(mails)) throw new Error("óvænt svar frá þjóni");
+    } catch (e) { saekjaVilla = e; mails = []; }
     box.innerHTML = '<div style="border-top:1px dashed #e2e8f0;margin-top:8px;padding-top:8px">' +
       (mails.length ? mails.map(m =>
         '<div class="crm-mail' + (m.is_question && !m.fra_okkur ? " q" : "") + '">' +
         '<div class="crm-mailmeta">' + fmtD(m.received_at) + " · " + esc(m.fra_okkur ? "Slökkvitæki ehf" : (m.sender_name || "")) + "</div>" +
         '<div class="crm-mailsubj">' + esc(m.subject || "(ekkert efni)") + "</div>" +
         '<div class="crm-mailsnip">' + esc((m.snippet || "").slice(0, 180)) + "</div></div>").join("")
-        : '<div class="crm-faint" style="font-size:12px">Engir póstar.</div>') +
+        : saekjaVilla
+          ? '<div style="font-size:12px;color:#b91c1c">⚠ Náði EKKI í póstsöguna (' + esc(String((saekjaVilla && saekjaVilla.message) || saekjaVilla)) + ') — þetta þýðir ekki að engir póstar séu til. Reyndu aftur.</div>'
+          : '<div class="crm-faint" style="font-size:12px">Engir póstar.</div>') +
       (r.athugasemdir_stubbur ? '<div class="crm-plabel">📋 PUNKTAR</div><div class="crm-pbox">' + esc(r.athugasemdir_stubbur) + "</div>" : "") +
       (r.simi || r.netfang ? '<div class="crm-links" style="margin-top:7px;font-size:12.5px">' +
         (r.simi ? '<a href="tel:' + esc(String(r.simi).replace(/[^\d+]/g, "")) + '">📞 ' + esc(r.simi) + "</a> · " : "") +
@@ -622,6 +629,8 @@
           subject: e.subject || "", body_preview: e.body_preview || "", snippet: e.snippet || "" };
       } }
     } catch (_) {}
+    // 17.09.2026 yfirferð: þögnin er RÉTT hér — RLS má fela email_digest og þá er
+    // fallið beint í saga-reitina hér að neðan; svarglugginn opnast eftir sem áður.
     if (!m) m = { message_id: null, sender_name: mail.sender_name || "", from: mail.sender_email || "",
       subject: mail.subject || "", body_preview: "", snippet: mail.snippet || "" };
     if (!m.from) { alert("Ekkert sendandanetfang á þessum pósti."); return; }

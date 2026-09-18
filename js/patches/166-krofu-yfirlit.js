@@ -912,6 +912,13 @@
         window.PaydaySpegill ? PaydaySpegill.uppfaera() : Promise.resolve(null)
       ]);
       const data = await res.json().catch(() => ({}));
+      // 17.09.2026: fetch kastar ekki á 500 og `res.ok` var aðeins notað til að
+      // slökkva á toastinu. Áður: Payday-fallið gat verið dautt dögum saman,
+      // kröfur sem VORU greiddar stóðu áfram sem ógreiddar og ekkert sagði frá.
+      // Engin toast-tilkynning hér viljandi — þetta keyrir án þess að nokkur hafi
+      // beðið um það, og sýnilega staðan (ógreitt) er sú sem var fyrir. En
+      // 30-mín-bremsan er losuð svo næsta opnun reyni aftur í stað þess að þegja.
+      if (!res.ok) throw new Error('payday-sync-paid ' + res.status + ': ' + String(data.error || '').slice(0, 160));
       const greiddar = !!(res.ok && data.marked_count);
       if (greiddar && window.Toast && Toast.show) Toast.show('✓ ' + data.marked_count + ' greiddar (Payday)');
       // Endurteiknað aðeins ef enginn er að skrifa í reit á síðunni (t.d. minnispunkt kröfu) — annars týnist textinn.
@@ -922,7 +929,11 @@
         await load(_state.month); refreshBadge();
         return;
       }
-    } catch (_) {}
+    } catch (e) {
+      console.warn('[patch-166] sjálfvirk greiðslu-athugun mistókst:', e);
+      try { localStorage.removeItem('_ky_paysync_at'); } catch (_) {}   // reyna aftur við næstu opnun
+      try { if (window.logProblem) window.logProblem('ky_autosync_failed', String((e && e.message) || e).slice(0, 200)); } catch (_) {}
+    }
     _autoSyncing = false;
   }
 
@@ -2480,6 +2491,10 @@
       });
     }
   } catch (_) {}
+  // 17.09.2026: þögnin hér er RÉTT. Þetta skráir aðeins áheyrn á Stílstjóra-
+  // breytingar til að hreinsa útlits-yfirskriftir; misheppnist skráningin
+  // verður síðan hugsanlega ljót, engin gögn tapast og engin staða verður ósönn.
+  // Fastar tímasetningar hér að ofan ([400,1500,4000,9000] ms) hreinsa hvort sem er.
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 🔍 SÉST HVERGI — fimmta sýnin (2026-09-09)

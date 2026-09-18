@@ -77,13 +77,20 @@
       if (r.error) throw r.error;
       // 2) Settings-merkið (subscribed) — AppSettings.save deep-merge-ar, svo við
       //    setjum bara þennan eina lykil. Úr þjónustu => subscribed:false.
+      // 2026-09-17: AppSettings.save KASTAR ekki — það skilar true/false. Svarið var
+      // hunsað, svo DB-dálkurinn gat breyst á meðan subscribed-merkið sat eftir: listarnir
+      // tveir sögðu sitt hvað og takkinn fullyrti samt „tekið úr þjónustu".
+      let merkiOk = true;
       if (window.AppSettings && AppSettings.save) {
         const patch = toService
           ? { subscribed: true }
           : { subscribed: false, removed_from_service_at: new Date().toISOString().slice(0, 10) };
-        try { await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: patch } }); } catch (_) {}
+        try { merkiOk = await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: patch } }) !== false; } catch (_) { merkiOk = false; }
       }
       // 3) Audit-slóð (sama og patch 153) — valfrjálst.
+      // 2026-09-17: þögnin er RÉTT hér. override_log er hrein söguskráning; sannleikurinn
+      // um þjónustuna er er_i_thjonustu-dálkurinn (skref 1, kannaður). Bregðist innfærslan
+      // verður ekkert ósatt á skjánum og engin gögn notandans tapast.
       try {
         await sb.from('override_log').insert({
           co_id: +coId, co_nafn: name, field: 'er_i_thjonustu',
@@ -92,7 +99,8 @@
       } catch (_) {}
 
       refreshLists(coId, toService);
-      toast((toService ? '⬆ ' + name + ' sett í þjónustu' : '⬇ ' + name + ' tekið úr þjónustu — er í Allir viðskiptavinir'));
+      toast((toService ? '⬆ ' + name + ' sett í þjónustu' : '⬇ ' + name + ' tekið úr þjónustu — er í Allir viðskiptavinir')
+        + (merkiOk ? '' : ' · ⚠ þjónustumerkið vistaðist ekki — bíður í vistunarbiðröð'));
       if (btn) applyButtonState(btn, coId, !toService); // flippa í hina áttina
     } catch (e) {
       const m = (e && e.message) || String(e);

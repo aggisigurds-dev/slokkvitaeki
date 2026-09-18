@@ -169,6 +169,8 @@
   async function getPublicUrl(path) {
     const SB = getSB();
     if (!SB) return null;
+    // 17.09.2026 yfirferð: þögnin er RÉTT hér — keðja varaleiða (undirrituð slóð →
+    // opinber slóð → null). Ekkert vistast; kallandinn fær null og segir frá.
     try {
       const r = await SB.storage.from(BUCKET).createSignedUrl(path, 3600);
       if (r && r.data && r.data.signedUrl) return r.data.signedUrl;

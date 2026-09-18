@@ -177,8 +177,17 @@
       const id = +b.getAttribute('data-id');
       const path = b.getAttribute('data-path');
       try {
-        if (path) await SB.storage.from(BUCKET).remove([path]);
-        await SB.from(TABLE).delete().eq('id', id);
+        // 17.09.2026: hvorug línan kastar — villan kom í .error og var hunsuð.
+        // Mistækist eyðing RAÐARINNAR var skránni samt búið að eyða úr hólfinu:
+        // viðhengið stóð áfram í listanum með dauðum tengli og notandinn fékk
+        // enga villu. Nú er sagt hreint frá.
+        if (path) {
+          const rm = await SB.storage.from(BUCKET).remove([path]);
+          // Munaðarlaus skrá í hólfinu stöðvar ekki eyðinguna — en sést í logg.
+          if (rm && rm.error) console.warn('[tilbod-photos] skrá ekki fjarlægð úr hólfi', rm.error);
+        }
+        const del = await SB.from(TABLE).delete().eq('id', id);
+        if (del && del.error) throw del.error;
         refreshList(tilbodId);
       } catch (e) {
         alert('Tókst ekki að eyða: ' + (e.message || e));

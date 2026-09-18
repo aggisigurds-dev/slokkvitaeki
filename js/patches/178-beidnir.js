@@ -163,12 +163,21 @@
 
   async function saveNote(key, text) {
     const SB = getSB(); if (!SB) return;
+    const adur = state.notes[key];
     state.notes[key] = text;   // keep local copy so re-renders show it
-    try {
-      await SB.from('email_actions').upsert(
-        { email_id: Number(key), notes: text, updated_at: new Date().toISOString() },
-        { onConflict: 'email_id' });
-    } catch (e) { toast('Náði ekki að vista minnispunkt: ' + (e.message || e)); }
+    // 17.09.2026: .upsert() kastar ekki — toastið hér fyrir neðan gat því aldrei
+    // birst. Minnispunkturinn stóð áfram á skjánum af staðbundnu afriti og hvarf
+    // fyrst við næstu hleðslu; textinn var þá farinn fyrir fullt og allt.
+    const r = await SB.from('email_actions').upsert(
+      { email_id: Number(key), notes: text, updated_at: new Date().toISOString() },
+      { onConflict: 'email_id' });
+    if (r && r.error) {
+      if (adur === undefined) delete state.notes[key]; else state.notes[key] = adur;
+      toast('Náði ekki að vista minnispunkt — hann er EKKI geymdur. Afritaðu textann áður en þú hleður síðunni. (' + (r.error.message || r.error) + ')');
+      try { if (window.logProblem) window.logProblem('beidnir_note_save_failed', key + ': ' + String(r.error.message || r.error).slice(0, 160)); } catch (_) {}
+      return false;
+    }
+    return true;
   }
 
   async function load() {

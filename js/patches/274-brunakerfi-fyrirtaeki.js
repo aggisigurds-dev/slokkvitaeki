@@ -56,13 +56,33 @@
   function adalReikn(coId, y) {
     const k = coId + '_' + y;
     let server = null;
+    // Þögnin hér er rétt (17.09.2026): hreinn LESTUR úr hlöðnum stillingum.
+    // Bregðist hann er server=null (= ekkert valið) og skrifleiðin
+    // setAdalReikn segir frá ef vistun mistekst.
     try { const m = (window.AppSettings && AppSettings.path && AppSettings.path('bk_inv_adal')) || {}; server = m[k] != null ? +m[k] : null; } catch (_) {}
     if (_adalNy.has(k)) { const o = _adalNy.get(k); if (server === o) _adalNy.delete(k); else return o; }
     return server;
   }
+  // 17.09.2026: AppSettings.save kastar ekki — hún skilar satt/ósatt, svo gamla
+  // try/catch-ið gat aldrei séð bilun og þetta val (HVAÐA reikningur fer út)
+  // gat setið ósamstillt milli vélanna fjögurra án þess að nokkuð væri skráð.
+  // ATH: AppSettings.save ER saveVordud (patch 85) — misheppnað skrif fer í
+  // biðröð, er reynt á 20 sek fresti og NOTANDINN FÆR AÐVÖRUN þaðan. Þess vegna
+  // engin alert hér og `_adalNy` er EKKI tekið til baka: biðröðin skilar
+  // gildinu inn og sticky-gildið á að sýna það sem er á leiðinni þangað til.
   async function setAdalReikn(coId, y, docId) {
-    _adalNy.set(coId + '_' + y, docId);
-    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ bk_inv_adal: { [coId + '_' + y]: docId } }); } catch (_) {}
+    const k = coId + '_' + y;
+    _adalNy.set(k, docId);
+    try {
+      if (!(window.AppSettings && AppSettings.save)) throw new Error('AppSettings ekki tiltækt');
+      const ok = await AppSettings.save({ bk_inv_adal: { [k]: docId } });
+      if (!ok) throw new Error('AppSettings.save skilaði ósatt');
+      return true;
+    } catch (e) {
+      console.warn('[bkc] aðalreikningur save', e);
+      try { if (window.logProblem) window.logProblem('bkc_adalreikn_save_failed', k + ': ' + String((e && e.message) || e).slice(0, 160)); } catch (_) {}
+      return false;
+    }
   }
   // Gegnum brunahólf /api/skjal (server-OAuth) — enginn „Select an account"
   function driveUrl(id) { return id && String(id).indexOf('sb:') !== 0 ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(id) : ''; }
@@ -246,6 +266,8 @@
       sb.from('customer_documents').select('id,fyrirtaeki_id,drive_file_id,storage_path,doc_date,customer_name,notes,is_duplicate').eq('doc_type', 'samningur').or(samOr).order('id', { ascending: false })
     ]);
     let note = '';
+    // Þögnin hér er rétt (17.09.2026): LESTUR á ársnótu úr hlöðnum stillingum;
+    // bregðist hann er nótan tóm og ekkert er skrifað yfir hana héðan.
     try { let m = (window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_co_notes')) || {}; if (!m || typeof m !== 'object' || Array.isArray(m)) m = {}; note = (m[String(coId)] && m[String(coId)].text) || ''; } catch (_) {}
     // 2026-08-05 (sama "chaos in center" fund og patch 199): tvítök flöguð af
     // eldri hreinsunar-sópun (`is_duplicate`) voru samt teiknuð hér — fellum
@@ -553,7 +575,15 @@
     }));
     w.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
       if (!confirm('Eyða þessum drögum?')) return;
-      try { await SB().from('brunakerfi_skyrslur').delete().eq('id', b.dataset.del); } catch (_) {}
+      // 17.09.2026: .delete() kastar ekki — catch-ið keyrði aldrei. Áður hlóðst
+      // spjaldið bara upp á nýtt með drögin enn á sínum stað og enga skýringu.
+      const del = await SB().from('brunakerfi_skyrslur').delete().eq('id', b.dataset.del);
+      if (del && del.error) {
+        console.warn('[bkc] eyða drögum', del.error);
+        alert('Drögin eyddust EKKI — þau eru enn í listanum.\n\n' + (del.error.message || ''));
+        try { if (window.logProblem) window.logProblem('bkc_drog_delete_failed', String(del.error.message || del.error).slice(0, 160)); } catch (_) {}
+        return;
+      }
       reload();
     }));
     // 📧 Senda — brunakerfisskýrsla (+ reikningur) ársins gegnum póst-ritilinn (254).

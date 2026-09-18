@@ -29,6 +29,11 @@
 
   // ☁️ Samstilling (matseðill 5): AppSettings er aðal-geymslan (fylgir appinu
   // milli allra tækja), localStorage er hraðvirkt afrit/offline-vari.
+  // 17.09.2026 (yfirferð á þöglum villum): þagnirnar í save/syncFromCloud eru
+  // RÉTTAR. Þetta eru dálkabreiddir — útlitsval EINS vafra, sem SAMSTILLT-reglan
+  // undanskilur beinlínis. Mistakist vistunin heldur taflan sjálfgefnum
+  // breiddum, engin gögn og engin staða tapast, og „↺ breiddir" núllstillir
+  // hvort eð er. Villuborði hér væri hávaði á hverri einustu drag-hreyfingu.
   let _cloudT = null;
   const save = () => {
     try { localStorage.setItem(LS, JSON.stringify(store)); } catch (_) {}

@@ -248,13 +248,28 @@
     var unretireBtn = document.getElementById('_ud_unretire');
     if (retireBtn) retireBtn.onclick = async function(){
       if (!await Confirm.show('Merkja '+unit.serial+' sem úrelt?')) return;
-      await DB.sb.from('uttaeki').update({status:'urelt'}).eq('id', unit.id);
+      // 2026-09-17: .error var aldrei lesið (supabase-js kastar ekki). Mistækist skrifið
+      // opnaðist glugginn bara aftur og tækið stóð áfram virkt — það hélt því áfram að
+      // teljast með í skoðunum og tækjafjölda þótt starfsmaður hefði „úrelt" það.
+      var _ru = await DB.sb.from('uttaeki').update({status:'urelt'}).eq('id', unit.id);
+      if (_ru && _ru.error) {
+        try { if (window.logProblem) window.logProblem('taeki-urelt-brast', unit.serial + ': ' + (_ru.error.message || _ru.error)); } catch (_) {}
+        alert('Tækið '+unit.serial+' var EKKI merkt úrelt ('+(_ru.error.message||_ru.error)+').\n\nÞað telst því enn virkt. Reyndu aftur.');
+        return;
+      }
       modal.remove();
       showUnitDetail(unit.serial);
     };
     if (unretireBtn) unretireBtn.onclick = async function(){
       if (!await Confirm.show('Endurvirkja '+unit.serial+'?')) return;
-      await DB.sb.from('uttaeki').update({status:'active'}).eq('id', unit.id);
+      // 2026-09-17: sama og hér að ofan — þögult misheppnað skrif skildi tækið eftir
+      // „úrelt" þótt starfsmaður hefði endurvirkjað það (datt þá úr skoðunarröðinni).
+      var _ra = await DB.sb.from('uttaeki').update({status:'active'}).eq('id', unit.id);
+      if (_ra && _ra.error) {
+        try { if (window.logProblem) window.logProblem('taeki-endurvirkja-brast', unit.serial + ': ' + (_ra.error.message || _ra.error)); } catch (_) {}
+        alert('Tækið '+unit.serial+' var EKKI endurvirkjað ('+(_ra.error.message||_ra.error)+').\n\nÞað stendur enn sem úrelt. Reyndu aftur.');
+        return;
+      }
       modal.remove();
       showUnitDetail(unit.serial);
     };

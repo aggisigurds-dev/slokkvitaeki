@@ -2130,14 +2130,22 @@ console.log('[patch-master] loaded with all fixes');
     try{
       // Get current notes
       var r = await window.DB.sb.from('uttaeki').select('notes').eq('serial',serial).single();
+      // 17.09.2026: hvorki lesturinn né skrifið kastar — .error var aldrei
+      // lesið. Tvennt gat gerst þegjandi: (1) mistækist lesturinn (t.d. tvö
+      // tæki með sama raðnúmer → .single() villa) varð notes='' og skrifið hér
+      // að neðan STRIKAÐI ÚT allar fyrri athugasemdir tækisins; (2) mistækist
+      // skrifið var samt skrifað „saved" í console og reiturinn stóð eftir
+      // útfylltur á skjánum þótt ekkert hefði vistast.
+      if(r && r.error) throw r.error;
       var notes = (r.data && r.data.notes) || '';
       // Remove old UMFYLLING if present
       notes = notes.replace(/UMFYLLING:\d{4}-\d{2}-\d{2}\s*/,'').trim();
       // Add new
       if(date) notes = 'UMFYLLING:'+date + (notes?' '+notes:'');
-      await window.DB.sb.from('uttaeki').update({notes:notes}).eq('serial',serial);
+      var upd = await window.DB.sb.from('uttaeki').update({notes:notes}).eq('serial',serial);
+      if(upd && upd.error) throw upd.error;
       console.log('[pm-refill] saved '+serial+' -> '+date);
-    }catch(e){ alert('Villa: '+e.message); }
+    }catch(e){ alert('Umfyllingardagsetning vistaðist EKKI á ' + serial + ': ' + (e && e.message ? e.message : e) + '\n\nReiturinn á skjánum sýnir gildið en það er ekki komið í skrána — reyndu aftur.'); }
   }
   // Watch for equipment tables appearing
   var mo = new MutationObserver(function(){ addRefillColumn(); });

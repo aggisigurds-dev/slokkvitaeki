@@ -1056,11 +1056,28 @@
     }
 
     // 2. Mark all jobs in the sale as collected, and units as done/broken
+    // 2026-09-17: catch-in hér að neðan voru tóm OG .error aldrei lesið (supabase-js
+    // kastar ekki). Verkbeiðni gat því setið áfram á 'received' og tæki á 'á verkstæði'
+    // þótt kúnninn væri farinn með tækið og salan rukkuð — staðbundna skyndiminnið í
+    // skrefi 3 faldi ósannindin þar til næst var hlaðið. Salan sjálf er þegar vistuð
+    // (kastað ofar), svo hér er EKKI kastað: hvert misheppnað skrif er talið, skráð og
+    // sagt hreint frá í lokin.
+    const _ekkiUppfaert = [];
+    const _mistokstJob = new Set();
+    const _skraVillu = (lykill, hvad, villa) => {
+      _ekkiUppfaert.push(hvad);
+      try { if (window.logProblem) window.logProblem(lykill, hvad + ': ' + ((villa && villa.message) || villa)); } catch (_) {}
+      console.warn('[Sótt] ' + hvad, villa);
+    };
     const allJobs = jobsForSaleNum(parentSaleNum(job.num));
     for (const j of allJobs) {
       try {
-        await SB.from('verkbeidnir').update({ status: 'collected', pickup: todayISO() }).eq('id', j.id);
-      } catch (_) {}
+        const rj = await SB.from('verkbeidnir').update({ status: 'collected', pickup: todayISO() }).eq('id', j.id);
+        if (rj && rj.error) throw rj.error;
+      } catch (e) {
+        _mistokstJob.add(j.id);
+        _skraVillu('sott-verkbeidni', 'verkbeiðni ' + (j.num || j.id) + ' var EKKI merkt sótt', e);
+      }
     }
     // 2026-05-11 fix: If user UNCHECKED a unit in the pickup modal it means
     // "not delivered" — so its verklidur should be marked 'broken'. Previously
@@ -1070,8 +1087,11 @@
     for (const s of unitState) {
       const newStatus = s.checked ? 'done' : 'broken';
       try {
-        await SB.from('verklidur').update({ status: newStatus }).eq('id', s.unit.id);
-      } catch (_) {}
+        const rv = await SB.from('verklidur').update({ status: newStatus }).eq('id', s.unit.id);
+        if (rv && rv.error) throw rv.error;
+      } catch (e) {
+        _skraVillu('sott-verklidur', 'verkliður ' + (s.unit.serial || s.unit.id) + ' var EKKI merktur ' + newStatus, e);
+      }
     }
 
     // 2b. (2026-05-10) For verklidur with a uttaeki_id link (created by
@@ -1091,13 +1111,17 @@
       if (!uid) continue;
       try {
         if (s.unit.status === 'broken') {
-          await SB.from('uttaeki').update({ status: 'broken' }).eq('id', uid);
+          const rb = await SB.from('uttaeki').update({ status: 'broken' }).eq('id', uid);
+          if (rb && rb.error) throw rb.error;
         } else if (s.checked) {
-          await SB.from('uttaeki').update({
+          const ru = await SB.from('uttaeki').update({
             status: 'active',
             last_insp: today,
             next_insp: next12mo
           }).eq('id', uid);
+          // 2026-09-17: mistækist þetta þegjandi datt tækið út úr 12-mánaða
+          // endurskoðunarröðinni (next_insp óbreytt) — það hefði komið í ljós ári síðar.
+          if (ru && ru.error) throw ru.error;
           // 11.09.2026 (Verkefnalisti e8caa730): afhending í Sótt tekur tækið
           // líka af afgreiðsluborðinu — sömu reitir og Móttaka (179) og
           // vertíðarlokun (210) skrifa. Aðeins tæki sem standa á borðinu eru
@@ -1112,12 +1136,26 @@
         }
         // s.checked === false (customer didn't take it back) → leave uttaeki
         // alone; the field-service record stays as-is.
-      } catch (_) {}
+      } catch (e) {
+        _skraVillu('sott-uttaeki', 'tæki ' + uid + ' var EKKI uppfært (staða/síðasta+næsta skoðun)', e);
+      }
+    }
+
+    // 2026-09-17: segja frá því sem vantaði. Salan er vistuð og rukkuð — en staðan á
+    // borðinu/tækinu er röng þar til þetta er lagað, og áður sá starfsmaðurinn ekkert
+    // nema „✓ Sótt og selt".
+    if (_ekkiUppfaert.length) {
+      alert('⚠ Salan vistaðist, EN ' + _ekkiUppfaert.length + ' staða uppfærðist ekki:\n\n• '
+        + _ekkiUppfaert.join('\n• ')
+        + '\n\nLagaðu stöðuna handvirkt á Verkstæði/borðinu. Ekki endurtaka „Sótt" — salan er þegar vistuð.');
     }
 
     // 3. Update local cache
     if (window.DB && DB.cache && Array.isArray(DB.cache.jobs)) {
       for (const j of allJobs) {
+        // 2026-09-17: ekki merkja í skyndiminni það sem þjónninn hafnaði — annars sýndi
+        // borðið „sótt" þangað til næsta hleðsla skilaði hinu rétta.
+        if (_mistokstJob.has(j.id)) continue;
         const cached = DB.cache.jobs.find(x => x.id === j.id);
         if (cached) cached.status = 'collected';
       }

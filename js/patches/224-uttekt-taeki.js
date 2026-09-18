@@ -233,8 +233,21 @@
       else  { steps.taekjalisti = false; delete meta.taekjalisti; }
       var patch = {}; patch[stepsKey]=steps; patch[metaKey]=meta;
       patch.listi_stadfest_ar = on ? ar : 0;
-      AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } });
-    }catch(e){ try{ console.warn('[uttekt-taeki] listi-staðfesting', e); }catch(_){} }
+      // 17.09.2026: AppSettings.save skilar false og kastar ekki — hér var hvorki
+      // beðið eftir henni né niðurstaðan lesin. Lásinn er localStorage (þessi vél),
+      // svo listinn leit staðfestur út hér á meðan ÞjónustuVerkstæðið á skrifstofunni
+      // sá skrefið aldrei kvikna. Nákvæmlega vandinn sem speglunin átti að leysa.
+      var _fail = function(e){
+        try{ if(window.logProblem) window.logProblem('listi_stadfest_sync_failed', 'co ' + coId + (e ? (': ' + String((e&&e.message)||e)) : ' — save skilaði false')); }catch(_){}
+        if(window.Toast&&Toast.show) Toast.show('⚠ Staðfesting tækjalistans komst EKKI á þjóninn — hún sést aðeins í þessu tæki. Reyndu aftur.');
+      };
+      Promise.resolve(AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } }))
+        .then(function(ok){ if(!ok) _fail(null); }, function(e){ _fail(e); });
+    }catch(e){
+      try{ console.warn('[uttekt-taeki] listi-staðfesting', e); }catch(_){}
+      try{ if(window.logProblem) window.logProblem('listi_stadfest_sync_failed', 'co ' + coId + ': ' + String((e&&e.message)||e)); }catch(_){}
+      if(window.Toast&&Toast.show) Toast.show('⚠ Staðfesting tækjalistans komst EKKI á þjóninn — hún sést aðeins í þessu tæki.');
+    }
   }
   (function(){ if(document.getElementById('sk-utlock-css'))return; var s=document.createElement('style'); s.id='sk-utlock-css';
     s.textContent='.ut-listlock{display:block;width:100%;margin-top:12px;padding:13px;border-radius:12px;border:1px solid #c7ccd3;background:#eef1f4;color:#2b313a;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'

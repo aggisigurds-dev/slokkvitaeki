@@ -271,7 +271,10 @@
     });
     tbody.querySelectorAll('[data-tb-status]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await updateStatus(parseInt(btn.dataset.tbStatus), btn.dataset.tbNewStatus);
+        // 17.09.2026: updateStatus kastar rétt, en hér var ekkert gripið — villan
+        // varð að ómeðhöndlaðri promise-höfnun og staðan leit út fyrir að breytast.
+        try { await updateStatus(parseInt(btn.dataset.tbStatus), btn.dataset.tbNewStatus); }
+        catch (e) { if (window.Toast && Toast.show) Toast.show('Staða tilboðsins breyttist EKKI: ' + (e.message || e)); }
         render();
       });
     });
@@ -286,7 +289,15 @@
       btn.addEventListener('click', async () => {
         if (!await Confirm.show('Eyða þessu tilboði?')) return;
         const SB = getSB(); if (!SB) return;
-        await SB.from('tilbod').delete().eq('id', btn.dataset.tbDel);
+        // 17.09.2026: .delete() kastar ekki — villan kom í .error og var aldrei
+        // lesin. Tilboðið hvarf aðeins af skjánum og kom aftur við næstu hleðslu.
+        let rDel = null;
+        try { rDel = await SB.from('tilbod').delete().eq('id', btn.dataset.tbDel); }
+        catch (e) { rDel = { error: e }; }
+        if (rDel && rDel.error) {
+          if (window.Toast && Toast.show) Toast.show('Tilboðinu var EKKI eytt: ' + ((rDel.error && rDel.error.message) || rDel.error));
+          return;
+        }
         quotes = quotes.filter(q => q.id != btn.dataset.tbDel);
         render();
       });

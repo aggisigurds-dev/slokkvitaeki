@@ -151,6 +151,18 @@
   // renna inn í APPS/APP_BY_KEY — fá launcher-kort MEÐ síðu-hökunum, ?app=
   // boot og /app/<key>/ slóð eins og innbyggðu öppin. Ekkert manifest →
   // „Setja upp" er falinn á þeim; Opna + Afrita hlekk virka.
+  // ── Af hverju tómu catch-in í þessari geymslu eru RÉTT (yfirfarið 17.09.2026) ──
+  // LESTUR (loadCustoms/loadCfg/loadOverrides): hver og einn er keðja með
+  //   varaleiðum — AppSettings → localStorage → tómt sjálfgefið gildi. Bregðist
+  //   efsta þrepið tekur það næsta við; ekkert tapast og ekkert verður ósatt.
+  // SKRIF (saveCustoms/saveCfg/saveOverride): `AppSettings.save` ER `saveVordud`
+  //   í patch 85 — hún kastar ekki, en misheppnað skrif fer í BIÐRÖÐ, er reynt
+  //   aftur á 20 sek fresti og NOTANDINN FÆR AÐVÖRUN þaðan („⚠️ Vistun mistókst
+  //   — geymt og reynt aftur"). Skilagildið sem er hunsað hér er því ekki eina
+  //   vísbendingin um bilun; hún er þegar sögð á einum stað fyrir allt appið.
+  //   Eina raunverulega gatið er `if (window.AppSettings && ...)`-vörðurinn:
+  //   sé AppSettings alls ekki til (skriftaröð brotin) fer ekkert í skýið OG
+  //   engin biðröð tekur við. Það sæist þó strax á öllu öðru í appinu.
   var CUSTOM_KEY = 'custom_apps_json';
   function loadCustoms() {
     var raw = null;
@@ -371,6 +383,10 @@
     function doDelete() {
       saveCustoms(loadCustoms().filter(function (c) { return c && c.key !== key; }));
       var i = APPS.indexOf(a); if (i >= 0) APPS.splice(i, 1); delete APP_BY_KEY[key];
+      // Þögnin rétt (17.09.2026): hér er aðeins TIL TEKTAR — síðu-stillingar
+      // appsins sem var að hverfa. Sjálf eyðingin er línan á undan. Verði
+      // munaðarlaus lykill eftir í app_profiles_json vísar hann á app sem er
+      // ekki lengur í APPS og er hunsaður alls staðar.
       try { var c = loadCfg(); if (c && c[key]) { delete c[key]; var st = JSON.stringify(c); localStorage.setItem(CFG_KEY, st); if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: st }); } } catch (_) {}
       render();
     }
@@ -439,6 +455,8 @@
   if (ACTIVE && !isStandalone(ACTIVE)) showSplash(ACTIVE);
 
   // ── config storage (which pages each app shows) — localStorage + AppSettings ─
+  // Sama röksemd og við CUSTOM_KEY að ofan (17.09.2026): lestur með varaleiðum,
+  // skrif á vegum saveVordud sem setur í biðröð og lætur notandann vita sjálf.
   var CFG_KEY = 'app_profiles_json';
   function loadCfg() {
     var raw = null;
@@ -604,6 +622,10 @@
           try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
           try { if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: s }); } catch (_) {}
         }
+      // Þögnin rétt (17.09.2026): einskiptis-flutningur sem bætir 'bord' inn í
+      // síðulista appanna. Hann keyrir sjálfkrafa upp að 12 sinnum (lína neðar),
+      // engin gögn tapast þótt hann sleppi úr, og saveVordud sér um að reyna
+      // skýja-skrifið aftur. Aðvörun hér væri hávaði um verk sem enginn bað um.
       } catch (_) {}
       if (++reynt < 12) setTimeout(keyra, 1000);
     }

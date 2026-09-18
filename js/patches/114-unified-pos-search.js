@@ -1169,7 +1169,13 @@
         if (source === 'vidskiptavinir') { label = '💎 sérkjör'; icon = '💎'; }
         const stored = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(key)) || {};
         pricingList = (stored && stored[String(m.id)]) || [];
-      } catch (_) {}
+      } catch (e) {
+        // 17.09.2026: lestur — borðinn felur sig og salan heldur áfram, sem er rétt
+        // varaplan. EN þá sést ekki að kúnninn eigi tilboðsverð, og það er peninga-
+        // upplýsing sem hvarf ÞÖGULT. Ekki stöðvað, en skráð.
+        pricingList = [];
+        try { if (window.logProblem) window.logProblem('pos_pricing_read_failed', 'kúnni ' + m.id + ' (' + source + '): ' + String((e && e.message) || e), { severity: 'warn' }); } catch (_) {}
+      }
       if (pricingList.length) {
         const summary = pricingList.slice(0, 3).map(p => p.name).join(', ') + (pricingList.length > 3 ? ' +' + (pricingList.length - 3) + ' fleiri' : '');
         pricingEl.innerHTML = icon + ' <strong>' + pricingList.length + ' ' + label + '</strong> — beitt sjálfvirkt á körfu-línur. (' + esc(summary) + ')';

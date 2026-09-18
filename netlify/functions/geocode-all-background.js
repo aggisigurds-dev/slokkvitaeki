@@ -86,29 +86,50 @@ async function tryNominatim(query) {
   } catch (_) { return null; }
 }
 
+// 17.09.2026: fetch kastar EKKI á 401/403/500 — svarið var hunsað og tóma
+// catch-ið greip aldrei neitt. Væri skrifréttur lokaður (RLS) skrifaðist EKKERT
+// í geocode_cache, en lokalínan sagði samt „geocoded=214": sá sem keyrði þetta
+// las töluna sem staðfestingu og beið eftir pinnum sem komu aldrei. Skilar núna
+// true/false og lokalínan telur ÞAÐ sem raunverulega vistaðist.
 async function writeCache(q, lat, lon, displayName) {
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/geocode_cache`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/geocode_cache`, {
       method: 'POST',
       headers: { ...SB, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' },
       body: JSON.stringify({ query: q, lat, lng: lon, display_name: displayName || null, source: 'bulk' }),
     });
-  } catch (_) {}
+    if (!r.ok) {
+      const txt = await r.text().catch(() => '');
+      console.error(`[geocode-all] VISTUN MISTÓKST fyrir "${q}" — HTTP ${r.status} ${txt.slice(0, 200)}`);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error(`[geocode-all] VISTUN MISTÓKST fyrir "${q}" —`, e && e.message ? e.message : e);
+    return false;
+  }
 }
 
 exports.handler = async () => {
   const start = Date.now();
   const [addrs, cached] = await Promise.all([getCompanyAddresses(), getCachedQueries()]);
   const todo = addrs.filter(a => !cached.has(a)).slice(0, MAX_PER_RUN);
-  let done = 0, hit = 0;
+  let done = 0, hit = 0, saved = 0, saveFailed = 0;
   for (const addr of todo) {
     if (Date.now() - start > TIME_BUDGET_MS) break;
     let res = null;
     for (const v of cleanVariants(addr)) { res = await tryNominatim(v); if (res) break; }
-    if (res) { await writeCache(addr, res.lat, res.lon, res.display_name); hit++; }
+    if (res) {
+      hit++;
+      if (await writeCache(addr, res.lat, res.lon, res.display_name)) saved++; else saveFailed++;
+    }
     done++;
     if (done < todo.length) await new Promise(r => setTimeout(r, THROTTLE_MS));
   }
-  console.log(`[geocode-all] candidates=${todo.length} processed=${done} geocoded=${hit}`);
-  return { statusCode: 200, body: JSON.stringify({ candidates: todo.length, processed: done, geocoded: hit }) };
+  // `geocoded` = fannst hjá Nominatim, `saved` = komst RAUNVERULEGA í
+  // geocode_cache. Munurinn er það eina sem segir til um hvort keyrslan
+  // skilaði einhverju — hann var ósýnilegur áður.
+  console.log(`[geocode-all] candidates=${todo.length} processed=${done} geocoded=${hit} saved=${saved} saveFailed=${saveFailed}`);
+  if (saveFailed) console.error(`[geocode-all] ⚠ ${saveFailed} hnit komust EKKI í geocode_cache — athugaðu skrifrétt (RLS) á töflunni.`);
+  return { statusCode: 200, body: JSON.stringify({ candidates: todo.length, processed: done, geocoded: hit, saved, saveFailed }) };
 };

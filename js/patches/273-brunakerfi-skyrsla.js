@@ -211,15 +211,35 @@
   }
   function customBunadurList() {
     let saved = null;
+    // Þögnin hér er rétt (17.09.2026): þetta er LESTUR með varaleið — bregðist
+    // AppSettings er lesið úr localStorage í næstu línu og að lokum skilað [].
     try { saved = window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_verdlisti'); } catch (_) {}
     if (!saved) { try { saved = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || 'null'); } catch (_) {} }
     // AFRIT (ekki lifandi tilvísun í _settings) svo hægt sé að breyta+vista óhætt
     return (saved && Array.isArray(saved.custom_bunadur)) ? saved.custom_bunadur.map(c => ({ ...c })) : [];
   }
+  // 17.09.2026: AppSettings.save KASTAR EKKI — hún skilar satt/ósatt. Gamla
+  // `try { await AppSettings.save(...) } catch (_) {}` gat því aldrei séð bilun,
+  // og liðurinn leit út fyrir að vera vistaður þótt hann lifði aðeins í
+  // localStorage-línunni hér fyrir ofan.
+  // ATH: AppSettings.save ER saveVordud (patch 85) — hún setur misheppnað skrif
+  // í biðröð, reynir á 20 sek fresti og BIRTIR NOTANDANUM aðvörun sjálf. Þess
+  // vegna er ENGIN alert hér: hún yrði tvítekning og segði notandanum að reyna
+  // aftur handvirkt, sem er rangt ráð. Hér er aðeins skráð og skilað ósatt —
+  // sama mynstur og savePriceItems hér að neðan.
   async function saveCustomBunadur(next) {
     try { const raw = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || '{}'); raw.custom_bunadur = next; localStorage.setItem('brunakerfi_verdlisti', JSON.stringify(raw)); } catch (_) {}
     // deepMerge í patch 85 skiptir ÖLLUM fylkjum út (ekki index-merge) → eyðing virkar
-    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ brunakerfi_verdlisti: { custom_bunadur: next } }); } catch (_) {}
+    try {
+      if (!(window.AppSettings && AppSettings.save)) throw new Error('AppSettings ekki tiltækt');
+      const ok = await AppSettings.save({ brunakerfi_verdlisti: { custom_bunadur: next } });
+      if (!ok) throw new Error('AppSettings.save skilaði ósatt');
+      return true;
+    } catch (e) {
+      console.warn('[bks] custom_bunadur save', e);
+      try { if (window.logProblem) window.logProblem('bks_custom_bunadur_save_failed', String((e && e.message) || e)); } catch (_) {}
+      return false;
+    }
   }
   // Skráir sérsniðinn búnaðarlið (fær eigin lykil svo verðlista-lína geti tengst
   // honum). dflt=true → hann birtist SJÁLFGEFIÐ í búnaðaryfirliti nýrra skýrslna.
@@ -247,6 +267,8 @@
   function priceItems() {
     if (_pricelist) return _pricelist;
     let saved = null;
+    // Þögnin hér er rétt (17.09.2026): lestur með tveimur varaleiðum —
+    // localStorage í næstu línu og BASE_PRICES að lokum. Ekkert getur tapast.
     try { saved = window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_verdlisti'); } catch (_) {}
     if (!saved) { try { saved = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || 'null'); } catch (_) {} }
     _pricelist = (saved && Array.isArray(saved.items) && saved.items.length)
@@ -1344,6 +1366,7 @@
   async function finalize(btn) {
     const sb = SB(); if (!sb) return toast('Engin gagnabankatenging', true);
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Bý til PDF…'; }
+    let tengiVilla = '';   // 17.09.2026: doc_id-tengingin mistókst → segja frá í lokatoastinu
     try {
       S.status = 'final';
       await saveDraft();
@@ -1366,7 +1389,18 @@
         const r = await sb.from('customer_documents').insert(docRec).select('id').single();
         if (r.error) throw r.error;
         S.docId = r.data.id;
-        await sb.from('brunakerfi_skyrslur').update({ doc_id: S.docId }).eq('id', S.id);
+        // 17.09.2026: þetta skrif var óskoðað. Mistækist það stóð doc_id sem NULL
+        // í brunakerfi_skyrslur — og af því að S.docId er lesið úr þeim dálki við
+        // næstu opnun (lína ~1471) bjó NÆSTA lokun til ANNAÐ customer_documents-
+        // skjal: sama skýrslan tvisvar á skjalaspjaldi félagsins, þögult.
+        // Ekki kastað: PDF-ið og skjalaröðin eru komin inn, svo 'final' er satt.
+        const lk = await sb.from('brunakerfi_skyrslur').update({ doc_id: S.docId }).eq('id', S.id);
+        if (lk && lk.error) {
+          console.warn('[bks] doc_id link', lk.error);
+          // Ekki toast hér: lokatoastið neðar skrifar yfir hann (eitt _bks-toast).
+          tengiVilla = String(lk.error.message || lk.error);
+          try { if (window.logProblem) window.logProblem('bks_doc_id_link_failed', 'skyrsla ' + S.id + ': ' + tengiVilla.slice(0, 160)); } catch (_) {}
+        }
       }
       // Skjalaspjaldið (199) endurteiknar sig strax (2026-08-09).
       document.dispatchEvent(new CustomEvent('customer-doc-written'));
@@ -1409,7 +1443,11 @@
           });
         }
       } catch (e) { console.warn('[bks] auto-reikningsdrög', e); }
-      toast('PDF vistað á fyrirtækið — græni punkturinn kviknar í yfirlitinu ✓');
+      if (tengiVilla) {
+        toast('PDF vistað — EN skýrslan tengdist ekki skjalinu (' + tengiVilla.slice(0, 80) + '). Ljúktu henni ekki aftur: það býr til tvítekið skjal á félaginu.', true);
+      } else {
+        toast('PDF vistað á fyrirtækið — græni punkturinn kviknar í yfirlitinu ✓');
+      }
       setMode('report');
       try { if (window.BrunakerfiYfirlit && BrunakerfiYfirlit.reload) BrunakerfiYfirlit.reload(); } catch (_) {}
     } catch (e) {
@@ -1519,7 +1557,16 @@
     }));
     p.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
       if (!confirm('Eyða þessum drögum?')) return;
-      try { await SB().from('brunakerfi_skyrslur').delete().eq('id', b.dataset.del); } catch (_) {}
+      // 17.09.2026: .delete() kastar ekki — catch-ið keyrði aldrei. Mistækist
+      // eyðingin (t.d. RLS) lokaðist glugginn og opnaðist aftur með drögin enn
+      // á sínum stað, án nokkurrar skýringar. Nú er sagt af hverju.
+      const del = await SB().from('brunakerfi_skyrslur').delete().eq('id', b.dataset.del);
+      if (del && del.error) {
+        console.warn('[bks] eyða drögum', del.error);
+        alert('Drögin eyddust EKKI — þau eru enn í listanum.\n\n' + (del.error.message || ''));
+        try { if (window.logProblem) window.logProblem('bks_drog_delete_failed', String(del.error.message || del.error).slice(0, 160)); } catch (_) {}
+        return;
+      }
       _reports = null; close(); openFlow(co.id);
     }));
   }

@@ -157,6 +157,10 @@
     if (dir < 0) { let j = ZOOM_STEPS.length - 1; while (j > 0 && ZOOM_STEPS[j] >= cur - 0.001) j--; return ZOOM_STEPS[j]; }
     let k = 0; while (k < ZOOM_STEPS.length - 1 && ZOOM_STEPS[k] <= cur + 0.001) k++; return ZOOM_STEPS[k];
   }
+  // 17.09.2026 (yfirferð á þöglum villum): þagnirnar hér eru RÉTTAR — báðar
+  // hreinsanir eru best-effort og línan á eftir endurhleður síðuna hvort eð er
+  // með ?nocache=<tími>, sem framhjá-hleður skyndiminninu. Mistakist önnur
+  // hvor fær notandinn samt ferska síðu; ekkert tapast.
   async function hreinsa() {
     state.msg = 'Hreinsa…'; render();
     try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.unregister())); } } catch (_) {}

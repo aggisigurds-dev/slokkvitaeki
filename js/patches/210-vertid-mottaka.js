@@ -363,15 +363,24 @@
     await loadAll();
   }
 
+  // 17.09.2026: hér er ENGIN aðvörun til notandans viljandi, og það er rétt.
+  // taeki_events er SAGAN, ekki staðan — rétta staðan er á uttaeki-röðinni og
+  // hún er skrifuð (og lesin) annars staðar. Fall hér gerir enga tölu ranga og
+  // ekkert merki ósatt. Þar að auki er logEvent kallað í lykkju yfir öll tæki
+  // vertíðarinnar, svo skilaboð hér yrðu tugir poppa ofan í hvert annað.
+  // .insert() kastar ekki, svo gamla catch-ið var hvort eð er dautt — villan
+  // er núna lesin og skráð þar sem hana má finna eftir á.
   async function logEvent(unit, eventType, custody) {
     const SB = getSB(); if (!SB) return;
-    try {
-      await SB.from('taeki_events').insert({
-        unit_id: unit.id || null, serial: unit.serial || null,
-        seasonal_job_id: unit.seasonal_job_id || null, event: eventType,
-        custody_status: custody || null, tech: getTech() || null,
-      });
-    } catch (_) {}
+    const r = await SB.from('taeki_events').insert({
+      unit_id: unit.id || null, serial: unit.serial || null,
+      seasonal_job_id: unit.seasonal_job_id || null, event: eventType,
+      custody_status: custody || null, tech: getTech() || null,
+    });
+    if (r && r.error) {
+      console.warn('[vertid] taeki_events', eventType, r.error);
+      try { if (window.logProblem) window.logProblem('vertid_taeki_event_failed', eventType + ' ' + (unit.serial || unit.id || '') + ': ' + String(r.error.message || r.error).slice(0, 160)); } catch (_) {}
+    }
   }
 
   // ── add company picker ─────────────────────────────────────────────────────
@@ -532,16 +541,34 @@
     const SB = getSB(); if (!SB || !serial) return;
     const today = todayIso();
     let unit = null;
-    try { const { data } = await SB.from('uttaeki').select('*').ilike('serial', serial).limit(1); unit = data && data[0]; } catch (_) {}
+    // 17.09.2026: uppflettingin var óskoðuð. Misheppnaðist SELECT-ið (RLS,
+    // tímaút, 500) varð `unit` null og else-greinin hér að neðan STOFNAÐI NÝTT
+    // tæki með raðnúmeri sem var þegar til — tvítekið tæki, og tvítalning á
+    // reikningnum. Nú er stoppað frekar en að skrá tvöfalt.
+    const leit = await SB.from('uttaeki').select('*').ilike('serial', serial).limit(1);
+    if (leit && leit.error) {
+      toast('Náði ekki að fletta upp „' + serial + '“ — skannaðu aftur. Ekkert var skráð. (' + (leit.error.message || '') + ')');
+      try { if (window.logProblem) window.logProblem('vertid_scan_lookup_failed', serial + ': ' + String(leit.error.message || leit.error).slice(0, 160)); } catch (_) {}
+      return;
+    }
+    unit = leit && leit.data && leit.data[0];
     if (unit) {
       if (String(unit.seasonal_job_id) === String(job.id)) { toast('„' + serial + '“ er þegar í þessari vertíð'); return; }
       const base = job.base;
-      await SB.from('uttaeki').update({
+      // 17.09.2026: þetta skrif var óskoðað — notandinn fékk „📥 bætt við" og
+      // tækið var aldrei tengt vertíðinni. Tækjafjöldinn (og þar með
+      // reikningurinn) varð of lágur án þess að nokkur sæi það.
+      const rUpd = await SB.from('uttaeki').update({
         seasonal_job_id: job.id, customer_base_id: job.customer_base_id || unit.customer_base_id,
         client: base ? base.nafn : unit.client, custody_status: 'móttekið',
         service_choice: unit.service_choice || defaultForType(unit.type),
         received_at: today, picked_up_at: null,
       }).eq('id', unit.id);
+      if (rUpd && rUpd.error) {
+        toast('„' + serial + '“ komst EKKI á vertíðina — skannaðu aftur. (' + (rUpd.error.message || '') + ')');
+        try { if (window.logProblem) window.logProblem('vertid_scan_update_failed', serial + ': ' + String(rUpd.error.message || rUpd.error).slice(0, 160)); } catch (_) {}
+        return;
+      }
       unit.seasonal_job_id = job.id;
       await logEvent(unit, 'arrival', 'móttekið');
       toast('📥 ' + serial + ' bætt við');
@@ -566,11 +593,23 @@
     const SB = getSB(); if (!SB) return;
     const job = selectedJob(); if (!job) return;
     const u = job.units.find(x => String(x.id) === String(unitId));
+    const adur = u ? u.service_choice : undefined;
     if (u) u.service_choice = value;       // optimistic
     job.bill = billFor(job.units, job.coId);
     renderDetailSubtotal(job);
-    try { await SB.from('uttaeki').update({ service_choice: value }).eq('id', unitId); }
-    catch (e) { toast('Villa við vistun: ' + (e.message || e)); }
+    // 17.09.2026: .update() kastar ekki — catch-ið hér keyrði ALDREI. Þjónustuval
+    // hvers tækis ræður verðinu á vertíðarreikningnum: bjartsýna línan hér að
+    // ofan uppfærði upphæðina á skjánum og valið vistaðist aldrei. Reikningurinn
+    // var svo byggður á því sem stóð á skjánum. Nú er valið tekið til baka.
+    const r = await SB.from('uttaeki').update({ service_choice: value }).eq('id', unitId);
+    if (r && r.error) {
+      if (u) u.service_choice = adur;
+      job.bill = billFor(job.units, job.coId);
+      renderDetailSubtotal(job);
+      render();
+      toast('Þjónustuvalið vistaðist EKKI — upphæðin hér er því óbreytt. Reyndu aftur. (' + (r.error.message || '') + ')');
+      try { if (window.logProblem) window.logProblem('vertid_service_choice_save_failed', String(unitId) + ': ' + String(r.error.message || r.error).slice(0, 160)); } catch (_) {}
+    }
   }
 
   // Check-out / check-in toggle for a single tæki.
@@ -600,7 +639,15 @@
   async function removeUnit(unitId) {
     const SB = getSB(); if (!SB) return;
     if (!await Confirm.show('Taka tækið af þessari vertíð? (Raðnúmerið helst í kerfinu.)')) return;
-    await SB.from('uttaeki').update({ seasonal_job_id: null, custody_status: null }).eq('id', unitId);
+    // 17.09.2026: óskoðað skrif. Mistækist það hlóðst listinn bara upp á nýtt
+    // með tækið enn á vertíðinni — engin skýring, og það taldist áfram með á
+    // reikningnum þótt notandinn hefði staðfest að taka það af.
+    const r = await SB.from('uttaeki').update({ seasonal_job_id: null, custody_status: null }).eq('id', unitId);
+    if (r && r.error) {
+      toast('Tækið var EKKI tekið af vertíðinni — það telst því enn með. (' + (r.error.message || '') + ')');
+      try { if (window.logProblem) window.logProblem('vertid_remove_unit_failed', String(unitId) + ': ' + String(r.error.message || r.error).slice(0, 160)); } catch (_) {}
+      return;
+    }
     await loadAll();
   }
 
@@ -715,7 +762,18 @@
     const next = addMonthsIso(today, 12);
     // Bump inspection dates on serviced units.
     const servicedIds = job.units.filter(u => { const c = choiceOf(u); return c === 'hledsla' || c === 'yfirferd' || c === 'nyitt'; }).map(u => u.id);
-    if (servicedIds.length) { try { await SB.from('uttaeki').update({ last_insp: today, next_insp: next }).in('id', servicedIds); } catch (_) {} }
+    // 17.09.2026: óskoðað skrif. Misheppnaðist það fór reikningurinn samt út en
+    // last_insp/next_insp stóðu óbreytt — tækin litu áfram út fyrir að vera
+    // óskoðuð í ársskoðunar- og „gleymst að rukka"-sýnunum, sem lesa einmitt
+    // þessa dálka. Ekki kastað: reikningsgerðin má ekki stöðvast á þessu.
+    if (servicedIds.length) {
+      const rb = await SB.from('uttaeki').update({ last_insp: today, next_insp: next }).in('id', servicedIds);
+      if (rb && rb.error) {
+        console.warn('[vertid] last_insp/next_insp', rb.error);
+        toast('⚠️ Reikningurinn er í lagi EN skoðunardagsetningar ' + servicedIds.length + ' tækja uppfærðust ekki — þau sýnast enn óskoðuð. (' + (rb.error.message || '') + ')');
+        try { if (window.logProblem) window.logProblem('vertid_insp_dates_failed', 'job ' + job.id + ': ' + String(rb.error.message || rb.error).slice(0, 160)); } catch (_) {}
+      }
+    }
 
     // linur shape matches SalaInvoice.renderFromSale: per-line discount_pct for %,
     // or sale-level afslattur (kr off gross) — auto-detected on re-print.

@@ -66,24 +66,43 @@
     const nextDate = addMonths(new Date().toISOString(), months);
     const update = { next_insp: nextDate };
     // service_interval_months column doesn't exist on uttaeki, just update next_insp.
-    await SB.from('uttaeki').update(update).eq('id', unitId);
+    // 17.09.2026: .update() kastar ekki — villan kom í .error og var aldrei lesin.
+    // Áður skilaði fallið nextDate hvort sem skrifið komst inn eða ekki, svo
+    // borðinn sagði „Næsta skoðun <dags>" þótt næsta skoðun væri hvergi skráð.
+    let res = null;
+    try { res = await SB.from('uttaeki').update(update).eq('id', unitId); }
+    catch (e) { res = { error: e }; }
+    if (res && res.error) {
+      try { if (window.logProblem) window.logProblem('next_insp_save_failed', 'uttaeki ' + unitId + ': ' + String((res.error && res.error.message) || res.error)); } catch (_) {}
+      if (window.Toast && Toast.show) Toast.show('⚠ Næsta skoðun vistaðist EKKI á tækið — skráðu hana handvirkt.');
+      return null;   // kallandinn birtir þá engan „næsta skoðun"-borða
+    }
     return nextDate;
   }
 
   // ── Create next scheduled job (in dagbok if it exists) ───────────────────
+  // 17.09.2026: .insert() kastar ekki, svo „safe to skip on error" þaggaði niður
+  // allar villur — notandinn fékk „✓ Dagbókarfærsla búin til" þótt engin færsla
+  // yrði til og skoðunin dytti út úr dagbókinni. Skilar nú true/false.
   async function createNextAppointment(unit, nextDate) {
     const SB = getSB();
-    if (!SB) return;
+    if (!SB) return false;
+    let res = null;
     try {
       // verkdagbok schema: id, job_date, fyrirtaeki, athugasemdir, duft_*, lettvatn_*, kolsyra_*, done, archived
-      await SB.from('verkdagbok').insert({
+      res = await SB.from('verkdagbok').insert({
         job_date: nextDate,
         fyrirtaeki: unit.client || unit.company_nafn || unit.company || null,
         athugasemdir: 'Þjónustuskoðun — ' + (unit.type || unit.tegund || unit.serial || 'tæki') +
                      ' (Sjálfvirkt búið til. Raðnr: ' + (unit.serial || '') + ')',
         done: false
       });
-    } catch (_) {}  // safe to skip on error
+    } catch (e) { res = { error: e }; }
+    if (res && res.error) {
+      try { if (window.logProblem) window.logProblem('verkdagbok_insert_failed', 'næsta skoðun ' + nextDate + ' fyrir ' + (unit && (unit.serial || unit.id)) + ': ' + String((res.error && res.error.message) || res.error)); } catch (_) {}
+      return false;
+    }
+    return true;
   }
 
   // ── Prompt after completing a job ────────────────────────────────────────
@@ -114,10 +133,11 @@
         <button id="rs-no-btn" style="padding:7px 12px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;color:#475569;">Nei</button>
       </div>`;
     document.getElementById('rs-yes-btn').onclick = async () => {
-      await createNextAppointment(unit, nextDate);
+      const ok = await createNextAppointment(unit, nextDate);
       banner.remove();
-      if (window.Toast && Toast.show) Toast.show('✓ Dagbókarfærsla búin til');
-      if (onConfirm) onConfirm();
+      // 17.09.2026: „✓ Dagbókarfærsla búin til" var sagt óháð niðurstöðu.
+      if (window.Toast && Toast.show) Toast.show(ok ? '✓ Dagbókarfærsla búin til' : '⚠ Dagbókarfærslan var EKKI búin til — skráðu skoðunina handvirkt í verkdagbók.');
+      if (ok && onConfirm) onConfirm();
     };
     document.getElementById('rs-no-btn').onclick = () => banner.remove();
     setTimeout(() => { if (banner.parentNode) banner.remove(); }, 15000);

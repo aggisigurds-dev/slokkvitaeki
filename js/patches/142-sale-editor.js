@@ -846,10 +846,19 @@
     if (r.error) { alert('Villa: ' + r.error.message); return; }
 
     // Cascade customer change to linked verkbeidnir (R-NNN-V*)
+    // 17.09.2026: supabase .update() kastar ekki — catch-ið hér keyrði aldrei.
+    // Áður: salan fékk nýja nafnið en verkbeiðnirnar sátu eftir með það gamla,
+    // þögult, og Verkstæðið sýndi rangan kúnna. Nú er villan lesin og sögð.
     if (customerChanged && _sale.num) {
-      try {
-        await SB.from('verkbeidnir').update({ customer: nafn }).like('num', _sale.num + '-V%');
-      } catch (e) { console.warn('[sale-editor] verkbeidnir cascade:', e); }
+      const casc = await SB.from('verkbeidnir').update({ customer: nafn }).like('num', _sale.num + '-V%');
+      if (casc && casc.error) {
+        console.warn('[sale-editor] verkbeidnir cascade:', casc.error);
+        // alert en ekki Toast: ✓-toastið neðar skrifar yfir hann eftir 0 sek.
+        alert('Salan vistaðist, EN nafnið uppfærðist ekki á verkbeiðnunum ' + _sale.num + '-V…\n'
+            + 'Þær bera enn gamla nafnið á Verkstæði — breyttu því þar handvirkt.\n\n'
+            + (casc.error.message || ''));
+        try { if (window.logProblem) window.logProblem('sala_verkbeidni_nafn_cascade_failed', _sale.num + ': ' + String(casc.error.message || casc.error).slice(0, 160)); } catch (_) {}
+      }
     }
 
     // 2026-08-19 (Agnar #12): Sölu-ritillinn bjó áður ALDREI til verkbeiðnir — hann
@@ -859,6 +868,7 @@
     // annars qty stk). Aðeins VIÐBÓT umfram núverandi -V<n>, talið upp frá hæsta
     // svo endurvistun tvítekur ekki. byrjunargjald (Fylgihlutir) verður aldrei tæki.
     if (_sale.num) {
+      const vbVillur = [];   // 17.09.2026: safnað svo bilun sjáist, ekki bara í console
       try {
         // Only lines explicitly marked krefst_verkbeidni:true (catalog products)
         // get a verkbeidni — matches pos.js behaviour. Free-text lines like
@@ -866,6 +876,10 @@
         const isTaeki = l => l.krefst_verkbeidni === true;
         const taeki = (_sale.linur || []).filter(isTaeki);
         const ex = await SB.from('verkbeidnir').select('num').like('num', _sale.num + '-V%');
+        // 17.09.2026: `ex.data || []` faldi lestrarvillu. Misheppnaðist SELECT-ið
+        // taldist salan verkbeiðnalaus og lykkjan hér að neðan bjó til -V1, -V2 …
+        // OFAN Í þær sem voru þegar til → tvítekin tæki á Verkstæði.
+        if (ex && ex.error) throw ex.error;
         const existing = ex.data || [];
         let maxIdx = 0;
         existing.forEach(row => { const m = /-V(\d+)$/.exec(row.num || ''); if (m) maxIdx = Math.max(maxIdx, +m[1]); });
@@ -884,7 +898,14 @@
             notes: sl.desc,
             verd: verd
           }).select('id').single();
-          if (job.error || !job.data) { console.warn('[sale-editor] verkbeidni insert:', job.error); continue; }
+          if (job.error || !job.data) {
+            console.warn('[sale-editor] verkbeidni insert:', job.error);
+            // 17.09.2026: áður aðeins console — tækið sem var selt skilaði sér
+            // aldrei á Verkstæði og ekkert sagði frá því.
+            vbVillur.push((sl.desc || 'tæki') + ': ' + ((job.error && job.error.message) || 'verkbeiðni varð ekki til'));
+            maxIdx--;   // númerið var tekið frá fyrir röð sem varð ekki til
+            continue;
+          }
           const count = gram ? 1 : qty;
           const rows = [];
           // 2026-08-24: label tegund+stærð úr vöruheitinu (var „—"/tómt á Verkstæði)
@@ -893,9 +914,26 @@
             job_id: job.data.id, serial: tmpSerial(), type: (pv && pv.type) || '—', size: (pv && pv.size) || '', status: 'received',
             service: gram ? (sl.desc + ' × ' + qty + ' (samtals)') : sl.desc
           });
-          if (rows.length) { try { await SB.from('verklidur').insert(rows); } catch (e) { console.warn('[sale-editor] verklidur insert:', e); } }
+          if (rows.length) {
+            // 17.09.2026: .insert() kastar ekki — gamla catch-ið keyrði aldrei og
+            // verkbeiðnin varð til TÓM (engir verkliðir) án þess að nokkur sæi það.
+            const vl = await SB.from('verklidur').insert(rows);
+            if (vl && vl.error) {
+              console.warn('[sale-editor] verklidur insert:', vl.error);
+              vbVillur.push((sl.desc || 'tæki') + ': verkbeiðnin ' + _sale.num + '-V' + maxIdx + ' varð til en TÓM — ' + (vl.error.message || ''));
+            }
+          }
         }
-      } catch (e) { console.warn('[sale-editor] verkbeidnir reconcile:', e); }
+      } catch (e) {
+        console.warn('[sale-editor] verkbeidnir reconcile:', e);
+        vbVillur.push(String((e && e.message) || e));
+      }
+      if (vbVillur.length) {
+        alert('Salan vistaðist, EN tækin komust ekki öll á Verkstæði:\n\n• '
+            + vbVillur.join('\n• ')
+            + '\n\nStofnaðu verkbeiðnina handvirkt á Verkstæði, eða vistaðu söluna aftur.');
+        try { if (window.logProblem) window.logProblem('sala_verkbeidni_reconcile_failed', _sale.num + ': ' + vbVillur.join(' | ').slice(0, 300)); } catch (_) {}
+      }
     }
 
     if (window.Toast && Toast.show) Toast.show(finalize ? '✓ Sala kláruð · birtist í Bókhaldi' : '✓ Drög vistuð');

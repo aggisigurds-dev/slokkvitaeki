@@ -116,12 +116,24 @@
       if (!state.zones || typeof state.zones !== 'object') state.zones = {};
       if (!state.zoom || typeof state.zoom !== 'object') state.zoom = {};
     } catch (_) {}
+    // 17.09.2026 yfirferð: þögnin er RÉTT hér — þetta er lestur/snyrting á
+    // innlesnu ástandi og fallback-gildin að ofan eru gild byrjunarstaða.
   }
+  // 17.09.2026: AppSettings.save skilar false og kastar ekki — og hér var hvorki
+  // beðið eftir henni né niðurstaðan lesin. Allar stílbreytingar (CSS-yfirskriftir,
+  // svæði, uppáhöld, útgáfur) gátu því horfið ÞÖGULT: útlitið hélst á skjánum af
+  // því applyCss keyrði, en við næstu hleðslu var allt komið til baka.
   function persist() {
     applyCss();
     if (_saveT) clearTimeout(_saveT);
-    _saveT = setTimeout(() => {
-      try { if (window.AppSettings && AppSettings.save) AppSettings.save({ [KEY]: JSON.stringify(state) }); } catch (_) {}
+    _saveT = setTimeout(async () => {
+      let ok = false;
+      try { ok = !!(window.AppSettings && AppSettings.save && await AppSettings.save({ [KEY]: JSON.stringify(state) })); }
+      catch (_) { ok = false; }
+      if (!ok) {
+        try { if (window.logProblem) window.logProblem('page_editor_save_failed', 'AppSettings.save(' + KEY + ') skilaði ekki árangri'); } catch (_) {}
+        toast('⚠ Stílbreytingin vistaðist EKKI — hún hverfur við næstu hleðslu. Reyndu aftur.');
+      }
     }, 400);
   }
   // ── undo ──────────────────────────────────────────────────────────────────

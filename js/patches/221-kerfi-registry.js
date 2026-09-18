@@ -67,6 +67,12 @@
   };
 
   // ── hidden-views flag (reversible) ──────────────────────────────────────────
+  // Yfirfarið 17.09.2026 — þögnin í þessum þremur catch-um er RÉTT:
+  //  • loadHidden: lestur með varaleiðum (AppSettings → localStorage → []).
+  //  • saveHidden: aðeins hvaða flipar eru FALDIR. Það er útlitsval, afturkræft
+  //    með einum smelli, og engin gögn, upphæð né staða hangir á því. Skýja-
+  //    skrifið fer auk þess gegnum saveVordud (patch 85) sem setur misheppnað
+  //    skrif í biðröð og lætur notandann vita sjálf.
   function loadHidden() {
     try { const a = window.AppSettings && AppSettings.path && AppSettings.path(AS_KEY); if (Array.isArray(a)) return a.slice(); } catch (_) {}
     try { const l = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); if (Array.isArray(l)) return l; } catch (_) {}
@@ -197,6 +203,9 @@
     console.log('[kerfi] tab injected');
   }
   setInterval(injectTab,1200); setTimeout(injectTab,800); setTimeout(applyHidden,1500);
+  // Þögnin rétt (17.09.2026): skráir aðeins áheyrn svo faldir flipar uppfærist
+  // þegar önnur vél breytir listanum. Bregðist skráningin sést það á næstu
+  // endurhleðslu — ekkert tapast og engin staða verður ósönn.
   try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(()=>{ HIDDEN=loadHidden(); applyHidden(); if(viewEl()&&viewEl().classList.contains('active')) render(); }); } catch (_) {}
 
   window.KerfiRegistry = { _installed:true, open:openView, scan, hidden:()=>HIDDEN.slice() };

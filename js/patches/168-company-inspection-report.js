@@ -478,6 +478,12 @@
           // til, en hún er best-effort og bregst þegjandi ef endapunkturinn
           // svarar ekki. Nú skrifum við röðina BEINT, idempotent: uppfærum
           // fyrirliggjandi röð sama árs í stað þess að afrita.
+          // 17.09.2026: .select()/.update()/.insert() kasta ekki — villan kom í
+          // .error og var aldrei lesin. Bregðist þetta skrif er skýrslan til í
+          // company_attachments en VANTAR í customer_documents, og þá segja
+          // árdálkarnir (187), Kröfu yfirlit (166) og Rekstrarfélög (175) að
+          // skýrsluna vanti — nákvæmlega villan sem þessi kafli átti að loka.
+          let _docRowOk = true;
           try {
             const sb = window.DB && DB.sb;
             if (sb && co.id != null && ar) {
@@ -491,16 +497,20 @@
               const ex = await sb.from('customer_documents')
                 .select('id').eq('fyrirtaeki_id', co.id).eq('year', +ar)
                 .eq('doc_type', 'uttektarskyrsla').limit(1);
-              if (ex && ex.data && ex.data[0]) {
-                await sb.from('customer_documents').update(rec).eq('id', ex.data[0].id);
-              } else {
-                await sb.from('customer_documents').insert(rec);
-              }
+              if (ex && ex.error) throw ex.error;
+              const w = (ex && ex.data && ex.data[0])
+                ? await sb.from('customer_documents').update(rec).eq('id', ex.data[0].id)
+                : await sb.from('customer_documents').insert(rec);
+              if (w && w.error) throw w.error;
               // Skjalaspjaldið (199) endurteiknar sig á þessum atburði — annars
               // sést nýja skýrslan ekki fyrr en eftir hard reload (2026-08-09).
               document.dispatchEvent(new CustomEvent('customer-doc-written'));
             }
-          } catch (e) { console.warn('[uttektarskyrsla] customer_documents', e); }
+          } catch (e) {
+            _docRowOk = false;
+            console.warn('[uttektarskyrsla] customer_documents', e);
+            try { if (window.logProblem) window.logProblem('uttektarskyrsla_docrow_failed', 'co ' + co.id + ' ár ' + ar + ': ' + String((e && e.message) || e)); } catch (_) {}
+          }
           // 2026-07-16 (ósk Agnars): eintak af skýrslunni fer LÍKA í Google Drive
           // gegnum brunahólfs-endapunktinn /api/uttekt-upload (kanónískt nafn +
           // #staðar-stimpill + customer_documents-röð; idempotent — sama skýrsla
@@ -517,8 +527,12 @@
             }).then(r => { if (!r.ok && r.status !== 404) console.warn('[168] uttekt-upload', r.status); })
               .catch(e => console.warn('[168] uttekt-upload', e && e.message));
           } catch (e) { console.warn('[168] uttekt-upload prep', e && e.message); }
-          if (_cirSaveBtn) _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar;
-          if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + ar);
+          if (_cirSaveBtn) _cirSaveBtn.textContent = _docRowOk ? ('✓ Vistuð sem ' + ar) : ('⚠ Vistuð — óskráð ' + ar);
+          // 17.09.2026: PDF-ið er vistað (það er satt), en sé skjalaröðin ekki
+          // komin inn telst skýrslan „vantar" alls staðar annars staðar. Segjum það.
+          if (window.Toast && Toast.show) Toast.show(_docRowOk
+            ? ('✓ Skýrsla vistuð sem ' + ar)
+            : ('⚠ Skýrslan er vistuð sem PDF, EN skjalaskráning ' + ar + ' mistókst — hún telst enn ógerð í árdálkum og kröfuyfirliti. Vistaðu aftur.'));
           // Skýrsla þessa árs raunverulega vistuð → „Skýrsla tilbúin/send" grænt
           // á ÞjónustuVerkstæði. Aðeins fyrir árið í ár (curYear) — ekki afturvirkt.
           if (window.ArsWorkflow && String(ar) === String(ArsWorkflow.curYear)) {

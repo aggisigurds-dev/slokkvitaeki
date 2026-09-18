@@ -29,6 +29,9 @@
 
   // Which report the tækjalisti was built from — saved per company (synced via
   // AppSettings) so the proof shows on every device.
+  // 2026-09-17: þögnin er RÉTT í báðum — getSource er hreinn lestur sem fellur á null,
+  // og bregðist saveSource sér AppSettings sjálft um að segja frá og setja í biðröð
+  // (85-app-settings). Þá birtist bara ekkert „byggt á"-merki: ekkert verður ósatt.
   function getSource(coId){ try{ if(window.AppSettings&&AppSettings.path){ var all=AppSettings.path('inspection_source')||{}; return all[String(coId)]||null; } }catch(_){} return null; }
   function saveSource(coId, src){ try{ if(window.AppSettings&&AppSettings.save){ var o={inspection_source:{}}; o.inspection_source[String(coId)]=src; return AppSettings.save(o); } }catch(_){} return Promise.resolve(); }
   // „Tengd skýrsla" footer. Á fjölstaða-kt (Center/Pizzan) málaði base-join
@@ -373,9 +376,20 @@
         // shows in Skjöl & viðhengi too, and record it as the tækjalisti source.
         var src={ name:f.name, year:pr.year||null, ts:Date.now() };
         if(window.CompanyAttachments&&CompanyAttachments.upload){
+          // 2026-09-17: „PDF vistuð sem viðhengi" stóð UTAN if(meta) — og
+          // CompanyAttachments.upload KASTAR ekki, það skilar null þegar upphleðslan
+          // mistekst (111-company-attachments). Reiturinn fullyrti því að sönnunar-
+          // skýrslan væri komin í Skjöl & viðhengi þótt hún væri hvergi. Tækjalistinn
+          // er réttur eftir sem áður, svo hér er ekki hætt við — bara sagt satt.
+          var _misVistun=null;
           try{ var meta=await CompanyAttachments.upload(coId, f, {kind:'skyrsla', year:String(pr.year||'')});
-            if(meta){ src.att_id=meta.id; } if(pdfStat){ pdfStat.textContent='✓ Las '+total+' tæki · PDF vistuð sem viðhengi'; }
-          }catch(_){}
+            if(meta){ src.att_id=meta.id; if(pdfStat){ pdfStat.textContent='✓ Las '+total+' tæki · PDF vistuð sem viðhengi'; } }
+            else { _misVistun='upphleðsla skilaði engu'; }
+          }catch(e){ _misVistun=(e&&e.message)||String(e); }
+          if(_misVistun){
+            try{ if(window.logProblem) window.logProblem('uttekt-reader-pdf-vistun', 'coId '+coId+': '+_misVistun); }catch(_){}
+            if(pdfStat){ pdfStat.textContent='✓ Las '+total+' tæki · ⚠ PDF vistaðist EKKI sem viðhengi — hlaðið henni upp handvirkt í Skjöl & viðhengi'; }
+          }
         }
         createFromCounts(coId, nafn, pr.year||new Date().getFullYear(), pr.counts, src);
       }catch(e){ if(pdfStat){ pdfStat.textContent='⚠ '+(e.message||e); } }
@@ -626,6 +640,9 @@
     if(f&&window.CompanyAttachments&&CompanyAttachments.openPreview) CompanyAttachments.openPreview(f);
   });
   // Re-render the open reader when settings sync (source/attachments arrive).
+  // 2026-09-17: þögnin er RÉTT — aðeins skráning á áhorfanda fyrir endurteikningu.
+  // Bregðist hún birtist lesarinn óbreyttur þangað til notandinn opnar hann aftur;
+  // engin gögn og engin staða veltur á þessu.
   try{ if(window.AppSettings&&AppSettings.onChange) AppSettings.onChange(function(){
     var box=document.querySelector('.rdr-box'); if(box&&box.dataset.open==='1'){ var b=box.querySelector('.rdr-bodywrap'); if(b) render(b, +box.dataset.co); }
   }); }catch(_){}

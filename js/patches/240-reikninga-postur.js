@@ -252,27 +252,55 @@
     });
   }
   function isAnswered(rep) { return state.activity.has(rep.message_id); }
+  // 17.09.2026: .insert() kastar ekki — villan kom í .error og var aldrei lesin.
+  // Áður: merkið fór í state og „✓ Merkt svarað" birtist þótt ekkert vistaðist;
+  // við næstu hleðslu var málið ósvarað aftur og enginn vissi af hverju.
+  // Skilar true/false svo kallandinn geti sagt satt.
   async function logActivity(message_id, kind) {
-    if (!message_id) return;
+    if (!message_id) return false;
     state.activity.add(message_id);
     const SB = getSB();
-    try { if (SB) await SB.from('reikninga_postur_activity').insert({ message_id, kind: kind || 'reply' }); } catch (_) {}
+    let err = SB ? null : new Error('enginn gagnagrunnstengill');
+    if (SB) {
+      try { const r = await SB.from('reikninga_postur_activity').insert({ message_id, kind: kind || 'reply' }); err = r && r.error; }
+      catch (e) { err = e; }
+    }
+    if (err) {
+      state.activity.delete(message_id);   // taka staðbundnu merkinguna til baka — hún vistaðist ekki
+      try { if (window.logProblem) window.logProblem('rp_activity_save_failed', 'message_id ' + message_id + ' (' + (kind || 'reply') + '): ' + String((err && err.message) || err)); } catch (_) {}
+      return false;
+    }
+    return true;
   }
   // Manual tag + note per message_id — upsert to Supabase (synced across devices).
+  // 17.09.2026: .upsert()/.delete() kasta ekki. Áður: merki og nóta fóru í state,
+  // „🏷️ Vistað" birtist og nótan var horfin við næstu hleðslu — og í öðru tæki
+  // sást hún aldrei. Nú er fyrra gildið sett aftur og sagt hreint frá.
   async function saveMeta(message_id, manual_tag, note) {
-    if (!message_id) return;
+    if (!message_id) return false;
     manual_tag = String(manual_tag || '').trim();
     note = String(note || '').trim();
+    const fyrra = state.meta[message_id];                       // til að afturkalla ef vistun mistekst
     if (!manual_tag && !note) delete state.meta[message_id];
     else state.meta[message_id] = { manual_tag: manual_tag, note: note };
     const SB = getSB();
-    try {
-      if (!SB) return;
-      if (!manual_tag && !note) await SB.from('reikninga_postur_meta').delete().eq('message_id', message_id);
-      else await SB.from('reikninga_postur_meta').upsert(
-        { message_id: message_id, manual_tag: manual_tag || null, note: note || null, updated_at: new Date().toISOString() },
-        { onConflict: 'message_id' });
-    } catch (_) {}
+    let err = SB ? null : new Error('enginn gagnagrunnstengill');
+    if (SB) {
+      try {
+        const r = (!manual_tag && !note)
+          ? await SB.from('reikninga_postur_meta').delete().eq('message_id', message_id)
+          : await SB.from('reikninga_postur_meta').upsert(
+              { message_id: message_id, manual_tag: manual_tag || null, note: note || null, updated_at: new Date().toISOString() },
+              { onConflict: 'message_id' });
+        err = r && r.error;
+      } catch (e) { err = e; }
+    }
+    if (err) {
+      if (fyrra) state.meta[message_id] = fyrra; else delete state.meta[message_id];
+      try { if (window.logProblem) window.logProblem('rp_meta_save_failed', 'message_id ' + message_id + ': ' + String((err && err.message) || err)); } catch (_) {}
+      return false;
+    }
+    return true;
   }
 
   // ── styles (self-contained, #view-scoped so patch-245 can't override) ──────
@@ -725,7 +753,7 @@
       if (state.expanded.has(k)) state.expanded.delete(k); else state.expanded.add(k);
       render();
     }));
-    v.querySelectorAll('._rp-answered').forEach(b => b.addEventListener('click', async () => { const m = rowFor(b); if (m && m.message_id) { await logActivity(m.message_id, 'reply'); render(); if (window.Toast && Toast.show) Toast.show('✓ Merkt svarað'); } }));
+    v.querySelectorAll('._rp-answered').forEach(b => b.addEventListener('click', async () => { const m = rowFor(b); if (m && m.message_id) { const ok = await logActivity(m.message_id, 'reply'); render(); if (window.Toast && Toast.show) Toast.show(ok ? '✓ Merkt svarað' : '⚠️ Merkingin „svarað" vistaðist EKKI á þjóninn — reyndu aftur eða athugaðu nettenginguna'); } }));
     v.querySelectorAll('._rp-tagf').forEach(b => b.addEventListener('click', () => { state.tagFilter = b.dataset.tag; state.filter = 'all'; render(); }));
     const tc = v.querySelector('#_rp-tagclear'); if (tc) tc.addEventListener('click', () => { state.tagFilter = null; render(); });
     // Tag-filter row — toggle the tag (click active chip to clear), keep the view chip.
@@ -738,18 +766,42 @@
 
   // ── delete / hide a handled email (Supabase-synced across devices) ─────────
   function threadIds(m) { return (m && m._threadIds && m._threadIds.length) ? m._threadIds : (m && m.message_id ? [m.message_id] : []); }
+  // 17.09.2026: .upsert() kastar ekki. Áður hurfu póstarnir úr listanum og
+  // „🗑 Póstur falinn" birtist — en þeir komu allir aftur við næstu hleðslu og
+  // í hinum vélunum sáust þeir aldrei faldir.
   async function hideEmail(m) {
     const ids = threadIds(m); if (!ids.length) return;
     ids.forEach(id => state.hidden.add(id)); render();
     const SB = getSB();
-    try { if (SB) await SB.from('reikninga_postur_hidden').upsert(ids.map(id => ({ message_id: id })), { onConflict: 'message_id' }); } catch (_) {}
+    let err = SB ? null : new Error('enginn gagnagrunnstengill');
+    if (SB) {
+      try { const r = await SB.from('reikninga_postur_hidden').upsert(ids.map(id => ({ message_id: id })), { onConflict: 'message_id' }); err = r && r.error; }
+      catch (e) { err = e; }
+    }
+    if (err) {
+      ids.forEach(id => state.hidden.delete(id)); render();   // sýna þá aftur — þeir eru ekki faldir
+      try { if (window.logProblem) window.logProblem('rp_hide_failed', ids.length + ' póstar: ' + String((err && err.message) || err)); } catch (_) {}
+      if (window.Toast && Toast.show) Toast.show('⚠️ Tókst ekki að fela — pósturinn er enn í listanum. Reyndu aftur.');
+      return;
+    }
     if (window.Toast && Toast.show) Toast.show(ids.length > 1 ? '🗑 ' + ids.length + ' póstar faldir' : '🗑 Póstur falinn');
   }
+  // 17.09.2026: mistókst afturköllunin þagði kerfið — pósturinn birtist á skjánum
+  // en var enn falinn á þjóninum og hvarf aftur við næstu hleðslu.
   async function restoreEmail(m) {
     const ids = threadIds(m); if (!ids.length) return;
     ids.forEach(id => state.hidden.delete(id)); render();
     const SB = getSB();
-    try { if (SB) await SB.from('reikninga_postur_hidden').delete().in('message_id', ids); } catch (_) {}
+    let err = SB ? null : new Error('enginn gagnagrunnstengill');
+    if (SB) {
+      try { const r = await SB.from('reikninga_postur_hidden').delete().in('message_id', ids); err = r && r.error; }
+      catch (e) { err = e; }
+    }
+    if (err) {
+      ids.forEach(id => state.hidden.add(id)); render();      // hann er enn falinn á þjóninum
+      try { if (window.logProblem) window.logProblem('rp_restore_failed', ids.length + ' póstar: ' + String((err && err.message) || err)); } catch (_) {}
+      if (window.Toast && Toast.show) Toast.show('⚠️ Tókst ekki að endurheimta póstinn — hann er enn falinn. Reyndu aftur.');
+    }
   }
 
   // ── auto-hide rules (síur) — sender / domain / subject, Supabase-synced ─────
@@ -761,19 +813,44 @@
     state.rules = [optimistic, ...(state.rules || [])];
     render();
     const SB = getSB();
-    try {
-      if (SB) {
+    // 17.09.2026: .insert() kastar ekki. Áður sat bráðabirgðasían (tmp:) eftir í
+    // listanum og „🔇 Sía bætt við" birtist — hún faldi ekkert eftir næstu hleðslu.
+    let err = SB ? null : new Error('enginn gagnagrunnstengill');
+    if (SB) {
+      try {
         const r = await SB.from('reikninga_postur_rules').insert({ rule_type, pattern }).select().maybeSingle();
-        if (r && r.data) { state.rules = state.rules.map(x => x.id === optimistic.id ? r.data : x); }
-      }
-    } catch (_) {}
+        err = r && r.error;
+        if (!err && r && r.data) { state.rules = state.rules.map(x => x.id === optimistic.id ? r.data : x); }
+      } catch (e) { err = e; }
+    }
+    if (err) {
+      state.rules = (state.rules || []).filter(x => x.id !== optimistic.id);   // sían varð ekki til
+      render();
+      try { if (window.logProblem) window.logProblem('rp_rule_add_failed', rule_type + ' ' + pattern + ': ' + String((err && err.message) || err)); } catch (_) {}
+      if (window.Toast && Toast.show) Toast.show('⚠️ Sían vistaðist EKKI — hún felur ekkert. Reyndu aftur.');
+      return;
+    }
     if (window.Toast && Toast.show) Toast.show('🔇 Sía bætt við');
   }
+  // 17.09.2026: mistókst eyðingin hvarf sían aðeins af skjánum — hún hélt áfram
+  // að fela pósta á þjóninum og kom aftur við næstu hleðslu.
   async function removeRule(id) {
+    const fyrri = (state.rules || []).filter(r => String(r.id) === String(id));
     state.rules = (state.rules || []).filter(r => String(r.id) !== String(id));
     render();
     const SB = getSB();
-    try { if (SB && String(id).indexOf('tmp:') !== 0) await SB.from('reikninga_postur_rules').delete().eq('id', id); } catch (_) {}
+    if (String(id).indexOf('tmp:') === 0) return;   // aldrei vistuð — ekkert að eyða
+    let err = SB ? null : new Error('enginn gagnagrunnstengill');
+    if (SB) {
+      try { const r = await SB.from('reikninga_postur_rules').delete().eq('id', id); err = r && r.error; }
+      catch (e) { err = e; }
+    }
+    if (err) {
+      state.rules = fyrri.concat(state.rules || []);   // sían er enn virk á þjóninum
+      render();
+      try { if (window.logProblem) window.logProblem('rp_rule_del_failed', 'id ' + id + ': ' + String((err && err.message) || err)); } catch (_) {}
+      if (window.Toast && Toast.show) Toast.show('⚠️ Sían var EKKI fjarlægð — hún felur enn pósta. Reyndu aftur.');
+    }
   }
   function muteSender(m) {
     const from = (m.from || '').toLowerCase().trim();
@@ -862,7 +939,16 @@
     card.querySelector('#_rpm-metasave').onclick = async () => {
       const note = card.querySelector('#_rpm-metanote').value;
       const btn = card.querySelector('#_rpm-metasave'); btn.disabled = true;
-      await saveMeta(m.message_id, picked, note);
+      const ok = await saveMeta(m.message_id, picked, note);
+      // 17.09.2026: glugganum var alltaf lokað og „Vistað" sagt. Mistókst vistun
+      // tapaðist nótan sem notandinn var nýbúinn að skrifa — nú helst hann opinn.
+      if (!ok) {
+        btn.disabled = false;
+        const msg = card.querySelector('#_rpm-metamsg');
+        if (msg) { msg.style.color = '#dc2626'; msg.textContent = 'Merki og nóta vistuðust EKKI — reyndu aftur.'; }
+        if (window.Toast && Toast.show) Toast.show('⚠️ Merki/nóta vistaðist ekki');
+        return;
+      }
       closeModal(); render();
       if (window.Toast && Toast.show) Toast.show('🏷️ Vistað');
     };

@@ -217,6 +217,11 @@
   // Marking a unit Í vinnslu flips the whole company to the blue "Í vinnslu"
   // status (patch 153 flag) so it shows up on the 🔵 Í vinnslu page (192) to
   // finish skýrsla/reikningur. One coherent pipeline — no separate board.
+  // 17.09.2026: AppSettings.save KASTAR EKKI — hún skilar true/false, og
+  // niðurstaðan var hvorki lesin né birt. Mistækist skrifið flaug fyrirtækið
+  // aldrei á 🔵 Í vinnslu-síðuna (192): ✓-merkin sátu í localStorage þessa
+  // tækis, enginn sá fyrirtækið á listanum og skýrslan/reikningurinn var aldrei
+  // kláraður. Núna er sagt frá strax.
   async function ensureCompanyInProgress(coId) {
     try {
       if (!window.AppSettings || !AppSettings.save || !AppSettings.path) return;
@@ -227,8 +232,15 @@
       if (+e.last_year_inspected === cy || +e.field_inspected_year === cy) return; // already done / blue
       e.field_inspected_year = cy;
       // AÐEINS þetta fyrirtæki — heil-varpan þurrkaði út stöðu hinna 807.
-      await AppSettings.save({ [KEY]: { [String(coId)]: { field_inspected_year: cy } } });
-    } catch (_) {}
+      const ok = await AppSettings.save({ [KEY]: { [String(coId)]: { field_inspected_year: cy } } });
+      if (!ok) {
+        if (window.Toast && Toast.show) Toast.show('⚠ Fyrirtækið komst EKKI á „Í vinnslu"-listann — merkingarnar eru aðeins á þessu tæki. Reyndu aftur eða endurhlaðið síðuna.');
+        try { if (window.logProblem) window.logProblem('ivinnslu_flag_save_failed', 'co ' + coId); } catch (_) {}
+      }
+    } catch (err) {
+      if (window.Toast && Toast.show) Toast.show('⚠ Fyrirtækið komst ekki á „Í vinnslu"-listann (' + ((err && err.message) || err) + ').');
+      try { if (window.logProblem) window.logProblem('ivinnslu_flag_save_failed', 'co ' + coId + ': ' + String((err && err.message) || err).slice(0, 140)); } catch (_) {}
+    }
   }
 
   function attach() {

@@ -28,6 +28,9 @@
   // í gagnagrunni fái merkið samstundis (var áður fryst í AppSettings-listanum,
   // sama villa og 175). Fallback á gamla AppSettings-leiðina ef 175 er ekki komið.
   function buildIndex() {
+    // 17.09.2026 yfirferð: þögnin er RÉTT hér — LESTUR með varaleið (175 → gamla
+    // AppSettings-leiðin → tóm varpa). Bregðist hún birtist rekstrarfélags-merkið
+    // ekki; ekkert vistast og engin staða verður ósönn.
     let data = null;
     try {
       if (window.RekstrarfelagData && typeof window.RekstrarfelagData.getMerged === 'function') {

@@ -385,6 +385,8 @@
     var klst = now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',hour12:false});
     // Pick first starfsmadur name from AppSettings (Stillingar → Starfsmenn) as default.
     var staffName = 'Kassi';
+    // 2026-09-17: þögnin er RÉTT — hreinn lestur á stillingum fyrir borðann. Bregðist
+    // hann stendur 'Kassi' eftir; ekkert er vistað og engin staða verður ósönn.
     try{var _slist=window.AppSettings&&window.AppSettings.path('starfsmenn');if(Array.isArray(_slist)){var _first=_slist.find(function(s){return s&&s.name&&s.name.trim();});if(_first)staffName=_first.name.trim();}}catch(_e){}
     // Pull branding from AppSettings (Stillingar → Branding). Fallbacks keep
     // the banner sensible during initial load before settings hydrate.
@@ -1462,6 +1464,9 @@
         var cleanKt=state.customer.kt.replace(/[^0-9]/g,'');
         if(cleanKt==='9999999999'){
           // Staðgreitt walk-in án kennitölu — engin kúnnastofnun, bara nafn á kvittun.
+          // 2026-09-17: þögnin er RÉTT hér — þetta endurskrifar sama nafn og insertið
+          // skrifaði þegar (customer_nafn:cust). Mistakist skrifið stendur nafnið úr
+          // insertinu eftir; engin gögn tapast og ekkert verður ósatt.
           var walkinNm = state.customer.nafn || 'Staðgreitt';
           await DB.sb.from('solur').update({customer_nafn: walkinNm}).eq('id', sr.data.id);
         } else if(cleanKt.length===10){
@@ -1537,10 +1542,21 @@
             var _upd={customer_kt:_dashed};
             if(_h.coId!=null)_upd.customer_id=_h.coId;
             if(_h.baseId!=null)_upd.customer_base_id=_h.baseId;
-            await DB.sb.from('solur').update(_upd).eq('id',sr.data.id);
+            var _bf=await DB.sb.from('solur').update(_upd).eq('id',sr.data.id);
+            if(_bf&&_bf.error)throw _bf.error;
             state.customer.co_id=_h.coId||state.customer.co_id;
           }
-        }catch(_e){console.warn('[POS] name-kt backfill:',_e);}
+        }catch(_e){
+          // 2026-09-17: .error var aldrei lesið (supabase-js kastar ekki), svo
+          // bakfyllingin gat mistekist ÞEGJANDI — salan sat eftir án customer_kt og
+          // customer_id, sem strippar kt í Kröfu yfirliti og stöðvar Payday-ýtinguna
+          // („sala án ID → ekki hægt að senda kröfu"). Starfsmaðurinn sá ekkert.
+          // Ekki kastað út úr checkout: salan er þegar vistuð og verkbeiðnirnar eiga
+          // eftir að stofnast — í staðinn nákvæm tilkynning + færsla í registry.
+          console.warn('[POS] name-kt backfill:',_e);
+          try{if(window.logProblem)window.logProblem('pos_kt_bakfylling_failed','sala '+sr.data.id+' — '+String((_e&&_e.message)||_e).replace(/\d{6}-?\d{4}/g,'[kt]'));}catch(_){}
+          try{if(window.Toast&&Toast.show)Toast.show('⚠ Kennitala festist EKKI á sölu '+(num||'')+' — opnaðu söluna og veldu viðskiptavin, annars er ekki hægt að rukka hana.');}catch(_){}
+        }
       }
       // 2026-08-13 (Agnar): verkbeiðni stofnast AÐEINS fyrir línur þar sem varan
       // er merkt „fer á verkstæði" (vorur.krefst_verkbeidni) — ekki lengur fyrir
@@ -1572,6 +1588,8 @@
         // Default VSK% (when product/service didn't specify) also from settings.
         var pickupOffsetDays = 7;
         var defVsk = 24;
+        // 2026-09-17: þögnin er RÉTT — aðeins lestur á sjálfgefnum gildum. Bregðist hann
+        // gilda fallbökkin hér að ofan (7 dagar / 24% VSK); ekkert skrif, ekkert tapast.
         try{var _o=window.AppSettings&&window.AppSettings.path('almennt.default_pickup_offset_days');if(Number.isFinite(+_o)&&+_o>0)pickupOffsetDays=+_o;var _v=window.AppSettings&&window.AppSettings.path('almennt.default_vsk_pct');if(Number.isFinite(+_v)&&+_v>0)defVsk=+_v;}catch(e){}
         // 2026-05-08: Auk þess að búa til verkbeiðnir þá búum við líka til
         // verklidur (eitt fyrir hvert magn í línunni). Án þess sá Verkstæði

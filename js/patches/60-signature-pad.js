@@ -91,9 +91,20 @@
     const { data: pub } = SB.storage.from(BUCKET).getPublicUrl(path);
     const url = pub.publicUrl;
     if (jobId) {
-      await SB.from('verkbeidnir').update({
-        signature_url: url, signed_by: name, signed_at: new Date().toISOString()
-      }).eq('id', jobId);
+      // 17.09.2026: .update() kastar ekki — villan kom í .error og var aldrei lesin.
+      // Myndin fór í geymsluna en verkbeiðnin fékk enga undirskrift: glugginn
+      // lokaðist og sagði „✓ Undirskrift vistuð" þótt verkið væri óundirritað.
+      let rSig = null;
+      try {
+        rSig = await SB.from('verkbeidnir').update({
+          signature_url: url, signed_by: name, signed_at: new Date().toISOString()
+        }).eq('id', jobId);
+      } catch (e) { rSig = { error: e }; }
+      if (rSig && rSig.error) {
+        try { if (window.logProblem) window.logProblem('signature_save_failed', 'verkbeidni ' + jobId + ': ' + String((rSig.error && rSig.error.message) || rSig.error)); } catch (_) {}
+        alert('Undirskriftin komst EKKI á verkbeiðnina (' + ((rSig.error && rSig.error.message) || rSig.error) + ').\n\nVerkið telst óundirritað. Reyndu aftur — myndin sjálf er geymd hér:\n' + url);
+        return;   // glugginn helst opinn svo hægt sé að reyna aftur
+      }
     }
     if (m._onSaved) m._onSaved({ url, name });
     m.remove();
