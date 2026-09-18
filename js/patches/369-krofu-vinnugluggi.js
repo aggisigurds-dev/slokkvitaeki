@@ -124,6 +124,35 @@
     stadfesta_greidslu: { l: 'Staðfesta greiðslu', t: 'Staðfesta greiðslu',             lina: 'Bera við uppgjör og merkja greitt' },
     annad:              { l: 'Annað',              t: 'Annað',                          lina: 'Sjá lýsingu' }
   };
+  /* 18.09.2026 — FORGANGUR EFTIR ÞVÍ HVAÐ PENINGURINN BÍÐUR EFTIR.
+   * Áður réð samtalan ein, og þá vann sá flokkur sem minnst er hægt að gera við:
+   * ítrekanir (1.498.199 kr, allar 1–11 daga gamlar) sátu efst meðan reikningar
+   * sem fóru aldrei (51.393 kr) lágu fimmti í röðinni.
+   *   1 = við höfum ekki beðið um peninginn — ekkert gerist fyrr en einhver gerir eitthvað
+   *   2 = við höfum beðið, krafan er í banka — það er þeirra að greiða
+   *   3 = líklega greitt, á eftir að stemma af
+   * Innan hóps ræður upphæðin áfram: hópurinn er dómur um hvað er hægt að GERA,
+   * upphæðin er mæling sem raðar innan hans.
+   */
+  const HOPUR = {
+    senda_krofu: 1, krafa_ekki_stofnud: 1, payday_drog: 1, gleymt: 1,
+    aud_sala: 1, greitt_sidar: 1, faera_kt: 1,
+    itreka: 2,
+    stadfesta_greidslu: 3,
+    annad: 4
+  };
+  const hopAf = teg => HOPUR[teg] || 4;
+  const HOP_HEITI = { 1: 'Ekki búið að biðja um peninginn', 2: 'Beðið — bíður greiðslu', 3: 'Líklega greitt — staðfesta', 4: 'Annað' };
+  // Ítrekun yngri en þetta er ekki vinna, hún er ónæði. Talan er ÁKVÖRÐUN (Agnar
+  // 18.09.2026: „heldur en að hringja eftir 2 daga í kröfu"), ekki mæling — hún
+  // stendur hér ein og sér svo hún sjáist og megi breyta.
+  const ITREKA_DAGAR = 14;
+  const ferskItrekun = m => {
+    if (m.tegund !== 'itreka') return false;
+    // `gjalddagi` er settur á málið þar sem ítrekunin verður til. Vanti hann er
+    // ekki hægt að segja hvort hún sé fersk — og þá er hún ekki falin.
+    return !!m.gjalddagi && dagaMunur(m.gjalddagi) < ITREKA_DAGAR;
+  };
   const TEG_ROD = Object.keys(TEG);
   const LEIDIR = { payday: 'Stofna kröfu í Payday', uppl: 'Senda greiðsluupplýsingar', endursenda: 'Afturkalla og senda aftur' };
   const VIDVORUN = {
@@ -146,6 +175,7 @@
   const S = {
     d: null, at: 0, bid: false, villa: '',
     rod: 'upphaed', synd: SYND, opinTegund: '',
+    ferskAllt: false,   // 18.09.2026: „Sýna samt" á nýlegum ítrekunum
     lag: null,       // lagið í skuggarót 368
     gl: null         // opinn gluggi: { m, x, vf, bid, villa, drog, busy, form, sleppaOpid, athStada }
   };
@@ -254,7 +284,9 @@
       if (p.status === 'DRAFT') { baeta(grunnur(s), 'payday_drog', id + 'payday_drog'); return; }
       if (p.status === 'PAID' || p.paid_date) { baeta(grunnur(s), 'stadfesta_greidslu', id + 'stadfesta_greidslu'); return; }
       if (p.status !== 'SENT') { baeta(grunnur(s), 'annad', id + 'osamraemi', { astaeda: 'Payday-reikningurinn er ' + p.status + ' en salan er enn merkt send og ógreidd. Stemma þarf af sölu og Payday.' }); return; }
-      if (p.due_date && p.due_date < idag) { baeta(grunnur(s), 'itreka', id + 'itreka'); return; }
+      // 18.09.2026: gjalddaginn fylgir málinu svo forgangslistinn geti greint
+      // tveggja daga ítrekun frá tveggja mánaða. Áður lifði hann aðeins hér.
+      if (p.due_date && p.due_date < idag) { baeta(grunnur(s), 'itreka', id + 'itreka', { gjalddagi: p.due_date }); return; }
       iInnheimtu.push(s);                   // SENT og ekki kominn á gjalddaga: ekkert að gera í dag
       utan[s.id] = 'Krafan er send (Payday nr. ' + (p.number || '—') + ') og ' + (p.due_date ? 'gjalddaginn ' + dags(p.due_date) + ' er ekki liðinn' : 'enginn gjalddagi er skráður') + ' — ekkert að gera enn.';
     });
@@ -309,7 +341,13 @@
   function lysing(m) {
     const p = m.p, s = m.s, idag = ymd(new Date());
     switch (m.tegund) {
-      case 'itreka': return p && p.due_date ? dagaMunur(p.due_date) + ' d. yfir gjalddaga' : 'yfir gjalddaga';
+      // 18.09.2026: fersk ítrekun segir ekki „hringja" — krafan er í banka og
+      // tveir dagar eru ekki tilefni til að ónáða neinn.
+      case 'itreka': {
+        if (!(p && p.due_date)) return 'yfir gjalddaga';
+        const d = dagaMunur(p.due_date);
+        return d + ' d. yfir gjalddaga' + (d < ITREKA_DAGAR ? ' · krafan er í banka, bíða' : '');
+      }
       case 'senda_krofu': return 'aldrei send · ' + dagaMunur(m.stofnad) + ' d.';
       case 'payday_drog': return 'aðeins drög í Payday' + (p && p.due_date && p.due_date < idag ? ' · gjalddagi dróganna liðinn' : '');
       case 'krafa_ekki_stofnud': return 'engin bankakrafa' + (p && p.due_date ? ' · gjalddagi ' + dags(p.due_date) : '');
@@ -359,14 +397,26 @@
       '</div>';
     if (bida.length) h += '<div class="sect">Bíða yfirferðar þinnar — krafan situr ósend (' + bida.length + ')</div>' + bida.map(rodHtml).join('');
     if (S.rod === 'tegund') {
-      h += TEG_ROD.map(t => ({ t, l: rest.filter(m => m.tegund === t) })).filter(g => g.l.length).sort((a, b) => summa(b.l) - summa(a.l)).map(g => {
+      // 18.09.2026: hópur fyrst, upphæð innan hóps. Áður: upphæð ein.
+      h += TEG_ROD.map(t => ({ t, l: rest.filter(m => m.tegund === t) })).filter(g => g.l.length)
+        .sort((a, b) => (hopAf(a.t) - hopAf(b.t)) || (summa(b.l) - summa(a.l))).map(g => {
         const allt = S.opinTegund === g.t, synd = allt ? g.l : g.l.slice(0, 8);
         return '<div class="sect">' + esc(TEG[g.t].t) + ' · ' + g.l.length + ' · ' + kr(summa(g.l)) + '</div>' + synd.map(rodHtml).join('') +
           (g.l.length > synd.length ? '<div class="more"><button type="button" class="btn iv sm" data-kv="tegund-allt" data-t="' + g.t + '">Sýna öll ' + g.l.length + '</button></div>' : '');
       }).join('');
     } else {
-      h += '<div class="sect">Stærst fyrst (' + med.length + ')</div>' + med.slice(0, S.synd).map(rodHtml).join('') +
-        (med.length > S.synd ? '<div class="more"><button type="button" class="btn iv sm" data-kv="fleiri">Sýna fleiri · ' + (med.length - S.synd) + ' eftir</button></div>' : '');
+      // 18.09.2026: ferskar ítrekanir eru teknar úr aðallistanum og settar neðst.
+      // Þær hverfa ekki — þær eru bara ekki það fyrsta sem manni er sagt að gera.
+      const ferskar = med.filter(ferskItrekun);
+      const adal = med.filter(m => !ferskItrekun(m)).sort((a, b) =>
+        (hopAf(a.tegund) - hopAf(b.tegund)) || (b.upphaed - a.upphaed));
+      h += '<div class="sect">Mest aðkallandi fyrst (' + adal.length + ')</div>' + adal.slice(0, S.synd).map(rodHtml).join('') +
+        (adal.length > S.synd ? '<div class="more"><button type="button" class="btn iv sm" data-kv="fleiri">Sýna fleiri · ' + (adal.length - S.synd) + ' eftir</button></div>' : '');
+      if (ferskar.length) {
+        h += '<div class="sect">Nýlega á gjalddaga — bíða (' + ferskar.length + ' · ' + kr(summa(ferskar)) + ')</div>' +
+          '<p class="kv-fott">Krafan er komin í banka og innan við ' + ITREKA_DAGAR + ' dagar liðnir frá gjalddaga. Ekkert að gera hér strax.</p>' +
+          (S.ferskAllt ? ferskar.map(rodHtml).join('') : '<div class="more"><button type="button" class="btn iv sm" data-kv="fersk-allt">Sýna samt</button></div>');
+      }
       if (an.length) {
         h += '<div class="sect">Án upphæðar (' + an.length + ')</div><div class="more">' +
           TEG_ROD.map(t => [t, an.filter(m => m.tegund === t).length]).filter(x => x[1])
@@ -377,13 +427,13 @@
     return '<div class="kvlisti">' + h + '</div>';
   }
   function samantekt() {
-    if (!S.d) return S.bid ? 'Tek saman…' : 'Stærsta upphæð fyrst';
+    if (!S.d) return S.bid ? 'Tek saman…' : 'Mest aðkallandi fyrst';
     const mal = S.d.mal.filter(m => !LOKAD[stadaMals(m)]), bida = mal.filter(m => stadaMals(m) === 'i_yfirferd_agnars').length;
     return mal.length + ' mál · ' + kr(summa(mal.filter(m => !m.aaetlad))) + (bida ? ' · ' + bida + ' bíða þín' : '') + (S.bid ? ' · uppfæri…' : '');
   }
   function takkar() {
     return '<div class="seg sm" role="group" aria-label="Röðun forgangslista">' +
-        '<button type="button" data-kv="rod" data-v="upphaed" aria-pressed="' + (S.rod === 'upphaed') + '">Stærst fyrst</button>' +
+        '<button type="button" data-kv="rod" data-v="upphaed" aria-pressed="' + (S.rod === 'upphaed') + '">Aðkallandi fyrst</button>' +
         '<button type="button" data-kv="rod" data-v="tegund" aria-pressed="' + (S.rod === 'tegund') + '">Eftir tegund</button></div>' +
       '<button type="button" class="btn iv sm" data-kv="nytt" title="Stofna mál á reikning: rangur greiðandi, krafa ekki stofnuð eða annað">+ Mál</button>' +
       '<button type="button" class="btn iv sm tog" data-kv="uppf" title="Sækja nýjustu gögn" aria-label="Uppfæra forgangslista">↻</button>';
@@ -422,6 +472,7 @@
     if (a === 'syna-tegund') { S.rod = 'tegund'; S.opinTegund = el.dataset.t; teiknaBord(); return; }
     if (a === 'tegund-allt') { S.opinTegund = el.dataset.t; teiknaBord(); return; }
     if (a === 'fleiri') { S.synd += SYND; teiknaBord(); return; }
+    if (a === 'fersk-allt') { S.ferskAllt = !S.ferskAllt; teiknaBord(); return; }
     if (a === 'uppf') {
       tryggja(true); teiknaBord();
       // Staða reikninga úr Payday líka — 'payday-spegill' sækir listann aftur þegar hún er komin.
