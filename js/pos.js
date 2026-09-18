@@ -1481,6 +1481,18 @@
             var dashedKt=cleanKt.slice(0,6)+'-'+cleanKt.slice(6);
             // 1) Er kt þegar til sem fyrirtæki/staður? (fjölstaða deilir einu base)
             var fyMatch=await DB.sb.from('fyrirtaeki').select('id,customer_base_id,stadur_nr').or('kennitala.eq.'+dashedKt+',kennitala.eq.'+cleanKt).is('deleted_at',null).order('stadur_nr',{ascending:true,nullsFirst:false}).limit(20);
+            // 18.09.2026 — ÓSKOÐAÐUR LESTUR ER VERRI EN ÓSKOÐAÐ SKRIF.
+            // Bregðist þessi fyrirspurn (RLS, 500, netglitch) er `data` null, `fyRows`
+            // verður tómt og kóðinn les það sem „kennitalan er ný". Þá fer hann í
+            // else-greinina og STOFNAR nýtt fyrirtæki + nýja base-röð fyrir kúnna sem
+            // er þegar til. Tvískráður staður verður til úr engu — og sameining færir
+            // hvorki tæki né skjöl, svo það er ekki hægt að taka til baka hreint.
+            // Salan er þegar vistuð; hún má standa ótengd frekar en að eignast tvífara.
+            if(fyMatch&&fyMatch.error){
+              _logP('pos_kunni_lestur_failed', fyMatch.error.message);
+              if(window.Toast&&Toast.show)Toast.show('⚠ Náði ekki að fletta upp kennitölunni. Salan er vistuð en ÓTENGD — og ekkert nýtt fyrirtæki var stofnað, til að forðast tvískráningu. Opnaðu söluna og tengdu hana.');
+              throw new Error('kunni_lestur_failed');
+            }
             var fyRows=(fyMatch&&fyMatch.data)||[];
             if(fyRows.length===1){
               custId=fyRows[0].id; baseId=fyRows[0].customer_base_id||null;
@@ -1491,6 +1503,13 @@
             }else{
               // 2) Ekkert fyrirtæki. Finnum/stofnum í customers_base (skráin) …
               var cbMatch=await DB.sb.from('customers_base').select('id,simi').or('kennitala.eq.'+dashedKt+',kennitala.eq.'+cleanKt).limit(1).maybeSingle();
+              // 18.09.2026: sama gildra einu þrepi neðar. Mistakist þessi lestur
+              // fer kóðinn í else-greinina og bætir ANNARRI base-röð við sömu
+              // kennitölu — munaðarlausar raðir í `customers_base` verða þannig til.
+              if(cbMatch&&cbMatch.error){
+                _logP('pos_kunni_base_lestur_failed', cbMatch.error.message);
+                throw new Error('kunni_base_lestur_failed');
+              }
               if(cbMatch&&cbMatch.data&&cbMatch.data.id){
                 baseId=cbMatch.data.id;
                 if(custSimi && !cbMatch.data.simi){ await DB.sb.from('customers_base').update({simi:custSimi}).eq('id',baseId); }
