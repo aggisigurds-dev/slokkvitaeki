@@ -182,7 +182,15 @@
         'margin:-6px 0 12px;padding:0 2px';
       head.parentNode.insertBefore(strip, head.nextSibling);
     }
-    strip.innerHTML = stripHtml(cached(coId, year), year);
+    // 18.09.2026 — MÆLT MEÐ tools/smoke/arekstrar.js: þessi lína keyrði á ~120 ms
+    // fresti að eilífu á kyrrstæðum prófíl (224 DOM-breytingar á 8 sekúndum, 28/sek).
+    // `innerHTML =` skiptir út ÖLLUM börnum, líka þegar efnið er stafrétt eins.
+    // Það er childList-breyting, sem endurræsir vaktina á :358, sem kallar tick(),
+    // sem kallar hingað aftur. Sjálfkveikja.
+    //
+    // Lagfæringin er hreyfingarleysi: bera saman fyrst. Útkoman er stafrétt sú sama.
+    const html = stripHtml(cached(coId, year), year);
+    if (strip.innerHTML !== html) strip.innerHTML = html;
   }
 
   /* Sama merking við „📄 Búa til úttektarskýrslu" (ósk Agnars: „líka merking að

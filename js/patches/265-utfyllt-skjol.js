@@ -142,13 +142,20 @@
     }
     sec.dataset.coId = coId;
     sec.style.cssText = sec.style.cssText || 'margin-top:14px';
-    sec.innerHTML =
+    // 18.09.2026 — MÆLT með tools/smoke/arekstrar.js: #_ufs-reports var endurteiknað
+    // á ~125 ms fresti á kyrrstæðri síðu (64 DOM-breytingar á 8 sek), þótt vaktin hér
+    // fyrir neðan hafi vörn. Eitthvað annað kallar hingað endurtekið.
+    // `innerHTML =` skiptir út ÖLLUM börnum líka þegar efnið er stafrétt eins, og hver
+    // slík breyting getur kveikt á næstu vakt í röðinni. Samanburður fyrst: sama
+    // útkoma, engin hreyfing þegar ekkert breyttist.
+    const _html =
       '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-top:14px">' +
         '<div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:8px">📑 Samningar &amp; útfyllt skjöl <span style="font-weight:500;color:#94a3b8;font-size:11px">(úr Samningar-flipanum)</span></div>' +
         (docs.length
           ? '<div style="border:1px solid #f1f5f9;border-radius:8px;overflow:hidden">' + docs.map(docRow).join('') + '</div>'
           : '<div style="font-size:12px;color:#94a3b8;font-style:italic">Engin útfyllt skjöl fundust á þessa kennitölu/nafn. Skjöl vistuð með „💾 Vista í kerfi" í Samningum birtast hér.</div>') +
       '</div>';
+    if (sec.innerHTML !== _html) sec.innerHTML = _html;
     wireOpen(sec);
   }
   (function watchProfile() {
@@ -282,11 +289,16 @@
       // Neðst á síðuna (Tilboðs-sectionið mountast líka neðst).
       (view.querySelector(':scope > div') || view).appendChild(sec);
     }
-    sec.innerHTML =
+    // 18.09.2026 — MÆLT: #_ufs-reports var endurteiknað á ~125 ms fresti á kyrrstæðri
+    // síðu (64 DOM-breytingar á 8 sek). `innerHTML =` skiptir út öllum börnum líka
+    // þegar efnið er stafrétt eins, og hver slík breyting kveikir á næstu vakt.
+    // Samanburður fyrst: sama útkoma, engin hreyfing þegar ekkert breyttist.
+    const _html =
       '<div style="font-size:14px;font-weight:800;color:#0f172a;margin:8px 0 8px">📄 Vistaðar skýrslur <span style="font-weight:500;color:#94a3b8;font-size:11px">' + reports.length + ' — prófunarskýrslur brunaviðvörunarkerfa, opnast til að prenta/vista PDF</span></div>' +
       (reports.length
         ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">' + reports.map(docRow).join('') + '</div>'
         : '<div style="background:#fff;border:1px dashed #e2e8f0;border-radius:12px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic">Engar skýrslur vistaðar enn — „📄 Skýrsla" takkinn hér að ofan býr til nýja.</div>');
+    if (sec.innerHTML !== _html) sec.innerHTML = _html;
     wireOpen(sec);
   }
   (function watchBk() {

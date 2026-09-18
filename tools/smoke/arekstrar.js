@@ -193,6 +193,80 @@
     return { tvitekid, margir, togstreita };
   }
 
-  window.Arekstrar = { byrja, haetta, skyrsla, get skra() { return skra; } };
+  /**
+   * KYRRÐARPRÓF — hreyfist DOM-ið þegar enginn snertir neitt?
+   *
+   * 18.09.2026: ég flýtti þremur borðum á fyrirtækjaprófílnum með því að kalla
+   * mount á fremstu brún MutationObserver-teljara, og bætti `placeSection()` við
+   * öftustu brúnina. Það fall kallaði `insertBefore` SKILYRÐISLAUST — það færði
+   * hnútinn líka þegar hann var þegar réttur. Að færa hnút er DOM-breyting, sem
+   * núllstillti minn eigin teljara. Lykkjan gekk að eilífu.
+   *
+   * Afleiðingin var ekki bara sóun: pappi 265 bíður í 600 ms eftir kyrrð sem kom
+   * aldrei, svo spjaldið hans BIRTIST ALDREI. Hraðabót faldi heila sýn.
+   *
+   * Ég reyndi að skrifa textamynsturs-vörð fyrir þetta. Hann flaggaði 214 stöðum,
+   * og eftir þrengingu 30 — nánast allt `injectButton`-föll sem búa til NÝJAN hnút
+   * og geta því ekki lykkjað. Listi sem enginn hefur dæmt er ekki vörður, svo
+   * honum var hent. Þetta próf mælir veruleikann í staðinn og hefur engar falskar
+   * viðvaranir: annaðhvort hreyfist DOM-ið á kyrrstæðri síðu eða ekki.
+   *
+   *     await Arekstrar.kyrrd()          // 8 sek á núverandi sýn
+   *     await Arekstrar.kyrrd(15000)
+   */
+  async function kyrrd(ms) {
+    ms = ms || 8000;
+    const hreyfingar = [];
+    const obs = new MutationObserver((mms) => {
+      for (const m of mms) {
+        if (m.type !== 'childList') continue;
+        // 18.09.2026: fyrsta útgáfa sagði „224× span" og nefndi ekki HVAR. Tala án
+        // staðsetningar sendir mann í leit. Foreldrið er það sem segir hvaða pappi ber ábyrgð.
+        const stadur = (el) => {
+          let e = el, leid = [];
+          for (let d = 0; e && d < 3; d++) {
+            leid.unshift(e.id ? '#' + e.id : (e.className ? '.' + String(e.className).split(' ')[0] : e.tagName.toLowerCase()));
+            e = e.parentElement;
+          }
+          return leid.join(' > ');
+        };
+        const lysa = (n) => (n.nodeType === 1
+          ? stadur(m.target) + '  ⟨' + (n.className ? '.' + String(n.className).split(' ')[0] : n.tagName.toLowerCase()) + '⟩'
+          : null);
+        m.removedNodes.forEach((n) => { const l = lysa(n); if (l) hreyfingar.push({ t: Date.now(), hvad: l, adg: 'fjarlægt' }); });
+        m.addedNodes.forEach((n) => { const l = lysa(n); if (l) hreyfingar.push({ t: Date.now(), hvad: l, adg: 'bætt við' }); });
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+    const t0 = Date.now();
+    await new Promise((r) => setTimeout(r, ms));
+    obs.disconnect();
+
+    const perHnut = {};
+    hreyfingar.forEach((h) => { (perHnut[h.hvad] = perHnut[h.hvad] || []).push(h.t); });
+    const grunsamlegt = Object.entries(perHnut)
+      .map(([hvad, tt]) => ({ hvad, n: tt.length, bil: tt.slice(1).map((t, i) => t - tt[i]) }))
+      .filter((x) => x.n >= 4)                       // endurtekið, ekki einskiptis
+      .sort((a, b) => b.n - a.n);
+
+    const sek = ((Date.now() - t0) / 1000).toFixed(1);
+    console.log('\n═══ KYRRÐARPRÓF — ' + sek + ' s á ' + (location.hash || '#') + ' ═══');
+    console.log('DOM-hreyfingar meðan enginn snerti neitt: ' + hreyfingar.length);
+    if (!grunsamlegt.length) {
+      console.log('✅ Engin endurtekin hreyfing — engin þöguls-lykkja á þessari sýn.');
+    } else {
+      console.log('❌ Endurtekin hreyfing á kyrrstæðri síðu:');
+      grunsamlegt.slice(0, 8).forEach((x) => {
+        const medal = x.bil.length ? Math.round(x.bil.reduce((a, b) => a + b, 0) / x.bil.length) : 0;
+        console.log('   ' + String(x.n).padStart(3) + '×  ' + x.hvad + '   (' + medal + ' ms að meðaltali)');
+      });
+      console.log('\n   Þetta er nær alltaf MutationObserver sem kveikir á sjálfum sér:');
+      console.log('   fall sem hreyfir hnút SKILYRÐISLAUST býr til breytinguna sem það beið eftir.');
+      console.log('   Lagfæring: snerta DOM aðeins þegar staðsetningin er raunverulega röng.');
+    }
+    return { hreyfingar: hreyfingar.length, grunsamlegt };
+  }
+
+  window.Arekstrar = { byrja, haetta, skyrsla, kyrrd, get skra() { return skra; } };
   byrja();                                   // vakta strax við hleðslu
 })();
