@@ -1212,29 +1212,49 @@ felldar saman — sbr. árekstrarviðvörunina sem eitt þeirra bar. Hvert atri�
 Agnar: *„rosalega ruglandi hvað það eru margir gerðir á dag, eftir því hvort
 miðast er við created day. edit day. finished day.. what do you use"*.
 
-Svarið er **`execution_date`**, og ástæðan er ekki smekkur — hinar tvær eru
-ónothæfar. Mælt á öllum 18.822 röðum `ajour_registrations`:
+**Svarið: Ajour-flipinn telur eftir STOFNDEGI (created), og leggur saman allar
+fimm stöðurnar.** `luna-bridge/ajour-yfirlit.js:103-110` kallar
+`POST /api/reporting/legacy/GetReportData` með
+`model[createdFrom] = model[createdTo] =` einn dag og leggur saman
+`created + done + completed + rejected + notApproved`. Talan er því **fjöldi
+skráninga sem URÐU TIL þann dag, í hvaða stöðu sem er** — ekki hvað var klárað
+þann dag. Stofndagurinn breytist ekki, þess vegna má geyma eldri daga (aðeins
+síðustu 3 dagar sóttir aftur, `buildDaily`).
+
+⚠️ **Taflan `ajour_registrations` er EKKI það sem flipinn notar, og hún er
+frosin fyrir öll verkefni nema NLSH.** Mælt 18.09.2026:
+
+| Verkefni | Raðir | Nýjast (execution) | Síðast flutt inn |
+|---|---|---|---|
+| NLSH 5-6. hæð | 10.041 | 17.09.2026 | **18.09.2026** |
+| Dalvegur 30A | 1.609 | 28.05.2026 | 30.05.2026 |
+| Heklureitur | 1.395 | 15.04.2026 | 22.05.2026 |
+| Fjarðargata NÝTT | 697 | 29.05.2026 | 30.05.2026 |
+| Grímsbær Reitir | 481 | 26.05.2026 | 28.05.2026 |
+
+`ajour-fetch.js` flytur aðeins út „NLSH 5-6. hæð", svo talning úr töflunni er
+röng fyrir öll önnur verkefni. Sjá [[project-ajour-api]].
+
+Þurfi samt að telja ÚR töflunni (aðeins NLSH er marktækt) eru dálkarnir svona,
+mælt á öllum 18.822 röðunum:
 
 | Dálkur | Fylltur | Tímabil |
 |---|---|---|
-| `execution_date` | **18.822 af 18.822 (100 %)** | 11.03.2025 → 17.09.2026 |
+| `execution_date` | **18.822 (100 %)** | 11.03.2025 → 17.09.2026 |
 | `checked_date` | 14.073 (75 %) | 12.03.2025 → 17.09.2026 |
-| `registration_created_date` | **919 (5 %)** | **aðeins 01.04. → 30.05.2026** |
+| `registration_created_date` | **919 (5 %)** | **01.04. → 30.05.2026** |
 
-`registration_created_date` er 95 % tómur og nær bara yfir tvo mánuði í vor —
-síðustu 14 dagar eftir honum gefa **núll á hverjum einasta degi**. `checked_date`
-vantelur um 10–25 % á virkum dögum (t.d. 09.09.: execution 31 · checked 24).
+`registration_created_date` nær aðeins yfir tímabilið ÁÐUR en útflutningurinn
+þrengdist í NLSH eitt — þess vegna gefur hann núll á hverjum degi síðustu vikur.
+`execution_date` er eini heili dálkurinn. Á þeim 919 röðum þar sem `created` er
+til er `execution` **aldrei** á öðrum degi (0 víkja); `checked` víkur á 37.
 
-Á þeim 919 röðum þar sem `created` er til er `execution_date` **aldrei** á öðrum
-degi (0 raðir víkja); `checked` víkur á 37.
-
-**Ekkert í appinu telur Ajour-punkta** (mælt 18.09.2026). Einu tilvísanirnar í
-töfluna eru athugasemd í `js/db.js:281` og `tools/audit-pagination.cjs`. Það er
-því engin gömul venja sem stangast á — talan hefur aldrei verið reiknuð.
-Samstillingin er lifandi: síðast flutt inn 18.09. kl. 12:27, 103 raðir á sólarhring.
+> **Leiðrétting 18.09.2026:** fyrri útgáfa þessa kafla sagði „ekkert í appinu
+> telur Ajour-punkta". Það var rangt — grepið náði aðeins yfir
+> `slokkvitaeki`-repóið, en talningin býr í `luna-bridge` og fer um API Ajour
+> sjálfs. Staðreyndir 597 og 598 í `charlize_knowledge` voru felldar (superseded).
 
 ---
-
 ## „Drög-stöðin" er ekki „Drög (38)" *(mælt 2026-09-18)*
 
 | Heiti | Hvað það er | Hvar |
