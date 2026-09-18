@@ -132,9 +132,13 @@
     { reitur: 'hringja',    merki: 'Tengiliður',   hint: 'nafn / sími' },
     { reitur: 'adkoma_ath', merki: 'Aðkoma nánar', hint: 't.d. herbergi kl. 11–14' }
   ];
+  // 18.09.2026 (Agnar: „bæta við kóða númeri, setja hann bara í staðin fyrir annað Merki"). Seinni
+  // frjálsa línan (frjalst2) var ónotuð á öllum félögum (mælt í app_settings sama dag: 0 af 10) og
+  // víkur fyrir föstum reit: aðgangskóði / lyklabox. Gögn í frjalst2 (ef einhver verða til annars
+  // staðar) eru ósnert í blobbinu — línan er aðeins ekki lengur teiknuð.
   const LINUR_FRJALS = [
-    { reitur: 'frjalst1', merkiReitur: 'frjalst1_merki', merkiHint: 'Merki…', hint: '—' },
-    { reitur: 'frjalst2', merkiReitur: 'frjalst2_merki', merkiHint: 'Merki…', hint: '—' }
+    { reitur: 'kodi', merki: 'Kóði', hint: 'aðgangskóði / lyklabox' },
+    { reitur: 'frjalst1', merkiReitur: 'frjalst1_merki', merkiHint: 'Merki…', hint: '—' }
   ];
 
   function esc(s) {
