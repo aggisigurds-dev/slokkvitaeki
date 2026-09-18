@@ -35,6 +35,16 @@
       '.tgl-wrap{max-width:1000px;margin:0 auto;padding:14px 16px 70px}' +
       '.tgl-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px}' +
       '.tgl-title{font-weight:800;font-size:20px;color:var(--ink,#0f172a)}' +
+      '.tgl-row{flex-wrap:wrap}.tgl-ctx{flex:1 1 100%;margin-top:8px;padding-top:8px;border-top:1px dashed var(--brd,#e2e8f0);font-size:12px;color:var(--ink2,#334155)}' +
+      '.tgl-ctx-bid{color:var(--ink3,#94a3b8);font-style:italic}' +
+      '.tgl-till{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:7px 10px;margin-bottom:8px}' +
+      '.tgl-till.veik{background:#fffbeb;border-color:#fde68a}.tgl-till b{color:#14532d}.tgl-till.veik b{color:#92400e}' +
+      '.tgl-till .rok{color:var(--ink3,#64748b);font-size:11.5px}' +
+      '.tgl-till button{margin-left:auto;padding:5px 11px;border:1px solid #16a34a;border-radius:7px;background:#16a34a;color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer}' +
+      '.tgl-p{border:1px solid var(--brd,#e2e8f0);border-radius:8px;margin-bottom:5px;background:#fff}.tgl-p summary{list-style:none;cursor:pointer;padding:6px 10px;display:flex;gap:8px;align-items:baseline}' +
+      '.tgl-p summary::-webkit-details-marker{display:none}.tgl-p .d{flex:0 0 auto;color:var(--ink3,#64748b);font-size:11px;white-space:nowrap}.tgl-p .e{font-weight:700;color:var(--ink,#0f172a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}' +
+      '.tgl-p .s{flex:1;min-width:0;color:var(--ink3,#64748b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.tgl-p .meg{white-space:pre-wrap;padding:8px 12px 10px;border-top:1px solid var(--brd,#e2e8f0);background:#f8fafc;color:var(--ink,#0f172a);max-height:340px;overflow:auto;line-height:1.5}' +
       '.tgl-sub{font-size:12.5px;color:var(--ink3,#64748b);margin-top:2px}' +
       '.tgl-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}' +
       '.tgl-seg{display:inline-flex;border:1px solid var(--brd,#e2e8f0);border-radius:9px;overflow:hidden}' +
@@ -115,6 +125,7 @@
         '<div class="tgl-meta">' + coHtml + ' · ' + esc(x.len || '') + ' · ' + (x.faerslur || 0) + ' póstar' + (x.sidast_sest ? ' · síðast ' + fmtDate(x.sidast_sest) : '') + '</div>' +
       '</div>' +
       '<div class="tgl-acts">' + acts.join('') + '</div>' +
+      '<div class="tgl-ctx" data-ctx="' + x.id + '"><span class="tgl-ctx-bid">⏳ sæki póstana…</span></div>' +
     '</div>';
   }
 
@@ -134,6 +145,7 @@
       try { if (window.App && App.switchView) App.switchView('companies'); Companies.openDetail(+el.dataset.open); } catch (_) {}
     }));
     host.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); onAct(b.dataset.act, +b.dataset.id); }));
+    vaktaSamhengi(host);
   }
 
   async function post(body) {
@@ -295,6 +307,76 @@
       stig: h.kt.size * 100 + h.gataEfni.size * 20 + h.gata.size * 10 + (h.len ? 1 : 0),
     })).sort((a, b) => b.stig - a.stig || String(a.c.nafn || '').localeCompare(String(b.c.nafn || ''), 'is'));
     return { listi, utanSkrar, goturUtan };
+  }
+
+  // ── 18.09.2026 — SAMHENGIÐ Á SPJALDINU SJÁLFU ───────────────────────────────────
+  // Agnar: „hræðileg hjálparsíða til að reyna staðfesta og tengja. vantar alveg samhengið og
+  // póstinn sjálfan". Listinn sýndi aðeins netfang + fjölda; póstarnir og tillögurnar voru
+  // faldar á bak við „Tengja". Nú sækir hvert spjald sína pósta þegar það kemur á skjáinn
+  // (mest 3 í einu, geymt per netfang) og sýnir: bestu tillögurnar með rökum + eins-smells
+  // tengingu, og nýjustu póstana — smellur opnar allan póstinn. Sömu reglur og í
+  // Tengja-glugganum (reiknaTillogur). Ekkert vistast nema smellt sé.
+  const _ctxGeymsla = new Map();   // netfang → Promise<{postar, till}>
+  let _ctxIGangi = 0; const _ctxBidrod = [];
+  function ctxSaekja(x) {
+    const k = String(x.netfang || '').toLowerCase();
+    if (!_ctxGeymsla.has(k)) _ctxGeymsla.set(k, (async () => {
+      const postar = await saekjaPosta(x.netfang);
+      return { postar, till: reiknaTillogur(x, postar, husaSkra()) };
+    })());
+    return _ctxGeymsla.get(k);
+  }
+  function ctxDags(iso) { const d = new Date(iso); if (isNaN(d)) return ''; const p = (n) => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); }
+  function ctxTeikna(el, x, r) {
+    const postar = r.postar || [], listi = (r.till && r.till.listi) || [];
+    if (!postar.length) { el.innerHTML = '<span class="tgl-ctx-bid">Enginn póstur frá þessu netfangi í ' + esc(POSTHOLF) + ' — ekkert til að byggja á.</span>'; return; }
+    let h = '';
+    const medRokum = listi.filter((t) => t.kt.size || t.gata.size);
+    if (!x.kennitala) {
+      if (medRokum.length) h += medRokum.slice(0, 3).map((t, i) => {
+        const sterk = t.kt.size > 0;
+        const rok = [t.kt.size ? 'kennitalan stendur í ' + t.kt.size + (t.kt.size === 1 ? ' pósti' : ' póstum') : '', t.gataEfni.size ? 'gatan í efnislínu ' + t.gataEfni.size + '×' : '', (!t.gataEfni.size && t.gata.size) ? 'gatan í texta ' + t.gata.size + '×' : ''].filter(Boolean).join(' · ');
+        return '<div class="tgl-till' + (sterk ? '' : ' veik') + '">' + (i === 0 ? '💡 ' : '') + '<b>' + esc(t.c.nafn) + '</b><span class="rok">' + esc(t.c.kennitala || '') + ' · ' + esc(rok) + '</span>' +
+          '<button type="button" data-ctx-link="' + x.id + '" data-kt="' + esc(t.c.kennitala || '') + '" data-nm="' + esc(t.c.nafn || '') + '">🔗 Tengja við þetta</button></div>';
+      }).join('');
+      else h += '<div class="tgl-till veik">Engin kennitala eða gata úr skránni fannst í póstunum — lestu póstana hér að neðan og notaðu „🔗 Tengja".</div>';
+      if (medRokum.length > 3) h += '<div class="tgl-ctx-bid" style="margin:-3px 0 8px">+ ' + (medRokum.length - 3) + ' hús í viðbót — líklega umsjónaraðili sem skrifar um mörg hús; „🔗 Tengja" sýnir þau öll.</div>';
+    }
+    h += postar.slice(0, 4).map((p) => {
+      const sent = p.folder === 'SENT';
+      const eigin = eiginTexti(p.body_preview || p.snippet || '').replace(/\s+/g, ' ').trim();
+      return '<details class="tgl-p"><summary><span class="d">' + (sent ? '📤 ' : '📩 ') + esc(ctxDags(p.received_at)) + '</span><span class="e">' + esc(p.subject || '(án efnis)') + '</span><span class="s">' + esc(eigin.slice(0, 160)) + '</span></summary>' +
+        '<div class="meg">' + esc(String(p.body_preview || p.snippet || '(enginn texti vistaður)')) + '</div></details>';
+    }).join('');
+    if (postar.length > 4) h += '<div class="tgl-ctx-bid">+ ' + (postar.length - 4) + ' eldri póstar — „🔗 Tengja" sýnir þá alla.</div>';
+    el.innerHTML = h;
+    el.querySelectorAll('[data-ctx-link]').forEach((b) => b.addEventListener('click', async (e) => {
+      e.stopPropagation(); b.disabled = true;
+      try { const j = await post({ action: 'link', id: +b.dataset.ctxLink, kennitala: b.dataset.kt, fyrirtaeki: b.dataset.nm }); apply(j.contact); toast('🔗 Tengt: ' + b.dataset.nm); }
+      catch (err) { b.disabled = false; toast('⚠ ' + err.message); }
+    }));
+  }
+  function ctxKeyra() {
+    while (_ctxIGangi < 3 && _ctxBidrod.length) {
+      const { el, x } = _ctxBidrod.shift();
+      if (!el.isConnected) continue;
+      _ctxIGangi++;
+      ctxSaekja(x).then((r) => { if (el.isConnected) ctxTeikna(el, x, r); })
+        .catch((e) => { if (el.isConnected) el.innerHTML = '<span class="tgl-ctx-bid">⚠ náði ekki í póstana: ' + esc((e && e.message) || e) + '</span>'; })
+        .finally(() => { _ctxIGangi--; ctxKeyra(); });
+    }
+  }
+  let _ctxIO = null;
+  function vaktaSamhengi(host) {
+    if (_ctxIO) { try { _ctxIO.disconnect(); } catch (_) {} }
+    _ctxBidrod.length = 0;
+    const byId = new Map(STATE.contacts.map((c) => [String(c.id), c]));
+    const setja = (el) => { if (el.dataset.ctxHafid) return; el.dataset.ctxHafid = '1'; const x = byId.get(el.dataset.ctx); if (x) { _ctxBidrod.push({ el, x }); ctxKeyra(); } };
+    const els = Array.from(host.querySelectorAll('[data-ctx]'));
+    if (!('IntersectionObserver' in window)) { els.slice(0, 12).forEach(setja); return; }
+    _ctxIO = new IntersectionObserver((ents) => ents.forEach((en) => { if (en.isIntersecting) { _ctxIO.unobserve(en.target); setja(en.target); } }), { rootMargin: '300px' });
+    els.slice(0, 6).forEach(setja);   // efstu spjöldin strax — líka þegar flipinn er falinn og IO þegir
+    els.slice(6).forEach((el) => _ctxIO.observe(el));
   }
 
   function openPicker(x) {
