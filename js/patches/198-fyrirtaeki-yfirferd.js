@@ -107,6 +107,7 @@
             <input id="fyr-q" type="search" placeholder="Leita: nafn, kt…">
             <button class="merge-btn" id="fyr-merge" disabled>🔗 Sameina valin (0)</button>
             <span class="meta" id="fyr-count"></span>
+            <button class="merge-btn" id="fyr-reload" type="button" title="Sækir ALLT upp á nýtt af þjóninum: fyrirtækin, tækin, myndirnar, stillingarnar og póst-tengslin" style="margin-left:auto">↻ Endurhlaða allt</button>
           </div>
           <div id="fyr-app"><div class="skel">Sæki fyrirtæki…</div></div>
         </section>
@@ -122,6 +123,17 @@
       </div></main>`;
     sample.parentElement.appendChild(v);
     v.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+    const rl = v.querySelector('#fyr-reload');
+    if (rl) rl.addEventListener('click', async () => {
+      const orig = rl.textContent; rl.disabled = true; rl.textContent = '… sæki allt';
+      try {
+        if (window.AppSettings && AppSettings.load) { try { await AppSettings.load(); } catch (_) {} }
+        await load();
+        if (_vidLoaded) { _vidLoaded = false; const a = v.querySelector('.tab.active'); if (a && a.dataset.tab === 'vid') loadVid(); }
+        rl.textContent = '✓ Uppfært ' + new Date().toLocaleTimeString('is-IS', { hour: '2-digit', minute: '2-digit' });
+      } catch (e) { rl.textContent = '⚠ ' + ((e && e.message) || e); }
+      finally { rl.disabled = false; setTimeout(() => { rl.textContent = orig; }, 5000); }
+    });
     v.querySelector('#fyr-merge').addEventListener('click', () => mergeFlow('fyrirtaeki', fSel, FROWS, () => { fSel.clear(); load(); }));
     v.querySelector('#vid-merge').addEventListener('click', () => mergeFlow('vidskiptavinir', vidSel, VROWS, () => { vidSel.clear(); loadVid(); }));
   }
@@ -162,6 +174,12 @@
     { k: 'nokt', label: 'Vantar kt', test: f => !f.kennitala },
     { k: 'noaddr', label: 'Vantar heimili', test: f => !f.heimilisfang },
     { k: 'nomail', label: 'Vantar netfang', test: f => !f.netfang },
+    // 18.09.2026 (Agnar): hvad vantar a PROFILINN - simi, mynd i bannernum, taekjalisti, postsaga.
+    { k: 'nosimi', label: 'Vantar síma', test: f => !String(f.simi || '').trim() && !String(f.farsimi || '').trim() },
+    { k: 'nomynd', label: 'Vantar mynd', test: f => !(MYND[String(f.id)] && MYND[String(f.id)].url) },
+    { k: 'notaeki', label: 'Tómur tækjalisti', test: f => !(TAEKI[f.id] > 0) },
+    { k: 'noteikn', label: 'Vantar teikningu', test: f => TEIKN != null && !TEIKN.has(+f.id) },
+    { k: 'nosamsk', label: 'Ekki í Samskiptum', test: f => TENGD != null && !TENGD.has(+f.id) },
     { k: 'nosamn', label: 'Vantar samning', test: f => B(f.er_i_thjonustu) && !f.greidsluskilmali },
     { k: 'nobase', label: 'Ótengt grunni', test: f => f.customer_base_id == null },
     { k: 'bank', label: 'Bank-only', test: f => B(f.is_bank_only) },
@@ -184,20 +202,48 @@
   const iScope = f => !f.deleted_at && (fScope !== 'ars' || iArsskodun(f));
 
   let FROWS = [], VROWS = [], BASE_REK = {}, _vidLoaded = false;
+  // TAEKI = fjoldi taekja i notkun per fyrirtaeki (uttaeki a fyrirtaeki_id, allt NEMA 'urelt' - sama regla og
+  // loadActiveUnitsByFid i 153). MYND = AppSettings co_bygging_mynd (367). TENGD = fyrirtaeki med tengdan post
+  // (taflan samskipti_tengd, naeturafrit af syninni fyrirtaeki_samskipti sem er of thung fyrir vafra); null = nadist ekki.
+  let TAEKI = {}, MYND = {}, TENGD = null, TENGD_REIKNAD = null;
+  // TEIKN = fyrirtaeki med vistada teikningu a profilnum (teikning_bord, 375: mynd eda merkingar); null = nadist ekki.
+  let TEIKN = null;
   const fSel = new Set(), vidSel = new Set();
 
   async function load() {
     const SB = getSB(); const app = document.getElementById('fyr-app');
-    if (!SB) { if (app) app.innerHTML = '<div class="skel" style="color:#dc2626">Engin gagnabankatenging.</div>'; return; }
+    // 18.09.2026: bein slóð (#fyrirtaeki-yfirferd) keyrði load() áður en biðlarinn var til og
+    // síðan stóð á „Engin gagnabankatenging" þar til notandinn fór annað og kom aftur. Bíðum
+    // í allt að ~10 sek áður en við gefumst upp.
+    if (!SB) {
+      load._bid = (load._bid || 0) + 1;
+      if (load._bid <= 12) { if (app) app.innerHTML = '<div class="skel">Bíð eftir gagnabanka…</div>'; setTimeout(load, 800); return; }
+      if (app) app.innerHTML = '<div class="skel" style="color:#dc2626">Engin gagnabankatenging — smelltu á „↻ Endurhlaða allt".</div>'; return;
+    }
+    load._bid = 0;
     // customers_base = 1.043 raðir og fyrirtaeki = 1.340 → stakar .select() skiluðu
     // aðeins 1000 hvor, svo ~340 fyrirtæki vantaði alveg af yfirferðar-listanum.
     const cb = { data: await DB.fetchAll((from, to) => SB.from('customers_base').select('id,rekstrarfelag').range(from, to)) };
     BASE_REK = {};
     (cb.data || []).forEach(b => { if (b.rekstrarfelag) BASE_REK[b.id] = b.rekstrarfelag; });
     const r = { data: await DB.fetchAll((from, to) => SB.from('fyrirtaeki')
-      .select('id,nafn,kennitala,simi,netfang,heimilisfang,greidsluskilmali,status,er_i_thjonustu,deleted_at,customer_base_id,review_flag,review_note,is_bank_only')
+      .select('id,nafn,kennitala,simi,farsimi,netfang,heimilisfang,greidsluskilmali,status,er_i_thjonustu,deleted_at,customer_base_id,review_flag,review_note,is_bank_only')
       .order('nafn').range(from, to)) };
     if (r.error) { if (app) app.innerHTML = '<div class="skel" style="color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
+    TAEKI = {}; TENGD = null; TEIKN = null;
+    try {
+      const u = await DB.fetchAll((from, to) => SB.from('uttaeki').select('id,fyrirtaeki_id').neq('status', 'urelt').order('id').range(from, to));
+      (u || []).forEach(x => { if (x.fyrirtaeki_id != null) TAEKI[x.fyrirtaeki_id] = (TAEKI[x.fyrirtaeki_id] || 0) + 1; });
+    } catch (_) {}
+    try {
+      const t = await DB.fetchAll((from, to) => SB.from('samskipti_tengd').select('fyrirtaeki_id,reiknad').order('fyrirtaeki_id').range(from, to));
+      if (Array.isArray(t)) { TENGD = new Set(t.map(x => +x.fyrirtaeki_id)); TENGD_REIKNAD = t[0] ? t[0].reiknad : null; }
+    } catch (_) { TENGD = null; }
+    try {
+      const tk = await DB.fetchAll((from, to) => SB.from('teikning_bord').select('company_id,image_url,markers').order('company_id').range(from, to));
+      if (Array.isArray(tk)) TEIKN = new Set(tk.filter(x => x.image_url || (Array.isArray(x.markers) && x.markers.length)).map(x => +x.company_id));
+    } catch (_) { TEIKN = null; }
+    MYND = (window.AppSettings && AppSettings.path && AppSettings.path('co_bygging_mynd')) || {};
     FROWS = (r.data || []).map(f => ({ ...f, _rek: f.customer_base_id != null ? (BASE_REK[f.customer_base_id] || '') : '' }));
     bindFilters();
     renderFyr();
