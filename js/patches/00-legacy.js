@@ -2918,9 +2918,16 @@ console.log('[patch-master] loaded with all fixes');
   if(!document.getElementById('_pm_dev_css'))document.head.appendChild(css);
 
   function openDeviceModal(serial){
-    window.DB.sb.from('uttaeki').select('*').eq('serial',serial).single().then(function(r){
-      if(!r.data){alert('Taeki ekki fundid: '+serial);return;}
-      var d=r.data;
+    // 18.09.2026: `.single()` skilar VILLU bæði við 0 raðir OG fleiri en eina.
+    // Raðnúmer eru ekki einkvæm í þessu kerfi („tæki eru FJÖLDI"), svo tvö tæki
+    // með sama raðnúmer sögðu „Tæki ekki fundið" — sem er ósatt og stöðvar mann.
+    // Brostin fyrirspurn sagði það sama. Þrjú ólík svör urðu að einu röngu.
+    window.DB.sb.from('uttaeki').select('*').eq('serial',serial).limit(5).then(function(r){
+      if(r.error){alert('Náði EKKI að fletta upp raðnúmeri '+serial+': '+(r.error.message||r.error)+'\n\nÞetta þýðir ekki að tækið sé ekki til — reyndu aftur.');return;}
+      var radir=r.data||[];
+      if(!radir.length){alert('Tæki ekki fundið: '+serial);return;}
+      if(radir.length>1){alert('⚠ '+radir.length+' tæki bera raðnúmerið '+serial+'. Opna það fyrsta — athugaðu hvort um tvískráningu sé að ræða.');}
+      var d=radir[0];
       // 2026-05-08: ef nýja UnitDetail modal er hlaðinn (patch 101) þá notum
       // hann frekar — gamli „_pm_dev" modallinn er ófullkominn (vantar
       // sögu, athugasemdir-tímalína, áfyllingar o.fl.). UnitDetail er
@@ -3066,10 +3073,24 @@ console.log('[patch-master] loaded with all fixes');
       }
     });
     if(!companyName) return Promise.resolve(null);
-    return window.DB.sb.from('fyrirtaeki').select('id').eq('nafn',companyName).single().then(function(r){
-      if(r.data){
-        window._currentCompanyId = r.data.id;
-        return r.data.id;
+    // 18.09.2026 — VERSTI STAÐURINN Í ÞESSUM FLOKKI. Fyrirtækjanöfn eru EKKI
+    // einkvæm: rekstrarfélög deila nafni milli starfsstöðva. Tveir staðir með
+    // sama nafni létu `.single()` skila villu, `r.data` varð null, og fallið
+    // datt niður í `ilike`-varaleiðina sem tekur `.limit(1)` — þ.e. VALDI STAÐ
+    // AF HANDAHÓFI og setti hann í `window._currentCompanyId`. Þögult og rangt.
+    return window.DB.sb.from('fyrirtaeki').select('id,nafn').eq('nafn',companyName).limit(5).then(function(r){
+      if(r.error){ console.warn("[legacy] fyrirtækjauppfletting brást:", r.error); return null; }
+      var radir=r.data||[];
+      if(radir.length>1){
+        console.warn('[legacy] '+radir.length+' staðir heita „'+companyName+'" — ekki giskað á hvorn. Veldu staðinn handvirkt.');
+        // Kallandinn slekkur á reitnum við null. Hann á að geta sagt SATT um
+        // af hverju — „tvíræður staður" er allt annað svar en „ekkert fyrirtæki".
+        window._companyLookupTviraett = { nafn: companyName, fjoldi: radir.length };
+        return null;                       // frekar ekkert en rangur staður
+      }
+      if(radir.length===1){
+        window._currentCompanyId = radir[0].id;
+        return radir[0].id;
       }
       return window.DB.sb.from('fyrirtaeki').select('id').ilike('nafn','%'+companyName.substring(0,10)+'%').limit(1).then(function(r2){
         if(r2.data && r2.data.length){
@@ -3101,7 +3122,15 @@ console.log('[patch-master] loaded with all fixes');
       var ta=document.getElementById('_pm_memo_input');
       // Load saved text
       findCompanyId().then(function(cid){
-        if(!cid){ta.placeholder='Engin fyrirt\u00e6ki tengt';ta.disabled=true;return;}
+        if(!cid){
+          // 18.09.2026: „Engin fyrirtæki tengt" var ósatt þegar TVEIR staðir
+          // heita eins — þá ER fyrirtæki tengt, við vitum bara ekki hvort.
+          var tv = window._companyLookupTviraett;
+          ta.placeholder = tv
+            ? tv.fjoldi + ' staðir heita „' + tv.nafn + '" — opnaðu réttan stað til að skrifa minnispunkt'
+            : 'Engin fyrirt\u00e6ki tengt';
+          ta.disabled = true; window._companyLookupTviraett = null; return;
+        }
         wrap.dataset.cid=cid;
         window.DB.sb.from('fyrirtaeki').select('athugasemdir').eq('id',cid).single().then(function(r){
           if(r.data && r.data.athugasemdir) ta.value=r.data.athugasemdir;

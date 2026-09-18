@@ -379,7 +379,11 @@
         try {
           const SB = getSB();
           if (SB) {
-            const { data } = await SB.from('solur').select('*').eq('id', creBtn.dataset.creSale).single();
+            // 18.09.2026: brostin uppfletting skildi `sale` eftir null og
+            // KREDITREIKNINGS-takkinn gerði þá einfaldlega ekkert, án skýringar.
+            const _cr = await SB.from('solur').select('*').eq('id', creBtn.dataset.creSale).single();
+            if (_cr.error) { alert('Náði EKKI að sækja söluna fyrir kreditreikning: ' + (_cr.error.message || _cr.error)); return; }
+            const data = _cr.data;
             if (data) sale = {
               id: data.id, num: data.num, customer: data.customer_nafn, customer_id: data.customer_id,
               customer_kt: data.customer_kt || null, total: +(data.samtals || 0), ex: +(data.upphaed_an_vsk || 0),

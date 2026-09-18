@@ -114,7 +114,15 @@
   async function loadPct(coId) {
     const sb = SB(); if (!sb) return 0;
     try {
+      // 18.09.2026 — PENINGALÍNA. Brostin uppfletting skilaði 0, sem lítur út
+      // eins og „enginn afsláttur" og rukkar kúnnann of mikið. Skilar nú null
+      // við bilun svo kallandinn geti greint „0%" frá „ég veit það ekki".
       const r = await sb.from('fyrirtaeki').select('afslattur_pct').eq('id', coId).single();
+      if (r && r.error && r.error.code !== 'PGRST116') {
+        console.warn('[255] náði ekki afsláttarprósentu fyrir', coId, r.error);
+        try { if (window.logProblem) window.logProblem('afslattur_lestur_failed', 'co:' + coId); } catch (_) {}
+        return null;
+      }
       return r && r.data ? (+r.data.afslattur_pct || 0) : 0;
     } catch (_) { return 0; }
   }

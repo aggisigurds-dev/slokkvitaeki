@@ -130,8 +130,12 @@
         const nr = document.getElementById('qr-manual').value.trim();
         if (!nr) return;
         const SB = getSB();
-        const { data } = await SB.from('uttaeki').select('id').eq('serial', nr).limit(1).single();
-        if (data) { m.remove(); _showDevice(data.id); } else alert('Tæki fannst ekki');
+        // 18.09.2026: bilun í uppflettingu sagði „Tæki fannst ekki" — sem er
+        // ósatt og lætur starfsmann leita að tæki sem er til. Aðgreint núna.
+        const r = await SB.from('uttaeki').select('id').eq('serial', nr).limit(1);
+        if (r.error) { alert('Náði EKKI að fletta upp ' + nr + ': ' + (r.error.message || r.error) + '\n\nÞetta þýðir ekki að tækið vanti.'); return; }
+        const data = (r.data || [])[0];
+        if (data) { m.remove(); _showDevice(data.id); } else alert('Tæki fannst ekki: ' + nr);
       }};
     }
   }
@@ -139,7 +143,10 @@
   // Listen for #device=X hash on load → show device detail
   async function _showDevice(id){
     const SB = getSB(); if (!SB) return;
-    const { data: dev } = await SB.from('uttaeki').select('*').eq('id', id).single();
+    // 18.09.2026: sama aðgreining — bilun er ekki það sama og „ekki til".
+    const rd = await SB.from('uttaeki').select('*').eq('id', id).single();
+    if (rd.error && rd.error.code !== 'PGRST116') { alert('Náði EKKI að sækja tækið: ' + (rd.error.message || rd.error)); return; }
+    const dev = rd.data;
     if (!dev) { alert('Tæki fannst ekki'); return; }
     if (window.DeviceHistory && window.DeviceHistory.show) window.DeviceHistory.show(dev);
     else alert(`Tæki: ${dev.serial}\n${dev.client||''}\nSíðasta skoðun: ${dev.last_insp||'—'}\nNæsta skoðun: ${dev.next_insp||'—'}`);

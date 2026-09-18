@@ -547,8 +547,15 @@
       if (container.id === 'view-lanstaeki') {
         const SB = getSB();
         if (!SB) return;
-        SB.from('lanstaeki').select('id').eq('serial', serial).single().then(r => {
-          if (r && r.data) openModal(r.data.id, 'lanstaeki');
+        // 18.09.2026: raðnúmer eru ekki einkvæm, svo `.single()` skilaði villu
+        // þegar tvö lánstæki báru sama númer — og smellurinn gerði þá EKKERT,
+        // án skýringar. Sama gilti ef fyrirspurnin brást.
+        SB.from('lanstaeki').select('id').eq('serial', serial).limit(5).then(r => {
+          if (r && r.error) { console.warn('[unit-detail] lánstækjauppfletting brást:', r.error); return; }
+          const radir = (r && r.data) || [];
+          if (!radir.length) return;
+          if (radir.length > 1) console.warn('[unit-detail] ' + radir.length + ' lánstæki með raðnúmer ' + serial + ' — opna það fyrsta');
+          openModal(radir[0].id, 'lanstaeki');
         });
       }
     });

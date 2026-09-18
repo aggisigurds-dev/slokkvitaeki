@@ -132,7 +132,12 @@
              (vk.data && vk.data[0] && vk.data[0].discount_tier_id) || null;
       }
       if (!id && coId) {
+        // 18.09.2026: brostin uppfletting varð að „enginn afsláttarhópur" og
+        // þar með að röngu verði. Skráð svo það sjáist í registry-inu.
         const r = await sb.from('fyrirtaeki').select('discount_tier_id').eq('id', coId).single();
+        if (r && r.error && r.error.code !== 'PGRST116') {
+          try { if (window.logProblem) window.logProblem('afslattarhopur_lestur_failed', 'co:' + coId); } catch (_) {}
+        }
         id = (r.data && r.data.discount_tier_id) || null;
       }
     } catch (_) {}
