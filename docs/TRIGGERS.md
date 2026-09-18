@@ -127,3 +127,12 @@ Bæði slökkvitæki og brunahólf lesa sama Supabase `osfdzskyvisifcwyjkuk`.
 - Staðreyndir: `docs/STADREYNDIR.md`
 - As-built: `docs/RAFKERFI.md`
 - Magn-audit: `.claude/skills/uttekt-audit/SKILL.md`
+
+## Heiðarlegt viðmót (takkar, vistun, röðun)
+
+`lygandi takki` · `vistun segir OK` · `af hverju er þetta efst` · `hnappur sem gerir ekkert`
+
+Vekur `heidarlegt-vidmot`. Þrjár reglur: lesa svarið áður en sagt er „vistað"
+(supabase-js kastar aldrei), ekki sýna takka sem getur ekkert gert, og raða
+eftir því sem hægt er að GERA en ekki eftir stærstu tölunni. Skrifað 18.09.2026
+eftir dag þar sem allar þrjár brotnuðu í sama appi.

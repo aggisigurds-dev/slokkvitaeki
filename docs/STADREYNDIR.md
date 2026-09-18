@@ -1204,3 +1204,84 @@ felldar saman — sbr. árekstrarviðvörunina sem eitt þeirra bar. Hvert atri�
   `_deleted`, og 124 þeirra á stöðum með úttektarsölu á árinu (t.d. Klaki Tech #466: gögn
   frá 17.08, R-000677 send og greidd). Ferð án `_locked` er því ekki sönnun um óklárað
   verk — berðu hana saman við úttektarsölu ársins.
+
+---
+
+## Ajour — hvaða dagsetning gildir *(DB 2026-09-18)*
+
+Agnar: *„rosalega ruglandi hvað það eru margir gerðir á dag, eftir því hvort
+miðast er við created day. edit day. finished day.. what do you use"*.
+
+Svarið er **`execution_date`**, og ástæðan er ekki smekkur — hinar tvær eru
+ónothæfar. Mælt á öllum 18.822 röðum `ajour_registrations`:
+
+| Dálkur | Fylltur | Tímabil |
+|---|---|---|
+| `execution_date` | **18.822 af 18.822 (100 %)** | 11.03.2025 → 17.09.2026 |
+| `checked_date` | 14.073 (75 %) | 12.03.2025 → 17.09.2026 |
+| `registration_created_date` | **919 (5 %)** | **aðeins 01.04. → 30.05.2026** |
+
+`registration_created_date` er 95 % tómur og nær bara yfir tvo mánuði í vor —
+síðustu 14 dagar eftir honum gefa **núll á hverjum einasta degi**. `checked_date`
+vantelur um 10–25 % á virkum dögum (t.d. 09.09.: execution 31 · checked 24).
+
+Á þeim 919 röðum þar sem `created` er til er `execution_date` **aldrei** á öðrum
+degi (0 raðir víkja); `checked` víkur á 37.
+
+**Ekkert í appinu telur Ajour-punkta** (mælt 18.09.2026). Einu tilvísanirnar í
+töfluna eru athugasemd í `js/db.js:281` og `tools/audit-pagination.cjs`. Það er
+því engin gömul venja sem stangast á — talan hefur aldrei verið reiknuð.
+Samstillingin er lifandi: síðast flutt inn 18.09. kl. 12:27, 103 raðir á sólarhring.
+
+---
+
+## „Drög-stöðin" er ekki „Drög (38)" *(mælt 2026-09-18)*
+
+| Heiti | Hvað það er | Hvar |
+|---|---|---|
+| **Drög (38)** | ókláraðar **sölur** — `solur` með `status = drog` | vinstri valstika → Drög · `js/patches/143-drog-list.js`, sýn `#drog` |
+| **Drög-stöðin** | taflan `reikningspunktar` í Brunahólfs-hubbnum | 📱 Öpp → 👑 The Big Boss → 🛒 Drög-stöð · `js/patches/261-app-profiles.js` |
+
+Níu mál á Þjónustuborðinu lofuðu að reikningsdrög færu „í Drög-stöðina" —
+ekkert þeirra fór þangað; nýjasta færslan í `reikningspunktar` var frá 06.09.
+Textinn var leiðréttur 18.09. og reglan afmörkuð í `.claude/agents/rukkari.md`
+(hún á við REIKNINGALOTUR, ekki mál á borðinu).
+
+Rétta leiðin á máli: **skýrsla + reikningur sem endar ÓSENDUR í Kröfuyfirliti**
+(patch 369, `opnaGleymt(fyrirtaeki_id)`). Hnappur á málið kom 18.09. — hann
+birtist aðeins þegar fyrirtækið stendur í `v_gleymt_ad_rukka_uttekt`.
+
+---
+
+## Samþykkt vinnublað býr ENGA sölu til *(mælt 2026-09-18)*
+
+`✓ Samþykkja` á vinnublaði skrifar aðeins stöðu. Mælt: þrjú vinnublöð samþykkt
+13.09. af Agnari áttu enga sölu —
+**270.654 kr án vsk · 335.611 kr með vsk** sem enginn hafði rukkað:
+
+    154.178 kr · Sameignarfélag Ölfusborga
+     83.812 kr · Grasnytjar ehf Hjarðarbóli
+     32.664 kr · Húsfélag Hraunbæ 64
+
+Vörðurinn er `tools/audit-vinnublad-an-solu.cjs` og hann er RAUÐUR þar til
+peningurinn er raunverulega rukkaður — merking málanna inn í Samþykkja (18.09.)
+lagar sýnileikann, ekki rukkunina.
+
+**Mál sést í Samþykkja aðeins ef það ber merkið `samthykki`** (+ `spurning` ef
+það þarf svar). Þessi þrjú báru aðeins `klara-heimsokn` og sátu því á Master.
+
+---
+
+## Þjónustuborðið — þrjár rætur sem fundust 18.09.2026
+
+| Einkenni | Rótin |
+|---|---|
+| Eining hakað í ham en birtist ekki | `baraMitt` núllaði `topHtml` — einingarnar urðu **aldrei til**, voru ekki faldar með CSS |
+| Útlit hams vistast en birtist ekki | `M(id)` byggir haminn upp á nýtt úr geymslunni og tekur aðeins þá reiti sem eru NEFNDIR þar |
+| Spjöld í einum mjóum dálki | `.skgrid` var `minmax(210px,1fr)` í 300 px rein |
+
+Útlit hams er nú geymt sem `{ first: [lyklar í röð], breidd: { lykill: 1\|2\|3 } }`
+(1 = þriðjungur · 2 = hálft · 3 = fullt) og stillt með útlitsritlinum í „Breyta ham".
+
+**Regla sem fylgir `M()`:** bætirðu reit á ham verður þú að nefna hann í `M()`,
+annars vistast hann en birtist aldrei.

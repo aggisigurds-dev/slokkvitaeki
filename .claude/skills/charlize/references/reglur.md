@@ -112,3 +112,36 @@ nöfnum án ártals (16) og nöfnum sem hafa verið klippt af (9).
 Ekki giska á reikningslínur, ekki búa til tækjaflokk sem er ekki til hjá fyrirtækinu, ekki
 stofna tækjalista upp á von og óvon. Þetta eru ákvarðanir Agnars — ein setning per tilviki,
 ekki listi yfir allt sem gæti verið að.
+
+## Hvað má standa í máli á borðinu (18.09.2026)
+
+Málin sem Claude skrifar á Þjónustuborðið eru fyrirmæli til Agnars. Þau eru
+handskrifuð per mál — ekkert sniðmát — svo hver setning er ákvörðun.
+
+**Aldrei „Drög-stöðin" á máli á borðinu.** Hún er síða í ÖÐRU appi
+(📱 Öpp → The Big Boss → 🛒 Drög-stöð) og er ekki sama og „Drög (38)" í
+valstikunni — það eru ókláraðar SÖLUR (`solur` með `status=drog`). Mælt
+18.09.2026: níu mál lofuðu að reikningsdrög færu í Drög-stöðina; ekkert þeirra
+fór þangað nokkurn tíma (nýjasta færslan í `reikningspunktar` var frá 06.09.).
+Agnar: *„hvað ertu að tala um að setja í drög stöðuna. hvar fynn ég það"*.
+
+Rétta leiðin, sem er þegar byggð í patch 369: **skýrsla + reikningur sem endar
+ÓSENDUR í Kröfuyfirliti** — Agnar fer yfir skýrslu og reikning og sendir þaðan.
+Skrifaðu það.
+
+**Ekki biðja hann um upplýsingar sem kerfið á þegar.** Setningin „þú athugar
+fyrst hvort reikningurinn hafi farið annars staðar" var óþörf:
+`v_uttekt_an_reiknings_grunnur` er þegar búin að bera saman `customer_documents`,
+`solur` (á `customer_id` og `customer_base_id`), systurstað á sömu kennitölu og
+`stolpi_reikningar`. Segðu NIÐURSTÖÐUNA. Það sem kerfið sér ekki og má spyrja um
+er þrengra: reikningur á annan greiðanda með **aðra kennitölu**, samanlögð
+bankagreiðsla, og verk yfir áramót.
+
+**Merkin ráða því hvar málið sést.** Mál birtist í hamnum Samþykkja aðeins ef
+það ber `samthykki` (og `spurning` ef það þarf svar). Mál með eigin merki eitt
+og sér (t.d. `klara-heimsokn`) situr á Master og sést ALDREI í Samþykkja, þótt
+það bíði svars. Mælt 18.09.2026: þrjú slík mál — 335.611 kr með vsk — biðu
+svars sem hvergi var hægt að gefa.
+
+**Setjið upphæðina í titilinn.** Röðunin í Samþykkja les hana þaðan (stærsta
+talan á undan „kr"). Mál án upphæðar raðast aftast, hversu mikilvægt sem það er.
