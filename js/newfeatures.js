@@ -11,6 +11,11 @@ if(typeof Workshop!=='undefined'&&Workshop.load){var _oWL=Workshop.load.bind(Wor
 var BLUE='padding:3px 8px;background:#eff6ff;border:1px solid #93c5fd;border-radius:5px;color:#1d4ed8;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;margin-left:4px;';
 var GREEN='padding:3px 8px;background:#edfaf3;border:1px solid #a7e8c5;border-radius:5px;color:#1a7f4b;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;margin-left:4px;';
 function _iQR(){document.querySelectorAll('.lan-table tbody tr,.gy-table tbody tr').forEach(function(row){if(row.querySelector('.qr-btn'))return;var c=row.querySelectorAll('td');if(c.length<3)return;var serial=c[0].textContent.trim();var type=c[1]?c[1].textContent.trim():'';var size=c[2]?c[2].textContent.trim():'';var isGy=!!row.closest('.gy-table');var owner=isGy&&c[3]?c[3].textContent.trim():'';var last=c[c.length-1];var b=document.createElement('button');b.className='qr-btn';b.textContent='QR';b.style.cssText=isGy?GREEN:BLUE;b.addEventListener('click',function(e){e.stopPropagation();printUnitQR(serial,type+(size?' - '+size:''),owner||null);});last.appendChild(b);});}
+// 18.09.2026: ENGIN fremsta brún sett hér — _iQR er í dvala. `.lan-table` og
+// `.gy-table` eru hvergi til í kóðanum nema í valinu á línunni fyrir ofan (leitað
+// um allt repóið), svo fallið finnur aldrei röð. Að kalla það oftar flýtir engu.
+// Vaktin sjálf kostar líka: hún metur hverja DOM-breytingu á síðunni (mælt 10,4
+// köll/sek á kyrrstæðum prófíl) fyrir töflur sem verða aldrei til.
 new MutationObserver(function(ms){if(ms.some(function(m){return Array.from(m.addedNodes).some(function(n){return n.nodeType===1&&(n.tagName==='TR'||n.tagName==='TBODY'||(n.querySelector&&n.querySelector('tr')));});}))setTimeout(_iQR,150);}).observe(document.body,{childList:true,subtree:true});
 setTimeout(_iQR,1000);
 (function(){
@@ -24,11 +29,16 @@ async function _geo(addr){
   if(_gc[addr])return _gc[addr];
   // Look up address from fyrirtaeki table
   var qAddr=addr;
+  // Þögnin hér er RÉTT: mistakist uppflettingin er `addr` notað óbreytt sem
+  // leitarstrengur — það er varaleiðin, ekki villa.
   try{
     var coRes=await DB.sb.from('fyrirtaeki').select('nafn,heimilisfang').eq('nafn',addr).limit(1);
     if(coRes.data&&coRes.data[0]&&coRes.data[0].heimilisfang)qAddr=coRes.data[0].heimilisfang;
   }catch(e){}
-  try{var r=await fetch('/api/geocode?q='+encodeURIComponent(qAddr));if(!r.ok){return null;}var d=await r.json();if(d&&typeof d.lat==='number'&&typeof d.lon==='number'){var p={lat:d.lat,lng:d.lon};_gc[addr]=p;try{localStorage.setItem("_slokk_gc",JSON.stringify(_gc));}catch(e){}return p;}}catch(e){}return null;}
+  // 18.09.2026: þessi þögn var hins vegar ALGER — /api/geocode gat verið niðri eða
+  // skilað 500 og hvorki notandi né logg sá neitt. Hegðunin er óbreytt (null →
+  // kallandinn sleppir einum kortapunkti, ekkert vistast), en ástæðan er nú sögð.
+  try{var r=await fetch('/api/geocode?q='+encodeURIComponent(qAddr));if(!r.ok){console.warn('[geocode] HTTP '+r.status+' fyrir "'+qAddr+'" — kortapunkti sleppt');return null;}var d=await r.json();if(d&&typeof d.lat==='number'&&typeof d.lon==='number'){var p={lat:d.lat,lng:d.lon};_gc[addr]=p;try{localStorage.setItem("_slokk_gc",JSON.stringify(_gc));}catch(e){}return p;}}catch(e){console.warn('[geocode] náðist ekki fyrir "'+qAddr+'": '+((e&&e.message)||e)+' — kortapunkti sleppt');}return null;}
 // 2026-05-07: SLOKK v7 _markers disabled. It was rendering its own L.marker
 // circles on top of mapfix.js's status markers, producing visual duplicates
 // ("þykkir grænir punktar" the user reported). mapfix.js owns map markers
@@ -58,7 +68,12 @@ outer.appendChild(hd);outer.appendChild(mc);
 fv.insertBefore(outer,body);
 setTimeout(function(){if(typeof L!=='undefined'){_build(mc);}else{var lc=document.createElement('link');lc.rel='stylesheet';lc.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(lc);var ls=document.createElement('script');ls.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';ls.onload=function(){_build(mc);};document.head.appendChild(ls);}},200);
 }
-new MutationObserver(function(ms){if(_done)return;for(var i=0;i<ms.length;i++){if(ms[i].type==='attributes'&&ms[i].target.id==='view-field'){setTimeout(_inject,300);return;}}}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
+// 18.09.2026 — MÆLT: 861 ms liðu frá App.switchView('field') þar til
+// #field-map-container birtist í DOM (hrein hleðsla). Kveikjan var þessi 300 ms bið
+// eftir að klasinn á #view-field breyttist. _inject er sjálfsamhliða: _done-flaggið
+// er sett áður en kortið er smíðað, og fallið skilar sér sjálft meðan .field-body
+// vantar — svo það má keyra á fremstu brún og teljarinn er áfram öryggisnet.
+new MutationObserver(function(ms){if(_done)return;for(var i=0;i<ms.length;i++){if(ms[i].type==='attributes'&&ms[i].target.id==='view-field'){_inject();setTimeout(_inject,300);return;}}}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
 document.addEventListener('click',function(){if(!_done)setTimeout(_inject,400);});
 setTimeout(_inject,900);
 // 2026-05-07: Legacy circle-marker renderer disabled. The thick green dots it

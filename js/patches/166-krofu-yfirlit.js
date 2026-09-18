@@ -2374,7 +2374,11 @@
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) { setTimeout(guardButton, 400); return; }
     let t = null;
-    new MutationObserver(() => { clearTimeout(t); t = setTimeout(injectNav, 250); })
+    // 18.09.2026: fremsta brún. injectNav er sjálfsamhliða (skilar strax þegar
+    // takkinn er á sínum stað) og vaktin er þröng — aðeins bein börn nav-stikunnar,
+    // ekki subtree — svo kostnaðurinn er einn querySelector. Fjarlægi einhver pappi
+    // takkann kemur hann núna aftur samstundis í stað 250 ms síðar.
+    new MutationObserver(() => { injectNav(); clearTimeout(t); t = setTimeout(injectNav, 250); })
       .observe(nav, { childList: true, subtree: false });
   }
 

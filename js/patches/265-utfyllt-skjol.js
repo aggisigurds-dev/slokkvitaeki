@@ -113,11 +113,22 @@
     }
     return co || {};
   }
+  // 18.09.2026: fremsta brún má ekki tvíteikna. Vörðurinn á línu 120 dugar aðeins
+  // EFTIR await-ið (dataset.coId er skrifað neðar), svo tvö köll sem skarast á
+  // biðinni bjuggu bæði til ._ufs-section. Þessi læsing er sett samstundis.
+  let ufsVinnur = 0;
   async function injectProfile() {
     const main = document.getElementById('companies-main'); if (!main) return;
     const coId = coIdOnPage(); if (!coId) return;
     let sec = main.querySelector('._ufs-section');
     if (sec && String(sec.dataset.coId) === String(coId)) return;
+    if (ufsVinnur === coId) return;      // sama félag þegar í smíðum
+    ufsVinnur = coId;
+    try {
+      await byggja(main, coId, sec);
+    } finally { ufsVinnur = 0; }
+  }
+  async function byggja(main, coId, sec) {
     const co = await coInfo(coId);
     if (coIdOnPage() !== coId) return;   // notandi flakkaði á meðan
     const docs = docsFor(co.kennitala, co.nafn);
@@ -144,7 +155,17 @@
     const main = document.getElementById('companies-main');
     if (!main) { setTimeout(watchProfile, 900); return; }
     let t = 0;
-    new MutationObserver(() => { clearTimeout(t); t = setTimeout(injectProfile, 600); }).observe(main, { childList: true });
+    // 18.09.2026 — MÆLT: spjaldið birtist ALDREI, hvorki á framleiðslu né staðbundið.
+    // 600 ms teljarinn beið eftir ÞÖGN, en #companies-main fær childList-breytingu á
+    // ~550 ms fresti allan tímann sem prófíll er opinn (17 breytingar á 10 s, mesta
+    // bil 632 ms), svo teljarinn var núllstilltur áður en hann rann út. Beint kall á
+    // UtfylltSkjol.injectProfile() teiknaði spjaldið strax — fallið var rétt, kveikjan dauð.
+    // Nú: teikna á fremstu brún, elta síðbúna endurteikningu á þeirri öftustu.
+    new MutationObserver(() => {
+      injectProfile();                                 // fremsta brún — spjaldið strax
+      clearTimeout(t);
+      t = setTimeout(injectProfile, 600);              // aftasta brún — ef 129/311 teiknuðu yfir
+    }).observe(main, { childList: true });
     injectProfile();
   })();
 

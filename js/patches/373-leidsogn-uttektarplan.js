@@ -121,7 +121,11 @@
     const panel = view.querySelector('#_lds-due-panel');
     if (!panel) return;
     if (panelMedObserver !== panel) {
-      const o = new MutationObserver(() => { clearTimeout(o._t); o._t = setTimeout(skreyta, 40); });
+      // 18.09.2026: fremsta brún. skreyta() er sjálfsamhliða — saekja() sameinar
+      // fyrirspurnir í einn `saeki`-lofa og báðar skreytingarnar sleppa hnút sem
+      // ber þegar ._up373 — svo merkin koma um leið og panellinn er endurteiknaður
+      // í stað þess að bíða 40 ms eftir þögn. Teljarinn stendur sem öryggisnet.
+      const o = new MutationObserver(() => { skreyta(); clearTimeout(o._t); o._t = setTimeout(skreyta, 40); });
       o.observe(panel, { childList: true });
       panelMedObserver = panel;
     }

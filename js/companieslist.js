@@ -98,7 +98,13 @@ async function decorate(){if(_pending)return;_pending=true;try{var v=document.ge
   document.getElementById('_cl_clear').onclick=function(){var i=document.getElementById('_cl_search');i.value='';_state.search='';renderTbody();i.focus();};
   var ths=wrap.querySelectorAll('th[data-sort]');Array.prototype.forEach.call(ths,function(th){th.onclick=function(){setSort(th.dataset.sort);};});
   updateSortIndicators();renderTbody();}finally{_pending=false;}}
-function setupObserver(){var v=document.getElementById('view-companies');if(!v){setTimeout(setupObserver,500);return;}var mo=new MutationObserver(function(muts){var hasGrid=muts.some(function(m){for(var i=0;i<m.addedNodes.length;i++){var n=m.addedNodes[i];if(n.nodeType===1 && (String(n.className||'').indexOf('company-grid')>=0 || (n.querySelector && n.querySelector('.company-grid'))))return true;}return false;});if(hasGrid)setTimeout(decorate,80);});mo.observe(v,{childList:true,subtree:true});setTimeout(decorate,200);}
+/* 18.09.2026 — MÆLT: frá því .company-grid birtist þar til fyrsta uttaeki-netkallið
+   fór af stað liðu 193–327 ms (5 keyrslur), því 80 ms teljarinn var settur af stað
+   eftir að 1.191 spjöld voru teiknuð og beið svo á upptekinni aðalþræði. decorate()
+   er sjálfsamhliða — _pending stöðvar samhliða köll samstundis og _listShown stöðvar
+   endurteikningu — svo hún má keyra á fremstu brún. Teljarinn stendur eftir sem
+   öryggisnet fyrir spjöld sem koma seinna. */
+function setupObserver(){var v=document.getElementById('view-companies');if(!v){setTimeout(setupObserver,500);return;}var mo=new MutationObserver(function(muts){var hasGrid=muts.some(function(m){for(var i=0;i<m.addedNodes.length;i++){var n=m.addedNodes[i];if(n.nodeType===1 && (String(n.className||'').indexOf('company-grid')>=0 || (n.querySelector && n.querySelector('.company-grid'))))return true;}return false;});if(hasGrid){decorate();setTimeout(decorate,80);}});mo.observe(v,{childList:true,subtree:true});setTimeout(decorate,200);}
 /* 2026-05-08: Removed setInterval(1500ms) safety net — patch
    99-companies-list-fix.js has its own 5s interval that does the same
    `tryForceRedecorate` work. Two intervals running simultaneously was

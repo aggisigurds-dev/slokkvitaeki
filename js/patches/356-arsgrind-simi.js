@@ -129,7 +129,12 @@
     const main = document.getElementById('companies-main');
     if (!main || main.__r356) return;
     main.__r356 = true;
-    try { new MutationObserver(() => { clearTimeout(_rt); _rt = setTimeout(regla, 60); }).observe(main, { childList: true, subtree: true }); } catch (_) {}
+    // 18.09.2026 — MÆLT (síma-hamur, 375 px): 91–155 ms liðu frá því .sk-svc-row
+    // birtist þar til hún var komin í .sk-svc-body (5 fyrirtæki). Á þeim tíma sést
+    // línan í rangri uppsetningu. regla() er sjálfsamhliða — hún tekur aðeins
+    // :not([data-r356]) og merkir hverja röð um leið — svo hún má keyra á fremstu
+    // brún; teljarinn eltir raðir sem 199 teiknar seinna.
+    try { new MutationObserver(() => { regla(); clearTimeout(_rt); _rt = setTimeout(regla, 60); }).observe(main, { childList: true, subtree: true }); } catch (_) {}
   }
   mount(); watch();
   document.addEventListener('slokk-viewmode', mount);
