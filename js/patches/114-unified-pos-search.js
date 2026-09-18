@@ -329,6 +329,15 @@
             SB.from('vidskiptavinir').select('id,nafn,kennitala').or(_ktOr).is('deleted_at', null).limit(1),
             SB.from('fyrirtaeki').select('id,nafn,kennitala').or(_ktOr).is('deleted_at', null).limit(1)
           ]);
+          // 18.09.2026: .select() kastar ekki — brygðist önnur hvor fyrirspurnin
+          // kom `data: null` til baka, `existing` varð null og aðvörunin birtist
+          // ALDREI. „Vista" bjó þá til nýja fyrirtaeki-röð á kennitölu sem átti
+          // þegar röð — nákvæmlega tvítekningin sem 10.09-athugasemdin lýsir.
+          if ((existVi && existVi.error) || (existFy && existFy.error)) {
+            const _kerr = (existVi && existVi.error) || (existFy && existFy.error);
+            showErr('Gat ekki athugað hvort kennitalan sé þegar skráð — enginn viðskiptavinur var stofnaður (annars gæti orðið til tvítekinn kúnni). Reyndu aftur. (' + (_kerr.message || _kerr) + ')');
+            return;
+          }
           const _viRow = (existVi && existVi.data && existVi.data[0]) || null;
           const _fyRow = (existFy && existFy.data && existFy.data[0]) || null;
           // fyrirtaeki FYRST — aðeins sú tafla má gefa co_id.
@@ -383,6 +392,14 @@
           let _baseId = null;
           const _cb = await SB.from('customers_base').select('id,simi,netfang')
             .or('kennitala.eq.' + _dashed + ',kennitala.eq.' + ktClean).limit(1).maybeSingle();
+          // 18.09.2026: brygðist þessi uppfletting var `data: null` lesið sem
+          // „kennitalan er ekki í skránni" og NÝ customers_base-röð stofnuð á
+          // kennitölu sem átti þegar röð. Nýja fyrirtækið hefði þá hangið á
+          // tvítekinni grunnskráningu og salan skipst á tvö base-id.
+          if (_cb && _cb.error) {
+            showErr('Gat ekki flett kennitölunni upp í viðskiptavinaskránni — ekkert var stofnað. Reyndu aftur. (' + (_cb.error.message || _cb.error) + ')');
+            return;
+          }
           if (_cb && _cb.data && _cb.data.id) {
             _baseId = _cb.data.id;
             const _p = {};

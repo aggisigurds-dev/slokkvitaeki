@@ -210,6 +210,10 @@
       // fyrirtaeki_id — svo systkinastaður með sama nafni dragist aldrei inn.
       let oldTotal = null;
       try {
+        // 18.09.2026 (vörður lestur→innsetning): ÞESSI lestur er saklaus — bregðist
+        // hann verður `nafn` tómt og allur samræmingar-kaflinn (líka .insert hér
+        // fyrir neðan) er hoppaður yfir, svo engin röð verður til. Lesturinn sem
+        // gat búið til tvítök er `saekja()` rétt fyrir neðan.
         const c = await sb.from('fyrirtaeki').select('id,nafn').eq('id', coId).maybeSingle();
         const nafn = c && c.data && c.data.nafn;
         if (nafn) {
@@ -218,7 +222,13 @@
             let ut = [], from = 0; const page = 1000;
             while (true) {
               const r = await byggja().range(from, from + page - 1);
-              if (r.error || !r.data) break;
+              // 18.09.2026: hér stóð `if (r.error || !r.data) break;`. Brostin
+              // fyrirspurn skilaði því TÓMUM lista sem las eins og „félagið á engin
+              // tæki" — computePlan bjó þá til nýtt tæki fyrir HVERT tæki í
+              // skýrslunni: fullkomið tvítak á tækjaskránni og tvítekin lína á
+              // reikningi (tæki eru FJÖLDI). Villan stöðvar nú samræminguna.
+              if (r.error) throw r.error;
+              if (!r.data) break;
               ut = ut.concat(r.data);
               if (r.data.length < page) break;
               from += page;
@@ -260,7 +270,15 @@
           console.warn('[270] override_log', ol.error);
           try { if (window.logProblem) window.logProblem('report_sync_override_log_failed', 'co ' + coId + ': ' + String(ol.error.message || ol.error).slice(0, 160)); } catch (_) {}
         }
-      } catch (_) {}
+      } catch (e) {
+        // 18.09.2026: lestrarvilla hér þýðir „ég veit ekki hvaða tæki eru til" —
+        // ekki „engin tæki til". Samræmingunni er því sleppt (engin röð búin til)
+        // og það skráð; annars sæist hvergi að tækjaskráin var ekki uppfærð.
+        // Vistun skýrslunnar heldur áfram eins og áður (ALLTAF LEYFA VISTUN).
+        summary.skipped = summary.skipped || 'uttaeki_lestur_brast';
+        console.warn('[270] uttaeki-samræming stöðvuð:', (e && e.message) || e);
+        try { if (window.logProblem) window.logProblem('report_sync_uttaeki_read_failed', 'co ' + coId + ': ' + String((e && e.message) || e).slice(0, 160)); } catch (_) {}
+      }
 
       // 3. arsskodun_customers blob — deep-merge (sama race-örugga mynstur og
       //    153 ⚡-ritlarnir). Handvirkar yfirskriftir vinna áfram.

@@ -83,6 +83,16 @@
         if (cleanKt && cleanKt.length === 10) {
           // Check if vidskiptavinur with this kennitala already exists
           const existing = await SB.from('vidskiptavinir').select('id').eq('kennitala', cleanKt).limit(1).maybeSingle();
+          // 18.09.2026: .select() kastar ekki. Brygðist uppflettingin (RLS, 500,
+          // netglitch) kom `data: null` til baka og var lesið sem „kennitalan er
+          // ekki til" — þá varð til NÝR viðskiptavinur ofan á þann sem var þegar
+          // til, solur voru færðar á tvítekninguna og gamla fyrirtaeki-röðin EYDD.
+          // Óafturkræft. Nú er staðnum sleppt og hann stendur óhreyfður.
+          if (existing && existing.error) {
+            results.errors.push({ co: co.id, step: 'kt-uppfletting', err: 'Gat ekki flett upp kennitölu — staðnum sleppt, engu breytt: ' + (existing.error.message || existing.error) });
+            results.skipped++;
+            continue;
+          }
           if (existing && existing.data && existing.data.id) {
             vidId = existing.data.id;
           }

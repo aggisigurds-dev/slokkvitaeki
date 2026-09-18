@@ -699,13 +699,20 @@
   //   • 'human'  = skrifstofan tvítékkaði og staðfesti
   // Patch 187 (listinn) les sömu töflu og sýnir bláan/grænan depil.
   var _fc = {};              // co_id → { year(str) → {status, note} }
+  var _fcFail = {};          // co_id → true þegar lesturinn brást (staðan er ÓÞEKKT, ekki tóm)
   function fcStatus(coId,y){ var m=_fc[String(coId)]; var r=m&&m[String(y)]; return r?r.status:null; }
   function fcNote(coId,y){ var m=_fc[String(coId)]; var r=m&&m[String(y)]; return (r&&r.note)||''; }
   async function fcLoad(coId){
     var sb=SB(); if(!sb||!coId){ _fc[String(coId)]={}; return; }
+    delete _fcFail[String(coId)];
+    // 18.09.2026: .select() kastar ekki. Brygðist fyrirspurnin varð `_fc` TÓMT og
+    // hvert ár leit út fyrir að vera ómerkt — næsti tvísmellur skrifaði þá 'human'
+    // (staðfest grænt) yfir 'gap' („skýrsla vantar") og hreinsaði nótuna með.
+    // Tvítekning verður ekki til (upsert á co_id,year) en falskt grænt varð til.
     try{ var r=await sb.from('year_factcheck').select('year,status,note').eq('co_id',coId);
+      if(r && r.error){ _fcFail[String(coId)]=true; _fc[String(coId)]={}; return; }
       var m={}; (r.data||[]).forEach(function(x){ m[String(x.year)]={status:x.status,note:x.note}; }); _fc[String(coId)]=m;
-    }catch(_){ _fc[String(coId)]={}; }
+    }catch(_){ _fcFail[String(coId)]=true; _fc[String(coId)]={}; }
   }
   async function fcSet(coId,y,status,note){
     var sb=SB(); if(!sb) return;
@@ -729,6 +736,9 @@
   // SAMI hringur og í árs-dálkum listans (patch 187, sama year_factcheck-tafla)
   // svo yfirskrift héðan breytir reitnum á Fyrirtæki í þjónustu og öfugt.
   async function fcToggle(coId,y){
+    // Staðan náðist ekki → við VITUM ekki hvar í hringnum við erum. Að halda áfram
+    // héðan skrifar fyrsta þrepið ('human') yfir það sem fyrir er.
+    if(_fcFail[String(coId)]){ alert('Árs-staðan náðist ekki úr gagnagrunninum, svo ekki er hægt að breyta henni núna — smellurinn gæti skrifað „staðfest" yfir „skýrsla vantar". Endurhladdu síðuna og reyndu aftur.'); return; }
     var st=fcStatus(coId,y);
     if(st==='human')      await fcSet(coId,y,'gap','Merkt handvirkt: skýrsla vantar');
     else if(st==='gap')   await fcSet(coId,y,'claude','Merkt handvirkt: úttekt gerð — skýrsla vantar');

@@ -151,6 +151,11 @@
   async function loadActions() {
     const SB = getSB(); if (!SB) return;
     try {
+      // 18.09.2026 (vörður lestur→innsetning): SAKLAUST. Bæði skrifin sem hanga á
+      // þessum lestri eru `.upsert(..., { onConflict: 'email_id' })` á einkvæman
+      // lykil, svo brostinn lestur getur ekki búið til aðra röð — hann lætur
+      // aðeins merki/minnispunkta líta ómerkt út þar til síðan er endurhlaðin,
+      // og bæði skrifin lesa .error og segja frá (17.09).
       const { data } = await SB.from('email_actions').select('email_id,status,notes');
       state.handled = new Set();
       state.notes = {};
