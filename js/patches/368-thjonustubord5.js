@@ -1522,6 +1522,9 @@
       if (String(rows[0].notes || '') !== texti) throw new Error('las annan texta til baka úr gagnagrunninum');
       if (r) r.notes = texti;                     // svo næsta teikning sýni nýja textann
       if (S.ntDrog[id] === texti) delete S.ntDrog[id];   // stafir sem bættust við á meðan bíða áfram
+      // Tveir ritlar á sama reit: „Breyta máli" geymir sín eigin drög. Væru þau
+      // eldri myndi „Vista breytingar" skrifa yfir textann sem var nýbúið að vista.
+      if (S.bmDrog[id] && S.bmDrog[id].notes != null) delete S.bmDrog[id].notes;
       S.ntStada[id] = { t: 'ok', s: 'Vistað kl. ' + klukka(new Date()) };
     } catch (e) {
       // Textinn stendur áfram í S.ntDrog og þar með í reitnum.
@@ -4332,6 +4335,12 @@
           if (!rows.length) throw new Error('málið fannst ekki');
           if (patch.status && rows[0].status !== patch.status) throw new Error('las til baka stöðuna „' + rows[0].status + '“');
           delete S.bmDrog[id];
+          // Tveir ritlar á sama reit (`notes`): óskoluð drög úr innsláttarreitnum
+          // myndu annars skolast út 700 ms síðar og skrifa yfir það sem var nýbúið
+          // að vista hér. Sá reitur sem síðast var skrifað í ræður.
+          try { clearTimeout(_skT['nt:' + id]); delete _skBid['nt:' + id]; } catch (_) {}
+          delete S.ntDrog[id];
+          S.ntStada[id] = null;
           S.bmOpid[id] = false;
           toast(patch.status === 'lokad' ? 'Breytingar vistaðar · málið er lokað' : 'Breytingar vistaðar');
         });
