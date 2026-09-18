@@ -256,6 +256,10 @@
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
     skDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
+    // 18.09.2026: innsláttur beint á borðinu. ntDrog = texti sem er ekki kominn í
+    // gagnagrunninn (lifir af teikningu OG af misheppnaðri vistun), ntStada = það sem
+    // reiturinn segir notandanum, ntOpid = opinn reitur á hvítu spjaldi.
+    ntDrog: {}, ntStada: {}, ntOpid: {}, krassOpid: true,
     samtSkyOpid: {}, samtSkyDrog: {},   // 368w: opinn skýringarritill á samþykkismáli + óvistuð drög
     falidBid: {},      // Fela-skrif sem bíða eða kláruðust nýlega: { lykill: { falid, row, tok, lokid } }
     skyrBid: {},       // Skýringar-skrif sem bíða eða kláruðust nýlega: { lykill: { skyring, af, at, rod, tok, lokid } }
@@ -521,10 +525,15 @@
     if (s.indexOf('DRAFT|') !== 0) return s;
     try { const d = JSON.parse(s.slice(6)); return String((d && (d.villa || d.reply)) || '').trim(); } catch (_) { return ''; }
   }
+  // 18.09.2026 (Agnar: „show 3-4 lines of text not only the fyrst line").
+  // Hér stóð `.find(Boolean)` sem tók FYRSTU ólínuna og henti afganginum: mál sem
+  // byrjar á „Sæl(l)," sýndi bara kveðjuna. `linur` tekur nú fjórar fyrstu línurnar
+  // sem eitthvað stendur í og CSS klippir við fjórar svo kortin haldi hæð.
+  function linur(texti, n) {
+    return String(texti || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, n || 4).join('\n');
+  }
   function aiLine(r) {
-    const s = samantekt(r);
-    if (s) return s.slice(0, 220);
-    return (String(r.notes || '').split('\n').map(x => x.trim()).find(Boolean) || '').slice(0, 220);
+    return linur(samantekt(r) || r.notes || '', 4).slice(0, 600);
   }
   // Síur: allt/post/beidni/hot velja úr Master · 'oll' = öll opin mál · 'p:<nafn>' = borð eins
   // starfsmanns · 'f:<id>' = opin mál eins fyrirtækis.
@@ -546,7 +555,9 @@
     let q = c.from('thjonustubeidni').update(Object.assign({ updated_at: new Date().toISOString() }, patch)).eq('id', id);
     if (sia === true) q = q.or(LAUS_SIA);
     else if (sia && 'adur' in sia) q = sia.adur == null ? q.is('assigned_to', null) : q.eq('assigned_to', sia.adur);
-    const r = await q.select('id,assigned_to,status,svarad_at');
+    // 18.09.2026: `notes` bættist við svo innsláttarreiturinn geti lesið til baka
+    // textann sem lenti í gagnagrunninum í stað þess að fullyrða að hann hafi lent þar.
+    const r = await q.select('id,assigned_to,status,svarad_at,notes');
     if (r.error) throw r.error;
     return r.data || [];
   }
@@ -858,7 +869,7 @@
       '.modcell{min-width:0;container:rail / inline-size}.modgrid>.breitt,.modgrid>.sel.inline{grid-column:1 / -1}',
       '@container main (min-width: 1100px){.modgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}',
       '@container main (min-width: 1900px){.modgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}',
-      '.samt-ef{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink)}',
+      '.samt-ef{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere;color:var(--ink)}',
       '.board{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"master mine" "master sel";gap:18px;align-items:start}',
       '.colmaster{grid-area:master}.colmine{grid-area:mine}.colsel{grid-area:sel}',
       '.colmine.samanbrotid{align-self:start}.colmine.samanbrotid .phead{border-image-width:0;border-radius:5px}',
@@ -906,7 +917,30 @@
       '.pchip[aria-pressed="true"]{background:var(--gside);color:var(--ink)}',
       '.board.bara{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);grid-template-rows:auto;grid-template-areas:"mine sel"}',
       '.mt{display:block;font-family:var(--disp);font-size:16px;font-weight:700;line-height:1.25;margin:4px 0 2px;overflow-wrap:anywhere;color:var(--ink)}',
-      '.mn{display:block;margin:0 0 8px;font-size:12.5px;color:var(--ink2)}',
+      // 18.09.2026 — hvíta svæðið á kortinu. `.mn` var áður lesspan; nú er hún
+      // hnappur sem opnar innsláttarreit. Fjórar línur, punktalína sem birtist við
+      // yfirsvif svo það sjáist að hægt sé að skrifa.
+      '.mn{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere;width:100%;margin:0 0 8px;padding:5px 7px;text-align:left;appearance:none;-webkit-appearance:none;border:1px dashed transparent;border-radius:4px;background:none;font:12.5px/1.5 var(--body);color:var(--ink2);cursor:text}',
+      '.mn.les{border:0;padding:0 0 0 1px;cursor:default;color:var(--mute)}',
+      '.mn:not(.les):hover,.mn:not(.les):focus-visible{border-color:var(--edge);background:#fffdf7}',
+      '.mn.tom{color:var(--mute);font-style:italic}',
+      '.ai{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere}',
+      // Innsláttarreiturinn sjálfur — hvítur á korti, svartur í valda málinu.
+      '.nt{display:flex;flex-direction:column;gap:3px;margin:0 0 8px}',
+      '.nthead{display:flex;align-items:baseline;gap:8px}',
+      '.nt textarea{width:100%;padding:8px 10px;border:1px solid var(--edge);border-radius:4px;background:#fffdf7;box-shadow:var(--wellsh);font:13px/1.6 var(--body);color:var(--ink);resize:vertical;white-space:pre-wrap}',
+      '.nt textarea:focus{outline:2px solid var(--g5);outline-offset:1px}',
+      '.nt textarea::placeholder{color:var(--mute);opacity:.5}',
+      '.well.ntwell{padding:10px 12px}.well.ntwell .nt{margin:0}',
+      '.nt.dark textarea{border:1px solid #2f2c26;background:#0b0b0a;color:#efe9da;box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}',
+      '.nt.dark textarea::placeholder{color:#7b7466;opacity:.8}',
+      '.ntst{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--mute)}',
+      '.ntst.villa{color:var(--terra);letter-spacing:0;font-family:var(--body);font-size:11.5px}',
+      '.ntst.ok{color:var(--green)}.ntst.vistar,.ntst.bid{color:var(--gink)}',
+      '.nt.dark .ntst{color:var(--on3)}.nt.dark .ntst.ok{color:#7fbf95}.nt.dark .ntst.villa{color:#e08b6a}',
+      // Krassblaðið efst — sama blað og á Skipulagsborðinu.
+      '.krassbordi{margin:0 0 12px}.krassbordi .krassbox{border:0;border-radius:0;box-shadow:none;background:none;padding:0 14px 12px}',
+      '.krassbordi .krass textarea{min-height:56px}',
       '.mfoot{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px}',
       '.sel{background:var(--slab);border:1px solid #000;border-top:3px solid transparent;border-image:var(--gline) 1;border-image-width:3px 0 0 0;border-radius:5px;color:var(--on);box-shadow:var(--slabsh);padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}',
       '.sel.inline{margin:0 10px 12px}',
@@ -1161,7 +1195,12 @@
     r.addEventListener('change', onChange);
     r.addEventListener('keydown', onKey);
     r.addEventListener('input', onInput);
-    r.addEventListener('focusout', e => { const el = e.target; if (el && el.dataset && el.dataset.sk) skola(el.dataset.sk === 'krass' ? '__krass' : el.dataset.skid); });
+    r.addEventListener('focusout', e => {
+      const el = e.target;
+      if (!el || !el.dataset) return;
+      if (el.dataset.sk) skola(el.dataset.sk === 'krass' ? '__krass' : el.dataset.skid);
+      else if (el.dataset.nt) skola('nt:' + el.dataset.id);   // farið úr reitnum = vistað strax
+    });
     ['dragstart', 'dragover', 'drop', 'dragend'].forEach(t => r.addEventListener(t, onDrag));
     r.addEventListener('paste', onPaste);
     document.addEventListener('visibilitychange', () => { if (document.hidden) skolaAllt(); });
@@ -1285,7 +1324,7 @@
   }
 
   function feedRow(r, valid) {
-    const a = ageDays(r), ai = aiLine(r), n = nu(), w = fyrLink(r);
+    const a = ageDays(r), sam = linur(samantekt(r), 4).slice(0, 600), n = nu(), w = fyrLink(r);
     const tags = samtMerki(r) +
       (r.important ? '<span class="tag hot">Áríðandi</span>' : '') +
       (r.due_at ? '<span class="tag">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
@@ -1303,7 +1342,9 @@
       '<div class="fbody"><div class="kick">' + esc(tegMals(r)) + (w ? ' · ' + w : '') + '</div>' +
         '<button type="button" class="fpick" data-t5="skoda" data-id="' + r.id + '" title="Skoða málið">' +
           '<span class="rt">' + esc(r.title || '(ónefnt mál)') + '</span>' +
-          (ai ? '<span class="ai">' + esc(ai) + '</span>' : '') + '</button>' +
+          (sam ? '<span class="ai">' + esc(sam) + '</span>' : '') + '</button>' +
+        // Master líka: það á ekki að þurfa að opna mál til að skrifa eina setningu.
+        ntReitur(r) +
         (tags ? '<div class="tags">' + tags + '</div>' : '') + '</div>' + hlid +
     '</article>';
   }
@@ -1337,14 +1378,18 @@
       '<button type="button" class="btn iv" data-t5="samt-sky" data-id="' + r.id + '">Hætta við</button></div></div>';
   }
   function mineRow(r, valid) {
-    const a = ageDays(r), w = fyrLink(r), ai = aiLine(r);
+    const a = ageDays(r), w = fyrLink(r), sam = linur(samantekt(r), 4).slice(0, 600);
     return '<div class="mrow" aria-current="' + valid + '">' +
       '<span class="pin" aria-hidden="true">◆</span>' +
       '<div><div class="kick">' + esc(tegMals(r)) + (w ? ' · ' + w : '') + '</div>' +
         '<button type="button" class="mpick" data-t5="select" data-id="' + r.id + '">' +
           '<span class="mt">' + esc(r.title || '(ónefnt mál)') + '</span>' +
-          (ai && !valid ? '<span class="mn">' + esc(ai) + '</span>' : '') +
         '</button>' +
+        // 18.09.2026: samantekt Claude er lestur, en athugasemdin er reitur. Áður var
+        // hún inni í `.mpick`-hnappinum — hnappur í hnappi er ógilt og ekki hægt að
+        // smella á hana til að skrifa.
+        (sam && !valid ? '<span class="mn les">' + esc(sam) + '</span>' : '') +
+        (valid ? '' : ntReitur(r)) +
         '<div class="mfoot"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
           (r.due_at ? '<span class="lock">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
           samtMerki(r) +
@@ -1380,6 +1425,119 @@
     const id = Number(el.dataset.id);
     if (id) (S.bmDrog[id] = S.bmDrog[id] || {})[el.dataset.bm] = el.type === 'checkbox' ? el.checked : el.value;
   }
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   * INNSLÁTTUR BEINT Á BORÐINU (18.09.2026 — Agnar).
+   *
+   *   „it takes time to go to breyta máli and put in text in a bar below,
+   *    unnecesery complications" · „everything need to be easy to wright
+   *    something down."
+   *
+   * Áður þurfti fjögur skref til að skrifa eina setningu: opna mál → ✏️ Breyta
+   * máli → skrifa → Vista breytingar. Nú er textinn sjálfur reiturinn.
+   *
+   * Vistun fer um `patchRow`, sem les `.error` og kastar. supabase-js kastar
+   * ALDREI sjálft við `.update()` — reitur sem segði „Vistað" án þess að lesa
+   * svarið væri að ljúga. Hér er auk þess lesinn til baka textinn sem lenti í
+   * gagnagrunninum og borinn saman við þann sem var sendur.
+   *
+   * Mistakist vistun er textinn EKKI hreinsaður: hann lifir í `S.ntDrog`, stendur
+   * áfram í reitnum og reiturinn segir frá. Ekkert hverfur.
+   */
+  const _ntRod = {};
+  const ntGildi = r => (S.ntDrog[r.id] != null ? S.ntDrog[r.id] : String(r.notes || ''));
+  const ntRadir = texti => Math.min(16, Math.max(4, String(texti).split('\n').length + 1));
+  function ntStadaHtml(id) {
+    const s = S.ntStada[id] || { t: '', s: '' };
+    return '<span class="ntst ' + s.t + '" data-ntst="' + id + '">' + esc(s.s) + '</span>';
+  }
+  // Staðan er stimpluð beint á stakan reit — ekki teiknað upp á nýtt, því
+  // teikning undir fingrunum tekur bendilinn og skrunið.
+  function ntStimpla(id) {
+    const root = rot();
+    if (!root) return;
+    const s = S.ntStada[id] || { t: '', s: '' };
+    root.querySelectorAll('[data-ntst="' + id + '"]').forEach(el => {
+      el.textContent = s.s || '';
+      el.className = 'ntst ' + s.t;
+    });
+  }
+  // kort = á hvítu spjaldi · dark = í svarta spjaldinu
+  function notaHtml(r, cls, label) {
+    const g = ntGildi(r);
+    return '<div class="nt' + (cls ? ' ' + cls : '') + '">' +
+      '<div class="nthead"><span class="slabel">' + esc(label || 'Lýsing og athugasemdir') + '</span>' +
+      '<span class="grow"></span>' + ntStadaHtml(r.id) + '</div>' +
+      '<textarea data-nt="notes" data-id="' + r.id + '"' + (cls === 'kort' ? ' data-nt-kort="1"' : '') +
+        ' rows="' + ntRadir(g) + '" aria-label="Lýsing og athugasemdir"' +
+        ' placeholder="Skrifaðu hér — vistast sjálfkrafa. Ctrl+Enter vistar strax.">' + esc(g) + '</textarea></div>';
+  }
+  // Hvíta svæðið á korti: fjórar línur sem smellt er á og þá er hægt að skrifa.
+  function ntReitur(r) {
+    if (S.ntOpid[r.id]) return notaHtml(r, 'kort');
+    const g = ntGildi(r), synt = linur(g, 4).slice(0, 600);
+    return '<button type="button" class="mn' + (synt ? '' : ' tom') + '" data-t5="nt-opna" data-id="' + r.id +
+      '" title="Smelltu og skrifaðu — vistast sjálfkrafa">' +
+      (synt ? esc(synt) : '✎ Skrifa athugasemd…') + '</button>';
+  }
+  function skrifaNota(el) {
+    const id = Number(el.dataset.id);
+    if (!id) return;
+    S.ntDrog[id] = el.value;
+    S.ntStada[id] = { t: 'bid', s: 'Óvistað…' };
+    ntStimpla(id);
+    bida('nt:' + id, () => vistaNota(id));
+  }
+  // Ein röð á hvert mál: tvær vistanir á sama mál geta ekki farið fram úr hvor annarri.
+  function vistaNota(id) {
+    const nyr = (_ntRod[id] || Promise.resolve()).catch(() => {}).then(() => ntVistaNu(id));
+    _ntRod[id] = nyr.catch(() => {});
+    return nyr;
+  }
+  async function ntVistaNu(id) {
+    const texti = S.ntDrog[id];
+    if (texti == null) return;
+    const r = S.rows.find(x => x.id === id);
+    if (r && texti === String(r.notes || '')) {   // ekkert breyttist — engin skrif, engin fullyrðing
+      delete S.ntDrog[id];
+      S.ntStada[id] = null;
+      ntStimpla(id);
+      return;
+    }
+    S.ntStada[id] = { t: 'vistar', s: 'Vista…' };
+    ntStimpla(id);
+    try {
+      const rows = await patchRow(id, { notes: texti });
+      if (!rows.length) throw new Error('málið fannst ekki');
+      if (String(rows[0].notes || '') !== texti) throw new Error('las annan texta til baka úr gagnagrunninum');
+      if (r) r.notes = texti;                     // svo næsta teikning sýni nýja textann
+      if (S.ntDrog[id] === texti) delete S.ntDrog[id];   // stafir sem bættust við á meðan bíða áfram
+      S.ntStada[id] = { t: 'ok', s: 'Vistað kl. ' + klukka(new Date()) };
+    } catch (e) {
+      // Textinn stendur áfram í S.ntDrog og þar með í reitnum.
+      S.ntStada[id] = { t: 'villa', s: '⚠ Vistaðist ekki (' + ((e && e.message) || e) + ') — textinn þinn stendur hér áfram.' };
+    }
+    ntStimpla(id);
+  }
+  // Krassblað efst á borðinu (Agnar: „I want the krassblað in there, I use that the
+  // most"). Þetta er SAMA blaðið og á Skipulagsborðinu — sami reitur í app_settings
+  // (skipulagsbord.by_staff.<nafn>.krass) og sama vistun. Ekki nýtt blað til að muna
+  // eftir, heldur sama blaðið á þeim stað sem er alltaf opinn.
+  function krassHtml(n) {
+    const opid = S.krassOpid !== false;
+    const t = S.skDrog.__krass != null ? S.skDrog.__krass : String(P('skipulagsbord.by_staff.' + n + '.krass') || '');
+    const fj = t.trim() ? t.split('\n').filter(x => x.trim()).length : 0;
+    return '<section class="panel krassbordi" aria-label="Krassblað">' +
+      '<header class="phead">' + plate('✎') + '<h2 class="ptitle">Krassblað</h2>' +
+        '<span class="sum">' + (fj ? fj + (fj === 1 ? ' lína' : ' línur') : 'tómt') + '</span>' +
+        '<span class="grow"></span><span class="skstada">' + esc(S.skStada || '') + '</span>' +
+        '<button type="button" class="btn iv sm tog" data-t5="krass-fella" aria-expanded="' + opid +
+          '" title="' + (opid ? 'Fella saman' : 'Opna') + ' Krassblaðið">' + (opid ? '⌃' : '⌄') + '</button></header>' +
+      (opid ? '<div class="krassbox"><label class="krass"><textarea data-sk="krass" rows="' +
+        Math.min(14, Math.max(3, t.split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er — vistast sjálfkrafa og fylgir þér á milli tölva.">' +
+        esc(t) + '</textarea></label></div>' : '') +
+    '</section>';
+  }
   function selHtml(r, opt) {
     opt = opt || {};                  // { rymi: true } = í Samþykkja: öll lýsingin, enginn ✕
     if (!r) return emptyHtml('Smelltu á hvaða mál sem er til að skoða það — eða taktu næsta af Master.<button type="button" class="btn gold" data-t5="take-next">Taka næsta af Master ›</button>');
@@ -1400,8 +1558,13 @@
         well = wellHtml(hver + (p.received_at ? ' · ' + fmtD(p.received_at) : ''), txt.slice(0, 1800) || '(enginn texti)');
       }
     } else {
-      well = wellHtml('Lýsing', String(r.notes || '').trim().slice(0, opt.rymi ? 8000 : 1800) || 'Engin lýsing skráð.');
+      // 18.09.2026: hér stóð LESTUR („Engin lýsing skráð."). Nú er þetta reiturinn
+      // sjálfur — svarta spjaldið er staðurinn sem er opinn þegar mál er valið.
+      well = '<div class="well ntwell">' + notaHtml(r, 'dark') + '</div>';
     }
+    // Á póstmáli stendur pósturinn sjálfur efst og athugasemdareiturinn fyrir neðan:
+    // báðir hlutir eiga heima þar, textinn hans og textinn þeirra.
+    if (post) well += '<div class="well ntwell">' + notaHtml(r, 'dark', 'Þín athugasemd') + '</div>';
     const p = post ? postOf(r) : null;
     const getaSvarad = !!(post && p && p.sender_email);
     const b = (cls, t5, txt) => '<button type="button" class="btn ' + cls + '" data-t5="' + t5 + '" data-id="' + r.id + '"' + dis(r.id) + '>' + txt + '</button>';
@@ -3162,8 +3325,12 @@
     const synileg = all.filter(l => !Array.isArray(l.modes) || !l.modes.length || l.modes.indexOf(mode) >= 0);
     const falin = all.length - synileg.length;
     const chips = synileg.map(l => {
-      const inni = '<span class="lk-ic" aria-hidden="true">' + esc(String(l.nafn).trim().charAt(0).toUpperCase() || '·') + '</span><span>' + esc(l.nafn) + '</span>' +
-        (Array.isArray(l.modes) && l.modes.length && M(l.modes[0]) ? '<span class="lk-m">' + esc(M(l.modes[0]).l) + '</span>' : '');
+      // 18.09.2026 (Agnar: „Dont show this over there"): hér stóð heiti hamsins á
+      // flöguna sjálfa — „Sala AFGREIÐSLA / ÚTKÖLL". Flagan sést hvort eð er aðeins
+      // í þeim ham (sjá síuna hér að ofan), svo merkið sagði manni hvar maður væri
+      // þegar staddur. Talningin „+ N í öðrum hömum" hér að neðan stendur áfram —
+      // hún segir eitthvað sem ekki sést.
+      const inni = '<span class="lk-ic" aria-hidden="true">' + esc(String(l.nafn).trim().charAt(0).toUpperCase() || '·') + '</span><span>' + esc(l.nafn) + '</span>';
       const tengill = l.slod.charAt(0) === '#'
         ? '<button type="button" class="lk" data-t5="go" data-view="' + esc(l.slod.slice(1)) + '" title="Opna ' + esc(l.nafn) + '">' + inni + '</button>'
         : '<a class="lk" href="' + esc(l.slod) + '" target="_blank" rel="noopener noreferrer" title="' + esc(l.slod) + '">' + inni + '</a>';
@@ -3304,7 +3471,7 @@
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði eða í skýringu truflast ef teiknað er undir — bíða.
     // Skráarval opið: teikning myndi skipta út <input type="file"> og skrárnar tapast.
-    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.skyr || ae.dataset.samtsky))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
+    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.skyr || ae.dataset.samtsky))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     const n = nu(), c = cfg(), mode = M(c.mode) || MODES.thjonusta;
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // 368y: vinnusvæðis-hamur (rymi) fær alla breiddina — engar einingar til hliðar, engin KPI-spjöld. 368aa: einingahamur
@@ -3402,6 +3569,7 @@
           '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' +
         '</div></div>' +
         leitHtml() +
+        krassHtml(n) +
         (S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
           hamaListi().map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
@@ -3429,7 +3597,7 @@
     const drog = {};
     root.querySelectorAll('input[data-k], textarea[data-k], select[data-k]').forEach(i => { drog[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value; });
     // Skrun innan pósts og vikunnar heldur sér ef sama mál er enn valið.
-    const SKRUN = '.well p, .week, .seg.modeseg, .vbr-items';
+    const SKRUN = '.well p, .nt textarea, .week, .seg.modeseg, .vbr-items';
     const skrunSel = v.dataset.t5sel === String(selId);
     const skrun = [...root.querySelectorAll(SKRUN)].map(x => [x.scrollTop, x.scrollLeft]);
     mount.innerHTML = html;
@@ -3498,7 +3666,9 @@
     _skRod = verk.catch(() => false);
     return verk;
   }
-  function stimplaSk() { const root = rot(), el = root && root.querySelector('.skstada'); if (el) el.textContent = S.skStada || ''; }
+  // 18.09.2026: `querySelector` stimplaði AÐEINS fyrsta reitinn. Krassblaðið er nú á
+  // tveimur stöðum (efst á borðinu og á Skipulagsborðinu), svo hinn hefði þagnað.
+  function stimplaSk() { const root = rot(); if (root) root.querySelectorAll('.skstada').forEach(el => { el.textContent = S.skStada || ''; }); }
   const _skT = {}, _skBid = {};
   function bida(lykill, fn) { clearTimeout(_skT[lykill]); _skBid[lykill] = fn; _skT[lykill] = setTimeout(() => { delete _skBid[lykill]; fn(); }, 700); }
   function skola(lykill) { if (!_skBid[lykill]) return; clearTimeout(_skT[lykill]); const fn = _skBid[lykill]; delete _skBid[lykill]; fn(); }
@@ -4051,6 +4221,23 @@
       case 'ai-tillaga': aiTillaga(id); return;
       case 'virkni-uppf': uppfaeraVirkni(); return;
       case 'bm-opna': S.bmOpid[id] = !S.bmOpid[id]; render(); return;
+      // 18.09.2026: smellt á hvíta svæðið → reitur opnast OG fókus fer í hann með
+      // bendilinn aftast. Annars þyrfti tvo smelli til að byrja að skrifa.
+      case 'nt-opna': {
+        S.ntOpid[id] = true;
+        render();
+        setTimeout(() => {
+          const root = rot();
+          if (!root) return;
+          const ta = root.querySelector('textarea[data-nt][data-nt-kort][data-id="' + id + '"]') ||
+            root.querySelector('textarea[data-nt][data-id="' + id + '"]');
+          if (!ta) return;
+          ta.focus();
+          try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (_) {}
+        }, 0);
+        return;
+      }
+      case 'krass-fella': S.krassOpid = S.krassOpid === false; skola('__krass'); render(); return;
       case 'bm-vista': {
         const r = S.rows.find(x => x.id === id), d = S.bmDrog[id] || {};
         if (!r) return;
@@ -4135,6 +4322,7 @@
     if (k === 'lq' || k === 'nc') leita(k, el.value);
     else if (el && el.dataset && el.dataset.sk) skrifaSk(el);
     else if (el && el.dataset && el.dataset.bm) bmSkra(el);
+    else if (el && el.dataset && el.dataset.nt) skrifaNota(el);
     else if (el && el.dataset && el.dataset.skyr && S.skyrOpid) S.skyrOpid.texti = el.value;
     else if (el && el.dataset && el.dataset.samtsky) { const sid = Number(el.dataset.id); if (sid) { S.samtSkyDrog[sid] = el.value; skyDrogVista(sid, el.value); } }
   }
@@ -4142,6 +4330,29 @@
     const v = document.getElementById(VIEW_ID), root = v && v.shadowRoot;
     if (!root || !v.classList.contains('active')) return;
     const k = e.target && e.target.dataset ? e.target.dataset.k : null;
+    // 18.09.2026 — innsláttarreiturinn: Ctrl/Cmd+Enter vistar strax (ekki bíða 700 ms),
+    // Esc skilar textanum í það sem stendur í gagnagrunninum og lokar reitnum á korti.
+    if (e.target && e.target.dataset && e.target.dataset.nt) {
+      const nid = Number(e.target.dataset.id);
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault(); e.stopPropagation();
+        skola('nt:' + nid);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault(); e.stopPropagation();
+        const r = S.rows.find(x => x.id === nid);
+        delete S.ntDrog[nid];
+        S.ntStada[nid] = null;
+        try { clearTimeout(_skT['nt:' + nid]); delete _skBid['nt:' + nid]; } catch (_) {}
+        e.target.value = r ? String(r.notes || '') : '';
+        S.ntOpid[nid] = false;
+        e.target.blur();
+        render();
+        return;
+      }
+      return;
+    }
     // Skýringarritill: Ctrl/Cmd+Enter vistar, Esc hættir við — og lyklarnir fara ekki lengra (Esc lokar ekki öðru á síðunni).
     if (e.target && e.target.dataset && e.target.dataset.skyr) {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); e.stopPropagation(); vistaSkyringu(true); }
