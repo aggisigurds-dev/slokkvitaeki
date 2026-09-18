@@ -35,7 +35,12 @@ const BANN = [
 
 // ── 2. Grunnlína — fjöldi ÓLÍKRA vafra-lykla per repó (mælt 06.09.2026) ────────
 //    Hækkaðu aðeins með rökstuðningi í commit-skilaboðum. Lækkun er alltaf í lagi.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 49 }, slokkvitaeki: { ls: 149, ui: 0 } };
+// 18.09.2026: brunaholf ui 49 -> 50. Nýi lykillinn er `drive_leit_val` úr
+// Drive-leitarflipanum (556cdea). Hann geymir { folder: <valin mappa> } — hvaða
+// möppu notandinn valdi síðast, þ.e. stilling ÞESSA vafra. Möppulistinn sjálfur
+// fer á þjóninn (state.ui.drive_leit_moppur), sem er rétt skipting. Talan er
+// hækkuð af því lykillinn stenst regluna, ekki til að fá grænt.
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 50 }, slokkvitaeki: { ls: 149, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {

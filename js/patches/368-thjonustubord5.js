@@ -275,6 +275,7 @@
     // gagnagrunninn (lifir af teikningu OG af misheppnaðri vistun), ntStada = það sem
     // reiturinn segir notandanum, ntOpid = opinn reitur á hvítu spjaldi.
     ntDrog: {}, ntStada: {}, ntOpid: {}, krassOpid: true, krassStor: false,
+    vbrBuin: false,    // 18.09.2026: sýna vinnublöð sem búið er að svara (sótt löt)
     hamDrag: null,     // 18.09.2026: eining sem verið er að draga til í útlitsritlinum
     dnDrog: {}, dnStada: {},   // 18.09.2026: frjáls texti á dag í Dagskránni
     samtSkyOpid: {}, samtSkyDrog: {},   // 368w: opinn skýringarritill á samþykkismáli + óvistuð drög
@@ -1771,6 +1772,36 @@
   /* ── 368y: VINNUBLÖÐ — vinnusvæði (hamurinn vinnublod, board:false) ── */
   const VBR_HAM = 'vinnublod';
   const vbrMal = () => S.rows.filter(r => rymisHamir(r).indexOf(VBR_HAM) >= 0);
+  /* 18.09.2026 — BÚIN VINNUBLÖÐ.
+   * `load()` sækir aldrei lokuð mál (.or(status.is.null,status.neq.lokad)), svo
+   * vinnublað sem búið var að svara hvarf alveg. Það var ekki falið — það var
+   * aldrei sótt. Hér eru þau sótt LÖT, aðeins þegar beðið er um þau, og geymd í
+   * 5 mín eins og aðrar latar einingar; að taka þau með í hverri hleðslu myndi
+   * draga hvert lokað mál í kerfinu inn á borðið fyrir alla.
+   */
+  async function saekjaBuinVbr() {
+    const c = sb();
+    if (!c) throw new Error('Engin tenging við gagnagrunn');
+    // MÆLT 18.09.2026: `tags` er JSONB, ekki text[]. Fylkis-formið
+    // .contains('tags', ['ham:vinnublod']) fellur á 'invalid input syntax for type json';
+    // JSON-strengurinn virkar. Villan birtist á skjánum þegar hún kom, sem var rétt.
+    //
+    // Athugasemd MÁ EKKI standa inni í keðjunni sjálfri: audit-pagination les
+    // keðjuna sem eina heild og sér þá ekki `.limit(60)` hér að neðan.
+    const r = await c.from('thjonustubeidni').select(SEL)
+      .is('deleted_at', null).is('archived_at', null)
+      .eq('status', 'lokad')
+      .contains('tags', JSON.stringify(['ham:vinnublod']))
+      .order('updated_at', { ascending: false }).limit(60);
+    if (r.error) throw r.error;
+    return r.data || [];
+  }
+  // Búin blöð eru aðeins sótt þegar kveikt hefur verið á þeim.
+  function buinVbr() {
+    if (!S.vbrBuin) return { radir: [], bid: false, villa: '' };
+    const g = gogn('vbr:buin', saekjaBuinVbr);
+    return { radir: g.data || [], bid: !!g.bid && !g.data, villa: g.villa || '' };
+  }
   const vbrBidur = r => erSamthykki(r);
   const saraIdMals = r => { const t = tagList(r).find(x => /^sara:\d+$/.test(x)); return t ? Number(t.slice(5)) : null; };
   const vbrNafn = (r, s) => (s && s.fyrirtaeki) || whereOf(r) || String(r.title || '').replace(/^Vinnublað — staðfesta lestur:\s*/, '') || '(ónefnt)';
@@ -1845,17 +1876,25 @@
   }
   function vbRymiHtml(n) {
     if (!S.loaded) return emptyHtml('Sæki vinnublöð…');
-    const ids = [...new Set(vbrMal().map(saraIdMals).filter(Boolean))].sort((a, b) => a - b);
+    // sara-raðir búnu blaðanna fylgja með, annars vantar lesturinn á þau.
+    const ids = [...new Set(vbrMal().concat(S.vbrBuin ? (G['vbr:buin'] && G['vbr:buin'].data) || [] : [])
+      .map(saraIdMals).filter(Boolean))].sort((a, b) => a - b);
     const g = gogn('vbrymi:' + ids.join(','), () => saekjaVbrRadir(ids));
     if (g.data) S._vbrSara = g.data;                     // fyrri gögn standa á meðan ný sókn er í gangi — enginn blossi
-    const listi = vbrListi(n);
+    const buin = buinVbr();
+    // Búin blöð aftast: þau trufla ekki röðina á því sem bíður.
+    const listi = vbrListi(n).concat(buin.radir);
     if (!listi.length) return emptyHtml('Engin vinnublöð bíða yfirferðar. Ný blöð birtast hér þegar þau hafa verið lesin.');
     let val = listi.find(r => r.id === S.vbrVal);
     // Sjálfgefið val bíður eftir sara-röðinni, svo fyrsta blaðið sé fyrsta blaðið í bunkanum en ekki fyrsta nafnið.
     if (!val) { val = listi.find(vbrBidur) || listi[0]; if (S._vbrSara) S.vbrVal = val.id; }
     const sara = new Map((g.data || S._vbrSara || []).map(x => [x.id, x]));
     const s = sara.get(saraIdMals(val)) || null;
-    const bida = listi.filter(vbrBidur), svorud = listi.filter(r => !vbrBidur(r)), nr = listi.indexOf(val);
+    const erBuid = r => r.status === 'lokad';
+    const bida = listi.filter(vbrBidur);
+    const svorud = listi.filter(r => !vbrBidur(r) && !erBuid(r));
+    const buinRod = listi.filter(erBuid);
+    const nr = listi.indexOf(val);
     const item = r => {
       const sr = sara.get(saraIdMals(r)) || null;
       const undir = [sr && (sr.dagsetning || sr.manudur), bladNr(sr), vbrBidur(r) ? '' : svarBidur(r) ? SVOR[svarMals(r)].l : 'Svarað'].filter(Boolean).join(' · ');
@@ -1873,10 +1912,19 @@
       : '<div class="smeta">' + esc(svarBidur(val) ? SVOR[svarMals(val)].merki : 'Svarað') + ' · veldu næsta blað í listanum</div>';
     return '<div class="vbr">' +
       '<aside class="panel vbr-list" aria-label="Vinnublöð">' +
-        '<header class="phead">' + plate('06') + '<h2 class="ptitle">Vinnublöð</h2><span class="sum">' + bida.length + ' bíða · ' + svorud.length + ' svarað · nýjast efst</span></header>' +
+        '<header class="phead">' + plate('06') + '<h2 class="ptitle">Vinnublöð</h2><span class="sum">' + bida.length + ' bíða · ' + svorud.length + ' svarað · nýjast efst</span>' +
+          '<span class="grow"></span><button type="button" class="btn iv sm tog" data-t5="vbr-buin" aria-pressed="' + !!S.vbrBuin + '"' +
+            ' title="Sýna vinnublöð sem búið er að svara — þau eru ekki sótt fyrr en beðið er um þau">' +
+            (S.vbrBuin ? '✓ Búin' : 'Sýna búin') + '</button></header>' +
         '<div class="vbr-items">' +
           (bida.length ? '<div class="vbr-sect">Bíða yfirferðar · ' + bida.length + '</div>' + bida.map(item).join('') : '') +
           (svorud.length ? '<div class="vbr-sect">Svarað · ' + svorud.length + '</div>' + svorud.map(item).join('') : '') +
+          // 18.09.2026: búin blöð — sótt löt, aðeins þegar kveikt er á þeim.
+          (!S.vbrBuin ? ''
+            : buin.villa ? '<div class="vbr-sect">Búin</div><p class="err">Náði ekki í búin blöð: ' + esc(buin.villa) + '</p>'
+            : buin.bid ? '<div class="vbr-sect">Búin</div><p class="s" style="padding:6px 12px">Sæki búin blöð…</p>'
+            : buinRod.length ? '<div class="vbr-sect">Búin · ' + buinRod.length + '</div>' + buinRod.map(item).join('')
+            : '<div class="vbr-sect">Búin</div><p class="s" style="padding:6px 12px">Engin búin vinnublöð síðustu 60.</p>') +
         '</div>' +
       '</aside>' +
       '<div class="vbr-main">' +
@@ -4291,6 +4339,7 @@
         setTimeout(() => { try { const b = rot().querySelector(leit); if (b && !b.disabled) b.focus({ preventScroll: true }); } catch (_) {} }, 0);
         return;
       }
+      case 'vbr-buin': S.vbrBuin = !S.vbrBuin; render(); return;
       case 'vbr-velja': vbtFlytja(); S.vbrVal = id; render(); vbrTilBaka(); return;
       case 'vbr-fara': {
         const listi = vbrListi(nu()), i = listi.findIndex(r => r.id === S.vbrVal);
