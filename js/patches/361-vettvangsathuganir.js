@@ -298,6 +298,18 @@
     _stada.set(coId, gogn);
   }
 
+  // 18.09.2026 — MÆLT: fyrsta kall þessa borða kom 1.640–1.872 ms eftir að
+  // prófíllinn opnaðist, því tifarinn hér að neðan var EINA kveikjan: hversu hratt
+  // sem prófíllinn teiknaði beið borðinn alltaf eftir næsta tifi (allt að 1,2 s).
+  // `haldaVid` er sjálfsamhliða — hún hættir strax ef hólfið er þegar á sínum stað
+  // (línu 281) og ef `#_ctc-notes` er ekki komið — svo hún má keyra á fremstu brún.
+  // Tifarinn stendur eftir sem varnarnet fyrir hnúta sem skipt er út án breytingar.
+  (function fremstaBrun() {
+    const main = document.getElementById('companies-main');
+    if (!main) { setTimeout(fremstaBrun, 400); return; }
+    new MutationObserver(() => { haldaVid(); }).observe(main, { childList: true, subtree: true });
+    haldaVid();
+  })();
   setInterval(haldaVid, 1200);
 
   // Öryggisnet (2026-09-09): flipi falinn / síða lokuð / app-skipti í síma →

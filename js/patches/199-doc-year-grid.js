@@ -1759,7 +1759,12 @@
   }
 
   var _t=0;
-  var mo=new MutationObserver(function(){ clearTimeout(_t); _t=setTimeout(inject, 500); });
+  // 18.09.2026 — sama mæling og í 311: hver DOM-breyting núllstillti 500 ms
+  // teljarann, svo spjaldið beið eftir ÞÖGN og netköllin hófust 1,5 s eftir opnun.
+  // `inject()` er sjálfsamhliða (sjá athugasemdina neðar: „skilar strax þegar
+  // spjaldið á sama félagi er þegar á sínum stað"), svo það má keyra á fremstu
+  // brún. Teljarinn heldur áfram að laga staðsetninguna á þeirri öftustu.
+  var mo=new MutationObserver(function(){ inject(); clearTimeout(_t); _t=setTimeout(inject, 500); });
   (function start(){ var main=document.getElementById('companies-main'); if(!main){ setTimeout(start,800); return; } mo.observe(main,{childList:true}); inject(); })();
   // 2026-09-11 — „📁 Skjöl & viðhengi" birtist EKKI á prófílnum, hvorki á framleiðslu né staðbundið
   // (#company/848 mælt: ._dyg-section ekki til; tilbúin breyting beint á #companies-main kveikti ekkert).

@@ -427,7 +427,26 @@
     const main = document.getElementById('companies-main');
     if (!main) { setTimeout(startCompany, 800); return; }
     let t = 0;
-    new MutationObserver(() => { clearTimeout(t); t = setTimeout(mountCompany, 500); }).observe(main, { childList: true });
+    // 18.09.2026 — MÆLT: borðinn fór ekki af stað fyrr en 1,5–2,0 s eftir að
+    // prófíllinn opnaðist. Ástæðan var hér: hver DOM-breyting núllstillti 500 ms
+    // teljarann, og prófíllinn gerir margar breytingar meðan hann teiknar, svo
+    // `mountCompany` beið eftir ÞÖGN. Fjögur netköll þessa borða hófust því hálfri
+    // sekúndu eftir að öll hin 33 voru búin — það er „reloadið" sem sést á skjánum.
+    //
+    // `mountCompany` er sjálfsamhliða (hættir strax ef borðinn er þegar réttur) og
+    // þarf aðeins coId, ekki fullteiknaðan prófíl. Eina sem tapast við að byrja
+    // strax er STAÐSETNING: `placeCompanySection` finnur ekki `._dyg-section` ef hún
+    // er ekki komin. Þess vegna: sækja gögnin á fremstu brún, laga staðsetninguna
+    // á þeirri öftustu. Netið byrjar hálfri sekúndu fyrr, útlitið endar eins.
+    new MutationObserver(() => {
+      mountCompany();                                   // fremsta brún — gögnin strax
+      clearTimeout(t);
+      t = setTimeout(() => {
+        const sec = main.querySelector('._dpb-company');
+        if (sec) placeCompanySection(sec, main);        // aftasta brún — rétt staðsetning
+        mountCompany();
+      }, 500);
+    }).observe(main, { childList: true });
     mountCompany();
   })();
   // A new skýrsla/reikningur was written (168/233/273/274 dispatch these) or the
