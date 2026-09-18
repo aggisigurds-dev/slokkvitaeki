@@ -260,6 +260,7 @@
     // gagnagrunninn (lifir af teikningu OG af misheppnaðri vistun), ntStada = það sem
     // reiturinn segir notandanum, ntOpid = opinn reitur á hvítu spjaldi.
     ntDrog: {}, ntStada: {}, ntOpid: {}, krassOpid: true,
+    dnDrog: {}, dnStada: {},   // 18.09.2026: frjáls texti á dag í Dagskránni
     samtSkyOpid: {}, samtSkyDrog: {},   // 368w: opinn skýringarritill á samþykkismáli + óvistuð drög
     falidBid: {},      // Fela-skrif sem bíða eða kláruðust nýlega: { lykill: { falid, row, tok, lokid } }
     skyrBid: {},       // Skýringar-skrif sem bíða eða kláruðust nýlega: { lykill: { skyring, af, at, rod, tok, lokid } }
@@ -927,6 +928,14 @@
       '.ai{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere}',
       // Innsláttarreiturinn sjálfur — hvítur á korti, svartur í valda málinu.
       '.nt{display:flex;flex-direction:column;gap:3px;margin:0 0 8px}',
+      // Dagnóta: reiturinn á að líta út eins og autt blað í dagatalinu, ekki eins og eyðublað.
+      '.dnota{display:flex;flex-direction:column;gap:2px;margin-top:4px}',
+      '.dnota textarea{width:100%;min-height:34px;padding:5px 6px;border:1px solid transparent;border-radius:3px;background:rgba(255,253,247,.5);font:12px/1.45 var(--body);color:var(--ink);resize:vertical;white-space:pre-wrap}',
+      '.dnota textarea:hover{border-color:var(--rule2);background:#fffdf7}',
+      '.dnota textarea:focus{outline:2px solid var(--g5);outline-offset:1px;background:#fffdf7}',
+      '.dnota textarea::placeholder{color:var(--mute);opacity:.45}',
+      '.dnst{font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--mute);min-height:11px}',
+      '.dnst.ok{color:var(--green)}.dnst.vistar,.dnst.bid{color:var(--gink)}',
       '.nthead{display:flex;align-items:baseline;gap:8px}',
       '.nt textarea{width:100%;padding:8px 10px;border:1px solid var(--edge);border-radius:4px;background:#fffdf7;box-shadow:var(--wellsh);font:13px/1.6 var(--body);color:var(--ink);resize:vertical;white-space:pre-wrap}',
       '.nt textarea:focus{outline:2px solid var(--g5);outline-offset:1px}',
@@ -1200,6 +1209,7 @@
       if (!el || !el.dataset) return;
       if (el.dataset.sk) skola(el.dataset.sk === 'krass' ? '__krass' : el.dataset.skid);
       else if (el.dataset.nt) skola('nt:' + el.dataset.id);   // farið úr reitnum = vistað strax
+      else if (el.dataset.dn) skola('dn:' + el.dataset.dn);
     });
     ['dragstart', 'dragover', 'drop', 'dragend'].forEach(t => r.addEventListener(t, onDrag));
     r.addEventListener('paste', onPaste);
@@ -1991,6 +2001,54 @@
         '<button type="button" class="btn iv sm tog" data-t5="mod-open" data-m="' + k + '" aria-expanded="' + open + '" aria-label="' + (open ? 'Fella saman ' : 'Opna ') + esc(m.t) + '">' + (open ? '▴' : '▾') + '</button>' +
       '</header>' + (open || alltaf ? body : '') + '</section>';
   }
+  /* ──────────────────────────────────────────────────────────────────────────
+   * DAGNÓTUR — frjáls texti á dag (18.09.2026).
+   *
+   * Geymt í skipulagsbord.by_staff.<nafn>.dagnotur.<YYYY-MM-DD>, sami staður og
+   * Krassblaðið og sama vistun. `AppSettings.save` er `saveVordud`: hún setur
+   * misheppnuð skrif í biðröð, varar við sjálf og reynir aftur á 20 sek fresti og
+   * við pagehide. Þess vegna stendur „í biðröð" hér — ekki „reyndu aftur".
+   */
+  const dagNota = (n, key) => String(P('skipulagsbord.by_staff.' + n + '.dagnotur.' + key) || '');
+  function dagNotaHtml(d) {
+    const n = nu();
+    const g = S.dnDrog[d.key] != null ? S.dnDrog[d.key] : dagNota(n, d.key);
+    const st = S.dnStada[d.key];
+    return '<div class="dnota">' +
+      '<textarea data-dn="' + esc(d.key) + '" rows="' + Math.min(10, Math.max(2, g.split('\n').length + 1)) + '"' +
+        ' aria-label="Nóta ' + d.d + ' ' + d.n + '." placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
+      '<span class="dnst ' + (st ? st.t : '') + '" data-dnst="' + esc(d.key) + '">' + esc(st ? st.s : '') + '</span>' +
+    '</div>';
+  }
+  function dnStimpla(key) {
+    const root = rot();
+    if (!root) return;
+    const st = S.dnStada[key] || { t: '', s: '' };
+    root.querySelectorAll('[data-dnst="' + key + '"]').forEach(el => {
+      el.textContent = st.s || '';
+      el.className = 'dnst ' + st.t;
+    });
+  }
+  function skrifaDagnotu(el) {
+    const key = el.dataset.dn;
+    if (!key) return;
+    S.dnDrog[key] = el.value;
+    S.dnStada[key] = { t: 'bid', s: 'Óvistað…' };
+    dnStimpla(key);
+    bida('dn:' + key, async () => {
+      const n = nu(), texti = S.dnDrog[key];
+      if (texti == null) return;
+      S.dnStada[key] = { t: 'vistar', s: 'Vista…' };
+      dnStimpla(key);
+      let ok = false;
+      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { dagnotur: { [key]: texti } } } } })); } catch (_) {}
+      if (ok && S.dnDrog[key] === texti) delete S.dnDrog[key];
+      S.dnStada[key] = ok
+        ? { t: 'ok', s: 'Vistað kl. ' + klukka(new Date()) }
+        : { t: 'bid', s: 'Í biðröð — reynt aftur sjálfkrafa. Textinn stendur hér áfram.' };
+      dnStimpla(key);
+    });
+  }
   function dagskraHtml() {
     const open = isOpen('dagskra'), days = week();
     const total = days.reduce((s, d) => s + d.jobs.length, 0);
@@ -2006,7 +2064,9 @@
           '<span class="dn">' + d.d + '</span><span class="dd">' + d.n + '</span></button><span class="grow"></span>' +
           '<button type="button" class="dplus" data-t5="job-new" data-date="' + d.key + '" aria-label="Skrá verk ' + d.d + ' ' + d.n + '.">+</button></div>' +
         '<div class="djobs">' + (open
-          ? (d.jobs.length ? d.jobs.map(jobHtml).join('') : '<span class="dnone">Ekkert skráð</span>')
+          // 18.09.2026 (Agnar: „open to write, easy edit"): dagurinn er reitur, ekki
+          // eyðublað. „Ekkert skráð" var endapunktur — nú er þar hægt að skrifa.
+          ? (d.jobs.length ? d.jobs.map(jobHtml).join('') : '') + dagNotaHtml(d)
           : '<span class="dots">' + d.jobs.map(j => '<i class="dot" style="background:' + vdLitur(j.type) + '" title="' + esc((j.time ? j.time + ' ' : '') + (j.name || '')) + '"></i>').join('') + '</span>') +
         '</div>' +
       '</div>').join('') + '</div>' +
@@ -3471,7 +3531,7 @@
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði eða í skýringu truflast ef teiknað er undir — bíða.
     // Skráarval opið: teikning myndi skipta út <input type="file"> og skrárnar tapast.
-    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.skyr || ae.dataset.samtsky))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
+    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     const n = nu(), c = cfg(), mode = M(c.mode) || MODES.thjonusta;
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // 368y: vinnusvæðis-hamur (rymi) fær alla breiddina — engar einingar til hliðar, engin KPI-spjöld. 368aa: einingahamur
@@ -3494,7 +3554,16 @@
     // svo latar gagnasóknir þeirra fara ekki af stað. 368aa: enginn hægri dálkur með „öðrum einingum" (hann var eins í
     // öllum hömum); einingar sérsniðins hams fara vinstra megin, einingar einingahams í miðjuna.
     const einingHtml = k => (k === 'dagskra' ? dagskraHtml() : bottomHtml(k));
-    const topHtml = rymi || eininga || baraMitt ? '' : mode.first.map(einingHtml).join('');
+    // 18.09.2026 — HÉR HVARF DAGSKRÁIN. `baraMitt` núllaði einingar hamsins, svo
+    // „Afgreiðsla / Útköll" (board:true, first:[dagskra,skipulag], bara_mitt:true)
+    // teiknaði þær aldrei. Reglan „bara mitt borð = allt tómt" (Agnar 11.09) stendur
+    // áfram fyrir innbyggðu hamina, en í ham sem hann bjó til sjálfur og hakaði
+    // sjálfur við einingarnar í eru hökin nákvæmari fyrirmæli en almenna reglan.
+    //
+    // Athugið: `bara_mitt` er vistað per STARFSMANN, ekki per ham (sjá cfg-vistun),
+    // svo valið fylgir manni inn í alla hami. Það er hluti af því af hverju þetta
+    // kom á óvart — hakið hvarf í ham sem maður hafði ekki snert.
+    const topHtml = rymi || eininga || (baraMitt && !mode.ser) ? '' : mode.first.map(einingHtml).join('');
 
     const selMarkup = rymi || (eininga && !selEininga) ? '' : selHtml(eininga ? selEininga : selRow);
     const nyleg = master.filter(r => ageDays(r) <= 30).length;
@@ -3668,7 +3737,17 @@
   }
   // 18.09.2026: `querySelector` stimplaði AÐEINS fyrsta reitinn. Krassblaðið er nú á
   // tveimur stöðum (efst á borðinu og á Skipulagsborðinu), svo hinn hefði þagnað.
-  function stimplaSk() { const root = rot(); if (root) root.querySelectorAll('.skstada').forEach(el => { el.textContent = S.skStada || ''; }); }
+  function stimplaSk() {
+    const root = rot();
+    if (!root) return;
+    root.querySelectorAll('.skstada').forEach(el => { el.textContent = S.skStada || ''; });
+    // 18.09.2026: talningin á Krassblaðinu stóð á „tómt" eftir að skrifað var í það,
+    // því teikning bíður á meðan skrifað er. Hún er stimpluð hér með stöðunni — annars
+    // stæði ósönn tala á skjánum þangað til eitthvað annað kallaði á teikningu.
+    const t = S.skDrog.__krass != null ? S.skDrog.__krass : String(P('skipulagsbord.by_staff.' + nu() + '.krass') || '');
+    const fj = t.trim() ? t.split('\n').filter(x => x.trim()).length : 0;
+    root.querySelectorAll('.krassbordi .sum').forEach(el => { el.textContent = fj ? fj + (fj === 1 ? ' lína' : ' línur') : 'tómt'; });
+  }
   const _skT = {}, _skBid = {};
   function bida(lykill, fn) { clearTimeout(_skT[lykill]); _skBid[lykill] = fn; _skT[lykill] = setTimeout(() => { delete _skBid[lykill]; fn(); }, 700); }
   function skola(lykill) { if (!_skBid[lykill]) return; clearTimeout(_skT[lykill]); const fn = _skBid[lykill]; delete _skBid[lykill]; fn(); }
@@ -4323,6 +4402,7 @@
     else if (el && el.dataset && el.dataset.sk) skrifaSk(el);
     else if (el && el.dataset && el.dataset.bm) bmSkra(el);
     else if (el && el.dataset && el.dataset.nt) skrifaNota(el);
+    else if (el && el.dataset && el.dataset.dn) skrifaDagnotu(el);
     else if (el && el.dataset && el.dataset.skyr && S.skyrOpid) S.skyrOpid.texti = el.value;
     else if (el && el.dataset && el.dataset.samtsky) { const sid = Number(el.dataset.id); if (sid) { S.samtSkyDrog[sid] = el.value; skyDrogVista(sid, el.value); } }
   }
