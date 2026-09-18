@@ -155,7 +155,12 @@
           ? '<div style="border:1px solid #f1f5f9;border-radius:8px;overflow:hidden">' + docs.map(docRow).join('') + '</div>'
           : '<div style="font-size:12px;color:#94a3b8;font-style:italic">Engin útfyllt skjöl fundust á þessa kennitölu/nafn. Skjöl vistuð með „💾 Vista í kerfi" í Samningum birtast hér.</div>') +
       '</div>';
-    if (sec.innerHTML !== _html) sec.innerHTML = _html;
+    // 18.09.2026 — LEIÐRÉTT samdægurs. Fyrri útgáfa mín bar saman við
+    // `sec.innerHTML`, sem les til baka STAÐLAÐA útgáfu vafrans (bil í
+    // rgba(), !important sem þemapappi bætti við) — aldrei það sem við
+    // skrifuðum. Samanburðurinn var því alltaf sannur og hreyfingin hélt
+    // áfram. Berum saman við okkar eigin streng, geymdan á hnútnum.
+    if (sec.__ufsHtml !== _html) { sec.__ufsHtml = _html; sec.innerHTML = _html; }
     wireOpen(sec);
   }
   (function watchProfile() {
@@ -298,7 +303,12 @@
       (reports.length
         ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">' + reports.map(docRow).join('') + '</div>'
         : '<div style="background:#fff;border:1px dashed #e2e8f0;border-radius:12px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic">Engar skýrslur vistaðar enn — „📄 Skýrsla" takkinn hér að ofan býr til nýja.</div>');
-    if (sec.innerHTML !== _html) sec.innerHTML = _html;
+    // 18.09.2026 — LEIÐRÉTT samdægurs. Fyrri útgáfa mín bar saman við
+    // `sec.innerHTML`, sem les til baka STAÐLAÐA útgáfu vafrans (bil í
+    // rgba(), !important sem þemapappi bætti við) — aldrei það sem við
+    // skrifuðum. Samanburðurinn var því alltaf sannur og hreyfingin hélt
+    // áfram. Berum saman við okkar eigin streng, geymdan á hnútnum.
+    if (sec.__ufsHtml !== _html) { sec.__ufsHtml = _html; sec.innerHTML = _html; }
     wireOpen(sec);
   }
   (function watchBk() {
