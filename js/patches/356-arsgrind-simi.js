@@ -134,6 +134,8 @@
     // línan í rangri uppsetningu. regla() er sjálfsamhliða — hún tekur aðeins
     // :not([data-r356]) og merkir hverja röð um leið — svo hún má keyra á fremstu
     // brún; teljarinn eltir raðir sem 199 teiknar seinna.
+    // EFTIR: 0 ms á öllum fimm — röðin er pökkuð í sama MutationObserver-kalli og
+    // hún birtist, svo rangi ramminn er aldrei teiknaður. Engin tvítekin .sk-svc-body.
     try { new MutationObserver(() => { regla(); clearTimeout(_rt); _rt = setTimeout(regla, 60); }).observe(main, { childList: true, subtree: true }); } catch (_) {}
   }
   mount(); watch();

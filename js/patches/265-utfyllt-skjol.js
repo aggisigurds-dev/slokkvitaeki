@@ -113,9 +113,9 @@
     }
     return co || {};
   }
-  // 18.09.2026: fremsta brún má ekki tvíteikna. Vörðurinn á línu 120 dugar aðeins
-  // EFTIR await-ið (dataset.coId er skrifað neðar), svo tvö köll sem skarast á
-  // biðinni bjuggu bæði til ._ufs-section. Þessi læsing er sett samstundis.
+  // 18.09.2026: fremsta brún má ekki tvíteikna. Vörðurinn `sec.dataset.coId` dugar
+  // aðeins EFTIR await-ið í byggja() — hann er skrifaður þar — svo tvö köll sem
+  // skarast á biðinni gætu bæði búið til ._ufs-section. Þessi læsing er samstundis.
   let ufsVinnur = 0;
   async function injectProfile() {
     const main = document.getElementById('companies-main'); if (!main) return;
@@ -161,6 +161,8 @@
     // bil 632 ms), svo teljarinn var núllstilltur áður en hann rann út. Beint kall á
     // UtfylltSkjol.injectProfile() teiknaði spjaldið strax — fallið var rétt, kveikjan dauð.
     // Nú: teikna á fremstu brún, elta síðbúna endurteikningu á þeirri öftustu.
+    // EFTIR: spjaldið birtist á 52–63 ms (6 fyrirtæki), alltaf nákvæmlega eitt,
+    // á sama stað í stakknum: ._dyg-section > ._dpb-company > ._ufs-section.
     new MutationObserver(() => {
       injectProfile();                                 // fremsta brún — spjaldið strax
       clearTimeout(t);

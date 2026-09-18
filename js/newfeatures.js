@@ -73,6 +73,8 @@ setTimeout(function(){if(typeof L!=='undefined'){_build(mc);}else{var lc=documen
 // eftir að klasinn á #view-field breyttist. _inject er sjálfsamhliða: _done-flaggið
 // er sett áður en kortið er smíðað, og fallið skilar sér sjálft meðan .field-body
 // vantar — svo það má keyra á fremstu brún og teljarinn er áfram öryggisnet.
+// EFTIR: 512/548 ms. Það sem eftir stendur er bið eftir .field-body, ekki eftir
+// þögn — kortið situr áfram eitt og sér á undan .field-body inni í #view-field.
 new MutationObserver(function(ms){if(_done)return;for(var i=0;i<ms.length;i++){if(ms[i].type==='attributes'&&ms[i].target.id==='view-field'){_inject();setTimeout(_inject,300);return;}}}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
 document.addEventListener('click',function(){if(!_done)setTimeout(_inject,400);});
 setTimeout(_inject,900);

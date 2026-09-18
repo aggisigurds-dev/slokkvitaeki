@@ -2374,11 +2374,13 @@
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) { setTimeout(guardButton, 400); return; }
     let t = null;
-    // 18.09.2026: fremsta brún. injectNav er sjálfsamhliða (skilar strax þegar
-    // takkinn er á sínum stað) og vaktin er þröng — aðeins bein börn nav-stikunnar,
-    // ekki subtree — svo kostnaðurinn er einn querySelector. Fjarlægi einhver pappi
-    // takkann kemur hann núna aftur samstundis í stað 250 ms síðar.
-    new MutationObserver(() => { injectNav(); clearTimeout(t); t = setTimeout(injectNav, 250); })
+    // 18.09.2026: fremsta brún PRÓFUÐ OG HAFNAÐ hér. injectNav er sjálfsamhliða,
+    // en þetta er endur-ísetningarvörður, ekki gagnasókn: takkinn er þegar settur
+    // inn á fremstu brún af beina kallinu neðar (+ 1 s/3 s/6 s). Mælt með því að
+    // fjarlægja takkann þrisvar: hann kom aftur á 126/165/276 ms bæði með og án
+    // fremstu brúnar — endurkoman rekst ekki til þessarar vaktar. Engin flýting
+    // mælanleg, svo reikningaskránni er ekki breytt að óþörfu.
+    new MutationObserver(() => { clearTimeout(t); t = setTimeout(injectNav, 250); })
       .observe(nav, { childList: true, subtree: false });
   }
 

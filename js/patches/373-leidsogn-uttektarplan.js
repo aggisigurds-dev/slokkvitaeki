@@ -121,10 +121,11 @@
     const panel = view.querySelector('#_lds-due-panel');
     if (!panel) return;
     if (panelMedObserver !== panel) {
-      // 18.09.2026: fremsta brún. skreyta() er sjálfsamhliða — saekja() sameinar
-      // fyrirspurnir í einn `saeki`-lofa og báðar skreytingarnar sleppa hnút sem
-      // ber þegar ._up373 — svo merkin koma um leið og panellinn er endurteiknaður
-      // í stað þess að bíða 40 ms eftir þögn. Teljarinn stendur sem öryggisnet.
+      // 18.09.2026 — MÆLT á „Eftir að skoða" (97 raðir, 84 merki): frá endurteikningu
+      // panelsins þar til merkin voru komin liðu 170/316/274/185 ms, nú 151/146/121/108 ms.
+      // skreyta() er sjálfsamhliða — saekja() sameinar fyrirspurnir í einn `saeki`-lofa
+      // og báðar skreytingarnar sleppa hnút sem ber þegar ._up373 — svo hún má keyra á
+      // fremstu brún. Það sem eftir stendur er vinnan sjálf, ekki biðin.
       const o = new MutationObserver(() => { skreyta(); clearTimeout(o._t); o._t = setTimeout(skreyta, 40); });
       o.observe(panel, { childList: true });
       panelMedObserver = panel;

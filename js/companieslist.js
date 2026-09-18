@@ -98,13 +98,18 @@ async function decorate(){if(_pending)return;_pending=true;try{var v=document.ge
   document.getElementById('_cl_clear').onclick=function(){var i=document.getElementById('_cl_search');i.value='';_state.search='';renderTbody();i.focus();};
   var ths=wrap.querySelectorAll('th[data-sort]');Array.prototype.forEach.call(ths,function(th){th.onclick=function(){setSort(th.dataset.sort);};});
   updateSortIndicators();renderTbody();}finally{_pending=false;}}
-/* 18.09.2026 — MÆLT: frá því .company-grid birtist þar til fyrsta uttaeki-netkallið
-   fór af stað liðu 193–327 ms (5 keyrslur), því 80 ms teljarinn var settur af stað
-   eftir að 1.191 spjöld voru teiknuð og beið svo á upptekinni aðalþræði. decorate()
-   er sjálfsamhliða — _pending stöðvar samhliða köll samstundis og _listShown stöðvar
-   endurteikningu — svo hún má keyra á fremstu brún. Teljarinn stendur eftir sem
-   öryggisnet fyrir spjöld sem koma seinna. */
-function setupObserver(){var v=document.getElementById('view-companies');if(!v){setTimeout(setupObserver,500);return;}var mo=new MutationObserver(function(muts){var hasGrid=muts.some(function(m){for(var i=0;i<m.addedNodes.length;i++){var n=m.addedNodes[i];if(n.nodeType===1 && (String(n.className||'').indexOf('company-grid')>=0 || (n.querySelector && n.querySelector('.company-grid'))))return true;}return false;});if(hasGrid){decorate();setTimeout(decorate,80);}});mo.observe(v,{childList:true,subtree:true});setTimeout(decorate,200);}
+/* 18.09.2026 — FREMSTA BRÚN PRÓFUÐ HÉR OG HAFNAÐ. MÆLT (Companies.render() þar til
+   1.191 raðir standa í ._cl_table): 950–1.000 ms með 80 ms teljaranum einum, en
+   2.596/2.724/3.423 ms þegar decorate() var líka kallað á fremstu brún — 2,7× HÆGARA.
+   Ástæðan: decorate() er sjálfsamhliða hvað hnúta varðar, en hún GRÍPUR `grid`-hnútinn
+   og heldur honum YFIR `await loadData()` (~500 ms). Ræsi hún á fremstu brún nær hún í
+   grid-hnút sem Companies.render() er enn að skipta út; á meðan heldur _pending læsingu
+   svo RÉTTA kallið (teljarinn) fellur strax út, og loks stöðvar vörðurinn
+   `if(!grid.parentNode) return;` hana þegjandi — engin tafla verður til. Listinn kom
+   ekki fyrr en 5 s tifari pappa 99 rak hann af stað. 80 ms biðin er hér RÉTT: hún lætur
+   Companies.render() klára áður en gripið er í hnútinn. Ekki setja fremstu brún á þetta
+   nema decorate() hætti fyrst að halda hnút yfir await. */
+function setupObserver(){var v=document.getElementById('view-companies');if(!v){setTimeout(setupObserver,500);return;}var mo=new MutationObserver(function(muts){var hasGrid=muts.some(function(m){for(var i=0;i<m.addedNodes.length;i++){var n=m.addedNodes[i];if(n.nodeType===1 && (String(n.className||'').indexOf('company-grid')>=0 || (n.querySelector && n.querySelector('.company-grid'))))return true;}return false;});if(hasGrid)setTimeout(decorate,80);});mo.observe(v,{childList:true,subtree:true});setTimeout(decorate,200);}
 /* 2026-05-08: Removed setInterval(1500ms) safety net — patch
    99-companies-list-fix.js has its own 5s interval that does the same
    `tryForceRedecorate` work. Two intervals running simultaneously was
