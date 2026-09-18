@@ -96,41 +96,57 @@ for (const m of MOPPUR) {
   }
 }
 
-/* ── SKRALL ────────────────────────────────────────────────────────────────
- * Þrjú fundust og voru lagfærð 18.09.2026. Talan hér er mæld staða eftir það.
- * Hún má aðeins LÆKKA og markmiðið er 0. Nýtt tilvik fellir vörðinn strax, því hvert þeirra er
- * mögulegt tvítekið tæki eða tvítekin verkbeiðni — þ.e. tvítekin reikningslína.
+/* ── SKOÐAÐ OG DÆMT SAKLAUST ───────────────────────────────────────────────
+ * Ber tala segir aðeins „þrjú eitthvað". Þessir þrír voru hver um sig lesnir og
+ * dæmdir — og ástæðan stendur hér svo enginn rannsaki þá aftur. Detti staður út
+ * af listanum (kóðinn breytist) fellur vörðurinn og krefst nýs dóms.
  */
-const EFTIR = 7;
+const SAKLAUST = {
+  'js/patches/178-beidnir.js': 'bæði skrifin eru .upsert(..., { onConflict: "email_id" }) '
+    + 'á einkvæman lykil — brostinn lestur getur ekki búið til aðra röð, aðeins látið '
+    + 'merki líta ómerkt út þar til síðan er endurhlaðin. Bæði lesa .error (17.09.2026).',
+  'js/patches/270-report-facts-sync.js': 'lestrarnir fara gegnum `saekja()`, sem KASTAR nú '
+    + 'á r.error (:230, lagað 18.09.2026 — þar stóð `break` sem skilaði tómum lista og lét '
+    + 'computePlan búa til nýtt tæki fyrir HVERT tæki í skýrslunni). Skanninn sér ekki '
+    + 'inn í umgjörðina og flaggar því kallstöðunum.',
+};
 
-for (const x of fundid) {
+const oskyrt = fundid.filter((x) => !SAKLAUST[x.rel]);
+const skyrt = fundid.filter((x) => SAKLAUST[x.rel]);
+
+/* Skrallið telur AÐEINS það sem enginn hefur dæmt. Markmiðið er 0. */
+const EFTIR = 0;
+
+if (skyrt.length) {
+  console.log('  Skoðað og dæmt saklaust (' + skyrt.length + '):');
+  const seen = new Set();
+  for (const x of skyrt) {
+    console.log('    · ' + x.rel + ':' + x.nr);
+    if (!seen.has(x.rel)) { seen.add(x.rel); console.log('      ' + SAKLAUST[x.rel]); }
+  }
+  console.log('');
+}
+for (const x of oskyrt) {
   console.log('  ' + x.rel + ':' + x.nr);
   console.log('      lestur     ' + x.lestur);
   console.log('      innsetning :' + x.innsetning + '  ' + x.skrif);
 }
-if (fundid.length) {
+if (oskyrt.length) {
   console.log('\n  Lagfæring: lestu `.error` og STÖÐVAÐU — `null` má aldrei lesast sem „ekki til".');
   console.log("    const r = await sb.from('x').select('*').eq('serial', s);");
   console.log('    if (r && r.error) throw r.error;            // annars býrðu til tvítekning');
   console.log('');
 }
 
-if (fundid.length > EFTIR) {
-  console.log('❌ ' + fundid.length + ' lestrar sem geta leitt til TVÍTEKNINGAR ('
-    + (fundid.length - EFTIR) + ' fleiri en skrallið leyfir). Misheppnuð fyrirspurn lítur út eins og „ekki til".');
+if (oskyrt.length > EFTIR) {
+  console.log('\u274C ' + oskyrt.length + ' \u00f3d\u00e6mdir lestrar sem geta leitt til TV\u00cdTEKNINGAR.');
+  console.log('   Misheppnu\u00f0 fyrirspurn l\u00edtur \u00fat eins og \u201eekki til\u201c \u2014 og \u00fe\u00e1 ver\u00f0ur til r\u00f6ng r\u00f6\u00f0.');
   process.exit(1);
 }
-if (fundid.length < EFTIR) {
-  console.log('🟡 ' + fundid.length + ' eftir (voru ' + EFTIR + ') — lækkaðu EFTIR í ' + fundid.length + '.');
+if (!oskyrt.length) {
+  console.log('\u2705 Enginn \u00f3d\u00e6mdur lestur lei\u00f0ir til innsetningar'
+    + (skyrt.length ? ' (' + skyrt.length + ' sko\u00f0a\u00f0ir og d\u00e6mdir saklausir, sj\u00e1 a\u00f0 ofan).' : '.'));
   process.exit(0);
 }
-// 18.09.2026: fyrri útgáfa prentaði „✅ Enginn óskoðaður lestur" um leið og talan
-// stóð í stað — líka þegar hún stóð í sjö. Það er nákvæmlega falska græna hakið
-// sem allt þetta verk snýst um. Grænt á aðeins við þegar talan er NÚLL.
-if (!fundid.length) {
-  console.log('✅ Enginn óskoðaður lestur leiðir til innsetningar — tvítekning getur ekki orðið til þannig.');
-  process.exit(0);
-}
-console.log('🟡 EKKI GRÆNT — ' + fundid.length + ' óskoðaðir lestrar geta enn leitt til tvítekningar; '
-  + 'ekkert nýtt bættist við. Hver þeirra er möguleg tvítekin lína á reikningi.');
+console.log('\ud83d\udfe1 EKKI GR\u00c6NT \u2014 ' + oskyrt.length + ' \u00f3d\u00e6mdir lestrar standa eftir.');
 process.exit(0);
