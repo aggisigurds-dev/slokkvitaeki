@@ -1144,12 +1144,53 @@
     // „2024–2026" → Í GILDI þar til loka-árið er liðið, þá ÚTRUNNINN. Samningur
     // án ártala í heiti telst Í GILDI (skjal á skrá = gildandi, venjan hans) —
     // við giskum ekki á dagsetningar sem hvergi standa.
+    // 2026-09-18 (Agnar): þjónustusamningur sem er fylltur út á prófílnum („💾 Vista í
+    // kerfi" → AppSettings.skjalasnidmat_filled) sást aðeins í neðsta spjaldinu (265) og
+    // samningskortin hér sögðu áfram VANTAR. Nú lenda vistuðu samningarnir á kortunum:
+    //   🧯 slökkvitæki  ← hakað við handslökkvitæki / reykskynjara / brunaslöngur
+    //                     (eða ekkert hak — samningur án haka er slökkvitækja-samningur)
+    //   🔥 brunakerfi   ← hakað við Brunaviðvörunarkerfi eða Slökkvikerfi, eða sniðið
+    //                     sjálft er brunakerfis-samningurinn.
+    // Sami samningur getur því staðið á BÁÐUM kortunum. Pörun við staðinn: nákvæmt nafn
+    // fyrst; kennitala ein dugar AÐEINS þegar staðurinn á engin systkini á sömu kt
+    // (annars fengi hver starfsstöð Bílabúðar Benna falskt „Í GILDI" af samningi annarrar).
+    var filledSamn = (function(){
+      var all=[]; try{ all=(window.DocTemplates && DocTemplates.listFilled && DocTemplates.listFilled())||[]; }catch(_){ all=[]; }
+      var nn=String((co&&co.nafn)||'').trim().toLowerCase(), kd=String(kt||'').replace(/\D/g,'');
+      var einn = sibs.length <= 1;
+      return all.filter(function(r){
+        if(!r) return false;
+        var erSamn = /^seed_thjonustusamningur/.test(String(r.template_id||'')) || /þjónustusamning|thjonustusamning/i.test(String(r.template_name||''));
+        if(!erSamn) return false;
+        if(nn && String(r.customer||'').trim().toLowerCase()===nn) return true;
+        var rk=String(r.kennitala||'').replace(/\D/g,'');
+        return einn && kd.length===10 && kd!=='9999999999' && rk===kd;
+      }).sort(function(a,b){ return String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')); })
+        // „Vista í kerfi" oft á sama samning býr til margar færslur — kortið sýnir aðeins þá
+        // nýjustu per snið; eldri útgáfur standa áfram í „Samningar & útfyllt skjöl" (265).
+        .filter(function(r, i, arr){ return arr.findIndex(function(x){ return String(x.template_id)===String(r.template_id); }) === i; });
+    })();
+    function filledKinds(r){
+      var v=r.values||{}, bk = !!(v.chk_brunavidvorun || v.chk_slokkvikerfi) || /brunakerfi/i.test(String(r.template_id||''));
+      var slk = !!(v.chk_slokkvitaeki || v.chk_reykskynjarar || v.chk_brunaslongur);
+      if(!bk && !slk) slk = true;
+      return { uttekt: slk, brunakerfi: bk };
+    }
+    function filledChip(r){
+      var full=String(r.name||r.template_name||'Þjónustusamningur'), disp=full.length>46?full.slice(0,44)+'…':full;
+      var dags=String(r.updated_at||r.created_at||'').slice(0,10).split('-').reverse().join('/');
+      return '<button type="button" class="sk-doc rep" data-filled="'+esc(r.id)+'" title="'+esc(full)+' — vistað í kerfi '+esc(dags)+'. Smelltu til að opna / prenta / breyta.">📑 '+esc(disp)+'</button>';
+    }
     function samnCard(kind){
       var bkc = kind==='brunakerfi';
       var items = samn.filter(function(s){
         var t=(samnLabel(s)+' '+String(s.src==='doc'?(s.d.notes||''):'')).toLowerCase();
         return bkc === /brunakerfi|brunavarn|brunavi[ðd]v/i.test(t);
       });
+      var fItems = filledSamn.filter(function(r){ return filledKinds(r)[bkc?'brunakerfi':'uttekt']; });
+      if(fItems.length && !items.length){
+        return '<div class="sk-samn-card '+(bkc?'bkc':'slk')+'">'+(bkc?'🔥':'🧯')+' <b>Samningur — '+(bkc?'brunakerfi':'slökkvitæki')+'</b>'+fItems.map(filledChip).join('')+addChip('samningur','','+')+'<span class="sk-samn-pill gildi">Í GILDI</span></div>';
+      }
       var pill, yrs='';
       if(!items.length) pill='<span class="sk-samn-pill vantar">VANTAR</span>';
       else {
@@ -1161,7 +1202,7 @@
           ? '<span class="sk-samn-pill utrunn">ÚTRUNNINN '+endY+'</span>'
           : '<span class="sk-samn-pill gildi">Í GILDI</span>';
       }
-      var chips = items.map(samnChip).join('') + (items.length?'':addChip('samningur','','+ samningur'));
+      var chips = items.map(samnChip).join('') + fItems.map(filledChip).join('') + (items.length?'':addChip('samningur','','+ samningur'));
       return '<div class="sk-samn-card '+(bkc?'bkc':'slk')+'">'+(bkc?'🔥':'🧯')+' <b>Samningur — '+(bkc?'brunakerfi':'slökkvitæki')+'</b>'+chips+yrs+pill+'</div>';
     }
     var samnHtml = samnCard('uttekt') + samnCard('brunakerfi');
@@ -1743,6 +1784,12 @@
           }
           render(section, coId);
         }
+        return;
+      }
+      var filledEl=e.target.closest('[data-filled]');
+      if(filledEl){   // vistadur thjonustusamningur (DocTemplates) a samningskortinu
+        e.preventDefault();
+        if(window.DocTemplates && DocTemplates.openFilled) DocTemplates.openFilled(filledEl.getAttribute('data-filled'));
         return;
       }
       var attEl=e.target.closest('[data-att]');

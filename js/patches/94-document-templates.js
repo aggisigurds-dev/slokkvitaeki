@@ -773,7 +773,11 @@
     const list = getFilledList().slice();
     const idx = list.findIndex(x => x.id === rec.id);
     if (idx >= 0) list[idx] = rec; else list.push(rec);
-    return await window.AppSettings.save({ [FILLED_KEY]: list });
+    const ok = await window.AppSettings.save({ [FILLED_KEY]: list });
+    // 2026-09-18: láta prófílinn vita — samningskortin í „Skjöl & viðhengi" (199) og
+    // „Samningar & útfyllt skjöl" (265) teikna sig upp á nýtt án endurhleðslu.
+    if (ok !== false) { try { document.dispatchEvent(new CustomEvent('customer-doc-written', { detail: { src: 'doctemplates', id: rec.id } })); } catch (_) {} }
+    return ok;
   }
   async function deleteFilled(id) {
     if (!window.AppSettings || !window.AppSettings.save) return false;

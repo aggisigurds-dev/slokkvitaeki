@@ -209,6 +209,14 @@
     injectProfile();
   })();
 
+  // 2026-09-18: skjal vistað í kerfi (94 sendir 'customer-doc-written') → spjaldið
+  // teiknar sig aftur. coId-vörnin í injectProfile() myndi annars stöðva það.
+  document.addEventListener('customer-doc-written', e => {
+    if (!e || !e.detail || e.detail.src !== 'doctemplates') return;
+    const sec = document.querySelector('#companies-main ._ufs-section');
+    if (sec) { sec.dataset.coId = ''; injectProfile(); }
+  });
+
   // ── 2. Brunakerfisþjónusta: fela X-uðu takkana + „📄 Skýrsla" ─────────────
   const TEMPLATE_ID = 'seed_arsskodun_brunakerfa';
   (function css() {
