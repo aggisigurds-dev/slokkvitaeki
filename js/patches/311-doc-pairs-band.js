@@ -399,10 +399,35 @@
     return null;
   }
   function placeCompanySection(sec, main) {
+    // 18.09.2026 — MIN EIGIN VILLA, mæld og lagfærð samdægurs.
+    //
+    // Fyrr í dag bætti ég `placeCompanySection` við ÖFTUSTU BRÚN teljarans hér
+    // fyrir neðan, til að tryggja rétta staðsetningu eftir að gögnin voru sótt á
+    // fremstu brún. En þetta fall kallaði `insertBefore` SKILYRÐISLAUST — það
+    // færir hnútinn líka þegar hann er þegar á réttum stað. Að færa hnút er
+    // childList-breyting, sem endurræsti minn eigin 500 ms teljara. Að eilífu.
+    //
+    // Mælt á kyrrstæðum prófíl: `._dpb-company` fjarlægt og sett inn aftur á
+    // ~550 ms fresti (17 breytingar á 10 sekúndum, bil 439–632 ms) þótt enginn
+    // snerti neitt. Afleiðingin var ekki bara sóun: pappi 265 („Útfyllt skjöl")
+    // bíður í 600 ms eftir kyrrð og **birtist því ALDREI**. Ein sýn hvarf.
+    //
+    // Lagfæringin er hreyfingarleysi: snerta DOM aðeins þegar hnúturinn er
+    // raunverulega á röngum stað. Þöguls-vörður má aldrei sjálfur búa til hávaða.
     const dyg = main.querySelector('._dyg-section');
-    if (dyg) { if (dyg.nextSibling) main.insertBefore(sec, dyg.nextSibling); else main.appendChild(sec); return; }
+    if (dyg) {
+      if (sec.parentNode === main && sec.previousSibling === dyg) return;   // þegar rétt
+      if (dyg.nextSibling) main.insertBefore(sec, dyg.nextSibling); else main.appendChild(sec);
+      return;
+    }
     const cat = main.querySelector('._cat-section');
-    if (cat) main.insertBefore(sec, cat); else main.appendChild(sec);
+    if (cat) {
+      if (sec.parentNode === main && sec.nextSibling === cat) return;       // þegar rétt
+      main.insertBefore(sec, cat);
+      return;
+    }
+    if (sec.parentNode === main && !sec.nextSibling) return;                // þegar aftast
+    main.appendChild(sec);
   }
   function mountCompany() {
     const main = document.getElementById('companies-main'); if (!main) return;

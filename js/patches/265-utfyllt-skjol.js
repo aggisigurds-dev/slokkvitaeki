@@ -233,7 +233,7 @@
     const q = dlg.querySelector('#_ufs-q');
     function paint() {
       const s = nrm(q.value);
-      const rows = list.filter(c => !s || nrm(c.nafn).includes(s) || ktDigits(c.kennitala).includes(s.replace(/\D/g, '') || ' '));
+      const rows = list.filter(c => !s || nrm(c.nafn).includes(s) || ktDigits(c.kennitala).includes(s.replace(/\D/g, '') || '\u0000'));
       holder.innerHTML = rows.length ? rows.map(c =>
         '<button class="_ufs-co" data-id="' + c.id + '" type="button" style="display:block;width:100%;text-align:left;padding:9px 12px;background:#fff;border:none;border-bottom:1px solid #f8fafc;cursor:pointer;font:inherit">' +
           '<div style="font-size:13px;font-weight:600;color:#0f172a">' + esc(c.nafn || '') + '</div>' +
