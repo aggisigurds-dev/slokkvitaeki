@@ -200,6 +200,18 @@
       created_at: nowIso()
     };
   }
+  // 18.09.2026: viðhengi sem notandinn fjarlægir bíða hér þar til VISTAÐ er.
+  // Áður fór `deleteAttachment` af stað samstundis og eyddi skránni úr geymslunni
+  // óafturkræft, en málið sjálft er djúpafrit sem vistast aðeins við 💾. Hætti
+  // notandinn við sat viðhengið áfram í málinu með slóð á skrá sem var horfin —
+  // dauður tengill. „Hætta við" á að þýða hætta við.
+  //
+  // Listinn er á EININGARSVIÐI, ekki inni í openEditor: `renderAttachments` býr
+  // inni í `renderEditorBody`, sem er sjálfstætt fall. Fyrsta tilraun mín lýsti
+  // honum inni í openEditor og notkunin þar hefði kastað ReferenceError í keyrslu
+  // — `node --check` staðfestir þýðingu, ekki svið.
+  const _bidaEydingar = [];
+
   async function deleteAttachment(att) {
     const SB = getSB();
     if (!SB || !att || !att.path) return;
@@ -698,6 +710,7 @@
       created_at: nowIso(), updated_at: nowIso()
     };
     if (!Array.isArray(c.attachments)) c.attachments = [];
+    _bidaEydingar.length = 0;          // ný ritlota — sjá _bidaEydingar að ofan
     const dlg = document.createElement('div');
     dlg.id = '_tv-editor';
     dlg.style.cssText = 'position:fixed;inset:0;z-index:100070;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:18px';
@@ -726,6 +739,11 @@
       if (idx >= 0) _state.cases[idx] = c; else _state.cases.push(c);
       const ok = await save();
       if (!ok) { alert('Vista mistókst'); return; }
+      // Fyrst núna má eyða skránum: málið er komið á þjóninn án þeirra, svo
+      // dauður tengill getur ekki orðið til. Mistakist eyðingin situr aðeins
+      // ósýnilegt afrit eftir í geymslunni — ekkert sem notandinn sér verður ósatt.
+      for (const att of _bidaEydingar) { try { await deleteAttachment(att); } catch (_) {} }
+      _bidaEydingar.length = 0;
       if (window.Toast && Toast.show) Toast.show('✓ Vistað');
       dlg.remove();
       render();
@@ -861,7 +879,8 @@
         const att = c.attachments[i];
         if (!att) return;
         if (!confirm('Fjarlægja viðhengið „' + (att.name || 'skrá') + '"?')) return;
-        await deleteAttachment(att);
+        // Skráin sjálf fer EKKI enn — hún bíður vistunar (sjá bidaEydingar).
+        if (att.path) _bidaEydingar.push(att);
         c.attachments.splice(i, 1);
         renderAttachments();
       }));
