@@ -93,7 +93,14 @@
       const rec = (listFilled() || []).find(x => String(x.id) === String(b.dataset.fid));
       if (!rec) { alert('Skýrslan fannst ekki.'); return; }
       const nafn = rec.customer || '';
-      const email = await emailForKt(rec.kennitala);
+      let email = await emailForKt(rec.kennitala);
+      // 18.09.2026 (Agnar): tengiliður hússins fyrst; umsjónaraðili sem vill engan póst fær engan (381).
+      try {
+        if (window.Vidtakandi) {
+          const vt = await Vidtakandi.fyrir({ kt: rec.kennitala, netfang: email });
+          if (vt) { email = vt.to || ''; Vidtakandi.merkja(vt); }
+        }
+      } catch (_) {}
       const heiti = rec.name || rec.template_name || 'Skýrsla';
       ReceiptSender.compose({
         title: 'Senda — ' + nafn,

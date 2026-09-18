@@ -67,7 +67,36 @@
     return { to: profilNetfang, adrir: [], heimild: 'profill', skyring: '' };
   }
 
-  window.Vidtakandi = { fyrir, umsjonarLen };
+  // Skýringin undir viðtakandareitnum í póstglugganum (254 er vörðuð leið — hér er aðeins bætt við
+  // línu EFTIR að glugginn opnast, ekkert í sendingunni sjálfri breytist). Aðrir tengiliðir hússins
+  // birtast sem smellanleg merki sem setja netfangið í reitinn.
+  function merkja(vt) {
+    if (!vt || !vt.skyring) return;
+    let n = 0;
+    const t = setInterval(() => {
+      const to = document.querySelector('#_rs-dialog #_rs-to');
+      if (!to && ++n < 50) return;
+      clearInterval(t);
+      if (!to || to.parentNode.querySelector('._vt-skyring')) return;
+      const d = document.createElement('div');
+      d.className = '_vt-skyring';
+      const enginn = vt.heimild === 'enginn';
+      d.style.cssText = 'margin-top:5px;font-size:11.5px;line-height:1.4;padding:6px 9px;border-radius:7px;' +
+        (enginn ? 'background:#fffbeb;border:1px solid #fde68a;color:#92400e' : 'background:#f0fdfa;border:1px solid #99f6e4;color:#0f766e');
+      d.textContent = (enginn ? '⚠ ' : '👤 ') + vt.skyring;
+      (vt.adrir || []).slice(0, 4).forEach((a) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = a;
+        b.style.cssText = 'margin:4px 4px 0 0;padding:2px 8px;border:1px solid #99f6e4;background:#fff;border-radius:999px;cursor:pointer;font:inherit;font-size:11px;color:#0f766e;display:inline-block';
+        b.addEventListener('click', () => { to.value = a; to.dispatchEvent(new Event('input', { bubbles: true })); });
+        if (!d.querySelector('br')) d.appendChild(document.createElement('br'));
+        d.appendChild(b);
+      });
+      to.parentNode.appendChild(d);
+    }, 100);
+  }
+
+  window.Vidtakandi = { fyrir, umsjonarLen, merkja };
   console.log('[patch-381] Viðtakandi: tengiliður hússins fyrst, umsjónaraðili með enginn_postur fær engan póst');
 })();
 /* === END VIÐTAKANDI === */

@@ -1576,7 +1576,7 @@
         // (Eignaumsjón — aðeins rafræn skjöl í heimabanka) fær engan. Sjá 381-vidtakandi.js. Aðeins
         // forfylling — Agnar sér viðtakandann í glugganum og getur breytt áður en sent er.
         var _vt=null; try{ if(window.Vidtakandi && meta.coId){ _vt=await Vidtakandi.fyrir({ coId: meta.coId, netfang: email }); if(_vt) email=_vt.to||''; } }catch(_){ _vt=null; }
-        if(_vt && _vt.heimild==='enginn' && !confirm(_vt.skyring+'\n\nOpna póstgluggann samt (án viðtakanda)?')) return;
+        if(_vt && _vt.skyring) try{ Vidtakandi.merkja(_vt); }catch(_){}
         // Hakað val — notandinn velur hvað fer með (🧯 úttektarskýrsla ·
         // 🔥 brunakerfisskýrsla · 🧾 reikningur) og svo opnast venjulegi póst-glugginn.
         var hasFile=function(x){ return x && ((x.drive_file_id && String(x.drive_file_id).indexOf('sb:')!==0) || x.storage_path || (x._att && x._att.path)); };
