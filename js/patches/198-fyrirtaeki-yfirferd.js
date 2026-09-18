@@ -98,6 +98,7 @@
         <div class="sub">Lagaðu viðskiptavina-grunninn — vantar kt/heimili/netfang/samning, ótengt grunni, tvíteknir. Hakaðu við tvítekna og veldu „Sameina valin". Allt afturkræft.</div>
         <div class="tabs">
           <div class="tab active" data-tab="fyr">Fyrirtæki</div>
+          <div class="tab" data-tab="ars" title="Aðeins fyrirtæki sem eru á Ársskoðunar-borðinu — sömu síur og aðgerðir">🧯 Í ársskoðun</div>
           <div class="tab" data-tab="vid">Viðskiptavinir / einstaklingar</div>
         </div>
         <section data-sec="fyr">
@@ -146,7 +147,11 @@
   function switchTab(which) {
     const v = document.getElementById(VIEW_ID); if (!v) return;
     v.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
-    v.querySelectorAll('section[data-sec]').forEach(s => { s.style.display = s.dataset.sec === which ? '' : 'none'; });
+    // 18.09.2026 (Agnar: „auka yfirflokkur sem eru bara fyrirtæki í ársskoðun"): „ars" er SAMA
+    // taflan og „fyr" (sömu síur, sameining, aðgerðir) — aðeins þrengd við Ársskoðunar-borðið.
+    const sec = which === 'ars' ? 'fyr' : which;
+    v.querySelectorAll('section[data-sec]').forEach(s => { s.style.display = s.dataset.sec === sec ? '' : 'none'; });
+    if (which === 'fyr' || which === 'ars') { const nytt = which === 'ars' ? 'ars' : 'all'; if (nytt !== fScope) { fScope = nytt; fSel.clear(); if (FROWS.length) renderFyr(); } }
     if (which === 'vid' && !_vidLoaded) loadVid();
   }
 
@@ -164,6 +169,19 @@
     { k: 'rek', label: 'Rekstrarfélög', test: f => !!f._rek }
   ];
   let fFilter = 'all';
+  // Yfirflokkur: 'all' = öll fyrirtæki · 'ars' = aðeins þau sem standa á Ársskoðunar-borðinu.
+  // SAMA regla og inService() í 153-arsskodun.js (flaggið á röðinni, áskrift/tæki í
+  // arsskodun_customers-blobbinu eða brunakerfissamningur; handvirk úrtaka úr þjónustu vinnur
+  // nema fyrirtækið hafi verið virkjað aftur). Breytist reglan þar þarf hún að breytast hér.
+  let fScope = 'all';
+  function iArsskodun(f) {
+    const P = (window.AppSettings && AppSettings.path) ? (k => AppSettings.path(k) || {}) : (() => ({}));
+    const key = String(f.id), a = P('arsskodun_customers')[key], bru = !!P('brunakerfi_customers')[key];
+    if (a && a.removed_from_service_at && !B(f.er_i_thjonustu) && a.subscribed !== true && !bru) return false;
+    const hasArs = B(f.er_i_thjonustu) || !!(a && (a.subscribed === true || (a.equipment && Object.values(a.equipment).some(v => +v > 0))));
+    return hasArs || bru;
+  }
+  const iScope = f => !f.deleted_at && (fScope !== 'ars' || iArsskodun(f));
 
   let FROWS = [], VROWS = [], BASE_REK = {}, _vidLoaded = false;
   const fSel = new Set(), vidSel = new Set();
@@ -248,17 +266,17 @@
 
   function renderFyr() {
     const app = document.getElementById('fyr-app'); if (!app) return;
-    const live = FROWS.filter(f => !f.deleted_at);
+    const live = FROWS.filter(iScope);
     const chipsEl = document.getElementById('fyr-chips');
     chipsEl.innerHTML = FILTERS.map(f => {
-      const n = (f.k === 'all') ? live.length : FROWS.filter(x => !x.deleted_at && f.test(x)).length;
+      const n = (f.k === 'all') ? live.length : live.filter(x => f.test(x)).length;
       return `<div class="chip ${fFilter === f.k ? 'sel' : ''}" data-f="${f.k}">${esc(f.label)}<span class="c-n">${n}</span></div>`;
     }).join('');
     chipsEl.querySelectorAll('.chip').forEach(c => c.onclick = () => { fFilter = c.dataset.f; renderFyr(); });
     const flt = FILTERS.find(x => x.k === fFilter) || FILTERS[0];
     const q = (document.getElementById('fyr-q')?.value || '').toLowerCase().trim();
-    let rows = FROWS.filter(f => !f.deleted_at && flt.test(f) && (!q || (f.nafn || '').toLowerCase().includes(q) || (f.kennitala || '').includes(q)));
-    document.getElementById('fyr-count').textContent = rows.length + ' / ' + live.length + ' fyrirtæki';
+    let rows = live.filter(f => flt.test(f) && (!q || (f.nafn || '').toLowerCase().includes(q) || (f.kennitala || '').includes(q)));
+    document.getElementById('fyr-count').textContent = rows.length + ' / ' + live.length + (fScope === 'ars' ? ' fyrirtæki í ársskoðun' : ' fyrirtæki');
     if (!rows.length) { app.innerHTML = '<div class="skel">Engin fyrirtæki í þessari síu.</div>'; return; }
     app.innerHTML = buildTable(rows, COLS_FYR, fSort, rowFyr);
     bindFyrRows(app);
