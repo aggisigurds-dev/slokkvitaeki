@@ -57,7 +57,21 @@
     return '?';
   }
 
-  /** Stuttur, stöðugur lykill á hnút — svo sami hnútur þekkist milli kalla. */
+  // 17.09.2026: fyrsta útgáfa flokkaði eftir MERKIMIÐA, svo 34 ólíkir „📝 Opna"
+  // hnappar (einn á hverri röð) litu út eins og sami hnappur hengdur 34 sinnum.
+  // Talan var röng og hefði sent mann í vitlausa átt. Auðkennið verður að vera
+  // hnúturinn sjálfur; merkimiðinn er aðeins til að lesa skýrsluna.
+  const audkenni = new WeakMap();
+  let naestaNr = 1;
+  function hnutAudkenni(el) {
+    if (el === document) return 'doc';
+    if (el === window) return 'win';
+    if (!el || typeof el !== 'object') return String(el);
+    if (!audkenni.has(el)) audkenni.set(el, 'e' + (naestaNr++));
+    return audkenni.get(el);
+  }
+
+  /** Læsilegur merkimiði — aðeins til að skilja skýrsluna, aldrei sem lykill. */
   function hnutLykill(el) {
     if (el === document) return 'document';
     if (el === window) return 'window';
@@ -81,6 +95,7 @@
         if (/^(click|submit|change|input|keydown)$/.test(tegund)) {
           skra.push({
             el: this,
+            audk: hnutAudkenni(this),
             lykill: hnutLykill(this),
             tegund,
             // Undirskrift fallsins greinir „sami hlustari tvisvar" frá
@@ -100,7 +115,7 @@
           if (m.type !== 'attributes' && m.type !== 'characterData') continue;
           const el = m.target.nodeType === 1 ? m.target : m.target.parentElement;
           if (!el) continue;
-          skrifari.push({ lykill: hnutLykill(el), eiginleiki: m.attributeName || 'texti', uppruni: upprunaSkra() });
+          skrifari.push({ audk: hnutAudkenni(el), lykill: hnutLykill(el), eiginleiki: m.attributeName || 'texti', uppruni: upprunaSkra() });
         }
       });
       obs.observe(document.documentElement, {
@@ -123,7 +138,7 @@
     valk = valk || {};
     const hopar = new Map();
     for (const h of skra) {
-      const k = h.lykill + ' ⟨' + h.tegund + '⟩';
+      const k = h.audk + ' ⟨' + h.tegund + '⟩';
       if (!hopar.has(k)) hopar.set(k, []);
       hopar.get(k).push(h);
     }
@@ -139,23 +154,23 @@
         eftirUndirskrift.get(h.undirskrift).push(h.uppruni);
       });
       for (const [, upprunar] of eftirUndirskrift) {
-        if (upprunar.length > 1) tvitekid.push({ hnutur: k, sinnum: upprunar.length, uppruni: upprunar[0] });
+        if (upprunar.length > 1) tvitekid.push({ hnutur: l[0].lykill, sinnum: upprunar.length, uppruni: upprunar[0] });
       }
       if (eftirUndirskrift.size > 1) {
-        margir.push({ hnutur: k, fjoldi: eftirUndirskrift.size, upprunar: [...new Set(l.map((h) => h.uppruni))] });
+        margir.push({ hnutur: l[0].lykill + ' ⟨' + l[0].tegund + '⟩', fjoldi: eftirUndirskrift.size, upprunar: [...new Set(l.map((h) => h.uppruni))] });
       }
     }
 
     // Hnútar sem fleiri en einn staður skrifar í.
     const skrifHopar = new Map();
     for (const s of skrifari) {
-      const k = s.lykill;
+      const k = s.audk + '|' + s.lykill;
       if (!skrifHopar.has(k)) skrifHopar.set(k, new Set());
       skrifHopar.get(k).add(s.uppruni);
     }
     const togstreita = [...skrifHopar.entries()]
       .filter(([, u]) => u.size > 1 && !u.has('?'))
-      .map(([k, u]) => ({ hnutur: k, upprunar: [...u] }))
+      .map(([k, u]) => ({ hnutur: k.split('|').slice(1).join('|'), upprunar: [...u] }))
       .sort((a, b) => b.upprunar.length - a.upprunar.length);
 
     console.log('\n═══ ÁREKSTRAR ═══');

@@ -65,11 +65,12 @@ for (const m of MOPPUR) {
  * Talan hér að neðan er MÆLD staða 17.09.2026, ekki ásættanleg staða.
  *
  * Af hverju hún er ekki 0: þegar vörðurinn var skrifaður fundust 55 slík skrif.
- * Níu voru lagfærð samdægurs (peningalínurnar: afsláttur á rekstrarfélag í
+ * Níu voru lagfærð samdægurs af mér (peningalínurnar: afsláttur á rekstrarfélag í
  * fjórum patchum, „Marka sem rukkað" á þjónustusamning, ferðavistun, samþykkt
- * úttektar, AI-fjöldasamþykki). 46 standa eftir.
+ * úttektar, AI-fjöldasamþykki), og 94 til viðbótar sama kvöld í fjórum samhliða
+ * lotum yfir 84 skrár. 2 standa eftir.
  *
- * Að setja EFTIR = 46 er EKKI að lækka kröfu til að fá grænt. Munurinn:
+ * Talan er SKRALL, ekki lækkuð krafa. Munurinn:
  *   · vörðurinn prentar alltaf ALLA listann — hann segir aldrei „OK";
  *   · hann fellur við hverja NÝJA slíka línu;
  *   · talan má aðeins LÆKKA, aldrei hækka. Þegar hún nær 0 er skrallið tekið út.
@@ -77,7 +78,7 @@ for (const m of MOPPUR) {
  * Til að vinna hana niður: taktu efstu skrána á listanum, bindu niðurstöðuna,
  * lestu `.error`, og lækkaðu töluna hér um það sem þú lagaðir.
  */
-const EFTIR = 46;
+const EFTIR = 2;
 
 const eftirSkra = {};
 fundid.forEach((x) => { (eftirSkra[x.rel] = eftirSkra[x.rel] || []).push(x); });
@@ -85,7 +86,7 @@ const radad = Object.entries(eftirSkra).sort((a, b) => b[1].length - a[1].length
 
 // Listinn FYRST — dómurinn SÍÐAST. audit-all.cjs sýnir SÍÐUSTU prentuðu línuna sem
 // samantekt varðarins. Stæði lagfæringarábendingin þar læsi netið "All green" þótt
-// 46 óskoðuð skrif stæðu eftir — nákvæmlega falska græna hakið sem á að hverfa.
+// óskoðuð skrif stæðu eftir — nákvæmlega falska græna hakið sem á að hverfa.
 for (const [rel, l] of radad) {
   console.log('  ' + rel + '  (' + l.length + ')');
   l.forEach((x) => console.log('      :' + x.nr + '  ' + x.txt));
@@ -98,11 +99,11 @@ console.log('');
 
 if (fundid.length > EFTIR) {
   console.log('❌ ' + fundid.length + ' óskoðuð skrif — ' + (fundid.length - EFTIR)
-    + ' FLEIRI en 17.09.2026. Nýtt skrif sem les ekki niðurstöðu sína og mistekst því þögult.');
+    + ' FLEIRI en skrallið leyfir. Nýtt skrif sem les ekki niðurstöðu sína og mistekst því þögult.');
 } else if (fundid.length < EFTIR) {
   console.log('🟡 ' + fundid.length + ' óskoðuð skrif eftir (voru ' + EFTIR
     + ') — lækkaðu EFTIR í ' + fundid.length + ' í þessari skrá svo skrallið haldi.');
 } else {
-  console.log('🟡 EKKI GRÆNT — ' + fundid.length + ' óskoðuð skrif standa eftir frá 17.09.2026; ekkert nýtt bættist við. Hvert þeirra getur mistekist þögult.');
+  console.log('🟡 EKKI GRÆNT — ' + fundid.length + ' óskoðuð skrif standa eftir; ekkert nýtt bættist við. Hvert þeirra getur mistekist þögult.');
 }
 process.exit(fundid.length > EFTIR ? 1 : 0);

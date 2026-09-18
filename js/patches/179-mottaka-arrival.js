@@ -120,18 +120,27 @@
     } catch (e) { console.warn('[mottaka] job', e); return null; }
   }
 
+  // 17.09.2026: ENGIN aðvörun til notandans hér — viljandi, sama regla og í
+  // 210-vertid-mottaka. taeki_events er SAGAN, ekki staðan: rétta staðan
+  // (custody_status, seasonal_job_id) er skrifuð á uttaeki-röðina annars staðar og
+  // lesin þaðan. Fall hér gerir enga tölu ranga og ekkert merki ósatt, og logEvent er
+  // kallað í lykkju yfir öll móttekin tæki — skilaboð yrðu tugir poppa ofan í hvert
+  // annað. .insert() kastar ekki, svo gamla catch-ið var dautt; villan er nú lesin
+  // og skráð þar sem hana má finna eftir á.
   async function logEvent(unit, eventType, custody) {
     const SB = getSB(); if (!SB) return;
-    try {
-      await SB.from('taeki_events').insert({
-        unit_id: unit.id || null,
-        serial: unit.serial || null,
-        seasonal_job_id: unit.seasonal_job_id || null,
-        event: eventType,
-        custody_status: custody || null,
-        tech: getTech() || null,
-      });
-    } catch (e) { console.warn('[mottaka] logEvent', e); }
+    const r = await SB.from('taeki_events').insert({
+      unit_id: unit.id || null,
+      serial: unit.serial || null,
+      seasonal_job_id: unit.seasonal_job_id || null,
+      event: eventType,
+      custody_status: custody || null,
+      tech: getTech() || null,
+    });
+    if (r && r.error) {
+      console.warn('[mottaka] logEvent', eventType, r.error);
+      try { if (window.logProblem) window.logProblem('mottaka_taeki_event_failed', eventType + ' ' + (unit.serial || unit.id || '') + ': ' + String(r.error.message || r.error).slice(0, 160)); } catch (_) {}
+    }
   }
 
   // ── Scan entry point ────────────────────────────────────────────────────────

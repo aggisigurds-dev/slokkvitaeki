@@ -166,6 +166,8 @@ var Counter = {
     d.value=U.today();
     // Pickup defaults from AppSettings.almennt.default_pickup_offset_days (Stillingar → Almennt).
     var offsetDays=1;
+    // 2026-09-17: þögnin er RÉTT — aðeins lestur á sjálfgefnum sóknardegi. Bregðist hann
+    // stendur 1 dagur í reitnum, sýnilegur og breytanlegur; ekkert skrif, ekkert tapast.
     try{var v=window.AppSettings&&window.AppSettings.path('almennt.default_pickup_offset_days');if(Number.isFinite(+v)&&+v>0)offsetDays=+v;}catch(e){}
     var pd=new Date(); pd.setDate(pd.getDate()+offsetDays);
     p.value=pd.toISOString().slice(0,10);

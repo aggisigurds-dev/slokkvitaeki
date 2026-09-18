@@ -2191,6 +2191,9 @@
     loadState(); applyCss();
     if (IN_DEVFRAME) {
       applyZones();
+      // 17.09.2026 yfirferð: þögnin er RÉTT — þetta er skráning á áhorfanda.
+      // Bregðist hún uppfærist forskoðunin ekki sjálfkrafa; ekkert vistast og
+      // ekkert glatast, og næsta hleðsla les réttu stillingarnar hvort sem er.
       try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => { loadState(); applyCss(); applyZones(); }); } catch (_) {}
       window.addEventListener('hashchange', () => setTimeout(applyZones, 140));
       document.addEventListener('slokk-viewmode', () => setTimeout(applyZones, 60));
@@ -2211,6 +2214,8 @@
       document.addEventListener('slokk-viewmode', () => setTimeout(ensureBtn, 60));
       return;
     }
+    // 17.09.2026 yfirferð: þögnin er RÉTT — skilaboðaviðtakandi sem hunsar allt
+    // sem hann kannast ekki við. Ekkert vistast; villa hér má ekki fella síðuna.
     window.addEventListener('message', function (e) {
       try {
         if (e.origin !== location.origin) return;

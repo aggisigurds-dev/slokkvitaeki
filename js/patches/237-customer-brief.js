@@ -97,6 +97,9 @@
 
     // AppSettings — urgent + priority
     let urgent = '', priority = 0;
+    // 2026-09-17: þögnin er RÉTT — hreinn lestur á stillingum með ''/0 sem fallbökkum.
+    // Bregðist hann birtist samantektin án áherslumerkis; ekkert skrif, engin tala
+    // fölsuð (tækjatölur og sala koma úr eigin fyrirspurnum hér að ofan).
     try {
       const ars = (window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {};
       const a = ars[coId] || {};

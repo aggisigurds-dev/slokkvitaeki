@@ -31,6 +31,10 @@
   function fmtKr(n) { if (n == null || !isFinite(+n)) return ''; const s = Math.round(+n).toString(); const r = []; let t = s; while (t.length > 3) { r.unshift(t.slice(-3)); t = t.slice(0, -3); } r.unshift(t); return r.join('.') + ' kr'; }
   function digits(s) { return String(s || '').replace(/\D/g, ''); }
   function toast(m) { if (window.Toast && Toast.show) Toast.show(m); else console.log('[þjónustuverkstæði]', m); }
+  // Þögnin rétt (17.09.2026): hreinn LESTUR úr hlöðnum stillingum, með {} sem
+  // varaleið. Séu stillingarnar ekki komnar enn sýnir kortið engin skref — en
+  // AppSettings.onChange neðst í skránni endurteiknar um leið og þær berast, og
+  // héðan er aldrei skrifað, svo tómt kort getur ekki þurrkað út raunveruleg skref.
   function arsMap() { try { if (window.AppSettings && AppSettings.path) return AppSettings.path(KEY) || {}; } catch (_) {} return {}; }
 
   // 2026-06-12 (Todoist): eftirfylgni-skref á hverju Í-vinnslu korti.
@@ -615,7 +619,12 @@
     try { ok = await AppSettings.save({ [KEY]: { [String(coId)]: p } }); }
     catch (e) { ok = false; console.warn('[190] setFlag', e); }
     if (!ok) {
-      toast('⚠ Vistaðist EKKI — staðan er óbreytt á þjóninum. Reyndu aftur.');
+      // 17.09.2026 — LEIÐRÉTT samdægurs. Fyrri útgáfa sagði „Reyndu aftur".
+      // Það var rangt ráð: AppSettings.save ER saveVordud (85:460) sem setur
+      // skrifið í biðröð, varar sjálf við og reynir á 20 sek fresti. Hér má
+      // aðeins segja hvað er ÓSTAÐFEST — ekki biðja um endurtekningu og ekki
+      // endurtaka aðvörunina sem notandinn fékk þegar.
+      toast('⏳ Staðan er ekki staðfest á þjóninum enn — hún er í biðröð. Kortið uppfærist þegar hún kemst inn.');
       try { if (window.logProblem) window.logProblem('thjonustu_setflag_failed', 'co:' + coId); } catch (_) {}
     }
     if (!(opts && opts.silent)) render();   // note edits save silently (keep focus)
@@ -1164,6 +1173,9 @@
     wrapped.__svThjVerk = true;
     App.switchView = wrapped;
   })();
+  // Þögnin rétt (17.09.2026): skráir aðeins endurteikningu þegar stillingar
+  // breytast. Bregðist hún sést nýjasta staðan við næstu opnun sýnarinnar —
+  // ekkert skrifast héðan og ekkert getur tapast.
   try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => { if (viewEl() && viewEl().classList.contains('active')) render(); }); } catch (_) {}
 
   window.ThjonustuVerkstaedi = { render, open: openView, buckets };

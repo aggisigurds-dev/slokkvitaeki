@@ -100,9 +100,13 @@ exports.handler = async (event) => {
     // Payday krófur (housing associations etc.) link to their profile durably —
     // survives every re-sync, unlike a manual kt edit the upsert would overwrite.
     let backfilled = 0;
+    // 17.09.2026: nafnalistinn getur verið ófullkominn; þá er kt-uppfyllingin
+    // ómarktæk og það VERÐUR að sjást í svarinu (annars lítur keyrslan heilbrigð út).
+    let nafnaVilla = null;
     const needName = rows.some(r => !r.kt && r.customer_name);
     if (needName) {
-      const byName = await baseNameIndex();
+      const { idx: byName, ofullkomid } = await baseNameIndex();
+      nafnaVilla = ofullkomid;
       for (const r of rows) {
         if (r.kt || !r.customer_name) continue;
         const hit = byName.get(foldName(r.customer_name));
@@ -111,7 +115,7 @@ exports.handler = async (event) => {
     }
 
     if (isDry) {
-      return json(200, { ok: true, dry: true, since: since || 'ALLT', fetched, mapped: rows.length, skipped, kt_backfilled: backfilled, sample: rows.slice(0, 8) });
+      return json(200, { ok: true, dry: true, since: since || 'ALLT', fetched, mapped: rows.length, skipped, kt_backfilled: backfilled, nafnalisti_ofullkominn: nafnaVilla || undefined, sample: rows.slice(0, 8) });
     }
 
     let upserted = 0;
@@ -129,7 +133,7 @@ exports.handler = async (event) => {
       upserted += slice.length;
     }
 
-    return json(200, { ok: true, since: since || 'ALLT', fetched, upserted, skipped, kt_backfilled: backfilled });
+    return json(200, { ok: true, since: since || 'ALLT', fetched, upserted, skipped, kt_backfilled: backfilled, nafnalisti_ofullkominn: nafnaVilla || undefined });
   } catch (e) {
     return json(500, { error: String(e.message || e) });
   }
@@ -253,14 +257,20 @@ function foldName(s) {
     .trim();
 }
 // folded-name → [kt-digits, …] index over customers_base (only kts of valid shape)
+// 17.09.2026: hér stóð `catch (_) {}` + `if (!r.ok) break;`. Bilun eða hálfsótt
+// blaðsíða skilaði því ÞÖGULT hálfum (eða tómum) nafnalista — og þá fundu kt-lausu
+// Payday-kröfurnar engan prófíl, svarið sagði samt `ok:true, kt_backfilled: 0` og
+// leit út eins og heilbrigð keyrsla. Peningalína: krafan hangir ótengd við kúnna.
+// Skilar nú { idx, ofullkomid } og kallandinn segir frá í svarinu.
 async function baseNameIndex() {
   const idx = new Map();
+  let ofullkomid = null;
   try {
     for (let from = 0; ; from += 1000) {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/customers_base?select=nafn,kennitala&kennitala=not.is.null`, {
         headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Range: `${from}-${from + 999}` },
       });
-      if (!r.ok) break;
+      if (!r.ok) { ofullkomid = 'customers_base HTTP ' + r.status + ' við offset ' + from; break; }
       const rows = await r.json().catch(() => []);
       for (const b of rows) {
         const k = foldName(b.nafn); const d = digits(b.kennitala);
@@ -269,6 +279,6 @@ async function baseNameIndex() {
       }
       if (rows.length < 1000) break;
     }
-  } catch (_) {}
-  return idx;
+  } catch (e) { ofullkomid = String((e && e.message) || e); }
+  return { idx, ofullkomid };
 }

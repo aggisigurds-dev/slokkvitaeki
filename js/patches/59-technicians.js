@@ -173,8 +173,16 @@
     const rate = prompt('Tímakaup (kr):', t.hourly_rate||'')||0;
     const SB = getSB();
     const rec = { nafn, phone, email, hire_date:hire, hourly_rate:parseFloat(rate)||0, active:true };
-    if (id) await SB.from('taeknimenn').update(rec).eq('id', id);
-    else await SB.from('taeknimenn').insert(rec);
+    // 2026-09-17: .error var aldrei lesið (supabase-js kastar ekki), svo load() teiknaði
+    // bara listann upp á nýtt — án tæknimannsins — og innslátturinn (fimm reitir) hvarf
+    // án þess að nokkur segði neitt.
+    const r = id ? await SB.from('taeknimenn').update(rec).eq('id', id)
+                 : await SB.from('taeknimenn').insert(rec);
+    if (r && r.error) {
+      try { if (window.logProblem) window.logProblem('taeknimadur_vistun_brast', (id ? 'update ' : 'insert ') + (r.error.message || r.error)); } catch (_) {}
+      alert('Tæknimaðurinn „' + nafn + '" vistaðist EKKI (' + (r.error.message || r.error) + ').\n\nEkkert var skráð — sláðu inn aftur.');
+      return;
+    }
     load();
   }
   async function _editTech(id){ _addTech(id); }
@@ -187,12 +195,19 @@
     const rennur = prompt('Rennur út (YYYY-MM-DD):')||null;
     const tech = techs.find(x=>(x.nafn||'').toLowerCase()===techNafn.toLowerCase());
     const SB = getSB();
-    await SB.from('skirteini').insert({
+    // 2026-09-17: sama og í _addTech — þögult misheppnað skrif þurrkaði út fimm
+    // innslegna reiti og listinn birtist óbreyttur, eins og ekkert hefði verið slegið inn.
+    const r = await SB.from('skirteini').insert({
       taeknimadur_id: tech?tech.id:null,
       taeknimadur_nafn: techNafn,
       skirteini_nafn: skirteini,
       utgefandi, gefid_ut:gefid, rennur_ut:rennur
     });
+    if (r && r.error) {
+      try { if (window.logProblem) window.logProblem('skirteini_vistun_brast', String(r.error.message || r.error).slice(0,160)); } catch (_) {}
+      alert('Skírteinið „' + skirteini + '" vistaðist EKKI (' + (r.error.message || r.error) + ').\n\nEkkert var skráð — sláðu inn aftur.');
+      return;
+    }
     load();
   }
   async function _delCert(id){ if (!await Confirm.show('Eyða?')) return; await getSB().from('skirteini').delete().eq('id', id); load(); }

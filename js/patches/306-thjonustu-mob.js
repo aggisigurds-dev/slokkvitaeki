@@ -675,8 +675,17 @@
     const delAttOk = (window.Confirm && Confirm.show) ? await Confirm.show('Eyða fylgiskjali?') : window.confirm('Eyða fylgiskjali?');
     if (!delAttOk) return;
     const SB = getSB(); if (!SB) return;
-    if (path) await SB.storage.from(ATT_BUCKET).remove([path]);
-    await SB.from('thjonustubeidni_files').delete().eq('id', attId);
+    // 17.09.2026: hvorug niðurstaðan var lesin. Mistækist eyðingin á röðinni
+    // teiknaðist listinn bara upp á nýtt með fylgiskjalið enn á sínum stað —
+    // notandinn staðfesti eyðingu sem gerðist aldrei og fékk enga skýringu.
+    // Skránni í geymslunni er eytt fyrst; bregðist ÞAÐ er hætt við áður en
+    // röðin fer, svo við sitjum ekki uppi með skrá sem ekkert vísar í.
+    if (path) {
+      const rm = await SB.storage.from(ATT_BUCKET).remove([path]);
+      if (rm && rm.error) { toast('Skráin eyddist ekki úr geymslunni — ekkert var fjarlægt. (' + (rm.error.message || rm.error) + ')'); return; }
+    }
+    const del = await SB.from('thjonustubeidni_files').delete().eq('id', attId);
+    if (del && del.error) { toast('Fylgiskjalið eyddist EKKI — það er enn í listanum. (' + (del.error.message || del.error) + ')'); return; }
     await loadSheetAttachments(beidniId);
   };
 

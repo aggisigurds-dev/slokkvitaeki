@@ -49,10 +49,16 @@ async function readCache(q) {
   } catch (_) { return null; }
 }
 
+// 2026-09-17: skrifið er áfram BEST-EFFORT gagnvart notandanum — hnitin eru þegar
+// komin í svarið og hann á ekkert að sjá þótt skyndiminnið klikki. En þögnin var of
+// djúp: fetch kastar EKKI á 4xx/5xx, svo höfnun frá PostgREST (RLS, dálkur vantar)
+// fór hvorki í catch-ið né nokkurt log. Afleiðingin sést aðeins sem hægagangur —
+// hver vél endurreiknar 295 heimilisföng (~7 mín) og við nálgumst Nominatim-þakið.
+// Nú fer staðan í fallalogg Netlify, þar sem hana má finna.
 async function writeCache(q, lat, lon, displayName, source) {
   try {
     const u = `${SUPABASE_URL}/rest/v1/geocode_cache`;
-    await fetch(u, {
+    const r = await fetch(u, {
       method: 'POST',
       headers: {
         apikey: SUPABASE_KEY,
@@ -63,7 +69,14 @@ async function writeCache(q, lat, lon, displayName, source) {
       },
       body: JSON.stringify({ query: q, lat, lng: lon, display_name: displayName || null, ...(source ? { source } : {}) }),
     });
-  } catch (_) {}
+    if (!r.ok) {
+      let detail = '';
+      try { detail = (await r.text()).slice(0, 200); } catch (_) {}
+      console.warn('[geocode] cache-skrif hafnað', r.status, q, detail);
+    }
+  } catch (e) {
+    console.warn('[geocode] cache-skrif brást', q, (e && e.message) || e);
+  }
 }
 
 export default async (req) => {

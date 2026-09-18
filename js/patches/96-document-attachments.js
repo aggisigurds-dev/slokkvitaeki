@@ -81,6 +81,10 @@
     return await window.AppSettings.save({ [STORAGE_KEY]: list });
   }
 
+  // 2026-09-17: þögnin er RÉTT í báðum catch-um hér — þetta er tveggja þrepa varaleið
+  // (undirritað URL → opinbert URL → null), og null-ið er EKKI kyngt: hver kallandi
+  // (forskoðun, sækja, prenta) stöðvar og segir „Gat ekki opnað/sótt skrá". Að hrópa
+  // á fyrsta þrepi myndi kvarta yfir leið sem næsta þrep leysir.
   async function getPublicUrl(path) {
     const SB = getSB();
     if (!SB) return null;

@@ -15,6 +15,9 @@
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 
+  // 2026-09-17: þögnin er RÉTT í báðum köllum — hreinn lestur með varaleið. Bregðist
+  // þjóns-lesturinn er reynt localStorage, og skili hvorugt neinu birtist borðinn
+  // einfaldlega ekki. Ekkert er skrifað og engin vistuð skýrsla er sögð til sem er ekki.
   function tripFor(coId){
     var t=null;
     try { if (window.AppSettings && AppSettings.path) { var all=AppSettings.path('inspection_trips')||{}; t=all[String(coId)]||null; } } catch(_){}
@@ -122,6 +125,8 @@
   var _t=0;
   (function start(){ var m=document.getElementById('companies-main'); if(!m){ setTimeout(start,700); return; }
     new MutationObserver(function(){ clearTimeout(_t); _t=setTimeout(inject,350); }).observe(m,{childList:true}); inject(); })();
+  // 2026-09-17: þögnin er RÉTT — aðeins skráning á áhorfanda til endurteikningar.
+  // Bregðist hún teiknar MutationObserver-inn hér að ofan borðann eftir sem áður.
   try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(inject); } catch(_){}
 
   if(!document.getElementById('_sr-css')){

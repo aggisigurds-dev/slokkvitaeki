@@ -326,7 +326,11 @@ var DB = {
     // áfram (annars stofnar notandinn hana tvisvar) en segjum hreint frá.
     var unitRes = await this.sb.from('verklidur').insert(unitInserts);
     if (unitRes && unitRes.error) {
-      if (window.Toast && Toast.show) Toast.show('Verkbeiðnin var stofnuð en TÆKIN vistuðust ekki: ' + (unitRes.error.message || 'óþekkt villa') + ' — opnaðu verkið og skráðu tækin aftur.');
+      // alert, ekki Toast: kallandinn (modal.js createJob-hnappurinn) birtir
+      // „Verk … stofnað ✓" strax á eftir og toast hyrfi undir þeim borða.
+      alert('Verkbeiðnin ' + data.num + ' var stofnuð EN TÆKIN vistuðust ekki.\n\n'
+        + (unitRes.error.message || 'óþekkt villa') + '\n\n'
+        + 'Verkið er tómt — opnaðu það og skráðu tækin aftur. Miðinn sem prentast núna sýnir engin tæki.');
       try { if (window.logProblem) window.logProblem('verklidur_insert_failed', 'verk ' + data.num + ': ' + String(unitRes.error.message || unitRes.error).slice(0, 160)); } catch (_) {}
     }
     await this.loadAll();
@@ -443,21 +447,29 @@ var DB = {
       var uRes = await this.sb.from('uttaeki').update({ last_insp: today, next_insp: nextYear, status: newStatus, pressure: unit.pressure }).eq('id', unitId);
       if (uRes && uRes.error) {
         unit.last_insp = fyrri.last_insp; unit.next_insp = fyrri.next_insp; unit.status = fyrri.status; unit.pressure = fyrri.pressure;
-        if (window.Toast && Toast.show) Toast.show('Skoðunin vistaðist EKKI á tækið (' + (uRes.error.message || 'óþekkt villa') + '). Tækið stendur óbreytt — reyndu aftur.');
+        // alert, ekki Toast: kallandinn (modal.js submitInspect) birtir
+        // „✓ Skoðun í lagi" strax á eftir hvað sem gerist, og toast hyrfi undir
+        // þeim borða. Alert er það eina sem notandinn getur ekki misst af.
+        alert('Skoðunin vistaðist EKKI á tækið ' + (unit.serial || unitId) + '.\n\n'
+          + (uRes.error.message || 'óþekkt villa') + '\n\n'
+          + 'Tækið stendur óbreytt í skránni og telst áfram óskoðað — skráðu skoðunina aftur.');
         try { if (window.logProblem) window.logProblem('skodun_uttaeki_update_failed', 'tæki ' + unitId + ': ' + String(uRes.error.message || uRes.error).slice(0, 160)); } catch (_) {}
         App.refreshAll();
-        return;
+        return false;
       }
       var sRes = await this.sb.from('skodunar_saga').insert({ unit_id: unitId, date: today, tech: 'Jón S.', result: data.result, pressure: unit.pressure, weight: data.weight, notes: data.notes });
       if (sRes && sRes.error) {
         // Dagsetningarnar eru komnar inn (það er peninga-/skipulagsatriðið) en
         // sagan vantar — segjum frá, rúllum EKKI dagsetningunum til baka.
-        if (window.Toast && Toast.show) Toast.show('Skoðunardagsetningin vistaðist, en skoðunin skráðist ekki í sögu tækisins (' + (sRes.error.message || 'óþekkt villa') + ').');
+        alert('Skoðunardagsetningin vistaðist á tækið, EN skoðunin skráðist ekki í sögu þess.\n\n'
+          + (sRes.error.message || 'óþekkt villa') + '\n\n'
+          + 'Tækið er rétt dagsett; skoðunin sést bara ekki í sögunni.');
         try { if (window.logProblem) window.logProblem('skodunar_saga_insert_failed', 'tæki ' + unitId + ': ' + String(sRes.error.message || sRes.error).slice(0, 160)); } catch (_) {}
       }
     }
     this.cache.history.unshift({ id: Date.now(), date: today, client: unit.client, tech: 'Jón S.', result: data.result, notes: data.notes });
     App.refreshAll();
+    return true;
   },
 
   // ---- DEMO DATA (when no Supabase) ----

@@ -36,6 +36,13 @@
   async function hreinsaSkyndiminni() {
     // Drop leftover Cache Storage (legacy SW names, old 231/305/343/287)
     // as soon as a newer build is seen, so the next reload cannot replay it.
+    // Þögnin í báðum catch-unum hér að neðan er RÉTT (yfirfarið 17.09.2026):
+    // þetta er hrein skyndiminnis-hreinsun. Engin gögn eru skrifuð, ekkert
+    // tapast og engin staða verður ósönn þótt hún bregðist — versta útkoman er
+    // að notandinn þurfi að endurhlaða aftur. Kallarinn hreinsaOgEndurhlada
+    // afskráir auk þess service worker-a og endurhleður með ?_v-tímastimpli,
+    // svo gömul útgáfa kemst hvort eð er ekki í gegn. Aðvörun hér væri hávaði
+    // um verk sem notandinn bað aldrei um.
     try {
       if (window.caches && caches.keys) {
         const ks = await caches.keys();

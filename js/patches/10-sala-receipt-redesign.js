@@ -114,6 +114,9 @@
     if (!(d instanceof Date)) d = new Date();
     // Honor Stillingar → Almennt → "Dagsformat". Falls back to dd.mm.yy
     // (legacy) if AppSettings is not loaded yet.
+    // 2026-09-17: þögnin er RÉTT — aðeins birtingarsnið. Bregðist AppSettings.fmtDate
+    // fellur dagsetningin á dd/mm/yy hér að neðan; dagsetningin sjálf er óbreytt og
+    // ekkert er skrifað (geymt snið breytist aldrei við birtingu).
     if (window.AppSettings && typeof window.AppSettings.fmtDate === 'function') {
       try { return window.AppSettings.fmtDate(d); } catch (_) {}
     }

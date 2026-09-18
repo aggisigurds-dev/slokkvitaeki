@@ -63,6 +63,9 @@
   }
   function hreinsaArsviewASimi() {
     if (inDevFrame()) return;
+    // 17.09.2026 yfirferð: þögnin er RÉTT hér — þetta snyrtir aðeins ?arsview af
+    // slóðinni. Mistakist það situr eftir forskoðunar-færibreyta í veffanginu;
+    // ekkert vistast, engin staða verður ósönn.
     try {
       const u = new URL(location.href);
       if (!u.searchParams.has('arsview')) return;

@@ -106,12 +106,18 @@
     }
     return st || null;
   }
+  // 2026-09-17: þögnin er RÉTT — hreinn lestur úr stillingum með {} sem fallbakk.
+  // Sé AppSettings ekki hlaðið stöðvar vörðurinn kallið áður en nokkuð kastast; ekkert
+  // er skrifað og engin tala er fölsuð (tækjafjöldi kemur frá CanonStadur hér að ofan).
   function uttektFiles(){ try{ if(window.AppSettings&&AppSettings.path) return AppSettings.path('uttekt_files')||{}; }catch(e){} return {}; }
 
   function inServiceList(){
     var cos=(window.Companies&&Companies.list)||[];
     // 2026-07-09 (audit): sama regla og patch 153 — líka blob-áskrift/tæki og brunakerfi.
     var arsMap={}, bruMap={};
+    // 2026-09-17: þögnin er RÉTT — lestur með {} sem fallbakk, ekkert skrif. Þetta er
+    // AÐEINS síunarleið (hverjir teljast í þjónustu); hún bætir við, hendir engu út og
+    // skrifar hvergi. Fyrsta skilyrðið (er_i_thjonustu úr DB) stendur óháð stillingunum.
     try{ if(window.AppSettings&&AppSettings.path){ arsMap=AppSettings.path('arsskodun_customers')||{}; bruMap=AppSettings.path('brunakerfi_customers')||{}; } }catch(e){}
     return cos.filter(function(c){
       if(c.er_i_thjonustu===true) return true;

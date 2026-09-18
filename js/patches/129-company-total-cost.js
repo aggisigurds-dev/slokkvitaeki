@@ -1197,11 +1197,14 @@
         const p = hefurSky ? window.TripCloudSync.saveNow(coId) : Promise.resolve(false);
         vistaBtn.disabled = true; vistaBtn.textContent = '⏳ Vista…';
         Promise.resolve(p).catch(() => false).then((ok) => {
-          vistaBtn.textContent = ok ? '✓ Vistað' : '⚠ Bara á þessu tæki';
+          vistaBtn.textContent = ok ? '✓ Vistað' : '⏳ Í biðröð';
           if (window.Toast && Toast.show) {
+            // 17.09.2026 — LEIÐRÉTT: TripCloudSync.saveNow fer gegnum
+            // AppSettings.save = saveVordud, sem geymir og reynir aftur sjálf.
+            // Það má því ekki segja að vinnan sé týnd né biðja um endurtekningu.
             Toast.show(ok
               ? '💾 Óklárað vistað — opnast sjálfkrafa næst (líka í síma).'
-              : '⚠ Vistaðist AÐEINS á þessu tæki — komst ekki í skýið. Ekki loka flipanum.');
+              : '⏳ Ekki komið í skýið enn — geymt hér og reynt aftur sjálfkrafa. Hafðu flipann opinn.');
           }
           if (!ok) { try { if (window.logProblem) window.logProblem('trip_saveNow_failed', 'co:' + coId); } catch (_) {} }
           setTimeout(() => { vistaBtn.disabled = false; vistaBtn.textContent = '💾 Vista óklárað'; }, 1800);

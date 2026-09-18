@@ -203,6 +203,11 @@
   async function deleteAttachment(att) {
     const SB = getSB();
     if (!SB || !att || !att.path) return;
+    // 2026-09-17: þögnin er RÉTT hér, þótt catch-ið sé í reynd dautt (.remove() kastar
+    // ekki, villan kæmi í .error). Það sem notandinn bað um — „Fjarlægja viðhengið" —
+    // gerist óháð þessu: kallandinn tekur það úr c.attachments og listinn endurteiknast.
+    // Mistakist eyðingin situr aðeins ósýnilegt afrit eftir í geymslunni; ekkert sem
+    // notandinn sér verður ósatt og engin gögn hans tapast.
     try { await SB.storage.from(ATTACH_BUCKET).remove([att.path]); } catch (_) {}
   }
   function isImage(att) { return /^image\//.test(att.mime || ''); }

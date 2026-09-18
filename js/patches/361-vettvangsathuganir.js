@@ -166,6 +166,13 @@
         fyrirtaeki_id: _bidur.coId, ar: arNu(), skrad_af: hverErVid(),
         updated_at: new Date().toISOString(),
       }, _bidur.gogn);
+      // 2026-09-17: `_bidur = null` stóð STRAX á eftir fetch-inu — biðfærslan var sem sagt
+      // talin vistuð áður en nokkuð svar kom. Lifi síðan af (pagehide kemur líka við
+      // flipa-skipti og bfcache) var textinn þar með horfinn úr minni þótt beiðnin hefði
+      // fallið: ekkert eftir til að reyna aftur með. Nú er aðeins hreinsað þegar þjónninn
+      // hefur svarað í lagi; annars situr það áfram og næsti blur/vistaStrax reynir aftur.
+      // Fetch-ið sjálft er áfram fire-and-forget — við lokun er enginn til að segja frá.
+      const bidThessi = _bidur;
       fetch(url, {
         method: 'POST', keepalive: true,
         headers: {
@@ -174,9 +181,18 @@
           Prefer: 'resolution=merge-duplicates,return=minimal'
         },
         body: JSON.stringify([rod])
-      }).catch(() => {});
-      _bidur = null;
-    } catch (_) {}
+      }).then(r => {
+        if (r && r.ok) { if (_bidur === bidThessi) _bidur = null; return; }
+        try { if (window.logProblem) window.logProblem('vettvangsathugun_lokunarskrif_failed', 'co ' + (bidThessi && bidThessi.coId) + ' · HTTP ' + (r && r.status)); } catch (_) {}
+      }).catch(() => {
+        try { if (window.logProblem) window.logProblem('vettvangsathugun_lokunarskrif_failed', 'co ' + (bidThessi && bidThessi.coId) + ' · netvilla'); } catch (_) {}
+      });
+    } catch (e) {
+      // Bregðist sópunin sjálf (t.d. við að byggja beiðnina) er venjulega leiðin reynd —
+      // hún sýnir villuna og heldur textanum í `_bidur`. Hér má ekkert gleypa þegjandi.
+      try { if (window.logProblem) window.logProblem('vettvangsathugun_lokunarsop_villa', String((e && e.message) || e).slice(0, 160)); } catch (_) {}
+      try { vistaStrax(); } catch (_) {}
+    }
   }
 
   function teikna(box, coId, gogn) {

@@ -269,14 +269,23 @@
       }
 
       // Audit log entry — best-effort, skip if the table or RLS rejects it.
+      // 17.09.2026: hreinsunin er þegar um garð gengin þegar hingað er komið, svo
+      // hér er EKKI stöðvað og notandanum ekki blandað í málið — ekkert verður
+      // ósatt í viðmótinu þótt línan vanti. En .insert() kastar ekki, svo
+      // catch-ið var dautt og bilun gat aldrei sést. Þetta er eina skráningin á
+      // því HVER hreinsaði HVAÐA töflur, svo villan er lesin og skráð.
       try {
         const profile = window.UserAuth && window.UserAuth.getProfile && window.UserAuth.getProfile();
-        await SB.from('audit_log').insert({
+        const al = await SB.from('audit_log').insert({
           actor: profile?.nafn || profile?.id || 'unknown',
           action: 'data-reset',
           details: JSON.stringify({ tables, results, seqResetStatus })
         });
-      } catch (e) { /* ignore */ }
+        if (al && al.error) {
+          console.warn('[data-reset] audit_log', al.error);
+          try { if (window.logProblem) window.logProblem('data_reset_audit_log_failed', String(al.error.message || al.error).slice(0, 160)); } catch (_) {}
+        }
+      } catch (e) { console.warn('[data-reset] audit_log', e); }
 
       m.remove();
       if (failed.length === 0) {

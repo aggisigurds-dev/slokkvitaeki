@@ -180,7 +180,17 @@
     _lastAct[k] = now;
     const row = { employee: emp, action: action, co_id: opts.co_id || null, co_nafn: opts.co_nafn || null,
       uttaeki_id: opts.uttaeki_id || null, lat: _geo ? _geo.lat : null, lng: _geo ? _geo.lng : null };
-    try { await DB.sb.from('bilstjori_vakt').insert(row); } catch (_) {}
+    // 2026-09-17: ENGIN aðvörun til notandans — viljandi (sama regla og taeki_events í
+    // 179/210). bilstjori_vakt er SAGAN/virknin, ekki staðan: hvað var yfirfarið eða
+    // sent á verkstæði er skrifað á tækin sjálf annars staðar. logAct keyrir líka á
+    // fjögurra mínútna púlsi og í lykkjum, svo skilaboð hér yrðu suð. .insert() kastar
+    // ekki, svo gamla catch-ið var dautt; villan er nú lesin og skráð svo það sjáist
+    // ef vaktaryfirlitið vantalar.
+    const r = await DB.sb.from('bilstjori_vakt').insert(row);
+    if (r && r.error) {
+      console.warn('[bilstjori] vakt', action, r.error);
+      try { if (window.logProblem) window.logProblem('bilstjori_vakt_failed', action + ': ' + String(r.error.message || r.error).slice(0, 160)); } catch (_) {}
+    }
     scheduleVaktRefresh();
   }
   function scheduleVaktRefresh() { clearTimeout(_vaktTimer); _vaktTimer = setTimeout(renderVakt, 500); }

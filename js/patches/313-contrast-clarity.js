@@ -326,6 +326,9 @@
       if (b) schedule('nav');
     }, true);
     window.addEventListener('hashchange', () => schedule('hash'));
+    // 2026-09-17: þögnin er RÉTT — aðeins skráning á áhorfanda fyrir endurskönnun á
+    // útliti. Bregðist hún keyra hinar kveikjurnar hér að ofan (nav, hash, observer,
+    // tímamælar) skönnunina eftir sem áður; engin gögn og engin staða veltur á þessu.
     try {
       if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => schedule('settings'));
     } catch (_) {}

@@ -1408,6 +1408,8 @@
     box.innerHTML='<div style="color:var(--ink4);padding:16px">Hleð…</div>';
     var data=getData(); var equip=await getEquipIndex();
     var attMap={},linkMap={};
+    // 17.09.2026 yfirferð: LESTUR — tóm kort þýða „engin viðhengi/hlekkir", sem er
+    // gild staða, og ekkert vistast hér. Þögnin er rétt.
     try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
     var caMap=getCaMap();
     var sharedKt=sharedKtSet();
@@ -1521,6 +1523,8 @@
       var equip=await getEquipIndex();
       var bruIx=await getBruIndex();
       var attMap={},linkMap={};
+      // 17.09.2026 yfirferð: sami LESTUR og að ofan — tóm kort eru gild staða og
+      // ytra try/catch-ið (hero counts) skrifar í console ef eitthvað fellur. Þögnin er rétt.
       try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
       var caMap=getCaMap(), sharedKt=sharedKtSet(), today=_todayStr();
       names.forEach(function(name){

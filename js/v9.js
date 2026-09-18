@@ -532,7 +532,13 @@
     };
     document.getElementById('_em_del').onclick=async function(){
       if(!await Confirm.show(t('delConfirm')))return;
-      await DB.sb.from('uttaeki').delete().eq('id',u.id);
+      // 17.09.2026: .delete() kastar ekki og skilagildið var aldrei lesið. Áður:
+      // mistækist eyðingin (RLS, tengsl, tímaút) hvarf tækið samt úr DB.cache og
+      // glugginn lokaðist — það LEIT ÚT fyrir að vera eytt, tækjatalan lækkaði,
+      // og svo birtist það aftur við næstu hleðslu. Sama mynstur og vistunin hér
+      // fyrir ofan notar nú þegar.
+      var d=await DB.sb.from('uttaeki').delete().eq('id',u.id);
+      if(d&&d.error){alert('Tækið var EKKI eytt — það er enn í kerfinu.\n\n'+(d.error.message||d.error));return;}
       if(DB.cache.units)DB.cache.units=DB.cache.units.filter(function(x){return x.id!==u.id;});
       m.close();
     };

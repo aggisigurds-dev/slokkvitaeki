@@ -7,8 +7,30 @@
   if (window.__VidskInstalled) { console.log('[Vidsk] already installed'); return; }
   window.__VidskInstalled = true;
 
-  const sb = window.supabase || window.sb;
-  if (!sb) { console.warn('[Vidsk] Supabase not ready, abort'); return; }
+  // 18.09.2026 — LIFANDI VILLA, rakin úr `villur`-töflunni og endurgerð í viðmótinu.
+  //
+  //     const sb = window.supabase || window.sb;
+  //
+  // `window.supabase` er SAFNIÐ, ekki biðlarinn (CLAUDE.md segir það orðrétt):
+  // það á `createClient`, ekki `from`. Ekkert í kerfinu skrifar biðlarann ofan í
+  // þennan glugga, svo `sb` var ALLTAF safnið og `loadData` féll á
+  // „sb.from is not a function" í hvert sinn sem #vidskiptavinir var opnað.
+  //
+  // Það leit út fyrir að vera fátítt (6 tilvik síðan 28.08) af því að villuvaktin
+  // sendir sömu villu einu sinni per lotu — ekki af því að hún gerðist sjaldan.
+  // Í þjappaða búntinum hét hún „w.from is not a function" og nefndi hvorki skrá
+  // né línu; hún var ólæsileg í þrjár vikur af þeirri ástæðu einni.
+  //
+  // Rétta keðjan er sú sama og 68 aðrir pappar nota: DB.sb fyrst — EN hún verður
+  // að vera metin við KALL, ekki við hleðslu. 03-vidsk-revamp.js:10 skjalfestir
+  // af hverju: „DB.sb is null at script-load time; it's set inside DB.init() on
+  // DOMContentLoaded." Fyrsta tilraun mín setti `const sb = DB.sb` við hleðslu;
+  // þá varð sb null, `if (!sb) return` hér fyrir neðan slökkti á ÖLLUM pappanum
+  // og #vidskiptavinir hvarf alveg. Mælt í viðmótinu og leiðrétt samstundis.
+  const sb = () => (window.DB && window.DB.sb) || window.sb || null;
+  // Ekkert hlið hér: biðlarinn er ekki til við hleðslu (DB.init keyrir á
+  // DOMContentLoaded), og hlið á þessum stað slökkti á ÖLLUM pappanum —
+  // #vidskiptavinir hvarf alveg. Athugunin á heima þar sem hann er notaður.
 
   const State = { customers: [], counts: {}, lastVisits: {}, search: '', loaded: false };
 
@@ -37,10 +59,12 @@
 
   // ---------- data ----------
   async function loadData() {
+    // Vörnin á heima hér: á þessum tímapunkti Á biðlarinn að vera til.
+    if (!sb()) { console.warn('[Vidsk] Supabase ekki tilbúinn þegar loadData var kallað'); return; }
     const [v, u, j] = await Promise.all([
-      sb.from('vidskiptavinir').select('*').order('nafn'),
-      DB.fetchAll((from, to) => sb.from('uttaeki').select('client').order('id').range(from, to)).then(rows => ({ data: rows })),  // >1000 rows — page through cap; .order('id') svo síðuskipting sleppi engu
-      sb.from('verkbeidnir').select('customer,dropoff,created_at'),
+      sb().from('vidskiptavinir').select('*').order('nafn'),
+      DB.fetchAll((from, to) => sb().from('uttaeki').select('client').order('id').range(from, to)).then(rows => ({ data: rows })),  // >1000 rows — page through cap; .order('id') svo síðuskipting sleppi engu
+      sb().from('verkbeidnir').select('customer,dropoff,created_at'),
     ]);
     State.customers = v.data || [];
     State.counts = {};

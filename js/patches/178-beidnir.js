@@ -163,17 +163,17 @@
 
   async function saveNote(key, text) {
     const SB = getSB(); if (!SB) return;
-    const adur = state.notes[key];
     state.notes[key] = text;   // keep local copy so re-renders show it
     // 17.09.2026: .upsert() kastar ekki — toastið hér fyrir neðan gat því aldrei
     // birst. Minnispunkturinn stóð áfram á skjánum af staðbundnu afriti og hvarf
     // fyrst við næstu hleðslu; textinn var þá farinn fyrir fullt og allt.
+    // Textanum er VILJANDI haldið í reitnum þótt vistun bregðist — annars tæki
+    // lagfæringin hann af skjánum og notandinn gæti ekki einu sinni afritað hann.
     const r = await SB.from('email_actions').upsert(
       { email_id: Number(key), notes: text, updated_at: new Date().toISOString() },
       { onConflict: 'email_id' });
     if (r && r.error) {
-      if (adur === undefined) delete state.notes[key]; else state.notes[key] = adur;
-      toast('Náði ekki að vista minnispunkt — hann er EKKI geymdur. Afritaðu textann áður en þú hleður síðunni. (' + (r.error.message || r.error) + ')');
+      toast('Minnispunkturinn vistaðist EKKI — hann hverfur við næstu hleðslu. Afritaðu textann. (' + (r.error.message || r.error) + ')');
       try { if (window.logProblem) window.logProblem('beidnir_note_save_failed', key + ': ' + String(r.error.message || r.error).slice(0, 160)); } catch (_) {}
       return false;
     }
@@ -208,13 +208,20 @@
   async function markDone(row, done) {
     const SB = getSB(); if (!SB) return;
     const key = String(row.id);
-    try {
-      await SB.from('email_actions').upsert(
-        { email_id: row.id, status: done ? 'done' : 'open', updated_at: new Date().toISOString() },
-        { onConflict: 'email_id' });
-      if (done) state.handled.add(key); else state.handled.delete(key);
-      render();
-    } catch (e) { toast('Náði ekki að vista stöðu: ' + (e.message || e)); }
+    // 17.09.2026: .upsert() kastar ekki — catch-ið keyrði aldrei og línan á eftir
+    // merkti beiðnina afgreidda í viðmótinu hvort sem skrifið komst inn eða ekki.
+    // Hakið varð grænt, datt svo aftur af við næstu hleðslu; á hinum vélunum
+    // stóð beiðnin ósnert allan tímann. Nú er ekkert merkt nema skrifið hafi tekist.
+    const r = await SB.from('email_actions').upsert(
+      { email_id: row.id, status: done ? 'done' : 'open', updated_at: new Date().toISOString() },
+      { onConflict: 'email_id' });
+    if (r && r.error) {
+      toast('Staðan vistaðist EKKI — beiðnin stendur áfram ' + (done ? 'ÓAFGREIDD' : 'afgreidd') + '. (' + (r.error.message || r.error) + ')');
+      try { if (window.logProblem) window.logProblem('beidnir_status_save_failed', key + ': ' + String(r.error.message || r.error).slice(0, 160)); } catch (_) {}
+      return;
+    }
+    if (done) state.handled.add(key); else state.handled.delete(key);
+    render();
   }
 
   function sendReport(row, coIdOverride) {

@@ -243,16 +243,23 @@
           }
         }
         // 4. override_log — ein rekjanleikaröð (best-effort).
-        try {
-          await sb.from('override_log').insert({
-            co_id: coId,
-            co_nafn: (c && c.data && c.data.nafn) || null,
-            field: 'report_sync',
-            old_value: oldTotal == null ? null : String(oldTotal),
-            new_value: String(total),
-            page: 'uttekt'
-          });
-        } catch (_) {}
+        // 17.09.2026: „best-effort" stendur og ENGIN skilaboð fara til notandans
+        // — þessi röð er SAGAN, ekki staðan; tækjaskráin sjálf er þegar vistuð
+        // hér að ofan og engin tala verður röng þótt línan vanti. En .insert()
+        // kastar ekki, svo catch-ið var dautt: villan er nú lesin og skráð, því
+        // rekjanleikinn er einmitt það sem maður saknar eftir á.
+        const ol = await sb.from('override_log').insert({
+          co_id: coId,
+          co_nafn: (c && c.data && c.data.nafn) || null,
+          field: 'report_sync',
+          old_value: oldTotal == null ? null : String(oldTotal),
+          new_value: String(total),
+          page: 'uttekt'
+        });
+        if (ol && ol.error) {
+          console.warn('[270] override_log', ol.error);
+          try { if (window.logProblem) window.logProblem('report_sync_override_log_failed', 'co ' + coId + ': ' + String(ol.error.message || ol.error).slice(0, 160)); } catch (_) {}
+        }
       } catch (_) {}
 
       // 3. arsskodun_customers blob — deep-merge (sama race-örugga mynstur og

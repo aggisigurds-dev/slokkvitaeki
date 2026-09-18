@@ -107,6 +107,9 @@
   // ── Lesa / skrifa ───────────────────────────────────────────────────────
   var _ny = new Map();
   function lesaMynd(coId) {
+    // 17.09.2026 yfirferð: þögnin er RÉTT hér — LESTUR þar sem null þýðir „engin
+    // mynd skráð", sem er gild staða. Skrifleiðin (skrifaMynd) kastar rétt þegar
+    // AppSettings.save skilar false, svo vistun getur ekki horfið þögult.
     var k = String(coId), server = null;
     try {
       var m = (window.AppSettings && AppSettings.path && AppSettings.path(LYKILL)) || {};
