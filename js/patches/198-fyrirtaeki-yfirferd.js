@@ -337,7 +337,7 @@
       <button class="ab" data-act="del" data-id="${f.id}">Fjarlægja</button>`;
     return `<tr class="${fSel.has(Number(f.id)) ? 'picked' : ''}">
       ${selCell(fSel, f.id)}
-      <td style="font-weight:600;color:#0f172a">${esc(f.nafn || '(nafnlaust)')}${B(f.review_flag) ? ' ⚑' : ''}${f._rek ? ' <span style="font-size:10px;color:#7c3aed">· ' + esc(f._rek) + '</span>' : ''}</td>
+      <td style="font-weight:600;color:#0f172a"><a class="fyr-prof" href="#company/${f.id}" title="Opna fyrirtækjaprófílinn (Ctrl+smellur opnar í nýjum flipa)" onclick="event.stopPropagation()" style="color:inherit;text-decoration:none;border-bottom:1px dotted #94a3b8">${esc(f.nafn || '(nafnlaust)')}</a>${B(f.review_flag) ? ' ⚑' : ''}${f._rek ? ' <span style="font-size:10px;color:#7c3aed">· ' + esc(f._rek) + '</span>' : ''}</td>
       <td>${f.kennitala ? esc(f.kennitala) : '<span class="miss">vantar</span>'}</td>
       <td>${f.heimilisfang ? esc(f.heimilisfang) : '<span class="miss">vantar</span>'}</td>
       <td>${f.netfang ? esc(f.netfang) : '<span class="miss">vantar</span>'}</td>
