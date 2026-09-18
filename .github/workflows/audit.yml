@@ -62,7 +62,13 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
     steps:
+      # fetch-depth: 0 — ÓMISSANDI. Sjálfgefinn grunnur klón (depth 1) skilar
+      # HEAD-dagsetningu úr `git log -1 -- <skrá>` fyrir HVERJA skrá, og þá sér
+      # audit-utgafumerki allar stakar skriftur sem „breyttar í dag" og fellur.
+      # Það felldi hverja einustu keyrslu þar til þetta fannst 18.09.2026.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

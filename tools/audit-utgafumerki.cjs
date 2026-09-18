@@ -46,6 +46,10 @@ function merkiFyrir(skra) {
 
 function sidastBreytt(skra) {
   try {
+    // 18.09.2026: í GRUNNUM klón (git clone --depth 1, sem actions/checkout gerir
+    // sjálfgefið) er aðeins einn commit til, svo þetta skilar HEAD-dagsetningu
+    // fyrir hverja skrá og vörðurinn fellir allt. Sjá `grunnurKlon` hér að neðan —
+    // hann stöðvar vörðinn með skýringu í stað þess að dæma á röngum gögnum.
     return execFileSync('git', ['log', '-1', '--format=%cs', '--', skra], { cwd: rot, encoding: 'utf8' }).trim() || null;
   } catch (_) { return null; }
 }
@@ -76,6 +80,19 @@ for (const skra of STAKAR) {
   if (breytt > dags) gomul.push(`${skra}  ?v=${merki} (${dags}) en síðast breytt ${breytt}`);
 }
 
+// 18.09.2026 — GRUNNUR KLÓN GERIR ÞENNAN VÖRÐ BLINDAN.
+// `git log -1 -- <skrá>` þarf sögu. Sé hún ekki til (depth 1) skilar hún HEAD
+// fyrir allt og vörðurinn fellir hverja einustu stöku skriftu. Þá er rétt svar
+// „ég get ekki mælt þetta", ekki „þetta er bilað".
+function grunnurKlon() {
+  try {
+    return execFileSync('git', ['rev-parse', '--is-shallow-repository'], { cwd: rot, encoding: 'utf8' }).trim() === 'true';
+  } catch (_) { return false; }
+}
+if (grunnurKlon()) {
+  console.log('⚠ Sleppt: grunnur klón (depth 1) — git log hefur enga sögu per skrá, svo merkin eru ekki mælanleg. Notaðu fetch-depth: 0.');
+  process.exit(0);
+}
 const nyttMerki = new Date().toISOString().slice(0, 10).replace(/-/g, '') + 'a';
 
 if (gomul.length || vantar.length) {
