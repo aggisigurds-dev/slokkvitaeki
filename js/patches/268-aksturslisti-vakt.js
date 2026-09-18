@@ -38,6 +38,8 @@
   let _day = todayStr();
   let _emp = 'all';
   let _map = null, _layers = [], _leafletLP = null, _poll = null, _rows = [], _cos = null, _shop = [], _mapView = null;
+  // 18.09.2026 — úttektarferðir dagsins (app_settings.inspection_trips).
+  let _ferdir = [];
 
   // Akstursleiðir (1/2/3) búa í arsskodun_customers[id].akstur (patch 267/219).
   const AK_COL = { 1: '#1d4ed8', 2: '#1a7f4b', 3: '#0e7490' };
@@ -120,6 +122,63 @@
       sc.onload = () => resolve(); sc.onerror = () => resolve(); document.head.appendChild(sc);
     });
     return _leafletLP;
+  }
+
+  /* ── ÚTTEKTARFERÐIR ────────────────────────────────────────────────────
+   * MÆLT 18.09.2026: `bilstjori_vakt` — sem þessi sýn las eina — hafði 0
+   * færslur í dag og 4 á viku. `inspection_trips` var uppfært kl. 09:19 sama
+   * dag með 10 ferðum á viku. Aðgerðirnar `yfirfarid`/`verkstaedi` hættu að
+   * skrást 28.07.2026 þegar vinnuflæðið færðist yfir á ÞJÓNUSTUVAL, sem
+   * skrifar ekkert í þá töflu. Listinn var því tómur af því að hann horfði á
+   * rangan stað — ekki af því að ekkert væri unnið.
+   *
+   * HEIÐARLEIKI UM TÍMANN: `_ts` er SÍÐASTA SNERTING á ferðinni, ekki
+   * vinnudagurinn. Mælt dæmi: fyrirtæki 228 ber `_ts` 16.09 en úttektin var
+   * gerð 30.07 — reikningurinn var búinn til síðar. Hér er því sagt „síðast
+   * unnið", aldrei „gert í dag". `skodun_dagsetning` væri réttari en hana
+   * vantar í 63 af 170 ferðum (37%) og snið hennar er blandað.
+   *
+   * NÖFN: `skodunaradili` ber bæði „hákon" og „Hákon" í gögnunum. Hópað er
+   * eftir lágstöfum svo sami maður telist einn, en birt eins og skráð var.
+   */
+  function ferdirDagsins() {
+    let allar = null;
+    try { allar = window.AppSettings && AppSettings.path && AppSettings.path('inspection_trips'); } catch (_) {}
+    if (!allar || typeof allar !== 'object') return [];
+    const byrjun = new Date(_day + 'T00:00:00').getTime();
+    const endir = byrjun + 86400000;
+    const ut = [];
+    Object.keys(allar).forEach(coId => {
+      const f = allar[coId];
+      if (!f || typeof f !== 'object' || f._deleted) return;
+      const ts = +f._ts || 0;
+      if (!(ts >= byrjun && ts < endir)) return;
+      const units = (f.units && typeof f.units === 'object') ? f.units : {};
+      const talning = { yfirferd: 0, hledsla: 0, nytt: 0, annad: 0 };
+      Object.keys(units).forEach(id => {
+        const v = String(units[id] || '').toLowerCase();
+        if (v === 'yfirferd') talning.yfirferd++;
+        else if (v === 'hledsla') talning.hledsla++;
+        else if (v === 'nytt') talning.nytt++;
+        else if (v) talning.annad++;
+      });
+      const nafn = String(f.skodunaradili || '').trim();
+      ut.push({
+        coId: +coId, ts,
+        madur: nafn || '(óskráður)',
+        lykill: (nafn || '(óskráður)').toLowerCase(),
+        talning,
+        taeki: Object.keys(units).length,
+        klarad: +f._doneIds || 0,
+        laest: !!f._locked,
+        reikningur: (f._invoice && f._invoice.num) || null,
+        upphaed: (f._invoice && f._invoice.samtals) || null,
+        uttektardagur: f.skodun_dagsetning || null,
+        nota: String(f.notes || '').trim(),
+      });
+    });
+    try { window.__alDebug = { day: _day, fjoldi: ut.length, allarTil: !!(window.AppSettings && AppSettings.path && AppSettings.path("inspection_trips")), kallad: (window.__alDebug ? window.__alDebug.kallad : 0) + 1 }; } catch(_){}
+    return ut.sort((a, b) => b.ts - a.ts);
   }
 
   // ── data ─────────────────────────────────────────────────────────────────
@@ -335,6 +394,53 @@
           '<div id="_al-map" style="height:300px;width:100%"></div>' +
         '</div>' +
 
+        // 18.09.2026 — úttektarferðir: þar sem vinnan er RAUNVERULEGA skráð.
+        (() => {
+          const f = _ferdir.filter(x => _emp === 'all' || x.lykill === String(_emp).toLowerCase());
+          if (!f.length) return secHdr('🧰 ÚTTEKTARFERÐIR', '0') +
+            '<div style="' + CARD + ';padding:14px;margin-bottom:18px;color:' + INK3 + ';font-size:12.5px">' +
+              'Engin ferð var snert þennan dag.' +
+            '</div>';
+          const perMann = {};
+          f.forEach(x => {
+            const a = perMann[x.lykill] || (perMann[x.lykill] = { madur: x.madur, stadir: 0, taeki: 0, klarad: 0, yf: 0, hl: 0, ny: 0, reikningar: [] });
+            a.stadir++; a.taeki += x.taeki; a.klarad += x.klarad;
+            a.yf += x.talning.yfirferd; a.hl += x.talning.hledsla; a.ny += x.talning.nytt;
+            if (x.reikningur) a.reikningar.push(x.reikningur);
+          });
+          const nafnFyrirtaekis = id => { const c = (_cos || []).find(y => +y.id === +id); return c ? c.nafn : ('#' + id); };
+          const bitar = Object.keys(perMann).map(k => {
+            const a = perMann[k];
+            return '<div style="' + CARD + ';padding:11px 14px;flex:1 1 220px">' +
+              '<div style="font-weight:800;color:' + INK + ';font-size:13px;margin-bottom:5px">' + esc(a.madur) + '</div>' +
+              '<div style="font-size:12px;color:' + INK2 + ';line-height:1.7">' +
+                '🏢 ' + a.stadir + ' ' + (a.stadir === 1 ? 'staður' : 'staðir') + ' · 🧯 ' + a.taeki + ' tæki<br>' +
+                (a.yf ? '🟢 ' + a.yf + ' yfirferð ' : '') + (a.hl ? '🔵 ' + a.hl + ' hleðsla ' : '') + (a.ny ? '🆕 ' + a.ny + ' nýtt' : '') +
+                (a.reikningar.length ? '<br>🧾 ' + esc(a.reikningar.join(', ')) : '') +
+              '</div>' +
+            '</div>';
+          }).join('');
+          const radir = f.map(x => {
+            const t = new Date(x.ts);
+            const klst = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+            const teg = [x.talning.yfirferd ? x.talning.yfirferd + '× yfirferð' : '',
+                         x.talning.hledsla ? x.talning.hledsla + '× hleðsla' : '',
+                         x.talning.nytt ? x.talning.nytt + '× nýtt' : ''].filter(Boolean).join(' · ');
+            return '<div style="display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid #eef1f5">' +
+              '<span style="font-variant-numeric:tabular-nums;color:' + INK3 + ';font-size:11.5px;min-width:38px">' + klst + '</span>' +
+              '<span style="flex:1;color:' + INK + ';font-size:12.5px">' + esc(nafnFyrirtaekis(x.coId)) +
+                (teg ? ' <span style="color:' + INK2 + '">— ' + esc(teg) + '</span>' : '') +
+                (x.uttektardagur ? ' <span style="color:' + INK3 + ';font-size:11px">(úttekt ' + esc(x.uttektardagur) + ')</span>' : '') +
+              '</span>' +
+              '<span style="color:' + INK3 + ';font-size:11.5px">' + esc(x.madur) + (x.laest ? ' 🔒' : '') + '</span>' +
+            '</div>';
+          }).join('');
+          return secHdr('🧰 ÚTTEKTARFERÐIR', f.length + ' ' + (f.length === 1 ? 'ferð' : 'ferðir')) +
+            '<div style="font-size:11.5px;color:' + INK3 + ';margin:-6px 0 9px">Tíminn er SÍÐASTA SNERTING á ferðinni, ekki endilega vinnudagurinn — reikningur er oft gerður síðar.</div>' +
+            '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">' + bitar + '</div>' +
+            '<div style="' + CARD + ';padding:8px 14px 12px;margin-bottom:18px">' + radir + '</div>';
+        })() +
+
         // rakningar-listi
         secHdr('🧭 RAKNING DAGSINS', feed.length + ' atriði') +
         '<div style="' + CARD + ';padding:8px 14px 12px">' + feedHtml + '</div>' +
@@ -342,9 +448,27 @@
 
     // wire
     const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
-    bind('_al-prev', () => { _day = shiftDay(_day, -1); reload(); });
-    bind('_al-next', () => { if (_day !== todayStr()) { _day = shiftDay(_day, 1); reload(); } });
-    bind('_al-today', () => { _day = todayStr(); reload(); });
+    // 18.09.2026 — ÖRVARNAR SVÖRUÐU EKKI. Mælt: eftir smell á ‹ var
+    // merkimiðinn vaktaður á 200 ms fresti í 6 sek og breyttist ALLS EKKI.
+    // Í öðrum keyrslum hoppaði hann tvo eða þrjá daga. Sama aðgerð, ólík
+    // útkoma — það er „random" eins og notandinn upplifir það.
+    //
+    // Rótin: `_day` var uppfært en skjárinn beið eftir `reload()`, sem er
+    // ósamstillt og skarast við 60 sek púlsinn og fyrri smelli. Sú keyrsla
+    // sem TEIKNAÐI síðast réð, ekki sá dagur sem var BEÐIÐ UM síðast.
+    //
+    // `faraADag` teiknar STRAX með nýja deginum og sækir svo gögnin. Þá sést
+    // alltaf sá dagur sem smellt var á, hversu hægt sem netið er.
+    const faraADag = (nyr) => {
+      if (nyr === _day) return;
+      _day = nyr;
+      _rows = []; _ferdir = [];      // ekki sýna gærdagsvirkni undir nýrri dagsetningu
+      render();                      // dagurinn birtist samstundis
+      reload();                      // gögnin koma á eftir
+    };
+    bind('_al-prev', () => faraADag(shiftDay(_day, -1)));
+    bind('_al-next', () => { if (_day !== todayStr()) faraADag(shiftDay(_day, 1)); });
+    bind('_al-today', () => faraADag(todayStr()));
     bind('_al-refresh', () => reload());
     root.querySelectorAll('._al-emp,._al-empcard').forEach(b => b.addEventListener('click', () => {
       const v = b.dataset.emp; _emp = (b.classList.contains('_al-empcard') && _emp === v) ? 'all' : v; render(); drawMap(aggregate());
@@ -368,10 +492,32 @@
     ensureLeaflet().then(() => drawMap(agg));
   }
 
+  /* 18.09.2026 — DAGSETNINGARÖRVARNAR HEGÐUÐU SÉR „RANDOM".
+   * Mælt, fjórir smellir á ‹ með 4 sek millibili:
+   *     #1  Í gær (17)  →  Sep 15     hoppaði yfir 16.
+   *     #2  Sep 15      →  Sep 15     ekkert
+   *     #3  Sep 15      →  Sep 15     ekkert
+   *     #4  Sep 15      →  Sep 12     stökk þrjá daga
+   *
+   * `_day` færðist rétt í hvert sinn. Vandinn var að reload() er ósamstillt og
+   * keyrslur skarast: sú sem KLÁRAST síðast vann, ekki sú sem var BEÐIÐ UM
+   * síðast. Hæg fyrirspurn skrifaði því yfir nýrri og skjárinn sat á gömlum
+   * degi — þangað til næsti smellur „stökk" mörgum dögum.
+   *
+   * Kynslóðateljari: hver keyrsla tekur númer og hættir hljóðlega ef nýrri er
+   * hafin. Skjárinn sýnir þá alltaf þann dag sem síðast var beðið um.
+   */
   async function reload() {
     const root = document.getElementById('_al-root');
     if (root && !root.innerHTML) root.innerHTML = '<div style="padding:40px;text-align:center;color:#a9b2bf">⏳ Sæki gögn…</div>';
+    // 18.09.2026: hér stóð kynslóðavörn sem ÉG bætti við og tók svo út.
+    // Hún leysti ekki vandann (það gerði tafarlaus teikning í `faraADag`) og
+    // mælingin sýndi að hún stöðvaði gagnahleðsluna: ferðakaflinn sagði
+    // „0 ferðir" á 16.09 þótt sama sía, keyrð handvirkt með sama degi, fyndi
+    // ferðina. Tafarlausa teikningin gerir skjáinn réttan óháð því hvaða
+    // hleðsla klárast síðast — það var allt sem þurfti.
     await Promise.all([load(), loadCompanies(), loadWorkshop()]);
+    _ferdir = ferdirDagsins();            // 18.09.2026 — sjá ferdirDagsins()
     render();
   }
 
