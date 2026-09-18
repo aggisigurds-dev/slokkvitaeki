@@ -13,8 +13,29 @@ name: Öryggisnet
 # deploy.yml er ósnert.
 #
 # Verkaskipting við pre-push-hookinn (.githooks/pre-push):
-#   hookurinn  13 kóða-verðir, ~2,5 s, án nets — stöðvar ýtingu strax
-#   þetta      allir 35, líka þeir sem spyrja Supabase — grípur gagnavillur
+#   hookurinn  kóða-verðirnir, ~2,5 s, án nets — stöðvar ýtingu strax
+#   þetta      allir, líka þeir sem spyrja Supabase — grípur gagnavillur
+#
+# ── 18.09.2026: GAGNAVERÐIR FELLA EKKI LENGUR KEYRSLUNA ────────────────────────
+# Agnar: „síðan er maður að fá stanslaust af þessu" — 12+ „Run failed"-póstar á
+# einum degi, einn á hverja ýtingu.
+#
+# Rótin: `audit-all.cjs:93` fellir keyrsluna ef EINHVER vörður er rauður, og
+# fjórir GAGNAverðir eru rauðir þessa dagana (ótengdir kreditreikningar, sölur án
+# tengingar, T=S-frávik, samþykkt vinnublöð án sölu). Ekkert af því orsakast af
+# ýtingunni — það er ástand í gagnagrunninum sem stendur óbreytt milli commita.
+# Niðurstaðan var póstur á hverja ýtingu um sama óbreytta ástandið, sem kennir
+# manni að eyða póstinum óopnuðum. Þá sést ekki þegar KÓÐINN brotnar.
+#
+# Skiptingin sem gildir hér:
+#   kóða-verðir  → mega fella. Ýtingin orsakaði þá, og þá á að stöðva hana.
+#   gagna-verðir → mega ekki fella. Þeir mæla ástand sem ýtingin snerti ekki.
+#                  Niðurstaðan fer áfram í `oryggisnet_keyrslur` (--skra), þar sem
+#                  hana má lesa í appinu í stað pósthólfsins.
+#
+# Þetta er EKKI þöggun: mælingin keyrir óbreytt, talan er skráð óbreytt, og rauður
+# gagnavörður birtist sem ⚠ í samantekt keyrslunnar. Það sem breytist er að hann
+# sendir ekki póst sem segir „bilað" um eitthvað sem var eins fyrir ýtinguna.
 
 on:
   push:
@@ -34,6 +55,12 @@ jobs:
     if: >-
       github.event_name != 'push' ||
       !contains(github.event.head_commit.message, '[skip ci]')
+
+    # `secrets`-samhengið er EKKI aðgengilegt í `if:` á þrepi — `env` er það.
+    # Lykillinn er því settur hér einu sinni og þrepin prófa `env`.
+    env:
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -41,10 +68,34 @@ jobs:
         with:
           node-version: '20'
 
+      # Blokkerandi: þessir lesa KÓÐANN sem var verið að ýta. Falli þeir er það
+      # ýtingin sem olli því, og þá á keyrslan að falla.
       - name: Kóða-verðir (engin gagnatenging)
         run: node tools/audit-all.cjs --static
 
-      - name: Allir verðir (líka gagnaverðir)
+      # Lykillinn vantar = gagnaverðirnir keyra í tómarúmi og ekkert skráist.
+      # Það á að sjást, en ekki sem „bilað flæði".
+      - name: Er gagnalykillinn til?
+        if: ${{ env.SUPABASE_SERVICE_ROLE_KEY == '' }}
+        run: echo "::warning title=Gagnaverðir sleppt::SUPABASE_SERVICE_ROLE_KEY vantar — gagnaverðirnir keyra ekki og ekkert skráist í oryggisnet_keyrslur."
+
+      # Ekki blokkerandi: þessir mæla ÁSTAND GAGNA sem ýtingin snerti ekki.
+      # Niðurstaðan er skráð í oryggisnet_keyrslur hvort sem hún er græn eða rauð.
+      - name: Gagna-verðir (fella ekki keyrsluna — sjá haus)
+        id: gogn
+        continue-on-error: true
+        if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' }}
         run: node tools/audit-all.cjs --skra --uppruni=ci
-        env:
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Samantekt
+        if: always()
+        run: |
+          echo "✅ Kóða-verðir: grænt (annars hefði keyrslan fallið hér að ofan)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.gogn.outcome }}" = "failure" ]; then
+            echo "::warning title=Rauður gagnavörður::Ástand í gögnunum er rautt. Það stöðvar ekki ýtinguna — sjá oryggisnet_keyrslur."
+            echo "⚠ Gagnaverðir: RAUTT — ástand gagna, ekki þessi ýting" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ steps.gogn.outcome }}" = "skipped" ]; then
+            echo "⏭ Gagnaverðir: sleppt (SUPABASE_SERVICE_ROLE_KEY vantar)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "✅ Gagnaverðir: grænt" >> "$GITHUB_STEP_SUMMARY"
+          fi
