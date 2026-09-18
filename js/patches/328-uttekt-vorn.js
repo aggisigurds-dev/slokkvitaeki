@@ -185,12 +185,39 @@
     // 18.09.2026 — MÆLT MEÐ tools/smoke/arekstrar.js: þessi lína keyrði á ~120 ms
     // fresti að eilífu á kyrrstæðum prófíl (224 DOM-breytingar á 8 sekúndum, 28/sek).
     // `innerHTML =` skiptir út ÖLLUM börnum, líka þegar efnið er stafrétt eins.
-    // Það er childList-breyting, sem endurræsir vaktina á :358, sem kallar tick(),
+    // Það er childList-breyting, sem endurræsir vaktina á :393, sem kallar tick(),
     // sem kallar hingað aftur. Sjálfkveikja.
     //
     // Lagfæringin er hreyfingarleysi: bera saman fyrst. Útkoman er stafrétt sú sama.
+    //
+    // 18.09.2026 (seinna sama dag) — SAMANBURÐURINN HÉR AÐ OFAN VAR ÓNÝTUR og
+    // þessi staður hélt áfram að skrifa 72 DOM-hreyfingar á 8 sek (~17 skrif,
+    // ~103 ms á milli). Mælt með innerHTML-njósn: hnúturinn var ALDREI
+    // endursmíðaður, samt var `strip.innerHTML !== html` satt í hvert einasta
+    // skipti. Ástæðan er að innerHTML les DOM-ið TIL BAKA, ekki það sem við
+    // skrifuðum:
+    //     skrifað : style="background:rgba(255,255,255,.12);color:#e7ebf2;…"
+    //     lesið   : style="background: rgba(255, 255, 255, 0.12);
+    //                      color: rgb(17, 20, 28) !important; …"
+    // Vafrinn staðlar style-strenginn (bil, `.12` → `0.12`, hex → rgb) OG
+    // þema-pappi hefur bætt `!important`-lit ofan á. 474 stafir á móti 370 —
+    // aldrei jafnt. Regla: bera saman við ÞAÐ SEM VIÐ SKRIFUÐUM, aldrei við
+    // innerHTML. Eiginleikinn situr á hnútnum og hverfur með honum, svo nýr
+    // hnútur (t.d. eftir að 129 endurteiknar #_ctc-section) fær sína teikningu.
+    //
+    // Kveikjan kom að utan: 307-afslattarkassi skrifaði ._afsl-head skilyrðislaust,
+    // sú breyting vakti vaktina hér á :393 → tick() → hingað → okkar skrif vakti
+    // 307 aftur. Gagnkvæm lykkja; hvor um sig hélt hinni gangandi. 307 var lagaður
+    // sama dag, en vörnin hér var ónýt og hefði endurvakið lykkjuna við næstu
+    // breytingu á #companies-main.
+    //
+    // Mæling (kyrrðarpróf á „5S ehf.", 8 sek): 72 → 0 hreyfingar hér.
+    // Álagspróf eftir á: 40 aðsendar DOM-breytingar í #companies-main á 6 sek
+    // gáfu NÚLL skrif héðan (áður eitt skrif á hvert tikk).
     const html = stripHtml(cached(coId, year), year);
-    if (strip.innerHTML !== html) strip.innerHTML = html;
+    if (strip.__uvHtml === html) return;
+    strip.__uvHtml = html;
+    strip.innerHTML = html;
   }
 
   /* Sama merking við „📄 Búa til úttektarskýrslu" (ósk Agnars: „líka merking að

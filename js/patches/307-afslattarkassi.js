@@ -99,7 +99,7 @@
     const step = (on, label) =>
       '<span class="_afsl-step' + (on ? ' _on' : '') + '">' + (on ? '●' : '○') + ' ' + label + '</span>';
     const arrow = '<span class="_afsl-arrow">›</span>';
-    head.innerHTML =
+    const html =
       '<span class="_afsl-title">💸 Afslættir &amp; verð</span>' +
       '<span style="font-size:10.5px;color:var(--ink3)">efsta virka þrepið ræður verðinu í Sölu</span>' +
       '<span class="_afsl-ladder">' +
@@ -107,6 +107,36 @@
         step(!!st.hopur, st.hopur ? 'Hópur · ' + st.hopur : 'Hópur') + arrow +
         step(st.pct > 0, st.pct > 0 ? st.pct + '% af öllu' : 'Sjálfvirkt %') +
       '</span>';
+    // 18.09.2026 — MÆLT með tools/smoke/arekstrar.js (kyrrðarpróf, „5S ehf.",
+    // 8 sek): þessi lína skrifaði STAFRÉTT sama efni 23× og bjó til 132 DOM-
+    // hreyfingar (._afsl-title + span + ._afsl-ladder, 44 hver, ~176 ms á milli).
+    // `innerHTML =` skiptir út öllum börnum líka þegar ekkert breyttist; það er
+    // childList-breyting í #companies-main, sem endurræsir vaktina neðar í
+    // þessari skrá, sem kallar build(), sem kallar hingað aftur. Sjálfkveikja —
+    // og hún kveikti líka á vaktinni í 328 (sjá þar).
+    //
+    // Borið saman við það sem VIÐ skrifuðum síðast, ekki við `head.innerHTML`:
+    // vafrinn endurraðar style-eiginleikum þegar hann les innerHTML til baka
+    // (`.12` → `0.12`, `#fff` → `rgb(...)`) og þema-pappi getur bætt við
+    // `!important`. Þess vegna var samanburður við innerHTML í 328 alltaf ósatt
+    // og gagnslaus. Eiginleiki á hnútnum sjálfum hverfur með hnútnum, svo nýr
+    // haus fær alltaf sína teikningu.
+    //
+    // Mæling (8 sek, tvö félög, víxlað fram og til baka á skránni til að
+    // staðfesta): „5S ehf." 204 → 0 hreyfingar, „Miklatorg hf (Ikea)" 138 → 0.
+    // Þessi staður einn: 132 → 0. Útkoman er stafrétt sú sama — sami hnútalisti,
+    // sömu auðkenni; aðeins hreyfingin hvarf.
+    //
+    // ÞETTA SLÖKKTI Á PENINGAVÖRN. 271-visit-year-lock bíður eftir 400 ms KYRRÐ
+    // áður en hann leggur græna „✅ Búið <ár> — skýrsla og reikningur frágengin ·
+    // 🔒 smelltu til að opna" borðann yfir REIKNINGUR-hlutann. Lykkjan hér sló á
+    // ~176 ms fresti, svo teljarinn hans núllaðist alltaf og apply() keyrði
+    // ALDREI. Mælt á Miklatorg hf (ár 2026 frágengið): ._vyl-overlay og
+    // ._vyl-banner vantaði alveg úr DOM-inu fyrir, birtast eftir. Læsingin sem
+    // á að hindra að tvírukkað sé fyrir sömu úttekt var þögul allan tímann.
+    if (head.__afslHtml === html) return;
+    head.__afslHtml = html;
+    head.innerHTML = html;
   }
 
   // ── Byggja/viðhalda kassanum ──────────────────────────────────────────────
