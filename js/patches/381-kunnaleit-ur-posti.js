@@ -111,12 +111,23 @@
 
   // Bein merki í EINUM pósti — sömu þrjú og 240 notar, endurtekin hér svo
   // þráðar-reglan geti spurt um systkini án þess að kalla aftur í 240.
+  // 19.09.2026 — VIÐ ERUM ALDREI KÚNNINN. Póstur sem svarar reikningi frá okkur
+  // ber OKKAR kennitölu, svo kennitölu-reglan paraði hann við okkur sjálf og leitaði
+  // svo að reikningum á Brunahólf. Mælt á hjalti@skeljungur.is: skilaði
+  // „Brunahólf Slökkvitæki ehf." þótt Skeljungur sé skráður með nákvæmlega hans
+  // netfang og eigi tvo reikninga. Þetta beið í hverju einasta svari við reikningi.
+  const OKKAR_KT = ['6005080400', '5204172300'];
+  const erOkkar = (c) => !!c && OKKAR_KT.indexOf(String(c.kt || c.kennitala || '').replace(/\D/g, '')) >= 0;
+
   function beint(g, m) {
     const h = hey(m);
-    const km = h.match(/\b(\d{6})-?(\d{4})\b/);
-    if (km && g.byKt[km[1] + km[2]]) return { ...g.byKt[km[1] + km[2]], hvernig: 'kennitala' };
+    // SENDANDINN Á UNDAN KENNITÖLU Í TEXTA. Netfang sendandans er sterkari
+    // vísbending en tala sem vitnað er í inni í pósti — hún getur verið okkar,
+    // bankans eða þriðja aðila sem nefndur er í þræðinum.
     const e = String(m.sender_email || '').toLowerCase().trim();
-    if (e && g.byMail[e]) return { ...g.byMail[e], hvernig: 'netfang' };
+    if (e && g.byMail[e] && !erOkkar(g.byMail[e])) return { ...g.byMail[e], hvernig: 'netfang' };
+    const km = h.match(/\b(\d{6})-?(\d{4})\b/);
+    if (km && g.byKt[km[1] + km[2]] && !erOkkar(g.byKt[km[1] + km[2]])) return { ...g.byKt[km[1] + km[2]], hvernig: 'kennitala' };
     const rm = h.match(/\br-0\d{5}\b/i);
     if (rm) {
       const s = g.bySale[rm[0].toUpperCase()];
@@ -139,11 +150,11 @@
     // NAFN — lengstu nöfnin fyrst (sjá röðun að ofan).
     const h = hey(m);
     const hit = g.nofn.find(x => h.indexOf(x.leit) >= 0);
-    if (hit) return { ...hit.rec, hvernig: 'nafn' };
+    if (hit && !erOkkar(hit.rec)) return { ...hit.rec, hvernig: 'nafn' };
 
     // LÉN — aðeins einkvæmt.
     const d = String(m.sender_email || '').toLowerCase().split('@')[1];
-    if (d && g.byDom[d]) return { ...g.byDom[d], hvernig: 'lén' };
+    if (d && g.byDom[d] && !erOkkar(g.byDom[d])) return { ...g.byDom[d], hvernig: 'lén' };
 
     // ÞRÁÐUR — erfa auðkenni úr systkini í sama þræði.
     if (Array.isArray(allir) && allir.length) {
