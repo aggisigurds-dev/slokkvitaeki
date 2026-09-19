@@ -140,6 +140,9 @@
       // Drop content-less rows: browser-extension partial scrapes capture only a
       // sender (no subject / body / snippet) → useless „(ekkert efni)" cards. The
       // real content-bearing copy (Thunderbird bridge / cloud) stays.
+      // Þráðarleit KunnaLeit þarf systkinin; hrái listinn er settur hér áður en
+      // classify keyrir, því state.emails verður ekki til fyrr en eftir á.
+      state._hrafyrir = em.data || [];
       state.emails = (em.data || []).map(classify)
         .filter(m => (m.subject && m.subject.trim()) || (m.body_preview && m.body_preview.trim()) || (m.snippet && m.snippet.trim()));
       state.loaded = true; state.err = null;
@@ -177,6 +180,16 @@
           matchBy = 'reikningur';
         }
       }
+    }
+
+    // 19.09.2026 — KúnnaLeit (381) sem FALLBAKKI þegar reglurnar þrjár hér að
+    // ofan bregðast. Mælt á 17 raunverulegum beiðnum: 5 -> 13 af 17. Nýju
+    // leiðirnar eru nafn í texta, einkvæmt sendandalén og erfð úr þræði.
+    // `state.emails` er ekki til fyrr en classify hefur keyrt á allt, svo
+    // þráðarleitin fær `state._hrafyrir` — hráa listann sem verið er að flokka.
+    if (!cust && window.KunnaLeit && KunnaLeit.hladid()) {
+      const k = KunnaLeit.finna(m, state._hrafyrir);
+      if (k) { cust = { name: k.nafn, kt: k.kt, coId: k.coId }; matchBy = k.hvernig; }
     }
 
     const category = isPayday ? 'sent' : 'inbox';
