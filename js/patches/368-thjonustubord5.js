@@ -3251,6 +3251,11 @@
     return {
       sender_name: m.sender_name, from: m.sender_email, subject: m.subject,
       body_preview: m.body_preview, snippet: m.snippet, message_id: m.message_id,
+      // 19.09.2026 — HÓLFIÐ VERÐUR AÐ FYLGJA MEÐ. 240 svarar úr því hólfi sem tók
+      // við póstinum, en las `m.account` sem var aldrei afritað hingað. Sendingin
+      // féll því í reikningar@eldklar.is (ótengt hólf) og þaðan í sjálfgefna
+      // hólfið — sem er nákvæmlega ranga netfangið sem Agnar kvartaði yfir.
+      account: m.account, received_at: m.received_at,
       cust: m.kunni ? { name: m.kunni.nafn, kt: m.kunni.kt, coId: m.kunni.coId } : null,
       sale: null,
     };
