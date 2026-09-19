@@ -46,7 +46,8 @@
     }
     if(MAN[key]){
       var l=document.querySelector('link[rel="manifest"]');
-      if(l) l.setAttribute('href',MAN[key]+'?v=sep12');
+      // 19.09.2026: fallið leggur tákn/liti úr „🎨 Tákn · litur · síður" ofan á kyrrstæða manifestið (sama id/scope).
+      if(l) l.setAttribute('href','/api/app-manifest?key='+key);
       var tc=document.querySelector('meta[name="theme-color"]');
       if(tc&&key==='bilstjori') tc.setAttribute('content','#0a0b0d');
       var TITLES={fjarmal:'Fjármál',verkefni:'Þjónustuborð',bilstjori:'Bílstjóri',brunaholf:'Brunahólf',brunakerfi:'Brunakerfi',boss:'The Big Boss'};
@@ -1069,7 +1070,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/216-theme-sidebar-dashboard.js?v=20260617a"></script>
 <script defer src="/js/patches/217-theme-arsskodun-tidy.js?v=20260817off"></script>
 <script defer src="/js/patches/218-url-routing.js?v=20260912leid"></script>
-<script defer src="/js/patches/219-bilstjori.js?v=20260914pg"></script>
+<script defer src="/js/patches/219-bilstjori.js?v=20260919a"></script>
 <script defer src="/js/patches/220-theme-system.js?v=20260817frozen"></script>
 <script defer src="/js/patches/221-kerfi-registry.js?v=20260618a"></script>
 <script defer src="/js/patches/222-grunsamlegt-flag.js?v=20260817rodun"></script>
@@ -1101,7 +1102,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/254-receipt-sender.js?v=20260731felag"></script>
 <script defer src="/js/patches/255-auto-discount.js?v=20260909vordur"></script>
 <!-- hibernated 2026-07-09 (rangur dökkur titil-bar úr #260, ekki í comps): 260-global-titlebar.js -->
-<script defer src="/js/patches/261-app-profiles.js?v=20260919a"></script>
+<script defer src="/js/patches/261-app-profiles.js?v=20260919b"></script>
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
 <script defer src="/js/patches/262-page-editor.js?v=20260830pal3"></script>
 <script defer src="/js/patches/319-column-drag.js?v=20260826d"></script>

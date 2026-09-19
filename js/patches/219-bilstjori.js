@@ -68,7 +68,9 @@
     try {
       let link = document.querySelector('link[rel="manifest"]');
       if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
-      link.setAttribute('href', '/manifest-bilstjori.json?v=1');
+      // 19.09.2026: sama slóð og <head>-veljarinn og 261 nota — fallið skilar manifest-bilstjori.json með tákni/lit
+      // úr „🎨 Tákn · litur" ofan á (sama id/scope). Áður setti þessi lína kyrrstæðu skrána aftur og yfirskriftin hvarf.
+      link.setAttribute('href', '/api/app-manifest?key=bilstjori');
       // Same open viewport as Brunahólf Fjármála-yfirlit / hub pages.
       // maximum-scale=1 + user-scalable=no froze Android pinch on the driver
       // PWA; layout fill is CSS (max-width:100%), not a scale lock.

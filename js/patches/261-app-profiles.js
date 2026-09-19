@@ -32,7 +32,8 @@
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
     { k: 'bord',             label: 'Þjónustuborð',          short: 'Borð',       emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
     { k: 'verkbord',         label: 'Verkefnalisti',         short: 'Verkefni',   emoji: '📋' },
-    { k: 'thjonustubord',    label: 'Gamla þjónustuborðið (mobíl)', short: 'Gamla þj.', emoji: '🔧' },
+    // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) tekið úr listanum — það teiknar ekkert lengur og var
+    // því hak sem gaf auðan skjá. pagesFor() vísar eldri vistunum á 'bord'.
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
     { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
     { k: 'thjonustu-verkstaedi', label: 'ÞjónustuVerkstæði', short: 'Verkstæði', emoji: '🔧' },
@@ -266,7 +267,7 @@
     var emoji = String(opts.emoji || '📱').trim().slice(0, 4) || '📱';
     var blurb = String(opts.blurb || 'Útlitsútgáfa frá Stilla útlit').trim().slice(0, 120)
       || 'Útlitsútgáfa frá Stilla útlit';
-    var defaults = pageKey ? [pageKey] : ['thjonustubord'];
+    var defaults = pageKey ? [pageKey] : ['bord'];
     var list = loadCustoms();
     var app = null;
     var updated = false;
@@ -369,7 +370,9 @@
         emoji: (emojiEl.value || '📱').trim().slice(0, 4) || '📱',
         ikon: validIkon,
         blurb: 'Notenda-búið app — hakaðu við síðurnar að neðan',
-        pageKey: 'thjonustubord'
+        // 19.09.2026: var 'thjonustubord' (gamla mobíl-borðið, 306) — sú síða teiknar ekkert lengur, svo hvert
+        // nýtt app opnaðist á AUÐUM skjá (mælt: „Brunahólf og slökkvitæki" → engin virk síða). Nýja borðið er 'bord'.
+        pageKey: 'bord'
       });
       close();
       if (r && r.ok) {
@@ -473,6 +476,10 @@
     // REGISTRY ('companies'); the intended page is the customer list. Swap on
     // read so already-saved configs pick up the fix without re-picking pages.
     arr = arr.map(function (k) { return k === 'companies' && key === 'fjarmal' ? 'vidskiptavinir' : k; });
+    // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) teiknar ekkert lengur. Flutningurinn 11.09 (__bord1)
+    // skipti því út í þá vistuðum öppum, en app sem var búið til EFTIR það (eða á `defaults`) sat eftir með dauða
+    // síðu sem heimasíðu. Skipt út við LESTUR, svo vistaðar stillingar þurfi enga handavinnu.
+    arr = arr.map(function (k) { return k === 'thjonustubord' ? 'bord' : k; });
     arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
     return arr.filter(function (k) { return pageByKey(k); });
   }
@@ -532,6 +539,9 @@
       color: ov.color || a.color, dark: ov.dark || a.dark
     };
     if (!e.manifest && a.custom) e.manifest = customManifestUrl(e);
+    // 19.09.2026: innbyggðu öppin fara líka um fallið (kyrrstætt manifest + yfirskrift Agnars) — SAMA slóð og
+    // <head>-veljarinn setur, svo hlekkurinn breytist ekki eftir ræsingu. Tónlist (/spotify/) er utan þessa.
+    if (!a.custom && ['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss'].indexOf(a.key) !== -1) e.manifest = customManifestUrl(e);
     return e;
   }
   function versionLine() {

@@ -22,6 +22,14 @@ export default async (req) => {
   const key = String(q.get('key') || '').toLowerCase();
   if (!/^[a-z]{1,24}$/.test(key)) return j(400, { error: 'key' });
 
+  // 19.09.2026 (Agnar: „finn ekki lengur option að breyta tákni á eldri öppunum, og opnunarlit"): INNBYGGÐU öppin
+  // (fjarmal, verkefni, brunaholf, brunakerfi, bilstjori, boss) áttu kyrrstæð manifest-*.json, svo tákn og litir
+  // sem Agnar valdi í „🎨 Tákn · litur · síður" náðu ALDREI á heimaskjáinn né opnunarskjáinn (Fjármál var stillt á
+  // #0000ff í grunninum en manifestið sagði áfram #0e7a4f). Nú er kyrrstæða manifestið GRUNNUR og yfirskriftin
+  // (app_profiles_overrides_json) lögð ofan á. id/start_url/scope eru ÓBREYTT — sama uppsetta appið uppfærist.
+  // Náist yfirskriftin ekki er kyrrstæða manifestinu skilað óbreyttu (aldrei verra en áður).
+  if (BUILTIN.has(key)) return builtin(req, key);
+
   let app = null;
   try { app = await fromDb(key); } catch (_) { app = null; }
 
@@ -56,6 +64,50 @@ export default async (req) => {
   });
 };
 
+const BUILTIN = new Set(['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss']);
+async function builtin(req, key) {
+  let base = null;
+  try { const r = await fetch(new URL('/manifest-' + key + '.json', req.url)); if (r.ok) base = await r.json(); } catch (_) { base = null; }
+  if (!base) return j(502, { error: 'grunn-manifest náðist ekki' });
+  let o = {};
+  try { o = (await overrides())[key] || {}; } catch (_) { o = {}; }
+  const m = Object.assign({}, base);
+  const name = clean(o.name, 45);
+  if (name) { m.name = name; m.short_name = name.split(' · ')[0].slice(0, 12); }
+  if (clean(o.blurb, 120)) m.description = clean(o.blurb, 120);
+  if (hex(o.color)) m.theme_color = hex(o.color);
+  if (hex(o.dark)) m.background_color = hex(o.dark);
+  const ik = ikonSett(o.ikon);
+  if (ik) m.icons = ik;
+  const breytt = ['name', 'blurb', 'color', 'dark', 'ikon'].some((k) => o[k]);
+  return new Response(JSON.stringify(m, null, 2), {
+    status: 200,
+    headers: { 'content-type': 'application/manifest+json; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-app-source': breytt ? 'builtin+db' : 'builtin' },
+  });
+}
+async function overrides() {
+  const URL_ = process.env.SUPABASE_URL, KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!URL_ || !KEY) return {};
+  const r = await fetch(URL_ + '/rest/v1/app_settings?id=eq.1&select=settings', { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } });
+  if (!r.ok) return {};
+  const rows = await r.json();
+  const st = (Array.isArray(rows) && rows[0] && rows[0].settings) || {};
+  return parseJson(st.app_profiles_overrides_json, {}) || {};
+}
+// Tákn úr safninu: PNG 192/512 (any + maskable) úr img/app-tokn/png/ (tools/app-tokn-png.cjs) + SVG. Android (WebAPK)
+// þarf PNG; með SVG einu („sizes: any") fékk heimaskjárinn í besta falli almennt tákn.
+function ikonSett(f) {
+  if (!(typeof f === 'string' && /^[0-9]{2}-[a-z0-9-]{1,40}\.svg$/.test(f))) return null;
+  const b = '/img/app-tokn/png/' + f.slice(0, -4);
+  return [
+    { src: b + '-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: b + '-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: b + '-192-maskable.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+    { src: b + '-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    { src: '/img/app-tokn/' + f, sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+  ];
+}
+
 // app_settings (id=1).settings: custom_apps_json = '[{key,name,emoji,color,dark,blurb,defaults}]',
 // app_profiles_overrides_json = '{key:{name,emoji,color,dark,blurb}}' — 261 CUSTOM_KEY / OV_KEY.
 async function fromDb(key) {
@@ -80,14 +132,8 @@ async function fromDb(key) {
 // Skráarheitið er sannreynt hér (aðeins NN-nafn.svg) svo fyrirspurn geti ekki
 // vísað út fyrir möppuna.
 function ikonar(app) {
-  const f = app && typeof app.ikon === 'string' ? app.ikon : null;
-  if (f && /^[0-9]{2}-[a-z0-9-]{1,40}\.svg$/.test(f)) {
-    const src = "/img/app-tokn/" + f;
-    return [
-      { src, sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-      { src, sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
-    ];
-  }
+  const sett = ikonSett(app && app.ikon);
+  if (sett) return sett;
   return [
     { src: '/img/icon-192.png?v=flame1', sizes: '192x192', type: 'image/png', purpose: 'any' },
     { src: '/img/icon-512.png?v=flame1', sizes: '512x512', type: 'image/png', purpose: 'any' },
