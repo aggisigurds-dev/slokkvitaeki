@@ -35,8 +35,8 @@ export default async (req) => {
 
   const name = clean(q.get('name'), 45) || (app && clean(app.name, 45)) || key;
   const blurb = clean(q.get('blurb'), 120) || (app && clean(app.blurb, 120)) || ('Notenda-búið app — ' + name);
-  const color = hex(q.get('color')) || (app && hex(app.color)) || '#334155';
-  const dark = hex(q.get('dark')) || (app && hex(app.dark)) || '#0f172a';
+  const color = hex(q.get('color')) || (app && hex(app.color) !== '#334155' && hex(app.color)) || '#0b0b0d';
+  const dark = hex(q.get('dark')) || (app && hex(app.dark) !== '#0f172a' && hex(app.dark)) || '#000000';
   const short = clean(q.get('short'), 12) || name.split(' · ')[0].slice(0, 12);
   const path = '/app/' + key + '/';
 

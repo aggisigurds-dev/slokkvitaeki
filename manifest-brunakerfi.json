@@ -7,8 +7,8 @@
   "scope": "/app/brunakerfi/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#101216",
-  "theme_color": "#7f1d1d",
+  "background_color": "#000000",
+  "theme_color": "#0b0b0d",
   "lang": "is",
   "icons": [
     {

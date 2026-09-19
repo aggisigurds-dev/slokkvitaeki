@@ -104,25 +104,25 @@
 
   // ── the apps (phase 1: Fjármál only) ────────────────────────────────────────
   var APPS = [
-    { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
+    { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-fjarmal.json', home: 'krofu-yfirlit',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
       defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'thjonustu-verkstaedi', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-efniskostnadur', 'br-vinnubok', 'br-krofur'] },
     // Agnar 12.09.2026: „setja þjónustuborð síðuna á skjáinn í símanum" — appið
     // opnast hvort eð er á #bord, svo það heitir nú Þjónustuborð (lykill, id og
     // slóð /app/verkefni/ óbreytt, svo uppsett eintök haldast sama appið).
-    { key: 'verkefni', emoji: '📋', name: 'Þjónustuborð', color: '#3b82f6', dark: '#1d4ed8',
+    { key: 'verkefni', emoji: '📋', name: 'Þjónustuborð', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-verkefni.json', home: 'bord',
       blurb: 'Þjónustuborð — Master borð, mitt borð og eftirfylgni',
       defaults: ['bord', 'verkbord', 'arsskodun', 'reikninga-postur'] },
-    { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#6d28d9', dark: '#4c1d95',
+    { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
       defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-skyrslustod', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting', 'turbopaint'] },
     // Brunakerfi-appið fyrir skoðunarmenn á staðnum (ósk Agnars 2026-07-21):
     // yfirlitið er heimasíðan; fyrirtækjasíðan (274) og skýrslu-formið (273)
     // opnast þaðan sem yfirlög — allt innan sömu læstu skeljar.
-    { key: 'brunakerfi', emoji: '🚨', name: 'Brunakerfi', color: '#b91c1c', dark: '#7f1d1d',
+    { key: 'brunakerfi', emoji: '🚨', name: 'Brunakerfi', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-brunakerfi.json', home: 'brunayfirlit',
       blurb: 'Skoðunarmanna-app: fyrirtækin, skoðunarskýrslur og verð — skráð á staðnum',
       defaults: ['brunayfirlit', 'sala', 'turbopaint'] },
@@ -184,8 +184,8 @@
       // 2026-09-08: `ikon` VARÐ AÐ FYLGJA MEÐ hér. Án þess týndist valda táknið
       // milli custom-listans og APPS — spjaldið féll aftur á emoji og valið leit út
       // fyrir að hafa ekki vistast (mælt í viðmótinu).
-      var a = { key: c.key, emoji: c.emoji || '📱', ikon: c.ikon || null, name: c.name || c.key, color: c.color || '#334155',
-        dark: c.dark || '#0f172a', home: '', blurb: c.blurb || 'Notenda-búið app', custom: true,
+      var a = { key: c.key, emoji: c.emoji || '📱', ikon: c.ikon || null, name: c.name || c.key, color: (c.color && c.color !== '#334155') ? c.color : '#0b0b0d',
+        dark: (c.dark && c.dark !== '#0f172a') ? c.dark : '#000000', home: '', blurb: c.blurb || 'Notenda-búið app', custom: true,
         defaults: Array.isArray(c.defaults) ? c.defaults : [] };
       APPS.push(a); APP_BY_KEY[a.key] = a;
       changed = true;
@@ -294,7 +294,7 @@
     } else {
       app = {
         key: customKeyFor(name), name: name, emoji: emoji, ikon: opts.ikon || null,
-        color: opts.color || '#334155', dark: opts.dark || '#0f172a',
+        color: opts.color || '#0b0b0d', dark: opts.dark || '#000000',
         blurb: blurb, defaults: defaults
       };
       list.push(app);
@@ -1243,6 +1243,9 @@
     setHubViewport();
     document.body.classList.add('appmode');
     document.body.setAttribute('data-app', a.key);
+    // 19.09.2026 (Agnar: „bláa sé svart og þetta appelsínugula uppi líka svart"): stöðustika símans tók litinn úr
+    // <meta theme-color> aðalsíðunnar (#C93C1D, eldrautt) í ÖLLUM öppum. Nú fylgir hún haus appsins.
+    try { var _tc = document.querySelector('meta[name="theme-color"]'); if (_tc) _tc.setAttribute('content', a.key === 'boss' ? '#0a0a0b' : (a.color || '#0b0b0d')); } catch (_) {}
     var pages = pagesFor(a.key); if (!pages.length) pages = a.defaults.slice();
     // App-mode á að opnast á SÍNU auðkennis-síðu (home), ekki hvað sem raðast
     // fremst í valdar síður. „Síður í appinu"-hökin vistast í PAGES-röð, svo t.d.
@@ -1392,7 +1395,7 @@
                 '<input class="_pe-dark" type="color" value="' + esc(a.dark) + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
               '<button class="_pe-reset-look" type="button" style="font:inherit;font-size:13px;font-weight:700;padding:9px 13px;border-radius:9px;border:1px solid #d7dce4;background:#f1f5f9;color:#64748b;cursor:pointer;min-height:40px">Núllstilla</button>' +
             '</div>' +
-            '<div style="font-size:11.5px;color:#94a3b8;line-height:1.5">Þetta breytir tákninu/litnum sem birtist HÉR í appinu (spjald, haus, hleðsluskjár) — ekki sjálfri heimaskjás-táknmyndinni, sem er föst mynd og krefst nýrrar hönnunar.</div>' +
+            '<div style="font-size:11.5px;color:#94a3b8;line-height:1.5">Breytist strax í appinu (spjald, haus, stöðustika, hleðsluskjár). Táknmynd og opnunarlitur á heimaskjá símans fylgja líka — uppsett app uppfærist sjálft á 1–3 dögum, eða strax ef það er fjarlægt og sett upp aftur.</div>' +
           '</div>' +
           pagesBlock +
           '<div class="op-sech" style="margin:14px 18px 6px">Upplýsingar</div>' +

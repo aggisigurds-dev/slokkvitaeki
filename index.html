@@ -40,6 +40,7 @@
     // Notenda-búin öpp (261 saveAsApp, lykill byrjar á x): manifestið kemur úr
     // /api/app-manifest?key= — SAMSTUNDIS hér, ekki eftir ræsingu (annars sótti Chrome
     // aðal-manifestið, id "/", og fyrsta uppsetta appið „vann" — 06.09.2026).
+    if(key&&(MAN[key]||/^x[a-z]{1,23}$/.test(key))){ var tc0=document.querySelector('meta[name="theme-color"]'); if(tc0) tc0.setAttribute('content','#0b0b0d'); }
     if(!MAN[key]&&/^x[a-z]{1,23}$/.test(key)){
       var lc=document.querySelector('link[rel="manifest"]');
       if(lc) lc.setAttribute('href','/api/app-manifest?key='+key);
@@ -1103,7 +1104,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/254-receipt-sender.js?v=20260731felag"></script>
 <script defer src="/js/patches/255-auto-discount.js?v=20260909vordur"></script>
 <!-- hibernated 2026-07-09 (rangur dökkur titil-bar úr #260, ekki í comps): 260-global-titlebar.js -->
-<script defer src="/js/patches/261-app-profiles.js?v=20260919c"></script>
+<script defer src="/js/patches/261-app-profiles.js?v=20260919d"></script>
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
 <script defer src="/js/patches/262-page-editor.js?v=20260830pal3"></script>
 <script defer src="/js/patches/319-column-drag.js?v=20260826d"></script>

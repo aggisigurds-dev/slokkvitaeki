@@ -7,8 +7,8 @@
   "scope": "/app/brunaholf/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#4c1d95",
-  "theme_color": "#6d28d9",
+  "background_color": "#000000",
+  "theme_color": "#0b0b0d",
   "lang": "is",
   "icons": [
     {
