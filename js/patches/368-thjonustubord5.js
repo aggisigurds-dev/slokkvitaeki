@@ -132,6 +132,10 @@
  *   annarra, leit, einingar); síur Öll opin / borð starfsmanns / fyrirtæki / Líklega búin; „Bara mitt
  *   borð"; fyrirtækið alltaf smellanlegt (#company/<id>, Ctrl-smellur = nýr flipi); leit í haus.
  *
+ * 19.09.2026: hamurinn „<nafn> · mitt vinnuborð" (MITT_HAM) er persónulegt borð án Master og mála — einingar per
+ *   starfsmann í by_staff.<nafn>.mitt = { first, breidd }. Sérsniðinn hamur með `eigandi` sést aðeins hjá honum.
+ *   Krassblaðið (eining 23, ræma, kassi á Skipulagsborði) var fjarlægt; gögnin í skipulagsbord…krass standa óhreyfð.
+ *
  * LESIÐ OG VISTAÐ ANNARS STAÐAR (engin ný tafla):
  *   Vinnuborð hvers og eins  AppSettings thjonustubord5.by_staff.<nafn> = { mode, mods, links }
  *                            mode/mods sem smá-plástrar; links byggt á NÝJASTA lista við vistun
@@ -197,9 +201,6 @@
     gleymt:    { n: '19', t: 'Gleymst að rukka?', d: 'Úttekt án reiknings, greitt síðar sem bíður, kort og reiðufé ekki merkt greitt.' },
     bakfaersla: { n: '20', t: 'Bakfærslur og breytingar', d: 'Beiðnir um bakfærslu eða breyttan reikning — mál, póstar og kreditreikningar.' },
     afgreidsla: { n: '21', t: 'Staðan í afgreiðslu', d: 'Kassinn: sala dagsins og vikunnar, opin drög og ógreitt.' },
-    // 18.09.2026: Krassblaðið er líka eining, svo hægt sé að setja það þangað sem
-    // það nýtist — í fullri breidd í miðjunni frekar en í mjórri rein.
-    krass:     { n: '23', t: 'Krassblað', d: 'Frjáls texti sem fylgir þér á milli tölva. Sama blað og á Skipulagsborðinu.' },
     // 19.09.2026 (Agnar: „Væri fínt að þetta bara í sér ham á þjónustuborðið"):
     // póstar sem biðja um reikninginn okkar, með kúnnanum fundnum og sendingu
     // á staðnum. Kallar í 240 fyrir sendinguna — hún er ekki afrituð.
@@ -211,7 +212,13 @@
   // sérsniðnir hamir) · rymi = vinnusvæði í fullri breidd · annars einingahamur: einingarnar í `first` og ekkert annað.
   // Röð lyklanna er röð hnappanna. flokkar/merki/tegundir lifa fyrir hamaflögur sérsniðinna hama.
   const SAMT_HAM = 'samthykkja';
+  const MITT_HAM = 'mitt';
   const MODES = {
+    // 19.09.2026 (Agnar: „allt overcrowded hjá öllum því master borðið er inni allstaðar, enginn getur
+    // skipulagt sitt dót. maður á að geta valið Agnar mitt vinnuborð sem er bara hálf tómt"): persónulegt
+    // vinnuborð — einingahamur ÁN Master og mála, með einingum sem hver og einn velur sér. Einingarnar
+    // lifa per starfsmann (by_staff.<nafn>.mitt), sjá M(). Málin eru í „Master og mitt borð".
+    mitt:      { l: 'Mitt vinnuborð', board: false, mitt: true, first: [], filter: 'allt', flokkar: [], merki: [] },
     samthykkja: { l: 'Samþykkja', board: false, rymi: SAMT_HAM, first: [], filter: 'allt', flokkar: [], merki: [] },
     thjonusta: { l: 'Master og mitt borð', board: true, first: [], filter: 'allt', flokkar: [], merki: [] },
     samskipti: { l: 'Samskipti', board: false, first: ['postsvor'], filter: 'allt', flokkar: ['samskipti'], merki: ['senda_tolvupost', 'hringja'] },
@@ -222,10 +229,10 @@
     akstur:    { l: 'Akstur og skipulag', board: false, first: ['dagskra', 'akstur', 'brunakerfi', 'skipulag', 'forgangur', 'frestir', 'nymal', 'starfsmenn'], filter: 'allt', flokkar: ['brunakerfi'], merki: ['uppsetning', 'brunakerfi', 'arskodun'], tegundir: ['heimsokn', 'skodun_tilbod'] }
   };
   // Einingar sem taka alla breidd einingahamsins (vika, tafla, langar línur).
-  // 18.09.2026: skipulag og krass bættust við — bæði eru skrifflötur og hvorugt
-  // nýtist í hálfri breidd (spjöldin kremjast, línan verður of mjó). BREIDAR er nú
+  // 18.09.2026: skipulag bættist við — skrifflötur sem nýtist ekki í hálfri breidd
+  // (spjöldin kremjast). BREIDAR er nú
   // aðeins SJÁLFGEFIÐ gildi: notandinn ræður breiddinni sjálfur í „Breyta ham".
-  const BREIDAR = ['dagskra', 'krofumal', 'akstur', 'starfsmenn', 'skipulag', 'krass', 'postbeidnir'];
+  const BREIDAR = ['dagskra', 'krofumal', 'akstur', 'starfsmenn', 'skipulag', 'postbeidnir'];
   // Breidd einingar: 1 = þriðjungur · 2 = hálft · 3 = fullt. Sjá .modcell[data-sp].
   const sjalfgefinBreidd = k => (BREIDAR.indexOf(k) >= 0 ? 3 : 1);
   function breiddAf(mode, k) {
@@ -239,17 +246,29 @@
   const HAM_MERKI = 'ham:';
   const SAMTHYKKI = 'samthykki';       // bíður samþykkis/staðfestingar eigandans → á borði hans í öllum hömum (368u)
   const serHamir = () => { const l = P(CFG_KEY + '.hamir'); return Array.isArray(l) ? l.filter(h => h && h.id && h.l && !MODES[h.id]) : []; };
+  // Einingar persónulega vinnuborðsins — sjálfgefið lítið: vikan og spjöldin manns.
+  const MITT_SJALFGEFID = ['dagskra', 'skipulag'];
+  function mittHamur() {
+    const n = nu(), v = P(CFG_KEY + '.by_staff.' + n + '.mitt');
+    const first = (v && Array.isArray(v.first) ? v.first : MITT_SJALFGEFID).filter(k => MODS[k]);
+    return Object.assign({}, MODES.mitt, { l: n + ' · mitt vinnuborð', first,
+      breidd: (v && v.breidd && typeof v.breidd === 'object') ? v.breidd : {} });
+  }
   function M(id) {
+    if (id === MITT_HAM) return mittHamur();
     if (MODES[id]) return MODES[id];
     const h = serHamir().find(x => x.id === id);
     // board vantar á hömum sem voru til fyrir 17.09.2026 -> true, so þeir haldast óbreyttir.
     // 18.09.2026: `breidd` kemur með. Hún datt áður á gólfið hér — útlitið vistaðist
     // en birtist aldrei, því lesturinn byggði haminn upp án hennar.
     return h ? { l: String(h.l), board: h.board !== false, filter: 'allt', ser: true, first: (Array.isArray(h.first) ? h.first : []).filter(k => MODS[k]),
-      breidd: (h.breidd && typeof h.breidd === 'object') ? h.breidd : {},
+      breidd: (h.breidd && typeof h.breidd === 'object') ? h.breidd : {}, eigandi: h.eigandi ? String(h.eigandi) : '',
       flokkar: Array.isArray(h.flokkar) ? h.flokkar : [], merki: Array.isArray(h.merki) ? h.merki : [] } : null;
   }
-  const hamaListi = () => Object.keys(MODES).concat(serHamir().map(h => h.id));
+  // 19.09.2026: hamur með `eigandi` sést aðeins í hamaröð þess starfsmanns — hinir fá ekki röðina sína
+  // fulla af hömum annarra. M(id) þekkir haminn áfram, svo mál tengd honum týnast ekki.
+  const hamSest = h => !h.eigandi || lagt(h.eigandi) === lagt(nu());
+  const hamaListi = () => Object.keys(MODES).concat(serHamir().filter(hamSest).map(h => h.id));
   // 368aa: talan á hamahnappnum er það sem bíður í hamnum — ekki fjöldi mála í flokki (sem var næstum sá sami alls staðar).
   function hamTala(k) {
     const h = M(k), n = nu();
@@ -278,7 +297,7 @@
     // 18.09.2026: innsláttur beint á borðinu. ntDrog = texti sem er ekki kominn í
     // gagnagrunninn (lifir af teikningu OG af misheppnaðri vistun), ntStada = það sem
     // reiturinn segir notandanum, ntOpid = opinn reitur á hvítu spjaldi.
-    ntDrog: {}, ntStada: {}, ntOpid: {}, krassOpid: true, krassStor: false,
+    ntDrog: {}, ntStada: {}, ntOpid: {},
     vbrBuin: false,    // 18.09.2026: sýna vinnublöð sem búið er að svara (sótt löt)
     hamDrag: null,     // 18.09.2026: eining sem verið er að draga til í útlitsritlinum
     dnDrog: {}, dnStada: {},   // 18.09.2026: frjáls texti á dag í Dagskránni
@@ -1014,15 +1033,6 @@
       '.ntst.villa{color:var(--terra);letter-spacing:0;font-family:var(--body);font-size:11.5px}',
       '.ntst.ok{color:var(--green)}.ntst.vistar,.ntst.bid{color:var(--gink)}',
       '.nt.dark .ntst{color:var(--on3)}.nt.dark .ntst.ok{color:#7fbf95}.nt.dark .ntst.villa{color:#e08b6a}',
-      // Krassblaðið efst — sama blað og á Skipulagsborðinu.
-      '.krassbordi{margin:0 0 12px}.krassbordi .krassbox{border:0;border-radius:0;box-shadow:none;background:none;padding:0 14px 12px}',
-      // 18.09.2026 (Agnar: „troðið niðri út í enda"): reiturinn var 942×75 px —
-      // 140 stafir á línu. Blað skal vera blað: full hæð til að skrifa í, og
-      // línulengd sem augað ræður við. ⤢ gefur fulla hæð þegar mikið liggur við.
-      '.krassbordi .krass textarea,.mod .krassbox .krass textarea{min-height:190px;max-width:86ch;font:14px/1.7 var(--body)}',
-      '.krassbox.stor .krass textarea{min-height:60vh}',
-      '.mod .krassbox{padding:12px 14px 14px}',
-      '.krassbordi .krass textarea{min-height:56px}',
       '.mfoot{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px}',
       '.sel{background:var(--slab);border:1px solid #000;border-top:3px solid transparent;border-image:var(--gline) 1;border-image-width:3px 0 0 0;border-radius:5px;color:var(--on);box-shadow:var(--slabsh);padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}',
       '.sel.inline{margin:0 10px 12px}',
@@ -1104,8 +1114,7 @@
       '.composer textarea{grid-column:1 / 3;min-height:34px;padding:7px 10px;border:1px solid var(--edge);border-radius:4px;background:#fff;font:13px var(--body);color:var(--ink);resize:vertical}',
       '.nychk{display:flex;align-items:center;gap:6px;font-size:13px}.nybtn{display:flex;gap:8px;grid-column:1 / -1;justify-content:flex-end}',
       '.t5toast .undo{margin-left:12px;height:26px;padding:0 10px;border:1px solid #5a4410;border-radius:4px;background:var(--gside);color:#1b1405;font:700 12px var(--body);cursor:pointer}',
-      '.skwrap{display:flex;flex-direction:column;gap:12px;padding:12px 14px}.krass{display:flex;flex-direction:column;gap:4px}',
-      '.krass textarea{width:100%;min-height:70px;padding:10px 12px;border:1px solid var(--edge);border-radius:4px;background:#fffdf7;box-shadow:var(--wellsh);font:13.5px/1.55 var(--body);color:var(--ink);resize:vertical}',
+      '.skwrap{display:flex;flex-direction:column;gap:12px;padding:12px 14px}',
       // 18.09.2026 (Agnar: „kannski 5 spjöld á breiddina og 2-3 spjöld niður").
       // `minmax(210px,1fr)` gaf EINN dálk í 300 px reininni. Ristin stefnir nú á
       // fimm dálka þegar breiddin leyfir og fellur sjálf niður í færri á mjórra.
@@ -1126,8 +1135,6 @@
       '.sknew{min-height:96px;border:1px dashed var(--edge2);border-radius:4px;background:transparent;font:600 13px var(--body);color:var(--mute);cursor:pointer}.sknew:hover{background:#fffdf7;color:var(--ink)}',
       // 17.09.2026 (Agnar: „svolítið chaoslegt"): færri hnappar, meiri andrými,
       // sterkari texti — og leiðbeinandi stafirnir næstum ósýnilegir.
-      '.krassbox{border:1px solid var(--rule);border-radius:4px;background:#fffdf7;box-shadow:var(--wellsh);padding:10px 12px}',
-      '.krassbox .krass textarea{border:0;background:transparent;box-shadow:none;padding:6px 2px;min-height:64px}',
       '.skskil{display:flex;align-items:center;gap:10px;margin-top:2px;font:600 11px/1 var(--body);letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}',
       '.skskil:after{content:"";flex:1;height:1px;background:var(--rule)}',
       '.skc{gap:2px;padding:0 0 10px;border-top:1px solid var(--rule);overflow:hidden}',
@@ -1139,7 +1146,7 @@
       '.skn{padding:2px 10px;font:700 14.5px var(--body);color:var(--ink)}',
       '.skt{padding:2px 10px 0;font:13px/1.5 var(--body);color:var(--ink)}',
       '.skc .skm,.skc .skf{margin:0 10px}',
-      '.skn::placeholder,.skt::placeholder,.krass textarea::placeholder{color:var(--mute);opacity:.14}',
+      '.skn::placeholder,.skt::placeholder{color:var(--mute);opacity:.14}',
       '.skgrid.yfir{outline:2px dashed var(--g6);outline-offset:4px;border-radius:6px}',
       '.sknew{cursor:grab}.sknew:active{cursor:grabbing}',
       '.saga{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
@@ -1290,7 +1297,7 @@
     r.addEventListener('focusout', e => {
       const el = e.target;
       if (!el || !el.dataset) return;
-      if (el.dataset.sk) skola(el.dataset.sk === 'krass' ? '__krass' : el.dataset.skid);
+      if (el.dataset.sk) skola(el.dataset.skid);
       else if (el.dataset.nt) skola('nt:' + el.dataset.id);   // farið úr reitnum = vistað strax
       else if (el.dataset.dn) skola('dn:' + el.dataset.dn);
     });
@@ -1615,43 +1622,9 @@
     }
     ntStimpla(id);
   }
-  // Krassblað efst á borðinu (Agnar: „I want the krassblað in there, I use that the
-  // most"). Þetta er SAMA blaðið og á Skipulagsborðinu — sami reitur í app_settings
-  // (skipulagsbord.by_staff.<nafn>.krass) og sama vistun. Ekki nýtt blað til að muna
-  // eftir, heldur sama blaðið á þeim stað sem er alltaf opinn.
-  // Reiturinn sjálfur — sami á báðum stöðum (efst á borðinu og sem eining).
-  function krassReitur(n) {
-    const t = S.skDrog.__krass != null ? S.skDrog.__krass : String(P('skipulagsbord.by_staff.' + n + '.krass') || '');
-    return '<div class="krassbox' + (S.krassStor ? ' stor' : '') + '"><label class="krass"><textarea data-sk="krass" rows="' +
-      Math.min(24, Math.max(7, t.split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er — vistast sjálfkrafa og fylgir þér á milli tölva.">' +
-      esc(t) + '</textarea></label></div>';
-  }
-  const krassLinur = n => {
-    const t = S.skDrog.__krass != null ? S.skDrog.__krass : String(P('skipulagsbord.by_staff.' + n + '.krass') || '');
-    const fj = t.trim() ? t.split('\n').filter(x => x.trim()).length : 0;
-    return fj ? fj + (fj === 1 ? ' lína' : ' línur') : 'tómt';
-  };
-  const krassStaekka = '<button type="button" class="btn iv sm tog" data-t5="krass-staerd" title="Stækka blaðið í fulla hæð">⤢</button>';
-  // Krassblaðið sem EINING — fær fulla breidd í miðjunni (sjá BREIDAR).
-  function krassEiningHtml(n) {
-    return modPanel('krass', krassLinur(n), krassReitur(n), krassStaekka, true);
-  }
-  function krassHtml(n) {
-    const opid = S.krassOpid !== false;
-    // Er Krassblaðið þegar eining í þessum ham? Þá stendur það þar og ræman efst
-    // væri sama blaðið tvisvar á sama skjá.
-    const m = M(cfg().mode);
-    if (m && Array.isArray(m.first) && m.first.indexOf('krass') >= 0) return '';
-    return '<section class="panel krassbordi" aria-label="Krassblað">' +
-      '<header class="phead">' + plate('✎') + '<h2 class="ptitle">Krassblað</h2>' +
-        '<span class="sum">' + krassLinur(n) + '</span>' +
-        '<span class="grow"></span><span class="skstada">' + esc(S.skStada || '') + '</span>' +
-        (opid ? krassStaekka : '') +
-        '<button type="button" class="btn iv sm tog" data-t5="krass-fella" aria-expanded="' + opid +
-          '" title="' + (opid ? 'Fella saman' : 'Opna') + ' Krassblaðið">' + (opid ? '⌃' : '⌄') + '</button></header>' +
-      (opid ? krassReitur(n) : '') +
-    '</section>';
-  }
+  // 19.09.2026 (Agnar: „henda burtu þessum krass blað feature"): Krassblaðið er farið af
+  // borðinu — ræman, einingin (23) og kassinn á Skipulagsborðinu. Textinn sem var skrifaður
+  // stendur óhreyfður í skipulagsbord.by_staff.<nafn>.krass; hér er hann hvorki lesinn né skrifaður.
   function selHtml(r, opt) {
     opt = opt || {};                  // { rymi: true } = í Samþykkja: öll lýsingin, enginn ✕
     if (!r) return emptyHtml('Smelltu á hvaða mál sem er til að skoða það — eða taktu næsta af Master.<button type="button" class="btn gold" data-t5="take-next">Taka næsta af Master ›</button>');
@@ -3237,7 +3210,6 @@
       // Agnar 11.09.2026: „algjörlega læst og tilgangslaust" · „opna á allt og customizable, geta eytt hlutum
       // og skrifað þar sem maður vill skrifa". Sömu gögn og 305: skipulagsbord.by_staff.<nafn> = { cards, krass }.
       const cards = spjold(n);
-      const krass = S.skDrog.__krass != null ? S.skDrog.__krass : String(P('skipulagsbord.by_staff.' + n + '.krass') || '');
       const kort = cards.map((cd, i) => {
         const d = S.skDrog[cd.id] || {}, id = esc(cd.id);
         const nafn = d.name != null ? d.name : (cd.name || ''), texti = d.title != null ? d.title : (cd.title || '');
@@ -3260,14 +3232,13 @@
       }).join('');
       // 853efc10 (Agnar 27.08: „beðið um þetta ENDALAUST"): áríðandi mál efst svo þau gleymist ekki þegar vikan er
       // skipulögð. 🗓-takkinn setur málið á dagskrá eða hoppar á daginn í Dagskrá (01) sé það komið þangað.
-      const ari = S.rows.filter(r => r.important).sort(rodun);
+      // 19.09.2026: á persónulega vinnuborðinu aðeins áríðandi mál á EIGIN borði — annars fylla mál allra hinna það.
+      const ari = S.rows.filter(r => r.important && (cfg().mode !== MITT_HAM || onBoardOf(r, n))).sort(rodun);
       const ariHtml = ari.length
         ? '<div class="sect">★ Áríðandi (' + ari.length + ')</div>' + ari.slice(0, 12).map(r => lrowHtml(r, dagskrarTakki(r))).join('') +
           (ari.length > 12 ? '<div class="more">+ ' + (ari.length - 12) + ' til viðbótar</div>' : '')
         : '';
       const body = ariHtml + '<div class="skwrap">' +
-        '<div class="krassbox"><label class="krass"><span class="lbl">Krassblað</span><textarea data-sk="krass" rows="' + Math.min(14, Math.max(3, krass.split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er — vistast sjálfkrafa og fylgir þér á milli tölva.">' + esc(krass) + '</textarea></label></div>' +
-        '<div class="skskil"><span>Spjöld</span></div>' +
         '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny" draggable="true" data-skdrag="__ny" title="Smelltu — eða dragðu autt spjald þangað sem þú vilt hafa það">+ Nýtt spjald</button></div>' +
         '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot beint í spjald.') + '</div></div>';
       return modPanel(k, cards.length + ' spjöld' + (ari.length ? ' · ' + ari.length + ' áríðandi' : ''), body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
@@ -3813,7 +3784,7 @@
     // tómt"): engar einingar og engin KPI-spjöld — aðeins borðið manns sjálfs. Einingarnar eru þá heldur ekki teiknaðar,
     // svo latar gagnasóknir þeirra fara ekki af stað. 368aa: enginn hægri dálkur með „öðrum einingum" (hann var eins í
     // öllum hömum); einingar sérsniðins hams fara vinstra megin, einingar einingahams í miðjuna.
-    const einingHtml = k => (k === 'dagskra' ? dagskraHtml() : k === 'krass' ? krassEiningHtml(n) : bottomHtml(k));
+    const einingHtml = k => (k === 'dagskra' ? dagskraHtml() : bottomHtml(k));
     // 18.09.2026 — EINING Í MJÓRRI REIN VIÐ HLIÐINA Á AUÐUM SKJÁ.
     // Þegar „Bara mitt borð" er valið er Master falinn og miðjan hefur lítið að
     // sýna, en einingarnar sátu samt í 300 px reininni (sjá .layout á ≥1600px).
@@ -3898,7 +3869,8 @@
           '<section class="sel side colsel" aria-live="polite">' + selMarkup + '</section>' +
         '</div>'
       : '<div class="modgrid' + (radar ? ' radar' : '') + '">' + (selEininga ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
-          einingaRod.map(frumaHtml).join('') + '</div>';
+          einingaRod.map(frumaHtml).join('') + '</div>' +
+          (mode.mitt && !einingaRod.length ? emptyHtml('Vinnuborðið þitt er autt. Smelltu á „✎ Velja einingar" til að setja á það það sem þú vilt hafa hjá þér. Málin eru í hamnum „Master og mitt borð".') : '');
 
     const haegri = selEininga ? '<section class="sel side" aria-live="polite">' + selMarkup + '</section>' : '';
     const layout = '<div class="layout' + (topHtml ? '' : ' nol') + (haegri ? ' selh' : ' nor') + '">' +
@@ -3922,17 +3894,13 @@
           '<button type="button" class="btn iv" data-t5="cfg" aria-expanded="' + S.cfgOpen + '">⚙ Mitt vinnuborð</button>' +
           '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' +
         '</div></div>' +
-        // 18.09.2026: hér stóð Krassblaðs-ræma sem ég bætti við fyrr í dag og tók
-        // svo út aftur — Agnar: „Þarf ekki þetta krassblað". Blaðið er áfram á
-        // Skipulagsborðinu og áfram hægt að setja sem einingu í ham; það stendur
-        // bara ekki lengur ofan á borðinu óumbeðið.
         leitHtml() +
         (S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
           hamaListi().map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
             (t === '' ? '' : '<span class="c">' + t + '</span>') + '</button>'; }).join('') +
         '</div><button type="button" class="btn iv sm" data-t5="ham-ny" aria-expanded="' + !!(S.hamForm && !S.hamForm.id) + '">+ Hamur</button>' +
-        (mode.ser ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '">✎ Breyta ham</button>' : '') +
+        (mode.ser || mode.mitt ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '">' + (mode.mitt ? '✎ Velja einingar' : '✎ Breyta ham') + '</button>' : '') +
         '<span class="grow"></span>' + (mode.board ? '<div class="seg" role="group" aria-label="Borðið">' +
           '<button type="button" data-t5="bara-mitt" data-v="0" aria-pressed="' + !baraMitt + '">Master + mitt borð</button>' +
           '<button type="button" data-t5="bara-mitt" data-v="1" aria-pressed="' + baraMitt + '">Bara mitt borð</button></div>' : '') + '</div>' +
@@ -4026,18 +3994,10 @@
     _skRod = verk.catch(() => false);
     return verk;
   }
-  // 18.09.2026: `querySelector` stimplaði AÐEINS fyrsta reitinn. Krassblaðið er nú á
-  // tveimur stöðum (efst á borðinu og á Skipulagsborðinu), svo hinn hefði þagnað.
   function stimplaSk() {
     const root = rot();
     if (!root) return;
     root.querySelectorAll('.skstada').forEach(el => { el.textContent = S.skStada || ''; });
-    // 18.09.2026: talningin á Krassblaðinu stóð á „tómt" eftir að skrifað var í það,
-    // því teikning bíður á meðan skrifað er. Hún er stimpluð hér með stöðunni — annars
-    // stæði ósönn tala á skjánum þangað til eitthvað annað kallaði á teikningu.
-    const t = S.skDrog.__krass != null ? S.skDrog.__krass : String(P('skipulagsbord.by_staff.' + nu() + '.krass') || '');
-    const fj = t.trim() ? t.split('\n').filter(x => x.trim()).length : 0;
-    root.querySelectorAll('.krassbordi .sum').forEach(el => { el.textContent = fj ? fj + (fj === 1 ? ' lína' : ' línur') : 'tómt'; });
   }
   const _skT = {}, _skBid = {};
   function bida(lykill, fn) { clearTimeout(_skT[lykill]); _skBid[lykill] = fn; _skT[lykill] = setTimeout(() => { delete _skBid[lykill]; fn(); }, 700); }
@@ -4045,21 +4005,6 @@
   const skolaAllt = () => { Object.keys(_skBid).forEach(skola); skolaSkyringu(); };
   function skrifaSk(el) {
     const n = nu(), reitur = el.dataset.sk, id = el.dataset.skid;
-    if (reitur === 'krass') {
-      S.skDrog.__krass = el.value;
-      bida('__krass', async () => {
-        const texti = S.skDrog.__krass;
-        if (texti == null) return;
-        _vistar++;
-        let ok = false;
-        try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { krass: texti } } } })); } catch (_) {}
-        _vistar--;
-        if (ok && S.skDrog.__krass === texti) delete S.skDrog.__krass;
-        S.skStada = ok ? 'Vistað kl. ' + klukka(new Date()) : '⚠ Krassblaðið vistaðist ekki — reynt verður aftur.';
-        stimplaSk();
-      });
-      return;
-    }
     if (!id) return;
     (S.skDrog[id] = S.skDrog[id] || {})[reitur] = el.value;
     bida(id, async () => {
@@ -4280,7 +4225,18 @@
       F.rod.forEach(k => { F.breidd[k] = breiddAf(h0, k); });
     }
     const h = F.id ? M(F.id) : null;
+    const mitt = F.id === MITT_HAM;
     const hak = (pre, k, lbl, on) => '<label class="hchk"><input type="checkbox" data-k="' + pre + k + '"' + (on ? ' checked' : '') + '> ' + esc(lbl) + '</label>';
+    // Persónulega vinnuborðið: aðeins einingarnar — ekkert nafn, ekkert borð, engin mál og ekki hægt að eyða.
+    if (mitt) return '<section class="panel hamform" aria-label="Einingar á mínu vinnuborði">' +
+      '<header class="phead"><span class="plate">✎</span><h2 class="ptitle">' + esc(h.l) + '</h2><span class="grow"></span>' +
+        '<button type="button" class="btn iv sm" data-t5="ham-loka">Hætta við</button></header>' +
+      '<div class="hf">' +
+        '<div class="hgrp"><span class="lbl">Einingar á þínu vinnuborði</span>' +
+          Object.keys(MODS).filter(k => I_VOLDU.indexOf(k) < 0).map(k => hak('hm_', k, MODS[k].t, (F.rod || []).indexOf(k) >= 0)).join('') +
+          '<span class="hnote2">Aðeins þú sérð þetta val — hver starfsmaður á sitt vinnuborð. Einingarnar hér að neðan má draga til, stækka og minnka.</span></div>' +
+        '<div class="nybtn"><span class="grow"></span><button type="button" class="btn gold sm" data-t5="ham-vista">Vista vinnuborðið</button></div>' +
+      '</div></section>';
     return '<section class="panel hamform" aria-label="' + (h ? 'Breyta ham' : 'Nýr hamur') + '">' +
       '<header class="phead"><span class="plate">' + (h ? '✎' : '+') + '</span><h2 class="ptitle">' + (h ? 'Breyta ham · ' + esc(h.l) : 'Nýr hamur') + '</h2><span class="grow"></span>' +
         '<button type="button" class="btn iv sm" data-t5="ham-loka">Hætta við</button></header>' +
@@ -4289,6 +4245,9 @@
         '<div class="hgrp"><span class="lbl">Borðið sjálft</span>'
           + hak('', 'hb', 'Master, mitt borð og valið mál fylgja hamnum', h ? h.board !== false : true)
           + '<span class="hnote2">Taktu hakið af til að hafa AÐEINS einingarnar hér að neðan — t.d. bara skipulagsborðið.</span></div>' +
+        '<div class="hgrp"><span class="lbl">Hver sér haminn</span>'
+          + hak('', 'he', 'Bara ég (' + esc(h && h.eigandi ? h.eigandi : nu()) + ') — hinir sjá hann ekki í hamaröðinni', !!(h && h.eigandi))
+          + '</div>' +
         // 18.09.2026: hökin lesa `S.hamForm.rod` — ekki vistaða haminn — svo þau
         // fylgi því sem dregið hefur verið til og því sem tekið var burt með ✕.
         '<div class="hgrp"><span class="lbl">Einingar sem opnast með hamnum</span>' +
@@ -4604,18 +4563,31 @@
       }
       case 'ham-loka': S.hamForm = null; render(); return;
       case 'ham-vista': {
+        if (S.hamForm && S.hamForm.id === MITT_HAM) {
+          if (!krefstStillinga()) return;
+          const F = S.hamForm, rod = (F.rod || []).filter(k => MODS[k]), breidd = {};
+          rod.forEach(k => { const b = (F.breidd || {})[k]; if (b === 1 || b === 2 || b === 3) breidd[k] = b; });
+          S.hamForm = null;
+          // `first` er fylki: deepMerge sameinar hluti en skiptir fylkjum út, svo afhakað hverfur. `breidd` er hlutur
+          // og gæti haldið gömlum lyklum — þeir eru meinlausir, breiddAf les aðeins einingar sem eru í `first`.
+          vistaCfg({ mitt: { first: rod, breidd: breidd } }, 'Vinnuborðið þitt er vistað').then(render);
+          render();
+          return;
+        }
         const nafn = String((root.querySelector('[data-k="hn"]') || {}).value || '').trim().slice(0, 30);
         if (!nafn) { toast('Gefðu hamnum nafn.', true); const f = root.querySelector('[data-k="hn"]'); if (f) f.focus(); return; }
         const F = S.hamForm || {}, hid = F.id || ('h' + Date.now().toString(36));
         if (hamaListi().some(k => k !== hid && lagt(M(k).l) === lagt(nafn))) { toast('Hamur með þessu nafni er þegar til.', true); return; }
         const valin = pre => [...root.querySelectorAll('.hamform input[data-k^="' + pre + '"]')].filter(x => x.checked).map(x => x.dataset.k.slice(pre.length));
         const bordMed = !!((root.querySelector('.hamform input[data-k="hb"]') || {}).checked);
+        const baraEg = !!((root.querySelector('.hamform input[data-k="he"]') || {}).checked);
+        const fyrri = F.id ? (M(F.id) || {}) : {};
         // 18.09.2026: röðin og breiddirnar koma úr ritlinum. Aðeins breiddir þeirra
         // eininga sem eru í hamnum eru geymdar — annars sæti gamalt rusl eftir.
         const rod = (F.rod || []).slice();
         const breidd = {};
         rod.forEach(k => { const b = (F.breidd || {})[k]; if (b === 1 || b === 2 || b === 3) breidd[k] = b; });
-        const gildi = { id: hid, l: nafn, board: bordMed, first: rod, breidd: breidd, flokkar: valin('hf_'), merki: valin('hg_') };
+        const gildi = { id: hid, l: nafn, board: bordMed, first: rod, breidd: breidd, flokkar: valin('hf_'), merki: valin('hg_'), eigandi: baraEg ? (fyrri.eigandi || nu()) : '' };
         if (!bordMed && !gildi.first.length) { toast('Veldu að minnsta kosti eina einingu — hamurinn yrði annars auður.', true); return; }
         el.disabled = true;
         vistaHamir(l => { const i = l.findIndex(x => x.id === hid); if (i >= 0) l[i] = gildi; else l.push(gildi); return l; },
@@ -4728,8 +4700,6 @@
         }, 0);
         return;
       }
-      case 'krass-fella': S.krassOpid = S.krassOpid === false; skola('__krass'); render(); return;
-      case 'krass-staerd': S.krassStor = !S.krassStor; skola('__krass'); render(); return;
       case 'pb-senda': {
         const m = pbMal(el.dataset.mid);
         if (!m) { toast('Fann ekki póstinn — uppfærðu eininguna.', true); return; }
