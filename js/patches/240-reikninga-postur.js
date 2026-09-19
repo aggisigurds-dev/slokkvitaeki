@@ -1399,6 +1399,10 @@
   window.ReikningaPostur = {
     open: () => { if (window.App && App.switchView) App.switchView(NAV_KEY); },
     reload: load,
+    // 19.09.2026: sendi-glugginn fluttur út svo Þjónustuborðið geti kallað í hann
+    // í stað þess að afrita hann. `m` þarf { cust } og/eða { sale }; án hvorugs
+    // hefur hann enga reikninga til að bjóða.
+    sendaReikning: (m) => openSendModal(m),
     // 2026-07-10 (ósk Agnars — svara af Verkborðinu): opna svar-modalinn fyrir
     // hvaða póst sem er, hvaðan sem er í appinu. `m` = { sender_name, from
     // (sendandanetfang), subject, body_preview|snippet, message_id, cust? }.

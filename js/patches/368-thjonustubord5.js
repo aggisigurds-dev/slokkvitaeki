@@ -199,7 +199,11 @@
     afgreidsla: { n: '21', t: 'Staðan í afgreiðslu', d: 'Kassinn: sala dagsins og vikunnar, opin drög og ógreitt.' },
     // 18.09.2026: Krassblaðið er líka eining, svo hægt sé að setja það þangað sem
     // það nýtist — í fullri breidd í miðjunni frekar en í mjórri rein.
-    krass:     { n: '23', t: 'Krassblað', d: 'Frjáls texti sem fylgir þér á milli tölva. Sama blað og á Skipulagsborðinu.' }
+    krass:     { n: '23', t: 'Krassblað', d: 'Frjáls texti sem fylgir þér á milli tölva. Sama blað og á Skipulagsborðinu.' },
+    // 19.09.2026 (Agnar: „Væri fínt að þetta bara í sér ham á þjónustuborðið"):
+    // póstar sem biðja um reikninginn okkar, með kúnnanum fundnum og sendingu
+    // á staðnum. Kallar í 240 fyrir sendinguna — hún er ekki afrituð.
+    postbeidnir: { n: '24', t: 'Reikningsbeiðnir', d: 'Póstar sem biðja um reikning: hver bað, hvaða kúnni, og senda hann beint héðan.' }
   };
   const I_VOLDU = ['saga', 'breyta'];
   const STODUR = [['nytt', 'Nýtt'], ['i_vinnslu', 'Í vinnslu'], ['bedid', 'Bíður'], ['tilbuid', 'Tilbúið'], ['lokad', 'Lokað']];
@@ -221,7 +225,7 @@
   // 18.09.2026: skipulag og krass bættust við — bæði eru skrifflötur og hvorugt
   // nýtist í hálfri breidd (spjöldin kremjast, línan verður of mjó). BREIDAR er nú
   // aðeins SJÁLFGEFIÐ gildi: notandinn ræður breiddinni sjálfur í „Breyta ham".
-  const BREIDAR = ['dagskra', 'krofumal', 'akstur', 'starfsmenn', 'skipulag', 'krass'];
+  const BREIDAR = ['dagskra', 'krofumal', 'akstur', 'starfsmenn', 'skipulag', 'krass', 'postbeidnir'];
   // Breidd einingar: 1 = þriðjungur · 2 = hálft · 3 = fullt. Sjá .modcell[data-sp].
   const sjalfgefinBreidd = k => (BREIDAR.indexOf(k) >= 0 ? 3 : 1);
   function breiddAf(mode, k) {
@@ -3152,6 +3156,81 @@
     if (!s) return '';
     return '<span class="pprev" title="Byrjun skilaboðanna — smelltu á titilinn til að sjá allt">' + esc(s.slice(0, 260)) + (s.length > 260 ? '…' : '') + '</span>';
   }
+  /* ── Reikningsbeiðnir (eining 24, 19.09.2026) ────────────────────────────
+   * Sömu póstar og 240 sýnir, en hér með kúnnanum fundnum (KunnaLeit, 381) og
+   * aðgerðunum tveimur sem 240 á. Sendingin er EKKI afrituð — kallað er í
+   * ReikningaPostur.sendaReikning, svo hún búi áfram á einum stað.
+   */
+  const PB_HOLF = ['eldklar@eldklar.is', 'bokhald@eldklar.is'];
+  const PB_RE = /(senda|sent|sendið|sendu|fá|fæ|vantar|afrit).{0,22}(reikning|kröfu|kvittun)|reikning.{0,22}(afrit|vantar|sent|sendan)|afrit af reikning|copy of (the )?invoice|send.{0,15}invoice/;
+  const pbThrad = s => String(s || '').toLowerCase().replace(/^((re|sv|svar|fw|fwd|áfram)\s*:\s*)+/g, '').replace(/\s+/g, ' ').trim();
+  async function saekjaPostbeidnir() {
+    const c = sb();
+    if (!c) throw new Error('Engin tenging við gagnagrunn');
+    const fra = new Date(Date.now() - 60 * 864e5).toISOString();
+    const r = await c.from('email_digest')
+      .select('id,message_id,account,sender_name,sender_email,subject,snippet,body_preview,received_at')
+      .in('account', PB_HOLF).eq('folder', 'INBOX').gte('received_at', fra)
+      .order('received_at', { ascending: false }).limit(600);
+    if (r.error) throw r.error;
+    const allir = r.data || [];
+    const beidnir = allir.filter(m => PB_RE.test(((m.subject || '') + ' ' + (m.body_preview || '') + ' ' + (m.snippet || '')).toLowerCase()));
+    // Afgreitt/falið er geymt á þjóninum af 240 — lesið þaðan svo listarnir
+    // tveir segi það sama. Bregðist lesturinn kastar hann; ekkert er falið í hljóði.
+    const ids = beidnir.map(m => m.message_id).filter(Boolean);
+    const bud = new Set();
+    if (ids.length) {
+      const [hd, ac] = await Promise.all([
+        c.from('reikninga_postur_hidden').select('message_id').in('message_id', ids),
+        c.from('reikninga_postur_activity').select('message_id').in('message_id', ids),
+      ]);
+      if (hd.error) throw hd.error;
+      if (ac.error) throw ac.error;
+      (hd.data || []).forEach(x => bud.add(x.message_id));
+      (ac.data || []).forEach(x => bud.add(x.message_id));
+    }
+    // Einn þráður = ein lína, nýjasti pósturinn fremstur (eins og 240 gerir).
+    const sedir = new Set(), ut = [];
+    beidnir.forEach(m => {
+      if (bud.has(m.message_id)) return;
+      const t = pbThrad(m.subject) || (m.message_id || String(m.id));
+      if (sedir.has(t)) return;
+      sedir.add(t);
+      let kunni = null;
+      try { if (window.KunnaLeit && KunnaLeit.hladid()) kunni = KunnaLeit.finna(m, allir); } catch (_) {}
+      ut.push(Object.assign({}, m, { kunni: kunni }));
+    });
+    return ut;
+  }
+  function pbRodHtml(m) {
+    const aldur = Math.max(0, Math.round((Date.now() - new Date(m.received_at).getTime()) / 864e5));
+    const hver = esc(m.sender_name || m.sender_email || '(óþekkt)');
+    const texti = String(m.body_preview || m.snippet || '').replace(/\s+/g, ' ').trim().slice(0, 190);
+    const k = m.kunni;
+    return '<div class="lrow pbr" data-mid="' + esc(m.message_id || '') + '">' +
+      '<div class="age ' + ageCls(aldur) + '" title="' + aldur + ' dagar síðan pósturinn barst">' + aldur + 'D</div>' +
+      '<div><div class="kick">' + hver + ' · ' + esc(m.sender_email || '') + '</div>' +
+        '<b>' + esc(m.subject || '(ekkert efni)') + '</b>' +
+        (texti ? '<span class="s">' + esc(texti) + '</span>' : '') +
+        '<span class="s">' + (k
+          ? '🏢 ' + esc(k.nafn) + ' <span class="tag">fannst: ' + esc(k.hvernig) + '</span>'
+          : '<span class="tag hot">enginn kúnni fannst</span>') + '</span></div>' +
+      lakt((k ? '<button type="button" class="btn gold sm" data-t5="pb-senda" data-mid="' + esc(m.message_id || '') + '">✉️ Senda reikning</button>' : '') +
+        '<button type="button" class="btn iv sm" data-t5="pb-svar" data-mid="' + esc(m.message_id || '') + '">🤖 Svar</button>') +
+    '</div>';
+  }
+  // Aðgerðirnar búa í 240. Hér er aðeins kallað í þær.
+  function pbMal(mid) {
+    const g = G['postbeidnir'];
+    const m = (g && g.data || []).find(x => String(x.message_id) === String(mid));
+    if (!m) return null;
+    return {
+      sender_name: m.sender_name, from: m.sender_email, subject: m.subject,
+      body_preview: m.body_preview, snippet: m.snippet, message_id: m.message_id,
+      cust: m.kunni ? { name: m.kunni.nafn, kt: m.kunni.kt, coId: m.kunni.coId } : null,
+      sale: null,
+    };
+  }
   function bottomHtml(k) {
     const n = nu();
     if (k === 'skipulag') {
@@ -3192,6 +3271,21 @@
         '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny" draggable="true" data-skdrag="__ny" title="Smelltu — eða dragðu autt spjald þangað sem þú vilt hafa það">+ Nýtt spjald</button></div>' +
         '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot beint í spjald.') + '</div></div>';
       return modPanel(k, cards.length + ' spjöld' + (ari.length ? ' · ' + ari.length + ' áríðandi' : ''), body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
+    }
+    if (k === 'postbeidnir') {
+      // Sami gluggi og 240 notar (2 mán) og SAMA regla, svo talan hér og talan
+      // þar segi það sama. Sóknin er löt og geymd í 5 mín eins og aðrar einingar.
+      const g = gogn('postbeidnir', saekjaPostbeidnir);
+      let body, sum = 'Reikningsbeiðnir';
+      if (!g || (!g.data && !g.villa)) body = emptyHtml('Les pósthólfin…');
+      else if (g.villa) body = '<p class="err">Náði ekki í póstinn: ' + esc(g.villa) + '</p>';
+      else {
+        const rad = g.data;
+        sum = rad.length + (rad.length === 1 ? ' beiðni' : ' beiðnir');
+        body = !rad.length ? emptyHtml('Engin ósvöruð reikningsbeiðni. Nýjar birtast hér um leið og þær berast.')
+          : '<div class="pbl">' + rad.map(pbRodHtml).join('') + '</div>';
+      }
+      return modPanel(k, sum, body, uppfTakki('postbeidnir'), true);
     }
     if (k === 'frestir') {
       const dagur = ymd(new Date());
@@ -4636,6 +4730,20 @@
       }
       case 'krass-fella': S.krassOpid = S.krassOpid === false; skola('__krass'); render(); return;
       case 'krass-staerd': S.krassStor = !S.krassStor; skola('__krass'); render(); return;
+      case 'pb-senda': {
+        const m = pbMal(el.dataset.mid);
+        if (!m) { toast('Fann ekki póstinn — uppfærðu eininguna.', true); return; }
+        if (!(window.ReikningaPostur && ReikningaPostur.sendaReikning)) { toast('Reikninga-pósturinn (240) hefur ekki hlaðist — endurhlaðið síðuna.', true); return; }
+        ReikningaPostur.sendaReikning(m);
+        return;
+      }
+      case 'pb-svar': {
+        const m = pbMal(el.dataset.mid);
+        if (!m) { toast('Fann ekki póstinn — uppfærðu eininguna.', true); return; }
+        if (!(window.ReikningaPostur && ReikningaPostur.replyTo)) { toast('Reikninga-pósturinn (240) hefur ekki hlaðist — endurhlaðið síðuna.', true); return; }
+        ReikningaPostur.replyTo(m);
+        return;
+      }
       case 'ham-breidd': {
         if (!S.hamForm) return;
         const k = el.dataset.m, ny = Math.max(1, Math.min(3, hfBreidd(k) + (+el.dataset.v || 0)));
