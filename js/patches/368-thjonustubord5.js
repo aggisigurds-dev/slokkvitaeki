@@ -3066,8 +3066,14 @@
   }
   const summa = l => l.reduce((s, x) => s + (+x.samtals || 0), 0);
   const daga = t => Math.max(0, Math.floor((Date.now() - tStamp(t)) / 864e5));
+  // 19.09.2026 — KRAFA SEM FER ALDREI. Sala merkt „reikningur" með tóman
+  // customer_base_id á engan viðtakanda: krafan verður aldrei send. Hún sat samt
+  // í „Ósendar kröfur" og leit eins út og hinar, svo hún beið þess að einhver
+  // reyndi og kæmist að því. Merkið segir hvað þarf, ekki bara að eitthvað sé að.
+  const otengdMerki = x => (x && x.customer_base_id == null)
+    ? '<div class="meta">⚠ enginn kúnni skráður — krafan verður ekki send fyrr en kennitala er tengd</div>' : '';
   const soluLina = (x, merki, f) => '<div class="lrow' + (f && f.falinn ? ' falid' : '') + '"><span class="age">' + esc(x.num || '—') + '</span><div><b>' + esc(x.customer_nafn || '(ónefnt)') + '</b>' +
-    '<span class="s">' + kr(x.samtals) + ' · ' + esc(fmtD(x.created_at)) + (x.starfsmadur ? ' · ' + esc(x.starfsmadur) : '') + (x.krafa_note ? ' · ' + esc(String(x.krafa_note).slice(0, 60)) : '') + felaTakki(f) + '</span>' + skyrLina(f) + '</div>' + (merki || '<span></span>') + '</div>';
+    '<span class="s">' + kr(x.samtals) + ' · ' + esc(fmtD(x.created_at)) + (x.starfsmadur ? ' · ' + esc(x.starfsmadur) : '') + (x.krafa_note ? ' · ' + esc(String(x.krafa_note).slice(0, 60)) : '') + felaTakki(f) + '</span>' + otengdMerki(x) + skyrLina(f) + '</div>' + (merki || '<span></span>') + '</div>';
   const soluLysing = x => [x.num, x.customer_nafn, kr(x.samtals)].filter(Boolean).join(' · ');
   // Gleymst að rukka? (Agnar 11.09.2026: „hvaða mánuð skýrslan var gerð, er hún á vinnublaði, eða kanski greitt gegnum
   // fyrri eigendur"): vinstra megin dagsetning skýrslu þegar hún er skráð, annars mánuður úr tækjaskrá (uttaeki.last_insp).

@@ -1422,6 +1422,22 @@
       var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,customer_kt:custKt,linur:linur,upphaed_an_vsk:exR,vsk_upphaed:vskR,afslattur:discKr,samtals:samtalsR,greitt_med:pmLabel,athugasemdir:saleNotes,status:saleStatus,source:'pos',paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
       if(sr.error)throw sr.error;
       checkout._lastSig=_dupSig; checkout._lastTs=Date.now();   // muna síðustu sölu fyrir tvítöku-vörnina
+
+      // 19.09.2026 — KRAFA Á EINHVERN SEM KERFIÐ ÞEKKIR EKKI.
+      // „reikningur" og „greitt síðar" eru loforð um að rukka SÍÐAR, og þau er
+      // ekki hægt að efna án kennitölu: engin krafa, enginn reikningur, enginn
+      // viðtakandi. Kassinn leyfði samt valið og þagði, svo salan leit út eins og
+      // hver önnur og vandinn kom í ljós vikum síðar (mælt: 7 slíkar á 14 dögum).
+      //
+      // VISTUN ER EKKI STÖÐVUÐ — „ALLTAF LEYFA VISTUN" er rétt regla og afgreiðsla
+      // má ekki stranda. Salan er inni; starfsmaðurinn fær bara að vita strax.
+      if((pmCode==='reikningur'||pmCode==='greitt_sidar') && String(custKt||'').replace(/[^0-9]/g,'')==='9999999999' && !state.customer.co_id){
+        try{
+          var _adv='⚠ '+(num||'Salan')+' er vistuð — en KRÖFUNA er ekki hægt að senda: engin kennitala er á kaupanda. Opnaðu söluna og tengdu kennitölu áður en rukkað er.';
+          if(window.Toast&&Toast.show)Toast.show(_adv);
+          if(window.logProblem)logProblem('sala_krafa_an_kunna','sala '+sr.data.id+' — '+pmCode+' án kennitölu; krafa verður ekki send');
+        }catch(_){ }
+      }
       var num = sr.data && sr.data.num ? sr.data.num : preNum;
       window._pendingReikningurNum = '';
       window._pendingPaymentMethod = '';
