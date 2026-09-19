@@ -3165,7 +3165,7 @@
     if (!c) throw new Error('Engin tenging við gagnagrunn');
     const fra = new Date(Date.now() - 60 * 864e5).toISOString();
     const r = await c.from('email_digest')
-      .select('id,message_id,account,sender_name,sender_email,subject,snippet,body_preview,received_at')
+      .select('id,message_id,account,thread_id,sender_name,sender_email,subject,snippet,body_preview,received_at')
       .in('account', PB_HOLF).eq('folder', 'INBOX').gte('received_at', fra)
       .order('received_at', { ascending: false }).limit(600);
     if (r.error) throw r.error;
@@ -3185,10 +3185,31 @@
       (hd.data || []).forEach(x => bud.add(x.message_id));
       (ac.data || []).forEach(x => bud.add(x.message_id));
     }
+    // 19.09.2026 — BEIÐNI SEM ER SVARAÐ DETTUR ÚT SJÁLF.
+    // Merkið er Gmail-þráðurinn (email_digest.thread_id). Hann er nákvæmur þar sem
+    // hitt var ágiskun: netfang umsjónaraðila þjónar mörgum félögum, og efnis-pörun
+    // sagði „svarað" út frá efni sem heitir bara „Reikningur". Sami þráður er hins
+    // vegar sami þráður. Aðeins raðir MEÐ þræði falla út — eldri póstur ber engan
+    // og hegðar sér óbreytt, svo beiðni hverfur aldrei af því gögnin vantar.
+    const svarad = new Map();   // thread_id -> nýjasta útsending
+    const thraedir = [...new Set(beidnir.map(m => m.thread_id).filter(Boolean))];
+    for (let i = 0; i < thraedir.length; i += 100) {
+      const s = await c.from('email_digest').select('thread_id,received_at')
+        .eq('folder', 'SENT').in('thread_id', thraedir.slice(i, i + 100));
+      if (s.error) throw s.error;
+      (s.data || []).forEach(x => {
+        const fyrri = svarad.get(x.thread_id);
+        if (!fyrri || new Date(x.received_at) > new Date(fyrri)) svarad.set(x.thread_id, x.received_at);
+      });
+    }
+
     // Einn þráður = ein lína, nýjasti pósturinn fremstur (eins og 240 gerir).
     const sedir = new Set(), ut = [];
     beidnir.forEach(m => {
       if (bud.has(m.message_id)) return;
+      // Svarað EFTIR að erindið barst — kom nýr póstur á eftir svarinu stendur hún áfram.
+      const svar = m.thread_id ? svarad.get(m.thread_id) : null;
+      if (svar && new Date(svar) > new Date(m.received_at)) return;
       const t = pbThrad(m.subject) || (m.message_id || String(m.id));
       if (sedir.has(t)) return;
       sedir.add(t);
