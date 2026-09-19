@@ -1021,7 +1021,19 @@
       fr.onerror = rej; fr.readAsDataURL(blob);
     });
   }
-  function emailFrom() { return localStorage.getItem('email_from') || 'Brunahólf Slökkvitæki ehf <reikningar@eldklar.is>'; }
+  // 19.09.2026 — SJÁLFGEFNA HÓLFIÐ VERÐUR AÐ VERA TENGT. Hér stóð
+  // reikningar@eldklar.is, sem er ekki tengt Gmail-hólf: appSend hunsaði það og
+  // sendi úr sínu sjálfgefna hólfi meðan yfirferðin sýndi reikningar@. Notandinn
+  // sá því annað en hann fékk. Agnar: „ef þú getur bara valið eitt, veldu þá
+  // eldklar@eldklar" — 99% fyrirspurna berast þangað. Geymt gildi er virt EF það
+  // er tengt hólf, annars sleppt fremur en að birta netfang sem verður ekki notað.
+  const TENGD_HOLF = /^(eldklar|bokhald)@eldklar\.is$/i;
+  const SJALFGEFID_FRA = 'Brunahólf slökkvitæki ehf <eldklar@eldklar.is>';
+  function emailFrom() {
+    const geymt = localStorage.getItem('email_from') || '';
+    const netfang = (geymt.match(/<([^>]+)>/) || [null, geymt.trim()])[1] || '';
+    return TENGD_HOLF.test(netfang) ? geymt : SJALFGEFID_FRA;
+  }
   function fmtKr(n) { return (Math.round(Number(n) || 0)).toLocaleString('is-IS') + ' kr'; }
 
   async function getFullSale(id) {
