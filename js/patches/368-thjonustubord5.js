@@ -526,14 +526,26 @@
   }
   // 18.09.2026: upphæðin kom inn á eftir áríðandi-hakinu (Agnar: „mikilvægustu
   // eða auðveldustu fyrst"). Hakið er hans dómur og gengur fyrir; upphæðin er
-  // næsta besta mæling á því hvað skiptir máli. Frestur og aldur ráða svo eins
-  // og áður — en elsta málið fer nú fremst meðal jafningja í stað þess nýjasta,
-  // svo það sem hefur beðið lengst sökkvi ekki endalaust.
-  const rodun = (a, b) => samtRod(b) - samtRod(a)
+  // næsta besta mæling á því hvað skiptir máli.
+  //
+  // 19.09.2026 — NÝJAST FYRST AFTUR, OG ELST FYRST AÐEINS Í SAMÞYKKJA.
+  // Sama dag sneri ég síðasta þrepinu hér í „elst fyrst" fyrir Samþykktir.
+  // `rodun` stýrir hins vegar NÍU listum (Master, Mitt borð, allar síur,
+  // Póstsvörun, Áríðandi á tveimur stöðum), svo ein lína sneri þeim öllum.
+  // Agnar: „Djö er þjónustuborðið í rugli" — 57 daga gamall póstur stóð efst í
+  // Póstsvörun meðan 461 opinn póstur er til og sá nýjasti frá í gær.
+  //
+  // Ekki er hægt að hnýta aukaþrepi aftan við `rodun`: hún skilar aldrei 0 þegar
+  // dagsetningar eru ólíkar, svo slíkt þrep keyrði aldrei. Sameiginlegi hlutinn
+  // er því hér, og listarnir enda hann hvor á sinn veg.
+  const rodunGrunnur = (a, b) => samtRod(b) - samtRod(a)
     || (b.important ? 1 : 0) - (a.important ? 1 : 0)
     || upphaedMals(b) - upphaedMals(a)
-    || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity)
-    || tStamp(a.created_at) - tStamp(b.created_at);
+    || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity);
+  // Allir listar nema Samþykkja: nýjast fyrst, eins og verið hefur.
+  const rodun = (a, b) => rodunGrunnur(a, b) || tStamp(b.created_at) - tStamp(a.created_at);
+  // Samþykkja er BIÐRÖÐ sem á að tæmast — þar fer elsta málið fremst.
+  const rodunSamt = (a, b) => rodunGrunnur(a, b) || tStamp(a.created_at) - tStamp(b.created_at);
   const tagList = r => (Array.isArray(r.tags) ? r.tags : []).filter(t => typeof t === 'string');
   const skyrirHamir = r => tagList(r).filter(t => t.indexOf(HAM_MERKI) === 0).map(t => t.slice(HAM_MERKI.length)).filter(id => !!M(id));
   // 368aa: hvert mál á einn stað. Merki á vinnusvæðis-ham (ham:vinnublod, 368y) ræður fyrst; bíði málið svars á borði þess
@@ -1729,7 +1741,7 @@
   // + merkið spurning) og svarað (svar:* — bíður Claude). Hægra megin er sama spjald og Valið mál, með allri lýsingunni.
   const SPURNING = 'spurning';
   const samtHluti = r => (!erSamthykki(r) ? 2 : tagList(r).indexOf(SPURNING) >= 0 ? 1 : 0);
-  const samtListi = n => S.rows.filter(r => iHam(r, SAMT_HAM)).sort((a, b) => samtHluti(a) - samtHluti(b) || rodun(a, b));
+  const samtListi = n => S.rows.filter(r => iHam(r, SAMT_HAM)).sort((a, b) => samtHluti(a) - samtHluti(b) || rodunSamt(a, b));
   function samtRymiHtml(n) {
     if (!S.loaded) return emptyHtml('Sæki mál…');
     const listi = samtListi(n);
