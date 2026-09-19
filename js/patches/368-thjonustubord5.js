@@ -538,14 +538,23 @@
   // Ekki er hægt að hnýta aukaþrepi aftan við `rodun`: hún skilar aldrei 0 þegar
   // dagsetningar eru ólíkar, svo slíkt þrep keyrði aldrei. Sameiginlegi hlutinn
   // er því hér, og listarnir enda hann hvor á sinn veg.
+  // 19.09.2026, seinni leiðrétting: UPPHÆÐIN Á LÍKA BARA HEIMA Í SAMÞYKKTUM.
+  // Hún var sett í sameiginlega grunninn og raðaði þá öllum listum eftir tölu sem
+  // NEFND ER Í TEXTANUM. Í Póstsvörun lenti 53 daga gamall póstur efst af því hann
+  // nefnir „krónur 27110" — aldurinn og röðin sögðu þá ekkert. Upphæðin er mæling
+  // á því hvað er í húfi ÞEGAR VERIÐ ER AÐ SAMÞYKKJA; hún er ekki almenn röðun.
   const rodunGrunnur = (a, b) => samtRod(b) - samtRod(a)
     || (b.important ? 1 : 0) - (a.important ? 1 : 0)
-    || upphaedMals(b) - upphaedMals(a)
     || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity);
   // Allir listar nema Samþykkja: nýjast fyrst, eins og verið hefur.
   const rodun = (a, b) => rodunGrunnur(a, b) || tStamp(b.created_at) - tStamp(a.created_at);
-  // Samþykkja er BIÐRÖÐ sem á að tæmast — þar fer elsta málið fremst.
-  const rodunSamt = (a, b) => rodunGrunnur(a, b) || tStamp(a.created_at) - tStamp(b.created_at);
+  // Samþykkja: áríðandi, svo UPPHÆÐ, svo frestur — og elst fremst meðal jafningja,
+  // því þetta er biðröð sem á að tæmast.
+  const rodunSamt = (a, b) => samtRod(b) - samtRod(a)
+    || (b.important ? 1 : 0) - (a.important ? 1 : 0)
+    || upphaedMals(b) - upphaedMals(a)
+    || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity)
+    || tStamp(a.created_at) - tStamp(b.created_at);
   const tagList = r => (Array.isArray(r.tags) ? r.tags : []).filter(t => typeof t === 'string');
   const skyrirHamir = r => tagList(r).filter(t => t.indexOf(HAM_MERKI) === 0).map(t => t.slice(HAM_MERKI.length)).filter(id => !!M(id));
   // 368aa: hvert mál á einn stað. Merki á vinnusvæðis-ham (ham:vinnublod, 368y) ræður fyrst; bíði málið svars á borði þess
