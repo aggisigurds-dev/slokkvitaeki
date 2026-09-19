@@ -1136,6 +1136,14 @@
       '.nylbl{display:flex;flex-direction:column;gap:3px}.nylbl select,.nylbl input{height:34px;padding:0 8px;border:1px solid var(--edge);border-radius:4px;background:#fff;font:13px var(--body);color:var(--ink)}',
       '.composer textarea{grid-column:1 / 3;min-height:34px;padding:7px 10px;border:1px solid var(--edge);border-radius:4px;background:#fff;font:13px var(--body);color:var(--ink);resize:vertical}',
       '.nychk{display:flex;align-items:center;gap:6px;font-size:13px}.nybtn{display:flex;gap:8px;grid-column:1 / -1;justify-content:flex-end}',
+      '.sannanir{padding:12px 14px;display:grid;gap:10px}',
+      '.sn-h{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px}',
+      '.sn-h .btn{margin-left:auto}',
+      '.sn-r{border-top:1px solid var(--rule2);padding-top:8px;display:grid;gap:2px}',
+      '.sn-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+      '.sn-n{font-size:14px}.sn-n b{font-variant-numeric:tabular-nums}',
+      '.sn-f{font-size:12px;color:var(--mute)}',
+      '.tag.ok{background:#e7f3ec;color:#2f7a4a;border-color:#bcd9c7}',
       '.t5toast .undo{margin-left:12px;height:26px;padding:0 10px;border:1px solid #5a4410;border-radius:4px;background:var(--gside);color:#1b1405;font:700 12px var(--body);cursor:pointer}',
       '.skwrap{display:flex;flex-direction:column;gap:12px;padding:12px 14px}',
       // 18.09.2026 (Agnar: „kannski 5 spjöld á breiddina og 2-3 spjöld niður").
@@ -2159,6 +2167,105 @@
     setTimeout(() => { try { const t = rot().querySelector('.vbr-main'); if (t && t.getBoundingClientRect().top < 0) t.scrollIntoView({ block: 'start' }); } catch (_) {} }, 40);
   }
 
+  /* ─────────────────────────────────────────────────────────────────────────
+   * SANNANIR — endurmæling, ekki fullyrðing (19.09.2026).
+   *
+   * Agnar: „bara hvort borðið segir satt. Ég hef ekki hugmynd. Sýnir engar
+   * sannanir." Borðið sýndi tölur og ekkert til að bera þær saman við.
+   *
+   * Hver mæling telur upp á nýtt beint úr gagnagrunninum og skilar tölu OG
+   * reglunni á íslensku. Talið er með `count: exact, head: true` þar sem því
+   * verður við komið — þá telur gagnagrunnurinn sjálfur og 1000-raða þakið
+   * skiptir engu máli. Sé sían í vafranum er allur ferillinn sýndur.
+   */
+  const SANNANIR = {
+    bord: {
+      heiti: 'Mál á borðinu',
+      regla: 'úr thjonustubeidni — ekki eytt, ekki í geymslu, staða ekki „lokað"',
+      askjanum: () => S.rows.length,
+      maela: async (c) => {
+        const r = await c.from('thjonustubeidni').select('id', { count: 'exact', head: true })
+          .is('deleted_at', null).is('archived_at', null).or('status.is.null,status.neq.lokad');
+        if (r.error) throw r.error;
+        return r.count;
+      },
+    },
+    krofur: {
+      heiti: 'Ógreiddar kröfur',
+      regla: 'úr solur — greitt með reikningi, ógreitt, ekki ógilt',
+      askjanum: () => S.counts.krofur,
+      maela: async (c) => {
+        const r = await c.from('solur').select('id', { count: 'exact', head: true })
+          .eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void');
+        if (r.error) throw r.error;
+        return r.count;
+      },
+    },
+    postbeidnir: {
+      heiti: 'Reikningsbeiðnir',
+      regla: 'úr email_digest — INBOX í eldklar@/bokhald@ síðustu 60 daga',
+      askjanum: () => ((G.postbeidnir && G.postbeidnir.data) || []).length,
+      maela: async (c) => {
+        const fra = new Date(Date.now() - 60 * 864e5).toISOString();
+        const r = await c.from('email_digest').select('id', { count: 'exact', head: true })
+          .in('account', PB_HOLF).eq('folder', 'INBOX').gte('received_at', fra);
+        if (r.error) throw r.error;
+        // Sían sjálf er í vafranum, svo ferillinn er sýndur í stað einnar tölu.
+        const ferskt = await saekjaPostbeidnir();
+        return { tala: ferskt.length, ferill: r.count + ' póstar bárust → ' + ferskt.length + ' ósvaraðar beiðnir' };
+      },
+    },
+  };
+
+  async function sannreyna() {
+    const c = sb();
+    if (!c) { toast('Engin tenging við gagnagrunn — ekkert var mælt.', true); return; }
+    S.sannreyn = { keyrir: true, radir: [], at: null };
+    render();
+    const radir = [];
+    for (const k of Object.keys(SANNANIR)) {
+      const s = SANNANIR[k];
+      let skjar = null;
+      try { skjar = s.askjanum(); } catch (_) {}
+      try {
+        const m = await s.maela(c);
+        const maelt = (m && typeof m === 'object') ? m.tala : m;
+        const ferill = (m && typeof m === 'object') ? m.ferill : '';
+        radir.push({
+          heiti: s.heiti, regla: s.regla, skjar, maelt, ferill,
+          stemmir: skjar == null ? null : Number(skjar) === Number(maelt),
+        });
+      } catch (e) {
+        radir.push({ heiti: s.heiti, regla: s.regla, skjar, maelt: null, villa: (e && e.message) || String(e) });
+      }
+    }
+    S.sannreyn = { keyrir: false, radir, at: new Date() };
+    render();
+  }
+
+  function sannanirHtml() {
+    const s = S.sannreyn;
+    if (!s) return '';
+    if (s.keyrir) return '<section class="panel sannanir"><div class="sn-h">Mæli allt upp á nýtt…</div></section>';
+    const rod = r => {
+      const merki = r.villa ? '<span class="tag hot">náði ekki að mæla</span>'
+        : r.stemmir === null ? '<span class="tag">ekkert á skjánum</span>'
+        : r.stemmir ? '<span class="tag ok">stemmir</span>'
+        : '<span class="tag hot">stemmir EKKI</span>';
+      return '<div class="sn-r"><div class="sn-t"><b>' + esc(r.heiti) + '</b> ' + merki + '</div>' +
+        '<div class="sn-n">' + (r.villa ? esc(r.villa)
+          : 'á skjánum <b>' + (r.skjar == null ? '—' : r.skjar) + '</b> · mælt núna <b>' + r.maelt + '</b>') + '</div>' +
+        (r.ferill ? '<div class="sn-f">' + esc(r.ferill) + '</div>' : '') +
+        '<div class="sn-f">' + esc(r.regla) + '</div></div>';
+    };
+    const misraemi = s.radir.filter(r => r.stemmir === false).length;
+    return '<section class="panel sannanir">' +
+      '<div class="sn-h">' + (misraemi ? '⚠ ' + misraemi + ' tala stemmir ekki' : '✓ Allar tölur stemma') +
+        ' · mælt kl. ' + klukka(s.at) + '<button type="button" class="btn iv sm" data-t5="sann-loka">Loka</button></div>' +
+      s.radir.map(rod).join('') +
+      '<div class="sn-f">Hver tala er talin upp á nýtt beint úr gagnagrunninum þegar smellt er — þetta er ekki merki sem segist vera rétt.</div>' +
+    '</section>';
+  }
   function modPanel(k, summary, body, action, alltaf) {
     const m = MODS[k], open = isOpen(k);
     return '<section class="panel mod' + (open ? ' open' : '') + (alltaf ? ' alltaf' : '') + '" aria-label="' + esc(m.t) + '">' +
@@ -3958,8 +4065,10 @@
             (ppl.indexOf(n) < 0 ? '<option value="" selected disabled>Veldu nafn…</option>' : '') +
             ppl.map(x => '<option' + (x === n ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select></label>' +
           '<button type="button" class="btn iv" data-t5="cfg" aria-expanded="' + S.cfgOpen + '">⚙ Mitt vinnuborð</button>' +
+          '<button type="button" class="btn iv" data-t5="sannreyna" title="Telja allt upp á nýtt úr gagnagrunninum og bera saman við það sem stendur á skjánum">🔍 Sannreyna</button>' +
           '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' +
         '</div></div>' +
+        sannanirHtml() +
         leitHtml() +
         (S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
@@ -4703,6 +4812,8 @@
         if (lyklabord) { const sami = [...root.querySelectorAll('[data-t5="' + a + '"]')].find(x => x.dataset.h === h); if (sami) sami.focus(); }
         return;
       }
+      case 'sannreyna': sannreyna(); return;
+      case 'sann-loka': S.sannreyn = null; render(); return;
       case 'fela-endurlesa': if (G.falid) G.falid.at = 0; render(); return;
       case 'skyr-opna': skyrOpna({ l: el.dataset.fl, e: el.dataset.fe, d: el.dataset.fd }); return;
       case 'skyr-vista': vistaSkyringu(true); return;
