@@ -2179,6 +2179,13 @@
    * verður við komið — þá telur gagnagrunnurinn sjálfur og 1000-raða þakið
    * skiptir engu máli. Sé sían í vafranum er allur ferillinn sýndur.
    */
+  // Lyklar sem eiga sér ekki ham fá nafn sem Agnar þekkir — ekki innri lykil.
+  // „vbt-vorur" segir honum ekkert; „Vöruverð (vinnublöð)" gerir það.
+  const SANN_NOFN = {
+    'vbt-vorur': 'Vöruverð (vinnublöð)', falid: 'Falin atriði', elt: 'Póstar í eftirfylgni',
+    bk: 'Brunakerfi', skyrslur: 'Skýrslur', krofur: 'Kröfur', gleymt: 'Gleymt að rukka',
+    afgr: 'Afgreiðsla', bakf: 'Bakfærslur', 'tf-post': 'Sendendur pósts',
+  };
   const SANNANIR = {
     bord: {
       heiti: 'Mál á borðinu',
@@ -2258,12 +2265,12 @@
         const ny = await g.saekja();
         const maelt = Array.isArray(ny) ? ny.length : null;
         radir.push({
-          heiti: (MODS[k] && MODS[k].t) || k,
+          heiti: (MODS[k] && MODS[k].t) || SANN_NOFN[k] || k,
           regla: 'sama fyrirspurn keyrð aftur beint úr gagnagrunninum',
           skjar, maelt, stemmir: maelt == null ? null : skjar === maelt,
         });
       } catch (e) {
-        radir.push({ heiti: (MODS[k] && MODS[k].t) || k, regla: 'sama fyrirspurn keyrð aftur', skjar, maelt: null, villa: (e && e.message) || String(e) });
+        radir.push({ heiti: (MODS[k] && MODS[k].t) || SANN_NOFN[k] || k, regla: 'sama fyrirspurn keyrð aftur', skjar, maelt: null, villa: (e && e.message) || String(e) });
       }
     }
 
