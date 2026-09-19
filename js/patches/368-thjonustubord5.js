@@ -3196,12 +3196,16 @@
     });
     return ut;
   }
-  function pbRodHtml(m) {
+  // 19.09.2026 — „x hide, bara ná þessu i bustu sem ég er búinn með" (Agnar).
+  // Sami lykill og önnur borð-atriði nota, svo felan samstillist á allar vélar.
+  const pbLyk = m => 'postbeidnir:' + (m.message_id || m.id || '');
+  function pbRodHtml(m, falinn) {
     const aldur = Math.max(0, Math.round((Date.now() - new Date(m.received_at).getTime()) / 864e5));
     const hver = esc(m.sender_name || m.sender_email || '(óþekkt)');
     const texti = String(m.body_preview || m.snippet || '').replace(/\s+/g, ' ').trim().slice(0, 190);
     const k = m.kunni;
-    return '<div class="lrow pbr" data-mid="' + esc(m.message_id || '') + '">' +
+    const f = { l: pbLyk(m), e: 'postbeidnir', d: (m.sender_name || m.sender_email || '') + ' — ' + (m.subject || ''), falinn: !!falinn };
+    return '<div class="lrow pbr' + (falinn ? ' falid' : '') + '" data-mid="' + esc(m.message_id || '') + '">' +
       '<div class="age ' + ageCls(aldur) + '" title="' + aldur + ' dagar síðan pósturinn barst">' + aldur + 'D</div>' +
       '<div><div class="kick">' + hver + ' · ' + esc(m.sender_email || '') + '</div>' +
         '<b>' + esc(m.subject || '(ekkert efni)') + '</b>' +
@@ -3211,7 +3215,7 @@
         // kúnnann, sem er upplýsing um mig en ekki um verkið hans.
         '<span class="s">' + (k
           ? '<a class="clink" href="#company/' + (k.coId || '') + '" data-t5="fyr-id" data-fid="' + (k.coId || '') + '">🏢 ' + esc(k.nafn) + ' ›</a>'
-          : '<span class="tag hot">enginn kúnni fannst</span>') + '</span></div>' +
+          : '<span class="tag hot">enginn kúnni fannst</span>') + felaTakki(f) + '</span>' + skyrLina(f) + '</div>' +
       lakt((k ? '<button type="button" class="btn gold sm" data-t5="pb-senda" data-mid="' + esc(m.message_id || '') + '">✉️ Senda reikning</button>' : '') +
         '<button type="button" class="btn iv sm" data-t5="pb-svar" data-mid="' + esc(m.message_id || '') + '">🤖 Svar</button>') +
     '</div>';
@@ -3280,10 +3284,13 @@
       if (!g || (!g.data && !g.villa)) body = emptyHtml('Les pósthólfin…');
       else if (g.villa) body = '<p class="err">Náði ekki í póstinn: ' + esc(g.villa) + '</p>';
       else {
-        const rad = g.data;
-        sum = rad.length + (rad.length === 1 ? ' beiðni' : ' beiðnir');
-        body = !rad.length ? emptyHtml('Engin ósvöruð reikningsbeiðni. Nýjar birtast hér um leið og þær berast.')
-          : '<div class="pbl">' + rad.map(pbRodHtml).join('') + '</div>';
+        // Faldar beiðnir fara neðst undir „N falin · Sýna" — ekki burt úr gögnunum.
+        const { synd, falin } = fela(g.data, pbLyk);
+        sum = synd.length + (synd.length === 1 ? ' beiðni' : ' beiðnir') + falinSum(falin.length);
+        body = (!synd.length && !falin.length) ? emptyHtml('Engin ósvöruð reikningsbeiðni. Nýjar birtast hér um leið og þær berast.')
+          : (synd.length ? '<div class="pbl">' + synd.map(m => pbRodHtml(m, false)).join('') + '</div>'
+               : emptyHtml('Allar beiðnir faldar — smelltu á Sýna til að sjá þær.'))
+            + falinHtml('postbeidnir', falin.length, () => falin.map(m => pbRodHtml(m, true)).join(''), 'pbl');
       }
       return modPanel(k, sum, body, uppfTakki('postbeidnir'), true);
     }
