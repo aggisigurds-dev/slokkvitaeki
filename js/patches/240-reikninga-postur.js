@@ -447,6 +447,12 @@
       '#_rp-modal textarea.reply{min-height:230px;font-size:13.5px}',
       '#_rp-modal .rpm-invs{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow:auto;border:1px solid #eef1f6;border-radius:10px;padding:7px}',
       '#_rp-modal .rpm-inv{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent}',
+      // 19.09.2026: skjalaval (fjolval) notar sama utlit og reikningavalid.
+      '#_rp-modal .rpm-doc{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent}',
+      '#_rp-modal .rpm-doc:hover{background:#f8fafc}',
+      '#_rp-modal .rpm-doc .n{flex:1;font-weight:600}',
+      '#_rp-modal .rpm-doc .meta{font-size:12px;color:#64748b;text-align:right}',
+      '#_rp-modal .rpm-docs{max-height:190px;overflow:auto}',
       '#_rp-modal .rpm-inv:hover{background:#f8fafc}',
       '#_rp-modal .rpm-inv.sel{background:#eef3ff;border-color:#c6d6ff}',
       '#_rp-modal .rpm-inv input{width:auto;flex:none}',
@@ -1052,6 +1058,40 @@
     (r.data || []).forEach(s => { if (s && !sed.has(s.id)) { sed.add(s.id); ut.push(s); } });
     return ut;
   }
+  /* 19.09.2026 — SKJÖL FÉLAGSINS (úttektarskýrslur, eldri reikningar, samningar).
+   * `customer_documents` geymir þau með `drive_file_id`, og /api/email-send leysir
+   * `{ filename, driveId }` í base64 þjónsmegin. Skjölin þurfa því enga nýja leið.
+   * Aðeins raðir MEÐ drive_file_id eru sýndar: hinar er ekki hægt að hengja við,
+   * og valmöguleiki sem virkar ekki er verri en enginn.
+   */
+  const DOC_HEITI = { uttektarskyrsla: 'Úttektarskýrsla', reikningur: 'Reikningur', samningur: 'Samningur', brunakerfi: 'Brunakerfi' };
+  async function getCustomerDocs(coId, baseId) {
+    const SB = getSB();
+    if (!SB) return [];
+    const skil = [];
+    if (coId != null && coId !== '') skil.push('fyrirtaeki_id.eq.' + coId);
+    if (baseId != null && baseId !== '') skil.push('customer_base_id.eq.' + baseId);
+    if (!skil.length) return [];
+    const r = await SB.from('customer_documents')
+      .select('id,doc_type,year,doc_date,invoice_number,file_name,drive_file_id,amount')
+      .or(skil.join(','))
+      .not('drive_file_id', 'is', null)
+      .order('doc_date', { ascending: false, nullsFirst: false })
+      .limit(60);
+    // Villa er ekki sama og „engin skjöl" — hún á að sjást.
+    if (r.error) throw r.error;
+    return r.data || [];
+  }
+  function docHeiti(d) {
+    const teg = DOC_HEITI[d.doc_type] || d.doc_type || 'Skjal';
+    const ar = d.year || (d.doc_date ? String(d.doc_date).slice(0, 4) : '');
+    const nr = d.invoice_number ? ' ' + d.invoice_number : '';
+    return teg + nr + (ar ? ' ' + ar : '');
+  }
+  function docSkraarnafn(d) {
+    if (d.file_name) return String(d.file_name).replace(/[\\/:*?"<>|]/g, '-');
+    return docHeiti(d).replace(/\s+/g, ' ').trim() + '.pdf';
+  }
   async function coForSale(sale, m) {
     const SB = getSB();
     const coId = m && m.cust && m.cust.coId;
@@ -1078,10 +1118,28 @@
     if (m.sale && !invs.some(s => String(s.id) === String(m.sale.id))) invs.unshift(m.sale);
     // fyrst ógreiddir reikningur-sölur, svo eftir dagsetningu (nýjast fyrst)
     invs = invs.filter(s => s && s.num);
+    // 19.09.2026: skjöl félagsins með — úttektarskýrslan er oft það sem vantar.
+    let docs = [], docVilla = null;
+    try { docs = await getCustomerDocs(coId, baseId); }
+    catch (e) { docVilla = (e && e.message) || String(e); }
     const preId = m.sale ? String(m.sale.id) : (invs[0] ? String(invs[0].id) : '');
-    renderSendModal(m, invs, preId);
+    renderSendModal(m, invs, preId, docs, leitVilla, docVilla);
   }
-  function renderSendModal(m, invs, selId) {
+  // Uppkast að svari. Forskrifað svo ekki þurfi að byrja á auðu blaði, en það
+  // er UPPKAST — reiturinn er opinn og textinn fer ekki óskoðaður.
+  function uppkast(m, sale) {
+    // `sender_name` er stundum netfangið sjálft (mælt: „Sæl(l)
+    // hussjodurinn@hussjodurinn.is,"). Nafn sem inniheldur @ eða punkt á
+    // undan léni er ekki nafn — þá er hlutlaus kveðja réttari en röng.
+    const hrátt = String(m.sender_name || '').trim();
+    const nafn = (!hrátt || hrátt.indexOf('@') >= 0) ? '' : hrátt.split(/\s+/)[0];
+    const kvedja = nafn ? 'Sæl(l) ' + nafn + ',' : 'Góðan daginn,';
+    const hvad = sale && sale.num ? 'reikningur ' + sale.num : 'umbeðin skjöl';
+    return kvedja + '\n\nMeðfylgjandi er ' + hvad + ' eins og beðið var um.' +
+      '\n\nKveðja,\nBrunahólf Slökkvitæki ehf.';
+  }
+  function renderSendModal(m, invs, selId, docs, leitVilla, docVilla) {
+    docs = docs || [];
     const to = m.from || '';
     const invRows = invs.length ? invs.map(s =>
       '<label class="rpm-inv' + (String(s.id) === selId ? ' sel' : '') + '" data-id="' + esc(String(s.id)) + '">' +
@@ -1089,16 +1147,29 @@
         '<span class="n">' + esc(s.num || '—') + '</span>' +
         '<span class="meta">' + fmtKr(s.samtals) + '<br>' + esc(fmtDate(s.created_at)) + (s.paid_at ? ' · <span class="paid">greitt</span>' : '') + '</span>' +
       '</label>'
-    ).join('') : '<div class="rpm-note" style="margin:0">Engir reikningar fundust á þennan viðskiptavin.</div>';
+    ).join('') : '<div class="rpm-note" style="margin:0">' + (leitVilla
+        ? '⚠ Náði ekki í reikningana: ' + esc(leitVilla)
+        : 'Engir reikningar fundust á þennan viðskiptavin.') + '</div>';
+    // Skjöl félagsins — fjölval. Aðeins þau sem hægt er að hengja við (drive_file_id).
+    const docRows = docs.length ? docs.map(d =>
+      '<label class="rpm-doc"><input type="checkbox" name="rpdoc" value="' + esc(String(d.id)) + '">' +
+        '<span class="n">' + esc(docHeiti(d)) + '</span>' +
+        '<span class="meta">' + esc(d.doc_date ? fmtDate(d.doc_date) : (d.year || '')) + '</span>' +
+      '</label>').join('')
+      : '<div class="rpm-note" style="margin:0">' + (docVilla
+          ? '⚠ Náði ekki í skjölin: ' + esc(docVilla)
+          : 'Engin skjöl með viðhengi fundust á félaginu.') + '</div>';
 
     openModal(
-      '<div class="rpm-head"><div><h3>✉️ Senda reikning</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
+      '<div class="rpm-head"><div><h3>✉️ Senda skjöl</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
       '<div class="rpm-body">' +
         '<div class="rpm-row"><label class="rpm-lbl">Senda á netfang</label><input id="_rpm-to" type="email" value="' + esc(to) + '" placeholder="netfang@daemi.is"></div>' +
-        '<div class="rpm-row"><label class="rpm-lbl">Hvaða reikning?</label><div class="rpm-invs">' + invRows + '</div></div>' +
-        '<div class="rpm-row"><label class="rpm-lbl">Skilaboð (valkvæmt)</label><textarea id="_rpm-note" placeholder="Stutt skilaboð sem fylgja með…"></textarea></div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Reikningur (valkvæmt — teiknaður sem PDF)</label><div class="rpm-invs">' + invRows + '</div>' +
+          (invs.length ? '<label class="rpm-inv" data-id=""><input type="radio" name="rpinv" value=""><span class="n">— enginn reikningur</span><span class="meta">aðeins skjölin hér að neðan</span></label>' : '') + '</div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Skjöl félagsins</label><div class="rpm-invs rpm-docs">' + docRows + '</div></div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Skilaboð</label><textarea id="_rpm-note">' + esc(uppkast(m, invs.find(s => String(s.id) === selId))) + '</textarea></div>' +
       '</div>' +
-      '<div class="rpm-foot"><span class="rpm-msg" id="_rpm-msg"></span><button class="rpm-btn" type="button" id="_rpm-cancel">Hætta við</button><button class="rpm-btn prim" type="button" id="_rpm-send">📤 Senda reikning</button></div>'
+      '<div class="rpm-foot"><span class="rpm-msg" id="_rpm-msg"></span><button class="rpm-btn" type="button" id="_rpm-cancel">Hætta við</button><button class="rpm-btn prim" type="button" id="_rpm-send">Undirbúa sendingu ›</button></div>'
     );
     const card = modalEl();
     card.querySelector('.rpm-x').onclick = closeModal;
@@ -1107,7 +1178,8 @@
       card.querySelectorAll('.rpm-inv').forEach(x => x.classList.remove('sel'));
       l.classList.add('sel'); const r = l.querySelector('input'); if (r) r.checked = true;
     }));
-    card.querySelector('#_rpm-send').onclick = () => doSend(m, invs);
+    // 19.09.2026: EKKI SENT STRAX. Fyrst er sendingin byggð og sýnd.
+    card.querySelector('#_rpm-send').onclick = () => undirbua(m, invs, docs);
     setTimeout(() => { const t = card.querySelector('#_rpm-to'); if (t && !t.value) t.focus(); }, 80);
   }
   function buildEmailHtml(sale, co, note) {
@@ -1124,34 +1196,90 @@
         '<p style="color:#64748b;font-size:12.5px;margin:18px 0 0">Kær kveðja,<br><strong>Brunahólf Slökkvitæki ehf</strong><br>eldklar@eldklar.is</p>' +
       '</div></body></html>';
   }
-  async function doSend(m, invs) {
+  /* 19.09.2026 — TVÖ ÞREP. Agnar: „Ekki senda strax."
+   * `undirbua` byggir sendinguna og SÝNIR hana: viðtakanda, efni, viðhengi og
+   * texta. Fyrst þá birtist „Senda núna". Sending er aðgerð sem ekki verður
+   * tekin til baka; hún á að krefjast þess að vera lesin fyrst.
+   */
+  async function undirbua(m, invs, docs) {
     const card = modalEl();
     const msg = card.querySelector('#_rpm-msg');
     const btn = card.querySelector('#_rpm-send');
+    const setMsg = (x, c) => { msg.textContent = x; msg.className = 'rpm-msg ' + (c || ''); };
     const to = (card.querySelector('#_rpm-to').value || '').trim();
     const note = (card.querySelector('#_rpm-note').value || '').trim();
     const sel = card.querySelector('input[name=rpinv]:checked');
-    const setMsg = (t, cls) => { msg.textContent = t; msg.className = 'rpm-msg ' + (cls || ''); };
+    const valdir = [...card.querySelectorAll('input[name=rpdoc]:checked')].map(x => x.value);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) { setMsg('Skráðu gilt netfang', 'bad'); return; }
-    if (!sel) { setMsg('Veldu reikning', 'bad'); return; }
-    if (!window.UttektInvoicePdf || !UttektInvoicePdf.buildInvoiceBlob) { setMsg('PDF-teiknari ekki tiltækur', 'bad'); return; }
-    btn.disabled = true; setMsg('Teikna PDF…', '');
+    const saleId = sel && sel.value ? sel.value : null;
+    if (!saleId && !valdir.length) { setMsg('Veldu reikning eða að minnsta kosti eitt skjal', 'bad'); return; }
+    btn.disabled = true;
     try {
-      let sale = invs.find(s => String(s.id) === sel.value);
-      const full = await getFullSale(sel.value);
-      if (full) sale = full;
-      const co = await coForSale(sale, m);
-      const blob = await UttektInvoicePdf.buildInvoiceBlob(sale, co);
-      const b64 = await blobToB64(blob);
-      const fname = [(co.nafn || 'reikningur').replace(/\s+/g, ' ').trim(), sale.num || ''].filter(Boolean).join(' - ') + '.pdf';
-      setMsg('Sendi…', '');
+      const attachments = [];
+      let sale = null, co = null;
+      if (saleId) {
+        if (!window.UttektInvoicePdf || !UttektInvoicePdf.buildInvoiceBlob) throw new Error('PDF-teiknari ekki tiltækur');
+        setMsg('Teikna reikning…', '');
+        sale = invs.find(s => String(s.id) === saleId);
+        const full = await getFullSale(saleId);
+        if (full) sale = full;
+        co = await coForSale(sale, m);
+        const blob = await UttektInvoicePdf.buildInvoiceBlob(sale, co);
+        const b64 = await blobToB64(blob);
+        const fname = [(co.nafn || 'reikningur').replace(/\s+/g, ' ').trim(), sale.num || ''].filter(Boolean).join(' - ') + '.pdf';
+        attachments.push({ filename: fname, content: b64 });
+      }
+      // Skjölin fara sem Drive-tilvísun; email-send sækir þau þjónsmegin.
+      (docs || []).filter(d => valdir.indexOf(String(d.id)) >= 0).forEach(d => {
+        attachments.push({ filename: docSkraarnafn(d), driveId: d.drive_file_id });
+      });
+      if (!co) co = await coForSale(null, m);
+      const efni = sale && sale.num ? 'Reikningur ' + sale.num + ' frá Brunahólf Slökkvitæki ehf'
+        : 'Umbeðin skjöl frá Brunahólf Slökkvitæki ehf';
       const payload = {
-        from: emailFrom(), to: [to],
-        subject: 'Reikningur ' + (sale.num || '') + ' frá Brunahólf Slökkvitæki ehf',
+        from: emailFrom(), to: [to], subject: efni,
         html: buildEmailHtml(sale, co, note),
-        attachments: [{ filename: fname, content: b64 }],
+        attachments: attachments,
         apiKey: localStorage.getItem('resend_api_key') || undefined,
       };
+      synaStadfestingu(m, payload, note);
+    } catch (e) {
+      btn.disabled = false;
+      setMsg('Tókst ekki að undirbúa: ' + ((e && e.message) || e), 'bad');
+    }
+  }
+  function synaStadfestingu(m, payload, note) {
+    const vidh = (payload.attachments || []).map(a =>
+      '<li>' + esc(a.filename) + (a.driveId ? ' <span class="meta">· úr Drive</span>' : ' <span class="meta">· teiknaður núna</span>') + '</li>').join('');
+    openModal(
+      '<div class="rpm-head"><div><h3>📤 Yfirfara áður en sent er</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button" aria-label="Loka">✕</button></div>' +
+      '<div class="rpm-body">' +
+        '<div class="rpm-row"><label class="rpm-lbl">Viðtakandi</label><div>' + esc(payload.to.join(', ')) + '</div></div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Efni</label><div>' + esc(payload.subject) + '</div></div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Viðhengi (' + (payload.attachments || []).length + ')</label><ul style="margin:0;padding-left:18px">' + (vidh || '<li>engin</li>') + '</ul></div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Skilaboð</label><div style="white-space:pre-wrap">' + esc(note || '(engin)') + '</div></div>' +
+      '</div>' +
+      '<div class="rpm-foot"><span class="rpm-msg" id="_rpm-msg"></span>' +
+        '<button class="rpm-btn" type="button" id="_rpm-back">‹ Til baka</button>' +
+        '<button class="rpm-btn prim" type="button" id="_rpm-go">📤 Senda núna</button></div>'
+    );
+    const card = modalEl();
+    card.querySelector('.rpm-x').onclick = closeModal;
+    card.querySelector('#_rpm-back').onclick = () => openSendModal(m);
+    card.querySelector('#_rpm-go').onclick = () => sendaNuna(m, payload);
+  }
+  /* Skrefið sem SENDIR. Aðskilið frá `undirbua` af ásettu ráði: sendingin sjálf
+   * á að vera stutt og læsileg, því hún er það eina sem ekki verður tekið til
+   * baka. Hér er ekkert byggt og engu breytt — aðeins sent og lesið svarið.
+   */
+  async function sendaNuna(m, payload) {
+    const card = modalEl();
+    const msg = card.querySelector('#_rpm-msg');
+    const btn = card.querySelector('#_rpm-go');
+    const setMsg = (x, c) => { msg.textContent = x; msg.className = 'rpm-msg ' + (c || ''); };
+    btn.disabled = true;
+    setMsg('Sendi…', '');
+    try {
       // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
       const r = await (window.AppMail ? AppMail.send(payload)
         : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
@@ -1159,10 +1287,24 @@
         const e = await r.json().catch(() => ({}));
         throw new Error(e.message || e.error || ('HTTP ' + r.status));
       }
-      setMsg('✓ Reikningur sendur á ' + to, 'ok');
-      if (window.Toast && Toast.show) Toast.show('✓ Reikningur ' + (sale.num || '') + ' sendur á ' + to);
+      // Þjónninn getur skilað 200 OG sagt frá viðhengi sem náðist ekki í
+      // (sjá warnings í email-send.js). Það á að sjást — hálf sending er ekki
+      // sending.
+      let vidvorun = null;
+      try {
+        const j = await r.clone().json();
+        if (j && Array.isArray(j.warnings) && j.warnings.length) vidvorun = j.warnings.join(' · ');
+      } catch (_) {}
+      const hve = (payload.attachments || []).length;
+      if (vidvorun) {
+        setMsg('Sent — EN viðhengi vantaði: ' + vidvorun, 'bad');
+        if (window.Toast && Toast.show) Toast.show('Sent, en viðhengi vantaði: ' + vidvorun);
+      } else {
+        setMsg('✓ Sent á ' + payload.to.join(', ') + ' (' + hve + ' viðhengi)', 'ok');
+        if (window.Toast && Toast.show) Toast.show('✓ Sent á ' + payload.to.join(', '));
+      }
       logActivity(m.message_id, 'invoice');
-      setTimeout(closeModal, 1100);
+      setTimeout(closeModal, vidvorun ? 3200 : 1200);
     } catch (e) {
       setMsg('Villa: ' + String((e && e.message) || e), 'bad');
       btn.disabled = false;
