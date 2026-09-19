@@ -3002,7 +3002,40 @@
       c.from('v_gleymt_uttekt_stolpi').select('fyrirtaeki_id,nafn,heimilisfang,postnumer,skodun_dags,skodun_heimild,stolpi_nr,stolpi_dags,stolpi_stada,stolpi_upphaed').order('skodun_dags', { ascending: true })
     ]);
     if (ru.error) throw ru.error;
-    return { uttekt: (ru.data || []).slice().sort(rodSkodun), sidar: rg.data || [], kort: rk.data || [],
+
+    // 19.09.2026 — SAMÞYKKT VINNUBLAÐ ÁN SÖLU. audit-vinnublad-an-solu hefur verið
+    // rauður síðan 17.09 með 335.611 kr sem enginn rukkaði, og sagt það í skel sem
+    // enginn horfir á. Sama regla og vörðurinn notar: blað með samthykkt_at, ekki
+    // „hafnad", og engin sala á sama viðskiptavini frá 30 dögum FYRIR samþykktina
+    // (salan er stundum stofnuð á undan).
+    let blod = [];
+    try {
+      const [rb, rf, rsl] = await Promise.all([
+        c.from('sara_yfirferd').select('id,fyrirtaeki,fyrirtaeki_id,stada,samthykkt_at,samthykkt_by,linur,akstur,akstur_verd,skyrslugerd')
+          .not('samthykkt_at', 'is', null).limit(1000),
+        DB.fetchAll((from, to) => c.from('fyrirtaeki').select('id,customer_base_id').order('id').range(from, to)),
+        DB.fetchAll((from, to) => c.from('solur').select('id,customer_base_id,created_at').not('customer_base_id', 'is', null)
+          .gte('created_at', new Date(Date.now() - 400 * 864e5).toISOString()).order('id').range(from, to)),
+      ]);
+      if (rb.error) throw rb.error;
+      const baseAf = new Map((rf || []).map(f => [f.id, f.customer_base_id]));
+      const eftirBase = new Map();
+      (rsl || []).forEach(s => { const l = eftirBase.get(s.customer_base_id) || []; l.push(s); eftirBase.set(s.customer_base_id, l); });
+      const upphaed = b => {
+        const linur = Array.isArray(b.linur) ? b.linur : [];
+        return linur.reduce((s, x) => s + (Number(x.n) || 0) * (Number(x.v) || 0), 0)
+          + (Number(b.akstur) || 0) * (Number(b.akstur_verd) || 0) + (Number(b.skyrslugerd) || 0);
+      };
+      blod = (rb.data || []).filter(b => {
+        if (b.stada === 'hafnad') return true === false;
+        const base = baseAf.get(b.fyrirtaeki_id);
+        const mork = Date.parse(b.samthykkt_at) - 30 * 864e5;
+        const s = (base == null ? [] : (eftirBase.get(base) || [])).filter(x => Date.parse(x.created_at) >= mork);
+        return !s.length;
+      }).map(b => Object.assign({}, b, { upphaed: upphaed(b) })).sort((a, b) => b.upphaed - a.upphaed);
+    } catch (_) { blod = []; }   // þessi hluti má ekki fella hina þrjá
+
+    return { uttekt: (ru.data || []).slice().sort(rodSkodun), sidar: rg.data || [], kort: rk.data || [], blod: blod,
       stolpi: rs.error ? null : (rs.data || []).slice().sort(rodSkodun), stolpiVilla: rs.error ? (rs.error.message || String(rs.error)) : '' };
   }
   const BAKF_ORD = ['bakfær', 'kreditreikn', 'kredit', 'leiðrétt', 'endurgreið', 'tvírukk', 'breyta reikn', 'rangur reikn', 'afrit af reikn', 'fella niður'];
@@ -3715,7 +3748,22 @@
       else {
         const d = g.data;
         const uLyk = x => 'gleymt:uttekt:fyr:' + x.fyrirtaeki_id + ':' + AR, sLyk = x => 'gleymt:sidar:solur:' + x.id, kLyk = x => 'gleymt:kort:solur:' + x.id;
+        const bLyk = x => 'gleymt:blad:vb:' + x.id;
         const uF = fela(d.uttekt, uLyk), sF = fela(d.sidar, sLyk), kF = fela(d.kort, kLyk);
+        const bF = fela(d.blod || [], bLyk);
+        // 19.09.2026 — SAMÞYKKT VINNUBLAÐ ÁN SÖLU. Upphæðin er ÁN vsk eins og á
+        // vinnublaðinu sjálfu; með vsk er hún sýnd við hliðina svo talan sem á að
+        // rukka sé ekki reiknuð í hausnum á honum.
+        const bRod = (x, falinn) => {
+          const f = { l: bLyk(x), e: k, d: (x.fyrirtaeki || '#' + x.fyrirtaeki_id) + ' — samþykkt vinnublað án sölu', falinn };
+          return '<div class="lrow' + (falinn ? ' falid' : '') + '">' +
+            '<span class="age hot">' + kr(x.upphaed) + '</span><div>' +
+            (x.fyrirtaeki_id ? '<a class="clink" href="#company/' + x.fyrirtaeki_id + '" data-t5="fyr-id" data-fid="' + x.fyrirtaeki_id + '">' + esc(x.fyrirtaeki || '(ónefnt)') + '</a>'
+              : '<b>' + esc(x.fyrirtaeki || '(ónefnt)') + '</b>') +
+            '<span class="s">samþykkt ' + esc(dagsFull(x.samthykkt_at)) + (x.samthykkt_by ? ' af ' + esc(x.samthykkt_by) : '') +
+              ' · ' + kr(Math.round(x.upphaed * 1.24)) + ' með vsk' + felaTakki(f) + '</span>' + skyrLina(f) + '</div>' +
+          lakt(x.fyrirtaeki_id ? '<button type="button" class="btn iv sm" data-t5="fyr-id" data-fid="' + x.fyrirtaeki_id + '" title="Opna félagið til að stofna söluna">Opna félagið ›</button>' : '') + '</div>';
+        };
         // Úttekt: skoðun vinstra megin; vinnublað og síðasti Stólpa-reikningur (aðeins verðviðmið) sem flögur í gráu línunni.
         const uRod = (x, falinn) => {
           const f = { l: uLyk(x), e: k, d: (x.nafn || '') + ' — úttekt ' + AR + ' án reiknings', falinn };
@@ -3740,7 +3788,15 @@
               : 'Skoðun jan.–apr. án reiknings — telst greidd fyrri eigendum') + '</span></div>' +
           '<span class="tag' + (x.stolpi_stada === 'greitt' ? ' ok' : '') + '">' + (x.stolpi_stada === 'greitt' ? 'Greitt' : x.stolpi_stada === 'opid_vid_yfirtoku' ? 'Opið við yfirtöku'
             : x.stolpi_stada === 'fyrri_eigendur_an_reiknings' ? 'Fyrri eigendur' : esc(x.stolpi_stada || '—')) + '</span></div>';
-        body = '<div class="sect">Úttekt ' + AR + ' án reiknings (' + uF.synd.length + ')</div>' +
+        // Efst: samþykkt vinna sem var aldrei rukkuð. Þetta er peningur sem er
+        // þegar unninn og samþykktur — hann á ekki að liggja neðst í lista.
+        body = (bF.synd.length || bF.falin.length
+          ? '<div class="sect">Samþykkt vinnublöð án sölu (' + bF.synd.length + ' · ' + kr(bF.synd.reduce((s, x) => s + x.upphaed, 0)) + ' án vsk)</div>' +
+            (bF.synd.length ? bF.synd.map(x => bRod(x)).join('') : '') +
+            falinHtml('gleymt:blad', bF.falin.length, () => bF.falin.map(x => bRod(x, true)).join('')) +
+            '<div class="more">„✓ Samþykkja" skrifar aðeins stöðu og býr enga sölu til — samþykktin er leyfi, ekki aðgerð.</div>'
+          : '') +
+          '<div class="sect">Úttekt ' + AR + ' án reiknings (' + uF.synd.length + ')</div>' +
           (uF.synd.length || uF.falin.length ? '<div class="sectm">Enginn reikningur á stað, kúnna né systurstað — og ekki rukkað gegnum Stólpa. Skoðanir jan.–apr. teljast greiddar fyrri eigendum.</div>' : '') +
           (uF.synd.length ? uF.synd.slice(0, 15).map(x => uRod(x)).join('') + (uF.synd.length > 15 ? '<div class="more">+ ' + (uF.synd.length - 15) + ' til viðbótar</div>' : '')
             : uF.falin.length ? '' : '<div class="more">Engin úttekt án reiknings.</div>') +
@@ -3755,7 +3811,8 @@
           '<div class="sect">Kort eða reiðufé — aldrei merkt greitt (' + kF.synd.length + ' · ' + kr(summa(kF.synd)) + ')</div>' +
           (kF.synd.length ? kF.synd.slice(0, 8).map(x => kRod(x)).join('') : kF.falin.length ? '' : '<div class="more">Allt merkt greitt.</div>') +
           falinHtml('gleymt:kort', kF.falin.length, () => kF.falin.map(x => kRod(x, true)).join(''));
-        sum = uF.synd.length + ' úttektir án reiknings · ' + sF.synd.length + ' greitt síðar · ' + kF.synd.length + ' ómerkt greitt' + falinSum(uF.falin.length + sF.falin.length + kF.falin.length);
+        sum = (bF.synd.length ? bF.synd.length + ' vinnublöð órukkuð (' + kr(bF.synd.reduce((s, x) => s + x.upphaed, 0)) + ') · ' : '') +
+          uF.synd.length + ' úttektir án reiknings · ' + sF.synd.length + ' greitt síðar · ' + kF.synd.length + ' ómerkt greitt' + falinSum(uF.falin.length + sF.falin.length + kF.falin.length + bF.falin.length);
       }
       return modPanel(k, sum, body, uppfTakki('gleymt') + '<button type="button" class="btn iv sm" data-t5="go" data-view="krofu-yfirlit">Kröfu yfirlit ›</button>');
     }
