@@ -545,10 +545,31 @@
   }
   // 18.09.2026: upphæðin kom inn á eftir áríðandi-hakinu (Agnar: „mikilvægustu
   // eða auðveldustu fyrst"). Hakið er hans dómur og gengur fyrir; upphæðin er
-  // næsta besta mæling á því hvað skiptir máli. Frestur og aldur ráða svo eins
-  // og áður — en elsta málið fer nú fremst meðal jafningja í stað þess nýjasta,
-  // svo það sem hefur beðið lengst sökkvi ekki endalaust.
-  const rodun = (a, b) => samtRod(b) - samtRod(a)
+  // næsta besta mæling á því hvað skiptir máli.
+  //
+  // 19.09.2026 — NÝJAST FYRST AFTUR, OG ELST FYRST AÐEINS Í SAMÞYKKJA.
+  // Sama dag sneri ég síðasta þrepinu hér í „elst fyrst" fyrir Samþykktir.
+  // `rodun` stýrir hins vegar NÍU listum (Master, Mitt borð, allar síur,
+  // Póstsvörun, Áríðandi á tveimur stöðum), svo ein lína sneri þeim öllum.
+  // Agnar: „Djö er þjónustuborðið í rugli" — 57 daga gamall póstur stóð efst í
+  // Póstsvörun meðan 461 opinn póstur er til og sá nýjasti frá í gær.
+  //
+  // Ekki er hægt að hnýta aukaþrepi aftan við `rodun`: hún skilar aldrei 0 þegar
+  // dagsetningar eru ólíkar, svo slíkt þrep keyrði aldrei. Sameiginlegi hlutinn
+  // er því hér, og listarnir enda hann hvor á sinn veg.
+  // 19.09.2026, seinni leiðrétting: UPPHÆÐIN Á LÍKA BARA HEIMA Í SAMÞYKKTUM.
+  // Hún var sett í sameiginlega grunninn og raðaði þá öllum listum eftir tölu sem
+  // NEFND ER Í TEXTANUM. Í Póstsvörun lenti 53 daga gamall póstur efst af því hann
+  // nefnir „krónur 27110" — aldurinn og röðin sögðu þá ekkert. Upphæðin er mæling
+  // á því hvað er í húfi ÞEGAR VERIÐ ER AÐ SAMÞYKKJA; hún er ekki almenn röðun.
+  const rodunGrunnur = (a, b) => samtRod(b) - samtRod(a)
+    || (b.important ? 1 : 0) - (a.important ? 1 : 0)
+    || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity);
+  // Allir listar nema Samþykkja: nýjast fyrst, eins og verið hefur.
+  const rodun = (a, b) => rodunGrunnur(a, b) || tStamp(b.created_at) - tStamp(a.created_at);
+  // Samþykkja: áríðandi, svo UPPHÆÐ, svo frestur — og elst fremst meðal jafningja,
+  // því þetta er biðröð sem á að tæmast.
+  const rodunSamt = (a, b) => samtRod(b) - samtRod(a)
     || (b.important ? 1 : 0) - (a.important ? 1 : 0)
     || upphaedMals(b) - upphaedMals(a)
     || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity)
@@ -1702,7 +1723,7 @@
   // + merkið spurning) og svarað (svar:* — bíður Claude). Hægra megin er sama spjald og Valið mál, með allri lýsingunni.
   const SPURNING = 'spurning';
   const samtHluti = r => (!erSamthykki(r) ? 2 : tagList(r).indexOf(SPURNING) >= 0 ? 1 : 0);
-  const samtListi = n => S.rows.filter(r => iHam(r, SAMT_HAM)).sort((a, b) => samtHluti(a) - samtHluti(b) || rodun(a, b));
+  const samtListi = n => S.rows.filter(r => iHam(r, SAMT_HAM)).sort((a, b) => samtHluti(a) - samtHluti(b) || rodunSamt(a, b));
   function samtRymiHtml(n) {
     if (!S.loaded) return emptyHtml('Sæki mál…');
     const listi = samtListi(n);
@@ -3185,8 +3206,11 @@
       '<div><div class="kick">' + hver + ' · ' + esc(m.sender_email || '') + '</div>' +
         '<b>' + esc(m.subject || '(ekkert efni)') + '</b>' +
         (texti ? '<span class="s">' + esc(texti) + '</span>' : '') +
+        // 19.09.2026: nafnið er HLEKKUR inn á fyrirtækið, ekki texti. Merkið
+        // „fannst: þráður (kennitala)" er farið — það sagði hvernig VÉLIN fann
+        // kúnnann, sem er upplýsing um mig en ekki um verkið hans.
         '<span class="s">' + (k
-          ? '🏢 ' + esc(k.nafn) + ' <span class="tag">fannst: ' + esc(k.hvernig) + '</span>'
+          ? '<a class="clink" href="#company/' + (k.coId || '') + '" data-t5="fyr-id" data-fid="' + (k.coId || '') + '">🏢 ' + esc(k.nafn) + ' ›</a>'
           : '<span class="tag hot">enginn kúnni fannst</span>') + '</span></div>' +
       lakt((k ? '<button type="button" class="btn gold sm" data-t5="pb-senda" data-mid="' + esc(m.message_id || '') + '">✉️ Senda reikning</button>' : '') +
         '<button type="button" class="btn iv sm" data-t5="pb-svar" data-mid="' + esc(m.message_id || '') + '">🤖 Svar</button>') +
@@ -3200,6 +3224,11 @@
     return {
       sender_name: m.sender_name, from: m.sender_email, subject: m.subject,
       body_preview: m.body_preview, snippet: m.snippet, message_id: m.message_id,
+      // 19.09.2026 — HÓLFIÐ VERÐUR AÐ FYLGJA MEÐ. 240 svarar úr því hólfi sem tók
+      // við póstinum, en las `m.account` sem var aldrei afritað hingað. Sendingin
+      // féll því í reikningar@eldklar.is (ótengt hólf) og þaðan í sjálfgefna
+      // hólfið — sem er nákvæmlega ranga netfangið sem Agnar kvartaði yfir.
+      account: m.account, received_at: m.received_at,
       cust: m.kunni ? { name: m.kunni.nafn, kt: m.kunni.kt, coId: m.kunni.coId } : null,
       sale: null,
     };

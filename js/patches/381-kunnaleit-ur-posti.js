@@ -172,12 +172,24 @@
       // nýju leiðirnar duttu allar út — „enginn kúnni" fór úr 38 í 71 og
       // ✉️ Senda úr 53 í 24. Listinn er því vakinn EINU SINNI þegar leitin er
       // tilbúin. Einu sinni: annars vekur endurlesturinn sjálfan sig.
-      if (_vakti) return;
-      _vakti = true;
-      try {
+      // 19.09.2026, mælt á tæki Agnars: hér stóð `_vakti = true` ÁÐUR en athugað
+      // var hvort 240 væri til. Væri það ekki komið brann eina skotið og listinn
+      // var aldrei vakinn — hann sat með „enginn kúnni fannst" þótt leitin fyndi
+      // Reykjavíkurborg (nafn) og Gára ehf. (lén) fyrir sömu póstana. Flaggið er
+      // nú sett EFTIR að vakningin hefur raunverulega gerst, og beðið í allt að
+      // 15 sek eftir 240.
+      let n = 0;
+      const vekja = () => {
+        if (_vakti) return;
         const RP = window.ReikningaPostur;
-        if (RP && typeof RP.reload === 'function') RP.reload();
-      } catch (_) {}
+        if (!RP || typeof RP.reload !== 'function') {
+          if (++n <= 50) setTimeout(vekja, 300);
+          return;
+        }
+        _vakti = true;
+        try { RP.reload(); } catch (_) {}
+      };
+      vekja();
     }).catch(e => {
       if (window.console) console.warn('[381-kunnaleit] uppfletting brást:', (e && e.message) || e);
     });
