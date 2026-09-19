@@ -31,7 +31,7 @@
     { k: 'vidskiptavinir',   label: 'Viðskiptavinir',        short: 'Kúnnar',     emoji: '👤' },
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
     { k: 'bord',             label: 'Þjónustuborð',          short: 'Borð',       emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
-    { k: 'verkbord',         label: 'Verkefnalisti',         short: 'Verkefni',   emoji: '📋' },
+    // 19.09.2026: 'verkbord' (Verkefnalisti) tekið úr listanum — sama sýn og 'bord' (368). pagesFor() vísar þangað.
     // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) tekið úr listanum — það teiknar ekkert lengur og var
     // því hak sem gaf auðan skjá. pagesFor() vísar eldri vistunum á 'bord'.
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
@@ -479,7 +479,9 @@
     // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) teiknar ekkert lengur. Flutningurinn 11.09 (__bord1)
     // skipti því út í þá vistuðum öppum, en app sem var búið til EFTIR það (eða á `defaults`) sat eftir með dauða
     // síðu sem heimasíðu. Skipt út við LESTUR, svo vistaðar stillingar þurfi enga handavinnu.
-    arr = arr.map(function (k) { return k === 'thjonustubord' ? 'bord' : k; });
+    // 19.09.2026 (Agnar: „já"): 'verkbord' (Verkefnalisti) er SAMA sýnin — 368 tók við #verkbord og opnar #bord —
+    // svo öpp með bæði báru tvo flipa á sömu síðu (Þjónustuborð, Big Boss). Vísað á 'bord'; de-dup að neðan fellir hinn.
+    arr = arr.map(function (k) { return (k === 'thjonustubord' || k === 'verkbord') ? 'bord' : k; });
     arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
     return arr.filter(function (k) { return pageByKey(k); });
   }
