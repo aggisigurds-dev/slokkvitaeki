@@ -1243,7 +1243,16 @@
         if (hreint) efni = 'Re: ' + hreint;
       }
       const payload = {
-        from: emailFrom(), to: [to], subject: efni,
+        // 19.09.2026 — SVARA ÚR ÞVÍ HÓLFI SEM FÉKK PÓSTINN.
+        // `emailFrom()` skilar reikningar@eldklar.is sem er EKKI tengt hólf, svo
+        // `appSend` féll á sjálfgefna hólfið (eldklar@). Beiðni sem kom á bokhald@
+        // fékk því svar frá eldklar@ — öðru netfangi en hún skrifaði á, og þá sér
+        // viðtakandinn ókunnugan sendanda. `m.account` er hólfið sem TÓK VIÐ
+        // póstinum. `appSend` tekur aðeins við eldklar@/bokhald@ og fellur sjálft
+        // aftur í sjálfgefið berist annað, svo þetta getur ekki sent úr ótengdu hólfi.
+        from: (/^(eldklar|bokhald)@eldklar\.is$/i.test(String(m.account || ''))
+          ? 'Brunahólf slökkvitæki ehf <' + m.account + '>' : emailFrom()),
+        to: [to], subject: efni,
         html: buildEmailHtml(sale, co, note),
         attachments: attachments,
         // 19.09.2026 — SVAR, ekki nýr póstur. Message-ID upprunalega póstsins fer
