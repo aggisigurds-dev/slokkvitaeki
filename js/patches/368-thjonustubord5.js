@@ -204,6 +204,8 @@
     // 19.09.2026 (Agnar: „Væri fínt að þetta bara í sér ham á þjónustuborðið"):
     // póstar sem biðja um reikninginn okkar, með kúnnanum fundnum og sendingu
     // á staðnum. Kallar í 240 fyrir sendinguna — hún er ekki afrituð.
+    // 19.09.2026: áríðandi málin voru efst á Skipulagsborðinu — nú sér eining svo borðið sé bara spjöldin.
+    aridandi:  { n: '25', t: 'Áríðandi', d: 'Mál merkt ★ áríðandi, með 🗓 til að setja þau á dagskrá.' },
     postbeidnir: { n: '24', t: 'Reikningsbeiðnir', d: 'Póstar sem biðja um reikning: hver bað, hvaða kúnni, og senda hann beint héðan.' }
   };
   const I_VOLDU = ['saga', 'breyta'];
@@ -226,7 +228,7 @@
     // 368y: vinnusvæði — mál merkt ham:vinnublod, yfirferð eins blaðs í einu með skannmynd í fullri breidd.
     vinnublod: { l: 'Vinnublöð', board: false, rymi: 'vinnublod', first: [], filter: 'allt', flokkar: [], merki: [] },
     skyrslur:  { l: 'Skýrslur', board: false, first: ['ivinnslu'], filter: 'allt', flokkar: [], merki: ['senda_skyrslur'] },
-    akstur:    { l: 'Akstur og skipulag', board: false, first: ['dagskra', 'akstur', 'brunakerfi', 'skipulag', 'forgangur', 'frestir', 'nymal', 'starfsmenn'], filter: 'allt', flokkar: ['brunakerfi'], merki: ['uppsetning', 'brunakerfi', 'arskodun'], tegundir: ['heimsokn', 'skodun_tilbod'] }
+    akstur:    { l: 'Akstur og skipulag', board: false, first: ['dagskra', 'akstur', 'brunakerfi', 'skipulag', 'aridandi', 'forgangur', 'frestir', 'nymal', 'starfsmenn'], filter: 'allt', flokkar: ['brunakerfi'], merki: ['uppsetning', 'brunakerfi', 'arskodun'], tegundir: ['heimsokn', 'skodun_tilbod'] }
   };
   // Einingar sem taka alla breidd einingahamsins (vika, tafla, langar línur).
   // 18.09.2026: skipulag bættist við — skrifflötur sem nýtist ekki í hálfri breidd
@@ -281,7 +283,7 @@
     return '';
   }
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -3263,18 +3265,11 @@
           (cd.verkbord_id != null ? '<div class="skf">' + (row ? (row.important ? '<span class="tag hot">★ Áríðandi</span> ' : '') + '<button type="button" class="clink" data-t5="skoda" data-id="' + row.id + '">Opna mál ›</button> · ' + esc(eigandaTexti(row, n)) + ' ' + dagskrarTakki(row) : 'Málið er lokað eða í geymslu') + '</div>' : '') +
         '</div>';
       }).join('');
-      // 853efc10 (Agnar 27.08: „beðið um þetta ENDALAUST"): áríðandi mál efst svo þau gleymist ekki þegar vikan er
-      // skipulögð. 🗓-takkinn setur málið á dagskrá eða hoppar á daginn í Dagskrá (01) sé það komið þangað.
-      // 19.09.2026: á persónulega vinnuborðinu aðeins áríðandi mál á EIGIN borði — annars fylla mál allra hinna það.
-      const ari = S.rows.filter(r => r.important && (cfg().mode !== MITT_HAM || onBoardOf(r, n))).sort(rodun);
-      const ariHtml = ari.length
-        ? '<div class="sect">★ Áríðandi (' + ari.length + ')</div>' + ari.slice(0, 12).map(r => lrowHtml(r, dagskrarTakki(r))).join('') +
-          (ari.length > 12 ? '<div class="more">+ ' + (ari.length - 12) + ' til viðbótar</div>' : '')
-        : '';
-      const body = ariHtml + '<div class="skwrap">' +
+      // 19.09.2026 (Agnar: „það á bara að vera taflan"): áríðandi-listinn er farinn héðan í sína eigin einingu (25 Áríðandi).
+      const body = '<div class="skwrap">' +
         '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny" draggable="true" data-skdrag="__ny" title="Smelltu — eða dragðu autt spjald þangað sem þú vilt hafa það">+ Nýtt spjald</button></div>' +
         '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot beint í spjald.') + '</div></div>';
-      return modPanel(k, cards.length + ' spjöld' + (ari.length ? ' · ' + ari.length + ' áríðandi' : ''), body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
+      return modPanel(k, cards.length + ' spjöld', body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
     }
     if (k === 'postbeidnir') {
       // Sami gluggi og 240 notar (2 mán) og SAMA regla, svo talan hér og talan
@@ -3293,6 +3288,17 @@
             + falinHtml('postbeidnir', falin.length, () => falin.map(m => pbRodHtml(m, true)).join(''), 'pbl');
       }
       return modPanel(k, sum, body, uppfTakki('postbeidnir'), true);
+    }
+    if (k === 'aridandi') {
+      // 853efc10 (Agnar 27.08: „beðið um þetta ENDALAUST"): áríðandi mál á einum stað svo þau gleymist ekki þegar vikan er
+      // skipulögð. 🗓-takkinn setur málið á dagskrá eða hoppar á daginn í Dagskrá (01) sé það komið þangað. Stóð áður efst
+      // á Skipulagsborðinu. Á persónulega vinnuborðinu aðeins mál á EIGIN borði — annars fylla mál allra hinna það.
+      const ari = S.rows.filter(r => r.important && (cfg().mode !== MITT_HAM || onBoardOf(r, n))).sort(rodun);
+      const body = ari.length
+        ? ari.slice(0, 12).map(r => lrowHtml(r, dagskrarTakki(r))).join('') +
+          (ari.length > 12 ? '<div class="more">+ ' + (ari.length - 12) + ' til viðbótar</div>' : '')
+        : emptyHtml('Ekkert mál er merkt áríðandi.');
+      return modPanel(k, ari.length + ' áríðandi', body, '');
     }
     if (k === 'frestir') {
       const dagur = ymd(new Date());
