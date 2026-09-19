@@ -2204,7 +2204,11 @@
     postbeidnir: {
       heiti: 'Reikningsbeiðnir',
       regla: 'úr email_digest — INBOX í eldklar@/bokhald@ síðustu 60 daga',
-      askjanum: () => ((G.postbeidnir && G.postbeidnir.data) || []).length,
+      // null = einingin hefur ekki verið opnuð. ÓMÆLT ER EKKI SAMA OG RANGT —
+      // fyrsta útgáfa skilaði 0 og tækið sagði „stemmir EKKI" um tölu sem var
+      // aldrei sýnd. Vörður sem hrópar á tóman skjá er nákvæmlega sú lygi sem
+      // hann á að finna hjá öðrum.
+      askjanum: () => (G.postbeidnir && G.postbeidnir.data) ? G.postbeidnir.data.length : null,
       maela: async (c) => {
         const fra = new Date(Date.now() - 60 * 864e5).toISOString();
         const r = await c.from('email_digest').select('id', { count: 'exact', head: true })
@@ -2249,12 +2253,12 @@
     if (s.keyrir) return '<section class="panel sannanir"><div class="sn-h">Mæli allt upp á nýtt…</div></section>';
     const rod = r => {
       const merki = r.villa ? '<span class="tag hot">náði ekki að mæla</span>'
-        : r.stemmir === null ? '<span class="tag">ekkert á skjánum</span>'
+        : r.stemmir === null ? '<span class="tag">ekki opnað — engin tala til að bera saman við</span>'
         : r.stemmir ? '<span class="tag ok">stemmir</span>'
         : '<span class="tag hot">stemmir EKKI</span>';
       return '<div class="sn-r"><div class="sn-t"><b>' + esc(r.heiti) + '</b> ' + merki + '</div>' +
         '<div class="sn-n">' + (r.villa ? esc(r.villa)
-          : 'á skjánum <b>' + (r.skjar == null ? '—' : r.skjar) + '</b> · mælt núna <b>' + r.maelt + '</b>') + '</div>' +
+          : (r.skjar == null ? 'mælt núna <b>' + r.maelt + '</b>' : 'á skjánum <b>' + r.skjar + '</b> · mælt núna <b>' + r.maelt + '</b>')) + '</div>' +
         (r.ferill ? '<div class="sn-f">' + esc(r.ferill) + '</div>' : '') +
         '<div class="sn-f">' + esc(r.regla) + '</div></div>';
     };
