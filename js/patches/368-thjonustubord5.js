@@ -3200,7 +3200,10 @@
   }
   // 19.09.2026 — „x hide, bara ná þessu i bustu sem ég er búinn með" (Agnar).
   // Sami lykill og önnur borð-atriði nota, svo felan samstillist á allar vélar.
-  const pbLyk = m => 'postbeidnir:' + (m.message_id || m.id || '');
+  // Lykillinn verður að vera <eining>:<hluti>:<auðkenni> (FALID_LYKILL, sama skorða
+  // og í töflunni). Fyrsta tilraun notaði tvo hluta og Message-ID óbreytt — með
+  // < > @ innanborðs — svo setjaFalid hafnaði honum og EKKERT var vistað.
+  const pbLyk = m => 'postbeidnir:post:' + String(m.message_id || m.id || '').replace(/[<>s]/g, '');
   function pbRodHtml(m, falinn) {
     const aldur = Math.max(0, Math.round((Date.now() - new Date(m.received_at).getTime()) / 864e5));
     const hver = esc(m.sender_name || m.sender_email || '(óþekkt)');
