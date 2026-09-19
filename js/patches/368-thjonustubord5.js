@@ -3233,8 +3233,11 @@
       '<div><div class="kick">' + hver + ' · ' + esc(m.sender_email || '') + '</div>' +
         '<b>' + esc(m.subject || '(ekkert efni)') + '</b>' +
         (texti ? '<span class="s">' + esc(texti) + '</span>' : '') +
+        // 19.09.2026: nafnið er HLEKKUR inn á fyrirtækið, ekki texti. Merkið
+        // „fannst: þráður (kennitala)" er farið — það sagði hvernig VÉLIN fann
+        // kúnnann, sem er upplýsing um mig en ekki um verkið hans.
         '<span class="s">' + (k
-          ? '🏢 ' + esc(k.nafn) + ' <span class="tag">fannst: ' + esc(k.hvernig) + '</span>'
+          ? '<a class="clink" href="#company/' + (k.coId || '') + '" data-t5="fyr-id" data-fid="' + (k.coId || '') + '">🏢 ' + esc(k.nafn) + ' ›</a>'
           : '<span class="tag hot">enginn kúnni fannst</span>') + '</span></div>' +
       lakt((k ? '<button type="button" class="btn gold sm" data-t5="pb-senda" data-mid="' + esc(m.message_id || '') + '">✉️ Senda reikning</button>' : '') +
         '<button type="button" class="btn iv sm" data-t5="pb-svar" data-mid="' + esc(m.message_id || '') + '">🤖 Svar</button>') +

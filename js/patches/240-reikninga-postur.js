@@ -1022,12 +1022,35 @@
     const SB = getSB(); if (!SB || id == null) return null;
     try { const r = await SB.from('solur').select('*').eq('id', id).maybeSingle(); return (r && r.data) || null; } catch (_) { return null; }
   }
-  async function getCustomerInvoices(kt) {
-    const SB = getSB(); const k = ktDigits(kt); if (!SB || !k) return [];
-    try {
-      const r = await SB.from('solur').select('*').eq('customer_kt', k).order('created_at', { ascending: false }).limit(40);
-      return (r && r.data) || [];
-    } catch (_) { return []; }
+  /* 19.09.2026 — ÞESSI LEIT FANN ALDREI NEITT.
+   * Hér stóð `.eq('customer_kt', ktDigits(kt))`, þ.e. leitað var að kennitölu ÁN
+   * bandstriks. Mæld geymsla í `solur.customer_kt`: 843 raðir MEÐ bandstriki,
+   * 0 án, 21 tóm (af 864). Jafnaðarmerkið gat því aldrei staðist og glugginn
+   * sagði „Engir reikningar fundust" um hvern einasta kúnna.
+   *
+   * Nú eru bæði form kennitölunnar reynd OG kúnnalyklarnir, sem eru
+   * áreiðanlegri en strengur. `co` er fyrirtaeki.id (m.cust.coId) og `base` er
+   * customers_base.id þegar hann er til.
+   */
+  async function getCustomerInvoices(kt, co, base) {
+    const SB = getSB();
+    const k = ktDigits(kt);
+    if (!SB) return [];
+    const strik = k && k.length === 10 ? k.slice(0, 6) + '-' + k.slice(6) : null;
+    const skil = [];
+    if (k) skil.push('customer_kt.eq.' + k);
+    if (strik) skil.push('customer_kt.eq.' + strik);
+    if (co != null && co !== '') skil.push('customer_id.eq.' + co);
+    if (base != null && base !== '') skil.push('customer_base_id.eq.' + base);
+    if (!skil.length) return [];
+    const r = await SB.from('solur').select('*').or(skil.join(','))
+      .order('created_at', { ascending: false }).limit(40);
+    // Villa er EKKI sama og „enginn reikningur". Áður gleypti catch hvort tveggja
+    // og hvort um sig leit út eins og tómur listi.
+    if (r.error) throw r.error;
+    const sed = new Set(), ut = [];
+    (r.data || []).forEach(s => { if (s && !sed.has(s.id)) { sed.add(s.id); ut.push(s); } });
+    return ut;
   }
   async function coForSale(sale, m) {
     const SB = getSB();
@@ -1042,8 +1065,16 @@
   async function openSendModal(m) {
     openModal('<div class="rpm-load">Sæki reikninga…</div>');
     let invs = [];
-    const kt = m.cust && ktDigits(m.cust.kt);
-    if (kt) invs = await getCustomerInvoices(kt);
+    // 19.09.2026: kúnnalyklarnir fylgja með — kennitölustrengur einn og sér er
+    // ekki áreiðanlegur (og var auk þess borinn saman á röngu formi, sjá ofar).
+    const kt = m.cust && m.cust.kt;
+    const coId = m.cust && m.cust.coId;
+    const baseId = m.cust && (m.cust.baseId != null ? m.cust.baseId : m.cust.customer_base_id);
+    let leitVilla = null;
+    if (kt || coId != null || baseId != null) {
+      try { invs = await getCustomerInvoices(kt, coId, baseId); }
+      catch (e) { leitVilla = (e && e.message) || String(e); }
+    }
     if (m.sale && !invs.some(s => String(s.id) === String(m.sale.id))) invs.unshift(m.sale);
     // fyrst ógreiddir reikningur-sölur, svo eftir dagsetningu (nýjast fyrst)
     invs = invs.filter(s => s && s.num);
