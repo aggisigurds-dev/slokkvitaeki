@@ -1291,8 +1291,12 @@
     setMsg('Sendi…', '');
     try {
       // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
-      const r = await (window.AppMail ? AppMail.send(payload)
-        : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
+      // 19.09.2026: hér stóð varaleið á /api/email-send. Sú leið er DAUÐ fyrir
+      // eldklar.is (sjá 254:341) — hún hefði skilað svari sem lítur út eins og
+      // sending og notandinn fengið „✓ Sent" um póst sem fór aldrei. Vanti
+      // AppMail stoppar sendingin og segir af hverju.
+      if (!(window.AppMail && AppMail.send)) throw new Error('Póstleiðin (AppMail) hefur ekki hlaðist — endurhlaðið síðuna. Ekkert var sent.');
+      const r = await AppMail.send(payload);
       if (!r.ok) {
         const e = await r.json().catch(() => ({}));
         throw new Error(e.message || e.error || ('HTTP ' + r.status));
@@ -1341,8 +1345,12 @@
         html: buildEmailHtml(full, co, ''),
         attachments: [{ filename: fname, content: b64 }],
       };
-      const r = await (window.AppMail ? AppMail.send(payload)
-        : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
+      // 19.09.2026: hér stóð varaleið á /api/email-send. Sú leið er DAUÐ fyrir
+      // eldklar.is (sjá 254:341) — hún hefði skilað svari sem lítur út eins og
+      // sending og notandinn fengið „✓ Sent" um póst sem fór aldrei. Vanti
+      // AppMail stoppar sendingin og segir af hverju.
+      if (!(window.AppMail && AppMail.send)) throw new Error('Póstleiðin (AppMail) hefur ekki hlaðist — endurhlaðið síðuna. Ekkert var sent.');
+      const r = await AppMail.send(payload);
       if (!r.ok) {
         const e = await r.json().catch(() => ({}));
         throw new Error(e.message || e.error || ('HTTP ' + r.status));
@@ -1495,8 +1503,12 @@
       // hvert svar frá eldklar@, og þráðaleit gmail-send fann ekki póst sem kom inn á bokhald@.
       const postholf = String(m.account || '').trim();
       const payload = { from: /^(eldklar|bokhald)@eldklar\.is$/i.test(postholf) ? postholf : emailFrom(), to: [to], subject, html, inReplyTo: m.message_id || undefined };
-      const r = await (window.AppMail ? AppMail.send(payload)
-        : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
+      // 19.09.2026: hér stóð varaleið á /api/email-send. Sú leið er DAUÐ fyrir
+      // eldklar.is (sjá 254:341) — hún hefði skilað svari sem lítur út eins og
+      // sending og notandinn fengið „✓ Sent" um póst sem fór aldrei. Vanti
+      // AppMail stoppar sendingin og segir af hverju.
+      if (!(window.AppMail && AppMail.send)) throw new Error('Póstleiðin (AppMail) hefur ekki hlaðist — endurhlaðið síðuna. Ekkert var sent.');
+      const r = await AppMail.send(payload);
       if (!r.ok) {
         const e = await r.json().catch(() => ({}));
         throw new Error(e.message || e.error || ('HTTP ' + r.status));
