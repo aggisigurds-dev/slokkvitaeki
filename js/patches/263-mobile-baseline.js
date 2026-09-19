@@ -65,7 +65,12 @@
     // Standard responsive pattern: the <table> becomes a scroll box; thead/tbody
     // stay table-laid-out so the columns still read.
     V + ' table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}',
-    V + ' table>thead,' + V + ' table>tbody,' + V + ' table>tfoot{display:table;width:100%;table-layout:auto}',
+    // 19.09.2026 — var `display:table;width:100%` á thead/tbody/tfoot: þá verða haus og raðir SJÁLFSTÆÐAR töflur og
+    // dálkarnir stillast ekki saman (mælt í 375 px: Brunakerfi yfirlit 7/10 á skjön, Allir viðskiptavinir 9/9,
+    // Samningar 6/6, Drög 5/7). Sama lagfæring og Rekstrarfélög fékk 26.08 — nú fyrir allar töflur.
+    V + ' table>thead{display:table-header-group}',
+    V + ' table>tbody{display:table-row-group}',
+    V + ' table>tfoot{display:table-footer-group}',
     // 2026-08-26 (Agnar column-shift): Rekstrarfélög already scrolls inside
     // .rf-tblscroll. Splitting thead/tbody into two tables + td.rf-cellname
     // {display:flex} shifted Heimilisfang/Nóta/Tæki one column. Keep one table.

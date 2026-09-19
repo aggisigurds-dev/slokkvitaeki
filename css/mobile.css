@@ -70,7 +70,12 @@
     -webkit-overflow-scrolling:touch;
     max-width:100% !important;
   }
-  .view table thead,.view table tbody{display:table;width:100%;table-layout:auto}
+  /* 19.09.2026 — var `display:table;width:100%` á thead OG tbody: þá eru haus og raðir TVÆR sjálfstæðar töflur
+     og dálkarnir stillast ekki saman (mælt í 375 px: Brunakerfi yfirlit 7/10 dálkar á skjön, Allir viðskiptavinir
+     9/9, Drög 5/7, Ársskoðun·Skjár th 110 px yfir td 131 px). Með header-group/row-group deila þau dálkum aftur;
+     taflan sjálf er áfram display:block með láréttu skruni. Mælt eftir: 0 dálkar á skjön á öllum fjórum. */
+  .view table thead{display:table-header-group}
+  .view table tbody{display:table-row-group}
   .view table{font-size:12px !important}
   .view table th,.view table td{padding:8px 6px !important;white-space:nowrap}
   /* Yfirlit modal stats tighten */

@@ -48,7 +48,12 @@
         'width:14px !important;height:14px !important;min-width:0 !important;min-height:0 !important;max-height:14px !important;' +
         'margin:0 !important;padding:0 !important;border-radius:50% !important;z-index:1}',
       '#view-arsskodun ._arsm-row' + P + ' > .cb-dot::after{content:"";position:absolute;inset:-10px}',
-      '#view-arsskodun ._arsm-row:has(> .cb-dot) ._arsm-name{padding-right:20px !important;box-sizing:border-box}'
+      '#view-arsskodun ._arsm-row:has(> .cb-dot) ._arsm-name{padding-right:20px !important;box-sizing:border-box}',
+      // 5 — (19.09.2026, símaskoðun) AFGREIÐSLA: 337 setti kortin á nowrap + flex:1 1 auto;min-width:0 á nafnið →
+      //     takkarnir átu línuna og R-númer + nafn + sími fengu 26 px (mælt í 375 px; textinn brotnaði staf fyrir staf).
+      //     Nú á nafnið sína eigin línu og takkarnir raðast undir.
+      'html[data-viewmode="mobile"] #view-counter .cw-rcard' + P + ',body.appmode #view-counter .cw-rcard' + P + '{flex-wrap:wrap !important;overflow-x:visible !important}',
+      'html[data-viewmode="mobile"] #view-counter .cw-rcard-info' + P + ',body.appmode #view-counter .cw-rcard-info' + P + '{flex:1 1 100% !important;min-width:0 !important}'
     ].join('\n');
   }
 
@@ -77,6 +82,25 @@
               .map((p) => (r.style.getPropertyValue(p) ? p + ':' + r.style.getPropertyValue(p) + ' !important' : '')).filter(Boolean);
         if (!decl.length) continue;
         ut += 'body.appmode ' + m[1] + m[1] + '.view.active' + P + '{' + decl.join(';') + '}\n';
+      }
+    } catch (_) {}
+    // 4 — (19.09.2026, símaskoðun á öllum skjám) PIXLABREIDDIR ÚR HÖNNUNARHAM Á SÍMA. Agnar dregur svæði til á
+    //     tölvuskjá og Hönnunarhamur vistar t.d. `#view-tengilidir div.tgl-wrap{width:1750px !important}`. Sama regla
+    //     gildir á símanum: síðan verður 1.750 px í 375 px glugga og .view er overflow:hidden → efnið er skorið af og
+    //     ÓNÁANLEGT. MÆLT: 8 slíkar reglur (Brunakerfi yfirlit 2500 px, Tengiliðir 1750, Verkdagbók 1590, Tilboð 1370,
+    //     Samningar/Ársskoðun/Öpp 1280, Mín síða 860). Á síma eru þær hlutleystar; tölvuútlitið er ósnert.
+    try {
+      const rules = pe && pe.sheet ? pe.sheet.cssRules : [];
+      const px = (v) => (/px$/.test(v || '') ? parseFloat(v) : 0);
+      for (const r of rules) {
+        if (!r.style || !r.selectorText) continue;
+        if (px(r.style.getPropertyValue('width')) <= 340 && px(r.style.getPropertyValue('min-width')) <= 340) continue;
+        const sels = r.selectorText.split(',').map((x) => x.trim()).filter(Boolean);
+        const gatt = [];
+        for (const sel of sels) for (const g of ['html[data-viewmode="mobile"]', 'html.slokk-phone-dev']) {
+          gatt.push(/^html(?![\w-])/.test(sel) ? sel.replace(/^html/, g) : g + ' ' + sel);
+        }
+        ut += gatt.join(',') + '{width:auto !important;min-width:0 !important;max-width:100% !important}\n';
       }
     } catch (_) {}
     if (ut === _sidast) return;

@@ -37,6 +37,8 @@
       '.tgl-title{font-weight:800;font-size:20px;color:var(--ink,#0f172a)}' +
       '.tgl-row{flex-wrap:wrap}.tgl-ctx{flex:1 1 100%;margin-top:8px;padding-top:8px;border-top:1px dashed var(--brd,#e2e8f0);font-size:12px;color:var(--ink2,#334155)}' +
       '.tgl-ctx-bid{color:var(--ink3,#94a3b8);font-style:italic}' +
+      // 19.09.2026 (símaskoðun): póstlínurnar eru nowrap og .tgl-ctx er flex-barn án min-width:0 → kortið varð 1.000+ px á síma
+      '.tgl-ctx{min-width:0;max-width:100%;overflow:hidden}.tgl-p,.tgl-p summary{min-width:0;max-width:100%}.tgl-till{min-width:0;max-width:100%;box-sizing:border-box}' +
       '.tgl-till{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:7px 10px;margin-bottom:8px}' +
       '.tgl-till.veik{background:#fffbeb;border-color:#fde68a}.tgl-till b{color:#14532d}.tgl-till.veik b{color:#92400e}' +
       '.tgl-till .rok{color:var(--ink3,#64748b);font-size:11.5px}' +
