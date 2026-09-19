@@ -2244,6 +2244,29 @@
         radir.push({ heiti: s.heiti, regla: s.regla, skjar, maelt: null, villa: (e && e.message) || String(e) });
       }
     }
+
+    // ALLAR EININGAR SEM HAFA SÓTT GÖGN — ekki bara þær sem ég mundi eftir.
+    // Lyklar með „:" eru uppflettingar á einstakar raðir (skjol:123), ekki tölur
+    // á skjánum, og eiga ekkert erindi hingað.
+    for (const k of Object.keys(G)) {
+      if (k.indexOf(':') >= 0) continue;
+      const g = G[k];
+      if (!g || !g.saekja || !Array.isArray(g.data)) continue;
+      if (SANNANIR[k]) continue;   // þegar mæld að ofan, með eigin reglu
+      const skjar = g.data.length;
+      try {
+        const ny = await g.saekja();
+        const maelt = Array.isArray(ny) ? ny.length : null;
+        radir.push({
+          heiti: (MODS[k] && MODS[k].t) || k,
+          regla: 'sama fyrirspurn keyrð aftur beint úr gagnagrunninum',
+          skjar, maelt, stemmir: maelt == null ? null : skjar === maelt,
+        });
+      } catch (e) {
+        radir.push({ heiti: (MODS[k] && MODS[k].t) || k, regla: 'sama fyrirspurn keyrð aftur', skjar, maelt: null, villa: (e && e.message) || String(e) });
+      }
+    }
+
     S.sannreyn = { keyrir: false, radir, at: new Date() };
     render();
   }
@@ -2358,6 +2381,10 @@
     const g = G[lykill] || (G[lykill] = {});
     // Engin sókn fyrr en tengingin er til: djúptengill (#bord) teiknar borðið á undan DB.sb, og þá geymdist „Engin tenging"
     // í allt að 5 mín. (falin atriði birtust aftur í mínútu). load() teiknar aftur þegar tengingin kemur og sóknin fer af stað.
+    // 19.09.2026: fyrirspurnin geymd svo „🔍 Sannreyna" geti keyrt hana aftur.
+    // Án hennar var hver eining ósannreynanleg nema hún væri handskrifuð inn í
+    // SANNANIR — og það gleymist, eins og allt sem þarf að muna.
+    g.saekja = saekja;
     if (!g.bid && (!g.at || Date.now() - g.at > (maxAldur || 300000)) && sb()) {
       g.bid = true;
       Promise.resolve().then(saekja).then(d => { g.data = d; g.villa = ''; }, e => { g.villa = (e && e.message) || String(e); })
