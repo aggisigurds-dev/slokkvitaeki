@@ -1274,6 +1274,15 @@
       '<div class="rpm-head"><div><h3>📤 Yfirfara áður en sent er</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button" aria-label="Loka">✕</button></div>' +
       '<div class="rpm-body">' +
         '<div class="rpm-row"><label class="rpm-lbl">Viðtakandi</label><div>' + esc(payload.to.join(', ')) + (payload.inReplyTo ? '<div class="meta">↩ svar í sama þræði — lendir undir fyrri póstinum</div>' : '<div class="meta">⚠ nýr póstur — ekki svar (Message-ID vantar)</div>') + '</div></div>' +
+        // 19.09.2026 — SÝNA SENDANDANN. Agnar: „En rangur tölvupóstur þarna."
+        // Sendandinn var lagaður (svarið fer úr hólfinu sem tók við póstinum) en
+        // yfirferðin sýndi hann hvergi, svo hann sá ekki það sem hann kvartaði yfir
+        // fyrr en viðtakandinn fékk póstinn. Yfirferð á að sýna það sem fer út.
+        '<div class="rpm-row"><label class="rpm-lbl">Sent frá</label><div>' + esc(payload.from) +
+          (m && m.account && String(payload.from).indexOf(m.account) >= 0
+            ? '<div class="meta">sama hólf og fékk fyrirspurnina</div>'
+            : '<div class="meta">⚠ annað hólf en fékk fyrirspurnina (' + esc(m && m.account || 'óþekkt') + ')</div>') +
+        '</div></div>' +
         '<div class="rpm-row"><label class="rpm-lbl">Efni</label><div>' + esc(payload.subject) + '</div></div>' +
         '<div class="rpm-row"><label class="rpm-lbl">Viðhengi (' + (payload.attachments || []).length + ')</label><ul style="margin:0;padding-left:18px">' + (vidh || '<li>engin</li>') + '</ul></div>' +
         '<div class="rpm-row"><label class="rpm-lbl">Skilaboð</label><div style="white-space:pre-wrap">' + esc(note || '(engin)') + '</div></div>' +
