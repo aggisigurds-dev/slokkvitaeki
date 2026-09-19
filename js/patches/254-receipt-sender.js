@@ -145,7 +145,7 @@
       const I = 'width:100%;padding:9px 11px;border:1.5px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13.5px;box-sizing:border-box';
       dlg.innerHTML =
         '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.35);width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 48px);display:flex;flex-direction:column;overflow:hidden">' +
-          '<div style="padding:14px 18px;background:linear-gradient(135deg,#0f766e,#0d5b54);color:#fff;font-size:15px;font-weight:700">📧 ' + esc(o.title || 'Senda í tölvupósti') + '</div>' +
+          '<div style="padding:14px 18px;background:linear-gradient(135deg,#0f766e,#0d5b54);color:#fff;font-size:15px;font-weight:700">' + (o.inReplyTo ? '↩ ' : '📧 ') + esc(o.title || 'Senda í tölvupósti') + (o.inReplyTo ? '<div style="font-size:11.5px;font-weight:600;opacity:.85;margin-top:2px">Svar í sama þræði — lendir undir fyrri póstinum hjá viðtakanda</div>' : '') + '</div>' +
           '<div style="padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:12px">' +
             '<div><label style="' + L + '">Sent frá — svör berast hingað</label>' +
               '<select id="_rs-from" style="' + I + '">' +
@@ -254,6 +254,13 @@
               subject: (subj.value || '').trim() || 'Skjal frá Brunahólf slökkvitæki ehf',
               html: textToHtml(bodyEl.value || ''),
               attachments: atts,
+              // 19.09.2026 — SVAR Í ÞRÆÐI. Agnar: „Þessi kemur bara nýr póstur frá
+              // eldklar@eldklar.is". `appSend` bar þennan reit þegar áfram (254:354,
+              // 10.09.2026) og /api/gmail-send tekur við honum — en ÞESSI leið, sem
+              // er glugginn sem notaður er í Sölu, sleppti honum alveg. Þess vegna
+              // varð svarið alltaf nýr póstur. `undefined` fellur út í JSON, svo
+              // sendingar án samhengis eru óbreyttar.
+              inReplyTo: o.inReplyTo || undefined,
             }),
           });
           const j = await resp.json().catch(() => ({}));

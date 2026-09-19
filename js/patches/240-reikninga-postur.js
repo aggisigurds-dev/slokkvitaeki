@@ -1234,12 +1234,22 @@
         attachments.push({ filename: docSkraarnafn(d), driveId: d.drive_file_id });
       });
       if (!co) co = await coForSale(null, m);
-      const efni = sale && sale.num ? 'Reikningur ' + sale.num + ' frá Brunahólf Slökkvitæki ehf'
+      let efni = sale && sale.num ? 'Reikningur ' + sale.num + ' frá Brunahólf Slökkvitæki ehf'
         : 'Umbeðin skjöl frá Brunahólf Slökkvitæki ehf';
+      // Svar heldur efni fyrirspurnarinnar með „Re:" — Message-ID eitt og sér
+      // dugar ekki alls staðar til að þræða.
+      if (m.message_id && m.subject) {
+        const hreint = String(m.subject).replace(/^((re|sv|svar|fw|fwd|áfram)\s*:\s*)+/i, '').trim();
+        if (hreint) efni = 'Re: ' + hreint;
+      }
       const payload = {
         from: emailFrom(), to: [to], subject: efni,
         html: buildEmailHtml(sale, co, note),
         attachments: attachments,
+        // 19.09.2026 — SVAR, ekki nýr póstur. Message-ID upprunalega póstsins fer
+        // með, svo svarið lendi undir fyrirspurninni hjá viðtakanda í stað þess
+        // að birtast sem ótengt erindi frá eldklar@eldklar.is.
+        inReplyTo: m.message_id || undefined,
         apiKey: localStorage.getItem('resend_api_key') || undefined,
       };
       synaStadfestingu(m, payload, note);
@@ -1254,7 +1264,7 @@
     openModal(
       '<div class="rpm-head"><div><h3>📤 Yfirfara áður en sent er</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button" aria-label="Loka">✕</button></div>' +
       '<div class="rpm-body">' +
-        '<div class="rpm-row"><label class="rpm-lbl">Viðtakandi</label><div>' + esc(payload.to.join(', ')) + '</div></div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Viðtakandi</label><div>' + esc(payload.to.join(', ')) + (payload.inReplyTo ? '<div class="meta">↩ svar í sama þræði — lendir undir fyrri póstinum</div>' : '<div class="meta">⚠ nýr póstur — ekki svar (Message-ID vantar)</div>') + '</div></div>' +
         '<div class="rpm-row"><label class="rpm-lbl">Efni</label><div>' + esc(payload.subject) + '</div></div>' +
         '<div class="rpm-row"><label class="rpm-lbl">Viðhengi (' + (payload.attachments || []).length + ')</label><ul style="margin:0;padding-left:18px">' + (vidh || '<li>engin</li>') + '</ul></div>' +
         '<div class="rpm-row"><label class="rpm-lbl">Skilaboð</label><div style="white-space:pre-wrap">' + esc(note || '(engin)') + '</div></div>' +
