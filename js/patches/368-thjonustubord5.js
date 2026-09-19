@@ -1143,6 +1143,7 @@
       '.sn-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
       '.sn-n{font-size:14px}.sn-n b{font-variant-numeric:tabular-nums}',
       '.sn-f{font-size:12px;color:var(--mute)}',
+      '.sn-t .tag{white-space:normal;overflow-wrap:anywhere;max-width:100%}',
       '.tag.ok{background:#e7f3ec;color:#2f7a4a;border-color:#bcd9c7}',
       '.t5toast .undo{margin-left:12px;height:26px;padding:0 10px;border:1px solid #5a4410;border-radius:4px;background:var(--gside);color:#1b1405;font:700 12px var(--body);cursor:pointer}',
       '.skwrap{display:flex;flex-direction:column;gap:12px;padding:12px 14px}',
@@ -2253,12 +2254,12 @@
     if (s.keyrir) return '<section class="panel sannanir"><div class="sn-h">Mæli allt upp á nýtt…</div></section>';
     const rod = r => {
       const merki = r.villa ? '<span class="tag hot">náði ekki að mæla</span>'
-        : r.stemmir === null ? '<span class="tag">ekki opnað — engin tala til að bera saman við</span>'
+        : r.stemmir === null ? '<span class="tag">ekki opnað</span>'
         : r.stemmir ? '<span class="tag ok">stemmir</span>'
         : '<span class="tag hot">stemmir EKKI</span>';
       return '<div class="sn-r"><div class="sn-t"><b>' + esc(r.heiti) + '</b> ' + merki + '</div>' +
         '<div class="sn-n">' + (r.villa ? esc(r.villa)
-          : (r.skjar == null ? 'mælt núna <b>' + r.maelt + '</b>' : 'á skjánum <b>' + r.skjar + '</b> · mælt núna <b>' + r.maelt + '</b>')) + '</div>' +
+          : (r.skjar == null ? 'mælt núna <b>' + r.maelt + '</b> — einingin var ekki opin, svo engin tala var á skjánum til að bera saman við' : 'á skjánum <b>' + r.skjar + '</b> · mælt núna <b>' + r.maelt + '</b>')) + '</div>' +
         (r.ferill ? '<div class="sn-f">' + esc(r.ferill) + '</div>' : '') +
         '<div class="sn-f">' + esc(r.regla) + '</div></div>';
     };
