@@ -129,18 +129,39 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 (function(){
   var v=document.getElementById('boot-veil'),done=false;
   function go(){ if(done||!v)return; done=true; v.style.opacity='0'; v.style.pointerEvents='none'; setTimeout(function(){ try{v.remove()}catch(_){} },420); }
+  // 19.09.2026 (Agnar: „heiftarlegt loadrace á forsíðunni"). Þrennt var að:
+  //  (1) öryggis-fallbackið taldi 6,5 sek frá FYRSTA ramma. Á kaldri hleðslu (eftir „Endurhlaða", sem tæmir
+  //      skyndiminnið) eru bundlarnir enn að koma þá — hulan lyftist af óstíluðu millistigi. Það telur nú frá
+  //      load-atburðinum, með 25 sek algjöru hámarki.
+  //  (2) Þjónustuborðið (view-bord) teiknar í shadow root, svo innerText var alltaf tómt og hulan beið ALLTAF
+  //      eftir fallbackinu þar. Innihald í shadow root telst nú með.
+  //  (3) hliðarstikan raðast og felur takka eftir load (mælt: 56 -> 37 sýnilegir). Hulan bíður nú þar til
+  //      fjöldi sýnilegra takka hefur staðið kyrr í 450 ms.
+  var sidast=-1, kyrrFra=0, loadAt=0, t0=Date.now();
+  function efni(a){
+    var t=(a.innerText||'').trim().length>40 || a.querySelector('button,table,input');
+    if(t) return true;
+    var sr=a.shadowRoot;
+    return !!(sr && ((sr.textContent||'').trim().length>40) && sr.querySelector('button,table,input'));
+  }
   var iv=setInterval(function(){
-    // Lyfta AÐEINS þegar bæði: (1) síðan er full-hlaðin (load-atburður búinn —
-    // annars lyftist hulan á hálf-teiknaða millistiginu sem var einmitt óreiðan)
-    // og (2) eitthvert view er orðið virkt.
-    // Þrjú skilyrði: load búið, view virkt OG það hefur RAUNVERULEGT innihald
-    // (patcharnir mála eftir load — tómt view = enn á óreiðu-millistiginu).
+    var nu=Date.now();
+    if(document.readyState==='complete' && !loadAt) loadAt=nu;
+    // Lyfta AÐEINS þegar: load búið, view virkt, það hefur RAUNVERULEGT innihald (patcharnir mála eftir
+    // load — tómt view = enn á óreiðu-millistiginu) og hliðarstikan er hætt að hreyfast.
     var a=document.querySelector('[id^="view-"].active,[id^="view-"][style*="display: block"]');
-    var hasContent=a && ((a.innerText||'').trim().length>40 || a.querySelector('button,table,input'));
-    if(a && hasContent && document.readyState==='complete'){ clearInterval(iv); setTimeout(go,350); }
+    var n=0, bs=document.querySelectorAll('nav.view-nav .vnav-btn');
+    for(var i=0;i<bs.length;i++) if(bs[i].offsetParent) n++;
+    if(n!==sidast){ sidast=n; kyrrFra=nu; }
+    var kyrr=nu-kyrrFra>=450 && !document.documentElement.classList.contains('sb-settling');
+    if(a && efni(a) && loadAt && kyrr){ clearInterval(iv); setTimeout(go,200); return; }
+    // öryggis-fallback: hulan hverfur ALLTAF — 6,5 sek eftir load, eða 25 sek frá byrjun
+    if((loadAt && nu-loadAt>6500) || nu-t0>25000){ clearInterval(iv); go(); }
   },150);
-  setTimeout(go,6500);   // öryggis-fallback: hulan hverfur ALLTAF
-  window.addEventListener('error',function(){ setTimeout(go,1500) },{once:true});
+  // Villa í skriftu má ekki lyfta hulunni af hálfhlaðinni síðu: bíða eftir load, svo 1,5 sek.
+  window.addEventListener('error',function(){
+    var b=setInterval(function(){ if(document.readyState==='complete'){ clearInterval(b); setTimeout(go,1500); } },200);
+  },{once:true});
 })();
 </script>
 <!-- SETUP BANNER (shown when config not set) -->
