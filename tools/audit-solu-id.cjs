@@ -55,7 +55,7 @@ async function sb(slod) {
   // ---- 1. Sölur -----------------------------------------------------------
   const solur = await sb(
     'solur?select=num,status,samtals,customer_nafn,customer_id,customer_base_id,' +
-    'krafa_sent_at,paid_at,greitt_med,created_at,updated_at&created_at=gte.' + fra + '&order=created_at.desc'
+    'krafa_sent_at,paid_at,greitt_med,is_credit,created_at,updated_at&created_at=gte.' + fra + '&order=created_at.desc'
   );
 
   // 18.09.2026 — ÞRENGT: greidd sala þarf enga tengingu.
@@ -83,7 +83,25 @@ async function sb(slod) {
   // þrjár ógreiddar (Ingólfur og þórdís, Þorgeir Jónsson, kreditfærsla Ármanns).
   const NAFNLAUST = /^(staðgreitt|stadgreitt|reiðufé|reidufe|kort|nafnlaus)\s*$/i;
   const nafngreind = s => { const n = String(s.customer_nafn || '').trim(); return !!n && !NAFNLAUST.test(n); };
-  const soluAnAudkennis = solur.filter(s => nafngreind(s) && s.customer_base_id == null);
+
+  // 19.09.2026 — PENINGAR OG SAGA ERU EKKI SAMA MÁLIÐ.
+  // Greinin taldi hverja nafngreinda sölu án tengingar. Mælt hvað þær voru:
+  //   3 greiddar með korti/reiðufé · 1 kreditreikningur · 1 ómerkt greitt
+  //   2 „greitt síðar" drög á fólk án kennitölu  <- eina raunverulega vandamálið
+  // Óháð mæling sama dag: af 16 ÓSENDUM kröfum átti engin ótengdan kúnna.
+  //
+  // Krafan er EKKI lækkuð og engin grunnlína bætist við. Skilyrðinu er breytt úr
+  // „nafn án tengingar" í „nafn án tengingar OG á eftir að rukka": tengingin
+  // skiptir aðeins máli fyrir sölu sem á eftir að rukka. Sá sem borgaði með korti
+  // yfir borðið þarf enga skráningu og hefur aldrei þurft.
+  const RUKKA_SIDAR = s => ['reikningur', 'greitt_sidar'].includes(String(s.greitt_med || ''));
+  const soluAnAudkennis = solur.filter(s => nafngreind(s) && s.customer_base_id == null
+    && RUKKA_SIDAR(s) && !s.paid_at && !s.is_credit);
+  // Greiddar/kredit án tengingar: gat í sögunni (hver keypti hvað), ekki fastur
+  // peningur. Þær eru taldar og sagðar frá — en fella ekki vörðinn. Vörður sem
+  // hrópar jafn hátt á hvort tveggja kennir manni að hunsa hann.
+  const sogugat = solur.filter(s => nafngreind(s) && s.customer_base_id == null
+    && !(RUKKA_SIDAR(s) && !s.paid_at && !s.is_credit));
 
   if (orukkanlegar.length) {
     orukkanlegar.slice(0, 8).forEach(s =>
@@ -94,7 +112,12 @@ async function sb(slod) {
       console.log(`   ${s.num}  ${s.customer_nafn || '(nafnlaus)'}  ` +
         `${s.customer_id == null ? 'customer_id VANTAR ' : ''}` +
         `${s.customer_base_id == null ? 'customer_base_id VANTAR' : ''}`));
-    villur.push(`${soluAnAudkennis.length} nafngreindar sölur síðustu ${GLUGGI} daga eiga enga tengingu við customers_base`);
+    villur.push(`${soluAnAudkennis.length} sala/sölur síðustu ${GLUGGI} daga eiga eftir að rukkast en enginn kúnni er tengdur — krafan verður ekki send`);
+  }
+
+  if (sogugat.length) {
+    console.log(`   ATH: ${sogugat.length} greidd/kredit sala með nafni en án tengingar (kort, reiðufé eða kreditfærsla).`);
+    console.log('        Peningurinn er kominn — þetta er gat í sögunni, ekki krafa sem situr föst.');
   }
 
   // Handlagfærðar sölur líta út eins og heilbrigðar. Aðgreinum þær.
