@@ -53,7 +53,12 @@
       //     takkarnir átu línuna og R-númer + nafn + sími fengu 26 px (mælt í 375 px; textinn brotnaði staf fyrir staf).
       //     Nú á nafnið sína eigin línu og takkarnir raðast undir.
       'html[data-viewmode="mobile"] #view-counter .cw-rcard' + P + ',body.appmode #view-counter .cw-rcard' + P + '{flex-wrap:wrap !important;overflow-x:visible !important}',
-      'html[data-viewmode="mobile"] #view-counter .cw-rcard-info' + P + ',body.appmode #view-counter .cw-rcard-info' + P + '{flex:1 1 100% !important;min-width:0 !important}'
+      'html[data-viewmode="mobile"] #view-counter .cw-rcard-info' + P + ',body.appmode #view-counter .cw-rcard-info' + P + '{flex:1 1 100% !important;min-width:0 !important}',
+      // 6 — (19.09.2026) ÖPP-SÍÐAN: 337 gerði takkaröð hvers apps að láréttri strokrönd (nowrap + skrun) án nokkurrar
+      //     vísbendingar — 563 px af tökkum í 325 px, svo „Fela app"/„Eyða appi" og hálfur takki sátu utan skjás
+      //     (skjáskot Agnars). Nú brotnar röðin í línur og allir takkar sjást.
+      'html[data-viewmode="mobile"] #view-opp .op-acts' + P + ',html.slokk-phone-nav #view-opp .op-acts' + P + ',body.appmode #view-opp .op-acts' + P +
+        '{flex-wrap:wrap !important;overflow:visible !important}'
     ].join('\n');
   }
 

@@ -1110,7 +1110,9 @@
           // svo nafn, lýsing, tákn og litir voru ÓBREYTANLEG á þeim. Borðið er
           // alfarið lykil-drifið (effectiveApp/saveOverrides/pagesFor) og kann
           // þegar við standalone-öpp, svo það þurfti enga undantekningu.
-          '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button">⚙ Þjónustuborð</button>' +
+          // 19.09.2026 (Agnar: „finn ekki lengur option að breyta tákni á eldri öppunum, og opnunarlit"): möguleikinn var
+          // hér allan tímann en hét „⚙ Þjónustuborð" — sem er líka nafn á síðu OG appi og segir ekkert um tákn/lit.
+          '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button" title="Nafn, lýsing, tákn, litir' + (a.standalone ? '' : ' og síður') + ' appsins">🎨 Tákn · litur' + (a.standalone ? '' : ' · síður') + '</button>' +
           (a.custom ? '<button class="op-btn _op-delapp" data-app="' + a.key + '" type="button" style="color:#b91c1c;border-color:#fecaca">🗑 Eyða appi</button>' : '') +
           '<button class="op-btn _op-felaapp" data-app="' + a.key + '" type="button" title="' +
             (a.falid ? 'Sýna appið aftur í ræsaranum' : 'Fela appið úr ræsaranum — ekkert er eytt, það kemur aftur með einum smelli') + '">' +
@@ -1245,7 +1247,7 @@
       // Textinn situr í ._applbl svo 316 geti falið hann og skilið EFTIR
       // táknið eitt í 36px reitnum (sjá athugasemd þar). Áður var klippt á
       // miðjum streng og hausinn sýndi „⚙ Þ" og „⤓ Se".
-      (a.standalone ? '' : '<button id="_app-pages" type="button" title="Þjónustuborð — síður, útlit, útgáfa">⚙<i class="_applbl"> Þjónustuborð</i></button>') +
+      (a.standalone ? '' : '<button id="_app-pages" type="button" title="Tákn, litur og síður appsins">⚙<i class="_applbl"> Tákn · litur · síður</i></button>') +
       // 🎨 Stílstjórinn var ÓAÐGENGILEGUR í app-ham: 262 hengir takkann sinn á
       // banner-klukkuna og app-hamurinn felur bannerinn alveg
       // (body.appmode #bstal-banner{display:none}). Þar með var ekki hægt að
@@ -1349,7 +1351,7 @@
       }).join('') + '</div>';
     ov.innerHTML =
       '<div class="_pe-card">' +
-        '<div class="_pe-h"><span>⚙ Þjónustuborð — ' + esc(a.name) + '</span><button id="_pe-close" type="button">Loka</button></div>' +
+        '<div class="_pe-h"><span>🎨 Tákn · litur' + (a.standalone ? '' : ' · síður') + ' — ' + esc(a.name) + '</span><button id="_pe-close" type="button">Loka</button></div>' +
         '<div class="_pe-list">' +
           '<div class="op-sech" style="margin:4px 8px 8px">Útlit</div>' +
           '<div style="display:flex;flex-direction:column;gap:10px;padding:0 10px 14px;font-size:13.5px;color:#334155">' +
