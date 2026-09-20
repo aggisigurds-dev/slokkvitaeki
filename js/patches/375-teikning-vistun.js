@@ -21,13 +21,21 @@
       image_url: plan.imageUrl || null,
       updated_at: new Date().toISOString()
     };
+    // 20.09.2026 (383): hæðir, skurður og handdregnir veggir. markers/image_url hér að ofan spegla FYRSTU hæð svo
+    // eldri biðlarar og 109-borðinn virka óbreyttir. Reiturinn er aðeins sendur þegar ritillinn á hæðir — biðlari
+    // án 383 má ekki núlla hæðir sem önnur vél vistaði.
+    var fjoldi = row.markers.length;
+    if (Array.isArray(plan.haedir) && plan.haedir.length) {
+      row.haedir = plan.haedir;
+      fjoldi = plan.haedir.reduce(function (n, h) { return n + ((h.markers || []).length); }, 0);
+    }
     try {
       // 20.09.2026: grunn-save (scanner.js) segir „aðeins í þessum vafra — sést ekki á hinum vélunum". Það var satt
       // áður en þessi patch kom; nú fer teikningin á þjóninn og tilkynningin laug. Niðurstaða skrifanna ræður textanum.
       var segja = function (t) { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} };
       DB.sb.from(TAFLA).upsert(row, { onConflict: 'company_id' }).then(function (r) {
         if (r && r.error) { console.warn('[375] upsert', r.error.message); segja('⚠ Teikningin vistaðist AÐEINS í þessum vafra — þjónninn hafnaði: ' + r.error.message); }
-        else segja('Teikning vistuð ✓ — ' + (row.markers.length) + ' staðsetningar, sést á öllum vélum');
+        else segja('Teikning vistuð ✓ — ' + fjoldi + ' staðsetningar' + (row.haedir && row.haedir.length > 1 ? ' á ' + row.haedir.length + ' hæðum' : '') + ', sést á öllum vélum');
       }, function (e) { console.warn('[375] upsert', e && e.message); segja('⚠ Teikningin vistaðist AÐEINS í þessum vafra — náði ekki í þjóninn.'); });
     } catch (e) { console.warn('[375] upsert', e && e.message); }
   }
@@ -53,7 +61,7 @@
   function serverFetch(cid) {
     if (!cid || !window.DB || !DB.sb) return;
     try {
-      DB.sb.from(TAFLA).select('markers,image_url,updated_at').eq('company_id', cid).limit(1)
+      DB.sb.from(TAFLA).select('markers,image_url,haedir,updated_at').eq('company_id', cid).limit(1)
         .then(function (r) {
           if (!r || r.error || !r.data || !r.data.length) return;
           var row = r.data[0];
@@ -61,6 +69,8 @@
           plan.markers = Array.isArray(row.markers) ? row.markers : [];
           if (row.image_url) plan.imageUrl = row.image_url;
           try { localStorage.setItem('fp_' + cid, JSON.stringify({ markers: plan.markers, imageUrl: plan.imageUrl })); } catch (_) {}
+          // 383: hæðirnar fylgja röðinni; merkin eru hér í frummyndarhnitum (ritillinn hliðrar þeim sjálfur við skurð).
+          try { if (typeof FloorPlan.__eftirSokn === 'function') FloorPlan.__eftirSokn(cid, row); } catch (_) {}
           if (FloorPlan.companyId === cid) beitaAServer(cid, row);   // borðið opið → uppfæra sýn
         }, function () {});
     } catch (_) {}

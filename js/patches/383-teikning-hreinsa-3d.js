@@ -1,4 +1,4 @@
-/* === TEIKNING: HREINSA VEGGI + 3D-SÝN (383) ================================
+/* === TEIKNING: HÆÐIR · SKURÐUR · VEGGIR · SKÝRARI VEGGIR · 3D (383) ==========
  *
  * Agnar 20.09.2026: „wanted to get more usable floorplans for teikningar but register the
  * fire extinguishers" · „nota skýrari veggja pælinguna og 3d view" · „plana hvernig sé best að
@@ -228,7 +228,7 @@
     haedir.forEach((hd, nr) => {
       const k = kassarUrGrimu(hd.veggir, hd.W, hd.H);
       staerst = Math.max(staerst, k.gw, k.gh);
-      const veggH = Math.max(k.gw, k.gh) * 0.045, bil = veggH * 2.4;
+      const veggH = Math.max(k.gw, k.gh) * 0.045, bil = veggH * 3.2;
       const hopur = new T.Group(); hopur.position.y = haedY; svid.add(hopur);
       // Gólf: hreina myndin sem áferð, svo herbergjaskipan og heiti sjáist undir veggjunum.
       const golfStr = document.createElement('canvas');
@@ -236,7 +236,8 @@
       golfStr.width = Math.max(1, Math.round(hd.golf.width * gs)); golfStr.height = Math.max(1, Math.round(hd.golf.height * gs));
       golfStr.getContext('2d').drawImage(hd.golf, 0, 0, golfStr.width, golfStr.height);
       const aferd = new T.CanvasTexture(golfStr); aferd.anisotropy = 4;
-      const golfG = new T.PlaneGeometry(k.gw, k.gh), golfE = new T.MeshBasicMaterial({ map: aferd, side: T.DoubleSide });
+      // Efri hæðir fá hálfgagnsætt gólf — annars hylur efsta hæðin allar hinar þegar horft er ofan frá.
+      const golfG = new T.PlaneGeometry(k.gw, k.gh), golfE = new T.MeshBasicMaterial({ map: aferd, side: T.DoubleSide, transparent: nr > 0, opacity: nr > 0 ? 0.42 : 1, depthWrite: nr === 0 });
       const golf = new T.Mesh(golfG, golfE); golf.rotation.x = -Math.PI / 2; hopur.add(golf);
       losa.push(golfG, golfE, aferd);
       // Veggir: eitt InstancedMesh — ein teiknikall fyrir alla kassana.
@@ -323,164 +324,524 @@
 
   window.Teikn3D = { syna: syna3d, kassarUrGrimu };
 
-  /* ───────────────────────── 3) TENGING VIÐ TEIKNINGAGLUGGANN (FloorPlan) ───────────────────────── */
+  /* ───────────────────────── 3) TENGING VIÐ TEIKNINGAGLUGGANN (FloorPlan) ─────────────────────────
+   *
+   * 20.09.2026 (Agnar: „Af þá báðum hæðunum" · „Já gerðu það"): HÆÐIR, SKURÐUR og HANDDREGNIR VEGGIR.
+   *
+   * GÖGN: teikning_bord.haedir = [{ id, nafn, image_url, markers, skurdur:{x,y,w,h}|null, veggir:[[x1,y1,x2,y2]] }].
+   *   ÖLL hnit eru í punktum FRUMMYNDAR hæðarinnar — líka þegar teikningin er skorin. markers/image_url í töflunni
+   *   spegla fyrstu hæð svo eldri biðlarar og 109-borðinn á prófílnum virka óbreyttir.
+   *
+   * RITILLINN (FloorPlan í scanner.js) kann eina mynd og eina merkjaröð. Hann fær því VIRKU hæðina í
+   *   plan.markers / plan.imageUrl og bgImage = leiðslan:   frummynd → skurður → skýrari veggir.
+   *   Sé skorið eru plan.markers í hnitum SKORNU myndarinnar (frummynd − G.rymi) á meðan glugginn er opinn;
+   *   samstillaVirka() færir þau aftur í frummyndarhnit áður en nokkuð er vistað eða skipt um hæð.
+   *   Handdregnir veggir eru teiknaðir á YFIRLAG ofan á strigann — þeir fara aldrei inn í myndina sjálfa.
+   */
 
   const LYKILL = cid => 'teikn_hreinsun_' + cid;
   const lesaVal = cid => { try { return JSON.parse(localStorage.getItem(LYKILL(cid)) || 'null') || {}; } catch (_) { return {}; } };
   const vistaVal = (cid, v) => { try { localStorage.setItem(LYKILL(cid), JSON.stringify(v)); } catch (_) {} };
   const segja = t => { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} };
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const nyttId = () => 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 
-  // Staða gluggans. `frum` = frummyndin sem FloorPlan hlóð; `hrein` = niðurstaða hreinsunar fyrir ÞÁ mynd og ÞÆR stillingar.
-  const G = { frum: null, hrein: null, lykill: '', syn3d: null, vakt: 0 };
-  const erOkkarStrigi = m => !!(G.hrein && m === G.hrein.strigi);
-  const myndLykill = (m, v) => (m.src || m.width + 'x' + m.height) + '|' + (v.thykkt || 0) + '|' + (v.fylla ? 1 : 0);
+  const G = {
+    frum: null,            // frummynd virku hæðarinnar (það sem FloorPlan hlóð)
+    stig1: null,           // frummynd eða skorinn strigi
+    synd: null,            // það sem við settum í FloorPlan.bgImage (null = frummyndin sjálf)
+    lykill: '',            // hvað `synd` var reiknað úr
+    hrein: null, hreinLykill: '',
+    rymi: { x: 0, y: 0 },  // hliðrunin sem plan.markers bera NÚNA miðað við frummynd
+    virk: 0,
+    hamur: null,           // null | 'skera' | 'veggir'
+    kedja: null,           // síðasti punktur veggjakeðju (frummyndarhnit)
+    bendill: null,         // músarstaða í veggjaham (frummyndarhnit) — fyrir forskoðunarlínu
+    drag: null,            // skurðarkassi í smíðum (frummyndarhnit)
+    syn3d: null, vakt: 0, raf: 0, teiknad: ''
+  };
 
-  function reikna(frum, val) {
-    const l = myndLykill(frum, val);
-    if (G.hrein && G.lykill === l) return G.hrein;
-    const t0 = performance.now();
-    const r = hreinsa(frum, { thykkt: val.thykkt || 0, fylla: !!val.fylla });
+  const FPx = () => window.FloorPlan;
+  function plan() { const FP = FPx(); if (!FP.plans[FP.companyId]) FP.plans[FP.companyId] = { markers: [] }; return FP.plans[FP.companyId]; }
+  function haedir() {
+    const p = plan();
+    if (!Array.isArray(p.haedir) || !p.haedir.length) {
+      p.haedir = [{ id: nyttId(), nafn: '1. hæð', image_url: typeof p.imageUrl === 'string' ? p.imageUrl : null, markers: [], skurdur: null, veggir: [] }];
+    }
+    p.haedir.forEach(h => { if (!Array.isArray(h.markers)) h.markers = []; if (!Array.isArray(h.veggir)) h.veggir = []; if (!h.id) h.id = nyttId(); });
+    if (G.virk >= p.haedir.length) G.virk = 0;
+    return p.haedir;
+  }
+  const virkHaed = () => haedir()[G.virk];
+  const erPx = m => (m.x > 1 || m.y > 1);
+
+  // plan.markers bera hliðrunina G.rymi; færa þau yfir í nýja hliðrun (0,0 = frummyndarhnit).
+  function faeraMerki(nx, ny) {
+    const dx = G.rymi.x - nx, dy = G.rymi.y - ny;
+    if (dx || dy) plan().markers.forEach(m => { if (erPx(m)) { m.x += dx; m.y += dy; } });
+    G.rymi = { x: nx, y: ny };
+  }
+  // Ritill → gögn: virka hæðin fær merkin í FRUMMYNDARHNITUM og slóð frummyndar. Tæki er aðeins á EINNI hæð — sú virka vinnur.
+  function samstillaVirka() {
+    const p = plan(), hs = haedir(), h = hs[G.virk];
+    h.markers = (p.markers || []).map(m => Object.assign({}, m, erPx(m) ? { x: m.x + G.rymi.x, y: m.y + G.rymi.y } : {}));
+    if (typeof p.imageUrl === 'string') h.image_url = p.imageUrl;
+    const her = {}; h.markers.forEach(m => { her[m.unitId] = 1; });
+    hs.forEach((o, i) => { if (i !== G.virk) o.markers = o.markers.filter(m => !her[m.unitId]); });
+  }
+
+  /* ── leiðslan: frummynd → skurður → skýrari veggir ── */
+  function skera(mynd, sk) {
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(sk.w)); c.height = Math.max(1, Math.round(sk.h));
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+    x.drawImage(mynd, -Math.round(sk.x), -Math.round(sk.y));
+    return c;
+  }
+  function reikna(stig1, l, val) {
+    const hl = l + '|' + (val.thykkt || 0) + '|' + (val.fylla ? 1 : 0);
+    if (G.hrein && G.hreinLykill === hl) return G.hrein;
+    const t0 = performance.now(), r = hreinsa(stig1, { thykkt: val.thykkt || 0, fylla: !!val.fylla });
     r.ms = Math.round(performance.now() - t0);
-    G.hrein = r; G.lykill = l;
+    G.hrein = r; G.hreinLykill = hl;
     return r;
   }
+  const okkar = m => !!m && (m === G.synd);
 
   function beita() {
-    const FP = window.FloorPlan; if (!FP || !FP.companyId) return;
-    const val = lesaVal(FP.companyId), nu = FP.bgImage;
-    if (!nu) return;
-    if (!erOkkarStrigi(nu)) G.frum = nu;                       // FloorPlan (eða 375) setti inn nýja frummynd
-    if (!G.frum || (G.frum.complete === false)) return;
-    if (val.a) {
-      let r;
-      try { r = reikna(G.frum, val); } catch (e) { segja('⚠ Gat ekki hreinsað teikninguna: ' + ((e && e.message) || e)); val.a = false; vistaVal(FP.companyId, val); stika(); return; }
-      if (r.thekja < 0.004) {
-        // Engir þykkir veggir fundust — sýna frummyndina frekar en auðan flöt, og segja hvers vegna.
-        if (erOkkarStrigi(FP.bgImage)) { FP.bgImage = G.frum; try { FP._renderCanvas(); } catch (_) {} }
-        stika('Fann nær enga þykka veggi (' + (r.thekja * 100).toFixed(1) + '%). Prófaðu minni veggþykkt eða „Fylla tvöfalda veggi".');
-        return;
+    const FP = FPx(); if (!FP || !FP.companyId) return;
+    const p = plan(), h = virkHaed(), val = lesaVal(FP.companyId), nu = FP.bgImage;
+    if (nu && !okkar(nu) && nu !== G.frum) {
+      // NÝ frummynd (fyrsta hleðsla, svar þjóns, „Sækja teikningu", „Hlaða upp" eða skipt um hæð).
+      if (nu.complete === false) return;
+      faeraMerki(0, 0);
+      G.frum = nu; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
+      if (typeof p.imageUrl === 'string' && h.image_url !== p.imageUrl) {
+        // Önnur teikning en hæðin átti: skurður og veggir áttu við gömlu myndina.
+        if (h.image_url) { h.skurdur = null; h.veggir = []; }
+        h.image_url = p.imageUrl;
       }
-      if (FP.bgImage !== r.strigi) { FP.bgImage = r.strigi; try { FP._renderCanvas(); } catch (_) {} }
-      // Mælt 20.09.2026: skannaður uppdráttur með FYLLTUM veggjum gaf 5,5% þekju og heilt veggjanet; þunnlínu-CAD
-      // (Skútuvogur 4, Fiskislóð 41) 0,3–0,7% — þar nást aðeins þykkustu línurnar, oft brunaveggir (EI-60). Segja það.
-      stika(r.thekja < 0.02 ? 'Fann aðeins þykkustu veggina (' + (r.thekja * 100).toFixed(1) + '%). Á CAD-teikningum með þunnum línum eru það oft brunaveggirnir — milliveggir nást ekki sjálfvirkt.' : '');
-    } else if (erOkkarStrigi(FP.bgImage)) {
-      FP.bgImage = G.frum; try { FP._renderCanvas(); } catch (_) {}
-      stika();
     }
+    if (!G.frum || !nu) { stika(); flipar(); return; }
+    const sk = h.skurdur && h.skurdur.w > 8 && h.skurdur.h > 8 ? h.skurdur : null;
+    const l1 = (G.frum.src || G.frum.width + 'x') + '|' + (sk ? [sk.x, sk.y, sk.w, sk.h].map(Math.round).join(',') : '-');
+    if (!G.stig1 || G.stig1Lykill !== l1) { G.stig1 = sk ? skera(G.frum, sk) : G.frum; G.stig1Lykill = l1; G.hrein = null; G.hreinLykill = ''; }
+    let ut = G.stig1, skilabod = '';
+    if (val.a) {
+      let r = null;
+      try { r = reikna(G.stig1, l1, val); } catch (e) { segja('⚠ Gat ekki unnið teikninguna: ' + ((e && e.message) || e)); val.a = false; vistaVal(FP.companyId, val); }
+      if (r && r.thekja < 0.004) skilabod = 'Fann nær enga þykka veggi (' + (r.thekja * 100).toFixed(1) + '%). Prófaðu minni veggþykkt, ✂ skerðu að húsinu, eða dragðu veggina sjálfur með ✏.';
+      else if (r) {
+        ut = r.strigi;
+        // Mælt 20.09.2026: fylltir veggir gefa ~5% þekju og heilt net; þunnlínu-CAD 0,3–0,7% — þá nást aðeins þykkustu línurnar.
+        if (r.thekja < 0.02) skilabod = 'Fann aðeins þykkustu veggina (' + (r.thekja * 100).toFixed(1) + '%). Á CAD-teikningum eru það oft brunaveggirnir — dragðu hina með ✏ Veggir.';
+      }
+    }
+    const lyk = l1 + '|' + (ut === G.stig1 ? 'frum' : G.hreinLykill);
+    if (G.lykill !== lyk || FP.bgImage !== ut) {
+      faeraMerki(sk ? Math.round(sk.x) : 0, sk ? Math.round(sk.y) : 0);
+      G.synd = ut === G.frum ? null : ut; G.lykill = lyk;
+      FP.bgImage = ut;
+      try { FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
+    }
+    stika(skilabod); flipar(); hnappar();
   }
 
-  function stika(skilabod) {
-    const main = document.getElementById('fp-main'); if (!main) return;
-    const FP = window.FloorPlan, val = lesaVal(FP.companyId);
+  /* ── stikur og takkar ── */
+  const TK = 'min-width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;font:700 13px system-ui;cursor:pointer;padding:0 9px';
+  const GULL = 'background:#c9a54a;color:#14120f;border-color:#c9a54a';
+  function stikuEl() {
+    const main = document.getElementById('fp-main'); if (!main) return null;
     let s = document.getElementById('fp-hreinsa-stika');
-    if (!val.a) { if (s) s.remove(); return; }
     if (!s) {
       s = document.createElement('div'); s.id = 'fp-hreinsa-stika';
-      s.style.cssText = 'position:absolute;left:10px;bottom:10px;z-index:6;display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:calc(100% - 150px);' +
-        'padding:7px 10px;border-radius:10px;background:rgba(20,18,15,.9);color:#f1ede4;font:600 12.5px system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.45)';
+      s.style.cssText = 'position:absolute;left:10px;bottom:10px;z-index:6;display:none;flex-wrap:wrap;align-items:center;gap:8px;max-width:calc(100% - 150px);' +
+        'padding:7px 10px;border-radius:10px;background:rgba(20,18,15,.92);color:#f1ede4;font:600 12.5px system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.45)';
       main.appendChild(s);
       s.addEventListener('click', e => {
         const t = e.target.closest('[data-hr]'); if (!t) return;
-        const v = lesaVal(FP.companyId), nuna = (G.hrein && G.hrein.thykkt) || 2;
-        if (t.dataset.hr === 'minna') v.thykkt = Math.max(1, (v.thykkt || nuna) - 1);
-        if (t.dataset.hr === 'meira') v.thykkt = Math.min(9, (v.thykkt || nuna) + 1);
-        if (t.dataset.hr === 'fylla') v.fylla = !v.fylla;
+        const FP = FPx(), v = lesaVal(FP.companyId), nuna = (G.hrein && G.hrein.thykkt) || 2, h = virkHaed(), a = t.dataset.hr;
+        if (a === 'minna') v.thykkt = Math.max(1, (v.thykkt || nuna) - 1);
+        if (a === 'meira') v.thykkt = Math.min(9, (v.thykkt || nuna) + 1);
+        if (a === 'fylla') v.fylla = !v.fylla;
+        if (a === 'v-aftur') { h.veggir.pop(); G.kedja = h.veggir.length ? h.veggir[h.veggir.length - 1].slice(2) : null; }
+        if (a === 'v-ny') G.kedja = null;
+        if (a === 'v-eyda' && window.confirm('Eyða öllum handdregnum veggjum á þessari hæð?')) { h.veggir = []; G.kedja = null; }
+        if (a === 'v-buid' || a === 's-haetta') { G.hamur = null; G.kedja = null; G.drag = null; }
+        if (a === 's-stadfesta' && G.drag) { stadfestaSkurd(); }
         vistaVal(FP.companyId, v); beita();
       });
     }
-    const th = (G.hrein && G.hrein.thykkt) || val.thykkt || 2, tk = 'min-width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;font:700 15px system-ui;cursor:pointer';
-    s.innerHTML = '<span>Veggþykkt</span><button type="button" data-hr="minna" style="' + tk + '" title="Halda líka þynnri veggjum">−</button><span style="min-width:14px;text-align:center">' + th +
-      '</span><button type="button" data-hr="meira" style="' + tk + '" title="Aðeins þykkustu veggir">+</button>' +
-      '<button type="button" data-hr="fylla" aria-pressed="' + !!val.fylla + '" style="' + tk + ';padding:0 10px;font-size:12.5px;' + (val.fylla ? 'background:#c9a54a;color:#14120f;border-color:#c9a54a' : '') + '">Fylla tvöfalda veggi</button>' +
-      (skilabod ? '<span style="flex-basis:100%;color:#ffd27a;font-weight:500">' + skilabod + '</span>'
-        : (G.hrein ? '<span style="opacity:.6;font-weight:500">' + (G.hrein.thekja * 100).toFixed(1) + '% veggir · ' + G.hrein.ms + ' ms</span>' : ''));
+    return s;
+  }
+  function stika(skilabod) {
+    const s = stikuEl(); if (!s) return;
+    const FP = FPx(), val = lesaVal(FP.companyId), h = virkHaed();
+    let html = '';
+    if (G.hamur === 'veggir') {
+      html = '<span>✏ Smelltu á horn veggjanna — línan réttir sig sjálf lárétt/lóðrétt</span>' +
+        '<button type="button" data-hr="v-ny" style="' + TK + '" title="Byrja nýja línu annars staðar (líka tvísmellur eða Esc)">Ný lína</button>' +
+        '<button type="button" data-hr="v-aftur" style="' + TK + '"' + (h.veggir.length ? '' : ' disabled') + '>↶ Til baka</button>' +
+        '<button type="button" data-hr="v-eyda" style="' + TK + '"' + (h.veggir.length ? '' : ' disabled') + '>🗑 Eyða öllum</button>' +
+        '<button type="button" data-hr="v-buid" style="' + TK + ';' + GULL + '">✓ Búið · ' + h.veggir.length + ' veggir</button>';
+    } else if (G.hamur === 'skera') {
+      html = '<span>✂ Dragðu kassa utan um húsið</span>' +
+        (G.drag && G.drag.buid ? '<button type="button" data-hr="s-stadfesta" style="' + TK + ';' + GULL + '">✓ Skera hér</button>' : '') +
+        '<button type="button" data-hr="s-haetta" style="' + TK + '">Hætta við</button>';
+    } else if (val.a) {
+      const th = (G.hrein && G.hrein.thykkt) || val.thykkt || 2;
+      html = '<span>Veggþykkt</span><button type="button" data-hr="minna" style="' + TK + '" title="Halda líka þynnri veggjum">−</button><span style="min-width:14px;text-align:center">' + th +
+        '</span><button type="button" data-hr="meira" style="' + TK + '" title="Aðeins þykkustu veggir">+</button>' +
+        '<button type="button" data-hr="fylla" aria-pressed="' + !!val.fylla + '" style="' + TK + ';' + (val.fylla ? GULL : '') + '">Fylla tvöfalda veggi</button>' +
+        (skilabod ? '' : (G.hrein ? '<span style="opacity:.6;font-weight:500">' + (G.hrein.thekja * 100).toFixed(1) + '% veggir · ' + G.hrein.ms + ' ms</span>' : ''));
+    }
+    if (skilabod && !G.hamur) html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500">' + esc(skilabod) + '</span>';
+    if (s._html !== html) { s.innerHTML = html; s._html = html; }
+    s.style.display = html ? 'flex' : 'none';
   }
 
+  // Hæðaflipar efst til vinstri.
+  function flipar() {
+    const main = document.getElementById('fp-main'); if (!main) return;
+    let f = document.getElementById('fp-haedir');
+    if (!f) {
+      f = document.createElement('div'); f.id = 'fp-haedir';
+      f.style.cssText = 'position:absolute;left:10px;top:10px;z-index:6;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100% - 20px);font:700 12.5px system-ui,sans-serif';
+      main.appendChild(f);
+      f.addEventListener('click', e => {
+        const t = e.target.closest('[data-h]'); if (!t) return;
+        const a = t.dataset.h, hs = haedir();
+        if (a === 'ny') {
+          samstillaVirka();
+          hs.push({ id: nyttId(), nafn: (hs.length + 1) + '. hæð', image_url: null, markers: [], skurdur: null, veggir: [] });
+          virkja(hs.length - 1);
+          segja('Ný hæð — sæktu eða hlaðu upp teikningu fyrir hana.');
+        } else if (a === 'nafn') {
+          const n = window.prompt('Heiti hæðar', virkHaed().nafn || ''); if (n != null && n.trim()) virkHaed().nafn = n.trim().slice(0, 24);
+          flipar();
+        } else if (a === 'eyda') {
+          const h = virkHaed();
+          if (hs.length < 2 || !window.confirm('Eyða „' + h.nafn + '" með ' + plan().markers.length + ' staðsetningum? Breytingin vistast þegar þú ýtir á Vista.')) return;
+          hs.splice(G.virk, 1); plan().markers = []; G.rymi = { x: 0, y: 0 };
+          const i = Math.max(0, G.virk - 1); G.virk = -1; virkja(i, true);
+        } else virkja(+a);
+      });
+    }
+    const hs = haedir(), FL = 'height:30px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.22);cursor:pointer;font:inherit;';
+    const html = hs.map((h, i) => '<button type="button" data-h="' + i + '" aria-pressed="' + (i === G.virk) + '" style="' + FL + (i === G.virk ? GULL : 'background:rgba(20,18,15,.88);color:#f1ede4') + '">' +
+        esc(h.nafn || (i + 1) + '. hæð') + ' <span style="opacity:.65;font-weight:500">' + (i === G.virk ? plan().markers.length : h.markers.length) + '</span></button>').join('') +
+      '<button type="button" data-h="nafn" title="Endurnefna virku hæðina" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">✎</button>' +
+      (hs.length > 1 ? '<button type="button" data-h="eyda" title="Eyða virku hæðinni" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">🗑</button>' : '') +
+      '<button type="button" data-h="ny" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">+ Hæð</button>';
+    if (f._html !== html) { f.innerHTML = html; f._html = html; }
+  }
+
+  function virkja(i, anSamstillingar) {
+    const FP = FPx(), p = plan(), hs = haedir();
+    if (i === G.virk || i < 0 || i >= hs.length) return;
+    if (!anSamstillingar) samstillaVirka();
+    loka3d(); G.hamur = null; G.kedja = null; G.drag = null;
+    G.virk = i;
+    const h = hs[i];
+    p.markers = h.markers.map(m => Object.assign({}, m)); G.rymi = { x: 0, y: 0 };
+    p.imageUrl = h.image_url || null;
+    G.frum = null; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
+    FP.bgImage = null; FP._selectedUnitId = null;
+    const c = document.getElementById('fp-canvas'), dm = document.getElementById('fp-drop-msg');
+    if (h.image_url) {
+      const img = new Image();
+      img.onload = () => {
+        if (FPx().companyId !== FP.companyId || haedir()[G.virk] !== h) return;
+        FP.bgImage = img; if (c) c.style.display = 'block'; if (dm) dm.style.display = 'none';
+        beita(); try { FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
+      };
+      img.onerror = () => segja('⚠ Náði ekki í teikningu hæðarinnar „' + h.nafn + '".');
+      img.src = h.image_url;
+    } else {
+      if (c) c.style.display = 'none'; if (dm) dm.style.display = '';
+    }
+    try { FP._renderPanel(); } catch (_) {}
+    flipar(); stika(); hnappar();
+  }
+
+  /* ── yfirlag: handdregnir veggir, forskoðunarlína, skurðarkassi ── */
+  function yfirlag() {
+    const main = document.getElementById('fp-main'), c = document.getElementById('fp-canvas'); if (!main || !c) return;
+    let y = document.getElementById('fp-yfirlag');
+    if (!y) {
+      y = document.createElement('canvas'); y.id = 'fp-yfirlag';
+      y.style.cssText = 'position:absolute;left:0;top:0;z-index:5;pointer-events:none';
+      main.appendChild(y);
+    }
+    const FP = FPx(), h = virkHaed(), mr = main.getBoundingClientRect(), cr = c.getBoundingClientRect();
+    const synilegt = c.style.display !== 'none' && cr.width > 2 && FP.bgImage;
+    const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
+      G.hamur, JSON.stringify(h.veggir), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height].join('|');
+    if (merki === G.teiknad) return;
+    G.teiknad = merki;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    y.width = Math.round(mr.width * dpr); y.height = Math.round(mr.height * dpr); y.style.width = mr.width + 'px'; y.style.height = mr.height + 'px';
+    const x = y.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, mr.width, mr.height);
+    if (!synilegt) return;
+    const k = cr.width / c.width, ox = cr.left - mr.left, oy = cr.top - mr.top;
+    const sx = X => ox + (X - G.rymi.x) * k, sy = Y => oy + (Y - G.rymi.y) * k;
+    x.save(); x.beginPath(); x.rect(ox, oy, cr.width, cr.height); x.clip();
+    const bt = Math.max(3, Math.min(9, c.width * k / 170));
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    x.strokeStyle = G.hamur === 'veggir' ? '#1d4ed8' : '#26221e'; x.lineWidth = bt;
+    h.veggir.forEach(v => { x.beginPath(); x.moveTo(sx(v[0]), sy(v[1])); x.lineTo(sx(v[2]), sy(v[3])); x.stroke(); });
+    if (G.hamur === 'veggir' && G.kedja) {
+      if (G.bendill) { x.strokeStyle = 'rgba(29,78,216,.55)'; x.setLineDash([8, 6]); x.beginPath(); x.moveTo(sx(G.kedja[0]), sy(G.kedja[1])); x.lineTo(sx(G.bendill[0]), sy(G.bendill[1])); x.stroke(); x.setLineDash([]); }
+      x.fillStyle = '#1d4ed8'; x.beginPath(); x.arc(sx(G.kedja[0]), sy(G.kedja[1]), bt * 0.9, 0, 6.3); x.fill();
+    }
+    if (G.hamur === 'skera' && G.drag) {
+      const d = G.drag, X0 = sx(Math.min(d.x0, d.x1)), Y0 = sy(Math.min(d.y0, d.y1)), Wd = Math.abs(d.x1 - d.x0) * k, Hd = Math.abs(d.y1 - d.y0) * k;
+      x.fillStyle = 'rgba(20,18,15,.5)'; x.beginPath(); x.rect(ox, oy, cr.width, cr.height); x.rect(X0, Y0, Wd, Hd); x.fill('evenodd');
+      x.strokeStyle = '#c9a54a'; x.lineWidth = 2; x.setLineDash([7, 5]); x.strokeRect(X0, Y0, Wd, Hd);
+    }
+    x.restore();
+  }
+
+  // Skjáhnit → frummyndarhnit virku hæðarinnar.
+  function hnit(e) {
+    const c = document.getElementById('fp-canvas'), r = c.getBoundingClientRect();
+    return [(e.clientX - r.left) * (c.width / r.width) + G.rymi.x, (e.clientY - r.top) * (c.height / r.height) + G.rymi.y];
+  }
+  function smella(p) {
+    // Rétta lárétt/lóðrétt (innan ~7°) og grípa í enda sem þegar eru til — þannig lokast herbergi hreint.
+    const c = document.getElementById('fp-canvas'), r = c.getBoundingClientRect(), grip = 12 * (c.width / r.width);
+    let [X, Y] = p;
+    if (G.kedja) { const dx = X - G.kedja[0], dy = Y - G.kedja[1]; if (Math.abs(dx) < Math.abs(dy) * 0.12) X = G.kedja[0]; else if (Math.abs(dy) < Math.abs(dx) * 0.12) Y = G.kedja[1]; }
+    let best = null, bd = grip;
+    virkHaed().veggir.forEach(v => [[v[0], v[1]], [v[2], v[3]]].forEach(q => { const d = Math.hypot(q[0] - X, q[1] - Y); if (d < bd) { bd = d; best = q; } }));
+    return best ? [best[0], best[1]] : [Math.round(X), Math.round(Y)];
+  }
+  function stadfestaSkurd() {
+    const d = G.drag, h = virkHaed(); if (!d || !G.frum) return;
+    const iw = G.frum.naturalWidth || G.frum.width, ih = G.frum.naturalHeight || G.frum.height;
+    const x = Math.max(0, Math.min(d.x0, d.x1)), y = Math.max(0, Math.min(d.y0, d.y1));
+    const w = Math.min(iw, Math.max(d.x0, d.x1)) - x, hh = Math.min(ih, Math.max(d.y0, d.y1)) - y;
+    G.drag = null; G.hamur = null;
+    if (w < 40 || hh < 40) { segja('Kassinn var of lítill — reyndu aftur.'); return; }
+    const uti = plan().markers.filter(m => erPx(m) && (m.x + G.rymi.x < x || m.x + G.rymi.x > x + w || m.y + G.rymi.y < y || m.y + G.rymi.y > y + hh)).length;
+    h.skurdur = { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(hh) };
+    if (uti) segja('⚠ ' + uti + ' staðsetning' + (uti === 1 ? '' : 'ar') + ' lend' + (uti === 1 ? 'ir' : 'a') + ' utan við skurðinn — þær haldast, en sjást ekki fyrr en „Sýna allt blaðið" er valið.');
+  }
+  function tengjaStriga() {
+    const main = document.getElementById('fp-main'); if (!main || main._t383) return;
+    main._t383 = 1;
+    // CAPTURE: á undan merkja-smelli FloorPlan og draga/þysja annarra plástra — aðeins þegar hamur er virkur.
+    const stodva = e => { e.stopPropagation(); e.preventDefault(); };
+    main.addEventListener('click', e => {
+      if (!G.hamur || e.target.id !== 'fp-canvas') return;
+      stodva(e);
+      if (G.hamur === 'veggir') {
+        const p = smella(hnit(e));
+        if (G.kedja && (G.kedja[0] !== p[0] || G.kedja[1] !== p[1])) virkHaed().veggir.push([G.kedja[0], G.kedja[1], p[0], p[1]]);
+        G.kedja = p; stika();
+      }
+    }, true);
+    main.addEventListener('dblclick', e => { if (G.hamur === 'veggir' && e.target.id === 'fp-canvas') { stodva(e); G.kedja = null; } }, true);
+    main.addEventListener('pointerdown', e => {
+      if (G.hamur !== 'skera' || e.target.id !== 'fp-canvas') return;
+      stodva(e); const p = hnit(e); G.drag = { x0: p[0], y0: p[1], x1: p[0], y1: p[1], buid: false };
+      try { e.target.setPointerCapture(e.pointerId); } catch (_) {}
+    }, true);
+    main.addEventListener('pointermove', e => {
+      if (G.hamur === 'veggir' && e.target.id === 'fp-canvas') G.bendill = smella(hnit(e));
+      if (G.hamur === 'skera' && G.drag && !G.drag.buid) { stodva(e); const p = hnit(e); G.drag.x1 = p[0]; G.drag.y1 = p[1]; }
+    }, true);
+    main.addEventListener('pointerup', e => {
+      if (G.hamur !== 'skera' || !G.drag || G.drag.buid) return;
+      stodva(e); G.drag.buid = true; stika();
+    }, true);
+    main.addEventListener('pointerleave', () => { G.bendill = null; });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || !G.hamur) return;
+      const m = document.getElementById('modal-floorplan'); if (!m || m.style.display === 'none') return;
+      e.stopPropagation(); e.preventDefault();
+      if (G.hamur === 'veggir' && G.kedja) G.kedja = null; else { G.hamur = null; G.drag = null; G.kedja = null; }
+      stika();
+    }, true);
+  }
+
+  /* ── 3D yfir allar hæðir ── */
   function loka3d() {
     if (G.syn3d) { try { G.syn3d.loka(); } catch (_) {} G.syn3d = null; }
     const g = document.getElementById('fp-3d'); if (g) g.remove();
     const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'false');
   }
-
+  const hladaMynd = slod => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('mynd')); i.src = slod; });
+  // Hæð → { veggir, W, H, golf, kvardi, merki } í hnitum SKORNU myndarinnar (stig1).
+  function undirbua(h, stig1, merkiFrum, val, einingar) {
+    const sk = h.skurdur || { x: 0, y: 0 };
+    const r = hreinsa(stig1, { thykkt: val.thykkt || 0, fylla: !!val.fylla });
+    const veggir = r.thekja >= 0.004 ? r.veggir : new Uint8Array(r.W * r.H);
+    if (h.veggir.length) {
+      const c = document.createElement('canvas'); c.width = r.W; c.height = r.H;
+      const x = c.getContext('2d'); x.strokeStyle = '#000'; x.lineCap = 'square'; x.lineWidth = Math.max(3, Math.round(r.W / 240));
+      h.veggir.forEach(v => { x.beginPath(); x.moveTo((v[0] - sk.x) * r.kvardi, (v[1] - sk.y) * r.kvardi); x.lineTo((v[2] - sk.x) * r.kvardi, (v[3] - sk.y) * r.kvardi); x.stroke(); });
+      const d = x.getImageData(0, 0, r.W, r.H).data;
+      for (let i = 0; i < r.W * r.H; i++) if (d[i * 4 + 3] > 96) veggir[i] = 1;
+    }
+    let n = 0; for (let i = 0; i < veggir.length; i++) n += veggir[i];
+    const iw = stig1.naturalWidth || stig1.width, ih = stig1.naturalHeight || stig1.height;
+    const merki = merkiFrum.map(mk => {
+      const u = einingar.find(q => q.id === mk.unitId);
+      const px = erPx(mk) ? mk.x - sk.x : mk.x * iw, py = erPx(mk) ? mk.y - sk.y : mk.y * ih;
+      return { x: px, y: py, litur: u && u.status === 'overdue' ? '#c93c1d' : '#2f9e55', texti: u ? String(u.serial || '').slice(-6) : '' };
+    });
+    return { veggir, W: r.W, H: r.H, golf: r.vinnu, kvardi: r.kvardi, merki, veggjaPx: n };
+  }
   async function opna3d() {
-    const FP = window.FloorPlan, main = document.getElementById('fp-main');
-    if (!FP || !main) return;
+    const FP = FPx(), main = document.getElementById('fp-main'); if (!FP || !main) return;
     if (document.getElementById('fp-3d')) { loka3d(); return; }
-    const frum = erOkkarStrigi(FP.bgImage) ? G.frum : FP.bgImage;
-    if (!frum) { segja('Sæktu eða hlaðu upp teikningu fyrst.'); return; }
-    const val = lesaVal(FP.companyId);
-    let r;
-    try { r = reikna(frum, val); } catch (e) { segja('⚠ Gat ekki lesið teikninguna: ' + ((e && e.message) || e)); return; }
-    if (r.thekja < 0.004) { segja('Fann enga þykka veggi til að lyfta upp — kveiktu á ✨ Skýrari veggir og stilltu veggþykktina fyrst.'); return; }
+    samstillaVirka();
+    const hs = haedir(), val = lesaVal(FP.companyId), einingar = FP.units || [];
     const gamur = document.createElement('div'); gamur.id = 'fp-3d';
     gamur.style.cssText = 'position:absolute;inset:0;z-index:8;background:#14120f';
-    gamur.innerHTML = '<div style="position:absolute;left:10px;top:10px;z-index:2;padding:6px 10px;border-radius:9px;background:rgba(20,18,15,.85);color:#f1ede4;font:500 12px system-ui,sans-serif;pointer-events:none">' +
-      'Draga = snúa · hjól / klípa = aðdráttur · shift-draga eða tveir fingur = færa</div>' +
+    gamur.innerHTML = '<div id="fp-3d-skyr" style="position:absolute;left:10px;top:10px;z-index:2;max-width:calc(100% - 140px);padding:6px 10px;border-radius:9px;background:rgba(20,18,15,.85);color:#f1ede4;font:500 12px system-ui,sans-serif;pointer-events:none">Undirbý hæðir…</div>' +
       '<button type="button" id="fp-3d-x" style="position:absolute;right:10px;top:10px;z-index:2;height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">✕ Loka 3D</button>';
     main.appendChild(gamur);
     gamur.querySelector('#fp-3d-x').addEventListener('click', loka3d);
-    const plan = (FP.plans && FP.plans[FP.companyId]) || {}, einingar = FP.units || [];
-    const iw = frum.naturalWidth || frum.width;
-    const merki = (plan.markers || []).map(mk => {
-      const u = einingar.find(x => x.id === mk.unitId);
-      const px = (mk.x > 1 || mk.y > 1) ? mk.x : mk.x * iw, py = (mk.x > 1 || mk.y > 1) ? mk.y : mk.y * (frum.naturalHeight || frum.height);
-      return { x: px, y: py, litur: u && u.status === 'overdue' ? '#c93c1d' : '#2f9e55', texti: u ? String(u.serial || '').slice(-6) : '' };
-    });
-    try {
-      G.syn3d = await syna3d(gamur, { haedir: [{ veggir: r.veggir, W: r.W, H: r.H, golf: r.vinnu, kvardi: r.kvardi, merki }] });
-      const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'true');
-    } catch (e) {
-      loka3d(); segja('⚠ 3D-sýnin opnaðist ekki: ' + ((e && e.message) || e));
+    const skyr = gamur.querySelector('#fp-3d-skyr'), ut = [], sleppt = [];
+    for (let i = 0; i < hs.length; i++) {
+      const h = hs[i];
+      try {
+        let stig1 = i === G.virk ? G.stig1 : null;
+        if (!stig1) { if (!h.image_url) { sleppt.push(h.nafn + ' (engin teikning)'); continue; } const img = await hladaMynd(h.image_url); stig1 = h.skurdur ? skera(img, h.skurdur) : img; }
+        if (!document.getElementById('fp-3d')) return;
+        const u = undirbua(h, stig1, h.markers, val, einingar);
+        if (!u.veggjaPx) { sleppt.push(h.nafn + ' (engir veggir — dragðu þá með ✏)'); continue; }
+        ut.push(u);
+      } catch (_) { sleppt.push(h.nafn + ' (náði ekki í teikningu)'); }
     }
+    if (!ut.length) { loka3d(); segja('Engir veggir til að lyfta upp: ' + sleppt.join(' · ') + '.'); return; }
+    try {
+      G.syn3d = await syna3d(gamur, { haedir: ut });
+      skyr.textContent = 'Draga = snúa · hjól / klípa = aðdráttur · shift-draga eða tveir fingur = færa' + (ut.length > 1 ? ' · ' + ut.length + ' hæðir' : '') + (sleppt.length ? ' · sleppt: ' + sleppt.join(', ') : '');
+      const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'true');
+    } catch (e) { loka3d(); segja('⚠ 3D-sýnin opnaðist ekki: ' + ((e && e.message) || e)); }
   }
 
-  function baetaHnoppum() {
+  /* ── takkar í haus gluggans ── */
+  function hnappar() {
     const hd = document.querySelector('#modal-floorplan .modal-hd'); if (!hd) return;
-    const grp = hd.lastElementChild; if (!grp || grp.querySelector('.fp-hreinsa-btn')) return;
-    const FP = window.FloorPlan;
-    const gera = (kl, texti, titill, fn) => {
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-outline btn-sm ' + kl;
-      b.style.cssText = 'cursor:pointer'; b.textContent = texti; b.title = titill; b.setAttribute('aria-pressed', 'false');
-      b.addEventListener('click', fn); return b;
-    };
-    const h = gera('fp-hreinsa-btn', '✨ Skýrari veggir', 'Sýna aðeins veggina — málsetningar og texti dofna. Frummyndin geymist óbreytt.', () => {
-      const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v);
-      h.setAttribute('aria-pressed', String(!!v.a)); h.style.background = v.a ? '#c9a54a' : ''; h.style.color = v.a ? '#14120f' : '';
-      beita();
+    const grp = hd.lastElementChild; if (!grp) return;
+    const FP = FPx();
+    if (!grp.querySelector('.fp-hreinsa-btn')) {
+      const gera = (kl, texti, titill, fn) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-outline btn-sm ' + kl;
+        b.style.cssText = 'cursor:pointer'; b.textContent = texti; b.title = titill; b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', fn); return b;
+      };
+      const tharfMynd = fn => () => { if (!FPx().bgImage) { segja('Sæktu eða hlaðu upp teikningu fyrst.'); return; } fn(); beita(); };
+      const takkar = [
+        gera('fp-skera-btn', '✂ Skera', 'Skera teikninguna að húsinu — blaðið er oft margfalt stærra en grunnmyndin', tharfMynd(() => {
+          const h = virkHaed(); loka3d();
+          if (h.skurdur) { h.skurdur = null; G.hamur = null; } else { G.hamur = G.hamur === 'skera' ? null : 'skera'; G.drag = null; G.kedja = null; }
+        })),
+        gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
+        gera('fp-hreinsa-btn', '✨ Skýrari veggir', 'Sýna aðeins veggina — málsetningar og texti dofna. Frummyndin geymist óbreytt.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
+        gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); })
+      ];
+      const upp = grp.querySelector('label') || grp.firstChild;
+      takkar.forEach(b => grp.insertBefore(b, upp));
+      grp.style.flexWrap = 'wrap'; grp.style.justifyContent = 'flex-end';
+    }
+    const val = lesaVal(FP.companyId), h = virkHaed();
+    const lita = (kl, a, texti) => { const b = grp.querySelector(kl); if (!b) return; b.setAttribute('aria-pressed', String(!!a)); b.style.background = a ? '#c9a54a' : ''; b.style.color = a ? '#14120f' : ''; if (texti) b.textContent = texti; };
+    lita('.fp-hreinsa-btn', val.a);
+    lita('.fp-veggir-btn', G.hamur === 'veggir', '✏ Veggir' + (h.veggir.length ? ' · ' + h.veggir.length : ''));
+    lita('.fp-skera-btn', G.hamur === 'skera' || !!h.skurdur, h.skurdur ? '✂ Sýna allt blaðið' : '✂ Skera');
+    const c = document.getElementById('fp-canvas'); if (c) c.style.cursor = G.hamur ? 'crosshair' : '';
+  }
+
+  // Tækjalistinn þekkir aðeins virku hæðina: segja á hvaða hæð tækið er annars.
+  function listaVisbending() {
+    const el = document.getElementById('fp-unit-list'), FP = FPx(); if (!el || !FP.units) return;
+    const hs = haedir();
+    [...el.children].forEach((rod, i) => {
+      const u = FP.units[i]; if (!u) return;
+      const annars = hs.find((h, j) => j !== G.virk && h.markers.some(m => m.unitId === u.id));
+      const sidast = rod.lastElementChild; if (!sidast) return;
+      if (annars && !plan().markers.some(m => m.unitId === u.id)) { const t = '↗ á ' + annars.nafn; if (sidast.textContent !== t) { sidast.textContent = t; sidast.style.color = '#c9a54a'; } }
     });
-    const d = gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd', opna3d);
-    const upp = grp.querySelector('label') || grp.firstChild;
-    grp.insertBefore(d, upp); grp.insertBefore(h, d);
-    const v = lesaVal(FP.companyId);
-    if (v.a) { h.setAttribute('aria-pressed', 'true'); h.style.background = '#c9a54a'; h.style.color = '#14120f'; }
+  }
+
+  /* ── skreyta FloorPlan ── */
+  async function blobIDataUrl(slod) {
+    const img = await hladaMynd(slod), cv = document.createElement('canvas');
+    const w = Math.min(img.naturalWidth, 1600), hh = Math.round(img.naturalHeight * w / img.naturalWidth);
+    cv.width = w; cv.height = hh; cv.getContext('2d').drawImage(img, 0, 0, w, hh);
+    return { slod: cv.toDataURL('image/jpeg', 0.75), kvardi: w / img.naturalWidth };
   }
 
   function skreyta() {
-    const FP = window.FloorPlan;
+    const FP = FPx();
     if (!FP) return false;
     if (FP.__hreinsaSkreytt) return true;
-    const uppruni = FP.open;
-    if (typeof uppruni !== 'function') return false;
+    // Á EFTIR 375 (vistun á þjón): save-vefjan okkar verður að vera YST svo gögnin séu samstillt áður en 375 les þau.
+    if (typeof FP.open !== 'function' || typeof FP.save !== 'function' || !FP.__vistunSkreytt) return false;
+    const opna = FP.open, vista = FP.save;
+
     FP.open = function () {
-      loka3d(); G.frum = null; G.hrein = null; G.lykill = '';
-      const r = uppruni.apply(this, arguments);
-      try { baetaHnoppum(); } catch (_) {}
-      // Frummyndin kemur ósamstillt (localStorage, svo þjónn í 375, svo „Sækja teikningu"): vakta meðan glugginn er
-      // opinn og hreinsa hverja NÝJA frummynd ef valið er á. Ódýrt — reikna() geymir niðurstöðuna per mynd+stillingar.
-      clearInterval(G.vakt);
-      G.vakt = setInterval(() => {
+      loka3d(); cancelAnimationFrame(G.raf); clearInterval(G.vakt);
+      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '' });
+      const r = opna.apply(this, arguments);
+      const tikk = () => {
         const m = document.getElementById('modal-floorplan');
-        if (!m || m.style.display === 'none') { clearInterval(G.vakt); loka3d(); return; }
-        try { baetaHnoppum(); beita(); } catch (_) {}
-      }, 600);
+        if (!m || m.style.display === 'none' || !document.body.contains(m)) { clearInterval(G.vakt); cancelAnimationFrame(G.raf); loka3d(); return false; }
+        try { tengjaStriga(); hnappar(); beita(); listaVisbending(); } catch (e) { console.warn('[383]', e); }
+        return true;
+      };
+      setTimeout(tikk, 60);
+      G.vakt = setInterval(tikk, 500);
+      const lykkja = () => { const m = document.getElementById('modal-floorplan'); if (!m || !document.body.contains(m)) return; try { yfirlag(); } catch (_) {} G.raf = requestAnimationFrame(lykkja); };
+      G.raf = requestAnimationFrame(lykkja);
       return r;
     };
-    // Vista má ALDREI sjá strigann okkar sem mynd: plan.imageUrl er slóð frummyndar og er ósnert hér — þetta er
-    // aðeins varnagli ef annar kóði les bgImage við vistun.
+
+    // 375 kallar þetta þegar röð þjónsins er komin: merkin eru þá í FRUMMYNDARHNITUM og hæðirnar fylgja.
+    FP.__eftirSokn = function (cid, row) {
+      if (FP.companyId !== cid) return;
+      const p = plan();
+      p.haedir = Array.isArray(row.haedir) && row.haedir.length ? JSON.parse(JSON.stringify(row.haedir)) : null;
+      G.rymi = { x: 0, y: 0 }; G.virk = 0; G.lykill = ''; G.synd = null;
+      const hs = haedir();
+      if (Array.isArray(row.haedir) && row.haedir.length) { p.markers = hs[0].markers.map(m => Object.assign({}, m)); if (hs[0].image_url) p.imageUrl = hs[0].image_url; }
+      else { hs[0].markers = (p.markers || []).map(m => Object.assign({}, m)); hs[0].image_url = p.imageUrl || null; }
+      if (G.frum && FP.bgImage !== G.frum) { FP.bgImage = G.frum; G.frum = null; }
+    };
+
+    FP.save = function () {
+      const self = this, p = plan();
+      loka3d(); G.hamur = null;
+      samstillaVirka();
+      const hs = haedir();
+      (async () => {
+        // Upphlaðnar myndir eru blob: — þær deyja við endurhleðslu. Sama smækkun og 375 notar; hnit hæðarinnar skalast með.
+        for (const h of hs) {
+          if (typeof h.image_url === 'string' && h.image_url.indexOf('blob:') === 0) {
+            try {
+              const b = await blobIDataUrl(h.image_url), k = b.kvardi;
+              h.image_url = b.slod;
+              if (k !== 1) {
+                h.markers.forEach(m => { if (erPx(m)) { m.x *= k; m.y *= k; } });
+                h.veggir = h.veggir.map(v => v.map(n => Math.round(n * k)));
+                if (h.skurdur) h.skurdur = { x: Math.round(h.skurdur.x * k), y: Math.round(h.skurdur.y * k), w: Math.round(h.skurdur.w * k), h: Math.round(h.skurdur.h * k) };
+              }
+            } catch (_) { segja('⚠ Náði ekki að geyma upphlaðna mynd hæðarinnar „' + h.nafn + '".'); }
+          }
+        }
+        // Gömlu reitirnir (og localStorage) spegla FYRSTU hæð í frummyndarhnitum.
+        p.markers = hs[0].markers.map(m => Object.assign({}, m)); p.imageUrl = hs[0].image_url || null;
+        G.rymi = { x: 0, y: 0 }; G.virk = 0;
+        vista.call(self);
+      })();
+    };
     FP.__hreinsaSkreytt = true;
     return true;
   }
 
-  if (!skreyta()) { let n = 0; const i = setInterval(() => { if (skreyta() || ++n > 40) clearInterval(i); }, 150); }
+  if (!skreyta()) { let n = 0; const i = setInterval(() => { if (skreyta() || ++n > 80) clearInterval(i); }, 150); }
 })();
