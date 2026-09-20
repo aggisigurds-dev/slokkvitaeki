@@ -1,0 +1,14 @@
+{
+  "_lysing": "20.09.2026 — V4 (Agnar: „þú þarft að checka á þessu græna veseni\"). Níu staðir báru steps_2026 = {uttekt,skyrsla,reikningur} án NOKKURRAR sönnunar: engin úttektarskýrsla 2026, engar report_facts, enginn reikningur á staðnum, engin sala 2026, ekkert tæki með last_insp 2026, ekkert document_pair. Merkin urðu til í EINNI fjöldaaðgerð milli 18.07 og 28.07.2026 (0 slík í backup_appsettings_cowork_20260718, 100 í backup_appsettings_rf_20260728) — enginn lifandi kóði skrifar þetta þríhliða mynstur án 'send' og án steps_meta. Flest hinna 91 áttu sönnun; þessir níu erfðu merkin frá systkinum á sömu kennitölu. Leiðrétting: steps_2026 fjarlægt; last_year_inspected 2026 -> 2025 á #623 og #1486 (tækin síðast skoðuð 10/2025). Hér eru gildin FYRIR leiðréttingu. Afturköllun: setja steps_2026 (og last_year_inspected) aftur eins og hér stendur.",
+  "fyrir": {
+    "200":  { "nafn": "Center Hótel - Þingholt Apartments", "taeki": 5,  "sidast_skodad": "12/2025", "steps_2026": { "uttekt": true, "skyrsla": true, "reikningur": true }, "last_year_inspected": 0 },
+    "869":  { "nafn": "Heimaleiga - Máni Apartments",       "taeki": 54, "sidast_skodad": "10/2025", "steps_2026": { "uttekt": true, "skyrsla": true, "reikningur": true }, "last_year_inspected": 0 },
+    "1484": { "nafn": "Heimaleiga - Ice Apartments",        "taeki": 8,  "sidast_skodad": "10/2025", "steps_2026": { "uttekt": true, "skyrsla": true, "reikningur": true } },
+    "1486": { "nafn": "Heimaleiga - Midtown Hotel",         "taeki": 61, "sidast_skodad": "10/2025", "steps_2026": { "uttekt": true, "skyrsla": true, "reikningur": true }, "last_year_inspected": 2026 },
+    "1487": { "nafn": "Heimaleiga - Bríetartún 9-11",       "taeki": 8,  "sidast_skodad": "10/2025", "steps_2026": { "uttekt": true, "skyrsla": true, "reikningur": true } },
+    "1622": { "nafn": "Heimaleiga - Icelandic Apartments",  "taeki": 40, "sidast_skodad": "08/2025", "steps_2026": { "uttekt": true, "skyrsla": true, "reikningur": true } },
+    "622":  { "nafn": "Steypustöðin - Helguvík",            "taeki": 6,  "sidast_skodad": "09/2025", "steps_2026": { "uttekt": true, "skyrsla": true, "reikningur": true }, "last_year_inspected": 2025 },
+    "623":  { "nafn": "Steypustöðin - Borgarnesi",          "taeki": 40, "sidast_skodad": "10/2025", "steps_2026": { "uttekt": true, "skyrsla": true, "reikningur": true }, "last_year_inspected": 2026, "_ath": "_skyrsla bendir á „febrúar 2026/Steypustöðin malarhöfða 2026.pdf\" — skýrsla MALARHÖFÐA, ekki Borgarness; equipment (20/17/2/1) er líka Malarhöfða-listinn. Ósnert hér." },
+    "1610": { "nafn": "Steypustöðin - Íshellu",             "taeki": 29, "sidast_skodad": "01/2025", "steps_2026": { "uttekt": true, "skyrsla": true, "reikningur": true } }
+  }
+}

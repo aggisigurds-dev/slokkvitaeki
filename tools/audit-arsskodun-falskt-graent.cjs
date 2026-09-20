@@ -30,7 +30,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const BASELINE = 6;
+const BASELINE = 4;   // 20.09.2026: mælt 4 (var 6) — Bílaverk #674 og Granítsteinar #153 eru farin af listanum
 const rot = path.join(__dirname, '..');
 const cfg = fs.readFileSync(path.join(rot, 'js/config.js'), 'utf8');
 const URL_ = (cfg.match(/SUPABASE_URL\s*=\s*["']([^"']+)/) || [])[1];
@@ -78,12 +78,21 @@ async function allar(q) {
   const oskyrt = [];
   Object.keys(ars).forEach(k => {
     const a = ars[k];
-    if (!a || +a.last_year_inspected !== AR) return;
+    // 20.09.2026 (V4): „búið" er líka lesið úr steps_<ár> (271-lásinn, 190) — ekki aðeins last_year_inspected.
+    const st0 = (a && a['steps_' + AR]) || {};
+    if (!a || (+a.last_year_inspected !== AR && !(st0.skyrsla === true && st0.reikningur === true))) return;
     const c = N.get(+k);
     if (!c || c.er_i_thjonustu !== true) return;      // sofandi skráning málar ekkert borð
     if (sonn.has(+k)) return;
     const steps = a['steps_' + AR] || {};
-    if (steps.uttekt === true) return;                // mannleg skráning: heimsóknin stendur
+    // FJÖLDAMERKIÐ (20.09.2026): milli 18.07 og 28.07.2026 voru 100 félög stimpluð með NÁKVÆMLEGA
+    // {uttekt,skyrsla,reikningur} án steps_meta og án 'send'. Níu þeirra áttu enga sönnun (251 tæki, systkini á
+    // sömu kt) og stóðu græn í tvo mánuði — af því þessi vörður tók uttekt:true sem mannlega skráningu.
+    // Það fingrafar telst því EKKI mannlegt; hak með steps_meta (190 stimplar nafn+tíma síðan 29.07) eða önnur
+    // samsetning skrefa stendur áfram.
+    const lyklar = Object.keys(steps).filter(x => steps[x] === true).sort().join(',');
+    const fjoldamerki = lyklar === 'reikningur,skyrsla,uttekt' && !a['steps_meta_' + AR];
+    if (steps.uttekt === true && !fjoldamerki) return;   // mannleg skráning: heimsóknin stendur
     oskyrt.push({ id: +k, nafn: c.nafn, steps: JSON.stringify(steps) });
   });
 
