@@ -1147,6 +1147,7 @@
       '.sn-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
       '.sn-n{font-size:14px}.sn-n b{font-variant-numeric:tabular-nums}',
       '.sn-f{font-size:12px;color:var(--mute)}',
+      '.pbx{color:var(--terra);font-weight:700;min-width:34px}',
       '.sn-t .tag{white-space:normal;overflow-wrap:anywhere;max-width:100%}',
       '.tag.ok{background:#e7f3ec;color:#2f7a4a;border-color:#bcd9c7}',
       '.t5toast .undo{margin-left:12px;height:26px;padding:0 10px;border:1px solid #5a4410;border-radius:4px;background:var(--gside);color:#1b1405;font:700 12px var(--body);cursor:pointer}',
@@ -3452,7 +3453,12 @@
           ? '<a class="clink" href="#company/' + (k.coId || '') + '" data-t5="fyr-id" data-fid="' + (k.coId || '') + '">🏢 ' + esc(k.nafn) + ' ›</a>'
           : '<span class="tag hot">enginn kúnni fannst</span>') + felaTakki(f) + '</span>' + skyrLina(f) + '</div>' +
       lakt((k ? '<button type="button" class="btn gold sm" data-t5="pb-senda" data-mid="' + esc(m.message_id || '') + '">✉️ Senda reikning</button>' : '') +
-        '<button type="button" class="btn iv sm" data-t5="pb-svar" data-mid="' + esc(m.message_id || '') + '">🤖 Svar</button>') +
+        '<button type="button" class="btn iv sm" data-t5="pb-svar" data-mid="' + esc(m.message_id || '') + '">🤖 Svar</button>' +
+        // 20.09.2026 — Agnar, með rauðan kross yfir línu: „Leyfðu mér að eyða."
+        // „Fela" var til en sem grár tengill inni í undirlínunni; það lítur ekki
+        // út eins og aðgerð. ✕ gerir NÁKVÆMLEGA það sama og Fela — pósturinn
+        // stendur áfram í pósthólfinu og „Sýna" nær honum aftur.
+        '<button type="button" class="btn iv sm pbx" data-t5="fela" data-fl="' + esc(pbLyk(m)) + '" data-fe="postbeidnir" data-fd="' + esc(((m.sender_name || m.sender_email || '') + ' — ' + (m.subject || '')).slice(0, 200)) + '" title="Taka af listanum — pósturinn stendur áfram í pósthólfinu og Sýna nær honum aftur" aria-label="Taka af listanum">✕</button>') +
     '</div>';
   }
   // Aðgerðirnar búa í 240. Hér er aðeins kallað í þær.

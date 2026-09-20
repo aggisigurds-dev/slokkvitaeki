@@ -441,6 +441,8 @@
       '#_rp-modal .rp-tag.fire{color:#c2410c;background:#fff7ed;border-color:#fdba74}',
       '#_rp-modal .rpm-lbl{display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 5px}',
       '#_rp-modal .rpm-row{margin-bottom:14px}',
+      '#_rp-modal .rpm-opna{margin-left:auto;font-size:12px;font-weight:700;color:#2563eb;text-decoration:none;background:none;border:1px solid #bfdbfe;border-radius:7px;padding:2px 9px;cursor:pointer;font-family:inherit;white-space:nowrap}',
+      '#_rp-modal .rpm-opna:hover{background:#eff6ff}',
       '#_rp-modal input[type=email],#_rp-modal input[type=text],#_rp-modal textarea{width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;font-size:13.5px;color:#11141c;box-sizing:border-box;background:#fff}',
       '#_rp-modal input:focus,#_rp-modal textarea:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}',
       '#_rp-modal textarea{resize:vertical;min-height:150px;line-height:1.5}',
@@ -1167,6 +1169,9 @@
       '<label class="rpm-doc"><input type="checkbox" name="rpdoc" value="' + esc(String(d.id)) + '">' +
         '<span class="n">' + esc(docHeiti(d)) + '</span>' +
         '<span class="meta">' + esc(d.doc_date ? fmtDate(d.doc_date) : (d.year || '')) + '</span>' +
+        // 20.09.2026 — Agnar: „þyrfti að geta séð preview þarna. Treysti ekki neinu".
+        // Skjalið var aðeins nafn á lista. Nú opnast það sjálft.
+        (d.drive_file_id ? '<a class="rpm-opna" href="https://drive.google.com/file/d/' + esc(String(d.drive_file_id)) + '/view" target="_blank" rel="noopener">Opna</a>' : '') +
       '</label>').join('')
       : '<div class="rpm-note" style="margin:0">' + (docVilla
           ? '⚠ Náði ekki í skjölin: ' + esc(docVilla)
@@ -1280,8 +1285,14 @@
     }
   }
   function synaStadfestingu(m, payload, note) {
-    const vidh = (payload.attachments || []).map(a =>
-      '<li>' + esc(a.filename) + (a.driveId ? ' <span class="meta">· úr Drive</span>' : ' <span class="meta">· teiknaður núna</span>') + '</li>').join('');
+    // 20.09.2026 — FORSKOÐUN Á ÞVÍ SEM FER. Hvert viðhengi opnast: Drive-skjal
+    // beint úr Drive, og reikningurinn úr ÞEIM base64-bætum sem fara í póstinn
+    // (ekki teiknaður upp á nýtt). Sjáist það hér er það það sem berst.
+    const vidh = (payload.attachments || []).map((a, i) =>
+      '<li>' + esc(a.filename) +
+        (a.driveId ? ' <span class="meta">· úr Drive</span> <a class="rpm-opna" href="https://drive.google.com/file/d/' + esc(String(a.driveId)) + '/view" target="_blank" rel="noopener">Skoða</a>'
+          : ' <span class="meta">· teiknaður núna</span> <button type="button" class="rpm-opna" data-vidh="' + i + '">Skoða</button>') +
+      '</li>').join('');
     openModal(
       '<div class="rpm-head"><div><h3>📤 Yfirfara áður en sent er</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button" aria-label="Loka">✕</button></div>' +
       '<div class="rpm-body">' +
@@ -1304,6 +1315,20 @@
         '<button class="rpm-btn prim" type="button" id="_rpm-go">📤 Senda núna</button></div>'
     );
     const card = modalEl();
+    // Teiknaði reikningurinn: byggður úr base64-inu sem FER, svo forskoðunin sé
+    // ekki „svipað skjal" heldur sama skjal. Blob-slóðin er losuð eftir opnun.
+    card.querySelectorAll('button.rpm-opna[data-vidh]').forEach(b => b.addEventListener('click', () => {
+      try {
+        const a = (payload.attachments || [])[+b.dataset.vidh];
+        if (!a || !a.content) return;
+        const bin = atob(String(a.content).replace(/^data:[^,]*,/, ''));
+        const buf = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([buf], { type: 'application/pdf' }));
+        window.open(url, '_blank', 'noopener');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      } catch (_) { alert('Náði ekki að opna viðhengið.'); }
+    }));
     card.querySelector('.rpm-x').onclick = closeModal;
     card.querySelector('#_rpm-back').onclick = () => openSendModal(m);
     card.querySelector('#_rpm-go').onclick = () => sendaNuna(m, payload);
