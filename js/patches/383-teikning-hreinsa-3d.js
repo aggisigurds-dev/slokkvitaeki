@@ -521,7 +521,7 @@
     let s = document.getElementById('fp-hreinsa-stika');
     if (!s) {
       s = document.createElement('div'); s.id = 'fp-hreinsa-stika';
-      s.style.cssText = 'position:absolute;left:10px;bottom:10px;z-index:6;display:none;flex-wrap:wrap;align-items:center;gap:8px;max-width:calc(100% - 150px);' +
+      s.style.cssText = 'position:absolute;left:10px;bottom:10px;z-index:6;display:none;flex-wrap:wrap;align-items:center;gap:8px;max-width:calc(100% - 20px);' +
         'padding:7px 10px;border-radius:10px;background:rgba(20,18,15,.92);color:#f1ede4;font:600 12.5px system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.45)';
       main.appendChild(s);
       s.addEventListener('click', e => {
@@ -572,7 +572,7 @@
     let f = document.getElementById('fp-haedir');
     if (!f) {
       f = document.createElement('div'); f.id = 'fp-haedir';
-      f.style.cssText = 'position:absolute;left:10px;top:10px;z-index:6;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100% - 20px);font:700 12.5px system-ui,sans-serif';
+      f.style.cssText = 'position:absolute;left:10px;top:10px;z-index:6;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100% - 215px);font:700 12.5px system-ui,sans-serif';
       main.appendChild(f);
       f.addEventListener('click', e => {
         const t = e.target.closest('[data-h]'); if (!t) return;
@@ -715,7 +715,9 @@
     const gamalt = document.getElementById('_fzb'); if (gamalt && gamalt.parentNode && gamalt.parentNode.style.display !== 'none') gamalt.parentNode.style.display = 'none';
     if (document.getElementById('fp-zoom')) return;
     const d = document.createElement('div'); d.id = 'fp-zoom';
-    d.style.cssText = 'position:absolute;right:10px;bottom:10px;z-index:7;display:flex;align-items:center;gap:6px;font:700 13px system-ui,sans-serif';
+    // Efst til hægri (Agnar 20.09.2026 bað um að færa takkana upp) — neðst rákust þeir á þysjunarstiku appsins
+    // á síma (353) og á tækjaræmuna.
+    d.style.cssText = 'position:absolute;right:10px;top:10px;z-index:7;display:flex;align-items:center;gap:5px;font:700 13px system-ui,sans-serif';
     const tk = 'width:42px;height:42px;border-radius:11px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.88);color:#fff;font:700 20px system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center';
     d.innerHTML = '<button type="button" data-z="ut" style="' + tk + '" aria-label="Minnka" title="Minnka">−</button>' +
       '<span id="fp-zoom-pct" style="min-width:52px;text-align:center;padding:0 4px;height:42px;line-height:42px;border-radius:11px;background:rgba(20,18,15,.88);color:#f1ede4">100%</span>' +
@@ -878,7 +880,8 @@
         '#modal-floorplan #fp-unit-list>div{flex:0 0 128px;margin-bottom:0!important}' +
         '#modal-floorplan .modal-ft{padding:8px 10px}' +
         '#modal-floorplan #fp-info{font-size:12px}' +
-        '#fp-hreinsa-stika{max-width:calc(100% - 20px)!important;bottom:62px!important}' +
+        '#fp-hreinsa-stika{max-width:calc(100% - 20px)!important}' +
+        '#fp-zoom button{width:36px!important;height:36px!important}#fp-zoom span{height:36px!important;line-height:36px!important;min-width:46px!important}' +
       '}';
     document.head.appendChild(st);
   }
