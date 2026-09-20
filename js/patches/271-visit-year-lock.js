@@ -55,6 +55,42 @@
     } catch (_) { return false; }
   }
 
+  // 20.09.2026 (Agnar, Steypustöðin: „græni glugginn er yfir útreikningi þótt sé ekki búið að gera 2026"). MÆLT:
+  // 249 félög bera steps_2026.skyrsla + .reikningur = true í arsskodun_customers, en 13 þeirra eiga ENGA skýrslu 2026
+  // á sínum stað (9 alls ekkert skjal) — t.d. Steypustöðin Helguvík/Borgarnes/Íshella, sem erfðu merkin frá systkinum
+  // á sömu kennitölu (Malarhöfði/Hringhella/Þorlákshöfn VORU gerð). Skjalagrindin (199) sagði réttilega „Í vinnslu"
+  // á sama skjá og lásinn sagði „Búið". Merkin ein duga því ekki: lásinn krefst nú SÖNNUNAR um skýrslu á ÞESSUM stað
+  // (customer_documents uttektarskyrsla, arsskodun_report_facts eða ársmerkt skýrsluviðhengi). Reikningur má vera
+  // sameiginlegur kennitölunni (samreikningur), svo hans er ekki krafist per stað. Á meðan sönnunin er sótt er EKKI
+  // læst (ALLTAF LEYFA VISTUN) — lásinn kemur á þegar svarið berst.
+  const sonnun = {};   // 'coId:ár' -> true | false | 'bid'
+  function skyrslaSonnud(coId, year) {
+    const k = coId + ':' + year;
+    if (sonnun[k] === true || sonnun[k] === false) return sonnun[k];
+    if (sonnun[k] === 'bid') return null;
+    sonnun[k] = 'bid';
+    (async () => {
+      let ok = false;
+      try {
+        let atts = [];
+        try { atts = (window.CompanyAttachments && CompanyAttachments.list && CompanyAttachments.list(coId)) || []; } catch (_) {}
+        ok = !!ReportFactsSync.hasComplete({}, atts, year, {}).report;
+        const sb = window.DB && DB.sb;
+        if (!ok && sb) {
+          const d = await sb.from('customer_documents').select('id').eq('fyrirtaeki_id', coId).eq('year', year).eq('doc_type', 'uttektarskyrsla').limit(1);
+          ok = !!(d.data && d.data.length);
+        }
+        if (!ok && sb) {
+          const a = await sb.from('arsskodun_report_facts').select('fyrirtaeki_id').eq('fyrirtaeki_id', coId).eq('report_year', year).limit(1);
+          ok = !!(a.data && a.data.length);
+        }
+        sonnun[k] = ok;
+      } catch (_) { delete sonnun[k]; return; }   // sókn brást → reyna aftur næst, ekki læsa á meðan
+      apply();
+    })();
+    return null;
+  }
+
   // Útlit: sami græni gradienta-borði og .ut-listlock.on (patch 224) — ≥44px snertimark.
   (function css() {
     if (document.getElementById('sk-vyl-css')) return;
@@ -78,7 +114,7 @@
     if (!coId) return;
     const year = new Date().getFullYear();
     const existing = section.querySelector('._vyl-overlay');
-    if (unlocked[coId] || !isComplete(coId, year)) {
+    if (unlocked[coId] || !isComplete(coId, year) || skyrslaSonnud(coId, year) !== true) {
       if (existing) existing.remove();
       return;
     }
@@ -112,7 +148,7 @@
   }
   attach();
 
-  window.VisitYearLock = { apply, isComplete };
+  window.VisitYearLock = { apply, isComplete, skyrslaSonnud };
   console.log('[patch-271] visit year lock installed');
 })();
 /* === END VISIT YEAR LOCK v1 === */
