@@ -54,9 +54,9 @@
       '#tfs .tfs-zoom button{width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.88);color:#fff;font:700 19px system-ui;cursor:pointer}' +
       '#tfs .tfs-txt{position:absolute;left:10px;top:10px;z-index:2;max-width:calc(100% - 160px);padding:6px 10px;border-radius:9px;background:rgba(20,18,15,.88);font-size:12.5px;line-height:1.35}' +
       '#tfs .tfs-ft{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-top:1px solid rgba(255,255,255,.1);background:#0f0e0c}' +
-      '@media (max-width:760px){#tfs .tfs-gl{width:100vw;height:100dvh;border-radius:0}#tfs .tfs-bd{flex-direction:column-reverse}' +
-        '#tfs .tfs-li{width:auto;flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:0;border-top:1px solid rgba(255,255,255,.1);padding:8px}' +
-        '#tfs .tfs-kort{width:132px}#tfs .tfs-kort i{height:78px}#tfs .tfs-ft .tfs-tk{flex:1 1 46%;padding:0 8px;font-size:12.5px}#tfs .tfs-hd{padding-left:64px}}';
+      '#tfs.tfs-simi .tfs-gl{width:100vw;height:100dvh;border-radius:0}#tfs.tfs-simi .tfs-bd{flex-direction:column-reverse}' +
+        '#tfs.tfs-simi .tfs-li{width:auto;flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:0;border-top:1px solid rgba(255,255,255,.1);padding:8px}' +
+        '#tfs.tfs-simi .tfs-kort{width:132px}#tfs.tfs-simi .tfs-kort i{height:78px}#tfs.tfs-simi .tfs-ft .tfs-tk{flex:1 1 46%;padding:0 8px;font-size:12.5px}#tfs.tfs-simi .tfs-hd{padding-left:64px}';
     document.head.appendChild(st);
   }
 
@@ -98,6 +98,9 @@
         '<button type="button" class="tfs-tk" data-a="uttekt" title="Setja teikninguna í úttektarteikningu staðarins til að merkja tækin">📌 Nota í úttektarteikningu</button>' +
         '<span style="flex:1"></span><span class="tfs-sub" id="tfs-skra"></span></div></div>';
     document.body.appendChild(el);
+    // Sama regla og í teikningaglugganum (383): appið þysjar sig á síma, svo breiddarregla kviknar ekki — skjár á hæðina ræður.
+    const simi = () => el.classList.toggle('tfs-simi', window.innerWidth <= 760 || window.innerHeight > window.innerWidth * 1.1);
+    simi(); window.addEventListener('resize', simi);
     el.addEventListener('click', e => {
       if (e.target === el) { loka(); return; }
       const t = e.target.closest('[data-a],[data-sia],[data-z],[data-i]'); if (!t) return;

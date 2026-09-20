@@ -534,6 +534,20 @@
     const valid = Array.isArray(h.pdfFlokkar) ? h.pdfFlokkar : [];
     h.pdfVeggir = G.pdf && G.pdf.haed === h.id ? [].concat(...valid.map(l => G.pdf.flokkar[l] || [])) : h.pdfVeggir;
   }
+  function thetturSkurdur(h, iw, ih) {
+    if (h.sjalf === false || h.thett || h.pdfVeggir.length <= 30) return false;
+    const xs = [], ys = []; h.pdfVeggir.forEach(v => { xs.push(v[0], v[2]); ys.push(v[1], v[3]); });
+    xs.sort((a, b) => a - b); ys.sort((a, b) => a - b);
+    const q = (l, f) => l[Math.min(l.length - 1, Math.max(0, Math.round(f * (l.length - 1))))];
+    let x0 = q(xs, 0.02), x1 = q(xs, 0.98), y0 = q(ys, 0.02), y1 = q(ys, 0.98);
+    const sp = Math.max(x1 - x0, y1 - y0) * 0.07;
+    x0 -= sp; y0 -= sp; x1 += sp; y1 += sp;
+    plan().markers.forEach(m => { if (erPx(m)) { const mx = m.x + G.rymi.x, my = m.y + G.rymi.y, s2 = sp * 0.5; x0 = Math.min(x0, mx - s2); y0 = Math.min(y0, my - s2); x1 = Math.max(x1, mx + s2); y1 = Math.max(y1, my + s2); } });
+    x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(iw, x1); y1 = Math.min(ih, y1);
+    if (x1 - x0 < 200 || y1 - y0 < 200) return false;
+    h.skurdur = { x: Math.round(x0), y: Math.round(y0), w: Math.round(x1 - x0), h: Math.round(y1 - y0) }; h.sjalf = true; h.thett = true; zNullstilla();
+    return true;
+  }
   async function lesaPdfVeggi(sjalfkrafa) {
     const h = virkHaed(), slod = pdfSlod(h);
     if (!slod) { if (!sjalfkrafa) segja('Þessi teikning er ekki PDF úr skjalasafninu — þar er enginn vigur að lesa. Notaðu ✏ til að draga veggina.'); return false; }
@@ -553,6 +567,10 @@
       const px = {}; Object.keys(fl).forEach(l => { if (+l >= 0.3) px[l] = fl[l].map(v => [Math.round(v[0] * kx), Math.round(v[1] * ky), Math.round(v[2] * kx), Math.round(v[3] * ky)]); });
       G.pdf = { haed: h.id, flokkar: px, yfirlit: val.yfirlit.filter(y => +y.breidd >= 0.3 && y.strik >= 8).slice(0, 5), ptIPx: kx };
       h.pdfFlokkar = [val.valinn]; beitaPdfFlokkum(h);
+      // ÞÉTTUR SKURÐUR (Agnar: „croppa kringum byggingu"): blek-klasinn (finnaHus) tekur lóðina og skástrikuð bílastæði
+      // með. Veggirnir úr vigrinum segja nákvæmlega hvar húsið er. Aðeins þegar skurðurinn var sjálfvirkur eða enginn —
+      // handvalinn skurður notandans stendur. 2.–98. hundraðshluti svo stakt strik úti á lóð dragi kassann ekki út.
+      thetturSkurdur(h, iw, ih);
       segja('✓ ' + h.pdfVeggir.length + ' veggjastrik lesin úr PDF-inu (línuþykkt ' + val.valinn.replace('.', ',') + ' pt).');
       return true;
     } catch (e) {
@@ -596,6 +614,8 @@
       }
     }
     if (!G.frum || !nu) { stika(); flipar(); return; }
+    // Hæð sem á þegar vigurveggi en ber enn LAUSA sjálfvirka skurðinn (vistuð fyrir þétta skurðinn): þétta einu sinni.
+    if (h.pdfVeggir.length > 30 && h.sjalf === true && !h.thett) thetturSkurdur(h, G.frum.naturalWidth || G.frum.width, G.frum.naturalHeight || G.frum.height);
     // SJÁLFGEFINN SKURÐUR AÐ BYGGINGUNNI (Agnar 20.09.2026: „reyna að default croppa að byggingunni"). Aðeins þegar hæðin
     // á engan skurð og notandinn hefur ekki valið „Sýna allt blaðið" (sjalf === false). Kassinn er víkkaður svo öll
     // merki sem þegar eru til lendi innan hans — sjálfvirkni má aldrei fela staðsetningu.
@@ -862,7 +882,7 @@
     G.drag = null; G.hamur = null;
     if (w < 40 || hh < 40) { segja('Kassinn var of lítill — reyndu aftur.'); return; }
     const uti = plan().markers.filter(m => erPx(m) && (m.x + G.rymi.x < x || m.x + G.rymi.x > x + w || m.y + G.rymi.y < y || m.y + G.rymi.y > y + hh)).length;
-    h.skurdur = { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(hh) }; h.sjalf = false; zNullstilla();
+    h.skurdur = { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(hh) }; h.sjalf = false; delete h.thett; zNullstilla();
     if (uti) segja('⚠ ' + uti + ' staðsetning' + (uti === 1 ? '' : 'ar') + ' lend' + (uti === 1 ? 'ir' : 'a') + ' utan við skurðinn — þær haldast, en sjást ekki fyrr en „Sýna allt blaðið" er valið.');
   }
   /* ── þysjun og færsla: EIN stýring fyrir mús, hjól, fingur og takka ──
@@ -1035,30 +1055,37 @@
   /* ── símaútlit ──
    * Agnar 20.09.2026 (skjáskot af S26): tækjalistinn stóð sem 220 px dálkur við hliðina og tók þriðjung skjásins;
    * teikningin fékk mjóa rein og tveir þriðju hennar stóðu auðir. Á mjóum skjá fer listinn NIÐUR sem lárétt ræma,
-   * glugginn fyllir skjáinn og takkaröðin í hausnum skrunar til hliðar í stað þess að brotna í tvær línur. */
+   * glugginn fyllir skjáinn og takkaröðin í hausnum skrunar til hliðar í stað þess að brotna í tvær línur.
+   * 20.09.2026 seint: reglan var @media (max-width:760px) og kviknaði ALDREI á síma Agnars — appið þysjar sig á síma
+   * (353, „115%") svo útlitsbreiddin er yfir 760 px. Nú ræður klasi sem settur er þegar skjárinn er Á HÆÐINA
+   * (eða mjór): það er það sem skiptir máli fyrir þetta útlit, ekki punktafjöldinn. */
+  function simaKlasi() {
+    const m = document.getElementById('modal-floorplan'); if (!m) return;
+    const simi = window.innerWidth <= 760 || window.innerHeight > window.innerWidth * 1.1;
+    if (m.classList.contains('fp-simi') !== simi) { m.classList.toggle('fp-simi', simi); G.teiknad = ''; try { FPx()._renderCanvas(); } catch (_) {} }
+  }
   function simaStill() {
     if (document.getElementById('fp-simi-css')) return;
     const st = document.createElement('style'); st.id = 'fp-simi-css';
     st.textContent =
       '#modal-floorplan .fp-hd-grp{flex-wrap:wrap;justify-content:flex-end}' +
-      '@media (max-width:760px){' +
-        '#modal-floorplan{width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;margin:0!important}' +
-        '#modal-floorplan .modal-hd{flex-direction:column;align-items:stretch;gap:6px;padding:8px 10px 8px 64px}' +
-        '#modal-floorplan .modal-hd h2{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-        '#modal-floorplan .modal-hd h2+div{display:none}' +
-        '#modal-floorplan .fp-hd-grp{flex-wrap:nowrap!important;justify-content:flex-start!important;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-left:-54px}' +
-        '#modal-floorplan .fp-hd-grp>*{flex:none}' +
-        '#modal-floorplan .modal-bd{flex-direction:column!important}' +
-        '#modal-floorplan #fp-main{min-height:0}' +
-        '#modal-floorplan #fp-panel{width:auto!important;flex:none!important;border-left:0!important;border-top:1px solid rgba(255,255,255,.12);padding:8px 10px!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch}' +
-        '#modal-floorplan #fp-panel>div:first-child{display:none}' +
-        '#modal-floorplan #fp-unit-list{display:flex;gap:7px}' +
-        '#modal-floorplan #fp-unit-list>div{flex:0 0 128px;margin-bottom:0!important}' +
-        '#modal-floorplan .modal-ft{padding:8px 10px}' +
-        '#modal-floorplan #fp-info{font-size:12px}' +
-        '#fp-hreinsa-stika{max-width:calc(100% - 20px)!important}' +
-        '#fp-zoom button{width:36px!important;height:36px!important}#fp-zoom span{height:36px!important;line-height:36px!important;min-width:46px!important}' +
-      '}';
+        '#modal-floorplan.fp-simi{width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;margin:0!important}' +
+        '#modal-floorplan.fp-simi .modal-hd{flex-direction:column;align-items:stretch;gap:6px;padding:8px 10px 8px 64px}' +
+        '#modal-floorplan.fp-simi .modal-hd h2{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+        '#modal-floorplan.fp-simi .modal-hd h2+div{display:none}' +
+        '#modal-floorplan.fp-simi .fp-hd-grp{flex-wrap:nowrap!important;justify-content:flex-start!important;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-left:-54px}' +
+        '#modal-floorplan.fp-simi .fp-hd-grp>*{flex:none}' +
+        '#modal-floorplan.fp-simi .modal-bd{flex-direction:column!important}' +
+        '#modal-floorplan.fp-simi #fp-main{min-height:0}' +
+        '#modal-floorplan.fp-simi #fp-panel{width:auto!important;flex:none!important;border-left:0!important;border-top:1px solid rgba(255,255,255,.12);padding:8px 10px!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch}' +
+        '#modal-floorplan.fp-simi #fp-panel>div:first-child{display:none}' +
+        '#modal-floorplan.fp-simi #fp-unit-list{display:flex;gap:7px}' +
+        '#modal-floorplan.fp-simi #fp-unit-list>div{flex:0 0 128px;margin-bottom:0!important}' +
+        '#modal-floorplan.fp-simi .modal-ft{padding:8px 10px}' +
+        '#modal-floorplan.fp-simi #fp-info{font-size:12px}' +
+        '.fp-simi #fp-hreinsa-stika{max-width:calc(100% - 20px)!important}' +
+        '.fp-simi #fp-zoom button{width:36px!important;height:36px!important}.fp-simi #fp-zoom span{height:36px!important;line-height:36px!important;min-width:46px!important}' +
+      '';
     document.head.appendChild(st);
   }
 
@@ -1142,7 +1169,7 @@
   // Tækjalistinn þekkir aðeins virku hæðina: segja á hvaða hæð tækið er annars.
   function listaVisbending() {
     const el = document.getElementById('fp-unit-list'), FP = FPx(); if (!el || !FP.units) return;
-    if (FP._selectedUnitId !== G.valid) { G.valid = FP._selectedUnitId; const i = FP.units.findIndex(u => u.id === G.valid); if (i >= 0 && el.children[i] && window.innerWidth <= 760) { try { el.children[i].scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } catch (_) {} } }
+    if (FP._selectedUnitId !== G.valid) { G.valid = FP._selectedUnitId; const i = FP.units.findIndex(u => u.id === G.valid); if (i >= 0 && el.children[i] && document.querySelector('#modal-floorplan.fp-simi')) { try { el.children[i].scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } catch (_) {} } }
     const hs = haedir();
     [...el.children].forEach((rod, i) => {
       const u = FP.units[i]; if (!u) return;
@@ -1176,7 +1203,7 @@
       const tikk = () => {
         const m = document.getElementById('modal-floorplan');
         if (!m || m.style.display === 'none' || !document.body.contains(m)) { clearInterval(G.vakt); cancelAnimationFrame(G.raf); loka3d(); return false; }
-        try { tengjaStriga(); zTakkar(); hnappar(); beita(); listaVisbending(); } catch (e) { console.warn('[383]', e); }
+        try { simaKlasi(); tengjaStriga(); zTakkar(); hnappar(); beita(); listaVisbending(); } catch (e) { console.warn('[383]', e); }
         return true;
       };
       setTimeout(tikk, 60);
