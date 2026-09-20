@@ -1435,16 +1435,28 @@
             const ke = await ensureKtForSale(sale);
             if (!ke.ok) throw new Error('Vantar kennitölu — fannst ekki út frá nafni. Skráðu kt á kúnnann fyrst.');
           }
-          const r = await fetch('/api/payday-push', {
+          // 20.09.2026 (Agnar, Ölfusborgir suður/norður: „er að senda eins reikning … næ ekki að haka við neitt til að
+          // override viðvörunina. En á að senda þessa líka"). payday-push hefur frá 13.08 tekið `force_duplicate:true` sem
+          // meðvitaða yfirskrift á tvítakagáttinni — en viðmótið bauð hana aldrei; villan kom sem alert() með tæknitexta.
+          // Nú spyr gluggi (hak + „Senda samt") og sendir aftur með flagginu. Þjónshliðin er ÓSNERT.
+          const senda = (auka) => fetch('/api/payday-push', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            body: JSON.stringify(Object.assign({
               sale_id: id,
               attach_report: choice.attach,
               report_storage_path: (choice.attach && choice.path) || undefined,
-            }),
+            }, auka || {})),
           });
-          const j = await r.json().catch(() => ({}));
+          let r = await senda();
+          let j = await r.json().catch(() => ({}));
+          if (r.status === 409 && j && j.gate === 'duplicate') {
+            const samt = await spyrjaTvirukkun(sale, j);
+            if (!samt) { b.disabled = false; b.textContent = 'Krafa send'; await load(_state.month); return; }
+            b.textContent = '⏳ Sendir…';
+            r = await senda({ force_duplicate: true });
+            j = await r.json().catch(() => ({}));
+          }
           if (!r.ok || !j.ok) {
             // XML hafnað og endurtilraun án XML mistókst líka → glugginn strax (málið er á borðinu).
             if (j && j.retriedWithoutElectronic) { synaXmlHofnun(sale, j); b.disabled = false; return; }
@@ -1765,6 +1777,7 @@
           const j = await r.json().catch(() => ({}));
           if (!r.ok || !j.ok) {
             if (j && j.retriedWithoutElectronic) synaXmlHofnun(sale, j);   // glugginn strax; sendingin heldur áfram
+            if (j && j.gate === 'duplicate') throw new Error('möguleg tvírukkun við ' + ((j.twin && j.twin.num) || '?') + ' — sendu þessa STAKA („Krafa send") og hakaðu við „tvö aðskilin verk"');
             throw new Error(j.error || ('HTTP ' + r.status));
           }
           markWorkflowSent(sale, j);
@@ -1802,6 +1815,40 @@
   }
 
   // 2026-09-14 (Agnar): „það mætti poppa upp villa strax upp á skjáinn og setja á þjónustuborð".
+  // Tvítakagáttin í payday-push (gate:'duplicate'): sama kt, sömu línur, sama upphæð, þegar send. Oftast mistök —
+  // en stundum tvö aðskilin verk (tvö hús sama félags). Meðvituð ákvörðun: hak + „Senda samt". Skilar true/false.
+  function spyrjaTvirukkun(sale, j) {
+    return new Promise(resolve => {
+      const t = (j && j.twin) || {};
+      const dags = String(t.krafa_sent_at || '').slice(0, 10).split('-').reverse().join('/');
+      const ov = document.createElement('div');
+      ov.id = '_ky-tvirukkun';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:100095;background:rgba(15,23,42,.62);display:flex;align-items:center;justify-content:center;padding:16px;font-family:inherit';
+      ov.innerHTML =
+        '<div role="dialog" aria-modal="true" style="background:#fff;border-radius:14px;border-top:5px solid #d97706;box-shadow:0 24px 64px rgba(0,0,0,.4);width:min(520px,calc(100vw - 24px));padding:18px 20px;color:#0f172a">' +
+          '<div style="font-size:16px;font-weight:800;color:#92400e;margin-bottom:6px">⚠ Möguleg tvírukkun</div>' +
+          '<div style="font-size:13.5px;line-height:1.55;color:#334155">' +
+            '<b>' + esc((sale && sale.num) || '') + '</b> · ' + esc((sale && sale.customer_nafn) || '') + '<br>' +
+            'er með nákvæmlega sömu línur og sömu upphæð og <b>' + esc(t.num || ('#' + (t.id || '?'))) + '</b>' +
+            (dags ? ', sem var send ' + esc(dags) : '') + (t.samtals != null ? ' (' + esc(Number(t.samtals).toLocaleString('is-IS')) + ' kr)' : '') + ', á sömu kennitölu.' +
+          '</div>' +
+          '<label style="display:flex;gap:10px;align-items:flex-start;margin:14px 0 4px;padding:11px 12px;border:1.5px solid #fde68a;background:#fffbeb;border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:600;color:#78350f">' +
+            '<input type="checkbox" id="_ky-tvi-hak" style="width:20px;height:20px;margin-top:1px;flex:0 0 auto">' +
+            '<span>Þetta eru tvö aðskilin verk (t.d. tvö hús sama félags) — senda þessa kröfu líka.</span></label>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap">' +
+            '<button type="button" id="_ky-tvi-nei" style="padding:10px 16px;min-height:44px;border:1px solid #cbd5e1;background:#fff;border-radius:9px;cursor:pointer;font:inherit;font-size:14px;color:#475569">Hætta við</button>' +
+            '<button type="button" id="_ky-tvi-ja" disabled style="padding:10px 18px;min-height:44px;border:0;background:#b45309;color:#fff;border-radius:9px;cursor:pointer;font:inherit;font-size:14px;font-weight:800;opacity:.45">🏦 Senda samt</button>' +
+          '</div></div>';
+      document.body.appendChild(ov);
+      const hak = ov.querySelector('#_ky-tvi-hak'), ja = ov.querySelector('#_ky-tvi-ja');
+      const loka = v => { ov.remove(); resolve(v); };
+      hak.addEventListener('change', () => { ja.disabled = !hak.checked; ja.style.opacity = hak.checked ? '1' : '.45'; });
+      ja.addEventListener('click', () => { if (hak.checked) loka(true); });
+      ov.querySelector('#_ky-tvi-nei').addEventListener('click', () => loka(false));
+      ov.addEventListener('click', e => { if (e.target === ov) loka(false); });
+    });
+  }
+
   // Þegar payday-push segir að Payday hafi hafnað rafrænum reikningi (XML) — fellBackToNonElectronic
   // (reikningur fór án XML) eða retriedWithoutElectronic (enginn reikningur) — opnast þessi gluggi
   // STRAX, í stað smá-toasts sem hvarf (Plaza 31.08.). Málið á Þjónustuborðinu stofnar payday-push
