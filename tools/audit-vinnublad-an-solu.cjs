@@ -43,14 +43,32 @@ async function saekja(q) {
   return r.json();
 }
 
+// 20.09.2026 — PostgREST skilar ALDREI fleiri en 1000 röðum, sama hvaða `limit`
+// er beðið um, og án `order` er röðin tilviljunarkennd. Vörðurinn bað um
+// `fyrirtaeki?limit=2000` (1.262 raðir) og fékk 1000 af handahófi: Grasnytjar
+// lentu utan þeirra, tengingin fannst ekki og salan taldist ekki til. Vörður sem
+// les brot af skránni mælir ekkert — hann kastar teningi.
+async function saekjaAllt(slod) {
+  const allt = [];
+  for (let fra = 0; ; fra += 1000) {
+    const r = await fetch(`${URL_}/rest/v1/${slod}`, {
+      headers: Object.assign({ Range: fra + '-' + (fra + 999), 'Range-Unit': 'items' }, H),
+    });
+    if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 140)}`);
+    const hluti = await r.json();
+    allt.push(...hluti);
+    if (hluti.length < 1000) return allt;
+  }
+}
+
 const kr = (n) => Math.round(n).toLocaleString('is-IS').replace(/,/g, '.') + ' kr';
 
 (async () => {
   let blod, fyrirtaeki, solur;
   try {
-    blod = await saekja('sara_yfirferd?select=id,fyrirtaeki,fyrirtaeki_id,stada,samthykkt_at,samthykkt_by,linur,akstur,akstur_verd,skyrslugerd&samthykkt_at=not.is.null&limit=1000');
-    fyrirtaeki = await saekja('fyrirtaeki?select=id,customer_base_id&limit=2000');
-    solur = await saekja('solur?select=id,num,customer_base_id,created_at,samtals&limit=1000&order=created_at.desc');
+    blod = await saekjaAllt('sara_yfirferd?select=id,fyrirtaeki,fyrirtaeki_id,stada,samthykkt_at,samthykkt_by,linur,akstur,akstur_verd,skyrslugerd&samthykkt_at=not.is.null&order=id');
+    fyrirtaeki = await saekjaAllt('fyrirtaeki?select=id,customer_base_id&order=id');
+    solur = await saekjaAllt('solur?select=id,num,customer_base_id,created_at,samtals&order=id');
   } catch (e) {
     console.log('⚠️  audit-vinnublad-an-solu: náði ekki í gögn — ' + e.message);
     process.exit(0);                       // net-bilun fellir ekki ýtingu
