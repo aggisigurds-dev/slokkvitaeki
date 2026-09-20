@@ -68,9 +68,18 @@
     return g.length ? g : l.filter(d => !d.urelt);
   };
 
-  function loka() {
+  // Bakk-takki símans lokar forskoðuninni í stað þess að fara af spjaldinu (sama og teikningaglugginn, 383).
+  const Saga = { opin: false, gleypa: 0 };
+  window.addEventListener('popstate', e => {
+    if (Saga.gleypa > 0) { Saga.gleypa--; try { e.stopImmediatePropagation(); } catch (_) {} return; }
+    if (!Saga.opin || !document.getElementById('tfs')) { Saga.opin = false; return; }
+    Saga.opin = false; try { e.stopImmediatePropagation(); } catch (_) {}
+    loka(true);
+  }, true);
+  function loka(urSogu) {
     const el = document.getElementById('tfs'); if (el) el.remove();
     document.removeEventListener('keydown', aLykil, true);
+    if (Saga.opin && urSogu !== true) { Saga.opin = false; Saga.gleypa++; try { history.back(); } catch (_) { Saga.gleypa = 0; } }
   }
   function aLykil(e) {
     if (e.key === 'Escape') { e.stopPropagation(); loka(); return; }
@@ -80,7 +89,7 @@
   }
 
   function grind() {
-    stilar(); loka();
+    stilar(); if (document.getElementById('tfs')) loka();
     const el = document.createElement('div'); el.id = 'tfs';
     el.innerHTML = '<div class="tfs-gl" role="dialog" aria-modal="true" aria-label="Teikningar">' +
       '<div class="tfs-hd"><div style="min-width:0;flex:1"><h2 id="tfs-titill"></h2><div class="tfs-sub" id="tfs-sub"></div></div>' +
@@ -115,6 +124,7 @@
       else if (a === 'uttekt') notaIUttekt();
     });
     document.addEventListener('keydown', aLykil, true);
+    if (!Saga.opin) { try { history.pushState({ slokkForskodun: 1 }, '', location.href); Saga.opin = true; } catch (_) {} }
     tengjaSvid();
   }
 
@@ -224,7 +234,9 @@
     if (typeof FloorPlan === 'undefined' || !FloorPlan.open) { segja('Teikniglugginn er ekki tilbúinn — reyndu aftur.'); return; }
     const takki = [...document.querySelectorAll('button,a')].find(b => b.textContent.trim() === 'Teikning' && /FloorPlan\.open/.test(b.getAttribute('onclick') || ''));
     if (!takki) { segja('Fann ekki „Teikning"-takkann á spjaldinu — opnaðu úttektarteikninguna og notaðu „📐 Sækja teikningu".'); return; }
-    loka(); takki.click();
+    // loka() tekur sögufærsluna af með history.back() — ÓSAMSTILLT. Opnist teikningaglugginn (sem setur sína eigin
+    // færslu) á undan, tæki bakkið HANS færslu og næsta lokun færi af spjaldinu. Því er beðið eftir bakkinu.
+    loka(); setTimeout(() => takki.click(), 450);
     // Glugginn hleður fyrst vistuðu hæðirnar (375/383). Eigi virka hæðin þegar teikningu fer þessi á NÝJA hæð — annars
     // færi hún yfir teikningu sem tækin eru þegar merkt á.
     let n = 0;

@@ -1075,6 +1075,8 @@
         '#modal-floorplan.fp-simi .modal-hd h2+div{display:none}' +
         '#modal-floorplan.fp-simi .fp-hd-grp{flex-wrap:nowrap!important;justify-content:flex-start!important;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-left:-54px}' +
         '#modal-floorplan.fp-simi .fp-hd-grp>*{flex:none}' +
+        // ✕ er AFTAST í röð sem skrunar til hliðar — á síma var hann utan skjás og engin sýnileg leið út. Festur hægra megin.
+        '#modal-floorplan.fp-simi .fp-hd-grp .modal-x{position:sticky;right:0;z-index:3;width:40px;height:40px;border-radius:10px;background:#14120f;color:#fff;border:1px solid rgba(255,255,255,.3);box-shadow:-10px 0 12px 4px #fff}' +
         '#modal-floorplan.fp-simi .modal-bd{flex-direction:column!important}' +
         '#modal-floorplan.fp-simi #fp-main{min-height:0}' +
         '#modal-floorplan.fp-simi #fp-panel{width:auto!important;flex:none!important;border-left:0!important;border-top:1px solid rgba(255,255,255,.12);padding:8px 10px!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch}' +
@@ -1179,6 +1181,27 @@
     });
   }
 
+  /* ── bakk-takki símans lokar glugganum ──
+   * Agnar 20.09.2026: „Þegar ég ýti á back lendi ég bara í ársskoðun. Og þarf að leita upp á nýtt." Glugginn fyllir
+   * skjáinn á síma, svo bakk er eðlilega leiðin út — en appið (18/277) las það sem „fyrri síða" og fór af spjaldinu.
+   * Ein sögufærsla meðan glugginn er opinn: bakk → popstate → við lokum glugganum (capture, á undan leiðarkerfinu) og
+   * færslan er farin. Lokist glugginn öðruvísi (✕, Loka, Vista) tökum við færsluna sjálf af með history.back(). */
+  const Saga = { opin: false, gleypa: 0 };
+  function sagaOpna() { if (Saga.opin) return; try { history.pushState({ slokkTeikning: 1 }, '', location.href); Saga.opin = true; } catch (_) {} }
+  function sagaLoka() { if (!Saga.opin) return; Saga.opin = false; Saga.gleypa++; try { history.back(); } catch (_) { Saga.gleypa = 0; } }
+  window.addEventListener('popstate', e => {
+    if (Saga.gleypa > 0) { Saga.gleypa--; try { e.stopImmediatePropagation(); } catch (_) {} return; }   // okkar eigin history.back()
+    if (!Saga.opin) return;
+    const m = document.getElementById('modal-floorplan');
+    if (!m || m.style.display === 'none') { Saga.opin = false; return; }
+    Saga.opin = false;
+    try { e.stopImmediatePropagation(); } catch (_) {}
+    // Fyrst það sem liggur efst: 3D, hamur, svo glugginn sjálfur.
+    if (document.getElementById('fp-3d')) { loka3d(); sagaOpna(); return; }
+    if (G.hamur) { G.hamur = null; G.kedja = null; G.drag = null; stika(); sagaOpna(); return; }
+    try { window.closeFP ? window.closeFP() : Modal.close('modal-floorplan'); } catch (_) {}
+  }, true);
+
   /* ── skreyta FloorPlan ── */
   async function blobIDataUrl(slod) {
     const img = await hladaMynd(slod), cv = document.createElement('canvas');
@@ -1199,10 +1222,10 @@
       loka3d(); cancelAnimationFrame(G.raf); clearInterval(G.vakt);
       Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '' });
       const r = opna.apply(this, arguments);
-      Z.s = 1; Z.x = 0; Z.y = 0;
+      Z.s = 1; Z.x = 0; Z.y = 0; sagaOpna();
       const tikk = () => {
         const m = document.getElementById('modal-floorplan');
-        if (!m || m.style.display === 'none' || !document.body.contains(m)) { clearInterval(G.vakt); cancelAnimationFrame(G.raf); loka3d(); return false; }
+        if (!m || m.style.display === 'none' || !document.body.contains(m)) { clearInterval(G.vakt); cancelAnimationFrame(G.raf); loka3d(); sagaLoka(); return false; }
         try { simaKlasi(); tengjaStriga(); zTakkar(); hnappar(); beita(); listaVisbending(); } catch (e) { console.warn('[383]', e); }
         return true;
       };
