@@ -577,6 +577,8 @@
     G.hrein = r; G.hreinLykill = hl;
     return r;
   }
+  // Undir þessu er niðurstaða myndgreiningarinnar slitrur, ekki veggjanet — þá er hún ekki sýnd og fer ekki í 3D.
+  const NOTHAEF_THEKJA = 0.04;
   const okkar = m => !!m && (m === G.synd);
 
   function beita() {
@@ -629,19 +631,18 @@
       }
       ut = G.dauft;
     } else if (val.a) {
+      // 20.09.2026 seint (Agnar, skjáskot af 2. hæð Fiskislóðar: „Þessi er alls ekki að virka. Spurning bara croppa
+      // original við húsið"): myndgreiningin fann 2,5% „veggi" á þunnlínu-CAD og teiknaði BARA þá — slitrur í stað
+      // teikningar. Reglan núna: UPPRUNALEGA teikningin, skorin að húsinu, er alltaf grunnurinn. Myndgreiningin fær
+      // aðeins að skipta henni út þegar hún nær heilu veggjaneti (fylltir veggir gáfu 5,5%; CAD 0,3–2,5%).
+      // PDF-hæð: veggirnir eru lesnir úr VIGRINUM — alltaf reynt, óháð því hvað myndgreiningin fann.
+      if (pdfSlod(h) && !h.pdfReynt && !G.pdfBid) { h.pdfReynt = 'sjálfvirkt'; lesaPdfVeggi(true).then(beita); }
       let r = null;
       try { r = reikna(G.stig1, l1, val); } catch (e) { segja('⚠ Gat ekki unnið teikninguna: ' + ((e && e.message) || e)); val.a = false; vistaVal(FP.companyId, val); }
-      // CAD-PDF úr skjalasafninu: reyna EINU SINNI að lesa veggina úr vigrinum í stað þess að giska á myndina. Stóð fyrst
-      // aðeins í „fáir veggir"-greininni (<2%) — Fiskislóð 41 lendir í „nær engir" (0,3%) og þar kviknaði það aldrei.
-      if (r && r.thekja < 0.02 && pdfSlod(h) && !h.pdfReynt && !G.pdfBid) { h.pdfReynt = 'sjálfvirkt'; lesaPdfVeggi(true).then(beita); }
-      if (r && r.thekja < 0.004) skilabod = 'Fann nær enga þykka veggi (' + (r.thekja * 100).toFixed(1) + '%). Prófaðu minni veggþykkt, ✂ skerðu að húsinu, eða dragðu veggina sjálfur með ✏.';
-      else if (r) {
-        ut = r.strigi;
-        // Mælt 20.09.2026: fylltir veggir gefa ~5% þekju og heilt net; þunnlínu-CAD 0,3–0,7% — þá nást aðeins þykkustu línurnar.
-        if (r.thekja < 0.02) {
-          skilabod = 'Fann aðeins þykkustu veggina (' + (r.thekja * 100).toFixed(1) + '%). Á CAD-teikningum eru það oft brunaveggirnir — dragðu hina með ✏ Veggir.';
-          // CAD-PDF úr skjalasafninu: reyna EINU SINNI að lesa veggina úr vigrinum í stað þess að giska á myndina.
-        }
+      if (r && r.thekja >= NOTHAEF_THEKJA) ut = r.strigi;
+      else if (r && !G.pdfBid) {
+        skilabod = 'Sjálfvirk veggjagreining nær ekki þessari teikningu (' + (r.thekja * 100).toFixed(1) + '% veggir) — sýni upprunalegu teikninguna, skorna að húsinu.' +
+          (pdfSlod(h) ? ' Enginn vigur lásist úr PDF-inu.' : '') + ' Fyrir 3D: dragðu veggina með ✏ Veggir.';
       }
     }
     const lyk = l1 + '|' + (ut === G.stig1 ? 'frum' : ut === G.dauft ? 'dauft' : G.hreinLykill);
@@ -709,6 +710,8 @@
         '<button type="button" data-hr="s-haetta" style="' + TK + '">Hætta við</button>';
     } else if (val.a && h.pdfVeggir.length) {
       html = '<span>📄 ' + h.pdfVeggir.length + ' veggjastrik úr PDF-inu</span><span style="opacity:.6;font-weight:500">Aðrar línuþykktir og handdregnir veggir: ✏ Veggir</span>';
+    } else if (val.a && G.hrein && G.hrein.thekja < NOTHAEF_THEKJA && !val.thykkt && !val.fylla) {
+      html = '';                                  // upprunalega teikningin er sýnd — engar stillingar sem breyta engu
     } else if (val.a) {
       const th = (G.hrein && G.hrein.thykkt) || val.thykkt || 2;
       html = '<span>Veggþykkt</span><button type="button" data-hr="minna" style="' + TK + '" title="Halda líka þynnri veggjum">−</button><span style="min-width:14px;text-align:center">' + th +
@@ -977,7 +980,7 @@
     const fb = frum.naturalWidth || frum.width, fh = frum.naturalHeight || frum.height;
     const sk = h.skurdur || { x: 0, y: 0, w: fb, h: fh };
     const r = hreinsa(stig1, { thykkt: val.thykkt || 0, fylla: !!val.fylla });
-    const veggir = r.thekja >= 0.004 && !h.pdfVeggir.length ? r.veggir : new Uint8Array(r.W * r.H);
+    const veggir = r.thekja >= NOTHAEF_THEKJA && !h.pdfVeggir.length ? r.veggir : new Uint8Array(r.W * r.H);
     if (h.veggir.length || h.pdfVeggir.length) {
       const c = document.createElement('canvas'); c.width = r.W; c.height = r.H;
       const x = c.getContext('2d'); x.strokeStyle = '#000'; x.lineCap = 'square'; x.lineWidth = Math.max(3, Math.round(r.W / 240));
