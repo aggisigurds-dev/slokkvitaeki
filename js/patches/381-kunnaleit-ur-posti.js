@@ -73,7 +73,7 @@
       const asRes = p => p.then(data => ({ data, error: null }), error => ({ data: null, error }));
       const [fy, sl] = await Promise.all([
         asRes(window.DB.fetchAll((from, to) => c.from('fyrirtaeki')
-          .select('id,nafn,kennitala,netfang').is('deleted_at', null).order('id').range(from, to))),
+          .select('id,nafn,kennitala,netfang,er_i_thjonustu').is('deleted_at', null).order('id').range(from, to))),
         asRes(window.DB.fetchAll((from, to) => c.from('solur')
           .select('num,customer_nafn,customer_kt,customer_base_id').order('id').range(from, to))),
       ]);
@@ -84,12 +84,18 @@
 
       const byKt = {}, byMail = {}, domTal = {}, nofn = [], bySale = {};
       (fy.data || []).forEach(x => {
-        const rec = { nafn: x.nafn, kt: x.kennitala, coId: x.id };
+        const rec = { nafn: x.nafn, kt: x.kennitala, coId: x.id, iThjonustu: x.er_i_thjonustu === true };
         const k = ktD(x.kennitala);
         if (k.length === 10 && !byKt[k]) byKt[k] = rec;
         const e = String(x.netfang || '').toLowerCase().trim();
         if (e) {
-          if (!byMail[e]) byMail[e] = rec;
+          // 20.09.2026 — FÉLAG Í ÞJÓNUSTU GENGUR FYRIR Á SAMA NETFANGI.
+          // Hótel Hjarðarból á tvö félög með info@hjardarbol.is: #578 utan
+          // þjónustu með eina skýrslu frá 2024, og #697 í þjónustu með 15 tæki,
+          // skýrslu 2026 og reikninginn. Fyrsti-vinnur greip #578 og glugginn bauð
+          // því ekki skýrsluna sem kúnninn var að biðja um. Þar sem tækin og
+          // skjölin liggja er nánast alltaf félagið sem átt er við.
+          if (!byMail[e] || (rec.iThjonustu && !byMail[e].iThjonustu)) byMail[e] = rec;
           const d = e.split('@')[1];
           if (d && !ALMENN_LEN.test(d)) (domTal[d] = domTal[d] || []).push(rec);
         }
