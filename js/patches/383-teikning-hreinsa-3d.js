@@ -641,6 +641,9 @@
       }
     }, true);
     main.addEventListener('dblclick', e => { if (G.hamur === 'veggir' && e.target.id === 'fp-canvas') { stodva(e); G.kedja = null; } }, true);
+    // newfeatures.js færir teikninguna til með `mousedown` á fp-main (ekki pointerdown) — án þessa færði skurðar-
+    // drátturinn myndina út af skjánum í stað þess að teikna kassa (fannst á lifandi síðu 20.09.2026). Hjólið þysjar áfram.
+    main.addEventListener('mousedown', e => { if (G.hamur && e.target.id === 'fp-canvas') e.stopPropagation(); }, true);
     main.addEventListener('pointerdown', e => {
       if (G.hamur !== 'skera' || e.target.id !== 'fp-canvas') return;
       stodva(e); const p = hnit(e); G.drag = { x0: p[0], y0: p[1], x1: p[0], y1: p[1], buid: false };
