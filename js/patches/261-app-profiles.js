@@ -703,6 +703,31 @@
     // dialog for THIS app the moment the browser offers it.
     try { if (new URLSearchParams(location.search).has('install')) setTimeout(doInstall, 300); } catch (_) {}
   });
+  // 20.09.2026 (Agnar: „Ég get ekki installað öppunum" · „Gerir ekkert"): þegar Chrome býður EKKI uppsetningu
+  // (appið þegar uppsett, boðinu hafnað áður, eða iOS) endurhlóð takkinn síðuna á ?install=1 og svo gerðist
+  // ekkert — leiðbeiningarnar birtust fyrst við ANNAN smell. Nú birtast þær sjálfar ef boðið kemur ekki á 3 sek.
+  var _promptSynt = false;
+  try {
+    if (new URLSearchParams(location.search).has('install')) {
+      window.addEventListener('load', function () {
+        setTimeout(function () {
+          if (deferredPrompt || _promptSynt || document.getElementById('_app-inst-guide')) return;
+          if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return;
+          showInstallGuide();
+        }, 3000);
+      });
+    }
+  } catch (_) {}
+  // Skilaboð sem sjást ALLTAF — Toast-ið liggur undir app-hausnum í app-ham og sást ekki.
+  function segja(msg) {
+    var d = document.getElementById('_app-inst-msg');
+    if (!d) { d = document.createElement('div'); d.id = '_app-inst-msg'; document.body.appendChild(d); }
+    d.style.cssText = 'position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translateX(-50%);z-index:2147483647;' +
+      'max-width:calc(100vw - 24px);background:#11141c;color:#fff;border:1px solid #c9a54a;border-radius:12px;padding:12px 16px;' +
+      'font:600 14.5px system-ui,sans-serif;line-height:1.4;box-shadow:0 12px 30px -8px rgba(0,0,0,.6);text-align:center';
+    d.textContent = msg;
+    clearTimeout(segja._t); segja._t = setTimeout(function () { try { d.remove(); } catch (_) {} }, 4500);
+  }
   function setManifest(href) {
     var l = document.querySelector('link[rel="manifest"]');
     if (l && href) l.setAttribute('href', href);
@@ -710,17 +735,17 @@
   async function doInstall() {
     // Already running as an installed PWA — nothing to do.
     if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
-      toast('✓ Þetta app er þegar sett upp á þetta tæki');
+      segja('✓ Þetta app er þegar sett upp á þetta tæki — þú ert að nota það núna.');
       return;
     }
-    if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; refreshInstallBtns(); return; }
+    if (deferredPrompt) { _promptSynt = true; deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; refreshInstallBtns(); return; }
     // No native prompt yet. If we haven't tried a fresh page load, navigate to
     // ?install=1 so Chrome gets a clean shot at beforeinstallprompt on load.
     // The beforeinstallprompt listener will auto-call doInstall() if it fires.
     if (ACTIVE) {
       try {
         var _params = new URLSearchParams(location.search);
-        if (!_params.has('install')) { location.href = appLink(ACTIVE) + '?install=1'; return; }
+        if (!_params.has('install')) { segja('Opna uppsetningu…'); location.href = appLink(ACTIVE) + '?install=1'; return; }
       } catch (_) {}
     }
     // Already at ?install=1 and Chrome still won't offer the prompt — fall back
@@ -746,7 +771,7 @@
     // beforeinstallprompt has been consumed — make that crystal-clear.
     var androidNote = !isIos
       ? '<div style="background:#fef9c3;border-radius:10px;padding:10px 14px;margin-top:14px;font-size:13px;color:#713f12;line-height:1.5">'
-        + '💡 <b>Athugið:</b> „Setja upp"-takkinn í appinu vísar þér hér — þú þarft að nota <b>valmynd vafransins</b> (⋮) til að klára uppsetninguna.</div>'
+        + '💡 <b>Af hverju kom enginn gluggi?</b> Chrome býður ekki uppsetningu ef appið er <b>þegar á símanum</b> (gáðu á heimaskjáinn — í ⋮ stendur þá „Opna app") eða ef boðinu var hafnað nýlega. Leiðin um <b>valmynd vafrans (⋮)</b> virkar alltaf.</div>'
       : '';
     var d = document.createElement('div');
     d.id = '_app-inst-guide';
