@@ -697,6 +697,15 @@
 
   // ── install (per-app manifest) ───────────────────────────────────────────────
   var deferredPrompt = null;
+  // 20.09.2026 (Agnar: „Get bara haft einhver 3-4. Hin opnast í gegnum þau"): aðalappið (manifest.json) hefur scope "/",
+  // svo sé ÞAÐ uppsett grípur Android alla /app/<key>/ hlekki og opnar þá inni í því. Þar segir display-mode „standalone"
+  // þótt ÞETTA app sé ekki uppsett. Fyrsta slóð gluggans segir hvaða app hýsir okkur í raun.
+  var _hysill = '';
+  try {
+    _hysill = sessionStorage.getItem('_pwa_hysill') || '';
+    if (!_hysill) { _hysill = location.pathname || '/'; sessionStorage.setItem('_pwa_hysill', _hysill); }
+  } catch (_) {}
+  function hystAfOdru() { return !!(ACTIVE && _hysill && _hysill.indexOf('/app/' + ACTIVE + '/') !== 0); }
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault(); deferredPrompt = e; refreshInstallBtns();
     // Arrived via „Setja upp" (…/app/<key>/?install=1) → show the native install
@@ -735,7 +744,7 @@
   async function doInstall() {
     // Already running as an installed PWA — nothing to do.
     if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
-      segja('✓ Þetta app er þegar sett upp á þetta tæki — þú ert að nota það núna.');
+      synaUppsettHjalp();
       return;
     }
     if (deferredPrompt) { _promptSynt = true; deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; refreshInstallBtns(); return; }
@@ -756,6 +765,33 @@
     document.querySelectorAll('#_app-inst2,._app-install[data-always]').forEach(function (b) {
       b.textContent = '📖 Leiðbeiningar';
     });
+  }
+  // Inni í uppsettu appi: „Setja upp" getur ekkert gert — en notandinn er oftast að leita að tákninu á heimaskjánum.
+  function synaUppsettHjalp() {
+    if (document.getElementById('_app-inst-guide')) return;
+    var a = effectiveApp(ACTIVE) || { key: ACTIVE };
+    var d = document.createElement('div');
+    d.id = '_app-inst-guide';
+    d.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)';
+    d.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:22px 20px 32px;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(0,0,0,.25);font-family:system-ui,sans-serif">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+      '<div style="font-size:17px;font-weight:800;color:#11141c">' + (hystAfOdru() ? '📲 Setja þetta app upp sér' : '✓ Appið er þegar uppsett') + '</div>' +
+      '<button id="_app-inst-guide-x" type="button" style="min-width:44px;height:44px;background:#f1f5f9;border:none;border-radius:12px;cursor:pointer;font-size:15px;font-weight:700;color:#334155">Loka</button></div>' +
+      (hystAfOdru()
+        ? '<div style="font-size:14.5px;color:#1e293b;line-height:1.55">Þetta app er <b>ekki uppsett sér</b> — það opnaðist inni í öðru uppsettu appi (' + esc(_hysill === '/' ? 'aðalappinu Slökkvitæki' : _hysill) + '), og þar er ekki hægt að setja upp. Ýttu á <b>Opna í Chrome</b> og settu það upp þaðan: <b>Setja upp</b>, eða ⋮ → „Setja upp app".</div>'
+        : '<div style="font-size:14.5px;color:#1e293b;line-height:1.55"><b>Finnst táknið ekki á heimaskjánum?</b> Strjúktu upp í forritalistann, haltu fingri á appinu og veldu <b>„Bæta á heimaskjá"</b>.</div>') +
+      '<div id="_pe-heim-host"></div></div>';
+    document.body.appendChild(d);
+    var host = d.querySelector('#_pe-heim-host');
+    host.innerHTML = hystAfOdru()
+      ? '<div style="margin:14px 0 0"><a href="' + esc(chromeHlekkur(a)) + '" target="_blank" rel="noopener" style="display:inline-block;padding:12px 16px;border-radius:10px;background:#11141c;color:#fff;font-weight:800;text-decoration:none">Opna í Chrome ›</a></div>'
+      : '<div style="margin:12px 0 0;padding:12px 13px;border-radius:12px;background:#fef9c3;color:#713f12;font-size:13.5px;line-height:1.55">' +
+      '<b>Setja upp aftur</b> (nýtt tákn/litur strax, eða táknið týnt):<ol style="margin:6px 0 8px;padding-left:20px">' +
+      '<li>Ýttu á <b>Opna í Chrome</b>.</li><li>Fjarlægðu gamla appið: haltu fingri á tákninu → <b>Fjarlægja / Uninstall</b>.</li>' +
+      '<li>Í Chrome: endurhlaðaðu og veldu <b>Setja upp</b> (eða ⋮ → „Setja upp app").</li></ol>' +
+      '<a href="' + esc(chromeHlekkur(a)) + '" target="_blank" rel="noopener" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#11141c;color:#fff;font-weight:800;text-decoration:none">Opna í Chrome ›</a></div>';
+    d.addEventListener('click', function (e) { if (e.target === d) d.remove(); });
+    d.querySelector('#_app-inst-guide-x').addEventListener('click', function () { d.remove(); });
   }
   function showInstallGuide() {
     if (document.getElementById('_app-inst-guide')) return;
@@ -980,6 +1016,15 @@
       '#_app-pgedit ._pe-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px 8px;font-size:18px;font-weight:800;color:#11141c}',
       '#_app-pgedit ._pe-h button{font:inherit;font-size:15px;font-weight:700;padding:9px 15px;border-radius:10px;border:1px solid #d7dce4;background:#f1f5f9;color:#334155;cursor:pointer;min-height:44px}',
       '#_app-pgedit ._pe-sub{padding:0 18px 8px;font-size:13px;color:#64748b}',
+      '@media (max-width:700px){#_app-pgedit ._pe-card{max-height:94vh;max-height:94dvh}}',
+      '#_app-pgedit ._pe-h button{flex:none}',
+      '#_app-pgedit details._pe-sidur{margin:6px 6px 0;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}',
+      '#_app-pgedit details._pe-sidur>summary{padding:13px 14px;font-size:15px;font-weight:800;color:#11141c;cursor:pointer;list-style:none}',
+      '#_app-pgedit details._pe-sidur>summary::after{content:"▾";float:right;color:#64748b}',
+      '#_app-pgedit details._pe-sidur[open]>summary::after{content:"▴"}',
+      '#_app-pgedit ._pe-heim{margin:10px 0 0;padding:12px 13px;border-radius:12px;background:#fef9c3;color:#713f12;font-size:13.5px;line-height:1.55}',
+      '#_app-pgedit ._pe-heim ol{margin:6px 0 8px;padding-left:20px}',
+      '#_app-pgedit ._pe-heim a{display:inline-block;padding:10px 14px;border-radius:10px;background:#11141c;color:#fff;font-weight:800;text-decoration:none}',
       '#_app-pgedit ._pe-list{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 12px calc(20px + env(safe-area-inset-bottom,0px))}',
       '#_app-pgedit ._pe-row{display:flex;align-items:center;gap:13px;padding:13px 10px;border-radius:12px;cursor:pointer;font-size:16.5px;color:#1f2937}',
       '#_app-pgedit ._pe-row:active{background:#f1f5f9}',
@@ -1376,44 +1421,78 @@
   // `key` (ekki bara ACTIVE) svo sama spjaldið dugi hvort sem kallað er innan úr
   // appi eða af 📱 Öpp-síðunni áður en appið er einu sinni opnað.
   function refreshAfterEdit(key) { if (ACTIVE === key) buildShell(); else render(); }
+  var _peSidurOpid = false, _peTaknBreytt = false, _peSaga = false;
+  function lokaSpjaldi() {
+    var ov = document.getElementById('_app-pgedit'); if (ov) ov.style.display = 'none';
+    _peTaknBreytt = false;
+    if (_peSaga) { _peSaga = false; try { history.back(); } catch (_) {} }
+  }
+  // capture: á undan bakk-vörðunum (18/277) svo bakk með opið spjald flakki ekki á milli síðna.
+  window.addEventListener('popstate', function (e) {
+    var ov = document.getElementById('_app-pgedit');
+    if (_peSaga && ov && ov.style.display !== 'none') {
+      _peSaga = false; ov.style.display = 'none'; _peTaknBreytt = false;
+      try { e.stopImmediatePropagation(); } catch (_) {}
+    }
+  }, true);
+  // Táknið á HEIMASKJÁ símans er hluti af uppsetta appinu — Android uppfærir það sjálft á 1–3 dögum. Strax: setja upp aftur.
+  function chromeHlekkur(a) {
+    var slod = appLink(a.key) + '?install=1';
+    if (/android/i.test(navigator.userAgent)) return 'intent://' + slod.replace(/^https?:[/][/]/, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+    return slod;
+  }
+  function heimaskjarHtml(a, vistad) {
+    return '<div class="_pe-heim">' + (vistad ? '✓ <b>Táknið er vistað</b> og sést strax inni í appinu. ' : '') +
+      'Táknið á <b>heimaskjá símans</b> uppfærist sjálft á 1–3 dögum. Til að fá það strax — eða ef appið finnst ekki á heimaskjánum:' +
+      '<ol><li>Ýttu á <b>Opna í Chrome</b> hér fyrir neðan.</li>' +
+      '<li>Fjarlægðu gamla appið: haltu fingri á tákninu (heimaskjár eða forritalisti) → <b>Fjarlægja / Uninstall</b>.</li>' +
+      '<li>Í Chrome: endurhlaðaðu síðuna og veldu <b>Setja upp</b> (eða ⋮ → „Setja upp app"). Táknið lendir þá á heimaskjánum.</li></ol>' +
+      '<a href="' + esc(chromeHlekkur(a)) + '" target="_blank" rel="noopener">Opna í Chrome ›</a></div>';
+  }
   function openControlPanel(key) {
     var a = effectiveApp(key); if (!a) return;
     var selSet = {}; pagesFor(a.key).forEach(function (k) { selSet[k] = 1; });
     var ver = versionLine();
     var ov = document.getElementById('_app-pgedit') || document.createElement('div');
     ov.id = '_app-pgedit';
+    // 20.09.2026 (Agnar: „Þegar ég ýti á breyta lit/icon þá fer ég bara á síðuyfirlit"): síðulistinn (2400 px á síma)
+    // drekkti útlitinu. Hann er nú samanbrotinn; táknið er efst.
     var pagesBlock = a.standalone ? '' :
-      '<div class="op-sech" style="margin:14px 18px 6px">Síður í appinu</div>' +
+      '<details class="_pe-sidur"' + (_peSidurOpid ? ' open' : '') + '><summary>Síður í appinu (' + pagesFor(a.key).length + ')</summary>' +
       '<div class="_pe-sub">Hakaðu við síðurnar sem eiga að vera í appinu.</div>' +
-      '<div class="_pe-list">' + allPages().map(function (p) {
+      '<div>' + allPages().map(function (p) {
         return '<label class="_pe-row"><input type="checkbox" class="_pe-pg" data-k="' + p.k + '"' + (selSet[p.k] ? ' checked' : '') + '>' +
           '<span class="e">' + p.emoji + '</span><span>' + esc(p.label) + '</span></label>';
-      }).join('') + '</div>';
+      }).join('') + '</div></details>';
+    var gamalt = document.getElementById('_app-pgedit');
+    var fyrraSkrun = gamalt && gamalt.style.display !== 'none' && gamalt.querySelector('._pe-list') ? gamalt.querySelector('._pe-list').scrollTop : 0;
     ov.innerHTML =
       '<div class="_pe-card">' +
-        '<div class="_pe-h"><span>🎨 Tákn · litur' + (a.standalone ? '' : ' · síður') + ' — ' + esc(a.name) + '</span><button id="_pe-close" type="button">Loka</button></div>' +
+        '<div class="_pe-h"><span>🎨 Tákn · litur' + (a.standalone ? '' : ' · síður') + ' — ' + esc(a.name) + '</span><button id="_pe-close" type="button">‹ Til baka</button></div>' +
         '<div class="_pe-list">' +
-          '<div class="op-sech" style="margin:4px 8px 8px">Útlit</div>' +
+          '<div class="op-sech" style="margin:4px 8px 8px">Tákn appsins</div>' +
+          '<div style="padding:0 10px 12px">' +
+            '<div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:5px">Smelltu á tákn til að velja það, aftur til að afvelja</div>' +
+            '<div class="_pe-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;max-height:236px;overflow:auto;padding:7px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc">' +
+              IKONSAFN.map(function (x) {
+                var valid = a.ikon === x.f;
+                return '<button type="button" class="_pe-ik" data-ik="' + x.f + '" title="' + x.h + '" ' +
+                  'style="padding:3px;border:2px solid ' + (valid ? '#2563eb' : 'transparent') + ';border-radius:10px;background:' + (valid ? '#eff6ff' : '#fff') + ';cursor:pointer;line-height:0">' +
+                  '<img src="' + IKON_MAPPA + x.f + '" alt="" width="42" height="42" style="display:block;border-radius:8px">' +
+                '</button>';
+              }).join('') +
+            '</div>' +
+            (_peTaknBreytt ? heimaskjarHtml(a, true) : '') +
+          '</div>' +
+          '<div class="op-sech" style="margin:4px 8px 8px">Nafn og litir</div>' +
           '<div style="display:flex;flex-direction:column;gap:10px;padding:0 10px 14px;font-size:13.5px;color:#334155">' +
             '<label style="display:flex;flex-direction:column;gap:4px">Nafn' +
               '<input class="_pe-name" value="' + esc(a.name) + '" style="padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:15px"></label>' +
             '<label style="display:flex;flex-direction:column;gap:4px">Lýsing' +
               '<input class="_pe-blurb" value="' + esc(a.blurb || '') + '" style="padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:15px"></label>' +
             '<div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">' +
-              '<label style="display:flex;flex-direction:column;gap:4px">Tákn' +
+              '<label style="display:flex;flex-direction:column;gap:4px">Tákn (emoji)' +
                 '<input class="_pe-emoji" value="' + esc(a.emoji) + '" maxlength="4" style="width:64px;padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:20px;text-align:center"></label>' +
-              '<div style="grid-column:1/-1">' +
-                '<div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:5px">Táknasafn — smelltu til að velja, aftur til að afvelja</div>' +
-                '<div class="_pe-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:6px;max-height:168px;overflow:auto;padding:7px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc">' +
-                  IKONSAFN.map(function (x) {
-                    var valid = a.ikon === x.f;
-                    return '<button type="button" class="_pe-ik" data-ik="' + x.f + '" title="' + x.h + '" ' +
-                      'style="padding:3px;border:2px solid ' + (valid ? '#2563eb' : 'transparent') + ';border-radius:10px;background:' + (valid ? '#eff6ff' : '#fff') + ';cursor:pointer;line-height:0">' +
-                      '<img src="' + IKON_MAPPA + x.f + '" alt="" width="38" height="38" style="display:block;border-radius:8px">' +
-                    '</button>';
-                  }).join('') +
-                '</div>' +
-              '</div>' +
               '<label style="display:flex;flex-direction:column;gap:4px">Litur (efst)' +
                 '<input class="_pe-color" type="color" value="' + esc(a.color) + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
               '<label style="display:flex;flex-direction:column;gap:4px">Litur (neðst)' +
@@ -1432,8 +1511,14 @@
       '</div>';
     if (!ov.parentNode) document.body.appendChild(ov);
     ov.style.display = 'flex';
-    ov.querySelector('#_pe-close').addEventListener('click', function () { ov.style.display = 'none'; });
-    ov.addEventListener('click', function (e) { if (e.target === ov) ov.style.display = 'none'; });
+    // Endurteikning (eftir hvert val) má ekki henda manni efst í spjaldið.
+    var _l0 = ov.querySelector('._pe-list'); if (_l0 && fyrraSkrun) _l0.scrollTop = fyrraSkrun;
+    var _det = ov.querySelector('details._pe-sidur');
+    if (_det) _det.addEventListener('toggle', function () { _peSidurOpid = _det.open; });
+    // Android-bakk á að LOKA spjaldinu — ekki appinu. Ein sögufærsla meðan spjaldið er opið.
+    if (!_peSaga) { try { history.pushState({ slokkPe: 1 }, '', location.href); _peSaga = true; } catch (_) {} }
+    ov.querySelector('#_pe-close').addEventListener('click', lokaSpjaldi);
+    if (!ov._bakWired) { ov._bakWired = 1; ov.addEventListener('click', function (e) { if (e.target === ov) lokaSpjaldi(); }); }
     ov.querySelectorAll('._pe-pg').forEach(function (cb) {
       cb.addEventListener('change', function () {
         var checked = Array.prototype.slice.call(ov.querySelectorAll('._pe-pg:checked')).map(function (x) { return x.dataset.k; });
@@ -1460,6 +1545,7 @@
     ov.querySelectorAll('._pe-ik').forEach(function (b) {
       b.addEventListener('click', function () {
         var nytt = (a.ikon === b.dataset.ik) ? null : b.dataset.ik;
+        _peTaknBreytt = true;
         saveOverrides(a.key, { ikon: nytt });
         refreshAfterEdit(a.key);
         openControlPanel(a.key);
