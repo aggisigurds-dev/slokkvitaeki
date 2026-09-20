@@ -1181,27 +1181,7 @@
     });
   }
 
-  /* ── bakk-takki símans lokar glugganum ──
-   * Agnar 20.09.2026: „Þegar ég ýti á back lendi ég bara í ársskoðun. Og þarf að leita upp á nýtt." Glugginn fyllir
-   * skjáinn á síma, svo bakk er eðlilega leiðin út — en appið (18/277) las það sem „fyrri síða" og fór af spjaldinu.
-   * Ein sögufærsla meðan glugginn er opinn: bakk → popstate → við lokum glugganum (capture, á undan leiðarkerfinu) og
-   * færslan er farin. Lokist glugginn öðruvísi (✕, Loka, Vista) tökum við færsluna sjálf af með history.back(). */
-  const Saga = { opin: false, gleypa: 0 };
-  function sagaOpna() { if (Saga.opin) return; try { history.pushState({ slokkTeikning: 1 }, '', location.href); Saga.opin = true; } catch (_) {} }
-  function sagaLoka() { if (!Saga.opin) return; Saga.opin = false; Saga.gleypa++; try { history.back(); } catch (_) { Saga.gleypa = 0; } }
-  window.addEventListener('popstate', e => {
-    if (Saga.gleypa > 0) { Saga.gleypa--; try { e.stopImmediatePropagation(); } catch (_) {} return; }   // okkar eigin history.back()
-    if (!Saga.opin) return;
-    const m = document.getElementById('modal-floorplan');
-    if (!m || m.style.display === 'none') { Saga.opin = false; return; }
-    Saga.opin = false;
-    try { e.stopImmediatePropagation(); } catch (_) {}
-    // Fyrst það sem liggur efst: 3D, hamur, svo glugginn sjálfur.
-    if (document.getElementById('fp-3d')) { loka3d(); sagaOpna(); return; }
-    if (G.hamur) { G.hamur = null; G.kedja = null; G.drag = null; stika(); sagaOpna(); return; }
-    try { window.closeFP ? window.closeFP() : Modal.close('modal-floorplan'); } catch (_) {}
-  }, true);
-
+  // Bakk-takkinn lokar glugganum (og 3D-sýninni fyrst): skráð sem lög í almennu reglunni, patch 276.
   /* ── skreyta FloorPlan ── */
   async function blobIDataUrl(slod) {
     const img = await hladaMynd(slod), cv = document.createElement('canvas');
@@ -1222,10 +1202,10 @@
       loka3d(); cancelAnimationFrame(G.raf); clearInterval(G.vakt);
       Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '' });
       const r = opna.apply(this, arguments);
-      Z.s = 1; Z.x = 0; Z.y = 0; sagaOpna();
+      Z.s = 1; Z.x = 0; Z.y = 0;
       const tikk = () => {
         const m = document.getElementById('modal-floorplan');
-        if (!m || m.style.display === 'none' || !document.body.contains(m)) { clearInterval(G.vakt); cancelAnimationFrame(G.raf); loka3d(); sagaLoka(); return false; }
+        if (!m || m.style.display === 'none' || !document.body.contains(m)) { clearInterval(G.vakt); cancelAnimationFrame(G.raf); loka3d(); return false; }
         try { simaKlasi(); tengjaStriga(); zTakkar(); hnappar(); beita(); listaVisbending(); } catch (e) { console.warn('[383]', e); }
         return true;
       };

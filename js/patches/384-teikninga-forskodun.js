@@ -68,18 +68,10 @@
     return g.length ? g : l.filter(d => !d.urelt);
   };
 
-  // Bakk-takki símans lokar forskoðuninni í stað þess að fara af spjaldinu (sama og teikningaglugginn, 383).
-  const Saga = { opin: false, gleypa: 0 };
-  window.addEventListener('popstate', e => {
-    if (Saga.gleypa > 0) { Saga.gleypa--; try { e.stopImmediatePropagation(); } catch (_) {} return; }
-    if (!Saga.opin || !document.getElementById('tfs')) { Saga.opin = false; return; }
-    Saga.opin = false; try { e.stopImmediatePropagation(); } catch (_) {}
-    loka(true);
-  }, true);
-  function loka(urSogu) {
+  // Bakk-takkinn lokar forskoðuninni: skráð sem lag í almennu reglunni (patch 276).
+  function loka() {
     const el = document.getElementById('tfs'); if (el) el.remove();
     document.removeEventListener('keydown', aLykil, true);
-    if (Saga.opin && urSogu !== true) { Saga.opin = false; Saga.gleypa++; try { history.back(); } catch (_) { Saga.gleypa = 0; } }
   }
   function aLykil(e) {
     if (e.key === 'Escape') { e.stopPropagation(); loka(); return; }
@@ -124,7 +116,6 @@
       else if (a === 'uttekt') notaIUttekt();
     });
     document.addEventListener('keydown', aLykil, true);
-    if (!Saga.opin) { try { history.pushState({ slokkForskodun: 1 }, '', location.href); Saga.opin = true; } catch (_) {} }
     tengjaSvid();
   }
 
