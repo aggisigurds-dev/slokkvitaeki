@@ -854,6 +854,35 @@
     } catch (e) { loka3d(); segja('⚠ 3D-sýnin opnaðist ekki: ' + ((e && e.message) || e)); }
   }
 
+  /* ── símaútlit ──
+   * Agnar 20.09.2026 (skjáskot af S26): tækjalistinn stóð sem 220 px dálkur við hliðina og tók þriðjung skjásins;
+   * teikningin fékk mjóa rein og tveir þriðju hennar stóðu auðir. Á mjóum skjá fer listinn NIÐUR sem lárétt ræma,
+   * glugginn fyllir skjáinn og takkaröðin í hausnum skrunar til hliðar í stað þess að brotna í tvær línur. */
+  function simaStill() {
+    if (document.getElementById('fp-simi-css')) return;
+    const st = document.createElement('style'); st.id = 'fp-simi-css';
+    st.textContent =
+      '#modal-floorplan .fp-hd-grp{flex-wrap:wrap;justify-content:flex-end}' +
+      '@media (max-width:760px){' +
+        '#modal-floorplan{width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;margin:0!important}' +
+        '#modal-floorplan .modal-hd{flex-direction:column;align-items:stretch;gap:6px;padding:8px 10px 8px 64px}' +
+        '#modal-floorplan .modal-hd h2{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+        '#modal-floorplan .modal-hd h2+div{display:none}' +
+        '#modal-floorplan .fp-hd-grp{flex-wrap:nowrap!important;justify-content:flex-start!important;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-left:-54px}' +
+        '#modal-floorplan .fp-hd-grp>*{flex:none}' +
+        '#modal-floorplan .modal-bd{flex-direction:column!important}' +
+        '#modal-floorplan #fp-main{min-height:0}' +
+        '#modal-floorplan #fp-panel{width:auto!important;flex:none!important;border-left:0!important;border-top:1px solid rgba(255,255,255,.12);padding:8px 10px!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch}' +
+        '#modal-floorplan #fp-panel>div:first-child{display:none}' +
+        '#modal-floorplan #fp-unit-list{display:flex;gap:7px}' +
+        '#modal-floorplan #fp-unit-list>div{flex:0 0 128px;margin-bottom:0!important}' +
+        '#modal-floorplan .modal-ft{padding:8px 10px}' +
+        '#modal-floorplan #fp-info{font-size:12px}' +
+        '#fp-hreinsa-stika{max-width:calc(100% - 20px)!important;bottom:62px!important}' +
+      '}';
+    document.head.appendChild(st);
+  }
+
   /* ── takkar í haus gluggans ── */
   function hnappar() {
     const hd = document.querySelector('#modal-floorplan .modal-hd'); if (!hd) return;
@@ -877,7 +906,7 @@
       ];
       const upp = grp.querySelector('label') || grp.firstChild;
       takkar.forEach(b => grp.insertBefore(b, upp));
-      grp.style.flexWrap = 'wrap'; grp.style.justifyContent = 'flex-end';
+      grp.classList.add('fp-hd-grp'); simaStill();
     }
     const val = lesaVal(FP.companyId), h = virkHaed();
     const lita = (kl, a, texti) => { const b = grp.querySelector(kl); if (!b) return; b.setAttribute('aria-pressed', String(!!a)); b.style.background = a ? '#c9a54a' : ''; b.style.color = a ? '#14120f' : ''; if (texti) b.textContent = texti; };
@@ -890,6 +919,7 @@
   // Tækjalistinn þekkir aðeins virku hæðina: segja á hvaða hæð tækið er annars.
   function listaVisbending() {
     const el = document.getElementById('fp-unit-list'), FP = FPx(); if (!el || !FP.units) return;
+    if (FP._selectedUnitId !== G.valid) { G.valid = FP._selectedUnitId; const i = FP.units.findIndex(u => u.id === G.valid); if (i >= 0 && el.children[i] && window.innerWidth <= 760) { try { el.children[i].scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } catch (_) {} } }
     const hs = haedir();
     [...el.children].forEach((rod, i) => {
       const u = FP.units[i]; if (!u) return;
