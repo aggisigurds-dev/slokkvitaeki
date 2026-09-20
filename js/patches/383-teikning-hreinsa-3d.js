@@ -257,12 +257,24 @@
     svid.add(new T.AmbientLight(0xffffff, 0.72));
     const sol = new T.DirectionalLight(0xffffff, 0.75); sol.position.set(0.6, 1.4, 0.9); svid.add(sol);
     const losa = [];
-    let staerst = 1, haedY = 0;
+    let staerst = 1, haedY = 0, vidmid = null;
     haedir.forEach((hd, nr) => {
       const k = kassarUrGrimu(hd.veggir, hd.W, hd.H);
       staerst = Math.max(staerst, k.gw, k.gh);
       const veggH = Math.max(k.gw, k.gh) * 0.045, bil = veggH * 3.2;
       const hopur = new T.Group(); hopur.position.y = haedY; svid.add(hopur);
+      // Hæðir úr SAMA teikningasetti (sama blaðstærð) raðast eftir stöðu sinni á blaðinu og í sama kvarða — annars
+      // sveif álma á 2. hæð yfir miðju 1. hæðar og varð stærri en hún er (skurðirnir eru misstórir). `punktar` =
+      // frummyndarpunktar á ristarreit. Ólík blöð: hæðin er miðjuð eins og áður.
+      if (!hd.sk) hd.sk = { x: 0, y: 0, w: hd.W / hd.kvardi, h: hd.H / hd.kvardi };
+      const punktar = k.c / hd.kvardi;
+      if (nr === 0) vidmid = { punktar, mx: hd.sk.x + hd.sk.w / 2, my: hd.sk.y + hd.sk.h / 2, b: hd.frumB, h: hd.frumH };
+      else if (vidmid && hd.frumB && Math.abs(hd.frumB - vidmid.b) < vidmid.b * 0.03 && Math.abs(hd.frumH - vidmid.h) < vidmid.h * 0.03) {
+        const kv = punktar / vidmid.punktar;
+        hopur.scale.set(kv, 1, kv);
+        hopur.position.x = (hd.sk.x + hd.sk.w / 2 - vidmid.mx) / vidmid.punktar;
+        hopur.position.z = (hd.sk.y + hd.sk.h / 2 - vidmid.my) / vidmid.punktar;
+      }
       // Gólf: hreina myndin sem áferð, svo herbergjaskipan og heiti sjáist undir veggjunum.
       const golfStr = document.createElement('canvas');
       const gs = Math.min(1, 2048 / Math.max(hd.golf.width, hd.golf.height));
@@ -790,8 +802,9 @@
   }
   const hladaMynd = slod => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('mynd')); i.src = slod; });
   // Hæð → { veggir, W, H, golf, kvardi, merki } í hnitum SKORNU myndarinnar (stig1).
-  function undirbua(h, stig1, merkiFrum, val, einingar) {
-    const sk = h.skurdur || { x: 0, y: 0 };
+  function undirbua(h, stig1, merkiFrum, val, einingar, frum) {
+    const fb = frum.naturalWidth || frum.width, fh = frum.naturalHeight || frum.height;
+    const sk = h.skurdur || { x: 0, y: 0, w: fb, h: fh };
     const r = hreinsa(stig1, { thykkt: val.thykkt || 0, fylla: !!val.fylla });
     const veggir = r.thekja >= 0.004 ? r.veggir : new Uint8Array(r.W * r.H);
     if (h.veggir.length) {
@@ -808,7 +821,7 @@
       const px = erPx(mk) ? mk.x - sk.x : mk.x * iw, py = erPx(mk) ? mk.y - sk.y : mk.y * ih;
       return { x: px, y: py, litur: u && u.status === 'overdue' ? '#c93c1d' : '#2f9e55', texti: u ? String(u.serial || '').slice(-6) : '' };
     });
-    return { veggir, W: r.W, H: r.H, golf: r.vinnu, kvardi: r.kvardi, merki, veggjaPx: n };
+    return { veggir, W: r.W, H: r.H, golf: r.vinnu, kvardi: r.kvardi, merki, veggjaPx: n, sk, frumB: fb, frumH: fh };
   }
   async function opna3d() {
     const FP = FPx(), main = document.getElementById('fp-main'); if (!FP || !main) return;
@@ -825,10 +838,10 @@
     for (let i = 0; i < hs.length; i++) {
       const h = hs[i];
       try {
-        let stig1 = i === G.virk ? G.stig1 : null;
-        if (!stig1) { if (!h.image_url) { sleppt.push(h.nafn + ' (engin teikning)'); continue; } const img = await hladaMynd(h.image_url); stig1 = h.skurdur ? skera(img, h.skurdur) : img; }
+        let stig1 = i === G.virk ? G.stig1 : null, frum = i === G.virk ? G.frum : null;
+        if (!stig1) { if (!h.image_url) { sleppt.push(h.nafn + ' (engin teikning)'); continue; } frum = await hladaMynd(h.image_url); stig1 = h.skurdur ? skera(frum, h.skurdur) : frum; }
         if (!document.getElementById('fp-3d')) return;
-        const u = undirbua(h, stig1, h.markers, val, einingar);
+        const u = undirbua(h, stig1, h.markers, val, einingar, frum);
         if (!u.veggjaPx) { sleppt.push(h.nafn + ' (engir veggir — dragðu þá með ✏)'); continue; }
         ut.push(u);
       } catch (_) { sleppt.push(h.nafn + ' (náði ekki í teikningu)'); }
