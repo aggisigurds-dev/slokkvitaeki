@@ -628,6 +628,9 @@
     } else if (val.a) {
       let r = null;
       try { r = reikna(G.stig1, l1, val); } catch (e) { segja('⚠ Gat ekki unnið teikninguna: ' + ((e && e.message) || e)); val.a = false; vistaVal(FP.companyId, val); }
+      // CAD-PDF úr skjalasafninu: reyna EINU SINNI að lesa veggina úr vigrinum í stað þess að giska á myndina. Stóð fyrst
+      // aðeins í „fáir veggir"-greininni (<2%) — Fiskislóð 41 lendir í „nær engir" (0,3%) og þar kviknaði það aldrei.
+      if (r && r.thekja < 0.02 && pdfSlod(h) && !h.pdfReynt && !G.pdfBid) { h.pdfReynt = 'sjálfvirkt'; lesaPdfVeggi(true).then(beita); }
       if (r && r.thekja < 0.004) skilabod = 'Fann nær enga þykka veggi (' + (r.thekja * 100).toFixed(1) + '%). Prófaðu minni veggþykkt, ✂ skerðu að húsinu, eða dragðu veggina sjálfur með ✏.';
       else if (r) {
         ut = r.strigi;
@@ -635,7 +638,6 @@
         if (r.thekja < 0.02) {
           skilabod = 'Fann aðeins þykkustu veggina (' + (r.thekja * 100).toFixed(1) + '%). Á CAD-teikningum eru það oft brunaveggirnir — dragðu hina með ✏ Veggir.';
           // CAD-PDF úr skjalasafninu: reyna EINU SINNI að lesa veggina úr vigrinum í stað þess að giska á myndina.
-          if (pdfSlod(h) && !h.pdfReynt && !G.pdfBid) { h.pdfReynt = 'sjálfvirkt'; lesaPdfVeggi(true); }
         }
       }
     }
