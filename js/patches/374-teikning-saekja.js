@@ -150,7 +150,13 @@
     try {
       var d1 = await (await fetch(LISTI + '?heimilisfang=' + encodeURIComponent(addr), { signal: AbortSignal.timeout(28000) })).json();
       var results = (d1 && d1.results) || [];
-      var eign = results.find(function (x) { return x.heimild === 'reykjavik'; });
+      // 20.09.2026: tók FYRSTU Reykjavíkur-eignina. Fyrir „Skútuvogur 4, 104 Reykjavík" skilar skráin 4A á undan 4,
+      // svo glugginn sótti spennistöðina á 4A (1 blað) í stað hússins (66 teikningar). Nákvæm samsvörun á
+      // götu + húsnúmeri ræður nú; fyrsta eignin er aðeins varaleið.
+      var nrm = function (t) { return String(t || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(); };
+      var gata = nrm(addr.split(',')[0]);
+      var rvk = results.filter(function (x) { return x.heimild === 'reykjavik'; });
+      var eign = rvk.find(function (x) { return nrm(String(x.label || '').split('(')[0]) === gata; }) || rvk[0];
       if (!eign) {
         var mapis = results.find(function (x) { return x.heimild === 'map.is' && x.ytriSlod; });
         if (mapis) {

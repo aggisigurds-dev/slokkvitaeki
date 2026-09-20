@@ -33,7 +33,9 @@
     ctx.drawImage(img,0,0,cw,ch);
     var plan = this.plans && this.plans[this.companyId];
     if(plan && plan.markers && plan.markers.length){
-      var mr = Math.max(8, Math.round(cw/120));
+      // 20.09.2026: á 4244x6006 px uppdrætti varð cw/120 = 35 px í mynd en ~1,5 px á skjánum (myndin er
+      // smækkuð 22x til að passa) — merkin sáust varla. Radíusinn miðast nú við SKJÁINN: aldrei undir ~8 px þar.
+      var mr = Math.max(8, Math.round(cw/120), (sc > 0 && isFinite(sc)) ? Math.round(8/sc) : 0);
       plan.markers.forEach(function(mk){
         var x = mk.x || 0, y = mk.y || 0;
         var mx, my;

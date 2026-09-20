@@ -22,9 +22,13 @@
       updated_at: new Date().toISOString()
     };
     try {
+      // 20.09.2026: grunn-save (scanner.js) segir „aðeins í þessum vafra — sést ekki á hinum vélunum". Það var satt
+      // áður en þessi patch kom; nú fer teikningin á þjóninn og tilkynningin laug. Niðurstaða skrifanna ræður textanum.
+      var segja = function (t) { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} };
       DB.sb.from(TAFLA).upsert(row, { onConflict: 'company_id' }).then(function (r) {
-        if (r && r.error) console.warn('[375] upsert', r.error.message);
-      }, function (e) { console.warn('[375] upsert', e && e.message); });
+        if (r && r.error) { console.warn('[375] upsert', r.error.message); segja('⚠ Teikningin vistaðist AÐEINS í þessum vafra — þjónninn hafnaði: ' + r.error.message); }
+        else segja('Teikning vistuð ✓ — ' + (row.markers.length) + ' staðsetningar, sést á öllum vélum');
+      }, function (e) { console.warn('[375] upsert', e && e.message); segja('⚠ Teikningin vistaðist AÐEINS í þessum vafra — náði ekki í þjóninn.'); });
     } catch (e) { console.warn('[375] upsert', e && e.message); }
   }
 
