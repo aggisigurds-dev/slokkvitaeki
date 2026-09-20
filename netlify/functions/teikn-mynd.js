@@ -35,7 +35,9 @@ export default async (req) => {
   }
 
   try {
-    const r = await fetch(FETCH_PLAN + '?url=' + encodeURIComponent(raw), {
+    // prefer=image: fetch-plan skilar bráðum upprunalegu VIGUR-PDF fyrir .pdf-permalinka (kjarni#124, fyrir TurboPaint).
+    // Hér fer myndin í <img> og á <canvas> — PDF myndi brjóta „Sækja teikningu". Vigurinn sækir teikn-pdf sér.
+    const r = await fetch(FETCH_PLAN + '?prefer=image&url=' + encodeURIComponent(raw), {
       signal: AbortSignal.timeout(60000),
     });
     if (!r.ok || !r.body) return villa(r.status || 502, 'Myndin fékkst ekki (' + r.status + ')');

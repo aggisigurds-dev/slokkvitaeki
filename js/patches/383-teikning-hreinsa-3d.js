@@ -199,7 +199,82 @@
     return ut;
   }
 
-  window.TeiknHreinsun = { hreinsaGogn, hreinsa, finnaHus };
+  /* ── veggir úr VIGUR-PDF ──
+   * CAD-uppdráttur geymir hverja línu með þykkt. Mælt á Fiskislóð 41 (1. hæð, 22.000 slóðir): 0,24 pt = málsetning,
+   * skástrikun og húsgögn · 0,48 pt = VEGGIR (allt netið, líka milliveggir) · 0,66 = málstrik · 0,96 = hnitakrossar ·
+   * 1,38 = lóðarmörk (strikuð). Myndgreiningin fann 0,3% á sömu teikningu.
+   * Skilar línuflokkum eftir þykkt, í hnitum síðunnar (pt, efra-vinstra horn = 0,0), og giskar á veggjaflokkinn:
+   * mest samanlögð lengd LANGRA beinna strika (strikuð lína er mörg stutt strik og telst því ekki), með lágmarksfjölda
+   * svo tvær rammalínur vinni ekki. Notandinn getur alltaf valið aðra flokka — þykktir eru ekki staðlaðar milli stofa.
+   * Skilur bæði pdf.js 3.x (constructPath = [aðgerðir, hnit] + málun sér) og 5.x (málun inni í constructPath). */
+  function flokkaPdfLinur(OPS, fnArray, argsArray, grunnur) {
+    const mul = (a, b) => [a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1], a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3], a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5]];
+    const ap = (m, x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+    const STROK = {}; ['stroke', 'closeStroke', 'fillStroke', 'eoFillStroke', 'closeFillStroke', 'closeEOFillStroke'].forEach(n => { if (OPS[n] != null) STROK[OPS[n]] = 1; });
+    const MALUN = {}; ['stroke', 'closeStroke', 'fill', 'eoFill', 'fillStroke', 'eoFillStroke', 'closeFillStroke', 'closeEOFillStroke', 'endPath'].forEach(n => { if (OPS[n] != null) MALUN[OPS[n]] = 1; });
+    let ctm = grunnur.slice(), lw = 1, bid = [];
+    const stafli = [], flokkar = {};
+    const skra = (b, strik) => { const l = b.toFixed(2); (flokkar[l] || (flokkar[l] = [])).push(...strik); };
+    for (let i = 0; i < fnArray.length; i++) {
+      const fn = fnArray[i], a = argsArray[i];
+      if (fn === OPS.save) stafli.push([ctm.slice(), lw]);
+      else if (fn === OPS.restore) { const t = stafli.pop(); if (t) { ctm = t[0]; lw = t[1]; } }
+      else if (fn === OPS.transform) ctm = mul(ctm, a);
+      else if (fn === OPS.setLineWidth) lw = a[0];
+      else if (fn === OPS.constructPath) {
+        const strik = []; let p = null, byrjun = null;
+        const lina = (x, y) => { const q = ap(ctm, x, y); if (p) strik.push([p[0], p[1], q[0], q[1]]); p = q; };
+        if (typeof a[0] === 'number') {                       // pdf.js 5.x
+          const d = a[1] && a[1][0]; if (!d) continue;
+          for (let j = 0; j < d.length;) {
+            const op = d[j++];
+            if (op === 0) { p = ap(ctm, d[j], d[j + 1]); byrjun = p; j += 2; }
+            else if (op === 1) { lina(d[j], d[j + 1]); j += 2; }
+            else if (op === 2) { p = ap(ctm, d[j + 4], d[j + 5]); j += 6; }
+            else if (op === 3) { p = ap(ctm, d[j + 2], d[j + 3]); j += 4; }
+            else if (op === 4) { if (p && byrjun) strik.push([p[0], p[1], byrjun[0], byrjun[1]]); p = byrjun; }
+            else break;
+          }
+          if (STROK[a[0]]) { const kv = Math.sqrt(Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2])); skra(lw * kv, strik); }
+        } else {                                              // pdf.js 3.x
+          const ops = a[0], d = a[1]; let j = 0;
+          for (let k = 0; k < ops.length; k++) {
+            const op = ops[k];
+            if (op === OPS.moveTo) { p = ap(ctm, d[j], d[j + 1]); byrjun = p; j += 2; }
+            else if (op === OPS.lineTo) { lina(d[j], d[j + 1]); j += 2; }
+            else if (op === OPS.curveTo) { p = ap(ctm, d[j + 4], d[j + 5]); j += 6; }
+            else if (op === OPS.curveTo2 || op === OPS.curveTo3) { p = ap(ctm, d[j + 2], d[j + 3]); j += 4; }
+            else if (op === OPS.closePath) { if (p && byrjun) strik.push([p[0], p[1], byrjun[0], byrjun[1]]); p = byrjun; }
+            else if (op === OPS.rectangle) {
+              const x = d[j], y = d[j + 1], w = d[j + 2], h = d[j + 3]; j += 4;
+              const A = ap(ctm, x, y), B = ap(ctm, x + w, y), C = ap(ctm, x + w, y + h), D = ap(ctm, x, y + h);
+              strik.push([A[0], A[1], B[0], B[1]], [B[0], B[1], C[0], C[1]], [C[0], C[1], D[0], D[1]], [D[0], D[1], A[0], A[1]]); p = A; byrjun = A;
+            }
+          }
+          bid = bid.concat(strik);
+        }
+      } else if (MALUN[fn]) {                                 // 3.x: málunin kemur á eftir slóðinni
+        if (bid.length && STROK[fn]) { const kv = Math.sqrt(Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2])); skra(lw * kv, bid); }
+        bid = [];
+      }
+    }
+    return flokkar;
+  }
+  function veljaVeggjaflokk(flokkar, bladB, bladH) {
+    const lagm = Math.max(bladB, bladH) * 0.004;                   // ~8 pt á A1: strikuð lína og örvar detta út
+    let best = null, bestS = 0; const yfirlit = [];
+    Object.keys(flokkar).forEach(l => {
+      const b = +l, strik = flokkar[l]; let n = 0, lengd = 0;
+      strik.forEach(v => { const d = Math.hypot(v[2] - v[0], v[3] - v[1]); if (d >= lagm) { n++; lengd += d; } });
+      yfirlit.push({ breidd: l, strik: strik.length, long: n, lengd: Math.round(lengd) });
+      if (b < 0.3 || n < 40) return;                               // hárlínur eru aldrei veggir; fá strik = rammi
+      if (lengd > bestS) { bestS = lengd; best = l; }
+    });
+    yfirlit.sort((a, c) => c.lengd - a.lengd);
+    return { valinn: best, yfirlit };
+  }
+
+  window.TeiknHreinsun = { hreinsaGogn, hreinsa, finnaHus, flokkaPdfLinur, veljaVeggjaflokk };
 
   /* ───────────────────────── 2) 3D-SÝN ───────────────────────── */
 
@@ -413,7 +488,7 @@
     if (!Array.isArray(p.haedir) || !p.haedir.length) {
       p.haedir = [{ id: nyttId(), nafn: '1. hæð', image_url: typeof p.imageUrl === 'string' ? p.imageUrl : null, markers: [], skurdur: null, veggir: [] }];
     }
-    p.haedir.forEach(h => { if (!Array.isArray(h.markers)) h.markers = []; if (!Array.isArray(h.veggir)) h.veggir = []; if (!h.id) h.id = nyttId(); });
+    p.haedir.forEach(h => { if (!Array.isArray(h.markers)) h.markers = []; if (!Array.isArray(h.veggir)) h.veggir = []; if (!Array.isArray(h.pdfVeggir)) h.pdfVeggir = []; if (!h.id) h.id = nyttId(); });
     if (G.virk >= p.haedir.length) G.virk = 0;
     return p.haedir;
   }
@@ -433,6 +508,55 @@
     if (typeof p.imageUrl === 'string') h.image_url = p.imageUrl;
     const her = {}; h.markers.forEach(m => { her[m.unitId] = 1; });
     hs.forEach((o, i) => { if (i !== G.virk) o.markers = o.markers.filter(m => !her[m.unitId]); });
+  }
+
+  /* ── veggir úr vigur-PDF hæðarinnar ── */
+  const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';   // sama útgáfa og FloorPlan._loadPDF hleður
+  function saekjaPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const sk = document.createElement('script'); sk.src = PDFJS + 'pdf.min.js';
+      sk.onload = () => { try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; } catch (_) {} res(); };
+      sk.onerror = () => rej(new Error('Náði ekki í pdf.js')); document.head.appendChild(sk);
+    });
+  }
+  // image_url hæðar er '/.netlify/functions/teikn-mynd?url=<permalink>' — permalinkurinn segir hvort frumritið er PDF.
+  function pdfSlod(h) {
+    try {
+      const u = new URL(h.image_url, location.href), inn = u.searchParams.get('url') || '';
+      return /\.pdf\.info$/i.test(new URL(inn).pathname) ? '/.netlify/functions/teikn-pdf?url=' + encodeURIComponent(inn) : '';
+    } catch (_) { return ''; }
+  }
+  function beitaPdfFlokkum(h) {
+    const valid = Array.isArray(h.pdfFlokkar) ? h.pdfFlokkar : [];
+    h.pdfVeggir = G.pdf && G.pdf.haed === h.id ? [].concat(...valid.map(l => G.pdf.flokkar[l] || [])) : h.pdfVeggir;
+  }
+  async function lesaPdfVeggi(sjalfkrafa) {
+    const h = virkHaed(), slod = pdfSlod(h);
+    if (!slod) { if (!sjalfkrafa) segja('Þessi teikning er ekki PDF úr skjalasafninu — þar er enginn vigur að lesa. Notaðu ✏ til að draga veggina.'); return false; }
+    if (!G.frum || G.pdfBid) return false;
+    G.pdfBid = true; stika();
+    try {
+      await saekjaPdfJs();
+      const r = await fetch(slod);
+      if (!r.ok) { const v = await r.json().catch(() => null); throw new Error((v && v.error) || ('Svar ' + r.status)); }
+      const doc = await window.pdfjsLib.getDocument({ data: new Uint8Array(await r.arrayBuffer()) }).promise;
+      const sida = await doc.getPage(1), vp = sida.getViewport({ scale: 1 }), ol = await sida.getOperatorList();
+      const fl = flokkaPdfLinur(window.pdfjsLib.OPS, ol.fnArray, ol.argsArray, vp.transform), val = veljaVeggjaflokk(fl, vp.width, vp.height);
+      const iw = G.frum.naturalWidth || G.frum.width, ih = G.frum.naturalHeight || G.frum.height, kx = iw / vp.width, ky = ih / vp.height;
+      if (!val.valinn) throw new Error(val.yfirlit.length ? 'Fann engan línuflokk sem líkist veggjum.' : 'PDF-ið er skönnuð mynd — þar er enginn vigur. Dragðu veggina með ✏.');
+      // Myndin er mynd af SÖMU síðu: hlutföllin verða að stemma, annars lenda veggirnir á skjön (snúið blað / önnur síða).
+      if (Math.abs(kx / ky - 1) > 0.02) throw new Error('Blaðið í PDF-inu hefur önnur hlutföll en myndin — veggirnir myndu lenda á skjön.');
+      const px = {}; Object.keys(fl).forEach(l => { if (+l >= 0.3) px[l] = fl[l].map(v => [Math.round(v[0] * kx), Math.round(v[1] * ky), Math.round(v[2] * kx), Math.round(v[3] * ky)]); });
+      G.pdf = { haed: h.id, flokkar: px, yfirlit: val.yfirlit.filter(y => +y.breidd >= 0.3 && y.strik >= 8).slice(0, 5), ptIPx: kx };
+      h.pdfFlokkar = [val.valinn]; beitaPdfFlokkum(h);
+      segja('✓ ' + h.pdfVeggir.length + ' veggjastrik lesin úr PDF-inu (línuþykkt ' + val.valinn.replace('.', ',') + ' pt).');
+      return true;
+    } catch (e) {
+      if (!sjalfkrafa) segja('⚠ Las ekki veggi úr PDF: ' + ((e && e.message) || e));
+      h.pdfReynt = String((e && e.message) || e);
+      return false;
+    } finally { G.pdfBid = false; G.lykill = ''; stika(); }
   }
 
   /* ── leiðslan: frummynd → skurður → skýrari veggir ── */
@@ -462,7 +586,7 @@
       G.frum = nu; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
       if (typeof p.imageUrl === 'string' && h.image_url !== p.imageUrl) {
         // Önnur teikning en hæðin átti: skurður og veggir áttu við gömlu myndina.
-        if (h.image_url) { h.skurdur = null; h.veggir = []; delete h.sjalf; }
+        if (h.image_url) { h.skurdur = null; h.veggir = []; h.pdfVeggir = []; delete h.pdfFlokkar; delete h.sjalf; G.pdf = null; }
         h.image_url = p.imageUrl;
       }
     }
@@ -493,17 +617,29 @@
     const l1 = (G.frum.src || G.frum.width + 'x') + '|' + (sk ? [sk.x, sk.y, sk.w, sk.h].map(Math.round).join(',') : '-');
     if (!G.stig1 || G.stig1Lykill !== l1) { G.stig1 = sk ? skera(G.frum, sk) : G.frum; G.stig1Lykill = l1; G.hrein = null; G.hreinLykill = ''; }
     let ut = G.stig1, skilabod = '';
-    if (val.a) {
+    if (val.a && h.pdfVeggir.length) {
+      // Vigurveggir eru til: þeir eru teiknaðir hnífskarpir á yfirlagið — undir þeim er blaðið aðeins DEYFT.
+      if (!G.dauft || G.dauftLykill !== l1) {
+        const c = document.createElement('canvas'); c.width = G.stig1.naturalWidth || G.stig1.width; c.height = G.stig1.naturalHeight || G.stig1.height;
+        const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.globalAlpha = 0.3; x.drawImage(G.stig1, 0, 0);
+        G.dauft = c; G.dauftLykill = l1;
+      }
+      ut = G.dauft;
+    } else if (val.a) {
       let r = null;
       try { r = reikna(G.stig1, l1, val); } catch (e) { segja('⚠ Gat ekki unnið teikninguna: ' + ((e && e.message) || e)); val.a = false; vistaVal(FP.companyId, val); }
       if (r && r.thekja < 0.004) skilabod = 'Fann nær enga þykka veggi (' + (r.thekja * 100).toFixed(1) + '%). Prófaðu minni veggþykkt, ✂ skerðu að húsinu, eða dragðu veggina sjálfur með ✏.';
       else if (r) {
         ut = r.strigi;
         // Mælt 20.09.2026: fylltir veggir gefa ~5% þekju og heilt net; þunnlínu-CAD 0,3–0,7% — þá nást aðeins þykkustu línurnar.
-        if (r.thekja < 0.02) skilabod = 'Fann aðeins þykkustu veggina (' + (r.thekja * 100).toFixed(1) + '%). Á CAD-teikningum eru það oft brunaveggirnir — dragðu hina með ✏ Veggir.';
+        if (r.thekja < 0.02) {
+          skilabod = 'Fann aðeins þykkustu veggina (' + (r.thekja * 100).toFixed(1) + '%). Á CAD-teikningum eru það oft brunaveggirnir — dragðu hina með ✏ Veggir.';
+          // CAD-PDF úr skjalasafninu: reyna EINU SINNI að lesa veggina úr vigrinum í stað þess að giska á myndina.
+          if (pdfSlod(h) && !h.pdfReynt && !G.pdfBid) { h.pdfReynt = 'sjálfvirkt'; lesaPdfVeggi(true); }
+        }
       }
     }
-    const lyk = l1 + '|' + (ut === G.stig1 ? 'frum' : G.hreinLykill);
+    const lyk = l1 + '|' + (ut === G.stig1 ? 'frum' : ut === G.dauft ? 'dauft' : G.hreinLykill);
     if (G.lykill !== lyk || FP.bgImage !== ut) {
       faeraMerki(sk ? Math.round(sk.x) : 0, sk ? Math.round(sk.y) : 0);
       G.synd = ut === G.frum ? null : ut; G.lykill = lyk;
@@ -534,6 +670,13 @@
         if (a === 'v-ny') G.kedja = null;
         if (a === 'v-eyda' && window.confirm('Eyða öllum handdregnum veggjum á þessari hæð?')) { h.veggir = []; G.kedja = null; }
         if (a === 'v-buid' || a === 's-haetta') { G.hamur = null; G.kedja = null; G.drag = null; }
+        if (a === 'pdf-lesa') { lesaPdfVeggi(false).then(beita); return; }
+        if (a === 'pdf-eyda') { h.pdfVeggir = []; h.pdfFlokkar = []; G.lykill = ''; }
+        if (a === 'pdf-flokkur') {
+          const l = t.dataset.l, nu = Array.isArray(h.pdfFlokkar) ? h.pdfFlokkar.slice() : [], i = nu.indexOf(l);
+          if (i >= 0) nu.splice(i, 1); else nu.push(l);
+          h.pdfFlokkar = nu; beitaPdfFlokkum(h); G.lykill = '';
+        }
         if (a === 's-stadfesta' && G.drag) { stadfestaSkurd(); }
         vistaVal(FP.companyId, v); beita();
       });
@@ -545,7 +688,12 @@
     const FP = FPx(), val = lesaVal(FP.companyId), h = virkHaed();
     let html = '';
     if (G.hamur === 'veggir') {
-      html = '<span>✏ Smelltu á horn veggjanna — línan réttir sig sjálf lárétt/lóðrétt</span>' +
+      const pdfTil = !!pdfSlod(h), flk = G.pdf && G.pdf.haed === h.id ? G.pdf.yfirlit : [];
+      html = (pdfTil ? '<button type="button" data-hr="pdf-lesa" style="' + TK + '"' + (G.pdfBid ? ' disabled' : '') + ' title="Lesa veggina beint úr vigur-PDF skjalasafnsins">' + (G.pdfBid ? '⏳ Les PDF…' : '📄 Veggir úr PDF' + (h.pdfVeggir.length ? ' · ' + h.pdfVeggir.length : '')) + '</button>' : '') +
+        flk.map(y => '<button type="button" data-hr="pdf-flokkur" data-l="' + y.breidd + '" aria-pressed="' + ((h.pdfFlokkar || []).indexOf(y.breidd) >= 0) + '" title="Línuþykkt ' + y.breidd + ' pt — ' + y.strik + ' strik" style="' + TK + ';' + ((h.pdfFlokkar || []).indexOf(y.breidd) >= 0 ? GULL : '') + '">' + y.breidd.replace('.', ',') + ' pt</button>').join('') +
+        (h.pdfVeggir.length ? '<button type="button" data-hr="pdf-eyda" style="' + TK + '" title="Taka PDF-veggina af">✕ PDF</button>' : '') +
+        '<span style="flex-basis:100%;height:0"></span>' +
+        '<span>✏ Smelltu á horn veggjanna — línan réttir sig sjálf lárétt/lóðrétt</span>' +
         '<button type="button" data-hr="v-ny" style="' + TK + '" title="Byrja nýja línu annars staðar (líka tvísmellur eða Esc)">Ný lína</button>' +
         '<button type="button" data-hr="v-aftur" style="' + TK + '"' + (h.veggir.length ? '' : ' disabled') + '>↶ Til baka</button>' +
         '<button type="button" data-hr="v-eyda" style="' + TK + '"' + (h.veggir.length ? '' : ' disabled') + '>🗑 Eyða öllum</button>' +
@@ -554,6 +702,8 @@
       html = '<span>✂ Dragðu kassa utan um húsið</span>' +
         (G.drag && G.drag.buid ? '<button type="button" data-hr="s-stadfesta" style="' + TK + ';' + GULL + '">✓ Skera hér</button>' : '') +
         '<button type="button" data-hr="s-haetta" style="' + TK + '">Hætta við</button>';
+    } else if (val.a && h.pdfVeggir.length) {
+      html = '<span>📄 ' + h.pdfVeggir.length + ' veggjastrik úr PDF-inu</span><span style="opacity:.6;font-weight:500">Aðrar línuþykktir og handdregnir veggir: ✏ Veggir</span>';
     } else if (val.a) {
       const th = (G.hrein && G.hrein.thykkt) || val.thykkt || 2;
       html = '<span>Veggþykkt</span><button type="button" data-hr="minna" style="' + TK + '" title="Halda líka þynnri veggjum">−</button><span style="min-width:14px;text-align:center">' + th +
@@ -561,7 +711,8 @@
         '<button type="button" data-hr="fylla" aria-pressed="' + !!val.fylla + '" style="' + TK + ';' + (val.fylla ? GULL : '') + '">Fylla tvöfalda veggi</button>' +
         (skilabod ? '' : (G.hrein ? '<span style="opacity:.6;font-weight:500">' + (G.hrein.thekja * 100).toFixed(1) + '% veggir · ' + G.hrein.ms + ' ms</span>' : ''));
     }
-    if (skilabod && !G.hamur) html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500">' + esc(skilabod) + '</span>';
+    if (G.pdfBid && G.hamur !== 'veggir') html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500">⏳ Les veggi úr PDF-skjalinu…</span>';
+    else if (skilabod && !G.hamur && !h.pdfVeggir.length) html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500">' + esc(skilabod) + '</span>';
     if (s._html !== html) { s.innerHTML = html; s._html = html; }
     s.style.display = html ? 'flex' : 'none';
   }
@@ -642,7 +793,7 @@
     const FP = FPx(), h = virkHaed(), mr = main.getBoundingClientRect(), cr = c.getBoundingClientRect();
     const synilegt = c.style.display !== 'none' && cr.width > 2 && FP.bgImage;
     const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
-      G.hamur, JSON.stringify(h.veggir), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height].join('|');
+      G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height].join('|');
     if (merki === G.teiknad) return;
     G.teiknad = merki;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -654,6 +805,17 @@
     x.save(); x.beginPath(); x.rect(ox, oy, cr.width, cr.height); x.clip();
     const bt = Math.max(3, Math.min(9, c.width * k / 170));
     x.lineCap = 'round'; x.lineJoin = 'round';
+    if (h.pdfVeggir.length) {
+      // Aðeins strik sem snerta sýnilega svæðið — 800+ strik á hverjum ramma væri sóun þegar þysjað er inn.
+      x.strokeStyle = '#14120f'; x.lineWidth = Math.max(1.25, Math.min(4, k * 3.2)); x.beginPath();
+      const L = ox - 4, R = ox + cr.width + 4, Tp = oy - 4, B = oy + cr.height + 4;
+      for (let i = 0; i < h.pdfVeggir.length; i++) {
+        const v = h.pdfVeggir[i], ax = sx(v[0]), ay = sy(v[1]), bx = sx(v[2]), by = sy(v[3]);
+        if ((ax < L && bx < L) || (ax > R && bx > R) || (ay < Tp && by < Tp) || (ay > B && by > B)) continue;
+        x.moveTo(ax, ay); x.lineTo(bx, by);
+      }
+      x.stroke();
+    }
     x.strokeStyle = G.hamur === 'veggir' ? '#1d4ed8' : '#26221e'; x.lineWidth = bt;
     h.veggir.forEach(v => { x.beginPath(); x.moveTo(sx(v[0]), sy(v[1])); x.lineTo(sx(v[2]), sy(v[3])); x.stroke(); });
     if (G.hamur === 'veggir' && G.kedja) {
@@ -808,11 +970,15 @@
     const fb = frum.naturalWidth || frum.width, fh = frum.naturalHeight || frum.height;
     const sk = h.skurdur || { x: 0, y: 0, w: fb, h: fh };
     const r = hreinsa(stig1, { thykkt: val.thykkt || 0, fylla: !!val.fylla });
-    const veggir = r.thekja >= 0.004 ? r.veggir : new Uint8Array(r.W * r.H);
-    if (h.veggir.length) {
+    const veggir = r.thekja >= 0.004 && !h.pdfVeggir.length ? r.veggir : new Uint8Array(r.W * r.H);
+    if (h.veggir.length || h.pdfVeggir.length) {
       const c = document.createElement('canvas'); c.width = r.W; c.height = r.H;
       const x = c.getContext('2d'); x.strokeStyle = '#000'; x.lineCap = 'square'; x.lineWidth = Math.max(3, Math.round(r.W / 240));
       h.veggir.forEach(v => { x.beginPath(); x.moveTo((v[0] - sk.x) * r.kvardi, (v[1] - sk.y) * r.kvardi); x.lineTo((v[2] - sk.x) * r.kvardi, (v[3] - sk.y) * r.kvardi); x.stroke(); });
+      // Vigurveggir eru TVÆR línur með veggþykkt á milli: nógu breitt strik til að parið renni saman í einn heilan vegg.
+      x.lineWidth = Math.max(3, Math.round(r.W / 380)); x.beginPath();
+      h.pdfVeggir.forEach(v => { x.moveTo((v[0] - sk.x) * r.kvardi, (v[1] - sk.y) * r.kvardi); x.lineTo((v[2] - sk.x) * r.kvardi, (v[3] - sk.y) * r.kvardi); });
+      x.stroke();
       const d = x.getImageData(0, 0, r.W, r.H).data;
       for (let i = 0; i < r.W * r.H; i++) if (d[i * 4 + 3] > 96) veggir[i] = 1;
     }
@@ -844,7 +1010,7 @@
         if (!stig1) { if (!h.image_url) { sleppt.push(h.nafn + ' (engin teikning)'); continue; } frum = await hladaMynd(h.image_url); stig1 = h.skurdur ? skera(frum, h.skurdur) : frum; }
         if (!document.getElementById('fp-3d')) return;
         const u = undirbua(h, stig1, h.markers, val, einingar, frum);
-        if (!u.veggjaPx) { sleppt.push(h.nafn + ' (engir veggir — dragðu þá með ✏)'); continue; }
+        if (!u.veggjaPx) { sleppt.push(h.nafn + ' (engir veggir — lestu þá úr PDF eða dragðu með ✏)'); continue; }
         ut.push(u);
       } catch (_) { sleppt.push(h.nafn + ' (náði ekki í teikningu)'); }
     }
@@ -914,7 +1080,7 @@
     const val = lesaVal(FP.companyId), h = virkHaed();
     const lita = (kl, a, texti) => { const b = grp.querySelector(kl); if (!b) return; b.setAttribute('aria-pressed', String(!!a)); b.style.background = a ? '#c9a54a' : ''; b.style.color = a ? '#14120f' : ''; if (texti) b.textContent = texti; };
     lita('.fp-hreinsa-btn', val.a);
-    lita('.fp-veggir-btn', G.hamur === 'veggir', '✏ Veggir' + (h.veggir.length ? ' · ' + h.veggir.length : ''));
+    lita('.fp-veggir-btn', G.hamur === 'veggir', '✏ Veggir' + (h.veggir.length + h.pdfVeggir.length ? ' · ' + (h.veggir.length + h.pdfVeggir.length) : ''));
     lita('.fp-skera-btn', G.hamur === 'skera' || !!h.skurdur, h.skurdur ? '✂ Sýna allt blaðið' : '✂ Skera');
     const c = document.getElementById('fp-canvas'); if (c) c.style.cursor = G.hamur ? 'crosshair' : '';
   }
@@ -982,7 +1148,7 @@
       const self = this, p = plan();
       loka3d(); G.hamur = null;
       samstillaVirka();
-      const hs = haedir();
+      const hs = haedir(); hs.forEach(h => { delete h.pdfReynt; });
       (async () => {
         // Upphlaðnar myndir eru blob: — þær deyja við endurhleðslu. Sama smækkun og 375 notar; hnit hæðarinnar skalast með.
         for (const h of hs) {
@@ -992,7 +1158,7 @@
               h.image_url = b.slod;
               if (k !== 1) {
                 h.markers.forEach(m => { if (erPx(m)) { m.x *= k; m.y *= k; } });
-                h.veggir = h.veggir.map(v => v.map(n => Math.round(n * k)));
+                h.veggir = h.veggir.map(v => v.map(n => Math.round(n * k))); h.pdfVeggir = h.pdfVeggir.map(v => v.map(n => Math.round(n * k)));
                 if (h.skurdur) h.skurdur = { x: Math.round(h.skurdur.x * k), y: Math.round(h.skurdur.y * k), w: Math.round(h.skurdur.w * k), h: Math.round(h.skurdur.h * k) };
               }
             } catch (_) { segja('⚠ Náði ekki að geyma upphlaðna mynd hæðarinnar „' + h.nafn + '".'); }
