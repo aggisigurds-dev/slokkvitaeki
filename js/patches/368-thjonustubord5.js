@@ -3358,7 +3358,16 @@
    * ReikningaPostur.sendaReikning, svo hún búi áfram á einum stað.
    */
   const PB_HOLF = ['eldklar@eldklar.is', 'bokhald@eldklar.is'];
-  const PB_RE = /(senda|sent|sendið|sendu|fá|fæ|vantar|afrit).{0,22}(reikning|kröfu|kvittun)|reikning.{0,22}(afrit|vantar|sent|sendan)|afrit af reikning|copy of (the )?invoice|send.{0,15}invoice/;
+  // 20.09.2026 — SKÝRSLUBEIÐNIR LÍKA. Hótel Hjarðarból skrifaði kl. 21:14:
+  // „Eruð þið búnir að senda mér staðfestingu á eftirlitinu?" — og sá póstur
+  // sást HVERGI. Sían leitaði aðeins að reikning/kröfu/kvittun, svo beiðni um
+  // skýrslu datt þegjandi niður og kúnninn beið. Frá sjónarhóli Agnars er þetta
+  // sama málið: einhver biður um skjal sem við eigum, og svarið er að finna það
+  // og senda í sama þræði. Glugginn sýnir þegar bæði reikninga OG skjöl félagsins.
+  //
+  // Sagnorðið verður áfram að vera nálægt nafnorðinu, svo venjulegur póstur sem
+  // NEFNIR úttekt lendi ekki inni — sama form og reglan sem fyrir var.
+  const PB_RE = /(senda|sent|sendið|sendu|fá|fæ|vantar|afrit).{0,22}(reikning|kröfu|kvittun)|reikning.{0,22}(afrit|vantar|sent|sendan)|afrit af reikning|copy of (the )?invoice|send.{0,15}invoice|(senda|sent|sendið|sendu|fá|fæ|vantar|afrit|berast).{0,26}(staðfesting|skýrslu|skýrsla|vottorð|úttektarskýrsl)|(staðfesting|skýrslu|vottorð).{0,26}(vantar|sent|sendan|afrit|ekki borist)|staðfestingu á (eftirlit|úttekt|skoðun)/;
   const pbThrad = s => String(s || '').toLowerCase().replace(/^((re|sv|svar|fw|fwd|áfram)\s*:\s*)+/g, '').replace(/\s+/g, ' ').trim();
   async function saekjaPostbeidnir() {
     const c = sb();
