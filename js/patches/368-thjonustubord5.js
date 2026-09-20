@@ -701,9 +701,10 @@
     toast('Skilað á Master');
   });
   const done = id => act(id, async () => {
+    const fyrri = (S.rows.find(x => x.id === id) || {}).status || 'nytt';
     const rows = await patchRow(id, { status: 'lokad' });
     if (!rows.length || rows[0].status !== 'lokad') throw new Error('málið fannst ekki');
-    toast('Merkt lokið');
+    toast('Merkt lokið', false, () => act(id, async () => { await patchRow(id, { status: fyrri }); toast('Málið er opið aftur'); }));
   });
   // Svar við máli sem bíður samþykkis (368v). Lesið ferskt, skrifað skilyrt á updated_at (sama og hama-tenging) og lesið
   // til baka; „Afturkalla" skrifar fyrri merki, stöðu og lýsingu aftur, skilyrt á svarið.
@@ -1100,6 +1101,9 @@
       '.kbox .v{font-family:var(--disp);font-size:24px;font-weight:800;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}',
       '.more{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px 12px;font-size:12px;color:var(--mute)}',
       // FELA (11.09.2026): dauft en lyklaborðsnothæft — full sýn og undirstrik við sveimun og fókus.
+      '.radg{display:inline-flex;flex-wrap:wrap;gap:4px 12px;align-items:center}.radg.lina{display:flex;margin-top:6px}',
+      '@media (max-width:760px),(pointer:coarse){.fela.adg{min-height:36px;padding:8px 4px;font-size:12.5px}.radg{gap:2px 16px}}',
+      '.fela.adg{opacity:.85;font-weight:600;padding:3px 0;min-height:24px}.fela.adg:hover{opacity:1;text-decoration:underline}.fela.adg.eyda{color:var(--hot,#b42318)}.fela.adg[disabled]{opacity:.35;cursor:default}',
       '.fela{display:inline;padding:0;margin:0;border:0;background:none;font:500 11px var(--body);letter-spacing:0;text-transform:none;color:var(--mute);opacity:.6;cursor:pointer}',
       '.fela:hover,.fela:focus-visible{opacity:1;text-decoration:underline;text-underline-offset:2px}',
       '.fela.syna{font-size:12px;opacity:1;text-decoration:underline;text-decoration-color:var(--rule3);text-underline-offset:2px}.fela.syna:hover,.fela.syna:focus-visible{color:var(--ink);text-decoration-color:var(--g6)}',
@@ -1477,7 +1481,7 @@
           (sam ? '<span class="ai">' + esc(sam) + '</span>' : '') + '</button>' +
         // Master líka: það á ekki að þurfa að opna mál til að skrifa eina setningu.
         ntReitur(r) +
-        (tags ? '<div class="tags">' + tags + '</div>' : '') + '</div>' + hlid +
+        (tags ? '<div class="tags">' + tags + '</div>' : '') + malAdg(r, 'lina') + '</div>' + hlid +
     '</article>';
   }
   // Svartakkar á máli sem bíður samþykkis (368v).
@@ -1532,6 +1536,8 @@
           (erSamthykki(r) ? samtTakkar(r, ' sm') :
             '<button type="button" class="btn iv sm" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + '>✓ Lokið</button>' +
             '<button type="button" class="btn iv sm" data-t5="giveback" data-id="' + r.id + '"' + dis(r.id) + '>↩ Skila</button>') +
+          '<button type="button" class="btn iv sm" data-t5="mal-ari" data-id="' + r.id + '"' + dis(r.id) + ' title="' + (r.important ? 'Taka áríðandi-merkið af' : 'Merkja áríðandi') + '">' + (r.important ? '★' : '☆') + '</button>' +
+          '<button type="button" class="btn iv sm" data-t5="mal-eyda" data-id="' + r.id + '"' + dis(r.id) + ' title="Eyða málinu — hægt að afturkalla">🗑</button>' +
         '</div></div></div>';
   }
   // Breyta máli — sömu reitir og „⋯ Meira" á gamla borðinu. Drög lifa í S.bmDrog (valið mál er teiknað
@@ -1722,7 +1728,7 @@
       '<div class="smeta">' + esc(meta) + '</div>' +
       (samantekt(r) ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(samantekt(r).slice(0, 600)) + '</div>' : '') +
       sagaHtml(r) + skjolHtml(r) + well +
-      '<div class="sacts">' + (minn && erSamthykki(r) ? samtTakkar(r, ' lg') + rukkaTakki + fyr : taka + svara + lokid + skila + rukkaTakki + fyr) + '</div>' + (minn && erSamthykki(r) ? skyRitillHtml(r) : '') +
+      '<div class="sacts">' + (minn && erSamthykki(r) ? samtTakkar(r, ' lg') + rukkaTakki + fyr : taka + svara + lokid + skila + rukkaTakki + fyr) + b('iv', 'mal-ari', r.important ? '★ Áríðandi af' : '☆ Áríðandi') + b('iv', 'mal-eyda', '🗑 Eyða máli') + '</div>' + (minn && erSamthykki(r) ? skyRitillHtml(r) : '') +
       '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + (jm => jm ? b('iv', 'vd-opna', '🗓 ' + fmtD(jm.date) + (jm._n !== nu() ? ' · ' + jm._n : '')) : b('iv', 'vd-add', '🗓 Á dagskrá'))(jobOfMal(r.id)) +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
           ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + hamirHtml(r) + breytaHtml(r);
@@ -1916,7 +1922,7 @@
     const meta = [s && s.manudur, s && s.dagsetning, bladNr(s) || k.haus, (nr + 1) + ' af ' + listi.length].filter(Boolean).join(' · ');
     const eigin = onBoardOf(val, n);
     const svar = vbrBidur(val)
-      ? (eigin ? '<div class="sacts">' + samtTakkar(val, ' lg', true) + '</div>' + skyRitillHtml(val)
+      ? (eigin ? '<div class="sacts">' + samtTakkar(val, ' lg', true) + '<button type="button" class="btn iv lg" data-t5="mal-eyda" data-id="' + val.id + '"' + dis(val.id) + ' title="Eyða blaðinu af borðinu — hægt að afturkalla">🗑 Eyða</button></div>' + skyRitillHtml(val)
         : '<div class="smeta">Bíður samþykkis hjá ' + esc(normW(val.assigned_to) || 'Master') + ' — aðeins eigandinn svarar</div>')
       : '<div class="smeta">' + esc(svarBidur(val) ? SVOR[svarMals(val)].merki : 'Svarað') + ' · veldu næsta blað í listanum</div>';
     return '<div class="vbr">' +
@@ -2448,6 +2454,15 @@
   }
   const falinSum = n => (n ? ' · ' + n + ' falin' : '');
   // f = { l: lykill, e: eining, d: lýsing (fer í töfluna svo sagan skiljist), falinn: sýnt í „Sýna"-ham }.
+  // 20.09.2026 (Agnar: „gera það alveg gagnvirkt — ekki post-it miða á vegg sem ég get ekki notað eða eytt"). MÆLT á
+  // lifandi borðinu: mál á Master og í Áríðandi/Frestum/Forgangi/Nýjum málum/Póstsvörun var aðeins hægt að OPNA;
+  // „Lokið" var inni í völdu máli og „Eyða" í einingu sem er sjálfgefið slökkt (Breyta máli). Nú ber HVER lína sem
+  // er mál sömu þrjár aðgerðir: ✓ Lokið · ★ áríðandi af/á · 🗑 Eyða — allar með „Afturkalla". Eyðing er mjúk
+  // (deleted_at), sama og í Breyta máli. Mál sem bíður samþykkis fær ekki ✓ (þar ERU svörin aðgerðin).
+  const malAdg = (r, cls) => !r || !r.id ? '' : '<span class="radg' + (cls ? ' ' + cls : '') + '">' +
+    (erSamthykki(r) ? '' : '<button type="button" class="fela adg" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + ' title="Merkja málið lokið — hverfur af borðinu, hægt að afturkalla">✓ Lokið</button>') +
+    '<button type="button" class="fela adg" data-t5="mal-ari" data-id="' + r.id + '"' + dis(r.id) + ' title="' + (r.important ? 'Taka áríðandi-merkið af' : 'Merkja áríðandi') + '">' + (r.important ? '★ af' : '☆ Áríðandi') + '</button>' +
+    '<button type="button" class="fela adg eyda" data-t5="mal-eyda" data-id="' + r.id + '"' + dis(r.id) + ' title="Eyða málinu af öllum borðum — hægt að afturkalla">🗑 Eyða</button></span>';
   const felaTakki = f => (!f || typeof f !== 'object') ? '' : ' · <button type="button" class="fela" data-t5="' + (f.falinn ? 'fela-aftur' : 'fela') + '" data-fl="' + esc(f.l) +
     '" data-fe="' + esc(f.e) + '" data-fd="' + esc(String(f.d || '').slice(0, 200)) + '" title="' + (f.falinn ? 'Sýna aftur í listanum — á öllum vélum' : 'Fela úr listanum — á öllum vélum. Birtist aftur ef það breytist.') + '">' +
     (f.falinn ? 'Sýna aftur' : 'Fela') + '</button>' + skyrTakki(f);
@@ -3323,7 +3338,7 @@
     const a = ageDays(r), w = fyrLink(r);
     return '<div class="lrow' + (f && f.falinn ? ' falid' : '') + '"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
       '<div><button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '" title="Skoða málið"><b>' + esc(r.title || '(ónefnt mál)') + '</b></button>' +
-      '<span class="s">' + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + felaTakki(f) + '</span>' + skyrLina(f) + (forsk || '') + '</div>' + (merki || '<span></span>') + '</div>';
+      '<span class="s">' + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + felaTakki(f) + '</span>' + skyrLina(f) + (forsk || '') + malAdg(r, 'lina') + '</div>' + (merki || '<span></span>') + '</div>';
   }
   // Byrjun skilaboðanna, án tilvitnaðs texta. Sama hugsun og KLIPPA_TXT í 286:
   // það sem stendur NEÐAN við „-----", „Frá:", „On … wrote:" er gamall póstur.
@@ -3540,7 +3555,7 @@
         const r = S.rows.find(x => x.channel_ref === 'email:' + m.id), a = Math.max(0, Math.floor((nuna - tStamp(m.received_at)) / 864e5));
         return '<div class="lrow' + (f.falinn ? ' falid' : '') + '"><span class="age ' + ageCls(a) + '">' + a + 'D</span><div>' +
           (r ? '<button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '"><b>' + esc(m.subject || '(ekkert efni)') + '</b></button>' : '<b>' + esc(m.subject || '(ekkert efni)') + '</b>') +
-          '<span class="s">' + esc(m.sender_name || m.sender_email || '') + ' · ' + (r ? esc(eigandaTexti(r, nu())) : 'ekki á borðinu') + felaTakki(f) + '</span>' + skyrLina(f) + '</div>' + merki + '</div>';
+          '<span class="s">' + esc(m.sender_name || m.sender_email || '') + ' · ' + (r ? esc(eigandaTexti(r, nu())) : 'ekki á borðinu') + felaTakki(f) + '</span>' + skyrLina(f) + malAdg(r, 'lina') + '</div>' + merki + '</div>';
       };
       const lidRod = (r, falinn) => lrowHtml(r, '<span class="tag hot">' + esc(fmtD(r.due_at)) + '</span>', { l: lidLyk(r), e: k, d: r.title, falinn });
       const ariRod = (r, falinn) => lrowHtml(r, '<span class="tag hot">Áríðandi</span>', { l: ariLyk(r), e: k, d: r.title, falinn });
@@ -4643,6 +4658,28 @@
         vistaCfg({ bara_mitt: c.baraMitt }, c.baraMitt ? 'Bara þitt borð — allt annað falið' : 'Master og einingar sýnd aftur');
         return;
       case 'done': done(id); return;
+      case 'mal-eyda': {
+        const r = S.rows.find(x => x.id === id);
+        if (!r) return;
+        act(id, async () => {
+          const rows = await patchRow(id, { deleted_at: new Date().toISOString() });
+          if (!rows.length) throw new Error('málið fannst ekki');
+          if (S.sel === id) S.sel = 0;
+          toast('Eytt: ' + String(r.title || '(ónefnt mál)').slice(0, 60), false, () => act(id, async () => { await patchRow(id, { deleted_at: null }); toast('Málið er komið aftur'); }));
+        });
+        return;
+      }
+      case 'mal-ari': {
+        const r = S.rows.find(x => x.id === id);
+        if (!r) return;
+        const var_ = !!r.important;
+        act(id, async () => {
+          const rows = await patchRow(id, { important: !var_ });
+          if (!rows.length) throw new Error('málið fannst ekki');
+          toast(var_ ? 'Áríðandi-merkið tekið af' : 'Merkt áríðandi', false, () => act(id, async () => { await patchRow(id, { important: var_ }); toast('Afturkallað'); }));
+        });
+        return;
+      }
       case 'giveback': giveBack(id); return;
       case 'samt-svar': {
         // 368z: óvistaðar tölur fara fyrst í grunninn — mistakist það er ekki svarað og blaðið stendur kyrrt.
