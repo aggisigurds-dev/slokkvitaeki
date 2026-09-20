@@ -215,7 +215,7 @@ console.log('[NewFeatures v4] Ready');
         canvas.style.width=(cw*sc)+'px';canvas.style.height=(ch*sc)+'px';
         var ctx=canvas.getContext('2d');ctx.clearRect(0,0,cw,ch);ctx.drawImage(img,0,0,cw,ch);
         var plan=this.plans&&this.plans[this.companyId];
-        if(plan&&plan.markers){var mr=Math.max(6,Math.round(cw/400));plan.markers.forEach(function(mk){var mx=(mk.x||0)*cw,my=(mk.y||0)*ch;ctx.beginPath();ctx.arc(mx,my,mr,0,2*Math.PI);ctx.fillStyle=mk.color||'#c93c1d';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=Math.max(2,mr/3);ctx.stroke();});}
+        /* 20.09.2026: merkin vistast í PUNKTUM myndarinnar (onCanvasClick, 375) en hér voru þau lesin sem HLUTFÖLL (x*cw) og lentu langt utan myndar — þau sáust ekki þegar þessi teiknari vann kapphlaupið við floorplanfix.js. Sama regla og þar: >1 = punktar. Radíusinn miðast við skjáinn (>= 8 px) því 6000 px uppdráttur er smækkaður ~7-20x. */if(plan&&plan.markers){var mr=Math.max(6,Math.round(cw/400),(sc>0&&isFinite(sc))?Math.round(8/sc):0);plan.markers.forEach(function(mk){var x=(mk.x||0),y=(mk.y||0);var mx=(x>1||y>1)?x*ratio:x*cw,my=(x>1||y>1)?y*ratio:y*ch;ctx.beginPath();ctx.arc(mx,my,mr,0,2*Math.PI);ctx.fillStyle=mk.color||'#c93c1d';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=Math.max(2,mr/3);ctx.stroke();});}
       };
     }
   
