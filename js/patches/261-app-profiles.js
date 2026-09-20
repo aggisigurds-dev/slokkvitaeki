@@ -1443,7 +1443,7 @@
   }
   function heimaskjarHtml(a, vistad) {
     return '<div class="_pe-heim">' + (vistad ? '✓ <b>Táknið er vistað</b> og sést strax inni í appinu. ' : '') +
-      'Táknið á <b>heimaskjá símans</b> uppfærist sjálft á 1–3 dögum. Til að fá það strax — eða ef appið finnst ekki á heimaskjánum:' +
+      '<b>Táknið á heimaskjá símans breytist EKKI strax.</b> Android leyfir vefappi ekki að skipta sjálft um tákn á heimaskjánum — síminn sækir nýja táknið sjálfur á 1–3 dögum. Til að fá það strax þarf að setja appið upp aftur:' +
       '<ol><li>Ýttu á <b>Opna í Chrome</b> hér fyrir neðan.</li>' +
       '<li>Fjarlægðu gamla appið: haltu fingri á tákninu (heimaskjár eða forritalisti) → <b>Fjarlægja / Uninstall</b>.</li>' +
       '<li>Í Chrome: endurhlaðaðu síðuna og veldu <b>Setja upp</b> (eða ⋮ → „Setja upp app"). Táknið lendir þá á heimaskjánum.</li></ol>' +
@@ -1482,7 +1482,7 @@
                 '</button>';
               }).join('') +
             '</div>' +
-            (_peTaknBreytt ? heimaskjarHtml(a, true) : '') +
+            (_peTaknBreytt || a.ikon ? heimaskjarHtml(a, _peTaknBreytt) : '') +
           '</div>' +
           '<div class="op-sech" style="margin:4px 8px 8px">Nafn og litir</div>' +
           '<div style="display:flex;flex-direction:column;gap:10px;padding:0 10px 14px;font-size:13.5px;color:#334155">' +
@@ -1491,8 +1491,13 @@
             '<label style="display:flex;flex-direction:column;gap:4px">Lýsing' +
               '<input class="_pe-blurb" value="' + esc(a.blurb || '') + '" style="padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:15px"></label>' +
             '<div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">' +
-              '<label style="display:flex;flex-direction:column;gap:4px">Tákn (emoji)' +
-                '<input class="_pe-emoji" value="' + esc(a.emoji) + '" maxlength="4" style="width:64px;padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:20px;text-align:center"></label>' +
+              // 20.09.2026 (Agnar hringaði 💰-reitinn: „This won't change"): emoji-reiturinn stóð óbreyttur þótt táknmynd
+              // væri valin, svo það leit út eins og valið hefði ekki tekist. Með valda táknmynd sýnir reiturinn HANA.
+              (a.ikon
+                ? '<div style="display:flex;flex-direction:column;gap:4px">Valið tákn' +
+                    '<img src="' + IKON_MAPPA + esc(a.ikon) + '" alt="" width="52" height="52" style="display:block;border-radius:11px;border:1px solid #d7dce4"></div>'
+                : '<label style="display:flex;flex-direction:column;gap:4px">Tákn (emoji)' +
+                    '<input class="_pe-emoji" value="' + esc(a.emoji) + '" maxlength="4" style="width:64px;padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:20px;text-align:center"></label>') +
               '<label style="display:flex;flex-direction:column;gap:4px">Litur (efst)' +
                 '<input class="_pe-color" type="color" value="' + esc(a.color) + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
               '<label style="display:flex;flex-direction:column;gap:4px">Litur (neðst)' +
