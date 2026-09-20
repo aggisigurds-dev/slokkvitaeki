@@ -506,6 +506,9 @@
     const p = plan(), hs = haedir(), h = hs[G.virk];
     h.markers = (p.markers || []).map(m => Object.assign({}, m, erPx(m) ? { x: m.x + G.rymi.x, y: m.y + G.rymi.y } : {}));
     if (typeof p.imageUrl === 'string') h.image_url = p.imageUrl;
+    // Stærð FRUMMYNDAR fylgir hæðinni: TurboPaint teiknar sama blað í annarri stærð og þarf hana til að varpa
+    // staðsetningum fram og til baka án þess að giska (kjarni: lib/board/uttekt.ts).
+    if (G.frum) h.frum = { b: G.frum.naturalWidth || G.frum.width, h: G.frum.naturalHeight || G.frum.height };
     const her = {}; h.markers.forEach(m => { her[m.unitId] = 1; });
     hs.forEach((o, i) => { if (i !== G.virk) o.markers = o.markers.filter(m => !her[m.unitId]); });
   }
@@ -735,6 +738,7 @@
           hs.push({ id: nyttId(), nafn: (hs.length + 1) + '. hæð', image_url: null, markers: [], skurdur: null, veggir: [] });
           virkja(hs.length - 1);
           segja('Ný hæð — sæktu eða hlaðu upp teikningu fyrir hana.');
+        } else if (a === 'saekja') { endurlesa();
         } else if (a === 'nafn') {
           const n = window.prompt('Heiti hæðar', virkHaed().nafn || ''); if (n != null && n.trim()) virkHaed().nafn = n.trim().slice(0, 24);
           flipar();
@@ -749,6 +753,7 @@
     const hs = haedir(), FL = 'height:30px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.22);cursor:pointer;font:inherit;';
     const html = hs.map((h, i) => '<button type="button" data-h="' + i + '" aria-pressed="' + (i === G.virk) + '" style="' + FL + (i === G.virk ? GULL : 'background:rgba(20,18,15,.88);color:#f1ede4') + '">' +
         esc(h.nafn || (i + 1) + '. hæð') + ' <span style="opacity:.65;font-weight:500">' + (i === G.virk ? plan().markers.length : h.markers.length) + '</span></button>').join('') +
+      '<button type="button" data-h="saekja" title="Sækja staðsetningar af þjóni — t.d. eftir „Vista í úttekt" í TurboPaint" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">↻</button>' +
       '<button type="button" data-h="nafn" title="Endurnefna virku hæðina" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">✎</button>' +
       (hs.length > 1 ? '<button type="button" data-h="eyda" title="Eyða virku hæðinni" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">🗑</button>' : '') +
       '<button type="button" data-h="ny" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">+ Hæð</button>';
@@ -1054,6 +1059,49 @@
     document.head.appendChild(st);
   }
 
+  /* ── TurboPaint-hringferð (Agnar 20.09.2026: „Edit í TurboPaint. Og save-að til baka") ──
+   * TurboPaint les hæðina úr teikning_bord — hún verður því að vera VISTUÐ og eins og hún stendur á skjánum. Óvistaðar
+   * breytingar eru vistaðar fyrst (án þess að loka glugganum), svo er hæðin opnuð í nýjum flipa. „Vista í úttekt" þar
+   * skrifar staðsetningar tækjanna aftur í sömu röð; ↻ í hæðaflipunum hér sækir þær. */
+  const TURBOPAINT = 'https://slokkvitaeki.vercel.app/kjarni/turbopaint';
+  async function opnaITurboPaint() {
+    const FP = FPx(), cid = FP.companyId;
+    if (!FP.bgImage || !window.DB || !DB.sb) { segja('Sæktu eða hlaðu upp teikningu fyrst.'); return; }
+    samstillaVirka();
+    const hs = haedir(), h = hs[G.virk];
+    if (!/teikn-mynd\?/.test(String(h.image_url || ''))) { segja('Aðeins teikningar úr skjalasafninu opnast sjálfkrafa í TurboPaint — upphlaðna mynd þarf að flytja þar inn handvirkt.'); return; }
+    // Upphlaðin mynd á ANNARRI hæð er enn blob: — hún má ekki fara þannig í grunninn. Vista-takkinn breytir henni fyrst.
+    if (hs.some(x => String(x.image_url || '').indexOf('blob:') === 0)) { segja('Ein hæðin er með nýupphlaðna mynd — ýttu fyrst á 💾 Vista, opnaðu gluggann aftur og svo TurboPaint.'); return; }
+    const flipi = window.open('about:blank', '_blank');               // opnað í smellinum sjálfum, annars lokar vafrinn á það
+    try {
+      const gogn = JSON.parse(JSON.stringify(hs)); gogn.forEach(x => { delete x.pdfReynt; });
+      const r = await DB.sb.from('teikning_bord').upsert({ company_id: cid, markers: gogn[0].markers, image_url: gogn[0].image_url || null, haedir: gogn, updated_at: new Date().toISOString() }, { onConflict: 'company_id' }).select('company_id');
+      if (r.error || !r.data || !r.data.length) throw new Error((r.error && r.error.message) || 'ekkert skrifað');
+      const slod = TURBOPAINT + '?uttekt=' + encodeURIComponent(cid) + '&haed=' + encodeURIComponent(h.id) + (h.frum ? '&b=' + h.frum.b + '&h=' + h.frum.h : '');
+      if (flipi) flipi.location.href = slod; else location.href = slod;
+      segja('Hæðin er vistuð og opnast í TurboPaint. Þegar þú ert búinn þar: „💾 Vista í úttekt", og svo ↻ hér.');
+    } catch (e) {
+      if (flipi) try { flipi.close(); } catch (_) {}
+      segja('⚠ Gat ekki vistað hæðina fyrir TurboPaint: ' + ((e && e.message) || e));
+    }
+  }
+  // Sækja staðsetningar sem TurboPaint (eða önnur vél) vistaði á meðan glugginn stóð opinn.
+  async function endurlesa() {
+    const FP = FPx(), cid = FP.companyId;
+    try {
+      const r = await DB.sb.from('teikning_bord').select('markers,image_url,haedir,updated_at,updated_by').eq('company_id', cid).limit(1);
+      if (r.error || !r.data || !r.data.length) throw new Error((r.error && r.error.message) || 'engin röð');
+      const row = r.data[0], virkId = virkHaed().id;
+      faeraMerki(0, 0);
+      FP.__eftirSokn(cid, row);
+      const i = Math.max(0, haedir().findIndex(x => x.id === virkId));
+      const p = plan(), h = haedir()[i];
+      G.virk = i; p.markers = h.markers.map(m => Object.assign({}, m)); G.rymi = { x: 0, y: 0 }; G.lykill = '';
+      beita(); try { FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
+      segja('↻ Sótt af þjóni' + (row.updated_by ? ' (síðast vistað af ' + row.updated_by + ')' : '') + ' — ' + p.markers.length + ' staðsetningar á þessari hæð.');
+    } catch (e) { segja('⚠ Náði ekki að sækja: ' + ((e && e.message) || e)); }
+  }
+
   /* ── takkar í haus gluggans ── */
   function hnappar() {
     const hd = document.querySelector('#modal-floorplan .modal-hd'); if (!hd) return;
@@ -1073,7 +1121,8 @@
         })),
         gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
         gera('fp-hreinsa-btn', '✨ Skýrari veggir', 'Sýna aðeins veggina — málsetningar og texti dofna. Frummyndin geymist óbreytt.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
-        gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); })
+        gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); }),
+        gera('fp-tp-btn', '🖌 TurboPaint', 'Opna hæðina í TurboPaint: teikna á hana, færa tækin og vista staðsetningarnar til baka', opnaITurboPaint)
       ];
       const upp = grp.querySelector('label') || grp.firstChild;
       takkar.forEach(b => grp.insertBefore(b, upp));
