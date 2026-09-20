@@ -166,7 +166,40 @@
     return { strigi, vinnu, veggir: g.veggir, fotspor: g.fotspor, W, H, kvardi, thekja: g.thekja, thykkt: g.thykkt };
   }
 
-  window.TeiknHreinsun = { hreinsaGogn, hreinsa };
+  /** Hvar er HÚSIÐ á blaðinu? Skilar { x, y, w, h } í hlutföllum (0–1) eða null.
+   * Blaðið er oft margfalt stærra en grunnmyndin (rammi, nafnreitur, skýringar, afstöðumynd). Aðferð, á ~640 px smækkun
+   * (lágmark í hverjum reit svo þunnar línur lifi): blek → rammalínur (raðir/dálkar sem eru blek að >55%) teknar út →
+   * blekið þanið saman í klasa → stærsti klasinn að FLATARMÁLI BLEKS er húsið. Nafnreitur og skýringar eru minni klasar. */
+  function finnaHus(gra, W, H) {
+    const k = Math.max(1, Math.ceil(Math.max(W, H) / 640)), w = Math.ceil(W / k), h = Math.ceil(H / k);
+    const b = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let m = 255;
+      for (let yy = y * k; yy < Math.min(H, (y + 1) * k); yy++) for (let xx = x * k; xx < Math.min(W, (x + 1) * k); xx++) { const v = gra[yy * W + xx]; if (v < m) m = v; }
+      b[y * w + x] = m < 150 ? 1 : 0;
+    }
+    for (let y = 0; y < h; y++) { let n = 0; for (let x = 0; x < w; x++) n += b[y * w + x]; if (n > w * 0.55) for (let x = 0; x < w; x++) b[y * w + x] = 0; }
+    for (let x = 0; x < w; x++) { let n = 0; for (let y = 0; y < h; y++) n += b[y * w + x]; if (n > h * 0.55) for (let y = 0; y < h; y++) b[y * w + x] = 0; }
+    const r = Math.max(3, Math.round(w / 55)), th = dilate(b, w, h, r), sv = svaedi(th, w, h);
+    if (!sv.listi.length) return null;
+    const blek = new Int32Array(sv.listi.length + 1), kassi = {};
+    for (let i = 0; i < w * h; i++) {
+      const n = sv.merki[i]; if (!n) continue;
+      if (b[i]) blek[n]++;
+      const x = i % w, y = (i - x) / w, q = kassi[n] || (kassi[n] = [x, y, x, y]);
+      if (x < q[0]) q[0] = x; if (y < q[1]) q[1] = y; if (x > q[2]) q[2] = x; if (y > q[3]) q[3] = y;
+    }
+    let best = 0, bn = 0; for (let n = 1; n < blek.length; n++) if (blek[n] > bn) { bn = blek[n]; best = n; }
+    if (!best) return null;
+    const q = kassi[best], sp = Math.round(w * 0.015);
+    const x0 = Math.max(0, q[0] + r - sp), y0 = Math.max(0, q[1] + r - sp), x1 = Math.min(w, q[2] - r + sp + 1), y1 = Math.min(h, q[3] - r + sp + 1);
+    const ut = { x: x0 / w, y: y0 / h, w: (x1 - x0) / w, h: (y1 - y0) / h };
+    // Nær allt blaðið, eða örlítill biti: þá er ekkert unnið með skurði — skila null frekar en að skera vitlaust.
+    if (ut.w * ut.h > 0.8 || ut.w < 0.12 || ut.h < 0.12) return null;
+    return ut;
+  }
+
+  window.TeiknHreinsun = { hreinsaGogn, hreinsa, finnaHus };
 
   /* ───────────────────────── 2) 3D-SÝN ───────────────────────── */
 
@@ -417,11 +450,33 @@
       G.frum = nu; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
       if (typeof p.imageUrl === 'string' && h.image_url !== p.imageUrl) {
         // Önnur teikning en hæðin átti: skurður og veggir áttu við gömlu myndina.
-        if (h.image_url) { h.skurdur = null; h.veggir = []; }
+        if (h.image_url) { h.skurdur = null; h.veggir = []; delete h.sjalf; }
         h.image_url = p.imageUrl;
       }
     }
     if (!G.frum || !nu) { stika(); flipar(); return; }
+    // SJÁLFGEFINN SKURÐUR AÐ BYGGINGUNNI (Agnar 20.09.2026: „reyna að default croppa að byggingunni"). Aðeins þegar hæðin
+    // á engan skurð og notandinn hefur ekki valið „Sýna allt blaðið" (sjalf === false). Kassinn er víkkaður svo öll
+    // merki sem þegar eru til lendi innan hans — sjálfvirkni má aldrei fela staðsetningu.
+    if (!h.skurdur && h.sjalf !== false && G.sjalfReynt !== G.frum) {
+      G.sjalfReynt = G.frum;
+      try {
+        const iw = G.frum.naturalWidth || G.frum.width, ih = G.frum.naturalHeight || G.frum.height;
+        const kv = Math.min(1, 1300 / Math.max(iw, ih)), W = Math.round(iw * kv), H = Math.round(ih * kv);
+        const c = document.createElement('canvas'); c.width = W; c.height = H;
+        const x = c.getContext('2d', { willReadFrequently: true }); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.drawImage(G.frum, 0, 0, W, H);
+        const d = x.getImageData(0, 0, W, H).data, gra = new Uint8Array(W * H);
+        for (let i = 0, j = 0; i < W * H; i++, j += 4) gra[i] = (d[j] * 77 + d[j + 1] * 150 + d[j + 2] * 29) >> 8;
+        const hus = finnaHus(gra, W, H);
+        if (hus) {
+          let x0 = hus.x * iw, y0 = hus.y * ih, x1 = (hus.x + hus.w) * iw, y1 = (hus.y + hus.h) * ih;
+          const sp = Math.max(iw, ih) * 0.02;
+          p.markers.forEach(m => { if (erPx(m)) { const mx = m.x + G.rymi.x, my = m.y + G.rymi.y; x0 = Math.min(x0, mx - sp); y0 = Math.min(y0, my - sp); x1 = Math.max(x1, mx + sp); y1 = Math.max(y1, my + sp); } });
+          x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(iw, x1); y1 = Math.min(ih, y1);
+          if ((x1 - x0) * (y1 - y0) < iw * ih * 0.85) { h.skurdur = { x: Math.round(x0), y: Math.round(y0), w: Math.round(x1 - x0), h: Math.round(y1 - y0) }; h.sjalf = true; zNullstilla(); }
+        }
+      } catch (e) { console.warn('[383] sjálfskurður', e); }
+    }
     const sk = h.skurdur && h.skurdur.w > 8 && h.skurdur.h > 8 ? h.skurdur : null;
     const l1 = (G.frum.src || G.frum.width + 'x') + '|' + (sk ? [sk.x, sk.y, sk.w, sk.h].map(Math.round).join(',') : '-');
     if (!G.stig1 || G.stig1Lykill !== l1) { G.stig1 = sk ? skera(G.frum, sk) : G.frum; G.stig1Lykill = l1; G.hrein = null; G.hreinLykill = ''; }
@@ -545,7 +600,7 @@
     p.markers = h.markers.map(m => Object.assign({}, m)); G.rymi = { x: 0, y: 0 };
     p.imageUrl = h.image_url || null;
     G.frum = null; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
-    FP.bgImage = null; FP._selectedUnitId = null;
+    FP.bgImage = null; FP._selectedUnitId = null; zNullstilla();
     const c = document.getElementById('fp-canvas'), dm = document.getElementById('fp-drop-msg');
     if (h.image_url) {
       const img = new Image();
@@ -623,8 +678,39 @@
     G.drag = null; G.hamur = null;
     if (w < 40 || hh < 40) { segja('Kassinn var of lítill — reyndu aftur.'); return; }
     const uti = plan().markers.filter(m => erPx(m) && (m.x + G.rymi.x < x || m.x + G.rymi.x > x + w || m.y + G.rymi.y < y || m.y + G.rymi.y > y + hh)).length;
-    h.skurdur = { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(hh) };
+    h.skurdur = { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(hh) }; h.sjalf = false; zNullstilla();
     if (uti) segja('⚠ ' + uti + ' staðsetning' + (uti === 1 ? '' : 'ar') + ' lend' + (uti === 1 ? 'ir' : 'a') + ' utan við skurðinn — þær haldast, en sjást ekki fyrr en „Sýna allt blaðið" er valið.');
+  }
+  /* ── þysjun og færsla: EIN stýring fyrir mús, hjól, fingur og takka ──
+   * Agnar 20.09.2026: „Má kannski setja zoom takka og leyfa pinch zoom". newfeatures.js átti þysjun með hjóli og
+   * mousedown-færslu, með stöðuna lokaða inni í sér — engin snerting, engin klípa, og 30 px takkar. Hér er hún
+   * tekin yfir: atburðir hennar eru stöðvaðir í capture og takkarnir hennar faldir. */
+  const Z = { s: 1, x: 0, y: 0 };
+  function zBeita() {
+    const c = document.getElementById('fp-canvas'); if (!c) return;
+    c.style.transformOrigin = '0 0'; c.style.transform = 'translate(' + Z.x + 'px,' + Z.y + 'px) scale(' + Z.s + ')';
+    const m = document.getElementById('fp-zoom-pct'); if (m) m.textContent = Math.round(Z.s * 100) + '%';
+  }
+  function zThysja(f, cx, cy) {
+    const main = document.getElementById('fp-main'); if (!main) return;
+    const r = main.getBoundingClientRect(), mx = cx == null ? r.width / 2 : cx - r.left, my = cy == null ? r.height / 2 : cy - r.top;
+    const ns = Math.min(12, Math.max(0.2, Z.s * f));
+    Z.x = mx - (mx - Z.x) * (ns / Z.s); Z.y = my - (my - Z.y) * (ns / Z.s); Z.s = ns; zBeita();
+  }
+  function zNullstilla() { Z.s = 1; Z.x = 0; Z.y = 0; zBeita(); }
+  function zTakkar() {
+    const main = document.getElementById('fp-main'); if (!main) return;
+    const gamalt = document.getElementById('_fzb'); if (gamalt && gamalt.parentNode && gamalt.parentNode.style.display !== 'none') gamalt.parentNode.style.display = 'none';
+    if (document.getElementById('fp-zoom')) return;
+    const d = document.createElement('div'); d.id = 'fp-zoom';
+    d.style.cssText = 'position:absolute;right:10px;bottom:10px;z-index:7;display:flex;align-items:center;gap:6px;font:700 13px system-ui,sans-serif';
+    const tk = 'width:42px;height:42px;border-radius:11px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.88);color:#fff;font:700 20px system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center';
+    d.innerHTML = '<button type="button" data-z="ut" style="' + tk + '" aria-label="Minnka" title="Minnka">−</button>' +
+      '<span id="fp-zoom-pct" style="min-width:52px;text-align:center;padding:0 4px;height:42px;line-height:42px;border-radius:11px;background:rgba(20,18,15,.88);color:#f1ede4">100%</span>' +
+      '<button type="button" data-z="inn" style="' + tk + '" aria-label="Stækka" title="Stækka">+</button>' +
+      '<button type="button" data-z="passa" style="' + tk + ';font-size:16px" aria-label="Passa í glugga" title="Passa í glugga">⤢</button>';
+    main.appendChild(d);
+    d.addEventListener('click', e => { const t = e.target.closest('[data-z]'); if (!t) return; e.stopPropagation(); if (t.dataset.z === 'passa') zNullstilla(); else zThysja(t.dataset.z === 'inn' ? 1.35 : 1 / 1.35); });
   }
   function tengjaStriga() {
     const main = document.getElementById('fp-main'); if (!main || main._t383) return;
@@ -643,7 +729,36 @@
     main.addEventListener('dblclick', e => { if (G.hamur === 'veggir' && e.target.id === 'fp-canvas') { stodva(e); G.kedja = null; } }, true);
     // newfeatures.js færir teikninguna til með `mousedown` á fp-main (ekki pointerdown) — án þessa færði skurðar-
     // drátturinn myndina út af skjánum í stað þess að teikna kassa (fannst á lifandi síðu 20.09.2026). Hjólið þysjar áfram.
-    main.addEventListener('mousedown', e => { if (G.hamur && e.target.id === 'fp-canvas') e.stopPropagation(); }, true);
+    // Gamla stýringin er ALLTAF stöðvuð (mousedown + wheel) — annars toga tvær stýringar í sama strigann.
+    const aStriga = e => e.target === main || e.target.id === 'fp-canvas' || e.target.id === 'fp-drop-msg';
+    main.addEventListener('mousedown', e => { if (aStriga(e)) e.stopPropagation(); }, true);
+    main.addEventListener('wheel', e => { if (document.getElementById('fp-3d')) return; e.stopPropagation(); e.preventDefault(); zThysja(e.deltaY < 0 ? 1.15 : 0.87, e.clientX, e.clientY); }, { capture: true, passive: false });
+    main.style.touchAction = 'none';
+    const fingur = new Map(); let klipa = 0, midja = null, hreyft = 0;
+    main.addEventListener('pointerdown', e => {
+      if (!aStriga(e) || document.getElementById('fp-3d')) return;
+      fingur.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (fingur.size === 1) hreyft = 0;
+      klipa = 0; midja = null;
+    }, true);
+    main.addEventListener('pointermove', e => {
+      const f = fingur.get(e.pointerId); if (!f) return;
+      const dx = e.clientX - f.x, dy = e.clientY - f.y; f.x = e.clientX; f.y = e.clientY;
+      if (fingur.size >= 2) {
+        // Klípa: þysja um miðjuna milli fingranna og færa með henni. Skurðarkassi í smíðum víkur.
+        const [a, b] = [...fingur.values()], fj = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        if (G.drag && !G.drag.buid) G.drag = null;
+        if (klipa) zThysja(fj / klipa, mx, my);
+        if (midja) { Z.x += mx - midja[0]; Z.y += my - midja[1]; zBeita(); }
+        klipa = fj; midja = [mx, my]; hreyft = 99;
+      } else if (G.hamur !== 'skera') {
+        hreyft += Math.abs(dx) + Math.abs(dy);
+        if (hreyft > 6) { Z.x += dx; Z.y += dy; zBeita(); main.style.cursor = 'grabbing'; }
+      }
+    }, true);
+    const sleppa = e => { fingur.delete(e.pointerId); klipa = 0; midja = null; main.style.cursor = ''; };
+    main.addEventListener('pointerup', sleppa, true); main.addEventListener('pointercancel', sleppa, true);
+    // Dráttur er ekki smellur: án þessa setti færsla teikningarinnar niður merki (eða vegg) þar sem sleppt var.
+    main.addEventListener('click', e => { if (hreyft > 6 && e.target.id === 'fp-canvas') { e.stopPropagation(); e.preventDefault(); hreyft = 0; } }, true);
     main.addEventListener('pointerdown', e => {
       if (G.hamur !== 'skera' || e.target.id !== 'fp-canvas') return;
       stodva(e); const p = hnit(e); G.drag = { x0: p[0], y0: p[1], x1: p[0], y1: p[1], buid: false };
@@ -741,7 +856,7 @@
       const takkar = [
         gera('fp-skera-btn', '✂ Skera', 'Skera teikninguna að húsinu — blaðið er oft margfalt stærra en grunnmyndin', tharfMynd(() => {
           const h = virkHaed(); loka3d();
-          if (h.skurdur) { h.skurdur = null; G.hamur = null; } else { G.hamur = G.hamur === 'skera' ? null : 'skera'; G.drag = null; G.kedja = null; }
+          if (h.skurdur) { h.skurdur = null; h.sjalf = false; G.hamur = null; zNullstilla(); } else { G.hamur = G.hamur === 'skera' ? null : 'skera'; G.drag = null; G.kedja = null; }
         })),
         gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
         gera('fp-hreinsa-btn', '✨ Skýrari veggir', 'Sýna aðeins veggina — málsetningar og texti dofna. Frummyndin geymist óbreytt.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
@@ -791,10 +906,11 @@
       loka3d(); cancelAnimationFrame(G.raf); clearInterval(G.vakt);
       Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '' });
       const r = opna.apply(this, arguments);
+      Z.s = 1; Z.x = 0; Z.y = 0;
       const tikk = () => {
         const m = document.getElementById('modal-floorplan');
         if (!m || m.style.display === 'none' || !document.body.contains(m)) { clearInterval(G.vakt); cancelAnimationFrame(G.raf); loka3d(); return false; }
-        try { tengjaStriga(); hnappar(); beita(); listaVisbending(); } catch (e) { console.warn('[383]', e); }
+        try { tengjaStriga(); zTakkar(); hnappar(); beita(); listaVisbending(); } catch (e) { console.warn('[383]', e); }
         return true;
       };
       setTimeout(tikk, 60);
