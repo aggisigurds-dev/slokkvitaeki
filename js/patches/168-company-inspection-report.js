@@ -454,7 +454,13 @@
         const n = String(co.nafn || 'fyrirtæki').replace(/\s+/g, ' ').trim();
         const ktD = String(co.kennitala || '').replace(/[^0-9]/g, '');
         const ktDash = ktD.length === 10 ? ktD.slice(0, 6) + '-' + ktD.slice(6) : (co.kennitala || '');
-        const _mIS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'][new Date().getMonth()];
+        // 20.09.2026 — HEIMSÓKNARMÁNUÐUR, EKKI PRENTMÁNUÐUR. Hér stóð
+        // `new Date().getMonth()`, svo skjal sem sagði „í Júní 2026" í meginmáli
+        // fékk skráarnafnið „… - 2026 - september - úttektarskýrsla.pdf". Nafnið er
+        // það eina sem sést í Drive og skjalalistum, svo skýrslan fannst undir röngum
+        // mánuði. `ctx.monthIdx` er sami mánuður og prentast (1-12).
+        const _MAN_IS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
+        const _mIS = _MAN_IS[((ctx && ctx.monthIdx ? ctx.monthIdx : new Date().getMonth() + 1) - 1 + 12) % 12];
         // Innra skráarheiti (Drive/lesari — EKKI á sendum reikningi):
         // Fyrirtæki - Heimilisfang - Kennitala - Ár - Mánuður - #<fyrirtaeki_id>.
         // #id = STAÐA-id svo lesarinn/nafnabreytirinn tengi BEINT á réttan stað.
@@ -555,7 +561,13 @@
         const n = String(co.nafn || 'fyrirtæki').replace(/\s+/g, ' ').trim();
         const ktD = String(co.kennitala || '').replace(/[^0-9]/g, '');
         const ktDash = ktD.length === 10 ? ktD.slice(0, 6) + '-' + ktD.slice(6) : (co.kennitala || '');
-        const _mIS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'][new Date().getMonth()];
+        // 20.09.2026 — HEIMSÓKNARMÁNUÐUR, EKKI PRENTMÁNUÐUR. Hér stóð
+        // `new Date().getMonth()`, svo skjal sem sagði „í Júní 2026" í meginmáli
+        // fékk skráarnafnið „… - 2026 - september - úttektarskýrsla.pdf". Nafnið er
+        // það eina sem sést í Drive og skjalalistum, svo skýrslan fannst undir röngum
+        // mánuði. `ctx.monthIdx` er sami mánuður og prentast (1-12).
+        const _MAN_IS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
+        const _mIS = _MAN_IS[((ctx && ctx.monthIdx ? ctx.monthIdx : new Date().getMonth() + 1) - 1 + 12) % 12];
         // Innra skráarheiti (Drive/lesari — EKKI á sendum reikningi):
         // Fyrirtæki - Heimilisfang - Kennitala - Ár - Mánuður - #<fyrirtaeki_id>.
         // #id = STAÐA-id svo lesarinn/nafnabreytirinn tengi BEINT á réttan stað.
