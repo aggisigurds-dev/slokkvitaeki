@@ -612,7 +612,10 @@
     const sk = skrarSvar(coId);
     const teikn = (sk && sk.turbopaint && sk.eign)
       ? '<div class="_bupp-lina _bupp-teikn-lina"><span class="_bupp-merki">Teikningar</span>' +
+        // 384: í skjalasafni Reykjavíkur (eign.svf tómt) opnar smellurinn FORSKOÐUN hér í appinu — landnúmerið fylgir
+        // hlekknum. Ctrl-smellur og önnur sveitarfélög fara áfram á TurboPaint eins og áður.
         '<a class="_bupp-teikn" href="' + esc(sk.turbopaint) + '" target="_blank" rel="noopener" ' +
+        (sk.eign.landnr && !sk.eign.svf && sk.teikningar && sk.teikningar.fjoldi ? 'data-landnr="' + esc(sk.eign.landnr) + '" data-stadur="' + esc(sk.eign.label) + '" data-co="' + esc(coId) + '" ' : '') +
         'title="' + esc((sk.heimild || 'Teikningasafn') + ' — opnar leitina í TurboPaint með ' + sk.eign.label) + '">📐 ' +
         esc(sk.eign.oviss
           ? 'Næsta lóð ' + sk.eign.label + (sk.teikningar && sk.teikningar.fjoldi ? ' · ' + sk.teikningar.fjoldi + ' teikningar' : '') + ' · óvisst'

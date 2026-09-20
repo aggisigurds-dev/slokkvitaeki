@@ -63,6 +63,11 @@ export default async (req) => {
         if (lengd > HAMARK) return villa(413, 'Skjalið er stærra en 40 MB');
         const headers = new Headers(cors);
         headers.set('Content-Type', 'application/pdf');
+        // ?nidurhal=1 (384, „Sækja í fullum gæðum"): vista sem skrá með nafni skjalsins í stað þess að opna í flipa.
+        if (new URL(req.url).searchParams.get('nidurhal')) {
+          const nafn = decodeURIComponent(target.pathname.split('/').pop() || 'teikning.pdf.info').replace(/\.info$/i, '').replace(/[^\w.\-]+/g, '_');
+          headers.set('Content-Disposition', 'attachment; filename="' + nafn + '"');
+        }
         if (lengd) headers.set('Content-Length', String(lengd));
         headers.set('Cache-Control', 'public, max-age=86400');
         return new Response(r.body, { status: 200, headers });
