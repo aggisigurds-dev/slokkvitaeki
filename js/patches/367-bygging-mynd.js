@@ -173,6 +173,12 @@
       '@media (hover:none){.co-mynd-flis .co-mynd-x{opacity:1;width:28px;height:28px;line-height:28px;font-size:16px}}',
       '.co-mynd-x:hover{background:#dc2626}',
       // v3: hlekkir á götumynd — sjást við sveimu/fókus, alltaf á snertiskjá.
+      // v4 20.09.2026 (Agnar: „væri fínt að geta sett inn aðra mynd úr símanum líka … pínulítinn takka efst í hornið. Upload").
+      // Leiðin var til (smellur á mynd → stækkun → „Skipta um mynd"; smellur á tóma flís) en ósýnileg — og með sjálfsóttri
+      // loftmynd í flísinni leit hún út fyrir að vera full. Nú er 📷 ALLTAF sýnilegur í horninu og opnar myndaval/myndavél beint.
+      '.co-mynd-upp{position:absolute;left:6px;top:6px;z-index:2;width:26px;height:26px;padding:0;border:1px solid rgba(255,255,255,.55);border-radius:8px;background:rgba(15,23,42,.62);color:#fff;font-size:13px;line-height:24px;text-align:center;cursor:pointer;opacity:.9}',
+      '.co-mynd-upp:hover{background:#1d4ed8;opacity:1}',
+      '@media (hover:none){.co-mynd-upp{width:32px;height:32px;line-height:30px;font-size:15px}}',
       '.co-mynd-hlekkir{position:absolute;left:6px;bottom:6px;display:flex;gap:4px;line-height:normal;opacity:0;transition:opacity .15s}',
       '.co-mynd-flis:hover .co-mynd-hlekkir,.co-mynd-flis:focus-within .co-mynd-hlekkir{opacity:1}',
       '@media (hover:none){.co-mynd-flis .co-mynd-hlekkir{opacity:1}}',
@@ -356,14 +362,15 @@
     flis.tabIndex = 0;
     var m = lesaMynd(coId);
     var hlekkir = hlekkirHtml(heimilisfangNu());
+    var UPP = '<button type="button" class="co-mynd-upp" title="Setja inn mynd — taka mynd eða velja úr myndasafni" aria-label="Setja inn mynd">📷</button>';
     if (m && m.url) {
       flis.classList.add('med');
       flis.title = 'Mynd af byggingunni — smelltu til að stækka, skipta um eða fjarlægja · límdu nýja yfir til að skipta';
       flis.innerHTML = '<div class="co-mynd-vefja"><img alt="Bygging"></div>' +
-        '<button type="button" class="co-mynd-x" title="Fjarlægja myndina">×</button>' + hlekkir;
+        '<button type="button" class="co-mynd-x" title="Fjarlægja myndina">×</button>' + UPP + hlekkir;
       flis.querySelector('img').src = m.url;
       flis.addEventListener('click', function (e) {
-        if (e.target.closest('.co-mynd-x') || e.target.closest('.co-mynd-hlekkir')) return;
+        if (e.target.closest('.co-mynd-x') || e.target.closest('.co-mynd-hlekkir') || e.target.closest('.co-mynd-upp')) return;
         opnaLjos(m.url, coId);
       });
       flis.querySelector('.co-mynd-x').addEventListener('click', function (e) {
@@ -375,13 +382,15 @@
       // Agnar: „og ekki hafa neinn texta þarna með að líma mynd“. Tóm flís er
       // AÐEINS daufi ramminn; leiðbeiningin lifir í title (sést við hover).
       // v3: hlekkirnir eru ósýnilegir þar til músin fer yfir flísina.
-      flis.innerHTML = hlekkir;
+      flis.innerHTML = UPP + hlekkir;
       loftmynd(flis, heimilisfangNu());
       flis.addEventListener('click', function (e) {
-        if (e.target.closest('.co-mynd-hlekkir')) return;
+        if (e.target.closest('.co-mynd-hlekkir') || e.target.closest('.co-mynd-upp')) return;
         veljaMynd(coId);
       });
     }
+    var upp = flis.querySelector('.co-mynd-upp');
+    if (upp) upp.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); veljaMynd(coId); });
     // Draga inn — virkar líka yfir mynd sem er fyrir (skiptir um).
     flis.addEventListener('dragover', function (e) { e.preventDefault(); flis.classList.add('drag'); });
     flis.addEventListener('dragleave', function () { flis.classList.remove('drag'); });
