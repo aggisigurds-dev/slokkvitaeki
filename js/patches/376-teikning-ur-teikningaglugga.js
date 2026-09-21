@@ -39,6 +39,8 @@
       '#' + BAR_ID + ' button{padding:6px 12px;border-radius:8px;border:1px solid rgba(253,186,116,.45);' +
         'background:rgba(253,186,116,.16);color:#fdba74;font:600 12.5px system-ui,sans-serif;cursor:pointer}' +
       '#' + BAR_ID + ' button:hover{background:rgba(253,186,116,.26);color:#fff}' +
+      '#' + BAR_ID + ' button.teikn-bru-adal{background:#c9a54a;border-color:#c9a54a;color:#14120f}' +
+      '#' + BAR_ID + ' button.teikn-bru-adal:hover{background:#e0bd62;color:#14120f}' +
       '#' + BAR_ID + ' .teikn-bru-skyring{color:rgba(255,255,255,.45)}';
     document.head.appendChild(s);
   }
@@ -69,6 +71,20 @@
     FloorPlan.open(c.id, c.nafn, taeki);
   }
 
+  // 21.09.2026: kíkja á teikningarnar ÁN þess að neitt fari inn í TurboPaint. Leitin hér fyrir neðan (TurboPaint sjálft)
+  // flytur hverja teikningu inn á borð; þessi takki opnar forskoðunina úr 384 ofan á gluggann — ✕ lokar og ekkert situr eftir.
+  // Inntakið má vera staður úr listanum (þá er heimilisfang hans notað) EÐA heimilisfang slegið beint inn.
+  function skoda(inp) {
+    const F = window.TeikningaForskodun;
+    if (!F || !F.opnaHeimilisfang) { if (window.Toast) Toast.show('Forskoðunin er ekki tilbúin — endurhladdu síðunni.'); return; }
+    const texti = String(inp.value || '').trim();
+    if (!texti) { if (window.Toast) Toast.show('Veldu stað eða sláðu inn heimilisfang.'); inp.focus(); return; }
+    const c = finnaStad(texti);
+    const heim = c ? String(c.heimilisFang || c.heimilisfang || '').trim() : '';
+    if (c && !heim) { if (window.Toast) Toast.show(c.nafn + ' er ekki með skráð heimilisfang — sláðu það inn í reitinn.'); inp.focus(); return; }
+    F.opnaHeimilisfang(c ? heim : texti, c ? c.id : null);
+  }
+
   function setjaStiku() {
     const v = document.getElementById(VIEW_ID);
     if (!v || document.getElementById(BAR_ID)) return;
@@ -79,12 +95,13 @@
     bar.id = BAR_ID;
     const listiId = '_teikn-bru-listi';
     bar.innerHTML =
-      '<span>📐 Úttektarteikning:</span>' +
-      '<input list="' + listiId + '" placeholder="Veldu stað — t.d. Pitstop þjónustan" ' +
-        'title="Opnar úttektarteikningu staðarins: tækin í spjaldinu, „Sækja teikningu" nær í aðaluppdráttinn">' +
+      '<span>📐 Staður:</span>' +
+      '<input list="' + listiId + '" placeholder="Veldu stað eða sláðu inn heimilisfang — t.d. Seljavegur 2" ' +
+        'title="Staður úr listanum eða heimilisfang">' +
       '<datalist id="' + listiId + '"></datalist>' +
-      '<button type="button">Opna</button>' +
-      '<span class="teikn-bru-skyring">— þar eru slökkvitækin og „📐 Sækja teikningu"</span>';
+      '<button type="button" data-a="skoda" class="teikn-bru-adal" title="Forskoðun: teikningarnar opnast í glugga hér ofan á — ekkert fer inn í TurboPaint. ✕ lokar.">👁 Skoða teikningar</button>' +
+      '<button type="button" data-a="uttekt" title="Opnar úttektarteikningu staðarins: tækin í spjaldinu, „Sækja teikningu" nær í aðaluppdráttinn">📐 Úttektarteikning</button>' +
+      '<span class="teikn-bru-skyring">— skoðaðu fyrst; ekkert fer á borð fyrr en þú velur „Opna í TurboPaint"</span>';
     wrap.insertBefore(bar, wrap.firstChild);
 
     const inp = bar.querySelector('input');
@@ -97,8 +114,9 @@
     };
     fylla();
     inp.addEventListener('focus', fylla);
-    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); opna(inp); } });
-    bar.querySelector('button').addEventListener('click', () => opna(inp));
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); skoda(inp); } });   // Enter = skoða (meinlausa leiðin)
+    bar.querySelector('[data-a="skoda"]').addEventListener('click', () => skoda(inp));
+    bar.querySelector('[data-a="uttekt"]').addEventListener('click', () => opna(inp));
   }
 
   // Glugginn verður til við fyrstu heimsókn (342 býr hann til), svo við fylgjumst með.

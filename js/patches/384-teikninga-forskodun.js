@@ -309,7 +309,28 @@
       const b = document.getElementById('tfs-bid'); if (b) b.textContent = '⚠ Náði ekki í teikningalistann: ' + ((e && e.message) || e);
     }
   }
-  window.TeikningaForskodun = { opna, loka };
+  // 21.09.2026 (Agnar: „mig langar bara að geta kíkt á teikningarnar fyrst án þess að fylla TurboPaint"): forskoðun út frá
+  // heimilisfangi, svo hún nýtist líka þar sem enginn banner-hlekkur er (Teikningar-glugginn, 376). Uppflettingin er
+  // hus-upplysingar — sama fall og 363 notar — sem þolir beygð götuheiti og póstnúmer og skilar landnr + heitinr + svf.
+  let _leit = 0;
+  async function opnaHeimilisfang(heimilisfang, coId) {
+    const h = String(heimilisfang || '').trim();
+    if (h.length < 3) { segja('Veldu stað eða sláðu inn heimilisfang.'); return false; }
+    const min = ++_leit;
+    segja('🔎 Leita að teikningum á ' + h + '…');
+    let d = null;
+    try {
+      const r = await fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(h), { signal: AbortSignal.timeout(28000) });
+      d = await r.json();
+    } catch (e) { if (min === _leit) segja('⚠ Náði ekki í teikningaskrána: ' + ((e && e.message) || e)); return false; }
+    if (min !== _leit) return false;                                   // nýrri leit tók við
+    if (!d || d.error || !d.eign || !d.eign.landnr) { segja((d && d.error) || ('Fann enga lóð fyrir „' + h + '".')); return false; }
+    if (!d.teikningar || !d.teikningar.fjoldi) { segja(d.athugasemd || ('Engar rafrænar teikningar fundust á ' + (d.eign.label || h) + '.')); return false; }
+    if (d.eign.oviss) segja('ℹ Nákvæmt húsnúmer fannst ekki — sýni næstu lóð: ' + d.eign.label);
+    await opna(d.eign.landnr, d.eign.label || h, coId || null, d.eign.svf ? { svf: d.eign.svf, heitinr: d.eign.heitinr || 0 } : null);
+    return true;
+  }
+  window.TeikningaForskodun = { opna, loka, opnaHeimilisfang };
 
   // Hlekkurinn á spjaldinu (363 setur data-landnr þegar staðurinn er í skjalasafni Reykjavíkur).
   document.addEventListener('click', e => {
