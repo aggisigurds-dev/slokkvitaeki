@@ -99,13 +99,21 @@ export default async (req) => {
     if (!r.ok) return j(r.status, { error: (data && data.error && data.error.message) || 'anthropic error' });
   } catch (e) { return j(502, { error: String((e && e.message) || e) }); }
 
-  const text = (data && data.content && data.content[0] && data.content[0].text) || '';
+  // 21.09.2026: content er FYLKI af blokkum og fyrsta blokkin þarf ekki að vera
+  // texti. `content[0].text` var ágiskun sem hélt meðan eitt módel var notað og
+  // datt um leið og skipt var — svarið varð tómt og vörðurinn hafnaði því réttilega.
+  // Allar text-blokkir límdar saman: virkar fyrir bæði hátternin.
+  const text = Array.isArray(data && data.content)
+    ? data.content.filter(b => b && b.type === 'text' && typeof b.text === 'string').map(b => b.text).join('\n').trim()
+    : '';
   let out = lesaAfmarkad(text) || lesaJson(text);
   // ALDREI hrátt módelsvar í meginmálið. Það er einum smelli frá kúnna, og
   // kóðagirðing með JSON lítur út eins og tilbúið svar. Tómur reitur og skýr
   // villa er alltaf skárra — viðmótið skilur reitinn eftir ósnertan.
   if (!out || !String(out.body || '').trim()) {
-    return j(502, { error: 'Svarið kom á sniði sem ekki tókst að lesa. Reyndu aftur.' });
+    // Segja HVAÐ kom — annars kostar næsta bilun annan hring af ágiskunum.
+    return j(502, { error: 'Svarið kom á sniði sem ekki tókst að lesa. Reyndu aftur.',
+      detail: text ? text.slice(0, 300) : ('tómt svar · blokkir: ' + JSON.stringify((data && data.content || []).map(b => b && b.type)).slice(0, 120)) });
   }
   const reqDoc = (out && out.requested) || {};
   return j(200, {
