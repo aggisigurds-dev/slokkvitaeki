@@ -1005,9 +1005,28 @@
           if (window.toggleImportant) await window.toggleImportant(c.customer_id);
           else {
             // Inline fallback — flip the AppSettings list directly
-            const list = (window.AppSettings && AppSettings.path('tilkynningar.important_company_ids')) || [];
-            const s = new Set(list); s.has(c.customer_id) ? s.delete(c.customer_id) : s.add(c.customer_id);
-            await AppSettings.save({ tilkynningar: { important_company_ids: Array.from(s) } });
+            // 21.09.2026 (úttekt): sami listi og 91 sér um — FYLKI sem fer upp í heilu lagi.
+            // Var byggður úr skyndiminni flipans, svo merki frá annarri vél þurrkaðist út.
+            // Nú: ætlunin lesin FYRST (af því sem notandinn sér), ferskt sótt af þjóni,
+            // ætlunin lögð ofan á ferska listann, og sagt satt ef vistun er óstaðfest.
+            if (!window.AppSettings || typeof AppSettings.save !== 'function') return;
+            const readList = () => {
+              const v = AppSettings.path('tilkynningar.important_company_ids');
+              return Array.isArray(v) ? v.slice() : [];
+            };
+            // Borið saman sem strengir (listinn geymir tölur, customer_id getur verið strengur);
+            // færslur annarra eru skrifaðar til baka óbreyttar.
+            const same = x => String(x) === String(c.customer_id);
+            const want = !readList().some(same);
+            if (typeof AppSettings.load === 'function') {
+              try { await AppSettings.load(); } catch (_) {}
+            }
+            let next = readList().filter(x => !same(x));
+            if (want) next.push(isFinite(+c.customer_id) ? +c.customer_id : c.customer_id);
+            const ok = await AppSettings.save({ tilkynningar: { important_company_ids: next } });
+            if (window.Toast && Toast.show) {
+              Toast.show(ok === true ? (want ? '⚠ Merkt mikilvægt' : 'Mikilvægi tekið af') : '⏳ í biðröð — ekki staðfest enn');
+            }
           }
           renderCustInfo();
         });

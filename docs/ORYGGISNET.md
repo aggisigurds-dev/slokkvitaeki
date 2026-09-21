@@ -203,6 +203,23 @@ baseline rows and lowering the constant is how the net tightens over time.
 ---
 
 ## Session log — what was made bulletproof
+- **2026‑09‑21** — **Tvær leiðir að tvírukkun í Payday-sendingunni lokaðar (`payday-push.js` vörðuð leið + `166` + nýr vörður `audit-payday-tvirukkun`).**
+  Allsherjarúttektin (docs/UTTEKT-20260921.html) fann: (1) `await markSaleInvoiced(...)` — svarið var ALDREI lesið. Mistækist sú
+  eina skrift var krafan komin í Payday og í heimabanka kúnnans, en salan sat áfram í „Ósendar" með ✓ á skjánum og fór aftur
+  daginn eftir. (2) „þegar send?" var lesið efst en merkið skrifað mörgum sekúndum síðar án skilyrðis — tvær vélar, eða
+  fjöldasending + stakur smellur, gátu báðar stofnað reikning fyrir sömu sölu. (3) `166`: takkinn var virkur á meðan
+  sendiglugginn var opinn — tvísmellur opnaði tvo glugga.
+  **Varnirnar (engin vörn fjarlægð, aðeins bætt við):** `takaFra()` — skilyrt PATCH á nýja dálkinn `solur.krafa_sendir_at`
+  (`dk_invoice_id is null`, `invoiced_at is null`, frátekt laus eða eldri en 3 mín, `return=representation`) ÁÐUR en Payday er
+  snert; 0 raðir → `409 gate:'sending'`. Frátektin er losuð á öllum villuleiðum og hreinsuð við merkingu. `markSaleInvoiced`
+  skilar `{ok, villa}` eftir allt að 3 tilraunir; bregðist hún → `skraWritebackBrast` (app_problems `payday_writeback_brast`,
+  fingrafar per sölu, engin kt) + `502 gate:'writeback'` með „EKKI senda aftur", og gáttin `writebackBrast()` efst stöðvar
+  endursendingu sömu sölu þar til villunni er lokað. `166` óvirkjar takkann áður en glugginn opnast.
+  **Prófað:** gervinet, 10/10 (PATCH bilar 3× · 0 raðir · tekst · skráning án kt · gáttin finnur/finnur ekki · frátekt
+  tekst/hafnað/HTTP-villa · losun · merking hreinsar frátekt); skilyrta slóðin keyrð gegn RAUNGRUNNI á þegar sendri sölu
+  (R-000971) → 200 með `[]`, engin breyting. Í viðmóti með hleruðu neti: tvísmellur → einn gluggi; `gate:writeback`
+  → villutexti á skjá, ein beiðni. `audit-payday-xml-skraning` uppfærður (krefst nú að svarið sé lesið).
+  Óleyst: engin — en `--static` telur nú 30 verði.
 - **2026‑09‑17** — **Samþykkt vinnublöð sem enduðu aldrei í kröfu: 270.654 kr án vsk þögul síðan 13.09**
   (`audit-vinnublad-an-solu`, GRUNNLÍNA 0). Agnar spurði af hverju Grasnytjar ehf Hjarðarbóli hefði ekki farið
   í kröfu. Blaðið var samþykkt af honum sjálfum 13.09 kl. 16:01 og merkt klárað — en engin sala var til. Sama

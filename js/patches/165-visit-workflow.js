@@ -692,7 +692,9 @@
     b.disabled = true; b.textContent = '⏳ Vista…';
     const ok = window.ArsWorkflow ? await ArsWorkflow.markInVinnsla(coId) : false;
     b.textContent = ok ? '✓ Í vinnslu' : orig; b.disabled = !ok;
-    if (ok && window.Toast && Toast.show) Toast.show('🔵 Sett í vinnslu — komið á ÞjónustuVerkstæði');
+    // 21.09.2026 (úttekt): markInVinnsla skilar nú raunniðurstöðu (266). Áður þagði takkinn
+    // við ósatt — hann hrökk bara til baka. Nú er sagt satt: vistunin er óstaðfest.
+    if (window.Toast && Toast.show) Toast.show(ok ? '🔵 Sett í vinnslu — komið á ÞjónustuVerkstæði' : '⏳ í biðröð — ekki staðfest enn');
   }
 
   // Efri takki: „Úttekt búin / í Vinnslu" strax undir fyrirtækja-hausnum

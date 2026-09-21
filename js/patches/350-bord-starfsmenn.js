@@ -71,10 +71,23 @@
   async function baetaVid(nafn) {
     const n = String(nafn || '').trim();
     if (!n) return;
-    const nu = list();
-    if (nu.some(x => x.toLowerCase() === n.toLowerCase())) { set(n); return; }
-    const next = nu.concat([n]);
-    if (window.AppSettings && AppSettings.save) await AppSettings.save({ bord_starfsmenn: next });
+    if (list().some(x => x.toLowerCase() === n.toLowerCase())) { set(n); return; }
+    // 21.09.2026 (úttekt): bord_starfsmenn er FYLKI og fer upp í heilu lagi. Listinn var
+    // byggður úr skyndiminni flipans — tvær vélar sem bættu við starfsmanni á sama tíma
+    // þurrkuðu hvor annars nafn út. Nú er lesið ferskt af þjóni rétt fyrir vistun
+    // (load gleypir sjálft villur) og niðurstaðan lesin — satt sagt ef óstaðfest.
+    let ok = false;
+    if (window.AppSettings && AppSettings.save) {
+      if (typeof AppSettings.load === 'function') {
+        try { await AppSettings.load(); } catch (_) {}
+      }
+      const nu = list();
+      if (nu.some(x => x.toLowerCase() === n.toLowerCase())) { set(n); return; }
+      ok = await AppSettings.save({ bord_starfsmenn: nu.concat([n]) });
+    }
+    if (ok !== true && window.Toast && Toast.show) {
+      Toast.show('⏳ „' + n + '" í biðröð — ekki staðfest enn');
+    }
     set(n);
   }
 

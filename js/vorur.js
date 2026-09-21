@@ -472,12 +472,28 @@
           // og .single() skilaði villu sem enginn skildi.
           try {
             if(window.AppSettings && typeof window.AppSettings.save==='function'){
-              var eydd = (window.AppSettings.path('sala.deleted_product_names')||[]);
+              // 21.09.2026 (úttekt): listinn er FYLKI og fer upp í heilu lagi. Hann var byggður
+              // úr skyndiminni flipans — legsteinn sem önnur vél setti á meðan þurrkaðist út og
+              // eydd vara birtist aftur í Sölu. Nú er lesið ferskt af þjóni rétt fyrir vistun
+              // og AÐEINS þetta eina nafn tekið af ferska listanum.
+              if(typeof window.AppSettings.load==='function'){ try { await window.AppSettings.load(); } catch(_){} }
+              var eyddRaw = window.AppSettings.path('sala.deleted_product_names');
+              var eydd = Array.isArray(eyddRaw) ? eyddRaw : [];
               var nyttNafn = String(data.nafn||'').trim().toLowerCase();
               var eftir = eydd.filter(function(n){ return String(n||'').trim().toLowerCase() !== nyttNafn; });
-              if(eftir.length !== eydd.length) await window.AppSettings.save({sala:{deleted_product_names: eftir}});
+              if(eftir.length !== eydd.length){
+                var okAf = await window.AppSettings.save({sala:{deleted_product_names: eftir}});
+                if(okAf !== true){
+                  console.warn('[vorur] tókst ekki að taka nafn af legsteinalista (óstaðfest):', data.nafn);
+                  window.logProblem && window.logProblem('vorur_tombstone_save_failed', 'taka af lista: ' + String(data.nafn||'').slice(0,120));
+                }
+              }
             }
-          } catch(_){ /* best-effort — vörðurinn segir samt frá í vorur_hafnad_log */ }
+          } catch(eT){
+            // best-effort — vörðurinn segir samt frá í vorur_hafnad_log
+            console.warn('[vorur] legsteinalisti (taka af) brást:', eT);
+            window.logProblem && window.logProblem('vorur_tombstone_save_failed', 'taka af lista: ' + String((eT && eT.message) || eT).slice(0,160));
+          }
           var ir = await DB.sb.from('vorur').insert(data).select().single();
           if(ir.error) throw ir.error;
         } else {
@@ -501,14 +517,28 @@
         // don't re-insert it on next page load.
         try{
           if(window.AppSettings && typeof window.AppSettings.save==='function'){
-            var existing = (window.AppSettings.path('sala.deleted_product_names')||[]).slice();
+            // 21.09.2026 (úttekt): legsteinn lagður ofan á FERSKAN lista af þjóni (fylki fer upp
+            // í heilu lagi — skyndiminni flipans gat þurrkað út legsteina annarra véla), og
+            // niðurstaðan lesin: týndur legsteinn = eydd vara birtist aftur í Sölu.
+            if(typeof window.AppSettings.load==='function'){ try { await window.AppSettings.load(); } catch(_){} }
+            var existingRaw = window.AppSettings.path('sala.deleted_product_names');
+            var existing = Array.isArray(existingRaw) ? existingRaw.slice() : [];
             var name = String(p.nafn||'').trim();
             if(name && existing.indexOf(name)<0){
               existing.push(name);
-              await window.AppSettings.save({sala:{deleted_product_names: existing}});
+              var okLeg = await window.AppSettings.save({sala:{deleted_product_names: existing}});
+              if(okLeg !== true){
+                console.warn('[vorur] legsteinn óstaðfestur — varan gæti birst aftur:', name);
+                window.logProblem && window.logProblem('vorur_tombstone_save_failed', 'leggja á lista: ' + name.slice(0,120));
+                if(window.Toast && Toast.show) Toast.show('⏳ Eyðing skráð, en legsteinn í biðröð — ekki staðfest enn');
+              }
             }
           }
-        } catch(_){ /* tombstone is best-effort */ }
+        } catch(eL){
+          // tombstone is best-effort — en aldrei þegjandi
+          console.warn('[vorur] legsteinn brást:', eL);
+          window.logProblem && window.logProblem('vorur_tombstone_save_failed', 'leggja á lista: ' + String((eL && eL.message) || eL).slice(0,160));
+        }
         await refresh();
         m.remove();
       } catch(e){ alert('Villa: '+(e.message||e)); delBtn.disabled=false; delBtn.textContent='Eyða'; }

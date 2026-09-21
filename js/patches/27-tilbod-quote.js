@@ -939,6 +939,20 @@ ${q.heimilisfang?`<div class="meta">${esc(q.heimilisfang)}</div>`:''}
     if (!window.AppSettings || !AppSettings.save) { alert('AppSettings ekki tilbúið'); return false; }
     return await AppSettings.save({ tilbod_form_links: arr });
   }
+  // 21.09.2026 (úttekt): tilbod_form_links er FYLKI og fer upp í heilu lagi. Listinn var
+  // byggður úr skyndiminni flipans (og splice breytti skyndiminninu sjálfu) — hlekkur sem
+  // önnur vél bætti við á meðan þurrkaðist út. Nú: ætlunin (bæta við / fjarlægja ÞENNAN
+  // hlekk) er lögð ofan á ferskan lista af þjóni. Fjarlægt eftir slóð+nafni, ekki sæti,
+  // því sætin geta hafa hliðrast á ferska listanum.
+  async function breytaFormLinks(breyta) {
+    if (!window.AppSettings || !AppSettings.save) { alert('AppSettings ekki tilbúið'); return false; }
+    if (typeof AppSettings.load === 'function') {
+      try { await AppSettings.load(); } catch (_) {}
+    }
+    const ok = await saveFormLinks(breyta(getFormLinks().slice()));
+    if (ok !== true && window.Toast && Toast.show) Toast.show('⏳ í biðröð — ekki staðfest enn');
+    return ok;
+  }
   function linkChip(label, url, removable, idx) {
     return `<a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(url)}"
       style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:8px;font:inherit;font-size:12.5px;font-weight:600;text-decoration:none">${esc(label)}${
@@ -961,14 +975,21 @@ ${q.heimilisfang?`<div class="meta">${esc(q.heimilisfang)}</div>`:''}
       const url = prompt('Slóð á tilboðsform eða samning (https://…):');
       if (!url || !url.trim()) return;
       const label = (prompt('Nafn á hlekk (valfrjálst):', '') || '').trim();
-      const arr = getFormLinks().concat([{ label: label || url.trim(), url: url.trim() }]);
-      if (await saveFormLinks(arr)) renderLinksBar();
+      const nyr = { label: label || url.trim(), url: url.trim() };
+      await breytaFormLinks(arr => arr.concat([nyr]));
+      renderLinksBar(); // alltaf — ferski listinn getur borið hlekki frá annarri vél
     });
     bar.querySelectorAll('.tb-link-del').forEach(x => x.addEventListener('click', async e => {
       e.preventDefault(); e.stopPropagation();
       const i = parseInt(x.dataset.idx, 10);
-      const arr = getFormLinks(); arr.splice(i, 1);
-      if (await saveFormLinks(arr)) renderLinksBar();
+      const burt = getFormLinks()[i]; // hlekkurinn sem notandinn SÁ og smellti á
+      if (!burt) return;
+      await breytaFormLinks(arr => {
+        const j = arr.findIndex(l => l && l.url === burt.url && (l.label || '') === (burt.label || ''));
+        if (j >= 0) arr.splice(j, 1);
+        return arr;
+      });
+      renderLinksBar();
     }));
   }
 

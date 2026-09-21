@@ -87,6 +87,8 @@
   };
 
   let S = null, _dirty = false, _autoT = null, _pricelist = null;
+  // 21.09.2026 (úttekt): úreldingarvörður verðlistans — sjá savePriceItems.
+  let _pricelistAsOf = '', _verdlistiUreltur = false; const _minarVistanir = [];
   let _reports = null, _repAt = 0, _logoData = null;
 
   function SB() { return (window.DB && DB.sb) || null; }
@@ -271,6 +273,8 @@
     // localStorage í næstu línu og BASE_PRICES að lokum. Ekkert getur tapast.
     try { saved = window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_verdlisti'); } catch (_) {}
     if (!saved) { try { saved = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || 'null'); } catch (_) {} }
+    // 21.09.2026 (úttekt): munum HVAÐA útgáfu listinn í minni var byggður á (sjá savePriceItems).
+    _pricelistAsOf = (saved && saved.updated_at) ? String(saved.updated_at) : '';
     _pricelist = (saved && Array.isArray(saved.items) && saved.items.length)
       ? saved.items.map(x => ({ name: x.name || '', price: +x.price || 0,
           // eldri vistaðir listar án tenginga fá sjálfgefnu tengingarnar; tóm
@@ -285,14 +289,42 @@
   // fékk „Verðlisti vistaður ✓" og listinn lifði AÐEINS í þessum vafra
   // (CLAUDE.md: localStorage má bara fyrir útlitsval eins vafra). Skilar núna
   // satt/ósatt svo kallarinn geti sagt satt frá.
+  // 21.09.2026 (úttekt): `items` er FYLKI og fer upp í heilu lagi — og þetta eru VERÐ sem
+  // fara á reikninga. Listinn í minni (_pricelist) er lesinn einu sinni og lifir allan
+  // aldur flipans, svo vistun héðan gat skrifað gömul verð yfir breytingu annarrar vélar.
+  // Liðirnir hafa ENGIN föst auðkenni (heitið er lykillinn og því má breyta; endurnefning
+  // og eyðing+viðbót eru óaðgreinanleg), svo sameining lið-fyrir-lið væri ágiskun. Í staðinn
+  // er ÚRELDINGARVÖRÐUR: lesið ferskt af þjóni rétt fyrir vistun, og ef updated_at þar er
+  // annað en það sem listinn í minni var byggður á (og ekki okkar eigin vistun) er HÆTT VIÐ
+  // — ekkert skrifað, hvorki á þjón né í localStorage — og notandinn látinn vita.
+  // Vörðurinn helst lokaður þar til síðan er endurhlaðin (as-of er viljandi EKKI uppfært).
   async function savePriceItems(items) {
+    _verdlistiUreltur = false;
+    if (window.AppSettings && typeof AppSettings.load === 'function') {
+      try { await AppSettings.load(); } catch (_) {}
+    }
+    let aThjoni = null;
+    try { aThjoni = window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_verdlisti'); } catch (_) {}
+    const thjonsTimi = (aThjoni && aThjoni.updated_at) ? String(aThjoni.updated_at) : '';
+    if (thjonsTimi && thjonsTimi !== _pricelistAsOf && _minarVistanir.indexOf(thjonsTimi) < 0) {
+      _verdlistiUreltur = true;
+      // Sjálfgræðandi: næsta opnun verðlistans les ferskt af þjóni (load() er nýbúið) — annars gæti vél sem las
+      // listann úr localStorage áður en AppSettings hlóðst setið föst í „úrelt" þótt síðan sé endurhlaðin.
+      _pricelist = null;
+      console.warn('[bks] verðlisti úreltur — vistun stöðvuð', { a_thjoni: thjonsTimi, i_minni: _pricelistAsOf });
+      toast('⚠ Verðlistanum var breytt á annarri vél — endurhladdu áður en þú vistar', true);
+      return false;
+    }
     _pricelist = items;
+    // custom_bunadur er lesið EFTIR load() hér að ofan → ferskt af þjóni, ekki úr gömlu skyndiminni
     const payload = { items, custom_bunadur: customBunadurList(), updated_at: new Date().toISOString() };
+    _minarVistanir.push(payload.updated_at); // líka vistun sem fer í biðröð og lendir síðar
     try { localStorage.setItem('brunakerfi_verdlisti', JSON.stringify(payload)); } catch (_) {}
     try {
       if (!(window.AppSettings && AppSettings.save)) throw new Error('AppSettings ekki tiltækt');
       const ok = await AppSettings.save({ brunakerfi_verdlisti: payload });
       if (!ok) throw new Error('AppSettings.save skilaði ósatt');
+      _pricelistAsOf = payload.updated_at;
       return true;
     } catch (e) {
       console.warn('[bks] verðlisti save', e);
@@ -933,6 +965,9 @@
         // 2026-09-09: loka ALDREI glugganum þegar vistun mistókst — annars
         // hverfa innslegnu liðaheitin af skjánum og eru hvergi á þjóninum.
         const ok = await savePriceItems(items.filter(x => x.name.trim()));
+        // 21.09.2026 (úttekt): úreldingarvörðurinn birtir sín eigin skilaboð — ekki yfirskrifa
+        // þau með „athugaðu nettengingu". Glugginn helst opinn svo ekkert innslegið glatist.
+        if (!ok && _verdlistiUreltur) return;
         if (!ok) { toast('Verðlisti vistaðist EKKI — athugaðu nettengingu og reyndu aftur', true); return; }
         toast('Verðlisti vistaður ✓'); p.remove();
         if (onDone) onDone();

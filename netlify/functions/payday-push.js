@@ -240,6 +240,13 @@ exports.handler = async (event) => {
       delivery_source: body.delivery ? 'explicit' : (custPref ? 'customer-pref:' + custPref : 'auto'),
     });
 
+    // 21.09.2026 (úttekt): FRÁTEKT. Gáttin efst les „þegar send?" en merkið er skrifað mörgum sekúndum síðar — tvær vélar
+    // (eða fjöldasending + stakur smellur) gátu báðar komist hingað og BÁÐAR stofnað reikning í Payday fyrir sömu sölu.
+    // Skilyrt uppfærsla á solur.krafa_sendir_at hleypir aðeins EINNI í gegn; hin fær 409. Frátektin rennur út eftir
+    // 3 mín (deyi fallið) og er losuð á öllum villuleiðum hér fyrir neðan. Engin yfirskrift — bíða og reyna aftur.
+    const fratekt = await takaFra(sale.id);
+    if (!fratekt.ok) return json(409, { gate: 'sending', error: fratekt.villa });
+
     const token = await getAccessToken();
     // Payday requires customer to exist first — find by ssn or create.
     const custResult = await findOrCreateCustomer(token, payload.customer);
@@ -272,9 +279,11 @@ exports.handler = async (event) => {
           const bord_mal_id = await skraXmlHofnun(event, sale, msg,
             'endurtilraun án XML mistókst líka — salan er EKKI merkt send; athugaðu í Payday hvort reikningur varð samt til. Payday (án XML): ' + msg2.slice(0, 400),
             { created: null, fyrirtaeki_id: _siteTrusted ? site.id : null });
+          await losaFratekt(sale.id);
           return json(502, { error: msg2, retriedWithoutElectronic: true, xml_villa: msg.slice(0, 500), bord_mal_id, customerId, payload });
         }
       } else {
+        await losaFratekt(sale.id);
         return json(502, {
           error: msg,
           customer_lookup: custResult.lookup,
@@ -325,6 +334,10 @@ exports.handler = async (event) => {
       attach_skip_reason: attachment ? null : attachSkipReason,
     });
   } catch (e) {
+    // 21.09.2026 (úttekt): óvænt villa EFTIR frátekt (t.d. Payday-innskráning brást) má ekki skilja söluna eftir
+    // „í sendingu" í 3 mín — þá fengi notandinn „þegar í sendingu" við næstu tilraun þótt ekkert hefði farið.
+    // losaFratekt snertir aðeins krafa_sendir_at; hafi merkingin þegar tekist er dálkurinn hvort eð er null.
+    try { await losaFratekt(saleId); } catch (_) {}
     return json(500, { error: String(e.message || e) });
   }
 };
@@ -528,7 +541,7 @@ async function markSaleInvoiced(saleId, created) {
   // áfram sem 'drog' þótt hún væri rukkuð og greidd (6 slíkar, 264.302 kr) og
   // tekjuskýrslur sem sía á status='final' undirtöldu um þá upphæð. Sending er
   // frágangur — verkið er klárað um leið og krafan fer í banka.
-  const body = { invoiced_at: now, krafa_sent_at: now, status: 'final' };
+  const body = { invoiced_at: now, krafa_sent_at: now, status: 'final', krafa_sendir_at: null };
   if (payloadId) body.dk_invoice_id = String(payloadId);
   // 21.09.2026 (úttekt): skilar { ok, villa } — áður var hráu fetch-loforði skilað og enginn las það.
   let villa = '';
@@ -555,6 +568,31 @@ async function markSaleInvoiced(saleId, created) {
 
 // 21.09.2026 (úttekt): krafa varð til í Payday en salan merktist ekki send. Skráð svo (a) Agnar sjái það og
 // (b) gáttin writebackBrast() geti stöðvað endursendingu sömu sölu. Engin kennitala í texta. Gleypir villur.
+// 21.09.2026 (úttekt): frátekt sölu á meðan krafa er í sendingu — sjá athugasemd við kallið. Skilyrðin endurtaka
+// gáttina (ekki þegar send) svo lestur→skrif-glugginn lokast: 0 raðir = einhver annar á hana eða hún er farin.
+async function takaFra(saleId) {
+  try {
+    const utrunnid = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/solur?id=eq.${encodeURIComponent(saleId)}&dk_invoice_id=is.null&invoiced_at=is.null&or=(krafa_sendir_at.is.null,krafa_sendir_at.lt.${encodeURIComponent(utrunnid)})`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ krafa_sendir_at: new Date().toISOString() }),
+    });
+    if (!r.ok) return { ok: false, villa: 'Gat ekki tekið söluna frá fyrir sendingu (HTTP ' + r.status + ') — ekkert var sent. Reyndu aftur.' };
+    const rows = await r.json().catch(() => []);
+    if (Array.isArray(rows) && rows.length) return { ok: true };
+    return { ok: false, villa: 'Þessi krafa er þegar í sendingu (eða var send rétt í þessu) á annarri vél — ekkert var sent héðan. Endurhladdu listann.' };
+  } catch (e) { return { ok: false, villa: 'Gat ekki tekið söluna frá fyrir sendingu (' + String((e && e.message) || e).slice(0, 100) + ') — ekkert var sent.' }; }
+}
+async function losaFratekt(saleId) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/solur?id=eq.${encodeURIComponent(saleId)}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ krafa_sendir_at: null }),
+    });
+  } catch (_) {}
+}
 async function skraWritebackBrast(sale, nr, villa) {
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/app_problems`, {
