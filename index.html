@@ -414,7 +414,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script src="/js/db.js?v=20260911yfirtaka"></script>
 <!-- Problem registry: loads right after db.js so window.logProblem + auto error
      capture are live before every patch below (records problems to app_problems). -->
-<script defer src="/js/patches/309-problem-registry.js?v=20260820a"></script>
+<script defer src="/js/patches/309-problem-registry.js?v=20260921a"></script>
 <script src="/js/utils.js?v=20260512d"></script>
 <!-- 312: EIN uppspretta skoðunarmánaðar/tækjafjölda — hlaðið snemma svo allir flötir lesi sama stað -->
 <script src="/js/patches/312-canon-stadur.js?v=20260914raesing"></script>
@@ -457,7 +457,10 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 21-inspection-forecast.js -->
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 22-vsk-report.js -->
 <script defer src="/js/patches/23-aging-report.js?v=20260914pg2"></script>
-<script defer src="/js/patches/24-contact-log.js?v=20260510f"></script>
+<!-- 24-contact-log.js TEKIN UR NOTKUN 2026-09-21 (uttekt): flipinn leitar ad .co-tabs/.detail-tabs sem eru ekki lengur til a
+     profilnum, svo hann birtist aldrei - en sotti samt contact_log vid hverja profilopnun. Samskipti-kassinn (286) gegnir
+     hlutverkinu. Skrain stendur; endurvakin med thvi ad taka athugasemdina af ef Agnar vill handskrad simtol.
+<script defer src="/js/patches/24-contact-log.js?v=20260510f"></script> -->
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 25-customer-ledger.js -->
 <script defer src="/js/patches/26-credit-invoice.js?v=20260921a"></script>
 <script defer src="/js/patches/27-tilbod-quote.js?v=20260921a"></script>
@@ -1202,7 +1205,9 @@ var Lanstaeki = {
 <script defer src="/js/patches/303-vikudagskra.js?v=20260912mal"></script>
 <script defer src="/js/patches/305-skipulagsbord.js?v=20260909vist"></script>
 <script defer src="/js/patches/306-snoggskodun.js?v=20260814qv2"></script>
-<script defer src="/js/patches/306-thjonustu-mob.js?v=20260909vist"></script>
+<!-- 306-thjonustu-mob.js TEKIN UR NOTKUN 2026-09-21 (uttekt): skrair sig i NavRegistry/registerNavItem sem eru hvergi til,
+     notar UserAuth/NavBadge sem eru hvergi skilgreind - synin gat aldrei birst. Thjonustubord 2 (368, #bord) tok vid 11.09.
+<script defer src="/js/patches/306-thjonustu-mob.js?v=20260909vist"></script> -->
 <script defer src="/js/patches/304-fjarmal-live.js?v=20260808a"></script>
 <script defer src="/js/patches/307-afslattarkassi.js?v=20260812a"></script>
 <script defer src="/js/patches/311-doc-pairs-band.js?v=20260921a"></script>

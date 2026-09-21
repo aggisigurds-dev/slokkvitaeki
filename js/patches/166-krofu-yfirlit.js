@@ -697,10 +697,22 @@
 
     // 2026-06-30: pull kt + netfang fyrir hvern customer_id svo Payday-vinnan
     // sjái strax hvort gögn vanti. Birtist undir nafni fyrirtækisins.
+    // 21.09.2026 (úttekt): fylgigögnin voru sótt með EINNI `.in(…)`-fyrirspurn án blaðsíðna. Í „Allt"/„Greiddar" fer
+    // fjöldi auðkenna yfir 1.000 → PostgREST klippir svarið þegjandi og kröfur sýna „vantar netfang/kt" sem er ÓSATT
+    // (einhver eltir gögn sem eru til). Nú sótt í 200 auðkenna bunkum og lagt saman; villa í bunka er skráð, ekki gleypt.
+    const iBunkum = async (tafla, velja, dalkur, audkenni) => {
+      const ut = [];
+      for (let i = 0; i < audkenni.length; i += 200) {
+        const r = await SB.from(tafla).select(velja).in(dalkur, audkenni.slice(i, i + 200));
+        if (r.error) { console.warn('[166] fylgigögn ' + tafla, r.error.message); try { window.logProblem && logProblem('ky_fylgigogn_failed', tafla + ': ' + r.error.message); } catch (_) {} continue; }
+        ut.push.apply(ut, r.data || []);
+      }
+      return { data: ut };
+    };
     const cidSet = Array.from(new Set((_state.all || []).map(s => s.customer_id).filter(Boolean)));
     _state.fyrirtMap = {};
     if (cidSet.length) {
-      const fy = await SB.from('fyrirtaeki').select('id,kennitala,netfang,customer_base_id').in('id', cidSet);
+      const fy = await iBunkum('fyrirtaeki', 'id,kennitala,netfang,customer_base_id', 'id', cidSet);
       (fy.data || []).forEach(f => { _state.fyrirtMap[f.id] = f; });
     }
     // 2026-06-30: líka pull úr customers_base ef customer_base_id er sett —
@@ -708,7 +720,7 @@
     const baseSet = Array.from(new Set((_state.all || []).map(s => s.customer_base_id).filter(Boolean)));
     _state.baseMap = {};
     if (baseSet.length) {
-      const bb = await SB.from('customers_base').select('id,kennitala,netfang').in('id', baseSet);
+      const bb = await iBunkum('customers_base', 'id,kennitala,netfang', 'id', baseSet);
       (bb.data || []).forEach(b => { _state.baseMap[b.id] = b; });
     }
     // 2026-06-30: byggja kt → fyrirtaeki[] map fyrir úttektarskýrslu-lookup.
@@ -719,7 +731,7 @@
     _state.fyrirtIdsByKt = {};
     _state.baseIdByKt = {};   // kt → customer_base_id (fyrir customer_documents-uppflettingu)
     if (ktSet.length) {
-      const fy2 = await SB.from('fyrirtaeki').select('id,kennitala,customer_base_id').in('kennitala', ktSet);
+      const fy2 = await iBunkum('fyrirtaeki', 'id,kennitala,customer_base_id', 'kennitala', ktSet);
       (fy2.data || []).forEach(f => {
         const k = (f.kennitala || '').trim();
         if (!k) return;
@@ -729,7 +741,7 @@
       // Líka með customer_base_id — finna öll fyrirtaeki undir sama base
       const baseIds = (_state.all || []).map(s => s.customer_base_id).filter(Boolean);
       if (baseIds.length) {
-        const fy3 = await SB.from('fyrirtaeki').select('id,kennitala,customer_base_id').in('customer_base_id', Array.from(new Set(baseIds)));
+        const fy3 = await iBunkum('fyrirtaeki', 'id,kennitala,customer_base_id', 'customer_base_id', Array.from(new Set(baseIds)));
         (fy3.data || []).forEach(f => {
           const k = (f.kennitala || '').trim();
           if (!k) return;
@@ -837,7 +849,9 @@
     } catch (_) {}
 
     // Verkbeidnir for pickup status (same approach as patch 152).
-    const vb = await SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%');
+    // 21.09.2026 (úttekt): blaðsíðuflett — án þess datt sóttarstaða út aftan við 1.000. röð.
+    const vb = await DB.fetchAll((from, to) => SB.from('verkbeidnir').select('id,num,status').like('num', 'R-%-V%').order('id').range(from, to))
+      .then(data => ({ data }), e => { console.warn('[166] verkbeidnir', e && e.message); return { data: [] }; });
     _state.vbByParent = {};
     (vb.data || []).forEach(v => {
       const parent = String(v.num || '').replace(/-V\d+$/, '');

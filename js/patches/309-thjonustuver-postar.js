@@ -36,7 +36,7 @@
   const VIEW_ID = 'view-thjonustuver-postar';
   const NAV_KEY = 'thjonustuver-postar';           // === data-view === #slug === PAGES.k
   const NAV_LABEL = '📨 Þjónustuver póstar';
-  const HKEY = 'tvp_handled_v1';                    // { base_id: iso } — eigin „svarað"-merki
+  const HKEY = 'tvp_handled_v1';                    // { base_id: iso } — skyndiminni „svarað"-merkja; sannleikurinn er í samskipti_stada (21.09.2026)
   const RECENCY_DAYS = 150;                         // eldri opnar spurningar teljast ekki
   const AUTO_RE = /payday|noreply|no-reply|donotreply|do-not-reply|delivery@|mailer-daemon|postmaster|notification/i;
 
@@ -209,6 +209,87 @@
   const briefOf = (m) => STATE.briefs.get(String(m && m.id));
   function actionableOpen(g) { return (g.open || []).filter((m) => { const b = briefOf(m); return !b || b.needs_action !== false; }); }
 
+  // ── 21.09.2026 (úttekt): geymd AI-yfirlit (public.postur_ai_yfirlit, PK mail_id text) ──────────
+  // Lestur má ALDREI brjóta síðuna: bregðist hann er aðeins varað við og greint upp á nýtt eins og áður.
+  async function loadBriefs(sb, payload) {
+    try {
+      const ids = [];
+      ((payload && payload.customers) || []).forEach((c) => (c.mails || []).forEach((r) => { if (r && r.id != null && r.fra_okkur !== true) ids.push(String(r.id)); }));
+      const uniq = Array.from(new Set(ids));
+      const hlutar = [];
+      for (let i = 0; i < uniq.length; i += 200) hlutar.push(uniq.slice(i, i + 200));
+      const svor = await Promise.all(hlutar.map((hl) => sb.from('postur_ai_yfirlit').select('mail_id,yfirlit').in('mail_id', hl)));
+      svor.forEach((r) => {
+        if (r.error) { console.warn('[tvp] postur_ai_yfirlit lestur', r.error); return; }
+        (r.data || []).forEach((x) => { if (x && x.yfirlit && typeof x.yfirlit === 'object') STATE.briefs.set(String(x.mail_id), x.yfirlit); });
+      });
+    } catch (e) { console.warn('[tvp] postur_ai_yfirlit lestur', e); }
+  }
+  // Vistun kastar aldrei — yfirlitin eru nothæf í minni þótt hún bregðist (þá er greint aftur næst).
+  async function saveBriefs(results, model) {
+    try {
+      const sb = getSB(); if (!sb) throw new Error('DB.sb vantar');
+      const rows = Object.keys(results || {}).filter((id) => results[id] && typeof results[id] === 'object')
+        .map((id) => ({ mail_id: String(id), yfirlit: results[id], model: model || null }));
+      if (!rows.length) return;
+      const { error } = await sb.from('postur_ai_yfirlit').upsert(rows, { onConflict: 'mail_id' });
+      if (error) throw error;
+    } catch (e) {
+      console.warn('[tvp] postur_ai_yfirlit vistun brást', e);
+      try { if (window.logProblem) window.logProblem('postur_ai_yfirlit_save_failed', String((e && e.message) || e).slice(0, 160)); } catch (_) {}
+    }
+  }
+
+  // ── 21.09.2026 (úttekt): „svarað"-merkið býr í samskipti_stada (PK fyrirtaeki_id — sama tafla og 286/287) ──
+  // Merkið gildir fyrir ALLAR byggingar félagsins (sama regla og 286 markHandled / 287 tMark).
+  // localStorage (HKEY) er áfram skyndiminni + varaleið svo ekkert glatist ef netkallið bregst.
+  const hver = () => { try { return localStorage.getItem('ky_me') || localStorage.getItem('bs_employee') || me(); } catch (_) { return me(); } };
+  const tms = (x) => { const t = Date.parse(x || ''); return isNaN(t) ? 0 : t; };
+  async function saveHandledServer(sb, pairs) {   // pairs: [[base_id, iso]]
+    const nu = nowIso(), who = hver(), rows = [];
+    for (const p of pairs) {
+      let ids = (STATE.sibs && STATE.sibs.get(String(p[0]))) || [];
+      if (!ids.length) {
+        const r = await sb.from('fyrirtaeki').select('id').eq('customer_base_id', p[0]).is('deleted_at', null);
+        if (r.error) throw r.error;
+        ids = (r.data || []).map((x) => x.id);
+      }
+      if (!ids.length) throw new Error('engin bygging (fyrirtaeki) fannst á base ' + p[0]);
+      ids.forEach((id) => rows.push({ fyrirtaeki_id: id, handled_at: p[1], handled_by: who, updated_at: nu }));
+    }
+    for (let i = 0; i < rows.length; i += 500) {
+      const { error } = await sb.from('samskipti_stada').upsert(rows.slice(i, i + 500), { onConflict: 'fyrirtaeki_id' });
+      if (error) throw error;
+    }
+  }
+  // Les stöðu þjónsins, sameinar við staðbundna kortið (nýrra merkið ræður) og flytur staðbundin merki
+  // sem þjónninn á ekki upp — einu sinni: eftir flutning eru þau jöfn og ekkert er sent næst.
+  // Bregðist lesturinn er EKKERT skrifað upp (eldra staðbundið merki mætti ekki yfirskrifa nýrra á þjóni).
+  async function syncHandled(sb, local) {
+    const h = local || {};
+    try {
+      const idToBase = new Map();
+      STATE.sibs.forEach((ids, base) => ids.forEach((id) => idToBase.set(String(id), base)));
+      const all = Array.from(idToBase.keys());
+      const hlutar = [];
+      for (let i = 0; i < all.length; i += 200) hlutar.push(all.slice(i, i + 200));
+      const svor = await Promise.all(hlutar.map((hl) => sb.from('samskipti_stada').select('fyrirtaeki_id,handled_at').in('fyrirtaeki_id', hl)));
+      const server = {};
+      svor.forEach((r) => {
+        if (r.error) throw r.error;
+        (r.data || []).forEach((x) => { const b = idToBase.get(String(x.fyrirtaeki_id)); if (b && tms(x.handled_at) > tms(server[b])) server[b] = x.handled_at; });
+      });
+      Object.keys(server).forEach((b) => { if (tms(server[b]) > tms(h[b])) h[b] = new Date(tms(server[b])).toISOString(); });
+      saveHandled(h);
+      const upp = Object.keys(h).filter((b) => STATE.sibs.has(String(b)) && tms(h[b]) > tms(server[b])).map((b) => [b, h[b]]);
+      if (upp.length) {
+        try { await saveHandledServer(sb, upp); }
+        catch (e) { console.warn('[tvp] flutningur „svarað"-merkja á þjón brást — reynt aftur næst', e); }
+      }
+    } catch (e) { console.warn('[tvp] samskipti_stada lestur brást — nota staðbundin merki', e); }
+    return h;
+  }
+
   // ── DATA LAYER ──────────────────────────────────────────────────────────────
   // felag_samskipti er DÝR view (lateral address-matching) — full scan fellur á
   // statement_timeout úr anon (mælt 2026-08-19: 500 statement timeout). Því er
@@ -238,6 +319,7 @@
     //     fyrirtækis svo nafnið sé smellanlegt.
     STATE.virkni = new Map();
     STATE.fyrId = new Map();
+    STATE.sibs = new Map();   // base_id (strengur) -> [fyrirtaeki.id] (21.09.2026)
     try {
       const ids = (payload.customers || []).map((c) => c.base_id).filter(Boolean);
       for (let i = 0; i < ids.length; i += 150) {
@@ -248,11 +330,18 @@
         ]);
         (rv.data || []).forEach((x) => STATE.virkni.set(String(x.customer_base_id), x));
         (rf.data || []).forEach((x) => { if (!STATE.fyrId.has(String(x.customer_base_id))) STATE.fyrId.set(String(x.customer_base_id), x.id); });
+        // 21.09.2026 (úttekt): allar byggingar félagsins — samskipti_stada er lykluð á fyrirtaeki_id.
+        (rf.data || []).forEach((x) => { const k = String(x.customer_base_id); if (!STATE.sibs.has(k)) STATE.sibs.set(k, []); STATE.sibs.get(k).push(x.id); });
       }
     } catch (_) {}
 
     // 3) Byggja hópa + reikna svarstöðu client-hlið (handled-marks, needs_action, recency).
-    const handled = loadHandled();
+    // 21.09.2026 (úttekt): „svarað"-merkið er gagnastaða → lesið úr samskipti_stada (sama tafla og 286/287),
+    // localStorage er aðeins skyndiminni/varaleið.
+    const handled = await syncHandled(sb, loadHandled());
+    // 21.09.2026 (úttekt): geymd AI-yfirlit sótt ÁÐUR en hópar eru reiknaðir (needs_action ræður „vantar svar")
+    // og áður en autoAnalyze() keyrir — annars er greitt fyrir sömu Haiku-greininguna við hverja opnun.
+    await loadBriefs(sb, payload);
     const groups = [];
     for (const c of (payload.customers || [])) {
       const g = {
@@ -303,6 +392,8 @@
       if (!r.ok) { toast('AI-villa: ' + (out.error || r.status), true); return; }
       const results = out.results || {};
       Object.keys(results).forEach((id) => STATE.briefs.set(String(id), results[id]));
+      // 21.09.2026 (úttekt): geyma yfirlitin á þjóni svo næsta opnun (og hinar vélarnar) greini ekki aftur.
+      saveBriefs(results, out.model);   // kastar aldrei; ekki beðið eftir
       computeGroup(g, loadHandled());   // needs_action gæti hafa þaggað niður opna spurningu
     } catch (e) { toast('Netvilla: ' + (e.message || e), true); return; }
     finally { if (btn) btn.disabled = false; }
@@ -311,10 +402,18 @@
 
   // ── Merkja svarað (eigin merki — lifir endurhleðslu, óháð innsognstöf) ────────
   function markHandled(g) {
-    const h = loadHandled(); h[g.base_id] = nowIso(); saveHandled(h);
+    const at = nowIso();
+    const h = loadHandled(); h[g.base_id] = at; saveHandled(h);
     computeGroup(g, h);
     toast('✓ Merkt svarað: ' + g.nafn);
     render();
+    // 21.09.2026 (úttekt): merkið er gagnastaða → skrifað í samskipti_stada svo allar vélar sjái það.
+    // Bregðist það lifir merkið í localStorage og syncHandled() flytur það upp við næstu hleðslu.
+    (async () => { const sb = getSB(); if (!sb) throw new Error('DB.sb vantar'); await saveHandledServer(sb, [[g.base_id, at]]); })().catch((e) => {
+      console.warn('[tvp] samskipti_stada vistun brást', e);
+      try { if (window.logProblem) window.logProblem('samskipti_stada_save_failed', 'base ' + g.base_id + ': ' + String((e && e.message) || e).slice(0, 160)); } catch (_) {}
+      toast('⚠ „Svarað" vistaðist aðeins á þessari vél — ekki á þjóni (' + String((e && e.message) || e).slice(0, 80) + ')', true);
+    });
   }
 
   // ── Flytja á Þjónustuborð ────────────────────────────────────────────────────

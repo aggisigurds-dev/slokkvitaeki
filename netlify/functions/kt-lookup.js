@@ -53,7 +53,7 @@ export default async (req) => {
       // („byko" skilaði 0 þótt Byko ehf. sé til). Sú síða ER fyrirtækið og er lesin
       // hér með sömu reglum og kennitölu-greinin að neðan notar.
       if (!results.length) {
-        const h1 = html.match(/<h1>\s*([^<(]+?)\s*\((\d{10})\)\s*<\/h1>/);
+        const h1 = html.match(/<h1>\s*([^<]+?)\s*\((\d{10})\)\s*<\/h1>/);   // 21.09.2026: nafn má bera sviga („… (JEI ehf.) (kt)")
         if (h1) {
           const a = html.match(/<td>\s*([^<>]+?)\s*<br\s*\/?>\s*(\d{3})\s+([^<>]+?)\s*<\/td>/);
           results.push({
@@ -98,7 +98,8 @@ export default async (req) => {
     const html = await r.text();
 
     // Title line: "<h1>Ferðafélag Íslands (5301693759)</h1>"
-    const nameMatch = html.match(/<h1>\s*([^<(]+?)\s*\((\d{10})\)\s*<\/h1>/);
+    // 21.09.2026: [^<(] stöðvaðist á sviga í nafni („Jarðefnaiðnaður ehf. (JEI ehf.) (5108770209)") → félagið „fannst ekki".
+    const nameMatch = html.match(/<h1>\s*([^<]+?)\s*\((\d{10})\)\s*<\/h1>/);
     const nafn = nameMatch ? nameMatch[1].trim() : '';
 
     // Find the first "Póstfang" or "Lögheimili" table cell address.

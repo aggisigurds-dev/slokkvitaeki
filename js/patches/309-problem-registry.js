@@ -24,6 +24,10 @@
     try {
       var p = location.hash || '';
       if (window.MasterView && MasterView.current) p += ' ' + MasterView.current;
+      // 21.09.2026 (uttekt): utgafan fylgir hverri skraningu - annars er ekki haegt ad sja hvort villa er ur gamalli
+      // utgafu sem er thegar logud. Og adrir vefir en adalsidan (deploy-preview o.th.h.) bera slod sina.
+      try { if (window.BUILD && BUILD.commit) p += ' @' + String(BUILD.commit).slice(0, 7); } catch (_) {}
+      try { if (location.hostname && location.hostname !== 'slokkvitaeki.netlify.app') p += ' [' + location.hostname + ']'; } catch (_) {}
       return p;
     } catch (_) { return location.hash || ''; }
   }
@@ -55,8 +59,13 @@
     try { await S.from('app_problems').insert(batch); } catch (_) { /* swallow — logging must never break the app */ }
   }
 
+  // 21.09.2026 (uttekt): villuskrain var mengud af throunarlotum - 'Failed to update a ServiceWorker ... localhost:5599'
+  // og 'payday-sync-paid 404' (stadbundinn thjonn hefur engin /api) voru tugir rada sem litu ut eins og bilanir hja
+  // notendum. A localhost fer skraningin adeins i console; a ollum odrum slodum er hun obreytt.
+  var THROUN = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(String(location.hostname || ''));
   function logProblem(kind, detail, opts) {
     try {
+      if (THROUN) { try { console.warn('[logProblem - throun, ekki skrad]', kind, detail); } catch (_) {} return; }
       var r = row(kind, detail, opts);
       var now = Date.now();
       var last = _recent.get(r._fp) || 0;
