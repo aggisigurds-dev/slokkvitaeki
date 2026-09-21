@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-21 01:44 · 591 virkar staðreyndir
+Sótt 2026-09-21 03:01 · 597 virkar staðreyndir
 
 ---
 
@@ -81,9 +81,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | Efni | Fjöldi |
 |---|---:|
 | [skjol](#skjol) | 32 |
+| [kerfi](#kerfi) | 27 |
 | [sweep](#sweep) | 25 |
 | [taeki](#taeki) | 25 |
-| [kerfi](#kerfi) | 23 |
 | [solur](#solur) | 22 |
 | [brunaholf](#brunaholf) | 21 |
 | [villuleit](#villuleit) | 18 |
@@ -94,11 +94,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [oryggisnet](#oryggisnet) | 13 |
 | [arsskodun](#arsskodun) | 13 |
 | [bord](#bord) | 12 |
+| [payday](#payday) | 11 |
 | [reikningar](#reikningar) | 11 |
 | [deploy](#deploy) | 10 |
 | [uttektir](#uttektir) | 10 |
 | [bord-flettur](#bord-flettur) | 10 |
-| [payday](#payday) | 9 |
 | [thjonustubord](#thjonustubord) | 9 |
 
 ### skjol
@@ -131,11 +131,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **POS-röð hjá rekstrarfélagi er oft BÚÐARSALA yfir borðið — þá á engin starfsstöð við og röðin er ekki „ótengd" heldur rétt**
   <br>Athugaðu solur.linur áður en þú reynir að tengja: séu línurnar hleðslur og ný tæki án aksturs og án skýrslugerðar (vörunr. 060) er þetta búðarsala. Merktu vidskiptategund='bud' í stað þess að þvinga fram starfsstöð. Vélrás hafði 9 slíkar raðir 2026 sem litu út eins og gagnavilla.
   <br><sub>2026-08-21 · slokkvitaeki · sql · cowork</sub>
-- **Sami reikningur er oft skráður TVISVAR: ein röð úr POS („kt-tengt úr Sölu") og önnur úr Payday-samræmingunni 17.08.2026 — hvorug með skjal, bara númer**
-  <br>Regla: POS-röðin (lægra id) er frumritið, Payday-röðin er tvítakið. Sama gildir um fasi0-raðir úr samningar-bucket. Fundið á Colas (R-000243/163/370), Vélrás (R-000259/276) og Stálsmiðjunni (R-000411, þrjár raðir). Sbr. færslu 70: röð án drive_file_id og án storage_path er ekki skjal.
-  <br><sub>2026-08-20 · slokkvitaeki · sql · cowork</sub>
 - **is_duplicate hefur verið sett á skýrslur sem eru EKKI tvítök — merkingin var sett á nafn félagsins, ekki á stað og ár, og felur þannig raunverulegar skýrslur**
   <br>Hreinsað 20.08.2026: 12 raðir hjá Center Hótel, Colas, Endurvinnslunni og Vélrás voru merktar afrit með dup_of=null þótt þær væru aðskildir staðir eða ár (t.d. Colas Gullhella 2024 vs Álfhella 2024, Vélrás Álhellu 2024 vs VR-5 Klettagörðum 2026). Áður en afrit er merkt: staðfestu að staður OG ár séu
+  <br><sub>2026-08-20 · slokkvitaeki · sql · cowork</sub>
+- **Sami reikningur er oft skráður TVISVAR: ein röð úr POS („kt-tengt úr Sölu") og önnur úr Payday-samræmingunni 17.08.2026 — hvorug með skjal, bara númer**
+  <br>Regla: POS-röðin (lægra id) er frumritið, Payday-röðin er tvítakið. Sama gildir um fasi0-raðir úr samningar-bucket. Fundið á Colas (R-000243/163/370), Vélrás (R-000259/276) og Stálsmiðjunni (R-000411, þrjár raðir). Sbr. færslu 70: röð án drive_file_id og án storage_path er ekki skjal.
   <br><sub>2026-08-20 · slokkvitaeki · sql · cowork</sub>
 - **SAFNSKJÖL eru til í Drive: ein PDF með öllum reikningum ársins fyrir eitt félag — invoice_number og amount á röðinni eru þá tekin úr sitt hvorum reikningnum og bæði röng**
   <br>Fundið 20.08.2026 á Steypustöðinni: skjal #3256 heitir „R-107186 - 2025 - 182.065 kr" en inniheldur 11 reikninga (106237...107539). Reikningsnúmerið kom af einum þeirra og upphæðin af öðrum. Þekkist á því að tveir aðskildir Drive-hlekkir bera SAMA reikningsnúmer en ólíka upphæð. Meðhöndlaðu safnskja
@@ -152,12 +152,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **customer_documents.invoice_number er EKKI einkvæmt milli félaga — uppfletting á viðhengi eftir númeri einu og sér getur sent PDF annars fyrirtækis**
   <br>Fundið 13.08.2026 eftir að Vélrás fékk sendan reikning annars aðila frá 2025. R-114924 liggur á FJÓRUM félögum (Dalshraun 10, Golfklúbburinn Keilir, Nýji tónlistarskólinn, Þelamörk) með fjórum ólíkum dagsetningum og upphæðum; R-114926 á þremur; R-114922 og R-114925 á tveimur (R-114925 spannar 2025 O
   <br><sub>2026-08-13 · slokkvitaeki · sql · cowork</sub>
-- **Storage-skjöl má lesa beint: https://osfdzskyvisifcwyjkuk.supabase.co/storage/v1/object/public/<storage_path> — bucket samningar er opinn**
-  <br>storage_path í customer_documents byrjar á bucket-nafninu sjálfu (t.d. „samningar/company_attachments/126/..."), svo það má skeyta beint aftan við /public/. curl + pdftotext -layout dugar; 76 skjöl á ~2 mín. Notað 13.08.2026 til að staðfesta reikninga sem undiragentar náðu ekki í gegnum Drive.
-  <br><sub>2026-08-13 · brunaholf · kóði · cowork</sub>
 - **Reikningar úr kerfinu sjálfu (Supabase storage, R-000xxx) eru áreiðanlegir — 75 af 76 réttir; áhættan er nánast öll í Drive-safninu úr Stólpa**
   <br>Mælt 13.08.2026: 76 storage-reikningar 2026 sóttir af public URL og lesnir með pdftotext. 56 pössuðu beint, 19 voru falskt jákvæð (sniðmunur: nýja Slökkvitækis-sniðið setur heimilisfang undir „Kt.", eldra Brunahólfs-sniðið setur það undir nafni og hausinn ber heimilisfang SELJANDA Helluhrauni 10 — r
   <br><sub>2026-08-13 · brunaholf · sql · cowork</sub>
+- **Storage-skjöl má lesa beint: https://osfdzskyvisifcwyjkuk.supabase.co/storage/v1/object/public/<storage_path> — bucket samningar er opinn**
+  <br>storage_path í customer_documents byrjar á bucket-nafninu sjálfu (t.d. „samningar/company_attachments/126/..."), svo það má skeyta beint aftan við /public/. curl + pdftotext -layout dugar; 76 skjöl á ~2 mín. Notað 13.08.2026 til að staðfesta reikninga sem undiragentar náðu ekki í gegnum Drive.
+  <br><sub>2026-08-13 · brunaholf · kóði · cowork</sub>
 - **Röð í customer_documents án drive_file_id OG án storage_path er EKKI skjal — hún er bara númer, og má aldrei teljast með sem "reikningur tengdur"**
   <br>Hreinsað 12.08.2026: 239 slíkar raðir eyddar, þar af 163 úr Stólpa-reikningayfirliti 2026 (found_by=cowork-stolpi, nr á forminu S-107982, notes byrja á "Stólpi reikningayfirlit"). 88 þeirra héngu í document_pairs og 56 héldu uppi status=klarad — pörunarhlutfall 2026 féll úr 73,8% í 54,1% þegar þær f
   <br><sub>2026-08-12 · brunaholf · sql · cowork</sub>
@@ -194,6 +194,65 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Úttektarskýrslur eru sóttar live úr Drive við hvert load, ekki vistaðar í Supabase eins og reikningar**
   <br>Þess vegna endurtóku tvítektir sig. content_hash í skjalaheiti_log er áreiðanlegi lykillinn.
   <br><sub>2026-08-07 · brunaholf · kodi · chat</sub>
+
+### kerfi
+
+- **Verðlisti brunakerfis-skoðana (273) hefur úreldingarvörð: ferskt lesið fyrir vistun, og hafi önnur vél breytt listanum er EKKERT vistað; lokun og enduropnun les nýju verðin (21.09.2026, prófað lifandi).**
+  <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
+- **Ártöl rúlla (líðandi ár + 3 á undan) í 187 og 185 frá 21.09.2026. 175-rekstrarfelog er ENN bundið við dálka y2024..y2026 í sýninni v_uttaeki_client_rollup — þarf að laga fyrir áramót.**
+  <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
+- **Pósthólf (309) geymir AI-samantektir í postur_ai_yfirlit og „afgreitt" í samskipti_stada frá 21.09.2026 — önnur opnun kallar 0 sinnum á AI. Áður greint upp á nýtt við hverja opnun.**
+  <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
+- **Kredit- og tilboðsnúmer eru atómísk frá 21.09.2026: RPC next_forskeyti_num(p_tafla,p_forskeyti,p_breidd) á töflunni numerarod. Telur aðeins 1–4 stafa hala því gamall kóði spillti tilboðsnúmerum (T2626002).**
+  <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
+- **v_thjonustu_tolur (hausinn á Ársskoðun) taldi mjúk-eydd félög: i_thj-CTE-ið síaði á er_i_thjonustu en sleppti deleted_at IS NULL. 33 eydd félög með flaggið, þar af 16 með mánuð sem lentu í Eftir-2026. Lagað 08.09.2026 (682→649, eftir_2026 252→236). LESTU ALLTAF viewið með pg_get_viewdef áður en það er endurskrifað — ekki endursmíða eftir útkomunni.**
+  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Auto-sync-verkið (15 mín) committar ÓCOMMITTUÐUM breytingum sem „wip … [skip ci]" — GitHub Actions OG Netlify-Git sleppa þá byggingunni, svo lagfæring sem lá í vinnutrénu í >15 mín (359b, 06.09.2026) fer út án þess að nokkuð deploy-ist. Vörn: committa strax eftir build+audit; ef auto-sync varð á undan → tómt commit án [skip ci] (git commit --allow-empty) til að kveikja deploy. Athuga build.json (commit) áður en sagt er „lifandi".**
+  <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
+- **244-sidebar-svg-icons bar spec.d saman við svg.innerHTML sem texta, en vafrinn skrifar sjálflokandi path-tög með loka-tagi, svo samanburðurinn brást ALLTAF: táknið fjarlægt og sett inn aftur í hverri umferð, MutationObserver→rAF→aftur = ~1.170 DOM-breytingar/s á 62 nav-tökkum, endalaust (fundið 06.09.2026 með remove/insertBefore-krókum og stack). Lagað: bera saman við seríalíseraða útgáfu (buildSvg(spec).innerHTML). Regla: „idempotent" pappi verður að staðfesta idempotens með mælingu (0 breytingar í annarri umferð).**
+  <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
+- **DOM-slagsmál 01-sala-suite vs 06-pos-fixes (fundið 06.09.2026): 01 setur 5 .sm-toolbtn-takka aftur inn í MutationObserver+rAF um leið og þeir hverfa, 06 fjarlægði þá í sinni vakt → ~170 body-breytingar/s endalaust (34×/s per takka) á ÖLLUM tækjum; allar debounce-vaktir annarra pappa sváfu (358 hljóp aldrei). Lagað: 06 fjarlægir ekki lengur (CSS felur). Regla: mæla DOM-breytingar/s (MutationObserver í 2 s) áður en debounce er treyst; nota throttle.**
+  <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
+- **Supabase-stífla 06.09.2026 (kvöld): 1.337 statement timeouts + 183 PGRST003 pool timeouts (30 tengingar), 504 á app_settings/solur/uttaeki fyrir alla. Rót: brunaholf /api/company-mail (5–6 s, skannar ~7.700 pósta, 2× tv_history_sites-RPC, 8 s statement_timeout á authenticator) var kallað við HVERJA hleðslu appsins (295 refresh() líka með ferskt cache) — 98 RPC/mín í toppi. Lagað: app_kv-cache company_mail_v2_<days> (15 mín, stampede-lás, gamalt svar við villu) + 295 kallar aðeins þegar cache >20 mín. Einkenni hjá Agnari: „Hleð póstsögu…" hangir, „Engin tæki skráð" á prófíl (uttaeki 504).**
+  <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
+- **v_uttaeki_fid_rollup (03.09.2026): view-id sem Rekstrarfelog (175) OG kunnavefur (gatt.js/_gatt-eq.cjs) telja taeki ur siadi ENN a status='active' inni i gagnagrunninum eftir ad allir 22 kodastadir voru lagadir 01.09 -> 228 taeki vantalin, 17 fyrirtaeki rong, 14 syndust tom (6 theirra Heimaleiga-stadir: Dalbrekka 48, Brietartun 48, bilskur 16, Iceland Comfort 15, Freyjugata 5). Lagad med create or replace view (status is distinct from urelt), sql/2026-09-03_v_uttaeki_fid_rollup_urelt.sql KEYRT. LAERDOMUR: kodasopun ser ekki view/RPC i grunni - vordurinn audit-status-gildi.cjs MAELIR nu summu view-s gegn beinni talningu (raudur 5100!=5328 fyrir, graenn eftir). Stadfest i Rekstrarfelaga-syninni. v_uttaeki_client_rollup (nafna-lyklad, 175:1015) siar EKKI urelt: telur 481 urelt taeki MED (5813 vs 5332) - omaelt hvort thad birtist notanda, skrad i gaedaskyrslu.**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Adstodarmadur a forsidu (patch 344 + /api/assistant) KVEIKTUR 03.09.2026 ad beidni Agnars: migration assistant_memory_fasi1 keyrd (toflurnar 3 voru ALDREI til fra 31.08 -> hann skiladi alltaf 500). Svarar nu a ISLENSKU i texta (enska-reglan atti bara vid Jarvis-talsvor, ser kerfi /api/jarvis-tts). Thrju gagnatol logud gegn skemanu: finna_fyrirtaeki (stadur->postnumer, deleted_at null), stada_fyrirtaekis (uttaeki type/status ekki tegund/stada, status=neq.urelt, bilun->null ekki 0), reikningastada (samtals/status/paid_at, hidden ekki med). Takkinn _ad-fab er VILJANDI falinn a Solu-syn (patch 327). Modelid claude-sonnet-5 (ASSISTANT_MODEL env).**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Auth-hlid (02.09.2026): _portal.requireStaff(event) i BADUM repoum ver innri endapunkta. Cookie hub_session (HS256, lykill=HUB_STAFF_PASSWORD sjalft). FAIL-OPEN medan HUB_STAFF_PASSWORD er ekki sett i Netlify -> null, ekkert rof; virk um leid og hun er sett. /api/hub-login = ein sameiginleg lykilords-innskraning (GET {configured,authed}, POST {password}/{action:logout}). gatt-admin varid (badir vefir), /gatt-admin/ birtir lykilords-glugga vid 401. Malning: 175 foll, 124 ovarin+haettuleg (gatt-admin GET var HTTP 200 an auth). Afangi 2 = hin 123 (verst: gmail-send, email-send, invoice-*, dkplus-*, payday-*, DELETE-foll). ATH: setja EKKI HUB_STAFF_PASSWORD sjalfur - laesir starfsfolk uti; Agnar gerir thad.**
+  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **SÓPUN 02.09.2026 lokauppgjör (v_app_problems_open, 5 kindir): canon_stadur_empty (498) lagað — sjá færslu 359. js_error (62, síðast 01.09) og blank_invoice_blocked (1, 27.08) staðfest LEYST/benign — EKKI merkt resolved í app_problems því PATCH með wildcard-filter (kind=eq.X&resolved=eq.false) er lokað af sandbox-classifier í þessari session; PATCH með stökum id gekk í gegn stundum en ekki áreiðanlega (sjá id=2829 sem sýndi óbreytt resolved=false eftir 'árangursríkt' PATCH — grunur um að skrifið hafi ekki í raun tekið gildi, ekki staðfest af hverju). Agnar eða næsta lota þarf annaðhvort UI-leið eða aðra aðferð til að hreinsa registrið. uttaeki_null_fid (4197, 4 virk tæki án staðsetningar-FK enn í dag) og promise_rejection (32, 'TypeError: Failed to fetch' á #company/1524) EKKI snert — óljóst/gagnaháð, þarfnast dóms Agnars.**
+  <br>automation_triggers: ajour rautt á nánast hverri keyrslu (síðast 30.08, tvisvar rautt) — sama þekkta villa og 339 (Ajour Export-hnappur, luna-bridge, utan þessa repos). email/redder status=done, síðast keyrt 26.08 — ekkert nýtt rautt. automation_runs er ÁFRAM tóm (0 raðir) — það er by design/óvirk t
+  <br><sub>2026-09-02 · slokkvitaeki · sql · claude-code</sub>
+- **SÓPUN 02.09.2026: canon_stadur_empty (498 atvik, virkt í dag) lagað — _sb() í 312-canon-stadur.js fékk eigin fallback-klient (stíll 09/183/11/03/04/78), audit-db-null-guard.cjs framlengt til að verja hann (staðfest rautt/grænt á báða vegu). Commit 506f2e6 á claude/mcp-browser-access-wqattt — ÓPUSHAÐ, sama session-takmörkun og í gær (338): GITHUB_TOKEN hefur lesaðgang, push gefur 403 'not in this session's authorized repository set'. Agnar þarf annaðhvort að veita push á þetta trigger-session (claude.ai session/trigger stillingar, utan seilingar Claude) eða beita meðfylgjandi patch handvirkt. js_error (n=62, síðast 01.09) og blank_invoice_blocked (n=1, 27.08) staðfest AÐSKILIÐ vandamál — bæði leyst/benign, sjá aðskilda færslu.**
+  <br>Full format-patch (git am -3 < patch.txt eftir að hafa vistað þetta sem skrá), vistað hér svo það lifi af container-endurræsingu: From 506f2e67f355ce7ca49af554630cc4b1aef95669 Mon Sep 17 00:00:00 2001 From: Claude <noreply@anthropic.com> Subject: 312 CanonStadur fallback-klient fix --- a/js/patches/
+  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
+- **SPJALL (347) — thrjar villur fundnar 02.09.2026, allar i gegnum vidmotid, engin theirra i gagnagrunninum: (1) teikna() setti innerHTML a allt spjaldid vid HVERJA lifandi uppfaerslu (SpjallRefresh ur db.js, lika bergmal af eigin sendingu ~5 sek sidar vegna debounce) og thurrkadi halfskrifadan texta ur textarea — fra notanda sed 'spjallid vistast ekki' thott allar sendingar vaeru i DB; nu er drog/fokus/caret/skrun vardveitt yfir endurteiknun. (2) Verkbord.currentUser var ALDREI til svo hver() fell alltaf a 'Slokkvitaeki'; thar sem olesin() undanskilur eigin skilabod og spjall_lesid er lyklad a hofund taldist ALLT eigid og glodin kviknadi aldrei hja neinum; nu er hofundur starfsmadurinn ur veljaranum (vb_starfsmadur). (3) Eyding: x a hverju skilabodi, mjuk-eyding med deleted_at, saekja() siar hana ut og realtime (UPDATE) fellir hana a hinum tolvunum — sannreynt ad eyding fra 'annarri tolvu' hvarf her innan 9 sek. Neon-glodin (SPJALL-texti + hlidarstika blikka) VIRKAR thegar spjaldid er lokad og skilabod koma fra odrum hofundi; med spjaldid OPID teljast thau lesin strax (merkjaLesid vid refresh) — thad er hegdun, ekki villa. spjall er i supabase_realtime; spjall_lesid er thad ekki og tharf ekki.**
+  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
+- **BORD PER STARFSMANN (#350, 02.09.2026): veljari vid hlidina a Vidskiptavinavefjum styrir Dagskra (303), Skipulagsbordi (305) og verklistanum (231). HVER situr vid velina = localStorage vb_starfsmadur (per TOLVU, ma aldrei stokkva i allir); HVAD hann a = app_settings <grunnur>.by_staff.<nafn> (samstillt). Gomlu lyklarnir vikudagskra.jobs / skipulagsbord.cards standa osnertir sem afrit; Agnar erfdi thau. FJORAR GILDRUR sem kostudu thrjar utgafur adur en thetta virkadi: (1) 231/303/305 hladast A UNDAN 350 — beint BordStarfsmadur.onChange() vardad med && hvarf THEGJANDI; askrift fer i window.__bordStarfsmadurAskrift-bidrod sem er ohad hledsluroð, og 350 kallar tilkynna(get()) einu sinni vid raesingu svo 231 retti sig af. (2) knownWorkerFilter() profar gegn WORKERS, EKKI WORKER_FILTERS — nafn sem er bara i hinum listanum telst othekkt og sian situr fost. (3) MutationObserver sem kallar render() i hverri hringferd endurbyggir <select> undir fingrinum og fellilistinn LOKAST strax — setja adeins inn ef vantar, og sleppa render medan select hefur fokus. (4) blur() a element sem hefur EKKI fokus gerir ekkert — vistun sem hangir oll a blur vistast aldrei; Enter a ad kalla vista() beint, blur er varaleid. STAERSTI LAERDOMURINN: eg profadi med beinu API-kalli (BordStarfsmadur.set) og thad 'virkadi' — en i gegnum sjalfan <select>-inn og smellina virkadi EKKERT. Profa ALLTAF i gegnum somu leid og notandinn fer.**
+  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
+- **auto_pair_customer_document() hafnar nu budarsolu og rangri thjonustutegund (keyrt 02.09.2026). Adur paradi hann eftir (base, ari, stad) og skodadi EKKI customer_documents.vidskiptategund, svo stadgreidd budarsala tengdist sem klarud uttekt — 56 por, 15 theirra merkt klarad, thad er stadir sem litu ut fyrir ad vera afgreiddir an thess ad hafa fengid thjonustuheimsokn. TVENNT sem sql-skjalid gat rangt til um: (1) breytan v_service_type er EKKI til i fallinu, rett leid var ny breyta v_teg borin saman vid p.service_type; (2) bidstodu-greinin (INSERT) greip HVADA par sem er ohad service_type, svo greinarnar tvaer thurftu OLIKA skordu — ekki somu. ovisst/null halda afram ad tengjast (77 reikningar). Sannreynt med raunverulegri innsetningu: budar-reikningur parast ekki, uttektar-reikningur parast og fer i klarad. Vordur audit-para-tegund faerdur ur GRUNNLINA 53 i 0 — hver ny rong tenging er nu villa, ekki rek. Afrit: backup_20260902_document_pairs.**
+  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
+- **GENERERA TAEKI UR SKYRSLU — tools/generera-taeki-ur-skyrslu.cjs. Agnar 02.09.2026: 'tha tharf bara ad generate taeki sem passa vid report eda invoice.. og bara merga fyrirtaekin med somu gogn.' Ohaett af thvi uttaeki er TELJARI: radnumer eru TMP-NNNN og bera enga sogu, talan per fyrirtaeki er thad eina sem skiptir mali og hun a ad stemma vid nyjustu uttektarskyrslu (arsskodun_report_facts.equipment). Ordaforðinn sem MA nota (maeldur 02.09, 5101 taeki): Lettvatn|6 L, Brunaslanga|null, Reykskynjari|null, ABC Duft|6 kg, CO2|5 kg, CO2|2 kg, ABC Duft|2 kg, Eldvarnarteppi|null. ALDREI bua til ny afbrigdi — 'CO₂' med undirskrifudu tvii er til i 5 rodum og er villa. Tolid snertir ALDREI felog sem eiga thegar taeki (rong tala thar er ser mal, krefst doms um hvort skyrslan eda profillinn se nyrri) ne felog sem eru ekki i thjonustu. Dagsetningar leiddar af skyrslunni: last_insp = report_year+inspect_month, next_insp = ari sidar. Fyrsta keyrsla: 231 taeki a 37 felog, 215 theirra STRAX utrunnin (skyrslur fra 2023-24) — thad er rett og er upplysingin, felogin eru a eftir. Utrunnin foru 1526 -> 1741.**
+  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
+- **SAMEINING TVISKRADS STADAR: taekin a tvitakinu er EYTT, ekki flutt. uttaeki er teljari (Agnar: autogenerated til ad matcha trioid), svo flutningur myndi tvofalda toluna — Gullsmari 5 hefdi ordid 37 taeki fyrir hus sem a 19. Skjol eru hins vegar FAERD og aldrei eytt (is_duplicate er afturkraeft), og dup_of ma ALDREI benda a skjal sem er sjalft merkt tvitak. tools/sameina-stad.cjs gerir thetta: thurrkeyrir sjalfgefid, tekur afrit af ollu sem snert er, stodvar ef kennitolur eru olikar eda tvitakid ber solur (fjarhagsgogn), mjuk-eydir fyrirtaekinu og SANNREYNIR ad taekjatalan stemmi vid skyrsluna a eftir. Fyrsta keyrsla 02.09.2026: Gullsmari 5, fid 327 stod (19 taeki, 9x lettvatn + 1x CO2 5kg + 9x brunaslanga) og fid 1287 for (18 — sama nema CO2-tekid). Munurinn var nakvaemlega eitt CO2 5 kg. Eftir: 19 taeki, skyrslutala 19, 2026-reikningur R-108243 — stadfest trio. STANDANDI REGLA ohoggd: stadi rekstrarfelags ma ALDREI sameina; thetta tol er adeins fyrir tvitok sem Agnar hefur stadfest. Midleiti 2-6 (husfelag + bilageymsla, 15 taeki hvor, sin skyrslan hvor) er daemi um thad sem ma EKKI sameina.**
+  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
+- **uttaeki er TELJARI, ekki skra. Agnar 01.09.2026: 'taekjanumer skipta samt engu mali. autogenerated eftir thorfum til ad matcha trioid.' Rod i uttaeki er EINNOTA — ma eyda og endurgera hvenaer sem er svo fjoldinn passi vid nyjustu skyrslu og reikning. Radnumer, saga per taeki og taekja-bokhald eru EKKI burdarvirki, og reglan 'otengd taeki eru ALDREI verkefni' (2026-07-30) stendur ohoggd. Thess vegna skipti status-sian samt mali: hana skorti ekki rod heldur TOLU — sian faldi 228 taeki og let 14 fyrirtaeki lita ut fyrir ad eiga NULL taeki thegar thau attu 48 (Brietartun syndi 0 af 48). Talan per fyrirtaeki er ein af threm heimildum triosins; vanti hana getur trioid aldrei stadfest neitt. Sama gildir um nafn-rekid: thad laetur toluna hverfa af nafn-siudum skjaum an thess ad rodin fari neitt. REGLAN: talan verdur ad vera rett og synileg; hvada radir liggja ad baki henni skiptir engu.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **STADREYNDIR.md er safnad ur morgum lotum og sumt i thvi er AFSANNAD, ekki bara gamalt. Yfirferd 01.09.2026 (tools/stadreyndir-yfirferd.cjs maelir allar maelanlegar tolur upp a nytt): 8 stodust, 20 raku litillega, 8 raku svo mikid ad alyktun byggd a theim yrdi rong. FJOGUR voru osonn: (1) 'uttaeki 5.843 taeki, 5.648 an stadar, otengd taeki eru ALDREI verkefni, uttaeki-radir skipta ekki mali' — nuna eru 5.597 af 5.601 TENGD stad, 0,1% otengd en ekki 96,7%; su fullyrding hefdi latid mann afskrifa status-sianna-lagfaeringuna sem tilgangslausa; (2) email_digest 'fimm posthólf, 30.724 radir' — nuna EITT holf (eldklar@eldklar.is) og 5.576 radir; (3) invoices 'Brunaholf AR 435' — skilar NULL rodum med anon-lykli (taemd eda RLS, anon getur ekki greint a milli); (4) endurheimtar-talan '56 felog med skjol en engan stad i thjonustu' — nuna 247, maelt tvisvar med ohadum adferdum. Skjalid sagdist lika SPEGLAD i badum sofnum en §0-6 hofdu rekid i sundur; sameinad 01.09.2026 og skrarnar eru nu ordrett eins.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **'Breyta samantekt'-reiturinn a fyrirtaekjaspjaldinu skrifar i fyrirtaeki.athugasemdir — 286-samskipti-panel.js:218, client.from('fyrirtaeki').update({athugasemdir: val}).eq('id', f.id). Samhlida lota skradi thetta 01.09.2026 sem OLEYSTA hljodlata gagnataps-ahaettu eftir ad hafa leitad i review_note, banner_note, plan_note, thjonustubeidni.summary, nlsh_notes, samskipti_stada, customer_documents.notes og ollum 59 lyklum app_settings — en ekki i athugasemdir. Ekkert tapadist; textinn er a id 1524. LAERDOMUR: leit i 'ollum liklegum dalkum' er ekki sama og ad lesa kodann sem skrifar. Grep a hnappstextann (her 'Breyta samantekt') svarar thessu strax. Skrifin eru vordud sidan 06.08.2026: an gagnagrunnstengingar stoppar 286:216 med skilabodum i stad thess ad syna textann eins og hann hafi vistast.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **TENGDU A customer_id, ALDREI A KENNITOLU EINA. Hja rekstrarfelagi er kennitalan sameiginleg ollum stodum, svo kt-tenging eignar HVERJUM stad allt sem felagid gerir. Thetta bjo til threjar rangar 'nidurstodur' i STADREYNDIR §8 (samhlida lota, 01.09.2026): (a) 'Center Hotel - Thverholt 14 (fid 1627) med 7 uttektir en null taeki' — fid 1627 a NULL uttektir; thaer sjo tilheyra sjo odrum Center-husum a kt 450905-1430, hvert med sitt customer_id; (b) '8 felog med uttekt en ekki i thjonustu' — rett tala er 4 tengt a customer_id, kt-tengingin baetti ranglega vid Thverholti 14 og Pumpingiron; (c) 'Themasnyrting tviskrad a fid 151 + 1262' — fid 151 er mjuk-eytt sidan 2026-07-12 (deleted_at ma aldrei gleymast i talningu). solur hefur customer_id OG customer_kt; customer_id er thad sem bindur soluna vid starfsstodina. Vordur um sama mynstur: tools/audit-stadur-nr.cjs og audit-rekstrarfelog-sites.cjs.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **app_settings er EIN rod (id=1) med 59 lyklum i settings-JSONB, ekki fjorum. STADREYNDIR 7.9 taldi upp fjora (inspection_trips, company_attachments, arsskodun_customers, uttekt_files) eins og listinn vaeri taemandi; leidrett 01.09.2026. Thetta skiptir mali af thvi ad rodin er EIN: lota sem les nokkra lykla og skrifar settings til baka i heilu lagi EYDIR hinum. Lestu rodina, braeddu inn i hana, skrifadu hana svo aftur.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **Auto-sync (Windows Scheduled Task, 15 min) pushar wip-commit a master og THAD RAESTI DEPLOY — halfklarad verk for i loftid oprofad kl 15:05 midja i verki sem lauk 15:12 (01.09.2026). Lagfaert: auto-sync-slokkvitaeki.ps1 og auto-sync-brunaholf.ps1 i OneDrive/ClaudeMemory baeta nu [skip ci] vid wip-skilabodin — token sem BAEDI GitHub Actions og Netlify Git-tengingin virda — svo wip synkast milli velanna en byggir ekkert. Tokenid er EKKI sett i blindni: skriftan les git log origin/<grein>..HEAD og merkir adeins thegar hvert einasta oputta commit er wip; bidi raunverulegt commit fer pushid ut omerkt svo thad deployi. Mistakist lesturinn er gert rad fyrir raunverulegu verki (bilun ma ekki stoppa deploy thegjandi). Sannreynt i einangrudu safni i ollum thremur tilvikum.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **Endurnefning fyrirtaekis skilar ser EKKI nidur i taekin thegar hun fer beint i gagnagrunninn. Samfellan er til i koda (14-companies-openedit:209, 157:922, 00-legacy:2655 keyra .update({client:nafn}).eq('client',oldNafn)) en hangir a UI-flaedinu; REST/MCP/SQL sniðganga hana - og thad er einmitt leidin sem Claude notar i lotu. Fjoldi skjaa siar taeki a NAFNI en ekki FK (mapfix.js:66, 158:71, 155:72, 00-legacy:1637, 89:43) svo fyrirtaekid syndi NULL taeki. Brietartun 9-11 (fid 443) var endurnefnt i 'Heimaleiga - Brietartun 9-11 (husfelag)' 01.09.2026 og 48 taeki baru afram gamla nafnid; samraemd sama dag. lanstaeki hefur ENGAN fyrirtaeki_id - adeins nafn-streng - svo endurnefning slitur thad alveg (12 lanstaeki, oll gild). Vordur: tools/audit-rename-cascade.cjs, baseline 3 (fid 848 Skaftahlid, 429 Alftamyri, 288 Velsmidja Orms - bida akvordunar Agnars um hvort nafnid se rett).**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **Stödusian a taekjum: I NOTKUN = uttaeki.status != 'urelt', ALDREI = 'active'. Stadan ber fjogur gildi (active 4891, urelt 482, 'I lagi' 154, ok 74). Tuttugu og tveir kodastadir siudu a 'active' einu -- sex fyrirspurnir server-megin (153, 15 x2, 177, 00-legacy, audit-fk-join) og sextan samanburdir JS-megin a DB.cache.units (db.js x2, features.js, mapfix.js x2, v9.js x5, 00-legacy, 102, 155, 157, 158, 89). Their foldu 228 taeki a 17 fyrirtaekjum; 14 theirra attu ekkert 'active' og litu ut fyrir ad vera ALVEG TOM (Brietartun 48, Dalbrekka 48, bilskurinn 16, Dra ehf 37, Iceland Comfort 15). Lagfaert 01.09.2026. Sonnunin var maeld, ekki alyktud: hja SEX fyrirtaekjum for afleidda talan ad stemma vid arsskodun-blobbinn sem thegar var rettur. Vordur: tools/audit-status-gildi.cjs vaktar baedi ny stodugildi OG afturfor i koda (skannar upprunann, strippar blokk-athugasemdir, LEYFT-listi fyrir logmaet tilvik).**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### sweep
 
@@ -343,57 +402,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Má henda og generata upp á nýtt per stað svo það stemmi við síðustu skoðun.
   <br><sub>2026-08-07 · brunaholf · agnar · chat</sub>
 
-### kerfi
-
-- **v_thjonustu_tolur (hausinn á Ársskoðun) taldi mjúk-eydd félög: i_thj-CTE-ið síaði á er_i_thjonustu en sleppti deleted_at IS NULL. 33 eydd félög með flaggið, þar af 16 með mánuð sem lentu í Eftir-2026. Lagað 08.09.2026 (682→649, eftir_2026 252→236). LESTU ALLTAF viewið með pg_get_viewdef áður en það er endurskrifað — ekki endursmíða eftir útkomunni.**
-  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Auto-sync-verkið (15 mín) committar ÓCOMMITTUÐUM breytingum sem „wip … [skip ci]" — GitHub Actions OG Netlify-Git sleppa þá byggingunni, svo lagfæring sem lá í vinnutrénu í >15 mín (359b, 06.09.2026) fer út án þess að nokkuð deploy-ist. Vörn: committa strax eftir build+audit; ef auto-sync varð á undan → tómt commit án [skip ci] (git commit --allow-empty) til að kveikja deploy. Athuga build.json (commit) áður en sagt er „lifandi".**
-  <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
-- **244-sidebar-svg-icons bar spec.d saman við svg.innerHTML sem texta, en vafrinn skrifar sjálflokandi path-tög með loka-tagi, svo samanburðurinn brást ALLTAF: táknið fjarlægt og sett inn aftur í hverri umferð, MutationObserver→rAF→aftur = ~1.170 DOM-breytingar/s á 62 nav-tökkum, endalaust (fundið 06.09.2026 með remove/insertBefore-krókum og stack). Lagað: bera saman við seríalíseraða útgáfu (buildSvg(spec).innerHTML). Regla: „idempotent" pappi verður að staðfesta idempotens með mælingu (0 breytingar í annarri umferð).**
-  <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
-- **DOM-slagsmál 01-sala-suite vs 06-pos-fixes (fundið 06.09.2026): 01 setur 5 .sm-toolbtn-takka aftur inn í MutationObserver+rAF um leið og þeir hverfa, 06 fjarlægði þá í sinni vakt → ~170 body-breytingar/s endalaust (34×/s per takka) á ÖLLUM tækjum; allar debounce-vaktir annarra pappa sváfu (358 hljóp aldrei). Lagað: 06 fjarlægir ekki lengur (CSS felur). Regla: mæla DOM-breytingar/s (MutationObserver í 2 s) áður en debounce er treyst; nota throttle.**
-  <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
-- **Supabase-stífla 06.09.2026 (kvöld): 1.337 statement timeouts + 183 PGRST003 pool timeouts (30 tengingar), 504 á app_settings/solur/uttaeki fyrir alla. Rót: brunaholf /api/company-mail (5–6 s, skannar ~7.700 pósta, 2× tv_history_sites-RPC, 8 s statement_timeout á authenticator) var kallað við HVERJA hleðslu appsins (295 refresh() líka með ferskt cache) — 98 RPC/mín í toppi. Lagað: app_kv-cache company_mail_v2_<days> (15 mín, stampede-lás, gamalt svar við villu) + 295 kallar aðeins þegar cache >20 mín. Einkenni hjá Agnari: „Hleð póstsögu…" hangir, „Engin tæki skráð" á prófíl (uttaeki 504).**
-  <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
-- **v_uttaeki_fid_rollup (03.09.2026): view-id sem Rekstrarfelog (175) OG kunnavefur (gatt.js/_gatt-eq.cjs) telja taeki ur siadi ENN a status='active' inni i gagnagrunninum eftir ad allir 22 kodastadir voru lagadir 01.09 -> 228 taeki vantalin, 17 fyrirtaeki rong, 14 syndust tom (6 theirra Heimaleiga-stadir: Dalbrekka 48, Brietartun 48, bilskur 16, Iceland Comfort 15, Freyjugata 5). Lagad med create or replace view (status is distinct from urelt), sql/2026-09-03_v_uttaeki_fid_rollup_urelt.sql KEYRT. LAERDOMUR: kodasopun ser ekki view/RPC i grunni - vordurinn audit-status-gildi.cjs MAELIR nu summu view-s gegn beinni talningu (raudur 5100!=5328 fyrir, graenn eftir). Stadfest i Rekstrarfelaga-syninni. v_uttaeki_client_rollup (nafna-lyklad, 175:1015) siar EKKI urelt: telur 481 urelt taeki MED (5813 vs 5332) - omaelt hvort thad birtist notanda, skrad i gaedaskyrslu.**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Adstodarmadur a forsidu (patch 344 + /api/assistant) KVEIKTUR 03.09.2026 ad beidni Agnars: migration assistant_memory_fasi1 keyrd (toflurnar 3 voru ALDREI til fra 31.08 -> hann skiladi alltaf 500). Svarar nu a ISLENSKU i texta (enska-reglan atti bara vid Jarvis-talsvor, ser kerfi /api/jarvis-tts). Thrju gagnatol logud gegn skemanu: finna_fyrirtaeki (stadur->postnumer, deleted_at null), stada_fyrirtaekis (uttaeki type/status ekki tegund/stada, status=neq.urelt, bilun->null ekki 0), reikningastada (samtals/status/paid_at, hidden ekki med). Takkinn _ad-fab er VILJANDI falinn a Solu-syn (patch 327). Modelid claude-sonnet-5 (ASSISTANT_MODEL env).**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Auth-hlid (02.09.2026): _portal.requireStaff(event) i BADUM repoum ver innri endapunkta. Cookie hub_session (HS256, lykill=HUB_STAFF_PASSWORD sjalft). FAIL-OPEN medan HUB_STAFF_PASSWORD er ekki sett i Netlify -> null, ekkert rof; virk um leid og hun er sett. /api/hub-login = ein sameiginleg lykilords-innskraning (GET {configured,authed}, POST {password}/{action:logout}). gatt-admin varid (badir vefir), /gatt-admin/ birtir lykilords-glugga vid 401. Malning: 175 foll, 124 ovarin+haettuleg (gatt-admin GET var HTTP 200 an auth). Afangi 2 = hin 123 (verst: gmail-send, email-send, invoice-*, dkplus-*, payday-*, DELETE-foll). ATH: setja EKKI HUB_STAFF_PASSWORD sjalfur - laesir starfsfolk uti; Agnar gerir thad.**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **SÓPUN 02.09.2026 lokauppgjör (v_app_problems_open, 5 kindir): canon_stadur_empty (498) lagað — sjá færslu 359. js_error (62, síðast 01.09) og blank_invoice_blocked (1, 27.08) staðfest LEYST/benign — EKKI merkt resolved í app_problems því PATCH með wildcard-filter (kind=eq.X&resolved=eq.false) er lokað af sandbox-classifier í þessari session; PATCH með stökum id gekk í gegn stundum en ekki áreiðanlega (sjá id=2829 sem sýndi óbreytt resolved=false eftir 'árangursríkt' PATCH — grunur um að skrifið hafi ekki í raun tekið gildi, ekki staðfest af hverju). Agnar eða næsta lota þarf annaðhvort UI-leið eða aðra aðferð til að hreinsa registrið. uttaeki_null_fid (4197, 4 virk tæki án staðsetningar-FK enn í dag) og promise_rejection (32, 'TypeError: Failed to fetch' á #company/1524) EKKI snert — óljóst/gagnaháð, þarfnast dóms Agnars.**
-  <br>automation_triggers: ajour rautt á nánast hverri keyrslu (síðast 30.08, tvisvar rautt) — sama þekkta villa og 339 (Ajour Export-hnappur, luna-bridge, utan þessa repos). email/redder status=done, síðast keyrt 26.08 — ekkert nýtt rautt. automation_runs er ÁFRAM tóm (0 raðir) — það er by design/óvirk t
-  <br><sub>2026-09-02 · slokkvitaeki · sql · claude-code</sub>
-- **SÓPUN 02.09.2026: canon_stadur_empty (498 atvik, virkt í dag) lagað — _sb() í 312-canon-stadur.js fékk eigin fallback-klient (stíll 09/183/11/03/04/78), audit-db-null-guard.cjs framlengt til að verja hann (staðfest rautt/grænt á báða vegu). Commit 506f2e6 á claude/mcp-browser-access-wqattt — ÓPUSHAÐ, sama session-takmörkun og í gær (338): GITHUB_TOKEN hefur lesaðgang, push gefur 403 'not in this session's authorized repository set'. Agnar þarf annaðhvort að veita push á þetta trigger-session (claude.ai session/trigger stillingar, utan seilingar Claude) eða beita meðfylgjandi patch handvirkt. js_error (n=62, síðast 01.09) og blank_invoice_blocked (n=1, 27.08) staðfest AÐSKILIÐ vandamál — bæði leyst/benign, sjá aðskilda færslu.**
-  <br>Full format-patch (git am -3 < patch.txt eftir að hafa vistað þetta sem skrá), vistað hér svo það lifi af container-endurræsingu: From 506f2e67f355ce7ca49af554630cc4b1aef95669 Mon Sep 17 00:00:00 2001 From: Claude <noreply@anthropic.com> Subject: 312 CanonStadur fallback-klient fix --- a/js/patches/
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-- **SPJALL (347) — thrjar villur fundnar 02.09.2026, allar i gegnum vidmotid, engin theirra i gagnagrunninum: (1) teikna() setti innerHTML a allt spjaldid vid HVERJA lifandi uppfaerslu (SpjallRefresh ur db.js, lika bergmal af eigin sendingu ~5 sek sidar vegna debounce) og thurrkadi halfskrifadan texta ur textarea — fra notanda sed 'spjallid vistast ekki' thott allar sendingar vaeru i DB; nu er drog/fokus/caret/skrun vardveitt yfir endurteiknun. (2) Verkbord.currentUser var ALDREI til svo hver() fell alltaf a 'Slokkvitaeki'; thar sem olesin() undanskilur eigin skilabod og spjall_lesid er lyklad a hofund taldist ALLT eigid og glodin kviknadi aldrei hja neinum; nu er hofundur starfsmadurinn ur veljaranum (vb_starfsmadur). (3) Eyding: x a hverju skilabodi, mjuk-eyding med deleted_at, saekja() siar hana ut og realtime (UPDATE) fellir hana a hinum tolvunum — sannreynt ad eyding fra 'annarri tolvu' hvarf her innan 9 sek. Neon-glodin (SPJALL-texti + hlidarstika blikka) VIRKAR thegar spjaldid er lokad og skilabod koma fra odrum hofundi; med spjaldid OPID teljast thau lesin strax (merkjaLesid vid refresh) — thad er hegdun, ekki villa. spjall er i supabase_realtime; spjall_lesid er thad ekki og tharf ekki.**
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-- **BORD PER STARFSMANN (#350, 02.09.2026): veljari vid hlidina a Vidskiptavinavefjum styrir Dagskra (303), Skipulagsbordi (305) og verklistanum (231). HVER situr vid velina = localStorage vb_starfsmadur (per TOLVU, ma aldrei stokkva i allir); HVAD hann a = app_settings <grunnur>.by_staff.<nafn> (samstillt). Gomlu lyklarnir vikudagskra.jobs / skipulagsbord.cards standa osnertir sem afrit; Agnar erfdi thau. FJORAR GILDRUR sem kostudu thrjar utgafur adur en thetta virkadi: (1) 231/303/305 hladast A UNDAN 350 — beint BordStarfsmadur.onChange() vardad med && hvarf THEGJANDI; askrift fer i window.__bordStarfsmadurAskrift-bidrod sem er ohad hledsluroð, og 350 kallar tilkynna(get()) einu sinni vid raesingu svo 231 retti sig af. (2) knownWorkerFilter() profar gegn WORKERS, EKKI WORKER_FILTERS — nafn sem er bara i hinum listanum telst othekkt og sian situr fost. (3) MutationObserver sem kallar render() i hverri hringferd endurbyggir <select> undir fingrinum og fellilistinn LOKAST strax — setja adeins inn ef vantar, og sleppa render medan select hefur fokus. (4) blur() a element sem hefur EKKI fokus gerir ekkert — vistun sem hangir oll a blur vistast aldrei; Enter a ad kalla vista() beint, blur er varaleid. STAERSTI LAERDOMURINN: eg profadi med beinu API-kalli (BordStarfsmadur.set) og thad 'virkadi' — en i gegnum sjalfan <select>-inn og smellina virkadi EKKERT. Profa ALLTAF i gegnum somu leid og notandinn fer.**
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-- **auto_pair_customer_document() hafnar nu budarsolu og rangri thjonustutegund (keyrt 02.09.2026). Adur paradi hann eftir (base, ari, stad) og skodadi EKKI customer_documents.vidskiptategund, svo stadgreidd budarsala tengdist sem klarud uttekt — 56 por, 15 theirra merkt klarad, thad er stadir sem litu ut fyrir ad vera afgreiddir an thess ad hafa fengid thjonustuheimsokn. TVENNT sem sql-skjalid gat rangt til um: (1) breytan v_service_type er EKKI til i fallinu, rett leid var ny breyta v_teg borin saman vid p.service_type; (2) bidstodu-greinin (INSERT) greip HVADA par sem er ohad service_type, svo greinarnar tvaer thurftu OLIKA skordu — ekki somu. ovisst/null halda afram ad tengjast (77 reikningar). Sannreynt med raunverulegri innsetningu: budar-reikningur parast ekki, uttektar-reikningur parast og fer i klarad. Vordur audit-para-tegund faerdur ur GRUNNLINA 53 i 0 — hver ny rong tenging er nu villa, ekki rek. Afrit: backup_20260902_document_pairs.**
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-- **GENERERA TAEKI UR SKYRSLU — tools/generera-taeki-ur-skyrslu.cjs. Agnar 02.09.2026: 'tha tharf bara ad generate taeki sem passa vid report eda invoice.. og bara merga fyrirtaekin med somu gogn.' Ohaett af thvi uttaeki er TELJARI: radnumer eru TMP-NNNN og bera enga sogu, talan per fyrirtaeki er thad eina sem skiptir mali og hun a ad stemma vid nyjustu uttektarskyrslu (arsskodun_report_facts.equipment). Ordaforðinn sem MA nota (maeldur 02.09, 5101 taeki): Lettvatn|6 L, Brunaslanga|null, Reykskynjari|null, ABC Duft|6 kg, CO2|5 kg, CO2|2 kg, ABC Duft|2 kg, Eldvarnarteppi|null. ALDREI bua til ny afbrigdi — 'CO₂' med undirskrifudu tvii er til i 5 rodum og er villa. Tolid snertir ALDREI felog sem eiga thegar taeki (rong tala thar er ser mal, krefst doms um hvort skyrslan eda profillinn se nyrri) ne felog sem eru ekki i thjonustu. Dagsetningar leiddar af skyrslunni: last_insp = report_year+inspect_month, next_insp = ari sidar. Fyrsta keyrsla: 231 taeki a 37 felog, 215 theirra STRAX utrunnin (skyrslur fra 2023-24) — thad er rett og er upplysingin, felogin eru a eftir. Utrunnin foru 1526 -> 1741.**
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-- **SAMEINING TVISKRADS STADAR: taekin a tvitakinu er EYTT, ekki flutt. uttaeki er teljari (Agnar: autogenerated til ad matcha trioid), svo flutningur myndi tvofalda toluna — Gullsmari 5 hefdi ordid 37 taeki fyrir hus sem a 19. Skjol eru hins vegar FAERD og aldrei eytt (is_duplicate er afturkraeft), og dup_of ma ALDREI benda a skjal sem er sjalft merkt tvitak. tools/sameina-stad.cjs gerir thetta: thurrkeyrir sjalfgefid, tekur afrit af ollu sem snert er, stodvar ef kennitolur eru olikar eda tvitakid ber solur (fjarhagsgogn), mjuk-eydir fyrirtaekinu og SANNREYNIR ad taekjatalan stemmi vid skyrsluna a eftir. Fyrsta keyrsla 02.09.2026: Gullsmari 5, fid 327 stod (19 taeki, 9x lettvatn + 1x CO2 5kg + 9x brunaslanga) og fid 1287 for (18 — sama nema CO2-tekid). Munurinn var nakvaemlega eitt CO2 5 kg. Eftir: 19 taeki, skyrslutala 19, 2026-reikningur R-108243 — stadfest trio. STANDANDI REGLA ohoggd: stadi rekstrarfelags ma ALDREI sameina; thetta tol er adeins fyrir tvitok sem Agnar hefur stadfest. Midleiti 2-6 (husfelag + bilageymsla, 15 taeki hvor, sin skyrslan hvor) er daemi um thad sem ma EKKI sameina.**
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-- **uttaeki er TELJARI, ekki skra. Agnar 01.09.2026: 'taekjanumer skipta samt engu mali. autogenerated eftir thorfum til ad matcha trioid.' Rod i uttaeki er EINNOTA — ma eyda og endurgera hvenaer sem er svo fjoldinn passi vid nyjustu skyrslu og reikning. Radnumer, saga per taeki og taekja-bokhald eru EKKI burdarvirki, og reglan 'otengd taeki eru ALDREI verkefni' (2026-07-30) stendur ohoggd. Thess vegna skipti status-sian samt mali: hana skorti ekki rod heldur TOLU — sian faldi 228 taeki og let 14 fyrirtaeki lita ut fyrir ad eiga NULL taeki thegar thau attu 48 (Brietartun syndi 0 af 48). Talan per fyrirtaeki er ein af threm heimildum triosins; vanti hana getur trioid aldrei stadfest neitt. Sama gildir um nafn-rekid: thad laetur toluna hverfa af nafn-siudum skjaum an thess ad rodin fari neitt. REGLAN: talan verdur ad vera rett og synileg; hvada radir liggja ad baki henni skiptir engu.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **STADREYNDIR.md er safnad ur morgum lotum og sumt i thvi er AFSANNAD, ekki bara gamalt. Yfirferd 01.09.2026 (tools/stadreyndir-yfirferd.cjs maelir allar maelanlegar tolur upp a nytt): 8 stodust, 20 raku litillega, 8 raku svo mikid ad alyktun byggd a theim yrdi rong. FJOGUR voru osonn: (1) 'uttaeki 5.843 taeki, 5.648 an stadar, otengd taeki eru ALDREI verkefni, uttaeki-radir skipta ekki mali' — nuna eru 5.597 af 5.601 TENGD stad, 0,1% otengd en ekki 96,7%; su fullyrding hefdi latid mann afskrifa status-sianna-lagfaeringuna sem tilgangslausa; (2) email_digest 'fimm posthólf, 30.724 radir' — nuna EITT holf (eldklar@eldklar.is) og 5.576 radir; (3) invoices 'Brunaholf AR 435' — skilar NULL rodum med anon-lykli (taemd eda RLS, anon getur ekki greint a milli); (4) endurheimtar-talan '56 felog med skjol en engan stad i thjonustu' — nuna 247, maelt tvisvar med ohadum adferdum. Skjalid sagdist lika SPEGLAD i badum sofnum en §0-6 hofdu rekid i sundur; sameinad 01.09.2026 og skrarnar eru nu ordrett eins.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **'Breyta samantekt'-reiturinn a fyrirtaekjaspjaldinu skrifar i fyrirtaeki.athugasemdir — 286-samskipti-panel.js:218, client.from('fyrirtaeki').update({athugasemdir: val}).eq('id', f.id). Samhlida lota skradi thetta 01.09.2026 sem OLEYSTA hljodlata gagnataps-ahaettu eftir ad hafa leitad i review_note, banner_note, plan_note, thjonustubeidni.summary, nlsh_notes, samskipti_stada, customer_documents.notes og ollum 59 lyklum app_settings — en ekki i athugasemdir. Ekkert tapadist; textinn er a id 1524. LAERDOMUR: leit i 'ollum liklegum dalkum' er ekki sama og ad lesa kodann sem skrifar. Grep a hnappstextann (her 'Breyta samantekt') svarar thessu strax. Skrifin eru vordud sidan 06.08.2026: an gagnagrunnstengingar stoppar 286:216 med skilabodum i stad thess ad syna textann eins og hann hafi vistast.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **TENGDU A customer_id, ALDREI A KENNITOLU EINA. Hja rekstrarfelagi er kennitalan sameiginleg ollum stodum, svo kt-tenging eignar HVERJUM stad allt sem felagid gerir. Thetta bjo til threjar rangar 'nidurstodur' i STADREYNDIR §8 (samhlida lota, 01.09.2026): (a) 'Center Hotel - Thverholt 14 (fid 1627) med 7 uttektir en null taeki' — fid 1627 a NULL uttektir; thaer sjo tilheyra sjo odrum Center-husum a kt 450905-1430, hvert med sitt customer_id; (b) '8 felog med uttekt en ekki i thjonustu' — rett tala er 4 tengt a customer_id, kt-tengingin baetti ranglega vid Thverholti 14 og Pumpingiron; (c) 'Themasnyrting tviskrad a fid 151 + 1262' — fid 151 er mjuk-eytt sidan 2026-07-12 (deleted_at ma aldrei gleymast i talningu). solur hefur customer_id OG customer_kt; customer_id er thad sem bindur soluna vid starfsstodina. Vordur um sama mynstur: tools/audit-stadur-nr.cjs og audit-rekstrarfelog-sites.cjs.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **app_settings er EIN rod (id=1) med 59 lyklum i settings-JSONB, ekki fjorum. STADREYNDIR 7.9 taldi upp fjora (inspection_trips, company_attachments, arsskodun_customers, uttekt_files) eins og listinn vaeri taemandi; leidrett 01.09.2026. Thetta skiptir mali af thvi ad rodin er EIN: lota sem les nokkra lykla og skrifar settings til baka i heilu lagi EYDIR hinum. Lestu rodina, braeddu inn i hana, skrifadu hana svo aftur.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **Auto-sync (Windows Scheduled Task, 15 min) pushar wip-commit a master og THAD RAESTI DEPLOY — halfklarad verk for i loftid oprofad kl 15:05 midja i verki sem lauk 15:12 (01.09.2026). Lagfaert: auto-sync-slokkvitaeki.ps1 og auto-sync-brunaholf.ps1 i OneDrive/ClaudeMemory baeta nu [skip ci] vid wip-skilabodin — token sem BAEDI GitHub Actions og Netlify Git-tengingin virda — svo wip synkast milli velanna en byggir ekkert. Tokenid er EKKI sett i blindni: skriftan les git log origin/<grein>..HEAD og merkir adeins thegar hvert einasta oputta commit er wip; bidi raunverulegt commit fer pushid ut omerkt svo thad deployi. Mistakist lesturinn er gert rad fyrir raunverulegu verki (bilun ma ekki stoppa deploy thegjandi). Sannreynt i einangrudu safni i ollum thremur tilvikum.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **Endurnefning fyrirtaekis skilar ser EKKI nidur i taekin thegar hun fer beint i gagnagrunninn. Samfellan er til i koda (14-companies-openedit:209, 157:922, 00-legacy:2655 keyra .update({client:nafn}).eq('client',oldNafn)) en hangir a UI-flaedinu; REST/MCP/SQL sniðganga hana - og thad er einmitt leidin sem Claude notar i lotu. Fjoldi skjaa siar taeki a NAFNI en ekki FK (mapfix.js:66, 158:71, 155:72, 00-legacy:1637, 89:43) svo fyrirtaekid syndi NULL taeki. Brietartun 9-11 (fid 443) var endurnefnt i 'Heimaleiga - Brietartun 9-11 (husfelag)' 01.09.2026 og 48 taeki baru afram gamla nafnid; samraemd sama dag. lanstaeki hefur ENGAN fyrirtaeki_id - adeins nafn-streng - svo endurnefning slitur thad alveg (12 lanstaeki, oll gild). Vordur: tools/audit-rename-cascade.cjs, baseline 3 (fid 848 Skaftahlid, 429 Alftamyri, 288 Velsmidja Orms - bida akvordunar Agnars um hvort nafnid se rett).**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **Stödusian a taekjum: I NOTKUN = uttaeki.status != 'urelt', ALDREI = 'active'. Stadan ber fjogur gildi (active 4891, urelt 482, 'I lagi' 154, ok 74). Tuttugu og tveir kodastadir siudu a 'active' einu -- sex fyrirspurnir server-megin (153, 15 x2, 177, 00-legacy, audit-fk-join) og sextan samanburdir JS-megin a DB.cache.units (db.js x2, features.js, mapfix.js x2, v9.js x5, 00-legacy, 102, 155, 157, 158, 89). Their foldu 228 taeki a 17 fyrirtaekjum; 14 theirra attu ekkert 'active' og litu ut fyrir ad vera ALVEG TOM (Brietartun 48, Dalbrekka 48, bilskurinn 16, Dra ehf 37, Iceland Comfort 15). Lagfaert 01.09.2026. Sonnunin var maeld, ekki alyktud: hja SEX fyrirtaekjum for afleidda talan ad stemma vid arsskodun-blobbinn sem thegar var rettur. Vordur: tools/audit-status-gildi.cjs vaktar baedi ny stodugildi OG afturfor i koda (skannar upprunann, strippar blokk-athugasemdir, LEYFT-listi fyrir logmaet tilvik).**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-
 ### solur
 
 - **Agnar 14.09.2026: úttekt með skýrslu en engum reikningi þar sem skoðunin var jan.–apr. 2026 (fyrir yfirtöku 07.05.) telst GREIDD FYRRI EIGENDUM og á ekki að rukka. Útfært í v_uttekt_an_reiknings_grunnur.fyrri_eigendur → dettur úr v_gleymt_ad_rukka_uttekt, fer í v_gleymt_uttekt_stolpi og telst reikningur í v_uttektarplan. Fimm staðir 14.09.: Hljóðfærahúsið, Hagvagnar hf, Krosshólmi, Snóker og Poolstofan, Efnalaugin Björg.**
@@ -411,11 +419,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Kreditfærsla ber upprunanúmerið í Tilvísun-reitnum sem S-<númer>, og endurútgáfan kemur yfirleitt 1-2 dögum síðar með sömu línusamsetningu**
   <br>Dæmi 20.08.2026: R-107256 (Grensásvegur 14, 32.573) → kredit R-107266 (-32.573, Tilvísun S-107256) → endurútgáfa R-107267 (27.900) tveimur dögum síðar. Sama mynstur á Urðarhvarfi 4: R-107254 → R-107299 → R-107300 á rétta greiðandann (Aegina).
   <br><sub>2026-08-20 · slokkvitaeki · sql · cowork</sub>
-- **„Fyrirtæki í þjónustu" sýnir rautt (ekki tilbúið) þótt fyrirtæki sé skoðað, af því staðnað „vantar skýrslu"-flagg (year_factcheck gap) TROMPAR raunverulega skoðun í isDoneYear og ekkert hreinsar flaggið þegar skýrslan kemur.**
-  <br>346 gap-raðir úr einni bulk-audit 22.07.2026 („Skýrsla vantar fyrir þetta ár"); isDoneYear (153:777) les gap Á UNDAN last_year_inspected/report-on-file, og completion-pípurnar (266/270/165) snerta year_factcheck aldrei → júlí-flaggið lifir af ágúst-skýrsluna. Task #14 (klaradCur) var of þröngt (aðei
-  <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
 - **Skýrslu-flæðið frýs af því hvert „finish" klónar allan app_settings-blobbinn (~0.5–1.4 MB) 3–4x og notify() endurteiknar allan 660-fyrirtækja listann ósíðaðan á aðal-þræðinum — client-side main-thread block, EKKI DB (DB svarar á 0.26–0.55 s).**
   <br>85-app-settings.js save (244/292) gerir JSON.parse(JSON.stringify(heilan blob)) per kall; notify() (187) fannar á ~15 onChange-hlustara; 153 renderCards (2051) er ósíðað í kortasýn (tafla síðar við 50); tveir setInterval(process,1500) (187:570, 222:124) endurskanna sífellt. Ein finish = 3–4 klón + 6
+  <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
+- **„Fyrirtæki í þjónustu" sýnir rautt (ekki tilbúið) þótt fyrirtæki sé skoðað, af því staðnað „vantar skýrslu"-flagg (year_factcheck gap) TROMPAR raunverulega skoðun í isDoneYear og ekkert hreinsar flaggið þegar skýrslan kemur.**
+  <br>346 gap-raðir úr einni bulk-audit 22.07.2026 („Skýrsla vantar fyrir þetta ár"); isDoneYear (153:777) les gap Á UNDAN last_year_inspected/report-on-file, og completion-pípurnar (266/270/165) snerta year_factcheck aldrei → júlí-flaggið lifir af ágúst-skýrsluna. Task #14 (klaradCur) var of þröngt (aðei
   <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
 - **POS-leitin (patch 114) leitar að kennitölu AÐEINS í fyrirtaeki/vidskiptavinir.kennitala, ALDREI í customers_base — svo kúnni sem ber kt bara í customers_base finnst EKKI þegar leitað er eftir kt.**
   <br>185 fyrirtaeki + 35 vidskiptavinir eru án kt á röðinni en tengd customers_base-röð sem ber alvöru kt (t.d. Mýrin brasserie: fyrirtaeki.kennitala NULL, customers_base(139).kennitala 450424-0990 → kt-leit skilar 0). Starfsfólk fer þá í „Án kennitölu" og slær kt í nafn/pickup → veldur 999999-gildrunni.
@@ -435,11 +443,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **solur.status er ÓÁREIÐANLEGT sem tekjusía — 487.226 kr af greiddri sölu liggur undir drog/void, og tekjuskýrsla sem síar á status=final undirtelur**
   <br>Mælt 13.08.2026: final 555 sölur / 12.305.989 kr greitt · drog 53 sölur þar af 6 GREIDDAR (264.302 kr) · void 22 sölur þar af 4 GREIDDAR (222.924 kr). Leiðréttir eldri færslu sem taldi drög-rukkanir vera ranga rukkun — verkið var raunverulegt og kúnnarnir greiddu (Hagvagnar 102.616 gr. 31.07, ICS 47
   <br><sub>2026-08-13 · slokkvitaeki · sql · cowork</sub>
-- **payday_delivery er NULL hjá 691 af 692 félögum í þjónustu — rafræn afhending reikninga hefur aldrei virkað**
-  <br>Mælt 13.08.2026. Stillingin er til í fyrirtaeki.payday_delivery en aðeins eitt félag hefur gildi (tölvupóstur). Center Hótel á netfang (reikningar@centerhotels.com) á öllum 11 starfsstöðvum en payday_delivery=NULL — kröfurnar R-000668 (174.747) og R-000670 (19.778) fóru í banka 03.08 en reikningurin
-  <br><sub>2026-08-13 · slokkvitaeki · sql · cowork</sub>
 - **solur.num er EKKI einkvæmt — fimm reikningsnúmer eru notuð tvisvar, á sitt hvorn kúnnann**
   <br>Fundið 13.08.2026: R-000600 (Gára ehf 29.05 + Gudnar 22.07, 240.126 kr), R-000598 (Steypustöðin 26.05 + YES-EU 22.07, 205.204), R-000528 (Ferðafélag ×2, 11.07 og 13.07, 99.200), R-000599 (Gára + Hjortur, 58.280), R-000527 (Ferðafélag + Jón, kreditfærsla). Mynstrið: eldri sala frá maí og ný sala frá 
+  <br><sub>2026-08-13 · slokkvitaeki · sql · cowork</sub>
+- **payday_delivery er NULL hjá 691 af 692 félögum í þjónustu — rafræn afhending reikninga hefur aldrei virkað**
+  <br>Mælt 13.08.2026. Stillingin er til í fyrirtaeki.payday_delivery en aðeins eitt félag hefur gildi (tölvupóstur). Center Hótel á netfang (reikningar@centerhotels.com) á öllum 11 starfsstöðvum en payday_delivery=NULL — kröfurnar R-000668 (174.747) og R-000670 (19.778) fóru í banka 03.08 en reikningurin
   <br><sub>2026-08-13 · slokkvitaeki · sql · cowork</sub>
 - **Byte-eins tvítök verða til í Kassanum þegar sama sala er slegin inn tvisvar — linur::text + samtals + kt finnur þau**
   <br>Staðfest 13.08.2026: Vélrás R-000259 (08.06) og R-000276 (09.06) eru nákvæmlega eins — 8× „Duft 6 kg. ABC hleðsla" @ 6.782,26 með 20% afslætti = 53.824 kr hvor. BÁÐAR final og BÁÐAR sendar í kröfu 02.07. Vélrás var því rukkað 107.648 kr fyrir eitt verk. Sama mynstur: Ferðafélag Íslands R-000017/R-00
@@ -573,11 +581,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
 - **ÞJÓNUSTUBORÐIÐ — hverjir eiga í raun heima í þjónustu (yfirferð 07.09.2026, docs/THJONUSTA-YFIRFERD-20260907.md). er_i_thjonustu er EKKI merki um þjónustu: á sínum tíma voru allir sem áttu millifærslu eða greiðslu til félagsins fluttir inn í þjónustu, og Agnar er enn að sortera þá út. Af 684 sem bera flaggið eiga 645 (94%) raunverulega þjónustusögu — 147 samning, 477 úttektarskýrslu, 19 úttektarreikning, 2 aðeins tæki. Eftir standa 39 án nokkurrar sönnunar og ENGIN þeirra á tæki skráð; þrír eru systkinastaðir kúnna í þjónustu (Center Hótel - Hlaðvarpinn, Vélrás - Gullhella, Vélrás - Klettagarðar) og eiga að standa. Kandídatarnir eru því 36: 21 virkur 2026, 6 sofandi frá 2021-2023, 9 án nokkurs spors. BÍÐUR ÁKVÖRÐUNAR — engu hefur verið breytt. Staldra skal við Íslandspóst, Highland Base Kerlingarfjöll, Art Hostel og Waldorfskólann: séu þeir í þjónustu er þetta gagnagat en ekki búðarkúnni. Fyrri áfangi merkti 154 raðir is_bank_only (greiðendur án kt/tækja/samnings, faldir úr sýnum nema sinni eigin síu); enginn af þessum 36 er í þeim hópi.**
   <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Laugavegur 11 (slökkvitækjaskoðun) er skráð á Eignarhaldsfélagið Gerðuberg ehf (kt 470202-3940) sem GREIÐANDA/samningshafa — samningur des 2024. Húsið sjálft á enga eigin kt.**
-  <br>Akstursblaðið las kt 470202-3040 (röng vartala). Fyrsta skoðun — aldrei farið. Tengiliður Þórunn Sigurðardóttir 868-9945. Staðfest af Agnari 2026-08-20.
-  <br><sub>2026-08-20 · kunni · agnar · claude-code</sub>
 - **Partýbær ehf (kt 440413-1100) er AÐEINS greiðandinn fyrir Viðburðarverksmiðjuna (Hverfisgata 105, 101 Rvk). „Partýbær" er EKKI staðsetning — áfangastaður/verkstaður er Viðburðarverksmiðjan.**
   <br>Skoðað 2026 (17 tæki). Greiðanda-færslan var ranglega tekin úr þjónustu 23.07.2026 sem „0 tæki" — leiðrétta. gisli@partybaer.is. Greiðandi ≠ staðsetning. Staðfest af Agnari 2026-08-20.
+  <br><sub>2026-08-20 · kunni · agnar · claude-code</sub>
+- **Laugavegur 11 (slökkvitækjaskoðun) er skráð á Eignarhaldsfélagið Gerðuberg ehf (kt 470202-3940) sem GREIÐANDA/samningshafa — samningur des 2024. Húsið sjálft á enga eigin kt.**
+  <br>Akstursblaðið las kt 470202-3040 (röng vartala). Fyrsta skoðun — aldrei farið. Tengiliður Þórunn Sigurðardóttir 868-9945. Staðfest af Agnari 2026-08-20.
   <br><sub>2026-08-20 · kunni · agnar · claude-code</sub>
 - **FJÖLDI- og BÚIÐ-spjöldin eiga að lesa v_thjonustu_tolur — ein röð, átta reitir, alltaf fersk**
   <br>Skilgreint af Agnari 13.08.2026. fjoldi (612) = starfsstöð í þjónustu með arsskodun_report_facts 2023–2026. i_arsskodun (508) = með inspect_month skráðan — það er NEFNARINN í öllum hlutföllum. buid_2026 (245) = af þeim 508, hve margir eiga skýrslu 2026. buid_2026_pct (48%) = 245/508. eftir_2026 (263
@@ -708,6 +716,18 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Austurberg: TVAER kennitolur a somu byggingu. id 291 (511115-1400) er virka husfelagid — rett heimilisfang, tengilidur, reikningar 2021/2023/2024/2026. id 499 (470486-7169) var stofnad SJALFVIRKT ur Skuldunautaskra 2026-05-17, ber posthólf sem heimilisfang og banner_note 'ATH - kanski kerfisvilla'. Uttektarskyrslur 2026 og 2024 eru SOMU skjolin a badum.**
   <br>Badir bera sima 585-4800 og netfang reikningar@eignaumsjon.is (Eignaumsjon). 499 a adeins sitt eigid: reikning R-100585 fra 2021 (9.647 kr) og samning fra 2015 — allt fra 2023 er a 291. 470486-7169 er tvi gamla husfelags-kennitalan. EKKI sameinad: sameining kunnarada krefst Agnars (kunnaskra-reglan)
   <br><sub>2026-09-01 · slokkvitaeki · Agnar benti a, sannreynt 01.09.2026 · claude-code</sub>
+- **Jaðarleiti 2-8, 103 Rvk sameinað (board 141e4f90): #495 (tómt, eytt) -> #704. Sami staður/kt 611117-0190/base 591.**
+  <br>survivor=704 loser=495
+  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
+- **Kaplahraun 9 Bílasprautun Íslands sameinað: #1449 (eytt) -> #1329 (kt 650398-2389/base 904).**
+  <br>survivor=1329 loser=1449
+  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
+- **Kristnibraut 69 sameinað: #1300 (tómt, eytt) -> #343 (kt 550704-2260/base 437).**
+  <br>survivor=343 loser=1300
+  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
+- **Ingólfsstræti 5 sameinað: #1271 (tómt, eytt) -> #342 (kt 570998-2509/base 490).**
+  <br>survivor=342 loser=1271
+  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Leirubakki 4 sameinað: #1281 (tómt, eytt) -> #330 (kt 500585-0999/base 275).**
   <br>survivor=330 loser=1281
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
@@ -723,26 +743,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Skógarás 11 sameinað: #1274 (tómt, án kt/base) -> #329 (kt 610586-2019/base 579).**
   <br>survivor=329 loser=1274
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Kaplahraun 9 Bílasprautun Íslands sameinað: #1449 (eytt) -> #1329 (kt 650398-2389/base 904).**
-  <br>survivor=1329 loser=1449
+- **Ármúli 21 Indverska matarfélagið sameinað: #1369 (gömul kt 510613-0310/base 878, eytt) + #912 -> #241 (núv. kt 610417-0350/base 575). Gamall samningur (doc 86) fluttur á 575/241; base 878 gleypt.**
+  <br>survivor=241 losers=1369,912
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Bíldshöfði 16 „Batik ehf" sameinað: #1319 (kt-innsláttarvilla 650706-0604, eytt) -> #804 (kt 650706-0640/base 692). MIKILVÆGT: Martex-Batik ehf #544 (kt 660707-1740/base 721, eigin reikningur R-107651) er AÐSKILIÐ félag — EKKI sameinað.**
   <br>survivor=804 loser=1319; EXCLUDE 544 Martex-Batik
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 - **Álftamýri 36 sameinað: #1368+#1455+#947 -> #429 (ber sölur R-000317/380/492 + reikninga). 7 tæki+2 skýrslur færð; 2023 skýrsla afrit-merkt, 2023 par (1394) fjarlægt (afritað).**
   <br>survivor=429 losers=1368,1455,947
-  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Jaðarleiti 2-8, 103 Rvk sameinað (board 141e4f90): #495 (tómt, eytt) -> #704. Sami staður/kt 611117-0190/base 591.**
-  <br>survivor=704 loser=495
-  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Ármúli 21 Indverska matarfélagið sameinað: #1369 (gömul kt 510613-0310/base 878, eytt) + #912 -> #241 (núv. kt 610417-0350/base 575). Gamall samningur (doc 86) fluttur á 575/241; base 878 gleypt.**
-  <br>survivor=241 losers=1369,912
-  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Kristnibraut 69 sameinað: #1300 (tómt, eytt) -> #343 (kt 550704-2260/base 437).**
-  <br>survivor=343 loser=1300
-  <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
-- **Ingólfsstræti 5 sameinað: #1271 (tómt, eytt) -> #342 (kt 570998-2509/base 490).**
-  <br>survivor=342 loser=1271
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
 
 ### oryggisnet
@@ -772,12 +780,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Regla 0 (docs/ORYGGISNET.md): áður en Claude-session/agent breytir vörðum leiðum í Slökkvitæki VERÐUR hann að fara um kortið, keyra netvörðinn (subagent_type: netvordur) OG audit-all grænt — fyrir OG eftir breytingu. netvordur kveður upp SAFE eða CUTS-A-WIRE.**
   <br>netvordur er sérfræði-agent (.claude/agents/netvordur.md) sem GÆTIR netsins — les docs/ORYGGISNET.md, athugar hvort vörn tapist (233/254 tóm-reikningur, 121/pos.js kt, payday-push rukkun, 153/187 tilbúið), hvort nýr bilunar-punktur kalli window.logProblem, hvort nýtt invariant fái audit, og keyrir n
   <br><sub>2026-08-20 · kerfi · agnar · claude-code</sub>
-- **Sjálfvirk heilsu-sópun (Routine trig_013hqjttRBk7TqbrPum2MskF) keyrir 3x á dag (08/13/18) og les v_app_problems_open + automation_runs, lagar smátt+öruggt á draft-PR og lætur Agnar vita AÐEINS ef eitthvað þarf hann.**
-  <br>Registry-taflan app_problems (RLS: anon insert+select, aðeins þjónn/Claude resolve) + view v_app_problems_open. Client-hlið: js/patches/309-problem-registry.js (hlaðið strax á eftir db.js). Fyrstu merkt failure-points: blank_invoice_source (233), blank_invoice_blocked + send_failed (254). Óunnið: se
-  <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
 - **Slökkvitæki hefur öryggisnet (docs/ORYGGISNET.md): varnir á OUT-hlið (blokka slæma útkomu, aldrei vistun), problem-registry (window.logProblem → app_problems), og audits (tools/audit-*.cjs). Keyrðu `node tools/audit-all.cjs` fyrir HVERJA ýtingu — grænt = óhætt að ýta.**
   <br>Reglurnar (Agnar's „electric cable"-samlíking — ekki klippa aðal-línuna án þess að tengja aftur og keyra enda-í-enda próf): (1) aldrei fjarlægja/veikja vörn án staðgengils + græns audits; (2) breyting á vörðum leiðum (reikninga-OUT 10/233/254, kt 121/pos.js, rukkun payday-push, tilbúið-staða 153/187
   <br><sub>2026-08-20 · kerfi · kóði · claude-code</sub>
+- **Sjálfvirk heilsu-sópun (Routine trig_013hqjttRBk7TqbrPum2MskF) keyrir 3x á dag (08/13/18) og les v_app_problems_open + automation_runs, lagar smátt+öruggt á draft-PR og lætur Agnar vita AÐEINS ef eitthvað þarf hann.**
+  <br>Registry-taflan app_problems (RLS: anon insert+select, aðeins þjónn/Claude resolve) + view v_app_problems_open. Client-hlið: js/patches/309-problem-registry.js (hlaðið strax á eftir db.js). Fyrstu merkt failure-points: blank_invoice_source (233), blank_invoice_blocked + send_failed (254). Óunnið: se
+  <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
 
 ### arsskodun
 
@@ -840,6 +848,40 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **#leidsogn opnar Leiðsögn (161, view-leidsogn) síðan 12.09.2026 (218); áður leystist slóðin í view-field (falda Þjónustutæki-kortið). Leiðsögn hefur aksturslista-röð (Akstur 1/2/3) og skiptir Google Maps-leið í leggi með 9 millistoppum.**
   <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
 
+### payday
+
+- **Mistakist merking sölu EFTIR að Payday stofnaði reikning skilar payday-push 502 gate:writeback (EKKI senda aftur), skráir í app_problems og gátt stöðvar endursendingu (409) þar til merkingin er leiðrétt handvirkt (21.09.2026).**
+  <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
+- **payday-push.js tekur sölu FRÁ áður en Payday er kallað (21.09.2026): skilyrt PATCH á solur.krafa_sendir_at (dk_invoice_id og invoiced_at null, frátekt laus eða eldri en 3 mín). 0 raðir = 409 gate:sending. Losuð á öllum villuleiðum og hreinsuð í markSaleInvoiced. Tvær vélar geta því ekki stofnað reikning fyrir sömu sölu. Vörður: tools/audit-payday-tvirukkun.cjs.**
+  <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
+- **Agnar 14.09.2026: afhending er almennt BÆÐI rafrænt og póstur (sjálfgefið, payday_delivery null/both), NEMA Eignaumsjón sem fær bara rafrænt. 74 staðir með netfang @eignaumsjon.is settir á payday_delivery='electronic' (afrit í audit_vernd); prófíllinn sýnir „📧 Póstafrit: AF". Hafni Payday XML fer póstur samt (öryggisnet).**
+  <br>Agnar skrifaði „Eignarmidlun" — það félag er hvergi í kerfinu; hann staðfesti Eignaumsjón í valglugga. Eignarekstur (eignarekstur.is) og Rekstrarumsjón eru aðrir umsjónaraðilar í umsjonar_len — ekki stilltir.
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code 14.09.2026 · claude-code</sub>
+- **Yfirferð 14.09.2026 á öllum 36 ógreiddum (SENT) Payday-reikningum: 15 fengu ekkert XML, samtals 1.504.935 kr. Plaza 240, Lyngási 272 og Fjörukráin 268 tóku við XML þegar það var sent handvirkt síðar — fyrsta höfnunin var því tímabundin (timeout eða álíka hjá Payday), ekki „tekur ekki við". 8 fóru á borðið sem samþykkismál #1039–#1046 (4 hvorki XML né póstur: Suðurvangur 6, Írabakki 26, Þemasnyrting, Dynsalir 4; 4 póstur en ekkert XML: Norðnorðvestur 627.172, Árskógar 6-8 521.995, Austurberg 20, Reykjavíkurborg).**
+  <br>Aðferð: Saga-flipi hvers reiknings á app.payday.is/is/invoice/<solur.dk_invoice_id>/ (lesið eftir smell á Saga, AJAX) + „Auðkenni" í XML-hlutanum = rafrænn reikningur. Tómur XML-hluti = búinn til án XML.
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code 14.09.2026 · claude-code</sub>
+- **Frá 14.09.2026 (dee4457) skráir payday-push hverja Payday-höfnun á rafrænum reikningi (XML) í app_problems, kind payday_xml_hafnad: warn við „does not accept electronic invoices", annars error. Skráð í 502-greininni ef endurtilraun án XML mistekst, og á eftir markSaleInvoiced ef hún tekst; sendingin sjálf óbreytt (póstur sem öryggisnet). Vörður tools/audit-payday-xml-skraning.cjs; stubbað harness 47/47; netvörður SAFE.**
+  <br>ATH: engin síða les app_problems (hvorugt repó) — merkið sést aðeins í sópuninni eða með SQL: select ts, severity, detail from app_problems where kind = 'payday_xml_hafnad' order by ts desc. Payday-villutextinn er í detail (kt hreinsaðar).
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code 14.09.2026 · claude-code</sub>
+- **payday-push fellur hljóðlaust yfir í reikning án XML (aðeins póstur) þegar Payday skilar villu sem passar við /electronic invoice/i (payday-push.js:246–259), og Payday-villan er hvergi vistuð. Plaza R-000852 (Payday nr. 240) fékk ekkert XML 31.08.2026 kl. 19:44, á meðan 231/228/229/230 á sömu kt fengu XML kl. 02:03 — sami kóði, sömu netföng, jafnstór skýrsla (460 KB), sama sjálfvirka ferli í Saga. Fallbackið er líklegasta skýringin; villan sjálf verður ekki sótt eftir á.**
+  <br>Greining: lesa Saga-flipann á app.payday.is/is/invoice/<solur.dk_invoice_id>/ og leita að „Rafrænn reikningur (XML)“. XML fyrir 240 var sent handvirkt 14.09. kl. 10:45 („Vegna plaza“ í bókunarupplýsingum), frestur til 21.9. Lagfæring (skrá fallback í app_problems og falla aðeins yfir við „does not a
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code 14.09.2026 · claude-code</sub>
+- **Reikninga-póstur fer „offline" þegar Google OAuth refresh-token fyrir sendipósthólfið (eldklar@eldklar.is / bokhald@) rennur út — af því OAuth-appið er í Google „Testing" publishing-stöðu sem lætur refresh-tokens renna út á 7 daga fresti.**
+  <br>Öll „Senda" fara um AppMail.send (254:45) → POST brunaholf /api/gmail-send → _google.js freshAccessTokenFor; 400 invalid_grant → NOT_CONNECTED → allar sendingar falla. google-auth.js:14 segir þetta sjálft. Fallbacks dauðir (Graph configured:false, Resend 403 óstaðfest lén). Fix: (1) tafarlaust /api/
+  <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
+- **Kreditnóta af afsláttaðri sölu má ALDREI bera discount_pct á línunum — verðið er þegar skalað í nettó, svo per-line grein Payday myndi tvöfalda afsláttinn og bankakrafan verður of lág þótt prentun sýni rétta upphæð.**
+  <br>Slice-3 afturför fundin í 4-agenta bug-test yfirferð á #656, staðfest á lifandi gögnum (R-000178: Payday bókaði −8.774 í stað −10.968). Rót: 26-credit-invoice.js hélt discount_pct þegar það negerar qty OG skalar verðið í nettó (tvíkóðuð röð). Tvíþætt lagfæring 2026-08-19: (1) kreditlínur fá discount
+  <br><sub>2026-08-19 · slokkvitaeki · kóði · claude-code</sub>
+- **payday-push.js buildPayload rukkar núna afslátt PER LÍNU (discountPercentage úr linur[].discount_pct) þegar nettó-summa per línu endurgerir upphaed_an_vsk innan ±2 kr — annars fellur það til baka á einn jafnan bakreiknaðan %.**
+  <br>Áður var ALLTAF einn jafn % bakreiknaður úr upphaed_an_vsk, sem smurði "15% á fáar línur" út sem jafnt 13,3% á allar línur. ±2 kr vörðin ver tvíkóðaðar eldri raðir (t.d. R-000461) gegn tvöföldum afslætti þegar bæði er búið að baka lækkað einingaverð OG discount_pct er sett. Payday er löglegi reiknin
+  <br><sub>2026-08-19 · slokkvitaeki · kóði · claude-code</sub>
+- **Brunahólfsmegin er engin payday_invoices tafla — aðeins eldri invoices-feed án Payday-númera** _(likely)_
+  <br>Verkkaupar-mælaborðið sýndi útistandandi upphæðir fyrir reikninga sem Payday taldi greidda (25.7).
+  <br><sub>2026-08-07 · brunaholf · sql · chat</sub>
+- **Payday er API-tengt Slökkvitæki (payday_invoices_slokk); reference-reiturinn geymir innra sölunúmer R-xxx**
+  <br>Pull-hlið aðeins, push var sleppt.
+  <br><sub>2026-08-07 · slokkvitaeki · kodi · chat</sub>
+
 ### reikningar
 
 - **Stólpa-reikningur stílaður á greiðanda getur verið „Vegna <staður>“ — tækin tilheyra staðnum, ekki greiðandanum. R-108092 (EA Law Practice ehf. → Vegna Freyjugötu 16) bjó til 4 tvítalin léttvatnstæki á #857 08.09.2026 (mál #943). 13 aðrar reikningsstaðreyndir (heimild reikningur-060) eru á höfuðstöðvum/greiðanda meðan skjalið er tengt stað: Heimaleiga HQ #269 ×7, Endurvinnslan Knarrarvogur #605 ×4, Colas Gulhella, O&V (12.09.2026).**
@@ -887,11 +929,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **git push a claude/mcp-browser-access-wqattt / aggisigurds-dev/slokkvitaeki er ENN lokad fyrir sopunar-session (403 'not in this session's authorized repository set') — nu stadfest a.m.k. fjorda skiptid (01.09, 02.09, 04.09 + fyrri).**
   <br>04.09.2026: GITHUB_TOKEN i thessari session HEFUR lesadgang (git clone/fetch/checkout a slokkvitaeki gekk fint, gh/api /repos/... synir sama '403 not enabled' skilabod jafnvel thott clone virki). En `git push -u origin claude/mcp-browser-access-wqattt` faer beint fra git-proxynum: 'access denied by 
   <br><sub>2026-09-04 · kerfi · sql · claude-code</sub>
-- **Vörn sem býr í vafranum getur aldrei stöðvað vafra sem keyrir gamlan kóða — regla sem verður að halda á að vera í gagnagrunninum**
-  <br>Lærdómur 03.09.2026: sáningarpatcharnir voru lagaðir (PR #845) og lagfæringin sannreynd í framleiðslubúntinum, en eyddar vörur komu samt aftur kl. 22:36 því einhver vafri keyrði fyrri útgáfuna. Deploy fer ekki fram í öllum vöfrum samtímis; preview-lén og cache lengja halann. Þegar afleiðing rangrar 
-  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
 - **Netlify deploy-preview slóðir eru SÉRSTÖK LÉN með tómt localStorage — en þær skrifa í FRAMLEIÐSLU-gagnagrunninn**
   <br>Uppgötvað 03.09.2026 við að rekja af hverju eyddar vörur komu aftur EFTIR að lagfæring fór í loftið. Hver „keyr þetta einu sinni"-vörn sem byggir á localStorage-merki (t.d. _auxProductsSeededV1, _pricelist66Seeded, _vrSeeded) er ÓSETT á preview-léni og keyrir því upp á nýtt — gegn alvöru gögnum. Sam
+  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
+- **Vörn sem býr í vafranum getur aldrei stöðvað vafra sem keyrir gamlan kóða — regla sem verður að halda á að vera í gagnagrunninum**
+  <br>Lærdómur 03.09.2026: sáningarpatcharnir voru lagaðir (PR #845) og lagfæringin sannreynd í framleiðslubúntinum, en eyddar vörur komu samt aftur kl. 22:36 því einhver vafri keyrði fyrri útgáfuna. Deploy fer ekki fram í öllum vöfrum samtímis; preview-lén og cache lengja halann. Þegar afleiðing rangrar 
   <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
 - **Rautt audit er EKKI staðreynd um main fyrr en vinnutréð er ferskt. 2026-09-01 var audit-attachment-forms rautt og virtist segja að gmail-send vörnina vantaði; hún var í main frá 68c7a66 (2026-08-27) — greinin var 32 commit á eftir. git fetch + git status -sb á að vera FYRSTA prófunin þegar audit er rautt, ekki sú síðasta. Sama gildir um A/B með git stash: það mælir bara greinina sem þú stendur á.**
   <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
@@ -922,21 +964,21 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Takkinn „📄 Búa til úttektarskýrslu" EYÐILEGGUR skráðar skoðunardagsetningar — hann keyrir advanceInspectionDates sem setur last_insp = Í DAG og next_insp ár fram á ÖLL tæki fyrirtækisins**
   <br>Patch 129, wire á #_ctc-skyrsla. Hagstál 10.09.2026: hefði breytt 20.08.2026 → 10.09.2026 og 20.08.2027 → 2028, og eyðilagt ágúst-skoðunina sem var verið að skrá. Sama mynstur og „Merkja skoðun" (00-legacy). Sé skoðunin í öðrum mánuði en í dag: EKKI nota takkann.
   <br><sub>2026-09-10 · slokkvitaeki · kóði · claude-code</sub>
-- **Blað 5 („Sumarbústaðir", 37 númeruð léttvatnstæki, „Hús 5-6-7-8-9" og „Hús 28-30-31-33") er Sameignarfélag Ölfusborga**
-  <br>Agnar 10.09.2026: „sumarbustadir eru eitthvad í ölfusborgum ölfus. þorlákshöfn". Kerfið á 42 virk tæki: 41 léttvatn 6 L + 1 duft 6 kg, öll með skoðun 01.09.2026. Blaðið telur 37 — fjórum munar og það er óútkljáð. „Engin lykill í Nr 27" stendur á blaðinu.
-  <br><sub>2026-09-10 · kunni · agnar · claude-code</sub>
 - **Rétt stöðvunarstaða Söru er: haka við tæki → Staðfesta lista → „💾 Vista / í Vinnslu". Hún snertir hvorki „Klára heimsókn" né „Búa til úttektarskýrslu"**
   <br>Staðfest á Hagstáli 10.09.2026: eftir þessi þrjú skref stendur í skýinu _locked:true, átta _doneIds, computed {ex 38819, vsk 9317, total 48136} og arsskodun_customers steps_2026 {uttekt:true, taekjalisti:true}. Agnar sendir sjálfur í kröfuyfirlit.
   <br><sub>2026-09-10 · slokkvitaeki · sql · claude-code</sub>
+- **Blað 5 („Sumarbústaðir", 37 númeruð léttvatnstæki, „Hús 5-6-7-8-9" og „Hús 28-30-31-33") er Sameignarfélag Ölfusborga**
+  <br>Agnar 10.09.2026: „sumarbustadir eru eitthvad í ölfusborgum ölfus. þorlákshöfn". Kerfið á 42 virk tæki: 41 léttvatn 6 L + 1 duft 6 kg, öll með skoðun 01.09.2026. Blaðið telur 37 — fjórum munar og það er óútkljáð. „Engin lykill í Nr 27" stendur á blaðinu.
+  <br><sub>2026-09-10 · kunni · agnar · claude-code</sub>
 - **Einingaverð í úttektarreikningi eru færð ÁN VSK og VSK (24%) leggst ofan á — líka á akstur og skýrslugerð**
   <br>Hagstál 09.09.2026: 3×3.387 duft + 3×4.346 slanga + 3.270 CO₂ 5kg + 3.150 léttvatn + 5.600 skýrslugerð + 3.600 akstur = 38.819 án vsk → 48.136 m/vsk. Verðskrárverðin m/vsk (4.200/5.389/4.055/3.906) eru sömu tölur ×1,24.
-  <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
-- **Brunaslöngur Hagstáls (og víðar) eru skráðar án stærðar (size = NULL) og verðleggjast því ekki sjálfkrafa — 30 m er rétta verðið (5.389 kr m/vsk yfirferð)**
-  <br>Sjá verd.md: brunaslanga verður að hafa stærð (30/25/20 m). Þrjú tæki hjá Hagstáli (id 9144-9146) eru með size NULL. Val á stærð á alltaf að segja Agnari frá.
   <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
 - **Quick-inspect takkinn „Merkja skoðun" (00-legacy) stimplar 1. dag valins mánaðar á ÖLL tæki fyrirtækisins gegnum .eq(client, nafn) — óháð vali; nákvæmar dagsetningar á að setja með Síðasta/Næsta skoðun í svörtu fjöldaaðgerða-stikunni (patch 224)**
   <br>Stikan skrifar aðeins á VALIN tæki (.in(id, lids)) og tekur nákvæma dagsetningu. Notað 09.09.2026 til að setja Hagstál á 2026-08-20 / 2027-08-20.
   <br><sub>2026-09-09 · slokkvitaeki · kóði · claude-code</sub>
+- **Brunaslöngur Hagstáls (og víðar) eru skráðar án stærðar (size = NULL) og verðleggjast því ekki sjálfkrafa — 30 m er rétta verðið (5.389 kr m/vsk yfirferð)**
+  <br>Sjá verd.md: brunaslanga verður að hafa stærð (30/25/20 m). Þrjú tæki hjá Hagstáli (id 9144-9146) eru með size NULL. Val á stærð á alltaf að segja Agnari frá.
+  <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
 
 ### bord-flettur
 
@@ -960,36 +1002,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
 - **Djúptenging #company/<id> tapaði ræsingunni (218 speglar hashið strax, sala-lending t≈1500ms, Companies.load() endurteiknar yfir prófíl) — pappi 357 grípur id við hleðslu, opnar með _openCompanySafe og tikkar þar til Breyta-takkinn (Companies.openEdit) sést. Prófa ALLTAF ferska hleðslu, ekki bara hashchange.**
   <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
-
-### payday
-
-- **Agnar 14.09.2026: afhending er almennt BÆÐI rafrænt og póstur (sjálfgefið, payday_delivery null/both), NEMA Eignaumsjón sem fær bara rafrænt. 74 staðir með netfang @eignaumsjon.is settir á payday_delivery='electronic' (afrit í audit_vernd); prófíllinn sýnir „📧 Póstafrit: AF". Hafni Payday XML fer póstur samt (öryggisnet).**
-  <br>Agnar skrifaði „Eignarmidlun" — það félag er hvergi í kerfinu; hann staðfesti Eignaumsjón í valglugga. Eignarekstur (eignarekstur.is) og Rekstrarumsjón eru aðrir umsjónaraðilar í umsjonar_len — ekki stilltir.
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code 14.09.2026 · claude-code</sub>
-- **Yfirferð 14.09.2026 á öllum 36 ógreiddum (SENT) Payday-reikningum: 15 fengu ekkert XML, samtals 1.504.935 kr. Plaza 240, Lyngási 272 og Fjörukráin 268 tóku við XML þegar það var sent handvirkt síðar — fyrsta höfnunin var því tímabundin (timeout eða álíka hjá Payday), ekki „tekur ekki við". 8 fóru á borðið sem samþykkismál #1039–#1046 (4 hvorki XML né póstur: Suðurvangur 6, Írabakki 26, Þemasnyrting, Dynsalir 4; 4 póstur en ekkert XML: Norðnorðvestur 627.172, Árskógar 6-8 521.995, Austurberg 20, Reykjavíkurborg).**
-  <br>Aðferð: Saga-flipi hvers reiknings á app.payday.is/is/invoice/<solur.dk_invoice_id>/ (lesið eftir smell á Saga, AJAX) + „Auðkenni" í XML-hlutanum = rafrænn reikningur. Tómur XML-hluti = búinn til án XML.
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code 14.09.2026 · claude-code</sub>
-- **Frá 14.09.2026 (dee4457) skráir payday-push hverja Payday-höfnun á rafrænum reikningi (XML) í app_problems, kind payday_xml_hafnad: warn við „does not accept electronic invoices", annars error. Skráð í 502-greininni ef endurtilraun án XML mistekst, og á eftir markSaleInvoiced ef hún tekst; sendingin sjálf óbreytt (póstur sem öryggisnet). Vörður tools/audit-payday-xml-skraning.cjs; stubbað harness 47/47; netvörður SAFE.**
-  <br>ATH: engin síða les app_problems (hvorugt repó) — merkið sést aðeins í sópuninni eða með SQL: select ts, severity, detail from app_problems where kind = 'payday_xml_hafnad' order by ts desc. Payday-villutextinn er í detail (kt hreinsaðar).
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code 14.09.2026 · claude-code</sub>
-- **payday-push fellur hljóðlaust yfir í reikning án XML (aðeins póstur) þegar Payday skilar villu sem passar við /electronic invoice/i (payday-push.js:246–259), og Payday-villan er hvergi vistuð. Plaza R-000852 (Payday nr. 240) fékk ekkert XML 31.08.2026 kl. 19:44, á meðan 231/228/229/230 á sömu kt fengu XML kl. 02:03 — sami kóði, sömu netföng, jafnstór skýrsla (460 KB), sama sjálfvirka ferli í Saga. Fallbackið er líklegasta skýringin; villan sjálf verður ekki sótt eftir á.**
-  <br>Greining: lesa Saga-flipann á app.payday.is/is/invoice/<solur.dk_invoice_id>/ og leita að „Rafrænn reikningur (XML)“. XML fyrir 240 var sent handvirkt 14.09. kl. 10:45 („Vegna plaza“ í bókunarupplýsingum), frestur til 21.9. Lagfæring (skrá fallback í app_problems og falla aðeins yfir við „does not a
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code 14.09.2026 · claude-code</sub>
-- **Reikninga-póstur fer „offline" þegar Google OAuth refresh-token fyrir sendipósthólfið (eldklar@eldklar.is / bokhald@) rennur út — af því OAuth-appið er í Google „Testing" publishing-stöðu sem lætur refresh-tokens renna út á 7 daga fresti.**
-  <br>Öll „Senda" fara um AppMail.send (254:45) → POST brunaholf /api/gmail-send → _google.js freshAccessTokenFor; 400 invalid_grant → NOT_CONNECTED → allar sendingar falla. google-auth.js:14 segir þetta sjálft. Fallbacks dauðir (Graph configured:false, Resend 403 óstaðfest lén). Fix: (1) tafarlaust /api/
-  <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
-- **Kreditnóta af afsláttaðri sölu má ALDREI bera discount_pct á línunum — verðið er þegar skalað í nettó, svo per-line grein Payday myndi tvöfalda afsláttinn og bankakrafan verður of lág þótt prentun sýni rétta upphæð.**
-  <br>Slice-3 afturför fundin í 4-agenta bug-test yfirferð á #656, staðfest á lifandi gögnum (R-000178: Payday bókaði −8.774 í stað −10.968). Rót: 26-credit-invoice.js hélt discount_pct þegar það negerar qty OG skalar verðið í nettó (tvíkóðuð röð). Tvíþætt lagfæring 2026-08-19: (1) kreditlínur fá discount
-  <br><sub>2026-08-19 · slokkvitaeki · kóði · claude-code</sub>
-- **payday-push.js buildPayload rukkar núna afslátt PER LÍNU (discountPercentage úr linur[].discount_pct) þegar nettó-summa per línu endurgerir upphaed_an_vsk innan ±2 kr — annars fellur það til baka á einn jafnan bakreiknaðan %.**
-  <br>Áður var ALLTAF einn jafn % bakreiknaður úr upphaed_an_vsk, sem smurði "15% á fáar línur" út sem jafnt 13,3% á allar línur. ±2 kr vörðin ver tvíkóðaðar eldri raðir (t.d. R-000461) gegn tvöföldum afslætti þegar bæði er búið að baka lækkað einingaverð OG discount_pct er sett. Payday er löglegi reiknin
-  <br><sub>2026-08-19 · slokkvitaeki · kóði · claude-code</sub>
-- **Brunahólfsmegin er engin payday_invoices tafla — aðeins eldri invoices-feed án Payday-númera** _(likely)_
-  <br>Verkkaupar-mælaborðið sýndi útistandandi upphæðir fyrir reikninga sem Payday taldi greidda (25.7).
-  <br><sub>2026-08-07 · brunaholf · sql · chat</sub>
-- **Payday er API-tengt Slökkvitæki (payday_invoices_slokk); reference-reiturinn geymir innra sölunúmer R-xxx**
-  <br>Pull-hlið aðeins, push var sleppt.
-  <br><sub>2026-08-07 · slokkvitaeki · kodi · chat</sub>
 
 ### thjonustubord
 
@@ -1050,11 +1062,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **fyrirtaeki.postnumer er SÉRSTAKUR reitur sem UI-ið les — það les EKKI póstnúmerið úr heimilisfanginu**
   <br>Fundið 13.08.2026 eftir að Agnar sýndi lista þar sem póstnúmerakassinn var tómur þótt heimilisfangið væri „Stórhöfði 16, 110 Reykjavík". Aðeins raðir þar sem númerið stóð FREMST í strengnum („110 Hyrjarhöfða 1", „861 Hvolsvelli") sýndu merki. Staðan var 845 af 1412 með postnumer; 185 höfðu gilt núme
   <br><sub>2026-08-13 · brunaholf · sql · cowork</sub>
-- **Skuggaraðir í fyrirtaeki — sama kt OG sama heimilisfang, ein í þjónustu og hin ekki — eru afritsraðir án nokkurra gagna og má fjarlægja**
-  <br>Hreinsað 13.08.2026: 36 slíkar raðir fundust, ALLAR með 0 tæki, 0 skjöl, 0 pörun og 0 skoðanir. Þær tvítóku kúnnalistann („allir viðskiptavinir" sýndi báðar, „fyrirtæki í þjónustu" aðra). Eyddar, afrit í backup_skuggaradir_20260813. Eftir standa 12 hópar sem ÞARF mannsauga — þeir bera skjöl og pörun
-  <br><sub>2026-08-13 · brunaholf · sql · cowork</sub>
 - **Heimilisfang samstillist nú sjálfkrafa: trigger trg_sync_cb_heimilisfang á fyrirtaeki skrifar upp í customers_base**
   <br>Sett upp 13.08.2026 eftir að Agnar benti á að kúnnalistinn sýndi 90+ án póstnúmers þótt fyrirtaeki væri lagað. Fallið sync_cb_heimilisfang() keyrir AFTER INSERT OR UPDATE OF heimilisfang, er_i_thjonustu, customer_base_id og fyllir customers_base.heimilisfang AÐEINS ef það er tómt eða án 3ja stafa pó
+  <br><sub>2026-08-13 · brunaholf · sql · cowork</sub>
+- **Skuggaraðir í fyrirtaeki — sama kt OG sama heimilisfang, ein í þjónustu og hin ekki — eru afritsraðir án nokkurra gagna og má fjarlægja**
+  <br>Hreinsað 13.08.2026: 36 slíkar raðir fundust, ALLAR með 0 tæki, 0 skjöl, 0 pörun og 0 skoðanir. Þær tvítóku kúnnalistann („allir viðskiptavinir" sýndi báðar, „fyrirtæki í þjónustu" aðra). Eyddar, afrit í backup_skuggaradir_20260813. Eftir standa 12 hópar sem ÞARF mannsauga — þeir bera skjöl og pörun
   <br><sub>2026-08-13 · brunaholf · sql · cowork</sub>
 - **Heimilisfang er geymt á TVEIMUR stöðum — fyrirtaeki.heimilisfang og customers_base.heimilisfang — og þau samstillast ekki sjálfkrafa**
   <br>Fundið 13.08.2026: eftir að ~75 heimilisföng voru löguð í fyrirtaeki stóð kúnnalistinn áfram með 90+ án póstnúmers, því hann les customers_base. Staðan fyrir lagfæringu: fyrirtaeki 0 án póstnúmers (af 692 í þjónustu), customers_base 63 án + 228 tóm = 291. Fyllt 99 úr fyrirtaeki (besta starfsstöð: er
@@ -1071,15 +1083,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Center Hótel: reikningar sem þvera þjónustu voru losaðir 25.08.2026 og hengdir á rétta þjónustu. Vegna-lína + tækjafjöldi (Yfirferð/Hleðsla/Nýtt vs Ársskoðun brunakerfis-einingar) er heimildin. Óljósir brunakerfisreikningar án vegna og án stemmni við skýrslu voru EKKI giskaðir á hótel.**
   <br>Úttekt: Grandi 2026 par 1295 losað (R-108001); Grandi 2025 par 1380 → R-106356 (12 léttvatn+1 CO2+11 slöngur) + skýrsla 1867; Klöpp 2025 par 724 → R-107054 (11+10); Klöpp 2024 par 1462 → R-105528 (sama 11+10); Þingholt 2025 par 1382 + skýrsla 1783; Miðgarður 2025 par 1469 → R-107259 (vegna Miðgarður
   <br><sub>2026-08-25 · slokkvitaeki · kóði+pdf 25.08.2026 · cursor</sub>
-- **Kreditreikningar (neikvæðar upphæðir, tilvísun S-xxxxxx) rata inn í customer_documents sem doc_type=reikningur og parast við úttektarskýrslur — þeir sanna ekki að rukkað hafi verið**
-  <br>Fundið 13.08.2026: fjögur pör 2026 stóðu „klarad" á kreditnótu — 1046 (raðnr 107986, -43.293), 1078 (108061, -63.612), 1110 (Hreyfill), 1141 (107852, Efnalaugin Björg). Innsog á að merkja neikvæða heildarupphæð sem doc_type=kreditreikningur eða a.m.k. útiloka frá pörun. Þrjú þeirra höfðu invoice_num
-  <br><sub>2026-08-13 · brunaholf · sql · cowork</sub>
-- **Rekstrarfélög fá stundum EINN samsafnsreikning fyrir margar starfsstöðvar — 1:1 pörun getur aldrei náð þeim öllum**
-  <br>Dæmi 13.08.2026: Pizzan ehf R-108122 ber textann „Vegna sölustaða: Núpalind 1, Nýbílavegi 6-8, Hverafold, Litlatún, Fjarðargötu, Fellsmúla og Lóuhólum" með 7× skýrslugerð á einum reikningi. Parið (1147) vísar aðeins á Fellsmúla 24; hinir 6 staðirnir standa sem „vantar reikning" þótt rukkað hafi veri
-  <br><sub>2026-08-13 · brunaholf · sql · cowork</sub>
 - **Verkstaðarlína neðst á reikningi er ÚRSLITAHEIMILD um starfsstöð — en hún er aðeins á ~3% reikninga og orðalagið er á reiki („vegna húsnæðis X", „Vegna X", „Vegna: X")**
   <br>Mælt 13.08.2026 á öllum 223 Drive-reikningum 2026: aðeins 11 báru verkstaðarlínu. Af þeim pössuðu 6 við gagnagrunn og 5 stönguðust á. Gamla Slökkvitækis-sniðið (R-1xxxxx) setur línuna neðst UNDIR fyrirtækjafót Slökkvitækis, og aðeins þegar greiðandi og verkstaður eru sitt hvað. Nýja Brunahólfs-sniði
   <br><sub>2026-08-13 · brunaholf · kóði · cowork</sub>
+- **Rekstrarfélög fá stundum EINN samsafnsreikning fyrir margar starfsstöðvar — 1:1 pörun getur aldrei náð þeim öllum**
+  <br>Dæmi 13.08.2026: Pizzan ehf R-108122 ber textann „Vegna sölustaða: Núpalind 1, Nýbílavegi 6-8, Hverafold, Litlatún, Fjarðargötu, Fellsmúla og Lóuhólum" með 7× skýrslugerð á einum reikningi. Parið (1147) vísar aðeins á Fellsmúla 24; hinir 6 staðirnir standa sem „vantar reikning" þótt rukkað hafi veri
+  <br><sub>2026-08-13 · brunaholf · sql · cowork</sub>
+- **Kreditreikningar (neikvæðar upphæðir, tilvísun S-xxxxxx) rata inn í customer_documents sem doc_type=reikningur og parast við úttektarskýrslur — þeir sanna ekki að rukkað hafi verið**
+  <br>Fundið 13.08.2026: fjögur pör 2026 stóðu „klarad" á kreditnótu — 1046 (raðnr 107986, -43.293), 1078 (108061, -63.612), 1110 (Hreyfill), 1141 (107852, Efnalaugin Björg). Innsog á að merkja neikvæða heildarupphæð sem doc_type=kreditreikningur eða a.m.k. útiloka frá pörun. Þrjú þeirra höfðu invoice_num
+  <br><sub>2026-08-13 · brunaholf · sql · cowork</sub>
 - **Sami reikningur getur endað á tveimur pörum — það er engin einkvæmnisskorða á document_pairs.invoice_doc_id**
   <br>Fundið 13.08.2026: doc 9502 (R-107896) hékk á pörum 1038 og 1327; doc 9371 hangir enn á 1285 (auto_trigger) og 1305 (manual). Verður til þegar tvær pörunarleiðir keyra á mismunandi tímum — hvor um sig sá reikninginn lausan. Þarf UNIQUE-skorðu eða a.m.k. viðvörun í Skýrslu-stöðinni. Eftirlitsfyrirspu
   <br><sub>2026-08-13 · brunaholf · sql · cowork</sub>
@@ -1126,11 +1138,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Þegar reikningsútreikningar eru sannreyndir aftur skal PRÓFA kredit sérstaklega — að kreditera afsláttaða sölu er önnur rukkunar-leið en venjuleg sending og heildar-samstemmingar-harness (app==Payday==geymt) grípur hana EKKI því engin afsláttuð sala hefur verið kredit-uð enn.**
   <br>4-agenta yfirferð #656 (ágúst 2026): heildar-harness sagði 648/653 í lagi og allar 14 per-line sölur stemmdu, en adversarial bug-hunter fann samt kredit-tvöföldunina því hún krefst þess að SÍMÚLERA createCreditNote og bóka afurðina gegnum buildPayload. Lærdómur: prófaðu hverja rukkunar-leið (venjule
   <br><sub>2026-08-19 · slokkvitaeki · kóði · claude-code</sub>
-- **Reikningsupphæð er reiknuð á FJÓRUM aðskildum stöðum sem geta rekið í sundur: pos.js (POS-karfa), 142-sale-editor.js recomputeTotals, 10-sala-receipt-redesign.js (buildLines/totalsByRate), og payday-push.js buildPayload.**
-  <br>Öll fjögur verða að reikna nettó línu = qty·unit·(1−disc/100) ÓRÚNNAÐ á sama hátt, annars stemma prentun og Payday ekki. Slice 2 (enn ógert í ágúst 2026) á að leiða POS-körfu + ritil gegnum EINN sameiginlegan reiknil svo staðirnir reki ekki í sundur aftur.
-  <br><sub>2026-08-19 · slokkvitaeki · kóði · claude-code</sub>
 - **Til að sannreyna reikningsútreikninga aftur: keyrðu Node-harness sem sækir solur gegnum Supabase REST og keyrir buildLines+detectOpts+totalsByRate + paydayNet á móti geymdu upphaed_an_vsk/samtals — app == Payday == geymt á að stemma fyrir ~99% raða.**
   <br>Ágúst 2026 grunnlína: 648 af 653 sölum stemmdu fullkomlega. Þekkt frávik sem eru EKKI galli í nýja kóðanum (ekki flagga aftur): R-000518 (nettó-0 sala), gamlar kreditnótur R-000097/R-000493/K2605001, ±1 kr rúnnun á risasölum R-000598/R-000307, og blönduð R-000176. Endurkeyrðu harness-inn eftir hverj
+  <br><sub>2026-08-19 · slokkvitaeki · kóði · claude-code</sub>
+- **Reikningsupphæð er reiknuð á FJÓRUM aðskildum stöðum sem geta rekið í sundur: pos.js (POS-karfa), 142-sale-editor.js recomputeTotals, 10-sala-receipt-redesign.js (buildLines/totalsByRate), og payday-push.js buildPayload.**
+  <br>Öll fjögur verða að reikna nettó línu = qty·unit·(1−disc/100) ÓRÚNNAÐ á sama hátt, annars stemma prentun og Payday ekki. Slice 2 (enn ógert í ágúst 2026) á að leiða POS-körfu + ritil gegnum EINN sameiginlegan reiknil svo staðirnir reki ekki í sundur aftur.
   <br><sub>2026-08-19 · slokkvitaeki · kóði · claude-code</sub>
 
 ### rekstrarfelog
@@ -1141,6 +1153,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Heimaleiga-uppbyggingin: Heimaleiga ehf (510117-0690) SER UM eignirnar en er ekki alltaf greidandinn. Hver eign hefur sinn greidanda med EIGIN kennitolu, og their eiga ALLIR ad bera rekstrarfelag=Heimaleiga i customers_base.**
   <br>Stadfest af Agnari 01.09.2026 med niu reikningum. Daemi: G14 ehf (510809-0170) er greidandi fyrir Grensasveg 14 THAR SEM Heimaleiga hefur sina eigin starfsstod. EA Law Practice ehf. (650222-0400) er greidandi fyrir Freyjugotu 16 — Heimaleiga ser bara um. Brietartun 9-11 husfelag (540119-0660) er gre
   <br><sub>2026-09-01 · slokkvitaeki · Agnar + niu reikningar, 01.09.2026 · claude-code</sub>
+- **Skýrslutenging keðja er óstaðfestanleg úr gögnunum — skjölin bera aðeins keðjunafnið, ekki staðinn**
+  <br>Mælt 7.8.2026: Pizzan 31 af 32, Center Hótel 27 af 29, Aðalskoðun 15 af 15, Colas 8 af 8, Endurvinnslan 12 af 12. Húsfélagahóparnir eru í lagi (Eignaumsjón 3 af 137, Eignarekstur 0 af 13) því hvert hús heitir eftir heimilisfanginu. Staðfesting krefst þess að opna PDF-inn.
+  <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 - **Fimm rekstrarfélög vantaði í hópaskrána 7.8.2026: Brynja leigufélag, Partýbær, Hamborgarabúlla Tómasar, Vallarbraut og Bílabúð Benna**
   <br>Alls 34 ómerktar færslur áttu heima í hóp — 14 í nýja hópa, 20 í hópa sem eru þegar til.
   <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
@@ -1149,9 +1164,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 - **Eydd fyrirtækjafærsla getur haldið skýrslunni — 31 úttektarskýrsla hangir á færslu með deleted_at**
   <br>Níu færslur eru eyddar en enn með er_i_thjonustu=true og skýrslu frá 2026, þar á meðal Center Hótel Grandi. Afleiðing sameininganna í júlí: rangur helmingur tvítaksins var eyddur.
-  <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
-- **Skýrslutenging keðja er óstaðfestanleg úr gögnunum — skjölin bera aðeins keðjunafnið, ekki staðinn**
-  <br>Mælt 7.8.2026: Pizzan 31 af 32, Center Hótel 27 af 29, Aðalskoðun 15 af 15, Colas 8 af 8, Endurvinnslan 12 af 12. Húsfélagahóparnir eru í lagi (Eignaumsjón 3 af 137, Eignarekstur 0 af 13) því hvert hús heitir eftir heimilisfanginu. Staðfesting krefst þess að opna PDF-inn.
   <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 - **Netfangslénið er áreiðanlegasti lykillinn að rekstrarfélagi — betri en nafnið og betri en kennitalan**
   <br>Kennitalan bregst hjá húsfélögum (hvert á sína eigin þótt umsjónaraðilinn sé sá sami) og nöfnin eru handslegin. Hópaðu fyrirtaeki eftir split_part(netfang,'@',2) og berðu saman við customers_base.rekstrarfelag.
@@ -1232,12 +1244,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Teikningasöfn Hafnarfjarðar (svf 1400), Garðabæjar (1300) og Kópavogs (1000) eru öll sami map.is-hlutinn „Teikningar af byggingum": GET https://www.map.is/webservice/queryTeiknigrunn.php?landnumer=&svfnr=&heitinumer=&t=<token> skilar JSON-lista með beinum PDF-slóðum.**
   <br>Þarf PHP-setu (cookies PHPSESSID + TS…) OG config.t-lykil sem hvaða kortasjár-síða map.is sem er gefur út (t.d. https://www.map.is/hafnarfjordur/); ein seta dugar öllum þremur bæjum. heitinumer=0 gefur „Engar niðurstöður". Raðir: lysing, dagsetning, hofundur_nafn, tegund, gerd, status (null/F/Ó = úr
   <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
-- **Eitt landnúmer getur átt mörg hús: L 199350 (Höfðatorg) ber Bríetartún 9-11, Katrínartún 2 (19 hæða turn) og Borgartún 8-16A — hæðatillögur út frá teikningum lóðar má aldrei taka án þess að sía á húsið.**
-  <br>FotoWeb Reykjavíkur merkir hverja teikningu heimilisfangi (gata-reitur), oft SÖGULEGU lóðarheiti („Borgartún 8-16A"); teikningar merktar „Bríetartún" eru engar → hus-upplysingar gefur engar tillögur fyrir Bríetartún 9 (aðeins tengil), í stað þess að segja 19 hæðir. map.is-söfnin merkja ekki götu — þ
-  <br><sub>2026-09-14 · kerfi · sql · claude-code</sub>
 - **Fjöldi íbúða, stigaganga og herbergja í húsi er EKKI opinber: api.hms.is/ords svarar 403 (áskrift) og hms.is er læst á bak við Vercel-botvörn (429). Þeir reitir á fyrirtækjabannernum eru handvirkir áfram.**
   <br>Kannað 14.09.2026 þegar húsupplýsingar úr skrám voru settar á bannerinn (patch 363 v3). Það sem ER opið: hæðir/kjallari/jarðhæð/ris úr grunnmyndum teikningasafnanna.
   <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
+- **Eitt landnúmer getur átt mörg hús: L 199350 (Höfðatorg) ber Bríetartún 9-11, Katrínartún 2 (19 hæða turn) og Borgartún 8-16A — hæðatillögur út frá teikningum lóðar má aldrei taka án þess að sía á húsið.**
+  <br>FotoWeb Reykjavíkur merkir hverja teikningu heimilisfangi (gata-reitur), oft SÖGULEGU lóðarheiti („Borgartún 8-16A"); teikningar merktar „Bríetartún" eru engar → hus-upplysingar gefur engar tillögur fyrir Bríetartún 9 (aðeins tengil), í stað þess að segja 19 hæðir. map.is-söfnin merkja ekki götu — þ
+  <br><sub>2026-09-14 · kerfi · sql · claude-code</sub>
 - **Landnúmer → aðaluppdrættir: skjalasafn.reykjavik.is/fotoweb/archives/5000-Aðaluppdrættir/?q=LANDNUMER opnar teikningar eignarinnar. Landeignaskrá-síða eignarinnar er geo.fasteignaskra.is/landeignaskra/LANDNUMER. Hvorugt má setja í iframe.**
   <br>Tvívirki leitarhnappurinn (patch 325, window.Landnr) sameinar skrefin tvö: Landnr.mount(el) setur hann hvar sem er, Landnr.open() opnar fljótandi. Situr sjálfkrafa á Sölu; TurboPaint þarf bara Landnr.mount(...).
   <br><sub>2026-08-28 · kerfi · patch 325 + netlify/functions/landnr.js, commit f9dfac8 · claude-code</sub>
@@ -1268,15 +1280,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
 - **Póststaða á kúnnasíðu 07.09.2026 (Kirkjuvellir sýndi „Nýjasti póstur" frá david.vilmundarson@greenkey.is „Re: brunakerfi" sem fjallar um Norðurhellu 17): company-mail.js eignar póst stað eftir netfangi sendanda — netfangið var í charlize_contacts tengt AÐEINS kt Kirkjuvalla (551007-1890, staðfest af Agnari á vinnublaði 30.08). Greenkey (Davíð Vilmundarson, Sherilyn) er umsjónaraðili fleiri húsa; bætt við contact-röð → 630216-1680 (#1626 E Fasteignafélag v/Norðurhella 17). Netfang sem tvö félög eiga verður AMBIG í claim() og telst hvorki ósvarað (rautt) né „nýjasti póstur" á öðru hvoru — pósturinn sést áfram í Þjónustuver póstar. Regla: umsjónarfélög (Eignaumsjón, Greenkey …) eiga aldrei að vera strict per-hús tengiliðir; sé eitt netfang tengt mörgum kt fellur það sjálfkrafa í broad/ekkert.**
   <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **felag_samskipti.fra_okkur er REIKNAÐUR dálkur (sender ILIKE '%eldklar%'), ekki geymdur — reikningar frá delivery@payday.is og svör úr Gmail/Outlook lenda því á INNKOMNU hliðinni, ekki sem "frá okkur".**
-  <br>Afleiðing: svarstaða sem reiðir sig eingöngu á fra_okkur verður röng þegar SENT-innsog situr eftir. SENT kemur frá luna-bridge Sent mbox / gmail-ingest?folder=sent. Nákvæmara "við svöruðum"-merki: SENT-póstur þar sem to_addresses inniheldur nákvæmt netfang kúnnans (sbr. company-mail.js).
+- **samskipti_stada (handled_at "merkja afgreitt") er lyklað á fyrirtaeki_id, EKKI customer_base_id, og er sem stendur tómt (0 raðir).**
   <br><sub>2026-08-19 · baedi · sql · claude-code</sub>
 - **felag_samskipti er DÝR view (lateral address-matching per customers_base) — full-scan úr anon-lyklinum fellur á statement_timeout (500 "canceling statement"). Sía á einn customer_base_id ýtir niður og er hratt; annars hópaðu server-hlið.**
   <br>Þjónustuver póstar (patch 309) hópar server-hlið í public.tv_postar_list() (SECURITY DEFINER + set statement_timeout='25s'); client kallar sb.rpc('tv_postar_list'). Mælt 2026-08-19.
   <br><sub>2026-08-19 · baedi · sql · claude-code</sub>
 - **is_question í email_digest/felag_samskipti er leitarorða-heurística sem gefur falska jákvæða (t.d. "takk fyrir" með ? í tilvitnaðri undirskrift telst spurning). Nota AI-dóm (needs_action) til að sía, ekki sem hörð sannindi.**
   <br><sub>2026-08-19 · baedi · kóði · claude-code</sub>
-- **samskipti_stada (handled_at "merkja afgreitt") er lyklað á fyrirtaeki_id, EKKI customer_base_id, og er sem stendur tómt (0 raðir).**
+- **felag_samskipti.fra_okkur er REIKNAÐUR dálkur (sender ILIKE '%eldklar%'), ekki geymdur — reikningar frá delivery@payday.is og svör úr Gmail/Outlook lenda því á INNKOMNU hliðinni, ekki sem "frá okkur".**
+  <br>Afleiðing: svarstaða sem reiðir sig eingöngu á fra_okkur verður röng þegar SENT-innsog situr eftir. SENT kemur frá luna-bridge Sent mbox / gmail-ingest?folder=sent. Nákvæmara "við svöruðum"-merki: SENT-póstur þar sem to_addresses inniheldur nákvæmt netfang kúnnans (sbr. company-mail.js).
   <br><sub>2026-08-19 · baedi · sql · claude-code</sub>
 
 ### kjarni
@@ -1325,12 +1337,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Rafhlaðan er INNIFALIN í „Yfirferð Reykskynjari" (2.346 kr án vsk) — 9V Rafhlaða fer ekki á reikninginn sem sér lína**
   <br>Agnar 10.09.2026: „það er innifalið rafhlaða í reykskynjara yfirferð". Vinnublöð skrifa oft „skipti um X skynjara og batterí í Y" — Y-hlutinn er yfirferð, ekki varahlutasala. 9V Rafhlaða (466 án vsk) er til í vörulistanum en á aðeins við þegar rafhlaða er seld ein og sér, án yfirferðar.
   <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
-- **Akstur er 3.600 kr og skýrslugerð 5.600 kr ÁN VSK — window.SlokkVisitDefaults í patch 129 er EINA heimildin; verd.md sagði 3.000/3.500 og var úrelt**
-  <br>Athugasemdin í 129 (2026-08-18) segir berum orðum að báðar leiðir (kostnaðartaflan og reikningsleiðin í 165) lesi héðan. Sara-borðið hardkóðaði gömlu tölurnar og sýndi 43.228 kr þar sem appið sagði 48.136 (Hagstál). Lagað 09.09.2026 — borðið les nú SlokkVisitDefaults.
-  <br><sub>2026-09-09 · slokkvitaeki · kóði · claude-code</sub>
 - **Það er AÐEINS EITT verð á yfirferð brunaslöngu (4.346 kr án vsk / 5.389 m/vsk) — lengdin skiptir ekki máli og 30 m er bara sjálfgefna merkingin**
   <br>Agnar 09.09.2026: „við erum bara með eitt verð á yfirferð á brunaslöngum sem varð þá bara að 30m default, veit ekki raun lengdina. en er bara eitt verð". verd.md sagði áður að velja þyrfti stærð og segja Agnari frá valinu — óþarfa spurning sem á að hætta.
   <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
+- **Akstur er 3.600 kr og skýrslugerð 5.600 kr ÁN VSK — window.SlokkVisitDefaults í patch 129 er EINA heimildin; verd.md sagði 3.000/3.500 og var úrelt**
+  <br>Athugasemdin í 129 (2026-08-18) segir berum orðum að báðar leiðir (kostnaðartaflan og reikningsleiðin í 165) lesi héðan. Sara-borðið hardkóðaði gömlu tölurnar og sýndi 43.228 kr þar sem appið sagði 48.136 (Hagstál). Lagað 09.09.2026 — borðið les nú SlokkVisitDefaults.
+  <br><sub>2026-09-09 · slokkvitaeki · kóði · claude-code</sub>
 - **Duft 9 kg og 12 kg skilgreinast sem 6 kg í bæði skýrslu og reikningsútreikningi — raunstærðin á blaðinu er ekki flokkur**
   <br>Skýrslulínan „Slökkvitæki duft 6-12 kg." nær yfir 6, 9 og 12 kg. Á reikningi fara þau á 6 kg vöruna: 118 Slökkvitæki Duft 6 kg, 135 Yfirferð Duft 6-12 kg, 125 Hleðsla Duft 6-12 kg. Aðeins 2 kg duft er sérflokkur (119 / 126). Staðfest af Agnari 21.08.2026 þegar 9 kg tæki kom upp á Kirkjuvöllum 9. VIÐ
   <br><sub>2026-08-21 · slokkvitaeki · agnar · cowork</sub>
@@ -1340,14 +1352,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Samantekt úr eldri lotu er EKKI blað-lestur — Sara má ekki telja upp tæki sem hún las ekki sjálf, jafnvel þótt blaðið ráði**
   <br>Naust Marine og Grasnytjar stöðvuðust á þessu 10.09.2026: minnisblaðið sagði „kolsýra 2 kg" og „léttvatn í herbergjum 6-12, þvottahúsi, herb. 15, 30-40" — staðsetningar og útdráttur, ekki talning. Rétt viðbragð er að biðja um skannann í myndaröndina á Sara-borðinu, ekki að giska.
   <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
-- **Sara-borðið (tafla sara_yfirferd + spjaldið „SARA · VINNUBLÖÐ" á Þjónustuborðinu) er hliðið: ekkert fer í kerfið fyrr en Agnar hakar við og staðan fer úr bidur í samthykkt**
-  <br>Agnar 09.09.2026: „check mark sem ég get sett sem þú mátt þá klára að gera skýrsluna og invoicið.. ég síðan sendi hana af stað í kröfuyfirlit". Patch 364-sara-yfirferd.js. Stöður: bidur → samthykkt → klarad. Aðeins bidur/samthykkt sjást; kláruð eru falin.
+- **Þegar hakið kemur skal lesa fjölda og verð úr sara_yfirferd.linur — ekki tillöguna sem Sara lagði fram; Agnar breytir tölunum áður en hann hakar**
+  <br>Reitirnir linur (jsonb [{l,n,v}]), akstur, akstur_verd, skyrslugerd og texti eru allir breytanlegir í borðinu. athugasemd-reiturinn er skilaboð Agnars til Söru.
   <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
 - **Cowork skrifaði 19 „Úttektarskýrsla — X" mál í thjonustubeidni 06.09.2026 (source=cowork) þar sem lestur vinnublaðsins stendur í notes undir hausunum ■ LESIÐ AF BLAÐI / ■ TÆKJALISTI Í KERFINU / ■ NIÐURSTAÐA, með skanni sem viðhengi**
   <br>Agnar 09.09.2026: „það er helling inn á þjónustuborði en það er bara útum allt, sem Cowork hefur sett inn". Þau eru enn ólesin inn í sara_yfirferd.
   <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
-- **Þegar hakið kemur skal lesa fjölda og verð úr sara_yfirferd.linur — ekki tillöguna sem Sara lagði fram; Agnar breytir tölunum áður en hann hakar**
-  <br>Reitirnir linur (jsonb [{l,n,v}]), akstur, akstur_verd, skyrslugerd og texti eru allir breytanlegir í borðinu. athugasemd-reiturinn er skilaboð Agnars til Söru.
+- **Sara-borðið (tafla sara_yfirferd + spjaldið „SARA · VINNUBLÖÐ" á Þjónustuborðinu) er hliðið: ekkert fer í kerfið fyrr en Agnar hakar við og staðan fer úr bidur í samthykkt**
+  <br>Agnar 09.09.2026: „check mark sem ég get sett sem þú mátt þá klára að gera skýrsluna og invoicið.. ég síðan sendi hana af stað í kröfuyfirlit". Patch 364-sara-yfirferd.js. Stöður: bidur → samthykkt → klarad. Aðeins bidur/samthykkt sjást; kláruð eru falin.
   <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
 
 ### kunnaskra
@@ -1377,11 +1389,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Patch 245 (Brunastál content-skin) þvingar height:42px + padding:0 14px á ÖLL .view input/select með !important — sérhver lítill inline-reitur þarf eigin !important-reglu með hærri sértækni**
   <br>Fórnarlömb löguð 07.08.2026: karfa-magnreitur (patch 115, tölur klipptust í 46px boxi), kr/stk- og %-reitir (pos.js), sk-link-sel fellilistinn (199), rf-tbl (175 átti þegar anti-245 blokk — það er mynstrið til að herma eftir). Inline-stílar tapa fyrir !important úr stylesheet.
   <br><sub>2026-08-08 · slokkvitaeki · kóði · claude-code</sub>
-- **Módalar sem hengjast á <body> verða að setja skýran textalit á rótina sína — erfði liturinn frá body er LJÓS undir dökku þema og textinn hverfur á hvítum spjaldbakgrunni.**
-  <br>Þetta var rót „grey on grey" skjáskotsins 7.8.2026: félagsnöfn í Samskiptaborðs-módalnum höfðu engan eigin lit og erfðu ljósan body-lit ofan á hvít kort. Lagað í PR #609 með _crm-style stílblaði.
-  <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
 - **Attribute-selectorar þemanna ([style*=…]) grípa bara stíla setta með innerHTML — stílar settir með element.style.cssText serialiserast sem rgb() í style-attributinu og sleppa alveg við þema-flippið.**
   <br>Þess vegna getur sama síða orðið hálf-flippuð: innerHTML-fletir dökkna, cssText-fletir haldast hvítir. Samskiptaborðs-módallinn (287) lenti í þessu 7.8.2026. Öruggasta leiðin fyrir módala/ný borð: skorað klasa-stílblað með skýrum lit á hverjum texta, ekkert inline og ekkert erft. Lagað í PR #609.
+  <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
+- **Módalar sem hengjast á <body> verða að setja skýran textalit á rótina sína — erfði liturinn frá body er LJÓS undir dökku þema og textinn hverfur á hvítum spjaldbakgrunni.**
+  <br>Þetta var rót „grey on grey" skjáskotsins 7.8.2026: félagsnöfn í Samskiptaborðs-módalnum höfðu engan eigin lit og erfðu ljósan body-lit ofan á hvít kort. Lagað í PR #609 með _crm-style stílblaði.
   <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
 - **Þemakerfin (patch 66/229/240) endurlita síður með [style*="color:#…"]-attribute-selectorum sem grípa AÐEINS húspallettuna — blek utan hennar (t.d. #111827, #6b7280) verður svart-á-svörtu í dökku þema því bakgrunnarnir flippast en textinn ekki.**
   <br>Nota alltaf húslitina í inline-texta: #0f172a (aðal), #334155/#475569 (auka), #64748b (daufur), #94a3b8 (dauflegastur). Uppgötvað 7.8.2026 á Aksturslistanum (268) — INK var #111827 og sat eftir svartur á flippuðum dökkum kortum. Lagað í PR #609.
@@ -1392,11 +1404,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **MYNSTUR 3 — AppSettings: hlutir sameinast per lykil en FYLKI og strengir skiptast út í heilu lagi (jsonb_deep_merge sql:34), og engin vél FÆR breytingar annarra fyrr en hún endurhleður (engin realtime/sókn á app_settings, js/db.js:250)**
   <br>Heit fylki: skipulagsbord.by_staff.*.cards (305:99, 148 skrif/30 d), vikudagskra.jobs (303:112, 74), company_pricing/vidsk_pricing (113/116/285), sala.*_product_ids (vorur.js), thjonustuverk.cases (172:70), skjalasnidmat (94), tilbod_hub (201), page_editor_v1_json (262:124 strengur), app_profiles_js
   <br><sub>2026-09-06 · slokkvitaeki · villuleit 06.09.2026 · claude-code</sub>
-- **MYNSTUR 2 — heilt object/fylki lesið → breytt í minni → skrifað til baka (read-modify-write án útgáfu-varðar): vél með gamalt eintak þurrkar út breytingar hinna**
-  <br>Hub lagað 06.09.2026: hub_state sameinað per lykil OG per undirlykil (RPC hub_state_merge p_deep), wf_state per reit (ky_wf_merge), invoice_drafts með expected_updated_at (409 + spurning). Eftir (slokkvitaeki, úttekt sala-reikningar/kunnaskra/elon): 142 SaleEditor + 121 Sótt skrifa heilt solur.linur
-  <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
   <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
+  <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
+- **MYNSTUR 2 — heilt object/fylki lesið → breytt í minni → skrifað til baka (read-modify-write án útgáfu-varðar): vél með gamalt eintak þurrkar út breytingar hinna**
+  <br>Hub lagað 06.09.2026: hub_state sameinað per lykil OG per undirlykil (RPC hub_state_merge p_deep), wf_state per reit (ky_wf_merge), invoice_drafts með expected_updated_at (409 + spurning). Eftir (slokkvitaeki, úttekt sala-reikningar/kunnaskra/elon): 142 SaleEditor + 121 Sótt skrifa heilt solur.linur
   <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
 
 ### redder
@@ -1416,11 +1428,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **AI-bunkinn á Verkborðinu er Charlize, ekki Agnar — sjálfgefna sían heitir „Allir án Ai" (nema_ai) og felur Charlize**
   <br>Ósk Agnars 03.09.2026. Nafn hans var ruslakistan: óúthlutað + opið + eldra en 30 daga fór sjálfkrafa á hann og sjálfgefna sían faldi þann bunka, svo hans EIGIN mál urðu ósýnileg (mál 817 lá óhreyft í viku, 01.09). Nú: AI_WORKER = 'Charlize' í js/patches/231-verkbord.js stýrir bæði effectiveAssignee(
   <br><sub>2026-09-03 · slokkvitaeki · agnar · claude-code</sub>
-- **claimOldJobs() í 231-verkbord.js SKRIFAR assigned_to beint í thjonustubeidni við hverja hleðslu borðsins — gagnaflutningur á úthlutun dugar aldrei einn og sér**
-  <br>Fallið sópar öllu óúthlutuðu, opnu og eldra en 30 daga á AI_WORKER og keyrir í hvert sinn sem Verkborðið hleðst. Þegar bunkinn var færður af Agnari 03.09.2026 hefði hrein SQL-uppfærsla verið undin ofan af sér innan mínútna; kóðinn varð að fara fyrst. Sama gildir um hverja framtíðar-breytingu á því h
-  <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
 - **Vistuð starfsmannasía býr í localStorage á hverri vél fyrir sig — nafnabreyting á síugildi þarf þýðingu í canonFilter(), annars tapar hver vél valinu þegjandi**
   <br>WKEY = _vb_worker. Þegar nema_agnar varð nema_ai (03.09.2026) var bætt við `if (s === 'nema_agnar') return 'nema_ai'` í canonFilter() og nema_agnar haldið í WORKER_SENTINELS. Sama mynstur og 'Sara' → 'Bjarndís' notar. Án þess hefðu allar fjórar vélarnar fallið aftur á sjálfgefið gildi án viðvörunar.
+  <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
+- **claimOldJobs() í 231-verkbord.js SKRIFAR assigned_to beint í thjonustubeidni við hverja hleðslu borðsins — gagnaflutningur á úthlutun dugar aldrei einn og sér**
+  <br>Fallið sópar öllu óúthlutuðu, opnu og eldra en 30 daga á AI_WORKER og keyrir í hvert sinn sem Verkborðið hleðst. Þegar bunkinn var færður af Agnari 03.09.2026 hefði hrein SQL-uppfærsla verið undin ofan af sér innan mínútna; kóðinn varð að fara fyrst. Sama gildir um hverja framtíðar-breytingu á því h
   <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
 
 ### brunavarnir
@@ -1485,12 +1497,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### falskflogg
 
-- **Merkin í appinu eru ekki áreiðanleg — ekki byggja greiningu á þeim**
-  <br>Byggðu á skráarheitum í Drive og röðum í customer_documents í staðinn.
-  <br><sub>2026-08-07 · slokkvitaeki · agnar · chat</sub>
 - **Tækjatalning byggir á nafna-mátun (uttaeki.client á móti heiti félags) — örlítið önnur stafsetning gerir félag "tækjalaust"**
   <br>Sama aðferð og appið notar, svo villan birtist eins báðum megin.
   <br><sub>2026-08-07 · baedi · greining · chat</sub>
+- **Merkin í appinu eru ekki áreiðanleg — ekki byggja greiningu á þeim**
+  <br>Byggðu á skráarheitum í Drive og röðum í customer_documents í staðinn.
+  <br><sub>2026-08-07 · slokkvitaeki · agnar · chat</sub>
 - **Rekstrarfélög deila kennitölu — uppfletting á kt lætur eina skýrslu líta út fyrir að duga öllum stöðum félagsins**
   <br>Aðalskoðun er fjórir staðir á 540994-2269. Staðfestu á HEIMILISFANGI þegar kt á fleiri en einn stað.
   <br><sub>2026-08-07 · baedi · greining · chat</sub>
@@ -1571,11 +1583,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### agentar
 
-- **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
-  <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
-  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
 - **Sara (sara-organizer í brunaholf / sara-coworker í slokkvitaeki) veit hvaða úttektarskýrslur á eftir að senda almennt — Rukkarinn spyr hana um heildarlistann áður en hann segir hvað er tilbúið að senda**
   <br>Agnar 05.09.2026. Pörin skýrsla↔reikningur búa í v_bundle_coverage (kind/stada) og Sara á þau; Rukkarinn stjórnar lotunni en finnur ekki upp skýrslulista sjálfur.
+  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
+- **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
+  <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
   <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
 
 ### hradi
@@ -1823,16 +1835,16 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Staðfest 28.8.2026 í patch 280 (Taka úr/Setja í þjónustu): watch() setti fylgjara á þann #companies-main sem fannst við ræsingu. Appið skiptir hnútnum út við sumar endurteikningar, og þá sat fylgjarinn á laustengdum hnút. Greining: #companies-main var tengt, Breyta-takkinn með onclick til staðar, en
   <br><sub>2026-08-28 · slokkvitaeki · kóði · claude-code</sub>
 
-### timavera
-
-- **timavera-bridge.js er óvirkt og skilar strax nema TIMAVERA_BRIDGE_FORCE=1 — timavera-pull.js í brunaholf er eina heimildin fyrir timavera_entries**
-  <br>Desktop-xlsx leiðin reiknaði annað time_in og þar með annan entry_key fyrir sömu færslu, sem tvítaldi tíma á móti API-línunum. Scheduled task LunaBridge-Timavera var fjarlægt 28.8.2026 og Tímavera tekin út úr setup-tasks.bat.
-  <br><sub>2026-08-28 · kerfi · kóði · claude-code</sub>
-
 ### pdf
 
 - **pdf-parse v2 flytur út HLUT, ekki fall — gamla kallið pdf(buf) hrynur og þarf new PDFParse({data}).getText()**
   <br>doc-indexer.js sat á main með v1-kallinu eftir að package.json var uppfært í ^2.4.5; hefði hrunið á fyrsta PDF. Lagað 28.8.2026 eftir mynstrinu sem redder.js notaði þegar.
+  <br><sub>2026-08-28 · kerfi · kóði · claude-code</sub>
+
+### timavera
+
+- **timavera-bridge.js er óvirkt og skilar strax nema TIMAVERA_BRIDGE_FORCE=1 — timavera-pull.js í brunaholf er eina heimildin fyrir timavera_entries**
+  <br>Desktop-xlsx leiðin reiknaði annað time_in og þar með annan entry_key fyrir sömu færslu, sem tvítaldi tíma á móti API-línunum. Scheduled task LunaBridge-Timavera var fjarlægt 28.8.2026 og Tímavera tekin út úr setup-tasks.bat.
   <br><sub>2026-08-28 · kerfi · kóði · claude-code</sub>
 
 ### konva
@@ -1889,6 +1901,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Steypustöðin 9, Colas 4, Pizzan 4, Vélrás 4, Ormur 2, Aðalskoðun 1, Álftamýri 1, Center 5. Jafnvel vöruþungir reikningar (Þorlákshöfn með skápum og skiltum, Pizzan með 7 nýjum tækjum) eru úttekt af því þeir bera Yfirferð OG 060 Skýrslugerð. REGLA: búðarsala er aðeins búðarsala ef HVORKI Yfirferð NÉ 
   <br><sub>2026-08-23 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
+### Endurvinnslan endurbyggð — 36 tæki á 5 stöðum
+
+- **Endurvinnslan hf. (610789-1299) bar NÚLL tæki þrátt fyrir 18 úttektarskýrslur. Skráin er endurbyggð úr nýjustu skýrslu hvers staðar.**
+  <br>Dalvegur (jan 2026): 1 léttvatn + 2 duft 6-12kg + 1 slanga = 4. Knarrarvogur 4 (jan 2026): 3 léttvatn + 2 CO2 2kg + 4 CO2 5kg + 2 slöngur = 11. Skútuhraun (jan 2026): 1 léttvatn + 1 duft 6-12kg + 1 CO2 2kg + 3 slöngur = 6. Austurhraun 3 (mars 2026): 6 léttvatn + 1 CO2 5kg + 2 slöngur = 9. Köllunarkl
+  <br><sub>2026-08-23 · slokkvitaeki · Cowork 21.08.2026 — lestur á 5 úttektarskýrslum · natalie</sub>
+
 ### vidskiptategund-flokkarinn í Skýrslu-stöð
 
 - **Reikningar flokkast í uttekt / brunakerfi / bud / ovisst. 847 reikningar eru enn ovisst.**
@@ -1900,24 +1918,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Ef vegna-línan er tóm er hægt að lesa staðinn út úr línunum sjálfum með því að bera þær saman við úttektarskýrslur hvers staðar.**
   <br>Dæmi frá Endurvinnslunni 21.08.2026: fjórir reikningar lágu allir á Knarrarvogi og voru flokkaðir „óvisst". R-107798 sagði „Vegna Dalvegur" og línurnar (1 léttvatn + 2 duft 6-12 + 1 slanga) stemmdu nákvæmlega við Dalvegs-skýrsluna. R-107797 hafði ENGA vegna-línu en línurnar (1 hleðsla léttvatn + 1 h
   <br><sub>2026-08-23 · kerfi · Cowork 21.08.2026 · natalie</sub>
-
-### Endurvinnslan endurbyggð — 36 tæki á 5 stöðum
-
-- **Endurvinnslan hf. (610789-1299) bar NÚLL tæki þrátt fyrir 18 úttektarskýrslur. Skráin er endurbyggð úr nýjustu skýrslu hvers staðar.**
-  <br>Dalvegur (jan 2026): 1 léttvatn + 2 duft 6-12kg + 1 slanga = 4. Knarrarvogur 4 (jan 2026): 3 léttvatn + 2 CO2 2kg + 4 CO2 5kg + 2 slöngur = 11. Skútuhraun (jan 2026): 1 léttvatn + 1 duft 6-12kg + 1 CO2 2kg + 3 slöngur = 6. Austurhraun 3 (mars 2026): 6 léttvatn + 1 CO2 5kg + 2 slöngur = 9. Köllunarkl
-  <br><sub>2026-08-23 · slokkvitaeki · Cowork 21.08.2026 — lestur á 5 úttektarskýrslum · natalie</sub>
-
-### Laugavegur 42 (Iðun Apartments) — húsfélagið greiðir
-
-- **Skýrslan er stíluð á Heimaleigu en reikningurinn á húsfélagið. Staðurinn liggur rétt.**
-  <br>Úttekt feb 2026: „Heimaleiga ehf. kt:510117-0690 vegna Laugavegur 42 101 Reykjavík (Iðun apartments)" — 9 léttvatn + 1 duft 6-12 kg = 10 tæki. Reikningur R-107860 (61.390 kr.) er á Húsfélagið Laugavegi 42, kt 611096-2599. Greiðandinn ræður: staðurinn tilheyrir húsfélaginu, Heimaleiga er rekstraraðil
-  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
-
-### Heimaleiga — þrjár tómar raðir fjarlægðar
-
-- **Aegina ehf. (greiðandi), SAB / U2 ehf. og Ármúli 13 sameign voru teknar út 21.08.2026.**
-  <br>Allar þrjár báru engin tæki, engin skjöl, engar sölur og engar tengingar. Aegina er greiðandi Urðarhvarfs 4 og lifir sem customers_base 784 — hún þurfti ekki starfsstöð. SAB/U2 (Naustavör 18) var óvirk og gagnalaus. Ármúli 13 sameign var ágiskun — S30 er á Ármúla 13A og ekkert skjal nefnir sameign Á
-  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
 ### R-107758 (193.600 kr.) LEYST — það var Bríetartún, ekki Grensásvegur
 
@@ -1931,17 +1931,29 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Heimaleiga ehf (510117-0690): úttekt okt 2025, 4 léttvatn + 4 brunaslöngur — „öll slökkvitæki í ALMENNU RÝMI yfirfarin". Bríetartún 9-11 húsfélag (540119-0660): úttekt des 2025, 48 léttvatn í ÍBÚÐUNUM — endurhleðslur í bygg. 9 íbúð 101 og 405, bygg. 11 íbúð 208, 411 og 608, nýtt tæki í íbúð 413. Hús
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 — lestur á tveimur úttektarskýrslum og fjórum reikningum · natalie</sub>
 
-### Center Hótel — opinber nöfn og heimilisföng af centerhotels.com
+### Laugavegur 42 (Iðun Apartments) — húsfélagið greiðir
 
-- **Hótelin eru NÍU og vefur félagsins er heimildin um nöfn og heimilisföng.**
-  <br>Grandi by Center Hotels — Seljavegur 2 · Center Hotels Plaza — AÐALSTRÆTI 4-6 · Miðgarður by Center Hotels — Laugavegur 120 · Þingholt by Center Hotels — Þingholtsstræti 3-5 · Center Hotels Laugavegur — Laugavegur 95-99 · Center Hotels Arnarhvoll — Ingólfsstræti 1 · Center Hotels Skjaldbreið — Lauga
-  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 — centerhotels.com · natalie</sub>
+- **Skýrslan er stíluð á Heimaleigu en reikningurinn á húsfélagið. Staðurinn liggur rétt.**
+  <br>Úttekt feb 2026: „Heimaleiga ehf. kt:510117-0690 vegna Laugavegur 42 101 Reykjavík (Iðun apartments)" — 9 léttvatn + 1 duft 6-12 kg = 10 tæki. Reikningur R-107860 (61.390 kr.) er á Húsfélagið Laugavegi 42, kt 611096-2599. Greiðandinn ræður: staðurinn tilheyrir húsfélaginu, Heimaleiga er rekstraraðil
+  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
+
+### Heimaleiga — þrjár tómar raðir fjarlægðar
+
+- **Aegina ehf. (greiðandi), SAB / U2 ehf. og Ármúli 13 sameign voru teknar út 21.08.2026.**
+  <br>Allar þrjár báru engin tæki, engin skjöl, engar sölur og engar tengingar. Aegina er greiðandi Urðarhvarfs 4 og lifir sem customers_base 784 — hún þurfti ekki starfsstöð. SAB/U2 (Naustavör 18) var óvirk og gagnalaus. Ármúli 13 sameign var ágiskun — S30 er á Ármúla 13A og ekkert skjal nefnir sameign Á
+  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
 ### Center Hótel — þrír staðir stemmdu ekki við skýrslu
 
 - **Fact-check á öllum níu hótelum gegn nýjustu úttektarskýrslu leiddi í ljós þrjú frávik.**
   <br>MIÐGARÐUR: engin 2025-úttekt er til (aðeins brunakerfisskýrsla). Nýjasta úttektin er SEPTEMBER 2024: 23 léttvatn + 5 CO2 2kg + 3 CO2 5kg = 31. Skráð voru 26 léttvatn + 5 CO2 2kg + 2 CO2 5kg = 33 og dagsetningin ranglega ágúst 2025. Leiðrétt í 31 og sept 2024 — staðurinn er því tæp tvö ár fram yfir. 
   <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 — lestur á 10 úttektarskýrslum · natalie</sub>
+
+### Center Hótel — opinber nöfn og heimilisföng af centerhotels.com
+
+- **Hótelin eru NÍU og vefur félagsins er heimildin um nöfn og heimilisföng.**
+  <br>Grandi by Center Hotels — Seljavegur 2 · Center Hotels Plaza — AÐALSTRÆTI 4-6 · Miðgarður by Center Hotels — Laugavegur 120 · Þingholt by Center Hotels — Þingholtsstræti 3-5 · Center Hotels Laugavegur — Laugavegur 95-99 · Center Hotels Arnarhvoll — Ingólfsstræti 1 · Center Hotels Skjaldbreið — Lauga
+  <br><sub>2026-08-22 · slokkvitaeki · Cowork 21.08.2026 — centerhotels.com · natalie</sub>
 
 ### design
 
@@ -1967,11 +1979,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Innihald: bls.1 forsíða og efnisyfirlit · bls.2 starfsstöðvarnar tíu með tækjafjölda og brunakerfaverði 2023 · bls.3 uppskrift af meginsamningnum 16.01.2018 (frumrit í Scan2026-06-30_215459.pdf, náðist ekki út vegna 10 MB þaks á Drive-tenglinum) · bls.4 rammasamningur 25.03.2026 (frumrit) · bls.5 Gr
   <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
-### Center Hótel — móðursamningurinn er frá 16.01.2018
+### Center Hótel — níu-hótela listinn með verðum
 
-- **Rammasamningurinn sem nær yfir ÖLL Centerhotels-hótelin er þjónustusamningur dags. 16.01.2018 við Miðbæjarhótel, Aðalstræti 6, kt 450905-1430.**
-  <br>Fannst í Scan2026-06-30_215459.pdf (janúar-möppan, Drive-mappa 1z7r77eOkwIopHrH5nF7JsbrGyMlil885). Orðalag: „...muni sjá um árlega þjónustu slökkvitækja og tengdum búnaði, á núverandi hótelum félagsins." BÁÐAR undirskriftarlínur útfylltar — Guðlaug Ólafsd. fyrir hönd félagsins. Þetta er eina Center-
-  <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 — leit í öllum 12 skönnum í Drive-möppu 1z7r77eOkwIopHrH5nF7JsbrGyMlil885 · natalie</sub>
+- **Einu skjölin sem telja upp öll hótelin eru fjögur yfirlitsbréf „Brunakerfi yfirfarin, prófuð og vottuð fyrir Center Hótel" (2023).**
+  <br>Í Scan2026-07-12_183138.pdf. Listinn: 1 Grandi Seljavegur 2 · 2 Miðgarður Laugavegi 120 · 3 Arnarhvoll Ingólfsstræti 1 · 4 Hlaðvarpinn Aðalstræti 4 · 5 Plaza Aðalstræti 4 · 6 Klöpp Klapparstíg 26 · 7 Þingholt · 8 Laugavegur 95-99 · 9 Skjaldbreið Laugavegi 16. Brunakerfaverð 2023: Grandi 418.700 · Mi
+  <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
 ### Plaza er Aðalstræti 6 í skýrslum en Aðalstræti 4 í kerfinu
 
@@ -1979,17 +1991,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Úttektarskýrslur 2023/2024/2025 segja allar „Hótel Plaza (Center Hótel) Aðalstræti 6". Reikningur 104631 (18.01.24) er stílaður á „Miðbæjarhótel/Centerhotels ehf., Aðalstræti 6". Níu-hótela listinn segir hins vegar „Plaza Aðalstræti 4" OG „Hlaðvarpinn Aðalstræti 4". Í fyrirtaeki stendur Aðalstræti 4
   <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
-### Center Hótel — níu-hótela listinn með verðum
+### Center Hótel — móðursamningurinn er frá 16.01.2018
 
-- **Einu skjölin sem telja upp öll hótelin eru fjögur yfirlitsbréf „Brunakerfi yfirfarin, prófuð og vottuð fyrir Center Hótel" (2023).**
-  <br>Í Scan2026-07-12_183138.pdf. Listinn: 1 Grandi Seljavegur 2 · 2 Miðgarður Laugavegi 120 · 3 Arnarhvoll Ingólfsstræti 1 · 4 Hlaðvarpinn Aðalstræti 4 · 5 Plaza Aðalstræti 4 · 6 Klöpp Klapparstíg 26 · 7 Þingholt · 8 Laugavegur 95-99 · 9 Skjaldbreið Laugavegi 16. Brunakerfaverð 2023: Grandi 418.700 · Mi
-  <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
-
-### Þverholt 14 er lögheimili Centerhotels, ekki starfsstöð
-
-- **Starfsstöðin „Center Hótel - Þverholt 14" (fid 1627) varð til úr rangnefndri samningsskrá.**
-  <br>Þverholt 14 er heimilisfang félagsins á rammasamningnum, ekki hótel í þjónustu. Staðurinn ber engin tæki og enga úttektarskýrslu — aðeins samningsskjölin #9386 og #8739. Sama villa og Norðurstígur 5a í Heimaleigu-hópnum: heimilisfang á skjali gert að starfsstöð. ÞARF ÁKVÖRÐUN Agnars um hvort staðuri
-  <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
+- **Rammasamningurinn sem nær yfir ÖLL Centerhotels-hótelin er þjónustusamningur dags. 16.01.2018 við Miðbæjarhótel, Aðalstræti 6, kt 450905-1430.**
+  <br>Fannst í Scan2026-06-30_215459.pdf (janúar-möppan, Drive-mappa 1z7r77eOkwIopHrH5nF7JsbrGyMlil885). Orðalag: „...muni sjá um árlega þjónustu slökkvitækja og tengdum búnaði, á núverandi hótelum félagsins." BÁÐAR undirskriftarlínur útfylltar — Guðlaug Ólafsd. fyrir hönd félagsins. Þetta er eina Center-
+  <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 — leit í öllum 12 skönnum í Drive-möppu 1z7r77eOkwIopHrH5nF7JsbrGyMlil885 · natalie</sub>
 
 ### Center Hótel — enginn samningur nefnir Miðgarð eða Plaza
 
@@ -1997,23 +2003,29 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Lesin voru öll fimm samningsskjöl Centerhotels í Drive. (1) „Center Hótel — þjónustusamningur 2026" (25.03.2026) er RAMMASAMNINGUR: eina heimilisfangið er Þverholt 14 = lögheimili félagsins, og reiturinn Annað segir „Þjónusta á öllum hótelum Centerhótels varðandi slökkvitæki og brunaslöngur". Undirs
   <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 — lestur á 5 samningsskjölum í Drive · natalie</sub>
 
+### Þverholt 14 er lögheimili Centerhotels, ekki starfsstöð
+
+- **Starfsstöðin „Center Hótel - Þverholt 14" (fid 1627) varð til úr rangnefndri samningsskrá.**
+  <br>Þverholt 14 er heimilisfang félagsins á rammasamningnum, ekki hótel í þjónustu. Staðurinn ber engin tæki og enga úttektarskýrslu — aðeins samningsskjölin #9386 og #8739. Sama villa og Norðurstígur 5a í Heimaleigu-hópnum: heimilisfang á skjali gert að starfsstöð. ÞARF ÁKVÖRÐUN Agnars um hvort staðuri
+  <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
+
 ### Norðurstígur 5a — ekki starfsstöð
 
 - **Norðurstígur 5a var tekinn út úr Heimaleigu-hópnum 21.08.2026 að ósk Agnars.**
   <br>Staðurinn (fid 1746) var stofnaður sama dag út frá reikningi R-107718 sem er stílaður á „Mannheimar ehf - Norðurstíg 5a". Engin tæki, engin úttektarskýrsla. Mannheimar ehf hafa aðeins eina þjónustustöð: Grettisgötu 62. Reikningurinn (skjal #9478) var færður þangað. Afrit af röðinni í backup_nordurst
   <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 — beiðni Agnars · natalie</sub>
 
-### Urðarhvarf 2 — 4 léttvatn vantaði
-
-- **Júlí-2026 skýrslan segir 37 léttvatn + 5 brunaslöngur; aðeins 33 léttvatn voru skráð.**
-  <br>4 léttvatnstæki bætt við (AE20260821-90001..4) svo staðurinn stemmi við nýjustu skýrslu. Gamla talan (33) kom úr 2025-skýrslunni.
-  <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
-
 ### Heimaleiga — vörumerkjanöfn staða
 
 - **Vörumerkjanöfnin koma úr úttektarskýrslunum sjálfum, ekki úr appinu.**
   <br>Staðfest í skýrslutexta: S30/Heimaleiga (Ármúli 13A), Máni Apartments (Laugavegur 18, 3.-6. hæð), Midtown Hotel (Laugavegur 18, 1.-2. hæð — skýrslan heitir „Máni Apartments og Midtown Hotel"), Blue Montain Apartments (Urðarhvarf 2, 2023), Icelandic Apartments (Urðarhvarf 4, 2023), Iceland Comfort Ap
   <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 — lestur á 14 úttektarskýrslum Heimaleigu-hópsins · natalie</sub>
+
+### Urðarhvarf 2 — 4 léttvatn vantaði
+
+- **Júlí-2026 skýrslan segir 37 léttvatn + 5 brunaslöngur; aðeins 33 léttvatn voru skráð.**
+  <br>4 léttvatnstæki bætt við (AE20260821-90001..4) svo staðurinn stemmi við nýjustu skýrslu. Gamla talan (33) kom úr 2025-skýrslunni.
+  <br><sub>2026-08-21 · slokkvitaeki · Cowork 21.08.2026 · natalie</sub>
 
 ### greidandi
 
@@ -2087,22 +2099,16 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>payday-push.js buildPayload + findOrCreateCustomer (13.08.2026). Svarið ber delivery/email_used/email_synced og Kröfu yfirlit sýnir það í toast/samantekt. fyrirtaeki.payday_delivery yfirskrifar sjálfgefnina þegar sett.
   <br><sub>2026-08-13 · slokkvitaeki · afhendingar-lagfæring 13.08.2026 · claude-rannsokn</sub>
 
-### rukkunarkedjan-gaettir
+### void-fellir-krofu
 
-- **Allar kröfusendingar fara um payday-push sem gætir: void rukkast aldrei; krafa krefst customer_base_id; byte-eins tvíburi þegar í kröfu stöðvar (force_duplicate yfirskrifar); engin afhendingarleið (hvorki payday_delivery né netfang) setur í biðstöðu (force_delivery yfirskrifar). Kröfusending lyftir status í final.**
-  <br>Gáttir í netlify/functions/payday-push.js. Vistun sölu er aldrei stöðvuð — gáttir gilda aðeins um sendingu. Sjá docs/RUKKUNARKEDJAN.md.
+- **Void á sölu sem er komin í kröfu VERÐUR að fella Payday-kröfuna í leiðinni (annars greiðir kúnninn afturkallaða sölu). Greidd sala verður aldrei void — kreditfærsla í staðinn. Rétt tekjusía er paid_at IS NOT NULL, ekki status.**
+  <br>Patch 193 + 197 afturkalla nú í Payday fyrir void og hafna void á greiddri sölu. payday-sync-paid skráir paid_at áfram og eftirlitið flaggar void+greitt.
   <br><sub>2026-08-13 · slokkvitaeki · rukkunarkedju-rannsókn 13.08.2026 · claude-rannsokn</sub>
 
 ### eftirlit-daglegt
 
 - **rukkun_eftirlit() í gagnagrunninum skilar 8 gátlistum sem eiga allir að vera tómir; payday-sync-cron keyrir það kl. 10 og 15 og sendir póst á Agnar við frávik.**
   <br>Gátlistar: doc-númeraárekstrar, tvínotuð sölunúmer, rukkað-ekki-final, void-greitt, byte-eins tvítök, rukkað án kt, rukkað án netfangs, félög án afhendingarleiðar.
-  <br><sub>2026-08-13 · slokkvitaeki · rukkunarkedju-rannsókn 13.08.2026 · claude-rannsokn</sub>
-
-### void-fellir-krofu
-
-- **Void á sölu sem er komin í kröfu VERÐUR að fella Payday-kröfuna í leiðinni (annars greiðir kúnninn afturkallaða sölu). Greidd sala verður aldrei void — kreditfærsla í staðinn. Rétt tekjusía er paid_at IS NOT NULL, ekki status.**
-  <br>Patch 193 + 197 afturkalla nú í Payday fyrir void og hafna void á greiddri sölu. payday-sync-paid skráir paid_at áfram og eftirlitið flaggar void+greitt.
   <br><sub>2026-08-13 · slokkvitaeki · rukkunarkedju-rannsókn 13.08.2026 · claude-rannsokn</sub>
 
 ### vidhengi-krossud-a-kunna
@@ -2117,11 +2123,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Rót fimm tvínotaðra númera: bakfyllingar með forsett númer framhjá sekvensnum. Trigger set_reikningur_num lagaður 13.08.2026. UNIQUE-vísir á num bíður hreinsunar (RUKKUNARKEDJAN 5c/5h).
   <br><sub>2026-08-13 · slokkvitaeki · rukkunarkedju-rannsókn 13.08.2026 · claude-rannsokn</sub>
 
-### uppbygging
+### rukkunarkedjan-gaettir
 
-- **Slökkvitæki ehf og Brunahólf eru aðskilin fyrirtæki, ekki tvö vörumerki**
-  <br>Þau deila Supabase-verkefni osfdzskyvisifcwyjkuk. customers_base/fyrirtaeki/customer_documents = Brunahólf; uttaeki/solur/verkbeidnir/vidskiptavinir = Slökkvitæki.
-  <br><sub>2026-08-07 · baedi · agnar · chat</sub>
+- **Allar kröfusendingar fara um payday-push sem gætir: void rukkast aldrei; krafa krefst customer_base_id; byte-eins tvíburi þegar í kröfu stöðvar (force_duplicate yfirskrifar); engin afhendingarleið (hvorki payday_delivery né netfang) setur í biðstöðu (force_delivery yfirskrifar). Kröfusending lyftir status í final.**
+  <br>Gáttir í netlify/functions/payday-push.js. Vistun sölu er aldrei stöðvuð — gáttir gilda aðeins um sendingu. Sjá docs/RUKKUNARKEDJAN.md.
+  <br><sub>2026-08-13 · slokkvitaeki · rukkunarkedju-rannsókn 13.08.2026 · claude-rannsokn</sub>
 
 ### kodi
 
@@ -2138,6 +2144,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 - **Hver eyðileggjandi DB-aðgerð fær afritstöflu backup_YYYYMMDD_<hvað> áður en hún keyrir**
   <br>Dæmi: backup_20260711_* og backup_20260722_solur_*.
+  <br><sub>2026-08-07 · baedi · agnar · chat</sub>
+
+### uppbygging
+
+- **Slökkvitæki ehf og Brunahólf eru aðskilin fyrirtæki, ekki tvö vörumerki**
+  <br>Þau deila Supabase-verkefni osfdzskyvisifcwyjkuk. customers_base/fyrirtaeki/customer_documents = Brunahólf; uttaeki/solur/verkbeidnir/vidskiptavinir = Slökkvitæki.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
 
 ---

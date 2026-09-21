@@ -28,9 +28,13 @@
     .replace(/[^a-z0-9áðéíóúýþæö]+/g,' ').replace(/\s+/g,' ').trim(); }
   function _compact(s){ return _norm(s).replace(/\s+/g,''); }
   function _streetnum(s){ var n=_norm(s); var m=n.match(/([a-záðéíóúýþæö]{3,})\s*(\d+)/); return m?(m[1]+m[2]):''; }
-  function _blank(){ return {units:0,y2024:0,y2025:0,y2026:0,next:null}; }
+  // 21.09.2026 (úttekt): ártölin voru HARÐKÓÐUÐ (y2024/y2025/y2026, „vantar 2026") — 1. janúar hefði yfirlitið
+  // haldið áfram að spyrja um 2026 og aldrei sýnt 2027. Nú rúlla þau: líðandi ár + þrjú á undan (sama og 187).
+  var AR_NU=new Date().getFullYear();
+  var YEARS=[AR_NU-3,AR_NU-2,AR_NU-1,AR_NU].map(String);
+  function _blank(){ return {units:0,y:{},next:null}; }
   function _add(e,u){ e.units++; var y=u.last_insp?String(u.last_insp).slice(0,4):null;
-    if(y==='2024')e.y2024++; else if(y==='2025')e.y2025++; else if(y==='2026')e.y2026++;
+    if(y) e.y[y]=(e.y[y]||0)+1;
     if(u.next_insp&&(!e.next||u.next_insp<e.next)) e.next=u.next_insp; }
   function getEquip(){
     if(_equip) return Promise.resolve(_equip);
@@ -144,12 +148,14 @@
       // Per-staðar talning (facts → worksite → nafn) — sjá coEquipSt að ofan.
       var kt=digits(c.kennitala); var st=coEquipSt(equip,c); var lks=uf[kt]||{};
       var units=st?st.units:0;
-      var d23=!!lks['2023'];
-      var d24=(st&&st.y2024>0)||!!lks['2024'], d25=(st&&st.y2025>0)||!!lks['2025'], d26=(st&&st.y2026>0)||!!lks['2026'];
-      var hasData=units>0||d24||d25||d26;
+      // d[ár] = úttekt það ár: tæki með last_insp á árinu EÐA skýrsluhlekkur. Elsta árið (dálkur 1) telur aðeins
+      // hlekk — óbreytt hegðun frá því 2023 var þar — og telst ekki til „gagna" frekar en áður.
+      var d={}; YEARS.forEach(function(y,i){ d[y]=(i>0&&!!(st&&st.y&&st.y[y]>0))||!!lks[y]; });
+      var dNu=d[YEARS[3]], dEldri=d[YEARS[1]]||d[YEARS[2]];
+      var hasData=units>0||dNu||dEldri;
       var next=st?st.next:null; var overdue=!!(next&&next<today&&hasData);
-      var cls=!hasData?'none':(d26?'done':((d24||d25)?'need':'other'));
-      return {c:c,kt:kt,units:units,d23:d23,d24:d24,d25:d25,d26:d26,lks:lks,next:next,overdue:overdue,cls:cls,hasData:hasData};
+      var cls=!hasData?'none':(dNu?'done':(dEldri?'need':'other'));
+      return {c:c,kt:kt,units:units,d:d,lks:lks,next:next,overdue:overdue,cls:cls,hasData:hasData};
     });
     var tot={n:all.length,done:0,need:0,none:0,overdue:0};
     all.forEach(function(r){ if(r.cls==='done')tot.done++; else if(r.cls==='need')tot.need++; else if(r.cls==='none')tot.none++; if(r.overdue)tot.overdue++; });
@@ -164,7 +170,7 @@
       var nextCell = r.next ? '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(r.overdue?'background:#fef2f2;color:#b91c1c;':'color:#475569;')+'font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(r.next)+(r.overdue?' ⚠':'')+'</td>' : '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>';
       return '<tr><td style="padding:5px 6px;border-bottom:'+bd+'">'+nm+'</td>'+
         '<td style="padding:5px 6px;border-bottom:'+bd+';color:#64748b;font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(fmtKt(r.kt))+'</td>'+
-        unitCell+yCell(r.d23,r.units,r.lks['2023'])+yCell(r.d24,r.units,r.lks['2024'])+yCell(r.d25,r.units,r.lks['2025'])+yCell(r.d26,r.units,r.lks['2026'])+nextCell+'</tr>';
+        unitCell+YEARS.map(function(y){ return yCell(r.d[y],r.units,r.lks[y]); }).join('')+nextCell+'</tr>';
     }).join('');
     if(!trs) trs='<tr><td colspan="8" style="padding:18px;text-align:center;color:#94a3b8">Ekkert fannst.</td></tr>';
     box.innerHTML=
@@ -175,16 +181,16 @@
       '</div>'+
       '<div class="_ovr-totals" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
         '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;font-size:13px"><b>'+tot.n+'</b> fyrirtæki</div>'+
-        '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 14px;font-size:13px;color:#15803d">✓ <b>'+tot.done+'</b> með úttekt 2026</div>'+
-        '<div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:8px 14px;font-size:13px;color:#b7791f">⏳ <b>'+tot.need+'</b> vantar 2026</div>'+
+        '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 14px;font-size:13px;color:#15803d">✓ <b>'+tot.done+'</b> með úttekt '+AR_NU+'</div>'+
+        '<div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:8px 14px;font-size:13px;color:#b7791f">⏳ <b>'+tot.need+'</b> vantar '+AR_NU+'</div>'+
         '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:8px 14px;font-size:13px;color:#b45309">⚠ <b>'+tot.none+'</b> engin gögn</div>'+
         '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 14px;font-size:13px;color:#b91c1c">⏰ <b>'+tot.overdue+'</b> skoðun liðin</div>'+
       '</div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">'+
-        chip('all','Allir ('+all.length+')')+chip('done','✓ Með úttekt 2026 ('+tot.done+')')+chip('need','⏳ Vantar 2026 ('+tot.need+')')+chip('none','⚠ Engin gögn ('+tot.none+')')+chip('overdue','⏰ Skoðun liðin ('+tot.overdue+')')+
+        chip('all','Allir ('+all.length+')')+chip('done','✓ Með úttekt '+AR_NU+' ('+tot.done+')')+chip('need','⏳ Vantar '+AR_NU+' ('+tot.need+')')+chip('none','⚠ Engin gögn ('+tot.none+')')+chip('overdue','⏰ Skoðun liðin ('+tot.overdue+')')+
       '</div>'+
       '<div style="overflow-x:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+
-      ['Fyrirtæki','Kennitala','Tæki','2023','2024','2025','2026','Næsta skoðun'].map(function(h,i){ return '<th style="text-align:'+(i<2?'left':'center')+';color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">'+h+'</th>'; }).join('')+
+      ['Fyrirtæki','Kennitala','Tæki'].concat(YEARS,['Næsta skoðun']).map(function(h,i){ return '<th style="text-align:'+(i<2?'left':'center')+';color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">'+h+'</th>'; }).join('')+
       '</tr></thead><tbody>'+trs+'</tbody></table></div>';
     box.querySelector('#_isy-back').onclick=function(){ closeOverview(); };
     var _pb=box.querySelector('#_isy-print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Fyrirtæki í þjónustu — staða og úttektir', box); };

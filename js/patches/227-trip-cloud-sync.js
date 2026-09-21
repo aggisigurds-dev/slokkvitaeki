@@ -74,14 +74,36 @@
     if (!any) return;
     var ok = false;
     var o = {}; o[KEY] = patch;                                  // deep-merges per coId
+    aLofti.push(sending);                                        // 21.09.2026 (úttekt): sjá skolaStrax
     try { ok = await as.save(o); } catch (_) { ok = false; }
+    var ix = aLofti.indexOf(sending); if (ix >= 0) aLofti.splice(ix, 1);
     // Only the entries that actually saved get dropped. On failure re-queue this
     // batch for the next timer (mirror patch 147's notes-flush re-queue) without
     // clobbering any newer write that arrived while we were awaiting.
-    if (!ok) {
-      Object.keys(sending).forEach(function (co) { if (!(co in pending)) pending[co] = sending[co]; });
+    if (ok) merkjaStadfest(sending);
+    else {
+      afturIBid(sending);
       clearTimeout(timer); timer = setTimeout(flush, 1200);
     }
+  }
+
+  // 21.09.2026 (úttekt): lotur sem venjulega leiðin (án keepalive) er með á lofti,
+  // og nýjasti _ts sem þjónninn hefur STAÐFEST per fyrirtæki. Hvert eintak er
+  // allur ferðahluturinn, svo nýrra staðfest eintak leysir eldra alveg af hólmi —
+  // eldri lota sem fellur seinna má þá EKKI fara aftur í bið og yfirskrifa það
+  // nýrra í skýinu (lokunarskolunin sendir samhliða venjulegu leiðinni).
+  var aLofti = [], stadfest = {};
+  function tsAf(v) { try { return +((JSON.parse(v) || {})._ts || 0); } catch (_) { return 0; } }
+  function merkjaStadfest(lota) {
+    Object.keys(lota).forEach(function (co) { var t = tsAf(lota[co]); if (t > (stadfest[co] || 0)) stadfest[co] = t; });
+  }
+  function afturIBid(lota) {
+    Object.keys(lota).forEach(function (co) {
+      if (co in pending) return;                                 // nýrra skrif bíður þegar
+      var t = tsAf(lota[co]);
+      if (t && t <= (stadfest[co] || 0)) return;                 // sama eða nýrra er þegar komið upp
+      pending[co] = lota[co];
+    });
   }
 
   // ── cloud → local restore (newest-wins) ─────────────────────────────────
@@ -186,10 +208,48 @@
    * Sama regla og papp 365 og flushSyncNow() í hubbnum: það sem bíður verður að
    * fara af stað þegar síðan hverfur.
    */
+  /* 21.09.2026 (úttekt): útskolunin hér að ofan fór af stað — en um supabase-js,
+   * sem notar venjulegt fetch ÁN keepalive. Vafrinn drepur þá beiðni þegar síðan
+   * hverfur (mælt 09.09.2026, sjá 361), svo ferðin náði samt ekki upp ef símanum
+   * var læst innan 1,2 sek. Nú fer lotan með `AppSettings.saveVidLokun` (85):
+   * SAMA `app_settings_merge`-kallið og venjulega leiðin sendir, beint á
+   * PostgREST með keepalive — sama mynstur og 361/368.
+   *
+   *   · Ekkert sent nema eitthvað bíði (`pending`) eða sé enn á lofti án
+   *     keepalive (`aLofti`). Sé venjulega leiðin búin gerist ekkert.
+   *   · Lota á lofti fer EINU SINNI með (aLofti tæmt), svo visibilitychange +
+   *     pagehide í sömu lokun tvísenda ekki. Sama eintak með sama _ts tvisvar
+   *     er skaðlaust — þjónninn sameinar það í sjálft sig.
+   *   · Yfir ~60 KB eða saveVidLokun ekki til → `null` → venjulega leiðin.
+   *   · Falli keepalive-kallið fer lotan aftur í bið og tímarinn reynir á ný.
+   */
   function skolaStrax() {
-    if (!Object.keys(pending).length) return;
+    var lotur = aLofti.splice(0, aLofti.length);
+    if (!lotur.length && !Object.keys(pending).length) return;
     clearTimeout(timer);
-    try { flush(); } catch (_) {}
+    var sending = {};
+    lotur.forEach(function (l) { Object.keys(l).forEach(function (co) { sending[co] = l[co]; }); });
+    var bidu = pending; pending = {};
+    Object.keys(bidu).forEach(function (co) { sending[co] = bidu[co]; });         // það nýjasta ræður
+    var patch = {}, any = false;
+    Object.keys(sending).forEach(function (co) {
+      try { patch[co] = JSON.parse(sending[co]); any = true; } catch (_) {}
+    });
+    if (!any) return;
+    var as = AS(), lok = null;
+    var o = {}; o[KEY] = patch;
+    try { if (as && typeof as.saveVidLokun === 'function') lok = as.saveVidLokun(o); } catch (_) { lok = null; }
+    if (!lok) {                                                  // of stórt / 85 ekki tilbúið → gamla leiðin
+      Array.prototype.push.apply(aLofti, lotur);                 // þær eru enn á lofti — ekki endursenda
+      afturIBid(bidu);
+      if (Object.keys(pending).length) { try { flush(); } catch (_) {} }
+      return;
+    }
+    lok.then(function (ok) {
+      if (ok) { merkjaStadfest(sending); return; }
+      afturIBid(sending);
+      clearTimeout(timer); timer = setTimeout(flush, 1200);
+    });
   }
   window.addEventListener('pagehide', skolaStrax);
   document.addEventListener('visibilitychange', function () {

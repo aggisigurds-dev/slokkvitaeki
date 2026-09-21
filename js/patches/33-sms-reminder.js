@@ -11,7 +11,9 @@
  *   sms_template      — message body template
  *   sms_company_phone — shown in message as contact number
  *   sms_overdue_days  — days after dropoff to flag as overdue (default 2)
- *   sms_sent_log      — JSON map of {jobId: isoTimestamp}
+ *   sms_sent_log      — JSON map of {jobId: isoTimestamp} — 21.09.2026 (úttekt):
+ *                       aðeins skyndiminni; sannleikurinn er á þjóninum í
+ *                       AppSettings-lyklinum `sms_aminningar_log` (sama lögun)
  *   sms_twilio_sid / sms_twilio_token / sms_twilio_from — Twilio (optional)
  */
 (() => {
@@ -67,13 +69,165 @@
     return 'sms:' + normalizePhone(phone) + '?body=' + encodeURIComponent(body);
   }
 
-  function getSmsLog() {
-    try { return JSON.parse(localStorage.getItem(K.LOG) || '{}'); } catch { return {}; }
+  // ── Áminningasaga: þjónninn er sannleikurinn — 21.09.2026 (úttekt) ────────
+  // Áður bjó sagan AÐEINS í localStorage. Fjórar vélar + sími vinna í sömu
+  // gögnum, svo önnur vél sá ekki að áminning fór og sendi aftur → kúnni fékk
+  // tvöfalt. Nú er sagan VARPA (lykill → ISO-tími) undir sér-lykli í
+  // app_settings: AppSettings.save djúp-sameinar vörpur per lykil (fylki
+  // yfirskrifast — þess vegna ALDREI fylki hér). localStorage er áfram skrifað
+  // strax, en aðeins sem skyndiminni/varaleið.
+  //
+  // Sama smiðjan þjónar papp 37 (fjöldaáminningar) um window.__AminningaSaga —
+  // þar er lykillinn fyrirtækjanafn og merkingin önnur, svo hann fær sér-lykil.
+  //   lsLykill     — localStorage-lykillinn (skyndiminni þessa vafra)
+  //   thjonsLykill — lykill í app_settings.settings (sannleikurinn)
+  function buaTilSogu(lsLykill, thjonsLykill, merki) {
+    const UPPFLUTT = lsLykill + '__uppflutt_v1';
+    let _ferskt = {};               // síðasta ferska svar þjóns í þessum flipa
+
+    function erVarpa(o) { return !!o && typeof o === 'object' && !Array.isArray(o); }
+    function ms(iso) { const t = Date.parse(iso); return isNaN(t) ? 0 : t; }
+    // Nýrri tími vinnur per lykil.
+    function sameina(a, b) {
+      const ut = {};
+      [a, b].forEach(m => {
+        if (!erVarpa(m)) return;
+        Object.keys(m).forEach(k => {
+          if (typeof m[k] !== 'string') return;
+          if (!ut[k] || ms(m[k]) > ms(ut[k])) ut[k] = m[k];
+        });
+      });
+      return ut;
+    }
+    function lesaLocal() {
+      try { const o = JSON.parse(localStorage.getItem(lsLykill) || '{}'); return erVarpa(o) ? o : {}; }
+      catch { return {}; }
+    }
+    // SAMSTILLT — kallað úr render. Les skyndiminni flipans í AppSettings og
+    // það sem saekjaFerskt() náði síðast í; ekkert netkall hér.
+    function lesaThjon() {
+      let m = null;
+      try { m = window.AppSettings && window.AppSettings.path(thjonsLykill); } catch (_) {}
+      return sameina(m, _ferskt);
+    }
+    function lesa() { return sameina(lesaThjon(), lesaLocal()); }
+
+    function tilkynna(astaeda) {
+      console.warn('[' + merki + '] áminningasaga vistaðist EKKI á þjóninn (' + thjonsLykill + '):', astaeda);
+      try {
+        if (typeof window.logProblem === 'function') {
+          window.logProblem('sms_log_save_failed', thjonsLykill + ': ' + String(astaeda).slice(0, 160));
+        }
+      } catch (_) {}
+      // Uppflutningurinn sendir allt sem vantar á þjóninn — leyfa honum að
+      // keyra aftur við næstu hleðslu svo þessi færsla týnist ekki.
+      try { localStorage.removeItem(UPPFLUTT); } catch (_) {}
+    }
+    // Kastar ALDREI — sagan má ekki stöðva SMS-flæðið.
+    async function vistaAThjon(patch) {
+      try {
+        const AS = window.AppSettings;
+        if (!AS || typeof AS.save !== 'function') { tilkynna('AppSettings ekki til'); return false; }
+        const ok = await AS.save({ [thjonsLykill]: patch });
+        if (ok === true) return true;
+        tilkynna('save skilaði ' + ok + ' (í biðröð / óstaðfest)');
+      } catch (e) { tilkynna((e && e.message) || e); }
+      return false;
+    }
+    // localStorage STRAX (samstillt), þjónninn í kjölfarið.
+    function skra(lyklar) {
+      const nu = new Date().toISOString();
+      const patch = {};
+      const log = lesaLocal();
+      (lyklar || []).forEach(k => { if (k == null || k === '') return; log[k] = nu; patch[k] = nu; });
+      if (!Object.keys(patch).length) return Promise.resolve(false);
+      try { localStorage.setItem(lsLykill, JSON.stringify(log)); } catch (_) {}
+      return vistaAThjon(patch);
+    }
+
+    // Ferskt af þjóni rétt fyrir sendingu. Létt leið fyrst: AÐEINS þessi lykill
+    // (JSON-slóð í select, ~100 ms) í stað alls 1,4 MB blobbans; AppSettings.load()
+    // er varaleiðin. Skilar vörpu, eða null = VEIT EKKI (tímamörk/villa) — þá
+    // heldur kallarinn áfram með sendinguna. Tímamörkin eru undir 5 s af ásetningi:
+    // vafrinn leyfir sms:-opnun aðeins stutta stund eftir smellinn.
+    function saekjaFerskt(timamork) {
+      const verk = (async () => {
+        try {
+          const sb = getSB();
+          if (sb) {
+            const r = await sb.from('app_settings')
+              .select('saga:settings->' + thjonsLykill).eq('id', 1).maybeSingle();
+            if (!r.error) { _ferskt = sameina(r.data && r.data.saga, null); return _ferskt; }
+            console.warn('[' + merki + '] létt sókn á sögu mistókst:', r.error.message);
+          }
+          if (window.AppSettings && typeof window.AppSettings.load === 'function') {
+            await window.AppSettings.load();
+            _ferskt = sameina(window.AppSettings.path(thjonsLykill), null);
+            return _ferskt;
+          }
+        } catch (e) { console.warn('[' + merki + '] sókn á sögu mistókst:', e); }
+        return null;
+      })();
+      const bid = new Promise(res => setTimeout(() => res(null), timamork || 4000));
+      return Promise.race([verk, bid]);
+    }
+    // Sendi ÖNNUR vél? Þjónninn á færslu sem þessi vafri á ekki (eða á eldri).
+    // Skilar ISO-tíma hinnar vélarinnar, annars null.
+    function annarVel(lykill, thjonn) {
+      const s = thjonn && thjonn[lykill];
+      if (!s) return null;
+      const l = lesaLocal()[lykill];
+      return (!l || ms(s) > ms(l)) ? s : null;
+    }
+
+    // Einskiptis-uppflutningur: það sem þessi vafri á en þjóninn vantar (eða á
+    // eldra) fer upp í EINU save-kalli, hámark 500 nýjustu. Merkt í localStorage
+    // svo það endurtaki sig ekki; merkið er fellt ef vistun bregst síðar.
+    async function flytjaUpp(tilraun) {
+      try {
+        if (localStorage.getItem(UPPFLUTT)) return;
+        const local = lesaLocal();
+        if (!Object.keys(local).length) { localStorage.setItem(UPPFLUTT, new Date().toISOString()); return; }
+        if (!getSB() || !window.AppSettings) {
+          if ((tilraun || 0) < 6) setTimeout(() => flytjaUpp((tilraun || 0) + 1), 5000);
+          return;
+        }
+        const thjonn = await saekjaFerskt(15000);
+        if (!thjonn) return;                       // veit ekki → reyna við næstu hleðslu
+        const vantar = Object.keys(local)
+          .filter(k => typeof local[k] === 'string' && (!thjonn[k] || ms(local[k]) > ms(thjonn[k])))
+          .sort((a, b) => ms(local[b]) - ms(local[a]))
+          .slice(0, 500);
+        if (!vantar.length) { localStorage.setItem(UPPFLUTT, new Date().toISOString()); return; }
+        const patch = {};
+        vantar.forEach(k => { patch[k] = local[k]; });
+        const ok = await vistaAThjon(patch);
+        if (ok) {
+          localStorage.setItem(UPPFLUTT, new Date().toISOString());
+          console.log('[' + merki + '] áminningasaga flutt á þjóninn: ' + vantar.length + ' færslur → ' + thjonsLykill);
+        }
+      } catch (e) { console.warn('[' + merki + '] uppflutningur sögu mistókst:', e); }
+    }
+
+    return { lesa, lesaLocal, lesaThjon, skra, saekjaFerskt, annarVel, flytjaUpp, thjonsLykill };
   }
+  // dd/mm/yyyy kl. hh:mm — fyrir „þegar send af annarri vél"-skilaboðin.
+  function dagsTimi(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const p = n => String(n).padStart(2, '0');
+    return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() + ' kl. ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  window.__AminningaSaga = { buaTil: buaTilSogu, dagsTimi };
+
+  // AppSettings-lykill: sms_aminningar_log  { [jobId]: iso }
+  const saga = buaTilSogu(K.LOG, 'sms_aminningar_log', 'sms-reminder');
+  setTimeout(() => saga.flytjaUpp(0), 6000);
+
+  // Sameining þjóns og localStorage (nýrri tími vinnur) — samstillt, úr render.
+  function getSmsLog() { return saga.lesa(); }
   function markSent(jobId) {
-    const log = getSmsLog();
-    log[jobId] = new Date().toISOString();
-    localStorage.setItem(K.LOG, JSON.stringify(log));
+    try { saga.skra([jobId]); } catch (e) { console.warn('[sms-reminder] markSent:', e); }
   }
 
   function daysSince(iso) {
@@ -191,7 +345,7 @@
               ${isOverdue ? `<span class="sms-job-overdue"> · ${days} dagar</span>` : ''}
             </div>
           </div>
-          <a href="${href}" class="sms-open-btn" onclick="window.__SmsReminder.onOpen(${j.id})">📱 SMS</a>
+          <a href="${href}" class="sms-open-btn" onclick="return window.__SmsReminder.onOpen(${j.id}, this, event)">📱 SMS</a>
         </div>`;
     }).join('');
 
@@ -294,11 +448,56 @@
   // Also refresh when new jobs complete (listen for mottaka:done)
   document.addEventListener('mottaka:done', () => setTimeout(renderPanel, 1000));
 
+  // ── Tvítékk rétt fyrir sendingu — 21.09.2026 (úttekt) ─────────────────────
+  // Smellurinn er stöðvaður augnablik, sagan sótt FERSK af þjóni, og sms:-
+  // hlekkurinn (óbreyttur) opnaður í kjölfarið. Hafi önnur vél þegar sent er
+  // spurt áður en sent er aftur. Náist ekki í þjóninn (tímamörk/villa) er sent
+  // eins og áður — sagan má aldrei stöðva SMS-flæðið.
+  const _leyft = {};   // jobId → ms; notandinn svaraði „Senda samt" (gildir í 60 s)
+  async function athugaOgSenda(jobId, href) {
+    let annar = null;
+    try {
+      const thjonn = await saga.saekjaFerskt(4000);
+      if (thjonn) annar = saga.annarVel(jobId, thjonn);
+      else console.warn('[sms-reminder] náði ekki í ferska sögu — sendi án tvítékks');
+    } catch (e) { console.warn('[sms-reminder] tvítékk mistókst — sendi samt:', e); }
+
+    if (annar) {
+      const texti = 'Áminning var þegar send af annarri vél ' + dagsTimi(annar) + '.\n\nSenda samt aftur?';
+      let ja = false;
+      try {
+        ja = (window.Confirm && typeof window.Confirm.show === 'function')
+          ? await window.Confirm.show(texti, { okText: 'Senda samt', cancelText: 'Sleppa' })
+          : window.confirm(texti);
+      } catch (_) { ja = false; }
+      renderPanel();                       // græni punkturinn birtist strax
+      if (!ja) {
+        if (window.Toast && Toast.show) Toast.show('SMS sleppt — áminning var þegar send ' + dagsTimi(annar));
+        return;
+      }
+      // Loki vafrinn á opnunina hér að neðan fer næsti smellur beint í gegn.
+      _leyft[jobId] = Date.now();
+    }
+    markSent(jobId);
+    try { window.location.href = href; } catch (e) { console.warn('[sms-reminder] gat ekki opnað SMS-hlekk:', e); }
+    setTimeout(renderPanel, 600);
+  }
+
   // Expose for inline onclick
   window.__SmsReminder = {
-    onOpen(jobId) {
-      markSent(jobId);
-      setTimeout(renderPanel, 600);
+    onOpen(jobId, el, ev) {
+      const href = el && el.getAttribute && el.getAttribute('href');
+      const nyleyft = _leyft[jobId] && (Date.now() - _leyft[jobId]) < 60000;
+      // Eldra kall án hlekks/atburðar, eða nýsamþykkt „Senda samt": fyrri hegðun.
+      if (!href || !ev || nyleyft) {
+        delete _leyft[jobId];
+        markSent(jobId);
+        setTimeout(renderPanel, 600);
+        return true;
+      }
+      ev.preventDefault();
+      athugaOgSenda(jobId, href);
+      return false;
     }
   };
 

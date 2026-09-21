@@ -312,7 +312,7 @@
       // listann úr localStorage áður en AppSettings hlóðst setið föst í „úrelt" þótt síðan sé endurhlaðin.
       _pricelist = null;
       console.warn('[bks] verðlisti úreltur — vistun stöðvuð', { a_thjoni: thjonsTimi, i_minni: _pricelistAsOf });
-      toast('⚠ Verðlistanum var breytt á annarri vél — endurhladdu áður en þú vistar', true);
+      toast('⚠ Verðlistanum var breytt á annarri vél — ekkert vistað. Lokaðu verðlistanum og opnaðu aftur til að sjá nýju verðin', true);
       return false;
     }
     _pricelist = items;

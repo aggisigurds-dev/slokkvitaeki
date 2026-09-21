@@ -11,7 +11,8 @@
  *   2. Group by company / customer
  *   3. Show a checklist modal — user can deselect individual customers
  *   4. "Senda" → opens email or SMS for each selected customer
- *   5. Marks sent date in localStorage so duplicates are visible
+ *   5. Marks sent date so duplicates are visible — 21.09.2026 (úttekt): on the
+ *      server (AppSettings key `bulk_aminningar_log`); localStorage is only a cache
  *
  * Uses window.EmailInvoice.sendMailto if available, else builds mailto: links.
  */
@@ -34,13 +35,63 @@
   }
 
   const LOG_KEY = 'bulk_reminder_log'; // { "CompanyName": isoTimestamp }
-  function getLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY)||'{}'); } catch { return {}; } }
+  // 21.09.2026 (úttekt): sagan bjó AÐEINS í localStorage, svo önnur vél sá ekki
+  // að áminning fór og sendi aftur. Nú er þjónninn sannleikurinn — AppSettings-
+  // lykill `bulk_aminningar_log` { [fyrirtækjanafn]: iso } (sér-lykill: hér er
+  // lykillinn fyrirtæki, í papp 33 verk-id). localStorage er skyndiminni/varaleið.
+  // Smiðjan býr í papp 33 (hleðst á undan); vanti hana er fallið á gömlu leiðina.
+  const THJONS_LYKILL = 'bulk_aminningar_log';
+  const ENDURSENDING_DAGAR = 30;   // eldri sending annarrar vélar telst fyrri umferð
+  let _saga = null;
+  function saga() {
+    if (!_saga && window.__AminningaSaga && typeof window.__AminningaSaga.buaTil === 'function') {
+      _saga = window.__AminningaSaga.buaTil(LOG_KEY, THJONS_LYKILL, 'bulk-reminders');
+    }
+    return _saga;
+  }
+  function getLocalLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY)||'{}'); } catch { return {}; } }
+  // Sameining þjóns og localStorage (nýrri tími vinnur per fyrirtæki).
+  function getLog() { const s = saga(); return s ? s.lesa() : getLocalLog(); }
   function markSent(companies) {
-    const log = getLog();
+    const s = saga();
+    if (s) { try { s.skra(companies); } catch (e) { console.warn('[bulk-reminders] markSent:', e); } return; }
+    console.warn('[bulk-reminders] __AminningaSaga vantar — sagan fór AÐEINS í localStorage');
+    try { if (typeof window.logProblem === 'function') window.logProblem('sms_log_save_failed', THJONS_LYKILL + ': smiðju vantar (papp 33)'); } catch (_) {}
+    const log = getLocalLog();
     const now = new Date().toISOString();
     companies.forEach(c => { log[c] = now; });
     localStorage.setItem(LOG_KEY, JSON.stringify(log));
   }
+  function dagsTimi(iso) {
+    if (window.__AminningaSaga && window.__AminningaSaga.dagsTimi) return window.__AminningaSaga.dagsTimi(iso);
+    return new Date(iso).toLocaleDateString('is-IS');
+  }
+  // Rétt fyrir sendingu: fersk saga af þjóni; þeim sem ÖNNUR vél sendi á síðustu
+  // ENDURSENDING_DAGAR daga er sleppt. Náist ekki í þjóninn (null) er engum sleppt —
+  // sagan má aldrei stöðva sendinguna. Tímamörk undir 5 s: vafrinn leyfir
+  // window.open aðeins stutta stund eftir smellinn.
+  async function skiptaEftirSogu(sel) {
+    const ut = { senda: sel, sleppt: [] };
+    const s = saga();
+    if (!s) return ut;
+    let thjonn = null;
+    try { thjonn = await s.saekjaFerskt(4000); } catch (_) {}
+    if (!thjonn) { console.warn('[bulk-reminders] náði ekki í ferska sögu — sendi án tvítékks'); return ut; }
+    const mork = Date.now() - ENDURSENDING_DAGAR * 86400000;
+    ut.senda = [];
+    sel.forEach(g => {
+      const annar = s.annarVel(g.name, thjonn);
+      if (annar && Date.parse(annar) >= mork) ut.sleppt.push({ name: g.name, hvenaer: annar });
+      else ut.senda.push(g);
+    });
+    return ut;
+  }
+  function segjaFraSlepptum(sleppt) {
+    if (!sleppt.length) return '';
+    const nofn = sleppt.slice(0, 3).map(x => x.name + ' (' + dagsTimi(x.hvenaer) + ')').join(', ');
+    return ' · ' + sleppt.length + ' sleppt — áminning var þegar send af annarri vél: ' + nofn + (sleppt.length > 3 ? ' o.fl.' : '');
+  }
+  setTimeout(() => { const s = saga(); if (s) s.flytjaUpp(0); }, 7000);
 
   // ── CSS ───────────────────────────────────────────────────────────────────
   if (!document.getElementById('bulk-reminder-style')) {
@@ -160,6 +211,9 @@
 
     const units = await loadDue(fromISO, toISO);
     const groups = await groupByCompany(units);
+    // 21.09.2026 (úttekt): fersk saga af þjóni svo „Sent"-merkið sýni líka
+    // sendingar annarra véla. Bregðist sóknin gildir skyndiminnið.
+    try { const s = saga(); if (s) await s.saekjaFerskt(4000); } catch (_) {}
     const log = getLog();
 
     if (!groups.length) {
@@ -228,9 +282,22 @@
     });
   }
 
-  function _sendEmail(groups) {
-    const sel = _getSelected(groups);
-    if (!sel.length) { if(window.Toast)Toast.show('Veldu að minnsta kosti eitt fyrirtæki'); return; }
+  // 21.09.2026 (úttekt): bæði sendiföllin tvítékka söguna á þjóni rétt fyrir
+  // sendingu (skiptaEftirSogu). Sendingin sjálf (mailto:/sms: + window.open) er óbreytt.
+  let _iGangi = false;   // vörn gegn tvísmelli á meðan sagan er sótt
+  async function _sendEmail(groups) {
+    const valid = _getSelected(groups);
+    if (!valid.length) { if(window.Toast)Toast.show('Veldu að minnsta kosti eitt fyrirtæki'); return; }
+    if (_iGangi) return;
+    _iGangi = true;
+    let skipt;
+    try { skipt = await skiptaEftirSogu(valid); } finally { _iGangi = false; }
+    const sel = skipt.senda;
+    if (!sel.length) {
+      if(window.Toast) Toast.show('Ekkert sent' + segjaFraSlepptum(skipt.sleppt));
+      closeModal();
+      return;
+    }
     sel.forEach(g => {
       const to = g.email || '';
       const subject = encodeURIComponent(buildEmailSubject(g));
@@ -239,20 +306,32 @@
       window.open(href, '_blank');
     });
     markSent(sel.map(g=>g.name));
-    if(window.Toast) Toast.show(`✓ ${sel.length} tölvupóst opnaðir`);
+    if(window.Toast) Toast.show(`✓ ${sel.length} tölvupóst opnaðir` + segjaFraSlepptum(skipt.sleppt));
     closeModal();
   }
 
-  function _sendSms(groups) {
-    const sel = _getSelected(groups);
-    if (!sel.length) { if(window.Toast)Toast.show('Veldu að minnsta kosti eitt fyrirtæki'); return; }
+  async function _sendSms(groups) {
+    const valid = _getSelected(groups);
+    if (!valid.length) { if(window.Toast)Toast.show('Veldu að minnsta kosti eitt fyrirtæki'); return; }
+    if (_iGangi) return;
+    _iGangi = true;
+    let skipt;
+    try { skipt = await skiptaEftirSogu(valid); } finally { _iGangi = false; }
+    // Sagan er nú sameiginleg öllum vélum: fyrirtæki án símanúmers fær ekkert SMS
+    // og má því ekki merkjast „sent" (áður merkt með — þá myndu hinar vélarnar sleppa því).
+    const sel = skipt.senda.filter(g => g.phone);
+    const simalaus = skipt.senda.length - sel.length;
+    if (!sel.length) {
+      if(window.Toast) Toast.show('Ekkert sent' + (simalaus ? ` · ${simalaus} án símanúmers` : '') + segjaFraSlepptum(skipt.sleppt));
+      closeModal();
+      return;
+    }
     sel.forEach(g => {
-      if (!g.phone) return;
       const msg = `Slökkvitæki ehf: ${g.units.length} tæki hjá ${g.name} eru á gjalddaga skoðunar (${g.units.map(u=>fmtDate(u.next_insp)).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}). Hafðu samband til að bóka tíma. ${localStorage.getItem('sms_company_phone')||''}`;
       window.open('sms:' + g.phone + '?body=' + encodeURIComponent(msg), '_blank');
     });
     markSent(sel.map(g=>g.name));
-    if(window.Toast) Toast.show(`✓ ${sel.length} SMS opnuð`);
+    if(window.Toast) Toast.show(`✓ ${sel.length} SMS opnuð` + (simalaus ? ` · ${simalaus} án símanúmers` : '') + segjaFraSlepptum(skipt.sleppt));
     closeModal();
   }
 

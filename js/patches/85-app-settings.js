@@ -424,17 +424,75 @@
     } catch (_) { console.error(skilabod); }
   }
 
-  async function _tomaBidrod() {
-    if (!_bidrod.length) return;
-    const eftir = [];
-    while (_bidrod.length) {
-      const p = _bidrod.shift();
-      let ok = false;
-      try { ok = await save(p.patch); } catch (_) { ok = false; }
-      if (!ok) { p.tilraunir++; if (p.tilraunir < 12) eftir.push(p); }
-    }
-    _bidrod.push(...eftir);
-    if (!_bidrod.length) _segjaFra('✓ Vistun tókst — biðröðin er tóm.');
+  /* ── VISTUN SEM LIFIR AF LOKUN (21.09.2026 (úttekt)) ─────────────────────
+   * supabase-js notar venjulegt fetch ÁN keepalive — beiðnin deyr með síðunni
+   * (mælt 09.09.2026, sjá 361). Útskolun við pagehide um `save()` fór því af
+   * stað en náði sjaldnast upp. Hér er SAMA kallið og `save()` reynir fyrst —
+   * `app_settings_merge`, ein atómísk sameining á þjóninum — sent beint á
+   * PostgREST með keepalive, sama mynstur og 361/368.
+   *
+   * Vísvitandi ENGIN eldri leið (lesa → sameina → skrifa) hér: hún er ekki
+   * örugg í einu kalli og gæti yfirskrifað stillingar annarrar vélar með gömlu
+   * afriti. Sé RPC-fallið ekki til eða svari þjónninn villu er skilað `false`
+   * og kallarinn notar venjulegu leiðina.
+   *
+   * Skilar `null` SAMSTUNDIS ef ekkert var sent (vantar slóð/lykil, eða body
+   * yfir ~60 KB — vafrinn hafnar stærra keepalive-body); annars loforði um
+   * true/false. `save()` og `saveVordud()` eru ósnert.
+   */
+  const LOKUN_HAMARK = 60000;   // bæti; keepalive-kvóti vafrans er ~64 KB SAMTALS
+  function saveVidLokun(patch) {
+    if (!patch || typeof patch !== 'object') return null;
+    const url = window.SUPABASE_URL, key = window.SUPABASE_KEY;
+    if (!url || !key || typeof fetch !== 'function') return null;
+    let body;
+    try { body = JSON.stringify({ p_patch: patch }); } catch (_) { return null; }
+    let baeti = body.length * 3;                       // varfærið þak ef Blob vantar
+    try { baeti = new Blob([body]).size; } catch (_) {}
+    if (baeti > LOKUN_HAMARK) return null;
+    let bidur;
+    try {
+      bidur = fetch(url + '/rest/v1/rpc/app_settings_merge', {
+        method: 'POST', keepalive: true,
+        headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body
+      });
+    } catch (_) { return null; }
+    return bidur.then(r => {
+      if (!r || !r.ok) return false;
+      // Sama eftirvinnsla og í save(): minnið og skyndiminnið fylgja þjóninum.
+      _settings = deepMerge(JSON.parse(JSON.stringify(_settings)), patch);
+      writeCache(_settings);
+      notify();
+      return true;
+    }).catch(() => false);
+  }
+
+  // 21.09.2026 (úttekt): `vidLokun` = síðan er að hverfa → hvert skrif fer fyrst
+  // með keepalive (saveVidLokun), annars venjulega leiðin. Röðin er áfram tæmd
+  // EITT Í EINU og í réttri röð; `_tomir` ver gegn því að tvær tæmingar
+  // (visibilitychange + pagehide koma saman við lokun) fléttist og sendi
+  // plástra á sama lykil í rangri röð.
+  let _tomir = false;
+  async function _tomaBidrod(vidLokun) {
+    if (!_bidrod.length || _tomir) return;
+    _tomir = true;
+    try {
+      const eftir = [];
+      while (_bidrod.length) {
+        const p = _bidrod.shift();
+        let ok = false;
+        try {
+          const lok = vidLokun ? saveVidLokun(p.patch) : null;
+          ok = lok ? await lok : await save(p.patch);
+        } catch (_) { ok = false; }
+        // Lokunartilraun telst ekki upp í 12-þakið — annars æti flipaflakk án
+        // nets tilraunirnar upp og skrifið félli úr röðinni.
+        if (!ok) { if (!vidLokun) p.tilraunir++; if (p.tilraunir < 12) eftir.push(p); }
+      }
+      _bidrod.push(...eftir);
+      if (!_bidrod.length) _segjaFra('✓ Vistun tókst — biðröðin er tóm.');
+    } finally { _tomir = false; }
   }
 
   async function saveVordud(patch) {
@@ -450,14 +508,18 @@
     return false;
   }
 
+  // 21.09.2026 (úttekt): `hidden` bætt við — á síma (læstur skjár, skipt um app)
+  // kemur pagehide oft ALDREI; visibilitychange er eini áreiðanlegi atburðurinn.
+  // Við lokun fer röðin með keepalive (sjá saveVidLokun).
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') _tomaBidrod();
+    else if (document.visibilityState === 'hidden') { try { _tomaBidrod(true); } catch (_) {} }
   });
   // Síðasta tilraun áður en síðan hverfur — sama regla og papp 365.
-  window.addEventListener('pagehide', () => { try { _tomaBidrod(); } catch (_) {} });
+  window.addEventListener('pagehide', () => { try { _tomaBidrod(true); } catch (_) {} });
 
   window.AppSettings = {
-    get, path, save: saveVordud, saveHrátt: save, bidrod: () => _bidrod.length, load, onChange,
+    get, path, save: saveVordud, saveHrátt: save, saveVidLokun, bidrod: () => _bidrod.length, load, onChange,
     fmtPrice, fmtDate,
     defaults: DEFAULTS,
     isLoaded: () => _loaded,
