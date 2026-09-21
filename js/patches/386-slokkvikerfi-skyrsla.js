@@ -248,16 +248,19 @@
   function syna() {
     const host = document.getElementById('_sks-host'); if (!host) return;
     const k = S.k, ro = lokad();
+    // Á tölvu stendur stikan neðst í hægri dálkinum (hann er límdur, svo vistunarstaðan sést alltaf);
+    // á síma staflast dálkarnir og stikan límist neðst á skjáinn.
+    const breidd = window.matchMedia('(min-width:1251px)').matches;
+    const bar = '<div class="_sks-bar' + (breidd ? ' ipanel' : '') + '"><span id="_sks-saved" class="_sks-saved' + (S.stoppad ? ' villa' : '') + '">' + (S.stoppad ? '⚠ Síðasta breyting er ÓVISTUÐ — sjálfvistun stöðvuð' : S.rod ? 'Vistað á þjóni ' + esc(dm(S.rod.updated_at)) : 'Óvistað — skoðunin verður til við fyrstu breytingu') + '</span><span id="_sks-err" class="_sks-err"></span><span class="sp"></span>' +
+      '<button type="button" class="_sks-btn" data-act="prenta">🖨 Prenta / PDF</button>' +
+      (ro ? '<button type="button" class="_sks-btn" data-act="opna-aftur">✎ Opna aftur til breytinga</button>' : '<button type="button" class="_sks-btn pri" data-act="ljuka">Ljúka skoðun</button>') + '</div>';
     host.innerHTML =
       '<div class="_sks-hd"><h2>🍳 Slökkvikerfis skoðun ' + arNu() + ' · ' + esc(k.heiti) + (k.tegund ? ' <small>' + esc(k.tegund) + '</small>' : '') + '</h2>' +
         (S.kerfi.length > 1 ? '<span class="_sks-kerfi">' + S.kerfi.map(x => '<button type="button" class="_sks-kbtn' + (x.id === k.id ? ' on' : '') + '" data-kerfi="' + x.id + '">' + esc(x.heiti) + '</button>').join('') + '</span>' : '') +
         '<span class="sp"></span>' + (ro ? '<span class="_sks-lok">✓ Skoðun lokið ' + esc(dm(S.rod.dags_skodunar)) + '</span>' : (k.fyrri_skodun ? '<span class="hint">Síðast skoðað ' + esc(dm(k.fyrri_skodun)) + (k.fyrri_adili ? ' af ' + esc(k.fyrri_adili) : '') + ' — tegund og stk. erfast þaðan</span>' : '')) + '</div>' +
       (S.stoppad ? '<div class="_sks-villa">⚠ Sjálfvistun stöðvuð: skoðuninni var breytt annars staðar. <button type="button" class="_sks-btn" data-act="endurhlada">Endurhlaða skoðunina</button></div>' : '') +
       '<div class="_sks-cols"><div class="sheet' + (ro ? ' ro' : '') + '">' + bladHtml() + '</div>' +
-      '<div class="kost">' + kostHtml() + '</div></div>' +
-      '<div class="_sks-bar"><span id="_sks-saved" class="_sks-saved' + (S.stoppad ? ' villa' : '') + '">' + (S.stoppad ? '⚠ Síðasta breyting er ÓVISTUÐ — sjálfvistun stöðvuð' : S.rod ? 'Vistað á þjóni ' + esc(dm(S.rod.updated_at)) : 'Óvistað — skoðunin verður til við fyrstu breytingu') + '</span><span id="_sks-err" class="_sks-err"></span><span class="sp"></span>' +
-        '<button type="button" class="_sks-btn" data-act="prenta">🖨 Prenta / PDF</button>' +
-        (ro ? '<button type="button" class="_sks-btn" data-act="opna-aftur">✎ Opna aftur til breytinga</button>' : '<button type="button" class="_sks-btn pri" data-act="ljuka">Ljúka skoðun</button>') + '</div>';
+      '<div class="kost"><div class="kost-in">' + kostHtml() + '</div>' + (breidd ? bar : '') + '</div></div>' + (breidd ? '' : bar);
     uppfaeraAth(); uppfaeraSummur();
   }
 
@@ -345,8 +348,8 @@
       if (lokad() && !kb2 && !kx2) return;
       if (t.dataset.ath) { const r = rad(t); r.ath = !r.ath; uppfaeraAth(); return merkjaBreytt(); }
       const b = t.closest('[data-baeta]');
-      if (b) { if (b.dataset.baeta === 'kost') { S.kost.annad.push({}); $('.kost').innerHTML = kostHtml(); uppfaeraSummur(); } else { S.data[b.dataset.baeta].push({}); const s = $('.sheet'); s.innerHTML = bladHtml(); uppfaeraAth(); } return merkjaBreytt(); }
-      if (t.dataset.kx != null) { S.kost.annad.splice(+t.dataset.kx, 1); $('.kost').innerHTML = kostHtml(); uppfaeraSummur(); return merkjaBreytt(); }
+      if (b) { if (b.dataset.baeta === 'kost') { S.kost.annad.push({}); $('.kost-in').innerHTML = kostHtml(); uppfaeraSummur(); } else { S.data[b.dataset.baeta].push({}); const s = $('.sheet'); s.innerHTML = bladHtml(); uppfaeraAth(); } return merkjaBreytt(); }
+      if (t.dataset.kx != null) { S.kost.annad.splice(+t.dataset.kx, 1); $('.kost-in').innerHTML = kostHtml(); uppfaeraSummur(); return merkjaBreytt(); }
     });
     // Smellur í tóman reit fyllir eins og á pappírnum: Í lagi = Stk. (eða x), Ekki í lagi = x + athugasemd.
     host.addEventListener('focusin', e => {
@@ -494,6 +497,7 @@
       H + '.ktot{margin-top:10px;border-top:2px solid #1b1d22;padding-top:8px;display:grid;gap:5px}' + H + '.ktot>div{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#3a4250}' + H + '.ktot b{font-family:var(--mono,ui-monospace,monospace);color:#0f172a}',
       H + '.ktot .alls{margin-top:4px;padding:9px 11px;border-radius:9px;color:#fff;background:linear-gradient(180deg,#3a3d45 0%,#1b1d22 100%);font-weight:700;letter-spacing:.04em}' + H + '.ktot .alls span{color:#f0f2f5}' + H + '.ktot .alls b{color:#fff;font-size:16px}',
       '@media (max-width:1250px){' + H + '._sks-cols{flex-direction:column}' + H + '._sks-cols .sheet{max-width:none;width:100%}' + H + '.kost{flex:1 1 auto;width:100%;position:static;box-sizing:border-box}}',
+      H + '._sks-bar.ipanel{position:static;margin:12px 0 0;padding:10px 0 0;border:0;border-top:1px solid #eceff4;border-radius:0;box-shadow:none}' + H + '._sks-bar.ipanel ._sks-err{flex-basis:100%}',
       H + '._sks-bar{position:sticky;bottom:0;z-index:30;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 0;background:#fff;border:1px solid #d8dde6;border-radius:10px;padding:10px 14px;box-shadow:0 -4px 16px rgba(20,30,45,.08)}',
       H + '._sks-saved{font-size:12px;color:#64748b}' + H + '._sks-saved.ok{color:#1c7a45;font-weight:600}' + H + '._sks-saved.villa{color:#b0201b;font-weight:700}' + H + '._sks-err{font-size:12.5px;color:#b0201b;font-weight:600}',
       H + '._sks-btn{border:1px solid #d8dde6;background:#fff;color:#0f172a;border-radius:8px;padding:8px 13px;font:600 12.5px var(--ui,system-ui);cursor:pointer}',
