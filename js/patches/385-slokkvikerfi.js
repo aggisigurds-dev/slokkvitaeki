@@ -16,26 +16,34 @@
  * breið Nóta í staðinn. Verð lá ekki fyrir 21.09 → „⚠ vantar", aldrei gisk.
  *
  * View `view-slokkvikerfi`, slug `#slokkvikerfi`. Public: window.Slokkvikerfi = { open, reload }.
+ *
+ * 21.09.2026 (síðar): Agnar vill brunaviðvörunarkerfið inn á sama hátt („það kerfi er ekki nægilega gott")
+ * og að flokkarnir þrír virki eins. Síðan er því VERKSMIÐJA: window.Thjonustuskra.buaTil(FLOKKUR) býr til
+ * eina síðu per flokk. Raðirnar bera alltaf SÖMU dálkanöfn og v_slokkvikerfi_yfirlit; flokkur sem á ekki þá
+ * sýn gefur `saekja()` sem skilar röðum í því sniði (sjá 388-brunakerfi-skra.js). Valkvæmt per flokk:
+ *   saekja() · vista(rod, patch) → {ok, villa} · opna(rod) · nytt (false = enginn takki) · skref ·
+ *   navEftir · felaSjalfgefid · verdHaus · verdTomt · verdKpi (false = ekkert „Verð vantar"-spjald) · tomt
+ * Valkvæmt per röð: ar_slod {ár: slóð} (ár-reitur verður hlekkur) · verd_fast (upphæð í Verð-dálki) ·
+ *   utan_lista (ekki á áskriftarlista flokksins).
  */
 (() => {
-  if (window.__slokkvikerfiInstalled) return;
-  window.__slokkvikerfiInstalled = true;
+  if (window.Thjonustuskra) return;
 
-  const FLOKKUR = { key: 'slokkvikerfi', titill: 'Slökkvikerfis skoðun', takn: '🍳',
-    syn: 'v_slokkvikerfi_yfirlit', tafla: 'slokkvikerfi' };
+  function buaTil(FLOKKUR) {
   const VIEW_ID = 'view-' + FLOKKUR.key;
   const NAV_KEY = FLOKKUR.key;
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Maí', 'Jún', 'Júl', 'Ágú', 'Sep', 'Okt', 'Nóv', 'Des'];
   const MON_FULL = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
-  const SKREF = [['skodad_at', 'Skoðað'], ['skyrsla_at', 'Skýrsla'], ['send_at', 'Send'], ['reikningur_at', 'Reikningur']];
-  const LS = 'slokkvikerfi_sia_v1';   // AÐEINS sía/röðun þessa vafra — staða gagna býr á þjóninum
+  const SKREF = FLOKKUR.skref || [['skodad_at', 'Skoðað'], ['skyrsla_at', 'Skýrsla'], ['send_at', 'Send'], ['reikningur_at', 'Reikningur']];
+  const ROOT = '_sk-root-' + FLOKKUR.key;
+  const LS = FLOKKUR.key + '_sia_v1';   // AÐEINS sía/röðun þessa vafra — staða gagna býr á þjóninum
 
-  const state = Object.assign({ stada: 'allt', man: 0, leit: '', postnr: '', felaUr: true, sort: 'man', dir: 1 }, lesaSiu());
+  const state = Object.assign({ stada: 'allt', man: 0, leit: '', postnr: '', felaUr: FLOKKUR.felaSjalfgefid !== false, sort: 'man', dir: 1 }, lesaSiu());
   let _rows = null, _loading = false, _villa = '';
 
   function SB() { return (window.DB && DB.sb) || null; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-  function toast(m) { if (window.Toast && Toast.show) Toast.show(m); else console.log('[slokkvikerfi]', m); }
+  function toast(m) { if (window.Toast && Toast.show) Toast.show(m); else console.log('[' + FLOKKUR.key + ']', m); }
   function lesaSiu() { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (_) { return {}; } }
   function vistaSiu() { try { localStorage.setItem(LS, JSON.stringify({ stada: state.stada, man: state.man, postnr: state.postnr, felaUr: state.felaUr, sort: state.sort, dir: state.dir })); } catch (_) {} }
   function dm(iso) { if (!iso) return '—'; const p = String(iso).slice(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
@@ -52,9 +60,11 @@
     return r.skodunarmanudur ? new Date(r.ar_nu, r.skodunarmanudur - 1, 1) : null;
   }
   function stada(r) {
-    if (!r.i_thjonustu) return { k: 'ur', t: 'Úr þjónustu', c: 'off', o: 9 };
     const skodad = !!(r.skodad_at || r.skyrsla_at || r.skodun_status === 'final');
-    if (skodad && !r.reikningur_at) return { k: 'orukkad', t: 'Órukkað', c: 'late', o: 0 };
+    // Órukkað kemur Á UNDAN þjónustustöðunni: skoðun ársins án reiknings er ógreidd vinna hvort sem fyrirtækið
+    // er enn í þjónustu eða ekki (mælt 21.09: Hlíðasmári 15 bar skýrslu 2026 en sást aðeins sem „Ekki á áskriftarlista").
+    if (skodad && !r.reikningur_at) return { k: 'orukkad', t: 'Órukkað' + (r.i_thjonustu ? '' : r.utan_lista ? ' · ekki á lista' : ' · úr þjónustu'), c: 'late', o: 0 };
+    if (!r.i_thjonustu) return { k: 'ur', t: r.utan_lista ? 'Ekki á áskriftarlista' : 'Úr þjónustu', c: 'off', o: 9 };
     if (skodad && r.reikningur_at) return { k: 'buid', t: 'Búið ' + r.ar_nu, c: 'done', o: 5 };
     if (r.skodun_id) return { k: 'vinnsla', t: 'Í vinnslu', c: 'work', o: 2 };
     const n = naest(r), nu = new Date(), m0 = new Date(nu.getFullYear(), nu.getMonth(), 1);
@@ -65,6 +75,8 @@
   }
   // Verð: samtala kostnaðarlína skoðunar ársins, annars samningsverð kerfisins. null = vantar.
   function verd(r) {
+    if (r.verd_fast != null) return +r.verd_fast;
+    if (FLOKKUR.key !== 'slokkvikerfi') return null;
     // EIN formúla: 386 á útreikninginn (línur × afsl., skýrslugerð, akstur, heildarafsláttur). Án vsk.
     const S6 = window.SlokkvikerfiSkyrsla;
     if (S6 && S6.summa) { const su = S6.summa(r.kostnadur || {}); if (su != null) return su; }
@@ -74,6 +86,7 @@
 
   // ── gögn ────────────────────────────────────────────────────────────────────
   async function load() {
+    if (FLOKKUR.saekja) return await FLOKKUR.saekja();
     const sb = SB(); if (!sb) throw new Error('Engin tenging við gagnagrunn');
     // Blaðsíðað: PostgREST sker hljóðlaust við 1000 raðir (audit-pagination).
     const BLS = 1000; let ut = [];
@@ -94,6 +107,7 @@
   // Vistun les svarið áður en „✓" er sagt (skill heidarlegt-vidmot): uppfærslan skilar röðinni
   // og gildið er borið saman við það sem var sent. RLS sem þegir skilar tómu fylki → villa.
   async function vistaKerfi(kerfiId, patch) {
+    if (FLOKKUR.vista) { const rod0 = (_rows || []).find(x => x.kerfi_id === kerfiId); try { return await FLOKKUR.vista(rod0, patch); } catch (e) { return { ok: false, villa: (e && e.message) || String(e) }; } }
     const sb = SB(); if (!sb) return { ok: false, villa: 'Engin tenging' };
     const sendur = Object.assign({}, patch, { updated_by: (window.CurrentUser && CurrentUser.name) || 'app' });
     const { data, error } = await sb.from(FLOKKUR.tafla).update(sendur).eq('id', kerfiId).select('id,' + Object.keys(patch).join(','));
@@ -109,7 +123,7 @@
     const q = state.leit.trim().toLowerCase();
     const ut = (_rows || []).map(r => ({ r, s: stada(r) })).filter(x => {
       const r = x.r;
-      if (state.felaUr && !r.i_thjonustu) return false;
+      if (state.felaUr && !r.i_thjonustu && x.s.k !== 'orukkad') return false;   // órukkað felst aldrei
       if (state.stada !== 'allt' && x.s.k !== state.stada) return false;
       if (state.man && r.skodunarmanudur !== state.man) return false;
       if (state.postnr && String(r.postnumer || '') !== state.postnr) return false;
@@ -147,19 +161,21 @@
         const kominn = !r.skodunarmanudur || (nu.getMonth() + 1) >= r.skodunarmanudur;
         cls = kominn ? ' now' : ' penda'; tt = kominn ? 'Skoðun ' + y + ' vantar' : 'Skoðun ' + y + ' er í ' + MON_FULL[r.skodunarmanudur - 1];
       }
-      return '<span class="_sk-yr' + cls + '" title="' + esc(tt) + '">' + String(y).slice(2) + '</span>';
+      const slod = r.ar_slod && r.ar_slod[y];
+      return slod ? '<a class="_sk-yr' + cls + '" href="' + esc(slod) + '" target="_blank" rel="noopener" title="' + esc(tt) + ' — opna skýrsluna">' + String(y).slice(2) + '</a>'
+        : '<span class="_sk-yr' + cls + '" title="' + esc(tt) + '">' + String(y).slice(2) + '</span>';
     }).join('') + '</span>';
   }
   function skrefHtml(r) {
     return '<span class="_sk-skref">' + SKREF.map(s => '<i class="' + (r[s[0]] ? 'on' : '') + '" title="' + s[1] + (r[s[0]] ? ' ' + dm(r[s[0]]) : ' — ekki búið') + '">' + s[1].slice(0, 2) + '</i>').join('') + '</span>';
   }
-  function verdHtml(r) { const v = verd(r); return v == null ? '<span class="_sk-vantar" title="Ekkert verð skráð — reikningsdrög verða til án upphæðar">⚠ vantar</span>' : '<span class="_sk-mono">' + kr(v) + '</span>'; }
+  function verdHtml(r) { const v = verd(r); if (v == null && FLOKKUR.verdTomt != null) return '<span class="_sk-mono" style="color:#94a3b8">' + esc(FLOKKUR.verdTomt) + '</span>'; return v == null ? '<span class="_sk-vantar" title="Ekkert verð skráð — reikningsdrög verða til án upphæðar">⚠ vantar</span>' : '<span class="_sk-mono">' + kr(v) + '</span>'; }
 
   // ATH: <table> ber data-_pm-status-done="1" — 00-legacy.js (enhanceStatusCells) setur annars tækja-
   // fellilista (Active / Í geymslu / Ónýtt) ofan í hvern „Staða“-dálk og skrifar í uttaeki.status
   // á gildinu í dálki 0 (hér póstnúmer). Sama gildra og 272 og 153 lentu í.
   function render() {
-    const root = document.getElementById('_sk-root'); if (!root) return;
+    const root = document.getElementById(ROOT); if (!root) return;
     if (_rows == null) { root.innerHTML = '<div class="_sk-tomt">Sæki…</div>'; return; }
     const allt = (_rows || []).map(r => ({ r, s: stada(r) }));
     const virk = allt.filter(x => x.r.i_thjonustu);
@@ -172,12 +188,12 @@
 
     root.innerHTML =
       '<div class="_sk-hd"><h1>' + FLOKKUR.takn + ' ' + FLOKKUR.titill + ' <small>' + arNu + '</small></h1><span class="_sk-sp"></span>' +
-        '<button class="_sk-btn" id="_sk-prenta">🖨 Prenta lista</button><button class="_sk-btn _sk-pri" id="_sk-nytt">＋ Nýtt kerfi</button></div>' +
+        '<button class="_sk-btn" id="_sk-prenta">🖨 Prenta lista</button>' + (FLOKKUR.nytt === false ? '' : '<button class="_sk-btn _sk-pri" id="_sk-nytt">＋ Nýtt kerfi</button>') + '</div>' +
       (_villa ? '<div class="_sk-villa">⚠ Náði ekki í gögnin: ' + esc(_villa) + ' <button class="_sk-btn" id="_sk-aftur">Reyna aftur</button></div>' : '') +
       '<div class="_sk-kpis">' +
         kpi('Kerfi í þjónustu', virk.length) + kpi('Skoðað ' + arNu, tel(x => x.r.skodad_at || x.r.skyrsla_at)) +
         kpi('Á gjalddaga / fram yfir', tel(x => x.s.k === 'nu' || x.s.k === 'fram'), true) +
-        kpi('Skoðað en órukkað', tel(x => x.s.k === 'orukkad'), true) + kpi('Verð vantar', tel(x => verd(x.r) == null), true) +
+        kpi('Skoðað en órukkað', allt.filter(x => x.s.k === 'orukkad').length, true) + (FLOKKUR.verdKpi === false ? '' : kpi('Verð vantar', tel(x => verd(x.r) == null), true)) +
       '</div>' +
       '<div class="_sk-sia">' + ST.map(s => { const n = s[0] === 'allt' ? virk.length : tel(x => x.s.k === s[0]); return '<button class="_sk-chip' + (state.stada === s[0] ? ' on' : '') + '" data-st="' + s[0] + '">' + s[1] + '<b>' + n + '</b></button>'; }).join('') + '</div>' +
       '<div class="_sk-sia"><button class="_sk-chip' + (state.man === 0 ? ' on' : '') + '" data-m="0">Allir mánuðir</button>' +
@@ -187,7 +203,7 @@
         '<label class="_sk-lbl"><input type="checkbox" id="_sk-fela"' + (state.felaUr ? ' checked' : '') + '> Fela þau sem eru úr þjónustu</label>' +
         '<span class="_sk-sp"></span><span class="_sk-lbl">' + sia.length + ' af ' + allt.length + '</span></div>' +
       '<div class="_sk-tblwrap"><table class="_sk-tbl" data-_pm-status-done="1"><colgroup><col style="width:58px"><col style="width:205px"><col><col style="width:165px"><col style="width:92px"><col style="width:230px"><col style="width:112px"><col style="width:90px"><col style="width:168px"></colgroup>' +
-        '<thead><tr>' + th('postnr', 'Póstur') + th('nafn', 'Fyrirtæki · kerfi') + th('nota', 'Nóta') + th('heim', 'Heimilisfang') + th('man', 'Skoðun') + th('ar', 'Ár', ' style="text-align:center"') + th('skref', 'Skref ' + arNu) + th('verd', 'Verð') + th('stada', 'Staða') + '</tr></thead><tbody>' +
+        '<thead><tr>' + th('postnr', 'Póstur') + th('nafn', 'Fyrirtæki · kerfi') + th('nota', 'Nóta') + th('heim', 'Heimilisfang') + th('man', 'Skoðun') + th('ar', 'Ár', ' style="text-align:center"') + th('skref', 'Skref ' + arNu) + th('verd', FLOKKUR.verdHaus || 'Verð') + th('stada', 'Staða') + '</tr></thead><tbody>' +
         (sia.map(x => { const r = x.r; return '<tr class="_sk-row' + (r.i_thjonustu ? '' : ' ur') + '" data-fid="' + r.fyrirtaeki_id + '" data-kid="' + r.kerfi_id + '">' +
           '<td><span class="_sk-post">' + esc(r.postnumer || '') + '</span></td>' +
           '<td><span class="_sk-co">' + esc(r.nafn) + (r.i_arsskodun ? ' <span class="_sk-svc" title="Líka í ársskoðun slökkvitækja">🧯</span>' : '') + '</span>' +
@@ -198,7 +214,7 @@
           '<td style="text-align:center">' + arHtml(r) + '<span class="_sk-sidast">síðast ' + dm(sidast(r)) + '</span></td>' +
           '<td>' + skrefHtml(r) + '</td><td>' + verdHtml(r) + '</td>' +
           '<td><span class="_sk-st _sk-st--' + x.s.c + '">' + esc(x.s.t) + '</span></td></tr>'; }).join('') ||
-          '<tr><td colspan="9" class="_sk-tomt">' + (allt.length ? 'Ekkert kerfi passar við síuna.' : 'Ekkert slökkvikerfi skráð enn — smelltu á „＋ Nýtt kerfi".') + '</td></tr>') +
+          '<tr><td colspan="9" class="_sk-tomt">' + (allt.length ? 'Ekkert kerfi passar við síuna.' : (FLOKKUR.tomt || 'Ekkert slökkvikerfi skráð enn — smelltu á „＋ Nýtt kerfi".')) + '</td></tr>') +
         '</tbody></table></div>' +
       '<div class="_sk-cards">' + sia.map(x => { const r = x.r; return '<div class="_sk-card _sk-row' + (r.i_thjonustu ? '' : ' ur') + '" data-fid="' + r.fyrirtaeki_id + '"><div class="_sk-cardhd"><div><span class="_sk-co">' + esc(r.nafn) + (r.i_arsskodun ? ' 🧯' : '') + '</span><span class="_sk-kerfi">' + esc(r.postnumer || '') + ' · ' + esc(r.heiti) + ' · ' + (r.skodunarmanudur ? MON_FULL[r.skodunarmanudur - 1] : 'mánuð vantar') + '</span></div><span class="_sk-st _sk-st--' + x.s.c + '">' + esc(x.s.t) + '</span></div>' +
         (r.nota ? '<div class="_sk-cardnota">' + esc(r.nota) + '</div>' : '') + '<div class="_sk-cardft">' + arHtml(r) + skrefHtml(r) + '</div></div>'; }).join('') + '</div>';
@@ -278,11 +294,12 @@
       if (t.closest('._sk-nota,._sk-man,a,button,select,textarea,input')) return;   // reitir í röðinni eiga sinn smell
       const row = t.closest('._sk-row'); if (!row) return;
       const fid = +row.dataset.fid;
+      if (FLOKKUR.opna) return FLOKKUR.opna((_rows || []).find(x => x.fyrirtaeki_id === fid) || { fyrirtaeki_id: fid });
       window.__slokkvikerfiOpna = { fid, kid: +row.dataset.kid || null, at: Date.now() };   // 386 les: opna 🍳-flipann á prófílnum
       if (window._openCompanySafe) window._openCompanySafe(fid);
       else if (window.App && App.switchView) App.switchView('companies');
     });
-    v.addEventListener('input', e => { if (e.target.id === '_sk-leit') { state.leit = e.target.value; const pos = e.target.selectionStart; render(); const n = document.getElementById('_sk-leit'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} } } });
+    v.addEventListener('input', e => { if (e.target.id === '_sk-leit') { state.leit = e.target.value; const pos = e.target.selectionStart; render(); const n = v.querySelector('#_sk-leit'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} } } });
     v.addEventListener('change', async e => {
       const t = e.target;
       if (t.id === '_sk-postnr') { state.postnr = t.value; vistaSiu(); return render(); }
@@ -312,7 +329,7 @@
     v.style.cssText = 'min-height:100vh;background:#eef1f5';   // ENGIN inline display — sjá open()
     const V = '#' + VIEW_ID + ' ';
     v.innerHTML = '<style>' + [
-      V + '#_sk-root{max-width:1500px;margin:0 auto;padding:18px 18px 60px;font-family:var(--ui,system-ui,sans-serif);color:var(--ink,#0f172a)}',
+      V + '._sk-root{max-width:1500px;margin:0 auto;padding:18px 18px 60px;font-family:var(--ui,system-ui,sans-serif);color:var(--ink,#0f172a)}',
       V + '._sk-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}',
       V + '._sk-hd h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em;color:#0f172a!important;background:rgba(255,255,255,.92);border-radius:8px;padding:5px 12px}' + V + '._sk-hd small{font-weight:500;color:#64748b;font-size:13px}',
       V + '._sk-sp{flex:1}',
@@ -357,6 +374,7 @@
       V + '._sk-yrs{display:inline-flex;gap:4px;justify-content:center}',
       V + '._sk-sidast{display:block;font-size:10px;color:#94a3b8;margin-top:3px;font-family:var(--mono,monospace)}',
       V + '._sk-yr{display:inline-flex;align-items:center;justify-content:center;gap:5px;width:50px;height:20px;border-radius:6px;font-family:var(--mono,monospace);font-size:11px;font-weight:700;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0}',
+      V + 'a._sk-yr{text-decoration:none;cursor:pointer}',
       V + '._sk-yr::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,.14);flex:none}',
       V + '._sk-yr.lit::before{background:#37c47e;box-shadow:0 0 5px rgba(55,196,126,.8)}',
       V + '._sk-yr.on{color:#3a4250;background:#e7ebf2;border-color:#d8dde6}',
@@ -380,7 +398,7 @@
       V + '._sk-cardhd{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}',
       V + '._sk-cardnota{font-size:12.5px;color:#3a4250;margin-top:6px;border-left:2px solid #d8dde6;padding-left:8px}',
       V + '._sk-cardft{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px}',
-      '@media (max-width:900px){' + V + '._sk-tblwrap{display:none}' + V + '._sk-cards{display:grid;gap:8px}' + V + '#_sk-root{padding:12px 10px 60px}' + V + '._sk-inp{max-width:none}}',
+      '@media (max-width:900px){' + V + '._sk-tblwrap{display:none}' + V + '._sk-cards{display:grid;gap:8px}' + V + '._sk-root{padding:12px 10px 60px}' + V + '._sk-inp{max-width:none}}',
       '._sk-bak{position:fixed;inset:0;background:rgba(10,14,22,.55);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:6vh 12px;overflow:auto}',
       '._sk-modal{background:#fff;border-radius:14px;padding:18px 20px;width:100%;max-width:560px;font-family:var(--ui,system-ui,sans-serif);color:#0f172a}',
       '._sk-modal h2{margin:0 0 12px;font-size:17px}._sk-modal label{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#64748b;margin:10px 0 3px}',
@@ -390,7 +408,7 @@
       '._skn-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}._skn-ft{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}',
       '._skn-f{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #eceff4;background:#fff;padding:7px 4px;cursor:pointer;font:13px system-ui}._skn-f:hover{background:#f7f9fd}._skn-f span{display:block;font-size:11px;color:#64748b}',
       '._skn-valid{font-size:12.5px;color:#1c7a45;font-weight:600;margin-top:4px}._skn-err{color:#b0201b;font-size:12.5px;font-weight:600;margin-top:8px}'
-    ].join('') + '</style><div id="_sk-root"></div>';
+    ].join('') + '</style><div id="' + ROOT + '" class="_sk-root"></div>';
     document.body.appendChild(v);
     wire(v);
     return v;
@@ -413,7 +431,7 @@
     if (!nav) { setTimeout(injectSidebar, 600); return; }
     if (nav.querySelector('[data-view="' + NAV_KEY + '"]')) return;
     // Klóna „Brunakerfi yfirlit"-hnappinn svo bygging/stílun sé eins og flokkarnir standi saman.
-    const ref = nav.querySelector('[data-view="brunayfirlit"]') || nav.querySelector('[data-view="brunakerfi"]') || nav.querySelector('.vnav-btn[data-view]');
+    const ref = (FLOKKUR.navEftir && nav.querySelector('[data-view="' + FLOKKUR.navEftir + '"]')) || nav.querySelector('[data-view="brunayfirlit"]') || nav.querySelector('[data-view="brunakerfi"]') || nav.querySelector('.vnav-btn[data-view]');
     if (!ref) { setTimeout(injectSidebar, 600); return; }
     const btn = ref.cloneNode(true);
     btn.setAttribute('data-view', NAV_KEY);
@@ -427,7 +445,7 @@
   }
   function patchSwitchView() {
     if (!window.App) { setTimeout(patchSwitchView, 150); return; }
-    if (window.App._slokkvikerfiPatched) return;
+    if (window.App['_tjsPatched_' + FLOKKUR.key]) return;
     const orig = window.App.switchView;
     window.App.switchView = function (view) {
       if (view === NAV_KEY) { open(); return; }
@@ -436,16 +454,34 @@
       return r;
     };
     for (const k in orig) { try { window.App.switchView[k] = orig[k]; } catch (_) {} }
-    window.App._slokkvikerfiPatched = true;
+    window.App['_tjsPatched_' + FLOKKUR.key] = true;
   }
   function boot() {
     injectSidebar(); setTimeout(injectSidebar, 1800); patchSwitchView();
-    if ((location.hash || '').replace(/^#/, '') === NAV_KEY) setTimeout(() => { if (window.App && App.switchView) App.switchView(NAV_KEY); else open(); }, 300);
+    // Djúptenging (#<lykill>) við KALDA hleðslu: appið velur sína eigin upphafssíðu EFTIR að þessi pappi
+    // ræsist og tók síðuna af aftur (mælt 21.09 — #brunaskra opnaðist stundum ekki). Slóðin er því elt í
+    // nokkrar sekúndur: á meðan hash-ið er enn okkar og sýnin er ekki virk er hún opnuð á ný. Hættir um leið
+    // og notandinn fer annað (hash breytist) eða tíminn er liðinn.
+    if ((location.hash || '').replace(/^#/, '') === NAV_KEY) {
+      let n = 0;
+      const elta = () => {
+        if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) return;
+        const v = document.getElementById(VIEW_ID);
+        if (!(v && v.classList.contains('active'))) { if (window.App && App.switchView) App.switchView(NAV_KEY); else open(); }
+        if (++n < 16) setTimeout(elta, 600);
+      };
+      setTimeout(elta, 300);
+    }
     window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  window.Slokkvikerfi = { open, reload, _stada: stada, _naest: naest };
-  console.log('[patch-385] Slökkvikerfis skoðun installed');
+  console.log('[patch-385] þjónustuskrá: ' + FLOKKUR.titill);
+  return { open, reload, _stada: stada, _naest: naest };
+  }   // buaTil
+
+  window.Thjonustuskra = { buaTil };
+  window.Slokkvikerfi = buaTil({ key: 'slokkvikerfi', titill: 'Slökkvikerfis skoðun', takn: '🍳',
+    syn: 'v_slokkvikerfi_yfirlit', tafla: 'slokkvikerfi', navEftir: 'brunayfirlit' });
 })();
 /* === END SLÖKKVIKERFIS SKOÐUN === */
