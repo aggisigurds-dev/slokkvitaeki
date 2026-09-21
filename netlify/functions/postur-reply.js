@@ -65,8 +65,18 @@ export default async (req) => {
     '- "requested": hlutur sem lýsir hvaða SKJAL (ef eitthvað) er beðið um: ' +
     '{"kind":"reikningur"|"skyrsla"|"annad"|"ekkert","invoice_ref": "R-000123" eða null, "note":"stutt"}. ' +
     'Ef beðið er um afrit/reikning → kind "reikningur". Ef beðið er um úttektarskýrslu → "skyrsla". Ef ekkert skjal → "ekkert".\n' +
-    'Svaraðu EINGÖNGU sem hreint JSON: {"subject":"…","body":"…","summary":"…","requested":{…}} — ekkert annað, engir bakgrunnstextar. ' +
-    'Efnislínan má vera „Re: <upprunalegt efni>".\n\n' +
+    // 21.09.2026: AFMARKAÐ SNIÐ, EKKI JSON. Svarið á að bera gæsalappir, og
+    // ein óescape-uð gæsalöpp inni í JSON-streng felldi parse-ið — sjá haus
+    // skriftunnar. Hér er meginmálið einfaldlega allt á eftir ---SVAR---, svo
+    // engin escape-un er til staðar sem getur brotnað.
+    'SNIÐ SVARSINS — nákvæmlega þetta, engir bakgrunnstextar og engin kóðagirðing:\n' +
+    'EFNI: Re: <upprunalegt efni>\n' +
+    'YFIRLIT: <ein setning, hámark 16 orð>\n' +
+    'BEÐIÐ: reikningur|skyrsla|annad|ekkert\n' +
+    'TILVISUN: <R-000123 eða ->\n' +
+    'ATHUGASEMD: <stutt eða ->\n' +
+    '---SVAR---\n' +
+    '<sjálft svarið, venjulegur texti með línubilum>\n\n' +
     ctx;
 
   let data;
@@ -85,11 +95,12 @@ export default async (req) => {
   } catch (e) { return j(502, { error: String((e && e.message) || e) }); }
 
   const text = (data && data.content && data.content[0] && data.content[0].text) || '';
-  let out = null;
-  try { const m = text.match(/\{[\s\S]*\}/); if (m) out = JSON.parse(m[0]); } catch (_) { out = null; }
-  if (!out || !out.body) {
-    // fall back to raw text as the body so the office still gets something usable
-    out = { subject: 'Re: ' + (em.subject || ''), body: text.trim() || 'Ekki tókst að semja svar — reyndu aftur.' };
+  let out = lesaAfmarkad(text) || lesaJson(text);
+  // ALDREI hrátt módelsvar í meginmálið. Það er einum smelli frá kúnna, og
+  // kóðagirðing með JSON lítur út eins og tilbúið svar. Tómur reitur og skýr
+  // villa er alltaf skárra — viðmótið skilur reitinn eftir ósnertan.
+  if (!out || !String(out.body || '').trim()) {
+    return j(502, { error: 'Svarið kom á sniði sem ekki tókst að lesa. Reyndu aftur.' });
   }
   const reqDoc = (out && out.requested) || {};
   return j(200, {
@@ -112,3 +123,34 @@ function j(status, obj) {
 }
 
 export const config = { path: '/api/postur-reply' };
+
+// ── Lestur svarsins ────────────────────────────────────────────────────────
+// Afmarkaða sniðið: hausalínur og svo allt á eftir ---SVAR--- sem meginmál.
+// Engin escape-un, svo gæsalappir og línubil geta ekki brotið neitt.
+function lesaAfmarkad(text) {
+  const hlutar = String(text || '').split(/^\s*-{2,}\s*SVAR\s*-{2,}\s*$/mi);
+  if (hlutar.length < 2) return null;
+  const haus = hlutar[0];
+  const body = hlutar.slice(1).join('\n').replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '').trim();
+  if (!body) return null;
+  const reitur = (nafn) => {
+    const m = haus.match(new RegExp('^\\s*' + nafn + '\\s*:\\s*(.+)$', 'mi'));
+    const v = m ? m[1].trim() : '';
+    return (v === '-' || v === '—') ? '' : v;
+  };
+  return {
+    subject: reitur('EFNI'),
+    body: body,
+    summary: reitur('YFIRLIT'),
+    requested: { kind: reitur('BEÐIÐ') || reitur('BEDID'), invoice_ref: reitur('TILVISUN') || null, note: reitur('ATHUGASEMD') },
+  };
+}
+
+// Varaleið fyrir eldri/óvænt svör: JSON, með kóðagirðingu strokinni fyrst.
+// Girðingin var einmitt það sem sást í reitnum hjá Agnari 21.09.
+function lesaJson(text) {
+  const hreint = String(text || '').replace(/^\s*```[a-z]*\s*/i, '').replace(/```\s*$/, '');
+  const m = hreint.match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try { const o = JSON.parse(m[0]); return (o && o.body) ? o : null; } catch (_) { return null; }
+}
