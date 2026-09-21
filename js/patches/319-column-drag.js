@@ -136,7 +136,7 @@
         // neyðir vafrann til að endurreikna útlit allrar síðunnar. Nú aðeins þegar eitthvað breyttist í raun; jafningjarnir
         // (313 · 323) mega standa aftar, annars berjast blöðin þrjú endalaust um síðasta sætið.
         if (s.textContent !== css) s.textContent = css;
-        if (s.parentNode && !(() => { let n = s.nextElementSibling; while (n) { if (['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css'].indexOf(n.id) < 0) return false; n = n.nextElementSibling; } return true; })()) s.parentNode.appendChild(s);
+        if (s.parentNode && !(() => { let n = s.nextElementSibling; while (n) { if (['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css', '_pe-kanban-css'].indexOf(n.id) < 0) return false; n = n.nextElementSibling; } return true; })()) s.parentNode.appendChild(s);
       } catch (_) {}
     });
   }

@@ -162,7 +162,7 @@
     // breytist, og aðeins fært ef ÓKUNNUGT blað er komið aftar (jafningjarnir 319 · 323 mega standa þar — annars
     // berjast blöðin þrjú endalaust um síðasta sætið).
     if (s.textContent !== cssNytt) s.textContent = cssNytt;
-    const aftast = (() => { let n = s.nextElementSibling; while (n) { if (['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css'].indexOf(n.id) < 0) return false; n = n.nextElementSibling; } return true; })();
+    const aftast = (() => { let n = s.nextElementSibling; while (n) { if (['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css', '_pe-kanban-css'].indexOf(n.id) < 0) return false; n = n.nextElementSibling; } return true; })();
     if (s.parentNode && !aftast) s.parentNode.appendChild(s);
   }
 
