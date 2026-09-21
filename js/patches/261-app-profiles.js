@@ -38,6 +38,8 @@
     { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
     { k: 'thjonustu-verkstaedi', label: 'ÞjónustuVerkstæði', short: 'Verkstæði', emoji: '🔧' },
     { k: 'brunayfirlit',     label: 'Brunakerfi yfirlit',    short: 'Brunakerfi', emoji: '🚨' },
+    // 21.09.2026: þriðji þjónustuflokkurinn (385). Hér svo hægt sé að haka síðuna inn í app — annars vísar app-hamur henni frá.
+    { k: 'slokkvikerfi',     label: 'Slökkvikerfis skoðun',  short: 'Slökkvikerfi', emoji: '🍳' },
     { k: 'rekstrarfelog',    label: 'Rekstrarfélög',         short: 'Rekstrarf.', emoji: '🏢' },
     { k: 'minar-sidur',      label: 'Mínar síður',           short: 'Mínar síður', emoji: '🧩' },
     // Brunahólf-síður — birtar inni í appinu í iframe (deep-link á tab-ið).

@@ -40,6 +40,7 @@
     geymsla:{cls:'ok',note:'Geymsla'}, utlit:{cls:'ok',note:'Útlit & þema'},
     arsskodun:{cls:'special',note:'Ársskoðun (sérhæft)'}, leidsogn:{cls:'special',note:'Leiðsögn (sérhæft)'},
     bilstjori:{cls:'special',note:'Bílstjóri (læst, sérhæft)'}, brunakerfi:{cls:'special',note:'Brunakerfi áskriftir'},
+    slokkvikerfi:{cls:'special',note:'Slökkvikerfis skoðun (385) — þriðji þjónustuflokkurinn'},
     'thjonustu-verkstaedi':{cls:'ok',note:'ÞjónustuVerkstæði'},
     'bokhalds-yfirlit':{cls:'ok',note:'Bókhalds yfirlit'},
     'bokhald-yfirferd':{cls:'check',note:'Bókhald yfirferð — skoða samruna'},
