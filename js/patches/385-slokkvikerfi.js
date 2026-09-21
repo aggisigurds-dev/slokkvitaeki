@@ -65,10 +65,9 @@
   }
   // Verð: samtala kostnaðarlína skoðunar ársins, annars samningsverð kerfisins. null = vantar.
   function verd(r) {
-    const ko = r.kostnadur || {}; let t = 0, n = 0;
-    ['skodun', 'akstur', 'skyrsla', 'vinna'].forEach(k => { const x = ko[k] || {}; const v = parseFloat(x.verd) || 0; if (v) { t += (parseFloat(x.magn) || 1) * v; n++; } });
-    (ko.annad || []).forEach(x => { const v = parseFloat(x.verd) || 0; if (v) { t += v; n++; } });
-    if (n) return t;
+    // EIN formúla: 386 á útreikninginn (línur × afsl., skýrslugerð, akstur, heildarafsláttur). Án vsk.
+    const S6 = window.SlokkvikerfiSkyrsla;
+    if (S6 && S6.summa) { const su = S6.summa(r.kostnadur || {}); if (su != null) return su; }
     return r.verd_an_vsk != null ? +r.verd_an_vsk : null;
   }
   function arin(r) { const ut = []; for (let y = r.ar_nu - 3; y <= r.ar_nu; y++) ut.push(y); return ut; }
