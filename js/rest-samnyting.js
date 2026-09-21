@@ -25,7 +25,7 @@
   var LIFIR_MS = 2000, HAMARK = 300;
   var upprunalegt = window.fetch;
   var geymsla = new Map();          // lykill → { t, p: Promise<Response> }
-  var tolur = { samnytt: 0, sott: 0, taemt: 0 };
+  var tolur = { samnytt: 0, sott: 0, taemt: 0, skrif: 0 };
 
   function grunnur() { return String(window.SUPABASE_URL || '').replace(/\/+$/, ''); }
   function haus(h, nafn) {
@@ -41,9 +41,20 @@
     try {
       var slod = typeof inntak === 'string' ? inntak : (inntak && inntak.url) || '';
       var g = grunnur();
-      if (!g || slod.indexOf(g) !== 0) return upprunalegt.apply(this, arguments);
+      if (!g || slod.indexOf(g) !== 0) {
+        // Skrif um okkar eigin Netlify-föll (/api/… — t.d. Payday-sending, póstur) breyta gögnum ÞJÓNSMEGIN án þess að fara
+        // um Supabase héðan. Þau teljast því líka sem skrift og tæma skyndiminnið (sjá skrif() og 153 backgroundRefresh).
+        var m0 = String((stillingar && stillingar.method) || (inntak && inntak.method) || 'GET').toUpperCase();
+        if (m0 !== 'GET' && m0 !== 'HEAD' && (slod.indexOf('/api/') === 0 || slod.indexOf('/.netlify/functions/') === 0 ||
+            slod.indexOf(location.origin + '/api/') === 0 || slod.indexOf(location.origin + '/.netlify/functions/') === 0)) {
+          tolur.skrif++;
+          if (geymsla.size) { geymsla.clear(); tolur.taemt++; }
+        }
+        return upprunalegt.apply(this, arguments);
+      }
       var adferd = String((stillingar && stillingar.method) || (inntak && inntak.method) || 'GET').toUpperCase();
       if (adferd !== 'GET' && adferd !== 'HEAD') {               // skrift → allt ferskt á eftir
+        tolur.skrif++;
         if (geymsla.size) { geymsla.clear(); tolur.taemt++; }
         return upprunalegt.apply(this, arguments);
       }
@@ -74,6 +85,9 @@
 
   window.RestSamnyting = {
     tolur: function () { return Object.assign({ i_geymslu: geymsla.size }, tolur); },
-    taema: function () { geymsla.clear(); }
+    taema: function () { geymsla.clear(); },
+    // Fjöldi skrifta (allt nema GET/HEAD á Supabase, líka rpc) úr ÞESSUM flipa frá hleðslu. 153 notar þetta til að vita
+    // hvort nokkuð var vistað síðan Ársskoðun sótti síðast — sjá backgroundRefresh.
+    skrif: function () { return tolur.skrif; }
   };
 })();

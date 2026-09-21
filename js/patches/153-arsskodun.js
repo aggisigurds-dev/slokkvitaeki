@@ -1571,13 +1571,25 @@
       if (ns !== _lastDataSig && !_editingNote) { render(); _lastDataSig = ns; }
     } catch (e) { try { console.warn('[arsskodun] repaintIfChanged', e); } catch (_) {} }
   }
+  // 21.09.2026 (afköst, mælt á lifandi): hver ferð TIL BAKA á Ársskoðun úr fyrirtækjaspjaldi sótti allt mengið upp á nýtt —
+  // 45 netköll (öll tæki í 12 síðum + 1,6 MB stillinga-blob) — ef > 8 s voru liðnar, þ.e. alltaf við skýrslugerð. Listinn
+  // er þegar á skjánum, en sóknin keppti um net og örgjörva við næsta spjald sem opnað er (Agnar: „við erum svo mikið inn
+  // og út af þessum síðum"). Nú er endursókn SLEPPT í allt að 60 s EF ekkert var skrifað úr þessum flipa síðan síðast
+  // (js/rest-samnyting.js telur hverja skrift, líka rpc/AppSettings). Var eitthvað vistað → sótt strax eins og áður.
+  // Breytingar ANNARRA véla sjást því í versta falli 60 s seinna en áður (8 s). Sé lagið óvirkt (-1) gildir gamla reglan.
+  const skrifNu = () => { try { return (window.RestSamnyting && RestSamnyting.skrif) ? RestSamnyting.skrif() : -1; } catch (_) { return -1; } };
+  let _skrifVidHledslu = -2;
   async function backgroundRefresh() {
     if (_bgRefreshing) return;
-    if (Date.now() - _lastLoad < 8000) return;   // rapid back-and-forth → skip the refetch
+    const _aldur = Date.now() - _lastLoad;
+    if (_aldur < 8000) return;   // rapid back-and-forth → skip the refetch
+    const _skrif = skrifNu();
+    if (_aldur < 60000 && _skrif !== -1 && _skrif === _skrifVidHledslu) return;   // ekkert vistað héðan síðan síðast
     _bgRefreshing = true;
     try {
       await loadAll();
       _lastLoad = Date.now();
+      _skrifVidHledslu = _skrif;   // talið FYRIR sóknina: skrift á meðan hún var á lofti kallar á aðra
       const ns = dataSig();
       // Ekki endurteikna (sópa burt röðum) á meðan notandi skrifar í ferðanótu —
       // textinn hyrfi úr reitnum. Sleppum þessari umferð; _lastDataSig stendur óbreytt
@@ -1620,8 +1632,10 @@
       return;
     }
     main.innerHTML = '<div style="padding:24px;color:var(--ink4)">Hleður…</div>';
+    const _skrifFyrir = skrifNu();
     await loadAll();
     _lastLoad = Date.now();
+    _skrifVidHledslu = _skrifFyrir;
     render();
     _rendered = true;
     _lastDataSig = dataSig();
