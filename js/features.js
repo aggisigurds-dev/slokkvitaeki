@@ -48,7 +48,21 @@ var Companies = {
     }
     el.innerHTML = html;
   },
-  load: async function() {
+  // 21.09.2026 (afköst, mælt á lifandi): við EINA opnun á fyrirtækjaspjaldi kölluðu fjórir aðilar á load() í sömu andrá
+  // (allir +0 ms) og hver sótti ALLA töfluna — 1.192 raðir × allar súlur × 4 = 8 netköll og ~2,5 s af sókn og þáttun.
+  // Nú deila kallarar EINNI sókn ef hún hófst fyrir < 800 ms. Glugginn er vísvitandi þröngur: sá sem vistar breytingu og
+  // kallar svo á load() má ekki fá sókn sem hófst FYRIR vistunina — 800 ms nær samtíma kallurum en ekki slíkri röð.
+  load: function() {
+    var self = this, nu = Date.now();
+    if (self._loadP && (nu - (self._loadHofst || 0)) < 800) return self._loadP;
+    self._loadHofst = nu;
+    var p = self._loadInner();
+    self._loadP = p;
+    var hreinsa = function () { if (self._loadP === p) self._loadP = null; };
+    p.then(hreinsa, hreinsa);
+    return p;
+  },
+  _loadInner: async function() {
     // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"). ÁÐUR stóð hér
     // `this.list = []` þegar DB.online var ósatt. Companies.load() er kallað úr
     // mörgum áttum (patch 146 á 2 mín fresti, 147 eftir stofnun, ræsi-
