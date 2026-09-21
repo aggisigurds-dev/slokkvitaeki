@@ -81,8 +81,14 @@
     if (frac == null || !isFinite(frac)) return;
     frac = Math.max(0.02, Math.min(1, frac));
     card.classList.add('thm-stat');
-    var old = card.querySelector(':scope > .thm-track'); if (old) old.remove();
-    var t = document.createElement('div'); t.className = 'thm-track'; t.style.background = dark ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.07)';
+    // 21.09.2026 (afköst, mælt á lifandi Ársskoðun): stikan var fjarlægð og smíðuð upp á nýtt í HVERRI umferð (3 spjöld, ~2×/s) þótt ekkert
+    // hefði breyst. Hver DOM-breyting vakti 313/319/317 sem endurskrifuðu sín stílblöð → útlit 23.000 hnúta endurreiknað,
+    // 140–180 ms hik á ~½ s fresti. Nú er stikan látin vera ef hún sýnir þegar rétt hlutfall og lit.
+    var old = card.querySelector(':scope > .thm-track');
+    var lykill = Math.round(frac * 100) + '|' + color + '|' + (dark ? 1 : 0);
+    if (old && old.getAttribute('data-thm') === lykill && old === card.lastElementChild) return;
+    if (old) old.remove();
+    var t = document.createElement('div'); t.className = 'thm-track'; t.setAttribute('data-thm', lykill); t.style.background = dark ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.07)';
     var f = document.createElement('div'); f.className = 'thm-fill'; f.style.width = Math.round(frac * 100) + '%'; f.style.background = color;
     t.appendChild(f); card.appendChild(t);
     var nodes = card.querySelectorAll('div,span');

@@ -42,7 +42,7 @@
       s.id = STYLE_ID;
       (document.head || document.documentElement).appendChild(s);
     }
-    s.textContent = [
+    const cssNytt = [
       ':root{--ink-on-steel:' + INK + '!important;--ink-muted-readable:' + INK_MUTED + '!important}',
 
       /* Beat 230's html[data-thm-preset] .view h1 {#fff} — titles sit on steel. */
@@ -157,7 +157,13 @@
       '#gs-trigger{background:#fff!important;color:' + INK + '!important;border:1px solid #cbd5e1!important;opacity:1!important}',
       '#gs-trigger kbd{color:#334155!important;background:#e2e8f0!important}'
     ].join('');
-    if (s.parentNode) s.parentNode.appendChild(s);
+    // 21.09.2026 (afköst, mælt á lifandi Ársskoðun): blaðið var endurskrifað og fært aftast við HVERJA DOM-breytingu á
+    // síðunni (~2×/s) — hvort tveggja neyðir vafrann til að endurreikna útlit allra 23.000 hnúta. Nú aðeins þegar textinn
+    // breytist, og aðeins fært ef ÓKUNNUGT blað er komið aftar (jafningjarnir 319 · 323 mega standa þar — annars
+    // berjast blöðin þrjú endalaust um síðasta sætið).
+    if (s.textContent !== cssNytt) s.textContent = cssNytt;
+    const aftast = (() => { let n = s.nextElementSibling; while (n) { if (['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css'].indexOf(n.id) < 0) return false; n = n.nextElementSibling; } return true; })();
+    if (s.parentNode && !aftast) s.parentNode.appendChild(s);
   }
 
   function parseRgb(str) {

@@ -132,8 +132,11 @@
         const doc = head.ownerDocument || document;
         let s = doc.getElementById(SHEET);
         if (!s) { s = doc.createElement('style'); s.id = SHEET; head.appendChild(s); }
-        s.textContent = css;
-        if (s.parentNode) s.parentNode.appendChild(s);
+        // 21.09.2026 (afköst, mælt á lifandi Ársskoðun): textinn var endurskrifaður og blaðið fært aftast í HVERRI umferð — hvort tveggja
+        // neyðir vafrann til að endurreikna útlit allrar síðunnar. Nú aðeins þegar eitthvað breyttist í raun; jafningjarnir
+        // (313 · 323) mega standa aftar, annars berjast blöðin þrjú endalaust um síðasta sætið.
+        if (s.textContent !== css) s.textContent = css;
+        if (s.parentNode && !(() => { let n = s.nextElementSibling; while (n) { if (['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css'].indexOf(n.id) < 0) return false; n = n.nextElementSibling; } return true; })()) s.parentNode.appendChild(s);
       } catch (_) {}
     });
   }

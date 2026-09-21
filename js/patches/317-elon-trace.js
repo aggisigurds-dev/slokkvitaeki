@@ -311,14 +311,23 @@
     });
   }
 
-  let scheduled = false;
+  // 21.09.2026 (afköst, mælt á lifandi Ársskoðun): skönnunin (20+ fyrirspurnir yfir ALLT skjalið, ~15 ms á 23.000 hnútum)
+  // keyrði í næsta ramma eftir HVERJA DOM-breytingu hvar sem er — mælt ~7×/s. Stimplarnir eru rakningarmerki (data-elon +
+  // hover-titill), ekkert les þá í rauntíma, svo þeir mega koma sekúndu síðar: nú í mesta lagi ein skönnun á ~1,2 s fresti,
+  // í lausagangi vafrans, og aldrei í földum flipa.
+  let scheduled = false, sidast = 0;
   function schedule() {
     if (scheduled) return;
     scheduled = true;
-    requestAnimationFrame(() => {
-      scheduled = false;
-      try { scan(document); } catch (e) { console.warn('[elon-trace]', e); }
-    });
+    const bid = Math.max(250, 1200 - (Date.now() - sidast));
+    setTimeout(() => {
+      const keyra = () => {
+        scheduled = false; sidast = Date.now();
+        if (document.hidden) return;
+        try { scan(document); } catch (e) { console.warn('[elon-trace]', e); }
+      };
+      if (window.requestIdleCallback) requestIdleCallback(keyra, { timeout: 1500 }); else keyra();
+    }, bid);
   }
 
   function boot() {

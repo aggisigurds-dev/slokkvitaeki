@@ -742,7 +742,8 @@
     try { css += taflaApply(_cur.tafla || {}); } catch (_) {}
     const s = sheet();
     if (s.textContent !== css) s.textContent = css;
-    if (s.parentNode) s.parentNode.appendChild(s);   // sitja síðast → vinna 230/314
+    // 21.09.2026 (afköst, mælt á lifandi Ársskoðun): aðeins færa ef ÓKUNNUGT blað er komið aftar (jafningjar 313 · 319 mega standa þar).
+    if (s.parentNode && !(() => { let n = s.nextElementSibling; while (n) { if (['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css'].indexOf(n.id) < 0) return false; n = n.nextElementSibling; } return true; })()) s.parentNode.appendChild(s);   // sitja síðast → vinna 230/314
   }
   document.addEventListener('pe-zones-apply', e => runApply(e.detail));
 

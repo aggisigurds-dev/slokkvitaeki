@@ -569,7 +569,8 @@
       });
       anchor.parentNode.insertBefore(b, anchor.nextSibling);
     }
-    const merkja = () => { b.textContent = on() ? '✕ Loka hönnun' : '⚙ Hönnunarhamur'; };
+    // 21.09.2026 (afköst, mælt á lifandi Ársskoðun): aðeins skrifa þegar textinn breytist — annars er þetta DOM-breyting í hverri umferð.
+    const merkja = () => { const t = on() ? '✕ Loka hönnun' : '⚙ Hönnunarhamur'; if (b.textContent !== t) b.textContent = t; };
     merkja();
   }
 

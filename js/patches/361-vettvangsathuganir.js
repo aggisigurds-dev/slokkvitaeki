@@ -195,14 +195,33 @@
     }
   }
 
+  // 21.09.2026 (Agnar: „slökkva á þessu í bili, eða pínkulítið merki og default collapsed"): kaflinn tók hálfan skjá í
+  // úttektarforminu. Nú er hann EIN lítil lína, sjálfgefið lokuð; smellur opnar. Ekkert er falið þegjandi: sé eitthvað
+  // skráð stendur það í merkinu („· 2 skráð"). Opið/lokað lifir meðan síðan er opin (líka yfir endurteikningu við smell).
+  let _vaOpid = false;
   function teikna(box, coId, gogn) {
     const valin = new Set(gogn.abendingar || []);
+    const nSkrad = ((gogn.neydarlysing && gogn.neydarlysing !== 'ekki_skodad') ? 1 : 0) + valin.size + (String(gogn.nota || '').trim() ? 1 : 0);
+    if (!_vaOpid) {
+      box.innerHTML =
+        '<div style="margin:8px 0 0;display:flex;align-items:center;gap:8px">' +
+          '<button type="button" id="_va-opna" title="Vettvangsathuganir — sést ekki á skýrslu né reikningi; býr til verk fyrir hin félögin" ' +
+            'style="font:inherit;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;cursor:pointer;background:' +
+            (nSkrad ? '#eff6ff' : 'transparent') + ';color:' + (nSkrad ? '#1d4ed8' : '#94a3b8') + ';border:1px solid ' + (nSkrad ? '#bfdbfe' : '#e2e8f0') + '">' +
+            '🔎 Vettvangsathuganir' + (nSkrad ? ' · ' + nSkrad + ' skráð' : '') + ' ▸</button>' +
+          '<span id="_va-stada" style="font-size:11px;color:var(--ink3)"></span>' +
+        '</div>';
+      const op = box.querySelector('#_va-opna');
+      if (op) op.addEventListener('click', () => { _vaOpid = true; teikna(box, coId, gogn); });
+      return;
+    }
     box.innerHTML =
       '<div style="border-top:1px dashed #cbd5e1;margin:12px 0 0;padding-top:11px">' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">' +
           '<div style="font-size:12px;color:var(--ink2);font-weight:700">🔎 Vettvangsathuganir</div>' +
           '<span style="font-size:11px;color:var(--ink3);font-weight:400">— sést ekki á skýrslu né reikningi; býr til verk fyrir hin félögin</span>' +
           '<span id="_va-stada" style="margin-left:auto;font-size:11px;color:var(--ink3)"></span>' +
+          '<button type="button" id="_va-loka" title="Fella saman" style="font:inherit;font-size:11px;padding:2px 8px;border-radius:99px;cursor:pointer;background:transparent;color:#64748b;border:1px solid #e2e8f0">▾ fela</button>' +
         '</div>' +
         '<div style="font-size:11.5px;color:var(--ink2);font-weight:600;margin-bottom:4px">💡 Neyðarlýsing ' +
           '<span style="font-weight:400;color:var(--ink3)">(þriðja lögbundna árlega skoðunin — við gerum hana ekki enn)</span></div>' +
@@ -234,6 +253,8 @@
           'line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' + esc(gogn.nota || '') + '</textarea>' +
       '</div>';
 
+    const lk = box.querySelector('#_va-loka');
+    if (lk) lk.addEventListener('click', () => { try { const t = box.querySelector('#_va-nota'); if (t) t.blur(); } catch (_) {} _vaOpid = false; teikna(box, coId, gogn); });
     box.querySelectorAll('#_va-lysing button').forEach(b => b.addEventListener('click', () => {
       gogn.neydarlysing = b.dataset.g;
       teikna(box, coId, gogn);
