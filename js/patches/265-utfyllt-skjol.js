@@ -135,7 +135,12 @@
   // aðeins EFTIR await-ið í byggja() — hann er skrifaður þar — svo tvö köll sem
   // skarast á biðinni gætu bæði búið til ._ufs-section. Þessi læsing er samstundis.
   let ufsVinnur = 0;
+  // 2026-09-21 (Agnar strikaði yfir á skjámynd: „Þetta þarf ekki að vera á þessari síðu … raun þarf ekki að
+  // vera neinstaðar“): spjaldið „Samningar & útfyllt skjöl“ birtist ekki lengur á prófílnum. Ekkert fjarlægt —
+  // skjölin eru áfram í Samningar-flipanum og í Sölu (253); setja PROFILSPJALD_FALID = false til að endurvekja.
+  const PROFILSPJALD_FALID = true;
   async function injectProfile() {
+    if (PROFILSPJALD_FALID) return;
     const main = document.getElementById('companies-main'); if (!main) return;
     const coId = coIdOnPage(); if (!coId) return;
     let sec = main.querySelector('._ufs-section');

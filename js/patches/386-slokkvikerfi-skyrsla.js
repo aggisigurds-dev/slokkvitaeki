@@ -396,6 +396,9 @@
       if (t.length < 80 && /Úttekt búin/i.test(t)) ut.push(el);
     });
     ut.push(cols);
+    // Agnar 21.09 (strikaði yfir á skjámynd): „Samningar & útfyllt skjöl" (._ufs-section) og „Samræma
+    // tækjalista úr skýrslu / reikningi" (.rdr-box) eiga ekki heima undir 🍳. Falin þar, óbreytt undir 🧯.
+    main.querySelectorAll(':scope > ._ufs-section, :scope > .rdr-box').forEach(el => ut.push(el));
     return ut;
   }
   function setjaFlipa(f) {
@@ -412,11 +415,15 @@
       veljaKerfi(k);
     }
   }
-  let _mounting = false;
+  let _mounting = false, _reyna = 0;
+  // Prófíllinn er stundum endurteiknaður Á MEÐAN kerfin eru sótt: þá er `cols` frá því fyrir biðina dottinn úr
+  // DOM-inu og insertBefore kastar. Áður björguðu síðbúnar sprautur annarra pappa (226/265) þessu með því að
+  // vekja mount aftur; þegar þeir voru faldir 21.09 hurfu fliparnir af Varmalandi. Nú reynir mount sjálft aftur.
+  function reynaAftur() { if (_reyna++ < 10) setTimeout(() => { mount().catch(() => {}); }, 450); }
   async function mount() {
     const main = document.getElementById('companies-main'); if (!main || _mounting) return;
-    const coEl = main.querySelector('[data-co-id]'); const cols = main.querySelector(':scope > .uttekt-cols');
-    if (!coEl || !cols) return;
+    const coEl = main.querySelector('[data-co-id]'); const cols0 = main.querySelector(':scope > .uttekt-cols');
+    if (!coEl || !cols0) return;
     const fid = +coEl.getAttribute('data-co-id'); if (!fid) return;
     if (main.querySelector('#_sks-tabs') && S.fid === fid) { if (S.flipi === 'slokk') setjaFlipa('slokk'); return; }   // þegar komið — endurbeita felun (takkinn kemur stundum á eftir)
     _mounting = true;
@@ -424,7 +431,11 @@
       if (S.fid !== fid) { clearTimeout(S.timer); if (S.dirty && !S.stoppad && S.k) await vista(); S.fid = fid; S.k = null; S.rod = null; S.data = null; S.flipi = 'ars'; S.kerfi = await saekjaKerfi(fid); }
       const gomul = main.querySelector('#_sks-tabs'); if (gomul) gomul.remove();
       const gamall = main.querySelector('#_sks-host'); if (gamall) gamall.remove();
-      if (!S.kerfi.length) return;                                                  // fyrirtækið á ekkert slökkvikerfi → engir flipar
+      if (!S.kerfi.length) { _reyna = 0; return; }                                  // fyrirtækið á ekkert slökkvikerfi → engir flipar
+      // Eftir biðina: lesa DOM-ið UPP Á NÝTT — ekki treysta tilvísunum frá því áður.
+      const coNu = main.querySelector('[data-co-id]'); const colsNu = main.querySelector(':scope > .uttekt-cols');
+      if (!coNu || !colsNu || +coNu.getAttribute('data-co-id') !== fid) { reynaAftur(); return; }
+      const cols = colsNu;
       const taeki = (cols.textContent.match(/Slökkvitæki\s*\((\d+)\)/) || [])[1];
       const tabs = document.createElement('div'); tabs.id = '_sks-tabs';
       tabs.innerHTML = '<button type="button" class="_sks-tab" data-flipi="ars">🧯 Slökkvitæki' + (taeki ? ' (' + taeki + ')' : '') + '</button>' +
@@ -437,7 +448,9 @@
       const o = window.__slokkvikerfiOpna; const beint = o && o.fid === fid && (Date.now() - o.at) < 15000;
       if (beint) window.__slokkvikerfiOpna = null;
       setjaFlipa(beint ? 'slokk' : S.flipi);
-    } finally { _mounting = false; }
+      _reyna = 0;
+    } catch (e) { console.warn('[slokkvikerfi-skyrsla] mount — reyni aftur', e); reynaAftur(); }
+    finally { _mounting = false; }
   }
 
   function ensureCss() {

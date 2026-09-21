@@ -602,7 +602,11 @@
   function pickerBtnHtml(){ return '<button id="_rdr-pick" class="rdr-btn rdr-btn-ghost" style="margin-top:8px">📚 Velja skýrslu úr safni (öll ár / allir staðir)</button>'; }
   function wirePicker(body, coId, co, baseId){ var b=body.querySelector('#_rdr-pick'); if(b) b.onclick=function(){ openReportPicker(coId, co, baseId); }; }
 
+  // 2026-09-21 (Agnar strikaði yfir á skjámynd, „raun þarf ekki að vera neinstaðar“): kassinn „Samræma tækjalista úr
+  // skýrslu / reikningi“ birtist ekki lengur á prófílnum. Kóðinn stendur; RDR_FALID = false endurvekur hann.
+  var RDR_FALID = true;
   function inject(){
+    if(RDR_FALID) return;
     var main=document.getElementById('companies-main'); if(!main) return;
     var coId=getCoId(); if(!coId) return;
     var box=main.querySelector('.rdr-box');
