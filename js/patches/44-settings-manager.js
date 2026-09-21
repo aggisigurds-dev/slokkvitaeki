@@ -185,7 +185,22 @@
     if (!await Confirm.show('Hreinsa áminningarlog? Þetta mun fjarlægja minningar um sent tölvupóstar/SMS.')) return;
     localStorage.removeItem('bulk_reminder_log');
     localStorage.removeItem('sms_sent_log');
-    if(window.Toast) Toast.show('✓ Log hreinsað');
+    // 21.09.2026: sagan býr nú á ÞJÓNINUM (33/37: sms_aminningar_log · bulk_aminningar_log) og localStorage er aðeins
+    // skyndiminni — hnappurinn hreinsaði því ekkert lengur (sagan kom strax aftur). Vörpur sameinast per lykil og
+    // lesarinn í 33 hunsar gildi sem eru ekki strengir, svo hver færsla er sett á null. Sagt SATT frá ef það bregst.
+    let n = 0, okThjonn = true;
+    try {
+      const AS = window.AppSettings;
+      if (AS && AS.save && AS.path) {
+        if (AS.load) { try { await AS.load(); } catch (_) {} }
+        for (const lykill of ['sms_aminningar_log', 'bulk_aminningar_log']) {
+          const m = AS.path(lykill) || {}; const p = {};
+          Object.keys(m).forEach(k => { if (typeof m[k] === 'string') { p[k] = null; n++; } });
+          if (Object.keys(p).length && (await AS.save({ [lykill]: p })) !== true) okThjonn = false;
+        }
+      } else okThjonn = false;
+    } catch (e) { okThjonn = false; console.warn('[settings-mgr] hreinsun áminningasögu', e); }
+    if(window.Toast) Toast.show(okThjonn ? ('✓ Áminningasaga hreinsuð á öllum tækjum (' + n + ' færslur)') : '⚠ Hreinsað á þessu tæki, en náði EKKI á þjóninn — sagan kemur aftur. Reyndu aftur.');
   }
 
   // ── Inject button into existing Stillingar nav + inject gear icon ─────────

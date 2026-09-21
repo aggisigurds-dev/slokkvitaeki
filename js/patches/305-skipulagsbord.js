@@ -114,6 +114,43 @@
     } catch (_) {}
   }
 
+  // 21.09.2026 (úttekt): `cards` er FYLKI og fór upp í heilu lagi úr minni flipans — sami starfsmaður á tveimur tækjum
+  // (eða tveir flipar á „Afgreiðsla") skrifaði sitt borð yfir spjöld sem hitt tækið hafði bætt við eða breytt.
+  // Nú: grein starfsmannsins lesin FERSK af þjóni rétt fyrir vistun (JSON-slóð, nokkur kB) og sameinuð PER SPJALD:
+  //   grunnur = spjöldin eins og þau voru þegar þessi flipi las þau síðast (mount)
+  //   • spjald sem ÉG breytti/bætti við  → mín útgáfa            • spjald sem ég snerti EKKI → útgáfa þjónsins
+  //   • ég eyddi (var í grunni, ekki hjá mér) → eytt              • hitt tækið bætti við (ekki í grunni) → kemur inn
+  //   • hitt tækið eyddi spjaldi sem ég BREYTTI → mitt lifir (enginn texti má tapast)
+  // Bregðist lesturinn gildir fyrri hegðun. Rekist tvö spjöld á sama reit fær aðkomuspjaldið fyrsta lausa reit.
+  let _grunnur = new Map();
+  function setjaGrunn(cards) { _grunnur = new Map((cards || []).map(c => [c.id, JSON.stringify(c)])); }
+  async function ferskGrein(nafn) {
+    try {
+      const sb = window.DB && DB.sb; if (!sb) return null;
+      const r = await sb.from('app_settings').select('b:settings->skipulagsbord->by_staff->' + nafn).eq('id', 1).maybeSingle();
+      if (r.error || !r.data || !r.data.b || !Array.isArray(r.data.b.cards)) return null;
+      return r.data.b;
+    } catch (_) { return null; }
+  }
+  function sameina(minn, thjonn) {
+    const S = new Map(thjonn.map(c => [c.id, c])), Lm = new Map(minn.map(c => [c.id, c]));
+    const ut = [];
+    minn.forEach(c => {
+      const g = _grunnur.get(c.id), breytt = (g === undefined) || g !== JSON.stringify(c);
+      if (S.has(c.id)) ut.push(breytt ? c : S.get(c.id));
+      else if (breytt) ut.push(c);                       // nýtt hjá mér, eða eytt þar en breytt hér → lifir
+      // annars: eytt á hinu tækinu og ósnert hér → fellur út
+    });
+    const notadir = new Set(ut.map(c => c.slot));
+    thjonn.forEach(c => {
+      if (Lm.has(c.id) || _grunnur.has(c.id)) return;    // til hjá mér, eða ég eyddi því
+      let k = c;
+      if (notadir.has(c.slot)) { for (let i = 0; i < SLOTS_MAX; i++) if (!notadir.has(i)) { k = Object.assign({}, c, { slot: i }); break; } }
+      notadir.add(k.slot); ut.push(k);
+    });
+    return ut;
+  }
+
   async function persist() {
     const data = { cards: state.cards, rows: synilegarRadir() };
     render();
@@ -135,8 +172,14 @@
     // RPC-villa) — og af því að `render()` keyrir hér að ofan úr STAÐBUNDNU
     // `state.cards`, sat minnispunkturinn áfram á skjánum eins og hann væri
     // vistaður. Hann hvarf svo við næstu hörðu endurhleðslu. Nú er sagt frá.
+    const fersk = await ferskGrein(nafnStarfsm());
+    if (fersk) {
+      const sam = sameina(state.cards, fersk.cards);
+      if (JSON.stringify(sam) !== JSON.stringify(state.cards)) { state.cards = sam; data.cards = sam; render(); }
+    }
     const ok = await AppSettings.save({ skipulagsbord: { by_staff: { [nafnStarfsm()]: data } } });
     if (ok === false) { vistunVilla('Þjónninn tók ekki við borðinu'); return; }
+    setjaGrunn(data.cards);   // það sem fór upp er nýi grunnurinn
     try { const b = document.querySelector('#' + SLOT_ID + ' ._sb-villa'); if (b) b.remove(); } catch (_) {}
     // localStorage-afritið er AÐEINS fyrir Agnar (gamla sameiginlega borðið);
     // annars myndi afgreiðslutölvan skrifa sitt borð yfir afrit hans.
@@ -949,6 +992,7 @@
     if (!document.getElementById(SLOT_ID)) return;
     const data = readData();
     state.cards = data.cards || [];
+    setjaGrunn(state.cards);
     state.rows  = Math.max(ROWS_MIN, Math.min(ROWS_MAX, Number(data.rows) || ROWS_DEF));
     state.collapsed = !readOpenPref();
     render();

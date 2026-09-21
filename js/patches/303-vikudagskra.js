@@ -118,6 +118,19 @@
   // fyllist aðeins þegar reiturinn á Verkborðinu er teiknaður (mount). Glugginn er líka opnaður af
   // Þjónustuborði 5 (368) þar sem reiturinn er ekki til, og þá hefði „Vista á dagskrá" skrifað
   // `[] + nýja verkið` yfir öll verk starfsmannsins.
+  // 21.09.2026 (úttekt): `jobs` er FYLKI og fer upp í heilu lagi. `readJobs()` les skyndiminni FLIPANS, svo sami
+  // starfsmaður á tveimur tækjum (tölva + sími, eða tveir flipar á „Afgreiðsla") skrifaði sinn gamla lista yfir verk
+  // sem hitt tækið hafði bætt við. Nú er grein starfsmannsins lesin FERSK af þjóni rétt fyrir vistun (JSON-slóð —
+  // nokkur kB, ekki 1,6 MB blobbinn) og breytingunni (`next` er fall: listi → listi) beitt á ÞANN lista.
+  // Bregðist lesturinn gildir fyrri hegðun (skyndiminnið). Skilar fylki, eða null ef ekkert ferskt fékkst.
+  async function ferskJobs(nafn) {
+    try {
+      const sb = window.DB && DB.sb; if (!sb) return null;
+      const r = await sb.from('app_settings').select('j:settings->vikudagskra->by_staff->' + nafn + '->jobs').eq('id', 1).maybeSingle();
+      if (r.error || !r.data) return null;
+      return Array.isArray(r.data.j) ? r.data.j : null;   // null = greinin ekki til enn → readJobs() ræður (erfðir Agnars)
+    } catch (_) { return null; }
+  }
   async function persist(next) {
     const reikna = typeof next === 'function' ? next : () => next;
     state.jobs = reikna(state.jobs);
@@ -132,8 +145,11 @@
       for (let i = 0; i < 40 && !AppSettings.isLoaded(); i++) await new Promise(r => setTimeout(r, 150));
       if (!AppSettings.isLoaded()) { toast('Stillingar hlóðust ekki — dagskráin vistaðist ekki'); return; }
     }
-    if (typeof next === 'function') { state.jobs = reikna(readJobs()); render(); }
     const nafn = (window.BordStarfsmadur && BordStarfsmadur.get) ? BordStarfsmadur.get() : 'Agnar';
+    if (typeof next === 'function') {
+      const ferskt = await ferskJobs(nafn);
+      state.jobs = reikna(ferskt || readJobs()); render();
+    }
     const patch = { vikudagskra: { by_staff: { [nafn]: { jobs: state.jobs } } } };
     const ok = await AppSettings.save(patch);
     if (!ok) toast('Náði ekki að vista dagskrána');

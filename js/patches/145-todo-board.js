@@ -58,20 +58,48 @@
   function load() {
     const s = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || null;
     if (!s || !Array.isArray(s.columns) || !s.columns.length) return defaultData();
+    _bordAsOf = s.updated_at ? String(s.updated_at) : '';   // 21.09.2026: hvaða útgáfu borðið í minni er byggt á (sjá save)
     return s;
   }
   // 21.09.2026 (úttekt): enginn kallstaður las niðurstöðuna — misheppnuð vistun sást
   // hvergi á borðinu. save() segir nú sjálft frá (einn staður, allir kallarar), EINU
   // SINNI þar til vistun tekst aftur, svo 600 ms sjálfvistunin spammi ekki. AppSettings
   // geymir skrifið í biðröð og reynir aftur — þess vegna „reyni aftur".
+  // 21.09.2026 (úttekt): borðið (dálkar → spjöld) er hreiðrað FYLKI og fer upp í heilu lagi úr minni flipans, svo tvö tæki
+  // með borðið opið skrifuðu hvort yfir annað — sjálfvistunin á 600 ms fresti gerði gluggann stóran. Spjöldin hafa auðkenni
+  // en dálkar má endurraða/endurnefna, svo í stað sameiningar er ÚRELDINGARVÖRÐUR (sama og verðlistinn í 273): rétt fyrir
+  // vistun er `todo.updated_at` lesið af þjóni með JSON-slóð (nokkur bæti — EKKI 1,6 MB blobbinn; sjálfvistunin kallar oft).
+  // Sé það annað en borðið í minni var byggt á, og ekki okkar eigin vistun, er EKKERT skrifað og notandinn látinn vita.
+  // Textinn stendur áfram á skjánum; ferskar stillingar eru sóttar svo næsta opnun borðsins sýni stöðu hins tækisins.
+  let _bordAsOf = ''; const _minarVistanir = []; let _ureltVarad = false;
+  async function thjonsTimi() {
+    try {
+      const sb = getSB(); if (!sb) return null;
+      const r = await sb.from('app_settings').select('at:settings->todo->>updated_at').eq('id', 1).maybeSingle();
+      if (r.error || !r.data) return null;
+      return r.data.at ? String(r.data.at) : '';
+    } catch (_) { return null; }
+  }
   let _saveWarned = false;
   async function save(data) {
+    const at = await thjonsTimi();   // null = náðist ekki → fyrri hegðun (vista)
+    if (at && at !== _bordAsOf && _minarVistanir.indexOf(at) < 0) {
+      console.warn('[todo-board] borð úrelt — vistun stöðvuð', { a_thjoni: at, i_minni: _bordAsOf });
+      if (!_ureltVarad) {
+        _ureltVarad = true;
+        try { if (window.Toast && Toast.show) Toast.show('⚠ Verkefnaborðinu var breytt á öðru tæki — ekkert vistað héðan. Afritaðu textann, lokaðu borðinu og opnaðu aftur.'); } catch (_) {}
+        try { if (window.AppSettings && AppSettings.load) AppSettings.load(); } catch (_) {}
+      }
+      return false;
+    }
+    _ureltVarad = false;
     data.updated_at = new Date().toISOString();
+    _minarVistanir.push(data.updated_at); if (_minarVistanir.length > 50) _minarVistanir.shift();
     if (!window.AppSettings || !window.AppSettings.save) return false;
     let ok = false;
     try { ok = (await window.AppSettings.save({ [STORAGE_KEY]: data })) === true; }
     catch (e) { console.warn('[todo-board] save exception', e); ok = false; }
-    if (ok) { _saveWarned = false; return true; }
+    if (ok) { _saveWarned = false; _bordAsOf = data.updated_at; return true; }
     if (!_saveWarned) {
       _saveWarned = true;
       try { if (window.Toast && Toast.show) Toast.show('⚠ Vistaðist ekki — reyni aftur'); } catch (_) {}
