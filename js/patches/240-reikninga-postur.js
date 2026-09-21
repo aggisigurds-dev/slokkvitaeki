@@ -60,6 +60,9 @@
     rules: [],           // auto-hide rules {id, rule_type:'sender'|'domain'|'subject', pattern}
     activity: new Set(), // message_ids we have replied to / sent an invoice for
     expanded: new Set(), // thread keys the user expanded
+    // 21.09.2026: opnar radir. Gmail-listinn synir adeins samantekt; kunninn,
+    // thradurinn og ALLAR adgerdir birtast thegar rod er opnud.
+    opin: new Set(),
     tagFilter: null,     // active category-tag filter (label) or null
     meta: {},            // message_id → {manual_tag, note} (manual override + minnispunktur)
   };
@@ -335,7 +338,39 @@
       V + '.rp-search input{width:100%;height:38px;padding:0 12px 0 34px;border-radius:11px;border:1px solid rgba(255,255,255,.28) !important;background:rgba(255,255,255,.12) !important;color:#fff !important;font:inherit;font-size:13.5px;outline:none;box-sizing:border-box}',
       V + '.rp-search input::placeholder{color:rgba(255,255,255,.6)}',
       V + '.rp-search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:rgba(255,255,255,.7)}',
-      V + '.rp-list{display:flex;flex-direction:column;gap:9px}',
+      V + '.rp-list{display:flex;flex-direction:column;gap:6px}',
+      // --- Gmail-rodin (21.09.2026) ---
+      V + '.gm-row{padding:10px 13px;gap:12px;border-radius:11px;box-shadow:0 4px 14px -12px rgba(25,35,60,.5);cursor:pointer}',
+      V + '.gm-row:hover{box-shadow:0 8px 20px -14px rgba(25,35,60,.55)}',
+      V + '.gm-row.opin{box-shadow:0 14px 30px -16px rgba(25,35,60,.5);cursor:default}',
+      V + '.gm-av{flex:none;width:34px;height:34px;border-radius:50%;color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;margin-top:1px}',
+      V + '.gm-mid{flex:1;min-width:0}',
+      V + '.gm-top{display:flex;align-items:baseline;gap:10px}',
+      V + '.gm-from{flex:1;min-width:0;font-size:13.5px;font-weight:700;color:#11141c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V + '.gm-from .gm-me{font-weight:400;color:#94a3b8}',
+      V + '.gm-from b{font-weight:700;color:#64748b;font-size:12px}',
+      V + '.gm-time{flex:none;font-size:11.5px;color:#64748b;font-family:"JetBrains Mono",ui-monospace,monospace}',
+      V + '.gm-subj{font-size:13px;font-weight:600;color:#1f2733;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V + '.gm-snip{font-size:12px;color:#8a93a3;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      // Osvarad = svartara og feitara, eins og olesid i Gmail.
+      V + '.gm-row:not(.answered) .gm-subj{font-weight:800;color:#0b0e14}',
+      V + '.gm-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;align-items:center}',
+      V + '.gm-att{font-size:10.5px;color:#475569;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:2px 7px;white-space:nowrap}',
+      V + '.gm-lokid{font-size:10.5px;font-weight:700;color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:20px;padding:2px 9px;white-space:nowrap}',
+      V + '.gm-bidur{font-size:10.5px;font-weight:700;color:#b45309;background:#fff7ed;border:1px solid #fed7aa;border-radius:20px;padding:2px 9px;white-space:nowrap}',
+      V + '.gm-falid{font-size:10.5px;font-weight:700;color:#94a3b8;background:#f8fafc;border:1px solid #e2e8f0;border-radius:20px;padding:2px 9px}',
+      // Opna rodin: netfang, kunni, allar adgerdir, allur thradurinn.
+      V + '.gm-opid{margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;display:flex;flex-direction:column;gap:9px;cursor:default}',
+      V + '.gm-netfang{font-size:11.5px;color:#94a3b8;font-family:"JetBrains Mono",ui-monospace,monospace;word-break:break-all}',
+      V + '.gm-opid .rp-cust{text-align:left;max-width:100%}',
+      V + '.gm-opid .rp-acts{justify-content:flex-start}',
+      V + '.gm-opid .rp-thread-list{margin-top:0;border-top:0;padding-top:0}',
+      // Simi: staerri snertifletir a tokkunum i opnu rodinni.
+      '@media (max-width:640px){' +
+        V + '.gm-av{width:30px;height:30px;font-size:13.5px}' +
+        V + '.gm-row{padding:10px 11px;gap:10px}' +
+        V + '.gm-opid .rp-btn{padding:8px 12px;font-size:12px}' +
+      '}',
       V + '.rp-card{background:#fff !important;border:1px solid rgba(20,24,34,.08) !important;border-left:3px solid #cbd5e1 !important;border-radius:13px;box-shadow:0 8px 22px -16px rgba(25,35,60,.22);padding:11px 15px;display:flex;align-items:flex-start;gap:14px}',
       V + '.rp-card.q{border-left-color:#f59e0b !important}',
       V + '.rp-card.matched{border-left-color:#2f5fe0 !important}',
@@ -677,23 +712,64 @@
     if (!isHidden(m) && m.from) acts.push('<button class="rp-btn mute _rp-mute"' + di + ' type="button" title="Fela sjálfkrafa alla pósta frá ' + esc(m.from) + '">🔇</button>');
     if (!isHidden(m)) acts.push('<button class="rp-btn del _rp-del"' + di + ' type="button" title="Eyða / fela þessum pósti">🗑</button>');
     const note = (metaFor(m) || {}).note || '';
-    const older = (m._threadCount > 1 && state.expanded.has(m.threadKey)) ? (m._thread || []).slice(1) : [];
+    const older = (m._threadCount > 1 && (state.opin.has(m.threadKey) || state.expanded.has(m.threadKey))) ? (m._thread || []).slice(1) : [];
     const olderHTML = older.length
       ? '<div class="rp-thread-list">' + older.map(o =>
           '<div class="rp-thread-msg"><span class="d">' + esc(fmtDate(o.received_at)) + '</span> · <span class="s">' + esc(o.sender_name || o.from) + '</span>' +
           (isAnswered(o) ? ' <span class="ans">✓</span>' : '') +
           '<div class="tx">' + esc((o.clean || o.snippet || '').slice(0, 200)) + '</div></div>').join('') + '</div>'
       : '';
-    return '<div class="' + cls + '">' +
-      '<div class="rp-when"><b>' + esc(relDay(m.received_at)) + '</b>' + esc(fmtDate(m.received_at)) + '</div>' +
-      '<div class="rp-mid">' +
-        '<div class="rp-from">' + esc(m.sender_name || m.from) + ' <span class="em">' + esc(m.from) + '</span> ' + badges.join(' ') + '</div>' +
-        '<div class="rp-subj">' + esc(subj) + '</div>' +
-        (snip ? '<div class="rp-snip">' + esc(snip.slice(0, 320)) + '</div>' : '') +
-        (note ? '<div class="rp-note">📝 ' + esc(note) + '</div>' : '') +
-        olderHTML +
+    // 21.09.2026 - GMAIL-ROD. Listinn er bara listi; adgerdirnar bua i opnu
+    // rodinni. Somu takkar og adur, sami data-i, somu handhafar.
+    const opin = state.opin.has(m.threadKey);
+    const nafn = (m.sender_name || m.from || '?').trim();
+    const staf = (nafn.replace(/[^A-Za-z\u00C0-\u017F]/g, '')[0] || '?').toUpperCase();
+    // Litur er fasti af netfanginu - sami sendandi faer alltaf sama lit.
+    const LITIR = ['#d97757','#2f7a4a','#4f46e5','#b5522a','#0f766e','#a16207','#7c3aed','#0369a1'];
+    let hsh = 0; const lyk = String(m.from || nafn);
+    for (let z = 0; z < lyk.length; z++) hsh = (hsh * 31 + lyk.charCodeAt(z)) % 99991;
+    const litur = LITIR[hsh % LITIR.length];
+    const fraTexti = esc(nafn)
+      + (m._threadCount > 1 ? '<span class="gm-me">, me</span> <b>' + m._threadCount + '</b>' : '');
+    // Vidhengin med NAFNI, ur ollum thraedinum - sendir postar okkar bera aldrei
+    // has_attachment (innsogid les tha med format=metadata), svo eitt skeyti dugar ekki.
+    const vidhNofn = [];
+    ((m._thread && m._thread.length) ? m._thread : [m]).forEach(function (o) {
+      (Array.isArray(o.attachment_names) ? o.attachment_names : []).forEach(function (n) {
+        if (n && vidhNofn.indexOf(n) < 0) vidhNofn.push(n);
+      });
+    });
+    const vidhFlis = vidhNofn.length
+      ? vidhNofn.slice(0, 2).map(function (n) {
+          return '<span class="gm-att">' + esc(String(n).replace(/\.[a-z0-9]+$/i, '').slice(0, 20)) + '</span>';
+        }).join('') + (vidhNofn.length > 2 ? '<span class="gm-att">+' + (vidhNofn.length - 2) + '</span>' : '')
+      : (m.has_attachment ? '<span class="gm-att">vi\u00F0hengi</span>' : '');
+    const flisar = [
+      tag ? '<span class="rp-tag ' + tag.cls + ' _rp-tagf" data-tag="' + esc(tag.label) + '" title="S\u00EDa \u00E1 \u00FEennan flokk">' + tag.label + '</span>' : '',
+      (inbox && answered) ? '<span class="gm-lokid">Loki\u00F0</span>' : '',
+      (inbox && !answered) ? '<span class="gm-bidur">B\u00ED\u00F0ur svars</span>' : '',
+      vidhFlis,
+      isHidden(m) ? '<span class="gm-falid">fali\u00F0</span>' : '',
+    ].filter(Boolean).join('');
+
+    return '<div class="gm-row ' + cls + (opin ? ' opin' : '') + '" data-k="' + esc(m.threadKey) + '">' +
+      '<div class="gm-av" style="background:' + litur + '">' + esc(staf) + '</div>' +
+      '<div class="gm-mid">' +
+        '<div class="gm-top"><span class="gm-from">' + fraTexti + '</span>' +
+          '<span class="gm-time">' + esc(relDay(m.received_at)) + '</span></div>' +
+        '<div class="gm-subj">' + esc(subj) + '</div>' +
+        (snip ? '<div class="gm-snip">' + esc(snip.slice(0, 200)) + '</div>' : '') +
+        (flisar ? '<div class="gm-chips">' + flisar + '</div>' : '') +
+        (note ? '<div class="rp-note">\uD83D\uDCDD ' + esc(note) + '</div>' : '') +
+        (opin
+          ? '<div class="gm-opid">' +
+              '<div class="gm-netfang">' + esc(m.from || '') + '</div>' +
+              custHTML +
+              (acts.length ? '<div class="rp-acts">' + acts.join('') + '</div>' : '') +
+              olderHTML +
+            '</div>'
+          : '') +
       '</div>' +
-      '<div class="rp-right">' + custHTML + (acts.length ? '<div class="rp-acts">' + acts.join('') + '</div>' : '') + '</div>' +
     '</div>';
   }
 
@@ -752,6 +828,16 @@
       '</div>';
 
     v.querySelector('#_rp-reload').addEventListener('click', load);
+    // 21.09.2026: smellur a rodina opnar hana. Smellur a takka, tengil eda
+    // merkiflis gerir sitt eigid verk og opnar ekki rodina lika.
+    v.querySelectorAll('.gm-row').forEach(function (r) {
+      r.addEventListener('click', function (ev) {
+        if (ev.target.closest('button, a, input, textarea, select, .rp-tag, .rp-cust, .gm-opid')) return;
+        const k = r.dataset.k;
+        if (state.opin.has(k)) state.opin.delete(k); else state.opin.add(k);
+        render();
+      });
+    });
     v.querySelectorAll('.rp-chip[data-f]').forEach(b => b.addEventListener('click', () => { state.filter = b.dataset.f; render(); }));
     const si = v.querySelector('#_rp-search');
     if (si) si.addEventListener('input', () => {
