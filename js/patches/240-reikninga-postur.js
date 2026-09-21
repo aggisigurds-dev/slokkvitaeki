@@ -414,7 +414,9 @@
       V + '.rp-btn.tag{color:#c2410c;border-color:#fed7aa;background:#fff7ed}',
       V + '.rp-btn.tag:hover{background:#ffedd5}',
       // Tag-filter row
-      V + '.rp-tagbar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:-2px 0 14px}',
+      // 21.09.2026: ein lina sem ma strjuka. Thessi regla stendur NEDAR en
+      // .rp-bar-reglurnar og vinnur their - thvi er hun lagfaerd her, ekki thar.
+      V + '.rp-tagbar{display:flex;flex-wrap:nowrap;align-items:center;gap:7px;margin:0 0 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}',
       V + '.rp-tagbar-lbl{font-size:12px;font-weight:600;color:#8a93a3;margin-right:2px}',
       V + '.rp-tagchip{font:inherit;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:20px;white-space:nowrap;cursor:pointer;border:1px solid;transition:box-shadow .12s,transform .08s}',
       V + '.rp-tagchip:hover{transform:translateY(-1px)}',
