@@ -262,6 +262,12 @@
       const yrReps = reports.filter(r => +r.year === yr);
       const finalRep = yrReps.find(r => r.status === 'final') || null;
       const anyRep = yrReps[0] || null;
+      // 21.09.2026 (Agnar, skjámynd af G14 ehf): línan sagði „ENGIN SKOÐUN · Reikningur —" beint fyrir ofan ársyfirlit sem
+      // sýndi skýrslu (feb.) OG reikning R-107992 fyrir sama ár. Hún leit AÐEINS á skýrslur gerðar í appinu og vissi ekki af
+      // skjölum (PDF) sem þegar eru tengd félaginu. Nú les hún sömu skjöl og ársyfirlitið (274: C.docs · C.invDocs), svo
+      // tvær línur á sama skjá geti ekki sagt sitt hvað.
+      const pdfRep = (C.docs || []).find(d => +d.year === yr) || null;
+      const pdfInv = (C.invDocs || []).filter(d => +d.year === yr).sort((a, b) => String(b.doc_date || '').localeCompare(String(a.doc_date || '')) || b.id - a.id)[0] || null;
 
       const el = document.createElement('div');
       el.id = '_bkr-status';
@@ -270,7 +276,9 @@
         ? '<span style="padding:2px 9px;border-radius:99px;background:#dcf1e4;color:#166b3a;font-weight:800;font-size:10.5px">LOKIÐ ✓</span>'
         : anyRep
           ? '<span style="padding:2px 9px;border-radius:99px;background:#fdf3d7;color:#8a6100;font-weight:800;font-size:10.5px">DRÖG</span>'
-          : '<span style="padding:2px 9px;border-radius:99px;background:#e8ecf3;color:#3b4653;font-weight:800;font-size:10.5px">ENGIN SKOÐUN</span>';
+          : pdfRep
+            ? '<span style="padding:2px 9px;border-radius:99px;background:#dcf1e4;color:#166b3a;font-weight:800;font-size:10.5px">SKÝRSLA TIL (PDF)</span>'
+            : '<span style="padding:2px 9px;border-radius:99px;background:#e8ecf3;color:#3b4653;font-weight:800;font-size:10.5px">ENGIN SKOÐUN</span>';
       el.innerHTML = '<b style="font-size:13px">🧾 Brunakerfi ' + yr + ':</b> ' + badge +
         ' <span id="_bkr-inv" style="color:#59606c;display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">· Reikningur: leita…</span>';
       const grid = w.querySelector('._bkc-grid');
@@ -325,6 +333,10 @@
           if (row) decorateProfile(C, w);
           else { b.disabled = false; b.textContent = '＋ Stofna drög'; }
         });
+        const lk = span.querySelector('#_bkr-link'); if (lk) lk.addEventListener('click', doLink);
+      } else if (pdfInv) {
+        // Reikningsskjal (PDF) er tengt félaginu fyrir árið — það ER reikningurinn. Tenging við sölu í appinu er valkvæð.
+        span.innerHTML = '· Reikningur: <b style="color:#16181c">' + esc(pdfInv.invoice_number || 'PDF') + '</b> <span style="color:#8b93a1">(skjal)</span> ' + LINKBTN;
         const lk = span.querySelector('#_bkr-link'); if (lk) lk.addEventListener('click', doLink);
       } else {
         span.innerHTML = '· Reikningur: — ' + LINKBTN +
