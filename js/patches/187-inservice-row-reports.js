@@ -19,7 +19,10 @@
   if (window.__inserviceRowReportsInstalled) return;
   window.__inserviceRowReportsInstalled = true;
 
-  const YEARS = ['2023','2024','2025','2026'];
+  // 21.09.2026 (uttekt): artolin voru fastir strengir. 1. januar 2027 hefdi 2027-dalkurinn aldrei birst og ENGIN felog
+  // merkst a gjalddaga (due var y === '2026') - thegjandi. Nu rullandi fjogur ar; i ar er utkoman NAKVAEMLEGA su sama.
+  const AR_NU = new Date().getFullYear();
+  const YEARS = [AR_NU - 3, AR_NU - 2, AR_NU - 1, AR_NU].map(String);
   const BUCKET = 'samningar';
   function digits(s){ return String(s||'').replace(/\D/g,''); }
   // Fact-check per (fyrirtæki, ár) — úr Supabase-töflunni `year_factcheck`
@@ -555,7 +558,7 @@
     try { loadLoc(); loadReik(); loadInv(); loadPairs(); loadFc(); } catch (_) {}   // best-effort warm (idempotent)
     const out = {};
     if (!c) {
-      YEARS.forEach(y => out[y] = { has: false, due: (y === '2026'), reik: false, klarad: false, confirmed: false });
+      YEARS.forEach(y => out[y] = { has: false, due: (+y === AR_NU), reik: false, klarad: false, confirmed: false });
       return out;
     }
     let uf = {}, att = {};
@@ -576,7 +579,7 @@
       // `has` er ÁFRAM skýrslu-eingöngu svo „vantar skýrslu"-talningar standi.
       // `reik` 🧾: við skýrslu = site-keyed úttektarreikningur; án skýrslu = confirmed only.
       // `confirmed` = year_factcheck human — LED-merki; ekki readiness.
-      out[y] = { has: hasRep, due: (y === '2026'),
+      out[y] = { has: hasRep, due: (+y === AR_NU),
         reik: hasRep ? hasReikYear(coId, kt, y, ktCount) : hasConfirmedInvYear(coId, y),
         inv: hasConfirmedInvYear(coId, y),
         klarad: !!(pairMap && pairMap[coId] && pairMap[coId].has(y)),

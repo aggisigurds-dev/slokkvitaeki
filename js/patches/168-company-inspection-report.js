@@ -433,7 +433,12 @@
     }
     async function _cirSaveReport(auto) {
       const ar = String((ctx && ctx.ar) || new Date().getFullYear());
-      if (!window.CompanyAttachments || !CompanyAttachments.upload) { if (!auto) alert('Skjalaeining ekki tiltæk.'); return; }
+      // 21.09.2026 (úttekt): sjálfvirka leiðin þagði líka hér — nú segir hún frá.
+      if (!window.CompanyAttachments || !CompanyAttachments.upload) {
+        if (!auto) alert('Skjalaeining ekki tiltæk.');
+        else if (window.Toast && Toast.show) Toast.show('⚠ Skýrslan vistaðist ekki sjálfkrafa — ýttu á Vista');
+        return;
+      }
       // Sjálfvirk vistun: sleppa ef úttektarskýrsla þessa árs er þegar til (svo
       // endurteknar forskoðanir tvírita ekki). Handvirki takkinn vistar samt.
       if (auto) {
@@ -545,8 +550,21 @@
             try { ArsWorkflow.markReport(co.id); } catch (_) {}
           }
         }
-        else if (_cirSaveBtn) { _cirSaveBtn.disabled = false; _cirSaveBtn.textContent = orig; }
-      } catch (e) { if (!auto) alert('Villa við vistun: ' + (e.message || e)); if (_cirSaveBtn) { _cirSaveBtn.disabled = false; _cirSaveBtn.textContent = orig; } }
+        // 21.09.2026 (úttekt): SJÁLFVIRKA vistunin (auto=true) gleypti bilun þegjandi —
+        // bæði þegar upphleðslan skilaði engu (meta tómt) og þegar undantekning kom.
+        // Notandinn hélt að skýrslan væri vistuð. Nú sést það; handvirka leiðin óbreytt.
+        else {
+          if (_cirSaveBtn) { _cirSaveBtn.disabled = false; _cirSaveBtn.textContent = orig; }
+          if (auto && window.Toast && Toast.show) Toast.show('⚠ Skýrslan vistaðist ekki sjálfkrafa — ýttu á Vista');
+        }
+      } catch (e) {
+        if (!auto) alert('Villa við vistun: ' + (e.message || e));
+        else {
+          console.warn('[uttektarskyrsla] sjálfvirk vistun mistókst', e);
+          try { if (window.Toast && Toast.show) Toast.show('⚠ Skýrslan vistaðist ekki sjálfkrafa — ýttu á Vista'); } catch (_) {}
+        }
+        if (_cirSaveBtn) { _cirSaveBtn.disabled = false; _cirSaveBtn.textContent = orig; }
+      }
     }
     if (_cirSaveBtn) _cirSaveBtn.addEventListener('click', () => _cirSaveReport(false));
     // 2026-06-24: straight download — same vector PDF, filename

@@ -106,6 +106,12 @@ exports.handler = async (event) => {
       return json(409, { error: 'Sala þegar í reikningi (' + (sale.dk_invoice_id || sale.invoiced_at) + ')' });
     }
 
+    // 21.09.2026 (úttekt): krafa þessarar sölu varð þegar til í Payday en merkingin brást (sjá skraWritebackBrast).
+    // Endursending væri tvírukkun — engin yfirskrift; leyst með því að merkja söluna senda og loka villunni.
+    if (!dry) {
+      const brast = await writebackBrast(saleId);
+      if (brast) return json(409, { gate: 'writeback', error: 'Þessi sala fór ÞEGAR í Payday en merktist ekki send: ' + String(brast.detail || '').slice(0, 300) + ' — ekki senda aftur.' });
+    }
     // ═══ RUKKUNAR-GÁTTIR (2026-08-13 — sjá docs/RUKKUNARKEDJAN.md) ═══════════
     // Allar sendingarleiðir (stök sending, bulk, endursending — patch 166 öll
     // þrjú köllin) fara um ÞETTA eina fall, svo gáttirnar hér gilda alls staðar.
@@ -280,7 +286,20 @@ exports.handler = async (event) => {
     }
 
     // Writeback: merkja söluna sem invoiced
-    await markSaleInvoiced(sale.id, created);
+    // 21.09.2026 (úttekt): svarið var ALDREI lesið. Mistækist þessi eina skrift (500/tímaút) var reikningurinn
+    // kominn í Payday og krafan í heimabanka kúnnans, en salan sat áfram í „Ósendar" með ✓ á skjánum — og fór
+    // AFTUR daginn eftir = tvírukkun. Nú: allt að 3 tilraunir; bregðist þær er það skráð (app_problems, án kt)
+    // og svarið segir skýrt að EKKI megi senda aftur. Gáttin efst (writebackBrast) stöðvar endursendingu.
+    const merkt = await markSaleInvoiced(sale.id, created);
+    if (!merkt.ok) {
+      const nr = (created && (created.number || created.invoiceNumber || created.id)) || '?';
+      await skraWritebackBrast(sale, nr, merkt.villa);
+      return json(502, {
+        gate: 'writeback',
+        payday_created: true, created,
+        error: 'KRAFAN FÓR Í PAYDAY (nr. ' + nr + ') en salan merktist EKKI send í kerfinu (' + merkt.villa + '). EKKI senda hana aftur — merktu hana „Krafa send" handvirkt eða láttu Claude laga.',
+      });
+    }
 
     // XML-höfnun sem endaði með reikningi án XML — skráð EFTIR að salan er merkt send.
     // Agnar 14.09.: villan sprettur líka upp á skjánum (166 les xml_villa + bord_mal_id) og
@@ -511,14 +530,52 @@ async function markSaleInvoiced(saleId, created) {
   // frágangur — verkið er klárað um leið og krafan fer í banka.
   const body = { invoiced_at: now, krafa_sent_at: now, status: 'final' };
   if (payloadId) body.dk_invoice_id = String(payloadId);
-  return fetch(`${SUPABASE_URL}/rest/v1/solur?id=eq.${encodeURIComponent(saleId)}`, {
-    method: 'PATCH',
-    headers: {
-      apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json', Prefer: 'return=minimal',
-    },
-    body: JSON.stringify(body),
-  });
+  // 21.09.2026 (úttekt): skilar { ok, villa } — áður var hráu fetch-loforði skilað og enginn las það.
+  let villa = '';
+  for (let i = 0; i < 3; i++) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/solur?id=eq.${encodeURIComponent(saleId)}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json', Prefer: 'return=representation',
+        },
+        body: JSON.stringify(body),
+      });
+      if (r.ok) {
+        const rows = await r.json().catch(() => []);
+        if (Array.isArray(rows) && rows.length) return { ok: true, villa: '' };
+        villa = 'engin röð uppfærðist';
+      } else villa = 'HTTP ' + r.status;
+    } catch (e) { villa = String((e && e.message) || e).slice(0, 120); }
+    await new Promise((res) => setTimeout(res, 400 * (i + 1)));
+  }
+  return { ok: false, villa };
+}
+
+// 21.09.2026 (úttekt): krafa varð til í Payday en salan merktist ekki send. Skráð svo (a) Agnar sjái það og
+// (b) gáttin writebackBrast() geti stöðvað endursendingu sömu sölu. Engin kennitala í texta. Gleypir villur.
+async function skraWritebackBrast(sale, nr, villa) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/app_problems`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        source_app: 'slokkvitaeki', kind: 'payday_writeback_brast', severity: 'error',
+        detail: ('Sala ' + ((sale && sale.num) || (sale && sale.id)) + ' — krafa varð til í Payday (nr. ' + nr + ') en salan merktist ekki send: ' + villa).slice(0, 500),
+        page: 'payday-push', who: 'netlify:payday-push', fingerprint: 'payday_writeback_brast|' + (sale && sale.id),
+      }),
+    });
+  } catch (_) {}
+}
+async function writebackBrast(saleId) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/app_problems?kind=eq.payday_writeback_brast&fingerprint=eq.${encodeURIComponent('payday_writeback_brast|' + saleId)}&or=(resolved.is.null,resolved.eq.false)&select=detail&limit=1`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return (rows && rows[0]) || null;
+  } catch (_) { return null; }
 }
 
 async function clearSaleInvoiced(saleId) {

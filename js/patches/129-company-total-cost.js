@@ -500,6 +500,12 @@
     }
     const services = await loadServices();
     const tier = await loadTierFor(coId);
+    // 21.09.2026 (úttekt): á meðan beðið var eftir gögnunum gat notandinn opnað
+    // ANNAÐ fyrirtæki — þá málaðist kostnaðartafla félags A inn á síðu félags B.
+    // Sé fyrirtækið á skjánum ekki lengur það sem lesið var í upphafi er hætt
+    // ÁÐUR en nokkuð er skrifað í DOM; _lastKey er núllað svo næsta maybeRender
+    // teikni rétt félag.
+    if (getCompanyId() !== coId) { _lastKey = ''; return; }
     const tripState = loadTripState(coId);
     const tierFastFor = (product) => {
       if (!tier || !window.DiscountEngine || !product) return null;
@@ -1473,8 +1479,13 @@
   }
 
   let _retryT = 0;
+  // 21.09.2026 (úttekt): `if (_rendering) return;` HENTI nýjustu beiðninni — ef
+  // skipt var um fyrirtæki á meðan render() beið eftir gögnum kom engin ný
+  // teikning fyrr en púlsinn (2,5 s) náði því. Nú er beiðnin geymd (_pending) og
+  // keyrð aftur í finally.
+  let _pending = false;
   async function maybeRender() {
-    if (_rendering) return;
+    if (_rendering) { _pending = true; return; }
     // 2026-08-17 („invoice calculator keeps falling out"): þessir tveir
     // þöglu returnar átu SÍÐASTA kallið — endurteiknun eftir „Merkja skoðun"
     // lenti innan 800ms-gluggans (eða Companies.list var enn ólistaður) og
@@ -1499,6 +1510,7 @@
       _lastRender = Date.now();
     } finally {
       _rendering = false;
+      if (_pending) { _pending = false; clearTimeout(_retryT); _retryT = setTimeout(maybeRender, 0); }
     }
   }
 

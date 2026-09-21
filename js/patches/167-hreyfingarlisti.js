@@ -239,7 +239,7 @@
   // (lastAct = greitt/breytt/skráð, nýjast fyrst), ekki skráningardegi — salan sem
   // var greidd í morgun á að vera efst þótt hún hafi verið skráð í síðasta mánuði.
   // Röðunin er hvergi vistuð, svo án þessa þurfti að smella á dálkinn í hvert sinn.
-  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'greitt', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'all' };
+  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'greitt', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'all', req: 0 };
   let _hlCreditedIds = new Set();  // 2026-08-19: id upprunareikninga sem hafa verið kreditfærðir (fyllt í render())
 
   // 2026-07-01: customer lookup by NAME or KENNITALA — pull a customer's WHOLE
@@ -269,6 +269,9 @@
     if (q.length < 2) { if (window.Toast && Toast.show) Toast.show('Sláðu inn nafn eða kennitölu'); return; }
     const SB = getSB();
     if (!SB) return;
+    // 21.09.2026 (úttekt): ógilda load() sem er enn á leiðinni — annars gat
+    // mánaðarlistinn málast yfir sögu kúnnans eftir að hún birtist.
+    _state.req++;
     main.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8">Leita að sögu kúnna…</div>';
     const kt = ktDigits(q);
     const isKt = kt.length >= 7;                 // ≥7 digits → treat as kennitala
@@ -332,12 +335,22 @@
     return { start, end };
   }
 
-  async function load(filterMonth) {
+  async function load(filterMonth, retry) {
     const main = document.getElementById('hr-main');
     if (!main) return;
+    // 21.09.2026 (úttekt): „síðasta beiðni vinnur" — áður gat hægara eldra svar
+    // (annar mánuður/umfang) yfirskrifað nýrri lista. Hver keyrsla fær númer og
+    // svar sem er ekki lengur það nýjasta er hent.
+    const rid = ++_state.req;
     main.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8">Hleður hreyfingum…</div>';
     const SB = getSB();
-    if (!SB) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Engin gagnabankatenging.</div>'; return; }
+    if (!SB) {
+      // 21.09.2026 (úttekt): DB.sb er oft ekki tilbúinn við kalt start — áður birtist
+      // „Engin gagnabankatenging" strax og sat þar. Sama mynstur og 166: reyna aftur
+      // á 500 ms fresti, allt að 20×, og halda „Hleður…" á meðan.
+      if ((retry || 0) < 20) { setTimeout(() => { if (rid === _state.req) load(filterMonth, (retry || 0) + 1); }, 500); return; }
+      main.innerHTML = '<div style="padding:32px;color:#dc2626">Engin gagnabankatenging.</div>'; return;
+    }
 
     const m = filterMonth || _state.month || new Date();
     _state.month = m;
@@ -361,7 +374,8 @@
         }
         return q.range(from, to);
       });
-    } catch (e) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc((e && e.message) || e) + '</div>'; return; }
+    } catch (e) { if (rid !== _state.req) return; main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc((e && e.message) || e) + '</div>'; return; }
+    if (rid !== _state.req) return;
     _state.all = rows;
 
     render();

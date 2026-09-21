@@ -197,12 +197,19 @@
     if (!SB) return 'T001';
     const year = new Date().getFullYear().toString().slice(-2);
     const prefix = 'T' + year;
-    const { data } = await SB.from('tilbod').select('num').like('num', prefix + '%').order('num', { ascending: false }).limit(1);
-    if (data && data.length) {
-      const m = (data[0].num || '').match(/(\d+)$/);
-      if (m) return prefix + String(parseInt(m[1], 10) + 1).padStart(3, '0');
-    }
-    return prefix + '001';
+    // 21.09.2026 (úttekt): tvennt var að. (1) /(\d+)$/ las ALLAN talnahalann, líka ártalið: T26005 → 26005 → +1 →
+    // „T26"+"26006" — þess vegna eru til tilboð T2626002, T262626003 og T26262626004. (2) „hæsta + 1" í vafranum er
+    // ekki atómískt. Nú: grunnfallið next_forskeyti_num (teljari per forskeyti, hali mest 4 stafir); gamla leiðin er
+    // aðeins varaleið og les halann á eftir forskeytinu.
+    try {
+      const rn = await SB.rpc('next_forskeyti_num', { p_tafla: 'tilbod', p_forskeyti: prefix, p_breidd: 3 });
+      if (!rn.error && typeof rn.data === 'string' && rn.data.indexOf(prefix) === 0) return rn.data;
+      if (rn.error) console.warn('[patch-27] next_forskeyti_num', rn.error.message);
+    } catch (e) { console.warn('[patch-27] next_forskeyti_num', e); }
+    const { data } = await SB.from('tilbod').select('num').like('num', prefix + '%').order('num', { ascending: false }).limit(200);
+    let haest = 0;
+    (data || []).forEach((x) => { const hali = String(x.num || '').slice(prefix.length); if (/^\d{1,4}$/.test(hali)) haest = Math.max(haest, parseInt(hali, 10)); });
+    return prefix + String(haest + 1).padStart(3, '0');
   }
 
   // Per-row status changer — lets the user set any status directly.

@@ -57,10 +57,15 @@ const KALL_G = /await\s+skraXmlHofnun\s*\(/g;
 
 // ── payday-push: varaleiðin ────────────────────────────────────────────────
 const iGrein = src.indexOf('/electronic invoice/i.test(msg)');
-const iMerkt = src.indexOf('await markSaleInvoiced(sale.id, created);');
+// 21.09.2026: merkingin skilar nú { ok, villa } og svarið ER lesið (tvírukkunarvörn) — línan ber því 'const merkt = '.
+// Krafan er óbreytt: sjálfstæð, óskilyrt skipun á undan XML-skráningunni.
+const iMerktNy = src.indexOf('const merkt = await markSaleInvoiced(sale.id, created);');
+const iMerkt = iMerktNy > -1 ? iMerktNy : src.indexOf('await markSaleInvoiced(sale.id, created);');
 if (iGrein < 0) brot.push('fann ekki XML-varaleiðina (/electronic invoice/i.test(msg)) í payday-push.js — vörðurinn þarf að uppfærast með kóðanum');
 if (iMerkt < 0) brot.push('fann ekki await markSaleInvoiced(sale.id, created) í payday-push.js — vörðurinn þarf að uppfærast með kóðanum');
 
+if (iMerktNy < 0) brot.push('svar markSaleInvoiced er ekki lesið (const merkt = await …; if (!merkt.ok) …) — mistekin merking yrði aftur þögul = tvírukkun');
+if (iMerktNy > -1 && !/if\s*\(\s*!merkt\.ok\s*\)[\s\S]{0,600}gate:\s*'writeback'/.test(src.slice(iMerktNy, iMerktNy + 1200))) brot.push('mistekin merking skilar ekki gate:writeback-villu');
 if (iMerkt > -1) {
   // markSaleInvoiced verður að vera sjálfstæð, óskilyrt skipun: á undan henni kemur ; { eða } (athugasemdir hunsaðar).
   const undan = src.slice(0, iMerkt).replace(/[ \t]*\/\/[^\n]*\n/g, '\n').replace(/\s+$/, '');
@@ -83,7 +88,7 @@ if (iGrein > -1 && iMerkt > iGrein) {
   const kallFyrir = (src.slice(iGrein, iMerkt).match(KALL_G) || []).length;
   if (kallFyrir !== 1) brot.push(`${kallFyrir} skráningarköll á milli varaleiðar og markSaleInvoiced — aðeins 502-greinin (invErr2) má skrá þar`);
 
-  const eftir = src.slice(iMerkt, iMerkt + 1400);
+  const eftir = src.slice(iMerkt, iMerkt + 2800);   // 21.09.2026: writeback-villugreinin (gate:writeback) stendur nú á milli
   if (!/if\s*\(\s*fellBackToNonElectronic\s*\)\s*\{\s*(?:[\w$]+\s*=\s*)?await\s+skraXmlHofnun\s*\(\s*event\s*,\s*sale\s*,\s*xmlVilla\b/.test(eftir)) {
     brot.push('reikningur búinn til án XML skráist ekki á eftir markSaleInvoiced (if (fellBackToNonElectronic) { … await skraXmlHofnun(event, sale, xmlVilla, …) })');
   }

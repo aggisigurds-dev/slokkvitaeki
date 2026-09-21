@@ -511,7 +511,9 @@
       sec.style.display = had ? '' : 'none';
     }).catch(() => { sec.style.display = 'none'; });
   }
-  setInterval(mountSala, 700);
+  // 21.09.2026 (úttekt): tifið keyrði líka í földu vafraspjaldi. Falið spjald
+  // sleppir því; bil og hegðun annars óbreytt.
+  setInterval(function () { if (document.hidden) return; mountSala(); }, 700);
   setTimeout(mountSala, 900);
 
   console.log('[patch-311] DocPairs pör-band installed (company detail + Sala)');

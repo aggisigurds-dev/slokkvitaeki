@@ -410,7 +410,11 @@
     updateNavBadge();
   }, 3000);
 
+  // 21.09.2026 (úttekt): púlsinn sótti ógreidda reikninga á 60 s fresti líka í
+  // földu vafraspjaldi — óþörf köll á Supabase allan sólarhringinn. Falið spjald
+  // sleppir nú umferðinni; næsti púls eftir að spjaldið sést sækir aftur.
   setInterval(async () => {
+    if (document.hidden) return;
     await loadUnpaid();
     updateNavBadge();
   }, 60000);

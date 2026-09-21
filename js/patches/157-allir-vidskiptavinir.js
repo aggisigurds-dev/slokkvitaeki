@@ -1392,8 +1392,15 @@
     ids.forEach(id => {
       map[String(id)] = Object.assign({}, cur[String(id)] || {}, { co_id: +id, flexible: true, marked_at: (cur[String(id)] && cur[String(id)].marked_at) || new Date().toISOString().slice(0, 10) });
     });
-    await window.AppSettings.save({ ferdathjonusta_customers: map });
-    if (window.Toast && Toast.show) Toast.show(`🚌 ${ids.length} merkt sem Ferðaþjónusta`);
+    // 21.09.2026 (úttekt): „merkt" birtist óháð niðurstöðu vistunar. Nú er hún lesin;
+    // false = skrifið situr í vistunarbiðröð AppSettings og er EKKI staðfest á þjóni.
+    let ok = false;
+    try { ok = (await window.AppSettings.save({ ferdathjonusta_customers: map })) === true; } catch (_) { ok = false; }
+    if (window.Toast && Toast.show) {
+      Toast.show(ok
+        ? `🚌 ${ids.length} merkt sem Ferðaþjónusta`
+        : `⏳ Ferðaþjónustumerking (${ids.length}) er í biðröð — ekki staðfest enn`);
+    }
     state.selected.clear(); state.selectMode = false;
     const main = document.getElementById('_av-main'); if (main) render(main);
   }

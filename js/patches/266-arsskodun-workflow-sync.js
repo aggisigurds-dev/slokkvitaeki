@@ -35,10 +35,14 @@
     try {
       const map = AppSettings.path(KEY) || {};
       const cur = map[String(coId)] || {};
-      const e = Object.assign({}, cur, extra || {});
+      // 21.09.2026 (úttekt): `e` byrjaði sem afrit af ALLRI færslunni úr skyndiminni
+      // flipans (equipment, nótur, …) og fór þannig upp — gamalt skyndiminni skrifaði
+      // yfir breytingar annarra véla á sama fyrirtæki. Nú fara aðeins reitirnir sem
+      // þetta fall á (extra + steps_<ár> + lokunarreitirnir); þjónninn djúp-sameinar.
+      const e = Object.assign({}, extra || {});
       if (stepPatch) {
         const s = Object.assign({}, cur[STEPS_KEY] || {}, stepPatch);
-        e[STEPS_KEY] = s;
+        e[STEPS_KEY] = Object.assign({}, stepPatch);   // aðeins breyttu þrepin; `s` er bara fyrir „öll 4"-prófið
         if (STEP_KEYS.every(k => !!s[k])) {          // öll 4 þrep græn → Lokið
           e.last_year_inspected = curYear;
           e.field_inspected_year = 0;
@@ -46,13 +50,18 @@
       }
       // AÐEINS þetta fyrirtæki. Að senda alla vörpuna (808 fyrirtæki) skrifaði
       // stöðu allra hinna aftur í það sem ÞESSI flipi las síðast.
-      await AppSettings.save({ [KEY]: { [String(coId)]: e } });
-      return true;
+      // 21.09.2026 (úttekt): hér stóð `return true` skilyrðislaust — kallarinn fékk
+      // „tókst" þótt AppSettings.save skilaði false. Nú skilar fallið raunniðurstöðunni.
+      const ok = await AppSettings.save({ [KEY]: { [String(coId)]: e } });
+      return ok === true;
     } catch (err) { console.warn('[ars-workflow] write failed', err); return false; }
   }
 
   // Þrep 1 — blár „Vista / í Vinnslu": birtist á borðinu + blátt á listanum.
   // Úttektin er búin (kom af heimsókn); skýrsla/reikningur er það sem eftir er.
+  // 21.09.2026 (úttekt, verkefnastjóri): ÓBREYTT með vilja. Þetta er MEÐVITAÐUR smellur á bláa „Vista / í Vinnslu" —
+  // t.d. önnur úttekt ársins á félagi sem var þegar „Lokið" — og á því að mega enduropna árið. Vörnin gegn
+  // enduropnun á aðeins við SJÁLFVIRKU leiðirnar (markInvoice, 166 markWorkflowSent), ekki þennan takka.
   function markInVinnsla(coId) {
     return write(coId, { uttekt: true }, { field_inspected_year: curYear, last_year_inspected: 0 });
   }
@@ -77,7 +86,12 @@
     // field_inspected_year=curYear heldur kortinu sýnilegu á borðinu ef skýrsla
     // er óunnin (reikningur búinn en vantar skýrslu); write() núllar það sjálft
     // þegar öll 4 þrepin eru græn → „Lokið".
-    return write(coId, { uttekt: true, reikningur: true }, { field_inspected_year: curYear });
+    // 21.09.2026 (úttekt): var skilyrðislaust — reikningur á fyrirtæki sem var þegar
+    // „Lokið" á árinu (t.d. lokað handvirkt) gerði það aftur blátt. Sama vörn og markReport.
+    if (!ready() || coId == null) return Promise.resolve(false);
+    const cur = (AppSettings.path(KEY) || {})[String(coId)] || {};
+    const extra = +cur.last_year_inspected === curYear ? {} : { field_inspected_year: curYear };
+    return write(coId, { uttekt: true, reikningur: true }, extra);
   }
 
   window.ArsWorkflow = { markInVinnsla, markReport, markInvoice, curYear, _write: write };

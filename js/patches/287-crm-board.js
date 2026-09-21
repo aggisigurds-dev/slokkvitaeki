@@ -58,7 +58,9 @@
     _mt = setTimeout(() => { _mt = null; try { mountChip(); } catch (_) {} }, 250);
   }
   new MutationObserver(scheduleMount).observe(document.body, { childList: true, subtree: true });
-  setInterval(scheduleMount, 3000);
+  // 21.09.2026 (úttekt): öryggis-tifið keyrði líka í földu vafraspjaldi. Falið
+  // spjald sleppir því; bil og hegðun annars óbreytt.
+  setInterval(function () { if (document.hidden) return; scheduleMount(); }, 3000);
   scheduleMount();
   window.CrmBoard = { open };
 

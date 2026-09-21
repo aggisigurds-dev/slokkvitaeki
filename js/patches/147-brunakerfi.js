@@ -585,6 +585,9 @@
       if (digits.length >= 3) q = q.or(`kennitala.ilike.${digits}%`);
       else q = q.ilike('nafn', '%' + term + '%');
       const { data } = await q;
+      // 21.09.2026 (úttekt): úrelt svar — hægara svar við eldri leitarstreng gat
+      // málast yfir niðurstöður þess nýja (sama vörn og í 114).
+      if (inp.value.trim() !== term) return;
       const list = data || [];
       const existing = getList();
       if (!list.length) {

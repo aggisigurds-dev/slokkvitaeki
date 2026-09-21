@@ -247,10 +247,18 @@
       .limit(1);
     let seq = 1;
     if (latestData && latestData.length) {
-      const m = (latestData[0].num || '').match(/(\d+)$/);
-      if (m) seq = parseInt(m[1], 10) + 1;
+      // 21.09.2026 (úttekt): halinn er lesinn Á EFTIR forskeytinu — /(\d+)$/ gleypti líka ár+mánuð (K2609001 → 2609001).
+      const hali = String(latestData[0].num || '').slice(prefix.length);
+      if (/^\d{1,4}$/.test(hali)) seq = parseInt(hali, 10) + 1;
     }
-    const num = prefix + String(seq).padStart(3, '0');
+    let num = prefix + String(seq).padStart(3, '0');
+    // 21.09.2026 (úttekt): „hæsta + 1" í vafranum er ekki atómískt — tveir starfsmenn á sömu sekúndu fengu SAMA
+    // kreditnúmer. Grunnfallið next_forskeyti_num læsir teljara per forskeyti. Svari það ekki stendur gamla leiðin.
+    try {
+      const rn = await SB.rpc('next_forskeyti_num', { p_tafla: 'solur', p_forskeyti: prefix, p_breidd: 3 });
+      if (!rn.error && typeof rn.data === 'string' && rn.data.indexOf(prefix) === 0) num = rn.data;
+      else if (rn.error) console.warn('[patch-26] next_forskeyti_num', rn.error.message);
+    } catch (e) { console.warn('[patch-26] next_forskeyti_num', e); }
 
     // ── 2026-09-09 (Agnar: „hverning var síðan með grillvagninn 542-543") ──
     // Kreditfærslurnar hengu HVERGI: 11 af 36 báru `customer_id = NULL` og

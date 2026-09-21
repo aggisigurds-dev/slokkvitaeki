@@ -360,10 +360,16 @@
       u.next_insp = nextYear;
     });
 
-    await markCompanyVisited(c);
+    // 21.09.2026 (úttekt): ✓ birtist áður óháð því hvort ársskoðunarmerkið
+    // vistaðist. Nú er niðurstaðan lesin og sagt satt frá.
+    const visitedOk = await markCompanyVisited(c);
 
     if (window.Toast && window.Toast.show) {
-      window.Toast.show('✓ Heimsókn skráð — ' + updated + ' tæki uppfærð', 'success');
+      if (visitedOk === false) {
+        window.Toast.show('⏳ ' + updated + ' tæki uppfærð, en ársskoðunarmerkið er í biðröð — ekki staðfest enn');
+      } else {
+        window.Toast.show('✓ Heimsókn skráð — ' + updated + ' tæki uppfærð', 'success');
+      }
     }
 
     // Re-render so the unit table dates refresh
@@ -377,16 +383,21 @@
   // Stamp the company as visited this year so it leaves Ársskoðun's "due"
   // filter immediately. Doesn't touch arsskodun if the customer isn't
   // subscribed — caller should handle that.
+  // 21.09.2026 (úttekt): hér var ALLT arsskodun_customers-kortið (~530 kB) sent
+  // upp úr skyndiminni flipans — gamalt skyndiminni skrifaði þá yfir breytingar
+  // annarra véla á ÖÐRUM fyrirtækjum. Nú fer aðeins þessi eini reitur upp
+  // (þjónninn djúp-sameinar) og niðurstaðan (true/false) skilar sér til kallarans.
+  // Skilar undefined þegar ekkert þurfti að vista.
   async function markCompanyVisited(c) {
     if (!window.AppSettings || !window.AppSettings.save) return;
-    const arsMap = Object.assign({}, window.AppSettings.path('arsskodun_customers') || {});
+    const arsMap = window.AppSettings.path('arsskodun_customers') || {};
     const existing = arsMap[String(c.id)];
     if (!existing) return; // not an arsskodun customer; nothing to update
     const curYear = new Date().getFullYear();
-    arsMap[String(c.id)] = Object.assign({}, existing, {
-      last_year_inspected: curYear
+    const ok = await window.AppSettings.save({
+      arsskodun_customers: { [String(c.id)]: { last_year_inspected: curYear } }
     });
-    await window.AppSettings.save({ arsskodun_customers: arsMap });
+    return ok === true;
   }
 
   function openReport(coId) {
@@ -1117,6 +1128,10 @@
       const ktd = ktDigits(c.kennitala);
       if (ktd.length === 10) {
         const dashed = ktd.slice(0, 6) + '-' + ktd.slice(6);
+        // 21.09.2026 (úttekt): svarið málaði í #_vd-hreyf-body án þess að athuga
+        // HVAÐA kúnna það tilheyrði — hægt svar fyrri kúnna lenti á spjaldi þess
+        // næsta. Spjaldið er nú merkt með kt og svarið hættir við ef það passar ekki.
+        hreyfBody.dataset.kt = ktd;
         sb.from('solur')
           .select('id,num,customer_nafn,samtals,created_at,paid_at,is_credit,status')
           .or('customer_kt.eq.' + ktd + ',customer_kt.eq.' + dashed)
@@ -1125,6 +1140,7 @@
           .then(({ data, error }) => {
             const el = document.getElementById('_vd-hreyf-body');
             if (!el) return;
+            if (el.dataset.kt !== ktd) return; // annar kúnni kominn á skjáinn
             if (error || !data || !data.length) {
               el.innerHTML = '<div style="padding:10px;text-align:center;font-size:11.5px;color:var(--ink3);font-style:italic">Engar hreyfingar skráðar á þennan kennitala</div>';
               return;
@@ -1158,7 +1174,7 @@
             document.getElementById('_vd-hreyf-more')?.addEventListener('click', () => { hreyfNav && hreyfNav.click(); });
           }).catch(e => {
             const el = document.getElementById('_vd-hreyf-body');
-            if (el) el.innerHTML = '<div style="padding:10px;color:var(--red);font-size:11.5px">Villa: ' + esc(String((e && e.message) || e)) + '</div>';
+            if (el && el.dataset.kt === ktd) el.innerHTML = '<div style="padding:10px;color:var(--red);font-size:11.5px">Villa: ' + esc(String((e && e.message) || e)) + '</div>';
           });
       }
     }

@@ -83,10 +83,16 @@
     let salesQ = SB.from('solur').select('id,num,created_at,samtals,status,greitt_med')
       .eq('customer_id', coId).order('created_at', { ascending: false }).limit(1);
     if (co.kennitala) salesQ = salesQ.eq('customer_kt', co.kennitala);
+    // 21.09.2026 (úttekt): tækin voru talin á NAFNI (`client`) — endurnefnt félag
+    // missti tækin sín og samnefndir staðir runnu saman í eina tölu. Dálkurinn
+    // `uttaeki.fyrirtaeki_id` er til síðan 23.08.2026 (sbr. 129 fetchUnits), svo
+    // auðkennið ræður núna; nafnið er aðeins varaleið ef ekkert tölulegt id fæst.
+    const fid = (co.id != null && /^\d+$/.test(String(co.id))) ? co.id : null;
+    const aFelag = (q) => (fid != null ? q.eq('fyrirtaeki_id', fid) : q.eq('client', co.nafn));
     const [ucountRes, ulastRes, uoverdueRes, salesRes] = await Promise.all([
-      SB.from('uttaeki').select('id', { count: 'exact', head: true }).eq('client', co.nafn),
-      SB.from('uttaeki').select('last_insp,next_insp').eq('client', co.nafn).order('last_insp', { ascending: false, nullsFirst: false }).limit(1),
-      SB.from('uttaeki').select('id', { count: 'exact', head: true }).eq('client', co.nafn).lte('next_insp', today),
+      aFelag(SB.from('uttaeki').select('id', { count: 'exact', head: true })),
+      aFelag(SB.from('uttaeki').select('last_insp,next_insp')).order('last_insp', { ascending: false, nullsFirst: false }).limit(1),
+      aFelag(SB.from('uttaeki').select('id', { count: 'exact', head: true })).lte('next_insp', today),
       salesQ,
     ]);
 

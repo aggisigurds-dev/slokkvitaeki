@@ -376,6 +376,14 @@
       };
 
       if (window.AppSettings && window.AppSettings.save) {
+        // 21.09.2026 (úttekt): skjalasnidmat er FYLKI og fer upp í heilu lagi (djúp-
+        // sameining þjónsins sameinar ekki fylki). Listinn var byggður úr skyndiminni
+        // flipans — sniðmát sem önnur vél vistaði á meðan þessi flipi var opinn þurrkaðist
+        // þá út. Nú er lesið ferskt af þjóninum (AppSettings.load) rétt fyrir vistun.
+        // load() gleypir sjálft villur og heldur þá skyndiminninu, svo þetta stöðvar aldrei vistun.
+        if (typeof window.AppSettings.load === 'function') {
+          try { await window.AppSettings.load(); } catch (_) {}
+        }
         const stored = window.AppSettings.path('skjalasnidmat') || [];
         const list = Array.isArray(stored) ? stored.slice() : [];
         const idx = list.findIndex(x => x.id === t.id);

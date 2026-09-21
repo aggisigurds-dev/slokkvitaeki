@@ -279,10 +279,26 @@
           if (plan.inserts.length) {
             const ins = await sb.from('uttaeki').insert(plan.inserts);
             if (!ins.error) summary.inserts = plan.inserts.length;
+            // 21.09.2026 (úttekt): ins.error / del.error voru lesin en þeim HENT — tækja-
+            // skráin stemmdi þá ekki við skýrsluna og það sást hvergi. Nú skráð og sagt
+            // frá með sama mynstri og facts-upsert hér að ofan. Ekki kastað: override_log
+            // og vistun skýrslunnar halda áfram (ALLTAF LEYFA VISTUN).
+            else {
+              const m = String(ins.error.message || ins.error).slice(0, 160);
+              console.warn('[270] uttaeki insert brást:', m);
+              try { if (window.logProblem) window.logProblem('report_sync_uttaeki_insert_failed', 'co ' + coId + ' ár ' + year + ' (' + plan.inserts.length + ' tæki): ' + m); } catch (_) {}
+              try { if (window.Toast && Toast.show) Toast.show('⚠ ' + plan.inserts.length + ' tæki úr skýrslunni (' + year + ') bættust EKKI í tækjaskrána. Skýrslan sjálf er vistuð; opnaðu hana og vistaðu aftur.'); } catch (_) {}
+            }
           }
           if (plan.deleteIds.length) {
             const del = await sb.from('uttaeki').delete().in('id', plan.deleteIds);
             if (!del.error) summary.deletes = plan.deleteIds.length;
+            else {
+              const m = String(del.error.message || del.error).slice(0, 160);
+              console.warn('[270] uttaeki delete brást:', m);
+              try { if (window.logProblem) window.logProblem('report_sync_uttaeki_delete_failed', 'co ' + coId + ' ár ' + year + ' (' + plan.deleteIds.length + ' tæki): ' + m); } catch (_) {}
+              try { if (window.Toast && Toast.show) Toast.show('⚠ ' + plan.deleteIds.length + ' umframtæki (' + year + ') fóru EKKI úr tækjaskránni — hún sýnir áfram fleiri tæki en skýrslan. Skýrslan sjálf er vistuð; opnaðu hana og vistaðu aftur.'); } catch (_) {}
+            }
           }
         }
         // 4. override_log — ein rekjanleikaröð (best-effort).

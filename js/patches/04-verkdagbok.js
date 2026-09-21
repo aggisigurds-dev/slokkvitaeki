@@ -7,7 +7,11 @@
   }
 
   // Lazy getter — evaluated at call-time so we always get the canonical DB.sb
-  const getSB = () => (window.DB && window.DB.sb) || window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+  // 21.09.2026 (úttekt): varaleiðin bjó til NÝJAN Supabase-biðlara í hverju kalli
+  // á meðan DB.sb var null. Nú er varabiðlarinn búinn til einu sinni og
+  // endurnýttur; DB.sb ræður áfram um leið og hann er til.
+  let _fb = null;
+  const getSB = () => (window.DB && window.DB.sb) || (_fb || (_fb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY)));
   const DESKTOP_MIN = 900;
   const isDesktop = () => window.matchMedia('(min-width: ' + DESKTOP_MIN + 'px)').matches;
 

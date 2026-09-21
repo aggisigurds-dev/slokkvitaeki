@@ -60,10 +60,23 @@
     if (!s || !Array.isArray(s.columns) || !s.columns.length) return defaultData();
     return s;
   }
+  // 21.09.2026 (úttekt): enginn kallstaður las niðurstöðuna — misheppnuð vistun sást
+  // hvergi á borðinu. save() segir nú sjálft frá (einn staður, allir kallarar), EINU
+  // SINNI þar til vistun tekst aftur, svo 600 ms sjálfvistunin spammi ekki. AppSettings
+  // geymir skrifið í biðröð og reynir aftur — þess vegna „reyni aftur".
+  let _saveWarned = false;
   async function save(data) {
     data.updated_at = new Date().toISOString();
     if (!window.AppSettings || !window.AppSettings.save) return false;
-    return await window.AppSettings.save({ [STORAGE_KEY]: data });
+    let ok = false;
+    try { ok = (await window.AppSettings.save({ [STORAGE_KEY]: data })) === true; }
+    catch (e) { console.warn('[todo-board] save exception', e); ok = false; }
+    if (ok) { _saveWarned = false; return true; }
+    if (!_saveWarned) {
+      _saveWarned = true;
+      try { if (window.Toast && Toast.show) Toast.show('⚠ Vistaðist ekki — reyni aftur'); } catch (_) {}
+    }
+    return false;
   }
 
   let _data = null;
@@ -386,18 +399,30 @@
     renderAtts();
 
     // Auto-save title/body on blur
+    // 21.09.2026 (úttekt): athugasemdin lofaði vistun við blur en aðeins `input` var
+    // hlustað á (600 ms töf) — texti tapaðist ef farið var úr reitnum/af síðunni innan
+    // tafarinnar. Nú tæmir blur biðina STRAX (aðeins ef vistun bíður — engin auka skrif).
     let saveTimer;
+    async function doSave() {
+      saveTimer = null;
+      card.title = titleInp.value;
+      card.body  = bodyInp.value;
+      card.updated_at = new Date().toISOString();
+      await save(_data);
+    }
     function scheduleSave() {
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(async () => {
-        card.title = titleInp.value;
-        card.body  = bodyInp.value;
-        card.updated_at = new Date().toISOString();
-        await save(_data);
-      }, 600);
+      saveTimer = setTimeout(doSave, 600);
+    }
+    function flushSave() {
+      if (!saveTimer) return;
+      clearTimeout(saveTimer);
+      doSave();
     }
     titleInp.addEventListener('input', scheduleSave);
     bodyInp.addEventListener('input', scheduleSave);
+    titleInp.addEventListener('blur', flushSave);
+    bodyInp.addEventListener('blur', flushSave);
 
     // File upload via picker
     fileBtn.addEventListener('click', () => fileInp.click());

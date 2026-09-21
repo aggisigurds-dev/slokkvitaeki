@@ -153,16 +153,22 @@
     if (!y) return;
     const ARS = 'arsskodun_customers';
     const all = (window.AppSettings.path && window.AppSettings.path(ARS)) || {};
-    const cur = Object.assign({}, all[String(coId)] || {});
+    const cur = all[String(coId)] || {};
     const existing = parseInt(cur.last_year_inspected, 10) || 0;
     if (y <= existing) return;            // already marked this year or newer
-    cur.co_id = coId;
     // 2026-07-30: geymt sem TALA (var String(y)). Patch 266 ber saman með === við
     // curYear (tölu), svo "2026" === 2026 var alltaf false og félag sem varð grænt
     // við að hengja við úttektarskýrslu datt aftur í 🔵 „Í vinnslu" á Verkstæðinu.
-    cur.last_year_inspected = y;
-    // AppSettings.save deep-merges, so this only touches last_year_inspected.
-    await window.AppSettings.save({ [ARS]: { [String(coId)]: cur } });
+    // 21.09.2026 (úttekt): athugasemdin hér sagði „only touches last_year_inspected"
+    // en ÖLL færslan úr skyndiminni flipans (equipment, nótur, …) fór upp og gat
+    // skrifað gömul gildi yfir breytingar annarra véla. Nú fara aðeins co_id (lykill
+    // færslunnar sjálfrar, þarf þegar færslan er ný) og last_year_inspected, og
+    // niðurstaðan er lesin — merkið „skoðað" er ekki tilkynnt nema vistun takist.
+    const ok = await window.AppSettings.save({ [ARS]: { [String(coId)]: { co_id: coId, last_year_inspected: y } } });
+    if (ok !== true) {
+      console.warn('[company-attachments] last_year_inspected vistaðist ekki (co ' + coId + ') — AppSettings geymir skrifið í biðröð');
+      return;
+    }
     try { document.dispatchEvent(new CustomEvent('arsskodun-marking-changed', { detail: { coId, year: y } })); } catch (_) {}
     try { if (window.Arsskodun && Arsskodun.render) Arsskodun.render(); } catch (_) {}
   }
@@ -549,21 +555,30 @@
     const fileInput = section.querySelector('._cat-file-input');
     const dropzone = section.querySelector('._cat-dropzone');
     // pending attach context from a year-grid cell button ({year, kind})
-    let _pendingCtx = null;
+    // 21.09.2026 (úttekt): refreshSection() kallar aftur á wireSection() á SAMA
+    // elementi, svo click/change-hlustararnir á `section` margfölduðust við hverja
+    // endurteikningu (2×, 4×, 8× skrif/eyðingar). Nú bundnir EINU SINNI (flagg á
+    // elementinu). Þeir lifa af innerHTML-endurteikningu því þeir eru á `section`
+    // sjálfu; þess vegna sækja þeir fileInput upp á nýtt og samhengið býr á
+    // section.__pendingCtx. fileInput/dropzone eru NÝ element við hverja teikningu
+    // og eru því áfram bundin í hvert sinn hér fyrir neðan.
+    const firstWire = !section.__wired;
+    section.__wired = true;
 
-    section.addEventListener('click', async e => {
+    if (firstWire) section.addEventListener('click', async e => {
+      const fileInput = section.querySelector('._cat-file-input');
       const upBtn = e.target.closest('._cat-upload');
       const cellAdd = e.target.closest('._cat-cell-add');
       const openBtn = e.target.closest('._cat-open');
       const dlBtn = e.target.closest('._cat-download, ._cat-download2');
       const delBtn = e.target.closest('._cat-del');
 
-      if (upBtn) { e.stopPropagation(); _pendingCtx = null; fileInput.click(); return; }
+      if (upBtn) { e.stopPropagation(); section.__pendingCtx = null; if (fileInput) fileInput.click(); return; }
 
       if (cellAdd) {
         e.stopPropagation();
-        _pendingCtx = { year: cellAdd.dataset.year, kind: cellAdd.dataset.kind };
-        fileInput.click();
+        section.__pendingCtx = { year: cellAdd.dataset.year, kind: cellAdd.dataset.kind };
+        if (fileInput) fileInput.click();
         return;
       }
 
@@ -596,7 +611,7 @@
 
     // Year tag changed on a card → persist + tell the year-columns patch (187)
     // so the 23/24/25/26 view refreshes its icons.
-    section.addEventListener('change', async e => {
+    if (firstWire) section.addEventListener('change', async e => {
       const sel = e.target.closest('._cat-year');
       if (!sel) return;
       e.stopPropagation();
@@ -614,7 +629,7 @@
     fileInput.addEventListener('change', async () => {
       const file = fileInput.files && fileInput.files[0];
       if (!file) return;
-      const ctx = _pendingCtx; _pendingCtx = null;
+      const ctx = section.__pendingCtx || null; section.__pendingCtx = null;
       await doUpload(file, ctx);
       fileInput.value = '';
     });

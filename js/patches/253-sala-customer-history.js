@@ -806,7 +806,9 @@
     openInvoice(saleId);
   }
 
-  setInterval(ensureButton, 700);
+  // 21.09.2026 (úttekt): tifið keyrði líka í földu vafraspjaldi. Falið spjald
+  // sleppir því; bil og hegðun annars óbreytt.
+  setInterval(function () { if (document.hidden) return; ensureButton(); }, 700);
   setTimeout(ensureButton, 800);
   window.SalaCustomerHistory = { open, urlFor, queryFor };
   console.log('[patch-253] Sala customer-history v2 installed');

@@ -105,7 +105,9 @@
     }
   } catch (_) {}
   // Gluggar sem lokast án Modal.close (closeFP, style.display) og lög sem hverfa öðruvísi: ódýr taktur (nokkur getElementById).
-  setInterval(sync, 350);
+  // 21.09.2026 (úttekt): takturinn tifaði líka í földu vafraspjaldi (≈3×/s allan
+  // sólarhringinn). Falið spjald sleppir tifinu; bil og hegðun annars óbreytt.
+  setInterval(function () { if (document.hidden) return; sync(); }, 350);
   // fylgjast með: ný lög á body (picker/ritlar/gluggar) + display-breytingar á
   // þrálátu yfirlögunum (form 273 / síða 274) þegar þau verða til.
   const watched = new WeakSet();

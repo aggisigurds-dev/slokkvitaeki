@@ -171,8 +171,18 @@
       '</div>';
   }
 
-  function wireSection(section, vid) {
+  // 21.09.2026 (úttekt): refreshSection() og injectSection() kölluðu aftur á
+  // wireSection() á SAMA elementi, svo click-hlustarinn margfaldaðist við hverja
+  // endurteikningu — „Bæta við" skrifaði þá 2×, 4×, 8× raðir. Nú bundinn EINU SINNI
+  // (flagg á elementinu); hann lifir af innerHTML-endurteikningu því hann er á
+  // `section` sjálfu. Af því sama elementið er endurnýtt fyrir ANNAN viðskiptavin
+  // (injectSection) er vid lesið úr section.dataset.vid í hverjum smelli, ekki úr
+  // lokuninni (sem væri þá gamli viðskiptavinurinn).
+  function wireSection(section, vid0) {
+    if (section.__wired) return;
+    section.__wired = true;
     section.addEventListener('click', async e => {
+      const vid = section.dataset.vid || String(vid0);
       const delBtn = e.target.closest('._vpr-del');
       const addBtn = e.target.closest('._vpr-add');
       const pickBtn = e.target.closest('._vpr-pick');

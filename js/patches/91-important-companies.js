@@ -26,9 +26,20 @@
     if (!window.AppSettings || typeof window.AppSettings.save !== 'function') return false;
     return await window.AppSettings.save({ tilkynningar: { important_company_ids: arr } });
   }
+  // 21.09.2026 (úttekt): listinn er FYLKI (lesarar í 172 treysta á það, svo sniðinu er
+  // ekki breytt) og fer því upp í heilu lagi. Hann var byggður úr skyndiminni flipans —
+  // merki sem önnur vél setti á meðan þessi flipi var opinn þurrkaðist út við næsta smell.
+  // Nú: (1) ætlun notandans lesin af skjánum FYRST, (2) ferskur listi sóttur af þjóni
+  // (AppSettings.load gleypir sjálft villur), (3) ætlunin lögð ofan á ferska listann.
+  // Þrengir gluggann úr „aldur flipans" í eitt netkall — lokar honum ekki alveg.
   async function toggleImportant(coId) {
+    const id = +coId;
+    const want = !isImportant(id);
+    if (window.AppSettings && typeof window.AppSettings.load === 'function') {
+      try { await window.AppSettings.load(); } catch (_) {}
+    }
     const list = new Set(getList());
-    if (list.has(coId)) list.delete(coId); else list.add(coId);
+    if (want) list.add(id); else list.delete(id);
     return await setList(Array.from(list));
   }
   function isImportant(coId) {

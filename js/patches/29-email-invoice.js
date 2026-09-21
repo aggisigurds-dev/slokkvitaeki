@@ -252,11 +252,17 @@
         try {
           if (window.POS && POS.getState) {
             const st = POS.getState();
+            // 21.09.2026 (úttekt): „Samtals" var reiknað beint úr línunum og HUNSAÐI
+            // bæði línu-afslátt og sölu-afslátt (% og kr) — pósturinn sýndi hærri
+            // upphæð en salan. POS.totals() (pos.js) er sama tala og karfan og
+            // vistaða salan nota; gamla summan er aðeins varaleið ef hún er ekki til.
+            let _tot = null;
+            try { if (typeof POS.totals === 'function') { const t = POS.totals(); if (t && isFinite(t.total)) _tot = t.total; } } catch (_) {}
             sale = {
               lines: st.lines || [],
               customer: st.customer?.nafn || '',
               customerEmail: st.customer?.netfang || '',
-              total: st.lines?.reduce((a,l) => a + ((+l.qty||0)*(+l.unit_price_ex_vat||0)*(1+(+l.vsk_pct||0)/100)), 0) || 0
+              total: (_tot != null) ? _tot : (st.lines?.reduce((a,l) => a + ((+l.qty||0)*(+l.unit_price_ex_vat||0)*(1+(+l.vsk_pct||0)/100)), 0) || 0)
             };
           }
         } catch (_) {}

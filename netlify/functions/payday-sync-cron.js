@@ -107,7 +107,21 @@ exports.handler = async () => {
       }
     } catch (e3) { console.error('[payday-sync-cron] eftirlit error', e3); }
 
-    return { statusCode: 200, body: JSON.stringify({ ok: true, ranAt: new Date().toISOString(), result: data, mirror, eftirlit }) };
+    // 21.09.2026 (uttekt): her stod `ok: true` ohad svarinu. Rynni Payday-lykill ut svaradi payday-sync-paid 500,
+    // keyrslan sagdi samt 'tokst' og solur.paid_at uppfaerdist ekki dogum saman - greiddar krofur satu i Ogreitt.
+    // Nu er svarid lesid, keyrslan skrad i automation_runs (dagleg heilsa les thadan) og stodukodinn segir satt.
+    const syncOk = !!(r.ok && data && !data.error);
+    const mirrorOk = !!(mirror && !mirror.error);
+    try {
+      await fetch(process.env.SUPABASE_URL + '/rest/v1/automation_runs', {
+        method: 'POST',
+        headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_SERVICE_ROLE_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify([{ job_name: 'payday-sync-cron', status: syncOk && mirrorOk ? 'success' : 'error', source: 'netlify:slokkvitaeki',
+          detail: (syncOk ? 'greidslur OK' : 'greidslur BRUGDUST: ' + String((data && data.error) || ('HTTP ' + r.status)).slice(0, 160)) + ' | ' + (mirrorOk ? 'spegill OK' : 'spegill BRAST: ' + String((mirror && mirror.error) || 'ekkert svar').slice(0, 120)),
+          started_at: new Date().toISOString(), finished_at: new Date().toISOString() }]),
+      });
+    } catch (e5) { console.error('[payday-sync-cron] automation_runs skraning brast', e5); }
+    return { statusCode: syncOk ? 200 : 502, body: JSON.stringify({ ok: syncOk, mirror_ok: mirrorOk, ranAt: new Date().toISOString(), result: data, mirror, eftirlit }) };
   } catch (e) {
     console.error('[payday-sync-cron] error', e);
     return { statusCode: 500, body: JSON.stringify({ error: String(e.message || e) }) };

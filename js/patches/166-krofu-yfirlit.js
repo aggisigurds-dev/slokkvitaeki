@@ -609,7 +609,11 @@
       if (!window.ArsWorkflow || !ArsWorkflow._write) return;
       const patch = { uttekt: true, reikningur: true };
       if (resp && resp.attached_report) patch.send = true;
-      ArsWorkflow._write(sale.customer_id, patch, { field_inspected_year: ArsWorkflow.curYear });
+      // 21.09.2026 (úttekt): setti „í vinnslu"-árið skilyrðislaust → eftirá-reikningur á félagi sem var LOKIÐ stökk
+      // aftur í blátt. Sama vörn og 266 markReport/markInvoice: ári sem er lokið er ekki hreyft.
+      let lokid = false;
+      try { const a = ((window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {})[String(sale.customer_id)] || {}; lokid = +a.last_year_inspected === +ArsWorkflow.curYear; } catch (_) {}
+      ArsWorkflow._write(sale.customer_id, patch, lokid ? {} : { field_inspected_year: ArsWorkflow.curYear });
     } catch (_) {}
   }
 
@@ -637,6 +641,10 @@
 
     const m = filterMonth || new Date();
     _state.month = m;
+    // 21.09.2026 (úttekt): ekkert „nýjasta vinnur". Smellt á „Ósendar" og strax „Kröfur": hægara svarið lenti síðast,
+    // listinn sýndi annað en sían sagði — og „Senda valdar" vann þá á RÖNGU mengi. Hver sókn fær númer; eldri
+    // sókn sem klárast á eftir nýrri skrifar hvorki gögn né teiknar.
+    const rid = (_state.req = (_state.req || 0) + 1);
 
     // ── 🔍 Sést hvergi (2026-09-09) — FIMMTA sýnin, sjálfstæð leið ───────────
     // Hún les allt ANNAÐ en `greitt_med='reikningur'` og má því ALDREI fara í
@@ -662,6 +670,7 @@
       // 'allt' → engin paid_at-sía (bæði ógreiddar OG greiddar)
       return q.order('updated_at', { ascending: false }).order('id').range(from, to);
     }).then(data => ({ data, error: null }), error => ({ data: null, error }));
+    if (rid !== _state.req) return;   // nýrri sókn er farin af stað — þessi er úrelt
     if (r.error) { main.innerHTML = thmWrap('<div style="padding:32px;color:#fca5a5">Villa: ' + esc(r.error.message) + '</div>'); return; }
     _state.all = r.data || [];
 
@@ -890,6 +899,7 @@
       if (_state.forskodun) cgSkra('CG-S04', summa(_state.osendar.filter(s => (_state.forskodun.get(String(s.id)) || {}).source === 'uttekt')));
     } catch (_) { _state.paydayUnpaid = _state.paydayUnpaid || []; _state.osendar = _state.osendar || []; _state.paydayDrog = _state.paydayDrog || []; _state.paydayUnpaidAnVsk = null; }
 
+    if (rid !== _state.req) return;   // úrelt sókn teiknar ekki yfir nýrri
     render();
     maybeAutoSync();   // athuga greiðslur í Payday sjálfkrafa (throttlað) → Greitt kviknar sjálft
   }
@@ -1427,9 +1437,13 @@
         // 2026-07-16: confirm() → eiginn Senda-gluggi með skýrslu-stöðunni —
         // skrifstofan opnar og yfirfer úttektarskýrsluna ÁÐUR en krafan fer.
         const sale = (_state.all || []).find(s => String(s.id) === String(id));
+        // 21.09.2026 (úttekt): takkinn var virkur á meðan glugginn var opinn — tvísmellur (algengt á snertiskjá) opnaði
+        // TVO sendiglugga og tvær payday-push-beiðnir gátu farið af stað. Nú óvirkur strax; virkjaður aftur ef hætt er við.
+        if (b.disabled) return;
+        b.disabled = true;
         const choice = await openKrafaSendDialog(sale);
-        if (!choice) return;
-        b.disabled = true; b.textContent = '⏳ Sendir…';
+        if (!choice) { b.disabled = false; return; }
+        b.textContent = '⏳ Sendir…';
         try {
           if (sale) {
             const ke = await ensureKtForSale(sale);

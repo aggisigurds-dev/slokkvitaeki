@@ -177,10 +177,14 @@
   async function loadReik2026() {
     try {
       const sb = (window.DB && DB.sb); if (!sb) return;
-      const r = await sb.from('customer_documents')
+      // 21.09.2026 (úttekt): fyrirspurnin var ÓBLAÐSÍÐUÐ — PostgREST klippir þegjandi
+      // við 1000 raðir, og sjálfvirka „búið"-merkingin hér að neðan (markBuid) SKRIFAR
+      // út frá þessu mengi. DB.fetchAll flettir í 1000-raða síðum (`id` gefur stöðuga
+      // röð) og kastar á villu → catch að neðan, ekkert skrifað.
+      const rows = await DB.fetchAll((from, to) => sb.from('customer_documents')
         .select('fyrirtaeki_id,vidskiptategund').eq('doc_type', 'reikningur').eq('year', curYear)
-        .not('fyrirtaeki_id', 'is', null);
-      _reikStadir = new Set((r.data || [])
+        .not('fyrirtaeki_id', 'is', null).order('id').range(from, to));
+      _reikStadir = new Set((rows || [])
         .filter(x => isUttektInvoiceTeg(x.vidskiptategund))
         .map(x => x.fyrirtaeki_id).filter(v => v != null));
       // Auto-remove: staðir í „í vinnslu" sem eiga reikning ársins eru í raun

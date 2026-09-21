@@ -361,10 +361,19 @@
   }
 
   // ── Saga / History loader ─────────────────────────────────────────────────
-  async function loadHistory(unit, container) {
+  async function loadHistory(unit, container, retry) {
     if (!container) return;
     const SB = getSB();
-    if (!SB) { container.innerHTML = '<div style="color:#94a3b8">Engin gagnabankatenging</div>'; return; }
+    if (!SB) {
+      // 21.09.2026 (úttekt): DB.sb er stundum ekki tilbúinn þegar glugginn opnast —
+      // áður var gefist upp strax með „Engin gagnabankatenging". Reynt aftur á
+      // 500 ms fresti, allt að 10×, svo lengi sem glugginn er enn opinn.
+      if ((retry || 0) < 10) {
+        setTimeout(() => { if (document.body.contains(container)) loadHistory(unit, container, (retry || 0) + 1); }, 500);
+        return;
+      }
+      container.innerHTML = '<div style="color:#94a3b8">Engin gagnabankatenging</div>'; return;
+    }
 
     let entries = []; // { ts, kind, label, detail, color }
 
