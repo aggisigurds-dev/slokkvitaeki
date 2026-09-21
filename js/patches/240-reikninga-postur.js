@@ -65,7 +65,8 @@
     opin: new Set(),
     tagFilter: null,     // active category-tag filter (label) or null
     merki: null,         // 21.09.2026: virk Gmail-merkjasia (nafn merkis eda STJARNA)
-    meta: {},            // message_id → {manual_tag, note} (manual override + minnispunktur)
+    meta: {},
+    mal: {},              // 21.09.2026: email_digest.id -> mal a Thjonustubordinu            // message_id → {manual_tag, note} (manual override + minnispunktur)
   };
   const WINDOW_DAYS = 62; // „síðustu 2 mánuðir"
 
@@ -88,9 +89,9 @@
       // 14.09.2026: .limit(1500)/.limit(2500) hnekkja ekki 1000-raða þaki PostgREST.
       // Blaðsíðuflett; villur skila sér í sama { data, error }-formi og áður.
       const asResult = p => p.then(data => ({ data, error: null }), error => ({ data: null, error }));
-      const [em, fy, cb, vd, sl, hd, rl, ac, mt] = await Promise.all([
+      const [em, fy, cb, vd, sl, hd, rl, ac, mt, tb] = await Promise.all([
         asResult(DB.fetchAll((from, to) => SB.from('email_digest')
-          .select('message_id,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,is_question,has_attachment,attachment_names,labels,received_at')
+          .select('id,message_id,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,is_question,has_attachment,attachment_names,labels,received_at')
           .in('account', ['eldklar@eldklar.is', 'bokhald@eldklar.is'])
           // SENT-ingest (2026-07-10): okkar eigin svör mega ekki birtast sem
           // „📥 Til að svara" — innhólfið eitt á þetta borð. (231-borðið les
@@ -108,6 +109,13 @@
         SB.from('reikninga_postur_rules').select('*').order('created_at', { ascending: false }),
         SB.from('reikninga_postur_activity').select('message_id'),
         SB.from('reikninga_postur_meta').select('message_id,manual_tag,note'),
+        // 21.09.2026: malin a Thjonustubordinu sem eiga uppruna i posti.
+        // channel_ref er `email:<email_digest.id>` - thvi er `id` sott ad ofan.
+        asResult(DB.fetchAll((from, to) => SB.from('thjonustubeidni')
+          .select('id,channel_ref,title,status,flokkur,assigned_to,svarad_at,archived_at')
+          .eq('source', 'email').is('deleted_at', null)
+          .not('channel_ref', 'is', null)
+          .order('id').range(from, to))),
       ]);
       if (em.error) throw em.error;
       state.hidden = new Set(((hd && hd.data) || []).map(r => r.message_id));
@@ -116,6 +124,15 @@
       const metaMap = {};
       ((mt && mt.data) || []).forEach(r => { metaMap[r.message_id] = { manual_tag: r.manual_tag || '', note: r.note || '' }; });
       state.meta = metaMap;
+      // Vorpun email_digest.id -> mal a bordinu. RLS getur thagad her eins og
+      // annars stadar; tha er kortid tomt og engin rod ber mal - hun logur
+      // ekki um ad malid se ekki til.
+      const malKort = {};
+      ((tb && tb.data) || []).forEach(function (r) {
+        const m = /^email:(\d+)$/.exec(String(r.channel_ref || ''));
+        if (m) malKort[m[1]] = r;
+      });
+      state.mal = malKort;
 
       const emailMap = {}, byKt = {};
       const addCust = (res, isCompany) => (res && res.data || []).forEach(r => {
@@ -336,6 +353,9 @@
       V + '.rp-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
       V + '.rp-ico{flex:none;position:relative;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.28);border-radius:11px;background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:16px;line-height:1;cursor:pointer}',
       V + '.rp-ico:hover{background:rgba(255,255,255,.2)}',
+      V + '.rp-ico[disabled]{opacity:.6;cursor:default}',
+      V + '.rp-ico.snyst{animation:rpSnua .9s linear infinite}',
+      '@keyframes rpSnua{to{transform:rotate(360deg)}}',
       V + '.rp-ico .n{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:#d97757;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}',
       // Ein lina sem ma strjuka. flex:none a flisunum svo thaer kremjist ekki.
       V + '.rp-tools{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:10px;padding-bottom:2px}',
@@ -377,6 +397,10 @@
       V + '.gm-merki{font:inherit;font-size:10.5px;font-weight:700;color:#0f766e;background:#f0fdfa;border:1px solid #99f6e4;border-radius:20px;padding:2px 9px;white-space:nowrap;cursor:pointer}',
       V + '.gm-merki:hover{background:#ccfbf1}',
       V + '.gm-stj{font-size:13.5px;line-height:1}',
+      // Malid a Thjonustubordinu - blatt eins og bordid sjalft.
+      V + '.gm-mal{font-size:10.5px;font-weight:700;color:#1d4ed8;background:#eff3ff;border:1px solid #c6d6ff;border-radius:20px;padding:2px 9px;white-space:nowrap}',
+      V + '.gm-mal.lokid{color:#64748b;background:#f8fafc;border-color:#e2e8f0}',
+      V + '.gm-malrod{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:#3a4250;background:#eff3ff;border:1px solid #c6d6ff;border-radius:9px;padding:7px 10px}',
       V + '.rp-tagchip.merki{color:#0f766e;background:#f0fdfa;border-color:#99f6e4}',
       V + '.rp-tagchip.stjarna{color:#a16207;background:#fefce8;border-color:#fde68a;font-size:13px}',
       // Opna rodin: netfang, kunni, allar adgerdir, allur thradurinn.
@@ -816,6 +840,17 @@
         }).join('') + (vidhNofn.length > 2 ? '<span class="gm-att">+' + (vidhNofn.length - 2) + '</span>' : '')
       : (m.has_attachment ? '<span class="gm-att">vi\u00F0hengi</span>' : '');
     // Merkin hans. Segi thau lokid thegir reiknada stadan - hans ord vinnur.
+    // Malid a Thjonustubordinu, se thad til. Leitad i ollum thraedinum svo
+    // samtal syni malid thott thad hafi verid stofnad af fyrsta skeytinu.
+    const mal = (function () {
+      const oll = (m._thread && m._thread.length) ? m._thread : [m];
+      for (var z = 0; z < oll.length; z++) {
+        var v = state.mal[String(oll[z].id)];
+        if (v) return v;
+      }
+      return null;
+    })();
+    const MAL_STADA = { nytt: 'n\u00fdtt', i_vinnslu: '\u00ed vinnslu', tilbuid: 'tilb\u00fai\u00f0', lokad: 'loka\u00f0' };
     const merkiOll = merkiThradar(m);
     const merkiMin = merkiEigin(m);
     const merktLokid = merkiMin.some(function (n) { return /loki|b\u00fai|done/i.test(n); });
@@ -828,6 +863,8 @@
       (inbox && answered && !merktLokid) ? '<span class="gm-lokid">Loki\u00F0</span>' : '',
       (inbox && !answered && !merktLokid) ? '<span class="gm-bidur">B\u00ED\u00F0ur svars</span>' : '',
       vidhFlis,
+      mal ? '<span class="gm-mal' + (mal.status === 'lokad' ? ' lokid' : '') + '">\ud83d\udccb #' + mal.id +
+        ' \u00b7 ' + esc(MAL_STADA[mal.status] || mal.status || '') + '</span>' : '',
       isHidden(m) ? '<span class="gm-falid">fali\u00F0</span>' : '',
     ].filter(Boolean).join('');
 
@@ -843,6 +880,13 @@
         (opin
           ? '<div class="gm-opid">' +
               '<div class="gm-netfang">' + esc(m.from || '') + '</div>' +
+              (mal
+                ? '<div class="gm-malrod">\ud83d\udccb <b>M\u00e1l #' + mal.id + '</b> \u00b7 ' +
+                    esc(MAL_STADA[mal.status] || mal.status || '') +
+                    (mal.assigned_to ? ' \u00b7 ' + esc(mal.assigned_to) : '') +
+                    (mal.archived_at ? ' \u00b7 \u00ed geymslu' : '') +
+                    ' <button class="rp-btn _rp-bord" data-mal="' + mal.id + '" type="button">Opna \u00e1 bor\u00f0inu</button></div>'
+                : '') +
               custHTML +
               (acts.length ? '<div class="rp-acts">' + acts.join('') + '</div>' : '') +
               olderHTML +
@@ -888,6 +932,50 @@
       clear + '</div>';
   }
 
+  // 21.09.2026 — ↻ SAEKIR POSTINN. Sja haus skriftunnar: takkinn las adeins
+  // tofluna, en nyr postur berst i hana a tveggja klst fresti. Nu er innsogid
+  // keyrt fyrst.
+  //
+  // Holfin tvo eru thau sem ERU tengd sem Gmail-reikningar. Vidbot her thegar
+  // bokhald@brunaholf.is / Brunaholf@brunaholf.is verda tengd
+  // (/api/google-auth?account=<netfang>) — annars svarar innsogid 409.
+  const POSTHOLF = ['eldklar@eldklar.is', 'bokhald@eldklar.is'];
+  const BH = 'https://brunaholf.netlify.app';
+  let saekiNuna = false;
+  async function saekjaNyjan() {
+    if (saekiNuna) return;
+    saekiNuna = true;
+    const b = viewEl().querySelector('#_rp-reload');
+    if (b) { b.disabled = true; b.classList.add('snyst'); }
+    let nyir = 0, villa = null, tokst = 0;
+    try {
+      const koll = [];
+      POSTHOLF.forEach(function (a) {
+        ['', '&folder=sent'].forEach(function (f) {
+          koll.push(fetch(BH + '/api/gmail-ingest?account=' + encodeURIComponent(a) + '&days=3' + f,
+            { cache: 'no-store' })
+            .then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (d) {
+              if (!d || d.error) { villa = (d && d.error) || villa; return; }
+              tokst++;
+              if (typeof d.nyir === 'number') nyir += d.nyir;
+            })
+            .catch(function (e) { villa = String((e && e.message) || e); }));
+        });
+      });
+      await Promise.all(koll);
+    } finally {
+      saekiNuna = false;
+      if (b) { b.disabled = false; b.classList.remove('snyst'); }
+    }
+    await load();
+    // Segja satt: hafi innsogid brugdist er listinn adeins gamli lesturinn.
+    const skilabod = tokst === 0
+      ? ('\u26a0\ufe0f N\u00e1\u00f0i ekki \u00ed Gmail' + (villa ? ' (' + String(villa).slice(0, 80) + ')' : '') + ' \u2014 listinn er \u00f3breyttur')
+      : (nyir > 0 ? ('\u2713 ' + nyir + ' n\u00fdr p\u00f3stur') : '\u2713 Enginn n\u00fdr p\u00f3stur');
+    try { if (window.Toast && Toast.show) Toast.show(skilabod); } catch (_) {}
+  }
+
   function render() {
     styles();
     const v = viewEl();
@@ -927,7 +1015,7 @@
         body +
       '</div>';
 
-    v.querySelector('#_rp-reload').addEventListener('click', load);
+    v.querySelector('#_rp-reload').addEventListener('click', saekjaNyjan);
     // 21.09.2026: smellur a rodina opnar hana. Smellur a takka, tengil eda
     // merkiflis gerir sitt eigid verk og opnar ekki rodina lika.
     v.querySelectorAll('.gm-row').forEach(function (r) {
@@ -969,6 +1057,14 @@
     }));
     const ta = v.querySelector('#_rp-tagall'); if (ta) ta.addEventListener('click', () => { state.tagFilter = null; state.merki = null; render(); });
     // Merkjaflisar - bædi i flisaroðinni og a sjalfri rodinni.
+    // Bordid er eini stadurinn sem SKRIFAR stoduna - eitt mal, einn eigandi.
+    // Hedan er adeins leitt thangad, med malid valid.
+    v.querySelectorAll('._rp-bord').forEach(b => b.addEventListener('click', ev => {
+      ev.stopPropagation();
+      try { sessionStorage.setItem('bord_opna_mal', b.dataset.mal); } catch (_) {}
+      location.hash = '#bord';
+      if (window.App && App.switchView) App.switchView('bord');
+    }));
     v.querySelectorAll('._rp-merki').forEach(b => b.addEventListener('click', ev => {
       ev.stopPropagation();
       state.merki = (state.merki === b.dataset.m) ? null : b.dataset.m; state.filter = 'all'; render();
