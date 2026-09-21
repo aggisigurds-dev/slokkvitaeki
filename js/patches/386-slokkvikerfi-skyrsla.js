@@ -617,6 +617,12 @@
     B.__sksVafid = true;
     new MutationObserver(() => {
       if (!bkcHyst() || document.body.style.overflow !== 'hidden') return;
+      // 274 læsir skruninu í HVERT sinn sem hún opnast — áreiðanlegasta merkið um að hún hafi verið opnuð. Sé hún
+      // hýst en hýsillinn sést ekki (opnað úr 272 / annarri síðu) er henni sleppt út sem yfirlagi og læsingin
+      // látin standa. (display-vöktunin ein dugði ekki: stakið var þegar 'block', svo engin breyting mældist.)
+      const hys = document.getElementById('_sks-bru'), ov1 = document.getElementById('_bkc-overlay');
+      const sest = !!(hys && ov1 && hys.contains(ov1) && hys.offsetParent !== null && S.flipi === 'bru');
+      if (!sest && !S._bkcInnan) { bkcLosa(); return; }
       const form = document.getElementById('_bks-overlay');
       if (form && form.style.display !== 'none' && form.offsetParent !== null) return;   // skýrsluformið (273) er ofan á — það á læsinguna
       document.body.style.overflow = '';
