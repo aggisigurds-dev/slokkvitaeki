@@ -4280,12 +4280,25 @@
   // fara í röð. Texti í ritun lifir í S.skDrog þar til þjónninn hefur tekið við honum og fer með í hverja vistun.
   const nyttSkId = () => 'sb' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   const naestaSlot = l => l.reduce((m, x) => Math.max(m, Number(x.slot) || 0), -1) + 1;
+  // 21.09.2026 (úttekt): „NÝJASTI listi stillinganna" var skyndiminni FLIPANS — sami starfsmaður á tveimur tækjum (tölva +
+  // sími, eða tveir flipar á „Afgreiðsla") skrifaði sinn gamla lista yfir spjöld sem hitt tækið hafði bætt við. Nú er grein
+  // starfsmannsins lesin FERSK af þjóni rétt fyrir vistun (JSON-slóð, nokkur kB — ekki 1,6 MB blobbinn) og breytingunni
+  // beitt á ÞANN lista. null = náðist ekki / greinin ekki til → cardsFor() ræður eins og áður (líka erfðir Agnars).
+  async function ferskSpjold(n) {
+    try {
+      const c = sb(); if (!c) return null;
+      const r = await c.from('app_settings').select('k:settings->skipulagsbord->by_staff->' + n + '->cards').eq('id', 1).maybeSingle();
+      if (r.error || !r.data || !Array.isArray(r.data.k)) return null;
+      return r.data.k.filter(Boolean);
+    } catch (_) { return null; }
+  }
   let _skRod = Promise.resolve();
   function vistaSpjold(breyta, skilabod) {
     const verk = _skRod.then(async () => {
       if (!stillingarTilbunar()) { toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; }
       const n = nu();
-      const nyr = breyta(cardsFor(n).map(x => Object.assign({}, x, S.skDrog[x.id] || {})));
+      const grunnlisti = (await ferskSpjold(n)) || cardsFor(n);
+      const nyr = breyta(grunnlisti.map(x => Object.assign({}, x, S.skDrog[x.id] || {})));
       _vistar++;
       S.skStada = 'Vista…';
       stimplaSk();
