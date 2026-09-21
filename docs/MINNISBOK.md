@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-21 16:16 · 612 virkar staðreyndir
+Sótt 2026-09-21 22:25 · 613 virkar staðreyndir
 
 ---
 
@@ -80,7 +80,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 | Efni | Fjöldi |
 |---|---:|
-| [kerfi](#kerfi) | 40 |
+| [kerfi](#kerfi) | 41 |
 | [skjol](#skjol) | 32 |
 | [sweep](#sweep) | 25 |
 | [taeki](#taeki) | 25 |
@@ -103,6 +103,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kerfi
 
+- **Brunakerfis-flipinn á fyrirtæki (274 + stöðulína 291) var endurhannaður 21.09.2026 í anda Slökkvikerfis (386): hetjuspjald efst með skoðun líðandi árs (staða, skýrsla, reikningur, ein aðalaðgerð), fyrri ár samanfelld, hliðarspjöld samanbrjótanleg, prófílhaus falinn þegar flipinn býr í fyrirtækjaspjaldinu. Tvær villur lagaðar um leið: 274 sýndi slökkvitækjareikning sem brunakerfisreikning (síar nú á vidskiptategund) og 291 sagði ENGIN SKOÐUN þótt PDF-skýrsla og reikningur væru tengd árinu.**
+  <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
 - **Hraðamælir 387 + taflan hradamaelingar (21.09.2026): skráir við hver síðuskipti í SÝNILEGUM flipa löng verk (long_ms, long_n, lengsta_ms), REST-köll (rest_n, rest_sidast_ms), dom, útgáfu og skjástærð; sýn með strípuðum auðkennum (company/*). Claude mælir í földum flipa þar sem tímamælar eru hægðir — lesa þessa töflu til að sjá raunverulegan hraða á vinnutölvunum áður en næsta afkastalota hefst. Slökkva: localStorage hradamaelir_off=1.**
   <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
 - **js/rest-samnyting.js (21.09.2026, hlaðið á undan db.js): eins GET á Supabase /rest/v1/ innan 2 s endurnýtir svarið; hver skrift (Supabase, rpc og okkar /api/-föll) tæmir og telst í RestSamnyting.skrif(); app_settings og rpc aldrei samnýtt; hradamaelingar og app_problems teljast ekki sem skrift. Fyrirtækjaspjald 100 → 30–41 netkall. Slökkva: localStorage rest_samnyting_off=1. 153 backgroundRefresh sleppir endursókn (45 köll) í allt að 60 s ef skrif() er óbreytt síðan síðast.**
@@ -183,8 +185,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
 - **Endurnefning fyrirtaekis skilar ser EKKI nidur i taekin thegar hun fer beint i gagnagrunninn. Samfellan er til i koda (14-companies-openedit:209, 157:922, 00-legacy:2655 keyra .update({client:nafn}).eq('client',oldNafn)) en hangir a UI-flaedinu; REST/MCP/SQL sniðganga hana - og thad er einmitt leidin sem Claude notar i lotu. Fjoldi skjaa siar taeki a NAFNI en ekki FK (mapfix.js:66, 158:71, 155:72, 00-legacy:1637, 89:43) svo fyrirtaekid syndi NULL taeki. Brietartun 9-11 (fid 443) var endurnefnt i 'Heimaleiga - Brietartun 9-11 (husfelag)' 01.09.2026 og 48 taeki baru afram gamla nafnid; samraemd sama dag. lanstaeki hefur ENGAN fyrirtaeki_id - adeins nafn-streng - svo endurnefning slitur thad alveg (12 lanstaeki, oll gild). Vordur: tools/audit-rename-cascade.cjs, baseline 3 (fid 848 Skaftahlid, 429 Alftamyri, 288 Velsmidja Orms - bida akvordunar Agnars um hvort nafnid se rett).**
   <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **Stödusian a taekjum: I NOTKUN = uttaeki.status != 'urelt', ALDREI = 'active'. Stadan ber fjogur gildi (active 4891, urelt 482, 'I lagi' 154, ok 74). Tuttugu og tveir kodastadir siudu a 'active' einu -- sex fyrirspurnir server-megin (153, 15 x2, 177, 00-legacy, audit-fk-join) og sextan samanburdir JS-megin a DB.cache.units (db.js x2, features.js, mapfix.js x2, v9.js x5, 00-legacy, 102, 155, 157, 158, 89). Their foldu 228 taeki a 17 fyrirtaekjum; 14 theirra attu ekkert 'active' og litu ut fyrir ad vera ALVEG TOM (Brietartun 48, Dalbrekka 48, bilskurinn 16, Dra ehf 37, Iceland Comfort 15). Lagfaert 01.09.2026. Sonnunin var maeld, ekki alyktud: hja SEX fyrirtaekjum for afleidda talan ad stemma vid arsskodun-blobbinn sem thegar var rettur. Vordur: tools/audit-status-gildi.cjs vaktar baedi ny stodugildi OG afturfor i koda (skannar upprunann, strippar blokk-athugasemdir, LEYFT-listi fyrir logmaet tilvik).**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- _…og 1 til viðbótar í töflunni._
 
 ### skjol
 
@@ -1613,11 +1614,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### agentar
 
-- **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
-  <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
-  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
 - **Sara (sara-organizer í brunaholf / sara-coworker í slokkvitaeki) veit hvaða úttektarskýrslur á eftir að senda almennt — Rukkarinn spyr hana um heildarlistann áður en hann segir hvað er tilbúið að senda**
   <br>Agnar 05.09.2026. Pörin skýrsla↔reikningur búa í v_bundle_coverage (kind/stada) og Sara á þau; Rukkarinn stjórnar lotunni en finnur ekki upp skýrslulista sjálfur.
+  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
+- **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
+  <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
   <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
 
 ### hradi
