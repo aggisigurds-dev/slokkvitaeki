@@ -206,7 +206,7 @@
     // á staðnum. Kallar í 240 fyrir sendinguna — hún er ekki afrituð.
     // 19.09.2026: áríðandi málin voru efst á Skipulagsborðinu — nú sér eining svo borðið sé bara spjöldin.
     aridandi:  { n: '25', t: 'Áríðandi', d: 'Mál merkt ★ áríðandi, með 🗓 til að setja þau á dagskrá.' },
-    postbeidnir: { n: '24', t: 'Reikningsbeiðnir', d: 'Póstar sem biðja um reikning: hver bað, hvaða kúnni, og senda hann beint héðan.' }
+    postbeidnir: { n: '24', t: 'Pósthólfið', d: 'Allur póstur úr eldklar@ og bokhald@ — kúnninn fundinn, svar og reikningur sendur héðan. Merkið ✉ beiðni segir hvað lítur út eins og reikningsbeiðni.' }
   };
   const I_VOLDU = ['saga', 'breyta'];
   const STODUR = [['nytt', 'Nýtt'], ['i_vinnslu', 'Í vinnslu'], ['bedid', 'Bíður'], ['tilbuid', 'Tilbúið'], ['lokad', 'Lokað']];
@@ -228,6 +228,13 @@
     // 368y: vinnusvæði — mál merkt ham:vinnublod, yfirferð eins blaðs í einu með skannmynd í fullri breidd.
     vinnublod: { l: 'Vinnublöð', board: false, rymi: 'vinnublod', first: [], filter: 'allt', flokkar: [], merki: [] },
     skyrslur:  { l: 'Skýrslur', board: false, first: ['ivinnslu'], filter: 'allt', flokkar: [], merki: ['senda_skyrslur'] },
+    // 21.09.2026 (Agnar: „Máttu setja hann bara í sér ham. Pósthólf. Með þá ýtarlegri
+    // sýn og aðstoð til hliðar" · „Á tölvunni semsagt"): borðið er tölvan, appið er
+    // síminn. Pósturinn í hálfri breidd til vinstri og það sem þarf til að svara
+    // honum til hægri — bakfærslur, kröfur og „gleymst að rukka?".
+    postholf:  { l: 'Pósthólf', board: false, first: ['postbeidnir', 'bakfaersla', 'krofur', 'gleymt'],
+                 breidd: { postbeidnir: 2, bakfaersla: 1, krofur: 1, gleymt: 1 },
+                 filter: 'allt', flokkar: ['rukkun', 'samskipti'], merki: ['senda_tolvupost', 'eftir_ad_rukka'] },
     akstur:    { l: 'Akstur og skipulag', board: false, first: ['dagskra', 'akstur', 'brunakerfi', 'skipulag', 'aridandi', 'forgangur', 'frestir', 'nymal', 'starfsmenn'], filter: 'allt', flokkar: ['brunakerfi'], merki: ['uppsetning', 'brunakerfi', 'arskodun'], tegundir: ['heimsokn', 'skodun_tilbod'] }
   };
   // Einingar sem taka alla breidd einingahamsins (vika, tafla, langar línur).
@@ -3380,7 +3387,17 @@
       .order('received_at', { ascending: false }).limit(600);
     if (r.error) throw r.error;
     const allir = r.data || [];
-    const beidnir = allir.filter(m => PB_RE.test(((m.subject || '') + ' ' + (m.body_preview || '') + ' ' + (m.snippet || '')).toLowerCase()));
+    // 21.09.2026 — SÍAN VARÐ AÐ MERKI. PB_RE var víkkuð tvisvar sama kvöldið og
+    // missti samt af Hótel Hjarðarbóli. Sía sem fellir póst þegjandi er verri en
+    // listi sem er of langur: of langan lista sér maður, þögn ekki. Nú stendur
+    // allur pósturinn eftir og PB_RE ræður aðeins merkinu „beiðni".
+    //
+    // Og röðin er NÝJAST FYRST, eins og á síðunni. Að lyfta „beiðnum" efst er sama
+    // gildra og `is_question` var þar: markpóstur frá Teya endaði ofan við
+    // fyrirspurn dagsins frá Reykjavíkurborg.
+    const beidnir = allir.map(m => Object.assign({}, m, {
+      _beidni: PB_RE.test(((m.subject || '') + ' ' + (m.body_preview || '') + ' ' + (m.snippet || '')).toLowerCase()),
+    }));
     // Afgreitt/falið er geymt á þjóninum af 240 — lesið þaðan svo listarnir
     // tveir segi það sama. Bregðist lesturinn kastar hann; ekkert er falið í hljóði.
     const ids = beidnir.map(m => m.message_id).filter(Boolean);
@@ -3420,7 +3437,16 @@
       // Svarað EFTIR að erindið barst — kom nýr póstur á eftir svarinu stendur hún áfram.
       const svar = m.thread_id ? svarad.get(m.thread_id) : null;
       if (svar && new Date(svar) > new Date(m.received_at)) return;
-      const t = pbThrad(m.subject) || (m.message_id || String(m.id));
+      // 21.09.2026 - SAMDRATTUR MA EKKI BYGGJA A EFNI EINU. Medan sian skildi
+      // adeins eftir reikningsbeidnir var thetta i lagi; nu stendur ALLUR
+      // posturinn eftir og tveir othengdir postar sem heita badir "Reikningur"
+      // hefdu runnid saman i eina linu - og annar horfid thegjandi.
+      //
+      // thread_id er nakvaemur thar sem efni er agiskun. Hann nær aftur til
+      // 21.08.2026; eldri postur faer sendanda + efni, svo tveir sendendur
+      // renna aldrei saman.
+      const t = m.thread_id
+        || (String(m.sender_email || '').toLowerCase() + '|' + (pbThrad(m.subject) || (m.message_id || String(m.id))));
       if (sedir.has(t)) return;
       sedir.add(t);
       let kunni = null;
@@ -3445,6 +3471,7 @@
       '<div class="age ' + ageCls(aldur) + '" title="' + aldur + ' dagar síðan pósturinn barst">' + aldur + 'D</div>' +
       '<div><div class="kick">' + hver + ' · ' + esc(m.sender_email || '') + '</div>' +
         '<b>' + esc(m.subject || '(ekkert efni)') + '</b>' +
+        (m._beidni ? ' <span class="tag">\u2709 bei\u00f0ni</span>' : '') +
         (texti ? '<span class="s">' + esc(texti) + '</span>' : '') +
         // 19.09.2026: nafnið er HLEKKUR inn á fyrirtækið, ekki texti. Merkið
         // „fannst: þráður (kennitala)" er farið — það sagði hvernig VÉLIN fann
@@ -3514,16 +3541,20 @@
       // Sami gluggi og 240 notar (2 mán) og SAMA regla, svo talan hér og talan
       // þar segi það sama. Sóknin er löt og geymd í 5 mín eins og aðrar einingar.
       const g = gogn('postbeidnir', saekjaPostbeidnir);
-      let body, sum = 'Reikningsbeiðnir';
+      let body, sum = 'Pósthólfið';
       if (!g || (!g.data && !g.villa)) body = emptyHtml('Les pósthólfin…');
       else if (g.villa) body = '<p class="err">Náði ekki í póstinn: ' + esc(g.villa) + '</p>';
       else {
         // Faldar beiðnir fara neðst undir „N falin · Sýna" — ekki burt úr gögnunum.
         const { synd, falin } = fela(g.data, pbLyk);
-        sum = synd.length + (synd.length === 1 ? ' beiðni' : ' beiðnir') + falinSum(falin.length);
-        body = (!synd.length && !falin.length) ? emptyHtml('Engin ósvöruð reikningsbeiðni. Nýjar birtast hér um leið og þær berast.')
+        // Talan segir hvort tveggja: hvað er í hólfinu og hvað af því lítur út
+        // eins og beiðni. Áður sagði hún aðeins það sem sían hafði skilið eftir.
+        const nBeidni = synd.filter(m => m._beidni).length;
+        sum = synd.length + (synd.length === 1 ? ' póstur' : ' póstar')
+          + (nBeidni ? ' · ' + nBeidni + ' beiðni' + (nBeidni === 1 ? '' : 'r') : '') + falinSum(falin.length);
+        body = (!synd.length && !falin.length) ? emptyHtml('Ekkert ósvarað í pósthólfinu. Nýir póstar birtast hér um leið og þeir berast.')
           : (synd.length ? '<div class="pbl">' + synd.map(m => pbRodHtml(m, false)).join('') + '</div>'
-               : emptyHtml('Allar beiðnir faldar — smelltu á Sýna til að sjá þær.'))
+               : emptyHtml('Allir póstar faldir — smelltu á Sýna til að sjá þá.'))
             + falinHtml('postbeidnir', falin.length, () => falin.map(m => pbRodHtml(m, true)).join(''), 'pbl');
       }
       return modPanel(k, sum, body, uppfTakki('postbeidnir'), true);
