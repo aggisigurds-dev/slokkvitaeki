@@ -281,8 +281,12 @@
             : '<span style="padding:2px 9px;border-radius:99px;background:#e8ecf3;color:#3b4653;font-weight:800;font-size:10.5px">ENGIN SKOÐUN</span>';
       el.innerHTML = '<b style="font-size:13px">🧾 Brunakerfi ' + yr + ':</b> ' + badge +
         ' <span id="_bkr-inv" style="color:#59606c;display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">· Reikningur: leita…</span>';
+      // 21.09.2026: 274 á nú „hetjuspjald" (skoðun ársins) með rauf fyrir þessa línu — þá er ár + staða þegar í haus spjaldsins
+      // og hér stendur aðeins reikningshlutinn. Án raufar (eldri uppsetning) fer línan ofan við grindina eins og áður.
+      const rauf = w.querySelector('#_bkc-heroinv');
       const grid = w.querySelector('._bkc-grid');
-      if (grid) w.insertBefore(el, grid); else w.appendChild(el);
+      if (rauf && yr === new Date().getFullYear()) { rauf.appendChild(el); const b0 = el.querySelector('b'); if (b0) b0.style.display = 'none'; const bd = b0 && b0.nextElementSibling; if (bd && bd.id !== '_bkr-inv') bd.style.display = 'none'; }
+      else if (grid) w.insertBefore(el, grid); else w.appendChild(el);
 
       // reikningsstaðan — sale_id sem einhver skýrsla ársins geymir er sterkasta sönnunin
       const linkedId = yrReps.map(r => r.data && r.data.verd && r.data.verd.sale_id).find(Boolean) || null;

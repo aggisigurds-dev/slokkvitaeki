@@ -33,7 +33,7 @@
 
   let C = null;          // { co, reports, docs, note }
   // 21.09.2026: útlitsval árs-blokkanna (opið/lokað, ⋯ opið) — lifir yfir endurteikningar, núllast þegar skipt er um félag.
-  let _arOpid = {}, _arMeira = {}, _arFelag = null;
+  let _arOpid = {}, _arMeira = {}, _arFelag = null, _foldVal = {}, _addOpid = false;
   let _noteT = null, _notePending = null;
 
   function SB() { return (window.DB && DB.sb) || null; }
@@ -209,6 +209,15 @@
       '#_bkc-overlay ._bkc-act._x:hover{color:#c93c1d;background:#fdeeee;border-radius:6px}' +
       '#_bkc-overlay ._bkc-new{width:100%;padding:12px;border-radius:10px;border:0;background:#1f8a4c;color:#fff;font:inherit;font-size:14px;font-weight:800;cursor:pointer;margin-top:12px}' +
       '#_bkc-overlay ._bkc-new:hover{background:#187a41}' +
+      // 21.09.2026: hetjuspjald (skoðun ársins) · samanbrjótanleg hliðarspjöld · prófílhaus falinn þegar flipinn býr Í fyrirtækjaspjaldinu
+      '#_bkc-overlay ._bkc-new._litid{background:transparent;color:#64748b;border:1px dashed #cbd5e1;font-size:12.5px;font-weight:700;padding:8px;margin-top:10px}#_bkc-overlay ._bkc-new._litid:hover{background:#f8fafc}' +
+      '#_bkc-overlay ._bkc-hero{border-color:#0f172a}#_bkc-overlay ._bkc-herohd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#0f172a;color:#fff;padding:12px 14px}' +
+      '#_bkc-overlay ._bkc-herot{font-size:15.5px;font-weight:800;flex:1;min-width:0}' +
+      '#_bkc-overlay ._bkc-hero ._bkc-yr{border-top:0;padding-top:2px}#_bkc-overlay ._bkc-hero ._bkc-yrlbl,#_bkc-overlay ._bkc-hero ._bkc-yrhd ._bkc-pill,#_bkc-overlay ._bkc-hero ._bkc-ork{display:none}' +
+      '#_bkc-overlay ._bkc-hero ._bkc-yrhd{cursor:default;margin-bottom:0;min-height:0}#_bkc-overlay ._bkc-hero ._bkc-yrrow{padding:7px 0;font-size:13.5px}' +
+      '#_bkc-overlay #_bkc-heroinv #_bkr-status{border:0;box-shadow:none;border-top:1px dashed #d7dade;border-radius:0;padding:10px 0 0;margin:8px 0 0;background:transparent}' +
+      '#_bkc-overlay ._bkc-fold ._bkc-ch{cursor:pointer;user-select:none}#_bkc-overlay ._bkc-fold._saman ._bkc-body{display:none}#_bkc-overlay ._bkc-fold._saman ._bkc-ork{display:inline-block;transform:rotate(-90deg)}' +
+      '#_sks-bru #_bkc-overlay ._bkc-custL{display:none}#_sks-bru #_bkc-overlay ._bkc-cust{display:block;padding:10px 12px}#_sks-bru #_bkc-overlay ._bkc-note{min-height:44px}' +
       '#_bkc-overlay table._bkc-tbl{width:100%;border-collapse:collapse}' +
       '#_bkc-overlay ._bkc-tbl th{font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:5px 8px;border-bottom:1px solid #eef0f3}' +
       '#_bkc-overlay ._bkc-tbl td{padding:6px 8px;border-bottom:1px solid #eef0f3;font-size:12.5px}' +
@@ -339,7 +348,7 @@
     const ov = ensureOverlay();
     const w = document.getElementById('_bkc-wrap');
     const co = C.co;
-    if (_arFelag !== co.id) { _arFelag = co.id; _arOpid = {}; _arMeira = {}; }
+    if (_arFelag !== co.id) { _arFelag = co.id; _arOpid = {}; _arMeira = {}; _foldVal = {}; _addOpid = false; }
     document.getElementById('_bkc-topname').textContent = co.nafn || '';
     const simi = co.simi || co.farsimi || '';
     const docIds = new Set(C.reports.map(r => r.doc_id).filter(Boolean));
@@ -362,7 +371,8 @@
     const sj = html => '<span class="_bkc-sj">' + html + '</span>';   // sjaldgæft: sést aðeins þegar ⋯ ársins er opið
     const dot = ok => '<span class="_bkc-dot ' + (ok ? 'ok' : 'miss') + '"></span>';
     const tag = t => '<span class="_bkc-tag" title="' + t + '">' + (t === 'SKÝRSLA' ? '📄' : '🧾') + '</span>';
-    const yearRows = yrs.map(y => {
+    const hetjaHefurGogn = C.reports.some(r => +r.year === NOW) || oldDocs.some(d => +d.year === NOW);
+    const yearBlocks = yrs.map(y => {
       const reps = C.reports.filter(r => +r.year === y);
       const docs = oldDocs.filter(d => +d.year === y);
       const invSkjol = (C.invDocs || []).filter(d => +d.year === y);
@@ -458,14 +468,20 @@
       }
       // Opið sjálfgefið: líðandi ár og nýjasta árið með gögnum. Val notandans (smellur á hausinn) lifir yfir endurteikningar.
       const nyjastMedGogn = yrs.find(a => C.reports.some(r => +r.year === a) || oldDocs.some(d => +d.year === a));
-      const opid = (y in _arOpid) ? _arOpid[y] : (y === NOW || y === nyjastMedGogn);
-      return '<div class="_bkc-yr' + (opid ? '' : ' _lokad') + (_arMeira[y] ? ' _meira' : '') + '" data-ar="' + y + '">' +
+      const opid = y === NOW ? true : ((y in _arOpid) ? _arOpid[y] : (y === nyjastMedGogn && !hetjaHefurGogn));
+      const _html = '<div class="_bkc-yr' + (opid ? '' : ' _lokad') + (_arMeira[y] ? ' _meira' : '') + '" data-ar="' + y + '">' +
         '<div class="_bkc-yrhd" data-arhaus="' + y + '" title="Smelltu til að ' + (opid ? 'fella saman' : 'opna') + '"><span class="_bkc-yrlbl _' + pc + '">' + y + '</span><span class="_bkc-st _bkc-pill _' + pc + '">' + pill + '</span>' + (reps.length + docs.length > 1 ? '<small>' + (reps.length + docs.length) + ' skýrslur</small>' : '') +
           '<span class="_bkc-yrsp"></span><button type="button" class="_bkc-meira" data-armeira="' + y + '" title="Sjaldgæfar aðgerðir: breyta mánuði · aftengja skjal · breyta skýrslu">⋯</button><span class="_bkc-ork">▾</span></div>' +
         '<div class="_bkc-yrrow">' + dot(hasRep) + tag('SKÝRSLA') + '<div class="_bkc-yrbody">' + rep + '</div></div>' +
         '<div class="_bkc-yrrow">' + dot(hasInv) + tag('REIKNINGUR') + '<div class="_bkc-yrbody">' + invHtml + '</div></div>' +
       '</div>';
-    }).join('');
+      return { y, html: _html, pill, pc, fin, draft, hefur: !!(fin || draft || docs.length) };
+    });
+    // 21.09.2026 (Agnar: „similar approach as slökkvikerfi"): skoðun ÁRSINS er aðalatriðið efst — eitt spjald með stöðu,
+    // skýrslu, reikningi og EINNI aðalaðgerð (sama mynstur og 🍳 í 386). Sagan er aukaatriði fyrir neðan, samanfelld.
+    const hetja = yearBlocks.find(b => b.y === NOW) || null;
+    const fyrriAr = yearBlocks.filter(b => b.y !== NOW);
+    const yearRows = fyrriAr.map(b => b.html).join('');
     const addFileStrip =
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px dashed #d7dade;font-size:12.5px;color:#59606c">' +
         '＋ Bæta við:' +
@@ -543,15 +559,21 @@
       '</div>' +
       '<div class="_bkc-grid">' +
         '<div>' +
-          '<div class="_bkc-card"><div class="_bkc-ch">🔥 Brunakerfi — staða eftir ári<small>' + C.reports.length + ' í appinu · ' + oldDocs.length + ' eldri skjöl</small></div><div class="_bkc-body">' +
-            '<div class="_bkc-legend"><span class="_bkc-dot ok"></span> til &nbsp; <span class="_bkc-dot miss"></span> vantar</div>' +
-            yearRows +
-            '<button type="button" class="_bkc-new" id="_bkc-new">＋ Ný skoðunarskýrsla</button>' +
-            addFileStrip +
+          // HETJAN: skoðun ársins. Stöðulína 291 (reikningur · Stofna drög · Tengja) lendir í #_bkc-heroinv — einn staður, ekki tveir.
+          '<div class="_bkc-card _bkc-hero"><div class="_bkc-herohd"><div class="_bkc-herot">🚨 Brunakerfis skoðun ' + NOW + '</div>' +
+            '<span class="_bkc-st _bkc-pill _' + (hetja ? hetja.pc : 'miss') + '">' + (hetja ? hetja.pill : 'Óskoðað') + '</span></div><div class="_bkc-body">' +
+            (hetja ? hetja.html : '') +
+            '<div id="_bkc-heroinv"></div>' +
+            '<button type="button" class="_bkc-new' + (hetja && (hetja.fin || hetja.draft) ? ' _litid' : '') + '" id="_bkc-new">' + (hetja && (hetja.fin || hetja.draft) ? '＋ Önnur skoðunarskýrsla' : '＋ Ný skoðunarskýrsla ' + NOW) + '</button>' +
+          '</div></div>' +
+          '<div class="_bkc-card"><div class="_bkc-ch">Fyrri ár<small>' + (fyrriAr.length ? fyrriAr.length + ' ár · smelltu á ár til að opna' : 'ekkert skráð') + '</small></div><div class="_bkc-body">' +
+            (yearRows || '<div class="_bkc-empty">Engin eldri skoðun skráð.</div>') +
+            '<button type="button" class="_bkc-act _ghost _bkc-addtog" id="_bkc-addtog" style="margin-top:10px">＋ Bæta við skjali eða tengja reikning</button>' +
+            '<div id="_bkc-addwrap" style="display:none">' + addFileStrip + '</div>' +
           '</div></div>' +
         '</div>' +
         '<div>' +
-          '<div class="_bkc-card"><div class="_bkc-ch">Þjónustusamningur<small>' + (C.samningar.length || 'enginn skráður') + '</small></div><div class="_bkc-body">' +
+          '<div class="_bkc-card _bkc-fold' + (C.samningar.length ? '' : ' _saman') + '"><div class="_bkc-ch" data-fold="1">Þjónustusamningur<small>' + (C.samningar.length || 'enginn skráður') + ' <span class="_bkc-ork">▾</span></small></div><div class="_bkc-body">' +
             (C.samningar.length ? C.samningar.map(s => {
               const url = driveUrl(s.drive_file_id) || storageUrl(s.storage_path);
               const chain = !s.fyrirtaeki_id;
@@ -571,9 +593,9 @@
               '<span id="_bkc-samnstatus" style="color:#8b93a1"></span>' +
             '</div>' +
           '</div></div>' +
-          '<div class="_bkc-card"><div class="_bkc-ch">Búnaðarskrá kerfisins' +
-            (newest ? '<small>úr skýrslu ' + esc(newest.uttekt_nr || '') + '</small>' : '') + '</div><div class="_bkc-body">' + bunHtml + '</div></div>' +
-          '<div class="_bkc-card"><div class="_bkc-ch">Verð / reikningsyfirlit<small>VSK ' + VAT_PCT + '%</small></div><div class="_bkc-body">' +
+          '<div class="_bkc-card _bkc-fold' + (newest ? '' : ' _saman') + '"><div class="_bkc-ch" data-fold="1">Búnaðarskrá kerfisins' +
+            '<small>' + (newest ? 'úr skýrslu ' + esc(newest.uttekt_nr || '') : 'engin skýrsla enn') + ' <span class="_bkc-ork">▾</span></small></div><div class="_bkc-body">' + bunHtml + '</div></div>' +
+          '<div class="_bkc-card _bkc-fold' + (verds.length ? '' : ' _saman') + '"><div class="_bkc-ch" data-fold="1">Verð / reikningsyfirlit<small>' + (verds.length ? 'VSK ' + VAT_PCT + '%' : 'engar verðlínur') + ' <span class="_bkc-ork">▾</span></small></div><div class="_bkc-body">' +
             verdHtml +
             '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
               '<button type="button" class="_bkc-act _ghost" id="_bkc-vlist">🏷 Verðlisti</button>' +
@@ -596,10 +618,17 @@
     if (vl) vl.addEventListener('click', () => {
       if (window.BrunakerfiSkyrsla && BrunakerfiSkyrsla.openPriceEditor) BrunakerfiSkyrsla.openPriceEditor(null);
     });
+    // hliðarspjöld (samningur · búnaðarskrá · verð): smellur á haus fellir saman / opnar. Val notandans lifir yfir endurteikningar.
+    w.querySelectorAll('._bkc-fold').forEach((k, i) => {
+      if (i in _foldVal) k.classList.toggle('_saman', _foldVal[i]);
+      const h = k.querySelector('[data-fold]'); if (h) h.addEventListener('click', () => { _foldVal[i] = !k.classList.contains('_saman'); k.classList.toggle('_saman', _foldVal[i]); });
+    });
+    const at = w.querySelector('#_bkc-addtog'), aw = w.querySelector('#_bkc-addwrap');
+    if (at && aw) { if (_addOpid) { aw.style.display = ''; at.style.display = 'none'; } at.addEventListener('click', () => { _addOpid = true; aw.style.display = ''; at.style.display = 'none'; }); }
     // árshaus: fella saman / opna · ⋯: sýna sjaldgæfu aðgerðirnar. Hreint útlit — flettir klasa, engin endurteikning, engin skrif.
     w.querySelectorAll('[data-arhaus]').forEach(h => h.addEventListener('click', e => {
       if (e.target.closest('[data-armeira]')) return;
-      const y = +h.dataset.arhaus, yr = h.closest('._bkc-yr'); if (!yr) return;
+      const y = +h.dataset.arhaus, yr = h.closest('._bkc-yr'); if (!yr || yr.closest('._bkc-hero')) return;
       const lokast = !yr.classList.contains('_lokad');
       yr.classList.toggle('_lokad', lokast); _arOpid[y] = !lokast;
     }));
