@@ -18,11 +18,20 @@
  * sjálfkrafa (nafnapörun er bönnuð: id ræður, nafn aðeins fyrir raðir með NULL fid).
  * Hver NÝ ótengd kreditfærsla er raunveruleg afturför.
  *
+ * 21.09.2026 — ÞRENGT: kreditfærsla á WALK-IN sölu þarf enga tengingu. Mælt: nýju tvær sem felldu vörðinn voru
+ * R-000951 (prufa, −52 kr) og R-000959 (Ármann, −1.426 kr) — báðar á móðursölu með kt 999999-9999, sem er skráð venja
+ * fyrir viðskiptavin ÁN kennitölu (docs/CLAUDE-LEIDBEININGAR.md). Þar er EKKERT fyrirtæki til sem mínusinn gæti vantað
+ * á — og það er eina tjónið sem þessi vörður ver gegn (fyrirtækjasíða sem sýnir of háa tölu). Grunnlínan er EKKI hækkuð:
+ * skilyrðinu er breytt úr „móðirin er án customer_id" í „… OG móðirin er ekki walk-in". Walk-in kreditfærslur eru taldar
+ * og sagðar frá, en fella ekki. Kreditfærsla á nafngreint félag án tengingar fellir áfram eins og áður.
+ *
  * Lesandi, opinber lykill.
  */
 const SUPA = 'https://osfdzskyvisifcwyjkuk.supabase.co';
 const KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 const BASELINE = 2;
+const WALKIN_KT = '9999999999';
+const tolur = k => String(k || '').replace(/\D/g, '');
 
 async function sok(p) {
   const r = await fetch(SUPA + '/rest/v1/' + p, { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } });
@@ -31,14 +40,17 @@ async function sok(p) {
 }
 
 (async () => {
-  const lausar = await sok('solur?select=id,num,samtals,customer_nafn,credit_of&is_credit=eq.true&customer_id=is.null&order=num');
+  const lausar = await sok('solur?select=id,num,samtals,customer_nafn,customer_kt,credit_of&is_credit=eq.true&customer_id=is.null&order=num');
   const modir = [...new Set(lausar.map(x => x.credit_of).filter(Boolean))];
-  const mo = modir.length ? await sok('solur?select=id,num,customer_id&id=in.(' + modir.join(',') + ')') : [];
+  const mo = modir.length ? await sok('solur?select=id,num,customer_id,customer_kt&id=in.(' + modir.join(',') + ')') : [];
   const M = new Map(mo.map(x => [x.id, x]));
 
   // Lagfæranleg = móðirin BER customer_id. Slík má aldrei standa ótengd.
   const lagfaeranlegar = lausar.filter(x => { const m = M.get(x.credit_of); return m && m.customer_id; });
-  const oleysanlegar = lausar.filter(x => !lagfaeranlegar.includes(x));
+  // walk-in: móðirin (eða færslan sjálf, vanti móður) ber kt 999999-9999 → ekkert fyrirtæki til að hanga á
+  const erWalkin = x => { const m = M.get(x.credit_of); return tolur(m ? m.customer_kt : x.customer_kt) === WALKIN_KT; };
+  const walkin = lausar.filter(x => !lagfaeranlegar.includes(x) && erWalkin(x));
+  const oleysanlegar = lausar.filter(x => !lagfaeranlegar.includes(x) && !erWalkin(x));
 
   if (lagfaeranlegar.length) {
     console.log('KREDITFÆRSLUR SEM HANGA HVERGI þótt móðursalan viti hver kúnninn er:');
@@ -60,5 +72,5 @@ async function sok(p) {
   }
 
   console.log('✅ GRÆNT kredit-tenging: allar kreditfærslur hanga á sínu fyrirtæki (' +
-    oleysanlegar.length + ' bíða handvirkrar pörunar, grunnlína ' + BASELINE + ').');
+    oleysanlegar.length + ' bíða handvirkrar pörunar, grunnlína ' + BASELINE + ' · ' + walkin.length + ' walk-in án kennitölu: ' + (walkin.map(x => x.num).join(', ') || '—') + ').');
 })().catch(e => { console.error('❌ audit-kredit-tenging villa: ' + e.message); process.exit(1); });

@@ -22,7 +22,8 @@ const KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 const KVITTAD = {
   'T3:R-000363': 'endurrukkað á ProLan ehf. á sama stað (R-000401, 93.464 kr, greitt 10.07) — sameining staða í máli á borði',
   'T3:R-000407': 'mál #987 — Herbergjaleiga Flatahrauni: nýr reikningur á FF7 eða BJB',
-  'T3:R-000418': 'endurrukkað sem R-000717 (Strandasel 9-11, greitt 18.08) — mál #821',
+  // 21.09.2026: færðist úr T3 í T2 þegar Agnar hreinsaði ranga greiðslumerkið 20.09 (merkið kom af greiðsludegi kreditreiknings).
+  'T2:R-000418': 'endurrukkað sem R-000717 (Strandasel 9-11, greitt 18.08) — mál #821. Payday: CANCELLED. Agnar 20.09.2026: „leyfa þessu að vera" — enginn kreditreikningur, ekki spyrja aftur (sjá krafa_note)',
   'T3:R-000778': 'mál #955 — tvítak R-000740, afturkallað 04.09, ekkert að endurgreiða',
   'T3:R-000017': 'endurgerður sem R-000528 og greiddur (Payday nr. 159)',
   'T3:R-000466': 'prufa 104 kr (Agnar Sigurðsson)',
