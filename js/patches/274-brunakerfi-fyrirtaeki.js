@@ -564,7 +564,7 @@
             '<span class="_bkc-st _bkc-pill _' + (hetja ? hetja.pc : 'miss') + '">' + (hetja ? hetja.pill : 'Óskoðað') + '</span></div><div class="_bkc-body">' +
             (hetja ? hetja.html : '') +
             '<div id="_bkc-heroinv"></div>' +
-            '<button type="button" class="_bkc-new' + (hetja && (hetja.fin || hetja.draft) ? ' _litid' : '') + '" id="_bkc-new">' + (hetja && (hetja.fin || hetja.draft) ? '＋ Önnur skoðunarskýrsla' : '＋ Ný skoðunarskýrsla ' + NOW) + '</button>' +
+            '<button type="button" class="_bkc-new' + (hetja && hetja.hefur ? ' _litid' : '') + '" id="_bkc-new">' + (hetja && hetja.hefur ? '＋ Önnur skoðunarskýrsla' : '＋ Ný skoðunarskýrsla ' + NOW) + '</button>' +
           '</div></div>' +
           '<div class="_bkc-card"><div class="_bkc-ch">Fyrri ár<small>' + (fyrriAr.length ? fyrriAr.length + ' ár · smelltu á ár til að opna' : 'ekkert skráð') + '</small></div><div class="_bkc-body">' +
             (yearRows || '<div class="_bkc-empty">Engin eldri skoðun skráð.</div>') +

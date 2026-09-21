@@ -339,6 +339,9 @@
         });
         const lk = span.querySelector('#_bkr-link'); if (lk) lk.addEventListener('click', doLink);
       } else if (pdfInv) {
+        // Í hetjuspjaldi 274 stendur reikningsskjalið ÞEGAR í línunni beint fyrir ofan — að nefna það aftur hér er bara hávaði.
+        // Tenging við sölu býðst áfram undir „＋ Bæta við skjali eða tengja reikning".
+        if (el.parentElement && el.parentElement.id === '_bkc-heroinv') { el.remove(); return; }
         // Reikningsskjal (PDF) er tengt félaginu fyrir árið — það ER reikningurinn. Tenging við sölu í appinu er valkvæð.
         span.innerHTML = '· Reikningur: <b style="color:#16181c">' + esc(pdfInv.invoice_number || 'PDF') + '</b> <span style="color:#8b93a1">(skjal)</span> ' + LINKBTN;
         const lk = span.querySelector('#_bkr-link'); if (lk) lk.addEventListener('click', doLink);
