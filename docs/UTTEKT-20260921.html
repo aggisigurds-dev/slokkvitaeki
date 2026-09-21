@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allsherjarúttekt 21.09.2026</title>
+<style>
+:root{--bg:#f6f4ee;--ink:#15171c;--mute:#5d6470;--card:#fff;--rule:#e4dfd2;--gold:#a9822b;--raud:#b42318;--gul:#b45309;--blar:#1d4ed8;--graen:#15803d}
+@media (prefers-color-scheme:dark){:root{--bg:#0e0f12;--ink:#ecebe6;--mute:#9aa1ad;--card:#17191e;--rule:#2a2d35;--gold:#d4aa4f;--raud:#f87171;--gul:#fbbf24;--blar:#93c5fd;--graen:#4ade80}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:900px;margin:0 auto;padding:22px 16px 80px}
+h1{font:700 27px/1.2 Georgia,serif;margin:0 0 4px}h2{font:700 20px/1.25 Georgia,serif;margin:34px 0 10px;padding-top:14px;border-top:2px solid var(--gold)}
+h3{font-size:16px;margin:18px 0 6px}.sub{color:var(--mute);font-size:14px;margin:0 0 18px}
+.kort{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:14px 16px;margin:10px 0}
+.tolur{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tala{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 14px}.tala b{display:block;font:700 24px/1.1 Georgia,serif}.tala span{font-size:12.5px;color:var(--mute)}
+.m{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.04em;padding:2px 8px;border-radius:99px;border:1px solid currentColor;margin-right:6px;vertical-align:1px}
+.a{color:var(--raud)}.h{color:var(--gul)}.mi{color:var(--blar)}.l{color:var(--mute)}.g{color:var(--graen)}
+.f{border-left:4px solid var(--rule);padding:8px 0 8px 12px;margin:12px 0}.f.a{border-color:var(--raud);color:inherit}.f.h{border-color:var(--gul);color:inherit}.f.mi{border-color:var(--blar);color:inherit}.f.l{border-color:var(--rule);color:inherit}
+.f p{margin:4px 0}.hv{font-size:12.5px;color:var(--mute);font-family:ui-monospace,Consolas,monospace;word-break:break-word}
+.lag{font-size:14px}.lag b{color:var(--graen)}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--rule);vertical-align:top}th{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+.skrun{overflow-x:auto}ol,ul{padding-left:20px}li{margin:5px 0}code{font-size:13px;background:rgba(127,127,127,.14);padding:1px 5px;border-radius:5px}
+</style></head><body><main>
+<h1>Allsherjarúttekt</h1>
+<p class="sub">21.09.2026 · slokkvitaeki.netlify.app + brunaholf.netlify.app · aðeins úttekt — engu var breytt. Þrjár kóðayfirferðir (vistun · kapphlaup og gallar · tengingar og hub), lifandi mæling á 44 skjám og gagnamælingar í grunni. Alvarlegustu atriðin sannreyndi ég sjálfur í kóðanum; tvö voru lækkuð við það.</p>
+
+<div class="tolur">
+<div class="tala"><b>0</b><span>JavaScript-villur á 44 skjám á lifandi síðu</span></div>
+<div class="tala"><b>58 / 62</b><span>verðir öryggisnetsins grænir (4 rauðir eru gagnamál)</span></div>
+<div class="tala"><b>6</b><span>alvarleg atriði (3 snerta peninga)</span></div>
+<div class="tala"><b>~55</b><span>atriði alls, flest sama mynstrið endurtekið</span></div>
+</div>
+
+<div class="kort"><b>Í hnotskurn.</b> Kjarninn er traustur: stillingavistunin (atómísk sameining, biðröð, endurtilraunir), sölunúmerin, Þjónustuborðið og Kröfu-vinnuglugginn eru vel varin, og fyrri stóru gallarnir sex eru raunverulega lagaðir. Veikleikarnir eru <b>fjögur mynstur</b> sem endurtaka sig: (1) skrif sem enginn les niðurstöðuna úr, (2) heilar vörpur/fylki skrifuð úr skyndiminni flipans yfir breytingar annarra véla, (3) bilun sem birtist sem „0 / tómt / allt í lagi", (4) köll sem þakið 1.000 raðir klippir þegjandi. Lagfæring á mynstrinu lagar mörg atriði í einu.</div>
+
+<h2>Laga fyrst — tíu atriði í forgangsröð</h2>
+
+<div class="f a"><p><span class="m a">ALVARLEGT</span><b>1 · Krafa getur farið í Payday án þess að salan merkist send → tvírukkun</b></p>
+<p class="hv">netlify/functions/payday-push.js:283 og :505–521 · VÖRÐUÐ LEIÐ (netvörður)</p>
+<p>Eftir að reikningurinn er orðinn til í Payday er salan merkt send með <code>await markSaleInvoiced(...)</code> — en svarið er aldrei lesið. Mistakist sú eina skrift situr salan áfram í „Ósendar" og fer aftur daginn eftir. Sama fall les „er þegar send?" og skrifar merkið mörgum sekúndum síðar án skilyrðis, svo tvær vélar geta sent sömu kröfuna samtímis.</p>
+<p class="lag"><b>Lagfæring:</b> lesa <code>.ok</code> og skila 502 með skýrum texta; skilyrða PATCH-ið á <code>dk_invoice_id=is.null</code>; óvirkja „Senda kröfu"-takkann ÁÐUR en sendiglugginn opnast (166:1430 — tvísmellur opnar tvo glugga í dag).</p></div>
+
+<div class="f a"><p><span class="m a">ALVARLEGT</span><b>2 · „Skrá heimsókn" skrifar alla ársskoðunarskrána (752 félög) yfir</b></p>
+<p class="hv">js/patches/158-vidsk-detail.js:380–389</p>
+<p>Fallið tekur ALLA vörpuna úr skyndiminni flipans og vistar hana heila. Hafi önnur vél breytt skoðunarmánuði, skrefum eða akstri síðan flipinn var opnaður, fer það þegjandi í gamla gildið — hjá öllum félögum. Líklegasta skýringin á „þetta var rétt í gær". Skylt: 111:158 gerir það sama fyrir eitt félag.</p>
+<p class="lag"><b>Lagfæring:</b> vista aðeins <code>{ [id]: { last_year_inspected } }</code> og lesa svarið — 5 mínútna verk, mynstrið er þegar notað í 190, 224 og 175.</p></div>
+
+<div class="f a"><p><span class="m a">ALVARLEGT</span><b>3 · Verð og eyðingar skrást 2×, 4×, 8× á viðskiptavini</b></p>
+<p class="hv">js/patches/116-vidsk-pricing.js:227 og 111-company-attachments.js:662</p>
+<p>Hver endurteiknun kaflans bætir NÝJUM smell-hlustara á sama hnút. Annað tilboðsverðið sem skráð er vistast tvisvar, þriðja fjórum sinnum; í viðhengjum þýðir það N eyðingar í einum smelli.</p>
+<p class="lag"><b>Lagfæring:</b> binda hlustarann einu sinni þegar kaflinn er stofnaður.</p></div>
+
+<div class="f a"><p><span class="m a">ALVARLEGT</span><b>4 · Kreditreikningar og tilboð fá númer með „hæsta + 1"</b></p>
+<p class="hv">js/patches/26-credit-invoice.js:242 og 27-tilbod-quote.js:200</p>
+<p>Sölunúmerin eru atómísk (RPC), en kredit og tilboð ekki — tveir starfsmenn á sömu sekúndu fá sama númer. Eitt tvítekið gilt reikningsnúmer er í grunninum í dag.</p>
+<p class="lag"><b>Lagfæring:</b> <code>next_kredit_num</code> / <code>next_tilbod_num</code> RPC eins og <code>next_reikningur_num</code>.</p></div>
+
+<div class="f a"><p><span class="m a">ALVARLEGT</span><b>5 · Greiðslusamstillingin segir „tókst" þótt hún mistakist</b></p>
+<p class="hv">netlify/functions/payday-sync-cron.js:14–21</p>
+<p>Keyrslan kl. 10 og 15 les aldrei hvort <code>payday-sync-paid</code> svaraði villu. Renni Payday-lykill út uppfærist „greitt" ekki dögum saman og enginn sér það — greiddar kröfur sitja í „Ógreitt".</p>
+<p class="lag"><b>Lagfæring:</b> skila villu og skrá í <code>automation_runs</code> svo dagleg heilsa grípi það.</p></div>
+
+<div class="f a"><p><span class="m a">ALVARLEGT</span><b>6 · Skilaboð á Landsspítala-síðunni geta horfið</b></p>
+<p class="hv">brunaholf/nlsh.html:188</p>
+<p>Textareiturinn er tæmdur hvort sem sendingin tókst eða ekki (<code>catch(_){}</code>). Starfsmaður skrifar „vantar efni", netið hikstar, skilaboðin eru hvergi til.</p>
+<p class="lag"><b>Lagfæring:</b> tæma aðeins eftir staðfest svar; sýna villu annars.</p></div>
+
+<div class="f h"><p><span class="m h">HÁTT</span><b>7 · Nafn→kennitala í skjalaflokkun sér aðeins 1.000 af 1.192 félögum</b></p>
+<p class="hv">brunaholf/netlify/functions/brunakerfi-gather.js:500, uttekt-rename.js:381, reikningar-read.js:31 (customers_base: 1.164)</p>
+<p>MÆLT: <code>limit=5000</code> er klippt í 1.000 þegjandi. 192 félög finnast aldrei → skýrslur lenda í sóttkví eða á röngu félagi; í reikningaskoðun vantar 164 viðskiptavini aftast í stafrófinu → hætta á tvítöku. Villa verður auk þess að tómum lista.</p>
+<p class="lag"><b>Lagfæring:</b> blaðsíðufletta (mynstrið er til í ~35 föllum) og kasta á villu.</p></div>
+
+<div class="f h"><p><span class="m h">HÁTT</span><b>8 · Hægara svar yfirskrifar nýrra í Kröfu yfirliti og Hreyfingarlista</b></p>
+<p class="hv">166-krofu-yfirlit.js:622 · 167-hreyfingarlisti.js:335 · 129:1477 · 158:1117</p>
+<p>Smellt á „Ósendar" og strax „Kröfur": hægara svarið lendir síðast, listinn sýnir annað en sían segir — og <b>„Senda valdar" vinnur þá á röngu mengi</b>. Sama gildir um kostnaðartöflu félags A sem teiknast inn á síðu félags B þegar skipt er hratt.</p>
+<p class="lag"><b>Lagfæring:</b> beiðnateljari („nýjasta vinnur") — þrjár línur á hvern stað. Aðeins EIN skrá í öllu kerfinu notar það í dag.</p></div>
+
+<div class="f h"><p><span class="m h">HÁTT</span><b>9 · Ártalið 2026 er harðkóðað í Ársskoðun, Í þjónustu og Rekstrarfélögum</b></p>
+<p class="hv">187-inservice-row-reports.js:22,579 · 185:31 · 175:1029 · brunaholf index.html:14467</p>
+<p>1. janúar 2027 hverfur 2027-dálkurinn, „vantar 2026" stendur áfram og ENGIN félög merkjast á gjalddaga — þegjandi. Kröfuyfirlit hubbsins opnast á 2026 að eilífu.</p>
+<p class="lag"><b>Lagfæring:</b> <code>new Date().getFullYear()</code> — 190 gerir þetta þegar rétt. Gera fyrir áramót.</p></div>
+
+<div class="f h"><p><span class="m h">HÁTT</span><b>10 · Eftirá-reikningur opnar aftur ár sem var lokið</b></p>
+<p class="hv">js/patches/266-arsskodun-workflow-sync.js:77–81</p>
+<p><code>markInvoice</code> setur „í vinnslu"-árið skilyrðislaust (markReport ver sig, markInvoice ekki) → grænt „Lokið" stekkur í blátt. Sama fall skilar <code>true</code> þótt vistun mistakist.</p></div>
+
+<h2>Vistast allt? — önnur atriði</h2>
+<div class="skrun"><table><tr><th>Alv.</th><th>Hvað</th><th>Hvar</th></tr>
+<tr><td><span class="m h">HÁTT</span></td><td><b>Verkefnaborðið:</b> heilt fylki skrifað, enginn <code>blur</code>-hlustari þrátt fyrir athugasemd sem segir það, 11 vistanir ólesnar. Texti tapast við lokun; spjald annarrar vélar hverfur.</td><td class="hv">145-todo-board.js:63,388</td></tr>
+<tr><td><span class="m h">HÁTT</span></td><td><b>„✓ Sniðmát vistað"</b> þótt sniðmát annarrar vélar hafi þurrkast út (fylki úr skyndiminni).</td><td class="hv">112-form-builder.js:379</td></tr>
+<tr><td><span class="m h">HÁTT</span></td><td><b>„Afgreitt"-merki á póstum lifir í einum vafra</b> — brýtur samstillingarregluna; taflan <code>samskipti_stada</code> er til og 286/287 nota hana.</td><td class="hv">309-thjonustuver-postar.js:39</td></tr>
+<tr><td><span class="m h">HÁTT</span></td><td><b>Reikningur vistast ekki í skjöl félagsins og enginn fær að vita</b> (tómt catch + „fire and forget" brú yfir í hubbinn).</td><td class="hv">pos.js:1465 · 233:487</td></tr>
+<tr><td><span class="m h">HÁTT</span></td><td><b>SMS-áminningasaga aðeins í localStorage</b> → kúnni fær tvöfalt; Twilio-auðkenni geymd í vafranum.</td><td class="hv">33-sms-reminder.js:73 · 37:36</td></tr>
+<tr><td><span class="m mi">MIÐL.</span></td><td>Sjálfvirk skýrsluvistun þegir þegar hún mistekst (handvirka leiðin segir frá).</td><td class="hv">168:549</td></tr>
+<tr><td><span class="m mi">MIÐL.</span></td><td>Tæki búin til úr skýrslu — villan lesin en hent; tæki eru FJÖLDI á reikningi.</td><td class="hv">270:281</td></tr>
+<tr><td><span class="m mi">MIÐL.</span></td><td>Heil fylki skrifuð: mikilvæg félög (91, 172), vikudagskrá og skipulagsborð per nafn — og sjálfgefna nafnið er „Agnar" á öllum vélum (303, 305), eyddar vörur vakna aftur (vorur.js:478), <b>verðlisti brunakerfa</b> (273:289), starfsmannalisti (350), tilboðstenglar (27:932).</td><td class="hv">lykla á id í vörpu</td></tr>
+<tr><td><span class="m mi">MIÐL.</span></td><td>Útskolun við lokun flipa án <code>keepalive</code> — ferðin (rukkanlegu línurnar) nær ekki upp ef símanum er læst innan 1,2 sek.</td><td class="hv">227:188 · 85:457</td></tr>
+<tr><td><span class="m mi">MIÐL.</span></td><td>Merki slökkvitækja á grunnmynd lifa aðeins í einum vafra (textinn segir það heiðarlega, en þetta eru gögn).</td><td class="hv">scanner.js · v9.js:285</td></tr>
+<tr><td><span class="m mi">MIÐL.</span></td><td>Hub: „búið"-hök, minnispunktar á spjöldum og leiðréttar tímabókarlínur búa í <code>state.ui</code>-heildarhlutnum, ekki í töflu.</td><td class="hv">index.html:23181, 10632, 11547, 11430</td></tr>
+<tr><td><span class="m mi">MIÐL.</span></td><td>Hub: CG-skýrslur vistast staðbundið þótt þjónninn hafni þeim (fetch í samstilltu try/catch grípur aldrei).</td><td class="hv">index.html:16309</td></tr>
+</table></div>
+
+<h2>Bilun sem birtist sem „0 / tómt / allt í lagi"</h2>
+<ul>
+<li><b>„Engar reikningssölur í bið 🎉"</b> þegar endapunkturinn svarar villu — <span class="hv">brunaholf/reikningar-bid.html:89</span></li>
+<li><b>Leiðsögn</b> sýnir tóman lista í stað villu — <span class="hv">index.html:21760</span></li>
+<li><b>Pósthólf og póstverkefni</b> sýna 0 pósta þegar lesturinn bilar (33 þús. raða tafla) — <span class="hv">postholf.js:44 · email-tasks.js:37</span></li>
+<li><b>Öll samskiptamerki hverfa</b> í einu við eitt hiksti — <span class="hv">company-mail.js:213</span></li>
+<li><b>Ferskleikaborðið telur „0 raðir"</b> þegar talningin mistekst; dagleg heilsa byggir á sama svari — <span class="hv">data-sources-status.js:36</span></li>
+<li><b>„Aldrei keyrt"</b> getur líka þýtt „náði ekki í keyrslusöguna"; heilsuvaktin skilar 200 þótt pósturinn hennar hafi ekki farið — <span class="hv">automations.js:47 · daily-health-background.js:39</span></li>
+<li>Kröfuyfirlit hubbsins: skjöl og yfirferðarstaða verða að tómum lista við villu → krafa getur farið án efnislista — <span class="hv">index.html:18072</span></li>
+</ul>
+
+<h2>Mælt á lifandi síðunni</h2>
+<div class="skrun"><table><tr><th>Mæling</th><th>Gildi</th><th>Hvað það þýðir</th></tr>
+<tr><td>JS-villur / höfnuð loforð, 44 skjáir</td><td><b class="g">0</b></td><td>Ekkert brotnar við að opna skjá.</td></tr>
+<tr><td>JavaScript á hverri hleðslu</td><td>5,8 MB (16 skrár)</td><td>Þungt á síma; tveir bunkar eru 1,7–2,0 MB hvor.</td></tr>
+<tr><td>Gagnagrunnsköll við að opna Ársskoðun</td><td>132</td><td><code>uttaeki</code> sótt 48×, <code>fyrirtaeki</code> og <code>customer_documents</code> 20× hvort.</td></tr>
+<tr><td>DOM-hnútar / style-tög</td><td>21.346 / 148</td><td>Skýrir hægagang í skruni á símanum.</td></tr>
+<tr><td><code>/api/company-mail</code></td><td>8,4 sek</td><td>Hægasta kallið; keyrir við ræsingu.</td></tr>
+<tr><td><b>Gervigreind í Pósthólfi</b></td><td>allt að 6 köll × 4–8 sek við HVERJA opnun</td><td>Samantektirnar eru aðeins í minni vafrans, svo sömu póstarnir eru greindir upp á nýtt í hvert sinn — kostnaður og bið. <span class="hv">309:598</span></td></tr>
+<tr><td>Payday-samstilling við að opna Hreyfingarlista</td><td>2 POST, 3,7 + 4,8 sek</td><td>Keyrir í hvert sinn sem skjárinn opnast.</td></tr>
+<tr><td>Tímamælar án stöðvunar</td><td>78 <code>setInterval</code> án <code>clearInterval</code>; 1 skrá gáir að földum flipa</td><td>Einn tifar 2,9×/sek að eilífu (276:108). Tæmir rafhlöðu símans í bílnum.</td></tr>
+<tr><td>Hub: síður sem kalla á 15 sek fresti, líka faldar</td><td>nlsh.html · verkefnalisti.html = 5.760 köll/dag/flipa hvor</td><td>Sama kvótabruni og var lagaður í hubbnum sjálfum 19.09; þessar tvær fengu aldrei lagfæringuna. Auk þess <code>timavera-maeting</code> tímasett 96×/dag og gerir ekkert.</td></tr>
+<tr><td><code>alert()</code> / <code>confirm()</code></td><td>548 / 129</td><td>Niðurstaða 40 krafna fjöldasendingar birtist í glugga sem ekki er hægt að afrita.</td></tr>
+</table></div>
+
+<h2>Gögn í grunninum</h2>
+<div class="skrun"><table><tr><th>Mæling</th><th>Fjöldi</th><th></th></tr>
+<tr><td>Opnar villuskráningar (<code>app_problems</code>)</td><td><b>7.756</b></td><td>6.466 eru SAMA atriðið skráð aftur og aftur; enginn les skrána. Hún er auk þess menguð af þróunarlotum á localhost (þjónustuskriftu-villur, „payday-sync-paid 404") — hvorki vél né útgáfa er skráð, svo ekki er hægt að greina raunverulegar villur frá prófunum.</td></tr>
+<tr><td>Opin mál eldri en 90 daga</td><td><b>441 af 646</b></td><td>Borðið er að mestu safn — nýju ✓/🗑-takkarnir hjálpa, en fjöldatiltekt þarf.</td></tr>
+<tr><td>Tvítekið gilt reikningsnúmer</td><td>1</td><td>Sjá atriði 4.</td></tr>
+<tr><td>Gildar sölur á 0 kr með línum (2026)</td><td>4</td><td>Þarf þitt mat.</td></tr>
+<tr><td>Sölur á eyddum félögum</td><td>4</td><td></td></tr>
+<tr><td>Í þjónustu án kennitölu</td><td>1</td><td></td></tr>
+<tr><td>Skjöl / tæki / mál á eyddum félögum · kröfur án Payday-auðkennis</td><td class="g"><b>0</b></td><td>Hreint.</td></tr>
+</table></div>
+
+<h2>Kvarðað við sannreyningu</h2>
+<ul>
+<li><b>„Eyðing félags eyðir sölum og skilur verk eftir munaðarlaus" (00-legacy:1809)</b> — kóðinn er hættulegur (harðeyðir sölum; rangir lyklar), en takkinn er <b>slökktur</b> (<code>SKIP_DELETE_BTN = true</code>). Ekki lifandi hætta — eyða kóðanum svo enginn kveiki á honum.</li>
+<li><b>Tímaveru-speglunin „sér aðeins 1.000 raðir"</b> — þakið er raunverulegt, en 60 daga glugginn er 489 raðir í dag. Bítur ekki enn; laga áður en fjölgar.</li>
+<li><b>190 sjálfvirk „Búið"-merking</b> les reikninga ársins án blaðsíðna: 583 raðir núna — bítur við ~1.000, líklega næsta ár.</li>
+<li><b>Villan á Aksturslista</b> („(_cos || []).find is not a function", 9× 18.09) er þegar löguð.</li>
+</ul>
+
+<h2>Hreint — þetta þarf ekki að snerta</h2>
+<ul>
+<li>Stillingavistunin (85): atómísk sameining á þjóni, biðröð, sýnileg aðvörun og endurtilraunir. Mildar flest „ólesið svar"-atriðin.</li>
+<li>Sölunúmer og raðnúmer tækja: atómísk RPC.</li>
+<li>Þjónustuborðið (368) og Kröfu-vinnuglugginn (369): skilyrt skrif, árekstrarvörn, útskolun með keepalive, afturköllun.</li>
+<li>Fyrri gallarnir sex (Allar greiddar, samstillingarlykkjan, next_insp, storage_path, viðhengi, nóta án await) eru raunverulega lagaðir.</li>
+<li>Systkinaleki á kennitölu er vel varinn í 187, 190 og 199 (eina eftirstöðin: 237 telur tæki eftir NAFNI).</li>
+<li>Engar MutationObserver-lykkjur; engir tvíhlaðnir plástrar; engir leynilyklar í kóða; allar tímasetningar vísa á föll sem eru til; tímabelti er ekki vandamál (Ísland er UTC allt árið).</li>
+<li>Póstsending (254), tengiliðir (310), banner-upplýsingar (363), byggingarmynd (367), tækjalisti staðfestur (224): lesa svar og segja satt.</li>
+</ul>
+
+<h2>Tillögur að úrbótum</h2>
+<h3>A · Fjórir sameiginlegir hjálparar í stað 55 stakra lagfæringa</h3>
+<ol>
+<li><b><code>vista(…)</code></b> — ein leið fyrir öll skrif sem les svarið, sýnir „⚠ vistaðist ekki" og skráir. Vörður sem bannar skrif framhjá henni.</li>
+<li><b>Vörpur, ekki fylki</b> í stillingum (lyklað á id) + vörður sem finnur <code>AppSettings.save({lykill: fylki})</code>. Lagar 8 atriði í einu.</li>
+<li><b><code>nyjastaVinnur()</code></b> — beiðnateljari fyrir alla <code>load()</code>-hringi.</li>
+<li><b><code>tikk(fn, ms)</code></b> — tímamælir sem þegir í földum flipa og deyr með skjánum. Rafhlaða og kvóti.</li>
+</ol>
+<h3>B · Heiðarlegt viðmót</h3>
+<ul><li>Föll skili villu, ekki tómum lista; viðmótið sýni „náði ekki í gögn" í stað „0". Eitt sameiginlegt <code>saekja()</code> á framenda sem kastar á <code>!r.ok</code>.</li>
+<li><code>alert()</code> → tilkynning sem hægt er að afrita; niðurstaða fjöldasendingar verði listi á skjánum.</li></ul>
+<h3>C · Hraði</h3>
+<ul><li>Sækja <code>uttaeki</code> einu sinni per skjá og deila (48 köll → 1). Hlaða þungu bunkunum (4 og 2, samtals 3,7 MB) aðeins þegar skjárinn þeirra opnast.</li>
+<li>Geyma gervigreindarsamantektir pósta í töflu (eins og <code>postur_ai_flokkun</code>) — hver póstur greindur einu sinni.</li>
+<li>Payday-samstilling á tímamæli á þjóni í stað þess að keyra við hverja opnun skjás.</li></ul>
+<h3>D · Yfirsýn og tiltekt</h3>
+<ul><li><b>Villuskráin:</b> skrá vél, slóð (host) og útgáfu; ekkert frá localhost; sama fingrafar hækki teljara í stað nýrrar raðar; vikulegt yfirlit á Þjónustuborðið. Þá verða 7.756 raðir að ~20 raunverulegum atriðum.</li>
+<li><b>Borðið:</b> fjöldaaðgerð „loka öllu eldra en X sem ber merkið Líklega afgreitt" — 441 gömul mál.</li>
+<li><b>Dauðir plástrar út:</b> 306 (gamla mobíl-borðið), 24 (samskiptaflipi sem birtist ekki), 314-arsskodun-mobile-compact (á diski, hvergi hlaðinn), hættulega eyðingin í 00-legacy.</li>
+<li><b>Fyrir áramót:</b> ártalið (atriði 9) og einn sameiginlegur staður fyrir taxta og VSK — dagvinnutaxtinn 9.951 er þríritaður og 1,24 stendur í tólf skrám.</li></ul>
+
+<h2>Tillaga að röð</h2>
+<ol>
+<li><b>Lota 1 (peningar, með netverði):</b> atriði 1, 5 og tvísmellsvörnin — svo 4 (númer).</li>
+<li><b>Lota 2 (gagnatap, hrað-lagfæringar):</b> 2, 3, 6, 10 og 111:158 — hvert um sig fáar línur.</li>
+<li><b>Lota 3 (rangar tölur):</b> 7, 8 og „0 / tómt"-listinn.</li>
+<li><b>Lota 4 (fyrir áramót):</b> 9 og taxtarnir.</li>
+<li><b>Lota 5 (mynstrin):</b> hjálpararnir fjórir + verðir, svo þetta komi ekki aftur.</li>
+</ol>
+<p class="sub">Ekki skoðað að ósk þinni frá fyrri úttekt: aðgangsstýring á föllum, RLS og skrifaðgangur anon-lykils.</p>
+</main></body></html>
