@@ -54,6 +54,9 @@
       }
       var adferd = String((stillingar && stillingar.method) || (inntak && inntak.method) || 'GET').toUpperCase();
       if (adferd !== 'GET' && adferd !== 'HEAD') {               // skrift → allt ferskt á eftir
+        // Hraðamælirinn (387) og villuskráin (309) skrifa SJÁLF í bakgrunni — það er ekki „notandinn vistaði eitthvað" og má
+        // hvorki tæma skyndiminnið né kveikja endursókn á Ársskoðun.
+        if (slod.indexOf('/rest/v1/hradamaelingar') > -1 || slod.indexOf('/rest/v1/app_problems') > -1) return upprunalegt.apply(this, arguments);
         tolur.skrif++;
         if (geymsla.size) { geymsla.clear(); tolur.taemt++; }
         return upprunalegt.apply(this, arguments);
