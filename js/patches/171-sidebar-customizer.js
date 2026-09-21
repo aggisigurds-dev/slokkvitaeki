@@ -100,8 +100,37 @@
 
   let _state = { items: [] };
 
-  function open() {
+  /* ── VISTUNARVÖRN (21.09.2026) ───────────────────────────────────────────────────────────────────────────────────
+   * Agnar: „Ég var að breyta sidepanel um daginn. En hún savaðist ekki … datt út milli tækja." Sagan á þjóninum
+   * (audit_vernd) sýnir tvær vistanir, 17.09 og 19.09, með SÖMU stöðu á undan báðum — breytingin frá 17.09 var horfin
+   * aftur áður en sú seinni kom. Rótin: röðin og felulistinn eru FYLKI sem fara upp í heilu lagi, og glugginn las röðina úr
+   * DOM-inu, þ.e. úr stillingum flipans eins og þær voru þegar hann hlóðst (flipar standa opnir dögum saman). Tæki með
+   * gamalt afrit sem vistaði sína útgáfu skrifaði því þegjandi yfir breytingu hins tækisins.
+   *   1. OPNUN: stillingar sóttar ferskar og hliðarstikan endurröðuð ÁÐUR en glugginn les hana.
+   *   2. VISTUN: lesið aftur af þjóni; hafi annað tæki vistað síðan glugginn opnaðist er SPURT — aldrei þegjandi yfirskrift.
+   *   3. STAÐFESTING: lesið til baka af þjóni; „✓" birtist aðeins ef það sem stendur þar ER það sem var vistað.
+   *   4. ÖNNUR TÆKI: þegar flipi verður sýnilegur aftur er athugað (nokkur hundruð bæti) hvort röðin á þjóni hafi breyst,
+   *      og þá eru stillingar sóttar svo patch 68 endurraði — áður sá tækið nýja röð fyrst við fulla endurhleðslu.
+   */
+  async function lesaAfThjoni() {
+    try {
+      const sb = window.DB && DB.sb; if (!sb) return null;
+      const r = await sb.from('app_settings').select('o:settings->sidebar_order,h:settings->sidebar_hidden').eq('id', 1).maybeSingle();
+      if (r.error || !r.data) return null;
+      return { o: Array.isArray(r.data.o) ? r.data.o : [], h: Array.isArray(r.data.h) ? r.data.h : [] };
+    } catch (_) { return null; }
+  }
+  const fingrafar = x => x ? JSON.stringify([x.o || [], (x.h || []).slice().sort()]) : null;
+  let _grunnur = null;   // fingrafar þjónsins þegar glugginn opnaðist
+
+  async function open() {
     document.getElementById('_sc-modal')?.remove();
+    // 1. ferskt af þjóni → 68 endurraðar → ÞÁ les glugginn röðina sem notandinn sér
+    try {
+      if (window.AppSettings && AppSettings.load) await AppSettings.load();
+      if (window.SidebarReorder && SidebarReorder.scheduleReorder) { SidebarReorder.scheduleReorder(); await new Promise(r => setTimeout(r, 450)); }
+    } catch (_) {}
+    _grunnur = fingrafar(await lesaAfThjoni());
     const snap = readCurrentOrder();
     _state.items = snap.items;
     const dlg = document.createElement('div');
@@ -222,9 +251,30 @@
     // after this snapshot simply aren't listed and flow to the tail (visible).
     const order = _state.items.map(it => it.type === 'sep' ? SEP : it.id);
     const hidden = _state.items.filter(it => it.type === 'item' && it.hidden).map(it => it.id);
+    // 2. hefur annað tæki vistað síðan glugginn opnaðist? (null = náðist ekki í þjóninn → sama hegðun og áður)
+    const nuna = fingrafar(await lesaAfThjoni());
+    if (_grunnur && nuna && nuna !== _grunnur) {
+      const texti = 'Hliðarstikunni var breytt á ÖÐRU tæki eftir að þú opnaðir þennan glugga.\n\nVista ÞÍNA útgáfu yfir hana? (Hætta við = ekkert vistað; lokaðu glugganum og opnaðu aftur til að sjá nýju röðina.)';
+      let ja = false;
+      try { ja = (window.Confirm && Confirm.show) ? await Confirm.show(texti, { okText: 'Vista mína', cancelText: 'Hætta við' }) : window.confirm(texti); } catch (_) { ja = false; }
+      if (!ja) return;
+    }
+    const takki = document.getElementById('_sc-save'); if (takki) { takki.disabled = true; takki.textContent = '⏳ Vista…'; }
     const ok = await AppSettings.save({ sidebar_order: order, sidebar_hidden: hidden });
-    if (!ok) { alert('Vista mistókst'); return; }
-    if (window.Toast && Toast.show) Toast.show('✓ Röð vistuð');
+    // 3. lesa til baka — „✓" aðeins ef þjónninn ber nákvæmlega það sem var vistað
+    const eftir = ok === true ? await lesaAfThjoni() : null;
+    const stadfest = !!eftir && fingrafar(eftir) === fingrafar({ o: order, h: hidden });
+    if (!stadfest) {
+      if (takki) { takki.disabled = false; takki.textContent = 'Vista'; }
+      try { if (window.logProblem) window.logProblem('sidebar_save_failed', 'save=' + ok + ' · lesið til baka=' + (eftir ? 'annað gildi' : 'náðist ekki')); } catch (_) {}
+      alert(ok === true
+        ? 'Röðin fór af stað en þjónninn ber EKKI sömu röð þegar lesið er til baka — hún gæti horfið. Glugginn er enn opinn; reyndu „Vista" aftur.'
+        : 'Röðin vistaðist EKKI á þjóninn (nettenging?). Hún er í biðröð og reynt verður aftur, en önnur tæki sjá hana ekki fyrr en það tekst. Glugginn er enn opinn; reyndu „Vista" aftur.');
+      return;
+    }
+    _grunnur = fingrafar(eftir);
+    try { localStorage.setItem('sb_order_cache', JSON.stringify(order)); localStorage.setItem('sb_hidden_cache', JSON.stringify(hidden)); } catch (_) {}
+    if (window.Toast && Toast.show) Toast.show('✓ Röð vistuð og staðfest á þjóni — önnur tæki sækja hana næst þegar þau eru tekin upp');
     document.getElementById('_sc-modal')?.remove();
     if (window.SidebarReorder && SidebarReorder.scheduleReorder) {
       const nav = document.querySelector('nav.view-nav, .view-nav');
@@ -271,7 +321,24 @@
   injectLauncher();
   setTimeout(injectLauncher, 1500);
 
-  window.SidebarCustomizer = { open };
+  // 4. Þegar flipinn verður sýnilegur aftur (tæki tekið upp, skipt milli glugga): ber þjónninn aðra röð en þessi flipi?
+  //    Ódýr lestur (tveir lyklar), í mesta lagi á 60 s fresti, og aldrei á meðan glugginn er opinn (þar ræður notandinn).
+  let _sidastAthugad = 0;
+  async function athugaRodAThjoni() {
+    try {
+      if (document.hidden || document.getElementById('_sc-modal')) return;
+      if (Date.now() - _sidastAthugad < 60000) return;
+      _sidastAthugad = Date.now();
+      if (!window.AppSettings || !AppSettings.path || !AppSettings.load) return;
+      const th = await lesaAfThjoni(); if (!th) return;
+      const her = fingrafar({ o: AppSettings.path('sidebar_order') || [], h: AppSettings.path('sidebar_hidden') || [] });
+      if (fingrafar(th) !== her) await AppSettings.load();   // 68 hlustar á onChange og endurraðar
+    } catch (_) {}
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') athugaRodAThjoni(); });
+  window.addEventListener('focus', athugaRodAThjoni);
+
+  window.SidebarCustomizer = { open, athugaRodAThjoni };
   console.log('[patch-171] sidebar customizer ready');
 })();
 /* === END SIDEBAR CUSTOMIZER === */
