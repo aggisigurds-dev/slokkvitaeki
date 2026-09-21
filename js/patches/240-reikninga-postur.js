@@ -369,6 +369,11 @@
       '@media (max-width:640px){' +
         V + '.gm-av{width:30px;height:30px;font-size:13.5px}' +
         V + '.gm-row{padding:10px 11px;gap:10px}' +
+        // Flokkarnir tóku þrjár línur ofan við fyrsta póstinn í síma. Ein lína sem
+        // má strjúka — ekkert hverfur, listinn byrjar bara ofar.
+        V + '.rp-tagbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}' +
+        V + '.rp-tagbar::-webkit-scrollbar{display:none}' +
+        V + '.rp-tagchip,' + V + '.rp-tagbar-lbl{flex:none}' +
         V + '.gm-opid .rp-btn{padding:8px 12px;font-size:12px}' +
       '}',
       V + '.rp-card{background:#fff !important;border:1px solid rgba(20,24,34,.08) !important;border-left:3px solid #cbd5e1 !important;border-radius:13px;box-shadow:0 8px 22px -16px rgba(25,35,60,.22);padding:11px 15px;display:flex;align-items:flex-start;gap:14px}',
@@ -609,15 +614,14 @@
     // 3) combine into threads (one card per conversation)
     let threads = groupThreads(rows);
     if (state.filter === 'unanswered') threads = threads.filter(t => !isAnswered(t));
-    // 4) sort — í inbox: ósvöruð + spurningar efst, svo nýjast; annars nýjast
-    if (state.filter === 'inbox' || state.filter === 'unanswered') {
-      threads.sort((a, b) =>
-        (isAnswered(a) ? 1 : 0) - (isAnswered(b) ? 1 : 0) ||
-        (b.is_question ? 1 : 0) - (a.is_question ? 1 : 0) ||
-        (b.received_at || '').localeCompare(a.received_at || ''));
-    } else {
-      threads.sort((a, b) => (b.received_at || '').localeCompare(a.received_at || ''));
-    }
+    // 4) RÖÐUN: NÝJAST FYRST, ALLTAF — eins og pósthólf (21.09.2026).
+    //
+    // Áður flutu ósvaraðir og `is_question` efst. Þá sat fyrirspurn Auðar hjá
+    // Reykjavíkurborg frá í DAG í 15. sæti, undir markpósti frá Teya frá 10. sept.
+    // sem `is_question` hafði merkt spurningu („Hvernig stöndum við okkur?").
+    // Staðan er hvort sem er á röðinni sjálfri („Lokið" / „Bíður svars") og í
+    // flísinni „Ósvarað" — hún á ekki líka að hnika til tímaröðinni.
+    threads.sort((a, b) => (b.received_at || '').localeCompare(a.received_at || ''));
     return threads;
   }
 
