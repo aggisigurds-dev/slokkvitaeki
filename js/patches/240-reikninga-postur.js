@@ -330,11 +330,24 @@
       V + '.rp-title h1{margin:0;font-size:26px;font-weight:700;color:#fff;letter-spacing:-.01em}',
       V + '.rp-title p{margin:3px 0 0;font-size:12.5px;color:rgba(255,255,255,.6)}',
       V + '.rp-reload{height:38px;padding:0 14px;border:1px solid rgba(255,255,255,.18);border-radius:10px;background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font:inherit;font-size:13px}',
-      V + '.rp-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}',
+      // 21.09.2026: hausinn. Ein leitarlina, sidan tvaer flisaradir sem strjukast
+      // i stad thess ad brotna nidur i fimm linur ofan vid fyrsta postinn.
+      V + '.rp-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
+      V + '.rp-ico{flex:none;position:relative;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.28);border-radius:11px;background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:16px;line-height:1;cursor:pointer}',
+      V + '.rp-ico:hover{background:rgba(255,255,255,.2)}',
+      V + '.rp-ico .n{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:#d97757;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}',
+      // Ein lina sem ma strjuka. flex:none a flisunum svo thaer kremjist ekki.
+      V + '.rp-tools{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:10px;padding-bottom:2px}',
+      V + '.rp-tools::-webkit-scrollbar{display:none}',
+      V + '.rp-chip{flex:none}',
+      V + '.rp-tagbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 0 12px;padding-bottom:2px}',
+      V + '.rp-tagbar::-webkit-scrollbar{display:none}',
+      V + '.rp-tagchip{flex:none}',
+      V + '.rp-tagbar-lbl{flex:none}',
       V + '.rp-chip{font:inherit;font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:20px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#3a4250;cursor:pointer}',
       V + '.rp-chip.on{border-color:#0a0b0d;background:linear-gradient(145deg,#08080a,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709);color:#fff}',
       V + '.rp-chip .n{opacity:.65;font-weight:500;margin-left:2px}',
-      V + '.rp-search{position:relative;margin-left:auto;min-width:240px;flex:1;max-width:420px}',
+      V + '.rp-search{position:relative;flex:1;min-width:0}',
       V + '.rp-search input{width:100%;height:38px;padding:0 12px 0 34px;border-radius:11px;border:1px solid rgba(255,255,255,.28) !important;background:rgba(255,255,255,.12) !important;color:#fff !important;font:inherit;font-size:13.5px;outline:none;box-sizing:border-box}',
       V + '.rp-search input::placeholder{color:rgba(255,255,255,.6)}',
       V + '.rp-search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:rgba(255,255,255,.7)}',
@@ -369,11 +382,7 @@
       '@media (max-width:640px){' +
         V + '.gm-av{width:30px;height:30px;font-size:13.5px}' +
         V + '.gm-row{padding:10px 11px;gap:10px}' +
-        // Flokkarnir tóku þrjár línur ofan við fyrsta póstinn í síma. Ein lína sem
-        // má strjúka — ekkert hverfur, listinn byrjar bara ofar.
-        V + '.rp-tagbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}' +
-        V + '.rp-tagbar::-webkit-scrollbar{display:none}' +
-        V + '.rp-tagchip,' + V + '.rp-tagbar-lbl{flex:none}' +
+        V + '.rp-main{padding:12px 13px 48px}' +
         V + '.gm-opid .rp-btn{padding:8px 12px;font-size:12px}' +
       '}',
       V + '.rp-card{background:#fff !important;border:1px solid rgba(20,24,34,.08) !important;border-left:3px solid #cbd5e1 !important;border-radius:13px;box-shadow:0 8px 22px -16px rgba(25,35,60,.22);padding:11px 15px;display:flex;align-items:flex-start;gap:14px}',
@@ -811,9 +820,13 @@
 
     v.innerHTML =
       '<div class="rp-main">' +
-        '<div class="rp-head">' +
-          '<div class="rp-title"><h1>📧 Reikninga-póstur</h1><p>Síðustu 2 mánuðir · samtöl sameinuð · texti hreinsaður — svaraðu, sendu reikning eða merktu.</p></div>' +
-          '<button class="rp-reload" id="_rp-reload" type="button">↻ Endurhlaða</button>' +
+        // 21.09.2026: leitin efst, ein lina, eins og i postholfi. Fyrirsognin
+        // for (flipinn heitir "Postur" hvort sem er) og Endurhlada/Siur urdu takn.
+        '<div class="rp-bar">' +
+          '<div class="rp-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>' +
+            '<input id="_rp-search" type="search" placeholder="Leita í pósti…" value="' + esc(state.search) + '"></div>' +
+          '<button class="rp-ico" id="_rp-reload" type="button" title="Endurhlaða" aria-label="Endurhlaða">↻</button>' +
+          '<button class="rp-ico" id="_rp-rules" type="button" title="Sjálfvirkar síur — fela sendendur, lén eða efni" aria-label="Síur">⚙️' + (state.rules && state.rules.length ? '<span class="n">' + state.rules.length + '</span>' : '') + '</button>' +
         '</div>' +
         '<div class="rp-tools">' +
           chip('inbox', '📥 Til að svara', c.inbox) +
@@ -823,9 +836,6 @@
           (c.hidden ? chip('hidden', '🗑 Falin', c.hidden) : '') +
           (c.filtered ? chip('filtered', '🔇 Síað', c.filtered) : '') +
           (state.tagFilter ? '<button class="rp-chip on" id="_rp-tagclear" type="button" title="Hreinsa flokkasíu">' + esc(state.tagFilter) + ' ✕</button>' : '') +
-          '<button class="rp-chip" id="_rp-rules" type="button" title="Sjálfvirkar síur — fela sendendur, lén eða efni">⚙️ Síur' + (state.rules && state.rules.length ? ' <span class="n">' + state.rules.length + '</span>' : '') + '</button>' +
-          '<div class="rp-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>' +
-            '<input id="_rp-search" type="search" placeholder="Leita (sendandi · efni · kúnni)…" value="' + esc(state.search) + '"></div>' +
         '</div>' +
         tagbarHTML() +
         body +
