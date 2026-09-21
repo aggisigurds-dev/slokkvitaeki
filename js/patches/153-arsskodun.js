@@ -2709,7 +2709,8 @@
       // '23–'26 úttektarskýrslu-staða — SAMA uppspretta og aðallistinn (patch 187),
       // svo prentaði listinn passar við það sem er á skjánum.
       const yi = (window.InserviceRowReports && window.InserviceRowReports.yearInfo) ? window.InserviceRowReports.yearInfo(c) : {};
-      const yearBadges = ['2023', '2024', '2025', '2026'].map(y => {
+      // 21.09.2026 (úttekt): ártölin voru harðkóðuð hér — nú sömu rúllandi ár og 187 sýnir á skjánum.
+      const yearBadges = ((window.InserviceRowReports && window.InserviceRowReports.YEARS) || ['2023', '2024', '2025', '2026']).map(y => {
         const info = yi[y] || {};
         const done = !!info.has, due = !done && !!info.due;
         const bg = done ? '#DBEEE3' : (due ? '#FBEAC6' : '#F0EFEA');
@@ -2830,7 +2831,7 @@
       <th class="c">Mán.</th>
       <th class="c chk">✓ Búið</th>` : `
       <th class="num">#</th><th>Fyrirtæki</th>
-      <th class="c yr">'23</th><th class="c yr">'24</th><th class="c yr">'25</th><th class="c yr">'26</th>
+      ${((window.InserviceRowReports && window.InserviceRowReports.YEARS) || ['2023', '2024', '2025', '2026']).map(y => `<th class="c yr">'${String(y).slice(-2)}</th>`).join('')}
       <th>Heimilisfang</th><th>Sími</th>
       <th class="c">Skoðun</th><th class="c">Tæki (SLT·BSL·RS)</th><th class="r">Áætl.</th>
       <th class="c" title="Aksturslisti">🚗</th><th class="c" title="Forgangur">❗</th>

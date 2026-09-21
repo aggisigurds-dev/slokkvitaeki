@@ -53,6 +53,32 @@
     const out = new Set();
     const idOut = new Set();
     if (!window.SUPABASE_URL || !window.SUPABASE_KEY) return out;
+    // 21.09.2026 (afköst, mælt): þessi skönnun sótti ALLA uttaeki-töfluna (5.781 raðir, 6 köll, ~580 ms) við HVERJA
+    // síðuhleðslu til þess eins að búa til settin tvö. Sýnin v_uttaeki_i_notkun skilar sömu pörum einkvæmum
+    // (637 raðir, 1 kall, ~80 ms) — borið saman 21.09: nöfn 636=636, auðkenni 637=637. Sama regla (allt nema 'urelt').
+    // Bregðist sýnin (ekki til / villa / tóm) tekur gamla skönnunin við óbreytt hér að neðan.
+    try {
+      let from = 0; const page = 1000; let okSyn = true;
+      while (true) {
+        const r = await fetch(
+          window.SUPABASE_URL + '/rest/v1/v_uttaeki_i_notkun?select=client,fyrirtaeki_id&order=fyrirtaeki_id.asc,client.asc',
+          { headers: { apikey: window.SUPABASE_KEY, Authorization: 'Bearer ' + window.SUPABASE_KEY, Range: from + '-' + (from + page - 1) } }
+        );
+        if (!r.ok) { okSyn = false; break; }
+        const rows = await r.json();
+        if (!Array.isArray(rows)) { okSyn = false; break; }
+        rows.forEach(x => {
+          if (!x) return;
+          if (x.client) out.add(foldName(x.client));
+          if (x.fyrirtaeki_id != null) idOut.add(+x.fyrirtaeki_id);
+        });
+        if (rows.length < page) break;
+        from += page;
+      }
+      if (okSyn && (out.size || idOut.size)) return { nofn: out, ids: idOut };
+      console.warn('[inservice] sýnin v_uttaeki_i_notkun svaraði ekki — nota gömlu skönnunina');
+    } catch (e) { console.warn('[inservice] sýn', e); }
+    out.clear(); idOut.clear();
     try {
       let from = 0; const page = 1000;
       while (true) {

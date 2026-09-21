@@ -194,7 +194,26 @@
     if (typeof fn === 'function') _listeners.push(fn);
   }
 
-  async function load() {
+  /* 21.09.2026 (afköst, mælt á lifandi síðu): `settings` er EINN 1,4 MB blob og var sóttur ÞRISVAR á fyrstu 1,4 sek.
+   * hverrar síðuhleðslu (0,9 · 1,0 · 1,4 s) því þrír patchar kalla á load() hver fyrir sig á sama augnabliki — 2,8 MB
+   * af hreinni sóun per hleðslu per vél. Nú deila samtíma kallarar EINNI sókn.
+   *
+   * Öryggið (þess vegna er þetta ekki bara `if (_loadP) return _loadP`): sókn sem hófst FYRIR vistun ber gamla stöðu.
+   * Kallari sem vistar og biður svo um load() — eða les ferskt rétt fyrir fylkjavistun (sjá 172/350/27/273) — má ALDREI
+   * fá þá sókn í hendurnar. `_kynslod` hækkar við hverja vel heppnaða vistun; sókn er aðeins samnýtt ef engin vistun
+   * hefur orðið síðan hún hófst. Af sömu ástæðu hendir sókn svari sínu ef vistun lenti á meðan hún var á lofti (áður
+   * gat hún yfirskrifað nývistað gildi í minni með eldri stöðu þjónsins) og sækir einu sinni aftur.
+   */
+  let _loadP = null, _loadKynslod = -1, _kynslod = 0;
+  function load() {
+    if (_loadP && _loadKynslod === _kynslod) return _loadP;
+    const mitt = _kynslod;
+    _loadKynslod = mitt;
+    const p = _loadInner(mitt).finally(() => { if (_loadP === p) _loadP = null; });
+    _loadP = p;
+    return p;
+  }
+  async function _loadInner(kynslodVidUpphaf, endurtekid) {
     if (!window.DB || !window.DB.sb) {
       console.warn('[app-settings] DB not ready; using defaults');
       _loaded = true;
@@ -207,6 +226,8 @@
         // Table missing or RLS denied — fall back silently.
         console.warn('[app-settings] load skipped:', r.error.message);
       } else if (r.data && r.data.settings) {
+        // vistun lenti á meðan sóknin var á lofti → svarið gæti verið eldra en minnið. Sækja einu sinni aftur.
+        if (kynslodVidUpphaf !== _kynslod && !endurtekid) return _loadInner(_kynslod, true);
         _settings = deepMerge(JSON.parse(JSON.stringify(DEFAULTS)), r.data.settings);
         // Cache the freshly-loaded settings so the next page load can paint
         // with real values immediately instead of defaults.
@@ -241,6 +262,7 @@
     try {
       const rpc = await window.DB.sb.rpc('app_settings_merge', { p_patch: patch });
       if (!rpc.error) {
+        _kynslod++;
         _settings = deepMerge(JSON.parse(JSON.stringify(_settings)), patch);
         writeCache(_settings);
         notify();
@@ -340,6 +362,7 @@
           }
         }
 
+        _kynslod++;
         _settings = next;
         // Update cache so the next page load reflects the change immediately.
         writeCache(next);
@@ -460,6 +483,7 @@
     } catch (_) { return null; }
     return bidur.then(r => {
       if (!r || !r.ok) return false;
+      _kynslod++;
       // Sama eftirvinnsla og í save(): minnið og skyndiminnið fylgja þjóninum.
       _settings = deepMerge(JSON.parse(JSON.stringify(_settings)), patch);
       writeCache(_settings);

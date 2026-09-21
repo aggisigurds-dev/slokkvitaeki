@@ -203,6 +203,7 @@ baseline rows and lowering the constant is how the net tightens over time.
 ---
 
 ## Session log — what was made bulletproof
+- **2026-09-21 (afköst + ártöl)** — `153-arsskodun.js`: AÐEINS birting í prentlista — árs-haus og árs-reitir lesa nú `InserviceRowReports.YEARS` (rúllandi, sama og skjárinn) í stað harðkóðaðs 2023–2026; engin breyting á „tilbúið"-rökum, talningu né skrifum. Utan varðaðra leiða: `304` sækir ekki lengur allt Ársskoðunar-mengið 20 s eftir hverja síðuhleðslu (notar nýsótt mengi / sleppir ef talan á þjóni er < 25 mín), `85` samnýtir samtíma `load()` með kynslóðavörn (hermipróf 6/6), `177` les sýnina `v_uttaeki_i_notkun` (borið saman: 636=636 nöfn, 637=637 auðkenni) með gömlu skönnunina sem varaleið. Verðir: audit-all grænt.
 - **2026‑09‑21** — **Tvær leiðir að tvírukkun í Payday-sendingunni lokaðar (`payday-push.js` vörðuð leið + `166` + nýr vörður `audit-payday-tvirukkun`).**
   Allsherjarúttektin (docs/UTTEKT-20260921.html) fann: (1) `await markSaleInvoiced(...)` — svarið var ALDREI lesið. Mistækist sú
   eina skrift var krafan komin í Payday og í heimabanka kúnnans, en salan sat áfram í „Ósendar" með ✓ á skjánum og fór aftur

@@ -34,7 +34,12 @@
 
   async function compute() {
     if (!(window.Arsskodun && Arsskodun.loadAll)) return null;
-    await Arsskodun.loadAll();   // sama hleðsla og viewin nota — cache-uð eftir fyrsta kall
+    // 21.09.2026 (afköst, mælt á lifandi): hér stóð „cache-uð eftir fyrsta kall" — það er hún EKKI. Hvert kall
+    // sótti ALLT Ársskoðunar-mengið upp á nýtt (~27 REST-köll: uttaeki 2×6 síður, 1,4 MB app_settings, fyrirtaeki…),
+    // 20 sek. eftir HVERJA síðuhleðslu á hverri vél, líka þegar notandinn var nýbúinn að opna Ársskoðun og gögnin
+    // voru tveggja sekúndna gömul. Nú er nýsótt mengi notað beint: 153 skrifar snapshot (ars_snapshot_v1, reitur t)
+    // í lok hverrar hleðslu, svo aldur þess segir hvenær listinn í minni var síðast sóttur.
+    if (!ferskurListi()) await Arsskodun.loadAll();
     const cos = (window.Companies && Companies.list) || [];
     if (!cos.length) return null;
     const map = (window.AppSettings && AppSettings.path && AppSettings.path(KEY)) || {};
@@ -62,15 +67,38 @@
     };
   }
 
+  const FERSKT_MS = 10 * 60 * 1000;      // listi í minni yngri en þetta → engin ný sókn
+  const BIRT_NYLEGA_MS = 25 * 60 * 1000; // talan á þjóni yngri en þetta → þessi flipi sleppir umferðinni
+  function ferskurListi() {
+    try {
+      const L = window.Arsskodun && Arsskodun._cache && Arsskodun._cache.list;
+      if (!L || !L.length) return false;
+      const snap = JSON.parse(localStorage.getItem('ars_snapshot_v1') || 'null');
+      return !!(snap && snap.t && (Date.now() - snap.t) < FERSKT_MS);
+    } catch (_) { return false; }
+  }
+  // Fjórar vélar + símar, hver flipi birti sömu töluna á 30 mín fresti og 20 sek. eftir hverja hleðslu. Eitt örlítið
+  // kall (ein röð, einn dálkur) segir hvort einhver annar er nýbúinn — þá þarf þessi flipi hvorki að sækja né skrifa.
+  // Bregðist kallið er haldið áfram eins og áður (betra að birta tvisvar en aldrei).
+  async function nylegaBirt(SB) {
+    try {
+      const r = await SB.from('fjarmal_live').select('updated_at').eq('key', 'skyrslur_i_vinnslu').maybeSingle();
+      const t = r && r.data && r.data.updated_at ? new Date(r.data.updated_at).getTime() : 0;
+      return !!t && (Date.now() - t) < BIRT_NYLEGA_MS;
+    } catch (_) { return false; }
+  }
+
   let _busy = false;
-  async function publish() {
+  async function publish(thvinga) {
     if (_busy) return;
     _busy = true;
     try {
-      const row = await compute();
-      if (!row) return;
       const SB = window.DB && DB.sb;
       if (!SB) return;
+      // þvinguð birting (FjarmalLive.publish(true)) sleppir athuguninni — t.d. rétt eftir að verk var klárað
+      if (thvinga !== true && await nylegaBirt(SB)) return;
+      const row = await compute();
+      if (!row) return;
       const r = await SB.from('fjarmal_live').upsert(row, { onConflict: 'key' });
       if (r.error) console.warn('[fjarmal-live]', r.error.message);
       else console.log('[fjarmal-live] skyrslur_i_vinnslu →', row.n + ' verk · ' + row.kr + ' kr');
@@ -81,7 +109,8 @@
 
   // Einu sinni þegar appið er komið í ró eftir ræsingu, svo á 30 mín fresti
   // meðan flipinn er opinn — talan er þá aldrei eldri en síðasta virka lota.
-  setTimeout(publish, 20000);
-  setInterval(publish, 30 * 60 * 1000);
+  setTimeout(() => publish(), 20000);
+  // falinn flipi birtir ekki — sýnilegi flipinn (eða næsta vél) sér um það
+  setInterval(() => { if (!document.hidden) publish(); }, 30 * 60 * 1000);
   window.FjarmalLive = { publish };
 })();
