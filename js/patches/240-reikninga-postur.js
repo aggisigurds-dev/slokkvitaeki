@@ -64,6 +64,7 @@
     // thradurinn og ALLAR adgerdir birtast thegar rod er opnud.
     opin: new Set(),
     tagFilter: null,     // active category-tag filter (label) or null
+    merki: null,         // 21.09.2026: virk Gmail-merkjasia (nafn merkis eda STJARNA)
     meta: {},            // message_id → {manual_tag, note} (manual override + minnispunktur)
   };
   const WINDOW_DAYS = 62; // „síðustu 2 mánuðir"
@@ -89,7 +90,7 @@
       const asResult = p => p.then(data => ({ data, error: null }), error => ({ data: null, error }));
       const [em, fy, cb, vd, sl, hd, rl, ac, mt] = await Promise.all([
         asResult(DB.fetchAll((from, to) => SB.from('email_digest')
-          .select('message_id,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,is_question,has_attachment,attachment_names,received_at')
+          .select('message_id,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,is_question,has_attachment,attachment_names,labels,received_at')
           .in('account', ['eldklar@eldklar.is', 'bokhald@eldklar.is'])
           // SENT-ingest (2026-07-10): okkar eigin svör mega ekki birtast sem
           // „📥 Til að svara" — innhólfið eitt á þetta borð. (231-borðið les
@@ -372,6 +373,12 @@
       V + '.gm-lokid{font-size:10.5px;font-weight:700;color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:20px;padding:2px 9px;white-space:nowrap}',
       V + '.gm-bidur{font-size:10.5px;font-weight:700;color:#b45309;background:#fff7ed;border:1px solid #fed7aa;border-radius:20px;padding:2px 9px;white-space:nowrap}',
       V + '.gm-falid{font-size:10.5px;font-weight:700;color:#94a3b8;background:#f8fafc;border:1px solid #e2e8f0;border-radius:20px;padding:2px 9px}',
+      // Gmail-merkin hans. Teal svo thau ruglist ekki vid flokkana okkar.
+      V + '.gm-merki{font:inherit;font-size:10.5px;font-weight:700;color:#0f766e;background:#f0fdfa;border:1px solid #99f6e4;border-radius:20px;padding:2px 9px;white-space:nowrap;cursor:pointer}',
+      V + '.gm-merki:hover{background:#ccfbf1}',
+      V + '.gm-stj{font-size:13.5px;line-height:1}',
+      V + '.rp-tagchip.merki{color:#0f766e;background:#f0fdfa;border-color:#99f6e4}',
+      V + '.rp-tagchip.stjarna{color:#a16207;background:#fefce8;border-color:#fde68a;font-size:13px}',
       // Opna rodin: netfang, kunni, allar adgerdir, allur thradurinn.
       V + '.gm-opid{margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;display:flex;flex-direction:column;gap:9px;cursor:default}',
       V + '.gm-netfang{font-size:11.5px;color:#94a3b8;font-family:"JetBrains Mono",ui-monospace,monospace;word-break:break-all}',
@@ -622,6 +629,12 @@
   function currentRows() {
     let rows = baseRows();
     if (state.tagFilter) rows = rows.filter(m => { const t = tagFor(m); return t && t.label === state.tagFilter; });
+    // Gmail-merkjasia. Unnin a stokum skeytum adur en thraedir eru sameinadir,
+    // svo samtal birtist se EITT skeyti i thvi merkt.
+    if (state.merki) rows = rows.filter(m => {
+      const l = Array.isArray(m.labels) ? m.labels : [];
+      return state.merki === STJARNA ? erStjornumerkt(l) : l.indexOf(state.merki) >= 0;
+    });
     // 3) combine into threads (one card per conversation)
     let threads = groupThreads(rows);
     if (state.filter === 'unanswered') threads = threads.filter(t => !isAnswered(t));
@@ -662,6 +675,49 @@
     const ids = threadIds(m);
     for (var i = 0; i < ids.length; i++) { if (state.meta[ids[i]]) return state.meta[ids[i]]; }
     return null;
+  }
+
+  // --- GMAIL-MERKIN (21.09.2026) ------------------------------------------
+  // Litastjornur Gmail. STARRED fylgir ALLTAF med thegar stjarna er sett;
+  // lita-merkid segir hver hun er. Ein stjarna a rodina, i hans lit.
+  const STJORNUR = {
+    STARRED: { t: '★', c: '#eab308' },
+    YELLOW_STAR: { t: '★', c: '#eab308' }, ORANGE_STAR: { t: '★', c: '#f97316' },
+    RED_STAR: { t: '★', c: '#dc2626' },    BLUE_STAR: { t: '★', c: '#2563eb' },
+    PURPLE_STAR: { t: '★', c: '#7c3aed' }, GREEN_STAR: { t: '★', c: '#059669' },
+    GREEN_CIRCLE: { t: '●', c: '#059669' },BLUE_CIRCLE: { t: '●', c: '#2563eb' },
+    RED_CIRCLE: { t: '●', c: '#dc2626' },  ORANGE_GUILLEMET: { t: '»', c: '#f97316' },
+    YELLOW_BANG: { t: '!', c: '#eab308' },      RED_BANG: { t: '!', c: '#dc2626' },
+    PURPLE_QUESTION: { t: '?', c: '#7c3aed' },  GREEN_CHECK: { t: '✓', c: '#059669' },
+  };
+  const STJARNA = '\u2605';   // gildid sem siuflisin notar
+  // Gmail ad flokka sjalft. Geymt, en ekki sett a rodina - CATEGORY_PERSONAL
+  // var a 77 postum af 167 og segir ekkert um malid.
+  const MERKI_HULIN = /^(CATEGORY_[A-Z_]+|IMPORTANT|CHAT|SPAM|TRASH|OPENED)$/;
+
+  // Merki ur ollum thraedinum: merkti hann eitt skeyti i samtalinu er samtalid merkt.
+  function merkiThradar(m) {
+    const ut = [];
+    ((m._thread && m._thread.length) ? m._thread : [m]).forEach(function (o) {
+      (Array.isArray(o.labels) ? o.labels : []).forEach(function (n) {
+        if (n && ut.indexOf(n) < 0) ut.push(n);
+      });
+    });
+    return ut;
+  }
+  // Hans eigin merki - allt sem Gmail bjo ekki til sjalft.
+  function merkiEigin(m) {
+    return merkiThradar(m).filter(function (n) { return !STJORNUR[n] && !MERKI_HULIN.test(n); });
+  }
+  function erStjornumerkt(list) {
+    return list.some(function (n) { return !!STJORNUR[n]; });
+  }
+  function stjarnaHtml(list) {
+    if (!erStjornumerkt(list)) return '';
+    // Lita-merkid raedur; STARRED eitt og ser er gula sjalfgefna stjarnan.
+    const lit = list.filter(function (n) { return n !== 'STARRED' && STJORNUR[n]; })
+      .map(function (n) { return STJORNUR[n]; })[0] || STJORNUR.STARRED;
+    return '<span class="gm-stj" style="color:' + lit.c + '" title="Stj\u00f6rnumerkt \u00ed Gmail">' + lit.t + '</span>';
   }
 
   function tagFor(m) {
@@ -759,10 +815,18 @@
           return '<span class="gm-att">' + esc(String(n).replace(/\.[a-z0-9]+$/i, '').slice(0, 20)) + '</span>';
         }).join('') + (vidhNofn.length > 2 ? '<span class="gm-att">+' + (vidhNofn.length - 2) + '</span>' : '')
       : (m.has_attachment ? '<span class="gm-att">vi\u00F0hengi</span>' : '');
+    // Merkin hans. Segi thau lokid thegir reiknada stadan - hans ord vinnur.
+    const merkiOll = merkiThradar(m);
+    const merkiMin = merkiEigin(m);
+    const merktLokid = merkiMin.some(function (n) { return /loki|b\u00fai|done/i.test(n); });
     const flisar = [
+      stjarnaHtml(merkiOll),
+      merkiMin.map(function (n) {
+        return '<button class="gm-merki _rp-merki" data-m="' + esc(n) + '" type="button" title="S\u00eda \u00e1 \u00feetta merki">' + esc(n) + '</button>';
+      }).join(''),
       tag ? '<span class="rp-tag ' + tag.cls + ' _rp-tagf" data-tag="' + esc(tag.label) + '" title="S\u00EDa \u00E1 \u00FEennan flokk">' + tag.label + '</span>' : '',
-      (inbox && answered) ? '<span class="gm-lokid">Loki\u00F0</span>' : '',
-      (inbox && !answered) ? '<span class="gm-bidur">B\u00ED\u00F0ur svars</span>' : '',
+      (inbox && answered && !merktLokid) ? '<span class="gm-lokid">Loki\u00F0</span>' : '',
+      (inbox && !answered && !merktLokid) ? '<span class="gm-bidur">B\u00ED\u00F0ur svars</span>' : '',
       vidhFlis,
       isHidden(m) ? '<span class="gm-falid">fali\u00F0</span>' : '',
     ].filter(Boolean).join('');
@@ -793,15 +857,35 @@
   function tagbarHTML() {
     const tc = tagCounts();
     const present = TAG_CATALOG.filter(t => tc[t.label]);
-    if (!present.length) return '';
     const chips = present.map(t =>
       '<button class="rp-tagchip rp-tag ' + t.cls + (state.tagFilter === t.label ? ' on' : '') +
       '" data-tag="' + esc(t.label) + '" type="button">' + t.label +
       ' <span class="n">' + tc[t.label] + '</span></button>').join('');
-    const clear = state.tagFilter
-      ? '<button class="rp-tagchip clearall" id="_rp-tagall" type="button">✕ Allir flokkar</button>'
+    // 21.09.2026: Gmail-merkin i somu rod. Hans eigin merki fyrst, sidan
+    // stjarnan - thad er rodin sem hann notar sjalfur til ad flokka.
+    const mc = {}; let stjornur = 0;
+    baseRows().forEach(function (m) {
+      const l = Array.isArray(m.labels) ? m.labels : [];
+      if (erStjornumerkt(l)) stjornur++;
+      l.forEach(function (n) { if (!STJORNUR[n] && !MERKI_HULIN.test(n)) mc[n] = (mc[n] || 0) + 1; });
+    });
+    const merkiChips = Object.keys(mc).sort(function (a, b) { return mc[b] - mc[a]; }).map(function (n) {
+      return '<button class="rp-tagchip merki' + (state.merki === n ? ' on' : '') +
+        '" data-m="' + esc(n) + '" type="button">' + esc(n) +
+        ' <span class="n">' + mc[n] + '</span></button>';
+    }).join('') + (stjornur
+      ? '<button class="rp-tagchip stjarna' + (state.merki === STJARNA ? ' on' : '') +
+        '" data-m="' + STJARNA + '" type="button">' + STJARNA +
+        ' <span class="n">' + stjornur + '</span></button>'
+      : '');
+    const clear = (state.tagFilter || state.merki)
+      ? '<button class="rp-tagchip clearall" id="_rp-tagall" type="button">✕ Hreinsa</button>'
       : '';
-    return '<div class="rp-tagbar"><span class="rp-tagbar-lbl">Flokkar:</span>' + chips + clear + '</div>';
+    if (!chips && !merkiChips) return '';
+    return '<div class="rp-tagbar">' +
+      (chips ? '<span class="rp-tagbar-lbl">Flokkar:</span>' + chips : '') +
+      (merkiChips ? '<span class="rp-tagbar-lbl">Merki:</span>' + merkiChips : '') +
+      clear + '</div>';
   }
 
   function render() {
@@ -883,7 +967,15 @@
     v.querySelectorAll('.rp-tagchip[data-tag]').forEach(b => b.addEventListener('click', () => {
       state.tagFilter = (state.tagFilter === b.dataset.tag) ? null : b.dataset.tag; render();
     }));
-    const ta = v.querySelector('#_rp-tagall'); if (ta) ta.addEventListener('click', () => { state.tagFilter = null; render(); });
+    const ta = v.querySelector('#_rp-tagall'); if (ta) ta.addEventListener('click', () => { state.tagFilter = null; state.merki = null; render(); });
+    // Merkjaflisar - bædi i flisaroðinni og a sjalfri rodinni.
+    v.querySelectorAll('._rp-merki').forEach(b => b.addEventListener('click', ev => {
+      ev.stopPropagation();
+      state.merki = (state.merki === b.dataset.m) ? null : b.dataset.m; state.filter = 'all'; render();
+    }));
+    v.querySelectorAll('.rp-tagchip.merki, .rp-tagchip.stjarna').forEach(b => b.addEventListener('click', () => {
+      state.merki = (state.merki === b.dataset.m) ? null : b.dataset.m; render();
+    }));
     const rb = v.querySelector('#_rp-rules'); if (rb) rb.addEventListener('click', openRulesModal);
   }
 
