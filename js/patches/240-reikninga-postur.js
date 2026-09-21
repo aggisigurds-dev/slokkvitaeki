@@ -66,7 +66,8 @@
     tagFilter: null,     // active category-tag filter (label) or null
     merki: null,         // 21.09.2026: virk Gmail-merkjasia (nafn merkis eda STJARNA)
     meta: {},
-    mal: {},              // 21.09.2026: email_digest.id -> mal a Thjonustubordinu            // message_id → {manual_tag, note} (manual override + minnispunktur)
+    mal: {},              // 21.09.2026: email_digest.id -> mal a Thjonustubordinu
+    svar: {},             // 21.09.2026: threadKey -> { efni, texti, msg, cls } fyrir svarreitinn i rodinni            // message_id → {manual_tag, note} (manual override + minnispunktur)
   };
   const WINDOW_DAYS = 62; // „síðustu 2 mánuðir"
 
@@ -401,6 +402,16 @@
       V + '.gm-mal{font-size:10.5px;font-weight:700;color:#1d4ed8;background:#eff3ff;border:1px solid #c6d6ff;border-radius:20px;padding:2px 9px;white-space:nowrap}',
       V + '.gm-mal.lokid{color:#64748b;background:#f8fafc;border-color:#e2e8f0}',
       V + '.gm-malrod{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:#3a4250;background:#eff3ff;border:1px solid #c6d6ff;border-radius:9px;padding:7px 10px}',
+      // Svarreiturinn i rodinni (21.09.2026).
+      V + '.gm-svar{display:flex;flex-direction:column;gap:8px;border-top:1px dashed #e2e8f0;padding-top:10px}',
+      V + '.gm-svar-efni{font:inherit;font-size:13px;font-weight:600;color:#11141c;padding:8px 10px;border:1px solid rgba(20,24,34,.16);border-radius:9px;background:#fff;box-sizing:border-box;width:100%}',
+      V + '.gm-svar-texti{font:inherit;font-size:13px;color:#11141c;line-height:1.55;padding:10px;border:1px solid rgba(20,24,34,.16);border-radius:9px;background:#fff;box-sizing:border-box;width:100%;min-height:150px;resize:vertical}',
+      V + '.gm-svar-efni:focus,' + V + '.gm-svar-texti:focus{outline:none;border-color:#2f5fe0;box-shadow:0 0 0 3px rgba(47,95,224,.14)}',
+      V + '.gm-svar-fra{font-size:11.5px;color:#94a3b8}',
+      V + '.gm-svar-msg{font-size:12px;padding:6px 9px;border-radius:8px;background:#f1f5f9;color:#475569}',
+      V + '.gm-svar-msg.ok{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}',
+      V + '.gm-svar-msg.bad{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}',
+      V + '.rp-btn.prim{color:#fff;background:linear-gradient(180deg,#2f5fe0,#1d4ed8);border-color:#1d4ed8}',
       V + '.rp-tagchip.merki{color:#0f766e;background:#f0fdfa;border-color:#99f6e4}',
       V + '.rp-tagchip.stjarna{color:#a16207;background:#fefce8;border-color:#fde68a;font-size:13px}',
       // Opna rodin: netfang, kunni, allar adgerdir, allur thradurinn.
@@ -889,11 +900,37 @@
                 : '') +
               custHTML +
               (acts.length ? '<div class="rp-acts">' + acts.join('') + '</div>' : '') +
+              svarHTML(m) +
               olderHTML +
             '</div>'
           : '') +
       '</div>' +
     '</div>';
+  }
+
+  // 21.09.2026 — SVARREITURINN I ROÐINNI. Sja haus: gamli modalinn var
+  // "geimvera" ofan a sidunni. Her er svarid thar sem posturinn er.
+  function svarHTML(m) {
+    const s = state.svar[m.threadKey];
+    if (!s) return '';
+    const fra = postholfFyrir(m);
+    return '<div class="gm-svar">' +
+      '<input class="gm-svar-efni _rp-sv-efni" data-k="' + esc(m.threadKey) + '" value="' + esc(s.efni || '') + '">' +
+      '<textarea class="gm-svar-texti _rp-sv-texti" data-k="' + esc(m.threadKey) + '" placeholder="Skrifa\u00f0u svar \u2014 e\u00f0a l\u00e1ttu Claude semja uppkast">' + esc(s.texti || '') + '</textarea>' +
+      '<div class="gm-svar-fra">Fer fr\u00e1 <b>' + esc(fra) + '</b> \u00ed sama \u00fer\u00e6\u00f0i til ' + esc(m.from || '') + '</div>' +
+      '<div class="rp-acts">' +
+        '<button class="rp-btn ai _rp-sv-gen" data-k="' + esc(m.threadKey) + '" type="button"' + (s.bidur ? ' disabled' : '') + '>\u2728 Semja uppkast</button>' +
+        '<button class="rp-btn prim _rp-sv-send" data-k="' + esc(m.threadKey) + '" type="button"' + (s.bidur ? ' disabled' : '') + '>\ud83d\udce4 Senda</button>' +
+        '<button class="rp-btn _rp-sv-haetta" data-k="' + esc(m.threadKey) + '" type="button">H\u00e6tta vi\u00f0</button>' +
+      '</div>' +
+      (s.msg ? '<div class="gm-svar-msg ' + (s.cls || '') + '">' + esc(s.msg) + '</div>' : '') +
+    '</div>';
+  }
+  // Ur hvada holfi svarid fer. Sama regla og sendReply notar: THAD HOLF SEM
+  // TOK VID postinum, annars sjalfgefid. Annars fann gmail-send ekki thradinn.
+  function postholfFyrir(m) {
+    const p = String(m.account || '').trim();
+    return /^(eldklar|bokhald)@eldklar\.is$/i.test(p) ? p : emailFrom();
   }
 
   // Tag-filter row: one coloured chip per category present in the current view,
@@ -1038,7 +1075,33 @@
     const rowFor = el => (state._rows || [])[+el.dataset.i];
     v.querySelectorAll('._rp-send').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) openSendModal(m); }));
     v.querySelectorAll('._rp-edit').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) editSale(m); }));
-    v.querySelectorAll('._rp-reply').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) openReplyModal(m); }));
+    // 21.09.2026: opnar svarreitinn i rodinni. Modalinn stendur afram fyrir
+    // Thjonustubordid (368) og CRM-bordid (287) gegnum ReikningaPostur.replyTo.
+    v.querySelectorAll('._rp-reply').forEach(b => b.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const m = rowFor(b); if (!m) return;
+      state.opin.add(m.threadKey);
+      if (!state.svar[m.threadKey]) state.svar[m.threadKey] = { efni: 'Re: ' + String(m.subject || '').replace(/^\s*(re|sv|svar)\s*:\s*/i, ''), texti: '', msg: '' };
+      render();
+      const ta = viewEl().querySelector('.gm-row.opin .gm-svar-texti');
+      if (ta) { ta.focus(); ta.scrollIntoView({ block: 'center' }); }
+    }));
+    // Innslattur skrifast i state svo hann lifi naestu teikningu af.
+    v.querySelectorAll('._rp-sv-efni').forEach(el => el.addEventListener('input', () => {
+      const s = state.svar[el.dataset.k]; if (s) s.efni = el.value;
+    }));
+    v.querySelectorAll('._rp-sv-texti').forEach(el => el.addEventListener('input', () => {
+      const s = state.svar[el.dataset.k]; if (s) s.texti = el.value;
+    }));
+    v.querySelectorAll('._rp-sv-haetta').forEach(b => b.addEventListener('click', ev => {
+      ev.stopPropagation(); delete state.svar[b.dataset.k]; render();
+    }));
+    v.querySelectorAll('._rp-sv-gen').forEach(b => b.addEventListener('click', ev => {
+      ev.stopPropagation(); const m = malFyrirLykil(b.dataset.k); if (m) semjaInline(m);
+    }));
+    v.querySelectorAll('._rp-sv-send').forEach(b => b.addEventListener('click', ev => {
+      ev.stopPropagation(); const m = malFyrirLykil(b.dataset.k); if (m) sendaInline(m);
+    }));
     v.querySelectorAll('._rp-del').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) hideEmail(m); }));
     v.querySelectorAll('._rp-restore').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) restoreEmail(m); }));
     v.querySelectorAll('._rp-mute').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) muteSender(m); }));
@@ -1828,6 +1891,69 @@
       setMsg('Villa: ' + String((e && e.message) || e), 'bad');
     } finally { gen.disabled = false; }
   }
+  function malFyrirLykil(k) {
+    return (state._rows || []).filter(function (r) { return r.threadKey === k; })[0] || null;
+  }
+  function svarStada(k, msg, cls, bidur) {
+    const s = state.svar[k]; if (!s) return;
+    s.msg = msg || ''; s.cls = cls || ''; s.bidur = !!bidur; render();
+  }
+
+  // Uppkast fra Claude. /api/postur-reply skilar VILLU ef svarid er ekki
+  // laesilegt — hrar texti fer aldrei i reitinn (sja postur-reply.js).
+  async function semjaInline(m) {
+    const k = m.threadKey; const s = state.svar[k]; if (!s) return;
+    svarStada(k, 'Claude semur uppkast\u2026', '', true);
+    try {
+      const invoices = await customerInvContext(m);
+      const r = await fetch('/api/postur-reply', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: { sender_name: m.sender_name, sender_email: m.from, subject: m.subject, body: m.body_preview || m.snippet || '' },
+          customer: m.cust ? { name: m.cust.name, kt: ktDashed(m.cust.kt) } : null,
+          invoices, instruction: '',
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+      const s2 = state.svar[k]; if (!s2) return;
+      if (d.body) s2.texti = d.body;
+      if (d.subject) s2.efni = d.subject;
+      svarStada(k, d.summary ? ('\u2713 Uppkast tilb\u00fai\u00f0 \u00b7 ' + d.summary) : '\u2713 Uppkast tilb\u00fai\u00f0 \u2014 yfirfar\u00f0u \u00fea\u00f0', 'ok', false);
+    } catch (e) {
+      svarStada(k, 'Villa: ' + String((e && e.message) || e), 'bad', false);
+    }
+  }
+
+  // Sending. Nakvaemlega sama leid og sendReply notar (AppMail -> gmail-send,
+  // In-Reply-To -> sami thradur). Engin varaleid: se AppMail ekki hladid er
+  // STOPPAD, thvi gamla /api/email-send leidin er daud fyrir eldklar.is og
+  // hefdi skilad "sent" um post sem for aldrei.
+  async function sendaInline(m) {
+    const k = m.threadKey; const s = state.svar[k]; if (!s) return;
+    const to = m.from, efni = String(s.efni || '').trim() || ('Re: ' + (m.subject || ''));
+    const texti = String(s.texti || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to || '')) { svarStada(k, 'Sendandanetfang \u00f3gilt', 'bad', false); return; }
+    if (!texti) { svarStada(k, 'Svari\u00f0 er t\u00f3mt', 'bad', false); return; }
+    svarStada(k, 'Sendi\u2026', '', true);
+    try {
+      if (!(window.AppMail && AppMail.send)) throw new Error('P\u00f3stlei\u00f0in (AppMail) hefur ekki hla\u00f0ist \u2014 endurhla\u00f0i\u00f0 s\u00ed\u00f0una. Ekkert var sent.');
+      const html = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0f172a;white-space:pre-wrap;line-height:1.6">' + esc(texti) + '</div>';
+      const r = await AppMail.send({ from: postholfFyrir(m), to: [to], subject: efni, html, inReplyTo: m.message_id || undefined });
+      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || e.error || ('HTTP ' + r.status)); }
+      let svar = {}; try { svar = (await r.json()) || {}; } catch (_) {}
+      const thradur = svar.threaded === true ? ' \u00b7 \u00ed sama \u00fer\u00e6\u00f0i' : (m.message_id ? ' \u00b7 \u00fer\u00e1\u00f0urinn fannst ekki hj\u00e1 okkur' : '');
+      logActivity(m.message_id, 'reply');
+      try { state.activity.add(m.message_id); } catch (_) {}
+      try { if (typeof m._onSent === 'function') m._onSent(); } catch (_) {}
+      try { if (window.Toast && Toast.show) Toast.show('\u2713 Svar sent \u00e1 ' + to + thradur); } catch (_) {}
+      delete state.svar[k];
+      render();
+    } catch (e) {
+      svarStada(k, 'Villa: ' + String((e && e.message) || e), 'bad', false);
+    }
+  }
+
   async function sendReply(m) {
     const card = modalEl();
     const msg = card.querySelector('#_rpm-msg');
