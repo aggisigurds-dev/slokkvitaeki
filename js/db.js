@@ -109,7 +109,36 @@ var DB = {
       // 3,777+ active rows (after the bulk insert from arsskodun) so a
       // single .select() returns at most 1000. Fetch in chunks via .range()
       // until exhausted so the full cache is consistent with the DB.
+      // 21.09.2026 (afköst, mælt á lifandi): síðurnar 7 voru sóttar Í RÖÐ (~1,5–2 s af hreinni bið við hverja ræsingu).
+      // Nú: fyrsta síðan með count:'exact', hinar SAMHLIÐA með sömu röðun (client, id) og sömu síðumörkum, lagðar saman
+      // í réttri röð. Sannprófun áður en niðurstaðan er notuð: fjöldi = talning þjónsins OG hvert id einkvæmt. Bregðist
+      // annað hvort (röð bættist við / færðist milli síðna á meðan) tekur gamla raðbundna leiðin við — aldrei hálft mengi.
       async function loadAllUttaeki(sb) {
+        try {
+          var hradi = await loadAllUttaekiSamhlida(sb);
+          if (hradi) return hradi;
+        } catch (e) { console.warn('[db] samhliða uttaeki-sókn brást — raðbundin leið tekur við:', e && e.message); }
+        return loadAllUttaekiIRod(sb);
+      }
+      async function loadAllUttaekiSamhlida(sb) {
+        var pageSize = 1000;
+        var mk = function (start, opts) { return sb.from('uttaeki').select('*', opts).order('client').order('id').range(start, start + pageSize - 1); };
+        var fyrsta = await mk(0, { count: 'exact' });
+        if (fyrsta.error) throw fyrsta.error;
+        var rows0 = fyrsta.data || [], alls = fyrsta.count;
+        if (rows0.length < pageSize) return { data: rows0 };
+        if (typeof alls !== 'number' || alls > 50000) return null;
+        var byrjanir = [];
+        for (var st = pageSize; st < alls; st += pageSize) byrjanir.push(st);
+        var svor = await Promise.all(byrjanir.map(function (st) { return mk(st); }));
+        var allt = rows0;
+        for (var i = 0; i < svor.length; i++) { if (svor[i].error) throw svor[i].error; allt = allt.concat(svor[i].data || []); }
+        var ids = {}; var einkvaemt = true;
+        for (var k = 0; k < allt.length; k++) { var id = allt[k] && allt[k].id; if (ids[id]) { einkvaemt = false; break; } ids[id] = 1; }
+        if (allt.length !== alls || !einkvaemt) { console.warn('[db] uttaeki: samhliða mengi stemmdi ekki (' + allt.length + '/' + alls + ', einkvæmt=' + einkvaemt + ') — sæki í röð'); return null; }
+        return { data: allt };
+      }
+      async function loadAllUttaekiIRod(sb) {
         var pageSize = 1000;
         var allRows = [];
         for (var start = 0; ; start += pageSize) {

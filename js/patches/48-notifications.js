@@ -85,7 +85,9 @@
     // 14.09.2026: tæki á gjalddaga næstu 30 daga voru 2.118 — ópöguð sókn sá aðeins 1.000.
     const queries = [
       safe(DB.fetchAll((from, to) => SB.from('solur').select('id,num,customer_nafn,samtals,created_at,paid_at,greitt_med').neq('status','drog').neq('status','void').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null).lte('created_at', eldraEn30).order('id').range(from, to)).then(data => ({ data, error: null }))),
-      safe(DB.fetchAll((from, to) => SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).order('next_insp',{ascending:true}).order('id').range(from, to)).then(data => ({ data, error: null }))),
+      // 21.09.2026 (afköst): bjallan sýnir FIMM efstu og heildartölu — en sótti allar 2.118 raðirnar (3 síður) við HVERJA
+      // síðuhleðslu. Nú: sömu sía og röðun, 5 raðir + count:'exact' í EINU kalli. Talan er sú sama (nákvæm talning þjónsins).
+      safe(SB.from('uttaeki').select('id,serial,client,next_insp', { count: 'exact' }).not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).order('next_insp',{ascending:true}).order('id').range(0, 4)),
       safe(SB.from('birgdir').select('id,nafn,magn,lagmark,eining').limit(500)),
       safe(SB.from('verkbeidnir').select('id,num,customer,created_at,status').gte('created_at', last7.toISOString()).order('created_at',{ascending:false}).limit(10)),
       tilbodExists
@@ -102,7 +104,7 @@
         meta:`${fmtKr(r.samtals)} · ${fmtDate(r.created_at)}`,
         click:()=> window.App && window.App.switchView('income')
       })) },
-      { kind:'insp',    sev:'med',  label:'Þjónustutæki sem þarf að skoða', items: (dueInsp.data||[]).map(r=>{
+      { kind:'insp',    sev:'med',  label:'Þjónustutæki sem þarf að skoða', n: (typeof dueInsp.count === 'number' ? dueInsp.count : null), items: (dueInsp.data||[]).map(r=>{
         const d = daysFrom(r.next_insp);
         return { title:`${r.serial||'#'+r.id} — ${r.client||''}`,
           meta: d<0 ? `${-d} dögum yfir tíma` : (d===0?'Í dag':`Eftir ${d} daga`),
@@ -128,7 +130,8 @@
     render();
   }
 
-  function totalCount() { return alerts.reduce((s,g)=>s+g.items.length, 0); }
+  function fjoldi(g) { return (g && typeof g.n === 'number') ? g.n : g.items.length; }   // n = nákvæm talning þjóns þegar aðeins efstu raðir eru sóttar
+  function totalCount() { return alerts.reduce((s,g)=>s+fjoldi(g), 0); }
 
   function ensureBell() {
     if (document.getElementById('notif-bell')) return;
@@ -173,13 +176,13 @@
       <div class="notif-panel-hd">🔔 Tilkynningar <span style="font-size:11px;color:#94a3b8;font-weight:400">${count} alls</span></div>
       ${alerts.map(g => `
         <div class="notif-group">
-          <div class="notif-group-hd notif-sev-${g.sev}">${esc(g.label)} <span style="font-weight:400;color:#94a3b8">(${g.items.length})</span></div>
+          <div class="notif-group-hd notif-sev-${g.sev}">${esc(g.label)} <span style="font-weight:400;color:#94a3b8">(${fjoldi(g)})</span></div>
           ${g.items.slice(0,5).map((it,i) => `
             <div class="notif-item" data-g="${g.kind}" data-i="${i}">
               <div>${esc(it.title)}</div>
               <div class="meta">${esc(it.meta)}</div>
             </div>`).join('')}
-          ${g.items.length>5?`<div style="font-size:11px;color:#94a3b8;margin-top:4px">… og ${g.items.length-5} til viðbótar</div>`:''}
+          ${fjoldi(g)>5?`<div style="font-size:11px;color:#94a3b8;margin-top:4px">… og ${fjoldi(g)-5} til viðbótar</div>`:''}
         </div>`).join('')}`;
     panel.querySelectorAll('.notif-item').forEach(el => {
       el.onclick = () => {
