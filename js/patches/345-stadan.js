@@ -73,8 +73,9 @@
       q => q.is('deleted_at', null));
     let ars = {};
     try {
-      const { data } = await sb.from('app_settings').select('settings').eq('id', 1).maybeSingle();
-      ars = (data && data.settings && data.settings.arsskodun_customers) || {};
+      // 21.09.2026 (afköst): sótti ALLAN 1,4 MB stillinga-blobbinn til að lesa EINN lykil. JSON-slóð í select skilar aðeins lyklinum.
+      const { data } = await sb.from('app_settings').select('ars:settings->arsskodun_customers').eq('id', 1).maybeSingle();
+      ars = (data && data.ars) || {};
     } catch (_) {}
 
     const sol = await allar('solur', 'customer_id,created_at,linur,is_credit');

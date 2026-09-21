@@ -2517,12 +2517,13 @@
     if (!AS || typeof AS.save !== 'function' || !sb) return;
     let raw = null;
     try {
-      const r = await sb.from('app_settings').select('settings').eq('id', 1).maybeSingle();
+      // 21.09.2026 (afköst): sótti ALLAN 1,4 MB stillinga-blobbinn til að lesa EINN lykil. JSON-slóð í select skilar aðeins lyklinum.
+      const r = await sb.from('app_settings').select('pe:settings->' + PE_KEY).eq('id', 1).maybeSingle();
       if (r && r.error) {
         console.warn('[patch-166] Stílstjóri-hreinsun: náði ekki stillingum', r.error.message);
         return;
       }
-      raw = r && r.data && r.data.settings && r.data.settings[PE_KEY];
+      raw = r && r.data && r.data.pe;
     } catch (e) {
       console.warn('[patch-166] Stílstjóri-hreinsun: lestrarvilla', e);
       return;

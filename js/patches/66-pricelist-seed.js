@@ -336,10 +336,10 @@
     var tombstoned = {};
     var tombstonesOk = false;
     try {
-      var tsRead = await DB.sb.from('app_settings').select('settings').eq('id', 1).maybeSingle();
+      // 21.09.2026 (afköst): sótti ALLAN 1,4 MB stillinga-blobbinn til að lesa EINN lykil. JSON-slóð í select skilar aðeins lyklinum.
+      var tsRead = await DB.sb.from('app_settings').select('dpn:settings->sala->deleted_product_names').eq('id', 1).maybeSingle();
       if (tsRead && !tsRead.error) {
-        var salaCfg = (tsRead.data && tsRead.data.settings && tsRead.data.settings.sala) || {};
-        var dpn = Array.isArray(salaCfg.deleted_product_names) ? salaCfg.deleted_product_names : [];
+        var dpn = (tsRead.data && Array.isArray(tsRead.data.dpn)) ? tsRead.data.dpn : [];
         dpn.forEach(function (n) { tombstoned[String(n || '').trim().toLowerCase()] = true; });
         tombstonesOk = true;
       }

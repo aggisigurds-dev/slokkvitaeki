@@ -125,10 +125,10 @@
   // hverju var eytt má ekki setja neitt inn.
   async function readTombstones() {
     try {
-      const r = await DB.sb.from('app_settings').select('settings').eq('id', 1).maybeSingle();
+      // 21.09.2026 (afköst): sótti ALLAN 1,4 MB stillinga-blobbinn til að lesa EINN lykil. JSON-slóð í select skilar aðeins lyklinum.
+      const r = await DB.sb.from('app_settings').select('dpn:settings->sala->deleted_product_names').eq('id', 1).maybeSingle();
       if (r.error) return null;
-      const sala = (r.data && r.data.settings && r.data.settings.sala) || {};
-      const arr = Array.isArray(sala.deleted_product_names) ? sala.deleted_product_names : [];
+      const arr = (r.data && Array.isArray(r.data.dpn)) ? r.data.dpn : [];
       return new Set(arr.map(n => String(n || '').trim().toLowerCase()));
     } catch (_) { return null; }
   }

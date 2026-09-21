@@ -204,9 +204,11 @@
    * hefur orðið síðan hún hófst. Af sömu ástæðu hendir sókn svari sínu ef vistun lenti á meðan hún var á lofti (áður
    * gat hún yfirskrifað nývistað gildi í minni með eldri stöðu þjónsins) og sækir einu sinni aftur.
    */
-  let _loadP = null, _loadKynslod = -1, _kynslod = 0;
+  let _loadP = null, _loadKynslod = -1, _kynslod = 0, _sidastSott = 0, _sottKynslod = -1;
+  const NYSOTT_MS = 2000;   // sókn sem LAUK fyrir < 2 s (og engin vistun síðan) telst fersk — mælt: 2. load() kom 190 ms eftir að 1. lauk
   function load() {
     if (_loadP && _loadKynslod === _kynslod) return _loadP;
+    if (_sottKynslod === _kynslod && (Date.now() - _sidastSott) < NYSOTT_MS) return Promise.resolve(_settings);
     const mitt = _kynslod;
     _loadKynslod = mitt;
     const p = _loadInner(mitt).finally(() => { if (_loadP === p) _loadP = null; });
@@ -232,6 +234,7 @@
         // Cache the freshly-loaded settings so the next page load can paint
         // with real values immediately instead of defaults.
         writeCache(r.data.settings);
+        _sidastSott = Date.now(); _sottKynslod = _kynslod;
       }
     } catch (e) {
       console.warn('[app-settings] load exception:', e);
