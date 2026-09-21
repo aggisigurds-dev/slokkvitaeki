@@ -29,6 +29,8 @@
 (() => {
   if (window.Thjonustuskra) return;
 
+  const UPPHAFS_HASH = (location.hash || '').replace(/^#/, '');   // lesið við hleðslu skriftunnar, á undan ræsingu appsins
+
   function buaTil(FLOKKUR) {
   const VIEW_ID = 'view-' + FLOKKUR.key;
   const NAV_KEY = FLOKKUR.key;
@@ -462,13 +464,21 @@
     // ræsist og tók síðuna af aftur (mælt 21.09 — #brunaskra opnaðist stundum ekki). Slóðin er því elt í
     // nokkrar sekúndur: á meðan hash-ið er enn okkar og sýnin er ekki virk er hún opnuð á ný. Hættir um leið
     // og notandinn fer annað (hash breytist) eða tíminn er liðinn.
-    if ((location.hash || '').replace(/^#/, '') === NAV_KEY) {
-      let n = 0;
+    if (UPPHAFS_HASH === NAV_KEY) {
+      let n = 0, sed = false;
       const elta = () => {
-        if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) return;
+        const h = (location.hash || '').replace(/^#/, '');
+        // Ræsing appsins endurskrifar óþekkta slóð í #sala (mælt 21.09: #brunaskra → #sala) — það telst EKKI
+        // vera val notandans. Allt annað (notandinn smellti sig annað) stöðvar eltinguna.
+        if (h !== NAV_KEY && h !== '' && h !== 'sala') return;
         const v = document.getElementById(VIEW_ID);
-        if (!(v && v.classList.contains('active'))) { if (window.App && App.switchView) App.switchView(NAV_KEY); else open(); }
-        if (++n < 16) setTimeout(elta, 600);
+        const virk = !!(v && v.classList.contains('active'));
+        if (virk) sed = true;
+        // Eftir fyrstu ~5 s er hætt að endurheimta síðu sem hefur þegar sést: þá er brottför líklegast notandinn
+        // sjálfur (smellti á Sölu) en ekki ræsing appsins.
+        else if (sed && n > 8) return;
+        else if (window.App && App.switchView) App.switchView(NAV_KEY); else open();
+        if (++n < 20) setTimeout(elta, 600);
       };
       setTimeout(elta, 300);
     }

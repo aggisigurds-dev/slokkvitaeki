@@ -4,8 +4,9 @@
  * Bannerinn, myndin, nótan, aðgerðastikan og Samskipti-kortið eru prófílsins sjálfs (features.js
  * Companies.openDetail + 223/363/111 …) og eru EKKI afrituð. Þessi pappi bætir við:
  *
- *   1. Þjónustuflipum undir Samskiptum: 🧯 Slökkvitæki · 🍳 Slökkvikerfi — aðeins á fyrirtækjum sem
- *      eiga röð í `slokkvikerfi`. Flipinn skiptir AÐEINS um neðri helminginn: „Úttekt búin"-takkinn og
+ *   1. Þjónustuflipum undir Samskiptum: 🧯 Slökkvitæki · 🚨 Brunakerfi · 🍳 Slökkvikerfi. 🍳 aðeins á fyrirtækjum
+ *      sem eiga röð í `slokkvikerfi`; 🚨 aðeins á þeim sem eru á áskriftarlista brunakerfa eða eiga
+ *      brunakerfisskýrslu (hýsir vinnusíðu 274, sjá synaBru). Fyrirtæki sem er aðeins í 🧯 fær enga flipa. Flipinn skiptir AÐEINS um neðri helminginn: „Úttekt búin"-takkinn og
  *      `.uttekt-cols` (tækjalistinn) víkja fyrir blaðinu. Ekkert er fjarlægt úr DOM-inu, aðeins falið.
  *   2. Blaðinu: vinnuformið ER skýrslan (sama blað á skjá og á prenti), 1:1 við eyðublaðið
  *      slokkvikerfis-uttekt-tomt-eyoublad.pdf. Reitirnir eru óháðir eins og á pappírnum:
@@ -42,7 +43,7 @@
   const KOSTN = [['skodun', 'Skoðun slökkvikerfis', 'magn'], ['akstur', 'Akstur', 'km / ferð'], ['skyrsla', 'Skýrslugerð', 'magn'], ['vinna', 'Vinna', 'klst']];
   const LS_MADUR = 'slokkvikerfi_skodunarmadur';   // þægindi eins vafra: síðasta nafn skoðunarmanns
 
-  const S = { fid: null, kerfi: [], k: null, rod: null, data: null, kost: null, flipi: 'ars', timer: null, saving: false, dirty: false, stoppad: false };
+  const S = { fid: null, kerfi: [], bru: false, k: null, rod: null, data: null, kost: null, flipi: 'ars', timer: null, saving: false, dirty: false, stoppad: false };
 
   function SB() { return (window.DB && DB.sb) || null; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -571,12 +572,82 @@
     main.querySelectorAll(':scope > ._ufs-section, :scope > .rdr-box').forEach(el => ut.push(el));
     return ut;
   }
+  // ── 🚨 Brunakerfi-flipinn: vinnusíða 274 HÝST, ekki endurskrifuð ────────────────────────────────────
+  // 274 teiknar allt inn í eitt stak (#_bkc-overlay, position:fixed) með útlitið bundið við auðkennið. Þegar
+  // 🚨 er valið er stakið flutt inn í prófílinn og gert flæðandi; þegar vinnusíðan er opnuð annars staðar
+  // (272, 388, „Þjónustusíða →" í 199) er það flutt aftur út ÁÐUR en hún opnast, svo þær leiðir eru óbreyttar.
+  // 274 læsir skruni síðunnar (body overflow:hidden) í hvert sinn sem hún hleður sig — líka í reload() eftir
+  // að skýrsluformi er lokað — og því er læsingin tekin af á meðan stakið er hýst og ekkert form er ofan á.
+  async function erIBrunakerfi(fid) {
+    try {
+      const AS = window.AppSettings; let m = AS && AS.path ? AS.path('brunakerfi_customers') : null;
+      if (m && m[fid] && typeof m[fid] === 'object') return true;
+      const sb = SB(); if (!sb) return false;
+      const r = await sb.from('customer_documents').select('id').eq('fyrirtaeki_id', fid).eq('doc_type', 'brunakerfi').limit(1);
+      return !!(r && r.data && r.data.length);
+    } catch (_) { return false; }
+  }
+  function bkcHyst() { const ov = document.getElementById('_bkc-overlay'); return !!(ov && ov.classList.contains('_sks-inni')); }
+  function bkcUt() {
+    const ov = document.getElementById('_bkc-overlay'); if (!ov || !ov.classList.contains('_sks-inni')) return;
+    const bak = ov.querySelector('[data-a="back"]'); if (bak) bak.click();          // close() í 274: vistar nótu, felur, losar skrun
+    ov.classList.remove('_sks-inni'); document.body.appendChild(ov); ov.style.display = 'none';
+  }
+  // 272 (og 274 sjálf í reload) kalla á INNRA open() vinnusíðunnar, fram hjá window.BrunakerfiFyrirtaeki.open —
+  // vafningurinn hér að neðan sér þau köll aldrei (mælt 21.09: opnað úr gamla yfirlitinu sat stakið áfram inni í
+  // földum prófílnum og ekkert sást). Þess vegna er fylgst með STAKINU: verði það sýnilegt án þess að þessi
+  // pappi hafi beðið um það OG hýsillinn sést ekki, er því sleppt lausu aftur út á body sem venjulegt yfirlag.
+  function bkcLosa() {
+    const ov = document.getElementById('_bkc-overlay'); if (!ov || !ov.classList.contains('_sks-inni')) return;
+    ov.classList.remove('_sks-inni'); document.body.appendChild(ov); S._bkcFid = null;
+  }
+  function bkcVakta(ov) {
+    if (!ov || ov.__sksVaktad) return; ov.__sksVaktad = true;
+    new MutationObserver(() => {
+      if (S._bkcInnan || ov.style.display !== 'block' || !ov.classList.contains('_sks-inni')) return;
+      const host = document.getElementById('_sks-bru');
+      const sest = !!(host && host.contains(ov) && host.offsetParent !== null && S.flipi === 'bru');
+      if (!sest) bkcLosa();
+    }).observe(ov, { attributes: true, attributeFilter: ['style'] });
+  }
+  function vefjaBkc() {
+    const B = window.BrunakerfiFyrirtaeki; if (!B || B.__sksVafid) return !!B;
+    const orig = B.open;
+    B.open = function () { if (!S._bkcInnan) bkcUt(); return orig.apply(this, arguments); };
+    B.__sksVafid = true;
+    new MutationObserver(() => {
+      if (!bkcHyst() || document.body.style.overflow !== 'hidden') return;
+      const form = document.getElementById('_bks-overlay');
+      if (form && form.style.display !== 'none' && form.offsetParent !== null) return;   // skýrsluformið (273) er ofan á — það á læsinguna
+      document.body.style.overflow = '';
+    }).observe(document.body, { attributes: true, attributeFilter: ['style'] });
+    return true;
+  }
+  async function synaBru() {
+    const host = document.getElementById('_sks-bru'); if (!host) return;
+    if (!vefjaBkc()) { host.innerHTML = '<div class="_sks-villa">Brunakerfis-vinnusíðan (274) hlóðst ekki — endurhladdu síðunni.</div>'; return; }
+    const ov0 = document.getElementById('_bkc-overlay');
+    if (ov0 && ov0.classList.contains('_sks-inni') && ov0.parentNode === host && S._bkcFid === S.fid) { S._bkcInnan = true; ov0.style.display = 'block'; S._bkcInnan = false; return; }
+    S._bkcInnan = true;
+    try {
+      const pr = window.BrunakerfiFyrirtaeki.open(S.fid);
+      const ov = document.getElementById('_bkc-overlay');
+      if (ov) { ov.classList.add('_sks-inni'); host.appendChild(ov); bkcVakta(ov); }
+      document.body.style.overflow = '';
+      await pr; S._bkcFid = S.fid;
+    } finally { S._bkcInnan = false; document.body.style.overflow = ''; }
+  }
+
   function setjaFlipa(f) {
+    if (f === 'bru' && !S.bru) f = 'ars';
+    if (f === 'slokk' && !S.kerfi.length) f = 'ars';
     S.flipi = f;
     const main = document.getElementById('companies-main'); if (!main) return;
-    const slokk = f === 'slokk';
-    arsHlutar(main).forEach(el => { if (slokk) { el.dataset.sksFalid = '1'; el.style.setProperty('display', 'none', 'important'); } else if (el.dataset.sksFalid) { delete el.dataset.sksFalid; el.style.removeProperty('display'); } });
+    const slokk = f === 'slokk', bru = f === 'bru', fela = slokk || bru;
+    arsHlutar(main).forEach(el => { if (fela) { el.dataset.sksFalid = '1'; el.style.setProperty('display', 'none', 'important'); } else if (el.dataset.sksFalid) { delete el.dataset.sksFalid; el.style.removeProperty('display'); } });
     const host = document.getElementById('_sks-host'); if (host) host.style.display = slokk ? '' : 'none';
+    const bruHost = document.getElementById('_sks-bru'); if (bruHost) bruHost.style.display = bru ? '' : 'none';
+    if (bru) synaBru(); else if (bkcHyst()) { const ov = document.getElementById('_bkc-overlay'); if (ov) ov.style.display = 'none'; }
     main.querySelectorAll('#_sks-tabs ._sks-tab').forEach(b => b.classList.toggle('on', b.dataset.flipi === f));
     // Hýsillinn er nýr í hvert sinn sem prófíllinn er endurteiknaður — líka þegar SAMA fyrirtæki er
     // opnað aftur (mælt 21.09: blaðið stóð tómt í annarri opnun). Tómur hýsill → sækja upp á nýtt.
@@ -595,13 +666,14 @@
     const coEl = main.querySelector('[data-co-id]'); const cols0 = main.querySelector(':scope > .uttekt-cols');
     if (!coEl || !cols0) return;
     const fid = +coEl.getAttribute('data-co-id'); if (!fid) return;
-    if (main.querySelector('#_sks-tabs') && S.fid === fid) { if (S.flipi === 'slokk') setjaFlipa('slokk'); return; }   // þegar komið — endurbeita felun (takkinn kemur stundum á eftir)
+    if (main.querySelector('#_sks-tabs') && S.fid === fid) { if (S.flipi === 'slokk') setjaFlipa('slokk'); else if (S.flipi === 'bru' && !document.querySelector('#_sks-bru #_bkc-overlay')) setjaFlipa('bru'); else if (S.flipi === 'bru') arsHlutar(main).forEach(el => { el.dataset.sksFalid = '1'; el.style.setProperty('display', 'none', 'important'); }); return; }   // þegar komið — endurbeita felun (takkinn kemur stundum á eftir)
     _mounting = true;
     try {
-      if (S.fid !== fid) { clearTimeout(S.timer); if (S.dirty && !S.stoppad && S.k) await vista(); S.fid = fid; S.k = null; S.rod = null; S.data = null; S.flipi = 'ars'; S.kerfi = await saekjaKerfi(fid); }
+      if (S.fid !== fid) { clearTimeout(S.timer); if (S.dirty && !S.stoppad && S.k) await vista(); S.fid = fid; S.k = null; S.rod = null; S.data = null; S.flipi = 'ars'; bkcUt(); const tv = await Promise.all([saekjaKerfi(fid), erIBrunakerfi(fid)]); S.kerfi = tv[0]; S.bru = tv[1]; }
       const gomul = main.querySelector('#_sks-tabs'); if (gomul) gomul.remove();
       const gamall = main.querySelector('#_sks-host'); if (gamall) gamall.remove();
-      if (!S.kerfi.length) { _reyna = 0; return; }                                  // fyrirtækið á ekkert slökkvikerfi → engir flipar
+      const gBru = main.querySelector('#_sks-bru'); if (gBru) { if (gBru.querySelector('#_bkc-overlay')) bkcUt(); gBru.remove(); }
+      if (!S.kerfi.length && !S.bru) { _reyna = 0; return; }                         // aðeins 🧯 → engir flipar, prófíllinn óbreyttur                                  // fyrirtækið á ekkert slökkvikerfi → engir flipar
       // Eftir biðina: lesa DOM-ið UPP Á NÝTT — ekki treysta tilvísunum frá því áður.
       const coNu = main.querySelector('[data-co-id]'); const colsNu = main.querySelector(':scope > .uttekt-cols');
       if (!coNu || !colsNu || +coNu.getAttribute('data-co-id') !== fid) { reynaAftur(); return; }
@@ -609,15 +681,17 @@
       const taeki = (cols.textContent.match(/Slökkvitæki\s*\((\d+)\)/) || [])[1];
       const tabs = document.createElement('div'); tabs.id = '_sks-tabs';
       tabs.innerHTML = '<button type="button" class="_sks-tab" data-flipi="ars">🧯 Slökkvitæki' + (taeki ? ' (' + taeki + ')' : '') + '</button>' +
-        '<button type="button" class="_sks-tab" data-flipi="slokk">🍳 Slökkvikerfi' + (S.kerfi.length > 1 ? ' (' + S.kerfi.length + ')' : '') + '</button>';
+        (S.bru ? '<button type="button" class="_sks-tab" data-flipi="bru">🚨 Brunakerfi</button>' : '') +
+        (S.kerfi.length ? '<button type="button" class="_sks-tab" data-flipi="slokk">🍳 Slökkvikerfi' + (S.kerfi.length > 1 ? ' (' + S.kerfi.length + ')' : '') + '</button>' : '');
       tabs.addEventListener('click', e => { const b = e.target.closest('._sks-tab'); if (b) setjaFlipa(b.dataset.flipi); });
       const host = document.createElement('div'); host.id = '_sks-host'; host.style.display = 'none'; wire(host);
       const hl = arsHlutar(main); const akkeri = hl.find(el => el.parentNode === main && (el.compareDocumentPosition(cols) & Node.DOCUMENT_POSITION_FOLLOWING)) || cols;
-      main.insertBefore(tabs, akkeri); main.insertBefore(host, akkeri);
+      const bruHost = document.createElement('div'); bruHost.id = '_sks-bru'; bruHost.style.display = 'none';
+      main.insertBefore(tabs, akkeri); main.insertBefore(host, akkeri); main.insertBefore(bruHost, akkeri);
       // 385 skilur eftir ósk um að opna 🍳 beint þegar komið er af Slökkvikerfis-síðunni
       const o = window.__slokkvikerfiOpna; const beint = o && o.fid === fid && (Date.now() - o.at) < 15000;
       if (beint) window.__slokkvikerfiOpna = null;
-      setjaFlipa(beint ? 'slokk' : S.flipi);
+      setjaFlipa(beint ? (o.flipi || 'slokk') : S.flipi);   // 388 biður um flipi:'bru'
       _reyna = 0;
     } catch (e) { console.warn('[slokkvikerfi-skyrsla] mount — reyni aftur', e); reynaAftur(); }
     finally { _mounting = false; }
@@ -630,6 +704,9 @@
     s.textContent = [
       '#_sks-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 12px;border-bottom:2px solid #d8dde6}',
       '#_sks-tabs ._sks-tab{border:1px solid #d8dde6;border-bottom:0;background:#f4f6f9;border-radius:10px 10px 0 0;padding:10px 16px;font:700 13px var(--ui,system-ui);cursor:pointer;color:#3a4250;margin-bottom:-2px}',
+      '#_bkc-overlay._sks-inni{position:static!important;inset:auto!important;z-index:auto!important;overflow:visible!important;background:transparent!important;height:auto!important}',
+      '#_bkc-overlay._sks-inni ._bkc-top{display:none!important}',
+      '#_bkc-overlay._sks-inni ._bkc-wrap{max-width:none!important;padding:0 0 10px!important}',
       '#_sks-tabs ._sks-tab.on{background:#fff;border-color:#b0201b;border-bottom:2px solid #fff;color:#0f172a}',
       H + '{font-family:var(--ui,system-ui,sans-serif);color:#0f172a;margin-bottom:18px}',
       H + '.sp{flex:1}' + H + '.hint{font-size:12px;color:#64748b}',

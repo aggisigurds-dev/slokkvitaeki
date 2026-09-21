@@ -122,6 +122,11 @@
 
   function opna(rod) {
     const fid = +rod.fyrirtaeki_id;
+    // Prófíllinn efst eins og í hinum flokkunum: 386 hýsir vinnusíðuna undir 🚨-flipanum.
+    if (window.SlokkvikerfiSkyrsla && window._openCompanySafe) {
+      window.__slokkvikerfiOpna = { fid, flipi: 'bru', at: Date.now() };
+      return window._openCompanySafe(fid);
+    }
     if (window.BrunakerfiFyrirtaeki && BrunakerfiFyrirtaeki.open) {   // vinnusíðan úr 274 (yfirlag; lokast ofan af þessari síðu)
       BrunakerfiFyrirtaeki.open(fid);
       // 274 endurhleður aðeins gamla yfirlitið (272) við lokun — þessi síða hlustar sjálf eftir því að yfirlagið
