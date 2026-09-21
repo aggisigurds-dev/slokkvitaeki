@@ -173,7 +173,34 @@
     try { if (window.AppSettings && AppSettings.get) raw = AppSettings.get(CUSTOM_KEY); } catch (_) {}
     if (!raw) { try { raw = localStorage.getItem(CUSTOM_KEY); } catch (_) {} }
     if (!raw) return [];
-    try { var a = JSON.parse(raw); return Array.isArray(a) ? a : []; } catch (_) { return []; }
+    var a; try { a = JSON.parse(raw); } catch (_) { return []; }
+    if (!Array.isArray(a)) return [];
+    return hreinsaTvitekna(a);
+  }
+  // 21.09.2026 — TVO OPP, EITT AUDKENNI. Manifest-slodin er
+  // /api/app-manifest?key=<lykill>, svo tvo opp med sama lykli eru EITT app i
+  // augum simans — og `mergeCustoms` sleppir thvi seinna thogult, svo appid
+  // sem notandinn bjo til birtist aldrei an nokkurrar skyringar.
+  //
+  // Hreinsad vid LESTUR (ekki bara vid skrif) svo gogn sem ERU thegar skokk
+  // lagist a ollum velunum an handavinnu. Seinni faerslan lifir — hun er
+  // nyrra skrefid sem notandinn tok.
+  function hreinsaTvitekna(list) {
+    var seen = {}, ut = [], tvitekid = false;
+    for (var i = list.length - 1; i >= 0; i--) {
+      var c = list[i];
+      if (!c || !c.key) { ut.unshift(c); continue; }
+      if (seen[c.key]) { tvitekid = true; continue; }
+      seen[c.key] = 1; ut.unshift(c);
+    }
+    if (tvitekid) {
+      try {
+        var s = JSON.stringify(ut);
+        try { localStorage.setItem('custom_apps_json', s); } catch (_) {}
+        if (window.AppSettings && AppSettings.save) AppSettings.save({ custom_apps_json: s });
+      } catch (_) {}
+    }
+    return ut;
   }
   function saveCustoms(list) {
     var str = JSON.stringify(list || []);
@@ -196,13 +223,18 @@
     return changed;
   }
   mergeCustoms();   // localStorage-eintakið er til NÚNA → ?app=/slóð bootar strax
-  function customKeyFor(name) {
+  function customKeyFor(name, listi) {
     var base = 'x' + String(name || '').toLowerCase()
       .replace(/[áà]/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/[óö]/g, 'o')
       .replace(/ú/g, 'u').replace(/ý/g, 'y').replace(/þ/g, 'th').replace(/ð/g, 'd').replace(/æ/g, 'ae')
       .replace(/[^a-z]/g, '').slice(0, 18) || 'xapp';
+    // APP_BY_KEY er endurbyggt i mergeCustoms(); se thad ekki bunid ad keyra
+    // er nyskradur lykill osynilegur her og naesta app faer SAMA lykil. Listinn
+    // sjalfur er eina heimildin sem er alltaf fersk.
+    var iNotkun = {};
+    (Array.isArray(listi) ? listi : loadCustoms()).forEach(function (c) { if (c && c.key) iNotkun[c.key] = 1; });
     var k = base, i = 2;
-    while (APP_BY_KEY[k]) k = base + 'abcdefghij'.charAt(i++ % 10);
+    while (APP_BY_KEY[k] || iNotkun[k]) k = base + 'abcdefghij'.charAt(i++ % 10);
     return k;
   }
   // Stofna / uppfæra custom app án native prompt — Stilla útlit (262) og Öpp.
@@ -296,7 +328,7 @@
       updated = true;
     } else {
       app = {
-        key: customKeyFor(name), name: name, emoji: emoji, ikon: opts.ikon || null,
+        key: customKeyFor(name, list), name: name, emoji: emoji, ikon: opts.ikon || null,
         color: opts.color || '#0b0b0d', dark: opts.dark || '#000000',
         blurb: blurb, defaults: defaults
       };
