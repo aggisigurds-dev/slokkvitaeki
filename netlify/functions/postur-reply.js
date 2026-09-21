@@ -60,6 +60,7 @@ export default async (req) => {
     '- Ekki lofa neinu sem þú veist ekki (t.d. nákvæmri dagsetningu leiðréttingar).\n' +
     '- Undirskrift: „Kveðja,\\nSlökkvitæki ehf\\neldklar@eldklar.is".\n' +
     '- Haltu því undir ~120 orðum.\n' +
+    '- ÍSLENSKAN VERÐUR AÐ VERA RÉTT — réttar beygingar og engin orð sem eru ekki til. Þetta fer beint á viðskiptavin.\n' +
     'Auk svarsins skaltu greina póstinn:\n' +
     '- "summary": EIN stutt íslensk setning (hámark 16 orð) sem segir hvað sendandinn vill.\n' +
     '- "requested": hlutur sem lýsir hvaða SKJAL (ef eitthvað) er beðið um: ' +
@@ -85,7 +86,11 @@ export default async (req) => {
       method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        // 21.09.2026: Haiku skrifaði ótrausta íslensku — „Við bídlum þinna
+        // svarboða" og „hvað þú vilt kom fram". Þetta fer BEINT á viðskiptavin,
+        // svo málfarið er ekki aukaatriði. ~200 token og fjórir póstar á dag:
+        // kostnaðurinn er hverfandi við hliðina á því að endurskrifa hvert svar.
+        model: 'claude-sonnet-5',
         max_tokens: 900,
         messages: [{ role: 'user', content: prompt }],
       }),
