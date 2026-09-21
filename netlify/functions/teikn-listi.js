@@ -31,8 +31,12 @@ export default async (req) => {
   if (!landnr && heimilisfang.length < 2) {
     return json({ error: 'Sláðu inn heimilisfang (2+ stafi) eða landnúmer.' }, 400);
   }
+  // 21.09.2026: Kópavogur / Garðabær / Hafnarfjörður (map.is) eru lykluð á landnr + heitinr + svf — mælt: aðeins
+  // landnr skilaði 0 af 49 teikningum á Langamýri 22. Tölustafir eingöngu, svo ekkert annað slæðist í slóðina.
+  const heitinr = (sp.get('heitinr') || '').replace(/[^0-9]/g, '');
+  const svf = (sp.get('svf') || '').replace(/[^0-9]/g, '');
   const qs = landnr
-    ? 'landnr=' + encodeURIComponent(landnr)
+    ? 'landnr=' + encodeURIComponent(landnr) + (svf ? '&heitinr=' + (heitinr || '0') + '&svf=' + svf : '')
     : 'heimilisfang=' + encodeURIComponent(heimilisfang);
 
   try {

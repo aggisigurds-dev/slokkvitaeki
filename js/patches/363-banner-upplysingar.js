@@ -615,7 +615,10 @@
         // 384: í skjalasafni Reykjavíkur (eign.svf tómt) opnar smellurinn FORSKOÐUN hér í appinu — landnúmerið fylgir
         // hlekknum. Ctrl-smellur og önnur sveitarfélög fara áfram á TurboPaint eins og áður.
         '<a class="_bupp-teikn" href="' + esc(sk.turbopaint) + '" target="_blank" rel="noopener" ' +
-        (sk.eign.landnr && !sk.eign.svf && sk.teikningar && sk.teikningar.fjoldi ? 'data-landnr="' + esc(sk.eign.landnr) + '" data-stadur="' + esc(sk.eign.label) + '" data-co="' + esc(coId) + '" ' : '') +
+        // 21.09.2026 (Agnar: „enda ég inni í TurboPaint og teikningarnar fara á sér borð — þarf að eyða og vesen"): forskoðunin
+        // gilti aðeins fyrir Reykjavík; Kópavogur/Garðabær/Hafnarfjörður fóru beint í TurboPaint. Nú fylgja heitinr + svf.
+        (sk.eign.landnr && sk.teikningar && sk.teikningar.fjoldi ? 'data-landnr="' + esc(sk.eign.landnr) + '" data-stadur="' + esc(sk.eign.label) + '" data-co="' + esc(coId) + '" ' +
+          (sk.eign.svf ? 'data-svf="' + esc(sk.eign.svf) + '" data-heitinr="' + esc(sk.eign.heitinr || 0) + '" ' : '') : '') +
         'title="' + esc((sk.heimild || 'Teikningasafn') + ' — opnar leitina í TurboPaint með ' + sk.eign.label) + '">📐 ' +
         esc(sk.eign.oviss
           ? 'Næsta lóð ' + sk.eign.label + (sk.teikningar && sk.teikningar.fjoldi ? ' · ' + sk.teikningar.fjoldi + ' teikningar' : '') + ' · óvisst'

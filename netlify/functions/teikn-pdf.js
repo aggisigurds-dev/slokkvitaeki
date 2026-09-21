@@ -10,6 +10,9 @@
 // sér að þar er enginn vigur. Streymt, svo 6 MB svarþak Netlify stoppi þá ekki.
 
 const LEYFDIR = new Set(['skjalasafn.reykjavik.is']);
+// 21.09.2026: teikningasöfn Kópavogs, Hafnarfjarðar og Garðabæjar afhenda PDF-ið BEINT (engin .info / rendition).
+// Þau senda enga CORS-hausa, svo forskoðunin (384) getur ekki lesið þau úr vafranum — hér eru þau streymd af sömu rót.
+const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is']);
 const HAMARK = 40 * 1024 * 1024;
 
 const cors = {
@@ -33,6 +36,24 @@ export default async (req) => {
   const raw = new URL(req.url).searchParams.get('url') || '';
   let target;
   try { target = new URL(raw); } catch { return villa(400, 'Ógild slóð'); }
+  if (target.protocol === 'https:' && BEINIR.has(target.hostname)) {
+    if (!/\.pdf$/i.test(target.pathname)) return villa(415, 'Skjalið er ekki PDF');
+    try {
+      const r = await fetch(target.href, { redirect: 'follow', signal: AbortSignal.timeout(9000) });
+      if (r.status !== 200 || !r.body) return villa(502, 'Teikningasafnið svaraði ' + r.status);
+      const lengd = Number(r.headers.get('content-length') || 0);
+      if (lengd > HAMARK) return villa(413, 'Skjalið er stærra en 40 MB');
+      const headers = new Headers(cors);
+      headers.set('Content-Type', 'application/pdf');
+      if (new URL(req.url).searchParams.get('nidurhal')) {
+        const nafn = decodeURIComponent(target.pathname.split('/').pop() || 'teikning.pdf').replace(/[^\w.\-]+/g, '_');
+        headers.set('Content-Disposition', 'attachment; filename="' + nafn + '"');
+      }
+      if (lengd) headers.set('Content-Length', String(lengd));
+      headers.set('Cache-Control', 'public, max-age=86400');
+      return new Response(r.body, { status: 200, headers });
+    } catch (_) { return villa(502, 'Náði ekki í PDF-skjalið'); }
+  }
   if (target.protocol !== 'https:' || !LEYFDIR.has(target.hostname)) return villa(403, 'Hýsillinn er ekki leyfður');
   if (!/\.pdf\.info$/i.test(target.pathname)) return villa(415, 'Teikningin er ekki PDF — enginn vigur til að lesa.');
 

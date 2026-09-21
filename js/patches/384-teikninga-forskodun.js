@@ -24,6 +24,38 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const segja = t => { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} };
   const erPdf = d => /\.pdf(\.info)?$/i.test(String(d.infoUrl || d.filename || ''));
+  // 21.09.2026: Kópavogur / Garðabær / Hafnarfjörður afhenda BEINT PDF (engin .info, engin smámynd, engin JPEG-útgáfa).
+  // Þar er fyrsta síða skjalsins teiknuð með pdf.js (sama útgáfa og 383 / FloorPlan) og sýnd sem mynd, svo þysjun,
+  // prentun og „Nota í úttektarteikningu" virka eins og fyrir Reykjavík. Myndirnar eru geymdar á meðan glugginn er opinn.
+  const beintPdf = d => /\.pdf$/i.test(String(d.infoUrl || '')) && !/skjalasafn\.reykjavik\.is/i.test(String(d.infoUrl || ''));
+  const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  const _myndir = new Map();
+  function hladaPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const sk = document.createElement('script'); sk.src = PDFJS + 'pdf.min.js';
+      sk.onload = () => { try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; } catch (_) {} res(); };
+      sk.onerror = () => rej(new Error('pdf.js hlóðst ekki')); document.head.appendChild(sk);
+    });
+  }
+  async function myndSlod(d) {
+    if (!beintPdf(d)) return MYND + '?url=' + encodeURIComponent(d.infoUrl);
+    if (_myndir.has(d.infoUrl)) return _myndir.get(d.infoUrl);
+    await hladaPdfJs();
+    const r = await fetch(PDF + '?url=' + encodeURIComponent(d.infoUrl), { signal: AbortSignal.timeout(45000) });
+    if (!r.ok) { let v = ''; try { v = (await r.json()).error || ''; } catch (_) {} throw new Error(v || ('PDF fékkst ekki (' + r.status + ')')); }
+    const doc = await window.pdfjsLib.getDocument({ data: new Uint8Array(await r.arrayBuffer()) }).promise;
+    const sida = await doc.getPage(1), v0 = sida.getViewport({ scale: 1 });
+    const kv = Math.min(4, Math.max(1, 4200 / Math.max(v0.width, v0.height)));          // lengri hlið ~4200 px: læsileg málsetning, hóflegt minni
+    const vp = sida.getViewport({ scale: kv }), cv = document.createElement('canvas');
+    cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+    const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+    await sida.render({ canvasContext: cx, viewport: vp }).promise;
+    const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.9));
+    const url = URL.createObjectURL(blob); _myndir.set(d.infoUrl, url);
+    d._sidur = doc.numPages;
+    return url;
+  }
 
   const S = { listi: [], sia: 'grunn', valin: null, stadur: '', coId: null, z: { s: 1, x: 0, y: 0 } };
 
@@ -183,7 +215,9 @@
     im.alt = d.lysing || 'Teikning'; im.draggable = false;
     im.onload = () => { if (S.valin !== d) return; bid.hidden = true; sv.insertBefore(im, sv.firstChild); passa(); };
     im.onerror = () => { if (S.valin !== d) return; bid.innerHTML = '⚠ Náði ekki í teikninguna. Prófaðu aðra, eða opnaðu hana í skjalasafninu með ⬇.'; };
-    im.src = MYND + '?url=' + encodeURIComponent(d.infoUrl);
+    if (beintPdf(d)) bid.innerHTML = '<div style="width:26px;height:26px;border:3px solid rgba(255,255,255,.18);border-top-color:#c9a54a;border-radius:50%;animation:bvr .9s linear infinite"></div>Sæki PDF og teikna fyrstu síðu…';
+    myndSlod(d).then(u => { if (S.valin !== d) return; im.src = u; if (d._sidur > 1) txt.innerHTML += ' · <span style="color:#e8cb7a">síða 1 af ' + d._sidur + ' — allar síður í ⬇ / 🖨</span>'; })
+      .catch(e => { if (S.valin !== d) return; bid.innerHTML = '⚠ Náði ekki í teikninguna: ' + esc((e && e.message) || e) + '. Prófaðu aðra, eða sæktu skjalið með ⬇.'; });
   }
 
   /* ── aðgerðir ── */
@@ -239,7 +273,7 @@
       const p = FloorPlan.plans[FloorPlan.companyId];
       if (p && p.imageUrl) { const ny = flipar.querySelector('[data-h="ny"]'); if (ny) ny.click(); }
       setTimeout(() => {
-        const url = MYND + '?url=' + encodeURIComponent(d.infoUrl), im = new Image();
+        const im = new Image(); let url = '';
         im.onload = () => {
           FloorPlan.bgImage = im;
           const pl = FloorPlan.plans[FloorPlan.companyId] || (FloorPlan.plans[FloorPlan.companyId] = { markers: [] }); pl.imageUrl = url;
@@ -249,17 +283,22 @@
           segja('📌 ' + (d.lysing || 'Teikningin') + ' er komin í úttektarteikninguna — merktu tækin og ýttu á Vista.');
         };
         im.onerror = () => segja('⚠ Náði ekki í teikninguna fyrir úttektina.');
-        im.src = url;
+        // Beint PDF: blob-slóðin lifir aðeins í þessum flipa og má EKKI vistast sem imageUrl á þjóninn — þar fer gagnaslóð.
+        myndSlod(d).then(async u => {
+          if (beintPdf(d)) { try { const b = await (await fetch(u)).blob(); u = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(b); }); } catch (_) {} }
+          url = u; im.src = u;
+        }).catch(() => segja('⚠ Náði ekki í teikninguna fyrir úttektina.'));
       }, 350);
     }, 300);
   }
 
-  async function opna(landnr, stadur, coId) {
+  async function opna(landnr, stadur, coId, auka) {
     Object.assign(S, { listi: [], sia: 'grunn', valin: null, stadur: stadur || '', coId: coId || null });
     grind();
     document.getElementById('tfs-titill').textContent = '📐 Teikningar' + (stadur ? ' — ' + stadur : '');
     try {
-      const r = await fetch(LISTI + '?landnr=' + encodeURIComponent(landnr), { signal: AbortSignal.timeout(28000) });
+      const vidbot = auka && auka.svf ? '&svf=' + encodeURIComponent(auka.svf) + '&heitinr=' + encodeURIComponent(auka.heitinr || 0) : '';
+      const r = await fetch(LISTI + '?landnr=' + encodeURIComponent(landnr) + vidbot, { signal: AbortSignal.timeout(28000) });
       const d = await r.json();
       if (!document.getElementById('tfs')) return;
       if (d.error) throw new Error(d.error);
@@ -277,6 +316,6 @@
     const a = e.target.closest && e.target.closest('a._bupp-teikn[data-landnr]');
     if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
     e.preventDefault(); e.stopPropagation();
-    opna(a.dataset.landnr, a.dataset.stadur || '', a.dataset.co || null);
+    opna(a.dataset.landnr, a.dataset.stadur || '', a.dataset.co || null, a.dataset.svf ? { svf: a.dataset.svf, heitinr: a.dataset.heitinr || 0 } : null);
   }, true);
 })();
