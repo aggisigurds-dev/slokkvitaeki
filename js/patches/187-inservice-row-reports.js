@@ -338,7 +338,19 @@
     pairLoading = false;
   }
 
+  // Hleðslari sem BREGST skilur vörpuna sína eftir tóma (null) og myndi því reyna aftur í hverju tifi — sókn á 1,5 s
+  // fresti svo lengi sem villan varir. Fyrstu 6 sek. má vekja í hverju tifi (DB ekki tilbúið við ræsingu), svo á 20 s fresti.
+  let _fyrstVakid = 0, _sidastVakid = 0;
+  function vekjaHledslu(){
+    if (locMap && fcMap && invMap && pairMap && reikMap) return;
+    const nu = Date.now();
+    if (!_fyrstVakid) _fyrstVakid = nu;
+    if (nu - _fyrstVakid > 6000 && nu - _sidastVakid < 20000) return;
+    _sidastVakid = nu;
+    try { loadLoc(); loadFc(); loadInv(); loadPairs(); loadReik(); } catch (_) {}
+  }
   function process(){
+    if (document.querySelector('tr._ars-row')) vekjaHledslu();   // 21.09.2026: leti-hleðsla, sjá athugasemd neðst
     let uf = {}, att = {};
     try { if (window.AppSettings && AppSettings.path) uf = AppSettings.path('uttekt_files') || {}; } catch(e){}
     try { if (window.AppSettings && AppSettings.path) att = AppSettings.path('company_attachments') || {}; } catch(e){}
@@ -721,9 +733,12 @@
   // marked nodes are skipped).
   setInterval(process, 1500);
   setTimeout(process, 120); setTimeout(process, 500);
-  setTimeout(loadReik, 900);   // load reikningur-status once, then re-render cells with 🧾
-  setTimeout(loadLoc, 600);    // load location-precise reports once, then re-render cells
-  setTimeout(loadFc, 750);     // load fact-check (blár/grænn) once, then re-render cells
-  setTimeout(loadPairs, 850);  // klarad úttektar-pör → grænt trompar staðnað gap
-  setTimeout(loadInv, 800);    // load v_uttekt_ar (úttekt-með-reikningi = blátt ár)
+  // 21.09.2026 (afköst, mælt á lifandi): þessir fimm hleðslar fóru af stað 0,6–0,9 s eftir HVERJA síðuhleðslu á ÖLLUM
+  // síðum (~12 REST-köll, þar af customer_documents 2 × 5 síður) — líka í Sölu, Þjónustuborði og öppunum þar sem enginn
+  // les þá. Einu lesendurnir eru Ársskoðunar-taflan (raðir `tr._ars-row`, sjá process()) og yearInfo()/isKlarad()
+  // (153 prentlisti, 317 Bílstjóri) — og þau föll vekja hleðslarana þegar sjálf. Nú vekur process() þá um leið og
+  // Ársskoðunar-raðir eru til í DOM (hún tifar á 120 ms, 500 ms og svo 1,5 s fresti), svo á Ársskoðun breytist ekkert
+  // nema að fyrsta sókn getur hafist ~0,1 s fyrr eða ~0,6 s síðar. Hleðslararnir eru endurkvæm-öruggir (sleppa ef
+  // hlaðið/í hleðslu, reyna aftur ef DB var ekki tilbúið) svo það er óhætt að kalla á þá í hverju tifi.
+  // Rökin sjálf (yearInfo, „tilbúið", litir) eru ÓSNERT.
 })();
