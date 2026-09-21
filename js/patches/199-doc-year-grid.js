@@ -174,6 +174,21 @@
         .eq('fyrirtaeki_id', coId).eq('doc_type','brunakerfi');
       return r.data||[]; }catch(e){ return soknVilla('brunakerfisskjöl', e); }
   }
+  // ── 🍳 Slökkvikerfis skoðun — þriðji þjónustuflokkurinn (21.09.2026, 385/386) ──
+  // Spjaldið birtist AÐEINS hjá fyrirtækjum sem eiga röð í `slokkvikerfi` (eða eiga þegar skýrslu):
+  // hin ~600 fá ekkert tómt þriðja box. Skýrslurnar eru customer_documents doc_type='slokkvikerfi'
+  // með customer_base_id NULL, svo þær eru sóttar beint eftir fyrirtaeki_id (sama og brunakerfið).
+  async function fetchSlokkvikerfi(coId){
+    var sb=SB(); if(!sb||!coId) return { kerfi:0, docs:[] };
+    try{
+      var k=await sb.from('slokkvikerfi').select('id').eq('fyrirtaeki_id', coId);
+      var d=await sb.from('customer_documents')
+        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund,stolpi_stada,stolpi_skyring')
+        .eq('fyrirtaeki_id', coId).eq('doc_type','slokkvikerfi');
+      if((k&&k.error)||(d&&d.error)) throw ((k&&k.error)||(d&&d.error));
+      return { kerfi:((k&&k.data)||[]).length, docs:(d&&d.data)||[] };
+    }catch(e){ soknVilla('slökkvikerfisskjöl', e); return { kerfi:0, docs:[] }; }
+  }
   // Fjarlægja is_duplicate=true færslur úr EINUM (ár,þjónusta) hóp — EN AÐEINS
   // ef a.m.k. ein ómerkt (eða handvirkt viðhengi, sem ber aldrei þetta flagg)
   // stendur eftir. Annars stæði árið eftir með EKKERT í staðinn fyrir "óreiðu"
@@ -401,6 +416,9 @@
     var nm=String(a.name||'');
     if(a.kind==='brunakerfi') return 'brunakerfi';
     if(/brunakerfi[\s-]*sko(ð|d)unarsk(ý|y)rsl/i.test(nm)) return 'brunakerfi';
+    // 21.09.2026: sama gildra og brunakerfið lenti í 29.07 — „slökkvikerfi-skoðunarskýrsla" ber orðið „skoðun".
+    if(a.kind==='slokkvikerfi') return 'slokkvikerfi';
+    if(/sl(ö|o)kkvikerfi/i.test(nm)) return 'slokkvikerfi';
     if(a.kind==='skyrsla'||a.kind==='reikningur'||a.kind==='samningur') return a.kind;
     if(/samning/i.test(nm)) return 'samningur';
     if(/reikn|r-?\s?\d{3,}/i.test(nm)) return 'reikningur';
@@ -465,13 +483,13 @@
     // Varaleið: kúnnanafn + ár. Mælt: 1.130 af 1.151 stimpil-röðum eiga
     // customer_name og 1.150 eiga year — engin á hvorugt, svo þetta er aldrei tómt.
     var co = String(d.customer_name || '').trim();
-    var kind = d.doc_type === 'brunakerfi' ? 'Brunakerfi' : 'Skoðun';
+    var kind = d.doc_type === 'brunakerfi' ? 'Brunakerfi' : d.doc_type === 'slokkvikerfi' ? 'Slökkvikerfi' : 'Skoðun';
     return [co, kind + (d.year ? (' ' + d.year) : '')].filter(Boolean).join(' — ');
   }
   function repDocChip(d){
     var u=docUrl(d), full=docName(d);
     var disp=full.length>46?full.slice(0,44)+'…':full;
-    var ico = d.doc_type==='brunakerfi' ? '🔥' : '📄';
+    var ico = d.doc_type==='brunakerfi' ? '🔥' : d.doc_type==='slokkvikerfi' ? '🍳' : '📄';
     // 2026-08-17 (Agnar: „get ekkert opnað"): skjalalausa chippið leit út eins
     // og hlekkur (cursor:pointer á .sk-doc) en gerði ekkert. Nú er það sýnilega
     // dautt (⚠, dauft, strikaður rammi) og smellur útskýrir sig — sýnir söguna
@@ -491,7 +509,7 @@
     // Reikninga-tegund (2026-08-22, Agnar): táknið á reikninga-chippi fylgir
     // vidskiptategund — 🧯 slökkvitæki (uttekt) · 🔥 brunakerfi · 🏪 almennt/búð (bud).
     var _teg=(d&&d.vidskiptategund)||(function(){ var k=numKey(d&&d.invoice_number); var e=k?srcByNum[k]:null; return (e&&typeof e==='object')?e.teg:null; })();
-    var _ico=_teg==='brunakerfi'?'🔥':_teg==='bud'?'🏪':_teg==='uttekt'?'🧯':'🧾';
+    var _ico=_teg==='brunakerfi'?'🔥':_teg==='slokkvikerfi'?'🍳':_teg==='bud'?'🏪':_teg==='uttekt'?'🧯':'🧾';
     var chip;
     var nk = d.invoice_number ? numKey(d.invoice_number) : '';
     var inSolur = nk && srcByNum && srcByNum[nk];
@@ -627,6 +645,7 @@
       // ovisst/óþekkt fellur á gömlu source-regluna.
       if(e.teg==='bud') return 'afgr';
       if(e.teg==='brunakerfi') return 'brunakerfi';
+      if(e.teg==='slokkvikerfi') return 'slokkvikerfi';
       if(e.teg==='uttekt') return 'uttekt';
       return (e.src==='pos'||e.src==='sott')?'afgr':'uttekt';
     }
@@ -637,15 +656,16 @@
   // (ekki bæði, ekki hvorki). Búð birtist á hvorugu skoðunarkortinu.
   function invoiceServiceKind(d, srcByNum){
     var t=String(d && d.vidskiptategund || '').toLowerCase();
-    if(t==='brunakerfi'||t==='bud'||t==='uttekt') return t;
+    if(t==='brunakerfi'||t==='bud'||t==='uttekt'||t==='slokkvikerfi') return t;
     var k=numKey(d && (d.invoice_number || chipInvNum(d)));
     var e=k && srcByNum && srcByNum[k];
     if(e && typeof e==='object'){
       var et=String(e.teg||'').toLowerCase();
-      if(et==='brunakerfi'||et==='bud'||et==='uttekt') return et;
+      if(et==='brunakerfi'||et==='bud'||et==='uttekt'||et==='slokkvikerfi') return et;
     }
     var nm=String((d && d._att && d._att.name) || (d && d.file_name) || (d && d.name) || '');
     if(/brunakerfi/i.test(nm)) return 'brunakerfi';
+    if(/sl(ö|o)kkvikerfi/i.test(nm)) return 'slokkvikerfi';
     return 'uttekt';
   }
   function invGroup(tag, col, bg, brd, chips){
@@ -965,7 +985,7 @@
     // slökkvitæki — sami staður getur haft báðar. Áður lentu þær í SÖMU
     // úttektarskýrslu-dálknum og litu út eins og tvítök/rugl. Nú AÐSKILDAR:
     // repByY = slökkvitæki-úttektir, bruByY = brunakerfi-skoðanir.
-    var repByY={}, bruByY={}, invUtByY={}, invBrByY={}, pdByY={}, samn=[];
+    var repByY={}, bruByY={}, slkByY={}, invUtByY={}, invBrByY={}, invSlkByY={}, pdByY={}, samn=[];
     // Búðarreikningar detta viljandi út úr báðum þjónustuflokkum
     // (pushInvByService) svo þeir liti ekki árið grænt — en þeir sjást í
     // Hreyfingar-listanum neðst, sem er byggður úr `docs` beint.
@@ -977,6 +997,7 @@
       var knd=invoiceServiceKind(d, srcByNum);
       if(knd==='bud') return;
       if(knd==='brunakerfi') (invBrByY[y]=invBrByY[y]||[]).push(d);
+      else if(knd==='slokkvikerfi') (invSlkByY[y]=invSlkByY[y]||[]).push(d);   // aldrei í 🧯 — annars liti árið grænt
       else (invUtByY[y]=invUtByY[y]||[]).push(d);
     }
     docs.forEach(function(d){
@@ -984,6 +1005,7 @@
       if(t==='samningur'){ samn.push({src:'doc',d:d,year:y||null}); return; }
       if(!(y>=2000&&y<=NOW+1)) return;
       if(t==='brunakerfi') (bruByY[y]=bruByY[y]||[]).push(d);
+      else if(t==='slokkvikerfi') (slkByY[y]=slkByY[y]||[]).push(d);
       else if(t==='uttektarskyrsla') (repByY[y]=repByY[y]||[]).push(d);
       else if(t==='reikningur'){ if(!isVoidInvoiceDoc(d)) pushInvByService(d, y); }
     });
@@ -995,6 +1017,7 @@
       if(k==='samningur'){ samn.push({src:'att',a:a,year:y||null}); return; }
       if(k==='other' || !(y>=2000&&y<=NOW+1)){ other.push(a); return; }
       if(k==='brunakerfi') (bruByY[y]=bruByY[y]||[]).push({_att:a});
+      else if(k==='slokkvikerfi') (slkByY[y]=slkByY[y]||[]).push({_att:a});
       else if(k==='skyrsla') (repByY[y]=repByY[y]||[]).push({_att:a});
       else if(k==='reikningur') pushInvByService({_att:a}, y);
     });
@@ -1008,6 +1031,15 @@
       var dup=(bruByY[y]||[]).some(function(x){ return !x._att && x.id===d.id; });
       if(!dup) (bruByY[y]=bruByY[y]||[]).push(d);
     });
+
+    // ── 🍳 slökkvikerfis-skoðanir beint eftir fyrirtaeki_id ──
+    var slk = await fetchSlokkvikerfi(coId);
+    slk.docs.forEach(function(d){
+      var y=parseInt(d.year,10); if(!(y>=2000&&y<=NOW+1)) return;
+      var dup=(slkByY[y]||[]).some(function(x){ return !x._att && x.id===d.id; });
+      if(!dup) (slkByY[y]=slkByY[y]||[]).push(d);
+    });
+    var hasSlk = slk.kerfi>0 || Object.keys(slkByY).length>0;
 
     // Brunakerfis-skýrslan er vistuð TVISVAR viljandi (customer_documents fyrir
     // yfirlitin + viðhengi fyrir skjalaspjaldið, sjá patch 273). Nú þegar báðar
@@ -1026,6 +1058,7 @@
     var _docIds=[];
     docs.forEach(function(d){ if(d && d.id!=null) _docIds.push(d.id); });
     bruDocs.forEach(function(d){ if(d && d.id!=null) _docIds.push(d.id); });
+    slk.docs.forEach(function(d){ if(d && d.id!=null) _docIds.push(d.id); });
     await dfcLoad(_docIds);
 
     // ── merge reikningur-sölur beint úr solur (sömu og í Kröfu yfirliti) ──
@@ -1171,10 +1204,11 @@
         .filter(function(r, i, arr){ return arr.findIndex(function(x){ return String(x.template_id)===String(r.template_id); }) === i; });
     })();
     function filledKinds(r){
-      var v=r.values||{}, bk = !!(v.chk_brunavidvorun || v.chk_slokkvikerfi) || /brunakerfi/i.test(String(r.template_id||''));
+      var v=r.values||{}, bk = !!(v.chk_brunavidvorun || (!hasSlk && v.chk_slokkvikerfi)) || /brunakerfi/i.test(String(r.template_id||''));
       var slk = !!(v.chk_slokkvitaeki || v.chk_reykskynjarar || v.chk_brunaslongur);
-      if(!bk && !slk) slk = true;
-      return { uttekt: slk, brunakerfi: bk };
+      var sk = hasSlk && !!v.chk_slokkvikerfi;
+      if(!bk && !slk && !sk) slk = true;
+      return { uttekt: slk, brunakerfi: bk, slokkvikerfi: sk };
     }
     function filledChip(r){
       var full=String(r.name||r.template_name||'Þjónustusamningur'), disp=full.length>46?full.slice(0,44)+'…':full;
@@ -1182,14 +1216,18 @@
       return '<button type="button" class="sk-doc rep" data-filled="'+esc(r.id)+'" title="'+esc(full)+' — vistað í kerfi '+esc(dags)+'. Smelltu til að opna / prenta / breyta.">📑 '+esc(disp)+'</button>';
     }
     function samnCard(kind){
-      var bkc = kind==='brunakerfi';
+      var bkc = kind==='brunakerfi', skc = kind==='slokkvikerfi';
       var items = samn.filter(function(s){
         var t=(samnLabel(s)+' '+String(s.src==='doc'?(s.d.notes||''):'')).toLowerCase();
+        var erSk = hasSlk && /sl(ö|o)kkvikerfi/i.test(t);
+        if(skc) return erSk;
+        if(erSk) return false;
         return bkc === /brunakerfi|brunavarn|brunavi[ðd]v/i.test(t);
       });
-      var fItems = filledSamn.filter(function(r){ return filledKinds(r)[bkc?'brunakerfi':'uttekt']; });
+      var fItems = filledSamn.filter(function(r){ return filledKinds(r)[kind]; });
+      var KL = skc?'skc':bkc?'bkc':'slk', IK = skc?'🍳':bkc?'🔥':'🧯', HT = skc?'slökkvikerfi':bkc?'brunakerfi':'slökkvitæki';
       if(fItems.length && !items.length){
-        return '<div class="sk-samn-card '+(bkc?'bkc':'slk')+'">'+(bkc?'🔥':'🧯')+' <b>Samningur — '+(bkc?'brunakerfi':'slökkvitæki')+'</b>'+fItems.map(filledChip).join('')+addChip('samningur','','+')+'<span class="sk-samn-pill gildi">Í GILDI</span></div>';
+        return '<div class="sk-samn-card '+KL+'">'+IK+' <b>Samningur — '+HT+'</b>'+fItems.map(filledChip).join('')+addChip('samningur','','+')+'<span class="sk-samn-pill gildi">Í GILDI</span></div>';
       }
       var pill, yrs='';
       if(!items.length) pill='<span class="sk-samn-pill vantar">VANTAR</span>';
@@ -1203,9 +1241,9 @@
           : '<span class="sk-samn-pill gildi">Í GILDI</span>';
       }
       var chips = items.map(samnChip).join('') + fItems.map(filledChip).join('') + (items.length?'':addChip('samningur','','+ samningur'));
-      return '<div class="sk-samn-card '+(bkc?'bkc':'slk')+'">'+(bkc?'🔥':'🧯')+' <b>Samningur — '+(bkc?'brunakerfi':'slökkvitæki')+'</b>'+chips+yrs+pill+'</div>';
+      return '<div class="sk-samn-card '+KL+'">'+IK+' <b>Samningur — '+HT+'</b>'+chips+yrs+pill+'</div>';
     }
-    var samnHtml = samnCard('uttekt') + samnCard('brunakerfi');
+    var samnHtml = samnCard('uttekt') + samnCard('brunakerfi') + (hasSlk ? samnCard('slokkvikerfi') : '');
 
     // ── per-year × per-service bundle cards (verkefnalisti mockup, 2026-08-05) ──
     // The newest year is expanded into two side-by-side service cards (🧯
@@ -1221,6 +1259,10 @@
       { kind:'uttekt', label:'Slökkvitækjaþjónusta', icon:'🧯', repMap:repByY, invMap:invUtByY },
       { kind:'brunakerfi', label:'Brunakerfisþjónusta', icon:'🔥', repMap:bruByY, invMap:invBrByY },
     ];
+    // 🍳 aðeins þar sem slökkvikerfi er skráð. Pör þessa flokks eru EKKI vistuð í document_pairs:
+    // service_type-reglan þar leyfir aðeins uttekt/brunakerfi og lesarar hennar (153/187/175/253/311) eru
+    // ekki allir síaðir á tegund — tengingin býr á slokkvikerfi_skodanir (doc_id / sala_id) í staðinn.
+    if(hasSlk) SERVICES.push({ kind:'slokkvikerfi', label:'Slökkvikerfisþjónusta', icon:'🍳', repMap:slkByY, invMap:invSlkByY, ekkiVista:true });
     // Resolve once per (year, service) — stored pairing wins; else an
     // UNAMBIGUOUS 1 report + 1 invoice + no other active service that year is
     // auto-linked (and saved); otherwise left for the manual picker.
@@ -1228,7 +1270,10 @@
     YEARS.forEach(function(y){
       SERVICES.forEach(function(svc){
         var repArr=svc.repMap[y]||[];
-        var otherArr=(svc.kind==='uttekt'?bruByY:repByY)[y]||[];
+        // Skýrslur HINNA þjónustanna sama ár (áður: aðeins „hin" af tveimur). 🍳 telst ekki með fyrir 🧯/🔥:
+        // reikningar hennar fara aldrei í þeirra fötur, svo hún gerir þeirra val ekki tvírætt.
+        var otherArr=[]; SERVICES.forEach(function(o){ if(o.kind!==svc.kind && !o.ekkiVista) otherArr=otherArr.concat(o.repMap[y]||[]); });
+        if(svc.ekkiVista) otherArr=[];
         var invArr=svc.invMap[y]||[];
         var stored=pairsByYear[y]&&pairsByYear[y][svc.kind];
         // Reikningur sem er ÞEGAR tengdur HINNI þjónustunni er FRÁTEKINN —
@@ -1266,7 +1311,7 @@
         var autoSave=false;
         if(!inv && repArr.length===1 && invArr.length===1 && otherArr.length===0){ inv=invArr[0]; autoSave=!stored; }
         var ambiguous = !inv && invArr.length>=1;
-        if(autoSave && baseId){
+        if(autoSave && baseId && !svc.ekkiVista){
           var rep=repArr[0];
           if(rep && inv && !rep._att && !inv._att && !inv._fromSolur && rep.id!=null && inv.id!=null){
             savePair(baseId, y, svc.kind, coId, { report_doc_id: rep.id, invoice_doc_id: inv.id, status:'klarad', matched_by:'exact' });
@@ -1308,16 +1353,28 @@
         var amt = (!forCompact && r.inv.amount!=null) ? ('<span class="sk-svc-amt">'+fmtKrLoc(r.inv.amount)+' kr</span>') : '';
         return chip+stBadge+amt;
       }
+      if(svc.ekkiVista){
+        // Enginn upphleðslu-/tengitakki hér: „+ reikningur" myndi vista skrá sem félli í 🧯-dálkinn.
+        if(r.invCandidates && r.invCandidates.length) return r.invCandidates.map(function(x){ return x._att?invAttChip(x._att):invDocChip(x, srcByNum); }).join('');
+        return '<span class="sk-doc prog" title="Reikningsdrög verða til úr kostnaðarlínunum í 🍳-flipanum">'+(y===NOW?'⏳ enginn reikningur enn':'enginn reikningur')+'</span>';
+      }
       if(r.ambiguous) return manualLinkHtml(y, svc, r.invCandidates);
       return addChip('reikningur', y, y===NOW?'+ reikningur':'vantar reikning');
     }
     function svcRepHtml(y, svc){
       var arr=svc.repMap[y]||[];
+      if(svc.ekkiVista){
+        // Skýrslan verður til í 🍳-flipanum (386) — „+ skýrsla" hér myndi hlaða skrá upp sem 🧯-úttekt.
+        var opna='<button type="button" class="sk-add" data-open-slk="1" title="Opna skoðunarblaðið í 🍳 Slökkvikerfi-flipanum">🍳 Opna skoðun</button>';
+        if(arr.length) return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join('')+(y===NOW?opna:'');
+        return y===NOW ? '<span class="sk-doc prog" title="Skoðun ársins ekki enn skjalfest">⏳ Í vinnslu</span>'+opna : '<span class="sk-doc prog">engin skýrsla</span>';
+      }
       if(arr.length) return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join('')+addChip('skyrsla',y,'＋');
       if(y===NOW) return '<span class="sk-doc prog" title="Skoðun ársins ekki enn skjalfest">⏳ Í vinnslu</span>'+addChip('skyrsla',y,'+ skýrsla');
       return addChip('skyrsla',y,'vantar skýrslu');
     }
     function svcSendBtn(y, svc){
+      if(svc.ekkiVista) return '';   // sending skýrslu+reiknings fyrir 🍳 er óunnið — enginn takki fyrr en hann gerir eitthvað
       var hasRep=(svc.repMap[y]||[]).length, r=resolved[y+'|'+svc.kind];
       if(!hasRep && !r.inv) return '';
       return '<button type="button" class="sk-svc-send" data-send-year="'+y+'" data-send-kind="'+svc.kind+'" title="Senda '+esc(svc.label)+' '+y+' í tölvupósti">📧 Senda</button>';
@@ -1362,7 +1419,7 @@
       // 2026-08-07: ÖLL ár fá spjöldin tvö hlið við hlið (skissa Agnars) —
       // eldri ár voru áður þjappaðar línur, en stöðumerkið + punktarnir segja
       // söguna betur og eins alls staðar. cur helst fyrir upphæðir (forCompact).
-      var body = '<div class="sk-svc-grid">'+SERVICES.map(function(svc){return svcCardExpanded(y,svc);}).join('')+'</div>';
+      var body = '<div class="sk-svc-grid'+(SERVICES.length>2?' sk-3':'')+'">'+SERVICES.map(function(svc){return svcCardExpanded(y,svc);}).join('')+'</div>';
       return '<div class="sk-yrblock"><div class="'+ycls+' sk-yr-label" data-yr="'+y+'" title="'+esc(ttl)+'">'+mark+y+'</div>'+body+'</div>';
     }).join('');
 
@@ -1411,7 +1468,7 @@
     }).sort(function(x,y){ return String(y.dags).localeCompare(String(x.dags)); });
 
     var HR_TEG = { uttekt:{i:'🧯',t:'Úttekt'}, bud:{i:'🏪',t:'Búð'},
-                   brunakerfi:{i:'🔥',t:'Brunakerfi'} };
+                   brunakerfi:{i:'🔥',t:'Brunakerfi'}, slokkvikerfi:{i:'🍳',t:'Slökkvikerfi'} };
     var hreyfHtml='';
     if(hreyf.length){
       var summa = hreyf.reduce(function(n,x){ return n + (x.upph||0); }, 0);
@@ -1442,7 +1499,7 @@
 
     section.innerHTML = hdr +
       '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') + monthPillHtml(monthInfo) +'</div></div>'+
-      '<div class="sk-svc-grid sk-samn-grid">'+samnHtml+'</div>'+
+      '<div class="sk-svc-grid sk-samn-grid'+(hasSlk?' sk-3':'')+'">'+samnHtml+'</div>'+
       '<div class="sk-yrwrap">'+yearBlocks+
         '<div class="sk-yr-add"><button type="button" class="sk-doc add" data-add-yr-svc="1">+ ár / þjónusta</button>'+
         '<span class="sk-sub">skýrsla og reikningur parast sjálfkrafa eftir ári — nýjasta árið opið, eldri ár samanþjöppuð</span></div>'+
@@ -1537,6 +1594,13 @@
       // 🔥 Þjónustusíða → opnar patch 274's sérhæfðu Brunakerfi-yfirlitssíðu
       // fyrirtækisins (skoðunarskýrsluform, verð, búnaðarskrá) — sama gögn,
       // sérhæfðara vinnusvæði. Aðskilið kort, ein-smells hlekkur á milli.
+      var slkEl=e.target.closest('[data-open-slk]');
+      if(slkEl){
+        e.preventDefault();
+        var tb=document.querySelector('#_sks-tabs ._sks-tab[data-flipi="slokk"]');
+        if(tb){ tb.click(); try{ tb.scrollIntoView({block:'start',behavior:'smooth'}); }catch(_){} }
+        return;
+      }
       var wsEl=e.target.closest('[data-open-bkc]');
       if(wsEl){
         e.preventDefault();
@@ -1947,6 +2011,10 @@
       '.sk-samn-grid{margin:8px 0}',
       '.sk-samn-card{display:flex;align-items:center;flex-wrap:wrap;gap:7px;background:var(--bg);border:1px solid var(--brd2,#f1f5f9);border-left:4px solid #3b82f6;border-radius:10px;padding:8px 12px;font-size:13px}',
       '.sk-samn-card.bkc{border-left-color:#ef4444}',
+      '.sk-samn-card.skc{border-left-color:#d97706}',
+      '.sk-svc-grid.sk-3{grid-template-columns:1fr 1fr 1fr}',
+      '@media (max-width:1100px){.sk-svc-grid.sk-3{grid-template-columns:1fr 1fr}}',
+      '@media (max-width:620px){.sk-svc-grid.sk-3{grid-template-columns:1fr}}',
       '.sk-samn-yrs{font-size:11px;font-weight:700;color:var(--ink3);white-space:nowrap}',
       '.sk-samn-pill{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 9px;border-radius:99px;white-space:nowrap}',
       '.sk-samn-pill.gildi{color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe}',

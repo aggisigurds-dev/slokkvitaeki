@@ -1675,15 +1675,24 @@
       } catch (e) { /* fall through to empty form */ }
     }
     co = co || {};
-    openTemplateForm('seed_thjonustusamningur', {
-      prefill: {
-        vidskiptavinur_nafn: co.nafn || '',
-        kennitala: co.kennitala || '',
-        heimilisfang: co.heimilisFang || co.heimilisfang || '',
-        netfang: co.netfang || '',
-        chk_slokkvitaeki: true
+    // 21.09.2026: fyrirtæki með slökkvikerfi Í ÞJÓNUSTU (385) fær „Slökkvikerfi" forhakað — þá lendir
+    // vistaði samningurinn líka á 🍳-samningsspjaldinu (199). Aðeins forfylling; formið er breytanlegt.
+    let medSlokkvikerfi = false;
+    try {
+      if (window.DB && window.DB.sb) {
+        const k = await window.DB.sb.from('slokkvikerfi').select('id').eq('fyrirtaeki_id', coId).eq('i_thjonustu', true).limit(1);
+        medSlokkvikerfi = !!(k && k.data && k.data.length);
       }
-    });
+    } catch (e) { /* forfylling má aldrei stöðva formið */ }
+    const prefill = {
+      vidskiptavinur_nafn: co.nafn || '',
+      kennitala: co.kennitala || '',
+      heimilisfang: co.heimilisFang || co.heimilisfang || '',
+      netfang: co.netfang || '',
+      chk_slokkvitaeki: true
+    };
+    if (medSlokkvikerfi) prefill.chk_slokkvikerfi = true;
+    openTemplateForm('seed_thjonustusamningur', { prefill });
   }
 
   const api = {
