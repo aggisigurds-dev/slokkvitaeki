@@ -20,8 +20,13 @@
  * þjónninn engri röð og blaðið segir frá því í stað þess að yfirskrifa (galli E2 í 273).
  * „✓ Vistað" birtist AÐEINS eftir að þjónninn hefur skilað röðinni (skill heidarlegt-vidmot).
  *
- * Ekki enn: PDF í 📁 Skjöl (skref „Skýrsla") og reikningsdrög (387). „Ljúka skoðun" setur skrefið
- * „Skoðað" og uppfærir búnaðargrunnlínu kerfisins; prentun fer um prentglugga vafrans.
+ * „Ljúka skoðun" setur skrefið „Skoðað", uppfærir búnaðargrunnlínu kerfisins og vistar skýrsluna sem
+ * vektor-PDF: bucket `samningar/slokkvikerfi-skyrslur/<fid>/` + customer_documents (doc_type og
+ * vidskiptategund = 'slokkvikerfi') → skrefið „Skýrsla". auto_pair_customer_document hunsar tegundina,
+ * svo skýrslan getur aldrei orðið falskt úttektarpar. HÚN FER EKKI í CompanyAttachments: 199 (attKind)
+ * myndi lesa „skoðunarskýrsla" í skráarnafninu sem slökkvitækja-úttekt og lita ár 🧯 grænt — sama gildra
+ * og brunakerfið lenti í 29.07.2026. Skjalaspjaldið fær sinn þriðja flokk í sér verki.
+ * Ekki enn: reikningsdrög (387).
  *
  * Public: window.SlokkvikerfiSkyrsla = { mount, prenta }.
  */
@@ -205,8 +210,9 @@
     return '<div class="kglosur"><div class="khd"><b>📝 MINNISPUNKTAR</b><span class="sp"></span><span class="hint">innanhúss — fer hvorki á skýrslu né reikning</span></div>' +
       '<textarea class="kgl" data-ktop="glosur" rows="5" placeholder="t.d. sækja bræðivör 182°C × 6 · vinna: skipt um afhleypivír · hringja í kokkinn fyrir komu"' + dis + '>' + esc(ko.glosur || '') + '</textarea></div>' +
       '<div class="khd"><b>🧾 REIKNINGUR</b><span class="sp"></span><span id="_sks-kvantar"></span></div>' +
-      '<div class="kstada"><span class="' + (lokad() ? 'ok' : 'bid') + '">📄 Skoðunarskýrsla ' + arNu() + ' — ' + (lokad() ? 'lokið ' + esc(dm(S.rod.dags_skodunar)) : 'í vinnslu') + '</span>' +
+      '<div class="kstada"><span class="' + (S.rod && S.rod.skyrsla_at ? 'ok' : 'bid') + '">📄 Skoðunarskýrsla ' + arNu() + ' — ' + (S.rod && S.rod.skyrsla_at ? 'PDF vistað ' + esc(dm(S.rod.skyrsla_at)) : lokad() ? 'skoðun lokið, PDF VANTAR' : 'í vinnslu') + '</span>' +
         '<span class="' + (S.rod && S.rod.reikningur_at ? 'ok' : 'bid') + '">🧾 Reikningur ' + arNu() + ' — ' + (S.rod && S.rod.reikningur_at ? 'kominn ' + esc(dm(S.rod.reikningur_at)) : 'enginn') + '</span></div>' +
+      '<div class="kskjol"><span class="hint">Vistaðar skýrslur:</span> <span id="_sks-skyrslur"><span class="hint">…</span></span></div>' +
       '<label class="klbl">🧾 Texti á reikning <small>sést sem „Vegna…" lína á reikningnum</small></label><input class="kf t" data-ktop="vegna" value="' + esc(vegna) + '"' + dis + '>' +
       '<div class="kline h"><div>Tegund</div><div>Fjöldi</div><div>Per stk</div><div>Afsl.</div><div>Samtals</div></div>' +
       LINUR.map(x => lina(' data-k="' + x[0] + '"', '<div>' + x[1] + '</div>', ko[x[0]] || {}, x[2])).join('') +
@@ -253,7 +259,7 @@
     const breidd = window.matchMedia('(min-width:1251px)').matches;
     const bar = '<div class="_sks-bar' + (breidd ? ' ipanel' : '') + '"><span id="_sks-saved" class="_sks-saved' + (S.stoppad ? ' villa' : '') + '">' + (S.stoppad ? '⚠ Síðasta breyting er ÓVISTUÐ — sjálfvistun stöðvuð' : S.rod ? 'Vistað á þjóni ' + esc(dm(S.rod.updated_at)) : 'Óvistað — skoðunin verður til við fyrstu breytingu') + '</span><span id="_sks-err" class="_sks-err"></span><span class="sp"></span>' +
       '<button type="button" class="_sks-btn" data-act="prenta">🖨 Prenta / PDF</button>' +
-      (ro ? '<button type="button" class="_sks-btn" data-act="opna-aftur">✎ Opna aftur til breytinga</button>' : '<button type="button" class="_sks-btn pri" data-act="ljuka">Ljúka skoðun</button>') + '</div>';
+      (ro ? '<button type="button" class="_sks-btn' + (S.rod && !S.rod.skyrsla_at ? ' pri' : '') + '" data-act="pdf">📄 ' + (S.rod && S.rod.skyrsla_at ? 'Endurnýja PDF' : 'Vista PDF') + '</button><button type="button" class="_sks-btn" data-act="opna-aftur">✎ Opna aftur til breytinga</button>' : '<button type="button" class="_sks-btn pri" data-act="ljuka">Ljúka skoðun</button>') + '</div>';
     host.innerHTML =
       '<div class="_sks-hd"><h2>🍳 Slökkvikerfis skoðun ' + arNu() + ' · ' + esc(k.heiti) + (k.tegund ? ' <small>' + esc(k.tegund) + '</small>' : '') + '</h2>' +
         (S.kerfi.length > 1 ? '<span class="_sks-kerfi">' + S.kerfi.map(x => '<button type="button" class="_sks-kbtn' + (x.id === k.id ? ' on' : '') + '" data-kerfi="' + x.id + '">' + esc(x.heiti) + '</button>').join('') + '</span>' : '') +
@@ -261,7 +267,7 @@
       (S.stoppad ? '<div class="_sks-villa">⚠ Sjálfvistun stöðvuð: skoðuninni var breytt annars staðar. <button type="button" class="_sks-btn" data-act="endurhlada">Endurhlaða skoðunina</button></div>' : '') +
       '<div class="_sks-cols"><div class="sheet' + (ro ? ' ro' : '') + '">' + bladHtml() + '</div>' +
       '<div class="kost"><div class="kost-in">' + kostHtml() + '</div>' + (breidd ? bar : '') + '</div></div>' + (breidd ? '' : bar);
-    uppfaeraAth(); uppfaeraSummur();
+    uppfaeraAth(); uppfaeraSummur(); teiknaSkyrslur();
   }
 
   // ── prentun: sama blað, gildin sem texti ────────────────────────────────────
@@ -295,6 +301,166 @@
     win.document.close();
   }
 
+  // ── PDF (jsPDF vektor, sama leið og 273/168 — EKKI html2canvas) ───────────────
+  const BUCKET = 'samningar', FOLDER = 'slokkvikerfi-skyrslur';
+  let _logo = null;
+  function ensureJsPdf() {
+    if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      sc.onload = () => (window.jspdf && window.jspdf.jsPDF) ? res() : rej(new Error('jsPDF hlóðst ekki.'));
+      sc.onerror = () => rej(new Error('jsPDF hlóðst ekki.'));
+      document.head.appendChild(sc);
+    });
+  }
+  function logoData() {
+    if (_logo) return Promise.resolve(_logo);
+    return fetch(LOGO).then(r => { if (!r.ok) throw new Error('logo'); return r.blob(); })
+      .then(b => new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => { const im = new Image(); im.onload = () => {
+          try {
+            const bw = 420, bh = Math.round(bw * im.height / im.width), cv = document.createElement('canvas'); cv.width = bw; cv.height = bh;
+            const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, bw, bh); cx.drawImage(im, 0, 0, bw, bh);
+            _logo = { url: cv.toDataURL('image/jpeg', 0.88), w: bw, h: bh, snid: 'JPEG' };
+          } catch (_) { _logo = { url: fr.result, w: im.width, h: im.height, snid: 'PNG' }; }
+          res(_logo); }; im.onerror = rej; im.src = fr.result; };
+        fr.onerror = rej; fr.readAsDataURL(b);
+      })).catch(() => null);
+  }
+  async function buildPdfBlob() {
+    await ensureJsPdf();
+    const logo = await logoData();
+    const doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+    const W = 595.28, H = 841.89, M = 34, GAP = 14, LINE = [154, 163, 176], GRAY = [85, 85, 85];
+    const d = S.data, h = d.haus, nr = athNr(d);
+    const f = (st, sz, col) => { doc.setFont('helvetica', st || 'normal'); doc.setFontSize(sz || 9); doc.setTextColor.apply(doc, col || [0, 0, 0]); };
+    const kassi = (x, y, w, hh, fill) => { doc.setDrawColor.apply(doc, LINE); doc.setLineWidth(0.6); if (fill) { doc.setFillColor.apply(doc, fill); doc.rect(x, y, w, hh, 'FD'); } else doc.rect(x, y, w, hh, 'S'); };
+    const passa = (t, w) => { t = String(t == null ? '' : t); if (doc.getTextWidth(t) <= w) return t; while (t.length > 1 && doc.getTextWidth(t + '…') > w) t = t.slice(0, -1); return t + '…'; };
+    // tafla: cols = [{w, align}], rows = [[texti…]], haus = [texti…]
+    const tafla = (x, y, cols, haus, rows, rh) => {
+      const hh = 20; let cx = x;
+      cols.forEach((c, i) => { kassi(cx, y, c.w, hh, [238, 241, 245]); f('bold', 6.3); const t = String(haus[i]).toUpperCase().split('\n'); t.forEach((ln, k) => doc.text(ln, i === 0 ? cx + 4 : cx + c.w / 2, y + (t.length > 1 ? 8.5 : 12.5) + k * 7, { align: i === 0 ? 'left' : 'center' })); cx += c.w; });
+      y += hh;
+      rows.forEach(r => { cx = x; cols.forEach((c, i) => { kassi(cx, y, c.w, rh); let sz = i === 0 ? 8.2 : 8.5; f(i === 0 ? 'bold' : 'normal', sz, c.rautt && r[i] ? [168, 48, 24] : null);
+        while (sz > 6.2 && doc.getTextWidth(String(r[i] == null ? '' : r[i])) > c.w - 6) { sz -= 0.3; doc.setFontSize(sz); }
+        const t = passa(r[i], c.w - 6); if (t) doc.text(t, c.align === 'c' ? cx + c.w / 2 : cx + 3.5, y + rh / 2 + 3, { align: c.align === 'c' ? 'center' : 'left' }); cx += c.w; }); y += rh; });
+      return y;
+    };
+    const hopur = (t, x, y) => { f('bolditalic', 10); doc.text(t, x, y); doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.6); doc.line(x, y + 1.5, x + doc.getTextWidth(t), y + 1.5); };
+
+    // haus
+    let y = M;
+    kassi(M, y, 80, 36); f('normal', 6.5, GRAY); doc.text('Samn. nr', M + 4, y + 9); f('bold', 10); doc.text(passa(h.samn, 72), M + 4, y + 25);
+    f('bold', 15); doc.text('SKOÐUNARSKÝRSLA', W / 2, y + 15, { align: 'center' }); doc.text('SLÖKKVIKERFIS', W / 2, y + 32, { align: 'center' });
+    if (logo) { const lh = 44, lw = Math.min(130, lh * logo.w / logo.h); try { doc.addImage(logo.url, logo.snid || 'PNG', W - M - lw, y - 3, lw, lw * logo.h / logo.w); } catch (_) {} }
+    else { f('bold', 11); doc.text(FELAG, W - M, y + 20, { align: 'right' }); }
+    y += 50;
+    const hw = (W - 2 * M - GAP) / 2;
+    kassi(M, y, hw, 102);
+    [['VIÐSKIPTAVINUR', h.vidsk], ['TENGILIÐUR / NETFANG', h.tengil], ['HEIMILISFANG', h.heim], ['PÓSTNÚMER OG STAÐUR', h.postnr], ['SÍMI', h.simi]].forEach((r, i) => {
+      f('normal', 6, GRAY); doc.text(r[0], M + 6, y + 10 + i * 19.5); f('normal', 9); doc.text(passa(r[1], hw - 14), M + 8, y + 19.5 + i * 19.5);
+    });
+    const hx = M + hw + GAP;
+    [['Dags. skoðunar', dm(h.dags)], ['Dags. viðgerða / úrbóta', dm(h.dagsurb)], ['Nafn skoðunarmanns', h.madur], ['Nafn þjónustuaðila', h.thjon], ['Nafn fjargæsluaðila', h.fjarg], ['Nafn uppsetningaraðila', h.upps]].forEach((r, i) => {
+      const ry = y + i * 17; kassi(hx, ry, hw * 0.48, 17, [238, 241, 245]); kassi(hx + hw * 0.48, ry, hw * 0.52, 17);
+      f('bold', 6.6); doc.text(r[0].toUpperCase(), hx + 4, ry + 11); f('normal', 8.8); doc.text(passa(r[1], hw * 0.52 - 8), hx + hw * 0.48 + 4, ry + 11.5);
+    });
+    y += 102 + 18;
+
+    // töflurnar tvær
+    const lw = (W - 2 * M - GAP) * 0.555, rw = (W - 2 * M - GAP) - lw, rx = M + lw + GAP, RH = 14.6;
+    hopur('Prófanir', M, y); hopur('Prófanir', rx, y); y += 6;
+    const c6 = [{ w: lw * 0.34 }, { w: lw * 0.24 }, { w: lw * 0.10, align: 'c' }, { w: lw * 0.10, align: 'c' }, { w: lw * 0.11, align: 'c', rautt: 1 }, { w: lw * 0.11, align: 'c' }];
+    const c4 = [{ w: rw * 0.58 }, { w: rw * 0.14, align: 'c' }, { w: rw * 0.14, align: 'c', rautt: 1 }, { w: rw * 0.14, align: 'c' }];
+    const bunRows = d.bun.map((r, i) => [BUNADUR[i], r.teg, r.stk, r.il, r.ek, nr['bun:' + i] || ''])
+      .concat(d.auk.map((r, i) => (r.heiti || r.il || r.ek || r.teg) ? [r.heiti || '', r.teg, r.stk, r.il, r.ek, nr['auk:' + i] || ''] : null).filter(Boolean));
+    const yL = tafla(M, y, c6, ['Búnaður', 'Tegund', 'Stk.', 'Í lagi', 'Ekki\ní lagi', 'Sjá\nath.'], bunRows, RH);
+    let yR = tafla(rx, y, c4, ['Vöktun og fl.', 'Í lagi', 'Ekki\ní lagi', 'Sjá\nath.'], d.vok.map((r, i) => [VOKTUN[i], r.il, r.ek, nr['vok:' + i] || '']), RH);
+    yR += 16; hopur('Uppsetning eldhústækja miðað við dreifistúta', rx, yR); yR += 6;
+    const eldRows = d.eld.map((r, i) => [r.heiti || '', r.il, r.ek, nr['eld:' + i] || '']);
+    yR = tafla(rx, yR, c4, ['Eldhústæki', 'Í lagi', 'Ekki\ní lagi', 'Sjá\nath.'], eldRows.length ? eldRows : [['', '', '', '']], RH);
+    y = Math.max(yL, yR) + 18;
+
+    // athugasemdir
+    const ath = radir(d).filter(x => x.r.ath), aw = W - 2 * M - 40;
+    f('normal', 9);
+    const athLinur = ath.map((x, i) => doc.splitTextToSize((i + 1) + '.  ' + (x.r.athTxt || ''), aw));
+    const annadL = d.annad ? doc.splitTextToSize('Annað: ' + d.annad, W - 2 * M - 24) : ['Annað:'];
+    const bh = Math.max(84, 30 + athLinur.reduce((a, l) => a + l.length * 11.5 + 2, 0) + annadL.length * 11.5 + 12);
+    if (y + bh + 110 > H) { doc.addPage(); y = M; }
+    hopur('Athugasemdir / úrbætur', M, y); y += 6;
+    kassi(M, y, W - 2 * M, bh);
+    f('bold', 9.5); doc.text('Athugasemdir:', M + 12, y + 15);
+    let ay = y + 29; f('normal', 9);
+    if (!ath.length) { doc.text('Engar.', M + 28, ay); ay += 13; }
+    athLinur.forEach(l => { doc.text(l, M + 28, ay); ay += l.length * 11.5 + 2; });
+    ay += 4; f('bold', 9.5); doc.text('Annað:', M + 12, ay); f('normal', 9);
+    if (d.annad) doc.text(doc.splitTextToSize(d.annad, W - 2 * M - 70), M + 50, ay);
+    y += bh + 10;
+    f('italic', 7.3, GRAY); doc.text('Afrit af skoðunarskýrslunni verður sent eldvarnareftirliti slökkviliðs ef kallað er eftir því.', M, y);
+
+    // undirskrift + fótur (neðst á síðustu síðu)
+    const sy = Math.max(y + 46, H - 78), sw = (W - 2 * M - 40) / 3.4;
+    [[M, sw, h.stadur, 'Staður'], [M + sw + 20, sw, dm(h.dags), 'Dagsetning'], [M + 2 * sw + 40, W - M - (M + 2 * sw + 40), h.madur, 'Nafn skoðunarmanns — starfsmannsnúmer']].forEach(r => {
+      f('normal', 10); doc.text(passa(r[2], r[1]), r[0] + r[1] / 2, sy - 4, { align: 'center' });
+      doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.7); doc.line(r[0], sy, r[0] + r[1], sy);
+      f('normal', 7.2, GRAY); doc.text(r[3], r[0], sy + 9);
+    });
+    f('bold', 7.8); doc.text('F.h. ' + FELAG, M + 2 * sw + 40, sy + 19);
+    doc.setDrawColor.apply(doc, LINE); doc.setLineWidth(0.6); doc.line(M, H - 30, W - M, H - 30);
+    f('normal', 7.2, GRAY); doc.text(FOTUR, W / 2, H - 20, { align: 'center' });
+    return doc.output('blob');
+  }
+  function skraarnafn() {
+    const co = ((window.Companies && Companies.list) || []).find(x => x.id === S.fid) || {};
+    const kt = String(co.kennitala || '').replace(/\D/g, '');
+    // Skráarnafn má ekki bera skástrik (audit-skraarnofn-dags) — aðeins ár, ekki dagsetning.
+    return [S.data.haus.vidsk || co.nafn, kt, arNu(), 'slökkvikerfi-skoðunarskýrsla' + (S.kerfi.length > 1 ? ' ' + S.k.heiti : '')].filter(Boolean).join(' - ').replace(/[\/\\:*?"<>|]+/g, ' ') + '.pdf';
+  }
+  // Skýrslan í 📁: PDF → bucket → customer_documents (doc_type 'slokkvikerfi') → doc_id + skyrsla_at á skoðuninni.
+  // Hvert skref er LESIÐ; mistakist eitthvað stendur skoðunin sem „Skoðað" án „Skýrsla" og takkinn býðst aftur.
+  async function vistaPdf() {
+    const sb = SB(); if (!sb || !S.rod) return { ok: false, villa: 'Engin tenging' };
+    try {
+      const pdf = await buildPdfBlob();
+      const path = FOLDER + '/' + S.fid + '/' + arNu() + '_' + S.rod.numer + '_' + Date.now() + '.pdf';
+      const up = await sb.storage.from(BUCKET).upload(path, pdf, { contentType: 'application/pdf', upsert: true });
+      if (up.error) throw up.error;
+      const co = ((window.Companies && Companies.list) || []).find(x => x.id === S.fid) || {};
+      const rec = { doc_type: 'slokkvikerfi', vidskiptategund: 'slokkvikerfi', fyrirtaeki_id: S.fid, year: arNu(), storage_path: BUCKET + '/' + path,
+        doc_date: S.data.haus.dags || null, customer_name: co.nafn || S.data.haus.vidsk || null, source: 'app', found_by: 'slokkvikerfi-skyrsla',
+        notes: skraarnafn().replace(/\.pdf$/, '') + ' · skoðun nr. ' + S.rod.numer };
+      let docId = S.rod.doc_id;
+      if (docId) { const r = await sb.from('customer_documents').update(rec).eq('id', docId).select('id'); if (r.error) throw r.error; if (!r.data || !r.data[0]) docId = null; }
+      if (!docId) { const r = await sb.from('customer_documents').insert(rec).select('id'); if (r.error) throw r.error; if (!r.data || !r.data[0]) throw new Error('Skjalaröðin skilaði sér ekki'); docId = r.data[0].id; }
+      const nu = new Date().toISOString();
+      const l = await sb.from('slokkvikerfi_skodanir').update({ doc_id: docId, skyrsla_at: nu, updated_by: notandi() }).eq('id', S.rod.id).eq('updated_at', S.rod.updated_at).select('*');
+      if (l.error) throw l.error;
+      if (!l.data || !l.data[0]) throw new Error('PDF vistaðist (skjal ' + docId + ') en skoðuninni var breytt annars staðar — skrefið „Skýrsla" merktist ekki');
+      S.rod = l.data[0]; S.pdfPath = BUCKET + '/' + path;
+      try { document.dispatchEvent(new CustomEvent('customer-doc-written')); } catch (_) {}
+      return { ok: true };
+    } catch (e) { console.warn('[slokkvikerfi-skyrsla] pdf', e); return { ok: false, villa: (e && e.message) || String(e) }; }
+  }
+  function pdfSlod(storagePath) {
+    const base = String(window.SUPABASE_URL || '').replace(/\/+$/, ''), sp = String(storagePath || '').replace(/^\/+/, ''), i = sp.indexOf('/');
+    if (!base || i < 1) return '';
+    return base + '/storage/v1/object/public/' + sp.slice(0, i) + '/' + sp.slice(i + 1).split('/').map(encodeURIComponent).join('/');
+  }
+  async function saekjaSkyrslur() {
+    const sb = SB(); if (!sb) return [];
+    const { data, error } = await sb.from('customer_documents').select('id,year,doc_date,storage_path,notes').eq('fyrirtaeki_id', S.fid).eq('doc_type', 'slokkvikerfi').order('year', { ascending: false });
+    if (error) { console.warn('[slokkvikerfi-skyrsla] skýrslulisti', error); return []; }
+    return data || [];
+  }
+  async function teiknaSkyrslur() {
+    const e = $('#_sks-skyrslur'); if (!e) return;
+    const l = await saekjaSkyrslur(); const e2 = $('#_sks-skyrslur'); if (!e2) return;
+    e2.innerHTML = l.length ? l.map(x => { const u = pdfSlod(x.storage_path); return u ? '<a class="kskj" href="' + esc(u) + '" target="_blank" rel="noopener" title="' + esc(x.notes || '') + '">📄 ' + x.year + ' · ' + esc(dm(x.doc_date)) + '</a>' : ''; }).join('') : '<span class="hint">Engin vistuð skýrsla enn.</span>';
+  }
+
   // ── ljúka / opna aftur ──────────────────────────────────────────────────────
   async function ljuka() {
     const err = $('#_sks-err'); const v = vantar();
@@ -312,15 +478,19 @@
     if (!S.k.skodunarmanudur && S.data.haus.dags) patch.skodunarmanudur = +String(S.data.haus.dags).slice(5, 7);
     const g = await sb.from('slokkvikerfi').update(patch).eq('id', S.k.id).select('id,bunadur,skodunarmanudur');
     if (g.error || !g.data || !g.data[0]) toast('⚠ Skoðun lokið, en búnaðargrunnlínan uppfærðist ekki: ' + ((g.error && g.error.message) || 'engin röð'));
-    else { S.k.bunadur = g.data[0].bunadur; S.k.skodunarmanudur = g.data[0].skodunarmanudur; toast('✓ Skoðun lokið — skrefið „Skoðað" er komið á yfirlitið'); }
+    else { S.k.bunadur = g.data[0].bunadur; S.k.skodunarmanudur = g.data[0].skodunarmanudur; }
+    syna(); stadaTexti('⏳ Bý til PDF…', '');
+    const pv = await vistaPdf();
     syna();
+    if (pv.ok) toast('✓ Skoðun lokið — skýrslan er vistuð sem PDF (skref Skoðað + Skýrsla)');
+    else toast('⚠ Skoðun lokið, en PDF vistaðist ekki: ' + pv.villa + ' — notaðu „📄 Vista PDF" til að reyna aftur');
   }
   async function opnaAftur() {
     const sb = SB(); if (!sb || !S.rod) return;
     if (S.rod.reikningur_at || S.rod.sala_id) { toast('Reikningur er kominn á þessa skoðun — hún verður ekki opnuð aftur héðan.'); return; }
-    const { data, error } = await sb.from('slokkvikerfi_skodanir').update({ status: 'draft', skodad_at: null, updated_by: notandi() }).eq('id', S.rod.id).eq('updated_at', S.rod.updated_at).select('*');
+    const { data, error } = await sb.from('slokkvikerfi_skodanir').update({ status: 'draft', skodad_at: null, skyrsla_at: null, updated_by: notandi() }).eq('id', S.rod.id).eq('updated_at', S.rod.updated_at).select('*');
     if (error || !data || !data[0]) { toast('⚠ Tókst ekki að opna aftur: ' + ((error && error.message) || 'skoðuninni var breytt annars staðar')); return; }
-    S.rod = data[0]; syna(); toast('Skoðunin er opin aftur — skrefið „Skoðað" var tekið af');
+    S.rod = data[0]; syna(); toast('Skoðunin er opin aftur — skrefin „Skoðað" og „Skýrsla" voru tekin af; PDF-ið uppfærist við næstu lok');
   }
 
   async function veljaKerfi(k) {
@@ -342,7 +512,7 @@
       const t = e.target;
       const kb = t.closest('[data-kerfi]'); if (kb) { const k = S.kerfi.find(x => x.id === +kb.dataset.kerfi); if (k) veljaKerfi(k); return; }
       const act = t.closest('[data-act]');
-      if (act) { const a = act.dataset.act; if (a === 'prenta') return prenta(); if (a === 'ljuka') return ljuka(); if (a === 'opna-aftur') return opnaAftur(); if (a === 'endurhlada') return veljaKerfi(S.k); }
+      if (act) { const a = act.dataset.act; if (a === 'prenta') return prenta(); if (a === 'ljuka') return ljuka(); if (a === 'opna-aftur') return opnaAftur(); if (a === 'pdf') { act.disabled = true; stadaTexti('⏳ Bý til PDF…', ''); return vistaPdf().then(r => { syna(); toast(r.ok ? '✓ PDF vistað í skjöl fyrirtækisins' : '⚠ PDF vistaðist ekki: ' + r.villa); }); } if (a === 'endurhlada') return veljaKerfi(S.k); }
       if (S.stoppad) return;
       const kb2 = t.closest('[data-baeta="kost"]'), kx2 = t.dataset.kx != null;
       if (lokad() && !kb2 && !kx2) return;
@@ -501,6 +671,7 @@
       H + '.vantar{font-size:11.5px;font-weight:600;color:#8a5c04;background:#fbeac6;border:1px solid rgba(217,146,6,.5);border-radius:6px;padding:2px 8px}',
       H + '.kstada{display:grid;gap:4px;margin-bottom:10px}' + H + '.kstada span{font-size:12.5px;border-radius:7px;padding:5px 9px;border:1px solid #e7eaf0;background:#f4f6f9;color:#3a4250}' + H + '.kstada span.ok{background:#e8f5ec;border-color:#b9dfc6;color:#0f5e3f;font-weight:600}',
       H + '.kglosur{margin:-14px -16px 12px;padding:14px 16px 12px;background:#fffdf3;border-bottom:1px solid #eee3b8;border-radius:12px 12px 0 0}' + H + 'textarea.kgl{display:block;width:100%;box-sizing:border-box;border:1px solid #e3d9a8!important;border-radius:8px!important;background:#fffef8!important;color:#0f172a!important;font:13px/1.45 var(--ui,system-ui)!important;padding:8px 10px!important;resize:vertical;min-height:96px;margin:0!important}',
+      H + '.kskjol{margin:-4px 0 10px;font-size:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}' + H + 'a.kskj{font-size:12px;font-weight:600;color:#0f5e3f;background:#e8f5ec;border:1px solid #b9dfc6;border-radius:6px;padding:2px 8px;text-decoration:none}',
       H + '.klbl{display:block;font-size:11.5px;font-weight:700;color:#3a4250;margin:4px 0 3px}' + H + '.klbl small{font-weight:400;color:#64748b;margin-left:4px}',
       H + '.kline{display:grid;grid-template-columns:minmax(0,1fr) 58px 86px 52px 92px;gap:6px;align-items:center;padding:5px 0;border-top:1px solid #eceff4;font-size:13px}',
       H + '.kline.h{border-top:0;margin-top:10px;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.06em}' + H + '.kline.h div:not(:first-child),' + H + '.ksum{text-align:right}' + H + '.ksum{font-family:var(--mono,ui-monospace,monospace);font-size:12.5px}' + H + '.ksum.tom{color:#94a3b8}',
@@ -537,7 +708,7 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  window.SlokkvikerfiSkyrsla = { mount, prenta, summa, reikna };
+  window.SlokkvikerfiSkyrsla = { mount, prenta, summa, reikna, buildPdfBlob };
   console.log('[patch-386] Slökkvikerfis skýrsla installed');
 })();
 /* === END SLÖKKVIKERFIS SKÝRSLA === */

@@ -128,3 +128,17 @@ join public.fyrirtaeki  f on f.id = s.fyrirtaeki_id
 where s.status = 'final' and s.sala_id is null and s.reikningur_at is null;
 
 grant select on public.v_gleymt_slokkvikerfi to anon, authenticated;
+
+-- ── 21.09.2026 (MCP-migration `customer_documents_leyfa_slokkvikerfi`) ─────────────────────────────
+-- Skoðunarskýrslan fer í customer_documents sem doc_type = 'slokkvikerfi' (ár skylt).
+-- auto_pair_customer_document hunsar aðrar tegundir en reikningur/uttektarskyrsla/brunakerfi,
+-- svo skýrslan getur ALDREI orðið falskt úttektarpar. Skjalaspjaldið (199) les hana ekki enn.
+alter table public.customer_documents drop constraint if exists customer_documents_doc_type_check;
+alter table public.customer_documents add constraint customer_documents_doc_type_check
+  check (doc_type = any (array['samningur'::text, 'uttektarskyrsla'::text, 'reikningur'::text, 'brunakerfi'::text, 'slokkvikerfi'::text]));
+
+alter table public.customer_documents drop constraint if exists customer_documents_year_shape;
+alter table public.customer_documents add constraint customer_documents_year_shape
+  check ((doc_type = 'samningur'::text)
+      or ((doc_type = any (array['uttektarskyrsla'::text, 'reikningur'::text, 'slokkvikerfi'::text])) and (year is not null))
+      or (doc_type = 'brunakerfi'::text));
