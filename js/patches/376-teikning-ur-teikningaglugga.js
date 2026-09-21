@@ -103,6 +103,15 @@
       '<button type="button" data-a="uttekt" title="Opnar úttektarteikningu staðarins: tækin í spjaldinu, „Sækja teikningu" nær í aðaluppdráttinn">📐 Úttektarteikning</button>' +
       '<span class="teikn-bru-skyring">— skoðaðu fyrst; ekkert fer á borð fyrr en þú velur „Opna í TurboPaint"</span>';
     wrap.insertBefore(bar, wrap.firstChild);
+    // 21.09.2026: stikan SÁST ALDREI á tölvu. `.tp-frame-wrap` er position:absolute; inset:0 og hunsar því
+    // padding-top sýnarinnar (bilið sem appið tekur frá fyrir fasta bannerinn, mælt 148 px) — stikan lenti í top:0,
+    // undir #bstal-banner (z-index 40), hvorki sýnileg né smellanleg (elementFromPoint gaf .bb-logo). Hún les nú
+    // sama bil og appið reiknar sjálft, svo hún sest rétt neðan við bannerinn líka í símaappinu (mjórri haus).
+    const stillaBil = () => { try { bar.style.marginTop = (parseFloat(getComputedStyle(v).paddingTop) || 0) + 'px'; } catch (_) {} };
+    stillaBil();
+    window.addEventListener('resize', stillaBil);
+    new MutationObserver(stillaBil).observe(v, { attributes: true, attributeFilter: ['style', 'class'] });
+    new MutationObserver(stillaBil).observe(document.documentElement, { attributes: true, attributeFilter: ['data-viewmode', 'class'] });
 
     const inp = bar.querySelector('input');
     const dl = bar.querySelector('datalist');
