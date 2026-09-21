@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slökkvikerfis skoðun — frumgerð</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --panel:#fff; --panel2:#f8f8fa; --ink:#0f1117; --ink2:#404550; --sub:#626b7a;
+    --line:#dfe3ea; --brand:#C93C1D; --brand-dk:#a83018; --brand-lt:#fff0ed;
+    --green:#1f7a45; --green-bg:#e8f5ec; --amber:#8a5a00; --amber-bg:#fdf3dc; --red-bg:#fff0ed; --steel:#2a3340;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px}
+  .top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 14px;background:var(--steel);color:#fff;position:sticky;top:0;z-index:50}
+  .top .brand{font-weight:700;font-size:15px}
+  .top .brand small{font-weight:500;opacity:.7;font-size:11px;margin-left:6px}
+  .top .sp{flex:1}
+  .tab{border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;border-radius:8px;padding:7px 12px;font:600 12.5px system-ui;cursor:pointer}
+  .tab.on{background:var(--brand);border-color:var(--brand)}
+  .wrap{max-width:1080px;margin:0 auto;padding:16px 14px 60px}
+  .proto-note{font-size:12px;color:var(--sub);background:var(--panel);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin-bottom:14px}
+  h1{font-size:19px;margin:0 0 12px}
+  h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--sub);margin:18px 0 6px}
+  .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 12px;font:600 12.5px system-ui;cursor:pointer}
+  .btn:hover{border-color:var(--brand)}
+  .btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .kpi small{color:var(--sub);font-size:11.5px;display:block}
+  .kpi b{font-size:24px;font-weight:700}
+  .kpi.warn b{color:var(--brand)}
+  .filters{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:10px}
+  .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--ink2)}
+  .chip.on{background:var(--steel);border-color:var(--steel);color:#fff}
+  .chip .n{opacity:.6;margin-left:3px}
+  input[type=text],input[type=date],input[type=number],textarea,select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:14px system-ui;background:#fff;color:var(--ink);width:100%}
+  .search{max-width:240px}
+  table.list{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  table.list th{font:600 11px system-ui;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);background:var(--panel2)}
+  table.list td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.list tr.r{cursor:pointer}
+  table.list tr.r:hover td{background:var(--brand-lt)}
+  .nm{font-weight:600}
+  .sub{font-size:12px;color:var(--sub)}
+  .pill{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+  .p-ok{background:var(--green-bg);color:var(--green)}
+  .p-warn{background:var(--amber-bg);color:var(--amber)}
+  .p-bad{background:var(--red-bg);color:var(--brand-dk)}
+  .p-off{background:var(--panel2);color:var(--sub);border-color:var(--line)}
+  .steps{display:flex;gap:3px;flex-wrap:wrap}
+  .demo{font-size:10px;letter-spacing:.08em;color:var(--sub);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:1px}
+  .cards{display:none}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+  label.f{display:block;font-size:11.5px;color:var(--sub);margin-bottom:3px}
+  .line{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 64px 210px;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+  .line.nometa{grid-template-columns:minmax(0,1fr) 210px}
+  .line .lbl{font-weight:600}
+  .tri{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+  .tri button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 0;font:600 12px system-ui;color:var(--ink2);cursor:pointer}
+  .tri button.on.ok{background:var(--green);border-color:var(--green);color:#fff}
+  .tri button.on.bad{background:var(--brand);border-color:var(--brand);color:#fff}
+  .tri button.on.ath{background:#b7791f;border-color:#b7791f;color:#fff}
+  .athrow{grid-column:1/-1;display:flex;gap:6px;align-items:center}
+  .athrow .no{font-weight:700;color:var(--brand-dk);min-width:20px}
+  .athrow input.miss{border-color:var(--brand);background:var(--red-bg)}
+  .bar{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:16px -14px -60px}
+  .bar .sp{flex:1}
+  .saved{font-size:12px;color:var(--green)}
+  .err{font-size:12.5px;color:var(--brand-dk);font-weight:600}
+  .svc{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel)}
+  .svc.new{border:2px solid var(--brand)}
+  .svc .ic{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;font-size:19px;background:var(--panel2)}
+  .svc .tx{flex:1}
+  .banner{display:flex;gap:12px;align-items:center;background:var(--steel);color:#fff;border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .mono{width:46px;height:46px;border-radius:50%;background:var(--brand);display:grid;place-items:center;font-weight:700}
+  .view{display:none}.view.on{display:block}
+  /* prentuð skýrsla */
+  #report{display:none;background:#fff;color:#000;padding:24px;max-width:800px;margin:0 auto;font-size:12px}
+  #report h3{margin:0;font-size:18px;text-align:center}
+  #report table{width:100%;border-collapse:collapse;margin-top:8px}
+  #report th,#report td{border:1px solid #9aa3b0;padding:4px 6px;text-align:left;font-size:11.5px}
+  #report th{background:#eef1f5;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+  #report td.c{text-align:center;width:54px}
+  #report .hd{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}
+  #report .ft{margin-top:22px;border-top:1px solid #9aa3b0;padding-top:6px;text-align:center;font-size:10.5px;color:#444}
+  @media (max-width:720px){
+    table.list{display:none}.cards{display:grid;gap:8px}
+    .line{grid-template-columns:minmax(0,1fr) 64px}
+    .line .lbl{grid-column:1/-1}
+    .line .tri{grid-column:1/-1}
+    .line.nometa{grid-template-columns:1fr}
+    .tri button{padding:13px 0;font-size:13px}
+  }
+  @media print{
+    .top,.wrap{display:none!important}
+    #report{display:block!important;padding:0}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+<div class="top">
+  <span class="brand">🍳 Slökkvikerfis skoðun <small>frumgerð · ekkert vistast á þjón</small></span>
+  <span class="sp"></span>
+  <button class="tab on" data-v="yfirlit">Yfirlit</button>
+  <button class="tab" data-v="form">Skoðun</button>
+  <button class="tab" data-v="profill">Prófíll</button>
+</div>
+
+<div class="wrap">
+  <div class="proto-note">Frumgerð til samþykktar. Hótel Varmaland er raunverulegi kúnninn; línur merktar <span class="demo">DÆMI</span> eru tilbúnar til að sýna hvernig síðan lítur út þegar fleiri bætast við. Svör eyðublaðsins lifa aðeins í þessum vafra.</div>
+
+  <!-- ─────────── YFIRLIT ─────────── -->
+  <section class="view on" id="v-yfirlit">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <h1 style="margin:0">Slökkvikerfis skoðun <span id="yr" class="sub"></span></h1>
+      <span style="flex:1"></span>
+      <button class="btn" id="btn-nytt">＋ Nýtt kerfi</button>
+    </div>
+    <div class="kpis" id="kpis" style="margin-top:12px"></div>
+    <div class="filters" id="stada-chips"></div>
+    <div class="filters" id="man-chips"></div>
+    <div class="filters"><input type="text" class="search" id="leit" placeholder="Leita að fyrirtæki eða kerfi"></div>
+    <table class="list"><thead><tr>
+      <th>Fyrirtæki · kerfi</th><th>Heimilisfang</th><th>Mánuður</th><th>Tíðni</th><th>Síðast</th><th id="th-skref">Skref</th><th>Verð</th><th>Staða</th>
+    </tr></thead><tbody id="rows"></tbody></table>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <!-- ─────────── SKOÐUNARFORM ─────────── -->
+  <section class="view" id="v-form">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <button class="btn" id="btn-til-baka">← Yfirlit</button>
+      <h1 style="margin:0" id="f-titill">Skoðunarskýrsla slökkvikerfis</h1>
+    </div>
+    <div class="sub" id="f-undir" style="margin:4px 0 10px"></div>
+
+    <div class="card">
+      <div class="grid2" id="f-haus"></div>
+    </div>
+
+    <h2>Prófanir — búnaður <span id="c-bun" class="sub"></span></h2>
+    <div class="card" id="f-bun"></div>
+
+    <h2>Prófanir — vöktun og fl. <span id="c-vok" class="sub"></span></h2>
+    <div class="card" id="f-vok"></div>
+
+    <h2>Eldhústæki (dreifistútar) <span id="c-eld" class="sub"></span></h2>
+    <div class="card"><div id="f-eld"></div>
+      <div style="padding-top:10px"><button class="btn" id="btn-eld">＋ Bæta við tæki</button></div>
+    </div>
+
+    <h2>Athugasemdir / úrbætur</h2>
+    <div class="card">
+      <div class="sub" id="f-ath-tomt">Athugasemd verður til sjálfkrafa við hverja línu sem fær „Ekki í lagi" eða „Sjá ath.".</div>
+      <ol id="f-ath" style="margin:6px 0 0;padding-left:20px"></ol>
+      <label class="f" style="margin-top:12px">Annað</label>
+      <textarea id="f-annad" rows="2"></textarea>
+    </div>
+
+    <div class="bar">
+      <span class="saved" id="f-saved"></span>
+      <span class="err" id="f-err"></span>
+      <span class="sp"></span>
+      <button class="btn" id="btn-hreinsa">Hreinsa svör</button>
+      <button class="btn" id="btn-prenta">🖨 Forskoða skýrslu</button>
+      <button class="btn pri" id="btn-ljuka">Ljúka skoðun</button>
+    </div>
+  </section>
+
+  <!-- ─────────── PRÓFÍLL ─────────── -->
+  <section class="view" id="v-profill">
+    <div class="banner"><div class="mono">HV</div><div><div style="font-size:17px;font-weight:700">Hótel Varmaland</div><div style="opacity:.75;font-size:12.5px">Varmaland, Borgarfirði · 📅 Skoðun: september</div></div></div>
+    <h2>Þjónustuflokkar</h2>
+    <div style="display:grid;gap:8px">
+      <div class="svc"><div class="ic">🧯</div><div class="tx"><div class="nm">Ársskoðun slökkvitækja</div><div class="sub">Tækjaskrá · úttektarskýrsla · reikningur</div></div><span class="pill p-ok">Í þjónustu</span></div>
+      <div class="svc"><div class="ic">🚨</div><div class="tx"><div class="nm">Brunakerfis skoðun</div><div class="sub">Ekki skráð</div></div><span class="pill p-off">Ekki í þjónustu</span></div>
+      <div class="svc new"><div class="ic">🍳</div><div class="tx"><div class="nm">Slökkvikerfis skoðun <span class="demo">NÝTT</span></div><div class="sub" id="p-kerfi"></div></div><span class="pill p-ok">Í þjónustu</span><button class="btn" id="btn-p-skoda">Opna skoðun</button></div>
+    </div>
+    <h2>Ein ferð, tvær skoðanir</h2>
+    <div class="card sub">Þegar slökkvitæki og slökkvikerfi falla á sama tímabil birtist 🍳 á línu fyrirtækisins í Úttektarplaninu. Akstur rukkast einu sinni; hvor flokkur fær sinn reikning og sína skýrslu í 📁 Skjölum.</div>
+    <h2>Skjöl — ár fyrir ár</h2>
+    <div class="card"><table style="width:100%;border-collapse:collapse;font-size:12.5px" id="p-skjol"></table></div>
+  </section>
+</div>
+
+<div id="report"></div>
+
+<script>
+(function(){
+  var AR = new Date().getFullYear();
+  var MAN = ['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
+  var MANL = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
+  var FELAG = 'Brunahólf slökkvitæki ehf';
+  var FOTUR = FELAG + ' · Hlíðasmári 10, 201 Kópavogur · sími 547-0100';
+
+  // 1:1 við eyðublaðið slokkvikerfis-uttekt-tomt-eyoublad.pdf
+  var BUNADUR = ['Slökkvimiðill / fj. kerfa','Hylki','Þrýstiprófunartími hylkja','Hylkjaþrýstingur','Hæðarmæling','Dreifilögn','Dreifistútar','Tengigrein','Festingar','Þrýstislöngur','Stýrislöngur','Deililokar','Afhleypivír','Afhleypihylki','Stjórnstöð','Handboðar f. afhl.','Bræðivör f. afhl.'];
+  var VOKTUN = ['Þjónustubók í vasa','Þjónustusamningur','Handvirk afhl. — neyðar','Sjálfvirk afhleyping','Fjarvöktun (bruna/bilun)'];
+  var HAUS = [['samn','Samn. nr'],['vidsk','Viðskiptavinur'],['tengil','Tengiliður / netfang'],['heim','Heimilisfang'],['postnr','Póstnúmer og staður'],['simi','Sími'],
+              ['dags','Dags. skoðunar','date'],['dagsurb','Dags. viðgerða / úrbóta','date'],['madur','Nafn skoðunarmanns'],['thjon','Nafn þjónustuaðila'],['fjarg','Nafn fjargæsluaðila'],['upps','Nafn uppsetningaraðila']];
+  var SVOR = [['ok','Í lagi'],['bad','Ekki í lagi'],['ath','Sjá ath.']];
+
+  var KERFI = [
+    {id:'varmaland', nafn:'Hótel Varmaland', kerfi:'Aðaleldhús', tegund:'Vökvakerfi', heim:'Varmaland, Borgarfirði', man:9, interval:12, sidast:null, verd:null, ars:true, demo:false, skref:{}},
+    {id:'d1', nafn:'Veitingastaður við höfnina', kerfi:'Eldhús', tegund:'Vökvakerfi', heim:'—', man:3, interval:6, sidast:AR+'-03-12', verd:null, ars:true, demo:true, skref:{skodad:1,skyrsla:1,send:1,reikningur:0}},
+    {id:'d2', nafn:'Mötuneyti — skrifstofuhús', kerfi:'Eldhús 2. hæð', tegund:'Gaskerfi', heim:'—', man:11, interval:12, sidast:(AR-1)+'-11-04', verd:null, ars:false, demo:true, skref:{}}
+  ];
+  var SKREF = [['skodad','Skoðað'],['skyrsla','Skýrsla'],['send','Send'],['reikningur','Reikningur']];
+  var LS = 'slokkvikerfi_proto_v1';
+  var st = {stada:'allt', man:0, leit:'', opid:'varmaland'};
+  var gogn = lesa();
+
+  function lesa(){ try{ return JSON.parse(localStorage.getItem(LS)) || {}; }catch(e){ return {}; } }
+  function vista(){
+    var ok = true;
+    try{ localStorage.setItem(LS, JSON.stringify(gogn)); ok = localStorage.getItem(LS) === JSON.stringify(gogn); }catch(e){ ok = false; }
+    var el = document.getElementById('f-saved');
+    el.textContent = ok ? '✓ Vistað í þessum vafra ' + new Date().toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'}) : '⚠ Vistaðist ekki';
+    el.style.color = ok ? '' : 'var(--brand-dk)';
+  }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function dm(iso){ if(!iso) return '—'; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+  function $(id){ return document.getElementById(id); }
+
+  function skref(k){ var g = gogn[k.id]; return (g && g.skref) || k.skref || {}; }
+  function sidast(k){ var g = gogn[k.id]; return (g && g.lokid) || k.sidast; }
+  function naest(k){
+    var s = sidast(k);
+    if(!s) return new Date(AR, k.man-1, 1);
+    var d = new Date(s); return new Date(d.getFullYear(), d.getMonth()+k.interval, 1);
+  }
+  function stada(k){
+    var sk = skref(k), n = naest(k), nu = new Date(), m0 = new Date(nu.getFullYear(), nu.getMonth(), 1);
+    if(sk.skodad && !sk.reikningur) return ['orukkad','Órukkað','p-bad'];
+    if(n < m0) return ['fram','Fram yfir','p-bad'];
+    if(n.getTime() === m0.getTime()) return ['nu','Þessi mánuður','p-warn'];
+    if(sk.skodad && sk.reikningur) return ['buid','Búið '+AR,'p-ok'];
+    return ['framundan','Framundan · '+MAN[n.getMonth()]+' '+n.getFullYear(),'p-off'];
+  }
+
+  function teiknaYfirlit(){
+    $('yr').textContent = AR; $('th-skref').textContent = 'Skref ' + AR;
+    var allt = KERFI.map(function(k){ return {k:k, s:stada(k)}; });
+    var tel = function(f){ return allt.filter(f).length; };
+    $('kpis').innerHTML =
+      kpi('Kerfi í þjónustu', allt.length) + kpi('Skoðað '+AR, tel(function(x){return skref(x.k).skodad;})) +
+      kpi('Á gjalddaga / fram yfir', tel(function(x){return x.s[0]==='nu'||x.s[0]==='fram';}), true) +
+      kpi('Skoðað en órukkað', tel(function(x){return x.s[0]==='orukkad';}), true) +
+      kpi('Verð vantar', tel(function(x){return x.k.verd==null;}), true);
+    var ST = [['allt','Allt'],['nu','Þessi mánuður'],['fram','Fram yfir'],['orukkad','Órukkað'],['buid','Búið'],['framundan','Framundan']];
+    $('stada-chips').innerHTML = ST.map(function(s){
+      var n = s[0]==='allt' ? allt.length : tel(function(x){return x.s[0]===s[0];});
+      return '<span class="chip'+(st.stada===s[0]?' on':'')+'" data-st="'+s[0]+'">'+s[1]+'<span class="n">'+n+'</span></span>';
+    }).join('');
+    $('man-chips').innerHTML = '<span class="chip'+(st.man===0?' on':'')+'" data-m="0">Allir mánuðir</span>' + MAN.map(function(m,i){
+      var n = tel(function(x){return x.k.man===i+1;});
+      return '<span class="chip'+(st.man===i+1?' on':'')+'" data-m="'+(i+1)+'"'+(n?'':' style="opacity:.45"')+'>'+m+(n?'<span class="n">'+n+'</span>':'')+'</span>';
+    }).join('');
+    var sia = allt.filter(function(x){
+      if(st.stada!=='allt' && x.s[0]!==st.stada) return false;
+      if(st.man && x.k.man!==st.man) return false;
+      if(st.leit && (x.k.nafn+' '+x.k.kerfi).toLowerCase().indexOf(st.leit.toLowerCase())<0) return false;
+      return true;
+    });
+    $('rows').innerHTML = sia.map(function(x){
+      var k=x.k;
+      return '<tr class="r" data-id="'+k.id+'"><td><div class="nm">'+esc(k.nafn)+(k.demo?'<span class="demo">DÆMI</span>':'')+'</div><div class="sub">'+esc(k.kerfi)+' · '+esc(k.tegund)+(k.ars?' · 🧯 líka í ársskoðun':'')+'</div></td>'+
+        '<td class="sub">'+esc(k.heim)+'</td><td>'+MANL[k.man-1]+'</td><td>'+k.interval+' mán</td><td>'+dm(sidast(k))+'</td>'+
+        '<td><div class="steps">'+skrefHtml(k)+'</div></td><td>'+(k.verd==null?'<span class="pill p-warn">⚠ vantar</span>':k.verd+' kr')+'</td>'+
+        '<td><span class="pill '+x.s[2]+'">'+x.s[1]+'</span></td></tr>';
+    }).join('') || '<tr><td colspan="8" class="sub" style="text-align:center;padding:22px">Ekkert kerfi passar við síuna.</td></tr>';
+    $('cards').innerHTML = sia.map(function(x){
+      var k=x.k;
+      return '<div class="card r" data-id="'+k.id+'" style="cursor:pointer"><div style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1"><div class="nm">'+esc(k.nafn)+(k.demo?'<span class="demo">DÆMI</span>':'')+'</div><div class="sub">'+esc(k.kerfi)+' · '+MANL[k.man-1]+' · '+k.interval+' mán'+(k.ars?' · 🧯':'')+'</div></div><span class="pill '+x.s[2]+'">'+x.s[1]+'</span></div><div class="steps" style="margin-top:8px">'+skrefHtml(k)+'</div></div>';
+    }).join('');
+  }
+  function kpi(t,n,warn){ return '<div class="kpi'+(warn&&n?' warn':'')+'"><small>'+t+'</small><b>'+n+'</b></div>'; }
+  function skrefHtml(k){ var s=skref(k); return SKREF.map(function(x){ return '<span class="pill '+(s[x[0]]?'p-ok':'p-off')+'">'+(s[x[0]]?'✓ ':'')+x[1]+'</span>'; }).join(''); }
+
+  // ── eyðublað ──
+  function blad(){
+    var id = st.opid, k = KERFI.filter(function(x){return x.id===id;})[0];
+    if(!gogn[id]) gogn[id] = {};
+    var g = gogn[id];
+    if(!g.haus) g.haus = {vidsk:k.nafn, heim:k.heim, dags:new Date().toISOString().slice(0,10), thjon:FELAG};
+    if(!g.bun) g.bun = {}; if(!g.vok) g.vok = {}; if(!g.ath) g.ath = {};
+    if(!g.eld) g.eld = [{heiti:'Djúpsteikingarpottur'},{heiti:'Panna / grill'},{heiti:'Eldavél'}];
+    return {k:k, g:g};
+  }
+  function triHtml(hop, i, v){
+    return '<div class="tri">'+SVOR.map(function(s){ return '<button type="button" class="'+s[0]+(v===s[0]?' on':'')+'" data-hop="'+hop+'" data-i="'+i+'" data-v="'+s[0]+'">'+s[1]+'</button>'; }).join('')+'</div>';
+  }
+  function teiknaForm(){
+    var b = blad(), k=b.k, g=b.g;
+    $('f-undir').textContent = k.nafn + ' · ' + k.kerfi + ' · ' + k.tegund + (k.demo?' · DÆMI':'');
+    $('f-haus').innerHTML = HAUS.map(function(h){
+      return '<div><label class="f">'+h[1]+'</label><input type="'+(h[2]||'text')+'" data-haus="'+h[0]+'" value="'+esc(g.haus[h[0]]||'')+'"></div>';
+    }).join('');
+    $('f-bun').innerHTML = BUNADUR.map(function(l,i){
+      var r = g.bun[i] || {};
+      return '<div class="line" style="'+(i?'':'border-top:0')+'"><div class="lbl">'+l+'</div>'+
+        '<input type="text" placeholder="Tegund" data-bt="'+i+'" value="'+esc(r.teg||'')+'">'+
+        '<input type="number" min="0" placeholder="Stk." data-bs="'+i+'" value="'+esc(r.stk||'')+'">'+
+        triHtml('bun',i,r.v)+'</div>';
+    }).join('');
+    $('f-vok').innerHTML = VOKTUN.map(function(l,i){
+      var r = g.vok[i] || {};
+      return '<div class="line nometa" style="'+(i?'':'border-top:0')+'"><div class="lbl">'+l+'</div>'+triHtml('vok',i,r.v)+'</div>';
+    }).join('');
+    $('f-eld').innerHTML = g.eld.map(function(r,i){
+      return '<div class="line nometa" style="'+(i?'':'border-top:0')+'"><div style="display:flex;gap:6px"><input type="text" placeholder="Heiti tækis" data-eh="'+i+'" value="'+esc(r.heiti||'')+'"><button class="btn" data-ex="'+i+'" title="Fjarlægja línu">✕</button></div>'+triHtml('eld',i,r.v)+'</div>';
+    }).join('');
+    $('f-annad').value = g.annad || '';
+    teiknaAth(); telja();
+  }
+  function lina(hop,i,g){ return hop==='bun' ? (g.bun[i]=g.bun[i]||{}) : hop==='vok' ? (g.vok[i]=g.vok[i]||{}) : g.eld[i]; }
+  function heiti(hop,i,g){ return hop==='bun'?BUNADUR[i]:hop==='vok'?VOKTUN[i]:(g.eld[i].heiti||'Eldhústæki '+(+i+1)); }
+  function frabrigdi(g){
+    var ut=[];
+    ['bun','vok','eld'].forEach(function(hop){
+      var n = hop==='bun'?BUNADUR.length:hop==='vok'?VOKTUN.length:g.eld.length;
+      for(var i=0;i<n;i++){ var r = hop==='eld'?g.eld[i]:(g[hop][i]||{}); if(r && (r.v==='bad'||r.v==='ath')) ut.push({hop:hop,i:i,v:r.v}); }
+    });
+    return ut;
+  }
+  function teiknaAth(){
+    var g = blad().g, f = frabrigdi(g);
+    $('f-ath-tomt').style.display = f.length ? 'none' : '';
+    $('f-ath').innerHTML = f.map(function(x){
+      var key = x.hop+':'+x.i;
+      return '<li style="margin-bottom:6px"><span class="pill '+(x.v==='bad'?'p-bad':'p-warn')+'">'+esc(heiti(x.hop,x.i,g))+' — '+(x.v==='bad'?'Ekki í lagi':'Sjá ath.')+'</span><input type="text" style="margin-top:4px" placeholder="Hvað er að og hvað þarf að gera?" data-ath="'+key+'" value="'+esc(g.ath[key]||'')+'"></li>';
+    }).join('');
+  }
+  function telja(){
+    var g = blad().g, c=function(o,n){ var t=0; for(var i=0;i<n;i++) if(o[i]&&o[i].v) t++; return t; };
+    $('c-bun').textContent = '· '+c(g.bun,BUNADUR.length)+' af '+BUNADUR.length;
+    $('c-vok').textContent = '· '+c(g.vok,VOKTUN.length)+' af '+VOKTUN.length;
+    $('c-eld').textContent = '· '+g.eld.filter(function(r){return r.v;}).length+' af '+g.eld.length;
+  }
+  function vantar(){
+    var g = blad().g, v=[];
+    var ob = BUNADUR.filter(function(_,i){return !(g.bun[i]&&g.bun[i].v);}).length;
+    var ov = VOKTUN.filter(function(_,i){return !(g.vok[i]&&g.vok[i].v);}).length;
+    var oe = g.eld.filter(function(r){return !r.v;}).length;
+    if(ob) v.push(ob+' búnaðarlínur ósvaraðar');
+    if(ov) v.push(ov+' vöktunarlínur ósvaraðar');
+    if(oe) v.push(oe+' eldhústæki ósvöruð');
+    var oa = frabrigdi(g).filter(function(x){return !(g.ath[x.hop+':'+x.i]||'').trim();}).length;
+    if(oa) v.push(oa+' athugasemd vantar texta');
+    if(!(g.haus.madur||'').trim()) v.push('nafn skoðunarmanns vantar');
+    return v;
+  }
+
+  // ── skýrsla til prentunar ──
+  function skyrsla(){
+    var b = blad(), g=b.g, h=g.haus;
+    var x = function(v,m){ return v===m?'✕':''; };
+    var rad = function(l,r,meta){ r=r||{}; return '<tr><td>'+esc(l)+'</td>'+(meta?'<td>'+esc(r.teg||'')+'</td><td class="c">'+esc(r.stk||'')+'</td>':'')+'<td class="c">'+x(r.v,'ok')+'</td><td class="c">'+x(r.v,'bad')+'</td><td class="c">'+x(r.v,'ath')+'</td></tr>'; };
+    var f = frabrigdi(g);
+    $('report').innerHTML =
+      '<h3>Skoðunarskýrsla slökkvikerfis</h3><div style="text-align:center;color:#555">Slökkvikerfi (vökva-/gasslökkvikerfi) · '+esc(FELAG)+'</div>'+
+      '<div class="hd"><table>'+HAUS.slice(0,6).map(function(a){return '<tr><th style="width:42%">'+a[1]+'</th><td>'+esc(h[a[0]]||'')+'</td></tr>';}).join('')+'</table>'+
+      '<table>'+HAUS.slice(6).map(function(a){return '<tr><th style="width:52%">'+a[1]+'</th><td>'+esc(a[2]?dm(h[a[0]]):h[a[0]]||'')+'</td></tr>';}).join('')+'</table></div>'+
+      '<table><tr><th>Búnaður</th><th>Tegund</th><th>Stk.</th><th>Í lagi</th><th>Ekki í lagi</th><th>Sjá ath.</th></tr>'+BUNADUR.map(function(l,i){return rad(l,g.bun[i],true);}).join('')+'</table>'+
+      '<table><tr><th>Vöktun og fl.</th><th>Í lagi</th><th>Ekki í lagi</th><th>Sjá ath.</th></tr>'+VOKTUN.map(function(l,i){return rad(l,g.vok[i]);}).join('')+'</table>'+
+      '<table><tr><th>Eldhústæki (dreifistútar)</th><th>Í lagi</th><th>Ekki í lagi</th><th>Sjá ath.</th></tr>'+g.eld.map(function(r){return rad(r.heiti||'',r);}).join('')+'</table>'+
+      '<table><tr><th>Athugasemdir / úrbætur</th></tr><tr><td>'+(f.length?'<ol style="margin:4px 0;padding-left:18px">'+f.map(function(q){return '<li><b>'+esc(heiti(q.hop,q.i,g))+':</b> '+esc(g.ath[q.hop+':'+q.i]||'')+'</li>';}).join('')+'</ol>':'Engar athugasemdir.')+(g.annad?'<div><b>Annað:</b> '+esc(g.annad)+'</div>':'')+'</td></tr></table>'+
+      '<div style="font-size:10.5px;color:#555;margin-top:6px">Afrit af skoðunarskýrslunni verður sent eldvarnareftirliti slökkviliðs ef kallað er eftir því.</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:20px;margin-top:34px"><div style="border-top:1px solid #000;padding-top:3px">Staður</div><div style="border-top:1px solid #000;padding-top:3px">Dagsetning</div><div style="border-top:1px solid #000;padding-top:3px">'+esc(h.madur||'Nafn skoðunarmanns')+'<br><b>F.h. '+esc(FELAG)+'</b></div></div>'+
+      '<div class="ft">'+esc(FOTUR)+'</div>';
+  }
+
+  // ── atburðir ──
+  function syna(v){
+    [].forEach.call(document.querySelectorAll('.view'),function(e){e.classList.toggle('on',e.id==='v-'+v);});
+    [].forEach.call(document.querySelectorAll('.tab'),function(e){e.classList.toggle('on',e.dataset.v===v);});
+    if(v==='yfirlit') teiknaYfirlit(); if(v==='form') teiknaForm(); if(v==='profill') teiknaProfil();
+    window.scrollTo(0,0);
+  }
+  function teiknaProfil(){
+    var k = KERFI[0], s = stada(k);
+    $('p-kerfi').textContent = '1 kerfi · '+k.kerfi+' · '+k.tegund+' · '+s[1];
+    var ar=[AR-3,AR-2,AR-1,AR], sk=skref(k);
+    $('p-skjol').innerHTML = '<tr><td></td>'+ar.map(function(a){return '<th style="text-align:center;padding:4px">'+a+'</th>';}).join('')+'</tr>'+
+      [['🧯 Ársskoðun','—'],['🚨 Brunakerfi',''],['🍳 Slökkvikerfi','']].map(function(r,ri){
+        return '<tr><td style="padding:6px 4px;border-top:1px solid var(--line)">'+r[0]+'</td>'+ar.map(function(a){
+          var t = ri===2 ? (a===AR ? (sk.skyrsla?'<span class="pill p-ok">✓ skýrsla</span>':'<span class="pill p-warn">vantar</span>') : '<span class="sub">ekki í þjónustu</span>') : ri===0 ? '<span class="sub">(úr kerfinu)</span>' : '<span class="sub">—</span>';
+          return '<td style="text-align:center;border-top:1px solid var(--line)">'+t+'</td>';
+        }).join('')+'</tr>';
+      }).join('');
+  }
+  document.addEventListener('click', function(e){
+    var t = e.target, g;
+    if(t.classList.contains('tab')) return syna(t.dataset.v);
+    if(t.dataset.st){ st.stada=t.dataset.st; return teiknaYfirlit(); }
+    if(t.dataset.m!=null && t.classList.contains('chip')){ st.man=+t.dataset.m; return teiknaYfirlit(); }
+    var r = t.closest && t.closest('.r'); if(r){ st.opid=r.dataset.id; return syna('form'); }
+    if(t.dataset.hop){
+      g = blad().g; var l = lina(t.dataset.hop, t.dataset.i, g);
+      l.v = (l.v===t.dataset.v) ? null : t.dataset.v;
+      vista(); teiknaForm(); $('f-err').textContent=''; return;
+    }
+    if(t.dataset.ex!=null){ g=blad().g; g.eld.splice(+t.dataset.ex,1); vista(); return teiknaForm(); }
+    if(t.id==='btn-eld'){ blad().g.eld.push({heiti:''}); vista(); return teiknaForm(); }
+    if(t.id==='btn-til-baka') return syna('yfirlit');
+    if(t.id==='btn-p-skoda'){ st.opid='varmaland'; return syna('form'); }
+    if(t.id==='btn-nytt') return alert('Í alvöru síðunni: velja fyrirtæki úr fyrirtækjaskrá (eftir kt), heiti kerfis, tegund, skoðunarmánuð og tíðni (6/12 mán).');
+    if(t.id==='btn-hreinsa'){ if(confirm('Hreinsa öll svör þessarar skoðunar í frumgerðinni?')){ delete gogn[st.opid]; vista(); teiknaForm(); } return; }
+    if(t.id==='btn-prenta'){ skyrsla(); return window.print(); }
+    if(t.id==='btn-ljuka'){
+      var v = vantar();
+      if(v.length){ $('f-err').textContent = 'Ekki hægt að ljúka: ' + v.join(' · '); [].forEach.call(document.querySelectorAll('[data-ath]'),function(i){i.classList.toggle('miss',!i.value.trim());}); return; }
+      g = blad().g; g.lokid = g.haus.dags; g.skref = {skodad:1, skyrsla:1, send:0, reikningur:0};
+      vista(); $('f-err').textContent='';
+      alert('Skoðun lokið. Í alvöru síðunni verður PDF til, fer í 📁 Skjöl undir 🍳 og reikningsdrög stofnast (⚠ verð vantar).');
+      return syna('yfirlit');
+    }
+  });
+  document.addEventListener('input', function(e){
+    var t = e.target, g;
+    if(t.id==='leit'){ st.leit=t.value; return teiknaYfirlit(); }
+    g = blad().g;
+    if(t.dataset.haus) g.haus[t.dataset.haus]=t.value;
+    else if(t.dataset.bt!=null) (g.bun[t.dataset.bt]=g.bun[t.dataset.bt]||{}).teg=t.value;
+    else if(t.dataset.bs!=null) (g.bun[t.dataset.bs]=g.bun[t.dataset.bs]||{}).stk=t.value;
+    else if(t.dataset.eh!=null) g.eld[t.dataset.eh].heiti=t.value;
+    else if(t.dataset.ath){ g.ath[t.dataset.ath]=t.value; t.classList.remove('miss'); }
+    else if(t.id==='f-annad') g.annad=t.value;
+    else return;
+    vista();
+  });
+
+  teiknaYfirlit();
+})();
+</script>
+</body>
+</html>
