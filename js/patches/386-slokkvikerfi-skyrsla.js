@@ -218,7 +218,7 @@
       (S.stoppad ? '<div class="_sks-villa">⚠ Sjálfvistun stöðvuð: skoðuninni var breytt annars staðar. <button type="button" class="_sks-btn" data-act="endurhlada">Endurhlaða skoðunina</button></div>' : '') +
       '<div class="sheet' + (ro ? ' ro' : '') + '">' + bladHtml() + '</div>' +
       '<div class="kost">' + kostHtml() + '</div>' +
-      '<div class="_sks-bar"><span id="_sks-saved" class="_sks-saved">' + (S.rod ? 'Vistað á þjóni ' + esc(dm(S.rod.updated_at)) : 'Óvistað — skoðunin verður til við fyrstu breytingu') + '</span><span id="_sks-err" class="_sks-err"></span><span class="sp"></span>' +
+      '<div class="_sks-bar"><span id="_sks-saved" class="_sks-saved' + (S.stoppad ? ' villa' : '') + '">' + (S.stoppad ? '⚠ Síðasta breyting er ÓVISTUÐ — sjálfvistun stöðvuð' : S.rod ? 'Vistað á þjóni ' + esc(dm(S.rod.updated_at)) : 'Óvistað — skoðunin verður til við fyrstu breytingu') + '</span><span id="_sks-err" class="_sks-err"></span><span class="sp"></span>' +
         '<button type="button" class="_sks-btn" data-act="prenta">🖨 Prenta / PDF</button>' +
         (ro ? '<button type="button" class="_sks-btn" data-act="opna-aftur">✎ Opna aftur til breytinga</button>' : '<button type="button" class="_sks-btn pri" data-act="ljuka">Ljúka skoðun</button>') + '</div>';
     uppfaeraAth();
@@ -341,17 +341,25 @@
   }
 
   // ── flipar á prófílnum ──────────────────────────────────────────────────────
+  // Neðri helmingur Ársskoðunar: tækjalistinn (.uttekt-cols) og „Úttekt búin / í Vinnslu“-takkinn. Takkinn er
+  // sprautaður af öðrum pappa og stendur ekki alltaf næst á undan listanum (mælt á síma 21.09) — því er leitað
+  // meðal beinna barna, ekki treyst á systkinaröð.
   function arsHlutar(main) {
     const cols = main.querySelector(':scope > .uttekt-cols'); if (!cols) return [];
-    const ut = [cols], fyrir = cols.previousElementSibling;
-    if (fyrir && fyrir.id !== '_sks-host' && fyrir.id !== '_sks-tabs' && /Úttekt búin|í Vinnslu/i.test(fyrir.textContent || '') && fyrir.textContent.length < 120) ut.unshift(fyrir);
+    const ut = [];
+    [...main.children].forEach(el => {
+      if (el === cols || el.id === '_sks-host' || el.id === '_sks-tabs') return;
+      const t = (el.textContent || '').trim();
+      if (t.length < 80 && /Úttekt búin/i.test(t)) ut.push(el);
+    });
+    ut.push(cols);
     return ut;
   }
   function setjaFlipa(f) {
     S.flipi = f;
     const main = document.getElementById('companies-main'); if (!main) return;
     const slokk = f === 'slokk';
-    arsHlutar(main).forEach(el => { if (slokk) { el.dataset.sksFalid = '1'; el.style.display = 'none'; } else if (el.dataset.sksFalid) { delete el.dataset.sksFalid; el.style.display = ''; } });
+    arsHlutar(main).forEach(el => { if (slokk) { el.dataset.sksFalid = '1'; el.style.setProperty('display', 'none', 'important'); } else if (el.dataset.sksFalid) { delete el.dataset.sksFalid; el.style.removeProperty('display'); } });
     const host = document.getElementById('_sks-host'); if (host) host.style.display = slokk ? '' : 'none';
     main.querySelectorAll('#_sks-tabs ._sks-tab').forEach(b => b.classList.toggle('on', b.dataset.flipi === f));
     // Hýsillinn er nýr í hvert sinn sem prófíllinn er endurteiknaður — líka þegar SAMA fyrirtæki er
@@ -367,7 +375,7 @@
     const coEl = main.querySelector('[data-co-id]'); const cols = main.querySelector(':scope > .uttekt-cols');
     if (!coEl || !cols) return;
     const fid = +coEl.getAttribute('data-co-id'); if (!fid) return;
-    if (main.querySelector('#_sks-tabs') && S.fid === fid) return;                // þegar komið á þennan prófíl
+    if (main.querySelector('#_sks-tabs') && S.fid === fid) { if (S.flipi === 'slokk') setjaFlipa('slokk'); return; }   // þegar komið — endurbeita felun (takkinn kemur stundum á eftir)
     _mounting = true;
     try {
       if (S.fid !== fid) { clearTimeout(S.timer); if (S.dirty && !S.stoppad && S.k) await vista(); S.fid = fid; S.k = null; S.rod = null; S.data = null; S.flipi = 'ars'; S.kerfi = await saekjaKerfi(fid); }
@@ -380,7 +388,7 @@
         '<button type="button" class="_sks-tab" data-flipi="slokk">🍳 Slökkvikerfi' + (S.kerfi.length > 1 ? ' (' + S.kerfi.length + ')' : '') + '</button>';
       tabs.addEventListener('click', e => { const b = e.target.closest('._sks-tab'); if (b) setjaFlipa(b.dataset.flipi); });
       const host = document.createElement('div'); host.id = '_sks-host'; host.style.display = 'none'; wire(host);
-      const akkeri = arsHlutar(main)[0] || cols;
+      const hl = arsHlutar(main); const akkeri = hl.find(el => el.parentNode === main && (el.compareDocumentPosition(cols) & Node.DOCUMENT_POSITION_FOLLOWING)) || cols;
       main.insertBefore(tabs, akkeri); main.insertBefore(host, akkeri);
       // 385 skilur eftir ósk um að opna 🍳 beint þegar komið er af Slökkvikerfis-síðunni
       const o = window.__slokkvikerfiOpna; const beint = o && o.fid === fid && (Date.now() - o.at) < 15000;
