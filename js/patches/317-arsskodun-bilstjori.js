@@ -559,6 +559,9 @@
   }
 
   document.addEventListener('slokk-viewmode', vakta);
+  // 21.09.2026 (afköst): 187 sækir árs-gögnin nú fyrst þegar einhver les þau (yearInfo hér í spjald()). Perurnar eru
+  // teiknaðar samstillt, svo þegar gögnin lenda þarf að teikna aftur — annars sætu þær gráar fram að næstu DOM-breytingu.
+  document.addEventListener('irr-gogn', () => { clearTimeout(window.__bilT); window.__bilT = setTimeout(vakta, 120); });
   new MutationObserver(() => { clearTimeout(window.__bilT); window.__bilT = setTimeout(vakta, 260); })
     .observe(document.body, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);

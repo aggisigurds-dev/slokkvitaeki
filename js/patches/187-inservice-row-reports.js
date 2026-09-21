@@ -171,7 +171,7 @@
       invMap = map;
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-      process();
+      process(); gognLent();
     } catch (_) {}
     invLoading = false;
   }
@@ -210,7 +210,7 @@
       // rebuild the year cells so location-precise links replace kt-wide ones
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-      process();
+      process(); gognLent();
     } catch (_) {}
     locLoading = false;
   }
@@ -278,7 +278,7 @@
       // rebuild the year cells so the new 🧾 markers appear
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-      process();
+      process(); gognLent();
     } catch (_) {}
     reikLoading = false;
   }
@@ -296,7 +296,7 @@
       fcMap = map; fcMeta = meta;
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-      process();
+      process(); gognLent();
     } catch (_) {}
     fcLoading = false;
   }
@@ -333,7 +333,7 @@
       pairMap = map;
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-      process();
+      process(); gognLent();
     } catch (_) {}
     pairLoading = false;
   }
@@ -341,6 +341,8 @@
   // Hleðslari sem BREGST skilur vörpuna sína eftir tóma (null) og myndi því reyna aftur í hverju tifi — sókn á 1,5 s
   // fresti svo lengi sem villan varir. Fyrstu 6 sek. má vekja í hverju tifi (DB ekki tilbúið við ræsingu), svo á 20 s fresti.
   let _fyrstVakid = 0, _sidastVakid = 0;
+  // Lesendur sem teikna SJÁLFIR úr yearInfo() (317 Bílstjóri) sjá ekki DOM-breytingu þegar gögn lenda — þeir hlusta á þetta.
+  function gognLent(){ try { document.dispatchEvent(new CustomEvent('irr-gogn')); } catch (_) {} }
   function vekjaHledslu(){
     if (locMap && fcMap && invMap && pairMap && reikMap) return;
     const nu = Date.now();
