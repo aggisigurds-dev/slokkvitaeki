@@ -64,6 +64,13 @@
       V + '._ars-statgrid>*{border-radius:2px!important;position:relative!important;overflow:hidden!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 30px -14px rgba(0,0,0,.7)!important}',
       V + '._ars-statgrid>*::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:' + STRIPE + 'none}',
       V + '._ars-statgrid>*>*{position:relative;z-index:1}',
+      // Röndin ofan á hinum þremur (Agnar 22.09: „kanski bara röndin ofaná græna,
+      // rauða, gráa glugganum"). Hún er teiknuð sem ::after, ekki border — Stílstjóra-
+      // reglur Agnars setja svartan border-top á þessi spjöld og vinna hann slaginn.
+      V + '._ars-statgrid>._kpi::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;z-index:2;pointer-events:none}',
+      V + '._kpi--graent::after{background:#16783f}',
+      V + '._kpi--rautt::after{background:#971515}',
+      V + '._kpi--hlut::after{background:#8f98a8}',
       V + '.bstal-hero{grid-column:1!important;order:-1!important;padding:18px 22px!important;border-top:3px solid #2f7fc9!important;display:flex!important;flex-direction:column!important;gap:10px!important;justify-content:center!important}',
       // Röðin á borðinu: Virði (breitt) · Búið · Eftir · Fjöldi — Fjöldinn aftast.
       V + '._kpi--hlut{border-top:3px solid #8f98a8!important;order:3!important}',
