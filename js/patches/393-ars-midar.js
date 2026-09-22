@@ -50,7 +50,8 @@
       V + '._ars-statgrid>*::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:' + STRIPE + 'none}',
       V + '._ars-statgrid>*>*{position:relative;z-index:1}',
       V + '.bstal-hero{grid-column:1!important;order:-1!important;padding:18px 22px!important;border-top:3px solid #2f7fc9!important;display:flex!important;flex-direction:column!important;gap:10px!important;justify-content:center!important}',
-      V + '._kpi--hlut{border-top:3px solid #8f98a8!important}',
+      // Röðin á borðinu: Virði (breitt) · Búið · Eftir · Fjöldi — Fjöldinn aftast.
+      V + '._kpi--hlut{border-top:3px solid #8f98a8!important;order:3!important}',
       V + '._kpi--graent{border-top:3px solid #16783f!important}',
       V + '._kpi--rautt{border-top:3px solid #971515!important}',
       V + '._kpi-h,' + V + '.bstal-hero>div:first-child>div:first-child{font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.14em!important;text-transform:uppercase!important}',

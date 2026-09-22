@@ -73,7 +73,18 @@
       V + '.arsm-b.is-tom em,' + V + '.arsm-b.is-tom u{color:#e0a93e}',
 
       // ── 2 · síustikan ─────────────────────────────────────────────────────
-      V + '.arsm-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 8px}',
+      // Röðin á borðinu: síur · Fleiri síur · LEITIN sem fyllir út í · Bílstjóri.
+      // Leitarreiturinn er EKKI færður til í DOM-inu — aðeins `order` — því 153
+      // endurteiknar við innslátt og fluttur reitur myndi missa bendilinn.
+      F + '._ars-filterstrip{display:flex!important;align-items:center!important;gap:10px!important;flex-wrap:wrap!important;margin:0 0 8px!important}',
+      F + '#_ars-search{order:3!important;flex:1 1 220px!important;min-width:180px!important;max-width:none!important}',
+      F + '.arsm-seg{order:1}',
+      F + '.arsm-more{order:2}',
+      F + '#_ars-searchall{order:2}',
+      // Kort/Listi-parið fer (Agnar 22.09: „það má taka út hönnunarham og kort/listi“);
+      // kortið er opnað með takkanum í hlutahausnum eins og á borðinu.
+      F + '._ars-vm{display:none!important}',
+      F + '#_ars-pnr-row{display:none!important}',
       V + '.arsm-seg{display:flex;height:38px;border:1px solid rgba(20,24,34,.22);border-radius:3px;overflow:hidden;background:' + SILVER + ';box-shadow:0 6px 16px -12px rgba(0,0,0,.5)}',
       V + '.arsm-seg button{display:inline-flex;align-items:center;gap:7px;padding:0 15px;border:0;border-left:1px solid rgba(20,24,34,.14);background:transparent;color:#3a4250;font:600 12.5px ' + SANS + ';white-space:nowrap;cursor:pointer}',
       V + '.arsm-seg button:first-child{border-left:0}',
@@ -109,9 +120,13 @@
       // næstum tómar raðir hvor undir annarri, 90 px af engu milli strimils og töflu.
       // Takkinn flýtur nú til hægri svo raðirnar deila einni línu.
       // NB: hvort tveggja er AUÐKENNI í 153 (`id="_arsmap-wrapper"`, `id="_ars-pnr-row"`),
-      // ekki klasi — punktaútgáfan hér að ofan hitti ekkert og bilið stóð óbreytt.
-      F + '#_arsmap-wrapper{float:right!important;margin:0 0 6px!important}',
-      F + '#_ars-pnr-row{margin:0 0 6px!important}',
+      // ekki klasi — punktaútgáfan hitti ekkert og bilið stóð óbreytt.
+      // Agnar 22.09 („allt of mikið bil"): kortatakkinn og póstnúmera-sían voru tvær
+      // næstum tómar raðir, 90 px af engu milli strimils og töflu. Takkarnir sitja nú
+      // í hlutahausnum (eins og „Númer ▾ · Raða ▾" á borðinu) og raðirnar hverfa.
+      F + '#_arsmap-wrapper{margin:0!important}',
+      V + '.arsm-sec .arsm-verkf{display:flex;align-items:center;gap:8px;margin-left:auto}',
+      V + '.arsm-sec .arsm-verkf>*{margin:0!important}',
     ].join('\n');
   }
 
@@ -130,6 +145,31 @@
   const heitiAf = el => String(el.textContent || '').replace(/\s*\d[\d.]*\s*$/, '').trim();
   const erVirk = el => (el.getAttribute('style') || '').indexOf('--brand') !== -1;
   const merkja = on => { document.documentElement.setAttribute('data-arsm', on ? '1' : '0'); };
+
+  /* Takkar sem við FÆRUM (Bílstjóri, Númer, Sýna kort) eiga aðra eigendur — 153 og
+   * 317/318. Fyrsta útgáfan fjarlægði einfaldlega sína eigin gáma við endurbyggingu
+   * og tók þá með sér: „📍 Númer" og „🗺️ Sýna kort" HURFU af síðunni og komu ekki
+   * aftur fyrr en við næstu heilu hleðslu (mælt 22.09). Þess vegna man þessi vörpun
+   * hvar hver takki á heima og skilar honum þangað áður en gámur er fjarlægður. */
+  const HEIM = new WeakMap();
+  function faera(node, gamur) {
+    if (!node || !gamur) return null;
+    if (!HEIM.has(node)) HEIM.set(node, node.parentElement);
+    node.style.removeProperty('display');      // gæti hafa verið lagður til hliðar falinn
+    gamur.appendChild(node);
+    return node;
+  }
+  function heimskila(gamur) {
+    if (!gamur) return;
+    const vara = document.querySelector('#view-arsskodun #ars-main');
+    Array.from(gamur.children).forEach(ch => {
+      const heim = HEIM.get(ch);
+      // Sé heimilið horfið (153 endurteiknaði) er takkinn samt EKKI látinn fylgja
+      // gámnum í ruslið — hann er lagður í sýnina svo næsta smíði finni hann aftur.
+      if (heim && heim.isConnected) heim.appendChild(ch);
+      else if (vara) { ch.style.setProperty('display', 'none', 'important'); vara.appendChild(ch); }
+    });
+  }
 
   // ── 1 · mánaðastrimill ────────────────────────────────────────────────────
   function strimill(root) {
@@ -211,11 +251,11 @@
     const auka = chips.filter(c => !ADAL.some(re => re.test(heitiAf(c))));
     if (!adal.length || !auka.length) return false;
 
-    const strip = row.closest('._ars-filterstrip') || row.parentNode;
-    root.querySelectorAll('.arsm-bar,.arsm-tags').forEach(n => n.remove());
-
-    const bar = document.createElement('div');
-    bar.className = 'arsm-bar';
+    // Stikan SJÁLF er filterstrip 153 — við bætum í hana og röðum með `order`,
+    // svo leitarreiturinn haldi bendlinum við innslátt.
+    const bar = row.closest('._ars-filterstrip') || row.parentNode;
+    root.querySelectorAll('.arsm-verk').forEach(heimskila);
+    root.querySelectorAll('.arsm-seg,.arsm-more,.arsm-tags,.arsm-verk').forEach(n => n.remove());
 
     // Daglegu síurnar — ein silfurstika, virk sía í málmi (eins og á borðinu).
     const seg = document.createElement('div');
@@ -295,7 +335,20 @@
     }, true);
     wrap.appendChild(btn); wrap.appendChild(menu);
     bar.appendChild(wrap);
-    strip.parentNode.insertBefore(bar, strip.nextSibling);
+
+    // Bílstjóri (og Hönnunarhamur) fara út í hægri kantinn á sömu línu — á borðinu
+    // stendur „Bílstjóri" þar. Röðin sem hýsti þá verður tóm og víkur.
+    // Bílstjóri/Hönnunarhamur (317/318) eru EKKI færðir — aðeins fleytt til hægri þar
+    // sem þeir standa. Fyrsta atlagan flutti þá inn í stikuna og þeir hurfu alveg af
+    // síðunni: eigendurnir bæta þeim við einu sinni, svo þegar endurbygging fjarlægði
+    // gáminn minn fóru takkarnir með. Þeir bera hvorki klasa né auðkenni þegar hér er
+    // komið (mælt: `class=""`), svo þeir eru fundnir á textanum og aðeins stílaðir.
+    Array.from(bar.parentElement.children).forEach(el => {
+      if (el.tagName !== 'BUTTON') return;
+      if (!/Bílstjóri|Hönnunarham/.test(el.textContent || '')) return;
+      el.style.setProperty('float', 'right', 'important');
+      el.style.setProperty('margin', '0 0 8px 7px', 'important');
+    });
 
     if (virkAuka.length) {
       const tags = document.createElement('div');
@@ -326,7 +379,7 @@
     const wrap = root.querySelector('.data-table-wrap, ._ars-tblscroll');
     if (!wrap) return;
     const gamall = root.querySelector('.arsm-sec');
-    if (gamall) gamall.remove();
+    if (gamall) { heimskila(gamall.querySelector('.arsm-verkf')); gamall.remove(); }
     // Talan er ekki reiknuð hér — hún er LESIN af línunni sem 153 skrifar sjálft
     // („Sýni 632 af 655 viðskiptavinum"). Tvær talningar á sama hlut reka í sundur.
     let talning = '';
@@ -345,6 +398,22 @@
     const h = document.createElement('h2'); h.textContent = 'Staðirnir';
     const s = document.createElement('span'); s.textContent = talning;
     sec.appendChild(h); sec.appendChild(s);
+
+    // Verkfærin sem stóðu í tveimur hálftómum röðum (póstnúmera-sían og kortatakkinn)
+    // setjast hér til hægri — eins og „Númer ▾ · Raða ▾" á borðinu.
+    const verkf = document.createElement('div');
+    verkf.className = 'arsm-verkf';
+    const pnrBtn = root.querySelector('#_ars-pnr-btn');
+    const pnrClear = root.querySelector('#_ars-pnr-clear');
+    const mapBtn = (() => {
+      const w = document.getElementById('_arsmap-wrapper');
+      return w ? w.querySelector('button') : null;
+    })();
+    faera(pnrBtn, verkf);
+    faera(pnrClear, verkf);
+    faera(mapBtn, verkf);
+    if (verkf.children.length) sec.appendChild(verkf);
+
     const mark = wrap.closest('.thm') || wrap;
     mark.parentNode.insertBefore(sec, mark);
   }
