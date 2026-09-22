@@ -27,6 +27,7 @@
   const SANS = '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif';
   const DISPLAY = '"Playfair Display",Georgia,serif';
   const METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
+  const STRIPE = 'repeating-linear-gradient(108deg,rgba(255,255,255,.05) 0 1px,transparent 1px 5px),';
   const GRAPHITE = 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)';
   const SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
   const GREEN = 'linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)';
@@ -39,9 +40,25 @@
       // Titill í Playfair (stærð og litur eru reglur Agnars — þeim er ekki breytt)
       V + '#ars-main h1{font-family:' + DISPLAY + '!important;font-weight:800!important;letter-spacing:-.02em!important}',
 
-      // Lykiltölur: ferköntuð spjöld, Playfair-tala. Litirnir eru hans.
-      V + '._ars-statgrid>*{border-radius:2px!important}',
-      V + '._kpi .thm-statnum,' + V + '._kpi>div:nth-child(2),' + V + '.bstal-hero ._hero-num{font-family:' + DISPLAY + '!important;font-weight:800!important;letter-spacing:-.02em!important;font-variant-numeric:lining-nums tabular-nums!important}',
+      // ── Lykiltölu-spjöldin fjögur (Agnar 22.09: „þessum fjórum gluggum geggjað flott") ──
+      // Eins og á borðinu: Virðið er breiða spjaldið fremst, málmáferð ofan á LITUM HANS
+      // (þeir koma úr Stílstjóranum og er ekki breytt — rendurnar liggja í ::before svo
+      // bakgrunnurinn hans stendur óhaggaður undir), málmband efst, merkimiði í einbreiðu
+      // letri og talan í Playfair í þeirri stærð sem hönnunin sýnir.
+      V + '._ars-statgrid{grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr))!important;gap:12px!important}',
+      V + '._ars-statgrid>*{border-radius:2px!important;position:relative!important;overflow:hidden!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 30px -14px rgba(0,0,0,.7)!important}',
+      V + '._ars-statgrid>*::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:' + STRIPE + 'none}',
+      V + '._ars-statgrid>*>*{position:relative;z-index:1}',
+      V + '.bstal-hero{grid-column:1!important;order:-1!important;padding:18px 22px!important;border-top:3px solid #2f7fc9!important;display:flex!important;flex-direction:column!important;gap:10px!important;justify-content:center!important}',
+      V + '._kpi--hlut{border-top:3px solid #8f98a8!important}',
+      V + '._kpi--graent{border-top:3px solid #16783f!important}',
+      V + '._kpi--rautt{border-top:3px solid #971515!important}',
+      V + '._kpi-h,' + V + '.bstal-hero>div:first-child>div:first-child{font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.14em!important;text-transform:uppercase!important}',
+      V + '._kpi .thm-statnum,' + V + '._kpi>div:nth-child(2),' + V + '.bstal-hero ._hero-num,' + V + '.bstal-hero>div:nth-child(2){font-family:' + DISPLAY + '!important;font-weight:800!important;letter-spacing:-.02em!important;font-variant-numeric:lining-nums tabular-nums!important}',
+      V + '._kpi .thm-statnum,' + V + '._kpi>div:nth-child(2){font-size:32px!important;line-height:1!important}',
+      V + '.bstal-hero>div:nth-child(2){font-size:44px!important;line-height:1!important}',
+      V + '._kpi-s,' + V + '.bstal-hero>div:nth-child(3){font-size:11.5px!important;line-height:1.45!important}',
+      V + '._ars-statgrid .thm-track{height:6px!important;border-radius:1px!important;overflow:hidden!important}',
 
       // Síuflísar og mánuðir: ferkantað stál, valið í málmi
       V + '._ars-statusrow{border-radius:3px!important;border-color:rgba(20,24,34,.18)!important;gap:0!important}',
