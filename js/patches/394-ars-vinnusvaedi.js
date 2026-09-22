@@ -137,7 +137,9 @@
       V + '.arsm-korthaus .arsm-led{width:7px;height:7px;border-radius:50%;background:#3cc47c;box-shadow:0 0 8px #3cc47c;flex:none}',
       V + '.arsm-korthaus .arsm-leg{display:inline-flex;align-items:center;gap:6px;font:500 11px ' + MONO + ';color:#d5dbe6;white-space:nowrap}',
       V + '.arsm-korthaus .arsm-leg i{width:6px;height:6px;border-radius:50%;display:block}',
-      V + '.arsm-korthaus button{height:30px!important;padding:0 11px!important;border:1px solid #3a3d44!important;border-radius:3px!important;background:transparent!important;color:#eef1f4!important;font:600 12px ' + SANS + '!important;margin:0!important;cursor:pointer}',
+      // Gullþemað málar alla takka; hér þarf tvöfaldað auðkenni OG background-image
+      // til að fá hreinan útlínutakka eins og á borðinu (mælt: gull sló í gegn).
+      W + '.arsm-korthaus button{height:30px!important;padding:0 11px!important;border:1px solid #3a3d44!important;border-radius:3px!important;background:transparent!important;background-image:none!important;box-shadow:none!important;color:#eef1f4!important;text-shadow:none!important;font:600 12px ' + SANS + '!important;margin:0!important;cursor:pointer}',
 
       // ── 3 · hlutahaus og bilið ────────────────────────────────────────────
       V + '.arsm-sec{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:2px 2px 8px}',
@@ -186,9 +188,30 @@
     gamur.appendChild(node);
     return node;
   }
+  /* Gullþema hússins málar ALLA takka og vinnur stílblaðið hér (mælt: „Fela kort"
+   * kom gullinn inni í málmhausnum þrátt fyrir !important og tvöfaldað auðkenni).
+   * Þess vegna er takkinn klæddur inline meðan hann stendur í hausnum — og afklæddur
+   * aftur um leið og hann fer heim, svo hann beri sitt venjulega útlit þar. */
+  const KLADI = {
+    background: 'transparent', 'background-image': 'none', 'box-shadow': 'none',
+    border: '1px solid #3a3d44', color: '#eef1f4', 'text-shadow': 'none',
+    'border-radius': '3px', height: '30px', padding: '0 11px', margin: '0'
+  };
+  function klaeda(node) {
+    if (!node) return;
+    Object.keys(KLADI).forEach(k => node.style.setProperty(k, KLADI[k], 'important'));
+    node.dataset.arsmKladi = '1';
+  }
+  function afklaeda(node) {
+    if (!node || !node.dataset.arsmKladi) return;
+    Object.keys(KLADI).forEach(k => node.style.removeProperty(k));
+    delete node.dataset.arsmKladi;
+  }
+
   function heimskila(gamur) {
     if (!gamur) return;
     const vara = document.querySelector('#view-arsskodun #ars-main');
+    Array.from(gamur.children).forEach(afklaeda);
     Array.from(gamur.children).forEach(ch => {
       const heim = HEIM.get(ch);
       // Sé heimilið horfið (153 endurteiknaði) er takkinn samt EKKI látinn fylgja
@@ -466,6 +489,14 @@
       em.textContent = raun + ' raunreiknuð';
       leg.appendChild(em);
     }
+    // Merkimiðinn ber staðafjöldann eins og á borðinu: „VIRÐI ÁRSÞJÓNUSTU 2026 · 620 STAÐIR".
+    const kick = h.children[0] && h.children[0].firstElementChild;
+    const sub = root.querySelector('._ars-sub');
+    const mst = sub ? String(sub.textContent || '').match(/([\d.]+)\s*með skráð/) : null;
+    if (kick && mst && !/STAÐIR/i.test(kick.textContent || '')) {
+      kick.textContent = String(kick.textContent || '').trim() + ' · ' + mst[1] + ' staðir';
+    }
+
     // „28,3M" → „28,3 m.kr" eins og á borðinu (einingin í minna letri).
     const mt = String(num.textContent || '').trim().match(/^([\d.]+,?\d*)\s*M\.?$/i);
     if (mt) {
@@ -518,7 +549,7 @@
     leg.className = 'arsm-leg';
     leg.innerHTML = '<i style="background:#23a35a"></i>Búið<i style="background:#d3ab4e;margin-left:8px"></i>Eftir<i style="background:#c92a2a;margin-left:8px"></i>Á eftir';
     h.appendChild(leg);
-    if (takki) faera(takki, h);
+    if (takki) { faera(takki, h); klaeda(takki); }
     haus.appendChild(v); haus.appendChild(h);
     panel.insertBefore(haus, panel.firstChild);
     return takki;
