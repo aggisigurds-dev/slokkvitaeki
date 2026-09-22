@@ -709,6 +709,13 @@
   }
 
   function wCustomerGroup(statusKey, co) {
+    // 2026-09-22 (Agnar: „verkstæði … in a similar style"): miðaútlitið úr
+    // patch 390 — sömu aðgerðir og hér að neðan. Án 390 teiknast gamla spjaldið.
+    if (window.VerkMidar && typeof VerkMidar.group === 'function') {
+      try {
+        return VerkMidar.group(statusKey, co, { live, digitsOnly, baseNum, groupStaffNote, parseSvcName });
+      } catch (e) { console.warn('[78] verkstæðismiðar (390) brugðust — gamla spjaldið teiknað', e); }
+    }
     const pct = co.totalUnits ? Math.round(co.doneUnits / co.totalUnits * 100) : 0;
     const ready = pct === 100;
     const jobIds = co.jobs.map(j => j.id).join(',');

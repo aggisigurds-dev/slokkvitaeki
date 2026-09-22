@@ -210,7 +210,10 @@
   }
 
   const SKIP_TAG = /^(SCRIPT|STYLE|SVG|PATH|CANVAS|VIDEO|IMG|BR|HR|SOURCE|LINK|META)$/;
-  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn';
+  // 22.09.2026: .bw-page-hdr (Verkröð-titillinn) bætt við — hann situr á DÖKKA hluta
+  // síðuhallans undir borðanum (~#3a3d41), en bgOf() les síðuna sem ljóst stál og
+  // þvingaði titilinn dökkan (1,7:1). 390 stílar hann hvítan (11:1).
+  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr';
 
   function hasOwnText(el) {
     for (let n = el.firstChild; n; n = n.nextSibling) {
