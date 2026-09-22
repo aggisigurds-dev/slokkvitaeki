@@ -194,7 +194,7 @@
     const sia = filteredSorted();
 
     root.innerHTML =
-      '<div class="_sk-hd"><h1>' + FLOKKUR.takn + ' ' + FLOKKUR.titill + ' <small>' + arNu + '</small></h1><span class="_sk-sp"></span>' +
+      '<div class="_sk-hd"><h1>' + (FLOKKUR.takn ? FLOKKUR.takn + ' ' : '') + FLOKKUR.titill + ' <small>' + arNu + '</small></h1><span class="_sk-sp"></span>' +
         '<span class="_sk-utlit"><button class="_sk-btn' + (utlit() === 'tafla' ? ' on' : '') + '" data-utlit="tafla" title="Tafla — zoomaðu út til að sjá meira af henni">▦ Tafla</button><button class="_sk-btn' + (utlit() === 'spjold' ? ' on' : '') + '" data-utlit="spjold" title="Spjöld — eitt fyrirtæki per spjald, stórt letur">☰ Spjöld</button></span><button class="_sk-btn" id="_sk-prenta">🖨 Prenta lista</button>' + (FLOKKUR.nytt === false ? '' : '<button class="_sk-btn _sk-pri" id="_sk-nytt">＋ Nýtt kerfi</button>') + '</div>' +
       (_villa ? '<div class="_sk-villa">⚠ Náði ekki í gögnin: ' + esc(_villa) + ' <button class="_sk-btn" id="_sk-aftur">Reyna aftur</button></div>' : '') +
       '<div class="_sk-kpis">' +
@@ -250,7 +250,7 @@
   // ── ＋ Nýtt kerfi ───────────────────────────────────────────────────────────
   function nyttKerfi() {
     const bak = document.createElement('div'); bak.className = '_sk-bak';
-    bak.innerHTML = '<div class="_sk-modal"><h2>' + FLOKKUR.takn + ' Nýtt slökkvikerfi</h2>' +
+    bak.innerHTML = '<div class="_sk-modal"><h2>' + (FLOKKUR.takn ? FLOKKUR.takn + ' ' : '') + 'Nýtt slökkvikerfi</h2>' +
       '<label>Fyrirtæki (nafn eða kennitala)</label><input class="_sk-inp" id="_skn-leit" placeholder="Byrjaðu að skrifa…" autocomplete="off"><div id="_skn-nid" class="_skn-nid"></div>' +
       '<div id="_skn-valid" class="_skn-valid"></div>' +
       '<div class="_skn-2"><div><label>Heiti kerfis</label><input class="_sk-inp" id="_skn-heiti" value="Eldhús"></div><div><label>Tegund</label><input class="_sk-inp" id="_skn-teg" placeholder="t.d. Amerex vökvakerfi"></div></div>' +
@@ -533,7 +533,7 @@
   }   // buaTil
 
   window.Thjonustuskra = { buaTil };
-  window.Slokkvikerfi = buaTil({ key: 'slokkvikerfi', titill: 'Slökkvikerfis skoðun', takn: '🍳',
+  window.Slokkvikerfi = buaTil({ key: 'slokkvikerfi', titill: 'Slökkvikerfis skoðun', takn: '',
     syn: 'v_slokkvikerfi_yfirlit', tafla: 'slokkvikerfi', navEftir: 'brunayfirlit' });
 })();
 /* === END SLÖKKVIKERFIS SKOÐUN === */

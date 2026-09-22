@@ -188,9 +188,22 @@
   function isPageSurface(el) {
     return !!(el.matches && el.matches('html,body,.view,.main-panel,.app-page,.app-main,.thm,main.app-main'));
   }
+  // 22.09.2026: burstaði málmurinn (389/392) leggur hárþunna GLANSRÖND efst í
+  // background-image: `repeating-linear-gradient(108deg,rgba(255,255,255,.05) …)`.
+  // Fyrsti litur myndarinnar var þá nær-gegnsætt HVÍTT, skanninn las spjaldið sem
+  // ljóst og þvingaði Playfair-töluna dökka á svartan málm (mælt á Brunakerfis
+  // skoðun: 22 · 7 · 10 · 4 nánast ósýnileg). Hér er hoppað yfir stopp sem sjást
+  // varla (alfa < .25) og fyrsti raunverulegi liturinn notaður.
   function firstStop(img) {
-    const m = String(img || '').match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/);
-    return m ? { r: +m[1], g: +m[2], b: +m[3], a: 1 } : null;
+    const re = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/g;
+    let m, fallback = null;
+    while ((m = re.exec(String(img || '')))) {
+      const c = { r: +m[1], g: +m[2], b: +m[3], a: 1 };
+      const alpha = m[4] === undefined ? 1 : +m[4];
+      if (!fallback) fallback = c;
+      if (alpha >= 0.25) return c;
+    }
+    return fallback;
   }
   function bgOf(el) {
     let n = el;
@@ -214,7 +227,7 @@
   // síðuhallans undir borðanum (~#3a3d41), en bgOf() les síðuna sem ljóst stál og
   // þvingaði titilinn dökkan (1,7:1). 390 stílar hann hvítan (11:1).
   // 22.09.2026: .kym-head (Kröfu yfirlit, 166 Skjár) — sama ástæða: hvítur titill á dökka bandinu.
-  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head';
+  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd';
 
   function hasOwnText(el) {
     for (let n = el.firstChild; n; n = n.nextSibling) {

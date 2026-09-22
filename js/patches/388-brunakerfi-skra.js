@@ -146,7 +146,7 @@
   function boot() {
     if (!window.Thjonustuskra || !Thjonustuskra.buaTil) { setTimeout(boot, 300); return; }
     window.BrunakerfiSkra = Thjonustuskra.buaTil({
-      key: 'brunaskra', titill: 'Brunakerfis skoðun', takn: '🚨', navEftir: 'brunayfirlit',
+      key: 'brunaskra', titill: 'Brunakerfis skoðun', takn: '', navEftir: 'brunayfirlit',
       saekja, vista, opna, nytt: false, felaSjalfgefid: false, verdHaus: 'Reikningur', verdTomt: '—', verdKpi: false,
       skref: [['skodad_at', 'Skoðað'], ['skyrsla_at', 'Skýrsla'], ['reikningur_at', 'Reikningur']],
       tomt: 'Ekkert fyrirtæki er á áskriftarlista brunakerfa og engin brunakerfisskýrsla fannst.'
