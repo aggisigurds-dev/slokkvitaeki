@@ -1560,6 +1560,9 @@
       V + '.kym-hvsec-h b{font-family:' + DISPLAY + ';font-size:24px;font-weight:800;color:#11141c;white-space:nowrap}',
       V + '.kym-hvsec-h b small{font-size:13px;color:#6b7483}',
       // Bunkastikan (updateBulkBar) — málmur með rauðri brún, Senda í grænum málmi
+      // updateBulkBar setur style.display='' á eftir cssText → stikan varð display:block og
+      // takkarnir féllu í aðra línu. Hér flex ÁN !important svo inline 'none' feli hana enn.
+      'html body #ky-bulkbar.kym-bulk{display:flex}',
       'html body #ky-bulkbar.kym-bulk{background:' + METAL + '!important;border-top:3px solid #c92a2a!important;box-shadow:0 -10px 28px rgba(0,0,0,.45)!important;font-family:"IBM Plex Sans",system-ui,sans-serif!important;-webkit-font-smoothing:antialiased}',
       'html body #ky-bulkbar.kym-bulk button{border-radius:3px!important;font-family:"IBM Plex Sans",system-ui,sans-serif!important}',
       'html body #ky-bulkbar.kym-bulk #_ky-bulk-clear{border:1px solid #3a3d44!important;background:transparent!important;color:#d5dbe6!important}',
@@ -1571,7 +1574,7 @@
       V + '.kym-section b{font-family:' + DISPLAY + ';font-size:22px;font-weight:800;color:#11141c}',
       V + '.kym-section b small{font-size:13px;color:#3a4250}',
       // mjórra: minnispunkturinn í eigin línu; lykiltölur í tvær/eina röð
-      '@container (max-width: 1080px){' + V + '.kym-row{flex-wrap:wrap}' + V + '.kym-note{order:9;flex:1 1 100%;margin-left:29px}}',
+      '@container (max-width: 1080px){' + V + '.kym-row{flex-wrap:wrap}' + V + '.kym-note{order:9;flex:1 1 100%;margin-left:29px}' + V + '.kym-amt{margin-left:auto}}',
       '@media (max-width: 1280px){' + V + '.kym-kpis,' + V + '.kym-kpis--3{grid-template-columns:repeat(2,minmax(0,1fr))}' + V + '.kym-hero{grid-column:1/-1}}',
       '@media (max-width: 760px){' + V + '.kym-kpis,' + V + '.kym-kpis--3{grid-template-columns:minmax(0,1fr)}}',
     ].join('\n');
