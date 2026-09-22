@@ -533,19 +533,21 @@
       V + '.tbm-head--mot .tbm-led{background:#f0584c;box-shadow:0 0 0 3px rgba(240,88,76,.18),0 0 12px rgba(240,88,76,.85)}',
       V + '.tbm-head--vin .cw-col-title.tbm-title{color:#f6b545!important}',
       V + '.tbm-head--vin .tbm-led{background:#f6b545;box-shadow:0 0 0 3px rgba(246,181,69,.18),0 0 12px rgba(246,181,69,.85)}',
-      V + '.tbm-head .cw-col-sub.tbm-count{display:flex;align-items:baseline;gap:9px;margin:0!important;font-family:"IBM Plex Sans",system-ui,sans-serif!important;font-size:14px!important;color:#cfd4dc!important;min-width:0}',
-      V + '.tbm-count b{font-family:Sora,"IBM Plex Sans",sans-serif;font-size:34px;font-weight:700;line-height:1;letter-spacing:-.03em;color:#fff!important}',
-      V + '.tbm-count span{font-weight:500;color:#cfd4dc!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      // talningarlínan í letri Kröfu yfirlits (Playfair Display ExtraBold — ósk Agnars 22.09)
+      V + '.tbm-head .cw-col-sub.tbm-count{display:flex;align-items:baseline;gap:10px;margin:0!important;font-family:"Playfair Display",Georgia,serif!important;font-size:16px!important;font-weight:700;color:#d9dee6!important;min-width:0}',
+      V + '.tbm-count b{font-family:"Playfair Display",Georgia,serif;font-size:38px;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:lining-nums;color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)}',
+      V + '.tbm-count span{font-weight:700;letter-spacing:-.005em;color:#d9dee6!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       V + '.tbm-print{flex:none;height:38px;display:inline-flex;align-items:center;gap:8px;padding:0 14px 0 12px;border-radius:9px;border:1px solid #000;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#eef1f4!important;font-size:13px;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);cursor:pointer}',
       V + '.tbm-print *{color:#eef1f4!important}' + V + '.tbm-print:hover{filter:brightness(1.2)}',
-      V + '.tbm-head .cw-col-sub.tbm-age{display:flex;flex-direction:column;align-items:stretch!important;gap:8px;margin:0!important;font-family:' + MONO + '!important;font-size:11px!important;color:#aeb6c4!important}',
+      V + '.tbm-head .cw-col-sub.tbm-age{display:flex;flex-direction:column;align-items:stretch!important;gap:8px;margin:0!important;font-family:' + MONO + '!important;font-size:11.5px!important;color:#d5dbe6!important}',
+      V + '.tbm-head{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}',
       V + '.tbm-bar{display:flex;gap:3px;height:6px;width:100%}' + V + '.tbm-bar span{flex-basis:0;min-width:4px;border-radius:3px}',
       V + '.tbm-bar--tom span{flex-grow:1;background:rgba(255,255,255,.12)}',
       V + '.tbm-legend{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px 16px;width:100%}',
-      V + '.tbm-legend span{display:inline-flex;align-items:center;gap:6px;color:#aeb6c4!important}',
-      V + '.tbm-legend span.is-zero{opacity:.55}',
+      V + '.tbm-legend span{display:inline-flex;align-items:center;gap:6px;font-weight:500;color:#d5dbe6!important}',
+      V + '.tbm-legend span.is-zero,' + V + '.tbm-legend span.is-zero b{color:#8e97a6!important}',
       V + '.tbm-legend i{width:7px;height:7px;border-radius:2px}',
-      V + '.tbm-legend b{color:#fff!important}',
+      V + '.tbm-legend b{font-weight:700;color:#fff!important}',
       // málmáferð á litalínunum í hausnum (sama og takkarnir): ljós brún efst, dökk rönd í miðjunni
       V + '.tbm-c-dag{background:linear-gradient(180deg,#7fe0a8 0%,#23a35a 40%,#0b5a2e 60%,#137a41 100%)}' +
         V + '.tbm-c-vika{background:linear-gradient(180deg,#e2e6ec 0%,#8f98a8 40%,#555d6b 60%,#737c8b 100%)}' +
@@ -554,7 +556,7 @@
       // kaflarnir
       V + '.tbm-sec{display:flex;align-items:center;gap:8px;padding:12px 2px 0;margin-bottom:8px}',
       V + '.tbm-sec:first-child{padding-top:2px}',
-      V + '.tbm-sec-lbl{font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}',
+      V + '.tbm-sec-lbl{font-family:' + MONO + ';font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}',
       V + '.tbm-sec--dag .tbm-sec-lbl{color:#0b6b3a}' + V + '.tbm-sec--vika .tbm-sec-lbl{color:#3a4250}' + V + '.tbm-sec--tvaer .tbm-sec-lbl{color:#845400}' + V + '.tbm-sec--lengi .tbm-sec-lbl{color:#b42318}',
       V + '.tbm-sec-n{padding:1px 7px;border-radius:99px;background:rgba(20,24,34,.09);font-family:' + MONO + ';font-size:10.5px;font-weight:700;color:#2b313c}',
       V + '.tbm-sec-rule{flex:1 1 auto;height:1px;background:rgba(20,24,34,.16)}',
@@ -632,7 +634,7 @@
         V + '.tbm-row-stub{padding-left:10px}' +
         V + '.tbm-row-body{padding-left:14px}' +
         V + '.cw-col-head.tbm-head{padding:14px 14px 12px!important}' +
-        V + '.tbm-count b{font-size:28px}' +
+        V + '.tbm-count b{font-size:31px}' +
       '}',
       '@container tbm (max-width: 330px){' +
         V + '.tbm-print span{display:none}' +
@@ -658,6 +660,15 @@
       '.tbm-pop button.tbm-shelf-clear{margin-top:6px;justify-content:center;border:1px solid rgba(20,24,34,.14)}',
       '@media (prefers-reduced-motion: no-preference){.tbm-pop{animation:tbm-pop-in .12s ease-out}@keyframes tbm-pop-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}}',
     ].join('\n');
+    // Raunveruleg feitletrun: appið hleður JetBrains Mono aðeins 400/500 og IBM Plex Sans
+    // 400–600, svo 700 var FALSAÐ (vafrinn þykkir letrið sjálfur) — smátt letur varð
+    // loðið („a bit blurry", Agnar 22.09). Playfair 800 = letur Kröfu yfirlits.
+    if (!document.getElementById('_tbm-font')) {
+      const lf = document.createElement('link');
+      lf.id = '_tbm-font'; lf.rel = 'stylesheet';
+      lf.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Playfair+Display:wght@700;800&display=swap';
+      (document.head || document.documentElement).appendChild(lf);
+    }
     const st = document.createElement('style');
     st.id = '_tbm-css';
     st.textContent = css;
