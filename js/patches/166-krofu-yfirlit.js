@@ -1118,6 +1118,469 @@
     '</div>';
   }
 
+  // ══ MIÐAKERFI — Skjár-sýnin (22.09.2026) ══════════════════════════════════
+  // Agnar („Great love it … otherwise you can just put this through"): hönnunin
+  // https://claude.ai/artifact/5CojrbMEcML7ZpkhkV6ruj — ferkantaðir gluggar með
+  // litaðri brún efst, Playfair-upphæðir, Heildarkröfur sem málmspjald með
+  // skiptingu mánuður/eldra (Sendar kröfur og Eldri ógreitt féllu út — sama tala
+  // og „Ógreiddar í Payday" / hluti Heildarkrafna), og færri takkar á línu:
+  // Krafa send · Greitt · ⋯ (Breyta · Ný sala · Afturkalla · Bakfæra).
+  //
+  // AÐEINS markup + CSS. Allir takkar bera SÖMU _ky-* klasana og data-* og áður,
+  // svo tengingin neðst í render() bindur þá óbreytt (payday-push, greitt,
+  // kredit, afturkalla …). ⋯-valmyndin er teiknuð strax (falin) inni í línunni
+  // svo hlustararnir festist á hana eins og hina. Sími og Tafla eru óbreytt.
+  const MID_MONTHS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
+  const midarNum = n => fmtKr(n).replace(/\s*kr$/, '');
+  const MSV = (w, body, sw) => '<svg width="' + w + '" height="' + w + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (sw || 2) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  const MIC = {
+    prev: MSV(14, '<path d="M15 18l-6-6 6-6"/>', 2.6),
+    next: MSV(14, '<path d="M9 18l6-6-6-6"/>', 2.6),
+    sync: MSV(15, '<path d="M21 12a9 9 0 0 1-15.4 6.4L3 16M3 12a9 9 0 0 1 15.4-6.4L21 8M21 3v5h-5M3 21v-5h5"/>', 2.2),
+    search: MSV(15, '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>', 2.2),
+    info: MSV(15, '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>', 2.2),
+    mail: MSV(14, '<path d="M4 4h16v16H4z"/><path d="M4 7l8 6 8-6"/>'),
+    print: MSV(14, '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'),
+    clip: MSV(14, '<path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>'),
+    check: MSV(13, '<path d="M5 12.5l4.5 4.5L19 7.5"/>', 3),
+    bank: MSV(13, '<path d="M3 21h18M4 10h16M6 10v8M10 10v8M14 10v8M18 10v8M12 3l9 5H3z"/>', 2.2),
+    copy: MSV(15, '<rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>'),
+    dots: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+    edit: MSV(16, '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+    plus: MSV(16, '<path d="M12 5v14M5 12h14"/>'),
+    ban: MSV(16, '<circle cx="12" cy="12" r="9"/><path d="M5.7 5.7l12.6 12.6"/>'),
+    undo: MSV(16, '<path d="M9 14L4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>'),
+    chevron: MSV(13, '<path d="M9 18l6-6-6-6"/>', 2.6),
+    chevronDown: MSV(13, '<path d="M6 9l6 6 6-6"/>', 2.6),
+  };
+  function midarNowStr() {
+    const d = new Date();
+    return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear() +
+      ', ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+  // Aldursflokkar krafna — sömu mörk og agingPill (≤30 · 31–60 · >60 d.).
+  const midarAgeKind = d => (d > 60 ? 'r' : d > 30 ? 'a' : 'g');
+  function midarAging(sales) {
+    let g = 0, a = 0, r = 0, oldest = 0;
+    sales.forEach(s => { const d = daysAgo(s.created_at) || 0; const amt = parseFloat(s.samtals) || 0; if (d > oldest) oldest = d; if (d > 60) r += amt; else if (d > 30) a += amt; else g += amt; });
+    const bar = '<span class="kym-agebar" aria-hidden="true">' +
+      (g ? '<i class="kym-seg-g" style="flex-grow:' + Math.round(g) + '"></i>' : '') +
+      (a ? '<i class="kym-seg-a" style="flex-grow:' + Math.round(a) + '"></i>' : '') +
+      (r ? '<i class="kym-seg-r" style="flex-grow:' + Math.round(r) + '"></i>' : '') + '</span>';
+    return { bar, oldest, kind: midarAgeKind(oldest), label: oldest > 60 ? '60+ d.' : (oldest ? oldest + ' d.' : 'í dag') };
+  }
+  // Haus: rautt yfirheiti · Playfair-titill · mono-undirlína · verkfæri hægra megin.
+  // NB: hvorki `ky-navbtn` né `page-title` hér — 166/313/315 stíla þá klasa
+  // (málmfylling á leitarreitinn, þvingaður litur) og myndu brjóta hausinn.
+  function midarHead(kicker, title, subHtml, toolsHtml) {
+    return `
+        <div class="kym-head">
+          <div class="kym-head-left">
+            <div class="kym-kicker"><i aria-hidden="true"></i>${kicker}</div>
+            <h1 class="kym-title">${title}</h1>
+            <div class="kym-sub">${subHtml}</div>
+          </div>
+          ${toolsHtml ? '<div class="kym-head-tools">' + toolsHtml + '</div>' : ''}
+        </div>`;
+  }
+  const midarMonthName = m => { const n = MID_MONTHS[m.getMonth()]; return n.charAt(0).toUpperCase() + n.slice(1); };
+  function midarHeadHtml(allLen, coLen) {
+    const m = _state.month || new Date();
+    const SORTS = [['updated_desc', 'Nýlega breytt fyrst'], ['created_desc', 'Nýjast stofnað'], ['created_asc', 'Elst stofnað'], ['amount_desc', 'Hæsta upphæð'], ['amount_asc', 'Lægsta upphæð']];
+    const tools = `
+            <div class="kym-stepper">
+              <button class="_ky-prev" type="button" aria-label="Fyrri mánuður" title="Fyrri mánuður">${MIC.prev}</button>
+              <div class="ky-month kym-month">${esc(midarMonthName(m))} ${m.getFullYear()}</div>
+              <button class="_ky-next" type="button" aria-label="Næsti mánuður" title="Næsti mánuður">${MIC.next}</button>
+            </div>
+            <select class="_ky-sort kym-select" title="Raða" aria-label="Raða">
+              ${SORTS.map(([v, t]) => '<option value="' + v + '"' + (_state.sort === v ? ' selected' : '') + '>' + t + '</option>').join('')}
+            </select>`;
+    return midarHead('Innheimta · ' + esc(midarMonthName(m)) + ' ' + m.getFullYear(), 'Kröfu yfirlit',
+      '<b>' + allLen + '</b> sölur · <b>' + coLen + '</b> fyrirtæki · ' + esc(midarNowStr()) + ' — krafa í heimabanka, safnað saman í lok mánaðar', tools);
+  }
+  function midarExpCard(key, label, count, total, tone, sub, cgId) {
+    const open = _state.expandCard === key;
+    return '<button type="button" class="_ky-exp kym-exp kym-tone-' + tone + (open ? ' is-open' : '') + '" data-exp="' + key + '" aria-expanded="' + open + '" title="Smelltu til að sjá listann">' +
+      '<span class="kym-exp-top"><span class="kym-lbl">' + esc(label) + ' · ' + count + '</span>' +
+        (cgId ? '<span class="_ky-cg kym-cg" title="' + cgId + ' — reikni-auðkenni. Talan fer sjálfkrafa í Brunahólf → Skýrslur.">' + cgId + '</span>' : '') + '</span>' +
+      '<span class="kym-mid">' + midarNum(total) + ' <small>kr</small></span>' +
+      (sub ? '<span class="kym-exp-sub">' + esc(sub) + '</span>' : '') +
+      '<span class="kym-exp-go">' + (open ? 'Fela listann' + MIC.chevronDown : 'Sýna kröfurnar' + MIC.chevron) + '</span>' +
+    '</button>';
+  }
+  function midarKpiHtml(o) {
+    const m = _state.month || new Date();
+    const mName = MID_MONTHS[m.getMonth()];
+    const cards = [
+      midarExpCard('payday', 'Ógreiddar í Payday', o.paydayUnpaid.length, o.paydayUnpaidTotal, 'amber',
+        'Með VSK' + (_state.paydayUnpaidAnVsk != null ? ' · án VSK ' + fmtKr(_state.paydayUnpaidAnVsk) : '') + ' · allir mánuðir', 'CG-S01'),
+      o.paydayDrog.length ? midarExpCard('drog', 'Drög í Payday — ósend', o.paydayDrog.length, o.paydayDrogTotal, 'violet', 'Aðeins drög — sendu þau úr Payday', 'CG-S03') : '',
+      midarExpCard('osendar', 'Ósendar kröfur', o.osendarRows.length, o.osendarTotal, 'blue',
+        'Allir mánuðir' + (_state.forskodun ? ' · þar af úttektir ' + fmtKr(o.osendarRows.filter(s => (_state.forskodun.get(String(s.id)) || {}).source === 'uttekt').reduce((a, s) => a + (parseFloat(s.samtals) || 0), 0)) + ' (CG-S04)' : ''), 'CG-S02'),
+    ].filter(Boolean);
+    return `
+        <div class="kym-kpis kym-kpis--${cards.length}">
+          <section class="kym-hero" aria-label="Heildarkröfur í þessari sýn">
+            <div class="kym-lbl">Heildarkröfur í sýn · ${o.allLen} sölur · ${o.coLen} fyrirtæki</div>
+            <div class="kym-big">${midarNum(o.grandTotal)} <small>kr</small></div>
+            <div class="kym-split" role="img" aria-label="Skipting: ${esc(mName)} ${esc(fmtKr(o.thisMonthTotal))}, eldra ${esc(fmtKr(o.olderTotal))}">
+              ${o.thisMonthTotal > 0 ? '<i class="kym-seg-m" style="flex-grow:' + Math.round(o.thisMonthTotal) + '"></i>' : ''}${o.olderTotal > 0 ? '<i class="kym-seg-o" style="flex-grow:' + Math.round(o.olderTotal) + '"></i>' : ''}${(o.thisMonthTotal + o.olderTotal) > 0 ? '' : '<i class="kym-seg-none"></i>'}
+            </div>
+            <div class="kym-legend">
+              <span><i class="kym-seg-m" aria-hidden="true"></i>${esc(mName.charAt(0).toUpperCase() + mName.slice(1))} <b>${esc(fmtKr(o.thisMonthTotal))}</b> · ${o.thisMonthLen} ${o.thisMonthLen === 1 ? 'krafa' : 'kröfur'}</span>
+              <span><i class="kym-seg-o" aria-hidden="true"></i>Eldra ógreitt <b>${esc(fmtKr(o.olderTotal))}</b> · ${o.olderLen} ${o.olderLen === 1 ? 'krafa' : 'kröfur'}</span>
+            </div>
+          </section>
+          ${cards.join('')}
+        </div>`;
+  }
+  // Sýnar-flipar sem samfelldur hnappaborði (sömu _ky-vf / data-vf og áður).
+  function midarTabsHtml() {
+    const tabs = VF_TABS.map(([k, label]) => {
+      const on = (_state.viewFilter || 'krofur') === k;
+      const txt = String(label).replace(/^[^A-Za-zÁÉÍÓÚÝÞÆÖÐáéíóúýþæöð]+/, '').trim();   // emoji-forskeytið burt
+      return '<button class="_ky-vf kym-tab' + (on ? ' is-active' : '') + '" data-vf="' + k + '" type="button" role="tab" aria-selected="' + on + '">' + esc(txt) + '</button>';
+    }).join('');
+    return '<div class="kym-tabs" role="tablist" aria-label="Sýn">' + tabs + '</div>';
+  }
+  function midarToolbarHtml() {
+    return `
+        <div class="kym-toolbar">
+          ${midarTabsHtml()}
+          <button class="_ky-sync kym-sync" type="button" title="Uppfæra úr Payday: sækja stöðu reikninga (drög / send / greitt) og merkja greiddar kröfur sjálfkrafa">${MIC.sync}<span>Sækja stöðu úr Payday</span></button>
+          <label class="kym-search">${MIC.search}<input class="_ky-search" type="search" aria-label="Leita" placeholder="Leita (nafn · kt · R-nr)…" value="${esc(_state.search)}"></label>
+        </div>
+        <div class="kym-hint">${MIC.info}<span>Útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann. Merktu greitt með „Greitt" — eða „Sækja stöðu úr Payday" merkir greiddar sjálfkrafa.</span></div>`;
+  }
+  const MID_SORT_LBL = { updated_desc: 'nýlega breytt efst', created_desc: 'nýjast stofnað efst', created_asc: 'elst stofnað efst', amount_desc: 'hæsta upphæð efst', amount_asc: 'lægsta upphæð efst' };
+  function midarSectionHtml(shownLen, coLen, q, shownTotal) {
+    const sub = q
+      ? shownLen + ' af ' + coLen + ' fyrirtækjum passa við „' + esc(_state.search) + '"'
+      : coLen + ' fyrirtæki · ' + (MID_SORT_LBL[_state.sort] || MID_SORT_LBL.updated_desc);
+    return '<div class="kym-section"><div><h2>Per fyrirtæki</h2><span>' + sub + '</span></div><b>' + midarNum(shownTotal) + ' <small>kr</small></b></div>';
+  }
+  const midarEmpty = txt => '<div class="kym-empty">' + txt + '</div>';
+  function midarSkyrslaBtn(s) {
+    const res = resolveSkyrsla(s);
+    return res.found
+      ? '<button type="button" class="_ky-skyrsla kym-doc is-found" data-id="' + s.id + '" title="Úttektarskýrsla ' + esc(res.year) + ' — opna og yfirfara áður en krafan er send (fylgir kröfunni sem viðhengi)">' + MIC.clip + '<span>Skýrsla</span></button>'
+      : '<button type="button" class="_ky-skyrsla kym-doc is-missing" data-id="' + s.id + '" data-missing="1" title="Engin úttektarskýrsla fundin fyrir ' + esc(res.year) + '">' + MIC.clip + '<span>Skýrsla</span></button>';
+  }
+  function renderCompanyMidar(grp) {
+    const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+    const totalStr = String(Math.round(grp.sum));
+    const sendableIds = sales.filter(isSendable).map(s => s.id);
+    const ident = companyIdentity(grp);
+    const ag = midarAging(sales);
+    const rows = sales.map(s => {
+      const da = daysAgo(s.created_at);
+      const k = midarAgeKind(da || 0);
+      const isDraft = !!(_state.paydayDraftIds && s.dk_invoice_id && _state.paydayDraftIds.has(String(s.dk_invoice_id)));
+      const sent = !!s.krafa_sent_at;
+      const paid = !!s.paid_at;
+      return `
+            <div class="kym-row">
+              ${isSendable(s)
+                ? `<input type="checkbox" class="_ky-pick kym-pick" data-id="${s.id}" data-amount="${Math.round(parseFloat(s.samtals) || 0)}" aria-label="Velja kröfu ${esc(s.num || '')} í Payday-sendingu" title="Velja kröfu í Payday-sendingu">`
+                : '<span class="kym-pick-sp" aria-hidden="true"></span>'}
+              <div class="kym-num"><b>${esc(s.num || '')}</b><time datetime="${esc(String(s.created_at || '').slice(0, 10))}">${fmtDate(s.created_at)}</time></div>
+              <span class="kym-age kym-age-${k}">${da == null ? '—' : (da === 0 ? 'í dag' : da + ' d.')}</span>
+              <div class="kym-docs">
+                <button type="button" class="_ky-email kym-doc" data-id="${s.id}" title="Senda reikning og/eða úttektarskýrslu í tölvupósti">${MIC.mail}<span>Senda</span></button>
+                <button type="button" class="_ky-view-invoice kym-doc" data-id="${s.id}" title="Skoða / prenta reikning">${MIC.print}<span>Reikningur</span></button>
+                ${midarSkyrslaBtn(s)}
+              </div>
+              <input class="_ky-note kym-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — eigin reitur (ekki athugasemd reikningsins). Vistast sjálfkrafa." aria-label="Minnispunktur ${esc(s.num || '')}">
+              <span class="kym-amt">${fmtKr(s.samtals)}</span>
+              ${isDraft ? '<span class="ky-drog-pill kym-drog" title="Aðeins drög í Payday — krafan hefur ekki farið til kúnna. Sendu hana úr Payday.">Drög í Payday</span>' : ''}
+              <button type="button" class="_ky-krafa-toggle kym-krafa${sent ? ' is-on' : ''}" data-id="${s.id}"${sent ? ' data-on="1"' : ''} aria-pressed="${sent}" title="${esc(sent ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)')}">${sent ? MIC.check : MIC.bank}<span>${sent ? 'Krafa send' : 'Senda kröfu'}</span></button>
+              <button type="button" class="_ky-mark-paid kym-paid${paid ? ' is-on' : ''}" data-id="${s.id}"${paid ? ' data-on="1"' : ''} aria-pressed="${paid}" title="${esc(paid ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt')}">${MIC.check}<span>${paid ? 'Greitt ' + fmtDate(s.paid_at) : 'Greitt'}</span></button>
+              <div class="kym-more">
+                <button type="button" class="kym-more-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Fleiri aðgerðir — ${esc(s.num || '')}" title="Breyta · Ný sala · Afturkalla · Bakfæra" onclick="window.KyMidar&&KyMidar.more(event)">${MIC.dots}</button>
+                <div class="kym-menu" role="menu" aria-label="Aðgerðir fyrir ${esc(s.num || '')}" hidden>
+                  <button type="button" role="menuitem" class="_ky-open-editor kym-mi" data-num="${esc(s.num)}" title="Opna í sölu-editor">${MIC.edit}Breyta sölu</button>
+                  <button type="button" role="menuitem" class="_ky-nyjan kym-mi" data-kt="${esc(s.customer_kt || '')}" data-nafn="${esc(s.customer_nafn || '')}" title="Ný sala fyrir þennan viðskiptavin (opnar Sölu með kt tilbúið)">${MIC.plus}Ný sala fyrir viðskiptavin</button>
+                  <div class="kym-mi-sep" role="separator"></div>
+                  ${s.dk_invoice_id ? `<button type="button" role="menuitem" class="_ky-afturkalla kym-mi kym-mi--warn" data-id="${s.id}" title="Afturkalla kröfuna í Payday (fella niður kröfu + reikning)">${MIC.ban}Afturkalla í Payday</button>` : ''}
+                  <button type="button" role="menuitem" class="_ky-kredit kym-mi kym-mi--danger" data-id="${s.id}" title="Bakfæra (kreditfæra) reikninginn">${MIC.undo}Bakfæra (kreditreikningur)</button>
+                </div>
+              </div>
+            </div>`;
+    }).join('');
+    return `
+      <section class="kym-co kym-co-${ag.kind}">
+        <div class="kym-co-head">
+          ${sendableIds.length
+            ? `<input type="checkbox" class="_ky-pick-co kym-pick" data-ids="${sendableIds.join(',')}" aria-label="Velja allar ósendar kröfur hjá ${esc(grp.display)}" title="Velja allar ósendar kröfur hjá ${esc(grp.display)}">`
+            : ''}
+          <div class="kym-co-info">
+            <div class="kym-co-name"><strong class="kym-co-nm">${ident.nameHtml}</strong><small class="kym-co-meta">${ident.metaHtml}</small></div>
+            <div class="kym-co-age">${ag.bar}<span>${sales.length} ${sales.length === 1 ? 'krafa' : 'kröfur'}${grp.olderSum > 0 ? ' · <span class="kym-older">eldra: ' + fmtKr(grp.olderSum) + '</span>' : ''} · elsta <b class="kym-ink-${ag.kind}">${esc(ag.label)}</b></span></div>
+          </div>
+          <div class="kym-co-sum"><span>Krafa</span><b>${midarNum(grp.sum)} <small>kr</small></b></div>
+          <button class="_ky-copy-total kym-icon" data-value="${esc(totalStr)}" type="button" aria-label="Afrita upphæð" title="Afrita upphæð">${MIC.copy}</button>
+        </div>
+        <div class="kym-rows">${rows}</div>
+      </section>`;
+  }
+  // „Sést hvergi" (renderHvergi) fær sama haus og flipaborða, svo flipaskipti
+  // skipti ekki um útlit. Hlutirnir sem hún teiknar sjálf (_hv-row) eru óbreyttir.
+  function midarHvergiTopHtml(felog, nofn, felogKr, nofnKr, sottN) {
+    const n = felog.length + nofn.length;
+    const stat = (tone, label, val, sub) =>
+      '<section class="kym-stat kym-tone-' + tone + '"><span class="kym-lbl">' + label + '</span><span class="kym-mid">' + val + '</span>' +
+      (sub ? '<span class="kym-exp-sub">' + sub + '</span>' : '') + '</section>';
+    return midarHead('Innheimta · Allir mánuðir', 'Sést hvergi',
+        'Ógreidd, ósend vinna sem hinar fjórar sýnirnar geta aldrei sýnt — þær sía hart á greitt_med = „reikningur"', '') + `
+        <div class="kym-kpis kym-kpis--3">
+          <section class="kym-hero" aria-label="Samtals ósýnilegt">
+            <div class="kym-lbl">Samtals ósýnilegt · ${n} sölur · allir mánuðir</div>
+            <div class="kym-big">${midarNum(felogKr + nofnKr)} <small>kr</small></div>
+            <div class="kym-split" aria-hidden="true">${felogKr > 0 ? '<i class="kym-seg-o" style="flex-grow:' + Math.round(felogKr) + '"></i>' : ''}${nofnKr > 0 ? '<i class="kym-seg-m" style="flex-grow:' + Math.round(nofnKr) + '"></i>' : ''}${(felogKr + nofnKr) > 0 ? '' : '<i class="kym-seg-none"></i>'}</div>
+            <div class="kym-legend">
+              <span><i class="kym-seg-o" aria-hidden="true"></i>Félög <b>${esc(fmtKr(felogKr))}</b> · ${felog.length} sölur</span>
+              <span><i class="kym-seg-m" aria-hidden="true"></i>Nöfn / staðgreitt <b>${esc(fmtKr(nofnKr))}</b> · ${nofn.length} sölur</span>
+            </div>
+          </section>
+          ${stat('amber', 'Félög · ' + felog.length, midarNum(felogKr) + ' <small>kr</small>', 'Eiga erindi í kröfu')}
+          ${stat('steel', 'Nöfn / staðgreitt · ' + nofn.length, midarNum(nofnKr) + ' <small>kr</small>', 'Líklega afgreitt yfir borðið')}
+          ${stat('green', 'Merkt „Sótt" í texta', sottN + ' <small>af ' + n + '</small>', 'Frjáls texti — lesið, aldrei skrifað')}
+        </div>
+        <div class="kym-toolbar">
+          ${midarTabsHtml()}
+          <button class="_hv-reload kym-btn" type="button" title="Endurhlaða listann">${MIC.sync}<span>Endurhlaða</span></button>
+        </div>`;
+  }
+
+  // ⋯ valmyndin — sama mynstur og afhendingarmiðarnir (389): ein opin í einu,
+  // lokast við smell utan hennar, Escape eða þegar liður er valinn.
+  (function () {
+    let openWrap = null;
+    function close(focusBack) {
+      if (!openWrap) return;
+      const w = openWrap; openWrap = null;
+      const m = w.querySelector('.kym-menu'); const b = w.querySelector('.kym-more-btn');
+      if (m) m.hidden = true;
+      w.classList.remove('is-open', 'is-up');
+      const co = w.closest('.kym-co'); if (co) co.classList.remove('kym-lift');
+      if (b) { b.setAttribute('aria-expanded', 'false'); if (focusBack) try { b.focus({ preventScroll: true }); } catch (_) {} }
+    }
+    document.addEventListener('pointerdown', e => { if (openWrap && !openWrap.contains(e.target)) close(false); }, true);
+    document.addEventListener('keydown', e => {
+      if (!openWrap) return;
+      if (e.key === 'Escape') { e.preventDefault(); close(true); return; }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const items = Array.from(openWrap.querySelectorAll('.kym-menu button'));
+        if (!items.length) return;
+        let i = items.indexOf(document.activeElement);
+        i = e.key === 'ArrowDown' ? (i + 1) % items.length : (i <= 0 ? items.length - 1 : i - 1);
+        items[i].focus(); e.preventDefault();
+      }
+    }, true);
+    document.addEventListener('click', e => {
+      const it = e.target && e.target.closest ? e.target.closest('.kym-menu button') : null;
+      if (it && openWrap && openWrap.contains(it)) setTimeout(() => close(false), 0);   // handler liðarins keyrir fyrst
+    });
+    window.KyMidar = {
+      more(ev) {
+        const btn = ev && ev.currentTarget;
+        const wrap = btn && btn.closest('.kym-more');
+        if (!wrap) return;
+        if (openWrap === wrap) { close(true); return; }
+        close(false);
+        const m = wrap.querySelector('.kym-menu');
+        if (!m) return;
+        m.hidden = false;
+        wrap.classList.add('is-open');
+        btn.setAttribute('aria-expanded', 'true');
+        // .kym-co er container-query-ílát → eigið stöflunarsamhengi; án lyftingar
+        // málaði NÆSTA fyrirtækjaspjald yfir valmynd neðstu línunnar.
+        const co = wrap.closest('.kym-co'); if (co) co.classList.add('kym-lift');
+        // Opnast upp ef ekki er pláss niður (neðst á skjánum eða undir bunkastikunni).
+        const r = btn.getBoundingClientRect();
+        const bb = document.getElementById('ky-bulkbar');
+        const reserve = (bb && bb.offsetHeight) || 0;
+        if (r.bottom + m.offsetHeight + 12 + reserve > window.innerHeight) wrap.classList.add('is-up');
+        openWrap = wrap;
+        const first = m.querySelector('button');
+        if (first) try { first.focus({ preventScroll: true }); } catch (_) {}
+      },
+      close: () => close(false),
+    };
+  })();
+  function injectMidarStyle() {
+    if (document.getElementById('ky-midar-css')) return;
+    if (!document.getElementById('ky-midar-font')) {
+      const lf = document.createElement('link');
+      lf.id = 'ky-midar-font'; lf.rel = 'stylesheet';
+      lf.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Playfair+Display:wght@700;800&display=swap';
+      (document.head || document.documentElement).appendChild(lf);
+    }
+    const V = 'html body #view-krofu-yfirlit ';
+    const MONO = '"JetBrains Mono",ui-monospace,monospace';
+    const DISPLAY = '"Playfair Display",Georgia,serif';
+    const METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
+    const METAL_BTN = 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)';
+    const SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
+    const GREEN = 'linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)';
+    const SEG = {
+      m: 'linear-gradient(180deg,#e2e6ec 0%,#8f98a8 40%,#555d6b 60%,#737c8b 100%)',
+      o: 'linear-gradient(180deg,#ffe0a0 0%,#e0a93e 40%,#935f0d 60%,#b27b1c 100%)',
+      g: 'linear-gradient(180deg,#7fe0a8 0%,#23a35a 40%,#0b5a2e 60%,#137a41 100%)',
+      a: 'linear-gradient(180deg,#ffe0a0 0%,#e0a93e 40%,#935f0d 60%,#b27b1c 100%)',
+      r: 'linear-gradient(180deg,#ff9d95 0%,#e25555 40%,#971515 60%,#b52020 100%)',
+    };
+    const css = [
+      // haus
+      V + '.kym-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin:6px 0 18px;-webkit-font-smoothing:antialiased}',
+      V + '.kym-head-left{display:flex;flex-direction:column;gap:6px;min-width:0}',
+      V + '.kym-kicker{display:flex;align-items:center;gap:10px;font-family:' + MONO + ';font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#f0584c}',
+      V + '.kym-kicker i{width:26px;height:2px;background:#f0584c}',
+      V + '.kym-title{margin:0!important;font-family:' + DISPLAY + '!important;font-size:44px!important;font-weight:800!important;line-height:1!important;letter-spacing:-.02em!important;color:#fff!important;text-shadow:0 2px 8px rgba(0,0,0,.45)!important}',
+      V + '.kym-sub{font-family:' + MONO + ';font-size:12.5px;color:#d5dbe6}',
+      V + '.kym-sub b{color:#fff}',
+      V + '.kym-head-tools{display:flex;align-items:center;gap:10px}',
+      V + '.kym-stepper{display:flex;align-items:stretch;height:40px;border:1px solid #000;border-radius:3px;overflow:hidden;background:' + METAL_BTN + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 6px rgba(0,0,0,.45)}',
+      V + '.kym-stepper button{width:40px!important;height:auto!important;display:flex;align-items:center;justify-content:center;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:#eef1f4!important;cursor:pointer;box-shadow:none!important}',
+      V + '.kym-stepper button:first-child{border-right:1px solid #000!important}' + V + '.kym-stepper button:last-child{border-left:1px solid #000!important}',
+      V + '.kym-stepper button:hover{background:rgba(255,255,255,.08)!important}',
+      V + '.kym-month{display:flex;align-items:center;padding:0 16px!important;min-width:0!important;font-family:' + MONO + '!important;font-size:12px!important;font-weight:700!important;letter-spacing:.12em;text-transform:uppercase;color:#fff!important}',
+      V + '.kym-select{height:40px!important;padding:0 12px!important;border:1px solid #000!important;border-radius:3px!important;background:' + METAL_BTN + '!important;color:#eef1f4!important;font:600 13px "IBM Plex Sans",system-ui,sans-serif!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 6px rgba(0,0,0,.45)!important;cursor:pointer}',
+      V + '.kym-select option{color:#11141c;background:#fff}',
+      // lykiltölur
+      V + '.kym-kpis{display:grid;grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}',
+      V + '.kym-kpis--3{grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr))}',
+      V + '.kym-hero{display:flex;flex-direction:column;gap:12px;padding:18px 22px;background:' + METAL + ';border-top:3px solid #f0584c;border-radius:2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 30px -14px rgba(0,0,0,.7);-webkit-font-smoothing:antialiased}',
+      V + '.kym-lbl{font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}',
+      V + '.kym-hero .kym-lbl{color:#f0584c}',
+      V + '.kym-big{font-family:' + DISPLAY + ';font-size:46px;font-weight:800;line-height:1;letter-spacing:-.02em;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
+      V + '.kym-big small{font-size:18px;font-weight:700;color:#aeb6c4}',
+      V + '.kym-split{display:flex;gap:3px;height:8px}' + V + '.kym-split i{flex-basis:0;min-width:4px;border-radius:2px}',
+      V + '.kym-legend{display:flex;flex-wrap:wrap;gap:6px 26px;font-family:' + MONO + ';font-size:12px;color:#d5dbe6}',
+      V + '.kym-legend span{display:inline-flex;align-items:center;gap:8px;color:#d5dbe6}' + V + '.kym-legend b{color:#fff}',
+      V + '.kym-legend i{width:9px;height:9px;border-radius:1px}',
+      V + '.kym-seg-m{background:' + SEG.m + '}' + V + '.kym-seg-o{background:' + SEG.o + '}' + V + '.kym-seg-none{flex-grow:1;background:rgba(255,255,255,.12)}',
+      V + '.kym-exp{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:16px 18px!important;text-align:left;background:#fff!important;border:0!important;border-top:3px solid var(--kym-tone)!important;border-radius:2px!important;box-shadow:0 10px 24px -16px rgba(0,0,0,.5)!important;font:inherit;color:#11141c;cursor:pointer}',
+      V + '.kym-exp:hover{box-shadow:0 0 0 1px var(--kym-tone),0 10px 24px -16px rgba(0,0,0,.5)!important}',
+      V + '.kym-exp.is-open{box-shadow:inset 0 0 0 2px var(--kym-tone),0 10px 24px -16px rgba(0,0,0,.5)!important}',
+      V + '.kym-tone-amber{--kym-tone:#e0a93e;--kym-ink:#845400}' + V + '.kym-tone-blue{--kym-tone:#2563eb;--kym-ink:#1d4ed8}' + V + '.kym-tone-violet{--kym-tone:#7c3aed;--kym-ink:#5b21b6}',
+      V + '.kym-exp-top{display:flex;align-items:center;justify-content:space-between;gap:10px}',
+      V + '.kym-exp .kym-lbl{color:var(--kym-ink)}',
+      V + '.kym-cg{font-family:' + MONO + ';font-size:10px;color:#6b7483;border:1px solid #d7dbe2;border-radius:2px;padding:0 4px}',
+      V + '.kym-mid{font-family:' + DISPLAY + ';font-size:30px;font-weight:800;line-height:1.05;letter-spacing:-.02em;color:#11141c}',
+      V + '.kym-mid small{font-size:14px;color:#6b7483}',
+      V + '.kym-exp-sub{font-size:12px;color:#5b6472;line-height:1.4}',
+      V + '.kym-exp-go{margin-top:auto;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid rgba(20,24,34,.16);border-radius:3px;background:' + SILVER + ';color:#3a4250;font-size:12.5px;font-weight:600}',
+      // síur + leit
+      V + '.kym-toolbar{display:flex!important;align-items:center;gap:10px!important;flex-wrap:wrap;margin-bottom:8px!important}',
+      V + '.kym-tabs{display:flex;align-items:stretch;height:40px;border:1px solid rgba(20,24,34,.22);border-radius:3px;overflow:hidden;background:' + SILVER + ';box-shadow:0 6px 16px -12px rgba(0,0,0,.5)}',
+      V + '.kym-tab{padding:0 16px!important;border:0!important;border-radius:0!important;background:transparent!important;color:#3a4250!important;font:600 13px "IBM Plex Sans",system-ui,sans-serif!important;cursor:pointer;box-shadow:none!important}',
+      V + '.kym-tab+.kym-tab{border-left:1px solid rgba(20,24,34,.14)!important}',
+      V + '.kym-tab.is-active{background:' + METAL + '!important;color:#fff!important}',
+      V + '.kym-tab:not(.is-active):hover{background:rgba(255,255,255,.6)!important}',
+      V + '.kym-sync{height:40px;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border:1px solid rgba(52,168,98,.55);border-radius:3px;background:' + GREEN + ';color:#fff;font:700 13px "IBM Plex Sans",system-ui,sans-serif;text-shadow:0 1px 1px rgba(0,0,0,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65);cursor:pointer}',
+      V + '.kym-sync:hover{filter:brightness(1.2)}',
+      V + '.kym-search{flex:1 1 220px;display:flex;align-items:center;gap:9px;height:40px;padding:0 12px;background:#eef1f6;border:1px solid rgba(20,24,34,.18);border-radius:3px;box-shadow:inset 0 2px 5px rgba(0,0,0,.14);color:#5b6472}',
+      V + '.kym-search input{flex:1;min-width:0;height:auto!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;font:400 13px "IBM Plex Sans",system-ui,sans-serif!important;color:#11141c!important;outline:none}',
+      V + '.kym-hint{display:flex!important;align-items:center;gap:8px;margin:0 2px 16px!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;font-size:12.5px!important;color:#1f2530!important}',
+      V + '.kym-hint svg{flex:none;color:#3a4250}',
+      // fyrirtækin
+      V + '.kym-co{margin-bottom:10px;background:#fff;border-top:3px solid var(--kym-rule,#8a93a3);border-radius:2px;box-shadow:0 1px 1px rgba(15,20,30,.2),0 10px 22px -14px rgba(15,20,30,.45);container-type:inline-size}',
+      V + '.kym-co-g{--kym-rule:#16783f}' + V + '.kym-co-a{--kym-rule:#e0a93e}' + V + '.kym-co-r{--kym-rule:#c92a2a}',
+      V + '.kym-co-head{display:flex;align-items:center;gap:16px;padding:14px 18px 12px;border-bottom:1px solid #edf0f4}',
+      V + '.kym-co-info{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}',
+      V + '.kym-co-name{display:flex;align-items:baseline;gap:12px;min-width:0;flex-wrap:wrap}',
+      V + '.kym-co-nm{font-size:16px;font-weight:600;color:#11141c}',
+      // Playfair ber gamaldags tölustafi (3/5/7 niður fyrir línu) — upphæðir í línutölum.
+      V + '.kym-big,' + V + '.kym-mid,' + V + '.kym-co-sum b,' + V + '.kym-section b,' + V + '.kym-hvsec-h b{font-variant-numeric:lining-nums tabular-nums}',
+      V + '.kym-co-nm a{color:#11141c!important;text-decoration:none!important;border-bottom:1px dotted #8a93a3!important}',
+      V + '.kym-co-meta{font-family:' + MONO + ';font-size:11.5px;color:#5b6472}',
+      V + '.kym-co-age{display:flex;align-items:center;gap:12px;font-size:12px;color:#5b6472}',
+      V + '.kym-agebar{display:flex;gap:2px;width:180px;height:5px}' + V + '.kym-agebar i{flex-basis:0;min-width:3px;border-radius:1px}',
+      V + '.kym-seg-g{background:' + SEG.g + '}' + V + '.kym-seg-a{background:' + SEG.a + '}' + V + '.kym-seg-r{background:' + SEG.r + '}',
+      V + '.kym-older{color:#845400}',
+      V + '.kym-ink-g{color:#0b6b3a}' + V + '.kym-ink-a{color:#845400}' + V + '.kym-ink-r{color:#b42318}',
+      V + '.kym-co-sum{display:flex;flex-direction:column;align-items:flex-end;text-align:right}',
+      V + '.kym-co-sum span{font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6b7483}',
+      V + '.kym-co-sum b{font-family:' + DISPLAY + ';font-size:26px;font-weight:800;line-height:1.05;color:#11141c}',
+      V + '.kym-co-sum small{font-size:13px;color:#6b7483}',
+      V + '.kym-icon{flex:none;width:38px;height:38px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid rgba(20,24,34,.16);border-radius:3px;background:' + SILVER + ';color:#3a4250;cursor:pointer}',
+      V + '.kym-pick{flex:none;width:17px!important;height:17px!important;margin:0;accent-color:#c92a2a;cursor:pointer}',
+      V + '.kym-pick-sp{flex:none;width:17px}',
+      V + '.kym-row{display:flex;align-items:center;gap:12px;padding:10px 18px;border-top:1px solid #f3f5f8}',
+      V + '.kym-row:first-child{border-top:0}',
+      V + '.kym-num{flex:none;width:100px;display:flex;flex-direction:column;line-height:1.25}',
+      V + '.kym-num b{font-family:' + MONO + ';font-size:13px;font-weight:700;color:#11141c}',
+      V + '.kym-num time{font-family:' + MONO + ';font-size:11px;color:#5b6472}',
+      V + '.kym-age{flex:none;min-width:52px;text-align:center;font-family:' + MONO + ';font-size:11px;font-weight:700;padding:3px 6px;border-radius:2px}',
+      V + '.kym-age-g{background:#e3f4ea;color:#0b6b3a}' + V + '.kym-age-a{background:#fbf0d9;color:#845400}' + V + '.kym-age-r{background:#fbe4e1;color:#b42318}',
+      V + '.kym-docs{flex:none;display:flex;align-items:stretch;height:34px;border:1px solid rgba(20,24,34,.16);border-radius:3px;overflow:hidden;background:linear-gradient(180deg,#fdfdfe 0%,#e8ebf1 100%)}',
+      V + '.kym-doc{display:inline-flex;align-items:center;gap:6px;padding:0 11px;border:0;border-radius:0;background:transparent;color:#3a4250;font:600 12px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;white-space:nowrap}',
+      V + '.kym-doc+.kym-doc{border-left:1px solid rgba(20,24,34,.12)}',
+      V + '.kym-doc:hover{background:rgba(255,255,255,.7)}',
+      V + '.kym-doc.is-found{color:#0b6b3a}' + V + '.kym-doc.is-missing{color:#6b7483}' + V + '.kym-doc.is-missing svg{opacity:.5}',
+      V + '.kym-note{flex:1 1 140px;min-width:80px;height:auto!important;padding:2px 4px 3px!important;border:0!important;border-bottom:1px dashed #cfd5de!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font:400 12.5px "IBM Plex Sans",system-ui,sans-serif!important;color:#2b313c!important;outline:none}',
+      V + '.kym-note:focus,' + V + '.kym-note:hover:focus{border:0!important;border-bottom:1px solid #c92a2a!important;background:#fbfcfe!important}',
+      V + '.kym-note::placeholder{color:#8a93a3}',
+      V + '.kym-amt{flex:none;width:104px;text-align:right;font-family:' + MONO + ';font-size:13.5px;font-weight:700;color:#11141c;white-space:nowrap}',
+      V + '.kym-drog{flex:none;display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:2px;background:#f1ecfb;border:1px solid #d9cdf5;color:#5b21b6;font-family:' + MONO + ';font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}',
+      V + '.kym-krafa,' + V + '.kym-paid{flex:none;height:34px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;border-radius:3px;font:700 12px "IBM Plex Sans",system-ui,sans-serif;white-space:nowrap;cursor:pointer}',
+      V + '.kym-krafa{min-width:126px;border:1px solid #000;background:' + METAL_BTN + ';color:#eef1f4}',
+      V + '.kym-paid{border:1px solid rgba(20,24,34,.16);background:' + SILVER + ';color:#0b6b3a}',
+      V + '.kym-krafa.is-on,' + V + '.kym-paid.is-on{border-color:rgba(52,168,98,.55);background:' + GREEN + ';color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5)}',
+      V + '.kym-krafa:hover,' + V + '.kym-paid:hover{filter:brightness(1.12)}',
+      V + '.kym-krafa:disabled{opacity:.6;cursor:wait}',
+      V + '.kym-more{position:relative;flex:none}',
+      V + '.kym-more-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid rgba(20,24,34,.16);border-radius:3px;background:' + SILVER + ';color:#3a4250;cursor:pointer}',
+      V + '.kym-more.is-open .kym-more-btn{border-color:#000;background:' + METAL_BTN + ';color:#fff}',
+      V + '.kym-menu{position:absolute;top:40px;right:0;z-index:60;width:248px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:6px;background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:3px;box-shadow:0 18px 40px -12px rgba(10,14,22,.55),0 2px 6px rgba(10,14,22,.14)}',
+      V + '.kym-menu[hidden]{display:none}',
+      V + '.kym-more.is-up .kym-menu{top:auto;bottom:40px}',
+      V + '.kym-mi{height:38px;display:flex;align-items:center;gap:10px;padding:0 10px;border:0;border-radius:2px;background:transparent;color:#1f2530;font:500 13.5px "IBM Plex Sans",system-ui,sans-serif;text-align:left;cursor:pointer}',
+      V + '.kym-mi svg{flex:none;color:#5b6472}',
+      V + '.kym-mi:hover,' + V + '.kym-mi:focus-visible{background:#f1f4f8;outline:none}',
+      V + '.kym-mi--warn{color:#845400;font-weight:600}' + V + '.kym-mi--warn svg{color:#845400}',
+      V + '.kym-mi--danger{color:#b42318;font-weight:600}' + V + '.kym-mi--danger svg{color:#b42318}',
+      V + '.kym-mi-sep{height:1px;margin:4px 6px;background:#eceff3}',
+      V + '.kym-detail>div{border-radius:2px!important;border:0!important;border-top:3px solid var(--kym-tone,#8a93a3)!important;box-shadow:0 10px 24px -16px rgba(0,0,0,.5)!important}',
+      V + '.kym-co.kym-lift{position:relative;z-index:30}',
+      V + '.kym-empty{padding:40px;text-align:center;background:#fff;border-top:3px solid #8a93a3;border-radius:2px;box-shadow:0 10px 22px -14px rgba(15,20,30,.45);color:#5b6472;font-size:13.5px}',
+      // „Sést hvergi": spjöld, endurhlaða-takki og hlutarnir (hvSectionHtml)
+      V + '.kym-stat{display:flex;flex-direction:column;gap:8px;padding:16px 18px;background:#fff;border-top:3px solid var(--kym-tone);border-radius:2px;box-shadow:0 10px 24px -16px rgba(0,0,0,.5)}',
+      V + '.kym-stat .kym-lbl{color:var(--kym-ink)}',
+      V + '.kym-tone-steel{--kym-tone:#8f98a8;--kym-ink:#3a4250}' + V + '.kym-tone-green{--kym-tone:#16783f;--kym-ink:#0b6b3a}',
+      V + '.kym-btn{height:40px;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border:1px solid rgba(20,24,34,.2);border-radius:3px;background:' + SILVER + ';color:#1f2530;font:700 13px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}',
+      V + '.kym-btn:hover{filter:brightness(1.04)}',
+      V + '.kym-hvbox{margin:0 0 14px;padding:13px 16px;background:#fff;border-top:3px solid #8f98a8;border-radius:2px;box-shadow:0 10px 22px -14px rgba(15,20,30,.45);font-size:12.5px;line-height:1.55;color:#1f2530}',
+      V + '.kym-hvsec{margin-bottom:12px;background:#fff;border-top:3px solid var(--kym-tone);border-radius:2px;box-shadow:0 1px 1px rgba(15,20,30,.2),0 10px 22px -14px rgba(15,20,30,.45)}',
+      V + '.kym-hvsec-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px 12px;border-bottom:1px solid #edf0f4}',
+      V + '.kym-hvsec-h h3{margin:0!important;font:600 16px "IBM Plex Sans",system-ui,sans-serif!important;color:#11141c!important}',
+      V + '.kym-hvsec-h p{margin:2px 0 0!important;font-size:12px!important;color:#5b6472!important}',
+      V + '.kym-hvsec-h b{font-family:' + DISPLAY + ';font-size:24px;font-weight:800;color:#11141c;white-space:nowrap}',
+      V + '.kym-hvsec-h b small{font-size:13px;color:#6b7483}',
+      // Bunkastikan (updateBulkBar) — málmur með rauðri brún, Senda í grænum málmi
+      'html body #ky-bulkbar.kym-bulk{background:' + METAL + '!important;border-top:3px solid #c92a2a!important;box-shadow:0 -10px 28px rgba(0,0,0,.45)!important;font-family:"IBM Plex Sans",system-ui,sans-serif!important;-webkit-font-smoothing:antialiased}',
+      'html body #ky-bulkbar.kym-bulk button{border-radius:3px!important;font-family:"IBM Plex Sans",system-ui,sans-serif!important}',
+      'html body #ky-bulkbar.kym-bulk #_ky-bulk-clear{border:1px solid #3a3d44!important;background:transparent!important;color:#d5dbe6!important}',
+      'html body #ky-bulkbar.kym-bulk #_ky-bulk-draft{border:1px solid #000!important;background:' + METAL_BTN + '!important;color:#eef1f4!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)!important}',
+      'html body #ky-bulkbar.kym-bulk #_ky-bulk-send{border:1px solid rgba(52,168,98,.55)!important;background:' + GREEN + '!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65)!important}',
+      V + '.kym-section{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:14px 2px 10px}',
+      V + '.kym-section h2{margin:0!important;font-family:' + DISPLAY + '!important;font-size:24px!important;font-weight:800!important;color:#11141c!important}',
+      V + '.kym-section span{font-family:' + MONO + ';font-size:11.5px;color:#2b313c}',
+      V + '.kym-section b{font-family:' + DISPLAY + ';font-size:22px;font-weight:800;color:#11141c}',
+      V + '.kym-section b small{font-size:13px;color:#3a4250}',
+      // mjórra: minnispunkturinn í eigin línu; lykiltölur í tvær/eina röð
+      '@container (max-width: 1080px){' + V + '.kym-row{flex-wrap:wrap}' + V + '.kym-note{order:9;flex:1 1 100%;margin-left:29px}}',
+      '@media (max-width: 1280px){' + V + '.kym-kpis,' + V + '.kym-kpis--3{grid-template-columns:repeat(2,minmax(0,1fr))}' + V + '.kym-hero{grid-column:1/-1}}',
+      '@media (max-width: 760px){' + V + '.kym-kpis,' + V + '.kym-kpis--3{grid-template-columns:minmax(0,1fr)}}',
+    ].join('\n');
+    const st = document.createElement('style');
+    st.id = 'ky-midar-css';
+    st.textContent = css;
+    (document.head || document.documentElement).appendChild(st);
+  }
+
   // ── Render ───────────────────────────────────────────────────────────────
   function render() {
     const main = document.getElementById('ky-main');
@@ -1232,6 +1695,32 @@
     const monthLabel = _state.month.getFullYear() + ' · ' +
       ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'][_state.month.getMonth()];
 
+    // 22.09.2026: Skjár-sýnin (desktop) í Miðakerfinu — sjá renderCompanyMidar.
+    // Sími (renderCompany) og Tafla (renderTable) eru óbreytt; allir takkar bera
+    // sömu _ky-* klasa svo tengingin hér fyrir neðan á við allar þrjár.
+    const MID = getViewMode() === 'desktop';
+    if (MID) {
+      injectMidarStyle();
+      const shownTotal = shown.reduce((a, g) => a + (g.sum || 0), 0);
+      const detail = _state.expandCard === 'payday' ? expDetailHtml('payday', 'Ógreiddar kröfur í Payday', paydayUnpaid, paydayUnpaidTotal, '#845400')
+        : _state.expandCard === 'drog' ? expDetailHtml('drog', 'Drög í Payday — ósend (aldrei farin til kúnna; sendu úr Payday)', paydayDrog, paydayDrogTotal, '#5b21b6')
+        : _state.expandCard === 'osendar' ? expDetailHtml('osendar', 'Ósendar kröfur (aldrei sendar í banka/Payday)', osendarRows, osendarTotal, '#1d4ed8')
+        : '';
+      const tone = { payday: 'amber', drog: 'violet', osendar: 'blue' }[_state.expandCard] || 'steel';
+      main.innerHTML = `
+      <div class="thm"><div class="app-page"><main class="app-main kym-page">
+        ${midarHeadHtml(all.length, companies.length)}
+        ${midarKpiHtml({ allLen: all.length, coLen: companies.length, grandTotal, thisMonthTotal, olderTotal,
+                         thisMonthLen: thisMonth.length, olderLen: older.length,
+                         paydayUnpaid, paydayUnpaidTotal, paydayDrog, paydayDrogTotal, osendarRows, osendarTotal })}
+        ${detail ? '<div class="kym-detail kym-tone-' + tone + '">' + detail + '</div>' : ''}
+        ${midarToolbarHtml()}
+        ${shown.length
+          ? midarSectionHtml(shown.length, companies.length, q, shownTotal) + shown.map(renderCompanyMidar).join('')
+          : midarEmpty(q ? 'Ekkert fyrirtæki passar við „' + esc(_state.search) + '"' : 'Engar útistandandi kröfur')}
+      </main></div></div>
+      <div id="ky-bulkbar" class="kym-bulk"></div>`;
+    } else
     main.innerHTML = `
       <div class="thm"><div class="app-page"><main class="app-main">
 
@@ -2733,6 +3222,21 @@
 
   function hvSectionHtml(titill, undirtitill, rows, litur, bg, bd) {
     const total = hvSum(rows);
+    if (getViewMode() === 'desktop') {
+      // Miðakerfið (22.09.2026): ferkantaður hluti með litaðri brún efst.
+      return `
+      <section class="kym-hvsec" style="--kym-tone:${bd}">
+        <div class="kym-hvsec-h">
+          <div><h3>${esc(String(titill).replace(/^[^A-Za-zÁÉÍÓÚÝÞÆÖÐáéíóúýþæöð]+/, ''))} · ${rows.length}</h3><p>${esc(undirtitill)}</p></div>
+          <b>${midarNum(total)} <small>kr</small></b>
+        </div>
+        <div class="_hv-rows">
+          ${rows.length
+            ? rows.slice().sort((a, b) => (parseFloat(b.samtals) || 0) - (parseFloat(a.samtals) || 0)).map(hvRowHtml).join('')
+            : '<div style="padding:26px;text-align:center;color:#5b6472">Ekkert í þessum flokki</div>'}
+        </div>
+      </section>`;
+    }
     return `
       <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)">
         <div style="padding:13px 17px;border-bottom:1px solid #eef1f6;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:${bg};border-left:4px solid ${bd}">
@@ -2761,6 +3265,26 @@
     const felogKr = hvSum(felog), nofnKr = hvSum(nofn);
     const sottN = felog.concat(nofn).filter(s => hvSott(s).found).length;
 
+    if (getViewMode() === 'desktop') {
+      // Miðakerfið (22.09.2026) — sami haus + flipaborði og hinar fjórar sýnirnar.
+      injectMidarStyle();
+      main.innerHTML = `
+      <div class="thm"><div class="app-page"><main class="app-main kym-page">
+        ${midarHvergiTopHtml(felog, nofn, felogKr, nofnKr, sottN)}
+        ${_hv.villa
+          ? `<div class="kym-hvbox" style="border-top-color:#c92a2a;color:#b42318;font-weight:700">Listinn hlóðst EKKI: ${esc(_hv.villa)}</div>`
+          : ''}
+        <div class="kym-hvbox">
+          <b>Allir mánuðir</b> — óháð mánaðar-flettingunni. Sían er: greitt_med ≠ „reikningur" · ógreitt · aldrei sent · ekki void · upphæð &gt; 0 · hvorki kreditfærsla né bakfærð móðir.<br>
+          <b style="color:#1d4ed8">→ Í kröfu</b> setur greitt_med = „reikningur" svo salan komi inn í venjulega flæðið — <b>einstefna, engin leið til baka héðan</b>.
+          <b style="color:#0b6b3a">✓ Greitt</b> stimplar paid_at fyrir kort/reiðufé sem gleymdist að merkja. Ein sala í einu, með staðfestingu.<br>
+          <span style="color:#5b6472">„Sótt"-merkið er í dag <b>frjáls texti</b> í athugasemdum — það er LESIÐ hér, aldrei skrifað. Fjarvera þess sannar ekkert.</span>
+        </div>
+        ${hvSectionHtml('Félög', 'Þessi eiga erindi í kröfu — fyrirtæki borga sjaldnast yfir borðið', felog, '#b45309', '#fffbeb', '#e0a93e')}
+        ${hvSectionHtml('Nöfn / staðgreitt', 'Líklega afgreitt yfir borðið — bara aldrei merkt greitt', nofn, '#0f172a', '#f8fafc', '#8f98a8')}
+      </main></div></div>
+      <div id="ky-bulkbar" class="kym-bulk"></div>`;
+    } else
     main.innerHTML = `
       <div class="thm"><div class="app-page"><main class="app-main">
 
