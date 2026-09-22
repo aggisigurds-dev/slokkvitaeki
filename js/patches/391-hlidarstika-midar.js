@@ -72,9 +72,9 @@
       P + ' > #gs-trigger kbd{margin-left:auto!important;padding:1px 5px!important;border:1px solid #2c2f36!important;border-radius:3px!important;background:transparent!important;color:#aeb6c4!important;font:700 10.5px/1.3 ' + MONO + '!important}',
       // Valmyndin
       N + '{order:2;padding:6px 10px 10px!important;gap:2px!important}',
-      // NB: `display` er EKKI sett hér — 68 felur hnappa með inline `display:none`
-      // (án !important) og `display:flex!important` hefði dregið þá alla fram.
-      B + ':not([style*="display: none"]){display:flex!important}',
+      // NB: `display` er ALDREI sett hér. app.css gefur .vnav-btn `display:flex`;
+      // 68 felur hnappa með inline `display:none` og 162/181 o.fl. með CSS-reglum
+      // — `display:flex!important` dró þá ALLA fram (mælt: 17 faldir hnappar birtust).
       B + '{position:relative!important;overflow:visible!important;align-items:center!important;gap:11px!important;height:36px!important;min-height:36px!important;box-sizing:border-box!important;padding:0 10px 0 26px!important;margin-top:0;border:1px solid transparent!important;border-radius:3px!important;background:transparent!important;box-shadow:none!important;text-shadow:none!important;color:#c9ced6!important;font:500 13.5px/1.2 ' + SANS + '!important;letter-spacing:0!important;text-align:left!important;-webkit-font-smoothing:antialiased}',
       B + ' svg{flex:none!important;width:16px!important;height:16px!important;margin:0!important}',
       B + ' > svg[stroke="currentColor"],' + B + ' > span > svg[stroke="currentColor"]{color:#8f98a8!important}',
@@ -105,7 +105,7 @@
       N + ' .qlinks-btn{display:flex!important;align-items:center!important;gap:11px!important;height:32px!important;padding:0 10px 0 26px!important;border-radius:3px!important;background:transparent!important;border:0!important;color:#aeb6c4!important;font:500 12.5px/1.2 ' + SANS + '!important;text-decoration:none!important}',
       N + ' .qlinks-btn:hover{background:rgba(255,255,255,.045)!important;color:#fff!important}',
       // Byggingarstimpillinn (292) — límdur neðst í listann, dempaður mono
-      N + ' > ._build-stamp{order:99999!important;position:sticky!important;bottom:-10px!important;z-index:2;margin:12px -10px -10px!important;padding:14px 14px 10px!important;border-radius:0!important;background:linear-gradient(180deg,rgba(12,13,16,0) 0%,#0c0d10 45%)!important;color:#5c6473!important;font:500 10px/1.3 ' + MONO + '!important;text-align:left!important;word-break:normal!important}',
+      N + ' > ._build-stamp{order:99999!important;position:sticky!important;bottom:-10px!important;z-index:2;margin:12px -10px -10px!important;padding:7px 14px 9px!important;border-radius:0!important;border-top:1px solid #1f2126!important;background:#0c0d10!important;color:#5c6473!important;font:500 10px/1.3 ' + MONO + '!important;text-align:left!important;word-break:normal!important}',
       N + ' > ._build-stamp:hover{color:#8f98a8!important}',
       // Notandinn neðst: [JS] Jón S. / • Tengt ……… [bjalla]
       P + ' > .topbar-right{order:3;display:grid!important;grid-template-columns:32px minmax(0,1fr)!important;grid-template-rows:auto auto!important;column-gap:10px!important;row-gap:1px!important;align-items:center!important;flex:none!important;padding:12px 62px 12px 14px!important;border-top:1px solid #1f2126!important;background:transparent!important}',
@@ -154,7 +154,7 @@
       if (k === 0 || el.classList.contains('nav-grp-start')) groups.push([]);
       groups[groups.length - 1].push(el);
     });
-    let prev = null;
+    const used = new Set();
     groups.forEach((g, gi) => {
       const head = g[0];
       let name = null;
@@ -163,10 +163,10 @@
         g.forEach(el => { const s = SEC_OF[el.getAttribute('data-view') || '']; if (s) votes[s] = (votes[s] || 0) + 1; });
         let best = 0;
         Object.keys(votes).forEach(s => { if (votes[s] > best) { best = votes[s]; name = s; } });
-        if (name && name === prev) name = null;   // sami hluti og á undan → bara línan
+        // Heiti birtist AÐEINS einu sinni — fleiri hópar úr sama hluta fá línuna eina.
+        if (name && used.has(name)) name = null;
       }
-      if (name) prev = name;
-      else if (gi > 0) { /* ómerktur hópur rýfur ekki keðjuna */ }
+      if (name) used.add(name);
       if ((head.getAttribute('data-sbm-sec') || null) !== name) {
         if (name) head.setAttribute('data-sbm-sec', name); else head.removeAttribute('data-sbm-sec');
       }
@@ -174,16 +174,38 @@
     });
   }
 
+  // Tóm talningarmerki (t.d. `<span class="sb-badge zero">` á Sölu) birtust sem
+  // pínulítið strik hægra megin. Mælt 22.09.2026: hvorki `display:none!important`
+  // frá 241 né héðan hafði áhrif á þau — EINA leiðin sem dugði var inline
+  // !important. Þess vegna er það gert hér, og tekið af um leið og tala kemur.
+  function hideEmptyBadges(nav) {
+    nav.querySelectorAll('.vnav-btn .sb-badge').forEach(b => {
+      const tomt = !String(b.textContent || '').trim();
+      if (tomt) { if (b.style.display !== 'none') b.style.setProperty('display', 'none', 'important'); }
+      else if (b.style.display === 'none') b.style.removeProperty('display');
+    });
+  }
+
   let t = null;
-  function schedule() { if (!t) t = setTimeout(() => { t = null; try { label(); } catch (_) {} try { dressSearch(); } catch (_) {} }, 250); }
+  function schedule() {
+    if (t) return;
+    t = setTimeout(() => {
+      t = null;
+      const nav = document.querySelector('.topbar nav.view-nav');
+      try { label(); } catch (_) {}
+      try { if (nav) hideEmptyBadges(nav); } catch (_) {}
+      try { dressSearch(); } catch (_) {}
+    }, 250);
+  }
 
   function start() {
     injectCss();
     schedule();
     const nav = document.querySelector('.topbar nav.view-nav');
     if (nav) {
-      // Aðeins class/style (68 raðar með order + nav-grp-start) og hnappar sem bætast við.
-      new MutationObserver(schedule).observe(nav, { childList: true, subtree: false, attributes: true, attributeFilter: ['class', 'style'], attributeOldValue: false });
+      // class/style (68 raðar með order + nav-grp-start), nýir hnappar og texti
+      // í talningarmerkjunum (15/166/…). Ekkert annað — stikan er lítið tré.
+      new MutationObserver(schedule).observe(nav, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
     }
     // 56 býr leitarhnappinn til eftir ~1,5 s
     let n = 0; const iv = setInterval(() => { if (dressSearch() || ++n > 40) clearInterval(iv); }, 500);
