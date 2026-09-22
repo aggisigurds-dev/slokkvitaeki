@@ -173,11 +173,7 @@
                 renderJobs('received',   byStatus.received,   false)) +
         colHtml('Í vinnslu', byStatus.inprogress.length + ' verk', '#d97706', '#fef3c7',
                 renderJobs('inprogress', byStatus.inprogress, false)) +
-        colHtml('Tilbúin',   byStatus.ready.length + ' verk',      '#059669', '#ecfdf5',
-                renderJobs('ready',      byStatus.ready,      true),
-                // 2026-08-18 (ósk Agnars): prentvænn listi af tilbúnu verkunum
-                // með símanúmerum — til að hringja út „tækin þín eru tilbúin".
-                '<button type="button" onclick="Counter.printReady()" title="Prenta lista yfir tilbúin verk (með símanúmerum)" style="flex:none;padding:5px 10px;border:1px solid #a7f3d0;background:#fff;color:#047857;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">🖨 Prenta</button>') +
+        readyColHtml(byStatus.ready, q, allActive) +
       '</div>' +
       // Detail modal: holds #counter-main + #print-aside so legacy renderDetail/renderPrintAside still work
       '<div id="counter-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;padding:24px">' +
@@ -208,6 +204,29 @@
       if (job && Counter.renderPrintAside) Counter.renderPrintAside(job);
       if (job && Counter.openJobModal) Counter.openJobModal();
     }
+    // Opin ⋯ valmynd á afhendingarmiða (389) flyst á nýja takkann eftir endurteikningu.
+    if (window.TilbuinMidar && TilbuinMidar.afterRender) TilbuinMidar.afterRender();
+  }
+
+  // 2026-09-22 (Agnar: „This is awesome. Can you integrate that into our site"):
+  // Tilbúin-dálkurinn teiknast sem afhendingarmiðar úr patch 389. Sé 389 ekki
+  // hlaðið (eða bregðist það) teiknast gömlu kortin hér óbreytt.
+  function readyColHtml(ready, q, allActive) {
+    if (window.TilbuinMidar && typeof TilbuinMidar.column === 'function') {
+      try {
+        return TilbuinMidar.column(ready, {
+          live, digitsOnly, custKey, baseNum,
+          expanded: Counter.expandedCos || {},
+          total: allActive.filter(j => j.status === 'ready').length,
+          searching: !!q
+        });
+      } catch (e) { console.warn('[78] afhendingarmiðar (389) brugðust — gömlu kortin teiknuð', e); }
+    }
+    return colHtml('Tilbúin', ready.length + ' verk', '#059669', '#ecfdf5',
+      renderJobs('ready', ready, true),
+      // 2026-08-18 (ósk Agnars): prentvænn listi af tilbúnu verkunum
+      // með símanúmerum — til að hringja út „tækin þín eru tilbúin".
+      '<button type="button" onclick="Counter.printReady()" title="Prenta lista yfir tilbúin verk (með símanúmerum)" style="flex:none;padding:5px 10px;border:1px solid #a7f3d0;background:#fff;color:#047857;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">🖨 Prenta</button>');
   }
 
   // 2026-08-18 (ósk Agnars): prentvænn A4-listi af Tilbúin-dálknum með síma-
