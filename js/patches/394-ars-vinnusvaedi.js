@@ -38,6 +38,7 @@
 
   function css() {
     const V = 'html body #view-arsskodun ';
+    const W = 'html body #view-arsskodun#view-arsskodun ';   // sterkari en blað 153
     return [
       V + '.arsm-strip{display:grid;gap:6px;align-items:end;padding:12px 14px 12px;margin-bottom:12px;border-top:3px solid #555d6b;border-radius:2px;background-image:' + STRIPE + METAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 30px -14px rgba(0,0,0,.7)}',
       V + '.arsm-head{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:2px}',
@@ -74,9 +75,15 @@
       V + '.arsm-sec{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:14px 2px 10px}',
       V + '.arsm-sec h2{margin:0;font:800 24px/1.1 ' + DISPLAY + ';letter-spacing:-.02em;color:#11141c}',
       V + '.arsm-sec span{font:500 11.5px/1.4 ' + MONO + ';color:#2b313c}',
-      // Upprunalegu raðirnar víkja þegar hjúpurinn hefur teiknað sig
-      V + '._ars-morow[data-arsm="falid"]{display:none!important}',
-      V + '._ars-st[data-arsm="falid"]{display:none!important}',
+      // Upprunalegu raðirnar víkja þegar hjúpurinn hefur teiknað sig.
+      // TVÖFALDUR ID VILJANDI: 153 skrifar sjálft `#view-arsskodun#view-arsskodun
+      // ._ars-morow{display:flex!important}` (lína 3434) og sá selector er sterkari en
+      // `html body #view-arsskodun …`. Mælt: röðin stóð eftir undir strimlinum þangað
+      // til ID-ið var tvöfaldað hér líka. Inline `!important` dugði ekki heldur —
+      // endurteiknun 153 býr til NÝJA röð og Stílstjórinn endurskrifar style-eigindið.
+      W + '._ars-morow[data-arsm="falid"]{display:none!important}',
+      W + '._ars-st[data-arsm="falid"]{display:none!important}',
+      W + '#_ars-skiphide[data-arsm="falid"]{display:none!important}',
     ].join('\n');
   }
 
@@ -97,18 +104,29 @@
   // ── 1 · mánaðastrimill ────────────────────────────────────────────────────
   function strimill(root) {
     const row = root.querySelector('._ars-morow');
-    if (!row || row.dataset.arsm === 'falid') return;
+    if (!row) return;
+    const gomul = root.querySelector('.arsm-strip');
+    // Merkið eitt og sér dugar ekki sem „þegar smíðað“: eftir ferð niður í símabreidd
+    // er röðin enn merkt en strimillinn farinn, og þá stóð síðan mánaðarlaus.
+    if (gomul && row.dataset.arsm === 'falid') return;
     const chips = Array.from(row.querySelectorAll('._ars-mo'));
     if (chips.length < 6) return;                       // ekki það sem við héldum — snertum ekkert
-    const gomul = root.querySelector('.arsm-strip');
     if (gomul) gomul.remove();
 
     const tolur = chips.map(talaAf);
-    const max = Math.max.apply(null, tolur.concat([1]));
+    // Kvarðinn nær yfir MÁNUÐINA eina (ekki „Allir“ né „Án mánaðar“) og byrjar á
+    // lægsta mánuðinum, ekki á núlli: 36 á móti 76 lítur eins út ef súlurnar eru
+    // mældar frá núlli, og þá segir strimillinn ekkert um hvar álagið liggur.
+    const manTolur = tolur.slice(1, -1).filter(n => n > 0);
+    const lagst = manTolur.length ? Math.min.apply(null, manTolur) : 0;
+    const haest = manTolur.length ? Math.max.apply(null, manTolur) : 1;
+    const bil = Math.max(1, haest - lagst);
     const strip = document.createElement('div');
     strip.className = 'arsm-strip';
     strip.style.gridTemplateColumns = 'repeat(' + chips.length + ',minmax(0,1fr))';
-    const alls = tolur.reduce((a, b) => a + b, 0);
+    const manSum = tolur.slice(1, -1).reduce((a, b) => a + b, 0);
+    const anMan = tolur[tolur.length - 1] || 0;
+    const alls = manSum + anMan;
     const haus = document.createElement('div');
     haus.className = 'arsm-head';
     const nuHeiti = ['jan', 'feb', 'mar', 'apr', 'maí', 'jún', 'júl', 'ágú', 'sep', 'okt', 'nóv', 'des'][new Date().getMonth()];
@@ -127,7 +145,10 @@
         (c.getAttribute('aria-pressed') === 'true' ? ' is-on' : '') +
         (!erAllir && !erTom && heiti.toLowerCase().slice(0, 3) === nuHeiti.slice(0, 3) ? ' is-nu' : '');
       b.title = heiti + (n ? ' — ' + n + ' staðir' : '');
-      const h = erAllir ? 56 : Math.max(10, Math.round(14 + (n / max) * 46));
+      // Klemmt við 58: „Án mánaðar“ er utan kvarðans (hann nær yfir mánuðina eina) og
+      // getur annars orðið margfalt hærri en strimillinn — mælt 236 px þegar sían
+      // „Engin tæki“ skildi eftir 16 án mánaðar á móti 4 í hæsta mánuði.
+      const h = erAllir ? 58 : (n ? Math.min(58, Math.max(12, Math.round(16 + ((n - lagst) / bil) * 44))) : 6);
       b.innerHTML = '<i style="height:' + h + 'px"></i><em></em><u></u>';
       b.querySelector('em').textContent = erTom ? 'Án mán.' : heiti;
       b.querySelector('u').textContent = n ? String(n) : (erAllir ? String(alls) : '0');
@@ -136,7 +157,7 @@
     });
 
     const nuChip = chips.find(c => heitiAf(c).toLowerCase().slice(0, 3) === nuHeiti.slice(0, 3));
-    hs.textContent = alls + ' með mánuð · ' + (tolur[chips.length - 1] || 0) + ' án mánaðar' +
+    hs.textContent = manSum + ' með mánuð · ' + anMan + ' án mánaðar' +
       (nuChip ? ' · ' + heitiAf(nuChip) + ' ' + talaAf(nuChip) + ' í dag' : '');
     haus.appendChild(hs);
 
@@ -262,10 +283,20 @@
     (wrap.closest('.thm') || wrap).parentNode.insertBefore(sec, wrap.closest('.thm') || wrap);
   }
 
+  const OKKAR = '.arsm-strip,.arsm-more,.arsm-tags,.arsm-sec';
+
   let t = null, inni = false;
   function bygg() {
     const root = document.querySelector('#view-arsskodun #ars-main');
     if (!root || !root.offsetParent) return;
+    // Opin valmynd er ekki endurbyggð undan notandanum. (Mælt: að opna hana breytir
+    // DOM-inu, sem vakti vaktarann, sem smíðaði hólfið upp á nýtt — lokað. Smellurinn
+    // virkaði, valmyndin lifði bara í 260 ms.)
+    if (root.querySelector('.arsm-menu:not([hidden])')) return;
+    // Síminn heldur sínum eigin strimli (331/382): stílarnir hér eru allir í
+    // @media(min-width:901px), svo hjúpurinn ætti að standa ÓSMÍÐAÐUR þar — annars
+    // sætu ósnyrtar súlur ofan á upprunalegu röðunum, sem þá fela sig ekki heldur.
+    if (innerWidth < 901) { root.querySelectorAll(OKKAR).forEach(n => n.remove()); return; }
     inni = true;
     try { strimill(root); } catch (e) { console.warn('[394] strimill', e); }
     try { siur(root); } catch (e) { console.warn('[394] síur', e); }
@@ -279,7 +310,17 @@
     const v = document.getElementById('view-arsskodun');
     if (!v) { setTimeout(start, 1000); return; }
     schedule();
-    new MutationObserver(schedule).observe(v, { childList: true, subtree: true });
+    // Aðeins breytingar sem 153 gerir telja. Breytingar innan okkar eigin hluta
+    // (súlur, hólf, flísar, haus) eru hunsaðar, annars elti hjúpurinn sjálfan sig.
+    new MutationObserver(ms => {
+      for (const m of ms) {
+        const el = m.target && m.target.nodeType === 1 ? m.target : (m.target && m.target.parentElement);
+        if (el && el.closest && el.closest(OKKAR)) continue;
+        schedule();
+        return;
+      }
+    }).observe(v, { childList: true, subtree: true });
+    addEventListener('resize', schedule);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(start, 1200));
   else setTimeout(start, 1200);
