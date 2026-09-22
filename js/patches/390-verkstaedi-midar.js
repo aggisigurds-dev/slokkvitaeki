@@ -147,30 +147,30 @@
           '<div class="vkm-num">' + (np.n0 ? '<span class="vkm-num0">' + esc(np.n0) + '</span>' : '') + esc(np.n1) + '</div>' +
           '<div class="vkm-age vkm-age--' + ageKind(days) + '"><i aria-hidden="true"></i>' + ageLabel(days) + '</div>' +
         '</div>' +
+        // 22.09 (Agnar: „decrease the height of verk rows so I will see a bit more"):
+        // ein lína — nafn · tæki · framvinda + Senda — í stað þriggja raða.
         '<div class="vkm-main">' +
-          '<div class="bw-row-top">' +
-            '<div class="bw-cinfo">' +
-              '<div class="bw-cname-row">' +
-                '<div class="bw-cname">' + esc(co.name || '—') + '</div>' +
-                (jobs.length > 1 ? '<span class="vkm-chip">' + jobs.length + ' verk</span>' : '') +
-              '</div>' +
-              '<div class="bw-cmeta"><span class="vkm-done">' + co.doneUnits + '/' + co.totalUnits + ' lokið</span>' +
-                (phone ? '<span class="vkm-phone" title="Sími">' + ICON.phone + esc(phone) + '</span>' : '') +
-              '</div>' +
-              '<div class="vkm-tools">' +
+          '<div class="bw-cinfo">' +
+            '<div class="bw-cname-row">' +
+              '<div class="bw-cname">' + esc(co.name || '—') + '</div>' +
+              (jobs.length > 1 ? '<span class="vkm-chip">' + jobs.length + ' verk</span>' : '') +
+            '</div>' +
+            '<div class="bw-cmeta"><span class="vkm-done">' + co.doneUnits + '/' + co.totalUnits + ' lokið</span>' +
+              (phone ? '<span class="vkm-phone" title="Sími">' + ICON.phone + esc(phone) + '</span>' : '') +
+              '<span class="vkm-tools">' +
                 '<button type="button" class="bw-edit-verk vkm-ic" title="Breyta verki (nafn / sími)" aria-label="Breyta verki" onclick="event.stopPropagation();Workshop.editVerk(\'' + jobIds + '\')">' + ICON.pencil + '</button>' +
                 '<button type="button" class="bw-edit-verk vkm-ic" title="Bæta við tæki" aria-label="Bæta við tæki" onclick="event.stopPropagation();Workshop.addUnit(' + (first.id || 0) + ')">' + ICON.plus + '</button>' +
                 '<button type="button" class="bw-edit-verk vkm-ic" title="Opna Drög (breyta / eyða reikningi)" aria-label="Opna Drög" onclick="event.stopPropagation();Workshop.openDrog(\'' + esc(first.num || '') + '\')">' + ICON.file + '</button>' +
-              '</div>' +
+              '</span>' +
             '</div>' +
-            t.html +
           '</div>' +
-          (staffNote ? '<div class="bw-cnote vkm-note">' + ICON.note + '<span><b>Athugasemd:</b> ' + esc(staffNote) + '</span></div>' : '') +
+          t.html +
           '<div class="bw-prow">' +
             '<div class="bw-prog' + (ready ? ' full' : '') + '" role="img" aria-label="' + co.doneUnits + ' af ' + co.totalUnits + ' tækjum tilbúin"><div style="width:' + pct + '%"></div></div>' +
             '<span class="vkm-pct">' + co.doneUnits + '/' + co.totalUnits + '</span>' +
             '<button type="button" class="bw-send' + (ready ? ' ready' : '') + '" onclick="event.stopPropagation();Workshop.sendGroupToAfgreidsla([' + jobIds + '])">' + ICON.send + 'Senda í afgreiðslu</button>' +
           '</div>' +
+          (staffNote ? '<div class="bw-cnote vkm-note">' + ICON.note + '<span><b>Athugasemd:</b> ' + esc(staffNote) + '</span></div>' : '') +
         '</div>' +
       '</div>' +
     '</div>';
@@ -206,9 +206,8 @@
       V + '.bw-shd ._sr-btn{flex-basis:100%;height:40px;margin-top:4px!important;border-radius:10px!important;font-size:13px!important;font-weight:700!important}',
       V + '.bw-sh-col{border-radius:14px!important;border:1px solid rgba(20,24,34,.22)!important;box-shadow:0 14px 32px -16px rgba(0,0,0,.6)!important}',
       V + '.bw-sh-body{background:' + STEEL + ';padding:12px 12px 14px!important}',
-      V + '#_vk-loaned>div:first-child>span:first-child{font-family:' + MONO + '!important;font-size:11px!important;letter-spacing:.14em!important;color:#3a4250!important}',
       // miðinn (viðskiptavinur)
-      V + '.vkm-wrap{position:relative;margin-bottom:10px;filter:drop-shadow(0 1px 1px rgba(15,20,30,.22)) drop-shadow(0 6px 12px rgba(15,20,30,.12))}',
+      V + '.vkm-wrap{position:relative;margin-bottom:8px;filter:drop-shadow(0 1px 1px rgba(15,20,30,.22)) drop-shadow(0 6px 12px rgba(15,20,30,.12))}',
       V + '.bw-row.vkm-row{--vkm-stub:88px;display:grid;grid-template-columns:var(--vkm-stub) minmax(0,1fr);margin:0!important;padding:0!important;border:0!important;border-radius:12px!important;overflow:hidden;background:#fff!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.07)!important;' +
         '-webkit-mask:radial-gradient(circle at var(--vkm-stub) 0,transparent 7px,#000 7.5px) top/100% 51% no-repeat,radial-gradient(circle at var(--vkm-stub) 100%,transparent 7px,#000 7.5px) bottom/100% 51% no-repeat;' +
         'mask:radial-gradient(circle at var(--vkm-stub) 0,transparent 7px,#000 7.5px) top/100% 51% no-repeat,radial-gradient(circle at var(--vkm-stub) 100%,transparent 7px,#000 7.5px) bottom/100% 51% no-repeat}',
@@ -223,29 +222,30 @@
       V + '.vkm-age--vika{color:#4a5363}' + V + '.vkm-age--vika i{background:#8a93a3}',
       V + '.vkm-age--tvaer{color:#845400}' + V + '.vkm-age--tvaer i{background:#e0a93e}',
       V + '.vkm-age--lengi{color:#b42318}' + V + '.vkm-age--lengi i{background:#c92a2a}',
-      V + '.vkm-main{min-width:0;padding:12px 14px 12px 16px}',
-      V + '.vkm-row .bw-row-top{gap:14px}',
-      V + '.vkm-row .bw-cinfo{flex:1 1 170px;width:auto;min-width:0}',
-      V + '.bw-cname{font-size:15px!important;font-weight:600!important;color:#11141c!important}',
+      V + '.vkm-main{min-width:0;padding:9px 12px 9px 14px;display:grid;grid-template-columns:minmax(210px,1.25fr) minmax(0,2fr) auto;grid-template-areas:"info tiles acts" "note note note";align-items:center;column-gap:16px;row-gap:8px}',
+      V + '.bw-card,' + V + '.bw-sh-col{container-type:inline-size;container-name:vkm}',
+      V + '.vkm-main>.bw-cinfo{grid-area:info;width:auto;min-width:0}' + V + '.vkm-main>.bw-tiles{grid-area:tiles;min-width:0}' + V + '.vkm-main>.bw-cnote{grid-area:note}',
+      V + '.bw-cname{font-size:14.5px!important;font-weight:600!important;color:#11141c!important}',
       V + '.vkm-chip{flex:none;padding:2px 7px;border-radius:6px;background:#1d1f24;font-family:' + MONO + ';font-size:10.5px;font-weight:700;color:#fff}',
-      V + '.vkm-row .bw-cmeta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:4px;font-size:12px;color:#5b6472}',
+      V + '.vkm-row .bw-cmeta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:3px;font-size:12px;color:#5b6472}',
       V + '.vkm-done{font-weight:500;color:#2b313c}',
       V + '.vkm-phone{display:inline-flex;align-items:center;gap:4px;font-family:' + MONO + ';font-size:11.5px;color:#3a4250}',
-      V + '.vkm-tools{display:flex;gap:6px;margin-top:10px}',
-      V + '.bw-edit-verk.vkm-ic{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center;opacity:1;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#3a4250;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);cursor:pointer}',
+      V + '.vkm-tools{flex:none;display:inline-flex;gap:4px;margin-left:auto}',
+      V + '.bw-edit-verk.vkm-ic{width:28px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center;opacity:1;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#3a4250;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);cursor:pointer}',
       V + '.bw-edit-verk.vkm-ic:hover{background:linear-gradient(180deg,#fff 0%,#e9ecf2 100%);border-color:rgba(201,42,42,.45)}',
       // tækjaflísarnar = smá-miðar (líka í Komið úr þjónustu, 269)
       V + '.bw-tiles{gap:8px!important}',
-      V + '.bw-tile{width:100px!important;border:1px solid rgba(20,24,34,.13)!important;border-radius:9px!important;background:#fff!important;box-shadow:0 1px 2px rgba(15,20,30,.1),0 4px 10px -6px rgba(15,20,30,.25)!important}',
+      V + '.bw-tile{width:96px!important;border:1px solid rgba(20,24,34,.13)!important;border-radius:9px!important;background:#fff!important;box-shadow:0 1px 2px rgba(15,20,30,.1),0 4px 10px -6px rgba(15,20,30,.25)!important}',
       V + '.bw-tile.vkm-tile{box-shadow:inset 3px 0 0 var(--vkm-type,transparent),0 1px 2px rgba(15,20,30,.1),0 4px 10px -6px rgba(15,20,30,.25)!important}',
       V + '.bw-tile:hover{transform:translateY(-2px);border-color:rgba(201,42,42,.45)!important}',
       V + '.bw-tile-x{width:24px!important;height:24px!important;background:transparent!important;color:#8a93a3!important;border-radius:0 0 0 7px!important}',
       V + '.bw-tile-x:hover{background:rgba(201,42,42,.12)!important;color:#b42318!important}',
-      V + '.bw-tile-body{padding:8px 16px 6px 9px!important;text-align:left!important}',
-      V + '.bw-tile-ty{font-size:11px!important;font-weight:600!important;color:#11141c!important}',
-      V + '.bw-tile-ser{font-family:' + MONO + '!important;font-size:10px!important;font-weight:500;color:#6b7483!important;margin-top:3px!important}',
-      V + '.bw-tile-parts{display:flex;align-items:center;gap:3px;min-height:13px!important;margin-top:3px!important;font-size:10px!important;font-weight:600!important;color:#0b6b3a!important}',
-      V + '.bw-chk{display:flex!important;align-items:center;justify-content:center;gap:5px;height:28px;padding:0 4px!important;border:0!important;border-top:1px solid rgba(20,24,34,.1)!important;font-family:"IBM Plex Sans",system-ui,sans-serif!important;font-size:11px!important;font-weight:700!important;letter-spacing:.01em}',
+      V + '.bw-tile-body{padding:6px 16px 4px 8px!important;text-align:left!important}',
+      V + '.bw-tile-ty{font-size:10.5px!important;font-weight:600!important;color:#11141c!important}',
+      V + '.bw-tile-ser{font-family:' + MONO + '!important;font-size:9.5px!important;font-weight:500;color:#6b7483!important;margin-top:2px!important}',
+      V + '.bw-tile-parts{display:flex;align-items:center;gap:3px;min-height:0!important;margin-top:2px!important;font-size:10px!important;font-weight:600!important;color:#0b6b3a!important}',
+      V + '.bw-tile-parts:empty{display:none}',
+      V + '.bw-chk{display:flex!important;align-items:center;justify-content:center;gap:5px;height:24px;padding:0 4px!important;border:0!important;border-top:1px solid rgba(20,24,34,.1)!important;font-family:"IBM Plex Sans",system-ui,sans-serif!important;font-size:11px!important;font-weight:700!important;letter-spacing:.01em}',
       V + '.bw-chk.no{background:linear-gradient(180deg,#fdfdfe 0%,#e8ebf1 100%)!important;color:#3a4250!important}',
       V + '.bw-chk.no:hover{color:#0b6b3a!important}',
       V + '.bw-chk.yes{background:' + GREEN_METAL + '!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.5)}',
@@ -254,20 +254,25 @@
       V + '.bw-cnote.vkm-note{display:flex;align-items:flex-start;gap:8px;margin:10px 0 0!important;padding:9px 11px!important;background:#fff8e6!important;border:1px solid #f1d58a!important;border-radius:9px!important;font-size:12.5px!important;color:#5c3f00!important;line-height:1.45}',
       V + '.bw-cnote.vkm-note svg{flex:none;margin-top:1px;color:#b27b1c}',
       // framvinda + Senda í afgreiðslu (grænn málmur þegar allt er tilbúið)
-      V + '.vkm-row .bw-prow{gap:10px;margin-top:12px}',
+      V + '.vkm-main>.bw-prow{grid-area:acts;width:218px;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 8px;margin:0!important}' +
+        V + '.vkm-main>.bw-prow::after{content:"";order:1;flex-basis:100%;height:0}' +
+        V + '.vkm-main>.bw-prow .bw-prog{order:0;flex:1 1 120px}' + V + '.vkm-main>.bw-prow .vkm-pct{order:0}' +
+        V + '.vkm-main>.bw-prow .bw-send,' + V + '.vkm-main>.bw-prow ._vsd-del{order:2}',
       V + '.bw-prog{height:8px!important;border-radius:99px!important;background:#dfe3ea!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}',
       V + '.bw-prog>div{border-radius:99px;background:linear-gradient(180deg,#ffe0a0 0%,#e0a93e 40%,#935f0d 60%,#b27b1c 100%)!important}',
       V + '.bw-prog.full>div{background:linear-gradient(180deg,#7fe0a8 0%,#23a35a 40%,#0b5a2e 60%,#137a41 100%)!important}',
       V + '.vkm-pct{flex:none;font-family:' + MONO + ';font-size:11.5px;font-weight:700;color:#3a4250}',
-      V + '.bw-send{display:inline-flex;align-items:center;gap:8px;height:40px!important;padding:0 15px!important;border-radius:10px!important;border:1px solid #000!important;background:' + METAL + '!important;color:#eef1f4!important;font-size:13px!important;font-weight:700!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 6px rgba(0,0,0,.35)!important}',
+      V + '.bw-send{display:inline-flex;align-items:center;gap:7px;height:36px!important;padding:0 13px!important;border-radius:10px!important;border:1px solid #000!important;background:' + METAL + '!important;color:#eef1f4!important;font-size:13px!important;font-weight:700!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 6px rgba(0,0,0,.35)!important}',
       V + '.bw-send.ready{border-color:rgba(52,168,98,.55)!important;background:' + GREEN_METAL + '!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3)!important}',
       V + '.bw-send:hover{filter:brightness(1.2)}',
       // 🗑 frá 234 → silfurtakki með teiknuðu rusli (ekkert emoji)
-      V + '._vsd-del{width:40px!important;height:40px!important;display:inline-flex!important;align-items:center;justify-content:center;border-radius:10px!important;border:1px solid rgba(20,24,34,.16)!important;background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)!important;color:#b42318!important;font-size:0!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)}',
+      V + '._vsd-del{width:36px!important;height:36px!important;margin-left:0!important;display:inline-flex!important;align-items:center;justify-content:center;border-radius:10px!important;border:1px solid rgba(20,24,34,.16)!important;background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)!important;color:#b42318!important;font-size:0!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)}',
       V + '._vsd-del::before{content:"";width:16px;height:16px;background:currentColor;-webkit-mask:' + TRASH + ' center/contain no-repeat;mask:' + TRASH + ' center/contain no-repeat}',
       V + '._vsd-del:hover{border-color:rgba(201,42,42,.5)!important}',
       // mjór skjár: rifflipinn mjórri
       '@media (max-width:640px){' + V + '.bw-row.vkm-row{--vkm-stub:74px}' + V + '.vkm-num{font-size:12px}' + V + '.vkm-main{padding:10px 10px 10px 12px}}',
+      '@container vkm (max-width: 720px){' + V + '.vkm-main{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"info acts" "tiles tiles" "note note"}}',
+      '@container vkm (max-width: 470px){' + V + '.vkm-main{grid-template-columns:minmax(0,1fr);grid-template-areas:"info" "tiles" "acts" "note"}' + V + '.vkm-main>.bw-prow{width:auto;justify-content:flex-start}}',
     ].join('\n');
     const st = document.createElement('style');
     st.id = '_vkm-css';
