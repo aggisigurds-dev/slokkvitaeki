@@ -169,11 +169,9 @@
       // Legacy IDs kept alive (hidden) so editjobbutton.js, searchbox.js work
       '<div style="display:none"><div id="job-list"></div><div id="sidebar-ready"></div></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px;height:calc(100vh - 110px);overflow:hidden;box-sizing:border-box;min-width:0">' +
-        colHtml('Móttekin',  byStatus.received.length + ' verk',   '#64748b', '#f8fafc',
-                renderJobs('received',   byStatus.received,   false)) +
-        colHtml('Í vinnslu', byStatus.inprogress.length + ' verk', '#d97706', '#fef3c7',
-                renderJobs('inprogress', byStatus.inprogress, false)) +
-        readyColHtml(byStatus.ready, q, allActive) +
+        statusColHtml('received',   byStatus.received,   q, allActive) +
+        statusColHtml('inprogress', byStatus.inprogress, q, allActive) +
+        statusColHtml('ready',      byStatus.ready,      q, allActive) +
       '</div>' +
       // Detail modal: holds #counter-main + #print-aside so legacy renderDetail/renderPrintAside still work
       '<div id="counter-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;padding:24px">' +
@@ -208,25 +206,36 @@
     if (window.TilbuinMidar && TilbuinMidar.afterRender) TilbuinMidar.afterRender();
   }
 
-  // 2026-09-22 (Agnar: „This is awesome. Can you integrate that into our site"):
-  // Tilbúin-dálkurinn teiknast sem afhendingarmiðar úr patch 389. Sé 389 ekki
-  // hlaðið (eða bregðist það) teiknast gömlu kortin hér óbreytt.
-  function readyColHtml(ready, q, allActive) {
+  // 2026-09-22 (Agnar: „This is awesome. Can you integrate that into our site"
+  // → „perhaps make the other two windows in the same theme"): allir þrír
+  // dálkarnir teiknast sem miðar úr patch 389. Sé 389 ekki hlaðið (eða bregðist
+  // það) teiknast gömlu kortin hér óbreytt, dálkur fyrir dálk.
+  const COL_OLD = {
+    received:   ['Móttekin',  '#64748b', '#f8fafc'],
+    inprogress: ['Í vinnslu', '#d97706', '#fef3c7'],
+    ready:      ['Tilbúin',   '#059669', '#ecfdf5'],
+  };
+  function statusKindOf(j) {
+    const s = j && j.status === 'in_progress' ? 'inprogress' : (j && j.status);
+    return COL_OLD[s] ? s : 'received';     // sama skipting og byStatus í counterRender
+  }
+  function statusColHtml(kind, list, q, allActive) {
     if (window.TilbuinMidar && typeof TilbuinMidar.column === 'function') {
       try {
-        return TilbuinMidar.column(ready, {
-          live, digitsOnly, custKey, baseNum,
+        return TilbuinMidar.column(list, {
+          kind, live, digitsOnly, custKey, baseNum,
           expanded: Counter.expandedCos || {},
-          total: allActive.filter(j => j.status === 'ready').length,
+          total: allActive.filter(j => statusKindOf(j) === kind).length,
           searching: !!q
         });
-      } catch (e) { console.warn('[78] afhendingarmiðar (389) brugðust — gömlu kortin teiknuð', e); }
+      } catch (e) { console.warn('[78] miðar (389) brugðust — gömlu kortin teiknuð', kind, e); }
     }
-    return colHtml('Tilbúin', ready.length + ' verk', '#059669', '#ecfdf5',
-      renderJobs('ready', ready, true),
+    const o = COL_OLD[kind];
+    return colHtml(o[0], list.length + ' verk', o[1], o[2],
+      renderJobs(kind, list, kind === 'ready'),
       // 2026-08-18 (ósk Agnars): prentvænn listi af tilbúnu verkunum
       // með símanúmerum — til að hringja út „tækin þín eru tilbúin".
-      '<button type="button" onclick="Counter.printReady()" title="Prenta lista yfir tilbúin verk (með símanúmerum)" style="flex:none;padding:5px 10px;border:1px solid #a7f3d0;background:#fff;color:#047857;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">🖨 Prenta</button>');
+      kind === 'ready' ? '<button type="button" onclick="Counter.printReady()" title="Prenta lista yfir tilbúin verk (með símanúmerum)" style="flex:none;padding:5px 10px;border:1px solid #a7f3d0;background:#fff;color:#047857;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">🖨 Prenta</button>' : '');
   }
 
   // 2026-08-18 (ósk Agnars): prentvænn A4-listi af Tilbúin-dálknum með síma-

@@ -6,9 +6,10 @@
  * sem afhendingarmiðar.
  *
  *   • R-númer á rifflipa (núllin dofin) og biðdagar sem litaður stimpill.
- *   • Tegundarliturinn (SlokkTypeColor) sem lítil slökkvitækjatákn + varan
- *     sjálf („CO₂ 100 gr ×20"). Gamla kortið sagði „1 slökkvitæki" fyrir 20 stk
- *     því magnið situr í service-textanum, ekki í fjölda verklidur-lína.
+ *   • Tegundarliturinn (SlokkTypeColor) sem rönd á vinstri kanti miðans (regla
+ *     Agnars 17.08) og lítil slökkvitækjatákn + varan sjálf („CO₂ 100 gr ×20").
+ *     Gamla kortið sagði „1 slökkvitæki" fyrir 20 stk því magnið situr í
+ *     service-textanum, ekki í fjölda verklidur-lína.
  *   • Fjögur stjórntæki → tvö: „Sótt" + „⋯" (Opna verkið · Setja á hillu ·
  *     Aftur á verkstæði · Eyða verki). Hillan sést aðeins sem plata þegar hún
  *     er sett — 22.09 var ekkert af 16 tilbúnum verkum með hillu.
@@ -17,9 +18,13 @@
  *     (dropoff, annars created_at) — sama dagsetning og kortin sýndu áður.
  *   • Dagsetning birt DD/MM/YYYY (regla Agnars 17.09.2026).
  *
- * TENGING: 78 kallar TilbuinMidar.column() þegar þessi skrá er hlaðin, annars
- * teiknar 78 gömlu kortin (readyCard). Að taka <script>-taggið út skilar gamla
- * útlitinu óbreyttu — engin gögn breytast við þetta patch.
+ * Sama dag: „perhaps make the other two windows in the same theme" — Móttekin og
+ * Í vinnslu teiknast líka sem miðar (sjá KINDS). Þeir halda stafrófsröð 78 og
+ * fá engan stöðutakka; ⋯ býður Opna verkið · Setja á hillu · Eyða verki.
+ *
+ * TENGING: 78 kallar TilbuinMidar.column() fyrir hvern dálk þegar þessi skrá er
+ * hlaðin, annars teiknar 78 gömlu kortin. Að taka <script>-taggið út skilar
+ * gamla útlitinu óbreyttu — engin gögn breytast við þetta patch.
  *
  * GÖMLU KRÓKARNIR SNIÐGENGNIR VILJANDI: 119 (↩ Verkstæði) leitar að
  * button[onclick*="Counter.markCollected"], 140 (hillu-fellilisti) að [onclick]
@@ -146,9 +151,11 @@
     }
     return '<span class="tbm-item">' + (infos.length ? infos.length + ' tæki' : 'Engin tæki') + '</span>';
   }
-  function metaHtml(infos, phone, dateStr) {
+  // Síminn situr hægra megin í nafnalínunni (þar er pláss og þaðan er hringt);
+  // varan og móttökudagurinn í línunni fyrir neðan.
+  const phoneHtml = phone => phone ? '<span class="tbm-phone" title="Sími">' + ICON.phone + esc(phone) + '</span>' : '';
+  function metaHtml(infos, dateStr) {
     return '<div class="tbm-meta">' + iconsHtml(infos) + itemHtml(infos) +
-      (phone ? '<span class="tbm-sep" aria-hidden="true">·</span><span class="tbm-phone" title="Sími">' + ICON.phone + esc(phone) + '</span>' : '') +
       (dateStr ? '<span class="tbm-sep" aria-hidden="true">·</span><span class="tbm-date" title="Móttekið">' + dateStr + '</span>' : '') +
     '</div>';
   }
@@ -168,20 +175,34 @@
       ' onclick="event.stopPropagation();TilbuinMidar.menu(event,' + id + ')">' + ICON.dots + '</button>';
   }
 
+  // Tegundar-litakanturinn (ósk Agnars 17.08: „add the type color indicator part
+  // border on everything in Afgreiðsla", aftur 22.09: „add the color line as
+  // well") — 4 px rönd vinstra megin á rifflipanum. Blandað verk fær röndina í
+  // bútum, einn bút á hvern lit (sömu litir og táknin, SlokkTypeColor).
+  function typeStripe(infos) {
+    const cols = [];
+    infos.forEach(i => { if (i.c && cols.indexOf(i.c) === -1) cols.push(i.c); });
+    if (!cols.length) return '';
+    const step = 100 / cols.length;
+    const stops = cols.map((c, k) => esc(c) + ' ' + (k * step).toFixed(2) + '% ' + ((k + 1) * step).toFixed(2) + '%').join(',');
+    return ' style="--tbm-type:linear-gradient(to bottom,' + stops + ')"';
+  }
+
   // ── Stakur miði ────────────────────────────────────────────────────────────
   function ticket(card, ctx) {
     const j = card.jobs[0];
     const id = +j.id;
     const b = bucketOf(card.days);
+    const infos = unitsOf([j], ctx.live);
     const open = ' onclick="TilbuinMidar.open(' + id + ')"';
     return '<div class="tbm-wrap" data-tbm-id="' + id + '">' +
-      '<div class="tbm-ticket">' +
+      '<div class="tbm-ticket' + (ctx.K.sott ? '' : ' tbm-ticket--nosott') + '"' + typeStripe(infos) + '>' +
         stubHtml(numParts(j.num), card.days, b, open) +
         '<div class="tbm-body" role="button" tabindex="0" title="Opna verkið" onkeydown="_cwKbAct(event)"' + open + '>' +
-          '<div class="tbm-name-row"><span class="tbm-name">' + esc(j.customer || '—') + '</span>' + plate(shelfOf(ctx.shelves, id)) + '</div>' +
-          metaHtml(unitsOf([j], ctx.live), fmtPhone(ctx.digitsOnly(j.phone)), fmtDay(card.dkey)) +
+          '<div class="tbm-name-row"><span class="tbm-name">' + esc(j.customer || '—') + '</span>' + plate(shelfOf(ctx.shelves, id)) + phoneHtml(fmtPhone(ctx.digitsOnly(j.phone))) + '</div>' +
+          metaHtml(infos, fmtDay(card.dkey)) +
         '</div>' +
-        '<div class="tbm-acts">' + sottBtn(id) + moreBtn(id) + '</div>' +
+        '<div class="tbm-acts">' + (ctx.K.sott ? sottBtn(id) : '') + moreBtn(id) + '</div>' +
       '</div>' +
     '</div>';
   }
@@ -201,10 +222,13 @@
     const phone = phoneJob ? fmtPhone(ctx.digitsOnly(phoneJob.phone)) : '';
     const shelf = jobs.map(j => shelfOf(ctx.shelves, j.id)).find(Boolean) || '';
     const np = multi ? { n0: '', n1: sales.size + ' sölur' } : numParts(first.num);
-    const tog = ' onclick="TilbuinMidar.toggle(' + idx + ')"';
+    const togJs = 'TilbuinMidar.toggle(\'' + ctx.kind + '\',' + idx + ')';
+    const tog = ' onclick="' + togJs + '"';
     let rows = '';
     if (expanded) {
-      rows = '<div class="tbm-rows">' + jobs.map(j => {
+      // Línurnar í númeraröð (–V1, –V2 …); „Sótt" hópsins notar samt nýjasta verkið.
+      const inOrder = jobs.slice().sort((a, b) => String(a.num || '').localeCompare(String(b.num || ''), 'is', { numeric: true }));
+      rows = '<div class="tbm-rows">' + inOrder.map(j => {
         const rid = +j.id;
         const ri = unitsOf([j], ctx.live);
         const vm = /-V(\d+)$/i.exec(String(j.num || ''));
@@ -214,63 +238,80 @@
           ? '<b>' + esc(ri[0].label) + '</b>' + (ri[0].qty > 1 ? '<span class="tbm-qty">×' + ri[0].qty + '</span>' : '') + (ri[0].service ? '<span>' + esc(ri[0].service) + '</span>' : '')
           : '<b>' + (ri.length ? ri.length + ' tæki' : 'Engin tæki') + '</b>';
         const ropen = ' onclick="TilbuinMidar.open(' + rid + ')"';
-        return '<div class="tbm-row" data-tbm-id="' + rid + '">' +
+        return '<div class="tbm-row" data-tbm-id="' + rid + '"' + (typeStripe(ri) || ' style="--tbm-type:none"') + '>' +
           '<div class="tbm-row-stub"' + ropen + '>' + rowNum + '</div>' +
           '<div class="tbm-row-body" role="button" tabindex="0" title="Opna verkið" onkeydown="_cwKbAct(event)"' + ropen + '>' +
             iconsHtml(ri) + desc + plate(shelfOf(ctx.shelves, rid)) +
           '</div>' +
-          '<div class="tbm-row-acts">' + (multi ? sottBtn(rid, true) : '') + moreBtn(rid, true) + '</div>' +
+          '<div class="tbm-row-acts">' + (ctx.K.sott && multi ? sottBtn(rid, true) : '') + moreBtn(rid, true) + '</div>' +
         '</div>';
       }).join('') + '</div>';
     }
     const sottTitle = multi
       ? 'Afhenda nýjustu söluna — hinar eru í listanum þegar hópurinn er opnaður'
       : 'Afhenda öll ' + jobs.length + ' verkin — opnar afgreiðsluna';
+    const allInfos = unitsOf(jobs, ctx.live);
     return '<div class="tbm-wrap tbm-wrap--group' + (expanded ? ' is-open' : '') + '">' +
-      '<div class="tbm-ticket">' +
+      '<div class="tbm-ticket' + (ctx.K.sott ? '' : ' tbm-ticket--nosott') + '"' + typeStripe(allInfos) + '>' +
         stubHtml(np, card.days, b, tog) +
         '<div class="tbm-body" role="button" tabindex="0" aria-expanded="' + expanded + '" title="' + (expanded ? 'Fela verkin' : 'Sýna verkin') + '" onkeydown="_cwKbAct(event)"' + tog + '>' +
-          '<div class="tbm-name-row"><span class="tbm-name">' + esc(first.customer || '—') + '</span><span class="tbm-chip">' + jobs.length + ' verk</span>' + plate(shelf) + '</div>' +
-          metaHtml(unitsOf(jobs, ctx.live), phone, fmtDay(card.dkey)) +
+          '<div class="tbm-name-row"><span class="tbm-name">' + esc(first.customer || '—') + '</span><span class="tbm-chip">' + jobs.length + ' verk</span>' + plate(shelf) + phoneHtml(phone) + '</div>' +
+          metaHtml(allInfos, fmtDay(card.dkey)) +
         '</div>' +
         '<div class="tbm-acts">' +
-          sottBtn(+first.id, false, sottTitle) +
+          (ctx.K.sott ? sottBtn(+first.id, false, sottTitle) : '') +
           '<button type="button" class="tbm-icon-btn' + (expanded ? ' is-on' : '') + '" aria-expanded="' + expanded + '"' +
             ' aria-label="' + (expanded ? 'Fela verkin' : 'Sýna öll verkin') + '"' +
-            ' onclick="event.stopPropagation();TilbuinMidar.toggle(' + idx + ')">' + (expanded ? ICON.up : ICON.down) + '</button>' +
+            ' onclick="event.stopPropagation();' + togJs + '">' + (expanded ? ICON.up : ICON.down) + '</button>' +
         '</div>' +
         rows +
       '</div>' +
     '</div>';
   }
 
+  // ── Dálkarnir þrír ─────────────────────────────────────────────────────────
+  // Móttekin og Í vinnslu fengu sama útlit 22.09 („perhaps make the other two
+  // windows in the same theme"). Þeir halda STAFRÓFSRÖÐ 78 (ósk Agnars 18.08) og
+  // fá því enga biðtímakafla — aðeins stimpilinn á miðanum og stikuna í hausnum.
+  // Enginn stöðutakki bætist við þar: stöðubreytingar eiga heima á Verkstæði.
+  const KINDS = {
+    received:   { title: 'Móttekin',  cls: 'mot',  ink: '#64748b', label: n => n === 1 ? 'verk bíður verkstæðis' : 'verk bíða verkstæðis', sections: false, sott: false, print: false },
+    inprogress: { title: 'Í vinnslu', cls: 'vin',  ink: '#d97706', label: () => 'verk á verkstæðinu', sections: false, sott: false, print: false },
+    ready:      { title: 'Tilbúin',   cls: 'tilb', ink: '#059669', label: n => n === 1 ? 'verk bíður afhendingar' : 'verk bíða afhendingar', sections: true, sott: true, print: true },
+  };
+
   // ── Hausinn ────────────────────────────────────────────────────────────────
-  function headHtml(n, total, counts, searching) {
+  function headHtml(K, n, total, counts, searching) {
     const segs = BUCKETS.filter(b => counts[b.k] > 0)
       .map(b => '<span class="tbm-c-' + b.k + '" style="flex-grow:' + counts[b.k] + '"></span>').join('');
     const aria = 'Biðtími: ' + BUCKETS.map(b => counts[b.k] + ' verk ' + b.aria).join(', ');
     const legend = BUCKETS.map(b =>
       '<span' + (counts[b.k] ? '' : ' class="is-zero"') + '><i class="tbm-c-' + b.k + '" aria-hidden="true"></i>' + b.label + ' <b>' + counts[b.k] + '</b></span>').join('');
-    const label = searching ? 'af ' + total + ' verkum' : (n === 1 ? 'verk bíður afhendingar' : 'verk bíða afhendingar');
-    return '<div class="cw-col-head tbm-head">' +
+    const label = searching ? 'af ' + total + ' verkum' : K.label(n);
+    return '<div class="cw-col-head tbm-head tbm-head--' + K.cls + '">' +
       '<i class="tbm-rivet tl" aria-hidden="true"></i><i class="tbm-rivet tr" aria-hidden="true"></i>' +
       '<i class="tbm-rivet bl" aria-hidden="true"></i><i class="tbm-rivet br" aria-hidden="true"></i>' +
       '<div class="tbm-head-main">' +
         '<div class="tbm-head-left">' +
-          '<div class="cw-col-title tbm-title" style="color:#059669"><span class="tbm-led" aria-hidden="true"></span>Tilbúin</div>' +
+          '<div class="cw-col-title tbm-title" style="color:' + K.ink + '"><span class="tbm-led" aria-hidden="true"></span>' + K.title + '</div>' +
           '<div class="cw-col-sub tbm-count"><b>' + n + '</b><span>' + label + '</span></div>' +
         '</div>' +
-        '<button type="button" class="tbm-print" onclick="window.Counter&&Counter.printReady&&Counter.printReady()" title="Prenta lista yfir tilbúin verk (með símanúmerum)">' + ICON.print + '<span>Prenta</span></button>' +
+        (K.print ? '<button type="button" class="tbm-print" onclick="window.Counter&&Counter.printReady&&Counter.printReady()" title="Prenta lista yfir tilbúin verk (með símanúmerum)">' + ICON.print + '<span>Prenta</span></button>' : '') +
       '</div>' +
-      (n ? '<div class="cw-col-sub tbm-age"><div class="tbm-bar" role="img" aria-label="' + esc(aria) + '">' + segs + '</div><div class="tbm-legend">' + legend + '</div></div>' : '') +
+      '<div class="cw-col-sub tbm-age">' +
+        (n ? '<div class="tbm-bar" role="img" aria-label="' + esc(aria) + '">' + segs + '</div><div class="tbm-legend">' + legend + '</div>'
+           : '<div class="tbm-bar tbm-bar--tom" aria-hidden="true"><span></span></div><div class="tbm-legend"><span class="is-zero">Ekkert verk</span></div>') +
+      '</div>' +
     '</div>';
   }
 
-  // ── Dálkurinn allur — kallað úr 78 (counterRender) ─────────────────────────
-  // ctx: { live, digitsOnly, custKey, baseNum, expanded, total, searching }
-  let _keys = [];
+  // ── Dálkur — kallað úr 78 (counterRender), einu sinni fyrir hvern dálk ─────
+  // ctx: { kind, live, digitsOnly, custKey, baseNum, expanded, total, searching }
+  const _keys = { received: [], inprogress: [], ready: [] };
   function column(jobs, ctx) {
-    ctx = Object.assign({}, ctx, { shelves: shelfMap() });
+    const kind = KINDS[ctx && ctx.kind] ? ctx.kind : 'ready';
+    const K = KINDS[kind];
+    ctx = Object.assign({}, ctx, { kind, K, shelves: shelfMap() });
     // Hópað eftir sama auðkenni og 78 (custKey: nafn + sími) — sama viðskiptavinur = einn miði.
     const byKey = new Map();
     (jobs || []).forEach(j => {
@@ -283,12 +324,15 @@
       // Elsta móttökudagsetning hópsins ræður biðtímanum (sá sem hefur beðið lengst).
       const keys = list.map(j => dayKey(j.dropoff || j.created_at)).filter(Boolean).sort();
       const dkey = keys[0] || '';
-      cards.push({ k, jobs: list, dkey, days: ageDays(dkey), name: String(list[0].customer || ''), toggleKey: 'ready:' + k });
+      // Sama lykill og 78 notar í Counter.expandedCos (statusKey + ':' + custKey).
+      cards.push({ k, jobs: list, dkey, days: ageDays(dkey), name: String(list[0].customer || ''), toggleKey: kind + ':' + k });
     });
-    // Nýjast efst (ósk Agnars 18.08) — jafntefli brotið á nafni, eins og 78.
-    cards.sort((a, b) => b.dkey.localeCompare(a.dkey) || a.name.localeCompare(b.name, 'is', { sensitivity: 'base' }));
+    // Tilbúin: nýjast efst (ósk Agnars 18.08), jafntefli brotið á nafni eins og 78.
+    // Móttekin / Í vinnslu: röðin sem 78 skilar (stafrófsröð) helst óbreytt.
+    if (K.sections) cards.sort((a, b) => b.dkey.localeCompare(a.dkey) || a.name.localeCompare(b.name, 'is', { sensitivity: 'base' }));
 
-    _keys = [];
+    _keys[kind] = [];
+    const one = c => (c.jobs.length === 1 ? ticket(c, ctx) : groupTicket(c, ctx, _keys[kind].push(c.toggleKey) - 1));
     const counts = { dag: 0, vika: 0, tvaer: 0, lengi: 0 };
     const secs = BUCKETS.map(b => ({ b, cards: [], n: 0 }));
     cards.forEach(c => {
@@ -296,18 +340,19 @@
       s.cards.push(c); s.n += c.jobs.length; counts[s.b.k] += c.jobs.length;
     });
     let body = cards.length ? '' : '<div class="tbm-empty">Engin verk</div>';
-    secs.forEach(s => {
-      if (!s.cards.length) return;
-      body += '<div class="tbm-sec tbm-sec--' + s.b.k + '"><span class="tbm-sec-lbl">' + s.b.label + '</span>' +
-        '<span class="tbm-sec-n">' + s.n + '</span><span class="tbm-sec-rule" aria-hidden="true"></span></div>';
-      s.cards.forEach(c => {
-        if (c.jobs.length === 1) body += ticket(c, ctx);
-        else body += groupTicket(c, ctx, _keys.push(c.toggleKey) - 1);
+    if (K.sections) {
+      secs.forEach(s => {
+        if (!s.cards.length) return;
+        body += '<div class="tbm-sec tbm-sec--' + s.b.k + '"><span class="tbm-sec-lbl">' + s.b.label + '</span>' +
+          '<span class="tbm-sec-n">' + s.n + '</span><span class="tbm-sec-rule" aria-hidden="true"></span></div>';
+        s.cards.forEach(c => { body += one(c); });
       });
-    });
+    } else {
+      cards.forEach(c => { body += one(c); });
+    }
     const n = (jobs || []).length;
-    return '<div class="cw-col tbm-col" style="display:flex;flex-direction:column;background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;min-height:0;min-width:0">' +
-      headHtml(n, ctx.total == null ? n : ctx.total, counts, !!ctx.searching) +
+    return '<div class="cw-col tbm-col tbm-col--' + K.cls + '" style="display:flex;flex-direction:column;background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;min-height:0;min-width:0">' +
+      headHtml(K, n, ctx.total == null ? n : ctx.total, counts, !!ctx.searching) +
       '<div class="cw-col-scroll tbm-scroll" style="overflow-y:auto;padding:6px;flex:1;min-height:0">' + body + '</div>' +
     '</div>';
   }
@@ -320,9 +365,11 @@
   }
   function menuHtml(id) {
     const sh = shelfOf(shelfMap(), id);
+    const j = window.DB && DB.getJob ? DB.getJob(id) : null;
+    const isReady = !!(j && j.status === 'ready');     // „Aftur á verkstæði" á aðeins við tilbúin verk
     return '<button type="button" role="menuitem" class="tbm-mi" data-act="opna">' + ICON.open + 'Opna verkið</button>' +
       '<button type="button" role="menuitem" class="tbm-mi" data-act="hilla">' + ICON.shelf + 'Setja á hillu<span class="tbm-mi-hint">' + (sh ? esc(sh) : 'G1–G40') + '</span></button>' +
-      '<button type="button" role="menuitem" class="tbm-mi" data-act="verkstaedi">' + ICON.undo + 'Aftur á verkstæði</button>' +
+      (isReady ? '<button type="button" role="menuitem" class="tbm-mi" data-act="verkstaedi">' + ICON.undo + 'Aftur á verkstæði</button>' : '') +
       '<div class="tbm-div" role="separator"></div>' +
       '<button type="button" role="menuitem" class="tbm-mi tbm-mi--danger" data-act="eyda">' + ICON.trash + 'Eyða verki</button>';
   }
@@ -420,7 +467,11 @@
     column,
     open(id) { closePop(false); if (window.Counter && Counter.select) Counter.select(id); },
     sott(id) { closePop(false); if (window.Counter && Counter.markCollected) Counter.markCollected(id); },
-    toggle(i) { closePop(false); const k = _keys[i]; if (k != null && window.Counter && Counter.toggleCo) Counter.toggleCo(k); },
+    toggle(kind, i) {
+      closePop(false);
+      const k = (_keys[kind] || [])[i];
+      if (k != null && window.Counter && Counter.toggleCo) Counter.toggleCo(k);
+    },
     menu(ev, id) {
       const btn = (ev && ev.currentTarget) || null;
       if (pop && popId === id) { closePop(true); return; }
@@ -475,21 +526,31 @@
       V + '.tbm-rivet.tl{top:6px;left:6px}' + V + '.tbm-rivet.tr{top:6px;right:6px}' + V + '.tbm-rivet.bl{bottom:6px;left:6px}' + V + '.tbm-rivet.br{bottom:6px;right:6px}',
       V + '.tbm-head-main{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;min-width:0}',
       V + '.tbm-head-left{display:flex;flex-direction:column;gap:6px;min-width:0}',
-      V + '.tbm-head .cw-col-title.tbm-title{display:flex;align-items:center;gap:9px;font-family:' + MONO + '!important;font-size:11.5px!important;font-weight:700!important;letter-spacing:.2em!important;text-transform:uppercase;color:#34d399!important}',
-      V + '.tbm-led{flex:none;width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.16),0 0 12px rgba(52,211,153,.85)}',
+      V + '.tbm-head .cw-col-title.tbm-title{display:flex;align-items:center;gap:9px;font-family:' + MONO + '!important;font-size:11.5px!important;font-weight:700!important;letter-spacing:.2em!important;text-transform:uppercase;color:#3cc47c!important}',
+      V + '.tbm-led{flex:none;width:8px;height:8px;border-radius:50%;background:#3cc47c;box-shadow:0 0 0 3px rgba(60,196,124,.16),0 0 12px rgba(60,196,124,.8)}',
+      // Móttekin rauður, Í vinnslu gulbrúnn — sömu litir og Agnar setti á dálkaheitin í Stílstjóra
+      V + '.tbm-head--mot .cw-col-title.tbm-title{color:#f0584c!important}',
+      V + '.tbm-head--mot .tbm-led{background:#f0584c;box-shadow:0 0 0 3px rgba(240,88,76,.18),0 0 12px rgba(240,88,76,.85)}',
+      V + '.tbm-head--vin .cw-col-title.tbm-title{color:#f6b545!important}',
+      V + '.tbm-head--vin .tbm-led{background:#f6b545;box-shadow:0 0 0 3px rgba(246,181,69,.18),0 0 12px rgba(246,181,69,.85)}',
       V + '.tbm-head .cw-col-sub.tbm-count{display:flex;align-items:baseline;gap:9px;margin:0!important;font-family:"IBM Plex Sans",system-ui,sans-serif!important;font-size:14px!important;color:#cfd4dc!important;min-width:0}',
       V + '.tbm-count b{font-family:Sora,"IBM Plex Sans",sans-serif;font-size:34px;font-weight:700;line-height:1;letter-spacing:-.03em;color:#fff!important}',
       V + '.tbm-count span{font-weight:500;color:#cfd4dc!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       V + '.tbm-print{flex:none;height:38px;display:inline-flex;align-items:center;gap:8px;padding:0 14px 0 12px;border-radius:9px;border:1px solid #000;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#eef1f4!important;font-size:13px;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);cursor:pointer}',
       V + '.tbm-print *{color:#eef1f4!important}' + V + '.tbm-print:hover{filter:brightness(1.2)}',
-      V + '.tbm-head .cw-col-sub.tbm-age{display:flex;flex-direction:column;gap:8px;margin:0!important;font-family:' + MONO + '!important;font-size:11px!important;color:#aeb6c4!important}',
-      V + '.tbm-bar{display:flex;gap:3px;height:6px}' + V + '.tbm-bar span{flex-basis:0;min-width:4px;border-radius:3px}',
-      V + '.tbm-legend{display:flex;flex-wrap:wrap;gap:4px 16px}',
+      V + '.tbm-head .cw-col-sub.tbm-age{display:flex;flex-direction:column;align-items:stretch!important;gap:8px;margin:0!important;font-family:' + MONO + '!important;font-size:11px!important;color:#aeb6c4!important}',
+      V + '.tbm-bar{display:flex;gap:3px;height:6px;width:100%}' + V + '.tbm-bar span{flex-basis:0;min-width:4px;border-radius:3px}',
+      V + '.tbm-bar--tom span{flex-grow:1;background:rgba(255,255,255,.12)}',
+      V + '.tbm-legend{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px 16px;width:100%}',
       V + '.tbm-legend span{display:inline-flex;align-items:center;gap:6px;color:#aeb6c4!important}',
       V + '.tbm-legend span.is-zero{opacity:.55}',
       V + '.tbm-legend i{width:7px;height:7px;border-radius:2px}',
       V + '.tbm-legend b{color:#fff!important}',
-      V + '.tbm-c-dag{background:#34d399}' + V + '.tbm-c-vika{background:#8a93a3}' + V + '.tbm-c-tvaer{background:#f6b545}' + V + '.tbm-c-lengi{background:#f0584c}',
+      // málmáferð á litalínunum í hausnum (sama og takkarnir): ljós brún efst, dökk rönd í miðjunni
+      V + '.tbm-c-dag{background:linear-gradient(180deg,#7fe0a8 0%,#23a35a 40%,#0b5a2e 60%,#137a41 100%)}' +
+        V + '.tbm-c-vika{background:linear-gradient(180deg,#e2e6ec 0%,#8f98a8 40%,#555d6b 60%,#737c8b 100%)}' +
+        V + '.tbm-c-tvaer{background:linear-gradient(180deg,#ffe0a0 0%,#e0a93e 40%,#935f0d 60%,#b27b1c 100%)}' +
+        V + '.tbm-c-lengi{background:linear-gradient(180deg,#ff9d95 0%,#e25555 40%,#971515 60%,#b52020 100%)}',
       // kaflarnir
       V + '.tbm-sec{display:flex;align-items:center;gap:8px;padding:12px 2px 0;margin-bottom:8px}',
       V + '.tbm-sec:first-child{padding-top:2px}',
@@ -508,12 +569,14 @@
         '-webkit-mask:radial-gradient(circle at var(--tbm-stub) 0,transparent 7px,#000 7.5px) top/100% 51% no-repeat,radial-gradient(circle at var(--tbm-stub) 100%,transparent 7px,#000 7.5px) bottom/100% 51% no-repeat;' +
         'mask:radial-gradient(circle at var(--tbm-stub) 0,transparent 7px,#000 7.5px) top/100% 51% no-repeat,radial-gradient(circle at var(--tbm-stub) 100%,transparent 7px,#000 7.5px) bottom/100% 51% no-repeat}',
       V + '.tbm-wrap:hover .tbm-ticket{box-shadow:inset 0 0 0 1px rgba(201,42,42,.45)}',
-      V + '.tbm-stub{grid-area:stub;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:12px 0 12px 12px;background:#f4f6f9;border-right:1.5px dashed #c3cad5;cursor:pointer}',
+      V + '.tbm-stub{position:relative;grid-area:stub;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:12px 0 12px 12px;background:#f4f6f9;border-right:1.5px dashed #c3cad5;cursor:pointer}',
+      // tegundar-röndin (typeStripe) — sama lína og gömlu kortin báru
+      V + '.tbm-stub::before,' + V + '.tbm-row-stub::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--tbm-type,none)}',
       V + '.tbm-num{font-family:' + MONO + ';font-size:14px;font-weight:700;letter-spacing:-.02em;line-height:1.2;color:#11141c;white-space:nowrap;overflow:hidden}',
       V + '.tbm-num0{color:#a1a9b6}',
       V + '.tbm-age{display:flex;align-items:center;gap:5px;font-family:' + MONO + ';font-size:11px;font-weight:700;line-height:1.2;white-space:nowrap}',
       V + '.tbm-age i{flex:none;width:6px;height:6px;border-radius:50%}',
-      V + '.tbm-age--dag{color:#0b6b3a}' + V + '.tbm-age--dag i{background:#1f9d57}',
+      V + '.tbm-age--dag{color:#0b6b3a}' + V + '.tbm-age--dag i{background:#16783f}',
       V + '.tbm-age--vika{color:#4a5363}' + V + '.tbm-age--vika i{background:#8a93a3}',
       V + '.tbm-age--tvaer{color:#845400}' + V + '.tbm-age--tvaer i{background:#e0a93e}',
       V + '.tbm-age--lengi{color:#b42318}' + V + '.tbm-age--lengi i{background:#c92a2a}',
@@ -531,11 +594,11 @@
       V + '.tbm-item{font-weight:500;color:#2b313c;min-width:0;overflow:hidden;text-overflow:ellipsis}',
       V + '.tbm-qty{flex:none;padding:0 5px;border-radius:5px;background:#eceff4;font-family:' + MONO + ';font-size:11px;font-weight:700;color:#1f2530}',
       V + '.tbm-sep{flex:none;color:#a1a9b6}',
-      V + '.tbm-phone{flex:none;display:inline-flex;align-items:center;gap:4px;font-family:' + MONO + ';font-size:11.5px;color:#3a4250}',
+      V + '.tbm-phone{flex:none;margin-left:auto;padding-left:4px;display:inline-flex;align-items:center;gap:4px;font-family:' + MONO + ';font-size:11.5px;color:#3a4250}',
       V + '.tbm-date{flex:none;font-family:' + MONO + ';font-size:11.5px}',
       V + '.tbm-acts{grid-area:acts;display:flex;align-items:center;gap:6px;padding:0 12px 0 4px}',
-      V + '.tbm-sott{flex:none;height:44px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 14px 0 16px;border-radius:10px;border:1px solid #0a4a26;background:linear-gradient(150deg,#1f9d57 0%,#0a4a26 100%);color:#fff;font-size:14px;font-weight:700;letter-spacing:.01em;text-shadow:0 1px 1px rgba(0,0,0,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 5px rgba(0,0,0,.22);cursor:pointer;white-space:nowrap}',
-      V + '.tbm-sott:hover{filter:brightness(1.12)}' + V + '.tbm-sott:active{filter:brightness(.95);box-shadow:inset 0 2px 5px rgba(0,0,0,.4)}',
+      V + '.tbm-sott{flex:none;height:44px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 14px 0 16px;border-radius:10px;border:1px solid rgba(52,168,98,.55);background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%);color:#fff;font-size:14px;font-weight:700;letter-spacing:.01em;text-shadow:0 1px 1px rgba(0,0,0,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3);cursor:pointer;white-space:nowrap}',
+      V + '.tbm-sott:hover{filter:brightness(1.22)}' + V + '.tbm-sott:active{filter:brightness(.95);box-shadow:inset 0 2px 5px rgba(0,0,0,.4)}',
       V + '.tbm-sott--sm{height:40px;padding:0 12px;font-size:13px}',
       V + '.tbm-icon-btn{flex:none;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:10px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#3a4250;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);cursor:pointer}',
       V + '.tbm-icon-btn:hover{border-color:rgba(20,24,34,.32)}',
@@ -545,7 +608,7 @@
       V + '.tbm-rows{grid-column:1/-1;display:flex;flex-direction:column;border-top:1.5px dashed #c3cad5}',
       V + '.tbm-row{display:grid;grid-template-columns:var(--tbm-stub) minmax(0,1fr) auto;min-height:48px}',
       V + '.tbm-row+.tbm-row{border-top:1px solid #edf0f4}',
-      V + '.tbm-row-stub{min-width:0;display:flex;align-items:center;padding-left:12px;background:#f4f6f9;border-right:1.5px dashed #c3cad5;font-family:' + MONO + ';font-size:11.5px;font-weight:700;color:#5b6472;white-space:nowrap;overflow:hidden;cursor:pointer}',
+      V + '.tbm-row-stub{position:relative;min-width:0;display:flex;align-items:center;padding-left:12px;background:#f4f6f9;border-right:1.5px dashed #c3cad5;font-family:' + MONO + ';font-size:11.5px;font-weight:700;color:#5b6472;white-space:nowrap;overflow:hidden;cursor:pointer}',
       V + '.tbm-row-body{min-width:0;display:flex;align-items:center;gap:8px;padding:0 8px 0 16px;font-size:13px;color:#5b6472;white-space:nowrap;overflow:hidden;cursor:pointer;outline:none}',
       V + '.tbm-row-body b{font-weight:600;color:#1f2530;min-width:0;overflow:hidden;text-overflow:ellipsis}',
       V + '.tbm-row-acts{display:flex;align-items:center;gap:6px;padding:0 12px 0 4px}',
@@ -556,9 +619,16 @@
         V + '.tbm-num{font-size:12.5px}' +
         V + '.tbm-body{padding:10px 10px 4px 14px}' +
         V + '.tbm-meta{flex-wrap:wrap;row-gap:2px}' +
+        V + '.tbm-meta .tbm-sep{display:none}' +
+        V + '.tbm-name-row{flex-wrap:wrap;row-gap:2px}' +
+        V + '.tbm-phone{margin-left:0;padding-left:0}' +
         V + '.tbm-acts{padding:4px 10px 10px 14px}' +
         V + '.tbm-acts .tbm-sott{flex:1 1 auto;height:40px}' +
         V + '.tbm-acts .tbm-icon-btn{width:40px;height:40px}' +
+        // Móttekin / Í vinnslu hafa engan Sótt-takka — ⋯ helst efst til hægri, engin auka-röð
+        V + '.tbm-ticket.tbm-ticket--nosott{grid-template-columns:var(--tbm-stub) minmax(0,1fr) auto;grid-template-rows:auto;grid-template-areas:"stub body acts"}' +
+        V + '.tbm-ticket--nosott .tbm-body{padding:10px 6px 10px 14px}' +
+        V + '.tbm-ticket--nosott .tbm-acts{padding:0 10px 0 2px}' +
         V + '.tbm-row-stub{padding-left:10px}' +
         V + '.tbm-row-body{padding-left:14px}' +
         V + '.cw-col-head.tbm-head{padding:14px 14px 12px!important}' +
