@@ -74,7 +74,19 @@
       V + '._kpi .thm-statnum,' + V + '._kpi>div:nth-child(2){font-size:32px!important;line-height:1!important}',
       V + '.bstal-hero>div:nth-child(2){font-size:44px!important;line-height:1!important}',
       V + '._kpi-s,' + V + '.bstal-hero>div:nth-child(3){font-size:11.5px!important;line-height:1.45!important}',
-      V + '._ars-statgrid .thm-track{height:6px!important;border-radius:1px!important;overflow:hidden!important}',
+      // Röðin innan spjalds á borðinu: merkimiði · tala · stika · skýring.
+      // (Í 153 kemur stikan síðust, svo skýringin flaut milli tölu og stiku.)
+      V + '._kpi{display:flex!important;flex-direction:column!important;gap:7px!important;justify-content:center!important}',
+      V + '._kpi ._kpi-h{order:0!important}',
+      V + '._kpi ._kpi-n{order:1!important}',
+      V + '._kpi .thm-track{order:2!important}',
+      V + '._kpi ._kpi-s{order:3!important}',
+      V + '._ars-statgrid .thm-track{height:6px!important;border-radius:1px!important;overflow:hidden!important;background:rgba(255,255,255,.12)!important}',
+      // Hausinn: stærri Playfair og einbreiður undirtexti eins og á borðinu.
+      V + '#ars-main h1{font-size:40px!important;line-height:1!important;text-shadow:0 2px 8px rgba(0,0,0,.45)!important}',
+      V + '._ars-sub{font-family:' + MONO + '!important;font-size:12.5px!important;color:#d5dbe6!important}',
+      V + '._ars-sub b{color:#fff!important}',
+      V + '._ars-sort{height:40px!important;border-radius:3px!important;background:' + SILVER + '!important;color:#3a4250!important;border:1px solid rgba(20,24,34,.16)!important;font:600 12.5px ' + SANS + '!important}',
 
       // Síuflísar og mánuðir: ferkantað stál, valið í málmi
       V + '._ars-statusrow{border-radius:3px!important;border-color:rgba(20,24,34,.18)!important;gap:0!important}',

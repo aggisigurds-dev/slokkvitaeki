@@ -128,6 +128,17 @@
       V + '.arsm-seg button[data-lit="graent"] span{color:#0b6b3a}',
       V + '.arsm-seg button[data-lit="gult"] span{color:#845400}',
 
+      // ── Kortið: málmhaus eins og á borðinu ────────────────────────────────
+      W + '#_arsmap-panel{border-radius:2px!important;border:1px solid #23262c!important;box-shadow:0 14px 30px -14px rgba(0,0,0,.7)!important;margin-bottom:10px!important}',
+      V + '.arsm-korthaus{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background-image:' + STRIPE + METAL + '}',
+      V + '.arsm-korthaus .arsm-kh-v{display:flex;align-items:center;gap:10px;min-width:0}',
+      V + '.arsm-korthaus b{font:700 10.5px/1 ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#eef1f4}',
+      V + '.arsm-korthaus small{font:500 11px/1.4 ' + MONO + ';color:#aeb6c4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V + '.arsm-korthaus .arsm-led{width:7px;height:7px;border-radius:50%;background:#3cc47c;box-shadow:0 0 8px #3cc47c;flex:none}',
+      V + '.arsm-korthaus .arsm-leg{display:inline-flex;align-items:center;gap:6px;font:500 11px ' + MONO + ';color:#d5dbe6;white-space:nowrap}',
+      V + '.arsm-korthaus .arsm-leg i{width:6px;height:6px;border-radius:50%;display:block}',
+      V + '.arsm-korthaus button{height:30px!important;padding:0 11px!important;border:1px solid #3a3d44!important;border-radius:3px!important;background:transparent!important;color:#eef1f4!important;font:600 12px ' + SANS + '!important;margin:0!important;cursor:pointer}',
+
       // ── 3 · hlutahaus og bilið ────────────────────────────────────────────
       V + '.arsm-sec{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:2px 2px 8px}',
       V + '.arsm-sec h2{margin:0;font:800 24px/1.1 ' + DISPLAY + ';letter-spacing:-.02em;color:#11141c}',
@@ -371,7 +382,14 @@
       if (!/Bílstjóri/.test(t)) return;
       el.style.setProperty('float', 'right', 'important');
       el.style.setProperty('margin', '0 0 8px 7px', 'important');
+      el.style.setProperty('height', '44px', 'important');
     });
+
+    // Leitin ber orðalag borðsins (153 skrifar „🔎 Leita…").
+    const leit = root.querySelector('#_ars-search');
+    if (leit && !/heimilisfang/.test(leit.placeholder || '')) {
+      leit.placeholder = 'Leita (nafn · kt · heimilisfang · póstnr.)…';
+    }
 
     if (virkAuka.length) {
       const tags = document.createElement('div');
@@ -463,6 +481,49 @@
     h.appendChild(leg);
   }
 
+  // ── 2c · kortið: málmhaus ofan á Leaflet-fletinum ────────────────────────
+  // Kortið sjálft er ÓBREYTT (Leaflet + Esri-flísar úr mapfix). Hér bætist aðeins
+  // haus ofan á spjaldið og „Fela kort"-takkinn flyst þangað meðan kortið er opið —
+  // eins og á borðinu. Sé kortið lokað fer takkinn aftur í hlutahausinn.
+  function kort(root, verkf) {
+    const panel = document.getElementById('_arsmap-panel');
+    if (!panel) return null;
+    const opid = getComputedStyle(panel).display !== 'none';
+    const gamall = panel.querySelector('.arsm-korthaus');
+    if (!opid) { if (gamall) { heimskila(gamall); gamall.remove(); } return null; }
+
+    // Kortatakkinn er valinn á TEXTANUM — í hlutahausnum standa líka „📍 Númer ▾"
+    // og sá takki lenti í kortahausnum þegar valið byggði á röð (mælt 22.09).
+    const finna = el => (el ? Array.from(el.querySelectorAll('button')).find(b => /kort/i.test(b.textContent || '')) : null);
+    const takki = finna(panel) || finna(document.getElementById('_arsmap-wrapper')) || finna(verkf);
+    if (gamall) { heimskila(gamall); gamall.remove(); }
+
+    const sub = root.querySelector('._ars-sub');
+    const m = sub ? String(sub.textContent || '').match(/([\d.]+)\s*með skráð/) : null;
+    const fjoldi = m ? m[1] : String(document.querySelectorAll('#_arsmap-panel .leaflet-marker-icon').length || '');
+
+    const haus = document.createElement('div');
+    haus.className = 'arsm-korthaus';
+    const v = document.createElement('div');
+    v.className = 'arsm-kh-v';
+    v.innerHTML = '<span class="arsm-led"></span>';
+    const b = document.createElement('b');
+    b.textContent = 'Kort' + (fjoldi ? ' · ' + fjoldi + ' staðir' : '');
+    const s = document.createElement('small');
+    s.textContent = 'Leaflet + Esri-flísar (óbreytt kort) · smelltu á punkt til að opna staðinn';
+    v.appendChild(b); v.appendChild(s);
+    const h = document.createElement('div');
+    h.className = 'arsm-kh-v';
+    const leg = document.createElement('span');
+    leg.className = 'arsm-leg';
+    leg.innerHTML = '<i style="background:#23a35a"></i>Búið<i style="background:#d3ab4e;margin-left:8px"></i>Eftir<i style="background:#c92a2a;margin-left:8px"></i>Á eftir';
+    h.appendChild(leg);
+    if (takki) faera(takki, h);
+    haus.appendChild(v); haus.appendChild(h);
+    panel.insertBefore(haus, panel.firstChild);
+    return takki;
+  }
+
   // ── 3 · hlutahaus yfir töflunni ───────────────────────────────────────────
   function hlutahaus(root) {
     const wrap = root.querySelector('.data-table-wrap, ._ars-tblscroll');
@@ -486,6 +547,16 @@
     } else {
       talning = root.querySelectorAll('table.data-table tbody tr').length + ' raðir';
     }
+    // „· raðað eftir <dálki>" — lesið af dálkahausnum sem ber örina, ekki giskað.
+    const virkur = Array.from(root.querySelectorAll('table.data-table thead th')).find(th => {
+      const ar = th.querySelector('.sort-ar');
+      return ar && /[▲▼]/.test(ar.textContent || '');
+    });
+    if (virkur) {
+      const heiti = String(virkur.textContent || '').replace(/[▲▼⇅]/g, '').trim().toLowerCase();
+      if (heiti) talning += ' · raðað eftir ' + heiti;
+    }
+
     const sec = document.createElement('div');
     sec.className = 'arsm-sec';
     const h = document.createElement('h2'); h.textContent = 'Staðirnir';
@@ -529,6 +600,7 @@
       const iLagi = siur(root);
       hero(root);
       hlutahaus(root);
+      kort(root, root.querySelector('.arsm-verkf'));
       merkja(iLagi !== false);
     } catch (e) {
       // Fellur hjúpurinn — upprunalegu raðirnar koma strax aftur, engin síulaus síða.
