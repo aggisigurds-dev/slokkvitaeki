@@ -71,12 +71,21 @@
       V + '._kpi--rautt{border-top:3px solid #971515!important}',
       V + '._kpi-h,' + V + '.bstal-hero>div:first-child>div:first-child{font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.14em!important;text-transform:uppercase!important}',
       V + '._kpi .thm-statnum,' + V + '._kpi>div:nth-child(2),' + V + '.bstal-hero ._hero-num,' + V + '.bstal-hero>div:nth-child(2){font-family:' + DISPLAY + '!important;font-weight:800!important;letter-spacing:-.02em!important;font-variant-numeric:lining-nums tabular-nums!important}',
-      V + '._kpi .thm-statnum,' + V + '._kpi>div:nth-child(2){font-size:32px!important;line-height:1!important}',
-      V + '.bstal-hero>div:nth-child(2){font-size:44px!important;line-height:1!important}',
-      V + '._kpi-s,' + V + '.bstal-hero>div:nth-child(3){font-size:11.5px!important;line-height:1.45!important}',
+      V + '._kpi .thm-statnum,' + V + '._kpi>div:nth-child(2){font-size:30px!important;line-height:1!important}',
+      V + '.bstal-hero>div:nth-child(2){font-size:40px!important;line-height:1!important}',
+      // Skýrleiki (Agnar: „og hafa skýrleika góðann"): skýringarnar eru upplýsing,
+      // ekki skraut — ljós grár á dökkum málmi, aldrei dofnaður texti.
+      V + '._kpi-s,' + V + '.bstal-hero>div:nth-child(3){font-size:11.5px!important;line-height:1.45!important;opacity:1!important}',
+      W + '._kpi--hlut ._kpi-s{color:#c9d0db!important}',
+      W + '._kpi--graent ._kpi-s{color:#c9e6d4!important}',
+      W + '._kpi--rautt ._kpi-s{color:#f0d3cf!important}',
+      W + '._kpi--graent ._kpi-s b,' + W + '._kpi--rautt ._kpi-s b,' + W + '._kpi--hlut ._kpi-s b{color:#fff!important}',
       // Röðin innan spjalds á borðinu: merkimiði · tala · stika · skýring.
       // (Í 153 kemur stikan síðust, svo skýringin flaut milli tölu og stiku.)
-      V + '._kpi{display:flex!important;flex-direction:column!important;gap:7px!important;justify-content:center!important}',
+      // Lægri gluggar (Agnar 22.09: „lækka hæðina aðeins á gluggunum") — borðið er
+      // með ~135 px spjöld, hér voru þau 185 px.
+      V + '._kpi{display:flex!important;flex-direction:column!important;gap:6px!important;justify-content:center!important;padding:13px 15px!important}',
+      V + '.bstal-hero{padding:14px 18px!important}',
       V + '._kpi ._kpi-h{order:0!important}',
       V + '._kpi ._kpi-n{order:1!important}',
       V + '._kpi .thm-track{order:2!important}',
@@ -85,8 +94,20 @@
       // Hausinn: stærri Playfair og einbreiður undirtexti eins og á borðinu.
       V + '#ars-main h1{font-size:40px!important;line-height:1!important;text-shadow:0 2px 8px rgba(0,0,0,.45)!important}',
       V + '._ars-sub{font-family:' + MONO + '!important;font-size:12.5px!important;color:#d5dbe6!important}',
+      // Hausinn helst EIN lína: titillinn vinstra megin, takkarnir hægra megin.
+      // (Þegar tímastimpillinn bættist við undirtextann varð blokkin 720 px og
+      // takkarnir duttu niður í næstu línu — mælt 22.09.) Undirtextinn styttist
+      // með þremur punktum frekar en að ýta nokkru til.
+      W + 'div:has(> div > div > h1){flex-wrap:nowrap!important}',
+      W + 'div:has(> div > h1){min-width:0!important;flex:1 1 auto!important}',
+      W + '._ars-sub{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}',
+      // Efsti textinn: kickerinn í einbreiðu letri með sperrtu bili, eins og á borðinu.
+      V + '#ars-main h1{color:#fff!important}',
+      V + '#ars-main h1+div,' + V + '#ars-main h1~div._ars-kick{font-family:' + MONO + '!important}',
       V + '._ars-sub b{color:#fff!important}',
-      V + '._ars-sort{height:40px!important;border-radius:3px!important;background:' + SILVER + '!important;color:#3a4250!important;border:1px solid rgba(20,24,34,.16)!important;font:600 12.5px ' + SANS + '!important}',
+      // Röðunarvalið var 310 px og át plássið sem undirtextinn þarf — borðið er með
+      // ~240 px hnapp þarna.
+      V + '._ars-sort{height:40px!important;max-width:240px!important;border-radius:3px!important;background:' + SILVER + '!important;color:#3a4250!important;border:1px solid rgba(20,24,34,.16)!important;font:600 12.5px ' + SANS + '!important}',
 
       // Síuflísar og mánuðir: ferkantað stál, valið í málmi
       V + '._ars-statusrow{border-radius:3px!important;border-color:rgba(20,24,34,.18)!important;gap:0!important}',

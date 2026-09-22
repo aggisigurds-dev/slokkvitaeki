@@ -123,6 +123,7 @@
       V + '.arsm-heroleg em{display:inline-flex;align-items:center;gap:8px;font-style:normal}',
       V + '.arsm-heroleg i{width:9px;height:9px;border-radius:1px;display:block}',
       V + '.arsm-heroleg b{color:#fff}',
+      V + '.arsm-raun{display:inline-flex;align-items:center;height:18px;padding:0 6px;margin-left:auto;border:1px solid #3a3d44;border-radius:2px;font:500 10px ' + MONO + ';color:#aeb6c4;white-space:nowrap}',
       V + '.bstal-hero .arsm-mkr{font-family:' + SANS + '!important;font-size:18px!important;font-weight:700!important;color:#aeb6c4!important;letter-spacing:0!important}',
       // Tölur síanna bera lit síunnar, eins og á borðinu.
       V + '.arsm-seg button[data-lit="graent"] span{color:#0b6b3a}',
@@ -172,6 +173,8 @@
     return m ? +m[1].replace(/\./g, '') : 0;
   };
   const heitiAf = el => String(el.textContent || '').replace(/\s*\d[\d.]*\s*$/, '').trim();
+  // Borðið er án tákna í síum og skýringum (Agnar strikaði þau út 22.09).
+  const anTakna = s => String(s || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
   const erVirk = el => (el.getAttribute('style') || '').indexOf('--brand') !== -1;
   const merkja = on => { document.documentElement.setAttribute('data-arsm', on ? '1' : '0'); };
 
@@ -318,7 +321,7 @@
       const virk = erVirk(c);
       b.setAttribute('aria-selected', String(virk));
       if (virk) b.className = 'is-on';
-      const heiti = heitiAf(c);
+      const heiti = anTakna(heitiAf(c));
       b.textContent = heiti;
       if (/búið/i.test(heiti)) b.dataset.lit = 'graent';
       else if (/eftir/i.test(heiti)) b.dataset.lit = 'gult';
@@ -357,7 +360,7 @@
       it.type = 'button';
       it.setAttribute('role', 'menuitem');
       if (erVirk(c)) it.className = 'is-on';
-      it.textContent = heitiAf(c);
+      it.textContent = anTakna(heitiAf(c));
       const n = talaAf(c);
       if (n) { const s = document.createElement('span'); s.textContent = String(n); it.appendChild(s); }
       it.addEventListener('click', () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); c.click(); });
@@ -426,7 +429,7 @@
         t.className = 'arsm-tag';
         t.title = 'Slökkva á síunni';
         t.innerHTML = '<i></i>';
-        t.appendChild(document.createTextNode(heitiAf(c)));
+        t.appendChild(document.createTextNode(anTakna(heitiAf(c))));
         const n = talaAf(c);
         if (n) { const b2 = document.createElement('b'); b2.textContent = String(n); t.appendChild(b2); }
         const x = document.createElement('u'); x.textContent = '✕'; t.appendChild(x);
@@ -483,18 +486,24 @@
     };
     leg.appendChild(lina(GB, 'Búið', kr(buid), stadir('._kpi--graent ._kpi-n')));
     leg.appendChild(lina(AB, 'Eftir', kr(eftir), stadir('._kpi--rautt ._kpi-n')));
-    if (raun) {
-      const em = document.createElement('em');
-      em.style.color = '#aeb6c4';
-      em.textContent = raun + ' raunreiknuð';
-      leg.appendChild(em);
-    }
+    // (raunreiknuð stendur í rammanum efst til hægri, ekki í skýringarlínunni)
     // Merkimiðinn ber staðafjöldann eins og á borðinu: „VIRÐI ÁRSÞJÓNUSTU 2026 · 620 STAÐIR".
     const kick = h.children[0] && h.children[0].firstElementChild;
     const sub = root.querySelector('._ars-sub');
     const mst = sub ? String(sub.textContent || '').match(/([\d.]+)\s*með skráð/) : null;
-    if (kick && mst && !/STAÐIR/i.test(kick.textContent || '')) {
-      kick.textContent = String(kick.textContent || '').trim() + ' · ' + mst[1] + ' staðir';
+    if (kick && !kick.dataset.arsmH) {
+      kick.dataset.arsmH = '1';
+      // „≈" er ekki á borðinu og staðafjöldinn fylgir merkimiðanum.
+      kick.textContent = anTakna(kick.textContent) + (mst ? ' · ' + mst[1] + ' staðir' : '');
+    }
+    // „109 raunreiknuð" verður lítill rammi efst til hægri, eins og á borðinu.
+    const raunT = (String(cap.textContent || '').match(/(\d+)\s*raunreikn/i) || [])[1];
+    const haus0 = h.children[0];
+    if (raunT && haus0 && !haus0.querySelector('.arsm-raun')) {
+      const chip = document.createElement('span');
+      chip.className = 'arsm-raun';
+      chip.textContent = raunT + ' raunreiknuð';
+      haus0.insertBefore(chip, haus0.lastElementChild);
     }
 
     // „28,3M" → „28,3 m.kr" eins og á borðinu (einingin í minna letri).
@@ -510,6 +519,103 @@
     cap.style.setProperty('display', 'none', 'important');
     h.appendChild(bar);
     h.appendChild(leg);
+  }
+
+  // ── 2d · hausinn og skýringar spjaldanna, orðrétt eins og á borðinu ──────
+  // Agnar 22.09 strikaði undir hvert frávik: táknin í síunum, „= Búið-flagan",
+  // „= Allt-flagan" og hlutfallið sem vantaði. EKKERT er reiknað upp á nýtt hér —
+  // tölurnar eru lesnar úr spjöldunum sjálfum og settar saman í orðalag borðsins.
+  const tala = s => {
+    const m = String(s || '').match(/(\d[\d.]*)/);
+    return m ? +m[1].replace(/\./g, '') : NaN;
+  };
+
+  function haus(root) {
+    const h1 = root.querySelector('#ars-main h1');
+    if (!h1) return;
+    // Kickerinn: „— ÁRSSKOÐUN · 2026" með rauðu striki, án húss-táknsins.
+    const box = h1.parentElement;
+    const kick = box && Array.from(box.children).find(e => e !== h1 && /ÁRSSKOÐUN/i.test(e.textContent || ''));
+    if (kick && !kick.dataset.arsmK) {
+      kick.dataset.arsmK = '1';
+      kick.textContent = 'Ársskoðun · ' + new Date().getFullYear();
+      kick.style.setProperty('color', '#f0584c', 'important');
+      kick.style.setProperty('font-family', MONO, 'important');
+      kick.style.setProperty('font-size', '11px', 'important');
+      kick.style.setProperty('font-weight', '700', 'important');
+      kick.style.setProperty('letter-spacing', '.2em', 'important');
+      kick.style.setProperty('text-transform', 'uppercase', 'important');
+      const strik = document.createElement('span');
+      strik.setAttribute('aria-hidden', 'true');
+      strik.style.cssText = 'display:inline-block;width:22px;height:2px;background:#f0584c;margin-right:9px;vertical-align:middle';
+      kick.insertBefore(strik, kick.firstChild);
+    }
+    // Húss-táknið við titilinn er ekki á borðinu.
+    const takn = box && box.parentElement ? Array.from(box.parentElement.children).find(e => e !== box && /^[^\p{L}\p{N}\s]{1,3}$/u.test((e.textContent || '').trim())) : null;
+    if (takn) takn.style.setProperty('display', 'none', 'important');
+    // Undirtextinn fær tímastimpilinn og lokaorðin.
+    const sub = root.querySelector('._ars-sub');
+    if (sub && !/gert upp/.test(sub.textContent || '')) {
+      const d = new Date();
+      const p = n => String(n).padStart(2, '0');
+      sub.textContent = String(sub.textContent || '').trim().replace(/\s+/g, ' ') +
+        ' · ' + p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() +
+        ', ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ' — árið gert upp stað fyrir stað';
+    }
+  }
+
+  function spjold(root) {
+    const grid = root.querySelector('._ars-statgrid');
+    if (!grid) return;
+    const les = sel => tala((root.querySelector(sel) || {}).textContent);
+    const fjoldi = les('._kpi--hlut ._kpi-n');
+    const buid = les('._kpi--graent ._kpi-n');
+    const eftir = les('._kpi--rautt ._kpi-n');
+
+    // Búið: „56% af borðinu · 365 með 2026-skýrslu skjalfesta"
+    const g = root.querySelector('._kpi--graent ._kpi-s');
+    if (g && !g.dataset.arsmS && isFinite(buid) && isFinite(fjoldi) && fjoldi > 0) {
+      g.dataset.arsmS = '1';
+      const hali = String(g.textContent || '').split('·').slice(1).join('·').trim();
+      g.textContent = Math.round(buid / fjoldi * 100) + '% af borðinu' + (hali ? ' · ' + hali : '');
+    }
+
+    // Eftir: „101 komin á tíma · 6 án mánaðar · 163 eiga mánuð framundan"
+    const r = root.querySelector('._kpi--rautt ._kpi-s');
+    if (r && !r.dataset.arsmS) {
+      r.dataset.arsmS = '1';
+      const t = anTakna(r.textContent);
+      const komin = tala(t);
+      const anMan = tala((t.split('·')[1] || ''));
+      const framundan = (isFinite(eftir) && isFinite(komin) && isFinite(anMan)) ? eftir - komin - anMan : NaN;
+      r.textContent = t + (isFinite(framundan) && framundan > 0 ? ' · ' + framundan + ' eiga mánuð framundan' : '');
+    }
+
+    // Fjöldi: „355 búið + 270 eftir + 7 óvíst" og „12 staðir eru án skráðra tækja"
+    const hlut = root.querySelector('._kpi--hlut');
+    const hs = hlut ? Array.from(hlut.querySelectorAll('._kpi-s')) : [];
+    if (hs.length && !hlut.dataset.arsmS) {
+      hlut.dataset.arsmS = '1';
+      const sumLina = hs.find(e => /\+/.test(e.textContent || '')) || hs[hs.length - 1];
+      const tolur = String(sumLina.textContent || '').match(/\d[\d.]*/g) || [];
+      const ovist = tolur.length >= 3 ? +tolur[2].replace(/\./g, '') : NaN;
+      if (isFinite(buid) && isFinite(eftir) && isFinite(ovist)) {
+        sumLina.textContent = buid + ' búið + ' + eftir + ' eftir + ' + ovist + ' óvíst';
+      } else {
+        sumLina.textContent = anTakna(sumLina.textContent).replace(/\s*=\s*[\d.]+\s*$/, '');
+      }
+      hs.filter(e => e !== sumLina).forEach(e => e.style.setProperty('display', 'none', 'important'));
+      // Staðir án skráðra tækja — munurinn sem stendur í undirtextanum.
+      const sub = root.querySelector('._ars-sub');
+      const m = sub ? String(sub.textContent || '').match(/([\d.]+)\s*með skráð/) : null;
+      const medTaeki = m ? +m[1].replace(/\./g, '') : NaN;
+      if (isFinite(medTaeki) && isFinite(fjoldi) && fjoldi - medTaeki > 0 && !hlut.querySelector('.arsm-hlut-extra')) {
+        const x = document.createElement('div');
+        x.className = '_kpi-s arsm-hlut-extra';
+        x.textContent = (fjoldi - medTaeki) + ' staðir eru án skráðra tækja';
+        sumLina.parentNode.insertBefore(x, sumLina.nextSibling);
+      }
+    }
   }
 
   // ── 2c · kortið: málmhaus ofan á Leaflet-fletinum ────────────────────────
@@ -629,6 +735,8 @@
     try {
       strimill(root);
       const iLagi = siur(root);
+      haus(root);
+      spjold(root);
       hero(root);
       hlutahaus(root);
       kort(root, root.querySelector('.arsm-verkf'));
