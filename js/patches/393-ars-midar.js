@@ -23,6 +23,10 @@
   window.__arsMidarInstalled = true;
 
   const V = 'html body #view-arsskodun ';
+  // Tvöfaldað auðkenni: 153 og Stílstjórinn skrifa báðir reglur á þessa sýn sem
+  // slá út `html body #view-arsskodun …` (sjá 394 og docs). Notað þar sem liturinn
+  // sjálfur þarf að koma úr borðinu.
+  const W = 'html body #view-arsskodun#view-arsskodun ';
   const MONO = '"JetBrains Mono",ui-monospace,monospace';
   const SANS = '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif';
   const DISPLAY = '"Playfair Display",Georgia,serif';
@@ -46,6 +50,17 @@
       // bakgrunnurinn hans stendur óhaggaður undir), málmband efst, merkimiði í einbreiðu
       // letri og talan í Playfair í þeirri stærð sem hönnunin sýnir.
       V + '._ars-statgrid{grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr))!important;gap:12px!important}',
+      // Litirnir af borðinu sjálfu (Agnar 22.09: „reyndu að replikata gamla"):
+      // hetjuspjaldið er nærri svartur málmur með rauðri rönd, hin þrjú djúpgræn,
+      // djúprauð og grafít — ekki flatir fletir.
+      W + '.bstal-hero{background-image:' + STRIPE + METAL + '!important;background-color:#0a0a0c!important;border:1px solid #23262c!important;border-top:3px solid #f0584c!important}',
+      W + '._kpi--graent{background-image:' + STRIPE + 'linear-gradient(145deg,#02100a 0%,#07301c 30%,#0d5130 55%,#062719 80%,#010c07 100%)!important;border:1px solid #14512f!important;border-top:3px solid #16783f!important;color:#e8f3ec!important}',
+      W + '._kpi--rautt{background-image:' + STRIPE + 'linear-gradient(145deg,#100203 0%,#330607 30%,#6b1114 55%,#2a0506 80%,#0c0102 100%)!important;border:1px solid #58100f!important;border-top:3px solid #971515!important;color:#f6e6e4!important}',
+      W + '._kpi--hlut{background-image:' + STRIPE + METAL + '!important;border:1px solid #23262c!important;color:#e7eaf0!important}',
+      W + '._kpi--graent ._kpi-h{color:#7fe0a8!important}',
+      W + '._kpi--rautt ._kpi-h{color:#ffb3ab!important}',
+      W + '._kpi--hlut ._kpi-h{color:#aeb6c4!important}',
+      W + '._kpi-n{color:#fff!important}',
       V + '._ars-statgrid>*{border-radius:2px!important;position:relative!important;overflow:hidden!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 30px -14px rgba(0,0,0,.7)!important}',
       V + '._ars-statgrid>*::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:' + STRIPE + 'none}',
       V + '._ars-statgrid>*>*{position:relative;z-index:1}',

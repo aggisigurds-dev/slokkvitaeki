@@ -38,7 +38,9 @@
 
   // Síurnar sem eru notaðar daglega standa í stikunni; hinar fara í hólfið.
   // (Heitin koma úr 153: „Allt", „✅ Búið 2026 355", „⏳ Eftir 158", „🗓️ Eftir 2026 270", …)
-  const ADAL = [/^allt$/i, /búið/i, /eftir/i, /í vinnslu/i, /aksturslisti/i];
+  // Borðið sýnir NÁKVÆMLEGA fimm: Allt · Búið 2026 · Eftir 2026 · Í vinnslu · Aksturslisti.
+  // (Stakt „⏳ Eftir" — öll ár — fer með hinum í hólfið.)
+  const ADAL = [/^allt$/i, /búið/i, /eftir\s*20/i, /í vinnslu/i, /aksturslisti/i];
 
   function css() {
     const V = 'html body #view-arsskodun ';
@@ -85,8 +87,9 @@
       // kortið er opnað með takkanum í hlutahausnum eins og á borðinu.
       F + '._ars-vm{display:none!important}',
       F + '#_ars-pnr-row{display:none!important}',
-      V + '.arsm-seg{display:flex;height:38px;border:1px solid rgba(20,24,34,.22);border-radius:3px;overflow:hidden;background:' + SILVER + ';box-shadow:0 6px 16px -12px rgba(0,0,0,.5)}',
-      V + '.arsm-seg button{display:inline-flex;align-items:center;gap:7px;padding:0 15px;border:0;border-left:1px solid rgba(20,24,34,.14);background:transparent;color:#3a4250;font:600 12.5px ' + SANS + ';white-space:nowrap;cursor:pointer}',
+      V + '.arsm-seg{display:flex;height:44px;border:1px solid rgba(20,24,34,.22);border-radius:3px;overflow:hidden;background:' + SILVER + ';box-shadow:0 6px 16px -12px rgba(0,0,0,.5)}',
+      // Merkimiði yfir tölu — eins og á borðinu.
+      V + '.arsm-seg button{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0 17px;border:0;border-left:1px solid rgba(20,24,34,.14);background:transparent;color:#3a4250;font:600 12.5px ' + SANS + ';line-height:1.15;white-space:nowrap;cursor:pointer}',
       V + '.arsm-seg button:first-child{border-left:0}',
       V + '.arsm-seg button:hover{background:rgba(20,24,34,.06)}',
       V + '.arsm-seg button span{font:700 11.5px ' + MONO + ';color:#6b7483}',
@@ -94,7 +97,7 @@
       V + '.arsm-seg button.is-on:hover{background-image:' + STRIPE + METAL + '}',
       V + '.arsm-seg button.is-on span{color:rgba(255,255,255,.78)}',
       V + '.arsm-more{position:relative;display:inline-flex}',
-      V + '.arsm-more>button{height:38px;display:inline-flex;align-items:center;gap:8px;padding:0 13px;border:1px solid rgba(20,24,34,.16);border-radius:3px;background:' + SILVER + ';color:#3a4250;font:600 12.5px ' + SANS + ';cursor:pointer}',
+      V + '.arsm-more>button{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 13px;border:1px solid rgba(20,24,34,.16);border-radius:3px;background:' + SILVER + ';color:#3a4250;font:600 12.5px ' + SANS + ';cursor:pointer}',
       V + '.arsm-more>button b{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:2px;background:' + RED + ';color:#fff;font:700 10px ' + MONO + '}',
       V + '.arsm-menu{position:absolute;top:42px;left:0;z-index:60;width:264px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:6px;background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:3px;box-shadow:0 18px 40px -12px rgba(10,14,22,.5)}',
       V + '.arsm-menu[hidden]{display:none}',
@@ -103,14 +106,27 @@
       V + '.arsm-menu button.is-on{background-image:' + RED + ';color:#fff}',
       V + '.arsm-menu button span{margin-left:auto;font:700 11px ' + MONO + ';color:#6b7483}',
       V + '.arsm-menu button.is-on span{color:#ffd8d4}',
-      V + '.arsm-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px}',
+      // clear:right — Bílstjóri flýtur til hægri og lagðist ella OFAN á þessa röð.
+      V + '.arsm-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px;clear:right}',
       V + '.arsm-tags>i{font:700 10.5px/1 ' + MONO + ';font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:#1f2530}',
       V + '.arsm-tag{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 10px 0 0;border:1px solid rgba(20,24,34,.16);border-radius:3px;background:' + SILVER + ';color:#3a4250;font:600 11.5px ' + SANS + ';overflow:hidden;cursor:pointer}',
       V + '.arsm-tag i{width:4px;align-self:stretch;background:' + REDBAR + '}',
       V + '.arsm-tag b{font:700 11px ' + MONO + ';color:#6b7483}',
       V + '.arsm-tag u{text-decoration:none;color:#8a93a3;margin-left:2px}',
       // leitarreiturinn í sama takti og stikan (153 gefur honum 8px hæð minna)
-      W + '#_ars-search{height:38px!important;box-sizing:border-box!important;max-width:260px!important;border-radius:3px!important;background:#eef1f6!important;border:1px solid rgba(20,24,34,.18)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.14)!important}',
+      W + '#_ars-search{height:44px!important;box-sizing:border-box!important;max-width:none!important;border-radius:3px!important;background:#eef1f6!important;border:1px solid rgba(20,24,34,.18)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.14)!important}',
+
+      // ── Hetjuspjaldið: skiptistikan og skýringin af borðinu ───────────────
+      V + '.arsm-herobar{display:flex;gap:3px;height:8px;margin:4px 0 2px}',
+      V + '.arsm-herobar span{flex-basis:0;border-radius:2px}',
+      V + '.arsm-heroleg{display:flex;flex-wrap:wrap;gap:6px 26px;font:500 12px ' + MONO + ';color:#d5dbe6;margin-top:2px}',
+      V + '.arsm-heroleg em{display:inline-flex;align-items:center;gap:8px;font-style:normal}',
+      V + '.arsm-heroleg i{width:9px;height:9px;border-radius:1px;display:block}',
+      V + '.arsm-heroleg b{color:#fff}',
+      V + '.bstal-hero .arsm-mkr{font-family:' + SANS + '!important;font-size:18px!important;font-weight:700!important;color:#aeb6c4!important;letter-spacing:0!important}',
+      // Tölur síanna bera lit síunnar, eins og á borðinu.
+      V + '.arsm-seg button[data-lit="graent"] span{color:#0b6b3a}',
+      V + '.arsm-seg button[data-lit="gult"] span{color:#845400}',
 
       // ── 3 · hlutahaus og bilið ────────────────────────────────────────────
       V + '.arsm-sec{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:2px 2px 8px}',
@@ -268,7 +284,10 @@
       const virk = erVirk(c);
       b.setAttribute('aria-selected', String(virk));
       if (virk) b.className = 'is-on';
-      b.textContent = heitiAf(c);
+      const heiti = heitiAf(c);
+      b.textContent = heiti;
+      if (/búið/i.test(heiti)) b.dataset.lit = 'graent';
+      else if (/eftir/i.test(heiti)) b.dataset.lit = 'gult';
       const n = talaAf(c);
       if (n) { const s = document.createElement('span'); s.textContent = String(n); b.appendChild(s); }
       b.addEventListener('click', () => c.click());
@@ -345,7 +364,11 @@
     // komið (mælt: `class=""`), svo þeir eru fundnir á textanum og aðeins stílaðir.
     Array.from(bar.parentElement.children).forEach(el => {
       if (el.tagName !== 'BUTTON') return;
-      if (!/Bílstjóri|Hönnunarham/.test(el.textContent || '')) return;
+      const t = el.textContent || '';
+      // Hönnunarhamur er ekki á borðinu (Agnar: „það má taka út hönnunarham og
+      // kort/listi"). Hann er falinn, ekki fjarlægður — Stílstjórinn er enn til staðar.
+      if (/Hönnunarham/.test(t)) { el.style.setProperty('display', 'none', 'important'); return; }
+      if (!/Bílstjóri/.test(t)) return;
       el.style.setProperty('float', 'right', 'important');
       el.style.setProperty('margin', '0 0 8px 7px', 'important');
     });
@@ -374,6 +397,72 @@
     return true;
   }
 
+  // ── 2b · hetjuspjaldið: skiptistika + skýring (eins og á borðinu) ────────
+  // Talan „28,3M" segir ekki hvað er búið og hvað er eftir; borðið sýnir það sem
+  // eina rönd. Hér er EKKERT reiknað upp á nýtt: heildin og „þar af búið" eru lesin
+  // úr textanum sem 153 skrifar, og staðafjöldinn úr grænu og rauðu spjöldunum.
+  function hero(root) {
+    const h = root.querySelector('.bstal-hero');
+    if (!h || h.querySelector('.arsm-herobar')) return;
+    const num = h.children[1], cap = h.children[2];
+    if (!num || !cap) return;
+    const les = s => {
+      const m = String(s || '').match(/([\d.]+,?\d*)\s*M/i);
+      return m ? parseFloat(m[1].replace(/\./g, '').replace(',', '.')) : NaN;
+    };
+    const heild = les(num.textContent);
+    const buid = les(cap.textContent);
+    if (!isFinite(heild) || !isFinite(buid) || heild <= 0) return;
+    const eftir = Math.max(0, heild - buid);
+    const kr = n => n.toFixed(1).replace('.', ',') + ' m.kr';
+    const stadir = sel => {
+      const el = root.querySelector(sel);
+      return el ? String(el.textContent || '').trim() : '';
+    };
+    const GB = 'linear-gradient(180deg,#7fe0a8 0%,#23a35a 40%,#0b5a2e 60%,#137a41 100%)';
+    const AB = 'linear-gradient(180deg,#ffe0a0 0%,#e0a93e 40%,#935f0d 60%,#b27b1c 100%)';
+    const raun = (String(cap.textContent || '').match(/(\d+)\s*raunreikn/i) || [])[1];
+
+    const bar = document.createElement('div');
+    bar.className = 'arsm-herobar';
+    bar.setAttribute('role', 'img');
+    bar.setAttribute('aria-label', 'Skipting: búið ' + kr(buid) + ', eftir ' + kr(eftir));
+    bar.innerHTML = '<span style="flex-grow:' + Math.round(buid * 10) + ';background:' + GB + '"></span>' +
+      '<span style="flex-grow:' + Math.max(1, Math.round(eftir * 10)) + ';background:' + AB + '"></span>';
+
+    const leg = document.createElement('div');
+    leg.className = 'arsm-heroleg';
+    const lina = (grad, heiti, tala, fjoldi) => {
+      const em = document.createElement('em');
+      em.innerHTML = '<i style="background:' + grad + '"></i>';
+      em.appendChild(document.createTextNode(heiti + ' '));
+      const b = document.createElement('b'); b.textContent = tala; em.appendChild(b);
+      if (fjoldi) em.appendChild(document.createTextNode(' · ' + fjoldi + ' staðir'));
+      return em;
+    };
+    leg.appendChild(lina(GB, 'Búið', kr(buid), stadir('._kpi--graent ._kpi-n')));
+    leg.appendChild(lina(AB, 'Eftir', kr(eftir), stadir('._kpi--rautt ._kpi-n')));
+    if (raun) {
+      const em = document.createElement('em');
+      em.style.color = '#aeb6c4';
+      em.textContent = raun + ' raunreiknuð';
+      leg.appendChild(em);
+    }
+    // „28,3M" → „28,3 m.kr" eins og á borðinu (einingin í minna letri).
+    const mt = String(num.textContent || '').trim().match(/^([\d.]+,?\d*)\s*M\.?$/i);
+    if (mt) {
+      num.textContent = mt[1] + ' ';
+      const ein = document.createElement('span');
+      ein.className = 'arsm-mkr';
+      ein.textContent = 'm.kr';
+      num.appendChild(ein);
+    }
+
+    cap.style.setProperty('display', 'none', 'important');
+    h.appendChild(bar);
+    h.appendChild(leg);
+  }
+
   // ── 3 · hlutahaus yfir töflunni ───────────────────────────────────────────
   function hlutahaus(root) {
     const wrap = root.querySelector('.data-table-wrap, ._ars-tblscroll');
@@ -388,7 +477,11 @@
         /^\s*Sýni\s+[\d.]+\s+af\s/.test(d.textContent || '')
     );
     if (lina) {
-      talning = String(lina.textContent || '').trim().replace(/\s+/g, ' ');
+      // Orðalag borðsins: „53 af 632 í þessari síu" (153 skrifar „Sýni 53 af 632
+      // viðskiptavinum" — sömu tölur, bara borðið sitt snið).
+      const t = String(lina.textContent || '').trim().replace(/\s+/g, ' ');
+      const m = t.match(/Sýni\s+([\d.]+)\s+af\s+([\d.]+)/);
+      talning = m ? (m[1] + ' af ' + m[2] + ' í þessari síu') : t;
       lina.style.setProperty('display', 'none', 'important');
     } else {
       talning = root.querySelectorAll('table.data-table tbody tr').length + ' raðir';
@@ -418,7 +511,7 @@
     mark.parentNode.insertBefore(sec, mark);
   }
 
-  const OKKAR = '.arsm-strip,.arsm-bar,.arsm-tags,.arsm-sec';
+  const OKKAR = '.arsm-strip,.arsm-seg,.arsm-more,.arsm-tags,.arsm-sec,.arsm-herobar,.arsm-heroleg';
 
   let t = null, inni = false;
   function bygg() {
@@ -434,6 +527,7 @@
     try {
       strimill(root);
       const iLagi = siur(root);
+      hero(root);
       hlutahaus(root);
       merkja(iLagi !== false);
     } catch (e) {
