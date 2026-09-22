@@ -10,7 +10,7 @@
  *     Agnars 17.08) og lítil slökkvitækjatákn + varan sjálf („CO₂ 100 gr ×20").
  *     Gamla kortið sagði „1 slökkvitæki" fyrir 20 stk því magnið situr í
  *     service-textanum, ekki í fjölda verklidur-lína.
- *   • Fjögur stjórntæki → tvö: „Sótt" + „⋯" (Opna verkið · Setja á hillu ·
+ *   • Fjögur stjórntæki → tvö: „Sækja" + „⋯" (Opna verkið · Setja á hillu ·
  *     Aftur á verkstæði · Eyða verki). Hillan sést aðeins sem plata þegar hún
  *     er sett — 22.09 var ekkert af 16 tilbúnum verkum með hillu.
  *   • Listinn flokkaður eftir biðtíma (Í dag · 1–7 · 8–14 · 15+ dagar) og sama
@@ -167,7 +167,7 @@
   }
   function sottBtn(id, small, title) {
     return '<button type="button" class="tbm-sott' + (small ? ' tbm-sott--sm' : '') + '" title="' + esc(title || 'Afhenda — opnar afgreiðsluna') + '"' +
-      ' onclick="event.stopPropagation();TilbuinMidar.sott(' + id + ')">Sótt' + ICON.check + '</button>';
+      ' onclick="event.stopPropagation();TilbuinMidar.sott(' + id + ')">Sækja' + ICON.check + '</button>';   // „Sótt" → „Sækja" (Agnar 22.09)
   }
   function moreBtn(id, small) {
     return '<button type="button" class="tbm-icon-btn tbm-more' + (small ? ' tbm-icon-btn--sm' : '') + '" data-tbm-more="' + id + '"' +
