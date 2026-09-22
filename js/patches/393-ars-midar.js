@@ -47,9 +47,19 @@
       V + '._ars-statusrow{border-radius:3px!important;border-color:rgba(20,24,34,.18)!important;gap:0!important}',
       V + '._ars-st{border-radius:0!important;background:' + SILVER + '!important;color:#3a4250!important;font:600 12.5px ' + SANS + '!important;padding:8px 13px!important}',
       V + '._ars-st+._ars-st{border-left:1px solid rgba(20,24,34,.14)!important}',
-      V + '._ars-st[aria-pressed="true"],' + V + '._ars-st.is-on{background:' + METAL + '!important;color:#fff!important}',
+      // VALDA sían: 153 merkir hana með inline `background:var(--brand)` (ekkert aria-pressed).
+      // Fyrsta útgáfan af þessum stíl málaði hana silfraða eins og hinar — þá sást ekki hvað var valið.
+      V + '._ars-st[style*="--brand"],' + V + '._ars-st[aria-pressed="true"],' + V + '._ars-st.is-on{background:' + RED + '!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.5)!important}',
+      V + '._ars-st[style*="--brand"] span,' + V + '._ars-st[aria-pressed="true"] span{color:#ffd8d4!important;opacity:1!important}',
       V + '._ars-mo{border-radius:3px!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.18)!important;color:#3a4250!important;font:600 12px ' + SANS + '!important}',
       V + '._ars-mo[aria-pressed="true"]{background:' + METAL + '!important;border-color:#000!important;color:#fff!important}',
+      // Talan í mánaðarflísinni var á 60% ógagnsæi — hún er upplýsing, ekki skraut.
+      V + '._ars-mo span{opacity:1!important;font-family:' + MONO + '!important;font-weight:700!important;color:#6b7483!important;margin-left:5px}',
+      V + '._ars-mo[aria-pressed="true"] span{color:#d5dbe6!important}',
+      // Mánuðurinn sem stendur yfir fær gullbrún (sama regla og í hönnuninni: gull = núna).
+      V + '._ars-mo[data-nu="1"]{border-color:#b8912f!important;box-shadow:inset 0 0 0 1px rgba(184,145,47,.45)!important}',
+      V + '._ars-mo[data-nu="1"]:not([aria-pressed="true"]){color:#845400!important}',
+      V + '._ars-mo[data-nu="1"]:not([aria-pressed="true"]) span{color:#a07a2a!important}',
       V + '#_ars-skiphide,' + V + '.by-preset{border-radius:3px!important}',
 
       // Leit og val
@@ -109,6 +119,28 @@
     st.textContent = '@media (min-width: 901px){\n' + css() + '\n}';
     (document.head || document.documentElement).appendChild(st);
   }
+
+  // Merkja mánuðinn sem stendur yfir (gullbrúnin). 153 á flísarnar; hér er aðeins
+  // sett data-nu="1" á þá sem passar — ekkert annað snert.
+  const MON = ['jan', 'feb', 'mar', 'apr', 'maí', 'jún', 'júl', 'ágú', 'sep', 'okt', 'nóv', 'des'];
+  function merkjaManud() {
+    const nu = MON[new Date().getMonth()];
+    document.querySelectorAll('#view-arsskodun ._ars-mo').forEach(b => {
+      const heiti = String(b.textContent || '').trim().toLowerCase().slice(0, 3);
+      const passar = heiti === nu.slice(0, 3);
+      if (passar && b.dataset.nu !== '1') b.dataset.nu = '1';
+      else if (!passar && b.dataset.nu) delete b.dataset.nu;
+    });
+  }
+  let t = null;
+  function schedule() { if (t) return; t = setTimeout(() => { t = null; try { merkjaManud(); } catch (_) {} }, 250); }
+  function fylgjast() {
+    const v = document.getElementById('view-arsskodun');
+    if (!v) { setTimeout(fylgjast, 1000); return; }
+    schedule();
+    new MutationObserver(schedule).observe(v, { childList: true, subtree: true });
+  }
+  setTimeout(fylgjast, 1200);
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject);
   else inject();
