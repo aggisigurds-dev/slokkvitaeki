@@ -34,13 +34,19 @@
   const GOLDBAR = 'linear-gradient(180deg,#ffe9b0 0%,#d3ab4e 40%,#7a5608 60%,#a67f22 100%)';
   const AMBERBAR = 'linear-gradient(180deg,#ffe0a0 0%,#e0a93e 40%,#935f0d 60%,#b27b1c 100%)';
   const REDBAR = 'linear-gradient(180deg,#ff9d95 0%,#e25555 40%,#971515 60%,#b52020 100%)';
+  // Daufi stálliturinn — sami málmur og STEELBAR, lægri birta. Notaður á súlu sem á
+  // ekki að líta út fyrir að vera valin (Gleymt-súlan í mánaðastrimlinum).
+  const DIMBAR = 'linear-gradient(180deg,#a8aeb9 0%,#6b7381 40%,#3c424d 60%,#525a67 100%)';
   const RED = 'linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)';
 
   // Síurnar sem eru notaðar daglega standa í stikunni; hinar fara í hólfið.
   // (Heitin koma úr 153: „Allt", „✅ Búið 2026 355", „⏳ Eftir 158", „🗓️ Eftir 2026 270", …)
-  // Borðið sýnir NÁKVÆMLEGA fimm: Allt · Búið 2026 · Eftir 2026 · Í vinnslu · Aksturslisti.
+  // Borðið sýnir NÁKVÆMLEGA sex: Allt · Búið 2026 · Eftir 2026 · Í vinnslu · Aksturslisti · Nýtt.
   // (Stakt „⏳ Eftir" — öll ár — fer með hinum í hólfið.)
-  const ADAL = [/^allt$/i, /búið/i, /eftir\s*20/i, /í vinnslu/i, /aksturslisti/i];
+  // 23.09.2026 (Agnar: „mátt setja nýtt við hliðina á Aksturslisti"): röðin hér ræður
+  // röðinni í stikunni — ekki röðin á flögunum í 153 — því „🆕 Nýtt" stendur þar framar
+  // en Aksturslisti og hefði annars lent á undan honum.
+  const ADAL = [/^allt$/i, /búið/i, /eftir\s*20/i, /í vinnslu/i, /aksturslisti/i, /nýtt/i];
 
   function css() {
     const V = 'html body #view-arsskodun ';
@@ -75,10 +81,19 @@
       V + '.arsm-b.is-tom em,' + V + '.arsm-b.is-tom u{color:#e0a93e}',
       // Uppsöfnuð skuld (Agnar 23.09: „súla með þá sem var gleymt í fyrra og síðustu
       // 2025, 2024"). Hún er EKKI mánuður ársins, svo hún stendur sér vinstra megin
-      // með skilrúmi og ber rauðan málm — þetta er það sem er komið fram yfir.
+      // með skilrúmi.
+      // 23.09.2026 (Agnar: „mátt kanski setja Gleymt súluna í grátóna lit, ruglingslegt
+      // hvort þetta sé valið eða ekki"): hún bar rauðan málm ÓHÁÐ vali — og rautt er
+      // einmitt valmerki strimilsins (.is-on), svo hún leit alltaf út fyrir að vera
+      // valin. Nú ber hún dekkri stálgráan tón (sami málmur, lægri birta) og verður
+      // RAUÐ AÐEINS þegar hún er valin, eins og hver annar mánuður.
       V + '.arsm-b.is-skuld{padding-right:10px;margin-right:6px;border-right:1px solid rgba(255,255,255,.14)}',
-      V + '.arsm-b.is-skuld i{background:' + REDBAR + ';box-shadow:0 0 16px -4px rgba(226,85,85,.6)}',
-      V + '.arsm-b.is-skuld em,' + V + '.arsm-b.is-skuld u{color:#ff9d95}',
+      V + '.arsm-b.is-skuld i{background:' + DIMBAR + ';box-shadow:none}',
+      V + '.arsm-b.is-skuld em{color:#c9cfdb}',
+      V + '.arsm-b.is-skuld u{color:#98a1b0}',
+      // Valið trompar — skrifað EFTIR grátóninn svo röðin (jöfn sértækni) ráði.
+      V + '.arsm-b.is-skuld.is-on i{background:' + REDBAR + ';box-shadow:0 0 16px -4px rgba(226,85,85,.75)}',
+      V + '.arsm-b.is-skuld.is-on em,' + V + '.arsm-b.is-skuld.is-on u{color:#ff9d95}',
 
       // ── 2 · síustikan ─────────────────────────────────────────────────────
       // Röðin á borðinu: síur · Fleiri síur · LEITIN sem fyllir út í · Bílstjóri.
@@ -372,8 +387,9 @@
     if (!row) return false;
     const chips = Array.from(row.querySelectorAll('._ars-st'));
     if (chips.length < 8) return false;
-    const adal = chips.filter(c => ADAL.some(re => re.test(heitiAf(c))));
-    const auka = chips.filter(c => !ADAL.some(re => re.test(heitiAf(c))));
+    const adalNr = c => ADAL.findIndex(re => re.test(heitiAf(c)));
+    const adal = chips.filter(c => adalNr(c) >= 0).sort((a, b) => adalNr(a) - adalNr(b));
+    const auka = chips.filter(c => adalNr(c) < 0);
     if (!adal.length || !auka.length) return false;
 
     // Stikan SJÁLF er filterstrip 153 — við bætum í hana og röðum með `order`,

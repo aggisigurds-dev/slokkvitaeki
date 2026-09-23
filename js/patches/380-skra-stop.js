@@ -55,12 +55,14 @@
         try {
           const r = await sb.from('fyrirtaekjaskra_stada').select('kennitala,nafn,stada').neq('stada', '{}').limit(1000);
           if (r.error) throw r.error;
-          const nytt = new Map((r.data || []).filter((x) => Array.isArray(x.stada) && x.stada.length).map((x) => [tolur(x.kennitala), x]));
-          const breyttist = !STADA || STADA.size !== nytt.size;
-          STADA = nytt;
-          skrifaMinni(nytt);
-          // 153 telur afskráð félög út úr bakstöðunni — breytist skráin, á talan að fylgja.
-          if (breyttist) { try { window.dispatchEvent(new CustomEvent('skra-stada-ferskt')); } catch (_) {} }
+          STADA = new Map((r.data || []).filter((x) => Array.isArray(x.stada) && x.stada.length).map((x) => [tolur(x.kennitala), x]));
+          skrifaMinni(STADA);
+          // 153 telur afskráð félög út úr bakstöðunni. Atburðurinn fer ALLTAF af stað þegar
+          // sóknin lendir — ekki bara þegar skráin breytist: kalda málunin úr ars_snapshot
+          // getur hafa teiknað áður en skráin var til, og `repaintIfChanged()` teiknar ekki
+          // aftur þegar gögnin sjálf eru óbreytt. Þá sat talan eftir á 96 þótt skráin væri
+          // komin (mælt 23.09). Ein aukateikning per lotu er ódýrari en röng tala.
+          try { window.dispatchEvent(new CustomEvent('skra-stada-ferskt')); } catch (_) {}
         } catch (e) {
           console.warn('[380] fyrirtaekjaskra_stada náðist ekki:', e && e.message || e);
           if (!STADA) STADA = new Map();       // skyndiminnið heldur ef sóknin brást
