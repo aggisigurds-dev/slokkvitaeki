@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-23 23:04 · 634 virkar staðreyndir
+Sótt 2026-09-23 23:36 · 635 virkar staðreyndir
 
 ---
 
@@ -80,7 +80,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 | Efni | Fjöldi |
 |---|---:|
-| [kerfi](#kerfi) | 53 |
+| [kerfi](#kerfi) | 54 |
 | [skjol](#skjol) | 32 |
 | [sweep](#sweep) | 26 |
 | [taeki](#taeki) | 25 |
@@ -103,6 +103,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kerfi
 
+- **Yfirferð 23.09 23:15–23:40 (allt kvöldið mælt lifandi með Playwright, tölva + sími): fyrirtækjasíða, 408, D-síðurnar, 341, Stílstjóri — allt stóðst; lagað: 274 watchForm las .style af null þegar hýsta yfirlagið hvarf með prófílnum (TypeError í 252), 405 strípar emoji af .b405-knappur. Hópfelling í 404-prófum þarf ferska hnúta (224 endurteiknar). Samhliða lota lagaði reiptog 311/403 (202 kyrrt). GitHub Actions röðin getur beðið 15+ mín þegar tvær lotur ýta.**
+  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
 - **408 (23.09): brunakerfis-skýrslan (273 #_bks-overlay) fyllist inni í 🚨-flipanum — stakið flutt í #_sks-bks eins og 386 hýsir 274; klasi _sks-bks-open felur 274 á meðan (inline display ósnert); beforeprint/afterprint flytja út/inn (prent-CSS body>#_bks-overlay); hýsill position:relative+overflow:clip (falinn .dd-date-iso 149 er absolute með width:100% og víkkaði síðuna), skelin overflow:clip svo sticky-toppstikan haldi.**
   <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
 - **Vinnusíða 274 (brunakerfi) fær Brunastál líka ein og sér 23.09: 402 endurtekur #_sks-bru #_bkc-overlay-reglurnar með OV-forskeyti (body > #_bkc-overlay:not(._sks-inni)), toppstika málmhaus, _bkc-cust stálplata. NUL-gildra: CSS-escape í JS þarf \0020, eitt bakstrik = NUL+020 (kassaglyph í haus 🚨). Röð úr Brunakerfis skoðun (388) leiðir á fyrirtækjasíðuna með 🚨-flipa, ekki yfirlagið.**
@@ -182,10 +184,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **SÓPUN 02.09.2026 lokauppgjör (v_app_problems_open, 5 kindir): canon_stadur_empty (498) lagað — sjá færslu 359. js_error (62, síðast 01.09) og blank_invoice_blocked (1, 27.08) staðfest LEYST/benign — EKKI merkt resolved í app_problems því PATCH með wildcard-filter (kind=eq.X&resolved=eq.false) er lokað af sandbox-classifier í þessari session; PATCH með stökum id gekk í gegn stundum en ekki áreiðanlega (sjá id=2829 sem sýndi óbreytt resolved=false eftir 'árangursríkt' PATCH — grunur um að skrifið hafi ekki í raun tekið gildi, ekki staðfest af hverju). Agnar eða næsta lota þarf annaðhvort UI-leið eða aðra aðferð til að hreinsa registrið. uttaeki_null_fid (4197, 4 virk tæki án staðsetningar-FK enn í dag) og promise_rejection (32, 'TypeError: Failed to fetch' á #company/1524) EKKI snert — óljóst/gagnaháð, þarfnast dóms Agnars.**
   <br>automation_triggers: ajour rautt á nánast hverri keyrslu (síðast 30.08, tvisvar rautt) — sama þekkta villa og 339 (Ajour Export-hnappur, luna-bridge, utan þessa repos). email/redder status=done, síðast keyrt 26.08 — ekkert nýtt rautt. automation_runs er ÁFRAM tóm (0 raðir) — það er by design/óvirk t
   <br><sub>2026-09-02 · slokkvitaeki · sql · claude-code</sub>
-- **SÓPUN 02.09.2026: canon_stadur_empty (498 atvik, virkt í dag) lagað — _sb() í 312-canon-stadur.js fékk eigin fallback-klient (stíll 09/183/11/03/04/78), audit-db-null-guard.cjs framlengt til að verja hann (staðfest rautt/grænt á báða vegu). Commit 506f2e6 á claude/mcp-browser-access-wqattt — ÓPUSHAÐ, sama session-takmörkun og í gær (338): GITHUB_TOKEN hefur lesaðgang, push gefur 403 'not in this session's authorized repository set'. Agnar þarf annaðhvort að veita push á þetta trigger-session (claude.ai session/trigger stillingar, utan seilingar Claude) eða beita meðfylgjandi patch handvirkt. js_error (n=62, síðast 01.09) og blank_invoice_blocked (n=1, 27.08) staðfest AÐSKILIÐ vandamál — bæði leyst/benign, sjá aðskilda færslu.**
-  <br>Full format-patch (git am -3 < patch.txt eftir að hafa vistað þetta sem skrá), vistað hér svo það lifi af container-endurræsingu: From 506f2e67f355ce7ca49af554630cc4b1aef95669 Mon Sep 17 00:00:00 2001 From: Claude <noreply@anthropic.com> Subject: 312 CanonStadur fallback-klient fix --- a/js/patches/
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-- _…og 13 til viðbótar í töflunni._
+- _…og 14 til viðbótar í töflunni._
 
 ### skjol
 
