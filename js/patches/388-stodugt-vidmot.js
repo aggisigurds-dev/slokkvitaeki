@@ -79,6 +79,14 @@
       }
     } catch (_) {}
 
+    // Efni sem fyllist EFTIR Á (kort sem sækja sitt innihald, myndir, töflur) gerir síðuna hærri sekúndubroti síðar.
+    // Sé skrunstaðan sett á meðan síðan er enn stutt klippist hún niður og notandinn situr eftir á röngum stað. Þess vegna
+    // er hún sett aftur í nokkur skipti á meðan hæðin er enn að koma — EN aðeins ef notandinn hefur ekki sjálfur snert
+    // skrunið á meðan (hjól, snerting, lyklaborð). Hans hreyfing gildir alltaf.
+    let snert = false;
+    const merkja = () => { snert = true; };
+    const hlusta = (a) => [wheel,touchstart,keydown,mousedown].forEach(e => a ? addEventListener(e, merkja, { passive: true, capture: true }) : removeEventListener(e, merkja, { capture: true }));
+
     return function aftur() {
       try {
         ytri.forEach(([el, t, l]) => { if (el && el.isConnected) { if (t) el.scrollTop = t; if (l) el.scrollLeft = l; } });
@@ -90,6 +98,18 @@
             if (fokus.s != null && el.setSelectionRange) { try { el.setSelectionRange(fokus.s, fokus.e); } catch (_) {} }
           }
         }
+      } catch (_) {}
+      // Fylgja hæðinni eftir: sömu tölur settar aftur þegar innihaldið hefur sest, nema notandinn hafi tekið völdin.
+      try {
+        const aftur_i_sama = () => {
+          if (snert) { hlusta(false); return; }
+          ytri.forEach(([el, t, l]) => { if (el && el.isConnected && t && el.scrollTop < t) el.scrollTop = t; });
+          innri.forEach(([k, t, l]) => { const el = finna(rot, k); if (el && t && el.scrollTop < t) el.scrollTop = t; });
+        };
+        hlusta(true);
+        requestAnimationFrame(aftur_i_sama);
+        setTimeout(aftur_i_sama, 220);
+        setTimeout(() => { aftur_i_sama(); hlusta(false); }, 650);
       } catch (_) {}
     };
   }
