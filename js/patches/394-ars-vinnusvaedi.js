@@ -775,6 +775,24 @@
     });
   }
 
+  /* Hönnunarhamur og Bílstjóri eru EKKI hluti af smíðinni (aðrir eiga þá), og
+   * þeir birtast oft EFTIR að undirskriftin er orðin stöðug. Væri þetta inni í
+   * bygg() slyppi Hönnunarhamur fram hjá um leið og ekkert annað breyttist —
+   * sem gerðist (Agnar 23.09: „taka í burtu hönnunarham", takkinn enn á skjánum). */
+  function snyrtaAukatakka(root) {
+    const bar = root.querySelector("._ars-filterstrip");
+    const foreldri = bar ? bar.parentElement : root;
+    if (!foreldri) return;
+    Array.from(foreldri.children).forEach(el => {
+      if (el.tagName !== "BUTTON") return;
+      const txt = el.textContent || "";
+      if (/Hönnunarham/.test(txt)) { el.style.setProperty("display", "none", "important"); return; }
+      if (!/Bílstjóri/.test(txt)) return;
+      el.style.setProperty("float", "right", "important");
+      el.style.setProperty("margin", "0 0 8px 7px", "important");
+      el.style.setProperty("height", "44px", "important");
+    });
+  }
   const OKKAR = '.arsm-strip,.arsm-seg,.arsm-more,.arsm-tags,.arsm-sec,.arsm-herobar,.arsm-heroleg,._ars-nota3,.arsm-korthaus,.arsm-verkf,.arsm-verk';
   // Staðir sem hjúpurinn sjálfur hreyfir við (færir takka heim og aftur til baka).
   // Breytingar ÞAR mega ekki vekja nýja smíði — það var lykkjan sem hökti.
@@ -813,6 +831,7 @@
     // @media(min-width:901px), svo hjúpurinn stendur ósmíðaður þar.
     if (innerWidth < 901) { root.querySelectorAll(OKKAR).forEach(n => n.remove()); merkja(false); return; }
     // Ekkert breyttist og allt er á sínum stað → ekkert gert. (Sjá undirskrift().)
+    try { snyrtaAukatakka(root); } catch (_) {}
     const nu = undirskrift(root);
     if (nu === sidastaUndirskrift && hlutarAStad(root)) return;
     sidastaUndirskrift = nu;
