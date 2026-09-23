@@ -137,6 +137,7 @@
       r('.b405-talning .tlabel', 'font-family:' + DISPLAY + ';font-size:16px;font-weight:700;color:#d9dee6'),
       r('._samskipti-card ._skx-head ._skx-acts', 'order:0;margin-left:auto')
     ].join('\n');
+    css += '\n' + P + '.b405-menu[hidden]{display:none!important}'; // [hidden] vinnur display:flex
     var st = document.createElement('style'); st.id = 'efsta-405'; st.textContent = css; document.head.appendChild(st);
   }
 })();

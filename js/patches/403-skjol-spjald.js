@@ -431,7 +431,19 @@
   function tick() {
     if (!scope()) return;
     var main = document.getElementById('companies-main'); if (!main) return;
-    Array.prototype.slice.call(main.querySelectorAll('._dyg-section')).forEach(function (s) { if (s.dataset.b403fail === '1' && !s.querySelector('.sk-yrwrap')) delete s.dataset.b403fail; if (s.dataset.b403fail === '1') return; try { compose(s); } catch (err) { console.error('[403]', err); } });
+    Array.prototype.slice.call(main.querySelectorAll('._dyg-section')).forEach(function (s) { if (s.dataset.b403fail === '1' && !s.querySelector('.sk-yrwrap')) delete s.dataset.b403fail; if (s.dataset.b403fail === '1') return; try { compose(s); porInn(main, s); } catch (err) { console.error('[403]', err); } });
+  }
+  // Pör-bandið (311, „skýrsla + reikningur — sendu bæði í einu") fellur inn í spjaldið sem kafli (hönnun B).
+  // 311 finnur bandið áfram með querySelector og færir það aldrei sjálft eftir fyrstu festingu; teikni 199 spjaldið
+  // upp á nýtt hverfur bandið með og 311 býr það til aftur á eftir spjaldinu — þá kemur það hingað inn á ný.
+  function porInn(main, s) {
+    var stal = s.querySelector('.b403-root > .b403-stal'); if (!stal) return;
+    var band = main.querySelector('._dpb-company'); if (!band || s.contains(band)) return;
+    if (band.style.display === 'none' && !band.children.length) return; // 311 hefur ekki teiknað enn
+    var k = stal.querySelector('.b403-por-kafli');
+    if (!k) { k = kafli('Skýrsla og reikningur saman', [el('span', 'b403-lina'), el('span', 'b403-hint', 'sendu bæði í einu')]); k.classList.add('b403-por-kafli'); }
+    var vidh = stal.querySelector('.b403-kafli:not(.b403-por-kafli)'); // fyrir framan Önnur viðhengi
+    if (vidh) { stal.insertBefore(k, vidh); stal.insertBefore(band, vidh); } else { stal.appendChild(k); stal.appendChild(band); }
   }
   function schedule() { clearTimeout(timer); timer = setTimeout(tick, 60); }
   (function watch() {
@@ -579,8 +591,15 @@
       r('.b403-skjal-lina .sk-att-wrap .sk-doc.stolpi::before', 'display:none'),
       r('.b403-skjal-lina .sk-att-wrap .sk-dfc', 'width:18px;height:18px;border-radius:4px;border:1px solid rgba(20,24,34,.32);background:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;color:#fff'),
       r('.b403-skjal-lina .sk-att-wrap .sk-dfc.green', 'background:linear-gradient(180deg,#1f9d57,#0a4a26);border-color:#0a4a26'), r('.b403-skjal-lina .sk-att-wrap .sk-dfc.blue', 'background:linear-gradient(180deg,#4f74dc,#16306f);border-color:#16306f'),
-      r('.b403-skjal-lina .b403-vm', 'margin-left:auto'), r('.b403-skjal-lina.hreyf .b403-vm', 'margin-left:0')
+      r('.b403-skjal-lina .b403-vm', 'margin-left:auto'), r('.b403-skjal-lina.hreyf .b403-vm', 'margin-left:0'),
+      // pör-bandið (311) inni í spjaldinu: eigin haus falinn (kaflinn segir það), raðir hvítar, skel af
+      r('._dpb-company', 'margin:0!important;background:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important'),
+      r('._dpb-company > div:first-child', 'display:none!important'),
+      r('._dpb-company > div:nth-child(2)', 'padding:0!important;display:flex;flex-direction:column;gap:6px'),
+      r('._dpb-company > div:nth-child(2) > div', LINE + ';padding:6px 10px!important;min-height:44px;display:flex;align-items:center;gap:8px;border:0!important')
     ].join('\n');
+    // display:flex á valmyndinni vann UA-regluna [hidden]{display:none} — lokaðar valmyndir sáust opnar
+    css += '\n' + P + '.b403-menu[hidden]{display:none!important}';
     var st = document.createElement('style'); st.id = 'skjol-403'; st.textContent = css; document.head.appendChild(st);
   }
 })();

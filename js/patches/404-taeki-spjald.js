@@ -282,6 +282,7 @@
       r('.b404-mi', 'all:unset;cursor:pointer;height:40px;border-radius:8px;padding:0 10px;display:flex;align-items:center;gap:10px;font-family:' + SANS + ';font-size:13.5px;font-weight:500;color:#1f2530;position:relative;box-sizing:border-box'),
       r('.b404-mi svg', 'color:#5b6472;flex:none'), r('.b404-mi:hover', 'background:#f1f4f8'), r('.b404-mi.a', 'color:#b42318;font-weight:600'), r('.b404-mi.a svg', 'color:#b42318'), r('.b404-mi > svg:last-of-type', 'margin-left:auto;color:#0a4a26')
     ].join('\n');
+    css += '\n' + P + '.b404-menu[hidden]{display:none!important}'; // [hidden] vinnur display:flex
     var st = document.createElement('style'); st.id = 'taeki-404'; st.textContent = css; document.head.appendChild(st);
   }
 })();
