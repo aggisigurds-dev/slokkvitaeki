@@ -1295,8 +1295,10 @@
   function setSvc(v){ _state.svc=v; try{ localStorage.setItem('_rf_svc_view',v); }catch(e){} }
   function viewEl(){ return document.getElementById('view-rekstrarfelog'); }
 
+  // 23.09.2026: öll sýnin er endurbyggð hér (haus + listi) — skrun og fókus mega ekki tapast við það. Sjá 388.
   async function renderView(){
     var v=viewEl(); if(!v) return;
+    var _afturV=(window.Stodugt&&Stodugt.vernda)?Stodugt.vernda(v):null;
     injectStyles();
     // Sækjum lifandi rekstrarfélög fyrir fyrstu málun; ef þau eru ekki komin
     // (fyrsta opnun) málum við samt strax með hráu gögnunum og endurmálum þegar
@@ -1324,6 +1326,7 @@
           '</div>';
     html+='<div id="_rf_list" class="rf-acclist"></div><div id="_rf_overview" style="display:none"></div></div>';
     v.innerHTML=html;
+    if(_afturV) _afturV();
     var backBtn=v.querySelector('#_rf_back');
     if(backBtn) backBtn.addEventListener('click', function(){
       try{ if(window.App&&App.switchView){ App.switchView('companies'); return; } }catch(e){}
