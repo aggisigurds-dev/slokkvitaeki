@@ -347,7 +347,7 @@ curl -X POST \
   if (aftur) aftur();   // strax á eftir, í SAMA tifi — engin millistaða sést
   ```
 
-  Þrennt til viðbótar undir sömu reglu:
+  Fernt til viðbótar undir sömu reglu:
   1. **Endurteikning má aldrei kippa reitnum undan þeim sem er að skrifa.** Bíddu með hana þar til `focusout` kemur
      (`erAdSkrifa()` + `teiknaEftirInnslatt()` í 153).
   2. **Ástand sem lifir aðeins í DOM-inu tapast** við hverja teikningu — t.d. hvaða kort eru opin. Geymdu það í breytu,
@@ -355,6 +355,14 @@ curl -X POST \
   3. **Þegar gögn lenda: uppfærðu hnútinn sem breyttist** (`innerHTML` á SAMA `<td>`) í stað þess að rífa hann út og
      byggja aftur. Hnútur sem hverfur og birtist aftur ER blikkið sem sést (`endurbyggjaArsreiti()` í 187 — þar fóru
      201 reitir út og inn við hverja opnun). Sé mörgum hleðslurum lokið á víxl, dragðu endurbygginguna saman í eina.
+  4. **TVEIR PAPPAR MEGA ALDREI EIGA SAMA HNÚTINN.** Uppröðunar-pappi sem *ættleiðir* hnút frá öðrum (403 tekur
+     `._dpb-company` inn í Skjöl-spjaldið) fer í reiptog við þann sem *staðsetur* hann (311), því hvor um sig les hina
+     staðsetninguna sem „ranga" og færir hnútinn til baka — og hver færsla vekur hina vaktina. Mælt á fyrirtæki 202
+     23.09.2026: 11 færslur fram og til baka á 6 sekúndum, síðan komst aldrei í kyrrstöðu. **Þetta gerðist TVISVAR í
+     sama falli** (`placeCompanySection`, 18.09 og 23.09), svo reglan er skrifuð hér: sá sem staðsetur verður að
+     viðurkenna ættleiðinguna sem gildan stað (`if (sec.closest('._dyg-section')) return;`) — prófaðu á ÆTTINNI, ekki
+     á klasa ættleiðandans, svo næsta uppröðun erfi vörnina. Almennt: *snertu DOM aðeins þegar hnúturinn er
+     raunverulega á röngum stað,* og teldu ættleiðingu ekki ranga.
 
   Og **samtíma hleðslur eiga að deila EINNI sókn** (`_loadP`-mynstrið í 153 `loadAll()` og `features.js Companies.load()`)
   — annars sækja fjórir kallarar sama mengið og síðasta svarið yfirskrifar hin.
