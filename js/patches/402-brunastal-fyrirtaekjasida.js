@@ -182,6 +182,17 @@
     r('.co-banner-right .co-banner-note', 'max-width:none!important'),
     'html[data-thm-preset="brunastal"] #companies-main .uttekt-col-l:has(.ut-list.b404) > :not(.ut-list){display:none!important}',
 
+
+    /* ── sirka eins og hönnun C (Agnar 23.09 19:12): samantekt hægra megin í haus, Google Maps á Staður-línu, takkar undir loftmynd ── */
+    r('.co-banner', 'grid-template-areas:"id id" "facts mynd" "note mynd" "note knappar" "bupp bupp";grid-template-rows:auto auto auto auto auto'),
+    r('.co-banner-id', 'align-items:center'),
+    r('.b405-sky', 'margin-left:auto;align-self:center;display:flex;flex-direction:column;align-items:flex-end;gap:8px;font-family:' + MONO + ';font-size:11.5px;color:#d5dbe6!important;text-align:right;max-width:46%'),
+    r('.b405-sky > span', PLATE_CHIP + ';color:#0b6b3a!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.12)!important'),
+    r('.b405-facts .co-banner-facts > span:has(a[data-adr-maps]) a', 'flex:1;display:flex;align-items:center;gap:8px;min-width:0'),
+    r('.b405-facts .co-banner-facts > span:has(a[data-adr-maps]) a::after', 'content:"Google Maps";margin-left:auto;color:#b42318;text-decoration:underline;font-weight:500;font-size:12px;font-family:' + SANS),
+    r('.b405-knappar', 'grid-area:knappar;margin:0 12px 0 0;display:flex;gap:8px'),
+    r('.b405-knappur', 'flex:1;justify-content:center;height:40px!important;border-radius:9px!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;color:#1f2530!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;text-shadow:none!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center;gap:8px;padding:0 14px!important'),
+
     /* ── skeljar ── */
     r('._samskipti-card,.ut-list:not(.b404),._afsl-box,._dyg-section.sk-card:not(.b403),._ufs-section.sk-card,._co-mail-box', SHELL + ';padding:0'),
     r('#_ctc-notes', SHELL.replace('border-radius:14px', 'border-radius:14px 14px 0 0') + '!important;border-bottom:0!important;background:' + PLATE + '!important;background-image:' + PLATE_IMG + '!important;margin:0!important;padding:14px 12px 10px!important;box-shadow:none!important'),

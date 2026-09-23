@@ -103,15 +103,21 @@
   function ensureBanner(main) {
     var banner = main.querySelector('.co-banner'); if (!banner) return;
     var box = banner.querySelector(':scope > .b405-facts');
-    var parts = ['.co-banner-facts', '.co-banner-skra', '.co-banner-skyrsla'];
+    var parts = ['.co-banner-facts', '.co-banner-skra'];
+    // Skýrslu-samantektin („Skýrsla 2025: 12× Léttvatn …" + allt í lagi) stendur hægra megin í málmhausnum (hönnun C)
+    var sky = banner.querySelector('.co-banner-skyrsla'); var idb = banner.querySelector(':scope > .co-banner-id');
+    if (sky && idb && sky.parentElement !== idb) { sky.classList.add('b405-sky'); idb.appendChild(sky); }
+    // Teikning · Þjónustusamningur undir loftmyndinni (hönnun C) — inline onclick, virka hvar sem er; 91/370 nota röðina áfram
+    var knappar = banner.querySelector(':scope > .b405-knappar');
+    var kand = Array.prototype.slice.call(main.querySelectorAll('div[data-co-id] > button[onclick]')).filter(function (b) { return /DocTemplates\.openForCompany|FloorPlan\./.test(b.getAttribute('onclick') || ''); });
+    if (kand.length) { if (!knappar) { knappar = el('div', 'b405-knappar'); banner.appendChild(knappar); } kand.forEach(function (b) { if (b.parentElement !== knappar) { b.classList.add('b405-knappur'); knappar.appendChild(b); } }); }
     var any = parts.some(function (sel) { var e = banner.querySelector(sel); return e && (!box || !box.contains(e)); });
     if (!any && !box) return;
     if (!box) { box = el('div', 'b405-facts'); var mynd = banner.querySelector(':scope > .co-mynd'); if (mynd) banner.insertBefore(box, mynd); else banner.appendChild(box); }
     if (any) parts.forEach(function (sel) { var e = banner.querySelector(sel); if (e && !box.contains(e)) box.appendChild(e); });
     // (textinn í .co-banner-skra kemur ASYNC eftir færsluna — því er hreinsað í hverju tifi, ódýrt)
     // emoji-tákn í textanum (📍 📞 ✉ 🏛 📋) víkja — hönnunin merkir línurnar með orðum; aðeins textahnútar snertir
-    var w = document.createTreeWalker(box, NodeFilter.SHOW_TEXT); var n; var tn = [];
-    while ((n = w.nextNode())) tn.push(n);
+    var n; var tn = []; [box, sky].filter(Boolean).forEach(function (rt) { var w = document.createTreeWalker(rt, NodeFilter.SHOW_TEXT); while ((n = w.nextNode())) tn.push(n); });
     tn.forEach(function (x) { var v = x.nodeValue; var y = v.replace(/[🀀-🫿⌀-⏿☀-➿️]/gu, '').replace(/^\s+/, ''); if (y !== v) x.nodeValue = y; }); // (/^s+/ át „ss" úr ss@ss.is — 23.09 19:10)
   }
   var timer = null;
