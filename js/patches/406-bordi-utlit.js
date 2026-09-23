@@ -78,7 +78,9 @@
     H('hreinn') + B + ' .bb-clockbox{border-color:rgba(211,171,78,.28)!important}',
 
     /* ── málningartáknið: minna og hreinna (svg-ið í 262 ósnert) ── */
-    B + ' #_pe-btn{width:26px!important;height:26px!important;min-width:0!important;padding:0!important;'
+    /* min-height:0 er NAUÐSYNLEGT: 262 setur sjálft `min-height:32px` á hnappinn
+       (_pe-css), svo 26px hæðin beit ekki og reiturinn var 26×32 en ekki ferningur. */
+    B + ' #_pe-btn{width:26px!important;height:26px!important;min-width:0!important;min-height:0!important;padding:0!important;'
       + 'display:flex!important;align-items:center!important;justify-content:center!important;'
       + 'border:1px solid rgba(255,255,255,.16)!important;border-radius:3px!important;background:rgba(255,255,255,.04)!important}',
     B + ' #_pe-btn svg{display:none!important}',
