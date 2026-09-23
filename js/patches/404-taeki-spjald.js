@@ -147,7 +147,7 @@
     var stal = el('div', 'b404-stal');
     // ── valstika (= .ut-bulk, óbreytt innihald) ──
     bulk.classList.add('b404-valstika');
-    Array.prototype.slice.call(bulk.querySelectorAll('button')).forEach(function (b) { b.textContent = stripEmoji(txt(b)); });
+    Array.prototype.slice.call(bulk.querySelectorAll('button')).forEach(function (b) { if (b.classList.contains('ut-bulk-clear')) { b.innerHTML = svg('<path d="M18 6 6 18M6 6l12 12"/>', 2.5, 14); b.setAttribute('aria-label', 'Hætta við val'); return; } b.textContent = stripEmoji(txt(b)).replace(/^[─-◿]s*/, ''); });
     Array.prototype.slice.call(bulk.querySelectorAll('.ut-bulk-lbl')).forEach(function (s) { s.textContent = stripEmoji(txt(s)); });
     var sel = bulk.querySelector('.ut-selall'); if (sel) sel.textContent = /Hreinsa/.test(txt(sel)) ? 'Hreinsa val' : 'Velja allt';
     stal.appendChild(bulk);
