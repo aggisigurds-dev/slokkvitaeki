@@ -624,6 +624,22 @@
           _ars._factEq = _factSrc;
           _ars._misraemi = !manual.equipment_manual && !_factSrc.some(f => f.ok);
         }
+        // 23.09.2026 — AFRITIÐ ER VEIKASTA HEIMILDIN OG Á AÐEINS AÐ TALA ÞEGAR ENGIN ÖNNUR ER TIL.
+        // `_blobStutt` (sett í afleiðslunni að ofan) ber prófílinn saman við GAMLA afritið í
+        // stillingunum — sama afrit og enginn uppfærir. Fyrsta útgáfa þessa merkis, fyrr sama dag,
+        // kveikti á átta félögum. Krossmæling við arsskodun_report_facts (véllesna skýrsluna sjálfa)
+        // sýndi að í SJÖ þeirra stemmdi skýrslan við PRÓFÍLINN, ekki við afritið:
+        //   Plaza 80 = skýrsla 80 (afrit 83) · Arnarhvoll 19 = 19 (afrit 20) · Sólbaðsstofan 2 = 2
+        //   (afrit 4, og reikningur 107397 segir líka 2) · Fríða gull 1 = 1 (afrit 2) · o.s.frv.
+        // Merki sem hefur rangt fyrir sér í sjö af níu er hávaði, og hávaði þaggar vörðinn —
+        // sama lexía og skráð er í audit-vistun-utskolun. Sé skýrsla eða reikningur til um félagið
+        // ræður ÞAÐ misræmið (`_misraemi`, rauða ⚠ ≠ merkið, betur heimildað). Afrits-merkið
+        // stendur aðeins þegar hvorug heimildin er til — þá er afritið það eina sem til er.
+        // TÓMI prófíllinn (else-greinin) er ósnertur: þar er ekkert að stemma við.
+        if (_ars._blobStutt != null && _factSrc.length) {
+          _ars._blobMisraemi = false;
+          _ars._blobStutt = null;
+        }
         if (fact) {
           // 2026-07-16 MÁNAÐAR-FORGANGSREGLA: inspect_month_manual > blob
           // inspect_month (hvaða gildi sem er, geymt af notanda) > fact.inspect_month
