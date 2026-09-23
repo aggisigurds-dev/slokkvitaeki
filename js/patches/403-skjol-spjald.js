@@ -167,7 +167,7 @@
     }
     adds.forEach(function (a) { menuItems.unshift({ label: 'Bæta við skjali', icon: ICON.plus, orig: a }); });
     // Stöðuplata
-    if (!stateTxt) { if (hasDoc) { stateTxt = 'Komin'; stateCls = 'ok'; } else if (prog) { stateTxt = 'Í vinnslu'; stateCls = 'vinnsla'; } else { stateTxt = 'Vantar'; stateCls = 'vantar'; } }
+    if (!stateTxt) { if (hasDoc) { stateTxt = 'Komin'; stateCls = 'ok'; } else if (prog) { stateTxt = 'Í vinnslu'; stateCls = 'vnsl'; } else { stateTxt = 'Vantar'; stateCls = 'vantar'; } }
     line.appendChild(plata(stateTxt, stateCls));
     if (menuItems.length) line.appendChild(menuButton(menuItems, 'Fleiri aðgerðir fyrir ' + labelText.toLowerCase()));
     return { line: line, hasDoc: hasDoc, prog: !!prog };
@@ -208,7 +208,7 @@
     var frac = el('span', 'b403-frac', okN + '<span>/' + rows.length + '</span>');
     head.appendChild(frac);
     var st = hd && hd.querySelector('.sk-svc-st');
-    var stCls = st ? (st.classList.contains('ok') ? 'ok' : st.classList.contains('part') ? 'vantar' : 'vinnsla') : 'vinnsla';
+    var stCls = st ? (st.classList.contains('ok') ? 'ok' : st.classList.contains('part') ? 'vantar' : 'vnsl') : 'vnsl';
     var stTxt = stCls === 'ok' ? 'Komið' : stCls === 'vantar' ? 'Vantar' : 'Í vinnslu';
     var stamp = el('span', 'b403-stimpill ' + stCls, '<i aria-hidden="true"></i>' + stTxt);
     if (st) { st.classList.add('b403-orig-st'); stamp.appendChild(st); }
@@ -275,11 +275,11 @@
     var root = el('div', 'b403-root');
 
     // Talning úr spjöldunum (aðeins ár með þjónustu)
-    var komin = 0, vinnsla = 0, vantar = 0;
+    var komin = 0, vnsl = 0, vantar = 0;
     section.querySelectorAll('.sk-svc-card:not(.sk-svc-empty) .sk-svc-row').forEach(function (r) {
-      if (r.querySelector('.sk-dot.ok')) komin++; else if (r.querySelector('.sk-doc.prog')) vinnsla++; else vantar++;
+      if (r.querySelector('.sk-dot.ok')) komin++; else if (r.querySelector('.sk-doc.prog')) vnsl++; else vantar++;
     });
-    var alls = komin + vinnsla + vantar;
+    var alls = komin + vnsl + vantar;
 
     // ── haus ──
     var head = el('header', 'b403-haus');
@@ -288,8 +288,8 @@
     hl.appendChild(el('div', 'b403-titill', '<i class="b403-led"></i>Skjöl og viðhengi'));
     hl.appendChild(el('div', 'b403-talning', '<span class="tala">' + vantar + '</span><span class="tlabel">' + (vantar === 1 ? 'skjal vantar' : 'skjöl vantar') + '</span>'));
     if (alls) {
-      hl.appendChild(el('div', 'b403-stika', '<i style="flex:' + komin + ';background:linear-gradient(150deg,#1f9d57,#0a4a26)"></i><i style="flex:' + vinnsla + ';background:linear-gradient(150deg,#4f74dc,#16306f)"></i><i style="flex:' + vantar + ';background:linear-gradient(150deg,#e25555,#a01818)"></i>'));
-      hl.appendChild(el('div', 'b403-skyring', '<span><i style="background:#7fe0a8"></i>Komin <b>' + komin + '</b></span><span><i style="background:#9fd0ff"></i>Í vinnslu <b>' + vinnsla + '</b></span><span><i style="background:#ff9d95"></i>Vantar <b>' + vantar + '</b></span><span class="dauf">· ' + alls + ' skjöl</span>'));
+      hl.appendChild(el('div', 'b403-stika', '<i style="flex:' + komin + ';background:linear-gradient(150deg,#1f9d57,#0a4a26)"></i><i style="flex:' + vnsl + ';background:linear-gradient(150deg,#4f74dc,#16306f)"></i><i style="flex:' + vantar + ';background:linear-gradient(150deg,#e25555,#a01818)"></i>'));
+      hl.appendChild(el('div', 'b403-skyring', '<span><i style="background:#7fe0a8"></i>Komin <b>' + komin + '</b></span><span><i style="background:#9fd0ff"></i>Í vinnslu <b>' + vnsl + '</b></span><span><i style="background:#ff9d95"></i>Vantar <b>' + vantar + '</b></span><span class="dauf">· ' + alls + ' skjöl</span>'));
     }
     head.appendChild(hl);
     var hr = el('div', 'b403-haus-h');
@@ -313,7 +313,7 @@
     section.querySelectorAll('.sk-pill[data-yr]').forEach(function (p) {
       p.classList.add('b403-arplata');
       var y = p.getAttribute('data-yr'); var full = y && y.length === 2 ? '20' + y : y;
-      var ledCls = p.classList.contains('ok') ? 'ok' : p.classList.contains('gap') ? 'gull' : p.classList.contains('claude') ? 'vinnsla' : 'stal';
+      var ledCls = p.classList.contains('ok') ? 'ok' : p.classList.contains('gap') ? 'gull' : p.classList.contains('claude') ? 'vnsl' : 'stal';
       p.innerHTML = '<i class="led ' + ledCls + '"></i>' + full;
       if (p.classList.contains('now')) p.classList.add('nuna');
       arrod.appendChild(p);
@@ -344,8 +344,8 @@
       var band = el('div', 'b403-band');
       if (lab) {
         var y = lab.getAttribute('data-yr');
-        var state = lab.classList.contains('sk-yr-ok') ? 'ok' : lab.classList.contains('sk-yr-gap') ? 'gull' : lab.classList.contains('sk-yr-claude') ? 'vinnsla' : lab.classList.contains('sk-yr-now') ? 'nuna' : '';
-        var stTxt = state === 'ok' ? ' · lokið' : state === 'gull' ? ' · skýrsla vantar' : state === 'vinnsla' ? ' · yfirfarið' : state === 'nuna' ? ' · í vinnslu' : '';
+        var state = lab.classList.contains('sk-yr-ok') ? 'ok' : lab.classList.contains('sk-yr-gap') ? 'gull' : lab.classList.contains('sk-yr-claude') ? 'vnsl' : lab.classList.contains('sk-yr-now') ? 'nuna' : '';
+        var stTxt = state === 'ok' ? ' · lokið' : state === 'gull' ? ' · skýrsla vantar' : state === 'vnsl' ? ' · yfirfarið' : state === 'nuna' ? ' · í vinnslu' : '';
         lab.classList.add('b403-ar'); lab.classList.add(state || 'x'); lab.innerHTML = '<i class="led"></i>' + y + '<small>' + stTxt + '</small>';
         band.appendChild(lab);
       }
@@ -464,6 +464,11 @@
   // ── CSS ──
   if (!document.getElementById('skjol-403')) {
     var P = 'html[data-thm-preset="brunastal"] #companies-main ._dyg-section.b403 ';
+    // Tákn sem bakgrunnsmynd (::before): kóðuð með encodeURIComponent svo < > # lifi af í öllum vöfrum
+    function svgUrl(stroke, w, inner) { return 'url("data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="' + w + '" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>') + '")'; }
+    var U_OPNA = svgUrl('#2b313c', 2, '<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/>');
+    var U_INV = svgUrl('#2b313c', 2, '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>');
+    var U_PLUS = svgUrl('#525b6b', 2.5, '<path d="M12 5v14M5 12h14"/>');
     function r(sel, css) { return sel.split(',').map(function (s) { return P + s.trim(); }).join(',') + '{' + css + '}'; }
     var LINE = 'background:#fff;border-radius:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)';
     var SILVER_BTN = 'background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.14)!important;color:#1f2530!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;text-shadow:none';
@@ -499,7 +504,7 @@
       r('.b403-merki', 'font-family:' + MONO + ';font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3a4250'),
       r('.b403-arrod', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap'),
       r('.b403-arplata', 'all:unset;cursor:pointer;height:30px;padding:0 12px;border-radius:3px;border:1px solid rgba(20,24,34,.12);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);color:#11141c;font-family:' + MONO + ';font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;box-sizing:border-box'),
-      r('.b403-arplata .led', 'width:5px;height:5px;border-radius:50%;display:inline-block;background:#8f98a8'), r('.b403-arplata .led.ok', 'background:#7fe0a8'), r('.b403-arplata .led.gull', 'background:#ffe0a0'), r('.b403-arplata .led.vinnsla', 'background:#9fd0ff'),
+      r('.b403-arplata .led', 'width:5px;height:5px;border-radius:50%;display:inline-block;background:#8f98a8'), r('.b403-arplata .led.ok', 'background:#7fe0a8'), r('.b403-arplata .led.gull', 'background:#ffe0a0'), r('.b403-arplata .led.vnsl', 'background:#9fd0ff'),
       r('.b403-arplata.nuna', 'background:' + GULL + ';border-color:rgba(190,150,60,.5);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 14px -4px rgba(211,171,78,.6)'), r('.b403-arplata.nuna .led', 'background:#f7e6a8'),
       r('.b403-hint', 'margin-left:auto;font-family:' + MONO + ';font-size:11.5px;color:#525b6b'),
       r('.b403-btn-litill', 'all:unset;cursor:pointer;height:32px;padding:0 10px 0 8px;border-radius:7px;border:1px solid rgba(20,24,34,.14);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);color:#1f2530;font-family:' + SANS + ';font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;box-sizing:border-box'),
@@ -518,7 +523,7 @@
       r('.b403-ar', 'display:inline-flex;align-items:center;gap:10px;font-family:' + DISPLAY + '!important;font-size:20px!important;font-weight:800!important;letter-spacing:-.01em;color:#eef1f4!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);margin:0!important;cursor:pointer'),
       r('.b403-ar small', 'font-family:' + MONO + ';font-size:11.5px;font-weight:500;letter-spacing:0;color:#d5dbe6;text-shadow:none'),
       r('.b403-ar .led', 'width:8px;height:8px;border-radius:50%;background:#8f98a8;box-shadow:0 0 0 3px rgba(255,255,255,.08)'),
-      r('.b403-ar.ok .led', 'background:#7fe0a8;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #7fe0a8'), r('.b403-ar.gull .led', 'background:#ffe0a0;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #ffe0a0'), r('.b403-ar.vinnsla .led', 'background:#9fd0ff;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #9fd0ff'), r('.b403-ar.nuna .led', 'background:#f7e6a8;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #f7e6a8'),
+      r('.b403-ar.ok .led', 'background:#7fe0a8;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #7fe0a8'), r('.b403-ar.gull .led', 'background:#ffe0a0;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #ffe0a0'), r('.b403-ar.vnsl .led', 'background:#9fd0ff;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #9fd0ff'), r('.b403-ar.nuna .led', 'background:#f7e6a8;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #f7e6a8'),
       r('.b403-pill', 'height:18px;padding:0 7px;border-radius:99px;background:rgba(255,255,255,.12);font-family:' + MONO + ';font-size:10.5px;font-weight:700;color:#fff;display:inline-flex;align-items:center'),
       r('.b403-lina', 'flex:1;height:1px;background:rgba(255,255,255,.12)'),
       r('.b403-band .b403-hint,.b403-kafli .b403-hint', 'margin-left:0;color:#d5dbe6'),
@@ -536,7 +541,7 @@
       r('.b403-frac', 'font-family:' + MONO + ';font-size:13px;font-weight:700;letter-spacing:-.02em;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5);flex:none'), r('.b403-frac span', 'color:#8e97a6'),
       r('.b403-stimpill', 'font-family:' + MONO + ';font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;display:inline-flex;align-items:center;gap:5px;flex:none;margin-right:2px;position:relative'),
       r('.b403-stimpill i', 'width:6px;height:6px;border-radius:50%;display:inline-block;background:currentColor'),
-      r('.b403-stimpill.ok', 'color:#7fe0a8'), r('.b403-stimpill.vantar', 'color:#ff9d95'), r('.b403-stimpill.vinnsla', 'color:#9fd0ff'),
+      r('.b403-stimpill.ok', 'color:#7fe0a8'), r('.b403-stimpill.vantar', 'color:#ff9d95'), r('.b403-stimpill.vnsl', 'color:#9fd0ff'),
       r('.b403-senda', 'all:unset;cursor:pointer;height:40px;padding:0 14px 0 12px;border-radius:9px;border:1px solid rgba(52,168,98,.55);background:' + SAEKJA + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3);color:#fff;font-family:' + SANS + ';font-size:13px;font-weight:700;letter-spacing:.01em;text-shadow:0 1px 1px rgba(0,0,0,.55);display:inline-flex;align-items:center;gap:7px;box-sizing:border-box;margin-left:6px'),
       r('.b403-body', 'padding:8px 8px 10px;display:flex;flex-direction:column;gap:6px'),
       r('.b403-rod', LINE + ';display:flex;align-items:center;gap:6px;min-height:38px;padding:4px 6px 4px 10px;font-size:12px;color:#5b6472;position:relative;flex-wrap:wrap'),
@@ -546,7 +551,7 @@
       r('.b403-skjal', 'display:inline-flex;align-items:center;gap:4px;min-width:0'),
       // skjalið sjálft er opnunartakkinn: tákn + nafn
       r('.b403-skjal .sk-doc,.b403-vidh-chip,.b403-samn-h .sk-doc', 'all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:' + SANS + ';font-size:12.5px;font-weight:500;color:#1f2530;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;padding:2px 0'),
-      r('.b403-skjal .sk-doc::before,.b403-vidh-chip::before,.b403-samn-h .sk-doc::before', 'content:"";flex:none;width:28px;height:28px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + SILVER + ' , url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%232b313c%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27><path d=%27M14 4h6v6%27/><path d=%27M20 4 10 14%27/><path d=%27M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6%27/></svg>") center/15px no-repeat;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)'),
+      r('.b403-skjal .sk-doc::before,.b403-vidh-chip::before,.b403-samn-h .sk-doc::before', 'content:"";flex:none;width:28px;height:28px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + SILVER + ' , ' + U_OPNA + ' center/15px no-repeat;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)'),
       r('.b403-skjal .sk-doc:hover::before,.b403-vidh-chip:hover::before,.b403-samn-h .sk-doc:hover::before', 'box-shadow:inset 0 0 0 1px rgba(201,42,42,.45),0 1px 2px rgba(0,0,0,.1)'),
       r('.b403-skjal .sk-doc.inv', 'font-family:' + MONO + ';font-size:11.5px;font-weight:700'),
       r('.b403-skjal .sk-doc.miss', 'color:#845400;text-decoration:line-through'),
@@ -559,13 +564,13 @@
       r('.b403-val .sk-doc.prog::before', 'content:"";width:5px;height:5px;border-radius:50%;background:#4f74dc;display:inline-block'),
       r('.b403-val .sk-add', 'all:unset;cursor:pointer;height:26px;padding:0 9px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);color:#1f2530;font-family:' + SANS + ';font-size:12px;font-weight:600;display:inline-flex;align-items:center'),
       r('.b403-slot-btn', 'all:unset;cursor:pointer;font-family:' + SANS + ';font-size:12px;font-weight:500;color:#525b6b;display:inline-flex;align-items:center;gap:6px;flex:1;min-height:28px'),
-      r('.b403-slot-btn::before', 'content:"";width:14px;height:14px;background:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23525b6b%27 stroke-width=%272.5%27 stroke-linecap=%27round%27><path d=%27M12 5v14M5 12h14%27/></svg>") center/14px no-repeat;flex:none'),
+      r('.b403-slot-btn::before', 'content:"";width:14px;height:14px;background:' + U_PLUS + ' center/14px no-repeat;flex:none'),
       r('.b403-rod.slot:hover .b403-slot-btn', 'color:#b42318'),
       r('.b403-tomt-txt', 'font-size:12px;color:#525b6b;margin-right:8px'),
       r('.b403-upph', 'font-family:' + MONO + ';font-size:11.5px;font-weight:700;color:#1f2530;flex:none;margin-left:auto;padding-right:6px'),
       r('.b403-plata', 'display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:3px;border:1px solid rgba(20,24,34,.12);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);color:#11141c;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;flex:none;white-space:nowrap;position:relative'),
       r('.b403-plata i', 'width:5px;height:5px;border-radius:50%;display:inline-block;background:#8f98a8'),
-      r('.b403-plata.ok i', 'background:#1f9d57'), r('.b403-plata.vinnsla i', 'background:#4f74dc'), r('.b403-plata.vantar i', 'background:#e25555'), r('.b403-plata.gull i', 'background:#e0a93e'), r('.b403-plata.vantar', 'color:#b42318'),
+      r('.b403-plata.ok i', 'background:#1f9d57'), r('.b403-plata.vnsl i', 'background:#4f74dc'), r('.b403-plata.vantar i', 'background:#e25555'), r('.b403-plata.gull i', 'background:#e0a93e'), r('.b403-plata.vantar', 'color:#b42318'),
       r('.b403-leif', 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;padding:6px 10px;' + LINE),
       r('.b403-annad', 'display:flex;flex-direction:column;gap:6px'),
       // ⋯ valmynd
@@ -589,7 +594,7 @@
       r('.b403-skjal-lina .upph', 'font-family:' + MONO + ';font-size:11.5px!important;font-weight:700!important;color:#1f2530;margin-left:auto'),
       r('.b403-skjal-lina .sk-att-wrap', 'display:inline-flex;align-items:center;gap:4px'),
       r('.b403-skjal-lina .sk-att-wrap .sk-doc', 'all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:' + MONO + ';font-size:11.5px;font-weight:700;color:#1f2530'),
-      r('.b403-skjal-lina .sk-att-wrap .sk-doc::before', 'content:"";flex:none;width:28px;height:28px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + SILVER + ' , url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%232b313c%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27><path d=%27M6 3h12v18l-3-2-3 2-3-2-3 2z%27/><path d=%27M9 8h6M9 12h6%27/></svg>") center/15px no-repeat;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)'),
+      r('.b403-skjal-lina .sk-att-wrap .sk-doc::before', 'content:"";flex:none;width:28px;height:28px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + SILVER + ' , ' + U_INV + ' center/15px no-repeat;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)'),
       r('.b403-skjal-lina .sk-att-wrap .sk-doc.stolpi', 'all:unset;height:18px;padding:0 6px;border-radius:5px;background:#eceff4;color:#1f2530;font-family:' + MONO + ';font-size:10.5px;font-weight:700;display:inline-flex;align-items:center'),
       r('.b403-skjal-lina .sk-att-wrap .sk-doc.stolpi::before', 'display:none'),
       r('.b403-skjal-lina .sk-att-wrap .sk-dfc', 'width:18px;height:18px;border-radius:4px;border:1px solid rgba(20,24,34,.32);background:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;color:#fff'),

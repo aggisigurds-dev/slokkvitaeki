@@ -172,6 +172,16 @@
     r('.b405-facts .co-banner-skyrsla > span', 'margin-left:auto'),
     r('.co-banner-right .co-banner-note', 'min-height:72px!important'),
 
+
+    /* ── Playwright-yfirferð 23.09 19:06 (1920 px): stöðuplata hjá Til baka, staðreyndalínur fullbreiðar og dökkar, athugasemd fullbreið ── */
+    r('.b405-plata', 'margin-right:auto'),
+    r('.b405-facts > *', 'align-self:stretch;width:100%!important;max-width:none!important;box-sizing:border-box;display:flex!important'),
+    r('.b405-facts .co-banner-skra,.b405-facts .co-banner-skyrsla,.b405-facts .co-banner-facts', 'color:#1f2530!important;font-size:12.5px!important;opacity:1!important'),
+    r('.b405-facts .co-banner-skyrsla', 'flex-wrap:wrap'),
+    r('.co-banner-right', 'width:100%;max-width:none'),
+    r('.co-banner-right .co-banner-note', 'max-width:none!important'),
+    'html[data-thm-preset="brunastal"] #companies-main .uttekt-col-l:has(.ut-list.b404) > :not(.ut-list){display:none!important}',
+
     /* ── skeljar ── */
     r('._samskipti-card,.ut-list:not(.b404),._afsl-box,._dyg-section.sk-card:not(.b403),._ufs-section.sk-card,._co-mail-box', SHELL + ';padding:0'),
     r('#_ctc-notes', SHELL.replace('border-radius:14px', 'border-radius:14px 14px 0 0') + '!important;border-bottom:0!important;background:' + PLATE + '!important;background-image:' + PLATE_IMG + '!important;margin:0!important;padding:14px 12px 10px!important;box-shadow:none!important'),

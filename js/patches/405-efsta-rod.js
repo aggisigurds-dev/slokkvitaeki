@@ -105,9 +105,14 @@
     var box = banner.querySelector(':scope > .b405-facts');
     var parts = ['.co-banner-facts', '.co-banner-skra', '.co-banner-skyrsla'];
     var any = parts.some(function (sel) { var e = banner.querySelector(sel); return e && (!box || !box.contains(e)); });
-    if (!any) return;
+    if (!any && !box) return;
     if (!box) { box = el('div', 'b405-facts'); var mynd = banner.querySelector(':scope > .co-mynd'); if (mynd) banner.insertBefore(box, mynd); else banner.appendChild(box); }
-    parts.forEach(function (sel) { var e = banner.querySelector(sel); if (e && !box.contains(e)) box.appendChild(e); });
+    if (any) parts.forEach(function (sel) { var e = banner.querySelector(sel); if (e && !box.contains(e)) box.appendChild(e); });
+    // (textinn í .co-banner-skra kemur ASYNC eftir færsluna — því er hreinsað í hverju tifi, ódýrt)
+    // emoji-tákn í textanum (📍 📞 ✉ 🏛 📋) víkja — hönnunin merkir línurnar með orðum; aðeins textahnútar snertir
+    var w = document.createTreeWalker(box, NodeFilter.SHOW_TEXT); var n; var tn = [];
+    while ((n = w.nextNode())) tn.push(n);
+    tn.forEach(function (x) { var v = x.nodeValue; var y = v.replace(/[🀀-🫿⌀-⏿☀-➿️]/gu, '').replace(/^\s+/, ''); if (y !== v) x.nodeValue = y; }); // (/^s+/ át „ss" úr ss@ss.is — 23.09 19:10)
   }
   var timer = null;
   function tick() {
