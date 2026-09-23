@@ -5,74 +5,15 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-23 22:05 · 632 virkar staðreyndir
+Sótt 2026-09-23 22:51 · 633 virkar staðreyndir
 
 ---
 
 ## 1. Staðan í tölum
 
-Mælt 2026-09-10 22:37 · 90 mælar · allar tölur eru VANDAMÁL (hærra = verra).
-
-**⚠ Fór í ranga átt síðan síðast:**
-
-- opin_an_svarad_at: 518 → 538 (+20) — FÓR Í RANGA ÁTT
-- opin_thjonustumal: 518 → 538 (+20) — FÓR Í RANGA ÁTT
-- verkefni_i_beidni: 165 → 195 (+30) — FÓR Í RANGA ÁTT
-- opin_an_kunnaskrar: 297 → 299 (+2) — FÓR Í RANGA ÁTT
-- trio_stadfest_2025: 118 → 67 (+-51) — FÓR Í RANGA ÁTT
-- tvitekin_kennitala: 73 → 76 (+3) — FÓR Í RANGA ÁTT
-- veidin_amber_felog: 26 → 37 (+11) — FÓR Í RANGA ÁTT
-- veidin_gleymd_felog: 76 → 78 (+2) — FÓR Í RANGA ÁTT
-- verklidir_an_taekis: 933 → 988 (+55) — FÓR Í RANGA ÁTT
-- opin_eldri_en_6_manada: 287 → 303 (+16) — FÓR Í RANGA ÁTT
-- taeki_an_stadsetningar: 631 → 797 (+166) — FÓR Í RANGA ÁTT
-- i_thjonustu_an_netfangs: 193 → 195 (+2) — FÓR Í RANGA ÁTT
-- i_thjonustu_an_tengilids: 171 → 174 (+3) — FÓR Í RANGA ÁTT
-- oathugadir_drive_tenglar: 765 → 800 (+35) — FÓR Í RANGA ÁTT
-- veidin_felog_med_netfang: 405 → 401 (+-4) — FÓR Í RANGA ÁTT
-- veidin_rukkud_an_skyrslu: 32 → 36 (+4) — FÓR Í RANGA ÁTT
-- blob_og_uttaeki_osamraeda: 115 → 119 (+4) — FÓR Í RANGA ÁTT
-- i_thjonustu_an_postnumers: 2 → 7 (+5) — FÓR Í RANGA ÁTT
-- i_thjonustu_en_merkt_ovirkt: 2 → 4 (+2) — FÓR Í RANGA ÁTT
-- i_thjonustu_an_heimilisfangs: 0 → 5 (+5) — FÓR Í RANGA ÁTT
-- rukkad_undir_helmingi_skradra: 7 → 8 (+1) — FÓR Í RANGA ÁTT
-- veidin_stadir_med_2025_skyrslu: 273 → 269 (+-4) — FÓR Í RANGA ÁTT
-- verkbeidnir_ekki_sottar_30_daga: 10 → 17 (+7) — FÓR Í RANGA ÁTT
-
-| Mælir | Tala |
-|---|---:|
-| `taeki_med_utrunna_skodun` | 1871 |
-| `verklidir_an_taekis` | 988 |
-| `oathugadir_drive_tenglar` | 800 |
-| `taeki_an_stadsetningar` | 797 |
-| `veidin_stadir_i_thjonustu` | 646 |
-| `i_thjonustu_an_samnings` | 635 |
-| `veidin_felog_i_thjonustu` | 589 |
-| `opin_an_svarad_at` | 538 |
-| `opin_thjonustumal` | 538 |
-| `skjol_merkt_tvitekin` | 507 |
-| `i_thjonustu_an_samnings_skjals` | 478 |
-| `veidin_felog_med_netfang` | 401 |
-
-_Allir 90 mælarnir: mælaborðið á /#maelabord, eða 
-`GET /api/ai-context`._
-
-## 2. Hvaða sérfræðingur á hvaða tölu
-
-Skilaðu niðurstöðu á RÉTT svið svo hún rati til þess sem á málið:
-`POST /api/ai-context` með `svid:"<lykill>"`.
-
-| Svið | Skrá | Mælar | Síðasta viðgerð |
-|---|---|---:|---|
-| `kunnaskra` | `.claude/agents/kunnaskra.md` | 11 | — |
-| `sala-reikningar` | `.claude/agents/sala-reikningar.md` | 15 | 2026-09-06 — samstilling-per-lykil 🛡 |
-| `elon-musk` | `.claude/agents/elon-musk.md` | 13 | — |
-| `bord-flettur` | `.claude/agents/bord-flettur.md` | 6 | — |
-| `prentun` | `.claude/agents/prentun.md` | 2 | — |
-
-**43 mælar eiga engan sérfræðing enn** — sýnilegt gat, ekki falið:
-
-`reikn_bk_2025` · `reikn_bk_2026` · `reikn_slt_2025` · `reikn_slt_2026` · `skyrslur_bk_2025` · `skyrslur_bk_2026` · `taeki_an_eiganda` · `verkefni_i_vinnu` · `skyrslur_slt_2025` · `skyrslur_slt_2026` · `taeki_an_tegundar` · `verkefni_i_beidni` · `trio_stadfest_2025` · `trio_stadfest_2026` · `veidin_systkini_kt` · `endurheimt_fra_2023` · `endurheimt_fra_2024` · `nyir_samningar_2026` · `veidin_drive_tvitok` · `veidin_skjol_an_ars` · `verkefni_i_yfirferd` · `dauder_drive_tenglar` · `skjol_merkt_tvitekin` · `veidin_hud_buid_2026` · `taeki_an_stadsetningar` · `i_thjonustu_an_samnings` · `samningar_komnir_a_tima` · `samningsskjol_i_kerfinu` · `veidin_drive_2026_radir` · `oathugadir_drive_tenglar` · `taeki_an_naestu_skodunar` · `taeki_med_utrunna_skodun` · `veidin_felog_i_thjonustu` · `veidin_felog_med_netfang` · `blob_og_uttaeki_osamraeda` · `taeki_an_sidustu_skodunar` · `veidin_stadir_i_thjonustu` · `veidin_stadir_med_samning` · `veidin_drive_2026_distinct` · `veidin_hud_buid_vs_skyrsla` · `solur_i_ar_an_vidskiptavinar` · `veidin_blob_graen_an_skyrslu` · `i_thjonustu_an_samnings_skjals`
+_Mælibókin svaraði ekki þegar þetta var skrifað. Tölurnar eru því EKKI hér —
+ekki núll. Keyrðu `node tools/minni.cjs --uppfaera` aftur, eða sæktu beint:_
+`GET https://slokkvitaeki.netlify.app/api/ai-context`
 
 ## 3. Staðreyndir — lesa ÁÐUR en breytt er
 
@@ -80,7 +21,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 | Efni | Fjöldi |
 |---|---:|
-| [kerfi](#kerfi) | 51 |
+| [kerfi](#kerfi) | 52 |
 | [skjol](#skjol) | 32 |
 | [sweep](#sweep) | 26 |
 | [taeki](#taeki) | 25 |
@@ -103,6 +44,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kerfi
 
+- **Vinnusíða 274 (brunakerfi) fær Brunastál líka ein og sér 23.09: 402 endurtekur #_sks-bru #_bkc-overlay-reglurnar með OV-forskeyti (body > #_bkc-overlay:not(._sks-inni)), toppstika málmhaus, _bkc-cust stálplata. NUL-gildra: CSS-escape í JS þarf \0020, eitt bakstrik = NUL+020 (kassaglyph í haus 🚨). Röð úr Brunakerfis skoðun (388) leiðir á fyrirtækjasíðuna með 🚨-flipa, ekki yfirlagið.**
+  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
 - **Brunakerfis/Slökkvikerfis skoðun 23.09: hönnun D (strigi UcyMFZNi1sVNPGiHdYSWCZ, Brunaskra.dc.html) smíðuð í 392 — ._sk-root stálspjald, ._sk-hd málmhaus með hnoðum, síuraðir eitt hvítt spjald með merkjum úr ::before (Staða/Mánuður/Leit), N af N plata, fótur ::after; col5 Skoðun 86px, col8 Reikningur 104px, tafla min 1382. 385/388 ósnert.**
   <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
 - **Stilla útlit 23.09: 166 strípaði viljandi ALLAR Stílstjóra-reglur með scope view-krofu-yfirlit úr #_pe-overrides (watchPeOverrides) og af þjóni (scrubKrofuPageEditor) — einnota hreinsun 25.08 orðin varanleg; slökkt 23.09. 262: valið geymt sem veljari+sýn (resolveTarget), onChange endurhleður ekki meðan eigin vistun er í gangi, Áferð texta (gull/silfur/kopar/brunastál = background-clip:text), botn-sheet í síma (isPhoneLike). 341: með body.has-mobnav er #view-arsskodun eini skrunarinn (100vw) — áður margin-left:60px + overflow-x:clip klippti hausinn.**
@@ -183,9 +126,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
 - **SPJALL (347) — thrjar villur fundnar 02.09.2026, allar i gegnum vidmotid, engin theirra i gagnagrunninum: (1) teikna() setti innerHTML a allt spjaldid vid HVERJA lifandi uppfaerslu (SpjallRefresh ur db.js, lika bergmal af eigin sendingu ~5 sek sidar vegna debounce) og thurrkadi halfskrifadan texta ur textarea — fra notanda sed 'spjallid vistast ekki' thott allar sendingar vaeru i DB; nu er drog/fokus/caret/skrun vardveitt yfir endurteiknun. (2) Verkbord.currentUser var ALDREI til svo hver() fell alltaf a 'Slokkvitaeki'; thar sem olesin() undanskilur eigin skilabod og spjall_lesid er lyklad a hofund taldist ALLT eigid og glodin kviknadi aldrei hja neinum; nu er hofundur starfsmadurinn ur veljaranum (vb_starfsmadur). (3) Eyding: x a hverju skilabodi, mjuk-eyding med deleted_at, saekja() siar hana ut og realtime (UPDATE) fellir hana a hinum tolvunum — sannreynt ad eyding fra 'annarri tolvu' hvarf her innan 9 sek. Neon-glodin (SPJALL-texti + hlidarstika blikka) VIRKAR thegar spjaldid er lokad og skilabod koma fra odrum hofundi; med spjaldid OPID teljast thau lesin strax (merkjaLesid vid refresh) — thad er hegdun, ekki villa. spjall er i supabase_realtime; spjall_lesid er thad ekki og tharf ekki.**
   <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-- **BORD PER STARFSMANN (#350, 02.09.2026): veljari vid hlidina a Vidskiptavinavefjum styrir Dagskra (303), Skipulagsbordi (305) og verklistanum (231). HVER situr vid velina = localStorage vb_starfsmadur (per TOLVU, ma aldrei stokkva i allir); HVAD hann a = app_settings <grunnur>.by_staff.<nafn> (samstillt). Gomlu lyklarnir vikudagskra.jobs / skipulagsbord.cards standa osnertir sem afrit; Agnar erfdi thau. FJORAR GILDRUR sem kostudu thrjar utgafur adur en thetta virkadi: (1) 231/303/305 hladast A UNDAN 350 — beint BordStarfsmadur.onChange() vardad med && hvarf THEGJANDI; askrift fer i window.__bordStarfsmadurAskrift-bidrod sem er ohad hledsluroð, og 350 kallar tilkynna(get()) einu sinni vid raesingu svo 231 retti sig af. (2) knownWorkerFilter() profar gegn WORKERS, EKKI WORKER_FILTERS — nafn sem er bara i hinum listanum telst othekkt og sian situr fost. (3) MutationObserver sem kallar render() i hverri hringferd endurbyggir <select> undir fingrinum og fellilistinn LOKAST strax — setja adeins inn ef vantar, og sleppa render medan select hefur fokus. (4) blur() a element sem hefur EKKI fokus gerir ekkert — vistun sem hangir oll a blur vistast aldrei; Enter a ad kalla vista() beint, blur er varaleid. STAERSTI LAERDOMURINN: eg profadi med beinu API-kalli (BordStarfsmadur.set) og thad 'virkadi' — en i gegnum sjalfan <select>-inn og smellina virkadi EKKERT. Profa ALLTAF i gegnum somu leid og notandinn fer.**
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-- _…og 11 til viðbótar í töflunni._
+- _…og 12 til viðbótar í töflunni._
 
 ### skjol
 
@@ -995,24 +936,24 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **BLAÐIÐ RÆÐUR ALLTAF — líka þegar kerfið segir hærri tölu og þegar kerfið þekkir ekki tækið sem stendur á blaðinu. Það á ekki að spyrja um þetta framar**
   <br>Agnar 10.09.2026, spurður fjórum sinnum í röð hvor heimildin réði: „alltaf ad fara eftir vinnubladi." Beitt strax: Ölfusborgir rukkast 37 léttvatnstæki þótt kerfið eigi 41; Endurskoðun rukkast 3 slöngur + 3 léttvatn þótt kerfið eigi 2 tæki og enga slöngu. Umframtæki í kerfinu á að eyða, vantandi tæk
   <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
+- **Takkinn „📄 Búa til úttektarskýrslu" EYÐILEGGUR skráðar skoðunardagsetningar — hann keyrir advanceInspectionDates sem setur last_insp = Í DAG og next_insp ár fram á ÖLL tæki fyrirtækisins**
+  <br>Patch 129, wire á #_ctc-skyrsla. Hagstál 10.09.2026: hefði breytt 20.08.2026 → 10.09.2026 og 20.08.2027 → 2028, og eyðilagt ágúst-skoðunina sem var verið að skrá. Sama mynstur og „Merkja skoðun" (00-legacy). Sé skoðunin í öðrum mánuði en í dag: EKKI nota takkann.
+  <br><sub>2026-09-10 · slokkvitaeki · kóði · claude-code</sub>
 - **Blað 5 („Sumarbústaðir", 37 númeruð léttvatnstæki, „Hús 5-6-7-8-9" og „Hús 28-30-31-33") er Sameignarfélag Ölfusborga**
   <br>Agnar 10.09.2026: „sumarbustadir eru eitthvad í ölfusborgum ölfus. þorlákshöfn". Kerfið á 42 virk tæki: 41 léttvatn 6 L + 1 duft 6 kg, öll með skoðun 01.09.2026. Blaðið telur 37 — fjórum munar og það er óútkljáð. „Engin lykill í Nr 27" stendur á blaðinu.
   <br><sub>2026-09-10 · kunni · agnar · claude-code</sub>
 - **Rétt stöðvunarstaða Söru er: haka við tæki → Staðfesta lista → „💾 Vista / í Vinnslu". Hún snertir hvorki „Klára heimsókn" né „Búa til úttektarskýrslu"**
   <br>Staðfest á Hagstáli 10.09.2026: eftir þessi þrjú skref stendur í skýinu _locked:true, átta _doneIds, computed {ex 38819, vsk 9317, total 48136} og arsskodun_customers steps_2026 {uttekt:true, taekjalisti:true}. Agnar sendir sjálfur í kröfuyfirlit.
   <br><sub>2026-09-10 · slokkvitaeki · sql · claude-code</sub>
-- **Takkinn „📄 Búa til úttektarskýrslu" EYÐILEGGUR skráðar skoðunardagsetningar — hann keyrir advanceInspectionDates sem setur last_insp = Í DAG og next_insp ár fram á ÖLL tæki fyrirtækisins**
-  <br>Patch 129, wire á #_ctc-skyrsla. Hagstál 10.09.2026: hefði breytt 20.08.2026 → 10.09.2026 og 20.08.2027 → 2028, og eyðilagt ágúst-skoðunina sem var verið að skrá. Sama mynstur og „Merkja skoðun" (00-legacy). Sé skoðunin í öðrum mánuði en í dag: EKKI nota takkann.
-  <br><sub>2026-09-10 · slokkvitaeki · kóði · claude-code</sub>
 - **Einingaverð í úttektarreikningi eru færð ÁN VSK og VSK (24%) leggst ofan á — líka á akstur og skýrslugerð**
   <br>Hagstál 09.09.2026: 3×3.387 duft + 3×4.346 slanga + 3.270 CO₂ 5kg + 3.150 léttvatn + 5.600 skýrslugerð + 3.600 akstur = 38.819 án vsk → 48.136 m/vsk. Verðskrárverðin m/vsk (4.200/5.389/4.055/3.906) eru sömu tölur ×1,24.
-  <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
-- **Brunaslöngur Hagstáls (og víðar) eru skráðar án stærðar (size = NULL) og verðleggjast því ekki sjálfkrafa — 30 m er rétta verðið (5.389 kr m/vsk yfirferð)**
-  <br>Sjá verd.md: brunaslanga verður að hafa stærð (30/25/20 m). Þrjú tæki hjá Hagstáli (id 9144-9146) eru með size NULL. Val á stærð á alltaf að segja Agnari frá.
   <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
 - **Quick-inspect takkinn „Merkja skoðun" (00-legacy) stimplar 1. dag valins mánaðar á ÖLL tæki fyrirtækisins gegnum .eq(client, nafn) — óháð vali; nákvæmar dagsetningar á að setja með Síðasta/Næsta skoðun í svörtu fjöldaaðgerða-stikunni (patch 224)**
   <br>Stikan skrifar aðeins á VALIN tæki (.in(id, lids)) og tekur nákvæma dagsetningu. Notað 09.09.2026 til að setja Hagstál á 2026-08-20 / 2027-08-20.
   <br><sub>2026-09-09 · slokkvitaeki · kóði · claude-code</sub>
+- **Brunaslöngur Hagstáls (og víðar) eru skráðar án stærðar (size = NULL) og verðleggjast því ekki sjálfkrafa — 30 m er rétta verðið (5.389 kr m/vsk yfirferð)**
+  <br>Sjá verd.md: brunaslanga verður að hafa stærð (30/25/20 m). Þrjú tæki hjá Hagstáli (id 9144-9146) eru með size NULL. Val á stærð á alltaf að segja Agnari frá.
+  <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
 
 ### bord-flettur
 
@@ -1060,11 +1001,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### turbopaint
 
-- **pdf.js 5.7 (public/pdfjs í kjarni) notar Map.prototype.getOrInsertComputed sem Chromium 141 og eldri eiga ekki — PDF-innflutningur í TurboPaint brotnaði HLJÓÐLAUST án polyfill.**
-  <br>Lagað 14.09.2026: lib/board/polyfills.ts (fyrsti import í import-files.ts og WhiteboardApp.tsx) setur getOrInsert/getOrInsertComputed á Map og WeakMap; sama lína er fremst í public/pdfjs/pdf.worker.min.mjs (workerinn hleður ekki polyfill aðalþráðar). Muna að endurbæta línuna ef pdf.worker er uppfærð
-  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **/kjarni/turbopaint?leit=<heimilisfang> opnar teikningaleitina með heimilisfanginu fyllt (breytan hverfur strax úr slóðinni) — djúptengill fyrir önnur kerfi, t.d. Teikningar-línuna á fyrirtækjabanner Slökkvitækja-appsins.**
   <br>Kjarni PR #117 (14.09.2026). Slökkvitæki: patch 363 v3 + netlify/functions/hus-upplysingar.js smíðar tengilinn úr Staðfangaskrár-heitinu (t.d. „Dalshraun 1B").
+  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
+- **pdf.js 5.7 (public/pdfjs í kjarni) notar Map.prototype.getOrInsertComputed sem Chromium 141 og eldri eiga ekki — PDF-innflutningur í TurboPaint brotnaði HLJÓÐLAUST án polyfill.**
+  <br>Lagað 14.09.2026: lib/board/polyfills.ts (fyrsti import í import-files.ts og WhiteboardApp.tsx) setur getOrInsert/getOrInsertComputed á Map og WeakMap; sama lína er fremst í public/pdfjs/pdf.worker.min.mjs (workerinn hleður ekki polyfill aðalþráðar). Muna að endurbæta línuna ef pdf.worker er uppfærð
   <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **TurboPaint frá PR #107 (10.09.2026): ⌘C/⌘X/⌘V á hlutum (copy/cut/paste-atburðir vafrans, JSON {turbopaint:1,objects} á klemmuspjaldi → límist líka milli borða/flipa, 24 px hliðrun per límingu, ⌘D = Tvöfalda); sérsniðnir litir með „+" swatch (native litaval, síðustu 6 muna sig í localStorage turbopaint:custom-colors, fylling fær 40% gegnsæi); Gátreitur-tólið (X) = rect með isCheckbox/checked, ✓-hakreitur í hægra horni að neðan, hakað → allur reiturinn grænn.**
   <br>Skrár: lib/board/clipboard.ts, custom-colors.ts, checkbox.ts, components/kjarni/ColorPicker.tsx. Gátreitur byggir á RectObject svo færsla/stærð/afritun/hópun/útflutningur/samstilling fylgja án sérmeðhöndlunar; Magntafla telur „Gátreitir — hakað/óhakað" sér. Prófun: apps/slokkvitaeki/tools/turbopaint
@@ -1327,11 +1268,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kjarni
 
-- **3dwork-verkefni samstillast sjálfkrafa milli tölva frá PR #107 (10.09.2026): work3d_projects (RLS á, public select/insert/update, ekkert delete) + bucket work3d; dirty-flagg + 2,5 s debounce push, pull við opnun/ræsingu/fókus á flipa, „Projects · N" skiptir í stikunni. Eyðing = soft delete (deleted=true) sem aðrar tölvur fella sitt eintak eftir.**
-  <br>Reglur: cloud updated_at er sannleikur (row-stamp, ekki JSON updatedAt); staðbundið eintak fær sama stimpil eftir push svo ræsing ýti ekki sama efni aftur (engin ping-pong). Óvistaðar breytingar + nýrra cloud-eintak → union á parts eftir id (staðbundið vinnur). Hrein föll í apps/web/src/lib/3dwork/p
-  <br><sub>2026-09-10 · kerfi · kóði · claude-code</sub>
 - **Vafra-prófanir í Claude Code web/remote: Chromium nær heldur EKKI í Supabase frá localhost-síðu (ERR_CONNECTION_RESET, ECH GREASE) — Supabase-köll síðunnar bila hljóðlaust. Nota bh-browser relay (slokkvitaeki/tools/bh-browser.cjs) líka fyrir localhost-próf sem tala við Supabase; önnur „tölva" = context.browser().newContext({ ignoreHTTPSErrors: true }) á sama relay-vafra.**
   <br>Kostaði 3 keyrslur 04.09.2026 áður en þetta sást: pushCloud sat fastur í „Saving to Supabase…" án villu í console. Beinar HTTPS-síður þurfa relay-ið hvort eð er. Athugið líka: pkill -f með mynstri sem stendur í eigin skipanalínu drepur skelina sjálfa (exit 144) — nota t.d. pkill -f "next[-]server".
+  <br><sub>2026-09-10 · kerfi · kóði · claude-code</sub>
+- **3dwork-verkefni samstillast sjálfkrafa milli tölva frá PR #107 (10.09.2026): work3d_projects (RLS á, public select/insert/update, ekkert delete) + bucket work3d; dirty-flagg + 2,5 s debounce push, pull við opnun/ræsingu/fókus á flipa, „Projects · N" skiptir í stikunni. Eyðing = soft delete (deleted=true) sem aðrar tölvur fella sitt eintak eftir.**
+  <br>Reglur: cloud updated_at er sannleikur (row-stamp, ekki JSON updatedAt); staðbundið eintak fær sama stimpil eftir push svo ræsing ýti ekki sama efni aftur (engin ping-pong). Óvistaðar breytingar + nýrra cloud-eintak → union á parts eftir id (staðbundið vinnur). Hrein föll í apps/web/src/lib/3dwork/p
   <br><sub>2026-09-10 · kerfi · kóði · claude-code</sub>
 - **3dwork Google Drive: innbyggða Web-clientið 708215000553-7sc6vb83g2manolct21l7gh45tk442es er gilt og https://kjarni-3dwork.vercel.app er leyfður JavaScript-uppruni — „Connect Drive" bilaði af því handslegið client id (víxlað 1/l) lá í localStorage og sló innbyggða id-ið út (Google: invalid_client).**
   <br>Sannreynt 04.09.2026 með curl á accounts.google.com/o/oauth2/v2/auth (storagerelay-redirect + origin): baked id → innskráningarsíða; bogus origin → redirect_uri_mismatch; gamli clientinn 708215000553-77htigi4… → deleted_client. Frá PR #107 (kjarni) er localStorage-lykillinn kjarni_3dwork_google_clie
@@ -1382,12 +1323,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Rafhlaðan er INNIFALIN í „Yfirferð Reykskynjari" (2.346 kr án vsk) — 9V Rafhlaða fer ekki á reikninginn sem sér lína**
   <br>Agnar 10.09.2026: „það er innifalið rafhlaða í reykskynjara yfirferð". Vinnublöð skrifa oft „skipti um X skynjara og batterí í Y" — Y-hlutinn er yfirferð, ekki varahlutasala. 9V Rafhlaða (466 án vsk) er til í vörulistanum en á aðeins við þegar rafhlaða er seld ein og sér, án yfirferðar.
   <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
-- **Það er AÐEINS EITT verð á yfirferð brunaslöngu (4.346 kr án vsk / 5.389 m/vsk) — lengdin skiptir ekki máli og 30 m er bara sjálfgefna merkingin**
-  <br>Agnar 09.09.2026: „við erum bara með eitt verð á yfirferð á brunaslöngum sem varð þá bara að 30m default, veit ekki raun lengdina. en er bara eitt verð". verd.md sagði áður að velja þyrfti stærð og segja Agnari frá valinu — óþarfa spurning sem á að hætta.
-  <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
 - **Akstur er 3.600 kr og skýrslugerð 5.600 kr ÁN VSK — window.SlokkVisitDefaults í patch 129 er EINA heimildin; verd.md sagði 3.000/3.500 og var úrelt**
   <br>Athugasemdin í 129 (2026-08-18) segir berum orðum að báðar leiðir (kostnaðartaflan og reikningsleiðin í 165) lesi héðan. Sara-borðið hardkóðaði gömlu tölurnar og sýndi 43.228 kr þar sem appið sagði 48.136 (Hagstál). Lagað 09.09.2026 — borðið les nú SlokkVisitDefaults.
   <br><sub>2026-09-09 · slokkvitaeki · kóði · claude-code</sub>
+- **Það er AÐEINS EITT verð á yfirferð brunaslöngu (4.346 kr án vsk / 5.389 m/vsk) — lengdin skiptir ekki máli og 30 m er bara sjálfgefna merkingin**
+  <br>Agnar 09.09.2026: „við erum bara með eitt verð á yfirferð á brunaslöngum sem varð þá bara að 30m default, veit ekki raun lengdina. en er bara eitt verð". verd.md sagði áður að velja þyrfti stærð og segja Agnari frá valinu — óþarfa spurning sem á að hætta.
+  <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
 - **Duft 9 kg og 12 kg skilgreinast sem 6 kg í bæði skýrslu og reikningsútreikningi — raunstærðin á blaðinu er ekki flokkur**
   <br>Skýrslulínan „Slökkvitæki duft 6-12 kg." nær yfir 6, 9 og 12 kg. Á reikningi fara þau á 6 kg vöruna: 118 Slökkvitæki Duft 6 kg, 135 Yfirferð Duft 6-12 kg, 125 Hleðsla Duft 6-12 kg. Aðeins 2 kg duft er sérflokkur (119 / 126). Staðfest af Agnari 21.08.2026 þegar 9 kg tæki kom upp á Kirkjuvöllum 9. VIÐ
   <br><sub>2026-08-21 · slokkvitaeki · agnar · cowork</sub>
