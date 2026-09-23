@@ -152,6 +152,41 @@
       prefixed('.view table thead th,.view table thead th *,.view table thead .sort-ar'),
       '{color:#fff!important}',
 
+      /* ── 23.09.2026: grái textinn festur í CSS í stað þess að vera lagaður í hverri teikningu ──
+       *
+       * Agnar hefur setið uppi með þennan grámann síðan þemað var smíðað í ágúst. Skannarinn hér
+       * að neðan hefur verið að laga hann — en aðeins EFTIR á, 180 ms eftir hver sýnarskipti, á
+       * hverjum hlut fyrir sig. Þessar reglur gera það sama við fyrstu teikningu: enginn blossi,
+       * enginn kostnaður, og skannarinn finnur ekkert eftir.
+       *
+       * Upprunareglurnar sem gáfu of ljósan tón (allar ætlaðar hvítu spjaldi, lenda á stáli):
+       *     ._devs div.off b   var(--empty) #cbd2dc   js/patches/153-arsskodun.js:3847
+       *     ._devs div.off i   #d8dde4                js/patches/153-arsskodun.js:3848
+       *     ._yr (grunnur)     #aab3c0                js/patches/153-arsskodun.js:3825
+       *     ._av-yr b          #aab3c0                js/patches/157-allir-vidskiptavinir.js:1001
+       *     ._av-yr.none b     #c3cad6                js/patches/157-allir-vidskiptavinir.js:1005
+       *     ._kt               #8a93a5                js/patches/157-allir-vidskiptavinir.js:982
+       *     .vkm-num0          #a1a9b6                js/patches/390-verkstaedi-midar.js:218
+       *     .tbm-sec-n         #2b313c á dökku        js/patches/389-tilbuin-midar.js:561
+       *
+       * HVER VELJARI VAR MÆLDUR á lifandi síðu áður en hann var skrifaður hér: hann hittir
+       * NÁKVÆMLEGA þá hluti sem skannarinn merkti (`[data-cc313]`) og ENGAN annan. Þess vegna
+       * standa :not()-in — án þeirra svertu reglurnar líka hvíta textann á grænu/rauðu/gullnu
+       * ástandspillunum (mælt: ._av-yr b hittir 100, þar af 44 sem MÁ EKKI snerta).
+       */
+      prefixed('.view ._devs div.off b,.view ._devs div.off i'),
+      '{color:' + INK + '!important}',
+      prefixed('.view a._yr._yr-add:not(.on):not(.now):not(.both):not(.inv-only):not(.penda)'),
+      '{color:' + INK + '!important}',
+      prefixed('.view ._av-yr:not(.ok):not(.prev):not(.old) b'),
+      '{color:' + INK + '!important}',
+      prefixed('.view ._av-namecell span._kt'),
+      '{color:' + INK + '!important}',
+      prefixed('.view .vkm-num span.vkm-num0'),
+      '{color:' + INK + '!important}',
+      prefixed('.view .tbm-sec span.tbm-sec-n'),
+      '{color:#fff!important}',
+
       '.nav-section-label{color:rgba(255,255,255,.82)!important}',
       '.vnav-btn{color:rgba(255,255,255,.92)!important}',
       '#gs-trigger{background:#fff!important;color:' + INK + '!important;border:1px solid #cbd5e1!important;opacity:1!important}',
