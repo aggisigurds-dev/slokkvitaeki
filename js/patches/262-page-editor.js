@@ -77,8 +77,19 @@
   try { dock = localStorage.getItem('pe_dock') || 'side'; } catch (_) {}
   let _saveT = null;
   // Skjár-hamur (data-viewmode=desktop) eða breiður gluggi — ekki sími/tafla.
+  // Agnar 23.09 20:55 (skjámynd úr Fjármál-appinu): síminn leggur út 980 px (Tölvusíðu-hamur) svo innerWidth ≥ 900
+  // taldist „tölva" og ritillinn varð 320 px hliðardálkur ofan á síðunni. Alvöru sími/app er ALDREI tölvu-UI hér.
+  function isPhoneLike() {
+    try {
+      if (document.documentElement.classList.contains('slokk-phone-dev')) return true;
+      if (document.body && document.body.classList.contains('appmode')) return true;
+      const short = Math.min(screen.width || 0, screen.height || 0);
+      return (short > 0 && short <= 500) || ((navigator.maxTouchPoints || 0) > 1 && short > 0 && short <= 700);
+    } catch (_) { return false; }
+  }
   function isDesktopUi() {
     try {
+      if (isPhoneLike()) return false;
       const vm = document.documentElement.getAttribute('data-viewmode') || '';
       if (vm === 'desktop') return true;
       if (vm === 'mobile' || vm === 'table') return false;
@@ -565,6 +576,20 @@
       ['Hlý', { 'background': 'linear-gradient(135deg,#fff7ed,#ffedd5)', 'border': '1px solid #fed7aa', 'border-radius': '16px', 'color': '#7c2d12', 'box-shadow': '0 2px 8px rgba(124,45,18,.08)', 'padding': '13px 18px' }],
     ]},
   ];
+  // ── Áferð texta (Agnar 23.09 20:52: „gold metal effect text color“ í Stilla útlit) ──────────────
+  // Málmur sem TEXTALITUR: halli klipptur við letrið (background-clip:text). Gullböndin eru þau sömu og
+  // BOSS-orðmerkið í 261. Setur líka text-shadow:none — skuggi sæist annars gegnum gegnsæja letrið.
+  const TEXT_FX_CLIP = { '-webkit-background-clip': 'text', 'background-clip': 'text', '-webkit-text-fill-color': 'transparent', 'color': 'transparent', 'text-shadow': 'none' };
+  const TEXT_FX = [
+    ['Gull', 'linear-gradient(180deg,#fffbe8 0%,#f9e29a 12%,#e0ad3f 26%,#96631a 40%,#6e4a11 46%,#c99a3f 54%,#f6dd8f 64%,#d3a63f 78%,#8a5c17 90%,#f3dd97 100%)'],
+    ['Silfur', 'linear-gradient(180deg,#ffffff 0%,#e6eaf0 14%,#aab2be 30%,#6d7683 44%,#4e5561 50%,#98a1ad 58%,#eef1f5 70%,#b9c0ca 84%,#7b8390 94%,#e9edf2 100%)'],
+    ['Kopar', 'linear-gradient(180deg,#ffe9d6 0%,#f0b088 14%,#c9702f 30%,#7a3d12 44%,#5a2a0a 50%,#b8672c 58%,#f5c39a 70%,#c97a3a 84%,#6e3410 94%,#f3c8a3 100%)'],
+    ['Brunastál', 'linear-gradient(180deg,#ffd9d6 0%,#f08a82 14%,#c32b24 30%,#6c0d10 44%,#420607 50%,#a51c19 58%,#f4a39c 70%,#b42318 84%,#5a0a0b 94%,#f7bdb7 100%)'],
+  ];
+  function textFxDecls(i) { const fx = TEXT_FX[i]; if (!fx) return null; return Object.assign({ 'background': fx[1] }, TEXT_FX_CLIP); }
+  function textFxPreview(i) { const d = textFxDecls(i); return Object.keys(d).map(k => k + ':' + d[k]).join(';') + ';font-weight:800;font-size:13px;background-color:#1b1d22'; }
+  // Venjulegur litur eða ✕ á Texti hreinsar áferðina — annars héldi gegnsæja letrið sér og liturinn sæist aldrei
+  function clearTextFx() { ['-webkit-background-clip', 'background-clip', '-webkit-text-fill-color', 'text-shadow'].forEach(p => setDecl(p, '')); if (/gradient/.test(getDecl('background') || '')) setDecl('background', ''); }
   function applyPreset(decls) { if (!target) { toast('Veldu hlut fyrst (🎯 Velja)'); return; }
     snapshot(); eachRule(true, r => Object.assign(r.decls, decls)); persist(); renderPanel();
   }
@@ -690,6 +715,7 @@
       '#' + PANEL_ID + ' .pe-row input[type=color]{width:40px;height:28px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;padding:1px;cursor:pointer}',
       '#' + PANEL_ID + ' .pe-row select{flex:1;font:inherit;font-size:12.5px;padding:5px 7px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}',
       '#' + PANEL_ID + ' .pe-presets{display:flex;gap:9px;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pe-textfx{flex-wrap:wrap;gap:6px}#' + PANEL_ID + ' .pe-textfx .pe-chip{min-width:0;padding:6px 10px;border-color:#000;border-radius:7px}',
       '#' + PANEL_ID + ' .pe-chip{all:unset;cursor:pointer;font-size:12px;font-weight:700;padding:7px 12px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;display:inline-flex;align-items:center;justify-content:center;min-width:64px;text-align:center}',
       '#' + PANEL_ID + ' .pe-chip:hover{filter:brightness(1.06)}',
       '#' + PANEL_ID + ' .pe-pgroup{margin:2px 0 8px}',
@@ -708,6 +734,20 @@
       'body.appmode #' + PANEL_ID + ':not(.pe-framed){z-index:2147481500 !important;top:auto !important;bottom:0 !important;max-height:38vh !important}',
       'body.appmode #' + PANEL_ID + '.pe-side:not(.pe-framed){height:auto !important;max-height:38vh !important}',
       'html[data-viewmode="mobile"] #' + PANEL_ID + ':not(.pe-framed){max-height:38vh}',
+      // Sími/app (23.09): alltaf botn-sheet, fingurstærð á stýringum, dokk-takkinn falinn (hliðardálkur á ekki við).
+      ['', ' .pe-row label', ' .pe-btn', ' .pe-seg button', ' .pe-row input[type=color]', ' .pe-row input[type=range]', ' .pe-row select', ' .pe-chip', ' #pe-dock', ' .pe-row', ' .pe-val'].map(X => ('html.slokk-phone-dev #' + PANEL_ID + ':not(.pe-framed)' + X + ',body.appmode #' + PANEL_ID + ':not(.pe-framed)' + X) + ({
+        '': '{left:0!important;right:0!important;top:auto!important;bottom:0!important;width:auto!important;max-width:none!important;height:auto!important;max-height:52vh!important;border-right:0!important;border-top:1px solid #cbd5e1!important;box-shadow:0 -12px 34px -14px rgba(15,23,42,.35)!important;padding:12px 14px 26px!important;font-size:14px}',
+        ' .pe-row label': '{flex-basis:112px;font-size:13.5px}',
+        ' .pe-btn': '{font-size:14px;padding:9px 14px;min-height:40px;box-sizing:border-box}',
+        ' .pe-seg button': '{font-size:13.5px;padding:9px 14px;min-height:38px;box-sizing:border-box}',
+        ' .pe-row input[type=color]': '{width:54px;height:40px}',
+        ' .pe-row input[type=range]': '{height:34px}',
+        ' .pe-row select': '{font-size:14px;padding:9px 10px}',
+        ' .pe-chip': '{font-size:13.5px;padding:9px 13px;min-height:38px;box-sizing:border-box}',
+        ' #pe-dock': '{display:none!important}',
+        ' .pe-row': '{margin:6px 0;gap:10px}',
+        ' .pe-val': '{font-size:14px;min-height:36px}'
+      })[X]).join(''),
       '#' + PANEL_ID + ' .pe-zoom{display:inline-flex;align-items:center;gap:3px;margin-left:auto}',
       '#' + PANEL_ID + ' .pe-zoomv{font-size:12px;font-weight:800;min-width:42px;text-align:center;font-variant-numeric:tabular-nums;color:#334155}',
       '#' + PANEL_ID + ' .pe-step{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin:14px 0 2px}',
@@ -929,6 +969,7 @@
         '</details>' +
         '<details class="pe-sec" open><summary><h4>Litir</h4></summary>' +
           colorRow('Texti', 'color') +
+          '<div class="pe-row pe-textfx"><label>Áferð texta</label>' + TEXT_FX.map((f, i) => '<button class="pe-chip" data-textfx="' + i + '" title="' + esc(f[0]) + ' sem textalitur (málmur)" style="' + textFxPreview(i) + '">' + esc(f[0]) + '</button>').join('') + '<button class="pe-btn" data-textfx="x" title="Hreinsa áferð">✕</button></div>' +
           colorRow('Bakgrunnur', 'background-color') +
           colorRow('Border', 'border-color') +
           '<div class="pe-row"><label>Halli (gradient)</label>' +
@@ -1842,9 +1883,11 @@
     }));
     qa('[data-color]').forEach(inp => inp.addEventListener('input', () => {
       if (inp.dataset.color === 'border-color') setDecl('border-style', 'solid');
+      if (inp.dataset.color === 'color') clearTextFx();
       setDecl(inp.dataset.color, inp.value);
     }));
-    qa('[data-clear]').forEach(b => b.onclick = () => { setDecl(b.dataset.clear, ''); renderPanel(); });
+    qa('[data-clear]').forEach(b => b.onclick = () => { if (b.dataset.clear === 'color') clearTextFx(); setDecl(b.dataset.clear, ''); renderPanel(); });
+    qa('[data-textfx]').forEach(b => b.onclick = () => { if (!target) { toast('Veldu hlut fyrst (🎯 Velja)'); return; } if (b.dataset.textfx === 'x') { snapshot(); clearTextFx(); setDecl('color', ''); renderPanel(); return; } applyPreset(textFxDecls(+b.dataset.textfx)); });
     qa('[data-grad]').forEach(inp => inp.addEventListener('input', setGradient));
     const fs = q('[data-font]'); if (fs) fs.onchange = () => setDecl('font-family', fs.value === '(sjálfgefið)' ? '' : fs.value);
     qa('[data-preset]').forEach(b => b.onclick = () => { const p = b.dataset.preset.split('-'); const g = PRESET_GROUPS[+p[0]]; if (g && g.items[+p[1]]) applyPreset(g.items[+p[1]][1]); });
