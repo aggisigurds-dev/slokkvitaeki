@@ -122,6 +122,16 @@
     r('.co-bupp ._bupp-flis._on,.co-bupp ._bupp-flis.valin,.co-bupp ._bupp-flis[aria-pressed="true"]', 'background:' + METAL_BTN + '!important;border-color:#000!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
     r('.co-bupp ._bupp-tala', 'width:44px!important;text-align:right!important;font-family:' + MONO + '!important'),
 
+
+    /* ── tækjalistinn fær meira pláss en útreikningurinn (Agnar 23.09): 60/40 í stað fastra 780px hægra megin (224) ── */
+    r('.uttekt-cols', 'display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start'),
+    r('.uttekt-col-l,.uttekt-col-r', 'flex:none;width:auto;max-width:none;min-width:0'),
+    r('.uttekt-col-r #_ctc-section table', 'min-width:0!important;width:100%'),
+    r('.uttekt-col-r #_ctc-section table th,.uttekt-col-r #_ctc-section table td', 'padding:6px 6px!important'),
+    r('.uttekt-col-r #_ctc-section table td:last-child,.uttekt-col-r #_ctc-section table th:last-child', 'white-space:nowrap'),
+    r('.uttekt-col-r #_ctc-section table td .inn,.uttekt-col-r #_ctc-section table td input', 'width:64px!important;max-width:64px'),
+    '@media(max-width:1420px){' + S + '.uttekt-cols{grid-template-columns:minmax(0,1fr)}}',
+
     /* ── skeljar ── */
     r('._samskipti-card,.ut-list:not(.b404),._afsl-box,._dyg-section.sk-card:not(.b403),._ufs-section.sk-card,._co-mail-box', SHELL + ';padding:0'),
     r('#_ctc-notes', SHELL.replace('border-radius:14px', 'border-radius:14px 14px 0 0') + '!important;border-bottom:0!important;background:' + PLATE + '!important;background-image:' + PLATE_IMG + '!important;margin:0!important;padding:14px 12px 10px!important;box-shadow:none!important'),
