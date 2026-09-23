@@ -633,7 +633,20 @@
     _sidastaUndirskrift = u;
     teikna();
   }
-  setInterval(fylgjast, 700);
+  // 23.09.2026 (Agnar: „Akstur and hönnunarhamur is popping in and out").
+  // `takki()` keyrði AÐEINS úr `vakta()`, sem hangir á MutationObserver með 300 ms
+  // töf. Takkinn þarf akkeri (`#_bil-toggle` eða `._ars-filterstrip`) og skilar sér
+  // ÞEGJANDI ef það er ekki komið þegar töfin rennur út. Sé síðan þá orðin kyrr —
+  // og hún er það núna, mælt 0 DOM-breytingar á 6 sek eftir að reiptogið 311/403 var
+  // stöðvað — kemur engin næsta breyting til að reyna aftur. Takkinn hverfur við
+  // endurteikningu verkfærastikunnar og kemur ALDREI til baka; hann „poppar" eftir
+  // því hvort tilviljun réð að akkerið væri til staðar.
+  //
+  // Púlsinn sem er þegar að keyra leysir þetta: `takki()` er sjálft sjálfsamhliða
+  // (hættir strax sé takkinn til, og `merkja()` skrifar aðeins þegar textinn breytist
+  // — sú varúð var sett inn 21.09 af nákvæmlega þessari ástæðu), svo þetta kostar eitt
+  // querySelector á 700 ms og getur ekki búið til hávaða.
+  setInterval(() => { try { takki(); } catch (_) {} fylgjast(); }, 700);
   document.addEventListener('slokk-viewmode', vakta);
   new MutationObserver(() => { clearTimeout(window.__hhT); window.__hhT = setTimeout(vakta, 300); })
     .observe(document.body, { childList: true, subtree: true });
