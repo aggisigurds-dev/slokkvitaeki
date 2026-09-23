@@ -111,7 +111,13 @@
         '.view [style*="color:#6b7280"],.view [style*="color: #6b7280"],' +
         '.view [style*="color:#9aa3b3"],.view [style*="color:#8891a0"],' +
         '.view [style*="color:#5b6472"],.view [style*="color:#5b6573"],' +
-        '.view [style*="color:#8a93a5"],.view [style*="color:#9aa1ab"]'),
+        '.view [style*="color:#8a93a5"],.view [style*="color:#9aa1ab"],' +
+        /* 23.09.2026: ljósu „tómt/ekkert"-tónarnir sem þemað skilur eftir ólæsilega.
+         * #cbd2dc er var(--empty) skrifað beint inn (t.d. — strikið í þjónustudálki,
+         * js/patches/157-allir-vidskiptavinir.js:1088). Hinir eru systkini hans. */
+        '.view [style*="color:#cbd2dc"],.view [style*="color: #cbd2dc"],' +
+        '.view [style*="color:#d8dde4"],.view [style*="color:#c3cad6"],' +
+        '.view [style*="color:#aab3c0"],.view [style*="color:#a1a9b6"]'),
       '{color:' + INK_MUTED + '!important}',
 
       /* Translucent white (230 subtitles) on steel → dark ink. */
@@ -186,6 +192,17 @@
       '{color:' + INK + '!important}',
       prefixed('.view .tbm-sec span.tbm-sec-n'),
       '{color:#fff!important}',
+      /* Forgangs-punkturinn án forgangs (175:72 btnHtml — COLORS[0] + opacity .45).
+       * `data-pri="0"` er nákvæmlega sá hópur; punktar MEÐ forgang bera 1/2/3 og halda
+       * sínum lit. Mælt: 44 af 50 — hinir sex mega ekki breytast. */
+      prefixed('.view ._pri-btn[data-pri="0"]'),
+      '{color:' + INK + '!important;opacity:1!important}',
+      /* Kröfu yfirlit — afritunartakkinn og Skýrslu-takkinn í ÓVIRKA ástandinu.
+       * `.on`-útgáfan (31 af 52) er lituð og má ekki breytast; mælt á lifandi síðu. */
+      prefixed('.view button._ky-copy-total'),
+      '{color:' + INK_MUTED + '!important}',
+      prefixed('.view ._ky-skyrsla:not(.on) span.ky-abtn-ico,.view ._ky-skyrsla:not(.on) span.ky-abtn-lbl'),
+      '{color:' + INK + '!important}',
 
       '.nav-section-label{color:rgba(255,255,255,.82)!important}',
       '.vnav-btn{color:rgba(255,255,255,.92)!important}',
