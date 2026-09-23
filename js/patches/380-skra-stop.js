@@ -22,20 +22,54 @@
   let STADA = null;          // Map kt → { stada:[…], nafn }
   let saekir = null;
 
+  // 23.09.2026: skyndiminni í vafranum. Ársskoðun (153) telur afskráð félög EKKI með í
+  // bakstöðunni („🟡 Slepptir í fyrra"), og sú tala er reiknuð um leið og borðið teiknast —
+  // löngu áður en þessi eina sókn skilar sér. Talan stökk því 96 → 91 fyrir augunum á
+  // notandanum við hverja hleðslu. Skráin er opinber og breytist hægt, svo hún er geymd í
+  // localStorage í sólarhring og LESIN SAMSTUNDIS við ræsingu; fersk sókn fer samt af stað
+  // og leiðréttir sig sjálf. Aðeins birting — ekkert er vistað um okkar eigin viðskiptavini.
+  const LYK = 'skra_stada_v1';
+  const DAGUR = 24 * 60 * 60 * 1000;
+  function lesaMinni() {
+    try {
+      const r = JSON.parse(localStorage.getItem(LYK) || 'null');
+      if (!r || !Array.isArray(r.radir) || !(Date.now() - (+r.t || 0) < DAGUR)) return null;
+      return new Map(r.radir.map((x) => [tolur(x.kennitala), x]));
+    } catch (_) { return null; }
+  }
+  function skrifaMinni(m) {
+    try { localStorage.setItem(LYK, JSON.stringify({ t: Date.now(), radir: Array.from(m.values()) })); } catch (_) {}
+  }
+
+  // Skyndiminnið er lesið STRAX við ræsingu (samstundis, engin bið) svo 153 hafi skrána
+  // þegar það telur bakstöðuna í fyrstu teikningu. Fersk sókn fer samt alltaf af stað einu
+  // sinni per lotu og leiðréttir kortið (og skyndiminnið) þegar hún skilar sér.
+  STADA = lesaMinni();
+  let sottALotu = false;
   async function saekja() {
-    if (STADA) return STADA;
-    if (saekir) return saekir;
-    saekir = (async () => {
-      const sb = window.DB && DB.sb;
-      if (!sb) { saekir = null; return null; }
-      try {
-        const r = await sb.from('fyrirtaekjaskra_stada').select('kennitala,nafn,stada').neq('stada', '{}').limit(1000);
-        if (r.error) throw r.error;
-        STADA = new Map((r.data || []).filter((x) => Array.isArray(x.stada) && x.stada.length).map((x) => [tolur(x.kennitala), x]));
-      } catch (e) { console.warn('[380] fyrirtaekjaskra_stada náðist ekki:', e && e.message || e); STADA = new Map(); }
-      return STADA;
-    })();
-    return saekir;
+    if (!sottALotu && !saekir) {
+      sottALotu = true;
+      saekir = (async () => {
+        const sb = window.DB && DB.sb;
+        if (!sb) { saekir = null; sottALotu = false; return STADA; }
+        try {
+          const r = await sb.from('fyrirtaekjaskra_stada').select('kennitala,nafn,stada').neq('stada', '{}').limit(1000);
+          if (r.error) throw r.error;
+          const nytt = new Map((r.data || []).filter((x) => Array.isArray(x.stada) && x.stada.length).map((x) => [tolur(x.kennitala), x]));
+          const breyttist = !STADA || STADA.size !== nytt.size;
+          STADA = nytt;
+          skrifaMinni(nytt);
+          // 153 telur afskráð félög út úr bakstöðunni — breytist skráin, á talan að fylgja.
+          if (breyttist) { try { window.dispatchEvent(new CustomEvent('skra-stada-ferskt')); } catch (_) {} }
+        } catch (e) {
+          console.warn('[380] fyrirtaekjaskra_stada náðist ekki:', e && e.message || e);
+          if (!STADA) STADA = new Map();       // skyndiminnið heldur ef sóknin brást
+        }
+        return STADA;
+      })();
+    }
+    if (STADA && STADA.size) return STADA;     // skyndiminnið dugar — ekki bíða eftir sókninni
+    return saekir || STADA;
   }
 
   function ktFyrir(coId) {

@@ -1189,6 +1189,12 @@
   ['scroll', 'resize'].forEach(ev => window.addEventListener(ev, () => {
     if (_pnrOpen) _pnrPlace();
   }, true));
+  // 23.09.2026: fyrirtækjaskrár-staðan (380) kemur í einni sókn og bakstaðan telur
+  // afskráð félög EKKI með. Sé hún ekki komin þegar borðið teiknast, er talan hærri í
+  // örskamma stund — svo við teiknum EINU SINNI aftur þegar hún lendir. Skráð einu sinni.
+  window.addEventListener('skra-stada-ferskt', () => {
+    try { if (document.getElementById('ars-main') && document.getElementById('_ars-search')) render(); } catch (_) {}
+  });
 
   // Smellur utan gluggans lokar honum. Skráð EINU SINNI á document (ekki í
   // render()) svo hlustendur hlaðist ekki upp við hverja endurteikningu.
