@@ -122,7 +122,7 @@
   }
   // 4) Miðjan (386-flipar, 274-vinnusíða, 386-blað): emoji-tákn í hausum, flipum og tökkum víkja — hönnunin merkir með orðum.
   //    Aðeins textahnútar snertir; ▾ · × ＋ eru ekki emoji og standa. Handlerar (closest('._sks-tab'), data-*) ósnertir.
-  var MIDJA_SEL = '#_sks-tabs ._sks-tab,#_sks-host ._sks-hd h2,#_sks-host .khd b,#_sks-host ._sks-btn,#_sks-bru ._bkc-herot,#_sks-bru ._bkc-lbl,#_sks-bru ._bkc-ch,#_sks-bru ._bkc-act,#_sks-bru ._bkc-new,#_sks-bru #_bkr-link';
+  var MIDJA_SEL = '.b405-knappur,#_sks-tabs ._sks-tab,#_sks-host ._sks-hd h2,#_sks-host .khd b,#_sks-host ._sks-btn,#_sks-bru ._bkc-herot,#_sks-bru ._bkc-lbl,#_sks-bru ._bkc-ch,#_sks-bru ._bkc-act,#_sks-bru ._bkc-new,#_sks-bru #_bkr-link';
   function ensureMidja(main) {
     var els = main.querySelectorAll(MIDJA_SEL); if (!els.length) return;
     for (var i = 0; i < els.length; i++) {

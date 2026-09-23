@@ -87,6 +87,7 @@
     if (!B || !B.openForm || B.__bks408) return !!B;
     const orig = B.openForm;
     B.openForm = function () {
+      if (ovRef) ovRef.hidden = false;   // sjá tick(): falið með hidden eftir hash-skipti
       const bru = scope() ? bruHost() : null;
       const r = orig.apply(this, arguments);
       if (bru) { try { if (hostIn(bru)) watchClose(ovRef); } catch (e) { console.warn('[408] hýsing', e); } }
@@ -105,7 +106,8 @@
     if (!wrap()) return;
     if (ovRef && ovRef.classList.contains('_sks-inni') && !ovRef.isConnected) {
       ovRef.classList.remove('_sks-inni');
-      ovRef.style.display = 'none';
+      // hidden-eigind, EKKI style: 274 vaktar style-breytingar formsins og les #_bkc-overlay sem er þá horfið með prófílnum (TypeError)
+      ovRef.hidden = true;
       document.body.appendChild(ovRef);
       document.body.style.overflow = '';
     }
