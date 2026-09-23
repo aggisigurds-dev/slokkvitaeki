@@ -101,8 +101,38 @@
   //
   // EKKI í `.bb-rightwrap`: patch 405 (borði-hnappar, sami dagur) mældi þá leið og hafnaði henni — 314 og mobile.css
   // fela þá umgjörð í Síma-ham, svo allt sem fer þangað inn hverfur á síma. 166:451 og 262:2141 segja hið sama.
+  // Hinir borða-hnapparnir (#_ky-vm-toggle úr 166, #_pe-btn úr 262) eru settir inn EFTIR að þessi patch keyrir, og
+  // patch 405 gefur þeim `margin-left:auto` svo þeir hópast við klukkuna. Væri okkar hnappur skilinn eftir þar sem
+  // hann lenti fyrst sæti hann einn úti á miðjum borða. Þess vegna er sætið leiðrétt þar til röðin er komin — með
+  // ÞAKI, því 405 mældi að endalaus færsla á hnútum í borðanum varð að slag (156 DOM-breytingar á 4 sek).
+  // Á síma er hnappurinn FALINN. Tvær ástæður, báðar mældar:
+  //   • hann stóð út fyrir skjáinn á 375 px (hægri brún 392) — borðinn hefur ekkert pláss aflögu þar;
+  //   • þetta er vinnutölvu-fítus. 378 segir það sjálfur: „ekki í síma á 4G, þetta heldur ~14 MB í minni."
+  function stíll() {
+    if (document.getElementById('hledslutakki-css')) return;
+    const st = document.createElement('style');
+    st.id = 'hledslutakki-css';
+    st.textContent = '@media (max-width:900px){#' + AUÐK + '{display:none!important}}\n'
+                   + 'html[data-viewmode="mobile"] #' + AUÐK + '{display:none!important}';
+    (document.head || document.documentElement).appendChild(st);
+  }
+
+  let færslur = 0;
+  function réttSæti() {
+    const b = takki();
+    if (!b || færslur > 30) return;
+    const face = b.parentElement;
+    if (!face) return;
+    const klukka = face.querySelector(':scope > .bb-rightwrap');
+    if (!klukka) return;
+    if (b.nextElementSibling === klukka) return;   // þegar rétt — engin snerting
+    face.insertBefore(b, klukka);
+    færslur++;
+  }
+
   function setja() {
-    if (takki()) return;
+    stíll();
+    if (takki()) { réttSæti(); return; }
     const face = document.querySelector('#bstal-banner .bb-face');
     if (!face) return;
     const hýsill = face;
