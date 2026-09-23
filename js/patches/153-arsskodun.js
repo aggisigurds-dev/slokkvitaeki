@@ -204,9 +204,15 @@
     catch (_) {}   // t.d. QuotaExceeded — snapshot er bara hraðabót
   }
 
-  async function loadAll() {
+  // 23.09.2026 (Agnar: „reyna koma í veg fyrir multiloade"): fjórir kallarar (190 Þjónustuverkstæði, 304 Fjármál-LIVE,
+  // show() og bakgrunns-endurnýjun) gátu ræst hleðsluna á sömu sekúndu — hver sótti ALLT mengið og síðasta svarið yfirskrifaði
+  // hin. Nú deila samtíma kallarar EINNI sókn; sá sem kallar EFTIR að henni lauk fær ferska hleðslu eins og áður.
+  let _loadP = null;
+  function loadAll() {
+    if (_loadP) return _loadP;
     _loadingAll = true;
-    try { return await _loadAllInner(); } finally { _loadingAll = false; }
+    _loadP = (async () => { try { return await _loadAllInner(); } finally { _loadingAll = false; _loadP = null; } })();
+    return _loadP;
   }
   async function _loadAllInner() {
     // 08.09.2026: við ræsingu getur DB.sb verið óstofnað þegar fyrsta bakgrunns-sóknin
@@ -1562,12 +1568,33 @@
 
   // 08.09.2026: ein regla um „teikna ef gögnin breyttust" — kölluð úr backgroundRefresh OG
   // í lok hverrar hleðslu (_loadAllInner). Snertir ekki ferðanótu í ritun.
+  // 23.09.2026: teikning í bakgrunni má ALDREI kippa reitnum undan þeim sem er að skrifa. Áður var aðeins ferðanótan
+  // varin; mánaðarval, leit og hakreitir duttu. Nú bíður teikningin þar til fókus fer úr reitnum — og keyrir þá strax.
+  function erAdSkrifa() {
+    try {
+      const a = document.activeElement, m = document.getElementById('ars-main');
+      return !!(a && m && m.contains(a) && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable));
+    } catch (_) { return false; }
+  }
+  let _bidTeikning = false;
+  function teiknaEftirInnslatt() {
+    if (_bidTeikning) return;
+    _bidTeikning = true;
+    const kveikt = () => {
+      if (erAdSkrifa()) return;                      // fór í annan reit — bíða áfram
+      document.removeEventListener('focusout', seinna, true);
+      _bidTeikning = false;
+      try { repaintIfChanged(); } catch (_) {}
+    };
+    const seinna = () => setTimeout(kveikt, 60);     // focusout kemur ÁÐUR en nýi reiturinn fær fókus
+    document.addEventListener('focusout', seinna, true);
+  }
   function repaintIfChanged() {
     try {
       if (!_rendered || !document.getElementById('ars-main') || !document.getElementById('_ars-search')) return;
       const ns = dataSig();
-      const _editingNote = document.activeElement && document.activeElement.classList
-        && document.activeElement.classList.contains('_ars-plannote');
+      const _editingNote = erAdSkrifa();
+      if (ns !== _lastDataSig && _editingNote) { teiknaEftirInnslatt(); return; }
       if (ns !== _lastDataSig && !_editingNote) { render(); _lastDataSig = ns; }
     } catch (e) { try { console.warn('[arsskodun] repaintIfChanged', e); } catch (_) {} }
   }
@@ -1594,8 +1621,8 @@
       // Ekki endurteikna (sópa burt röðum) á meðan notandi skrifar í ferðanótu —
       // textinn hyrfi úr reitnum. Sleppum þessari umferð; _lastDataSig stendur óbreytt
       // svo næsta refresh teiknar þegar reiturinn er ekki lengur í fókus.
-      const _editingNote = document.activeElement && document.activeElement.classList
-        && document.activeElement.classList.contains('_ars-plannote');
+      const _editingNote = erAdSkrifa();
+      if (ns !== _lastDataSig && _editingNote) { teiknaEftirInnslatt(); }
       // 08.09.2026: sjáanlegt í console hvort bakgrunns-sóknin teiknaði — „Búið"-talan
       // sat föst á snapshot-gildinu og enginn vissi hvers vegna. Þögul catch var hluti.
       try { console.info('[arsskodun] bg-refresh', { changed: ns !== _lastDataSig, editing: !!_editingNote, active: document.activeElement && (document.activeElement.className || document.activeElement.tagName) }); } catch (_) {}
@@ -1778,6 +1805,36 @@
     const selStart = keepSearchFocus ? prevActive.selectionStart : null;
     const selEnd = keepSearchFocus ? prevActive.selectionEnd : null;
     if (!main) return;
+    // 23.09.2026 (Agnar: „hindra hopp þegar maður er að ýta á eitthvað eða stimpla inn"): render() skiptir út ÖLLU
+    // innihaldi listans. Allt sem hékk í því hvarf — skrunstaðan (líka lárétta skrunið á símanum), fókus í reit sem
+    // verið var að skrifa í og textavalið. AÐEINS leitarreiturinn var varinn. Staðan er nú tekin hér og sett aftur
+    // strax á eftir innerHTML, í sama tifi, svo skjárinn sjái aldrei millistöðuna.
+    const _skrunarar = [];
+    try {
+      let n = main;
+      while (n && n !== document.body) {
+        const st = getComputedStyle(n);
+        if (/(auto|scroll)/.test(st.overflowY + ' ' + st.overflowX)) _skrunarar.push([n, n.scrollTop, n.scrollLeft]);
+        n = n.parentElement;
+      }
+      const rot = document.scrollingElement || document.documentElement;
+      if (rot) _skrunarar.push([rot, rot.scrollTop, rot.scrollLeft]);
+    } catch (_) {}
+    // Lárétta skrunið í töflunni sjálfri: hnúturinn er endurnýjaður, svo staðan er sett aftur eftir SELECTOR.
+    let _tblSkrun = null;
+    try { const t = main.querySelector('._ars-tblscroll'); if (t && (t.scrollLeft || t.scrollTop)) _tblSkrun = [t.scrollLeft, t.scrollTop]; } catch (_) {}
+    // Fókus í HVAÐA reit sem er (ferðanóta, mánuður, haki) — ekki bara leitin.
+    let _fokus = null;
+    try {
+      if (prevActive && !keepSearchFocus && main.contains(prevActive) && /^(INPUT|TEXTAREA|SELECT)$/.test(prevActive.tagName)) {
+        _fokus = {
+          id: prevActive.id || '',
+          kl: String(prevActive.className || '').split(' ').filter(Boolean)[0] || '',
+          co: prevActive.getAttribute('data-co') || prevActive.getAttribute('data-co-id') || '',
+          s: prevActive.selectionStart, e: prevActive.selectionEnd,
+        };
+      }
+    } catch (_) {}
     const all = _cache.list;
     const filtered = filteredSorted();
     // 2026-07-06: the app-wide view-mode toggle (Sími / Tafla / Skjár,
@@ -2630,6 +2687,22 @@
       setTimeout(_restore, 340);
     }));
 
+    // Skrun og fókus aftur á sinn stað — sama tifi og teikningin, svo ekkert hopp sjáist.
+    try { _skrunarar.forEach(([el, t, l]) => { if (el && el.isConnected) { if (t) el.scrollTop = t; if (l) el.scrollLeft = l; } }); } catch (_) {}
+    if (_tblSkrun) { try { const t = main.querySelector('._ars-tblscroll'); if (t) { t.scrollLeft = _tblSkrun[0]; t.scrollTop = _tblSkrun[1]; } } catch (_) {} }
+    if (_fokus) {
+      try {
+        let el = _fokus.id ? main.querySelector('#' + (window.CSS && CSS.escape ? CSS.escape(_fokus.id) : _fokus.id)) : null;
+        if (!el && _fokus.kl) {
+          const kl = '.' + (window.CSS && CSS.escape ? CSS.escape(_fokus.kl) : _fokus.kl);
+          el = (_fokus.co && (main.querySelector(kl + '[data-co="' + _fokus.co + '"]') || main.querySelector(kl + '[data-co-id="' + _fokus.co + '"]'))) || null;
+        }
+        if (el && el.focus) {
+          el.focus({ preventScroll: true });
+          if (_fokus.s != null && el.setSelectionRange) { try { el.setSelectionRange(_fokus.s, _fokus.e); } catch (_) {} }
+        }
+      } catch (_) {}
+    }
     if (keepSearchFocus) {
       const fresh = main.querySelector('#_ars-search');
       if (fresh) {

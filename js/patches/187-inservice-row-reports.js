@@ -169,9 +169,7 @@
         (map[String(x.fyrirtaeki_id)] = map[String(x.fyrirtaeki_id)] || {})[String(x.ar)] = { nr: x.nr || '', dags: x.dags || '' };
       });
       invMap = map;
-      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
-      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-      process(); gognLent();
+      endurbyggjaArsreiti(); gognLent();
     } catch (_) {}
     invLoading = false;
   }
@@ -208,9 +206,7 @@
       });
       locMap = map; locAt = atMap;
       // rebuild the year cells so location-precise links replace kt-wide ones
-      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
-      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-      process(); gognLent();
+      endurbyggjaArsreiti(); gognLent();
     } catch (_) {}
     locLoading = false;
   }
@@ -276,9 +272,7 @@
       }
       reikMap = { byCo, byKtOrphan, bySolurCo };
       // rebuild the year cells so the new 🧾 markers appear
-      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
-      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-      process(); gognLent();
+      endurbyggjaArsreiti(); gognLent();
     } catch (_) {}
     reikLoading = false;
   }
@@ -294,9 +288,7 @@
         (meta[String(x.co_id)] = meta[String(x.co_id)] || {})[String(x.year)] = { at: Date.parse(x.updated_at) || 0, human: !!x.human_by };
       });
       fcMap = map; fcMeta = meta;
-      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
-      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-      process(); gognLent();
+      endurbyggjaArsreiti(); gognLent();
     } catch (_) {}
     fcLoading = false;
   }
@@ -331,9 +323,7 @@
         (map[String(x.fyrirtaeki_id)] = map[String(x.fyrirtaeki_id)] || new Set()).add(String(x.year));
       });
       pairMap = map;
-      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
-      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-      process(); gognLent();
+      endurbyggjaArsreiti(); gognLent();
     } catch (_) {}
     pairLoading = false;
   }
@@ -343,6 +333,20 @@
   let _fyrstVakid = 0, _sidastVakid = 0;
   // Lesendur sem teikna SJÁLFIR úr yearInfo() (317 Bílstjóri) sjá ekki DOM-breytingu þegar gögn lenda — þeir hlusta á þetta.
   function gognLent(){ try { document.dispatchEvent(new CustomEvent('irr-gogn')); } catch (_) {} }
+  // 23.09.2026 (Agnar: „hálfgert blikk glitz … hindra hopp … eins steady og hægt er"): hver hleðslari sem lenti RIFTI
+  // ÖLLUM árs-reitunum út úr töflunni (mælt: 201 reitir) og byggði þá aftur — fimm hleðslarar + tif = sami dansinn
+  // aftur og aftur. Meðan reitirnir voru horfnir er taflan MJÓRRI, svo dálkarnir hoppa til og merkin blikka.
+  // Nú: ein samandregin endurbygging (60 ms gluggi) og reitirnir UPPFÆRÐIR Á STAÐNUM — enginn hnútur fjarlægður,
+  // engin breidd breytist, og reitur sem er óbreyttur er ekki snertur. Rökin sjálf (hvaða ár er grænt) eru ÓSNERTIN.
+  let _thvingaReiti = false, _bidEndur = null;
+  function endurbyggjaArsreiti() {
+    clearTimeout(_bidEndur);
+    _bidEndur = setTimeout(() => {
+      _bidEndur = null;
+      _thvingaReiti = true;
+      try { process(); } finally { _thvingaReiti = false; }
+    }, 60);
+  }
   function vekjaHledslu(){
     if (locMap && fcMap && invMap && pairMap && reikMap) return;
     const nu = Date.now();
@@ -412,8 +416,11 @@
     const _curMonth = new Date().getMonth() + 1;
 
     // 2) each company row — add the four year cells at the same position
-    document.querySelectorAll('tr._ars-row:not([data-yrcol])').forEach(tr => {
+    document.querySelectorAll(_thvingaReiti ? 'tr._ars-row' : 'tr._ars-row:not([data-yrcol])').forEach(tr => {
       tr.setAttribute('data-yrcol','1');
+      // Reitir raðarinnar eins og þeir standa NÚNA — uppfærðir á staðnum hér að neðan í stað þess að vera endurnýjaðir.
+      const _fyrriReitir = Array.prototype.slice.call(tr.querySelectorAll('td[data-yrcell]'));
+      let _iReitur = 0;
       const coId = String(tr.getAttribute('data-co-id'));
       const c = byId[coId];
       const kt = c ? digits(c.kennitala) : '';
@@ -553,7 +560,12 @@
         } else {
           td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(false) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Hengja skýrslu við ' + y + '">' + yy + '</a>', false);
         }
-        tr.insertBefore(td, ref);
+        const gamall = _fyrriReitir[_iReitur++];
+        if (gamall && gamall.isConnected) {
+          if (gamall.innerHTML !== td.innerHTML) gamall.innerHTML = td.innerHTML;   // sami hnútur, aðeins innihald
+        } else {
+          tr.insertBefore(td, ref);
+        }
       });
     });
   }
@@ -677,9 +689,7 @@
       fcMap[String(coId)] = fcMap[String(coId)] || {};
       if (next === null) delete fcMap[String(coId)][String(year)];
       else fcMap[String(coId)][String(year)] = next;
-      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
-      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(r => r.removeAttribute('data-yrcol'));
-      process();
+      endurbyggjaArsreiti();
       // 2026-08-17: láta 153 vita — „Skoðað <ár>"-staðan fylgir nú litnum á
       // árs-merkinu (isDoneYear les year_factcheck), svo hún á að uppfærast strax.
       try { document.dispatchEvent(new Event('attachment-year-changed')); } catch (_) {}
@@ -725,9 +735,7 @@
   // the fact-check map from the table and rebuild all year cells.
   document.addEventListener('attachment-year-changed', () => {
     loadFc(true);   // re-pulls year_factcheck, then process() inside
-    document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
-    document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
-    process();
+    endurbyggjaArsreiti();
   });
 
   // Interval: the list patch rebuilds on sort/filter; new thead/rows lack the
