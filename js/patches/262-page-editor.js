@@ -64,6 +64,21 @@
 
   let state = { rules: [], bg: { all: null, pages: {} }, favs: [], zones: {}, zoom: {} };
   let target = null;        // currently selected DOM element
+  // Agnar 23.09 21:03 (sími, Kröfu yfirlit): „Velja hlut … just falls out of chosen“. Síðurnar endurteikna listana
+  // sína (innerHTML) — m.a. þegar stillingar vistast — og þá er valdi hnúturinn ekki lengur í trénu: veljarinn
+  // reiknaðist af lausum hnút (engin sýn → gildissvið 'all', stubbur af slóð) og næsta breyting lenti hvergi.
+  // Nú er veljarinn og sýnin geymd við val, og hnúturinn fundinn aftur með þeim áður en nokkuð er lesið eða skrifað.
+  let targetSel = null, targetVid = null;
+  function rememberTarget(el) { try { targetSel = el ? relSelector(el, false) : null; targetVid = el ? viewIdOf(el) : null; } catch (_) { targetSel = null; targetVid = null; } }
+  function resolveTarget() {
+    if (!target || target.isConnected || !targetSel) return target;
+    try {
+      const root = (targetVid && document.getElementById(targetVid)) || document;
+      const nt = root.querySelector(targetSel);
+      if (nt) target = nt;
+    } catch (_) {}
+    return target;
+  }
   let picking = false;      // element-pick mode
   let scope = 'page';       // 'page' | 'all'
   let matchMode = 'one';    // 'one' = just this element, 'many' = every matching element (tag+class, no nth-of-type)
@@ -134,13 +149,23 @@
   // beðið eftir henni né niðurstaðan lesin. Allar stílbreytingar (CSS-yfirskriftir,
   // svæði, uppáhöld, útgáfur) gátu því horfið ÞÖGULT: útlitið hélst á skjánum af
   // því applyCss keyrði, en við næstu hleðslu var allt komið til baka.
+  // 23.09.2026 (Agnar, sími, Kröfu yfirlit: „Velja hlut … just falls out of chosen“): reglan komst á þjóninn en
+  // AppSettings.onChange — sem aðrar síður kveikja oft (166 vistar sjálf) — kallaði loadState() úr skyndiminni sem
+  // var enn GAMALT, og yfirskrifaði ástandið í minni: reglan hvarf úr CSS-inu þótt hún sæti á þjóninum. Mælt 23.09:
+  // __peColorSels bar veljann en _pe-overrides ekki. Meðan breyting bíður vistunar, eða rétt eftir eigin vistun,
+  // er ekkert endurhlaðið — okkar ástand er það nýjasta.
+  let _lastSaveAt = 0, _dirty = false;
+  function ownChangeInFlight() { return !!_saveT || _dirty || (Date.now() - _lastSaveAt) < 2500; }
   function persist() {
     applyCss();
+    _dirty = true;
     if (_saveT) clearTimeout(_saveT);
     _saveT = setTimeout(async () => {
+      _saveT = null;
       let ok = false;
       try { ok = !!(window.AppSettings && AppSettings.save && await AppSettings.save({ [KEY]: JSON.stringify(state) })); }
       catch (_) { ok = false; }
+      _lastSaveAt = Date.now(); _dirty = false;
       if (!ok) {
         try { if (window.logProblem) window.logProblem('page_editor_save_failed', 'AppSettings.save(' + KEY + ') skilaði ekki árangri'); } catch (_) {}
         toast('⚠ Stílbreytingin vistaðist EKKI — hún hverfur við næstu hleðslu. Reyndu aftur.');
@@ -218,6 +243,7 @@
     return r;
   }
   function currentRule(create) {
+    resolveTarget();
     if (!target) return null;
     return ruleFor(relSelector(target, matchMode === 'many'), targetScope(), create);
   }
@@ -881,6 +907,7 @@
   function applyPeViewMode(mode) { applyPlatView(mode); }
   function renderPanel() {
     const p = document.getElementById(PANEL_ID); if (!p) return;
+    resolveTarget();
     extraTargets = extraTargets.filter(el => el && el.isConnected && el !== target);
     const targetLbl = target ? relSelector(target, matchMode === 'many') + (extraTargets.length ? '  (+' + extraTargets.length + ' valdir)' : '') : '';
     const scopeSeg = '<div class="pe-seg" title="Vista breytingu á þessari síðu eingöngu, eða öllum síðum"><button data-scope="page"' + (scope === 'page' ? ' class="on"' : '') + '>Þessi síða</button>' +
@@ -1847,12 +1874,12 @@
     const pp = q('#pe-parent'); if (pp) pp.onclick = () => {
       const par = target && target.parentElement;
       if (par && par !== document.body && par !== document.documentElement) {
-        target = par; highlight(par); setTimeout(hideHighlight, 900); renderPanel();
+        target = par; rememberTarget(par); highlight(par); setTimeout(hideHighlight, 900); renderPanel();
       }
     };
     const pt = q('#pe-pick-table'); if (pt) pt.onclick = () => {
       const tb = target && target.closest && target.closest('table');
-      if (tb) { target = tb; extraTargets = []; highlight(tb); setTimeout(hideHighlight, 900); renderPanel(); }
+      if (tb) { target = tb; rememberTarget(tb); extraTargets = []; highlight(tb); setTimeout(hideHighlight, 900); renderPanel(); }
     };
     const pk = q('#pe-pick'); if (pk) pk.onclick = () => setPicking(!picking);
     const mu = q('#pe-multi'); if (mu) mu.onclick = () => {
@@ -1861,7 +1888,7 @@
       if (!multiPick) extraTargets = [];
       renderPanel();
     };
-    const up = q('#pe-unpick'); if (up) up.onclick = () => { target = null; extraTargets = []; hideHighlight(); renderPanel(); };
+    const up = q('#pe-unpick'); if (up) up.onclick = () => { target = null; targetSel = null; targetVid = null; extraTargets = []; hideHighlight(); renderPanel(); };
     const bg = q('#pe-bg'); if (bg) bg.onclick = pickBackground;
     qa('[data-zoom]').forEach(b => b.onclick = () => setZoom(+b.dataset.zoom));
     const rs = q('#pe-reset'); if (rs) rs.onclick = resetMenu;
@@ -2054,7 +2081,7 @@
       renderPanel();   // picking helst Á — hægt að smella áfram
       return;
     }
-    target = el;
+    target = el; rememberTarget(el);
     if (!multiPick) setPicking(false);
     // keep the highlight on the chosen element briefly
     highlight(el); setTimeout(hideHighlight, 700);
@@ -2278,7 +2305,7 @@
     document.addEventListener('mousemove', onMove, true);
     document.addEventListener('click', onPick, true);
     // re-hydrate overrides once settings sync from the DB
-    try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => { loadState(); applyCss(); renderPageLinks(true); applyZones(); }); } catch (_) {}
+    try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => { if (ownChangeInFlight()) { applyCss(); return; } loadState(); applyCss(); renderPageLinks(true); applyZones(); }); } catch (_) {}
     // Svæða-stillingarnar (bannerhæð, faldar síur, KPI-spjöld) sitja á DOM-inu
     // sjálfu, ekki í CSS-reglunum — þær þarf því að keyra aftur í hvert sinn sem
     // síða er teiknuð upp á nýtt. Ódýrt: hvert spjald hættir strax ef ekkert

@@ -3085,8 +3085,13 @@
     }
     stripPeOverridesDom();
   }
-  watchPeOverrides();
-  [400, 1500, 4000, 9000].forEach(function (ms) { setTimeout(scrubKrofuPageEditor, ms); });
+  // 23.09.2026 (Agnar, sími: „Velja hlut … just falls out of chosen“): hreinsunin frá 25.08 var einnota lagfæring á
+  // slysamálningu en varð varanleg — hún strípaði HVERJA Stílstjóra-reglu með gildissvið þessarar síðu úr #_pe-overrides
+  // innan 100 ms (MutationObserver) og eyddi þeim af þjóninum við hverja hleðslu. Ritillinn gat því aldrei stílað
+  // Kröfu yfirlit, sama hvað valið var. Slysamálningin er löngu farin af þjóninum; hreinsunin er nú SLÖKKT og
+  // Stílstjórinn gildir hér eins og á öðrum síðum. Föllin standa til að hægt sé að kveikja á þeim aftur ef þarf.
+  window.__kyPeScrubDone = true;
+  // watchPeOverrides(); [400, 1500, 4000, 9000].forEach(function (ms) { setTimeout(scrubKrofuPageEditor, ms); });
   try {
     if (window.AppSettings && typeof AppSettings.onChange === 'function') {
       AppSettings.onChange(function () {
