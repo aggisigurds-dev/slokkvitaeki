@@ -47,6 +47,15 @@
       W + 'div:has(>.ky-card-rows)>div:first-child a{color:#ffd27a!important}',
       W + 'div:has(>.ky-card-rows)>div:first-child small{color:#aeb6c4!important}',
 
+      // ── Hausinn í appinu ────────────────────────────────────────────────
+      // Miðakerfis-hausinn (kym-head) er hannaður fyrir DÖKKA bandið efst á
+      // Skjá-sýninni: titillinn er hvítur. Í appinu er flöturinn ljósgrár og
+      // hvítt á ljósgráu er ólæsilegt (mælt 23.09: rgb(255,255,255) á #9ba1ad).
+      // Hausinn fær því sitt eigið málmspjald — sama efni og hitt á síðunni.
+      W + '.kym-head{background-image:' + STRIPE + METAL + '!important;background-color:#0a0a0c!important;border:1px solid #23262c!important;border-top:3px solid #971515!important;border-radius:2px!important;padding:14px 16px!important;margin-bottom:12px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 26px -18px rgba(0,0,0,.75)!important}',
+      W + '.kym-title{font-size:30px!important;line-height:1!important;color:#fff!important}',
+      W + '.kym-head .kym-sub,' + W + '.kym-head p,' + W + '.kym-head>div>div{color:#c9d0db!important}',
+
       // ── Lykiltölu-reitirnir efst ────────────────────────────────────────
       // Agnar 23.09: „þessir ljósu gulu bláu eru hræðilegir. Reyndu að setja
       // desktop stílinn á það." Hér koma sömu málmspjöld og á Skjá: dökkur

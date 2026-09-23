@@ -344,6 +344,16 @@
     const m = document.documentElement.dataset.viewmode;
     return VM_MODES.indexOf(m) >= 0 ? m : 'desktop';
   }
+  // 23.09.2026 (Agnar: „Kröfuyfirlit er einhvernveginn allt önnur útgáfa en þín nýja.
+  // Geturðu kannski bara gert nýja útgáfu af þinni síðu í öpp mode"): Miðakerfis-
+  // sýnin var læst við Skjá, og getViewMode() skilar ALLTAF mobile í appinu — þess
+  // vegna sá hann gömlu röðina þar. Nú ræður erMid() og appið fær sömu síðu og Skjár.
+  // Markupið er þegar svarhæft: @container(max-width:1080px) brýtur kym-row í línur
+  // og @media(max-width:760px) setur lykiltölurnar í einn dálk.
+  function erMid() {
+    try { if (inAppMode()) return true; } catch (_) {}
+    return getViewMode() === 'desktop';
+  }
   function loadViewMode() {
     // App-ham þvingar 'mobile' — en snertir EKKI vistaða vafra-valið (applyViewMode
     // sleppir localStorage í app-ham) svo Sími/Tafla/Skjár í hubbinu helst óbreytt.
@@ -1719,7 +1729,7 @@
     // 22.09.2026: Skjár-sýnin (desktop) í Miðakerfinu — sjá renderCompanyMidar.
     // Sími (renderCompany) og Tafla (renderTable) eru óbreytt; allir takkar bera
     // sömu _ky-* klasa svo tengingin hér fyrir neðan á við allar þrjár.
-    const MID = getViewMode() === 'desktop';
+    const MID = erMid();
     if (MID) {
       injectMidarStyle();
       const shownTotal = shown.reduce((a, g) => a + (g.sum || 0), 0);
@@ -3245,7 +3255,7 @@
 
   function hvSectionHtml(titill, undirtitill, rows, litur, bg, bd) {
     const total = hvSum(rows);
-    if (getViewMode() === 'desktop') {
+    if (erMid()) {
       // Miðakerfið (22.09.2026): ferkantaður hluti með litaðri brún efst.
       return `
       <section class="kym-hvsec" style="--kym-tone:${bd}">
@@ -3288,7 +3298,7 @@
     const felogKr = hvSum(felog), nofnKr = hvSum(nofn);
     const sottN = felog.concat(nofn).filter(s => hvSott(s).found).length;
 
-    if (getViewMode() === 'desktop') {
+    if (erMid()) {
       // Miðakerfið (22.09.2026) — sami haus + flipaborði og hinar fjórar sýnirnar.
       injectMidarStyle();
       main.innerHTML = `
