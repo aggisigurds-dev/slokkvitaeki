@@ -70,7 +70,7 @@
       var mi = el('button', 'b405-mi' + (it.danger ? ' eyda' : '')); mi.type = 'button'; mi.setAttribute('role', 'menuitem');
       mi.innerHTML = (it.icon || '') + '<span>' + labelFor(orig) + '</span>';
       orig.classList.add('b405-orig'); mi.appendChild(orig);
-      mi.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); closeAll(); orig.click(); });
+      mi.addEventListener('click', function (ev) { if (orig === ev.target || orig.contains(ev.target)) return; ev.preventDefault(); ev.stopPropagation(); closeAll(); orig.click(); });
       if (it.danger && menu.children.length) menu.appendChild(el('div', 'b405-skil'));
       menu.appendChild(mi);
     });
@@ -97,6 +97,18 @@
     if (title) title.insertAdjacentElement('afterend', box); else head.insertBefore(box, head.firstChild);
   }
 
+  // 3) Fyrirtækjaspjaldið (hönnun C): staðreyndalínurnar (heimilisfang/sími/netfang, fyrirtækjaskrá, skýrslu-samantekt)
+  //    færast úr málmhausnum í hvítar línur vinstra megin við loftmyndina. features.js setur .co-banner-skra og
+  //    .co-banner-skyrsla inn ASYNC á eftir .co-banner-facts — lendi þær í hausnum eftir á færir vaktin þær hingað.
+  function ensureBanner(main) {
+    var banner = main.querySelector('.co-banner'); if (!banner) return;
+    var box = banner.querySelector(':scope > .b405-facts');
+    var parts = ['.co-banner-facts', '.co-banner-skra', '.co-banner-skyrsla'];
+    var any = parts.some(function (sel) { var e = banner.querySelector(sel); return e && (!box || !box.contains(e)); });
+    if (!any) return;
+    if (!box) { box = el('div', 'b405-facts'); var mynd = banner.querySelector(':scope > .co-mynd'); if (mynd) banner.insertBefore(box, mynd); else banner.appendChild(box); }
+    parts.forEach(function (sel) { var e = banner.querySelector(sel); if (e && !box.contains(e)) box.appendChild(e); });
+  }
   var timer = null;
   function tick() {
     if (!scope()) return;
@@ -106,6 +118,7 @@
       var row = editBtn && editBtn.parentElement;
       if (row && row.parentElement && row.parentElement.parentElement === main) { row.classList.add('b405-rod'); ensureMenu(row); ensurePlate(main, row); }
       ensureSamskipti(main);
+      ensureBanner(main);
     } catch (err) { console.error('[405]', err); }
   }
   function schedule() { clearTimeout(timer); timer = setTimeout(tick, 0); }

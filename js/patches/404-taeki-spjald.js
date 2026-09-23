@@ -61,7 +61,7 @@
       mi.type = 'button'; mi.setAttribute('role', 'menuitem');
       mi.innerHTML = (it.icon || '') + '<span>' + it.label + '</span>' + (it.on ? ICON.check : '');
       it.orig.classList.add('b404-orig'); mi.appendChild(it.orig);
-      mi.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); closeAll(); it.orig.click(); });
+      mi.addEventListener('click', function (ev) { if (it.orig === ev.target || it.orig.contains(ev.target)) return; ev.preventDefault(); ev.stopPropagation(); closeAll(); it.orig.click(); }); // gervi-smellurinn bólar upp í document-hlustara 224
       menu.appendChild(mi);
     });
     wrap.appendChild(btn); wrap.appendChild(menu);

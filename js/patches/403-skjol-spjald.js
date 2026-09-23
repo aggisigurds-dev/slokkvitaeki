@@ -92,6 +92,9 @@
       mi.innerHTML = (it.icon || '') + '<span>' + it.label + '</span>';
       var orig = it.orig; orig.classList.add('b403-orig'); mi.appendChild(orig);
       mi.addEventListener('click', function (ev) {
+        // Gervi-smellurinn á orig bólar upp GEGNUM þennan lið — hann má aldrei stöðva, annars nær hann
+        // ekki upp í hlustara 199 (section) — það var villan sem lét Þjónustusíða/Eyða/Bæta við ekkert gera.
+        if (orig === ev.target || orig.contains(ev.target)) return;
         ev.preventDefault(); ev.stopPropagation(); closeAll();
         orig.click();
       });

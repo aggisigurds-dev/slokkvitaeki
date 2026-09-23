@@ -132,6 +132,46 @@
     r('.uttekt-col-r #_ctc-section table td .inn,.uttekt-col-r #_ctc-section table td input', 'width:64px!important;max-width:64px'),
     '@media(max-width:1420px){' + S + '.uttekt-cols{grid-template-columns:minmax(0,1fr)}}',
 
+
+    /* ── 23.09 kvöld (skjámynd Agnars, Fríða gull): upplýsingareitirnir teygðust yfir allan vinstri dálkinn sem tómar
+       rendur og athugasemdin sat skökk. Nú: haus | athugasemd + loftmynd | reitirnir í 4 dálkum eins og hönnun C. ── */
+    r('.co-banner', 'grid-template-areas:"id id" "note mynd" "bupp bupp";grid-template-columns:minmax(0,1fr) 420px'),
+    r('.co-banner-right', 'grid-area:note;margin:0 0 0 12px;display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:0'),
+    r('.co-banner-right .co-banner-badge', 'align-self:flex-start'),
+    r('.co-banner-right .co-banner-note', 'width:100%!important;min-height:140px!important;box-sizing:border-box;flex:1'),
+    r('.co-mynd', 'grid-area:mynd;margin:0 12px 0 0;min-width:0'),
+    r('.co-bupp', 'grid-area:bupp;margin:0 12px;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:stretch'),
+    r('.co-bupp ._bupp-lina', 'min-height:44px;padding:6px 8px 6px 10px;display:flex!important;align-items:center;gap:8px;margin:0!important;box-sizing:border-box;min-width:0'),
+    r('.co-bupp ._bupp-merki', 'width:auto!important;min-width:0!important;flex:none;margin:0!important;text-align:left!important'),
+    r('.co-bupp ._bupp-innri', 'flex:1 1 auto;display:flex!important;flex-wrap:wrap;gap:4px;justify-content:flex-end;min-width:0'),
+    r('.co-bupp ._bupp-innri .co-bupp-reitur._simi,.co-bupp ._bupp-innri input:not(._bupp-tala)', 'flex:1 1 60px;min-width:0;width:auto!important;height:26px!important;padding:0 8px!important;font-size:12px!important'),
+    r('.co-bupp ._bupp-vixl', 'grid-column:1/-1;justify-self:start'),
+    r('.co-bupp > *:not(._bupp-lina):not(._bupp-vixl)', 'grid-column:1/-1'),
+    /* fyrirtæki án tækja: enginn tómur vinstri dálkur — útreikningurinn fær alla breiddina */
+    r('.uttekt-cols:not(:has(.ut-row))', 'grid-template-columns:minmax(0,1fr)'),
+    r('.uttekt-col-l .empty-state', 'background:#fff;border:1px solid #000;border-radius:12px;box-shadow:0 12px 30px -16px rgba(0,0,0,.55);padding:14px 16px;font-family:' + SANS + ';color:#525b6b;font-size:13px'),
+
+
+    /* ── staðreyndalínurnar (405 færir þær í .b405-facts) sem hvítar línur vinstra megin við loftmyndina ── */
+    r('.co-banner', 'grid-template-areas:"id id" "facts mynd" "note mynd" "bupp bupp"'),
+    r('.b405-facts', 'grid-area:facts;margin:0 0 0 12px;display:flex;flex-direction:column;gap:6px;min-width:0'),
+    r('.b405-facts .co-banner-facts', 'display:flex;flex-direction:column;gap:6px;margin:0;font-size:12.5px;color:#3a4250'),
+    r('.b405-facts .co-banner-facts > span,.b405-facts .co-banner-skra,.b405-facts .co-banner-skyrsla', LINE + ';display:flex;align-items:center;gap:8px;min-height:38px;padding:0 10px;font-size:12.5px;color:#1f2530;margin:0'),
+    r('.b405-facts .co-banner-facts > span::before,.b405-facts .co-banner-skra::before,.b405-facts .co-banner-skyrsla::before', 'content:"";width:92px;flex:none;font-family:' + SANS + ';font-size:12px;font-weight:500;color:#2b313c'),
+    r('.b405-facts .co-banner-facts > span:has(a[data-adr-maps])::before', 'content:"Staður"'),
+    r('.b405-facts .co-banner-facts > span:has(a[href^="tel"])::before', 'content:"Sími"'),
+    r('.b405-facts .co-banner-facts > span:has(a[href^="mailto"])::before', 'content:"Netfang"'),
+    r('.b405-facts .co-banner-skra::before', 'content:"Fyrirtækjaskrá"'),
+    r('.b405-facts .co-banner-skyrsla::before', 'content:"Skýrsla"'),
+    r('.b405-facts .co-banner-skra::after', 'content:"sjálfsótt";margin-left:auto;height:18px;padding:0 6px;border-radius:5px;background:#eceff4;color:#1f2530;font-family:' + MONO + ';font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;flex:none'),
+    r('.b405-facts .co-banner-facts a', 'color:#1f2530;text-decoration:none'),
+    r('.b405-facts .co-banner-facts a[href^="tel"]', 'font-family:' + MONO),
+    r('.b405-facts .co-banner-facts b', 'color:#1f2530;font-weight:600'),
+    r('.b405-facts .co-banner-skra', 'color:#3a4250;font-size:12.5px'),
+    r('.b405-facts .co-banner-skyrsla', 'color:#3a4250'),
+    r('.b405-facts .co-banner-skyrsla > span', 'margin-left:auto'),
+    r('.co-banner-right .co-banner-note', 'min-height:72px!important'),
+
     /* ── skeljar ── */
     r('._samskipti-card,.ut-list:not(.b404),._afsl-box,._dyg-section.sk-card:not(.b403),._ufs-section.sk-card,._co-mail-box', SHELL + ';padding:0'),
     r('#_ctc-notes', SHELL.replace('border-radius:14px', 'border-radius:14px 14px 0 0') + '!important;border-bottom:0!important;background:' + PLATE + '!important;background-image:' + PLATE_IMG + '!important;margin:0!important;padding:14px 12px 10px!important;box-shadow:none!important'),
