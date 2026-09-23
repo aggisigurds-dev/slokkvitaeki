@@ -247,11 +247,26 @@
     return chroma(bg) < 42 && L > 0.22 && L < 0.62;
   }
 
+  // 23.09.2026 (afköst) — LESA ALLT FYRST, SKRIFA SVO.
+  //
+  // Áður stóð `el.style.setProperty(...)` inni í lestrarlykkjunni sjálfri. Hvert
+  // skrif ógildir stílinn, svo NÆSTA `getComputedStyle`/`bgOf` þvingaði fulla
+  // stílendurreikninga á öllu skjalinu — layout-thrashing. Mælt á lifandi síðu
+  // 23.09.2026 á 2.900 hlutum í Kröfu yfirliti:
+  //     hreinn lestur ................... 11 ms
+  //     lestur + skrif á víxl (gamla) ... 23.601 ms
+  //     lesa fyrst, skrifa svo (þetta) .. 66 ms
+  // Skönnunin sjálf mældist 4.339 ms við hver sýnarskipti (hraðamælir 387 sýnir
+  // 4.087 ms á krofu-yfirlit og 34.840 ms á arsskodun hjá raunverulegum notendum).
+  //
+  // AÐEINS RÖÐIN BREYTIST. Sömu hlutir eru valdir eftir sömu skilyrðum og fá
+  // nákvæmlega sama blek — ákvörðunin er tekin í lestrarfasanum og geymd, og
+  // öll skrifin gerast í einni lotu á eftir þar sem enginn lestur truflar.
   function scan(root) {
     if (!root) return 0;
-    let fixed = 0;
     const all = root.querySelectorAll('*');
     const limit = Math.min(all.length, 6000);
+    const akvardanir = [];   // { el, litur, deyfa }
     for (let i = 0; i < limit; i++) {
       const el = all[i];
       if (SKIP_TAG.test(el.tagName)) continue;
@@ -279,29 +294,58 @@
         if (!lightOnSteel && ratio(fg, bg) >= 4.5) continue;
         const size = parseFloat(cs.fontSize);
         const w = parseInt(cs.fontWeight, 10) || 400;
-        el.style.setProperty('color', (size >= 20 || w >= 700) ? INK : INK_MUTED, 'important');
-        el.setAttribute('data-cc313', '1');
-        if (parseFloat(cs.opacity) < 0.7) el.style.setProperty('opacity', '1', 'important');
-        fixed++;
+        akvardanir.push({
+          el,
+          litur: (size >= 20 || w >= 700) ? INK : INK_MUTED,
+          deyfa: parseFloat(cs.opacity) < 0.7
+        });
         continue;
       }
       const greyishBg = chroma(bg) < 55;
       const greyishFg = chroma(fg) < 55;
       if (!greyishFg || !greyishBg) continue;
       if (ratio(fg, bg) >= 4.5) continue;
-      el.style.setProperty('color', pickInk(bg), 'important');
-      el.setAttribute('data-cc313', '1');
-      if (parseFloat(cs.opacity) < 0.7) el.style.setProperty('opacity', '1', 'important');
-      fixed++;
+      akvardanir.push({ el, litur: pickInk(bg), deyfa: parseFloat(cs.opacity) < 0.7 });
     }
-    return fixed;
+
+    // ── skrif-fasinn: ENGINN lestur hér á milli, annars snýr thrashið aftur ──
+    for (let i = 0; i < akvardanir.length; i++) {
+      const a = akvardanir[i];
+      a.el.style.setProperty('color', a.litur, 'important');
+      a.el.setAttribute('data-cc313', '1');
+      if (a.deyfa) a.el.style.setProperty('opacity', '1', 'important');
+    }
+    return akvardanir.length;
   }
 
   // Er hluturinn undir lit-reglu Stílstjórans? (262 birtir __peColorSels.)
+  //
+  // 23.09.2026 (afköst): 75 veljarar × 2.953 hlutir = 221.475 closest()-köll,
+  // mælt 144,6 ms. Sameinaður veljari gerir EITT kall per hlut — 89,2 ms.
+  // Listinn breytist sjaldan, svo hann er lagður saman einu sinni og geymdur.
+  // Einn ógildur veljari fellir allan sameinaða strenginn, svo hann er prófaður
+  // fyrst; bregðist hann er fallið aftur í gömlu lykkjuna (rétt svar, hægara).
+  let _peSels = null, _peSameinad = null, _peNothaefur = false;
+  function peSameinad() {
+    const sels = window.__peColorSels || [];
+    if (sels === _peSels) return _peSameinad;
+    _peSels = sels;
+    _peNothaefur = false;
+    const c = sels.join(',');
+    if (!c) { _peSameinad = ''; return ''; }
+    try { document.createDocumentFragment().querySelector(c); _peSameinad = c; }
+    catch (_) { _peSameinad = null; _peNothaefur = true; }
+    return _peSameinad;
+  }
   function peGoverned(el) {
     const sels = window.__peColorSels || [];
+    if (!sels.length || !el.closest) return false;
+    const c = peSameinad();
+    if (c && !_peNothaefur) {
+      try { return !!el.closest(c); } catch (_) { _peNothaefur = true; }
+    }
     for (let i = 0; i < sels.length; i++) {
-      try { if (el.closest && el.closest(sels[i])) return true; } catch (_) {}
+      try { if (el.closest(sels[i])) return true; } catch (_) {}
     }
     return false;
   }
