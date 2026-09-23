@@ -257,7 +257,10 @@
       const f = document.getElementById('_bks-overlay');
       if (!f) { setTimeout(watchForm, 1200); return; }
       new MutationObserver(() => {
-        if (f.style.display === 'none' && C && document.getElementById('_bkc-overlay').style.display === 'block') reload();
+        // 23.09.2026: yfirlagið er hýst inni í prófílnum (386) og hverfur með honum við hash-skipti — formið lokast þá
+        // (273) og þessi vakt las .style af null (TypeError í mo-throttle252). Vantar stakið → ekkert að endurhlaða.
+        const bk = document.getElementById('_bkc-overlay');
+        if (f.style.display === 'none' && C && bk && bk.style.display === 'block') reload();
       }).observe(f, { attributes: true, attributeFilter: ['style'] });
     };
     watchForm();
