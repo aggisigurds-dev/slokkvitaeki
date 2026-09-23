@@ -364,6 +364,13 @@ curl -X POST \
      á klasa ættleiðandans, svo næsta uppröðun erfi vörnina. Almennt: *snertu DOM aðeins þegar hnúturinn er
      raunverulega á röngum stað,* og teldu ættleiðingu ekki ranga.
 
+     **Og seinni helmingurinn, sem beit mig samdægurs:** ættleiddur hnútur er ekki lengur beinn afkomandi.
+     Vakt sem hlustar á `{ childList: true }` án `subtree` sér þá EKKI þegar hann deyr — hann hverfur inni í
+     spjaldinu sem var endurteiknað, engin bein barnabreyting verður, og hnúturinn kemur aldrei aftur
+     (mælt: enginn `._dpb-company` eftir 20 sek á fullteiknuðum prófíl). Færir þú hnút dýpra í tréð verður
+     endurlífgun hans að hvíla á einhverju sem sér þangað: öryggispúls sem er ódýr í kyrrstöðu (`mountCompany`
+     hættir strax sé hnúturinn réttur) — ekki á vaktinni sem hætti að ná til hans.
+
   Og **samtíma hleðslur eiga að deila EINNI sókn** (`_loadP`-mynstrið í 153 `loadAll()` og `features.js Companies.load()`)
   — annars sækja fjórir kallarar sama mengið og síðasta svarið yfirskrifar hin.
 

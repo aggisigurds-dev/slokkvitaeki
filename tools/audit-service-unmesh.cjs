@@ -126,10 +126,24 @@ async function pageAll(pathAndQuery) {
       fail('fid ' + pair[0] + ' renamed away from ' + pair[1] + ': ' + row.nafn);
     }
   });
-  const thver = center.find((x) => x.id === 1627);
-  if (thver && thver.er_i_thjonustu !== false) {
-    fail('Þverholt 14 is back in slökk service — it is the booking office, not a hotel.');
-  }
+  // ── Þverholt 14 (fid 1627) ────────────────────────────────────────────────
+  // Hér stóð fullyrðing um að `er_i_thjonustu` yrði að vera false — Þverholt 14 væri
+  // bókunarskrifstofa, ekki hótel, og hefði áður verið dregið ranglega inn í
+  // slökkþjónustu. 23.09.2026 varð það rautt og ég spurði Agnar beint.
+  //
+  // Hann svaraði: „Þverholt 14 stendur. Er í lagi."
+  //
+  // Eigandinn hefur þar með tekið ákvörðunina, og vörður sem geltir á ákvörðun sem
+  // hefur verið tekin kennir manni að hunsa hann — þá er hann verri en enginn (sama
+  // regla og í audit-vistun-utskolun og audit-t-s-i). Fullyrðingin er því farin.
+  //
+  // ÞAÐ SEM ER ÁFRAM VARIÐ er hitt sem þessi vörður er raunverulega til fyrir:
+  // hótelin ellefu mega ekki renna saman í eitt fyrirtæki (prófað hér að ofan),
+  // slökk-ár mega ekki fyllast úr sidasta_ar og brunakerfis-reikningur má ekki
+  // teljast úttekt. Þjónustustaða EINS staðar er rekstrarákvörðun, ekki samruni.
+  //
+  // Komi Þverholt 14 til tals aftur: talan sem skiptir máli er hvort tækin og
+  // skýrslurnar fylgi staðnum, ekki flaggan ein og sér.
 
   const docs = await pageAll('customer_documents?fyrirtaeki_id=in.(195,197,1750,196,201,192,193,198,199,200,1627)&doc_type=in.(uttektarskyrsla,brunakerfi)&is_duplicate=eq.false&select=fyrirtaeki_id,doc_type,year');
   function years(fid, type) {
