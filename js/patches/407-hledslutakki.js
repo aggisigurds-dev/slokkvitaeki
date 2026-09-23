@@ -112,27 +112,27 @@
     if (document.getElementById('hledslutakki-css')) return;
     const st = document.createElement('style');
     st.id = 'hledslutakki-css';
-    st.textContent = '@media (max-width:900px){#' + AUÐK + '{display:none!important}}\n'
+    // 23.09.2026 — SÆTIÐ ER RÁÐIÐ MEÐ `order`, EKKI MEÐ ÞVÍ AÐ FÆRA HNÚTINN.
+    //
+    // Fyrsta útgáfa leiðrétti sætið með `insertBefore` á 1,5 sek. fresti. Það varð að slag: 262 skilar sínum hnappi
+    // aftast í `.bb-face` jafnóðum, svo okkar hnappur var aftur og aftur ekki lengur á undan klukkunni og við
+    // færðum hann til baka. Agnar sá hann hoppa fram og til baka í borðanum. Þetta er NÁKVÆMLEGA gildran sem
+    // patch 405 lýsir og mældi (156 DOM-breytingar á 4 sek) — ég gekk í hana þrátt fyrir að hafa lesið hana.
+    //
+    // `.bb-face` er flex og öll börnin bera order:0. Með því að gefa okkar hnappi order:1 og klukkunni order:2
+    // lendir hann alltaf á eftir hinum hnöppunum og á undan klukkunni — án þess að nokkur hnútur sé hreyfður.
+    // Enginn getur því togað á móti.
+    const B = '#bstal-banner .bb-face';
+    st.textContent = B + ' > #' + AUÐK + '{order:1}\n'
+                   + B + ' > .bb-rightwrap{order:2}\n'
+                   + '@media (max-width:900px){#' + AUÐK + '{display:none!important}}\n'
                    + 'html[data-viewmode="mobile"] #' + AUÐK + '{display:none!important}';
     (document.head || document.documentElement).appendChild(st);
   }
 
-  let færslur = 0;
-  function réttSæti() {
-    const b = takki();
-    if (!b || færslur > 30) return;
-    const face = b.parentElement;
-    if (!face) return;
-    const klukka = face.querySelector(':scope > .bb-rightwrap');
-    if (!klukka) return;
-    if (b.nextElementSibling === klukka) return;   // þegar rétt — engin snerting
-    face.insertBefore(b, klukka);
-    færslur++;
-  }
-
   function setja() {
     stíll();
-    if (takki()) { réttSæti(); return; }
+    if (takki()) return;
     const face = document.querySelector('#bstal-banner .bb-face');
     if (!face) return;
     const hýsill = face;
@@ -152,8 +152,7 @@
     b.onmouseout  = () => { b.style.background = 'rgba(255,255,255,.08)'; };
     b.textContent = '⚡ Hlaða';
     b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); sækja(); });
-    const klukka = face.querySelector(':scope > .bb-rightwrap');
-    hýsill.insertBefore(b, klukka || null);   // á undan klukkunni, annars aftast í röðina
+    hýsill.appendChild(b);   // sætið ræðst af `order` í stílnum — hnúturinn er aldrei hreyfður eftir þetta
   }
 
   setInterval(setja, 1500);
