@@ -1,4 +1,4 @@
-/* === FLJÓTANDI HNAPPAR: RÖÐ OG FORGANGUR (400) — 23.09.2026 ===
+/* === FLJÓTANDI HNAPPAR: RÖÐ OG FORGANGUR (401) — 23.09.2026 ===
  *
  * Agnar 23.09: „sjá hvort eitthvað cuttast af. Eitthvað sé að overlappa."
  *
@@ -18,7 +18,7 @@
  * Engin hegðun er snert — aðeins staðsetning og lagskipting.
  */
 (() => {
-  if (window.__fljotandiRod400) return;
+  if (window.__fljotandiRod401) return;
   window.__fljotandiRod400 = true;
 
   // Aðeins það sem stílblað ræður við. Staðsetningin sjálf fer inline (sjá rada):
@@ -99,6 +99,6 @@
   setTimeout(maela, 3000);
   setTimeout(maela, 8000);
 
-  console.log('[400] Fljótandi hnappar raðast fyrir ofan botnstikuna');
+  console.log('[401] Fljótandi hnappar raðast fyrir ofan botnstikuna');
 })();
 /* === END FLJÓTANDI RÖÐ === */
