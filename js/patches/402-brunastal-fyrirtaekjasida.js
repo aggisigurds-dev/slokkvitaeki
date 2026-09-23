@@ -196,9 +196,11 @@
 
     /* ── Agnar 23.09 19:19: stærra myndasvæði — hægri dálkur 560px, flísin fyllir hæð staðreynda + athugasemdar ── */
     r('.co-banner', 'grid-template-columns:minmax(0,1fr) 560px'),
-    r('.co-mynd', 'align-self:stretch;display:flex;flex-direction:column;min-height:0'),
+    r('.co-mynd', 'align-self:stretch;display:flex;flex-direction:column;min-height:0;width:auto!important;max-width:none!important;flex-basis:auto!important'),
+    r('.co-mynd .co-mynd-flis', 'width:100%!important;max-width:none!important'),
     r('.co-mynd .co-mynd-flis', 'flex:1 1 auto;min-height:260px!important;height:auto!important'),
-    r('.co-mynd .co-mynd-vefja img', 'width:100%!important;height:100%!important;object-fit:cover'),
+    r('.co-mynd .co-mynd-vefja img', 'width:100%!important;height:100%!important;object-fit:contain;background:#3a3a41'), /* fit to box (Agnar) */
+    r('.co-mynd .co-mynd-flis', 'background:#3a3a41!important'),
     r('.co-banner-right .co-banner-note', 'min-height:96px!important'),
 
     /* ── skeljar ── */
