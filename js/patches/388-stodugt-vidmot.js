@@ -108,8 +108,21 @@
         };
         hlusta(true);
         requestAnimationFrame(aftur_i_sama);
+        // Sum kort sækja innihaldið sitt af þjóni (Rekstrarfélög) — hæðin kemur þá sekúndu síðar. Fylgjumst með hæð
+        // rótarinnar og setjum stöðuna aftur á meðan hún er enn að vaxa, í mesta lagi í 3 sek. og aldrei eftir að
+        // notandinn hefur snert skrunið sjálfur.
+        let ro = null;
+        const haetta = () => { try { if (ro) ro.disconnect(); } catch (_) {} ro = null; hlusta(false); };
+        try {
+          if (window.ResizeObserver) {
+            ro = new ResizeObserver(() => { if (snert) { haetta(); return; } aftur_i_sama(); });
+            ro.observe(rot);
+          }
+        } catch (_) {}
         setTimeout(aftur_i_sama, 220);
-        setTimeout(() => { aftur_i_sama(); hlusta(false); }, 650);
+        setTimeout(aftur_i_sama, 700);
+        setTimeout(aftur_i_sama, 1500);
+        setTimeout(() => { aftur_i_sama(); haetta(); }, 3000);
       } catch (_) {}
     };
   }
