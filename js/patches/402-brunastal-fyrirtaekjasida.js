@@ -418,7 +418,7 @@
 
     /* 🚨 Brunakerfi — vinnusíða 274 hýst í #_sks-bru: skel + málmhaus + stálplata, spjöldin hvít með málmhaus */
     r('#_sks-bru', SHELL + ';background:' + PLATE + ';background-image:' + PLATE_IMG + ';margin:0 0 18px;padding:0'),
-    r('#_sks-bru::before', 'content:"Brunakerfi \\00b7\0020sko\\00f0un og skj\\00f6l";display:block;' + HEAD + ';padding:12px 24px;font-family:' + MONO + ';font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,.5);background-image:' + RIVET + ',' + RIVET + ',' + METAL + ';background-size:6px 6px,6px 6px,auto;background-position:7px 50%,calc(100% - 7px) 50%,0 0;background-repeat:no-repeat'),
+    r('#_sks-bru::before', 'content:"Brunakerfi \\00b7\\0020sko\\00f0un og skj\\00f6l";display:block;' + HEAD + ';padding:12px 24px;font-family:' + MONO + ';font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,.5);background-image:' + RIVET + ',' + RIVET + ',' + METAL + ';background-size:6px 6px,6px 6px,auto;background-position:7px 50%,calc(100% - 7px) 50%,0 0;background-repeat:no-repeat'),
     r('#_sks-bru #_bkc-overlay._sks-inni', 'background:transparent!important;font-family:' + SANS + ';color:#11141c'),
     r('#_sks-bru #_bkc-overlay._sks-inni ._bkc-wrap', 'padding:12px!important'),
     r('#_sks-bru #_bkc-overlay ._bkc-cust', LINE + ';padding:10px 12px;margin-bottom:12px;border:0'),
@@ -500,6 +500,28 @@
     p('#_sks-tabs ._sks-tab', 'flex:1 1 auto!important;text-align:center!important'),
     '@media(max-width:600px){' + p('.co-bupp', 'grid-template-columns:minmax(0,1fr)!important') + p('.co-banner-name', 'font-size:22px!important') + '}'
   ].join('\n');
+  // ── vinnusíða 274 EIN OG SÉR (úr Brunakerfi yfirliti 272, „Þjónustusíða →" og eigin reload): sömu reglur og undir
+  //    🚨-flipanum, með forskeyti fyrir yfirlagið á body. Toppstikan verður málmhaus, flöturinn stálgrár, efnið 1600 px.
+  //    Agnar 23.09 22:40: „can you also fix the company profile in brunaskoðun". ──
+  var OV = 'html[data-thm-preset="brunastal"] body > #_bkc-overlay:not(._sks-inni)';
+  var HOST = S + '#_sks-bru #_bkc-overlay';
+  var cssOv = css.split('\n').filter(function (l) { return l.indexOf(HOST) === 0 && l.indexOf('._sks-inni') < 0; }).map(function (l) { return l.split(HOST).join(OV); }).join('\n') + '\n' + [
+    OV + '{background:#9ba1ad!important;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.05) 0 1px,transparent 1px 5px),linear-gradient(180deg,#0b0c0e 0px,#1c1e22 120px,#8f96a1 360px,#9ba1ad 100%)!important;font-family:' + SANS + '!important;color:#11141c}',
+    OV + ' ._bkc-top{' + HEAD + ';padding:12px 24px!important;gap:14px!important}',
+    OV + ' ._bkc-top::before{' + RIVETS_BEFORE + '}',
+    OV + ' ._bkc-top::after{' + RIVETS_AFTER + '}',
+    OV + ' ._bkc-hb{' + SILVER_BTN + ';border-radius:9px!important;height:40px;padding:0 14px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important}',
+    OV + ' ._bkc-logo{display:none!important}',
+    OV + ' #_bkc-topname{font-family:' + DISPLAY + ';font-size:22px!important;font-weight:800!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)}',
+    OV + ' ._bkc-wrap{max-width:1600px!important;padding:20px 24px 80px!important}',
+    OV + ' ._bkc-cust{' + SHELL + ';background:' + PLATE + ';background-image:' + PLATE_IMG + ';padding:14px 16px!important;display:flex!important;gap:16px!important}',
+    OV + ' ._bkc-custL{display:block!important}',
+    OV + ' ._bkc-nafn{font-family:' + DISPLAY + ';font-size:26px!important;font-weight:800!important;color:#11141c!important}',
+    OV + ' ._bkc-sub{font-family:' + MONO + ';font-size:12px!important;color:#525b6b!important}',
+    OV + ' ._bkc-chip{' + SILVER_BTN + ';border-radius:8px!important;color:#1f2530!important;font-family:' + SANS + '!important;font-weight:600!important;min-height:34px!important;text-shadow:none}',
+    OV + ' ._bkc-lbl{' + MERKI + ';font-size:10.5px;color:#525b6b;letter-spacing:.12em;margin-bottom:6px}'
+  ].join('\n');
+  css += '\n' + cssOv;
   var st = document.createElement('style');
   st.id = 'bfs-402';
   st.textContent = css + '\n' + cssSimi;
