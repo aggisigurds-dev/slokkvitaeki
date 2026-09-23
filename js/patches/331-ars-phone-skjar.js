@@ -190,9 +190,55 @@
       tbl.style.transform = '';
     }
     paintZoomPct();
+    stillaBreidd();
     if (persist !== false) {
       try { localStorage.setItem(LSZ, String(cssScale)); } catch (_) {}
     }
+  }
+
+  /* ── Kassinn verður að fylgja zoom-inu ───────────────────────────────────────
+     23.09.2026 (Agnar: „when i zoom i can slide all the way to right or left").
+
+     `zoom` á töflunni skalar hana, en umgjörðin fylgir ekki: kassinn er `width:100%`
+     af foreldri sem er `max-content` — og max-content mælir INNRI stærð, sem tekur
+     aldrei mið af zoom. Mælt í framleiðslu (Skjár, 375px):
+
+        zoom 100%   tafla 1456   kassi 1682   ->  226 px auðir
+        zoom  65%   tafla  947   kassi 1682   ->  735 px auðir
+        zoom  52%   tafla  758   kassi 1682   ->  924 px auðir
+
+     Afgangurinn er tómt svæði sem hægt er að panna út í — nákvæmlega einkennið.
+     Ég reyndi fyrst `width:max-content` í CSS (cae095c) og BAKKAÐI með það: patch
+     341 setur `width:100%!important` með tvöföldu auðkenni og vinnur cascade-inn,
+     og jafnvel þótt hún ynni mælir max-content áfram óskalaða stærð (#ars-main stóð
+     í 1748 px á öllum zoom-stigum).
+
+     Þess vegna er breiddin sett BEINT hér, í sama falli og setur zoom-ið, og með
+     `!important` svo hún standist 341. Mælt eftir á: 924 px -> 1 px.
+     Kassinn hugsar ekki um zoom-stuðulinn sjálfan heldur les SKÖLUÐU breidd
+     töflunnar, svo þetta helst rétt hver sem leiðin er (zoom eða transform). */
+  function stillaBreidd() {
+    const tbl = tableEl();
+    const sc = scrollerEl();
+    const wrap = sc && sc.parentElement;
+    const main = document.getElementById('ars-main');
+    const stok = [sc, wrap, main].filter(Boolean);
+    const hreinsa = () => stok.forEach(e => {
+      e.style.removeProperty('width');
+      e.style.removeProperty('min-width');
+      e.style.removeProperty('max-width');
+    });
+    if (!tbl || !sc || !(wantsWide(get()) && isPhoneLike())) { hreinsa(); return; }
+    // Lesið EFTIR að zoom-ið hefur tekið gildi — annars mælist gamla breiddin.
+    requestAnimationFrame(() => {
+      const px = Math.ceil(tbl.getBoundingClientRect().width);
+      if (!px) return;                       // taflan ekki teiknuð enn
+      stok.forEach(e => {
+        e.style.setProperty('width', px + 'px', 'important');
+        e.style.setProperty('min-width', '0', 'important');
+        if (e !== main) e.style.setProperty('max-width', 'none', 'important');
+      });
+    });
   }
   function resetCssZoom() {
     const tbl = tableEl();
@@ -203,6 +249,9 @@
     }
     try { document.documentElement.style.removeProperty('--ars-skjar-zoom'); } catch (_) {}
     paintZoomPct();
+    // Föstu breiddirnar frá stillaBreidd() verða að fara með zoom-inu — annars
+    // sæti Ársskoðun eftir í skjáborðsham með breidd sem var reiknuð fyrir síma.
+    stillaBreidd();
   }
   function naturalTableWidth() {
     const tbl = tableEl();
