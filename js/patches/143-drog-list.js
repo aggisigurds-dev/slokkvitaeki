@@ -105,7 +105,7 @@
     try {
       // audit-pagination:ok — drög, .limit(100) í næsta skrefi
       let q = SB.from('solur')
-        .select('id,num,customer_nafn,samtals,greitt_med,created_at,updated_at,athugasemdir,hidden')
+        .select('id,num,customer_nafn,samtals,greitt_med,created_at,updated_at,athugasemdir,hidden,customer_id,customer_base_id,customer_kt')
         .eq('status', 'drog');
       if (!_showDeleted) q = q.neq('hidden', true);   // soft-deleted drög hidden by default
       const { data, error } = await q.order('updated_at', { ascending: false }).limit(100);
@@ -250,7 +250,8 @@
     // 2026-09-10: _loc er LOC-hlutur ({label,emoji,…}), ekki strengur. String(hlutur)
     // gaf "[object Object]" — svo staðsetningarleitin sem commit 3b19e28 lofaði virkaði
     // aldrei, og leitarstrengurinn „object“ skilaði ÖLLUM röðum. Leitum í merkinu sjálfu.
-    return [d.num, d.customer_nafn, d.greitt_med, d._loc && d._loc.label]
+    return [d.num, d.customer_nafn, d.greitt_med, d._loc && d._loc.label,
+            (d.customer_id == null && d.customer_base_id == null && /reikning|sidar|síðar/i.test(String(d.greitt_med || ''))) ? 'enginn kúnni vantar kennitölu' : '']
       .map(function (x) { return String(x == null ? '' : x).toLowerCase(); })
       .join(' ').indexOf(_q) > -1;
   }
@@ -290,10 +291,23 @@
         : '<button data-act="edit" type="button" style="padding:6px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;margin-right:4px">✏️ Breyta</button>' +
           '<button data-act="finalize" type="button" style="padding:6px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;margin-right:4px">✅ Klára</button>' +
           '<button data-act="delete" type="button" title="Eyða drögum (hægt að endurheimta)" style="padding:6px 11px;background:#fff;border:1px solid #fecaca;color:#dc2626;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🗑</button>';
+      // 23.09.2026 — KRAFA ÁN VIÐTAKANDA SÝNIR SIG HÉR.
+      // Kassinn varar við þessu þegar salan er vistuð (js/pos.js:1434, 19.09.2026), en það er Toast sem hverfur:
+      // ÞRJÁR slíkar sölur bættust við eftir að viðvörunin kom. Þær lentu svo í þessum lista innan um 40 önnur drög,
+      // nákvæmlega eins útlítandi, og ekkert sagði hverjar væru ósendanlegar. Mælt 23.09.2026: 5 af 40 drögum áttu
+      // engan kúnna — R-001003, R-001000, R-000994, R-000972, R-000957, samtals 35.868 kr sem ekki var hægt að rukka.
+      // Þetta stöðvar ekkert og felur ekkert; það gerir muninn sýnilegan þar sem drögin eru afgreidd.
+      const rukkaSidar = /reikning|sidar|síðar/i.test(String(s.greitt_med || ''));
+      const enginnKunni = s.customer_id == null && s.customer_base_id == null;
+      const vantarKunna = rukkaSidar && enginnKunni && !s.hidden;
+      const kunnaMerki = vantarKunna
+        ? ' <span title="Engin kennitala og enginn viðskiptavinur á sölunni — krafan verður ekki send. Opnaðu söluna og tengdu kaupandann." ' +
+          'style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:10.5px;font-weight:700;white-space:nowrap">⚠ enginn kúnni</span>'
+        : '';
       return `
-        <tr data-id="${s.id}" style="${s.hidden ? 'opacity:.55;background:#fff7ed' : ''}">
+        <tr data-id="${s.id}" data-vantar-kunna="${vantarKunna ? '1' : ''}" style="${s.hidden ? 'opacity:.55;background:#fff7ed' : ''}">
           <td style="padding:11px 14px;font-family:monospace;font-size:12px;color:#475569">${esc(s.num || '—')}</td>
-          <td style="padding:11px 14px;font-weight:600;color:#0f172a">${esc(s.customer_nafn || '—')}${s.hidden ? ' <span style="font-size:10px;font-weight:700;color:#dc2626">· eytt</span>' : ''}</td>
+          <td style="padding:11px 14px;font-weight:600;color:#0f172a">${esc(s.customer_nafn || '—')}${s.hidden ? ' <span style="font-size:10px;font-weight:700;color:#dc2626">· eytt</span>' : ''}${kunnaMerki}</td>
           <td style="padding:11px 14px">${locBadge(s._loc)}</td>
           <td style="padding:11px 14px;color:#475569;font-size:12.5px">${esc(s.greitt_med || '—')}</td>
           <td style="padding:11px 14px;color:#475569;font-size:12px">${esc(fmtDate(s.created_at))} · ${ageBadge}</td>
