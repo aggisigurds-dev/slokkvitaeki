@@ -67,6 +67,7 @@
   function u(sel, css) { return sel.split(',').map(function (s) { s = s.trim(); return S + (/^.ut-/.test(s) ? '.ut-list:not(.b404) ' + s : s); }).join(',') + '{' + css + '}'; }
   function r(sel, css) { return sel.split(',').map(function (s) { return S + s.trim(); }).join(',') + '{' + css + '}'; }
 
+  function imp(css) { return css.split(';').map(function (d) { return d.trim() ? d + '!important' : ''; }).filter(Boolean).join(';'); }
   var css = [
     /* ── grunnur ── */
     r('.co-banner,._samskipti-card,.ut-list,._afsl-box,._dyg-section:not(.b403),._ufs-section,.info-grid .ic,._co-mail-box', 'font-family:' + SANS),
@@ -403,6 +404,63 @@
     r('._afsl-grid > div,._cpr-section,._ahop-section,._cad-section', 'background:#fff;border:1px solid #000;border-radius:12px;box-shadow:0 12px 30px -16px rgba(0,0,0,.55)'),
     r('._afsl-grid > div > div,._afsl-wide > div', 'border:0!important;box-shadow:none!important'),
     r('._cpr-toggle', 'font-family:' + SANS + ';font-weight:600'),
+
+    /* ── miðjan: þjónustuflipar (386) — efst og neðst eins á 🧯 · 🚨 · 🍳, aðeins miðjan skiptir (Agnar 23.09 19:45) ── */
+    r('#_sks-tabs', 'display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 12px;padding:6px;border:1px solid #000;border-radius:12px;background:' + METAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 14px 28px -16px rgba(0,0,0,.75)'),
+    r('#_sks-tabs ._sks-tab', METAL_BTN_CSS + ';border-radius:8px;padding:9px 18px;margin:0;font-family:' + MONO + ';font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
+    r('#_sks-tabs ._sks-tab:hover', 'filter:brightness(1.18)'),
+    r('#_sks-tabs ._sks-tab.on', SILVER_BTN + ';border-color:#000;color:#11141c;border-radius:8px;filter:none'),
+
+    /* 🚨 Brunakerfi — vinnusíða 274 hýst í #_sks-bru: skel + málmhaus + stálplata, spjöldin hvít með málmhaus */
+    r('#_sks-bru', SHELL + ';background:' + PLATE + ';background-image:' + PLATE_IMG + ';margin:0 0 18px;padding:0'),
+    r('#_sks-bru::before', 'content:"Brunakerfi \\00b7\0020sko\\00f0un og skj\\00f6l";display:block;' + HEAD + ';padding:12px 24px;font-family:' + MONO + ';font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,.5);background-image:' + RIVET + ',' + RIVET + ',' + METAL + ';background-size:6px 6px,6px 6px,auto;background-position:7px 50%,calc(100% - 7px) 50%,0 0;background-repeat:no-repeat'),
+    r('#_sks-bru #_bkc-overlay._sks-inni', 'background:transparent!important;font-family:' + SANS + ';color:#11141c'),
+    r('#_sks-bru #_bkc-overlay._sks-inni ._bkc-wrap', 'padding:12px!important'),
+    r('#_sks-bru #_bkc-overlay ._bkc-cust', LINE + ';padding:10px 12px;margin-bottom:12px;border:0'),
+    r('#_sks-bru #_bkc-overlay ._bkc-lbl', MERKI + ';font-size:10.5px;color:#525b6b;letter-spacing:.12em;margin-bottom:6px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-note', 'background:#f6f7fa;border:1px solid rgba(20,24,34,.16);color:#11141c;border-radius:6px;font-family:' + SANS + ';font-size:13.5px;min-height:56px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-note::placeholder', 'color:#8a93a3'),
+    r('#_sks-bru #_bkc-overlay ._bkc-grid', 'gap:12px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-card', 'background:#fff;border:1px solid #000;border-radius:12px;box-shadow:0 12px 30px -16px rgba(0,0,0,.55);margin-bottom:12px;overflow:hidden'),
+    r('#_sks-bru #_bkc-overlay ._bkc-ch,#_sks-bru #_bkc-overlay ._bkc-herohd', HEAD + ';padding:10px 20px;gap:10px;font-family:' + MONO + ';font-size:11.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
+    r('#_sks-bru #_bkc-overlay ._bkc-ch::before,#_sks-bru #_bkc-overlay ._bkc-herohd::before', RIVETS_BEFORE),
+    r('#_sks-bru #_bkc-overlay ._bkc-ch::after,#_sks-bru #_bkc-overlay ._bkc-herohd::after', RIVETS_AFTER),
+    r('#_sks-bru #_bkc-overlay ._bkc-herot', 'font-family:' + MONO + ';font-size:11.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase'),
+    r('#_sks-bru #_bkc-overlay ._bkc-ch small', 'font-family:' + MONO + ';color:#c9d0da;text-transform:none;letter-spacing:.02em;font-size:11px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-body', 'padding:12px 14px;background:#fff'),
+    r('#_sks-bru #_bkc-overlay ._bkc-row', 'border-bottom:1px solid rgba(20,24,34,.08)'),
+    r('#_sks-bru #_bkc-overlay ._bkc-act', METAL_BTN_CSS + ';border-radius:6px;font-family:' + SANS + ';font-size:12.5px;font-weight:600;min-height:32px;padding:6px 12px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-act._ghost', SILVER_BTN + ';border-radius:6px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-act[style*="0f766e"]', imp(GREEN_BTN) + ';border-radius:6px!important'),
+    r('#_sks-bru #_bkc-overlay ._bkc-act._x', 'background:transparent;border:0;box-shadow:none;color:#8a93a3;min-height:0;padding:0 5px;text-shadow:none'),
+    r('#_sks-bru #_bkc-overlay ._bkc-act._x:hover', 'color:#b0201b;background:#fdeeee'),
+    r('#_sks-bru #_bkc-overlay ._bkc-yr._meira ._bkc-act._x', 'color:#b0201b;border:1px solid rgba(190,32,28,.5);border-radius:6px;padding:5px 9px;font-size:12px;font-weight:700;background:#fff;min-height:30px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-new', GREEN_BTN + ';border-radius:8px;font-family:' + SANS + ';font-weight:700;font-size:13.5px;padding:11px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-new._litid', 'background:transparent;color:#525b6b;border:1px dashed rgba(20,24,34,.3);box-shadow:none;text-shadow:none;font-size:12.5px;font-weight:600;padding:8px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-yrlbl', 'font-family:' + DISPLAY + ';font-size:19px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-meira', SILVER_BTN + ';border-radius:6px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-yr._meira ._bkc-meira', METAL_BTN_CSS + ';border-radius:6px'),
+    r('#_sks-bru #_bkc-overlay ._bkc-pill,#_sks-bru #_bkc-overlay ._bkc-invst', 'font-family:' + MONO + ';letter-spacing:.06em'),
+    r('#_sks-bru #_bkc-overlay #_bkr-link', imp(SILVER_BTN) + ';border-radius:6px!important;font-family:' + SANS + '!important;font-weight:600!important'),
+    r('#_sks-bru #_bkc-overlay ._bkc-tbl th', MERKI + ';font-size:10px;color:#525b6b;letter-spacing:.12em'),
+
+    /* 🍳 Slökkvikerfi — blaðið (386) í sömu skel: haus ._sks-hd = málmhaus, pappírinn og reikningsdálkurinn hvít spjöld á plötu */
+    r('#_sks-host', SHELL + ';background:' + PLATE + ';background-image:' + PLATE_IMG + ';margin:0 0 18px;padding:0 12px 12px;font-family:' + SANS),
+    r('#_sks-host ._sks-hd', HEAD + ';margin:0 -12px 12px;border-radius:0;padding:12px 24px;border:0;border-bottom:1px solid #000'),
+    r('#_sks-host ._sks-hd::before', RIVETS_BEFORE),
+    r('#_sks-host ._sks-hd::after', RIVETS_AFTER),
+    r('#_sks-host ._sks-hd h2', 'font-family:' + MONO + ';font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#eef1f4;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
+    r('#_sks-host ._sks-hd small,#_sks-host ._sks-hd .hint', 'color:#c9d0da;font-family:' + MONO + ';font-size:11px;letter-spacing:.04em;text-transform:none'),
+    r('#_sks-host ._sks-kbtn', PLATE_CHIP + ';cursor:pointer'),
+    r('#_sks-host ._sks-kbtn.on', METAL_BTN_CSS + ';height:22px;border-radius:3px;font-family:' + MONO + ';font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:0 8px'),
+    r('#_sks-host ._sks-lok', GREEN_BTN + ';border-radius:6px;font-family:' + MONO + ';font-size:11px;letter-spacing:.06em;text-transform:uppercase'),
+    r('#_sks-host .sheet', 'border:1px solid #000;border-radius:8px;box-shadow:0 12px 30px -16px rgba(0,0,0,.55)'),
+    r('#_sks-host .kost', 'border:1px solid #000;border-radius:12px;box-shadow:0 12px 30px -16px rgba(0,0,0,.55);top:12px'),
+    r('#_sks-host .khd b', MERKI + ';font-size:11px;letter-spacing:.16em'),
+    r('#_sks-host ._sks-bar', 'background:' + PLATE + ';background-image:' + PLATE_IMG + ';border:1px solid #000;border-radius:10px;box-shadow:0 -6px 16px rgba(0,0,0,.18)'),
+    r('#_sks-host ._sks-btn', SILVER_BTN + ';border-radius:6px;font-family:' + SANS + ';font-weight:600'),
+    r('#_sks-host ._sks-btn.pri', RED_BTN + ';border-radius:6px'),
+    r('#_sks-host ._sks-saved', 'font-family:' + MONO + ';font-size:11px'),
 
     /* ── efsta röðin ── */
     r('._co-mail-box', 'background:' + PLATE + ';background-image:' + PLATE_IMG + ';padding:10px 12px'),

@@ -120,6 +120,17 @@
     var n; var tn = []; [box, sky].filter(Boolean).forEach(function (rt) { var w = document.createTreeWalker(rt, NodeFilter.SHOW_TEXT); while ((n = w.nextNode())) tn.push(n); });
     tn.forEach(function (x) { var v = x.nodeValue; var y = v.replace(/[🀀-🫿⌀-⏿☀-➿️]/gu, '').replace(/^\s+/, ''); if (y !== v) x.nodeValue = y; }); // (/^s+/ át „ss" úr ss@ss.is — 23.09 19:10)
   }
+  // 4) Miðjan (386-flipar, 274-vinnusíða, 386-blað): emoji-tákn í hausum, flipum og tökkum víkja — hönnunin merkir með orðum.
+  //    Aðeins textahnútar snertir; ▾ · × ＋ eru ekki emoji og standa. Handlerar (closest('._sks-tab'), data-*) ósnertir.
+  var MIDJA_SEL = '#_sks-tabs ._sks-tab,#_sks-host ._sks-hd h2,#_sks-host .khd b,#_sks-host ._sks-btn,#_sks-bru ._bkc-herot,#_sks-bru ._bkc-lbl,#_sks-bru ._bkc-ch,#_sks-bru ._bkc-act,#_sks-bru ._bkc-new,#_sks-bru #_bkr-link';
+  function ensureMidja(main) {
+    var els = main.querySelectorAll(MIDJA_SEL); if (!els.length) return;
+    for (var i = 0; i < els.length; i++) {
+      var w = document.createTreeWalker(els[i], NodeFilter.SHOW_TEXT), n, tn = [];
+      while ((n = w.nextNode())) tn.push(n);
+      tn.forEach(function (x) { var v = x.nodeValue; var y = v.replace(/[🀀-🫿⌀-⏿☀-➿️]/gu, '').replace(/^\s+/, ''); if (y !== v) x.nodeValue = y; });
+    }
+  }
   var timer = null;
   function tick() {
     if (!scope()) return;
@@ -130,6 +141,7 @@
       if (row && row.parentElement && row.parentElement.parentElement === main) { row.classList.add('b405-rod'); ensureMenu(row); ensurePlate(main, row); }
       ensureSamskipti(main);
       ensureBanner(main);
+      ensureMidja(main);
     } catch (err) { console.error('[405]', err); }
   }
   function schedule() { clearTimeout(timer); timer = setTimeout(tick, 0); }
