@@ -544,12 +544,19 @@
         render();
       });
     });
+    // 23.09.2026 (afköst): síureiturinn kallaði á render() við HVERN staf — og render() byggir alla töfluna upp á nýtt.
+    // Mælt á lifandi síðu: sýnin er 28.203 hnútar, svo hver áslátt reif þá alla út og byggði aftur. Nú er teikningin
+    // dregin saman í eina umferð 180 ms eftir síðasta staf; sá sem skrifar hratt fær EINA teikningu í stað tíu.
+    // Talan er sú sama og 187 notar fyrir sína samandregnu endurbyggingu.
     const _si = main.querySelector('._hr-search');
     if (_si) _si.addEventListener('input', () => {
       _state.search = _si.value;
-      render();
-      const el = document.querySelector('._hr-search');
-      if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (_) {} }
+      clearTimeout(_leitTimer);
+      _leitTimer = setTimeout(() => {
+        render();
+        const el = document.querySelector('._hr-search');
+        if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (_) {} }
+      }, 180);
     });
     main.querySelectorAll('._hr-view').forEach(b => {
       b.addEventListener('click', () => openInvoice(b.dataset.id));
