@@ -119,7 +119,7 @@
     r('.co-bupp ._bupp-merki', 'color:#525b6b!important;font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.08em!important;text-transform:uppercase!important'),
     r('.co-bupp ._bupp-eining,.co-bupp ._bupp-afsl,.co-bupp ._bupp-lina > span', 'color:#1f2530!important'),
     r('.co-bupp ._bupp-flis', 'background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.14)!important;color:#3a4250!important;border-radius:7px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;font-family:' + SANS + '!important;font-size:11.5px!important;font-weight:600!important;padding:0 8px!important;height:26px!important;text-shadow:none!important'),
-    r('.co-bupp ._bupp-flis.valin,.co-bupp ._bupp-flis.a,.co-bupp ._bupp-flis.on,.co-bupp ._bupp-flis[aria-pressed="true"]', 'background:' + METAL_BTN + '!important;border-color:#000!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
+    r('.co-bupp ._bupp-flis._on,.co-bupp ._bupp-flis.valin,.co-bupp ._bupp-flis[aria-pressed="true"]', 'background:' + METAL_BTN + '!important;border-color:#000!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
     r('.co-bupp ._bupp-tala', 'width:44px!important;text-align:right!important;font-family:' + MONO + '!important'),
 
     /* ── skeljar ── */
