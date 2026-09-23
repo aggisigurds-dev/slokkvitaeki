@@ -487,6 +487,14 @@
     p('.co-bupp ._bupp-innri .co-bupp-reitur,.co-bupp ._bupp-innri input', 'height:32px!important;min-height:32px!important;flex:0 1 96px!important;font-size:13px!important;padding:0 8px!important'),
     p('.co-bupp ._bupp-innri ._bupp-tala', 'flex:0 0 52px!important'),
     p('.co-bupp ._bupp-lina', 'min-height:44px!important;padding:6px 8px 6px 10px!important'),
+    /* Agnar 23.09 20:03 (skjámynd): „galið plássfrekt með engu efni" — 363 felur auðar línur undir „Fleiri upplýsingar" í símanum; reglan að ofan þvingaði þær fram. Loftmyndin fyllir flísina (cover) í stað dökkra randa. */
+    p('.co-bupp._bupp-thjappad ._bupp-lina._bupp-tomt,._bupp-simi._bupp-thjappad ._bupp-lina._bupp-tomt', 'display:none!important'),
+    p('.co-mynd .co-mynd-flis', 'min-height:170px!important'),
+    p('.co-mynd .co-mynd-vefja img', 'object-fit:cover!important'),
+    /* „Yfirferðin á ekki að vera þarna megin": Yfirfarið-flísin fylgir nafninu/raðnúmerinu, aðgerðirnar sitja hægra megin */
+    p('.ut-list .ut-row .ut-main', 'flex:0 1 auto!important;min-width:0!important'),
+    p('.ut-list .ut-row .ut-right', 'flex:1 1 auto!important;margin-left:0!important;display:flex!important;align-items:center!important;min-width:0!important'),
+    p('.ut-list .ut-row .ut-lastcol', 'margin-right:auto!important;flex:none!important'),
     p('.uttekt-cols', 'display:flex!important;flex-direction:column!important;gap:12px!important'),
     p('.uttekt-col-l,.uttekt-col-r', 'width:100%!important;max-width:none!important'),
     p('#_sks-tabs ._sks-tab', 'flex:1 1 auto!important;text-align:center!important'),
