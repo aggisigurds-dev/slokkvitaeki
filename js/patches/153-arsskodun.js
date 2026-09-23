@@ -1946,7 +1946,12 @@
     // tölu og hún geymdi nákvæmlega mismuninn sem lét Búið + Eftir ekki ná borðinu
     // (341 + 297 = 638 af 650). Ótalinn hópur er ósýnilegur hópur.
     const cnt = { all: countByStatus('all'), done: countByStatus('done'), pending: countByStatus('pending'), pending2026: countByStatus('pending2026'),
-      suspect: countByStatus('suspect'), entaeki: countByStatus('entaeki') };
+      suspect: countByStatus('suspect'), entaeki: countByStatus('entaeki'),
+      // 23.09.2026 (Agnar: „bæta við annarri súlu með þá sem var gleymt í fyrra og
+      // síðustu 2025, 2024"): 🟡 Slepptir í fyrra var SÍÐASTA flagan án tölu — sama
+      // rökvilla og lagfærð var 10.09: ótalinn hópur er ósýnilegur hópur. Talan er
+      // AÐEINS BIRT; countByStatus keyrir sömu síu og flaggan sjálf, engin rök breytast.
+      skipped2025: countByStatus('skipped2025') };
     // 2026-09-08 (Agnar: „geturðu gert þessa grænu og rauðu samantektartakka bara
     // sýna það sem þeir eru að telja í töflunni fyrir neðan … eða sýna nánari
     // upplýsingar"): spjöldin töldu ALLTAF allt borðið, líka þegar taflan var síuð
@@ -2172,7 +2177,7 @@
               { v: 'done', label: '✅ Búið ' + curYear + ' ' + cnt.done },
               { v: 'pending', label: '⏳ Eftir ' + cnt.pending },
               { v: 'pending2026', label: '🗓️ Eftir ' + curYear + ' ' + cnt.pending2026 },
-              { v: 'skipped2025', label: '🟡 Slepptir í fyrra' },
+              { v: 'skipped2025', label: '🟡 Slepptir í fyrra' + (cnt.skipped2025 ? ' ' + cnt.skipped2025 : '') },
               { v: 'priority', label: '❗ Forgangur' },
               { v: 'suspect', label: '❓ Óvíst' + (cnt.suspect ? ' ' + cnt.suspect : '') },
               // 10.09.2026 (Agnar: „félag án tækja á ekki að HVERFA"): allir sem sýna 0 tæki.

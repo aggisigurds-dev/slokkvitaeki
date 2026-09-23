@@ -73,6 +73,12 @@
       V + '.arsm-b.is-all i{background:repeating-linear-gradient(135deg,rgba(255,255,255,.10) 0 3px,rgba(255,255,255,.03) 3px 6px);border:1px solid rgba(255,255,255,.14);box-sizing:border-box}',
       V + '.arsm-b.is-tom i{background:' + AMBERBAR + '}',
       V + '.arsm-b.is-tom em,' + V + '.arsm-b.is-tom u{color:#e0a93e}',
+      // Uppsöfnuð skuld (Agnar 23.09: „súla með þá sem var gleymt í fyrra og síðustu
+      // 2025, 2024"). Hún er EKKI mánuður ársins, svo hún stendur sér vinstra megin
+      // með skilrúmi og ber rauðan málm — þetta er það sem er komið fram yfir.
+      V + '.arsm-b.is-skuld{padding-right:10px;margin-right:6px;border-right:1px solid rgba(255,255,255,.14)}',
+      V + '.arsm-b.is-skuld i{background:' + REDBAR + ';box-shadow:0 0 16px -4px rgba(226,85,85,.6)}',
+      V + '.arsm-b.is-skuld em,' + V + '.arsm-b.is-skuld u{color:#ff9d95}',
 
       // ── 2 · síustikan ─────────────────────────────────────────────────────
       // Röðin á borðinu: síur · Fleiri síur · LEITIN sem fyllir út í · Bílstjóri.
@@ -326,6 +332,28 @@
       nb.textContent = String(talaAf(nuChip));
       hs.appendChild(nb);
       hs.appendChild(document.createTextNode(' í dag'));
+    }
+
+    // ── Uppsöfnuð skuld: súla fyrir þá sem gleymdust (Agnar 23.09) ──────────
+    // „Bæta við annarri súlu með þá sem var gleymt í fyrra og síðustu 2025, 2024."
+    // Talan kemur úr 🟡 Slepptir í fyrra-flögunni sem 153 telur sjálft — hér er
+    // EKKERT talið upp á nýtt, svo súlan getur ekki rekið í sundur við flöguna.
+    // Smellur á súluna kveikir nákvæmlega sömu síu og flaggan.
+    const skuldChip = Array.from(root.querySelectorAll('._ars-st'))
+      .find(c => /slepptir/i.test(heitiAf(c)));
+    if (skuldChip) {
+      const skuldN = talaAf(skuldChip);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'arsm-b is-skuld' + (erVirk(skuldChip) ? ' is-on' : '');
+      b.title = 'Gleymdust — síðasta skoðun 2025 eða fyrr. Smelltu til að sjá listann.';
+      const h = skuldN ? Math.min(58, Math.max(12, Math.round(16 + ((skuldN - lagst) / bil) * 44))) : 6;
+      b.innerHTML = '<i style="height:' + h + 'px"></i><em></em><u></u>';
+      b.querySelector('em').textContent = 'Gleymt';
+      b.querySelector('u').textContent = skuldN ? String(skuldN) : '—';
+      b.addEventListener('click', () => skuldChip.click());
+      strip.insertBefore(b, strip.children[1] || null);
+      strip.style.gridTemplateColumns = 'repeat(' + (chips.length + 1) + ',minmax(0,1fr))';
     }
 
     row.parentNode.insertBefore(strip, row);
