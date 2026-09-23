@@ -148,7 +148,7 @@
       // Bæði colgroup OG reitinn: taflan er í auto-layout og skar dálkinn í 170 px
       // þótt <col> segði 236 (mælt 23.09) — min-width á reitnum heldur honum.
       W + 'table.data-table colgroup col:nth-child(3){width:236px!important}',
-      W + '._ars-notacell{position:relative!important;vertical-align:middle!important;overflow:visible!important;min-width:236px!important;width:236px!important}',
+      W + '._ars-notacell{position:relative!important;vertical-align:middle!important;overflow:hidden!important;min-width:236px!important;width:236px!important;padding:4px 6px!important}',
       W + 'table.data-table thead th:nth-child(3){min-width:236px!important}',
       // Lesa-lagið: textinn er sýndur í eigin lagi OFAN Á reitnum — `input` getur
       // ekki brotið línur — svo reiturinn sjálfur (og öll vistun 153) er ósnertur
@@ -164,12 +164,15 @@
       // -webkit-line-clamp komst aldrei að: mælt 23.09 skiluðu sellur ÞREMUR og FJÓRUM
       // línum þótt klemman stæði á 2, og neðsta línan lenti 2px NEÐAN við punktastrikið.
       // Klemman ræður aðeins hæð sem er innihaldsdrifin — botninn verður að vera auto.
-      V + '._ars-nota3{position:absolute;top:3px;left:4px;right:4px;bottom:auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:2px 4px;font:500 11.5px/1.35 ' + SANS + ';color:#2b313c;background:transparent;cursor:text;white-space:normal;word-break:break-word}',
-      V + '._ars-nota3:empty{display:none}',
-      V + '._ars-notacell.arsm-ritar ._ars-nota3{display:none}',
-      W + '._ars-notacell ._ars-plannote{height:100%!important;min-height:40px!important}',
-      W + '._ars-notacell._er-med ._ars-plannote{color:transparent!important;caret-color:#1f2530}',
-      W + '._ars-notacell.arsm-ritar ._ars-plannote{color:#1f2530!important}',
+      // Textinn liggur í venjulegu flæði og er klipptur við þrjár línur — hann
+      // getur því ekki flætt yfir næstu röð (mælt 23.09: absolút lag hékk út úr
+      // reitnum og tvær nótur runnu saman á skjánum).
+      V + '._ars-nota3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font:500 11.5px/1.35 ' + SANS + ';color:#2b313c;white-space:normal;word-break:break-word;cursor:text;min-height:15px}',
+      // Reiturinn sjálfur er ósýnilegur ofan á textanum þar til smellt er í hann.
+      // Engin gullrönd (Agnar 23.09: „taka kannski bara burtu þessa rönd").
+      W + '._ars-notacell ._ars-plannote{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:4px 6px!important;border:0!important;background:transparent!important;color:transparent!important;caret-color:#1f2530;box-shadow:none!important}',
+      W + '._ars-notacell.arsm-ritar ._ars-plannote{background:#fff!important;color:#1f2530!important;border:1px solid #b8912f!important;z-index:3!important}',
+      V + '._ars-notacell.arsm-ritar ._ars-nota3{visibility:hidden}',
 
       // ── 3 · hlutahaus og bilið ────────────────────────────────────────────
       V + '.arsm-sec{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:2px 2px 8px}',
