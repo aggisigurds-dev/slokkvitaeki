@@ -45,7 +45,30 @@
     B + ' .bb-face:not(:has(>#_ky-vm-toggle)):has(>#_pe-btn)>.bb-rightwrap{margin-left:0!important}',
     B + ' .bb-face:not(:has(>#_ky-vm-toggle))>#_pe-btn{margin-left:auto!important}',
     /* 3 · loft milli spjaldsins og klukkunnar (bb-face gap er 4px) */
-    B + ' .bb-face>#_pe-btn{margin-right:10px}'
+    B + ' .bb-face>#_pe-btn{margin-right:10px}',
+
+    /* 4 · 23.09.2026 (Agnar: „Þessi skjár. Tölva. Tablet. Þarf ekki að vera svona
+     *    áberandi. Gerðu bara mjög lítið óljóst. Bara f mig þegar ég er að kíkja úr
+     *    símanum"): sýn-rofinn var blár borði með þremur orðum — hávaðasamasti
+     *    hluturinn í borðanum og þó aðeins fyrir hann sjálfan. Hann er nú daufur og
+     *    lítill: engin orð, grá tákn, 38% ógagnsæi — og LIFNAR VIÐ (full birta,
+     *    orðin aftur) þegar bendillinn fer yfir hann. Vöxturinn étur sjálfvirka bilið
+     *    vinstra megin, svo spjaldið, skiptirinn og klukkan haggast ekki.
+     *    Á SÍMA er hann hins vegar TÆKIÐ hans til að skipta yfir í Skjá/Töflu — þar
+     *    heldur hann snertistærð (32px) og er aðeins deyfður. */
+    B + ' .ky-vm{background:transparent!important;border-color:rgba(255,255,255,.10)!important;border-radius:3px!important;'
+      + 'padding:1px!important;margin:0 6px 0 0!important;opacity:.38!important;transition:opacity .15s}',
+    B + ' .ky-vm:hover,' + B + ' .ky-vm:focus-within{opacity:1!important}',
+    B + ' .ky-vm-seg{padding:3px 5px!important;font-size:9.5px!important;font-weight:600!important;color:rgba(255,255,255,.55)!important;gap:4px!important}',
+    B + ' .ky-vm-ico{font-size:11px!important;filter:grayscale(1)}',
+    B + ' .ky-vm-lbl{display:none}',
+    B + ' .ky-vm:hover .ky-vm-lbl,' + B + ' .ky-vm:focus-within .ky-vm-lbl{display:inline}',
+    B + ' .ky-vm-seg.on{background:rgba(255,255,255,.10)!important;color:rgba(255,255,255,.85)!important;box-shadow:none!important}',
+    B + ' .ky-vm-seg.on .ky-vm-ico{filter:grayscale(.35)}',
+    /* síminn: sama lágstemmda útlitið en snertistærð heldur sér */
+    'html[data-viewmode="mobile"] ' + B + ' .ky-vm{opacity:.75!important}',
+    'html[data-viewmode="mobile"] ' + B + ' .ky-vm-seg{padding:8px 10px!important;font-size:11px!important;min-height:32px;box-sizing:border-box}',
+    'html[data-viewmode="mobile"] ' + B + ' .ky-vm-ico{font-size:14px!important}'
   ].join('\n');
 
   function setja() {
