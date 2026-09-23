@@ -720,6 +720,21 @@
         };
       })
       .sort((a, b) => String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
+    // 23.09.2026 (Agnar: „sumir vilja ekkert virkjast aftur eða óvirkjast") — RÓTIN.
+    // `_cache.byId` var byggt ofar (:397) úr `allCompanies`, en línan hér að ofan skilar
+    // NÝJUM hlut per fyrirtæki (`return { ...c, _ars, … }`). Taflan teiknar úr `_cache.list`
+    // (nýju hlutirnir) en hver einasti raðar-hnappur les `_cache.byId[id]` — GAMLA hlutinn.
+    // Afleiðing, MÆLD á lifandi borði: smellur á „↩ Virkja aftur" vistaðist rétt á þjóninum
+    // (ekki_sleppt flakkaði true↔false við hvern smell) en merkið á röðinni breyttist ALDREI,
+    // þótt taflan væri endurbyggð — og `cur` var lesið af skuggahlutnum, svo næsti smellur gat
+    // skrifað sama gildið aftur. Nákvæmlega „vill ekki virkjast eða óvirkjast". Sama gat beið
+    // hvers handlers sem les byId (ferðanóta :2760, ítarsýn :1760, :4406, :4849).
+    // Kortið vísar nú á TEIKNUÐU hlutina; fyrirtæki utan borðsins halda sínum stað í kortinu
+    // (ítarsýn af öðrum listum má enn fletta þeim upp). Engin breyting á gögnum né reglum.
+    _cache.byId = Object.assign(
+      Object.fromEntries(allCompanies.map(c => [c.id, c])),
+      Object.fromEntries(_cache.list.map(c => [c.id, c]))
+    );
     writeSnapshot();   // næsta kalda opnun málar strax úr þessu eintaki
     // 08.09.2026: HVER sem hleður (190/304 kalla líka Arsskodun.loadAll) — sé borðið uppi
     // og gögnin breytt, teiknum við. Áður teiknaði aðeins backgroundRefresh, og hleðsla sem
