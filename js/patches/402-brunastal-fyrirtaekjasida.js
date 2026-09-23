@@ -96,6 +96,32 @@
     r('.co-mynd-flis', 'border:1px solid rgba(255,255,255,.14);border-radius:8px;box-shadow:inset 0 2px 5px rgba(0,0,0,.35)'),
     r('.co-mynd-hlekkir a,.co-mynd-upp', PLATE_CHIP + ';text-decoration:none'),
 
+
+    /* ── fyrirtækjaspjaldið sem málmhaus + stálplata (hönnun C): grid án DOM-breytinga ── */
+    r('.co-banner', 'display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-areas:"id id" "bupp mynd" "note mynd";gap:12px;padding:0 0 12px;background:' + PLATE + ';background-image:' + PLATE_IMG + ';align-items:start;overflow:visible'),
+    r('.co-banner::before', 'content:none'),
+    r('.co-banner-id', 'grid-area:id;position:relative;background:' + METAL + ';padding:18px 22px 16px;border-bottom:1px solid #000;border-radius:13px 13px 0 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);align-items:center;gap:14px;margin:0'),
+    r('.co-banner-id::before,.co-banner-id::after', 'content:"";position:absolute;top:8px;width:7px;height:7px;border-radius:50%;background:' + RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.7);pointer-events:none'),
+    r('.co-banner-id::before', 'left:8px'), r('.co-banner-id::after', 'right:8px'),
+    r('.co-banner::after', 'content:none'),
+    r('.co-mynd', 'grid-area:mynd;margin:0 12px 0 0;min-width:0'),
+    r('.co-bupp', 'grid-area:bupp;margin:0 0 0 12px;color:#1f2530'),
+    r('.co-banner-right', 'grid-area:note;margin:0 0 0 12px;align-items:flex-start'),
+    r('.co-banner-right .co-banner-note', 'width:100%;min-height:64px'),
+    r('.co-bupp ._bupp-lina', LINE + ';border:0;color:#1f2530'),
+    r('.co-bupp ._bupp-lina span,.co-bupp ._bupp-afsl', 'color:#1f2530'),
+    r('.co-bupp ._bupp-merki', 'color:#525b6b'),
+    r('.co-bupp .co-bupp-reitur', 'background:#eef1f6!important;color:#141822!important;border:1px solid rgba(20,24,34,.14)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)!important'),
+    r('.co-mynd-flis', 'border:1px solid rgba(20,24,34,.14);background:#8f98a8;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)'),
+    r('.co-mynd-flis.med', 'border-color:rgba(20,24,34,.14)'),
+
+
+    r('.co-bupp ._bupp-merki', 'color:#525b6b!important;font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.08em!important;text-transform:uppercase!important'),
+    r('.co-bupp ._bupp-eining,.co-bupp ._bupp-afsl,.co-bupp ._bupp-lina > span', 'color:#1f2530!important'),
+    r('.co-bupp ._bupp-flis', 'background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.14)!important;color:#3a4250!important;border-radius:7px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;font-family:' + SANS + '!important;font-size:11.5px!important;font-weight:600!important;padding:0 8px!important;height:26px!important;text-shadow:none!important'),
+    r('.co-bupp ._bupp-flis.valin,.co-bupp ._bupp-flis.a,.co-bupp ._bupp-flis.on,.co-bupp ._bupp-flis[aria-pressed="true"]', 'background:' + METAL_BTN + '!important;border-color:#000!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
+    r('.co-bupp ._bupp-tala', 'width:44px!important;text-align:right!important;font-family:' + MONO + '!important'),
+
     /* ── skeljar ── */
     r('._samskipti-card,.ut-list:not(.b404),._afsl-box,._dyg-section.sk-card:not(.b403),._ufs-section.sk-card,._co-mail-box', SHELL + ';padding:0'),
     r('#_ctc-notes', SHELL.replace('border-radius:14px', 'border-radius:14px 14px 0 0') + '!important;border-bottom:0!important;background:' + PLATE + '!important;background-image:' + PLATE_IMG + '!important;margin:0!important;padding:14px 12px 10px!important;box-shadow:none!important'),
