@@ -76,6 +76,7 @@
     // við réttan stað + ár beint úr símanum.
     { k: 'br-skyrslustod',  label: 'Skýrslu-stöð (Brunahólf)',        short: 'Skýrslust.', emoji: '📊', url: 'https://brunaholf.netlify.app/?embed=1#skyrslustod' },
     { k: 'turbopaint',      label: 'TurboPaint — teikningar',        short: 'Teikningar', emoji: '📐', url: 'https://kjarni.vercel.app/kjarni/turbopaint' },
+    { k: '3dwork',          label: '3dwork — merkja/CAD-bekkur',     short: '3dwork', emoji: '🛠️', url: 'https://kjarni-3dwork.vercel.app/3dwork' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -156,6 +157,13 @@
       manifest: '/manifest-boss.json', home: 'br-fjarmalyfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
       defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'br-efniskostnadur', 'income', 'bokhalds-yfirlit', 'bord', 'verkbord', 'rekstrarfelog'] },
+    // 3dwork sem eigið app (Agnar 23.09.2026: vildi opna bekkinn af öpp-síðunni í
+    // símanum, ekki úr hliðarstiku). Ein síða — bekkurinn sjálfur (iframe á
+    // kjarni-3dwork.vercel.app/3dwork), sem er þegar fullt app-útlit.
+    { key: '3dwork', emoji: '🛠️', name: '3dwork', color: '#0b0b0d', dark: '#000000',
+      manifest: '/manifest-3dwork.json', home: '3dwork',
+      blurb: 'STL/mesh-bekkur fyrir CO2-merki og prentun',
+      defaults: ['3dwork'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
   // ── NOTENDA-BÚIN ÖPP (2026-08-26, ósk Agnars: „save as app page named …") ──
