@@ -494,6 +494,20 @@
       }, 500);
     }).observe(main, { childList: true });
     mountCompany();
+    // ── ÖRYGGISPÚLS (23.09.2026) ───────────────────────────────────────────────
+    // Vaktin hér að ofan hlustar á BEINA afkomendur `main` — og það dugði meðan
+    // bandið var sjálft beinn afkomandi. Frá og með 403 býr það INNI í Skjöl-
+    // spjaldinu, og þá er það ekki lengur satt: teikni 199 spjaldið upp á nýtt
+    // deyr bandið með innvolsinu án þess að nokkur bein barnabreyting verði á
+    // `main`. Vaktin sá ekkert, `mountCompany` var aldrei kölluð og bandið kom
+    // ALDREI aftur. Mælt á fyrirtæki 202 í framleiðslu: enginn `._dpb-company`
+    // eftir 20 sekúndna bið á fullteiknuðum prófíl.
+    //
+    // Púlsinn er ódýr af ásettu ráði: `mountCompany` hættir strax ef bandið er
+    // þegar til og ber rétt coId (eitt querySelector), svo þetta kostar ekkert í
+    // kyrrstöðu og getur ekki sjálft búið til hávaða — `placeCompanySection` er
+    // EKKI kölluð héðan. Sama mynstur og 403 notar af sömu ástæðu.
+    setInterval(mountCompany, 2000);
   })();
   // A new skýrsla/reikningur was written (168/233/273/274 dispatch these) or the
   // user navigated back to the same company → re-pull.
