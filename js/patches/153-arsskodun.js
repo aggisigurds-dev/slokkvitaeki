@@ -535,6 +535,26 @@
           _ars.estimated_yearly = Math.round(est);
           _ars._unit_count = units.length;
           _ars._derived = true;
+          // 23.09.2026 — SKAMMUR PRÓFÍLL SÁST HVERGI.
+          // `_blobMisraemi` hér að neðan kviknaði AÐEINS á TÓMUM prófíl (units.length === 0).
+          // Vanti 49 af 54 tækjum er prófíllinn ekki tómur — og þá sagði ekkert neitt: hvorki
+          // ⚠-merkið, sían „Stemmir ekki" né talan í hausnum. Það er sama einkennið og Agnar
+          // lýsti („tækjalistinn dettur út úr prófílnum en sýnir samt tölu á ársskoðunarsíðunni"),
+          // aðeins að hluta í stað alls — og hlutinn reyndist algengari. Mælt 23.09.2026 á
+          // LIFANDI félögum: ÞRÍR tómir (sáust) og NÍU skammir sem sáust hvergi, þar á meðal
+          // Heimaleiga – Höfuðstöðvar með 5 tæki á prófíl á móti 54 í skýrslu-afritinu.
+          //
+          // Lifandi talan gildir ÁFRAM (T=S=I) og áætlunin er reiknuð af tækjunum sem ERU til —
+          // þetta bætir engu við nema merkinu. Misræmið á að sjást, ekki hverfa.
+          if (manual.equipment) {
+            const _stuttTot = Object.values(manual.equipment).reduce((s, v) => s + (+v || 0), 0);
+            if (_stuttTot > units.length) {
+              _ars._blobEq = manual.equipment;
+              _ars._blobTotal = _stuttTot;
+              _ars._blobMisraemi = true;
+              _ars._blobStutt = units.length;   // prófíllinn er EKKI tómur — hve mörg standa á honum
+            }
+          }
         } else if (!manual.equipment_manual && manual.equipment) {
           // 09.09.2026 — T=S=I (Agnar, orðrétt): „Tækin inn á prófíl er jafnt úttektarskýrslu
           // og jafnt við invoice. T=S=I. Það sé líka grunnurinn sem restin af síðunni á að
@@ -771,9 +791,15 @@
     // (arsskodun_customers[fid].equipment) segir tölu. Lifandi talan gildir — en afritið
     // er ekki þaggað niður, það stendur hér svo Agnar sjái NÁKVÆMLEGA hvað stangast á.
     if (ars._blobMisraemi) {
-      const tipT = 'Prófíllinn er TÓMUR — engin tæki skráð á þennan stað í uttaeki.\n'
-        + 'Gamalt skýrslu-afrit í stillingunum segir ' + ars._blobTotal + ' tæki'
-        + (ars._blobEst ? ' (áætlun ' + ars._blobEst + ' kr)' : '') + '.\n'
+      // 23.09.2026: merkið nær nú yfir SKAMMAN prófíl líka (sjá loadAll). Textinn verður að segja
+      // hvort tilvikið þetta er — „TÓMUR" á prófíl sem ber 80 af 83 tækjum var einfaldlega rangt.
+      const tipT = (ars._blobStutt != null
+          ? 'Prófíllinn ber ' + ars._blobStutt + ' tæki en skýrslu-afritið í stillingunum segir '
+            + ars._blobTotal + '.\nÞað munar '
+            + ((ars._blobTotal - ars._blobStutt) === 1 ? '1 tæki' : (ars._blobTotal - ars._blobStutt) + ' tækjum') + '.\n'
+          : 'Prófíllinn er TÓMUR — engin tæki skráð á þennan stað í uttaeki.\n'
+            + 'Gamalt skýrslu-afrit í stillingunum segir ' + ars._blobTotal + ' tæki'
+            + (ars._blobEst ? ' (áætlun ' + ars._blobEst + ' kr)' : '') + '.\n')
         + 'Lifandi talan gildir (T=S=I). Annaðhvort vantar tækin á fyrirtækjasíðuna '
         + 'eða afritið er úrelt — afritinu er ekki eytt sjálfkrafa.';
       return '<span class="_ars-misr _ars-misr-afrit" title="' + esc(tipT) + '" style="display:inline-flex;align-items:center;gap:3px;margin-left:5px;padding:1px 6px;border-radius:6px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:10px;font-weight:800;white-space:nowrap;vertical-align:top;line-height:1.5">⚠ afrit ' + ars._blobTotal + '</span>';
@@ -4744,7 +4770,10 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
   // eqGroups/eqTrioHtml eru birt af sömu ástæðu og cleanAminning: önnur borð
   // (175 Rekstrarfélög) eiga að TEIKNA SLT/BSL/RS með nákvæmlega sömu formúlu,
   // ekki afriti af henni. Sjá athugasemd við eqGroups um forflokkað inntak.
-  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, arsViewMode, version: 'v1' };
+  // categoryOf er deilt ÚT (23.09.2026) af sömu ástæðu: papp 224 skrifar skýrslu-afritið þegar
+  // tækjalistinn er staðfestur og VERÐUR að nota nákvæmlega sömu körfur og afleiðslan hér.
+  // Tvær útfærslur á sömu flokkun reka í sundur og byggju til misræmið sem þær áttu að loka.
+  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, arsViewMode, categoryOf, version: 'v1' };
 
   // Keep the cached priority in sync when the ❗ control is cycled (patch 175),
   // so sorting by ❗ stays correct. The ❗ button updates itself in place — no

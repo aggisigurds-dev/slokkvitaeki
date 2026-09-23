@@ -266,6 +266,32 @@
       else  { steps.taekjalisti = false; delete meta.taekjalisti; }
       var patch = {}; patch[stepsKey]=steps; patch[metaKey]=meta;
       patch.listi_stadfest_ar = on ? ar : 0;
+      // 23.09.2026 — AFRITIÐ ELTI ALDREI STAÐFESTINGUNA, OG VÖRÐURINN GALT FYRIR ÞAÐ.
+      // `arsskodun_customers[<id>].equipment` er skýrslu-afrit sem EKKERT uppfærði nema
+      // handvirki tækjaritillinn í 153. Skrái maður tæki í felti stækkar prófíllinn (uttaeki)
+      // en afritið stendur kyrrt — og audit-t-s-i sá NÝTT T=S-brot í hvert einasta sinn sem
+      // farið var í úttekt. Mælt 23.09.2026: 26 lifandi félög stóðu þannig, fimm þeirra frá
+      // úttektardeginum 21.09. einum. Vörður sem gelgir á hverjum úttektardegi verður þaggaður,
+      // og þá er hann verri en enginn (sama regla og í audit-vistun-utskolun).
+      //
+      // Þegar maður LÆSIR listanum er hann að lýsa því yfir: þetta er tækjalisti ársins.
+      // Þá á afritið að víkja fyrir lifandi tölunni — nákvæmlega það sem T=S=I segir.
+      //
+      // AÐEINS UPP Á VIÐ. Sé prófíllinn SKEMMRI en afritið stendur afritið óhreyft, svo
+      // ⚠-merkið í Ársskoðun (153 `_blobMisraemi`) haldi áfram að sýna að tæki vanti. Það er
+      // einkennið sem Agnar bað um að sjá; staðfesting á aldrei að má það út.
+      // Handvirk tala (equipment_manual) er aldrei snert — hún vinnur yfir allt.
+      if(on){
+        try{
+          var _cat = window.Arsskodun && Arsskodun.categoryOf;
+          if(_cat && !cur.equipment_manual){
+            var _u = unitsFor(coId), _eq = {};
+            _u.forEach(function(x){ var k=_cat(x.type, x.size); _eq[k]=(_eq[k]||0)+1; });
+            var _afrit = Object.keys(cur.equipment||{}).reduce(function(s,k){ return s + (+cur.equipment[k]||0); }, 0);
+            if(_u.length >= _afrit) patch.equipment = _eq;
+          }
+        }catch(e){ try{ console.warn('[uttekt-taeki] afrit ekki uppfært', e); }catch(_){} }
+      }
       // 17.09.2026: AppSettings.save skilar false og kastar ekki — hér var hvorki
       // beðið eftir henni né niðurstaðan lesin. Lásinn er localStorage (þessi vél),
       // svo listinn leit staðfestur út hér á meðan ÞjónustuVerkstæðið á skrifstofunni

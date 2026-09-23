@@ -77,6 +77,32 @@ function kodaVordur() {
     fail('153: afritið er ekki geymt (_blobEq). Það má aldrei hverfa þögult — aðeins víkja fyrir lifandi tölunni.');
   if (!/_ars\._misraemi \|\| c\._ars\._blobMisraemi/.test(ars))
     fail('153: „⚠ Stemmir ekki"-sían nær ekki yfir afrits-misræmið — þá er ekki hægt að finna það.');
+
+  // ── 23.09.2026: TVÆR ÁTTIR, TVÖ ÓLÍK SVÖR ───────────────────────────────────
+  // Gagna-mælingin hér að neðan hafði enga áttarskyn og því tvö ólík vandamál undir
+  // einni rauðri tölu. Mælt á LIFANDI félögum þennan dag: 612 stemmdu, 26 voru með
+  // STÆRRI prófíl en afrit og 12 með minni (3 tómir + 9 skammir).
+  //
+  //   T > S  tæki skráð í felti eftir að afritið var tekið. Gögnin eru RÉTT; afritið
+  //          er úrelt. Þetta gerðist á hverjum úttektardegi og var eina ástæðan fyrir
+  //          fimm „NÝ brot" 21.09. Vörður sem gelgir í hvert sinn sem unnið er verður
+  //          þaggaður — rótin er löguð í 224, ekki þögguð hér.
+  //   T < S  tækin vantar á prófílinn. ÞETTA er kvörtun Agnars og má aldrei hverfa.
+  //
+  // Báðar brautirnar eru festar hér svo hvorug geti dottið út þegjandi.
+  const ut = fs.readFileSync(path.join(rot, 'js/patches/224-uttekt-taeki.js'), 'utf8');
+  if (!/patch\.equipment\s*=\s*_eq/.test(ut))
+    fail('224: staðfesting tækjalistans uppfærir ekki lengur skýrslu-afritið (patch.equipment). '
+       + 'Án þess fer T og S í sundur við HVERJA úttekt og vörðurinn verður hávaði.');
+  if (!/_u\.length\s*>=\s*_afrit/.test(ut))
+    fail('224: skilyrðið „aðeins upp á við" er farið. Staðfesting má ALDREI lækka afritið — '
+       + 'þá máist ⚠-merkið yfir tæki sem vantar á prófílinn út með einum smelli.');
+  if (!/categoryOf,\s*version:/.test(ars))
+    fail('153: categoryOf er ekki lengur deilt út — 224 myndi flokka tækin með eigin afriti '
+       + 'af körfunum og búa til misræmið sem það á að loka.');
+  if (!/_ars\._blobStutt\s*=\s*units\.length/.test(ars))
+    fail('153: SKAMMUR prófíll (0 < T < S) er ekki lengur merktur (_blobStutt). Hann sást hvergi '
+       + 'fyrir 23.09.2026 — níu lifandi félög, þar á meðal 5 tæki á móti 54.');
 }
 
 (async () => {
