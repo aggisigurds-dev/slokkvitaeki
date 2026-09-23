@@ -162,6 +162,12 @@
       // síðasti dálkurinn (⋯) tekur afganginn.
       W + 'table.data-table{width:100%!important;min-width:100%!important}',
       W + 'table.data-table colgroup col:last-child{width:auto!important}',
+      // 23.09.2026 (hopp og skopp): #ars-main ER skrunstikan (overflow-y:auto, mælt
+      // 4.705/814 px). Vafrinn „akkerar" skrunið sjálfkrafa þegar innihald ofan við
+      // útsýnið breytir hæð — og 187/267 sprauta inn dálkum eftir hverja teikningu, svo
+      // listinn skreið til undir fingrinum. `overflow-anchor:none` slekkur á akkerinu;
+      // 153 setur stöðuna sjálft á sinn stað og er eina heimildin um hana.
+      'html body #view-arsskodun,' + V + '#ars-main,' + V + '._ars-tblscroll,' + V + '.data-table-wrap{overflow-anchor:none}',
       // Lesa-lagið: textinn er sýndur í eigin lagi OFAN Á reitnum — `input` getur
       // ekki brotið línur — svo reiturinn sjálfur (og öll vistun 153) er ósnertur
       // og birtist um leið og smellt er í hann.
@@ -346,7 +352,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'arsm-b is-skuld' + (erVirk(skuldChip) ? ' is-on' : '');
-      b.title = 'Gleymdust — síðasta skoðun 2025 eða fyrr. Smelltu til að sjá listann.';
+      b.title = 'Gleymdust — síðasta skoðun 2025 eða fyrr.\nEKKI talin með: þeir sem þú virkjaðir aftur (↩) og afskráð félög (⛔).\nSmelltu til að sjá listann.';
       const h = skuldN ? Math.min(58, Math.max(12, Math.round(16 + ((skuldN - lagst) / bil) * 44))) : 6;
       b.innerHTML = '<i style="height:' + h + 'px"></i><em></em><u></u>';
       b.querySelector('em').textContent = 'Gleymt';
@@ -620,13 +626,19 @@
     const takn = box && box.parentElement ? Array.from(box.parentElement.children).find(e => e !== box && /^[^\p{L}\p{N}\s]{1,3}$/u.test((e.textContent || '').trim())) : null;
     if (takn) takn.style.setProperty('display', 'none', 'important');
     // Undirtextinn fær tímastimpilinn og lokaorðin.
+    // 23.09.2026: VIÐBÓT, ekki yfirskrift. Áður var `sub.textContent = …` sett á alla
+    // línuna — það fletti út hnútunum sem 153 á þar (🟡 „slepptir faldir"-tengillinn og
+    // ↩ „sýna líka undanskilda"-rofinn urðu að dauðum texta). Stimpillinn fær nú sinn
+    // eigin hnút aftast og hreyfir ekkert annað.
     const sub = root.querySelector('._ars-sub');
-    if (sub && !/gert upp/.test(sub.textContent || '')) {
+    if (sub && !sub.querySelector('._ars-stimpill')) {
       const d = new Date();
       const p = n => String(n).padStart(2, '0');
-      sub.textContent = String(sub.textContent || '').trim().replace(/\s+/g, ' ') +
-        ' · ' + p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() +
+      const s = document.createElement('span');
+      s.className = '_ars-stimpill';
+      s.textContent = ' · ' + p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() +
         ', ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ' — árið gert upp stað fyrir stað';
+      sub.appendChild(s);
     }
   }
 
@@ -827,7 +839,7 @@
       el.style.setProperty("height", "44px", "important");
     });
   }
-  const OKKAR = '.arsm-strip,.arsm-seg,.arsm-more,.arsm-tags,.arsm-sec,.arsm-herobar,.arsm-heroleg,._ars-nota3,.arsm-korthaus,.arsm-verkf,.arsm-verk';
+  const OKKAR = '.arsm-strip,.arsm-seg,.arsm-more,.arsm-tags,.arsm-sec,.arsm-herobar,.arsm-heroleg,._ars-nota3,._ars-stimpill,.arsm-korthaus,.arsm-verkf,.arsm-verk';
   // Staðir sem hjúpurinn sjálfur hreyfir við (færir takka heim og aftur til baka).
   // Breytingar ÞAR mega ekki vekja nýja smíði — það var lykkjan sem hökti.
   const OKKAR_SNERTIR = '#_ars-pnr-row,#_arsmap-wrapper,#_arsmap-panel,._hh-toggle,._ars-filterstrip';

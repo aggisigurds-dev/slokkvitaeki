@@ -62,6 +62,7 @@
   // stendur eftir á árinu — þeir blésu upp „Eftir"-tölurnar og duldu hvað er
   // raunverulega eftir hjá virku kúnnunum.
   const LS_SKIPHIDE = 'arsskodun_hideSkipped';
+  const LS_SKIPRAW = 'arsskodun_skipRaw';
   // 2026-08-12 (ósk Agnars): póstnúmera-sían — 'all' = engin sía (öll númer),
   // annars JSON-fylki af völdum númerum ('' = fyrirtæki án skráðs póstnúmers).
   const LS_POSTNR = 'arsskodun_postnr';
@@ -1123,6 +1124,9 @@
     // Sjálfgefið AF (=sýna þá) svo ekkert hverfi óumbeðið hjá þeim sem þekkja
     // listann eins og hann var. Gátreiturinn í „🟡 Slepptir í fyrra" kveikir.
     hideSkipped: localStorage.getItem(LS_SKIPHIDE) === '1',
+    // 23.09.2026: hrái stjórnborðs-hamurinn í 🟡 Slepptir (sýnir líka handvirkt
+    // virkjaða aftur + afskráð félög). ÚTLITSVAL eins og hinar — staðbundið.
+    skipRaw: localStorage.getItem(LS_SKIPRAW) === '1',
     search: ''
   };
   // „Númer"-glugginn opinn/lokaður — bara fyrir þessa setu, ekki vistað.
@@ -1207,6 +1211,21 @@
     if (a.ekki_sleppt) return false;
     const last = +a.last_year_inspected || 0;
     return last > 0 && last < curYear - 1;
+  }
+  // 23.09.2026 (Agnar: „er verið að telja sem eru ekki virkir líka") — ⛔ AFSKRÁÐ FÉLAG.
+  // Opinbera fyrirtækjaskrár-staðan (patch 380, taflan `fyrirtaekjaskra_stada`) er þegar
+  // birt sem ⛔ fremst í nafninu. Fimm af 132 í 🟡 Slepptir voru afskráð félög (elsta frá
+  // 2000) — þau verða aldrei skoðuð og bólgnuðu bara upp bakstöðuna. AÐEINS lesið hér:
+  // engu er breytt í gögnum, fyrirtækið er hvorki falið annars staðar né tekið úr þjónustu.
+  // Kortið hleðst seint (ein sókn per lotu); sé það ekki komið skilar fallið false og
+  // talan er sú gamla þangað til 380 teiknar — aldrei skakkt í hina áttina.
+  function erAfskrad(c) {
+    try {
+      const m = window.SkraStop && SkraStop.stada && SkraStop.stada();
+      if (!m || !m.size) return false;
+      const x = m.get(String(c.kennitala || '').replace(/\D/g, ''));
+      return !!(x && Array.isArray(x.stada) && x.stada.some(s => /afskrá|gjaldþrot|slit/i.test(String(s))));
+    } catch (_) { return false; }
   }
   // 2026-08-17 (Agnar — Pizzan: gult '26-merki en samt „Skoðað 2026" og „I
   // cant change that"): EIN skilgreining á „árið búið". Fact-check litur
@@ -1293,6 +1312,7 @@
     // í arsskodun_customers á þjóninum. Má því vera staðbundið.
     localStorage.setItem(LS_STATUS, state.status);
     localStorage.setItem(LS_SKIPHIDE, state.hideSkipped ? '1' : '0');
+    localStorage.setItem(LS_SKIPRAW, state.skipRaw ? '1' : '0');
   }
   // Póstnúmer fyrirtækis, samræmt: alltaf strengur, '' = ekkert skráð.
   const pnrOf = c => String(c.postnumer == null ? '' : c.postnumer).trim();
@@ -1399,11 +1419,25 @@
       // 2026-05-26: companies inspected 2024 but skipped 2025 — the "weird year"
       // hole. Detect by last_year_inspected === 2024 (or any year < curYear-1).
       // 2026-08-17: VILJANDI hráa reglan (án ekki_sleppt-yfirskriftar) — þessi
-      // sýn er stjórnborðið: hún sýnir líka þá sem voru handvirkt virkjaðir
+      // sýn var stjórnborðið: hún sýndi líka þá sem voru handvirkt virkjaðir
       // aftur (með ✓-merki + takka til að snúa við) svo yfirlitið tapist ekki.
+      // 23.09.2026 (Agnar: „ennþá verið að sýna í gleymt sem ég hef tekið úr
+      // þjónustu, og er verið að telja sem eru ekki virkir líka" + „sumir vilja
+      // ekkert virkjast aftur eða óvirkjast"): hráa talan var 132 — MÆLT á
+      // lifandi borði: 36 þeirra hafði hann sjálfur virkjað aftur (✓ virkur) og
+      // 5 eru afskráð félög. ↩ Virkja aftur breytti hvorki listanum né tölunni,
+      // svo takkinn leit út fyrir að vera bilaður. Sjálfgefið er sýnin nú HREIN
+      // bakstaða: það sem raunverulega er eftir að fara í. Stjórnborðið er einum
+      // smelli í burtu — „sýna líka"-rofinn í undirlínunni (state.skipRaw) skilar
+      // hráu reglunni óbreyttri. Ein regla, ein tala: countByStatus keyrir þessa
+      // sömu síu, svo flagan, súlan og listinn geta ekki rekið í sundur.
       arr = arr.filter(c => {
         const last = +c._ars.last_year_inspected || 0;
-        return last > 0 && last < curYear - 1;
+        if (!(last > 0 && last < curYear - 1)) return false;
+        if (state.skipRaw) return true;
+        if (c._ars.ekki_sleppt) return false;
+        if (erAfskrad(c)) return false;
+        return true;
       });
     } else if (state.status === 'priority') {
       // 2026-05-26: damage-control filter — show only flagged priority cases.
@@ -1865,6 +1899,23 @@
     // Lárétta skrunið í töflunni sjálfri: hnúturinn er endurnýjaður, svo staðan er sett aftur eftir SELECTOR.
     let _tblSkrun = null;
     try { const t = main.querySelector('._ars-tblscroll'); if (t && (t.scrollLeft || t.scrollTop)) _tblSkrun = [t.scrollLeft, t.scrollTop]; } catch (_) {}
+    // 23.09.2026 (Agnar: „getur þú eitthvað gert til að stoppa þetta hopp og skopp þegar maður ýtir á eitthvað
+    // þarna, meðan það er að reloadast"): skrunstaðan var þegar varin — en hún dugði ekki. `main.innerHTML=…`
+    // TÆMIR listann í eitt tif, svo skjalið styttist úr fullri hæð niður í hausinn einan. Vafrinn KLIPPIR þá
+    // skrunstöðuna við nýju (styttri) hæðina áður en við náum að setja hana aftur, og eftir teikningu hoppar
+    // síðan niður aftur — sami hnykkur báðar leiðir. Hæðin er því LÆST á fyrri hæð yfir skiptin og losuð aftur
+    // í næsta tifi (og eftir 380 ms, því 187/267 sprauta inn dálkum eftir á). Ekkert í teikningunni breytist,
+    // aðeins það að síðan má ekki skreppa saman á meðan.
+    let _haedLas = 0;
+    try {
+      _haedLas = main.offsetHeight || 0;
+      if (_haedLas > 120) {
+        main.style.minHeight = _haedLas + 'px';
+        const losa = () => { try { if (main.style.minHeight === _haedLas + 'px') main.style.minHeight = ''; } catch (_) {} };
+        requestAnimationFrame(() => requestAnimationFrame(losa));
+        setTimeout(losa, 380);
+      }
+    } catch (_) {}
     // Fókus í HVAÐA reit sem er (ferðanóta, mánuður, haki) — ekki bara leitin.
     let _fokus = null;
     try {
@@ -1952,6 +2003,19 @@
       // rökvilla og lagfærð var 10.09: ótalinn hópur er ósýnilegur hópur. Talan er
       // AÐEINS BIRT; countByStatus keyrir sömu síu og flaggan sjálf, engin rök breytast.
       skipped2025: countByStatus('skipped2025') };
+    // 23.09.2026: hvað hreina bakstaðan SKILUR EFTIR — talan á „sýna líka"-rofanum,
+    // svo undanskildi hópurinn sé sýnilegur en ekki talinn með. Sama regla og sían.
+    const skipUndan = (() => {
+      let virk = 0, afskr = 0;
+      (all || []).forEach(c => {
+        const a = c._ars || {};
+        const last = +a.last_year_inspected || 0;
+        if (!(last > 0 && last < curYear - 1)) return;
+        if (a.ekki_sleppt) virk++;
+        else if (erAfskrad(c)) afskr++;
+      });
+      return { virk, afskr, alls: virk + afskr };
+    })();
     // 2026-09-08 (Agnar: „geturðu gert þessa grænu og rauðu samantektartakka bara
     // sýna það sem þeir eru að telja í töflunni fyrir neðan … eða sýna nánari
     // upplýsingar"): spjöldin töldu ALLTAF allt borðið, líka þegar taflan var síuð
@@ -2103,7 +2167,11 @@
             <div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🏢</div>
             <div style="min-width:0">
               <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Fyrirtæki í Þjónustu</h1>
-              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${cnt.all} fyrirtæki á borðinu · ${arsAll.length} með skráð tæki${skipHidden ? ` · <span class="_ars-goskip" title="Opna listann yfir slepptu — þar má virkja einstaka aftur með ↩" style="color:#fcd34d;cursor:pointer;text-decoration:underline dotted">🟡 ${skippedCount} slepptir faldir</span>` : ''}</div>
+              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${cnt.all} fyrirtæki á borðinu · ${arsAll.length} með skráð tæki${skipHidden ? ` · <span class="_ars-goskip" title="Opna listann yfir slepptu — þar má virkja einstaka aftur með ↩" style="color:#fcd34d;cursor:pointer;text-decoration:underline dotted">🟡 ${skippedCount} slepptir faldir</span>` : ''}${(state.status === 'skipped2025' && (skipUndan.alls || state.skipRaw)) ? ` · <span class="_ars-skipraw" title="${state.skipRaw
+                ? 'Fela þá aftur — listinn sýnir þá bara það sem raunverulega er eftir að fara í'
+                : 'Sýna líka' + (skipUndan.virk ? ' ' + skipUndan.virk + ' sem þú virkjaðir aftur' : '') + (skipUndan.afskr ? (skipUndan.virk ? ' og ' : ' ') + skipUndan.afskr + ' afskráð félög' : '') + ' — þau eru EKKI talin með í bakstöðunni'}" style="color:#fcd34d;cursor:pointer;text-decoration:underline dotted">${state.skipRaw
+                ? '↩ fela ' + skipUndan.alls + ' undanskilda aftur'
+                : '↩ sýna líka ' + skipUndan.alls + ' undanskilda'}</span>` : ''}</div>
             </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -2469,6 +2537,12 @@
     main.querySelectorAll('._ars-goskip').forEach(el => el.addEventListener('click', (e) => {
       e.stopPropagation(); state.status = 'skipped2025'; saveState(); render();
     }));
+    // 23.09.2026: stjórnborðs-rofinn — sýnir/felur undanskilda hópinn (handvirkt
+    // virkjaðir aftur + afskráð félög) í 🟡 Slepptir. Ein regla: sían og talan
+    // lesa báðar state.skipRaw, svo listinn og flagan breytast í sama smelli.
+    main.querySelectorAll('._ars-skipraw').forEach(el => el.addEventListener('click', (e) => {
+      e.stopPropagation(); state.skipRaw = !state.skipRaw; saveState(); render();
+    }));
     // 2026-08-29 (Agnar): áminningin er ekki lengur birt á röðinni né á
     // síma-kortinu — hún var fastur texti undir fyrirtækjanafninu sem truflaði
     // borðið. Hún lifir óbreytt í gögnunum og sést í ítarsýninni, þar sem
@@ -2736,6 +2810,24 @@
 
     // Skrun og fókus aftur á sinn stað — sama tifi og teikningin, svo ekkert hopp sjáist.
     try { _skrunarar.forEach(([el, t, l]) => { if (el && el.isConnected) { if (t) el.scrollTop = t; if (l) el.scrollLeft = l; } }); } catch (_) {}
+    // 23.09.2026 (Agnar: „stoppa þetta hopp og skopp þegar maður ýtir á eitthvað … meðan það er að reloadast"):
+    // ein endurstilling í sama tifi DUGÐI EKKI. MÆLT á lifandi borði: skrunstaðan fór 2.200 → 2.959 px (759 px
+    // hopp) við eina endurteikningu, og innihaldshæðin datt úr 4.705 í 3.967 px á meðan. Ástæðan er ÁSYNKRÓN:
+    // 187/267 sprauta ár-dálkum og akstur-merkjum inn EFTIR teikninguna og hæð raðanna breytist þá undir
+    // skrunstöðunni. Hún er því sett aftur í nokkur skipti á meðan það sest — og HÆTT UM LEIÐ og notandinn
+    // snertir skrunið sjálfur (wheel/touch/lykill), svo þetta togi aldrei á móti honum.
+    try {
+      let haetta = false;
+      const haettaVid = () => { haetta = true; };
+      ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(t => window.addEventListener(t, haettaVid, { once: true, passive: true }));
+      const aftur = () => {
+        if (haetta) return;
+        try { _skrunarar.forEach(([el, t]) => { if (el && el.isConnected && t && Math.abs(el.scrollTop - t) > 2) el.scrollTop = t; }); } catch (_) {}
+      };
+      requestAnimationFrame(aftur);
+      setTimeout(aftur, 180);
+      setTimeout(() => { aftur(); ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(t => window.removeEventListener(t, haettaVid)); }, 420);
+    } catch (_) {}
     if (_tblSkrun) { try { const t = main.querySelector('._ars-tblscroll'); if (t) { t.scrollLeft = _tblSkrun[0]; t.scrollTop = _tblSkrun[1]; } } catch (_) {} }
     if (_fokus) {
       try {
