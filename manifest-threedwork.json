@@ -1,10 +1,10 @@
 {
-  "id": "/app/3dwork/",
+  "id": "/app/threedwork/",
   "name": "3dwork — Slökkvitæki",
   "short_name": "3dwork",
   "description": "STL/mesh-bekkur fyrir CO2-merki og prentun.",
-  "start_url": "/app/3dwork/",
-  "scope": "/app/3dwork/",
+  "start_url": "/app/threedwork/",
+  "scope": "/app/threedwork/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#000000",

@@ -160,8 +160,11 @@
     // 3dwork sem eigið app (Agnar 23.09.2026: vildi opna bekkinn af öpp-síðunni í
     // símanum, ekki úr hliðarstiku). Ein síða — bekkurinn sjálfur (iframe á
     // kjarni-3dwork.vercel.app/3dwork), sem er þegar fullt app-útlit.
-    { key: '3dwork', emoji: '🛠️', name: '3dwork', color: '#0b0b0d', dark: '#000000',
-      manifest: '/manifest-3dwork.json', home: '3dwork',
+    // Lykill = 'threedwork' (stafir) því /app/<key>/ app-mode boot (lína ~473)
+    // les aðeins [a-z]+ — lykill sem byrjar á tölustaf ('3dwork') fer aldrei í
+    // app-ham. Nafn, PAGE-lykill og heimasíða halda áfram '3dwork'.
+    { key: 'threedwork', emoji: '🛠️', name: '3dwork', color: '#0b0b0d', dark: '#000000',
+      manifest: '/manifest-threedwork.json', home: '3dwork',
       blurb: 'STL/mesh-bekkur fyrir CO2-merki og prentun',
       defaults: ['3dwork'] },
   ];
