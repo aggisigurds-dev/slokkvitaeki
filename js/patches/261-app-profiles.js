@@ -122,6 +122,14 @@
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
       defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-skyrslustod', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting', 'turbopaint'] },
+    // Skýrslu-stöðin sem sitt eigið app (Agnar 23.09.2026: „Can you make a app page
+    // for skýrslustod. For öpp page"). Hún er þegar til sem síða (br-skyrslustod →
+    // brunaholf /?embed=1#skyrslustod); hér fær hún eigin skel svo hún opnist beint
+    // og skiptist í forskoðun efst / lista neðst á símanum.
+    { key: 'skyrslustod', emoji: '📊', name: 'Skýrslu-stöð', color: '#0b0b0d', dark: '#000000',
+      manifest: '/manifest-skyrslustod.json', home: 'br-skyrslustod',
+      blurb: 'Tengja skýrslur og reikninga við réttan stað — forskoðun efst, listinn undir',
+      defaults: ['br-skyrslustod', 'br-drogstod', 'br-krofuyfirlit', 'br-yfirferd'] },
     // Brunakerfi-appið fyrir skoðunarmenn á staðnum (ósk Agnars 2026-07-21):
     // yfirlitið er heimasíðan; fyrirtækjasíðan (274) og skýrslu-formið (273)
     // opnast þaðan sem yfirlög — allt innan sömu læstu skeljar.
