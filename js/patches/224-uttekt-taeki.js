@@ -180,14 +180,42 @@
 
   window.UttektTaeki = {
     buildHtml: function(coId, units){ return '<div class="ut-list'+(isUtLocked(coId)?' locked':'')+'" data-uw-co="'+coId+'">'+inner(coId, units)+'</div>'; },
+    // 23.09.2026 (Agnar: „hindra hopp þegar maður er að ýta á eitthvað"): hver smellur á Yfirferð/Hleðsla/Nýtt (eða hak)
+    // byggir ALLAN tækjalistann upp á nýtt — 22 tæki = 22 raðir endurnýjaðar. Skrunstaðan fór á núll og fókus hvarf, svo
+    // notandinn þurfti að finna sig aftur eftir hvern einasta smell. Efnið er byggt eins og áður; hér er aðeins staðan
+    // tekin fyrir og sett aftur í SAMA tifi, svo skjárinn sjái enga millistöðu.
     rerender: function(coId){
       var wrap = document.querySelector('.ut-list[data-uw-co="'+coId+'"]'); if(!wrap) return;
       var c = window.Companies && Companies.list && Companies.list.find(function(x){return x.id==coId;}); if(!c) return;
+      var skrun = [];
+      try {
+        var n = wrap;
+        while (n && n !== document.body) {
+          var st = getComputedStyle(n);
+          if (/(auto|scroll)/.test(st.overflowY + ' ' + st.overflowX)) skrun.push([n, n.scrollTop, n.scrollLeft]);
+          n = n.parentElement;
+        }
+        var rot = document.scrollingElement || document.documentElement;
+        if (rot) skrun.push([rot, rot.scrollTop, rot.scrollLeft]);
+      } catch(_){}
+      var fokus = null;
+      try {
+        var a = document.activeElement;
+        if (a && wrap.contains(a)) fokus = { id: a.id || '', uid: a.getAttribute('data-uid') || a.getAttribute('data-id') || '', kl: String(a.className||'').split(' ').filter(Boolean)[0] || '' };
+      } catch(_){}
       // sama regla og unitsFor — annars stangast endurteikningin á við listann.
       wrap.innerHTML = inner(coId, DB.cache.units.filter(function(u){
         if(String(u.status)==='urelt') return false;
         return (u.fyrirtaeki_id!=null) ? (Number(u.fyrirtaeki_id)===Number(c.id)) : (u.client===c.nafn);
       }));
+      try { skrun.forEach(function(x){ if (x[0] && x[0].isConnected) { if (x[1]) x[0].scrollTop = x[1]; if (x[2]) x[0].scrollLeft = x[2]; } }); } catch(_){}
+      if (fokus) {
+        try {
+          var el = fokus.id ? wrap.querySelector('#'+(window.CSS&&CSS.escape?CSS.escape(fokus.id):fokus.id)) : null;
+          if (!el && fokus.kl && fokus.uid) el = wrap.querySelector('.'+(window.CSS&&CSS.escape?CSS.escape(fokus.kl):fokus.kl)+'[data-uid="'+fokus.uid+'"]') || wrap.querySelector('.'+(window.CSS&&CSS.escape?CSS.escape(fokus.kl):fokus.kl)+'[data-id="'+fokus.uid+'"]');
+          if (el && el.focus) el.focus({ preventScroll: true });
+        } catch(_){}
+      }
     },
     // Aðrir patchar (t.d. 270 sem læsir listanum sjálfkrafa við lok heimsóknar)
     // geta kveikt á sama skrefi án þess að afrita rökin.
