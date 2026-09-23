@@ -35,6 +35,11 @@
 
   // Sömu síma-merki og 356 útilokar með: html[data-viewmode="mobile"], html.slokk-phone-dev, body.appmode.
   var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #companies-main:has(.co-banner) ';
+  // Sími / app (Agnar 23.09 19:47 „þetta er svolítið út um allt í símanum. Óuppfært“): SAMA málning, en 338/356 halda
+  // uppröðun símans (dálkar undir hver öðrum, flísa-takkar). 403/404/405 keyra ekki í símaham — hér er CSS eitt.
+  var S2 = 'html[data-thm-preset="brunastal"]:is([data-viewmode="mobile"],.slokk-phone-dev,:has(>body.appmode)) body #companies-main:has(.co-banner) ';
+  var F = ':not(#_p402a):not(#_p402b):not(#_p402c):not(#_p402d):not(#_p402e)';
+  function p(sel, css) { return sel.split(',').map(function (x) { return S2 + x.trim() + F; }).join(',') + '{' + css + '}'; }
   var MONO = '"JetBrains Mono",ui-monospace,monospace';
   var SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif';
   var DISPLAY = '"Playfair Display",Georgia,serif';
@@ -469,9 +474,27 @@
     r('.info-grid .ic', 'padding:10px 12px')
   ].join('\n');
 
+  // ── símaútgáfan: sömu reglur með símaforskeyti + yfirskrift á því sem hönnun C raðar í grid (405 er ekki í símanum) ──
+  var cssSimi = css.split(S).join(S2) + '\n' + [
+    p('.co-banner', 'display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:10px!important;padding:0 0 12px!important;margin-bottom:12px!important;overflow:hidden!important;border-radius:14px!important'),
+    p('.co-banner-id', 'width:100%!important;box-sizing:border-box!important;margin:0!important;border-radius:13px 13px 0 0!important;flex-wrap:wrap!important;padding:14px 16px 12px!important'),
+    p('.co-banner-right,.co-mynd,.co-bupp,.co-banner-facts-simi', 'margin:0 12px!important;width:auto!important;max-width:none!important;box-sizing:border-box!important'),
+    p('.co-banner-right', 'display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important'),
+    p('.co-banner-right .co-banner-note', 'width:100%!important;max-width:none!important;min-height:64px!important'),
+    p('.co-mynd', 'display:flex!important;flex-direction:column!important'),
+    p('.co-mynd .co-mynd-flis', 'min-height:200px!important;width:100%!important'),
+    p('.co-bupp', 'grid-template-columns:repeat(2,minmax(0,1fr))!important'),
+    p('.co-bupp ._bupp-innri .co-bupp-reitur,.co-bupp ._bupp-innri input', 'height:32px!important;min-height:32px!important;flex:0 1 96px!important;font-size:13px!important;padding:0 8px!important'),
+    p('.co-bupp ._bupp-innri ._bupp-tala', 'flex:0 0 52px!important'),
+    p('.co-bupp ._bupp-lina', 'min-height:44px!important;padding:6px 8px 6px 10px!important'),
+    p('.uttekt-cols', 'display:flex!important;flex-direction:column!important;gap:12px!important'),
+    p('.uttekt-col-l,.uttekt-col-r', 'width:100%!important;max-width:none!important'),
+    p('#_sks-tabs ._sks-tab', 'flex:1 1 auto!important;text-align:center!important'),
+    '@media(max-width:600px){' + p('.co-bupp', 'grid-template-columns:minmax(0,1fr)!important') + p('.co-banner-name', 'font-size:22px!important') + '}'
+  ].join('\n');
   var st = document.createElement('style');
   st.id = 'bfs-402';
-  st.textContent = css;
+  st.textContent = css + '\n' + cssSimi;
   document.head.appendChild(st);
 
   // Þyngdirnar 700/800 sem hausarnir og tölurnar nota; appið sjálft hleður aðeins 400–600 (389 skýrir loðna letrið).

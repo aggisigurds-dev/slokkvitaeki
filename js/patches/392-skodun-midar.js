@@ -92,6 +92,10 @@
       R('table._sk-tbl tbody tr._sk-row:hover', 'background:#fbfcfe!important'),
       // Agnar 22.09: „texta nótusvæðið er óþarflega stórt" — nótan fær fast þak (280px)
       // og plássið sem losnar fer í nafnadálkinn, sem var að brjóta sig í þrjár línur.
+      // 23.09 (skjámynd Agnars af síma, 980 px Tölvusíðu-hamur): nafndálkurinn er auto en taflan hélt 1170 px lágmarki 385 —
+      // föstu dálkarnir (50+280+150+52+214+110+86+186 = 1128) skildu 41 px eftir handa nafninu, sem braut sig orð fyrir orð.
+      // Lágmarkið rúmar nú nafnið (≥ 200 px); umbúðirnar ._sk-tblwrap skruna lárétt á mjórri skjá.
+      R('table._sk-tbl', 'min-width:1330px!important'),
       R('table._sk-tbl colgroup col:nth-child(2)', 'width:auto!important'),
       R('table._sk-tbl colgroup col:nth-child(3)', 'width:280px!important'),
       // Stöðudálkurinn er 158px í 385 en platan er 150px + fylling — hann fær 186px
