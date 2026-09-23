@@ -150,13 +150,24 @@
       W + 'table.data-table colgroup col:nth-child(3){width:236px!important}',
       W + '._ars-notacell{position:relative!important;vertical-align:middle!important;overflow:visible!important;min-width:236px!important;width:236px!important}',
       W + 'table.data-table thead th:nth-child(3){min-width:236px!important}',
-      // Lesa-lagið: þrjár línur með orðaskilum. `input` getur ekki brotið línur,
-      // svo textinn er sýndur í eigin lagi OFAN Á reitnum — reiturinn sjálfur
-      // (og öll vistun 153) er ósnertur og birtist um leið og smellt er í hann.
-      V + '._ars-nota3{position:absolute;inset:3px 4px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;padding:2px 4px;font:500 11.5px/1.35 ' + SANS + ';color:#2b313c;background:transparent;cursor:text;white-space:normal;word-break:break-word}',
+      // Lesa-lagið: textinn er sýndur í eigin lagi OFAN Á reitnum — `input` getur
+      // ekki brotið línur — svo reiturinn sjálfur (og öll vistun 153) er ósnertur
+      // og birtist um leið og smellt er í hann.
+      //
+      // 23.09.2026 — ÞRJÁR LÍNUR RÁKUST Á STRIKIÐ. Agnar: „minnkað aðeins styrkleikann
+      // í línunum, finnst það eitthvað vera að trufla eða fara yfir stafina, ekki alveg
+      // nógu skýrt" — og í sömu andrá „cut the 3 rows into only 2 rows". Þetta er EIN
+      // rót, ekki tvær: þrjár línur á 11,5px/1.35 = 46,5px + 10px stoppun fylla 52px
+      // reitinn út í jaðar, svo neðsta línan sest ofan í punktastrikið undir reitnum.
+      // Tvær línur skilja eftir loft og strikið hættir að skera textann.
+      // `inset:3px 4px` negldi BÆÐI topp og botn, svo lagið fékk fasta hæð af sellunni og
+      // -webkit-line-clamp komst aldrei að: mælt 23.09 skiluðu sellur ÞREMUR og FJÓRUM
+      // línum þótt klemman stæði á 2, og neðsta línan lenti 2px NEÐAN við punktastrikið.
+      // Klemman ræður aðeins hæð sem er innihaldsdrifin — botninn verður að vera auto.
+      V + '._ars-nota3{position:absolute;top:3px;left:4px;right:4px;bottom:auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:2px 4px;font:500 11.5px/1.35 ' + SANS + ';color:#2b313c;background:transparent;cursor:text;white-space:normal;word-break:break-word}',
       V + '._ars-nota3:empty{display:none}',
       V + '._ars-notacell.arsm-ritar ._ars-nota3{display:none}',
-      W + '._ars-notacell ._ars-plannote{height:100%!important;min-height:52px!important}',
+      W + '._ars-notacell ._ars-plannote{height:100%!important;min-height:40px!important}',
       W + '._ars-notacell._er-med ._ars-plannote{color:transparent!important;caret-color:#1f2530}',
       W + '._ars-notacell.arsm-ritar ._ars-plannote{color:#1f2530!important}',
 

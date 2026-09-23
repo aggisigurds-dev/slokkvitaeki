@@ -146,7 +146,12 @@
       V + '._ars-namecell ._kt,' + V + '._ars-addrcell ._post,' + V + '._ars-addrcell ._addr,' + V + '._mo,' + V + '._devs{font-family:' + MONO + '!important;font-variant-numeric:tabular-nums lining-nums}',
 
       // Ferðanótan: gullrönd þegar spurning bíður (sjá Stöðuplötu-íhlutinn)
-      V + 'input._ars-plannote{border-radius:0!important;border:0!important;border-bottom:1px dashed #cfd5de!important;background:transparent!important;font:400 12.5px ' + SANS + '!important;color:#2b313c!important}',
+      // 23.09.2026: strikið var #cfd5de — nógu dökkt til að keppa við nótutextann sjálfan
+      // þegar hann stóð þétt upp að því (sjá 394, línuklemman færð úr 3 í 2). Agnar bað um
+      // „minnkaðan styrkleika í línunum". Ljósara strik heldur hlutverki sínu — að sýna
+      // hvar má skrifa — án þess að lesast sem hluti af textanum.
+      V + 'input._ars-plannote{border-radius:0!important;border:0!important;border-bottom:1px dashed #e2e6ee!important;background:transparent!important;font:400 12.5px ' + SANS + '!important;color:#2b313c!important}',
+      V + 'input._ars-plannote:hover{border-bottom-color:#c8cfda!important}',
       V + 'input._ars-plannote:focus{border-bottom:1px solid #c92a2a!important;background:#fbfcfe!important;outline:none!important}',
       V + 'input._ars-plannote:not([value=""]){box-shadow:inset 3px 0 0 #b8912f!important;padding-left:8px!important}',
 
