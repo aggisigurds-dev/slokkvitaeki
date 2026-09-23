@@ -1510,8 +1510,11 @@
     var _pb=box.querySelector('#_rf_print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Rekstrarfélög — byggingar og úttektir', box, true); };
   }
 
+  // 23.09.2026 (Agnar: hindra hopp): listinn er tæmdur og byggður upp á nýtt (kort fyrir kort) í hvert sinn sem sía, leit
+  // eða smellur kallar á hann — skrunstaðan fór þá á núll og fókus hvarf úr reitnum sem var í notkun. Sett aftur strax; sjá 388.
   async function renderList(){
     var v=viewEl(); if(!v) return; var box=v.querySelector('#_rf_list'); if(!box) return;
+    var _aftur=(window.Stodugt&&Stodugt.vernda)?Stodugt.vernda(box):null;
     var data=getData(); var q=_state.q.toLowerCase().trim();
     var names=Object.keys(data);
     box.innerHTML='';
@@ -1599,6 +1602,7 @@
       }catch(e){}
       box.appendChild(card);
     });
+    if(_aftur) _aftur();
     if(!shown) box.innerHTML='<div style="color:#3a4250;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 16px 40px -22px rgba(10,20,50,.65)">Ekkert fannst.</div>';
   }
 

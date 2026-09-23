@@ -550,6 +550,9 @@
     // Typing in #_av-search fires a 200ms timeout that calls main.innerHTML=…
     // which destroys the input. Without this, the user can only type one
     // letter at a time — every keystroke loses focus.
+    // 23.09.2026 (Agnar: „hindra hopp"): skrun (listans OG innri taflna) og fókus í HVAÐA reit sem er lifa nú endurteikninguna — áður var
+    // aðeins leitarreiturinn varinn, svo smellur eða innsláttur henti notandanum aftur á topp listans. Sjá patch 388.
+    const _aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(main) : null;
     const prevActive = document.activeElement;
     const keepSearchFocus = !!(prevActive && prevActive.id === '_av-search');
     const selStart = keepSearchFocus ? prevActive.selectionStart : null;
@@ -888,6 +891,7 @@
     });
 
     // Restore search-input focus + cursor position (see top of render()).
+    if (_aftur) _aftur();   // skrun + fókus aftur á sinn stað, í sama tifi og teikningin
     if (keepSearchFocus) {
       const fresh = main.querySelector('#_av-search');
       if (fresh) {

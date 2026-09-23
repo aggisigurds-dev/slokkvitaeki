@@ -627,7 +627,22 @@
     const main = document.getElementById('ky-main');
     if (!main) return;
     const thmWrap = (inner) => '<div class="thm"><div class="app-page"><main class="app-main">' + inner + '</main></div></div>';
-    main.innerHTML = thmWrap('<div style="padding:32px;text-align:center;color:#cbd5e1">Hleður kröfum…</div>');
+    // 23.09.2026 (Agnar: „hálfgert blikk glitz"): load() er kölluð eftir HVERJA aðgerð (krafa send, merkt greidd,
+    // mánuður valinn — tíu staðir) og setti þá ALLA síðuna í „Hleður kröfum…" á meðan sótt var. Listinn hvarf, skrunið
+    // fór á núll og allt kom svo aftur: eitt stórt blikk eftir hvern smell. Nú er efnið sem er á skjánum LÁTIÐ STANDA
+    // og aðeins mjó staða sýnd efst; tóm síða (fyrsta opnun) fær „Hleður" eins og áður.
+    const _erEfni = !!main.querySelector('.app-main');
+    if (!_erEfni) main.innerHTML = thmWrap('<div style="padding:32px;text-align:center;color:#cbd5e1">Hleður kröfum…</div>');
+    else {
+      let b = main.querySelector('#_ky-sekja');
+      if (!b) {
+        b = document.createElement('div');
+        b.id = '_ky-sekja';
+        b.style.cssText = 'position:sticky;top:0;z-index:40;background:#0f172a;color:#fff;font-size:12px;font-weight:700;padding:4px 10px;text-align:center;opacity:.92';
+        b.textContent = '⏳ Sæki nýjustu kröfurnar…';
+        main.insertBefore(b, main.firstChild);
+      }
+    }
     const SB = getSB();
     if (!SB) {
       // DB-biðlarinn (window.DB.sb) er oft ekki tilbúinn þegar Kröfuyfirlit er
@@ -1588,6 +1603,9 @@
   function render() {
     const main = document.getElementById('ky-main');
     if (!main) return;
+    // 23.09.2026: skrun (líka í innri töflum) og fókus lifa teikninguna — sjá patch 388.
+    const _aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(main) : null;
+    try { const _s = main.querySelector("#_ky-sekja"); if (_s) _s.remove(); } catch (_) {}   // sækju-borðinn víkur um leið og nýja myndin kemur
     // App-ham: tryggja að <html data-viewmode="mobile"> sé sett ÁÐUR en við teiknum,
     // svo M-scoped síma-CSS (KPI 2×2, haus, síu-borði) virkist — ekki bara render-
     // greinin. applyViewMode vistar ekki í app-ham svo vafra-valið helst. (Agnar 2026-08-22.)
@@ -1788,6 +1806,8 @@
 
       </main></div></div>
       <div id="ky-bulkbar"></div>`;
+
+    if (_aftur) _aftur();   // skrun + fókus aftur á sinn stað, í sama tifi og teikningin
 
     main.querySelector('._ky-sort')?.addEventListener('change', e => {
       _state.sort = e.target.value;
