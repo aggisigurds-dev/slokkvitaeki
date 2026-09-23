@@ -1515,6 +1515,7 @@
 
   // 23.09.2026 (Agnar: hindra hopp): listinn er tæmdur og byggður upp á nýtt (kort fyrir kort) í hvert sinn sem sía, leit
   // eða smellur kallar á hann — skrunstaðan fór þá á núll og fókus hvarf úr reitnum sem var í notkun. Sett aftur strax; sjá 388.
+  var _opin=Object.create(null);   // 23.09.2026: nöfn félaga sem notandinn hefur opnað — lifa endurteikningu
   async function renderList(){
     var v=viewEl(); if(!v) return; var box=v.querySelector('#_rf_list'); if(!box) return;
     var _aftur=(window.Stodugt&&Stodugt.vernda)?Stodugt.vernda(box):null;
@@ -1581,6 +1582,9 @@
       function flip(){
         var open=!card.classList.contains('is-open');
         card.classList.toggle('is-open',open);
+        // 23.09.2026: hvaða kort eru opin lifði AÐEINS í DOM-inu, svo hver endurteikning (leit, sía, smellur) lokaði þeim
+        // öllum — og skrunstaðan fylgdi með niður. Munað hér svo kortið sem verið er að vinna í standi áfram opið.
+        if(open) _opin[name]=1; else delete _opin[name];
         if(open && !body.dataset.filled){ body.dataset.filled='1'; fillBody(body,name,info); }
       }
       card.querySelector('._rf_head').addEventListener('click',flip);
@@ -1603,6 +1607,7 @@
         if(pills){ var chev=pills.querySelector('.rfa__chev'); var akc=makeRfAksturChip(function(){return coIdsForBlds(blds);});
           if(chev) pills.insertBefore(akc, chev); else pills.appendChild(akc); }
       }catch(e){}
+      if(_opin[name]){ card.classList.add('is-open'); if(body && !body.dataset.filled){ body.dataset.filled='1'; try{ fillBody(body,name,info); }catch(e){} } }
       box.appendChild(card);
     });
     if(_aftur) _aftur();
