@@ -42,15 +42,15 @@
       W + 'div:has(>.ky-card-rows){border-radius:2px!important;border:1px solid rgba(20,24,34,.16)!important}',
       W + 'div:has(>.ky-card-rows){overflow:hidden!important;box-shadow:0 1px 1px rgba(15,20,30,.06),0 10px 22px -18px rgba(15,20,30,.45)!important}',
       // Hausinn með nafni og upphæð: burstaður málmur.
-      W + '.ky-card>div:first-child{background-image:' + STRIPE + METAL + '!important;border-bottom:1px solid #23262c!important;color:#eef1f4!important}',
+      W + 'div:has(>.ky-card-rows)>div:first-child{background-image:' + STRIPE + METAL + '!important;border-bottom:1px solid #23262c!important;color:#eef1f4!important}',
       W + 'div:has(>.ky-card-rows)>div:first-child *{color:#eef1f4!important}',
       W + 'div:has(>.ky-card-rows)>div:first-child a{color:#ffd27a!important}',
-      W + '.ky-card>div:first-child small,' + W + '.ky-card>div:first-child .ky-sub{color:#aeb6c4!important}',
+      W + 'div:has(>.ky-card-rows)>div:first-child small{color:#aeb6c4!important}',
 
       // ── Upphæðir og merkimiðar ──────────────────────────────────────────
       V + '.ky-num{font-family:' + MONO + '!important;font-variant-numeric:tabular-nums lining-nums!important}',
       // Krafan sjálf (stóra talan á spjaldinu) í Playfair.
-      W + '.ky-card .ky-co-total,' + W + '.ky-card>div:first-child .ky-num[style*="font-size:1"]{font-family:' + DISPLAY + '!important;font-weight:800!important;letter-spacing:-.02em!important}',
+      W + 'div:has(>.ky-card-rows)>div:first-child .ky-num{font-family:' + DISPLAY + '!important;font-weight:800!important;letter-spacing:-.02em!important}',
 
       // ── Raðirnar ────────────────────────────────────────────────────────
       W + '.ky-row{border-bottom:1px solid rgba(20,24,34,.08)!important}',
