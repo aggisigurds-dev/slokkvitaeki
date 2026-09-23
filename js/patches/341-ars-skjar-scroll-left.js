@@ -169,26 +169,48 @@
   function pinViewToRail() {
     const v = document.getElementById(VIEW_ID);
     if (!v) return;
+    // 23.09.2026 (afköst, mælt á lifandi síðu): smella-hlustarinn neðar í skránni grípur ALLA smelli í `.topbar` —
+    // sem er hliðarstikan sjálf — og keyrir þetta fall tvisvar (50 ms og 280 ms) við HVERJA einustu flettingu, líka
+    // þegar farið er á allt aðra sýn. Fallið skrifar `width`/`max-width`/`margin-left` á Ársskoðunar-sýnina og les
+    // `.topbar`-hnitin, svo hver umferð þvingar fulla útlitsumferð. Mælt á Hreyfingarlista (28.203 hnútar):
+    // 999 ms í einni aðgerð — á sýn sem kemur Ársskoðun ekkert við.
+    //
+    // Stillingin á aðeins erindi þegar Ársskoðun er raunverulega á skjánum. Sé hún það ekki, sleppum við henni:
+    // `apply()` kallar á þetta fall við hashchange · resize · pageshow · slokk-viewmode · ræsingu (og 80/400/
+    // 1200/3000 ms), svo sýnin fær sína stillingu um leið og hún birtist. Smellur á Ársskoðunar-hnappinn sjálfan
+    // heldur líka áfram að virka: við 50/280 ms er sýnin orðin virk og skilyrðið hér stenst.
+    if (!v.classList.contains('active') && !v.offsetParent) return;
     if (!isWide()) {
       try {
         v.style.removeProperty('margin-left');
         v.style.removeProperty('width');
         v.style.removeProperty('max-width');
+        delete v.dataset.p341w;        // vörðurinn hreinsaður, annars festist hann
       } catch (_) {}
       return;
     }
     const w = railWidth();
     if (w > 0) {
       try {
-        v.style.setProperty('margin-left', w + 'px', 'important');
-        v.style.setProperty('width', 'calc(100vw - ' + w + 'px)', 'important');
-        v.style.setProperty('max-width', 'calc(100vw - ' + w + 'px)', 'important');
+        // 23.09.2026 (afköst): SKRIFA AÐEINS EF GILDIÐ BREYTIST. Fallið er keyrt margoft með nákvæmlega sömu tölu
+        // (ræsing ×5, hashchange, resize, og tvisvar við hvern smell í hliðarstikunni). Hvert skrif ógildir stílinn
+        // — líka þegar gildið er það sama — og næsta útlitslestur borgar fulla umferð. Mælt á Hreyfingarlista:
+        // 652 ms í einni slíkri umferð. Samanburðurinn hér að neðan kostar ekkert og fellir þær allar nema fyrstu.
+        // NB: bera saman TÖLUNA, ekki CSS-strenginn. Vafrinn umritar `calc(100vw - 220px)` í `calc(-220px + 100vw)`
+        // við lestur, svo strengjasamanburður stenst aldrei og vörnin yrði gagnslaus (mælt 23.09.2026).
+        if (v.dataset.p341w !== String(w)) {
+          v.style.setProperty('margin-left', w + 'px', 'important');
+          v.style.setProperty('width', 'calc(100vw - ' + w + 'px)', 'important');
+          v.style.setProperty('max-width', 'calc(100vw - ' + w + 'px)', 'important');
+          v.dataset.p341w = String(w);
+        }
       } catch (_) {}
     } else {
       try {
         v.style.removeProperty('margin-left');
         v.style.removeProperty('width');
         v.style.removeProperty('max-width');
+        delete v.dataset.p341w;        // sama hér — næsta umferð með w>0 á að skrifa á ný
       } catch (_) {}
     }
   }
