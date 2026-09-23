@@ -90,6 +90,10 @@
       var mi = el('button', 'b403-mi' + (it.danger ? ' eyda' : ''));
       mi.type = 'button'; mi.setAttribute('role', 'menuitem');
       mi.innerHTML = (it.icon || '') + '<span>' + it.label + '</span>';
+      if (it.run) {   // liður sem keyrir fall — ársstaðan býr á .sk-pill í ársröðinni, sem má ekki flytja inn í liðinn
+        mi.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); closeAll(); try { it.run(); } catch (e) { console.warn('[403] liður', e); } });
+        menu.appendChild(mi); return;
+      }
       var orig = it.orig; orig.classList.add('b403-orig'); mi.appendChild(orig);
       mi.addEventListener('click', function (ev) {
         // Gervi-smellurinn á orig bólar upp GEGNUM þennan lið — hann má aldrei stöðva, annars nær hann
@@ -352,6 +356,14 @@
       band.appendChild(el('span', 'b403-pill', nSvc + (nSvc === 1 ? ' þjónusta' : ' þjónustur')));
       band.appendChild(el('span', 'b403-lina'));
       band.appendChild(el('span', 'b403-hint', n ? (ok + ' af ' + n + ' skjölum ' + (ok === 1 ? 'komið' : 'komin')) : 'engin þjónusta skráð'));
+      // ⋯ á ársbandinu (hönnun B): staða ársins — sama hringur og tvísmellur 199 á árplötuna (fcToggle), einn samhengisliður
+      if (lab) {
+        var yPill = [arrod, root, section].map(function (n) { return n && n.querySelector && n.querySelector('.sk-pill[data-yr="' + y + '"]'); }).filter(Boolean)[0];   // plöturnar eru þegar komnar í ársröðina í root (ótengt þar til í lokin)
+        if (yPill) {
+          var nxt = state === 'ok' ? 'Merkja: skýrsla vantar' : state === 'gull' ? 'Merkja: úttekt gerð, skýrsla vantar' : state === 'vnsl' ? 'Hreinsa handvirka merkingu' : 'Staðfesta ár ' + y;
+          band.appendChild(menuButton([{ label: nxt, icon: ICON.check, run: function () { yPill.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true })); } }], 'Staða ársins ' + y));
+        }
+      }
       stal.appendChild(band); stal.appendChild(grid);
     });
 
@@ -577,6 +589,8 @@
       r('.b403-vm', 'position:relative;flex:none;display:inline-flex'),
       r('.b403-meira', 'all:unset;cursor:pointer;width:28px;height:28px;border-radius:6px;color:#5b6472;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box'),
       r('.b403-meira:hover', 'background:rgba(20,24,34,.07)'),
+      r('.b403-band .b403-meira', 'color:#d5dbe6;margin-left:4px'),
+      r('.b403-band .b403-meira:hover', 'background:rgba(255,255,255,.12)'),
       r('.b403-nafn .b403-meira', 'width:40px;height:40px;border-radius:9px;border:1px solid #000;background:' + METAL_BTN + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.25);color:#eef1f4;margin-left:6px'),
       r('.b403-meira.opin', 'border:1px solid #000;background:' + METAL_BTN + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.25);color:#eef1f4'),
       r('.b403-nafn .b403-meira.opin', 'background:' + SILVER + ';color:#11141c'),
