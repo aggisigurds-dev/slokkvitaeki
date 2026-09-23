@@ -47,6 +47,35 @@
       W + 'div:has(>.ky-card-rows)>div:first-child a{color:#ffd27a!important}',
       W + 'div:has(>.ky-card-rows)>div:first-child small{color:#aeb6c4!important}',
 
+      // ── Lykiltölu-reitirnir efst ────────────────────────────────────────
+      // Agnar 23.09: „þessir ljósu gulu bláu eru hræðilegir. Reyndu að setja
+      // desktop stílinn á það." Hér koma sömu málmspjöld og á Skjá: dökkur
+      // burstaður flötur, merkimiði í einbreiðu letri, talan í Playfair — og
+      // litur AÐEINS sem 3 px rönd efst, sama regla og á Ársskoðun.
+      W + '.stat-card{border-radius:2px!important;border:1px solid #23262c!important;background-image:' + STRIPE + METAL + '!important;background-color:#0a0a0c!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 26px -18px rgba(0,0,0,.75)!important;position:relative!important;overflow:hidden!important}',
+      W + '.stat-card::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:#8f98a8;pointer-events:none}',
+      W + '.stat-card--amber::after{background:#d3ab4e}',
+      W + '.stat-card--hero::after{background:#2f7fc9}',
+      W + '.stat-card--blue::after,' + W + '.stat-card--info::after{background:#2f7fc9}',
+      W + '.stat-card--green::after,' + W + '.stat-card--ok::after{background:#16783f}',
+      W + '.stat-card__label{font-family:' + MONO + '!important;font-size:9.5px!important;font-weight:700!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:#aeb6c4!important}',
+      W + '.stat-card__value{font-family:' + DISPLAY + '!important;font-weight:800!important;letter-spacing:-.02em!important;color:#fff!important}',
+      W + '.stat-card__icon{background:rgba(255,255,255,.06)!important;border-radius:2px!important;border:1px solid rgba(255,255,255,.10)!important}',
+      W + '.stat-card p,' + W + '.stat-card small,' + W + '.stat-card div:not(.stat-card__value):not(.stat-card__icon){color:#c9d0db!important}',
+      W + '.stat-card b{color:#fff!important}',
+
+      // Stóru tveir („ÓGREIDDAR Í PAYDAY" og „ÓSENDAR KRÖFUR") eru `button._ky-exp`
+      // — það voru þessir ljósgulu/ljósbláu fletir. Þeir fá sama málm og hin
+      // spjöldin; liturinn lifir áfram sem rönd efst og í tölunni sjálfri.
+      W + '._ky-exp{border-radius:2px!important;border:1px solid #23262c!important;background-image:' + STRIPE + METAL + '!important;background-color:#0a0a0c!important;color:#d5dbe6!important;position:relative!important;overflow:hidden!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 12px 26px -18px rgba(0,0,0,.75)!important;text-align:left!important}',
+      W + '._ky-exp::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:#d3ab4e;pointer-events:none}',
+      W + '._ky-exp[data-exp="osendar"]::after,' + W + '._ky-exp[data-card="osendar"]::after{background:#2f7fc9}',
+      W + '._ky-exp *{color:#c9d0db!important}',
+      W + '._ky-exp b,' + W + '._ky-exp strong{color:#fff!important}',
+      // Talan sjálf: Playfair, í lit reitsins (gull = bíður greiðslu, blátt = ósent).
+      W + '._ky-exp .ky-num{font-family:' + DISPLAY + '!important;font-weight:800!important;font-size:26px!important;letter-spacing:-.02em!important;color:#ffd27a!important}',
+      W + '._ky-exp[data-exp="osendar"] .ky-num,' + W + '._ky-exp[data-card="osendar"] .ky-num{color:#9ec5f0!important}',
+
       // ── Upphæðir og merkimiðar ──────────────────────────────────────────
       V + '.ky-num{font-family:' + MONO + '!important;font-variant-numeric:tabular-nums lining-nums!important}',
       // Krafan sjálf (stóra talan á spjaldinu) í Playfair.
