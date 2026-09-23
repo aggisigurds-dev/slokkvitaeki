@@ -443,7 +443,21 @@
            því ekkert. ATH: `overflow-x:auto` með `overflow-y:visible` er EKKI
            hægt — CSS reiknar hinn ásinn sem `auto` um leið og annar er ekki
            visible. Þess vegna er hæðin fjarlægð frekar en ásnum slökkt. */
-        + '{width:100%!important;max-width:100vw!important;min-width:0!important;'
+        /* 23.09.2026 (Agnar: „when i zoom i can slide all the way to right or left").
+           `width:100%` lét kassann teygja sig eftir FORELDRINU, á meðan taflan inni í
+           honum ber `width:max-content` OG `zoom:var(--ars-skjar-zoom)`. Zoom breytir
+           stærð töflunnar en ekki 100%-breidd kassans, svo við útzoom skrapp taflan
+           saman inni í kassa sem sat eftir í fullri breidd — og afgangurinn varð tómt
+           svæði sem hægt var að panna út í.
+
+           MÆLT í framleiðslu á 65% zoom: tafla 947px inni í 1682px kassa = 735px af
+           auðu plássi hægra megin. Sama tilraun með `max-content`: 0px.
+
+           `max-content` lætur kassann FAÐMA töfluna, hver sem zoom-stuðullinn er:
+           á 100% er hann jafn breiður og taflan (og síðan pannast eins og áður, taflan
+           er áfram min-width:1100px), á 65% skreppur hann saman með henni. Pönnunin
+           endar því alltaf á efninu sjálfu. */
+        + '{width:max-content!important;max-width:100vw!important;min-width:0!important;'
         + 'max-height:none!important;height:auto!important;'
         + 'overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
         + '-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom!important;'
