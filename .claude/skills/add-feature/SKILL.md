@@ -37,6 +37,29 @@ script tag**; `build-dist.js` bundles them at deploy.
 4. Deploy via `git push` → CI (see the **deploy** skill). Never edit the big
    bundles by hand.
 
+## Teiknaðu þannig að viðmótið hoppi ekki (regla frá 23.09.2026)
+
+Teiknir pappinn þinn lista með `rot.innerHTML = …` þá hverfur allt sem hékk í gamla trénu: skrunstaðan (líka lárétta
+skrunið á síma), fókusinn í reitnum sem verið er að skrifa í og textavalið. Notandinn lendir aftur á topp listans eftir
+hvern smell. Notaðu hjálparann `js/patches/388-stodugt-vidmot.js`:
+
+```js
+const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(rot) : null;
+rot.innerHTML = …;
+if (aftur) aftur();   // strax á eftir, í SAMA tifi
+```
+
+- **Bíddu með endurteikningu meðan notandinn skrifar** — teiknaðu við `focusout` í staðinn (`erAdSkrifa()` í 153).
+- **Geymdu ekki ástand í DOM-inu einu** (hvaða kort eru opin o.þ.h.) — það tapast við hverja teikningu (`_opin` í 175).
+- **Uppfærðu hnútinn sem breyttist** þegar gögn lenda, í stað þess að rífa hann út og byggja aftur. Hnútur sem hverfur
+  og birtist aftur ER blikkið sem sést (`endurbyggjaArsreiti()` í 187). Mörg svör sem lenda á víxl → ein samandregin
+  endurbygging.
+- **Samtíma hleðslur eiga að deila einni sókn** (`_loadP`-mynstrið í 153 `loadAll()`), annars yfirskrifar síðasta svarið hin.
+
+Sönnun á að teiknunarbreyting breyti engum rökum: taktu fingrafar af reitunum (klasar + texti), rífðu þá svo handvirkt
+út í vafranum, láttu gömlu leiðina byggja þá upp á nýtt og berðu saman. Fingrafar milli tveggja SÍÐUHLEÐSLNA er
+ómarktækt — hleðslararnir lenda á mismunandi tíma.
+
 ## Data access
 - `window.DB.sb` is the Supabase client (publishable key from `js/config.js`).
 - Many app tables (incl. `thjonustubeidni`) have **RLS disabled**, so the client can

@@ -337,6 +337,28 @@ curl -X POST \
 - **Currency formatting**: `1.234 kr` (Icelandic uses period as thousands separator)
 - **CSV exports**: UTF-8 BOM, semicolon separator, decimal comma — Icelandic Excel locale
 - **VAT**: Default 24%. Some items 11% (food, books).
+- **STÖÐUGT VIÐMÓT — regla frá 23.09.2026** (Agnar: „hindra hopp þegar maður er að ýta á eitthvað eða stimpla inn"):
+  teiknir þú lista með `rot.innerHTML = …` þá HVERFUR allt sem hékk í gamla trénu — skrunstaðan (líka lárétta skrunið
+  á síma), fókusinn í reitnum sem verið er að skrifa í og textavalið. Notaðu hjálparann `js/patches/388-stodugt-vidmot.js`:
+
+  ```js
+  const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(rot) : null;
+  rot.innerHTML = …;
+  if (aftur) aftur();   // strax á eftir, í SAMA tifi — engin millistaða sést
+  ```
+
+  Þrennt til viðbótar undir sömu reglu:
+  1. **Endurteikning má aldrei kippa reitnum undan þeim sem er að skrifa.** Bíddu með hana þar til `focusout` kemur
+     (`erAdSkrifa()` + `teiknaEftirInnslatt()` í 153).
+  2. **Ástand sem lifir aðeins í DOM-inu tapast** við hverja teikningu — t.d. hvaða kort eru opin. Geymdu það í breytu,
+     ekki í klasa á hnút (`_opin` í 175).
+  3. **Þegar gögn lenda: uppfærðu hnútinn sem breyttist** (`innerHTML` á SAMA `<td>`) í stað þess að rífa hann út og
+     byggja aftur. Hnútur sem hverfur og birtist aftur ER blikkið sem sést (`endurbyggjaArsreiti()` í 187 — þar fóru
+     201 reitir út og inn við hverja opnun). Sé mörgum hleðslurum lokið á víxl, dragðu endurbygginguna saman í eina.
+
+  Og **samtíma hleðslur eiga að deila EINNI sókn** (`_loadP`-mynstrið í 153 `loadAll()` og `features.js Companies.load()`)
+  — annars sækja fjórir kallarar sama mengið og síðasta svarið yfirskrifar hin.
+
 - **Patch wrapping**: When adding new patches as separate files, NO need for the
   `/* === NAME === */` wrapper convention anymore — that was only needed for the
   old single-file approach.
