@@ -85,7 +85,7 @@
     // skrunið á meðan (hjól, snerting, lyklaborð). Hans hreyfing gildir alltaf.
     let snert = false;
     const merkja = () => { snert = true; };
-    const hlusta = (a) => [wheel,touchstart,keydown,mousedown].forEach(e => a ? addEventListener(e, merkja, { passive: true, capture: true }) : removeEventListener(e, merkja, { capture: true }));
+    const hlusta = (a) => ['wheel','touchstart','keydown','mousedown'].forEach(e => a ? addEventListener(e, merkja, { passive: true, capture: true }) : removeEventListener(e, merkja, { capture: true }));
 
     return function aftur() {
       try {
