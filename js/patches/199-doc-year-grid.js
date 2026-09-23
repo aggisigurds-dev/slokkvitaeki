@@ -1229,6 +1229,7 @@
       if(fItems.length && !items.length){
         return '<div class="sk-samn-card '+KL+'">'+IK+' <b>Samningur — '+HT+'</b>'+fItems.map(filledChip).join('')+addChip('samningur','','+')+'<span class="sk-samn-pill gildi">Í GILDI</span></div>';
       }
+      if(skc && !items.length && !fItems.length) return '';   // 23.09: samningslína slökkvikerfis sjálfgefið falin þegar enginn samningur er
       var pill, yrs='';
       if(!items.length) pill='<span class="sk-samn-pill vantar">VANTAR</span>';
       else {
@@ -1397,6 +1398,9 @@
       var r=resolved[y+'|'+svc.kind];
       var hasRep=arr.length>0, hasInv=!!r.inv;
       var wsLink=svcWorkspaceLink(svc);
+      // Agnar 23.09 20:15: „gera slökkvikerfis skjalasýnina default falið — bara eitt fyrirtæki í þannig þjónustu" →
+      // tómt 🍳-spjald á eldra ári birtist ekki; árið með efni (skýrsla/reikningur) og líðandi ár sjást áfram, „+ ár / þjónusta" bætir við.
+      if(svc.kind==='slokkvikerfi' && !hasRep && !hasInv && !r.ambiguous && y!==NOW) return '';
       if(!hasRep && !hasInv && !r.ambiguous && y!==NOW)
         return '<div class="sk-svc-card sk-svc-empty"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+wsLink+'</div><div class="sk-svc-row">engin '+esc(svc.label.toLowerCase())+addChip('skyrsla',y,'+ skýrsla')+'</div></div>';
       var badge = hasRep&&hasInv ? '<span class="sk-svc-st ok">✓ FULLBÚIÐ</span>'
