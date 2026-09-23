@@ -1070,6 +1070,20 @@
     // Track id of the filled doc we're editing (null = new)
     let filledId = existing ? existing.id : null;
     let filledName = existing ? (existing.name || '') : '';
+    // 23.09.2026 — ÞJÓNUSTUSAMNINGAR FJÖLFÖLDUÐUST VIÐ ENDURTEKNA VISTUN.
+    // Agnar: „4 földu þjónustusamning". Mælt í töflunni: Bílabúð Benna 4 raðir búnar til
+    // 18.09 á 29 mínútum (13:39 · 13:46 · 13:52 · 14:08), Skipholt 50d 4 og Brynja 2 —
+    // allar með sama innihaldi, búnar til mínútum hvor frá annarri.
+    //
+    // Rótin: `rec` er byggt UPP Á NÝTT við hvern smell á Vista og sótti tengslin í
+    // `existing`, sem er fast frá því glugginn opnaðist. Í fyrstu vistun er `existing`
+    // null → insert (rétt). Vistirðu AFTUR í sömu lotu er það enn null → annað insert.
+    // `filledId`/`filledName` hér fyrir ofan leystu nákvæmlega þetta fyrir skjalið
+    // sjálft; tengingin við samningaröðina fylgdi ekki með.
+    //
+    // Sama mynstur og annars staðar í kerfinu: haltu auðkenninu í breytu sem lifir
+    // smellina, ekki í snapshot-i af opnunarástandinu.
+    let vistadSamningsId = existing ? (existing.thjonustusamningar_id || null) : null;
 
     // 2026-09-09 (Agnar: „það þarf að fara yfir allar síðurnar … enginn texti
     // má nokkurntíma tínast"): eyðublaðið lokaðist á ✕, „Loka" OG smell á
@@ -1407,7 +1421,9 @@
         updated_at: new Date().toISOString(),
         // Keep any previously-linked thjonustusamningar.id so subsequent saves
         // update the same row instead of inserting duplicates.
-        thjonustusamningar_id: existing ? existing.thjonustusamningar_id : null
+        // 23.09.2026: lesið úr `vistadSamningsId` (lifir smellina) en ekki úr `existing`,
+        // sem er frosið við opnun gluggans — sjá skýringuna við breytuna.
+        thjonustusamningar_id: vistadSamningsId
       };
       saveBtn.disabled = true;
       saveBtn.textContent = '…';
@@ -1419,6 +1435,7 @@
           const linkedId = await upsertThjonustusamningur(t, values, rec.thjonustusamningar_id);
           if (linkedId) {
             rec.thjonustusamningar_id = linkedId;
+            vistadSamningsId = linkedId;      // næsti smellur uppfærir SÖMU röð
             contractMsg = ' · Birtist í Þjónustusamningar';
           }
         } catch (err) {
