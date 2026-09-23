@@ -31,6 +31,7 @@
   const WRAP_ID = 'arsskodun-wrap';
   const VIEW_ID = 'view-arsskodun';
   const P = ':not(#_p341a):not(#_p341b):not(#_p341c):not(#_p341d):not(#_p341e)';
+  const P6 = P + ':not(#_p341f)';
 
   function isWide() {
     try {
@@ -110,7 +111,26 @@
       W + V + ' th[data-sort="name"]' + P + ',' + W + V + ' td._ars-namecell' + P + ','
         + W + V + ' td._ars-namecell ._co' + P
         + '{overflow:visible!important;text-overflow:clip!important;'
-        + 'position:static!important;left:auto!important}'
+        + 'position:static!important;left:auto!important}',
+
+      /* 23.09.2026 (Agnar, S26 í Chrome, Skjár: „no pinchzoom or moving. Side scroll“): á símanum er hliðarstikan
+         AF skjánum (body.has-mobnav) en --sidebar-w er samt 60px (app.css:1352) → sýnin fékk margin-left:60px,
+         breidd 330px og overflow-x:clip. Allt fyrir ofan töfluna (haus, KPI-spjöld, takkar) klipptist við hægri
+         brún og engin leið að panna. Hér, aðeins með stikuna af skjánum, er SÝNIN eini skrunarinn: 100vw, pannar
+         lárétt yfir alla síðuna (haus + tafla saman), pinch-zoom á viewport-inu. Sex gervi-auðkenni slá 341-regluna
+         hér að ofan (fimm). Með stikuna á skjánum (Tölvusíðu-hamur ≥ 900px) gildir 341 óbreytt. */
+      'html.ars-wide-table body.has-mobnav ' + V + P6
+        + '{margin-left:0!important;width:100vw!important;max-width:100vw!important;'
+        + 'overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
+        + '-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom!important;overscroll-behavior-x:contain}',
+      'html.ars-wide-table body.has-mobnav ' + V + ' #ars-main' + P6 + ','
+        + 'html.ars-wide-table body.has-mobnav ' + V + ' .thm' + P6 + ','
+        + 'html.ars-wide-table body.has-mobnav ' + V + ' .data-table-wrap' + P6 + ','
+        + 'html.ars-wide-table body.has-mobnav ' + wrap + P6 + ','
+        + 'html.ars-wide-table body.has-mobnav ' + V + ' ._ars-tblscroll' + P6 + ','
+        + 'html.ars-wide-table body.has-mobnav ' + V + ' .data-table-scroll' + P6
+        + '{overflow:visible!important;overflow-x:visible!important;overflow-y:visible!important;'
+        + 'width:max-content!important;min-width:100%!important;max-width:none!important;touch-action:auto!important}'
     ].join('\n');
   }
 
