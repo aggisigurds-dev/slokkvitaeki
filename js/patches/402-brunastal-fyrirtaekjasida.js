@@ -33,7 +33,8 @@
   window.__bfs402 = true;
   if (document.getElementById('bfs-402')) return;
 
-  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]) body:not(.appmode) #companies-main:has(.co-banner) ';
+  // Sömu síma-merki og 356 útilokar með: html[data-viewmode="mobile"], html.slokk-phone-dev, body.appmode.
+  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #companies-main:has(.co-banner) ';
   var MONO = '"JetBrains Mono",ui-monospace,monospace';
   var SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif';
   var DISPLAY = '"Playfair Display",Georgia,serif';
