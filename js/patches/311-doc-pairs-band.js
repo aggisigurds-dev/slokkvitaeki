@@ -414,6 +414,27 @@
     //
     // Lagfæringin er hreyfingarleysi: snerta DOM aðeins þegar hnúturinn er
     // raunverulega á röngum stað. Þöguls-vörður má aldrei sjálfur búa til hávaða.
+    //
+    // ── 23.09.2026: SAMA LYKKJA, NÝR MÓTAÐILI ──────────────────────────────────
+    // Agnar: „stanslaust hopp í company profile … skýrslur og reikningar saman,
+    // skreppa saman upp og niður" (fyrirtæki 202).
+    //
+    // Papp 403 (Skjöl-spjaldið, hönnun B) tekur þetta band INN í spjaldið sem kafla
+    // — það er samþykkt hönnun, ekki villa. En prófið hér að neðan þekkti aðeins
+    // EINN réttan stað: systkini `._dyg-section` beint undir `main`. Bandið inni í
+    // spjaldinu féll því undir „rangur staður" og var dregið út aftur. 403 sér þá
+    // childList-breytingu, færir það inn á ný, og þá fer þessi teljari í gang aftur.
+    //
+    // Mælt á fyrirtæki 202 í framleiðslu (MutationObserver, 6 sek):
+    //   6×  - ._dpb-company úr .b403-stal   →  + í #companies-main
+    //   5×  + ._dpb-company í .b403-stal    →  - úr #companies-main
+    // Reiptog á ~1 sek fresti sem hætti aldrei. Skjáskot náðist ekki einu sinni:
+    // síðan komst aldrei í kyrrstöðu.
+    //
+    // Hafi annar patch ættleitt bandið inn í Skjöl-spjaldið er það EKKI á röngum
+    // stað — og þá á þessi vörður að þegja. Prófað á `._dyg-section` sem ætt (ekki
+    // á `.b403-stal`) svo reglan haldi líka fyrir næstu uppröðun sem kemur.
+    if (sec.closest && sec.closest('._dyg-section')) return;
     const dyg = main.querySelector('._dyg-section');
     if (dyg) {
       if (sec.parentNode === main && sec.previousSibling === dyg) return;   // þegar rétt
