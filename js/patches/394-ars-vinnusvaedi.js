@@ -761,7 +761,32 @@
     });
   }
 
-  const OKKAR = '.arsm-strip,.arsm-seg,.arsm-more,.arsm-tags,.arsm-sec,.arsm-herobar,.arsm-heroleg,._ars-nota3';
+  const OKKAR = '.arsm-strip,.arsm-seg,.arsm-more,.arsm-tags,.arsm-sec,.arsm-herobar,.arsm-heroleg,._ars-nota3,.arsm-korthaus,.arsm-verkf,.arsm-verk';
+  // Staðir sem hjúpurinn sjálfur hreyfir við (færir takka heim og aftur til baka).
+  // Breytingar ÞAR mega ekki vekja nýja smíði — það var lykkjan sem hökti.
+  const OKKAR_SNERTIR = '#_ars-pnr-row,#_arsmap-wrapper,#_arsmap-panel,._hh-toggle,._ars-filterstrip';
+
+  /* Undirskrift sýnarinnar: allt sem smíðin byggir á. Sé hún óbreytt OG hlutarnir
+   * okkar enn á sínum stað er EKKERT gert. Án hennar elti hjúpurinn sjálfan sig:
+   * mælt 23.09 voru .arsm-seg/.arsm-more/.arsm-sec/.arsm-korthaus endurbyggð
+   * 27 sinnum á 6 sekúndum (~4,5/s) — það var höktið sem Agnar sá. */
+  let sidastaUndirskrift = '';
+  function undirskrift(root) {
+    const mo = Array.from(root.querySelectorAll('._ars-mo'))
+      .map(c => (c.textContent || '').trim() + (c.getAttribute('aria-pressed') === 'true' ? '*' : '')).join('|');
+    const st = Array.from(root.querySelectorAll('._ars-st'))
+      .map(c => (c.textContent || '').trim() + (erVirk(c) ? '*' : '')).join('|');
+    const lina = Array.from(root.querySelectorAll('div')).find(
+      d => d.children.length <= 2 && !d.closest('.arsm-sec') && /^\s*Sýni\s+[\d.]+\s+af\s/.test(d.textContent || '')
+    );
+    const panel = document.getElementById('_arsmap-panel');
+    const kortOpid = panel ? getComputedStyle(panel).display !== 'none' : false;
+    return [mo, st, lina ? lina.textContent.trim() : '', kortOpid ? 'k1' : 'k0',
+      root.querySelectorAll('table.data-table tbody tr').length].join('##');
+  }
+  function hlutarAStad(root) {
+    return !!root.querySelector('.arsm-strip') && !!root.querySelector('.arsm-seg') && !!root.querySelector('.arsm-sec');
+  }
 
   let t = null, inni = false;
   function bygg() {
@@ -773,6 +798,10 @@
     // Síminn heldur sínum eigin strimli (331/382): stílarnir hér eru allir í
     // @media(min-width:901px), svo hjúpurinn stendur ósmíðaður þar.
     if (innerWidth < 901) { root.querySelectorAll(OKKAR).forEach(n => n.remove()); merkja(false); return; }
+    // Ekkert breyttist og allt er á sínum stað → ekkert gert. (Sjá undirskrift().)
+    const nu = undirskrift(root);
+    if (nu === sidastaUndirskrift && hlutarAStad(root)) return;
+    sidastaUndirskrift = nu;
     inni = true;
     try {
       strimill(root);
@@ -803,7 +832,7 @@
     new MutationObserver(ms => {
       for (const m of ms) {
         const el = m.target && m.target.nodeType === 1 ? m.target : (m.target && m.target.parentElement);
-        if (el && el.closest && el.closest(OKKAR)) continue;
+        if (el && el.closest && (el.closest(OKKAR) || el.closest(OKKAR_SNERTIR))) continue;
         schedule();
         return;
       }
