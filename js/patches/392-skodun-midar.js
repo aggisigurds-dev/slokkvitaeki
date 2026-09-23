@@ -95,7 +95,10 @@
       // 23.09 (skjámynd Agnars af síma, 980 px Tölvusíðu-hamur): nafndálkurinn er auto en taflan hélt 1170 px lágmarki 385 —
       // föstu dálkarnir (50+280+150+52+214+110+86+186 = 1128) skildu 41 px eftir handa nafninu, sem braut sig orð fyrir orð.
       // Lágmarkið rúmar nú nafnið (≥ 200 px); umbúðirnar ._sk-tblwrap skruna lárétt á mjórri skjá.
-      R('table._sk-tbl', 'min-width:1330px!important'),
+      // 23.09 (hönnun D, „smá overlap"): Skoðun-dálkurinn (52px) lét röðunarörina skarast við Ár; Reikningur (86px) braut upphæðir.
+      R('table._sk-tbl', 'min-width:1382px!important'),
+      R('table._sk-tbl colgroup col:nth-child(5)', 'width:86px!important'),
+      R('table._sk-tbl colgroup col:nth-child(8)', 'width:104px!important'),
       R('table._sk-tbl colgroup col:nth-child(2)', 'width:auto!important'),
       R('table._sk-tbl colgroup col:nth-child(3)', 'width:280px!important'),
       // Stöðudálkurinn er 158px í 385 en platan er 150px + fylling — hann fær 186px
@@ -134,6 +137,44 @@
       R('._sk-st--off', 'background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;color:#5b6472!important;text-shadow:none!important'),
       R('._sk-st--off::before', 'background:#aeb6c4'),
 
+      // ── hönnun D (Agnar 23.09 21:20, strigi UcyMFZNi1sVNPGiHdYSWCZ): síðan sem EITT stálspjald — málmhaus með hnoðum,
+      //    stálplata undir KPI, síum og töflu; síuraðirnar þrjár mynda eitt hvítt spjald með merkjum (Staða · Mánuður · Leit);
+      //    talningin „N af N" sem plata; fótur með litaskýringu. CSS eitt — 385 teiknar sama markup, hver takki heldur sér. ──
+      R('._sk-root', 'background:#e2e6ec!important;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)!important;border:1px solid #000;border-radius:14px;box-shadow:0 30px 60px -20px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.3);padding:0 0 16px!important;overflow:hidden;margin:24px auto 64px'),
+      R('._sk-hd', 'position:relative;background:' + METAL + ';border-bottom:1px solid #000!important;padding:18px 24px 16px!important;margin:0 0 14px!important;align-items:center!important;gap:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)'),
+      R('._sk-hd::before,' + '._sk-hd::after', 'content:"";position:absolute;top:8px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7);pointer-events:none'),
+      R('._sk-hd::before', 'left:8px'),
+      R('._sk-hd::after', 'right:8px'),
+      R('._sk-hd ._sk-btn', 'height:40px!important;padding:0 14px!important;border-radius:9px!important'),
+      R('._sk-hd ._sk-utlit ._sk-btn', 'border-radius:0!important'),
+      R('._sk-hd ._sk-utlit ._sk-btn:first-child', 'border-radius:9px 0 0 9px!important'),
+      R('._sk-hd ._sk-utlit ._sk-btn:last-child', 'border-radius:0 9px 9px 0!important'),
+      R('._sk-villa,' + '._sk-kpis,' + '._sk-tblwrap,' + '._sk-cards', 'margin-left:12px!important;margin-right:12px!important'),
+      R('._sk-kpi', 'border-radius:10px!important;border:1px solid #000!important;border-top-width:3px!important'),
+      // síuraðirnar þrjár = eitt hvítt spjald; merki fremst í hverri röð (Staða · Mánuður · Leit)
+      R('._sk-sia', 'margin:0 12px!important;padding:8px 12px 8px 12px;background:#fff;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12);gap:6px!important'),
+      R('._sk-sia::before', 'content:"";flex:none;width:84px;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#525b6b'),
+      R('._sk-kpis + ._sk-sia', 'border-radius:8px 8px 0 0;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)'),
+      R('._sk-kpis + ._sk-sia::before', 'content:"Staða"'),
+      R('._sk-sia + ._sk-sia', 'box-shadow:inset 1px 0 0 rgba(20,24,34,.12),inset -1px 0 0 rgba(20,24,34,.12)'),
+      R('._sk-sia + ._sk-sia::before', 'content:"Mánuður"'),
+      R('._sk-sia:has(._sk-inp)', 'border-radius:0 0 8px 8px;margin-bottom:12px!important;box-shadow:inset 0 -1px 0 rgba(20,24,34,.12),inset 1px 0 0 rgba(20,24,34,.12),inset -1px 0 0 rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)'),
+      R('._sk-sia:has(._sk-inp)::before', 'content:"Leit"'),
+      R('._sk-chip', 'border-radius:7px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)'),
+      R('._sk-chip b', 'height:18px;min-width:18px;padding:0 5px;border-radius:5px;background:#eceff4!important;color:#1f2530!important;display:inline-flex;align-items:center;justify-content:center;margin-left:2px!important'),
+      R('._sk-chip.on b', 'background:rgba(255,255,255,.16)!important;color:#fff!important'),
+      R('._sk-chip[data-st="fram"]:not(.on) b', 'background:#fde3e0!important;color:#b42318!important'),
+      R('._sk-chip[data-st="orukkad"]:not(.on) b', 'background:#fbeac6!important;color:#7a4f06!important'),
+      R('._sk-inp', 'border-radius:8px!important'),
+      R('._sk-sia ._sk-sp + ._sk-lbl', 'height:24px;padding:0 9px;border-radius:3px;border:1px solid rgba(20,24,34,.12);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);font:700 10.5px ' + MONO + '!important;letter-spacing:.06em;text-transform:uppercase;color:#11141c!important'),
+      R('._sk-tblwrap', 'border-top:0!important;border-radius:8px!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)!important'),
+      R('table._sk-tbl th', 'height:38px;color:#eef1f4!important;letter-spacing:.14em!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)'),
+      R('._sk-co', 'font-size:13.5px!important'),
+      R('._sk-post', 'color:#5b6472!important'),
+      // fótur: litaskýring (eina viðbótin sem er ekki í markupi 385 — texti einn)
+      R('._sk-tblwrap::after', 'content:none'),
+      R('._sk-root::after', 'content:"Grænt = skýrsla ársins til · Gull = skoðað en órukkað · Rautt = skoðun vantar / fram yfir · Blátt = þennan mánuð — Skref: Sk skoðað · Sk skýrsla · Re reikningur — smellur á röð opnar síðu fyrirtækisins";display:block;margin:10px 16px 0;font-family:' + MONO + ';font-size:11.5px;color:#525b6b'),
+      VIEWS.map(id => 'html body #' + id + '._sk-spjold ._sk-root::after').join(',') + '{content:none}',
       // Spjaldahamur (mjór gluggi / sími): sömu ferköntuðu gluggar
       R('._sk-card', 'border:0!important;border-top:3px solid #8f98a8!important;border-radius:2px!important;box-shadow:0 1px 1px rgba(15,20,30,.2),0 10px 22px -14px rgba(15,20,30,.45)!important'),
       R('._sk-cardnafn', 'font-family:' + SANS + '!important;font-weight:600!important'),
