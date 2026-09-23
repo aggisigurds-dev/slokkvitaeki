@@ -241,6 +241,7 @@
   // Röðunin er hvergi vistuð, svo án þessa þurfti að smella á dálkinn í hvert sinn.
   let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'greitt', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'all', req: 0 };
   let _hlCreditedIds = new Set();  // 2026-08-19: id upprunareikninga sem hafa verið kreditfærðir (fyllt í render())
+  let _leitTimer = 0;              // 23.09.2026: dregur saman teikningu meðan skrifað er í síureitinn
 
   // 2026-07-01: customer lookup by NAME or KENNITALA — pull a customer's WHOLE
   // sölu-/reikningasaga (all time, not month-bounded) so "sendu mér kvittun frá
@@ -468,6 +469,11 @@
 
     const greittLabel = (_state.mode === 'kt' || _state.scope !== 'month') ? 'Greitt' : 'Greitt í mán.';
     const darkBtn = 'padding:8px 11px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font:inherit;font-size:13px';
+    // STÖÐUGT VIÐMÓT (CLAUDE.md, 23.09.2026): `main.innerHTML = …` hendir öllu sem hékk í gamla trénu — skrunstöðunni
+    // (líka láréttu skruni töflunnar á síma), fókusnum og textavalinu. Þessi skrá bjargaði áður AÐEINS leitarreitnum,
+    // handvirkt og eftir á; skrunstaðan tapaðist alltaf, svo hver sía eða röðun skaut notandanum aftur á topp
+    // 28.203 hnúta lista. Hjálparinn í 388 gerir þetta allt í sama tifi, svo engin millistaða sést.
+    const _aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(main) : null;
     main.innerHTML = `
       <div class="thm"><div class="app-page"><main class="app-main">
 
@@ -517,6 +523,7 @@
         ${listHtml(rows)}
 
       </main></div></div>`;
+    if (_aftur) _aftur();   // skrun + fókus + textaval aftur á sinn stað, í SAMA tifi og teikningin
 
     // Prev/next step by month (Mán scope) or year (Ár scope). Hidden in Allt.
     const _step = dir => {
