@@ -79,19 +79,44 @@ jobs:
       - name: Kóða-verðir (engin gagnatenging)
         run: node tools/audit-all.cjs --static
 
-      # Lykillinn vantar = gagnaverðirnir keyra í tómarúmi og ekkert skráist.
-      # Það á að sjást, en ekki sem „bilað flæði".
-      - name: Er gagnalykillinn til?
-        if: ${{ env.SUPABASE_SERVICE_ROLE_KEY == '' }}
-        run: echo "::warning title=Gagnaverðir sleppt::SUPABASE_SERVICE_ROLE_KEY vantar — gagnaverðirnir keyra ekki og ekkert skráist í oryggisnet_keyrslur."
-
+      # 23.09.2026 — ÞETTA ÞREP ÞAGGAÐI NIÐUR ALLT ÖRYGGISNETIÐ Í VIKU.
+      # Skilyrðið `if: SUPABASE_SERVICE_ROLE_KEY != ''` hér að neðan sleppti gagnavörðunum ALVEG þegar leyndarmálið
+      # vantaði. Það hvarf úr repóinu (aðeins NETLIFY_* eru eftir) og 16.09. kl. 17:57 skrifaðist síðasta röðin í
+      # `oryggisnet_keyrslur`. Keyrslan hélt samt áfram að skila ✅, svo ekkert sást: Jarvis-síðan sýndi 49/53 græna
+      # og „2 brotnir" í sex daga á meðan raunveruleikinn var 59/64 og 5 brotnir — og ellefu nýir verðir sáust hvergi.
+      # Lykillinn er ÓÞARFUR: tools/audit-all.cjs fellur aftur á anon-lykilinn í js/config.js (línur 89–91), og sú leið
+      # var prófuð 23.09. — 64 raðir skrifuðust. Skilyrðið er því farið; þrepið keyrir alltaf.
+      #
       # Ekki blokkerandi: þessir mæla ÁSTAND GAGNA sem ýtingin snerti ekki.
       # Niðurstaðan er skráð í oryggisnet_keyrslur hvort sem hún er græn eða rauð.
       - name: Gagna-verðir (fella ekki keyrsluna — sjá haus)
         id: gogn
         continue-on-error: true
-        if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' }}
         run: node tools/audit-all.cjs --skra --uppruni=ci
+
+      # Skráðist keyrslan? Án þessa er þögn óaðgreinanleg frá „allt í lagi" — og það var einmitt bilunin.
+      - name: Skráðist keyrslan í öryggisnetið?
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs");
+            const cfg = fs.readFileSync("js/config.js", "utf8");
+            const url = (cfg.match(/SUPABASE_URL\s*=\s*["\x27]([^"\x27]+)/) || [])[1];
+            const key = process.env.SUPABASE_SERVICE_ROLE_KEY || (cfg.match(/SUPABASE_KEY\s*=\s*["\x27]([^"\x27]+)/) || [])[1];
+            fetch(url + "/rest/v1/oryggisnet_keyrslur?select=timi&order=timi.desc&limit=1", { headers: { apikey: key, Authorization: "Bearer " + key } })
+              .then(r => r.json())
+              .then(j => {
+                const timi = j && j[0] && j[0].timi;
+                const min = timi ? (Date.now() - Date.parse(timi)) / 60000 : Infinity;
+                if (min > 180) {
+                  console.log("::warning title=Öryggisnetið skráist ekki::Nýjasta keyrslan í oryggisnet_keyrslur er " +
+                    (isFinite(min) ? Math.round(min / 60) + " klst" : "ENGIN") + " gömul — Jarvis-síðan sýnir úreltar tölur.");
+                } else {
+                  console.log("✅ Skráð fyrir " + Math.round(min) + " mín — Jarvis sýnir þessa keyrslu.");
+                }
+              })
+              .catch(e => console.log("::warning title=Öryggisnetið::Náði ekki að staðfesta skráningu: " + e.message));
+          ' >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
 
       - name: Samantekt
         if: always()
@@ -101,7 +126,7 @@ jobs:
             echo "::warning title=Rauður gagnavörður::Ástand í gögnunum er rautt. Það stöðvar ekki ýtinguna — sjá oryggisnet_keyrslur."
             echo "⚠ Gagnaverðir: RAUTT — ástand gagna, ekki þessi ýting" >> "$GITHUB_STEP_SUMMARY"
           elif [ "${{ steps.gogn.outcome }}" = "skipped" ]; then
-            echo "⏭ Gagnaverðir: sleppt (SUPABASE_SERVICE_ROLE_KEY vantar)" >> "$GITHUB_STEP_SUMMARY"
+            echo "⏭ Gagnaverðir: SLEPPT — það á ekki að geta gerst lengur (skilyrðið var fjarlægt 23.09.2026)" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "✅ Gagnaverðir: grænt" >> "$GITHUB_STEP_SUMMARY"
           fi

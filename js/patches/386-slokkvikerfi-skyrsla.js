@@ -551,7 +551,12 @@
       else return;
       merkjaBreytt();
     });
-    document.addEventListener('visibilitychange', () => { if (document.hidden && S.dirty && !S.stoppad && document.getElementById('_sks-host')) { clearTimeout(S.timer); vista(); } });
+    // Útskolun við lokun. `visibilitychange` grípur flipaskipti og heimaskjá; `pagehide` grípur það sem hann missir af:
+    // bakk/áfram í bfcache og lokun flipans. Án hins síðara gat 1,2 sek töfin á `vista()` tapað síðustu breytingu
+    // (vörður: tools/audit-vistun-utskolun.cjs, rautt 23.09.2026 — hann þekkir `pagehide`, ekki `document.hidden`).
+    const skola = () => { if (S.dirty && !S.stoppad && document.getElementById('_sks-host')) { clearTimeout(S.timer); vista(); } };
+    document.addEventListener('visibilitychange', () => { if (document.hidden) skola(); });
+    window.addEventListener('pagehide', skola);
   }
 
   // ── flipar á prófílnum ──────────────────────────────────────────────────────

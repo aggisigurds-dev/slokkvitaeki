@@ -80,6 +80,11 @@ const SKRIFAR_A_THJON = /fetch\s*\([^)]*\/api\/|\.from\s*\(['"][a-z_]+['"]\)\s*\
 const SKOLAR_UT = new RegExp([
   "addEventListener\\s*\\(\\s*['\"]pagehide['\"]",
   "visibilityState\\s*===?\\s*['\"]hidden['\"]",
+  // 23.09.2026: vörðurinn þekkti AÐEINS `visibilityState === 'hidden'`, svo `document.hidden` — sama prófun, önnur
+  // stafsetning — taldist „skolar ekki út". Patch 386 var flaggaður þótt hann skolaði. Vörður sem gelgir að ósekju
+  // verður þaggaður (sjá hausinn), og þá er hann verri en enginn. Báðar myndirnar gilda nú.
+  "addEventListener\\s*\\(\\s*['\"]visibilitychange['\"]",
+  '\\bdocument\\.hidden\\b',
   'keepalive\\s*:\\s*true',
   'sendBeacon',
   // blur-vistun — varin af papp 365

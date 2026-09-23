@@ -55,7 +55,13 @@ const H = { apikey: KEY, Authorization: 'Bearer ' + KEY };
 
 // Mælt 01.09.2026. Bætist gildi við á að SKOÐA hvort síurnar eigi að hleypa
 // því í gegn — og bæta því hér fyrst þá.
-const THEKKT = new Set(['active', 'urelt', 'Í lagi', 'ok']);
+// 23.09.2026: 'loaned' bættist við. Það er EKKI slys — 122 (samningshafar-receive) setur tækið þannig þegar það er
+// tekið inn á verkstæði, og 219/268/269 lesa `status='loaned'` til að sýna það á Verkstæði/Aksturslista. Það þýðir
+// því „í notkun, statt hjá okkur", aldrei „úr notkun" (þess vegna ekki í UR_NOTKUN hér að neðan).
+// Mælt um leið: Stilling ehf. (1825) á EINGÖNGU tvö 'loaned' tæki og hverfur úr hverri sía sem þrengir á 'active' —
+// 13 félög eru í þeirri stöðu. Kóðaskönnunin hér að neðan fann enga slíka síu, og það er skilyrðið fyrir að taka
+// gildið inn: þekkt gildi má aldrei þýða að sían megi þrengjast aftur.
+const THEKKT = new Set(['active', 'urelt', 'Í lagi', 'ok', 'loaned']);
 // Gildi sem þýða „úr notkun". Allt annað telst í notkun.
 const UR_NOTKUN = new Set(['urelt']);
 
