@@ -150,6 +150,12 @@
       W + 'table.data-table colgroup col:nth-child(3){width:236px!important}',
       W + '._ars-notacell{position:relative!important;vertical-align:middle!important;overflow:hidden!important;min-width:236px!important;width:236px!important;padding:4px 6px!important}',
       W + 'table.data-table thead th:nth-child(3){min-width:236px!important}',
+      // Agnar 23.09: „láta töfluna ná alveg út í enda" — dálkarnir eru fastir í
+      // <colgroup> og summan þeirra (~1550 px) er minni en borðið á breiðum skjá,
+      // svo taflan endaði með auðu svæði hægra megin. Taflan fyllir nú breiddina og
+      // síðasti dálkurinn (⋯) tekur afganginn.
+      W + 'table.data-table{width:100%!important;min-width:100%!important}',
+      W + 'table.data-table colgroup col:last-child{width:auto!important}',
       // Lesa-lagið: textinn er sýndur í eigin lagi OFAN Á reitnum — `input` getur
       // ekki brotið línur — svo reiturinn sjálfur (og öll vistun 153) er ósnertur
       // og birtist um leið og smellt er í hann.
