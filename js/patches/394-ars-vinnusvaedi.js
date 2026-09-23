@@ -142,6 +142,24 @@
       // til að fá hreinan útlínutakka eins og á borðinu (mælt: gull sló í gegn).
       W + '.arsm-korthaus button{height:30px!important;padding:0 11px!important;border:1px solid #3a3d44!important;border-radius:3px!important;background:transparent!important;background-image:none!important;box-shadow:none!important;color:#eef1f4!important;text-shadow:none!important;font:600 12px ' + SANS + '!important;margin:0!important;cursor:pointer}',
 
+      // ── Ferðanótan: tvöfaldur dálkur og þrjár línur ──────────────────────
+      // Agnar 23.09: „tvöfaldan breiddina á column f ferðanótu. Og leyft texta
+      // að ná þrem línum." Dálkurinn var 118 px og nótan sást sem „hann fó…".
+      // Bæði colgroup OG reitinn: taflan er í auto-layout og skar dálkinn í 170 px
+      // þótt <col> segði 236 (mælt 23.09) — min-width á reitnum heldur honum.
+      W + 'table.data-table colgroup col:nth-child(3){width:236px!important}',
+      W + '._ars-notacell{position:relative!important;vertical-align:middle!important;overflow:visible!important;min-width:236px!important;width:236px!important}',
+      W + 'table.data-table thead th:nth-child(3){min-width:236px!important}',
+      // Lesa-lagið: þrjár línur með orðaskilum. `input` getur ekki brotið línur,
+      // svo textinn er sýndur í eigin lagi OFAN Á reitnum — reiturinn sjálfur
+      // (og öll vistun 153) er ósnertur og birtist um leið og smellt er í hann.
+      V + '._ars-nota3{position:absolute;inset:3px 4px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;padding:2px 4px;font:500 11.5px/1.35 ' + SANS + ';color:#2b313c;background:transparent;cursor:text;white-space:normal;word-break:break-word}',
+      V + '._ars-nota3:empty{display:none}',
+      V + '._ars-notacell.arsm-ritar ._ars-nota3{display:none}',
+      W + '._ars-notacell ._ars-plannote{height:100%!important;min-height:52px!important}',
+      W + '._ars-notacell._er-med ._ars-plannote{color:transparent!important;caret-color:#1f2530}',
+      W + '._ars-notacell.arsm-ritar ._ars-plannote{color:#1f2530!important}',
+
       // ── 3 · hlutahaus og bilið ────────────────────────────────────────────
       V + '.arsm-sec{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:2px 2px 8px}',
       V + '.arsm-sec h2{margin:0;font:800 24px/1.1 ' + DISPLAY + ';letter-spacing:-.02em;color:#11141c}',
@@ -719,7 +737,31 @@
     mark.parentNode.insertBefore(sec, mark);
   }
 
-  const OKKAR = '.arsm-strip,.arsm-seg,.arsm-more,.arsm-tags,.arsm-sec,.arsm-herobar,.arsm-heroleg';
+  // ── Ferðanótan í þremur línum ────────────────────────────────────────────
+  // Reiturinn sem 153 teiknar er `input` og getur ekki brotið línur. Hér er
+  // textinn speglaður í lag OFAN Á honum sem brýtur sig í þrjár línur; um leið
+  // og smellt er í reitinn víkur lagið og maður ritar í upprunalega reitinn.
+  // Ekkert er fært, engin vistun afrituð — 153 á reitinn áfram.
+  function notur(root) {
+    root.querySelectorAll('td._ars-notacell').forEach(td => {
+      const inp = td.querySelector('._ars-plannote');
+      if (!inp) return;
+      let lag = td.querySelector('._ars-nota3');
+      if (!lag) {
+        lag = document.createElement('div');
+        lag.className = '_ars-nota3';
+        lag.addEventListener('mousedown', e => { e.preventDefault(); inp.focus(); });
+        td.appendChild(lag);
+        inp.addEventListener('focus', () => td.classList.add('arsm-ritar'));
+        inp.addEventListener('blur', () => { td.classList.remove('arsm-ritar'); lag.textContent = inp.value; td.classList.toggle('_er-med', !!inp.value); });
+        inp.addEventListener('input', () => { lag.textContent = inp.value; td.classList.toggle('_er-med', !!inp.value); });
+      }
+      if (document.activeElement !== inp) lag.textContent = inp.value || '';
+      td.classList.toggle('_er-med', !!inp.value);
+    });
+  }
+
+  const OKKAR = '.arsm-strip,.arsm-seg,.arsm-more,.arsm-tags,.arsm-sec,.arsm-herobar,.arsm-heroleg,._ars-nota3';
 
   let t = null, inni = false;
   function bygg() {
@@ -740,6 +782,7 @@
       hero(root);
       hlutahaus(root);
       kort(root, root.querySelector('.arsm-verkf'));
+      notur(root);
       merkja(iLagi !== false);
     } catch (e) {
       // Fellur hjúpurinn — upprunalegu raðirnar koma strax aftur, engin síulaus síða.
