@@ -193,6 +193,14 @@
     r('.b405-knappar', 'grid-area:knappar;margin:0 12px 0 0;display:flex;gap:8px'),
     r('.b405-knappur', 'flex:1;justify-content:center;height:40px!important;border-radius:9px!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;color:#1f2530!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;text-shadow:none!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center;gap:8px;padding:0 14px!important'),
 
+
+    /* ── Agnar 23.09 19:19: stærra myndasvæði — hægri dálkur 560px, flísin fyllir hæð staðreynda + athugasemdar ── */
+    r('.co-banner', 'grid-template-columns:minmax(0,1fr) 560px'),
+    r('.co-mynd', 'align-self:stretch;display:flex;flex-direction:column;min-height:0'),
+    r('.co-mynd .co-mynd-flis', 'flex:1 1 auto;min-height:260px!important;height:auto!important'),
+    r('.co-mynd .co-mynd-vefja img', 'width:100%!important;height:100%!important;object-fit:cover'),
+    r('.co-banner-right .co-banner-note', 'min-height:96px!important'),
+
     /* ── skeljar ── */
     r('._samskipti-card,.ut-list:not(.b404),._afsl-box,._dyg-section.sk-card:not(.b403),._ufs-section.sk-card,._co-mail-box', SHELL + ';padding:0'),
     r('#_ctc-notes', SHELL.replace('border-radius:14px', 'border-radius:14px 14px 0 0') + '!important;border-bottom:0!important;background:' + PLATE + '!important;background-image:' + PLATE_IMG + '!important;margin:0!important;padding:14px 12px 10px!important;box-shadow:none!important'),
