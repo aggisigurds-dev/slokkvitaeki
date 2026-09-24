@@ -174,19 +174,67 @@
     list.classList.add('b404'); list.dataset.b404 = String(before);
   }
 
+  // Heimildin að „+ Bæta við tæki": hnúturinn sem raunverulega framkvæmir aðgerðina.
+  // 73 setur sinn bulk-takka fremst og felur upprunalega, svo hann gengur fyrir sé hann til.
+  function finnaBaetaHeimild(main) {
+    var allir = Array.prototype.slice.call(main.querySelectorAll('button')).filter(function (x) {
+      return /^\+\s*Bæta við tæki/.test(txt(x)) && !x.closest('.ut-list') && !x.closest('.modal') && !x.classList.contains('b404-umbod');
+    });
+    if (!allir.length) return null;
+    for (var i = 0; i < allir.length; i++) if (allir[i].classList.contains('_bulkadd_btn')) return allir[i];
+    return allir[0];
+  }
+
   function scope() { var h = document.documentElement; return h.getAttribute('data-thm-preset') === 'brunastal' && h.getAttribute('data-viewmode') !== 'mobile' && !h.classList.contains('slokk-phone-dev') && !document.body.classList.contains('appmode'); }
   var timer = null;
   function tick() {
-    if (!scope()) return;
+    if (!scope()) {
+      // Sími/appmode: hausinn okkar er ekki til, svo heimildin verður að sjást aftur.
+      Array.prototype.slice.call(document.querySelectorAll('.b404-heimild')).forEach(function (x) { x.classList.remove('b404-heimild'); });
+      return;
+    }
     var main = document.getElementById('companies-main'); if (!main) return;
     Array.prototype.slice.call(main.querySelectorAll('.ut-list')).forEach(function (l) {
       if (l.dataset.b404fail === '1' && !l.querySelector('.b404-root')) delete l.dataset.b404fail;
       try { compose(l); } catch (err) { console.error('[404]', err); }
       // legacy hengir mánuð/Merkja skoðun í .ut-bulk EFTIR uppröðun → færa í hausinn þegar þau koma
       var hr = l.querySelector('.b404-haus-h'); if (hr) { var m = main.querySelector('._pm_quick_inspect_month'), b = main.querySelector('._pm_quick_inspect'); if (m && m.parentElement !== hr) { m.classList.add('b404-manudur'); hr.appendChild(m); } if (b && b.parentElement !== hr) { b.classList.add('b404-btn-malmur'); b.innerHTML = ICON.check + 'Merkja skoðun'; hr.appendChild(b); }
-        // Agnar 24.09 (skjámynd með hring og ör): „+ Bæta við tæki" úr takkaröðinni undir borðanum niður í Úttekt-hausinn, við Merkja skoðun.
-        // Upprunalegi takkinn er FÆRÐUR (sama hnút, sami onclick); 73 (+ Mörg tæki) finnur hann eftir texta og setur sinn við hliðina.
-        Array.prototype.slice.call(main.querySelectorAll('button')).filter(function (x) { return /^\+\s*Bæta við tæki/.test(txt(x)) && !x.closest('.ut-list') && !x.closest('.modal') && x.parentElement !== hr; }).forEach(function (x) { x.classList.add('b404-btn-malmur', 'b404-baeta'); var mk = hr.querySelector('._pm_quick_inspect'); if (mk) hr.insertBefore(x, mk); else hr.appendChild(x); });
+        // Agnar 24.09 (skjámynd með hring og ör): „+ Bæta við tæki" á að standa í Úttekt-hausnum við Merkja skoðun.
+        //
+        // 24.09 seinna, Agnar: „þegar ég bæti við tæki, þá dettur takkinn út og næ ekki að bæta
+        // við öðru nema refresha." Takkinn var FÆRÐUR hingað áður. Hann er ekki okkar hnútur —
+        // hann býr í takkaröðinni (div[data-co-id]) sem `Companies` á. Við hverja endurteikningu
+        // listans rífur compose() upp `.b404-root` og býr til NÝJAN `.b404-haus-h`, svo aðfengni
+        // hnúturinn dó með gamla hausnum. Röðin sem átti hann teiknast EKKI aftur þegar tæki er
+        // bætt við, svo ekkert endurskapaði hann — aðeins full endurhleðsla.
+        // CLAUDE.md regla 4: ekki færa hnút sem þú átt ekki inn í ílát sem þú endurbyggir.
+        // Þess í stað: UMBOÐSTAKKI sem við eigum og megum endurbyggja, og smellir á heimildina.
+        var heim = finnaBaetaHeimild(main);
+        if (heim) {
+          // ÖRYGGISREGLA: heimildin felst AÐEINS ef umboðið er sannanlega komið í hausinn.
+          // Í prófun 24.09 mældist staða með NÚLL sýnilegum „+ Bæta við tæki" — heimildin
+          // var falin en umboðið varð aldrei til. Röðin hér að neðan tryggir að aldrei sé
+          // hægt að enda með enga leið til að bæta við tæki.
+          if (!hr.querySelector('.b404-umbod')) {
+            var umb = document.createElement('button');
+            umb.type = 'button';
+            umb.className = 'b404-btn-malmur b404-baeta b404-umbod';
+            umb.textContent = '+ Bæta við tæki';
+            umb.addEventListener('click', function (e) {
+              e.preventDefault();
+              // heimildin er flett upp AFTUR við smell: hún gæti hafa verið
+              // endurteiknuð (73 skiptir sínum bulk-takka inn) síðan umboðið varð til.
+              var m = document.getElementById('companies-main');
+              var h = m && finnaBaetaHeimild(m);
+              if (h) h.click();
+            });
+            var mk2 = hr.querySelector('._pm_quick_inspect');
+            if (mk2) hr.insertBefore(umb, mk2); else hr.appendChild(umb);
+          }
+          var stendur = hr.querySelector('.b404-umbod');
+          if (stendur) heim.classList.add('b404-heimild');      // falin með CSS — EKKI færð
+          else heim.classList.remove('b404-heimild');           // ekkert umboð → heimildin verður að sjást
+        }
       }
     });
   }
@@ -216,6 +264,9 @@
     var LINE = 'background:#fff;border-radius:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)';
     var SILVER_BTN = 'background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.14)!important;color:#1f2530!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;text-shadow:none';
     var css = [
+      // Heimildin að „+ Bæta við tæki" er FALIN, ekki færð — umboðstakkinn í hausnum
+      // smellir á hana. Hún býr í takkaröðinni, utan .ut-list, svo r() -forskeytið nær ekki til hennar.
+      'html[data-thm-preset="brunastal"] #companies-main .b404-heimild{display:none!important}',
       'html[data-thm-preset="brunastal"] #companies-main .uttekt-col-l:has(.ut-list.b404) > div:first-child{display:none}',
       r('', 'background:#e2e6ec;background-image:' + PLATE_IMG + ';border:1px solid #000;border-radius:14px;overflow:visible;box-shadow:0 30px 60px -20px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.3);font-family:' + SANS + ';margin-bottom:14px;container-type:normal'),
       r('> .b404-gamalt', 'display:none'),

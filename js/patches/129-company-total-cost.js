@@ -163,7 +163,27 @@
     return false;
   }
 
-  function findMatchingServices(type, size, services) {
+  // 2026-09-24 — STÆRÐARVÖRÐUR (Agnar: „Verðin eru öll komin í rugl").
+  // `findReplacementProduct` fékk þennan vörð 16.06.2026 („never bill a 9 kg price
+  // for a 6 kg unit"); aðalleitin sat eftir. Það beit tvisvar sama daginn:
+  //   · R-001011 Línuborun — „Léttvatn 9 L" rukkað á 6 L verði.
+  //   · Ný vara „Slökkvitæki 9L léttvatn yfirferð" (11:36) fór að keppa við
+  //     „Léttvatnstæki 6L. yfirferð" um ÖLL léttvatnstæki, því SIZELESS_SVC hendir
+  //     stærðinni úr fyrirspurninni fyrir léttvatn/froðu/ABF. Bæði heitin fengu
+  //     fullt skor og sigurvegarinn réðst af röðinni sem PostgREST skilaði.
+  // Vörðurinn ber saman RAUNSTÆRÐ tækisins (ekki `matchSize`, sem SIZELESS_SVC
+  // gæti hafa tæmt) við stærðartóka vörunnar. Beri hvorugt stærð er ekkert að —
+  // „Yfirferð Brunaslanga" á 30 m slöngu er rétt. Beri bæði stærð og þær stangist
+  // á er varan ekki gild; línan fellur þá í ótengdu-listann og SÉST.
+  function staerdArekstur(realSize, type, productName) {
+    const erStaerd = t => /^\d/.test(t);
+    const q = norm(String(type || '') + ' ' + String(realSize || '')).split(' ').filter(erStaerd);
+    const n = norm(String(productName || '')).split(' ').filter(erStaerd);
+    if (!q.length || !n.length) return false;
+    return !q.some(t => n.indexOf(t) >= 0);
+  }
+
+  function findMatchingServices(type, size, services, realSize) {
     const qTokens = norm(type + ' ' + size).split(' ').filter(Boolean);
     // Boost: distinguishing tokens (non-generic, length>=4) carry more weight
     // than short / generic ones like "kg" or "l".
@@ -188,6 +208,8 @@
       // Need at least one "strong" semantic token match (e.g. brunaslang,
       // duft, co2 — not just kg / 6). Pure size matches don't qualify.
       if (strongMatches === 0) continue;
+      // stærðarvörður — sjá skýringu við staerdArekstur
+      if (staerdArekstur(realSize != null ? realSize : size, type, p.nafn)) continue;
       const score = matched / Math.max(1, qTokens.length);
       if (score >= 0.5) candidates.push({ product: p, score, kind: isHledsla ? 'hledsla' : 'yfirferd' });
     }
@@ -225,6 +247,13 @@
       const n = norm(p.nafn);
       // Skip hleðsla/yfirferð — those go through the main matcher.
       if (/hledsla|yfirferd/.test(n)) continue;
+      // 2026-09-24 (Agnar: „nýtt léttvatn skráist sem leiga"): LEIGA er dagverð,
+      // aldrei verð á nýju tæki. „Leiga — Léttvatn/froðuvatnstæki 6 L, á dag" (597 kr)
+      // vann yfir „Léttvatn 6 kg. AB Slökkvitæki" (11.677 kr) því heitið ber bæði
+      // „lettvatn" og „6" og fékk fullt skor. Sama gildir um förgun og uppsetningu —
+      // þjónustugjöld, ekki endurnýjunarverð.
+      if (String(p.flokkur || '').toLowerCase() === 'leiga') continue;
+      if (/^leiga|,\s*a dag$|forgun|uppsetning/.test(n)) continue;
       const nTokens = n.split(' ').filter(Boolean);
       let matched = 0;
       let strongMatches = 0;
@@ -785,7 +814,7 @@
         return;
       }
       const matchSize = SIZELESS_SVC.test(g.type) ? '' : g.size;
-      const matching = findMatchingServices(g.type, matchSize, services);
+      const matching = findMatchingServices(g.type, matchSize, services, g.size);
       // Skráð tenging (410) á að gilda LÍKA þegar nafnaleitin finnur ekkert —
       // annars hlypi endurnýjunar-varaleiðin fram fyrir hana.
       const skradH = skradVara(g.type, g.size, 'hledsla', services);
