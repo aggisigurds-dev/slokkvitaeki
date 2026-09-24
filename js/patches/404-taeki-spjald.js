@@ -245,7 +245,33 @@
     var U = window.UttektTaeki;
     if (!U || !U.rerender || U.rerender.__b404) { setTimeout(wrapRerender, 500); return; }
     var orig = U.rerender;
-    U.rerender = function () { var out = orig.apply(this, arguments); try { tick(); } catch (e) { console.error('[404]', e); } return out; };
+    U.rerender = function () {
+      // Agnar 24.09: „Þessi partur skreppur saman í örstutta stund þegar ég ýti á
+      // yfirferð eða hleðslu." Mánaðarreiturinn og „Merkja skoðun" eru hnútar 00-legacy
+      // sem við FÆRÐUM inn í hausinn okkar — hausinn býr inni í .ut-list sem 224 skrifar
+      // yfir með innerHTML. Þeir dóu því með gamla trénu; tick() fann þá ekki og teiknaði
+      // hausinn án þeirra (mjórri), legacy-vaktin bjó þá til aftur ~300 ms síðar og
+      // hausinn stækkaði á ný. Lausn: taka þá úr trénu ÁÐUR en 224 skrifar, setja þá
+      // aftur í nýju .ut-bulk (þar sem legacy skilur þá eftir) og láta tick() færa þá
+      // í hausinn í SAMA tifi. Engin millistaða málast.
+      var main = document.getElementById('companies-main');
+      var geymt = [];
+      if (main) {
+        ['._pm_quick_inspect_month', '._pm_quick_inspect'].forEach(function (s) {
+          var n = main.querySelector(s);
+          if (n && n.closest('.ut-list')) { geymt.push(n); n.parentNode.removeChild(n); }
+        });
+      }
+      var out = orig.apply(this, arguments);
+      try {
+        if (geymt.length && main) {
+          var bulk = main.querySelector('.ut-list .ut-bulk') || main.querySelector('.ut-list');
+          if (bulk) geymt.forEach(function (n) { bulk.appendChild(n); });
+        }
+        tick();
+      } catch (e) { console.error('[404]', e); }
+      return out;
+    };
     U.rerender.__b404 = true;
   })();
   (function watch() {

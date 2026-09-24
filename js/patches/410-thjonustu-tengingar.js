@@ -379,7 +379,13 @@
       '  box-shadow:0 24px 60px -20px rgba(0,0,0,.55);overflow:hidden;font:inherit}',
       '#' + AUÐK + '-haus{display:flex;align-items:center;gap:14px;padding:16px 20px;',
       '  background:linear-gradient(180deg,#1d2430,#141a23);color:#fff}',
-      '#' + AUÐK + '-haus h2{margin:0;font-size:17px;font-weight:800;letter-spacing:.01em}',
+      // 24.09.2026 (Agnar: „ég sé ekki neitt á þetta með svarta stafi"): titillinn var dökkur á
+      // dökkum haus í öllum þremur flokkunum. Hausinn setur `color:#fff` á sig sjálfan — en h2
+      // ERFIR þann lit ekki, því app.css á eigin reglu á stakið: `h1,h2,h3{color:var(--ink1)}`
+      // (#11141c). Regla á stakinu vinnur alltaf á erfðum, hversu ljós sem foreldrið er.
+      // MÆLT á lifandi síðu: computed color rgb(17,20,28) fyrir, rgb(255,255,255) eftir.
+      'html body #' + AUÐK + '-haus h2{margin:0;font-size:17px;font-weight:800;letter-spacing:.01em;'
+        + 'color:#fff!important}',
       '#' + AUÐK + '-haus p{margin:3px 0 0;font-size:12px;color:#aab6c6}',
       '#' + AUÐK + '-loka{margin-left:auto;background:rgba(255,255,255,.12);color:#fff;border:0;',
       '  width:32px;height:32px;border-radius:8px;font-size:17px;cursor:pointer;line-height:1}',
@@ -402,7 +408,7 @@
       '  font:inherit;font-size:12.5px;background:#fff}',
       '.' + AUÐK + '-leit.vantar .' + AUÐK + '-leit-inp{border-color:#dc2626;background:#fef2f2}',
       '.' + AUÐK + '-leit-inp:focus{outline:2px solid #2563eb;outline-offset:-1px;background:#fff}',
-      '.' + AUÐK + '-leit-listi{position:absolute;z-index:30;left:0;right:0;top:100%;margin-top:3px;max-height:320px;overflow:auto;',
+      '.' + AUÐK + '-leit-listi{position:fixed;z-index:12500;max-height:320px;overflow:auto;',
       '  background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 10px 30px rgba(15,23,42,.18);padding:4px}',
       '.' + AUÐK + '-leit-hopur{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;padding:6px 8px 3px}',
       '.' + AUÐK + '-leit-kostur{display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;border:0;background:none;',
@@ -502,6 +508,17 @@
     if (nidur.length > 60) h += '<div class="' + AUÐK + '-leit-hopur">… ' + (nidur.length - 60) + ' fleiri — skrifaðu meira</div>';
     listi.innerHTML = h;
     listi.hidden = false;
+    // Listinn er position:fixed (ekki absolute í reitnum) — annars klippir skrun-
+    // ílátið #p410-efni hann af á neðstu línunum og hann er óaðgengilegur þar.
+    var inp = rot.querySelector('.' + AUÐK + '-leit-inp');
+    var r = (inp || rot).getBoundingClientRect();
+    var plass = window.innerHeight - r.bottom - 12;
+    var upp = plass < 180 && r.top > plass;      // lítið pláss fyrir neðan → opna upp
+    listi.style.left = r.left + 'px';
+    listi.style.width = Math.max(r.width, 260) + 'px';
+    listi.style.maxHeight = Math.min(320, Math.max(120, upp ? r.top - 12 : plass)) + 'px';
+    if (upp) { listi.style.top = 'auto'; listi.style.bottom = (window.innerHeight - r.top + 3) + 'px'; }
+    else { listi.style.bottom = 'auto'; listi.style.top = (r.bottom + 3) + 'px'; }
   }
   function felaLeitarlista(rot) {
     var listi = rot && rot.querySelector('.' + AUÐK + '-leit-listi');
@@ -793,6 +810,13 @@
       var rot = inp.parentNode;
       setTimeout(function () { if (!rot.contains(document.activeElement)) felaLeitarlista(rot); }, 120);
     });
+    // Listinn er fixed — skrun í efninu færir reitinn en ekki listann; fela hann þá.
+    gluggi.addEventListener('scroll', function () {
+      gluggi.querySelectorAll('.' + AUÐK + '-leit-listi:not([hidden])').forEach(function (l) {
+        var rot = l.parentNode; felaLeitarlista(rot);
+        var inp = rot.querySelector('.' + AUÐK + '-leit-inp'); if (inp) inp.blur();
+      });
+    }, true);
 
     // ── ✓ Staðfesta + röðunarhausar ──
     gluggi.addEventListener('click', function (e) {
