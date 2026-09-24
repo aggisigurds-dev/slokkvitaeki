@@ -21,11 +21,32 @@
 
   // Tengill í verðlistann (Vörur og þjónusta) — þaðan koma öll verðin sem reiknað er með hér.
   // `target="_blank"` er viljandi: sjá athugasemd við hausinn í buildSection().
+  // 24.09.2026 (Agnar: „annars er síðan verðlistinn ótengdur, hann fer bara á forsíðuna"):
+  // `#vorur` í nýjum flipa endaði á forsíðunni. Takkinn opnar nú tengingargluggann
+  // (papp 410) ofan á þessum glugga með línu tegundar+stærðar upplýsta — þar SÉST
+  // hvaða vara rukkast og þar er henni breytt. Fellur á #vorur sé 410 ekki hlaðinn.
   const VERDLISTI_TENGILL =
-    '<a href="#vorur" target="_blank" rel="noopener" ' +
-    'title="Opna Vörur og þjónustu í nýjum flipa — verðin hér eru reiknuð úr þeim lista" ' +
-    'style="font-size:11px;font-weight:700;color:#1d4ed8;text-decoration:none;white-space:nowrap;' +
-    'border:1px solid #bfdbfe;border-radius:999px;padding:2px 8px;background:#fff">Verðlisti ↗</a>';
+    '<button type="button" class="_bap-tengingar" ' +
+    'title="Opna verð-tengingarnar: hvaða þjónustulína rukkast fyrir þessa tegund og stærð" ' +
+    'style="font-size:11px;font-weight:700;color:#1d4ed8;cursor:pointer;white-space:nowrap;font:inherit;' +
+    'border:1px solid #bfdbfe;border-radius:999px;padding:2px 8px;background:#fff">Verðtengingar ↗</button>';
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('._bap-tengingar');
+    if (!b) return;
+    e.preventDefault();
+    const modal = b.closest('#_bulkadd_modal') || document;
+    const tegund = (modal.querySelector('#_ba_type') || {}).value || '';
+    const staerd = (modal.querySelector('#_ba_size') || {}).value || '';
+    if (window.ThjonustuTengingar && ThjonustuTengingar.opna) ThjonustuTengingar.opna('slokkvitaeki', { tegund, staerd });
+    else location.hash = '#vorur';
+  });
+  // 410 vistaði tengingu → endurreikna verðútlitið sem er opið, ef eitthvert er.
+  window.addEventListener('thjonustu-tengingar-breytt', () => {
+    document.querySelectorAll('#_bap-body').forEach(b => {
+      const modal = b.closest('#_bulkadd_modal');
+      if (modal && modal.__bapRecompute) modal.__bapRecompute();
+    });
+  });
   let _services = null;        // cached vörur (services only)
   let _servicesPromise = null;
 
@@ -197,14 +218,31 @@
       return;
     }
     const services = await loadServices();
-    const product = pickService(type, size, services, choice);
-    if (!product) {
-      body.innerHTML = '<div style="color:#dc2626">⚠ Fann ekki matchandi þjónustu í vörulista fyrir „' +
-        type + ' / ' + size + '". Bæta við í ' +
-        '<a href="#vorur" target="_blank" rel="noopener" style="color:#1d4ed8;font-weight:700">Vörur og þjónustu ↗</a>?</div>';
+    // 24.09.2026: SKRÁÐ tenging (papp 410) gengur fyrir nafnaleitinni — sama regla
+    // og í 129, annars segir þessi gluggi eitt og reikningurinn annað.
+    let skrad = null;
+    try {
+      if (window.ThjonustuTengingar && ThjonustuTengingar.skradVara && choice !== 'nyitt') {
+        skrad = await ThjonustuTengingar.skradVara(type, size, choice === 'hledsla' ? 'hledsla' : 'yfirferd');
+      }
+    } catch (_) { skrad = null; }
+    if (skrad === 'ekki_rukka') {
+      body.innerHTML = '<div style="color:#64748b;font-style:italic">Skráð sem lína sem ekki rukkast fyrir „' +
+        type + ' / ' + size + '". Kostnaður 0 kr. ' + VERDLISTI_TENGILL + '</div>';
       badge.textContent = '';
       return;
     }
+    const product = skrad || pickService(type, size, services, choice);
+    if (!product) {
+      body.innerHTML = '<div style="color:#dc2626">⚠ Engin þjónustulína tengd við „' +
+        type + ' / ' + size + '" og nafnaleitin fann enga. Tengdu hana: ' + VERDLISTI_TENGILL + '</div>';
+      badge.textContent = '';
+      return;
+    }
+    // Grænn punktur = skráð tenging, ekki ágiskun (sami punktur og í ársskoðunar-útreikningnum).
+    const skradPunktur = skrad
+      ? '<span title="Skráð verðtenging — engin ágiskun" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 2px #dcfce7;margin-right:5px;vertical-align:middle"></span>'
+      : '';
     const coId = lookupCoIdByName(nafn);
     const override = findOverride(coId, product.nafn);
     const akstur = findAkstur(coId);
@@ -225,7 +263,7 @@
     body.innerHTML =
       '<table style="width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums">' +
         '<tr><td style="padding:3px 0;color:#475569">Þjónusta:</td>' +
-          '<td style="padding:3px 0;text-align:right;font-weight:600">' + product.nafn + '</td></tr>' +
+          '<td style="padding:3px 0;text-align:right;font-weight:600">' + skradPunktur + product.nafn + '</td></tr>' +
         '<tr><td style="padding:3px 0;color:#475569">Per stk:</td>' +
           '<td style="padding:3px 0;text-align:right;font-weight:600">' + fmtKr(unitPrice) +
           (override ? ' <span title="' + (override.notes || '') + '" style="margin-left:6px;padding:1px 6px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:10px;font-weight:700">💰 Tilboð</span>' : '') +
@@ -288,6 +326,7 @@
 
     // Wire input changes (recompute on every change).
     const onChange = () => recompute(modal, nafn);
+    modal.__bapRecompute = onChange;   // 410 kallar á þetta þegar tenging vistast
     ['_ba_type', '_ba_size', '_ba_qty', '_bap-choice'].forEach(id => {
       const el = modal.querySelector('#' + id);
       if (!el) return;

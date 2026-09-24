@@ -97,7 +97,27 @@
     // have no size (—); the kg list only makes sense for handslökkvitæki.
     const typeSel = document.getElementById('_ba_type');
     const sizeSel = document.getElementById('_ba_size');
+    // 24.09.2026: skráin taeki_tegundir (papp 410, window.TaekiTegundir) á listana.
+    // Agnar bætir tegund/stærð við í „🧯 Slökkvit. verð" og hún birtist hér. Sé
+    // skráin ekki komin (DB seint) standa gömlu listarnir hér fyrir neðan.
+    const Skra = window.TaekiTegundir;
+    if (Skra && Skra.klar() && Skra.tegundir().length && typeSel) {
+      const fyrri = typeSel.value;
+      typeSel.innerHTML = Skra.tegundir().map(t => '<option>' + t.replace(/</g, '&lt;') + '</option>').join('');
+      if (Skra.tegundir().indexOf(fyrri) >= 0) typeSel.value = fyrri;
+    } else if (Skra && Skra.hlada) {
+      Skra.hlada().then(() => { if (document.body.contains(typeSel) && Skra.tegundir().length) {
+        const fyrri = typeSel.value;
+        typeSel.innerHTML = Skra.tegundir().map(t => '<option>' + t.replace(/</g, '&lt;') + '</option>').join('');
+        if (Skra.tegundir().indexOf(fyrri) >= 0) typeSel.value = fyrri;
+        syncSizes();
+      } });
+    }
     function sizesFor(t) {
+      if (Skra && Skra.klar()) {
+        const ur = Skra.staerdir(t);
+        if (ur.length) return ur;
+      }
       t = (t || '').toLowerCase();
       if (/duft|abc|pfc/.test(t)) return ['2 kg', '6 kg', '12 kg', '9 kg', '1 kg'];
       if (/co2|co₂|kolsýr|kolsyr/.test(t)) return ['2 kg', '5 kg'];

@@ -51,10 +51,22 @@
     })();
     return _tengingarPromise;
   }
+  // Grænn punktur við línu sem verðleggst af SKRÁÐRI tengingu (Agnar 24.09: „geturðu
+  // sett punkt þar sem virkt í ársskoðunarútreikningunum"). Ágiskaðar línur bera hann ekki.
+  const SKRAD_PUNKTUR = '<span title="Skráð verðtenging (Vörur og þjónusta → 🧯 Slökkvit. verð) — engin ágiskun" ' +
+    'style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 2px #dcfce7;margin-right:5px;vertical-align:middle"></span>';
+  // 410 vistar tengingu → skyndiminnið hér er úrelt. Sé kostnaðartaflan á skjánum
+  // teiknast hún strax með nýju tengingunni; annars næst þegar hún opnast.
+  window.addEventListener('thjonustu-tengingar-breytt', () => {
+    _tengingar = null; _tengingarPromise = null;
+    try { _lastKey = ''; if (document.getElementById('_ctc-section')) render(); } catch (_) {}
+  });
   // Skilar vöru, 'ekki_rukka', eða null. Lykillinn er nákvæmlega sá sem 410 skrifar.
   function skradVara(type, size, kind, services) {
     if (!_tengingar) return null;
-    const t = _tengingar[String(type || '') + '|' + String(size || '') + '|' + kind];
+    // Sýnin v_taeki_tegundir (sem 410 skrifar lyklana úr) TRIM-ar stærðina; hér er
+    // hún hrá úr uttaeki.size. „6 L " með bili á eftir má ekki missa tenginguna.
+    const t = _tengingar[String(type || '') + '|' + String(size || '').trim() + '|' + kind];
     if (!t) return null;
     if (t.ekki_rukka) return 'ekki_rukka';
     if (!t.vara_id) return null;
@@ -671,7 +683,7 @@
     const priceCell = (key, defUnit, override) =>
       '<td style="padding:7px 10px;text-align:right;white-space:nowrap">' +
         '<input class="_ctc-line-price" data-lk="' + esc(key) + '" data-def="' + Math.round(Math.max(0, +defUnit || 0)) + '" type="number" min="0" step="1" inputmode="numeric" value="' + Math.round(priceFor(key, defUnit)) + '" ' +
-        'style="width:82px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums;-moz-appearance:textfield"><span style="font-size:11px;color:#94a3b8"> kr</span>' +
+        'style="width:96px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums;-moz-appearance:textfield"><span style="font-size:11px;color:#94a3b8"> kr</span>' +
         (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:2px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') +
       '</td>';
 
@@ -862,7 +874,17 @@
         const n = g[kindKey];
         if (!n) return;
         const skrad = kindKey === 'hledsla' ? skradH : skradY;
-        if (skrad === 'ekki_rukka') return;          // skráð sem ó-rukkanlegt
+        if (skrad === 'ekki_rukka') {
+          // Skráð sem ó-rukkanlegt (410). Sýnt fölt eins og „Sleppt" — lína sem
+          // hverfur þegjandi lítur út eins og villa í útreikningnum.
+          rows.push('<tr style="opacity:.6">' +
+            '<td style="padding:5px 10px;font-size:12px;color:#64748b;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
+            '<td style="padding:5px 10px;text-align:center;font-size:12px;color:#64748b">' + n + '</td>' +
+            '<td style="padding:5px 10px"><span style="padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:#f1f5f9;color:#64748b">' + kindLabel + '</span></td>' +
+            '<td colspan="4" style="padding:5px 10px;color:#64748b;font-size:11px;font-style:italic">' + SKRAD_PUNKTUR + ' Skráð: ekki rukkað</td>' +
+          '</tr>');
+          return;
+        }
         const product = skrad || pickByKind(matching, kindKey);
         if (!product) return;
         const override = findOverride(coId, product.nafn);
@@ -884,7 +906,7 @@
         if (override || tierMark || tierPctMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
         rows.push('<tr>' +
           '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
-            '<div style="font-size:11px;color:#64748b">' + esc(product.nafn) + '</div></td>' +
+            '<div style="font-size:11px;color:#64748b">' + (skrad ? SKRAD_PUNKTUR : '') + esc(product.nafn) + '</div></td>' +
           '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + n + '</td>' +
           '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;' +
             (kindKey === 'hledsla' ? 'background:#dcfce7;color:#166534' : 'background:#dbeafe;color:#1e40af') + '">' +

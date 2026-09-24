@@ -23,15 +23,26 @@
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // 24.09.2026: skráin taeki_tegundir (papp 410, window.TaekiTegundir) á listann
+  // þegar hún er komin — allar skráðar stærðir, í skráar-röð, án tvítaka.
+  function staerdirUrSkra() {
+    const S = window.TaekiTegundir;
+    if (!S || !S.klar()) return SIZE_OPTIONS;
+    const ut = [];
+    S.tegundir().forEach(t => S.staerdir(t).forEach(s => { if (s !== '—' && ut.indexOf(s) < 0) ut.push(s); }));
+    return ut.length ? ut : SIZE_OPTIONS;
+  }
+
   function buildSizeSelect(unitId, cur) {
     const c = cur || '';
+    const kostir = staerdirUrSkra();
     let opts = '<option value="">—</option>';
     // Preserve any non-standard current value (e.g. "6-12 kg", "6 ltr") so we
     // never silently clobber it; it shows selected at the top.
-    if (c && SIZE_OPTIONS.indexOf(c) === -1) {
+    if (c && kostir.indexOf(c) === -1) {
       opts += '<option value="' + esc(c) + '" selected>' + esc(c) + ' (núv.)</option>';
     }
-    SIZE_OPTIONS.forEach(s => {
+    kostir.forEach(s => {
       opts += '<option value="' + s + '"' + (s === c ? ' selected' : '') + '>' + s + '</option>';
     });
     return '<select class="_usc-size" data-uid="' + unitId + '" ' +
