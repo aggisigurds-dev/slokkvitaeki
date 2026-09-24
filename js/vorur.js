@@ -100,7 +100,13 @@
           '<span class="page-title__icon">📦</span>' +
           '<div><h1>Vörur og þjónusta</h1><p>Vörulistinn sem Sala notar — verð, birgðir og flokkar</p></div>' +
         '</div>' +
-        '<div class="page-title__tools">' +
+        '<div class="page-title__tools" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+          // Verð-gluggarnir þrír (papp 410). Þeir sýna hvaða þjónustulínu hvert
+          // reikningsflæði rukkar fyrir — og leyfa að skipta um. vorur.js á
+          // TAKKANA, 410 á gluggana (CLAUDE.md regla 4).
+          tengiTakki('slokkvitaeki','🧯','Slökkvit. verð') +
+          tengiTakki('brunakerfi','🚨','Brunak. verð') +
+          tengiTakki('slokkvikerfi','🍳','Slökkvikerfis verð') +
           '<button id="vorur-new" style="background:linear-gradient(180deg,#209d5c,#178048);color:#fff;border:1px solid rgba(0,0,0,.25);padding:9px 16px;border-radius:9px;font-family:\'Space Grotesk\',system-ui,sans-serif;font-weight:700;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 10px -4px rgba(0,0,0,.5)">+ Ný vara/þjónusta</button>' +
         '</div>' +
       '</div>' +
@@ -125,6 +131,15 @@
     '</main></div></div>';
     bindEvents();
     renderGrid();
+  }
+
+  // Takki sem opnar einn af verð-gluggum papps 410. Sé pappinn ekki hlaðinn
+  // (eldra dist, gömul flipa-lota) segir takkinn það frekar en að gera ekkert.
+  function tengiTakki(flokkur,takn,label){
+    return '<button class="vorur-teng" data-teng="'+flokkur+'" type="button" ' +
+      'style="background:#fff;color:#334155;border:1px solid #cbd5e1;padding:9px 13px;border-radius:9px;' +
+      'font-family:\'Space Grotesk\',system-ui,sans-serif;font-weight:700;cursor:pointer;font-size:12.5px;' +
+      'display:inline-flex;align-items:center;gap:6px">'+takn+' '+label+'</button>';
   }
 
   function tabBtn(key,label){
@@ -236,6 +251,15 @@
   }
 
   function bindEvents(){
+    Array.from(document.querySelectorAll('.vorur-teng')).forEach(function(b){
+      b.addEventListener('click',function(){
+        if(window.ThjonustuTengingar && ThjonustuTengingar.opna){
+          ThjonustuTengingar.opna(b.getAttribute('data-teng'));
+        } else {
+          alert('Verð-gluggarnir eru ekki hlaðnir í þessari útgáfu. Endurhlaðu síðuna.');
+        }
+      });
+    });
     Array.from(document.querySelectorAll('.vorur-tab')).forEach(function(b){
       b.addEventListener('click',function(){
         _activeTab = b.getAttribute('data-tab');

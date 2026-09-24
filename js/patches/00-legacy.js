@@ -2818,7 +2818,11 @@ console.log('[patch-master] loaded with all fixes');
       // fyrir neðan (byrjar á tölustaf) missti af henni og setti tækja-fellilista
       // ofan í kredit-línuna („↩ Kredit" hvarf, R-000867 dæmi frá Agnari).
       // Sama undanþága og hinir.
-      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal, #view-bakendi, #view-brunakerfi-yfirlit, #view-arsskodun, #view-slokkvikerfi, #view-brunaskra, #_sch-modal')) return;
+      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal, #view-bakendi, #view-brunakerfi-yfirlit, #view-arsskodun, #view-slokkvikerfi, #view-brunaskra, #_sch-modal, #p410-bak')) return;
+      // 2026-09-24: #p410-bak (Thjonustu-tengingar) er sjotta daemid um sama leka.
+      // Dalkurinn thar heitir „Stada" og dalkur 0 er tegundarheiti („Lettvatn"),
+      // svo hvorki hausaleitin ne serial-vornin stoppudu hann: taekjastodu-fellilistinn
+      // at merkin sem segja hvort verdtenging se skrad, giskud eda rong.
       // Check if this table has STAÐA column
       var ths = table.querySelectorAll('th');
       var statusIdx = -1;

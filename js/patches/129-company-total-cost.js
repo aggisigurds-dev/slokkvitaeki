@@ -24,6 +24,43 @@
   let _services = null;
   let _servicesPromise = null;
 
+  // ── SKRÁÐ VERÐTENGING (thjonustu_tengingar, papp 410 — 24.09.2026) ───────
+  // Agnar skráir í „🧯 Slökkvit. verð" hvaða þjónustulína á að rukkast fyrir
+  // tiltekna tegund+stærð. Sú skráning gengur ALLTAF fyrir nafnaleitinni hér
+  // fyrir neðan. Ástæðan er R-001011 (Línuborun): `SIZELESS_SVC` hendir
+  // stærðinni fyrir léttvatn/froðu/ABF og `findMatchingServices` hefur engan
+  // stærðarvörð, svo „Léttvatn 9 L" fékk þegjandi verð 6 L tækisins. Ágiskun
+  // má ekki ráða verði þegar maðurinn hefur sagt hvað á að gerast.
+  let _tengingar = null;
+  let _tengingarPromise = null;
+  function loadTengingar() {
+    if (_tengingar) return Promise.resolve(_tengingar);
+    if (_tengingarPromise) return _tengingarPromise;
+    _tengingarPromise = (async () => {
+      const sb = window.DB && window.DB.sb;
+      if (!sb) return (_tengingar = {});
+      // Þögn hér er RÉTT: vanti taflan (eldra afrit) á reikningsgerðin að halda
+      // áfram á nafnaleitinni eins og áður, ekki stöðvast.
+      const { data, error } = await sb.from('thjonustu_tengingar')
+        .select('lykill,vara_id,ekki_rukka').eq('flokkur', 'slokkvitaeki');
+      if (error) { _tengingar = {}; return _tengingar; }
+      const m = {};
+      (data || []).forEach(t => { m[t.lykill] = t; });
+      _tengingar = m;
+      return m;
+    })();
+    return _tengingarPromise;
+  }
+  // Skilar vöru, 'ekki_rukka', eða null. Lykillinn er nákvæmlega sá sem 410 skrifar.
+  function skradVara(type, size, kind, services) {
+    if (!_tengingar) return null;
+    const t = _tengingar[String(type || '') + '|' + String(size || '') + '|' + kind];
+    if (!t) return null;
+    if (t.ekki_rukka) return 'ekki_rukka';
+    if (!t.vara_id) return null;
+    return (services || []).find(p => String(p.id) === String(t.vara_id)) || null;
+  }
+
   function fmtKr(n) {
     return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr';
   }
@@ -499,6 +536,7 @@
       munadarlaus.forEach(u => { if (!seen.has(u.id)) units.push(u); });
     }
     const services = await loadServices();
+    await loadTengingar();   // papp 410 — skráð tenging trompar nafnaleit
     const tier = await loadTierFor(coId);
     // 21.09.2026 (úttekt): á meðan beðið var eftir gögnunum gat notandinn opnað
     // ANNAÐ fyrirtæki — þá málaðist kostnaðartafla félags A inn á síðu félags B.
@@ -748,7 +786,12 @@
       }
       const matchSize = SIZELESS_SVC.test(g.type) ? '' : g.size;
       const matching = findMatchingServices(g.type, matchSize, services);
-      if (!matching.length && (g.hledsla > 0 || g.yfirferd > 0)) {
+      // Skráð tenging (410) á að gilda LÍKA þegar nafnaleitin finnur ekkert —
+      // annars hlypi endurnýjunar-varaleiðin fram fyrir hana.
+      const skradH = skradVara(g.type, g.size, 'hledsla', services);
+      const skradY = skradVara(g.type, g.size, 'yfirferd', services);
+      const skradTil = (skradH && skradH !== 'ekki_rukka') || (skradY && skradY !== 'ekki_rukka');
+      if (!matching.length && !skradTil && (g.hledsla > 0 || g.yfirferd > 0)) {
         // Fallback: try replacement product (Eldvarnateppi, Reykskynjari etc.)
         const replacement = findReplacementProduct(g.type, g.size, services);
         if (replacement) {
@@ -789,7 +832,9 @@
       [['hledsla', 'Hleðsla'], ['yfirferd', 'Yfirferð']].forEach(([kindKey, kindLabel]) => {
         const n = g[kindKey];
         if (!n) return;
-        const product = pickByKind(matching, kindKey);
+        const skrad = kindKey === 'hledsla' ? skradH : skradY;
+        if (skrad === 'ekki_rukka') return;          // skráð sem ó-rukkanlegt
+        const product = skrad || pickByKind(matching, kindKey);
         if (!product) return;
         const override = findOverride(coId, product.nafn);
         let unitPrice = override ? +override.price_ex_vat : +product.verd_an_vsk;
