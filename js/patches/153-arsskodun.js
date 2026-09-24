@@ -2522,6 +2522,9 @@
     `);
     // 24.09.2026: 187 (árs-reitir) hlustar — setur reitina inn í sama tifi, fyrir málun (sjá 187).
     try { document.dispatchEvent(new CustomEvent('ars:render')); } catch (_) {}
+    // 394 (strimill/síustika/haus): vaktarinn hans náði ekki alltaf samrunanum (mælt: strimillinn sat á gömlu flísinni) —
+    // kallað beint, í sama tifi, fyrir málun. bygg() er sjálft varið með undirskrift og gerir ekkert sé allt óbreytt.
+    try { if (window.ArsVinnusvaedi && typeof ArsVinnusvaedi.bygg === 'function') ArsVinnusvaedi.bygg(); } catch (_) {}
 
     // Re-stamp the póst-stöðumerki (patch 295) deterministically after every
     // render. Filter/month/sort re-renders rebuild the rows, and the badge's own
