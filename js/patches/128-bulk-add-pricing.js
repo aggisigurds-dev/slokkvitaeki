@@ -18,6 +18,14 @@
   window.__bulkAddPricingInstalled = true;
 
   const SERVICE_KW = /hleðsla|yfirferð/i;
+
+  // Tengill í verðlistann (Vörur og þjónusta) — þaðan koma öll verðin sem reiknað er með hér.
+  // `target="_blank"` er viljandi: sjá athugasemd við hausinn í buildSection().
+  const VERDLISTI_TENGILL =
+    '<a href="#vorur" target="_blank" rel="noopener" ' +
+    'title="Opna Vörur og þjónustu í nýjum flipa — verðin hér eru reiknuð úr þeim lista" ' +
+    'style="font-size:11px;font-weight:700;color:#1d4ed8;text-decoration:none;white-space:nowrap;' +
+    'border:1px solid #bfdbfe;border-radius:999px;padding:2px 8px;background:#fff">Verðlisti ↗</a>';
   let _services = null;        // cached vörur (services only)
   let _servicesPromise = null;
 
@@ -154,9 +162,15 @@
     sec.style.cssText =
       'margin-top:14px;padding:12px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;';
     sec.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">' +
         '<div style="font-size:12px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.05em">📋 Verðútlit næstu þjónustu</div>' +
-        '<div id="_bap-badge" style="font-size:11px;color:#1e40af"></div>' +
+        '<div style="display:flex;align-items:center;gap:10px;flex:none">' +
+          '<div id="_bap-badge" style="font-size:11px;color:#1e40af"></div>' +
+          // 24.09.2026 (Agnar): tengill í verðlistann sem tölurnar hér eru reiknaðar úr.
+          // NÝR FLIPI viljandi: glugginn „Bæta við mörgum tækjum" er hálfútfylltur þegar
+          // hér er komið (tegund, stærð, magn, staðsetning) og sama-flipa flakk hendir því.
+          VERDLISTI_TENGILL +
+        '</div>' +
       '</div>' +
       '<div id="_bap-body" style="font-size:13px;color:#1e3a8a">' +
         '<div style="color:#94a3b8;font-style:italic">Veldu Tegund og Stærð til að sjá verð…</div>' +
@@ -186,7 +200,8 @@
     const product = pickService(type, size, services, choice);
     if (!product) {
       body.innerHTML = '<div style="color:#dc2626">⚠ Fann ekki matchandi þjónustu í vörulista fyrir „' +
-        type + ' / ' + size + '". Bæta við í Vörur og þjónusta?</div>';
+        type + ' / ' + size + '". Bæta við í ' +
+        '<a href="#vorur" target="_blank" rel="noopener" style="color:#1d4ed8;font-weight:700">Vörur og þjónustu ↗</a>?</div>';
       badge.textContent = '';
       return;
     }
