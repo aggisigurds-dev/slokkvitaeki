@@ -58,6 +58,9 @@
     const F = 'html[data-arsm="1"] body #view-arsskodun#view-arsskodun ';
     return [
       // ── Upprunalegu raðirnar víkja UM LEIÐ og hjúpurinn er virkur ──────────
+      // Agnar 24.09: húsatáknið við titilinn blikkaði við hleðslu — haus() fól það með JS ~1,3 s eftir render. Falið strax með CSS
+      // (W, ekki F: líka áður en hjúpurinn merkir sig). 153 á reitinn: fyrsta barn vinstri hópsins í efstu röðinni, 38×38 — stílstrengurinn endurraðast (bil) um leið og JS snertir hann, svo aðeins 38px er treyst.
+      W + '#ars-main > div > div:first-child > div:first-child > div:first-child[style*="38px"]{display:none!important}',
       F + '._ars-morow{display:none!important}',
       F + '._ars-statusrow{display:none!important}',
 
