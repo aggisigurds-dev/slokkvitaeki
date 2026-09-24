@@ -1740,7 +1740,23 @@
     }
     // Kald opnun: mála STRAX úr localStorage-snapshotinu (síðasta heimsókn) og
     // sækja ferskt í bakgrunni — „Hleður…" sést bara í allra fyrstu heimsókn.
+    // Biðin gildir um FYRSTU teikninguna hvor leiðin sem hún fer — snapshot EÐA gögn sem loadAll hafði þegar sótt (mælt: show()
+    // var kallað 1,4 s eftir ræsingu með _cache.list fullt, löngu fyrir DOMContentLoaded).
+    // NB: readyState er „interactive" á meðan defer-skrifturnar keyra (þáttun lokið, DCL ekki komið) — 'loading' segir ekkert
+    // hér. Hvort DCL sé komið sést á navigation-tímamerkinu; öryggisþak 5 s ef hlustunin næði aldrei að vakna.
+    const dclBuid = () => { try { const n = performance.getEntriesByType('navigation')[0]; return !n || n.domContentLoadedEventStart > 0; } catch (_) { return true; } };
+    if (!dclBuid()) {
+      main.innerHTML = '<div style="padding:24px;color:var(--ink4)">Hleður…</div>';
+      await new Promise(r => { document.addEventListener('DOMContentLoaded', r, { once: true }); setTimeout(r, 5000); });
+      if (_rendered && document.getElementById('_ars-search')) { backgroundRefresh(); return; }   // annar show() kláraði á meðan
+    }
     const snap = (!_cache.list.length) ? readSnapshot() : null;
+    // 24.09.2026 (Agnar: „reyndu að ná öllu hoppi af ársskoðun síðunni"): kalda málunin úr snapshotinu kom ~1 s eftir ræsingu,
+    // á meðan defer-skrifturnar voru enn að keyra — skreytipapparnir sem koma síðar í röðinni (393 málmur, 394 vinnusvæði,
+    // 187 skjalareitir, 155 kortastika) voru ekki til og röðuðu töflunni upp á nýtt 1–4 s síðar: taflan færðist 556 → 492 px,
+    // síuflísarnar brotnuðu um 3 línur og runnu svo saman í eina stiku (layout-shift 0,47). Snapshot-málunin bíður því
+    // DOMContentLoaded (allar skrifturnar keyrðar; ~0,4 s á framleiðslu) og fyrsta teikningin fær allar skreytingarnar í
+    // SAMA tifi (ars:render + ArsVinnusvaedi.bygg() hér að neðan). Gögnin, undirskriftin og bakgrunns-sóknin eru óbreytt.
     if (snap) {
       _cache.list = snap.list;
       _cache.byId = Object.fromEntries(snap.list.map(c => [c.id, c]));   // detail-smellir virka strax

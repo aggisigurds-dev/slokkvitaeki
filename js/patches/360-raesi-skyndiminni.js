@@ -69,14 +69,7 @@
     DB.online = true; DB._lastLoadOk = DB._lastLoadOk || (snap.t || Date.now());
     try { DB.setSyncState && DB.setSyncState('syncing'); } catch (_) {}          // ferskt er á leiðinni
     stada.hydrated = true; stada.hydratedAt = Math.round(performance.now()); stada.snapAge_s = snap.t ? Math.round((Date.now() - snap.t) / 1000) : null;
-    // 24.09.2026 (Agnar: „reyndu að ná öllu hoppi af ársskoðun síðunni"): vökvunin kemur ~1 s eftir ræsingu, á meðan defer-skrifturnar
-    // eru enn að keyra — Ársskoðun teiknaðist HRÁ (153) og skreytipapparnir sem koma síðar í röðinni (393 málmur, 394 vinnusvæði,
-    // 187 skjalareitir) röðuðu henni upp á nýtt 1–4 s síðar: taflan færðist 556 → 492 px, síuflísarnar brotnuðu um 3 línur og
-    // komu svo saman í eina stiku. Gögnin fara í DB.cache STRAX (allir sem lesa þau fá þau), en endurteikning viðmótsins bíður
-    // DOMContentLoaded — þá hafa ALLAR defer-skrifturnar keyrt og fyrsta teikningin fær skreytingarnar í sama tifi
-    // (153 kallar ArsVinnusvaedi.bygg() beint og sendir 'ars:render'). Kostar ~0,4–0,9 s á fyrstu töflu, sparar endurröðunina.
-    const teikna = () => { try { window.App && App.refreshAll && App.refreshAll(); } catch (e) { console.warn('[360] refreshAll', e); } };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', teikna, { once: true }); else teikna();
+    try { window.App && App.refreshAll && App.refreshAll(); } catch (e) { console.warn('[360] refreshAll', e); }
     console.log('[360] ræsi-skyndiminni: ' + snap.units.length + ' tæki, ' + (snap.jobs || []).length + ' verkbeiðnir úr IndexedDB (' + stada.snapAge_s + ' s gamalt) á ' + stada.hydratedAt + ' ms');
     return true;
   }
