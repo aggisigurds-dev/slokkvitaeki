@@ -72,8 +72,8 @@
     r('.co-banner-right .b411-meira.syna', 'display:inline-flex;align-items:center;gap:4px'),
     // 5) Samskipti þétt: haus 56 px, tölur sem plötur á einni línu, nýjasta uppfærslan ein lína; „Meira" opnar allt
     // 24.09.2026: hýsillinn (286) stendur tómur í ~1 s áður en kortið kemur (159 px) — frátekið pláss svo Úttektin hoppi ekki niður
-    r('._samskipti-host', 'min-height:159px'),
-    r('._samskipti-host ._skx-hledur', 'max-height:159px!important;overflow:hidden!important;box-sizing:border-box!important'),   // beinagrindin (286) var 279 px → kortið 159 px: 120 px hopp
+    r('._samskipti-host', 'min-height:240px'),
+    r('._samskipti-host ._skx-hledur', 'max-height:240px!important;overflow:hidden!important;box-sizing:border-box!important'),   // beinagrindin (286) var 279 px → kortið 159 px: 120 px hopp
     r('.card._samskipti-card:not(.b411-opid) ', 'padding:0 0 8px!important;gap:6px!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-head', 'padding:5px 12px!important;min-height:0!important;display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:14px!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-acts', 'margin-left:auto!important;display:flex!important;flex-wrap:nowrap!important;flex:none!important;gap:6px!important;align-items:center!important'),
@@ -89,17 +89,19 @@
     r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-acts button', 'height:28px!important;padding:0 10px!important;font-size:12px!important'),
     r('.card._samskipti-card:not(.b411-opid) ._smx-strip', 'min-height:26px!important;padding:0 14px!important;margin:0!important'),
     r('.card._samskipti-card:not(.b411-opid) ._smx-strip ._smx-imp', 'height:26px!important;padding:0 8px!important;font-size:11.5px!important'),
-    r('.card._samskipti-card:not(.b411-opid) ._skx-tiles', 'display:flex!important;flex-wrap:wrap!important;gap:6px!important;padding:0 14px!important;margin:0!important'),
-    r('.card._samskipti-card:not(.b411-opid) ._skx-tile', 'flex:0 1 auto!important;display:flex!important;align-items:baseline!important;gap:6px!important;min-height:36px!important;height:auto!important;padding:4px 12px!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-tiles', 'display:flex!important;flex-wrap:wrap!important;gap:8px!important;padding:0 14px!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-tile', 'flex:1 1 170px!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:2px!important;min-height:62px!important;height:auto!important;padding:8px 14px!important;margin:0!important'),   // 24.09: „stækka samskiptaboxin aftur" — tveggja lína spjöld sem fylla breiddina
     r('.card._samskipti-card:not(.b411-opid) ._skx-tile > b', 'font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:#525b6b!important;margin:0!important'),
-    r('.card._samskipti-card:not(.b411-opid) ._skx-tile > span', 'font-size:13.5px!important;font-weight:600!important;margin:0!important'),
-    r('.card._samskipti-card:not(.b411-opid) ._skx-tile > small', 'font-size:11.5px!important;margin:0!important;white-space:nowrap!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-tile > span', 'font-size:16px!important;font-weight:700!important;margin:0!important;line-height:1.2!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-tile > small', 'font-size:12px!important;margin:0!important;white-space:nowrap!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-lbl:not(._ssk-full ._skx-lbl)', 'display:none!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast', 'margin:0 14px!important;padding:0!important'),
-    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-rod-inni', 'display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:10px!important;min-height:38px!important;padding:0 12px!important;overflow:hidden!important;font-size:13.5px!important'),
-    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-meta', 'flex:none!important;white-space:nowrap!important;margin:0!important'),
-    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-subj', 'flex:0 1 auto!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0!important'),
-    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-txt', 'flex:1 1 0!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0!important;max-height:none!important;font-size:12.5px!important;color:#525b6b!important'),
+    // 24.09 (Agnar: „allavega skilaboðin sem koma þarna frá kúnna … sýna alveg 3 línur allavega"): skilaboðin sjálf fá þrjár
+    // línur — merkjalína (Frá kúnna · nafn · dags) efst, efnið feitt á næstu, svo allt að þrjár línur af textanum (line-clamp).
+    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-rod-inni', 'display:flex!important;flex-wrap:wrap!important;align-items:flex-start!important;gap:3px 12px!important;min-height:0!important;padding:10px 16px 12px!important;overflow:hidden!important;font-size:14px!important;line-height:1.4!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-meta', 'flex:1 1 100%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-subj', 'flex:1 1 100%!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:15px!important;font-weight:700!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-txt', 'flex:1 1 100%!important;min-width:0!important;white-space:normal!important;display:-webkit-box!important;-webkit-line-clamp:3!important;-webkit-box-orient:vertical!important;overflow:hidden!important;font-size:14px!important;line-height:1.45!important;min-height:calc(1.45em * 3)!important;color:#334155!important;margin:0!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._ssk-body', 'display:none!important'),
     r('.card._samskipti-card:not(.b411-opid) ._ssk-note,.card._samskipti-card:not(.b411-opid) ._skx-pts', 'display:none!important'),
     r('.card._samskipti-card .b411-samsk-meira', 'height:28px;padding:0 10px;border-radius:7px;border:1px dashed rgba(255,255,255,.35);background:transparent;color:#d5dbe6;font-family:' + MONO + ';font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px')

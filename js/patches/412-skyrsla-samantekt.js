@@ -122,6 +122,7 @@
     // Án vsk · Afsláttur · Vsk verða EIN mono-lína hægra megin undir, Samtals-bandið svo.
     r(D(7), 'padding-bottom:0!important'),
     r(D(7) + ' table', 'border-radius:8px 8px 0 0!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12)!important'),
+    r(D(7) + ' table', 'min-width:0!important;display:table!important'),   /* display:block kom úr annarri reglu: raðirnar (534 px) fylltu þá ekki töfluna (623 px) */   // 24.09 (Agnar: „taflan passar ekki innaní"): 129 setur min-width:740px inline — taflan var 740 px í 649 px hólfi og klipptist hægra megin (Samtals-dálkurinn hálfur); dálkarnir hér eru þéttir svo hún kemst fyrir
     r(D(7) + ' table tbody tr:last-child td', 'border-bottom:1px solid #edf0f4!important'),
     r(D(8), 'display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:0 14px!important;padding-top:0!important;align-items:center!important'),
     r(D(8) + ' > div:has(input):not(:has(> #_ctc-sum-total))', 'flex:1 1 100%!important;order:0;min-height:44px!important;margin:0!important;border-radius:0!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12)!important;border-top:0!important;padding:4px 10px 4px 12px!important;font-weight:700!important;font-size:13px!important;background:#fff!important'),
