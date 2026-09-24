@@ -97,6 +97,37 @@
   var STAERDARLAUS = /léttv|lettv|abf|froð|frod|brunaslang|brunaslöng|brunaslong|hose|reykskynj|hitaskynj|smoke|teppi|blanket/i;
   var erStaerd = function (t) { return /^\d/.test(t); };
 
+  // 24.09.2026 (Agnar: „eitthvað tvítak þarna") — 129 steypir tegundum saman í
+  // FJÖLSKYLDU áður en hún reiknar (ABC Duft, PFC Duft og Duft = „Duft"; CO2 og
+  // CO₂ = „CO₂") og LES tenginguna með fjölskyldu-heitinu. Glugginn skrifaði
+  // hráa heitið, svo „ABC Duft|2 kg|yfirferd" hefði aldrei lesist. Sama röðun
+  // hér og í 129 normalizeTypeFamily — víki hún, deyja tengingarnar þegjandi.
+  function fjolskylda(t) {
+    var s = String(t || '').toLowerCase();
+    if (!s.trim() || s === '(vantar)') return '—';
+    if (/\bduft\b|\babc\b|\bpfc\b/.test(s)) return 'Duft';
+    if (/co2|co₂|co_?2|kolsyr|kolsýr/.test(s)) return 'CO₂';
+    if (/léttv|lettv|abf|froð|frod/.test(s)) return 'Léttvatn';
+    if (/brunaslang|brunaslöng|brunaslong|hose/.test(s)) return 'Brunaslanga';
+    if (/reykskynj|smoke/.test(s)) return 'Reykskynjari';
+    if (/teppi|blanket/.test(s)) return 'Eldvarnateppi';
+    return t || '—';
+  }
+  // Steypir röðum sýnarinnar saman eftir fjölskyldu + stærð; hráu heitin
+  // fylgja með (`hra`) svo sjáist hvað liggur undir hverri línu.
+  function steypaTegundir(radir) {
+    var m = {}, ut = [];
+    (radir || []).forEach(function (t) {
+      var teg = fjolskylda(t.tegund), st = String(t.staerd || '').trim();
+      var k = teg + '|' + st;
+      if (!m[k]) { m[k] = { tegund: teg, staerd: st, fjoldi: 0, hra: [] }; ut.push(m[k]); }
+      m[k].fjoldi += Number(t.fjoldi) || 0;
+      if (t.tegund !== teg && m[k].hra.indexOf(t.tegund) < 0) m[k].hra.push(t.tegund);
+    });
+    ut.sort(function (a, b) { return b.fjoldi - a.fjoldi; });
+    return ut;
+  }
+
   // Lag 3 í 129: reykskynjara-afbrigði fara BEINT á söluvöru.
   function reykAfbrigdi(tegund, staerd) {
     if (!/reykskynj|smoke/.test(norm(tegund))) return null;
@@ -177,11 +208,20 @@
         // Stærðinni var hent OG varan ber aðra stærð → öll tæki tegundarinnar
         // fá þetta verð, hver sem stærð þeirra er. Það er Línuborun-villan.
         staerdHunsud: hunsud && arekstur,
-        staerdRong: !hunsud && arekstur
+        staerdRong: !hunsud && arekstur,
+        // 24.09: tækið ber ENGA stærð en varan gerir það („ABC Duft —" → „Duft 2 kg").
+        // Vörðurinn í 129 sleppir þessu (rétt fyrir slöngur), en hér er verðið
+        // handahófskennt — fyrsta duft-varan sem leitin hitti. Rautt, ekki blátt.
+        staerdVantar: !taekiTolur.length && voruTolur.length > 0
       };
     }
     var v = varaleit(tegund, staerd);
-    if (v) return { vara: v.vara, leid: 'vara', staerdHunsud: false, staerdRong: false };
+    if (v) {
+      var vTolur = norm(v.vara.nafn).split(' ').filter(erStaerd);
+      var tTolur = norm(tegund + ' ' + staerd).split(' ').filter(erStaerd);
+      return { vara: v.vara, leid: 'vara', staerdHunsud: false, staerdRong: false,
+        staerdVantar: !tTolur.length && vTolur.length > 0 };
+    }
     return null;
   }
 
@@ -205,7 +245,7 @@
     G.tengingar = {};
     (svör[1].data || []).forEach(function (t) { G.tengingar[t.flokkur + '//' + t.lykill] = t; });
     // Sýnin getur vantað á eldri afritum — þá stendur listinn tómur frekar en að glugginn hrynji.
-    G.tegundir = svör[2].error ? [] : (svör[2].data || []);
+    G.tegundir = svör[2].error ? [] : steypaTegundir(svör[2].data || []);
     G.tegundaVilla = svör[2].error ? String(svör[2].error.message || svör[2].error) : '';
     try {
       G.bkListi = (window.AppSettings && AppSettings.path)
@@ -370,6 +410,10 @@
           merki = M('rangt', 'STÆRÐ HUNSUÐ', 'Tegundin er í SIZELESS_SVC, svo stærðinni er hent fyrir leit. ' +
             'Öll tæki af þessari tegund fá sama verð, hver sem stærðin er.');
           vantar = true;
+        } else if (giska.staerdVantar) {
+          merki = M('rangt', 'STÆRÐ VANTAR', 'Tækin bera enga stærð en varan gerir það — leitin tók fyrstu vöruna sem ' +
+            'passaði við heitið. Skráðu tenginguna eða stærðina á tækjunum.');
+          vantar = true;
         } else if (giska.leid === 'afbrigdi') {
           merki = M('sjalf', 'AFBRIGÐI', 'Föst vörpun reykskynjara-afbrigðis á söluvöru.');
         } else if (giska.leid === 'vara') {
@@ -377,12 +421,21 @@
         } else {
           merki = M('sjalf', 'GISKAÐ', 'Nafnaleit hitti á vöru með passandi stærð.');
         }
-        h += '<tr><td style="font-weight:700;color:#0f172a">' + esc(t.tegund) + '</td>' +
+        // „✓ Staðfesta" — Agnar: „hvernig staðfesti ég?". Val í listanum vistast
+        // strax, en sé ágiskunin RÉTT kviknar enginn change-atburður við að velja
+        // það sem þegar stendur. Takkinn vistar það sem sést sem skráða tengingu.
+        var stadfesta = (!tg || !tg.vara_id) && valinn
+          ? ' <button type="button" class="' + AUÐK + '-stadfesta" data-teng="' + esc('slokkvitaeki|' + lyk) + '" ' +
+            'title="Vista það sem stendur í reitnum sem skráða tengingu">✓ Staðfesta</button>'
+          : '';
+        var hra = t.hra && t.hra.length
+          ? '<div style="font-size:10.5px;font-weight:400;color:#94a3b8">' + esc(t.hra.join(' · ')) + '</div>' : '';
+        h += '<tr><td style="font-weight:700;color:#0f172a">' + esc(t.tegund) + hra + '</td>' +
           '<td>' + esc(t.staerd || '—') + '</td>' +
           '<td style="text-align:right;color:#5b6573">' + t.fjoldi + '</td>' +
           '<td>' + kind[1] + '</td>' +
           '<td>' + valHtml(valinn, 'slokkvitaeki|' + lyk, vantar) + '</td>' +
-          '<td>' + merki + '</td></tr>';
+          '<td style="white-space:nowrap">' + merki + stadfesta + '</td></tr>';
       });
     });
     h += '</tbody></table>';
