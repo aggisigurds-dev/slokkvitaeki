@@ -123,7 +123,10 @@
     // Vinstra megin við þjónustu-takkann (þar sem Agnar merkti); ef hann er
     // ekki kominn enn, þá vinstra megin við Breyta.
     const svcBtn = actionsRow.querySelector('._co-svc-toggle');
-    actionsRow.insertBefore(btn, svcBtn || editBtn);
+    // 24.09.2026: 405 færir þjónustu-takkann inn í ⋯-valmynd INNI í röðinni — hann finnst þá með querySelector en er
+    // ekki beint barn, og insertBefore kastar NotFoundError (28× á einni síðu) svo NÝTT-takkinn varð aldrei til.
+    // Aðeins beint barn dugir sem viðmið; annars Breyta (sem 405 skilur eftir í röðinni).
+    actionsRow.insertBefore(btn, (svcBtn && svcBtn.parentElement === actionsRow) ? svcBtn : editBtn);
   }
 
   function watch() {
