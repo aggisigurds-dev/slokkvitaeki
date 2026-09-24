@@ -666,7 +666,10 @@
     const per = cfg.per || 50;
     if (window.__peTablePer !== per) {
       window.__peTablePer = per;
-      try { if (window.Arsskodun && Arsskodun.render) Arsskodun.render(); } catch (_) {}
+      // 24.09.2026 (hopp): við ræsingu kom þetta kall ÁÐUR en 153 hafði sótt nokkuð — heil síða teiknaðist með „0 fyrirtæki á
+      // borðinu", tómri töflu og þriggja lína síum, og var svo skipt út 0,5–1 s síðar (layout-shift 0,39). Endurteikna aðeins
+      // þegar borðið er þegar teiknað; annars les fyrsta teikning 153 __peTablePer sjálf.
+      try { if (window.Arsskodun && Arsskodun.render && document.getElementById('_ars-search')) Arsskodun.render(); } catch (_) {}
     }
     const en = tlEntry(false);
     // Dálkaröðin er DOM-færsla, ekki CSS — endurtekin hér því 153 teiknar
