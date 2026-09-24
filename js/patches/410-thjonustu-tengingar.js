@@ -512,12 +512,13 @@
     // ílátið #p410-efni hann af á neðstu línunum og hann er óaðgengilegur þar.
     var inp = rot.querySelector('.' + AUÐK + '-leit-inp');
     var r = (inp || rot).getBoundingClientRect();
-    var plass = window.innerHeight - r.bottom - 12;
+    var vh = window.innerHeight || document.documentElement.clientHeight || 800;
+    var plass = vh - r.bottom - 12;
     var upp = plass < 180 && r.top > plass;      // lítið pláss fyrir neðan → opna upp
     listi.style.left = r.left + 'px';
     listi.style.width = Math.max(r.width, 260) + 'px';
     listi.style.maxHeight = Math.min(320, Math.max(120, upp ? r.top - 12 : plass)) + 'px';
-    if (upp) { listi.style.top = 'auto'; listi.style.bottom = (window.innerHeight - r.top + 3) + 'px'; }
+    if (upp) { listi.style.top = 'auto'; listi.style.bottom = (vh - r.top + 3) + 'px'; }
     else { listi.style.bottom = 'auto'; listi.style.top = (r.bottom + 3) + 'px'; }
   }
   function felaLeitarlista(rot) {

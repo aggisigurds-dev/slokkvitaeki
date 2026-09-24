@@ -785,7 +785,12 @@
       // → BEINT á Sölu-vöruna (Reykskynjari / Reykskynjari 2 / Reykskynjari 3), rukkað
       // á búðarverði × heildar-fjölda (hleðsla+yfirferð+nýtt). PER STK ritanlegt + afsl.
       // eins og aðrar línur. Venjulegt reykskynjari (án afbrigðis) fer óbreytt neðar.
-      const reykP = reykVariantProduct(g.type, g.size, services);
+      // 24.09: SKRÁÐ tenging (410) trompar afbrigðis-vörpunina — Agnar skráði
+      // „Reykskynjari|Batterís|yfirferd" og sá enga breytingu, því þessi grein hljóp
+      // fram fyrir. Sé tenging skráð fyrir hvora þjónustuna fer hópurinn venjulegu
+      // leiðina (ein lína per þjónustu, punktur á skráðu); afbrigðið er þá varaleið.
+      const reykSkrad = skradVara(g.type, g.size, 'yfirferd', services) || skradVara(g.type, g.size, 'hledsla', services);
+      const reykP = reykSkrad ? null : reykVariantProduct(g.type, g.size, services);
       if (reykP) {
         const total = g.hledsla + g.yfirferd + g.nyitt;
         if (total > 0) {
@@ -885,7 +890,9 @@
           '</tr>');
           return;
         }
-        const product = skrad || pickByKind(matching, kindKey);
+        // Afbrigðis-vörpun reykskynjara sem varaleið: sé aðeins hin þjónustan skráð
+        // má þessi ekki detta þegjandi út (áður: `if (!product) return;`).
+        const product = skrad || pickByKind(matching, kindKey) || reykVariantProduct(g.type, g.size, services);
         if (!product) return;
         const override = findOverride(coId, product.nafn);
         let unitPrice = override ? +override.price_ex_vat : +product.verd_an_vsk;
