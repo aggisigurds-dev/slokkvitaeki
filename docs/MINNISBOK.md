@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-23 23:57 · 636 virkar staðreyndir
+Sótt 2026-09-24 00:39 · 638 virkar staðreyndir
 
 ---
 
@@ -80,7 +80,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 | Efni | Fjöldi |
 |---|---:|
-| [kerfi](#kerfi) | 55 |
+| [kerfi](#kerfi) | 56 |
 | [skjol](#skjol) | 32 |
 | [sweep](#sweep) | 26 |
 | [taeki](#taeki) | 25 |
@@ -103,6 +103,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kerfi
 
+- **409 (24.09): samræming allra 49 sýna — finnaTitil merkir fyrsta feitletraða stak í efstu 320 px (h1/h2 fyrst, skrun tekið með, ekki á ljósum fleti) sem hvítan Playfair-síðutitil án emoji, endurmetið í hverju tifi (fyrsta tif gat merkt neðri kaflafyrirsögn meðan efri hluti var óteiknaður); bláir takkar (#2563eb/#1d4ed8/#0d6efd/#3b82f6/#2a78d6 + klasar) → málmur; Drög (143 f59e0b) og Yfirferð greiðslna (193 0ea5e9) bönd → málmhaus; .dd-date-wrap position:relative (149 víkkaði Verkdagbók 534 px); .tgl-wrap max-width. 313 skrifar inline color!important á titla — -webkit-text-fill-color vinnur.**
+  <br><sub>2026-09-24 · slokkvitaeki · claude-code · claude-code</sub>
 - **403 (23.09 23:55): ⋯ á ársböndum Skjöl-spjaldsins — einn samhengisliður með næstu stöðu ársins, sendir tvísmell 199 á .sk-pill[data-yr] (fcToggle-hringurinn); menuButton fékk run-lið. Í compose() eru plöturnar í arrod (ótengt) — leita þar. ATH: tvær Claude-lotur deila SAMA vinnutré á þessari vél — auto-sync wip tekur breytingar beggja; 167 var óvistað frá hinni lotunni (stash/pop utan um rebase).**
   <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
 - **Yfirferð 23.09 23:15–23:40 (allt kvöldið mælt lifandi með Playwright, tölva + sími): fyrirtækjasíða, 408, D-síðurnar, 341, Stílstjóri — allt stóðst; lagað: 274 watchForm las .style af null þegar hýsta yfirlagið hvarf með prófílnum (TypeError í 252), 405 strípar emoji af .b405-knappur. Hópfelling í 404-prófum þarf ferska hnúta (224 endurteiknar). Samhliða lota lagaði reiptog 311/403 (202 kyrrt). GitHub Actions röðin getur beðið 15+ mín þegar tvær lotur ýta.**
@@ -181,9 +183,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
 - **Adstodarmadur a forsidu (patch 344 + /api/assistant) KVEIKTUR 03.09.2026 ad beidni Agnars: migration assistant_memory_fasi1 keyrd (toflurnar 3 voru ALDREI til fra 31.08 -> hann skiladi alltaf 500). Svarar nu a ISLENSKU i texta (enska-reglan atti bara vid Jarvis-talsvor, ser kerfi /api/jarvis-tts). Thrju gagnatol logud gegn skemanu: finna_fyrirtaeki (stadur->postnumer, deleted_at null), stada_fyrirtaekis (uttaeki type/status ekki tegund/stada, status=neq.urelt, bilun->null ekki 0), reikningastada (samtals/status/paid_at, hidden ekki med). Takkinn _ad-fab er VILJANDI falinn a Solu-syn (patch 327). Modelid claude-sonnet-5 (ASSISTANT_MODEL env).**
   <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Auth-hlid (02.09.2026): _portal.requireStaff(event) i BADUM repoum ver innri endapunkta. Cookie hub_session (HS256, lykill=HUB_STAFF_PASSWORD sjalft). FAIL-OPEN medan HUB_STAFF_PASSWORD er ekki sett i Netlify -> null, ekkert rof; virk um leid og hun er sett. /api/hub-login = ein sameiginleg lykilords-innskraning (GET {configured,authed}, POST {password}/{action:logout}). gatt-admin varid (badir vefir), /gatt-admin/ birtir lykilords-glugga vid 401. Malning: 175 foll, 124 ovarin+haettuleg (gatt-admin GET var HTTP 200 an auth). Afangi 2 = hin 123 (verst: gmail-send, email-send, invoice-*, dkplus-*, payday-*, DELETE-foll). ATH: setja EKKI HUB_STAFF_PASSWORD sjalfur - laesir starfsfolk uti; Agnar gerir thad.**
-  <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
-- _…og 15 til viðbótar í töflunni._
+- _…og 16 til viðbótar í töflunni._
 
 ### skjol
 
@@ -961,11 +961,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **git push a claude/mcp-browser-access-wqattt / aggisigurds-dev/slokkvitaeki er ENN lokad fyrir sopunar-session (403 'not in this session's authorized repository set') — nu stadfest a.m.k. fjorda skiptid (01.09, 02.09, 04.09 + fyrri).**
   <br>04.09.2026: GITHUB_TOKEN i thessari session HEFUR lesadgang (git clone/fetch/checkout a slokkvitaeki gekk fint, gh/api /repos/... synir sama '403 not enabled' skilabod jafnvel thott clone virki). En `git push -u origin claude/mcp-browser-access-wqattt` faer beint fra git-proxynum: 'access denied by 
   <br><sub>2026-09-04 · kerfi · sql · claude-code</sub>
-- **Netlify deploy-preview slóðir eru SÉRSTÖK LÉN með tómt localStorage — en þær skrifa í FRAMLEIÐSLU-gagnagrunninn**
-  <br>Uppgötvað 03.09.2026 við að rekja af hverju eyddar vörur komu aftur EFTIR að lagfæring fór í loftið. Hver „keyr þetta einu sinni"-vörn sem byggir á localStorage-merki (t.d. _auxProductsSeededV1, _pricelist66Seeded, _vrSeeded) er ÓSETT á preview-léni og keyrir því upp á nýtt — gegn alvöru gögnum. Sam
-  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
 - **Vörn sem býr í vafranum getur aldrei stöðvað vafra sem keyrir gamlan kóða — regla sem verður að halda á að vera í gagnagrunninum**
   <br>Lærdómur 03.09.2026: sáningarpatcharnir voru lagaðir (PR #845) og lagfæringin sannreynd í framleiðslubúntinum, en eyddar vörur komu samt aftur kl. 22:36 því einhver vafri keyrði fyrri útgáfuna. Deploy fer ekki fram í öllum vöfrum samtímis; preview-lén og cache lengja halann. Þegar afleiðing rangrar 
+  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
+- **Netlify deploy-preview slóðir eru SÉRSTÖK LÉN með tómt localStorage — en þær skrifa í FRAMLEIÐSLU-gagnagrunninn**
+  <br>Uppgötvað 03.09.2026 við að rekja af hverju eyddar vörur komu aftur EFTIR að lagfæring fór í loftið. Hver „keyr þetta einu sinni"-vörn sem byggir á localStorage-merki (t.d. _auxProductsSeededV1, _pricelist66Seeded, _vrSeeded) er ÓSETT á preview-léni og keyrir því upp á nýtt — gegn alvöru gögnum. Sam
   <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
 - **Rautt audit er EKKI staðreynd um main fyrr en vinnutréð er ferskt. 2026-09-01 var audit-attachment-forms rautt og virtist segja að gmail-send vörnina vantaði; hún var í main frá 68c7a66 (2026-08-27) — greinin var 32 commit á eftir. git fetch + git status -sb á að vera FYRSTA prófunin þegar audit er rautt, ekki sú síðasta. Sama gildir um A/B með git stash: það mælir bara greinina sem þú stendur á.**
   <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
@@ -993,12 +993,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **BLAÐIÐ RÆÐUR ALLTAF — líka þegar kerfið segir hærri tölu og þegar kerfið þekkir ekki tækið sem stendur á blaðinu. Það á ekki að spyrja um þetta framar**
   <br>Agnar 10.09.2026, spurður fjórum sinnum í röð hvor heimildin réði: „alltaf ad fara eftir vinnubladi." Beitt strax: Ölfusborgir rukkast 37 léttvatnstæki þótt kerfið eigi 41; Endurskoðun rukkast 3 slöngur + 3 léttvatn þótt kerfið eigi 2 tæki og enga slöngu. Umframtæki í kerfinu á að eyða, vantandi tæk
   <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
-- **Rétt stöðvunarstaða Söru er: haka við tæki → Staðfesta lista → „💾 Vista / í Vinnslu". Hún snertir hvorki „Klára heimsókn" né „Búa til úttektarskýrslu"**
-  <br>Staðfest á Hagstáli 10.09.2026: eftir þessi þrjú skref stendur í skýinu _locked:true, átta _doneIds, computed {ex 38819, vsk 9317, total 48136} og arsskodun_customers steps_2026 {uttekt:true, taekjalisti:true}. Agnar sendir sjálfur í kröfuyfirlit.
-  <br><sub>2026-09-10 · slokkvitaeki · sql · claude-code</sub>
 - **Blað 5 („Sumarbústaðir", 37 númeruð léttvatnstæki, „Hús 5-6-7-8-9" og „Hús 28-30-31-33") er Sameignarfélag Ölfusborga**
   <br>Agnar 10.09.2026: „sumarbustadir eru eitthvad í ölfusborgum ölfus. þorlákshöfn". Kerfið á 42 virk tæki: 41 léttvatn 6 L + 1 duft 6 kg, öll með skoðun 01.09.2026. Blaðið telur 37 — fjórum munar og það er óútkljáð. „Engin lykill í Nr 27" stendur á blaðinu.
   <br><sub>2026-09-10 · kunni · agnar · claude-code</sub>
+- **Rétt stöðvunarstaða Söru er: haka við tæki → Staðfesta lista → „💾 Vista / í Vinnslu". Hún snertir hvorki „Klára heimsókn" né „Búa til úttektarskýrslu"**
+  <br>Staðfest á Hagstáli 10.09.2026: eftir þessi þrjú skref stendur í skýinu _locked:true, átta _doneIds, computed {ex 38819, vsk 9317, total 48136} og arsskodun_customers steps_2026 {uttekt:true, taekjalisti:true}. Agnar sendir sjálfur í kröfuyfirlit.
+  <br><sub>2026-09-10 · slokkvitaeki · sql · claude-code</sub>
 - **Takkinn „📄 Búa til úttektarskýrslu" EYÐILEGGUR skráðar skoðunardagsetningar — hann keyrir advanceInspectionDates sem setur last_insp = Í DAG og next_insp ár fram á ÖLL tæki fyrirtækisins**
   <br>Patch 129, wire á #_ctc-skyrsla. Hagstál 10.09.2026: hefði breytt 20.08.2026 → 10.09.2026 og 20.08.2027 → 2028, og eyðilagt ágúst-skoðunina sem var verið að skrá. Sama mynstur og „Merkja skoðun" (00-legacy). Sé skoðunin í öðrum mánuði en í dag: EKKI nota takkann.
   <br><sub>2026-09-10 · slokkvitaeki · kóði · claude-code</sub>
@@ -1058,11 +1058,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### turbopaint
 
-- **pdf.js 5.7 (public/pdfjs í kjarni) notar Map.prototype.getOrInsertComputed sem Chromium 141 og eldri eiga ekki — PDF-innflutningur í TurboPaint brotnaði HLJÓÐLAUST án polyfill.**
-  <br>Lagað 14.09.2026: lib/board/polyfills.ts (fyrsti import í import-files.ts og WhiteboardApp.tsx) setur getOrInsert/getOrInsertComputed á Map og WeakMap; sama lína er fremst í public/pdfjs/pdf.worker.min.mjs (workerinn hleður ekki polyfill aðalþráðar). Muna að endurbæta línuna ef pdf.worker er uppfærð
-  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **/kjarni/turbopaint?leit=<heimilisfang> opnar teikningaleitina með heimilisfanginu fyllt (breytan hverfur strax úr slóðinni) — djúptengill fyrir önnur kerfi, t.d. Teikningar-línuna á fyrirtækjabanner Slökkvitækja-appsins.**
   <br>Kjarni PR #117 (14.09.2026). Slökkvitæki: patch 363 v3 + netlify/functions/hus-upplysingar.js smíðar tengilinn úr Staðfangaskrár-heitinu (t.d. „Dalshraun 1B").
+  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
+- **pdf.js 5.7 (public/pdfjs í kjarni) notar Map.prototype.getOrInsertComputed sem Chromium 141 og eldri eiga ekki — PDF-innflutningur í TurboPaint brotnaði HLJÓÐLAUST án polyfill.**
+  <br>Lagað 14.09.2026: lib/board/polyfills.ts (fyrsti import í import-files.ts og WhiteboardApp.tsx) setur getOrInsert/getOrInsertComputed á Map og WeakMap; sama lína er fremst í public/pdfjs/pdf.worker.min.mjs (workerinn hleður ekki polyfill aðalþráðar). Muna að endurbæta línuna ef pdf.worker er uppfærð
   <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **TurboPaint frá PR #107 (10.09.2026): ⌘C/⌘X/⌘V á hlutum (copy/cut/paste-atburðir vafrans, JSON {turbopaint:1,objects} á klemmuspjaldi → límist líka milli borða/flipa, 24 px hliðrun per límingu, ⌘D = Tvöfalda); sérsniðnir litir með „+" swatch (native litaval, síðustu 6 muna sig í localStorage turbopaint:custom-colors, fylling fær 40% gegnsæi); Gátreitur-tólið (X) = rect með isCheckbox/checked, ✓-hakreitur í hægra horni að neðan, hakað → allur reiturinn grænn.**
   <br>Skrár: lib/board/clipboard.ts, custom-colors.ts, checkbox.ts, components/kjarni/ColorPicker.tsx. Gátreitur byggir á RectObject svo færsla/stærð/afritun/hópun/útflutningur/samstilling fylgja án sérmeðhöndlunar; Magntafla telur „Gátreitir — hakað/óhakað" sér. Prófun: apps/slokkvitaeki/tools/turbopaint
@@ -1323,13 +1323,26 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Afleiðing: svarstaða sem reiðir sig eingöngu á fra_okkur verður röng þegar SENT-innsog situr eftir. SENT kemur frá luna-bridge Sent mbox / gmail-ingest?folder=sent. Nákvæmara "við svöruðum"-merki: SENT-póstur þar sem to_addresses inniheldur nákvæmt netfang kúnnans (sbr. company-mail.js).
   <br><sub>2026-08-19 · baedi · sql · claude-code</sub>
 
+### afkost
+
+- **Hreyfingarlisti (167): siureiturinn kalladi a render() beint ur input-atburdinum og render() byggir alla synina med einu main.innerHTML - 28.203 hnutar. Fimm stafir = fimm fullar endurbyggingar (maelt med childList-vakt a #hr-main: lifandi 5, lagfaert 1). Lagfaert 23.09.2026 med 180 ms samandratt, somu tolu og 187 notar. VARUD VID SAMHLIDA LOTUM: eg keyrdi 'git stash -u' til ad geta rebase-ad og stashadi tha ohladid verk hinnar lotunnar; stash pop gaf arekstur i index.html. I thetta sinn reyndist stash-eintakid GAMALT (vantadi rest-samnyting, 379-381, 407) svo upstream var rettur og ekkert tapadist - en adferdin er haettuleg thegar onnur lota er virk i sama tre. Rett leid: committa bara MINAR skrar og yta an rebase, eda bida eftir auto-sync sem committar allt hvort sem er a 15 min fresti.**
+  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
+- **MAELIADFERD i foldu vafraspjaldi (23.09.2026) - thrjar gildrur sem ogiltu maelingar hja mer: (1) patch 252-mo-throttle safnar ollum MutationObserver-kollum i requestAnimationFrame sem keyrir ALDREI i foldu spjaldi, svo dom-breytingar maeldust 0; lagast med rAF-hermi: window.requestAnimationFrame = cb => setTimeout(()=>cb(performance.now()),16) - stadfest, vaktir vokna. (2) performance.getEntriesByType('resource') stoppar vid 250 faerslur; tharf clearResourceTimings + setResourceTimingBufferSize(4000) fyrir hverja maelingu annars synir hun 0 koll. (3) longtask-PerformanceObserver skilar tolum a lifandi vefnum en ENGU a localhost - tima ma thvi ALDREI bera saman milli theirra; talningar (rest-koll, DOM-hnutar, DOM-breytingar) stemma hins vegar upp a nokkur prosent (96 vs 100, 4112 vs 4110) og eru marktaekar. NIDURSTADA: maeldu TALNINGAR sjalfur, saektu TIMA ur hradamaelingar-toflunni (syn=..., long_ms, lengsta_ms) thar sem their koma ur synilegum flipum raunverulegra notenda.**
+  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
+- **Prof-yfirferd 23.09.2026 a ollum synum: engar JS-villur, engin follin netkoll, engin tom syn. TVAER THUNGAR SYNIR FUNDUST sem voru ekki i hradamaelinum: hreyfingarlisti 28.203 hnutar (blokkun 8.412 ms) og bokhalds-yfirlit 10.464 hnutar (2.930 ms) - hvorug syndarrodud. Rot ad hluta: 341-ars-skjar-scroll-left gripur ALLA smelli i .topbar (hlidarstikan) og keyrir pinViewToRail tvisvar vid hverja flettingu, lika a odrum synum; hun skrifar width/margin a Arsskodunar-synina og thvingar fulla utlitsumferd (999 ms maelt a hreyfingarlista). Lagad: sleppt thegar Arsskodun er ekki virk/synileg + skrifad adeins ef rail-breiddin breytist. 8.412->5.925 ms og 2.930->1.969 ms. PROFAADFERD - TVAER GILDRUR: (1) App.switchView(v) er EKKI jafngilt smelli fyrir synir sem eru smidadar lati (rekstrarfelog leit ut fyrir ad vera bilud - var ekki); prof verda ad SMELLA a [data-view]-takkann. (2) performance.getEntriesByType('resource') tharf clearResourceTimings + setResourceTimingBufferSize, annars fyllist 250-fardu bufferinn og maelingin synir 0 koll.**
+  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
+- **Hledslutakki i bordann (407, 23.09.2026) - svar vid osk Agnars um takka sem saekir allt cache fyrir vinnutolvurnar. MAELT: REST-koll vid ad opna fyrirtaekjaprofil, Vinnutolva SLOKKT 25/21/20 og AFTUR a fyrsta 28; KVEIKT 32/30/28 og AFTUR 0. Skyndiminnid (378) virkar thvi a ENDURKOMU en ekki a fyrstu heimsokn - fyrirspurnir profilsins eru siadar a fyrirtaeki_id svo hver a sina slod og ekkert magn-forsokn naer theim. Takkinn getur thvi EKKI flytt fyrstu heimsokn og lofar thvi ekki; thad sem hann gerir er ad kveikja a Vinnutolvu (SLOKKT sjalfgefid - staersta atridid, 28 koll verda 0) og hita fjogur sameiginleg mengi gegnum appsins EIGIN hleddslara (AppSettings.load, Companies.load, DB.loadAll, Arsskodun.loadAll) svo slodirnar seu their somu og sidurnar bidja um seinna. GILDRA: hnappur i bordanum ma EKKI fara i .bb-rightwrap (314+mobile.css fela hana i Sima-ham) og hann verdur ad leita ser saetis a undan .bb-rightwrap MED THAKI thvi hinir eigendurnir setja sina hnappa inn eftir a - 405 maeldi 156 DOM-breytingar a 4 sek thegar tveir toguost a.**
+  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
+- **313-contrast-clarity scan() skrifadi el.style.setProperty inni i lestrarlykkjunni; hvert skrif ogildir stilinn svo naesta getComputedStyle/bgOf thvingadi fulla stilendurreikninga - layout-thrashing. Maelt 23.09.2026 a 2.900 hlutum: hreinn lestur 11 ms, lestur+skrif a vixl 23.601 ms, lesa-fyrst-skrifa-svo 66 ms. Skonnunin keyrir 180 ms eftir HVER synarskipti og kostadi 4.339 ms a krofu-yfirlit og 16.258 ms a arsskodun (hradamaelir 387 synir 34.840 ms hja notanda). Lagad med lesa-fyrst-skrifa-svo: 178 ms og 181 ms. Utkoma ordrett su sama - fingrafar yfir merkta hluti (tag|litur|opacity) eins: krofu-yfirlit 91/2489, arsskodun 261/5234. LAERDOMUR: thegar ein adgerd tekur sekundur en hreinn lestur millisekundur, leitadu ad skrifi inni i lestrarlykkju adur en thu bytir algrimi.**
+  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### kjarni
 
-- **Vafra-prófanir í Claude Code web/remote: Chromium nær heldur EKKI í Supabase frá localhost-síðu (ERR_CONNECTION_RESET, ECH GREASE) — Supabase-köll síðunnar bila hljóðlaust. Nota bh-browser relay (slokkvitaeki/tools/bh-browser.cjs) líka fyrir localhost-próf sem tala við Supabase; önnur „tölva" = context.browser().newContext({ ignoreHTTPSErrors: true }) á sama relay-vafra.**
-  <br>Kostaði 3 keyrslur 04.09.2026 áður en þetta sást: pushCloud sat fastur í „Saving to Supabase…" án villu í console. Beinar HTTPS-síður þurfa relay-ið hvort eð er. Athugið líka: pkill -f með mynstri sem stendur í eigin skipanalínu drepur skelina sjálfa (exit 144) — nota t.d. pkill -f "next[-]server".
-  <br><sub>2026-09-10 · kerfi · kóði · claude-code</sub>
 - **3dwork-verkefni samstillast sjálfkrafa milli tölva frá PR #107 (10.09.2026): work3d_projects (RLS á, public select/insert/update, ekkert delete) + bucket work3d; dirty-flagg + 2,5 s debounce push, pull við opnun/ræsingu/fókus á flipa, „Projects · N" skiptir í stikunni. Eyðing = soft delete (deleted=true) sem aðrar tölvur fella sitt eintak eftir.**
   <br>Reglur: cloud updated_at er sannleikur (row-stamp, ekki JSON updatedAt); staðbundið eintak fær sama stimpil eftir push svo ræsing ýti ekki sama efni aftur (engin ping-pong). Óvistaðar breytingar + nýrra cloud-eintak → union á parts eftir id (staðbundið vinnur). Hrein föll í apps/web/src/lib/3dwork/p
+  <br><sub>2026-09-10 · kerfi · kóði · claude-code</sub>
+- **Vafra-prófanir í Claude Code web/remote: Chromium nær heldur EKKI í Supabase frá localhost-síðu (ERR_CONNECTION_RESET, ECH GREASE) — Supabase-köll síðunnar bila hljóðlaust. Nota bh-browser relay (slokkvitaeki/tools/bh-browser.cjs) líka fyrir localhost-próf sem tala við Supabase; önnur „tölva" = context.browser().newContext({ ignoreHTTPSErrors: true }) á sama relay-vafra.**
+  <br>Kostaði 3 keyrslur 04.09.2026 áður en þetta sást: pushCloud sat fastur í „Saving to Supabase…" án villu í console. Beinar HTTPS-síður þurfa relay-ið hvort eð er. Athugið líka: pkill -f með mynstri sem stendur í eigin skipanalínu drepur skelina sjálfa (exit 144) — nota t.d. pkill -f "next[-]server".
   <br><sub>2026-09-10 · kerfi · kóði · claude-code</sub>
 - **3dwork Google Drive: innbyggða Web-clientið 708215000553-7sc6vb83g2manolct21l7gh45tk442es er gilt og https://kjarni-3dwork.vercel.app er leyfður JavaScript-uppruni — „Connect Drive" bilaði af því handslegið client id (víxlað 1/l) lá í localStorage og sló innbyggða id-ið út (Google: invalid_client).**
   <br>Sannreynt 04.09.2026 með curl á accounts.google.com/o/oauth2/v2/auth (storagerelay-redirect + origin): baked id → innskráningarsíða; bogus origin → redirect_uri_mismatch; gamli clientinn 708215000553-77htigi4… → deleted_client. Frá PR #107 (kjarni) er localStorage-lykillinn kjarni_3dwork_google_clie
@@ -1340,17 +1353,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **kjarni (Next.js 16, cacheComponents) hafnar route segment config — export const dynamic/revalidate/fetchCache í route.ts fellir Vercel-buildið**
   <br>Villan: "Route segment config \"dynamic\" is not compatible with nextConfig.cacheComponents". PR #38 (3dwork GitHub-sync, Cursor) setti force-dynamic í 4 API-routes → ÖLL production-deploy á kjarni-3dwork rauð frá #38 þar til PR #44 fjarlægði línurnar (26.08). Route handlers eru dynamic sjálfgefið u
   <br><sub>2026-08-26 · kerfi · kóði · claude-code</sub>
-
-### afkost
-
-- **MAELIADFERD i foldu vafraspjaldi (23.09.2026) - thrjar gildrur sem ogiltu maelingar hja mer: (1) patch 252-mo-throttle safnar ollum MutationObserver-kollum i requestAnimationFrame sem keyrir ALDREI i foldu spjaldi, svo dom-breytingar maeldust 0; lagast med rAF-hermi: window.requestAnimationFrame = cb => setTimeout(()=>cb(performance.now()),16) - stadfest, vaktir vokna. (2) performance.getEntriesByType('resource') stoppar vid 250 faerslur; tharf clearResourceTimings + setResourceTimingBufferSize(4000) fyrir hverja maelingu annars synir hun 0 koll. (3) longtask-PerformanceObserver skilar tolum a lifandi vefnum en ENGU a localhost - tima ma thvi ALDREI bera saman milli theirra; talningar (rest-koll, DOM-hnutar, DOM-breytingar) stemma hins vegar upp a nokkur prosent (96 vs 100, 4112 vs 4110) og eru marktaekar. NIDURSTADA: maeldu TALNINGAR sjalfur, saektu TIMA ur hradamaelingar-toflunni (syn=..., long_ms, lengsta_ms) thar sem their koma ur synilegum flipum raunverulegra notenda.**
-  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
-- **Prof-yfirferd 23.09.2026 a ollum synum: engar JS-villur, engin follin netkoll, engin tom syn. TVAER THUNGAR SYNIR FUNDUST sem voru ekki i hradamaelinum: hreyfingarlisti 28.203 hnutar (blokkun 8.412 ms) og bokhalds-yfirlit 10.464 hnutar (2.930 ms) - hvorug syndarrodud. Rot ad hluta: 341-ars-skjar-scroll-left gripur ALLA smelli i .topbar (hlidarstikan) og keyrir pinViewToRail tvisvar vid hverja flettingu, lika a odrum synum; hun skrifar width/margin a Arsskodunar-synina og thvingar fulla utlitsumferd (999 ms maelt a hreyfingarlista). Lagad: sleppt thegar Arsskodun er ekki virk/synileg + skrifad adeins ef rail-breiddin breytist. 8.412->5.925 ms og 2.930->1.969 ms. PROFAADFERD - TVAER GILDRUR: (1) App.switchView(v) er EKKI jafngilt smelli fyrir synir sem eru smidadar lati (rekstrarfelog leit ut fyrir ad vera bilud - var ekki); prof verda ad SMELLA a [data-view]-takkann. (2) performance.getEntriesByType('resource') tharf clearResourceTimings + setResourceTimingBufferSize, annars fyllist 250-fardu bufferinn og maelingin synir 0 koll.**
-  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
-- **Hledslutakki i bordann (407, 23.09.2026) - svar vid osk Agnars um takka sem saekir allt cache fyrir vinnutolvurnar. MAELT: REST-koll vid ad opna fyrirtaekjaprofil, Vinnutolva SLOKKT 25/21/20 og AFTUR a fyrsta 28; KVEIKT 32/30/28 og AFTUR 0. Skyndiminnid (378) virkar thvi a ENDURKOMU en ekki a fyrstu heimsokn - fyrirspurnir profilsins eru siadar a fyrirtaeki_id svo hver a sina slod og ekkert magn-forsokn naer theim. Takkinn getur thvi EKKI flytt fyrstu heimsokn og lofar thvi ekki; thad sem hann gerir er ad kveikja a Vinnutolvu (SLOKKT sjalfgefid - staersta atridid, 28 koll verda 0) og hita fjogur sameiginleg mengi gegnum appsins EIGIN hleddslara (AppSettings.load, Companies.load, DB.loadAll, Arsskodun.loadAll) svo slodirnar seu their somu og sidurnar bidja um seinna. GILDRA: hnappur i bordanum ma EKKI fara i .bb-rightwrap (314+mobile.css fela hana i Sima-ham) og hann verdur ad leita ser saetis a undan .bb-rightwrap MED THAKI thvi hinir eigendurnir setja sina hnappa inn eftir a - 405 maeldi 156 DOM-breytingar a 4 sek thegar tveir toguost a.**
-  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
-- **313-contrast-clarity scan() skrifadi el.style.setProperty inni i lestrarlykkjunni; hvert skrif ogildir stilinn svo naesta getComputedStyle/bgOf thvingadi fulla stilendurreikninga - layout-thrashing. Maelt 23.09.2026 a 2.900 hlutum: hreinn lestur 11 ms, lestur+skrif a vixl 23.601 ms, lesa-fyrst-skrifa-svo 66 ms. Skonnunin keyrir 180 ms eftir HVER synarskipti og kostadi 4.339 ms a krofu-yfirlit og 16.258 ms a arsskodun (hradamaelir 387 synir 34.840 ms hja notanda). Lagad med lesa-fyrst-skrifa-svo: 178 ms og 181 ms. Utkoma ordrett su sama - fingrafar yfir merkta hluti (tag|litur|opacity) eins: krofu-yfirlit 91/2489, arsskodun 261/5234. LAERDOMUR: thegar ein adgerd tekur sekundur en hreinn lestur millisekundur, leitadu ad skrifi inni i lestrarlykkju adur en thu bytir algrimi.**
-  <br><sub>2026-09-23 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### ajour
 
@@ -1395,15 +1397,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Samantekt úr eldri lotu er EKKI blað-lestur — Sara má ekki telja upp tæki sem hún las ekki sjálf, jafnvel þótt blaðið ráði**
   <br>Naust Marine og Grasnytjar stöðvuðust á þessu 10.09.2026: minnisblaðið sagði „kolsýra 2 kg" og „léttvatn í herbergjum 6-12, þvottahúsi, herb. 15, 30-40" — staðsetningar og útdráttur, ekki talning. Rétt viðbragð er að biðja um skannann í myndaröndina á Sara-borðinu, ekki að giska.
   <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
-- **Cowork skrifaði 19 „Úttektarskýrsla — X" mál í thjonustubeidni 06.09.2026 (source=cowork) þar sem lestur vinnublaðsins stendur í notes undir hausunum ■ LESIÐ AF BLAÐI / ■ TÆKJALISTI Í KERFINU / ■ NIÐURSTAÐA, með skanni sem viðhengi**
-  <br>Agnar 09.09.2026: „það er helling inn á þjónustuborði en það er bara útum allt, sem Cowork hefur sett inn". Þau eru enn ólesin inn í sara_yfirferd.
-  <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
-- **Þegar hakið kemur skal lesa fjölda og verð úr sara_yfirferd.linur — ekki tillöguna sem Sara lagði fram; Agnar breytir tölunum áður en hann hakar**
-  <br>Reitirnir linur (jsonb [{l,n,v}]), akstur, akstur_verd, skyrslugerd og texti eru allir breytanlegir í borðinu. athugasemd-reiturinn er skilaboð Agnars til Söru.
-  <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
 - **Sara-borðið (tafla sara_yfirferd + spjaldið „SARA · VINNUBLÖÐ" á Þjónustuborðinu) er hliðið: ekkert fer í kerfið fyrr en Agnar hakar við og staðan fer úr bidur í samthykkt**
   <br>Agnar 09.09.2026: „check mark sem ég get sett sem þú mátt þá klára að gera skýrsluna og invoicið.. ég síðan sendi hana af stað í kröfuyfirlit". Patch 364-sara-yfirferd.js. Stöður: bidur → samthykkt → klarad. Aðeins bidur/samthykkt sjást; kláruð eru falin.
   <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
+- **Þegar hakið kemur skal lesa fjölda og verð úr sara_yfirferd.linur — ekki tillöguna sem Sara lagði fram; Agnar breytir tölunum áður en hann hakar**
+  <br>Reitirnir linur (jsonb [{l,n,v}]), akstur, akstur_verd, skyrslugerd og texti eru allir breytanlegir í borðinu. athugasemd-reiturinn er skilaboð Agnars til Söru.
+  <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
+- **Cowork skrifaði 19 „Úttektarskýrsla — X" mál í thjonustubeidni 06.09.2026 (source=cowork) þar sem lestur vinnublaðsins stendur í notes undir hausunum ■ LESIÐ AF BLAÐI / ■ TÆKJALISTI Í KERFINU / ■ NIÐURSTAÐA, með skanni sem viðhengi**
+  <br>Agnar 09.09.2026: „það er helling inn á þjónustuborði en það er bara útum allt, sem Cowork hefur sett inn". Þau eru enn ólesin inn í sara_yfirferd.
+  <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
 
 ### kunnaskra
 
@@ -1487,26 +1489,26 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### verkbord
 
-- **AI-bunkinn á Verkborðinu er Charlize, ekki Agnar — sjálfgefna sían heitir „Allir án Ai" (nema_ai) og felur Charlize**
-  <br>Ósk Agnars 03.09.2026. Nafn hans var ruslakistan: óúthlutað + opið + eldra en 30 daga fór sjálfkrafa á hann og sjálfgefna sían faldi þann bunka, svo hans EIGIN mál urðu ósýnileg (mál 817 lá óhreyft í viku, 01.09). Nú: AI_WORKER = 'Charlize' í js/patches/231-verkbord.js stýrir bæði effectiveAssignee(
-  <br><sub>2026-09-03 · slokkvitaeki · agnar · claude-code</sub>
 - **Vistuð starfsmannasía býr í localStorage á hverri vél fyrir sig — nafnabreyting á síugildi þarf þýðingu í canonFilter(), annars tapar hver vél valinu þegjandi**
   <br>WKEY = _vb_worker. Þegar nema_agnar varð nema_ai (03.09.2026) var bætt við `if (s === 'nema_agnar') return 'nema_ai'` í canonFilter() og nema_agnar haldið í WORKER_SENTINELS. Sama mynstur og 'Sara' → 'Bjarndís' notar. Án þess hefðu allar fjórar vélarnar fallið aftur á sjálfgefið gildi án viðvörunar.
   <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
 - **claimOldJobs() í 231-verkbord.js SKRIFAR assigned_to beint í thjonustubeidni við hverja hleðslu borðsins — gagnaflutningur á úthlutun dugar aldrei einn og sér**
   <br>Fallið sópar öllu óúthlutuðu, opnu og eldra en 30 daga á AI_WORKER og keyrir í hvert sinn sem Verkborðið hleðst. Þegar bunkinn var færður af Agnari 03.09.2026 hefði hrein SQL-uppfærsla verið undin ofan af sér innan mínútna; kóðinn varð að fara fyrst. Sama gildir um hverja framtíðar-breytingu á því h
   <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
+- **AI-bunkinn á Verkborðinu er Charlize, ekki Agnar — sjálfgefna sían heitir „Allir án Ai" (nema_ai) og felur Charlize**
+  <br>Ósk Agnars 03.09.2026. Nafn hans var ruslakistan: óúthlutað + opið + eldra en 30 daga fór sjálfkrafa á hann og sjálfgefna sían faldi þann bunka, svo hans EIGIN mál urðu ósýnileg (mál 817 lá óhreyft í viku, 01.09). Nú: AI_WORKER = 'Charlize' í js/patches/231-verkbord.js stýrir bæði effectiveAssignee(
+  <br><sub>2026-09-03 · slokkvitaeki · agnar · claude-code</sub>
 
 ### brunavarnir
 
-- **Álhella 7 er SEX aðskilin EI60-brunahólf — slökkvitækjakrafan (26A lágmark) reiknast á hvert hólf fyrir sig, ekki á hæðina í heild**
-  <br>Hólfin skv. brunavarnatexta Brunahönnunar slf (mál 16-179, uppf. 19.08.2026): 0101 verkstæði + milliloft 0106 ~340 m2 · 0102 geymsla 81 · 0103 verkstæði 79 · 0104 geymsla + milliloft 0107 ~85 · 0105 verkstæði + milliloft 0108 ~425 · 0109 inntaksrými 11. Hver leigjandi er á bak við læstan EI60-vegg o
-  <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
 - **Reyndarteikningin merkir sjálf sl.t.-punktana: 11 á 1. hæð — en 0102 og 0104 bera aðeins eitt tæki hvort og ná ekki 26A**
   <br>Talning af grunnmynd 1. hæðar: 0101=3 · 0102=1 · 0103=2 · 0104=1 · 0105=3 · 0109=1 (kolsýran). Geymsluloftin 0106/0107/0108 bera eitt hvert til viðbótar. Eitt 6 L léttvatn er 13A eða 21A — hvorugt nær 26A eitt og sér, svo 0102 og 0104 þurfa annað tæki.
   <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
 - **Við aðalrafmagnstöfluna í 0109 inntaksrými á að vera 5 kg KOLSÝRA, ekki léttvatn — brunahönnunin tilgreinir það sérstaklega**
   <br>Orðrétt úr greinargerðinni: „Slökkvitæki skv. ÍST EN 3 skulu vera skv. teikningum, t.d. 6 L léttvatn og 5 kg kolsýra við aðalrafmagnstöflu." Táknið rafm.inntak-Tafla á grunnmynd 1. hæðar er þessi punktur. Undirtöflurnar í hverju bili fá léttvatn.
+  <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
+- **Álhella 7 er SEX aðskilin EI60-brunahólf — slökkvitækjakrafan (26A lágmark) reiknast á hvert hólf fyrir sig, ekki á hæðina í heild**
+  <br>Hólfin skv. brunavarnatexta Brunahönnunar slf (mál 16-179, uppf. 19.08.2026): 0101 verkstæði + milliloft 0106 ~340 m2 · 0102 geymsla 81 · 0103 verkstæði 79 · 0104 geymsla + milliloft 0107 ~85 · 0105 verkstæði + milliloft 0108 ~425 · 0109 inntaksrými 11. Hver leigjandi er á bak við læstan EI60-vegg o
   <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
 
 ### factcheck
@@ -1628,11 +1630,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### fjarmal
 
-- **/api/debtors inniheldur AÐEINS þrep 1 (ógreitt) — ósend drög (þrep 2) eru bara í /api/krofu-yfirlit-bru**
-  <br>CG_REGISTRY í index.html sagði ranglega að CG-02 kæmi úr /api/debtors. Leiðrétt 11.09.2026 (PR #445). Ef þú þarft ósend drög, sæktu tier2 úr krofu-yfirlit-bru — tier2.debtors[].invoices[] með hidden-merkingunni sem borðið sjálft notar.
-  <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
 - **Fjármála-yfirlit endurreiknar EKKI „Ósent" (CG-02) — það sækir /api/krofu-yfirlit-bru og les tier2.total/tier2.n beint**
   <br>Fram til 11.09.2026 var þrep-2 reglan skrifuð upp aftur í netlify/functions/fjarmal-yfirlit.js (C1), með athugasemd sem bað næsta mann að breyta báðum hliðum. Það entist ekki: borðið sagði 14.854.855 á 15 röðum, spjaldið 14.996.115 á 16 — austurströnd 2026-07 (141.260 kr) var falin á borðinu en sást
+  <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
+- **/api/debtors inniheldur AÐEINS þrep 1 (ógreitt) — ósend drög (þrep 2) eru bara í /api/krofu-yfirlit-bru**
+  <br>CG_REGISTRY í index.html sagði ranglega að CG-02 kæmi úr /api/debtors. Leiðrétt 11.09.2026 (PR #445). Ef þú þarft ósend drög, sæktu tier2 úr krofu-yfirlit-bru — tier2.debtors[].invoices[] með hidden-merkingunni sem borðið sjálft notar.
   <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
 
 ### agentar
