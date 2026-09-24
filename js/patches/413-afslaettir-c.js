@@ -133,7 +133,7 @@
   }
   var timer = null;
   function tick() { if (!scope()) return; try { spegla(); } catch (e) { console.error('[413]', e); } }
-  function schedule() { clearTimeout(timer); timer = setTimeout(tick, 60); }
+  function schedule() { if (schedule.inni) return; schedule.inni = true; try { tick(); } finally { schedule.inni = false; } }   // 24.09.2026: vaktin (252) skilar sér í rAF, FYRIR málun — setTimeout héðan lenti EFTIR málun og hrái ramminn sást sem hopp (mælt: 224-listinn 601 → 741 px, valstikan 205 → 154 px). Sama tif, engin millistaða.
   (function watch() {
     var main = document.getElementById('companies-main');
     if (!main) { setTimeout(watch, 500); return; }

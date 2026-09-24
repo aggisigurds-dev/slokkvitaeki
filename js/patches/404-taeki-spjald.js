@@ -238,7 +238,7 @@
       }
     });
   }
-  function schedule() { clearTimeout(timer); timer = setTimeout(tick, 0); }
+  function schedule() { if (schedule.inni) return; schedule.inni = true; try { tick(); } finally { schedule.inni = false; } }   // 24.09.2026: vaktin (252) skilar sér í rAF, FYRIR málun — setTimeout héðan lenti EFTIR málun og hrái ramminn sást sem hopp (mælt: 224-listinn 601 → 741 px, valstikan 205 → 154 px). Sama tif, engin millistaða.
   // Vaktin (MutationObserver) er inngjafarstýrð af 252 og skilar sér ~300 ms eftir smell — sá millitími sæist sem hopp.
   // Því er UttektTaeki.rerender vafið: uppröðunin keyrir í SAMA tifi og endurteikningin, fyrir málun.
   (function wrapRerender() {

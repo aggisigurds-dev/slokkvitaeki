@@ -71,6 +71,8 @@
     r('.co-banner-right .b411-meira', 'align-self:flex-end;height:22px;padding:0 8px;border:0;border-radius:5px;background:transparent;color:#525b6b;font-family:' + MONO + ';font-size:11px;font-weight:700;cursor:pointer;display:none'),
     r('.co-banner-right .b411-meira.syna', 'display:inline-flex;align-items:center;gap:4px'),
     // 5) Samskipti þétt: haus 56 px, tölur sem plötur á einni línu, nýjasta uppfærslan ein lína; „Meira" opnar allt
+    // 24.09.2026: hýsillinn (286) stendur tómur í ~1 s áður en kortið kemur (159 px) — frátekið pláss svo Úttektin hoppi ekki niður
+    r('._samskipti-host', 'min-height:159px'),
     r('.card._samskipti-card:not(.b411-opid) ', 'padding:0 0 8px!important;gap:6px!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-head', 'padding:5px 12px!important;min-height:0!important;display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:14px!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-acts', 'margin-left:auto!important;display:flex!important;flex-wrap:nowrap!important;flex:none!important;gap:6px!important;align-items:center!important'),
@@ -186,7 +188,7 @@
     Array.prototype.slice.call(main.querySelectorAll('.co-banner-right .co-banner-note')).forEach(function (ta) { try { note(ta); } catch (e) { console.error('[411]', e); } });
     Array.prototype.slice.call(main.querySelectorAll('.card._samskipti-card')).forEach(function (c) { try { samsk(c); } catch (e) { console.error('[411]', e); } });
   }
-  function schedule() { clearTimeout(timer); timer = setTimeout(tick, 30); }
+  function schedule() { if (schedule.inni) return; schedule.inni = true; try { tick(); } finally { schedule.inni = false; } }   // 24.09.2026: vaktin (252) skilar sér í rAF, FYRIR málun — setTimeout héðan lenti EFTIR málun og hrái ramminn sást sem hopp (mælt: 224-listinn 601 → 741 px, valstikan 205 → 154 px). Sama tif, engin millistaða.
   (function watch() {
     var main = document.getElementById('companies-main');
     if (!main) { setTimeout(watch, 500); return; }
