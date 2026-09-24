@@ -183,7 +183,11 @@
       if (l.dataset.b404fail === '1' && !l.querySelector('.b404-root')) delete l.dataset.b404fail;
       try { compose(l); } catch (err) { console.error('[404]', err); }
       // legacy hengir mánuð/Merkja skoðun í .ut-bulk EFTIR uppröðun → færa í hausinn þegar þau koma
-      var hr = l.querySelector('.b404-haus-h'); if (hr) { var m = main.querySelector('._pm_quick_inspect_month'), b = main.querySelector('._pm_quick_inspect'); if (m && m.parentElement !== hr) { m.classList.add('b404-manudur'); hr.appendChild(m); } if (b && b.parentElement !== hr) { b.classList.add('b404-btn-malmur'); b.innerHTML = ICON.check + 'Merkja skoðun'; hr.appendChild(b); } }
+      var hr = l.querySelector('.b404-haus-h'); if (hr) { var m = main.querySelector('._pm_quick_inspect_month'), b = main.querySelector('._pm_quick_inspect'); if (m && m.parentElement !== hr) { m.classList.add('b404-manudur'); hr.appendChild(m); } if (b && b.parentElement !== hr) { b.classList.add('b404-btn-malmur'); b.innerHTML = ICON.check + 'Merkja skoðun'; hr.appendChild(b); }
+        // Agnar 24.09 (skjámynd með hring og ör): „+ Bæta við tæki" úr takkaröðinni undir borðanum niður í Úttekt-hausinn, við Merkja skoðun.
+        // Upprunalegi takkinn er FÆRÐUR (sama hnút, sami onclick); 73 (+ Mörg tæki) finnur hann eftir texta og setur sinn við hliðina.
+        Array.prototype.slice.call(main.querySelectorAll('button')).filter(function (x) { return /^\+\s*Bæta við tæki/.test(txt(x)) && !x.closest('.ut-list') && !x.closest('.modal') && x.parentElement !== hr; }).forEach(function (x) { x.classList.add('b404-btn-malmur', 'b404-baeta'); var mk = hr.querySelector('._pm_quick_inspect'); if (mk) hr.insertBefore(x, mk); else hr.appendChild(x); });
+      }
     });
   }
   function schedule() { clearTimeout(timer); timer = setTimeout(tick, 0); }
@@ -228,7 +232,7 @@
       r('.b404-haus-m', 'display:flex;flex-direction:column;gap:6px;margin-left:8px'),
       r('.b404-stika', 'display:flex;gap:3px;height:8px;width:280px;max-width:100%'), r('.b404-stika i', 'display:block;border-radius:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4);min-width:0'),
       r('.b404-skyring', 'display:flex;gap:14px;font-family:' + MONO + ';font-size:11.5px;font-weight:500;color:#d5dbe6;flex-wrap:wrap'), r('.b404-skyring span', 'display:inline-flex;align-items:center;gap:5px'), r('.b404-skyring b', 'color:#fff;font-weight:700'), r('.b404-skyring i', 'width:6px;height:6px;border-radius:50%;display:inline-block'),
-      r('.b404-haus-h', 'margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px'),
+      r('.b404-haus-h', 'margin-left:auto;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px'),
       r('.b404-manudur', 'height:30px!important;padding:0 8px!important;border-radius:3px!important;border:1px solid rgba(20,24,34,.12)!important;background:' + SILVER + '!important;color:#11141c!important;font-family:' + MONO + '!important;font-size:12px!important;font-weight:700!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12)!important;margin:0!important'),
       r('.b404-btn-malmur', 'all:unset;cursor:pointer;height:36px;padding:0 14px 0 12px;border-radius:9px;border:1px solid #000;background:' + METAL_BTN + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);color:#eef1f4;font-family:' + SANS + ';font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px;box-sizing:border-box;margin:0!important'),
       // stálplata
