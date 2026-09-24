@@ -144,8 +144,10 @@
   function stripHtml(st, year) {
     if (!st) return pill('⏳ athuga stöðu ' + year + '…', 'hlutlaust');
     const parts = [];
+    // 24.09 (Agnar: „þegar ég bý til úttektarskýrslu getuðu látið merkið verða grænt"):
+    // skýrsla sem er TIL er græn, ekki gul — gult er fyrir reikning sem bíður.
     parts.push(st.skyrsla
-      ? pill('📄 Úttektarskýrsla ' + year + ' — TIL' + (dmy(st.skyrsla.dags) ? ' (' + dmy(st.skyrsla.dags) + ')' : ''), 'gult')
+      ? pill('📄 Úttektarskýrsla ' + year + ' — TIL' + (dmy(st.skyrsla.dags) ? ' (' + dmy(st.skyrsla.dags) + ')' : ''), 'graent')
       : pill('📄 Úttektarskýrsla ' + year + ' — vantar', 'hlutlaust'));
     if (st.reikningur) {
       const r = st.reikningur;
@@ -227,13 +229,15 @@
     document.querySelectorAll('#companies-main button').forEach(b => {
       const t = (b.textContent || '').trim();
       if (!/Búa til úttektarskýrslu|úttektarskýrslu/i.test(t)) return;
-      if (b.querySelector('._uv-rb')) return;
-      const tag = document.createElement('span');
-      tag.className = '_uv-rb';
-      tag.style.cssText = 'margin-left:8px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;' +
-        (st.skyrsla ? 'background:#fde68a;color:#7c4a03' : 'background:rgba(255,255,255,.25);color:inherit');
-      tag.textContent = st.skyrsla ? ('· ' + year + ' TIL') : ('· ' + year + ' vantar');
-      b.appendChild(tag);
+      // Merkið UPPFÆRIST ef það er þegar til (áður: return) — svo „vantar" verði „TIL"
+      // um leið og skýrslan vistast, án þess að 129 þurfi að endurteikna takkann.
+      let tag = b.querySelector('._uv-rb');
+      if (!tag) { tag = document.createElement('span'); tag.className = '_uv-rb'; b.appendChild(tag); }
+      const css = 'margin-left:8px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;' +
+        (st.skyrsla ? 'background:#bbf7d0;color:#14532d' : 'background:rgba(255,255,255,.25);color:inherit');
+      const txt = st.skyrsla ? ('· ' + year + ' TIL') : ('· ' + year + ' vantar');
+      if (tag.__uvCss !== css) { tag.__uvCss = css; tag.style.cssText = css; }
+      if (tag.textContent !== txt) tag.textContent = txt;
     });
   }
 
@@ -398,6 +402,14 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   window.addEventListener('hashchange', () => setTimeout(boot, 200));
+  // 24.09: skýrslan vistast (168 sendir 'customer-doc-written') → stöðuplöturnar sátu á
+  // 45 s skyndiminninu og sögðu „vantar" þótt skýrslan væri komin. Nú er staðan sótt
+  // aftur strax og platan + takkamerkið verða græn án endurhleðslu.
+  document.addEventListener('customer-doc-written', () => {
+    const coId = getCompanyId(); if (!coId) return;
+    const year = new Date().getFullYear();
+    statusFor(coId, year, true).then(() => { paintStrip(coId, year); paintReportBtn(coId, year); paintNextYearBtn(coId, year); });
+  });
 
   window.UttektVorn = { statusFor, refresh: (coId, y) => statusFor(coId, y || new Date().getFullYear(), true) };
   console.log('[patch-328] úttektar-vörn tilbúin');
