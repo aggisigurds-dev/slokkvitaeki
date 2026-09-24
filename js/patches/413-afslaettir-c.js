@@ -61,8 +61,8 @@
     r('._afsl-arrow', 'font-family:' + MONO + '!important;color:#8e97a6!important'),
     // ── spjöldin þrjú ──
     r(HOP + ',' + CAD, imp(SPJALD)),
-    r(HOP + ' > div,' + CAD + ' > div', 'display:flex!important;flex-direction:column!important;gap:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important'),
-    r(HOP + ' > div > span:first-child,' + CAD + ' > div > span:first-child', imp(HAUS) + ';font-family:' + SANS + '!important;font-size:15px!important;font-weight:600!important;text-shadow:0 1px 1px rgba(0,0,0,.5)!important;margin:0!important'),
+    r(HOP + ' > div,' + CAD + ' > div', 'display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;gap:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important'),
+    r(HOP + ' > div > span:first-child,' + CAD + ' > div > span:first-child', imp(HAUS) + ';font-family:' + SANS + '!important;font-size:15px!important;font-weight:600!important;text-shadow:0 1px 1px rgba(0,0,0,.5)!important;margin:0!important;width:100%!important;align-self:stretch!important;box-sizing:border-box!important;justify-content:flex-start!important'),   /* 24.09 (Agnar: „auðvitað á þetta að fylla út í reitina"): 307 setur align-items:center inline á hólfið → hausinn kreppt í miðju */
     r(HOP + ' > div > span:first-child::before,' + CAD + ' > div > span:first-child::before', RIVET + ';left:7px'),
     r(HOP + ' > div > span:first-child::after,' + CAD + ' > div > span:first-child::after', RIVET + ';right:7px'),
     r(HOP + ' > div > span:first-child svg', 'display:none!important'),
@@ -76,7 +76,7 @@
     r(CAD + ' ._cad-save', imp(METAL_BTN) + ';margin-left:auto!important'),
     // Tilboðsverð — þriðja spjaldið er rofinn sjálfur; búkurinn full breidd fyrir neðan
     r(CPR + ' ._cpr-toggle', 'all:unset!important;' + imp(SPJALD) + ';cursor:pointer!important;grid-column:3!important;grid-row:2!important;display:flex!important;flex-wrap:wrap!important;align-content:flex-start!important;font-family:' + SANS + '!important'),
-    r(CPR + ' ._cpr-toggle > span:nth-child(2)', 'flex:1 1 auto!important;order:0;' + imp(HAUS) + ';font-size:15px!important;font-weight:600!important;text-shadow:0 1px 1px rgba(0,0,0,.5)!important;padding-right:110px!important'),
+    r(CPR + ' ._cpr-toggle > span:nth-child(2)', 'flex:0 0 100%!important;width:100%!important;box-sizing:border-box!important;order:0;' + imp(HAUS) + ';font-size:15px!important;font-weight:600!important;text-shadow:0 1px 1px rgba(0,0,0,.5)!important;padding-right:110px!important'),
     r(CPR + ' ._cpr-toggle > span:nth-child(2)::before', RIVET + ';left:7px'),
     r(CPR + ' ._cpr-toggle > span:nth-child(2)::after', RIVET + ';right:7px'),
     r(CPR + ' ._cpr-toggle > span:nth-child(3)', 'order:1;position:absolute!important;right:16px!important;top:12px!important;' + PLATA),
