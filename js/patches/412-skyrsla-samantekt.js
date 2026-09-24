@@ -58,6 +58,11 @@
     r(D(4), 'margin:0!important;padding:4px 18px 14px!important;background:' + METAL + '!important;border-bottom:1px solid #000!important;display:flex!important;gap:8px!important;flex-wrap:wrap!important;align-items:center!important'),
     r(D(4) + ' button', 'height:36px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-weight:600!important;font-size:12.5px!important;padding:0 14px!important'),
     r('#_ctc-skyrsla', imp(METAL_BTN) + ';margin-left:auto!important;order:3'),
+    // 24.09 (Agnar): „Þegar búið er að ýta á búa til úttektarskýrslu þá á allur takkinn að verða svona
+    // grænn" — sami grænn og „Staðfesta lista" (404 SAEKJA). 328 setur klasann ._uv-til þegar skýrslan
+    // er til og litla merkið segir „✓ 2026" í hvítu.
+    r('#_ctc-skyrsla._uv-til', imp('background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%);border:1px solid rgba(52,168,98,.55);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3)')),
+    r('#_ctc-skyrsla._uv-til ._uv-rb', imp('background:rgba(255,255,255,.14);color:#fff;font-size:10px;letter-spacing:.04em')),
     r('#_ctc-vista,#_ctc-endurreikna', imp(SILVER_BTN)),
     // ── stálflöturinn ──
     r(D(3) + ',' + D(5) + ',' + D(6) + ',' + D(7) + ',' + D(8) + ',' + SEC + '._vw-bar', 'margin:0!important;background:' + STAL + '!important;background-image:' + STAL_IMG + '!important;padding:6px 12px!important'),

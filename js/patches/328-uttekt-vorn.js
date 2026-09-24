@@ -233,9 +233,13 @@
       // um leið og skýrslan vistast, án þess að 129 þurfi að endurteikna takkann.
       let tag = b.querySelector('._uv-rb');
       if (!tag) { tag = document.createElement('span'); tag.className = '_uv-rb'; b.appendChild(tag); }
+      // 24.09 (Agnar): skýrslan til → ALLUR takkinn grænn (klasinn ._uv-til; 412 litar hann í
+      // Brunastáli eins og „Staðfesta lista", 129 hefur grænan grunnstíl annars) og litla merkið
+      // segir „✓ 2026" í hvítu. Vantar → óbreytt.
+      b.classList.toggle('_uv-til', !!st.skyrsla);
       const css = 'margin-left:8px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;' +
-        (st.skyrsla ? 'background:#bbf7d0;color:#14532d' : 'background:rgba(255,255,255,.25);color:inherit');
-      const txt = st.skyrsla ? ('· ' + year + ' TIL') : ('· ' + year + ' vantar');
+        (st.skyrsla ? 'background:rgba(255,255,255,.14);color:#fff' : 'background:rgba(255,255,255,.25);color:inherit');
+      const txt = st.skyrsla ? ('✓ ' + year) : ('· ' + year + ' vantar');
       if (tag.__uvCss !== css) { tag.__uvCss = css; tag.style.cssText = css; }
       if (tag.textContent !== txt) tag.textContent = txt;
     });
