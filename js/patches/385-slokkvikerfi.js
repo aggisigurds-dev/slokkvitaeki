@@ -193,7 +193,7 @@
     const pn = {}; (_rows || []).forEach(r => { if (r.postnumer) pn[r.postnumer] = 1; });
     const sia = filteredSorted();
 
-    root.innerHTML =
+    sameina(root,
       '<div class="_sk-hd"><h1>' + (FLOKKUR.takn ? FLOKKUR.takn + ' ' : '') + FLOKKUR.titill + ' <small>' + arNu + '</small></h1><span class="_sk-sp"></span>' +
         '<span class="_sk-utlit"><button class="_sk-btn' + (utlit() === 'tafla' ? ' on' : '') + '" data-utlit="tafla" title="Tafla — zoomaðu út til að sjá meira af henni">▦ Tafla</button><button class="_sk-btn' + (utlit() === 'spjold' ? ' on' : '') + '" data-utlit="spjold" title="Spjöld — eitt fyrirtæki per spjald, stórt letur">☰ Spjöld</button></span><button class="_sk-btn" id="_sk-prenta">🖨 Prenta lista</button>' + (FLOKKUR.nytt === false ? '' : '<button class="_sk-btn _sk-pri" id="_sk-nytt">＋ Nýtt kerfi</button>') + '</div>' +
       (_villa ? '<div class="_sk-villa">⚠ Náði ekki í gögnin: ' + esc(_villa) + ' <button class="_sk-btn" id="_sk-aftur">Reyna aftur</button></div>' : '') +
@@ -232,7 +232,59 @@
           '<span class="_sk-cardsidast">síðast ' + dm(sidast(r)) + '</span></div>' +
         '<div class="_sk-cardlina">' + arHtml(r).replace('<span class="_sk-sidast">', '<span class="_sk-sidast" style="display:none">') + skrefHtml(r) + '<span class="_sk-sp"></span>' + verdHtml(r) + '</div>' +
         '<div class="_sk-notacell"><textarea class="_sk-nota" rows="2" data-kid="' + r.kerfi_id + '" placeholder="Nóta…">' + esc(r.nota || '') + '</textarea><span class="_sk-notast"></span></div>' +
-        '</div>'; }).join('') + '</div>';
+        '</div>'; }).join('') + '</div>');
+  }
+  // ── sameina: í stað root.innerHTML = … (24.09.2026, Agnar: „þegar ég ýti á filter-mánuðina hoppar allt út um allt“)
+  //   Hver smellur á síu endurskrifaði alla rótina: haus, KPI, síuraðir, tafla og spjöld — nýir hnútar, skrunstaða
+  //   glötuð, og pappar sem skreyta hnútana (392 útlit, 405 emoji-strípun, 409 titill, 313 litir) þurftu tif til að ná
+  //   þeim aftur → blikk og hopp. Nú er nýja HTML-ið borið saman við tréð sem er til og aðeins því breytt sem breyttist:
+  //   textar/klasar/eigindi uppfærð í sömu hnútum, raðir lyklaðar á data-kid, kerfisklasar annarra pappa haldast.
+  const HALDA_KLASA = /^(_s4\d\d-|b40\w+-|_pe-|_cc313|_b4)/;
+  const HALDA_EIGIND = /^(style|data-cc313|data-s4|data-b40|data-_pm-status-done)/;
+  function anEmoji(t) { try { return String(t || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').replace(/\s+/g, ' ').trim(); } catch (_) { return String(t || '').trim(); } }
+  function lykill(n) {
+    if (n.nodeType !== 1) return n.nodeType === 3 ? '#t' : '#o';
+    return n.tagName + '|' + (n.id || '') + '|' + (n.getAttribute('data-kid') || n.getAttribute('data-m') || n.getAttribute('data-st') || n.getAttribute('data-sort') || n.getAttribute('data-utlit') || '');
+  }
+  function sameinaHnut(na, nb) {
+    if (na.nodeType === 3) { if (na.nodeValue !== nb.nodeValue && anEmoji(na.nodeValue) !== anEmoji(nb.nodeValue)) na.nodeValue = nb.nodeValue; return; }
+    if (na.nodeType !== 1) return;
+    for (const at of [...nb.attributes]) { if (at.name !== 'class' && na.getAttribute(at.name) !== at.value) na.setAttribute(at.name, at.value); }
+    for (const at of [...na.attributes]) { if (at.name !== 'class' && !nb.hasAttribute(at.name) && !HALDA_EIGIND.test(at.name)) na.removeAttribute(at.name); }
+    const halda = [...na.classList].filter(k => HALDA_KLASA.test(k));
+    const nyr = (nb.getAttribute('class') || '').trim();
+    const vill = ((nyr ? nyr + ' ' : '') + halda.join(' ')).trim();
+    if (na.className !== vill) na.className = vill;
+    const tag = na.tagName;
+    const virkt = document.activeElement === na;
+    if (tag === 'TEXTAREA') { if (!virkt && na.value !== nb.value) na.value = nb.value; return; }
+    if (tag === 'INPUT') { if (nb.type === 'checkbox' || nb.type === 'radio') { if (na.checked !== nb.checked) na.checked = nb.checked; } else if (!virkt && na.value !== nb.value) na.value = nb.value; return; }
+    if (tag === 'SELECT') { sameinaBorn(na, nb); if (!virkt && na.value !== nb.value) na.value = nb.value; return; }
+    sameinaBorn(na, nb);
+  }
+  function sameinaBorn(a, b) {
+    const A = [...a.childNodes], B = [...b.childNodes];
+    let ai = 0;
+    for (const nb of B) {
+      const lk = lykill(nb);
+      let f = -1;
+      for (let j = ai; j < A.length && j < ai + 40; j++) { if (A[j] && lykill(A[j]) === lk) { f = j; break; } }
+      if (f < 0) { a.insertBefore(nb.cloneNode(true), A[ai] || null); continue; }
+      for (let j = ai; j < f; j++) { if (A[j]) { a.removeChild(A[j]); A[j] = null; } }
+      ai = f + 1;
+      sameinaHnut(A[f], nb);
+    }
+    for (let j = ai; j < A.length; j++) if (A[j] && A[j].parentNode === a) a.removeChild(A[j]);
+  }
+  function sameina(root, html) {
+    const tpl = document.createElement('template'); tpl.innerHTML = html;
+    const sx = window.scrollX, sy = window.scrollY;
+    const skrun = [];
+    try { root.querySelectorAll('*').forEach(e => { if (e.scrollTop || e.scrollLeft) skrun.push([e, e.scrollTop, e.scrollLeft]); }); } catch (_) {}
+    if (!root.firstElementChild || root.firstElementChild.classList.contains('_sk-tomt')) { root.innerHTML = html; return; }
+    try { sameinaBorn(root, tpl.content); } catch (e) { root.innerHTML = html; return; }
+    skrun.forEach(([e, t, l]) => { if (e.isConnected) { if (e.scrollTop !== t) e.scrollTop = t; if (e.scrollLeft !== l) e.scrollLeft = l; } });
+    if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
   }
   function kpi(t, n, warn) { return '<div class="_sk-kpi' + (warn && n ? ' warn' : '') + '"><small>' + t + '</small><b>' + n + '</b></div>'; }
 

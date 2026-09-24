@@ -1891,6 +1891,73 @@
     inp.addEventListener('blur', () => setTimeout(commit, 150));
   }
 
+  // ── sameinaMain: í stað main.innerHTML = … (24.09.2026, Agnar: „þegar ég ýti á filter-mánuðina hoppar allt út um allt")
+  //   Hver smellur á síu þurrkaði út alla sýnina. Þá hurfu líka hlutir sem AÐRIR pappar setja inn í hana (155 kortið,
+  //   394 vinnusvæðið, 409 titillinn, 331 síma-skjárinn …) og þeir settu þá inn aftur hver í sínu tifi — mælt á tölvu:
+  //   taflan lenti á fjórum mismunandi stöðum á einni sekúndu (806 → 536 → 584 → 628 → 803 → 755 px).
+  //   Nú er nýja HTML-ið borið saman við tréð sem er til: ílát (div/span/h1/table/tbody …) halda sér og þar með
+  //   skreytingar hinna pappanna; aðskotahnútar (id/klasi sem kemur hvergi fyrir í nýja HTML-inu) fá að standa;
+  //   allt sem 153 bindur smell-hlustun á (takkar, th, input, raðir, spjöld, _ars-ovr/_ars-goskip/_ars-skipraw) er
+  //   sett inn FERSKT svo hlustanirnar tvöfaldist ekki — bindingarnar hér fyrir neðan sjá þá alltaf nýja hnúta.
+  const S_HALDA_KLASA = /^(_s4\d\d-|b40\w+-|_pe-|_cc313|_b4|arsm-|_arsm-v)/;
+  const S_HALDA_EIGIND = /^(style|data-cc313|data-s4|data-b40|data-_pm-status-done|data-arsm)/;
+  const S_FERSKT_TAG = /^(BUTTON|INPUT|SELECT|TEXTAREA|A|TH|LABEL|SUMMARY)$/;
+  const S_FERSKT_KLASI = /^(_ars-row|_ars-card|_ars-skipraw|_ars-goskip|_ars-ovr-|_arsm-ak|_ars-plan)/;
+  function sAnEmoji(t) { try { return String(t || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').replace(/\s+/g, ' ').trim(); } catch (_) { return String(t || '').trim(); } }
+  function sFerskt(n) {
+    if (n.nodeType !== 1) return false;
+    if (S_FERSKT_TAG.test(n.tagName)) return true;
+    if (n.id && /^_ars-/.test(n.id)) return true;
+    for (const k of n.classList) if (S_FERSKT_KLASI.test(k)) return true;
+    return false;
+  }
+  function sLykill(n) {
+    if (n.nodeType !== 1) return n.nodeType === 3 ? '#t' : '#o';
+    return n.tagName + '|' + (n.id || '') + '|' + (n.getAttribute('data-co-id') || n.getAttribute('data-month') || n.getAttribute('data-st') || n.getAttribute('data-sort') || n.getAttribute('data-pnr') || '') + '|' + (n.className && typeof n.className === 'string' ? n.className.split(/\s+/)[0] : '');
+  }
+  function sAdskota(n, html) {
+    if (n.nodeType !== 1) return false;
+    if (n.id) return html.indexOf('id="' + n.id + '"') < 0 && html.indexOf("id='" + n.id + "'") < 0;
+    const kl = [...n.classList];
+    if (kl.length) return !kl.some(k => html.indexOf(k) >= 0);
+    return false;
+  }
+  function sHnut(na, nb, html) {
+    if (na.nodeType === 3) { if (na.nodeValue !== nb.nodeValue && sAnEmoji(na.nodeValue) !== sAnEmoji(nb.nodeValue)) na.nodeValue = nb.nodeValue; return; }
+    if (na.nodeType !== 1) return;
+    for (const at of [...nb.attributes]) { if (at.name !== 'class' && na.getAttribute(at.name) !== at.value) na.setAttribute(at.name, at.value); }
+    for (const at of [...na.attributes]) { if (at.name !== 'class' && !nb.hasAttribute(at.name) && !S_HALDA_EIGIND.test(at.name)) na.removeAttribute(at.name); }
+    const halda = [...na.classList].filter(k => S_HALDA_KLASA.test(k));
+    const nyr = (nb.getAttribute('class') || '').trim();
+    const vill = ((nyr ? nyr + ' ' : '') + halda.join(' ')).trim();
+    if (na.className !== vill) na.className = vill;
+    sBorn(na, nb, html);
+  }
+  function sBorn(a, b, html) {
+    const A = [...a.childNodes], B = [...b.childNodes];
+    let ai = 0;
+    for (const nb of B) {
+      const lk = sLykill(nb);
+      let f = -1;
+      for (let j = ai; j < A.length && j < ai + 60; j++) { if (A[j] && sLykill(A[j]) === lk) { f = j; break; } }
+      if (f < 0) { a.insertBefore(nb.cloneNode(true), A[ai] || null); continue; }
+      for (let j = ai; j < f; j++) { if (A[j] && !sAdskota(A[j], html)) { a.removeChild(A[j]); A[j] = null; } }
+      ai = f + 1;
+      if (sFerskt(nb)) { a.replaceChild(nb.cloneNode(true), A[f]); continue; }
+      sHnut(A[f], nb, html);
+    }
+    for (let j = ai; j < A.length; j++) if (A[j] && A[j].parentNode === a && !sAdskota(A[j], html)) a.removeChild(A[j]);
+  }
+  function sameinaMain(main, html) {
+    const tpl = document.createElement('template'); tpl.innerHTML = html;
+    if (!main.firstElementChild || main.children.length !== 1 || !main.firstElementChild.getAttribute('style') || main.firstElementChild.getAttribute('style').indexOf('max-width:1720px') < 0) { main.innerHTML = html; return; }
+    const sx = window.scrollX, sy = window.scrollY;
+    const skrun = [];
+    try { main.querySelectorAll('*').forEach(e => { if (e.scrollTop || e.scrollLeft) skrun.push([e, e.scrollTop, e.scrollLeft]); }); } catch (_) {}
+    try { sBorn(main, tpl.content, html); } catch (e) { try { console.warn('[153] sameinaMain féll — innerHTML', e); } catch (_) {} main.innerHTML = html; return; }
+    skrun.forEach(([e, t, l]) => { if (e.isConnected) { if (e.scrollTop !== t) e.scrollTop = t; if (e.scrollLeft !== l) e.scrollLeft = l; } });
+    if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
+  }
   function render() {
     const main = document.getElementById('ars-main');
     // Preserve search-box focus across re-renders: typing in #_ars-search
@@ -2181,7 +2248,7 @@
       ? `Leit: „${esc(state.search.trim())}" — allir mánuðir og allar stöður`
       : filterLabel + (pnrActive ? ' · ' + postnrFilterLabel() : '');
 
-    main.innerHTML = `
+    sameinaMain(main, `
       <div style="max-width:1720px;margin:0 auto;padding:10px 18px 60px">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:11px;min-width:0">
@@ -2412,7 +2479,7 @@
           Sýni <strong style="color:var(--ink2)">${filtered.length}</strong> af ${allCount} viðskiptavinum${skipHidden ? ` · <span class="_ars-goskip" title="Opna listann yfir slepptu" style="cursor:pointer;text-decoration:underline dotted">${skippedCount} slepptir faldir</span>` : ''}
         </div>
       </div>
-    `;
+    `);
 
     // Re-stamp the póst-stöðumerki (patch 295) deterministically after every
     // render. Filter/month/sort re-renders rebuild the rows, and the badge's own
