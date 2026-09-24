@@ -138,6 +138,7 @@
   function composeRow(row, labelText) {
     var line = el('div', 'b403-rod');
     var lbl = el('span', 'b403-lbl', labelText); line.appendChild(lbl);
+    line.classList.add(/reikn/i.test(labelText) ? 'b403-rod-inv' : 'b403-rod-rep');   // 24.09: táknið fyrir framan merkið (spjald B)
     var val = el('span', 'b403-val'); line.appendChild(val);
     var hasDoc = !!row.querySelector('.sk-dot.ok');
     var prog = row.querySelector('.sk-doc.prog');
@@ -481,6 +482,7 @@
     var U_OPNA = svgUrl('#2b313c', 2, '<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/>');
     var U_INV = svgUrl('#2b313c', 2, '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>');
     var U_PLUS = svgUrl('#525b6b', 2.5, '<path d="M12 5v14M5 12h14"/>');
+    var U_DOC = svgUrl('#2b313c', 2, '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>');
     function r(sel, css) { return sel.split(',').map(function (s) { return P + s.trim(); }).join(',') + '{' + css + '}'; }
     var LINE = 'background:#fff;border-radius:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)';
     var SILVER_BTN = 'background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.14)!important;color:#1f2530!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;text-shadow:none';
@@ -561,12 +563,17 @@
       r('.b403-body', 'padding:8px 8px 10px;display:flex;flex-direction:column;gap:6px'),
       r('.b403-rod', LINE + ';display:flex;align-items:center;gap:6px;min-height:38px;padding:4px 6px 4px 10px;font-size:12px;color:#5b6472;position:relative;flex-wrap:wrap'),
       r('.b403-rod.slot', 'background:rgba(255,255,255,.35);box-shadow:inset 0 2px 5px rgba(0,0,0,.08);border:1.5px dashed rgba(20,24,34,.24);color:#525b6b'),
-      r('.b403-lbl', 'font-family:' + SANS + ';font-size:12px;font-weight:500;color:#2b313c;width:70px;flex:none'),
+      r('.b403-lbl', 'font-family:' + SANS + ';font-size:12px;font-weight:500;color:#2b313c;width:auto;min-width:98px;flex:none;display:inline-flex;align-items:center;gap:8px'),
+      // 24.09 (Agnar: „skýrslu-iconin og reiknings-iconin í tómu boxin"): táknbox fyrir framan Skýrsla/Reikningur, líka í tómum röðum (strikað)
+      r('.b403-rod > .b403-lbl::before', 'content:"";flex:none;width:28px;height:28px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + U_DOC + ' center/15px no-repeat , ' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)'),
+      r('.b403-rod.b403-rod-inv > .b403-lbl::before', 'background:' + U_INV + ' center/15px no-repeat , ' + SILVER + ''),
+      r('.b403-rod:has(> .b403-plata.vantar) > .b403-lbl::before,.b403-rod.slot > .b403-lbl::before', 'border:1.5px dashed rgba(20,24,34,.28);background-color:transparent;box-shadow:none;opacity:.8'),
+      r('.b403-skjal .sk-doc.rep::before,.b403-skjal .sk-doc.inv::before', 'display:none'),
       r('.b403-val', 'flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap'),
       r('.b403-skjal', 'display:inline-flex;align-items:center;gap:4px;min-width:0'),
       // skjalið sjálft er opnunartakkinn: tákn + nafn
       r('.b403-skjal .sk-doc,.b403-vidh-chip,.b403-samn-h .sk-doc', 'all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:' + SANS + ';font-size:12.5px;font-weight:500;color:#1f2530;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;padding:2px 0'),
-      r('.b403-skjal .sk-doc::before,.b403-vidh-chip::before,.b403-samn-h .sk-doc::before', 'content:"";flex:none;width:28px;height:28px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + SILVER + ' , ' + U_OPNA + ' center/15px no-repeat;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)'),
+      r('.b403-skjal .sk-doc::before,.b403-vidh-chip::before,.b403-samn-h .sk-doc::before', 'content:"";flex:none;width:28px;height:28px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + U_OPNA + ' center/15px no-repeat , ' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)'),
       r('.b403-skjal .sk-doc:hover::before,.b403-vidh-chip:hover::before,.b403-samn-h .sk-doc:hover::before', 'box-shadow:inset 0 0 0 1px rgba(201,42,42,.45),0 1px 2px rgba(0,0,0,.1)'),
       r('.b403-skjal .sk-doc.inv', 'font-family:' + MONO + ';font-size:11.5px;font-weight:700'),
       r('.b403-skjal .sk-doc.miss', 'color:#845400;text-decoration:line-through'),
@@ -611,7 +618,7 @@
       r('.b403-skjal-lina .upph', 'font-family:' + MONO + ';font-size:11.5px!important;font-weight:700!important;color:#1f2530;margin-left:auto'),
       r('.b403-skjal-lina .sk-att-wrap', 'display:inline-flex;align-items:center;gap:4px'),
       r('.b403-skjal-lina .sk-att-wrap .sk-doc', 'all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:' + MONO + ';font-size:11.5px;font-weight:700;color:#1f2530'),
-      r('.b403-skjal-lina .sk-att-wrap .sk-doc::before', 'content:"";flex:none;width:28px;height:28px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + SILVER + ' , ' + U_INV + ' center/15px no-repeat;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)'),
+      r('.b403-skjal-lina .sk-att-wrap .sk-doc::before', 'content:"";flex:none;width:28px;height:28px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + U_INV + ' center/15px no-repeat , ' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)'),
       r('.b403-skjal-lina .sk-att-wrap .sk-doc.stolpi', 'all:unset;height:18px;padding:0 6px;border-radius:5px;background:#eceff4;color:#1f2530;font-family:' + MONO + ';font-size:10.5px;font-weight:700;display:inline-flex;align-items:center'),
       r('.b403-skjal-lina .sk-att-wrap .sk-doc.stolpi::before', 'display:none'),
       r('.b403-skjal-lina .sk-att-wrap .sk-dfc', 'width:18px;height:18px;border-radius:4px;border:1px solid rgba(20,24,34,.32);background:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;color:#fff'),

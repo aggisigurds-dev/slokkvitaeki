@@ -52,6 +52,7 @@
     r('._afsl-title', 'order:0;flex:1 1 100%;font-family:' + MONO + '!important;font-size:11.5px!important;font-weight:700!important;letter-spacing:.2em!important;text-transform:uppercase!important;color:#d9dee6!important;display:flex!important;align-items:center!important;gap:9px!important'),
     r('._afsl-title::before', 'content:"";width:8px;height:8px;border-radius:50%;background:#8f98a8;display:inline-block'),
     r('._afsl-head .b413-tala', 'order:1;display:flex;align-items:baseline;gap:8px;font-family:' + DISPLAY + '!important;font-size:38px!important;font-weight:800!important;line-height:1!important;letter-spacing:-.02em!important;color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)'),
+    r('._afsl-head .b413-tala > span', 'font-family:' + DISPLAY + '!important;font-size:38px!important;font-weight:800!important;line-height:1!important;letter-spacing:-.02em!important;color:#fff!important'),
     r('._afsl-head .b413-tala small', 'font-family:' + DISPLAY + '!important;font-size:16px!important;font-weight:700!important;color:#d9dee6!important;letter-spacing:-.005em!important'),
     r('._afsl-head > span:nth-child(2)', 'order:2;font-family:' + MONO + '!important;font-size:11.5px!important;color:#d5dbe6!important;margin-left:8px!important'),
     r('._afsl-head > span:nth-child(2)::after', 'content:":"'),

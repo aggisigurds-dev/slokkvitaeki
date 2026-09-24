@@ -113,6 +113,21 @@
     r(D(8) + ' > div:not(:has(input)):not(:has(> #_ctc-sum-total)) > span:last-child', 'font-weight:700!important;color:#1f2530!important'),
     r(D(8) + ' input', imp(LINE) + ';border:0!important;height:30px!important;padding:0 6px!important;font-family:' + MONO + '!important;font-size:12.5px!important;text-align:center!important;color:#141822!important;width:64px!important;max-width:64px!important'),
     r(D(8) + ' > div:has(> #_ctc-sum-total)', 'margin-top:4px!important;border-radius:8px!important'),
+    // Agnar 14:45 („mátt setja skýrslugerðina og akstur inn á hvíta svæðið"): raðirnar tvær sitja í framhaldi töflunnar, sama hvíta spjald;
+    // Án vsk · Afsláttur · Vsk verða EIN mono-lína hægra megin undir, Samtals-bandið svo.
+    r(D(7), 'padding-bottom:0!important'),
+    r(D(7) + ' table', 'border-radius:8px 8px 0 0!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12)!important'),
+    r(D(7) + ' table tbody tr:last-child td', 'border-bottom:1px solid #edf0f4!important'),
+    r(D(8), 'display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:0 14px!important;padding-top:0!important;align-items:center!important'),
+    r(D(8) + ' > div:has(input):not(:has(> #_ctc-sum-total))', 'flex:1 1 100%!important;order:0;min-height:44px!important;margin:0!important;border-radius:0!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12)!important;border-top:0!important;padding:4px 10px 4px 12px!important;font-weight:700!important;font-size:13px!important;background:#fff!important'),
+    r(D(8) + ' > div:has(input):not(:has(> #_ctc-sum-total)):nth-of-type(2)', 'border-radius:0 0 8px 8px!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)!important'),
+    r(D(8) + ' > div:has(input) > span:first-child', 'flex:1 1 auto!important'),
+    r(D(8) + ' > div:not(:has(input)):not(:has(> #_ctc-sum-total))', 'flex:0 0 auto!important;order:2;min-height:30px!important;margin:6px 0 0!important;padding:0!important;gap:6px!important;font-size:12px!important'),
+    r(D(8) + ' > div:not(:has(input)):not(:has(> #_ctc-sum-total)):nth-of-type(3)', 'margin-left:auto!important'),   // sama sérhæfni (:has(#id)) og línan á undan, annars tapar margin-left   // Án vsk: fyrsta samtölulínan ýtir hinum til hægri
+    r(D(8) + ' > div:has(> #_ctc-sum-total)', 'flex:1 1 100%!important;order:3;margin-top:6px!important'),
+    // Afsláttar-röðin (input + %) er samtölulína, ekki tafla — í sömu mono-línuna
+    r(D(8) + ' > div:has(input):not(:has(> #_ctc-sum-total)):nth-of-type(n+3)', 'flex:0 0 auto!important;order:2;min-height:30px!important;margin:6px 0 0!important;padding:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;font-family:' + MONO + '!important;font-size:12px!important;font-weight:400!important;color:#525b6b!important;gap:6px!important'),
+    r(D(8) + ' > div:has(input):nth-of-type(n+3) input', 'width:44px!important;max-width:44px!important;height:24px!important;padding:0 4px!important;font-size:11.5px!important'),
     // neðsta röðin: „Drög þar til heimsókn er kláruð." · Vista (málmur) · Klára (grænn, full breidd)
     r(SEC + '._vw-bar::before', 'content:"Drög þar til heimsókn er kláruð.";font-family:' + MONO + ';font-size:11.5px;color:#525b6b;margin-right:auto;align-self:center'),
     r('#_vw-invinnsla', 'height:36px!important;padding:0 14px!important;font-size:12.5px!important;flex:none!important;max-width:100%!important;white-space:nowrap!important'),
