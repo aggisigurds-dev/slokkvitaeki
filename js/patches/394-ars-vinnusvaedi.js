@@ -158,9 +158,9 @@
       // og fyllist með fersku gögnunum ~4 s síðar → spjaldið hækkaði um 27 px og allt fyrir neðan færðist (mælt lifandi,
       // layout-shift 0,37). Plássið er frátekið frá fyrsta ramma.
       // Línan er FALIN með inline display:none!important þar til ferska sóknin staðfestir töluna (153) — min-height á henni dugar
-      // því ekki. Plássið er tekið frá á súlunni sem kemur næst á eftir (okkar eigin .arsm-herobar): 17 px lína + 10 px bil.
+      // því ekki. Plássið er tekið frá á súlunni sem kemur næst á eftir (okkar eigin .arsm-herobar): 17 px lína + 10 px bil + 4 px eigin margin súlunnar (mælt lifandi: 183 → 187 með 27 px).
       W + '.bstal-hero > div:nth-child(3){min-height:17px}',
-      W + '.bstal-hero > div:nth-child(3)[style*="none"] + .arsm-herobar{margin-top:27px}',
+      W + '.bstal-hero > div:nth-child(3)[style*="none"] + .arsm-herobar{margin-top:31px}',
       W + '#_arsmap-panel{border-radius:2px!important;border:1px solid #23262c!important;box-shadow:0 14px 30px -14px rgba(0,0,0,.7)!important;margin-bottom:10px!important}',
       V + '.arsm-korthaus{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background-image:' + STRIPE + METAL + '}',
       V + '.arsm-korthaus .arsm-kh-v{display:flex;align-items:center;gap:10px;min-width:0}',
