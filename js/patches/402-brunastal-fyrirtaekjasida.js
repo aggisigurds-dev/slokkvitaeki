@@ -484,6 +484,14 @@
     p('.co-mynd', 'display:flex!important;flex-direction:column!important'),
     p('.co-mynd .co-mynd-flis', 'min-height:200px!important;width:100%!important'),
     p('.co-bupp', 'grid-template-columns:repeat(2,minmax(0,1fr))!important'),
+    /* Agnar 24.09 06:27 (S26): reitirnir urðu 300 px háir hvítir kassar með textann í miðjunni — 363 gefur .co-bupp flex:0 1 300px (breidd í röð á tölvu),
+       en í dálkinum hér verður grunnstærðin HÆÐ og grindin teygir raðirnar í hana (1 röð = 300, 2 = 150). Hæð eftir efni, raðir efst, fullbreitt. */
+    p('.co-bupp', 'flex:none!important;height:auto!important;min-height:0!important;align-self:stretch!important;grid-auto-rows:min-content!important;align-content:start!important'),
+    p('.co-mynd,.co-banner-right', 'flex:none!important;height:auto!important;min-height:0!important;align-self:stretch!important'),
+    p('.co-bupp ._bupp-lina', 'height:auto!important;align-self:start!important'),
+    /* langt nafn brotnar í stað þess að klippast („FOSS, stéttarfélag í almannaþjónust…") */
+    p('.co-banner-name', 'white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;line-height:1.1!important;font-size:24px!important'),
+    p('.co-banner-id > div', 'min-width:0!important;flex:1 1 auto!important'),
     p('.co-bupp ._bupp-innri .co-bupp-reitur,.co-bupp ._bupp-innri input', 'height:32px!important;min-height:32px!important;flex:0 1 96px!important;font-size:13px!important;padding:0 8px!important'),
     p('.co-bupp ._bupp-innri ._bupp-tala', 'flex:0 0 52px!important'),
     p('.co-bupp ._bupp-lina', 'min-height:44px!important;padding:6px 8px 6px 10px!important'),
