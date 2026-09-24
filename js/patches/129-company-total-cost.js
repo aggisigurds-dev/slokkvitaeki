@@ -57,6 +57,16 @@
     'style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 2px #dcfce7;margin-right:5px;vertical-align:middle"></span>';
   // 410 vistar tengingu → skyndiminnið hér er úrelt. Sé kostnaðartaflan á skjánum
   // teiknast hún strax með nýju tengingunni; annars næst þegar hún opnast.
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('._ctc-tengingar');
+    if (!b) return;
+    e.preventDefault();
+    // Fyrsta línan í töflunni lýsist upp í glugganum — oftast sú sem var verið að skoða.
+    const tr = document.querySelector('#_ctc-section tbody tr td');
+    const m = tr ? String(tr.childNodes[0] && tr.childNodes[0].textContent || '').match(/^\s*(.+?)\s*\/\s*(.+?)\s*$/) : null;
+    if (window.ThjonustuTengingar && ThjonustuTengingar.opna) ThjonustuTengingar.opna('slokkvitaeki', m ? { tegund: m[1], staerd: m[2] } : null);
+    else location.hash = '#vorur';
+  });
   window.addEventListener('thjonustu-tengingar-breytt', () => {
     _tengingar = null; _tengingarPromise = null;
     try { _lastKey = ''; if (document.getElementById('_ctc-section')) render(); } catch (_) {}
@@ -1111,6 +1121,12 @@
           '" label="síðasti dagur ' + MONTHS_IS[mIx].toLowerCase() + '"></option>';
       }
     })();
+    // 24.09 kvöld (Agnar: „rosaleg hopp og vesen þarna ef maður slær eitthvað inn"):
+    // change/blur á Per stk og Afsl. endurteiknar ALLA töfluna með innerHTML — reiturinn sem
+    // fókusinn var á leiðinni í (Tab) dó með gamla trénu og skrunstaðan fór. CLAUDE.md
+    // Stöðugt viðmót: Stodugt.vernda(section) geymir skrun, fókus (sami klasi + sæti) og
+    // textaval og skilar þeim strax á eftir, í sama tifi — engin millistaða sést.
+    const _aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(section) : null;
     section.innerHTML =
       '<div style="background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px -10px rgba(0,0,0,.6)">' +
         '<div style="font-size:13px;font-weight:800;letter-spacing:.06em;display:flex;align-items:center;gap:7px">🧾 REIKNINGUR</div>' +
@@ -1170,10 +1186,14 @@
         // 24.09.2026 (Agnar): tengill í verðlistann sem línurnar hér að neðan eru reiknaðar úr
         // (verð, VSK og afsláttarhópur koma öll þaðan). NÝR FLIPI viljandi — heimsóknin getur
         // borið óvistuð línu-verð og afslætti, og sama-flipa flakk hendir þeim.
-        '<a href="#vorur" target="_blank" rel="noopener" ' +
-          'title="Opna Vörur og þjónustu í nýjum flipa — verðin í línunum hér að neðan eru reiknuð úr þeim lista" ' +
-          'style="font-size:11.5px;font-weight:700;color:#1d4ed8;text-decoration:none;white-space:nowrap;' +
-          'border:1px solid #bfdbfe;border-radius:999px;padding:4px 11px;background:#fff">📋 Verðlisti ↗</a>' +
+        // 24.09 kvöld (Agnar, skjámynd): `#vorur` í nýjum flipa endaði á forsíðunni. Takkinn
+        // opnar nú verð-tengingargluggann (410) OFAN Á síðuna — engin sigling, svo óvistuð
+        // línu-verð og afslættir heimsóknarinnar haldast. Þar sést hvaða vara rukkast fyrir
+        // hverja tegund+stærð og þar er henni breytt; 129 endurreiknar við vistun.
+        '<button type="button" class="_ctc-tengingar" ' +
+          'title="Opna verð-tengingarnar: hvaða þjónustulína rukkast fyrir hverja tegund og stærð í línunum hér að neðan" ' +
+          'style="font-size:11.5px;font-weight:700;color:#1d4ed8;cursor:pointer;white-space:nowrap;font-family:inherit;' +
+          'border:1px solid #bfdbfe;border-radius:999px;padding:4px 11px;background:#fff">📋 Verðtengingar ↗</button>' +
         '<button id="_ctc-add-extra" type="button" ' +
           'style="padding:6px 12px;background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">' +
           '+ Bæta við vöru eða þjónustu</button>' +
@@ -1240,6 +1260,7 @@
         '</div>' +
       '</div>' +
       (unmatched.length ? '<div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f">⚠ ' + unmatched.length + ' tegund(ir) fundu ekki matchandi þjónustu í verðlista. Bæta við í <a href="#vorur" target="_blank" rel="noopener" style="color:#1d4ed8;font-weight:700">Vörur og þjónustu ↗</a>.</div>' : '');
+    if (_aftur) { try { _aftur(); } catch (_) {} }
 
     // Wire Skoðunaraðili input.
     const skodunInp = section.querySelector('#_ctc-skodun');
