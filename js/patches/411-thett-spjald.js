@@ -73,6 +73,7 @@
     // 5) Samskipti þétt: haus 56 px, tölur sem plötur á einni línu, nýjasta uppfærslan ein lína; „Meira" opnar allt
     // 24.09.2026: hýsillinn (286) stendur tómur í ~1 s áður en kortið kemur (159 px) — frátekið pláss svo Úttektin hoppi ekki niður
     r('._samskipti-host', 'min-height:159px'),
+    r('._samskipti-host ._skx-hledur', 'max-height:159px!important;overflow:hidden!important;box-sizing:border-box!important'),   // beinagrindin (286) var 279 px → kortið 159 px: 120 px hopp
     r('.card._samskipti-card:not(.b411-opid) ', 'padding:0 0 8px!important;gap:6px!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-head', 'padding:5px 12px!important;min-height:0!important;display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:14px!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-acts', 'margin-left:auto!important;display:flex!important;flex-wrap:nowrap!important;flex:none!important;gap:6px!important;align-items:center!important'),

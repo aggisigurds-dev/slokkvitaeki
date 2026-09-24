@@ -937,8 +937,11 @@
     }).observe(v, { childList: true, subtree: true });
     addEventListener('resize', schedule);
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(start, 1200));
-  else setTimeout(start, 1200);
+  // 24.09.2026 (Agnar: „reyndu að ná öllu hoppi af ársskoðun síðunni"): 153 teiknar töfluna úr ræsi-skyndiminninu (360) ~1 s eftir
+  // ræsingu, en DOMContentLoaded kemur ekki fyrr en allar ~280 skrifturnar hafa keyrt — beðið eftir DCL + 1,2 s þýddi að hjúpurinn
+  // kom allt að 6 s Á EFTIR töflunni (mælt: taflan 556 → 492 px 7,3 s eftir hleðslu, síuflísarnar brotnuðu um 3–4 línur á meðan).
+  // Byrja strax: start() bíður sjálf eftir #view-arsskodun og 153 kallar bygg() beint eftir hverja teikningu.
+  start();
 
   window.ArsVinnusvaedi = { bygg };
   console.log('[394] Ársskoðun: strimill + síustika');

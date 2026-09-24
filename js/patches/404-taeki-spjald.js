@@ -112,6 +112,7 @@
 
   function compose(list) {
     if (list.querySelector('.b404-root') || list.dataset.b404fail === '1') return;
+    window.__b404compose = performance.now();   // mælispor: hvenær uppröðunin byrjar (24.09-mælingar á hráum ramma)
     var bulk = list.querySelector(':scope > .ut-bulk'); if (!bulk) return;
     var before = interactive(list);
     var main = document.getElementById('companies-main');
@@ -188,6 +189,7 @@
   function scope() { var h = document.documentElement; return h.getAttribute('data-thm-preset') === 'brunastal' && h.getAttribute('data-viewmode') !== 'mobile' && !h.classList.contains('slokk-phone-dev') && !document.body.classList.contains('appmode'); }
   var timer = null;
   function tick() {
+    window.__b404tick = performance.now();
     if (!scope()) {
       // Sími/appmode: hausinn okkar er ekki til, svo heimildin verður að sjást aftur.
       Array.prototype.slice.call(document.querySelectorAll('.b404-heimild')).forEach(function (x) { x.classList.remove('b404-heimild'); });
