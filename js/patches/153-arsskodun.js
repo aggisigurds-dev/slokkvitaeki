@@ -3241,7 +3241,7 @@
       <th class="num">#</th><th>Fyrirtæki</th>
       <th>Heimilisfang</th><th>Sími</th>
       <th class="c">Tæki (SLT·BSL·RS)</th>
-      <th title="Ferðanóta">✈ Nóta</th>
+      <th title="Sameiginlegur minnispunktur — sami texti og ✍ Athugasemd á fyrirtækjasíðunni og Minnispunktur á Verkstæði. Vistast á fyrirtækinu og fylgir öllum vélum.">✈ Nóta</th>
       <th class="c">Mán.</th>
       <th class="c chk">✓ Búið</th>` : `
       <th class="num">#</th><th>Fyrirtæki</th>
@@ -4147,9 +4147,9 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                     ${((window.NyttBadge && NyttBadge.is(c.id)) || (window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala) && RekstrarfelagBadge.html(c.kennitala, c.customer_base_id)) || state.status === 'skipped2025') ? `<span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;align-items:center">${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : ''}${state.status === 'skipped2025' ? (ars.ekki_sleppt
                       ? `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Handvirkt virkjaður aftur — smelltu til að merkja aftur sem sleppt" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;cursor:pointer;font-weight:700">✓ virkur · ↩ aftur í sleppt</button>`
                       : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</span>` : ''}
-                    <input class="_note _ars-plannote _ars-note-under" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="···" title="Ferðanóta — tímabundnar nótur við ferðaskipulag" maxlength="140">
+                    <input class="_note _ars-plannote _ars-note-under" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="···" title="Sameiginlegur minnispunktur — sami texti og ✍ Athugasemd á fyrirtækjasíðunni og Minnispunktur á Verkstæði. Vistast á fyrirtækinu og fylgir öllum vélum." maxlength="400">
                   </td>
-                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="···" title="Ferðanóta — tímabundnar nótur við ferðaskipulag" maxlength="140"></td>
+                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="···" title="Sameiginlegur minnispunktur — sami texti og ✍ Athugasemd á fyrirtækjasíðunni og Minnispunktur á Verkstæði. Vistast á fyrirtækinu og fylgir öllum vélum." maxlength="400"></td>
                   <td class="_ars-addrcell"><span class="_addr">${c.postnumer ? `<span class="_post">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</span></td>
                   <td class="center${ovr ? ' _ars-ovr-month' : ''}"${ovr ? ` data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}><span class="_mo" style="${m===curMonth?'color:#c0241f;font-weight:700':''}">${manualMark(esc(MONTHS_IS_SHORT[m-1] || '—'), !!ars.inspect_month_manual)}</span></td>
                   <td ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}>

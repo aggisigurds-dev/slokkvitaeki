@@ -586,7 +586,13 @@
         steps: effSteps(a, hasReik, hasSkyrsla),   // 153-staða + eigin skýrsla/reikningur/krafa
         stepsMeta: a[STEPS_META_KEY] || {},   // hver setti hvaða skref og hvenær
         mark: a.sv_mark || '',          // bráðabirgða-merking (single-select)
-        note: a.sv_note || '',          // bráðabirgða-minnispunktur (frítexti)
+        // 24.09.2026 (Agnar: „sync these three text boxes together ... saved and
+        // connectable to all devices"): minnispunkturinn hér, ✍ Athugasemd á
+        // fyrirtækjasíðunni og Ferðanótan í Ársskoðun voru þrír aðskildir reitir.
+        // Nú er EINN: fyrirtaeki.banner_note (alvöru dálkur, ekki stillinga-blobb),
+        // og gagnagrunns-vörður heldur plan_note í takt. Gamli sv_note er ekki
+        // lengur lesinn — gildin fjögur sem í honum voru fóru inn í banner_note.
+        note: co.banner_note || '',
         markedAt: +a.sv_mark_at || 0,   // hvenær síðast merkt (fyrir "Nýlega merkt" röðun)
         units: +info._unit_count || 0,
         tekjur: +info.estimated_yearly || 0,
@@ -1112,7 +1118,17 @@
     // note — save on blur, no re-render (keep focus while typing)
     v.querySelectorAll('.sv-note').forEach(ta => ta.addEventListener('change', e => {
       e.stopPropagation();
-      setFlag(+ta.dataset.id, { sv_note: ta.value }, { silent: true });
+      // Skrifað á fyrirtækið sjálft svo textinn sjáist á öllum þremur skjám og
+      // öllum vélum. Companies.saveBannerNote uppfærir líka minnið í flipanum.
+      const _id = +ta.dataset.id;
+      if (window.Companies && typeof Companies.saveBannerNote === 'function') {
+        Companies.saveBannerNote(_id, ta.value);
+        const _c = (window.state && state.companies || []).find(x => +x.id === _id);
+        if (_c) _c.banner_note = ta.value;
+      } else if (window.DB && DB.sb) {
+        DB.sb.from('fyrirtaeki').update({ banner_note: ta.value || null }).eq('id', _id)
+          .then(r => { if (r && r.error) toast('Minnispunktur vistaðist EKKI: ' + r.error.message); });
+      } else { toast('Minnispunktur vistaðist EKKI — engin gagnabankatenging'); }
     }));
   }
 

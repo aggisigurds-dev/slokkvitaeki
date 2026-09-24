@@ -2114,7 +2114,7 @@
              // Fyrirtæki í Þjónustu (fyrirtaeki.plan_note; class _rf-plannote svo
              // vökvunar-/vistunar-lykkjan neðar nái í hann). Aðeins tengdar byggingar.
              '<td class="rf-notacell">'+(co
-               ? '<input class="_rf-plannote rf-plannote" data-co-id="'+co.id+'" value="'+esc(co.plan_note||'')+'" placeholder="···" maxlength="140" title="Ferðanóta">'
+               ? '<input class="_rf-plannote rf-plannote" data-co-id="'+co.id+'" value="'+esc(co.plan_note||'')+'" placeholder="···" maxlength="400" title="Sameiginlegur minnispunktur — sami texti og ✍ Athugasemd á fyrirtækjasíðunni og Minnispunktur á Verkstæði. Vistast á fyrirtækinu og fylgir öllum vélum.">'
                : '<input class="rf-plannote" placeholder="···" disabled title="Nóta krefst tengingar við fyrirtæki í þjónustu — tengdu bygginguna með ✏️ fyrst">')+'</td>'+
              summaryCell+
              detailCells+
