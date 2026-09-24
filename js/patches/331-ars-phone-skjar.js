@@ -214,7 +214,17 @@
      í 1748 px á öllum zoom-stigum).
 
      Þess vegna er breiddin sett BEINT hér, í sama falli og setur zoom-ið, og með
-     `!important` svo hún standist 341. Mælt eftir á: 924 px -> 1 px.
+     `!important` svo hún standist 341. Handvirk tilraun á lifandi síðu gaf 924 px -> 1 px.
+
+     ⚠ EN ÞETTA VIRKAR EKKI ENN Í KEYRSLU (mælt eftir birtingu 09439e7, 24.09 kl. 00:05).
+     Staðfest: fallið ER í búntinum, `ars-wide-table` er á, `wantsWide(get())` satt,
+     `isPhoneLike()` satt, aðeins EITT `._ars-tblscroll` á síðunni — og samt engin
+     inline-breidd á stökunum og tómt bil óbreytt (226/924/735 px við 100/52/65%).
+     Þar sem hreinsunarleiðin er eina leiðin sem fjarlægir breiddina er líklegasta
+     skýringin að hún sé sett og STRAX hreinsuð aftur: `syncViewport` kallar á
+     `resetCssZoom()` þegar `arsActive()` er ósatt, og resetCssZoom kallar héðan.
+     Næsta skref er að mæla hvor leiðin er tekin (teljari á hreinsa/setja) áður en
+     nokkuð fleira er skrifað — EKKI að giska í þriðja sinn.
      Kassinn hugsar ekki um zoom-stuðulinn sjálfan heldur les SKÖLUÐU breidd
      töflunnar, svo þetta helst rétt hver sem leiðin er (zoom eða transform). */
   function stillaBreidd() {
