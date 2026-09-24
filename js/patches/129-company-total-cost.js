@@ -775,7 +775,7 @@
       '</textarea>' +
       // 2026-06-10: report-only Athugasemdir, grouped here with the notes.
       '<div style="font-size:12px;color:var(--ink2);font-weight:600;margin:8px 0 3px">✍ Athugasemdir á skýrslu <span style="font-weight:400;color:var(--ink3)">(sést í „Athugasemdir" á úttektarskýrslunni, ekki á reikningnum)</span></div>' +
-      '<textarea id="_ctc-athskyrsla" rows="2" placeholder="t.d. Mælt með að skipta út 2 tækjum á næsta ári" ' +
+      '<textarea id="_ctc-athskyrsla" rows="2" placeholder=" " ' +
         'style="width:100%;padding:8px 10px;border:1px solid #b4bcc8;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a;box-shadow:inset 0 1px 2px rgba(15,23,42,.06)">' +
         esc(athSkyrslaBox) +
       '</textarea>';
@@ -1208,7 +1208,7 @@
       '<div style="margin-bottom:10px">' +
         '<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#0f172a">' +
           '<span style="font-weight:600;color:var(--ink2);white-space:nowrap">🧾 Texti á reikning</span>' +
-          '<input id="_ctc-invtext" type="text" value="' + esc(invoiceText) + '" placeholder="t.d. Vinna vegna skoðunar á Dalvegi 10" ' +
+          '<input id="_ctc-invtext" type="text" value="' + esc(invoiceText) + '" placeholder=" " ' +
             'style="flex:1;min-width:120px;padding:6px 10px;border:1px solid var(--brd);border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
         '</label>' +
         '<div style="font-size:10.5px;color:var(--ink3);margin-top:3px;margin-left:2px">Sést sem „Vegna…" lína á reikningnum (yfirskrifar sjálfgefið).</div>' +
@@ -1348,6 +1348,37 @@
       athInp.addEventListener('change', onAth);
     }
     // Wire invoice-text input.
+    // 2026-09-24 (Agnar: „taka út leiðbeiningatextann og hafa bara dauf punktalínu"):
+    // dæmatextinn las eins og raunverulegt efni í reitnum. Í staðinn kemur dauf
+    // punktalína meðan reiturinn er tómur og ekki í fókus.
+    // Hún VERÐUR að fara inn sem inline-stíll með forgangi: Brunastáls-lögin setja
+    // `background:#fff!important` á alla innsláttarreiti, og !important í stílblaði
+    // tapar fyrir þeim óháð sérhæfni (sama gildra og skráð er um __peBannerPad).
+    // Inline !important er eina leiðin sem stendur.
+    function punktalina(el, ofar) {
+      if (!el) return;
+      const syna = !el.value && document.activeElement !== el;
+      if (syna) {
+        el.style.setProperty('background-image',
+          'repeating-linear-gradient(to right,rgba(15,23,42,.28) 0 3px,transparent 3px 7px)', 'important');
+        el.style.setProperty('background-repeat', 'no-repeat', 'important');
+        el.style.setProperty('background-size', 'calc(100% - 22px) 1px', 'important');
+        // textareaið fær línuna á fyrstu textalínu, einnar línu reitur rétt undir miðju
+        el.style.setProperty('background-position', ofar ? '11px 26px' : '11px calc(50% + 9px)', 'important');
+      } else {
+        ['background-image', 'background-repeat', 'background-size', 'background-position']
+          .forEach(k => el.style.removeProperty(k));
+      }
+    }
+    // athugasemdareiturinn býr í notesBox, ekki inni í section — leitað í skjalinu
+    [[document.getElementById('_ctc-athskyrsla'), true],
+     [section.querySelector('#_ctc-invtext'), false]].forEach(([el, ofar]) => {
+      if (!el) return;
+      punktalina(el, ofar);
+      ['input', 'focus', 'blur', 'change'].forEach(ev =>
+        el.addEventListener(ev, () => punktalina(el, ofar)));
+    });
+
     const invTextInp = section.querySelector('#_ctc-invtext');
     if (invTextInp) {
       const onInv = () => { const st = loadTripState(coId); st.invoice_text = invTextInp.value; saveTripState(coId, st); };

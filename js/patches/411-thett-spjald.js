@@ -71,34 +71,34 @@
     r('.co-banner-right .b411-meira', 'align-self:flex-end;height:22px;padding:0 8px;border:0;border-radius:5px;background:transparent;color:#525b6b;font-family:' + MONO + ';font-size:11px;font-weight:700;cursor:pointer;display:none'),
     r('.co-banner-right .b411-meira.syna', 'display:inline-flex;align-items:center;gap:4px'),
     // 5) Samskipti þétt: haus 56 px, tölur sem plötur á einni línu, nýjasta uppfærslan ein lína; „Meira" opnar allt
-    r('.card._samskipti-card.b411-thjappad ', 'padding:0 0 8px!important;gap:6px!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head', 'padding:5px 12px!important;min-height:0!important;display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:14px!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head ._skx-acts', 'margin-left:auto!important;display:flex!important;flex-wrap:nowrap!important;flex:none!important;gap:6px!important;align-items:center!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head ._skx-acts button', 'white-space:nowrap!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head ._skx-title', 'white-space:nowrap!important;flex:none!important;line-height:1!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head .b405-talning', 'flex:none!important;margin:0!important;order:1!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head ._skx-title', 'order:0!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head ._skx-acts', 'order:2!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head ._skx-title', 'font-size:11px!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head .b405-talning', 'gap:6px!important;align-items:baseline!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head .b405-talning .tala', 'font-size:18px!important;line-height:1!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head .b405-talning .tlabel', 'font-size:12px!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-head ._skx-acts button', 'height:28px!important;padding:0 10px!important;font-size:12px!important'),
-    r('.card._samskipti-card.b411-thjappad ._smx-strip', 'min-height:26px!important;padding:0 14px!important;margin:0!important'),
-    r('.card._samskipti-card.b411-thjappad ._smx-strip ._smx-imp', 'height:26px!important;padding:0 8px!important;font-size:11.5px!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-tiles', 'display:flex!important;flex-wrap:wrap!important;gap:6px!important;padding:0 14px!important;margin:0!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-tile', 'flex:0 1 auto!important;display:flex!important;align-items:baseline!important;gap:6px!important;min-height:36px!important;height:auto!important;padding:4px 12px!important;margin:0!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-tile > b', 'font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:#525b6b!important;margin:0!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-tile > span', 'font-size:13.5px!important;font-weight:600!important;margin:0!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-tile > small', 'font-size:11.5px!important;margin:0!important;white-space:nowrap!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-lbl:not(._ssk-full ._skx-lbl)', 'display:none!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-nyjast', 'margin:0 14px!important;padding:0!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-nyjast ._skx-rod-inni', 'display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:10px!important;min-height:38px!important;padding:0 12px!important;overflow:hidden!important;font-size:13.5px!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-nyjast ._skx-meta', 'flex:none!important;white-space:nowrap!important;margin:0!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-nyjast ._skx-subj', 'flex:0 1 auto!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-nyjast ._skx-txt', 'flex:1 1 0!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0!important;max-height:none!important;font-size:12.5px!important;color:#525b6b!important'),
-    r('.card._samskipti-card.b411-thjappad ._skx-nyjast ._ssk-body', 'display:none!important'),
-    r('.card._samskipti-card.b411-thjappad ._ssk-note,.card._samskipti-card.b411-thjappad ._skx-pts', 'display:none!important'),
+    r('.card._samskipti-card:not(.b411-opid) ', 'padding:0 0 8px!important;gap:6px!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head', 'padding:5px 12px!important;min-height:0!important;display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:14px!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-acts', 'margin-left:auto!important;display:flex!important;flex-wrap:nowrap!important;flex:none!important;gap:6px!important;align-items:center!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-acts button', 'white-space:nowrap!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-title', 'white-space:nowrap!important;flex:none!important;line-height:1!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head .b405-talning', 'flex:none!important;margin:0!important;order:1!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-title', 'order:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-acts', 'order:2!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-title', 'font-size:11px!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head .b405-talning', 'gap:6px!important;align-items:baseline!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head .b405-talning .tala', 'font-size:18px!important;line-height:1!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head .b405-talning .tlabel', 'font-size:12px!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-acts button', 'height:28px!important;padding:0 10px!important;font-size:12px!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._smx-strip', 'min-height:26px!important;padding:0 14px!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._smx-strip ._smx-imp', 'height:26px!important;padding:0 8px!important;font-size:11.5px!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-tiles', 'display:flex!important;flex-wrap:wrap!important;gap:6px!important;padding:0 14px!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-tile', 'flex:0 1 auto!important;display:flex!important;align-items:baseline!important;gap:6px!important;min-height:36px!important;height:auto!important;padding:4px 12px!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-tile > b', 'font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:#525b6b!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-tile > span', 'font-size:13.5px!important;font-weight:600!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-tile > small', 'font-size:11.5px!important;margin:0!important;white-space:nowrap!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-lbl:not(._ssk-full ._skx-lbl)', 'display:none!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast', 'margin:0 14px!important;padding:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-rod-inni', 'display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:10px!important;min-height:38px!important;padding:0 12px!important;overflow:hidden!important;font-size:13.5px!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-meta', 'flex:none!important;white-space:nowrap!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-subj', 'flex:0 1 auto!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._skx-txt', 'flex:1 1 0!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0!important;max-height:none!important;font-size:12.5px!important;color:#525b6b!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._skx-nyjast ._ssk-body', 'display:none!important'),
+    r('.card._samskipti-card:not(.b411-opid) ._ssk-note,.card._samskipti-card:not(.b411-opid) ._skx-pts', 'display:none!important'),
     r('.card._samskipti-card .b411-samsk-meira', 'height:28px;padding:0 10px;border-radius:7px;border:1px dashed rgba(255,255,255,.35);background:transparent;color:#d5dbe6;font-family:' + MONO + ';font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px')
   ].join('\n');
   var st = document.createElement('style'); st.id = 'thett-411'; st.textContent = css;
@@ -165,7 +165,9 @@
   function samskOpid() { try { return localStorage.getItem(SAMSK_LYKILL) === '1'; } catch (_) { return false; } }
   function samsk(card) {
     var opid = samskOpid();
-    if (card.classList.contains('b411-thjappad') === opid) card.classList.toggle('b411-thjappad', !opid);
+    // 24.09.2026: þétta útlitið er sjálfgefið í CSS (:not(.b411-opid)) svo kortið málast ALDREI fyrst í fullri hæð (371 px) og
+    // skreppur svo saman (159 px) þegar tifið nær því — það var 212 px hopp ~400 ms eftir að 286 teiknaði. Klasinn merkir aðeins OPIÐ.
+    if (card.classList.contains('b411-opid') !== opid) card.classList.toggle('b411-opid', opid);
     var acts = card.querySelector('._skx-head ._skx-acts');
     var b = card.querySelector('.b411-samsk-meira');
     if (!b && acts) {

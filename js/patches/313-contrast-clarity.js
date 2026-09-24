@@ -279,7 +279,10 @@
   // síðuhallans undir borðanum (~#3a3d41), en bgOf() les síðuna sem ljóst stál og
   // þvingaði titilinn dökkan (1,7:1). 390 stílar hann hvítan (11:1).
   // 22.09.2026: .kym-head (Kröfu yfirlit, 166 Skjár) — sama ástæða: hvítur titill á dökka bandinu.
-  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd';
+  // 24.09.2026: #_uv-strip (328) situr í SVARTA REIKNINGUR-hausnum og ber sína eigin
+  // ljósu liti. Skannin las bakgrunn pillnanna sem ljósan (þær eru hálfgegnsæjar) og
+  // skrifaði dökkt blek á þær — dökkt á dökkt, ólæsilegt. Hausinn á sína liti sjálfur.
+  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd,#_uv-strip,.b412-titill,._uv-rb';
 
   function hasOwnText(el) {
     for (let n = el.firstChild; n; n = n.nextSibling) {

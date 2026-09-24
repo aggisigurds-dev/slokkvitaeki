@@ -451,6 +451,9 @@
   }
 
   // ── Watch for re-renders of ars-main; refresh pins on each ─────────
+  // 24.09.2026: 153 sendir 'ars:render' í sama tifi og hún teiknar — setja stikuna inn ÞÁ, ekki í næstu 500 ms pollun,
+  // svo taflan málist aldrei án hennar og hoppi svo niður um 43 px þegar hún kemur.
+  document.addEventListener('ars:render', () => { try { inject(); } catch (_) {} });
   function watch() {
     if (!inject()) { setTimeout(watch, 500); return; }
     const main = document.getElementById('ars-main');

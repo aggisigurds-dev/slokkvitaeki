@@ -134,7 +134,10 @@
 
   /* ── LAG 1: passíf merking í svarta REIKNINGUR-hausnum ───────────────── */
   function pill(txt, tone) {
-    const c = { hlutlaust: ['rgba(255,255,255,.12)', '#e7ebf2'],
+    // 24.09.2026 (Agnar: „geturðu gert stafina í sama lit og punkturinn"):
+    // „vantar"/„enginn" pillurnar sátu daufar í svarta hausnum. #f6b545 er nákvæmlega
+    // liturinn á merkis-punktinum í .b412-titill, svo staðan les sem hluti af hausnum.
+    const c = { hlutlaust: ['rgba(246,181,69,.14)', '#f6b545'],
                 gult:      ['#fde68a', '#7c4a03'],
                 raudt:     ['#fecaca', '#7f1d1d'],
                 graent:    ['#bbf7d0', '#14532d'] }[tone] || ['rgba(255,255,255,.12)', '#e7ebf2'];
@@ -237,8 +240,15 @@
       // Brunastáli eins og „Staðfesta lista", 129 hefur grænan grunnstíl annars) og litla merkið
       // segir „✓ 2026" í hvítu. Vantar → óbreytt.
       b.classList.toggle('_uv-til', !!st.skyrsla);
+      // 24.09 seinna (Agnar: „geturðu gert V 2026 í upplýstri grænni birtu"):
+      // hvíta merkið hvarf inn í græna takkann. Nú lýsir það — bjartgrænt letur með
+      // ljóma og daufum grænum hring, svo „búið" sjáist í fljótu bragði.
       const css = 'margin-left:8px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;' +
-        (st.skyrsla ? 'background:rgba(255,255,255,.14);color:#fff' : 'background:rgba(255,255,255,.25);color:inherit');
+        (st.skyrsla
+          ? 'background:rgba(74,222,128,.15);color:#8dffbd;' +
+            'text-shadow:0 0 6px rgba(74,222,128,.9),0 0 14px rgba(74,222,128,.5);' +
+            'box-shadow:inset 0 0 0 1px rgba(141,255,189,.45),0 0 10px rgba(74,222,128,.35)'
+          : 'background:rgba(255,255,255,.25);color:inherit');
       const txt = st.skyrsla ? ('✓ ' + year) : ('· ' + year + ' vantar');
       if (tag.__uvCss !== css) { tag.__uvCss = css; tag.style.cssText = css; }
       if (tag.textContent !== txt) tag.textContent = txt;

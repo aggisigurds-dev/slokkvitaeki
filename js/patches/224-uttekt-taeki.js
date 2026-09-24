@@ -128,10 +128,10 @@
     var preNext = _bulkDate     || sharedDate('next_insp');
     // Bulk bar is ALWAYS visible (so "Velja allt" works on mobile too); the
     // actions appear once something is selected.
-    var bulk = '<div class="ut-bulk show">'+
+    var bulk = '<div class="ut-bulk show'+(n?'':' ut-bulk-tom')+'">'+
       '<button class="ut-selall" data-co="'+coId+'">'+(allSel?'☑ Hreinsa val':'☑ Velja allt')+'</button>'+
-      '<span class="ut-bulk-cnt">'+n+' valin</span>'+
-      (n ? (
+      '<span class="ut-bulk-cnt">'+(n?n+' valin':'Veldu tæki')+'</span>'+
+      (
         '<button class="ut-bulk-act" data-bulk="yfirferd" data-co="'+coId+'">→ Yfirferð</button>'+
         '<button class="ut-bulk-act" data-bulk="hledsla" data-co="'+coId+'">→ Hleðsla</button>'+
         '<button class="ut-bulk-act" data-bulk="onytt" data-co="'+coId+'">🚫 Ónýtt</button>'+
@@ -153,8 +153,11 @@
         '<button class="ut-bulk-qr" data-co="'+coId+'">▦ Prenta QR</button>'+
         '<button class="ut-bulk-del" data-co="'+coId+'" title="Eyða völdum tækjum">🗑 Eyða</button>'+
         '<button class="ut-bulk-clear" data-co="'+coId+'" title="Hætta við val">✕</button>'
-      ) : '')+
+      )+
     '</div>';
+    // 24.09.2026: stikan hélt áður aðeins „Velja allt" + talningu þar til fyrsta hakið kom — þá stækkaði hún um ~104 px og allur
+    // listinn hoppaði undan bendlinum. Nú er hún alltaf í fullri hæð; aðgerðirnar eru daufar og óvirkar (disabled) meðan ekkert er valið.
+    if(!n){ var iTom = bulk.indexOf('</span>'); bulk = bulk.slice(0, iTom) + bulk.slice(iTom).replace(/<(button|input) /g, '<$1 disabled '); }
     var groups = {};
     units.forEach(function(u){ var f=fam(u.type); (groups[f]=groups[f]||[]).push(u); });
     var head = '<div class="ut-head"><span class="sp"></span><span class="h-last">Frá síðustu skýrslur</span><span class="h-now">Þessi skoðun</span><span class="h-far"></span></div>';
@@ -208,6 +211,10 @@
         if(String(u.status)==='urelt') return false;
         return (u.fyrirtaeki_id!=null) ? (Number(u.fyrirtaeki_id)===Number(c.id)) : (u.client===c.nafn);
       }));
+      // 24.09.2026 (Agnar: „það kemur líka þegar maður hakar í check við tækin"): 149 vefur date-reitina í DD/MM/YYYY-hjúp
+      // (30 → 42 px) úr MutationObserver sem 252 seinkar — listinn málaðist fyrst með berum reitum og stækkaði svo um 20 px.
+      // Vefja hér, í SAMA tifi, svo enginn millirammi sjáist.
+      try { if (window.DDDateInput && DDDateInput.scan) DDDateInput.scan(wrap); } catch(_){}
       try { skrun.forEach(function(x){ if (x[0] && x[0].isConnected) { if (x[1]) x[0].scrollTop = x[1]; if (x[2]) x[0].scrollLeft = x[2]; } }); } catch(_){}
       if (fokus) {
         try {
@@ -604,6 +611,8 @@
       '@media(max-width:1420px){.uttekt-cols{flex-direction:column;align-items:stretch}.uttekt-col-l{flex:0 0 auto;width:100%;max-width:100%}.uttekt-col-r{flex:1 1 auto;width:100%;max-width:none;min-width:0}}',
       '.ut-bulk{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 15px;background:var(--ink1);color:#fff}',
       '.ut-bulk.show{display:flex}',
+      '.ut-bulk.ut-bulk-tom .ut-bulk-act,.ut-bulk.ut-bulk-tom .ut-bulk-size,.ut-bulk.ut-bulk-tom .ut-bulk-datewrap,.ut-bulk.ut-bulk-tom .ut-bulk-qr,.ut-bulk.ut-bulk-tom .ut-bulk-del{opacity:.38;pointer-events:none}',
+      '.ut-bulk.ut-bulk-tom .ut-bulk-clear{visibility:hidden}',
       '.ut-bulk-cnt{font-weight:800;font-size:13px}',
       '.ut-bulk-act{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
       '.ut-selall{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
