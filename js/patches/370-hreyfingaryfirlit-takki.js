@@ -42,17 +42,21 @@
     if (!rod) return;
     const coId = rod.getAttribute('data-co-id');
     if (!/^\d+$/.test(String(coId || ''))) return;
-    const til = rod.querySelector('.' + KLASI);
-    if (til && til.dataset.co === coId) return;            // þegar komið — engin DOM-breyting
+    // 24.09.2026 (Agnar: „Move Hreyfingaryfirlit to the profile box"): á tölvu í Brunastáli situr takkinn í spjaldinu,
+    // við hlið Þjónustusamnings/Teikningar (.b405-knappar, 405) — annars í takkaröðinni eins og áður. 370 á hnútinn
+    // OG staðinn (regla 4 í CLAUDE.md: tveir pappar mega aldrei eiga sama hnútinn).
+    const heim = main.querySelector('.co-banner .b405-knappar') || rod;
+    const til = main.querySelector('.' + KLASI);
+    if (til && til.dataset.co === coId && til.parentElement === heim) return;   // þegar komið á réttum stað — engin DOM-breyting
     if (til) til.remove();
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'btn btn-outline btn-sm ' + KLASI;
+    b.className = 'btn btn-outline btn-sm ' + KLASI + (heim !== rod ? ' b405-knappur' : '');
     b.dataset.co = coId;
     b.textContent = '📄 Hreyfingaryfirlit';
     b.title = 'Viðskiptahreyfingar kennitölunnar (allir staðir) — opnast í nýjum flipa';
     b.addEventListener('click', () => opna(coId));
-    rod.appendChild(b);
+    heim.appendChild(b);
   }
 
   function vakta() {

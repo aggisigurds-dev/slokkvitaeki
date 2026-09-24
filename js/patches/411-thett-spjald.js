@@ -42,6 +42,13 @@
     // 4) loftmynd lægri
     r('.co-mynd-flis', 'height:150px!important;min-height:150px!important;max-height:150px!important'),
     r('.co-mynd-flis img,.co-mynd-flis canvas', 'height:100%!important;object-fit:cover!important'),
+    // 2b) Agnar 24.09 („move 2 boxes under the 2 boxes on the right"): reitasvæðið í hægri dálkinn, undir loftmynd og
+    //     tökkunum tveimur — athugasemdin fyllir vinstri dálkinn á móti.
+    r('.co-banner', 'grid-template-areas:"id id" "facts mynd" "note mynd" "note knappar" "note bupp"!important;grid-template-rows:auto auto auto auto 1fr!important;align-items:start!important'),
+    r('.co-bupp', 'grid-area:bupp!important;margin:0 12px 0 0!important'),
+    r('.b405-knappar', 'grid-area:knappar!important;margin:0 12px 0 0!important;flex-wrap:wrap!important'),
+    r('.co-banner-right', 'grid-area:note!important;align-self:start!important'),
+    r('.co-bupp:not(._bupp-thjappad) ._bupp-lina', 'flex:1 1 100%!important'),
     // 2) reitirnir: þéttar línur hlið við hlið, tómir faldir meðan lokað er
     r('.co-bupp', 'display:flex!important;flex-wrap:wrap!important;gap:6px!important;align-items:stretch!important;align-content:flex-start!important'),
     r('.co-bupp ._bupp-lina', 'flex:0 1 auto!important;min-height:32px!important;padding:3px 10px!important;gap:8px!important'),
