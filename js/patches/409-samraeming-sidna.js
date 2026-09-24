@@ -93,8 +93,15 @@
   const done = new WeakSet();
   function tick() {
     const view = document.querySelector('.view.active'); if (!view) return;
-    let t = view.querySelector('._s409-titill');
-    if (!t || !t.isConnected) { t = finnaTitil(view); if (!t) return; t.classList.add('_s409-titill'); }
+    // Endurmetið í hverju tifi: síður teikna efri hlutann ASYNC — fyrsta tifið gat merkt neðri kaflafyrirsögn sem þá var
+    // ein í efstu 320 px (mælt 24.09: Punktar og verð). Komi betri frambjóðandi færist merkið.
+    const cand = finnaTitil(view); const cur = view.querySelector('._s409-titill');
+    let t = cur;
+    if (cand && cand !== cur) {
+      if (cur) { cur.classList.remove('_s409-titill'); const cu = cur.nextElementSibling; if (cu) cu.classList.remove('_s409-undir'); }
+      t = cand; t.classList.add('_s409-titill');
+    }
+    if (!t) return;
     if (!done.has(t)) {
       done.add(t); stripEmoji(t);
       if (t.hasAttribute('data-cc313')) { t.style.removeProperty('color'); t.removeAttribute('data-cc313'); }   // 313 taldi flötinn ljósan
