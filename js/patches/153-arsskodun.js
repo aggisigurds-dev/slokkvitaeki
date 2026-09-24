@@ -1950,11 +1950,14 @@
   }
   function sameinaMain(main, html) {
     const tpl = document.createElement('template'); tpl.innerHTML = html;
-    if (!main.firstElementChild || main.children.length !== 1 || !main.firstElementChild.getAttribute('style') || main.firstElementChild.getAttribute('style').indexOf('max-width:1720px') < 0) { main.innerHTML = html; return; }
+    // 153-umgjörðin er :scope > div[max-width:1720px]; aðrir pappar (394, 311, 383 …) setja systkini við hana beint í main — þau standa.
+    const gamla = [...main.children].find(c => c.tagName === 'DIV' && (c.getAttribute('style') || '').indexOf('max-width:1720px') >= 0);
+    const nyja = tpl.content.firstElementChild;
+    if (!gamla || !nyja) { main.innerHTML = html; return; }
     const sx = window.scrollX, sy = window.scrollY;
     const skrun = [];
     try { main.querySelectorAll('*').forEach(e => { if (e.scrollTop || e.scrollLeft) skrun.push([e, e.scrollTop, e.scrollLeft]); }); } catch (_) {}
-    try { sBorn(main, tpl.content, html); } catch (e) { try { console.warn('[153] sameinaMain féll — innerHTML', e); } catch (_) {} main.innerHTML = html; return; }
+    try { sHnut(gamla, nyja, html); } catch (e) { try { console.warn('[153] sameinaMain féll — innerHTML', e); } catch (_) {} main.innerHTML = html; return; }
     skrun.forEach(([e, t, l]) => { if (e.isConnected) { if (e.scrollTop !== t) e.scrollTop = t; if (e.scrollLeft !== l) e.scrollLeft = l; } });
     if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
   }
