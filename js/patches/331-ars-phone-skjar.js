@@ -223,8 +223,18 @@
      Þar sem hreinsunarleiðin er eina leiðin sem fjarlægir breiddina er líklegasta
      skýringin að hún sé sett og STRAX hreinsuð aftur: `syncViewport` kallar á
      `resetCssZoom()` þegar `arsActive()` er ósatt, og resetCssZoom kallar héðan.
-     Næsta skref er að mæla hvor leiðin er tekin (teljari á hreinsa/setja) áður en
-     nokkuð fleira er skrifað — EKKI að giska í þriðja sinn.
+     Framhald 24.09 kl. 00:10, mælt í ALVÖRU Chrome (Claude in Chrome, ekki hermi):
+       · kallið ER í minifyaða búntinum — `dt(),W()` í lok applyCssScale (W = þetta fall)
+       · aðeins EIN tafla undir `._ars-tblscroll`, breidd 1024 px (ekki núll)
+       · `#ars-main` er til, `._ars-tblscroll` er til
+       · engin inline-breidd sest, hvorki eftir 300 ms né 2 sek
+       · gildra á CSSStyleDeclaration.setProperty/removeProperty skráði ENGIN köll
+     Síðustu tvö atriðin geta ekki bæði verið sönn: takist fallið hreinsunarleiðina
+     kallar það removeProperty, og takist það setningarleiðina kallar það setProperty.
+     Mælitækið er því sjálft óáreiðanlegt (gildran náði ekki köllunum) og ÞAÐ verður
+     að laga fyrst. Næsta skref er console.log INNI í fallinu í tímabundinni
+     útgáfu — ekki fleiri ályktanir af utanaðkomandi mælingum, og alls ekki fjórða
+     ágiskunin. Tvær birtingar hafa þegar farið út sem virkuðu ekki (cae095c, 09439e7).
      Kassinn hugsar ekki um zoom-stuðulinn sjálfan heldur les SKÖLUÐU breidd
      töflunnar, svo þetta helst rétt hver sem leiðin er (zoom eða transform). */
   function stillaBreidd() {
