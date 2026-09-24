@@ -57,7 +57,7 @@
     r('.co-bupp > ._bupp-vixl', 'display:none!important'),   // takkinn utan línunnar (augnablikið áður en hann er færður)
     // 3) athugasemdin: ein lína sem vex
     r('.co-banner-right', 'gap:4px!important'),
-    r('.co-banner-right .co-banner-note', 'min-height:36px!important;height:36px;line-height:' + LINA_H + 'px!important;padding:7px 10px!important;resize:none!important;overflow:hidden!important;box-sizing:border-box!important;transition:none!important'),
+    r('.co-banner-right .co-banner-note', 'flex:none!important;min-height:36px!important;height:36px;line-height:' + LINA_H + 'px!important;padding:7px 10px!important;resize:none!important;overflow:hidden!important;box-sizing:border-box!important;transition:none!important'),
     r('.co-banner-right .co-banner-note.b411-opin', 'overflow:auto!important'),
     r('.co-banner-right .b411-meira', 'align-self:flex-end;height:22px;padding:0 8px;border:0;border-radius:5px;background:transparent;color:#525b6b;font-family:' + MONO + ';font-size:11px;font-weight:700;cursor:pointer;display:none'),
     r('.co-banner-right .b411-meira.syna', 'display:inline-flex;align-items:center;gap:4px'),
@@ -83,7 +83,7 @@
     r('.card._samskipti-card.b411-thjappad ._skx-nyjast ._skx-subj', 'flex:0 1 auto!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0!important'),
     r('.card._samskipti-card.b411-thjappad ._skx-nyjast ._skx-txt', 'flex:1 1 0!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0!important;max-height:none!important;font-size:12px!important;color:#525b6b!important'),
     r('.card._samskipti-card.b411-thjappad ._skx-nyjast ._ssk-body', 'display:none!important'),
-    r('.card._samskipti-card.b411-thjappad ._ssk-note,' + T + '._skx-pts', 'display:none!important'),
+    r('.card._samskipti-card.b411-thjappad ._ssk-note,.card._samskipti-card.b411-thjappad ._skx-pts', 'display:none!important'),
     r('.card._samskipti-card .b411-samsk-meira', 'height:30px;padding:0 10px;border-radius:7px;border:1px dashed rgba(255,255,255,.35);background:transparent;color:#d5dbe6;font-family:' + MONO + ';font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px')
   ].join('\n');
   var st = document.createElement('style'); st.id = 'thett-411'; st.textContent = css;
@@ -117,7 +117,7 @@
     var max = LINA_H * MAX_LINUR + 14;
     var takki = ta.parentElement && ta.parentElement.querySelector('.b411-meira');
     ta.style.setProperty('height', '36px', 'important');   // 338/402 setja hæð með !important — inline án important tapar
-    var h = ta.scrollHeight;
+    var h = ta.value ? ta.scrollHeight : 36;                 // tómur reitur: scrollHeight telur placeholder-textann (2 línur) — ein lína samt
     var opin = ta.classList.contains('b411-opin');
     if (h <= max) {
       ta.style.setProperty('height', Math.max(36, h) + 'px', 'important');
