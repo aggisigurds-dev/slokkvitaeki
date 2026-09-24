@@ -1900,7 +1900,9 @@
   //   allt sem 153 bindur smell-hlustun á (takkar, th, input, raðir, spjöld, _ars-ovr/_ars-goskip/_ars-skipraw) er
   //   sett inn FERSKT svo hlustanirnar tvöfaldist ekki — bindingarnar hér fyrir neðan sjá þá alltaf nýja hnúta.
   const S_HALDA_KLASA = /^(_s4\d\d-|b40\w+-|_pe-|_cc313|_b4|arsm-|_arsm-v)/;
-  const S_HALDA_EIGIND = /^(style|data-cc313|data-s4|data-b40|data-_pm-status-done|data-arsm)/;
+  // data-arsm* er EKKI haldið: 394 merkir ._ars-morow með data-arsm=falid og sleppir þá að endursmíða strimilinn —
+  // haldist merkið yfir samruna stendur strimillinn með gömlu tölunum (mælt: „0 með mánuð" eftir síusmell).
+  const S_HALDA_EIGIND = /^(style|data-cc313|data-s4|data-b40|data-_pm-status-done)/;
   const S_FERSKT_TAG = /^(BUTTON|INPUT|SELECT|TEXTAREA|A|TH|LABEL|SUMMARY)$/;
   const S_FERSKT_KLASI = /^(_ars-row|_ars-card|_ars-skipraw|_ars-goskip|_ars-ovr-|_arsm-ak|_ars-plan)/;
   function sAnEmoji(t) { try { return String(t || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').replace(/\s+/g, ' ').trim(); } catch (_) { return String(t || '').trim(); } }
@@ -1913,7 +1915,12 @@
   }
   function sLykill(n) {
     if (n.nodeType !== 1) return n.nodeType === 3 ? '#t' : '#o';
-    return n.tagName + '|' + (n.id || '') + '|' + (n.getAttribute('data-co-id') || n.getAttribute('data-month') || n.getAttribute('data-st') || n.getAttribute('data-sort') || n.getAttribute('data-pnr') || '') + '|' + (n.className && typeof n.className === 'string' ? n.className.split(/\s+/)[0] : '');
+    // Lykilklasinn er fyrsti klasi sem 153 á sjálft (kemur fyrir í nýja HTML-inu). Klasar sem aðrir pappar setja á
+    // (409 _s409-titill, 405 b40x- …) mega ekki gera hnútinn að „öðrum" hnút — þá stæði hann eftir sem aðskotahnútur
+    // og ferskur tvíburi kæmi við hliðina (mælt 24.09: tveir titlar á Ársskoðun).
+    let kl = '';
+    if (n.className && typeof n.className === 'string') { for (const k of n.className.split(/\s+/)) { if (k && sHtml.indexOf(k) >= 0) { kl = k; break; } } }
+    return n.tagName + '|' + (n.id || '') + '|' + (n.getAttribute('data-co-id') || n.getAttribute('data-month') || n.getAttribute('data-st') || n.getAttribute('data-sort') || n.getAttribute('data-pnr') || '') + '|' + kl;
   }
   function sAdskota(n, html) {
     if (n.nodeType !== 1) return false;
@@ -1948,7 +1955,9 @@
     }
     for (let j = ai; j < A.length; j++) if (A[j] && A[j].parentNode === a && !sAdskota(A[j], html)) a.removeChild(A[j]);
   }
+  let sHtml = '';
   function sameinaMain(main, html) {
+    sHtml = html;
     const tpl = document.createElement('template'); tpl.innerHTML = html;
     // 153-umgjörðin er :scope > div[max-width:1720px]; aðrir pappar (394, 311, 383 …) setja systkini við hana beint í main — þau standa.
     const gamla = [...main.children].find(c => c.tagName === 'DIV' && (c.getAttribute('style') || '').indexOf('max-width:1720px') >= 0);
@@ -1960,6 +1969,10 @@
     try { sHnut(gamla, nyja, html); } catch (e) { try { console.warn('[153] sameinaMain féll — innerHTML', e); } catch (_) {} main.innerHTML = html; return; }
     skrun.forEach(([e, t, l]) => { if (e.isConnected) { if (e.scrollTop !== t) e.scrollTop = t; if (e.scrollLeft !== l) e.scrollLeft = l; } });
     if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
+    // Vaktarar hinna pappanna sáu áður „allt þurrkað“ (childList á main). 394 hunsar breytingar inni í sínum eigin
+    // hlutum (og taflan/síurnar sitja þar) og 155 vaktar aðeins bein börn main — hvorugur sá samrunann. Ein saklaus
+    // childList-breyting á main sjálfu (athugasemdarhnútur inn og út) vekur þá báða, eins og render gerði áður.
+    try { const c = document.createComment('153 render'); main.appendChild(c); c.remove(); } catch (_) {}
   }
   function render() {
     const main = document.getElementById('ars-main');
