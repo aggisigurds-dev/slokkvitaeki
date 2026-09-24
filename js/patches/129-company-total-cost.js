@@ -566,7 +566,31 @@
   let _rendering = false;
   let _lastRender = 0;
 
-  async function render() {
+  // 24.09 kvöld (Agnar: „klikkað hopp og margar útgáfur að loadast á sama tíma … koma örugglega
+  // 5 mismunandi layout á 1-2 sekúndum" — akstur 1 → 2). Mælt: ein breyting kveikti render() TVISVAR
+  // (change OG blur á sama reit), hvert kall sótti tækin úr Supabase og skipti töflunni út með
+  // innerHTML; þar á milli hnikaði 328-platan (#_uv-strip) nth-of-type-stílum 412 til og frá.
+  // Hér: öll köll innan 60 ms renna saman í EITT, og kall sem kemur meðan teiknað er bíður
+  // og keyrir einu sinni á eftir. renderImpl() er gamla fallið óbreytt.
+  let _rTimer = 0, _rRunning = null, _rAgain = false, _rWaiters = [];
+  function render() {
+    return new Promise(resolve => {
+      _rWaiters.push(resolve);
+      clearTimeout(_rTimer);
+      _rTimer = setTimeout(async () => {
+        if (_rRunning) { _rAgain = true; return; }
+        const waiters = _rWaiters; _rWaiters = [];
+        _rRunning = (async () => {
+          try { await renderImpl(); } catch (e) { console.error('[129] render', e); }
+        })();
+        await _rRunning;
+        _rRunning = null;
+        waiters.forEach(w => { try { w(); } catch (_) {} });
+        if (_rAgain) { _rAgain = false; render(); }
+      }, 60);
+    });
+  }
+  async function renderImpl() {
     const main = document.getElementById('companies-main');
     if (!main) return;
     // Don't re-render while the user is typing in a green trip-note field — a
@@ -1127,6 +1151,15 @@
     // Stöðugt viðmót: Stodugt.vernda(section) geymir skrun, fókus (sami klasi + sæti) og
     // textaval og skilar þeim strax á eftir, í sama tifi — engin millistaða sést.
     const _aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(section) : null;
+    // Stöðuplatan (#_uv-strip, papp 328) er AÐSKOTAHNÚTUR í þessu spjaldi: hún situr sem barn nr. 2
+    // og 412 stílar spjaldið eftir nth-of-type barnanna. Dæi hún með innerHTML kæmi hún ~120 ms
+    // síðar aftur og hnikaði öllum stílum í millitíðinni — það var eitt af „fimm útlitunum".
+    // Hún er tekin til hliðar og sett strax aftur á sinn stað, með innihaldi (153/385-reglan:
+    // aðskotahnútar standa).
+    const _strip = section.querySelector('#_uv-strip');
+    // Sama gildir um Vista/Klára-stikuna (._vw-bar, papp 165) sem hangir neðst: hún kom aftur
+    // ~sekúndu síðar og var enn eitt „útlitið". Fer aftur neðst, samstundis.
+    const _vwBar = section.querySelector(':scope > ._vw-bar');
     section.innerHTML =
       '<div style="background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px -10px rgba(0,0,0,.6)">' +
         '<div style="font-size:13px;font-weight:800;letter-spacing:.06em;display:flex;align-items:center;gap:7px">🧾 REIKNINGUR</div>' +
@@ -1260,6 +1293,8 @@
         '</div>' +
       '</div>' +
       (unmatched.length ? '<div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f">⚠ ' + unmatched.length + ' tegund(ir) fundu ekki matchandi þjónustu í verðlista. Bæta við í <a href="#vorur" target="_blank" rel="noopener" style="color:#1d4ed8;font-weight:700">Vörur og þjónustu ↗</a>.</div>' : '');
+    if (_strip) { try { const _hd = section.firstElementChild; if (_hd) _hd.parentNode.insertBefore(_strip, _hd.nextSibling); } catch (_) {} }
+    if (_vwBar) { try { section.appendChild(_vwBar); } catch (_) {} }
     if (_aftur) { try { _aftur(); } catch (_) {} }
 
     // Wire Skoðunaraðili input.
