@@ -498,6 +498,17 @@
       .map(c => {
         const manual = arsMap[String(c.id)] || {};
         const _ars = Object.assign({}, manual);
+        // Sjálfvirkt „Í vinnslu": sett HÉR, á einum stað, svo allar tíu lestrarleiðir
+        // (röðun, síur, spjöld, borð) sjái sömu stöðu. -1 er handvirkt SLÖKKT og er
+        // virt; 0/ósett þýðir „aldrei snert" og má kvikna af ferðinni.
+        {
+          const _cy = new Date().getFullYear();
+          const _handvirkt = +manual.field_inspected_year || 0;
+          if (_handvirkt !== _cy && _handvirkt !== -1) {
+            const _fv = ferdVinnsla(c.id);
+            if (_fv) { _ars.field_inspected_year = _cy; _ars._vinnsla_sjalfv = _fv; }
+          }
+        }
         const units = unitsByFid[c.id] || [];
         _ars._units = units;   // keep the raw uttaeki rows so the modal can list + delete individual tæki
         // 10.09.2026: félag með NÚLL tæki — hvar eru tækin þá? Systurstaður sem ber þau
@@ -1273,6 +1284,28 @@
     if (((a._units) || []).length) return false;
     return Object.values(a.equipment || {}).reduce((s, v) => s + (+v || 0), 0) === 0;
   }
+  // ── SJÁLFVIRKT „Í vinnslu" (24.09.2026) ─────────────────────────────────
+  // Agnar: „kannski hægt að tengja það innan í í vinnslu merkið."
+  // Mælt sama dag: 41 fyrirtæki voru merkt Í vinnslu handvirkt, en 50 ferðir báru
+  // raunverulega vinnu — og aðeins 5 voru hvort tveggja. Handvirka hakið náði einu
+  // af hverjum tíu, því það krafðist þess að MUNA eftir að setja merkið ofan á að
+  // muna eftir úttektinni sjálfri. Tvö minni í stað eins.
+  // Nú kviknar það af verkinu: opinni ferð (inspection_trips, papp 227) sem ber hök.
+  // Opnuð síða án haka telst ekki verk í bið — annars drukknar merkið í 148 línum.
+  // `isDoneYear` slekkur áfram á öllu þegar skýrsla og reikningur eru pöruð, svo
+  // merkið getur ekki logið um klárað verk.
+  function ferdVinnsla(coId) {
+    try {
+      const m = (window.AppSettings && AppSettings.path && AppSettings.path('inspection_trips')) || {};
+      const t = m[String(coId)];
+      if (!t || t._deleted === true) return null;
+      const hok = Array.isArray(t._doneIds) ? t._doneIds.length : 0;
+      if (!hok) return null;
+      const ts = +t._ts || 0;
+      return { hok: hok, dagar: ts ? Math.floor((Date.now() - ts) / 86400000) : null };
+    } catch (_) { return null; }
+  }
+
   function isDoneYear(c, curYear) {
     const fc = (_cache.fcCur || {})[String(c.id)];
     // 2026-08-19 (Agnar #11): klarad úttektar-par (skýrsla↔reikningur paruð, per
@@ -2933,8 +2966,14 @@
       const curYear = new Date().getFullYear();
       const allMap = (window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
       const entry = allMap[String(coId)] || {};
-      const isCurrentlyMarked = +entry.field_inspected_year === curYear;
-      const newVal = isCurrentlyMarked ? 0 : curYear;   // 0 = ekki í vinnslu (deep-merge heldur 0, ólíkt delete)
+      // Lesið af SÝNDU stöðunni (c._ars), ekki hráu stillingunni — annars gerði fyrsti
+      // smellur á sjálfvirkt kveikt merki ekkert sýnilegt (hann setti bara handvirka gildið).
+      const _cRow = (_cache.list || []).find(x => +x.id === coId);
+      const isCurrentlyMarked = +(((_cRow && _cRow._ars) || entry).field_inspected_year) === curYear;
+      // -1 = handvirkt SLÖKKT. Áður 0, en 0 er ógreinanlegt frá „aldrei snert" og
+      // sjálfvirka merkið hefði kveikt aftur við næstu hleðslu — notandinn hefði ekki
+      // getað slökkt á því.
+      const newVal = isCurrentlyMarked ? -1 : curYear;
       btn.disabled = true;
       // RACE-LAGFÆRING (2026-07-15): áður var ÖLL arsskodun_customers taflan skrifuð
       // úr gömlum lestri (`allMap`) → hak á einni röð gat yfirskrifað nýlega breytingu
