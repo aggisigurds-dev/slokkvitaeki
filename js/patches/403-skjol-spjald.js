@@ -540,7 +540,10 @@
       r('.b403-lina', 'flex:1;height:1px;background:rgba(255,255,255,.12)'),
       r('.b403-band .b403-hint,.b403-kafli .b403-hint', 'margin-left:0;color:#d5dbe6'),
       r('.b403-kafli', 'position:relative;display:flex;align-items:center;gap:10px;background:' + METAL + ';border:1px solid #000;border-radius:6px;min-height:40px;padding:0 16px 0 20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 14px -8px rgba(0,0,0,.6);color:#eef1f4;margin-top:4px'),
-      r('.b403-kafli-t', 'font-family:' + MONO + ';font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#eef1f4'),
+      r('.b403-kafli-t', 'font-family:' + DISPLAY + ';font-size:18px;font-weight:800;letter-spacing:-.01em;text-transform:none;color:#eef1f4;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)'),   // 24.09: Playfair eins og .kafli .t á spjaldi C
+      r('.b403-kafli .b403-hint::before', 'content:"Samtals "'),
+      r('.b403-vidh', 'grid-template-columns:repeat(3,minmax(0,1fr))!important'),
+      r('.b403-skjal-lina .dags', 'background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px;box-shadow:inset 0 2px 5px rgba(0,0,0,.14);padding:0 8px;height:28px;display:inline-flex;align-items:center;color:#141822!important'),
       r('.b403-tengill', 'margin-left:12px;font-family:' + SANS + ';font-size:12px!important;font-weight:500!important;color:#ff9d95!important;text-decoration:none;display:inline-flex;align-items:center;gap:5px'),
       // spjöld
       r('.b403-rod3', 'display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:10px'),
