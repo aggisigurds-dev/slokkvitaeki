@@ -76,9 +76,9 @@
     r('#_ctc-add-extra', imp(SILVER_BTN) + ';height:32px!important;border-radius:7px!important;font-family:' + SANS + '!important;font-size:12px!important;font-weight:600!important;padding:0 10px!important'),
     r(D(7), 'padding-top:4px!important'),
     r(D(7) + ' > div', 'border:0!important;background:transparent!important'),
-    r(D(8) + ' > div', 'border:0!important;background:transparent!important'),
+    r(D(8) + ' > div:not(:has(> #_ctc-sum-total))', 'border:0!important;background:transparent!important'),
     r(D(8) + ' > div > div', 'min-height:36px!important;padding:4px 10px!important;font-family:' + SANS + '!important;font-size:13px!important;color:#1f2530!important;border-top:1px solid rgba(20,24,34,.1)!important'),
-    r(SEC + '._vw-bar', 'padding:8px 12px 14px!important;display:flex!important;gap:8px!important;flex-wrap:wrap!important'),
+    r(SEC + '._vw-bar', 'padding:8px 12px 14px!important;display:flex!important;gap:8px!important;flex-wrap:wrap!important;justify-content:flex-end!important;align-items:center!important'),
     r('#_vw-invinnsla', imp(METAL_BTN) + ';border-radius:9px!important;font-family:' + SANS + '!important;font-weight:600!important;flex:0 1 auto!important'),
     // ── taflan (7) í útliti C: hvítt spjald, málmhaus, feitt heiti + dauf undirlína, YFIRFERÐ sem dökk plata, reitir sem ljósir kassar ──
     r(D(7) + ' table', 'width:100%!important;border-collapse:separate!important;border-spacing:0!important;background:#fff!important;border-radius:8px!important;overflow:hidden!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)!important'),
@@ -106,7 +106,7 @@
     r(D(8) + ' > div:has(> #_ctc-sum-total)', 'margin-top:4px!important;border-radius:8px!important'),
     // neðsta röðin: „Drög þar til heimsókn er kláruð." · Vista (málmur) · Klára (grænn, full breidd)
     r(SEC + '._vw-bar::before', 'content:"Drög þar til heimsókn er kláruð.";font-family:' + MONO + ';font-size:11.5px;color:#525b6b;margin-right:auto;align-self:center'),
-    r('#_vw-invinnsla', 'height:36px!important;padding:0 14px!important;font-size:12.5px!important'),
+    r('#_vw-invinnsla', 'height:36px!important;padding:0 14px!important;font-size:12.5px!important;flex:none!important;max-width:100%!important;white-space:nowrap!important'),
     r('#_vw-finish', 'flex:1 1 100%!important;height:44px!important;font-size:13.5px!important'),
     r('#_vw-finish', 'background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)!important;border:1px solid rgba(52,168,98,.55)!important;border-radius:10px!important;color:#fff!important;font-family:' + SANS + '!important;font-weight:700!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.45)!important;flex:1 1 auto!important')
   ].join('\n');
