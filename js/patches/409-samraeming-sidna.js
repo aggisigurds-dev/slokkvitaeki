@@ -114,6 +114,11 @@
   window.addEventListener('hashchange', () => { setTimeout(tick, 200); setTimeout(tick, 1200); setTimeout(tick, 3000); });
   new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
   setInterval(tick, 2500);
+  // 24.09.2026 (hopp): titillinn á Ársskoðun stóð 43 px (60 px hár) í allt að 3,5 s eftir fyrstu teikningu og hrökk svo í
+  // Playfair 26 px (47 px) þegar fyrsta tifið kom — 14 px hopp á allri síðunni. Merkja í SAMA tifi og 153 teiknar
+  // (ars:render) og strax við hleðslu, ekki bíða vaktar/tímamælis.
+  document.addEventListener('ars:render', () => { try { tick(); } catch (_) {} });
+  try { tick(); } catch (_) {}
   schedule();
   console.log('[patch-409] samræming síðna (titlar · takkar · bönd · yfirflæði)');
 })();
