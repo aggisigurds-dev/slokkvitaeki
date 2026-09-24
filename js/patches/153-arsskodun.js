@@ -1947,15 +1947,39 @@
       const lk = sLykill(nb);
       let f = -1;
       for (let j = ai; j < A.length && j < ai + 60; j++) { if (A[j] && sLykill(A[j]) === lk) { f = j; break; } }
-      if (f < 0) { a.insertBefore(nb.cloneNode(true), A[ai] || null); continue; }
+      if (f < 0) {
+        const flutt = (nb.nodeType === 1 && (nb.id || !lk.endsWith('|'))) ? sFluttur(lk) : null;
+        if (flutt && !a.contains(flutt)) { sNotad.add(flutt); if (sFerskt(nb)) flutt.replaceWith(nb.cloneNode(true)); else sHnut(flutt, nb, html); continue; }
+        a.insertBefore(nb.cloneNode(true), A[ai] || null); continue;
+      }
       for (let j = ai; j < f; j++) { if (A[j] && !sAdskota(A[j], html)) { a.removeChild(A[j]); A[j] = null; } }
       ai = f + 1;
+      if (sNotad) sNotad.add(A[f]);
       if (sFerskt(nb)) { a.replaceChild(nb.cloneNode(true), A[f]); continue; }
       sHnut(A[f], nb, html);
     }
     for (let j = ai; j < A.length; j++) if (A[j] && A[j].parentNode === a && !sAdskota(A[j], html)) a.removeChild(A[j]);
   }
   let sHtml = '';
+  // Fluttir hnútar: 394 (og fleiri) færa hnúta sem 153 á — töfluhólfið ._ars-tblscroll, #_ars-pnr-btn, kortatakkann —
+  // inn í sín eigin hólf. Þar finnur staðbundni samruninn þá ekki og setti FERSKAN tvíbura á upprunalega staðinn
+  // (mælt 24.09: tvær töflur, 100 raðir, 2.687 px hopp eftir fyrsta síusmell). Vísitalan finnur þá hvar sem er í
+  // trénu og sameinar þá ÞAR SEM ÞEIR STANDA — 394 heldur sinni uppröðun, 153 sínu innihaldi.
+  let sIndex = null, sNotad = null;
+  function sByggIndex(root) {
+    sIndex = new Map(); sNotad = new Set();
+    root.querySelectorAll('*').forEach(function (n) {
+      const k = sLykill(n);
+      if (!n.id && k.endsWith('|')) return;                 // hvorki id né 153-klasi → ekki lyklanlegt
+      if (!sIndex.has(k)) sIndex.set(k, []);
+      sIndex.get(k).push(n);
+    });
+  }
+  function sFluttur(k) {
+    const l = sIndex && sIndex.get(k); if (!l) return null;
+    for (const n of l) { if (n.isConnected && !sNotad.has(n)) return n; }
+    return null;
+  }
   function sameinaMain(main, html) {
     sHtml = html;
     const tpl = document.createElement('template'); tpl.innerHTML = html;
@@ -1966,7 +1990,7 @@
     const sx = window.scrollX, sy = window.scrollY;
     const skrun = [];
     try { main.querySelectorAll('*').forEach(e => { if (e.scrollTop || e.scrollLeft) skrun.push([e, e.scrollTop, e.scrollLeft]); }); } catch (_) {}
-    try { sHnut(gamla, nyja, html); } catch (e) { try { console.warn('[153] sameinaMain féll — innerHTML', e); } catch (_) {} main.innerHTML = html; return; }
+    try { sByggIndex(main); sHnut(gamla, nyja, html); } catch (e) { try { console.warn('[153] sameinaMain féll — innerHTML', e); } catch (_) {} main.innerHTML = html; return; }
     skrun.forEach(([e, t, l]) => { if (e.isConnected) { if (e.scrollTop !== t) e.scrollTop = t; if (e.scrollLeft !== l) e.scrollLeft = l; } });
     if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
     // Vaktarar hinna pappanna sáu áður „allt þurrkað“ (childList á main). 394 hunsar breytingar inni í sínum eigin
@@ -2496,6 +2520,8 @@
         </div>
       </div>
     `);
+    // 24.09.2026: 187 (árs-reitir) hlustar — setur reitina inn í sama tifi, fyrir málun (sjá 187).
+    try { document.dispatchEvent(new CustomEvent('ars:render')); } catch (_) {}
 
     // Re-stamp the póst-stöðumerki (patch 295) deterministically after every
     // render. Filter/month/sort re-renders rebuild the rows, and the badge's own

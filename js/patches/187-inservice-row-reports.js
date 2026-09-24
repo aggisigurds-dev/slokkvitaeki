@@ -361,7 +361,12 @@
     try { if (window.AppSettings && AppSettings.path) uf = AppSettings.path('uttekt_files') || {}; } catch(e){}
     try { if (window.AppSettings && AppSettings.path) att = AppSettings.path('company_attachments') || {}; } catch(e){}
     const cos = (window.Companies && Companies.list) || [];
-    if (!cos.length) return;
+    // 24.09.2026 (Agnar: „skoðana-skjala boxin hverfa alltaf í refresh og allt dregst saman … vil losna við allar
+    // hreyfingar“): mælt við endurhleðslu — taflan kom 1,6 s, árs-dálkarnir 4,8 s (biðu eftir Companies.list + 1,5 s
+    // tifi); raðirnar hækkuðu þá úr 47 í 60 px og dálkabreiddir hoppuðu. Nú fara hausinn og reitirnir inn UM LEIÐ og
+    // raðir eru til — sem beinagrind (gráir 52×20 reitir í sömu stærð, data-yrcol="skel") — og fyllast á staðnum
+    // þegar gögnin lenda (sama hnút, sama breidd). Rökin um liti eru ósnert.
+    const skel = !cos.length;
     const byId = {}; cos.forEach(c => { byId[String(c.id)] = c; });
     // Fjöldi fyrirtaeki-raða per kt — kt-víði uttekt_files hlekkurinn er bara
     // ótvíræður þegar kt-in á EINN stað.
@@ -416,8 +421,8 @@
     const _curMonth = new Date().getMonth() + 1;
 
     // 2) each company row — add the four year cells at the same position
-    document.querySelectorAll(_thvingaReiti ? 'tr._ars-row' : 'tr._ars-row:not([data-yrcol])').forEach(tr => {
-      tr.setAttribute('data-yrcol','1');
+    document.querySelectorAll(_thvingaReiti ? 'tr._ars-row' : 'tr._ars-row:not([data-yrcol="1"])').forEach(tr => {
+      tr.setAttribute('data-yrcol', skel ? 'skel' : '1');
       // Reitir raðarinnar eins og þeir standa NÚNA — uppfærðir á staðnum hér að neðan í stað þess að vera endurnýjaðir.
       const _fyrriReitir = Array.prototype.slice.call(tr.querySelectorAll('td[data-yrcell]'));
       let _iReitur = 0;
@@ -560,6 +565,7 @@
         } else {
           td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(false) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Hengja skýrslu við ' + y + '">' + yy + '</a>', false);
         }
+        if (skel) { td.innerHTML = wrapBadge('<a class="_yr skel" title="Sæki skjöl…">' + yy + '</a>', false); }
         const gamall = _fyrriReitir[_iReitur++];
         if (gamall && gamall.isConnected) {
           if (gamall.innerHTML !== td.innerHTML) gamall.innerHTML = td.innerHTML;   // sami hnútur, aðeins innihald
@@ -743,6 +749,9 @@
   // marked nodes are skipped).
   setInterval(process, 1500);
   setTimeout(process, 120); setTimeout(process, 500);
+  // 24.09.2026: 153 sendir 'ars:render' um leið og sýnin er teiknuð (líka við síu/leit/röðun) — reitirnir fara inn í
+  // SAMA tifi, fyrir málun, í stað þess að bíða tifsins (allt að 1,5 s án dálkanna = raðirnar drógust saman).
+  document.addEventListener('ars:render', () => { try { process(); } catch (_) {} });
   // 21.09.2026 (afköst, mælt á lifandi): þessir fimm hleðslar fóru af stað 0,6–0,9 s eftir HVERJA síðuhleðslu á ÖLLUM
   // síðum (~12 REST-köll, þar af customer_documents 2 × 5 síður) — líka í Sölu, Þjónustuborði og öppunum þar sem enginn
   // les þá. Einu lesendurnir eru Ársskoðunar-taflan (raðir `tr._ars-row`, sjá process()) og yearInfo()/isKlarad()
