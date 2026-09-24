@@ -28,7 +28,7 @@
   var MONO = '"JetBrains Mono",ui-monospace,monospace';
   var LINA_H = 20, MAX_LINUR = 5;
 
-  function r(sel, css) { return sel.split(',').map(function (s) { return S + s.trim() + F; }).join(',') + '{' + css + '}'; }
+  function r(sel, css) { return sel.split(',').map(function (s) { var m = s.trim().match(/^(.*?)(::?(?:before|after))$/); return S + (m ? m[1] + F + m[2] : s.trim() + F); }).join(',') + '{' + css + '}'; }   // gervi-auðkennin á undan ::before (annars ógild regla)
   var css = [
     // 1) staðreyndir á eina línu
     r('.co-banner-facts', 'display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:6px!important;align-items:stretch!important'),
@@ -44,15 +44,17 @@
     r('.co-mynd-flis img,.co-mynd-flis canvas', 'height:100%!important;object-fit:cover!important'),
     // 2b) Agnar 24.09 („move 2 boxes under the 2 boxes on the right"): reitasvæðið í hægri dálkinn, undir loftmynd og
     //     tökkunum tveimur — athugasemdin fyllir vinstri dálkinn á móti.
-    r('.co-banner', 'grid-template-areas:"id id" "facts mynd" "note mynd" "note knappar" "note bupp"!important;grid-template-rows:auto auto auto auto 1fr!important;align-items:start!important'),
-    r('.co-bupp', 'grid-area:bupp!important;margin:0 12px 0 0!important'),
-    r('.b405-knappar', 'grid-area:knappar!important;margin:0 12px 0 0!important;flex-wrap:wrap!important'),
+    // 24.09 14:11 (Agnar: „to empty space on the left now … have it even, afsláttur box only 50% wide and teikningar"):
+    // reitirnir vinstra megin undir athugasemdinni, tveir í röð; loftmynd + takkar hægra megin.
+    r('.co-banner', 'grid-template-areas:"id id" "facts mynd" "note mynd" "bupp knappar"!important;grid-template-rows:auto auto auto 1fr!important;align-items:start!important'),
+    r('.co-bupp', 'grid-area:bupp!important;margin:0 0 0 12px!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;align-items:stretch!important'),
+    r('.co-bupp ._bupp-lina', 'min-width:0!important'),
+    r('.co-bupp .b411-oskrad', 'grid-column:1 / -1!important'),
+    r('.b405-knappar', 'grid-area:knappar!important;margin:0 12px 0 0!important;flex-wrap:wrap!important;align-self:start!important'),
+    r('.co-mynd', 'align-self:stretch!important'),
     r('.co-banner-right', 'grid-area:note!important;align-self:start!important'),
-    r('.co-bupp:not(._bupp-thjappad) ._bupp-lina', 'flex:1 1 100%!important'),
     // 2) reitirnir: þéttar línur hlið við hlið, tómir faldir meðan lokað er
-    r('.co-bupp', 'display:flex!important;flex-wrap:wrap!important;gap:6px!important;align-items:stretch!important;align-content:flex-start!important'),
-    r('.co-bupp ._bupp-lina', 'flex:0 1 auto!important;min-height:32px!important;padding:3px 10px!important;gap:8px!important'),
-    r('.co-bupp:not(._bupp-thjappad) ._bupp-lina', 'flex:1 1 calc(50% - 6px)!important;max-width:100%!important'),
+    r('.co-bupp ._bupp-lina', 'min-height:32px!important;padding:3px 10px!important;gap:8px!important'),
     r('.co-bupp._bupp-thjappad ._bupp-lina._bupp-tomt', 'display:none!important'),
     r('.co-bupp ._bupp-lina._bupp-tomt', 'background:transparent!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.16)!important;outline:1px dashed rgba(20,24,34,.22);outline-offset:-1px'),
     r('.co-bupp ._bupp-innri', 'justify-content:flex-start!important'),

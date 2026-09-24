@@ -34,7 +34,8 @@
   var SEC = '#_ctc-section > ';
   var D = function (n) { return SEC + 'div:nth-of-type(' + n + ')'; };   // 1 haus · 2 #_uv-strip · 3 reitir · 4 takkar · 5 texti · 6 verðlisti · 7 tafla · 8 samtölur · 9 ._vw-bar
 
-  function r(sel, css) { return sel.split(',').map(function (s) { return S + s.trim() + F; }).join(',') + '{' + css + '}'; }
+  function r(sel, css) { return sel.split(',').map(function (s) { var m = s.trim().match(/^(.*?)(::?(?:before|after))$/); return S + (m ? m[1] + F + m[2] : s.trim() + F); }).join(',') + '{' + css + '}'; }
+  function imp(css) { return css.split(';').filter(Boolean).map(function (d) { return /!important/.test(d) ? d : d + '!important'; }).join(';'); }   // !important á HVERJA eigind (129 skrifar inline)
   var css = [
     // skelin: dálkurinn sjálfur er spjaldið, hólfin tvö gegnsæ
     r('#_ctc-slot', 'display:flex!important;flex-direction:column!important;gap:0!important;background:#fff!important;border:1px solid #000!important;border-radius:14px!important;box-shadow:0 30px 60px -20px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.3)!important;overflow:hidden!important;padding:0!important'),
@@ -56,8 +57,8 @@
     r('#_uv-strip > span', 'height:22px!important;padding:0 8px!important;border-radius:3px!important;border:1px solid rgba(255,255,255,.14)!important;background:rgba(255,255,255,.1)!important;color:#eef1f4!important;font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.06em!important;text-transform:uppercase!important;display:inline-flex!important;align-items:center!important;gap:5px!important;white-space:nowrap'),
     r(D(4), 'margin:0!important;padding:4px 18px 14px!important;background:' + METAL + '!important;border-bottom:1px solid #000!important;display:flex!important;gap:8px!important;flex-wrap:wrap!important;align-items:center!important'),
     r(D(4) + ' button', 'height:36px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-weight:600!important;font-size:12.5px!important;padding:0 14px!important'),
-    r('#_ctc-skyrsla', METAL_BTN + '!important;margin-left:auto!important;order:3'),
-    r('#_ctc-vista,#_ctc-endurreikna', SILVER_BTN + '!important;color:#1f2530!important'),
+    r('#_ctc-skyrsla', imp(METAL_BTN) + ';margin-left:auto!important;order:3'),
+    r('#_ctc-vista,#_ctc-endurreikna', imp(SILVER_BTN)),
     // ── stálflöturinn ──
     r(D(3) + ',' + D(5) + ',' + D(6) + ',' + D(7) + ',' + D(8) + ',' + SEC + '._vw-bar', 'margin:0!important;background:' + STAL + '!important;background-image:' + STAL_IMG + '!important;padding:6px 12px!important'),
     r(D(3), 'padding-top:12px!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important'),
@@ -65,20 +66,48 @@
     r(D(3) + ' > label input,' + D(3) + ' > label select', LINE + '!important;height:38px!important;border:0!important;padding:0 10px!important;font-family:' + SANS + '!important;font-size:13px!important;color:#141822!important'),
     r('#_ctc-notes > div:first-child > div,#_ctc-notes > div:nth-of-type(2)', 'font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:#3a4250!important'),
     r('#_ctc-notes textarea', LINE + '!important;border:0!important;padding:8px 10px!important;font-family:' + SANS + '!important;font-size:13px!important;color:#141822!important'),
-    r('#_ctc-notes .ut-txtgen', SILVER_BTN + '!important;height:26px!important;border-radius:7px!important;font-family:' + SANS + '!important;font-size:12px!important;font-weight:600!important;padding:0 10px!important'),
+    r('#_ctc-notes .ut-txtgen', imp(SILVER_BTN) + ';height:26px!important;border-radius:7px!important;font-family:' + SANS + '!important;font-size:12px!important;font-weight:600!important;padding:0 10px!important'),
     r(D(5) + ' > label', 'font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:#3a4250!important'),
     r(D(5) + ' input', LINE + '!important;border:0!important;height:38px!important;padding:0 10px!important;font-family:' + SANS + '!important;font-size:13px!important;color:#141822!important'),
     r(D(5) + ' > div:last-child', 'font-family:' + SANS + '!important;font-size:11px!important;color:#6b7483!important'),
     r(D(6), 'display:flex!important;align-items:center!important;gap:8px!important;padding-top:8px!important'),
     r(D(6) + '::before', 'content:"Línur reiknings";font-family:' + MONO + ';font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3a4250;margin-right:auto'),
     r(D(6) + ' a', 'font-family:' + SANS + '!important;font-size:12px!important;font-weight:500!important;color:#b42318!important'),
-    r('#_ctc-add-extra', SILVER_BTN + '!important;height:32px!important;border-radius:7px!important;font-family:' + SANS + '!important;font-size:12px!important;font-weight:600!important;padding:0 10px!important'),
+    r('#_ctc-add-extra', imp(SILVER_BTN) + ';height:32px!important;border-radius:7px!important;font-family:' + SANS + '!important;font-size:12px!important;font-weight:600!important;padding:0 10px!important'),
     r(D(7), 'padding-top:4px!important'),
     r(D(7) + ' > div', 'border:0!important;background:transparent!important'),
     r(D(8) + ' > div', 'border:0!important;background:transparent!important'),
     r(D(8) + ' > div > div', 'min-height:36px!important;padding:4px 10px!important;font-family:' + SANS + '!important;font-size:13px!important;color:#1f2530!important;border-top:1px solid rgba(20,24,34,.1)!important'),
     r(SEC + '._vw-bar', 'padding:8px 12px 14px!important;display:flex!important;gap:8px!important;flex-wrap:wrap!important'),
-    r('#_vw-invinnsla', METAL_BTN + '!important;border-radius:9px!important;font-family:' + SANS + '!important;font-weight:600!important;flex:0 1 auto!important'),
+    r('#_vw-invinnsla', imp(METAL_BTN) + ';border-radius:9px!important;font-family:' + SANS + '!important;font-weight:600!important;flex:0 1 auto!important'),
+    // ── taflan (7) í útliti C: hvítt spjald, málmhaus, feitt heiti + dauf undirlína, YFIRFERÐ sem dökk plata, reitir sem ljósir kassar ──
+    r(D(7) + ' table', 'width:100%!important;border-collapse:separate!important;border-spacing:0!important;background:#fff!important;border-radius:8px!important;overflow:hidden!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)!important'),
+    r(D(7) + ' table th', 'background:' + METAL + '!important;color:#eef1f4!important;font-family:' + MONO + '!important;font-size:10px!important;font-weight:700!important;letter-spacing:.08em!important;text-transform:uppercase!important;padding:9px 5px!important;white-space:nowrap!important;text-align:left!important'),
+    r(D(7) + ' table th:nth-child(n+4),' + D(7) + ' table th:nth-child(2)', 'text-align:right!important'),
+    r(D(7) + ' table td', 'padding:6px 5px!important;border-bottom:1px solid #edf0f4!important;background:#fff!important;color:#1f2530!important;font-family:' + SANS + '!important;font-size:12.5px!important;vertical-align:middle!important'),
+    r(D(7) + ' table td:first-child', 'font-weight:700!important;font-size:13px!important;white-space:normal!important'),
+    r(D(7) + ' table td:first-child > div', 'font-weight:400!important;font-size:11px!important;color:#6b7483!important;white-space:normal!important'),
+    r(D(7) + ' table td:nth-child(2),' + D(7) + ' table td:nth-child(n+4)', 'text-align:right!important;font-family:' + MONO + '!important;font-size:12px!important'),
+    r(D(7) + ' table td:last-child', 'font-weight:700!important;white-space:nowrap!important'),
+    r(D(7) + ' table td:nth-child(3) > span', imp(METAL_BTN) + ';display:inline-flex!important;align-items:center!important;height:22px!important;padding:0 8px!important;border-radius:3px!important;font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.06em!important;text-transform:uppercase!important;white-space:nowrap!important'),
+    r(D(7) + ' table td input', imp(LINE) + ';border:0!important;height:30px!important;padding:0 6px!important;font-family:' + MONO + '!important;font-size:12px!important;text-align:center!important;color:#141822!important;width:56px!important;max-width:56px!important'),
+    r(D(7) + ' table td input._ctc-line-disc', 'width:40px!important;max-width:40px!important'),
+    r(D(7) + ' table td input + span', 'display:none!important'),
+    // Línur reiknings-röðin (6): merki vinstra megin, Verðlisti sem tengill, takkinn silfur
+    r(D(6) + '::before', 'content:"Línur reiknings";font-family:' + MONO + ';font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3a4250;margin-right:auto'),
+    r(D(6), 'justify-content:flex-start!important'),
+    // samtölur (8): Skýrslugerð/Akstur sem hvítar línur, Án vsk · Afsláttur · Vsk þétt mono, SAMTALS-bandið heldur málminum (402)
+    r(D(8), 'display:flex!important;flex-direction:column!important;gap:4px!important'),
+    r(D(8) + ' > div:not(:has(> #_ctc-sum-total))', 'min-height:32px!important;padding:2px 10px!important;border:0!important;font-family:' + SANS + '!important;font-size:12.5px!important;color:#1f2530!important;display:flex!important;align-items:center!important;gap:8px!important'),
+    r(D(8) + ' > div:has(input)', imp(LINE) + ';min-height:36px!important;justify-content:space-between!important'),
+    r(D(8) + ' > div:not(:has(input)):not(:has(> #_ctc-sum-total))', 'background:transparent!important;box-shadow:none!important;min-height:26px!important;justify-content:flex-end!important;font-family:' + MONO + '!important;font-size:12px!important;color:#525b6b!important'),
+    r(D(8) + ' > div:not(:has(input)):not(:has(> #_ctc-sum-total)) > span:last-child', 'font-weight:700!important;color:#1f2530!important'),
+    r(D(8) + ' input', imp(LINE) + ';border:0!important;height:30px!important;padding:0 6px!important;font-family:' + MONO + '!important;font-size:12.5px!important;text-align:center!important;color:#141822!important;width:64px!important;max-width:64px!important'),
+    r(D(8) + ' > div:has(> #_ctc-sum-total)', 'margin-top:4px!important;border-radius:8px!important'),
+    // neðsta röðin: „Drög þar til heimsókn er kláruð." · Vista (málmur) · Klára (grænn, full breidd)
+    r(SEC + '._vw-bar::before', 'content:"Drög þar til heimsókn er kláruð.";font-family:' + MONO + ';font-size:11.5px;color:#525b6b;margin-right:auto;align-self:center'),
+    r('#_vw-invinnsla', 'height:36px!important;padding:0 14px!important;font-size:12.5px!important'),
+    r('#_vw-finish', 'flex:1 1 100%!important;height:44px!important;font-size:13.5px!important'),
     r('#_vw-finish', 'background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)!important;border:1px solid rgba(52,168,98,.55)!important;border-radius:10px!important;color:#fff!important;font-family:' + SANS + '!important;font-weight:700!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.45)!important;flex:1 1 auto!important')
   ].join('\n');
   var st = document.createElement('style'); st.id = 'samantekt-412'; st.textContent = css;
