@@ -1063,7 +1063,14 @@
       '</div>' +
       // 2026-05-21: "+ Bæta við vöru eða þjónustu" button opens the shared
       // VorurPicker (patch 117) and appends the choice to tripState.extras.
-      '<div style="display:flex;justify-content:flex-end;margin-bottom:10px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">' +
+        // 24.09.2026 (Agnar): tengill í verðlistann sem línurnar hér að neðan eru reiknaðar úr
+        // (verð, VSK og afsláttarhópur koma öll þaðan). NÝR FLIPI viljandi — heimsóknin getur
+        // borið óvistuð línu-verð og afslætti, og sama-flipa flakk hendir þeim.
+        '<a href="#vorur" target="_blank" rel="noopener" ' +
+          'title="Opna Vörur og þjónustu í nýjum flipa — verðin í línunum hér að neðan eru reiknuð úr þeim lista" ' +
+          'style="font-size:11.5px;font-weight:700;color:#1d4ed8;text-decoration:none;white-space:nowrap;' +
+          'border:1px solid #bfdbfe;border-radius:999px;padding:4px 11px;background:#fff">📋 Verðlisti ↗</a>' +
         '<button id="_ctc-add-extra" type="button" ' +
           'style="padding:6px 12px;background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">' +
           '+ Bæta við vöru eða þjónustu</button>' +
@@ -1129,7 +1136,7 @@
           '<span id="_ctc-sum-total" style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;font-family:\'JetBrains Mono\',ui-monospace,monospace;white-space:nowrap">' + fmtKr(totalInc) + '</span>' +
         '</div>' +
       '</div>' +
-      (unmatched.length ? '<div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f">⚠ ' + unmatched.length + ' tegund(ir) fundu ekki matchandi þjónustu í verðlista. Bæta við í <b>Vörur og þjónusta</b>.</div>' : '');
+      (unmatched.length ? '<div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f">⚠ ' + unmatched.length + ' tegund(ir) fundu ekki matchandi þjónustu í verðlista. Bæta við í <a href="#vorur" target="_blank" rel="noopener" style="color:#1d4ed8;font-weight:700">Vörur og þjónustu ↗</a>.</div>' : '');
 
     // Wire Skoðunaraðili input.
     const skodunInp = section.querySelector('#_ctc-skodun');
