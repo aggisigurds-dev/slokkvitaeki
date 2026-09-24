@@ -39,7 +39,7 @@
     // 1) síðutitill + undirlína
     'html body .view ._s409-titill' + P + '{font-family:' + DISPLAY + '!important;font-weight:800!important;color:#fff!important;' + TS + '!important;letter-spacing:-.01em!important;background:transparent!important;-webkit-text-fill-color:#fff!important}',
     'html body .view ._s409-titill' + P + '{font-size:max(26px,1em)!important;line-height:1.1!important}',
-    'html body .view ._s409-undir' + P + '{color:#c9d0da!important;font-family:' + MONO + '!important;font-size:12px!important;letter-spacing:.04em!important;text-shadow:0 1px 1px rgba(0,0,0,.5)}',
+    'html body .view ._s409-undir' + P + '{color:#c9d0da!important;-webkit-text-fill-color:#c9d0da!important;font-family:' + MONO + '!important;font-size:12px!important;letter-spacing:.04em!important;text-shadow:0 1px 1px rgba(0,0,0,.5)}',
     // 2) bláir takkar → málmur (grænir/rauðir ósnertir)
     blueSel + '{background:' + METAL_BTN + '!important;border:1px solid #000!important;color:#eef1f4!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45)!important;text-shadow:0 1px 1px rgba(0,0,0,.5)!important;font-family:' + SANS + '!important;font-weight:600!important}',
     blueSel.split(',').map(s => s + ':hover').join(',') + '{filter:brightness(1.18)}',
