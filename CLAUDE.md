@@ -337,6 +337,15 @@ curl -X POST \
 - **Currency formatting**: `1.234 kr` (Icelandic uses period as thousands separator)
 - **CSV exports**: UTF-8 BOM, semicolon separator, decimal comma — Icelandic Excel locale
 - **VAT**: Default 24%. Some items 11% (food, books).
+- **BRUNASTÁL C — hönnunarkerfið ræður öllum útlitsbreytingum (Agnar 24.09.2026).** Hönnunarkerfið er
+  https://claude.ai/artifact/MfY6rBkwqEkKaSrJd6TKKj (Miðakerfi — Brunastál). Áður en síða, spjald, tafla eða
+  reitur er teiknaður eða breytt: lestu `project/README.md`, kaflann `project/brunastal-c.md` og kortið
+  `project/components/Stalspjald/README.md` úr kerfinu (Artifact read með path) og notaðu táknin þaðan — málmhaus
+  með hnoðum, stálplata, reitir (.line/.reitur), plötur, silfur/málm/rautt takkar, tafla C, Playfair-tala í haus.
+  Ekkert nýtt útlit, engir bláir takkar, engin emoji. Reglurnar sjö um hopp í kaflanum „Stöðugt viðmót" þar
+  gilda um hverja breytingu og eru mældar (layout-shift + rammi fyrir ramma í Playwright 1600 px) áður en sagt er
+  „búið". Þegar nýr hlutur verður til í þessu útliti fer hann líka inn í kerfið (kafli, kort, tákn) í sömu lotu —
+  ein skrá í hverju publish-kalli, indexið síðast.
 - **STÖÐUGT VIÐMÓT — regla frá 23.09.2026** (Agnar: „hindra hopp þegar maður er að ýta á eitthvað eða stimpla inn"):
   teiknir þú lista með `rot.innerHTML = …` þá HVERFUR allt sem hékk í gamla trénu — skrunstaðan (líka lárétta skrunið
   á síma), fókusinn í reitnum sem verið er að skrifa í og textavalið. Notaðu hjálparann `js/patches/388-stodugt-vidmot.js`:
