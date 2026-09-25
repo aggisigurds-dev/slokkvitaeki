@@ -29,8 +29,8 @@
   window.__serverdPakkar418 = true;
 
   var PAKKAR = {
-    ars: { id: '_th-pk-ars', source: 'uttekt', takn: '🧯', heiti: 'Slökkvitækjaþjónusta',
-      titill: 'Línur úr síðustu ársskoðunarreikningum — yfirferðir, hleðslur, skýrslugerð, akstur' },
+    ars: { id: '_th-pk-ars', source: 'uttekt', takn: '🧯', heiti: 'Slökkvitækjaþjónusta', radaEftirTegund: true,
+      titill: 'Línur úr síðustu ársskoðunarreikningum — hleðsla/yfirferð, reykskynjarar, brunaslöngur, skýrslugerð, akstur' },
     bk:  { id: '_th-pk-bk',  source: 'brunakerfi', takn: '🚨', heiti: 'Brunakerfisþjónusta',
       titill: 'Línur úr síðustu brunakerfisreikningum — skoðun stöðvar, skynjara, bjalla, skýrsla' }
   };
@@ -96,30 +96,68 @@
     '</tr>';
   }
 
-  function setjaInn(tbody, pakki) {
+  // Röðin innan slökkvitækjaþjónustunnar (Agnar 25.09): „hleðslu/yfirferð fyrst, reykskynjara,
+  // brunaslöngu, skýrslugerð og akstur í lokin". Brunakerfið heldur röð reikningsins.
+  function rod(n) {
+    var s = norm(n);
+    if (/akstur/.test(s)) return 5;
+    if (/skýrslu|skyrslu/.test(s)) return 4;
+    if (/brunaslang|brunaslöng|slöngu|slongu/.test(s)) return 3;
+    if (/reykskynj|hitaskynj/.test(s)) return 2;
+    if (/hleðsl|hledsl|yfirfer/.test(s)) return 0;
+    return 1;
+  }
+  // Fyrirsagnarlína — sama merking og rowHtml() í 201 fyrir { heading:true } (data-heading + [data-f="h"]).
+  function fyrirsognHtml(h) {
+    return '<tr data-i="0" data-primary="1" data-heading="1" draggable="true" style="background:var(--th-tint)">' +
+      '<td style="text-align:center;padding:4px 6px"><span class="_th-grip" title="Draga til" style="cursor:grab;color:#94a3b8;font-size:13px;user-select:none;padding:0 3px;line-height:1">⋮⋮</span></td>' +
+      '<td colspan="4" style="padding:4px 6px"><input data-f="h" type="text" value="' + esc(h) + '" placeholder="Fyrirsögn flokks" style="width:100%;padding:6px 8px;border:1px solid var(--th-tintb);border-radius:6px;font:inherit;font-size:12.5px;font-weight:800;color:var(--th-dark);background:#fff"></td>' +
+      '<td style="padding:4px 6px"><button data-del type="button" style="border:none;background:#fef2f2;color:#dc2626;border-radius:6px;width:26px;height:26px;cursor:pointer">×</button></td></tr>';
+  }
+  function nyRod(html) { var t = document.createElement('tbody'); t.innerHTML = html; return t.firstElementChild; }
+
+  function setjaInn(tbody, pakki, P) {
     var radir = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
-    var til = {};
-    radir.forEach(function (tr) { var inp = tr.querySelector('[data-f="n"]'); if (inp) til[norm(inp.value)] = tr; });
-    var fremst = document.createDocumentFragment();
-    var nyjar = 0, hakadar = 0;
-    pakki.linur.forEach(function (l) {
-      var tr = til[norm(l.n)];
+    // Aðeins FALDAR „aðrar vörur" eru dregnar inn í flokkinn; sýnileg lína (t.d. nýtt tæki undir
+    // „Ný tæki") stendur þar sem hún er — „ekki láta þetta blandast saman".
+    var faldar = {}, synilegar = {};
+    radir.forEach(function (tr) {
+      if (tr.dataset.heading === '1') return;
+      var inp = tr.querySelector('[data-f="n"]'); if (!inp) return;
+      (tr.classList.contains('_th-other') ? faldar : synilegar)[norm(inp.value)] = tr;
+    });
+    var linur = pakki.linur.slice();
+    if (P.radaEftirTegund) linur.sort(function (a, b) { return rod(a.n) - rod(b.n); });   // stöðug röðun → pakkaröðin helst innan hóps
+    // Flokkurinn: fyrirsögn sem þegar er til með sama heiti er endurnýtt, annars ný.
+    var fyrirs = radir.find(function (tr) { return tr.dataset.heading === '1' && norm((tr.querySelector('[data-f="h"]') || {}).value) === norm(P.heiti); });
+    var blokk = document.createDocumentFragment();
+    if (!fyrirs) { fyrirs = nyRod(fyrirsognHtml(P.heiti)); blokk.appendChild(fyrirs); }
+    var nyjar = 0, hakadar = 0, sleppt = 0;
+    linur.forEach(function (l) {
+      var k = norm(l.n);
+      if (synilegar[k]) { sleppt++; return; }
+      var tr = faldar[k];
       if (tr) {
-        // Þegar til (oftast falin „önnur vara"): haka, gera að aðallínu, draga upp.
         var inc = tr.querySelector('[data-f="inc"]'); if (inc && !inc.checked) { inc.checked = true; hakadar++; }
         tr.classList.remove('_th-other'); tr.dataset.primary = '1'; tr.style.display = '';
-        fremst.appendChild(tr);
-      } else {
-        var tmp = document.createElement('tbody'); tmp.innerHTML = rodHtml(l, 0);
-        fremst.appendChild(tmp.firstElementChild); nyjar++;
-      }
+        blokk.appendChild(tr);
+      } else { blokk.appendChild(nyRod(rodHtml(l, 0))); nyjar++; }
     });
-    tbody.insertBefore(fremst, tbody.firstChild);
+    if (fyrirs.parentNode === tbody) {
+      // Fyrirsögnin er þegar í töflunni: línurnar fara aftast í HENNAR flokk (fram að næstu fyrirsögn/földu línu).
+      var eftir = fyrirs.nextElementSibling;
+      while (eftir && eftir.dataset.heading !== '1' && !eftir.classList.contains('_th-other')) eftir = eftir.nextElementSibling;
+      tbody.insertBefore(blokk, eftir);
+    } else {
+      // Ný blokk: aftast í sýnilega hlutann, á undan földu „öðrum vörum" — „Ný tæki" standa efst.
+      var fyrstaFalda = radir.find(function (tr) { return tr.classList.contains('_th-other') && tr.parentNode === tbody; }) || null;
+      tbody.insertBefore(blokk, fyrstaFalda);
+    }
     // data-i = DOM-sætið (eyða-takkinn í 201 notar það)
     Array.prototype.forEach.call(tbody.querySelectorAll('tr'), function (tr, i) { tr.dataset.i = String(i); });
     // recompute() í 201 hlustar á input-atburði á glugganum
     var einhver = tbody.querySelector('input'); if (einhver) einhver.dispatchEvent(new Event('input', { bubbles: true }));
-    return { nyjar: nyjar, hakadar: hakadar };
+    return { nyjar: nyjar, hakadar: hakadar, sleppt: sleppt };
   }
 
   function segja(ov, txt, villa) {

@@ -265,7 +265,12 @@
     const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO(), skyring: (o && o.skyring) || '' });
     let lines;
     if (o && o.lines && o.lines.length) lines = o.lines.map(l => ({ ...l, primary: true }));
-    else { const v = await loadVorur(); lines = v.map(p => ({ n: p.lysing, full: Math.round((p.verd || 0) * (1 + VSK)), afsl: 0, include: false, primary: p.primary })); }
+    else {
+      const v = await loadVorur(); lines = v.map(p => ({ n: p.lysing, full: Math.round((p.verd || 0) * (1 + VSK)), afsl: 0, include: false, primary: p.primary }));
+      // 25.09 (Agnar): „Vill ný slökkvitæki efst almennt … fyrirsögn ný tæki" — sjálfgefin fyrirsögn
+      // yfir aðaltækjunum; pakkarnir (418) bæta sínum flokkum við fyrir neðan.
+      if (lines.some(l => l.primary)) lines.unshift({ heading: true, h: 'Ný tæki', include: true, primary: true });
+    }
     if (!lines.length) lines = [{ n: '', full: 0, afsl: 0, include: true, primary: true }];
     let showOthers = false;
     const inSt = 'padding:6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right';
@@ -330,8 +335,45 @@
     ov.addEventListener('change', e => { if (e.target.matches && e.target.matches('[data-f="inc"]')) recompute(); });
     ov.addEventListener('blur', e => { if (e.target.matches && e.target.matches('[data-f="full"]')) e.target.value = grp(pn(e.target.value)); }, true);
     tbody.addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { lines = collect(); lines.splice(+b.closest('tr').dataset.i, 1); draw(); } });
-    ov.querySelector('#_th-addrow').onclick = () => { lines = collect(); lines.push({ n: '', full: 0, afsl: 0, include: true, primary: true }); draw(); };
+    // Ný lína / ný fyrirsögn fara aftast í SÝNILEGA hlutann — á undan földu „öðrum vörum".
+    function fyrstaFalda(ls) { const i = ls.findIndex(l => !l.heading && !l.primary); return i < 0 ? ls.length : i; }
+    ov.querySelector('#_th-addrow').onclick = () => { lines = collect(); lines.splice(fyrstaFalda(lines), 0, { n: '', full: 0, afsl: 0, include: true, primary: true }); draw(); };
+    const addRowBtn = ov.querySelector('#_th-addrow');
+    const addHead = document.createElement('button');
+    addHead.id = '_th-addhead'; addHead.type = 'button'; addHead.textContent = '+ Fyrirsögn';
+    addHead.title = 'Fyrirsögn flokks — prentast sem kaflahaus á verðlistablaðinu';
+    addHead.style.cssText = 'padding:7px 12px;border:1px dashed var(--th-dark);border-radius:7px;background:#fff;color:var(--th-dark);cursor:pointer;font:inherit;font-size:12px;font-weight:700';
+    addRowBtn.parentNode.insertBefore(addHead, addRowBtn.nextSibling);
+    addHead.onclick = () => {
+      lines = collect(); const at = fyrstaFalda(lines);
+      lines.splice(at, 0, { heading: true, h: '', include: true, primary: true }); draw();
+      const inp = tbody.querySelectorAll('tr')[at]?.querySelector('[data-f="h"]'); if (inp) inp.focus();
+    };
     ov.querySelector('#_th-others').onclick = () => { showOthers = !showOthers; applyOtherVis(); };
+    // ── Draga til (HTML5 DnD á gripinu) ──
+    let dragTr = null, gripDown = false;
+    tbody.addEventListener('mousedown', e => { gripDown = !!(e.target.closest && e.target.closest('._th-grip')); });
+    tbody.addEventListener('dragstart', e => {
+      const tr = e.target.closest && e.target.closest('tr');
+      if (!tr || !gripDown) { e.preventDefault(); return; }   // aðeins af gripinu — annars stelur það textavali í reitunum
+      dragTr = tr; tr.style.opacity = '.45';
+      try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', tr.dataset.i || ''); } catch (_) {}
+    });
+    tbody.addEventListener('dragover', e => {
+      if (!dragTr) return; e.preventDefault();
+      const tr = e.target.closest && e.target.closest('tr'); if (!tr || tr === dragTr) return;
+      const r = tr.getBoundingClientRect(); const undir = e.clientY > r.top + r.height / 2;
+      tbody.querySelectorAll('tr').forEach(x => { x.style.boxShadow = ''; });
+      tr.style.boxShadow = undir ? 'inset 0 -2px 0 var(--th-primary)' : 'inset 0 2px 0 var(--th-primary)';
+      tr.dataset.dropUndir = undir ? '1' : '0';
+    });
+    tbody.addEventListener('drop', e => {
+      if (!dragTr) return; e.preventDefault();
+      const tr = e.target.closest && e.target.closest('tr');
+      if (tr && tr !== dragTr) { if (tr.dataset.dropUndir === '1') tr.parentNode.insertBefore(dragTr, tr.nextSibling); else tr.parentNode.insertBefore(dragTr, tr); }
+      lines = collect(); dragTr = null; gripDown = false; draw();
+    });
+    tbody.addEventListener('dragend', () => { if (dragTr) dragTr.style.opacity = ''; dragTr = null; gripDown = false; tbody.querySelectorAll('tr').forEach(x => { x.style.boxShadow = ''; delete x.dataset.dropUndir; }); });
     draw();
     function build() {
       // Fyrirsögn fylgir aðeins með eigi hún hakaða línu undir sér (tóm fyrirsögn prentast ekki).
@@ -350,7 +392,8 @@
   }
   function serverdHtml(o) {
     const tp = theme().primary;
-    const rows = o.lines.map(l => { const fin = l.full * (1 - (l.afsl || 0) / 100); return '<tr>' +
+    const rows = o.lines.map(l => { if (l.heading) return '<tr><td colspan="4" style="padding:14px 9px 5px;font-size:11.5px;font-weight:800;color:' + tp + ';text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid ' + tp + '">' + esc(l.h) + '</td></tr>';
+      const fin = l.full * (1 - (l.afsl || 0) / 100); return '<tr>' +
       '<td style="padding:7px 9px;font-size:12px;border-bottom:1px solid #f1f5f9">' + esc(l.n) + '</td>' +
       '<td style="padding:7px 9px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#94a3b8;text-decoration:' + (l.afsl ? 'line-through' : 'none') + '">' + fmtKr(l.full) + '</td>' +
       '<td style="padding:7px 9px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9">' + (l.afsl ? l.afsl + '%' : '—') + '</td>' +
@@ -512,7 +555,7 @@
   }
   function rowFor(f) {
     const tm = TYPE_META[f.type] || TYPE_META.slokkvitaeki;
-    const sub = f.type === 'samningur' ? esc(f.thjonusta || '') : ((f.lines ? f.lines.length : 0) + (f.type === 'serverd' ? ' tæki' : ' liðir'));
+    const sub = f.type === 'samningur' ? esc(f.thjonusta || '') : ((f.lines ? f.lines.filter(l => !l.heading).length : 0) + (f.type === 'serverd' ? ' tæki' : ' liðir'));
     const amount = f.type === 'serverd' ? '<span style="color:#0369a1;font-size:12px">sérverð</span>' : fmtKr(f.m_vsk);
     return `<div class="th-row" data-id="${esc(f.id)}" data-type="${f.type}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid #f1f5f9">
       <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${tm.chip};color:${tm.col};white-space:nowrap">${tm.icon} ${tm.label}</span>
