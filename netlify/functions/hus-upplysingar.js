@@ -80,6 +80,39 @@ const json = (body, status = 200) =>
 // Sama heimilisfang er flett upp í hvert sinn sem bannerinn teiknast — skyndiminni
 // í fallinu sjálfu (lifir meðan Netlify heldur tilvikinu vakandi).
 const minni = new Map();
+
+// 25.09.2026 — VARANLEGT skyndiminni ofan á Map-ið að ofan.
+// Map-ið lifir aðeins meðan Netlify heldur tilvikinu vakandi: kalt tilvik þýddi fulla
+// uppflettingu í Staðfangaskrá + teikningasöfn. Mælt á fyrirtækjasíðu: 1.668 ms, hægasta
+// kallið á síðunni. Og hver vél borgaði sitt, því Map-ið er per tilvik.
+// Nú les fallið `hus_upplysingar_cache` fyrst; fyrsta vélin skrifar, hinar fá frítt.
+// Sama mynstur og geocode.js hefur notað fyrir geocode_cache.
+// Bregðist taflan (vantar, RLS, net) er þagað og farið í upprunann — ekkert brotnar.
+const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
+const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
+const UTGAFA = '2026-09-14';   // verður að fylgja v.utgafa neðar; breytist hún detta eldri raðir út
+
+async function lesaVaranlegt(lykill) {
+  try {
+    const u = `${SB_URL}/rest/v1/hus_upplysingar_cache?lykill=eq.${encodeURIComponent(lykill)}`
+            + `&utgafa=eq.${encodeURIComponent(UTGAFA)}&select=svar&limit=1`;
+    const r = await fetch(u, { headers: SB_HAUS, signal: AbortSignal.timeout(2500) });
+    if (!r.ok) return null;
+    const radir = await r.json();
+    return (Array.isArray(radir) && radir.length && radir[0].svar) ? radir[0].svar : null;
+  } catch (_) { return null; }
+}
+
+function skrifaVaranlegt(lykill, heimilisfang, svar) {
+  try {
+    fetch(`${SB_URL}/rest/v1/hus_upplysingar_cache?on_conflict=lykill`, {
+      method: 'POST',
+      headers: { ...SB_HAUS, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ lykill, heimilisfang, utgafa: UTGAFA, svar, uppfaert: new Date().toISOString() }),
+    }).catch(() => {});          // svarið bíður ALDREI eftir skrifinu
+  } catch (_) {}
+}
 const MINNI_MS = 10 * 60 * 1000;
 const FRESTUR_MS = 8500;
 /** Tímamerki sem virðir sameiginlega frestinn: minnst 800 ms, mest það sem eftir er. */
@@ -322,10 +355,16 @@ export default async (req) => {
   const lykill = heimilisfang.toLowerCase();
   const gamalt = minni.get(lykill);
   if (gamalt && Date.now() - gamalt.t < MINNI_MS) return json(gamalt.v);
+  // varanlega skyndiminnið: lifir kalt tilvik og er sameiginlegt öllum vélum
+  const geymt = await lesaVaranlegt(lykill);
+  if (geymt) { minni.set(lykill, { t: Date.now(), v: geymt }); return json(geymt); }
   try {
     const v = await husUpplysingar(heimilisfang);
-    v.utgafa = '2026-09-14';
-    if ((!v.error || v.eign) && !v.reynaAftur) minni.set(lykill, { t: Date.now(), v });
+    v.utgafa = UTGAFA;
+    if ((!v.error || v.eign) && !v.reynaAftur) {
+      minni.set(lykill, { t: Date.now(), v });
+      skrifaVaranlegt(lykill, heimilisfang, v);   // aðeins raunveruleg svör eru geymd
+    }
     return json(v, v.ogilt ? 400 : v.error && !v.eign ? 404 : 200);
   } catch (e) {
     return json({ error: 'Uppfletting mistókst: ' + (e && e.message ? e.message : e) }, 502);
