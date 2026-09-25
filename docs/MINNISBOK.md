@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-09-25 09:40 · 654 virkar staðreyndir
+Sótt 2026-09-25 10:02 · 655 virkar staðreyndir
 
 ---
 
@@ -80,7 +80,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 | Efni | Fjöldi |
 |---|---:|
-| [kerfi](#kerfi) | 69 |
+| [kerfi](#kerfi) | 70 |
 | [skjol](#skjol) | 32 |
 | [sweep](#sweep) | 28 |
 | [taeki](#taeki) | 25 |
@@ -103,6 +103,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kerfi
 
+- **Ársskoðun 25.09.2026 lokastaða: 414 (spjöld A með hnoðum/glóð), 415 (tafla J), 416 (dökkt .sida-spjald, 2000 px). Bílstjóri-takkinn er staðsettur með mældri --b414-bil/-r úr haus-röðinni því spjaldið er mjórra en sýnin. Næst (Agnar: seinni): sömu spjöld á Brunakerfis SKOÐUN (ekki Brunakerfisþjónusta), Slökkvikerfis skoðun (_sk-kpis) og Allir viðskiptavinir (157, engin KPI í dag).**
+  <br><sub>2026-09-25 · slokkvitaeki · claude-code · claude-code</sub>
 - **Ársskoðun-síur hlóðu töflum ofan á töflur (25.09.2026, lagað í 153): sameinaMain samruninn (24.09) lykilar hnúta á tag|id|data-*|153-klasi. 341 setur id=arsskodun-wrap á ._ars-tblscroll sem 153 á → lykillinn stemmdi aldrei við nýja hólfið, gamla var kallað aðskotahnútur (id ekki í nýja HTML) og ferskur tvíburi settur inn í HVERRI teikningu: 2 töflur við hleðslu, 3 eftir Eftir, 4 eftir mánuð (50+50+39 raðir skreyttar af 187/267/313) — þetta var hægagangurinn. Regla: id sem kemur ekki fyrir í nýja HTML-inu telur hvorki í lykli né gerir hnút að aðskotahnút sé 153-klasi á honum; aðskota-id fær að standa yfir samruna. Líka: fluttur hnútur er sameinaður þar sem hann stendur nema hann sé BEINT barn (contains() lýgur þegar hólf annars pappa situr inni í umgjörðinni).**
   <br><sub>2026-09-25 · slokkvitaeki · claude-code · claude-code</sub>
 - **Ársskoðun efri hlutinn (414-ars-efri-a.js, 25.09.2026): teiknar efri hlutann í Brunastál C (hönnun A, spjald J í hönnunarkerfinu) úr tölum sem 153/394 skrifa í falin hólf (._kpi-n/-s, .bstal-hero, .arsm-strip .arsm-b) — engin sókn, engin tvöföld eign á hnút; smellir kalla á upprunalegu takkana. Síaður hamur lesinn eftir merkjum („af N á borðinu,**
@@ -181,9 +183,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
 - **AppSettings.load() (85) samnýtir samtíma sóknir og endurnýtir sókn sem lauk fyrir < 2 s, með kynslóðavörn: _kynslod hækkar við hverja vistun og sókn frá því fyrir vistun er aldrei samnýtt; sókn sem vistun lenti ofan í sækir aftur. Stakir lyklar úr blobbnum skal lesa með JSON-slóð: select('x:settings->lykill') — ekki sækja allan 1,6 MB blobbinn.**
   <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
-- **Afkastalota 21.09.2026: REST-köll við ræsingu á #sala fóru úr 133 í 80 á fyrstu 28 sek. Rótin að „uttaeki sótt 48×" var 304-fjarmal-live sem kallaði Arsskodun.loadAll() 20 s eftir hverja síðuhleðslu (athugasemdin sagði ranglega „cache-uð"); nú notar það nýsótt mengi og sleppir ef fjarmal_live.updated_at er yngra en 25 mín. FjarmalLive.publish(true) þvingar.**
-  <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
-- _…og 29 til viðbótar í töflunni._
+- _…og 30 til viðbótar í töflunni._
 
 ### skjol
 
@@ -1509,11 +1509,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### brunavarnir
 
-- **Við aðalrafmagnstöfluna í 0109 inntaksrými á að vera 5 kg KOLSÝRA, ekki léttvatn — brunahönnunin tilgreinir það sérstaklega**
-  <br>Orðrétt úr greinargerðinni: „Slökkvitæki skv. ÍST EN 3 skulu vera skv. teikningum, t.d. 6 L léttvatn og 5 kg kolsýra við aðalrafmagnstöflu." Táknið rafm.inntak-Tafla á grunnmynd 1. hæðar er þessi punktur. Undirtöflurnar í hverju bili fá léttvatn.
-  <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
 - **Reyndarteikningin merkir sjálf sl.t.-punktana: 11 á 1. hæð — en 0102 og 0104 bera aðeins eitt tæki hvort og ná ekki 26A**
   <br>Talning af grunnmynd 1. hæðar: 0101=3 · 0102=1 · 0103=2 · 0104=1 · 0105=3 · 0109=1 (kolsýran). Geymsluloftin 0106/0107/0108 bera eitt hvert til viðbótar. Eitt 6 L léttvatn er 13A eða 21A — hvorugt nær 26A eitt og sér, svo 0102 og 0104 þurfa annað tæki.
+  <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
+- **Við aðalrafmagnstöfluna í 0109 inntaksrými á að vera 5 kg KOLSÝRA, ekki léttvatn — brunahönnunin tilgreinir það sérstaklega**
+  <br>Orðrétt úr greinargerðinni: „Slökkvitæki skv. ÍST EN 3 skulu vera skv. teikningum, t.d. 6 L léttvatn og 5 kg kolsýra við aðalrafmagnstöflu." Táknið rafm.inntak-Tafla á grunnmynd 1. hæðar er þessi punktur. Undirtöflurnar í hverju bili fá léttvatn.
   <br><sub>2026-09-02 · kunni · teikning · claude-code</sub>
 - **Álhella 7 er SEX aðskilin EI60-brunahólf — slökkvitækjakrafan (26A lágmark) reiknast á hvert hólf fyrir sig, ekki á hæðina í heild**
   <br>Hólfin skv. brunavarnatexta Brunahönnunar slf (mál 16-179, uppf. 19.08.2026): 0101 verkstæði + milliloft 0106 ~340 m2 · 0102 geymsla 81 · 0103 verkstæði 79 · 0104 geymsla + milliloft 0107 ~85 · 0105 verkstæði + milliloft 0108 ~425 · 0109 inntaksrými 11. Hver leigjandi er á bak við læstan EI60-vegg o
