@@ -146,7 +146,42 @@
       // þeim: sími í Sími-ham — haldið ykkur frá. Skjár/Tafla (ars-wide-table) óbreytt.
       document.documentElement.classList.toggle('ars-simi-phone', !wantsWide(mode) && isPhoneLike());
     } catch (_) {}
+    simiFit(mode);
   }
+
+  /* ── SÍMI-HAMUR Í RAUNSTÆRÐ (25.09.2026, Agnar: „Still the fucking shit") ──────────
+     Chrome á S26 keyrir síðuna í Tölvusíðu-ham: layout-viewport ≈ 980 CSS-px á 411 dp
+     skjá (353 mældi það 06.09), og viewport-meta ræður engu um það. Sími-listinn (330,
+     hannaður fyrir ~412 px) teiknaðist því á 0,42 — pínulítill með hliðarstiku og borða.
+     Sama lausn og 353 notar á krómið: mæla hlutfallið layout/skjár og setja CSS `zoom`
+     á EFNIÐ (#ars-main) í Sími-ham. 980/2,38 ≈ 412 px → listinn í þeirri breidd sem
+     hann var hannaður fyrir. Venjulegur sími (hlutfall 1) og borðtölva: ekkert gerist.
+     Skjár/Tafla eiga sinn zoom (töfluna) — hér er aðeins Sími. Sem CSS-regla með
+     breytu á html, svo endurteikning 153 týni henni ekki. */
+  function simiHlutfall() {
+    try {
+      if (window.AppKrom && typeof window.AppKrom.auto === 'function') return +window.AppKrom.auto() || 1;
+      const sw = screen.width || 0, iw = window.innerWidth || 0;
+      return sw > 0 && iw > 0 ? Math.min(3, iw / sw) : 1;
+    } catch (_) { return 1; }
+  }
+  function simiFit(mode) {
+    const h = document.documentElement;
+    const r = simiHlutfall();
+    const on = mode === 'mobile' && isPhoneLike() && r >= 1.3;
+    try {
+      if (!document.getElementById('_ars-simi-fit-css')) {
+        const s = document.createElement('style');
+        s.id = '_ars-simi-fit-css';
+        s.textContent = 'html.ars-simi-fit #view-arsskodun #ars-main{zoom:var(--ars-simi-fit,1)}';
+        (document.head || h).appendChild(s);
+      }
+      h.classList.toggle('ars-simi-fit', on);
+      if (on) h.style.setProperty('--ars-simi-fit', String(Math.round(r * 100) / 100));
+      else h.style.removeProperty('--ars-simi-fit');
+    } catch (_) {}
+  }
+  window.addEventListener('resize', () => { try { simiFit(get()); } catch (_) {} });
 
   /* ── CSS zoom fallback (iOS hunsa minimum-scale < ~0.25) ───────────────── */
   let cssScale = 1;
