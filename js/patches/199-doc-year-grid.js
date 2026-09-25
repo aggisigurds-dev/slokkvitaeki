@@ -945,6 +945,36 @@
     return '<button type="button" class="sk-month-pill'+(info.manual?' manual':'')+'" data-month-edit="1" title="'+esc('Skoðunarmánuður — '+src+' — smelltu til að breyta')+'">📅 '+esc(lbl)+'</button>';
   }
 
+  // 25.09.2026 (Agnar: „ég var að útbúa þjónustusamning fyrir norðnorðvestur ehf en hann
+  // kemur ekki inn þarna … það vill ekkert bindast við þennan lið").
+  // Samningsspjaldið les útfyllt skjöl úr DocTemplates.listFilled(), sem kemur úr
+  // AppSettings. Spjaldið var teiknað ÁÐUR en sá listi var kominn frá þjóninum og
+  // teiknaðist aldrei aftur — samningurinn stóð því sem VANTAR þótt hann væri til.
+  // Mælt 25.09: nafn, kennitala og hök pössuðu öll; það vantaði bara gögnin á
+  // teiknistundu. Full endurteikning sýndi hann strax („Í GILDI").
+  // Lagfæringin er EIN endurteikning: aðeins þegar listinn var tómur við teikningu og
+  // fyllist síðar. Ekki hlustun sem teiknar við hverja stillingabreytingu — það væri
+  // endurteikningastormur á síðu sem er þegar viðkvæm fyrir hoppi.
+  var _beidSamninga = new WeakSet();
+  function _utfyllt() {
+    try { return (window.DocTemplates && DocTemplates.listFilled && DocTemplates.listFilled()) || []; }
+    catch (_) { return []; }
+  }
+  function _bidaEftirSamningum(section, coId) {
+    if (!section || _beidSamninga.has(section)) return;
+    if (_utfyllt().length) return;                       // gögnin þegar komin
+    if (!(window.AppSettings && typeof AppSettings.onChange === 'function')) return;
+    _beidSamninga.add(section);                          // aðeins einu sinni per spjald
+    var buid = false;
+    AppSettings.onChange(function () {
+      if (buid) return;
+      if (!_utfyllt().length) return;                    // enn tómt — bíða áfram
+      if (!section.isConnected) { buid = true; return; } // spjaldið farið; ekkert að gera
+      buid = true;
+      try { render(section, coId); } catch (e) { console.warn('[199] endurteikning eftir samningum', e); }
+    });
+  }
+
   async function render(section, coId){
     // Núllað per fyrirtæki — annars bærist bilun frá einu kortinu yfir á næsta.
     _sokn = [];
@@ -1245,6 +1275,7 @@
       return '<div class="sk-samn-card '+KL+'">'+IK+' <b>Samningur — '+HT+'</b>'+chips+yrs+pill+'</div>';
     }
     var samnHtml = samnCard('uttekt') + samnCard('brunakerfi') + (hasSlk ? samnCard('slokkvikerfi') : '');
+    _bidaEftirSamningum(section, coId);   // teiknaðist spjaldið án útfylltra skjala? teikna einu sinni þegar þau lenda
 
     // ── per-year × per-service bundle cards (verkefnalisti mockup, 2026-08-05) ──
     // The newest year is expanded into two side-by-side service cards (🧯
