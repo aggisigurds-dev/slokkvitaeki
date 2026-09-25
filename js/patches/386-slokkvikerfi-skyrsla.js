@@ -586,7 +586,10 @@
   async function erIBrunakerfi(fid) {
     try {
       const AS = window.AppSettings; let m = AS && AS.path ? AS.path('brunakerfi_customers') : null;
-      if (m && m[fid] && typeof m[fid] === 'object') return true;
+      // 25.09.2026: krafan um hlut felldi út eldra `true`-sniðið (188, 585) — sama
+      // villa og í 388. Hér bjargaði skjala-uppflettingin neðar þeim sem ÁTTU skýrslu;
+      // félag á listanum án skýrslu hefði samt misst 🚨-flipann. Tilvist er nóg.
+      if (m && m[fid]) return true;
       const sb = SB(); if (!sb) return false;
       const r = await sb.from('customer_documents').select('id').eq('fyrirtaeki_id', fid).eq('doc_type', 'brunakerfi').limit(1);
       return !!(r && r.data && r.data.length);
