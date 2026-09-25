@@ -341,6 +341,13 @@
       MQ+'#bstal-banner .bb-face > *{display:none}',
       MQ+'#bstal-banner .bb-face > .bb-logo{display:block}',
       MQ+'#bstal-banner .bb-face > .bb-mini{display:flex}',
+      // Stílstjóra-takkinn (262) er þvingaður sýnilegur með display:inline-flex
+      // !important og forskrift upp á ÞRJÚ auðkenni (:not(#_p262a)-bragðið), því
+      // þjöppunarlögin 337/334/314 átu hann áður. Samanbrotið hér er hins vegar
+      // ÁSETNINGUR notandans, ekki þjöppun — svo hann víkur með, og þá þarf jafn
+      // háa forskrift á móti. Sjá [CSS override specificity].
+      MQ+'#bstal-banner .bb-face > #_pe-btn:not(#_p230a):not(#_p230b)'
+        +'{display:none!important}',
       MQ+'#bstal-banner .bb-word,'+MQ+'#bstal-banner .bb-bolt,'
         +MQ+'#bstal-ember{display:none}',
       MQ+'#bstal-banner .bb-logo{padding:0;margin:0}',
