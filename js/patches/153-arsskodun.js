@@ -2005,7 +2005,12 @@
       for (let j = ai; j < A.length && j < ai + 60; j++) { if (A[j] && sLykill(A[j]) === lk) { f = j; break; } }
       if (f < 0) {
         const flutt = (nb.nodeType === 1 && (nb.id || !lk.endsWith('|'))) ? sFluttur(lk) : null;
-        if (flutt && !a.contains(flutt)) { sNotad.add(flutt); if (sFerskt(nb)) flutt.replaceWith(nb.cloneNode(true)); else sHnut(flutt, nb, html); continue; }
+        // 25.09.2026 (mælt á lifandi síðu, Agnar: „ýti á Eftir og september … allt hitt fyrir neðan, hrikalega hægt"):
+        // skilyrðið var !a.contains(flutt). 394 setur hólfið sitt (.thm) INN Í 153-umgjörðina, svo flutta taflan er
+        // afkomandi a þótt hún sé ekki beint barn — contains() sagði „til staðar" og ferskur tvíburi var settur inn
+        // í hverri teikningu: tvær töflur við hleðslu, þriðja eftir Eftir, fjórða eftir mánuð (50+50+39 raðir, allar
+        // skreyttar af 187/267). Rétta spurningin er hvort hnúturinn sé BEINT barn a — þá fann gluggaleitin hann þegar.
+        if (flutt && flutt.parentNode !== a) { sNotad.add(flutt); if (sFerskt(nb)) flutt.replaceWith(nb.cloneNode(true)); else sHnut(flutt, nb, html); continue; }
         a.insertBefore(nb.cloneNode(true), A[ai] || null); continue;
       }
       for (let j = ai; j < f; j++) { if (A[j] && !sAdskota(A[j], html)) { a.removeChild(A[j]); A[j] = null; } }
