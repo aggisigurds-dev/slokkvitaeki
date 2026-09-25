@@ -104,13 +104,18 @@ async function lesaVaranlegt(lykill) {
   } catch (_) { return null; }
 }
 
-function skrifaVaranlegt(lykill, heimilisfang, svar) {
+// NB: BEÐIÐ er eftir skrifinu. Í þjónalausu falli er tilvikið fryst eða drepið um leið
+// og svarið fer út, svo „fire-and-forget" fetch nær aldrei að lenda — mælt 25.09: taflan
+// stóð tóm eftir tvö köll. geocode.js awaitar sitt skrif af sömu ástæðu. Kostnaðurinn er
+// ~100 ms EINU SINNI per lykil; sparnaðurinn er 1,7–8,7 s í hvert skipti eftir það.
+async function skrifaVaranlegt(lykill, heimilisfang, svar) {
   try {
-    fetch(`${SB_URL}/rest/v1/hus_upplysingar_cache?on_conflict=lykill`, {
+    await fetch(`${SB_URL}/rest/v1/hus_upplysingar_cache?on_conflict=lykill`, {
       method: 'POST',
       headers: { ...SB_HAUS, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify({ lykill, heimilisfang, utgafa: UTGAFA, svar, uppfaert: new Date().toISOString() }),
-    }).catch(() => {});          // svarið bíður ALDREI eftir skrifinu
+      signal: AbortSignal.timeout(2500),
+    });
   } catch (_) {}
 }
 const MINNI_MS = 10 * 60 * 1000;
@@ -363,7 +368,7 @@ export default async (req) => {
     v.utgafa = UTGAFA;
     if ((!v.error || v.eign) && !v.reynaAftur) {
       minni.set(lykill, { t: Date.now(), v });
-      skrifaVaranlegt(lykill, heimilisfang, v);   // aðeins raunveruleg svör eru geymd
+      await skrifaVaranlegt(lykill, heimilisfang, v);   // aðeins raunveruleg svör eru geymd
     }
     return json(v, v.ogilt ? 400 : v.error && !v.eign ? 404 : 200);
   } catch (e) {

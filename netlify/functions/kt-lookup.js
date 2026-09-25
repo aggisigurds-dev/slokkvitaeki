@@ -37,13 +37,18 @@ async function lesaKt(kt) {
   } catch (_) { return null; }
 }
 
-function skrifaKt(kt, svar) {
+// NB: BEÐIÐ er eftir skrifinu. Í þjónalausu falli er tilvikið fryst eða drepið um leið
+// og svarið fer út, svo „fire-and-forget" fetch nær aldrei að lenda — mælt 25.09: taflan
+// stóð tóm eftir tvö köll. geocode.js awaitar sitt skrif af sömu ástæðu. Kostnaðurinn er
+// ~100 ms EINU SINNI per lykil; sparnaðurinn er 1,7–8,7 s í hvert skipti eftir það.
+async function skrifaKt(kt, svar) {
   try {
-    fetch(`${SB_URL}/rest/v1/kt_lookup_cache?on_conflict=kt`, {
+    await fetch(`${SB_URL}/rest/v1/kt_lookup_cache?on_conflict=kt`, {
       method: 'POST',
       headers: { ...SB_HAUS, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify({ kt, svar, uppfaert: new Date().toISOString() }),
-    }).catch(() => {});          // svarið bíður aldrei eftir skrifinu
+      signal: AbortSignal.timeout(2500),
+    });
   } catch (_) {}
 }
 
@@ -216,7 +221,7 @@ export default async (req) => {
       bt_adili,     // skiptastjóri eða annar b.t. aðili þegar félagið er í slitum
       source: 'skatturinn',
     };
-    skrifaKt(kt, svar);
+    await skrifaKt(kt, svar);
     return new Response(JSON.stringify(svar), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=86400' },
