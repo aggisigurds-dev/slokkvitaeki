@@ -48,7 +48,7 @@
   var RIVET_GRAENT = 'radial-gradient(circle at 40% 35%,#d8ffe6 0%,#23a35a 45%,#073a1d 100%)';
   var RIVET_RAUTT = 'radial-gradient(circle at 40% 35%,#ffd6d0 0%,#e25555 45%,#5a0a0a 100%)';
 
-  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #view-arsskodun ';
+  var S = 'html[data-thm-preset="brunastal"] body #view-arsskodun ';
   var F = ':not(#_p414a):not(#_p414b):not(#_p414c):not(#_p414d):not(#_p414e):not(#_p414f)';
   var SV = S.replace(/\s+$/, '');   // sýnin sjálf: #view-arsskodun.b414-on …
   function rv(sel, css) { return sel.split(',').map(function (x) { return SV + x.trim() + F; }).join(',') + '{' + blek(css) + '}'; }
@@ -73,8 +73,9 @@
   function hnodGlod(cls) { return cls === 'gull' ? '0 0 6px 1px rgba(240,168,60,.7)' : cls === 'graent' ? '0 0 6px 1px rgba(35,163,90,.6)' : cls === 'rautt' ? '0 0 6px 1px rgba(226,85,85,.6)' : '0 1px 1px rgba(0,0,0,.7)'; }
   var HN = '<span class="hn" style="top:9px;left:9px" aria-hidden="true"></span><span class="hn" style="top:9px;right:26px" aria-hidden="true"></span><span class="hn" style="bottom:9px;left:26px" aria-hidden="true"></span><span class="hn" style="bottom:9px;right:9px" aria-hidden="true"></span>';
 
-  var css = [
-    '@media (min-width:901px){',
+  var SW = 'html.ars-wide-table[data-thm-preset="brunastal"] body #view-arsskodun ';   // síminn í Skjár/Tafla (331)
+  function vitt(inni) { return inni.split(S).join(SW).split(S.replace(/\s+$/, '')).join(SW.replace(/\s+$/, '')); }
+  var rules = [
     // gömlu hólfin falin — 394 og 153 skrifa þau áfram, við lesum úr þeim
     rv('.b414-on ._ars-statgrid', 'display:none!important'),
     rv('.b414-on .arsm-strip', 'display:none!important'),
@@ -161,7 +162,12 @@
     // Bílstjóra-flipinn (317): situr í hausröðinni hægra megin sem málmtakki — ekki færður, aðeins staðsettur
     rv('.b414-on', 'position:relative'),
     rv('.b414-on #_bil-toggle', imp(METAL_BTN) + ';position:absolute!important;right:var(--b414-bil-r,14px)!important;top:var(--b414-bil,181px)!important;height:36px!important;padding:0 14px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center!important;gap:8px!important;margin:0!important;z-index:3;float:none!important'),
-    '}',
+    // app-hamur (261 þvingar .view button{font-size:17px;padding:12px;min-height:50px}) — takkarnir okkar halda stærð
+    r('.b414-man button', 'padding:0!important;min-height:0!important;font-size:10px!important;line-height:1!important'),
+    r('.b414-refresh', 'padding:0!important;min-height:22px!important;font-size:13px!important;line-height:1!important'),
+  ];
+  var inni = rules.join('\n');
+  var css = '@media (min-width:901px){' + inni + '}\n' + vitt(inni) + '\n' + [
     '@media (max-width:1720px){' + S + '.b414-p.ghost.raun' + F + '{display:none}}',
     '@media (max-width:1400px){' + S + '.b414-m > .b414-p:not(.raun)' + F + '{display:none}}'
   ].join('\n');
@@ -169,7 +175,9 @@
   if (!document.getElementById('ars-efri-414')) { var st = document.createElement('style'); st.id = 'ars-efri-414'; st.textContent = css; (document.head || document.documentElement).appendChild(st); }
 
   // ── lestur úr földu hólfunum ──────────────────────────────────────────────
-  function scope() { var h = document.documentElement; return h.getAttribute('data-thm-preset') === 'brunastal' && h.getAttribute('data-viewmode') !== 'mobile' && !h.classList.contains('slokk-phone-dev') && !(document.body && document.body.classList.contains('appmode')) && innerWidth >= 901; }
+  // 25.09 (Agnar: appið í Skjár + Tölvusíðu-hamur á síma): gildir á breiðum glugga OG í Skjár/Tafla á símanum (331 html.ars-wide-table);
+  // Sími-hamurinn (mrows, 412 px án ars-wide-table) heldur sínu. Appmode/phone-dev útiloka ekki lengur — CSS-ið sér um símabreiddina (417).
+  function scope() { var h = document.documentElement; return h.getAttribute('data-thm-preset') === 'brunastal' && (innerWidth >= 901 || h.classList.contains('ars-wide-table')); }
   function txt(e) { return String((e && e.textContent) || '').replace(/\s+/g, ' ').trim(); }
   function tala(s) { var m = String(s || '').replace(/ /g, ' ').match(/-?\d[\d.]*(?:,\d+)?/); if (!m) return NaN; return parseFloat(m[0].replace(/\./g, '').replace(',', '.')); }
   function heil(s) { var m = String(s || '').match(/\d[\d.]*/); return m ? parseInt(m[0].replace(/\./g, ''), 10) : NaN; }
@@ -327,7 +335,9 @@
     try {
       var haus = main.firstElementChild && main.firstElementChild.firstElementChild;
       if (haus && haus !== top) {
-        var y = Math.round(haus.getBoundingClientRect().top - view.getBoundingClientRect().top + (haus.offsetHeight - 36) / 2);
+        // brotin haus-röð (sími, 417): takkinn efst í hægri kantinum, ekki í miðju 200 px hárrar raðar
+        var hausH = haus.offsetHeight;
+        var y = Math.round(haus.getBoundingClientRect().top - view.getBoundingClientRect().top + (hausH > 96 ? 6 : (hausH - 36) / 2));
         if (y >= 0 && String(y) !== view.dataset.b414bil) { view.dataset.b414bil = String(y); view.style.setProperty('--b414-bil', y + 'px'); }
         var rx = Math.round(view.getBoundingClientRect().right - haus.getBoundingClientRect().right);   // hægri brún haus-raðarinnar (spjaldið 416 er mjórra en sýnin)
         if (rx >= 0 && String(rx) !== view.dataset.b414bilr) { view.dataset.b414bilr = String(rx); view.style.setProperty('--b414-bil-r', rx + 'px'); }

@@ -10,7 +10,7 @@
  */
 (function () {
   'use strict';
-  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #view-arsskodun ';
+  var S = 'html[data-thm-preset="brunastal"] body #view-arsskodun ';
   var F = ':not(#_p416a):not(#_p416b):not(#_p416c):not(#_p416d):not(#_p416e):not(#_p416f)';
   var MONO = '"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace';
   var SANS = '"IBM Plex Sans",-apple-system,"Segoe UI",system-ui,sans-serif';
@@ -18,8 +18,9 @@
   function r(sel, css) { return sel.split(',').map(function (x) { return S + x.trim() + F; }).join(',') + '{' + blek(css) + '}'; }
   var W = '#ars-main > div[style*="max-width:1720px"]';
   var SV = S.replace(/\s+$/, '');
-  var css = [
-    '@media (min-width:901px){',
+  var SW = 'html.ars-wide-table[data-thm-preset="brunastal"] body #view-arsskodun ';   // síminn í Skjár/Tafla (331)
+  function vitt(inni) { return inni.split(S).join(SW).split(S.replace(/\s+$/, '')).join(SW.replace(/\s+$/, '')); }
+  var rules = [
     // spjaldið: .sida úr mockinu, breiðara (1720 → 2000)
     // 25.09 síðar (Agnar: „skip the light grey background, use only yours full wide"): sýnin sjálf er kolið, efnið nær út í kanta
     SV + F + '{background-color:#25272c!important;background-image:linear-gradient(180deg,#1d1f24 0%,#30333a 320px,#2a2c31 100%)!important}',
@@ -41,8 +42,10 @@
     r('._tfoot > span', 'color:#aeb6c4'),
     // línur sem 394/153 draga á ljósum grunni verða að sjást á dökku
     r('._ars-morow', 'color:#c9d0da'),
-    '}'
-  ].join('\n');
+  ];
+  var inni = rules.join('\n');
+  var css = '@media (min-width:901px){' + inni + '}\n' + vitt(inni) + '\n';
+
   var st = document.getElementById('_ars-sida-416-css');
   if (!st) { st = document.createElement('style'); st.id = '_ars-sida-416-css'; document.head.appendChild(st); }
   st.textContent = css;

@@ -10,7 +10,7 @@
  */
 (function () {
   'use strict';
-  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #view-arsskodun ';
+  var S = 'html[data-thm-preset="brunastal"] body #view-arsskodun ';
   var F = ':not(#_p415a):not(#_p415b):not(#_p415c):not(#_p415d):not(#_p415e):not(#_p415f)';
   var MONO = '"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace';
   var SANS = '"IBM Plex Sans",-apple-system,"Segoe UI",system-ui,sans-serif';
@@ -18,8 +18,9 @@
   function blek(css) { return css.replace(/(^|;)color:([^;!]+)(?=;|$)/g, '$1color:$2!important'); }
   function r(sel, css) { return sel.split(',').map(function (x) { return S + x.trim() + F; }).join(',') + '{' + blek(css) + '}'; }
   var T = '._ars-tblscroll table.data-table ';
-  var css = [
-    '@media (min-width:901px){',
+  var SW = 'html.ars-wide-table[data-thm-preset="brunastal"] body #view-arsskodun ';   // síminn í Skjár/Tafla (331)
+  function vitt(inni) { return inni.split(S).join(SW).split(S.replace(/\s+$/, '')).join(SW.replace(/\s+$/, '')); }
+  var rules = [
     // töfluhólfið: svartur rammi, 10 px horn, djúpur skuggi — lárétta skrunið helst
     r('._ars-tblscroll', 'border:1px solid #000!important;border-radius:10px!important;box-shadow:0 18px 40px -12px rgba(10,14,22,.6)!important;background:#fff!important;overflow-x:auto;overflow-y:hidden'),
     // haus: 38 px, mono 10/700, .14em, ljóst blek á málmi
@@ -50,8 +51,10 @@
     r(T + '._st', 'min-height:24px!important;height:24px;border-radius:3px!important;font:700 11px/1 ' + SANS + '!important;padding:0 9px!important'),
     // ♻️-reiturinn og ✉ þrengri svo textadálkarnir fái plássið
     r(T + 'thead th:last-child,' + T + 'tbody td:last-child', 'width:44px!important;padding-left:4px!important;padding-right:4px!important'),
-    '}'
-  ].join('\n');
+  ];
+  var inni = rules.join('\n');
+  var css = '@media (min-width:901px){' + inni + '}\n' + vitt(inni) + '\n';
+
   var st = document.getElementById('_ars-tafla-415-css');
   if (!st) { st = document.createElement('style'); st.id = '_ars-tafla-415-css'; document.head.appendChild(st); }
   st.textContent = css;
