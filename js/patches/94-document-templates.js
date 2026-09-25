@@ -1432,7 +1432,7 @@
       let contractMsg = '';
       if (isThjonusta) {
         try {
-          const linkedId = await upsertThjonustusamningur(t, values, rec.thjonustusamningar_id);
+          const linkedId = await upsertThjonustusamningur(t, values, rec.thjonustusamningar_id, (opts && opts.coId) || null);
           if (linkedId) {
             rec.thjonustusamningar_id = linkedId;
             vistadSamningsId = linkedId;      // næsti smellur uppfærir SÖMU röð
@@ -1465,7 +1465,28 @@
   // already renders as the main contracts list. That way the saved doc shows
   // up in the familiar Þjónustusamningar table immediately. Returns the row
   // id (existing or new) so subsequent updates target the same row.
-  async function upsertThjonustusamningur(template, values, existingId) {
+  // 25.09.2026 (Agnar: „ég var að útbúa þjónustusamning fyrir norðnorðvestur ehf en hann kemur
+  // ekki inn þarna … það vill ekkert bindast við þennan lið").
+  // `rec` hér að neðan bar ALDREI `company_id` — samningurinn var vistaður með nafni og
+  // kennitölu einni saman, og samningsspjaldið á fyrirtækjasíðunni (199) leitar eftir
+  // félagstengingu. Þess vegna stóð „VANTAR" þótt samningurinn væri til.
+  // Mælt sama dag: 24 af 53 samningum voru ótengdir.
+  // Félagsauðkennið berst nú frá `openForCompany` gegnum `opts.coId`. Sé það ekki til
+  // (samningur búinn til utan fyrirtækjasíðunnar) er leyst úr NAFNI — og aðeins þegar
+  // nákvæmlega EITT lifandi félag ber það nafn. Kennitala ein dugar ekki: rekstrarfélög
+  // deila kennitölu milli staða og þá væri þetta ágiskun. Sjá [[project_stadur_nr]].
+  async function finnaFelag(SB, coId, nafn) {
+    if (coId) return +coId;
+    const n = String(nafn || '').trim();
+    if (!n) return null;
+    try {
+      const r = await SB.from('fyrirtaeki').select('id').eq('nafn', n).is('deleted_at', null).limit(2);
+      const rows = (r && r.data) || [];
+      return rows.length === 1 ? rows[0].id : null;   // fleiri en eitt → ekki giska
+    } catch (_) { return null; }
+  }
+
+  async function upsertThjonustusamningur(template, values, existingId, coId) {
     const SB = (window.DB && window.DB.sb) || null;
     if (!SB) return null;
     // Parse the dagsetning (dd.mm.yyyy) to ISO if possible, else today
@@ -1503,6 +1524,8 @@
       signed_at: signedAt,
       status: 'virkur'
     };
+    const felagId = await finnaFelag(SB, coId, rec.company_nafn);
+    if (felagId) rec.company_id = felagId;   // án þessa binst samningurinn engum stað
     if (!rec.company_nafn) return null; // can't create a row without a name
 
     if (existingId) {
@@ -1709,7 +1732,7 @@
       chk_slokkvitaeki: true
     };
     if (medSlokkvikerfi) prefill.chk_slokkvikerfi = true;
-    openTemplateForm('seed_thjonustusamningur', { prefill });
+    openTemplateForm('seed_thjonustusamningur', { prefill, coId: +coId || null });
   }
 
   const api = {
