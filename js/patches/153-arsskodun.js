@@ -68,6 +68,12 @@
   const LS_POSTNR = 'arsskodun_postnr';
 
   function getSB() { return (window.DB && window.DB.sb) || null; }
+  // 25.09.2026 (Agnar: „sami texti á báðum stöðum, samstillt, vistast alltaf"): ferðanótan ER athugasemd fyrirtækisins
+  // (banner_note) — gagnagrunns-kveikjan trg_fyrirtaeki_nota_samstilling heldur plan_note = banner_note. Athugasemdin getur
+  // verið í mörgum línum en reiturinn hér er einnar línu <input>, sem STRÝKUR línubil út. Línubil sýnd sem „ ↵ " og
+  // breytt aftur í línubil við vistun, svo breyting hér fletji aldrei út texta sem var skrifaður á fyrirtækjasíðunni.
+  function notaSyn(t) { return String(t == null ? '' : t).replace(/\r?\n/g, ' ↵ '); }
+  function notaLesa(v) { return String(v == null ? '' : v).replace(/\s*↵\s*/g, '\n').trim(); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1691,7 +1697,8 @@
     for (let i = 0; i < a.length; i++) {
       const c = a[i], x = c._ars || {};
       s += c.id + ',' + (x.last_year_inspected || '') + ',' + (x.inspect_month || '')
-         + ',' + (x._unit_count || '') + ',' + (x.estimated_yearly || '') + ',' + (x.priority || '') + ',' + (x._misraemi ? 1 : 0) + ';';
+         + ',' + (x._unit_count || '') + ',' + (x.estimated_yearly || '') + ',' + (x.priority || '') + ',' + (x._misraemi ? 1 : 0)
+         + ',' + (c.plan_note || '') + ';';   // 25.09.2026: nótan líka — án hennar teiknaði bakgrunns-sóknin ALDREI nýjar nótur yfir gamla snapshot-ið (tómar Ferðanótur)
     }
     return s;
   }
@@ -1759,6 +1766,27 @@
       if (ns !== _lastDataSig && !_editingNote) { render(); _lastDataSig = ns; }  // only rebuild if data changed
     } catch (e) { try { console.warn('[arsskodun] backgroundRefresh', e); } catch (_) {} } finally { _bgRefreshing = false; }
   }
+
+  // Ný nóta (héðan, af fyrirtækjasíðu, Verkstæði eða annarri vél um realtime): skyndiminnið og allir reitir sem ekki
+  // er verið að skrifa í uppfærðir strax — ásamt þriggja-línu laginu (394) — svo enginn skjár sýni eldri texta.
+  function nyNota(id, val, nema) {
+    val = (val == null || val === '') ? null : String(val);
+    const c1 = _cache.byId && _cache.byId[id]; if (c1) { c1.plan_note = val; c1.banner_note = val; }
+    const c2 = _cache.list.find(x => x.id === id); if (c2 && c2 !== c1) { c2.plan_note = val; c2.banner_note = val; }
+    const syn = notaSyn(val || '');
+    document.querySelectorAll('#view-arsskodun ._ars-plannote[data-co-id="' + id + '"]').forEach(other => {
+      if (other === nema || document.activeElement === other) return;
+      if (other.value !== syn) other.value = syn;
+      other.dataset.saved = syn;
+      const td = other.closest('td'); const lag = td && td.querySelector('._ars-nota3');
+      if (lag) { lag.textContent = syn; td.classList.toggle('_er-med', !!syn); }
+    });
+    try { _lastDataSig = dataSig(); } catch (_) {}
+  }
+  document.addEventListener('fyrirtaeki-nota', e => {
+    const d = e.detail || {}; if (!d.id || d.uppruni === '153') return;
+    try { nyNota(+d.id, d.texti); } catch (_) {}
+  });
 
   async function show() {
     ensureView();
@@ -2965,20 +2993,18 @@
       inp.dataset.saved = (inp.value.trim() || '');
       const savePlanNote = async () => {
         const id = +inp.dataset.coId;
-        const val = inp.value.trim() || null;
-        if (inp.dataset.saved === (val == null ? '' : val)) return;   // óbreytt → sleppa
-        const SB = getSB(); if (!SB || !id) return;
+        const skjar = inp.value.trim();
+        if (inp.dataset.saved === skjar) return;   // óbreytt → sleppa
+        const val = notaLesa(skjar) || null;
+        const SB = getSB(); if (!SB || !id) { inp.style.outline = '2px solid #dc2626'; inp.title = 'Ferðanóta vistaðist EKKI — engin tenging. Reyndu aftur'; return; }
         try {
-          const r = await SB.from('fyrirtaeki').update({ plan_note: val }).eq('id', id);
+          // banner_note OG plan_note í sömu skrift (kveikjan heldur þeim eins hvort sem er)
+          const r = await SB.from('fyrirtaeki').update({ banner_note: val, plan_note: val }).eq('id', id);
           if (r.error) throw r.error;
-          inp.dataset.saved = (val == null ? '' : val);
-          const c1 = _cache.byId && _cache.byId[id]; if (c1) c1.plan_note = val;
-          const c2 = _cache.list.find(x => x.id === id); if (c2) c2.plan_note = val;
-          main.querySelectorAll('._ars-plannote[data-co-id="' + id + '"]').forEach(other => {
-            if (other === inp || document.activeElement === other) return;
-            other.value = val || '';
-            other.dataset.saved = val == null ? '' : val;
-          });
+          inp.dataset.saved = skjar;
+          inp.style.outline = '';
+          nyNota(id, val, inp);
+          try { document.dispatchEvent(new CustomEvent('fyrirtaeki-nota', { detail: { id, texti: val || '', uppruni: '153' } })); } catch (_) {}
         } catch (err) {
           console.warn('[arsskodun] plan_note', err);
           try { if (window.logProblem) window.logProblem('plan_note_save_failed', 'co ' + id); } catch (_) {}
@@ -4180,9 +4206,9 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                     ${((window.NyttBadge && NyttBadge.is(c.id)) || (window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala) && RekstrarfelagBadge.html(c.kennitala, c.customer_base_id)) || state.status === 'skipped2025') ? `<span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;align-items:center">${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : ''}${state.status === 'skipped2025' ? (ars.ekki_sleppt
                       ? `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Handvirkt virkjaður aftur — smelltu til að merkja aftur sem sleppt" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;cursor:pointer;font-weight:700">✓ virkur · ↩ aftur í sleppt</button>`
                       : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</span>` : ''}
-                    <input class="_note _ars-plannote _ars-note-under" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="···" title="Sameiginlegur minnispunktur — sami texti og ✍ Athugasemd á fyrirtækjasíðunni og Minnispunktur á Verkstæði. Vistast á fyrirtækinu og fylgir öllum vélum." maxlength="400">
+                    <input class="_note _ars-plannote _ars-note-under" data-co-id="${c.id}" value="${esc(notaSyn(c.plan_note))}" placeholder="···" title="Sameiginlegur minnispunktur — sami texti og ✍ Athugasemd á fyrirtækjasíðunni og Minnispunktur á Verkstæði. Vistast á fyrirtækinu og fylgir öllum vélum." maxlength="2000">
                   </td>
-                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="···" title="Sameiginlegur minnispunktur — sami texti og ✍ Athugasemd á fyrirtækjasíðunni og Minnispunktur á Verkstæði. Vistast á fyrirtækinu og fylgir öllum vélum." maxlength="400"></td>
+                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(notaSyn(c.plan_note))}" placeholder="···" title="Sameiginlegur minnispunktur — sami texti og ✍ Athugasemd á fyrirtækjasíðunni og Minnispunktur á Verkstæði. Vistast á fyrirtækinu og fylgir öllum vélum." maxlength="2000"></td>
                   <td class="_ars-addrcell"><span class="_addr">${c.postnumer ? `<span class="_post">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</span></td>
                   <td class="center${ovr ? ' _ars-ovr-month' : ''}"${ovr ? ` data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}><span class="_mo" style="${m===curMonth?'color:#c0241f;font-weight:700':''}">${manualMark(esc(MONTHS_IS_SHORT[m-1] || '—'), !!ars.inspect_month_manual)}</span></td>
                   <td ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}>

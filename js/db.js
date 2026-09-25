@@ -318,6 +318,17 @@ var DB = {
       ch.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, function (payload) {
         var t = payload && payload.table;
         if (t) _pendingTables.add(t);
+        // 25.09.2026: athugasemd fyrirtækis (banner_note = Ferðanóta) frá annarri vél birtist STRAX á öllum opnum
+        // skjám (fyrirtækjasíða, Ársskoðun, Verkstæði) — bíður ekki 5 s endurhleðsluna. Hlustendur sleppa reit í ritun.
+        try {
+          var nr = payload && payload.new;
+          if (t === 'fyrirtaeki' && nr && nr.id != null && Object.prototype.hasOwnProperty.call(nr, 'banner_note')) {
+            var gamalt = payload.old && Object.prototype.hasOwnProperty.call(payload.old, 'banner_note') ? payload.old.banner_note : undefined;
+            if (gamalt === undefined || gamalt !== nr.banner_note) {
+              document.dispatchEvent(new CustomEvent('fyrirtaeki-nota', { detail: { id: +nr.id, texti: nr.banner_note || '', uppruni: 'rt' } }));
+            }
+          }
+        } catch (_) {}
         if (_debounce) clearTimeout(_debounce);
         // 2026-06-11: 3s → 5s so a burst of edits (e.g. flipping several tæki
         // statuses) coalesces into one refresh instead of several.
