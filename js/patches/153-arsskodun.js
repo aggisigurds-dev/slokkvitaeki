@@ -1976,11 +1976,24 @@
         if (i) { kl = k; break; }
       }
     }
-    return n.tagName + '|' + (n.id || '') + '|' + (n.getAttribute('data-co-id') || n.getAttribute('data-month') || n.getAttribute('data-st') || n.getAttribute('data-sort') || n.getAttribute('data-pnr') || '') + '|' + kl;
+    // 25.09.2026 (mælt): 341 setur id="arsskodun-wrap" á ._ars-tblscroll sem 153 á. Id sem kemur hvergi fyrir í nýja
+    // HTML-inu gerði hnútinn að „öðrum" hnút (lykill DIV|arsskodun-wrap|…) — nýja hólfið fannst hvergi, ferskur tvíburi
+    // var settur inn og sá gamli stóð sem aðskotahnútur: tvær töflur við hleðslu, þriðja eftir „Eftir", fjórða eftir
+    // mánuð. Sama regla og um aðskota-klasa: id telur aðeins sé það í nýja HTML-inu.
+    return n.tagName + '|' + (sIdOkkar(n.id) ? n.id : '') + '|' + (n.getAttribute('data-co-id') || n.getAttribute('data-month') || n.getAttribute('data-st') || n.getAttribute('data-sort') || n.getAttribute('data-pnr') || '') + '|' + kl;
+  }
+  function sIdOkkar(id) {
+    if (!id) return false;
+    const k = 'id:' + id;
+    let i = sKlasaMinni.get(k);
+    if (i === undefined) { i = sHtml.indexOf('id="' + id + '"') >= 0 || sHtml.indexOf("id='" + id + "'") >= 0; sKlasaMinni.set(k, i); }
+    return i;
   }
   function sAdskota(n, html) {
     if (n.nodeType !== 1) return false;
-    if (n.id) return html.indexOf('id="' + n.id + '"') < 0 && html.indexOf("id='" + n.id + "'") < 0;
+    // id úr nýja HTML-inu → okkar; aðskota-id (341 arsskodun-wrap) ræður ekki eitt — 153-klasi á hnútnum gerir hann okkar
+    if (n.id && sIdOkkar(n.id)) return false;
+    if (n.id && !n.classList.length) return true;   // aðskota-id án klasa → hnútur annars pappa (155 kortið, 317/318 takkar) stendur
     const kl = [...n.classList];
     if (kl.length) return !kl.some(k => html.indexOf(k) >= 0);
     return false;
@@ -1989,7 +2002,7 @@
     if (na.nodeType === 3) { if (na.nodeValue !== nb.nodeValue && sAnEmoji(na.nodeValue) !== sAnEmoji(nb.nodeValue)) na.nodeValue = nb.nodeValue; return; }
     if (na.nodeType !== 1) return;
     for (const at of [...nb.attributes]) { if (at.name !== 'class' && na.getAttribute(at.name) !== at.value) na.setAttribute(at.name, at.value); }
-    for (const at of [...na.attributes]) { if (at.name !== 'class' && !nb.hasAttribute(at.name) && !S_HALDA_EIGIND.test(at.name)) na.removeAttribute(at.name); }
+    for (const at of [...na.attributes]) { if (at.name !== 'class' && !(at.name === 'id' && !nb.id) && !nb.hasAttribute(at.name) && !S_HALDA_EIGIND.test(at.name)) na.removeAttribute(at.name); }
     const halda = [...na.classList].filter(k => S_HALDA_KLASA.test(k));
     const nyr = (nb.getAttribute('class') || '').trim();
     const vill = ((nyr ? nyr + ' ' : '') + halda.join(' ')).trim();
