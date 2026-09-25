@@ -2192,7 +2192,10 @@
     // Appmode þvingaði áður alltaf mrows, svo Skjár á raunsíma/í Fjármálum
     // opnaðist aldrei. arsskodun_viewmode (sími/tafla/skjár) gildir fyrst;
     // html[data-viewmode] er varaleið. Aldrei isPhone→card.
-    const effView = (vm === 'mobile') ? 'mrows' : 'list';
+    // 25.09.2026 (Agnar, appið í Sími-ham: „Wtf with the bottom part · show everything in there"): Sími-hamurinn sýnir líka
+    // FULLU töfluna (renderTable) — 417 gerir töfluhólfið að eina lárétta skrunaranum með pinch-zoom. renderMobileRows stendur
+    // óbreytt (317 bílstjóraspjöld o.fl. nota arsPerur), en er ekki lengur sjálfgefið á Ársskoðun.
+    const effView = 'list';
     // Stats restricted to companies that ARE in árskoðun (have equipment).
     // The full list still includes everyone — the user wanted the whole
     // fyrirtækjaregistur in one tab, but tiles only count the ones that

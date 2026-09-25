@@ -47,7 +47,9 @@
     r('._ars-morow', 'color:#c9d0da'),
   ];
   var inni = rules.join('\n');
-  var css = '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n';
+  var SM = 'html.ars-simi-phone[data-thm-preset="brunastal"] body #view-arsskodun ';
+  function simi(x) { return x.split(S).join(SM).split(S.replace(/\s+$/, '')).join(SM.replace(/\s+$/, '')); }
+  var css = '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n' + simi(inni) + '\n';
 
   var st = document.getElementById('_ars-sida-416-css');
   if (!st) { st = document.createElement('style'); st.id = '_ars-sida-416-css'; document.head.appendChild(st); }

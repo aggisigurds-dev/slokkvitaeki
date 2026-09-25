@@ -79,11 +79,14 @@
   // svo @media (min-width:901px) tók borðtölvuútlitið og kreisti það á símann. Borðtölvublokkin gildir því ekki þar.
   var SP = 'html[data-thm-preset="brunastal"]:not(.ars-simi-phone) body #view-arsskodun ';
   function simalaus(inni) { return inni.split(S).join(SP).split(S.replace(/\s+$/, '')).join(SP.replace(/\s+$/, '')); }
+  var SM = 'html.ars-simi-phone[data-thm-preset="brunastal"] body #view-arsskodun ';   // Sími-hamurinn á síma: sömu reglur án miðils, símalagið kemur úr 417
+  function simi(inni) { return inni.split(S).join(SM).split(S.replace(/\s+$/, '')).join(SM.replace(/\s+$/, '')); }
   var rules = [
     // gömlu hólfin falin — 394 og 153 skrifa þau áfram, við lesum úr þeim
     rv('.b414-on ._ars-statgrid', 'display:none!important'),
     rv('.b414-on .arsm-strip', 'display:none!important'),
     rv('.b414-scope #_hh-toggle', 'display:none!important'),   // 25.09: á .b414-scope (strax), ekki .b414-on — annars 48 px hopp þegar gögnin lenda
+    rv('.b414-scope ._ars-morow', 'display:none!important'),   // síminn: strimillinn okkar leysir gömlu mánaðaröð 153 af
     // umgjörðin okkar
     r('.b414-top', 'display:flex;flex-direction:column;gap:12px;margin:0 0 14px;font-family:' + SANS),
     r('.b414-grid', 'display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:12px;align-items:stretch'),
@@ -178,7 +181,7 @@
     r('.b414-refresh', 'padding:0!important;min-height:22px!important;font-size:13px!important;line-height:1!important'),
   ];
   var inni = rules.join('\n');
-  var css = '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n' + [
+  var css = '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n' + simi(inni) + '\n' + [
     '@media (max-width:1720px){' + S + '.b414-p.ghost.raun' + F + '{display:none}}',
     '@media (max-width:1400px){' + S + '.b414-m > .b414-p:not(.raun)' + F + '{display:none}}'
   ].join('\n');
@@ -188,7 +191,10 @@
   // ── lestur úr földu hólfunum ──────────────────────────────────────────────
   // 25.09 (Agnar: appið í Skjár + Tölvusíðu-hamur á síma): gildir á breiðum glugga OG í Skjár/Tafla á símanum (331 html.ars-wide-table);
   // Sími-hamurinn (mrows, 412 px án ars-wide-table) heldur sínu. Appmode/phone-dev útiloka ekki lengur — CSS-ið sér um símabreiddina (417).
-  function scope() { var h = document.documentElement; return h.getAttribute('data-thm-preset') === 'brunastal' && !h.classList.contains('ars-simi-phone') && (innerWidth >= 901 || h.classList.contains('ars-wide-table')); }
+  // 25.09 kvöld (Agnar, skjámynd úr appinu í Sími-ham: „the app mobile version is still crap · mobile website mobile and desktop"):
+  // Sími-hamurinn á síma (331 html.ars-simi-phone) fær spjöldin og strimilinn LÍKA — í símalagi 417 (tveir dálkar), ekki
+  // borðtölvublokkinni. Mánuðirnir lesast þá úr gömlu mánaðaröð 153 (._ars-morow), því 394 byggir engan strimil undir 901.
+  function scope() { var h = document.documentElement; return h.getAttribute('data-thm-preset') === 'brunastal' && (innerWidth >= 901 || h.classList.contains('ars-wide-table') || h.classList.contains('ars-simi-phone')); }
   function txt(e) { return String((e && e.textContent) || '').replace(/\s+/g, ' ').trim(); }
   function tala(s) { var m = String(s || '').replace(/ /g, ' ').match(/-?\d[\d.]*(?:,\d+)?/); if (!m) return NaN; return parseFloat(m[0].replace(/\./g, '').replace(',', '.')); }
   function heil(s) { var m = String(s || '').match(/\d[\d.]*/); return m ? parseInt(m[0].replace(/\./g, ''), 10) : NaN; }
@@ -203,7 +209,8 @@
     // „29,9M" + „m.kr" → 29,9 m.kr ; „þar af 18,6M búið · 123 raunreiknuð"
     var totalTxt = hk[1] ? txt(hk[1]).replace(/m\.?kr/i, '') : '';
     var total = tala(totalTxt);                           // í milljónum þegar „M", í þúsundum þegar „þ"
-    var eining = /M/.test(totalTxt) ? 'm.kr' : (/þ/.test(totalTxt) ? 'þ.kr' : 'kr');
+    var hra = hk[1] ? txt(hk[1]) : '';   // 394-hetjan skrifar „30,0 m.kr", 153-hetjan „30M" — hvort tveggja er m.kr
+    var eining = (/M/.test(totalTxt) || /m.?kr/i.test(hra)) ? 'm.kr' : ((/þ/.test(totalTxt) || /þ.?kr/i.test(hra)) ? 'þ.kr' : 'kr');
     var buidTxt = hk[2] ? txt(hk[2]) : '';
     var buidM = tala((buidTxt.match(/þar af\s*([\d.,]+\s*[Mþ]?)/) || [])[1] || '');
     var raun = heil(txt(hero.querySelector('.arsm-raun')) || (buidTxt.match(/(\d[\d.]*)\s*raunreiknu/) || [])[1]);
@@ -238,6 +245,17 @@
     var man = strip ? Array.prototype.slice.call(strip.querySelectorAll('.arsm-b')).map(function (b) {
       return { nafn: txt(b.querySelector('em')), n: heil(txt(b.querySelector('u'))), h: parseFloat((b.querySelector('i') || {}).style ? b.querySelector('i').style.height : '') || 0, cls: b.className.replace('arsm-b', '').trim(), el: b };
     }) : [];
+    if (!man.length) {   // síminn: 394 byggir engan strimil undir 901 — gamla mánaðaröð 153 ber sömu tölur og sömu smelli
+      var nuM = new Date().getMonth() + 1;
+      man = Array.prototype.slice.call(root.querySelectorAll('._ars-morow button._ars-mo[data-month]')).map(function (b) {
+        var all = b.getAttribute('data-month') === 'all'; var n = heil(txt(b.querySelector('span'))); var m = parseInt(b.getAttribute('data-month'), 10);
+        return { nafn: all ? 'Allir' : txt(b).replace(/\s*\d[\d.]*\s*$/, ''), n: all ? NaN : n, h: isFinite(n) ? n : 0, cls: (all ? 'is-all' : '') + (b.getAttribute('aria-pressed') === 'true' ? ' is-on' : '') + (m === nuM ? ' is-nu' : ''), el: b };
+      });
+      var maxN = Math.max(1, Math.max.apply(null, man.map(function (m) { return m.h; })));
+      man.forEach(function (m) { m.h = m.h / maxN * 52; });
+      var summa = man.reduce(function (t, m) { return t + (isFinite(m.n) ? m.n : 0); }, 0);
+      man.forEach(function (m) { if (/is-all/.test(m.cls)) { m.n = summa; m.h = 52; } });
+    }
     var ar = (txt(strip && strip.querySelector('.arsm-head b')).match(/\d{4}/) || [String(new Date().getFullYear())])[0];
     return { buidAf: buidAf, eftirAf: eftirAf, radir: radir, fjoldiAf: fjoldiAf, buidStadir: buidStadir, eftirStadir: eftirStadir, siad: isFinite(fjoldiAf) || isFinite(buidAf) || isFinite(eftirAf), total: total, eining: eining, buidM: buidM, eftirM: (isFinite(total) && isFinite(buidM)) ? total - buidM : NaN, raun: raun, fjoldi: fjoldi, buid: buid, eftir: eftir, medSkyrslu: medSkyrslu, komin: komin, anMan: anMan, framundan: framundan, ovist: ovist, anTaekja: anTaekja, medTaeki: medTaeki, man: man, ar: ar, curYear: ar };
   }
