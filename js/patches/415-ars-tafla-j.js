@@ -20,6 +20,9 @@
   var T = '._ars-tblscroll table.data-table ';
   var SW = 'html.ars-wide-table[data-thm-preset="brunastal"] body #view-arsskodun ';   // síminn í Skjár/Tafla (331)
   function vitt(inni) { return inni.split(S).join(SW).split(S.replace(/\s+$/, '')).join(SW.replace(/\s+$/, '')); }
+  // 25.09: sími í Sími-ham (331 html.ars-simi-phone) leggur út ~980 px — borðtölvublokkin gildir ekki þar.
+  var SP = 'html[data-thm-preset="brunastal"]:not(.ars-simi-phone) body #view-arsskodun ';
+  function simalaus(inni) { return inni.split(S).join(SP).split(S.replace(/\s+$/, '')).join(SP.replace(/\s+$/, '')); }
   var rules = [
     // töfluhólfið: svartur rammi, 10 px horn, djúpur skuggi — lárétta skrunið helst
     r('._ars-tblscroll', 'border:1px solid #000!important;border-radius:10px!important;box-shadow:0 18px 40px -12px rgba(10,14,22,.6)!important;background:#fff!important;overflow-x:auto;overflow-y:hidden'),
@@ -53,7 +56,7 @@
     r(T + 'thead th:last-child,' + T + 'tbody td:last-child', 'width:44px!important;padding-left:4px!important;padding-right:4px!important'),
   ];
   var inni = rules.join('\n');
-  var css = '@media (min-width:901px){' + inni + '}\n' + vitt(inni) + '\n';
+  var css = '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n';
 
   var st = document.getElementById('_ars-tafla-415-css');
   if (!st) { st = document.createElement('style'); st.id = '_ars-tafla-415-css'; document.head.appendChild(st); }

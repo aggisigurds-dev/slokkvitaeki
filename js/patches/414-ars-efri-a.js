@@ -75,6 +75,10 @@
 
   var SW = 'html.ars-wide-table[data-thm-preset="brunastal"] body #view-arsskodun ';   // síminn í Skjár/Tafla (331)
   function vitt(inni) { return inni.split(S).join(SW).split(S.replace(/\s+$/, '')).join(SW.replace(/\s+$/, '')); }
+  // 25.09 (Agnar: „lagað app símahaminn"): sími í Sími-ham (331 html.ars-simi-phone) leggur út ~980 px í Tölvusíðu-ham,
+  // svo @media (min-width:901px) tók borðtölvuútlitið og kreisti það á símann. Borðtölvublokkin gildir því ekki þar.
+  var SP = 'html[data-thm-preset="brunastal"]:not(.ars-simi-phone) body #view-arsskodun ';
+  function simalaus(inni) { return inni.split(S).join(SP).split(S.replace(/\s+$/, '')).join(SP.replace(/\s+$/, '')); }
   var rules = [
     // gömlu hólfin falin — 394 og 153 skrifa þau áfram, við lesum úr þeim
     rv('.b414-on ._ars-statgrid', 'display:none!important'),
@@ -170,7 +174,7 @@
     r('.b414-refresh', 'padding:0!important;min-height:22px!important;font-size:13px!important;line-height:1!important'),
   ];
   var inni = rules.join('\n');
-  var css = '@media (min-width:901px){' + inni + '}\n' + vitt(inni) + '\n' + [
+  var css = '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n' + [
     '@media (max-width:1720px){' + S + '.b414-p.ghost.raun' + F + '{display:none}}',
     '@media (max-width:1400px){' + S + '.b414-m > .b414-p:not(.raun)' + F + '{display:none}}'
   ].join('\n');
@@ -180,7 +184,7 @@
   // ── lestur úr földu hólfunum ──────────────────────────────────────────────
   // 25.09 (Agnar: appið í Skjár + Tölvusíðu-hamur á síma): gildir á breiðum glugga OG í Skjár/Tafla á símanum (331 html.ars-wide-table);
   // Sími-hamurinn (mrows, 412 px án ars-wide-table) heldur sínu. Appmode/phone-dev útiloka ekki lengur — CSS-ið sér um símabreiddina (417).
-  function scope() { var h = document.documentElement; return h.getAttribute('data-thm-preset') === 'brunastal' && (innerWidth >= 901 || h.classList.contains('ars-wide-table')); }
+  function scope() { var h = document.documentElement; return h.getAttribute('data-thm-preset') === 'brunastal' && !h.classList.contains('ars-simi-phone') && (innerWidth >= 901 || h.classList.contains('ars-wide-table')); }
   function txt(e) { return String((e && e.textContent) || '').replace(/\s+/g, ' ').trim(); }
   function tala(s) { var m = String(s || '').replace(/ /g, ' ').match(/-?\d[\d.]*(?:,\d+)?/); if (!m) return NaN; return parseFloat(m[0].replace(/\./g, '').replace(',', '.')); }
   function heil(s) { var m = String(s || '').match(/\d[\d.]*/); return m ? parseInt(m[0].replace(/\./g, ''), 10) : NaN; }
