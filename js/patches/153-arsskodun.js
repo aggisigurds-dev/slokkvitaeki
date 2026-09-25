@@ -1968,7 +1968,14 @@
     // (409 _s409-titill, 405 b40x- …) mega ekki gera hnútinn að „öðrum" hnút — þá stæði hann eftir sem aðskotahnútur
     // og ferskur tvíburi kæmi við hliðina (mælt 24.09: tveir titlar á Ársskoðun).
     let kl = '';
-    if (n.className && typeof n.className === 'string') { for (const k of n.className.split(/\s+/)) { if (k && sHtml.indexOf(k) >= 0) { kl = k; break; } } }
+    if (n.className && typeof n.className === 'string') {
+      for (const k of n.className.split(/\s+/)) {
+        if (!k) continue;
+        let i = sKlasaMinni.get(k);
+        if (i === undefined) { i = sHtml.indexOf(k) >= 0; sKlasaMinni.set(k, i); }
+        if (i) { kl = k; break; }
+      }
+    }
     return n.tagName + '|' + (n.id || '') + '|' + (n.getAttribute('data-co-id') || n.getAttribute('data-month') || n.getAttribute('data-st') || n.getAttribute('data-sort') || n.getAttribute('data-pnr') || '') + '|' + kl;
   }
   function sAdskota(n, html) {
@@ -2010,6 +2017,13 @@
     for (let j = ai; j < A.length; j++) if (A[j] && A[j].parentNode === a && !sAdskota(A[j], html)) a.removeChild(A[j]);
   }
   let sHtml = '';
+  // 25.09.2026 (mælt): sLykill hér fyrir neðan leitaði að HVERJUM klasa á HVERJUM hnút
+  // með sHtml.indexOf() — línuleg leit í öllu nýja HTML-inu. Á Ársskoðun eru 17.329
+  // hnútar og 16.540 klasa-uppflettingar, en aðeins 134 ÓLÍKIR klasar. Mælt á lifandi
+  // síðu: 2.209 ms í leitirnar einar. Svarið er það sama fyrir sama klasa allan
+  // samrunann, svo það er munað. Sömu indexOf-köll, bara ekki endurtekin:
+  // 2.209 ms → 8,1 ms (×273), og niðurstaðan stafrétt óbreytt — engin merkingarbreyting.
+  let sKlasaMinni = new Map();
   // Fluttir hnútar: 394 (og fleiri) færa hnúta sem 153 á — töfluhólfið ._ars-tblscroll, #_ars-pnr-btn, kortatakkann —
   // inn í sín eigin hólf. Þar finnur staðbundni samruninn þá ekki og setti FERSKAN tvíbura á upprunalega staðinn
   // (mælt 24.09: tvær töflur, 100 raðir, 2.687 px hopp eftir fyrsta síusmell). Vísitalan finnur þá hvar sem er í
@@ -2031,6 +2045,7 @@
   }
   function sameinaMain(main, html) {
     sHtml = html;
+    sKlasaMinni = new Map();   // nýtt HTML → nýtt svar; minnið má ekki lifa milli samruna
     const tpl = document.createElement('template'); tpl.innerHTML = html;
     // 153-umgjörðin er :scope > div[max-width:1720px]; aðrir pappar (394, 311, 383 …) setja systkini við hana beint í main — þau standa.
     const gamla = [...main.children].find(c => c.tagName === 'DIV' && (c.getAttribute('style') || '').indexOf('max-width:1720px') >= 0);
