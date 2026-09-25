@@ -61,12 +61,14 @@
         if (geymsla.size) { geymsla.clear(); tolur.taemt++; }
         return upprunalegt.apply(this, arguments);
       }
-      if (adferd !== 'GET' || slod.indexOf(g + '/rest/v1/') !== 0 || slod.indexOf('/rest/v1/rpc/') > -1 ||
+      // 25.09.2026: HEAD (talningar, count:'exact', head:true) samnýtt líka — mælt: sama ógreidda-krafna-talningin fór
+      // 2–3× á hverri síðu (166 merkið + 368 borðið). Aðferðin er hluti af lyklinum.
+      if ((adferd !== 'GET' && adferd !== 'HEAD') || slod.indexOf(g + '/rest/v1/') !== 0 || slod.indexOf('/rest/v1/rpc/') > -1 ||
           slod.indexOf('/rest/v1/app_settings') > -1 || (stillingar && (stillingar.signal || stillingar.cache === 'no-store'))) {
         return upprunalegt.apply(this, arguments);
       }
       var h = (stillingar && stillingar.headers) || (inntak && inntak.headers) || null;
-      var lykill = slod + '|' + haus(h, 'Range') + '|' + haus(h, 'Prefer') + '|' + haus(h, 'Accept') + '|' + haus(h, 'Accept-Profile');
+      var lykill = adferd + ' ' + slod + '|' + haus(h, 'Range') + '|' + haus(h, 'Prefer') + '|' + haus(h, 'Accept') + '|' + haus(h, 'Accept-Profile');
       var nu = Date.now(), til = geymsla.get(lykill);
       if (til && (nu - til.t) < LIFIR_MS) {
         tolur.samnytt++;

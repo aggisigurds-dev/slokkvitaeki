@@ -474,23 +474,45 @@ var Companies = {
   // Banner note (the black box in the company header) — saves immediately.
   // oninput debounces ~500ms; onblur flushes. Writes fyrirtaeki.banner_note
   // and keeps the in-memory list row in sync so re-renders show the text.
+  // 25.09.2026 (Agnar: „mjög mikilvægar nótur — sami texti á báðum stöðum, samstillt, vistast alltaf"):
+  // athugasemdin er EIN — banner_note = plan_note (Ferðanóta á Ársskoðun) í gagnagrunns-kveikju. Hér:
+  //  • misheppnuð vistun er SÝNILEG (rauður rammi + logProblem) og minnið ekki uppfært, svo næsta blur reynir aftur;
+  //  • óvistuð innsláttur (500 ms bið) er vistaður þegar síðunni er lokað (pagehide);
+  //  • vistun tilkynnir 'fyrirtaeki-nota' svo Ársskoðun/Verkstæði sýni nýja textann strax.
   _bnTimers: {},
+  _bnPending: {},
   onBannerNoteInput: function(id, value) {
     var self = this;
     clearTimeout(this._bnTimers[id]);
+    this._bnPending[id] = value;
     this._bnTimers[id] = setTimeout(function() { self.saveBannerNote(id, value); }, 500);
   },
   saveBannerNote: function(id, value) {
     clearTimeout(this._bnTimers[id]);
+    delete this._bnPending[id];
     var c = this.list.find(function(x) { return x.id === id; });
     var val = (value == null ? '' : String(value)).trim();
     if (c && (c.banner_note || '') === val) return; // no change → skip write
-    if (c) c.banner_note = val;
+    function merkja(villa) {
+      document.querySelectorAll('#companies-main .co-banner-note').forEach(function(ta) {
+        ta.style.outline = villa ? '2px solid #dc2626' : '';
+        if (villa) ta.title = 'Athugasemdin vistaðist EKKI — smelltu úr reitnum til að reyna aftur'; else ta.removeAttribute('title');
+      });
+    }
+    function villa(e) {
+      console.warn('banner_note save', e);
+      merkja(true);
+      try { if (window.logProblem) window.logProblem('banner_note_save_failed', 'co ' + id); } catch (_) {}
+    }
     try {
-      DB.sb.from('fyrirtaeki').update({ banner_note: val || null }).eq('id', id)
-        .then(function(r) { if (r && r.error) console.warn('banner_note save', r.error); },
-              function(e) { console.warn('banner_note save', e); });
-    } catch (e) { console.warn('banner_note save', e); }
+      DB.sb.from('fyrirtaeki').update({ banner_note: val || null, plan_note: val || null }).eq('id', id)
+        .then(function(r) {
+          if (r && r.error) { villa(r.error); return; }
+          if (c) { c.banner_note = val; c.plan_note = val; }
+          merkja(false);
+          try { document.dispatchEvent(new CustomEvent('fyrirtaeki-nota', { detail: { id: id, texti: val, uppruni: 'features' } })); } catch (_) {}
+        }, villa);
+    } catch (e) { villa(e); }
   },
   // 2026-06-11: stable per-tæki status dropdown rendered as part of the
   // canonical company-detail HTML (was previously bolted on by a 2s
@@ -710,3 +732,23 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(_patchAppSwitchView, 200);
   setTimeout(_patchAppSwitchView, 800);
 });
+
+// 25.09.2026 — athugasemd fyrirtækis (banner_note = Ferðanóta): nýr texti héðan eða annars staðar
+// (Ársskoðun, Verkstæði, önnur vél um realtime) uppfærir minnið og opna reitinn — nema verið sé að skrifa í hann.
+document.addEventListener('fyrirtaeki-nota', function(e) {
+  var d = e.detail || {}; if (!d.id || d.uppruni === 'features' || typeof Companies === 'undefined') return;
+  var id = +d.id, val = d.texti == null ? '' : String(d.texti);
+  var c = (Companies.list || []).find(function(x) { return +x.id === id; });
+  if (c) { c.banner_note = val; c.plan_note = val; }
+  document.querySelectorAll('#companies-main .co-banner-note[oninput*="onBannerNoteInput(' + id + ',"]').forEach(function(ta) {
+    if (document.activeElement === ta || Companies._bnPending[id] != null) return;
+    if (ta.value !== val) { ta.value = val; try { ta.dispatchEvent(new Event('input', { bubbles: false })); } catch (_) {} }
+  });
+});
+// Óvistaður texti (innan 500 ms biðarinnar) vistaður þegar síðunni er lokað eða skipt um flipa.
+function _bnFlush() {
+  if (typeof Companies === 'undefined' || !Companies._bnPending) return;
+  Object.keys(Companies._bnPending).forEach(function(id) { try { Companies.saveBannerNote(+id, Companies._bnPending[id]); } catch (_) {} });
+}
+window.addEventListener('pagehide', _bnFlush);
+document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden') _bnFlush(); });

@@ -128,7 +128,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script>
 (function(){
   var v=document.getElementById('boot-veil'),done=false;
-  function go(){ if(done||!v)return; done=true; v.style.opacity='0'; v.style.pointerEvents='none'; setTimeout(function(){ try{v.remove()}catch(_){} },420); }
+  function go(){ if(done||!v)return; done=true; hulaBuin=true; try{ window.__hula={ grunnur: klarFra?klarFra-t0:null, lyft: Date.now()-t0 }; }catch(_){} try{mo0&&mo0.disconnect()}catch(_){} v.style.opacity='0'; v.style.pointerEvents='none'; setTimeout(function(){ try{v.remove()}catch(_){} },420); }
   // 19.09.2026 (Agnar: „heiftarlegt loadrace á forsíðunni"). Þrennt var að:
   //  (1) öryggis-fallbackið taldi 6,5 sek frá FYRSTA ramma. Á kaldri hleðslu (eftir „Endurhlaða", sem tæmir
   //      skyndiminnið) eru bundlarnir enn að koma þá — hulan lyftist af óstíluðu millistigi. Það telur nú frá
@@ -138,6 +138,35 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   //  (3) hliðarstikan raðast og felur takka eftir load (mælt: 56 -> 37 sýnilegir). Hulan bíður nú þar til
   //      fjöldi sýnilegra takka hefur staðið kyrr í 450 ms.
   var sidast=-1, kyrrFra=0, loadAt=0, t0=Date.now();
+  // 25.09.2026 (hopp eftir hulu): mælt á fyrirtækjasíðu — hulan lyftist 4,3 sek en skreytipappar (404/405/411/363)
+  // röðuðu síðunni upp í 2 sek í viðbót fyrir framan notandann (CLS 0,26). Hulan bíður nú líka þar til
+  // virka sýnin hefur verið kyrr (engin childList-breyting) í 350 ms. Hráa MutationObserver-ið er búið til hér,
+  // áður en 252 vefur MutationObserver, svo það skilar sér strax. Hámarkið hér að neðan gildir áfram.
+  var sidastaBreyting=Date.now(), mo0=null;
+  // …og þar til engin Supabase-lesning (GET/HEAD á /rest/v1/) hefur verið í gangi í 250 ms. Mælt á Þjónustutækjum og
+  // fyrirtækjasíðu: DOM-ið var kyrrt meðan beðið var eftir svari, hulan lyftist, og svarið teiknaðist svo 0,6–0,7 s síðar
+  // fyrir framan notandann. Þetta lag er sett á undan rest-samnyting.js og db.js, svo það sér raunverulegar beiðnir.
+  var iGangi=0, netKyrrFra=Date.now(), hulaBuin=false, klarFra=0;
+  try{
+    var f0=window.fetch;
+    if(typeof f0==='function') window.fetch=function(u,o){
+      var slod=typeof u==='string'?u:((u&&u.url)||'');
+      var adf=String((o&&o.method)||(u&&u.method)||'GET').toUpperCase();
+      if(hulaBuin||slod.indexOf('/rest/v1/')<0||(adf!=='GET'&&adf!=='HEAD')) return f0.apply(this,arguments);
+      iGangi++;
+      var lokid=function(){ iGangi=Math.max(0,iGangi-1); if(!iGangi) netKyrrFra=Date.now(); };
+      var p=f0.apply(this,arguments);
+      try{ p.then(lokid,lokid); }catch(_){ lokid(); }
+      return p;
+    };
+  }catch(_){}
+  try{
+    mo0=new MutationObserver(function(ms){
+      var a=document.querySelector('[id^="view-"].active');
+      for(var i=0;i<ms.length;i++){ if(a&&a.contains(ms[i].target)){ sidastaBreyting=Date.now(); return; } }
+    });
+    mo0.observe(document.documentElement,{childList:true,subtree:true});
+  }catch(_){}
   function efni(a){
     var t=(a.innerText||'').trim().length>40 || a.querySelector('button,table,input');
     if(t) return true;
@@ -154,9 +183,14 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     for(var i=0;i<bs.length;i++) if(bs[i].offsetParent) n++;
     if(n!==sidast){ sidast=n; kyrrFra=nu; }
     var kyrr=nu-kyrrFra>=450 && !document.documentElement.classList.contains('sb-settling');
-    if(a && efni(a) && loadAt && kyrr){ clearInterval(iv); setTimeout(go,200); return; }
+    var grunnur=a && efni(a) && loadAt && kyrr && !window.__coBootHold && !document.getElementById('_co-settle-veil');
+    if(!grunnur) klarFra=0; else if(!klarFra) klarFra=nu;
+    // Kyrrð (DOM 350 ms + net 250 ms) fær MEST 0,8 s umfram gömlu skilyrðin — mælt á framleiðslubúntinum: án þaks
+    // beið hulan 3 s lengur á síðum sem fá sífellt smáuppfærslur (hún lenti á hámarkinu), sem er verra en hoppið.
+    var kyrrt=(nu-sidastaBreyting>=350 && !iGangi && nu-netKyrrFra>=250) || (klarFra && nu-klarFra>=800);
+    if(grunnur && kyrrt){ clearInterval(iv); try{mo0&&mo0.disconnect()}catch(_){} setTimeout(go,120); return; }
     // öryggis-fallback: hulan hverfur ALLTAF — 6,5 sek eftir load, eða 25 sek frá byrjun
-    if((loadAt && nu-loadAt>6500) || nu-t0>25000){ clearInterval(iv); go(); }
+    if((loadAt && nu-loadAt>6500) || nu-t0>25000){ clearInterval(iv); try{mo0&&mo0.disconnect()}catch(_){} go(); }
   },150);
   // Villa í skriftu má ekki lyfta hulunni af hálfhlaðinni síðu: bíða eftir load, svo 1,5 sek.
   window.addEventListener('error',function(){
@@ -411,8 +445,8 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
-<script src="/js/rest-samnyting.js?v=20260921n"></script>
-<script src="/js/db.js?v=20260921g"></script>
+<script src="/js/rest-samnyting.js?v=20260925afk"></script>
+<script src="/js/db.js?v=20260925nota"></script>
 <!-- Problem registry: loads right after db.js so window.logProblem + auto error
      capture are live before every patch below (records problems to app_problems). -->
 <script defer src="/js/patches/309-problem-registry.js?v=20260921a"></script>
@@ -427,7 +461,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/380-reikningsbeidnir-ljos.js?v=20260919a"></script>
 <script defer src="/js/patches/381-kunnaleit-ur-posti.js?v=20260919a"></script>
 <script defer src="/js/patches/148-date-format-unify.js?v=20260515a"></script>
-<script defer src="/js/patches/00-legacy.js?v=20260914pg3"></script>
+<script defer src="/js/patches/00-legacy.js?v=20260925afk"></script>
 <script defer src="/js/patches/290-api-key-header.js?v=20260729"></script>
 <script defer src="/js/patches/169-logo-customization.js?v=20260601b"></script>
 <script defer src="/js/patches/170-unit-delete.js?v=20260624a"></script>
@@ -454,7 +488,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/17-form-validation.js?v=20260503"></script>
 <script defer src="/js/patches/18-nav-history.js?v=20260512a"></script>
 <script defer src="/js/patches/19-kennitala-lookup.js?v=20260511d"></script>
-<script defer src="/js/patches/20-mark-invoice-paid.js?v=20260921a"></script>
+<script defer src="/js/patches/20-mark-invoice-paid.js?v=20260925afk"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 21-inspection-forecast.js -->
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 22-vsk-report.js -->
 <script defer src="/js/patches/23-aging-report.js?v=20260914pg2"></script>
@@ -526,7 +560,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/88-apply-utlit-almennt.js?v=20260817retired"></script>
 <script defer src="/js/patches/89-monthly-inspection-strip.js?v=20260824canon"></script>
 <script defer src="/js/patches/90-unit-row-actions.js?v=20260510f"></script>
-<script defer src="/js/patches/91-important-companies.js?v=20260921a"></script>
+<script defer src="/js/patches/91-important-companies.js?v=20260925afk"></script>
 <script defer src="/js/patches/92-credit-by-num.js?v=20260914pg2"></script>
 <script defer src="/js/patches/93-detail-stay-open.js?v=20260512a"></script>
 <script defer src="/js/patches/94-document-templates.js?v=20260909vist1"></script>
@@ -571,7 +605,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/134-job-notes-display.js?v=20260512c"></script>
 <script defer src="/js/patches/136-companies-back-fix.js?v=20260607a"></script>
 <script defer src="/js/patches/137-verk-actions.js?v=20260511b"></script>
-<script src="/js/features.js?v=20260921j"></script>
+<script src="/js/features.js?v=20260925nota"></script>
 <!-- jsQR er nú hlaðið EFTIR-PÖNTUN (lazy) þegar myndavélar-skanninn opnar — sjá js/scanner.js
      (._loadJsQR) og js/qrscan.js. Áður var þetta render-blocking <script> á HVERRI síðuhleðslu
      (~257 KB) þó það þurfi bara í QR-skönnun. -->
@@ -1020,8 +1054,8 @@ var Lanstaeki = {
 </script>
 <!-- PERF: throttle MutationObservers BEFORE any observer is constructed.
      Must run synchronously before newfeatures.js + every patch boots. -->
-<script src="/js/patches/252-mo-throttle.js?v=20260630a"></script>
-<script src="/js/newfeatures.js?v=20260920"></script>
+<script src="/js/patches/252-mo-throttle.js?v=20260925afk"></script>
+<script src="/js/newfeatures.js?v=20260925afk"></script>
     <script src="/js/mapfix.js?v=20260714geo"></script>
     <script src="/js/floorplanfix.js?v=20260920"></script>
     <script src="/js/navfix.js?v=1776869886801"></script>
@@ -1041,11 +1075,11 @@ var Lanstaeki = {
 <script defer src="/js/patches/150-brunakerfi-pricelist.js?v=20260515b"></script>
 <script defer src="/js/patches/151-brunakerfi-doc-import.js?v=20260515f"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 152-til-rukkun.js -->
-<script defer src="/js/patches/153-arsskodun.js?v=20260925c"></script>
+<script defer src="/js/patches/153-arsskodun.js?v=20260925nota"></script>
 <script defer src="/js/patches/154-last-view-memory.js?v=20260912dagskratm"></script>
 <script defer src="/js/patches/155-arsskodun-map-embed.js?v=20260924a"></script>
 <script defer src="/js/patches/177-inservice-clients.js?v=20260921d"></script>
-<script defer src="/js/patches/156-geocode-prewarm.js?v=20260912sidur"></script>
+<script defer src="/js/patches/156-geocode-prewarm.js?v=20260925afk"></script>
 <script defer src="/js/patches/157-allir-vidskiptavinir.js?v=20260923b"></script>
 <script defer src="/js/patches/158-vidsk-detail.js?v=20260921a"></script>
 <script defer src="/js/patches/159-data-quality-banner.js?v=20260702a"></script>
@@ -1062,7 +1096,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/164-companies-open-loading-fix.js?v=20260705a"></script>
 <script defer src="/js/patches/165-visit-workflow.js?v=20260921b"></script>
 <script defer src="/js/patches/372-payday-spegill.js?v=20260911a"></script>
-<script defer src="/js/patches/373-leidsogn-uttektarplan.js?v=20260912plan"></script>
+<script defer src="/js/patches/373-leidsogn-uttektarplan.js?v=20260925afk"></script>
 <script defer src="/js/patches/166-krofu-yfirlit.js?v=20260923d"></script>
 <script defer src="/js/patches/167-hreyfingarlisti.js?v=20260921a"></script>
 <script defer src="/js/patches/168-company-inspection-report.js?v=20260921a"></script>
@@ -1079,7 +1113,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/187-inservice-row-reports.js?v=20260924a"></script>
 <script defer src="/js/patches/188-promote-customer.js?v=20260609a"></script>
 <script defer src="/js/patches/189-sidebar-guardian.js?v=20260610a"></script>
-<script defer src="/js/patches/190-thjonustu-verkstaedi.js?v=20260921a"></script>
+<script defer src="/js/patches/190-thjonustu-verkstaedi.js?v=20260925nota"></script>
 <script defer src="/js/patches/191-unit-i-vinnslu.js?v=20260610c"></script>
 <script defer src="/js/patches/193-payment-review.js?v=20260813gaet"></script>
 <!-- hibernated 2026-09-12 (hnappur falinn, settings.eftirfylgni tómt): 194-eftirfylgni.js -->
@@ -1113,7 +1147,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/232-bakendi.js?v=20260909vist"></script>
 <script defer src="/js/patches/233-uttekt-pdf-autosave.js?v=20260726drog"></script>
 <script defer src="/js/patches/234-verk-soft-delete.js?v=20260623b"></script>
-<script defer src="/js/patches/235-deeplink-subroutes.js?v=20260629a"></script>
+<script defer src="/js/patches/235-deeplink-subroutes.js?v=20260925afk"></script>
 <script defer src="/js/patches/236-customer-sameining.js?v=20260914pg"></script>
 <script defer src="/js/patches/237-customer-brief.js?v=20260921a"></script>
 <script defer src="/js/patches/238-adstod-banner.js?v=20260629d"></script>
@@ -1144,11 +1178,11 @@ var Lanstaeki = {
 <script defer src="/js/patches/342-turbopaint-nav.js?v=20260830b"></script>
 <script defer src="/js/patches/325-table-single-scroller.js?v=20260828b"></script>
 <script defer src="/js/patches/328-simi-table-hscroll.js?v=20260830vp"></script>
-<script defer src="/js/patches/326-dalkastjori.js?v=20260829jkr"></script>
+<script defer src="/js/patches/326-dalkastjori.js?v=20260925afk"></script>
 <script defer src="/js/patches/327-sala-simi-hreinsun.js?v=20260829a"></script>
 <script defer src="/js/patches/328-uttekt-vorn.js?v=20260924b"></script>
 <script defer src="/js/patches/329-simi-fljotandi-takkar.js?v=20260829d"></script>
-<script defer src="/js/patches/313-contrast-clarity.js?v=20260925d"></script>
+<script defer src="/js/patches/313-contrast-clarity.js?v=20260925afk2"></script>
 <script defer src="/js/patches/318-color-scheme-light.js?v=20260826a"></script>
 <!-- hibernated 2026-08-23: TEMPORARY event-logging debug patch, no longer needed → _attic/patches/145-companies-diagnose.js -->
 <!-- <script defer src="/js/patches/145-companies-diagnose.js?v=20260516a"></script> -->
@@ -1169,7 +1203,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/337-fleiri-yfirlit-compact.js?v=20260830m3"></script>
 <script defer src="/js/patches/338-sala-ars-profil-simi.js?v=20260830m3"></script>
 <script defer src="/js/patches/339-rekstrar-bruna-thjonusta-simi.js?v=20260830m3"></script>
-<script defer src="/js/patches/341-ars-skjar-scroll-left.js?v=20260923a"></script>
+<script defer src="/js/patches/341-ars-skjar-scroll-left.js?v=20260925afk"></script>
 <script defer src="/js/patches/342-ars-man-col-align.js?v=20260830a"></script>
 <script defer src="/js/patches/317-elon-trace.js?v=20260921i"></script>
 <script defer src="/js/patches/264-beidni-gate.js?v=20260710a"></script>
@@ -1244,7 +1278,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/354-opp-styribord.js?v=20260906a"></script>
 <script defer src="/js/patches/355-kost-vidvorun.js?v=20260906a"></script>
 <script defer src="/js/patches/356-arsgrind-simi.js?v=20260906a"></script>
-<script defer src="/js/patches/357-fyrirtaeki-djuptenging.js?v=20260906b"></script>
+<script defer src="/js/patches/357-fyrirtaeki-djuptenging.js?v=20260925afk"></script>
 <script defer src="/js/patches/359-samskipti-eitt-box.js?v=20260906b"></script>
 <script defer src="/js/patches/360-raesi-skyndiminni.js?v=20260906b"></script>
 <script defer src="/js/patches/361-vettvangsathuganir.js?v=20260921i"></script>
@@ -1273,20 +1307,20 @@ var Lanstaeki = {
 <script defer src="/js/patches/382-ars-simi-samraemi.js?v=20260919b"></script>
 <script defer src="/js/patches/389-tilbuin-midar.js?v=20260922b"></script>
 <script defer src="/js/patches/390-verkstaedi-midar.js?v=20260922d"></script>
-<script defer src="/js/patches/391-hlidarstika-midar.js?v=20260922e"></script>
+<script defer src="/js/patches/391-hlidarstika-midar.js?v=20260925afk"></script>
 <script defer src="/js/patches/392-skodun-midar.js?v=20260923b"></script>
 <script defer src="/js/patches/393-ars-midar.js?v=20260922ae"></script>
 <script defer src="/js/patches/401-fljotandi-rod.js?v=20260923c"></script>
 <script defer src="/js/patches/402-brunastal-fyrirtaekjasida.js?v=20260924a"></script>
 <script defer src="/js/patches/403-skjol-spjald.js?v=20260924c"></script>
 <script defer src="/js/patches/404-taeki-spjald.js?v=20260924e"></script>
-<script defer src="/js/patches/405-efsta-rod.js?v=20260923j"></script>
+<script defer src="/js/patches/405-efsta-rod.js?v=20260925afk"></script>
 <script defer src="/js/patches/405-bordi-hnappar.js?v=20260923e"></script>
 <script defer src="/js/patches/411-thett-spjald.js?v=20260924q"></script>
 <script defer src="/js/patches/412-skyrsla-samantekt.js?v=20260924zz"></script>
 <script defer src="/js/patches/413-afslaettir-c.js?v=20260924e"></script>
 <script defer src="/js/patches/408-brunakerfi-skyrsla-inni.js?v=20260923b"></script>
-<script defer src="/js/patches/409-samraeming-sidna.js?v=20260924z"></script>
+<script defer src="/js/patches/409-samraeming-sidna.js?v=20260925afk"></script>
 <script defer src="/js/patches/410-simi-yfirferd.js?v=20260924a"></script>
 <script defer src="/js/patches/406-bordi-utlit.js?v=20260923b"></script>
 <script defer src="/js/patches/407-hledslutakki.js?v=20260923a"></script>
@@ -1297,14 +1331,14 @@ var Lanstaeki = {
 <script defer src="/js/patches/396-bilstjori-spjaldtolva.js?v=20260922c"></script>
 <script defer src="/js/patches/395-app-midar.js?v=20260922b"></script>
 <script defer src="/js/patches/394-ars-vinnusvaedi.js?v=20260924e"></script>
-<script defer src="/js/patches/414-ars-efri-a.js?v=20260925sp"></script>
+<script defer src="/js/patches/414-ars-efri-a.js?v=20260925afk2"></script>
 <script defer src="/js/patches/415-ars-tafla-j.js?v=20260925sp"></script>
 <script defer src="/js/patches/416-ars-sida-dokk.js?v=20260925sp"></script>
 <script defer src="/js/patches/417-ars-simi-skjar.js?v=20260925d"></script>
 <script defer src="/js/patches/418-skodun-efri.js?v=20260925e"></script>
     <script src="/js/tekjur.js?v=20260914pg3"></script>
 <script src="/js/v9.js?v=20260817rodun"></script>
-<script src="/js/scanmode.js?v=20260510f"></script>
+<script src="/js/scanmode.js?v=20260925afk"></script>
 <script src="/js/detailview.js?v=20260515a"></script>
 <script src="/js/qrprint.js?v=1776797624642"></script>
 <script src="/js/qrscan.js?v=20260510v4"></script>
@@ -1317,7 +1351,7 @@ var Lanstaeki = {
 <script src="/js/settigeymslu.js?v=1776797624642"></script>
 <script src="/js/mobilenav.js?v=20260826vm7"></script>
 <script src="/js/printphonefix.js?v=1776797624642"></script>
-<script src="/js/qrtag.js?v=1776797624642"></script>
+<script src="/js/qrtag.js?v=20260925afk"></script>
 <script src="/js/posprint.js?v=20260510f"></script>
 <script src="/js/vorur.js?v=20260921b"></script>
 <script src="/js/sala.js?v=20260728deeplink"></script>

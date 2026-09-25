@@ -1132,6 +1132,18 @@
     }));
   }
 
+  // 25.09.2026: sami minnispunktur á þremur stöðum — breyting annars staðar (fyrirtækjasíða, Ársskoðun, önnur vél)
+  // uppfærir reitinn hér strax, nema verið sé að skrifa í hann.
+  document.addEventListener('fyrirtaeki-nota', e => {
+    const d = e.detail || {}; if (!d.id) return;
+    const val = d.texti == null ? '' : String(d.texti);
+    const _c = (window.state && state.companies || []).find(x => +x.id === +d.id);
+    if (_c) _c.banner_note = val;
+    document.querySelectorAll('.sv-note[data-id="' + (+d.id) + '"]').forEach(ta => {
+      if (document.activeElement !== ta && ta.value !== val) ta.value = val;
+    });
+  });
+
   function openView() {
     document.querySelectorAll('[id^=view-]').forEach(x => { x.style.display = 'none'; x.classList.remove('active'); });
     ensureView();

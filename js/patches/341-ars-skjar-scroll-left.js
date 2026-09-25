@@ -199,7 +199,9 @@
     // `apply()` kallar á þetta fall við hashchange · resize · pageshow · slokk-viewmode · ræsingu (og 80/400/
     // 1200/3000 ms), svo sýnin fær sína stillingu um leið og hún birtist. Smellur á Ársskoðunar-hnappinn sjálfan
     // heldur líka áfram að virka: við 50/280 ms er sýnin orðin virk og skilyrðið hér stenst.
-    if (!v.classList.contains('active') && !v.offsetParent) return;
+    // 25.09.2026 (afköst): offsetParent á ÓVIRKRI sýn þvingaði layout eftir hverja DOM-breytingu á öllum öðrum síðum
+    // (mælt 0,66 s á Tekjum). Sýnin birtist aðeins með .active (eða inline display:block).
+    if (!v.classList.contains('active') && v.style.display !== 'block') return;
     if (!isWide()) {
       try {
         v.style.removeProperty('margin-left');

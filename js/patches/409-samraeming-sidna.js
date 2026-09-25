@@ -76,14 +76,16 @@
     const cands = Array.from(view.querySelectorAll('h1,h2')).concat(Array.from(view.querySelectorAll('h3,div,span,b,strong')));
     for (let i = 0; i < cands.length; i++) {
       const el = cands[i];
-      if (el.closest('button,a,input,select,table,.leaflet-container,#_pe-panel,.card,.sk-card,._skel,.tcard,[data-s409-skip]')) continue;
+      // 25.09.2026 (afköst): ódýru skilyrðin fyrst (sömu skilyrði, sama niðurstaða) — áður var closest() með 13
+      // veljurum og getBoundingClientRect keyrt á ÖLLUM div/span sýnarinnar (þúsundir) í hverju tifi.
+      if (el.children.length > 3) continue;
+      // beinn textahnútur þarf að vera í stakinu sjálfu (ekki bara í börnum)
+      if (!Array.from(el.childNodes).some(n => n.nodeType === 3 && n.nodeValue.trim().length > 1)) continue;
+      const t = (el.textContent || '').replace(EMOJI, '').trim(); if (t.length < 3 || t.length > 60) continue;
       const r = el.getBoundingClientRect(); if (!r.height) continue;
       let sy = 0, pe = el.parentElement; while (pe && pe !== view.parentElement) { sy += pe.scrollTop || 0; pe = pe.parentElement; }   // staða í ÓSKRUNUÐU efni
       const y = r.top - vr.top + sy; if (y > 320 || y < -10) continue;
-      if (el.children.length > 3) continue;
-      const t = (el.textContent || '').replace(EMOJI, '').trim(); if (t.length < 3 || t.length > 60) continue;
-      // beinn textahnútur þarf að vera í stakinu sjálfu (ekki bara í börnum)
-      if (!Array.from(el.childNodes).some(n => n.nodeType === 3 && n.nodeValue.trim().length > 1)) continue;
+      if (el.closest('button,a,input,select,table,.leaflet-container,#_pe-panel,.card,.sk-card,._skel,.tcard,[data-s409-skip]')) continue;
       const cs = getComputedStyle(el); const minFs = /^H[12]$/.test(el.tagName) ? 17 : 19; if (parseFloat(cs.fontSize) < minFs || +cs.fontWeight < 600) continue;
       if (onLightSurface(el, view)) continue;
       return el;
@@ -109,8 +111,11 @@
       if (u && !u.matches('button,a,[onclick],[role=button],input,select') && !u.querySelector('button,input,select,a') && (u.textContent || '').trim().length < 160 && parseFloat(getComputedStyle(u).fontSize) <= 15 && lum(getComputedStyle(u).color) < .6 && !onLightSurface(u, view)) u.classList.add('_s409-undir');
     }
   }
-  let timer = null;
-  const schedule = () => { clearTimeout(timer); timer = setTimeout(tick, 120); };
+  // 25.09.2026 (hopp): 120 ms debounce lét titilinn fá Playfair-stærðina EFTIR málun — sama 14 px hopp og var lagað
+  // á Ársskoðun 24.09, nú mælt á Brunakerfi (CLS 0,21 við hverja opnun). Vaktin (252) skilar sér í rAF, fyrir málun:
+  // tick keyrir þar í sama ramma, mest einu sinni per ramma. finnaTitil er ódýr síðan ódýru skilyrðin fóru fyrst.
+  let inni = false;
+  const schedule = () => { if (inni) return; inni = true; try { tick(); } catch (_) {} finally { inni = false; } };
   window.addEventListener('hashchange', () => { setTimeout(tick, 200); setTimeout(tick, 1200); setTimeout(tick, 3000); });
   new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
   setInterval(tick, 2500);

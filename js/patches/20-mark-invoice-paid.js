@@ -258,6 +258,7 @@
   //   - greitt_med = 'greitt_sidar'  ("Greitt síðar" — pay-later flag)
   // …AND paid_at IS NULL (not yet marked paid).
   let _unpaid = [];
+  let _unpaidLoaded = false;   // 25.09.2026: sótt a.m.k. einu sinni → spjaldið má teiknast strax úr minni
   async function loadUnpaid() {
     const SB = getSB();
     if (!SB) return [];
@@ -270,6 +271,7 @@
         .order('created_at', { ascending: true }).order('id').range(from, to))
         .then(data => ({ data, error: null }), error => ({ data: null, error }));
       if (error) throw error;
+      _unpaidLoaded = true;
       _unpaid = (data || []).map(s => ({
         id: s.id,
         num: s.num || '',
@@ -394,6 +396,26 @@
 
   document.addEventListener('view-shown', e => {
     if (e.detail && (e.detail.name === 'income' || e.detail.name === 'bokhalds-yfirlit')) {
+      // 25.09.2026 (hopp): spjaldið var AÐEINS teiknað eftir 300 ms + nýja sókn — það lagðist þá efst á síðu sem var
+      // þegar sýnd og ýtti öllu niður (mælt: CLS 0,71 á Tekjum við hverja opnun). Listinn er þegar í minni (sóttur
+      // við ræsingu og á 60 s fresti), svo spjaldið er teiknað STRAX úr honum; sóknin á eftir uppfærir það á staðnum.
+      // Sýnin endurteiknar main með innerHTML ~50 ms síðar (16) og aftur þegar gögnin koma, og tekur spjaldið með sér.
+      // Vaktin setur það aftur inn í SAMA verki (óinngjafað MutationObserver — örverk, fyrir málun), svo aldrei sést
+      // rammi án þess. (Inngjafaða 252-útgáfan skilaði sér stundum ramma of seint → spjaldið ýtti síðunni niður.)
+      try {
+        const v0 = document.getElementById('view-' + e.detail.name);
+        if (v0 && !v0._mipVakt) {
+          v0._mipVakt = true;
+          const MO0 = window.__NativeMutationObserver || MutationObserver;
+          new MO0(() => {
+            if (!_unpaidLoaded || !_unpaid.length || !v0.classList.contains('active')) return;
+            if (document.getElementById('mip-panel')) return;
+            const m1 = v0.querySelector('.main-panel, main') || v0;
+            if (m1.children.length) renderUnpaidPanel(m1);
+          }).observe(v0, { childList: true, subtree: true });
+        }
+        if (_unpaidLoaded) renderUnpaidPanel(v0 && (v0.querySelector('.main-panel, main') || v0));
+      } catch (_) {}
       setTimeout(async () => {
         await loadUnpaid();
         updateNavBadge();

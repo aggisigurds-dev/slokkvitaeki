@@ -226,11 +226,18 @@
   function wrapUsable(w) {
     return !!w && w.offsetParent !== null && getComputedStyle(w).display !== 'none';
   }
+  // 25.09.2026 (afköst): mountButton keyrði við hverja DOM-breytingu í öllu skjalinu og wrapUsable()
+  // þvingaði layout í hvert sinn. Standi takkinn þegar í borðanum og ekkert sem ræður staðnum hefur
+  // breyst (hamur, breidd, borðinn sjálfur) er engu að breyta.
+  let _mbKey = '';
   function mountButton() {
     css();
     const wrap = document.querySelector('.bb-rightwrap');
-    const usable = wrapUsable(wrap);
     let b = document.getElementById(BTN);
+    const key = (document.documentElement.getAttribute('data-viewmode') || '') + '|' + innerWidth + '|' + document.documentElement.className + '|' + document.body.className;
+    if (b && wrap && b.dataset.spot === 'banner' && b.parentElement === wrap && key === _mbKey) return;
+    _mbKey = key;
+    const usable = wrapUsable(wrap);
     // Fljótandi 📐 á síðu ÁN töflu er bara overlay. Mælt á Kröfu-listanum
     // (spjöld, engin tafla) — 52×52 sat ofan á síðasta fyrirtæki.
     if (!usable && !currentTable()) {

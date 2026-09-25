@@ -340,7 +340,8 @@
   function injectGeymslaBtn(){
     if (document.getElementById('_sc_openbtn_g')) return;
     var gv = document.getElementById('view-geymsla');
-    if (!gv || !gv.offsetParent) return;
+    // 25.09.2026 (afköst): klasinn í stað offsetParent (þvingaði layout á 2 s fresti)
+    if (!gv || !((gv.classList.contains('active') && gv.style.display !== 'none') || gv.style.display === 'block')) return;
     var headerRow = gv.querySelector('div[style*="justify-content:space-between"]');
     if (!headerRow) {
       var divs = gv.querySelectorAll('div');
@@ -362,7 +363,7 @@
   function injectLanstaekiBtn(){
     if (document.getElementById('_sc_openbtn_l')) return;
     var lv = document.getElementById('view-lanstaeki');
-    if (!lv || !lv.offsetParent) return;
+    if (!lv || !((lv.classList.contains('active') && lv.style.display !== 'none') || lv.style.display === 'block')) return;
     var headerRow = lv.querySelector('div[style*="justify-content:space-between"]');
     if (!headerRow) {
       var divs = lv.querySelectorAll('div');

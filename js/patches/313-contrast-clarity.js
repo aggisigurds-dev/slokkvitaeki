@@ -317,19 +317,24 @@
   // AÐEINS RÖÐIN BREYTIST. Sömu hlutir eru valdir eftir sömu skilyrðum og fá
   // nákvæmlega sama blek — ákvörðunin er tekin í lestrarfasanum og geymd, og
   // öll skrifin gerast í einni lotu á eftir þar sem enginn lestur truflar.
+  // 25.09.2026 (afköst): scan() tekur nú líka lista af rótum (aðeins nýir hnútar
+  // eftir DOM-breytingu) — sjá schedule(). peGoverned() færð aftast: hún var
+  // dýrasta kallið (2,3 s af 20 s á Ársskoðun) og keyrði á HVERJUM hlut, en
+  // skiptir aðeins máli fyrir þá sem annars fengju blek. Sama niðurstaða.
   function scan(root) {
     if (!root) return 0;
-    const all = root.querySelectorAll('*');
+    let all;
+    if (Array.isArray(root)) {
+      all = [];
+      for (const r of root) { if (r.nodeType !== 1) continue; all.push(r); const d = r.querySelectorAll('*'); for (let i = 0; i < d.length; i++) all.push(d[i]); }
+    } else all = root.querySelectorAll('*');
     const limit = Math.min(all.length, 6000);
     const akvardanir = [];   // { el, litur, deyfa }
     for (let i = 0; i < limit; i++) {
       const el = all[i];
       if (SKIP_TAG.test(el.tagName)) continue;
-      if (el.closest && el.closest(SKIP_CLOSEST)) continue;
       if (!hasOwnText(el)) continue;
-      // Stílstjórinn ræður (26.08): hlutur sem lit-regla notandans nær yfir
-      // (sjálfur eða gegnum erfðir) fær EKKI inline-blek frá skannanum.
-      if (peGoverned(el)) continue;
+      if (el.closest && el.closest(SKIP_CLOSEST)) continue;
       const cs = getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden') continue;
       if (parseFloat(cs.fontSize) < 8) continue;
@@ -347,6 +352,9 @@
       if (isSteelish(bg)) {
         const lightOnSteel = lum(fg) > 0.62;
         if (!lightOnSteel && ratio(fg, bg) >= 4.5) continue;
+        // Stílstjórinn ræður (26.08): hlutur sem lit-regla notandans nær yfir
+        // (sjálfur eða gegnum erfðir) fær EKKI inline-blek frá skannanum.
+        if (peGoverned(el)) continue;
         const size = parseFloat(cs.fontSize);
         const w = parseInt(cs.fontWeight, 10) || 400;
         akvardanir.push({
@@ -360,6 +368,7 @@
       const greyishFg = chroma(fg) < 55;
       if (!greyishFg || !greyishBg) continue;
       if (ratio(fg, bg) >= 4.5) continue;
+      if (peGoverned(el)) continue;
       akvardanir.push({ el, litur: pickInk(bg), deyfa: parseFloat(cs.opacity) < 0.7 });
     }
 
@@ -405,14 +414,30 @@
     return false;
   }
 
-  let _t = null;
+  // 25.09.2026 (afköst): DOM-breyting skannar aðeins NÝJU hnútana (addedNodes),
+  // ekki alla sýnina (allt að 6.000 hlutir í hvert sinn sem einhver pappi snerti
+  // DOM-ið — 3,3 s af 20 s á Ársskoðun). Full skönnun helst við sýnarskipti,
+  // hash, stillingar og ræsingu. Debounce fær hámarksbið (1 s) svo síða sem er
+  // aldrei róleg fái samt skönnun.
+  let _t = null, _full = false, _first = 0;
+  const _roots = new Set();
+  function run() {
+    _t = null; _first = 0;
+    injectCss();
+    const view = document.querySelector('.view.active') || document.querySelector('.view[style*="display: block"]') || document.body;
+    const full = _full || _roots.size > 300;
+    const roots = full ? null : Array.from(_roots).filter(r => r.isConnected && view.contains(r)
+      && !Array.from(_roots).some(o => o !== r && o.contains(r)));
+    _full = false; _roots.clear();
+    try { scan(full ? view : roots); } catch (e) { console.warn('[patch-313] scan', e); }
+  }
   function schedule(reason) {
+    if (reason !== 'dom') _full = true;
+    const now = Date.now();
+    if (!_first) _first = now;
     clearTimeout(_t);
-    _t = setTimeout(() => {
-      injectCss();
-      const view = document.querySelector('.view.active') || document.querySelector('.view[style*="display: block"]');
-      try { scan(view || document.body); } catch (e) { console.warn('[patch-313] scan', e); }
-    }, reason === 'now' ? 20 : 180);
+    const wait = reason === 'now' ? 20 : 180;
+    _t = setTimeout(run, Math.max(0, Math.min(wait, _first + 1000 - now)));
   }
 
   function wrapSwitch() {
@@ -432,7 +457,15 @@
   function observe() {
     if (window.__cxMo) return;
     try {
-      window.__cxMo = new MutationObserver(() => schedule('dom'));
+      window.__cxMo = new MutationObserver(ms => {
+        let any = false;
+        for (const m of ms) for (const n of m.addedNodes) {
+          // textContent= setur inn textahnút — þá gæti foreldrið fyrst núna átt eigin texta.
+          const el = n.nodeType === 1 ? n : (n.nodeType === 3 ? n.parentElement : null);
+          if (el) { _roots.add(el); any = true; }
+        }
+        if (any) schedule('dom');
+      });
       window.__cxMo.observe(document.body, { childList: true, subtree: true });
     } catch (_) {}
   }
