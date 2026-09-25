@@ -322,7 +322,8 @@
       'html[data-bstal-banner="on"] #bstal-ember{display:block}',
 
       /* ── samanbrots-takki: pinku lítill, situr fyrir ofan kassakerfisklukkuna ── */
-      '#bstal-banner .bb-mini{position:absolute;top:7px;right:13px;z-index:7;all:unset;cursor:pointer;'
+      // all:unset FYRST — annars strokar hún út position/top/right sem á undan stóðu.
+      '#bstal-banner .bb-mini{all:unset;position:absolute;top:7px;right:13px;z-index:7;cursor:pointer;'
         +'display:flex;align-items:center;justify-content:center;width:26px;height:15px;border-radius:5px;'
         +'background:linear-gradient(180deg,#2a2c31,#0c0d10);border:1px solid #000;'
         +'box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 1px 2px rgba(0,0,0,.8);'
@@ -332,14 +333,20 @@
       /* ── samanbrotinn: borðinn skreppur í eitt lítið merki efst til vinstri ── */
       MQ+'#bstal-banner{height:auto;right:auto;padding:4px;border-radius:11px}',
       MQ+'#bstal-banner .bb-face{height:30px;gap:7px;padding:0 7px;border-radius:7px}',
-      MQ+'#bstal-banner .bb-flames,'+MQ+'#bstal-banner .bb-word,'
-        +MQ+'#bstal-banner .bb-clockbox,'+MQ+'#bstal-banner .bb-bolt,'
+      // „bara eitt lítið merki": AÐRIR pappar hengja börn beint í .bb-face —
+      // mælt 25.09: ky-vm 70px, _pe-btn 26px og ⚡ Hlaða (_hl-takki) 74px, sem
+      // héldu samanbrotna borðanum í 401 px. Fela allt og sýna aðeins merkið og
+      // takkann; þá erfist reglan líka til þeirra sem bætast við síðar.
+      // Aðeins falið — enginn hnútur færður, svo enginn annar pappi missir sinn.
+      MQ+'#bstal-banner .bb-face > *{display:none}',
+      MQ+'#bstal-banner .bb-face > .bb-logo{display:block}',
+      MQ+'#bstal-banner .bb-face > .bb-mini{display:flex}',
+      MQ+'#bstal-banner .bb-word,'+MQ+'#bstal-banner .bb-bolt,'
         +MQ+'#bstal-ember{display:none}',
       MQ+'#bstal-banner .bb-logo{padding:0;margin:0}',
       MQ+'#bstal-banner .bb-logo::before{display:none}',
       MQ+'#bstal-banner .bb-logo img{height:19px}',
-      MQ+'#bstal-banner .bb-rightwrap{margin-left:2px;gap:0}',
-      MQ+'#bstal-banner .bb-mini{position:static;width:20px;height:14px}',
+      MQ+'#bstal-banner .bb-mini{position:relative;top:0;right:0;width:20px;height:14px}',
       /* efnið færist upp að merkinu — sömu þrjú tilvik og í fulla borðanum */
       MINI+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:56px!important}',
       MINI+'#view-field.active,'+MINI+'#view-counter.active,'+MINI+'#view-workshop.active{padding-top:60px!important}',
