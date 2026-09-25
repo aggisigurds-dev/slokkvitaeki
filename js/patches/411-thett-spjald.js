@@ -46,7 +46,11 @@
     //     tökkunum tveimur — athugasemdin fyllir vinstri dálkinn á móti.
     // 24.09 14:11 (Agnar: „to empty space on the left now … have it even, afsláttur box only 50% wide and teikningar"):
     // reitirnir vinstra megin undir athugasemdinni, tveir í röð; loftmynd + takkar hægra megin.
-    r('.co-banner', 'grid-template-areas:"id id" "facts mynd" "note mynd" "bupp knappar"!important;grid-template-rows:auto auto auto 1fr!important;align-items:start!important'),
+    // 25.09.2026 (Agnar, skjámynd með örvum): „switch the places of texti and the other boxes."
+    // Athugasemdin sat MILLI heimilisfangsins og upplýsingagrindarinnar; nú fer grindin upp að
+    // loftmyndinni (hæðir þeirra passa: 110 px á móti 150) og athugasemdin niður við takkana
+    // (36 px á móti 40). Sama röð og á öðrum fyrirtækjasíðum.
+    r('.co-banner', 'grid-template-areas:"id id" "facts mynd" "bupp mynd" "note knappar"!important;grid-template-rows:auto auto auto 1fr!important;align-items:start!important'),
     r('.co-bupp', 'grid-area:bupp!important;margin:0 0 0 12px!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;align-items:stretch!important'),
     r('.co-bupp ._bupp-lina', 'min-width:0!important'),
     r('.co-bupp .b411-oskrad', 'grid-column:1 / -1!important'),
