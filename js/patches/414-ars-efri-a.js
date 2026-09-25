@@ -51,8 +51,10 @@
   var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #view-arsskodun ';
   var F = ':not(#_p414a):not(#_p414b):not(#_p414c):not(#_p414d):not(#_p414e):not(#_p414f)';
   var SV = S.replace(/\s+$/, '');   // sýnin sjálf: #view-arsskodun.b414-on …
-  function rv(sel, css) { return sel.split(',').map(function (x) { return SV + x.trim() + F; }).join(',') + '{' + css + '}'; }
-  function r(sel, css) { return sel.split(',').map(function (s) { var m = s.trim().match(/^(.*?)(::?(?:before|after))$/); return S + (m ? m[1] + F + m[2] : s.trim() + F); }).join(',') + '{' + css + '}'; }
+  function rv(sel, css) { return sel.split(',').map(function (x) { return SV + x.trim() + F; }).join(',') + '{' + blek(css) + '}'; }
+  // blek-reglur: bstal-polish-css setur `small{color:…!important}` — hvert `color:` hjá okkur fær sama þunga
+  function blek(css) { return css.replace(/(^|;)color:([^;!]+)(?=;|$)/g, '$1color:$2!important'); }
+  function r(sel, css) { return sel.split(',').map(function (s) { var m = s.trim().match(/^(.*?)(::?(?:before|after))$/); return S + (m ? m[1] + F + m[2] : s.trim() + F); }).join(',') + '{' + blek(css) + '}'; }
   // rammi með tveimur skornum hornum: ytra lag (litur rammans) + innra lag (spjaldið), bæði klippt — og ská-línurnar sem
   // klippingin tekur af eru málaðar sem hallandi gradient-lög í hornunum tveimur
   function rammi(cls, frame, inni, rivet) {
@@ -116,7 +118,7 @@
     r('.b414-l b', 'color:#fff;font-weight:700'), r('.b414-l small', 'color:#8e97a6;margin-left:5px;font-size:11px'),
     r('.b414-l .gr', 'background:#1f6f42'), r('.b414-l .gu', 'background:#9c7c2c'), r('.b414-l .st', 'background:#8f98a8'),
     // litlu súlurnar (Eftir)
-    r('.b414-tikk', 'display:flex;flex-direction:column;gap:5px'),
+    r('.b414-tikk', 'display:flex;flex-direction:column;gap:5px;min-height:60px'),
     r('.b414-tikk .r', 'display:grid;grid-template-columns:92px minmax(0,1fr) 34px;gap:8px;align-items:center;font-family:' + MONO + ';font-size:11px;color:#d5dbe6'),
     r('.b414-tikk .r b', 'color:#fff;text-align:right;font-weight:700'),
     r('.b414-tikk .bar', 'height:5px;border-radius:3px;background:#131316;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)'),
@@ -124,7 +126,8 @@
     r('.b414-tikk .bar .ra', 'background:linear-gradient(90deg,#c95050,#6c1414)'), r('.b414-tikk .bar .gu', 'background:linear-gradient(90deg,#d8b866,#7a5a18)'), r('.b414-tikk .bar .st', 'background:linear-gradient(90deg,#8a919c,#3e434c)'),
     // flísar (Virði)
     r('.b414-f3', 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px'),
-    r('.b414-f', 'display:flex;flex-direction:column;gap:2px;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);min-width:0'),
+    r('.b414-f', 'display:flex;flex-direction:column;justify-content:center;gap:2px;height:50px;box-sizing:border-box;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);min-width:0;overflow:hidden'),
+    r('.b414-f .l,.b414-f .v', 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block'),
     r('.b414-f .l', 'font-family:' + MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a9b1bf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
     r('.b414-f .v', 'font-family:' + MONO + ';font-size:13px;font-weight:700;color:#fff;white-space:nowrap'),
     r('.b414-f .v small', 'font-size:10.5px;font-weight:400;color:#a9b1bf;margin-left:3px'),
@@ -132,7 +135,7 @@
     r('.b414-refresh', imp(SILVER_BTN) + ';width:26px;height:22px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;font-family:' + SANS + ';padding:0;flex:none'),
     // strimillinn
     r('.b414-strim', 'background:' + METAL + ';background-color:#0a0a0c;border:1px solid #000;border-radius:10px;padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)'),
-    r('.b414-strim .hd', 'display:flex;align-items:center;gap:10px;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#e9cf85'),
+    r('.b414-strim .hd', 'height:17px;display:flex;align-items:center;gap:10px;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#e9cf85'),
     r('.b414-strim .hd .dl', 'width:7px;height:7px;background:#e0a93e;transform:rotate(45deg);display:inline-block;flex:none'),
     r('.b414-strim .hd .r', 'margin-left:auto;color:#d5dbe6;letter-spacing:.04em;text-transform:none;font-weight:400;font-size:11.5px'),
     r('.b414-strim .hd .r b', 'color:#fff;font-weight:700'),
@@ -151,7 +154,7 @@
     r('.b414-man button:focus-visible', 'outline:2px solid #f3d98a;outline-offset:2px;border-radius:3px'),
     // Bílstjóra-flipinn (317): situr í hausröðinni hægra megin sem málmtakki — ekki færður, aðeins staðsettur
     rv('.b414-on', 'position:relative'),
-    rv('.b414-on #_bil-toggle', imp(METAL_BTN) + ';position:absolute!important;right:14px!important;top:var(--b414-bil,8px)!important;height:36px!important;padding:0 14px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center!important;gap:8px!important;margin:0!important;z-index:3;float:none!important'),
+    rv('.b414-on #_bil-toggle', imp(METAL_BTN) + ';position:absolute!important;right:14px!important;top:var(--b414-bil,181px)!important;height:36px!important;padding:0 14px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center!important;gap:8px!important;margin:0!important;z-index:3;float:none!important'),
     '}',
     '@media (max-width:1720px){' + S + '.b414-p.ghost.raun' + F + '{display:none}}',
     '@media (max-width:1400px){' + S + '.b414-m > .b414-p:not(.raun)' + F + '{display:none}}'
@@ -180,14 +183,24 @@
     var buidM = tala((buidTxt.match(/þar af\s*([\d.,]+\s*[Mþ]?)/) || [])[1] || '');
     var raun = heil(txt(hero.querySelector('.arsm-raun')) || (buidTxt.match(/(\d[\d.]*)\s*raunreiknu/) || [])[1]);
     var fjoldi = heil(txt(g.querySelector('._kpi--hlut ._kpi-n')));
+    var hlutS = txt(g.querySelector('._kpi--hlut ._kpi-s'));         // síað: „77 raðir í töflunni · af 636 á borðinu"
+    var radir = /raðir í töflunni/.test(hlutS) ? heil(hlutS) : NaN;
+    var fjoldiAf = heil((hlutS.match(/af\s+(\d[\d.]*)\s+á borðinu/) || [])[1]);
+    // hetjan: „Búið 18,6 m.kr · 366 staðir / Eftir 11,3 m.kr · 262 staðir" — staðatölur virðisins eru ÓSÍAÐAR
+    var ht = txt(hero);
+    var buidStadir = heil((ht.match(/Búið[^·]*·\s*(\d[\d.]*)\s*staði/) || [])[1]);
+    var eftirStadir = heil((ht.match(/Eftir[^·]*·\s*(\d[\d.]*)\s*staði/) || [])[1]);
     var buid = heil(txt(g.querySelector('._kpi--graent ._kpi-n')));
     var eftir = heil(txt(g.querySelector('._kpi--rautt ._kpi-n')));
-    var gs = txt(g.querySelector('._kpi--graent ._kpi-s'));        // „58% af borðinu · 375 með 2026-skýrslu skjalfesta"
-    var medSkyrslu = heil((gs.split('·')[1] || ''));
+    var gs = txt(g.querySelector('._kpi--graent ._kpi-s'));        // „58% af borðinu · 375 með 2026-skýrslu skjalfesta" | síað: „79% af borðinu · af 366 á borðinu"
+    var medSkyrslu = heil((gs.match(/(\d[\d.]*)\s+með\s+\S*\s*skýrslu/) || [])[1]);
+    var buidAf = heil((gs.match(/af\s+(\d[\d.]*)\s+á borðinu/) || [])[1]);
     var rs = txt(g.querySelector('._kpi--rautt ._kpi-s'));         // „95 komin á tíma · 6 án mánaðar · 161 eiga mánuð framundan"
-    var rp = rs.split('·');
-    var komin = heil(rp[0]), anMan = heil(rp[1] || ''), framundan = heil(rp[2] || '');
-    if (!isFinite(framundan) && isFinite(eftir) && isFinite(komin) && isFinite(anMan)) framundan = eftir - komin - anMan;
+    var komin = heil((rs.match(/(\d[\d.]*)\s+komin/) || [])[1]);          // merkin ráða, ekki staðan í setningunni
+    var anMan = heil((rs.match(/(\d[\d.]*)\s+án mánaðar/) || [])[1]);
+    var framundan = heil((rs.match(/(\d[\d.]*)\s+eiga mánuð/) || [])[1]);
+    var eftirAf = heil((rs.match(/af\s+(\d[\d.]*)\s+á borðinu/) || [])[1]);
+    if (!isFinite(framundan) && !isFinite(eftirAf) && isFinite(eftir) && isFinite(komin) && isFinite(anMan)) framundan = eftir - komin - anMan;
     var hs = Array.prototype.slice.call(g.querySelectorAll('._kpi--hlut ._kpi-s'));
     var sum = hs.find(function (e) { return /\+/.test(txt(e)); });
     var st = sum ? (txt(sum).match(/\d[\d.]*/g) || []).map(function (x) { return parseInt(x.replace(/\./g, ''), 10); }) : [];
@@ -201,7 +214,7 @@
       return { nafn: txt(b.querySelector('em')), n: heil(txt(b.querySelector('u'))), h: parseFloat((b.querySelector('i') || {}).style ? b.querySelector('i').style.height : '') || 0, cls: b.className.replace('arsm-b', '').trim(), el: b };
     }) : [];
     var ar = (txt(strip && strip.querySelector('.arsm-head b')).match(/\d{4}/) || [String(new Date().getFullYear())])[0];
-    return { total: total, eining: eining, buidM: buidM, eftirM: (isFinite(total) && isFinite(buidM)) ? total - buidM : NaN, raun: raun, fjoldi: fjoldi, buid: buid, eftir: eftir, medSkyrslu: medSkyrslu, komin: komin, anMan: anMan, framundan: framundan, ovist: ovist, anTaekja: anTaekja, medTaeki: medTaeki, man: man, ar: ar, curYear: ar };
+    return { buidAf: buidAf, eftirAf: eftirAf, radir: radir, fjoldiAf: fjoldiAf, buidStadir: buidStadir, eftirStadir: eftirStadir, siad: isFinite(fjoldiAf) || isFinite(buidAf) || isFinite(eftirAf), total: total, eining: eining, buidM: buidM, eftirM: (isFinite(total) && isFinite(buidM)) ? total - buidM : NaN, raun: raun, fjoldi: fjoldi, buid: buid, eftir: eftir, medSkyrslu: medSkyrslu, komin: komin, anMan: anMan, framundan: framundan, ovist: ovist, anTaekja: anTaekja, medTaeki: medTaeki, man: man, ar: ar, curYear: ar };
   }
 
   // ── teikning ─────────────────────────────────────────────────────────────
@@ -228,7 +241,7 @@
           '</div>' +
           '<div style="display:flex;align-items:flex-end;gap:14px;min-width:0">' +
             '<div class="b414-t gull">' + esc(mkr(d.total)) + '<small>' + esc(d.eining) + '</small></div>' +
-            '<span class="b414-l" style="padding-bottom:5px"><span><i class="gr" aria-hidden="true"></i>Búið <b>' + esc(mkr(d.buidM)) + ' ' + esc(d.eining) + '</b><small>' + isk(d.buid) + ' staðir</small></span><span><i class="gu" aria-hidden="true"></i>Eftir <b>' + esc(mkr(d.eftirM)) + ' ' + esc(d.eining) + '</b><small>' + isk(d.eftir) + ' staðir</small></span></span>' +
+            '<span class="b414-l" style="padding-bottom:5px"><span><i class="gr" aria-hidden="true"></i>Búið <b>' + esc(mkr(d.buidM)) + ' ' + esc(d.eining) + '</b><small>' + isk(isFinite(d.buidStadir) ? d.buidStadir : d.buid) + ' staðir</small></span><span><i class="gu" aria-hidden="true"></i>Eftir <b>' + esc(mkr(d.eftirM)) + ' ' + esc(d.eining) + '</b><small>' + isk(isFinite(d.eftirStadir) ? d.eftirStadir : d.eftir) + ' staðir</small></span></span>' +
           '</div>' +
           '<div class="b414-s stor" role="img" aria-label="' + (isFinite(pctBuid) ? pctBuid + '% af virðinu búið' : '') + '"><span class="gr" style="width:' + w(d.buidM, d.total) + '"></span><span class="gu" style="width:' + w(d.eftirM, d.total) + '"></span></div>' +
           '<div class="b414-f3">' +
@@ -242,7 +255,7 @@
           '<div class="b414-m"><span class="led" aria-hidden="true"></span>Búið ' + esc(d.ar) + '</div>' +
           '<div class="b414-t">' + isk(d.buid) + '<small>staðir</small></div>' +
           '<div class="b414-s" role="img" aria-label="' + (isFinite(pctBord) ? pctBord + '% af borðinu' : '') + '"><span class="gr" style="width:' + w(d.buid, d.fjoldi) + '"></span></div>' +
-          '<div class="b414-l"><span><b>' + (isFinite(pctBord) ? pctBord + '%' : '—') + '</b> af borðinu</span>' + (isFinite(d.medSkyrslu) ? '<span><b>' + isk(d.medSkyrslu) + '</b> með ' + esc(d.ar) + '-skýrslu<small>skjalfesta</small></span>' : '') + '</div>' +
+          '<div class="b414-l"><span><b>' + (isFinite(pctBord) ? pctBord + '%' : '—') + '</b> af borðinu</span>' + (isFinite(d.medSkyrslu) ? '<span><b>' + isk(d.medSkyrslu) + '</b> með ' + esc(d.ar) + '-skýrslu<small>skjalfesta</small></span>' : (isFinite(d.buidAf) ? '<span>af <b>' + isk(d.buidAf) + '</b> á borðinu</span>' : '')) + '</div>' +
         '</div></div>' +
         // Eftir
         '<div class="b414-k rautt"><div class="b414-i">' +
@@ -250,28 +263,29 @@
           '<div class="b414-t">' + isk(d.eftir) + '<small>staðir</small></div>' +
           '<div class="b414-tikk">' +
             '<div class="r"><span>Komin á tíma</span><div class="bar"><span class="ra" style="width:' + w(d.komin, eftirMax) + '"></span></div><b>' + isk(d.komin) + '</b></div>' +
-            '<div class="r"><span>Án mánaðar</span><div class="bar"><span class="st" style="width:' + w(d.anMan, eftirMax) + '"></span></div><b>' + isk(d.anMan) + '</b></div>' +
-            '<div class="r"><span>Framundan</span><div class="bar"><span class="gu" style="width:' + w(d.framundan, eftirMax) + '"></span></div><b>' + isk(d.framundan) + '</b></div>' +
+            (isFinite(d.anMan) ? '<div class="r"><span>Án mánaðar</span><div class="bar"><span class="st" style="width:' + w(d.anMan, eftirMax) + '"></span></div><b>' + isk(d.anMan) + '</b></div>' : '') +
+            (isFinite(d.framundan) ? '<div class="r"><span>Framundan</span><div class="bar"><span class="gu" style="width:' + w(d.framundan, eftirMax) + '"></span></div><b>' + isk(d.framundan) + '</b></div>' : '') +
+            (isFinite(d.eftirAf) ? '<div class="r"><span>Af borðinu</span><div class="bar"><span class="st" style="width:' + w(d.eftir, d.eftirAf) + '"></span></div><b>' + isk(d.eftirAf) + '</b></div>' : '') +
           '</div>' +
         '</div></div>' +
         // Fjöldi
         '<div class="b414-k stal"><div class="b414-i">' +
           '<div class="b414-m"><span class="led" aria-hidden="true"></span>Fjöldi</div>' +
-          '<div class="b414-t">' + isk(d.fjoldi) + '<small>á borðinu</small></div>' +
+          '<div class="b414-t">' + isk(d.fjoldi) + '<small>' + (isFinite(d.radir) ? 'í töflunni' : 'á borðinu') + '</small></div>' +
           '<div class="b414-s" role="img" aria-label="' + isk(d.buid) + ' búið, ' + isk(d.eftir) + ' eftir, ' + isk(d.ovist) + ' óvíst"><span class="gr" style="width:' + w(d.buid, d.fjoldi) + '"></span><span class="gu" style="width:' + w(d.eftir, d.fjoldi) + '"></span><span class="st" style="width:' + w(d.ovist, d.fjoldi) + '"></span></div>' +
-          '<div class="b414-l"><span><i class="gr" aria-hidden="true"></i><b>' + isk(d.buid) + '</b> búið</span><span><i class="gu" aria-hidden="true"></i><b>' + isk(d.eftir) + '</b> eftir</span>' + (isFinite(d.ovist) ? '<span><i class="st" aria-hidden="true"></i><b>' + isk(d.ovist) + '</b> óvíst</span>' : '') + (isFinite(d.anTaekja) ? '<span class="b414-p ghost" style="height:20px;font-size:10px">' + isk(d.anTaekja) + ' án tækja</span>' : '') + '</div>' +
+          '<div class="b414-l"><span><i class="gr" aria-hidden="true"></i><b>' + isk(d.buid) + '</b> búið</span><span><i class="gu" aria-hidden="true"></i><b>' + isk(d.eftir) + '</b> eftir</span>' + (isFinite(d.ovist) ? '<span><i class="st" aria-hidden="true"></i><b>' + isk(d.ovist) + '</b> óvíst</span>' : '') + (isFinite(d.fjoldiAf) ? '<span class="b414-p ghost" style="height:20px;font-size:10px">af ' + isk(d.fjoldiAf) + ' á borðinu</span>' : (isFinite(d.anTaekja) ? '<span class="b414-p ghost" style="height:20px;font-size:10px">' + isk(d.anTaekja) + ' án tækja</span>' : '')) + '</div>' +
         '</div></div>' +
       '</div>', strim:
       // strimillinn (smellir kalla á .arsm-b takkana sem 394 á)
-      (d.man.length ? '<div class="b414-strim">' +
+      '<div class="b414-strim' + (d.man.length ? '' : ' b414-strim--bid') + '">' +
         '<div class="hd"><span class="dl" aria-hidden="true"></span>Skoðunarmánuður · ' + esc(d.ar) +
-          '<span class="r"><b>' + isk(medMan) + '</b> með mánuð' + (isFinite(anMan2) ? ' · <b>' + isk(anMan2) + '</b> án mánaðar' : '') + (isFinite(gleymt) ? ' · <b>' + isk(gleymt) + '</b> gleymt' : '') + (nu ? ' · ' + esc(nu.nafn) + ' <b>' + isk(nu.n) + '</b> í dag' : '') + '</span></div>' +
+          (!d.man.length ? '' : '<span class="r"><b>' + isk(medMan) + '</b> með mánuð' + (isFinite(anMan2) ? ' · <b>' + isk(anMan2) + '</b> án mánaðar' : '') + (isFinite(gleymt) ? ' · <b>' + isk(gleymt) + '</b> gleymt' : '') + (nu ? ' · ' + esc(nu.nafn) + ' <b>' + isk(nu.n) + '</b> í dag' : '') + '</span>') + '</div>' +
         '<div class="b414-man" role="group" aria-label="Skoðunarmánuður">' + d.man.map(function (m, i) {
           var cls = (/is-nu/.test(m.cls) ? ' nu' : '') + (/is-on/.test(m.cls) ? ' on' : '') + (/is-skuld/.test(m.cls) ? ' skuld' : '') + (/is-all/.test(m.cls) ? ' all' : '');
           var h = Math.max(6, Math.round(m.h / maxH * 52));
           return '<button type="button" class="' + cls.trim() + '" data-b414="man" data-i="' + i + '" aria-pressed="' + (/is-on/.test(m.cls) ? 'true' : 'false') + '" title="' + esc(m.nafn) + ' · ' + isk(m.n) + '"><i style="height:' + h + 'px"></i><em>' + esc(m.nafn) + '</em><u>' + isk(m.n) + '</u></button>';
         }).join('') + '</div>' +
-      '</div>' : '') };
+      '</div>' };
   }
 
   var sidast = { grid: '', strim: '' };
