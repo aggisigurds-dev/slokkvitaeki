@@ -57,19 +57,21 @@
   function r(sel, css) { return sel.split(',').map(function (s) { var m = s.trim().match(/^(.*?)(::?(?:before|after))$/); return S + (m ? m[1] + F + m[2] : s.trim() + F); }).join(',') + '{' + blek(css) + '}'; }
   // rammi með tveimur skornum hornum: ytra lag (litur rammans) + innra lag (spjaldið), bæði klippt — og ská-línurnar sem
   // klippingin tekur af eru málaðar sem hallandi gradient-lög í hornunum tveimur
-  function rammi(cls, frame, inni, rivet) {
+  // Umgjörðin (25.09.2026, Agnar: „mikill gæðamunur í hero-boxunum, border-svæðið"): nákvæmlega .sk/.inni/.hn úr spjaldi J —
+  // ramminn er padding 2 px með málmgradient, skorið 18 px að utan og 16 px að innan (skáflöturinn sýnir rammann sjálfan),
+  // ENGAR teiknaðar skálínur, hnoðin eru hnútar (.hn) með box-shadow-glóð í lit spjaldsins, og 3 px ljósrönd efst (::before).
+  function rammi(cls, frame, inni) {
     return [
-      r('.b414-k.' + cls, 'background:' + frame + ';background-color:#0a0a0c;padding:2px;position:relative;clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px));filter:drop-shadow(0 14px 24px rgba(10,14,22,.45));min-width:0'),
-      r('.b414-k.' + cls + ' > .b414-i', 'position:relative;clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));color:#fff;background-image:' +
-        'radial-gradient(circle at 35% 30%,transparent 0,transparent 0),' + // (frátekið lag, heldur röðinni)
-        rivetLayer(rivet, 'left 9px top 9px') + ',' + rivetLayer(rivet, 'right 26px top 9px') + ',' + rivetLayer(rivet, 'left 26px bottom 9px') + ',' + rivetLayer(rivet, 'right 9px bottom 9px') + ',' +
-        'linear-gradient(to bottom left,transparent 0,transparent 50%,' + frameLine(cls) + ' 50%,' + frameLine(cls) + ' calc(50% + 2.5px),transparent calc(50% + 2.5px)),' +
-        'linear-gradient(to top right,transparent 0,transparent 50%,' + frameLine(cls) + ' 50%,' + frameLine(cls) + ' calc(50% + 2.5px),transparent calc(50% + 2.5px)),' +
-        inni + ';background-size:auto,6px 6px,6px 6px,6px 6px,6px 6px,20px 20px,20px 20px,auto,auto;background-position:0 0,left 9px top 9px,right 26px top 9px,left 26px bottom 9px,right 9px bottom 9px,right top,left bottom,0 0,0 0;background-repeat:no-repeat;background-color:#0a0a0c;padding:14px 18px 14px;display:flex;flex-direction:column;gap:10px;height:100%;box-sizing:border-box')
+      r('.b414-k.' + cls, 'background:' + frame + ';background-color:#0a0a0c;padding:2px;position:relative;clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));filter:drop-shadow(0 14px 24px rgba(10,14,22,.45));min-width:0'),
+      r('.b414-k.' + cls + ' > .b414-i', 'position:relative;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));color:#fff;background-image:' + inni + ';background-color:#0a0a0c;padding:14px 18px 14px;display:flex;flex-direction:column;gap:10px;height:100%;box-sizing:border-box'),
+      r('.b414-k.' + cls + ' > .b414-i::before', 'content:"";position:absolute;left:0;right:0;top:0;height:3px;background:' + toppLina(cls) + ';pointer-events:none'),
+      r('.b414-k.' + cls + ' .hn', 'background:' + hnod(cls) + ';box-shadow:' + hnodGlod(cls))
     ].join('\n');
   }
-  function rivetLayer(rivet, pos) { return rivet; }
-  function frameLine(cls) { return cls === 'gull' ? '#d3ab4e' : cls === 'graent' ? '#16783f' : cls === 'rautt' ? '#971515' : '#5a606b'; }
+  function toppLina(cls) { return cls === 'gull' ? 'linear-gradient(90deg,#3d2b05,#ffe9b0 50%,#3d2b05)' : cls === 'graent' ? 'linear-gradient(90deg,#06331a,#7fe0a8 50%,#06331a)' : cls === 'rautt' ? 'linear-gradient(90deg,#380506,#ff9d95 50%,#380506)' : 'linear-gradient(90deg,#3b3f46,#e2e6ec 50%,#3b3f46)'; }
+  function hnod(cls) { return cls === 'gull' ? RIVET_GULL : cls === 'graent' ? RIVET_GRAENT : cls === 'rautt' ? RIVET_RAUTT : RIVET_STAL; }
+  function hnodGlod(cls) { return cls === 'gull' ? '0 0 6px 1px rgba(240,168,60,.7)' : cls === 'graent' ? '0 0 6px 1px rgba(35,163,90,.6)' : cls === 'rautt' ? '0 0 6px 1px rgba(226,85,85,.6)' : '0 1px 1px rgba(0,0,0,.7)'; }
+  var HN = '<span class="hn" style="top:9px;left:9px" aria-hidden="true"></span><span class="hn" style="top:9px;right:26px" aria-hidden="true"></span><span class="hn" style="bottom:9px;left:26px" aria-hidden="true"></span><span class="hn" style="bottom:9px;right:9px" aria-hidden="true"></span>';
 
   var css = [
     '@media (min-width:901px){',
@@ -80,10 +82,11 @@
     // umgjörðin okkar
     r('.b414-top', 'display:flex;flex-direction:column;gap:12px;margin:0 0 14px;font-family:' + SANS),
     r('.b414-grid', 'display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:12px;align-items:stretch'),
-    rammi('gull', R_GULL, INNI, RIVET_GULL),
-    rammi('graent', R_GRAENT, INNI_GRAENT, RIVET_GRAENT),
-    rammi('rautt', R_RAUTT, INNI_RAUTT, RIVET_RAUTT),
-    rammi('stal', R_STAL, INNI, RIVET_STAL),
+    rammi('gull', R_GULL, INNI),
+    rammi('graent', R_GRAENT, INNI_GRAENT),
+    rammi('rautt', R_RAUTT, INNI_RAUTT),
+    rammi('stal', R_STAL, INNI),
+    r('.b414-k .hn', 'position:absolute;width:6px;height:6px;border-radius:50%;z-index:1;pointer-events:none'),
     // rönd efst í lit merkingarinnar
     r('.b414-i::before', 'content:"";position:absolute;left:0;right:0;top:0;height:3px'),
     r('.b414-k.gull > .b414-i::before', 'background:linear-gradient(90deg,#3d2b05,#ffe9b0 50%,#3d2b05)'),
@@ -236,7 +239,7 @@
     return { grid: '' +
       '<div class="b414-grid">' +
         // Virði
-        '<div class="b414-k gull"><div class="b414-i">' +
+        '<div class="b414-k gull"><div class="b414-i">' + HN +
           '<div class="b414-m"><span class="led" aria-hidden="true"></span>Virði ársþjónustu ' + esc(d.ar) +
             (isFinite(stadir) ? '<span class="b414-p">' + isk(stadir) + ' staðir</span>' : '') +
             (isFinite(d.raun) ? '<span class="b414-p ghost raun" style="margin-left:auto">' + isk(d.raun) + ' raunreiknuð</span>' : '<span style="margin-left:auto"></span>') +
@@ -254,14 +257,14 @@
           '</div>' +
         '</div></div>' +
         // Búið
-        '<div class="b414-k graent"><div class="b414-i">' +
+        '<div class="b414-k graent"><div class="b414-i">' + HN +
           '<div class="b414-m"><span class="led" aria-hidden="true"></span>Búið ' + esc(d.ar) + '</div>' +
           '<div class="b414-t">' + isk(d.buid) + '<small>staðir</small></div>' +
           '<div class="b414-s" role="img" aria-label="' + (isFinite(pctBord) ? pctBord + '% af borðinu' : '') + '"><span class="gr" style="width:' + w(d.buid, d.fjoldi) + '"></span></div>' +
           '<div class="b414-l"><span><b>' + (isFinite(pctBord) ? pctBord + '%' : '—') + '</b> af borðinu</span>' + (isFinite(d.medSkyrslu) ? '<span><b>' + isk(d.medSkyrslu) + '</b> með ' + esc(d.ar) + '-skýrslu<small>skjalfesta</small></span>' : (isFinite(d.buidAf) ? '<span>af <b>' + isk(d.buidAf) + '</b> á borðinu</span>' : '')) + '</div>' +
         '</div></div>' +
         // Eftir
-        '<div class="b414-k rautt"><div class="b414-i">' +
+        '<div class="b414-k rautt"><div class="b414-i">' + HN +
           '<div class="b414-m"><span class="led" aria-hidden="true"></span>Eftir ' + esc(d.ar) + '</div>' +
           '<div class="b414-t">' + isk(d.eftir) + '<small>staðir</small></div>' +
           '<div class="b414-tikk">' +
@@ -272,7 +275,7 @@
           '</div>' +
         '</div></div>' +
         // Fjöldi
-        '<div class="b414-k stal"><div class="b414-i">' +
+        '<div class="b414-k stal"><div class="b414-i">' + HN +
           '<div class="b414-m"><span class="led" aria-hidden="true"></span>Fjöldi</div>' +
           '<div class="b414-t">' + isk(d.fjoldi) + '<small>' + (isFinite(d.radir) ? 'í töflunni' : 'á borðinu') + '</small></div>' +
           '<div class="b414-s" role="img" aria-label="' + isk(d.buid) + ' búið, ' + isk(d.eftir) + ' eftir, ' + isk(d.ovist) + ' óvíst"><span class="gr" style="width:' + w(d.buid, d.fjoldi) + '"></span><span class="gu" style="width:' + w(d.eftir, d.fjoldi) + '"></span><span class="st" style="width:' + w(d.ovist, d.fjoldi) + '"></span></div>' +
