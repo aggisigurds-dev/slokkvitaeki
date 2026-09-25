@@ -162,6 +162,9 @@
     // Bílstjóra-flipinn (317): situr í hausröðinni hægra megin sem málmtakki — ekki færður, aðeins staðsettur
     rv('.b414-on', 'position:relative'),
     rv('.b414-on #_bil-toggle', imp(METAL_BTN) + ';position:absolute!important;right:var(--b414-bil-r,14px)!important;top:var(--b414-bil,181px)!important;height:36px!important;padding:0 14px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center!important;gap:8px!important;margin:0!important;z-index:3;float:none!important'),
+    // 213 (theme-inspection) merkir flísar sem „spjöld" (.thm-stat: hvítur rammi, 13 px horn) og tölur sem .thm-statnum (Plex Sans)
+    r('.b414-f.thm-stat', 'border:1px solid rgba(255,255,255,.1)!important;border-radius:6px!important;box-shadow:none!important'),
+    r('.b414-top .thm-statnum', 'font-family:' + MONO + '!important;letter-spacing:0!important'),
     // app-hamur (261 þvingar .view button{font-size:17px;padding:12px;min-height:50px}) — takkarnir okkar halda stærð
     r('.b414-man button', 'padding:0!important;min-height:0!important;font-size:10px!important;line-height:1!important'),
     r('.b414-refresh', 'padding:0!important;min-height:22px!important;font-size:13px!important;line-height:1!important'),
