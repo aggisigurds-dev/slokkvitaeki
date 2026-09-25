@@ -20,6 +20,9 @@
   var SV = S.replace(/\s+$/, '');
   var SW = 'html.ars-wide-table[data-thm-preset="brunastal"] body #view-arsskodun ';   // síminn í Skjár/Tafla (331)
   function vitt(inni) { return inni.split(S).join(SW).split(S.replace(/\s+$/, '')).join(SW.replace(/\s+$/, '')); }
+  // 25.09: sími í Sími-ham (331 html.ars-simi-phone) leggur út ~980 px — borðtölvublokkin gildir ekki þar.
+  var SP = 'html[data-thm-preset="brunastal"]:not(.ars-simi-phone) body #view-arsskodun ';
+  function simalaus(inni) { return inni.split(S).join(SP).split(S.replace(/\s+$/, '')).join(SP.replace(/\s+$/, '')); }
   var rules = [
     // spjaldið: .sida úr mockinu, breiðara (1720 → 2000)
     // 25.09 síðar (Agnar: „skip the light grey background, use only yours full wide"): sýnin sjálf er kolið, efnið nær út í kanta
@@ -44,7 +47,7 @@
     r('._ars-morow', 'color:#c9d0da'),
   ];
   var inni = rules.join('\n');
-  var css = '@media (min-width:901px){' + inni + '}\n' + vitt(inni) + '\n';
+  var css = '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n';
 
   var st = document.getElementById('_ars-sida-416-css');
   if (!st) { st = document.createElement('style'); st.id = '_ars-sida-416-css'; document.head.appendChild(st); }

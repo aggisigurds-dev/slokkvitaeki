@@ -53,6 +53,11 @@
   // ── the metallic stylesheet (all scoped to the preset) ──────────────────────
   const P = 'html[data-thm-preset="'+PRESET+'"] ';
   const ON = 'html[data-bstal-banner="on"][data-thm-preset="'+PRESET+'"] ';
+  // 25.09.2026 (Agnar): „pinku lítill takki … sem fellur upp bannerinn í bara eitt
+  // lítið merki". Samanbrot er útlitsval EINS vafra (sbr. sía/röðun/þema), svo það
+  // býr í localStorage — ekki á þjóninum.
+  const MINI = 'html[data-bstal-banner="on"][data-bstal-mini="1"][data-thm-preset="'+PRESET+'"] ';
+  const MQ   = 'html[data-bstal-mini="1"] ';
   const METAL_BLACK = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
   const PLATE_IMG   = 'linear-gradient(180deg,rgba(255,255,255,.9),rgba(20,30,60,.05)),repeating-linear-gradient(108deg,rgba(255,255,255,.5) 0 1px,transparent 1px 4px)';
 
@@ -316,10 +321,50 @@
         +'transform:translateZ(0);will-change:transform}',  /* isolate the costly blur to its own layer (painted once) */
       'html[data-bstal-banner="on"] #bstal-ember{display:block}',
 
+      /* ── samanbrots-takki: pinku lítill, situr fyrir ofan kassakerfisklukkuna ── */
+      // all:unset FYRST — annars strokar hún út position/top/right sem á undan stóðu.
+      '#bstal-banner .bb-mini{all:unset;position:absolute;top:7px;right:13px;z-index:7;cursor:pointer;'
+        +'display:flex;align-items:center;justify-content:center;width:26px;height:15px;border-radius:5px;'
+        +'background:linear-gradient(180deg,#2a2c31,#0c0d10);border:1px solid #000;'
+        +'box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 1px 2px rgba(0,0,0,.8);'
+        +'color:rgba(255,178,77,.72);font-size:9px;line-height:1;letter-spacing:.08em}',
+      '#bstal-banner .bb-mini:hover{color:#ffb24d;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 8px rgba(255,160,40,.35)}',
+
+      /* ── samanbrotinn: borðinn skreppur í eitt lítið merki efst til vinstri ── */
+      MQ+'#bstal-banner{height:auto;right:auto;padding:4px;border-radius:11px}',
+      MQ+'#bstal-banner .bb-face{height:30px;gap:7px;padding:0 7px;border-radius:7px}',
+      // „bara eitt lítið merki": AÐRIR pappar hengja börn beint í .bb-face —
+      // mælt 25.09: ky-vm 70px, _pe-btn 26px og ⚡ Hlaða (_hl-takki) 74px, sem
+      // héldu samanbrotna borðanum í 401 px. Fela allt og sýna aðeins merkið og
+      // takkann; þá erfist reglan líka til þeirra sem bætast við síðar.
+      // Aðeins falið — enginn hnútur færður, svo enginn annar pappi missir sinn.
+      MQ+'#bstal-banner .bb-face > *{display:none}',
+      MQ+'#bstal-banner .bb-face > .bb-logo{display:block}',
+      MQ+'#bstal-banner .bb-face > .bb-mini{display:flex}',
+      // Stílstjóra-takkinn (262) er þvingaður sýnilegur með display:inline-flex
+      // !important og forskrift upp á ÞRJÚ auðkenni (:not(#_p262a)-bragðið), því
+      // þjöppunarlögin 337/334/314 átu hann áður. Samanbrotið hér er hins vegar
+      // ÁSETNINGUR notandans, ekki þjöppun — svo hann víkur með, og þá þarf jafn
+      // háa forskrift á móti. Sjá [CSS override specificity].
+      MQ+'#bstal-banner .bb-face > #_pe-btn:not(#_p230a):not(#_p230b)'
+        +'{display:none!important}',
+      MQ+'#bstal-banner .bb-word,'+MQ+'#bstal-banner .bb-bolt,'
+        +MQ+'#bstal-ember{display:none}',
+      MQ+'#bstal-banner .bb-logo{padding:0;margin:0}',
+      MQ+'#bstal-banner .bb-logo::before{display:none}',
+      MQ+'#bstal-banner .bb-logo img{height:19px}',
+      MQ+'#bstal-banner .bb-mini{position:relative;top:0;right:0;width:20px;height:14px}',
+      /* efnið færist upp að merkinu — sömu þrjú tilvik og í fulla borðanum */
+      MINI+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:56px!important}',
+      MINI+'#view-field.active,'+MINI+'#view-counter.active,'+MINI+'#view-workshop.active{padding-top:60px!important}',
+
       /* mobile: full-width banner, slimmer + smaller insets */
       '@media(max-width:760px){#bstal-banner{left:10px;right:10px;top:8px;height:104px}#bstal-banner .bb-logo img{height:34px}#bstal-banner .bb-word{font-size:13px}#bstal-banner .bb-clock{font-size:24px}#bstal-banner .bb-flames{height:80px}#bstal-ember{left:10px;right:10px;top:114px}'
         +ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:112px!important}'
-        +ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:114px!important}}'
+        +ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:114px!important}'
+        +MQ+'#bstal-banner{top:8px;left:10px}'
+        +MINI+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:52px!important}'
+        +MINI+'#view-field.active,'+MINI+'#view-counter.active,'+MINI+'#view-workshop.active{padding-top:54px!important}}'
     ].join('\n');
     const st = document.createElement('style'); st.id='bstal-css'; st.textContent = css;
     (document.head||document.documentElement).appendChild(st);
@@ -340,6 +385,7 @@
           '<img src="/img/theme/brunaholf-mark.png" alt="Brunahólf">'+
           '<div class="bb-word">SLÖKKVITÆKI <b>EHF.</b></div>'+
         '</div>'+
+        '<button type="button" class="bb-mini" id="bstal-mini" aria-label="Fella borðann saman">▴</button>'+
         '<div class="bb-rightwrap">'+
           '<div class="bb-clockbox">'+
             '<div class="bb-eyebrow">KASSAKERFI</div>'+
@@ -350,6 +396,33 @@
       '</div>';
     const ember = document.createElement('div'); ember.id = 'bstal-ember';
     document.body.appendChild(b); document.body.appendChild(ember);
+    const t = b.querySelector('#bstal-mini');
+    if (t) t.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); setjaMini(!erMini()); });
+    merkjaMini(erMini());
+  }
+
+  // ── samanbrot borðans ───────────────────────────────────────────────────────
+  // Stöðunni er slegið á <html> STRAX við hleðslu (sjá kallið neðst í ræsingunni),
+  // áður en borðinn er byggður — annars sæist fullur borði í einn ramma og efnið
+  // hoppaði upp á eftir. Sama regla og í [Stöðugt viðmót].
+  const MINI_KEY = 'bstal_bordi_mini';
+  function erMini() {
+    try { return localStorage.getItem(MINI_KEY) === '1'; } catch (_) { return false; }
+  }
+  function merkjaMini(a) {
+    const r = document.documentElement;
+    if (a) { if (r.getAttribute('data-bstal-mini') !== '1') r.setAttribute('data-bstal-mini', '1'); }
+    else if (r.hasAttribute('data-bstal-mini')) r.removeAttribute('data-bstal-mini');
+    const t = document.getElementById('bstal-mini');
+    if (t) {
+      t.textContent = a ? '▾' : '▴';
+      t.setAttribute('aria-label', a ? 'Opna borðann' : 'Fella borðann saman');
+      t.title = a ? 'Opna borðann' : 'Fella borðann saman í eitt merki';
+    }
+  }
+  function setjaMini(a) {
+    try { localStorage.setItem(MINI_KEY, a ? '1' : '0'); } catch (_) {}
+    merkjaMini(a);
   }
 
   // ── live clock ──────────────────────────────────────────────────────────────
@@ -375,6 +448,9 @@
 
   // ── alltaf á — borðinn er hluti af frosna grunnútlitinu ─────────────────────
   function refresh() {
+    // Merkið á undan stílunum: annars sæist fullur borði í einn ramma og efnið
+    // hoppaði upp á eftir hjá þeim sem hefur hann samanbrotinn.
+    merkjaMini(erMini());
     fonts(); styles(); buildBanner();
     if (document.documentElement.getAttribute('data-bstal-banner') !== 'on') document.documentElement.setAttribute('data-bstal-banner', 'on');   // 06.09.2026: aðeins þegar breytist
     if (!clockTimer) { tickClock(); clockTimer = setInterval(tickClock, 1000); }

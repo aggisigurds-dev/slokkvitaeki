@@ -67,7 +67,17 @@
       fetchAll((a, b) => sb.from('solur').select('id,customer_id,created_at,status,samtals,is_credit,num').eq('source', 'brunakerfi').order('id').range(a, b)),
       askriftarkort()
     ]);
-    const aLista = {}; Object.keys(kort).forEach(k => { if (kort[k] && typeof kort[k] === 'object') aLista[+k] = kort[k]; });
+    // 25.09.2026 (Agnar: „afhverju er þetta grátt" + „⚠ vistaðist ekki" á Hlíðasmára 15).
+    // Áskriftarkortið geymir TVÖ snið: hlut með unit_count/inspect_month/notes, og eldra
+    // berskjaldað `true`. Sían hér tók aðeins hluti, svo boolean-færslurnar duttu ÚT —
+    // 2 af 28 (188 Húsfélagið Hlíðasmára 15, 585 JM Veitingar). Þær urðu því „Ekki á
+    // áskriftarlista", gráar, OG vista() neitaði að vista nótuna á þær (utan_lista).
+    // Tómt snið er gilt snið: `true` merkir á listanum, bara án talna.
+    const aLista = {};
+    Object.keys(kort).forEach(k => {
+      const v = kort[k]; if (!v) return;
+      aLista[+k] = (typeof v === 'object') ? v : { co_id: +k };
+    });
     const ids = [...new Set(docs.map(d => +d.fyrirtaeki_id).concat(Object.keys(aLista).map(Number)).filter(Boolean))];
     const cos = [];
     for (let i = 0; i < ids.length; i += 300) {
@@ -110,13 +120,19 @@
     if (!rod) return { ok: false, villa: 'Röðin fannst ekki' };
     if (rod.utan_lista) return { ok: false, villa: 'Fyrirtækið er ekki á áskriftarlista brunakerfa — bættu því við í „Brunakerfisþjónusta" fyrst' };
     const fid = String(rod.fyrirtaeki_id), sent = {};
+    // Sé færslan enn í eldra `true`-sniðinu þarf skrifið að reisa hlutinn, annars
+    // ætti djúp-sameiningin við skalara og staðfestingarlesturinn neðar félli.
+    const fyrir = (AS.path('brunakerfi_customers') || {})[fid];
+    if (fyrir != null && typeof fyrir !== 'object') sent.co_id = +rod.fyrirtaeki_id;
     if ('nota' in patch) sent.notes = patch.nota == null ? '' : String(patch.nota);
     if ('skodunarmanudur' in patch) sent.inspect_month = +patch.skodunarmanudur || 0;
-    if (!Object.keys(sent).length) return { ok: false, villa: 'Ekkert til að vista' };
+    // co_id eitt og sér er ekki breyting — aðeins snið-uppfærsla.
+    if (!Object.keys(sent).filter(k => k !== 'co_id').length) return { ok: false, villa: 'Ekkert til að vista' };
     const svar = await AS.save({ brunakerfi_customers: { [fid]: sent } });
     if (svar === false) return { ok: false, villa: 'Vistun stillinga mistókst (save skilaði false)' };
     const nu = (AS.path('brunakerfi_customers') || {})[fid] || {};
     const stemmir = Object.keys(sent).every(k => String(nu[k] == null ? '' : nu[k]) === String(sent[k]));
+    if (!stemmir) { try { console.warn('[388] vistun stemmdi ekki', { fid: fid, sent: sent, nu: nu }); } catch (_) {} }
     return stemmir ? { ok: true } : { ok: false, villa: 'Gildið í stillingunum stemmir ekki við það sem var sent' };
   }
 

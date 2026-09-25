@@ -89,7 +89,16 @@
       if (it === 'skil') { menu.appendChild(el('div', 'b403-skil')); return; }
       var mi = el('button', 'b403-mi' + (it.danger ? ' eyda' : ''));
       mi.type = 'button'; mi.setAttribute('role', 'menuitem');
-      mi.innerHTML = (it.icon || '') + '<span>' + it.label + '</span>';
+      // 25.09.2026 (Agnar: „I need to be able to se what I am Deleting"): valmyndin sagði
+      // aðeins „Eyða viðhengi" / „Eyða skráningu". Á línu með tveimur skjölum var ómögulegt
+      // að vita HVORU yrði eytt. Nafnið var þegar lesið í `it.name` — það var bara aldrei sýnt.
+      // hakið/táknin fremst á flísinni („✓Hótel …") eru staða, ekki hluti af heitinu
+      var hreint = it.name ? String(it.name).replace(/^[\s✓✔✕✖×·•–—]+/, '').trim() : '';
+      var nafn = hreint ? hreint.replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }) : '';
+      mi.innerHTML = (it.icon || '') + '<span class="b403-mi-texti">' + it.label +
+        (nafn ? '<small class="b403-mi-nafn">' + nafn + '</small>' : '') + '</span>';
+      if (hreint) mi.title = it.label + ' — ' + hreint;   // fullt heiti við yfirsvif
       if (it.run) {   // liður sem keyrir fall — ársstaðan býr á .sk-pill í ársröðinni, sem má ekki flytja inn í liðinn
         mi.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); closeAll(); try { it.run(); } catch (e) { console.warn('[403] liður', e); } });
         menu.appendChild(mi); return;
@@ -607,6 +616,11 @@
       r('.b403-menu', 'position:fixed;z-index:7900;min-width:212px;background:#fff;border:1px solid rgba(20,24,34,.12);border-radius:12px;box-shadow:0 18px 40px -12px rgba(10,14,22,.5),0 2px 6px rgba(10,14,22,.12);padding:6px;display:flex;flex-direction:column;gap:2px'),
       r('.b403-mi', 'all:unset;cursor:pointer;height:40px;border-radius:8px;padding:0 10px;display:flex;align-items:center;gap:10px;font-family:' + SANS + ';font-size:13.5px;font-weight:500;color:#1f2530;position:relative;box-sizing:border-box'),
       r('.b403-mi svg', 'color:#5b6472;flex:none'), r('.b403-mi:hover', 'background:#f1f4f8'), r('.b403-mi.eyda', 'color:#b42318;font-weight:600'), r('.b403-mi.eyda svg', 'color:#b42318'),
+      // liður með heiti verður tvílínu: aðgerðin efst, skjalið sem hún hittir undir
+      r('.b403-mi:has(.b403-mi-nafn)', 'height:auto;min-height:44px;padding-top:6px;padding-bottom:6px;align-items:flex-start'),
+      r('.b403-mi-texti', 'display:flex;flex-direction:column;gap:1px;min-width:0'),
+      r('.b403-mi-nafn', 'font-size:11.5px;font-weight:400;color:#5b6472;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'),
+      r('.b403-mi.eyda .b403-mi-nafn', 'color:#8c5a53'),
       r('.b403-skil', 'height:1px;background:#eceff3;margin:4px 6px'),
       // önnur viðhengi · hreyfingar
       r('.b403-vidh', 'display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px'),

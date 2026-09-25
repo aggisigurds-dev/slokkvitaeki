@@ -265,7 +265,12 @@
     const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO(), skyring: (o && o.skyring) || '' });
     let lines;
     if (o && o.lines && o.lines.length) lines = o.lines.map(l => ({ ...l, primary: true }));
-    else { const v = await loadVorur(); lines = v.map(p => ({ n: p.lysing, full: Math.round((p.verd || 0) * (1 + VSK)), afsl: 0, include: false, primary: p.primary })); }
+    else {
+      const v = await loadVorur(); lines = v.map(p => ({ n: p.lysing, full: Math.round((p.verd || 0) * (1 + VSK)), afsl: 0, include: false, primary: p.primary }));
+      // 25.09 (Agnar): „Vill ný slökkvitæki efst almennt … fyrirsögn ný tæki" — sjálfgefin fyrirsögn
+      // yfir aðaltækjunum; pakkarnir (418) bæta sínum flokkum við fyrir neðan.
+      if (lines.some(l => l.primary)) lines.unshift({ heading: true, h: 'Ný tæki', include: true, primary: true });
+    }
     if (!lines.length) lines = [{ n: '', full: 0, afsl: 0, include: true, primary: true }];
     let showOthers = false;
     const inSt = 'padding:6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right';
@@ -284,10 +289,22 @@
       '</div>';
     const m = modal('🏷 Slökkvitæki — sérverð' + (o ? ' <span style="font-size:12px;color:#fbbf24;font-weight:400">· breyti</span>' : ''), body, footBtns);
     const ov = m.ov, tbody = ov.querySelector('#_th-tbody');
+    // 25.09.2026 (Agnar: „Ekki láta þetta blandast svona saman. Hafðu að maður geti dregið til, og
+    // að geta sett fyrirsögn fyrir ofan hvern flokk á verðlistablaðinu"): FYRIRSAGNARLÍNUR
+    // ({ heading:true, h }) skipta listanum í flokka og prentast sem kaflahaus; allar línur eru
+    // DRAGANLEGAR á gripinu ⋮⋮. Samningurinn við 418 (pakkarnir): data-heading="1" + [data-f="h"].
+    const GRIP = '<span class="_th-grip" title="Draga til" style="cursor:grab;color:#94a3b8;font-size:13px;user-select:none;padding:0 3px;line-height:1">⋮⋮</span>';
     function rowHtml(l, i) {
+      if (l.heading) {
+        return `<tr data-i="${i}" data-primary="1" data-heading="1" draggable="true" style="background:var(--th-tint)">
+        <td style="text-align:center;padding:4px 6px">${GRIP}</td>
+        <td colspan="4" style="padding:4px 6px"><input data-f="h" type="text" value="${esc(l.h || '')}" placeholder="Fyrirsögn flokks — t.d. Slökkvitækjaþjónusta" style="width:100%;padding:6px 8px;border:1px solid var(--th-tintb);border-radius:6px;font:inherit;font-size:12.5px;font-weight:800;color:var(--th-dark);background:#fff"></td>
+        <td style="padding:4px 6px"><button data-del type="button" style="border:none;background:#fef2f2;color:#dc2626;border-radius:6px;width:26px;height:26px;cursor:pointer">×</button></td>
+      </tr>`;
+      }
       const fin = (l.full || 0) * (1 - (l.afsl || 0) / 100);
-      return `<tr data-i="${i}" data-primary="${l.primary ? 1 : 0}" class="${l.primary ? '' : '_th-other'}" style="${l.include ? 'background:#f0fdf4' : ''}">
-        <td style="text-align:center;padding:4px 6px"><input data-f="inc" type="checkbox" ${l.include ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+      return `<tr data-i="${i}" data-primary="${l.primary ? 1 : 0}" class="${l.primary ? '' : '_th-other'}" draggable="true" style="${l.include ? 'background:#f0fdf4' : ''}">
+        <td style="text-align:center;padding:4px 6px;white-space:nowrap">${GRIP}<input data-f="inc" type="checkbox" ${l.include ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;vertical-align:middle"></td>
         <td style="padding:4px 6px"><input data-f="n" type="text" value="${esc(l.n || '')}" placeholder="Tæki / vara" style="width:100%;min-width:210px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;box-sizing:border-box"></td>
         <td style="padding:4px 6px"><input data-f="full" type="text" inputmode="numeric" value="${grp(l.full)}" style="${inSt};width:94px"></td>
         <td style="padding:4px 6px"><input data-f="afsl" type="number" min="0" max="100" step="1" value="${l.afsl || ''}" placeholder="0" style="${inSt};width:54px"></td>
@@ -304,22 +321,64 @@
     }
     function collect() {
       const out = [];
-      tbody.querySelectorAll('tr').forEach(tr => out.push({ n: tr.querySelector('[data-f="n"]').value.trim(), full: pn(tr.querySelector('[data-f="full"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value), include: tr.querySelector('[data-f="inc"]').checked, primary: tr.dataset.primary === '1' }));
+      tbody.querySelectorAll('tr').forEach(tr => {
+        if (tr.dataset.heading === '1') { out.push({ heading: true, h: (tr.querySelector('[data-f="h"]') || {}).value || '', include: true, primary: true }); return; }
+        out.push({ n: tr.querySelector('[data-f="n"]').value.trim(), full: pn(tr.querySelector('[data-f="full"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value), include: tr.querySelector('[data-f="inc"]').checked, primary: tr.dataset.primary === '1' });
+      });
       return out;
     }
     function recompute() {
       const ls = collect();
-      tbody.querySelectorAll('tr').forEach((tr, i) => { tr.querySelector('[data-cell="final"]').textContent = fmtKr(ls[i].full * (1 - ls[i].afsl / 100)); tr.style.background = ls[i].include ? '#f0fdf4' : ''; });
+      tbody.querySelectorAll('tr').forEach((tr, i) => { if (ls[i].heading) return; tr.querySelector('[data-cell="final"]').textContent = fmtKr(ls[i].full * (1 - ls[i].afsl / 100)); tr.style.background = ls[i].include ? '#f0fdf4' : ''; });
     }
     ov.addEventListener('input', e => { if (e.target.tagName === 'INPUT') recompute(); });
     ov.addEventListener('change', e => { if (e.target.matches && e.target.matches('[data-f="inc"]')) recompute(); });
     ov.addEventListener('blur', e => { if (e.target.matches && e.target.matches('[data-f="full"]')) e.target.value = grp(pn(e.target.value)); }, true);
     tbody.addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { lines = collect(); lines.splice(+b.closest('tr').dataset.i, 1); draw(); } });
-    ov.querySelector('#_th-addrow').onclick = () => { lines = collect(); lines.push({ n: '', full: 0, afsl: 0, include: true, primary: true }); draw(); };
+    // Ný lína / ný fyrirsögn fara aftast í SÝNILEGA hlutann — á undan földu „öðrum vörum".
+    function fyrstaFalda(ls) { const i = ls.findIndex(l => !l.heading && !l.primary); return i < 0 ? ls.length : i; }
+    ov.querySelector('#_th-addrow').onclick = () => { lines = collect(); lines.splice(fyrstaFalda(lines), 0, { n: '', full: 0, afsl: 0, include: true, primary: true }); draw(); };
+    const addRowBtn = ov.querySelector('#_th-addrow');
+    const addHead = document.createElement('button');
+    addHead.id = '_th-addhead'; addHead.type = 'button'; addHead.textContent = '+ Fyrirsögn';
+    addHead.title = 'Fyrirsögn flokks — prentast sem kaflahaus á verðlistablaðinu';
+    addHead.style.cssText = 'padding:7px 12px;border:1px dashed var(--th-dark);border-radius:7px;background:#fff;color:var(--th-dark);cursor:pointer;font:inherit;font-size:12px;font-weight:700';
+    addRowBtn.parentNode.insertBefore(addHead, addRowBtn.nextSibling);
+    addHead.onclick = () => {
+      lines = collect(); const at = fyrstaFalda(lines);
+      lines.splice(at, 0, { heading: true, h: '', include: true, primary: true }); draw();
+      const inp = tbody.querySelectorAll('tr')[at]?.querySelector('[data-f="h"]'); if (inp) inp.focus();
+    };
     ov.querySelector('#_th-others').onclick = () => { showOthers = !showOthers; applyOtherVis(); };
+    // ── Draga til (HTML5 DnD á gripinu) ──
+    let dragTr = null, gripDown = false;
+    tbody.addEventListener('mousedown', e => { gripDown = !!(e.target.closest && e.target.closest('._th-grip')); });
+    tbody.addEventListener('dragstart', e => {
+      const tr = e.target.closest && e.target.closest('tr');
+      if (!tr || !gripDown) { e.preventDefault(); return; }   // aðeins af gripinu — annars stelur það textavali í reitunum
+      dragTr = tr; tr.style.opacity = '.45';
+      try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', tr.dataset.i || ''); } catch (_) {}
+    });
+    tbody.addEventListener('dragover', e => {
+      if (!dragTr) return; e.preventDefault();
+      const tr = e.target.closest && e.target.closest('tr'); if (!tr || tr === dragTr) return;
+      const r = tr.getBoundingClientRect(); const undir = e.clientY > r.top + r.height / 2;
+      tbody.querySelectorAll('tr').forEach(x => { x.style.boxShadow = ''; });
+      tr.style.boxShadow = undir ? 'inset 0 -2px 0 var(--th-primary)' : 'inset 0 2px 0 var(--th-primary)';
+      tr.dataset.dropUndir = undir ? '1' : '0';
+    });
+    tbody.addEventListener('drop', e => {
+      if (!dragTr) return; e.preventDefault();
+      const tr = e.target.closest && e.target.closest('tr');
+      if (tr && tr !== dragTr) { if (tr.dataset.dropUndir === '1') tr.parentNode.insertBefore(dragTr, tr.nextSibling); else tr.parentNode.insertBefore(dragTr, tr); }
+      lines = collect(); dragTr = null; gripDown = false; draw();
+    });
+    tbody.addEventListener('dragend', () => { if (dragTr) dragTr.style.opacity = ''; dragTr = null; gripDown = false; tbody.querySelectorAll('tr').forEach(x => { x.style.boxShadow = ''; delete x.dataset.dropUndir; }); });
     draw();
     function build() {
-      const ls = collect().filter(l => l.include && l.n);
+      // Fyrirsögn fylgir aðeins með eigi hún hakaða línu undir sér (tóm fyrirsögn prentast ekki).
+      const oll = collect().filter(l => l.heading ? !!String(l.h || '').trim() : (l.include && l.n));
+      const ls = oll.filter((l, i) => !l.heading || (oll[i + 1] && !oll[i + 1].heading));
       return { skyring: readSkyring(ov), id: (o && o.id) || ('V' + Date.now()), type: 'serverd', created_at: (o && o.created_at) || new Date().toISOString(), updated_at: new Date().toISOString(), date: ov.querySelector('#_th-date').value || todayISO(), customer: readCust(ov), lines: ls, m_vsk: 0 };
     }
     ov.querySelector('#_th-print').onclick = () => printDoc(serverdHtml(build()));
@@ -333,7 +392,8 @@
   }
   function serverdHtml(o) {
     const tp = theme().primary;
-    const rows = o.lines.map(l => { const fin = l.full * (1 - (l.afsl || 0) / 100); return '<tr>' +
+    const rows = o.lines.map(l => { if (l.heading) return '<tr><td colspan="4" style="padding:14px 9px 5px;font-size:11.5px;font-weight:800;color:' + tp + ';text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid ' + tp + '">' + esc(l.h) + '</td></tr>';
+      const fin = l.full * (1 - (l.afsl || 0) / 100); return '<tr>' +
       '<td style="padding:7px 9px;font-size:12px;border-bottom:1px solid #f1f5f9">' + esc(l.n) + '</td>' +
       '<td style="padding:7px 9px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#94a3b8;text-decoration:' + (l.afsl ? 'line-through' : 'none') + '">' + fmtKr(l.full) + '</td>' +
       '<td style="padding:7px 9px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9">' + (l.afsl ? l.afsl + '%' : '—') + '</td>' +
@@ -495,7 +555,7 @@
   }
   function rowFor(f) {
     const tm = TYPE_META[f.type] || TYPE_META.slokkvitaeki;
-    const sub = f.type === 'samningur' ? esc(f.thjonusta || '') : ((f.lines ? f.lines.length : 0) + (f.type === 'serverd' ? ' tæki' : ' liðir'));
+    const sub = f.type === 'samningur' ? esc(f.thjonusta || '') : ((f.lines ? f.lines.filter(l => !l.heading).length : 0) + (f.type === 'serverd' ? ' tæki' : ' liðir'));
     const amount = f.type === 'serverd' ? '<span style="color:#0369a1;font-size:12px">sérverð</span>' : fmtKr(f.m_vsk);
     return `<div class="th-row" data-id="${esc(f.id)}" data-type="${f.type}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid #f1f5f9">
       <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${tm.chip};color:${tm.col};white-space:nowrap">${tm.icon} ${tm.label}</span>

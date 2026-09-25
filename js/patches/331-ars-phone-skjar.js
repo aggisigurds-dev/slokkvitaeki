@@ -140,6 +140,11 @@
     try {
       document.documentElement.dataset.arsSjon = mode;
       document.documentElement.classList.toggle('ars-wide-table', wantsWide(mode) && isPhoneLike());
+      // 25.09.2026 (Agnar, S26 appið: „geturðu lagað app símahaminn"): í Tölvusíðu-ham er layout-viewportið
+      // ~980 px þótt „Sími" sé valið, svo @media (min-width:901px) og innerWidth>=901 í 414/415/416 tóku
+      // borðtölvuútlitið (fjögur spjöld í röð, breitt spjald) og kreistu það á 411 dp skjá. Þetta merki segir
+      // þeim: sími í Sími-ham — haldið ykkur frá. Skjár/Tafla (ars-wide-table) óbreytt.
+      document.documentElement.classList.toggle('ars-simi-phone', !wantsWide(mode) && isPhoneLike());
     } catch (_) {}
   }
 

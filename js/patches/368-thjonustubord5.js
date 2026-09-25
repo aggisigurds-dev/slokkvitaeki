@@ -182,6 +182,11 @@
   const MODS = {
     dagskra:   { n: '01', t: 'Dagskrá', d: 'Vikan í einni sýn. Plús skráir verk á daginn.' },
     skipulag:  { n: '05', t: 'Skipulagsborð', d: 'Spjöldin þín af skipulagsborðinu.' },
+    // 25.09.2026 (Agnar: „3 nýjar einingar … Checklista einfaldan sem er 2/5 breidd vinstra megin og minni
+    // skipulagsborð sem er 3/5 breidd hægra megin, og síðan geta fengið heilbreidd skipulagsborð líka").
+    // Litla borðið sýnir SÖMU spjöld og 05 — aðeins sjálfgefin breidd er önnur (⅗ við hlið checklistans).
+    checklisti: { n: '23', t: 'Checklisti', d: 'Einfaldur listi: skrifa atriði, haka við þegar það er klárað. Bara þinn.' },
+    skipulag2:  { n: '24', t: 'Skipulagsborð · lítið', d: 'Sömu spjöld og 05 í ⅗ breidd — fyrir hlið checklistans.' },
     vinnublod: { n: '06', t: 'Vinnublöð', d: 'Yfirferð vinnublaða: samþykkja, merkja klárað, sjá skýrslu og reikning.' },
     postsvor:  { n: '07', t: 'Póstsvörun', d: 'Póstmál sem bíða svars.' },
     akstur:    { n: '08', t: 'Aksturslistar', d: 'Listar 1–3 fyrir bílstjóra: færa á milli, prenta með samantekt, leið í korti.' },
@@ -243,10 +248,15 @@
   // aðeins SJÁLFGEFIÐ gildi: notandinn ræður breiddinni sjálfur í „Breyta ham".
   const BREIDAR = ['dagskra', 'krofumal', 'akstur', 'starfsmenn', 'skipulag', 'postbeidnir'];
   // Breidd einingar: 1 = þriðjungur · 2 = hálft · 3 = fullt. Sjá .modcell[data-sp].
-  const sjalfgefinBreidd = k => (BREIDAR.indexOf(k) >= 0 ? 3 : 1);
+  // 25.09.2026: tvö þrep til viðbótar — 4 = ⅖ og 5 = ⅗ (checklisti vinstra megin, lítið skipulagsborð hægra
+  // megin). Ristin er 60 dálkar svo bæði þriðjungar og fimmtungar gangi upp. Röð þrepanna frá mjóu í breitt:
+  const BREIDD_ROD = [1, 4, 2, 5, 3];
+  const BREIDD_MERKI = { 1: '⅓', 4: '⅖', 2: '½', 5: '⅗', 3: '1/1' };
+  const gildBreidd = b => BREIDD_ROD.indexOf(b) >= 0;
+  const sjalfgefinBreidd = k => (k === 'checklisti' ? 4 : k === 'skipulag2' ? 5 : BREIDAR.indexOf(k) >= 0 ? 3 : 1);
   function breiddAf(mode, k) {
     const b = mode && mode.breidd && mode.breidd[k];
-    return b === 1 || b === 2 || b === 3 ? b : sjalfgefinBreidd(k);
+    return gildBreidd(b) ? b : sjalfgefinBreidd(k);
   }
   // Gömlu flokkarnir (thjonustubeidni.flokkur) og merkin (tags) úr 231 — sama orðaforði, svo hamir fyllast strax.
   const FLOKKAR = { thjonusta: 'Þjónusta', rukkun: 'Rukkun', tilbod: 'Tilboð', samskipti: 'Samskipti', brunakerfi: 'Brunakerfi' };
@@ -290,7 +300,7 @@
     return '';
   }
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], skipulag2: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -302,7 +312,7 @@
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
-    skDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
+    skDrog: {}, chkCache: {}, chkDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
     // 18.09.2026: innsláttur beint á borðinu. ntDrog = texti sem er ekki kominn í
     // gagnagrunninn (lifir af teikningu OG af misheppnaðri vistun), ntStada = það sem
     // reiturinn segir notandanum, ntOpid = opinn reitur á hvítu spjaldi.
@@ -970,11 +980,12 @@
       // 368aa: einingahamur — einingarnar í fullri breidd, einn til þrír dálkar eftir plássi; valið mál efst í mjórri glugga.
       // 18.09.2026 — 12 dálka rist svo notandinn ráði breidd hverrar einingar.
       // Vörpunin heldur nákvæmlega gömlu útliti: 1 → 12·6·4, 2 → 12·6·6, 3 → alltaf fullt.
-      '.modgrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-items:start}',
-      '.modcell{min-width:0;container:rail / inline-size;grid-column:span 12}',
+      // 25.09.2026: 60 dálkar (sama útlit — 12·5) svo ⅖ (24) og ⅗ (36) gangi upp við hlið ⅓ (20), ½ (30) og 1/1 (60).
+      '.modgrid{display:grid;grid-template-columns:repeat(60,minmax(0,1fr));gap:14px;align-items:start}',
+      '.modcell{min-width:0;container:rail / inline-size;grid-column:span 60}',
       '.modgrid>.sel.inline{grid-column:1 / -1}',
-      '@container main (min-width: 1100px){.modcell[data-sp="1"],.modcell[data-sp="2"]{grid-column:span 6}}',
-      '@container main (min-width: 1900px){.modcell[data-sp="1"]{grid-column:span 4}.modcell[data-sp="2"]{grid-column:span 6}}',
+      '@container main (min-width: 1100px){.modcell[data-sp="1"],.modcell[data-sp="2"]{grid-column:span 30}.modcell[data-sp="4"]{grid-column:span 24}.modcell[data-sp="5"]{grid-column:span 36}}',
+      '@container main (min-width: 1900px){.modcell[data-sp="1"]{grid-column:span 20}.modcell[data-sp="2"]{grid-column:span 30}}',
       // Raðhamur: einingarnar fá hald, stærðarhandfang og ✕ á meðan hamur er í breytingu.
       '.modgrid.radar>.modcell{position:relative;outline:1px dashed var(--edge2);outline-offset:3px;border-radius:5px}',
       '.modgrid.radar>.modcell.yfir{outline:2px solid var(--g5);outline-offset:3px}',
@@ -1163,6 +1174,19 @@
       // `minmax(210px,1fr)` gaf EINN dálk í 300 px reininni. Ristin stefnir nú á
       // fimm dálka þegar breiddin leyfir og fellur sjálf niður í færri á mjórra.
       '.skgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr));gap:10px;align-items:start}',
+      // checklisti (eining 23, 25.09.2026)
+      '.chkl{display:flex;flex-direction:column;gap:6px;padding:12px 14px}',
+      '.chk{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:5px;background:#fff;border:1px solid var(--edge)}',
+      '.chk.done{opacity:.55}.chk.done .chkt{text-decoration:line-through}',
+      '.chkbox{flex:0 0 22px;width:22px;height:22px;border-radius:5px;border:1.5px solid var(--edge2);background:#fff;font-size:14px;line-height:1;cursor:pointer;color:var(--g5);display:flex;align-items:center;justify-content:center;padding:0}',
+      '.chk.done .chkbox{background:var(--g5);color:#fff;border-color:var(--g5)}',
+      '.chkt{flex:1 1 auto;min-width:0;border:none;background:transparent;font:13.5px var(--body);color:var(--ink);padding:4px 2px;outline:none}',
+      '.chkt:focus{background:var(--rule3)}',
+      '.chkx{flex:0 0 auto;border:none;background:transparent;color:var(--mute);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:4px}.chkx:hover{background:#fef2f2;color:#b91c1c}',
+      '.chkny{display:flex;gap:8px;align-items:center;margin-top:4px}',
+      '.chkny input{flex:1 1 auto;min-width:0;padding:7px 10px;border:1px dashed var(--edge2);border-radius:5px;background:#fff;font:13px var(--body);color:var(--ink)}',
+      '.chksep{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-top:8px;padding-top:8px;border-top:1px solid var(--edge)}',
+      '.chktomt{font-size:12.5px;color:var(--mute);padding:6px 2px}',
       '@container rail (min-width: 1240px){.skgrid{grid-template-columns:repeat(5,minmax(0,1fr))}}',
       // Þak á textareitinn svo eitt langt spjald teygi ekki alla röðina — raðirnar
       // standast á og 2–3 sjást í einu. Handfangið í horninu stækkar það áfram.
@@ -1344,6 +1368,7 @@
       if (el.dataset.sk) skola(el.dataset.skid);
       else if (el.dataset.nt) skola('nt:' + el.dataset.id);   // farið úr reitnum = vistað strax
       else if (el.dataset.dn) skola('dn:' + el.dataset.dn);
+      else if (el.dataset.chk) skola('chk:' + el.dataset.id);
     });
     ['dragstart', 'dragover', 'drop', 'dragend'].forEach(t => r.addEventListener(t, onDrag));
     r.addEventListener('paste', onPaste);
@@ -2331,6 +2356,67 @@
    * misheppnuð skrif í biðröð, varar við sjálf og reynir aftur á 20 sek fresti og
    * við pagehide. Þess vegna stendur „í biðröð" hér — ekki „reyndu aftur".
    */
+  /* ──────────────────────────────────────────────────────────────────────
+   * CHECKLISTI (25.09.2026) — einfaldur persónulegur listi, eining 23.
+   * Geymt í skipulagsbord.by_staff.<nafn>.checklisti = [{ id, t, done }], sami staður og
+   * dagnóturnar og sama vistun (AppSettings.save = saveVordud með biðröð). Listinn er skrifaður
+   * heill í hvert sinn — fylki sameinast ekki í deepMerge, og það er rétt fyrir lista eins manns.
+   * S.chkCache[nafn] heldur nýjustu útgáfunni á meðan skrifið er á leiðinni svo viðmótið
+   * svari strax; hún hverfur þegar þjónninn hefur staðfest.
+   * ────────────────────────────────────────────────────────────────────── */
+  function chkLesa(n) {
+    if (S.chkCache[n]) return S.chkCache[n];
+    const v = P('skipulagsbord.by_staff.' + n + '.checklisti');
+    return Array.isArray(v) ? v.filter(x => x && x.id).map(x => ({ id: String(x.id), t: String(x.t || ''), done: !!x.done })) : [];
+  }
+  function chkVista(n, listi) {
+    S.chkCache[n] = listi;
+    render();
+    return (async () => {
+      let ok = false;
+      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { checklisti: listi } } } })); } catch (_) {}
+      if (ok && S.chkCache[n] === listi) delete S.chkCache[n];
+      if (!ok) toast('Checklistinn vistaðist ekki — í biðröð, reynt aftur sjálfkrafa', true);
+      return ok;
+    })();
+  }
+  function chkBreyta(n, fn) { return chkVista(n, fn(chkLesa(n).map(x => Object.assign({}, x)))); }
+  const chkNyttId = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  function checklistiHtml(k) {
+    const n = nu(), l = chkLesa(n);
+    const opin = l.filter(x => !x.done), lokid = l.filter(x => x.done);
+    const rod = x => '<div class="chk' + (x.done ? ' done' : '') + '">' +
+      '<button type="button" class="chkbox" data-t5="chk-tog" data-id="' + esc(x.id) + '" aria-label="' + (x.done ? 'Taka hakið af' : 'Haka við') + '">' + (x.done ? '✓' : '') + '</button>' +
+      '<input class="chkt" data-chk="t" data-id="' + esc(x.id) + '" value="' + esc(S.chkDrog[x.id] != null ? S.chkDrog[x.id] : x.t) + '" placeholder="Atriði…" aria-label="Atriði">' +
+      '<button type="button" class="chkx" data-t5="chk-del" data-id="' + esc(x.id) + '" aria-label="Eyða atriði" title="Eyða">✕</button></div>';
+    const body = '<div class="chkl">' +
+      (opin.length ? opin.map(rod).join('') : '<div class="chktomt">Ekkert opið — skrifaðu fyrsta atriðið hér að neðan.</div>') +
+      '<div class="chkny"><input data-chkny="1" placeholder="Nýtt atriði … Enter bætir við" aria-label="Nýtt atriði"><button type="button" class="btn gold sm" data-t5="chk-add">+ Bæta við</button></div>' +
+      (lokid.length ? '<div class="chksep">Klárað · ' + lokid.length + '</div>' + lokid.map(rod).join('') : '') +
+      '</div>';
+    const action = lokid.length ? '<button type="button" class="btn iv sm" data-t5="chk-hreinsa">Hreinsa kláruð</button>' : '';
+    return modPanel(k, opin.length + ' opin · ' + lokid.length + ' klárað', body, action);
+  }
+  function skrifaChk(el) {
+    const n = nu(), id = el.dataset.id;
+    S.chkDrog[id] = el.value;
+    bida('chk:' + id, () => {
+      const t = S.chkDrog[id]; if (t == null) return;
+      delete S.chkDrog[id];
+      const listi = chkLesa(n).map(x => x.id === id ? Object.assign({}, x, { t: t }) : x);
+      S.chkCache[n] = listi;
+      (async () => { let ok = false; try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { checklisti: listi } } } })); } catch (_) {} if (ok && S.chkCache[n] === listi) delete S.chkCache[n]; })();
+    });
+  }
+  function chkBaetaVid(root) {
+    const inp = root.querySelector('[data-chkny]'); const t = inp ? inp.value.trim() : '';
+    if (!t) { if (inp) inp.focus(); return; }
+    const n = nu();
+    chkBreyta(n, l => l.concat([{ id: chkNyttId(), t: t, done: false }])).then(() => {
+      const v = document.getElementById(VIEW_ID), r = v && v.shadowRoot, ny = r && r.querySelector('[data-chkny]');
+      if (ny) ny.focus();
+    });
+  }
   const dagNota = (n, key) => String(P('skipulagsbord.by_staff.' + n + '.dagnotur.' + key) || '');
   function dagNotaHtml(d) {
     const n = nu();
@@ -3507,7 +3593,8 @@
   }
   function bottomHtml(k) {
     const n = nu();
-    if (k === 'skipulag') {
+    if (k === 'checklisti') return checklistiHtml(k);
+    if (k === 'skipulag' || k === 'skipulag2') {   // 24 = sömu spjöld, önnur sjálfgefin breidd
       // Agnar 11.09.2026: „algjörlega læst og tilgangslaust" · „opna á allt og customizable, geta eytt hlutum
       // og skrifað þar sem maður vill skrifa". Sömu gögn og 305: skipulagsbord.by_staff.<nafn> = { cards, krass }.
       const cards = spjold(n);
@@ -4136,9 +4223,9 @@
       const sp = radar ? hfBreidd(k) : breiddAf(mode, k);
       const bar = !radar ? '' : '<div class="mbar">' +
         '<span class="mgrip" aria-hidden="true">⠿</span><span>' + esc(MODS[k] ? MODS[k].t : k) + '</span><span class="grow"></span>' +
-        '<button type="button" data-t5="ham-breidd" data-m="' + esc(k) + '" data-v="-1"' + (sp <= 1 ? ' disabled' : '') + ' title="Mjórra">◀</button>' +
-        '<span class="mbr">' + ['⅓', '½', '1/1'][sp - 1] + '</span>' +
-        '<button type="button" data-t5="ham-breidd" data-m="' + esc(k) + '" data-v="1"' + (sp >= 3 ? ' disabled' : '') + ' title="Breiðara">▶</button>' +
+        '<button type="button" data-t5="ham-breidd" data-m="' + esc(k) + '" data-v="-1"' + (BREIDD_ROD.indexOf(sp) <= 0 ? ' disabled' : '') + ' title="Mjórra">◀</button>' +
+        '<span class="mbr">' + (BREIDD_MERKI[sp] || sp) + '</span>' +
+        '<button type="button" data-t5="ham-breidd" data-m="' + esc(k) + '" data-v="1"' + (BREIDD_ROD.indexOf(sp) >= BREIDD_ROD.length - 1 ? ' disabled' : '') + ' title="Breiðara">▶</button>' +
         '<button type="button" data-t5="ham-eining-burt" data-m="' + esc(k) + '" title="Taka einingu úr hamnum">✕</button></div>';
       const res = radar ? '<button type="button" class="mres" data-hres="' + esc(k) + '" aria-label="Draga til að breyta breidd"></button>' : '';
       return '<div class="modcell" data-sp="' + sp + '"' +
@@ -4407,7 +4494,8 @@
     const reikna = x => {
       // Hlutfall af ALLRI ristinni frá vinstri brún einingarinnar → 1, 2 eða 3 þriðjungar.
       const hlutf = (x - vinstri) / Math.max(1, g.width);
-      return hlutf < 0.42 ? 1 : hlutf < 0.75 ? 2 : 3;
+      // ⅓ · ⅖ · ½ · ⅗ · 1/1 — mörkin liggja mitt á milli þrepanna
+      return hlutf < 0.367 ? 1 : hlutf < 0.45 ? 4 : hlutf < 0.55 ? 2 : hlutf < 0.8 ? 5 : 3;
     };
     const hreyfa = ev => {
       const ny = reikna(ev.clientX);
@@ -4544,7 +4632,7 @@
   // Breidd einingar EINS OG HÚN STENDUR Í RITLINUM (óvistuð).
   function hfBreidd(k) {
     const b = S.hamForm && S.hamForm.breidd ? S.hamForm.breidd[k] : null;
-    return b === 1 || b === 2 || b === 3 ? b : sjalfgefinBreidd(k);
+    return gildBreidd(b) ? b : sjalfgefinBreidd(k);
   }
   function hfHak(k, a) {
     if (!S.hamForm) return;
@@ -4873,6 +4961,23 @@
         try { Vikudagskra.open(j.date, j); } catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
         return;
       }
+      case 'chk-add': { chkBaetaVid(el.getRootNode()); return; }
+      case 'chk-tog': { const id = el.dataset.id; chkBreyta(nu(), l => l.map(x => x.id === id ? Object.assign({}, x, { done: !x.done }) : x)); return; }
+      case 'chk-del': {
+        const id = el.dataset.id, n = nu(), gamalt = chkLesa(n).find(x => x.id === id);
+        clearTimeout(_skT['chk:' + id]); delete _skBid['chk:' + id]; delete S.chkDrog[id];
+        chkBreyta(n, l => l.filter(x => x.id !== id)).then(ok => {
+          if (ok && gamalt) toast('Atriðinu var eytt', false, () => chkBreyta(n, l => l.some(x => x.id === id) ? l : l.concat([gamalt])));
+        });
+        return;
+      }
+      case 'chk-hreinsa': {
+        const n = nu(), farin = chkLesa(n).filter(x => x.done);
+        chkBreyta(n, l => l.filter(x => !x.done)).then(ok => {
+          if (ok && farin.length) toast(farin.length + ' kláruð atriði hreinsuð', false, () => chkBreyta(n, l => l.concat(farin.filter(f => !l.some(x => x.id === f.id)))));
+        });
+        return;
+      }
       case 'sk-ny': {
         const nid = nyttSkId();
         S.open[openKey('skipulag')] = true;
@@ -5091,7 +5196,8 @@
       }
       case 'ham-breidd': {
         if (!S.hamForm) return;
-        const k = el.dataset.m, ny = Math.max(1, Math.min(3, hfBreidd(k) + (+el.dataset.v || 0)));
+        const k = el.dataset.m, i0 = BREIDD_ROD.indexOf(hfBreidd(k));
+        const ny = BREIDD_ROD[Math.max(0, Math.min(BREIDD_ROD.length - 1, i0 + (+el.dataset.v || 0)))];
         (S.hamForm.breidd = S.hamForm.breidd || {})[k] = ny;
         render();
         return;
@@ -5202,6 +5308,7 @@
     else if (el && el.dataset && el.dataset.bm) bmSkra(el);
     else if (el && el.dataset && el.dataset.nt) skrifaNota(el);
     else if (el && el.dataset && el.dataset.dn) skrifaDagnotu(el);
+    else if (el && el.dataset && el.dataset.chk) skrifaChk(el);
     else if (el && el.dataset && el.dataset.skyr && S.skyrOpid) S.skyrOpid.texti = el.value;
     else if (el && el.dataset && el.dataset.samtsky) { const sid = Number(el.dataset.id); if (sid) { S.samtSkyDrog[sid] = el.value; skyDrogVista(sid, el.value); } }
   }
@@ -5209,6 +5316,9 @@
     const v = document.getElementById(VIEW_ID), root = v && v.shadowRoot;
     if (!root || !v.classList.contains('active')) return;
     const k = e.target && e.target.dataset ? e.target.dataset.k : null;
+    // Checklisti: Enter í „Nýtt atriði" bætir við; Enter í atriði vistar strax.
+    if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.chkny) { e.preventDefault(); chkBaetaVid(root); return; }
+    if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.chk) { e.preventDefault(); skola('chk:' + e.target.dataset.id); e.target.blur(); return; }
     // 18.09.2026 — innsláttarreiturinn: Ctrl/Cmd+Enter vistar strax (ekki bíða 700 ms),
     // Esc skilar textanum í það sem stendur í gagnagrunninum og lokar reitnum á korti.
     if (e.target && e.target.dataset && e.target.dataset.nt) {
