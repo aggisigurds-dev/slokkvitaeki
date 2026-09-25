@@ -17,10 +17,14 @@
   function blek(css) { return css.replace(/(^|;)color:([^;!]+)(?=;|$)/g, '$1color:$2!important'); }
   function r(sel, css) { return sel.split(',').map(function (x) { return S + x.trim() + F; }).join(',') + '{' + blek(css) + '}'; }
   var W = '#ars-main > div[style*="max-width:1720px"]';
+  var SV = S.replace(/\s+$/, '');
   var css = [
     '@media (min-width:901px){',
     // spjaldið: .sida úr mockinu, breiðara (1720 → 2000)
-    r(W, 'max-width:2000px!important;margin:6px auto 30px!important;padding:22px 24px 24px!important;background-color:#2a2c31!important;background-image:linear-gradient(180deg,#1d1f24 0%,#30333a 100%)!important;border:1px solid #000!important;border-radius:14px!important;box-shadow:0 30px 60px -20px rgba(0,0,0,.7)!important;box-sizing:border-box'),
+    // 25.09 síðar (Agnar: „skip the light grey background, use only yours full wide"): sýnin sjálf er kolið, efnið nær út í kanta
+    SV + F + '{background-color:#25272c!important;background-image:linear-gradient(180deg,#1d1f24 0%,#30333a 320px,#2a2c31 100%)!important}',
+    r('.main-panel', 'padding-left:0!important;padding-right:0!important;padding-top:0!important;max-width:none!important'),
+    r(W, 'max-width:none!important;margin:0!important;padding:18px 24px 30px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;box-sizing:border-box'),
     // hausinn: yfirlína, titill og undirlína í ljósu (mock .haus)
     r(W + ' > div:first-child', 'color:#c9d0da;padding-right:118px!important;box-sizing:border-box'),   // Bílstjóri (414) situr í hægri kantinum
     r(W + ' > div:first-child h1', 'color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)'),
