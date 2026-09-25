@@ -94,6 +94,24 @@
 
   // ── Hópur viðskiptavinar (kt → tier) ──────────────────────────────────────
   const _custTier = new Map();     // kt → tierId | null
+  // 25.09.2026 (Agnar: „margt þarf alls ekkert að sækja aftur"). Tveir staðir hér sóttu
+  // `discount_tier_id` fyrir SAMA félagið við hverja prófílopnun — mælt sem tvítekið kall
+  // á netinu. Þau deila nú einni sókn.
+  // Svarið er EKKI geymt til lengdar viljandi: þetta ræður afslætti og þar með verði, svo
+  // gildi af annarri vél má ekki verða gamalt hér. Loforðið lifir aðeins 3 sekúndur —
+  // nógu lengi til að fella saman kallipar í sömu teikningu, of stutt til að lýga.
+  const _tierSokn = new Map();
+  function saekjaTier(sb, coId) {
+    const lyk = String(coId);
+    const til = _tierSokn.get(lyk);
+    if (til) return til;
+    const p = sb.from('fyrirtaeki').select('discount_tier_id').eq('id', coId).single()
+      .then(r => { setTimeout(() => _tierSokn.delete(lyk), 3000); return r; },
+            e => { _tierSokn.delete(lyk); throw e; });
+    _tierSokn.set(lyk, p);
+    return p;
+  }
+
   const _custPending = new Set();
 
   function resolveTierFor(cust) {
@@ -134,7 +152,7 @@
       if (!id && coId) {
         // 18.09.2026: brostin uppfletting varð að „enginn afsláttarhópur" og
         // þar með að röngu verði. Skráð svo það sjáist í registry-inu.
-        const r = await sb.from('fyrirtaeki').select('discount_tier_id').eq('id', coId).single();
+        const r = await saekjaTier(sb, coId);
         if (r && r.error && r.error.code !== 'PGRST116') {
           try { if (window.logProblem) window.logProblem('afslattarhopur_lestur_failed', 'co:' + coId); } catch (_) {}
         }
@@ -385,7 +403,7 @@
     const anchor = cad || cpr || cat;
     if (anchor) anchor.parentNode.insertBefore(sec, anchor); else main.appendChild(sec);
 
-    Promise.all([loadTiers(), SB() ? SB().from('fyrirtaeki').select('discount_tier_id').eq('id', coId).single() : null])
+    Promise.all([loadTiers(), SB() ? saekjaTier(SB(), coId) : null])
       .then(([, r]) => {
         const id = (r && r.data && r.data.discount_tier_id) || null;
         sec.dataset.tierId = id || '';
