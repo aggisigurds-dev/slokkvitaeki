@@ -80,23 +80,29 @@
 
   async function hitaUppflettingar() {
     const sb = window.DB && DB.sb;
-    if (!sb) return;
+    if (!sb || typeof DB.fetchAll !== 'function') return;
 
-    const { data: fel } = await sb.from('fyrirtaeki')
+    // PAGAÐ. PostgREST skilar hámark 1.000 röðum: 1.203 fyrirtæki eru í skránni, svo
+    // ópöguð fyrirspurn hefði sleppt 203 þeirra ÞEGJANDI — og þegar skyndiminnis-
+    // töflurnar fara yfir 1.000 raðir hefði takkinn haldið þær hálftómar og sótt allt
+    // upp á nýtt á ytri þjónusturnar. audit-pagination greip þetta. Sjá 1000-raða þakið.
+    const fel = await DB.fetchAll((fra, til) => sb.from('fyrirtaeki')
       .select('id,kennitala,heimilisfang,er_i_thjonustu')
       .is('deleted_at', null)
-      .order('er_i_thjonustu', { ascending: false });
+      .order('er_i_thjonustu', { ascending: false })
+      .order('id')
+      .range(fra, til));
     if (!Array.isArray(fel) || !fel.length) return;
 
     // Hvað er þegar geymt? Sótt í einu lagi svo við spyrjum ekki 2.000 sinnum.
     const komid = { kt: new Set(), hus: new Set() };
     try {
       const [a, b] = await Promise.all([
-        sb.from('kt_lookup_cache').select('kt'),
-        sb.from('hus_upplysingar_cache').select('lykill'),
+        DB.fetchAll((fra, til) => sb.from('kt_lookup_cache').select('kt').order('kt').range(fra, til)),
+        DB.fetchAll((fra, til) => sb.from('hus_upplysingar_cache').select('lykill').order('lykill').range(fra, til)),
       ]);
-      (a.data || []).forEach(r => komid.kt.add(String(r.kt)));
-      (b.data || []).forEach(r => komid.hus.add(String(r.lykill)));
+      (a || []).forEach(r => komid.kt.add(String(r.kt)));
+      (b || []).forEach(r => komid.hus.add(String(r.lykill)));
     } catch (_) { /* taflan gæti vantað — þá er einfaldlega ekkert geymt enn */ }
 
     const verk = [];
