@@ -86,8 +86,9 @@
   // Sama röð og rowHtml() í 201 — data-f/data-cell/data-del/data-i/data-primary eru samningurinn.
   function rodHtml(l, i) {
     var inSt = 'padding:6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right';
-    return '<tr data-i="' + i + '" data-primary="1" style="background:#f0fdf4">' +
-      '<td style="text-align:center;padding:4px 6px"><input data-f="inc" type="checkbox" checked style="width:16px;height:16px;cursor:pointer"></td>' +
+    return '<tr data-i="' + i + '" data-primary="1" draggable="true" style="background:#f0fdf4">' +
+      '<td style="text-align:center;padding:4px 6px;white-space:nowrap"><span class="_th-grip" title="Draga til" style="cursor:grab;color:#94a3b8;font-size:13px;user-select:none;padding:0 3px;line-height:1">⋮⋮</span>' +
+        '<input data-f="inc" type="checkbox" checked style="width:16px;height:16px;cursor:pointer;vertical-align:middle"></td>' +
       '<td style="padding:4px 6px"><input data-f="n" type="text" value="' + esc(l.n) + '" placeholder="Tæki / vara" style="width:100%;min-width:210px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px"></td>' +
       '<td style="padding:4px 6px"><input data-f="full" type="text" inputmode="numeric" value="' + grp(l.full) + '" style="' + inSt + ';width:94px"></td>' +
       '<td style="padding:4px 6px"><input data-f="afsl" type="number" min="0" max="100" step="1" value="" placeholder="0" style="' + inSt + ';width:54px"></td>' +
@@ -174,11 +175,11 @@
     try {
       var pakki = await saekjaPakka(P.source);
       if (!pakki.linur.length) { segja(ov, 'Engir reikningar fundust með source = ' + P.source, true); return; }
-      var u = setjaInn(tbody, pakki);
+      var u = setjaInn(tbody, pakki, P);
       var ny = pakki.nyjasti;
-      segja(ov, P.takn + ' ' + pakki.linur.length + ' línur úr ' + pakki.fjoldiReikninga + ' síðustu reikningum' +
+      segja(ov, P.takn + ' ' + P.heiti + ': ' + (u.nyjar + u.hakadar) + ' línur úr ' + pakki.fjoldiReikninga + ' síðustu reikningum' +
         (ny ? ' · nýjasti ' + (ny.num || '') + ' ' + dmy(ny.dags) + (ny.nafn ? ' (' + ny.nafn + ')' : '') : '') +
-        ' — ' + u.nyjar + ' nýjar, ' + u.hakadar + ' hakaðar. Settu afsláttinn.');
+        (u.sleppt ? ' · ' + u.sleppt + ' þegar í listanum ofar' : '') + '. Settu afsláttinn.');
     } catch (e) {
       segja(ov, 'Tókst ekki: ' + ((e && e.message) || e), true);
     } finally { b.disabled = false; }
