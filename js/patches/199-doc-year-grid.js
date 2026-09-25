@@ -1245,6 +1245,8 @@
       var dags=String(r.updated_at||r.created_at||'').slice(0,10).split('-').reverse().join('/');
       return '<button type="button" class="sk-doc rep" data-filled="'+esc(r.id)+'" title="'+esc(full)+' — vistað í kerfi '+esc(dags)+'. Smelltu til að opna / prenta / breyta.">📑 '+esc(disp)+'</button>';
     }
+    // Senda-takkinn les þetta: nákvæmlega það sem kortið teiknaði, ekki endursíað.
+    section._samnSend = {};
     function samnCard(kind){
       var bkc = kind==='brunakerfi', skc = kind==='slokkvikerfi';
       var items = samn.filter(function(s){
@@ -1256,8 +1258,11 @@
       });
       var fItems = filledSamn.filter(function(r){ return filledKinds(r)[kind]; });
       var KL = skc?'skc':bkc?'bkc':'slk', IK = skc?'🍳':bkc?'🔥':'🧯', HT = skc?'slökkvikerfi':bkc?'brunakerfi':'slökkvitæki';
+      section._samnSend[kind] = { docs: items, filled: fItems };
+      var sendBtn = (items.length || fItems.length)
+        ? '<button type="button" class="sk-samn-send" data-send-samn="'+kind+'" title="Senda þjónustusamninginn í tölvupósti">📧 Senda</button>' : '';
       if(fItems.length && !items.length){
-        return '<div class="sk-samn-card '+KL+'">'+IK+' <b>Samningur — '+HT+'</b>'+fItems.map(filledChip).join('')+addChip('samningur','','+')+'<span class="sk-samn-pill gildi">Í GILDI</span></div>';
+        return '<div class="sk-samn-card '+KL+'">'+IK+' <b>Samningur — '+HT+'</b>'+fItems.map(filledChip).join('')+addChip('samningur','','+')+'<span class="sk-samn-pill gildi">Í GILDI</span>'+sendBtn+'</div>';
       }
       if(skc && !items.length && !fItems.length) return '';   // 23.09: samningslína slökkvikerfis sjálfgefið falin þegar enginn samningur er
       var pill, yrs='';
@@ -1272,7 +1277,8 @@
           : '<span class="sk-samn-pill gildi">Í GILDI</span>';
       }
       var chips = items.map(samnChip).join('') + fItems.map(filledChip).join('') + (items.length?'':addChip('samningur','','+ samningur'));
-      return '<div class="sk-samn-card '+KL+'">'+IK+' <b>Samningur — '+HT+'</b>'+chips+yrs+pill+'</div>';
+      // 25.09.2026 (Agnar): samningurinn var eina skjalið sem ekki var hægt að senda héðan.
+      return '<div class="sk-samn-card '+KL+'">'+IK+' <b>Samningur — '+HT+'</b>'+chips+yrs+pill+sendBtn+'</div>';
     }
     var samnHtml = samnCard('uttekt') + samnCard('brunakerfi') + (hasSlk ? samnCard('slokkvikerfi') : '');
     _bidaEftirSamningum(section, coId);   // teiknaðist spjaldið án útfylltra skjala? teikna einu sinni þegar þau lenda
@@ -1649,6 +1655,42 @@
       // Hver þjónustukort hefur SITT EIGIÐ Senda (data-send-kind) — sendir bara
       // þá skýrslu + reikninginn sem er tengdur ÞEIRRI þjónustu þetta ár, ekki
       // bæði slökkvitæki og brunakerfi í einu.
+      // Senda þjónustusamning (25.09.2026). Útfyllt skjöl eru teiknuð í PDF á staðnum
+      // (DocTemplates.buildFilledPdfBase64); skráð skjöl fara sem Drive/geymslu-viðhengi.
+      var samnSend=e.target.closest('[data-send-samn]');
+      if(samnSend){
+        e.preventDefault(); e.stopPropagation();
+        if(!(window.ReceiptSender && ReceiptSender.compose)){ alert('Póstgluggi ekki tiltækur'); return; }
+        var sKind=samnSend.getAttribute('data-send-samn');
+        var sMeta=section._sendCo||{}, sNafn=sMeta.nafn||'';
+        var sEmail='';
+        try{ var sb2=SB(); if(sb2 && sMeta.coId){ var er2=await sb2.from('fyrirtaeki').select('netfang').eq('id',sMeta.coId).maybeSingle(); if(er2&&er2.data&&er2.data.netfang) sEmail=String(er2.data.netfang).trim(); } }catch(_){}
+        try{ if(window.Vidtakandi && sMeta.coId){ var v2=await Vidtakandi.fyrir({ coId:sMeta.coId, netfang:sEmail }); if(v2) sEmail=v2.to||''; } }catch(_){}
+        var sVal=(section._samnSend&&section._samnSend[sKind])||{ docs:[], filled:[] };
+        var sChoices=[];
+        // buildFilledPdfBase64 skilar ÞEGAR { filename, content } — ekki pakka aftur.
+        sVal.filled.forEach(function(r){
+          sChoices.push({ label:'📜 '+(r.name||r.template_name||'Þjónustusamningur'), checked:true, build:function(){
+            if(!(window.DocTemplates && DocTemplates.buildFilledPdfBase64)) return null;
+            return DocTemplates.buildFilledPdfBase64(r.id); } });
+        });
+        // Skráð skjöl: `samn`-færsla er annaðhvort { src:'doc', d } eða { a:<viðhengi> }.
+        sVal.docs.forEach(function(d){
+          var heiti = samnLabel(d) || 'Þjónustusamningur';
+          sChoices.push({ label:'📜 '+heiti, checked:true, build:function(){
+            return entryAttachment(d.src==='doc' ? d.d : { _att:d.a }, heiti+'.pdf'); } });
+        });
+        if(!sChoices.length){ alert('Enginn samningur til að senda.'); return; }
+        ReceiptSender.compose({
+          title:'Senda þjónustusamning — '+sNafn,
+          to:sEmail,
+          subject:'Þjónustusamningur — Slökkvitæki ehf',
+          bodyText:(window.ReceiptSender.standardText && ReceiptSender.standardText('samningur',{ nafn:sNafn })) || '',
+          attachmentChoices:sChoices,
+        });
+        return;
+      }
+
       var sendEl=e.target.closest('[data-send-year]');
       if(sendEl){
         e.preventDefault();
@@ -2052,6 +2094,8 @@
       '@media (max-width:620px){.sk-svc-grid.sk-3{grid-template-columns:1fr}}',
       '.sk-samn-yrs{font-size:11px;font-weight:700;color:var(--ink3);white-space:nowrap}',
       '.sk-samn-pill{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 9px;border-radius:99px;white-space:nowrap}',
+      '.sk-samn-send{all:unset;cursor:pointer;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid #99f6e4;color:#0f766e;background:var(--surface);white-space:nowrap}',
+      '.sk-samn-send:hover{background:#f0fdfa}',
       '.sk-samn-pill.gildi{color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe}',
       '.sk-samn-pill.vantar{color:#b45309;background:#fffbeb;border:1px solid #fde68a}',
       '.sk-samn-pill.utrunn{color:#b91c1c;background:#fef2f2;border:1px solid #fecaca}',

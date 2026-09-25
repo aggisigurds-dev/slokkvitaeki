@@ -575,11 +575,20 @@
             })
         });
       });
-      f2.forEach(r => items.push({
-        sort: '3' + fillYear(r),
-        html: docRow('📑', esc(r.name || r.template_name || 'Skjal'),
-          fillYear(r) + ' · Útfyllt skjal (Samningar)', '_sch-fill', r.id)
-      }));
+      // 25.09.2026 (Agnar): þjónustusamningurinn stóð hér en var eina skjalið án
+      // Senda-takka. Útfyllt skjöl eiga enga vistaða skrá — PDF-ið er teiknað við
+      // smell (buildFilledPdfBase64), svo þau fara ekki í gegnum `mail`-leiðina.
+      f2.forEach(r => {
+        const erSamn = /^seed_thjonustusamningur/.test(String(r.template_id || ''))
+                    || /þjónustusamning|thjonustusamning/i.test(String(r.template_name || r.name || ''));
+        items.push({
+          sort: '3' + fillYear(r),
+          html: docRow(erSamn ? '📜' : '📑', esc(r.name || r.template_name || 'Skjal'),
+            fillYear(r) + ' · ' + (erSamn ? 'Þjónustusamningur' : 'Útfyllt skjal (Samningar)'),
+            '_sch-fill', r.id, null,
+            '<button class="_sch-fillmail" data-v="' + esc(String(r.id)) + '" type="button" title="Senda í tölvupósti" style="padding:4px 9px;background:#fff;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">📧 Senda</button>')
+        });
+      });
       items.sort((x, y) => x.sort.localeCompare(y.sort));
 
       // 📦 Bundle-band — skýrsla + reikningur per ári með einum „📧 Senda"-hnappi
@@ -668,6 +677,33 @@
       holder.querySelectorAll('._sch-fill').forEach(b => b.addEventListener('click', () => {
         if (window.DocTemplates && DocTemplates.openFilled) DocTemplates.openFilled(b.dataset.v);
       }));
+      // 📧 Senda útfyllt skjal — PDF-ið er teiknað hér og handað ritlinum sem viðhengi.
+      holder.querySelectorAll('._sch-fillmail').forEach(b => b.addEventListener('click', async () => {
+        if (!(window.ReceiptSender && ReceiptSender.compose && window.DocTemplates && DocTemplates.buildFilledPdfBase64)) {
+          if (window.Toast && Toast.show) Toast.show('Póstsending ekki tilbúin — endurhladdu síðunni.');
+          return;
+        }
+        const rec = filled.find(x => String(x.id) === String(b.dataset.v));
+        if (!rec) return;
+        const erSamn = /^seed_thjonustusamningur/.test(String(rec.template_id || ''))
+                    || /þjónustusamning|thjonustusamning/i.test(String(rec.template_name || rec.name || ''));
+        const heiti = rec.name || rec.template_name || 'Skjal';
+        b.disabled = true;
+        try {
+          ReceiptSender.compose({
+            title: 'Senda ' + (erSamn ? 'þjónustusamning' : heiti) + (idty.nafn ? ' — ' + idty.nafn : ''),
+            to: await custEmail(idty),
+            subject: heiti + (idty.nafn ? ' — ' + idty.nafn : '') + ' — Slökkvitæki ehf',
+            bodyText: ReceiptSender.standardText(erSamn ? 'samningur' : 'skyrsla', { nafn: idty.nafn || '' }),
+            attachmentName: heiti + '.pdf',
+            buildAttachments: async () => {
+              const a = await DocTemplates.buildFilledPdfBase64(rec.id);
+              if (!a) throw new Error('Gat ekki teiknað PDF af skjalinu.');
+              return [a];
+            },
+          });
+        } finally { b.disabled = false; }
+      }));
       // 📧 Senda skjal — opnar ritilinn (patch 254) með stöðluðum texta sem má breyta.
       holder.querySelectorAll('._sch-mail').forEach(b => b.addEventListener('click', async () => {
         if (!window.ReceiptSender || !ReceiptSender.sendDoc) {
@@ -691,7 +727,7 @@
     }
     // `mail` = JSON-lýsing á viðhenginu fyrir 📧-takkann (sjá _sch-mail hér að ofan).
     // Sleppt þegar engin skrá er að baki — þá er ekkert að senda.
-    function docRow(icon, label, sub, cls, val, mail) {
+    function docRow(icon, label, sub, cls, val, mail, extraBtn) {
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #f1f5f9">' +
         '<span style="font-size:16px">' + icon + '</span>' +
         '<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + label + '</div>' +
@@ -701,6 +737,7 @@
         (cls
           ? '<button class="' + cls + '" data-v="' + esc(String(val)) + '" type="button" style="padding:4px 10px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">Opna</button>' +
             (mail ? '<button class="_sch-mail" data-m="' + esc(JSON.stringify(mail)) + '" type="button" title="Senda í tölvupósti" style="padding:4px 9px;background:#fff;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">📧 Senda</button>' : '')
+          + (extraBtn || '')
           : '<span style="font-size:10.5px;color:#cbd5e1;white-space:nowrap">engin skrá</span>') +
       '</div>';
     }
