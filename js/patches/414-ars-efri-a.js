@@ -115,6 +115,9 @@
     // skýring
     r('.b414-l', 'display:flex;flex-wrap:wrap;gap:6px 16px;font-family:' + MONO + ';font-size:11.5px;color:#d5dbe6;align-items:center;min-width:0'),
     r('.b414-l i', 'width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.4)'),
+    // fastar hæðir skýringa: hetjan alltaf tvær raðir (mældist 46→44→46 við leturskipti á 1896 px), litlu spjöldin 44 px (17→43 þegar „án tækja"-platan kemur seinna)
+    r('.b414-k.gull .b414-l', 'flex-direction:column;align-items:flex-start;gap:6px;flex-wrap:nowrap'),
+    r('.b414-k:not(.gull) .b414-l', 'min-height:44px;align-content:flex-start'),
     r('.b414-l b', 'color:#fff;font-weight:700'), r('.b414-l small', 'color:#8e97a6;margin-left:5px;font-size:11px'),
     r('.b414-l .gr', 'background:#1f6f42'), r('.b414-l .gu', 'background:#9c7c2c'), r('.b414-l .st', 'background:#8f98a8'),
     // litlu súlurnar (Eftir)
