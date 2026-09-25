@@ -61,12 +61,16 @@ function injectTengja(modal){
   modal.dataset._qtInjected='1';
   console.log('[QRTag] injected on modal',modal.id||modal.className);
 }
-function scanModals(){
+function scanModals(tops){
   // Look for any currently open edit modal containing Raðnúmer
   var candidates=document.querySelectorAll('.modal.open, [id^="modal-"].open, [role="dialog"]:not([style*="display: none"])');
-  // Also plain open overlays we built (div with z-index)
-  var overlays=Array.from(document.body.children).filter(function(el){
+  // Also plain open overlays we built (div with z-index) — aðeins þau börn body sem breyttust
+  var overlays=(tops||[]).filter(function(el){
+    if(!el.isConnected||el.parentElement!==document.body)return false;
     if(el.tagName!=='DIV')return false;
+    if(el.dataset&&el.dataset._qtInjected)return false;
+    if(el.classList&&(el.classList.contains('view')||el.classList.contains('topbar')))return false;
+    if(!el.querySelector('input'))return false;          // ódýrt: ekkert inntak → ekkert Raðnúmer-reit
     var cs=getComputedStyle(el);
     if(cs.position!=='fixed')return false;
     if(parseInt(cs.zIndex,10)<100)return false;
@@ -74,12 +78,33 @@ function scanModals(){
   });
   var all=[].concat(Array.from(candidates),overlays);
   all.forEach(function(m){
+    if(m.dataset&&m.dataset._qtInjected)return;
     // Make sure it has Raðnúmer label
     if(/Raðnúmer/i.test(m.textContent||'')) injectTengja(m);
   });
 }
-var mo=new MutationObserver(scanModals);
+// 25.09.2026 (afköst): áður keyrði scanModals við HVERJA class/style-breytingu hvar
+// sem er í body (getComputedStyle á ÖLL börn body + textContent á yfirlögum) og auk
+// þess á 1,5 s fresti — 2,7 s af 20 s aðalþráðar á Ársskoðun. Nú: aðeins börn body
+// sem breyttust (eða modalar), mest einu sinni á 250 ms, og engin sífelld klukka.
+var _qtT=null, _qtTops=new Set(), _qtModal=false;
+function schedScan(){ if(_qtT)return; _qtT=setTimeout(function(){ _qtT=null; var t=Array.from(_qtTops); _qtTops.clear(); var m=_qtModal; _qtModal=false; if(t.length||m) scanModals(t); },250); }
+function note(m){
+  var t=m.target;
+  if(t===document.body){
+    for(var i=0;i<m.addedNodes.length;i++){ var n=m.addedNodes[i]; if(n.nodeType===1){ _qtTops.add(n); } }
+    return m.addedNodes.length>0;
+  }
+  if(t.nodeType!==1)return false;
+  if(t.closest&&t.closest('.modal,[id^="modal-"],[role="dialog"]')){ _qtModal=true; return true; }
+  // Finna efsta forföður (barn body). Breytingar inni í sýnum og topbar skipta engu hér.
+  var top=t;
+  while(top.parentElement&&top.parentElement!==document.body)top=top.parentElement;
+  if(top.parentElement!==document.body)return false;
+  if(top.classList&&(top.classList.contains('view')||top.classList.contains('topbar')))return false;
+  _qtTops.add(top); return true;
+}
+var mo=new MutationObserver(function(ms){ var any=false; for(var i=0;i<ms.length;i++){ if(note(ms[i]))any=true; } if(any)schedScan(); });
 mo.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
-setInterval(scanModals,1500);
 console.log('[QRTag] module loaded');
 })();

@@ -1871,7 +1871,8 @@ console.log('[patch-master] loaded with all fixes');
   }
   async function decorateLanstaeki(){
     var v = document.getElementById('view-lanstaeki');
-    if(!v || getComputedStyle(v).display==='none') return;
+    // 25.09.2026 (afköst): klasinn í stað getComputedStyle (þvingaði stílendurreikning á sekúndu fresti)
+    if(!v || !((v.classList.contains('active') && v.style.display!=='none') || v.style.display==='block')) return;
     var table = v.querySelector('table');
     if(!table || table.dataset._pmLanGey) return;
     table.dataset._pmLanGey = '1';
@@ -1923,7 +1924,7 @@ console.log('[patch-master] loaded with all fixes');
   }
   setInterval(function(){
     var v = document.getElementById('view-lanstaeki');
-    if(!v || getComputedStyle(v).display==='none') return;
+    if(!v || !((v.classList.contains('active')&&v.style.display!=='none')||v.style.display==='block')/*25.09 afköst: klasi í stað getComputedStyle*/) return;
     var table = v.querySelector('table');
     if(table && !table.dataset._pmLanGey) decorateLanstaeki();
   }, 1000);
@@ -2311,7 +2312,7 @@ console.log('[patch-master] loaded with all fixes');
   }
   setInterval(function(){
     var v = document.getElementById('view-income');
-    if(!v || getComputedStyle(v).display==='none') return;
+    if(!v || !((v.classList.contains('active')&&v.style.display!=='none')||v.style.display==='block')/*25.09 afköst: klasi í stað getComputedStyle*/) return;
     var p = injectFinanceDash();
     if(p && typeof p.catch === 'function') p.catch(function(){});
   }, 1000);
@@ -2583,7 +2584,7 @@ console.log('[patch-master] loaded with all fixes');
   var css=document.createElement('style');css.id='_pm_lb_css';
   css.textContent='._pm_img_wrap{position:relative !important;display:block !important}._pm_zoom_btn{position:absolute !important;top:6px !important;right:6px !important;width:28px !important;height:28px !important;background:rgba(0,0,0,0.55) !important;color:#fff !important;border:none !important;border-radius:50% !important;font-size:14px !important;cursor:pointer !important;display:flex !important;align-items:center !important;justify-content:center !important;opacity:0 !important;transition:opacity .2s !important;z-index:2 !important;padding:0 !important}._pm_img_wrap:hover ._pm_zoom_btn{opacity:1 !important}@media(max-width:768px){._pm_zoom_btn{opacity:0.7 !important;width:32px !important;height:32px !important}}._pm_lightbox{position:fixed !important;inset:0 !important;background:rgba(0,0,0,0.85) !important;z-index:99999 !important;display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important;cursor:zoom-out !important}._pm_lightbox img{max-width:90vw !important;max-height:90vh !important;object-fit:contain !important;background:#fff !important;border-radius:8px !important;box-shadow:0 4px 24px rgba(0,0,0,0.4) !important;padding:12px !important}._pm_lb_x{position:absolute !important;top:16px !important;right:20px !important;color:#fff !important;font-size:28px !important;cursor:pointer !important;background:rgba(0,0,0,0.5) !important;border:none !important;border-radius:50% !important;width:40px !important;height:40px !important;display:flex !important;align-items:center !important;justify-content:center !important}';
   if(!document.getElementById('_pm_lb_css'))document.head.appendChild(css);
-  function addZoom(){var v=document.getElementById('view-vorur');if(!v||getComputedStyle(v).display==='none')return;v.querySelectorAll('img').forEach(function(img){if(img.dataset._pmZ)return;img.dataset._pmZ='1';var w=document.createElement('div');w.className='_pm_img_wrap';img.parentNode.insertBefore(w,img);w.appendChild(img);var b=document.createElement('button');b.className='_pm_zoom_btn';b.innerHTML='\uD83D\uDD0D';b.onclick=function(e){e.preventDefault();e.stopPropagation();var lb=document.createElement('div');lb.className='_pm_lightbox';lb.innerHTML='<button class="_pm_lb_x">&times;</button><img src="'+img.src+'">';lb.onclick=function(){lb.remove();};document.body.appendChild(lb);};w.appendChild(b);});}
+  function addZoom(){var v=document.getElementById('view-vorur');if(!v||!((v.classList.contains('active')&&v.style.display!=='none')||v.style.display==='block')/*25.09 afköst: klasi í stað getComputedStyle*/)return;v.querySelectorAll('img').forEach(function(img){if(img.dataset._pmZ)return;img.dataset._pmZ='1';var w=document.createElement('div');w.className='_pm_img_wrap';img.parentNode.insertBefore(w,img);w.appendChild(img);var b=document.createElement('button');b.className='_pm_zoom_btn';b.innerHTML='\uD83D\uDD0D';b.onclick=function(e){e.preventDefault();e.stopPropagation();var lb=document.createElement('div');lb.className='_pm_lightbox';lb.innerHTML='<button class="_pm_lb_x">&times;</button><img src="'+img.src+'">';lb.onclick=function(){lb.remove();};document.body.appendChild(lb);};w.appendChild(b);});}
   setInterval(addZoom,1000);
   console.log('[pm] vorur lightbox active');
 })();
@@ -2601,7 +2602,7 @@ console.log('[patch-master] loaded with all fixes');
   }
   function fixGeymsla(){
     var v = document.getElementById('view-geymsla');
-    if(!v || getComputedStyle(v).display==='none') return;
+    if(!v || !((v.classList.contains('active')&&v.style.display!=='none')||v.style.display==='block')/*25.09 afköst: klasi í stað getComputedStyle*/) return;
     // Hide 'Skanna nytt taeki' button (purple background)
     v.querySelectorAll('button').forEach(function(btn){
       if(btn.textContent.indexOf('nýtt tæki')>=0 || btn.textContent.indexOf('nytt taeki')>=0){

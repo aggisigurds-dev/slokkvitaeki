@@ -422,7 +422,8 @@ if (window.MapModule && MapModule._geocode) {
   var _lastFieldActive = false;
   setInterval(function(){
     var fv = document.getElementById("view-field");
-    var active = fv && fv.style.display !== "none" && fv.offsetHeight > 0;
+    // 25.09.2026 (afköst): klasinn í stað offsetHeight — sekúndu-klukka sem þvingaði layout á miðri hleðslu.
+    var active = !!fv && ((fv.classList.contains("active") && fv.style.display !== "none") || fv.style.display === "block");
     if (active && !_lastFieldActive && window._slokk_markers && window._slokk_map) {
       setTimeout(function(){ window._slokk_markers(); }, 800);
     }

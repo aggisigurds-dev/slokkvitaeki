@@ -180,7 +180,9 @@
 
   function skreyta() {
     const view = document.getElementById(VIEW_ID);
-    if (!view || view.offsetParent === null) return;          // Leiðsögn ekki opin → ekkert
+    // 25.09.2026 (afköst): klasinn fyrst — offsetParent þvingaði layout á 1,2 s fresti á ÖLLUM síðum
+    if (!view || !(view.classList.contains('active') || view.style.display === 'block')) return;
+    if (view.offsetParent === null) return;          // Leiðsögn ekki opin → ekkert
     if (!gogn || Date.now() - sott > ALDUR_MS) {
       const bid = saekja();
       if (!gogn) { bid.then(() => { if (gogn) skreyta(); }); return; }

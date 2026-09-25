@@ -97,6 +97,16 @@
     parent: 'companies',
     open: function (id) {
       var n = Number(id); if (!n) return;
+      // 25.09.2026 (ræsingar-kapphlaup): fyrir DB.online opnaði þetta prófílinn með „Slökkvitæki (0)"
+      // og 357 opnaði hann AFTUR ~3,5 s síðar þegar gögnin komu — „Hleður…"-slæðan (195) blikkaði yfir
+      // síðu sem var þegar sýnd. 357 á djúptenginguna við ræsingu og hashchange og bíður eftir DB.online.
+      // 235 ræsist á meðan defer-skriftur keyra (readyState 'interactive'), ÁÐUR en 357 hleðst — þá er
+      // CoDeeplink ekki til enn; reyna aftur eftir andartak svo 357 taki við.
+      if (!(window.DB && DB.online)) {
+        if (window.CoDeeplink) return;
+        setTimeout(function () { var r = ROUTES.company; if (r) r.open(id); }, 300);
+        return;
+      }
       if (!window.Companies || typeof Companies.openDetail !== 'function') {
         setTimeout(function () { SubRoutes.apply(); }, 200); return;
       }

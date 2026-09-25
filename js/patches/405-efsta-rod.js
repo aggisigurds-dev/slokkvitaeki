@@ -144,7 +144,9 @@
       ensureMidja(main);
     } catch (err) { console.error('[405]', err); }
   }
-  function schedule() { clearTimeout(timer); timer = setTimeout(tick, 0); }
+  // 25.09.2026 (hopp): setTimeout(tick, 0) lenti EFTIR málun — vaktin (252) skilar sér í rAF, svo hrái ramminn
+  // (takkaröðin óuppröðuð, 32→40 px) sást í einn ramma og allt fyrir neðan hoppaði. Sama tif, eins og 404.
+  function schedule() { if (schedule.inni) return; schedule.inni = true; try { tick(); } finally { schedule.inni = false; } }
   (function watch() {
     var main = document.getElementById('companies-main'); if (!main) { setTimeout(watch, 700); return; }
     new MutationObserver(function (recs) { for (var i = 0; i < recs.length; i++) { var t = recs[i].target; if (t && t.closest && t.closest('.b405-menu')) continue; schedule(); return; } }).observe(main, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-inservice'] });

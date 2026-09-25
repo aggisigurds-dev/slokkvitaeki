@@ -98,16 +98,17 @@
     const view = document.getElementById('view-field');
     const sched = document.getElementById('field-schedule');
     if (!view && !sched) return;
-    // Remove any existing _imp-section anywhere in the field area
-    document.querySelectorAll('#view-field ._imp-section, #field-schedule ._imp-section').forEach(el => el.remove());
-
+    // 25.09.2026 (hopp): áður var hlutinn fjarlægður FYRST og svo aðeins settur inn aftur ef gögnin leyfðu — meðan
+    // Companies.list var tómt (endurhleðsla) hvarf hann (232 px hopp á Þjónustutækjum) og kom aftur síðar.
+    // Nú: ekkert snert meðan fyrirtækjalistinn er ekki kominn; nýi hlutinn tekur SÆTI þess gamla (sama staður).
+    const gamlir = Array.from(document.querySelectorAll('#view-field ._imp-section, #field-schedule ._imp-section'));
     const list = getList();
-    if (!list.length) return;
     const companies = (window.Companies && window.Companies.list) || [];
+    if (list.length && !companies.length) return;
     const important = list
       .map(id => companies.find(c => +c.id === +id))
       .filter(Boolean);
-    if (!important.length) return;
+    if (!important.length) { gamlir.forEach(el => el.remove()); return; }
 
     const wrap = document.createElement('div');
     wrap.className = '_imp-section';
@@ -135,7 +136,12 @@
     // Insert at the TOP of view-field (above monthly strip + field-schedule).
     // Anchor: just below the search/action bar — find the first "real" content
     // div and insert before it. Fall back to sched.insertBefore for legacy.
-    if (view) {
+    if (gamlir.length && gamlir[0].isConnected) {
+      if (view) wrap.style.margin = '12px 20px';
+      gamlir[0].replaceWith(wrap);
+      gamlir.slice(1).forEach(el => el.remove());
+    } else if (view) {
+      gamlir.forEach(el => el.remove());
       // Add small horizontal padding so it lines up with other sections
       wrap.style.margin = '12px 20px';
       const firstContent = view.querySelector('.field-body, .field-content, ._mis-wrap, #field-schedule');

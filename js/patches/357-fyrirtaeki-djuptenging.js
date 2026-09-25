@@ -80,7 +80,10 @@
       // 06.09.2026: bíða líka eftir DB.online (loadAll: uttaeki o.fl.) — annars opnast prófíllinn með „Slökkvitæki (0)"
       // og endurteiknast ekki þegar tækin koma (Örkin: 57 tæki sýnd sem 0 í djúptengdri hleðslu).
       while (!(window.DB && DB.online) && Date.now() - t0 < 20000) await sl(250);
-      openNow(id);
+      // 25.09.2026: 235 opnar sama prófíl við hashchange þegar DB er komið — ekki opna hann tvisvar
+      // (hvert openDetail endurteiknar allt og leggur „Hleður…"-slæðu 195 yfir).
+      if (!detailOpen(id)) openNow(id);
+      window.__coBootHold = false;
       const deadline = Date.now() + ms;
       let reopened = 0;
       while (Date.now() < deadline && !userTouched) {
@@ -88,7 +91,7 @@
         if (!detailOpen(id)) { reopened++; openNow(id); }
       }
       if (reopened) console.log('[357] prófíll #' + id + ' opnaður aftur ' + reopened + 'x gegnum ræsinguna');
-    } finally { busy = false; }
+    } finally { busy = false; window.__coBootHold = false; }
   }
 
   window.addEventListener('hashchange', () => { const id = parseHash(location.hash); if (id) setTimeout(() => go(id, 3000), 350); });
@@ -102,10 +105,12 @@
     go(Number(d.id), 3000);
   });
   if (BOOT_ID) {
+    // Ræsihulan (index.html) bíður meðan djúptengdur prófíll er ekki opnaður — annars sést Sala/listinn fyrst.
+    window.__coBootHold = true;
     const start = () => setTimeout(() => go(BOOT_ID, 8000), 400);
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   }
-  window.CoDeeplink = { open: id => go(Number(id), 3000), parseHash, detailOpen, bootId: BOOT_ID, version: '357f' };
+  window.CoDeeplink = { open: id => go(Number(id), 3000), parseHash, detailOpen, bootId: BOOT_ID, version: '357g' };
   console.log('[patch-357] fyrirtæki djúptenging #company/<id>', BOOT_ID || '');
 })();
 /* === END FYRIRTÆKI DJÚPTENGING === */

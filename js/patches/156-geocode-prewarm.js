@@ -37,8 +37,11 @@
   let _done = 0;
   let _started = false;
 
-  const readGc  = () => { try { return JSON.parse(localStorage.getItem(GC_CACHE_KEY) || '{}'); } catch(e) { return {}; } };
-  const writeGc = c  => { try { localStorage.setItem(GC_CACHE_KEY, JSON.stringify(c)); } catch(e) {} };
+  // 25.09.2026 (afköst): skyndiminnið er stórt JSON og var þáttað upp á nýtt tvisvar í hverri umferð (1,5 s).
+  // Þáttað aðeins þegar strengurinn hefur breyst (mapfix/155 skrifa sama lykil) — sama útkoma.
+  let _gcRaw = null, _gcObj = null;
+  const readGc  = () => { try { const raw = localStorage.getItem(GC_CACHE_KEY) || '{}'; if (raw !== _gcRaw) { _gcObj = JSON.parse(raw); _gcRaw = raw; } return _gcObj; } catch(e) { return {}; } };
+  const writeGc = c  => { try { const raw = JSON.stringify(c); localStorage.setItem(GC_CACHE_KEY, raw); _gcRaw = raw; _gcObj = c; } catch(e) {} };
 
   // Let any currently-open map drop newly-resolved pins live, throttled so we
   // don't re-render on every single geocode during the background warm.

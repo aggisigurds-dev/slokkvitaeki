@@ -186,13 +186,20 @@
     });
   }
 
-  let t = null;
+  // 25.09.2026 (afköst): label() les getComputedStyle á ~60 hnöppum (þvingar stílendurreikning á öllu
+  // skjalinu) og keyrði við HVERJA breytingu á talningarmerkjum (sb-badge texti/klasi, margoft á mínútu).
+  // Merkin hafa engin áhrif á hópa/röð — þá er aðeins hideEmptyBadges keyrt.
+  let t = null, needLabel = true;
+  function onNav(recs) {
+    if (!recs || recs.some(r => { const x = r.target.nodeType === 1 ? r.target : r.target.parentElement; return !(x && x.closest && x.closest('.sb-badge,._drog-badge,.ky-badge')); })) needLabel = true;
+    schedule();
+  }
   function schedule() {
     if (t) return;
     t = setTimeout(() => {
       t = null;
       const nav = document.querySelector('.topbar nav.view-nav');
-      try { label(); } catch (_) {}
+      if (needLabel) { needLabel = false; try { label(); } catch (_) {} }
       try { if (nav) hideEmptyBadges(nav); } catch (_) {}
       try { dressSearch(); } catch (_) {}
     }, 250);
@@ -205,7 +212,7 @@
     if (nav) {
       // class/style (68 raðar með order + nav-grp-start), nýir hnappar og texti
       // í talningarmerkjunum (15/166/…). Ekkert annað — stikan er lítið tré.
-      new MutationObserver(schedule).observe(nav, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+      new MutationObserver(onNav).observe(nav, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
     }
     // 56 býr leitarhnappinn til eftir ~1,5 s
     let n = 0; const iv = setInterval(() => { if (dressSearch() || ++n > 40) clearInterval(iv); }, 500);

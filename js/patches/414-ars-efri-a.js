@@ -79,7 +79,7 @@
     // gömlu hólfin falin — 394 og 153 skrifa þau áfram, við lesum úr þeim
     rv('.b414-on ._ars-statgrid', 'display:none!important'),
     rv('.b414-on .arsm-strip', 'display:none!important'),
-    rv('.b414-on #_hh-toggle', 'display:none!important'),
+    rv('.b414-scope #_hh-toggle', 'display:none!important'),   // 25.09: á .b414-scope (strax), ekki .b414-on — annars 48 px hopp þegar gögnin lenda
     // umgjörðin okkar
     r('.b414-top', 'display:flex;flex-direction:column;gap:12px;margin:0 0 14px;font-family:' + SANS),
     r('.b414-grid', 'display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:12px;align-items:stretch'),
@@ -161,6 +161,10 @@
     r('.b414-man button:focus-visible', 'outline:2px solid #f3d98a;outline-offset:2px;border-radius:3px'),
     // Bílstjóra-flipinn (317): situr í hausröðinni hægra megin sem málmtakki — ekki færður, aðeins staðsettur
     rv('.b414-on', 'position:relative'),
+    // 25.09.2026 (hopp): 317 setir Bílstjóra-takkann inn í flæðið strax, en .b414-on kemur fyrst þegar gögnin
+    // lenda (~6 s) — þá varð takkinn absolute og allt #ars-main hoppaði 49 px upp (CLS 0,57). Á skjá sem 414 á
+    // (.b414-scope, sett um leið og sýnin er til) er takkinn því strax úr flæðinu og ósýnilegur þar til 414 staðsetur hann.
+    rv('.b414-scope:not(.b414-on) #_bil-toggle', 'position:absolute!important;visibility:hidden!important;margin:0!important'),
     rv('.b414-on #_bil-toggle', imp(METAL_BTN) + ';position:absolute!important;right:var(--b414-bil-r,14px)!important;top:var(--b414-bil,181px)!important;height:36px!important;padding:0 14px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center!important;gap:8px!important;margin:0!important;z-index:3;float:none!important'),
     // 213 (theme-inspection) merkir flísar sem „spjöld" (.thm-stat: hvítur rammi, 13 px horn) og tölur sem .thm-statnum (Plex Sans)
     r('.b414-f.thm-stat', 'border:1px solid rgba(255,255,255,.1)!important;border-radius:6px!important;box-shadow:none!important'),
@@ -306,6 +310,7 @@
   }
 
   var sidast = { grid: '', strim: '' };
+  var maeltHaus = null, maelaAftur = true, ro = null;
   function smellur(e) {
     var main = document.getElementById('ars-main');
     var b = e.target.closest('[data-b414]'); if (!b || !main) return;
@@ -323,7 +328,8 @@
   function tick() {
     var view = document.getElementById('view-arsskodun'); if (!view) return;
     var main = document.getElementById('ars-main'); if (!main) return;
-    if (!scope()) { view.classList.remove('b414-on'); Array.prototype.slice.call(main.querySelectorAll('.b414-top')).forEach(function (n) { n.remove(); }); sidast = { grid: '', strim: '' }; return; }
+    if (!scope()) { if (view.classList.contains('b414-scope')) view.classList.remove('b414-scope'); view.classList.remove('b414-on'); Array.prototype.slice.call(main.querySelectorAll('.b414-top')).forEach(function (n) { n.remove(); }); sidast = { grid: '', strim: '' }; return; }
+    if (!view.classList.contains('b414-scope')) view.classList.add('b414-scope');
     var grid = main.querySelector('._ars-statgrid');
     if (!grid || !grid.querySelector('.bstal-hero') || !grid.querySelector('._kpi--rautt ._kpi-n')) { return; }   // 153 ekki búin — bíða næstu teikningar
     var d = lesa(main); if (!d || !isFinite(d.fjoldi)) return;
@@ -335,9 +341,14 @@
     if (strim && out.strim !== sidast.strim) { strim.innerHTML = out.strim; sidast.strim = out.strim; }
     view.classList.add('b414-on');
     // Bílstjóri í haus-röðina hægra megin (sama lína og Prenta lista) — mælt aðeins þegar hausinn hefur færst
+    // 25.09.2026 (afköst): mælingin (getBoundingClientRect/offsetHeight) þvingaði layout í HVERJU tifi — tick keyrir
+    // við hverja class/style-breytingu í sýninni (2,4 s af 18 s á Ársskoðun). Nú aðeins þegar ResizeObserver segir
+    // að haus eða sýn hafi breytt stærð, eða hausinn er nýr hnútur.
     try {
       var haus = main.firstElementChild && main.firstElementChild.firstElementChild;
-      if (haus && haus !== top) {
+      if (haus && haus !== top && (haus !== maeltHaus || maelaAftur)) {
+        maelaAftur = false;
+        if (haus !== maeltHaus) { maeltHaus = haus; try { if (!ro && window.ResizeObserver) ro = new ResizeObserver(function () { maelaAftur = true; schedule(); }); if (ro) { ro.disconnect(); ro.observe(haus); ro.observe(view); } } catch (_) { maelaAftur = true; } }
         // brotin haus-röð (sími, 417): takkinn efst í hægri kantinum, ekki í miðju 200 px hárrar raðar
         var hausH = haus.offsetHeight;
         var y = Math.round(haus.getBoundingClientRect().top - view.getBoundingClientRect().top + (hausH > 96 ? 6 : (hausH - 36) / 2));
@@ -348,7 +359,7 @@
     } catch (_) {}
   }
   function schedule() { if (schedule.inni) return; schedule.inni = true; try { tick(); } catch (e) { console.error('[414]', e); } finally { schedule.inni = false; } }
-  document.addEventListener('ars:render', schedule);
+  document.addEventListener('ars:render', function () { maelaAftur = true; schedule(); });
   (function watch() {
     var v = document.getElementById('view-arsskodun');
     if (!v) { setTimeout(watch, 700); return; }
@@ -358,5 +369,5 @@
     schedule();
   })();
   setInterval(schedule, 2000);
-  window.addEventListener('resize', schedule);
+  window.addEventListener('resize', function () { maelaAftur = true; schedule(); });
 })();
