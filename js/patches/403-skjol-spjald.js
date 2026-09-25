@@ -92,11 +92,13 @@
       // 25.09.2026 (Agnar: „I need to be able to se what I am Deleting"): valmyndin sagði
       // aðeins „Eyða viðhengi" / „Eyða skráningu". Á línu með tveimur skjölum var ómögulegt
       // að vita HVORU yrði eytt. Nafnið var þegar lesið í `it.name` — það var bara aldrei sýnt.
-      var nafn = it.name ? String(it.name).replace(/[&<>"]/g, function (c) {
+      // hakið/táknin fremst á flísinni („✓Hótel …") eru staða, ekki hluti af heitinu
+      var hreint = it.name ? String(it.name).replace(/^[\s✓✔✕✖×·•–—]+/, '').trim() : '';
+      var nafn = hreint ? hreint.replace(/[&<>"]/g, function (c) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }) : '';
       mi.innerHTML = (it.icon || '') + '<span class="b403-mi-texti">' + it.label +
         (nafn ? '<small class="b403-mi-nafn">' + nafn + '</small>' : '') + '</span>';
-      if (it.name) mi.title = it.label + ' — ' + it.name;   // fullt heiti við yfirsvif
+      if (hreint) mi.title = it.label + ' — ' + hreint;   // fullt heiti við yfirsvif
       if (it.run) {   // liður sem keyrir fall — ársstaðan býr á .sk-pill í ársröðinni, sem má ekki flytja inn í liðinn
         mi.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); closeAll(); try { it.run(); } catch (e) { console.warn('[403] liður', e); } });
         menu.appendChild(mi); return;
