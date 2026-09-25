@@ -282,7 +282,7 @@
   // 24.09.2026: #_uv-strip (328) situr í SVARTA REIKNINGUR-hausnum og ber sína eigin
   // ljósu liti. Skannin las bakgrunn pillnanna sem ljósan (þær eru hálfgegnsæjar) og
   // skrifaði dökkt blek á þær — dökkt á dökkt, ólæsilegt. Hausinn á sína liti sjálfur.
-  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd,#_uv-strip,.b412-titill,._uv-rb,.b414-top';
+  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd,#_uv-strip,.b412-titill,._uv-rb,.b414-top,.arsm-sec,._ars-summary,._tfoot';
 
   function hasOwnText(el) {
     for (let n = el.firstChild; n; n = n.nextSibling) {
