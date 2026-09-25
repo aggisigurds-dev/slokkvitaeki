@@ -21,6 +21,9 @@
 
   const RealMO = window.MutationObserver;
   if (!RealMO || typeof requestAnimationFrame !== 'function') return;
+  // 25.09.2026: óinngjafaða útgáfan aðgengileg fyrir þá fáu sem VERÐA að bregðast við í sama verki (fyrir málun),
+  // t.d. hnút sem endurteikning annars pappa þurrkar út og á að setja aftur án þess að rammi sjáist án hans (20).
+  window.__NativeMutationObserver = RealMO;
 
   function ThrottledMO(originalCb) {
     let pending = [];
