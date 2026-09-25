@@ -12,10 +12,55 @@
  *
  * Source: Skatturinn (RSK) Fyrirtækjaskrá public registry.
  */
+// 25.09.2026 — skyndiminni fyrir kt-haminn (Agnar: „algjör óþarfi að vera alltaf að sækja það").
+// Fallið skrapaði skatturinn.is í HVERT sinn. Mælt á fyrirtækjasíðu við kuldaræsingu: 8.696 ms —
+// langhægasta kallið á síðunni. `Cache-Control: max-age=86400` hjálpar aðeins þeim vafra sem
+// þegar hefur spurt; ný vél og nýr flipi borga fullt verð.
+// TTL er 30 dagar EN EKKI lengur: `stada` (gjaldþrot, afskráning) og forráðamenn mega ekki
+// fyrnast þegjandi. Eldri raðir eru sóttar upp á nýtt og skrifaðar yfir.
+// Bregðist taflan er þagað og farið í upprunann — ekkert brotnar.
+const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
+const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
+const KT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+async function lesaKt(kt) {
+  try {
+    const u = `${SB_URL}/rest/v1/kt_lookup_cache?kt=eq.${encodeURIComponent(kt)}&select=svar,uppfaert&limit=1`;
+    const r = await fetch(u, { headers: SB_HAUS, signal: AbortSignal.timeout(2500) });
+    if (!r.ok) return null;
+    const radir = await r.json();
+    if (!Array.isArray(radir) || !radir.length) return null;
+    const aldur = Date.now() - new Date(radir[0].uppfaert).getTime();
+    if (!(aldur >= 0) || aldur > KT_TTL_MS) return null;   // of gamalt → sækja ferskt
+    return radir[0].svar || null;
+  } catch (_) { return null; }
+}
+
+function skrifaKt(kt, svar) {
+  try {
+    fetch(`${SB_URL}/rest/v1/kt_lookup_cache?on_conflict=kt`, {
+      method: 'POST',
+      headers: { ...SB_HAUS, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ kt, svar, uppfaert: new Date().toISOString() }),
+    }).catch(() => {});          // svarið bíður aldrei eftir skrifinu
+  } catch (_) {}
+}
+
 export default async (req) => {
   const url = new URL(req.url);
   const kt = (url.searchParams.get('kt') || '').replace(/[^0-9]/g, '');
   const nafn = (url.searchParams.get('nafn') || '').trim();
+
+  if (kt) {
+    const geymt = await lesaKt(kt);
+    if (geymt) {
+      return new Response(JSON.stringify({ ...geymt, ur_skyndiminni: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=86400' },
+      });
+    }
+  }
 
   // Name-search mode (2026-07-14): ?nafn=<query> → RSK fyrirtækjaskrá name
   // search, returns { results: [{ kennitala, nafn, heimilisfang_full }] }.
@@ -153,7 +198,7 @@ export default async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({
+    const svar = {
       kennitala: kt,
       nafn,
       heimilisfang,
@@ -170,7 +215,9 @@ export default async (req) => {
       stada,        // („Úrskurðað gjaldþrota …", „Félag afskráð …") — tómt fylki = virkt félag
       bt_adili,     // skiptastjóri eða annar b.t. aðili þegar félagið er í slitum
       source: 'skatturinn',
-    }), {
+    };
+    skrifaKt(kt, svar);
+    return new Response(JSON.stringify(svar), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=86400' },
     });
