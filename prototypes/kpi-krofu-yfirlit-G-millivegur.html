@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<title>KPI-spjöld – millivegur Brunastáls og Jarvis</title>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Playfair+Display:wght@700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;color:#11141c;background:#aeb4be;-webkit-font-smoothing:antialiased;font-size:13px}
+svg{flex:none}
+button{font-family:inherit;cursor:pointer;font-size:12.5px}
+.rammi-lbl{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#1f2530;display:flex;align-items:center;gap:10px;margin:0 0 10px}
+.rammi-lbl i{width:26px;height:2px;background:#b42318;display:inline-block}
+.ath{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;color:#525b6b;line-height:1.5}
+/* sameiginlegt */
+.tala{font-family:"Playfair Display",Georgia,serif;font-size:46px;font-weight:800;line-height:1;letter-spacing:-.02em;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);color:#fff}
+.tala small{font-size:18px;font-weight:700;color:#d9dee6;margin-left:6px;letter-spacing:0}
+.tala.gull{color:#f3d98a;text-shadow:0 0 18px rgba(230,190,90,.35),0 1px 0 rgba(0,0,0,.7)}
+.tala.gull small{color:#d3ab4e}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+.plata{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:3px;border:1px solid rgba(20,24,34,.12);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.12);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1f2530;white-space:nowrap}
+.plata.dokk{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);border-color:#000;color:#eef1f4;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+.plata.gullr{background:transparent;border:1px solid rgba(211,171,78,.7);color:#f3d98a;box-shadow:none;letter-spacing:.14em;border-radius:2px}
+.btn{height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);display:inline-flex;align-items:center;gap:8px;font-weight:600;color:#1f2530;white-space:nowrap;font-size:13px}
+.btn.gull{border:1px solid rgba(190,150,60,.5);background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.45);font-weight:700}
+.btn.jarvis{border:1px solid #c9a24a;background:linear-gradient(180deg,#1a1508 0%,#0c0a05 100%);color:#f3d98a;border-radius:2px;font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:11.5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.6),0 0 10px rgba(211,171,78,.18)}
+.btn.jarvis.dauf{border-color:rgba(201,162,74,.45);color:#c9a24a}
+.leg{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;color:#d5dbe6;align-items:center}
+.leg i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:7px;vertical-align:-1px;border:1px solid rgba(0,0,0,.4)}
+.leg b{color:#fff}
+.leg small{color:#8e97a6;margin-left:6px}
+.flis{display:flex;flex-direction:column;gap:3px;padding:8px 12px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);min-width:0}
+.flis .l{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a9b1bf}
+.flis .v{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;font-weight:700;color:#fff;white-space:nowrap}
+.flis .v small{font-size:11px;font-weight:400;color:#a9b1bf;margin-left:4px}
+/* ── 1 · Brunastál með gullbrún ── */
+.k1{position:relative;border:1px solid #000;border-radius:12px;overflow:hidden;color:#fff;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.05) 0 1px,transparent 1px 5px),linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 18px 40px -12px rgba(10,14,22,.6);padding:18px 20px 18px;display:flex;flex-direction:column;gap:12px}
+.k1::before,.k1::after{content:"";position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,#3d2b05 0%,#d3ab4e 18%,#ffe9b0 32%,#a67f22 50%,#ffe9b0 68%,#d3ab4e 82%,#3d2b05 100%)}
+.k1::before{top:0}.k1::after{bottom:0;opacity:.7}
+.glod{position:absolute;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff3c4 0%,#f0a83c 45%,#7a4a08 100%);box-shadow:0 0 6px 1px rgba(240,168,60,.75),0 1px 1px rgba(0,0,0,.7)}
+.merki1{display:flex;align-items:center;gap:10px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#e9cf85}
+.merki1 .dl{width:8px;height:8px;background:#e0a93e;transform:rotate(45deg);box-shadow:0 0 8px rgba(224,169,62,.8);flex:none}
+.sula1{height:10px;border-radius:5px;background:#1a1a1e;box-shadow:inset 0 1px 2px rgba(0,0,0,.7),inset 0 0 0 1px rgba(211,171,78,.25);display:flex;overflow:hidden;gap:2px}
+.sula1 span{height:100%;display:block}
+.sula1 .gu{background:linear-gradient(180deg,#ffe9b0 0%,#d3ab4e 40%,#a67f22 60%,#e0b85a 100%);box-shadow:0 0 10px rgba(230,190,90,.5)}
+.sula1 .gr{background:linear-gradient(180deg,#7fe0a8 0%,#23a35a 40%,#0b5a2e 60%,#137a41 100%)}
+.sula1 .st{background:linear-gradient(180deg,#e2e6ec 0%,#8f98a8 40%,#555d6b 60%,#737c8b 100%)}
+/* ── 2 · Jarvis-rammi, Brunastáls-innihald ── */
+.k2{position:relative;color:#f3e9cf;background:#0b0b0c;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 12px),repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,transparent 1px 12px);border:1px solid #6b5316;box-shadow:inset 0 0 0 3px #0b0b0c,inset 0 0 0 4px rgba(211,171,78,.55),0 18px 40px -12px rgba(0,0,0,.8);padding:22px 24px 20px;display:flex;flex-direction:column;gap:12px;clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px))}
+.k2::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,#3d2b05 0%,#d3ab4e 25%,#ffe9b0 40%,#a67f22 55%,#d3ab4e 75%,#3d2b05 100%)}
+.k2 .lj{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff3c4 0%,#f0a83c 45%,#7a4a08 100%);box-shadow:0 0 7px 2px rgba(240,168,60,.7)}
+.merki2{display:flex;align-items:center;gap:12px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:#e9cf85}
+.merki2 .dl{width:9px;height:9px;background:#d3ab4e;transform:rotate(45deg);flex:none}
+.jline{height:1px;background:linear-gradient(90deg,rgba(211,171,78,.9),rgba(211,171,78,.15))}
+.jflis{display:flex;flex-direction:column;gap:4px;padding:9px 12px;border:1px solid rgba(211,171,78,.4);background:rgba(0,0,0,.45);min-width:0}
+.jflis .l{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#c9a24a}
+.jflis .v{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:15px;font-weight:700;color:#f3e9cf;white-space:nowrap}
+.jflis .v small{font-size:11px;font-weight:400;color:#c9a24a;margin-left:4px}
+.sula2{height:12px;border:1px solid rgba(211,171,78,.5);background:#111;display:flex;overflow:hidden;padding:2px;gap:2px}
+.sula2 span{height:100%;display:block}
+.sula2 .gu{background:linear-gradient(90deg,#f3d98a,#d3ab4e 60%,#a67f22);box-shadow:0 0 8px rgba(243,217,138,.6)}
+.sula2 .gr{background:linear-gradient(90deg,#8fe6b4,#23a35a)}
+.sula2 .st{background:linear-gradient(90deg,#e2e6ec,#8f98a8)}
+.sula2 .to{background:repeating-linear-gradient(90deg,rgba(211,171,78,.25) 0 2px,transparent 2px 5px)}
+.jleg{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;color:#e9cf85;display:flex;flex-wrap:wrap;gap:8px 20px;letter-spacing:.04em}
+.jleg b{color:#fff}
+.jleg small{color:#c9a24a;margin-left:6px}
+.jleg i{width:9px;height:9px;display:inline-block;margin-right:7px;vertical-align:-1px}
+/* ── 3 · mælir ── */
+.k3{position:relative;border:1px solid #000;border-radius:12px;overflow:hidden;color:#fff;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.05) 0 1px,transparent 1px 5px),linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 18px 40px -12px rgba(10,14,22,.6);padding:16px 20px 16px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:8px 22px;align-items:center}
+.k3::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,#d3ab4e 30%,#ffe9b0 50%,#d3ab4e 70%,transparent)}
+.hnod{position:absolute;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7)}
+.maelir{position:relative;width:200px;height:120px;grid-row:1 / span 3}
+.maelir .mid{position:absolute;left:0;right:0;bottom:6px;text-align:center}
+.maelir .mid b{display:block;font-family:"Playfair Display",Georgia,serif;font-size:34px;font-weight:800;color:#f3d98a;line-height:1;text-shadow:0 0 14px rgba(230,190,90,.35)}
+.maelir .mid span{display:block;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#c9a24a;margin-top:4px}
+.merki3{display:flex;align-items:center;gap:10px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#d9dee6}
+.merki3 .led{width:8px;height:8px;border-radius:50%;background:#e0a93e;box-shadow:0 0 0 3px rgba(246,181,69,.18),0 0 12px rgba(246,181,69,.85);flex:none}
+.rod3{display:flex;align-items:center;gap:12px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;color:#d5dbe6}
+.rod3 b{color:#fff}
+.rod3 .skil{color:#6b7483}
+.tikk{display:flex;flex-direction:column;gap:6px}
+.tikk .r{display:grid;grid-template-columns:110px minmax(0,1fr) 110px;gap:10px;align-items:center;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;color:#d5dbe6}
+.tikk .r b{color:#fff;text-align:right}
+.tikk .bar{height:6px;border-radius:3px;background:#1a1a1e;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)}
+.tikk .bar span{display:block;height:100%;border-radius:3px}
+
+/* ── 4 · umgjörðin: skorin horn og rammar ── */
+.sk{--cut:20px;--b:2px;position:relative;padding:var(--b);clip-path:polygon(0 0,calc(100% - var(--cut)) 0,100% var(--cut),100% 100%,var(--cut) 100%,0 calc(100% - var(--cut)));filter:drop-shadow(0 14px 24px rgba(10,14,22,.45))}
+.sk .inni{position:relative;clip-path:polygon(0 0,calc(100% - var(--cut) + var(--b)) 0,100% calc(var(--cut) - var(--b)),100% 100%,calc(var(--cut) - var(--b)) 100%,0 calc(100% - var(--cut) + var(--b)));color:#fff;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.05) 0 1px,transparent 1px 5px),linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);padding:16px 20px 16px;display:flex;flex-direction:column;gap:12px;min-height:186px;box-sizing:border-box}
+.sk.stal{background:linear-gradient(145deg,#0a0a0c 0%,#4a4e57 20%,#1d1f24 45%,#6a6f79 62%,#15161a 85%,#0a0a0c 100%)}
+.sk.raudur{--b:2px;background:linear-gradient(145deg,#0d0102 0%,#380506 18%,#6c0d10 38%,#971515 50%,#6c0d10 62%,#380506 82%,#0d0102 100%)}
+.sk.raudur .inni{background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.05) 0 1px,transparent 1px 5px),linear-gradient(145deg,#0a0809 0%,#221b1c 26%,#332b2d 50%,#171314 74%,#080607 100%)}
+.sk.gull{--b:2px;background:linear-gradient(145deg,#3d2b05 0%,#d3ab4e 20%,#ffe9b0 35%,#a67f22 52%,#ffe9b0 68%,#d3ab4e 82%,#3d2b05 100%)}
+.sk.tvofaldur{--b:3px;background:linear-gradient(145deg,#0d0102 0%,#6c0d10 30%,#971515 50%,#6c0d10 70%,#0d0102 100%)}
+.sk.tvofaldur .inni{box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),inset 0 0 0 2px #0a0a0c}
+.sk .inni::before{content:"";position:absolute;left:0;right:0;top:0;height:3px}
+.sk.stal .inni::before{background:linear-gradient(90deg,#3d2b05 0%,#d3ab4e 25%,#ffe9b0 45%,#a67f22 60%,#d3ab4e 80%,#3d2b05 100%)}
+.sk.raudur .inni::before{background:linear-gradient(90deg,#380506,#e25555 40%,#ff9d95 50%,#e25555 60%,#380506)}
+.sk.gull .inni::before{display:none}
+.sk.tvofaldur .inni::before{display:none}
+.sk .hn{position:absolute;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7)}
+.sk.raudur .hn{background:radial-gradient(circle at 40% 35%,#ffd6d0 0%,#e25555 45%,#5a0a0a 100%);box-shadow:0 0 6px 1px rgba(226,85,85,.6),0 1px 1px rgba(0,0,0,.7)}
+.sk.gull .hn{background:radial-gradient(circle at 40% 35%,#fff3c4 0%,#f0a83c 45%,#7a4a08 100%);box-shadow:0 0 6px 1px rgba(240,168,60,.7)}
+.merki4{display:flex;align-items:center;gap:10px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#d9dee6}
+.merki4 .led{width:8px;height:8px;border-radius:50%;background:#e0a93e;box-shadow:0 0 0 3px rgba(246,181,69,.18),0 0 12px rgba(246,181,69,.85);flex:none}
+.sula4{height:10px;border-radius:5px;background:#1a1a1e;box-shadow:inset 0 1px 2px rgba(0,0,0,.7);display:flex;overflow:hidden;gap:2px}
+.sula4 span{height:100%;display:block}
+.sula4 .gu{background:linear-gradient(180deg,#ffe9b0 0%,#d3ab4e 40%,#a67f22 60%,#e0b85a 100%);box-shadow:0 0 10px rgba(230,190,90,.5)}
+.sula4 .gr{background:linear-gradient(180deg,#7fe0a8 0%,#23a35a 40%,#0b5a2e 60%,#137a41 100%)}
+.btn.raudur{border:1px solid rgba(190,32,28,.55);background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.45);font-weight:700}
+.btn.malmur{border:1px solid #000;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);color:#eef1f4}
+</style>
+
+<div style="padding: 36px 40px 40px; display: flex; flex-direction: column; gap: 34px; width: 1600px; box-sizing: border-box;">
+
+  <!-- ══ 1 · Brunastál með gullbrún ══ -->
+  <div>
+    <div class="rammi-lbl"><i aria-hidden="true"></i>1 · Brunastál með gullbrún — málmspjaldið heldur sér, Jarvis lánar gullið, glóðina og tígulmerkið</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start;">
+      <div class="k1">
+        <span class="glod" style="top: 11px; left: 10px;" aria-hidden="true"></span><span class="glod" style="top: 11px; right: 10px;" aria-hidden="true"></span>
+        <span class="glod" style="bottom: 11px; left: 10px;" aria-hidden="true"></span><span class="glod" style="bottom: 11px; right: 10px;" aria-hidden="true"></span>
+        <div class="merki1"><span class="dl" aria-hidden="true"></span>Ógreiddar í Payday<span class="plata dokk" style="margin-left: 2px; letter-spacing: .06em;">46 kröfur</span><span class="plata gullr" style="margin-left: auto;">CG-S01</span></div>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 16px; align-items: start;">
+          <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+            <div class="tala gull">2.344.949<small>kr</small></div>
+            <div class="sula1" role="img" aria-label="74% ógreitt, 26% greitt"><span class="gu" style="width: 74%;"></span><span class="gr" style="width: 26%;"></span></div>
+            <div class="leg"><span><i style="background: #d3ab4e;" aria-hidden="true"></i><b>74%</b> ógreitt<small>46 kröfur</small></span><span><i style="background: #23a35a;" aria-hidden="true"></i><b>26%</b> greitt<small>15 kröfur · 828.494 kr</small></span></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div class="flis"><span class="l">Án VSK</span><span class="v">1.891.087<small>kr</small></span></div>
+            <div class="flis"><span class="l">Meðalkrafa</span><span class="v">50.977<small>kr</small></span></div>
+            <div class="flis"><span class="l">Elsta krafa</span><span class="v">31 d.<small>R-106402</small></span></div>
+          </div>
+        </div>
+        <button class="btn gull" type="button" style="width: 100%; justify-content: center; height: 40px;">Sýna kröfurnar
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="k1">
+        <span class="glod" style="top: 11px; left: 10px;" aria-hidden="true"></span><span class="glod" style="top: 11px; right: 10px;" aria-hidden="true"></span>
+        <span class="glod" style="bottom: 11px; left: 10px;" aria-hidden="true"></span><span class="glod" style="bottom: 11px; right: 10px;" aria-hidden="true"></span>
+        <div class="merki1"><span class="dl" aria-hidden="true"></span>Heildarkröfur í sýn<span class="plata dokk" style="margin-left: 2px; letter-spacing: .06em;">61 sölur</span><span class="plata dokk" style="letter-spacing: .06em;">56 fyrirtæki</span><span class="plata gullr" style="margin-left: auto;">Sept 2026</span></div>
+        <div style="display: flex; align-items: flex-end; gap: 16px;">
+          <div class="tala gull">3.173.443<small>kr</small></div>
+          <span class="rod3" style="padding-bottom: 6px;">meðalkrafa <b>52.024 kr</b><span class="skil">·</span>á fyrirtæki <b>56.669 kr</b></span>
+        </div>
+        <div class="sula1" style="height: 14px; border-radius: 4px;" role="img" aria-label="September 93%, eldra ógreitt 7%"><span class="st" style="width: 92.6%;"></span><span class="gu" style="width: 7.4%;"></span></div>
+        <div class="leg"><span><i style="background: #8f98a8;" aria-hidden="true"></i>September <b>2.939.876 kr</b><small>49 kröfur</small></span><span><i style="background: #d3ab4e;" aria-hidden="true"></i>Eldra ógreitt <b>233.567 kr</b><small>12 kröfur</small></span><span><i style="background: #23a35a;" aria-hidden="true"></i>Greitt <b>828.494 kr</b><small>15 kröfur</small></span></div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" type="button" style="flex: 1; justify-content: center;">Sýna allar kröfur</button>
+          <button class="btn gull" type="button" style="flex: 1; justify-content: center;">Aðeins eldra ógreitt</button>
+        </div>
+      </div>
+    </div>
+    <div class="ath" style="margin-top: 10px; max-width: 1300px;">Minnsta skrefið: spjaldið, plöturnar og silfurtakkinn eru Brunastál; gullrendur efst og neðst, glóð í hnoðunum, tígulmerki og gyllt Playfair-tala eru úr Jarvis. Súlurnar fá gullglóð. Passar við hliðina á öðrum síðum Slökkvitækis án þess að stinga í stúf.</div>
+  </div>
+
+  <!-- ══ 2 · Jarvis-rammi, Brunastáls-innihald ══ -->
+  <div>
+    <div class="rammi-lbl"><i aria-hidden="true"></i>2 · Jarvis-rammi — skorið horn, tvöföld gullbrún, ristin; innihaldið er tölur og flísar Brunastáls</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start;">
+      <div class="k2">
+        <span class="lj" style="top: 13px; left: 12px;" aria-hidden="true"></span><span class="lj" style="top: 13px; right: 34px;" aria-hidden="true"></span>
+        <span class="lj" style="bottom: 12px; left: 34px;" aria-hidden="true"></span><span class="lj" style="bottom: 12px; right: 12px;" aria-hidden="true"></span>
+        <div class="merki2"><span class="dl" aria-hidden="true"></span>Ógreiddar í Payday<span class="plata gullr" style="margin-left: auto;">CG-S01</span></div>
+        <div class="jline" aria-hidden="true"></div>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 18px; align-items: start;">
+          <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+            <div class="tala gull" style="font-size: 44px;">2.344.949<small>kr</small></div>
+            <div class="sula2" role="img" aria-label="74% ógreitt, 26% greitt"><span class="gu" style="width: 74%;"></span><span class="gr" style="width: 26%;"></span></div>
+            <div class="jleg"><span><i style="background: #d3ab4e;" aria-hidden="true"></i>Ógreitt <b>74%</b><small>46 kröfur</small></span><span><i style="background: #23a35a;" aria-hidden="true"></i>Greitt <b>26%</b><small>15 kröfur</small></span></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div class="jflis"><span class="l">Án VSK</span><span class="v">1.891.087<small>kr</small></span></div>
+            <div class="jflis"><span class="l">Meðalkrafa</span><span class="v">50.977<small>kr</small></span></div>
+            <div class="jflis"><span class="l">Elsta krafa</span><span class="v">31 d.<small>R-106402</small></span></div>
+          </div>
+        </div>
+        <button class="btn jarvis" type="button" style="width: 100%; justify-content: center; height: 40px;">Sýna kröfurnar</button>
+      </div>
+
+      <div class="k2">
+        <span class="lj" style="top: 13px; left: 12px;" aria-hidden="true"></span><span class="lj" style="top: 13px; right: 34px;" aria-hidden="true"></span>
+        <span class="lj" style="bottom: 12px; left: 34px;" aria-hidden="true"></span><span class="lj" style="bottom: 12px; right: 12px;" aria-hidden="true"></span>
+        <div class="merki2"><span class="dl" aria-hidden="true"></span>Heildarkröfur í sýn<span class="plata gullr" style="margin-left: auto;">61 sölur · 56 fyrirtæki</span></div>
+        <div class="jline" aria-hidden="true"></div>
+        <div style="display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 18px; align-items: start;">
+          <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+            <div class="tala gull" style="font-size: 40px;">3.173.443<small>kr</small></div>
+            <div class="sula2" role="img" aria-label="September 93%, eldra ógreitt 7%"><span class="st" style="width: 92.6%;"></span><span class="gu" style="width: 7.4%;"></span></div>
+            <span class="jleg" style="font-size: 11.5px;">meðalkrafa <b>52.024 kr</b></span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div class="jflis" style="flex-direction: row; align-items: center; gap: 10px;"><i style="width: 9px; height: 9px; background: #8f98a8; display: inline-block;" aria-hidden="true"></i><span class="l" style="flex: 1;">September</span><span class="v">2.939.876<small>kr · 49</small></span></div>
+            <div class="jflis" style="flex-direction: row; align-items: center; gap: 10px;"><i style="width: 9px; height: 9px; background: #d3ab4e; display: inline-block;" aria-hidden="true"></i><span class="l" style="flex: 1;">Eldra ógreitt</span><span class="v">233.567<small>kr · 12</small></span></div>
+            <div class="jflis" style="flex-direction: row; align-items: center; gap: 10px;"><i style="width: 9px; height: 9px; background: #23a35a; display: inline-block;" aria-hidden="true"></i><span class="l" style="flex: 1;">Greitt í mánuðinum</span><span class="v">828.494<small>kr · 15</small></span></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn jarvis dauf" type="button" style="flex: 1; justify-content: center;">Sýna allar</button>
+          <button class="btn jarvis" type="button" style="flex: 1; justify-content: center;">Eldra ógreitt</button>
+        </div>
+      </div>
+    </div>
+    <div class="ath" style="margin-top: 10px; max-width: 1300px;">Lengst í átt að Jarvis: svartur grunnur með rist, tvöföld gullbrún, skorið horn og glóðarljós í hornunum, mono-merki með breiðu stafabili og gylltir útlínutakkar. Innihaldið heldur samt röð Brunastáls: stór tala, súla með skýringu, flísar hægra megin. Þetta yrði sér-spjald í Kröfu yfirliti, ekki sama útlit og hin spjöldin á síðunni.</div>
+  </div>
+
+  <!-- ══ 3 · mælir ══ -->
+  <div>
+    <div class="rammi-lbl"><i aria-hidden="true"></i>3 · Mælirinn — bogamælir Jarvis á Brunastálsspjaldi, kvarðinn segir hlutfallið</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start;">
+      <div class="k3">
+        <span class="hnod" style="top: 10px; left: 9px;" aria-hidden="true"></span><span class="hnod" style="top: 10px; right: 9px;" aria-hidden="true"></span>
+        <span class="hnod" style="bottom: 9px; left: 9px;" aria-hidden="true"></span><span class="hnod" style="bottom: 9px; right: 9px;" aria-hidden="true"></span>
+        <div class="maelir" role="img" aria-label="74% af heildarkröfum ógreiddar">
+          <svg width="200" height="120" viewBox="0 0 200 120" aria-hidden="true">
+            <path d="M16 108 A84 84 0 0 1 184 108" fill="none" stroke="#1a1a1e" stroke-width="12" stroke-linecap="round"/>
+            <path d="M16 108 A84 84 0 0 1 184 108" fill="none" stroke="rgba(211,171,78,.25)" stroke-width="1"/>
+            <path d="M16 108 A84 84 0 0 1 184 108" fill="none" stroke="url(#g1)" stroke-width="12" stroke-linecap="round" stroke-dasharray="195 264"/>
+            <g stroke="#c9a24a" stroke-width="1.5" opacity=".8"><path d="M16 108l6-2M25 78l6 3M44 50l4 5M73 30l3 6M100 22v6M127 30l-3 6M156 50l-4 5M175 78l-6 3M184 108l-6-2"/></g>
+            <g font-family="JetBrains Mono, monospace" font-size="9" fill="#c9a24a" text-anchor="middle"><text x="12" y="120">0</text><text x="100" y="12">50</text><text x="188" y="120">100</text></g>
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7a5608"/><stop offset=".55" stop-color="#d3ab4e"/><stop offset="1" stop-color="#ffe9b0"/></linearGradient></defs>
+          </svg>
+          <div class="mid"><b>74%</b><span>ógreitt</span></div>
+        </div>
+        <div class="merki3"><span class="led" aria-hidden="true"></span>Ógreiddar í Payday<span class="plata dokk" style="margin-left: 2px;">46 kröfur</span><span class="plata gullr" style="margin-left: auto;">CG-S01</span></div>
+        <div class="tala" style="font-size: 40px;">2.344.949<small>kr</small></div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="rod3" style="flex-wrap: wrap; row-gap: 2px; min-width: 0;"><span style="white-space: nowrap;">án VSK <b>1.891.087 kr</b></span><span class="skil">·</span><span style="white-space: nowrap;">greitt <b>828.494 kr</b></span><span class="skil">·</span><span style="white-space: nowrap;">elsta <b>31 d.</b></span></span>
+          <button class="btn" type="button" style="margin-left: auto; flex: none;">Sýna kröfurnar
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="k3">
+        <span class="hnod" style="top: 10px; left: 9px;" aria-hidden="true"></span><span class="hnod" style="top: 10px; right: 9px;" aria-hidden="true"></span>
+        <span class="hnod" style="bottom: 9px; left: 9px;" aria-hidden="true"></span><span class="hnod" style="bottom: 9px; right: 9px;" aria-hidden="true"></span>
+        <div class="maelir" role="img" aria-label="93% af kröfum eru frá september, 7% eldra ógreitt">
+          <svg width="200" height="120" viewBox="0 0 200 120" aria-hidden="true">
+            <path d="M16 108 A84 84 0 0 1 184 108" fill="none" stroke="#1a1a1e" stroke-width="12" stroke-linecap="round"/>
+            <path d="M16 108 A84 84 0 0 1 184 108" fill="none" stroke="#8f98a8" stroke-width="12" stroke-linecap="round" stroke-dasharray="244 264"/>
+            <path d="M16 108 A84 84 0 0 1 184 108" fill="none" stroke="#d3ab4e" stroke-width="12" stroke-linecap="butt" stroke-dasharray="0 244 20 264"/>
+            <g stroke="#c9a24a" stroke-width="1.5" opacity=".8"><path d="M16 108l6-2M25 78l6 3M44 50l4 5M73 30l3 6M100 22v6M127 30l-3 6M156 50l-4 5M175 78l-6 3M184 108l-6-2"/></g>
+          </svg>
+          <div class="mid"><b>61</b><span>sölur · 56 fyrirtæki</span></div>
+        </div>
+        <div class="merki3"><span class="led" style="background: #f0584c; box-shadow: 0 0 0 3px rgba(240,88,76,.18), 0 0 12px rgba(240,88,76,.85);" aria-hidden="true"></span>Heildarkröfur í sýn<span class="plata gullr" style="margin-left: auto;">Sept 2026</span></div>
+        <div class="tala" style="font-size: 40px;">3.173.443<small>kr</small></div>
+        <div class="tikk">
+          <div class="r"><span>September</span><div class="bar"><span style="width: 92.6%; background: linear-gradient(90deg,#e2e6ec,#8f98a8);"></span></div><b>2.939.876 kr</b></div>
+          <div class="r"><span>Eldra ógreitt</span><div class="bar"><span style="width: 7.4%; background: linear-gradient(90deg,#ffe9b0,#d3ab4e); box-shadow: 0 0 8px rgba(230,190,90,.6);"></span></div><b>233.567 kr</b></div>
+          <div class="r"><span>Greitt</span><div class="bar"><span style="width: 26%; background: linear-gradient(90deg,#7fe0a8,#23a35a);"></span></div><b>828.494 kr</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="ath" style="margin-top: 10px; max-width: 1300px;">Mælirinn er lánið úr Jarvis (bogi með kvarða og gullglóð), allt annað er Brunastál: málmspjald, stálhnoð, hvít Playfair-tala, plötur. Hægra megin er sundurliðunin sem þrjár mjóar súlur með upphæð — sama og 2B á spjaldi F en þéttara. Hlutfallið er fyrsta sem augað sér; talan næst.</div>
+  </div>
+
+
+  <!-- ══ 4 · umgjörðin ══ -->
+  <div>
+    <div class="rammi-lbl"><i aria-hidden="true"></i>4 · Umgjörðin — sama spjald, fjórir rammar með tveimur skornum hornum</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start;">
+
+      <div class="sk stal">
+        <div class="inni">
+          <span class="hn" style="top: 9px; left: 9px;" aria-hidden="true"></span><span class="hn" style="top: 9px; right: 28px;" aria-hidden="true"></span>
+          <span class="hn" style="bottom: 9px; left: 28px;" aria-hidden="true"></span><span class="hn" style="bottom: 9px; right: 9px;" aria-hidden="true"></span>
+          <div class="merki4"><span class="led" aria-hidden="true"></span>Ógreiddar í Payday<span class="plata dokk" style="margin-left: 2px; letter-spacing: .06em;">46 kröfur</span><span class="plata gullr" style="margin-left: auto;">CG-S01</span></div>
+          <div style="display: flex; align-items: flex-end; gap: 16px;">
+            <div class="tala">2.344.949<small>kr</small></div>
+            <span class="rod3" style="padding-bottom: 6px;">án VSK <b>1.891.087 kr</b></span>
+            <button class="btn " type="button" style="margin-left: auto;">Sýna kröfurnar</button>
+          </div>
+          <div class="sula4" role="img" aria-label="74% ógreitt, 26% greitt"><span class="gu" style="width: 74%;"></span><span class="gr" style="width: 26%;"></span></div>
+          <div class="leg"><span><i style="background: #d3ab4e;" aria-hidden="true"></i><b>74%</b> ógreitt<small>46 kröfur</small></span><span><i style="background: #23a35a;" aria-hidden="true"></i><b>26%</b> greitt<small>15 kröfur · 828.494 kr</small></span></div>
+        </div>
+      </div>
+
+      <div class="sk raudur">
+        <div class="inni">
+          <span class="hn" style="top: 9px; left: 9px;" aria-hidden="true"></span><span class="hn" style="top: 9px; right: 28px;" aria-hidden="true"></span>
+          <span class="hn" style="bottom: 9px; left: 28px;" aria-hidden="true"></span><span class="hn" style="bottom: 9px; right: 9px;" aria-hidden="true"></span>
+          <div class="merki4"><span class="led" aria-hidden="true"></span>Ógreiddar í Payday<span class="plata dokk" style="margin-left: 2px; letter-spacing: .06em;">46 kröfur</span><span class="plata gullr" style="margin-left: auto;">CG-S01</span></div>
+          <div style="display: flex; align-items: flex-end; gap: 16px;">
+            <div class="tala">2.344.949<small>kr</small></div>
+            <span class="rod3" style="padding-bottom: 6px;">án VSK <b>1.891.087 kr</b></span>
+            <button class="btn raudur" type="button" style="margin-left: auto;">Sýna kröfurnar</button>
+          </div>
+          <div class="sula4" role="img" aria-label="74% ógreitt, 26% greitt"><span class="gu" style="width: 74%;"></span><span class="gr" style="width: 26%;"></span></div>
+          <div class="leg"><span><i style="background: #d3ab4e;" aria-hidden="true"></i><b>74%</b> ógreitt<small>46 kröfur</small></span><span><i style="background: #23a35a;" aria-hidden="true"></i><b>26%</b> greitt<small>15 kröfur · 828.494 kr</small></span></div>
+        </div>
+      </div>
+
+      <div class="sk gull">
+        <div class="inni">
+          <span class="hn" style="top: 9px; left: 9px;" aria-hidden="true"></span><span class="hn" style="top: 9px; right: 28px;" aria-hidden="true"></span>
+          <span class="hn" style="bottom: 9px; left: 28px;" aria-hidden="true"></span><span class="hn" style="bottom: 9px; right: 9px;" aria-hidden="true"></span>
+          <div class="merki4"><span class="led" aria-hidden="true"></span>Ógreiddar í Payday<span class="plata dokk" style="margin-left: 2px; letter-spacing: .06em;">46 kröfur</span><span class="plata gullr" style="margin-left: auto;">CG-S01</span></div>
+          <div style="display: flex; align-items: flex-end; gap: 16px;">
+            <div class="tala">2.344.949<small>kr</small></div>
+            <span class="rod3" style="padding-bottom: 6px;">án VSK <b>1.891.087 kr</b></span>
+            <button class="btn gull" type="button" style="margin-left: auto;">Sýna kröfurnar</button>
+          </div>
+          <div class="sula4" role="img" aria-label="74% ógreitt, 26% greitt"><span class="gu" style="width: 74%;"></span><span class="gr" style="width: 26%;"></span></div>
+          <div class="leg"><span><i style="background: #d3ab4e;" aria-hidden="true"></i><b>74%</b> ógreitt<small>46 kröfur</small></span><span><i style="background: #23a35a;" aria-hidden="true"></i><b>26%</b> greitt<small>15 kröfur · 828.494 kr</small></span></div>
+        </div>
+      </div>
+
+      <div class="sk tvofaldur">
+        <div class="inni">
+          <span class="hn" style="top: 9px; left: 9px;" aria-hidden="true"></span><span class="hn" style="top: 9px; right: 28px;" aria-hidden="true"></span>
+          <span class="hn" style="bottom: 9px; left: 28px;" aria-hidden="true"></span><span class="hn" style="bottom: 9px; right: 9px;" aria-hidden="true"></span>
+          <div class="merki4"><span class="led" aria-hidden="true"></span>Ógreiddar í Payday<span class="plata dokk" style="margin-left: 2px; letter-spacing: .06em;">46 kröfur</span><span class="plata dokk" style="margin-left: auto;">CG-S01</span></div>
+          <div style="display: flex; align-items: flex-end; gap: 16px;">
+            <div class="tala">2.344.949<small>kr</small></div>
+            <span class="rod3" style="padding-bottom: 6px;">án VSK <b>1.891.087 kr</b></span>
+            <button class="btn malmur" type="button" style="margin-left: auto;">Sýna kröfurnar</button>
+          </div>
+          <div class="sula4" role="img" aria-label="74% ógreitt, 26% greitt"><span class="gu" style="width: 74%;"></span><span class="gr" style="width: 26%;"></span></div>
+          <div class="leg"><span><i style="background: #d3ab4e;" aria-hidden="true"></i><b>74%</b> ógreitt<small>46 kröfur</small></span><span><i style="background: #23a35a;" aria-hidden="true"></i><b>26%</b> greitt<small>15 kröfur · 828.494 kr</small></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ath" style="margin-top: 10px; max-width: 1300px;">
+      <b style="color: #b42318;">4a</b> Stálrammi, 2 px burstaður málmur, horn skorin efst til hægri og neðst til vinstri (20 px), gullrönd efst, stálhnoð.
+      <b style="color: #b42318;">4b</b> Dökkrauður málmrammi (sama rauða málmmerki og aðaltakkinn, dökkur endi), rauð rönd efst, glóð í hnoðunum, rauður takki — spjaldið sjálft dregur í rauðsvart.
+      <b style="color: #b42318;">4c</b> Gullrammi, 2 px, gullglóð í hnoðum, gullinn takki — næst Jarvis.
+      <b style="color: #b42318;">4d</b> Rauður málmur 3 px með innri stállínu (tvöfaldur rammi), engin rönd efst, málmtakki — mest „vél“, minnst skraut. Sama skurðarhorn í öllum: skurðurinn er umgjörðin sjálf, ekki bara skuggi.
+    </div>
+  </div>
+
+  <div class="ath" style="max-width: 1300px;">Röðin frá Brunastáli í átt að Jarvis: 1 → 3 → 2. Mín tillaga fyrir Kröfu yfirlit er 1 (gullbrúnin) fyrir bæði spjöldin, eða 3 (mælirinn) fyrir Ógreiddar og 1 fyrir Heildarkröfur — 2 er fallegt en verður eina Jarvis-spjaldið á síðu sem er annars Brunastál.</div>
+
+</div>
+</body>
+</html>
