@@ -50,6 +50,27 @@
     try { localStorage.setItem(LS, String(z)); } catch (_) {}
   }
 
+  // 26.09.2026 (Agnar: „láta kannski 160 zoom verða 100% · svo ég þurfi ekki að breyta á milli glugga"): zoomið er EITT
+  // gildi fyrir allar síður, en ÞjónustuVerkstæði er teiknað fyrir breiðan skjá og var aðeins læsilegt í 160%. Síða getur
+  // nú haft grunnstækkun í appinu (og á síma í Sími-ham); hún margfaldast við val notandans og stikan sýnir valið — 100%
+  // á ÞjónustuVerkstæði er það sem áður var 160%. Einu sinni: vistað 160% (sem var stillt fyrir þessa síðu) verður 100%.
+  const GRUNNUR = { 'view-thjonustu-verkstaedi': 1.6 };
+  function grunnur() {
+    try {
+      const b = document.body, h = document.documentElement;
+      const simi = b && (b.classList.contains('appmode') || h.getAttribute('data-viewmode') === 'mobile');
+      if (!simi) return 1;
+      const v = document.querySelector('.view.active');
+      return (v && GRUNNUR[v.id]) || 1;
+    } catch (_) { return 1; }
+  }
+  try {
+    if (!localStorage.getItem('app_page_zoom_grunnur_v1')) {
+      localStorage.setItem('app_page_zoom_grunnur_v1', '1');
+      const z = parseFloat(localStorage.getItem(LS) || '');
+      if (Math.abs(z - 1.6) < 0.01) localStorage.setItem(LS, '1');
+    }
+  } catch (_) {}
   let scale = read();
 
   function vpEl() {
@@ -93,8 +114,9 @@
     scale = clamp(z);
     const html = document.documentElement;
     try {
-      html.style.setProperty('--app-page-zoom', String(scale));
-      html.classList.toggle('app-page-zoomed', scale !== 1);
+      const virkt = Math.round(scale * grunnur() * 100) / 100;   // val notandans × grunnur síðunnar
+      html.style.setProperty('--app-page-zoom', String(virkt));
+      html.classList.toggle('app-page-zoomed', virkt !== 1);
     } catch (_) {}
     clearCssZoom();
     syncViewport();

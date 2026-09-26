@@ -350,6 +350,127 @@
   // Collapsible hliðar-dálkar — collapsed by default ("collapse both of each side").
   let _openDagskra = false, _openBuid = false;
 
+  // ── Brunastál C stílblað efri hlutans (26.09.2026) ─────────────────────────────────────────────────────────────
+  function injectB190() {
+    if (document.getElementById('_sv-b190')) return;
+    const V = 'html body #' + VIEW_ID + '#' + VIEW_ID;
+    const S = V + ' ';
+    const MONO = '"JetBrains Mono",ui-monospace,monospace', SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif', DISPLAY = '"Playfair Display",Georgia,serif';
+    const METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
+    const STRIPE = 'repeating-linear-gradient(108deg,rgba(255,255,255,.05) 0 1px,transparent 1px 5px)';
+    const SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
+    const K = {
+      gull:   { f: 'linear-gradient(145deg,#3d2b05 0%,#d3ab4e 20%,#ffe9b0 35%,#a67f22 52%,#ffe9b0 68%,#d3ab4e 82%,#3d2b05 100%)', i: METAL, t: 'linear-gradient(90deg,#3d2b05,#ffe9b0 50%,#3d2b05)', h: 'radial-gradient(circle at 40% 35%,#fff3c4 0%,#f0a83c 45%,#7a4a08 100%)', g: '0 0 6px 1px rgba(240,168,60,.7)', led: '#e0a93e' },
+      blatt:  { f: 'linear-gradient(145deg,#040d18 0%,#0b2440 25%,#2f7fc9 50%,#0b2440 75%,#040d18 100%)', i: 'linear-gradient(145deg,#050a12 0%,#0f1d33 26%,#162a47 50%,#0b1628 74%,#04080e 100%)', t: 'linear-gradient(90deg,#0b2440,#9fd0ff 50%,#0b2440)', h: 'radial-gradient(circle at 40% 35%,#d6e8ff 0%,#3b82f6 45%,#0a2350 100%)', g: '0 0 6px 1px rgba(59,130,246,.6)', led: '#5aa2ff' },
+      rautt:  { f: 'linear-gradient(145deg,#0d0102 0%,#380506 18%,#6c0d10 38%,#971515 50%,#6c0d10 62%,#380506 82%,#0d0102 100%)', i: 'linear-gradient(145deg,#130506 0%,#331214 26%,#4a1a1d 50%,#240b0d 74%,#0e0405 100%)', t: 'linear-gradient(90deg,#380506,#ff9d95 50%,#380506)', h: 'radial-gradient(circle at 40% 35%,#ffd6d0 0%,#e25555 45%,#5a0a0a 100%)', g: '0 0 6px 1px rgba(226,85,85,.6)', led: '#f0584c' },
+      graent: { f: 'linear-gradient(145deg,#010d05 0%,#0e5a2e 25%,#16783f 50%,#0e5a2e 75%,#010f06 100%)', i: 'linear-gradient(145deg,#06120a 0%,#132a1c 26%,#1b3a26 50%,#0e2216 74%,#050b07 100%)', t: 'linear-gradient(90deg,#06331a,#7fe0a8 50%,#06331a)', h: 'radial-gradient(circle at 40% 35%,#d8ffe6 0%,#23a35a 45%,#073a1d 100%)', g: '0 0 6px 1px rgba(35,163,90,.6)', led: '#3cc47c' }
+    };
+    const BAR = { bl: 'linear-gradient(180deg,#8fb8ff 0%,#2f5fb0 35%,#122a55 60%,#244a8a 100%)', ra: 'linear-gradient(180deg,#d97878 0%,#8a2020 35%,#4a0d0d 60%,#7a1a1a 100%)', gu: 'linear-gradient(180deg,#e2c67a 0%,#9c7c2c 35%,#5c4412 60%,#8c6c24 100%)', gr: 'linear-gradient(180deg,#63b88c 0%,#1f6f42 35%,#0c3d22 60%,#1a5a35 100%)' };
+    const blek = c => c.replace(/(^|;)color:([^;!]+)(?=;|$)/g, '$1color:$2!important');
+    const r = (sel, css) => sel.split(',').map(x => S + x.trim()).join(',') + '{' + blek(css) + '}';
+    const out = [
+      // síðan: kolið út í kanta, eins og Ársskoðun (416)
+      V + '.view{background-color:#25272c!important;background-image:linear-gradient(180deg,#1d1f24 0%,#30333a 320px,#2a2c31 100%)!important}',
+      r('.b190-sida', 'max-width:none;margin:0;width:100%;box-sizing:border-box;padding:6px 10px 34px;font-family:' + SANS),
+      r('.b190-top', 'container-type:inline-size;container-name:b190;display:flex;flex-direction:column;gap:12px;margin:0 0 16px'),
+      // haus
+      r('.b190-haus', 'display:flex;align-items:flex-end;justify-content:space-between;gap:12px 16px;flex-wrap:wrap'),
+      r('.b190-titill', 'min-width:0'),
+      r('.b190-titill .yfir', 'font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#a9b1bf'),
+      r('.b190-titill h1', 'margin:2px 0 0;font-family:' + DISPLAY + '!important;font-size:28px!important;font-weight:800!important;line-height:1.05!important;letter-spacing:-.01em;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)'),
+      r('.b190-titill .undir', 'font-family:' + MONO + ';font-size:11.5px;color:#c9d0da;margin-top:5px'),
+      r('.b190-titill .undir b', 'color:#fff'),
+      r('.b190-verk', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end'),
+      r('.b190-verk .sv-empbtn', 'height:36px!important;padding:0 14px!important;border-radius:9px!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14)!important;color:#1f2530;font:600 13px ' + SANS + '!important'),
+      r('.b190-verk .sv-seg', 'display:inline-flex;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;border-radius:9px!important;padding:3px!important;gap:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14)'),
+      r('.b190-verk .sv-seg button', 'height:28px;padding:0 12px!important;border-radius:7px!important;font:600 12.5px ' + SANS + '!important;color:#3a4250;background:transparent!important;border:0!important;box-shadow:none!important;min-height:0!important'),
+      r('.b190-verk .sv-seg button.on', 'background:' + METAL + '!important;color:#fff'),
+      r('.b190-verk .sv-sort', 'height:36px!important;border-radius:9px!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;color:#1f2530;font:600 12.5px ' + SANS + '!important;padding:0 10px!important;min-height:0!important'),
+      r('.b190-verk .sv-search', 'height:36px;width:170px;box-sizing:border-box;padding:0 12px;border-radius:9px;background:#eef1f6!important;border:1px solid rgba(20,24,34,.14)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);color:#1f2530;font:400 13px ' + SANS + ';outline:none'),
+      // spjöldin
+      r('.b190-grid', 'display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:12px;align-items:stretch'),
+      r('.b190-k', 'padding:2px;position:relative;clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));filter:drop-shadow(0 14px 24px rgba(10,14,22,.45));min-width:0;background-color:#0a0a0c'),
+      r('.b190-i', 'position:relative;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));color:#fff;background-color:#0a0a0c;padding:14px 18px 14px;display:flex;flex-direction:column;gap:10px;height:100%;box-sizing:border-box;min-height:176px'),
+      r('.b190-i::before', 'content:"";position:absolute;left:0;right:0;top:0;height:3px;pointer-events:none'),
+      r('.b190-k .hn', 'position:absolute;width:6px;height:6px;border-radius:50%;z-index:1;pointer-events:none')
+    ];
+    Object.keys(K).forEach(c => {
+      const k = K[c];
+      out.push(r('.b190-k.' + c, 'background:' + k.f));
+      out.push(r('.b190-k.' + c + ' > .b190-i', 'background-image:' + STRIPE + ',' + k.i));
+      out.push(S + '.b190-k.' + c + ' > .b190-i::before{background:' + k.t + '}');
+      out.push(r('.b190-k.' + c + ' .hn', 'background:' + k.h + ';box-shadow:' + k.g));
+      out.push(r('.b190-k.' + c + ' .led', 'background:' + k.led + ';box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 10px ' + k.led));
+    });
+    out.push(
+      r('.b190-m', 'display:flex;align-items:center;gap:9px;white-space:nowrap;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#d9dee6;min-width:0'),
+      r('.b190-m .led', 'width:7px;height:7px;border-radius:50%;flex:none'),
+      r('.b190-p', 'display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:3px;font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;flex:none'),
+      r('.b190-p.ghost', 'background:transparent;border:1px solid rgba(255,255,255,.3);color:#e9edf3;margin-left:auto'),
+      r('.b190-rod', 'display:flex;align-items:flex-end;gap:14px;min-width:0;flex-wrap:wrap'),
+      r('.b190-t', 'font-family:' + DISPLAY + ';font-size:44px;font-weight:800;line-height:1;letter-spacing:-.02em;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);white-space:nowrap'),
+      r('.b190-t small', 'font-size:16px;font-weight:700;color:#d9dee6;margin-left:6px;letter-spacing:0'),
+      r('.b190-t.gull', 'color:#f3d98a;text-shadow:0 0 18px rgba(230,190,90,.35),0 1px 0 rgba(0,0,0,.7)'),
+      r('.b190-t.gull small', 'color:#d3ab4e'),
+      r('.b190-s', 'height:9px;border-radius:5px;background:#131316;box-shadow:inset 0 1px 2px rgba(0,0,0,.7);display:flex;overflow:hidden;gap:2px;flex:none'),
+      r('.b190-s.stor', 'height:12px;border-radius:4px'),
+      r('.b190-s span', 'height:100%;display:block;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)'),
+      r('.b190-s .bl', 'background:' + BAR.bl), r('.b190-s .ra', 'background:' + BAR.ra), r('.b190-s .gu', 'background:' + BAR.gu), r('.b190-s .gr', 'background:' + BAR.gr),
+      r('.b190-l', 'display:flex;flex-wrap:wrap;gap:6px 16px;font-family:' + MONO + ';font-size:11.5px;color:#d5dbe6;align-items:center;min-width:0;min-height:18px'),
+      r('.b190-l.dalk', 'flex-direction:column;align-items:flex-start;gap:6px;padding-bottom:5px'),
+      r('.b190-l i', 'width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.4)'),
+      r('.b190-l i.bl', 'background:#2f5fb0'), r('.b190-l i.ra', 'background:#8a2020'),
+      r('.b190-l b', 'color:#fff;font-weight:700'), r('.b190-l small', 'color:#8e97a6;margin-left:5px;font-size:11px'),
+      r('.b190-tikk', 'display:flex;flex-direction:column;gap:6px;min-height:60px'),
+      r('.b190-tikk .r', 'display:grid;grid-template-columns:104px minmax(0,1fr) 30px;gap:8px;align-items:center;font-family:' + MONO + ';font-size:11px;color:#d5dbe6'),
+      r('.b190-tikk .r b', 'color:#fff;text-align:right;font-weight:700'),
+      r('.b190-tikk .bar', 'height:5px;border-radius:3px;background:#131316;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)'),
+      r('.b190-tikk .bar span', 'display:block;height:100%;border-radius:3px'),
+      r('.b190-tikk .bar .bl', 'background:linear-gradient(90deg,#6aa0ff,#1c3f7a)'), r('.b190-tikk .bar .gu', 'background:linear-gradient(90deg,#d8b866,#7a5a18)'), r('.b190-tikk .bar .gr', 'background:linear-gradient(90deg,#4fc07f,#155a33)'),
+      r('.b190-f4', 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px'),
+      r('.b190-f', 'display:flex;flex-direction:column;justify-content:center;gap:2px;height:50px;box-sizing:border-box;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);min-width:0;overflow:hidden'),
+      r('.b190-f .l', 'font-family:' + MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a9b1bf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
+      r('.b190-f .v', 'font-family:' + MONO + ';font-size:14px;font-weight:700;color:#fff;white-space:nowrap'),
+      r('.b190-f .v small', 'font-size:10.5px;font-weight:400;color:#a9b1bf;margin-left:3px'),
+      r('.b190-opna', 'margin-top:auto;align-self:flex-start;height:30px;padding:0 12px;border-radius:7px;background:' + SILVER + ';border:1px solid rgba(20,24,34,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.2);color:#1f2530;font:600 12px ' + SANS + ';cursor:pointer;min-height:0!important'),
+      r('.b190-opna[aria-expanded="true"]', 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);border-color:#000;color:#fff'),
+      // skrefa-strimillinn
+      r('.b190-strim', 'background:' + METAL + ';background-color:#0a0a0c;border:1px solid #000;border-radius:10px;padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)'),
+      r('.b190-strim .hd', 'min-height:17px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#e9cf85'),
+      r('.b190-strim .hd .dl', 'width:7px;height:7px;background:#e0a93e;transform:rotate(45deg);display:inline-block;flex:none'),
+      r('.b190-strim .hd .r', 'margin-left:auto;color:#d5dbe6;letter-spacing:.04em;text-transform:none;font-weight:400;font-size:11.5px;display:inline-flex;align-items:center;gap:8px'),
+      r('.b190-strim .hd .r b', 'color:#fff;font-weight:700'),
+      r('.b190-strim .sv-stepf-clear', 'height:24px;padding:0 10px;border-radius:6px;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;color:#1f2530;font:600 11.5px ' + SANS + '!important;cursor:pointer;min-height:0!important'),
+      r('.b190-man', 'display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;height:92px'),
+      r('.b190-man button', 'all:unset;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%;cursor:pointer;min-width:0;box-sizing:border-box'),
+      r('.b190-man button i', 'display:block;width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#7a8190 0%,#454a55 35%,#26292f 60%,#3a3f49 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 1px 2px rgba(0,0,0,.5);transition:filter .12s'),
+      r('.b190-man button:hover i', 'filter:brightness(1.15)'),
+      r('.b190-man button.on i', 'background:linear-gradient(180deg,#ffe9b0 0%,#d3ab4e 40%,#7a5608 60%,#a67f22 100%);box-shadow:0 0 12px rgba(230,190,90,.5),inset 0 1px 0 rgba(255,255,255,.5)'),
+      r('.b190-man button.off i', 'background:' + BAR.ra + ';box-shadow:0 0 12px rgba(226,85,85,.45),inset 0 1px 0 rgba(255,255,255,.3)'),
+      r('.b190-man button em', 'font-family:' + MONO + ';font-size:10px;font-weight:700;font-style:normal;color:#d5dbe6;letter-spacing:.04em;white-space:nowrap;line-height:15px;max-width:100%;overflow:hidden;text-overflow:ellipsis'),
+      r('.b190-man button u', 'font-family:' + MONO + ';font-size:10px;color:#8e97a6;text-decoration:none;line-height:15px'),
+      r('.b190-man button.on em,.b190-man button.on u', 'color:#f3d98a'),
+      r('.b190-man button.off em,.b190-man button.off u', 'color:#ff9d95'),
+      r('.b190-man button:focus-visible', 'outline:2px solid #f3d98a;outline-offset:2px;border-radius:3px'),
+      // appmode (261 þvingar .view button/input: 17px letur, 12px fylling, 50px lágmark) — stjórntækin okkar halda sinni stærð
+      r('.b190-opna,.b190-verk .sv-empbtn,.b190-verk .sv-seg button,.b190-verk .sv-sort,.b190-strim .sv-stepf-clear', 'min-height:0!important;line-height:1!important;padding-top:0!important;padding-bottom:0!important'),
+      r('.b190-opna', 'height:30px!important;font-size:12px!important;padding:0 12px!important'),
+      r('.b190-verk .sv-empbtn,.b190-verk .sv-sort', 'height:36px!important;font-size:13px!important'),
+      r('.b190-verk .sv-seg button', 'height:28px!important;font-size:12.5px!important'),
+      r('.b190-strim .sv-stepf-clear', 'height:24px!important;font-size:11.5px!important'),
+      r('.b190-verk .sv-search', 'height:36px!important;min-height:0!important;font-size:13px!important;padding:0 12px!important;line-height:36px!important'),
+      // listinn undir: hólfin halda sínu hvíta útliti; „Ekkert í vinnslu" og skúffurnar standa á kolinu
+      r('.sv-drawer', 'margin-bottom:14px'),
+      // mjórra hólf (appið, sími, þröngur gluggi): tveir dálkar, hetjan yfir báða — svo einn dálkur
+      '@container b190 (max-width: 1000px){' + r('.b190-grid', 'grid-template-columns:1fr 1fr') + r('.b190-k.gull,.b190-k.blatt', 'grid-column:1 / -1') + r('.b190-haus', 'align-items:flex-start') + r('.b190-verk', 'justify-content:flex-start') + '}',
+      '@container b190 (max-width: 540px){' + r('.b190-grid', 'grid-template-columns:1fr') + r('.b190-f4', 'grid-template-columns:1fr 1fr') + r('.b190-f', 'height:46px') + r('.b190-verk .sv-search', 'flex:1;width:auto;min-width:140px') + r('.b190-man em', 'font-size:9px') + '}'
+    );
+    const st = document.createElement('style');
+    st.id = '_sv-b190';
+    st.textContent = out.join('\n');
+    document.head.appendChild(st);
+  }
+
   function injectStyles() {
     if (document.getElementById('_sv-styles')) return;
     // Spec theme overrides — match THEME-SPEC.md (sticky-header table, tinted stat chips,
@@ -900,36 +1021,9 @@
     const ovUttekt = _all.filter(r => r.steps.uttekt).length;
     const ovSend   = _all.filter(r => r.steps.send || (r.docs && r.docs.skyrsla)).length;
     const ovReik   = _all.filter(r => r.steps.reikningur || r.reik2026 || (r.docs && r.docs.reik)).length;
-    const statChip = (emoji, n, label) => '<span class="sv-chip" style="cursor:default"><span class="n">' + n + '</span> ' + emoji + ' ' + esc(label) + '</span>';
-
-    // ── Peningaboxið (2026-07-28, ósk Agnars) ─────────────────────────────────
-    // Áætluðu tekjurnar (r.tekjur) stóðu áður aðeins á hverju spjaldi fyrir sig
-    // og sem ein tala í undirfyrirsögninni. Hér er þeim safnað saman efst til
-    // hægri svo sjá megi í einu augnkasti hvað liggur úti.
-    //   · Í VINNSLU    = verkin á borðinu núna
-    //   · HEILDARVIRÐI = í vinnslu + á dagskrá (allt óklárað á árinu)
-    // „ÓSENDAR SKÝRSLUR" var með í fyrstu útgáfu en Agnar bað um að taka hana
-    // út samdægurs — talan sagði ekki það sem hún leit út fyrir að segja.
+    // Peningaboxið og tölu-flísarnar (2026-07-28) eru nú í gull-spjaldinu efst (26.09.2026, Brunastál C).
     const dagskraSum = b.dagskra.reduce((s, r) => s + (+r.tekjur || 0), 0);
     const heildSum = vinnslaSum + dagskraSum;
-    const moneyRow = (label, val, sub, col) =>
-      '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:5px 0">' +
-        '<span style="font-size:10.5px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.6);white-space:nowrap">' + esc(label) + '</span>' +
-        '<span style="text-align:right;white-space:nowrap">' +
-          '<b style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:15px;font-weight:700;color:' + col + '">' + val + '</b>' +
-          (sub ? '<span style="font-size:10.5px;color:rgba(255,255,255,.45);margin-left:7px">' + esc(sub) + '</span>' : '') +
-        '</span></div>';
-    const moneyBox =
-      '<div title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk" ' +
-        'style="min-width:290px;border-radius:14px;padding:11px 15px;background:linear-gradient(180deg,#23262d,#15171b 55%,#0a0b0e);' +
-        'border:1px solid #0a0b0d;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 26px -14px rgba(0,0,0,.7)">' +
-        '<div style="font-size:10px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.45);margin-bottom:3px">ÁÆTLAÐ VIRÐI</div>' +
-        // Heildarvirðið er aðaltalan og situr EFST (ósk Agnars 2026-07-28);
-        // Í vinnslu er sundurliðunin undir henni.
-        moneyRow('HEILDARVIRÐI', fmtSum(heildSum) || '—', 'm. á dagskrá', '#ffffff') +
-        '<div style="height:1px;background:rgba(255,255,255,.09)"></div>' +
-        moneyRow('Í VINNSLU', fmtSum(vinnslaSum) || '—', b.vinnsla.length + ' verk', '#8fb0ff') +
-      '</div>';
 
     // Collapsible side drawers (collapsed by default).
     function drawerRows(list, withStart) {
@@ -961,71 +1055,101 @@
         : '<div class="sv-list">' + b.vinnsla.map(listCard).join('') + '</div>')
       : '<div style="color:#8a93a5;font-size:13px;padding:30px;text-align:center;border:1px dashed rgba(20,24,34,.12);border-radius:14px;background:#fff">Ekkert í vinnslu núna.</div>';
 
-    // Header + stat pills — mirrors reference comp ThjonustuVerkstaedi-board.dc.html
-    // (plain title on the page band + a Listi/Breitt/Spjöld segmented toggle +
-    // sort; the three counts are small coloured PILLS, not big cards).
-    const pill = (label, count, c, opts) => {
-      opts = opts || {};
-      const arrow = opts.toggle ? (' <span style="opacity:.55;font-size:11px">' + (opts.open ? '▾' : '▸') + '</span>') : '';
-      return '<button ' + (opts.toggle ? 'data-toggle="' + opts.toggle + '" ' : '') +
-        'style="font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid ' + c.bd + ';background:' + c.bg + ';color:' + c.fg + ';cursor:' + (opts.toggle ? 'pointer' : 'default') + ';display:inline-flex;align-items:center;gap:8px">' +
-        '<span style="width:9px;height:9px;border-radius:50%;background:' + c.dot + '"></span>' +
-        '<b style="font-family:\'JetBrains Mono\',ui-monospace,monospace">' + count + '</b> ' + esc(label) + arrow + '</button>';
-    };
-    v.innerHTML = '<div style="max-width:none;margin:0;width:100%;box-sizing:border-box;padding:6px 10px 34px;font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin:2px 2px 14px">' +
-        '<div style="min-width:0">' +
-          '<div style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-.01em;line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.35)">🔧 ÞjónustuVerkstæði</div>' +
-          '<div style="font-size:13px;color:#c7cdd8;margin-top:4px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'JetBrains Mono\',ui-monospace,monospace;color:#ffffff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
-        '</div>' +
-        '<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end">' +
-          '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">' +
-            // Hver er að vinna? Nafnið er stimplað á hvert skref sem þú hakar.
-          // Sama nafn og bílstjóra-appið notar (localStorage bs_employee).
-          '<button class="_sv-emp sv-empbtn" type="button" title="Nafnið þitt er stimplað á hvert skref sem þú hakar — svo aðrir sjái hver er kominn í skýrsluna">' +
-            (whoAmI() ? '👤 ' + esc(whoAmI()) : '👤 Hver ert þú?') + '</button>' +
-          '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>Spjöld</button></div>' +
+    // ── Efri hlutinn í Brunastáli C (26.09.2026, Agnar: „endurskipulagt þjónustuverk aðeins · sérstaklega efri hlutann") ──
+    // Sama útlit og Ársskoðun (414): haus með Playfair-titli, fjögur stálspjöld með skornum hornum og hnoðum (gull
+    // Áætlað virði · blátt Í vinnslu · dökkrautt Á dagskrá · grænt Búin í ár) og skrefa-strimill með dökkmálms-súlum í
+    // stað síuflísanna. SÖMU hnappar og hlustanir og áður (data-mode, data-toggle, data-stepf, .sv-sort, .sv-search,
+    // ._sv-emp, .sv-stepf-clear) — aðeins umgjörðin er ný. Spjöldin raðast eftir breidd hólfsins (container query), svo
+    // sama markup virkar á 1900 px skjá og í appinu á síma.
+    injectB190();
+    const pctOf = (a, t) => (t > 0 ? Math.max(0, Math.min(100, a / t * 100)) : 0).toFixed(1) + '%';
+    const krUnit = n => n >= 1e6 ? [(n / 1e6).toFixed(1).replace('.', ','), 'm.kr'] : (n > 0 ? [String(Math.round(n / 1000)), 'þ.kr'] : ['—', '']);
+    const HN = '<span class="hn" style="top:9px;left:9px" aria-hidden="true"></span><span class="hn" style="top:9px;right:26px" aria-hidden="true"></span><span class="hn" style="bottom:9px;left:26px" aria-hidden="true"></span><span class="hn" style="bottom:9px;right:9px" aria-hidden="true"></span>';
+    const vn = b.vinnsla.length, dn = b.dagskra.length, bn = b.buid.length;
+    const vCnt = k => b.vinnsla.filter(r => r.steps && r.steps[k]).length;
+    const tikk = (lbl, n, tot, cls) => '<div class="r"><span>' + esc(lbl) + '</span><div class="bar"><span class="' + cls + '" style="width:' + pctOf(n, tot) + '"></span></div><b>' + n + '</b></div>';
+    const flis = (lbl, val, sm) => '<div class="b190-f"><span class="l">' + esc(lbl) + '</span><span class="v">' + val + (sm ? '<small>' + esc(sm) + '</small>' : '') + '</span></div>';
+    const [hNum, hUnit] = krUnit(heildSum);
+    const vSum = fmtSum(vinnslaSum) || '—', dSum = fmtSum(dagskraSum) || '—';
+    const totAll = _allRaw.length;
+    const skrefSulur = STEP_DEFS.map(([k, lbl, short]) => {
+      const st = _stepF[k] || '';
+      const n = _allRaw.filter(r => (st === 'off' ? !r.steps[k] : !!r.steps[k])).length;
+      const h = Math.max(6, Math.round(n / Math.max(1, totAll) * 52));
+      return '<button type="button" class="' + st + '" data-stepf="' + k + '" aria-pressed="' + (st ? 'true' : 'false') + '" ' +
+        'title="' + esc(lbl) + ' — smelltu: ✓ búið → ⧗ vantar → af">' +
+        '<i style="height:' + h + 'px"></i><em>' + (st === 'off' ? '⧗ ' : (st === 'on' ? '✓ ' : '')) + esc(short) + '</em><u>' + n + '</u></button>';
+    }).join('');
+    const opna = (key, open) => '<button type="button" class="b190-opna" data-toggle="' + key + '" aria-expanded="' + (open ? 'true' : 'false') + '">' + (open ? 'Fela listann ▾' : 'Sýna listann ▸') + '</button>';
+    // leitin heldur fókus og bendli yfir endurteikninguna (setSearch teiknar allt upp á nýtt við hvern staf)
+    const _ae = document.activeElement;
+    const _leitFokus = (_ae && _ae.classList && _ae.classList.contains('sv-search') && v.contains(_ae)) ? [_ae.selectionStart, _ae.selectionEnd] : null;
+    v.innerHTML = '<div class="b190-sida">' +
+      '<div class="b190-top" data-s409-skip="1">' +
+        '<div class="b190-haus">' +
+          '<div class="b190-titill">' +
+            '<div class="yfir">Þjónusta · ' + curYear + '</div>' +
+            '<h1>ÞjónustuVerkstæði</h1>' +
+            '<div class="undir"><b>' + vn + '</b> í vinnslu · <b>' + dn + '</b> á dagskrá · <b>' + bn + '</b> búin í ár · <b>' + ovN + '</b> fyrirtæki í þjónustu</div>' +
+          '</div>' +
+          '<div class="b190-verk">' +
+            // Hver er að vinna? Nafnið er stimplað á hvert skref sem þú hakar (sama nafn og bílstjóra-appið, bs_employee).
+            '<button class="_sv-emp sv-empbtn" type="button" title="Nafnið þitt er stimplað á hvert skref sem þú hakar — svo aðrir sjái hver er kominn í skýrsluna">' +
+              (whoAmI() ? esc(whoAmI()) : 'Hver ert þú?') + '</button>' +
+            '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>Spjöld</button></div>' +
             '<select class="sv-sort" title="Raða Í-vinnslu listanum">' +
               '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>Nafn (A–Ö)</option>' +
               '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>Hæstu tekjur</option>' +
               '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>Nýlega merkt</option>' +
             '</select>' +
-            '<input class="sv-search" type="search" placeholder="🔍 Leita…" value="' + esc(_search) + '" ' +
-              'style="padding:7px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:13px;width:140px;outline:none" ' +
-              'title="Leita í Í-vinnslu listanum">' +
+            '<input class="sv-search" type="search" placeholder="Leita í vinnslu…" value="' + esc(_search) + '" title="Leita í Í-vinnslu listanum">' +
           '</div>' +
-          moneyBox +
+        '</div>' +
+        '<div class="b190-grid">' +
+          // Áætlað virði (gull) — heildarvirðið efst, sundurliðun og ársyfirlitið undir
+          '<div class="b190-k gull" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk"><div class="b190-i">' + HN +
+            '<div class="b190-m"><span class="led" aria-hidden="true"></span>Áætlað virði ' + curYear + '<span class="b190-p ghost">m. vsk</span></div>' +
+            '<div class="b190-rod"><div class="b190-t gull">' + hNum + '<small>' + hUnit + '</small></div>' +
+              '<span class="b190-l dalk"><span><i class="bl" aria-hidden="true"></i>Í vinnslu <b>' + vSum + '</b><small>' + vn + ' verk</small></span>' +
+              '<span><i class="ra" aria-hidden="true"></i>Á dagskrá <b>' + dSum + '</b><small>' + dn + ' staðir</small></span></span></div>' +
+            '<div class="b190-s stor" role="img" aria-label="Í vinnslu og á dagskrá"><span class="bl" style="width:' + pctOf(vinnslaSum, heildSum) + '"></span><span class="ra" style="width:' + pctOf(dagskraSum, heildSum) + '"></span></div>' +
+            '<div class="b190-f4">' + flis('Í þjónustu', ovN) + flis('Úttekt búin', ovUttekt) + flis('Skýrsla send', ovSend) + flis('Reikn. sendur', ovReik) + '</div>' +
+          '</div></div>' +
+          // Í vinnslu (blátt) — hvar verkin á borðinu standa
+          '<div class="b190-k blatt"><div class="b190-i">' + HN +
+            '<div class="b190-m"><span class="led" aria-hidden="true"></span>Í vinnslu</div>' +
+            '<div class="b190-t">' + vn + '<small>' + (stepKeys.length ? 'af ' + vinnslaAlls + ' verkum' : 'verk') + '</small></div>' +
+            '<div class="b190-tikk">' + tikk('Úttekt búin', vCnt('uttekt'), vn, 'bl') + tikk('Skýrsla tilbúin', vCnt('skyrsla'), vn, 'gu') + tikk('Reikningur', vCnt('reikningur'), vn, 'gr') + '</div>' +
+          '</div></div>' +
+          // Á dagskrá (dökkrautt) — opnar listann „hefja næsta"
+          '<div class="b190-k rautt"><div class="b190-i">' + HN +
+            '<div class="b190-m"><span class="led" aria-hidden="true"></span>Á dagskrá</div>' +
+            '<div class="b190-t">' + dn + '<small>staðir</small></div>' +
+            '<div class="b190-s" role="img" aria-label="Á dagskrá af fyrirtækjum í þjónustu"><span class="ra" style="width:' + pctOf(dn, ovN) + '"></span></div>' +
+            '<div class="b190-l"><span>≈ <b>' + dSum + '</b> eftir</span></div>' +
+            opna('dagskra', _openDagskra) +
+          '</div></div>' +
+          // Búin í ár (grænt)
+          '<div class="b190-k graent"><div class="b190-i">' + HN +
+            '<div class="b190-m"><span class="led" aria-hidden="true"></span>Búin í ár</div>' +
+            '<div class="b190-t">' + bn + '<small>staðir</small></div>' +
+            '<div class="b190-s" role="img" aria-label="Búin af fyrirtækjum í þjónustu"><span class="gr" style="width:' + pctOf(bn, ovN) + '"></span></div>' +
+            '<div class="b190-l"><span><b>' + (ovN > 0 ? Math.round(bn / ovN * 100) : 0) + '%</b> af ' + ovN + ' í þjónustu</span></div>' +
+            opna('buid', _openBuid) +
+          '</div></div>' +
+        '</div>' +
+        // Skref ársins — súla per skref; smellur: ✓ búið → ⧗ vantar → af (sama sía og áður)
+        '<div class="b190-strim">' +
+          '<div class="hd"><span class="dl" aria-hidden="true"></span>Skref ársins · ' + curYear +
+            '<span class="r">' + (stepKeys.length
+              ? '<b>' + vn + '</b> af ' + vinnslaAlls + ' í vinnslu <button type="button" class="sv-stepf-clear">Hreinsa síu</button>'
+              : '<b>' + totAll + '</b> staðir · smelltu á súlu: ✓ búið → ⧗ vantar') + '</span></div>' +
+          '<div class="b190-man" role="group" aria-label="Sía eftir skrefi">' + skrefSulur + '</div>' +
         '</div>' +
       '</div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 2px 16px">' +
-        pill('í vinnslu', b.vinnsla.length, { fg: '#2f5fe0', bg: '#eef3ff', bd: '#c6d6ff', dot: '#2f5fe0' }) +
-        pill('á dagskrá', b.dagskra.length, { fg: '#b45309', bg: '#fffbeb', bd: '#fde68a', dot: '#b45309' }, { toggle: 'dagskra', open: _openDagskra }) +
-        pill('búin í ár', b.buid.length, { fg: '#047857', bg: '#ecfdf5', bd: '#a7f3d0', dot: '#047857' }, { toggle: 'buid', open: _openBuid }) +
-      '</div>' +
-      // Yfirlit ársins (þjónustuhringurinn) — rólegar sv-chip tölur.
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 2px 16px">' +
-        statChip('🏢', ovN, 'fyrirtæki í þjónustu') +
-        statChip('🔍', ovUttekt, 'úttekt búin') +
-        statChip('📄', ovSend, 'skýrsla send') +
-        statChip('🧾', ovReik, 'reikningur sendur') +
-      '</div>' +
-      // Skref-sía: einn hnappur per skref. Smellur: ✓ búið → ⧗ vantar → af.
-      '<div class="sv-stepf">' +
-        '<span class="sv-stepf-lbl">Sía eftir skrefi:</span>' +
-        STEP_DEFS.map(([k, lbl]) => {
-          const st = _stepF[k] || '';
-          const n = _allRaw.filter(r => (st === 'off' ? !r.steps[k] : !!r.steps[k])).length;
-          return '<button type="button" class="sv-stepf-chip' + (st ? ' ' + st : '') + '" data-stepf="' + k + '" ' +
-            'title="' + esc(lbl) + ' — smelltu: ✓ búið → ⧗ vantar → af">' +
-            (st === 'off' ? '⧗ ' : (st === 'on' ? '✓ ' : '')) + esc(lbl) +
-            ' <span class="n">' + n + '</span></button>';
-        }).join('') +
-        (stepKeys.length
-          ? '<button type="button" class="sv-stepf-clear">✕ Hreinsa síu</button>' +
-            '<span class="sv-stepf-lbl">' + b.vinnsla.length + ' af ' + vinnslaAlls + ' í vinnslu</span>'
-          : '') +
-      '</div>' +
       dagskraDrawer + buidDrawer + body + '</div>';
+    if (_leitFokus) { const si = v.querySelector('.sv-search'); if (si) { si.focus(); try { si.setSelectionRange(_leitFokus[0], _leitFokus[1]); } catch (_) {} } }
+
 
     // view-mode toggle
     v.querySelectorAll('.sv-seg button').forEach(bn => bn.addEventListener('click', () => setMode(bn.dataset.mode)));
