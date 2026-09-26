@@ -157,7 +157,8 @@
         const gildi = notur.get(String(id));
         // Reitur sem er í ritun er ALDREI yfirskrifaður af samstillingu.
         if (document.activeElement !== inp && inp.value !== gildi) inp.value = gildi;
-        inp.dataset.vistad = gildi ? '1' : '';
+        const vs = gildi ? '1' : '';
+        if (inp.dataset.vistad !== vs) inp.dataset.vistad = vs;   // 26.09.2026: skrifa aðeins breytingu (123 skrif/s í lausagangi)
         wrap.classList.toggle('_er-tom', !gildi);
       } else {
         vantar.push(id);
