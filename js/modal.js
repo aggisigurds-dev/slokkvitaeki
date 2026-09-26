@@ -377,9 +377,26 @@ var App = {
     if(v==='companies'&&typeof Companies!=='undefined')Companies.load();
     if(v==='settings'&&typeof Settings!=='undefined')Settings.load();
     if(v==='income'&&typeof Income!=='undefined')Income.render();
+    // 26.09.2026: Þjónustutæki teiknuð hér ef gögn breyttust meðan sýnin var falin (sjá refreshAll)
+    if(v==='field'&&this._fieldStale&&typeof Field!=='undefined'){ this._fieldStale=false; try{Field.render();}catch(e){console.warn('[field] render',e);} }
   },
   refreshAll: function() {
-    Counter.render(); Workshop.render(); Field.render();
+    Counter.render(); Workshop.render();
+    // 26.09.2026 (afköst): Þjónustutæki (~1.700 spjöld) voru endurteiknuð við HVERJA gagnabreytingu, líka þegar sýnin
+    // var falin (mælt: 4.251 DOM-breytingar/s á Hreyfingarlista). Nú: fyrsta teikning alltaf, síðan aðeins ef sýnin er
+    // virk — annars merkt úrelt og teiknuð um leið og farið er á hana (switchView). Gögnin sem sjást eru jafn fersk.
+    var _fv=document.getElementById('view-field');
+    if(!this._fieldRendered || this.view==='field' || (_fv&&_fv.classList.contains('active'))){ this._fieldRendered=true; this._fieldStale=false; Field.render(); }
+    else {
+      this._fieldStale=true;
+      // Vörn óháð switchView (44 skrár skipta um það): sýnin verður virk → teikna strax, í sama verki (fyrir málun).
+      if(_fv&&!this._fieldVakt){
+        var self=this; this._fieldVakt=true;
+        try{ new (window.__NativeMutationObserver||MutationObserver)(function(){
+          if(self._fieldStale&&_fv.classList.contains('active')){ self._fieldStale=false; try{Field.render();}catch(e){console.warn('[field] render',e);} }
+        }).observe(_fv,{attributes:true,attributeFilter:['class','style']}); }catch(_){}
+      }
+    }
     if(this.view==='companies'&&typeof Companies!=='undefined')Companies.render();
     if(this.view==='income'&&typeof Income!=='undefined')Income.render();
     document.getElementById('alert-badge').textContent = DB.getOverdue().length + DB.getDue().length;

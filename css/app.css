@@ -3548,6 +3548,7 @@ textarea.fi { resize: vertical; min-height: 72px; }
 /* SLOKK v9 */
 ._slokk_edit_btn{font-size:11px!important;padding:3px 11px!important;background:#f0f4ff!important;border:1px solid #c7d4f8!important;border-radius:7px!important;font-weight:600!important;cursor:pointer!important;color:#2563eb!important;margin-left:6px!important;vertical-align:middle!important;white-space:nowrap!important;transition:background .15s!important;display:inline-block!important;}
 ._slokk_edit_btn:hover{background:#dbeafe!important;border-color:#93c5fd!important;}
+#view-lanstaeki td:has(> ._slokk_edit_btn){white-space:nowrap}/* 26.09.2026: breyta-takkinn braut línuna → röðin óx 61→84 px eftir teikningu */
 #_slokk_langbtn{position:fixed!important;bottom:18px!important;left:91px!important;transform:translateX(-50%)!important;background:rgba(15,23,42,0.88)!important;color:rgba(255,255,255,0.93)!important;border:1px solid rgba(255,255,255,0.22)!important;border-radius:20px!important;padding:5px 20px!important;font-size:11px!important;font-weight:700!important;cursor:pointer!important;letter-spacing:.08em!important;z-index:9999!important;white-space:nowrap!important;transition:all .2s!important;box-shadow:0 2px 10px rgba(0,0,0,0.4)!important;user-select:none!important;}
 #_slokk_langbtn:hover{background:rgba(30,41,80,0.95)!important;color:#fff!important;}
 /* 2026-06-28: on mobile bump the language toggle to a 44+pt touch target. */

@@ -175,6 +175,9 @@
       R('._sk-tblwrap::after', 'content:none'),
       R('._sk-root::after', 'content:"Grænt = skýrsla ársins til · Gull = skoðað en órukkað · Rautt = skoðun vantar / fram yfir · Blátt = þennan mánuð — Skref: Sk skoðað · Sk skýrsla · Re reikningur — smellur á röð opnar síðu fyrirtækisins";display:block;margin:10px 16px 0;font-family:' + MONO + ';font-size:11.5px;color:#525b6b'),
       VIEWS.map(id => 'html body #' + id + '._sk-spjold ._sk-root::after').join(',') + '{content:none}',
+      // 26.09.2026 (hopp): meðan aðeins „Sæki…" stendur í rótinni sat skýringin rétt undir því og var ýtt ~590 px niður
+      // þegar síðan kom (0,02 við hverja fyrstu opnun). Hún birtist fyrst þegar raunverulegt efni er komið.
+      R('._sk-root:has(> ._sk-tomt:only-child)::after', 'content:none'),
       // Spjaldahamur (mjór gluggi / sími): sömu ferköntuðu gluggar
       R('._sk-card', 'border:0!important;border-top:3px solid #8f98a8!important;border-radius:2px!important;box-shadow:0 1px 1px rgba(15,20,30,.2),0 10px 22px -14px rgba(15,20,30,.45)!important'),
       R('._sk-cardnafn', 'font-family:' + SANS + '!important;font-weight:600!important'),

@@ -1089,6 +1089,9 @@
         '</div>';
     }
     renderFilterChips();
+    // 26.09.2026 (hopp-yfirferð): síuraðirnar biðu eftir Leaflet (+100 ms) og ýttu kortinu 131 px
+    // niður þegar þær birtust. Þær þurfa ekki kortið — teiknaðar strax, í sömu teikningu og ramminn.
+    try { renderMonthRow(); renderCityRow(); renderAksturRow(); } catch (e) { console.warn('[161] raðir', e); }
     // Build the Leaflet map (lazy)
     const canvas = document.getElementById('_lds-mapcanvas');
     if (canvas && !_map) {

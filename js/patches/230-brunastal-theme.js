@@ -415,9 +415,10 @@
     else if (r.hasAttribute('data-bstal-mini')) r.removeAttribute('data-bstal-mini');
     const t = document.getElementById('bstal-mini');
     if (t) {
-      t.textContent = a ? '▾' : '▴';
-      t.setAttribute('aria-label', a ? 'Opna borðann' : 'Fella borðann saman');
-      t.title = a ? 'Opna borðann' : 'Fella borðann saman í eitt merki';
+      // 26.09: aðeins ef breytt — refresh keyrir reglulega og hvert skrif vakti vaktir
+      if (t.textContent !== (a ? '▾' : '▴')) t.textContent = a ? '▾' : '▴';
+      if (t.getAttribute('aria-label') !== (a ? 'Opna borðann' : 'Fella borðann saman')) t.setAttribute('aria-label', a ? 'Opna borðann' : 'Fella borðann saman');
+      if (t.title !== (a ? 'Opna borðann' : 'Fella borðann saman í eitt merki')) t.title = a ? 'Opna borðann' : 'Fella borðann saman í eitt merki';
     }
   }
   function setjaMini(a) {

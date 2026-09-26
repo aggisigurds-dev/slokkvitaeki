@@ -182,8 +182,18 @@
   }
 
   // ── Mount when Samningar view opens ────────────────────────────────────────
+  // 26.09.2026 (hopp-yfirferð): eins og 94/96 — upprunalegi MO setur kaflann inn í SAMA verki og #ct-main teiknast.
+  function vaktaSamninga() {
+    const v = document.getElementById('view-samningar');
+    if (!v || v.__vakt__np_section) return;
+    v.__vakt__np_section = true;
+    try { new (window.__NativeMutationObserver || MutationObserver)(() => {
+      if (v.classList.contains('active') && !v.querySelector('._np-section') && v.querySelector('#ct-main')) { try { injectSection(); } catch (_) {} }
+    }).observe(v, { childList: true, subtree: true }); } catch (_) {}
+  }
   document.addEventListener('view-shown', e => {
     if (e && e.detail && e.detail.name === 'samningar') {
+      vaktaSamninga(); try { injectSection(); } catch (_) {}
       setTimeout(injectSection, 250);
       setTimeout(injectSection, 900);
     }
