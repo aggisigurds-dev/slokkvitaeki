@@ -72,14 +72,6 @@
   var st = document.getElementById('_ars-simi-skjar-417-css');
   if (!st) { st = document.createElement('style'); st.id = '_ars-simi-skjar-417-css'; document.head.appendChild(st); }
   st.textContent = css;
-  // 341 setur stílblaðið sitt AFTAST í head við hverja teikningu — okkar verður að standa á eftir því.
-  // (331 stillaBreidd() er nú girt frá has-mobnav svo inline-breiddirnar koma ekki lengur.)
-  // 26.09.2026 (blaðastríð í head): áður fært aftast við HVERJA breytingu í head — 341/313/319 gerðu það sama og blöðin
-  // eltu hvert annað ~20×/s á öllum síðum. Nú aðeins ef 341 eða ókunnugt blað stendur aftar; jafningjar mega standa þar.
-  var JAFN = ['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css', '_pe-kanban-css'];
-  function aftast() { try {
-    if (!st.parentNode) return;
-    for (var n = st.nextElementSibling; n; n = n.nextElementSibling) { if (JAFN.indexOf(n.id) < 0) { st.parentNode.appendChild(st); return; } }
-  } catch (_) {} }
-  try { new MutationObserver(function () { aftast(); }).observe(document.head, { childList: true }); } catch (_) {}
+  // 417 notar 7 :not()-gervi-ID (9–10 IDs í heild) á móti 341's 6 (8 IDs) — vinnur CSS-kapphlaupið
+  // með sértækni óháð röð í DOM. aftast()-observer er því óþarfi og skapar hringrás með 341.
 })();

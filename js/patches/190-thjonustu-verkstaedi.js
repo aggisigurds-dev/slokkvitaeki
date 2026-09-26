@@ -544,13 +544,14 @@
         '#' + VIEW_ID + ' .sv-stepw.on .lb{color:#0f6e3a;font-weight:700}',
         '#' + VIEW_ID + ' .sv-lnw{flex:1;min-width:12px;max-width:46px;height:3px;border-radius:2px;background:#dbe1ea}',
         '#' + VIEW_ID + ' .sv-lnw.on{background:#2bbf6c}',
-        // Wide-mode right column — big note, 3-button row, full-width Afmerkja below
+        // Wide-mode right column — big note, samtengdur takkahópur [Opna|Skýrsla|Búið|✕ Afmerkja]
         '#' + VIEW_ID + ' .sv-wide-r{flex:0 0 340px!important}',
         '#' + VIEW_ID + ' .sv-wide-r .sv-note{min-height:86px!important}',
-        '#' + VIEW_ID + ' .sv-actsw{display:flex!important;gap:8px!important;flex-wrap:nowrap!important;border-top:0!important;padding-top:0!important}',
-        '#' + VIEW_ID + ' .sv-actsw ._sv-act{flex:1;height:42px!important;white-space:nowrap}',
+        '#' + VIEW_ID + ' .sv-actsw{display:flex!important;gap:6px!important;flex-wrap:wrap!important;border-top:0!important;padding-top:0!important}',
+        '#' + VIEW_ID + ' .sv-actsw ._sv-act{flex:1;min-width:70px;height:42px!important;white-space:nowrap}',
+        '#' + VIEW_ID + ' .sv-actsw .sv-unmarkw{flex:1 1 100%;min-width:auto;order:99}',
         '#' + VIEW_ID + ' .sv-actsw ._sv-act[data-act="report"]{background:#f1f5f9!important;border-color:rgba(20,24,34,.14)!important;color:#3a4250!important}',
-        '#' + VIEW_ID + ' .sv-unmarkw{width:100%;height:38px;border:1px solid #f3c6c4!important;background:#fdf1f1!important;color:#c0241f!important;border-radius:10px!important;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif!important;font-size:12.5px!important;font-weight:700!important;cursor:pointer}',
+        '#' + VIEW_ID + ' .sv-unmarkw{width:auto!important;height:42px!important;border:1px solid #f3c6c4!important;background:#fdf1f1!important;color:#c0241f!important;border-radius:10px!important;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif!important;font-size:12.5px!important;font-weight:700!important;cursor:pointer}',
         // Numbers in mono
         '#' + VIEW_ID + ' [data-mono],#' + VIEW_ID + ' .sv-kt{font-family:"JetBrains Mono",ui-monospace,monospace}'
       ].join('');
@@ -956,14 +957,14 @@
       docsLine(r) + stepper(r) + marks(r) + note(r) + aminningLine(r, 90) + vinnslaActs(r) + '</div>';
   }
   // Í-vinnslu kort — wide mode (comp-útlitið: nafn+chips, full-label stika í
-  // gráum borða, merkingar undir; hægra megin nóta → Opna/Skýrsla/Búið → Afmerkja)
+  // gráum borða, merkingar undir; hægra megin nóta → [Opna|Skýrsla|Búið|✕ Afmerkja] í einum samtengdum hópi)
   function vinnslaActsWide(r) {
     return '<div class="sv-acts sv-actsw">' +
       '<button class="_sv-act" data-act="open" data-id="' + r.id + '">📁 Opna</button>' +
       '<button class="_sv-act" data-act="report" data-id="' + r.id + '">📄 Skýrsla</button>' +
       '<button class="_sv-act" data-act="buid" data-id="' + r.id + '">✓ Búið</button>' +
-      '</div>' +
-      '<button class="_sv-act sv-unmarkw" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu">✕ Afmerkja</button>';
+      '<button class="_sv-act sv-unmarkw" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu">✕ Afmerkja</button>' +
+      '</div>';
   }
   function wideCard(r) {
     return '<div class="sv-card wide' + (r.mark === 'haett' ? ' haett' : '') + '">' +

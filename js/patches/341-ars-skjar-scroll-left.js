@@ -370,7 +370,8 @@
       pinViewToRail();
       wrapArsSjon();
     }, 200);
-  }).observe(document.documentElement, { childList: true, subtree: true });
+  // body-only: ef documentElement/head er hirt kemur mountCss() í hringrás við 417.
+  }).observe(document.body, { childList: true, subtree: true });
 
   if (document.body) {
     new MutationObserver(() => {
