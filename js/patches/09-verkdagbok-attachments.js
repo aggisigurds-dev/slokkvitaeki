@@ -411,8 +411,11 @@
   function paintBadges() {
     if (!badgeCounts.size) return;
     document.querySelectorAll('#view-verkdagbok .vd-card[data-id], #view-verkdagbok .vd-row[data-id]').forEach(el => {
-      el.querySelectorAll('.vda-badge').forEach(b => b.remove());
       const c = badgeCounts.get(el.dataset.id);
+      // 26.09.2026 (afköst): áður fjarlægt og sett inn aftur í hverri umferð (~3 DOM-breytingar/s á öllum síðum).
+      const til = el.querySelectorAll('.vda-badge');
+      if (c && til.length === 1 && til[0].textContent === '📎 ' + c) return;
+      til.forEach(b => b.remove());
       if (!c) return;
       const badge = document.createElement('span');
       badge.className = 'vda-badge';

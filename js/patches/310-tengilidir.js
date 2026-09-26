@@ -37,6 +37,8 @@
       '.tgl-title{font-weight:800;font-size:20px;color:var(--ink,#0f172a)}' +
       '.tgl-row{flex-wrap:wrap}.tgl-ctx{flex:1 1 100%;margin-top:8px;padding-top:8px;border-top:1px dashed var(--brd,#e2e8f0);font-size:12px;color:var(--ink2,#334155)}' +
       '.tgl-ctx-bid{color:var(--ink3,#94a3b8);font-style:italic}' +
+      // 26.09.2026 (hopp-yfirferð): póstarnir lenda seinna og spjaldið óx ~190 px → listinn neðar hoppaði. Frátekið pláss á meðan beðið er.
+      '.tgl-ctx.bida{min-height:150px;box-sizing:border-box}' +
       // 19.09.2026 (símaskoðun): póstlínurnar eru nowrap og .tgl-ctx er flex-barn án min-width:0 → kortið varð 1.000+ px á síma
       '.tgl-ctx{min-width:0;max-width:100%;overflow:hidden}.tgl-p,.tgl-p summary{min-width:0;max-width:100%}.tgl-till{min-width:0;max-width:100%;box-sizing:border-box}' +
       '.tgl-till{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:7px 10px;margin-bottom:8px}' +
@@ -127,7 +129,7 @@
         '<div class="tgl-meta">' + coHtml + ' · ' + esc(x.len || '') + ' · ' + (x.faerslur || 0) + ' póstar' + (x.sidast_sest ? ' · síðast ' + fmtDate(x.sidast_sest) : '') + '</div>' +
       '</div>' +
       '<div class="tgl-acts">' + acts.join('') + '</div>' +
-      '<div class="tgl-ctx" data-ctx="' + x.id + '"><span class="tgl-ctx-bid">⏳ sæki póstana…</span></div>' +
+      '<div class="tgl-ctx bida" data-ctx="' + x.id + '"><span class="tgl-ctx-bid">⏳ sæki póstana…</span></div>' +
     '</div>';
   }
 
@@ -330,6 +332,7 @@
   }
   function ctxDags(iso) { const d = new Date(iso); if (isNaN(d)) return ''; const p = (n) => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); }
   function ctxTeikna(el, x, r) {
+    el.classList.remove('bida');
     const postar = r.postar || [], listi = (r.till && r.till.listi) || [];
     if (!postar.length) { el.innerHTML = '<span class="tgl-ctx-bid">Enginn póstur frá þessu netfangi í ' + esc(POSTHOLF) + ' — ekkert til að byggja á.</span>'; return; }
     let h = '';
@@ -375,7 +378,7 @@
       if (!el.isConnected) continue;
       _ctxIGangi++;
       ctxSaekja(x).then((r) => { if (el.isConnected) ctxTeikna(el, x, r); })
-        .catch((e) => { if (el.isConnected) el.innerHTML = '<span class="tgl-ctx-bid">⚠ náði ekki í póstana: ' + esc((e && e.message) || e) + '</span>'; })
+        .catch((e) => { if (el.isConnected) el.classList.remove('bida'); el.innerHTML = '<span class="tgl-ctx-bid">⚠ náði ekki í póstana: ' + esc((e && e.message) || e) + '</span>'; })
         .finally(() => { _ctxIGangi--; ctxKeyra(); });
     }
   }

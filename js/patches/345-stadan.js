@@ -147,7 +147,10 @@
     s.id = '_st-css';
     const V = '#' + VIEW_ID + ' ';
     s.textContent = [
-      V + '{padding:16px 14px 90px;max-width:1000px;margin:0 auto}',
+      // 26.09.2026: max-width var á SÝNINNI sjálfri — aðrir pappar festa margin-left (hliðarstikan), svo hún gat ekki
+      // miðjast og ljós bakgrunnur sást hægra megin (1.000 px sýn á 1.380 px svæði). Breiddin nú á efninu, sýnin fyllir.
+      V.trim() + '{padding:16px 14px 90px}',
+      V + '> *{max-width:1000px}',
       V + '.st-h1{font-size:22px;font-weight:800;color:var(--ink1,#11141c);margin:0 0 2px}',
       V + '.st-sub{font-size:12.5px;color:var(--ink3,#5d5a54);margin-bottom:16px}',
       V + '.st-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}',

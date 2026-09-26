@@ -704,8 +704,13 @@
         }
       }
     } catch (_) {}
+    // 26.09.2026 (lykkja, ~570 DOM-breytingar/s): vaktin hlustar á class-breytingar í ÖLLU skjalinu og opna() teiknaði
+    // alla síðuna upp á nýtt í hvert sinn — sem lét 313/409 bæta klösum við, sem vakti vaktina aftur (~2–3×/s).
+    // Teikna aðeins þegar sýnin VERÐUR virk (switchView-leiðin kallar opna() sjálf).
     const el = document.getElementById(VIEW_ID);
-    if (el && el.classList.contains('active')) opna();
+    const virk = !!(el && el.classList.contains('active'));
+    if (virk && !vakta._virk) opna();
+    vakta._virk = virk;
   }
 
   new MutationObserver(() => { clearTimeout(window.__mbT); window.__mbT = setTimeout(vakta, 300); })

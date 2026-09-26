@@ -375,8 +375,20 @@
   }
 
   // ── Mount when Samningar view opens ────────────────────────────────────────
+  // 26.09.2026 (hopp 0,35 á Samningum): hlutinn var settur inn 200–900 ms eftir opnun og þurrkaðist út þegar listinn
+  // endurteiknaði #ct-main — kom svo aftur með 1,5 s púlsinum og ýtti öllu til. Óinngjafaða vaktin setur hann inn í SAMA
+  // verki og #ct-main teiknast, svo enginn rammi sést án hans.
+  function vaktaSamninga() {
+    const v = document.getElementById('view-samningar');
+    if (!v || v.__vakt__da_section) return;
+    v.__vakt__da_section = true;
+    try { new (window.__NativeMutationObserver || MutationObserver)(() => {
+      if (v.classList.contains('active') && !v.querySelector('._da-section') && v.querySelector('#ct-main')) { try { injectSection(); } catch (_) {} }
+    }).observe(v, { childList: true, subtree: true }); } catch (_) {}
+  }
   document.addEventListener('view-shown', e => {
     if (e && e.detail && e.detail.name === 'samningar') {
+      vaktaSamninga(); try { injectSection(); } catch (_) {}
       setTimeout(injectSection, 250);
       setTimeout(injectSection, 900);
     }

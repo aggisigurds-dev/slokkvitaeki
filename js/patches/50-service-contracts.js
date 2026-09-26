@@ -129,25 +129,42 @@
         const v = document.getElementById('view-samningar');
         if (v) { v.style.display='block'; v.classList.add('active'); }
         document.querySelectorAll('.vnav-btn').forEach(b=>b.classList.toggle('active', b.dataset.view==='samningar'));
-        load(); return;
+        load();
+        // 26.09.2026: þessi grein kallar ekki á orig, svo 16 sendi aldrei `view-shown` → kaflar 94/96/97 biðu eftir
+        // 1,5 s púlsinum og ýttu listanum til þegar þeir komu. Innsetning þeirra er endurtekningarörugg (tvísending skaðlaus).
+        try { document.dispatchEvent(new CustomEvent('view-shown', { detail: { name: 'samningar' } })); } catch (_) {}
+        return;
       }
       orig.apply(this, arguments);
     };
     window.App._ctPatch = true;
   }
 
+  // 26.09.2026 (hopp-yfirferð, 0,36 CLS á Samningum): load()/render() skrifuðu `main.innerHTML` og þurrkuðu þar með
+  // út kaflana sem 94/96/97 setja í #ct-main — þeir komu aftur 200–1500 ms síðar og ýttu öllu til. Nú á þessi patch
+  // aðeins SINN hnút (data-ct-eigin) og skiptir honum einum út; hinir kaflarnir standa kyrrir.
+  function setjaInn(main, html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html.trim();
+    const nyr = tmp.firstElementChild;
+    if (!nyr) return;
+    nyr.setAttribute('data-ct-eigin', '1');
+    const gamall = main.querySelector(':scope > [data-ct-eigin]');
+    if (gamall) gamall.replaceWith(nyr); else main.appendChild(nyr);
+  }
   async function load() {
     const main = document.querySelector('#view-samningar #ct-main');
     if (!main) return;
-    main.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8">Hleður...</div>';
+    // Endurkoma: listinn úr minni stendur á meðan nýtt svar sækist (engin „Hleður…"-millistaða).
+    if (!main.querySelector(':scope > [data-ct-eigin]')) setjaInn(main, '<div style="padding:30px;text-align:center;color:#94a3b8">Hleður...</div>');
     const SB = getSB(); if (!SB) return;
     const { data, error } = await SB.from('thjonustusamningar').select('*').order('next_due', { ascending:true });
     if (error) {
       if (/relation .* does not exist/i.test(error.message)) {
-        main.innerHTML = '<div style="padding:30px;text-align:center">⚠️ Taflan vantar — keyrðu MIGRATION.sql</div>';
+        setjaInn(main, '<div style="padding:30px;text-align:center">⚠️ Taflan vantar — keyrðu MIGRATION.sql</div>');
         return;
       }
-      main.innerHTML = `<div style="padding:30px;text-align:center;color:#dc2626">${esc(error.message)}</div>`;
+      setjaInn(main, `<div style="padding:30px;text-align:center;color:#dc2626">${esc(error.message)}</div>`);
       return;
     }
     contracts = data || [];
@@ -172,7 +189,7 @@
     const filtered = filterContracts();
     const showList = _listOpen || !!searchQuery;
 
-    main.innerHTML = `
+    setjaInn(main, `
       <div class="ct-wrap">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
           <div>
@@ -224,7 +241,7 @@
               </tr>`;
             }).join('')}</tbody>
           </table>` : `<div style="padding:40px;text-align:center;color:#94a3b8">${searchQuery?'Engar færslur passa':'Engir samningar enn — smelltu á "+ Nýr samningur"'}</div>`}
-      </div>`;
+      </div>`);
   }
 
   function _search(v) { searchQuery = v.trim(); render(); }

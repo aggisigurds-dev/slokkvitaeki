@@ -3120,6 +3120,8 @@ console.log('[patch-master] loaded with all fixes');
       // and shows "Engin fyrirt\u00e6ki tengt" for walk-in customers, which is
       // noise. Only show on Companies detail page.
       if (table.closest('#counter-main, #workshop-detail, #counter-detail-modal, #workshop-detail-modal')) return;
+      // 26.09.2026: Lánstæki á ekkert fyrirtæki — kassinn var alltaf „Engin fyrirtæki tengt“ og ýtti töflunni 164 px niður eftir teikningu.
+      if (table.closest('#view-lanstaeki')) return;
       // Create memo box now, load data async
       var wrap=document.createElement('div');wrap.className='_pm_memo_wrap';
       wrap.innerHTML='<label>\u2709 Minn\u00f3 / Athugasemdir <span class="_pm_memo_saved" id="_memo_saved">\u2713 Vista\u00f0!</span></label><textarea class="_pm_memo_ta" id="_pm_memo_input" placeholder="Skrifa\u00f0u athugasemdir h\u00e9r..."></textarea>';

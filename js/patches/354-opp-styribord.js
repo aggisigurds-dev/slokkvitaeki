@@ -310,7 +310,9 @@
     const v = document.getElementById('view-opp');
     if (v && !v.__styri354) {
       v.__styri354 = true;
-      try { new MutationObserver(schedule).observe(v, { childList: true }); } catch (_) {}
+      // 26.09.2026 (hopp 0,57): 60 ms bið lét spjöldin mála fyrst og stýriborðið ýtti þeim svo niður. Óinngjafaða vaktin
+      // setur það inn í sama verki og sýnin teiknast (ensure er einnar-ferðar: hættir strax sé spjaldið til).
+      try { new (window.__NativeMutationObserver || MutationObserver)(() => { try { ensure(); } catch (_) {} }).observe(v, { childList: true, subtree: true }); } catch (_) {}
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

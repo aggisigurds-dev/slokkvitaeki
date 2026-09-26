@@ -98,9 +98,10 @@
 
     const set = (el, col, row, svaedi) => {
       if (!el) return;
-      el.style.setProperty('grid-column', col, 'important');
-      el.style.setProperty('grid-row', row, 'important');
-      if (svaedi) el.dataset.bsSvaedi = svaedi;
+      // 26.09.2026: skrifa aðeins breytingar — raða() keyrir nú við hverja teikningu.
+      if (el.style.getPropertyValue('grid-column') !== col) el.style.setProperty('grid-column', col, 'important');
+      if (el.style.getPropertyValue('grid-row') !== row) el.style.setProperty('grid-row', row, 'important');
+      if (svaedi && el.dataset.bsSvaedi !== svaedi) el.dataset.bsSvaedi = svaedi;
     };
     set(haus, '1 / 3', '1');
     set(prog, '1 / 3', '2');
@@ -116,9 +117,9 @@
     const root = document.querySelector('#view-bilstjori ._bs-root');
     if (!root) return;
     Array.from(root.children).forEach(c => {
-      c.style.removeProperty('grid-column');
-      c.style.removeProperty('grid-row');
-      delete c.dataset.bsSvaedi;
+      if (c.style.getPropertyValue('grid-column')) c.style.removeProperty('grid-column');
+      if (c.style.getPropertyValue('grid-row')) c.style.removeProperty('grid-row');
+      if ('bsSvaedi' in c.dataset) delete c.dataset.bsSvaedi;
     });
   }
 
@@ -139,9 +140,16 @@
     const v = document.getElementById('view-bilstjori');
     if (!v) { setTimeout(start, 1200); return; }
     puls();
-    new MutationObserver(ms => {
+    // 26.09.2026 (hopp-yfirferð): raða() beið 260 ms eftir hverja teikningu 219 og á meðan
+    // málaðist listinn í EINUM dálki (framvindan 206 px há) → allt hoppaði þegar reitirnir komu.
+    // Nú raðað í sama örverki og teikningin (upprunalegi MO, fyrir málun); resize-púlsinn bíður áfram.
+    const MO = window.__NativeMutationObserver || MutationObserver;
+    new MO(ms => {
       for (const m of ms) {
-        if (m.type === 'childList' && m.addedNodes.length) { puls(); return; }
+        if (m.type === 'childList' && m.addedNodes.length) {
+          try { raða(); } catch (e) { console.warn('[396] raða', e); }
+          puls(); return;
+        }
       }
     }).observe(v, { childList: true, subtree: true });
     addEventListener('hashchange', puls);

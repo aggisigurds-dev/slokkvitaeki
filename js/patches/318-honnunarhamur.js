@@ -61,7 +61,8 @@
     return roots;
   }
   function setVar(v, val) {
-    paintRoots().forEach(r => { try { r.style.setProperty(v, val); } catch (_) {} });
+    // 26.09.2026: aðeins ef gildið breyttist (var skrifað ~1×/s á öllum síðum)
+    paintRoots().forEach(r => { try { if (r.style.getPropertyValue(v) !== String(val)) r.style.setProperty(v, val); } catch (_) {} });
   }
   function clearVar(v) {
     paintRoots().forEach(r => { try { r.style.removeProperty(v); } catch (_) {} });
