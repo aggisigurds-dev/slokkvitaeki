@@ -998,6 +998,7 @@
     // það sama. Margar síur = OG (öll skilyrðin þurfa að standast).
     const stepKeys = Object.keys(_stepF);
     const vinnslaAlls = b.vinnsla.length;
+    const _vinnslaRaw = b.vinnsla.slice();   // óhreyfð verk í vinnslu — skrefa-strimillinn telur aðeins þau (26.09: „bara í vinnslu")
     // Talan á hverjum síu-hnappi á ALLTAF að miðast við óhreyft þýði — annars
     // rýrnuðu tölurnar við hverja síu og hnappurinn gæti aldrei sagt satt um
     // hvað liggur að baki honum.
@@ -1071,10 +1072,10 @@
     const [vNum, vUnit] = krUnit(vinnslaSum);
     const vUttektSum = b.vinnsla.filter(r => r.steps && r.steps.uttekt).reduce((t, r) => t + (+r.tekjur || 0), 0);
     const dSum = fmtSum(dagskraSum) || '—';
-    const totAll = _allRaw.length;
+    const totAll = _vinnslaRaw.length;
     const skrefSulur = STEP_DEFS.map(([k, lbl, short]) => {
       const st = _stepF[k] || '';
-      const n = _allRaw.filter(r => (st === 'off' ? !r.steps[k] : !!r.steps[k])).length;
+      const n = _vinnslaRaw.filter(r => (st === 'off' ? !r.steps[k] : !!r.steps[k])).length;
       const h = Math.max(6, Math.round(n / Math.max(1, totAll) * 52));
       return '<button type="button" class="' + st + '" data-stepf="' + k + '" aria-pressed="' + (st ? 'true' : 'false') + '" ' +
         'title="' + esc(lbl) + ' — smelltu: ✓ búið → ⧗ vantar → af">' +
@@ -1139,12 +1140,12 @@
             opna('buid', _openBuid) +
           '</div></div>' +
         '</div>' +
-        // Skref ársins — súla per skref; smellur: ✓ búið → ⧗ vantar → af (sama sía og áður)
+        // Skref í vinnslu — súla per skref, talið yfir verkin í vinnslu, ekki árið (Agnar 26.09: „þarf ekki að sjá ársverkun þarna, bara í vinnslu"); smellur: ✓ búið → ⧗ vantar → af (sama sía og áður)
         '<div class="b190-strim">' +
-          '<div class="hd"><span class="dl" aria-hidden="true"></span>Skref ársins · ' + curYear +
+          '<div class="hd"><span class="dl" aria-hidden="true"></span>Skref í vinnslu' +
             '<span class="r">' + (stepKeys.length
               ? '<b>' + vn + '</b> af ' + vinnslaAlls + ' í vinnslu <button type="button" class="sv-stepf-clear">Hreinsa síu</button>'
-              : '<b>' + totAll + '</b> staðir · smelltu á súlu: ✓ búið → ⧗ vantar') + '</span></div>' +
+              : '<b>' + totAll + '</b> verk · smelltu á súlu: ✓ búið → ⧗ vantar') + '</span></div>' +
           '<div class="b190-man" role="group" aria-label="Sía eftir skrefi">' + skrefSulur + '</div>' +
         '</div>' +
       '</div>' +
