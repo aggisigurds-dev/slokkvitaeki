@@ -268,16 +268,19 @@
     var view = document.getElementById(id); if (!view) return;
     var root = view.querySelector('._sk-root'); if (!root) return;
     var kpis = root.querySelector('._sk-kpis');
-    if (!scope() || !kpis) { window.__b418dbg.early.push(id + ':' + (kpis ? 'scope' : 'kpis')); view.classList.remove('b418-on'); var g = root.querySelector('.b418-top'); if (g) g.remove(); sidast[id] = ''; return; }
+    if (!scope() || !kpis) { window.__b418dbg.early.push(id + ':' + (kpis ? 'scope' : 'kpis')); if (view.classList.contains('b418-on')) view.classList.remove('b418-on'); var g = root.querySelector('.b418-top'); if (g) g.remove(); sidast[id] = ''; return; }
     // hólfin teiknast STRAX með „—" þegar 385 hefur teiknað KPI-hólfin en tölurnar eru ókomnar — mældist annars 390 ms
     // gat (kpis 98 px sýnileg, svo okkar 380) og taflan hoppaði 482 → 718
     var d = lesa(root); if (!d) return;
     var out = html(d);
     var top = root.querySelector('.b418-top');
-    if (!top) { window.__b418dbg.made++; top = document.createElement('div'); top.className = 'b418-top'; top.setAttribute('data-s409-skip', '1'); top.addEventListener('click', smellur); }
+    // 26.09.2026: 385 endurteiknar ._sk-root við hverja heimsókn og hólfið okkar hverfur með — nýtt hólf er TÓMT, svo
+    // minnið um síðasta streng má ekki segja „óbreytt" (mælt: .b418-top 0 px á annarri heimsókn, spjöldin komu seint/aldrei).
+    if (!top) { sidast[id] = ''; window.__b418dbg.made++; top = document.createElement('div'); top.className = 'b418-top'; top.setAttribute('data-s409-skip', '1'); top.addEventListener('click', smellur); }
     if (top.nextElementSibling !== kpis || top.parentNode !== kpis.parentNode) kpis.parentNode.insertBefore(top, kpis);
     if (out !== sidast[id]) { top.innerHTML = out; sidast[id] = out; }
-    view.classList.add('b418-on');
+    // aðeins þegar vantar — classList.add á klasa sem er til skráir samt breytingu og vekur vaktina (lykkja)
+    if (!view.classList.contains('b418-on')) view.classList.add('b418-on');
   }
   function tick() { for (var i = 0; i < VIEWS.length; i++) { try { tickView(VIEWS[i]); } catch (e) { try { console.warn('[418] tick féll', VIEWS[i], e && e.message); } catch (_) {} } } }
   function schedule() { if (schedule.inni) return; schedule.inni = true; try { tick(); } finally { schedule.inni = false; } }
@@ -289,7 +292,9 @@
       if (vaktad[id]) return;
       var v = document.getElementById(id); if (!v) return;
       try {
-        new MutationObserver(function (ms) { window.__b418dbg.mo++; for (var i = 0; i < ms.length; i++) { var t = ms[i].target; if (t && t.closest && t.closest('.b418-top')) continue; schedule(); return; } }).observe(v, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+        // 26.09.2026 (hopp við flakk, 0,02): inngjafaða vaktin (252) skilaði sér ramma of seint — gömlu KPI-hólfin 385
+        // sáust í einn ramma áður en .b418-top tók við. Óinngjafaða vaktin keyrir í sama verki, fyrir málun.
+        new (window.__NativeMutationObserver || MutationObserver)(function (ms) { window.__b418dbg.mo++; for (var i = 0; i < ms.length; i++) { var t = ms[i].target; if (t && t.closest && t.closest('.b418-top')) continue; schedule(); return; } }).observe(v, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class'] });
         vaktad[id] = true;
       } catch (_) {}
     });

@@ -74,6 +74,12 @@
   st.textContent = css;
   // 341 setur stílblaðið sitt AFTAST í head við hverja teikningu — okkar verður að standa á eftir því.
   // (331 stillaBreidd() er nú girt frá has-mobnav svo inline-breiddirnar koma ekki lengur.)
-  function aftast() { try { if (st.parentNode && st.parentNode.lastElementChild !== st) st.parentNode.appendChild(st); } catch (_) {} }
+  // 26.09.2026 (blaðastríð í head): áður fært aftast við HVERJA breytingu í head — 341/313/319 gerðu það sama og blöðin
+  // eltu hvert annað ~20×/s á öllum síðum. Nú aðeins ef 341 eða ókunnugt blað stendur aftar; jafningjar mega standa þar.
+  var JAFN = ['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css', '_pe-kanban-css'];
+  function aftast() { try {
+    if (!st.parentNode) return;
+    for (var n = st.nextElementSibling; n; n = n.nextElementSibling) { if (JAFN.indexOf(n.id) < 0) { st.parentNode.appendChild(st); return; } }
+  } catch (_) {} }
   try { new MutationObserver(function () { aftast(); }).observe(document.head, { childList: true }); } catch (_) {}
 })();

@@ -361,7 +361,7 @@
     var strim = morow ? hnutur(main, 'b414-top b414-top--strim', morow) : null;  // strimillinn: fyrir framan ._ars-morow (eftir síustikunni)
     if (out.grid !== sidast.grid) { top.innerHTML = out.grid; sidast.grid = out.grid; }
     if (strim && out.strim !== sidast.strim) { strim.innerHTML = out.strim; sidast.strim = out.strim; }
-    view.classList.add('b414-on');
+    if (!view.classList.contains('b414-on')) view.classList.add('b414-on');   // 26.09: aðeins ef vantar — annars skráir add breytingu, vaktin vaknar og tikkar ~13×/s
     // Bílstjóri í haus-röðina hægra megin (sama lína og Prenta lista) — mælt aðeins þegar hausinn hefur færst
     // 25.09.2026 (afköst): mælingin (getBoundingClientRect/offsetHeight) þvingaði layout í HVERJU tifi — tick keyrir
     // við hverja class/style-breytingu í sýninni (2,4 s af 18 s á Ársskoðun). Nú aðeins þegar ResizeObserver segir

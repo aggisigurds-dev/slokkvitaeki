@@ -357,7 +357,7 @@
     if (s.textContent !== css) s.textContent = css;
     // 21.09.2026 (afköst): fjögur blöð (313 · 319 · 323 · þetta) færðu sig hvert um sig aftast í <head> í hverri umferð og
     // slógust þannig endalaust um síðasta sætið — hver færsla endurreiknar útlit allrar síðunnar. Jafningjar mega standa aftar.
-    if (s.parentNode && !(() => { let n = s.nextElementSibling; while (n) { if (['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css', '_pe-kanban-css'].indexOf(n.id) < 0) return false; n = n.nextElementSibling; } return true; })()) s.parentNode.appendChild(s);   // sitja síðast → vinna 78
+    if (s.parentNode && !(() => { let n = s.nextElementSibling; while (n) { if (['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css', '_pe-kanban-css', 'ars-skjar-scroll-left-341', '_ars-simi-skjar-417-css'].indexOf(n.id) < 0) return false; n = n.nextElementSibling; } return true; })()) s.parentNode.appendChild(s);   // sitja síðast → vinna 78
   }
   document.addEventListener('pe-zones-apply', e => runApply(e.detail));
 

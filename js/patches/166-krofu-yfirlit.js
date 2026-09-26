@@ -454,7 +454,8 @@
     const rightwrap = document.querySelector('#bstal-banner .bb-rightwrap');
     if (face) {
       const t = existing || buildToggle();
-      t.className = 'ky-vm'; t.style.cssText = '';
+      if (t.className !== 'ky-vm') t.className = 'ky-vm';
+      if (t.getAttribute('style')) t.style.cssText = '';   // 26.09: aðeins ef breytt (endurskrif vakti vaktir ~3×/s)
       // Anchor BEFORE the paint-palette (#_pe-btn, 262) when it is already in
       // the face, else before the clock wrap. Both patches insertBefore the
       // same node; last-writer used to swap them and the amber palette sat

@@ -201,11 +201,12 @@
   }
   function paintZoomPct() {
     const el = document.getElementById('_ars-z-pct');
-    if (el) el.textContent = Math.round(cssScale * 100) + '%';
+    const pct = Math.round(cssScale * 100) + '%';
+    if (el && el.textContent !== pct) el.textContent = pct;   // 26.09: aðeins ef breytt — annars vekur skrifið vaktina á body (~3×/s lykkja)
     const row = document.querySelector('#_ars-sjon ._ars-sjon-zoom');
     if (row) {
       const wide = wantsWide(get()) && isPhoneLike();
-      row.hidden = !wide;
+      if (row.hidden !== !wide) row.hidden = !wide;
     }
   }
   function applyCssScale(s, persist) {
@@ -349,8 +350,8 @@
     if (!bar) return;
     bar.querySelectorAll('[data-ars-sjon]').forEach(b => {
       const on = parse(b.getAttribute('data-ars-sjon')) === mode;
-      b.classList.toggle('on', on);
-      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if (b.classList.contains('on') !== on) b.classList.toggle('on', on);
+      if (b.getAttribute('aria-pressed') !== (on ? 'true' : 'false')) b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
     paintZoomPct();
   }
