@@ -318,7 +318,10 @@
   (function(){ if(document.getElementById('sk-utlock-css'))return; var s=document.createElement('style'); s.id='sk-utlock-css';
     s.textContent='.ut-listlock{display:block;width:100%;margin-top:12px;padding:13px;border-radius:12px;border:1px solid #c7ccd3;background:#eef1f4;color:#2b313a;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'
       +'.ut-listlock.on{background:linear-gradient(180deg,#2f5d3f,#173524);color:#daffe8;border-color:#0e2417;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.25)}'
-      +'.ut-list.locked .ut-svc,.ut-list.locked .ut-onytt,.ut-list.locked .ut-check,.ut-list.locked .ut-chk,.ut-list.locked .ut-selall,.ut-list.locked .ut-bulk-act,.ut-list.locked .ut-bulk-size,.ut-list.locked .ut-bulk-date,.ut-list.locked .ut-bulk-dateset,.ut-list.locked .ut-bulk-qr,.ut-list.locked .ut-bulk-del,.ut-list.locked .ut-bulk-clear,.ut-list.locked .ut-grp-h{pointer-events:none;opacity:.5}';
+      +'.ut-list.locked .ut-svc,.ut-list.locked .ut-onytt,.ut-list.locked .ut-check,.ut-list.locked .ut-chk,.ut-list.locked .ut-selall,.ut-list.locked .ut-bulk-act,.ut-list.locked .ut-bulk-size,.ut-list.locked .ut-bulk-qr,.ut-list.locked .ut-bulk-del,.ut-list.locked .ut-bulk-clear,.ut-list.locked .ut-grp-h{pointer-events:none;opacity:.5}'
+      // Dagsetningarreitir (síðasta/næsta skoðun) eru ALLTAF breytanlegir — líka á lokuðum lista.
+      // Skýrsla gæti verið gerð í öðrum mánuði en skoðunin fór fram (t.d. apríl gleymdist í september).
+      +'.ut-list.locked .ut-bulk-datewrap{opacity:1!important;pointer-events:auto!important}';
     document.head.appendChild(s); })();
   // 2026-09-08: síaði á NAFNI og hleypti ÚRELTUM tækjum inn. Hvort tveggja er
   // rangt: staðnað nafn faldi tæki sem á að skoða (mælt á fid 1570), og úrelt
