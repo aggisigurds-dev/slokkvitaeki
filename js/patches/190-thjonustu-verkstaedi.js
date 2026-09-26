@@ -419,7 +419,7 @@
       r('.b190-l', 'display:flex;flex-wrap:wrap;gap:6px 16px;font-family:' + MONO + ';font-size:11.5px;color:#d5dbe6;align-items:center;min-width:0;min-height:18px'),
       r('.b190-l.dalk', 'flex-direction:column;align-items:flex-start;gap:6px;padding-bottom:5px'),
       r('.b190-l i', 'width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.4)'),
-      r('.b190-l i.bl', 'background:#2f5fb0'), r('.b190-l i.ra', 'background:#8a2020'),
+      r('.b190-l i.bl', 'background:#2f5fb0'), r('.b190-l i.ra', 'background:#8a2020'), r('.b190-l i.gu', 'background:#9c7c2c'),
       r('.b190-l b', 'color:#fff;font-weight:700'), r('.b190-l small', 'color:#8e97a6;margin-left:5px;font-size:11px'),
       r('.b190-tikk', 'display:flex;flex-direction:column;gap:6px;min-height:60px'),
       r('.b190-tikk .r', 'display:grid;grid-template-columns:104px minmax(0,1fr) 30px;gap:8px;align-items:center;font-family:' + MONO + ';font-size:11px;color:#d5dbe6'),
@@ -1023,7 +1023,6 @@
     const ovReik   = _all.filter(r => r.steps.reikningur || r.reik2026 || (r.docs && r.docs.reik)).length;
     // Peningaboxið og tölu-flísarnar (2026-07-28) eru nú í gull-spjaldinu efst (26.09.2026, Brunastál C).
     const dagskraSum = b.dagskra.reduce((s, r) => s + (+r.tekjur || 0), 0);
-    const heildSum = vinnslaSum + dagskraSum;
 
     // Collapsible side drawers (collapsed by default).
     function drawerRows(list, withStart) {
@@ -1069,8 +1068,9 @@
     const vCnt = k => b.vinnsla.filter(r => r.steps && r.steps[k]).length;
     const tikk = (lbl, n, tot, cls) => '<div class="r"><span>' + esc(lbl) + '</span><div class="bar"><span class="' + cls + '" style="width:' + pctOf(n, tot) + '"></span></div><b>' + n + '</b></div>';
     const flis = (lbl, val, sm) => '<div class="b190-f"><span class="l">' + esc(lbl) + '</span><span class="v">' + val + (sm ? '<small>' + esc(sm) + '</small>' : '') + '</span></div>';
-    const [hNum, hUnit] = krUnit(heildSum);
-    const vSum = fmtSum(vinnslaSum) || '—', dSum = fmtSum(dagskraSum) || '—';
+    const [vNum, vUnit] = krUnit(vinnslaSum);
+    const vUttektSum = b.vinnsla.filter(r => r.steps && r.steps.uttekt).reduce((t, r) => t + (+r.tekjur || 0), 0);
+    const dSum = fmtSum(dagskraSum) || '—';
     const totAll = _allRaw.length;
     const skrefSulur = STEP_DEFS.map(([k, lbl, short]) => {
       const st = _stepF[k] || '';
@@ -1106,14 +1106,15 @@
           '</div>' +
         '</div>' +
         '<div class="b190-grid">' +
-          // Áætlað virði (gull) — heildarvirðið efst, sundurliðun og ársyfirlitið undir
-          '<div class="b190-k gull" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk"><div class="b190-i">' + HN +
-            '<div class="b190-m"><span class="led" aria-hidden="true"></span>Áætlað virði ' + curYear + '<span class="b190-p ghost">m. vsk</span></div>' +
-            '<div class="b190-rod"><div class="b190-t gull">' + hNum + '<small>' + hUnit + '</small></div>' +
-              '<span class="b190-l dalk"><span><i class="bl" aria-hidden="true"></i>Í vinnslu <b>' + vSum + '</b><small>' + vn + ' verk</small></span>' +
-              '<span><i class="ra" aria-hidden="true"></i>Á dagskrá <b>' + dSum + '</b><small>' + dn + ' staðir</small></span></span></div>' +
-            '<div class="b190-s stor" role="img" aria-label="Í vinnslu og á dagskrá"><span class="bl" style="width:' + pctOf(vinnslaSum, heildSum) + '"></span><span class="ra" style="width:' + pctOf(dagskraSum, heildSum) + '"></span></div>' +
-            '<div class="b190-f4">' + flis('Í þjónustu', ovN) + flis('Úttekt búin', ovUttekt) + flis('Skýrsla send', ovSend) + flis('Reikn. sendur', ovReik) + '</div>' +
+          // Í vinnslu — virði (gull). 26.09 (Agnar: „óþarfi að blanda inn á dagskrá og heildina — einbeita sér þarna bara að
+          // hvað er í vinnslu"): aðeins verkin á borðinu — virðið, skipt í úttekt búin / eftir, og hvað stendur út af þeim.
+          '<div class="b190-k gull" title="Áætlaðar tekjur verkanna í vinnslu: yfirferðir + skýrslugerð + akstur, m. vsk"><div class="b190-i">' + HN +
+            '<div class="b190-m"><span class="led" aria-hidden="true"></span>Í vinnslu · virði<span class="b190-p ghost">m. vsk</span></div>' +
+            '<div class="b190-rod"><div class="b190-t gull">' + vNum + '<small>' + vUnit + '</small></div>' +
+              '<span class="b190-l dalk"><span><i class="bl" aria-hidden="true"></i>Úttekt búin <b>' + (fmtSum(vUttektSum) || '—') + '</b><small>' + vCnt('uttekt') + ' verk</small></span>' +
+              '<span><i class="gu" aria-hidden="true"></i>Úttekt eftir <b>' + (fmtSum(vinnslaSum - vUttektSum) || '—') + '</b><small>' + (vn - vCnt('uttekt')) + ' verk</small></span></span></div>' +
+            '<div class="b190-s stor" role="img" aria-label="Virði verka í vinnslu: úttekt búin og eftir"><span class="bl" style="width:' + pctOf(vUttektSum, vinnslaSum) + '"></span><span class="gu" style="width:' + pctOf(vinnslaSum - vUttektSum, vinnslaSum) + '"></span></div>' +
+            '<div class="b190-f4">' + flis('Verk', vn) + flis('Meðalverk', vn ? Math.round(vinnslaSum / vn).toLocaleString('de-DE') : '—', vn ? 'kr' : '') + flis('Skýrsla eftir', vn - vCnt('skyrsla')) + flis('Reikn. eftir', vn - vCnt('reikningur')) + '</div>' +
           '</div></div>' +
           // Í vinnslu (blátt) — hvar verkin á borðinu standa
           '<div class="b190-k blatt"><div class="b190-i">' + HN +
