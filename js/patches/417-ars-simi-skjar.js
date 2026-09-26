@@ -72,25 +72,8 @@
   var st = document.getElementById('_ars-simi-skjar-417-css');
   if (!st) { st = document.createElement('style'); st.id = '_ars-simi-skjar-417-css'; document.head.appendChild(st); }
   st.textContent = css;
-  // 341 setur stílblaðið sitt AFTAST í head við hverja teikningu — okkar verður að standa á eftir því (sértækni jöfn þar
-  // sem 341 notar sex gervi-auðkenni + !important; sjö hér vinna hvort eð er, en röðin kostar ekkert).
-  // 331 stillaBreidd() skrifar inline width/min-width/max-width !important (breidd töflunnar) á #ars-main, .data-table-wrap og
-  // ._ars-tblscroll — hugsað fyrir Tölvusíðu-ham með stiku þar sem sýnin pannar. Hér (stikan af skjánum) er TAFLAN skrunarinn
-  // og ílátin eiga að halda símabreiddinni, svo inline-breiddirnar eru teknar af um leið og þær koma. 331 setur þær aðeins
-  // við ham-/zoom-skipti (ekki í lykkju), svo þetta flöktir ekki; „Passa töflu" (zoom á töflunni) virkar áfram inni í skrunaranum.
-  function simiVidd() { var h = document.documentElement; return (h.classList.contains('ars-wide-table') || h.classList.contains('ars-simi-phone')) && document.body && document.body.classList.contains('has-mobnav'); }
-  function hreinsaBreidd() {
-    if (!simiVidd()) return;
-    var main = document.getElementById('ars-main'); if (!main) return;
-    var stok = [main, main.querySelector('.data-table-wrap'), main.querySelector('._ars-tblscroll')];
-    for (var i = 0; i < stok.length; i++) { var e = stok[i]; if (!e) continue; if (e.style.width || e.style.minWidth || e.style.maxWidth) { e.style.removeProperty('width'); e.style.removeProperty('min-width'); e.style.removeProperty('max-width'); } }
-  }
-  try {
-    var vakt = new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) { var tg = ms[i].target; if (tg && tg.nodeType === 1 && (tg.id === 'ars-main' || (tg.classList && (tg.classList.contains('_ars-tblscroll') || tg.classList.contains('data-table-wrap'))))) { hreinsaBreidd(); return; } } });
-    var byrja = function () { var v = document.getElementById('view-arsskodun'); if (v) { vakt.observe(v, { attributes: true, attributeFilter: ['style'], subtree: true }); hreinsaBreidd(); } else setTimeout(byrja, 500); };
-    byrja();
-    window.addEventListener('resize', hreinsaBreidd);
-  } catch (_) {}
+  // 341 setur stílblaðið sitt AFTAST í head við hverja teikningu — okkar verður að standa á eftir því.
+  // (331 stillaBreidd() er nú girt frá has-mobnav svo inline-breiddirnar koma ekki lengur.)
   function aftast() { try { if (st.parentNode && st.parentNode.lastElementChild !== st) st.parentNode.appendChild(st); } catch (_) {} }
   try { new MutationObserver(function () { aftast(); }).observe(document.head, { childList: true }); } catch (_) {}
 })();

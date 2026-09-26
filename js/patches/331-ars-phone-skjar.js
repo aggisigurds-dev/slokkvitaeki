@@ -289,6 +289,8 @@
       e.style.removeProperty('max-width');
     });
     if (!tbl || !sc || !(wantsWide(get()) && isPhoneLike())) { hreinsa(); return; }
+    // Stikan af skjánum: 417 sér um breidd (100% via CSS), inline-breidd þrengir skrunann.
+    if (document.body && document.body.classList.contains('has-mobnav')) { hreinsa(); return; }
     // Lesið EFTIR að zoom-ið hefur tekið gildi — annars mælist gamla breiddin.
     requestAnimationFrame(() => {
       const px = Math.ceil(tbl.getBoundingClientRect().width);

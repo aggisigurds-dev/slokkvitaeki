@@ -123,14 +123,19 @@
         + '{margin-left:0!important;width:100vw!important;max-width:100vw!important;'
         + 'overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
         + '-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom!important;overscroll-behavior-x:contain}',
+      /* Ancestor containers: transparent to overflow — outer VIEW handles horizontal scroll. */
       'html.ars-wide-table body.has-mobnav ' + V + ' #ars-main' + P6 + ','
         + 'html.ars-wide-table body.has-mobnav ' + V + ' .thm' + P6 + ','
-        + 'html.ars-wide-table body.has-mobnav ' + V + ' .data-table-wrap' + P6 + ','
-        + 'html.ars-wide-table body.has-mobnav ' + wrap + P6 + ','
+        + 'html.ars-wide-table body.has-mobnav ' + V + ' .data-table-wrap' + P6
+        + '{overflow:visible!important;overflow-x:visible!important;overflow-y:visible!important;'
+        + 'width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important}',
+      /* Table scroller: phone-width container so zoom is bounded — no empty panning space. */
+      'html.ars-wide-table body.has-mobnav ' + wrap + P6 + ','
         + 'html.ars-wide-table body.has-mobnav ' + V + ' ._ars-tblscroll' + P6 + ','
         + 'html.ars-wide-table body.has-mobnav ' + V + ' .data-table-scroll' + P6
-        + '{overflow:visible!important;overflow-x:visible!important;overflow-y:visible!important;'
-        + 'width:max-content!important;min-width:100%!important;max-width:none!important;touch-action:auto!important}'
+        + '{overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;'
+        + 'width:100%!important;min-width:0!important;max-width:100%!important;'
+        + '-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom!important;overscroll-behavior-x:contain}'
     ].join('\n');
   }
 
