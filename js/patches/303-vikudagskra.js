@@ -131,7 +131,20 @@
       return Array.isArray(r.data.j) ? r.data.j : null;   // null = greinin ekki til enn → readJobs() ræður (erfðir Agnars)
     } catch (_) { return null; }
   }
+  // 27.09.2026 (Agnar: „ein dagskrá fyrir alla"): Þjónustuborðið sýnir verk ALLRA starfsmanna. Verk í eigu annars
+  // er vistað á grein EIGANDANS (ekki þess sem er við vélina) — annars færðist verkið á milli dagskráa við breytingu.
+  async function persistEiganda(nafn, next) {
+    if (!window.AppSettings || !AppSettings.save) { toast('Stillingar ekki tilbúnar — dagskráin vistaðist ekki'); return; }
+    const ferskt = await ferskJobs(nafn);
+    const grunnur = ferskt || (AppSettings.path && AppSettings.path('vikudagskra.by_staff.' + nafn + '.jobs')) || [];
+    const ok = await AppSettings.save({ vikudagskra: { by_staff: { [nafn]: { jobs: next(Array.isArray(grunnur) ? grunnur : []) } } } });
+    if (!ok) toast('Náði ekki að vista dagskrána');
+    try { document.dispatchEvent(new CustomEvent('vikudagskra-breytt')); } catch (_) {}
+  }
   async function persist(next) {
+    const eig = state.eigandi; state.eigandi = null;
+    const nuna = (window.BordStarfsmadur && BordStarfsmadur.get) ? BordStarfsmadur.get() : 'Agnar';
+    if (eig && eig !== nuna && typeof next === 'function') return persistEiganda(eig, next);
     const reikna = typeof next === 'function' ? next : () => next;
     state.jobs = reikna(state.jobs);
     render();
@@ -348,8 +361,9 @@
     return h;
   }
 
-  function openModal(dateStr, editJob) {
+  function openModal(dateStr, editJob, eigandi) {
     state.modal = true;
+    state.eigandiModal = eigandi || null;   // 27.09.2026: verk annars starfsmanns vistast á hans grein
     state.malId = null;   // st-skra-verk setur málið strax á eftir (853efc10)
     state.editingId = editJob ? editJob.id : null;
     state.form = editJob
@@ -357,7 +371,7 @@
       : { date: dateStr || fmt(new Date()), time: '09:00', name: '', type: 'Árskoðun', note: '', allday: false };
     renderModal();
   }
-  function closeModal() { state.modal = false; state.editingId = null; state.malId = null; renderModal(); }
+  function closeModal() { state.modal = false; state.editingId = null; state.malId = null; state.eigandiModal = null; renderModal(); }
 
   function renderModal() {
     const h = modalHost();
@@ -463,6 +477,7 @@
     const date = f.date || fmt(new Date());
     const editId = state.editingId;
     const malId = state.malId;
+    state.eigandi = editId ? state.eigandiModal : null; state.eigandiModal = null;   // ný verk fara á þann sem skráir
     state.modal = false;
     state.editingId = null;
     state.malId = null;
@@ -501,7 +516,7 @@
     if (act === 'add')      { ev.stopPropagation(); openModal(fmt(new Date())); return; }
     if (act === 'save')     { ev.preventDefault(); saveJob(); return; }
     if (act === 'del')      { ev.stopPropagation(); { const vid = hit.getAttribute('data-vd-id'); persist(jobs => jobs.filter(j => j && j.id !== vid)); } return; }
-    if (act === 'del-edit') { ev.stopPropagation(); const delId = state.editingId; state.modal = false; state.editingId = null; renderModal(); persist(jobs => jobs.filter(j => j && j.id !== delId)); return; }
+    if (act === 'del-edit') { ev.stopPropagation(); const delId = state.editingId; state.eigandi = state.eigandiModal; state.eigandiModal = null; state.modal = false; state.editingId = null; renderModal(); persist(jobs => jobs.filter(j => j && j.id !== delId)); return; }
     if (act === 'job')      { ev.stopPropagation(); const j = state.jobs.find(x => x && x.id === hit.getAttribute('data-vd-id')); if (j) openModal(j.date, j); return; }
     if (act === 'close')    { if (!throughSolid) closeModal(); return; }
     if (act === 'day')      { if (!throughSolid) openModal(hit.getAttribute('data-vd-date')); return; }

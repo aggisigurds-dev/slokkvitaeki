@@ -236,7 +236,8 @@
     var hs = Array.prototype.slice.call(g.querySelectorAll('._kpi--hlut ._kpi-s'));
     var sum = hs.find(function (e) { return /\+/.test(txt(e)); });
     var st = sum ? (txt(sum).match(/\d[\d.]*/g) || []).map(function (x) { return parseInt(x.replace(/\./g, ''), 10); }) : [];
-    var ovist = st.length >= 3 ? st[2] : NaN;
+    // 27.09.2026: „✅ 0 + 🗓️ 63 = 63" — án ❓-liðar er ÞRIÐJA talan summan, ekki óvíst (sýndi „63 óvíst").
+    var ovist = st.length >= 4 ? st[2] : (st.length === 3 ? 0 : NaN);
     var anTaekja = heil(txt(g.querySelector('.arsm-hlut-extra')));
     var sub = txt(root.querySelector('._ars-sub'));
     var medTaeki = heil((sub.match(/(\d[\d.]*)\s*með skráð/) || [])[1]);

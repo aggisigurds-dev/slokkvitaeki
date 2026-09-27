@@ -46,7 +46,8 @@
   // 23.09.2026 (Agnar: „mátt setja nýtt við hliðina á Aksturslisti"): röðin hér ræður
   // röðinni í stikunni — ekki röðin á flögunum í 153 — því „🆕 Nýtt" stendur þar framar
   // en Aksturslisti og hefði annars lent á undan honum.
-  const ADAL = [/^allt$/i, /búið/i, /eftir\s*20/i, /í vinnslu/i, /aksturslisti/i, /nýtt/i];
+  // 27.09.2026: „Á eftir áætlun" við hliðina á Eftir 2026 (liðinn mánuður, óbúið, ekki hafið).
+  const ADAL = [/^allt$/i, /búið/i, /eftir\s*20/i, /eftir áætlun/i, /í vinnslu/i, /aksturslisti/i, /nýtt/i];
 
   function css() {
     const V = 'html body #view-arsskodun ';
@@ -152,6 +153,7 @@
       // Tölur síanna bera lit síunnar, eins og á borðinu.
       V + '.arsm-seg button[data-lit="graent"] span{color:#0b6b3a}',
       V + '.arsm-seg button[data-lit="gult"] span{color:#845400}',
+      V + '.arsm-seg button[data-lit="rautt"] span{color:#b52020}',
 
       // ── Kortið: málmhaus eins og á borðinu ────────────────────────────────
       // 24.09.2026 (hopp): þriðja línan í hetjuspjaldinu („þar af 18,6M búið · 123 raunreiknuð") er TÓM í snapshot-teikningunni
@@ -422,6 +424,7 @@
       const heiti = anTakna(heitiAf(c));
       b.textContent = heiti;
       if (/búið/i.test(heiti)) b.dataset.lit = 'graent';
+      else if (/áætlun/i.test(heiti)) b.dataset.lit = 'rautt';
       else if (/eftir/i.test(heiti)) b.dataset.lit = 'gult';
       const n = talaAf(c);
       if (n) { const s = document.createElement('span'); s.textContent = String(n); b.appendChild(s); }

@@ -872,8 +872,20 @@
   }
   const spjold = n => cardsFor(n).slice().sort((a, b) => (+a.slot || 0) - (+b.slot || 0));
   const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  // 27.09.2026 (Agnar: „make the calendar always be for Allir. One calendar for all"): Dagskráin á Þjónustuborði er EIN
+  // fyrir alla — verk allra starfsmanna saman, hvert merkt eiganda sínum (_n). Verkin eru áfram geymd á grein þess sem
+  // skráði (303), svo persónulega dagskráin á Verkborðinu er óbreytt; breyting á verki annars vistast á hans grein.
+  function allirJobs() {
+    const out = [], sed = new Set();
+    for (const n of folk()) for (const j of jobsFor(n)) {
+      const k = j.id != null ? String(j.id) : n + '|' + j.date + '|' + j.time + '|' + j.name;
+      if (sed.has(k)) continue; sed.add(k);
+      out.push(Object.assign({ _n: n }, j));
+    }
+    return out;
+  }
   function week() {
-    const jobs = jobsFor(nu()), out = [], d0 = new Date();
+    const jobs = allirJobs(), out = [], d0 = new Date();
     for (let i = 0; i < 7; i++) {
       const d = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i), key = ymd(d);
       out.push({
@@ -2412,12 +2424,26 @@
     const inp = root.querySelector('[data-chkny]'); const t = inp ? inp.value.trim() : '';
     if (!t) { if (inp) inp.focus(); return; }
     const n = nu();
-    chkBreyta(n, l => l.concat([{ id: chkNyttId(), t: t, done: false }])).then(() => {
-      const v = document.getElementById(VIEW_ID), r = v && v.shadowRoot, ny = r && r.querySelector('[data-chkny]');
-      if (ny) ny.focus();
-    });
+    const fokus = () => { const v = document.getElementById(VIEW_ID), r = v && v.shadowRoot, ny = r && r.querySelector('[data-chkny]'); if (ny && r.activeElement !== ny) ny.focus(); };
+    S.chkTvinga = 1;
+    chkBreyta(n, l => l.concat([{ id: chkNyttId(), t: t, done: false }])).then(fokus);
+    fokus();   // strax, í sama smelli/Enter — sími opnar lyklaborðið aðeins við fókus innan notandaaðgerðar
   }
-  const dagNota = (n, key) => String(P('skipulagsbord.by_staff.' + n + '.dagnotur.' + key) || '');
+  // 27.09.2026: dagnóturnar eru SAMEIGINLEGAR (grein „Allir"). Dagur sem á enga sameiginlega nótu enn sýnir það sem
+  // starfsmenn höfðu skrifað hver á sína — öllu haldið, hvert atriði einu sinni — svo ekkert týnist við breytinguna;
+  // fyrsta vistun skrifar það í sameiginlegu nótuna.
+  const DN_EIG = 'Allir';
+  const dagNota = (_n, key) => {
+    const sam = P('skipulagsbord.by_staff.' + DN_EIG + '.dagnotur.' + key);
+    if (typeof sam === 'string') return sam;
+    const hlutar = [];
+    for (const x of folk()) {
+      if (x === DN_EIG) continue;
+      const t = String(P('skipulagsbord.by_staff.' + x + '.dagnotur.' + key) || '').trim();
+      if (t && hlutar.indexOf(t) < 0) hlutar.push(t);
+    }
+    return hlutar.join('\n');
+  };
   function dagNotaHtml(d) {
     const n = nu();
     const g = S.dnDrog[d.key] != null ? S.dnDrog[d.key] : dagNota(n, d.key);
@@ -2444,7 +2470,7 @@
     S.dnStada[key] = { t: 'bid', s: 'Óvistað…' };
     dnStimpla(key);
     bida('dn:' + key, async () => {
-      const n = nu(), texti = S.dnDrog[key];
+      const n = DN_EIG, texti = S.dnDrog[key];
       if (texti == null) return;
       S.dnStada[key] = { t: 'vistar', s: 'Vista…' };
       dnStimpla(key);
@@ -2461,7 +2487,7 @@
     const open = isOpen('dagskra'), days = week();
     const total = days.reduce((s, d) => s + d.jobs.length, 0);
     const jobHtml = j => {
-      const inni = '<b>' + esc(j.allday ? 'Allan daginn' : (j.time || '')) + '</b>' + esc(j.name || '') + (j.note ? '<small>' + esc(String(j.note).slice(0, 90)) + '</small>' : '');
+      const inni = '<b>' + esc(j.allday ? 'Allan daginn' : (j.time || '')) + (j._n && j._n !== 'Allir' ? ' · ' + esc(j._n) : '') + '</b>' + esc(j.name || '') + (j.note ? '<small>' + esc(String(j.note).slice(0, 90)) + '</small>' : '');
       return j.id
         ? '<button type="button" class="job" data-t5="job-edit" data-jid="' + esc(j.id) + '" style="border-left-color:' + vdLitur(j.type) + '" title="' + esc(j.type || '') + ' — smelltu til að breyta">' + inni + '</button>'
         : '<span class="job" style="border-left-color:' + vdLitur(j.type) + '">' + inni + '</span>';
@@ -4185,7 +4211,13 @@
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði eða í skýringu truflast ef teiknað er undir — bíða.
     // Skráarval opið: teikning myndi skipta út <input type="file"> og skrárnar tapast.
-    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky))))) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
+    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky || ae.dataset.chk || ae.dataset.chkny))))) {
+      // 27.09.2026 (Agnar: „checklist doesn't work in phone, keyboard disappears"): reitir checklistans vantaði hér —
+      // sjálfvirk endurteikning skipti reitnum út í miðju innslætti, lyklaborðið lokaðist og hálfskrifaður stafur varð
+      // að atriði. Undantekning: bætt við atriði (S.chkTvinga) teiknar strax og fókusinn fer aftur í nýja reitinn.
+      if (!S.chkTvinga) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
+    }
+    S.chkTvinga = 0;
     const n = nu(), c = cfg(), mode = M(c.mode) || MODES.thjonusta;
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // 368y: vinnusvæðis-hamur (rymi) fær alla breiddina — engar einingar til hliðar, engin KPI-spjöld. 368aa: einingahamur
@@ -4956,9 +4988,10 @@
         catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
         return;
       case 'job-edit': {
-        const j = jobsFor(nu()).find(x => String(x.id) === el.dataset.jid);
+        const j = allirJobs().find(x => String(x.id) === el.dataset.jid);
         if (!j) { toast('Verkið fannst ekki lengur á dagskránni.', true); render(); return; }
-        try { Vikudagskra.open(j.date, j); } catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
+        const { _n, ...hreint } = j;   // 27.09.2026: vistast á grein eigandans, ekki þess sem er við vélina
+        try { Vikudagskra.open(j.date, hreint, _n); } catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
         return;
       }
       case 'chk-add': { chkBaetaVid(el.getRootNode()); return; }
