@@ -71,10 +71,16 @@
     const c = await bidaEftirDb();
     if (!c) { S.villa = 'Engin tenging við gagnagrunninn'; return; }
     S.bid = true;
-    const { data, error } = await c.from('kostnadur').select('*').order('mottekid_at', { ascending: false }).limit(2000);
+    // Síðuð sókn (1000 í senn) — PostgREST skilar mest 1000 röðum, svo fastur .limit() yfir því þegir um restina.
+    const allt = [];
+    for (let fra = 0; ; fra += 1000) {
+      const { data, error } = await c.from('kostnadur').select('*').order('mottekid_at', { ascending: false }).order('id', { ascending: false }).range(fra, fra + 999);
+      if (error) { S.bid = false; S.villa = /does not exist|relation/.test(error.message) ? 'Taflan kostnadur er ekki til' : error.message; return; }
+      allt.push(...(data || []));
+      if (!data || data.length < 1000) break;
+    }
     S.bid = false;
-    if (error) { S.villa = /does not exist|relation/.test(error.message) ? 'Taflan kostnadur er ekki til' : error.message; return; }
-    S.villa = ''; S.rows = data || []; S.sott = true;
+    S.villa = ''; S.rows = allt; S.sott = true;
   }
   async function saekjaTengingar() {
     if (S.tengSott) return;
