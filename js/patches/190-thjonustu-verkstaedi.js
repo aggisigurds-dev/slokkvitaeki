@@ -527,7 +527,7 @@
         '#' + VIEW_ID + ' .sv-acts{border-top:0!important;padding-top:0!important;gap:8px!important}',
         '#' + VIEW_ID + ' .sv-acts ._sv-act{height:36px!important;padding:0 13px!important;border-radius:10px!important;border:1px solid rgba(20,24,34,.14)!important;background:#f1f5f9!important;color:#3a4250!important;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif!important;font-size:12.5px!important;font-weight:600!important;cursor:pointer!important}',
         '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="buid"]{border:1px solid #156e3a!important;background:linear-gradient(150deg,#2bbf6c,#0f6e3a)!important;color:#fff!important;font-weight:700!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)!important}',
-        '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="unstart"]{border:1px solid #f3c6c4!important;background:#fdecec!important;color:#c0241f!important}',
+        '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="unstart"]{border:1px solid #f3c6c4!important;background:#fdecec!important;color:#c0241f!important;flex:1 1 100%!important;order:99!important}',
         '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="report"]{background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)!important;border-color:#0a0b0d!important;color:#fff!important}',
         // Wide-mode right pane — make action stack tidy
         '#' + VIEW_ID + ' .sv-wide-r{gap:9px!important}',
