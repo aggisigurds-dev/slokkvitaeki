@@ -770,7 +770,17 @@
   const reopen       = id => setFlag(id, { field_inspected_year: 0, last_year_inspected: 0 });
   // Afmerkja: andhverfan á bláa hnappnum — núllar vinnslu-flaggið svo kortið
   // dettur úr 🔵 (fer í ⏳ Á dagskrá ef skoðunarmánuður er kominn, annars af borðinu).
-  const unVinnsla    = id => setFlag(id, { field_inspected_year: 0, sv_force_unstarted: true });
+  const unVinnsla = id => setFlag(id, { field_inspected_year: 0, sv_force_unstarted: true }).then(ok => {
+    if (!ok) return ok;
+    try {
+      if (window.Arsskodun && Arsskodun._cache) {
+        const co = Arsskodun._cache.byId && Arsskodun._cache.byId[String(id)];
+        if (co && co._ars) co._ars.field_inspected_year = 0;
+        if (Arsskodun.render) Arsskodun.render();
+      }
+    } catch (_) {}
+    return ok;
+  });
 
   // 2026-07-30 (ósk Agnars): „📁 Opna" á að fara BEINT á ársskoðunar-síðuna —
   // fyrirtækjasíðuna með tækjalistanum (224), UPPLÝSINGAR UM ÚTTEKT og
