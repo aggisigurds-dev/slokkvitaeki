@@ -1466,6 +1466,16 @@
         const m = +c._ars.inspect_month || 0;
         return skipped || (m > 0 && m <= curMonth);
       });
+    } else if (state.status === 'aeftir') {
+      // 27.09.2026 (Agnar: „Á eftir áætlun — það sem við erum á eftir með. Ekki núverandi
+      // mánuður, ekki á dagskrá, bara á eftir"): óbúið, úttekt EKKI hafin (Í vinnslu á sinn
+      // flipa) og skoðunarmánuðurinn LIÐINN — strangt fyrir neðan núverandi mánuð.
+      arr = arr.filter(c => {
+        if (isDoneYear(c, curYear)) return false;
+        if (+(c._ars.field_inspected_year || 0) === curYear) return false;   // Í vinnslu
+        const m = +c._ars.inspect_month || 0;
+        return m > 0 && m < curMonth;
+      });
     } else if (state.status === 'pending2026') {
       // Allt sem er óbúið á árinu: Eftir + Sleppt + Á dagskrá + Í vinnslu —
       // en ÁN „❓ Óvíst" (líklega óvart í þjónustu, sjá isSuspect).
@@ -2238,7 +2248,7 @@
     // tölu og hún geymdi nákvæmlega mismuninn sem lét Búið + Eftir ekki ná borðinu
     // (341 + 297 = 638 af 650). Ótalinn hópur er ósýnilegur hópur.
     const cnt = { all: countByStatus('all'), done: countByStatus('done'), pending: countByStatus('pending'), pending2026: countByStatus('pending2026'),
-      suspect: countByStatus('suspect'), entaeki: countByStatus('entaeki'),
+      suspect: countByStatus('suspect'), entaeki: countByStatus('entaeki'), aeftir: countByStatus('aeftir'),
       // 23.09.2026 (Agnar: „bæta við annarri súlu með þá sem var gleymt í fyrra og
       // síðustu 2025, 2024"): 🟡 Slepptir í fyrra var SÍÐASTA flagan án tölu — sama
       // rökvilla og lagfærð var 10.09: ótalinn hópur er ósýnilegur hópur. Talan er
@@ -2386,6 +2396,7 @@
       : (state.status === 'done'    ? `Búið ${curYear} (allir mánuðir)`
        : state.status === 'pending' ? `Á eftir + sleppt (allir mánuðir)`
        : state.status === 'pending2026' ? `Eftir ${curYear} — allt óbúið (allir mánuðir)`
+       : state.status === 'aeftir'  ? `Á eftir áætlun — skoðunarmánuður liðinn, óbúið og ekki hafið`
        : state.status === 'suspect' ? `Óvíst — líklega óvart í þjónustu (engin saga, enginn mánuður, engin tæki)`
        : state.status === 'entaeki' ? `Engin tæki skráð — 0 tæki á prófílnum (systurstaðir og brunakerfi merkt sér)`
        : state.status === 'misraemi' ? `Stemmir ekki — prófíll ≠ skýrsla/reikningur (SLT/BSL/RS)`
@@ -2486,6 +2497,7 @@
               { v: 'done', label: '✅ Búið ' + curYear + ' ' + cnt.done },
               { v: 'pending', label: '⏳ Eftir ' + cnt.pending },
               { v: 'pending2026', label: '🗓️ Eftir ' + curYear + ' ' + cnt.pending2026 },
+              { v: 'aeftir', label: '🔴 Á eftir áætlun ' + cnt.aeftir },
               { v: 'skipped2025', label: '🟡 Slepptir í fyrra' + (cnt.skipped2025 ? ' ' + cnt.skipped2025 : '') },
               { v: 'priority', label: '❗ Forgangur' },
               { v: 'suspect', label: '❓ Óvíst' + (cnt.suspect ? ' ' + cnt.suspect : '') },
@@ -3147,6 +3159,7 @@
       : (state.status === 'done'        ? `Búið ${curYear}`
        : state.status === 'pending'     ? 'Á eftir + sleppt'
        : state.status === 'pending2026' ? `Eftir ${curYear}`
+       : state.status === 'aeftir'      ? 'Á eftir áætlun'
        : state.status === 'suspect'     ? 'Óvíst — líklega óvart í þjónustu'
        : state.status === 'entaeki'     ? 'Engin tæki skráð'
        : state.status === 'misraemi'    ? 'Stemmir ekki — prófíll ≠ skýrsla/reikningur'
