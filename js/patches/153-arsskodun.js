@@ -1627,7 +1627,9 @@
         return (ya - yb)
             || String(a.nafn || '').localeCompare(b.nafn || '', 'is');
       },
-      priority: (a, b) => (+(b._ars.priority || 0)) - (+(a._ars.priority || 0))  // higher first
+      priority: (a, b) => (+(b._ars.priority || 0)) - (+(a._ars.priority || 0)),  // higher first
+      // GÓ: merkt efst (ósett = 0 aftast), annars í litaröðinni sjálfri.
+      go: (a, b) => ((window.GoMerki ? GoMerki.of(b.id) : 0) - (window.GoMerki ? GoMerki.of(a.id) : 0))
                        || String(a.nafn).localeCompare(b.nafn, 'is'),
       akstur: (a, b) => {
         const V = c => (window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+((c._ars || {}).akstur) || 0);
@@ -4180,6 +4182,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                   <th data-sort="tools" class="_ars-sort num">Tæki${arrow('tools')}</th>
                   <th data-sort="akstur" class="_ars-sort center" title="Aksturslisti (1/2/3) — raða til að prenta per bílstjóra">Akstur${arrow('akstur')}</th>
                   <th data-sort="priority" class="_ars-sort center">Forg.${arrow('priority')}</th>
+                  <th data-sort="go" class="_ars-sort center" title="GÓ — eigið vinnumerki. Smelltu á punktinn til að fletta: ósett → grænn → blár → bleikur → gulur → rauður → ósett.">GÓ${arrow('go')}</th>
                   <th data-sort="status" class="_ars-sort center" title="Hringlaga hakið merkir Í vinnslu — skoðun hafin, skýrsla/reikningur eftir">Staða ${curYear}${arrow('status')}</th>
                   <th data-sort="endurheimt" class="_ars-sort center" title="♻️ Endurheimt — hakaðu við félag sem er kannski hætt. Það fer af vinnulista bílstjórans og í ♻️-flipann. Raða: hökuð efst.">♻️${arrow('endurheimt')}</th>
                 `;
@@ -4237,6 +4240,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                   </td>
                   <td class="center _arsak-cell" onclick="event.stopPropagation()"></td>
                   <td class="center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
+                  <td class="center" onclick="event.stopPropagation()">${(window.GoMerki && window.GoMerki.btnHtml(c.id, 16)) || ''}</td>
                   <td class="center">
                     <div class="_stcell">
                       ${!isDone
