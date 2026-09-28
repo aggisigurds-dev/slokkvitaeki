@@ -234,7 +234,7 @@
   function nanarHtml(r) {
     const linur = (r.linur || []);
     const linuHtml = linur.length
-      ? '<table class="k9-linur"><thead><tr><th>Lýsing</th><th class="h">Magn</th><th class="h">Einingarverð</th><th class="h">Upphæð</th></tr></thead><tbody>' +
+      ? '<table class="k9-linur"><thead><tr><th style="min-width:200px">Lýsing</th><th class="h" style="min-width:60px">Magn</th><th class="h" style="min-width:90px">Einingarverð</th><th class="h" style="min-width:80px">Upphæð</th></tr></thead><tbody>' +
         linur.slice(0, 60).map((l) => '<tr><td>' + esc(l.lysing) + (l.dags ? ' <small>' + esc(dags(l.dags)) + '</small>' : '') + (l.kort ? ' <small>' + esc(l.kort) + '</small>' : '') + '</td><td class="h m">' + (l.magn == null ? '' : esc(l.magn)) + '</td><td class="h m">' + (l.einingarverd == null ? '' : esc(kr(l.einingarverd))) + '</td><td class="h m">' + (l.upphaed == null ? '' : esc(kr(l.upphaed))) + '</td></tr>').join('') +
         (linur.length > 60 ? '<tr><td colspan="4" class="k9-daufur">+ ' + (linur.length - 60) + ' línur í viðbót — sjá skjalið</td></tr>' : '') +
         '</tbody></table>'
@@ -267,6 +267,9 @@
       '<textarea class="k9-inn nota" data-k9="nota" data-id="' + r.id + '" rows="2" placeholder="Athugasemd…">' + esc(r.nota || '') + '</textarea>' +
       '<div class="k9-adgerdir">' +
         (r.storage_path ? '<button type="button" class="k9-btn malm" data-k9="skjal" data-id="' + r.id + '">Opna skjalið</button>' : '') +
+        (r.mynd_path ? '<button type="button" class="k9-btn malm" data-k9="mynd" data-id="' + r.id + '">Skoða mynd</button>' : '') +
+        '<button type="button" class="k9-btn" data-k9="mynd-hlaeda" data-id="' + r.id + '">' + (r.mynd_path ? 'Skipta um mynd' : 'Hlaða upp mynd') + '</button>' +
+        '<input type="file" accept="image/*" style="display:none" data-k9="mynd-input" data-id="' + r.id + '">' +
         (r.stada === 'yfirfarid' ? '<button type="button" class="k9-btn" data-k9="stada" data-id="' + r.id + '" data-v="nytt">Merkja óyfirfarið</button>'
           : '<button type="button" class="k9-btn malm" data-k9="stada" data-id="' + r.id + '" data-v="yfirfarid">Merkja yfirfarið</button>') +
         (erHunsad(r) ? '<button type="button" class="k9-btn" data-k9="stada" data-id="' + r.id + '" data-v="nytt">Taka úr hunsað</button>'
@@ -322,10 +325,20 @@
     if (k === 'ft-af') { uppfaera(id, { fyrirtaeki_id: null }); return; }
     if (k === 'vk-velja') { delete S.leitVk[id]; uppfaera(id, el.dataset.teg === 'v' ? { verkbeidni_id: +el.dataset.vk, thjonustubeidni_id: null, flokkur: 'verk' } : { thjonustubeidni_id: +el.dataset.vk, verkbeidni_id: null, flokkur: 'verk' }); return; }
     if (k === 'vk-af') { uppfaera(id, { verkbeidni_id: null, thjonustubeidni_id: null }); return; }
+    if (k === 'mynd') { opnaMynd(id); return; }
+    if (k === 'mynd-hlaeda') {
+      const inp = document.getElementById(VIEW_ID) && document.getElementById(VIEW_ID).querySelector('[data-k9="mynd-input"][data-id="' + id + '"]');
+      if (inp) inp.click();
+      return;
+    }
   }
   function onChange(e) {
     const el = e.target;
     if (el.dataset.k9 === 'flokkur') uppfaera(+el.dataset.id, { flokkur: el.value || null });
+    if (el.tagName === 'INPUT' && el.type === 'file' && el.dataset.k9 === 'mynd-input') {
+      const f = el.files && el.files[0];
+      if (f) hladaMynd(+el.dataset.id, f);
+    }
   }
   function onInput(e) {
     const el = e.target, k = el.dataset && el.dataset.k9;
@@ -357,6 +370,28 @@
       if (!r.ok || !j.url) throw new Error(j.error || ('HTTP ' + r.status));
       if (w) w.location.href = j.url; else window.open(j.url, '_blank');
     } catch (e) { if (w) w.close(); toast('Skjalið opnaðist ekki: ' + e.message, true); }
+  }
+  async function opnaMynd(id) {
+    const w = window.open('about:blank', '_blank');
+    try {
+      const r = await fetch(API + '?mynd=' + id);
+      const j = await r.json();
+      if (!r.ok || !j.url) throw new Error(j.error || ('HTTP ' + r.status));
+      if (w) w.location.href = j.url; else window.open(j.url, '_blank');
+    } catch (e) { if (w) w.close(); toast('Myndin opnaðist ekki: ' + e.message, true); }
+  }
+  async function hladaMynd(id, file) {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    toast('Hleð upp mynd…');
+    try {
+      const r = await fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'upload-url', id, ext }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.uploadUrl) throw new Error(j.error || ('HTTP ' + r.status));
+      const up = await fetch(j.uploadUrl, { method: 'PUT', headers: { 'x-upsert': 'true', 'content-type': file.type || 'application/octet-stream' }, body: file });
+      if (!up.ok) throw new Error('Upload mistókst: ' + up.status);
+      await uppfaera(id, { mynd_path: j.path });
+      toast('Mynd vistuð');
+    } catch (e) { toast('Villa við hleðslu: ' + e.message, true); }
   }
   let _syncT = null;
   async function syncNu() {
