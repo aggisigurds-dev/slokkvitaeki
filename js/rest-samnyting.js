@@ -49,6 +49,14 @@
             slod.indexOf(location.origin + '/api/') === 0 || slod.indexOf(location.origin + '/.netlify/functions/') === 0)) {
           tolur.skrif++;
           if (geymsla.size) { geymsla.clear(); tolur.taemt++; }
+          var svar0 = upprunalegt.apply(this, arguments);
+          try {
+            var fall = (slod.split(/\/api\/|\/\.netlify\/functions\//)[1] || '').split(/[?#/]/)[0];
+            svar0.then(function (r) {
+              if (r && r.ok) { try { document.dispatchEvent(new CustomEvent('gogn-skrifud', { detail: { tafla: 'api:' + fall, adferd: m0 } })); } catch (_) {} }
+            }, function () {});
+          } catch (_) {}
+          return svar0;
         }
         return upprunalegt.apply(this, arguments);
       }
@@ -59,7 +67,18 @@
         if (slod.indexOf('/rest/v1/hradamaelingar') > -1 || slod.indexOf('/rest/v1/app_problems') > -1) return upprunalegt.apply(this, arguments);
         tolur.skrif++;
         if (geymsla.size) { geymsla.clear(); tolur.taemt++; }
-        return upprunalegt.apply(this, arguments);
+        // 28.09.2026 (Agnar: „þegar maður breytir í fyrirtækjaprófíl að breytingin komi strax"): hér fara ALLAR skriftir
+        // um Supabase (~150 staðir í pöttunum skrifa beint með DB.sb.from(...)), svo þetta er eini staðurinn sem sér þær
+        // allar. Heppnuð skrift boðar `gogn-skrifud` { tafla, adferd } — 421 endurteiknar opinn prófíl á staðnum.
+        var svar = upprunalegt.apply(this, arguments);
+        try {
+          var hlutur = (slod.split('/rest/v1/')[1] || '').split(/[?#]/)[0];
+          var tafla = hlutur.indexOf('rpc/') === 0 ? 'rpc:' + hlutur.slice(4).split('/')[0] : hlutur.split('/')[0];
+          svar.then(function (r) {
+            if (r && r.ok) { try { document.dispatchEvent(new CustomEvent('gogn-skrifud', { detail: { tafla: tafla, adferd: adferd } })); } catch (_) {} }
+          }, function () {});
+        } catch (_) {}
+        return svar;
       }
       // 25.09.2026: HEAD (talningar, count:'exact', head:true) samnýtt líka — mælt: sama ógreidda-krafna-talningin fór
       // 2–3× á hverri síðu (166 merkið + 368 borðið). Aðferðin er hluti af lyklinum.

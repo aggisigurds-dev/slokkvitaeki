@@ -86,7 +86,7 @@
       const origC = Companies.openDetail.bind(Companies);
       Companies.openDetail = function (id) {
         const ret = origC(id);
-        push({ view: 'companies', detailId: id });
+        if (!window.__coLifandi) push({ view: 'companies', detailId: id });   // 421: endurteikning á staðnum er ekki ný ferð
         return ret;
       };
       Companies.openDetail.__navHistoryHook = true;

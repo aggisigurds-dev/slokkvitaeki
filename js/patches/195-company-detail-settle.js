@@ -73,7 +73,7 @@
     const orig = C.openDetail;
     const wrapped = function (id) {
       const r = orig.apply(this, arguments);
-      try { veil(); } catch (_) {}
+      if (!window.__coLifandi) { try { veil(); } catch (_) {} }   // 421: endurteikning á staðnum eftir vistun — engin hula
       return r;
     };
     wrapped._settleVeil = true;
