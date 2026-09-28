@@ -672,13 +672,29 @@
       }
       const me = document.getElementById(VIEW_ID);
       if (me) { me.style.display = 'none'; me.classList.remove('active'); }
-      return orig(k);
+      const r = orig(k);
+      // Slóðin fylgir ekki alltaf (218 uppfærir hana aðeins í sinni keðju) — sitji #kostnadur eftir myndi
+      // endurhleðsla opna Kostnað aftur þótt önnur síða sé opin.
+      try {
+        if (typeof k === 'string' && location.hash.replace('#', '') === NAV_KEY) {
+          const slug = (window.UrlRouting && UrlRouting.slugForView) ? UrlRouting.slugForView(k) : k;
+          history.replaceState(null, '', '#' + slug);
+        }
+      } catch (_) {}
+      return r;
     };
     App.__kostnadurPatched = true;
     return true;
   }
   let _tilraunir = 0;
   function start() {
+    // 28.09.2026 (Agnar: „I can't see the kostnaður page now"): beinirinn (218) hunsar #kostnadur ef view-kostnadur
+    // er ekki til þegar hann les slóðina (~1,9 s gluggi), og þá lendir ræsingin á Stjórnstöð. Síðan verður því til
+    // STRAX, falin — sama og hinar .view — svo djúptengill og endurhleðsla finni hana.
+    if (!document.getElementById(VIEW_ID) && document.querySelector('.view')) {
+      const v = viewEl();
+      if (!v.classList.contains('active')) v.style.display = 'none';
+    }
     const ok = navTakki() & hookSwitch();
     if (!ok && ++_tilraunir < 40) { setTimeout(start, 300); return; }
     try {
