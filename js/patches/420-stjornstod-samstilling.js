@@ -112,7 +112,7 @@
   /* ── DAGURINN — morgunyfirlit (28.09.2026, Agnar: „number in vinnsla, the amount, number behind schedule in
    * Ársskoðun, if Gmail is connected, number of emails today … everything I need on one page to start the day
    * and plan"). Ársskoðunartölurnar koma úr Arsskodun.talningar() — SÖMU síu og flögurnar í Ársskoðun. ── */
-  const D = { lesid: false, ars: null, arsVilla: '', postur: {}, postholf: [], bord: {}, kostn: null };
+  const D = { lesid: false, ars: null, arsVilla: '', postur: {}, postholf: [], bord: {}, kostn: null, vinnublod: null, osendar: null, hreinsa: null, hreinsaVilla: '' };
   const kr = (n) => Math.round(+n || 0).toLocaleString('is-IS').replace(/,/g, '.') + ' kr';
   const mkr = (n) => (Math.abs(+n || 0) >= 1e6 ? (Math.round((+n || 0) / 1e5) / 10).toLocaleString('is-IS') + ' m.kr' : kr(n));
   const idag = () => { const d = new Date(), k = (x) => String(x).padStart(2, '0'); return d.getFullYear() + '-' + k(d.getMonth() + 1) + '-' + k(d.getDate()); };
@@ -143,6 +143,21 @@
         D.kostn = { n: l.length, upphaed: l.reduce((s2, r) => s2 + (+r.upphaed || 0), 0) };
       }));
     }
+    if (c) {
+      // Óklárað vinnublað = bíður yfirferðar (sara_yfirferd.stada='bidur') — það sem Vinnublaða-hamur Þjónustuborðs vinnur úr.
+      verk.push(c.from('sara_yfirferd').select('id', { count: 'exact', head: true }).eq('stada', 'bidur')
+        .then(({ count }) => { D.vinnublod = count == null ? null : count; }));
+      // Ósendar kröfur — sama regla og spjaldið „Ósendar kröfur" í Kröfu yfirliti (166, _state.osendar): ógreidd
+      // reikningssala án sendingarmerkis, ekki ógild, og hvorki kreditnóta né sala sem kreditnóta leggst á móti.
+      verk.push(c.from('solur').select('id,samtals,status,is_credit,credit_of,krafa_sent_at,invoiced_at,dk_invoice_id').eq('greitt_med', 'reikningur').is('paid_at', null).range(0, 999)
+        .then(({ data }) => {
+          if (!data) return;
+          const kred = new Set(data.filter((s) => s.is_credit && s.credit_of != null).map((s) => String(s.credit_of)));
+          const l = data.filter((s) => !s.is_credit && !kred.has(String(s.id)) && s.status !== 'void' && !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id);
+          D.osendar = { n: l.length, upphaed: l.reduce((s2, r) => s2 + (+r.samtals || 0), 0) };
+        }));
+    }
+    verk.push(finnaKlarud().then((l) => { D.hreinsa = l; D.hreinsaVilla = ''; }, (e) => { D.hreinsa = null; D.hreinsaVilla = 'Gat ekki borið málin saman: ' + String((e && e.message) || e); }));
     verk.push(stjornstodStada().then((ss) => { D.postholf = ss.postholf || []; }));
     await Promise.all(verk.map((p) => Promise.resolve(p).catch(() => {})));
     D.lesid = true;
@@ -162,19 +177,162 @@
     const bid = !D.lesid ? '…' : null;
     const arsUndir = (k) => (D.ars ? mkr(p(k).virdi) : (D.arsVilla || bid || '—'));
     const flisar = [
-      flis({ merki: 'Ársskoðun · Í vinnslu', tala: D.ars ? p('ivinnslu').n : bid, undir: arsUndir('ivinnslu'), fara: 'ars:ivinnslu', tonn: 'blar' }),
+      flis({ merki: 'Ársskoðun · Í vinnslu', tala: D.ars ? p('ivinnslu').n : bid, undir: arsUndir('ivinnslu'), fara: 'thjonustu-verkstaedi', tonn: 'blar' }),
       flis({ merki: 'Ársskoðun · Á eftir áætlun', tala: D.ars ? p('aeftir').n : bid, undir: arsUndir('aeftir'), fara: 'ars:aeftir', tonn: 'raudur' }),
       flis({ merki: 'Ársskoðun · Eftir ' + new Date().getFullYear(), tala: D.ars ? p('pending2026').n : bid, undir: arsUndir('pending2026'), fara: 'ars:pending2026', tonn: 'gulur' }),
       flis({ merki: 'Ársskoðun · Búið ' + new Date().getFullYear(), tala: D.ars ? p('done').n : bid, undir: arsUndir('done'), fara: 'ars:done', tonn: 'graenn' }),
-      flis({ merki: 'Póstur í dag · eldklar@', tala: D.postur['eldklar@eldklar.is'] != null ? D.postur['eldklar@eldklar.is'] : bid, undir: tengt('eldklar@eldklar.is'), fara: 'reikninga-postur', tonn: tengt('eldklar@eldklar.is') === 'Gmail tengt' ? '' : 'raudur' }),
-      flis({ merki: 'Póstur í dag · bokhald@', tala: D.postur['bokhald@eldklar.is'] != null ? D.postur['bokhald@eldklar.is'] : bid, undir: tengt('bokhald@eldklar.is'), fara: 'reikninga-postur', tonn: tengt('bokhald@eldklar.is') === 'Gmail tengt' ? '' : 'raudur' }),
+      flis({ merki: 'Póstur í dag · eldklar@', tala: D.postur['eldklar@eldklar.is'] != null ? D.postur['eldklar@eldklar.is'] : bid, undir: tengt('eldklar@eldklar.is'), fara: 'thjonustuver-postar', tonn: tengt('eldklar@eldklar.is') === 'Gmail tengt' ? '' : 'raudur' }),
+      flis({ merki: 'Póstur í dag · bokhald@', tala: D.postur['bokhald@eldklar.is'] != null ? D.postur['bokhald@eldklar.is'] : bid, undir: tengt('bokhald@eldklar.is'), fara: 'thjonustuver-postar', tonn: tengt('bokhald@eldklar.is') === 'Gmail tengt' ? '' : 'raudur' }),
       flis({ merki: 'Þjónustuborð · ný mál', tala: b.nytt != null ? b.nytt : bid, undir: (b.i_vinnslu != null ? b.i_vinnslu + ' í vinnslu · ' + (b.tilbuid || 0) + ' tilbúin' : ''), fara: 'bord' }),
+      flis({ merki: 'Vinnublöð · óklárað', tala: D.vinnublod != null ? D.vinnublod : bid, undir: 'bíða yfirferðar', fara: 'bord:vinnublod', tonn: D.vinnublod ? 'gulur' : '' }),
+      flis({ merki: 'Kröfur · ósendar', tala: D.osendar ? D.osendar.n : bid, undir: D.osendar ? kr(D.osendar.upphaed) : '', fara: 'krofu:osendar', tonn: D.osendar && D.osendar.n ? 'raudur' : '' }),
       flis({ merki: 'Kostnaður · óyfirfarið', tala: kn ? kn.n : bid, undir: kn ? kr(kn.upphaed) : '', fara: 'kostnadur' }),
     ].join('');
     return '<div class="sam-haus"><span class="sam-titill">Dagurinn</span><span class="sam-plata">' + esc(hvenaer(new Date().toISOString()) ? idag().split('-').reverse().join('/') : '') + '</span>' +
-        '<button type="button" class="sam-btn" data-dag="endurnyja">Endurnýja</button></div>' +
-      '<div class="sam-buk"><div class="dag-grind">' + flisar + '</div></div>';
+        hreinsaTakki() + '<button type="button" class="sam-btn" data-dag="endurnyja">Endurnýja</button></div>' +
+      '<div class="sam-buk"><div class="dag-grind">' + flisar + '</div>' + hreinsaHtml() + '</div>';
   }
+  /* ── HREINSA ÞJÓNUSTUBORÐ (Agnar 28.09.2026: „button that cleans out from þjónustuborð connected issues — when some
+   *    issue is to finish sending an invoice or make a report, the system checks if the invoice is sent and marks the
+   *    issue as done"). Aðeins mál með HARÐA tengingu eru skoðuð — ekkert giskað á nafn eða lausan texta:
+   *      payday-xml-sala:<id>   XML hafnað        → lokið þegar reikningurinn er greiddur eða ógiltur (rafræni reikningurinn
+   *                                                  skiptir þá ekki lengur máli)
+   *      payday:<nr>            ekkert XML/póstur  → lokið þegar Payday-reikningurinn er greiddur
+   *      sala:R-… (eða R-nr í titli „krafa aldrei send / á að rukka / rukka eða ógilda / senda kröfu")
+   *                                                → lokið þegar krafan er send, salan greidd eða ógild
+   *      vinnublad-stadfesting + sara:<id>         → lokið þegar vinnublaðið er klárað (sara_yfirferd.stada='klarad')
+   *      klara-heimsokn / „enginn reikningur" + fyrirtæki
+   *                                                → lokið þegar reikningur á SAMA fyrirtæki (solur.customer_id) varð til eftir
+   *                                                  að málið stofnaðist (−2 dagar) og krafan er send eða greidd
+   *      senda_skyrslur + fyrirtæki                → lokið þegar skýrsla fyrirtækisins er dagsett eftir að málið stofnaðist
+   *    „Send" = krafa_sent_at / invoiced_at / paid_at — EKKI dk_invoice_id eitt og sér (drög í Payday teljast ósend, 166).
+   *    Lokun: status='lokad' + merkið lokad:stjornstod + lína í notes, skilyrt á updated_at og lesin til baka.
+   *    Afturkalla setur fyrra ástand aftur (skilyrt á að enginn hafi breytt málinu síðan). ── */
+  const tagsAf = (r) => (Array.isArray(r.tags) ? r.tags.map(String) : []);
+  const dmy = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear(); };
+  const sent = (s) => s.krafa_sent_at || s.invoiced_at || s.paid_at;
+  async function finnaKlarud() {
+    const c = sb(); if (!c) return null;
+    const { data: mal, error } = await c.from('thjonustubeidni').select('id,title,status,created_at,updated_at,fyrirtaeki_id,tags,notes')
+      .is('deleted_at', null).is('archived_at', null).neq('status', 'lokad').order('id').range(0, 999);
+    if (error) throw error;
+    const flokkad = [];
+    for (const r of mal || []) {
+      const t = tagsAf(r), finna = (re) => { for (const x of t) { const m = x.match(re); if (m) return m[1]; } return null; };
+      const xml = finna(/^payday-xml-sala:(\d+)$/), pd = finna(/^payday:(\d+)$/);
+      const rNum = finna(/^sala:(R-\d+)$/) || (/(krafa aldrei send|rukka eða ógilda|á að rukka|senda kröfu)/i.test(r.title || '') ? ((r.title || '').match(/R-\d{6}/) || [])[0] : null);
+      const sara = t.indexOf('vinnublad-stadfesting') >= 0 ? finna(/^sara:(\d+)$/) : null;
+      if (xml) flokkad.push({ r, regla: 'xml', lykill: +xml });
+      else if (pd) flokkad.push({ r, regla: 'payday', lykill: pd });
+      else if (rNum) flokkad.push({ r, regla: 'sala', lykill: rNum });
+      else if (sara) flokkad.push({ r, regla: 'vinnublad', lykill: +sara });
+      else if (r.fyrirtaeki_id && (t.indexOf('klara-heimsokn') >= 0 || /enginn reikningur/i.test(r.title || ''))) flokkad.push({ r, regla: 'reikningur', lykill: +r.fyrirtaeki_id });
+      else if (r.fyrirtaeki_id && t.indexOf('senda_skyrslur') >= 0) flokkad.push({ r, regla: 'skyrsla', lykill: +r.fyrirtaeki_id });
+    }
+    const lyklar = (regla) => Array.from(new Set(flokkad.filter((x) => x.regla === regla).map((x) => x.lykill)));
+    const bita = async (listi, fall) => {
+      const out = [];
+      for (let i = 0; i < listi.length; i += 150) { const { data, error: e } = await fall(listi.slice(i, i + 150)); if (e) throw e; out.push(...(data || [])); }
+      return out;
+    };
+    const [xmlS, pdS, rS, vbS, rkS, skS] = await Promise.all([
+      bita(lyklar('xml'), (l) => c.from('solur').select('id,num,status,paid_at').in('id', l).range(0, 999)),
+      bita(lyklar('payday'), (l) => c.from('payday_invoices_slokk').select('number,paid_date').in('number', l).range(0, 999)),
+      bita(lyklar('sala'), (l) => c.from('solur').select('id,num,status,paid_at,krafa_sent_at,invoiced_at').in('num', l).range(0, 999)),
+      bita(lyklar('vinnublad'), (l) => c.from('sara_yfirferd').select('id,stada').in('id', l).range(0, 999)),
+      bita(lyklar('reikningur'), (l) => c.from('solur').select('id,num,customer_id,samtals,created_at,paid_at,krafa_sent_at,invoiced_at,is_credit')
+        .in('customer_id', l).eq('status', 'final').eq('greitt_med', 'reikningur').gte('created_at', new Date(Date.now() - 400 * 864e5).toISOString())
+        .order('created_at', { ascending: false }).range(0, 999)),
+      bita(lyklar('skyrsla'), (l) => c.from('fyrirtaeki_virkni').select('fyrirtaeki_id,sidasta_skyrsla').in('fyrirtaeki_id', l).range(0, 999)),
+    ]);
+    const out = [];
+    for (const x of flokkad) {
+      let astaeda = null;
+      if (x.regla === 'xml') {
+        const s = xmlS.find((y) => y.id === x.lykill);
+        if (s && s.status === 'void') astaeda = s.num + ' ógiltur';
+        else if (s && s.paid_at) astaeda = s.num + ' greiddur ' + dmy(s.paid_at);
+      } else if (x.regla === 'payday') {
+        const s = pdS.find((y) => String(y.number) === String(x.lykill));
+        if (s && s.paid_date) astaeda = 'Payday ' + x.lykill + ' greiddur ' + dmy(s.paid_date);
+      } else if (x.regla === 'sala') {
+        const s = rS.find((y) => y.num === x.lykill);
+        if (s && s.status === 'void') astaeda = s.num + ' ógilt';
+        else if (s && s.paid_at) astaeda = s.num + ' greitt ' + dmy(s.paid_at);
+        else if (s && sent(s)) astaeda = 'Krafa ' + s.num + ' send ' + dmy(s.krafa_sent_at || s.invoiced_at);
+      } else if (x.regla === 'vinnublad') {
+        const s = vbS.find((y) => y.id === x.lykill);
+        if (s && s.stada === 'klarad') astaeda = 'Vinnublaðið er klárað';
+      } else if (x.regla === 'reikningur') {
+        const fra = new Date(x.r.created_at).getTime() - 2 * 864e5;
+        const s = rkS.find((y) => y.customer_id === x.lykill && !y.is_credit && new Date(y.created_at).getTime() >= fra && sent(y));
+        if (s) astaeda = 'Reikningur ' + s.num + ' (' + kr(s.samtals) + ') ' + (s.paid_at ? 'greiddur ' + dmy(s.paid_at) : 'sendur ' + dmy(s.krafa_sent_at || s.invoiced_at));
+      } else if (x.regla === 'skyrsla') {
+        const v = skS.find((y) => y.fyrirtaeki_id === x.lykill), sk = v && v.sidasta_skyrsla;
+        if (sk && sk.dags && String(sk.dags).slice(0, 10) >= String(x.r.created_at).slice(0, 10)) astaeda = 'Skýrsla dagsett ' + dmy(sk.dags);
+      }
+      if (astaeda) out.push({ r: x.r, regla: x.regla, astaeda });
+    }
+    return out;
+  }
+  // Lokanir þessarar lotu, svo hægt sé að afturkalla: id → { fyrra: {status,tags,notes}, nyttUpdated, titill, astaeda, afturkallad }
+  const LOKAD = new Map();
+  let _hreinsar = false, _hreinsaSkilabod = '';
+  function hreinsaTakki() {
+    const n = D.hreinsa ? D.hreinsa.length : null;
+    const titill = D.hreinsa && n ? D.hreinsa.map((x) => '#' + x.r.id + ' ' + x.r.title + ' — ' + x.astaeda).join('\n') : 'Engin tengd mál sem kerfið sér að eru kláruð.';
+    return '<button type="button" class="sam-btn malm" data-dag="hreinsa"' + (_hreinsar || !n ? ' disabled' : '') + ' title="' + esc(titill) + '">' +
+      (_hreinsar ? 'Hreinsa…' : 'Hreinsa Þjónustuborð' + (n != null ? ' · ' + n : '')) + '</button>';
+  }
+  function hreinsaHtml() {
+    if (!LOKAD.size && !_hreinsaSkilabod && !D.hreinsaVilla) return '';
+    const linur = Array.from(LOKAD.entries()).map(([id, x]) => '<li class="' + (x.afturkallad ? 'aftur' : '') + '"><b>#' + id + '</b>' +
+      '<span class="hr-titill">' + esc(x.titill) + '</span>' +
+      '<span class="hr-ast">' + esc(x.afturkallad ? 'Afturkallað — opið aftur' : x.astaeda) + '</span>' +
+      (x.afturkallad ? '' : '<button type="button" class="sam-btn" data-dag="aftur" data-id="' + id + '">Afturkalla</button>') + '</li>').join('');
+    return '<div class="dag-hreinsun"><div class="sam-merki">Hreinsun Þjónustuborðs</div>' +
+      (D.hreinsaVilla ? '<p class="hr-villa">' + esc(D.hreinsaVilla) + '</p>' : '') +
+      (_hreinsaSkilabod ? '<p class="hr-skil">' + esc(_hreinsaSkilabod) + '</p>' : '') +
+      (linur ? '<ul>' + linur + '</ul>' : '') + '</div>';
+  }
+  async function hreinsa() {
+    const c = sb(); if (!c || _hreinsar) return;
+    _hreinsar = true; _hreinsaSkilabod = ''; teiknaDag();
+    let lokad = 0, sleppt = 0, villur = 0, villa = '';
+    try {
+      const listi = await finnaKlarud();   // lesið aftur rétt fyrir lokun — staðan gæti hafa breyst síðan talan birtist
+      for (const x of listi || []) {
+        const r = x.r, tags = tagsAf(r);
+        const nyTags = tags.indexOf('lokad:stjornstod') >= 0 ? tags : tags.concat('lokad:stjornstod');
+        const lina = '[' + dmy(new Date().toISOString()) + ' Stjórnstöð] Lokað sjálfvirkt: ' + x.astaeda;
+        let q = c.from('thjonustubeidni')
+          .update({ status: 'lokad', tags: nyTags, notes: (r.notes ? r.notes + '\n' : '') + lina, updated_at: new Date().toISOString() }).eq('id', r.id);
+        q = r.updated_at ? q.eq('updated_at', r.updated_at) : q.is('updated_at', null);   // sama skilyrði og 368
+        const { data, error } = await q.select('id,status,updated_at');
+        if (!error && data && data[0] && data[0].status === 'lokad') {
+          lokad++;
+          LOKAD.set(r.id, { fyrra: { status: r.status, tags: r.tags, notes: r.notes }, nyttUpdated: data[0].updated_at, titill: r.title, astaeda: x.astaeda });
+        } else if (error) { villur++; villa = villa || ((error && error.message) || String(error)); }
+        else sleppt++;   // 0 raðir = updated_at breyttist — einhver annar snerti málið á meðan
+      }
+      const hlutar = [];
+      if (lokad) hlutar.push('Lokaði ' + lokad + (lokad === 1 ? ' máli' : ' málum'));
+      if (sleppt) hlutar.push(sleppt + ' breyttust á meðan og var sleppt');
+      if (villur) hlutar.push(villur + ' vistuðust ekki (' + villa + ')');
+      _hreinsaSkilabod = hlutar.length ? hlutar.join(' · ') + '.' : 'Ekkert tengt mál var klárað.';
+    } catch (e) { _hreinsaSkilabod = 'Hreinsun mistókst: ' + ((e && e.message) || e); }
+    _hreinsar = false;
+    D.lesid = false; teiknaDag(); lesaDaginn();
+  }
+  async function afturkalla(id) {
+    const c = sb(), x = LOKAD.get(id); if (!c || !x || x.afturkallad) return;
+    const { data, error } = await c.from('thjonustubeidni').update(Object.assign({}, x.fyrra, { updated_at: new Date().toISOString() }))
+      .eq('id', id).eq('updated_at', x.nyttUpdated).select('id,status');
+    if (!error && data && data[0] && data[0].status === x.fyrra.status) { x.afturkallad = true; _hreinsaSkilabod = 'Mál #' + id + ' er opið aftur.'; }
+    else _hreinsaSkilabod = 'Mál #' + id + ' var breytt eftir lokun — afturköllun sleppt. Opnaðu það á Þjónustuborði.';
+    D.lesid = false; teiknaDag(); lesaDaginn();
+  }
+
   let _dag = null;
   function teiknaDag() { if (_dag) _dag.innerHTML = dagHtml(); }
 
@@ -267,6 +425,29 @@
   function fara(k) {
     if (!k || !window.App || !App.switchView) return;
     const [view, sia] = k.split(':');
+    // Smellir á takkann eins og notandinn gerði — og sannreynir að hann TÓK. Síður binda smelli eftir að gögnin lenda
+    // (166 bindur _ky-vf eftir hleðslu), svo fyrsti takkinn sem sést getur verið beinagrind án hlustara. Reynt aftur
+    // á 1,2 sek fresti þar til takkinn er virkur, mest 3 smellir á 15 sek.
+    const smella = (fa, sel) => {
+      let n = 0, smellir = 0, sidast = 0;
+      const virkur = (b) => b.getAttribute('aria-pressed') === 'true' || b.getAttribute('aria-selected') === 'true' || b.classList.contains('is-active');
+      const t = setInterval(() => {
+        const b = fa(sel);
+        if (++n > 50 || (b && virkur(b))) { clearInterval(t); return; }
+        if (b && smellir < 3 && Date.now() - sidast > 1200) { smellir++; sidast = Date.now(); b.click(); }
+      }, 300);
+    };
+    if (view === 'bord') {
+      App.switchView('bord');
+      // Hamurinn á Þjónustuborði (368) er valinn með hamatakkanum í skuggarótinni — sama leið og smellur.
+      if (sia) smella((q) => { const v = document.getElementById('view-bord'); return v && v.shadowRoot ? v.shadowRoot.querySelector(q) : null; }, 'button[data-t5="mode"][data-mode="' + sia + '"]');
+      return;
+    }
+    if (view === 'krofu') {
+      App.switchView('krofu-yfirlit');
+      if (sia) smella((q) => document.querySelector(q), '#view-krofu-yfirlit ._ky-vf[data-vf="' + sia + '"]');
+      return;
+    }
     App.switchView(view === 'ars' ? 'arsskodun' : view);
     if (view === 'ars' && sia) {
       // Síuflagan er sett með því að smella á hana, eins og notandinn gerði — engin önnur leið að stöðunni.
@@ -372,6 +553,12 @@
       V + '.dag-flis.blar::before{background:#3a6fd8}' + V + '.dag-flis.raudur::before{background:#c53030}' + V + '.dag-flis.gulur::before{background:#d69e2e}' + V + '.dag-flis.graenn::before{background:#1f9d55}',
       V + '.dag-merki{font:700 10.5px ' + MONO + ';letter-spacing:.08em;text-transform:uppercase;color:#3a4250}',
       V + '.dag-tala{font:800 32px/1.05 "Playfair Display",Georgia,serif;font-variant-numeric:lining-nums;color:#141822}',
+      V + '.dag-hreinsun{display:flex;flex-direction:column;gap:6px;padding:10px 12px;background:#fff;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)}',
+      V + '.dag-hreinsun ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}',
+      V + '.dag-hreinsun li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"nr t b" "nr a b";column-gap:10px;align-items:center;padding:6px 8px;border-radius:4px;background:#f6f7f9}',
+      V + '.dag-hreinsun li b{grid-area:nr;font:700 11.5px ' + MONO + ';color:#3a4250}' + V + '.dag-hreinsun li .sam-btn{grid-area:b;min-width:0;height:30px}',
+      V + '.hr-titill{grid-area:t;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' + V + '.hr-ast{grid-area:a;font:500 11.5px ' + MONO + ';color:#1f7a45}',
+      V + '.dag-hreinsun li.aftur .hr-ast{color:#5b6573}' + V + '.hr-skil{margin:0;font:600 12.5px ' + SANS + ';color:#141822}' + V + '.hr-villa{margin:0;font-size:12.5px;color:#c53030}',
       V + '.dag-undir{font:500 12px ' + MONO + ';color:#5b6573;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}',
       // Vikan — Boss (svart stál, rjómi, gull) blandað mjúku gulli Jarvis: dökk plata, hlýr ljómi, í dag glóir.
       '#view-stjornstod ._vik420{background:radial-gradient(ellipse 70% 120% at 12% 0%,rgba(255,200,90,.10) 0%,rgba(255,200,90,0) 60%),linear-gradient(160deg,#26241f 0%,#151412 40%,#0c0c0b 100%);border-color:#000;color:#f4f1ea;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 0 1px rgba(226,196,111,.14),0 18px 40px -12px rgba(0,0,0,.7),0 0 46px -14px rgba(255,200,90,.28)}',
@@ -422,6 +609,8 @@
       _dag.setAttribute('aria-label', 'Dagurinn');
       _dag.addEventListener('click', (e) => {
         const f = e.target.closest('[data-fara]'); if (f) { fara(f.dataset.fara); return; }
+        if (e.target.closest('[data-dag="hreinsa"]')) { hreinsa(); return; }
+        const af = e.target.closest('[data-dag="aftur"]'); if (af) { afturkalla(+af.dataset.id); return; }
         if (e.target.closest('[data-dag="endurnyja"]')) { D.lesid = false; teiknaDag(); lesaDaginn(); lesaStodu(); }
       });
       teiknaDag();
