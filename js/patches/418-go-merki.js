@@ -71,17 +71,20 @@
   function _style(n, sz) {
     const c = colorOf(n);
     const G = '!important';
-    const grunn = 'width:' + sz + 'px' + G + ';height:' + sz + 'px' + G +
-      ';border-radius:50%' + G + ';box-sizing:border-box' + G +
-      ';background-image:none' + G + ';';
-    return n === 0
-      // Ósett: hálfgegnsær hringur — sést að reiturinn er til, án þess að trana sér fram.
-      ? grunn + 'border:1.5px solid ' + c + G + ';background-color:transparent' + G +
-        ';opacity:.35' + G + ';box-shadow:none' + G
-      // Glóandi: fylltur punktur með tveimur lögum af ljóma.
-      : grunn + 'border:1.5px solid ' + c + G + ';background-color:' + c + G +
-        ';opacity:1' + G +
-        ';box-shadow:0 0 4px ' + c + ',0 0 9px ' + c + '66,inset 0 1px 1px rgba(255,255,255,.55)' + G;
+    const lag = 'width:' + sz + 'px' + G + ';height:' + sz + 'px' + G +
+      ';border-radius:50%' + G + ';box-sizing:border-box' + G + ';';
+    // Ósett (Agnar 28.09: „Hún má alveg vera málm lituð bara"): þemað fær að
+    // mála hnappinn sínum málmhalla — þá les ósetta merkið eins og hnoð í
+    // röðinni fremur en gat. Hálfgegnsætt svo það trani sér ekki fram, eins og
+    // upphaflega var beðið um. Hér er því EKKERT background-override: að
+    // þvinga `background-image:none` væri einmitt að slást við þemað að óþörfu.
+    if (n === 0) return lag + 'opacity:.55' + G + ';box-shadow:none' + G;
+    // Sett: glóandi litur. Hér ÞARF að yfirtaka þemað — `background-image:none`
+    // líka, annars stendur málmhallinn eftir ofan á litnum.
+    return lag + 'background-image:none' + G +
+      ';border:1.5px solid ' + c + G + ';background-color:' + c + G +
+      ';opacity:1' + G +
+      ';box-shadow:0 0 4px ' + c + ',0 0 9px ' + c + '66,inset 0 1px 1px rgba(255,255,255,.55)' + G;
   }
 
   function btnHtml(coId, sz) {
