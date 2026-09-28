@@ -726,7 +726,7 @@
         pd: _pdByCo ? (_pdByCo.get(String(co.id)) || null) : null   // krafa ársins á þessum stað
       };
       if (ly === curYear) out.buid.push(card);
-      else if (fy === curYear || hasDraft) out.vinnsla.push(card);   // started OR has a saved draft
+      else if ((fy === curYear || hasDraft) && !a.sv_force_unstarted) out.vinnsla.push(card);   // started OR has a saved draft (unless force-removed by Afmerkja)
       else if (m > 0 && m <= curMonth) out.dagskra.push(card);   // due/overdue, not started
     });
     const byName = (x, y) => String(x.nafn).localeCompare(y.nafn, 'is');
@@ -765,12 +765,22 @@
   // NB: AppSettings.save() DEEP-MERGES — deleting a key does NOT propagate to
   // the server (see patches 157/158). So every transition must SET the flags to
   // 0 (which all readers treat as "not set" via `|| 0`), never rely on _delete.
-  const startVinnsla = id => setFlag(id, { field_inspected_year: curYear, last_year_inspected: 0 });
+  const startVinnsla = id => setFlag(id, { field_inspected_year: curYear, last_year_inspected: 0, sv_force_unstarted: false });
   const markBuid     = id => setFlag(id, { last_year_inspected: curYear, field_inspected_year: 0 });
   const reopen       = id => setFlag(id, { field_inspected_year: 0, last_year_inspected: 0 });
   // Afmerkja: andhverfan á bláa hnappnum — núllar vinnslu-flaggið svo kortið
   // dettur úr 🔵 (fer í ⏳ Á dagskrá ef skoðunarmánuður er kominn, annars af borðinu).
-  const unVinnsla    = id => setFlag(id, { field_inspected_year: 0 });
+  const unVinnsla = id => setFlag(id, { field_inspected_year: 0, sv_force_unstarted: true }).then(ok => {
+    if (!ok) return ok;
+    try {
+      if (window.Arsskodun && Arsskodun._cache) {
+        const co = Arsskodun._cache.byId && Arsskodun._cache.byId[String(id)];
+        if (co && co._ars) co._ars.field_inspected_year = 0;
+        if (Arsskodun.render) Arsskodun.render();
+      }
+    } catch (_) {}
+    return ok;
+  });
 
   // 2026-07-30 (ósk Agnars): „📁 Opna" á að fara BEINT á ársskoðunar-síðuna —
   // fyrirtækjasíðuna með tækjalistanum (224), UPPLÝSINGAR UM ÚTTEKT og
