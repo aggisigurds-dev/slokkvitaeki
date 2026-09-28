@@ -108,6 +108,16 @@
     { hopur: 'Brunahólf', id: 'ajour', heiti: 'Ajour', undir: 'skráningar · keyrt í hubbinum', gult: 3, rautt: 10, stada: dssLina('ajour'), hlekkur: HUB },
     { hopur: 'Brunahólf', id: 'banki', heiti: 'Landsbankinn', undir: 'bankayfirlit · keyrt í hubbinum', gult: 14, rautt: 45, stada: dssLina('bank'), hlekkur: HUB },
   ];
+  // Hvert gögnin fara — þangað sem unnið er úr þeim (Agnar 28.09.2026: „make all buttons link to the location I can
+  // solve the …"). Innri lykill = fara() í þessu appi; slóð = flipi í Brunahólf-hubbinum (applyDeepLinkTab les #<flipi>).
+  const OPNA = {
+    'kostnadur': 'kostnadur:opid',
+    'payday-slokk': 'krofu:krofur', 'payday-greitt': 'krofu:krofur',
+    'postur-eldklar': 'thjonustuver-postar', 'postur-bokhald': 'thjonustuver-postar',
+    'timavera': HUB + '/#timavera', 'payday-bh': HUB + '/#krofuyfirlit', 'redder': HUB + '/#efniskostnadur',
+    'ajour': HUB + '/#ajour', 'banki': HUB + '/#hreyfingaryfirlit',
+  };
+  RADIR.forEach((r) => { r.opna = OPNA[r.id] || r.hlekkur || ''; });
 
   /* ── DAGURINN — morgunyfirlit (28.09.2026, Agnar: „number in vinnsla, the amount, number behind schedule in
    * Ársskoðun, if Gmail is connected, number of emails today … everything I need on one page to start the day
@@ -183,10 +193,10 @@
       flis({ merki: 'Ársskoðun · Búið ' + new Date().getFullYear(), tala: D.ars ? p('done').n : bid, undir: arsUndir('done'), fara: 'ars:done', tonn: 'graenn' }),
       flis({ merki: 'Póstur í dag · eldklar@', tala: D.postur['eldklar@eldklar.is'] != null ? D.postur['eldklar@eldklar.is'] : bid, undir: tengt('eldklar@eldklar.is'), fara: 'thjonustuver-postar', tonn: tengt('eldklar@eldklar.is') === 'Gmail tengt' ? '' : 'raudur' }),
       flis({ merki: 'Póstur í dag · bokhald@', tala: D.postur['bokhald@eldklar.is'] != null ? D.postur['bokhald@eldklar.is'] : bid, undir: tengt('bokhald@eldklar.is'), fara: 'thjonustuver-postar', tonn: tengt('bokhald@eldklar.is') === 'Gmail tengt' ? '' : 'raudur' }),
-      flis({ merki: 'Þjónustuborð · ný mál', tala: b.nytt != null ? b.nytt : bid, undir: (b.i_vinnslu != null ? b.i_vinnslu + ' í vinnslu · ' + (b.tilbuid || 0) + ' tilbúin' : ''), fara: 'bord' }),
+      flis({ merki: 'Þjónustuborð · ný mál', tala: b.nytt != null ? b.nytt : bid, undir: (b.i_vinnslu != null ? b.i_vinnslu + ' í vinnslu · ' + (b.tilbuid || 0) + ' tilbúin' : ''), fara: 'bord:thjonusta' }),
       flis({ merki: 'Vinnublöð · óklárað', tala: D.vinnublod != null ? D.vinnublod : bid, undir: 'bíða yfirferðar', fara: 'bord:vinnublod', tonn: D.vinnublod ? 'gulur' : '' }),
       flis({ merki: 'Kröfur · ósendar', tala: D.osendar ? D.osendar.n : bid, undir: D.osendar ? kr(D.osendar.upphaed) : '', fara: 'krofu:osendar', tonn: D.osendar && D.osendar.n ? 'raudur' : '' }),
-      flis({ merki: 'Kostnaður · óyfirfarið', tala: kn ? kn.n : bid, undir: kn ? kr(kn.upphaed) : '', fara: 'kostnadur' }),
+      flis({ merki: 'Kostnaður · óyfirfarið', tala: kn ? kn.n : bid, undir: kn ? kr(kn.upphaed) : '', fara: 'kostnadur:opid' }),
     ].join('');
     return '<div class="sam-haus"><span class="sam-titill">Dagurinn</span><span class="sam-plata">' + esc(hvenaer(new Date().toISOString()) ? idag().split('-').reverse().join('/') : '') + '</span>' +
         hreinsaTakki() + '<button type="button" class="sam-btn" data-dag="endurnyja">Endurnýja</button></div>' +
@@ -430,7 +440,8 @@
     // á 1,2 sek fresti þar til takkinn er virkur, mest 3 smellir á 15 sek.
     const smella = (fa, sel) => {
       let n = 0, smellir = 0, sidast = 0;
-      const virkur = (b) => b.getAttribute('aria-pressed') === 'true' || b.getAttribute('aria-selected') === 'true' || b.classList.contains('is-active');
+      const virkur = (b) => b.getAttribute('aria-pressed') === 'true' || b.getAttribute('aria-selected') === 'true' || b.classList.contains('is-active') || b.classList.contains('on') ||
+        (b.classList.contains('_ars-st') && /background:\s*var\(--brand\)/.test(b.getAttribute('style') || ''));
       const t = setInterval(() => {
         const b = fa(sel);
         if (++n > 50 || (b && virkur(b))) { clearInterval(t); return; }
@@ -443,20 +454,20 @@
       if (sia) smella((q) => { const v = document.getElementById('view-bord'); return v && v.shadowRoot ? v.shadowRoot.querySelector(q) : null; }, 'button[data-t5="mode"][data-mode="' + sia + '"]');
       return;
     }
+    if (view === 'kostnadur') {
+      App.switchView('kostnadur');
+      if (sia) smella((q) => document.querySelector(q), '#view-kostnadur .k9-sia[data-v="' + sia + '"]');
+      return;
+    }
     if (view === 'krofu') {
       App.switchView('krofu-yfirlit');
       if (sia) smella((q) => document.querySelector(q), '#view-krofu-yfirlit ._ky-vf[data-vf="' + sia + '"]');
       return;
     }
     App.switchView(view === 'ars' ? 'arsskodun' : view);
-    if (view === 'ars' && sia) {
-      // Síuflagan er sett með því að smella á hana, eins og notandinn gerði — engin önnur leið að stöðunni.
-      let n = 0;
-      const t = setInterval(() => {
-        const b = document.querySelector('#view-arsskodun button._ars-st[data-status="' + sia + '"]');
-        if (b || ++n > 40) { clearInterval(t); if (b) b.click(); }
-      }, 150);
-    }
+    // Síuflagan er sett með því að smella á hana, eins og notandinn gerði — engin önnur leið að stöðunni.
+    // Virka flagan í 153 ber aðeins brand-litinn í style (enginn klasi), svo virkur() les hann þaðan.
+    if (view === 'ars' && sia) smella((q) => document.querySelector(q), '#view-arsskodun button._ars-st[data-status="' + sia + '"]');
   }
 
   // Staða hverrar línu lifir í breytu (ekki í DOM) — 61 teiknar #cc-main upp á nýtt við hverja opnun.
@@ -473,12 +484,19 @@
     const s = ST[r.id] || {};
     const h = hvenaer(s.tima);
     const staduTexti = s.keyrir ? (s.skilabod || 'sæki…') : s.villa ? 'Villa: ' + s.villa : s.skilabod ? s.skilabod : (h ? 'Sótt ' + h : (s.lesid ? 'Aldrei sótt' : '…'));
-    const takki = r.keyra
+    const uti = /^https?:/.test(r.opna);
+    const opna = !r.opna ? '' : uti
+      ? '<a class="sam-btn sam-opna" href="' + esc(r.opna) + '" target="_blank" rel="noopener" title="Opnar ' + esc(r.heiti) + ' í Brunahólf-hubbinum">Opna</a>'
+      : '<button type="button" class="sam-btn sam-opna" data-fara="' + esc(r.opna) + '" title="Opna þar sem unnið er úr gögnunum">Opna</button>';
+    const takki = (r.keyra
       ? '<button type="button" class="sam-btn" data-sam="' + r.id + '"' + (s.keyrir || s.aFerd ? ' disabled' : '') + '>' + (s.keyrir || s.aFerd ? 'Sæki…' : 'Sækja') + '</button>'
-      : '<a class="sam-btn" href="' + esc(r.hlekkur) + '" target="_blank" rel="noopener" title="Opnar Brunahólf-hubbinn">Opna</a>';
+      : '') + opna;
+    const heiti = !r.opna ? '<b>' + esc(r.heiti) + '</b>' : uti
+      ? '<a class="sam-heiti" href="' + esc(r.opna) + '" target="_blank" rel="noopener">' + esc(r.heiti) + '</a>'
+      : '<button type="button" class="sam-heiti" data-fara="' + esc(r.opna) + '">' + esc(r.heiti) + '</button>';
     return '<div class="sam-lina">' +
       '<span class="sam-ljos ' + litur(r, s) + '" aria-hidden="true"></span>' +
-      '<div class="sam-txt"><b>' + esc(r.heiti) + '</b><span>' + esc(r.undir) + '</span>' +
+      '<div class="sam-txt">' + heiti + '<span>' + esc(r.undir) + '</span>' +
         '<span class="sam-stada" data-sam-stada="' + r.id + '">' + esc(staduTexti) + (s.aukalega && !s.keyrir && !s.villa ? ' · ' + esc(s.aukalega) : '') + '</span></div>' +
       takki +
     '</div>';
@@ -540,7 +558,10 @@
       V + '.sam-ljos{flex:0 0 10px;width:10px;height:10px;border-radius:50%;box-shadow:inset 0 -1px 1px rgba(0,0,0,.35)}',
       V + '.sam-ljos.graenn{background:#1f9d55}' + V + '.sam-ljos.gulur{background:#d69e2e}' + V + '.sam-ljos.raudur{background:#c53030}' + V + '.sam-ljos.blar{background:#3a6fd8}',
       V + '.sam-txt{display:flex;flex-direction:column;min-width:0;flex:1}',
-      V + '.sam-txt b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      V + '.sam-txt b,' + V + '.sam-heiti{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      V + '.sam-heiti{display:block;max-width:100%;padding:0;border:0;background:none;text-align:left;color:#141822;font-family:' + SANS + ';text-decoration:none;cursor:pointer}',
+      V + '.sam-heiti:hover{text-decoration:underline;text-underline-offset:2px}',
+      V + '.sam-btn.sam-opna{min-width:0;padding:0 10px;margin-left:-4px}',
       V + '.sam-txt span{font-size:11.5px;color:#5b6573;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       V + '.sam-txt .sam-stada{font-family:' + MONO + ';font-size:11px;color:#3a4250}',
       V + '.sam-btn{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:74px;height:36px;padding:0 12px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:600 12.5px ' + SANS + ';cursor:pointer;text-decoration:none;white-space:nowrap}',
@@ -627,6 +648,7 @@
       _sec.className = '_sam420';
       _sec.setAttribute('aria-label', 'Samstilling gagna');
       _sec.addEventListener('click', (e) => {
+        const f = e.target.closest('button[data-fara]'); if (f) { fara(f.dataset.fara); return; }
         const b = e.target.closest('button[data-sam]'); if (!b) return;
         if (b.dataset.sam === '__allt') keyraAllt(); else keyra(b.dataset.sam);
       });
