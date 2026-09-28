@@ -112,7 +112,7 @@
   /* ── DAGURINN — morgunyfirlit (28.09.2026, Agnar: „number in vinnsla, the amount, number behind schedule in
    * Ársskoðun, if Gmail is connected, number of emails today … everything I need on one page to start the day
    * and plan"). Ársskoðunartölurnar koma úr Arsskodun.talningar() — SÖMU síu og flögurnar í Ársskoðun. ── */
-  const D = { lesid: false, ars: null, arsVilla: '', postur: {}, postholf: [], bord: {}, kostn: null, dagskra: [], nota: '' };
+  const D = { lesid: false, ars: null, arsVilla: '', postur: {}, postholf: [], bord: {}, kostn: null };
   const kr = (n) => Math.round(+n || 0).toLocaleString('is-IS').replace(/,/g, '.') + ' kr';
   const mkr = (n) => (Math.abs(+n || 0) >= 1e6 ? (Math.round((+n || 0) / 1e5) / 10).toLocaleString('is-IS') + ' m.kr' : kr(n));
   const idag = () => { const d = new Date(), k = (x) => String(x).padStart(2, '0'); return d.getFullYear() + '-' + k(d.getMonth() + 1) + '-' + k(d.getDate()); };
@@ -144,18 +144,10 @@
       }));
     }
     verk.push(stjornstodStada().then((ss) => { D.postholf = ss.postholf || []; }));
-    // Dagskrá dagsins — ein dagskrá fyrir alla (368): verk allra starfsmanna + sameiginleg dagnóta.
-    try {
-      const allir = (window.AppSettings && AppSettings.path && AppSettings.path('vikudagskra.by_staff')) || {};
-      const key = idag(), jobs = [];
-      Object.keys(allir).forEach((n) => ((allir[n] && allir[n].jobs) || []).forEach((j) => { if (j && String(j.date || '').slice(0, 10) === key) jobs.push(Object.assign({ _n: n }, j)); }));
-      jobs.sort((a, b) => (a.allday ? 0 : 1) - (b.allday ? 0 : 1) || String(a.time || '').localeCompare(String(b.time || '')));
-      D.dagskra = jobs;
-      D.nota = String((AppSettings.path('skipulagsbord.by_staff.Allir.dagnotur.' + key)) || '');
-    } catch (_) {}
     await Promise.all(verk.map((p) => Promise.resolve(p).catch(() => {})));
     D.lesid = true;
     teiknaDag();
+    teiknaViku();
   }
   function flis(o) {
     return '<button type="button" class="dag-flis' + (o.tonn ? ' ' + o.tonn : '') + '" data-fara="' + esc(o.fara) + '">' +
@@ -179,18 +171,99 @@
       flis({ merki: 'Þjónustuborð · ný mál', tala: b.nytt != null ? b.nytt : bid, undir: (b.i_vinnslu != null ? b.i_vinnslu + ' í vinnslu · ' + (b.tilbuid || 0) + ' tilbúin' : ''), fara: 'bord' }),
       flis({ merki: 'Kostnaður · óyfirfarið', tala: kn ? kn.n : bid, undir: kn ? kr(kn.upphaed) : '', fara: 'kostnadur' }),
     ].join('');
-    const dagskra = D.dagskra.length
-      ? D.dagskra.slice(0, 10).map((j) => '<li><b>' + esc(j.allday ? 'Allan daginn' : (j.time || '')) + '</b>' + esc(j.name || '') + (j._n && j._n !== 'Allir' ? ' <span>· ' + esc(j._n) + '</span>' : '') + '</li>').join('') + (D.dagskra.length > 10 ? '<li><span>+ ' + (D.dagskra.length - 10) + ' í viðbót</span></li>' : '')
-      : '<li><span>' + (D.lesid ? 'Ekkert skráð á dagskrá í dag.' : 'Sæki…') + '</span></li>';
     return '<div class="sam-haus"><span class="sam-titill">Dagurinn</span><span class="sam-plata">' + esc(hvenaer(new Date().toISOString()) ? idag().split('-').reverse().join('/') : '') + '</span>' +
         '<button type="button" class="sam-btn" data-dag="endurnyja">Endurnýja</button></div>' +
-      '<div class="sam-buk"><div class="dag-grind">' + flisar + '</div>' +
-        '<div class="dag-dagskra"><div class="sam-merki">Dagskrá í dag</div><ul>' + dagskra + '</ul>' +
-          (D.nota ? '<div class="dag-nota">' + esc(D.nota) + '</div>' : '') +
-          '<button type="button" class="sam-btn" data-fara="bord">Opna Þjónustuborð</button></div></div>';
+      '<div class="sam-buk"><div class="dag-grind">' + flisar + '</div></div>';
   }
   let _dag = null;
   function teiknaDag() { if (_dag) _dag.innerHTML = dagHtml(); }
+
+  /* ── Vikan — sama dagskrá og á Þjónustuborði (368): verk ALLRA starfsmanna næstu 7 daga, ein dagskrá fyrir alla.
+   *    Lesið úr AppSettings (vikudagskra.by_staff.<nafn>.jobs) — sama heimild og 368/303, svo allar vélar sjá það sama.
+   *    Smellur á verk opnar 303-gluggann á grein eigandans; „+" skráir nýtt verk á daginn. ── */
+  const DAGAR = ['SUN', 'MÁN', 'ÞRI', 'MIÐ', 'FIM', 'FÖS', 'LAU'];
+  const VD_TEG = [['Árskoðun', '#4f7dff'], ['Brunakerfiskoðun', '#e0493c'], ['Fund', '#9b6bff'], ['Uppsetning', '#f0a53a'], ['Annað', '#3fbf6f']];
+  const vdLitur = (t) => (VD_TEG.find((x) => x[0] === t) || [0, '#a89f8c'])[1];
+  const AP = (k) => { try { return window.AppSettings && AppSettings.path ? AppSettings.path(k) : undefined; } catch (_) { return undefined; } };
+  function starfsfolk() {
+    let l = [];
+    try { l = (window.BordStarfsmadur && BordStarfsmadur.list()) || []; } catch (_) {}
+    const by = AP('vikudagskra.by_staff') || {};
+    l = l.concat(Object.keys(by));
+    if (!l.length) l = ['Agnar', 'Bjarndís', 'Binni', 'Anni', 'Hákon', 'Afgreiðsla', 'Charlize', 'Allir'];
+    return l.filter((x, i) => x && l.indexOf(x) === i);
+  }
+  function jobsAf(n) {
+    const j = AP('vikudagskra.by_staff.' + n + '.jobs');
+    if (Array.isArray(j)) return j.filter(Boolean);
+    if (n === 'Agnar') { const g = AP('vikudagskra.jobs'); if (Array.isArray(g)) return g.filter(Boolean); }
+    return [];
+  }
+  function allirJobs() {
+    const out = [], sed = new Set();
+    for (const n of starfsfolk()) for (const j of jobsAf(n)) {
+      const k = j.id != null ? String(j.id) : n + '|' + j.date + '|' + j.time + '|' + j.name;
+      if (sed.has(k)) continue; sed.add(k);
+      out.push(Object.assign({ _n: n }, j));
+    }
+    return out;
+  }
+  const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  function dagnota(key) {
+    const s = String(AP('skipulagsbord.by_staff.Allir.dagnotur.' + key) || '').trim();
+    if (s) return s;
+    return starfsfolk().filter((x) => x !== 'Allir').map((x) => String(AP('skipulagsbord.by_staff.' + x + '.dagnotur.' + key) || '').trim()).filter(Boolean).join('\n');
+  }
+  function vikan() {
+    const jobs = allirJobs(), d0 = new Date(), out = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i), key = ymd(d);
+      out.push({
+        key, d: DAGAR[d.getDay()], n: d.getDate(), m: d.getMonth() + 1, today: i === 0, helgi: d.getDay() === 0 || d.getDay() === 6,
+        nota: dagnota(key),
+        jobs: jobs.filter((j) => String(j.date || '').slice(0, 10) === key)
+          .sort((a, b) => (a.allday ? 0 : 1) - (b.allday ? 0 : 1) || String(a.time || '').localeCompare(String(b.time || ''))),
+      });
+    }
+    return out;
+  }
+  function vikaHtml() {
+    const tilbuin = !!(window.AppSettings && AppSettings.path);
+    const dagar = vikan(), alls = dagar.reduce((s2, d) => s2 + d.jobs.length, 0);
+    const f = dagar[0], l = dagar[6], dm = (d) => String(d.n).padStart(2, '0') + '/' + String(d.m).padStart(2, '0');
+    const verk = (j) => '<button type="button" class="vk-verk" data-vk="verk" data-jid="' + esc(j.id == null ? '' : j.id) + '" data-n="' + esc(j._n) + '" style="--lit:' + vdLitur(j.type) + '" title="' + esc((j.type ? j.type + ' — ' : '') + 'smelltu til að breyta') + '">' +
+      '<span class="vk-timi">' + esc(j.allday ? 'Allan daginn' : (j.time || '—')) + (j._n && j._n !== 'Allir' ? '<i>' + esc(j._n) + '</i>' : '') + '</span>' +
+      '<span class="vk-nafn">' + esc(j.name || '(ónefnt)') + '</span>' +
+      (j.note ? '<span class="vk-ath">' + esc(String(j.note).slice(0, 80)) + '</span>' : '') + '</button>';
+    const dagur = (d) => '<div class="vk-dagur' + (d.today ? ' idag' : '') + (d.helgi ? ' helgi' : '') + '">' +
+      '<div class="vk-dh"><span class="vk-dn">' + d.d + '</span><span class="vk-dd">' + d.n + '</span>' +
+        (d.today ? '<span class="vk-idag">Í dag</span>' : '') + '<span class="vk-bil"></span>' +
+        '<button type="button" class="vk-plus" data-vk="nytt" data-date="' + d.key + '" aria-label="Skrá verk ' + d.d + ' ' + d.n + '.">+</button></div>' +
+      '<div class="vk-verkin">' + (d.jobs.length ? d.jobs.map(verk).join('') : '<span class="vk-autt">' + (tilbuin ? 'Ekkert skráð' : 'Sæki…') + '</span>') + '</div>' +
+      (d.nota ? '<div class="vk-nota">' + esc(d.nota.length > 160 ? d.nota.slice(0, 160) + '…' : d.nota) + '</div>' : '') +
+    '</div>';
+    return '<div class="sam-haus"><span class="sam-titill">Vikan</span><span class="sam-plata">' + dm(f) + ' – ' + dm(l) + ' · ' + alls + ' verk</span>' +
+        '<button type="button" class="sam-btn" data-fara="bord">Þjónustuborð</button>' +
+        '<button type="button" class="vk-gull" data-vk="nytt" data-date="' + f.key + '">+ Skrá verk</button></div>' +
+      '<div class="vk-gulllina" aria-hidden="true"></div>' +
+      '<div class="vk-buk"><div class="vk-vika">' + dagar.map(dagur).join('') + '</div>' +
+        '<div class="vk-skyring">' + VD_TEG.map((t) => '<span><i style="background:' + t[1] + '"></i>' + t[0] + '</span>').join('') + '</div></div>';
+  }
+  let _vik = null;
+  function teiknaViku() { if (_vik) _vik.innerHTML = vikaHtml(); }
+  function vikaSmellur(e) {
+    const f = e.target.closest('[data-fara]'); if (f) { fara(f.dataset.fara); return; }
+    const b = e.target.closest('[data-vk]'); if (!b) return;
+    if (!window.Vikudagskra || !Vikudagskra.open) { alert('Dagskrárglugginn er ekki hlaðinn.'); return; }
+    try {
+      if (b.dataset.vk === 'nytt') { Vikudagskra.open(b.dataset.date); return; }
+      const j = allirJobs().find((x) => String(x.id) === b.dataset.jid);
+      if (!j || j.id == null) { teiknaViku(); return; }
+      const { _n, ...hreint } = j;   // vistast á grein eigandans, eins og á Þjónustuborði (368/303)
+      Vikudagskra.open(j.date, hreint, _n);
+    } catch (_) { alert('Dagskrárglugginn opnaðist ekki.'); }
+  }
+  document.addEventListener('vikudagskra-breytt', () => setTimeout(teiknaViku, 0));
   function fara(k) {
     if (!k || !window.App || !App.switchView) return;
     const [view, sia] = k.split(':');
@@ -270,6 +343,7 @@
   function css() {
     if (document.getElementById('_sam420-css')) return;
     const V = '#view-stjornstod ._sam420 ';
+    const K = '#view-stjornstod ._vik420 ';
     const st = document.createElement('style');
     st.id = '_sam420-css';
     st.textContent = [
@@ -299,11 +373,37 @@
       V + '.dag-merki{font:700 10.5px ' + MONO + ';letter-spacing:.08em;text-transform:uppercase;color:#3a4250}',
       V + '.dag-tala{font:800 32px/1.05 "Playfair Display",Georgia,serif;font-variant-numeric:lining-nums;color:#141822}',
       V + '.dag-undir{font:500 12px ' + MONO + ';color:#5b6573;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}',
-      V + '.dag-dagskra{display:flex;flex-direction:column;gap:6px;padding:10px 12px;background:#fff;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)}',
-      V + '.dag-dagskra ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}',
-      V + '.dag-dagskra li{font-size:13px}' + V + '.dag-dagskra li b{font-family:' + MONO + ';font-size:12px;margin-right:8px}' + V + '.dag-dagskra li span{color:#5b6573}',
-      V + '.dag-nota{white-space:pre-wrap;font-size:12.5px;color:#3a4250;padding:6px 8px;background:#f4f6f9;border-radius:4px}',
-      V + '.dag-dagskra .sam-btn{align-self:flex-start}',
+      // Vikan — Boss (svart stál, rjómi, gull) blandað mjúku gulli Jarvis: dökk plata, hlýr ljómi, í dag glóir.
+      '#view-stjornstod ._vik420{background:radial-gradient(ellipse 70% 120% at 12% 0%,rgba(255,200,90,.10) 0%,rgba(255,200,90,0) 60%),linear-gradient(160deg,#26241f 0%,#151412 40%,#0c0c0b 100%);border-color:#000;color:#f4f1ea;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 0 1px rgba(226,196,111,.14),0 18px 40px -12px rgba(0,0,0,.7),0 0 46px -14px rgba(255,200,90,.28)}',
+      K + '.vk-gulllina{height:2px;background:linear-gradient(90deg,rgba(122,90,18,0) 0%,#c9a54a 14%,#f5d76e 36%,#fff3b0 48%,#f5d76e 60%,#c9a54a 84%,rgba(122,90,18,0) 100%);box-shadow:0 0 12px rgba(255,210,120,.55)}',
+      K + '.vk-gull{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 14px;border-radius:9px;border:1px solid #5a4410;border-top-color:#f7e6b8;border-bottom-color:#2e2004;background:linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.5) 45%,rgba(255,255,255,0) 52%),linear-gradient(180deg,#f3dc95 0%,#d9b25a 14%,#b8892e 46%,#8f6a1c 52%,#a87b1f 74%,#cfa54a 92%,#e8cb7a 100%);color:#161513;font:800 12.5px ' + SANS + ';text-shadow:0 1px 0 rgba(255,255,255,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 3px rgba(60,40,0,.45),0 3px 6px rgba(0,0,0,.45),0 0 14px rgba(255,200,90,.35);cursor:pointer;white-space:nowrap}',
+      K + '.vk-gull:hover{filter:brightness(1.06)}',
+      K + '.vk-buk{padding:14px;display:flex;flex-direction:column;gap:10px}',
+      K + '.vk-vika{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}',
+      K + '.vk-dagur{position:relative;display:flex;flex-direction:column;gap:8px;min-width:0;min-height:168px;padding:9px 9px 10px;border-radius:7px;border:1px solid #2a2823;background:linear-gradient(180deg,#121110 0%,#0a0a09 100%);box-shadow:inset 0 2px 6px rgba(0,0,0,.8),inset 0 -1px 0 rgba(255,255,255,.04),0 1px 0 rgba(255,255,255,.06)}',
+      K + '.vk-dagur.helgi{background:linear-gradient(180deg,#0f0e0d 0%,#080807 100%)}',
+      K + '.vk-dagur.idag{border-color:rgba(226,196,111,.6);background:radial-gradient(ellipse 120% 70% at 50% 0%,rgba(255,200,90,.18) 0%,rgba(255,200,90,0) 70%),linear-gradient(180deg,#1a1814 0%,#0c0b0a 100%);box-shadow:inset 0 1px 0 rgba(255,236,180,.18),0 0 0 1px rgba(255,210,120,.22),0 0 26px -4px rgba(255,200,90,.42)}',
+      K + '.vk-dh{display:flex;align-items:center;gap:6px;min-width:0}',
+      K + '.vk-dn{font:700 10.5px ' + MONO + ';letter-spacing:.16em;color:#c9a54a}',
+      K + '.vk-dagur.helgi .vk-dn{color:#8f8776}',
+      K + '.vk-dd{font:800 22px/1 "Playfair Display",Georgia,serif;font-variant-numeric:lining-nums;color:#f4f1ea}',
+      K + '.vk-idag{padding:2px 6px;border-radius:3px;background:linear-gradient(180deg,#f3dc95 0%,#c9a54a 55%,#a87b1f 100%);color:#161513;font:800 9.5px ' + MONO + ';letter-spacing:.1em;text-transform:uppercase;box-shadow:0 0 10px rgba(255,200,90,.45)}',
+      K + '.vk-bil{flex:1}',
+      K + '.vk-plus{flex:none;width:24px;height:24px;padding:0;border-radius:5px;border:1px solid rgba(201,160,74,.35);background:rgba(201,160,74,.06);color:#e8cb7a;font:700 15px/1 ' + SANS + ';cursor:pointer}',
+      K + '.vk-plus:hover{background:rgba(201,160,74,.16);box-shadow:0 0 10px rgba(255,200,90,.3)}',
+      K + '.vk-verkin{display:flex;flex-direction:column;gap:6px;min-width:0}',
+      K + '.vk-verk{display:flex;flex-direction:column;gap:1px;width:100%;min-width:0;padding:6px 8px 7px 9px;text-align:left;border-radius:4px;border:1px solid rgba(255,255,255,.07);border-left:3px solid var(--lit,#a89f8c);background:rgba(255,255,255,.035);color:#efe9da;font:inherit;cursor:pointer}',
+      K + '.vk-verk:hover{border-color:rgba(226,196,111,.38);border-left-color:var(--lit,#a89f8c);background:rgba(255,210,120,.06)}',
+      K + '.vk-timi{display:flex;gap:6px;align-items:baseline;font:600 10.5px ' + MONO + ';color:#e8cb7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      K + '.vk-timi i{font-style:normal;color:#8f8776}',
+      K + '.vk-nafn{font-size:12.5px;line-height:1.3;color:#f4f1ea;overflow-wrap:anywhere}',
+      K + '.vk-ath{font-size:11px;line-height:1.3;color:#a89f8c;overflow-wrap:anywhere}',
+      K + '.vk-autt{font:500 11px ' + MONO + ';color:#8f8776;letter-spacing:.04em}',
+      K + '.vk-nota{margin-top:auto;padding:6px 7px;border-radius:4px;border:1px dashed rgba(201,160,74,.28);color:#c8c1b1;font-size:11.5px;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere}',
+      K + '.vk-skyring{display:flex;flex-wrap:wrap;gap:6px 16px;font:500 11px ' + MONO + ';color:#8f8776}',
+      K + '.vk-skyring span{display:inline-flex;align-items:center;gap:6px}' + K + '.vk-skyring i{width:8px;height:8px;border-radius:50%;display:inline-block}',
+      '@media (max-width:1100px){' + K + '.vk-vika{grid-template-columns:repeat(4,minmax(0,1fr))}}',
+      '@media (max-width:760px){' + K + '.vk-vika{display:flex;flex-direction:column;gap:6px}' + K + '.vk-dagur{min-height:0;gap:6px}' + K + '.vk-buk{padding:10px}' + K + '.sam-haus .sam-plata{order:3}}',
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -315,7 +415,7 @@
     const hylki = main.firstElementChild;                        // <div style="max-width:1280px">
     const kvedja = hylki && hylki.firstElementChild;
     if (!kvedja || !kvedja.querySelector('h1')) return false;     // 61 er enn með „hleður…"
-    if (_dag && _sec && _dag.parentNode === hylki && _dag.previousElementSibling === kvedja && _sec.previousElementSibling === _dag) return true;
+    if (_dag && _vik && _sec && _dag.parentNode === hylki && _dag.previousElementSibling === kvedja && _vik.previousElementSibling === _dag && _sec.previousElementSibling === _vik) return true;
     if (!_dag) {
       _dag = document.createElement('section');
       _dag.className = '_sam420 _dag420';
@@ -325,6 +425,13 @@
         if (e.target.closest('[data-dag="endurnyja"]')) { D.lesid = false; teiknaDag(); lesaDaginn(); lesaStodu(); }
       });
       teiknaDag();
+    }
+    if (!_vik) {
+      _vik = document.createElement('section');
+      _vik.className = '_sam420 _vik420';
+      _vik.setAttribute('aria-label', 'Vikan');
+      _vik.addEventListener('click', vikaSmellur);
+      teiknaViku();
     }
     if (!_sec) {
       _sec = document.createElement('section');
@@ -337,7 +444,8 @@
       teikna();
     }
     kvedja.insertAdjacentElement('afterend', _dag);
-    _dag.insertAdjacentElement('afterend', _sec);
+    _dag.insertAdjacentElement('afterend', _vik);
+    _vik.insertAdjacentElement('afterend', _sec);
     return true;
   }
   let _vakt = null, _sidastLesid = 0;
@@ -349,11 +457,11 @@
       const MO = window.__NativeMutationObserver || MutationObserver;
       _vakt = new MO(() => {
         if (!v.classList.contains('active')) return;
-        if (setjaInn() && Date.now() - _sidastLesid > 30000) { _sidastLesid = Date.now(); lesaStodu(); lesaDaginn(); }
+        if (setjaInn() && Date.now() - _sidastLesid > 30000) { _sidastLesid = Date.now(); lesaStodu(); lesaDaginn(); teiknaViku(); }
       });
       _vakt.observe(v, { childList: true, subtree: true });
     }
-    if (v.classList.contains('active') && setjaInn() && Date.now() - _sidastLesid > 30000) { _sidastLesid = Date.now(); lesaStodu(); lesaDaginn(); }
+    if (v.classList.contains('active') && setjaInn() && Date.now() - _sidastLesid > 30000) { _sidastLesid = Date.now(); lesaStodu(); lesaDaginn(); teiknaViku(); }
     return true;
   }
   let _tilraunir = 0;
