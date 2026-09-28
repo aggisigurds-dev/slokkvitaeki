@@ -28,6 +28,7 @@
     { k: 'bokhalds-yfirlit', label: 'Bókhald',               emoji: '📊' },
     { k: 'reikninga-postur', label: 'Reikninga-póstur',      short: 'Póstur',     emoji: '📧' },
     { k: 'hreyfingarlisti',  label: 'Hreyfingarlisti',       short: 'Hreyfingar', emoji: '📄' },
+    { k: 'kostnadur',        label: 'Kostnaður · reikningar úr pósti', short: 'Kostnaður', emoji: '🧾' },   // 419 (28.09.2026)
     { k: 'vidskiptavinir',   label: 'Viðskiptavinir',        short: 'Kúnnar',     emoji: '👤' },
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
     { k: 'bord',             label: 'Þjónustuborð',          short: 'Borð',       emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
@@ -111,7 +112,7 @@
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-fjarmal.json', home: 'krofu-yfirlit',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
-      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'thjonustu-verkstaedi', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-efniskostnadur', 'br-vinnubok', 'br-krofur'] },
+      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'thjonustu-verkstaedi', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-efniskostnadur', 'kostnadur', 'br-vinnubok', 'br-krofur'] },
     // Agnar 12.09.2026: „setja þjónustuborð síðuna á skjáinn í símanum" — appið
     // opnast hvort eð er á #bord, svo það heitir nú Þjónustuborð (lykill, id og
     // slóð /app/verkefni/ óbreytt, svo uppsett eintök haldast sama appið).
@@ -156,7 +157,7 @@
     { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#fbe9ab', dark: '#b8860b',
       manifest: '/manifest-boss.json', home: 'br-fjarmalyfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
-      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'br-efniskostnadur', 'income', 'bokhalds-yfirlit', 'bord', 'verkbord', 'rekstrarfelog'] },
+      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'br-efniskostnadur', 'kostnadur', 'income', 'bokhalds-yfirlit', 'bord', 'verkbord', 'rekstrarfelog'] },
     // 3dwork sem eigið app (Agnar 23.09.2026: vildi opna bekkinn af öpp-síðunni í
     // símanum, ekki úr hliðarstiku). Ein síða — bekkurinn sjálfur (iframe á
     // kjarni-3dwork.vercel.app/3dwork), sem er þegar fullt app-útlit.
@@ -661,6 +662,8 @@
         insertOnce('__ds1',   'br-drogstod', 'krofu-yfirlit', 'boss');   // Drög-stöð í Boss (05.09.2026)
         insertOnce('__efk1',  'br-efniskostnadur', 'br-gerdreikninga', 'fjarmal');   // Efniskostnaður/dropp í Fjármál (06.09.2026)
         insertOnce('__efk2',  'br-efniskostnadur', 'br-drogstod', 'boss');           // … og í Boss
+        insertOnce('__kst1',  'kostnadur', 'br-efniskostnadur', 'fjarmal');   // Kostnaður (419) í Fjármál (28.09.2026: „ég sé hana ekki")
+        insertOnce('__kst2',  'kostnadur', 'br-efniskostnadur', 'boss');      // … og í Boss
         insertOnce('__bksl1', 'sala', 'brunayfirlit', 'brunakerfi');
         insertOnce('__tp1',   'turbopaint', 'sala', 'brunakerfi');
         insertOnce('__tp1b',  'turbopaint', 'br-maeting', 'brunaholf');
