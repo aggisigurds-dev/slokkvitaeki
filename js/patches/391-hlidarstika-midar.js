@@ -25,7 +25,7 @@
   const SEC = [
     ['Sala',           ['sala', 'counter', 'workshop', 'vorur', 'opp', 'turbopaint']],
     ['Viðskiptavinir', ['arsskodun', 'rekstrarfelog', 'brunayfirlit', 'allir-vidsk', 'vidskiptavinir', 'companies', 'tengilidir']],
-    ['Fjármál',        ['krofu-yfirlit', 'hreyfingarlisti', 'drog', 'payrev', 'income', 'bokhalds-yfirlit', 'reikninga-postur', 'aging-report']],
+    ['Fjármál',        ['krofu-yfirlit', 'hreyfingarlisti', 'drog', 'kostnadur', 'payrev', 'income', 'bokhalds-yfirlit', 'reikninga-postur', 'aging-report']],
     ['Vettvangur',     ['thjonustu-verkstaedi', 'leidsogn', 'bilstjori', 'aksturslisti', 'mottaka', 'vertid', 'field']],
     ['Tilboð',         ['tilbod', 'samningar', 'tilbodhub']],
     ['Skoðanir',       ['brunaskra', 'slokkvikerfi', 'brunakerfi', 'verkdagbok']],
