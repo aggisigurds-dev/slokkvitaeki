@@ -5149,7 +5149,22 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
   // categoryOf er deilt ÚT (23.09.2026) af sömu ástæðu: papp 224 skrifar skýrslu-afritið þegar
   // tækjalistinn er staðfestur og VERÐUR að nota nákvæmlega sömu körfur og afleiðslan hér.
   // Tvær útfærslur á sömu flokkun reka í sundur og byggju til misræmið sem þær áttu að loka.
-  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, arsViewMode, categoryOf, version: 'v1' };
+  // 28.09.2026 (Stjórnstöð 420 — morgunyfirlitið): fjöldi og virði á hverri stöðu, reiknað með SÖMU síu og flögurnar
+  // (filteredSorted, eins og countByStatus í render) svo Stjórnstöðin og Ársskoðun geta aldrei sagt sitt hvað.
+  // Les aðeins — state er sett til baka í finally. null ef listinn er ekki hlaðinn (kallandi keyrir loadAll()).
+  function talningar() {
+    if (!_cache.list || !_cache.list.length) return null;
+    const keepS = state.status, keepQ = state.search, out = {};
+    try {
+      for (const v of ['done', 'pending2026', 'aeftir', 'ivinnslu']) {
+        state.status = v; state.search = '';
+        const l = filteredSorted({ ignoreMonths: true, ignorePostnr: true });
+        out[v] = { n: l.length, virdi: l.reduce((sum, c) => sum + virdiOf(c), 0) };
+      }
+    } finally { state.status = keepS; state.search = keepQ; }
+    return out;
+  }
+  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, arsViewMode, talningar, categoryOf, version: 'v1' };
 
   // Keep the cached priority in sync when the ❗ control is cycled (patch 175),
   // so sorting by ❗ stays correct. The ❗ button updates itself in place — no
