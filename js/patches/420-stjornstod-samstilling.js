@@ -614,6 +614,84 @@
       '@media (max-width:760px){' + K + '.vk-vika{display:flex;flex-direction:column;gap:6px}' + K + '.vk-dagur{min-height:0;gap:6px}' + K + '.vk-buk{padding:10px}' + K + '.sam-haus .sam-plata{order:3}}',
     ].join('\n');
     document.head.appendChild(st);
+    document.head.appendChild(dokktThema());
+  }
+
+  /* ── ÖLL STJÓRNSTÖÐ Í SAMA ÚTLITI OG VIKAN (Agnar 28.09.2026: „samræmt útlitið á síðunni, í svipuðum gír og þú
+   *    gerðir dagatalið efst"). Boss (svart stál · rjómi · gull) + mjúkt Jarvis-gull, á Dagurinn, Samstillingu OG
+   *    spjöld 61 (lykiltölur, línurit, sundurliðun, listar). 61 teiknar með innri stílum án !important, svo reglur
+   *    hér bera !important þar sem þær þurfa að vinna innri stíl — engu er breytt í 61 sjálfu. Eitt gull á spjald:
+   *    .sam-btn.malm (Hreinsa / Sækja allt) og .vk-gull; allt annað er draugahnappur með gullramma. ── */
+  function dokktThema() {
+    const st = document.createElement('style');
+    st.id = '_sam420-dokkt';
+    const S = '#view-stjornstod ', C = S + '#cc-main ', P = S + '._sam420 ';   // P jafn-nákvæmt og V í css() — kemur síðar og vinnur
+    const INK = '#f4f1ea', INK2 = '#c8c1b1', MUTE = '#a89f8c', GULL = '#c9a54a', GULL2 = '#e8cb7a', LINA = '#2a2823';
+    const PLATA = 'radial-gradient(ellipse 70% 120% at 12% 0%,rgba(255,200,90,.10) 0%,rgba(255,200,90,0) 60%),linear-gradient(160deg,#26241f 0%,#151412 40%,#0c0c0b 100%)';
+    const PLATA_SK = 'inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 0 1px rgba(226,196,111,.14),0 18px 40px -12px rgba(0,0,0,.7),0 0 46px -14px rgba(255,200,90,.28)';
+    const BRUNNUR = 'linear-gradient(180deg,#121110 0%,#0a0a09 100%)';
+    const BRUNNUR_SK = 'inset 0 2px 6px rgba(0,0,0,.8),inset 0 0 0 1px ' + LINA + ',0 1px 0 rgba(255,255,255,.06)';
+    const GULLLINA = 'linear-gradient(90deg,rgba(122,90,18,0) 0%,#c9a54a 14%,#f5d76e 36%,#fff3b0 48%,#f5d76e 60%,#c9a54a 84%,rgba(122,90,18,0) 100%)';
+    const GULLFLOTUR = 'linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.5) 45%,rgba(255,255,255,0) 52%),linear-gradient(180deg,#f3dc95 0%,#d9b25a 14%,#b8892e 46%,#8f6a1c 52%,#a87b1f 74%,#cfa54a 92%,#e8cb7a 100%)';
+    const DRAUGUR = 'background:rgba(201,160,74,.07)!important;border:1px solid rgba(201,160,74,.38)!important;color:' + GULL2 + '!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)!important';
+    const MERKI = 'font:700 10.5px ' + MONO + '!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:' + GULL + '!important';
+    st.textContent = [
+      // 420-spjöldin (Dagurinn, Samstilling) — sama plata og Vikan, gulllína undir haus
+      S + '._sam420{background:' + PLATA + ';border-color:#000;color:' + INK + ';box-shadow:' + PLATA_SK + '}',
+      S + '._sam420 .sam-buk{background:' + GULLLINA + ' top/100% 2px no-repeat}',
+      S + '._sam420 .sam-merki{color:' + GULL + '}',
+      P + '.dag-flis{background:' + BRUNNUR + ';box-shadow:' + BRUNNUR_SK + ';color:' + INK + '}',
+      P + '.dag-flis:hover{filter:none;box-shadow:inset 0 0 0 1px rgba(226,196,111,.45),0 0 18px -6px rgba(255,200,90,.4)}',
+      P + '.dag-merki{color:' + GULL + '}' + P + '.dag-tala{color:' + INK + '}' + P + '.dag-undir{color:' + MUTE + '}',
+      P + '.sam-lina{background:' + BRUNNUR + ';box-shadow:' + BRUNNUR_SK + '}',
+      P + '.sam-txt b,' + P + '.sam-heiti{color:' + INK + '}' + P + '.sam-txt span{color:' + MUTE + '}' + P + '.sam-txt .sam-stada{color:' + INK2 + '}',
+      P + '.sam-btn{' + DRAUGUR + '}',
+      P + '.sam-btn:hover{background:rgba(201,160,74,.16)!important;box-shadow:0 0 12px -2px rgba(255,200,90,.35)!important}',
+      P + '.sam-btn.malm{background:' + GULLFLOTUR + '!important;border:1px solid #5a4410!important;border-top-color:#f7e6b8!important;border-bottom-color:#2e2004!important;color:#161513!important;font-weight:800!important;text-shadow:0 1px 0 rgba(255,255,255,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 3px rgba(60,40,0,.45),0 3px 6px rgba(0,0,0,.45),0 0 14px rgba(255,200,90,.35)!important}',
+      P + '.sam-btn[disabled]{opacity:.4}',
+      P + '.dag-hreinsun{background:' + BRUNNUR + ';box-shadow:' + BRUNNUR_SK + '}',
+      P + '.dag-hreinsun li{background:rgba(255,255,255,.035)}' + P + '.dag-hreinsun li b{color:' + GULL + '}',
+      P + '.hr-titill{color:' + INK + '}' + P + '.hr-ast{color:#7fd49b}' + P + '.dag-hreinsun li.aftur .hr-ast{color:' + MUTE + '}' + P + '.hr-skil{color:' + INK + '}' + P + '.hr-villa{color:#ff8a7a}',
+
+      // 61 — lykiltölur: dökkur brunnur, gullmerki, Playfair-tala; litaði vinstri kanturinn heldur merkingu sinni
+      C + 'div[style*="minmax(220px"]>div{background:' + BRUNNUR + '!important;border-radius:8px!important;box-shadow:' + BRUNNUR_SK + '!important;padding:12px 14px!important}',
+      C + 'div[style*="minmax(220px"]>div>div:first-child{margin-bottom:4px!important}',
+      C + 'div[style*="minmax(220px"]>div>div:first-child>div:first-child{display:none!important}',   // emoji-táknið (Brunastál: engin emoji)
+      C + 'div[style*="minmax(220px"]>div>div:first-child>div:last-child{' + MERKI + '}',
+      C + 'div[style*="minmax(220px"]>div>div:nth-child(2){font:800 30px/1.1 "Playfair Display",Georgia,serif!important;font-variant-numeric:lining-nums;color:' + INK + '!important}',
+      C + 'div[style*="minmax(220px"]>div>div:nth-child(3){font:500 12px ' + MONO + '!important;color:' + MUTE + '!important}',
+
+      // 61 — hlutar (línurit, sundurliðun, listar): sama plata og Vikan
+      S + '.cc-section{background:' + PLATA + '!important;border:1px solid #000;border-radius:12px!important;box-shadow:' + PLATA_SK + '!important;color:' + INK + '}',
+      S + '.cc-section h3{' + MERKI.replace('10.5px', '11px') + ';color:' + GULL2 + '!important;margin-bottom:10px}',
+      S + '.cc-row{border-bottom-color:' + LINA + '!important}' + S + '.cc-row strong{color:' + INK + '}',
+      S + '.cc-empty{color:' + MUTE + '!important}',
+      S + '.cc-section .btn{' + DRAUGUR + '}' + S + '.cc-section .btn:hover{background:rgba(201,160,74,.16)!important}',
+      C + '[style*="color:#64748b"],' + C + '[style*="color:#94a3b8"],' + C + '[style*="color:#475569"]{color:' + MUTE + '!important}',
+      // línurit
+      S + '.cc-chart-col:hover{background:rgba(255,255,255,.04)!important}' + S + '.cc-chart-col.cc-col-sel{background:rgba(201,160,74,.12)!important}',
+      S + '.cc-stack .cc-zero{background:' + LINA + '!important}',
+      S + '.cc-stack.cc-today{box-shadow:0 0 0 2px rgba(255,210,120,.55),0 0 14px rgba(255,200,90,.35)!important}',
+      S + '.cc-chart-val,' + S + '.cc-chart-day,' + S + '.cc-chart-date{color:' + INK2 + '!important}',
+      S + '.cc-legend{border-top-color:' + LINA + '!important}',
+      S + '.cc-leg{' + DRAUGUR + '}' + S + '.cc-leg.on{background:' + GULLFLOTUR + '!important;color:#161513!important;border-color:#5a4410!important}',
+      // í dag-ræma, sundurliðun
+      S + '.cc-today-strip{background:rgba(255,255,255,.03)!important;border-color:' + LINA + '!important}',
+      S + '.cc-today-lbl{' + MERKI + '}',
+      S + '.cc-today-cell{background:' + BRUNNUR + '!important;border-color:' + LINA + '!important}',
+      S + '.cc-today-cell span{color:' + MUTE + '!important}' + S + '.cc-today-cell b{color:' + INK + '!important;font-family:"Playfair Display",Georgia,serif!important}',
+      S + '.cc-today-cell.cc-tc-sum{background:rgba(31,157,85,.12)!important;border-color:rgba(31,157,85,.45)!important}' + S + '.cc-today-cell.cc-tc-sum b{color:#7fd49b!important}',
+      S + '.cc-today-cell.cc-tc-muted b{color:' + GULL2 + '!important}',
+      S + '.cc-detail{background:' + BRUNNUR + '!important;border-color:' + LINA + '!important}' + S + '.cc-detail-hint{background:transparent!important;color:' + MUTE + '!important}',
+      S + '.cc-detail-h{color:' + INK2 + '!important}' + S + '.cc-detail-big{color:#7fd49b!important;font-family:"Playfair Display",Georgia,serif!important}' + S + '.cc-detail-sub{color:' + MUTE + '!important}',
+      S + '.cc-dd-row span{color:' + INK2 + '!important}' + S + '.cc-dd-tot{border-top-color:' + LINA + '!important}' + S + '.cc-dd-tot b{color:#7fd49b!important}',
+      S + '.cc-bd-grp{color:' + GULL2 + '!important}' + S + '.cc-bd-grp span{color:' + MUTE + '!important}',
+      S + '.cc-per-btn{' + DRAUGUR + '}' + S + '.cc-per-btn.on{background:' + GULLFLOTUR + '!important;color:#161513!important;border-color:#5a4410!important}',
+      S + '.cc-bd-row.sub{color:' + MUTE + '!important}' + S + '.cc-bd-row.sub b{color:' + INK2 + '!important}' + S + '.cc-bd-row.strong.big b{color:#7fd49b!important}',
+      S + '.cc-bd-div{background:' + LINA + '!important}',
+      S + '.cc-bd-note{background:rgba(201,160,74,.08)!important;border-color:rgba(201,160,74,.35)!important;color:' + GULL2 + '!important}',
+    ].join('\n');
+    return st;
   }
 
   // Sett inn beint undir kveðjuna, í sama verki og 61 teiknar (upprunalegi MO keyrir fyrir málun).

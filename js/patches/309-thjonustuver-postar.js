@@ -307,6 +307,14 @@
       payload = data || {};
     } catch (e) { STATE.loading = false; throw e; }
     STATE.freshestOut = payload.freshest_outbound || '';
+    // 28.09.2026 (Agnar: „ekki að syncast inn"): freshest_outbound er síðasti póstur OKKAR til kúnna í þjónustu — ekki
+    // hvenær pósthólfið var lesið inn. Enginn póstur til kúnna í 3 daga lét borðann segja að innlestur væri stopp,
+    // þótt gmail-ingest-background læsi SENT á 2 klst fresti. Borðinn mælir nú raunverulega innlesturinn.
+    try {
+      const { data: fi } = await sb.from('email_digest').select('fetched_at').eq('account', 'eldklar@eldklar.is')
+        .order('fetched_at', { ascending: false }).limit(1);
+      STATE.lesidInn = (fi && fi[0] && fi[0].fetched_at) || '';
+    } catch (_) { STATE.lesidInn = ''; }
 
     // 2) Hvað er þegar á Þjónustuborðinu (channel_ref='email:<id>') → forðast tvítak.
     STATE.promoted = new Set();
@@ -603,11 +611,17 @@
   }
   function freshnessNote() {
     const host = document.getElementById('tvp-note'); if (!host) return;
-    const d = daysAgo(STATE.freshestOut);
-    if (STATE.loaded && d != null && d >= 3) {
+    // Innlestur keyrir á 2 klst fresti (netlify.toml, gmail-ingest-background :35) — viðvörun aðeins ef hann hefur
+    // raunverulega fallið niður (> 5 klst). Óþekkt staða = enginn borði, frekar en borði sem segir ósatt.
+    const t = Date.parse(STATE.lesidInn || '');
+    const klst = isNaN(t) ? null : Math.floor((Date.now() - t) / 3600000);
+    if (STATE.loaded && klst != null && klst >= 5) {
+      const d = new Date(t), kl = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
       host.style.display = 'flex';
-      host.innerHTML = '<span>ℹ️</span><span>Sendur póstur okkar hefur ekki lesist inn síðan <b>' + esc(dt(STATE.freshestOut)) + '</b> (' + d + ' d.). ' +
-        'Svör sem send eru eftir það sjást ekki sjálfkrafa — svör send héðan og „✓ Merki svarað" haldast samt. AI merkir „takk"-pósta sem þarfnast einskis.</span>';
+      host.innerHTML = '<span>ℹ️</span><span>Pósthólfið eldklar@ var síðast lesið inn <b>' + esc(dt(STATE.lesidInn)) + ' kl. ' + kl + '</b> (' +
+        (klst >= 48 ? Math.floor(klst / 24) + ' d.' : klst + ' klst.') + ' síðan) — innlesturinn á að keyra á 2 klst fresti. ' +
+        'Svör sem send eru eftir það sjást ekki fyrr en hann keyrir aftur (Stjórnstöð → Samstilling gagna → Póstur — eldklar@ → Sækja). ' +
+        'Svör send héðan og „✓ Merki svarað" haldast samt.</span>';
     } else { host.style.display = 'none'; }
   }
   function render() {
