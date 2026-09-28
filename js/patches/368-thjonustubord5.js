@@ -1194,6 +1194,12 @@
       '.chk.done .chkbox{background:var(--g5);color:#fff;border-color:var(--g5)}',
       '.chkt{flex:1 1 auto;min-width:0;border:none;background:transparent;font:13.5px var(--body);color:var(--ink);padding:4px 2px;outline:none}',
       '.chkt:focus{background:var(--rule3)}',
+      '.chkgrip{flex:0 0 auto;cursor:grab;color:var(--mute);font-size:13px;letter-spacing:-2px;padding:4px 4px 4px 0;touch-action:none;user-select:none}',
+      '.chk.dregin{position:relative;z-index:5;box-shadow:0 8px 20px -6px rgba(22,21,19,.45);cursor:grabbing;opacity:.95}',
+      '.chk.yfir-upp{box-shadow:inset 0 3px 0 var(--g6)}.chk.yfir-nidur{box-shadow:inset 0 -3px 0 var(--g6)}',
+      '.chkstj{flex:0 0 auto;border:none;background:transparent;color:var(--mute);cursor:pointer;font-size:16px;line-height:1;padding:2px 5px;border-radius:4px}',
+      '.chkstj[aria-pressed="true"]{color:var(--g6)}.chkstj:hover{background:var(--rule3)}',
+      '.chk.star{border-color:var(--g5);background:linear-gradient(90deg,rgba(201,165,74,.10),#fff 40%)}',
       '.chkx{flex:0 0 auto;border:none;background:transparent;color:var(--mute);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:4px}.chkx:hover{background:#fef2f2;color:#b91c1c}',
       '.chkny{display:flex;gap:8px;align-items:center;margin-top:4px}',
       '.chkny input{flex:1 1 auto;min-width:0;padding:7px 10px;border:1px dashed var(--edge2);border-radius:5px;background:#fff;font:13px var(--body);color:var(--ink)}',
@@ -1371,6 +1377,7 @@
     // 18.09.2026 — stærðarhandfangið í hægri brún einingar. Breiddin er 1/2/3 dálkar
     // af þremur, svo dráttur smellur í þrep: hlutfall bendilsins af breidd ristarinnar.
     r.addEventListener('pointerdown', onBreiddNidur);
+    r.addEventListener('pointerdown', chkDragNidur);
     r.addEventListener('change', onChange);
     r.addEventListener('keydown', onKey);
     r.addEventListener('input', onInput);
@@ -2379,7 +2386,7 @@
   function chkLesa(n) {
     if (S.chkCache[n]) return S.chkCache[n];
     const v = P('skipulagsbord.by_staff.' + n + '.checklisti');
-    return Array.isArray(v) ? v.filter(x => x && x.id).map(x => ({ id: String(x.id), t: String(x.t || ''), done: !!x.done })) : [];
+    return Array.isArray(v) ? v.filter(x => x && x.id).map(x => ({ id: String(x.id), t: String(x.t || ''), done: !!x.done, star: !!x.star })) : [];
   }
   function chkVista(n, listi) {
     S.chkCache[n] = listi;
@@ -2396,10 +2403,14 @@
   const chkNyttId = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   function checklistiHtml(k) {
     const n = nu(), l = chkLesa(n);
-    const opin = l.filter(x => !x.done), lokid = l.filter(x => x.done);
-    const rod = x => '<div class="chk' + (x.done ? ' done' : '') + '">' +
+    // 28.09.2026 (Agnar: „leyfa mér að draga upp og niður, eða setja stjörnumerki"): stjörnumerkt atriði efst í opna
+    // listanum (röðin innan hvors hóps = röðin í fylkinu); ⋮⋮-gripið dregur atriði til með pointer-atburðum (mús OG fingur).
+    const opin = l.filter(x => !x.done && x.star).concat(l.filter(x => !x.done && !x.star)), lokid = l.filter(x => x.done);
+    const rod = x => '<div class="chk' + (x.done ? ' done' : '') + (x.star ? ' star' : '') + '" data-chkrod="' + esc(x.id) + '">' +
+      (x.done ? '' : '<span class="chkgrip" data-chkgrip="' + esc(x.id) + '" title="Draga upp eða niður" aria-hidden="true">⋮⋮</span>') +
       '<button type="button" class="chkbox" data-t5="chk-tog" data-id="' + esc(x.id) + '" aria-label="' + (x.done ? 'Taka hakið af' : 'Haka við') + '">' + (x.done ? '✓' : '') + '</button>' +
       '<input class="chkt" data-chk="t" data-id="' + esc(x.id) + '" value="' + esc(S.chkDrog[x.id] != null ? S.chkDrog[x.id] : x.t) + '" placeholder="Atriði…" aria-label="Atriði">' +
+      (x.done ? '' : '<button type="button" class="chkstj" data-t5="chk-star" data-id="' + esc(x.id) + '" aria-pressed="' + (x.star ? 'true' : 'false') + '" aria-label="' + (x.star ? 'Taka stjörnu af' : 'Stjörnumerkja') + '" title="' + (x.star ? 'Taka stjörnu af' : 'Stjörnumerkja — fer efst') + '">' + (x.star ? '★' : '☆') + '</button>') +
       '<button type="button" class="chkx" data-t5="chk-del" data-id="' + esc(x.id) + '" aria-label="Eyða atriði" title="Eyða">✕</button></div>';
     const body = '<div class="chkl">' +
       (opin.length ? opin.map(rod).join('') : '<div class="chktomt">Ekkert opið — skrifaðu fyrsta atriðið hér að neðan.</div>') +
@@ -2419,6 +2430,45 @@
       S.chkCache[n] = listi;
       (async () => { let ok = false; try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { checklisti: listi } } } })); } catch (_) {} if (ok && S.chkCache[n] === listi) delete S.chkCache[n]; })();
     });
+  }
+  // Dregið með pointer-atburðum (ekki HTML5 drag — það virkar ekki á snertiskjá). Línan fylgir fingrinum, lína þar sem
+  // hún lendir fær .yfir; við slepp er atriðið fært í fylkinu fyrir framan (eða aftan) þá línu og listinn vistaður heill.
+  function chkDragNidur(e) {
+    const grip = e.target && e.target.closest ? e.target.closest('[data-chkgrip]') : null;
+    if (!grip) return;
+    e.preventDefault();
+    const root = grip.getRootNode(), rodEl = grip.closest('.chk'), id = grip.dataset.chkgrip;
+    const y0 = e.clientY;
+    let mark = null, fyrir = true;
+    rodEl.classList.add('dregin');
+    try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+    const hreinsa = () => { root.querySelectorAll('.chk.yfir-upp,.chk.yfir-nidur').forEach(x => x.classList.remove('yfir-upp', 'yfir-nidur')); };
+    const fara = ev => {
+      rodEl.style.transform = 'translateY(' + (ev.clientY - y0) + 'px)';
+      hreinsa(); mark = null;
+      const radir = Array.from(root.querySelectorAll('.chk[data-chkrod]:not(.done)')).filter(x => x !== rodEl);
+      for (const r of radir) {
+        const b = r.getBoundingClientRect();
+        if (ev.clientY >= b.top && ev.clientY <= b.bottom) { mark = r; fyrir = ev.clientY < b.top + b.height / 2; r.classList.add(fyrir ? 'yfir-upp' : 'yfir-nidur'); break; }
+      }
+    };
+    const sleppa = () => {
+      grip.removeEventListener('pointermove', fara); grip.removeEventListener('pointerup', sleppa); grip.removeEventListener('pointercancel', sleppa);
+      rodEl.classList.remove('dregin'); rodEl.style.transform = ''; hreinsa();
+      if (!mark) return;
+      const til = mark.dataset.chkrod;
+      chkBreyta(nu(), l => {
+        const i = l.findIndex(x => x.id === id); if (i < 0) return l;
+        const [x] = l.splice(i, 1);
+        const j = l.findIndex(y => y.id === til);
+        // Stjarnan fylgir staðnum: dregið inn á meðal stjörnumerktra = fær stjörnu, út úr þeim = missir hana.
+        const tilX = l[j];
+        if (tilX) x.star = !!tilX.star;
+        l.splice(j < 0 ? l.length : (fyrir ? j : j + 1), 0, x);
+        return l;
+      });
+    };
+    grip.addEventListener('pointermove', fara); grip.addEventListener('pointerup', sleppa); grip.addEventListener('pointercancel', sleppa);
   }
   function chkBaetaVid(root) {
     const inp = root.querySelector('[data-chkny]'); const t = inp ? inp.value.trim() : '';
@@ -4995,6 +5045,7 @@
         return;
       }
       case 'chk-add': { chkBaetaVid(el.getRootNode()); return; }
+      case 'chk-star': { const id = el.dataset.id; chkBreyta(nu(), l => l.map(x => x.id === id ? Object.assign({}, x, { star: !x.star }) : x)); return; }
       case 'chk-tog': { const id = el.dataset.id; chkBreyta(nu(), l => l.map(x => x.id === id ? Object.assign({}, x, { done: !x.done }) : x)); return; }
       case 'chk-del': {
         const id = el.dataset.id, n = nu(), gamalt = chkLesa(n).find(x => x.id === id);

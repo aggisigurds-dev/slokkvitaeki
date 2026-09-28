@@ -91,12 +91,15 @@
     sz = +sz || 16;
     if (TOUCH && sz < 28) sz = 28;
     const n = get(coId);
-    return '<button class="_go-btn" data-co-id="' + coId + '" data-go="' + n + '" type="button" ' +
+    // data-sz = grunnstærðin. _paint les hana héðan — ALDREI af getBoundingClientRect(), sem telur scale() með
+    // (28.09.2026: í síma kom mouseover við hvern smell en mouseout ekki, svo hnappurinn stækkaði um 25% við
+    // hvern smell — 28 → 35 → 44 → 55 px … Agnar: „Þeir stækka alltaf í hvert skipti").
+    return '<button class="_go-btn" data-co-id="' + coId + '" data-go="' + n + '" data-sz="' + sz + '" type="button" ' +
       'aria-label="GÓ-merki" title="GÓ — smelltu til að fletta merkinu" ' +
       'style="display:inline-block;padding:0;cursor:pointer;flex-shrink:0;' +
         'transition:background-color .15s ease-out,box-shadow .15s ease-out,opacity .15s ease-out,transform .12s ease-out;' +
         _style(n, sz) + '"' +
-      ' onmouseover="this.style.transform=\'scale(1.25)\'" onmouseout="this.style.transform=\'scale(1)\'"></button>';
+      (TOUCH ? '' : ' onmouseover="this.style.transform=\'scale(1.25)\'" onmouseout="this.style.transform=\'scale(1)\'"') + '></button>';
   }
 
   // Hver coId getur átt marga takka á skjánum í einu (listi + kort + gluggi).
@@ -106,8 +109,8 @@
     document.querySelectorAll(sel).forEach(b => {
       b.dataset.go = n;
       // Stærðin sem takkinn var teiknaður með helst — les hana af honum sjálfum.
-      const sz = Math.round(b.getBoundingClientRect().width) || (TOUCH ? 28 : 16);
-      const t = b.style.transform;
+      const sz = +b.dataset.sz || b.offsetWidth || (TOUCH ? 28 : 16);   // offsetWidth er óháð transform
+      const t = TOUCH ? '' : b.style.transform;
       b.setAttribute('style',
         'display:inline-block;padding:0;cursor:pointer;flex-shrink:0;' +
         'transition:background-color .15s ease-out,box-shadow .15s ease-out,opacity .15s ease-out,transform .12s ease-out;' +

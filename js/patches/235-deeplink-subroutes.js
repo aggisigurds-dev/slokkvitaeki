@@ -122,7 +122,7 @@
     var orig = Companies.openDetail;
     var wrapped = function (id) {
       var r = orig.apply(this, arguments);
-      if (!_suppress && id != null) setHash('company', id);
+      if (!_suppress && !window.__coLifandi && id != null) setHash('company', id);   // 421: sama síða, sama slóð
       return r;
     };
     for (var k in orig) { try { wrapped[k] = orig[k]; } catch (_) {} }
