@@ -55,6 +55,10 @@
   // sett punkt þar sem virkt í ársskoðunarútreikningunum"). Ágiskaðar línur bera hann ekki.
   const SKRAD_PUNKTUR = '<span title="Skráð verðtenging (Vörur og þjónusta → 🧯 Slökkvit. verð) — engin ágiskun" ' +
     'style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 2px #dcfce7;margin-right:5px;vertical-align:middle"></span>';
+  // 28.09.2026 (Agnar): textinn sem fylgir ónýtu tæki alla leið á reikninginn.
+  // 165 skafar undirlínuna ORÐRÉTT í `desc`, svo þetta er eini staðurinn sem
+  // þarf að breyta til að orða þetta öðruvísi.
+  const ONYTT_SKYRING = ' — yfirfarið en útskurðað ónýtt';
   // 410 vistar tengingu → skyndiminnið hér er úrelt. Sé kostnaðartaflan á skjánum
   // teiknast hún strax með nýju tengingunni; annars næst þegar hún opnast.
   document.addEventListener('click', (e) => {
@@ -730,16 +734,21 @@
     units.forEach(u => {
       const typeNorm = normalizeTypeFamily(u.type);
       const key = typeNorm + '|' + (u.size || '');
-      if (!agg[key]) agg[key] = { key, type: typeNorm, size: u.size || '', hledsla: 0, yfirferd: 0, nyitt: 0, skip: 0 };
+      if (!agg[key]) agg[key] = { key, type: typeNorm, size: u.size || '', hledsla: 0, yfirferd: 0, nyitt: 0, onytt: 0, skip: 0 };
       const choice = getUnitChoice(coId, u.id, u.type);
       if (choice === 'hledsla') agg[key].hledsla++;
       else if (choice === 'yfirferd') agg[key].yfirferd++;
       else if (choice === 'nyitt') agg[key].nyitt++;
+      // 28.09.2026 (Agnar): ónýtt tæki var yfirfarið — vinnan var unnin og er
+      // rukkuð á yfirferðarverði. Áður datt það í `skip` og hvarf af reikningnum.
+      // Á AÐEINS við ársskoðun slökkvitækja (þessa síðu); verkstæðisleiðin (269)
+      // setur status='onytt' og er óbreytt.
+      else if (choice === 'onytt') agg[key].onytt++;
       else agg[key].skip++;
     });
     const groups = Object.values(agg)
-      .filter(g => g.hledsla + g.yfirferd + g.nyitt + g.skip > 0)
-      .sort((a, b) => (b.hledsla + b.yfirferd + b.nyitt) - (a.hledsla + a.yfirferd + a.nyitt));
+      .filter(g => g.hledsla + g.yfirferd + g.nyitt + g.onytt + g.skip > 0)
+      .sort((a, b) => (b.hledsla + b.yfirferd + b.nyitt + b.onytt) - (a.hledsla + a.yfirferd + a.nyitt + a.onytt));
 
     // 2026-05-20: blue notes box above the green cost section — free-text
     // for the visit (e.g. "Bára vill skipta öllum á neðri hæð"). Persisted in
@@ -909,10 +918,15 @@
         return;
       }
       // Each kind that has count > 0 gets its own row.
-      [['hledsla', 'Hleðsla'], ['yfirferd', 'Yfirferð']].forEach(([kindKey, kindLabel]) => {
+      // 28.09.2026: „onytt" er ekki eigin þjónusta í verðlistanum — hún er YFIRFERÐ
+      // á yfirferðarverði, með sínu eigin merki, sínum eigin afsláttarlykli og
+      // skýringu á línunni. verdKind ræður öllu verð-uppflettinu; kindKey aðeins
+      // merkinu og lyklinum.
+      [['hledsla', 'Hleðsla'], ['yfirferd', 'Yfirferð'], ['onytt', 'Ónýtt']].forEach(([kindKey, kindLabel]) => {
         const n = g[kindKey];
         if (!n) return;
-        const skrad = kindKey === 'hledsla' ? skradH : skradY;
+        const verdKind = kindKey === 'onytt' ? 'yfirferd' : kindKey;
+        const skrad = verdKind === 'hledsla' ? skradH : skradY;
         if (skrad === 'ekki_rukka') {
           // Skráð sem ó-rukkanlegt (410). Sýnt fölt eins og „Sleppt" — lína sem
           // hverfur þegjandi lítur út eins og villa í útreikningnum.
@@ -926,7 +940,7 @@
         }
         // Afbrigðis-vörpun reykskynjara sem varaleið: sé aðeins hin þjónustan skráð
         // má þessi ekki detta þegjandi út (áður: `if (!product) return;`).
-        const product = skrad || pickByKind(matching, kindKey) || reykVariantProduct(g.type, g.size, services);
+        const product = skrad || pickByKind(matching, verdKind) || reykVariantProduct(g.type, g.size, services);
         if (!product) return;
         const override = findOverride(coId, product.nafn);
         let unitPrice = override ? +override.price_ex_vat : +product.verd_an_vsk;
@@ -947,10 +961,13 @@
         if (override || tierMark || tierPctMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
         rows.push('<tr>' +
           '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
-            '<div style="font-size:11px;color:#64748b">' + (skrad ? SKRAD_PUNKTUR : '') + esc(product.nafn) + '</div></td>' +
+            '<div style="font-size:11px;color:#64748b">' + (skrad ? SKRAD_PUNKTUR : '') + esc(product.nafn) +
+              (kindKey === 'onytt' ? esc(ONYTT_SKYRING) : '') + '</div></td>' +
           '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + n + '</td>' +
           '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;' +
-            (kindKey === 'hledsla' ? 'background:#dcfce7;color:#166534' : 'background:#dbeafe;color:#1e40af') + '">' +
+            (kindKey === 'hledsla' ? 'background:#dcfce7;color:#166534'
+             : kindKey === 'onytt' ? 'background:#fee2e2;color:#991b1b'
+             : 'background:#dbeafe;color:#1e40af') + '">' +
             kindLabel + '</span></td>' +
           priceCell(dKey, unitPrice, override || tierMark) +
           '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +

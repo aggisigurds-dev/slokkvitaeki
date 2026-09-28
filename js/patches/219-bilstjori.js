@@ -1331,7 +1331,7 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
           '<div class="usvc-row">' +
             SVC.map(s => '<button class="usvc _bs-usvc' + ((!onytt && svc === s[0]) ? ' is-on' : '') +
               '" data-v="' + s[0] + '" data-id="' + u.id + '" type="button">' + s[1] + '</button>').join('') +
-            '<button class="uonytt _bs-uonytt' + (onytt ? ' is-on' : '') + '" data-id="' + u.id + '" type="button" title="Ónýtt — ekki rukkað" aria-label="Ónýtt">🚫</button>' +
+            '<button class="uonytt _bs-uonytt' + (onytt ? ' is-on' : '') + '" data-id="' + u.id + '" type="button" title="Ónýtt — rukkast á yfirferðarverði (vinnan var unnin)" aria-label="Ónýtt">🚫</button>' +
           '</div>' +
         '</div>';
       }).join('');

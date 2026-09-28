@@ -102,7 +102,7 @@
         '<div class="ut-now">'+
           '<button class="ut-check'+(done?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" title="Merkja yfirfarið">✓</button>'+
           '<div class="ut-svcseg">'+segs+'</div>'+
-          '<button class="ut-onytt'+(onytt?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-ty="'+esc(u.type)+'" title="Merkja ónýtt — ekki rukkað">🚫</button>'+
+          '<button class="ut-onytt'+(onytt?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-ty="'+esc(u.type)+'" title="Merkja ónýtt — rukkast á yfirferðarverði (vinnan var unnin)">🚫</button>'+
         '</div>'+
         '<div class="ut-far">'+
           '<button class="ut-act" onclick="Print.showQR(DB.getUnit('+u.id+'))" title="Prenta QR-miða">▦</button>'+
