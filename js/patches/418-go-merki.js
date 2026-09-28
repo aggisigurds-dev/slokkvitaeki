@@ -60,16 +60,28 @@
   // Snertiskjár: 18 px hnappur er langt undir lágmarki (sama úttekt og í 175).
   const TOUCH = (typeof matchMedia === 'function') && matchMedia('(pointer:coarse)').matches;
 
+  // !important á hverri sjónrænni yfirlýsingu — ekki af kæruleysi. Þemað málar
+  // ALLA <button> með málmhalla og svörtum ramma gegnum reglu sem `matches()`
+  // nær ekki að meta (leitað 28.09, fannst ekki í neinu stílblaði). Mælt á
+  // lifandi síðu: innlínu-stíllinn stóð réttur (`background:#3b82f6`) en
+  // reiknaða gildið var `linear-gradient(#3d4048,#1c1e23)` — punkturinn var
+  // málmhnappur, ekki glóandi punktur. Innlína MEÐ !important er efst í
+  // stigveldinu og endar þann slag án þess að elta uppi regluna.
+  // Sjá [CSS override specificity].
   function _style(n, sz) {
     const c = colorOf(n);
+    const G = '!important';
+    const grunn = 'width:' + sz + 'px' + G + ';height:' + sz + 'px' + G +
+      ';border-radius:50%' + G + ';box-sizing:border-box' + G +
+      ';background-image:none' + G + ';';
     return n === 0
       // Ósett: hálfgegnsær hringur — sést að reiturinn er til, án þess að trana sér fram.
-      ? 'width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;box-sizing:border-box;' +
-        'border:1.5px solid ' + c + ';background:transparent;opacity:.35;box-shadow:none'
+      ? grunn + 'border:1.5px solid ' + c + G + ';background-color:transparent' + G +
+        ';opacity:.35' + G + ';box-shadow:none' + G
       // Glóandi: fylltur punktur með tveimur lögum af ljóma.
-      : 'width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;box-sizing:border-box;' +
-        'border:1.5px solid ' + c + ';background:' + c + ';opacity:1;' +
-        'box-shadow:0 0 4px ' + c + ',0 0 9px ' + c + '66,inset 0 1px 1px rgba(255,255,255,.55)';
+      : grunn + 'border:1.5px solid ' + c + G + ';background-color:' + c + G +
+        ';opacity:1' + G +
+        ';box-shadow:0 0 4px ' + c + ',0 0 9px ' + c + '66,inset 0 1px 1px rgba(255,255,255,.55)' + G;
   }
 
   function btnHtml(coId, sz) {
