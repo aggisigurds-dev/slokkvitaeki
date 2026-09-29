@@ -55,6 +55,12 @@ Listinn af **virkum field-tækjum** birtist með checkbox + service-dropdown per
 
 ## Skref 3 — Verkstæðismaður vinnur tækin
 
+> **29.09.2026 — unnið AÐEINS í verkbeiðninni.** Tækin birtast líka í „Komið úr þjónustu" hægra megin, en
+> þar standa þau sem „í verki R-NNNNNN" án takka. Merktu Tilbúið / Ónýtt í Verkröðinni — það er leiðin sem
+> endar á reikningi. Fyrirtækjaprófíllinn sýnir stöðuna á hverju tæki (Á verkstæði → Tilbúið / Ónýtt →
+> Skilað) og hakið þar verður grænt og læst þegar verkbeiðnin er afgreidd (Sótt ✓). Tækin eru rukkuð á
+> verkbeiðninni og teljast ekki aftur í ársskoðunarkostnaðinum.
+
 1. **Smelltu á verkbeiðnina** í Verkröðinni → modal opnast með öllum tækjunum
 2. Fyrir hvert tæki:
    - 📷 **Skanna** — skanna QR-kóða með myndavél (ef þeir eru með kóða)
