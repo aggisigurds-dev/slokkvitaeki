@@ -75,7 +75,30 @@
 
   function getChoice(coId,u){ try{ return window.UnitServicePicker ? UnitServicePicker.getChoice(coId,u.id,u.type) : 'yfirferd'; }catch(_){ return 'yfirferd'; } }
 
+  // 29.09.2026 (422): verkbeiðnarlínan ræður stöðu tækis sem fór á verkstæði — áður giskaði lastChip út frá
+  // status='loaned' og sýndi „↺ Hleðsla '26" eins og síðustu þjónustu, þótt tækið stæði enn á verkstæðinu.
+  function vtStada(u){ try{ return (window.VerkTenging && VerkTenging.stada) ? VerkTenging.stada(u.id) : null; }catch(_){ return null; } }
+  function ddmm(d){ var s=String(d||''); return s.length>=10 ? s.slice(8,10)+'/'+s.slice(5,7) : ''; }
+  function verkChip(s, u){
+    var txt, tit, num = s.num ? ' · '+esc(s.num) : '';
+    if(s.kind==='verkstaedi'){ txt='Á verkstæði'; tit='Á verkstæði í verkbeiðni '+s.num+(s.svcLabel?' ('+s.svcLabel.toLowerCase()+')':'')+'. Hakið verður grænt þegar tækinu er skilað.'; }
+    else if(s.kind==='tilbuid'){ txt=s.tilAfhendingar?'Tilbúið til afhendingar':'Tilbúið'; tit=(s.svcLabel||'Tilbúið')+' á verkstæði — '+s.num+'. Hakið verður grænt þegar tækinu er skilað.'; }
+    else if(s.kind==='onytt'){ txt='Ónýtt'; tit='Merkt ónýtt á verkstæði — '+s.num+'. Staðfestist þegar verkbeiðnin er afgreidd.'; }
+    else if(s.kind==='skilad'){ txt='Skilað'+(u.last_insp?' '+ddmm(u.last_insp):'')+(s.svcLabel?' · '+s.svcLabel:''); num=''; tit='Skilað af verkstæði — '+s.num+' (rukkað þar).'; }
+    else { txt='Ónýtt · staðfest'; tit='Ónýtt — staðfest við afgreiðslu '+s.num+'.'; }
+    return '<span class="ut-last vt vt-'+s.kind+'" title="'+esc(tit)+'">'+esc(txt)+num+'</span>';
+  }
+  // Tæki sem bílstjóri kom með (219 „Á verkstæði") á enga verkbeiðni — staðan býr þá á tækinu (269-lífsferill).
+  function bilstjoriChip(u){
+    var cs = u.custody_status || '';
+    var txt = cs==='tilbuid' ? 'Tilbúið á verkstæði' : cs==='farid' ? 'Farið af verkstæði' : 'Á verkstæði';
+    return '<span class="ut-last vt vt-'+(cs==='tilbuid'?'tilbuid':'verkstaedi')+'" title="Á verkstæði (Komið úr þjónustu) — engin verkbeiðni">'+txt+'</span>';
+  }
+
   function lastChip(u){
+    var vs = vtStada(u);
+    if(vs) return verkChip(vs, u);
+    if(String(u.status||'').toLowerCase()==='loaned') return bilstjoriChip(u);
     var y = u.last_insp ? parseInt(String(u.last_insp).slice(0,4),10) : 0;
     if(!y) return '<span class="ut-last none">Ný / óskoðuð</span>';
     // best-effort last-service label from the unit status (no per-unit service
@@ -86,8 +109,25 @@
     return '<span class="ut-last'+(hled?' h':'')+(y<CUR-1?' old':'')+'">↺ '+lab+' ’'+String(y).slice(-2)+'</span>';
   }
 
+  // 422: tæki sem verkbeiðni á er unnið og rukkað ÞAR (Agnar 29.09). Þjónustuvalið sýnir þjónustu línunnar og
+  // er læst; hakið bíður (strikað) þar til verkinu er lokið og verður þá grænt og staðfest. EIN skilgreining sem
+  // bæði rowHtml (full teikning) og uppfaeraRadir (breyting á staðnum) nota — annars rækju þær í sundur.
+  function radStada(coId, u){
+    var cur = getChoice(coId,u), h = { vs: vtStada(u), cur: cur, onytt: cur==='onytt', done: !!_done[u.id], hak: '', hakTitill: 'Merkja yfirfarið' };
+    if(h.vs){
+      h.cur = ({hledsla:'hledsla', yfirferd:'yfirferd', nytt:'nyitt'})[h.vs.svc] || '';
+      h.onytt = false;
+      if(h.vs.stadfest){ h.done = true; h.hak = 'stadfest'; h.hakTitill = 'Staðfest — '+(h.vs.kind==='onytt_skilad'?'ónýtt':'skilað af verkstæði')+' ('+h.vs.num+')'; }
+      else { h.done = false; h.hak = 'bid'; h.hakTitill = 'Á verkstæði ('+h.vs.num+') — hakið verður grænt þegar tækinu er skilað'; }
+    }
+    h.segTitill = h.vs ? 'Rukkað á verkbeiðni '+h.vs.num+' — ekki í ársskoðuninni' : '';
+    return h;
+  }
+
   function rowHtml(coId, u){
-    var f = fam(u.type), cur = getChoice(coId,u), onytt = cur==='onytt', sel = !!_sel[u.id], done = !!_done[u.id];
+    var f = fam(u.type), sel = !!_sel[u.id], h = radStada(coId, u);
+    var cur = h.cur, onytt = h.onytt, done = h.done, vs = h.vs;
+    var vtHak = h.hak ? ' vt-'+h.hak : '', vtTitill = h.hakTitill;
     var segs = SVC.map(function(s){
       var on = (!onytt && cur===s[0]);
       return '<button class="ut-svc'+(on?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-v="'+s[0]+'">'+s[1]+'</button>';
@@ -100,9 +140,9 @@
       '<div class="ut-right">'+
         '<div class="ut-lastcol">'+lastChip(u)+'</div>'+
         '<div class="ut-now">'+
-          '<button class="ut-check'+(done?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" title="Merkja yfirfarið">✓</button>'+
-          '<div class="ut-svcseg">'+segs+'</div>'+
-          '<button class="ut-onytt'+(onytt?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-ty="'+esc(u.type)+'" title="Merkja ónýtt — rukkast á yfirferðarverði (vinnan var unnin)">🚫</button>'+
+          '<button class="ut-check'+(done?' on':'')+vtHak+'" data-co="'+coId+'" data-uid="'+u.id+'" title="'+esc(vtTitill)+'">✓</button>'+
+          '<div class="ut-svcseg'+(vs?' vt-laest':'')+'"'+(vs?' title="'+esc(h.segTitill)+'"':'')+'>'+segs+'</div>'+
+          '<button class="ut-onytt'+(onytt?' on':'')+(vs?' vt-laest':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-ty="'+esc(u.type)+'" title="Merkja ónýtt — rukkast á yfirferðarverði (vinnan var unnin)">🚫</button>'+
         '</div>'+
         '<div class="ut-far">'+
           '<button class="ut-act" onclick="Print.showQR(DB.getUnit('+u.id+'))" title="Prenta QR-miða">▦</button>'+
@@ -113,6 +153,9 @@
 
   function inner(coId, units){
     _done = loadDone(coId);   // endurheimta grænu hökin (per fyrirtæki) svo þau lifi opnun/endurhleðslu
+    // 422: sækja verkstæðisstöðu tækjanna (TTL — ódýrt að kalla við hverja teikningu); raðir sem reynast á
+    // verkstæði eru uppfærðar á staðnum þegar svarið kemur (uppfaeraRadir), ekki allur listinn.
+    try{ if(window.VerkTenging && VerkTenging.nyrListi) VerkTenging.nyrListi(coId, units.map(function(u){ return u.id; })); }catch(_){}
     var selUnits = units.filter(function(u){return _sel[u.id];});
     var n = selUnits.length;
     var allSel = units.length>0 && n===units.length;
@@ -223,6 +266,50 @@
           if (el && el.focus) el.focus({ preventScroll: true });
         } catch(_){}
       }
+    },
+    // 29.09.2026 (422): verkstæðisstaða tækis breyttist (oft á annarri vél) — skipta AÐEINS um þær raðir.
+    // Sama hæð, sama staður: ekkert hopp, skrun og val haldast (Stöðugt viðmót, regla 3).
+    // Röðinni er EKKI skipt út: 404 endurraðar hverri röð einu sinni (merkið inn í undirlínu, DD/MM/YYYY, hakið í
+    // eigið hólf) og ný röð færi fram hjá því. Hér eru aðeins klasar, titlar og texti hnútanna uppfærðir þar sem
+    // þeir standa — sama hvaða pappi raðaði þeim (regla 4: tveir pappar eiga ekki sama hnút).
+    uppfaeraRadir: function(coId, ids){
+      var cache = (window.DB && DB.cache && DB.cache.units) || [];
+      (ids||[]).forEach(function(id){
+        var u = null; for(var i=0;i<cache.length;i++){ if(+cache[i].id===+id){ u=cache[i]; break; } }
+        if(!u) return;
+        var h = radStada(coId, u);
+        document.querySelectorAll('.ut-list[data-uw-co="'+coId+'"] .ut-chk[data-uid="'+id+'"]').forEach(function(chk){
+          var row = chk.closest('.ut-row'); if(!row) return;
+          row.classList.toggle('onytt', h.onytt);
+          var hak = row.querySelector('.ut-check');
+          if(hak){
+            hak.classList.toggle('on', h.done);
+            hak.classList.toggle('vt-bid', h.hak==='bid');
+            hak.classList.toggle('vt-stadfest', h.hak==='stadfest');
+            hak.title = h.hakTitill;
+          }
+          var seg = row.querySelector('.ut-svcseg');
+          if(seg){
+            seg.classList.toggle('vt-laest', !!h.vs);
+            if(h.vs) seg.title = h.segTitill; else seg.removeAttribute('title');
+            seg.querySelectorAll('.ut-svc').forEach(function(b){ b.classList.toggle('on', !h.onytt && h.cur===b.dataset.v); });
+          }
+          var ony = row.querySelector('.ut-onytt');
+          if(ony){ ony.classList.toggle('vt-laest', !!h.vs); ony.classList.toggle('on', h.onytt); }
+          var last = row.querySelector('.ut-last');
+          if(last){
+            var t = document.createElement('div'); t.innerHTML = lastChip(u);
+            var ny = t.firstElementChild;
+            if(ny){ if(row.dataset.b404) ny.textContent = ny.textContent.replace(/^[\s↺]+/,''); last.replaceWith(ny); }
+          }
+          var naest = row.querySelector('.b404-naest');
+          if(naest){ if(u.next_insp) naest.textContent = 'næsta '+String(u.next_insp).slice(8,10)+'/'+String(u.next_insp).slice(5,7)+'/'+String(u.next_insp).slice(0,4); }
+          else {
+            var sub = row.querySelector('.ut-sub');
+            if(sub && !sub.children.length) sub.textContent = (u.serial||'')+(u.next_insp?' · næsta '+fd(u.next_insp):'');
+          }
+        });
+      });
     },
     // Aðrir patchar (t.d. 270 sem læsir listanum sjálfkrafa við lok heimsóknar)
     // geta kveikt á sama skrefi án þess að afrita rökin.
@@ -360,6 +447,11 @@
       try{ UnitServicePicker.setChoice(+b.dataset.co,+b.dataset.uid,b.dataset.v); }catch(_){}
       recompute(); UttektTaeki.rerender(+b.dataset.co); return;
     }
+    // 422: tæki í verkbeiðni er merkt ónýtt í Verkröðinni, ekki hér (404 býður „Merkja ónýtt" í ⋯-valmynd).
+    if((b=e.target.closest('.ut-onytt.vt-laest'))){
+      try{ if(window.Toast && Toast.show) Toast.show('Tækið er í verkbeiðni — merktu það ónýtt í Verkröðinni'); }catch(_){}
+      return;
+    }
     if((b=e.target.closest('.ut-onytt'))){
       var co=+b.dataset.co, uid=+b.dataset.uid, cur='';
       try{ cur=UnitServicePicker.getChoice(co,uid,b.dataset.ty); }catch(_){}
@@ -373,6 +465,11 @@
     // Endurteikningin reif um leið upp kostnaðarspjaldið sem 129 á og 224 hefur
     // flutt í #_ctc-slot, svo hægri dálkurinn blikkaði og síðan hoppaði.
     // Reglan: uppfærðu hnútinn sem breyttist. Engin endurteikning hér.
+    // 422: hak sem verkbeiðni á — bíður eftir verkstæðinu eða er þegar staðfest. Segja frá, breyta engu.
+    if((b=e.target.closest('.ut-check.vt-bid,.ut-check.vt-stadfest'))){
+      try{ if(window.Toast && Toast.show) Toast.show(b.getAttribute('title')||''); }catch(_){}
+      return;
+    }
     if((b=e.target.closest('.ut-check'))){
       var duid=+b.dataset.uid, dco=+b.dataset.co;
       if(_done[duid]) delete _done[duid]; else _done[duid]=true;

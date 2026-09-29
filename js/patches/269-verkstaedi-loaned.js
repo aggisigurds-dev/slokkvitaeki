@@ -32,7 +32,14 @@
       _shop = await DB.fetchAll((from, to) => DB.sb.from('uttaeki').select('id,client,type,size,serial,status,custody_status,service_choice').eq('status', 'loaned').order('id').range(from, to));
       _loadedAt = Date.now();
     } catch (_) {}
+    // 29.09.2026 (422, Agnar: „aðeins í verkbeiðninni"): hvaða tæki eiga opna verkbeiðni (122 Sækja inn)?
+    try { if (window.VerkTenging && _shop.length) await VerkTenging.ensure(_shop.map(u => u.id)); } catch (_) {}
   }
+  // Tæki í opinni verkbeiðni er unnið í Verkröðinni (Tilbúið / Ónýtt → Sótt ✓ = reikningur). Hér er það aðeins
+  // sýnt — takkarnir hér skrifuðu beint á tækið án reiknings, og tækið var þá rakið á tveimur stöðum.
+  const iVerki = (u) => {
+    try { const s = window.VerkTenging && VerkTenging.stada(u.id); return (s && !s.stadfest) ? s : null; } catch (_) { return null; }
+  };
   async function saveCustody(id, patch) {
     if (!(window.DB && DB.sb)) return false;
     try { const r = await DB.sb.from('uttaeki').update(patch).eq('id', id); return !(r && r.error); } catch (_) { return false; }
@@ -82,6 +89,19 @@
       const label = typeRaw + (u.size ? ' ' + u.size : '');
       const serialShort = String(u.serial || '').replace(/^.*-/, '').slice(0, 8);
       const col = typeColor(typeRaw + ' ' + (u.size || ''));
+      const vs = iVerki(u);
+      if (vs) {
+        const lbl = vs.kind === 'tilbuid' ? 'Tilbúið' + (vs.svcLabel ? ' · ' + vs.svcLabel : '') : vs.kind === 'onytt' ? 'Ónýtt' : 'Á verkstæði';
+        const cls = vs.kind === 'tilbuid' ? 'tilbuid' : vs.kind === 'onytt' ? 'onytt' : 'komid';
+        return '<div class="vkl-tile vkl-tile--verk"' + (col ? ' style="--vkm-type:' + esc(col) + '"' : '') + ' title="' + esc((u.serial || '') + ' — unnið í verkbeiðni ' + vs.num) + '">' +
+            '<div class="vkl-body">' +
+              '<div class="vkl-ty">' + esc(label) + '</div>' +
+              (serialShort ? '<div class="vkl-ser">' + esc(serialShort) + '</div>' : '') +
+              '<div class="vkl-st vkl-st--' + cls + '"><i aria-hidden="true"></i>' + esc(lbl) + '</div>' +
+            '</div>' +
+            '<div class="vkl-foot vkl-foot--one"><span class="vkl-iverki">í verki ' + esc(vs.num) + '</span></div>' +
+          '</div>';
+      }
       let foot = '';
       if (cs === 'null') foot = '<div class="vkl-foot vkl-foot--one">' + actBtn(u.id, 'komid', 'Komið', IC.check, 'komid') + '</div>';
       else if (cs === 'komid') foot = '<div class="vkl-foot">' +
@@ -100,9 +120,13 @@
           foot +
         '</div>';
     };
+    const meta = (items) => {
+      const nums = [...new Set(items.map(u => { const s = iVerki(u); return s ? s.num : ''; }))];
+      return (nums.length === 1 && nums[0]) ? 'í verki ' + nums[0] + ' — unnið í Verkröðinni' : 'komið úr þjónustu';
+    };
     const cards = grp.length ? grp.map(g =>
       '<div class="vkl-grp">' +
-        '<div class="vkl-grp-h"><span class="vkl-name">' + esc(g.client) + '</span><span class="vkl-meta">' + g.items.length + ' tæki · komið úr þjónustu</span></div>' +
+        '<div class="vkl-grp-h"><span class="vkl-name">' + esc(g.client) + '</span><span class="vkl-meta">' + g.items.length + ' tæki · ' + esc(meta(g.items)) + '</span></div>' +
         '<div class="vkl-tiles">' + g.items.map(tile).join('') + '</div>' +
       '</div>').join('')
       : '<div class="vkl-empty">Engin tæki komin úr þjónustu núna.</div>';
@@ -154,6 +178,9 @@
       W + '.vkl-act--sott{border-color:rgba(52,168,98,.55);background:' + GREEN_METAL + ';color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 12px -5px rgba(22,140,72,.65)}',
       W + '.vkl-act--komid:hover,' + W + '.vkl-act--sott:hover{filter:brightness(1.2)}',
       W + '.vkl-empty{padding:16px 8px;color:#525b6b;font-size:12px;text-align:center}',
+      // 422: tæki í opinni verkbeiðni — plata í stað takka
+      W + '.vkl-st--onytt{color:#b42318}' + W + '.vkl-st--onytt i{background:#c92a2a}',
+      W + '.vkl-iverki{height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid rgba(20,24,34,.12);background:#eef1f6;box-shadow:inset 0 2px 4px rgba(0,0,0,.08);font-family:' + MONO + ';font-size:10px;font-weight:700;color:#3a4250;letter-spacing:.02em}',
     ].join('\n');
     const st = document.createElement('style');
     st.id = '_vkl-css';
@@ -205,7 +232,16 @@
     await loadShop(true); inject(true);
   }
 
+  let _vtAskrift = null;
   async function inject(force) {
+    // 422 hleðst á eftir þessum pappa — áskrift tekin við fyrstu teikningu: Tilbúið/Ónýtt í Verkröðinni
+    // (eða Sótt ✓) breytir flísunum hér strax.
+    if (!_vtAskrift && window.VerkTenging && VerkTenging.onChange) {
+      _vtAskrift = VerkTenging.onChange(() => {
+        const vw = document.getElementById('view-workshop');
+        if (vw && vw.style.display !== 'none') inject(true);
+      });
+    }
     const bodies = document.querySelectorAll('#view-workshop .bw-sh-body');
     if (!bodies.length) return;
     if (_busy) return; _busy = true;

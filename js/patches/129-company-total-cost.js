@@ -614,6 +614,29 @@
       const seen = new Set(units.map(u => u.id));
       munadarlaus.forEach(u => { if (!seen.has(u.id)) units.push(u); });
     }
+    // 29.09.2026 (Agnar: rukka „aðeins á verkbeiðninni"): tæki sem fór á verkstæði í verkbeiðni (122 Sækja inn) —
+    // eða var skilað úr henni nýlega — er rukkað á verkbeiðninni (R-…) og telst EKKI aftur hér. Áður las
+    // _normStatus 'loaned' sem virkt: 5 hlaðin tæki á R-001050 (42.050 kr) stóðu líka hér sem yfirferð.
+    // Taflan fær eina gráa skýringarlínu (einn reitur — 165 scrapeCostRows sleppir < 6 reitum).
+    let _averk = [];
+    if (window.VerkTenging && typeof VerkTenging.ensure === 'function') {
+      try {
+        await VerkTenging.ensure(units.map(u => u.id));
+        _averk = units.filter(u => VerkTenging.rukkadA(u.id));
+        if (_averk.length) {
+          const ut = new Set(_averk.map(u => u.id));
+          for (let i = units.length - 1; i >= 0; i--) if (ut.has(units[i].id)) units.splice(i, 1);
+        }
+      } catch (_) { _averk = []; }   // netvilla: taflan eins og áður frekar en engin
+    }
+    const _averkLina = () => {
+      if (!_averk.length) return '';
+      const per = {};
+      _averk.forEach(u => { const s = VerkTenging.stada(u.id); const k = (s && s.num) || '?'; per[k] = (per[k] || 0) + 1; });
+      const txt = Object.keys(per).map(k => per[k] + ' á ' + k).join(' · ');
+      return '<tr><td colspan="7" style="padding:6px 10px;font-size:12px;color:#5b6472;font-style:italic;border-top:1px dashed #cbd5e1">' +
+        'Á verkstæði: ' + _averk.length + ' tæki rukkuð á verkbeiðni (' + esc(txt) + ') — ekki talin hér</td></tr>';
+    };
     const services = await loadServices();
     await loadTengingar();   // papp 410 — skráð tenging trompar nafnaleit
     const tier = await loadTierFor(coId);
@@ -801,7 +824,8 @@
 
     if (!groups.length) {
       section.innerHTML = '<div style="font-size:13px;color:var(--ink2);font-weight:700">💵 Heildarkostnaður næstu þjónustu</div>' +
-        '<div style="padding:14px 0;color:#94a3b8;font-style:italic">Engin skráð tæki — kostnaður er 0 kr.</div>';
+        '<div style="padding:14px 0;color:#94a3b8;font-style:italic">' +
+          (_averk.length ? 'Öll ' + _averk.length + ' tækin eru rukkuð á verkbeiðni — kostnaður ársskoðunar er 0 kr.' : 'Engin skráð tæki — kostnaður er 0 kr.') + '</div>';
       return;
     }
 
@@ -1058,6 +1082,9 @@
         '</td>' +
       '</tr>');
     });
+
+    // 29.09.2026: skýringarlínan um tæki sem rukkast á verkbeiðni (sjá _averk efst í renderImpl).
+    if (_averk.length) rows.push(_averkLina());
 
     // Skýrslugerð + Akstur eru EKKI lengur línur í töflunni — þær eru færðar niður
     // í heildartölu-blokkina sem flex-raðir (reitirnir línast þá upp við Afslátt).
