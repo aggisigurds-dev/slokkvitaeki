@@ -997,7 +997,14 @@
               'style="font-size:11.5px;font-weight:700;border:1px solid '+(_postOff?'#fca5a5':'#a7f3d0')+';background:'+(_postOff?'#fef2f2':'#ecfdf5')+';color:'+(_postOff?'#b91c1c':'#065f46')+';border-radius:99px;padding:5px 11px;cursor:pointer">'+
               (_postOff?'📧 Póstafrit: AF':'📧 Póstafrit: Á')+'</button>'+
             '<button type="button" class="sk-add-btn" data-pick="1">+ Viðhengi</button></div>';
-    section.innerHTML=hdr+'<div style="padding:14px;color:var(--ink3);font-size:13px">Hleð…</div>';
+    // 29.09.2026 (Agnar: „þá hoppar allt út um allt þegar ég eyði skjali eða
+    // uploada"): hver aðgerð tæmdi spjaldið NIÐUR Í eina „Hleð…"-línu og þandi
+    // það svo út aftur — spjaldið fer úr ~700 px í ~50 og til baka, tvö umbrot,
+    // og allt fyrir neðan kastast til. Á FYRSTU teikningu er „Hleð…" rétt (þá er
+    // ekkert að sýna); á endurteikningu á gamla efnið að standa óhreyft þar til
+    // það nýja er tilbúið. Sjá [Stöðugt viðmót], reglu 3.
+    var _hafdiEfni = !!section.querySelector('.sk-yrwrap');
+    if (!_hafdiEfni) section.innerHTML = hdr + '<div style="padding:14px;color:var(--ink3);font-size:13px">Hleð…</div>';
 
     var co=getCompany(coId);
     var kt = co ? co.kennitala : await ktForCoId(coId);
@@ -1538,6 +1545,8 @@
         '</div>';
     }
 
+    // Skrun/fókus/textaval verndað yfir útskiptin — 199 hafði aldrei þessa vörn.
+    var _aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(section) : null;
     section.innerHTML = hdr +
       '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') + monthPillHtml(monthInfo) +'</div></div>'+
       '<div class="sk-svc-grid sk-samn-grid'+(hasSlk?' sk-3':'')+'">'+samnHtml+'</div>'+
@@ -1547,6 +1556,7 @@
       '</div>'+
       '<div class="sk-strip"><div class="sk-strip-l">📎 Önnur viðhengi</div><div class="sk-strip-r">'+otherHtml+'</div></div>'+
       hreyfHtml + soknBordi + notLinked + fixLink;
+    if (_aftur) _aftur();   // strax í SAMA tifi — engin millistaða sést
   }
 
   function wire(section){
