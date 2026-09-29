@@ -1728,7 +1728,34 @@
     }
   }
 
-  window.recomputeCompanyTotalCost = () => { _lastKey = ''; _tierCache = { coId: null, tier: null }; return maybeRender(); };
+  // 29.09.2026 (Agnar: „a few version of the calculations pops up .. so it is a
+  // lot of raceing"). Mælt á lifandi síðu: EINN smellur á Yfirferð/Hleðsla
+  // teiknaði spjaldið ÞRISVAR. Ellefu pappar kalla á þetta fall (128, 131, 132,
+  // 165, 176, 191, 219, 224, 226, 227, features.js) og hvert kall hreinsaði
+  // lykilvörnina og teiknaði SAMSTUNDIS — ein aðgerð sem snertir tvennt gaf því
+  // tvær til þrjár heilar teikningar hverja ofan í aðra, og notandinn sá
+  // upphæðina hoppa milli útgáfa.
+  //
+  // Ógildingin er áfram STRAX (lykillinn hreinsaður um leið, svo næsta teikning
+  // sé örugglega ný), en teikningin sjálf er dregin saman í eina per tif.
+  // setTimeout(0) en ekki rAF: rAF hleypur aldrei í földum flipa (sjá 252), og
+  // þá stæði spjaldið eftir ósnert.
+  //
+  // Óhætt af því að ENGINN kallandi les DOM-ið samstundis á eftir — staðfest í
+  // öllum ellefu. Sá sem þarf það kallar á recomputeCompanyTotalCostNow().
+  let _samanT = null;
+  function _ogilda() { _lastKey = ''; _tierCache = { coId: null, tier: null }; }
+  window.recomputeCompanyTotalCost = () => {
+    _ogilda();
+    if (_samanT) return;
+    _samanT = setTimeout(() => { _samanT = null; try { maybeRender(); } catch (_) {} }, 0);
+  };
+  // Samstundis-leiðin fyrir þann sem þarf teiknað spjald í sömu andrá.
+  window.recomputeCompanyTotalCostNow = () => {
+    if (_samanT) { clearTimeout(_samanT); _samanT = null; }
+    _ogilda();
+    return maybeRender();
+  };
 
   // 2026-08-17: observerinn tengist companies-main AFTUR ef viewið endursmíðar
   // nóðuna — gamli hlustaði á aftengda nóðu og þagnaði (sama rót og hjá 165).
