@@ -129,6 +129,32 @@
       var id=(r.data&&r.data[0])?r.data[0].id:null; _baseCache[d]=id; return id; }
     catch(e){ return null; }
   }
+  // 29.09.2026 (Agnar: „customer_base_id — það þarf að setja einhvers konar vörn
+  // á þetta, þetta er alltaf að gerast" · „baseIdForKt eða þetta").
+  //
+  // baseIdForKt er ÁGISKUN. Hún gerir `.limit(1)` á kennitölu og velur því af
+  // handahófi þegar tvær raðir í customers_base bera sömu kt — og þær eru til:
+  // mælt 29.09 voru FJÖGUR félög sem benda á annan grunn en kennitala þeirra
+  // skilar (257 Álfaskeið 78, 412 KvikkFix, 512 Suðurvangur 19, 1101 Ask).
+  // Þá fer tengingin á rangan grunn og „Tengja" virðist gera ekkert.
+  //
+  // Félagið sjálft ber rétta svarið í `customer_base_id` — sameining og
+  // handvirk leiðrétting skrifa ÞAÐ. Það ræður hér; kennitalan er varaleið
+  // fyrir félög sem hafa ekkert gildi (19 talsins, ekkert þeirra í þjónustu).
+  // Vörðurinn tools/audit-customer-base.cjs grípur ný frávik.
+  async function baseIdFyrirFelag(coId, kt){
+    var co = getCompany(coId);
+    if (co && co.customer_base_id != null) return +co.customer_base_id;
+    var sb = SB();
+    if (sb && coId != null) {
+      try {
+        var r = await sb.from('fyrirtaeki').select('customer_base_id').eq('id', coId).maybeSingle();
+        if (r && r.data && r.data.customer_base_id != null) return +r.data.customer_base_id;
+      } catch (_) {}
+    }
+    return kt ? await baseIdForKt(kt) : null;
+  }
+
   var _ktCache={};
   async function ktForCoId(coId){
     if(_ktCache[coId]!==undefined) return _ktCache[coId];
@@ -1009,7 +1035,7 @@
     var co=getCompany(coId);
     var kt = co ? co.kennitala : await ktForCoId(coId);
     await fcLoad(coId);
-    var baseId = kt ? await baseIdForKt(kt) : null;
+    var baseId = await baseIdFyrirFelag(coId, kt);
     var docs = await fetchDocs(baseId, coId);
     if(kt) docs = await filterDocsToLocation(docs, kt, coId);
     var payday = kt ? await fetchPayday(kt) : [];
@@ -1793,7 +1819,7 @@
         var inv=invArr[idx]; if(!inv) return;
         var repArr=(lkind==='brunakerfi'?section._bruByY:section._repByY)[ly]||[];
         var rep=repArr[0];
-        var baseId=null; try{ var k=(getCompany(coId)||{}).kennitala; baseId=k?await baseIdForKt(k):null; }catch(_){}
+        var baseId=null; try{ var k=(getCompany(coId)||{}).kennitala; baseId=await baseIdFyrirFelag(coId, k); }catch(_){}
         if(!baseId){ alert('Fyrirtækið er ekki tengt grunnskrá (customers_base) — hægt er að laga pörun í Brunahólf í staðinn.'); return; }
         linkSaveEl.disabled=true; linkSaveEl.textContent='Vista…';
         // Reikningurinn er þrenns konar: skjal (invoice_doc_id), sölu-röð eða
