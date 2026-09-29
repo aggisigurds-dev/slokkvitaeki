@@ -366,11 +366,23 @@
       try{ UnitServicePicker.setChoice(co,uid, cur==='onytt'?'yfirferd':'onytt'); }catch(_){}
       recompute(); UttektTaeki.rerender(co); return;
     }
+    // 29.09.2026 (Agnar: „when I press the check mark the site jumps a lot, and
+    // the right calculations turns off"): hakið byggði ALLAN tækjalistann upp á
+    // nýtt — 20+ raðir — þótt `_done` stýri engu nema græna klasanum á ÞESSUM
+    // eina takka (sjá rowHtml: `done` kemur hvergi annars staðar fyrir).
+    // Endurteikningin reif um leið upp kostnaðarspjaldið sem 129 á og 224 hefur
+    // flutt í #_ctc-slot, svo hægri dálkurinn blikkaði og síðan hoppaði.
+    // Reglan: uppfærðu hnútinn sem breyttist. Engin endurteikning hér.
     if((b=e.target.closest('.ut-check'))){
       var duid=+b.dataset.uid, dco=+b.dataset.co;
       if(_done[duid]) delete _done[duid]; else _done[duid]=true;
       saveDone(dco);
-      UttektTaeki.rerender(dco); return;
+      // Sami takki getur staðið víðar en á einum stað (listi + yfirlit).
+      var vali='.ut-check[data-uid="'+duid+'"][data-co="'+dco+'"]';
+      document.querySelectorAll(vali).forEach(function(el){
+        el.classList.toggle('on', !!_done[duid]);
+      });
+      return;
     }
     if(e.target.classList && e.target.classList.contains('ut-chk')){
       var cuid=+e.target.dataset.uid, cco=+e.target.dataset.co;
