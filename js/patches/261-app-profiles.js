@@ -1689,7 +1689,17 @@
     window.App._appProfilesPatched = true;
   }
   function openLauncher() {
-    document.querySelectorAll('.view.active').forEach(function (v) { v.classList.remove('active'); v.style.display = 'none'; });
+    // 30.09.2026 — MÆLT á lifandi síðu: Bílstjóri → 📱 Öpp skildi BÁÐAR síður eftir
+    // sýnilegar (view-bilstjori + view-opp samtímis; allar aðrar leiðir hreinar).
+    // Ástæðan: þessi sópun tók aðeins `.view.active`, en `#view-bilstjori` er búið
+    // til í kóða (219:535) og ber ENGAN `view`-klasa — aðeins `active`. Það hélt því
+    // `display:block` undir Öppin.
+    // Af hverju klasinn var EKKI settur á 219 í staðinn: `.view` fær
+    // `background:…!important` frá 190/229/230-Brunastáli og bakgrunnur Bílstjórans
+    // er án `!important`, svo þemað hefði málað skjáinn hans upp á nýtt.
+    // `[id^="view-"].active` þýðir „view sem telur sig vera núverandi síðan" — það
+    // er einmitt það sem á að hverfa þegar skipt er, hvaða klasa sem það ber.
+    document.querySelectorAll('.view.active,[id^="view-"].active').forEach(function (v) { v.classList.remove('active'); v.style.display = 'none'; });
     var v = viewEl(); render(); v.style.display = ''; v.classList.add('active');
   }
 

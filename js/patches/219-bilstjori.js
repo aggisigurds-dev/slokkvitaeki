@@ -534,6 +534,12 @@
     injectStyles();
     const v = document.createElement('div');
     v.id = VIEW_ID;
+    // 30.09.2026: þetta ílát ber VILJANDI ekki `class="view"`, þótt öll ílátin í
+    // index.html gefi það. Ég setti klasann á og tók hann af aftur: `.view` fær
+    // `background:…!important` frá þrem þemapöppum (190, 229, 230-Brunastál) og
+    // bakgrunnurinn hér (#41454d, lína ~671) er án `!important` — svo þemað hefði
+    // málað Bílstjóra-skjáinn upp á nýtt. Í staðinn var sópunin í
+    // 261-app-profiles.js látin þekkja id-merkt view (sjá skýringu þar).
     v.style.display = 'none';
     v.innerHTML = '<div id="_bs-root" class="_bs-root bt screen"></div>';
     // Append to <body> (NOT the content panel): the content panel is a
