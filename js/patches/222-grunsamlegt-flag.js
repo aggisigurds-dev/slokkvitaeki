@@ -35,7 +35,28 @@
 
   // foldName(client) -> { maxYear, hasDate }
   var _idx = null, _building = false;
+  // 30.09.2026 (kortlagning ræsi-netkallanna): þetta fall skannaði `uttaeki`
+  // frá enda til enda í SJÖ RAÐTENGDUM ferðum við hverja einustu hleðslu —
+  // líka þegar Ársskoðun var aldrei opnuð. Allt sem það þarf (client,
+  // last_insp, status) er ÞEGAR í `DB.cache.units`, sem db.js byggir hvort eð
+  // er. Netskönnunin er nú varaleið sem keyrir aðeins ef minnið er tómt.
+  function buildIndexFromCache() {
+    var raw = (window.DB && DB.cache && DB.cache.units) || null;
+    if (!raw || !raw.length) return null;
+    var map = {};
+    raw.forEach(function (u) {
+      if (u.status && u.status !== 'active') return;
+      var k = foldName(u.client); if (!k) return;
+      var y = u.last_insp ? parseInt(String(u.last_insp).slice(0, 4), 10) : 0;
+      var e = map[k] || (map[k] = { maxYear: 0, hasDate: false });
+      if (y) { e.hasDate = true; if (y > e.maxYear) e.maxYear = y; }
+    });
+    return map;
+  }
+
   async function buildIndex() {
+    var urMinni = buildIndexFromCache();
+    if (urMinni) return urMinni;
     var SB = (window.DB && DB.sb) || window.__vdaSB;
     if (!SB) return null;
     var map = {}, from = 0;
@@ -121,10 +142,17 @@
   document.addEventListener('attachment-year-changed', resetAndProcess);
 
   // Build the index once, then keep re-injecting as the list re-renders.
+  // Bíður eftir minninu í stað þess að sækja sjálfur. Púlsinn er ódýr í
+  // kyrrstöðu (process hættir strax finnist engar raðir) en hann á ekki að
+  // ganga í földum flipa — 173 af 188 tímurum í appinu gleymdu því.
   (async function init() {
     if (_building) return; _building = true;
+    for (var bid = 0; bid < 40; bid++) {                 // allt að ~12 s
+      if (window.DB && DB.cache && DB.cache.units && DB.cache.units.length) break;
+      await new Promise(function (r) { setTimeout(r, 300); });
+    }
     _idx = await buildIndex();
-    setInterval(process, 1500);
+    setInterval(function () { if (!document.hidden) process(); }, 1500);
     setTimeout(process, 200);
   })();
 

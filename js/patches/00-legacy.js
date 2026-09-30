@@ -347,6 +347,13 @@ function setupFireParticles(){
     var running = true;
     function frame(){
       if(!running) return;
+      // 30.09.2026: þessi lykkja teiknar ~50 agnir á 60 römmum á sekúndu með
+      // ctx.shadowBlur — dýrustu aðgerð striga — og `running` var ALDREI sett
+      // í false neins staðar í skránni. Hún brann heilan kjarna alla lotuna,
+      // óháð því hvaða sýn var opin, og hélt áfram í földum flipa.
+      // Deyr nú með borðanum og sefur þegar flipinn er falinn.
+      if (!banner.isConnected) { running = false; return; }
+      if (document.hidden) { setTimeout(frame, 400); return; }
       var rect = banner.getBoundingClientRect();
       if(rect.width > 0 && (Math.abs(rect.width - W) > 1 || Math.abs(rect.height - H) > 1)) resize();
       if(rect.width === 0){ requestAnimationFrame(frame); return; }

@@ -154,8 +154,17 @@
   function start() {
     refresh();
     refreshCart();
-    setInterval(refreshCart, 1500);
-    setInterval(refresh, 30000);
+    // 30.09.2026: báðir púlsarnir gengu í földum flipa. `refresh` er SEX
+    // HEAD-talningar í Supabase — á 30 s fresti gerir það ~720 köll á klukkustund
+    // í flipa sem enginn horfir á. Aðeins 15 af 188 tímurum í appinu athuguðu
+    // document.hidden; þetta er einn þeirra sem kostaði mest.
+    // Talningin er sótt strax og flipinn verður sýnilegur aftur, svo hún er
+    // aldrei úrelt þegar horft er á hana.
+    setInterval(function () { if (!document.hidden) refreshCart(); }, 1500);
+    setInterval(function () { if (!document.hidden) refresh(); }, 30000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) { refresh(); refreshCart(); }
+    });
     hookRealtime();
   }
 
