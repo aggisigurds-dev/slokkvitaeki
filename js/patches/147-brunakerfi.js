@@ -582,7 +582,16 @@
       if (!SB) { results.innerHTML = '<div style="padding:14px;color:#94a3b8;text-align:center;font-size:12.5px">Engin gagnabankatenging</div>'; return; }
       const digits = term.replace(/[^0-9]/g, '');
       let q = SB.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,simi').order('nafn').limit(12);
-      if (digits.length >= 3) q = q.or(`kennitala.ilike.${digits}%`);
+      // 30.09.2026 — tvær villur í einni línu, báðar mældar:
+      //  • ÞRÍR tölustafir HVAR SEM ER sendu leitina í kennitölu: „Hraunbær 103" leitaði að
+      //    kennitölu sem byrjar á 103 og fann ekkert. Nú aðeins ef strengurinn er kennitölulegur.
+      //  • Allar 1.168 kennitölur eru vistaðar MEÐ bandstriki, svo `<7+ tölustafir>%` fann
+      //    aldrei neitt — heil kennitala var ófinnanleg. Bandstrikinu skotið inn á eftir 6. staf.
+      const erKt = digits.length >= 3 && /^[\d\s-]+$/.test(term.trim());
+      if (erKt) {
+        const ktStrik = digits.length > 6 ? digits.slice(0, 6) + '-' + digits.slice(6) : digits;
+        q = q.or(`kennitala.ilike.${ktStrik}%,kennitala.ilike.${digits}%`);
+      }
       else q = q.ilike('nafn', '%' + term + '%');
       const { data } = await q;
       // 21.09.2026 (úttekt): úrelt svar — hægara svar við eldri leitarstreng gat

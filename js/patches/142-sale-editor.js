@@ -684,11 +684,20 @@
       if (!term) { resEl.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:18px;text-align:center">Sláðu inn leitarorð…</div>'; return; }
       resEl.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:18px;text-align:center">Leita…</div>';
       const digits = String(term).replace(/[^0-9]/g, '');
-      const isKt = digits.length >= 6;
+      // 30.09.2026 — MÆLT: 1.168/1.168 kennitölur í fyrirtaeki og 179/179 í
+      // vidskiptavinir eru vistaðar MEÐ bandstriki. Leitin var `kennitala.ilike.<tölustafir>%`,
+      // svo 7+ tölustafir (t.d. heil límd kennitala) fundu ALDREI neitt — og af því að
+      // isKt sleppir nafnaleitinni kom enginn varaleikur heldur. Nú er bandstrikinu skotið
+      // inn á eftir 6. staf; óstrikaða formið fylgir með til öryggis.
+      // Og kennitölu-leit aðeins ef strengurinn lítur út eins og kennitala: „Skúlagata 110 101"
+      // á 6 tölustafi en er heimilisfang, ekki kennitala.
+      const isKt = digits.length >= 6 && /^[\d\s-]+$/.test(String(term).trim());
+      const ktStrik = digits.length > 6 ? digits.slice(0, 6) + '-' + digits.slice(6) : digits;
+      const ktOr = `kennitala.ilike.${ktStrik}%,kennitala.ilike.${digits}%`;
       Promise.all([
-        isKt ? SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').or(`kennitala.ilike.${digits}%`).limit(8)
+        isKt ? SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').or(ktOr).limit(8)
              : SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').ilike('nafn', '%'+term+'%').limit(8),
-        isKt ? SB.from('vidskiptavinir').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').or(`kennitala.ilike.${digits}%`).limit(8)
+        isKt ? SB.from('vidskiptavinir').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').or(ktOr).limit(8)
              : SB.from('vidskiptavinir').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').ilike('nafn','%'+term+'%').limit(8)
       ]).then(([fy, vk]) => {
         // 2026-05-19: tag each row with its source table. solur.customer_id_fkey
