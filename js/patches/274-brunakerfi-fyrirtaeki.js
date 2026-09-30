@@ -276,6 +276,9 @@
       '#_bkc-overlay table._bkc-tbl{width:100%;border-collapse:collapse}' +
       '#_bkc-overlay ._bkc-tbl th{font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:5px 8px;border-bottom:1px solid #eef0f3}' +
       '#_bkc-overlay ._bkc-tbl td{padding:6px 8px;border-bottom:1px solid #eef0f3;font-size:12.5px}' +
+      '#_bkc-overlay ._bkc-reikn{margin-top:12px;margin-left:auto;max-width:320px;font-size:13px}' +
+      '#_bkc-overlay ._bkc-reikn>div{display:flex;justify-content:space-between;padding:3px 0}' +
+      '#_bkc-overlay ._bkc-reikn ._big{font-size:15.5px;font-weight:800;border-top:2px solid #141619;padding-top:6px;margin-top:3px}' +
       '#_bkc-overlay ._bkc-vlina>td{padding:2px 8px 2px 18px;border-bottom:0;font-size:11.5px;color:#6b7280}' +
       '#_bkc-overlay ._bkc-vlina:first-of-type>td{padding-top:5px}' +
       '#_bkc-overlay ._bkc-vlina._vantar>td{color:#8a6100;font-weight:700;padding-bottom:6px}' +
@@ -696,8 +699,11 @@
             '<button type="button" class="_bkc-act _ghost _bkc-addtog" id="_bkc-addtog" style="margin-top:10px">＋ Bæta við skjali eða tengja reikning</button>' +
             '<div id="_bkc-addwrap" style="display:none">' + addFileStrip + '</div>' +
           '</div></div>' +
-        '</div>' +
-        '<div>' +
+          // 30.09.2026 (Agnar: „ma kanski bara taka ut bunadarskranna haegra meginn"
+          // og „thjonustusamningsgluggan bara nidur hja skyrslunum"). Búnaðarskráin
+          // er farin — sömu tölur standa í skýrslunni sjálfri sem liggur efst. Og
+          // samningurinn er SKJAL eins og skýrslurnar, svo hann á heima hjá þeim.
+          // Hægri dálkurinn geymir þá aðeins peningana.
           '<div class="_bkc-card _bkc-fold' + (C.samningar.length ? '' : ' _saman') + '"><div class="_bkc-ch" data-fold="1">Þjónustusamningur<small>' + (C.samningar.length || 'enginn skráður') + ' <span class="_bkc-ork">▾</span></small></div><div class="_bkc-body">' +
             (C.samningar.length ? C.samningar.map(s => {
               const url = driveUrl(s.drive_file_id) || storageUrl(s.storage_path);
@@ -718,10 +724,17 @@
               '<span id="_bkc-samnstatus" style="color:#8b93a1"></span>' +
             '</div>' +
           '</div></div>' +
-          '<div class="_bkc-card _bkc-fold' + (newest ? '' : ' _saman') + '"><div class="_bkc-ch" data-fold="1">Búnaðarskrá kerfisins' +
-            '<small>' + (newest ? 'úr skýrslu ' + esc(newest.uttekt_nr || '') : 'engin skýrsla enn') + ' <span class="_bkc-ork">▾</span></small></div><div class="_bkc-body">' + bunHtml + '</div></div>' +
+        '</div>' +
+        '<div>' +
           '<div class="_bkc-card _bkc-fold' + (verds.length ? '' : ' _saman') + '"><div class="_bkc-ch" data-fold="1">Verð / reikningsyfirlit<small>' + (verds.length ? 'VSK ' + VAT_PCT + '%' : 'engar verðlínur') + ' <span class="_bkc-ork">▾</span></small></div><div class="_bkc-body">' +
             verdHtml +
+            // Samtölur eins og á reikningi: án vsk · VSK · m. vsk, hægri-jafnað
+            // með þykkri línu yfir lokatölunni (sama og _bks-vtot í forminu).
+            (verds.length ? '<div class="_bkc-reikn">' +
+              '<div><span>Samtals án vsk</span><b>' + fmtKr(verds.reduce((a, x) => a + x.v.sum, 0)) + '</b></div>' +
+              '<div><span>VSK ' + VAT_PCT + '%</span><b>' + fmtKr(verds.reduce((a, x) => a + x.v.total - x.v.sum, 0)) + '</b></div>' +
+              '<div class="_big"><span>Samtals m. vsk</span><span>' + fmtKr(verdSum) + '</span></div>' +
+            '</div>' : '') +
             '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
               // Opnar nýjustu skýrsluna beint — þar er Verð-hlutinn með ＋ Auð lína,
               // verðlista-vali og 📦 Efni úr innkaupum (kostnaðarreikningar úr póstinum).
