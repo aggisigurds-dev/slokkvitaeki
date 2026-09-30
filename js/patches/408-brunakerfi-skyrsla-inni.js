@@ -162,7 +162,35 @@
     H + ' ._bks-sheet{border:1px solid #000;border-radius:8px;box-shadow:0 12px 30px -16px rgba(0,0,0,.55)}',
     H + ' ._bks-vtot ._big{border-top-color:#000}',
     H + ' ._bks-ttl,' + H + ' ._bks-sub{font-family:' + MONO + '!important}',
-    H + ' ._bks-ttl{font-family:' + DISPLAY + '!important;font-size:16px!important;letter-spacing:0!important;text-transform:none!important}'
+    H + ' ._bks-ttl{font-family:' + DISPLAY + '!important;font-size:16px!important;letter-spacing:0!important;text-transform:none!important}',
+    // B28 (Agnar 30.09: „gera vinnusvæðis útgáfuna aðeins meira compact"): lægri toppstika og takkar, þéttari reitir og raðir
+    H + ' ._bks-top{padding:6px 16px!important;gap:10px!important}',
+    H + ' ._bks-hb{height:32px!important;padding:0 11px!important;font-size:12.5px!important}',
+    H + ' ._bks-wrap{padding:8px!important}',
+    H + ' ._bks-cust{padding:8px 10px!important;margin-bottom:8px!important;gap:6px 8px!important}',
+    H + ' ._bks-f label{font-size:9.5px!important;margin-bottom:2px!important}',
+    H + ' ._bks-f input{min-height:32px!important;padding:4px 9px!important;font-size:13px!important}',
+    H + ' ._bks-f._big input{font-size:13.5px!important}',
+    H + ' ._bks-grid{gap:10px!important}',
+    H + ' ._bks-ch{padding:6px 16px!important;font-size:11px!important}',
+    H + ' ._bks-body{padding:8px 10px!important}',
+    H + ' ._bks-lbl{font-size:9.5px!important;margin-bottom:2px!important}',
+    H + ' ._bks-in{min-height:32px!important;padding:4px 9px!important;font-size:13px!important}',
+    H + ' textarea._bks-in{min-height:60px!important}',
+    H + ' ._bks-eqhead{padding:0 0 3px!important}',
+    H + ' ._bks-eqrow{padding:2px 0!important}',
+    H + ' ._bks-eqrow>span:first-child{font-size:12.5px!important}',
+    H + ' ._bks-step button{width:22px!important;height:22px!important;font-size:13px!important}',
+    H + ' ._bks-sam{min-width:30px!important;padding:1px 6px!important;font-size:12px!important}',
+    H + ' ._bks-chk{padding:3px 0!important}',
+    H + ' ._bks-chk>span:first-child{font-size:12.5px!important}',
+    H + ' ._bks-okbtn,' + H + ' ._bks-badbtn{min-height:28px!important;padding:3px 9px!important;font-size:11px!important}',
+    H + ' ._bks-rafgrid{gap:6px!important}',
+    H + ' ._bks-rafstrip{padding:6px 10px!important;margin-top:8px!important}',
+    H + ' ._bks-athform{padding:8px!important}',
+    H + ' ._bks-athrow1{margin-bottom:6px!important}',
+    H + ' ._bks-vrow{padding:6px 0!important}',
+    H + ' ._bks-vrow ._bks-in{padding:4px 8px!important}'
   ].join('\n');
   const st = document.createElement('style'); st.id = 'bks-inni-408'; st.textContent = css;
   (document.head || document.documentElement).appendChild(st);
