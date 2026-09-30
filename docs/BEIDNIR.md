@@ -35,7 +35,7 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B25 | Línur reiknings (Brunakerfi): **sjálfgefið Akstur ×1 og Skýrslugerð ×1** — vantar á skýrslur sem urðu til áður en 273 fékk akstursliðinn | Claude | ✅ KLÁRT |
 | B26 | **„Aflæsa skýrslu"-hnappur á Brunakerfis-blaðinu:** haka við beint af skjá og breyta tölum eins og í slökkvikerfis-skýrslunni (386); þegar ýtt er á tölureit birtast **+ / −** til að hækka og lækka. Vinnusvæðið (273) verður varaleið. Krefst HTML-blaðs (273 „Skýrsla"-sýn) í stað PDF-ramma | Claude | ✅ KLÁRT |
 | B27 | **Teikning-stikan** („Teikning · 5 staðsetningar" með − 100% + ↺ Sýna) og **Viðbóta upplýsingar**-reiturinn undir miðjunni: færa í tákn á „Teikning"-hnappinn í efri hluta, samanfellt sjálfgefið, hægt að opna | Claude | ✅ KLÁRT |
-| B28 | **Vinnusvæðið (273 inni í 🚨-flipanum, 408): þjappa** — haus, reitir og búnaðaryfirlit taka of mikið pláss | Claude | NÝ |
+| B28 | **Vinnusvæðið (273 inni í 🚨-flipanum, 408): þjappa** — haus, reitir og búnaðaryfirlit taka of mikið pláss | Claude | ✅ KLÁRT |
 | B29 | **Verðlisti: „Föst lína (alltaf 1×)" á Akstur og Vinnu pr. klst. virðist ekki virka** — tengingin ER vistuð á þjóni (30.09 18:43) og ⚡ Reikna út notar hana; föstu línurnar bætast hins vegar ekki sjálfkrafa á skýrslu sem þegar á línur. Lausn: „Sjálfgefið vantar"-röðin í miðjunni býður allar föstu línurnar sem vantar, einn smellur hver | Claude | ✅ KLÁRT |
 | B30 | Línur reiknings (Brunakerfi): **afsláttur á alla heildina** — reitur undir línunum (kr m. vsk, líka hægt að slá inn %) | Claude | ✅ KLÁRT |
 | B31 | **Vöruvalslistinn „Velja vöru / þjónustu" (117) í slökkvitækja-úttekt er heiftarlega ljótur og erfitt að finna á honum** — endurhanna í Brunastáli, betri leit og flokkun | Claude | NÝ |
