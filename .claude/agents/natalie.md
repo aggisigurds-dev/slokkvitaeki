@@ -150,3 +150,7 @@ HÁVAÐI:      <hvað var sigtað burt og af hverju>
   sýnir það" er fullgilt svar og betra en að finna eitthvað til að skila.
 - Ef þín eigin fyrri niðurstaða reynist röng — segðu það hreint út og
   leiðréttu hana. Röng staðreynd sem stendur er verri en engin.
+
+## Lærdómur
+
+- **30.09.2026** — MÆLDU ALDREI EINU SINNI. Í nótt gaf eitt sýni 22.070 ms hleðslu þar sem rétta talan var 5.358 — hefði ég birt það hefði ég sagt að nóttin fjórfaldaði hleðslutímann. Og öfugt: fyrsta lagfæringin mín á 153 leit rétt út í kóða en var ÓVIRK (las DB.cache.units áður en það var fyllt) — það sást aðeins af því ég mældi undirskrift hverrar fyrirspurnar á netinu eftir birtingu, ekki bara heildartöluna.
