@@ -647,6 +647,20 @@
       '</div>' +
       '<div class="_bkc-grid">' +
         '<div>' +
+          // 30.09.2026 (Agnar: „make the report be open in half of the screen the left
+          // side. Then button to open it larger" — og svo „settu skyrslu/invoice
+          // kassann fyrir nedan"). Skýrslan sjálf er erindið; aðgerðirnar eru svar
+          // við henni. Hún liggur því EFST í vinstri dálknum og hetjan undir.
+          // Sé engin skýrsla til er reiturinn EKKI teiknaður — tómur rammi segir
+          // minna en ekkert, og þá stendur hetjan efst eins og áður.
+          (skyrslaSrc ?
+            '<div class="_bkc-card"><div class="_bkc-ch">Skýrslan<small>' + esc(skyrslaNafn) +
+              ' <button type="button" class="_bkc-hb" id="_bkc-repbig" style="margin-left:8px" title="Opna skýrsluna í fullum skjá">⤢ Stækka</button></small></div>' +
+              '<div class="_bkc-body" style="padding:0">' +
+                '<iframe id="_bkc-repframe" src="' + esc(skyrslaSrc) + '" title="Brunakerfisskýrsla" ' +
+                  'style="width:100%;height:68vh;min-height:420px;border:0;background:#fff;display:block"></iframe>' +
+              '</div></div>'
+            : '') +
           // HETJAN: skoðun ársins. Stöðulína 291 (reikningur · Stofna drög · Tengja) lendir í #_bkc-heroinv — einn staður, ekki tveir.
           '<div class="_bkc-card _bkc-hero"><div class="_bkc-herohd"><div class="_bkc-herot">🚨 Brunakerfis skoðun ' + NOW + '</div>' +
             '<span class="_bkc-st _bkc-pill _' + (hetja ? hetja.pc : 'miss') + '">' + (hetja ? hetja.pill : 'Óskoðað') + '</span></div><div class="_bkc-body">' +
@@ -661,19 +675,6 @@
             '<div id="_bkc-heroinv" data-hasinv="' + (hetja && hetja.hasInv ? '1' : '') + '"></div>' +
             '<button type="button" class="_bkc-new' + (hetja && hetja.hefur ? ' _litid' : '') + '" id="_bkc-new">' + (hetja && hetja.hefur ? '＋ Önnur skoðunarskýrsla' : '＋ Ný skoðunarskýrsla ' + NOW) + '</button>' +
           '</div></div>' +
-          // 30.09.2026 (Agnar: „make the report be open in half of the screen the left
-          // side. Then button to open it larger"). Vinstri dálkurinn stóð auður fyrir
-          // neðan hetjuna og skýrslan opnaðist í nýjum flipa. Nú liggur hún hér, og
-          // ⤢ Stækka opnar hana í skjalaglugganum. Sé engin skýrsla til er reiturinn
-          // EKKI teiknaður — tómur rammi segir minna en ekkert.
-          (skyrslaSrc ?
-            '<div class="_bkc-card"><div class="_bkc-ch">Skýrslan<small>' + esc(skyrslaNafn) +
-              ' <button type="button" class="_bkc-hb" id="_bkc-repbig" style="margin-left:8px" title="Opna skýrsluna í fullum skjá">⤢ Stækka</button></small></div>' +
-              '<div class="_bkc-body" style="padding:0">' +
-                '<iframe id="_bkc-repframe" src="' + esc(skyrslaSrc) + '" title="Brunakerfisskýrsla" ' +
-                  'style="width:100%;height:68vh;min-height:420px;border:0;background:#fff;display:block"></iframe>' +
-              '</div></div>'
-            : '') +
           '<div class="_bkc-card"><div class="_bkc-ch">Fyrri ár<small>' + (fyrriAr.length ? fyrriAr.length + ' ár · smelltu á ár til að opna' : 'ekkert skráð') + '</small></div><div class="_bkc-body">' +
             (yearRows || '<div class="_bkc-empty">Engin eldri skoðun skráð.</div>') +
             '<button type="button" class="_bkc-act _ghost _bkc-addtog" id="_bkc-addtog" style="margin-top:10px">＋ Bæta við skjali eða tengja reikning</button>' +
