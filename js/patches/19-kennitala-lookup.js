@@ -173,7 +173,43 @@
     btn.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="8" cy="8" r="5"/><path d="M15 15l-3.5-3.5"/></svg>Fletta upp';
     wrap.appendChild(btn);
 
-    async function doLookup() {
+    // ── 30.09.2026 · ENGINN TEXTI MÁ TAPAST ────────────────────────────────────
+    // MÆLT á lifandi síðu: ég skrifaði „MITT EIGIÐ NAFN sem má ekki tapast" í
+    // nafnareitinn, sló svo inn kennitölu — og reiturinn sagði „Ferdinand Hansen".
+    // Nafnið var þurrkað út þegjandi. Þannig varð líka til fyrirtæki #1844 sem hét
+    // nafni úr EINNI kennitölu, með ENGA kennitölu og ekkert customer_base_id.
+    //
+    // Ástæðan var forsenda sem gilti ekki: `fill()` hafði annað þrep með
+    // athugasemdinni „Try filling even if has value if user explicitly looked up"
+    // — en `doLookup` er líka kallað af `input`-atburði (lína ~272, 300 ms eftir
+    // innslátt), svo yfirskriftin gekk þegar ENGINN hafði smellt á neitt.
+    //
+    // Nú: innsláttur fyllir aðeins TÓMA reiti (sama regla og 114:262 hefur haft
+    // rétta allan tímann). Smellur á „Fletta upp" má yfirskrifa — notandinn bað um
+    // það — en fyrri gildin eru geymd og „↶ Til baka" birtist til að skila þeim.
+    let afturHnappur = null;
+    function bjodaTilBaka(fyrri) {
+      if (!fyrri.length) return;
+      if (afturHnappur) { try { afturHnappur.remove(); } catch (_) {} afturHnappur = null; }
+      const a = document.createElement('button');
+      a.type = 'button';
+      a.className = 'kt-lookup-btn';
+      a.textContent = '↶ Til baka';
+      a.title = 'Skila textanum sem var í reitunum fyrir uppflettinguna:\n' +
+        fyrri.map((f) => '• ' + f.heiti + ': ' + (f.gildi || '(tómt)')).join('\n');
+      a.addEventListener('click', () => {
+        fyrri.forEach((f) => { f.el.value = f.gildi; f.el.dispatchEvent(new Event('input', { bubbles: true })); });
+        try { a.remove(); } catch (_) {}
+        afturHnappur = null;
+        if (window.Toast && Toast.show) Toast.show('Fyrri texti skilaður');
+      });
+      wrap.appendChild(a);
+      afturHnappur = a;
+      // hverfur af sjálfu sér — en textinn er þá þegar í reitnum, ekkert tapast
+      setTimeout(() => { if (afturHnappur === a) { try { a.remove(); } catch (_) {} afturHnappur = null; } }, 30000);
+    }
+
+    async function doLookup(afSmelli) {
       const kt = input.value.replace(/[^0-9]/g, '');
       if (kt.length !== 10) {
         if (window.Toast && Toast.show) Toast.show('Kennitalan þarf að vera 10 tölustafir');
@@ -186,22 +222,32 @@
         const data = await fetchKt(kt);
         // Fill form fields — look for matching inputs by common id patterns
         const form = input.closest('form, .modal-bd, .modal, [class*="modal"], [id*="modal"], #tb-modal .tb-card') || document;
-        function fill(patterns, value) {
+        const yfirskrifad = [];   // { el, heiti, gildi } — fyrra innihald, svo það sé afturkallanlegt
+        function fill(patterns, value, heiti) {
           if (!value) return;
+          // 1) tómir reitir — alltaf óhætt
           for (const p of patterns) {
             const el = form.querySelector(`input[id*="${p}"], input[name*="${p}"], textarea[id*="${p}"]`);
-            if (el && !el.value) { el.value = value; el.dispatchEvent(new Event('input')); return; }
+            if (el && !el.value) { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); return; }
           }
-          // Try filling even if has value if user explicitly looked up
+          // 2) reitur með texta: AÐEINS þegar smellt var á „Fletta upp". Innsláttur
+          //    kennitölu má aldrei eyða texta sem einhver skrifaði.
+          if (!afSmelli) return;
           for (const p of patterns) {
             const el = form.querySelector(`input[id*="${p}"], input[name*="${p}"], textarea[id*="${p}"]`);
-            if (el) { el.value = value; el.dispatchEvent(new Event('input')); return; }
+            if (el) {
+              if (el.value !== value) yfirskrifad.push({ el, heiti, gildi: el.value });
+              el.value = value;
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              return;
+            }
           }
         }
-        fill(['nafn', 'name'], data.nafn);
-        fill(['heimilisfang', 'address', 'adress', 'heim'], data.heimilisfang);
-        fill(['simi', 'phone', 'tel'], data.simi);
-        fill(['netfang', 'email'], data.netfang);
+        fill(['nafn', 'name'], data.nafn, 'Nafn');
+        fill(['heimilisfang', 'address', 'adress', 'heim'], data.heimilisfang, 'Heimilisfang');
+        fill(['simi', 'phone', 'tel'], data.simi, 'Sími');
+        fill(['netfang', 'email'], data.netfang, 'Netfang');
+        bjodaTilBaka(yfirskrifad);
 
         btn.textContent = '✓ Fundið';
         btn.className = 'kt-lookup-btn ok';
@@ -249,7 +295,7 @@
       }
     }
 
-    btn.addEventListener('click', doLookup);
+    btn.addEventListener('click', () => doLookup(true));    // EXPLICIT — má yfirskrifa, með „↶ Til baka"
 
     // Auto-trigger only on customer-creation forms — NOT on the Sala POS
     // input (#pos-kt). On Sala the unified search (patch 114) owns the
@@ -269,7 +315,7 @@
       input.addEventListener('input', () => {
         const digits = input.value.replace(/[^0-9]/g, '');
         if (digits.length === 10) {
-          setTimeout(doLookup, 300);
+          setTimeout(() => doLookup(false), 300);   // SJÁLFVIRKT við innslátt — fyllir aðeins TÓMA reiti
         }
       });
     }
