@@ -864,7 +864,13 @@
       if (ors.length) {
         const dr = await SB.from('customer_documents')
           .select('id,customer_base_id,fyrirtaeki_id,year,doc_type,drive_file_id,storage_path')
-          .eq('doc_type', 'uttektarskyrsla')
+          // 30.09.2026 (Agnar, R-001009 Akrotiri ehf.: „þetta er reikningur fyrir
+          // brunakerfisúttektinni"): leitin tók AÐEINS doc_type='uttektarskyrsla', svo
+          // 📄 Skýrsla sagði „Engin úttektarskýrsla fundin fyrir 2026" þótt skýrslan væri
+          // til — hún var doc_type='brunakerfi'. Úttekt á brunakerfi eða slökkvikerfi er
+          // úttekt; skýrslan hennar er úttektarskýrslan. Öll þrjú eru skoðunarskýrslur og
+          // eiga öll að geta fylgt reikningnum.
+          .in('doc_type', ['uttektarskyrsla', 'brunakerfi', 'slokkvikerfi'])
           .or('is_duplicate.is.null,is_duplicate.eq.false')
           .or(ors.join(','));
         (dr.data || []).forEach(d => {
@@ -2541,7 +2547,11 @@
       if (rec && rec.baseId != null && !baseIds.includes(rec.baseId)) baseIds.push(rec.baseId);
       baseIds.forEach(id => ((_state.docsByBase || {})[String(id)] || []).forEach(d => { if (!docs.includes(d)) docs.push(d); }));
     }
-    const doc = docs.find(d => String(d.year || '') === yr && (d.drive_file_id || d.storage_path));
+    // Forgangur: 'uttektarskyrsla' gengur fyrir, svo ekkert sem finnst í dag breytist.
+    // Brunakerfis-/slökkvikerfis-skýrsla er notuð þegar engin úttektarskýrsla er til —
+    // þá er HÚN skýrsla úttektarinnar (Agnar 30.09.2026, R-001009).
+    const gild = docs.filter(d => String(d.year || '') === yr && (d.drive_file_id || d.storage_path));
+    const doc = gild.find(d => d.doc_type === 'uttektarskyrsla') || gild[0];
     if (doc) return { found: true, kind: 'doc', doc, year: yr };
     return { found: false, year: yr };
   }
