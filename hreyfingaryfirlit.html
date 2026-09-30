@@ -91,6 +91,12 @@ tr.obekraeft td{font-style:italic}
   .blad{box-shadow:none;margin:0;padding:0;width:auto;max-width:none}
   table.yf tr{page-break-inside:avoid}
   [contenteditable]:hover,[contenteditable]:focus{outline:none!important}
+  /* „án texta" (Agnar 30.09.2026): bókara-málsgreinin er ritanleg prósa sem á ekki
+     alltaf að fara til viðskiptavinarins. Stjörnu-skýringin fer EKKI — stjarna á
+     fjárhagsblaði án skýringar er verri en engin stjarna. */
+  html.hy-an-texta .bokari b,
+  html.hy-an-texta #bokaritexti{display:none!important}
+  html.hy-an-texta .bokari{margin-top:0}
 }
 </style>
 </head>
@@ -105,6 +111,7 @@ tr.obekraeft td{font-style:italic}
     <button type="button" data-stolpi="fyrri_eigandi" aria-pressed="false" title="Opin Stólpa-staða gerð upp við fyrri eigendur 07.05.2026">Stólpi: uppgert við fyrri eigendur</button>
   </span>
   <button type="button" class="hnappur" id="saekja">Sækja</button>
+  <label title="Sleppir „Upplýsingar til bókara" úr prentuninni — stjörnu-skýringin fylgir samt"><input type="checkbox" id="antexta"> án texta</label>
   <button type="button" class="hnappur rautt" id="prenta">🖨 Prenta</button>
   <span class="stadatexti" id="stadatexti"></span>
 </div>
@@ -250,7 +257,11 @@ tr.obekraeft td{font-style:italic}
 
   function teikna(d) {
     var h = d.haus;
-    document.title = 'Hreyfingaryfirlit ' + (h.nafn || h.kt) + ' ' + dags(h.fra) + '-' + dags(h.til);
+    // „Save as PDF" notar document.title sem skráarnafn. Fylgir húsreglunni —
+    // nafn fyrst (svo skjölin raðist á viðskiptavin), svo kennitala, svo tímabil.
+    // Punktar í dagsetningum, ALDREI skástrik: skástrik er ólöglegt í skráarnafni.
+    document.title = [h.nafn || h.kt, ktSnid(h.kt), 'hreyfingaryfirlit', dags(h.fra) + '-' + dags(h.til)]
+      .filter(Boolean).join(' - ').replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim();
     var bokari = st.bokari != null ? st.bokari : h.bokari;
     var obekraeft = d.linur.some(function (l) { return l.obekraeft; });
     $('blad').innerHTML =
@@ -329,6 +340,18 @@ tr.obekraeft td{font-style:italic}
   $('saekja').addEventListener('click', function () { saekja(); });
   ['kt', 'fra', 'til'].forEach(function (id) {
     $(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') saekja(); });
+  });
+  // ── „án texta" (Agnar 30.09.2026: „gera hreyfingaryfirlit prentanlegt án auka texta").
+  //    Þetta er ÚTLITSVAL eins vafra — ekki staða gagna — svo localStorage er rétti staðurinn
+  //    (regla um samstillingu milli véla: localStorage aðeins fyrir útlitsval). Bókara-textinn
+  //    sjálfur er óbreyttur og fer áfram á þjóninn eins og áður; hann er aðeins EKKI prentaður.
+  var AN_TEXTA_LYKILL = 'hy_an_texta';
+  function merkjaAnTexta(a) { document.documentElement.classList.toggle('hy-an-texta', !!a); }
+  try { $('antexta').checked = localStorage.getItem(AN_TEXTA_LYKILL) === '1'; } catch (_) {}
+  merkjaAnTexta($('antexta').checked);
+  $('antexta').addEventListener('change', function () {
+    merkjaAnTexta(this.checked);
+    try { localStorage.setItem(AN_TEXTA_LYKILL, this.checked ? '1' : '0'); } catch (_) {}
   });
   $('prenta').addEventListener('click', function () { window.print(); });
 
