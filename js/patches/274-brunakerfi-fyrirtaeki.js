@@ -42,6 +42,14 @@
   // Birting í reit: heiltala með þúsundapunkti (16.670), tugabrot með kommu; ótölulegt óbreytt.
   function fmtInn(v) { const n = num(v); if (n == null) return String(v == null ? '' : v); return Number.isInteger(n) ? String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : String(n).replace('.', ','); }
   function fmtKr(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr'; }
+  // 30.09.2026: ritillinn (vistaVerdlinur) kallaði í toast() sem var hvergi til í þessari skrá — ReferenceError eftir hverja vistun.
+  function toast(msg, bad) {
+    let t = document.getElementById('_bkc-toast');
+    if (!t) { t = document.createElement('div'); t.id = '_bkc-toast'; document.body.appendChild(t); }
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:12000;padding:11px 20px;border-radius:99px;font-weight:800;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);transition:opacity .3s;opacity:1;background:' + (bad ? '#b91c1c' : '#14532d') + ';color:#fff';
+    clearTimeout(t._h); t._h = setTimeout(() => { t.style.opacity = '0'; }, 2600);
+  }
   function fmtKt(kt) { const d = String(kt || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : (kt || ''); }
   function fmtDags(iso) { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso || ''); }
 

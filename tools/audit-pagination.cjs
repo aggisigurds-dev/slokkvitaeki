@@ -70,6 +70,7 @@ const ALLOW = [
   [/eq\(\s*['"]client['"]/,                   'tæki EINS fyrirtækis'],
   [/ilike\(\s*['"]nafn['"]/,                  'nafnaleit (fá svör)'],
   [/custFilter/,                              'leitarsía notanda'],
+  [/report_doc_id\.eq\.['"]\s*\+\s*did\s*\+\s*['"],invoice_doc_id\.eq\.['"]\s*\+\s*did/, 'pör EINS skjals við aftengingu (199, 274) — mest 2 raðir'],
   [/orParts|ors\.join/,                       'afmarkað við sýnileg fyrirtæki'],
   // 10.09.2026 — síðustu fjórar „þekktu" fyrirspurnirnar, hver MÆLD. Þær stóðu á
   // BASELINE = 4: vörðurinn þagði um þessi fjögur tilvik og hefði þagað um fjögur
