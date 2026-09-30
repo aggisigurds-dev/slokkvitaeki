@@ -472,7 +472,7 @@
     const r = (sel, css) => sel.split(',').map(x => P + x.trim()).join(',') + '{' + css + '}';
     const st = document.createElement('style'); st.id = '_bkc-b274';
     st.textContent = [
-      '#_bkc-overlay ._bkc-grid.b274{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:16px;align-items:start;font-family:' + SANS + '}',
+      '#_bkc-overlay ._bkc-grid.b274{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;font-family:' + SANS + '}',
       r('.b274-k', 'background:#fff;border:1px solid #000;border-radius:14px;overflow:hidden;box-shadow:0 30px 60px -20px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.3);display:flex;flex-direction:column;margin:0'),
       r('.b274-hd', 'position:relative;background:' + METAL + ';color:#fff;border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);padding:14px 18px 12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap'),
       r('.b274-hd::before,.b274-hd::after', 'content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:' + RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.7);top:8px'),
@@ -493,13 +493,17 @@
       r('.b274-legend b', 'font-weight:700;color:#fff'),
       r('.b274-legend i', 'width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:5px'),
       r('.b274-plotur', 'align-items:flex-start;font-family:' + MONO),
-      r('.b274-hr', 'margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px'),
+      r('.b274-hr', 'margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;align-self:stretch;gap:6px'),   // platan efst í horninu, takkarnir neðst
+      r('.b274-hd-h .b274-plotur', 'margin-left:auto;align-items:flex-end;text-align:right'),
+      r('.b274-hd:not(.b274-hd-h) .b274-plata.dokk', 'position:absolute;top:10px;right:22px'),   // B23: Skoðað-platan í hægra hornið, óháð umbroti
+      r('.b274-hd:not(.b274-hd-h) .b274-hr', 'align-self:center;justify-content:flex-end'),   // hægra spjald: plöturnar út í kant
+      r('.b274-hd-h .b274-hr', 'flex-basis:100%;flex-direction:row;justify-content:flex-end;align-self:auto;margin-left:0'),
       r('.b274-hb', 'display:flex;gap:8px'),
       r('.b274-plata', 'display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:3px;border:1px solid rgba(20,24,34,.12);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);color:#11141c;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;flex:none'),
       r('.b274-plata i', 'width:5px;height:5px;border-radius:50%;display:inline-block;background:#8f98a8'),
       r('.b274-plata.ok i', 'background:#1f9d57'), r('.b274-plata.vinnsla i', 'background:#4f74dc'), r('.b274-plata.vantar i', 'background:#e25555'), r('.b274-plata.vantar', 'color:#b42318'),
       r('.b274-plata.dokk', 'height:30px;font-size:12px;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);border-color:#000;color:#eef1f4;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)'),
-      r('.b274-silfur,.b274-malmur', 'height:36px!important;min-height:0!important;padding:0 14px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex;align-items:center;gap:7px'),
+      r('.b274-silfur,.b274-malmur', 'height:36px!important;min-height:0!important;padding:0 14px!important;border-radius:4px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex;align-items:center;gap:7px'),
       r('.b274-silfur', 'background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;color:#1f2530!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;text-shadow:none'),
       r('.b274-malmur', 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border:1px solid #000!important;color:#eef1f4!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45)!important'),
       r('.b274-stal', 'background:#e2e6ec;background-image:' + PLATE + ';padding:10px 10px 16px;display:flex;flex-direction:column;gap:10px'),
@@ -525,19 +529,20 @@
       r('.b274-linur', 'background:#fff;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14);display:flex;flex-direction:column'),
       r('.b274-linur > div', 'display:flex;flex-direction:column'),
       r('.b274-linur > div > div:first-child', 'font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.12em;text-transform:uppercase;color:#525b6b!important;padding:8px 12px 4px!important'),
-      r('.b274-linur ._bkc-vh', 'grid-template-columns:minmax(0,1fr) 44px 78px 84px 44px 48px 92px 22px;gap:8px;background:linear-gradient(180deg,#2b2f37,#15171c);color:#eef1f4;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:0 12px;height:34px;align-items:center;border-bottom:1px solid #000'),
-      r('.b274-linur ._bkc-vr', 'grid-template-columns:minmax(0,1fr) 44px 78px 84px 44px 48px 92px 22px;gap:8px;padding:7px 12px;border-bottom:1px solid #edf0f4'),
+      r('.b274-linur ._bkc-vh', 'grid-template-columns:minmax(0,1fr) 40px 66px 78px 40px 40px 84px 20px;gap:6px;background:linear-gradient(180deg,#2b2f37,#15171c);color:#eef1f4;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:0 12px;height:34px;align-items:center;border-bottom:1px solid #000'),
+      r('.b274-linur ._bkc-vr', 'grid-template-columns:minmax(0,1fr) 40px 66px 78px 40px 40px 84px 20px;gap:6px;padding:7px 10px;border-bottom:1px solid #edf0f4'),
       r('.b274-linur ._bkc-vteg', 'display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border-radius:3px;border:1px solid #000;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#eef1f4;font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)'),
       r('.b274-linur ._bkc-vvsk', 'font-family:' + MONO + ';font-size:12px;color:#5b6472;text-align:right'),
       r('.b274-linur ._bkc-vin[data-vk="qty"]', 'text-align:center;padding:0 4px'),
       r('.b274-undir', 'display:flex;gap:18px;justify-content:flex-end;flex-wrap:wrap'),
       r('.b274-undir .afsl b', 'color:#b42318'),
       r('.b274-linur ._bkc-vin', 'height:28px;border:1px solid rgba(20,24,34,.14);border-radius:6px;background:#eef1f6;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);font-family:' + MONO + ';font-size:12px;padding:0 8px'),
-      r('.b274-linur ._bkc-vin[data-vk="name"]', 'font-family:' + SANS + ';font-weight:600;font-size:12.5px;background:#fff;box-shadow:none;border-color:transparent'),
+      r('.b274-linur ._bkc-vin[data-vk="name"]', 'font-family:' + SANS + ';font-weight:600;font-size:12px;background:#fff;box-shadow:none;border-color:transparent;text-overflow:ellipsis;padding:0 4px'),
       r('.b274-linur ._bkc-vin[data-vk="name"]:focus', 'border-color:rgba(20,24,34,.3);background:#fff'),
       r('.b274-linur ._bkc-vsum', 'font-family:' + MONO + ';font-size:12px;font-weight:700;color:#11141c'),
       r('.b274-linur ._bkc-vx', 'border:0;background:transparent;color:#b9c0c9;font-size:13px'), r('.b274-linur ._bkc-vx:hover', 'color:#b42318;background:#fdeeee'),
       r('.b274-linur [data-vadd]', 'margin:8px 12px 10px!important;align-self:flex-start'),
+      r('.b274-vantar', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px 0;font-family:' + MONO + ';font-size:11px;color:#8a6100;font-weight:700'),
       r('.b274-linur ._bkc-empty', 'padding:14px 12px;text-align:center'),
       r('.b274-linur > div > div[style*="8a6100"]', 'padding:6px 12px 0!important;font-family:' + MONO + ';font-size:11px!important'),
       // samtölur: undirlína + málmstöng
@@ -551,10 +556,11 @@
       '#_bkc-overlay .b274 .b274-inv #_bkr-status{border:0!important;padding:0!important;margin:0!important;box-shadow:none!important;background:transparent!important}',
       '#_bkc-overlay .b274 .b274-inv:not(:has(#_bkr-status)),#_bkc-overlay .b274 .b274-inv:has(#_bkr-inv:empty){display:none!important}',
       r('.b274-fotur', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 2px'),
+      r('._bkc-act,._bkc-act._ghost,._bkc-new,.b274-linur ._bkc-vin,.b274-reitur,.b274-note', 'border-radius:4px!important'),   // B23: ferkantaðra, í stíl við plöturnar
       r('.b274-stong', 'height:44px!important;font-size:14px!important;padding:0 18px!important'),
       r('.b274-p', 'display:inline-flex;align-items:center;height:20px;padding:0 7px;margin-left:8px;border-radius:3px;background:rgba(255,255,255,.12);font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#d5dbe6'),
-      r('.b274-ny', 'width:auto!important;margin:0!important;padding:0 12px!important;height:32px;font-size:12.5px!important;border-radius:7px!important'),
-      r('.b274-graenn', 'height:36px!important;min-height:0!important;padding:0 14px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:700!important;display:inline-flex;align-items:center;gap:7px;background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)!important;border:1px solid rgba(52,168,98,.55)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3)!important;text-shadow:0 1px 1px rgba(0,0,0,.55)'),
+      r('.b274-ny', 'width:auto!important;margin:0!important;padding:0 12px!important;height:32px;font-size:12.5px!important;border-radius:4px!important'),
+      r('.b274-graenn', 'height:36px!important;min-height:0!important;padding:0 14px!important;border-radius:4px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:700!important;display:inline-flex;align-items:center;gap:7px;background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)!important;border:1px solid rgba(52,168,98,.55)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3)!important;text-shadow:0 1px 1px rgba(0,0,0,.55)'),
       // mjórra (sími / þröngt): einn dálkur
       '@media (max-width:1100px){#_bkc-overlay ._bkc-grid.b274{grid-template-columns:1fr}' + P + '.b274-thri{grid-template-columns:1fr 1fr}}'
     ].join('\n');
@@ -757,6 +763,7 @@
     // (lagað í 273 sama dag). Merkjum þær skýrslur sem hann vantar enn á — það er
     // eina leiðin til að sjá gömlu skýrslurnar sem fóru út án hans.
     const vantarAkstur = (r) => !linurOf(r).some(l => /akstur/i.test(String(l.name || '')));
+    const vantarSkyrsla = (r) => !linurOf(r).some(l => /sk[ýy]rslu|samantekt/i.test(String(l.name || '')));
     // Ritill, ekki tafla: hver lína er reitir sem má breyta beint hér.
     const verdHtml = verds.length ?
       verds.map(x =>
@@ -768,7 +775,7 @@
         '<div class="_bkc-vh"><span>Liður</span><span style="text-align:right">Fj.</span><span>Tegund</span><span style="text-align:right">Per stk</span><span style="text-align:right">Vsk</span><span style="text-align:right">Afsl.</span><span style="text-align:right">Samtals</span><span></span></div>' +
         linurOf(x.r).map((l, i) =>
           '<div class="_bkc-vr">' +
-            '<input class="_bkc-vin" data-vk="name" data-vi="' + i + '" value="' + esc(l.name || '') + '" placeholder="Lýsing">' +
+            '<input class="_bkc-vin" data-vk="name" data-vi="' + i + '" value="' + esc(l.name || '') + '" title="' + esc(l.name || '') + '" placeholder="Lýsing">' +
             '<input class="_bkc-vin" data-vk="qty" data-vi="' + i + '" inputmode="numeric" value="' + esc(l.qty == null ? '' : l.qty) + '" style="text-align:center">' +
             '<span class="_bkc-vteg">' + (/akstur/i.test(l.name || '') ? 'Akstur' : /sk[ýy]rslu|samantekt/i.test(l.name || '') ? 'Skýrsla' : /n[ýy]r|uppsett|skynjari|skipt/i.test(l.name || '') ? 'Vara' : 'Skoðun') + '</span>' +
             '<input class="_bkc-vin" data-vk="price" data-vi="' + i + '" inputmode="decimal" value="' + esc(l.price == null ? '' : fmtInn(l.price)) + '" style="text-align:right">' +
@@ -777,7 +784,10 @@
             '<span class="_bkc-vsum" data-vsum="' + i + '">' + fmtKr(vLina(l)) + '</span>' +
             '<button type="button" class="_bkc-vx" data-vdel="' + i + '" title="Eyða línunni">✕</button>' +
           '</div>').join('') +
-        (vantarAkstur(x.r) ? '<div style="font-size:11.5px;color:#8a6100;font-weight:700;padding:7px 0">⚠️ Enginn akstur á þessari skýrslu</div>' : '') +
+        // B25 (Agnar 30.09): sjálfgefnu línurnar — vanti þær er einn smellur í að bæta þeim við (verð úr verðlistanum), ekki bara viðvörun
+        ((vantarAkstur(x.r) || vantarSkyrsla(x.r)) ? '<div class="b274-vantar"><span>Sjálfgefið vantar:</span>' +
+          (vantarAkstur(x.r) ? '<button type="button" class="_bkc-act _ghost" data-vfast="akstur" title="Bæta við Akstur ×1 á verðlistaverði">＋ Akstur ×1</button>' : '') +
+          (vantarSkyrsla(x.r) ? '<button type="button" class="_bkc-act _ghost" data-vfast="skyrsla" title="Bæta við Skýrslugerð ×1 á verðlistaverði">＋ Skýrslugerð ×1</button>' : '') + '</div>' : '') +
         '<button type="button" class="_bkc-act _ghost" data-vadd="1" style="margin-top:9px">＋ Auð lína</button>' +
         '</div>').join('')
       // 30.09.2026 (Agnar: „skil ekki alveg hvað er í gangi þarna"). Textinn sagði
@@ -868,7 +878,6 @@
             '<div class="b274-hr">' +
               (meta.dags ? '<span class="b274-plata dokk">📅 Skoðað ' + esc(fmtDags(meta.dags)) + '</span>' : '') +
               '<div class="b274-hb">' +
-                (skyrslaSrc ? '<button type="button" class="_bkc-hb b274-silfur" id="_bkc-repbig" title="Opna skýrsluna í fullum skjá">⤢ Stækka</button>' : '') +
                 (repUrl ? '<button type="button" class="_bkc-act b274-malmur" data-repview="' + esc(repUrl) + '" data-repname="úttekt ' + esc((repNow && repNow.uttekt_nr) || '') + '" title="Opna skýrsluna">📄 Opna skýrsluna</button>' : '') +
               '</div>' +
             '</div>' +
@@ -896,7 +905,7 @@
         '</section>' +
         // ── HÆGRA: skýrsla og reikningur ──
         '<section class="b274-k">' +
-          '<header class="b274-hd">' +
+          '<header class="b274-hd b274-hd-h">' +
             '<div class="b274-hl">' +
               '<div class="b274-t"><i class="b274-led y"></i>Skýrsla og reikningur ' + NOW + '</div>' +
               '<div class="b274-tala"><span class="n">' + (hasVerd ? fmtKr(verdSum).replace(/ kr$/, '') : '—') + '</span><span class="l">kr með vsk</span></div>' +
@@ -986,6 +995,19 @@
         const l = linur()[+b.dataset.vdel]; if (!l) return;
         if (!confirm('Eyða línunni „' + (l.name || '') + '"?')) return;
         linur().splice(+b.dataset.vdel, 1);
+        render(); vistaSidar(rep);
+      }));
+      // B25: fastar línur úr verðlistanum (sama geymsla og 273 priceItems: AppSettings 'brunakerfi_verdlisti' → localStorage → grunnverð)
+      blokk.querySelectorAll('[data-vfast]').forEach(b => b.addEventListener('click', () => {
+        let listi = null;
+        try { listi = window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_verdlisti'); } catch (_) {}
+        if (!listi) { try { listi = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || 'null'); } catch (_) {} }
+        const vill = b.dataset.vfast === 'akstur' ? /akstur/i : /samantekt|sk[ýy]rslugerð/i;
+        const it = Array.isArray(listi) ? listi.find(x => vill.test(String(x.name || ''))) : null;
+        const nafn = it ? it.name : (b.dataset.vfast === 'akstur' ? 'Akstur' : 'Samantekt og gerð skoðunarskýrslu');
+        const verd = it && num(it.price) != null ? String(num(it.price)) : (b.dataset.vfast === 'akstur' ? '3000' : '16670');
+        rep.data = rep.data || {}; rep.data.verd = rep.data.verd || {}; rep.data.verd.linur = rep.data.verd.linur || [];
+        rep.data.verd.linur.push({ name: nafn, qty: '1', price: verd, afsl: '' });
         render(); vistaSidar(rep);
       }));
       const add = blokk.querySelector('[data-vadd]');

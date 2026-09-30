@@ -30,7 +30,11 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 
 | # | Beiðni | Hver | Staða |
 |---|--------|------|-------|
-| B23 | **Brunakerfis-miðjan, lagfæringar (skjámynd 18:3x):** (a) „Skoðað 29/07/2026"-platan upp í hægra horn vinstra hauss; (b) „Stækka" burt — gerir það sama og „Opna skýrsluna"; (c) stöðuplöturnar (Skýrsla lokið · R-… drög · N línur · einingar) hægrijafnaðar út í kant hægra hauss; (d) **allir hnappar ferkantaðri** (minni rúnnun) í stíl við þemað — byrja á Vista · Senda · Reikningur · Skoðunarskýrsla | Claude | Í VINNSLU |
+| B23 | **Brunakerfis-miðjan, lagfæringar (skjámynd 18:3x):** (a) „Skoðað 29/07/2026"-platan upp í hægra horn vinstra hauss; (b) „Stækka" burt — gerir það sama og „Opna skýrsluna"; (c) stöðuplöturnar (Skýrsla lokið · R-… drög · N línur · einingar) hægrijafnaðar út í kant hægra hauss; (d) **allir hnappar ferkantaðri** (minni rúnnun) í stíl við þemað — byrja á Vista · Senda · Reikningur · Skoðunarskýrsla | Claude | ✅ KLÁRT |
+| B24 | Línur reiknings (Brunakerfi): **hlutföll dálkanna** svo heitið („Samantekt og gerð skoðunarskýrslu") passi innan í reitinn — nafnið klippist | Claude | ✅ KLÁRT |
+| B25 | Línur reiknings (Brunakerfi): **sjálfgefið Akstur ×1 og Skýrslugerð ×1** — vantar á skýrslur sem urðu til áður en 273 fékk akstursliðinn | Claude | ✅ KLÁRT |
+| B26 | **„Aflæsa skýrslu"-hnappur á Brunakerfis-blaðinu:** haka við beint af skjá og breyta tölum eins og í slökkvikerfis-skýrslunni (386); þegar ýtt er á tölureit birtast **+ / −** til að hækka og lækka. Vinnusvæðið (273) verður varaleið. Krefst HTML-blaðs (273 „Skýrsla"-sýn) í stað PDF-ramma | Claude | NÝ |
+| B27 | **Teikning-stikan** („Teikning · 5 staðsetningar" með − 100% + ↺ Sýna) og **Viðbóta upplýsingar**-reiturinn undir miðjunni: færa í tákn á „Teikning"-hnappinn í efri hluta, samanfellt sjálfgefið, hægt að opna | Claude | NÝ |
 
 ## 2026-09-10
 
