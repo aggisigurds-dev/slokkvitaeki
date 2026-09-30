@@ -47,6 +47,7 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B37 | **Stjórnstöð (Kjarni):** auka breidd meginhlutans; fjólublái liturinn „skelfilegur" — þemað í „big boss": ljóst, gull og svart | Claude | NÝ |
 | B38 | **Sótt-glugginn (afhending, „Sókn — kt."):** hressa upp; afslátturinn (Lokastilling fyrir kvittun) inn á sömu opnu svo hann týnist ekki; guli liturinn burt; græni hausinn í dökkmálmsgrænan; samræma við þemað | Claude | NÝ |
 | B39 | **Allir viðskiptavinir:** öll síðan í svipað þema og Fyrirtæki í þjónustu (Brunastál C), án súluritsins; halda öllum tökkum í bili | Claude | NÝ |
+| B40 | **Kúnnasíðan** (úr Allir viðskiptavinir → „Opna kúnna-síðu", blái hallinn): „alveg ömurlega ljót" — laga liti og breidd í samræmi við Fyrirtæki í þjónustu (Brunastál C) | Claude | NÝ |
 
 ## 2026-09-10
 
