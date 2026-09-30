@@ -513,6 +513,95 @@
     '<button type="button" class="_bks-add" id="_bks-a-add">+ Bæta við</button></div>';
   }
 
+  // ── EFNI ÚR INNKAUPUM (Agnar 30.09.2026) ──────────────────────────────────
+  // „1026679 hefur kanski bara verið notað að hluta … mátt hafa þann reikning bara
+  //  með útskýringum, svo Binni geti farið inn á úttektina og rennt yfir
+  //  kostnaðartölurnar og sett inn."
+  //
+  // Kostnaðarreikningar frá birgjum bera EININGARVERÐ (fullt verð) og UPPHÆÐ
+  // (eftir afslátt birgjans). Afsláttur okkar hjá birgjanum er OKKAR kjör og á
+  // ekki að renna til viðskiptavinarins — þess vegna er boðið FULLA verðið.
+  // Báðar tölur eru sýndar svo enginn þurfi að giska á hvor er hvor.
+  //
+  // MAGN ER OPIÐ: reikningur getur verið notaður að hluta (5 keyptir, 3 í þetta
+  // hús). Þess vegna er magnreitur á hverri línu og sjálfgefna gildið er keypta
+  // magnið — ekki lokað, bara byrjunarpunktur.
+  let _efni = null, _efniSaekt = false, _efniVilla = null, _efniOpid = false;
+
+  async function saekjaEfni() {
+    const sb = SB(); if (!sb || !S || !S.co) return;
+    _efniSaekt = true; _efniVilla = null;
+    try {
+      // Tengt þessu félagi, OG ótengdir reikningar síðustu 120 daga — því sá sem
+      // vantar er einmitt sá sem enginn náði að tengja (1026679 bar ekkert félag).
+      const fra = new Date(Date.now() - 120 * 864e5).toISOString();
+      const r = await sb.from('kostnadur')
+        .select('id,mottekid_at,seljandi,reikningsnr,upphaed,tilvisun,samantekt,linur,fyrirtaeki_id,flokkur')
+        .or('fyrirtaeki_id.eq.' + S.co.id + ',and(fyrirtaeki_id.is.null,mottekid_at.gte.' + fra + ')')
+        .order('mottekid_at', { ascending: false }).limit(40);
+      if (r.error) throw r.error;
+      _efni = (r.data || []).filter(x => Array.isArray(x.linur) ? x.linur.length : (x.linur && String(x.linur).length > 2));
+    } catch (e) {
+      _efniVilla = (e && e.message) || String(e);
+      _efni = [];
+    }
+  }
+
+  function efniLinur(k) {
+    let arr = k.linur;
+    if (typeof arr === 'string') { try { arr = JSON.parse(arr); } catch (_) { arr = []; } }
+    return Array.isArray(arr) ? arr : [];
+  }
+
+  function efniBodyHtml() {
+    if (!_efniOpid) {
+      return '<div style="margin-top:14px"><button type="button" class="_bks-hb" id="_bks-efni-opna" ' +
+        'style="background:#fff;border:1px solid #d0d4da;color:#334155;min-height:37px;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer">' +
+        '📦 Efni úr innkaupum' + (_efni && _efni.length ? ' · ' + _efni.length : '') + '</button></div>';
+    }
+    if (!_efniSaekt) return '<div style="margin-top:14px;font-size:12.5px;color:#8b93a1">Sæki innkaup…</div>';
+    if (_efniVilla) return '<div style="margin-top:14px;font-size:12.5px;color:#b3341a">Náði ekki í innkaup: ' + esc(_efniVilla) + '</div>';
+    if (!_efni || !_efni.length) return '<div style="margin-top:14px;font-size:12.5px;color:#8b93a1;font-style:italic">Engir kostnaðarreikningar fundust á þetta félag eða ótengdir síðustu 120 daga.</div>';
+
+    return '<div id="_bks-efni" style="margin-top:16px;border-top:1px dashed #d0d4da;padding-top:12px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+        '<b style="font-size:13px">📦 Efni úr innkaupum</b>' +
+        '<span style="font-size:11.5px;color:#8b93a1">fullt verð án afsláttar birgjans — settu magnið sem fór í þetta hús</span>' +
+        '<button type="button" class="_bks-del" id="_bks-efni-loka" style="margin-left:auto">✕</button>' +
+      '</div>' +
+      _efni.map((k, ki) => {
+        const linur = efniLinur(k).filter(l => !/færslugjald/i.test(String(l.lysing || '')));
+        if (!linur.length) return '';
+        const otengt = k.fyrirtaeki_id == null;
+        return '<div style="border:1px solid #e3e6ea;border-radius:9px;padding:9px 11px;margin-bottom:8px;background:' + (otengt ? '#fffdf5' : '#fff') + '">' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;font-size:12px;margin-bottom:6px">' +
+            '<b>' + esc(k.seljandi || 'Óþekktur seljandi') + '</b>' +
+            '<span style="color:#64748b">' + esc(String(k.reikningsnr || '—')) + ' · ' + esc(String(k.mottekid_at || '').slice(0, 10)) + '</span>' +
+            (k.tilvisun ? '<span style="color:#64748b">· ' + esc(k.tilvisun) + '</span>' : '') +
+            (otengt ? '<span style="font-size:10.5px;font-weight:700;color:#8a5a00;background:#fff3cd;border:1px solid #ffe08a;border-radius:99px;padding:1px 7px">ótengt félagi</span>' : '') +
+            (k.flokkur ? '<span style="font-size:10.5px;color:#64748b;border:1px solid #e3e6ea;border-radius:99px;padding:1px 7px">' + esc(k.flokkur) + '</span>' : '') +
+          '</div>' +
+          (k.samantekt ? '<div style="font-size:11.5px;color:#64748b;margin-bottom:6px">' + esc(k.samantekt) + '</div>' : '') +
+          linur.map((l, li) => {
+            const magn = num(l.magn) || 0;
+            const fullt = num(l.einingarverd) || 0;
+            const greitt = num(l.upphaed) || 0;
+            const fulltAlls = Math.round(magn * fullt);
+            const afsl = Math.round(fulltAlls - greitt);
+            return '<div style="display:grid;grid-template-columns:1fr 62px 96px 104px;gap:7px;align-items:center;padding:4px 0;border-top:1px solid #f1f3f5">' +
+              '<span style="font-size:12.5px">' + esc(l.lysing || '—') +
+                '<span style="display:block;font-size:10.5px;color:#8b93a1">keypt ' + magn + ' · fullt ' + fmtKr(fullt) + '/stk' +
+                  (afsl > 0 ? ' · afsl. birgja ' + fmtKr(afsl) : '') + '</span></span>' +
+              '<input class="_bks-in" data-ef-magn="' + ki + '_' + li + '" inputmode="numeric" value="' + magn + '" style="text-align:center">' +
+              '<span style="text-align:right;font-weight:800;font-size:12.5px">' + fmtKr(fullt) + '</span>' +
+              '<button type="button" class="_bks-add" data-ef-add="' + ki + '_' + li + '" style="background:#1f8a4c;font-size:11.5px;padding:6px 8px">＋ Á reikning</button>' +
+            '</div>';
+          }).join('') +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
+
   function verdBodyHtml() {
     const m = model();
     const items = priceItems();
@@ -543,7 +632,8 @@
         (S.data.verd.sale_num ? '<span style="font-size:12px;font-weight:800;color:#166b3a;background:#dcf1e4;border:1px solid #a9dcbd;border-radius:99px;padding:4px 11px">🧾 Reikningur ' + esc(S.data.verd.sale_num) + ' stofnaður ✓</span>' : '') +
         '<button type="button" class="_bks-add" id="_bks-v-invoice" style="background:#141619">🧾 ' + (S.data.verd.sale_num ? 'Búa til annan reikning' : 'Búa til reikning → Kröfu yfirlit') + '</button>' +
       '</div>'
-      : '<div style="font-size:12.5px;color:#8b93a1;font-style:italic;padding:6px 0">Engar línur — veldu liði úr verðlistanum að ofan. Verðin fara ekki á prentuðu skýrsluna.</div>');
+      : '<div style="font-size:12.5px;color:#8b93a1;font-style:italic;padding:6px 0">Engar línur — veldu liði úr verðlistanum að ofan. Verðin fara ekki á prentuðu skýrsluna.</div>') +
+    efniBodyHtml();
   }
 
   function renderWork() {
@@ -791,6 +881,26 @@
       const tot = box.querySelector('._bks-vtot ._big span:last-child');
       if (tot) tot.textContent = fmtKr(m.verdTotal);
     });
+    const efniOpna = box.querySelector('#_bks-efni-opna');
+    if (efniOpna) efniOpna.addEventListener('click', async () => {
+      _efniOpid = true;
+      if (!_efniSaekt) { rerender(); await saekjaEfni(); }
+      rerender();
+    });
+    const efniLoka = box.querySelector('#_bks-efni-loka');
+    if (efniLoka) efniLoka.addEventListener('click', () => { _efniOpid = false; rerender(); });
+    box.querySelectorAll('[data-ef-add]').forEach(b => b.addEventListener('click', () => {
+      const parts = String(b.dataset.efAdd).split('_');
+      const k = (_efni || [])[+parts[0]]; if (!k) return;
+      const l = efniLinur(k).filter(x => !/færslugjald/i.test(String(x.lysing || '')))[+parts[1]]; if (!l) return;
+      const mInp = box.querySelector('[data-ef-magn="' + b.dataset.efAdd + '"]');
+      const magn = (mInp && num(mInp.value)) || num(l.magn) || 1;
+      if (magn <= 0) { toast('Settu magn hærra en 0', true); return; }
+      // FULLT verð birgjans — afsláttur okkar fylgir ekki með til viðskiptavinarins.
+      S.data.verd.linur.push({ name: String(l.lysing || ''), qty: String(magn), price: String(Math.round(num(l.einingarverd) || 0)) });
+      markDirty(); rerender();
+      toast('＋ ' + magn + ' × ' + (l.lysing || '') + ' á fullu verði');
+    }));
     const edit = box.querySelector('#_bks-v-edit');
     if (edit) edit.addEventListener('click', () => openPriceEditor(rerender));
     box.querySelectorAll('[data-vdel]').forEach(b => b.addEventListener('click', () => {
