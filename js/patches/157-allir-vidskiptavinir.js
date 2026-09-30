@@ -309,10 +309,22 @@
         // síðurnar tvær mega aldrei flokka ólíkt.
         // 08.09.2026: lifandi tæki ein og sér telja ekki lengur „í þjónustu" — sama breyting og
         // inService() í 153 sama dag (Hótel Atlantic o.fl. þvældust inn á borðið). Flaggið ræður.
-        _hasArs: c.er_i_thjonustu === true || !!(ars && (
+        // 30.09.2026 (Agnar: „I cant tekið trs úr þjónustu"): SKÝR AFSKRÁNING VINNUR.
+        // TRS ehf. (596) var tekið úr þjónustu og BÁÐAR skrifin tókust — er_i_thjonustu
+        // false OG arsskodun_customers.subscribed false með removed_from_service_at.
+        // Samt sat félagið áfram á borðinu, því þriðja greinin hér að neðan hélt því
+        // inni: equipment-blobbið geymdi 5 CO2 og 6 léttvatn. Tækjatala trompaði þannig
+        // ákvörðun sem einhver tók viljandi — sama kvörtun og 08.09 („næ ekki að losna
+        // við þetta af borðinu"), sem var þá löguð fyrir uttaeki-raðir en ekki fyrir
+        // þetta blobb. Mælt 30.09: 135 félög eru skýrt afskráð, 22 haldast inni á
+        // tækjatölunni, 18 detta út við þessa lagfæringu.
+        // Tækjatalan heldur áfram að gilda fyrir félög sem ENGINN hefur flokkað — það er
+        // tilgangur hennar. Hún má bara ekki yfirtaka skýrt nei.
+        // Sama regla og inService() í 153 — síðurnar tvær mega aldrei flokka ólíkt.
+        _hasArs: c.er_i_thjonustu === true || (!(ars && (ars.removed_from_service_at || ars.subscribed === false)) && !!(ars && (
           ars.subscribed === true ||
           (ars.equipment && Object.values(ars.equipment).some(v => +v > 0))
-        )),
+        ))),
         _hasBru: !!bru,
         _hasFerda: !!ferda,
         _ars: ars || {},
