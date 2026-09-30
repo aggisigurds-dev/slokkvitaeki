@@ -52,7 +52,9 @@
     if (!main) return;
     if (main.dataset._impDecorated === '1') return;
     // Find the title block + action buttons row at the top of the detail
-    const actionsRow = main.querySelector('div[style*="display:flex"][style*="gap:7px"]');
+    // 30.09.2026: fyrsta gap:7px-röðin í DOM er oft póstboxið (295, ._cmb-*) sem ber engan openEdit-hnapp — þá gafst
+    // leitin upp og takkinn birtist „stundum". Aðgerðaröð fyrirtækisins ber data-co-id (features.js) — hún fyrst.
+    const actionsRow = main.querySelector('div[data-co-id][style*="display:flex"][style*="gap:7px"]') || main.querySelector('div[style*="display:flex"][style*="gap:7px"]');
     if (!actionsRow) return;
     if (actionsRow.querySelector('._imp-toggle')) return;
     // Get the company id — the first onclick="Companies.openEdit(...)" gives us the id

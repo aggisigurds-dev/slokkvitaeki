@@ -99,11 +99,10 @@
       var pl = top.querySelector(':scope > .b405-plata:not(.b405-skodun)');
       if (pl) top.insertBefore(badge, pl.nextSibling); else top.insertBefore(badge, row);
     }
-    var imp = main.querySelector('._smx-strip ._smx-imp');
-    if (imp) {
-      var old = row.querySelector('._smx-imp'); if (old && old !== imp) old.remove();
-      imp.classList.add('b405-imp'); row.insertBefore(imp, row.firstChild);
-    }
+    // 30.09 18:3x: takkinn sem Agnar benti á er ⚠ Merkja mikilvægt úr 91 (._imp-toggle, sat í aðgerðaröðinni undir
+    // borðanum) — ekki ☆ úr samskiptakortinu (359), sá stendur áfram þar. 91 teiknar sinn hnapp einu sinni (dataset-vörður).
+    var imp = main.querySelector('._imp-toggle');
+    if (imp && imp.parentElement !== row) { imp.classList.add('b405-imp'); row.insertBefore(imp, row.firstChild); }
   }
   function ensureSamskipti(main) {
     var head = main.querySelector('._samskipti-card ._skx-head'); if (!head || head.querySelector('.b405-talning')) return;
@@ -183,8 +182,8 @@
       r('.b405-plata', 'display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:3px;border:1px solid #000;background:' + METAL_BTN + ';color:#eef1f4;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;box-shadow:inset 0 1px 0 rgba(255,255,255,.14);margin-left:4px'),
       r('.b405-plata i', 'width:6px;height:6px;border-radius:50%;display:inline-block;background:#8f98a8'), r('.b405-plata i.ok', 'background:#3cc47c;box-shadow:0 0 8px rgba(60,196,124,.8)'), r('.b405-plata i.gull', 'background:#e0a93e;box-shadow:0 0 8px rgba(224,169,62,.8)'),
       r('.b405-skodun.co-banner-badge', 'height:26px!important;padding:0 10px!important;border-radius:3px!important;border:1px solid #000!important;background:' + METAL_BTN + '!important;color:#eef1f4!important;font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.06em!important;text-transform:uppercase;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important;margin:0!important;align-self:center!important'),
-      r('.b405-rod ._smx-imp', 'cursor:pointer;height:40px!important;padding:0 14px!important;border-radius:9px!important;border:1px solid rgba(20,24,34,.16)!important;background:' + SILVER + '!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;color:#1f2530!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center;gap:7px;white-space:nowrap;box-sizing:border-box;margin:0!important'),
-      r('.b405-rod ._smx-imp[style*="fef3c7"]', 'background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)!important;border-color:rgba(190,150,60,.5)!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
+      r('.b405-rod ._imp-toggle', 'cursor:pointer;height:40px!important;padding:0 14px!important;border-radius:9px!important;border:1px solid rgba(20,24,34,.16)!important;background:' + SILVER + '!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;color:#1f2530!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center;gap:7px;white-space:nowrap;box-sizing:border-box;margin:0!important'),
+      r('.b405-rod ._imp-toggle[style*="fef3c7"]', 'background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)!important;border-color:rgba(190,150,60,.5)!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
       r('.b405-vm', 'position:relative;display:inline-flex'),
       r('.b405-meira', 'all:unset;cursor:pointer;width:40px;height:40px;border-radius:9px;border:1px solid #000;background:' + METAL_BTN + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);color:#eef1f4;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box'),
       r('.b405-meira.opin', 'background:' + SILVER + ';color:#11141c'),
