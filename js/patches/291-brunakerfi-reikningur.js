@@ -7,7 +7,7 @@
  *    („✅ Ljúka & vista PDF" → finalize() í patch 273, S.status='final') kallar
  *    273 í BrunakerfiReikningur.onFinal(ctx) — fire-and-forget, stöðvar ALDREI
  *    lokunina. Hér er stofnuð DRÖG-röð í `solur`:
- *      status='draft' · greitt_med='reikningur' · source='brunakerfi'
+ *      status='drog' · greitt_med='reikningur' · source='brunakerfi'
  *    Verðið kemur úr verð-línum skýrslunnar (S.data.verd.linur); ef þær eru
  *    tómar er reynt autoVerdLines() (búnaðarteljarar × tengdir verðlista-liðir,
  *    reiknað í 273 og sent með í ctx.autoLinur); finnist ekkert verð eru drögin
@@ -107,7 +107,14 @@
         customer_nafn: co.nafn || '', customer_id: co.id, customer_kt: ktd || null,
         starfsmadur: ctx.madur || 'Kassi', linur,
         upphaed_an_vsk: se, vsk_upphaed: vs, samtals: to, afslattur: afsl,
-        greitt_med: 'reikningur', status: 'draft', source: 'brunakerfi',
+        // 30.09.2026 (Agnar: „Reikningsdrög vistuðust ekki: new row for relation
+        // \"solur\" violates check constraint \"solur_status_check\""). Taflan leyfir
+        // AÐEINS 'drog' · 'final' · 'void'. Þessi eini staður skrifaði enska orðið,
+        // svo hver einasta tilraun til að stofna drög af brunakerfis-skýrslu féll á
+        // skilyrðinu — mælt sama dag: 51 rað með 'drog', 0 með 'draft', þ.e. leiðin
+        // hafði aldrei virkað. Allt hitt appið notar 'drog' (00 · 11 · 142 · 143 ·
+        // 158 · 166 · 167), svo gildið hér er það sem lesið er annars staðar.
+        greitt_med: 'reikningur', status: 'drog', source: 'brunakerfi',
         athugasemdir: 'Brunakerfisskoðun — úttekt ' + (ctx.nr || '') +
           (ctx.dags ? ' · ' + fmtDags(ctx.dags) : '') +
           ' · sjálfvirk drög við LOKIÐ' +
@@ -311,7 +318,7 @@
 
       if (inv) {
         // 07.09.2026: sama orðalag og ársyfirlitið (274) — greiddur/sendur trompar „stofnaður"
-        const stTxt = inv.paid_at ? 'greiddur' : inv.krafa_sent_at ? 'sendur' : inv.status === 'draft' ? 'drög' : inv.status === 'final' ? 'stofnaður' : (inv.status || '');
+        const stTxt = inv.paid_at ? 'greiddur' : inv.krafa_sent_at ? 'sendur' : inv.status === 'drog' ? 'drög' : inv.status === 'final' ? 'stofnaður' : (inv.status || '');
         span.innerHTML = '· Reikningur: <b style="color:#16181c">' + esc(inv.num || '') + '</b>' +
           ' <span style="padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:800;background:' +
           (inv.status === 'final' ? '#dcf1e4;color:#166b3a' : '#fdf3d7;color:#8a6100') + '">' + esc(stTxt) + '</span>' +
