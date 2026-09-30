@@ -159,6 +159,8 @@
   r(PK + ' #_pkc-cancel', SILVER_BTN + ';height:38px;padding:0 16px;font-size:13px;color:#1f2530');
   r(PK + ' #_pkc-pay', SILVER_BTN + ';height:38px;padding:0 12px;font-size:13px;color:#1f2530;appearance:auto');
   r(PK + ' #_pkc-finalize', GREEN_BTN + ';height:38px;padding:0 18px;font-size:13.5px');
+  // sími (netvörður 30.09): fóturinn í eina dálkröð undir 700 px svo hann flæði ekki út fyrir 351 px glugga
+  out.push('@media (max-width:700px){html body #_pkc-dialog #_pkc-foot{grid-template-columns:1fr!important}html body #_pkc-dialog #_pkc-loka{border-right:0!important;border-bottom:1px solid rgba(20,24,34,.12)!important}}');
   // fyrirframgreitt-borðinn (GREITT): dökkmálmsgrænn í stað #16a34a
   r(PK + ' > div > div[style*="background:#16a34a"]', 'background:' + SAEKJA + ';border-top:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)');
   r(PK + ' > div > div[style*="background:#16a34a"] > div:first-child > div:last-child > div:first-child', 'font-family:' + MONO + ';letter-spacing:.2em');
@@ -201,7 +203,7 @@
   r(SC + ' #_sch-body span[style*="background:#fef3c7"]', CHIP_GOLD);
   r(SC + ' #_sch-body span[style*="background:#e0e7ff"],' + SC + ' #_sch-body span[style*="background:#f5f3ff"]', CHIP_DARK);
   r(SC + ' #_sch-body span[style*="background:#f1f5f9"]', 'color:#3a4250');
-  r(SC + ' #_sch-body td span[style*="#6d28d9"],' + SC + ' #_sch-body td[style*="#6d28d9"]', 'color:#3a4250');
+  r(SC + ' #_sch-body td span[style*="#6d28d9"]:not([style*="background:#f5f3ff"]),' + SC + ' #_sch-body td[style*="#6d28d9"]', 'color:#3a4250');   // PD-platan heldur ljósa letrinu
   r(SC + ' #_sch-body span[style*="color:#991b1b"]', 'color:#b42318;font-family:' + MONO + ';font-size:10.5px;font-weight:700');
   // takkar í töflunni og skjalalistanum
   r(SC + ' ._sch-send,' + SC + ' ._sch-view,' + SC + ' ._sch-mail,' + SC + ' ._sch-open,' + SC + ' ._sch-att,' + SC + ' ._sch-fill,' + SC + ' ._sch-fillmail,' + SC + ' ._scb-rep,' + SC + ' ._scb-inv,' + SC + ' ._scb-inv-doc', SILVER_BTN + ';height:28px;padding:0 9px;font-size:11px;color:#1f2530;display:inline-flex;align-items:center');
