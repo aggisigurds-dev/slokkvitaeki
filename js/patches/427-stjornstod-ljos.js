@@ -31,7 +31,8 @@
   var MERKI = 'font:700 10.5px ' + MONO + '!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:' + GULL + '!important';
   var GRAENT = '#1f7a45', RAUTT = '#b42318';
 
-  var S = '#view-stjornstod ', C = S + '#cc-main ', P = S + '._sam420 ', K = S + '._vik420 ';
+  // 420 hengir dökka stílblaðið inn SEINNA (þegar hlutinn er teiknaður) — jafnnákvæm regla þar vinnur okkar. Því 'html body' fremst: hærri sérhæfni.
+  var S = 'html body #view-stjornstod ', C = S + '#cc-main ', P = S + '._sam420 ', K = S + '._vik420 ';
   var rules = [
     // ── breiddin: þakið 1280 px fer, síðan fyllir meginhlutann ──
     C + '> div[style*="max-width:1280px"]{max-width:none!important}',
@@ -71,6 +72,9 @@
     K + '.vk-nota{border-color:rgba(160,120,40,.45)!important;color:' + INK2 + '!important;background:#fffdf7!important}',
     K + '.vk-skyring{color:' + MUTE + '!important}',
     K + '.vk-gull{' + GULLTAKKI + '}',
+    // Fund-liturinn í Vikunni er fjólublár (#9b6bff í 420 VD_TEG) — gull hér, á punkti skýringar og vinstri rönd verks
+    K + '.vk-skyring i[style*="#9b6bff"]{background:#c9a54a!important}',
+    K + '.vk-verk[style*="#9b6bff"]{--lit:#c9a54a!important;border-left-color:#c9a54a!important}',
 
     // ── 61 lykiltölur: hvít spjöld, gullmerki, svört Playfair-tala; fjólublátt → gull, bleikt → dökkrautt ──
     C + 'div[style*="minmax(220px"]>div{background:' + HVITT + '!important;box-shadow:' + HVITT_SK + '!important;border-left-width:4px!important}',
