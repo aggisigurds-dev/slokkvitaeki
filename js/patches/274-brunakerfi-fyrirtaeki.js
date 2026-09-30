@@ -125,6 +125,24 @@
   // ALLT data-blobbið; skrifaði ég blobbið sem ég las við teikningu myndi ég
   // henda því sem einhver annar sló inn á meðan.
   let _vistT = null, _vistBid = {};
+  // ── B26: aflæst blað — breytingar á búnaðartölum, hljóðmælingum og stöðvarprófunum vistast beint (fresk lesning +
+  //    plástur á þá lykla eina, sama mynstur og verðlínurnar) ────────────────────────────────────────────────────
+  let _aflaest = false, _bladBreytt = false, _bladT = null;
+  async function vistaBlad(rep) {
+    const sb = SB(); if (!sb || !rep) return;
+    try {
+      const fersk = await sb.from('brunakerfi_skyrslur').select('data').eq('id', rep.id).limit(1);
+      if (fersk.error || !fersk.data || !fersk.data[0]) { toast('Skýrslan vistaðist EKKI — reyndu aftur', true); return; }
+      const d = fersk.data[0].data || {};
+      if (rep.data.bunadur) d.bunadur = rep.data.bunadur;
+      if (rep.data.hljod) d.hljod = rep.data.hljod;
+      if (rep.data.stod) { d.stod = d.stod || {}; d.stod.checks = rep.data.stod.checks; }
+      const r = await sb.from('brunakerfi_skyrslur').update({ data: d, updated_at: new Date().toISOString() }).eq('id', rep.id);
+      if (r.error) { toast('Skýrslan vistaðist EKKI: ' + r.error.message, true); return; }
+      toast('Skýrsla vistuð ✓');
+    } catch (e) { toast('Skýrslan vistaðist EKKI: ' + ((e && e.message) || e), true); }
+  }
+  function vistaBladSidar(rep) { _bladBreytt = true; if (_bladT) clearTimeout(_bladT); _bladT = setTimeout(() => { _bladT = null; vistaBlad(rep); }, 900); }
   async function vistaVerdlinur(rep) {
     const sb = SB(); if (!sb || !rep) return;
     try {
@@ -133,6 +151,7 @@
       const d = fersk.data[0].data || {};
       d.verd = d.verd || {};
       d.verd.linur = (rep.data && rep.data.verd && rep.data.verd.linur) || [];
+      if (rep.data && rep.data.verd && rep.data.verd.afslattur != null) d.verd.afslattur = rep.data.verd.afslattur;   // B30
       const r = await sb.from('brunakerfi_skyrslur').update({ data: d, updated_at: new Date().toISOString() }).eq('id', rep.id);
       if (r.error) { toast('Verðlínur vistuðust EKKI: ' + r.error.message, true); return; }
       toast('Verðlínur vistaðar ✓');
@@ -536,6 +555,7 @@
       r('.b274-linur ._bkc-vin[data-vk="qty"]', 'text-align:center;padding:0 4px'),
       r('.b274-undir', 'display:flex;gap:18px;justify-content:flex-end;flex-wrap:wrap'),
       r('.b274-undir .afsl b', 'color:#b42318'),
+      r('.b274-afslinn', 'width:72px;height:26px;border:1px solid rgba(20,24,34,.14);border-radius:4px;background:#eef1f6;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);font:700 12px ' + MONO + ';text-align:right;padding:0 6px;margin:0 2px 0 4px;color:#b42318'),
       r('.b274-linur ._bkc-vin', 'height:28px;border:1px solid rgba(20,24,34,.14);border-radius:6px;background:#eef1f6;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);font-family:' + MONO + ';font-size:12px;padding:0 8px'),
       r('.b274-linur ._bkc-vin[data-vk="name"]', 'font-family:' + SANS + ';font-weight:600;font-size:12px;background:#fff;box-shadow:none;border-color:transparent;text-overflow:ellipsis;padding:0 4px'),
       r('.b274-linur ._bkc-vin[data-vk="name"]:focus', 'border-color:rgba(20,24,34,.3);background:#fff'),
@@ -556,6 +576,17 @@
       '#_bkc-overlay .b274 .b274-inv #_bkr-status{border:0!important;padding:0!important;margin:0!important;box-shadow:none!important;background:transparent!important}',
       '#_bkc-overlay .b274 .b274-inv:not(:has(#_bkr-status)),#_bkc-overlay .b274 .b274-inv:has(#_bkr-inv:empty){display:none!important}',
       r('.b274-fotur', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 2px'),
+      // B26: blaðið í spjaldinu — sama útlit og A4-blaðið (R_CSS úr 273 gildir á ._bksr), skrunar innan spjalds
+      r('.b274-blad', 'padding:22px 26px 18px;max-height:78vh;overflow:auto;position:relative'),
+      r('.b274-blad ._bksr ._hd img', 'height:40px'),
+      r('.b274-blad._aflaest td[data-bk],.b274-blad._aflaest td[data-cv],.b274-blad._aflaest td[data-hv],.b274-blad._aflaest td[data-hk]', 'cursor:pointer;position:relative;background:#fffbea;box-shadow:inset 0 0 0 1px #e0a93e'),
+      r('.b274-blad._aflaest td[data-bk]:hover,.b274-blad._aflaest td[data-cv]:hover,.b274-blad._aflaest td[data-hv]:hover,.b274-blad._aflaest td[data-hk]:hover', 'background:#fff3c4'),
+      r('.b274-pop', 'position:absolute;left:50%;top:100%;transform:translateX(-50%);z-index:5;display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:6px;background:' + METAL + ';border:1px solid #000;box-shadow:0 10px 24px -8px rgba(0,0,0,.6);margin-top:2px'),
+      r('.b274-pop button', 'all:unset;cursor:pointer;width:34px;height:34px;border-radius:4px;background:' + SILVER + ';color:#11141c;font:800 20px ' + SANS + ';display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)'),
+      r('.b274-pop button:active', 'filter:brightness(.92)'),
+      r('.b274-pop b', 'min-width:34px;text-align:center;font-family:' + MONO + ';font-size:15px;font-weight:700;color:#fff'),
+      r('.b274-dbinn', 'width:52px;height:24px;border:1px solid #e0a93e;border-radius:4px;background:#fff;font:700 12px ' + MONO + ';text-align:center;padding:0 4px'),
+      r('.b274-bladhint', 'position:sticky;bottom:0;margin:12px -26px -18px;padding:8px 26px;background:#fff8dc;border-top:1px solid #e0a93e;font:600 12px ' + SANS + ';color:#7a4f06'),
       r('._bkc-act,._bkc-act._ghost,._bkc-new,.b274-linur ._bkc-vin,.b274-reitur,.b274-note', 'border-radius:4px!important'),   // B23: ferkantaðra, í stíl við plöturnar
       r('.b274-stong', 'height:44px!important;font-size:14px!important;padding:0 18px!important'),
       r('.b274-p', 'display:inline-flex;align-items:center;height:20px;padding:0 7px;margin-left:8px;border-radius:3px;background:rgba(255,255,255,.12);font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#d5dbe6'),
@@ -764,6 +795,21 @@
     // eina leiðin til að sjá gömlu skýrslurnar sem fóru út án hans.
     const vantarAkstur = (r) => !linurOf(r).some(l => /akstur/i.test(String(l.name || '')));
     const vantarSkyrsla = (r) => !linurOf(r).some(l => /sk[ýy]rslu|samantekt/i.test(String(l.name || '')));
+    // B29 (Agnar 30.09: „virðist ekki virka að láta Akstur og Vinnu vera fasta línu"): föstu línurnar (link 'fast' í
+    // verðlistanum, sama geymsla og 273 priceItems) bætast ekki sjálfkrafa á skýrslu sem þegar á línur — hér er þeim boðið.
+    const verdlisti = (function () {
+      let l = null;
+      try { l = window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_verdlisti'); } catch (_) {}
+      if (!l) { try { l = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || 'null'); } catch (_) {} }
+      return (l && Array.isArray(l.items)) ? l.items : (Array.isArray(l) ? l : []);
+    })();
+    const normN = x => String(x || '').toLowerCase().replace(/[^a-záðéíóúýþæö0-9]+/g, ' ').trim();
+    const fastarSemVantar = (r) => {
+      const heiti = linurOf(r).map(l => normN(l.name));
+      const ur = verdlisti.filter(it => it.link === 'fast' && it.name && heiti.indexOf(normN(it.name)) < 0).map(it => ({ name: it.name, price: num(it.price) != null ? String(num(it.price)) : '' }));
+      if (!verdlisti.length) { if (vantarAkstur(r)) ur.push({ name: 'Akstur', price: '3000' }); if (vantarSkyrsla(r)) ur.push({ name: 'Samantekt og gerð skoðunarskýrslu', price: '16670' }); }
+      return ur;
+    };
     // Ritill, ekki tafla: hver lína er reitir sem má breyta beint hér.
     const verdHtml = verds.length ?
       verds.map(x =>
@@ -785,9 +831,8 @@
             '<button type="button" class="_bkc-vx" data-vdel="' + i + '" title="Eyða línunni">✕</button>' +
           '</div>').join('') +
         // B25 (Agnar 30.09): sjálfgefnu línurnar — vanti þær er einn smellur í að bæta þeim við (verð úr verðlistanum), ekki bara viðvörun
-        ((vantarAkstur(x.r) || vantarSkyrsla(x.r)) ? '<div class="b274-vantar"><span>Sjálfgefið vantar:</span>' +
-          (vantarAkstur(x.r) ? '<button type="button" class="_bkc-act _ghost" data-vfast="akstur" title="Bæta við Akstur ×1 á verðlistaverði">＋ Akstur ×1</button>' : '') +
-          (vantarSkyrsla(x.r) ? '<button type="button" class="_bkc-act _ghost" data-vfast="skyrsla" title="Bæta við Skýrslugerð ×1 á verðlistaverði">＋ Skýrslugerð ×1</button>' : '') + '</div>' : '') +
+        (function () { const fv = fastarSemVantar(x.r); return fv.length ? '<div class="b274-vantar"><span>Fastar línur sem vantar:</span>' +
+          fv.map(it => '<button type="button" class="_bkc-act _ghost" data-vfn="' + esc(it.name) + '" data-vfp="' + esc(it.price) + '" title="Bæta við ' + esc(it.name) + ' ×1 á verðlistaverði">＋ ' + esc(it.name) + ' ×1</button>').join('') + '</div>' : ''; })() +
         '<button type="button" class="_bkc-act _ghost" data-vadd="1" style="margin-top:9px">＋ Auð lína</button>' +
         '</div>').join('')
       // 30.09.2026 (Agnar: „skil ekki alveg hvað er í gangi þarna"). Textinn sagði
@@ -843,6 +888,7 @@
     const pc = hetja ? hetja.pc : 'miss';
     const pillTxt = hetja ? hetja.pill : 'Óskoðað';
     const led = pc === 'ok' ? 'g' : pc === 'warn' ? 'y' : 'r';
+    const bladHtml = (repNow && repNow.data && window.BrunakerfiSkyrsla && BrunakerfiSkyrsla.renderSheet) ? (function () { try { return BrunakerfiSkyrsla.renderSheet(co, repNow); } catch (e) { console.warn('[bkc] renderSheet', e); return ''; } })() : '';
     const repUrl = (function () { const d = repNow && repNow.doc_id ? C.docs.find(x => x.id === repNow.doc_id) : null; return d ? (driveUrl(d.drive_file_id) || storageUrl(d.storage_path)) : ''; })();
     const hasVerd = verds.length > 0;
     const anVsk = verds.reduce((t, x) => t + x.v.sum, 0);
@@ -878,16 +924,21 @@
             '<div class="b274-hr">' +
               (meta.dags ? '<span class="b274-plata dokk">📅 Skoðað ' + esc(fmtDags(meta.dags)) + '</span>' : '') +
               '<div class="b274-hb">' +
-                (repUrl ? '<button type="button" class="_bkc-act b274-malmur" data-repview="' + esc(repUrl) + '" data-repname="úttekt ' + esc((repNow && repNow.uttekt_nr) || '') + '" title="Opna skýrsluna">📄 Opna skýrsluna</button>' : '') +
+                (bladHtml ? '<button type="button" class="_bkc-act ' + (_aflaest ? 'b274-graenn' : 'b274-malmur') + '" id="_bkc-aflaesa" title="' + (_aflaest ? 'Læsa blaðinu aftur' + (repNow.status === 'final' ? ' og uppfæra PDF-skýrsluna' : '') : 'Breyta tölum og hökum beint á blaðinu') + '">' + (_aflaest ? '🔒 Læsa skýrslu' : '🔓 Aflæsa skýrslu') + '</button>' : '') +
+                (repUrl ? '<button type="button" class="_bkc-act b274-silfur" data-repview="' + esc(repUrl) + '" data-repname="úttekt ' + esc((repNow && repNow.uttekt_nr) || '') + '" title="Opna PDF-skýrsluna">📄 PDF</button>' : '') +
               '</div>' +
             '</div>' +
           '</header>' +
           '<div class="b274-stal">' +
             '<div class="b274-rod"><span class="b274-merki">Skýrslan' + (skyrslaNafn ? ' · ' + esc(skyrslaNafn) : '') + '</span>' +
               (repNow ? '<span class="b274-plata ' + skyrslaPc + '"><i></i>' + (repNow.status === 'final' ? 'Lokið' : 'Drög') + '</span>' : '') +
-              '<span class="b274-sp"></span><span class="b274-hint">Blaðið er vinnuformið — reitirnir fyllast í skýrslunni sjálfri</span></div>' +
+              '<span class="b274-sp"></span><span class="b274-hint">' + (bladHtml ? (_aflaest ? 'Aflæst — breytingar vistast beint á skýrsluna' : 'Aflæstu blaðið til að breyta tölum og hökum beint') : 'Blaðið er vinnuformið — reitirnir fyllast í skýrslunni sjálfri') + '</span></div>' +
             // ramminn: ÓBREYTTUR (sama iframe, sömu breytur) — eða tómt blað sem býður í næstu skoðun
-            (skyrslaSrc ?
+            (bladHtml ?
+              '<div class="b274-rammi b274-blad' + (_aflaest ? ' _aflaest' : '') + '" id="_bkc-blad">' + bladHtml +
+                (_aflaest ? '<div class="b274-bladhint">Smelltu á tölu í búnaðaryfirlitinu (+ / −), á dB-reit, eða á „Í lagi / Ekki í lagi“-reit til að haka. Vistast sjálfkrafa.</div>' : '') +
+              '</div>'
+            : skyrslaSrc ?
               '<div class="b274-rammi">' +
                 '<iframe id="_bkc-repframe" src="' + esc(skyrslaSrc) + '#toolbar=0&navpanes=0&scrollbar=0&view=FitH" title="Brunakerfisskýrsla" ' +
                   'style="width:100%;height:78vh;min-height:520px;border:0;background:#fff;display:block"></iframe>' +
@@ -944,7 +995,7 @@
             '</div>' +
             '<div class="b274-linur">' + verdHtml + '</div>' +
             (hasVerd ? '<div class="_bkc-reikn b274-reikn">' +
-              '<div class="b274-undir"><span>Án vsk <b>' + fmtKr(anVsk) + '</b></span><span>Vsk ' + VAT_PCT + '% <b>' + fmtKr(anVsk * VAT_PCT / 100) + '</b></span>' + (afslSum > 0 ? '<span class="afsl">Afsláttur m. vsk <b>−' + fmtKr(afslSum) + '</b></span>' : '') + '</div>' +
+              '<div class="b274-undir"><span>Án vsk <b>' + fmtKr(anVsk) + '</b></span><span>Vsk ' + VAT_PCT + '% <b>' + fmtKr(anVsk * VAT_PCT / 100) + '</b></span>' + '<span class="afsl"><label>Afsláttur á heild <input class="b274-afslinn" data-vafsl="' + esc(verds[0].r.id) + '" value="' + (afslSum > 0 ? fmtInn(afslSum) : '') + '" placeholder="0" inputmode="decimal" title="Krónur m. vsk — eða prósenta, t.d. 10%"> kr</label></span>' + '</div>' +
               '<div class="_big"><span>Samtals með vsk</span><span>' + fmtKr(verdSum) + '</span></div>' +
             '</div>' : '') +
             '<div class="b274-inv"><div id="_bkc-heroinv" data-hasinv="' + (hetja && hetja.hasInv ? '1' : '') + '"></div></div>' +
@@ -998,16 +1049,9 @@
         render(); vistaSidar(rep);
       }));
       // B25: fastar línur úr verðlistanum (sama geymsla og 273 priceItems: AppSettings 'brunakerfi_verdlisti' → localStorage → grunnverð)
-      blokk.querySelectorAll('[data-vfast]').forEach(b => b.addEventListener('click', () => {
-        let listi = null;
-        try { listi = window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_verdlisti'); } catch (_) {}
-        if (!listi) { try { listi = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || 'null'); } catch (_) {} }
-        const vill = b.dataset.vfast === 'akstur' ? /akstur/i : /samantekt|sk[ýy]rslugerð/i;
-        const it = Array.isArray(listi) ? listi.find(x => vill.test(String(x.name || ''))) : null;
-        const nafn = it ? it.name : (b.dataset.vfast === 'akstur' ? 'Akstur' : 'Samantekt og gerð skoðunarskýrslu');
-        const verd = it && num(it.price) != null ? String(num(it.price)) : (b.dataset.vfast === 'akstur' ? '3000' : '16670');
+      blokk.querySelectorAll('[data-vfn]').forEach(b => b.addEventListener('click', () => {
         rep.data = rep.data || {}; rep.data.verd = rep.data.verd || {}; rep.data.verd.linur = rep.data.verd.linur || [];
-        rep.data.verd.linur.push({ name: nafn, qty: '1', price: verd, afsl: '' });
+        rep.data.verd.linur.push({ name: b.dataset.vfn, qty: '1', price: b.dataset.vfp || '', afsl: '' });
         render(); vistaSidar(rep);
       }));
       const add = blokk.querySelector('[data-vadd]');
@@ -1046,6 +1090,83 @@
       const mk = w.querySelector('#_bkr-make');
       if (mk) mk.click(); else toast('Reikningsleitin er ekki búin — reyndu aftur eftir andartak', true);
     });
+    // ── B26: aflæsing blaðsins ──
+    const afl = w.querySelector('#_bkc-aflaesa');
+    if (afl) afl.addEventListener('click', async () => {
+      if (_aflaest) {
+        _aflaest = false;
+        if (_bladT) { clearTimeout(_bladT); _bladT = null; await vistaBlad(repNow); }
+        if (_bladBreytt && repNow && repNow.status === 'final' && window.BrunakerfiSkyrsla && BrunakerfiSkyrsla.rebuildPdf) {
+          if (confirm('Uppfæra PDF-skýrsluna með breytingunum? (endurgerir skjalið og reikningsdrögin ef þau vantar)')) {
+            afl.disabled = true; afl.textContent = '⏳ Endurgeri PDF…';
+            await BrunakerfiSkyrsla.rebuildPdf(co, repNow);
+          }
+        }
+        _bladBreytt = false; reload(); return;
+      }
+      _aflaest = true; render();
+    });
+    const blad = w.querySelector('#_bkc-blad._aflaest');
+    if (blad && repNow) {
+      const d = repNow.data;
+      const lokaPop = () => { const p = blad.querySelector('.b274-pop'); if (p) p.remove(); };
+      const tolur = () => { const n = (d.bunadur || []).reduce((t, x) => t + (x.hidden ? 0 : (+x.iLagi || 0) + (+x.ekki || 0)), 0); const el = w.querySelector('.b274-tala .n'); if (el) el.textContent = n || '—'; };
+      blad.addEventListener('click', e => {
+        const td = e.target.closest('td'); if (!td || !blad.contains(td)) { if (!e.target.closest('.b274-pop')) lokaPop(); return; }
+        if (e.target.closest('.b274-pop')) return;
+        // búnaðartala → +/−
+        if (td.dataset.bk) {
+          const tr = td.closest('tr[data-bi]'); const bi = +tr.dataset.bi, k = td.dataset.bk; const row = d.bunadur && d.bunadur[bi]; if (!row) return;
+          lokaPop();
+          const pop = document.createElement('span'); pop.className = 'b274-pop';
+          pop.innerHTML = '<button type="button" data-d="-1" aria-label="Lækka">−</button><b>' + (+row[k] || 0) + '</b><button type="button" data-d="1" aria-label="Hækka">+</button>';
+          td.appendChild(pop);
+          pop.addEventListener('click', ev => {
+            const b = ev.target.closest('button[data-d]'); if (!b) return;
+            ev.stopPropagation();
+            row[k] = Math.max(0, (+row[k] || 0) + (+b.dataset.d));
+            pop.querySelector('b').textContent = row[k];
+            td.firstChild.nodeValue = String(row[k]);
+            const sam = tr.querySelector('[data-bsam]'); if (sam) sam.textContent = (+row.iLagi || 0) + (+row.ekki || 0);
+            tolur(); vistaBladSidar(repNow);
+          });
+          return;
+        }
+        // stöðvarprófun → hak
+        if (td.dataset.cv) {
+          const ci = +td.closest('tr[data-ci]').dataset.ci; const c = d.stod && d.stod.checks && d.stod.checks[ci]; if (!c) return;
+          c.st = c.st === td.dataset.cv ? '' : td.dataset.cv;
+          td.closest('tr').querySelectorAll('td[data-cv]').forEach(x => { x.innerHTML = c.st === x.dataset.cv ? '<span style="font-weight:800">x</span>' : ''; });
+          vistaBladSidar(repNow); return;
+        }
+        // hljóðmæling → hak / dB
+        if (td.dataset.hv) {
+          const hi = +td.closest('tr[data-hi]').dataset.hi; const h = d.hljod && d.hljod[hi]; if (!h) return;
+          h.st = h.st === td.dataset.hv ? '' : td.dataset.hv;
+          td.closest('tr').querySelectorAll('td[data-hv]').forEach(x => { x.innerHTML = h.st === x.dataset.hv ? '<span style="font-weight:800">x</span>' : ''; });
+          vistaBladSidar(repNow); return;
+        }
+        if (td.dataset.hk === 'db' && !td.querySelector('input')) {
+          const hi = +td.closest('tr[data-hi]').dataset.hi; const h = d.hljod && d.hljod[hi]; if (!h) return;
+          const inp = document.createElement('input'); inp.type = 'text'; inp.inputMode = 'decimal'; inp.value = h.db || ''; inp.className = 'b274-dbinn';
+          td.textContent = ''; td.appendChild(inp); inp.focus();
+          const lok = () => { h.db = String(inp.value || '').trim(); td.textContent = h.db === '' ? '—' : h.db; vistaBladSidar(repNow); };
+          inp.addEventListener('change', lok); inp.addEventListener('blur', lok);
+          inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') inp.blur(); });
+          return;
+        }
+      });
+    }
+    // B30: afsláttur á heildina — kr m. vsk; „10%" → krónur af brúttó
+    w.querySelectorAll('[data-vafsl]').forEach(inp => inp.addEventListener('change', () => {
+      const r = C.reports.find(x => String(x.id) === inp.dataset.vafsl); if (!r) return;
+      const raw = String(inp.value || '').trim();
+      let af = 0;
+      if (/%\s*$/.test(raw)) { const pct = num(raw.replace('%', '')) || 0; const gross = verdOf(Object.assign({}, r, { data: Object.assign({}, r.data, { verd: Object.assign({}, r.data.verd, { afslattur: 0 }) }) })).total; af = Math.round(gross * Math.min(100, Math.max(0, pct)) / 100); }
+      else af = Math.max(0, Math.round(num(raw) || 0));
+      r.data = r.data || {}; r.data.verd = r.data.verd || {}; r.data.verd.afslattur = String(af);
+      render(); vistaSidar(r);
+    }));
     const vl = w.querySelector('#_bkc-vlist');
     if (vl) vl.addEventListener('click', () => {
       if (window.BrunakerfiSkyrsla && BrunakerfiSkyrsla.openPriceEditor) BrunakerfiSkyrsla.openPriceEditor(null);

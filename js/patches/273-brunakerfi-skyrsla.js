@@ -1286,19 +1286,19 @@
       '</tbody></table>' +
 
       '<div class="_sec"><table class="_rt"><thead><tr><th>BÚNAÐUR</th><th style="width:70px;text-align:center">SAMTALS</th><th style="width:70px;text-align:center">Í LAGI</th><th style="width:80px;text-align:center">EKKI Í LAGI</th><th style="width:70px;text-align:center">VANTAR</th></tr></thead><tbody>' +
-        m.bunRows.filter(r => !r.hidden).map(r =>
-          '<tr><td style="font-weight:700">' + esc(r.label) + '</td><td class="_num" style="font-weight:700">' + r.samtals + '</td>' +
-          '<td class="_num" style="color:#1f7a44">' + r.iLagi + '</td>' +
-          '<td class="_num" style="color:' + (r.ekki > 0 ? '#b3341a' : '#16181c') + ';font-weight:' + (r.ekki > 0 ? 700 : 400) + '">' + r.ekki + '</td>' +
-          '<td class="_num" style="color:' + (r.vantar > 0 ? '#a06c00' : '#16181c') + ';font-weight:' + (r.vantar > 0 ? 700 : 400) + '">' + r.vantar + '</td></tr>').join('') +
+        m.bunRows.map((r, bi) => r.hidden ? '' :
+          '<tr data-bi="' + bi + '"><td style="font-weight:700">' + esc(r.label) + '</td><td class="_num" style="font-weight:700" data-bsam="1">' + r.samtals + '</td>' +
+          '<td class="_num" style="color:#1f7a44" data-bk="iLagi">' + r.iLagi + '</td>' +
+          '<td class="_num" style="color:' + (r.ekki > 0 ? '#b3341a' : '#16181c') + ';font-weight:' + (r.ekki > 0 ? 700 : 400) + '" data-bk="ekki">' + r.ekki + '</td>' +
+          '<td class="_num" style="color:' + (r.vantar > 0 ? '#a06c00' : '#16181c') + ';font-weight:' + (r.vantar > 0 ? 700 : 400) + '" data-bk="vantar">' + r.vantar + '</td></tr>').join('') +
       '</tbody></table></div>' +
 
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">' +
         '<div>' +
           '<div class="_sec"><h3 style="margin-top:10px">Hljóðstyrksmælingar</h3>' +
           '<table class="_lt"><thead><tr><th>MÆLING</th><th style="width:62px;text-align:center">HLJÓÐST. (dB)</th><th style="width:44px;text-align:center">Í LAGI</th><th style="width:56px;text-align:center">EKKI Í LAGI</th></tr></thead><tbody>' +
-          s.hljod.map(h => '<tr><td>' + esc(h.label) + '</td><td class="_num">' + (h.db === '' ? '—' : esc(h.db)) + '</td>' +
-            '<td class="_num">' + xm(h.st, 'ok') + '</td><td class="_num" style="color:#b3341a">' + xm(h.st, 'fail') + '</td></tr>').join('') +
+          s.hljod.map((h, hi) => '<tr data-hi="' + hi + '"><td>' + esc(h.label) + '</td><td class="_num" data-hk="db">' + (h.db === '' ? '—' : esc(h.db)) + '</td>' +
+            '<td class="_num" data-hv="ok">' + xm(h.st, 'ok') + '</td><td class="_num" style="color:#b3341a" data-hv="fail">' + xm(h.st, 'fail') + '</td></tr>').join('') +
           '</tbody></table></div>' +
           '<div class="_sec"><h3>Rafhlöðumælingar</h3><table class="_lt"><tbody>' +
             [['Stærð rafhlaðna', s.raf.staerd || '—'], ['Ástimpluð rýmd rafhlaðna', m.rafShow.rymd], ['Mæld rýmd rafhlaðna', m.rafShow.maeld],
@@ -1313,7 +1313,7 @@
           '<table class="_lt"><tbody>' +
             '<tr><td style="color:#444;width:60%">Fjöldi rása/slaufa</td><td colspan="2" class="_num" style="font-weight:700">' + esc(s.stod.fjoldi || '—') + '</td></tr>' +
             '<tr><td style="background:#eef0f3;font-size:9px;font-weight:700"></td><td style="background:#eef0f3;font-size:9px;font-weight:700;text-align:center;width:20%">Í LAGI</td><td style="background:#eef0f3;font-size:9px;font-weight:700;text-align:center;width:20%">EKKI Í LAGI</td></tr>' +
-            s.stod.checks.map(c => '<tr><td>' + esc(c.label) + '</td><td class="_num">' + xm(c.st, 'ok') + '</td><td class="_num" style="color:#b3341a;font-weight:700">' + xm(c.st, 'fail') + '</td></tr>').join('') +
+            s.stod.checks.map((c, ci) => '<tr data-ci="' + ci + '"><td>' + esc(c.label) + '</td><td class="_num" data-cv="ok">' + xm(c.st, 'ok') + '</td><td class="_num" style="color:#b3341a;font-weight:700" data-cv="fail">' + xm(c.st, 'fail') + '</td></tr>').join('') +
           '</tbody></table>' +
           '<table class="_lt" style="margin-top:12px"><tbody>' +
             '<tr><td style="color:#444;width:50%">Heiti fjargæsluaðila</td><td style="font-weight:700">' + esc(s.stod.fjargaesla || '—') + '</td></tr>' +
@@ -1856,7 +1856,30 @@
   function boot() { watch(); setTimeout(watch, 2500); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor };
+  // ── B26 (30.09.2026, Agnar: „Aflæsa skýrslu … haka við beint af skjá og breyta tölum") ─────────────────────
+  // Blaðið sjálft (reportInner) fyrir hvaða skýrslu sem er, ÁN þess að opna yfirlagið — 274 teiknar það í vinstra
+  // spjaldinu og gerir reitina virka. S er lánað í eina umferð og skilað; ensureOverlay tryggir að R_CSS sé komið.
+  function stateFor(co, row) {
+    let data = row && row.data ? migrate(row.data, co) : null;
+    if (!data || !data.meta) return null;
+    if (!data.verd) data.verd = { linur: [] };
+    return { id: row.id, docId: row.doc_id || null, co, status: row.status || 'draft', data };
+  }
+  function renderSheet(co, row) {
+    const st = stateFor(co, row); if (!st) return '';
+    ensureOverlay();
+    const prev = S; S = st;
+    try { return reportInner(); } finally { S = prev; }
+  }
+  // Lokin skýrsla breytt í aflæstu blaði → sama leið og „Ljúka & vista PDF": vistar, endurgerir PDF-ið og skjalaröðina.
+  async function rebuildPdf(co, row) {
+    const st = stateFor(co, row); if (!st) return false;
+    const prev = S; S = st;
+    try { await finalize(null); return true; }
+    catch (e) { toast('PDF endurgerðist EKKI: ' + ((e && e.message) || e), true); return false; }
+    finally { if (prev && prev !== st) S = prev; }
+  }
+  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf };
   console.log('[patch-273] Brunakerfi skoðunarskýrsla v2 (PDF + verð) installed');
 })();
 /* === END BRUNAKERFI SKOÐUNARSKÝRSLA === */
