@@ -63,7 +63,25 @@
     ['Skoðun á útgangsstýringu fyrir glugga', 2020], ['Skoðun á útgangsstýringu fyrir hurðaaflæsingar', 2020],
     ['Skoðun á útgangsstýringu fyrir loftræsingu', 2020], ['Skoðun á útgangsstýringu fyrir reyklúgur', 2020],
     ['Skoðun á útgangsstýringu fyrir reyksog', 2020], ['Skoðun á útstöð brunaviðvörunakerfis', 2420],
-    ['Skoðun á viðvörunarsökkli með sírenu', 680], ['Skoðun á yfirlitsmynd og þjónustubók', 1750]
+    ['Skoðun á viðvörunarsökkli með sírenu', 680], ['Skoðun á yfirlitsmynd og þjónustubók', 1750],
+    // 30.09.2026 (Agnar: „ég þarf að geta sett inn fleirri kostnaðarliði þarna …
+    // Akstur skýrslugerð, og efniskostnaðinn úr emailunum"). Verðlistinn taldi 33
+    // liði og ALLIR nema einn voru „Skoðun á …" — það var engin leið til að rukka
+    // fyrir að keyra á staðinn, því liðurinn var ekki til. Taxtarnir hér eru
+    // Slökkvitækis eigin, lesnir af reikningum 106989/106990/107074 (vörunúmer
+    // 200 = 3.000 og 198 = 13.200). Skýrslugerðin er þegar til sem „Samantekt og
+    // gerð skoðunarskýrslu"; efnið kemur um 📦 Efni úr innkaupum neðar í sama hluta.
+    ['Akstur', 3000], ['Vinna pr. klst.', 13200]
+  ];
+
+  // Þjónustuliðir sem VERÐA að vera í boði, hvað sem vistaði listinn segir.
+  // Ástæðan: vistaður listi LEYSIR BASE_PRICES AF HÓLMI (sjá priceItems), svo það
+  // dugði ekki að bæta þeim hér við — listinn á þjóninum frá 23.09.2026 hefði
+  // haldið áfram að vera án Aksturs. Þeir eru því felldir inn við lestur ef þá
+  // vantar, og lenda á þjóninum næst þegar verðlistinn er vistaður.
+  const THJONUSTU_LIDIR = [
+    { name: 'Akstur', price: 3000, link: 'fast' },
+    { name: 'Vinna pr. klst.', price: 13200, link: '' }
   ];
 
   // „Tengist skýrslu" — lyklarnir sem verðlista-lína getur fylgt (ósk Agnars
@@ -83,7 +101,10 @@
     'Skoðun á bjöllum / sírenum': 'bjollur',
     'Skoðun á boðbúnaði / úthringibúnaði': 'bodbunadur',
     'Skoðun á handboðum': 'handbodar',
-    'Skoðun á reyk- hitaskynjurum að 6m hæð': 'reykhita'
+    'Skoðun á reyk- hitaskynjurum að 6m hæð': 'reykhita',
+    // Akstur er FÖST lína (1×) — hann var að gleymast á hverri einustu skýrslu og
+    // það er nákvæmlega kvörtunin. Magninu má breyta í línunni eins og öllu öðru.
+    'Akstur': 'fast'
   };
 
   let S = null, _dirty = false, _autoT = null, _pricelist = null;
@@ -281,6 +302,14 @@
           // tenging sem notandinn valdi sjálfur ('') er virt
           link: x.link != null ? x.link : (DEFAULT_LINKS[x.name] || '') }))
       : BASE_PRICES.map(p => ({ name: p[0], price: p[1], link: DEFAULT_LINKS[p[0]] || '' }));
+    // Vantar þjónustulið í vistaða listann? Bæta honum við hér — ekki skrifa á
+    // þjóninn. Úreldingarvörðurinn í savePriceItems á að vera eina leiðin sem
+    // skrifar, og hann krefst þess að notandinn hafi opnað ritilinn.
+    THJONUSTU_LIDIR.forEach(t => {
+      if (!_pricelist.some(x => (x.name || '').trim().toLowerCase() === t.name.toLowerCase())) {
+        _pricelist.push({ name: t.name, price: t.price, link: t.link });
+      }
+    });
     return _pricelist;
   }
   // 2026-09-09 (Agnar: „enginn texti má nokkurntíma tínast"): liða-HEITIN í

@@ -221,6 +221,11 @@
       '#_bkc-overlay table._bkc-tbl{width:100%;border-collapse:collapse}' +
       '#_bkc-overlay ._bkc-tbl th{font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:5px 8px;border-bottom:1px solid #eef0f3}' +
       '#_bkc-overlay ._bkc-tbl td{padding:6px 8px;border-bottom:1px solid #eef0f3;font-size:12.5px}' +
+      '#_bkc-overlay ._bkc-vlina>td{padding:2px 8px 2px 18px;border-bottom:0;font-size:11.5px;color:#6b7280}' +
+      '#_bkc-overlay ._bkc-vlina:first-of-type>td{padding-top:5px}' +
+      '#_bkc-overlay ._bkc-vlina._vantar>td{color:#8a6100;font-weight:700;padding-bottom:6px}' +
+      '#_bkc-overlay ._bkc-vedit{background:none!important;border:0!important;padding:0 0 0 4px!important;margin:0!important;font-size:11.5px!important;line-height:1!important;cursor:pointer;opacity:.5;box-shadow:none!important;min-height:0!important;color:inherit!important}' +
+      '#_bkc-overlay ._bkc-vedit:hover{opacity:1}' +
       '#_bkc-overlay ._bkc-empty{font-size:12.5px;color:#8b93a1;font-style:italic;padding:8px 0}' +
       '#_bkc-overlay ._bkc-legend{font-size:11px;color:#8b93a1;display:flex;align-items:center;gap:6px;margin:0 0 4px}' +
       '#_bkc-overlay ._bkc-yr{border-top:1px solid #eef0f3;padding:9px 0 7px}#_bkc-overlay ._bkc-yr:first-of-type{border-top:0}' +
@@ -509,15 +514,33 @@
     // verð / reikningsyfirlit
     const verds = C.reports.map(r => ({ r, v: verdOf(r) })).filter(x => x.v.lines > 0);
     const verdSum = verds.reduce((a, x) => a + x.v.total, 0);
+    // 30.09.2026 (Agnar: „þetta er hræðileg samantektar reikningagerð"). Spjaldið
+    // sýndi EINA tölu per úttekt og ekkert annað — hvorki hvað var rukkað né hvað
+    // vantaði, og engin leið héðan til að bæta við lið. Nú fylgja línurnar með og
+    // ritillinn er einum smelli í burtu. Taflan heldur sér óbreytt að öðru leyti
+    // svo breiddin haggist ekki (Stöðugt viðmót).
+    const linurOf = (r) => ((r.data && r.data.verd && r.data.verd.linur) || []);
+    // Akstur gleymdist kerfisbundið af því að liðurinn var ekki til í verðlistanum
+    // (lagað í 273 sama dag). Merkjum þær skýrslur sem hann vantar enn á — það er
+    // eina leiðin til að sjá gömlu skýrslurnar sem fóru út án hans.
+    const vantarAkstur = (r) => !linurOf(r).some(l => /akstur/i.test(String(l.name || '')));
     const verdHtml = verds.length ?
       '<table class="_bkc-tbl"><thead><tr><th>Úttekt</th><th style="text-align:right">Án vsk</th><th style="text-align:right">M. vsk</th></tr></thead><tbody>' +
-      verds.map(x => '<tr><td>' + esc(x.r.uttekt_nr || '—') + ' · ' + esc(x.r.year || '') +
-        (x.r.status === 'final' ? '' : ' <span style="color:#8a6100;font-size:10.5px;font-weight:800">(drög)</span>') + '</td>' +
+      verds.map(x =>
+        '<tr><td>' + esc(x.r.uttekt_nr || '—') + ' · ' + esc(x.r.year || '') +
+          (x.r.status === 'final' ? '' : ' <span style="color:#8a6100;font-size:10.5px;font-weight:800">(drög)</span>') +
+          ' <button type="button" class="_bkc-vedit" data-open="' + esc(x.r.id) + '" title="Opna kostnaðarliði þessarar skýrslu">✏️</button></td>' +
         '<td style="text-align:right">' + fmtKr(x.v.sum) + '</td>' +
-        '<td style="text-align:right;font-weight:700">' + fmtKr(x.v.total) + '</td></tr>').join('') +
+        '<td style="text-align:right;font-weight:700">' + fmtKr(x.v.total) + '</td></tr>' +
+        linurOf(x.r).map(l =>
+          '<tr class="_bkc-vlina"><td>' + esc(l.name || '—') + '</td>' +
+          '<td style="text-align:right;white-space:nowrap">' + esc(String(l.qty || '')) + ' × ' + fmtKr(num(l.price) || 0) + '</td>' +
+          '<td style="text-align:right">' + fmtKr((num(l.qty) || 0) * (num(l.price) || 0)) + '</td></tr>').join('') +
+        (vantarAkstur(x.r) ? '<tr class="_bkc-vlina _vantar"><td colspan="3">⚠️ Enginn akstur á þessari skýrslu</td></tr>' : '')
+      ).join('') +
       '<tr><td style="font-weight:800;border-bottom:0">Samtals</td><td style="border-bottom:0"></td><td style="text-align:right;font-weight:800;border-bottom:0">' + fmtKr(verdSum) + '</td></tr>' +
       '</tbody></table>'
-      : '<div class="_bkc-empty">Engar verðlínur enn — þær bætast við í Verð-hluta skoðunarskýrslunnar.</div>';
+      : '<div class="_bkc-empty">Engar verðlínur enn — smelltu á „✏️ Kostnaðarliðir" hér fyrir neðan.</div>';
 
     // búnaðarskrá úr nýjustu skýrslu
     let bunHtml = '<div class="_bkc-empty">Engin skýrsla enn — búnaðarskráin fyllist sjálfkrafa úr fyrstu skoðunarskýrslu.</div>';
@@ -601,6 +624,9 @@
           '<div class="_bkc-card _bkc-fold' + (verds.length ? '' : ' _saman') + '"><div class="_bkc-ch" data-fold="1">Verð / reikningsyfirlit<small>' + (verds.length ? 'VSK ' + VAT_PCT + '%' : 'engar verðlínur') + ' <span class="_bkc-ork">▾</span></small></div><div class="_bkc-body">' +
             verdHtml +
             '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+              // Opnar nýjustu skýrsluna beint — þar er Verð-hlutinn með ＋ Auð lína,
+              // verðlista-vali og 📦 Efni úr innkaupum (kostnaðarreikningar úr póstinum).
+              (newest ? '<button type="button" class="_bkc-act" data-open="' + esc(newest.id) + '" style="background:#141619">✏️ Kostnaðarliðir</button>' : '') +
               '<button type="button" class="_bkc-act _ghost" id="_bkc-vlist">🏷 Verðlisti</button>' +
             '</div>' +
           '</div></div>' +
