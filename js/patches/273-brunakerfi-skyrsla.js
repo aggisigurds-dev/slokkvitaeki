@@ -526,7 +526,7 @@
   // MAGN ER OPIÐ: reikningur getur verið notaður að hluta (5 keyptir, 3 í þetta
   // hús). Þess vegna er magnreitur á hverri línu og sjálfgefna gildið er keypta
   // magnið — ekki lokað, bara byrjunarpunktur.
-  let _efni = null, _efniSaekt = false, _efniVilla = null, _efniOpid = false;
+  let _efni = null, _efniSaekt = false, _efniVilla = null, _efniOpid = false, _efniOtengd = false;
 
   async function saekjaEfni() {
     const sb = SB(); if (!sb || !S || !S.co) return;
@@ -563,13 +563,23 @@
     if (_efniVilla) return '<div style="margin-top:14px;font-size:12.5px;color:#b3341a">Náði ekki í innkaup: ' + esc(_efniVilla) + '</div>';
     if (!_efni || !_efni.length) return '<div style="margin-top:14px;font-size:12.5px;color:#8b93a1;font-style:italic">Engir kostnaðarreikningar fundust á þetta félag eða ótengdir síðustu 120 daga.</div>';
 
+    // 30.09.2026 — FYRSTA ÚTGÁFA SÝNDI 93 LÍNUR og drekkti því sem máli skipti:
+    // hver einasti ótengdi reikningur síðustu 120 daga (Veldix, Málning …) flaut
+    // með. Sjálfgefið eru því AÐEINS reikningar sem hanga á þessu félagi. Hinir
+    // eru á bak við takka — því sá sem vantar er stundum einmitt sá ótengdi
+    // (1026679 bar ekkert félag), en hann á ekki að vera fyrir.
+    const tengd = _efni.filter(x => x.fyrirtaeki_id != null);
+    const otengd = _efni.filter(x => x.fyrirtaeki_id == null);
+    const synt = _efniOtengd ? tengd.concat(otengd) : tengd;
+
     return '<div id="_bks-efni" style="margin-top:16px;border-top:1px dashed #d0d4da;padding-top:12px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
         '<b style="font-size:13px">📦 Efni úr innkaupum</b>' +
         '<span style="font-size:11.5px;color:#8b93a1">fullt verð án afsláttar birgjans — settu magnið sem fór í þetta hús</span>' +
         '<button type="button" class="_bks-del" id="_bks-efni-loka" style="margin-left:auto">✕</button>' +
       '</div>' +
-      _efni.map((k, ki) => {
+      (synt.length ? '' : '<div style="font-size:12.5px;color:#8b93a1;font-style:italic;padding:4px 0">Enginn kostnaðarreikningur hangir á þessu félagi.</div>') +
+      synt.map((k, ki) => {
         const linur = efniLinur(k).filter(l => !/færslugjald/i.test(String(l.lysing || '')));
         if (!linur.length) return '';
         const otengt = k.fyrirtaeki_id == null;
@@ -599,6 +609,8 @@
           }).join('') +
         '</div>';
       }).join('') +
+      (otengd.length ? '<button type="button" class="_bks-hb" id="_bks-efni-otengd" style="background:#fff;border:1px solid #d0d4da;color:#334155;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer">' +
+        (_efniOtengd ? '− Fela ótengda reikninga' : '＋ Sýna ótengda reikninga · ' + otengd.length) + '</button>' : '') +
     '</div>';
   }
 
@@ -887,11 +899,15 @@
       if (!_efniSaekt) { rerender(); await saekjaEfni(); }
       rerender();
     });
+    const efniOt = box.querySelector('#_bks-efni-otengd');
+    if (efniOt) efniOt.addEventListener('click', () => { _efniOtengd = !_efniOtengd; rerender(); });
     const efniLoka = box.querySelector('#_bks-efni-loka');
     if (efniLoka) efniLoka.addEventListener('click', () => { _efniOpid = false; rerender(); });
     box.querySelectorAll('[data-ef-add]').forEach(b => b.addEventListener('click', () => {
       const parts = String(b.dataset.efAdd).split('_');
-      const k = (_efni || [])[+parts[0]]; if (!k) return;
+      const _t = (_efni || []).filter(x => x.fyrirtaeki_id != null);
+      const _o = (_efni || []).filter(x => x.fyrirtaeki_id == null);
+      const k = (_efniOtengd ? _t.concat(_o) : _t)[+parts[0]]; if (!k) return;
       const l = efniLinur(k).filter(x => !/færslugjald/i.test(String(x.lysing || '')))[+parts[1]]; if (!l) return;
       const mInp = box.querySelector('[data-ef-magn="' + b.dataset.efAdd + '"]');
       const magn = (mInp && num(mInp.value)) || num(l.magn) || 1;
