@@ -58,3 +58,9 @@ Kveddu skýrt upp annað hvort:
 - Vafi = CUTS-A-WIRE. Betra að stöðva rétta breytingu en hleypa í gegn rangri.
 - Uppfærðu `docs/ORYGGISNET.md` (Session log + What is bulletproofed) þegar ný leið er varin.
 - Charlize: lestu `scope in ('kerfi','slokkvitaeki') and topic='oryggisnet'` fyrst; skráðu nýjan lærdóm.
+
+## Lærdómur
+
+- **30.09.2026** — Netið telur nú 65 verði. TVEIR NÝIR: audit-customer-base (félag verður að benda á réttan customers_base — baseIdForKt er ágiskun með .limit(1) og velur af handahófi þegar tvær grunnraðir bera sömu kt) og audit-agentar (agent má ekki vísa í horfna skrá né dragast 6+ skrám aftur úr því sem hann gætir). (tools/audit-customer-base.cjs, tools/audit-agentar.cjs)
+
+- **30.09.2026** — RAUTT Í GAGNAVÖRÐUM ER EKKI KÓÐABILUN. Þrír verðir mæla GÖGN, ekki kóða, og geta verið rauðir þótt ýtingin sé fullkomlega örugg: audit-solu-id (sölur án tengds kúnna), audit-t-s-i (tækjatölur stangast á) og audit-payday-samraeming. Sá síðasti er oftast SPEGLUNARTÖF: payday_invoices_slokk er sóttur á fresti, svo reikningur sem fór út eftir síðustu sókn mælist 'sendur en ekki í Payday'. Staðfest tvisvar (R-000999 28.09, R-001045/46 29.09) — ALLIR höfðu dk_invoice_id og voru í Payday. Berðu krafa_sent_at saman við max(updated_at) í speglinum ÁÐUR en þú kallar það bilun.

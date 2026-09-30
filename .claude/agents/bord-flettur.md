@@ -226,7 +226,13 @@ sees all drivers live. Each driver's last-known position draws a coloured
 name-marker on the map (`_driverMarkers`, `_vaktGeo`). API: `window.Bilstjori
 = {…, renderVakt, pickEmp, getEmp}`.
 
-## Verkborð (unified work board) — `js/patches/231-verkbord.js`
+## Verkborð (unified work board) — SÖGULEGT, papp 231 er ekki lengur til
+
+> **30.09.2026:** `js/patches/231-verkbord.js` var fjarlægt í commit d3eb1b78
+> („gamla borðið (231) og spjallið (347) út; 368 tekur við"). Borðið í dag er
+> **`js/patches/368-thjonustubord5.js`** (Þjónustuborð 2, Shadow DOM). Kaflinn
+> hér að neðan lýsir gagnalíkaninu sem 368 erfði — `thjonustubeidni`-taflan og
+> slug-arnir standa — en ekki skránni sjálfri.
 
 One tool that replaces the cluster of overlapping top-of-sidebar lists
 (Verkefni #145 · Þjónustuverk #172 · Beiðnir/Þjónustuver #182 · Eftirfylgni
@@ -491,3 +497,7 @@ Hubbinn í embed-ham (`https://brunaholf.netlify.app/?embed=1#efniskostnadur`) s
 `allow="camera"` þörf því þetta er skráarval, ekki getUserMedia), fyrirtæki til endurrukkunar, AI-innlestur
 (`/api/reikningspunktar lesa_kostnad`) og listinn (innkaupabók með hook á kúnna, „📚 Í bókhald").
 Punktarnir sjálfir opnast í `br-drogstod` (sama hub-iframe, `sessionStorage.ds_open_karfa`).
+
+## Lærdómur
+
+- **30.09.2026** — Borðið í dag er 368-thjonustubord5.js (Shadow DOM). Papp 231 var fjarlægt í d3eb1b78 ásamt spjallinu (347) — kaflinn um 231 hér er sögulegur og lýsir gagnalíkaninu sem 368 erfði, ekki lifandi skrá. thjonustubeidni-taflan og slug-arnir standa óbreyttir. (js/patches/368-thjonustubord5.js)

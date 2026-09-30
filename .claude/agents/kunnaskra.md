@@ -186,3 +186,8 @@ app/kerfiskort.html** (Brunahólf-megin, því skjöl/Drive-tólin lifa þar). S
 (Skýrslu-stöð, Kt-samræming, Hreinsi-borð, Drive-flokkun). **Á slökkvitæki-hlið**
 birtast skjöl+Payday á fyrirtækja-prófílnum í „📁 Skjöl & viðhengi" (patch 199).
 
+## Lærdómur
+
+- **30.09.2026** — SAMEINING SKILUR SKJÖL EFTIR. Álftamýri 48 sameinaðist Álftamýri 46-52 (félag 168) en viðhengin þrjú fylgdu með merkt gamla nafninu og kt 470486-7839, sem á ekkert félag lengur. Viðhengi búa í app_settings (CompanyAttachments), ekki í eigin töflu — þau fara hvorki með merge_customers né sjást í customer_documents. Athugaðu CompanyAttachments.list(fid) þegar kúnni 'á skjöl sem eiga ekki heima þar'.
+
+- **30.09.2026** — VÖRN Á customer_base_id (29.09): document_pairs er lyklað á customer_base_id. baseIdForKt gerir .limit(1) á kennitölu og velur af handahófi þegar tvær grunnraðir bera sömu kt — þá fer tengingin á rangan grunn og 'Tengja' virðist gera ekkert. 199 notar núna customer_base_id félagsins sjálfs (baseIdFyrirFelag) og kt aðeins sem varaleið. Nýr vörður audit-customer-base grípur fimm tegundir fráviks; fimm raunveruleg bíða ákvörðunar Agnars (257, 412, 512, 1101, 1138). (tools/audit-customer-base.cjs)

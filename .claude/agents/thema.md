@@ -134,3 +134,6 @@ dark→grey page band, metallic 3D stat cards, filled pills, dark-header data ta
   Þjónustu) is hibernated — script tag commented out like 152. The proper
   theme.css conversion still proceeds page by page as above.
 
+## Lærdómur
+
+- **30.09.2026** — ÞEMAÐ MÁLAR ALLA <button> SEM MÁLMHNAPP, með !important og valgrein sem e.matches() ræður ekki við — ég leitaði að henni í öllum stílblöðum og fann hana ekki. Innlínustíll TAPAR fyrir henni: GÓ-punkturinn (418) hafði réttan background í style-attribute en birtist sem málmhnappur með svörtum ramma. Lausn: !important á hverja sjónræna yfirlýsingu í innlínunni, background-image:none þar með, annars stendur hallinn eftir ofan á litnum. Undantekning: sé málmurinn ÆSKILEGUR (ósett staða) skaltu einfaldlega sleppa öllum background-override og láta þemað ráða. (js/patches/418-go-merki.js)
