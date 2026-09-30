@@ -72,6 +72,7 @@
     'Sameining':             { d: '<circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/>' },
     'Aðlaga hliðarstiku':    { d: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>', color: '#d9af52' },
     'Skrár í Storage':       { d: '<path d="M4 5a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>', color: '#d9af52' },
+    'Skjaladropp':           { d: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>', color: '#d9af52' },
     'Google Sheet':          { d: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>', color: '#3ec77a' },
     'Google Drive':          { d: '<path d="M6 2h12l4 7-6 11H8L2 9z"/><path d="m2 9 6 11M22 9 8 9M6 2l6 11"/>', color: '#5b86ff' },
     'QR-miði (18×70mm)':     { d: '<path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1"/>' },
