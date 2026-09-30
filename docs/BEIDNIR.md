@@ -46,7 +46,7 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B36 | **„Póstafrit: Á"-hnappurinn** (haus Skjöl og viðhengi) á frekar heima efst á prófílnum sem einfalt hak | Claude | ✅ KLÁRT |
 | B37 | **Stjórnstöð (Kjarni):** auka breidd meginhlutans; fjólublái liturinn „skelfilegur" — þemað í „big boss": ljóst, gull og svart | Claude | NÝ |
 | B38 | **Sótt-glugginn (afhending, „Sókn — kt."):** hressa upp; afslátturinn (Lokastilling fyrir kvittun) inn á sömu opnu svo hann týnist ekki; guli liturinn burt; græni hausinn í dökkmálmsgrænan; samræma við þemað | Claude | ✅ KLÁRT |
-| B39 | **Allir viðskiptavinir:** öll síðan í svipað þema og Fyrirtæki í þjónustu (Brunastál C), án súluritsins; halda öllum tökkum í bili | Claude | NÝ |
+| B39 | **Allir viðskiptavinir:** öll síðan í svipað þema og Fyrirtæki í þjónustu (Brunastál C), án súluritsins; halda öllum tökkum í bili | Claude | ✅ KLÁRT |
 | B40 | **Kúnnasíðan** (úr Allir viðskiptavinir → „Opna kúnna-síðu", blái hallinn): „alveg ömurlega ljót" — laga liti og breidd í samræmi við Fyrirtæki í þjónustu (Brunastál C) | Claude | NÝ |
 | B41 | **Fyrri viðskipti-glugginn** (kt.-hreyfingar, 370/167): pastellitirnir ekki í samræmi við þemað — hressa upp í Brunastáli | Claude | ✅ KLÁRT |
 | B42 | **Valstikan í slökkvitækja-úttekt** (Velja allt · Yfirferð · Hleðsla · Ónýtt · Breyta stærð · Síðasta/Næsta skoðun · Prenta QR · Eyða, 404): samanfelld sjálfgefið, hægt að opna | Claude | ✅ KLÁRT |

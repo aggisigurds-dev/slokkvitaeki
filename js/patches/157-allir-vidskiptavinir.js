@@ -630,37 +630,36 @@
           </div>
         </div>
 
-        <!-- Stat tiles — sömu stærðir og ._ars-statgrid í Fyrirtæki í þjónustu (153): 11/13 px, 22 px tala -->
-        <div class="_av-statgrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px">
-          <!-- 2026-09-08 (Agnar: „mátt bara láta Allir viðskiptavinir líta eins út,
-               með dekkri litunum"): sama palletta og Ársskoðun — window.KpiKort,
-               skilgreind í 153. Ein skilgreining, tvær síður. -->
-          <div class="_kpi _kpi--hlut" style="cursor:pointer" data-kpi="all" title="Sýna alla">
-            <div class="_kpi-h">Fjöldi</div>
-            <div class="_kpi-n">${cntAll}</div>
-            <div class="_kpi-s">viðskiptavinir</div>
-          </div>
-          <div class="_kpi _kpi--graent" style="cursor:pointer" data-kpi="fyrirt" title="Sía: fyrirtækjaþjónusta">
-            <div class="_kpi-h">Í þjónustu</div>
-            <div class="_kpi-n">${cntInService}</div>
-            <div class="_kpi-s">${cntArs} fyrirtækjaþj. · ${cntBru} brunakerfi</div>
-          </div>
-          <div class="_kpi _kpi--hlut" style="cursor:pointer" data-kpi="has-units" title="Sía: hefur tæki">
-            <div class="_kpi-h">Með tæki</div>
-            <div class="_kpi-n">${cntWithUnits}</div>
-            <div class="_kpi-s">skráð slökkvitæki</div>
-          </div>
-          <div class="_kpi _kpi--gult" style="cursor:pointer" data-kpi="no-email" title="Sía: vantar netfang">
-            <div class="_kpi-h">Án netfangs</div>
-            <div class="_kpi-n">${cntNoEmail}</div>
-            <div class="_kpi-s">vantar tölvupóst</div>
-          </div>
-        </div>
+        <!-- B39 (Agnar 30.09: „sama þema og Fyrirtæki í þjónustu, nema ekki með súluritinu“): fjögur stálspjöld með skornum
+             hornum og hnoðum eins og 414 teiknar á Fyrirtæki í þjónustu — smellur síar (var dauður cursor:pointer). CSS í 425. -->
+        ${(() => {
+          const HN = '<span class="hn" style="top:9px;left:9px"></span><span class="hn" style="top:9px;right:26px"></span><span class="hn" style="bottom:9px;left:26px"></span><span class="hn" style="bottom:9px;right:9px"></span>';
+          const pct = (n, d) => d ? Math.max(0, Math.min(100, Math.round(n * 100 / d))) : 0;
+          const bar = (parts, stor) => '<div class="b425-s' + (stor ? ' stor' : '') + '">' + parts.filter(p => p[1] > 0).map(p => '<span class="' + p[0] + '" style="width:' + p[1] + '%"></span>').join('') + '</div>';
+          const kort = (cls, kpi, title, merki, tala, eining, midja) =>
+            '<div class="b425-k ' + cls + ' _kpi" data-kpi="' + kpi + '" title="' + esc(title) + '" role="button" tabindex="0"><div class="b425-i">' + HN +
+              '<div class="b425-m"><i class="led"></i>' + merki + '</div>' +
+              '<div class="b425-t">' + tala + (eining ? '<small>' + eining + '</small>' : '') + '</div>' + midja + '</div></div>';
+          return '<div class="b425-grid">' +
+            kort('gull', 'all', 'Sýna alla', 'Viðskiptavinir · allir', cntAll, 'skráðir',
+              bar([['ra', pct(cntArs, cntAll)], ['bl', pct(cntBru, cntAll)], ['gu', pct(cntFerda, cntAll)], ['st', pct(cntOne, cntAll)]], true) +
+              '<div class="b425-l"><span><i class="ra"></i><b>' + cntArs + '</b><small>fyrirtækjaþj.</small></span><span><i class="bl"></i><b>' + cntBru + '</b><small>brunakerfi</small></span><span><i class="gu"></i><b>' + cntFerda + '</b><small>ferðaþj.</small></span><span><i class="st"></i><b>' + cntOne + '</b><small>án samnings</small></span></div>') +
+            kort('graent', 'fyrirt', 'Sía: fyrirtækjaþjónusta', 'Í þjónustu', cntInService, '',
+              bar([['gr', pct(cntInService, cntAll)]]) +
+              '<div class="b425-l"><span><b>' + cntArs + '</b><small>fyrirtækjaþj.</small></span><span><b>' + cntBru + '</b><small>brunakerfi</small></span></div>') +
+            kort('stal', 'has-units', 'Sía: hefur tæki', 'Með tæki', cntWithUnits, '',
+              bar([['st', pct(cntWithUnits, cntAll)]]) +
+              '<div class="b425-l"><span><b>' + pct(cntWithUnits, cntAll) + '%</b><small>skráð slökkvitæki</small></span></div>') +
+            kort('rautt', 'no-email', 'Sía: vantar netfang', 'Án netfangs', cntNoEmail, '',
+              bar([['ra', pct(cntNoEmail, cntAll)]]) +
+              '<div class="b425-l"><span><b>' + pct(cntNoEmail, cntAll) + '%</b><small>vantar tölvupóst</small></span></div>') +
+          '</div>';
+        })()}
 
         <!-- Toolbar: view toggle + sort -->
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div class="b425-tools" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <div style="display:inline-flex;border:1px solid rgba(20,24,34,.14);border-radius:11px;overflow:hidden;background:#fff;padding:3px;gap:3px">
+            <div class="b425-seg" style="display:inline-flex;border:1px solid rgba(20,24,34,.14);border-radius:11px;overflow:hidden;background:#fff;padding:3px;gap:3px">
               <button data-view-mode="card" class="_av-vm" type="button" style="padding:7px 14px;background:${state.view==='card'?'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)':'transparent'};color:${state.view==='card'?'#fff':'#3a4250'};border:none;border-radius:9px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:5px">▦ Kort</button>
               <button data-view-mode="list" class="_av-vm" type="button" style="padding:7px 14px;background:${state.view==='list'?'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)':'transparent'};color:${state.view==='list'?'#fff':'#3a4250'};border:none;border-radius:9px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:5px">☰ Listi</button>
             </div>
@@ -670,7 +669,7 @@
         </div>
 
         <!-- Primary service filter chips -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+        <div class="b425-sia" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
           ${[
             ['all',    'Allir',                  cntAll],
             ['fyrirt', '🔥 Fyrirtækjaþjónusta',  cntArs],
@@ -687,8 +686,8 @@
         </div>
 
         <!-- Secondary filter chips (xfilter — AND'd with primary) -->
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-          <span style="font-size:10.5px;font-weight:700;color:#8a93a5;letter-spacing:.12em;padding-right:4px">SÍA:</span>
+        <div class="b425-xsia" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+          <span class="b425-lbl" style="font-size:10.5px;font-weight:700;color:#8a93a5;letter-spacing:.12em;padding-right:4px">SÍA:</span>
           ${[
             ['review',     '⚑ Til skoðunar',  cntReview],
             ['missing-docs','📄 Vantar skjöl', cntMissingDocs],
@@ -742,6 +741,18 @@
     main.querySelectorAll('._av-ft').forEach(b => b.addEventListener('click', () => {
       state.filter = b.dataset.filter; saveState(); render(main);
     }));
+    // B39: talningarspjöldin sía — Allir / Í þjónustu (fyrirt) / Með tæki (xfilter has-units) / Án netfangs (xfilter no-email)
+    main.querySelectorAll('.b425-k[data-kpi]').forEach(k => {
+      const virkja = () => {
+        const kpi = k.dataset.kpi;
+        if (kpi === 'all') { state.filter = 'all'; state.xfilter = []; }
+        else if (kpi === 'fyrirt') { state.filter = state.filter === 'fyrirt' ? 'all' : 'fyrirt'; }
+        else { const i = state.xfilter.indexOf(kpi); if (i >= 0) state.xfilter.splice(i, 1); else state.xfilter.push(kpi); }
+        saveState(); render(main);
+      };
+      k.addEventListener('click', virkja);
+      k.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); virkja(); } });
+    });
     main.querySelectorAll('._av-vm').forEach(b => b.addEventListener('click', () => {
       state.view = b.dataset.viewMode; saveState(); render(main);
     }));
