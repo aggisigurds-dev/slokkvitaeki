@@ -443,9 +443,33 @@
       try{ var lst=JSON.parse(localStorage.getItem('slokk_trip_'+lco)||'{}'); lst._locked=!on; localStorage.setItem('slokk_trip_'+lco, JSON.stringify(lst)); }catch(_){}
       UttektTaeki.rerender(lco); return;
     }
+    // 30.09.2026 — MÆLT MEÐ VIÐMIÐI á fyrirtæki 1173 (12 tæki, úr þjónustu):
+    // í kyrrstöðu fóru NÚLL fyrirspurnir á 2,5 sekúndum; EINN smellur á Yfirferð
+    // ræsti SJÖ — uttaeki ×4, verklidur ×2, vettvangsathuganir ×1 — auk fimm
+    // endurteikninga á .uttekt-cols. Valið sjálft snertir ekki þjóninn (það fer
+    // í localStorage); allt hitt var `rerender`, sem byggir ALLAN listann upp á
+    // nýtt og vekur þar með vaktir allra hinna pappanna, sem sækja þá sitt.
+    //
+    // Sama lækning og hakið fékk fyrr í nótt: uppfærðu hnútana sem breyttust.
+    // Röðin ber alla stöðuna sem valið snertir — þrjá þjónustuhnappa og
+    // ónýtt-merkið. Kostnaðurinn er reiknaður áfram (129 dregur þær saman í
+    // eina teikningu), en listinn stendur kyrr.
+    function _radUpp(rod, val){
+      if(!rod) return;
+      var onytt = (val === 'onytt');
+      rod.classList.toggle('onytt', onytt);
+      Array.prototype.forEach.call(rod.querySelectorAll('.ut-svc'), function(sv){
+        sv.classList.toggle('on', !onytt && sv.dataset.v === val);
+      });
+      var on = rod.querySelector('.ut-onytt');
+      if(on) on.classList.toggle('on', onytt);
+    }
+
     if((b=e.target.closest('.ut-svc'))){
-      try{ UnitServicePicker.setChoice(+b.dataset.co,+b.dataset.uid,b.dataset.v); }catch(_){}
-      recompute(); UttektTaeki.rerender(+b.dataset.co); return;
+      var sval=b.dataset.v;
+      try{ UnitServicePicker.setChoice(+b.dataset.co,+b.dataset.uid,sval); }catch(_){}
+      _radUpp(b.closest('.ut-row'), sval);
+      recompute(); return;
     }
     // 422: tæki í verkbeiðni er merkt ónýtt í Verkröðinni, ekki hér (404 býður „Merkja ónýtt" í ⋯-valmynd).
     if((b=e.target.closest('.ut-onytt.vt-laest'))){
@@ -455,8 +479,10 @@
     if((b=e.target.closest('.ut-onytt'))){
       var co=+b.dataset.co, uid=+b.dataset.uid, cur='';
       try{ cur=UnitServicePicker.getChoice(co,uid,b.dataset.ty); }catch(_){}
-      try{ UnitServicePicker.setChoice(co,uid, cur==='onytt'?'yfirferd':'onytt'); }catch(_){}
-      recompute(); UttektTaeki.rerender(co); return;
+      var nytt = (cur==='onytt') ? 'yfirferd' : 'onytt';
+      try{ UnitServicePicker.setChoice(co,uid,nytt); }catch(_){}
+      _radUpp(b.closest('.ut-row'), nytt);
+      recompute(); return;
     }
     // 29.09.2026 (Agnar: „when I press the check mark the site jumps a lot, and
     // the right calculations turns off"): hakið byggði ALLAN tækjalistann upp á
