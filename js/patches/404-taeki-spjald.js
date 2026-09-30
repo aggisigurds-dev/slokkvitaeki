@@ -153,6 +153,20 @@
     var stal = el('div', 'b404-stal');
     // ── valstika (= .ut-bulk, óbreytt innihald) ──
     bulk.classList.add('b404-valstika');
+    // B42 (Agnar 30.09: „valstikan … samanfelld sjálfgefið, hægt að opna"): aðgerðirnar (Yfirferð · Hleðsla · Ónýtt · Breyta stærð ·
+    // Síðasta/Næsta skoðun · Prenta QR · Eyða) eru faldar þar til opnað er með „Aðgerðir" eða tæki er valið (val = ætlun um aðgerð).
+    // Valið er munað í localStorage (valstika_opin) — útlitsval, ekki gagnastaða. 224 endurteiknar stikuna → takkinn kemur aftur hér.
+    (function () {
+      var LYK = 'valstika_opin';
+      function opin() { try { return localStorage.getItem(LYK) === '1'; } catch (_) { return false; } }
+      function setja(v) { try { v ? localStorage.setItem(LYK, '1') : localStorage.removeItem(LYK); } catch (_) {} }
+      var valin = !bulk.classList.contains('ut-bulk-tom');
+      var t = el('button', 'b404-valtoggle', ''); t.type = 'button';
+      function mala() { var o = opin() || valin; bulk.classList.toggle('b404-samanfelld', !o); t.innerHTML = (o ? 'Fela aðgerðir' : 'Aðgerðir') + ICON.chev; t.classList.toggle('opin', o); t.title = o ? 'Fela aðgerðir á völdum tækjum' : 'Sýna aðgerðir á völdum tækjum (Yfirferð · Hleðsla · Ónýtt · stærð · dagsetningar · QR · Eyða)'; }
+      t.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); setja(!(opin() || valin)); if (valin && !opin()) { valin = false; } mala(); });
+      var cnt = bulk.querySelector('.ut-bulk-cnt'); if (cnt && cnt.nextSibling) bulk.insertBefore(t, cnt.nextSibling); else bulk.appendChild(t);
+      mala();
+    })();
     Array.prototype.slice.call(bulk.querySelectorAll('button')).forEach(function (b) { if (b.classList.contains('ut-bulk-clear')) { b.innerHTML = svg('<path d="M18 6 6 18M6 6l12 12"/>', 2.5, 14); b.setAttribute('aria-label', 'Hætta við val'); return; } b.textContent = stripEmoji(txt(b)).replace(/^[─-◿]s*/, ''); });
     Array.prototype.slice.call(bulk.querySelectorAll('.ut-bulk-lbl')).forEach(function (s) { s.textContent = stripEmoji(txt(s)); });
     var sel = bulk.querySelector('.ut-selall'); if (sel) sel.textContent = /Hreinsa/.test(txt(sel)) ? 'Hreinsa val' : 'Velja allt';
@@ -327,6 +341,10 @@
       r('.b404-valstika button', SILVER_BTN + ';border-radius:7px!important;font-family:' + SANS + '!important;font-size:12px!important;font-weight:600!important;padding:0 10px!important;height:32px;display:inline-flex;align-items:center;gap:5px'),
       r('.b404-valstika .ut-bulk-del', 'color:#b42318!important'),
       r('.b404-valstika .ut-bulk-clear', 'background:transparent!important;border-color:transparent!important;box-shadow:none!important;color:#d5dbe6!important;font-size:16px!important;margin-left:auto'),
+      // B42: samanfelld stika — aðeins Velja allt · talning · Aðgerðir-takkinn sjást
+      r('.b404-valstika.b404-samanfelld > *:not(.ut-selall):not(.ut-bulk-cnt):not(.b404-valtoggle)', 'display:none!important'),
+      r('.b404-valstika .b404-valtoggle', 'background:transparent!important;border:1px solid rgba(255,255,255,.22)!important;box-shadow:none!important;color:#eef1f4!important;font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.08em;text-transform:uppercase;height:28px;padding:0 8px 0 10px!important;border-radius:6px!important;display:inline-flex;align-items:center;gap:4px;cursor:pointer;margin-left:2px'),
+      r('.b404-valstika .b404-valtoggle.opin svg', 'transform:rotate(180deg)'),
       r('.b404-valstika .ut-bulk-datewrap', 'border-left:1px solid rgba(255,255,255,.14)!important;margin-left:4px!important;padding-left:8px!important;gap:6px!important'),
       r('.b404-valstika .ut-bulk-lbl', 'font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.1em;text-transform:uppercase;color:#d5dbe6!important'),
       r('.b404-valstika input[type="date"]', 'height:30px!important;padding:0 8px!important;border:1px solid rgba(20,24,34,.14)!important;border-radius:6px!important;background:#eef1f6!important;color:#141822!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)!important;font-family:' + MONO + '!important;font-size:12px!important'),

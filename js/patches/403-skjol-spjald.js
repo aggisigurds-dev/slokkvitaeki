@@ -665,7 +665,9 @@
       // pör-bandið (311) inni í spjaldinu: eigin haus falinn (kaflinn segir það), raðir hvítar, skel af
       r('._dpb-company', 'margin:0!important;background:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important'),
       r('._dpb-company > div:first-child', 'display:none!important'),
-      r('._dpb-company > div:nth-child(2)', 'padding:0!important;display:flex;flex-direction:column;gap:6px'),
+      // B35 (Agnar 30.09: „svo langt á milli úttekt og senda — þjappa, sameina í 1/3 eða 1/2 breidd"): raðirnar í rist,
+      // 2–3 á breidd eftir plássi (lágmark 420 px hver) — Úttekt og Brunakerfi sama ár standa hlið við hlið.
+      r('._dpb-company > div:nth-child(2)', 'padding:0!important;display:grid!important;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:6px'),
       r('._dpb-company > div:nth-child(2) > div', LINE + ';padding:6px 10px!important;min-height:44px;display:flex;align-items:center;gap:8px;border:0!important')
     ].join('\n');
     // display:flex á valmyndinni vann UA-regluna [hidden]{display:none} — lokaðar valmyndir sáust opnar
