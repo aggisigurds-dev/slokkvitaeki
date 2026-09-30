@@ -314,9 +314,15 @@
     }
 
     const term = searchTerm.toLowerCase().trim();
+    // 30.09.2026 — MÆLT: „550610-0430" fann viðskiptavininn, „5506100430" fann EKKI
+    // (allar 179 kennitölur eru vistaðar með bandstriki). Nú er kennitalan líka borin
+    // saman sem tölustafir báðum megin — aðeins ef leitin ber 3+ tölustafi, annars
+    // passar '' við allt.
+    const termKt = term.replace(/\D/g, '');
     const filtered = (term
       ? customers.filter(c => [c.nafn, c.kennitala, c.simi, c.netfang]
-          .some(f => (f || '').toString().toLowerCase().includes(term)))
+          .some(f => (f || '').toString().toLowerCase().includes(term))
+          || (termKt.length >= 3 && String(c.kennitala || '').replace(/\D/g, '').includes(termKt)))
       : customers.slice()
     ).sort(compareCustomers);
 

@@ -64,7 +64,28 @@ function daysUntil(d){if(!d)return null;var n=new Date();n.setHours(0,0,0,0);var
 function escHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function getSortVal(row,key){var d=row.data;if(key==='name')return row.name.toLowerCase();if(key==='ext')return d.ext;if(key==='hose')return d.hose;if(key==='smoke')return d.smoke;if(key==='total')return d.ext+d.hose+d.smoke+d.other;if(key==='next')return d.nextInsp||'9999-12-31';return row.name.toLowerCase();}
 function applySort(rows){var dir=_state.sortDir==='asc'?1:-1;rows.sort(function(a,b){var av=getSortVal(a,_state.sortBy),bv=getSortVal(b,_state.sortBy);if(av<bv)return -1*dir;if(av>bv)return 1*dir;return a.name.localeCompare(b.name,'is');});return rows;}
-function applySearch(rows){if(!_state.search)return rows;var q=_state.search.toLowerCase();return rows.filter(function(r){return r.name.toLowerCase().indexOf(q)>=0;});}
+/* 30.09.2026 — MÆLT Í VIÐMÓTINU (Fyrirtæki → leitarreitur, 1.213 félög):
+   „pitstop" 2 · „660219-0480" 0 · „6602190480" 0 · „hjallahrauni" 0 ·
+   „húsfélag" 188 · „husfelag" 0. Aðal-fyrirtækjalistinn leitaði AÐEINS í nafni,
+   án broddstafa-flettingar — veikasti leitarreitur appsins, á þeim skjá sem er
+   líklegast notaður fyrst. Raðirnar bera aðeins nafn (lesið af spjaldi), svo
+   kennitala og heimilisfang eru sótt úr Companies.list eftir nafni.
+   Fletting er afrituð orðrétt frá 377-fyrirtaekjaleit.js svo reitirnir tali eins.
+   Kennitölusamanburður aðeins ef leitin ber tölustaf — annars er '' í öllu. */
+function _clFold(s){return String(s||'').toLocaleLowerCase('is').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ð/g,'d').replace(/þ/g,'th').replace(/æ/g,'ae').replace(/ö/g,'o');}
+function applySearch(rows){
+  if(!_state.search)return rows;
+  var q=_clFold(_state.search.trim()), qKt=_state.search.replace(/\D/g,'');
+  var eftirNafni={};
+  ((window.Companies&&Companies.list)||[]).forEach(function(c){var k=c.nafn||'';(eftirNafni[k]=eftirNafni[k]||[]).push(c);});
+  return rows.filter(function(r){
+    if(_clFold(r.name).indexOf(q)>=0)return true;
+    return (eftirNafni[r.name]||[]).some(function(c){
+      if(_clFold(c.heimilisfang).indexOf(q)>=0)return true;
+      return qKt.length>=3 && String(c.kennitala||'').replace(/\D/g,'').indexOf(qKt)>=0;
+    });
+  });
+}
 /* 2026-05-08: Cache the parsed rows so search keystrokes don't re-walk
    the DOM (`grid.querySelectorAll('.company-card')` + per-card
    querySelector for the name). Was 30-60ms per keystroke at 56 cards;

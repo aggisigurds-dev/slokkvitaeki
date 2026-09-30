@@ -123,7 +123,12 @@ function applySort(rows){
 function applySearch(rows){
   if(!_state.search)return rows;
   var q=_state.search.toLowerCase();
-  return rows.filter(function(r){return r.name.toLowerCase().indexOf(q)>=0 || r.kennitala.indexOf(q.replace(/-/g,''))>=0 || (r.phone||'').indexOf(q)>=0;});
+  // 30.09.2026: bandstrik var strípað úr LEITINNI en ekki úr vistaða gildinu
+  // (179/179 kennitölur í vidskiptavinir eru vistaðar MEÐ bandstriki), svo heil
+  // kennitala fannst á HVORUGU sniðinu — aðeins 6 fyrstu stafirnir. Nú tölustafir
+  // báðum megin, og aðeins ef leitin ber tölustaf (annars er '' í öllu).
+  var qKt=q.replace(/\D/g,'');
+  return rows.filter(function(r){return r.name.toLowerCase().indexOf(q)>=0 || (qKt.length>=3 && String(r.kennitala||'').replace(/\D/g,'').indexOf(qKt)>=0) || (r.phone||'').indexOf(q)>=0;});
 }
 
 var _people=null;  // cached customer list — search/sort filter this in place (no DB refetch per keystroke)
