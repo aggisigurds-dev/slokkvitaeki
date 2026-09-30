@@ -111,7 +111,7 @@
     // töflur: málmhaus, MONO
     r(KORT + ' thead', 'background:' + TABLE_HEAD),
     r(KORT + ' thead tr', 'background:' + TABLE_HEAD + ';color:#eef1f4'),
-    r(KORT + ' th', 'font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#eef1f4;border-bottom:1px solid #000;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
+    r(KORT + ' th', 'background:transparent;font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#eef1f4;border-bottom:1px solid #000;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
     r(KORT + ' td', 'color:#1f2530;border-bottom:1px solid rgba(20,24,34,.08)'),
     r(KORT + ' td[style*="monospace"],' + KORT + ' td[style*="tabular-nums"]', 'font-family:' + MONO),
     r(KORT + ' div[style*="border-radius:8px"][style*="overflow:hidden"]', 'border:1px solid rgba(20,24,34,.14);border-radius:6px'),
