@@ -1902,7 +1902,14 @@
       backgroundRefresh();
       return;
     }
-    main.innerHTML = '<div style="padding:24px;color:var(--ink4)">Hleður…</div>';
+    // 30.09.2026 (sama villa og lagfærð var í 199 daginn áður): við hverja
+    // endurteikningu var taflan TÆMD niður í eina „Hleður…"-línu og þanin svo
+    // út aftur — tvö umbrot og allt fyrir neðan kastast til. Á FYRSTU teikningu
+    // er hún rétt, þá er ekkert að sýna; sé taflan þegar á skjánum á gamla
+    // efnið að standa óhreyft þar til það nýja er tilbúið.
+    if (!main.querySelector('#_ars-search')) {
+      main.innerHTML = '<div style="padding:24px;color:var(--ink4)">Hleður…</div>';
+    }
     const _skrifFyrir = skrifNu();
     await loadAll();
     _lastLoad = Date.now();
