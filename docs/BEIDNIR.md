@@ -45,6 +45,8 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B35 | **„Skýrsla og reikningur saman" (311) og blokkirnar undir:** raðirnar taka fulla breidd með langt bil milli Úttektar og Senda — þjappa, sameina í 1/3 eða 1/2 breidd | Claude | NÝ |
 | B36 | **„Póstafrit: Á"-hnappurinn** (haus Skjöl og viðhengi) á frekar heima efst á prófílnum sem einfalt hak | Claude | NÝ |
 | B37 | **Stjórnstöð (Kjarni):** auka breidd meginhlutans; fjólublái liturinn „skelfilegur" — þemað í „big boss": ljóst, gull og svart | Claude | NÝ |
+| B38 | **Sótt-glugginn (afhending, „Sókn — kt."):** hressa upp; afslátturinn (Lokastilling fyrir kvittun) inn á sömu opnu svo hann týnist ekki; guli liturinn burt; græni hausinn í dökkmálmsgrænan; samræma við þemað | Claude | NÝ |
+| B39 | **Allir viðskiptavinir:** öll síðan í svipað þema og Fyrirtæki í þjónustu (Brunastál C), án súluritsins; halda öllum tökkum í bili | Claude | NÝ |
 
 ## 2026-09-10
 
