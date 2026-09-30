@@ -200,8 +200,10 @@
   // stöðupillur → plötur
   r(SC + ' #_sch-body span[style*="border-radius:99px"]', CHIP + ';height:20px;padding:0 7px;font-size:9.5px;color:#11141c');
   r(SC + ' #_sch-body span[style*="background:#dcfce7"]', CHIP_GREEN);
-  r(SC + ' #_sch-body span[style*="background:#fef3c7"]', CHIP_GOLD);
-  r(SC + ' #_sch-body span[style*="background:#e0e7ff"],' + SC + ' #_sch-body span[style*="background:#f5f3ff"]', CHIP_DARK);
+  r(SC + ' #_sch-body span[style*="background:#fef3c7"]', CHIP_RED);   // Agnar 30.09: Ógreitt í dökkrauðum málmi
+  r(SC + ' #_sch-body span[style*="background:#e0e7ff"]', CHIP_DARK);
+  // Agnar 30.09: Payday-platan (PD nnn / Payday) í dökkbláum málmi með hvítu letri
+  r(SC + ' #_sch-body span[style*="background:#f5f3ff"]', 'background:linear-gradient(145deg,#02060f 0%,#0a1d45 20%,#16306f 43%,#2451a8 53%,#0d2350 74%,#02060f 100%);border-color:rgba(60,110,220,.55);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55)');
   r(SC + ' #_sch-body span[style*="background:#f1f5f9"]', 'color:#3a4250');
   r(SC + ' #_sch-body td span[style*="#6d28d9"]:not([style*="background:#f5f3ff"]),' + SC + ' #_sch-body td[style*="#6d28d9"]', 'color:#3a4250');   // PD-platan heldur ljósa letrinu
   r(SC + ' #_sch-body span[style*="color:#991b1b"]', 'color:#b42318;font-family:' + MONO + ';font-size:10.5px;font-weight:700');
