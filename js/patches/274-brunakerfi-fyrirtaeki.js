@@ -95,9 +95,18 @@
     if (/\.html?$/i.test(s)) return '/api/skyrsla-proxy?p=' + encodeURIComponent(s.slice(i + 1));
     return base + '/storage/v1/object/public/' + s.slice(0, i) + '/' + s.slice(i + 1).split('/').map(encodeURIComponent).join('/');
   }
+  // Línu-afsláttur (30.09.2026). Uppsprettan er 273 (BrunakerfiVerd); afritið hér
+  // er ÖRYGGISNET ef 273 hefur ekki hlaðist, og það VERÐUR að vera sama formúla —
+  // annars segja skýrslan, spjaldið og reikningurinn sitt hvað um sömu vinnuna.
+  function vLina(l) {
+    const V = window.BrunakerfiVerd;
+    if (V && V.lina) return V.lina(l);
+    const a = num(l && l.afsl); const p = a > 0 ? Math.min(a, 100) : 0;
+    return (num(l && l.qty) || 0) * (num(l && l.price) || 0) * (1 - p / 100);
+  }
   function verdOf(r) {
     const linur = (r.data && r.data.verd && r.data.verd.linur) || [];
-    const sum = linur.reduce((a, l) => a + (num(l.qty) || 0) * (num(l.price) || 0), 0);
+    const sum = linur.reduce((a, l) => a + vLina(l), 0);
     return { lines: linur.length, sum, total: sum * (1 + VAT_PCT / 100) };
   }
 
@@ -601,8 +610,9 @@
         '<td style="text-align:right;font-weight:700">' + fmtKr(x.v.total) + '</td></tr>' +
         linurOf(x.r).map(l =>
           '<tr class="_bkc-vlina"><td>' + esc(l.name || '—') + '</td>' +
-          '<td style="text-align:right;white-space:nowrap">' + esc(String(l.qty || '')) + ' × ' + fmtKr(num(l.price) || 0) + '</td>' +
-          '<td style="text-align:right">' + fmtKr((num(l.qty) || 0) * (num(l.price) || 0)) + '</td></tr>').join('') +
+          '<td style="text-align:right;white-space:nowrap">' + esc(String(l.qty || '')) + ' × ' + fmtKr(num(l.price) || 0) +
+            ((num(l.afsl) || 0) > 0 ? ' <span style="color:#b3341a;font-weight:700">−' + esc(String(l.afsl)) + '%</span>' : '') + '</td>' +
+          '<td style="text-align:right">' + fmtKr(vLina(l)) + '</td></tr>').join('') +
         (vantarAkstur(x.r) ? '<tr class="_bkc-vlina _vantar"><td colspan="3">⚠️ Enginn akstur á þessari skýrslu</td></tr>' : '')
       ).join('') +
       '<tr><td style="font-weight:800;border-bottom:0">Samtals</td><td style="border-bottom:0"></td><td style="text-align:right;font-weight:800;border-bottom:0">' + fmtKr(verdSum) + '</td></tr>' +

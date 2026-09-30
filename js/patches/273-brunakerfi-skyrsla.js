@@ -169,6 +169,21 @@
     return b;
   }
 
+  // ── LÍNUSUMMA — ein uppspretta ────────────────────────────────────────────
+  // 30.09.2026 (Agnar: „afslatt a hverja linu"). Afslátturinn er PRÓSENTA á
+  // línuna. Hún er reiknuð á FIMM stöðum í kerfinu — model() hér, verdOf og
+  // spjaldið í 274, buildDraftBody og optsFromReport í 291 — og ef einn þeirra
+  // gleymir henni segja skýrslan, spjaldið og reikningurinn sitt hvað um sömu
+  // vinnuna. Þess vegna er hún hér og flutt út; hinir kalla í hana.
+  function linuAfsl(l) { const a = num(l && l.afsl); return a > 0 ? Math.min(a, 100) : 0; }
+  function linuSamtals(l) { return (num(l && l.qty) || 0) * (num(l && l.price) || 0) * (1 - linuAfsl(l) / 100); }
+  // Einingaverð eins og það fer Á REIKNINGINN: afslátturinn er BAKAÐUR inn og
+  // merktur í lýsingunni (165-venjan sem patch 10 les aftur með bakedMarker).
+  // Þannig sést afslátturinn á prentaða reikningnum án þess að tvítelja.
+  function linuNettoVerd(l) { return (num(l && l.price) || 0) * (1 - linuAfsl(l) / 100); }
+  function linuHeiti(l) { const a = linuAfsl(l); return String((l && l.name) || '') + (a ? ' · −' + String(a).replace('.', ',') + '% afsl.' : ''); }
+  window.BrunakerfiVerd = { lina: linuSamtals, afsl: linuAfsl, netto: linuNettoVerd, heiti: linuHeiti };
+
   // Allar afleiddar stærðir á EINUM stað — vinnusvæði, HTML-skýrsla og PDF nota
   // sama líkanið svo tölurnar geti aldrei orðið ósamhljóða.
   function model() {
@@ -188,7 +203,7 @@
     const athGroups = FL_ORDER.filter(fl => s.aths.some(a => a.fl === fl))
       .map(fl => ({ fl, isHljod: fl === 'Hljóðstyrksmælingar', rows: s.aths.filter(a => a.fl === fl) }));
     const abendList = (s.abend || '').split('\n').map(t => t.trim()).filter(Boolean);
-    const linur = (s.verd.linur || []).map(l => ({ ...l, samtals: (num(l.qty) || 0) * (num(l.price) || 0) }));
+    const linur = (s.verd.linur || []).map(l => ({ ...l, samtals: linuSamtals(l) }));
     const verdSum = linur.reduce((a, l) => a + l.samtals, 0);
     // Afsláttur = kr DREGIÐ AF heildinni m. vsk (sama venja og POS: afsláttur er
     // brúttó-króna, verdTotal er upphæðin sem er raunverulega rukkuð).
@@ -435,8 +450,13 @@
       '#_bks-overlay ._bks-rafchip._ok{background:#dcf1e4;color:#166b3a;border-color:#a9dcbd}' +
       '#_bks-overlay ._bks-rafchip._bad{background:#fbe3dd;color:#b3341a;border-color:#efb9ab}' +
       // verð
-      '#_bks-overlay ._bks-vrow{display:grid;grid-template-columns:1fr 74px 110px 110px 30px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #eef0f3}' +
-      '#_bks-overlay ._bks-vhead{display:grid;grid-template-columns:1fr 74px 110px 110px 30px;gap:8px;font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;padding-bottom:5px;border-bottom:1px solid #eef0f3}' +
+      // 30.09.2026 (Agnar: „alltof klesst"): raðirnar voru 5px háar með 8px bili.
+      // Nú 10px lóðrétt bil, 10px gap og sér dálkur fyrir Afsl.% — sami dálkur og
+      // á reikningunum okkar (Afsl.% í Stólpa), svo talan sé á kunnuglegum stað.
+      '#_bks-overlay ._bks-vrow{display:grid;grid-template-columns:1fr 72px 116px 78px 122px 32px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #eef0f3}' +
+      '#_bks-overlay ._bks-vhead{display:grid;grid-template-columns:1fr 72px 116px 78px 122px 32px;gap:10px;font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;padding-bottom:7px;border-bottom:1px solid #eef0f3}' +
+      '#_bks-overlay ._bks-vrow ._bks-in{padding:8px 10px}' +
+      '#_bks-overlay ._bks-vafsl{color:#b3341a;font-weight:700}' +
       '#_bks-overlay ._bks-vtot{margin-top:10px;margin-left:auto;max-width:320px;font-size:13px}' +
       '#_bks-overlay ._bks-vtot>div{display:flex;justify-content:space-between;padding:3px 0}' +
       '#_bks-overlay ._bks-vtot ._big{font-size:15.5px;font-weight:800;border-top:2px solid #141619;padding-top:6px;margin-top:3px}' +
@@ -445,7 +465,7 @@
       '#_bks-overlay ._bks-backbtn{padding:7px 13px;border-radius:8px;border:1px solid #141619;background:#141619;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer}' +
       '#_bks-overlay ._bks-sheetwrap{padding:18px 8px 60px;display:none}' +
       '#_bks-overlay ._bks-sheet{background:#fff;max-width:815px;margin:0 auto;box-shadow:0 10px 34px -12px rgba(15,23,42,.45);padding:34px 38px;color:#16181c}' +
-      '@media (max-width:1000px){#_bks-overlay ._bks-cust{grid-template-columns:1fr 1fr}#_bks-overlay ._bks-grid{grid-template-columns:1fr}#_bks-overlay ._bks-athrow1,#_bks-overlay ._bks-athrow1._hljod{grid-template-columns:1fr 1fr}#_bks-overlay ._bks-sheet{padding:20px 12px}#_bks-overlay ._bks-vrow,#_bks-overlay ._bks-vhead{grid-template-columns:1fr 60px 92px 92px 26px}}' +
+      '@media (max-width:1000px){#_bks-overlay ._bks-cust{grid-template-columns:1fr 1fr}#_bks-overlay ._bks-grid{grid-template-columns:1fr}#_bks-overlay ._bks-athrow1,#_bks-overlay ._bks-athrow1._hljod{grid-template-columns:1fr 1fr}#_bks-overlay ._bks-sheet{padding:20px 12px}#_bks-overlay ._bks-vrow,#_bks-overlay ._bks-vhead{grid-template-columns:1fr 56px 92px 64px 98px 28px;gap:7px}}' +
       '@media print{body>*{display:none!important}body>#_bks-overlay{display:block!important;position:static;background:#fff;overflow:visible}' +
       '#_bks-overlay ._bks-top,#_bks-overlay ._bks-wrap,#_bks-overlay ._bks-note{display:none!important}' +
       '#_bks-overlay ._bks-sheetwrap{display:block!important;padding:0}' +
@@ -654,12 +674,13 @@
       '<button type="button" class="_bks-hb" id="_bks-v-edit" style="background:#fff;border:1px solid #d0d4da;color:#334155;min-height:37px;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer">🏷 Breyta verðlista</button>' +
     '</div>' +
     (m.linur.length ?
-      '<div class="_bks-vhead"><span>Liður</span><span style="text-align:center">Magn</span><span style="text-align:right">Einingaverð</span><span style="text-align:right">Samtals án vsk</span><span></span></div>' +
+      '<div class="_bks-vhead"><span>Liður</span><span style="text-align:center">Magn</span><span style="text-align:right">Einingaverð</span><span style="text-align:center">Afsl.%</span><span style="text-align:right">Samtals án vsk</span><span></span></div>' +
       m.linur.map((l, i) =>
         '<div class="_bks-vrow">' +
           '<input class="_bks-in" data-vk="name" data-vi="' + i + '" value="' + esc(l.name) + '" placeholder="Lýsing línu">' +
           '<input class="_bks-in" data-vk="qty" data-vi="' + i + '" inputmode="numeric" value="' + esc(l.qty) + '" style="text-align:center">' +
           '<input class="_bks-in" data-vk="price" data-vi="' + i + '" inputmode="decimal" value="' + esc(l.price) + '" style="text-align:right">' +
+          '<input class="_bks-in _bks-vafsl" data-vk="afsl" data-vi="' + i + '" inputmode="decimal" placeholder="0" value="' + esc(l.afsl == null ? '' : l.afsl) + '" style="text-align:center" title="Afsláttur á þessa línu, %">' +
           '<span style="text-align:right;font-weight:800;font-size:13px">' + fmtKr(l.samtals) + '</span>' +
           '<button type="button" class="_bks-del" data-vdel="' + i + '">✕</button>' +
         '</div>').join('') +
@@ -870,7 +891,10 @@
     const prev = S.data.verd.sale_num;
     if (!confirm((prev ? 'Reikningur ' + prev + ' er þegar til fyrir þessa skýrslu.\nBúa til ANNAN reikning?\n\n' : '') +
       'Búa til reikning upp á ' + fmtKr(m.verdTotal) + ' m. vsk fyrir ' + (S.co.nafn || '') + ' og setja í Kröfu yfirlit?')) return;
-    const linur = m.linur.map(l => ({ type: 'service', desc: l.name, qty: num(l.qty) || 0, unit_price_ex_vat: num(l.price) || 0, vsk_pct: VAT_PCT, ref: '' }));
+    // Línu-afslátturinn er BAKAÐUR inn í einingaverðið og merktur í lýsingunni
+    // (165-venjan). Patch 10 les merkið aftur og sýnir Afsl.%-dálkinn á PDF-inu
+    // án þess að draga afsláttinn frá tvisvar.
+    const linur = m.linur.map(l => ({ type: 'service', desc: linuHeiti(l), qty: num(l.qty) || 0, unit_price_ex_vat: linuNettoVerd(l), vsk_pct: VAT_PCT, ref: '' }));
     // POS-venjan: línur bera FULLT verð, afslattur = kr m.vsk af heild, samtals er
     // nettó m.vsk og án-vsk/vsk skalast (VSK tekur afrúnun) — svo PDF (233) og
     // Kröfu yfirlit reikna rétt.
@@ -911,10 +935,10 @@
     const pick = box.querySelector('#_bks-v-pick');
     if (pick) pick.addEventListener('change', () => {
       const it = priceItems()[+pick.value];
-      if (it) { S.data.verd.linur.push({ name: it.name, qty: '1', price: String(it.price) }); markDirty(); rerender(); }
+      if (it) { S.data.verd.linur.push({ name: it.name, qty: '1', price: String(it.price), afsl: '' }); markDirty(); rerender(); }
     });
     const blankB = box.querySelector('#_bks-v-blank');
-    if (blankB) blankB.addEventListener('click', () => { S.data.verd.linur.push({ name: '', qty: '1', price: '' }); markDirty(); rerender(); });
+    if (blankB) blankB.addEventListener('click', () => { S.data.verd.linur.push({ name: '', qty: '1', price: '', afsl: '' }); markDirty(); rerender(); });
     const afsl = box.querySelector('#_bks-v-afsl');
     if (afsl) afsl.addEventListener('input', () => {
       S.data.verd.afslattur = afsl.value; markDirty();

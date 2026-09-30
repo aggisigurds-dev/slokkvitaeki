@@ -89,8 +89,13 @@
     } else if (auto.some(l => (num(l.qty) || 0) > 0 && (num(l.price) || 0) > 0)) {
       // fallback: reiknaðar línur úr búnaðaryfirlitinu (enginn afsláttur)
       const al = auto.filter(l => (num(l.qty) || 0) > 0);
-      linur = al.map(l => ({ type: 'service', desc: l.name || '', qty: num(l.qty) || 0, unit_price_ex_vat: num(l.price) || 0, vsk_pct: VAT_PCT, ref: '' }));
-      const sum = al.reduce((a, l) => a + (num(l.qty) || 0) * (num(l.price) || 0), 0);
+      const V = window.BrunakerfiVerd;
+      linur = al.map(l => ({ type: 'service',
+        desc: (V && V.heiti) ? V.heiti(l) : (l.name || ''),
+        qty: num(l.qty) || 0,
+        unit_price_ex_vat: (V && V.netto) ? V.netto(l) : (num(l.price) || 0),
+        vsk_pct: VAT_PCT, ref: '' }));
+      const sum = al.reduce((a, l) => a + vLina(l), 0);
       to = Math.round(sum * (1 + VAT_PCT / 100));
     }
     if (!linur.length || !(to > 0)) {
@@ -152,11 +157,22 @@
   }
 
   // ── prófíl-hjálparar ────────────────────────────────────────────────────────
+  // Línu-afsláttur (30.09.2026). Uppsprettan er 273 (BrunakerfiVerd); afritið hér
+  // er ÖRYGGISNET ef 273 hefur ekki hlaðist, og það VERÐUR að vera sama formúla —
+  // annars segja skýrslan, spjaldið og reikningurinn sitt hvað um sömu vinnuna.
+  function vLina(l) {
+    const V = window.BrunakerfiVerd;
+    if (V && V.lina) return V.lina(l);
+    const a = num(l && l.afsl); const p = a > 0 ? Math.min(a, 100) : 0;
+    return (num(l && l.qty) || 0) * (num(l && l.price) || 0) * (1 - p / 100);
+  }
   function optsFromReport(co, rep) {
     const d = (rep && rep.data) || {};
     const verd = d.verd || {};
-    const lin = (verd.linur || []).map(l => ({ name: l.name, qty: l.qty, price: l.price }));
-    const sum = lin.reduce((a, l) => a + (num(l.qty) || 0) * (num(l.price) || 0), 0);
+    // afsl fylgir línunni alla leið — annars hverfur afslátturinn á leiðinni
+    // úr skýrslunni yfir í drögin og reikningurinn verður of hár.
+    const lin = (verd.linur || []).map(l => ({ name: l.name, qty: l.qty, price: l.price, afsl: l.afsl }));
+    const sum = lin.reduce((a, l) => a + vLina(l), 0);
     const gross = sum * (1 + VAT_PCT / 100);
     let af = num(verd.afslattur) || 0; if (af < 0) af = 0; if (af > gross) af = gross;
     return {
