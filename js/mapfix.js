@@ -254,7 +254,17 @@
 
   function hookUppfaeraButton(){
     if(state.btnHooked) return false;
-    var btns = Array.from(document.querySelectorAll('button')).filter(function(b){return /Uppf/.test(b.textContent);});
+    // 30.09.2026 — MÆLT Á LIFANDI SÍÐU: leitin var í ÖLLU skjalinu. Öll #view-*
+    // eru varanleg systkini (index.html), svo hver „Uppfæra"-takki sem var til
+    // þegar kortið opnaðist fékk capture-hlustara með stopImmediatePropagation.
+    // Þjónustuver póstar → kort → aftur á pósta → „🔄 Uppfæra": takkinn sýndi
+    // „⏳ 1/806" og hóf landkóðun 806 heimilisfanga (1 á sek, 13+ mín), en
+    // raunverulegi handlerinn sendi NÚLL köll — póstlistinn uppfærðist aldrei.
+    // Rekstrarfélög sluppu aðeins af því að þau teikna takkann upp á nýtt.
+    // Nú: aðeins takkar INNAN kortsins.
+    var field = document.getElementById('view-field');
+    if(!field) return false;
+    var btns = Array.from(field.querySelectorAll('button')).filter(function(b){return /Uppf/.test(b.textContent);});
     if(!btns.length) return false;
     btns.forEach(function(btn){
       btn.addEventListener('click', function(e){ e.preventDefault(); e.stopImmediatePropagation(); uppfaeraSweep(btn); }, {capture:true});

@@ -34,6 +34,9 @@ const STAKAR = [
   'js/patches/145-companies-diagnose.js',
   'js/patches/365-vistun-utskolun.js',
   'js/patches/369-krofu-vinnugluggi.js',
+  // 30.09.2026: þessar tvær eru birtar STAKAR (grep á dist/index.html) en vantaði hér.
+  'js/patches/24-contact-log.js',
+  'js/patches/306-thjonustu-mob.js',
 ];
 
 const html = fs.readFileSync(path.join(rot, 'index.html'), 'utf8');
