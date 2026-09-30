@@ -538,8 +538,11 @@
       r('.b274-reikn > div b', 'color:#1f2530;font-weight:700'),
       r('.b274-reikn ._big', 'justify-content:space-between!important;align-items:center;background:' + METAL + ';border:1px solid #000!important;border-radius:8px;padding:10px 18px!important;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);margin-top:4px;font-size:11px!important;font-weight:700;letter-spacing:.14em;text-transform:uppercase'),
       r('.b274-reikn ._big span:last-child', 'font-family:' + DISPLAY + ';font-size:30px;font-weight:800;letter-spacing:0;text-transform:none;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)'),
-      '#_bkc-overlay .b274-hero #_bkr-status{border:0!important;padding:0!important;margin:0!important;box-shadow:none!important}',
-      '#_bkc-overlay .b274-hero #_bkr-status:has(#_bkr-inv:empty){display:none!important}',
+      r('.b274-inv', LINE + ';padding:8px 12px;font-size:13px'),
+      '#_bkc-overlay .b274 .b274-inv #_bkr-status{border:0!important;padding:0!important;margin:0!important;box-shadow:none!important;background:transparent!important}',
+      '#_bkc-overlay .b274 .b274-inv:not(:has(#_bkr-status)),#_bkc-overlay .b274 .b274-inv:has(#_bkr-inv:empty){display:none!important}',
+      r('.b274-ny', 'width:auto!important;margin:0!important;padding:0 12px!important;height:32px;font-size:12.5px!important;border-radius:7px!important'),
+      r('.b274-graenn', 'height:36px!important;min-height:0!important;padding:0 14px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:700!important;display:inline-flex;align-items:center;gap:7px;background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)!important;border:1px solid rgba(52,168,98,.55)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3)!important;text-shadow:0 1px 1px rgba(0,0,0,.55)'),
       // mjórra (sími / þröngt): einn dálkur
       '@media (max-width:1100px){#_bkc-overlay ._bkc-grid.b274{grid-template-columns:1fr}' + P + '.b274-thri{grid-template-columns:1fr 1fr}}'
     ].join('\n');
@@ -825,18 +828,6 @@
     const skyrslaPc = repNow ? (repNow.status === 'final' ? 'ok' : 'vinnsla') : 'vantar';
     const skyrslaTxt = repNow ? ('Skýrsla ' + (repNow.uttekt_nr || NOW) + (repNow.status === 'final' ? ' lokið' : ' drög')) : 'Skýrsla ' + NOW + ' vantar';
     const reitur = (lbl, val, mono, tomt) => '<div><div class="b274-rl">' + lbl + '</div><div class="b274-reitur' + (mono ? ' mono' : '') + (tomt ? ' tomt' : '') + '">' + val + '</div></div>';
-    const samnHtml = C.samningar.length ? C.samningar.map(sm => {
-      const url = driveUrl(sm.drive_file_id) || storageUrl(sm.storage_path);
-      const chain = !sm.fyrirtaeki_id;
-      const title = (sm.customer_name && sm.customer_name.length < 70 ? sm.customer_name : 'Þjónustusamningur');
-      return '<div class="b274-lina">' +
-        '<span class="b274-ll">Þjónustusamningur</span><span class="b274-lv" title="' + esc(title) + '">' + (chain ? 'sameiginlegur (öll keðjan)' : 'þessi staður') + (sm.doc_date ? ' · ' + esc(fmtDags(sm.doc_date)) : '') + '</span>' +
-        (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">Opna</a>' : '') +
-        (url ? '<button type="button" class="_bkc-act" data-docsend="' + sm.id + '" data-sendkind="samningur" style="background:#0f766e" title="Senda samning í tölvupósti">📧 Senda</button>' : '') +
-        '<button type="button" class="_bkc-act _x" data-docdel="' + sm.id + '" title="Aftengja samninginn — skráin helst í Drive">×</button>' +
-      '</div>';
-    }).join('') : '<div class="b274-lina"><span class="b274-ll">Þjónustusamningur</span><span class="b274-lv" style="color:#6b7483">enginn skráður</span></div>';
-
     w.innerHTML =
       '<div class="_bkc-cust">' +
         '<div class="_bkc-custL">' +
@@ -881,16 +872,11 @@
                 '<div>Tóm skoðunarskýrsla bíður — búnaðaryfirlit, mælingar og kostnaðarliðir.</div>' +
                 '<button type="button" class="_bkc-act b274-malmur" id="_bkc-repny">＋ Byrja skoðun ' + NOW + '</button>' +
               '</div>') +
-            // fyrri ár (samanfelld) + þjónustusamningur
-            '<div class="b274-rod" style="margin-top:4px"><span class="b274-merki">Fyrri ár</span><span class="b274-hint">' + (fyrriAr.length ? fyrriAr.length + ' ár · smelltu á ár til að opna' : 'ekkert skráð') + '</span><span class="b274-sp"></span>' +
-              '<button type="button" class="_bkc-act _ghost _bkc-addtog" id="_bkc-addtog">＋ Skjal eða reikningur</button></div>' +
-            '<div class="b274-ar">' + (yearRows || '<div class="_bkc-empty">Engin eldri skoðun skráð.</div>') +
-              '<div id="_bkc-addwrap" style="display:none">' + addFileStrip + '</div>' +
+            // 30.09.2026 (Agnar: „ekki setja skýrslurnar þarna, bara fyrir neðan"): fyrri ár, skjöl og samningar búa í
+            // „Skjöl og viðhengi" neðar á síðunni (199/403) — hér er aðeins skoðun ársins og ein aðgerð: ný skýrsla.
+            '<div class="b274-rod" style="margin-top:2px"><span class="b274-hint">Fyrri ár, skjöl og samningar eru í „Skjöl og viðhengi“ hér fyrir neðan.</span><span class="b274-sp"></span>' +
+              '<button type="button" class="_bkc-new b274-ny' + (hetja && hetja.hefur ? ' _litid' : '') + '" id="_bkc-new">' + (hetja && hetja.hefur ? '＋ Önnur skoðunarskýrsla' : '＋ Ný skoðunarskýrsla ' + NOW) + '</button>' +
             '</div>' +
-            samnHtml +
-            '<div class="b274-rod" style="font-size:12.5px;color:#525b6b">＋ Bæta við samningi:' +
-              '<label class="_bkc-act _ghost" style="cursor:pointer">📎 Velja PDF<input type="file" id="_bkc-addsamn" accept="application/pdf" style="display:none"></label>' +
-              '<span id="_bkc-samnstatus" style="color:#8b93a1"></span></div>' +
           '</div>' +
         '</section>' +
         // ── HÆGRA: skýrsla og reikningur ──
@@ -905,6 +891,12 @@
               '<span class="b274-plata ' + reiknPc + '"><i></i>' + esc(reiknTxt) + '</span>' +
               '<span class="b274-hint">' + (hasVerd ? verds.reduce((t, x) => t + x.v.lines, 0) + ' línur' : 'engar verðlínur') + (einingar ? ' · ' + einingar + ' einingar' : '') + '</span>' +
             '</div>' +
+            // aðgerðir ársins — sömu data-eigindi og hetju-raðirnar báru (data-send · data-invpdf · data-open), víringin óbreytt
+            '<div class="b274-hr"><div class="b274-hb">' +
+              (repNow && repNow.status === 'final' ? '<button type="button" class="_bkc-act b274-graenn" data-send="' + repNow.id + '" title="Senda skýrslu og/eða reikning í tölvupósti">📧 Senda</button>' : '') +
+              (repNow && repNow._inv ? '<button type="button" class="_bkc-act b274-silfur" data-invpdf="' + repNow.id + '" title="Opna reikninginn (PDF)">🧾 Reikningur</button>' : '') +
+              (repNow && repNow.status !== 'final' ? '<button type="button" class="_bkc-act b274-malmur" data-open="' + repNow.id + '">Halda áfram</button>' : '') +
+            '</div></div>' +
           '</header>' +
           '<div class="b274-stal">' +
             '<div class="b274-thri">' +
@@ -914,13 +906,6 @@
             '</div>' +
             '<div><div class="b274-rl">Minnispunktur <small>vistast sjálfkrafa, sést á öllum tækjum</small></div>' +
               '<textarea class="_bkc-note b274-note" id="_bkc-note" placeholder="t.d. Lykill í hólfi hjá húsverði · hringja á undan…">' + esc(C.note) + '</textarea></div>' +
-            // skýrsla + reikningur ársins: sömu raðir og hetjan áður (Skýrsla · Senda · Breyta · Reikningur), 291 lendir í #_bkc-heroinv
-            '<div class="b274-rl">Skýrsla og reikningur ársins</div>' +
-            '<div class="_bkc-hero b274-hero">' +
-              (hetja ? hetja.html : '') +
-              '<div id="_bkc-heroinv" data-hasinv="' + (hetja && hetja.hasInv ? '1' : '') + '"></div>' +
-              '<button type="button" class="_bkc-new' + (hetja && hetja.hefur ? ' _litid' : '') + '" id="_bkc-new">' + (hetja && hetja.hefur ? '＋ Önnur skoðunarskýrsla' : '＋ Ný skoðunarskýrsla ' + NOW) + '</button>' +
-            '</div>' +
             // línur reiknings — ritillinn (sömu [data-vrep]-blokkir) sem tafla
             '<div class="b274-rod" style="margin-top:2px"><span class="b274-merki">Línur reiknings</span>' +
               (verds.some(x => vantarAkstur(x.r)) ? '<span class="b274-plata vantar"><i></i>Akstur vantar</span>' : '') +
@@ -934,6 +919,7 @@
               '<div><span>Vsk ' + VAT_PCT + '%</span><b>' + fmtKr(verdSum - anVsk) + '</b></div>' +
               '<div class="_big"><span>Samtals með vsk</span><span>' + fmtKr(verdSum) + '</span></div>' +
             '</div>' : '') +
+            '<div class="b274-inv"><div id="_bkc-heroinv" data-hasinv="' + (hetja && hetja.hasInv ? '1' : '') + '"></div></div>' +
           '</div>' +
         '</section>' +
       '</div>';
