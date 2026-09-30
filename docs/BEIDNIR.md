@@ -33,11 +33,18 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B23 | **Brunakerfis-miðjan, lagfæringar (skjámynd 18:3x):** (a) „Skoðað 29/07/2026"-platan upp í hægra horn vinstra hauss; (b) „Stækka" burt — gerir það sama og „Opna skýrsluna"; (c) stöðuplöturnar (Skýrsla lokið · R-… drög · N línur · einingar) hægrijafnaðar út í kant hægra hauss; (d) **allir hnappar ferkantaðri** (minni rúnnun) í stíl við þemað — byrja á Vista · Senda · Reikningur · Skoðunarskýrsla | Claude | ✅ KLÁRT |
 | B24 | Línur reiknings (Brunakerfi): **hlutföll dálkanna** svo heitið („Samantekt og gerð skoðunarskýrslu") passi innan í reitinn — nafnið klippist | Claude | ✅ KLÁRT |
 | B25 | Línur reiknings (Brunakerfi): **sjálfgefið Akstur ×1 og Skýrslugerð ×1** — vantar á skýrslur sem urðu til áður en 273 fékk akstursliðinn | Claude | ✅ KLÁRT |
-| B26 | **„Aflæsa skýrslu"-hnappur á Brunakerfis-blaðinu:** haka við beint af skjá og breyta tölum eins og í slökkvikerfis-skýrslunni (386); þegar ýtt er á tölureit birtast **+ / −** til að hækka og lækka. Vinnusvæðið (273) verður varaleið. Krefst HTML-blaðs (273 „Skýrsla"-sýn) í stað PDF-ramma | Claude | NÝ |
+| B26 | **„Aflæsa skýrslu"-hnappur á Brunakerfis-blaðinu:** haka við beint af skjá og breyta tölum eins og í slökkvikerfis-skýrslunni (386); þegar ýtt er á tölureit birtast **+ / −** til að hækka og lækka. Vinnusvæðið (273) verður varaleið. Krefst HTML-blaðs (273 „Skýrsla"-sýn) í stað PDF-ramma | Claude | ✅ KLÁRT |
 | B27 | **Teikning-stikan** („Teikning · 5 staðsetningar" með − 100% + ↺ Sýna) og **Viðbóta upplýsingar**-reiturinn undir miðjunni: færa í tákn á „Teikning"-hnappinn í efri hluta, samanfellt sjálfgefið, hægt að opna | Claude | NÝ |
 | B28 | **Vinnusvæðið (273 inni í 🚨-flipanum, 408): þjappa** — haus, reitir og búnaðaryfirlit taka of mikið pláss | Claude | NÝ |
-| B29 | **Verðlisti: „Föst lína (alltaf 1×)" á Akstur og Vinnu pr. klst. virðist ekki virka** — tengingin ER vistuð á þjóni (30.09 18:43) og ⚡ Reikna út notar hana; föstu línurnar bætast hins vegar ekki sjálfkrafa á skýrslu sem þegar á línur. Lausn: „Sjálfgefið vantar"-röðin í miðjunni býður allar föstu línurnar sem vantar, einn smellur hver | Claude | Í VINNSLU |
-| B30 | Línur reiknings (Brunakerfi): **afsláttur á alla heildina** — reitur undir línunum (kr m. vsk, líka hægt að slá inn %) | Claude | Í VINNSLU |
+| B29 | **Verðlisti: „Föst lína (alltaf 1×)" á Akstur og Vinnu pr. klst. virðist ekki virka** — tengingin ER vistuð á þjóni (30.09 18:43) og ⚡ Reikna út notar hana; föstu línurnar bætast hins vegar ekki sjálfkrafa á skýrslu sem þegar á línur. Lausn: „Sjálfgefið vantar"-röðin í miðjunni býður allar föstu línurnar sem vantar, einn smellur hver | Claude | ✅ KLÁRT |
+| B30 | Línur reiknings (Brunakerfi): **afsláttur á alla heildina** — reitur undir línunum (kr m. vsk, líka hægt að slá inn %) | Claude | ✅ KLÁRT |
+| B31 | **Vöruvalslistinn „Velja vöru / þjónustu" (117) í slökkvitækja-úttekt er heiftarlega ljótur og erfitt að finna á honum** — endurhanna í Brunastáli, betri leit og flokkun | Claude | NÝ |
+| B32 | **Verðtengingar-glugginn (410) í slökkvitækja-úttekt** — ljótur og ekki í þema síðunnar; Brunastál C | Claude | NÝ |
+| B33 | **Samskiptaboxið (286/359) hresst upp** — ljósar rendur/bönd til að brjóta upp, í Brunastáli | Claude | NÝ |
+| B34 | **Ársbandið í Skjöl og viðhengi (403/199) meira áberandi** — árin og skiptingin milli ára sjást ekki nógu fljótt | Claude | NÝ |
+| B35 | **„Skýrsla og reikningur saman" (311) og blokkirnar undir:** raðirnar taka fulla breidd með langt bil milli Úttektar og Senda — þjappa, sameina í 1/3 eða 1/2 breidd | Claude | NÝ |
+| B36 | **„Póstafrit: Á"-hnappurinn** (haus Skjöl og viðhengi) á frekar heima efst á prófílnum sem einfalt hak | Claude | NÝ |
+| B37 | **Stjórnstöð (Kjarni):** auka breidd meginhlutans; fjólublái liturinn „skelfilegur" — þemað í „big boss": ljóst, gull og svart | Claude | NÝ |
 
 ## 2026-09-10
 
