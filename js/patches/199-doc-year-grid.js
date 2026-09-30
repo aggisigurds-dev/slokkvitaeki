@@ -680,7 +680,21 @@
   // Reikningur → þjónustukort. doc_type er alltaf 'reikningur' fyrir báðar
   // þjónustur; vidskiptategund ræður. Óþekkt/ovisst → úttektarkortið AÐEINS
   // (ekki bæði, ekki hvorki). Búð birtist á hvorugu skoðunarkortinu.
+  // 30.09.2026 (Agnar, R-001009 Akrotiri ehf.): reikningur fyrir brunakerfisúttekt
+  // lenti á 🧯-kortinu og skýrslan á 🔥-kortinu, svo „📧 Senda" gat ekki tekið bæði.
+  // `vidskiptategund` ræður kortinu, og hún er réttilega 'uttekt' — brunakerfisúttekt
+  // ER úttekt og á að teljast með sem slík í 157/187/190. Þess vegna er salan ekki
+  // endurmerkt; í staðinn fær PÖRUNIN að segja hvaða þjónustu reikningurinn tilheyrir,
+  // því hún er einmitt skýr yfirlýsing um það (document_pairs.service_type).
+  //
+  // VÖRN: parið má AÐEINS færa reikning INN á sérhæft kort (brunakerfi/slökkvikerfi).
+  // 1.486 pör bera 'uttekt', og fengju þau að ráða almennt gæti búðarreikningur
+  // dregist inn á úttektarkortið og litað árið grænt. Þess vegna er 'uttekt' úr pari
+  // hunsað — það breytir engu sem virkar í dag.
+  var _parKind = {};                       // customer_documents.id → 'brunakerfi' | 'slokkvikerfi'
   function invoiceServiceKind(d, srcByNum){
+    var pk = d && d.id != null ? _parKind[String(d.id)] : null;
+    if (pk === 'brunakerfi' || pk === 'slokkvikerfi') return pk;
     var t=String(d && d.vidskiptategund || '').toLowerCase();
     if(t==='brunakerfi'||t==='bud'||t==='uttekt'||t==='slokkvikerfi') return t;
     var k=numKey(d && (d.invoice_number || chipInvNum(d)));
@@ -1041,6 +1055,16 @@
     var payday = kt ? await fetchPayday(kt) : [];
     var srcByNum = kt ? await fetchSolurSrc(kt) : {};
     var sibs = kt ? await siblingsForKt(kt) : [];
+    // Pörin sótt HÉR (áður neðar) því kortaflokkun reikninga (pushInvByService) keyrir
+    // strax á eftir og þarf að vita hvaða þjónustu parið segir að reikningurinn tilheyri.
+    var pairs = baseId ? await fetchPairs(baseId) : [];
+    _parKind = {};
+    pairs.forEach(function(pr){
+      if(pr.fyrirtaeki_id!=null && +pr.fyrirtaeki_id!==+coId) return;   // á öðrum stað
+      if(pr.invoice_doc_id==null) return;
+      var stp = String(pr.service_type||"").toLowerCase();
+      if(stp==="brunakerfi"||stp==="slokkvikerfi") _parKind[String(pr.invoice_doc_id)] = stp;
+    });
     var paydaySiteSafe = sibs.length <= 1;
 
     // ── group customer_documents per year/type ──
@@ -1180,7 +1204,7 @@
     // þeim eina stað — sibling-staðir sjá þau ekki. Pör ÁN fyrirtaeki_id (fyrir
     // 2026-08-09) eru staðlaus fallback sem hvaða staður má nota þar til hann
     // fær sitt eigið. Sama regla og document_pairs triggerinn í Brunahólf.
-    var pairs = baseId ? await fetchPairs(baseId) : [];
+    // (pairs sótt ofar — sama fylki, engin önnur sókn)
     var pairsByYear={};
     pairs.forEach(function(pr){
       if(pr.fyrirtaeki_id!=null && +pr.fyrirtaeki_id!==+coId) return; // á öðrum stað — ekki okkar
