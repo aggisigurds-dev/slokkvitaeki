@@ -26,6 +26,12 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B11 | Center Hotels: bannerlínan sýnir „Afsláttur —" þótt félagið sé í hópi með 10–32% — hópurinn er lesinn of seint | — | NÝ |
 
 
+## 2026-09-30
+
+| # | Beiðni | Hver | Staða |
+|---|--------|------|-------|
+| B23 | **Brunakerfis-miðjan, lagfæringar (skjámynd 18:3x):** (a) „Skoðað 29/07/2026"-platan upp í hægra horn vinstra hauss; (b) „Stækka" burt — gerir það sama og „Opna skýrsluna"; (c) stöðuplöturnar (Skýrsla lokið · R-… drög · N línur · einingar) hægrijafnaðar út í kant hægra hauss; (d) **allir hnappar ferkantaðri** (minni rúnnun) í stíl við þemað — byrja á Vista · Senda · Reikningur · Skoðunarskýrsla | Claude | Í VINNSLU |
+
 ## 2026-09-10
 
 | # | Beiðni | Hver | Staða |
