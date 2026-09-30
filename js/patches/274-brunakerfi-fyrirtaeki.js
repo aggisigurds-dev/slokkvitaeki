@@ -152,19 +152,65 @@
     });
   }
 
+  // ⤢ SKJALAGLUGGI — sama mót og Ársskoðun notar (199 openInvoiceOverlay), að
+  // ósk Agnars 30.09.2026 („replicate the function in arsskodun report/invoice").
+  // Áður var window.open notað hér. Á síma opnast skjalið þá í SÖMU flipa-sögu og
+  // „til baka" fer ÚT úr appinu — nákvæmlega það sem 199 var látið hætta við
+  // 21.07.2026. Glugginn hefur eigin ✕ Loka + 🖨 Prenta og snertir enga vafra-sögu.
+  // Fest á <body>, utan #_bkc-overlay, svo hann liggi ofan á spjaldinu.
+  //   src    → skjal sem vafrinn teiknar sjálfur (PDF um /api/skjal eða Storage)
+  //   render → fall sem fær iframe.contentWindow (SalaInvoice skrifar í .document)
+  function openDocViewer(opts) {
+    const o = opts || {};
+    const fyrri = document.getElementById('_bkc-docview'); if (fyrri) { try { fyrri.remove(); } catch (_) {} }
+    const ov = document.createElement('div');
+    ov.id = '_bkc-docview';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100050;background:rgba(15,23,42,.6);display:flex;flex-direction:column';
+    const bar = document.createElement('div');
+    bar.style.cssText = 'flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;background:#0f172a;color:#fff';
+    bar.innerHTML = '<b style="font-size:15px">' + esc(o.title || 'Skjal') + '</b>';
+    const btns = document.createElement('div'); btns.style.cssText = 'display:flex;gap:8px';
+    const pr = document.createElement('button'); pr.type = 'button'; pr.textContent = '🖨 Prenta';
+    pr.style.cssText = 'padding:9px 16px;background:#166534;color:#fff;border:none;border-radius:9px;font-size:15px;cursor:pointer';
+    const cl = document.createElement('button'); cl.type = 'button'; cl.textContent = '✕ Loka';
+    cl.style.cssText = 'padding:9px 16px;background:#334155;color:#fff;border:none;border-radius:9px;font-size:15px;cursor:pointer';
+    btns.appendChild(pr); btns.appendChild(cl); bar.appendChild(btns);
+    const frame = document.createElement('iframe');
+    frame.style.cssText = 'flex:1 1 auto;width:100%;border:0;background:#fff';
+    ov.appendChild(bar); ov.appendChild(frame);
+    document.body.appendChild(ov);
+    function loka() { try { ov.remove(); } catch (_) {} document.removeEventListener('keydown', aLykli); }
+    function aLykli(ev) { if (ev.key === 'Escape') loka(); }
+    cl.onclick = loka;
+    ov.addEventListener('click', ev => { if (ev.target === ov) loka(); });
+    document.addEventListener('keydown', aLykli);
+    if (o.src) frame.src = o.src;
+    else if (o.render) {
+      try { o.render(frame.contentWindow); }
+      catch (e) { loka(); alert('Villa við að teikna skjalið: ' + ((e && e.message) || e)); return; }
+    }
+    // Prentun á src-skjali fer gegnum iframe-gluggann; sé hann annars origin
+    // (Storage) kastar .print() og við föllum á vafrans eigin prentun.
+    pr.onclick = () => { try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (_) { try { window.print(); } catch (__) {} } };
+  }
+
   // 🧾 Opnar reikning (solur) skýrslunnar sem prent/PDF-forskoðun (SalaInvoice,
-  // patch 10). Glugginn opnaður STRAX (án await) svo popup-vörn stöðvi hann ekki.
+  // patch 10) — núna í skjalaglugganum hér að ofan, ekki nýjum vafraglugga.
   async function openInvoicePdf(inv) {
     if (!inv || !inv.id) return;
-    const w = window.open('', '_blank', 'width=900,height=1100');
     try {
-      const sb = SB(); if (!sb) { if (w) w.close(); return; }
+      const sb = SB(); if (!sb) return;
       const r = await sb.from('solur').select('*').eq('id', inv.id).single();
-      if (r.error || !r.data) { if (w) w.close(); alert('Reikningurinn fannst ekki.'); return; }
-      if (window.SalaInvoice && SalaInvoice.renderFromSale) {
-        SalaInvoice.renderFromSale(w, r.data, { kennitala: (C.co && C.co.kennitala) || r.data.customer_kt || '', heimilisfang: (C.co && C.co.heimilisfang) || '' });
-      } else if (w) { w.close(); alert('Reikningsmótið er ekki tiltækt.'); }
-    } catch (e) { if (w) w.close(); alert('Villa: ' + (e.message || e)); }
+      if (r.error || !r.data) { alert('Reikningurinn fannst ekki.'); return; }
+      if (!(window.SalaInvoice && SalaInvoice.renderFromSale)) { alert('Reikningsmótið er ekki tiltækt.'); return; }
+      openDocViewer({
+        title: 'Reikningur ' + (r.data.num || ''),
+        render: iwin => SalaInvoice.renderFromSale(iwin, r.data, {
+          kennitala: (C.co && C.co.kennitala) || r.data.customer_kt || '',
+          heimilisfang: (C.co && C.co.heimilisfang) || ''
+        })
+      });
+    } catch (e) { alert('Villa: ' + (e.message || e)); }
   }
 
   // ── yfirbygging ─────────────────────────────────────────────────────────────
@@ -483,7 +529,9 @@
         '<div class="_bkc-yrrow">' + dot(hasRep) + tag('SKÝRSLA') + '<div class="_bkc-yrbody">' + rep + '</div></div>' +
         '<div class="_bkc-yrrow">' + dot(hasInv) + tag('REIKNINGUR') + '<div class="_bkc-yrbody">' + invHtml + '</div></div>' +
       '</div>';
-      return { y, html: _html, pill, pc, fin, draft, hefur: !!(fin || draft || docs.length) };
+      // hasInv: hetjan teiknaði reikningsröð sjálf (invBitar). 291 les þetta og
+      // sleppir sinni eigin röð — sjá athugasemdina við #_bkc-heroinv hér að neðan.
+      return { y, html: _html, pill, pc, fin, draft, hasInv: !!inv, hefur: !!(fin || draft || docs.length) };
     });
     // 21.09.2026 (Agnar: „similar approach as slökkvikerfi"): skoðun ÁRSINS er aðalatriðið efst — eitt spjald með stöðu,
     // skýrslu, reikningi og EINNI aðalaðgerð (sama mynstur og 🍳 í 386). Sagan er aukaatriði fyrir neðan, samanfelld.
@@ -510,6 +558,20 @@
         '</span>' +
         '<span id="_bkc-addstatus" style="color:#8b93a1"></span>' +
       '</div>';
+
+    // Skýrslan sem birtist í vinstri dálknum: LOKIÐ-skýrsla ársins fyrst, annars
+    // nýjasta skjalið sem á sér slóð. Báðar leiðir gefa vafra-teiknanlegt PDF
+    // (/api/skjal eða Storage), svo iframe dugar — ekkert pdf.js þarf.
+    let skyrslaSrc = '', skyrslaNafn = '';
+    (function () {
+      const finNow = C.reports.find(r => +r.year === NOW && r.status === 'final') || C.reports.find(r => r.status === 'final');
+      const doc = finNow && finNow.doc_id ? C.docs.find(d => d.id === finNow.doc_id) : null;
+      if (doc) { skyrslaSrc = driveUrl(doc.drive_file_id) || storageUrl(doc.storage_path); skyrslaNafn = 'úttekt ' + (finNow.uttekt_nr || finNow.year || ''); }
+      if (!skyrslaSrc) {
+        const d = (C.docs || []).find(x => driveUrl(x.drive_file_id) || storageUrl(x.storage_path));
+        if (d) { skyrslaSrc = driveUrl(d.drive_file_id) || storageUrl(d.storage_path); skyrslaNafn = String(d.year || ''); }
+      }
+    })();
 
     // verð / reikningsyfirlit
     const verds = C.reports.map(r => ({ r, v: verdOf(r) })).filter(x => x.v.lines > 0);
@@ -589,9 +651,29 @@
           '<div class="_bkc-card _bkc-hero"><div class="_bkc-herohd"><div class="_bkc-herot">🚨 Brunakerfis skoðun ' + NOW + '</div>' +
             '<span class="_bkc-st _bkc-pill _' + (hetja ? hetja.pc : 'miss') + '">' + (hetja ? hetja.pill : 'Óskoðað') + '</span></div><div class="_bkc-body">' +
             (hetja ? hetja.html : '') +
-            '<div id="_bkc-heroinv"></div>' +
+            // 30.09.2026 (Agnar: „fix the payment details" — skjámynd sýndi R-001063
+            // TVISVAR og neðri röðin skreið út fyrir spjaldið). Hetjan teiknar
+            // reikninginn sjálf þegar hann finnst; 291 á þá ekkert erindi með sömu
+            // tölur aftur. Patch 291 sagði þetta sjálfur í athugasemd frá upphafi
+            // („einn staður, ekki tveir") en ekkert sagði honum hvenær hinn staðurinn
+            // var þegar fullur. Merkið hér er það sem vantaði. Finnist ENGINN
+            // reikningur stendur 291-röðin áfram — þar býr ＋ Stofna drög og 🔗 Tengja.
+            '<div id="_bkc-heroinv" data-hasinv="' + (hetja && hetja.hasInv ? '1' : '') + '"></div>' +
             '<button type="button" class="_bkc-new' + (hetja && hetja.hefur ? ' _litid' : '') + '" id="_bkc-new">' + (hetja && hetja.hefur ? '＋ Önnur skoðunarskýrsla' : '＋ Ný skoðunarskýrsla ' + NOW) + '</button>' +
           '</div></div>' +
+          // 30.09.2026 (Agnar: „make the report be open in half of the screen the left
+          // side. Then button to open it larger"). Vinstri dálkurinn stóð auður fyrir
+          // neðan hetjuna og skýrslan opnaðist í nýjum flipa. Nú liggur hún hér, og
+          // ⤢ Stækka opnar hana í skjalaglugganum. Sé engin skýrsla til er reiturinn
+          // EKKI teiknaður — tómur rammi segir minna en ekkert.
+          (skyrslaSrc ?
+            '<div class="_bkc-card"><div class="_bkc-ch">Skýrslan<small>' + esc(skyrslaNafn) +
+              ' <button type="button" class="_bkc-hb" id="_bkc-repbig" style="margin-left:8px" title="Opna skýrsluna í fullum skjá">⤢ Stækka</button></small></div>' +
+              '<div class="_bkc-body" style="padding:0">' +
+                '<iframe id="_bkc-repframe" src="' + esc(skyrslaSrc) + '" title="Brunakerfisskýrsla" ' +
+                  'style="width:100%;height:68vh;min-height:420px;border:0;background:#fff;display:block"></iframe>' +
+              '</div></div>'
+            : '') +
           '<div class="_bkc-card"><div class="_bkc-ch">Fyrri ár<small>' + (fyrriAr.length ? fyrriAr.length + ' ár · smelltu á ár til að opna' : 'ekkert skráð') + '</small></div><div class="_bkc-body">' +
             (yearRows || '<div class="_bkc-empty">Engin eldri skoðun skráð.</div>') +
             '<button type="button" class="_bkc-act _ghost _bkc-addtog" id="_bkc-addtog" style="margin-top:10px">＋ Bæta við skjali eða tengja reikning</button>' +
@@ -634,6 +716,8 @@
       '</div>';
 
     // víring
+    const repBig = w.querySelector('#_bkc-repbig');
+    if (repBig) repBig.addEventListener('click', () => openDocViewer({ title: 'Brunakerfisskýrsla ' + skyrslaNafn, src: skyrslaSrc }));
     w.querySelector('#_bkc-note').addEventListener('input', e => { C.note = e.target.value; saveNote(e.target.value); });
     w.querySelector('#_bkc-openco').addEventListener('click', () => {
       close();
@@ -886,7 +970,9 @@
   function boot() { watch(); setTimeout(watch, 2500); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  window.BrunakerfiFyrirtaeki = { open, reload };
+  // openDocViewer er fluttur út svo 291 (reikningslínan) noti SAMA glugga —
+  // annars yrðu tvö ólík mót fyrir sama verk í sama spjaldi.
+  window.BrunakerfiFyrirtaeki = { open, reload, openDocViewer };
   console.log('[patch-274] Brunakerfi þjónustusíða fyrirtækis installed');
 })();
 /* === END BRUNAKERFI ÞJÓNUSTUSÍÐA === */

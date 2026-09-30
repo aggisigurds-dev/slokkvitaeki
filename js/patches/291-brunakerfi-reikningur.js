@@ -316,6 +316,14 @@
         decorateProfile(C, w);
       }
 
+      // 30.09.2026: teikni hetjan (274) reikningsröðina sjálf er þessi röð aðeins
+      // endurtekning á sömu tölum — og hún skreið út fyrir spjaldið. Við þegjum þá.
+      // Sé enginn reikningur til stendur röðin áfram: þar býr ＋ Stofna drög og
+      // 🔗 Tengja, sem hvergi annars staðar er hægt að ná í.
+      const hetjanMedRod = (el && el.closest && el.closest('#_bkc-heroinv') &&
+                            el.closest('#_bkc-heroinv').dataset.hasinv === '1') ||
+                           (span.closest('#_bkc-heroinv') && span.closest('#_bkc-heroinv').dataset.hasinv === '1');
+      if (inv && hetjanMedRod) { span.innerHTML = ''; return; }
       if (inv) {
         // 07.09.2026: sama orðalag og ársyfirlitið (274) — greiddur/sendur trompar „stofnaður"
         const stTxt = inv.paid_at ? 'greiddur' : inv.krafa_sent_at ? 'sendur' : inv.status === 'drog' ? 'drög' : inv.status === 'final' ? 'stofnaður' : (inv.status || '');
