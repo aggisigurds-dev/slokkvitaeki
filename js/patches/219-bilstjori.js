@@ -341,10 +341,16 @@
     if (_seg === 'a1' || _seg === 'a2' || _seg === 'a3') { const n = +_seg.slice(1); list = list.filter(x => aksturOf(x.ars) === n); }
     else if (_seg === 'today') list = list.filter(x => x.status.key === 'overdue' || x.status.key === 'duenow' || x.priority);
     const q = _search.trim().toLowerCase();
+    // 30.09.2026: kennitölu-greinin var óvarin. Bókstafaleit („hraun") verður ''
+    // þegar tölustafir eru strípaðir, og `"6602190480".includes("")` er alltaf
+    // satt — svo HVER leit með bókstöfum skilaði ÖLLUM félögum og leitarreiturinn
+    // gerði ekkert. 157-allir-vidskiptavinir.js:389 lýsir sömu villu og ver sig;
+    // þetta var óvarði tvíburinn. Sama vörn: kt-samanburður aðeins ef tölustafur er.
+    const qKt = q.replace(/\D/g, '');
     if (q) list = list.filter(x =>
       (x.co.nafn || '').toLowerCase().includes(q) ||
       (x.co.heimilisfang || '').toLowerCase().includes(q) ||
-      String(x.co.kennitala || '').replace(/\D/g,'').includes(q.replace(/\D/g,'')));
+      (qKt && String(x.co.kennitala || '').replace(/\D/g,'').includes(qKt)));
     list.sort((a, b) =>
       ((+b.priority || 0) - (+a.priority || 0)) ||   // higher forgangur first (3→2→1→0)
       ((DUE[a.status.key] ?? 9) - (DUE[b.status.key] ?? 9)) ||
