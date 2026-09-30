@@ -620,7 +620,15 @@
       ).join('') +
       '<tr><td style="font-weight:800;border-bottom:0">Samtals</td><td style="border-bottom:0"></td><td style="text-align:right;font-weight:800;border-bottom:0">' + fmtKr(verdSum) + '</td></tr>' +
       '</tbody></table>'
-      : '<div class="_bkc-empty">Engar verðlínur enn — smelltu á „✏️ Kostnaðarliðir" hér fyrir neðan.</div>';
+      // 30.09.2026 (Agnar: „skil ekki alveg hvað er í gangi þarna"). Textinn sagði
+      // ALLTAF „smelltu á ✏️ Kostnaðarliðir" — en sá takki er aðeins teiknaður þegar
+      // app-skýrsla er til (newest). Á félagi sem á bara innflutt PDF úr Drive vísaði
+      // hann því á takka sem var hvergi á skjánum. Verðlínur búa inni í app-skýrslu;
+      // skannað skjal ber engar. Textinn segir það núna í stað þess að gefa fyrirmæli
+      // sem ekki er hægt að fylgja.
+      : (newest
+          ? '<div class="_bkc-empty">Engar verðlínur enn — smelltu á „✏️ Kostnaðarliðir" hér fyrir neðan.</div>'
+          : '<div class="_bkc-empty">Engar verðlínur. Skýrslan hér er innflutt PDF-skjal og ber engin verð — kostnaðarliðir verða til í skoðunarskýrslu sem er gerð í appinu.<br><button type="button" class="_bkc-act" id="_bkc-verdny" style="background:#141619;margin-top:9px">＋ Ný skoðunarskýrsla</button></div>');
 
     // búnaðarskrá úr nýjustu skýrslu
     let bunHtml = '<div class="_bkc-empty">Engin skýrsla enn — búnaðarskráin fyllist sjálfkrafa úr fyrstu skoðunarskýrslu.</div>';
@@ -746,6 +754,8 @@
       '</div>';
 
     // víring
+    const verdNy = w.querySelector('#_bkc-verdny');
+    if (verdNy) verdNy.addEventListener('click', () => { const b = w.querySelector('#_bkc-new'); if (b) b.click(); });
     const repBig = w.querySelector('#_bkc-repbig');
     if (repBig) repBig.addEventListener('click', () => openDocViewer({ title: 'Brunakerfisskýrsla ' + skyrslaNafn, src: skyrslaSrc }));
     w.querySelectorAll('[data-repview]').forEach(b => b.addEventListener('click', () => {
