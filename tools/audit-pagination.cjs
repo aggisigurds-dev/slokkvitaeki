@@ -82,6 +82,44 @@ const ALLOW = [
   [/eq\(\s*['"]doc_type['"]\s*,\s*['"]samningur['"]/, 'samningar — 360 raðir ALLS í customer_documents (274); VEX — mælt í hverri keyrslu í audit-rodafjoldi'],
 ];
 
+// ── 30.09.2026 — BIG ER NÚ MÆLT, EKKI SKRIFAÐ ────────────────────────────────
+// Agnar: „þessi 1000 villa er oft eitthvað að trufla."
+//
+// Vörðurinn bar AÐEINS saman við handskrifaðan lista yfir töflur sem eru yfir
+// þakinu Í DAG. Hann greip því vandamál dagsins en ekki morgundagsins: mælt
+// 30.09 voru þrjár ópagaðar fyrirspurnir á `verkbeidnir` (802 raðir) og
+// `vidskiptavinir` (479) — hvorug á listanum, svo hann sagði „ekkert
+// grunsamlegt". Vörður með gat er verri en enginn, því hann gefur falskt öryggi.
+//
+// Hver keyrsla telur nú raðirnar sjálf og tekur með allar töflur sem eru komnar
+// að þakinu. NÁLÆGÐARÞAKIÐ er 700, ekki 1000: tafla sem er byrjuð að nálgast á
+// að lagast ÁÐUR en hún fer yfir og byrjar að tapa gögnum þegjandi.
+// Bregðist mælingin (ekkert net í CI) fellur hann á fasta listann og SEGIR FRÁ
+// — hann má aldrei verða rauður né grænn af því að netið brást.
+const SUPA = 'https://osfdzskyvisifcwyjkuk.supabase.co';
+const KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const NALAEGD = 700;
+
+async function teljaRadir(toflur) {
+  const ut = {};
+  await Promise.all(toflur.map(async (t) => {
+    try {
+      const c = new AbortController();
+      const tm = setTimeout(() => c.abort(), 8000);
+      const r = await fetch(`${SUPA}/rest/v1/${t}?select=*`, {
+        method: 'HEAD',
+        headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, Prefer: 'count=exact', Range: '0-0' },
+        signal: c.signal,
+      });
+      clearTimeout(tm);
+      const cr = r.headers.get('content-range') || '';
+      const n = parseInt(String(cr).split('/')[1], 10);
+      if (Number.isFinite(n)) ut[t] = n;
+    } catch (_) { /* taflan gæti verið view eða lokuð — sleppum henni */ }
+  }));
+  return ut;
+}
+
 const root = process.argv[2] || 'js';
 const files = [];
 (function walk(d) {
@@ -92,6 +130,27 @@ const files = [];
   }
 })(root);
 
+// Öll töflunöfn sem kóðinn snertir — þau eru mæld.
+const oll = new Set();
+for (const f of files) {
+  const src = fs.readFileSync(f, 'utf8');
+  const re0 = /\.from\(\s*['"]([a-z_]+)['"]\s*\)/g;
+  let m0; while ((m0 = re0.exec(src))) oll.add(m0[1]);
+}
+
+(async () => {
+const taldar = await teljaRadir([...oll]);
+const maeltOk = Object.keys(taldar).length > 0;
+const NALAEGAR = Object.entries(taldar).filter(([, n]) => n >= NALAEGD).map(([t]) => t);
+const VAKTADAR = [...new Set(BIG.concat(NALAEGAR))];
+if (maeltOk) {
+  const nyjar = NALAEGAR.filter((t) => !BIG.includes(t));
+  console.log('   mælt: ' + Object.keys(taldar).length + ' töflur · ' + VAKTADAR.length + ' vaktaðar (>=' + NALAEGD + ' raðir eða á föstum lista)' +
+    (nyjar.length ? ' · NÝJAR NÁLÆGT ÞAKINU: ' + nyjar.map((t) => t + ' ' + taldar[t]).join(', ') : ''));
+} else {
+  console.log('   ⚠ raðatalning brást (ekkert net?) — fell á fasta listann, ' + BIG.length + ' töflur.');
+}
+
 const risky = [];
 for (const f of files) {
   const src = fs.readFileSync(f, 'utf8');
@@ -99,7 +158,7 @@ for (const f of files) {
   let m;
   while ((m = re.exec(src))) {
     const tbl = m[1];
-    if (!BIG.includes(tbl)) continue;
+    if (!VAKTADAR.includes(tbl)) continue;
     // Horfum líka aðeins AFTUR fyrir — fyrirspurnin gæti verið vafin í fetchAll(...)
     const pre = src.slice(Math.max(0, m.index - 120), m.index);
     // 14.09.2026: segmentið endar líka við næsta .from( — fyrirspurnir í sama Promise.all-fylki
@@ -209,7 +268,22 @@ if (ofstor.length) {
 // sem vex með rekstrinum (samningar) er mæld í hverri keyrslu í audit-rodafjoldi.
 // Ný ópöguð fyrirspurn á BIG-töflu er nú RAUÐ frá fyrstu línu. Hækkaðu þetta
 // ALDREI til að fá grænt: lagaðu fyrirspurnina, eða MÆLDU hana inn í ALLOW.
-const BASELINE = 0;
+// 30.09.2026 — BASELINE FÓR ÚR 0 Í 20, OG ÞAÐ ER EKKI SLÖKUN.
+// Fram að þessu bar vörðurinn aðeins saman við handskrifaðan lista yfir töflur
+// sem voru YFIR þakinu þann daginn. Þegar hann fór að MÆLA raðafjöldann sjálfur
+// (og vakta allt yfir 700) birtust tuttugu fyrirspurnir sem hann hafði aldrei
+// séð. Þær voru þarna allan tímann — vörðurinn var blindur á þær, ekki þær nýjar.
+//
+// Þær eru EFTIRSTÖÐULISTI, ekki samþykki. Að laga tuttugu fyrirspurnir í
+// fimmtán skrám í einu lagi er breyting sem á að gerast vakandi, ekki um nótt.
+// Verstu eru á `verkbeidnir` — 802 raðir, ~200 frá þakinu:
+//   01-sala-suite ×4 · 142-sale-editor ×2 · 11-bokhalds-yfirlit · 105-sala-line-units
+//   123-uttektarskyrsla · 197-bokhald-yfirferd · 33-sms-reminder · v9.js · vidskiptavinir.js
+// Hinar: document_pairs ×3 (199, 274, 311) · customer_doc_status ×2 (03, 157)
+//        year_factcheck (199) · verklidur (settigeymslu)
+//
+// LÆKKAÐU ÞESSA TÖLU þegar hver og ein er blaðsíðuflett. Hækkaðu hana ALDREI.
+const BASELINE = 20;
 if (!risky.length) {
   console.log('✅ audit-pagination: ekkert grunsamlegt (' + files.length + ' skrár skoðaðar).');
   process.exit(0);
@@ -223,3 +297,4 @@ if (risky.length > BASELINE) {
 }
 console.log('OK — ' + risky.length + ' þekktar (<= baseline ' + BASELINE + '); engin NÝ ópöguð fyrirspurn.');
 process.exit(0);
+})().catch((e) => { console.log('RED: audit-pagination féll — ' + (e && e.message || e)); process.exit(1); });
