@@ -939,13 +939,23 @@
   // kaldri hleðslu, og þeir keyrðu líka þegar Ársskoðun var aldrei opnuð.
   // Minnið fyrst, netið sem varaleið. Sían er ORÐRÉTT sú sama og að neðan;
   // víki þær í sundur stemma tölurnar ekki og audit-status-gildi grípur það.
-  function urMinni() {
-    var u = (window.DB && DB.cache && DB.cache.units) || null;
-    return (u && u.length) ? u : null;
+  // Fyrsta útgáfan las minnið BEINT og var því ÓVIRK: mælt á lifandi síðu eftir
+  // birtingu keyrðu báðir skannarnir áfram, því 153 spyr áður en db.js hefur
+  // fyllt DB.cache.units. Bíður nú eftir því — sama bið og virkaði í 222, þar
+  // sem skannin hvarf af netinu. Sex sekúndna þak: náist minnið ekki fer
+  // netskönnunin af stað eins og áður, svo þetta getur aldrei orðið verra en
+  // fyrir breytinguna.
+  async function urMinni() {
+    for (var i = 0; i < 30; i++) {
+      var u = (window.DB && DB.cache && DB.cache.units) || null;
+      if (u && u.length) return u;
+      await new Promise(function (r) { setTimeout(r, 200); });
+    }
+    return null;
   }
 
   async function loadActiveUnitsByFid(SB) {
-    var minni = urMinni();
+    var minni = await urMinni();
     if (minni) {
       const byFid = {};
       minni.forEach(u => {
@@ -1002,7 +1012,7 @@
   // ar an thess ad hun baerist yfir; thad var villan. Baedi sia nu eins.
   // 2026-08-23: lyklað á uttaeki.fyrirtaeki_id (starfsstöð) eins og hér að ofan.
   async function loadNextInspByFid(SB) {
-    var minni2 = urMinni();
+    var minni2 = await urMinni();
     if (minni2) {
       const m = {};
       minni2.forEach(u => {
