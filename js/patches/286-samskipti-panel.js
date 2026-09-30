@@ -515,6 +515,10 @@
         (opt.lagrad ? '<span class="_skx-uppf" title="Sýni samskiptin eins og þau voru sótt ' + esc(klukka(opt.lagrad)) + ' á þessu tæki, á meðan nýjustu eru sótt."><i class="_skx-snuda"></i>Uppfæri…</span>' : "") +
         '<div class="_skx-acts">' +
           (svaraM && window.ReikningaPostur && ReikningaPostur.replyTo ? '<button type="button" class="_skx-btn _skx-svara" title="Svara nýjasta pósti kúnnans — svarið fer í sama þráð">↩ Svara</button>' : "") +
+          // ✉️ Nýr póstur (Agnar 30.09.2026): „yrði hægt að bæta við þarna að senda nýjan
+          // póst … langaði að senda hvort einhver tími hentar betur." ↩ Svara krefst þess að
+          // kúnninn hafi sent okkur eitthvað — hér er ekkert að svara, við eigum frumkvæðið.
+          (window.ReceiptSender && ReceiptSender.compose ? '<button type="button" class="_skx-btn _skx-nyr" title="Nýr póstur til tengiliðar hússins — ekki svar í þræði">✉️ Nýr póstur</button>' : "") +
           (openQ > 0
             ? '<button type="button" class="_ssk-mark _skx-btn ljos">✓ Merkja afgreitt</button>'
             : (data.handled ? '<span class="_skx-afgreitt">✓ Afgreitt</span>' : "")) +
@@ -533,6 +537,42 @@
         "</div>" +
         beidnirHtml +
       "</div>";
+
+    // ✉️ Nýr póstur — ÓHÁÐ póstsögunni. Viðtakandinn er sóttur með Vidtakandi.fyrir
+    // (regla 381: tengiliður hússins fyrst, umsjónaraðili fær ekki póst) og ástæðan
+    // er MERKT í glugganum með Vidtakandi.merkja — annars sæist ekki hvers vegna
+    // þetta netfang varð fyrir valinu, og það var einmitt gallinn á samningskortinu.
+    const nyrB = card.querySelector("._skx-nyr");
+    if (nyrB) nyrB.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+      if (card.dataset.lagrad === "1") return;   // geymd útgáfa — bíðum eftir ferskri sókn
+      nyrB.disabled = true;
+      let vt = null;
+      try {
+        vt = (window.Vidtakandi && Vidtakandi.fyrir)
+          ? await Vidtakandi.fyrir({ coId: fid, netfang: f.netfang })
+          : { to: String(f.netfang || "").trim(), skyring: "" };
+      } catch (_) { vt = { to: String(f.netfang || "").trim(), skyring: "" }; }
+      nyrB.disabled = false;
+      const teng = String(f["tengiliður"] || f.tengilidur || "").trim();
+      const fyrstaNafn = teng ? teng.split(/[\s,]+/)[0] : "";
+      const nafnFelags = String(f.nafn || "").trim();
+      // Ávarpið er kynhlutlaust — nafn segir ekki til um hvernig á að ávarpa fólk.
+      const kvedja = fyrstaNafn ? "Góðan dag " + fyrstaNafn : "Góðan dag";
+      try {
+        ReceiptSender.compose({
+          title: "Nýr póstur" + (nafnFelags ? " — " + nafnFelags : ""),
+          to: (vt && vt.to) || "",
+          subject: "Slökkvitækjaþjónusta — hvenær hentar?",
+          bodyText: kvedja + "\n\n" +
+            "Þið eruð með þjónustusamning um slökkvitæki hjá okkur og nú er komið að reglubundinni yfirferð.\n\n" +
+            "Hentar einhver tími betur en annar fyrir okkar mann að koma? Við reynum að haga ferðinni eftir því sem hentar ykkur — morgnar, síðdegi eða ákveðnir vikudagar.\n\n" +
+            "Láttu mig vita og ég set ykkur á listann.\n\n" +
+            "Kveðja,\nSlökkvitæki ehf.",
+        });
+        if (window.Vidtakandi && Vidtakandi.merkja) Vidtakandi.merkja(vt);
+      } catch (e) { console.warn("[samskipti-panel] nýr póstur", e); }
+    });
 
     // ↩ Svara — nýjasti póstur kúnnans; Message-ID sótt svo svarið fari í sama þráð.
     const svaraB = card.querySelector("._skx-svara");
