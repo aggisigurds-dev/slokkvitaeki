@@ -241,11 +241,24 @@
       : Promise.resolve();
     // Load ALL fyrirtaeki rows. Supabase caps each response at 1000 rows
     // (server-side "Max rows"), so .range() alone is not enough — page through.
-    const companiesP = DB.fetchAll((from, to) => SB.from('fyrirtaeki')
+    // 30.09.2026: þetta var ÞRIÐJA eintakið af sömu fyrirspurn. `Companies.load()`
+    // er `_loadP`-varið og deilir EINNI sókn (CLAUDE.md: „samtíma hleðslur eiga
+    // að deila EINNI sókn"), sækir `select('*')` með sömu síu og sömu röðun, og
+    // ber því öll sextán sviðin hér að neðan OG `ovisst` sem `ovissP` þurfti.
+    // Tvær sjálfstæðar sóknir í `fyrirtaeki` verða að núlli — og um leið hverfur
+    // kapphlaupið um `Companies.list`, þar sem síðasta svarið yfirskrifaði hin.
+    // Bein fyrirspurn er varaleið ef Companies er ekki til eða skilar tómu.
+    const deiltP = (window.Companies && typeof Companies.load === 'function')
+      ? Promise.resolve(Companies.load()).then(
+          () => (Array.isArray(Companies.list) && Companies.list.length) ? Companies.list : null,
+          () => null)
+      : Promise.resolve(null);
+
+    const companiesP = deiltP.then(rows => rows || DB.fetchAll((from, to) => SB.from('fyrirtaeki')
       .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu,customer_base_id,created_at,postnumer,plan_note')
       .is('deleted_at', null)
       .order('nafn')
-      .range(from, to)).catch(error => { console.error('[arsskodun] loadAll', error); return null; });
+      .range(from, to))).catch(error => { console.error('[arsskodun] loadAll', error); return null; });
     // 2026-06-01: tæki count + estimated yearly revenue are DERIVED LIVE from the
     // real uttaeki table (status='active'); pricing from the vorur "yfirferð"
     // rates (single source of truth) with hardcoded fallbacks. Both run in
@@ -256,10 +269,13 @@
     // í patch 157 (fyrirtaeki.ovisst). Eitt merki fyrir báðar síður — félag sem
     // er falið í Allir viðskiptavinir á ekki að standa eftir á vinnulistanum í
     // Ársskoðun. DB.fetchAll pagar (audit-pagination krefst þess).
-    const ovissP = (window.DB && DB.fetchAll)
-      ? DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('id').eq('ovisst', true).order('id').range(from, to))
-          .then(rows => new Set((rows || []).map(r => +r.id))).catch(() => new Set())
-      : Promise.resolve(new Set());
+    // `ovisst` er dálkur á sömu röðum — hann þarf enga eigin ferð.
+    const ovissP = deiltP.then(rows => {
+      if (rows) return new Set(rows.filter(r => r && r.ovisst).map(r => +r.id));
+      if (!(window.DB && DB.fetchAll)) return new Set();
+      return DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('id').eq('ovisst', true).order('id').range(from, to))
+        .then(rs => new Set((rs || []).map(r => +r.id)));
+    }).catch(() => new Set());
     const priceP = loadYfirferdPrices(SB).catch(() => ({}));
     // 2026-07-14: authoritative "last inspection" facts parsed from each
     // company's most-recent úttektarskýrsla PDF (inspection month + per-category
@@ -917,7 +933,28 @@
   // Fiskislóð). 39 tæki eiga fyrirtaeki_id=null (óleyst tvítök, sjá entry 13):
   // þau falla sjálfkrafa út hér — birtast EKKI á neinum stað — uns Agnar
   // samþykkir sameiningarnar. location-textinn stendur óbreyttur (bakvörður).
+  // 30.09.2026 (kortlagning ræsi-netkallanna): `DB.cache.units` er byggt með
+  // `select('*')` í db.js og ber ÖLL þessi svið. Þessir tveir hleðslarar sóttu
+  // samt töfluna enda í enda — TÓLF ferðir af þeim 22 sem uttaeki fékk í
+  // kaldri hleðslu, og þeir keyrðu líka þegar Ársskoðun var aldrei opnuð.
+  // Minnið fyrst, netið sem varaleið. Sían er ORÐRÉTT sú sama og að neðan;
+  // víki þær í sundur stemma tölurnar ekki og audit-status-gildi grípur það.
+  function urMinni() {
+    var u = (window.DB && DB.cache && DB.cache.units) || null;
+    return (u && u.length) ? u : null;
+  }
+
   async function loadActiveUnitsByFid(SB) {
+    var minni = urMinni();
+    if (minni) {
+      const byFid = {};
+      minni.forEach(u => {
+        if (String(u.status) === 'urelt') return;
+        if (u.fyrirtaeki_id == null) return;
+        (byFid[u.fyrirtaeki_id] = byFid[u.fyrirtaeki_id] || []).push(u);
+      });
+      return byFid;
+    }
     const byFid = {};
     let nullFk = 0;   // virk tæki án starfsstöðvar-FK (entry 13 bakstaða)
     try {
@@ -965,6 +1002,17 @@
   // ar an thess ad hun baerist yfir; thad var villan. Baedi sia nu eins.
   // 2026-08-23: lyklað á uttaeki.fyrirtaeki_id (starfsstöð) eins og hér að ofan.
   async function loadNextInspByFid(SB) {
+    var minni2 = urMinni();
+    if (minni2) {
+      const m = {};
+      minni2.forEach(u => {
+        if (String(u.status) === 'urelt') return;
+        if (u.fyrirtaeki_id == null || u.next_insp == null) return;
+        const k = u.fyrirtaeki_id;
+        if (!m[k] || u.next_insp < m[k]) m[k] = u.next_insp;
+      });
+      return m;
+    }
     const byFid = {};
     try {
       let from = 0; const page = 1000;
