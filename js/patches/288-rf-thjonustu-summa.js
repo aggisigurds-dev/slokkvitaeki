@@ -172,14 +172,37 @@
     else if (anchor) anchor.appendChild(el);
   }
 
+  // 30.09.2026: vaktin hlustaði á body+subtree og kallaði fetchNotes() — NETKALL —
+  // í hvert sinn sem hún settist. HVER EINASTA DOM-breyting í appinu endurstillti
+  // 300 ms biðina og hvert hlé skilaði sókn. Þetta er vélin á bak við „Prófíll 66
+  // netköll".
+  //
+  // Teikningin og sóknin eru tvennt ólíkt og eru nú aðskilin: vaktin teiknar
+  // aðeins (ódýrt, staðbundið), en gögnin eru sótt í mesta lagi á þriggja mínútna
+  // fresti — og aldrei í földum flipa. Sótt strax við endurkomu svo spjaldið sé
+  // aldrei úrelt þegar horft er á það.
+  const SOKN_BIL_MS = 180000;
+  let _sidastSott = 0;
+  function kannskiSaekja() {
+    if (document.hidden) return Promise.resolve();
+    const nu = Date.now();
+    if (nu - _sidastSott < SOKN_BIL_MS) return Promise.resolve();
+    _sidastSott = nu;
+    return fetchNotes();
+  }
+
   let t = null;
   const run = () => {
     clearTimeout(t);
     t = setTimeout(() => {
-      fetchNotes().then(() => { try { tick(); tickCo(); } catch (e) { console.warn("[rf-summa]", e); } });
+      kannskiSaekja().then(() => { try { tick(); tickCo(); } catch (e) { console.warn("[rf-summa]", e); } })
+        .catch(() => { try { tick(); tickCo(); } catch (_) {} });
     }, 300);
   };
   new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) { _sidastSott = 0; run(); }
+  });
   // 1) STRAX: birtu úr localStorage (síðasta hleðsla) — poppar upp án biðar.
   loadLS();
   try { tick(); tickCo(); } catch (_) {}

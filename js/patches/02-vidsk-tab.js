@@ -62,9 +62,14 @@
     // Vörnin á heima hér: á þessum tímapunkti Á biðlarinn að vera til.
     if (!sb()) { console.warn('[Vidsk] Supabase ekki tilbúinn þegar loadData var kallað'); return; }
     const [v, u, j] = await Promise.all([
-      sb().from('vidskiptavinir').select('*').order('nafn'),
+      // 30.09.2026: ÓBLAÐSÍÐUFLETT. PostgREST skilar hámark 1000 röðum og segir
+      // EKKI frá — mælt í dag: vidskiptavinir 479, verkbeidnir 802. Hvorug er
+      // yfir þakinu ENN, en verkbeidnir er 80% af leiðinni og þegar hún fer yfir
+      // hverfur fimmtungur úr State.counts og State.lastVisits þegjandi.
+      // Þögul klipping er verri en villa: talan lítur rétt út og er röng.
+      DB.fetchAll((from, to) => sb().from('vidskiptavinir').select('*').order('nafn').order('id').range(from, to)).then(rows => ({ data: rows })),
       DB.fetchAll((from, to) => sb().from('uttaeki').select('client').order('id').range(from, to)).then(rows => ({ data: rows })),  // >1000 rows — page through cap; .order('id') svo síðuskipting sleppi engu
-      sb().from('verkbeidnir').select('customer,dropoff,created_at'),
+      DB.fetchAll((from, to) => sb().from('verkbeidnir').select('customer,dropoff,created_at').order('id').range(from, to)).then(rows => ({ data: rows })),
     ]);
     State.customers = v.data || [];
     State.counts = {};

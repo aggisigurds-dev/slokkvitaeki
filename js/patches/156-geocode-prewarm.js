@@ -184,6 +184,14 @@
       _done++;
       if (i < work.length - 1) {
         await new Promise(r => setTimeout(r, THROTTLE_MS));
+        // 30.09.2026: forhitunin hélt áfram í földum flipa. Hún vinnur aðeins
+        // ÓFUNDIN heimilisföng og skrifar viku-legstein á þau sem bregðast, svo
+        // þakið (400) er kaldræsing en ekki hver hleðsla — en hvert kall er samt
+        // Netlify-keyrsla, og þær á ekki að brenna í glugga sem enginn horfir á.
+        // Bíður hér þar til flipinn sést aftur; röðin heldur sér.
+        while (document.hidden && !_cancelled) {
+          await new Promise(r => setTimeout(r, 2000));
+        }
       }
     }
     notifyMaps(true);   // final render to catch the last batch
@@ -324,10 +332,19 @@
 
   // Start after DOM is ready. Customer data load is async (Supabase) so
   // waitForData polls until the list is populated.
+  // 30.09.2026: byrjaði á DOMContentLoaded og keppti því við ræsinguna sjálfa —
+  // á þeirri stundu er notandinn að bíða eftir fyrstu teikningu. Forhitun er
+  // eðli sínu samkvæmt bakgrunnsverk; hún má bíða. requestIdleCallback þar sem
+  // hann er til, annars fast bil.
+  function raesaSidar() {
+    var byrja = function () { if (!document.hidden) waitForData(); else setTimeout(byrja, 3000); };
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(byrja, { timeout: 15000 });
+    else setTimeout(byrja, 8000);
+  }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', waitForData);
+    document.addEventListener('DOMContentLoaded', raesaSidar);
   } else {
-    waitForData();
+    raesaSidar();
   }
 
   // Expose for debugging
