@@ -104,6 +104,45 @@
     var imp = main.querySelector('._imp-toggle');
     if (imp && imp.parentElement !== row) { imp.classList.add('b405-imp'); row.insertBefore(imp, row.firstChild); }
   }
+  // ── B27 (Agnar 30.09: „færa þennan bara í tákn á Teikningum í efri hluta sem bara collapsed default, en hægt að expanda") ──
+  // Teikningarborðinn (#co-fp-section, newfeatures/109/362) og Viðbóta upplýsingar (#vbu-section, vbu.js) sitja undir
+  // miðjunni og taka pláss þótt erindið komi teikningunni ekki við. Nú eru þau FALIN sjálfgefið og opnast með litlum
+  // takka við hlið „Teikning" í borðanum; valið er munað í localStorage (teikning_syna) — útlitsval, ekki gagnastaða.
+  // Falið = hæð 0 + overflow hidden (EKKI display:none — breiddin þarf að mælast fyrir grunnkvarða myndarinnar, sjá 362).
+  var FP_LYKILL = 'teikning_syna';
+  function fpOpid() { try { return localStorage.getItem(FP_LYKILL) === '1'; } catch (_) { return false; } }
+  function fpSetja(v) { try { v ? localStorage.setItem(FP_LYKILL, '1') : localStorage.removeItem(FP_LYKILL); } catch (_) {} }
+  function fpEndurmaela() { try { window.dispatchEvent(new Event('resize')); } catch (_) {} setTimeout(function () { try { window.dispatchEvent(new Event('resize')); } catch (_) {} }, 350); }
+  function ensureTeikning(main) {
+    var sec = document.getElementById('co-fp-section');
+    var knappar = main.querySelector('.b405-knappar');
+    var opid = fpOpid();
+    main.classList.toggle('b405-fp-open', opid);
+    if (!knappar) return;
+    var t = knappar.querySelector('#b405-fpt');
+    if (!sec) { if (t) t.remove(); return; }
+    var hdr = sec.querySelector('span'); var m = hdr && String(hdr.textContent || '').match(/(\d+)\s*sta/i);
+    var n = m ? m[1] : '';
+    var CHEV = svg('<path d="m6 9 6 6 6-6"/>');
+    var label = opid ? (CHEV + 'Fela teikningu') : (CHEV + 'Teikning' + (n ? ' · ' + n : ''));
+    if (!t) {
+      t = el('button', 'b405-fpt', label); t.id = 'b405-fpt'; t.type = 'button'; t.title = 'Sýna eða fela teikninguna og viðbótaupplýsingar';
+      t.addEventListener('click', function (ev) {
+        ev.preventDefault(); ev.stopPropagation();
+        var nu = !fpOpid(); fpSetja(nu); main.classList.toggle('b405-fp-open', nu);
+        if (nu) {
+          // 362 gæti hafa fellt borðann sjálfan saman (teikning_fellt) — opna hann líka, annars stendur hausinn einn eftir
+          try { if (localStorage.getItem('teikning_fellt') === '1') { var b = document.getElementById('_tf-btn'); if (b) b.click(); } } catch (_) {}
+          requestAnimationFrame(fpEndurmaela);
+          var s2 = document.getElementById('co-fp-section'); if (s2) setTimeout(function () { s2.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60);
+        }
+        ensureTeikning(main);
+      });
+      var teikn = Array.prototype.slice.call(knappar.querySelectorAll('button')).filter(function (b) { return /FloorPlan\./.test(b.getAttribute('onclick') || ''); })[0];
+      if (teikn && teikn.nextSibling) knappar.insertBefore(t, teikn.nextSibling); else knappar.appendChild(t);
+    } else if (t.innerHTML !== label) t.innerHTML = label;
+    t.classList.toggle('opin', opid);
+  }
   function ensureSamskipti(main) {
     var head = main.querySelector('._samskipti-card ._skx-head'); if (!head || head.querySelector('.b405-talning')) return;
     var tiles = Array.prototype.slice.call(main.querySelectorAll('._samskipti-card ._skx-tile'));
@@ -159,6 +198,7 @@
       if (row && row.parentElement && row.parentElement.parentElement === main) { row.classList.add('b405-rod'); ensureMenu(row); ensurePlate(main, row); ensureFaera(main, row); }
       ensureSamskipti(main);
       ensureBanner(main);
+      ensureTeikning(main);
       ensureMidja(main);
     } catch (err) { console.error('[405]', err); }
   }
@@ -198,6 +238,11 @@
       r('._samskipti-card ._skx-head ._skx-acts', 'order:0;margin-left:auto')
     ].join('\n');
     css += '\n' + P + '.b405-menu[hidden]{display:none!important}'; // [hidden] vinnur display:flex
+    // B27: teikningin og viðbótaupplýsingar falin þar til opnað er úr borðanum (hæð 0, breidd mælanleg)
+    css += '\nhtml[data-thm-preset="brunastal"] #companies-main:not(.b405-fp-open) #co-fp-section{height:0!important;min-height:0!important;overflow:hidden!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;opacity:0;pointer-events:none}';
+    css += '\nhtml[data-thm-preset="brunastal"] #companies-main:not(.b405-fp-open) #vbu-section{display:none!important}';
+    css += '\n' + P + '.b405-fpt{flex:0 0 auto!important;height:40px;padding:0 12px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);color:#1f2530;font-family:' + SANS + ';font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}';
+    css += '\n' + P + '.b405-fpt.opin{background:' + METAL_BTN + ';border-color:#000;color:#eef1f4}' + P + '.b405-fpt.opin svg{transform:rotate(180deg)}';
     css += '\nhtml[data-thm-preset="brunastal"] #_isy-btnbar:has(+ #companies-main .co-banner){display:none!important}'; // Staða — yfirlit (185) víkur á fyrirtækjasíðunni
     var st = document.createElement('style'); st.id = 'efsta-405'; st.textContent = css; document.head.appendChild(st);
   }
