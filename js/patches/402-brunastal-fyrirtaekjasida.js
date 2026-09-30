@@ -417,10 +417,12 @@
     r('#_sks-tabs ._sks-tab.on', SILVER_BTN + ';border-color:#000;color:#11141c;border-radius:8px;filter:none'),
 
     /* 🚨 Brunakerfi — vinnusíða 274 hýst í #_sks-bru: skel + málmhaus + stálplata, spjöldin hvít með málmhaus */
-    r('#_sks-bru', SHELL + ';background:' + PLATE + ';background-image:' + PLATE_IMG + ';margin:0 0 18px;padding:0'),
-    r('#_sks-bru::before', 'content:"Brunakerfi \\00b7\\0020sko\\00f0un og skj\\00f6l";display:block;' + HEAD + ';padding:12px 24px;font-family:' + MONO + ';font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,.5);background-image:' + RIVET + ',' + RIVET + ',' + METAL + ';background-size:6px 6px,6px 6px,auto;background-position:7px 50%,calc(100% - 7px) 50%,0 0;background-repeat:no-repeat'),
+    // 30.09.2026: miðjan í Brunastáli C (274 b274-*) — hýsillinn er gegnsær, spjöldin tvö standa beint á síðunni eins og 🧯-miðjan
+    r('#_sks-bru', 'background:transparent;border:0;box-shadow:none;margin:0 0 18px;padding:0'),
+    r('#_sks-bru::before', 'display:none'),   // bandið „Brunakerfi · skoðun og skjöl“ — flipinn sjálfur segir það
     r('#_sks-bru #_bkc-overlay._sks-inni', 'background:transparent!important;font-family:' + SANS + ';color:#11141c'),
-    r('#_sks-bru #_bkc-overlay._sks-inni ._bkc-wrap', 'padding:12px!important'),
+    r('#_sks-bru #_bkc-overlay._sks-inni ._bkc-wrap', 'padding:0!important'),
+    r('#_sks-bru #_bkc-overlay ._bkc-cust', 'display:none!important'),   // prófílhausinn er tvítekning; minnispunkturinn býr nú í hægra spjaldinu
     r('#_sks-bru #_bkc-overlay ._bkc-cust', LINE + ';padding:10px 12px;margin-bottom:12px;border:0'),
     r('#_sks-bru #_bkc-overlay ._bkc-lbl', MERKI + ';font-size:10.5px;color:#525b6b;letter-spacing:.12em;margin-bottom:6px'),
     r('#_sks-bru #_bkc-overlay ._bkc-note', 'background:#f6f7fa;border:1px solid rgba(20,24,34,.16);color:#11141c;border-radius:6px;font-family:' + SANS + ';font-size:13.5px;min-height:56px'),

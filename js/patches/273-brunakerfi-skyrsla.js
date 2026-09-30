@@ -114,7 +114,9 @@
 
   function SB() { return (window.DB && DB.sb) || null; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-  function num(v) { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : null; }
+  function num(v) { const s = String(v == null ? '' : v).replace(/\s/g, '').replace(/\.(?=\d{3}(?:[.,]|$))/g, '').replace(',', '.'); const n = parseFloat(s); return isFinite(n) ? n : null; }   // 30.09.2026: 16.670 = 16670 (þúsundapunktur), 1,5 = 1.5
+  // Birting í reit: heiltala með þúsundapunkti (16.670), tugabrot með kommu; ótölulegt óbreytt.
+  function fmtInn(v) { const n = num(v); if (n == null) return String(v == null ? '' : v); return Number.isInteger(n) ? String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : String(n).replace('.', ','); }
   function fmt(n, d) { return (n === null || !isFinite(n)) ? '—' : (Math.round(n * 100) / 100).toFixed(d); }
   function fmtKr(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr'; }
   function fmtKt(kt) { const d = String(kt || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : (kt || ''); }
@@ -679,7 +681,7 @@
         '<div class="_bks-vrow">' +
           '<input class="_bks-in" data-vk="name" data-vi="' + i + '" value="' + esc(l.name) + '" placeholder="Lýsing línu">' +
           '<input class="_bks-in" data-vk="qty" data-vi="' + i + '" inputmode="numeric" value="' + esc(l.qty) + '" style="text-align:center">' +
-          '<input class="_bks-in" data-vk="price" data-vi="' + i + '" inputmode="decimal" value="' + esc(l.price) + '" style="text-align:right">' +
+          '<input class="_bks-in" data-vk="price" data-vi="' + i + '" inputmode="decimal" value="' + esc(fmtInn(l.price)) + '" style="text-align:right">' +
           '<input class="_bks-in _bks-vafsl" data-vk="afsl" data-vi="' + i + '" inputmode="decimal" placeholder="0" value="' + esc(l.afsl == null ? '' : l.afsl) + '" style="text-align:center" title="Afsláttur á þessa línu, %">' +
           '<span style="text-align:right;font-weight:800;font-size:13px">' + fmtKr(l.samtals) + '</span>' +
           '<button type="button" class="_bks-del" data-vdel="' + i + '">✕</button>' +
@@ -977,7 +979,8 @@
     }));
     box.querySelectorAll('[data-vk]').forEach(inp => inp.addEventListener('input', () => {
       const l = S.data.verd.linur[+inp.dataset.vi]; if (!l) return;
-      l[inp.dataset.vk] = inp.value; markDirty();
+      l[inp.dataset.vk] = (inp.dataset.vk === 'name' || num(inp.value) == null) ? inp.value : String(num(inp.value)); markDirty();
+      if (inp.dataset.vk === 'price' && !inp.__fmtWired) { inp.__fmtWired = true; inp.addEventListener('change', () => { if (num(inp.value) != null) inp.value = fmtInn(inp.value); }); }
       // uppfæra línusamtölu + heildartölur án þess að endurteikna (halda fókus)
       const m = model();
       const row = inp.closest('._bks-vrow');
@@ -1104,7 +1107,8 @@
     const row = (it, i) =>
       '<div style="display:flex;gap:8px;padding:4px 0;align-items:center;flex-wrap:wrap">' +
         '<input class="_bks-in" data-pk="name" data-pi="' + i + '" value="' + esc(it.name) + '" style="flex:1;min-width:170px;border:1px solid #d0d4da;border-radius:8px;padding:7px 10px;font-size:13px">' +
-        '<input class="_bks-in" data-pk="price" data-pi="' + i + '" inputmode="numeric" value="' + esc(it.price) + '" style="width:88px;text-align:right;border:1px solid #d0d4da;border-radius:8px;padding:7px 10px;font-size:13px">' +
+        '<input class="_bks-in" data-pk="price" data-pi="' + i + '" inputmode="numeric" value="' + esc(fmtInn(it.price)) + '" style="width:104px;text-align:right;border:1px solid rgba(20,24,34,.14);border-radius:6px;padding:7px 10px;font-size:13px;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-weight:700;background:#eef1f6;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)">' +
+        '<span style="font-size:11px;color:#8a93a3;margin-left:-4px;width:18px">kr</span>' +
         '<select class="_bks-in" data-pk="link" data-pi="' + i + '" title="Tengist skýrslu — magnið kemur sjálfkrafa úr búnaðaryfirlitinu" style="width:168px;border:1px solid ' + (it.link ? '#1f8a4c' : '#d0d4da') + ';border-radius:8px;padding:7px 8px;font-size:12px;background:' + (it.link ? '#f2faf5' : '#fff') + '">' +
           linkOpts().map(o => '<option value="' + o[0] + '"' + (o[0] === (it.link || '') ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') +
         '</select>' +
@@ -1138,7 +1142,7 @@
           else it.price = num(inp.value) || 0;
         };
         inp.addEventListener('input', apply);
-        inp.addEventListener('change', apply);
+        inp.addEventListener('change', () => { apply(); if (inp.dataset.pk === 'price' && num(inp.value) != null) inp.value = fmtInn(inp.value); });
       });
       p.querySelector('#_bks-p-save').addEventListener('click', async () => {
         // 2026-09-09: loka ALDREI glugganum þegar vistun mistókst — annars
