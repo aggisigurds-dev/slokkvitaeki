@@ -193,9 +193,51 @@ function reikna(gogn, stillingar) {
       eftirstodvar: T.eftir ? (hamur === 'fyrri_eigandi' ? 0 : (r ? tala(r.opid_upphaed) : null)) : null,
       flokkur: T.flokkur,
       uppruni: 'stolpi',
+      _tegund: h.tegund,
+      _tv: String(h.tilvisun == null ? '' : h.tilvisun),
       _r: [d, 0, tala(h.runa), tala(h.id)],
     });
   }
+
+  // ── Innheimtukostnaður og vextir felldir inn í greiðsluna ──────────────────
+  // Agnar 30.09.2026 (Armar Vinnulyftur): „taka þar út kostnað sem er að gefa ranga
+  // mynd." Blaðið drukknaði í 295-króna línum — ein „Innheimtukostnaður" fyrir HVERJA
+  // greiðslu, auk dráttarvaxta-para, svo reikningur↔greiðsla hvarf í kraðakinu.
+  //
+  // Þetta eru BANKAGJÖLD sem kúnninn greiddi ofan á kröfuna, ekki okkar sala. Mælt á
+  // Stólpa-gögnunum: hver `tilvisun` (kröfulota) nettar NÁKVÆMLEGA á reikningsupphæðina
+  //   1247: −3.965 + 295 = −3.670 = reikningur 3.670
+  //    398: −14.296 + 295 = −14.001 = reikningur 14.001
+  //    780: 2 × (−7.611 + 295) = −14.632 = 2 × 7.316
+  // og dráttarvextir/greiddir vextir eru alltaf jafn og andstæð (+63/−63) — núllast sjálf.
+  //
+  // Þess vegna má fella hópinn saman í EINA greiðslulínu með nettóupphæð hans:
+  // summan er ÓBREYTT, svo engin staða á neinu yfirliti hreyfist. Aðeins hávaðinn fer.
+  // Fellt saman per (tilvisun, dagur) svo dagsetningar haldist sannar.
+  // ROFI (Agnar 30.09.2026): `kostnadur=synilegur` sýnir línurnar hráar eins og áður.
+  // SJÁLFGEFIÐ er að fella þær inn — það er myndin sem á að prentast.
+  const FELLA = { innheimtukostnadur: 1, drattarvextir: 1, greiddir_vextir: 1, greidd_krafa: 1, greiddur_reikningur: 1 };
+  const synaKostnad = st.kostnadur === 'synilegur';
+  if (!synaKostnad) (function felllaKostnadInnIGreidslu() {
+    const hopar = new Map();
+    for (const l of stolpi) {
+      if (!FELLA[l._tegund]) continue;
+      const k = l._tv + '|' + l.dags;
+      if (!hopar.has(k)) hopar.set(k, []);
+      hopar.get(k).push(l);
+    }
+    for (const [, hop] of hopar) {
+      // Aðeins þegar hópurinn ber raunverulega greiðslu OG eitthvað til að fella inn.
+      const greidslur = hop.filter(l => l._tegund === 'greidd_krafa' || l._tegund === 'greiddur_reikningur');
+      if (!greidslur.length || hop.length === greidslur.length) continue;
+      const net = hop.reduce((a, l) => a + tala(l.upphaed), 0);
+      const halda = greidslur[0];
+      halda.upphaed = net;
+      halda.texti = 'Greiðsla';
+      for (const l of hop) if (l !== halda) l._fella = true;
+    }
+  })();
+  for (let i = stolpi.length - 1; i >= 0; i--) if (stolpi[i]._fella) stolpi.splice(i, 1);
 
   // Greiðslur í banka 0528 eftir lokun bókarinnar
   const krofurIBok = new Set(hreyf.filter(h => h.krafa_nr).map(h => String(h.krafa_nr)));
@@ -225,10 +267,12 @@ function reikna(gogn, stillingar) {
     const kostn = gu - hofudstoll;
     const nrK = String(r.krafa_nr || r.reikn_nr || '');
     const rn = tala(r.reikn_nr);
-    if (kostn !== 0) {
+    // Sama regla og á Stólpa-hreyfingunum: sé kostnaðurinn falinn (sjálfgefið) fer hann
+    // INN Í greiðsluna í stað þess að standa sem sér lína. Summan er óbreytt.
+    if (kostn !== 0 && synaKostnad) {
       stolpi.push({ dags: gd, texti: /\+\s*vextir/.test(sv) ? 'Innheimtukostnaður og vextir' : 'Innheimtukostnaður', gjalddagi: null, skyring: 'Kostnaður', nr: nrK, upphaed: kostn, eftirstodvar: null, flokkur: 'vextir', uppruni: 'banki', _r: [gd, 1, rn, 0] });
     }
-    stolpi.push({ dags: gd, texti: 'Greiðsla', gjalddagi: null, skyring: 'Greiðsla', nr: nrK, upphaed: -gu, eftirstodvar: null, flokkur: 'greidslur', uppruni: 'banki', _r: [gd, 1, rn, 1] });
+    stolpi.push({ dags: gd, texti: 'Greiðsla', gjalddagi: null, skyring: 'Greiðsla', nr: nrK, upphaed: -gu + (synaKostnad ? 0 : kostn), eftirstodvar: null, flokkur: 'greidslur', uppruni: 'banki', _r: [gd, 1, rn, 1] });
     if (pct < 100 && u - hofudstoll !== 0) {
       const lp = hlutfallTexti(100 - pct);
       laekkunarHlutfoll.add(lp);

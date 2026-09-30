@@ -111,6 +111,7 @@ tr.obekraeft td{font-style:italic}
     <button type="button" data-stolpi="fyrri_eigandi" aria-pressed="false" title="Opin Stólpa-staða gerð upp við fyrri eigendur 07.05.2026">Stólpi: uppgert við fyrri eigendur</button>
   </span>
   <button type="button" class="hnappur" id="saekja">Sækja</button>
+  <label title="Innheimtukostnaður (295 kr á kröfu) og dráttarvextir eru sjálfgefið felld inn í greiðsluna, svo blaðið sýni reikninginn og greiðsluna á honum. Hakaðu til að sjá línurnar hráar — summan er sú sama."><input type="checkbox" id="synakostnad"> sýna innheimtukostnað</label>
   <label title="Sleppir „Upplýsingar til bókara" úr prentuninni — stjörnu-skýringin fylgir samt"><input type="checkbox" id="antexta"> án texta</label>
   <button type="button" class="hnappur rautt" id="prenta">🖨 Prenta</button>
   <span class="stadatexti" id="stadatexti"></span>
@@ -175,6 +176,8 @@ tr.obekraeft td{font-style:italic}
   var st = { stolpi: 'opid', bokari: null, hleður: false };
   var p = new URLSearchParams(location.search);
   st.stolpi = p.get('stolpi') === 'fyrri_eigandi' ? 'fyrri_eigandi' : 'opid';
+  // 30.09.2026: innheimtukostnaður er SJÁLFGEFIÐ falinn (felldur inn í greiðsluna).
+  st.kostnadur = p.get('kostnadur') === 'synilegur' ? 'synilegur' : 'falinn';
   $('kt').value = ktSnid(p.get('kt') || '');
   var til0 = /^\d{4}-\d{2}-\d{2}$/.test(p.get('til') || '') ? p.get('til') : idagIso();
   $('til').value = til0;
@@ -194,6 +197,7 @@ tr.obekraeft td{font-style:italic}
     var fra = $('fra').value, til = $('til').value;
     if (!fra || !til || fra > til) { synaVillu('Veldu gilt tímabil (frá ≤ til).'); return; }
     var q = new URLSearchParams({ kt: ktSnid(kt), fra: fra, til: til, stolpi: st.stolpi });
+    if (st.kostnadur === 'synilegur') q.set('kostnadur', 'synilegur');
     try { history.replaceState(null, '', location.pathname + '?' + q.toString()); } catch (_) {}
     st.hleður = true;
     $('villa').hidden = true; $('hledur').hidden = false; $('saekja').disabled = true;
@@ -347,6 +351,17 @@ tr.obekraeft td{font-style:italic}
   //    sjálfur er óbreyttur og fer áfram á þjóninn eins og áður; hann er aðeins EKKI prentaður.
   var AN_TEXTA_LYKILL = 'hy_an_texta';
   function merkjaAnTexta(a) { document.documentElement.classList.toggle('hy-an-texta', !!a); }
+  // Rofinn 'sýna innheimtukostnað' (Agnar 30.09.2026). SJÁLFGEFIÐ ÓHAKAÐ = kostnaðurinn
+  // felldur inn í greiðsluna. Þetta er útlitsval eins vafra, svo localStorage er réttur
+  // staður — en það ræður líka fyrirspurninni, svo við sækjum upp á nýtt við breytingu.
+  var KOSTN_LYKILL = 'hy_syna_kostnad';
+  try { if (localStorage.getItem(KOSTN_LYKILL) === '1') st.kostnadur = 'synilegur'; } catch (_) {}
+  $('synakostnad').checked = st.kostnadur === 'synilegur';
+  $('synakostnad').addEventListener('change', function () {
+    st.kostnadur = this.checked ? 'synilegur' : 'falinn';
+    try { localStorage.setItem(KOSTN_LYKILL, this.checked ? '1' : '0'); } catch (_) {}
+    saekja();
+  });
   try { $('antexta').checked = localStorage.getItem(AN_TEXTA_LYKILL) === '1'; } catch (_) {}
   merkjaAnTexta($('antexta').checked);
   $('antexta').addEventListener('change', function () {

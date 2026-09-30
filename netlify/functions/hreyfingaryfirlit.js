@@ -53,10 +53,14 @@ exports.handler = async (event) => {
   const fra = K.gildDags(q.fra) || `${Number(til.slice(0, 4)) - 1}-01-01`;
   if (fra > til) return P.json(400, { error: 'Upphafsdagur er á eftir lokadegi' });
   const stolpi = q.stolpi === 'fyrri_eigandi' ? 'fyrri_eigandi' : 'opid';
+  // 30.09.2026 (Agnar, Armar Vinnulyftur): innheimtukostnaður og vextir eru SJÁLFGEFIÐ
+  // felld inn í greiðsluna — blaðið drukknaði í 295-króna línum. `kostnadur=synilegur`
+  // skilar hráu myndinni. Summan er sú sama í báðum hömum.
+  const kostnadur = q.kostnadur === 'synilegur' ? 'synilegur' : 'falinn';
 
   try {
     const gogn = await K.saekja(kt10, sbGet);
-    return P.json(200, K.reikna(gogn, { fra, til, stolpi, idag }));
+    return P.json(200, K.reikna(gogn, { fra, til, stolpi, idag, kostnadur }));
   } catch (e) {
     console.error('[hreyfingaryfirlit]', e);
     return P.json(502, { error: 'Náði ekki í gögn: ' + (e && e.message ? e.message : String(e)) });

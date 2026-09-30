@@ -67,12 +67,12 @@ jafnt('Staða 07.05.2026', stadaA(aO, '2026-05-07'), 225284);
 jafnt('Lokastaða 11.09.2026', aO.samantekt.lokastada, 225284);
 jafnt('síðasta lína', [aO.linur[aO.linur.length - 1].tegund, aO.linur[aO.linur.length - 1].texti], ['lok', 'Lokastaða']);
 jafnt('Reikningar tímabils', aO.samantekt.reikningar, 446653);
-jafnt('Greiðslur tímabils', aO.samantekt.greidslur, -388607);
-jafnt('Vextir / vanskilagjöld tímabils', aO.samantekt.vextir, 9879);
+jafnt('Greiðslur tímabils', aO.samantekt.greidslur, -378728);
+jafnt('Vextir / vanskilagjöld tímabils', aO.samantekt.vextir, 0);
 ok('Byrjun + flokkar = Lokastaða', stemmirFlokkar(aO.samantekt) && aO.samantekt.stemmir, aO.samantekt);
 ok('línur í dagsetningaröð', rodud(aO));
 const b107729 = faerslur(aO).filter(l => l.dags === '2026-04-21').map(l => [l.texti, l.skyring, l.nr, l.upphaed]);
-jafnt('bankalínur 21.04.2026 (107729, 100% + vextir)', b107729, [['Innheimtukostnaður og vextir', 'Kostnaður', '104364', 2113], ['Greiðsla', 'Greiðsla', '104364', -60788]]);
+jafnt('bankalínur 21.04.2026 (107729, 100% + vextir)', b107729, [['Greiðsla', 'Greiðsla', '104364', -58675]]);
 jafnt('opnir Stólpa-reikningar (Eftirstöðvar > 0)', faerslur(aO).filter(l => l.skyring === 'Reikningur' && l.eftirstodvar > 0).map(l => [l.nr, l.eftirstodvar]), [['106590', 52000], ['107464', 106864], ['108189', 67010]]);
 jafnt('107729 Eftirstöðvar', faerslur(aO).find(l => l.nr === '107729').eftirstodvar, 0);
 jafnt('samantekt.stolpi', [aO.samantekt.stolpi.stada_vid_yfirtoku, aO.samantekt.stolpi.opid_alls, aO.samantekt.stolpi.opnir_reikningar.map(r => r.reikn_nr)], [225284, 225874, ['106590', '107464', '108189']]);
@@ -120,7 +120,7 @@ jafnt('SUM(upphaed) Stólpa (fixture)', summa(skaft.stolpi_hreyfingar), 0);
 const sO = K.reikna(skaft, { fra: '2025-01-01', til: IDAG, stolpi: 'opid', idag: IDAG });
 jafnt('Byrjunarstaða', sO.samantekt.byrjunarstada, 0);
 jafnt('Reikningur 107780', faerslur(sO).filter(l => l.nr === '107780').map(l => [l.dags, l.texti, l.gjalddagi, l.upphaed, l.eftirstodvar]), [['2026-01-29', 'Reikningur 107780', '2026-02-08', 124892, 0]]);
-jafnt('Greiðsla kröfu 104389 10.02.2026', faerslur(sO).filter(l => l.skyring === 'Greiðsla' && l.nr === '104389').map(l => [l.dags, l.upphaed]), [['2026-02-10', -125187]]);
+jafnt('Greiðsla kröfu 104389 10.02.2026', faerslur(sO).filter(l => l.skyring === 'Greiðsla' && l.nr === '104389').map(l => [l.dags, l.upphaed]), [['2026-02-10', -124892]]);
 jafnt('Staða 10.02.2026', stadaA(sO, '2026-02-10'), 0);
 jafnt('Lokastaða', sO.samantekt.lokastada, 0);
 jafnt('haus', [sO.haus.nafn, sO.haus.gata, sO.haus.postnr_baer], ['Skaftahlíð 4-10,húsfélag', 'Pósthólf 8940', '128 Reykjavík']);
@@ -162,13 +162,27 @@ console.log('\nOscuro ehf. (500317-1670) — banki_0528:80%');
 const osc = lesa('_oscuro-5003171670.json');
 const oO = K.reikna(osc, { fra: '2026-01-01', til: IDAG, stolpi: 'opid', idag: IDAG });
 jafnt('línur 27.04.2026', faerslur(oO).filter(l => l.dags === '2026-04-27').map(l => [l.texti, l.skyring, l.nr, l.upphaed, !!l.obekraeft]), [
-  ['Innheimtukostnaður', 'Kostnaður', '104626', 295],
-  ['Greiðsla', 'Greiðsla', '104626', -13750],
+  ['Greiðsla', 'Greiðsla', '104626', -13455],
   ['Lækkun kröfu (20%)', 'Lækkun', '108164', -3364, true],
 ].map(r => r.length === 4 ? r.concat(false) : r));
 jafnt('108164 nettar 0 (16.819 + 295 − 13.750 − 3.364)', 16819 + summa(faerslur(oO).filter(l => l.dags === '2026-04-27')), 0);
 jafnt('Lokastaða = opinn 108113', oO.samantekt.lokastada, 16534);
 jafnt('Lækkun krafna í samantekt', oO.samantekt.laekkun, -3364);
+
+// ── ROFINN: kostnadur=synilegur skilar HRÁU myndinni (Agnar 30.09.2026) ────────
+// Sjálfgefið er kostnaðurinn felldur inn í greiðsluna. Þessi próf verja hina hliðina:
+// gömlu tölurnar eiga að nást óskertar þegar rofinn er tekinn af, annars er hráa
+// myndin þögult horfin.
+console.log('');
+console.log('Rofinn kostnadur=synilegur - hraa myndin');
+const aS = K.reikna(atlas, { fra: '2025-01-01', til: IDAG, stolpi: 'opid', idag: IDAG, kostnadur: 'synilegur' });
+jafnt('synilegur: Greiðslur tímabils = gamla talan', aS.samantekt.greidslur, -388607);
+jafnt('synilegur: Vextir / vanskilagjöld = gamla talan', aS.samantekt.vextir, 9879);
+ok('synilegur: Byrjun + flokkar = Lokastaða', stemmirFlokkar(aS.samantekt));
+jafnt('LOKASTAÐA EINS í báðum hömum', [aO.samantekt.lokastada, aS.samantekt.lokastada][0] === [aO.samantekt.lokastada, aS.samantekt.lokastada][1], true);
+const oS = K.reikna(osc, { fra: '2026-01-01', til: IDAG, stolpi: 'opid', idag: IDAG, kostnadur: 'synilegur' });
+jafnt('synilegur: Innheimtukostnaður 295 sést aftur', faerslur(oS).filter(l => l.dags === '2026-04-27' && l.skyring === 'Kostnaður').map(l => l.upphaed), [295]);
+jafnt('synilegur: lokastaða óbreytt frá sjálfgefnu', oS.samantekt.lokastada, oO.samantekt.lokastada);
 ok('Byrjun + flokkar = Lokastaða', stemmirFlokkar(oO.samantekt));
 ok('bókari nefnir óstaðfesta lækkun', /Lækkun kröfu \(20%\)".*ekki verið staðfest/.test(oO.haus.bokari), oO.haus.bokari);
 jafnt('athugasemdir (Stólpa-staða = opnir)', oO.athugasemdir, []);
@@ -180,7 +194,7 @@ console.log('\nFótaaðgerðarstofa Reykjavíkur (701006-2910) — banki_0528:80
 const fot = lesa('_fotaadgerdarstofa-7010062910.json');
 const pO = K.reikna(fot, { fra: '2025-01-01', til: IDAG, stolpi: 'opid', idag: IDAG });
 jafnt('línur 26.05.2026', faerslur(pO).filter(l => l.dags === '2026-05-26').map(l => [l.texti, l.upphaed]), [
-  ['Innheimtukostnaður og vextir', 328], ['Greiðsla', -6978], ['Lækkun kröfu (20%)', -1663],
+  ['Greiðsla', -6650], ['Lækkun kröfu (20%)', -1663],
 ]);
 jafnt('árslok 2025 (295 kr kostnaður vantar í Stólpa-bók)', pO.arslok.map(a => a.stada), [-295]);
 jafnt('Lokastaða', pO.samantekt.lokastada, -295);
@@ -188,7 +202,7 @@ ok('athugasemd: mismunur -295', pO.athugasemdir.some(a => /mismunur -295 kr/.tes
 const pF = K.reikna(fot, { fra: '2025-01-01', til: IDAG, stolpi: 'fyrri_eigandi', idag: IDAG });
 ok('fyrri_eigandi: engar Stólpa-línur eftir 07.05.2026', !faerslur(pF).some(l => l.uppruni !== 'app' && l.uppruni !== 'payday' && l.dags > K.YFIRTAKA));
 jafnt('fyrri_eigandi: uppgjör 07.05.2026 og lokastaða', [faerslur(pF).filter(l => l.flokkur === 'uppgjor').map(l => l.upphaed), pF.samantekt.lokastada], [[-8018], 0]);
-ok('fyrri_eigandi: athugasemd um 3 færslur eftir yfirtöku (-8.313)', pF.athugasemdir.some(a => /3 Stólpa-færslur eftir 07\.05\.2026 \(samtals -8\.313 kr\)/.test(a)), pF.athugasemdir);
+ok('fyrri_eigandi: athugasemd um 2 færslur eftir yfirtöku (kostnaður felldur inn) (-8.313)', pF.athugasemdir.some(a => /2 Stólpa-færslur eftir 07\.05\.2026 \(samtals -8\.313 kr\)/.test(a)), pF.athugasemdir);
 
 // ── saekja(): sóknaráætlun með hermdu PostgREST (síðuskipting 7 raðir) ──────
 console.log('\nsaekja() — hermt PostgREST, síðustærð 7');
