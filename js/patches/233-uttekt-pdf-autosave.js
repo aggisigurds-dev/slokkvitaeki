@@ -496,6 +496,28 @@
     } catch (e) { console.warn('[patch-233] saveForSale', e); return null; }
   }
 
+  // 30.09.2026 (Agnar: „að rétt format af nefningu skjala haldist … save as pdf
+  // með réttum nöfnum"). KANÓNÍSKA SKRÁARNAFNIÐ BJÓ HÉR INNI og enginn annar
+  // komst í það — þess vegna fundu SJÖ aðrir staðir upp sitt eigið snið:
+  //   176 „Uttektarskyrsla.pdf" (ekkert nafn)   ·  190 „<nafn> - úttektarskýrsla <ár>"
+  //   240 [nafn, R-nr]                           ·  254 „Reikningur <nr>.pdf"
+  //   273/386 [nafn, kt, ár, tegund]             ·  275 „Tilboð - <nafn> - <dags>"
+  //   94  heiti útfyllta skjalsins
+  //
+  // Sniðið hér er ekki tilviljun: `#<fyrirtaeki_id>` aftast gerir lesaranum í
+  // Bakenda kleift að tengja skjalið BEINT á réttan stað í stað þess að giska á
+  // heimilisfang. Þess vegna er það þetta snið sem á að ráða.
+  //
+  // Nafnið er nú aðgengilegt öllum án nýrrar skráar og án aukinnar hleðslu.
+  // audit-skjalanofn.cjs vaktar að ný smíði bætist ekki við fram hjá því.
+  window.Skjalanafn = {
+    buaTil: docName,          // (nafn, kt, ár, hali, fyrirtaeki_id) -> "... .pdf"
+    ktStrik: fmtKtDash,
+    // Hreinsun sem ALLIR þurfa: skástrik í skráarnafni brýtur geymsluslóðina
+    // (sjá audit-skraarnofn-dags — dagsetning má aldrei bera / í skráarnafni).
+    hreinsa: function (s) { return String(s == null ? '' : s).replace(/[\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim(); },
+  };
+
   window.UttektInvoicePdf = { saveForSale: saveForSale, buildInvoiceBlob: buildInvoiceBlob };
   console.log('[patch-233] úttekt invoice PDF auto-save installed');
 })();
