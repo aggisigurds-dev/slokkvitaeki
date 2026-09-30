@@ -104,6 +104,36 @@
     const a = num(l && l.afsl); const p = a > 0 ? Math.min(a, 100) : 0;
     return (num(l && l.qty) || 0) * (num(l && l.price) || 0) * (1 - p / 100);
   }
+  // ── RITILL Á VERÐLÍNUM (30.09.2026) ───────────────────────────────────────
+  // Agnar, fjórum sinnum: „ég þarf að geta sett inn fleirri kostnaðarliði þarna"
+  // … „verð að geta breytt. bætt við nýjum liðum. afslatt a hverja linu" …
+  // „en eg þarf að andskotanst geta breytt verðunum". Spjaldið SÝNDI verðin en
+  // eina leiðin til að breyta þeim var að opna skýrsluformið. Nú er ritillinn hér.
+  //
+  // Skrifin lesa gögnin FERSK af þjóni og plástra aðeins verd.linur áður en þau
+  // fara til baka (sama mynstur og linkSaleToReport í 291). Formið í 273 vistar
+  // ALLT data-blobbið; skrifaði ég blobbið sem ég las við teikningu myndi ég
+  // henda því sem einhver annar sló inn á meðan.
+  let _vistT = null, _vistBid = {};
+  async function vistaVerdlinur(rep) {
+    const sb = SB(); if (!sb || !rep) return;
+    try {
+      const fersk = await sb.from('brunakerfi_skyrslur').select('data').eq('id', rep.id).limit(1);
+      if (fersk.error || !fersk.data || !fersk.data[0]) { toast('Verðlínur vistuðust EKKI — reyndu aftur', true); return; }
+      const d = fersk.data[0].data || {};
+      d.verd = d.verd || {};
+      d.verd.linur = (rep.data && rep.data.verd && rep.data.verd.linur) || [];
+      const r = await sb.from('brunakerfi_skyrslur').update({ data: d, updated_at: new Date().toISOString() }).eq('id', rep.id);
+      if (r.error) { toast('Verðlínur vistuðust EKKI: ' + r.error.message, true); return; }
+      toast('Verðlínur vistaðar ✓');
+    } catch (e) { toast('Verðlínur vistuðust EKKI: ' + ((e && e.message) || e), true); }
+  }
+  function vistaSidar(rep) {
+    _vistBid[rep.id] = rep;
+    if (_vistT) clearTimeout(_vistT);
+    _vistT = setTimeout(() => { const b = _vistBid; _vistBid = {}; Object.keys(b).forEach(k => vistaVerdlinur(b[k])); }, 900);
+  }
+
   function verdOf(r) {
     const linur = (r.data && r.data.verd && r.data.verd.linur) || [];
     const sum = linur.reduce((a, l) => a + vLina(l), 0);
@@ -276,6 +306,12 @@
       '#_bkc-overlay table._bkc-tbl{width:100%;border-collapse:collapse}' +
       '#_bkc-overlay ._bkc-tbl th{font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:5px 8px;border-bottom:1px solid #eef0f3}' +
       '#_bkc-overlay ._bkc-tbl td{padding:6px 8px;border-bottom:1px solid #eef0f3;font-size:12.5px}' +
+      '#_bkc-overlay ._bkc-vr{display:grid;grid-template-columns:1fr 54px 88px 52px 92px 26px;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid #eef0f3}' +
+      '#_bkc-overlay ._bkc-vh{display:grid;grid-template-columns:1fr 54px 88px 52px 92px 26px;gap:7px;font-size:9.5px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;padding-bottom:6px;border-bottom:1px solid #eef0f3}' +
+      '#_bkc-overlay ._bkc-vin{border:1px solid #d0d4da;border-radius:7px;padding:6px 8px;font:inherit;font-size:12px;width:100%;min-width:0;background:#fff;color:#16181c}' +
+      '#_bkc-overlay ._bkc-vin:focus{outline:0;border-color:#141619;box-shadow:0 0 0 2px rgba(20,22,25,.08)}' +
+      '#_bkc-overlay ._bkc-vx{width:22px;height:22px;border-radius:6px;border:1px solid #efb9ab;background:#fff;color:#c93c1d;font-weight:800;cursor:pointer;padding:0;font-size:11px}' +
+      '#_bkc-overlay ._bkc-vsum{text-align:right;font-weight:800;font-size:12.5px}' +
       '#_bkc-overlay ._bkc-reikn{margin-top:12px;margin-left:auto;max-width:320px;font-size:13px}' +
       '#_bkc-overlay ._bkc-reikn>div{display:flex;justify-content:space-between;padding:3px 0}' +
       '#_bkc-overlay ._bkc-reikn ._big{font-size:15.5px;font-weight:800;border-top:2px solid #141619;padding-top:6px;margin-top:3px}' +
@@ -584,10 +620,12 @@
       const finNow = C.reports.find(r => +r.year === NOW && r.status === 'final') || C.reports.find(r => r.status === 'final');
       const doc = finNow && finNow.doc_id ? C.docs.find(d => d.id === finNow.doc_id) : null;
       if (doc) { skyrslaSrc = driveUrl(doc.drive_file_id) || storageUrl(doc.storage_path); skyrslaNafn = 'úttekt ' + (finNow.uttekt_nr || finNow.year || ''); }
-      if (!skyrslaSrc) {
-        const d = (C.docs || []).find(x => driveUrl(x.drive_file_id) || storageUrl(x.storage_path));
-        if (d) { skyrslaSrc = driveUrl(d.drive_file_id) || storageUrl(d.storage_path); skyrslaNafn = String(d.year || ''); }
-      }
+      // 30.09.2026 (Agnar: „tharft ekkert ad syna gomlu tegundina · bara nyja toma
+      // fyrir naestu skodun"). Hér var áður varaleið sem greip nýjasta INNFLUTTA
+      // skjalið úr Drive. Þau eru gömul, skönnuð og bera hvorki verð né reiti —
+      // spjaldið sýndi þau samt og hausinn bar bara ártal. Þau eru ekki lengur
+      // dregin hingað; sé engin app-skýrsla til stendur reiturinn tilbúinn fyrir
+      // NÆSTU skoðun í staðinn. Gömlu skjölin eru áfram öll undir „Fyrri ár".
     })();
 
     // verð / reikningsyfirlit
@@ -603,23 +641,27 @@
     // (lagað í 273 sama dag). Merkjum þær skýrslur sem hann vantar enn á — það er
     // eina leiðin til að sjá gömlu skýrslurnar sem fóru út án hans.
     const vantarAkstur = (r) => !linurOf(r).some(l => /akstur/i.test(String(l.name || '')));
+    // Ritill, ekki tafla: hver lína er reitir sem má breyta beint hér.
     const verdHtml = verds.length ?
-      '<table class="_bkc-tbl"><thead><tr><th>Úttekt</th><th style="text-align:right">Án vsk</th><th style="text-align:right">M. vsk</th></tr></thead><tbody>' +
       verds.map(x =>
-        '<tr><td>' + esc(x.r.uttekt_nr || '—') + ' · ' + esc(x.r.year || '') +
-          (x.r.status === 'final' ? '' : ' <span style="color:#8a6100;font-size:10.5px;font-weight:800">(drög)</span>') +
-          ' <button type="button" class="_bkc-vedit" data-open="' + esc(x.r.id) + '" title="Opna kostnaðarliði þessarar skýrslu">✏️</button></td>' +
-        '<td style="text-align:right">' + fmtKr(x.v.sum) + '</td>' +
-        '<td style="text-align:right;font-weight:700">' + fmtKr(x.v.total) + '</td></tr>' +
-        linurOf(x.r).map(l =>
-          '<tr class="_bkc-vlina"><td>' + esc(l.name || '—') + '</td>' +
-          '<td style="text-align:right;white-space:nowrap">' + esc(String(l.qty || '')) + ' × ' + fmtKr(num(l.price) || 0) +
-            ((num(l.afsl) || 0) > 0 ? ' <span style="color:#b3341a;font-weight:700">−' + esc(String(l.afsl)) + '%</span>' : '') + '</td>' +
-          '<td style="text-align:right">' + fmtKr(vLina(l)) + '</td></tr>').join('') +
-        (vantarAkstur(x.r) ? '<tr class="_bkc-vlina _vantar"><td colspan="3">⚠️ Enginn akstur á þessari skýrslu</td></tr>' : '')
-      ).join('') +
-      '<tr><td style="font-weight:800;border-bottom:0">Samtals</td><td style="border-bottom:0"></td><td style="text-align:right;font-weight:800;border-bottom:0">' + fmtKr(verdSum) + '</td></tr>' +
-      '</tbody></table>'
+        '<div data-vrep="' + esc(x.r.id) + '">' +
+        '<div style="font-size:11.5px;font-weight:800;color:#59606c;padding:2px 0 8px">' +
+          esc(x.r.uttekt_nr || '—') + ' · ' + esc(x.r.year || '') +
+          (x.r.status === 'final' ? '' : ' <span style="color:#8a6100">(drög)</span>') +
+        '</div>' +
+        '<div class="_bkc-vh"><span>Liður</span><span style="text-align:center">Magn</span><span style="text-align:right">Verð</span><span style="text-align:center">Afsl.%</span><span style="text-align:right">Samtals</span><span></span></div>' +
+        linurOf(x.r).map((l, i) =>
+          '<div class="_bkc-vr">' +
+            '<input class="_bkc-vin" data-vk="name" data-vi="' + i + '" value="' + esc(l.name || '') + '" placeholder="Lýsing">' +
+            '<input class="_bkc-vin" data-vk="qty" data-vi="' + i + '" inputmode="numeric" value="' + esc(l.qty == null ? '' : l.qty) + '" style="text-align:center">' +
+            '<input class="_bkc-vin" data-vk="price" data-vi="' + i + '" inputmode="decimal" value="' + esc(l.price == null ? '' : l.price) + '" style="text-align:right">' +
+            '<input class="_bkc-vin" data-vk="afsl" data-vi="' + i + '" inputmode="decimal" placeholder="0" value="' + esc(l.afsl == null ? '' : l.afsl) + '" style="text-align:center;color:#b3341a;font-weight:700">' +
+            '<span class="_bkc-vsum" data-vsum="' + i + '">' + fmtKr(vLina(l)) + '</span>' +
+            '<button type="button" class="_bkc-vx" data-vdel="' + i + '" title="Eyða línunni">✕</button>' +
+          '</div>').join('') +
+        (vantarAkstur(x.r) ? '<div style="font-size:11.5px;color:#8a6100;font-weight:700;padding:7px 0">⚠️ Enginn akstur á þessari skýrslu</div>' : '') +
+        '<button type="button" class="_bkc-act _ghost" data-vadd="1" style="margin-top:9px">＋ Auð lína</button>' +
+        '</div>').join('')
       // 30.09.2026 (Agnar: „skil ekki alveg hvað er í gangi þarna"). Textinn sagði
       // ALLTAF „smelltu á ✏️ Kostnaðarliðir" — en sá takki er aðeins teiknaður þegar
       // app-skýrsla er til (newest). Á félagi sem á bara innflutt PDF úr Drive vísaði
@@ -628,7 +670,7 @@
       // sem ekki er hægt að fylgja.
       : (newest
           ? '<div class="_bkc-empty">Engar verðlínur enn — smelltu á „✏️ Kostnaðarliðir" hér fyrir neðan.</div>'
-          : '<div class="_bkc-empty">Engar verðlínur. Skýrslan hér er innflutt PDF-skjal og ber engin verð — kostnaðarliðir verða til í skoðunarskýrslu sem er gerð í appinu.<br><button type="button" class="_bkc-act" id="_bkc-verdny" style="background:#141619;margin-top:9px">＋ Ný skoðunarskýrsla</button></div>');
+          : '<div class="_bkc-empty">Útreikningarnir bíða í skoðunarskýrslunni.<br><button type="button" class="_bkc-act" id="_bkc-verdny" style="background:#141619;margin-top:9px">＋ Byrja skoðun ' + NOW + '</button></div>');
 
     // búnaðarskrá úr nýjustu skýrslu
     let bunHtml = '<div class="_bkc-empty">Engin skýrsla enn — búnaðarskráin fyllist sjálfkrafa úr fyrstu skoðunarskýrslu.</div>';
@@ -680,6 +722,13 @@
           // (Ég hélt fyrst að breyturnar væru hunsaðar; sú prófun keyrði gömlu
           // skrána úr skyndiminni af því að ?v-merkið hafði ekki verið bumpað.)
           // Sé engin skýrsla til er reiturinn EKKI teiknaður og hetjan stendur efst.
+          (!skyrslaSrc ?
+            '<div class="_bkc-card"><div class="_bkc-ch">Skýrslan<small>engin skoðun ' + NOW + ' enn</small></div>' +
+              '<div class="_bkc-body" style="text-align:center;padding:34px 18px">' +
+                '<div style="font-size:13px;color:#59606c;margin-bottom:14px">Tóm skoðunarskýrsla bíður — búnaðaryfirlit, mælingar og kostnaðarliðir.</div>' +
+                '<button type="button" class="_bkc-act" id="_bkc-repny" style="background:#141619">＋ Byrja skoðun ' + NOW + '</button>' +
+              '</div></div>'
+            : '') +
           (skyrslaSrc ?
             '<div class="_bkc-card"><div class="_bkc-ch">Skýrslan<small>' + esc(skyrslaNafn) +
               ' <button type="button" class="_bkc-hb" id="_bkc-repbig" style="margin-left:8px" title="Opna skýrsluna í fullum skjá">⤢ Stækka</button></small></div>' +
@@ -754,6 +803,46 @@
       '</div>';
 
     // víring
+    // Ritillinn: innsláttur uppfærir línuna og heildartölurnar Á STAÐNUM (enginn
+    // endurteikning meðan skrifað er — Stöðugt viðmót), og vistast 0,9 sek síðar.
+    w.querySelectorAll('[data-vrep]').forEach(blokk => {
+      const rep = C.reports.find(r => String(r.id) === blokk.dataset.vrep); if (!rep) return;
+      const linur = () => ((rep.data && rep.data.verd && rep.data.verd.linur) || []);
+      const uppfaeraTolur = () => {
+        blokk.querySelectorAll('[data-vsum]').forEach(sp => {
+          const l = linur()[+sp.dataset.vsum]; if (l) sp.textContent = fmtKr(vLina(l));
+        });
+        const heild = C.reports.map(r => verdOf(r)).filter(v => v.lines > 0);
+        const box = w.querySelector('._bkc-reikn');
+        if (box) {
+          const an = heild.reduce((a, v) => a + v.sum, 0), med = heild.reduce((a, v) => a + v.total, 0);
+          const b = box.querySelectorAll('b'), big = box.querySelector('._big span:last-child');
+          if (b[0]) b[0].textContent = fmtKr(an);
+          if (b[1]) b[1].textContent = fmtKr(med - an);
+          if (big) big.textContent = fmtKr(med);
+        }
+      };
+      blokk.querySelectorAll('[data-vk]').forEach(inp => inp.addEventListener('input', () => {
+        const l = linur()[+inp.dataset.vi]; if (!l) return;
+        l[inp.dataset.vk] = inp.value;
+        uppfaeraTolur(); vistaSidar(rep);
+      }));
+      blokk.querySelectorAll('[data-vdel]').forEach(b => b.addEventListener('click', async () => {
+        const l = linur()[+b.dataset.vdel]; if (!l) return;
+        if (!confirm('Eyða línunni „' + (l.name || '') + '"?')) return;
+        linur().splice(+b.dataset.vdel, 1);
+        render(); vistaSidar(rep);
+      }));
+      const add = blokk.querySelector('[data-vadd]');
+      if (add) add.addEventListener('click', async () => {
+        rep.data = rep.data || {}; rep.data.verd = rep.data.verd || {};
+        rep.data.verd.linur = rep.data.verd.linur || [];
+        rep.data.verd.linur.push({ name: '', qty: '1', price: '', afsl: '' });
+        render(); vistaSidar(rep);
+      });
+    });
+    const repNy = w.querySelector('#_bkc-repny');
+    if (repNy) repNy.addEventListener('click', () => { const b = w.querySelector('#_bkc-new'); if (b) b.click(); });
     const verdNy = w.querySelector('#_bkc-verdny');
     if (verdNy) verdNy.addEventListener('click', () => { const b = w.querySelector('#_bkc-new'); if (b) b.click(); });
     const repBig = w.querySelector('#_bkc-repbig');
