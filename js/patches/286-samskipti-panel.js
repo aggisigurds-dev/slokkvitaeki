@@ -568,7 +568,9 @@
             "Þið eruð með þjónustusamning um slökkvitæki hjá okkur og nú er komið að reglubundinni yfirferð.\n\n" +
             "Hentar einhver tími betur en annar fyrir okkar mann að koma? Við reynum að haga ferðinni eftir því sem hentar ykkur — morgnar, síðdegi eða ákveðnir vikudagar.\n\n" +
             "Láttu mig vita og ég set ykkur á listann.\n\n" +
-            "Kveðja,\nSlökkvitæki ehf.",
+            // 30.09.2026 (Agnar): undirskriftin er „Brunahólf Slökkvitæki ehf." — sama
+            // og sendandinn ber (eldklar@eldklar.is = Brunahólf slökkvitæki ehf).
+            "Kveðja,\nBrunahólf Slökkvitæki ehf.",
         });
         if (window.Vidtakandi && Vidtakandi.merkja) Vidtakandi.merkja(vt);
       } catch (e) { console.warn("[samskipti-panel] nýr póstur", e); }
