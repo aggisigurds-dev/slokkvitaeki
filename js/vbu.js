@@ -97,10 +97,33 @@
       statusText.textContent = '…';
       statusText.style.color = '#94a3b8';
       saveTimer = setTimeout(function(){
+        // 30.09.2026 — MÆLT: báðar niðurstöður sýndu GRÆNT ✓. Misheppnuð
+        // þjóns-vistun stóð sem „✓ vistað á þessu tæki" með color:#16a34a sett
+        // skilyrðislaust — sama græna og heppnuð vistun. Sá sem skrifaði textann
+        // sá ✓ og hélt áfram, og textinn komst aldrei á aðrar vélar.
+        // Orðalagið hér er það sama sem 224-uttekt-taeki.js hefur rétt:
+        // „komst EKKI á þjóninn". Viðvörunin hverfur EKKI af sjálfu sér, og ein
+        // tilraun er gerð aftur — heppnist hún verður hún græn.
         saveValue(coId, ta.value).then(function(ok){
-          statusText.textContent = ok ? '✓ vistað' : '✓ vistað á þessu tæki';
-          statusText.style.color = '#16a34a';
-          setTimeout(function(){ if(statusText.textContent.indexOf('vistað')>=0) statusText.textContent=''; }, 1800);
+          if (ok) {
+            statusText.textContent = '✓ vistað';
+            statusText.style.color = '#16a34a';
+            statusText.title = '';
+            setTimeout(function(){ if(statusText.textContent.indexOf('vistað')>=0) statusText.textContent=''; }, 1800);
+            return;
+          }
+          statusText.textContent = '⚠ komst EKKI á þjóninn — aðeins þessi tölva';
+          statusText.style.color = '#b91c1c';
+          statusText.title = 'Textinn er geymdur í þessum vafra en náði ekki á þjóninn, svo hinar vélarnar sjá hann ekki. Reyni aftur…';
+          setTimeout(function(){
+            saveValue(coId, ta.value).then(function(ok2){
+              if (!ok2) { statusText.title = 'Textinn er geymdur í þessum vafra en náði ekki á þjóninn. Afritaðu hann til vonar og vara.'; return; }
+              statusText.textContent = '✓ vistað';
+              statusText.style.color = '#16a34a';
+              statusText.title = '';
+              setTimeout(function(){ if(statusText.textContent.indexOf('vistað')>=0) statusText.textContent=''; }, 1800);
+            });
+          }, 4000);
         });
       }, debounceMs);
     }
