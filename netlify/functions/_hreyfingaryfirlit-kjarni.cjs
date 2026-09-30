@@ -267,7 +267,15 @@ function reikna(gogn, stillingar) {
   const solurRadir = [...solurMap.values()].sort((a, b) => tala(a.id) - tala(b.id));
   const pdAf = s => (s && s.dk_invoice_id ? pdById.get(String(s.dk_invoice_id)) || null : null);
   const eiginKt = s => [...new Set([s.customer_kt, s.cb_kt, s.fy_kt].map(ktHreint).filter(k => k.length === 10 && k !== WALKIN))];
-  const haefur = s => s.greitt_med === 'reikningur' && s.status === 'final';
+  // 30.09.2026 (Agnar: „inn á Véltindar ehf … þar vantar inn búðarsöluna"):
+  // yfirlitið tók AÐEINS greitt_med='reikningur', svo staðgreiddar búðarsölur
+  // duttu þegjandi út — ekki einu sinni í `osent`. Véltindar R-000551 (99.603 kr,
+  // greitt með korti 14.07) sást hvergi þótt hún sé raunveruleg viðskipti.
+  // Þetta er VIÐSKIPTAyfirlit, ekki kröfuyfirlit: staðgreidd sala er viðskipti.
+  // Hún hefur engin áhrif á stöðuna — salan og greiðslan koma saman og núllast
+  // (baetaReikningi setur greiðslulínuna þegar paid_at er til).
+  const STADGREITT = { kort: 1, reidufe: 1 };
+  const haefur = s => s.status === 'final' && (s.greitt_med === 'reikningur' || STADGREITT[s.greitt_med]);
   function tilheyrir(s, dypt) {
     const p = pdAf(s);
     const pk = p ? ktHreint(p.kt) : '';
@@ -282,6 +290,9 @@ function reikna(gogn, stillingar) {
   function erSent(s) {
     const p = pdAf(s);
     if (p) return upp(p.status) !== 'DRAFT';
+    // Staðgreidd búðarsala fer aldrei í kröfu og hefur hvorki dk_invoice_id né
+    // krafa_sent_at — hún var afhent yfir borðið. Greiðslan sjálf er sönnunin.
+    if (STADGREITT[s.greitt_med]) return !!s.paid_at;
     return !!(s.dk_invoice_id || s.krafa_sent_at);
   }
 
@@ -299,15 +310,19 @@ function reikna(gogn, stillingar) {
     if (status === 'PAID') greitt = dagur(p.paid_date) || (s ? dagur(s.paid_at) : null);
     else if ((status === 'SENT' || !p) && s && s.paid_at) greitt = dagur(s.paid_at);
     const nrTala = tala(nr);
+    // Staðgreidd búðarsala heitir ekki „Reikningur" — hún fór aldrei í kröfu.
+    // `skyring` helst 'Reikningur' svo hún teljist með í „Reikningar tímabils";
+    // aðeins textinn segir hvað hún er.
+    const stadgr = !p && s && STADGREITT[s.greitt_med];
     app.push({
-      dags: d, texti: ('Reikningur ' + nr + (num && num !== nr ? ' · ' + num : '')).trim(),
+      dags: d, texti: ((stadgr ? 'Búðarsala ' : 'Reikningur ') + nr + (num && num !== nr ? ' · ' + num : '')).trim(),
       gjalddagi: p ? dagur(p.due_date) : null, skyring: 'Reikningur', nr, upphaed: upph,
       eftirstodvar: status === 'CANCELLED' || greitt ? 0 : upph,
       flokkur: 'reikningar', uppruni: p ? 'payday' : 'app', num, payday_status: status || null,
       _r: [d, 3, 0, nrTala],
     });
     if (greitt) {
-      app.push({ dags: greitt, texti: 'Greiðsla', gjalddagi: null, skyring: 'Greiðsla', nr, upphaed: -upph, eftirstodvar: null, flokkur: 'greidslur', uppruni: status === 'PAID' ? 'payday' : 'app', num, _r: [greitt, 3, 2, nrTala] });
+      app.push({ dags: greitt, texti: stadgr ? (s.greitt_med === 'kort' ? 'Greitt með korti' : 'Staðgreitt') : 'Greiðsla', gjalddagi: null, skyring: 'Greiðsla', nr, upphaed: -upph, eftirstodvar: null, flokkur: 'greidslur', uppruni: status === 'PAID' ? 'payday' : 'app', num, _r: [greitt, 3, 2, nrTala] });
     }
     if (s && p && Math.abs(tala(s.samtals) - upph) >= 1) {
       athugasemdir.push(`${s.num}: ${kr(s.samtals)} kr í appinu en ${kr(upph)} kr í Payday (reikningur ${nr}) — yfirlitið notar Payday-upphæðina.`);
@@ -335,8 +350,14 @@ function reikna(gogn, stillingar) {
       osent.push({ num: s.num, dags: dagur(p.created_date) || dagur(s.created_at), upphaed: tala(p.amount_total), astaeda: 'Drög í Payday (DRAFT) — aldrei send viðskiptavini', tenging: 'kt', par: null });
       continue;
     }
-    if (!p && !s.dk_invoice_id && !s.krafa_sent_at) {
-      osent.push({ num: s.num, dags: dagur(s.created_at), upphaed: tala(s.samtals), astaeda: 'Aldrei sent — hvorki í Payday né krafa send', tenging: 'kt', par: null });
+    // 30.09.2026: hér stóð `!p && !s.dk_invoice_id && !s.krafa_sent_at` — AFRIT af
+    // reglunni í erSent() í stað þess að kalla hana. Þess vegna dugði ekki að laga
+    // erSent fyrir staðgreiddar búðarsölur; þessi lína hélt áfram að senda þær í
+    // `osent`. Ein regla, einn staður.
+    if (!erSent(s)) {
+      osent.push({ num: s.num, dags: dagur(s.created_at), upphaed: tala(s.samtals),
+        astaeda: STADGREITT[s.greitt_med] ? 'Búðarsala án greiðsludags — ekki hægt að staðfesta að hún hafi verið afgreidd' : 'Aldrei sent — hvorki í Payday né krafa send',
+        tenging: 'kt', par: null });
       continue;
     }
     if (status === 'CREDIT') continue;                              // afgreitt með kreditreikningum
