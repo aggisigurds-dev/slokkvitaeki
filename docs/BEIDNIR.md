@@ -40,10 +40,10 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B30 | Línur reiknings (Brunakerfi): **afsláttur á alla heildina** — reitur undir línunum (kr m. vsk, líka hægt að slá inn %) | Claude | ✅ KLÁRT |
 | B31 | **Vöruvalslistinn „Velja vöru / þjónustu" (117) í slökkvitækja-úttekt er heiftarlega ljótur og erfitt að finna á honum** — endurhanna í Brunastáli, betri leit og flokkun | Claude | NÝ |
 | B32 | **Verðtengingar-glugginn (410) í slökkvitækja-úttekt** — ljótur og ekki í þema síðunnar; Brunastál C | Claude | NÝ |
-| B33 | **Samskiptaboxið (286/359) hresst upp** — ljósar rendur/bönd til að brjóta upp, í Brunastáli | Claude | NÝ |
-| B34 | **Ársbandið í Skjöl og viðhengi (403/199) meira áberandi** — árin og skiptingin milli ára sjást ekki nógu fljótt | Claude | NÝ |
+| B33 | **Samskiptaboxið (286/359) hresst upp** — ljósar rendur/bönd til að brjóta upp, í Brunastáli | Claude | ✅ KLÁRT |
+| B34 | **Ársbandið í Skjöl og viðhengi (403/199) meira áberandi** — árin og skiptingin milli ára sjást ekki nógu fljótt | Claude | ✅ KLÁRT |
 | B35 | **„Skýrsla og reikningur saman" (311) og blokkirnar undir:** raðirnar taka fulla breidd með langt bil milli Úttektar og Senda — þjappa, sameina í 1/3 eða 1/2 breidd | Claude | NÝ |
-| B36 | **„Póstafrit: Á"-hnappurinn** (haus Skjöl og viðhengi) á frekar heima efst á prófílnum sem einfalt hak | Claude | NÝ |
+| B36 | **„Póstafrit: Á"-hnappurinn** (haus Skjöl og viðhengi) á frekar heima efst á prófílnum sem einfalt hak | Claude | ✅ KLÁRT |
 | B37 | **Stjórnstöð (Kjarni):** auka breidd meginhlutans; fjólublái liturinn „skelfilegur" — þemað í „big boss": ljóst, gull og svart | Claude | NÝ |
 | B38 | **Sótt-glugginn (afhending, „Sókn — kt."):** hressa upp; afslátturinn (Lokastilling fyrir kvittun) inn á sömu opnu svo hann týnist ekki; guli liturinn burt; græni hausinn í dökkmálmsgrænan; samræma við þemað | Claude | NÝ |
 | B39 | **Allir viðskiptavinir:** öll síðan í svipað þema og Fyrirtæki í þjónustu (Brunastál C), án súluritsins; halda öllum tökkum í bili | Claude | NÝ |

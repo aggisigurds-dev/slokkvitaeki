@@ -241,6 +241,12 @@
     r('._skx-subj', 'font-weight:600;color:#11141c'),
     r('._ssk-note-head', 'font-weight:500;color:#1f2530'),
     r('._smx-strip', 'padding:8px 0 0'),
+    // B33 (Agnar 30.09: „hressa aðeins upp á Samskiptaboxin … ljósar rendur einhvers staðar til að brjóta upp")
+    r('._samskipti-card > ._skx-tiles', 'background:' + INNER_PLATE + ';background-image:' + INNER_IMG + ';border-radius:8px;padding:8px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12)'),
+    r('._samskipti-card > ._smx-strip', 'background:rgba(255,255,255,.55)!important;border-radius:6px;padding:6px 10px!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.08);margin-top:8px'),
+    r('._samskipti-card ._ssk-mail._skx-nyjast', 'border-left:4px solid #4f74dc!important;background-image:linear-gradient(90deg,rgba(79,116,220,.06),transparent 220px)!important'),
+    r('._samskipti-card ._ssk-mail._skx-rod:nth-child(even)', 'background:#f6f8fb!important'),
+    r('._samskipti-card > ._ssk-note', 'background:#fffbea!important;border-left:4px solid #e0a93e!important'),
     r('.info-grid .ic-lbl', MERKI + ';font-size:10.5px;color:#525b6b;letter-spacing:.12em'),
     r('.info-grid .ic-val', 'font-size:14px;font-weight:600;color:#11141c'),
 

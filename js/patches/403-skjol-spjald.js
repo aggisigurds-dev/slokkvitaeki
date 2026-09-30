@@ -377,8 +377,8 @@
         // hér sem „í vinnslu" og las því sem vinna væri hafin — á hverju einasta félagi sem
         // á eftir að skoða í ár. Hinar stöðurnar hafa rétt orð nú þegar: 'vnsl' = yfirfarið
         // (úttekt gerð, skýrsla vantar), 'gull' = skýrsla vantar. Þau standa óbreytt.
-        var stTxt = state === 'ok' ? ' · lokið' : state === 'gull' ? ' · skýrsla vantar' : state === 'vnsl' ? ' · yfirfarið' : state === 'nuna' ? ' · ekkert komið enn' : '';
-        lab.classList.add('b403-ar'); lab.classList.add(state || 'x'); lab.innerHTML = '<i class="led"></i>' + y + '<small>' + stTxt + '</small>';
+        var stTxt = state === 'ok' ? 'lokið' : state === 'gull' ? 'skýrsla vantar' : state === 'vnsl' ? 'yfirfarið' : state === 'nuna' ? 'ekkert komið enn' : '';   // B34: platan ber orðið, enginn punktur á undan
+        lab.classList.add('b403-ar'); lab.classList.add(state || 'x'); lab.innerHTML = '<i class="led"></i>' + y + (stTxt ? '<small>' + stTxt + '</small>' : '');
         band.appendChild(lab);
       }
       band.appendChild(el('span', 'b403-pill', nSvc + (nSvc === 1 ? ' þjónusta' : ' þjónustur')));
@@ -562,7 +562,13 @@
       r('.b403-band::before,.b403-band::after,.b403-nafn::before,.b403-nafn::after,.b403-kafli::before,.b403-kafli::after', 'content:"";position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:' + RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.7);pointer-events:none'),
       r('.b403-band::before,.b403-nafn::before,.b403-kafli::before', 'left:7px'), r('.b403-band::after,.b403-nafn::after,.b403-kafli::after', 'right:7px'),
       r('.b403-ar', 'display:inline-flex;align-items:center;gap:10px;font-family:' + DISPLAY + '!important;font-size:20px!important;font-weight:800!important;letter-spacing:-.01em;color:#eef1f4!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);margin:0!important;cursor:pointer'),
-      r('.b403-ar small', 'font-family:' + MONO + ';font-size:11.5px;font-weight:500;letter-spacing:0;color:#d5dbe6;text-shadow:none'),
+      r('.b403-ar small', 'font-family:' + MONO + ';font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#eef1f4;text-shadow:none;height:20px;padding:0 8px;border-radius:3px;background:rgba(255,255,255,.12);display:inline-flex;align-items:center'),
+      // B34 (Agnar 30.09: „ársbannerinn aðeins meira áberandi … tekur smá stund að sjá árin og skiptinguna"): 26 px ártal, 52 px band, litarönd eftir stöðu
+      r('.b403-band:has(> .b403-ar)', 'min-height:52px!important;padding-left:24px!important;border-left:6px solid #8f98a8!important'),
+      r('.b403-band:has(> .b403-ar)::before', 'display:none'),
+      r('.b403-band:has(> .b403-ar.ok)', 'border-left-color:#3cc47c!important'), r('.b403-band:has(> .b403-ar.vnsl)', 'border-left-color:#5aa2ff!important'), r('.b403-band:has(> .b403-ar.gull)', 'border-left-color:#e0a93e!important'), r('.b403-band:has(> .b403-ar.nuna)', 'border-left-color:#d3ab4e!important'),
+      r('.b403-band > .b403-ar', 'font-size:26px!important'),
+      r('.b403-band > .b403-ar .led', 'width:10px!important;height:10px!important'),
       r('.b403-ar .led', 'width:8px;height:8px;border-radius:50%;background:#8f98a8;box-shadow:0 0 0 3px rgba(255,255,255,.08)'),
       r('.b403-ar.ok .led', 'background:#7fe0a8;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #7fe0a8'), r('.b403-ar.gull .led', 'background:#ffe0a0;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #ffe0a0'), r('.b403-ar.vnsl .led', 'background:#9fd0ff;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #9fd0ff'), r('.b403-ar.nuna .led', 'background:#f7e6a8;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #f7e6a8'),
       r('.b403-pill', 'height:18px;padding:0 7px;border-radius:99px;background:rgba(255,255,255,.12);font-family:' + MONO + ';font-size:10.5px;font-weight:700;color:#fff;display:inline-flex;align-items:center'),
