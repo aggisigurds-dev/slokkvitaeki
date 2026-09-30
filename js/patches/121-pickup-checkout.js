@@ -184,7 +184,7 @@
     const saleLinur = (sale && Array.isArray(sale.linur)) ? sale.linur : [];
 
     dlg.innerHTML =
-      '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.3);width:min(700px,calc(100vw - 24px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden">' +
+      '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.3);width:min(920px,calc(100vw - 24px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden">' +
         '<div style="padding:14px 22px;background:linear-gradient(135deg,#059669,#047857);color:#fff;display:flex;justify-content:space-between;align-items:center">' +
           '<div>' +
             '<h3 style="margin:0;font-size:17px;font-weight:700">📦 Sókn — ' + esc(customer) + '</h3>' +
@@ -193,7 +193,12 @@
           '<button id="_pkc-x" type="button" style="background:transparent;border:1px solid #34d399;color:#fff;font-size:20px;width:36px;height:36px;border-radius:7px;cursor:pointer;line-height:1">✕</button>' +
         '</div>' +
         '<div id="_pkc-body" style="flex:1;overflow:auto;padding:18px 22px"></div>' +
-        '<div id="_pkc-totals" style="padding:11px 22px;border-top:1px solid #e2e8f0;background:#f8fafc"></div>' +
+        // B38 (Agnar 30.09: „ná afslættinum inn á sömu opnu — hann gæti týnst þarna“): Lokastillingin (afsláttur + athugasemd)
+        // situr nú í fætinum VIÐ HLIÐ samtalnanna, alltaf sýnileg, í stað þess að standa neðst í skrunanlegu meginmáli.
+        '<div id="_pkc-foot" style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);border-top:1px solid #e2e8f0;background:#f8fafc">' +
+          '<div id="_pkc-loka" style="padding:11px 22px;border-right:1px solid #e2e8f0"></div>' +
+          '<div id="_pkc-totals" style="padding:11px 22px"></div>' +
+        '</div>' +
         (isAlreadyPaid
           // PAID UPFRONT — green banner, no payment selector. Just deliver.
           ? '<div style="padding:0;border-top:1px solid #166534;background:#16a34a;color:#fff;display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap">' +
@@ -398,7 +403,8 @@
       // short note before the draft sale is finalised. Discount scales every
       // line's unit_price_ex_vat (mixed-VSK safe) and is also recorded in
       // the `afslattur` column for reporting. Note is appended to audit.
-      html += '<div style="margin-bottom:14px;padding:12px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:8px">' +
+      // B38: blokkin teiknast í #_pkc-loka (fóturinn), ekki í meginmálið
+      let loka = '<div id="_pkc-loka-box" style="padding:0">' +
         '<div style="font-size:12px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Lokastilling fyrir kvittun</div>' +
         '<div style="display:grid;grid-template-columns:auto auto 1fr;gap:8px 10px;align-items:center">' +
           '<label style="font-size:12px;font-weight:600;color:#78350f">Afsláttur:</label>' +
@@ -424,6 +430,7 @@
       '</div>';
 
       body.innerHTML = html;
+      const lokaEl = dlg.querySelector('#_pkc-loka'); if (lokaEl) lokaEl.innerHTML = loka;   // B38
 
       // Wire checkboxes
       body.querySelectorAll('._pkc-unit-chk').forEach(cb => {
@@ -555,7 +562,7 @@
       // 2026-05-24: Wire discount + note inputs. Discount triggers a totals
       // recompute without re-rendering the whole body (keeps caret position
       // in the textarea). Note is just stashed; written out at finalize.
-      const discInp = body.querySelector('#_pkc-disc');
+      const discInp = dlg.querySelector('#_pkc-disc');   // B38: í fætinum
       if (discInp) {
         discInp.addEventListener('input', () => {
           const v = parseFloat(discInp.value);
@@ -563,7 +570,7 @@
           renderTotals();
         });
       }
-      const discKrInp = body.querySelector('#_pkc-disc-kr');
+      const discKrInp = dlg.querySelector('#_pkc-disc-kr');
       if (discKrInp) {
         discKrInp.addEventListener('input', () => {
           const v = parseFloat(discKrInp.value);
@@ -571,7 +578,7 @@
           renderTotals();
         });
       }
-      const noteInp = body.querySelector('#_pkc-note');
+      const noteInp = dlg.querySelector('#_pkc-note');
       if (noteInp) {
         noteInp.addEventListener('input', () => { pickupNote = noteInp.value; });
       }

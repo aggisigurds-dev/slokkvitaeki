@@ -180,6 +180,8 @@
             '<div id="_vp-clear" title="Hreinsa leit" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:99px;background:rgba(0,0,0,.08);color:rgba(0,0,0,.55);font-size:13px;line-height:24px;text-align:center;cursor:pointer">✕</div>' +
           '</div>' +
         '</div>' +
+        // B31 (Agnar 30.09: „erfitt að finna eitthvað á honum“): flokkastika — einn smellur skrunar að flokknum
+        '<div id="_vp-cats"></div>' +
         // ── Uppáhald (handvalið — aðeins þegar wantFav) ──
         '<div id="_vp-fav-wrap" style="padding:10px 16px 4px;display:none;flex:none">' +
           '<div style="font-size:10px;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">' + (window.UIIcons ? UIIcons.svg('star', { size: 12 }) : '★') + 'Uppáhald</div>' +
@@ -209,6 +211,7 @@
     const recentWrap= dlg.querySelector('#_vp-recent-wrap');
     const recentEl  = dlg.querySelector('#_vp-recent');
     const listEl    = dlg.querySelector('#_vp-list');
+    const catsEl    = dlg.querySelector('#_vp-cats');
     const countEl   = dlg.querySelector('#_vp-count');
 
     let products = [];
@@ -217,6 +220,8 @@
     // Always starts empty — "allir Categories Collapsed as default" (Agnar
     // 2026-08-05) — searching auto-expands matching ones on top of this.
     const manuallyOpen = new Set();
+    // B31: flokkarnir standa OPNIR sjálfgefið (allt sést, hausarnir límdir, stikan skrunar) — smellur á haus fellir saman.
+    let catsSeeded = false;
 
     function close() { dlg.remove(); }
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
@@ -347,7 +352,18 @@
       listEl.innerHTML = html || '<div style="padding:40px;text-align:center;font-size:13px;color:rgba(0,0,0,.45)">Engin vara fannst — prófaðu annað leitarorð</div>';
     }
 
-    function render() { renderFav(); renderRecent(); renderList(); }
+    function renderCats() {
+      if (!catsEl) return;
+      const tokens = queryTokens();
+      const groupMap = {};
+      products.forEach(p => { const c = p.flokkur || 'Ýmsar vörur'; (groupMap[c] = groupMap[c] || []).push(p); });
+      catsEl.innerHTML = categories().filter(c => groupMap[c]).map(c => {
+        const n = tokens.length ? groupMap[c].filter(p => matches(p, tokens)).length : groupMap[c].length;
+        if (tokens.length && !n) return '';
+        return '<span class="_vp-cat" data-cat="' + esc(c) + '" title="Fara í ' + esc(c) + '">' + esc(c) + '<b>' + n + '</b></span>';
+      }).join('');
+    }
+    function render() { if (!catsSeeded && products.length) { catsSeeded = true; categories().forEach(c => manuallyOpen.add(c)); } renderFav(); renderRecent(); renderCats(); renderList(); }
 
     // ── Atburðir (delegation) ──
     recentEl.addEventListener('click', e => {
@@ -375,6 +391,14 @@
         if (manuallyOpen.has(cat)) manuallyOpen.delete(cat); else manuallyOpen.add(cat);
         renderList();
       }
+    });
+    if (catsEl) catsEl.addEventListener('click', e => {
+      const t = e.target.closest('._vp-cat'); if (!t) return;
+      const cat = t.getAttribute('data-cat');
+      if (!manuallyOpen.has(cat)) { manuallyOpen.add(cat); renderList(); }
+      const hdr = Array.prototype.slice.call(listEl.querySelectorAll('._vp-cat-header')).filter(h => h.getAttribute('data-cat') === cat)[0];
+      if (hdr) listEl.scrollTop = hdr.offsetTop - listEl.offsetTop;
+      catsEl.querySelectorAll('._vp-cat').forEach(x => x.classList.toggle('on', x === t));
     });
     listEl.addEventListener('mouseover', e => { const r = e.target.closest('._vp-row'); if (r) r.style.background = 'rgba(30,58,138,.05)'; });
     listEl.addEventListener('mouseout',  e => { const r = e.target.closest('._vp-row'); if (r) r.style.background = ''; });
