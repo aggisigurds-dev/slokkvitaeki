@@ -146,6 +146,17 @@
     r('._sk-chip.on', 'background:' + METAL + '!important;border-color:#000!important;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
     r('._sk-chip.on b', 'background:rgba(255,255,255,.16)!important;color:#fff'),
     r('._sk-sia:has(._sk-inp)', 'margin-bottom:14px!important'),
+    // 30.09.2026 (Agnar: „breyta ávölu ljósu tökkunum frekar eins og er í fyrirtæki í þjónustu“): stöðuröðin er EIN samfelld
+    // silfurstika (sömu flísar, engin bil, skil á milli), valið í málmi, talan undir heitinu — eins og síustikan á Ársskoðun.
+    r('._sk-kpis + ._sk-sia', 'display:inline-flex!important;width:max-content;max-width:100%;gap:0!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;border-radius:9px!important;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14)!important'),
+    r('._sk-kpis + ._sk-sia ._sk-chip', 'height:44px!important;padding:0 16px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1'),
+    r('._sk-kpis + ._sk-sia ._sk-chip + ._sk-chip', 'border-left:1px solid rgba(20,24,34,.14)!important'),
+    r('._sk-kpis + ._sk-sia ._sk-chip b', 'height:auto;min-width:0;padding:0;margin:0!important;background:transparent!important;color:#6b7483!important'),
+    r('._sk-kpis + ._sk-sia ._sk-chip.on', 'background:' + METAL + '!important;color:#fff'),
+    r('._sk-kpis + ._sk-sia ._sk-chip.on b', 'color:#d5dbe6!important'),
+    r('._sk-kpis + ._sk-sia ._sk-chip[data-st="fram"]:not(.on) b', 'color:#b42318!important'),
+    r('._sk-kpis + ._sk-sia ._sk-chip[data-st="orukkad"]:not(.on) b', 'color:#7a4f06!important'),
+    r('._sk-sia:has(._sk-inp) select._sk-inp', 'background:' + SILVER + '!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;font-weight:600!important;max-width:180px'),
     r('._sk-inp', 'height:38px!important;border-radius:9px!important;background:#eef1f6!important;border:1px solid rgba(20,24,34,.14)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)!important;color:#1f2530;font:400 13px ' + SANS + '!important'),
     r('#_sk-leit', 'flex:1;min-width:260px'),
     r('._sk-lbl', 'color:#c9d0da;font:500 12.5px ' + SANS + '!important'),

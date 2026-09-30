@@ -86,6 +86,25 @@
     if (pl.dataset.st !== want) { pl.dataset.st = want; pl.innerHTML = '<i class="' + want + '"></i>' + label; }
   }
 
+  // 30.09.2026 (Agnar, skjámynd með örvum: „má færa 2 takkana og taka burtu þetta staða-yfirlit"): skoðunarmánuðurinn
+  // (.co-banner-badge úr borðanum, features.js) og ☆ Merkja mikilvægt (._smx-imp úr samskiptaspjaldinu, 359) FÆRAST upp í
+  // efstu röðina — sami hnútur, sami hlustari; 359 endurteiknar sinn hnapp → nýi kemur í stað þess gamla svo aldrei tveir.
+  // „Staða — yfirlit" (185, #_isy-btnbar) er falin með CSS meðan fyrirtækjasíða er opin.
+  function ensureFaera(main, row) {
+    var top = row.parentElement; if (!top || top.parentElement !== main) return;
+    var badge = main.querySelector('.co-banner-badge');
+    if (badge && badge.parentElement !== top) {
+      var t = stripEmoji(txt(badge)).replace(/^Skoðun:\s*/i, '');
+      badge.classList.add('b405-plata', 'b405-skodun'); badge.innerHTML = '<i class="gull"></i>Skoðun: ' + t;
+      var pl = top.querySelector(':scope > .b405-plata:not(.b405-skodun)');
+      if (pl) top.insertBefore(badge, pl.nextSibling); else top.insertBefore(badge, row);
+    }
+    var imp = main.querySelector('._smx-strip ._smx-imp');
+    if (imp) {
+      var old = row.querySelector('._smx-imp'); if (old && old !== imp) old.remove();
+      imp.classList.add('b405-imp'); row.insertBefore(imp, row.firstChild);
+    }
+  }
   function ensureSamskipti(main) {
     var head = main.querySelector('._samskipti-card ._skx-head'); if (!head || head.querySelector('.b405-talning')) return;
     var tiles = Array.prototype.slice.call(main.querySelectorAll('._samskipti-card ._skx-tile'));
@@ -138,7 +157,7 @@
     try {
       var editBtn = main.querySelector('button[onclick^="Companies.openEdit"]');
       var row = editBtn && editBtn.parentElement;
-      if (row && row.parentElement && row.parentElement.parentElement === main) { row.classList.add('b405-rod'); ensureMenu(row); ensurePlate(main, row); }
+      if (row && row.parentElement && row.parentElement.parentElement === main) { row.classList.add('b405-rod'); ensureMenu(row); ensurePlate(main, row); ensureFaera(main, row); }
       ensureSamskipti(main);
       ensureBanner(main);
       ensureMidja(main);
@@ -161,7 +180,10 @@
       r('.b405-orig', 'position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;opacity:0!important;margin:0!important;padding:0!important;border:0!important;pointer-events:none'),
       r('.b405-rod', 'display:flex;gap:8px;align-items:center'),
       r('.b405-plata', 'display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:3px;border:1px solid #000;background:' + METAL_BTN + ';color:#eef1f4;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;box-shadow:inset 0 1px 0 rgba(255,255,255,.14);margin-left:4px'),
-      r('.b405-plata i', 'width:6px;height:6px;border-radius:50%;display:inline-block;background:#8f98a8'), r('.b405-plata i.ok', 'background:#3cc47c;box-shadow:0 0 8px rgba(60,196,124,.8)'),
+      r('.b405-plata i', 'width:6px;height:6px;border-radius:50%;display:inline-block;background:#8f98a8'), r('.b405-plata i.ok', 'background:#3cc47c;box-shadow:0 0 8px rgba(60,196,124,.8)'), r('.b405-plata i.gull', 'background:#e0a93e;box-shadow:0 0 8px rgba(224,169,62,.8)'),
+      r('.b405-skodun.co-banner-badge', 'height:26px!important;padding:0 10px!important;border-radius:3px!important;border:1px solid #000!important;background:' + METAL_BTN + '!important;color:#eef1f4!important;font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.06em!important;text-transform:uppercase;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important;margin:0!important;align-self:center!important'),
+      r('.b405-rod ._smx-imp', 'cursor:pointer;height:40px!important;padding:0 14px!important;border-radius:9px!important;border:1px solid rgba(20,24,34,.16)!important;background:' + SILVER + '!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;color:#1f2530!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center;gap:7px;white-space:nowrap;box-sizing:border-box;margin:0!important'),
+      r('.b405-rod ._smx-imp[style*="fef3c7"]', 'background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)!important;border-color:rgba(190,150,60,.5)!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
       r('.b405-vm', 'position:relative;display:inline-flex'),
       r('.b405-meira', 'all:unset;cursor:pointer;width:40px;height:40px;border-radius:9px;border:1px solid #000;background:' + METAL_BTN + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);color:#eef1f4;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box'),
       r('.b405-meira.opin', 'background:' + SILVER + ';color:#11141c'),
@@ -176,6 +198,7 @@
       r('._samskipti-card ._skx-head ._skx-acts', 'order:0;margin-left:auto')
     ].join('\n');
     css += '\n' + P + '.b405-menu[hidden]{display:none!important}'; // [hidden] vinnur display:flex
+    css += '\nhtml[data-thm-preset="brunastal"] #_isy-btnbar:has(+ #companies-main .co-banner){display:none!important}'; // Staða — yfirlit (185) víkur á fyrirtækjasíðunni
     var st = document.createElement('style'); st.id = 'efsta-405'; st.textContent = css; document.head.appendChild(st);
   }
 })();
