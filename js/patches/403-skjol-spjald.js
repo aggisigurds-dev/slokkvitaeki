@@ -141,6 +141,10 @@
     var k = b.getAttribute('data-kind') || '';
     b.textContent = k === 'skyrsla' ? 'Bæta við skýrslu' : k === 'reikningur' ? 'Bæta við reikningi' : k === 'samningur' ? 'Bæta við samningi' : 'Bæta við skjali';
   }
+  // Chipp með .sk-doc.prog ber GULA stílinn bæði um raunverulega vinnslu og um tómið
+  // ('engin skýrsla enn', 'enginn reikningur'). Textinn sker úr.
+  function _vinnsluChip(rot) { var e = rot && rot.querySelector('.sk-doc.prog'); return (e && !/engin|enginn|vantar/i.test(e.textContent || '')) ? e : null; }
+  function _erVinnsla(rot) { return !!_vinnsluChip(rot); }
   function plata(text, state) { return el('span', 'b403-plata ' + (state || ''), '<i aria-hidden="true"></i>' + text); }
 
   // ── ein skjalalína (Skýrsla / Reikningur) úr .sk-svc-row ──
@@ -150,7 +154,13 @@
     line.classList.add(/reikn/i.test(labelText) ? 'b403-rod-inv' : 'b403-rod-rep');   // 24.09: táknið fyrir framan merkið (spjald B)
     var val = el('span', 'b403-val'); line.appendChild(val);
     var hasDoc = !!row.querySelector('.sk-dot.ok');
-    var prog = row.querySelector('.sk-doc.prog');
+    // 30.09.2026: `.sk-doc.prog` er gulur stíll sem 199 notar BÆÐI um raunverulega
+    // vinnslu OG um tómið („engin skýrsla enn", „enginn reikningur"). Að lesa klasann
+    // einan gerði hvert tómt ár að „Í vinnslu" — líka eldri ár. Nú ræður TEXTINN:
+    // chipp sem segir „engin/enginn/vantar" er skortur, ekki vinnsla. Stíllinn er
+    // óbreyttur; aðeins stöðuplatan hættir að lofa vinnu sem er ekki hafin.
+    var _progEl = _vinnsluChip(row);
+    var prog = _progEl;
     var adds = [], menuItems = [], stateTxt = null, stateCls = '';
     // Skjölin: hvert .sk-att-wrap = eitt skjal með ✓ (valkvætt), chippi og ✕.
     Array.prototype.slice.call(row.children).forEach(function (c) {
@@ -291,7 +301,9 @@
     // Talning úr spjöldunum (aðeins ár með þjónustu)
     var komin = 0, vnsl = 0, vantar = 0;
     section.querySelectorAll('.sk-svc-card:not(.sk-svc-empty) .sk-svc-row').forEach(function (r) {
-      if (r.querySelector('.sk-dot.ok')) komin++; else if (r.querySelector('.sk-doc.prog')) vnsl++; else vantar++;
+      // 30.09.2026: sama regla og í stöðuplötunni (lína ~158) — TEXTINN ræður, ekki klasinn.
+      // Áður taldist hvert tómt ár með í 'Í vinnslu' og samantektin laug jafnt og plöturnar.
+      if (r.querySelector('.sk-dot.ok')) komin++; else if (_erVinnsla(r)) vnsl++; else vantar++;
     });
     var alls = komin + vnsl + vantar;
 
@@ -359,7 +371,13 @@
       if (lab) {
         var y = lab.getAttribute('data-yr');
         var state = lab.classList.contains('sk-yr-ok') ? 'ok' : lab.classList.contains('sk-yr-gap') ? 'gull' : lab.classList.contains('sk-yr-claude') ? 'vnsl' : lab.classList.contains('sk-yr-now') ? 'nuna' : '';
-        var stTxt = state === 'ok' ? ' · lokið' : state === 'gull' ? ' · skýrsla vantar' : state === 'vnsl' ? ' · yfirfarið' : state === 'nuna' ? ' · í vinnslu' : '';
+        // 30.09.2026 (Agnar: „það stendur alltaf í vinnslu á öllu í 2026 — mjög villandi"):
+        // `sk-yr-now` er sett í 199:1505 sem `cur && !st && !yBoth` — líðandi ár OG engin
+        // árs-staða OG ekki bæði skjölin. Það þýðir bókstaflega „ekkert skráð enn", en stóð
+        // hér sem „í vinnslu" og las því sem vinna væri hafin — á hverju einasta félagi sem
+        // á eftir að skoða í ár. Hinar stöðurnar hafa rétt orð nú þegar: 'vnsl' = yfirfarið
+        // (úttekt gerð, skýrsla vantar), 'gull' = skýrsla vantar. Þau standa óbreytt.
+        var stTxt = state === 'ok' ? ' · lokið' : state === 'gull' ? ' · skýrsla vantar' : state === 'vnsl' ? ' · yfirfarið' : state === 'nuna' ? ' · ekkert komið enn' : '';
         lab.classList.add('b403-ar'); lab.classList.add(state || 'x'); lab.innerHTML = '<i class="led"></i>' + y + '<small>' + stTxt + '</small>';
         band.appendChild(lab);
       }

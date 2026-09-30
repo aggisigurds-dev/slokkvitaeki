@@ -129,7 +129,12 @@
     // ── haus ──
     var head = el('header', 'b404-haus', '<span class="b404-hnod tl"></span><span class="b404-hnod tr"></span><span class="b404-hnod bl"></span><span class="b404-hnod br"></span>');
     var v = el('div', 'b404-haus-v');
-    v.appendChild(el('div', 'b404-titill', '<i class="b404-led ' + (locked ? 'g' : 'b') + '"></i>Úttekt ' + yr + ' · ' + (locked ? 'listi staðfestur' : 'í vinnslu')));
+    // 30.09.2026 (Agnar: „það stendur alltaf í vinnslu á öllu í 2026"): „í vinnslu" hér
+    // þýðir AÐEINS að tækjalistinn sé óstaðfestur — ekki að úttekt sé hafin. Á NR5 sást
+    // „ÚTTEKT 2026 · Í VINNSLU · 4 slökkvitæki" þótt engin úttekt hefði farið fram; tækin
+    // fjögur komu úr búðarsölu 14.04. Merkingin er óbreytt, orðin eru nú nákvæm og standa
+    // sem andstæða við „listi staðfestur" í stað þess að lofa vinnu sem er ekki hafin.
+    v.appendChild(el('div', 'b404-titill', '<i class="b404-led ' + (locked ? 'g' : 'b') + '"></i>Úttekt ' + yr + ' · ' + (locked ? 'listi staðfestur' : 'listi óstaðfestur')));
     v.appendChild(el('div', 'b404-talning', '<span class="tala">' + total + '</span><span class="tlabel">' + (total === 1 ? 'slökkvitæki' : 'slökkvitæki') + '</span>'));
     head.appendChild(v);
     if (counts.length) {

@@ -1432,16 +1432,24 @@
       if(r.ambiguous) return manualLinkHtml(y, svc, r.invCandidates);
       return addChip('reikningur', y, y===NOW?'+ reikningur':'vantar reikning');
     }
+    // 30.09.2026 — orðalag líðandi árs þegar EKKERT skjal er komið. Sjá lengri
+    // skýringu við stöðumerkið að neðan: „Í vinnslu" var notað um tómið sjálft.
+    // Hér er sama regla: „Í vinnslu" aðeins þegar úttektin er skráð gerð.
+    function _repHafid(y){ var s=fcStatus(coId,y); return s==='claude'||s==='gap'; }
+    function _repMerki(y){ return _repHafid(y) ? '⏳ Í vinnslu' : 'engin skýrsla enn'; }
+    function _repTitill(y){ return _repHafid(y)
+      ? 'Úttekt skráð gerð — skýrsla ársins á eftir að berast'
+      : 'Engin skýrsla komin fyrir ' + y + ' — og engin úttekt skráð gerð'; }
     function svcRepHtml(y, svc){
       var arr=svc.repMap[y]||[];
       if(svc.ekkiVista){
         // Skýrslan verður til í 🍳-flipanum (386) — „+ skýrsla" hér myndi hlaða skrá upp sem 🧯-úttekt.
         var opna='<button type="button" class="sk-add" data-open-slk="1" title="Opna skoðunarblaðið í 🍳 Slökkvikerfi-flipanum">🍳 Opna skoðun</button>';
         if(arr.length) return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join('')+(y===NOW?opna:'');
-        return y===NOW ? '<span class="sk-doc prog" title="Skoðun ársins ekki enn skjalfest">⏳ Í vinnslu</span>'+opna : '<span class="sk-doc prog">engin skýrsla</span>';
+        return y===NOW ? '<span class="sk-doc prog" title="'+esc(_repTitill(y))+'">'+_repMerki(y)+'</span>'+opna : '<span class="sk-doc prog">engin skýrsla</span>';
       }
       if(arr.length) return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join('')+addChip('skyrsla',y,'＋');
-      if(y===NOW) return '<span class="sk-doc prog" title="Skoðun ársins ekki enn skjalfest">⏳ Í vinnslu</span>'+addChip('skyrsla',y,'+ skýrsla');
+      if(y===NOW) return '<span class="sk-doc prog" title="'+esc(_repTitill(y))+'">'+_repMerki(y)+'</span>'+addChip('skyrsla',y,'+ skýrsla');
       return addChip('skyrsla',y,'vantar skýrslu');
     }
     function svcSendBtn(y, svc){
@@ -1473,9 +1481,19 @@
       if(svc.kind==='slokkvikerfi' && !hasRep && !hasInv && !r.ambiguous && y!==NOW) return '';
       if(!hasRep && !hasInv && !r.ambiguous && y!==NOW)
         return '<div class="sk-svc-card sk-svc-empty"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+wsLink+'</div><div class="sk-svc-row">engin '+esc(svc.label.toLowerCase())+addChip('skyrsla',y,'+ skýrsla')+'</div></div>';
+      // 30.09.2026 (Agnar: „það stendur alltaf í vinnslu á öllu í 2026 — mjög villandi"):
+      // ⏳ Í VINNSLU var merkið fyrir að EKKERT væri til. Núll skjöl lásust því sem
+      // „vinna hafin", á hverju einasta félagi sem á eftir að skoða á líðandi ári.
+      // Sama tómið heitir „engin skýrsla" á eldra ári — eini munurinn var ártalið.
+      // Nú segir kortið það sem er: 2 AF 2 VANTAR, í sama orðafari og systkinamerkið.
+      // „Í vinnslu" er geymt fyrir það sem ER hafið: árs-staðan 'claude' (úttekt gerð
+      // / yfirfarið, skýrsla vantar) eða 'gap' — sama staðreyndin og málar árs-perluna
+      // bláa/gula. Þá er orðið satt.
+      var _hafid = !hasRep && !hasInv && (function(){ var s=fcStatus(coId,y); return s==='claude'||s==='gap'; })();
       var badge = hasRep&&hasInv ? '<span class="sk-svc-st ok">✓ FULLBÚIÐ</span>'
                 : (hasRep||hasInv) ? '<span class="sk-svc-st part">1 AF 2 VANTAR</span>'
-                : '<span class="sk-svc-st prog">⏳ Í VINNSLU</span>';
+                : _hafid ? '<span class="sk-svc-st prog" title="Úttekt skráð gerð — skýrsla og reikningur eiga eftir að berast">⏳ Í VINNSLU</span>'
+                : '<span class="sk-svc-st part" title="Hvorki skýrsla né reikningur er kominn fyrir '+y+'">2 AF 2 VANTAR</span>';
       var repRow='<div class="sk-svc-row"><span class="sk-dot '+(hasRep?'ok':'miss')+'"></span>'+svcRepHtml(y,svc)+'<span class="sk-svc-tag">skýrsla</span></div>';
       var invRow='<div class="sk-svc-row"><span class="sk-dot '+(hasInv?'ok':'miss')+'"></span>'+svcInvHtml(y,svc,false)+'<span class="sk-svc-tag inv">reikningur</span></div>';
       return '<div class="sk-svc-card"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+badge+svcSendBtn(y,svc)+wsLink+'</div>'+repRow+invRow+'</div>';
