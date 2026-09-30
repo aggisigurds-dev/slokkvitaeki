@@ -889,14 +889,15 @@
       // FÆRT á óskastaðinn um leið og röðin birtist, án nýrrar sóknar. Ódýrt: á réttum stað er
       // aðeins borið saman við næsta systkini, og leitin hættir 15 s eftir að kortið var sett upp.
       const fyrir = host.previousElementSibling;
-      if (fyrir && /Merkja mikilvægt/.test(fyrir.textContent || "")) return;
+      if (fyrir && (/Merkja mikilvægt/.test(fyrir.textContent || "") || (fyrir.classList && fyrir.classList.contains("co-banner")))) return;   // 30.09: undir borðanum er líka rétti staðurinn
       // 18.09.2026 (Agnar: "samskiptakassinn stundum ad fara fyrir ofan profilbannerinn"): 15 sek
       // thakid gafst upp ef "Merkja mikilvaegt"-rodin birtist seinna en thad, og kortid sat tha
       // afram vid Breyta-rodina OFAN vid bannerinn. Nu er leitad afram, en mest einu sinni a sekundu.
       const _nu = Date.now(); if (_nu - (+host.dataset.leit || 0) < 1000) return; host.dataset.leit = String(_nu);
-      const mk2 = [...document.querySelectorAll("button")].find(b => /Merkja mikilvægt/.test(b.textContent || "") && !b.closest("._samskipti-host"));
+      const mk2 = [...document.querySelectorAll("button")].find(b => /Merkja mikilvægt/.test(b.textContent || "") && !b.closest("._samskipti-host") && !b.closest(".b405-rod"));   // 30.09: efsta röðin (405) er ekki akkeri
       const rett = mk2 && mk2.parentElement;
       if (rett && rett.parentElement && !host.contains(rett)) rett.parentElement.insertBefore(host, rett.nextSibling);
+      else if (host.parentElement && host.parentElement.querySelector(":scope > .b405-rod")) { const bn = document.querySelector("#companies-main .co-banner"); if (bn && bn.parentElement) bn.parentElement.insertBefore(host, bn.nextSibling); }
       return;
     }
     // Besta akkerið (ósk Agnars 29.07): auða svæðið við hlið aðgerðahnappanna
@@ -905,7 +906,7 @@
     let row = null;
     // Hnappur INNI í kortinu sjálfu (359: „★ Merkja mikilvægt") má ekki verða akkeri — þá hefði
     // nýja kortið lent inni í gamla hýslinum sem er fjarlægður línum neðar, og horfið.
-    const mk = [...document.querySelectorAll("button")].find(b => /Merkja mikilvægt/.test(b.textContent || "") && !b.closest("._samskipti-host"));
+    const mk = [...document.querySelectorAll("button")].find(b => /Merkja mikilvægt/.test(b.textContent || "") && !b.closest("._samskipti-host") && !b.closest(".b405-rod"));   // 30.09: efsta röðin (405) er ekki akkeri
     if (mk) row = mk.parentElement;
     // Varaakkeri: BANNERINN sjalfur (kortid fer beint undir hann) - aldrei Breyta-rodin, hun er ofan vid bannerinn.
     if (!row) { const bn = document.querySelector('#companies-main .co-banner'); if (bn) row = bn; }

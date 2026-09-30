@@ -179,6 +179,7 @@
     var css = [
       r('.b405-orig', 'position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;opacity:0!important;margin:0!important;padding:0!important;border:0!important;pointer-events:none'),
       r('.b405-rod', 'display:flex;gap:8px;align-items:center'),
+      r('.b405-rod ~ ._samskipti-host,.b405-rod ~ ._co-mail-box', 'flex:0 0 100%!important;width:100%!important;order:9'),
       r('.b405-plata', 'display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:3px;border:1px solid #000;background:' + METAL_BTN + ';color:#eef1f4;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;box-shadow:inset 0 1px 0 rgba(255,255,255,.14);margin-left:4px'),
       r('.b405-plata i', 'width:6px;height:6px;border-radius:50%;display:inline-block;background:#8f98a8'), r('.b405-plata i.ok', 'background:#3cc47c;box-shadow:0 0 8px rgba(60,196,124,.8)'), r('.b405-plata i.gull', 'background:#e0a93e;box-shadow:0 0 8px rgba(224,169,62,.8)'),
       r('.b405-skodun.co-banner-badge', 'height:26px!important;padding:0 10px!important;border-radius:3px!important;border:1px solid #000!important;background:' + METAL_BTN + '!important;color:#eef1f4!important;font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.06em!important;text-transform:uppercase;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important;margin:0!important;align-self:center!important'),
