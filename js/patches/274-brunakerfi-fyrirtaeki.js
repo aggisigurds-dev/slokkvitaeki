@@ -451,7 +451,13 @@
         const url = doc ? (driveUrl(doc.drive_file_id) || storageUrl(doc.storage_path)) : '';
         const v = verdOf(fin);
         rep += '<span class="_bkc-yrtxt" title="Brunakerfisskýrsla ' + esc(fin.year || y) + ' · úttekt ' + esc(fin.uttekt_nr || '—') + ' · breytt ' + esc(String(fin.updated_at || '').slice(0, 10)) + (v.lines ? ' · ' + v.lines + ' verðlínur' : '') + '"><b>Skýrsla</b> · úttekt ' + esc(fin.uttekt_nr || '—') + '</span>' +
-          (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna skýrsluna (PDF)">📄 Skýrsla</a>' : '') +
+          // 30.09.2026: opnast í skjalaglugganum (sama mót og Ársskoðun), ekki nýjum
+          // flipa. Innfelldur rammi í vinstri dálknum var prófaður sama dag og
+          // tekinn út aftur — Agnar: „hrædilegt". Vafrinn límir SITT PDF-viðmót
+          // (tækjastika, smámyndadálkur, 56% aðdráttur) inn í hannað spjald og
+          // #toolbar=0 er hunsað í Chrome, svo útlitið verður aldrei okkar.
+          // Í fullum glugga er sama viðmót í lagi — þar er skjalið erindið.
+          (url ? '<button type="button" class="_bkc-act _ghost" data-repview="' + esc(url) + '" data-repname="úttekt ' + esc(fin.uttekt_nr || '') + '" title="Opna skýrsluna">📄 Skýrsla</button>' : '') +
           '<button type="button" class="_bkc-act" data-send="' + fin.id + '" style="background:#0f766e" title="Senda skýrslu og/eða reikning í tölvupósti">📧 Senda</button>' +
           sj('<button type="button" class="_bkc-act _ghost" data-open="' + fin.id + '">✏️ Breyta</button>');
       }
@@ -559,9 +565,8 @@
         '<span id="_bkc-addstatus" style="color:#8b93a1"></span>' +
       '</div>';
 
-    // Skýrslan sem birtist í vinstri dálknum: LOKIÐ-skýrsla ársins fyrst, annars
-    // nýjasta skjalið sem á sér slóð. Báðar leiðir gefa vafra-teiknanlegt PDF
-    // (/api/skjal eða Storage), svo iframe dugar — ekkert pdf.js þarf.
+    // Skýrslan sem liggur efst í vinstri dálknum: LOKIÐ-skýrsla ársins fyrst,
+    // annars nýjasta skjalið sem á sér slóð.
     let skyrslaSrc = '', skyrslaNafn = '';
     (function () {
       const finNow = C.reports.find(r => +r.year === NOW && r.status === 'final') || C.reports.find(r => r.status === 'final');
@@ -647,18 +652,19 @@
       '</div>' +
       '<div class="_bkc-grid">' +
         '<div>' +
-          // 30.09.2026 (Agnar: „make the report be open in half of the screen the left
-          // side. Then button to open it larger" — og svo „settu skyrslu/invoice
-          // kassann fyrir nedan"). Skýrslan sjálf er erindið; aðgerðirnar eru svar
-          // við henni. Hún liggur því EFST í vinstri dálknum og hetjan undir.
-          // Sé engin skýrsla til er reiturinn EKKI teiknaður — tómur rammi segir
-          // minna en ekkert, og þá stendur hetjan efst eins og áður.
+          // SKÝRSLAN efst (Agnar 30.09.2026: „full stærd inn a þessu svædi").
+          // #toolbar=0&navpanes=0&view=FitH fela tækjastiku og smámyndadálk vafrans
+          // og láta síðuna fylla BREIDDINA. Fyrsta útgáfan sýndi hana í 56% með
+          // öllu Chrome-viðmótinu og Agnar kallaði það „hrædilegt" — með réttu.
+          // (Ég hélt fyrst að breyturnar væru hunsaðar; sú prófun keyrði gömlu
+          // skrána úr skyndiminni af því að ?v-merkið hafði ekki verið bumpað.)
+          // Sé engin skýrsla til er reiturinn EKKI teiknaður og hetjan stendur efst.
           (skyrslaSrc ?
             '<div class="_bkc-card"><div class="_bkc-ch">Skýrslan<small>' + esc(skyrslaNafn) +
               ' <button type="button" class="_bkc-hb" id="_bkc-repbig" style="margin-left:8px" title="Opna skýrsluna í fullum skjá">⤢ Stækka</button></small></div>' +
               '<div class="_bkc-body" style="padding:0">' +
-                '<iframe id="_bkc-repframe" src="' + esc(skyrslaSrc) + '" title="Brunakerfisskýrsla" ' +
-                  'style="width:100%;height:68vh;min-height:420px;border:0;background:#fff;display:block"></iframe>' +
+                '<iframe id="_bkc-repframe" src="' + esc(skyrslaSrc) + '#toolbar=0&navpanes=0&scrollbar=0&view=FitH" title="Brunakerfisskýrsla" ' +
+                  'style="width:100%;height:78vh;min-height:520px;border:0;background:#fff;display:block"></iframe>' +
               '</div></div>'
             : '') +
           // HETJAN: skoðun ársins. Stöðulína 291 (reikningur · Stofna drög · Tengja) lendir í #_bkc-heroinv — einn staður, ekki tveir.
@@ -719,6 +725,9 @@
     // víring
     const repBig = w.querySelector('#_bkc-repbig');
     if (repBig) repBig.addEventListener('click', () => openDocViewer({ title: 'Brunakerfisskýrsla ' + skyrslaNafn, src: skyrslaSrc }));
+    w.querySelectorAll('[data-repview]').forEach(b => b.addEventListener('click', () => {
+      openDocViewer({ title: 'Brunakerfisskýrsla ' + (b.dataset.repname || ''), src: b.dataset.repview });
+    }));
     w.querySelector('#_bkc-note').addEventListener('input', e => { C.note = e.target.value; saveNote(e.target.value); });
     w.querySelector('#_bkc-openco').addEventListener('click', () => {
       close();
