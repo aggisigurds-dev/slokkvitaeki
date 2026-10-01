@@ -29,7 +29,7 @@
   // valið lifa í localStorage og 227 speglar þau í app_settings 1–2 s síðar. Sú skrift kom hingað sem „breyting“ og
   // ALLUR prófíllinn var endurteiknaður (mælt: fyrsta röð listans 390 → 609 → 740 → 433 → 306 → 272 px á 1,5 s).
   // Skjárinn sýndi þegar nýju stöðuna — app_settings er því bakgrunnur hér.
-  const BAKGRUNNUR = /^(hradamaelingar|app_problems|year_factcheck|geocode_cache|doc_factcheck|trio_saga|villur|villuvakt|heimsoknir_log|page_views|automation_runs|fjarmal_live|app_settings|app_kv)$/;
+  const BAKGRUNNUR = /^(hradamaelingar|app_problems|year_factcheck|geocode_cache|doc_factcheck|trio_saga|villur|villuvakt|heimsoknir_log|page_views|automation_runs|fjarmal_live|app_settings|app_kv|rpc:app_settings_merge)$/;
   const NOTANDI_MS = 20000, KYRRD_MS = 2500, BID_MS = 450;
 
   let _adgerd = 0;              // síðasta raunverulega aðgerð notanda

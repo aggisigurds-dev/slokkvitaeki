@@ -54,8 +54,10 @@
     return m || {};
   }
   const erDags = s => /^\d{4}-\d{2}-\d{2}/.test(String(s || ''));
+  let _saekjaAt = 0, _saekjaRows = null;
 
   async function saekja() {
+    if (_saekjaRows && (Date.now() - _saekjaAt) < 60000) return _saekjaRows;
     const sb = SB(); if (!sb) throw new Error('Engin tenging við gagnagrunn');
     const arNu = new Date().getFullYear();
     const [docs, reikn, drog, solur, kort] = await Promise.all([
@@ -84,7 +86,7 @@
       const r = await sb.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,postnumer,er_i_thjonustu').in('id', ids.slice(i, i + 300));
       if (r.error) throw r.error; cos.push(...(r.data || []));
     }
-    return cos.map(c => {
+    const rows = cos.map(c => {
       const a = aLista[c.id] || null;
       const min = docs.filter(d => +d.fyrirtaeki_id === c.id).map(d => ({ d, u: reportUrl(d) })).filter(x => x.u && x.d.year);
       const arSlod = {}; min.forEach(x => { arSlod[+x.d.year] = x.u; });
@@ -109,12 +111,16 @@
         kostnadur: {}
       };
     });
+    _saekjaRows = rows;
+    _saekjaAt = Date.now();
+    return rows;
   }
 
   // nota / skodunarmanudur → notes / inspect_month á EINU fyrirtæki. save() skilar true/false og kastar ekki
   // (85-app-settings) — svarið er lesið OG gildið lesið til baka. Djúp-sameiningin getur ekki eytt lyklum,
   // svo tómt er skrifað sem '' / 0, aldrei delete.
   async function vista(rod, patch) {
+    _saekjaAt = 0; _saekjaRows = null;
     const AS = window.AppSettings;
     if (!AS || !AS.save || !AS.path) return { ok: false, villa: 'Stillingageymslan (AppSettings) er ekki hlaðin' };
     if (!rod) return { ok: false, villa: 'Röðin fannst ekki' };

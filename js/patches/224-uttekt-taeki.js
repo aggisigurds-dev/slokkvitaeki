@@ -510,19 +510,27 @@
     if(e.target.classList && e.target.classList.contains('ut-chk')){
       var cuid=+e.target.dataset.uid, cco=+e.target.dataset.co;
       if(e.target.checked) _sel[cuid]=true; else delete _sel[cuid];
-      UttektTaeki.rerender(cco); return;
+      uppfaeraVal(cco); return;
     }
     if((b=e.target.closest('.ut-bulk-act'))){
       var bco=+b.dataset.co, v=b.dataset.bulk;
-      unitsFor(bco).forEach(function(u){ if(_sel[u.id]){ try{UnitServicePicker.setChoice(bco,u.id,v);}catch(_){} } });
-      recompute(); UttektTaeki.rerender(bco); return;
+      var bwrap=document.querySelector('.ut-list[data-uw-co="'+bco+'"]');
+      unitsFor(bco).forEach(function(u){
+        if(!_sel[u.id]) return;
+        try{UnitServicePicker.setChoice(bco,u.id,v);}catch(_){}
+        if(bwrap){
+          var bchk=bwrap.querySelector('.ut-chk[data-uid="'+u.id+'"]');
+          if(bchk) _radUpp(bchk.closest('.ut-row'), v);
+        }
+      });
+      recompute(); return;
     }
     if((b=e.target.closest('.ut-selall'))){
       var sco=+b.dataset.co; var us=unitsFor(sco);
       var allSel=us.length>0 && us.every(function(u){return _sel[u.id];});
       if(allSel){ us.forEach(function(u){ delete _sel[u.id]; }); }
       else { us.forEach(function(u){ _sel[u.id]=true; }); }
-      UttektTaeki.rerender(sco); return;
+      uppfaeraVal(sco); return;
     }
     if(e.target.classList && e.target.classList.contains('ut-bulk-date')){ _bulkDate=e.target.value; return; }
     if(e.target.classList && e.target.classList.contains('ut-bulk-lastdate')){ _bulkLastDate=e.target.value; return; }
@@ -626,7 +634,7 @@
       })();
       return;
     }
-    if((b=e.target.closest('.ut-bulk-clear'))){ _sel={}; UttektTaeki.rerender(+b.dataset.co); return; }
+    if((b=e.target.closest('.ut-bulk-clear'))){ _sel={}; uppfaeraVal(+b.dataset.co); return; }
     if((b=e.target.closest('.ut-grp-h'))){ _collapsed[b.dataset.k]=!_collapsed[b.dataset.k]; UttektTaeki.rerender(+b.dataset.co); return; }
   });
   // Remember the bulk date across re-renders.
