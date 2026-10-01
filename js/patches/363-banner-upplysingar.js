@@ -208,8 +208,8 @@
     return null;
   }
   // Ótryggt svar (404, tímaþrot) fer EKKI í sessionStorage. Við opnun er það
-  // ekki sótt aftur — húsið færist ekki. Endurnýja á prófílnum sækir einu sinni.
-  const HAMARK_TILRAUNA = 3;                       // svo Endurnýja á tómri lóð spyrji ekki endalaust
+  // ekki sótt aftur — húsið færist ekki.
+  const HAMARK_TILRAUNA = 3;
   function saekjaSkrar(coId) {
     const k = String(coId);
     const m = skrar.get(k);
@@ -219,11 +219,14 @@
     // Fannst það sem tómar flísar á framleiðslu 14.09.2026 (2 af 3 keyrslum).
     if (heimilisfang == null) return;
     if (!heimilisfang || !/\d/.test(heimilisfang)) { skrar.set(k, { svar: { engin: true }, sott: Date.now() }); return; }
-    // 01.10.2026 (Agnar: „húsið er ekkert að fara færa sig“). Heimilisfangið er
-    // þegar á færslunni. Ekki fletta í hus-upplysingar við opnun, og aldrei
-    // reyna aftur 404 (félag 482). Aðeins Endurnýja á þessum prófíl sækir einu sinni.
-    // Svar sem þegar er í minni eða sessionStorage er teiknað án nýs kalls.
-    if (!(window.__coMaEndurnyja && window.__coMaEndurnyja(coId, 'hus'))) return;
+    // 01.10.2026: 1,2 s takturinn (haldaVid), opnun prófíls, Endurnýja og Hlaða
+    // sækja ekki. 432 les hus_upplysingar_cache, skrifar sessionStorage og
+    // teiknar. Takkinn sækir einu sinni sjálfur. __fasteignBeidni er aðeins
+    // ein skotleið ef eitthvað biður 363 um það, og hún sleppir ef svar er til.
+    if (skrarSvar(coId)) return;
+    const b = window.__fasteignBeidni;
+    if (!(b && +b.id === +coId && !b.notad)) return;
+    b.notad = true;
     if (m && m.bid) return;
     const tilraunir = ((m && m.tilraunir) || 0) + 1;
     skrar.set(k, { bid: true, tilraunir });
