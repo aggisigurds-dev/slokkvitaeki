@@ -1261,14 +1261,17 @@
   // (transform/filter/contain) — mælt í sömu prófun.
   //
   // SAMA regla bítur tvisvar: `#_ars-pnr-row>*{white-space:nowrap}` á líka við
-  // gluggann (hann ER barn raðarinnar) og ERFIST niður allt undirtréð. Þess
+  // gluggann (hann VAR barn raðarinnar til 01.10.2026; nú í #_ars-pnr-pop) og ERFIST niður allt undirtréð. Þess
   // vegna gat hausinn hvorki brotnað né skroppið saman — hann þurfti 415px en
   // hafði 376px, svo „✓ Loka" lá 38px utan gluggans og mældist ÓSMELLANLEGUR á
   // síma (elementFromPoint skilaði ekki hnappnum). Þaðan koma `white-space:normal`
   // á glugganum og `flex-wrap:wrap` + `min-width:0` á hausnum. Ekki fjarlægja.
   function _pnrPlace() {
     const p = document.getElementById('_ars-pnr-panel');
-    const btn = document.getElementById('_ars-pnr-btn');
+    // Sýnilegi takkinn, ekki sá fyrsti í DOM: lifi falinn tvíburi í #_ars-pnr-row
+    // (394 felur röðina) skilar hann 0×0 og glugginn lenti uppi í horni (01.10.2026).
+    const btns = document.querySelectorAll('[id="_ars-pnr-btn"]');
+    const btn = Array.from(btns).find(b => b.getClientRects().length) || btns[0];
     if (!p || !btn) return;
     const r = btn.getBoundingClientRect();
     const below = window.innerHeight - r.bottom - 12;
@@ -1300,11 +1303,12 @@
 
   // Smellur utan gluggans lokar honum. Skráð EINU SINNI á document (ekki í
   // render()) svo hlustendur hlaðist ekki upp við hverja endurteikningu.
-  // NB: glugginn er áfram BARN #_ars-pnr-row í DOM þótt hann sé fixed, svo
-  // `closest` hér nær yfir smelli inni í honum eins og áður.
+  // 01.10.2026: glugginn er ekki lengur barn #_ars-pnr-row (hann býr í #_ars-pnr-pop)
+  // og 394 færir takkana upp í hlutahausinn — því eru þeir taldir upp hér sérstaklega.
+  // Án takkans hér lokaði mousedown glugganum og smellurinn opnaði hann strax aftur.
   document.addEventListener('mousedown', e => {
     if (!_pnrOpen) return;
-    if (e.target.closest && e.target.closest('#_ars-pnr-row')) return;
+    if (e.target.closest && e.target.closest('#_ars-pnr-row,#_ars-pnr-pop,#_ars-pnr-btn,#_ars-pnr-clear')) return;
     _pnrOpen = false;
     if (document.getElementById('ars-main')) render();
   });
@@ -2671,6 +2675,13 @@
             <span style="font-size:11px;color:var(--ink2);max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(postnrFilterLabel())}</span>
             <button id="_ars-pnr-clear" type="button" title="Taka póstnúmera-síuna af — sýna öll númer aftur" style="padding:5px 11px;border:1px solid var(--brd2);background:var(--surface);color:var(--ink2);border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">✕ Sýna öll</button>
           ` : ''}
+        </div>
+        <!-- 01.10.2026 (Agnar: „númer takkinn virkar ekki að opna"): glugginn stendur
+             UTAN #_ars-pnr-row. 394 felur röðina á tölvu (takkinn situr í hlutahausnum)
+             og gluggi inni í display:none röð mælist 0×0 hvað sem position:fixed segir.
+             Hólfið er alltaf teiknað og _ars-auðkennið gerir það ferskt í samrunanum,
+             svo lokaður gluggi hverfur með því — stakur gluggi stæði eftir sem aðskotahnútur. -->
+        <div id="_ars-pnr-pop">
           ${_pnrOpen ? `
           <div id="_ars-pnr-panel" style="position:fixed;top:0;left:0;margin:0;z-index:9999;background:var(--surface);border:1px solid var(--brd2);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.30);width:min(460px,94vw);max-height:65vh;display:flex;flex-direction:column;overflow:hidden;white-space:normal">
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:9px 11px;border-bottom:1px solid var(--brd);background:var(--surface2)">

@@ -288,6 +288,21 @@
   // fulla af hömum annarra. M(id) þekkir haminn áfram, svo mál tengd honum týnast ekki.
   const hamSest = h => !h.eigandi || lagt(h.eigandi) === lagt(nu());
   const hamaListi = () => Object.keys(MODES).concat(serHamir().filter(hamSest).map(h => h.id));
+  // 01.10.2026 (Agnar: „geti slökkt á að það sé alltaf allt sjáanlegt fyrir ákveðna starfsmenn … eins og fyrir
+  // Anna … svo hann sjái bara Anni · mitt vinnuborð til að byrja með og + hamur, velja einingar"): hamir sem eru
+  // faldir í hamaröð starfsmanns, by_staff.<nafn>.falnir_hamir = [id]. Listi yfir FALDA (ekki sýnilega), svo hamur
+  // sem hann býr sjálfur til með „+ Hamur" sést strax. Mitt vinnuborð verður aldrei falið — það er lendingarstaðurinn.
+  // Rofarnir eru í ⚙ Mitt vinnuborð. _falnirBid heldur nýja listanum meðan vistunin er á leiðinni.
+  const _falnirBid = {};
+  function falnirHamir(n) {
+    if (_falnirBid[n]) return _falnirBid[n];
+    const l = P(CFG_KEY + '.by_staff.' + n + '.falnir_hamir');
+    return Array.isArray(l) ? l.map(String).filter(k => k !== MITT_HAM) : [];
+  }
+  const hamFalinnHja = (n, k) => k !== MITT_HAM && falnirHamir(n).indexOf(k) >= 0;
+  const hamFalinn = k => hamFalinnHja(nu(), k);
+  // Hamur sem má lenda á: sá vistaði ef hann sést, annars Master og mitt borð, annars mitt vinnuborð.
+  const lendingarHamur = (n, k) => (k && !hamFalinnHja(n, k)) ? k : (hamFalinnHja(n, 'thjonusta') ? MITT_HAM : 'thjonusta');
   // 368aa: talan á hamahnappnum er það sem bíður í hamnum — ekki fjöldi mála í flokki (sem var næstum sá sami alls staðar).
   function hamTala(k) {
     const h = M(k), n = nu();
@@ -320,6 +335,7 @@
     vbrBuin: false,    // 18.09.2026: sýna vinnublöð sem búið er að svara (sótt löt)
     hamDrag: null,     // 18.09.2026: eining sem verið er að draga til í útlitsritlinum
     dnDrog: {}, dnStada: {},   // 18.09.2026: frjáls texti á dag í Dagskránni
+    skHled: {},                // 01.10.2026: skjöl á leið á spjald { skid: [{ k, nafn, stada: 'hled'|'vistar'|'villa' }] }
     samtSkyOpid: {}, samtSkyDrog: {},   // 368w: opinn skýringarritill á samþykkismáli + óvistuð drög
     falidBid: {},      // Fela-skrif sem bíða eða kláruðust nýlega: { lykill: { falid, row, tok, lokid } }
     skyrBid: {},       // Skýringar-skrif sem bíða eða kláruðust nýlega: { lykill: { skyring, af, at, rod, tok, lokid } }
@@ -362,7 +378,7 @@
       const x = v && v.mods && Array.isArray(v.mods[k]) ? v.mods[k] : base[k];
       mods[k] = [x[0] ? 1 : 0, x[1] ? 1 : 0];
     });
-    return { mode: v && M(v.mode) ? v.mode : 'thjonusta', mods, baraMitt: !!(v && v.bara_mitt) };
+    return { mode: lendingarHamur(n, v && M(v.mode) ? v.mode : ''), mods, baraMitt: !!(v && v.bara_mitt) };
   }
   function cfg() {
     const n = nu();
@@ -884,8 +900,20 @@
     }
     return out;
   }
+  // 01.10.2026 (Agnar: „bætt við Dagskrá að geta valið td Anni, Agnar, Bjarndís, Afgreiðsla, og síðan bara Allir"):
+  // hvers dagskrá er sýnd. „Allir" = eins og 27.09 — verk allra og sameiginlegar nótur. Nafn = verk þess starfsmanns
+  // (og sameiginleg verk á „Allir") og HANS dagnótur. Valið fylgir þeim sem er við borðið, by_staff.<nafn>.dagskra_syn.
+  const DN_EIG = 'Allir';   // grein sameiginlegu dagskrárinnar/nótanna (27.09.2026)
+  const _dgSynBid = {};
+  const dagskraFolk = () => folk().filter(x => x !== AI_WORKER && x !== DN_EIG).concat([DN_EIG]);
+  function dagskraSyn() {
+    const n = nu();
+    const v = _dgSynBid[n] != null ? _dgSynBid[n] : P(CFG_KEY + '.by_staff.' + n + '.dagskra_syn');
+    return v && dagskraFolk().indexOf(String(v)) >= 0 ? String(v) : DN_EIG;
+  }
   function week() {
-    const jobs = allirJobs(), out = [], d0 = new Date();
+    const syn = dagskraSyn(), out = [], d0 = new Date();
+    const jobs = allirJobs().filter(j => syn === DN_EIG || j._n === syn || j._n === DN_EIG);
     for (let i = 0; i < 7; i++) {
       const d = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i), key = ymd(d);
       out.push({
@@ -945,6 +973,8 @@
       '.acts{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}',
       '.who{display:flex;flex-direction:column;gap:5px;margin:0}',
       '.who select{height:36px;min-width:150px;padding:0 11px;border:1px solid var(--edge);border-radius:4px;background:var(--well);box-shadow:var(--wellsh);font:600 13px var(--body);color:var(--ink)}',
+      // 01.10.2026: hvers dagskrá — við hliðina á „+ Skrá verk" í haus Dagskrár.
+      '.dgsyn{display:inline-flex;align-items:center;gap:7px;margin:0 8px 0 0}.dgsyn select{height:30px;min-width:120px;padding:0 9px;border:1px solid var(--edge);border-radius:4px;background:var(--well);box-shadow:var(--wellsh);font:600 12.5px var(--body);color:var(--ink)}',
       '.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:4px;font:600 12.5px var(--body);cursor:pointer;white-space:nowrap;transition:filter 120ms}',
       '.btn:hover{filter:brightness(1.04)}.btn:active{filter:brightness(.96)}',
       '.btn.sm{height:30px;padding:0 11px;font-size:12px}.btn.lg{height:42px;padding:0 18px;font-size:13.5px}',
@@ -1153,6 +1183,8 @@
       '.cfgt b{display:block;font-family:var(--disp);font-size:15px;font-weight:700}.cfgt span{display:block;font-size:12px;color:var(--mute)}',
       '.lock{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}',
       '.cfgfoot{padding:11px 16px;border-top:1px solid var(--rule);font-size:12px;color:var(--mute)}',
+      // 01.10.2026: hamir sem hausar í ⚙ með rofa; einingar hamsins undir. Falinn hamur = daufur.
+      '.cfgrow.hamh{border-top:1px solid var(--rule);background:rgba(22,21,19,.035)}.cfgrow.hamh .cfgt b{font-size:16px}.cfgrow.hamoff .cfgt,.cfgrow.hamoff .plate{opacity:.5}.cfgrow.off{opacity:.42}',
       '.sw{position:relative;width:40px;height:22px;flex:none;border-radius:11px;border:1px solid var(--edge2);background:var(--well);box-shadow:var(--wellsh);cursor:pointer;padding:0}',
       '.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--key);border:1px solid var(--edge);box-shadow:var(--keysh)}',
       '.sw[aria-checked="true"]{background:linear-gradient(180deg,#2a7a45 0%,#174a2a 55%,#144424 100%);border-color:#0a2a15}.sw[aria-checked="true"]::after{left:20px}',
@@ -1221,6 +1253,16 @@
       '.skn{width:100%;border:0;border-bottom:1px dashed transparent;background:transparent;font:700 14px var(--body);color:var(--ink);padding:3px 2px}.skn:focus{outline:none;border-bottom-color:var(--g6)}',
       '.skt{width:100%;border:0;background:transparent;font:13px/1.45 var(--body);color:var(--ink2);padding:2px;resize:vertical;min-height:38px}.skt:focus{outline:none;background:#fffdf7}',
       '.skm{display:flex;flex-direction:column;align-items:flex-start;gap:4px}.skm img{max-width:100%;max-height:160px;border-radius:3px;border:1px solid var(--rule2)}',
+      // 01.10.2026: tenglar og skjöl á spjaldi + merkið þegar skjal er dregið yfir.
+      '.skl{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:2px;min-width:0}',
+      '.skla{display:inline-block;max-width:100%;height:22px;line-height:20px;padding:0 8px;border:1px solid var(--rule3);border-radius:3px;background:linear-gradient(180deg,#fff,#efece6);font:600 11.5px/20px var(--body);color:var(--ink);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}',
+      '.skla:hover{border-color:var(--edge2)}.skfw{display:inline-flex;align-items:center;gap:1px;max-width:100%;min-width:0}',
+      '.skfx{border:0;background:none;color:var(--mute);cursor:pointer;font-size:11px;padding:0 3px}.skfx:hover{color:var(--ink)}',
+      '.skc.skjalyfir,.skgrid.skjalyfir{outline:2px dashed #b8770e;outline-offset:2px}',
+      // Strax-merking (01.10.2026): yfir spjaldi segir það hvað gerist; á leiðinni sést „Hleð upp… / Vista…".
+      '.skc.skjalyfir::after{content:"Slepptu til að hengja við";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,253,247,.88);font:700 12.5px var(--body);color:#7a4e06;pointer-events:none;z-index:2}',
+      '.skla.skbid{border-style:dashed;background:#fffdf7;color:#7a4e06;animation:skpuls 1.2s ease-in-out infinite}.skla.skvilla{animation:none;border-color:var(--terra);color:var(--terra)}',
+      '@keyframes skpuls{0%,100%{opacity:1}50%{opacity:.55}}@media (prefers-reduced-motion: reduce){.skla.skbid{animation:none}}',
       '.skf{font-size:11.5px;color:var(--mute)}.skstada{font-size:11.5px;color:var(--mute)}',
       '.sknew{min-height:96px;border:1px dashed var(--edge2);border-radius:4px;background:transparent;font:600 13px var(--body);color:var(--mute);cursor:pointer}.sknew:hover{background:#fffdf7;color:var(--ink)}',
       // 17.09.2026 (Agnar: „svolítið chaoslegt"): færri hnappar, meiri andrými,
@@ -1236,6 +1278,27 @@
       '.skn{padding:2px 10px;font:700 14.5px var(--body);color:var(--ink)}',
       '.skt{padding:2px 10px 0;font:13px/1.5 var(--body);color:var(--ink)}',
       '.skc .skm,.skc .skf{margin:0 10px}',
+      // 01.10.2026: tenglar/skjöl og merki („@Anni") fá sömu innskot og hin; nafnavalið opnast INNI í spjaldinu
+      // (.skc er overflow:hidden — fljótandi gluggi klipptist).
+      '.skc .skl,.skc .skmk{margin:0 10px}',
+      // Smámyndin (01.10.2026): föst 64×48 efst til hægri; textinn víkur fyrir henni svo spjaldið haldi venjulegri stærð.
+      '.skc{position:relative}.skc .skm.skthumb{position:absolute;top:27px;right:10px;width:64px;height:48px;margin:0;display:block}',
+      '.skc .skm.skthumb a{display:block;width:100%;height:100%}.skc .skm.skthumb img{display:block;width:100%;height:100%;max-height:none;object-fit:cover;border-radius:3px;border:1px solid var(--rule3);box-shadow:0 1px 2px rgba(0,0,0,.12);cursor:zoom-in}',
+      '.skmx{position:absolute;top:-6px;right:-6px;width:18px;height:18px;padding:0;border:1px solid var(--rule3);border-radius:50%;background:#fff;font:400 10px/1 var(--body);color:var(--mute);cursor:pointer;opacity:0}',
+      '.skthumb:hover .skmx,.skmx:focus-visible{opacity:1}.skmx:hover{color:var(--terra)}@media (pointer:coarse){.skmx{opacity:1}}',
+      '.skc.harmynd .skn,.skc.harmynd .skt,.skc.harmynd .skn2,.skc.harmynd .skt2{padding-right:82px}.skc.harmynd .skt{min-height:44px}',
+      '.skmk{display:flex;align-items:center;flex-wrap:wrap;gap:3px 5px;min-height:20px;margin-top:2px}',
+      '.skmc{display:inline-block;height:18px;padding:0 6px;border-radius:3px;background:#2b2e35;color:#fff;font:700 10.5px/18px var(--mono);letter-spacing:.02em}',
+      '.skmb{width:24px;height:20px;padding:0;border:1px solid var(--rule3);border-radius:3px;background:linear-gradient(180deg,#fff,#efece6);font:700 12px/1 var(--mono);color:var(--mute);cursor:pointer}',
+      '.skmb:hover,.skmb[aria-expanded="true"]{color:var(--ink);border-color:var(--edge2)}',
+      '.skmp{display:flex;flex-wrap:wrap;gap:4px;width:100%;padding:6px 0 0}',
+      '.skmp button{height:24px;padding:0 9px;border:1px solid var(--rule3);border-radius:3px;background:#fff;font:600 12px var(--body);color:var(--ink);cursor:pointer}',
+      '.skmp button[aria-checked="true"]{background:#2b2e35;border-color:#000;color:#fff}',
+      '.skmt{margin-top:12px;padding-top:8px;border-top:1px solid var(--rule2)}',
+      '.skmth{margin-bottom:6px;font:700 10.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}',
+      '.skgridm{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr));gap:10px;align-items:start}',
+      '.skcm .skh{cursor:default}.skfra{font:700 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}',
+      '.skn2{display:block;padding:2px 10px;font:700 14.5px var(--body);color:var(--ink)}.skt2{padding:2px 10px 0;white-space:pre-wrap;font:13px/1.5 var(--body);color:var(--ink)}',
       '.skn::placeholder,.skt::placeholder{color:var(--mute);opacity:.14}',
       '.skgrid.yfir{outline:2px dashed var(--g6);outline-offset:4px;border-radius:6px}',
       '.sknew{cursor:grab}.sknew:active{cursor:grabbing}',
@@ -1352,6 +1415,8 @@
         '.sel.side{display:none}' +
         '.frow{grid-template-columns:minmax(0,1fr) auto;padding:12px}.frow .age{grid-column:1 / -1}' +
         '.cfgrow{grid-template-columns:30px minmax(0,1fr) auto;padding:10px 12px}.cfgrow .seg{grid-column:2 / -1;justify-self:start}' +
+        // Hamshaus: 4 hólf í 3 dálkum → rofinn féll í línu 2. Rofinn segir sjálfur Sést/Falið, svo merkið víkur.
+        '.cfgrow.hamh>.lock:not(:last-child),.cfgrow.hamh>span:empty{display:none}' +
         '.composer,.composer.ny{grid-template-columns:minmax(0,1fr)}.composer textarea{grid-column:auto}.leit{max-width:none}' +
       '}',
       '@media (prefers-reduced-motion: reduce){.btn{transition:none}}'
@@ -2578,8 +2643,9 @@
   // 27.09.2026: dagnóturnar eru SAMEIGINLEGAR (grein „Allir"). Dagur sem á enga sameiginlega nótu enn sýnir það sem
   // starfsmenn höfðu skrifað hver á sína — öllu haldið, hvert atriði einu sinni — svo ekkert týnist við breytinguna;
   // fyrsta vistun skrifar það í sameiginlegu nótuna.
-  const DN_EIG = 'Allir';
-  const dagNota = (_n, key) => {
+  const dagNota = (eig, key) => {
+    // 01.10.2026: valinn starfsmaður (ekki „Allir") → hans eigin nótur, skrifaðar á hans grein.
+    if (eig && eig !== DN_EIG) return String(P('skipulagsbord.by_staff.' + eig + '.dagnotur.' + key) || '');
     const sam = P('skipulagsbord.by_staff.' + DN_EIG + '.dagnotur.' + key);
     if (typeof sam === 'string') return sam;
     const hlutar = [];
@@ -2591,13 +2657,14 @@
     return hlutar.join('\n');
   };
   function dagNotaHtml(d) {
-    const n = nu();
-    const g = S.dnDrog[d.key] != null ? S.dnDrog[d.key] : dagNota(n, d.key);
-    const st = S.dnStada[d.key];
+    // Lykillinn ber eigandann með („Anni|2026-10-01") svo drög og vistun lendi á réttri grein þótt skipt sé um val.
+    const eig = dagskraSyn(), dk = eig + '|' + d.key;
+    const g = S.dnDrog[dk] != null ? S.dnDrog[dk] : dagNota(eig, d.key);
+    const st = S.dnStada[dk];
     return '<div class="dnota">' +
-      '<textarea data-dn="' + esc(d.key) + '" rows="' + Math.min(10, Math.max(2, g.split('\n').length + 1)) + '"' +
+      '<textarea data-dn="' + esc(dk) + '" rows="' + Math.min(10, Math.max(2, g.split('\n').length + 1)) + '"' +
         ' aria-label="Nóta ' + d.d + ' ' + d.n + '." placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
-      '<span class="dnst ' + (st ? st.t : '') + '" data-dnst="' + esc(d.key) + '">' + esc(st ? st.s : '') + '</span>' +
+      '<span class="dnst ' + (st ? st.t : '') + '" data-dnst="' + esc(dk) + '">' + esc(st ? st.s : '') + '</span>' +
     '</div>';
   }
   function dnStimpla(key) {
@@ -2616,12 +2683,13 @@
     S.dnStada[key] = { t: 'bid', s: 'Óvistað…' };
     dnStimpla(key);
     bida('dn:' + key, async () => {
-      const n = DN_EIG, texti = S.dnDrog[key];
+      const bil = key.indexOf('|'), n = bil > 0 ? key.slice(0, bil) : DN_EIG, dags = bil > 0 ? key.slice(bil + 1) : key;
+      const texti = S.dnDrog[key];
       if (texti == null) return;
       S.dnStada[key] = { t: 'vistar', s: 'Vista…' };
       dnStimpla(key);
       let ok = false;
-      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { dagnotur: { [key]: texti } } } } })); } catch (_) {}
+      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { dagnotur: { [dags]: texti } } } } })); } catch (_) {}
       if (ok && S.dnDrog[key] === texti) delete S.dnDrog[key];
       S.dnStada[key] = ok
         ? { t: 'ok', s: 'Vistað kl. ' + klukka(new Date()) }
@@ -2651,8 +2719,11 @@
         '</div>' +
       '</div>').join('') + '</div>' +
       (open ? '<div class="legend">' + VD_TEG.map(t => '<span><i class="dot" style="background:' + t[1] + '"></i>' + t[0] + '</span>').join('') + '</div>' : '');
-    const action = '<button type="button" class="btn gold sm" data-t5="job-new" data-date="' + days[0].key + '">+ Skrá verk</button>';
-    return modPanel('dagskra', days[0].jobs.length + ' í dag · ' + total + ' næstu 7 daga', body, action, true);
+    const syn = dagskraSyn();
+    const val = '<label class="dgsyn"><span class="lbl">Dagskrá</span><select data-t5="dg-syn" aria-label="Hvers dagskrá er sýnd">' +
+      dagskraFolk().map(x => '<option value="' + esc(x) + '"' + (x === syn ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select></label>';
+    const action = val + '<button type="button" class="btn gold sm" data-t5="job-new" data-date="' + days[0].key + '">+ Skrá verk</button>';
+    return modPanel('dagskra', (syn !== DN_EIG ? syn + ' · ' : '') + days[0].jobs.length + ' í dag · ' + total + ' næstu 7 daga', body, action, true);
   }
   /* ── einingar sem sækja gögn: latar, geymdar í 5 mín (engin sókn við hverja 60 s könnun) ── */
   const G = {};
@@ -3767,6 +3838,60 @@
       sale: null,
     };
   }
+  // Tenglar úr textanum + skjöl spjaldsins sem smellanlegar flögur undir textanum (01.10.2026).
+  function skFylgiHtml(id, texti, skjol, adeinsLesa) {
+    const tl = skTenglar(texti), sk = Array.isArray(skjol) ? skjol.filter(s => s && s.url) : [];
+    const bid = (!adeinsLesa && id && S.skHled[id]) || [];
+    if (!tl.length && !sk.length && !bid.length) return '';
+    return '<div class="skl">' +
+      // Skjöl á leiðinni sjást STRAX (Agnar 01.10.2026: „engin merking að það sé í vinnslu … maður dragi ekki aftur og aftur").
+      bid.map(b => '<span class="skla skbid' + (b.stada === 'villa' ? ' skvilla' : '') + '" title="' + esc(b.nafn) + '">' +
+        (b.stada === 'villa' ? 'Mistókst: ' : b.stada === 'vistar' ? 'Vista… ' : 'Hleð upp… ') + esc(b.nafn) + '</span>').join('') +
+      tl.map(u => '<a class="skla" href="' + esc(u) + '" target="_blank" rel="noopener noreferrer" title="' + esc(u) + '">' + esc(skTengilNafn(u)) + ' ›</a>').join('') +
+      sk.map(s => '<span class="skfw"><a class="skla" href="' + esc(s.url) + '" target="_blank" rel="noopener" title="' + esc(s.nafn || '') + '">' + esc(s.nafn || 'Skjal') + '</a>' +
+        (adeinsLesa ? '' : '<button type="button" class="skfx" data-t5="sk-skjal-x" data-skid="' + id + '" data-u="' + esc(s.url) + '" aria-label="Taka ' + esc(s.nafn || 'skjal') + ' af spjaldinu" title="Taka af spjaldinu">✕</button>') + '</span>').join('') +
+      '</div>';
+  }
+  // 01.10.2026 (Agnar: „litið Tag feature í hægra neðra hornið … svo ég geti tag einhvern af starfsmönnunum eða
+  // afgreiðsla"): cd.merki = [nafn]. „@" neðst til hægri opnar nafnavalið inni í spjaldinu; merktur starfsmaður sér
+  // spjaldið á sínu Skipulagsborði undir „Merkt á þig" og hakar „✓ Búið" (tekur sitt nafn af, á borði eigandans).
+  const merkjaFolk = () => folk().filter(x => x !== AI_WORKER && lagt(x) !== 'allir');
+  function skMerkiHtml(id, merki) {
+    const m = Array.isArray(merki) ? merki.filter(Boolean).map(String) : [];
+    const opid = S.skMerkja === id;
+    return '<div class="skmk">' + m.map(x => '<span class="skmc">@' + esc(x) + '</span>').join('') + '<span class="grow"></span>' +
+      '<button type="button" class="skmb" data-t5="sk-merkja" data-skid="' + id + '" aria-expanded="' + opid + '" title="Merkja starfsmann á spjaldið" aria-label="Merkja starfsmann">@</button>' +
+      (opid ? '<div class="skmp" role="group" aria-label="Merkja á">' + merkjaFolk().map(x => {
+        const a = m.some(y => lagt(y) === lagt(x));
+        return '<button type="button" role="switch" aria-checked="' + a + '" data-t5="sk-merki" data-skid="' + id + '" data-n="' + esc(x) + '">' + esc(x) + '</button>';
+      }).join('') + '</div>' : '') +
+      '</div>';
+  }
+  function merktAMig(n) {
+    const out = [];
+    for (const x of folk()) {
+      if (lagt(x) === lagt(n)) continue;
+      for (const cd of spjold(x)) if (cd && Array.isArray(cd.merki) && cd.merki.some(m => lagt(m) === lagt(n))) out.push({ eig: x, cd });
+    }
+    return out;
+  }
+  function merktHtml(n) {
+    const l = merktAMig(n);
+    if (!l.length) return '';
+    return '<div class="skmt"><div class="skmth">Merkt á þig · ' + l.length + '</div><div class="skgridm">' + l.map(({ eig, cd }) => {
+      const t = cd.type != null && SB_TEG[cd.type] ? SB_TEG[cd.type] : null;
+      return '<div class="skc skcm' + (cd.mynd ? ' harmynd' : '') + '">' +
+        '<span class="skstrip" style="background:' + (t ? t[1] : 'var(--rule3)') + '"></span>' +
+        '<div class="skh"><span class="skfra">frá ' + esc(eig) + '</span><span class="grow"></span>' +
+          '<button type="button" class="skb" data-t5="sk-merki-af" data-eig="' + esc(eig) + '" data-skid="' + esc(cd.id) + '" title="Taka nafnið mitt af spjaldinu">✓ Búið</button></div>' +
+        (cd.name ? '<b class="skn2">' + esc(cd.name) + '</b>' : '') +
+        (cd.title ? '<div class="skt2">' + esc(cd.title) + '</div>' : '') +
+        skFylgiHtml('', cd.title, cd.skjol, true) +
+        (cd.mynd ? '<div class="skm skthumb"><a href="' + esc(cd.mynd) + '" target="_blank" rel="noopener" title="Opna mynd í fullri stærð"><img src="' + esc(cd.mynd) + '" alt="Mynd á spjaldi" loading="lazy"></a></div>' : '') +
+        '<div class="skmk">' + cd.merki.map(x => '<span class="skmc">@' + esc(x) + '</span>').join('') + '</div>' +
+      '</div>';
+    }).join('') + '</div></div>';
+  }
   function bottomHtml(k) {
     const n = nu();
     if (k === 'checklisti') return checklistiHtml(k);
@@ -3782,23 +3907,29 @@
         // 17.09.2026: punktaröðin (6 hnappar) og örvarnar tvær fóru — liturinn er nú
         // ein ræma efst sem smellt er á til að skipta, og fært er með því að draga
         // hausinn sjálfan (ekki bara ⠿). Það tók fjóra hnappa af hverju spjaldi.
-        return '<div class="skc" data-skid="' + id + '">' +
+        return '<div class="skc' + (cd.mynd ? ' harmynd' : '') + '" data-skid="' + id + '">' +
           '<button type="button" class="skstrip" data-t5="sk-type" data-skid="' + id + '" style="background:' + (t ? t[1] : 'var(--rule3)') + '" title="' + (t ? esc(t[0]) : 'Enginn litur') + ' — smelltu til að skipta um lit" aria-label="Litur spjalds"></button>' +
           '<div class="skh" draggable="true" data-skdrag="' + id + '" title="Dragðu spjaldið til að færa það">' +
             '<span class="skgrip" aria-hidden="true">⠿</span><span class="grow"></span>' +
             '<button type="button" class="skx" data-t5="sk-del" data-skid="' + id + '" aria-label="Eyða spjaldi" title="Eyða spjaldi">✕</button></div>' +
           '<input class="skn" data-sk="name" data-skid="' + id + '" value="' + esc(nafn) + '" placeholder="Fyrirsögn" aria-label="Fyrirsögn">' +
           '<textarea class="skt" data-sk="title" data-skid="' + id + '" rows="' + Math.min(8, Math.max(2, String(texti).split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er…" aria-label="Texti">' + esc(texti) + '</textarea>' +
-          (cd.mynd ? '<div class="skm"><a href="' + esc(cd.mynd) + '" target="_blank" rel="noopener"><img src="' + esc(cd.mynd) + '" alt="Mynd á spjaldi" loading="lazy"></a>' +
-            '<button type="button" class="skb" data-t5="sk-mynd-x" data-skid="' + id + '">Fjarlægja mynd</button></div>' : '') +
+          skFylgiHtml(id, texti, cd.skjol) +
+          // 01.10.2026 (Agnar: „minnkað preview svo spjaldið sé bara nokkuð venjulegt að stærð … síðan opnað myndina"):
+          // smámynd efst til hægri; smellur opnar hana í fullri stærð í nýjum flipa, ✕ birtist þegar bendill er yfir.
+          (cd.mynd ? '<div class="skm skthumb"><a href="' + esc(cd.mynd) + '" target="_blank" rel="noopener" title="Opna mynd í fullri stærð"><img src="' + esc(cd.mynd) + '" alt="Mynd á spjaldi" loading="lazy"></a>' +
+            '<button type="button" class="skmx" data-t5="sk-mynd-x" data-skid="' + id + '" aria-label="Fjarlægja mynd" title="Fjarlægja mynd">✕</button></div>' : '') +
           (cd.verkbord_id != null ? '<div class="skf">' + (row ? (row.important ? '<span class="tag hot">★ Áríðandi</span> ' : '') + '<button type="button" class="clink" data-t5="skoda" data-id="' + row.id + '">Opna mál ›</button> · ' + esc(eigandaTexti(row, n)) + ' ' + dagskrarTakki(row) : 'Málið er lokað eða í geymslu') + '</div>' : '') +
+          skMerkiHtml(id, cd.merki) +
         '</div>';
       }).join('');
       // 19.09.2026 (Agnar: „það á bara að vera taflan"): áríðandi-listinn er farinn héðan í sína eigin einingu (25 Áríðandi).
       const body = '<div class="skwrap">' +
         '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny" draggable="true" data-skdrag="__ny" title="Smelltu — eða dragðu autt spjald þangað sem þú vilt hafa það">+ Nýtt spjald</button></div>' +
-        '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot beint í spjald.') + '</div></div>';
-      return modPanel(k, cards.length + ' spjöld', body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
+        '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot í spjald, eða dragðu skjal eða tengil á það.') + '</div>' +
+        merktHtml(n) + '</div>';
+      const nMerkt = merktAMig(n).length;
+      return modPanel(k, cards.length + ' spjöld' + (nMerkt ? ' · ' + nMerkt + ' merkt á þig' : ''), body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
     }
     if (k === 'postbeidnir') {
       // Sami gluggi og 240 notar (2 mán) og SAMA regla, svo talan hér og talan
@@ -4247,16 +4378,33 @@
   }
 
   function cfgHtml() {
-    const c = cfg();
-    const core = [['02', 'Master borð'], ['03', 'Mitt borð'], ['04', 'Valið mál']].map(x =>
-      '<div class="cfgrow">' + plate(x[0]) + '<div class="cfgt"><b>' + x[1] + '</b><span>Kjarninn í flæðinu — í hamnum Master og mitt borð.</span></div><span></span><span class="lock">Alltaf</span></div>').join('');
-    // 368aa: hver eining á heima í einum ham og birtist þar alltaf — hér sést hvar. Kveikja/slökkva og „opið/samanbrotið"
-    // hurfu með hægri dálkinum, sem var eins í öllum hömum.
-    const rows = Object.keys(MODES).map(h => MODES[h].first.map(k =>
-      '<div class="cfgrow">' + plate(MODS[k].n) + '<div class="cfgt"><b>' + MODS[k].t + '</b><span>' + MODS[k].d + '</span></div><span></span><span class="lock">' + esc(MODES[h].l) + '</span></div>').join('')).join('');
-    return '<header class="phead"><span class="plate">⚙</span><h2 class="ptitle">Mitt vinnuborð · ' + esc(nu()) + '</h2><span class="grow"></span>' +
+    const c = cfg(), n = nu(), falnir = falnirHamir(n);
+    // 368aa: hver eining á heima í einum ham og birtist þar alltaf — hér sést hvar, flokkað undir haminn.
+    // 01.10.2026: hver hamur fær rofa — slökkt = hamurinn (og einingarnar hans) hverfur úr hamaröð þessa starfsmanns.
+    const KJARNI = [['02', 'Master borð', 'Laus mál sem allir geta tekið.'], ['03', 'Mitt borð', 'Málin sem eru sett á þig.'], ['04', 'Valið mál', 'Opna málið: póstur, saga og aðgerðir.']];
+    const eining = (num, t, d, falid) => '<div class="cfgrow' + (falid ? ' off' : '') + '">' + plate(num) + '<div class="cfgt"><b>' + t + '</b><span>' + d + '</span></div><span></span><span class="lock">' + (falid ? 'Falið' : '') + '</span></div>';
+    const blokk = k => {
+      const h = M(k);
+      if (!h) return '';
+      const mitt = k === MITT_HAM, syn = mitt || falnir.indexOf(k) < 0;
+      const ein = k === 'thjonusta' ? KJARNI.map(x => eining(x[0], x[1], x[2], !syn))
+        : (h.first || []).filter(m => MODS[m]).map(m => eining(MODS[m].n, MODS[m].t, MODS[m].d, !syn));
+      const lysing = mitt ? 'Þitt borð — einingarnar velur þú í „✎ Velja einingar". Sést alltaf.'
+        : h.rymi ? 'Vinnusvæði í fullri breidd.'
+        : ein.length ? ein.length + (ein.length === 1 ? ' eining' : ' einingar') : 'Engar einingar enn.';
+      return '<div class="cfgrow hamh' + (syn ? '' : ' hamoff') + '"><span class="plate">' + esc(String(h.l).trim().charAt(0).toUpperCase() || '·') + '</span>' +
+        '<div class="cfgt"><b>' + esc(h.l) + '</b><span>' + lysing + '</span></div>' +
+        (mitt ? '<span></span><span class="lock">Alltaf</span>'
+          : '<span class="lock">' + (syn ? 'Sést' : 'Falið') + '</span><button type="button" class="sw" role="switch" aria-checked="' + syn + '" data-t5="ham-syn" data-mode="' + esc(k) + '" aria-label="Sýna haminn ' + esc(h.l) + ' hjá ' + esc(n) + '"></button>') +
+        '</div>' + ein.join('');
+    };
+    const hamir = [MITT_HAM].concat(hamaListi().filter(k => k !== MITT_HAM));
+    const nFalid = hamir.filter(k => falnir.indexOf(k) >= 0).length;
+    return '<header class="phead"><span class="plate">⚙</span><h2 class="ptitle">Mitt vinnuborð · ' + esc(n) + '</h2><span class="grow"></span>' +
         '<button type="button" class="btn gold sm" data-t5="cfg">Loka ›</button></header>' +
-      core + rows +
+      '<div class="cfgfoot">Hamirnir sem ' + esc(n) + ' sér. Slökktu á ham til að taka hann úr hamaröðinni — „' + esc(n) + ' · mitt vinnuborð", „+ Hamur" og „✎ Velja einingar" eru alltaf þar.' +
+        (nFalid ? ' <b>' + nFalid + (nFalid === 1 ? ' hamur falinn.' : ' hamir faldir.') + '</b>' : '') + '</div>' +
+      hamir.map(blokk).join('') +
       I_VOLDU.map(k => '<div class="cfgrow">' + plate(MODS[k].n) + '<div class="cfgt"><b>' + MODS[k].t + '</b><span>' + MODS[k].d + '</span></div><span class="lock">Í völdu máli</span>' +
         '<button type="button" class="sw" role="switch" aria-checked="' + !!c.mods[k][0] + '" data-t5="cfg-on" data-m="' + k + '" aria-label="' + MODS[k].t + '"></button></div>').join('') +
       '<div class="cfgrow"><span class="plate">—</span><div class="cfgt"><b>Spjall</b><span>Slökkt í bili fyrir alla.</span></div><span></span><span class="lock">Slökkt</span></div>' +
@@ -4311,7 +4459,11 @@
       const opin = fid => S.rows.filter(r => String(r.fyrirtaeki_id) === String(fid)).length;
       const fyr = L.fyr.map((x, i) => '<div class="pitem' + (L.idx === i ? ' on' : '') + '">' +
           '<a class="pmain" href="#company/' + x.id + '" data-t5="fyr-id" data-fid="' + x.id + '"><b>' + esc(x.nafn) + '</b><span>' + esc([x.heim, x.kt].filter(Boolean).join(' · ')) + '</span></a>' +
-          (opin(x.id) ? '<button type="button" class="btn iv sm" data-t5="filter" data-f="f:' + x.id + '">' + opin(x.id) + ' opin mál ›</button>' : '') + '</div>').join('');
+          (opin(x.id) ? '<button type="button" class="btn iv sm" data-t5="filter" data-f="f:' + x.id + '">' + opin(x.id) + ' opin mál ›</button>' : '') +
+          // 01.10.2026 (Agnar: „velja hvort maður vilji sjá fyrri viðskipti eða fara á profile"): sami gluggi og í
+          // Sölu (253 SalaCustomerHistory, source fyrirtaeki = staðurinn) og sama prófílleið og nafnið sjálft.
+          (window.SalaCustomerHistory ? '<button type="button" class="btn iv sm" data-t5="fyr-saga" data-i="' + i + '">Fyrri viðskipti</button>' : '') +
+          '<a class="btn iv sm" href="#company/' + x.id + '" data-t5="fyr-id" data-fid="' + x.id + '">Prófíll ›</a>' + '</div>').join('');
       const mal = malLeit(q).map(r => '<button type="button" class="pitem pmal" data-t5="skoda" data-id="' + r.id + '"><b>' + esc(r.title || '(ónefnt mál)') + '</b>' +
           '<span>' + esc([whereOf(r), eigandaTexti(r, nu())].filter(Boolean).join(' · ')) + '</span></button>').join('');
       pop = '<div class="pop"><div class="plbl">Fyrirtæki</div>' + (fyr || '<div class="pnone">Ekkert fyrirtæki fannst.</div>') +
@@ -4368,7 +4520,10 @@
       if (!S.chkTvinga) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     }
     S.chkTvinga = 0;
-    const n = nu(), c = cfg(), mode = M(c.mode) || MODES.thjonusta;
+    const n = nu(), c = cfg();
+    // Hamur sem var falinn í ⚙ (eða opnaður úr öðru, t.d. vinnublaði) er ekki sýndur — lent á sýnilegum ham.
+    if (hamFalinnHja(n, c.mode)) { c.mode = lendingarHamur(n, ''); S.filter = (M(c.mode) || MODES.thjonusta).filter || 'allt'; }
+    const mode = M(c.mode) || MODES.thjonusta;
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // 368y: vinnusvæðis-hamur (rymi) fær alla breiddina — engar einingar til hliðar, engin KPI-spjöld. 368aa: einingahamur
     // (board:false án rymi) teiknar aðeins sínar einingar; mál opnað úr einingu birtist hægra megin.
@@ -4507,7 +4662,7 @@
         leitHtml() +
         (S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
-          hamaListi().map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
+          hamaListi().filter(k => !hamFalinnHja(n, k)).map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
             (t === '' ? '' : '<span class="c">' + t + '</span>') + '</button>'; }).join('') +
         '</div><button type="button" class="btn iv sm" data-t5="ham-ny" aria-expanded="' + !!(S.hamForm && !S.hamForm.id) + '">+ Hamur</button>' +
         (mode.ser || mode.mitt ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '">' + (mode.mitt ? '✎ Velja einingar' : '✎ Breyta ham') + '</button>' : '') +
@@ -4596,12 +4751,13 @@
     } catch (_) { return null; }
   }
   let _skRod = Promise.resolve();
-  function vistaSpjold(breyta, skilabod) {
+  function vistaSpjold(breyta, skilabod, eigandi) {
     const verk = _skRod.then(async () => {
       if (!stillingarTilbunar()) { toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; }
-      const n = nu();
+      // 01.10.2026: `eigandi` = spjald á borði ANNARS (merkt á mig → „✓ Búið"). Drögin mín fylgja aðeins mínu borði.
+      const n = eigandi || nu(), minn = n === nu();
       const grunnlisti = (await ferskSpjold(n)) || cardsFor(n);
-      const nyr = breyta(grunnlisti.map(x => Object.assign({}, x, S.skDrog[x.id] || {})));
+      const nyr = breyta(grunnlisti.map(x => Object.assign({}, x, minn ? (S.skDrog[x.id] || {}) : {})));
       _vistar++;
       S.skStada = 'Vista…';
       stimplaSk();
@@ -4737,6 +4893,27 @@
         return;
       }
     }
+    // 01.10.2026: skjal eða tengill utan úr stýrikerfinu/vafranum — kemur hvorki með S.skDrag né S.hamDrag.
+    const dt = e.dataTransfer;
+    const ytri = !S.skDrag && !S.hamDrag && dt && Array.from(dt.types || []).some(x => x === 'Files' || x === 'text/uri-list');
+    if (ytri && (e.type === 'dragover' || e.type === 'drop')) {
+      const kortY = t && t.closest ? t.closest('.skc:not(.skcm)') : null;
+      const svaedi = t && t.closest ? t.closest('.skwrap') : null;
+      if (!kortY && !svaedi) return;
+      e.preventDefault();
+      if (t.closest('.skcm')) return;                  // spjald annars (merkt á mig) tekur ekki við skjölum
+      if (e.type === 'dragover') {
+        try { dt.dropEffect = 'copy'; } catch (_) {}
+        merkjaSkjalYfir(kortY || svaedi.querySelector('.skgrid'));
+        return;
+      }
+      merkjaSkjalYfir(null);
+      const skrar = Array.from(dt.files || []);        // afritað STRAX — FileList tæmist eftir atburðinn
+      if (skrar.length) { if (kortY) hladaSkjolumASpjald(kortY.dataset.skid, skrar); else nyttSpjaldMedSkjolum(skrar); return; }
+      const url = String(dt.getData('text/uri-list') || dt.getData('text/plain') || '').split(/\r?\n/).map(x => x.trim()).find(x => /^https?:\/\//i.test(x));
+      if (url && kortY) tengillASpjald(kortY.dataset.skid, url);
+      return;
+    }
     if (e.type === 'dragstart') {
       const g = t && t.closest ? t.closest('[data-skdrag]') : null;
       if (!g) return;
@@ -4777,6 +4954,139 @@
       S.skDrag = null;
       root.querySelectorAll('.skc.yfir, .skgrid.yfir').forEach(x => x.classList.remove('yfir'));
     }
+  }
+
+  // 01.10.2026 (Agnar: „opnað á möguleikann að maður geti dregið skjal inn á Spjald" · „sett inn linka þarna á td
+  // póst … sem sendir mann á póstinn sem um ræðir"). Skjal dregið á spjald fer í sama hólf og límdar myndir
+  // (verkbord-files/skipulag/) og bætist í cd.skjol = [{ nafn, url, teg }] — spjald sem á enga mynd fær fyrstu
+  // myndina sem `mynd`, eins og líming. Fellt á autt svæði = nýtt spjald með skjalinu. Tengill dreginn á spjald
+  // bætist í textann, og tenglar í textanum birtast smellanlegir undir honum (skTenglar).
+  const SK_HAMARK = 25 * 1024 * 1024;
+  const skSafeNafn = s => String(s || 'skjal').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[ðÐ]/g, 'd').replace(/[þÞ]/g, 'th').replace(/[æÆ]/g, 'ae').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80) || 'skjal';
+  const SK_URL = /\bhttps?:\/\/[^\s<>"']+/gi;
+  function skTenglar(texti) {
+    const sed = new Set();
+    return (String(texti || '').match(SK_URL) || []).map(u => u.replace(/[),.;:!?]+$/, ''))
+      .filter(u => { if (sed.has(u)) return false; sed.add(u); return true; }).slice(0, 8);
+  }
+  function skTengilNafn(u) {
+    let h = '';
+    try { h = new URL(u).hostname.replace(/^www\./, ''); } catch (_) { return 'Tengill'; }
+    if (h === 'mail.google.com') return 'Gmail-póstur';
+    if (h === 'drive.google.com') return 'Google Drive';
+    if (h === 'docs.google.com') return 'Google-skjal';
+    return h;
+  }
+  // Skjalalína EINS spjalds uppfærð á staðnum. render() bíður meðan skrifað er í spjald (svo textinn glatist ekki) —
+  // þess vegna sást fellt skjal ekki fyrr en smellt var annars staðar. Línan er sér hnútur, svo hún má breytast strax.
+  function skUppfaeraFylgi(sid) {
+    const root = rot();
+    const kort = root && root.querySelector('.skc[data-skid="' + (window.CSS && CSS.escape ? CSS.escape(sid) : sid) + '"]');
+    if (!kort) return;
+    const cd = cardsFor(nu()).find(x => x && x.id === sid) || {};
+    const d = S.skDrog[sid] || {};
+    const html = skFylgiHtml(esc(sid), d.title != null ? d.title : (cd.title || ''), cd.skjol);
+    const gamalt = kort.querySelector('.skl');
+    if (gamalt) { if (html) gamalt.outerHTML = html; else gamalt.remove(); return; }
+    if (!html) return;
+    const ta = kort.querySelector('textarea.skt');
+    if (ta) ta.insertAdjacentHTML('afterend', html);
+  }
+  function skMerkjaHled(sid, k, stada) {
+    const l = S.skHled[sid] || [];
+    const x = l.find(y => y.k === k);
+    if (!x) return;
+    if (stada) x.stada = stada; else l.splice(l.indexOf(x), 1);
+    if (!l.length) delete S.skHled[sid];
+    skUppfaeraFylgi(sid);
+  }
+  async function hladaSkjolumASpjald(sid, skrar) {
+    const c = sb();
+    if (!c) { toast('Engin tenging — skjalið vistaðist ekki.', true); return; }
+    const listi = (skrar || []).filter(f => f && f.size);
+    const ofstor = listi.filter(f => f.size > SK_HAMARK);
+    if (ofstor.length) toast(ofstor.map(f => f.name).join(', ') + ' — of stórt (hámark 25 MB).', true);
+    const gild = listi.filter(f => f.size <= SK_HAMARK).map((f, i) => ({ f, k: Date.now() + ':' + i }));
+    if (!gild.length) return;
+    const l = S.skHled[sid] = S.skHled[sid] || [];
+    gild.forEach(g => l.push({ k: g.k, nafn: g.f.name || 'skjal', stada: 'hled' }));
+    skUppfaeraFylgi(sid);
+    const komin = [];
+    for (const g of gild) {
+      const f = g.f;
+      const slod = 'skipulag/' + sid + '-' + Date.now() + '-' + skSafeNafn(f.name);
+      try {
+        const up = await c.storage.from('verkbord-files').upload(slod, f, { contentType: f.type || 'application/octet-stream', upsert: false });
+        if (up.error) throw up.error;
+        const url = ((c.storage.from('verkbord-files').getPublicUrl(slod) || {}).data || {}).publicUrl;
+        if (!url) throw new Error('engin slóð');
+        komin.push({ nafn: f.name || 'skjal', url, teg: f.type || '', k: g.k });
+        skMerkjaHled(sid, g.k, 'vistar');
+      } catch (err) {
+        toast((f.name || 'Skjalið') + ' vistaðist ekki: ' + ((err && err.message) || err), true);
+        skMerkjaHled(sid, g.k, 'villa');
+        setTimeout(() => skMerkjaHled(sid, g.k, null), 8000);
+      }
+    }
+    if (!komin.length) return;
+    const lyklar = komin.map(s => s.k);
+    komin.forEach(s => { delete s.k; });
+    const ok = await vistaSpjold(l => {
+      const cd = l.find(x => x.id === sid);
+      if (!cd) return l;
+      const skjol = Array.isArray(cd.skjol) ? cd.skjol.slice() : [];
+      komin.forEach(s => { if (!cd.mynd && /^image\//.test(s.teg)) cd.mynd = s.url; else skjol.push(s); });
+      cd.skjol = skjol;
+      return l;
+    }, komin.length === 1 ? '„' + komin[0].nafn + '" er komið á spjaldið' : komin.length + ' skjöl komin á spjaldið');
+    // Vistað → „Vista…"-flögurnar víkja fyrir alvöru skjölunum (úr skyndiminni stillinga, sem save uppfærði).
+    lyklar.forEach(k => skMerkjaHled(sid, k, ok ? null : 'villa'));
+    if (!ok) setTimeout(() => lyklar.forEach(k => skMerkjaHled(sid, k, null)), 8000);
+    skUppfaeraFylgi(sid);
+    render();
+  }
+  async function nyttSpjaldMedSkjolum(skrar) {
+    let nyId = null;
+    S.open[openKey('skipulag')] = true;
+    const ok = await vistaSpjold(l => {
+      const ny = nyttSpjaldHlutur(l);
+      ny.name = String((skrar[0] && skrar[0].name) || '').replace(/\.[^.]+$/, '').slice(0, 60);
+      nyId = ny.id;
+      l.push(ny);
+      return l;
+    });
+    if (ok && nyId) await hladaSkjolumASpjald(nyId, skrar);
+    render();
+  }
+  function tengillASpjald(sid, url) {
+    let nyr = null;
+    vistaSpjold(l => {
+      const cd = l.find(x => x.id === sid);
+      if (!cd) return l;
+      nyr = (cd.title ? String(cd.title).replace(/\s+$/, '') + '\n' : '') + url;
+      cd.title = nyr;
+      // Drög í ritun myndu annars skrifa gamla textann yfir tengilinn í næstu vistun.
+      if (S.skDrog[sid] && S.skDrog[sid].title != null) S.skDrog[sid].title = nyr;
+      return l;
+    }, 'Tengillinn er kominn á spjaldið').then(() => {
+      // Sami vandi og með skjöl: render() bíður meðan skrifað er — textinn og tengla-línan uppfærð á staðnum.
+      const root = rot(), ta = root && root.querySelector('.skc[data-skid="' + sid + '"] textarea.skt');
+      if (ta && nyr != null && ta.value !== nyr) ta.value = nyr;
+      skUppfaeraFylgi(sid);
+      render();
+    });
+  }
+  let _skjalYfirT = null;
+  function merkjaSkjalYfir(el) {
+    const root = rot();
+    if (!root) return;
+    root.querySelectorAll('.skjalyfir').forEach(x => { if (x !== el) x.classList.remove('skjalyfir'); });
+    clearTimeout(_skjalYfirT);
+    if (!el) return;
+    el.classList.add('skjalyfir');
+    // Skrá utan úr stýrikerfinu fær ekkert dragend — merkið fer þegar dragover hættir að berast.
+    _skjalYfirT = setTimeout(() => merkjaSkjalYfir(null), 250);
   }
 
   async function onPaste(e) {
@@ -4975,6 +5285,14 @@
       case 'sel-close': S.sel[nu()] = 0; render(); return;
       case 'stad-opna': opnaStad(S.rows.find(x => x.id === id), c); return;
       case 'endurmeta': endurmeta(); return;
+      case 'fyr-saga': {
+        const x = (S.leit.fyr || [])[+el.dataset.i];
+        if (!x || !window.SalaCustomerHistory) return;
+        S.leit.opid = false;
+        render();
+        SalaCustomerHistory.open({ id: String(x.id), source: 'fyrirtaeki', kt: x.kt || '', nafn: x.nafn || '' });
+        return;
+      }
       case 'fyr':
       case 'fyr-id':
         // Tengill með Ctrl/Shift/Cmd opnast í nýjum flipa (#company/<id>) — vafrinn sér um það.
@@ -5084,6 +5402,27 @@
         render();
         return;
       case 'cfg': S.cfgOpen = !S.cfgOpen; render(); return;
+      case 'ham-syn': {
+        // 01.10.2026: fela/sýna ham í hamaröð starfsmannsins sem er valinn í „Ég er". Allur listinn er vistaður
+        // (fylki eru skrifuð heil í 85 deepMerge); _falnirBid heldur honum á skjánum þar til þjónninn tekur við.
+        if (!krefstStillinga()) return;
+        const k = el.dataset.mode, hver = nu();
+        if (!k || k === MITT_HAM || !M(k)) return;
+        const adur = falnirHamir(hver).slice();
+        const nyr = adur.indexOf(k) >= 0 ? adur.filter(x => x !== k) : adur.concat([k]);
+        const falid = nyr.indexOf(k) >= 0;
+        _falnirBid[hver] = nyr;
+        render();
+        (async () => {
+          let ok = false;
+          try { ok = !!(await AppSettings.save({ [CFG_KEY]: { by_staff: { [hver]: { falnir_hamir: nyr } } } })); } catch (_) {}
+          if (_falnirBid[hver] === nyr) delete _falnirBid[hver];
+          if (!ok) { toast('Stillingin vistaðist ekki. Reyndu aftur.', true); delete _cfg[hver]; }
+          else toast('„' + M(k).l + '" ' + (falid ? 'falinn hjá ' : 'sést aftur hjá ') + hver);
+          render();
+        })();
+        return;
+      }
       case 'cfg-on':
         if (!krefstStillinga()) return;
         c.mods[m][0] = c.mods[m][0] ? 0 : 1;
@@ -5139,7 +5478,8 @@
       }
       case 'link-del': vistaLinks(l => l.filter(x => x.id !== el.dataset.lid), 'Flýtileið fjarlægð'); return;
       case 'job-new':
-        try { if (window.Vikudagskra && Vikudagskra.open) Vikudagskra.open(el.dataset.date); else toast('Dagskrárglugginn er ekki hlaðinn.', true); }
+        // 01.10.2026: sé dagskrá starfsmanns valin fer nýja verkið á hans grein (303 eigandi), annars eins og áður.
+        try { if (window.Vikudagskra && Vikudagskra.open) Vikudagskra.open(el.dataset.date, null, dagskraSyn() !== DN_EIG ? dagskraSyn() : undefined); else toast('Dagskrárglugginn er ekki hlaðinn.', true); }
         catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
         return;
       case 'job-edit': {
@@ -5191,6 +5531,42 @@
         // Ræman hringar: enginn litur -> fyrsti -> … -> síðasti -> enginn litur.
         const sid = el.dataset.skid;
         vistaSpjold(l => { const cd = l.find(x => x.id === sid); if (cd) { const nyr = cd.type == null ? 0 : cd.type + 1; cd.type = nyr >= SB_TEG.length ? null : nyr; } return l; }).then(render);
+        return;
+      }
+      case 'sk-merkja': S.skMerkja = S.skMerkja === el.dataset.skid ? null : el.dataset.skid; render(); return;
+      case 'sk-merki': {
+        const sid = el.dataset.skid, nafn = el.dataset.n;
+        let baett = null;
+        vistaSpjold(l => {
+          const cd = l.find(x => x.id === sid);
+          if (!cd) return l;
+          const m = Array.isArray(cd.merki) ? cd.merki.filter(Boolean).map(String) : [];
+          const i = m.findIndex(y => lagt(y) === lagt(nafn));
+          if (i >= 0) { m.splice(i, 1); baett = false; } else { m.push(nafn); baett = true; }
+          cd.merki = m;
+          return l;
+        }).then(ok => { if (ok && baett != null) toast(baett ? nafn + ' merkt á spjaldið' : nafn + ' tekið af spjaldinu'); render(); });
+        return;
+      }
+      case 'sk-merki-af': {
+        // Spjaldið býr á borði eigandans — nafnið mitt fer af því ÞAR (vistaSpjold með eiganda).
+        const sid = el.dataset.skid, eig = el.dataset.eig, eg = nu();
+        vistaSpjold(l => {
+          const cd = l.find(x => x.id === sid);
+          if (cd && Array.isArray(cd.merki)) cd.merki = cd.merki.filter(y => lagt(y) !== lagt(eg));
+          return l;
+        }, 'Merkt sem búið — spjaldið fór af þínu borði', eig).then(render);
+        return;
+      }
+      case 'sk-skjal-x': {
+        const sid = el.dataset.skid, u = el.dataset.u;
+        let tekid = null;
+        vistaSpjold(l => {
+          const cd = l.find(x => x.id === sid);
+          const j = cd && Array.isArray(cd.skjol) ? cd.skjol.findIndex(s => s && s.url === u) : -1;
+          if (j >= 0) { cd.skjol = cd.skjol.slice(); tekid = cd.skjol.splice(j, 1)[0]; }
+          return l;
+        }).then(ok => { if (ok && tekid) toast('„' + (tekid.nafn || 'Skjalið') + '" tekið af spjaldinu'); render(); });
         return;
       }
       case 'sk-mynd-x': {
@@ -5482,6 +5858,14 @@
       return;
     }
     if (el.dataset.t5 === 'ak-mal') { el.blur(); setjaAkstur(+el.dataset.fid, +el.value); return; }
+    if (el.dataset.t5 === 'dg-syn') {
+      el.blur();
+      const hver = nu(), v = el.value;
+      _dgSynBid[hver] = v;
+      render();
+      vistaCfg({ dagskra_syn: v }).then(() => { if (_dgSynBid[hver] === v) delete _dgSynBid[hver]; });
+      return;
+    }
     if (el.dataset.t5 !== 'who' || !el.value) return;
     el.blur();
     skolaAllt();                                           // texti í ritun vistast á réttan starfsmann

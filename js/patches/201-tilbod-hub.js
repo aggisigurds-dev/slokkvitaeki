@@ -501,12 +501,115 @@
   function totRows(t, td) { const tp = theme().primary, tdk = theme().dark; const r = (l, v, big) => '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:' + (big ? ('17px;font-weight:800;border-top:2px solid ' + tdk + ';color:' + tp + ';margin-top:4px;padding-top:8px') : '12.5px;color:#475569') + '"><span>' + l + '</span><span>' + v + '</span></div>'; return '<div style="display:flex;justify-content:flex-end;margin-top:16px"><div style="min-width:300px">' + (t.lina > 0 ? r('Samtals án vsk (fyrir afslátt)', fmtKr(t.brutto)) + r('Afsláttur á línum', '− ' + fmtKr(t.lina)) : '') + r('Samtals án vsk', fmtKr(t.sub)) + (t.disc > 0 ? r('Heildarafsláttur (' + td + '%)', '− ' + fmtKr(t.disc)) : '') + (t.disc > 0 ? r('Án vsk eftir afslátt', fmtKr(t.an)) : '') + r('VSK 24%', fmtKr(t.vsk)) + r('Samtals m. vsk', fmtKr(t.m_vsk), true) + '</div></div>'; }
 
   // ====================== PAGE RENDER ======================
+  // B53 (01.10.2026): síðan í Brunastáli C — plötur í stað pastel-pilla, engin emoji (sjá thStil() hér að neðan).
   const TYPE_META = {
-    brunakerfi: { label: 'Brunaviðvörunarkerfi', icon: '🔥', chip: '#fbeee7', col: '#C0341D' },
-    slokkvitaeki: { label: 'Slökkvitæki', icon: '🧯', chip: '#fee2e2', col: '#b91c1c' },
-    serverd: { label: 'Sérverð', icon: '🏷', chip: '#e0f2fe', col: '#0369a1' },
-    samningur: { label: 'Þjónustusamningur', icon: '📜', chip: '#fef3c7', col: '#b45309' },
+    brunakerfi: { label: 'Brunaviðvörunarkerfi', stutt: 'Brunakerfi', plata: 'rautt' },
+    slokkvitaeki: { label: 'Slökkvitæki', stutt: 'Slökkvitæki', plata: 'malmur' },
+    serverd: { label: 'Sérverð', stutt: 'Sérverð', plata: 'silfur' },
+    samningur: { label: 'Þjónustusamningur', stutt: 'Samningar', plata: 'gull' },
   };
+  const TH_ICON = {
+    plus: '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>',
+    edit: '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M10.8 2.4l2.8 2.8-8 8H2.8v-2.8z M9.4 3.8l2.8 2.8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg>',
+    print: '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M4.5 6V2.5h7V6M4.5 11.5H2.5v-5h11v5h-2M4.5 9.5h7v4h-7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/></svg>',
+    del: '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9M6.8 7v4.5M9.2 7v4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+    send: '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 8l12-5.5L10 14l-2-4.5z M8 9.5l6-7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/></svg>',
+    sheet: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 1.5h7l3 3v10H3z M3 6.5h10M3 10.5h10M7 6.5v8" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/></svg>',
+    leit: '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  };
+  // Síunarval er útlitsval eins vafra (ekki staða gagna) — breyta í minni, ekki á þjóni.
+  let thSia = 'allt', thLeit = '';
+  function thStil() {
+    if (document.getElementById('_th-b53')) return;
+    const MONO = '"JetBrains Mono",ui-monospace,monospace', SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif', DISPLAY = '"Playfair Display",Georgia,serif';
+    const METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
+    const METAL_BTN = 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)';
+    const SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
+    const GULL = 'linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)';
+    const BSTAL = 'linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)';
+    const RIVET = 'radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%)';
+    const TS = 'text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)';
+    const S = 'html body #view-tilbodhub', F = ':not(#_p201a):not(#_p201b):not(#_p201c)';
+    const r = (sel, css) => sel.split(',').map(s => { s = s.trim(); const m = s.match(/^(.*?)(::?(?:before|after|placeholder))$/); return S + ' ' + (m ? m[1] + F + m[2] : s + F); }).join(',') + '{' + css.split(';').map(d => d.trim()).filter(Boolean).map(d => /!important$/.test(d) ? d : d + '!important').join(';') + '}';
+    const hnod = (x, y) => 'content:"";position:absolute;' + x + ';' + y + ';width:7px;height:7px;border-radius:50%;background:' + RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.7);pointer-events:none';
+    const btnSilfur = 'background:' + SILVER + ';border:1px solid rgba(20,24,34,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530;text-shadow:none;border-radius:4px;font-family:' + SANS + ';font-weight:600';
+    const css = [
+      r('.th-wrap', 'max-width:1180px;margin:0 auto;padding:18px 18px 60px;font-family:' + SANS + ';color:#141822;box-sizing:border-box'),
+      // ── málmhausinn ──
+      r('.th-haus', 'position:relative;background:' + METAL + ';background-color:#0a0a0c;border:1px solid #000;border-radius:10px;padding:20px 30px 18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 30px 60px -24px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.3);color:#fff;margin:0 0 14px'),
+      r('.th-haus::before', hnod('left:10px', 'top:10px')), r('.th-haus::after', hnod('right:10px', 'top:10px')),
+      r('.th-hnod-n::before', hnod('left:10px', 'bottom:10px')), r('.th-hnod-n::after', hnod('right:10px', 'bottom:10px')),
+      r('.th-hnod-n', 'position:absolute;inset:0;pointer-events:none'),
+      r('.th-efst', 'position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap'),
+      r('.th-kick', 'font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#d3ab4e;margin:0 0 6px'),
+      r('.th-haus h1', 'margin:0;font-family:' + DISPLAY + ';font-size:30px;font-weight:800;line-height:1.1;color:#fff;-webkit-text-fill-color:#fff;letter-spacing:-.01em;' + TS),
+      r('.th-undir', 'margin-top:6px;font-family:' + MONO + ';font-size:12px;letter-spacing:.04em;color:#c9d0da;-webkit-text-fill-color:#c9d0da'),
+      r('.th-haustakkar', 'display:flex;gap:8px;align-items:center;flex-wrap:wrap'),
+      r('.th-haustakkar button', btnSilfur + ';height:34px;padding:0 13px;font-size:12.5px;display:inline-flex;align-items:center;gap:7px;cursor:pointer'),
+      r('.th-haustakkar button small', 'font-family:' + MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#5b6472'),
+      // teljararnir — smellur síar listann
+      r('.th-teljarar', 'position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px'),
+      r('.th-telj', 'all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:3px;padding:11px 14px 12px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:background .15s,border-color .15s;min-width:0'),
+      r('.th-telj:hover', 'background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.2)'),
+      r('.th-telj.on', 'background:rgba(211,171,78,.12);border-color:rgba(211,171,78,.65);box-shadow:inset 0 0 0 1px rgba(211,171,78,.35),0 0 18px -6px rgba(211,171,78,.6)'),
+      r('.th-telj .tl-m', 'display:flex;align-items:center;gap:7px;font-family:' + MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a9b1bf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
+      r('.th-telj .tl-d', 'width:8px;height:8px;border-radius:2px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.5)'),
+      r('.th-telj .tl-t', 'font-family:' + DISPLAY + ';font-size:26px;font-weight:800;line-height:1.05;color:#fff;-webkit-text-fill-color:#fff;font-variant-numeric:tabular-nums;' + TS),
+      r('.th-telj .tl-u', 'font-family:' + MONO + ';font-size:11px;color:#c9d0da;-webkit-text-fill-color:#c9d0da;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
+      // ── aðgerðaplatan: nýtt-takkar + verðskrá ──
+      r('.th-plata', 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;margin:0 0 16px;border-radius:8px;background-color:#eef1f6;background-image:linear-gradient(180deg,rgba(255,255,255,.9),rgba(20,30,60,.05)),repeating-linear-gradient(108deg,rgba(255,255,255,.5) 0 1px,transparent 1px 4px);border:1px solid rgba(20,24,34,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 2px 6px rgba(10,14,22,.1)'),
+      r('.th-ny', 'background:' + BSTAL + ';border:1px solid rgba(190,32,28,.55);color:#fff;box-shadow:0 0 16px -4px rgba(160,16,16,.55),inset 0 1px 0 rgba(255,255,255,.16);text-shadow:0 1px 1px rgba(0,0,0,.55);border-radius:4px;font-family:' + SANS + ';font-weight:700;font-size:13px;height:40px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;white-space:nowrap'),
+      r('.th-ny:hover', 'filter:brightness(1.15)'),
+      r('.th-ny svg', 'opacity:.9'),
+      r('.th-verdskra', btnSilfur + ';margin-left:auto;height:40px;padding:0 14px;display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-size:13px;white-space:nowrap'),
+      r('.th-verdskra small', 'font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a6410'),
+      // ── listinn ──
+      r('.th-listhaus', 'display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 8px'),
+      // fyrirsögnin stendur á gráa stálinu undir dökka bandinu (ekki á plötu) — ljós, eins og 409-undirlínan
+      r('.th-listhaus h2', 'margin:0;font-family:' + MONO + ';font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#f1f3f6;-webkit-text-fill-color:#f1f3f6;text-shadow:0 1px 2px rgba(0,0,0,.6)'),
+      r('.th-listhaus h2 span', 'color:#e8c873;-webkit-text-fill-color:#e8c873;margin-left:8px'),
+      r('.th-leit', 'position:relative;display:flex;align-items:center'),
+      r('.th-leit svg', 'position:absolute;left:10px;color:#5b6472;pointer-events:none'),
+      r('.th-leit input', 'width:260px;max-width:100%;height:34px;padding:0 12px 0 30px;background:#eef1f6;color:#141822;border:1px solid rgba(20,24,34,.14);border-radius:4px;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);font-family:' + SANS + ';font-size:13px;box-sizing:border-box'),
+      r('.th-listi', 'display:flex;flex-direction:column;gap:6px'),
+      r('.th-row', 'display:grid;grid-template-columns:150px minmax(0,1fr) auto auto;align-items:center;gap:14px;padding:10px 12px 10px 14px;background:#fff;border:0;border-radius:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.12);transition:box-shadow .15s'),
+      r('.th-row:hover', 'box-shadow:inset 0 0 0 1px rgba(20,24,34,.22),0 4px 10px -2px rgba(10,14,22,.2)'),
+      r('.th-plotu', 'justify-self:start;display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:3px;font-family:' + MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;border:1px solid rgba(20,24,34,.12)'),
+      r('.th-plotu.rautt', 'background:' + BSTAL + ';border-color:rgba(190,32,28,.55);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55)'),
+      r('.th-plotu.malmur', 'background:' + METAL_BTN + ';border-color:#000;color:#eef1f4;text-shadow:0 1px 1px rgba(0,0,0,.4)'),
+      r('.th-plotu.silfur', 'background:' + SILVER + ';color:#11141c;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12)'),
+      r('.th-plotu.gull', 'background:' + GULL + ';border-color:rgba(190,150,60,.5);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
+      r('.th-nafn', 'font-size:14px;font-weight:700;color:#11141c;-webkit-text-fill-color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
+      r('.th-meta', 'margin-top:2px;font-family:' + MONO + ';font-size:11px;color:#5b6472;-webkit-text-fill-color:#5b6472;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
+      r('.th-upph', 'font-family:' + DISPLAY + ';font-size:17px;font-weight:800;color:#11141c;-webkit-text-fill-color:#11141c;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right'),
+      r('.th-upph.sv', 'font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#5b6472;-webkit-text-fill-color:#5b6472'),
+      r('.th-akt', 'display:flex;gap:6px'),
+      r('.th-akt button', btnSilfur + ';width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;min-height:0'),
+      r('.th-akt button:hover', 'filter:brightness(.96)'),
+      r('.th-akt button[data-act="del"]', 'color:#b42318'),
+      r('.th-tomt', 'padding:26px;text-align:center;font-family:' + MONO + ';font-size:12px;letter-spacing:.06em;color:#5b6472;background:#fff;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12)'),
+      // ── sími ──
+      '@media (max-width:760px){' + [
+        r('.th-wrap', 'padding:10px 10px 40px'),
+        r('.th-haus', 'padding:16px 18px 14px'),
+        r('.th-haus h1', 'font-size:25px'),
+        r('.th-telj .tl-vsk', 'display:none'),
+        r('.th-teljarar', 'grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px'),
+        r('.th-telj .tl-t', 'font-size:22px'),
+        r('.th-ny', 'flex:1 1 calc(50% - 10px);justify-content:center;padding:0 10px;font-size:12.5px;min-height:44px'),
+        r('.th-verdskra', 'flex:1 1 100%;margin-left:0;justify-content:center;min-height:44px'),
+        r('.th-leit', 'flex:1 1 100%'), r('.th-leit input', 'width:100%;height:40px'),
+        r('.th-row', 'grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:10px 12px'),
+        r('.th-plotu', 'grid-column:1;grid-row:1'),
+        r('.th-upph', 'grid-column:2;grid-row:1'),
+        r('.th-row > .th-mid', 'grid-column:1 / -1;grid-row:2'),
+        r('.th-akt', 'grid-column:1 / -1;grid-row:3;justify-content:flex-end'),
+        r('.th-akt button', 'width:44px;height:40px'),
+      ].join('') + '}',
+    ].join('\n');
+    const st = document.createElement('style'); st.id = '_th-b53'; st.textContent = css;
+    (document.head || document.documentElement).appendChild(st);
+  }
   function allForms() {
     const hub = getHub().map(f => ({ ...f }));
     const bk = getBk().map(f => ({ ...f, type: 'brunakerfi' }));
@@ -514,57 +617,80 @@
   }
   function render() {
     const main = document.getElementById('tilbodhub-main'); if (!main) return;
-    applyTheme();
+    applyTheme(); thStil();
     const forms = allForms();
-    const btn = (id, c, t) => `<button id="${id}" type="button" style="padding:11px 16px;border:none;border-radius:9px;background:${c};color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:700;box-shadow:0 0 14px -4px rgba(160,16,16,.5),0 2px 8px rgba(0,0,0,.22)">${t}</button>`;
-    main.innerHTML = `<div style="max-width:1100px;margin:0 auto;padding:22px">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px">
-        <div><h1 style="margin:0;font-size:22px;color:var(--th-dark);display:flex;align-items:center;gap:10px">📑 Tilboð &amp; samningar</h1>
-          <div style="font-size:12px;color:#64748b;margin-top:2px">Tilboðs- og samningsform — vistast og samhæfast milli ykkar.</div></div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button id="_th-theme" type="button" title="Skipta um lit (þema)" style="padding:9px 12px;border:1px solid var(--th-tintb);border-radius:8px;background:var(--th-tint);color:var(--th-dark);cursor:pointer;font:inherit;font-size:12px;font-weight:700">${theme().name}</button>
-          <button id="_th-send" type="button" style="padding:9px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:12px;color:#475569" title="Senda starfsmanni tengil sem opnar AÐEINS þessa síðu">📤 Senda starfsmanni</button>
+    // teljarar: fjöldi + samtala m. vsk per tegund (sérverð hefur enga upphæð)
+    const telj = { brunakerfi: { n: 0, s: 0 }, slokkvitaeki: { n: 0, s: 0 }, serverd: { n: 0, s: 0 }, samningur: { n: 0, s: 0 } };
+    forms.forEach(f => { const t = telj[f.type] || telj.slokkvitaeki; t.n++; t.s += num(f.m_vsk); });
+    const DOT = { rautt: '#971515', malmur: '#3d4048', silfur: '#e3e7ee', gull: '#d3ab4e' };
+    const teljari = k => { const tm = TYPE_META[k], t = telj[k];
+      const u = k === 'serverd' ? (t.n === 1 ? 'verðlisti' : 'verðlistar') : (t.n ? fmtKr(t.s) + '<span class="tl-vsk"> m. vsk</span>' : '—');
+      return `<button type="button" class="th-telj${thSia === k ? ' on' : ''}" data-sia="${k}" aria-pressed="${thSia === k}"><span class="tl-m"><span class="tl-d" style="background:${DOT[tm.plata]}"></span>${tm.stutt}</span><span class="tl-t">${t.n}</span><span class="tl-u">${u}</span></button>`; };
+    const ny = (id, t) => `<button id="${id}" type="button" class="th-ny">${TH_ICON.plus}${t}</button>`;
+    main.innerHTML = `<div class="th-wrap">
+      <div class="th-haus"><span class="th-hnod-n"></span>
+        <div class="th-efst">
+          <div><div class="th-kick">Sala · Tilboð</div><h1>Tilboð &amp; samningar</h1>
+            <div class="th-undir">Tilboðs- og samningsform — vistast og samhæfast milli ykkar.</div></div>
+          <div class="th-haustakkar">
+            <button id="_th-theme" type="button" title="Skipta um lit á prentuðum skjölum"><small>Prentlitur</small>${esc(theme().name)}</button>
+            <button id="_th-send" type="button" title="Senda starfsmanni tengil sem opnar AÐEINS þessa síðu">${TH_ICON.send}Senda starfsmanni</button>
+          </div>
         </div>
+        <div class="th-teljarar">${['brunakerfi', 'slokkvitaeki', 'serverd', 'samningur'].map(teljari).join('')}</div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px">
-        ${btn('_th-new-bk', 'linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102)', '🔥 Nýtt brunakerfi-tilboð')}
-        ${btn('_th-new-sl', 'linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102)', '🧯 Nýtt slökkvitæki-tilboð')}
-        ${btn('_th-new-sv', 'linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102)', '🏷 Nýtt sérverð')}
-        ${btn('_th-new-mn', 'linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102)', '📜 Nýr þjónustusamningur')}
+      <div class="th-plata">
+        ${ny('_th-new-bk', 'Brunakerfi-tilboð')}
+        ${ny('_th-new-sl', 'Slökkvitæki-tilboð')}
+        ${ny('_th-new-sv', 'Sérverð')}
+        ${ny('_th-new-mn', 'Þjónustusamningur')}
+        <a class="th-verdskra" href="https://docs.google.com/spreadsheets/d/1g36r9NL8bcKZOweav4NSRy0rl6zTdhVY/edit?usp=sharing&ouid=104349985258847227699&rtpof=true&sd=true" target="_blank" rel="noopener" title="Opna tengt verðskrár-/vöruskjal í Google Sheets">${TH_ICON.sheet}Verðskrá<small>Google Sheet ↗</small></a>
       </div>
-      <a href="https://docs.google.com/spreadsheets/d/1g36r9NL8bcKZOweav4NSRy0rl6zTdhVY/edit?usp=sharing&ouid=104349985258847227699&rtpof=true&sd=true" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:11px;text-decoration:none;background:#fff;border:1px solid var(--th-tintb);border-left:4px solid var(--th-primary);border-radius:10px;padding:12px 16px;margin-bottom:18px;max-width:520px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
-        <span style="font-size:21px">📊</span>
-        <div style="flex:1"><div style="font-weight:700;color:var(--th-dark);font-size:13.5px">Verðskrá — Google Sheet</div><div style="font-size:11px;color:#64748b">Opna tengt verðskrár-/vöruskjal í Google Sheets</div></div>
-        <span style="color:var(--th-primary);font-weight:700;font-size:13px;white-space:nowrap">Opna ↗</span>
-      </a>
-      <h2 style="font-size:15px;color:var(--th-dark);margin:0 0 8px">Vistuð form <span style="font-size:12px;color:#64748b;font-weight:400">· ${forms.length}</span></h2>
-      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">${forms.length ? forms.map(rowFor).join('') : '<div style="padding:22px;text-align:center;color:#94a3b8;font-size:13px">Engin form enn — búðu til hér að ofan.</div>'}</div>
+      <div class="th-listhaus"><h2>Vistuð form<span id="_th-fjoldi"></span></h2>
+        <label class="th-leit">${TH_ICON.leit}<input id="_th-leit" type="search" placeholder="Leita að viðskiptavini…" value="${esc(thLeit)}" autocomplete="off"></label></div>
+      <div class="th-listi" id="_th-listi"></div>
     </div>`;
+    const teiknaLista = () => {
+      const q = thLeit.trim().toLowerCase();
+      const syn = forms.filter(f => (thSia === 'allt' || f.type === thSia) && (!q || String(f.customer && f.customer.nafn || '').toLowerCase().includes(q) || String(f.customer && f.customer.kt || '').includes(q)));
+      main.querySelector('#_th-fjoldi').textContent = syn.length === forms.length ? '· ' + forms.length : '· ' + syn.length + ' af ' + forms.length;
+      const L = main.querySelector('#_th-listi');
+      L.innerHTML = syn.length ? syn.map(rowFor).join('') : `<div class="th-tomt">${forms.length ? 'Ekkert form passar við síuna.' : 'Engin form enn — búðu til hér að ofan.'}</div>`;
+      syn.forEach(f => {
+        const row = L.querySelector('.th-row[data-id="' + f.id + '"][data-type="' + f.type + '"]'); if (!row) return;
+        row.querySelector('[data-act="edit"]').onclick = () => editForm(f);
+        row.querySelector('[data-act="print"]').onclick = () => printForm(f);
+        row.querySelector('[data-act="del"]').onclick = () => delForm(f);
+      });
+    };
+    teiknaLista();
+    main.querySelectorAll('.th-telj').forEach(b => b.onclick = () => {
+      thSia = thSia === b.dataset.sia ? 'allt' : b.dataset.sia;
+      main.querySelectorAll('.th-telj').forEach(x => { const on = x.dataset.sia === thSia; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+      teiknaLista();
+    });
+    main.querySelector('#_th-leit').oninput = e => { thLeit = e.target.value; teiknaLista(); };
     main.querySelector('#_th-new-bk').onclick = () => { if (window.BrunakerfiTilbod) { window.BrunakerfiTilbod.open(); afterModal(); } else alert('Brunakerfi-tilboð ekki tiltækt'); };
     main.querySelector('#_th-new-sl').onclick = () => openSlokk();
     main.querySelector('#_th-new-sv').onclick = () => openServerd();
     main.querySelector('#_th-new-mn').onclick = () => openSamn();
     main.querySelector('#_th-send').onclick = sendLink;
     main.querySelector('#_th-theme').onclick = cycleTheme;
-    forms.forEach(f => {
-      const row = main.querySelector('.th-row[data-id="' + f.id + '"][data-type="' + f.type + '"]'); if (!row) return;
-      row.querySelector('[data-act="edit"]').onclick = () => editForm(f);
-      row.querySelector('[data-act="print"]').onclick = () => printForm(f);
-      row.querySelector('[data-act="del"]').onclick = () => delForm(f);
-    });
   }
   function rowFor(f) {
     const tm = TYPE_META[f.type] || TYPE_META.slokkvitaeki;
     const sub = f.type === 'samningur' ? esc(f.thjonusta || '') : ((f.lines ? f.lines.filter(l => !l.heading).length : 0) + (f.type === 'serverd' ? ' tæki' : ' liðir'));
-    const amount = f.type === 'serverd' ? '<span style="color:#0369a1;font-size:12px">sérverð</span>' : fmtKr(f.m_vsk);
-    return `<div class="th-row" data-id="${esc(f.id)}" data-type="${f.type}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid #f1f5f9">
-      <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${tm.chip};color:${tm.col};white-space:nowrap">${tm.icon} ${tm.label}</span>
-      <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.customer && f.customer.nafn || '—')}</div>
-        <div style="font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(fmtDate(f.date))} · ${sub}</div></div>
-      <div style="font-size:14px;font-weight:800;color:var(--th-dark);white-space:nowrap;font-variant-numeric:tabular-nums">${amount}</div>
-      <button data-act="edit" type="button" style="padding:6px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px" title="Breyta">✏️</button>
-      <button data-act="print" type="button" style="padding:6px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px" title="Prenta PDF">🖨</button>
-      <button data-act="del" type="button" style="padding:6px 11px;border:1px solid #fecaca;border-radius:7px;background:#fef2f2;cursor:pointer;font:inherit;font-size:12px;color:#dc2626" title="Eyða">🗑</button>
+    const amount = f.type === 'serverd' ? '<div class="th-upph sv">Sérverð</div>' : '<div class="th-upph">' + fmtKr(f.m_vsk) + '</div>';
+    return `<div class="th-row" data-id="${esc(f.id)}" data-type="${f.type}">
+      <span class="th-plotu ${tm.plata}" title="${tm.label}">${tm.label}</span>
+      <div class="th-mid" style="min-width:0"><div class="th-nafn">${esc(f.customer && f.customer.nafn || '—')}</div>
+        <div class="th-meta">${esc(fmtDate(f.date))} · ${sub}</div></div>
+      ${amount}
+      <div class="th-akt">
+        <button data-act="edit" type="button" title="Breyta" aria-label="Breyta">${TH_ICON.edit}</button>
+        <button data-act="print" type="button" title="Prenta PDF" aria-label="Prenta PDF">${TH_ICON.print}</button>
+        <button data-act="del" type="button" title="Eyða" aria-label="Eyða">${TH_ICON.del}</button>
+      </div>
     </div>`;
   }
   function editForm(f) { if (f.type === 'brunakerfi') { window.BrunakerfiTilbod && window.BrunakerfiTilbod.open(f); afterModal(); } else if (f.type === 'samningur') openSamn(f); else if (f.type === 'serverd') openServerd(f); else openSlokk(f); }
