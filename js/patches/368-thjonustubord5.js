@@ -1236,6 +1236,10 @@
       '.chkstj{flex:0 0 auto;border:none;background:transparent;color:var(--mute);cursor:pointer;font-size:16px;line-height:1;padding:2px 5px;border-radius:4px}',
       '.chkstj[aria-pressed="true"]{color:var(--g6)}.chkstj:hover{background:var(--rule3)}',
       '.chk.star{border-color:var(--g5);background:linear-gradient(90deg,rgba(201,165,74,.10),#fff 40%)}',
+      // 01.10.2026: fjórir litir á stjörnu og línu — sama áferð og gyllta, hver í sínum lit.
+      '.chk.star.st-raud{border-color:#c0392b;background:linear-gradient(90deg,rgba(192,57,43,.12),#fff 40%)}.chkstj.st-raud{color:#c0392b}',
+      '.chk.star.st-bla{border-color:#2c6e9e;background:linear-gradient(90deg,rgba(44,110,158,.12),#fff 40%)}.chkstj.st-bla{color:#2c6e9e}',
+      '.chk.star.st-graen{border-color:#2e7d4f;background:linear-gradient(90deg,rgba(46,125,79,.13),#fff 40%)}.chkstj.st-graen{color:#2e7d4f}',
       '.chkx{flex:0 0 auto;border:none;background:transparent;color:var(--mute);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:4px}.chkx:hover{background:#fef2f2;color:#b91c1c}',
       '.chkny{display:flex;gap:8px;align-items:center;margin-top:4px}',
       '.chkny input{flex:1 1 auto;min-width:0;padding:7px 10px;border:1px dashed var(--edge2);border-radius:5px;background:#fff;font:13px var(--body);color:var(--ink)}',
@@ -2547,8 +2551,13 @@
   function chkLesa(n) {
     if (S.chkCache[n]) return S.chkCache[n];
     const v = P('skipulagsbord.by_staff.' + n + '.checklisti');
-    return Array.isArray(v) ? v.filter(x => x && x.id).map(x => ({ id: String(x.id), t: String(x.t || ''), done: !!x.done, star: !!x.star })) : [];
+    return Array.isArray(v) ? v.filter(x => x && x.id).map(x => ({ id: String(x.id), t: String(x.t || ''), done: !!x.done, star: chkStjarna(x.star) })) : [];
   }
+  // 01.10.2026 (Agnar: „ýtir einu sinni … gull, aftur … rauð, og aftur þá blá og aftur þá græn, og síðan aftur þá fer
+  // hún"): star = 0 engin · 1 gull · 2 rauð · 3 blá · 4 græn. Gamla `true` (fyrir 01.10) = gull. Öll lituð atriði eru
+  // áfram „stjörnumerkt" (efst í opna listanum); liturinn fer í stjörnuna og í áferð línunnar.
+  const CHK_LITIR = [null, ['gull', 'Gull'], ['raud', 'Rauð'], ['bla', 'Blá'], ['graen', 'Græn']];
+  function chkStjarna(v) { if (v === true) return 1; const n = Math.floor(Number(v)); return n >= 1 && n <= 4 ? n : 0; }
   function chkVista(n, listi) {
     S.chkCache[n] = listi;
     render();
@@ -2563,15 +2572,17 @@
   function chkBreyta(n, fn) { return chkVista(n, fn(chkLesa(n).map(x => Object.assign({}, x)))); }
   const chkNyttId = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   function checklistiHtml(k) {
-    const n = nu(), l = chkLesa(n);
+    // Staðlað hér: chkVista teiknar beint úr breytingunni (S.chkCache), og nýtt atriði ber engan `star` — án þess
+    // reiknaðist CHK_LITIR[NaN] og teikningin hrundi (mælt 01.10.2026: atriði bættist aldrei við).
+    const n = nu(), l = chkLesa(n).map(x => Object.assign({}, x, { star: chkStjarna(x.star) }));
     // 28.09.2026 (Agnar: „leyfa mér að draga upp og niður, eða setja stjörnumerki"): stjörnumerkt atriði efst í opna
     // listanum (röðin innan hvors hóps = röðin í fylkinu); ⋮⋮-gripið dregur atriði til með pointer-atburðum (mús OG fingur).
     const opin = l.filter(x => !x.done && x.star).concat(l.filter(x => !x.done && !x.star)), lokid = l.filter(x => x.done);
-    const rod = x => '<div class="chk' + (x.done ? ' done' : '') + (x.star ? ' star' : '') + '" data-chkrod="' + esc(x.id) + '">' +
+    const rod = x => '<div class="chk' + (x.done ? ' done' : '') + (x.star ? ' star st-' + CHK_LITIR[x.star][0] : '') + '" data-chkrod="' + esc(x.id) + '">' +
       (x.done ? '' : '<span class="chkgrip" data-chkgrip="' + esc(x.id) + '" title="Draga upp eða niður" aria-hidden="true">⋮⋮</span>') +
       '<button type="button" class="chkbox" data-t5="chk-tog" data-id="' + esc(x.id) + '" aria-label="' + (x.done ? 'Taka hakið af' : 'Haka við') + '">' + (x.done ? '✓' : '') + '</button>' +
       '<input class="chkt" data-chk="t" data-id="' + esc(x.id) + '" value="' + esc(S.chkDrog[x.id] != null ? S.chkDrog[x.id] : x.t) + '" placeholder="Atriði…" aria-label="Atriði">' +
-      (x.done ? '' : '<button type="button" class="chkstj" data-t5="chk-star" data-id="' + esc(x.id) + '" aria-pressed="' + (x.star ? 'true' : 'false') + '" aria-label="' + (x.star ? 'Taka stjörnu af' : 'Stjörnumerkja') + '" title="' + (x.star ? 'Taka stjörnu af' : 'Stjörnumerkja — fer efst') + '">' + (x.star ? '★' : '☆') + '</button>') +
+      (x.done ? '' : '<button type="button" class="chkstj' + (x.star ? ' st-' + CHK_LITIR[x.star][0] : '') + '" data-t5="chk-star" data-id="' + esc(x.id) + '" aria-pressed="' + (x.star ? 'true' : 'false') + '" aria-label="Stjarna: ' + (x.star ? CHK_LITIR[x.star][1] : 'engin') + ' — smelltu: ' + (x.star >= 4 ? 'taka stjörnu af' : 'næst ' + CHK_LITIR[x.star + 1][1].toLowerCase()) + '" title="' + (x.star ? CHK_LITIR[x.star][1] + ' stjarna — smelltu: ' + (x.star >= 4 ? 'taka stjörnu af' : 'næst ' + CHK_LITIR[x.star + 1][1].toLowerCase()) : 'Stjörnumerkja — fer efst (gull → rauð → blá → græn)') + '">' + (x.star ? '★' : '☆') + '</button>') +
       '<button type="button" class="chkx" data-t5="chk-del" data-id="' + esc(x.id) + '" aria-label="Eyða atriði" title="Eyða">✕</button></div>';
     const body = '<div class="chkl">' +
       (opin.length ? opin.map(rod).join('') : '<div class="chktomt">Ekkert opið — skrifaðu fyrsta atriðið hér að neðan.</div>') +
@@ -2624,7 +2635,7 @@
         const j = l.findIndex(y => y.id === til);
         // Stjarnan fylgir staðnum: dregið inn á meðal stjörnumerktra = fær stjörnu, út úr þeim = missir hana.
         const tilX = l[j];
-        if (tilX) x.star = !!tilX.star;
+        if (tilX) x.star = tilX.star ? (x.star || tilX.star) : 0;   // heldur sínum lit; fær lit nágrannans ef hann hafði engan
         l.splice(j < 0 ? l.length : (fyrir ? j : j + 1), 0, x);
         return l;
       });
@@ -5490,7 +5501,7 @@
         return;
       }
       case 'chk-add': { chkBaetaVid(el.getRootNode()); return; }
-      case 'chk-star': { const id = el.dataset.id; chkBreyta(nu(), l => l.map(x => x.id === id ? Object.assign({}, x, { star: !x.star }) : x)); return; }
+      case 'chk-star': { const id = el.dataset.id; chkBreyta(nu(), l => l.map(x => x.id === id ? Object.assign({}, x, { star: (chkStjarna(x.star) + 1) % 5 }) : x)); return; }   // gull → rauð → blá → græn → engin
       case 'chk-tog': { const id = el.dataset.id; chkBreyta(nu(), l => l.map(x => x.id === id ? Object.assign({}, x, { done: !x.done }) : x)); return; }
       case 'chk-del': {
         const id = el.dataset.id, n = nu(), gamalt = chkLesa(n).find(x => x.id === id);
