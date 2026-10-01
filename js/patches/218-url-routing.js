@@ -31,6 +31,10 @@
  *    (e.g. 154's __lastViewWrapped, features.js's _patched) so it does not
  *    trigger a re-wrap, and re-asserts the deep-link view briefly on boot to
  *    win over the boot-time auto-landers (sala.js etc. fire up to ~t=1.5s).
+ *    01.10.2026: the boot tick stops on first real user input (same boundary
+ *    as 154/348). The switchView wrapper keeps a pending clean-slug hash
+ *    while that view is still being mounted, so a late switchView('sala')
+ *    cannot rewrite #verkbord/#bord to #sala and steal the landing.
  */
 (() => {
   if (window.__urlRoutingInstalled) return;
@@ -53,6 +57,7 @@
     payrev: 'payrev', greidslur: 'payrev',        // 🧾 Yfirferð greiðslna (patch 193; #greidslur = fallegri slóð)
     bord: 'bord', verkbord: 'bord', verkefni: 'bord',   // Þjónustuborð 2 (368); gamla verkborðið (231) er farið — #verkbord opnar #bord
     brunakerfi: 'brunakerfi', verkdagbok: 'verkdagbok', arsskodun: 'arsskodun',
+    brunaskra: 'brunaskra', slokkvikerfi: 'slokkvikerfi',
     vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit',
     bilstjori: 'bilstjori', drivers: 'bilstjori', bakendi: 'bakendi',
     sameining: 'sameining', adstod: 'adstod',
@@ -97,6 +102,10 @@
   }
 
   var _suppress = false; // guards the switchView<->hash feedback loop
+  var userTouched = false;
+  ['mousedown', 'keydown', 'touchstart', 'pointerdown'].forEach(function (evt) {
+    window.addEventListener(evt, function () { userTouched = true; }, { capture: true, passive: true });
+  });
 
   // Sync the sidebar highlight to a view. The core App.switchView does this
   // itself, but several board patches (240 Reikninga-póstur o.fl.) wrap
@@ -141,8 +150,18 @@
       var r = orig.apply(this, arguments);
       try {
         if (!_suppress && v && typeof v === 'string') {
-          var slug = slugForView(v);
-          if (cleanHash() !== slug) history.replaceState(null, '', '#' + slug);
+          var pending = cleanHash();
+          var pendingView = pending ? resolveView(pending) : '';
+          var pendingMissing = !!(pending && pendingView && pendingView !== v &&
+            !document.getElementById('view-' + pendingView) &&
+            !(pendingView === 'leidsogn' && window.App && App._leidsognPatched));
+          if (pendingMissing && !userTouched) {
+            // Deep-link view not mounted yet. Keep the hash so 368/late
+            // patches can still land; a boot lander must not rewrite it.
+          } else {
+            var slug = slugForView(v);
+            if (cleanHash() !== slug) history.replaceState(null, '', '#' + slug);
+          }
         }
       } catch (_) {}
       return r;
@@ -162,6 +181,7 @@
     var tries = 0;
     (function tick() {
       applyHash();
+      if (userTouched) return; // user took over — do not yank them back
       if (++tries < 24) setTimeout(tick, 80); // ~1.9s window
     })();
   }
@@ -170,7 +190,7 @@
   else boot();
 
   // small public surface for debugging / programmatic deep-linking
-  window.UrlRouting = { applyHash: applyHash, slugForView: slugForView, resolveView: resolveView, syncNav: syncNav, ALIAS: ALIAS };
+  window.UrlRouting = { applyHash: applyHash, slugForView: slugForView, resolveView: resolveView, syncNav: syncNav, ALIAS: ALIAS, userTouched: function () { return userTouched; } };
 
   try { console.log('[url-routing v1] installed'); } catch (_) {}
 })();

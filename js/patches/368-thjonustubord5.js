@@ -422,9 +422,11 @@
 
   /* ── gögn ── */
   const SEL = 'id,title,notes,summary,status,type,important,due_at,created_at,updated_at,source,channel_ref,assigned_to,customer_base_id,fyrirtaeki_id,customer_nafn,svarad_at,tags,flokkur,attachment_url';
-  let _sig = '', _aftur = false, _dbBid = 0, _dbT = 0;
+  let _sig = '', _aftur = false, _dbBid = 0, _dbT = 0, _loadGen = 0;
   // Könnunin á 60 s fresti teiknar AÐEINS ef eitthvað breyttist — annars myndi hún rugla skrun
   // í pósti sem verið er að lesa. Sóttímanum er skipt út beint.
+  // 01.10.2026 — kynslóðarmerki: síðari load() sem byrjar á meðan önnur er í loftinu
+  // má ekki skrifa eldri röðum yfir nýrri stöðu (sía/selId/skrun).
   async function load(hljott) {
     const c = sb();
     if (!c) {
@@ -442,10 +444,13 @@
       return;
     }
     _dbBid = 0;
+    const gen = ++_loadGen;
     if (S.loading) { _aftur = true; return; }
     S.loading = true;
     if (!hljott) render();
     let breytt = !hljott;
+    let bunka = null;
+    const urelt = () => gen !== _loadGen;
     try {
       const [r, rs, rk] = await Promise.all([
         c.from('thjonustubeidni').select(SEL).is('deleted_at', null).is('archived_at', null)
@@ -453,6 +458,7 @@
         c.from('sara_yfirferd').select('stada'),
         c.from('solur').select('id', { count: 'exact', head: true }).eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void')
       ]);
+      if (urelt()) return;
       if (r.error) throw r.error;
       const rows = r.data || [];
       const sara = rs.error ? null : (rs.data || []).reduce((m, x) => { m[x.stada] = (m[x.stada] || 0) + 1; return m; }, {});
@@ -460,6 +466,7 @@
       const ids = [...new Set(rows.filter(x => !x.customer_nafn && x.customer_base_id).map(x => x.customer_base_id))].filter(id => !(id in S.names));
       for (let i = 0; i < ids.length; i += 150) {
         const rb = await c.from('customers_base').select('id,nafn').in('id', ids.slice(i, i + 150));
+        if (urelt()) return;
         (rb.data || []).forEach(b => { S.names[b.id] = b.nafn; });
         breytt = true;
       }
@@ -469,6 +476,7 @@
       for (let i = 0; i < cbs.length; i += 150) {
         const hluti = cbs.slice(i, i + 150);
         const rv = await c.from('fyrirtaeki_virkni').select('customer_base_id,fyrirtaeki_id,sidasta_sala,sidasti_reikningur,sidasta_skyrsla,reiknad_at').in('customer_base_id', hluti);
+        if (urelt()) return;
         if (rv.error) break;
         hluti.forEach(id => { S.virkni[id] = null; });
         (rv.data || []).forEach(x => { S.virkni[x.customer_base_id] = x; });
@@ -482,17 +490,28 @@
       S.counts.krofur = krofur;
       S.err = '';
       S.loaded = true;
-      saekjaBunka(rows);
+      bunka = rows;
     } catch (e) {
+      if (urelt()) return;
       const msg = (e && e.message) || String(e);
       if (S.err !== msg) breytt = true;
       S.err = msg;
       console.warn('[368-thjonustubord5] load', e);
+    } finally {
+      if (urelt()) {
+        if (S.loading) {
+          S.loading = false;
+          _aftur = false;
+          load(true);
+        }
+      } else {
+        S.loadedAt = new Date();
+        S.loading = false;
+        if (breytt) render(); else stimpla();
+        if (_aftur) { _aftur = false; load(true); }
+        else if (bunka) saekjaBunka(bunka);
+      }
     }
-    S.loadedAt = new Date();
-    S.loading = false;
-    if (breytt) render(); else stimpla();
-    if (_aftur) { _aftur = false; load(true); }
   }
   // Óúthlutuð mál eldri en 30 daga fara í bunka Charlize — áður gert af 231 (claimOldJobs). Aðeins null/tómt (ekki
   // „Allir", sem er nú sameiginlegt borð), skilyrt svo úthlutun annarrar vélar étist ekki, og á 10 mín. fresti í vafra.
@@ -4435,9 +4454,18 @@
     const SKRUN = '.well p, .nt textarea, .week, .seg.modeseg, .vbr-items';
     const skrunSel = v.dataset.t5sel === String(selId);
     const skrun = [...root.querySelectorAll(SKRUN)].map(x => [x.scrollTop, x.scrollLeft]);
+    // Hýsillinn #view-bord er skrunarinn (overflow:auto). Stodugt.vernda nær
+    // honum ekki: .t5-mount er bein barn skuggarótar og parentElement gengur
+    // ekki út á hýsilinn. Án þessa hoppar borðið á topp við hvert render().
+    const hostTop = v.scrollTop, hostLeft = v.scrollLeft;
     mount.innerHTML = html;
     v.dataset.t5sel = String(selId);
+    v.scrollTop = hostTop;
+    v.scrollLeft = hostLeft;
     if (skrunSel) root.querySelectorAll(SKRUN).forEach((x, i) => { if (skrun[i]) { x.scrollTop = skrun[i][0]; x.scrollLeft = skrun[i][1]; } });
+    requestAnimationFrame(() => {
+      if (document.getElementById(VIEW_ID) === v) { v.scrollTop = hostTop; v.scrollLeft = hostLeft; }
+    });
     root.querySelectorAll(DROG_SEL).forEach(i => {
       const k = i.dataset.k;
       if (k in drog) { if (i.type === 'checkbox') i.checked = drog[k]; else i.value = drog[k]; }
@@ -5466,15 +5494,39 @@
     return true;
   }
   let _poll = 0;
+  function raesaPoll() {
+    if (_poll) return;
+    _poll = setInterval(() => {
+      const vv = document.getElementById(VIEW_ID);
+      if (!vv || !vv.classList.contains('active')) { clearInterval(_poll); _poll = 0; return; }
+      if (document.hidden) return;
+      // Punktarnir í „Í vinnslu — er það búið?" (skýrsla/reikningur) fylgja líka mínútu-könnuninni, ekki bara 5 mín. geymslu.
+      const gs = G.skyrslur;
+      if (gs && gs.at && !gs.bid && Date.now() - gs.at > POLL_MS) { gs.at = 0; render(); }
+      load(true);
+    }, POLL_MS);
+  }
   function show() {
     if (!ensureView()) return;
-    document.querySelectorAll('[id^="view-"]').forEach(x => { x.style.display = 'none'; x.classList.remove('active'); });
     const v = document.getElementById(VIEW_ID);
+    const lysaNav = () => document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'verkbord' || b.dataset.view === NAV_KEY));
+    // 01.10.2026 — Agnar: hopp þegar ýtt er á hnappa. Ef borðið er þegar opið
+    // má ekki núlla síu, teikna allt upp eða stela #verkbord → #bord.
+    if (v && v.classList.contains('active') && v.style.display !== 'none') {
+      lysaNav();
+      const h = (location.hash || '').replace(/^#/, '');
+      if (['bord', 'verkbord', 'verkefni'].indexOf(h) < 0) {
+        try { history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
+      }
+      raesaPoll();
+      load(S.loaded);
+      return;
+    }
+    document.querySelectorAll('[id^="view-"]').forEach(x => { x.style.display = 'none'; x.classList.remove('active'); });
     v.style.display = 'block';
     v.classList.add('active');
     // Hnappurinn „🔧 Þjónustuborð" ber data-view 'verkbord' (231 injectNav). 218 syncNav tekur
     // lýsinguna af eftir hash-leiðsögn, svo hún er sett aftur augnabliki síðar.
-    const lysaNav = () => document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'verkbord' || b.dataset.view === NAV_KEY));
     lysaNav();
     setTimeout(() => { const vv = document.getElementById(VIEW_ID); if (vv && vv.classList.contains('active')) lysaNav(); }, 60);
     try { if (location.hash !== '#' + NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
@@ -5483,15 +5535,8 @@
     render();
     load(S.loaded);
     clearInterval(_poll);
-    _poll = setInterval(() => {
-      const vv = document.getElementById(VIEW_ID);
-      if (!vv || !vv.classList.contains('active')) { clearInterval(_poll); return; }
-      if (document.hidden) return;
-      // Punktarnir í „Í vinnslu — er það búið?" (skýrsla/reikningur) fylgja líka mínútu-könnuninni, ekki bara 5 mín. geymslu.
-      const gs = G.skyrslur;
-      if (gs && gs.at && !gs.bid && Date.now() - gs.at > POLL_MS) { gs.at = 0; render(); }
-      load(true);
-    }, POLL_MS);
+    _poll = 0;
+    raesaPoll();
   }
   function patchSwitchView() {
     if (!window.App || window.App._t5SwitchPatched) return;
@@ -5565,7 +5610,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368z3' };
+    window.Thjonustubord5 = { show, load, render, version: '368z4' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
