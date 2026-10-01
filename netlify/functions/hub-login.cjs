@@ -9,7 +9,7 @@
 // fyrir allt starfsfólk — ekki notendaskrá. Örlítil töf á röngu lykilorði til að
 // hægja á brute-force; harðari throttling er seinni tíma verk.
 
-const P = require('./_portal');
+const P = require('./_portal.cjs');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 exports.handler = async (event) => {

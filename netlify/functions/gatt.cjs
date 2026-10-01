@@ -10,7 +10,7 @@
 // Les beint úr Supabase (service-role) og skilar AÐEINS hvítlistuðum, kúnna-
 // öruggum reitum. Skjöl sótt gegnum /api/gatt-doc (eignarhaldsprófað).
 
-const P = require('./_portal');
+const P = require('./_portal.cjs');
 const { pickHose, slokkMinusHose } = require('./_gatt-eq.cjs');
 const GY = require('./_gatt-years.cjs');
 

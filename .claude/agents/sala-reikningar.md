@@ -219,7 +219,7 @@ leysir per samtal (öll `_threadIds`). Public: `saveMeta(message_id, manual_tag,
   patch 218 ALIAS (`postur`/`reikningapostur`). Public API `window.ReikningaPostur
   = { open, reload }`. Verður READ→WRITE með Tier 2/3 (var read-only í v1).
 
-## Payday-spegill — `payday_invoices_slokk` + `netlify/functions/payday-pull-slokk.js` (2026-07-10)
+## Payday-spegill — `payday_invoices_slokk` + `netlify/functions/payday-pull-slokk.cjs` (2026-07-10)
 
 Payday gefur reikningum SÍN eigin númer — kúnnar hringja og nefna Payday-númerið
 en hluti krafna er stofnaður beint í Payday (bókari/mánaðaruppgjör) og á enga

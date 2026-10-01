@@ -2,13 +2,13 @@
 'use strict';
 /* PAYDAY-LÝSINGIN BER EKKI INNRI BÓKHALDSMERKI.
  *
- * Af hverju (12.09.2026, Verkefnalisti c091f2ff): payday-push.js setti sölunótuna (solur.athugasemdir)
+ * Af hverju (12.09.2026, Verkefnalisti c091f2ff): payday-push.cjs setti sölunótuna (solur.athugasemdir)
  * óhreinsaða í description kröfunnar. Sótt-slóðin (121) skrifar innri merki aftast í nótuna —
  * „Kt: 570585-0379 [Sótt 2026-08-24] Afsláttur úr sölu: −8091 kr Greiðsla: reikningur" — og þau
  * prentuðust á Payday-reikning kúnnans (Payday #249, Colas 04.09.). Mælt 12.09.: 42 reikningar frá
  * 01.06. báru merkin, 3 ósendir. PDF-reikningurinn (10) og Sótt-glugginn (121) klipptu þau þegar.
  *
- * Mælir (án nets): hreinsaNotu() í payday-push.js — tekin beint úr skránni milli merkjanna
+ * Mælir (án nets): hreinsaNotu() í payday-push.cjs — tekin beint úr skránni milli merkjanna
  * hreinsaNotu:byrjun/endir — á raundæmum. Og að description sé byggð úr hreinsuðu nótunni.
  * Með --gogn: keyrir líka á allar sölunótur frá 01.06. og telur hvort merki standi eftir.
  * GRUNNLINA 0. Hækkaðu hana aldrei til að fá grænt.
@@ -20,7 +20,7 @@ const path = require('path');
 
 const GRUNNLINA = 0;
 const rot = path.join(__dirname, '..');
-const skra = fs.readFileSync(path.join(rot, 'netlify/functions/payday-push.js'), 'utf8');
+const skra = fs.readFileSync(path.join(rot, 'netlify/functions/payday-push.cjs'), 'utf8');
 const brot = [];
 
 // 1) description byggð úr hreinsuðu nótunni
@@ -30,7 +30,7 @@ if (!/description:\s*\[_vegna,\s*_notes\]/.test(skra)) brot.push('description er
 // 2) fallið sjálft, tekið úr skránni
 const m = skra.match(/\/\*\s*hreinsaNotu:byrjun\s*\*\/([\s\S]*?)\/\*\s*hreinsaNotu:endir\s*\*\//);
 let hreinsaNotu = null;
-if (!m) brot.push('merkin hreinsaNotu:byrjun/endir fundust ekki í payday-push.js');
+if (!m) brot.push('merkin hreinsaNotu:byrjun/endir fundust ekki í payday-push.cjs');
 else {
   try { hreinsaNotu = new Function(m[1] + '\nreturn hreinsaNotu;')(); }
   catch (e) { brot.push('hreinsaNotu þýðist ekki: ' + e.message); }
