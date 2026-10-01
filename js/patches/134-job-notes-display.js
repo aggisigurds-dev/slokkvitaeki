@@ -241,5 +241,8 @@
   }
   attach();
 
+  // 01.10.2026: Verkspjaldið (430) notar SÖMU skiptingu og vistun — ein regla um þjónustulínuna, ekki tvær.
+  window.JobNotes = { split: splitNotes, join: joinNotes, save: saveJobNotes };
+
   console.log('[job-notes-display] v2 installed — editable shared sticky-note (verkbeidnir.notes)');
 })();
