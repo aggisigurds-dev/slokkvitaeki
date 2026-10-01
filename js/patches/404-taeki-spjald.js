@@ -209,6 +209,7 @@
   var timer = null;
   function tick() {
     window.__b404tick = performance.now();
+    if (document.hidden) return;
     if (!scope()) {
       // Sími/appmode: hausinn okkar er ekki til, svo heimildin verður að sjást aftur.
       Array.prototype.slice.call(document.querySelectorAll('.b404-heimild')).forEach(function (x) { x.classList.remove('b404-heimild'); });
@@ -298,10 +299,15 @@
   (function watch() {
     var main = document.getElementById('companies-main');
     if (!main) { setTimeout(watch, 700); return; }
-    new MutationObserver(function (recs) { // hunsa okkar eigin valmyndar-opnanir (hidden-attribút) og legacy-innskot inn í hausinn
-      for (var i = 0; i < recs.length; i++) { var t = recs[i].target; if (t && t.closest && (t.closest('.b404-menu') || t.classList && t.classList.contains('b404-haus-h'))) continue; schedule(); return; }
+    new MutationObserver(function (recs) { // hunsa okkar eigin valmyndar-opnanir, kostnaðarspjaldið (129) og legacy-innskot inn í hausinn
+      if (document.hidden) return;
+      for (var i = 0; i < recs.length; i++) {
+        var t = recs[i].target;
+        if (t && (t.id === '_ctc-section' || (t.closest && (t.closest('#_ctc-section') || t.closest('.b404-menu') || (t.classList && t.classList.contains('b404-haus-h')))))) continue;
+        schedule(); return;
+      }
     }).observe(main, { childList: true, subtree: true });
-    setInterval(tick, 1500);
+    setInterval(function () { if (!document.hidden) tick(); }, 1500);
     schedule();
   })();
 
