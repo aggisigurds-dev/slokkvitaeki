@@ -10,25 +10,22 @@
  *   alveg jafn mikið og áður, og það er einmitt biðin sem Agnar var að lýsa. Seinni helming óskarinnar — takkinn sem
  *   SÆKIR fyrirfram — vantaði. Hann er hér.
  *
- * MÆLT 23.09.2026 ÁÐUR EN ÞETTA VAR SKRIFAÐ — hvað kostar að opna fyrirtækjaprófíl (REST-köll):
+ * 01.10.2026 — Agnar: tækin og kennitalan sem hurfu af prófíl-opnun, má það kveikjast
+ * fyrir ÖLL fyrirtækin þegar ýtt er á Hlaða, eða er það of þungt?
  *
- *                       Vinnutölva SLÖKKT   Vinnutölva KVEIKT
- *     618 (fyrsta)              25                32
- *     193                       21                30
- *     233                       20                28
- *     AFTUR á 618               28                 0      ← þetta er vinningurinn
+ *   JÁ, ein umferð: fyrirtaeki (~1.215 raðir, 2 síður) + uttaeki (~6.405 raðir, 7 síður)
+ *   inn í Companies.list og DB.cache. Sami kostnaður og gamla kalda ræsingin, greiddur
+ *   einu sinni þegar ýtt er á takkann. Eftir það er #company/<id> lesið úr minni
+ *   (_unitsComplete) og sækir engin uttaeki. Kennitala sem þegar stendur á fyrirtaeki-röðinni
+ *   kemur með select('*') — ekkert auka kall.
+ *   NEI, ekki einu sinni á hvert fyrirtæki: kt-lookup, geocode og hus-upplysingar eru
+ *   ~1.170 / ~1.015 ytri köll (mælt áður 8,7 s og 1,7 s köld). Þau bíða þar til prófíllinn opnast.
  *
- * Lesið úr þessu, og það er mikilvægt: SKYNDIMINNIÐ VIRKAR, en það virkar á ENDURKOMU. Fyrsta heimsókn á hvert
- * fyrirtæki kostar jafn mikið eftir sem áður, því fyrirspurnirnar á prófílnum eru síaðar á fyrirtaeki_id — hver
- * þeirra á sína eigin slóð og ekkert magn-forsókn getur hitað þær upp fyrirfram. Þessi takki getur því EKKI
- * flýtt fyrstu heimsókn á fyrirtæki, og lofar því ekki.
- *
- * ÞAÐ SEM HANN GERIR RAUNVERULEGA:
- *   1. Kveikir á Vinnutölvu (378) í einum smelli. Hún er SLÖKKT sjálfgefið — og það er langstærsta atriðið hér:
- *      án hennar kostar hver endurkoma á fyrirtæki 28 köll, með henni 0.
- *   2. Hitar sameiginlegu mengin (stillingar · fyrirtækjalisti · tæki og verk · Ársskoðun) svo þau séu klár.
- *      Á venjulega ræstri síðu eru þau reyndar þegar komin — þetta skiptir helst máli eftir að minnið hefur
- *      verið hreinsað eða þegar ræsingin hefur ekki klárast.
+ * ÞAÐ SEM HANN GERIR:
+ *   1. Kveikir á Vinnutölvu (378) í einum smelli. Hún er SLÖKKT sjálfgefið.
+ *   2. Hitar stillingar, fyrirtækjalistann, ÖLL tæki (líka þegar síðan opnaðist á #company,
+ *      því sú ræsing sækir viljandi aðeins eitt fyrirtæki) og Ársskoðun.
+ *   3. Sýnir „Hleð…" og síðufjölda á takkanum. Restin af viðmótinu helst lifandi.
  *
  * AÐFERÐIN — appsins eigin hleðslarar, engar nýjar fyrirspurnir:
  *   Skyndiminni 378 lyklast á SLÓÐ. Ef þessi takki byggi til sínar eigin fyrirspurnir (aðrir dálkar, önnur röðun) yrði
@@ -53,87 +50,18 @@
   // Hleðslararnir sem síðurnar sjálfar nota. Röðin er viljandi: stillingar fyrst (allt annað les þær), svo
   // fyrirtækjalistinn (þyngstur og flestir lesa hann), svo tækin, svo Ársskoðunar-mengið.
   const SKREF = [
-    { nafn: 'Stillingar',    keyra: () => window.AppSettings && AppSettings.load && AppSettings.load() },
-    { nafn: 'Fyrirtæki',     keyra: () => window.Companies   && Companies.load   && Companies.load() },
-    { nafn: 'Tæki og verk',  keyra: () => window.DB          && DB.loadAll       && DB.loadAll() },
-    { nafn: 'Ársskoðun',     keyra: () => window.Arsskodun   && Arsskodun.loadAll && Arsskodun.loadAll() },
-    { nafn: 'Uppflettingar', keyra: () => hitaUppflettingar() },
+    { nafn: 'Stillingar',   keyra: () => window.AppSettings && AppSettings.load && AppSettings.load() },
+    { nafn: 'Fyrirtæki',    keyra: () => window.Companies   && Companies.load   && Companies.load() },
+    { nafn: 'Tæki og verk', keyra: () => window.DB && DB.loadAll && DB.loadAll({
+        forceUnits: true,
+        onUnits: function (p) {
+          var sidor = (p && p.pages) || 0;
+          var komid = (p && p.done) || 0;
+          mála('⚡ Tæki … ' + komid + '/' + sidor, '#f6b545');
+        },
+      }) },
+    { nafn: 'Ársskoðun',    keyra: () => window.Arsskodun && Arsskodun.loadAll && Arsskodun.loadAll() },
   ];
-
-  // ── Ytri uppflettingar (25.09.2026) ──────────────────────────────────────
-  // Agnar: „getur líka þá í staðinn sótt einhverjar byggingaupplýsingar og frá skattinum
-  // o.fl. Algjör óþarfi að vera alltaf að sækja það."
-  // Tvær uppflettingar fara út úr húsi þegar fyrirtækjasíða opnast:
-  //   /api/hus-upplysingar  → Staðfangaskrá HMS + teikningasöfn   (mælt 1.668 ms)
-  //   /api/kt-lookup        → fyrirtækjaskrá Skattsins            (mælt 8.696 ms köld)
-  // Bæði föllin fengu varanlegt skyndiminni 25.09 (hus_upplysingar_cache, kt_lookup_cache),
-  // svo svar sem er sótt EINU SINNI dugar öllum vélum eftir það. Þessi takki fyllir það
-  // fyrirfram — heimilisfang og kennitala breytast ekki milli daga.
-  //
-  // Skammtað viljandi: 1.158 kennitölur og 1.005 heimilisföng eru í skránni og hvert kall
-  // fer á ytri þjónustu. Takkinn tekur HAMARK í einu, byrjar á þeim sem eru í þjónustu
-  // (það eru síðurnar sem eru opnaðar), og heldur áfram þar sem frá var horfið næst.
-  // Þeir sem þegar eru í skyndiminni eru aldrei sóttir aftur.
-  const HAMARK = 30;          // uppflettingar per ýtingu
-  const SAMHLIDA = 2;         // hóflegt álag á ytri þjónusturnar
-  const BIL_MS = 200;
-
-  async function hitaUppflettingar() {
-    const sb = window.DB && DB.sb;
-    if (!sb || typeof DB.fetchAll !== 'function') return;
-
-    // PAGAÐ. PostgREST skilar hámark 1.000 röðum: 1.203 fyrirtæki eru í skránni, svo
-    // ópöguð fyrirspurn hefði sleppt 203 þeirra ÞEGJANDI — og þegar skyndiminnis-
-    // töflurnar fara yfir 1.000 raðir hefði takkinn haldið þær hálftómar og sótt allt
-    // upp á nýtt á ytri þjónusturnar. audit-pagination greip þetta. Sjá 1000-raða þakið.
-    const fel = await DB.fetchAll((fra, til) => sb.from('fyrirtaeki')
-      .select('id,kennitala,heimilisfang,er_i_thjonustu')
-      .is('deleted_at', null)
-      .order('er_i_thjonustu', { ascending: false })
-      .order('id')
-      .range(fra, til));
-    if (!Array.isArray(fel) || !fel.length) return;
-
-    // Hvað er þegar geymt? Sótt í einu lagi svo við spyrjum ekki 2.000 sinnum.
-    const komid = { kt: new Set(), hus: new Set() };
-    try {
-      const [a, b] = await Promise.all([
-        DB.fetchAll((fra, til) => sb.from('kt_lookup_cache').select('kt').order('kt').range(fra, til)),
-        DB.fetchAll((fra, til) => sb.from('hus_upplysingar_cache').select('lykill').order('lykill').range(fra, til)),
-      ]);
-      (a || []).forEach(r => komid.kt.add(String(r.kt)));
-      (b || []).forEach(r => komid.hus.add(String(r.lykill)));
-    } catch (_) { /* taflan gæti vantað — þá er einfaldlega ekkert geymt enn */ }
-
-    const verk = [];
-    for (const f of fel) {
-      const kt = String(f.kennitala || '').replace(/\D/g, '');
-      if (kt.length === 10 && !komid.kt.has(kt)) verk.push({ teg: 'kt', slod: '/api/kt-lookup?kt=' + kt });
-      const hf = String(f.heimilisfang || '').normalize('NFC').trim();
-      if (hf.length > 4 && !komid.hus.has(hf.toLowerCase())) {
-        verk.push({ teg: 'hus', slod: '/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(hf) });
-      }
-    }
-    if (!verk.length) { mála('✓ Uppflettingar fullar', '#16a34a'); return; }
-
-    const skammtur = verk.slice(0, HAMARK);
-    let lokid = 0;
-    async function kverk() {
-      while (skammtur.length) {
-        const v = skammtur.shift();
-        if (!v) break;
-        try { await fetch(v.slod, { cache: 'no-store' }); } catch (_) {}
-        lokid++;
-        mála('⚡ Uppflettingar … ' + lokid + '/' + Math.min(HAMARK, verk.length), '#f6b545');
-        await new Promise(r => setTimeout(r, BIL_MS));
-      }
-    }
-    await Promise.all(Array.from({ length: SAMHLIDA }, kverk));
-    const eftir = verk.length - lokid;
-    if (eftir > 0) {
-      try { if (window.Toast && Toast.show) Toast.show('⚡ ' + lokid + ' uppflettingar geymdar · ' + eftir + ' eftir — ýttu aftur'); } catch (_) {}
-    }
-  }
 
   let ígangi = false;
 
@@ -151,6 +79,7 @@
     ígangi = true;
     const b = takki();
     if (b) b.disabled = true;
+    mála('⚡ Hleð…', '#f6b545');
 
     try {
       // Án skyndiminnis er ekkert geymt og takkinn skilar engu næst.
@@ -159,12 +88,13 @@
       for (let i = 0; i < SKREF.length; i++) {
         mála('⚡ ' + SKREF[i].nafn + ' … ' + (i + 1) + '/' + SKREF.length, '#f6b545');
         try { await Promise.resolve(SKREF[i].keyra()); }
-        catch (e) { try { console.warn('[406] ' + SKREF[i].nafn, e); } catch (_) {} }
+        catch (e) { try { console.warn('[407] ' + SKREF[i].nafn, e); } catch (_) {} }
       }
 
-      const n = (window.Vinnutolva && Vinnutolva.stada().svor) || 0;
-      mála('✓ Tilbúið · ' + n + ' svör', '#16a34a');
-      try { if (window.Toast && Toast.show) Toast.show('⚡ Vinnutölvan er hlaðin — ' + n + ' svör í minni'); } catch (_) {}
+      const felog = (window.Companies && Companies.list && Companies.list.length) || 0;
+      const taeki = (window.DB && DB.cache && DB.cache.units && DB.cache.units.length) || 0;
+      mála('✓ ' + felog + ' · ' + taeki + ' tæki', '#16a34a');
+      try { if (window.Toast && Toast.show) Toast.show('⚡ Vinnutölvan er hlaðin — ' + felog + ' fyrirtæki og ' + taeki + ' tæki í minni'); } catch (_) {}
     } finally {
       ígangi = false;
       if (takki()) takki().disabled = false;
@@ -215,11 +145,10 @@
     const b = document.createElement('button');
     b.id = AUÐK;
     b.type = 'button';
-    b.title = 'Gerir þessa tölvu að vinnutölvu:\n'
-            + '• kveikir á skyndiminninu — endurkoma á fyrirtæki kostar þá 0 netköll í stað 28 (mælt)\n'
-            + '• hitar stillingar, fyrirtækjalistann, tæki og verk og Ársskoðun\n\n'
-            + 'FYRSTA heimsókn á hvert fyrirtæki verður EKKI hraðari — þær fyrirspurnir eru síaðar á fyrirtækið '
-            + 'og ekkert forsókn nær þeim.\n\n'
+    b.title = 'Vinnutölvuhamur — ýttu áður en vinnutörnin byrjar:\n'
+            + '• sækir fyrirtækjalistann og öll tæki í einni umferð svo prófílar opnist úr minni\n'
+            + '• kveikir á skyndiminninu\n'
+            + '• kennitala á skrá fylgir með; Skatturinn og húsaupplýsingar bíða þar til prófíll opnast\n\n'
             + 'Aðeins lestur; ekkert er skrifað. Valið gildir fyrir þessa tölvu.';
     b.style.cssText = 'margin-right:8px;padding:5px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.22);'
       + 'background:rgba(255,255,255,.08);color:#fff;font:600 11.5px/1 system-ui,sans-serif;cursor:pointer;'

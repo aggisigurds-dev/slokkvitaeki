@@ -191,6 +191,21 @@ var DB = {
     return this._companySlice;
   },
 
+  // After a full uttaeki pass, every company is already in memory, including
+  // companies with zero rows. Profile open then skips the per-company fetch.
+  _markCompaniesFetched: function() {
+    var rows = (this.cache && this.cache.units) || [];
+    for (var i = 0; i < rows.length; i++) {
+      var fid = rows[i] && rows[i].fyrirtaeki_id;
+      if (fid != null) this._companyFetched[fid] = true;
+    }
+    var list = window.Companies && Companies.list;
+    if (!Array.isArray(list)) return;
+    for (var j = 0; j < list.length; j++) {
+      if (list[j] && list[j].id != null) this._companyFetched[list[j].id] = true;
+    }
+  },
+
   // Drop this company's previous rows and put the fresh slice in. Other
   // companies already in the cache stay. Indexes used by the profile are
   // updated for this id only.
@@ -220,14 +235,18 @@ var DB = {
     }
   },
 
-  loadAll: async function() {
+  loadAll: async function(opts) {
     this.setSyncState('syncing');
     try {
       // 01.10.2026: #company/<id> paints from this company's rows only.
       // The seven uttaeki pages (select * order=client) do not run just
       // because a profile opened. Endurnýja refetches this company.
+      // Hlaða passes forceUnits: one press, the whole table, then profiles
+      // read memory. A cold profile with an empty cache still fetches one company.
+      var forceUnits = !!(opts && opts.forceUnits);
+      var onUnits = (opts && typeof opts.onUnits === 'function') ? opts.onUnits : null;
       var bootCo = this._bootCompanyId();
-      if (bootCo) {
+      if (bootCo && !forceUnits) {
         try { await this._primeCompany(bootCo); }
         catch (e) { console.warn('[db] prófíl-sneið', e && e.message); }
         try { if (window.__paintBootCompany) window.__paintBootCompany(bootCo); }
@@ -250,25 +269,39 @@ var DB = {
       }
       async function loadAllUttaekiSamhlida(sb) {
         var pageSize = 1000;
-        var mk = function (start, opts) { return sb.from('uttaeki').select('*', opts).order('client').order('id').range(start, start + pageSize - 1); };
+        var mk = function (start, qopts) { return sb.from('uttaeki').select('*', qopts).order('client').order('id').range(start, start + pageSize - 1); };
         var fyrsta = await mk(0, { count: 'exact' });
         if (fyrsta.error) throw fyrsta.error;
         var rows0 = fyrsta.data || [], alls = fyrsta.count;
-        if (rows0.length < pageSize) return { data: rows0 };
+        if (rows0.length < pageSize) {
+          if (onUnits) onUnits({ done: 1, pages: 1, rows: rows0.length });
+          return { data: rows0 };
+        }
         if (typeof alls !== 'number' || alls > 50000) return null;
         var byrjanir = [];
         for (var st = pageSize; st < alls; st += pageSize) byrjanir.push(st);
-        var svor = await Promise.all(byrjanir.map(function (st) { return mk(st); }));
+        var pages = 1 + byrjanir.length;
+        var done = 1;
+        if (onUnits) onUnits({ done: 1, pages: pages, rows: rows0.length });
+        var svor = await Promise.all(byrjanir.map(function (st) {
+          return mk(st).then(function (res) {
+            done++;
+            if (onUnits) onUnits({ done: done, pages: pages, rows: rows0.length });
+            return res;
+          });
+        }));
         var allt = rows0;
         for (var i = 0; i < svor.length; i++) { if (svor[i].error) throw svor[i].error; allt = allt.concat(svor[i].data || []); }
         var ids = {}; var einkvaemt = true;
         for (var k = 0; k < allt.length; k++) { var id = allt[k] && allt[k].id; if (ids[id]) { einkvaemt = false; break; } ids[id] = 1; }
         if (allt.length !== alls || !einkvaemt) { console.warn('[db] uttaeki: samhliða mengi stemmdi ekki (' + allt.length + '/' + alls + ', einkvæmt=' + einkvaemt + ') — sæki í röð'); return null; }
+        if (onUnits) onUnits({ done: pages, pages: pages, rows: allt.length });
         return { data: allt };
       }
       async function loadAllUttaekiIRod(sb) {
         var pageSize = 1000;
         var allRows = [];
+        var pageNo = 0;
         for (var start = 0; ; start += pageSize) {
           // 2026-08-17: .order('id') tiebreaker — ORDER BY client eitt og sér er
           // ekki einkvæmt (hundruð raða deila sama client) svo Postgres má raða
@@ -279,6 +312,8 @@ var DB = {
           if (res.error) throw res.error;
           var rows = res.data || [];
           allRows = allRows.concat(rows);
+          pageNo++;
+          if (onUnits) onUnits({ done: pageNo, pages: pageNo + (rows.length < pageSize ? 0 : 1), rows: allRows.length });
           if (rows.length < pageSize) break;
           if (start > 50000) break; // safety stop
         }
@@ -292,7 +327,7 @@ var DB = {
       // Profile open is not a reason to download every device. Keep the
       // slice _primeCompany already merged. Other screens that call loadAll
       // without a boot company still get the full table.
-      var skipFullUnits = !!bootCo;
+      var skipFullUnits = !!bootCo && !forceUnits;
       var [j, v, u, s, h] = await Promise.all([
         self.fetchAll(function(from,to){ return self.sb.from('verkbeidnir').select('*').order('created_at', {ascending:false}).order('id').range(from,to); }).then(function(data){ return { data: data }; }),
         self.fetchAll(function(from,to){ return self.sb.from('verklidur').select('*').order('id').range(from,to); }).then(function(data){ return { data: data }; }),
@@ -308,6 +343,7 @@ var DB = {
       if (!(u && u.skipped)) {
         this.cache.units = u.data || [];
         this._unitsComplete = true;
+        this._markCompaniesFetched();
       }
       this.cache.schedule = s.data || [];
       this.cache.history = h.data || [];
