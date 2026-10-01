@@ -54,9 +54,8 @@
     if (RVK.has(pn)) return true;
     return /reykjav[ií]k/i.test(String(adr || ''));
   }
-  function boxFyrir(id) {
-    return document.querySelector('#companies-main .co-bupp[data-co="' + id + '"]')
-      || document.querySelector('.co-bupp[data-co="' + id + '"]');
+  function boxesFyrir(id) {
+    return Array.from(document.querySelectorAll('#companies-main .co-bupp[data-co="' + id + '"]'));
   }
 
   function stilar() {
@@ -69,6 +68,7 @@
       'background-color:transparent!important;box-shadow:none!important;color:#93c5fd!important;font:inherit!important;' +
       'font-size:11.5px!important;font-weight:400!important;line-height:19px!important;text-decoration:none!important;' +
       'cursor:pointer!important;white-space:nowrap!important}' +
+      '._serupp ._bupp-merki{width:118px!important}' +
       'a._serupp-l:hover,button._serupp-l:hover{color:#fff!important;text-decoration:underline!important}' +
       'button._serupp-l:disabled{opacity:.55!important;cursor:default!important}';
     (document.head || document.documentElement).appendChild(s);
@@ -119,8 +119,8 @@
     // er lesið, og næsta teikning reyndi ekki aftur.
     if (!endurnyja && !(window.DB && DB.sb)) return null;
     bid.add(lykill);
-    syna();
     try {
+      syna();
       if (!endurnyja) {
         const c = await lesaSb(adr);
         if (c) { minni.set(lykill, c); return c; }
@@ -145,13 +145,12 @@
   function syna() {
     const id = coIdNu();
     if (!id) return;
-    const box = boxFyrir(id);
-    if (!box) return;
+    const boxes = boxesFyrir(id);
+    if (!boxes.length) return;
     const adr = heimilisfang(id);
     if (adr == null) return;
-    let el = box.querySelector('._serupp');
     if (!adr || !/\d/.test(adr) || !erReykjavik(adr)) {
-      if (el) el.remove();
+      boxes.forEach((box) => { const el = box.querySelector('._serupp'); if (el) el.remove(); });
       return;
     }
     const lykill = lykillAf(adr);
@@ -168,32 +167,37 @@
     } else if (villEndur && !saeki) saekja(id, adr, ma());
     const html = markup(svar, saeki || (!svar && !minni.has(lykill)));
     const sig = (saeki ? 's' : '') + (svar ? JSON.stringify(svar.flokkar || svar.error || (svar.utan ? 'u' : '')) : '');
-    if (!html) { if (el) el.remove(); return; }
-    if (!el) {
-      el = document.createElement('div');
-      el.className = '_serupp';
+    boxes.forEach((box) => {
+      let el = box.querySelector('._serupp');
+      if (!html) { if (el) el.remove(); return; }
       const teikn = box.querySelector('._bupp-teikn-lina');
-      const vixl = box.querySelector('._bupp-vixl');
-      if (teikn) teikn.insertAdjacentElement('afterend', el);
-      else if (vixl) box.insertBefore(el, vixl);
-      else box.appendChild(el);
-    }
-    if (el.dataset.sig === sig && el.innerHTML) return;
-    el.dataset.sig = sig;
-    el.innerHTML = html;
-    el.querySelectorAll('[data-ser]').forEach((b) => {
-      b.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (b.dataset.ser === 'endur') {
-          minni.delete(lykill);
-          saekja(id, adr, true);
-          return;
-        }
-        const nu = minni.get(lykill);
-        const land = nu && nu.landnr;
-        if (!land || !window.TeikningaForskodun || !TeikningaForskodun.opna) return;
-        TeikningaForskodun.opna(land, nu.label || adr, id, { sia: 'skraning' });
+      if (!el) {
+        el = document.createElement('div');
+        el.className = '_serupp';
+        const osk = box.querySelector(':scope > .b411-oskrad');
+        if (teikn) teikn.insertAdjacentElement('afterend', el);
+        else if (osk) osk.insertAdjacentElement('beforebegin', el);
+        else box.appendChild(el);
+      } else if (teikn && el.previousElementSibling !== teikn) {
+        teikn.insertAdjacentElement('afterend', el);
+      }
+      if (el.dataset.sig === sig && el.innerHTML) return;
+      el.dataset.sig = sig;
+      el.innerHTML = html;
+      el.querySelectorAll('[data-ser]').forEach((b) => {
+        b.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (b.dataset.ser === 'endur') {
+            minni.delete(lykill);
+            saekja(id, adr, true);
+            return;
+          }
+          const nu = minni.get(lykill);
+          const land = nu && nu.landnr;
+          if (!land || !window.TeikningaForskodun || !TeikningaForskodun.opna) return;
+          TeikningaForskodun.opna(land, nu.label || adr, id, { sia: 'skraning' });
+        });
       });
     });
   }
