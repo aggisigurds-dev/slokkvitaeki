@@ -39,6 +39,7 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B51 | **„textarnir sjást illa þarna“** — KOMIÐ / 1 þjónusta á ársbandinu | Claude | ✅ KLÁRT (01.10): 313 las hálfgegnsæju merkin sem ljós og skrifaði dökkt blek → .b403-band og .b403-kafli á undanþágulista 313; stöðumerkið litað eftir stöðu |
 | B48 | Öpp-síðurnar samræmdar + layout + sími (Sími-hamur og Tölvusíðu-hamur) | Claude | ✅ KLÁRT (01.10): ræsir, fylki, spjöld, síðuritill, app-skel og Stýriborð (354) í Brunastál C — engin emoji/blátt; dökka bandið nær yfir titilinn (409 málar hann hvítan); fylkið brýtur síðuheiti á síma (309 → 132 px); Opna yfir alla breiddina + 2 jafnir takkar (337). Mælt 1600 / 375 / 980×1940 krom 2,4: engin lárétt skrun, titill hvítur á dökku |
 | B49 | „Sækja inn úr fyrirtæki“ á Verkstæði í Brunastál — málmhaus m. hnoðum, stálplata, silfur/rauður takki, engin emoji; leitin heldur gildi eftir „Velja annað“ (122 v=20261001d, 313 SKIP #_sr-dialog). Prófað í Playwright 1600+375 px: leit, val Test fyrirtæki 1404, hök/Velja öll, til baka, ✕ | Claude | ✅ KLÁRT |
+| B52 | Mánaðarmerkið á Kröfu yfirliti illa læsilegt í síma | Claude | ✅ KLÁRT (01.10): 166 + 313 skrifuðu dökkt blek (#11141c) á mánuðinn sem stendur á dökka titilbandinu → ljóst (#e9edf2), .page-title .ky-month á undanþágulista 313; ◀ ▶ miðjuð í kassanum (voru í efra vinstra horni). Mælt 375 px: blek ljóst, ekkert data-cc313, örvar 0/−1 px frá miðju; 1600 px ósnert (annar haus) |
 
 ## 2026-09-30
 
