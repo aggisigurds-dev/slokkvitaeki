@@ -341,10 +341,38 @@
     await opna(d.eign.landnr, d.eign.label || h, coId || null, d.eign.svf ? { svf: d.eign.svf, heitinr: d.eign.heitinr || 0 } : null);
     return true;
   }
-  window.TeikningaForskodun = { opna, loka, opnaHeimilisfang };
+  window.TeikningaForskodun = { opna, loka, opnaHeimilisfang, opnaGeymt };
 
   // Hlekkurinn á spjaldinu (363 setur data-landnr þegar staðurinn er í skjalasafni Reykjavíkur).
+  function opnaGeymt(coId, flokkur) {
+    const sk = window.BannerUpplysingar && BannerUpplysingar.skrarSvar && BannerUpplysingar.skrarSvar(coId);
+    const allar = (sk && sk.results) || [];
+    const listi = flokkur ? allar.filter(d => d.flokkur === flokkur) : allar;
+    Object.assign(S, {
+      listi: listi.length ? listi : allar,
+      sia: 'allar',
+      valin: null,
+      stadur: (sk && sk.eign && sk.eign.label) || '',
+      coId: coId || null,
+    });
+    grind();
+    const titill = document.getElementById('tfs-titill');
+    if (titill) titill.textContent = '📐 Teikningar' + (S.stadur ? ' — ' + S.stadur : '');
+    if (!S.listi.length) {
+      const b = document.getElementById('tfs-bid');
+      if (b) b.textContent = 'engin teikning fannst';
+      return;
+    }
+    teiknaLista(true);
+  }
+
   document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('button._bupp-teikn[data-flokkur]');
+    if (b) {
+      e.preventDefault(); e.stopPropagation();
+      opnaGeymt(b.dataset.co, b.dataset.flokkur);
+      return;
+    }
     const a = e.target.closest && e.target.closest('a._bupp-teikn[data-landnr]');
     if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
     e.preventDefault(); e.stopPropagation();
