@@ -563,6 +563,12 @@
       r('.b274-linur ._bkc-vsum', 'font-family:' + MONO + ';font-size:12px;font-weight:700;color:#11141c'),
       r('.b274-linur ._bkc-vx', 'border:0;background:transparent;color:#b9c0c9;font-size:13px'), r('.b274-linur ._bkc-vx:hover', 'color:#b42318;background:#fdeeee'),
       r('.b274-linur [data-vadd]', 'margin:8px 12px 10px!important;align-self:flex-start'),
+      r('.b274-linur .b274-baeta', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 12px 10px'),
+      r('.b274-linur .b274-baeta [data-vadd]', 'margin:0!important'),
+      r('.b274-linur .b274-lidval', 'height:30px;max-width:240px;border:1px solid rgba(20,24,34,.14);border-radius:7px;background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);font:600 12px ' + SANS + ';color:#1f2530;padding:0 8px;cursor:pointer'),
+      r('.b274-linur button._bkc-vteg', 'cursor:pointer;font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase'),
+      r('.b274-linur button._bkc-vteg._vara', 'background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%);border-color:rgba(190,150,60,.5);color:#fff'),
+      r('.b274-nytt', 'color:#845400'),
       r('.b274-vantar', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px 0;font-family:' + MONO + ';font-size:11px;color:#8a6100;font-weight:700'),
       r('.b274-linur ._bkc-empty', 'padding:14px 12px;text-align:center'),
       r('.b274-linur > div > div[style*="8a6100"]', 'padding:6px 12px 0!important;font-family:' + MONO + ';font-size:11px!important'),
@@ -816,6 +822,45 @@
       return (l && Array.isArray(l.items)) ? l.items : (Array.isArray(l) ? l : []);
     })();
     const normN = x => String(x || '').toLowerCase().replace(/[^a-záðéíóúýþæö0-9]+/g, ' ').trim();
+    // 01.10.2026 (Agnar: „velja Vöru eða þjónustu lið" · „tenging við þar af nýtt"). Tegund línu kom ÁÐUR aðeins
+    // úr ágiskun á heitinu („skynjari" → Vara). Nú ber línan sína tegund (l.teg, úr verðlistanum eða valin hér) —
+    // ágiskunin er aðeins fyrir eldri línur. Smellur á merkið skiptir á milli Vöru og Þjónustu.
+    const BKS = window.BrunakerfiSkyrsla || {};
+    const tegLinu = (l) => {
+      const n = String(l.name || '');
+      if (l.teg === 'vara' || l.teg === 'thjonusta') return l.teg;
+      if (!n.trim()) return 'thjonusta';
+      return BKS.tegAgiskun ? BKS.tegAgiskun(n) : (/n[ýy]r|uppsett|skynjari|skipt/i.test(n) ? 'vara' : 'thjonusta');
+    };
+    const tegMerki = (l) => {
+      const n = String(l.name || '');
+      if (/akstur/i.test(n)) return 'Akstur';
+      if (/sk[ýy]rslu|samantekt/i.test(n)) return 'Skýrsla';
+      return tegLinu(l) === 'vara' ? 'Vara' : (/^\s*vinna/i.test(n) ? 'Vinna' : 'Skoðun');
+    };
+    const verdlistiTeg = (function () {
+      try { if (BKS.verdlistiMedTegund) return BKS.verdlistiMedTegund(); } catch (_) {}
+      return verdlisti.map(it => ({ name: it.name, price: num(it.price) || 0, link: it.link || '', teg: it.teg || tegLinu({ name: it.name }) }));
+    })();
+    const lidaVal = (teg, merki) => {
+      const lidir = verdlistiTeg.map((it, ix) => ({ it, ix })).filter(x => x.it.name && x.it.teg === teg);
+      return lidir.length ? '<select class="b274-lidval" data-vlid="' + teg + '" title="Bæta við ' + merki.toLowerCase() + ' úr verðlistanum">' +
+        '<option value="">＋ ' + merki + ' úr verðlista…</option>' +
+        lidir.map(x => '<option value="' + x.ix + '">' + esc(x.it.name) + ' · ' + fmtKr(x.it.price) + '</option>').join('') + '</select>' : '';
+    };
+    // „Þar af nýtt" í skýrslunni × vara tengd „Nýtt: …" í verðlistanum → lína sem vantar eða magn sem stemmir ekki
+    // „Reykskynjari optískur XP95" = „Optiskur Reykskynjari XP95": orðaröð og broddstafir skipta ekki máli
+    const lidLykill = x => normN(x).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ð/g, 'd').replace(/þ/g, 'th').replace(/æ/g, 'ae').split(' ').filter(Boolean).sort().join(' ');
+    const nyttSemVantar = (r) => {
+      let ur = [];
+      try { ur = BKS.nyttLinur ? BKS.nyttLinur(C.co, r) : []; } catch (_) { ur = []; }
+      const linur = linurOf(r);
+      return ur.map(nl => {
+        const ix = linur.findIndex(l => lidLykill(l.name) === lidLykill(nl.name));
+        if (ix < 0) return { ny: true, nl };
+        return (num(linur[ix].qty) || 0) !== (num(nl.qty) || 0) ? { ny: false, nl, ix, var: num(linur[ix].qty) || 0 } : null;
+      }).filter(Boolean);
+    };
     const fastarSemVantar = (r) => {
       const heiti = linurOf(r).map(l => normN(l.name));
       const ur = verdlisti.filter(it => it.link === 'fast' && it.name && heiti.indexOf(normN(it.name)) < 0).map(it => ({ name: it.name, price: num(it.price) != null ? String(num(it.price)) : '' }));
@@ -835,7 +880,7 @@
           '<div class="_bkc-vr">' +
             '<input class="_bkc-vin" data-vk="name" data-vi="' + i + '" value="' + esc(l.name || '') + '" title="' + esc(l.name || '') + '" placeholder="Lýsing">' +
             '<input class="_bkc-vin" data-vk="qty" data-vi="' + i + '" inputmode="numeric" value="' + esc(l.qty == null ? '' : l.qty) + '" style="text-align:center">' +
-            '<span class="_bkc-vteg">' + (/akstur/i.test(l.name || '') ? 'Akstur' : /sk[ýy]rslu|samantekt/i.test(l.name || '') ? 'Skýrsla' : /n[ýy]r|uppsett|skynjari|skipt/i.test(l.name || '') ? 'Vara' : 'Skoðun') + '</span>' +
+            '<button type="button" class="_bkc-vteg' + (tegLinu(l) === 'vara' ? ' _vara' : '') + '" data-vteg="' + i + '" title="Tegund línu — smelltu til að skipta á milli Vöru og Þjónustu">' + tegMerki(l) + '</button>' +
             '<input class="_bkc-vin" data-vk="price" data-vi="' + i + '" inputmode="decimal" value="' + esc(l.price == null ? '' : fmtInn(l.price)) + '" style="text-align:right">' +
             '<span class="_bkc-vvsk">' + VAT_PCT + '%</span>' +
             '<input class="_bkc-vin" data-vk="afsl" data-vi="' + i + '" inputmode="decimal" placeholder="0" value="' + esc(l.afsl == null ? '' : l.afsl) + '" style="text-align:center;color:#b3341a;font-weight:700">' +
@@ -845,7 +890,14 @@
         // B25 (Agnar 30.09): sjálfgefnu línurnar — vanti þær er einn smellur í að bæta þeim við (verð úr verðlistanum), ekki bara viðvörun
         (function () { const fv = fastarSemVantar(x.r); return fv.length ? '<div class="b274-vantar"><span>Fastar línur sem vantar:</span>' +
           fv.map(it => '<button type="button" class="_bkc-act _ghost" data-vfn="' + esc(it.name) + '" data-vfp="' + esc(it.price) + '" title="Bæta við ' + esc(it.name) + ' ×1 á verðlistaverði">＋ ' + esc(it.name) + ' ×1</button>').join('') + '</div>' : ''; })() +
-        '<button type="button" class="_bkc-act _ghost" data-vadd="1" style="margin-top:9px">＋ Auð lína</button>' +
+        (function () { const nv = nyttSemVantar(x.r); return nv.length ? '<div class="b274-vantar b274-nytt"><span>Þar af nýtt:</span>' +
+          nv.map(v => v.ny
+            ? '<button type="button" class="_bkc-act _ghost" data-vnn="' + esc(v.nl.name) + '" data-vnq="' + esc(v.nl.qty) + '" data-vnp="' + esc(v.nl.price) + '" data-vnt="' + esc(v.nl.teg || 'vara') + '" title="Bæta við ' + esc(v.nl.name) + ' × ' + esc(v.nl.qty) + ' (nýtt í skýrslunni)">＋ ' + esc(v.nl.name) + ' ×' + esc(v.nl.qty) + '</button>'
+            : '<button type="button" class="_bkc-act _ghost" data-vnu="' + v.ix + '" data-vnq="' + esc(v.nl.qty) + '" title="Skýrslan segir ' + esc(v.nl.qty) + ' ný — línan segir ' + v.var + '">↻ ' + esc(v.nl.name) + ': ' + v.var + ' → ' + esc(v.nl.qty) + '</button>').join('') + '</div>' : ''; })() +
+        '<div class="b274-baeta">' +
+          '<button type="button" class="_bkc-act _ghost" data-vadd="1">＋ Auð lína</button>' +
+          lidaVal('vara', 'Vara') + lidaVal('thjonusta', 'Þjónusta') +
+        '</div>' +
         '</div>').join('')
       // 30.09.2026 (Agnar: „skil ekki alveg hvað er í gangi þarna"). Textinn sagði
       // ALLTAF „smelltu á ✏️ Kostnaðarliðir" — en sá takki er aðeins teiknaður þegar
@@ -1064,6 +1116,27 @@
       blokk.querySelectorAll('[data-vfn]').forEach(b => b.addEventListener('click', () => {
         rep.data = rep.data || {}; rep.data.verd = rep.data.verd || {}; rep.data.verd.linur = rep.data.verd.linur || [];
         rep.data.verd.linur.push({ name: b.dataset.vfn, qty: '1', price: b.dataset.vfp || '', afsl: '' });
+        render(); vistaSidar(rep);
+      }));
+      // 01.10.2026: tegund línu (Vara ↔ Þjónusta), vöru-/þjónustuliður úr verðlista, „Þar af nýtt"-tillögur
+      const tilLinur = () => { rep.data = rep.data || {}; rep.data.verd = rep.data.verd || {}; rep.data.verd.linur = rep.data.verd.linur || []; return rep.data.verd.linur; };
+      blokk.querySelectorAll('[data-vteg]').forEach(b => b.addEventListener('click', () => {
+        const l = linur()[+b.dataset.vteg]; if (!l) return;
+        l.teg = tegLinu(l) === 'vara' ? 'thjonusta' : 'vara';
+        render(); vistaSidar(rep);
+      }));
+      blokk.querySelectorAll('[data-vlid]').forEach(sel => sel.addEventListener('change', () => {
+        const it = verdlistiTeg[+sel.value]; if (!it) return;
+        tilLinur().push({ name: it.name, qty: '1', price: String(it.price), afsl: '', teg: it.teg });
+        render(); vistaSidar(rep);
+      }));
+      blokk.querySelectorAll('[data-vnn]').forEach(b => b.addEventListener('click', () => {
+        tilLinur().push({ name: b.dataset.vnn, qty: b.dataset.vnq || '1', price: b.dataset.vnp || '', afsl: '', teg: b.dataset.vnt || 'vara' });
+        render(); vistaSidar(rep);
+      }));
+      blokk.querySelectorAll('[data-vnu]').forEach(b => b.addEventListener('click', () => {
+        const l = linur()[+b.dataset.vnu]; if (!l) return;
+        l.qty = b.dataset.vnq || l.qty;
         render(); vistaSidar(rep);
       }));
       const add = blokk.querySelector('[data-vadd]');
