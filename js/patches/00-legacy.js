@@ -3192,7 +3192,13 @@ console.log('[patch-master] loaded with all fixes');
     document.querySelectorAll('table').forEach(function(t){
       var ths=t.querySelectorAll('th');var ok=false;
       ths.forEach(function(th){if(/RA[\u00d0D]N|serial/i.test(th.textContent))ok=true;});
-      if(!ok||t.dataset._pmCb) return;t.dataset._pmCb='1';
+      if(!ok||t.dataset._pmCb) return;
+      // 01.10.2026: EKKI á tækjatöflu verkbeiðnar. Stikan vinnur á `uttaeki` eftir raðnúmeri, en tæki
+      // verkbeiðnar eru `verklidur` (TMP-raðnr. af söluborði): „Prenta merki" fann ekkert („Fann ekki
+      // tækin í skrá"), „Merkja skoðað"/„Uppfæra" gátu breytt tæki ANNARS kúnna með sama raðnr., og
+      // „Eyða" harðeyðir uttaeki-röðum. Sama útilokun og minnisboxið hér að ofan notar.
+      if (t.closest('#counter-main, #workshop-detail, #counter-detail-modal, #workshop-detail-modal')) return;
+      t.dataset._pmCb='1';
       var thR=t.querySelector('thead tr');if(!thR) return;
       var cbTh=document.createElement('th');cbTh.style.cssText='width:30px;text-align:center';
       var aCb=document.createElement('input');aCb.type='checkbox';aCb.className='_pm_cb';aCb.title='Velja allt';

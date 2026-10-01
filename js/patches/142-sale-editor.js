@@ -766,8 +766,10 @@
     const s = f.querySelector('#_se-save'); if (s) s.addEventListener('click', () => commit({ finalize: false }));
     const fin = f.querySelector('#_se-finalize'); if (fin) fin.addEventListener('click', () => commit({ finalize: true }));
     const cr = f.querySelector('#_se-credit'); if (cr) cr.addEventListener('click', () => {
+      // 01.10.2026: close() núllar _sale — númerið lesið FYRST (annars TypeError og kreditleiðin opnaðist aldrei).
+      const num = _sale && _sale.num;
       close();
-      if (window.kreditFaera) window.kreditFaera(_sale.num);
+      if (window.kreditFaera) window.kreditFaera(num);
       else if (window.openKreditLookup) window.openKreditLookup();
     });
   }
