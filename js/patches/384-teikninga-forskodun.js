@@ -92,7 +92,8 @@
     document.head.appendChild(st);
   }
 
-  const erSkraning = (d) => /skráningartöfl|skraningartofl/i.test([d && d.lysing, d && d.filename, d && d.tegund].filter(Boolean).join(' '));
+  // Eintala á blaðinu er „skráningartafla“ (a), fleirtala „skráningartöflur“ (ö).
+  const erSkraning = (d) => /skr[aá]ningart[aö]fl/i.test([d && d.lysing, d && d.filename, d && d.tegund].filter(Boolean).join(' '));
   const synilegar = () => {
     const l = S.listi;
     if (S.sia === 'skraning') return l.filter(erSkraning);
