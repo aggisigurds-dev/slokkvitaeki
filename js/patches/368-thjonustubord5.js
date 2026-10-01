@@ -288,6 +288,21 @@
   // fulla af hömum annarra. M(id) þekkir haminn áfram, svo mál tengd honum týnast ekki.
   const hamSest = h => !h.eigandi || lagt(h.eigandi) === lagt(nu());
   const hamaListi = () => Object.keys(MODES).concat(serHamir().filter(hamSest).map(h => h.id));
+  // 01.10.2026 (Agnar: „geti slökkt á að það sé alltaf allt sjáanlegt fyrir ákveðna starfsmenn … eins og fyrir
+  // Anna … svo hann sjái bara Anni · mitt vinnuborð til að byrja með og + hamur, velja einingar"): hamir sem eru
+  // faldir í hamaröð starfsmanns, by_staff.<nafn>.falnir_hamir = [id]. Listi yfir FALDA (ekki sýnilega), svo hamur
+  // sem hann býr sjálfur til með „+ Hamur" sést strax. Mitt vinnuborð verður aldrei falið — það er lendingarstaðurinn.
+  // Rofarnir eru í ⚙ Mitt vinnuborð. _falnirBid heldur nýja listanum meðan vistunin er á leiðinni.
+  const _falnirBid = {};
+  function falnirHamir(n) {
+    if (_falnirBid[n]) return _falnirBid[n];
+    const l = P(CFG_KEY + '.by_staff.' + n + '.falnir_hamir');
+    return Array.isArray(l) ? l.map(String).filter(k => k !== MITT_HAM) : [];
+  }
+  const hamFalinnHja = (n, k) => k !== MITT_HAM && falnirHamir(n).indexOf(k) >= 0;
+  const hamFalinn = k => hamFalinnHja(nu(), k);
+  // Hamur sem má lenda á: sá vistaði ef hann sést, annars Master og mitt borð, annars mitt vinnuborð.
+  const lendingarHamur = (n, k) => (k && !hamFalinnHja(n, k)) ? k : (hamFalinnHja(n, 'thjonusta') ? MITT_HAM : 'thjonusta');
   // 368aa: talan á hamahnappnum er það sem bíður í hamnum — ekki fjöldi mála í flokki (sem var næstum sá sami alls staðar).
   function hamTala(k) {
     const h = M(k), n = nu();
@@ -362,7 +377,7 @@
       const x = v && v.mods && Array.isArray(v.mods[k]) ? v.mods[k] : base[k];
       mods[k] = [x[0] ? 1 : 0, x[1] ? 1 : 0];
     });
-    return { mode: v && M(v.mode) ? v.mode : 'thjonusta', mods, baraMitt: !!(v && v.bara_mitt) };
+    return { mode: lendingarHamur(n, v && M(v.mode) ? v.mode : ''), mods, baraMitt: !!(v && v.bara_mitt) };
   }
   function cfg() {
     const n = nu();
@@ -1153,6 +1168,8 @@
       '.cfgt b{display:block;font-family:var(--disp);font-size:15px;font-weight:700}.cfgt span{display:block;font-size:12px;color:var(--mute)}',
       '.lock{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}',
       '.cfgfoot{padding:11px 16px;border-top:1px solid var(--rule);font-size:12px;color:var(--mute)}',
+      // 01.10.2026: hamir sem hausar í ⚙ með rofa; einingar hamsins undir. Falinn hamur = daufur.
+      '.cfgrow.hamh{border-top:1px solid var(--rule);background:rgba(22,21,19,.035)}.cfgrow.hamh .cfgt b{font-size:16px}.cfgrow.hamoff .cfgt,.cfgrow.hamoff .plate{opacity:.5}.cfgrow.off{opacity:.42}',
       '.sw{position:relative;width:40px;height:22px;flex:none;border-radius:11px;border:1px solid var(--edge2);background:var(--well);box-shadow:var(--wellsh);cursor:pointer;padding:0}',
       '.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--key);border:1px solid var(--edge);box-shadow:var(--keysh)}',
       '.sw[aria-checked="true"]{background:linear-gradient(180deg,#2a7a45 0%,#174a2a 55%,#144424 100%);border-color:#0a2a15}.sw[aria-checked="true"]::after{left:20px}',
@@ -1352,6 +1369,8 @@
         '.sel.side{display:none}' +
         '.frow{grid-template-columns:minmax(0,1fr) auto;padding:12px}.frow .age{grid-column:1 / -1}' +
         '.cfgrow{grid-template-columns:30px minmax(0,1fr) auto;padding:10px 12px}.cfgrow .seg{grid-column:2 / -1;justify-self:start}' +
+        // Hamshaus: 4 hólf í 3 dálkum → rofinn féll í línu 2. Rofinn segir sjálfur Sést/Falið, svo merkið víkur.
+        '.cfgrow.hamh>.lock:not(:last-child),.cfgrow.hamh>span:empty{display:none}' +
         '.composer,.composer.ny{grid-template-columns:minmax(0,1fr)}.composer textarea{grid-column:auto}.leit{max-width:none}' +
       '}',
       '@media (prefers-reduced-motion: reduce){.btn{transition:none}}'
@@ -4247,16 +4266,33 @@
   }
 
   function cfgHtml() {
-    const c = cfg();
-    const core = [['02', 'Master borð'], ['03', 'Mitt borð'], ['04', 'Valið mál']].map(x =>
-      '<div class="cfgrow">' + plate(x[0]) + '<div class="cfgt"><b>' + x[1] + '</b><span>Kjarninn í flæðinu — í hamnum Master og mitt borð.</span></div><span></span><span class="lock">Alltaf</span></div>').join('');
-    // 368aa: hver eining á heima í einum ham og birtist þar alltaf — hér sést hvar. Kveikja/slökkva og „opið/samanbrotið"
-    // hurfu með hægri dálkinum, sem var eins í öllum hömum.
-    const rows = Object.keys(MODES).map(h => MODES[h].first.map(k =>
-      '<div class="cfgrow">' + plate(MODS[k].n) + '<div class="cfgt"><b>' + MODS[k].t + '</b><span>' + MODS[k].d + '</span></div><span></span><span class="lock">' + esc(MODES[h].l) + '</span></div>').join('')).join('');
-    return '<header class="phead"><span class="plate">⚙</span><h2 class="ptitle">Mitt vinnuborð · ' + esc(nu()) + '</h2><span class="grow"></span>' +
+    const c = cfg(), n = nu(), falnir = falnirHamir(n);
+    // 368aa: hver eining á heima í einum ham og birtist þar alltaf — hér sést hvar, flokkað undir haminn.
+    // 01.10.2026: hver hamur fær rofa — slökkt = hamurinn (og einingarnar hans) hverfur úr hamaröð þessa starfsmanns.
+    const KJARNI = [['02', 'Master borð', 'Laus mál sem allir geta tekið.'], ['03', 'Mitt borð', 'Málin sem eru sett á þig.'], ['04', 'Valið mál', 'Opna málið: póstur, saga og aðgerðir.']];
+    const eining = (num, t, d, falid) => '<div class="cfgrow' + (falid ? ' off' : '') + '">' + plate(num) + '<div class="cfgt"><b>' + t + '</b><span>' + d + '</span></div><span></span><span class="lock">' + (falid ? 'Falið' : '') + '</span></div>';
+    const blokk = k => {
+      const h = M(k);
+      if (!h) return '';
+      const mitt = k === MITT_HAM, syn = mitt || falnir.indexOf(k) < 0;
+      const ein = k === 'thjonusta' ? KJARNI.map(x => eining(x[0], x[1], x[2], !syn))
+        : (h.first || []).filter(m => MODS[m]).map(m => eining(MODS[m].n, MODS[m].t, MODS[m].d, !syn));
+      const lysing = mitt ? 'Þitt borð — einingarnar velur þú í „✎ Velja einingar". Sést alltaf.'
+        : h.rymi ? 'Vinnusvæði í fullri breidd.'
+        : ein.length ? ein.length + (ein.length === 1 ? ' eining' : ' einingar') : 'Engar einingar enn.';
+      return '<div class="cfgrow hamh' + (syn ? '' : ' hamoff') + '"><span class="plate">' + esc(String(h.l).trim().charAt(0).toUpperCase() || '·') + '</span>' +
+        '<div class="cfgt"><b>' + esc(h.l) + '</b><span>' + lysing + '</span></div>' +
+        (mitt ? '<span></span><span class="lock">Alltaf</span>'
+          : '<span class="lock">' + (syn ? 'Sést' : 'Falið') + '</span><button type="button" class="sw" role="switch" aria-checked="' + syn + '" data-t5="ham-syn" data-mode="' + esc(k) + '" aria-label="Sýna haminn ' + esc(h.l) + ' hjá ' + esc(n) + '"></button>') +
+        '</div>' + ein.join('');
+    };
+    const hamir = [MITT_HAM].concat(hamaListi().filter(k => k !== MITT_HAM));
+    const nFalid = hamir.filter(k => falnir.indexOf(k) >= 0).length;
+    return '<header class="phead"><span class="plate">⚙</span><h2 class="ptitle">Mitt vinnuborð · ' + esc(n) + '</h2><span class="grow"></span>' +
         '<button type="button" class="btn gold sm" data-t5="cfg">Loka ›</button></header>' +
-      core + rows +
+      '<div class="cfgfoot">Hamirnir sem ' + esc(n) + ' sér. Slökktu á ham til að taka hann úr hamaröðinni — „' + esc(n) + ' · mitt vinnuborð", „+ Hamur" og „✎ Velja einingar" eru alltaf þar.' +
+        (nFalid ? ' <b>' + nFalid + (nFalid === 1 ? ' hamur falinn.' : ' hamir faldir.') + '</b>' : '') + '</div>' +
+      hamir.map(blokk).join('') +
       I_VOLDU.map(k => '<div class="cfgrow">' + plate(MODS[k].n) + '<div class="cfgt"><b>' + MODS[k].t + '</b><span>' + MODS[k].d + '</span></div><span class="lock">Í völdu máli</span>' +
         '<button type="button" class="sw" role="switch" aria-checked="' + !!c.mods[k][0] + '" data-t5="cfg-on" data-m="' + k + '" aria-label="' + MODS[k].t + '"></button></div>').join('') +
       '<div class="cfgrow"><span class="plate">—</span><div class="cfgt"><b>Spjall</b><span>Slökkt í bili fyrir alla.</span></div><span></span><span class="lock">Slökkt</span></div>' +
@@ -4368,7 +4404,10 @@
       if (!S.chkTvinga) { clearTimeout(_frestad); _frestad = setTimeout(render, 1200); return; }
     }
     S.chkTvinga = 0;
-    const n = nu(), c = cfg(), mode = M(c.mode) || MODES.thjonusta;
+    const n = nu(), c = cfg();
+    // Hamur sem var falinn í ⚙ (eða opnaður úr öðru, t.d. vinnublaði) er ekki sýndur — lent á sýnilegum ham.
+    if (hamFalinnHja(n, c.mode)) { c.mode = lendingarHamur(n, ''); S.filter = (M(c.mode) || MODES.thjonusta).filter || 'allt'; }
+    const mode = M(c.mode) || MODES.thjonusta;
     const master = masterRows(), mine = mineRows(), baraMitt = !!c.baraMitt;
     // 368y: vinnusvæðis-hamur (rymi) fær alla breiddina — engar einingar til hliðar, engin KPI-spjöld. 368aa: einingahamur
     // (board:false án rymi) teiknar aðeins sínar einingar; mál opnað úr einingu birtist hægra megin.
@@ -4507,7 +4546,7 @@
         leitHtml() +
         (S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
-          hamaListi().map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
+          hamaListi().filter(k => !hamFalinnHja(n, k)).map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
             (t === '' ? '' : '<span class="c">' + t + '</span>') + '</button>'; }).join('') +
         '</div><button type="button" class="btn iv sm" data-t5="ham-ny" aria-expanded="' + !!(S.hamForm && !S.hamForm.id) + '">+ Hamur</button>' +
         (mode.ser || mode.mitt ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '">' + (mode.mitt ? '✎ Velja einingar' : '✎ Breyta ham') + '</button>' : '') +
@@ -5084,6 +5123,27 @@
         render();
         return;
       case 'cfg': S.cfgOpen = !S.cfgOpen; render(); return;
+      case 'ham-syn': {
+        // 01.10.2026: fela/sýna ham í hamaröð starfsmannsins sem er valinn í „Ég er". Allur listinn er vistaður
+        // (fylki eru skrifuð heil í 85 deepMerge); _falnirBid heldur honum á skjánum þar til þjónninn tekur við.
+        if (!krefstStillinga()) return;
+        const k = el.dataset.mode, hver = nu();
+        if (!k || k === MITT_HAM || !M(k)) return;
+        const adur = falnirHamir(hver).slice();
+        const nyr = adur.indexOf(k) >= 0 ? adur.filter(x => x !== k) : adur.concat([k]);
+        const falid = nyr.indexOf(k) >= 0;
+        _falnirBid[hver] = nyr;
+        render();
+        (async () => {
+          let ok = false;
+          try { ok = !!(await AppSettings.save({ [CFG_KEY]: { by_staff: { [hver]: { falnir_hamir: nyr } } } })); } catch (_) {}
+          if (_falnirBid[hver] === nyr) delete _falnirBid[hver];
+          if (!ok) { toast('Stillingin vistaðist ekki. Reyndu aftur.', true); delete _cfg[hver]; }
+          else toast('„' + M(k).l + '" ' + (falid ? 'falinn hjá ' : 'sést aftur hjá ') + hver);
+          render();
+        })();
+        return;
+      }
       case 'cfg-on':
         if (!krefstStillinga()) return;
         c.mods[m][0] = c.mods[m][0] ? 0 : 1;
