@@ -11,6 +11,9 @@
  * Endurnýja á prófíl sækir eitt fyrirtæki í gegnum DB._primeCompany og er ekki lokað hér.
  * Kennitala, hús og kort: ein umferð á hvern Endurnýja-smell (kallandinn merkir
  * __coEndurnyja.notad áður en fetch fer). Af stöðvar þær umferðir líka.
+ * Hús: heimilisfang á færslunni er ekki teikningaskrá. Opinn prófíll má sækja
+ * hus-upplysingar einu sinni fyrir ÞETTA heimilisfang þegar 363 á ekkert í
+ * geymslu. Hlaða (depth) og önnur félög fara ekki í gegn.
  * Af hreinsar aldrei skyndiminni prófílsins.
  *
  * Viðvaranir á hverri röð og aðgerðir fyrir eitt fyrirtæki (úr #company/N).
@@ -202,7 +205,15 @@
     if (endurnyjaLeyfir(job)) return true;
     if (mode === 'auto') return due(job);
     if (job === 'kennitala') return !kennitalaASkra(url);
-    if (job === 'hus') return !heimilisfangASkra(url);
+    if (job === 'hus') {
+      if (_depth) return false;
+      if (!heimilisfangASkra(url)) return true;
+      if (!profilOpinn()) return false;
+      const rod = felagRod();
+      const q = String(breyta(url, 'heimilisfang') || '').trim();
+      const adr = String((rod && rod.heimilisfang) || '').trim();
+      return !!adr && adr === q;
+    }
     if (job === 'kort') {
       if (hnitASkra(url)) return false;
       if (Date.now() < _kortLeyfiTil) return true;
