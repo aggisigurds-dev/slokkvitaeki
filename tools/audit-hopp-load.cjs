@@ -51,13 +51,24 @@ krefst('js/patches/385-slokkvikerfi.js', /if\s*\(r\)\s*r\.skodunarmanudur\s*=\s*
 krefst('js/patches/218-url-routing.js', /brunaskra:\s*'brunaskra'/, '218 verður að þekkja #brunaskra (annars #sala)');
 krefst('js/patches/218-url-routing.js', /userTouched/, '218 boot-tick má ekki rífa slóð eftir fyrsta smell');
 
+krefst('js/patches/224-uttekt-taeki.js', /function hoppBump/, '224 þarf hoppBump svo hak/Yfirferð merki kynslóð');
+krefst('js/patches/224-uttekt-taeki.js', /function uppfaeraVal/, '224 valreitur má ekki rerender() — aðeins uppfaeraVal');
+krefst('js/patches/224-uttekt-taeki.js', /type="button" class="ut-svc/, '224 Yfirferð/Hleðsla verður að vera type=button');
+krefst('js/patches/224-uttekt-taeki.js', /type="button" class="ut-check/, '224 hak verður að vera type=button');
+krefst('js/patches/224-uttekt-taeki.js', /contains\('ut-chk'\)[\s\S]{0,400}uppfaeraVal\(cco\)/, '.ut-chk má ekki kalla rerender');
+krefst('js/patches/227-trip-cloud-sync.js', /__hakHopp[\s\S]{0,80}skalSleppa/, '227 applyCloud/notifyRestored verður að sleppa í hak-glugga');
+krefst('js/patches/421-profill-lifandi.js', /rpc:app_settings_merge/, '421 má ekki remounta prófíl á trip-cloud echo');
+krefst('js/patches/428-hak-hopp.js', /window\.__hakHopp/, '428 kynslóðar-tákn vantar');
+krefst('js/patches/428-hak-hopp.js', /a\[href\^="#"\]/, '428 verður að stöðva hash-leiðsögn á hak/Yfirferð');
+
 const html = lesa('index.html');
-['features.js', 'mapfix.js', '147-brunakerfi.js', '153-arsskodun.js', '218-url-routing.js', '274-brunakerfi-fyrirtaeki.js', '385-slokkvikerfi.js']
+['features.js', 'mapfix.js', '147-brunakerfi.js', '153-arsskodun.js', '218-url-routing.js', '224-uttekt-taeki.js', '227-trip-cloud-sync.js', '274-brunakerfi-fyrirtaeki.js', '385-slokkvikerfi.js', '421-profill-lifandi.js']
   .forEach(f => {
     if (!new RegExp(f.replace('.', '\\.') + '\\?v=20261001hopp').test(html)) {
       villur.push('index.html: ' + f + ' vantar ?v=20261001hopp');
     }
   });
+if (!/428-hak-hopp\.js\?v=20261001b/.test(html)) villur.push('index.html: 428-hak-hopp.js vantar ?v=20261001b');
 
 if (villur.length) {
   console.log('HOPP-LOAD RAUDT — ' + villur.length + ' vantar:');
