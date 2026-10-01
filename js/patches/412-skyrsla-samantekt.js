@@ -178,15 +178,16 @@
     var vs = tala.querySelector('span'); if (vs && vs.textContent !== v) vs.textContent = v;
   }
   var timer = null;
-  function tick() { if (!scope()) return; try { haus(); } catch (e) { console.error('[412]', e); } }
+  function tick() { if (document.hidden || !scope()) return; try { haus(); } catch (e) { console.error('[412]', e); } }
   function schedule() { if (schedule.inni) return; schedule.inni = true; try { tick(); } finally { schedule.inni = false; } }   // 24.09.2026: vaktin (252) skilar sér í rAF, FYRIR málun — setTimeout héðan lenti EFTIR málun og hrái ramminn sást sem hopp (mælt: 224-listinn 601 → 741 px, valstikan 205 → 154 px). Sama tif, engin millistaða.
   (function watch() {
     var main = document.getElementById('companies-main');
     if (!main) { setTimeout(watch, 500); return; }
     new MutationObserver(function (ms) {
+      if (document.hidden) return;
       for (var i = 0; i < ms.length; i++) { var t = ms[i].target; if (t && t.closest && t.closest('.b412-titill,.b412-tala')) continue; schedule(); return; }
     }).observe(main, { childList: true, subtree: true, characterData: true });
     tick();
   })();
-  setInterval(tick, 1500);
+  setInterval(function () { if (!document.hidden) tick(); }, 1500);
 })();

@@ -387,10 +387,18 @@
     var v = document.getElementById('view-arsskodun');
     if (!v) { setTimeout(watch, 700); return; }
     new MutationObserver(function (ms) {
+      if (document.hidden) return;
+      var view = document.getElementById('view-arsskodun');
+      if (!view || !view.classList.contains('active')) return;
       for (var i = 0; i < ms.length; i++) { var t = ms[i].target; if (t && t.closest && t.closest('.b414-top')) continue; schedule(); return; }
     }).observe(v, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'style'] });
     schedule();
   })();
-  setInterval(schedule, 2000);
+  setInterval(function () {
+    if (document.hidden) return;
+    var view = document.getElementById('view-arsskodun');
+    if (!view || !view.classList.contains('active')) return;
+    schedule();
+  }, 2000);
   window.addEventListener('resize', function () { maelaAftur = true; schedule(); });
 })();

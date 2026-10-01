@@ -314,7 +314,7 @@
     vakta();
     window.addEventListener('resize', schedule);
     window.addEventListener('hashchange', function () { vakta(); schedule(); });
-    setInterval(function () { vakta(); schedule(); }, 2000);
+    setInterval(function () { if (document.hidden) return; vakta(); schedule(); }, 2000);
     try { new MutationObserver(function () { if (VIEWS.some(function (id) { return !vaktad[id]; })) { vakta(); schedule(); } }).observe(document.body, { childList: true }); } catch (_) {}
     schedule();
   }

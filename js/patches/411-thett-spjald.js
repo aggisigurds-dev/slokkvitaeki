@@ -189,7 +189,7 @@
 
   var timer = null;
   function tick() {
-    if (!scope()) return;
+    if (document.hidden || !scope()) return;
     var main = document.getElementById('companies-main'); if (!main) return;
     Array.prototype.slice.call(main.querySelectorAll('.co-bupp')).forEach(function (box) { try { oskrad(box); } catch (e) { console.error('[411]', e); } });
     Array.prototype.slice.call(main.querySelectorAll('.co-banner-right .co-banner-note')).forEach(function (ta) { try { note(ta); } catch (e) { console.error('[411]', e); } });
@@ -200,10 +200,15 @@
     var main = document.getElementById('companies-main');
     if (!main) { setTimeout(watch, 500); return; }
     new MutationObserver(function (ms) {
-      for (var i = 0; i < ms.length; i++) { var t = ms[i].target; if (t && t.closest && t.closest('.b411-oskrad,.b411-meira,.b411-samsk-meira')) continue; schedule(); return; }
+      if (document.hidden) return;
+      for (var i = 0; i < ms.length; i++) {
+        var t = ms[i].target;
+        if (t && (t.id === '_ctc-section' || (t.closest && (t.closest('#_ctc-section') || t.closest('.b411-oskrad,.b411-meira,.b411-samsk-meira'))))) continue;
+        schedule(); return;
+      }
     }).observe(main, { childList: true, subtree: true });
     tick();
   })();
-  setInterval(tick, 1200);
+  setInterval(function () { if (!document.hidden) tick(); }, 1200);
   window.addEventListener('resize', schedule);
 })();

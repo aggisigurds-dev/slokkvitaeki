@@ -41,7 +41,8 @@
   const LS = FLOKKUR.key + '_sia_v1';   // AÐEINS sía/röðun þessa vafra — staða gagna býr á þjóninum
 
   const state = Object.assign({ stada: 'allt', man: 0, leit: '', postnr: '', felaUr: FLOKKUR.felaSjalfgefid !== false, sort: 'man', dir: 1 }, lesaSiu());
-  let _rows = null, _loading = false, _villa = '';
+  let _rows = null, _loading = false, _villa = '', _lastLoad = 0;
+  const CACHE_MS = 60000;
 
   function SB() { return (window.DB && DB.sb) || null; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -104,10 +105,11 @@
     }
     return ut;
   }
-  async function reload() {
+  async function reload(force) {
     if (_loading) return;
+    if (!force && _rows && (Date.now() - _lastLoad) < CACHE_MS) { render(); return; }
     _loading = true; _villa = ''; render();
-    try { _rows = await load(); } catch (e) { _villa = (e && e.message) || String(e); _rows = _rows || []; console.warn('[slokkvikerfi] load', e); }
+    try { _rows = await load(); _lastLoad = Date.now(); } catch (e) { _villa = (e && e.message) || String(e); _rows = _rows || []; console.warn('[slokkvikerfi] load', e); }
     _loading = false; render();
   }
   // Vistun les svarið áður en „✓" er sagt (skill heidarlegt-vidmot): uppfærslan skilar röðinni
@@ -343,7 +345,7 @@
       $('_skn-vista').disabled = false;
       if (error || !data || !data[0]) { err.textContent = 'Skráðist ekki: ' + ((error && error.message) || 'þjónninn skilaði engri röð'); return; }
       toast('✓ ' + valid.nafn + ' · ' + data[0].heiti + ' skráð í ' + FLOKKUR.titill);
-      loka(); reload();
+      loka(); reload(true);
     };
     setTimeout(() => $('_skn-leit').focus(), 50);
   }
@@ -358,7 +360,7 @@
       const ub = t.closest('[data-utlit]'); if (ub) { state.utlit = ub.dataset.utlit; vistaSiu(); return render(); }
       if (t.id === '_sk-nytt') return nyttKerfi();
       if (t.id === '_sk-prenta') return prenta();
-      if (t.id === '_sk-aftur') return reload();
+      if (t.id === '_sk-aftur') return reload(true);
       if (t.closest('._sk-nota,._sk-man,a,button,select,textarea,input')) return;   // reitir í röðinni eiga sinn smell
       const row = t.closest('._sk-row'); if (!row) return;
       const fid = +row.dataset.fid;
@@ -384,8 +386,8 @@
       if (t.classList.contains('_sk-man')) {
         const kid = +t.dataset.kid, gildi = +t.value || null;
         const sv = await vistaKerfi(kid, { skodunarmanudur: gildi });
-        if (sv.ok) { toast('✓ Skoðunarmánuður vistaður'); reload(); }
-        else { toast('⚠ Mánuðurinn vistaðist ekki: ' + sv.villa); reload(); }
+        if (sv.ok) { toast('✓ Skoðunarmánuður vistaður'); reload(true); }
+        else { toast('⚠ Mánuðurinn vistaðist ekki: ' + sv.villa); reload(true); }
       }
     });
   }
@@ -581,7 +583,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
   console.log('[patch-385] þjónustuskrá: ' + FLOKKUR.titill);
-  return { open, reload, _stada: stada, _naest: naest };
+  return { open, reload: () => reload(true), _stada: stada, _naest: naest };
   }   // buaTil
 
   window.Thjonustuskra = { buaTil };

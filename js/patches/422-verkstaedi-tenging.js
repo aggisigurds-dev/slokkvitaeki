@@ -31,7 +31,7 @@
   if (window.VerkTenging) return;
 
   const GLUGGI_DAGA = 45;        // afgreitt verk telst hluti af yfirstandandi ársskoðun í 45 daga
-  const TTL_MS = 15000, PUSL_MS = 20000, BITI = 150;
+  const TTL_MS = 60000, PUSL_MS = 60000, BITI = 150;
   const DISP = { hledsla: 'Hlaðið', yfirferd: 'Yfirfarið', nytt: 'Nýtt', vidgerd: 'Viðgert' };
 
   const _lina = new Map();       // uid -> { lina, verk } | null
@@ -181,8 +181,8 @@
     _t = setTimeout(() => { endurnyja(true); tilkynna(['*']); }, 400);
   });
   // (2) púls á meðan prófíll er opinn og sýnilegur (önnur vél breytti á verkstæðinu)
-  setInterval(() => { endurnyja(true); }, PUSL_MS);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') endurnyja(true); });
+  setInterval(() => { if (!document.hidden) endurnyja(false); }, PUSL_MS);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') endurnyja(false); });
 
   // Stílar — Brunastál C (402): sama plötumerki og .ut-last, litur segir stöðuna. `:not(#_p422)` lyftir
   // sértækninni yfir 402-reglurnar án !important.
