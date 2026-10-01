@@ -282,7 +282,7 @@
   // 24.09.2026: #_uv-strip (328) situr í SVARTA REIKNINGUR-hausnum og ber sína eigin
   // ljósu liti. Skannin las bakgrunn pillnanna sem ljósan (þær eru hálfgegnsæjar) og
   // skrifaði dökkt blek á þær — dökkt á dökkt, ólæsilegt. Hausinn á sína liti sjálfur.
-  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd,#_uv-strip,.b412-titill,._uv-rb,.b414-top,.arsm-sec,._ars-summary,._tfoot,.b418-top,.b190-top,.b403-band,.b403-kafli';
+  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd,#_uv-strip,.b412-titill,._uv-rb,.b414-top,.arsm-sec,._ars-summary,._tfoot,.b418-top,.b190-top,.b403-band,.b403-kafli,#_sr-dialog';
   // 01.10.2026 (B51, Agnar: „textarnir sjást illa þarna“): .b403-band — ársbandið í Skjöl-spjaldinu (403) er málmur;
   // stöðumerkið (KOMIÐ/YFIRFARIÐ) og „1 þjónusta“ eru hálfgegnsæ og fengu dökkt blek. Sama gildra og #_uv-strip.
 
