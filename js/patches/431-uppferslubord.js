@@ -842,7 +842,7 @@
       'Hlaða sækir fyrirtæki og öll tæki í einni umferð. Endurnýja á prófíl sækir það eina fyrirtæki. ' +
       'Hús færist ekki: ef heimilisfang, hnit eða kennitala er þegar á færslunni er það ekki sótt aftur þegar prófíll opnast.</p>' +
       '<p id="ub-samantekt" role="status" data-n="' + n + '">' + esc(samantektTexti(metas)) + '</p>' +
-      '<table id="ub-tafla"><thead><tr><th>Nafn</th><th>Hvaðan</th><th>Stjórn</th><th>Staða</th></tr></thead><tbody>' +
+      '<table id="ub-tafla"><thead><tr><th>Nafn</th><th>Hvaðan</th><th>Stjórn</th><th>Viðvörun</th></tr></thead><tbody>' +
       SJALFGEFID.map((r) => htmlRod(r, all[r.id])).join('') +
       '</tbody></table>' +
       '<section id="ub-felag" data-id="' + (co ? co.id : '') + '">' + (co ? felagHtml(co) : leitHtml()) + '</section>';
