@@ -26,6 +26,12 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B11 | Center Hotels: bannerlínan sýnir „Afsláttur —" þótt félagið sé í hópi með 10–32% — hópurinn er lesinn of seint | — | NÝ |
 
 
+## 2026-10-01
+
+| # | Beiðni | Hver | Staða |
+|---|-----|---|---|
+| B43 | **„Hrikaleg hopp í ársskoðun þegar maður ýtir á check í tæki eða breytir hleðslu/yfirferð“** — fara yfir alla takka og losna við öll hopp | Claude | ✅ KLÁRT (01.10): rótin var 421 (prófíll uppfærist strax) sem endurteiknaði ALLAN prófílinn ~2 s eftir hverja vistun — líka app_settings-speglun 227 á hökum/vali (rpc:app_settings_merge). Nú hunsuð; uttaeki-breyting = aðeins listinn + kostnaður (líka í 211). 129 endurbyggir ekki athugasemdaboxið og læsir hæð spjaldsins. Mælt: 0 px hreyfing í 26 s yfir 5 aðgerðir (var 390→609→740→433→306→272 px). Eftir: tvíteikning við opnun í kapphlaupi 235/357 (sjaldgæf) |
+
 ## 2026-09-30
 
 | # | Beiðni | Hver | Staða |
