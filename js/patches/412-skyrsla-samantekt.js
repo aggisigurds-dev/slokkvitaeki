@@ -74,8 +74,9 @@
     r('#_ctc-notes', 'padding:10px 12px 6px!important;gap:8px!important'),
     r('#_ctc-notes textarea', imp(LINE) + ';border:0!important;border-radius:8px!important;padding:11px 13px!important;font-family:' + SANS + '!important;font-size:13.5px!important;line-height:1.45!important;color:#141822!important;resize:vertical!important;box-shadow:inset 0 2px 5px rgba(20,24,34,.10),inset 0 0 0 1px rgba(20,24,34,.14)!important;transition:box-shadow .12s'),
     r('#_ctc-notes textarea:focus', 'outline:0!important;box-shadow:inset 0 2px 5px rgba(20,24,34,.10),inset 0 0 0 1px rgba(20,24,34,.14),0 0 0 3px rgba(58,58,65,.28)!important'),
-    r('#_ctc-notes #_ctc-notes-ta', 'min-height:132px!important'),
-    r('#_ctc-notes #_ctc-athskyrsla', 'min-height:96px!important'),
+    // B45 (Agnar 01.10: „lower the height a bit on those boxes“): 132/96 → 76/52 px; enn hægt að draga þá stærri
+    r('#_ctc-notes #_ctc-notes-ta', 'min-height:76px!important;height:76px'),
+    r('#_ctc-notes #_ctc-athskyrsla', 'min-height:52px!important;height:52px'),
     r('#_ctc-notes textarea::placeholder', 'color:#8e97a6!important;font-style:normal!important'),
     r('#_ctc-notes > div:first-child', 'display:flex!important;align-items:center!important;gap:8px!important;margin:0!important'),
     r('#_ctc-notes > div:nth-of-type(2)', 'margin:4px 0 0!important'),
@@ -84,6 +85,19 @@
     r(D(5) + ' > label', 'font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:#3a4250!important'),
     r(D(5) + ' input', LINE + '!important;border:0!important;height:38px!important;padding:0 10px!important;font-family:' + SANS + '!important;font-size:13px!important;color:#141822!important'),
     r(D(5) + ' > div:last-child', 'font-family:' + SANS + '!important;font-size:11px!important;color:#6b7483!important'),
+    // B45 („make the text more visible“): merkið „Texti á reikning“ bar innlínulit (var(--ink2), ljóst) á spanninu og hvarf á stálinu;
+    // bundið við reitinn sjálfan (:has) svo röð hólfanna skipti ekki máli.
+    r('#_ctc-section label:has(#_ctc-invtext)', 'font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:#3a4250!important;gap:10px!important'),
+    r('#_ctc-section label:has(#_ctc-invtext) > span', 'color:#3a4250!important;font-weight:700!important'),
+    r('#_ctc-section label:has(#_ctc-invtext) + div', 'font-family:' + SANS + '!important;font-size:11.5px!important;color:#3a4250!important;margin-top:4px!important'),
+    r('#_ctc-section div:has(> label > #_ctc-invtext)', 'background:' + STAL + '!important;background-image:' + STAL_IMG + '!important'),
+    // B46 („black text on black“): samtölubandið er málmur — letrið ljóst, talan í Playfair
+    r('#_ctc-section div:has(> #_ctc-sum-total)', 'background:' + METAL + '!important;border:1px solid #000!important;border-radius:8px!important;color:#eef1f4!important'),
+    r('#_ctc-section div:has(> #_ctc-sum-total) *', 'color:#eef1f4!important'),
+    r('#_ctc-section div:has(> #_ctc-sum-total) > :first-child', 'font-family:' + MONO + '!important;font-size:11px!important;font-weight:700!important;letter-spacing:.14em!important;text-transform:uppercase!important;color:#d9dee6!important'),
+    r('#_ctc-section #_ctc-sum-total', 'font-family:' + DISPLAY + '!important;font-size:24px!important;font-weight:800!important;color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)!important'),
+    // B44: „Úttekt búin / í Vinnslu“ í hausnum, hægra megin við samtöluna
+    r(D(1) + ' ._vw-topbtn', imp(SILVER_BTN) + ';order:1!important;margin-left:auto!important;height:34px!important;padding:0 14px!important;border-radius:4px!important;font-family:' + SANS + '!important;font-size:12.5px!important;font-weight:600!important;display:inline-flex!important;align-items:center!important;gap:7px!important;white-space:nowrap!important;cursor:pointer'),
     r(D(6), 'display:flex!important;align-items:center!important;gap:8px!important;padding-top:8px!important'),
     r(D(6) + '::before', 'content:"Línur reiknings";font-family:' + MONO + ';font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3a4250;margin-right:auto'),
     r(D(6) + ' a', 'font-family:' + SANS + '!important;font-size:12px!important;font-weight:500!important;color:#b42318!important'),

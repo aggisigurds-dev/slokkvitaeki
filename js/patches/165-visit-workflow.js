@@ -705,13 +705,31 @@
     if (!main) return;
     const info = main.querySelector('.info-grid');
     if (!info) return;                              // aðeins detail-síðan (listinn hefur enga .info-grid)
-    if (main.querySelector('._vw-topbtn')) return;  // þegar innsett
+    // 01.10.2026 (Agnar, skjámynd með ör: „move the vinnslu takkann“): takkinn sat einn í röð undir hausnum, ofan við
+    // hægra spjaldið. Á tölvu í Brunastáli á hann heima Í hausnum á því spjaldi (#_ctc-section, 129/412) — við hlið
+    // samtölunnar. 129 tekur hnútinn til hliðar og setur hann aftur þegar það endurbyggir spjaldið (engin millistaða).
+    const h = document.documentElement;
+    const tolva = h.getAttribute('data-thm-preset') === 'brunastal' && h.getAttribute('data-viewmode') !== 'mobile' && !h.classList.contains('slokk-phone-dev') && !(document.body && document.body.classList.contains('appmode'));
+    const haus = tolva ? main.querySelector('#_ctc-section > div:first-of-type') : null;
+    let btn = main.querySelector('._vw-topbtn');
+    if (btn) {
+      if (haus && btn.parentElement !== haus) {
+        const bar = btn.parentElement;
+        btn.classList.add('_vw-ihaus'); haus.appendChild(btn);
+        if (bar && bar !== haus && !bar.children.length && bar.parentElement) bar.remove();
+      }
+      return;
+    }
+    btn = document.createElement('button');
+    btn.type = 'button'; btn.className = '_vw-topbtn';
+    btn.style.cssText = 'padding:9px 16px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.15)';
+    btn.innerHTML = '\uD83D\uDD35 Úttekt búin / í Vinnslu';
+    btn.addEventListener('click', (ev) => onInVinnsla(ev.currentTarget));
+    if (haus) { btn.classList.add('_vw-ihaus'); haus.appendChild(btn); return; }
     const bar = document.createElement('div');
     bar.style.cssText = 'display:flex;justify-content:flex-end;margin:8px 0 0';
-    bar.innerHTML =
-      '<button type="button" class="_vw-topbtn" style="padding:9px 16px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.15)">🔵 Úttekt búin / í Vinnslu</button>';
+    bar.appendChild(btn);
     info.parentNode.insertBefore(bar, info.nextSibling);
-    bar.querySelector('._vw-topbtn').addEventListener('click', (ev) => onInVinnsla(ev.currentTarget));
   }
 
   function injectAll() { injectButtons(); injectTopButton(); }
