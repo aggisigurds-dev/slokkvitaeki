@@ -447,7 +447,10 @@ var DB = {
       // valkvæðar endurhleðslur á einingum sem gætu verið óhlaðnar; mistakist
       // ein hleðst hún hvort eð er þegar viðkomandi flipi er opnaður. Ekkert
       // skrif og engin staða ræðst af þeim.
-      if (tables.indexOf('fyrirtaeki') >= 0 && window.Companies && typeof Companies.load === 'function') {
+      // 01.10.2026: opinn prófíll endurhleður ekki öll ~1200 fyrirtæki þegar
+      // ein röð breytist. 421 sækir þá eina röð. Hlaða sækir listann.
+      var _listiOpinn = !!(_coMain && _coMain.querySelector('.company-grid'));
+      if (tables.indexOf('fyrirtaeki') >= 0 && !_coDetailOpen && _listiOpinn && window.Companies && typeof Companies.load === 'function') {
         try { Companies.load(); } catch(e){}
       }
       if (tables.indexOf('vidskiptavinir') >= 0 && window.Vidskiptavinir && typeof Vidskiptavinir.load === 'function') {

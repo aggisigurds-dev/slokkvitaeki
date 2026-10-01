@@ -417,11 +417,13 @@
         if (_unpaidLoaded) renderUnpaidPanel(v0 && (v0.querySelector('.main-panel, main') || v0));
       } catch (_) {}
       setTimeout(async () => {
-        await loadUnpaid();
+        // 01.10.2026: skipta um sýn endurlasar ekki ógreidda lista sem er
+        // þegar í minni. Fyrsta hleðslan og InvoicePaid.refresh gera það.
+        if (!_unpaidLoaded) await loadUnpaid();
         updateNavBadge();
         const view = document.getElementById('view-' + e.detail.name);
         const main = view && (view.querySelector('.main-panel, main') || view);
-        renderUnpaidPanel(main);
+        if (_unpaidLoaded) renderUnpaidPanel(main);
       }, 300);
     }
   });
@@ -432,14 +434,8 @@
     updateNavBadge();
   }, 3000);
 
-  // 21.09.2026 (úttekt): púlsinn sótti ógreidda reikninga á 60 s fresti líka í
-  // földu vafraspjaldi — óþörf köll á Supabase allan sólarhringinn. Falið spjald
-  // sleppir nú umferðinni; næsti púls eftir að spjaldið sést sækir aftur.
-  setInterval(async () => {
-    if (document.hidden) return;
-    await loadUnpaid();
-    updateNavBadge();
-  }, 60000);
+  // 01.10.2026: 60 s púlsinn á ógreidda reikninga er farinn. Listinn hleðst
+  // einu sinni við ræsingu. InvoicePaid.refresh sækir aftur þegar beðið er um það.
 
   window.InvoicePaid = {
     loadUnpaid,

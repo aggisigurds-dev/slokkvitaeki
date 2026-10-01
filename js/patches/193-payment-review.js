@@ -408,7 +408,7 @@
 
   // Refresh when other surfaces edit sales
   document.addEventListener('sale-edited', loadReview);
-  setInterval(() => { const el = document.getElementById(VIEW_ID); if (el && el.classList.contains('active')) loadReview(); }, 45000);
+  // 01.10.2026: enginn 45 s púls. Yfirferðin hleðst við opnun og þegar sala breytist.
 
   // (Gamli modal-lokarinn á view-switch + Esc er horfinn — engin modal lengur;
   //  bakk-takkinn/hliðarstikan fer af síðunni eins og af hverju öðru borði.)

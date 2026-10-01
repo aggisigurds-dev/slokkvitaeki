@@ -23,15 +23,15 @@
  *   onytt_skilad  afgreidd, línan ónýt                      „Ónýtt · staðfest"          → hak grænt + staðfest
  *   null          engin lína, eða afgreidd fyrir meira en GLUGGI dögum (þá gildir venjuleg ársskoðun)
  *
- * Uppfærist: (1) strax þegar þessi vafri skrifar í verklidur/verkbeidnir/uttaeki (`gogn-skrifud`, rest-samnyting),
- * (2) á 20 s fresti á meðan fyrirtækjaprófíll er opinn og sýnilegur — breyting á verkstæðinu kemur oft frá ANNARRI
- * vél. Aðeins raðirnar sem breyttust eru teiknaðar aftur (UttektTaeki.uppfaeraRadir) — ekkert hopp.
+ * Uppfærist: þegar þessi vafri skrifar í verklidur/verkbeidnir/uttaeki (`gogn-skrifud`)
+ * eða þegar ýtt er á Endurnýja. Enginn púls. Aðeins raðirnar sem breyttust eru
+ * teiknaðar aftur (UttektTaeki.uppfaeraRadir).
  */
 (() => {
   if (window.VerkTenging) return;
 
   const GLUGGI_DAGA = 45;        // afgreitt verk telst hluti af yfirstandandi ársskoðun í 45 daga
-  const TTL_MS = 60000, BITI = 150;
+  const BITI = 150;
   const DISP = { hledsla: 'Hlaðið', yfirferd: 'Yfirfarið', nytt: 'Nýtt', vidgerd: 'Viðgert' };
 
   const _lina = new Map();       // uid -> { lina, verk } | null
@@ -85,9 +85,10 @@
   let _bid = null;
   async function ensure(ids, opts) {
     const force = !!(opts && opts.force);
-    const nu = Date.now();
+    // 01.10.2026: einu sinni per tæki. Endurnýja og skrift (gogn-skrifud
+    // hreinsar _sott) sækja aftur. Enginn aldurspúls á óbreytta línu.
     const vantar = [...new Set((ids || []).map(Number).filter((x) => x > 0))]
-      .filter((id) => force || !_sott.has(id) || nu - _sott.get(id) > TTL_MS);
+      .filter((id) => force || !_sott.has(id));
     if (!vantar.length) return;
     const fyrri = _bid;
     const p = (async () => { try { if (fyrri) await fyrri; } catch (_) {} await saekja(vantar); })();

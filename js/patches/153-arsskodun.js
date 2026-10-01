@@ -1773,8 +1773,6 @@
   // rapid back-and-forth doesn't hammer the DB.
   let _rendered = false;
   let _lastDataSig = '';
-  let _lastLoad = 0;
-  let _bgRefreshing = false;
 
   // Cheap fingerprint of what the table draws — id + the few fields that change
   // (inspection status/month, derived unit count/estimate, priority). Far cheaper
@@ -1836,37 +1834,12 @@
       if (ns !== _lastDataSig && !_editingNote) { render(); _lastDataSig = ns; }
     } catch (e) { try { console.warn('[arsskodun] repaintIfChanged', e); } catch (_) {} }
   }
-  // 21.09.2026 (afköst, mælt á lifandi): hver ferð TIL BAKA á Ársskoðun úr fyrirtækjaspjaldi sótti allt mengið upp á nýtt —
-  // 45 netköll (öll tæki í 12 síðum + 1,6 MB stillinga-blob) — ef > 8 s voru liðnar, þ.e. alltaf við skýrslugerð. Listinn
-  // er þegar á skjánum, en sóknin keppti um net og örgjörva við næsta spjald sem opnað er (Agnar: „við erum svo mikið inn
-  // og út af þessum síðum"). Nú er endursókn SLEPPT í allt að 60 s EF ekkert var skrifað úr þessum flipa síðan síðast
-  // (js/rest-samnyting.js telur hverja skrift, líka rpc/AppSettings). Var eitthvað vistað → sótt strax eins og áður.
-  // Breytingar ANNARRA véla sjást því í versta falli 60 s seinna en áður (8 s). Sé lagið óvirkt (-1) gildir gamla reglan.
-  const skrifNu = () => { try { return (window.RestSamnyting && RestSamnyting.skrif) ? RestSamnyting.skrif() : -1; } catch (_) { return -1; } };
-  let _skrifVidHledslu = -2;
+  // 01.10.2026: að koma aftur á sýnina sækir ekki lengur allt mengið.
+  // backgroundRefresh() er tóm. Hlaða kallar á loadAll().
   async function backgroundRefresh() {
-    if (document.hidden) return;
-    if (_bgRefreshing) return;
-    const _aldur = Date.now() - _lastLoad;
-    if (_aldur < 8000) return;   // rapid back-and-forth → skip the refetch
-    const _skrif = skrifNu();
-    if (_aldur < 60000 && _skrif !== -1 && _skrif === _skrifVidHledslu) return;   // ekkert vistað héðan síðan síðast
-    _bgRefreshing = true;
-    try {
-      await loadAll();
-      _lastLoad = Date.now();
-      _skrifVidHledslu = _skrif;   // talið FYRIR sóknina: skrift á meðan hún var á lofti kallar á aðra
-      const ns = dataSig();
-      // Ekki endurteikna (sópa burt röðum) á meðan notandi skrifar í ferðanótu —
-      // textinn hyrfi úr reitnum. Sleppum þessari umferð; _lastDataSig stendur óbreytt
-      // svo næsta refresh teiknar þegar reiturinn er ekki lengur í fókus.
-      const _editingNote = erAdSkrifa();
-      if (ns !== _lastDataSig && _editingNote) { teiknaEftirInnslatt(); }
-      // 08.09.2026: sjáanlegt í console hvort bakgrunns-sóknin teiknaði — „Búið"-talan
-      // sat föst á snapshot-gildinu og enginn vissi hvers vegna. Þögul catch var hluti.
-      try { console.info('[arsskodun] bg-refresh', { changed: ns !== _lastDataSig, editing: !!_editingNote, active: document.activeElement && (document.activeElement.className || document.activeElement.tagName) }); } catch (_) {}
-      if (ns !== _lastDataSig && !_editingNote && arsSynVirk()) { render(); _lastDataSig = ns; }  // only rebuild if data changed + sýnin er enn opin
-    } catch (e) { try { console.warn('[arsskodun] backgroundRefresh', e); } catch (_) {} } finally { _bgRefreshing = false; }
+    // 01.10.2026: sjálfvirk endursókn er slökkt. Að koma aftur á sýnina sótti
+    // allt mengið (fyrirtæki, tæki, skjöl) þó listinn væri þegar í minni.
+    // Hlaða kallar á Arsskodun.loadAll(); það teiknar ef gögnin breyttust.
   }
 
   // Ný nóta (héðan, af fyrirtækjasíðu, Verkstæði eða annarri vél um realtime): skyndiminnið og allir reitir sem ekki
@@ -1942,11 +1915,8 @@
     if (!main.querySelector('#_ars-search')) {
       main.innerHTML = '<div style="padding:24px;color:var(--ink4)">Hleður…</div>';
     }
-    const _skrifFyrir = skrifNu();
     await loadAll();
     if (!arsSynVirk() && document.getElementById('_ars-search')) return;
-    _lastLoad = Date.now();
-    _skrifVidHledslu = _skrifFyrir;
     render();
     _rendered = true;
     _lastDataSig = dataSig();

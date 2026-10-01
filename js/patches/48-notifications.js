@@ -202,8 +202,9 @@
 
   function init() { ensureBell(); load(); }
   setTimeout(init, 1500);
-  setInterval(load, 5*60*1000);
-  window.addEventListener('focus', load);
+  // 01.10.2026: ein hleðsla. Fókus og 5 mín púls endurlasu sömu töflurnar
+  // (ógreiddir reikningar, tæki, birgðir, verk, tilboð) án þess að neitt
+  // hefði breyst. Tilkynningar.refresh er áfram til ef kallað er á hann.
 
   window.Notifications = { load, render };
   console.log('[notifications] installed');
