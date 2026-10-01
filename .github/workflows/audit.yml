@@ -74,8 +74,10 @@ jobs:
       # (../brunaholf á vélunum fjórum). Actions klónar aðeins þetta repo, svo
       # þrjár réttar systur-skrár (REIKNINGALOTA, BROWSER-MCP-SETUP, company-mail)
       # litu út eins og klipptir vírar. Repóið er opið. Ekki hvítlista slóðirnar.
+      # UTAN vinnslunnar: .sister inni í trénu taldi Brunahólf sem Slökkvitæki
+      # og felldi audit-vafrastada (ls 189/149).
       - name: Sækja Brunahólf (systur-skrár)
-        run: git clone --depth 1 https://github.com/aggisigurds-dev/brunaholf.git .sister/brunaholf
+        run: git clone --depth 1 https://github.com/aggisigurds-dev/brunaholf.git "$GITHUB_WORKSPACE/../brunaholf"
 
       - uses: actions/setup-node@v4
         with:
