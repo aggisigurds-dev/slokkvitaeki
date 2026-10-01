@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Vörður — Payday-höfnun á rafrænum reikningi (XML) er aldrei þögul (2026-09-14, hert 15.09.).
  *
- * Það sem gerðist: payday-push.js reynir alltaf rafrænan reikning (XML). Hafni
+ * Það sem gerðist: payday-push.cjs reynir alltaf rafrænan reikning (XML). Hafni
  * Payday honum með villu sem nefnir „electronic invoice" býr varaleiðin reikninginn
  * til aftur ÁN XML og sendir hann í pósti. Það er rétt — ekkert tapast — en
  * höfnunin fór AÐEINS í svar vafrans (smá-toast) og gleymdist. Plaza R-000852 og
@@ -49,7 +49,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const src = fs.readFileSync(path.join(__dirname, '..', 'netlify/functions/payday-push.js'), 'utf8').replace(/\r\n/g, '\n');
+const src = fs.readFileSync(path.join(__dirname, '..', 'netlify/functions/payday-push.cjs'), 'utf8').replace(/\r\n/g, '\n');
 const ky = fs.readFileSync(path.join(__dirname, '..', 'js/patches/166-krofu-yfirlit.js'), 'utf8').replace(/\r\n/g, '\n');
 const brot = [];
 const KALL = /(?:[\w$]+\s*=\s*)?await\s+skraXmlHofnun\s*\(/;
@@ -61,8 +61,8 @@ const iGrein = src.indexOf('/electronic invoice/i.test(msg)');
 // Krafan er óbreytt: sjálfstæð, óskilyrt skipun á undan XML-skráningunni.
 const iMerktNy = src.indexOf('const merkt = await markSaleInvoiced(sale.id, created);');
 const iMerkt = iMerktNy > -1 ? iMerktNy : src.indexOf('await markSaleInvoiced(sale.id, created);');
-if (iGrein < 0) brot.push('fann ekki XML-varaleiðina (/electronic invoice/i.test(msg)) í payday-push.js — vörðurinn þarf að uppfærast með kóðanum');
-if (iMerkt < 0) brot.push('fann ekki await markSaleInvoiced(sale.id, created) í payday-push.js — vörðurinn þarf að uppfærast með kóðanum');
+if (iGrein < 0) brot.push('fann ekki XML-varaleiðina (/electronic invoice/i.test(msg)) í payday-push.cjs — vörðurinn þarf að uppfærast með kóðanum');
+if (iMerkt < 0) brot.push('fann ekki await markSaleInvoiced(sale.id, created) í payday-push.cjs — vörðurinn þarf að uppfærast með kóðanum');
 
 if (iMerktNy < 0) brot.push('svar markSaleInvoiced er ekki lesið (const merkt = await …; if (!merkt.ok) …) — mistekin merking yrði aftur þögul = tvírukkun');
 if (iMerktNy > -1 && !/if\s*\(\s*!merkt\.ok\s*\)[\s\S]{0,600}gate:\s*'writeback'/.test(src.slice(iMerktNy, iMerktNy + 1200))) brot.push('mistekin merking skilar ekki gate:writeback-villu');
@@ -107,7 +107,7 @@ if (iGrein > -1 && iMerkt > iGrein) {
 // Vörðurinn tekur fyrstu skilgreininguna úr skránni, en í JavaScript keyrir sú síðasta (netvörður 15.09.:
 // gamla skraXmlHofnun aftan við þá nýju eða tvítekið esc í 166 sluppu í gegn).
 const fjoldiFalla = (src.match(/function\s+skraXmlHofnun\s*\(/g) || []).length;
-if (fjoldiFalla !== 1) brot.push(fjoldiFalla + ' skilgreiningar á skraXmlHofnun í payday-push.js — vörðurinn prófar þá fyrstu en sú síðasta keyrir');
+if (fjoldiFalla !== 1) brot.push(fjoldiFalla + ' skilgreiningar á skraXmlHofnun í payday-push.cjs — vörðurinn prófar þá fyrstu en sú síðasta keyrir');
 const tvitekid166 = ['synaXmlHofnun', 'esc'].map(n => [n, (ky.match(new RegExp('function\\s+' + n + '\\s*\\(', 'g')) || []).length]).filter(x => x[1] !== 1);
 if (tvitekid166.length) brot.push('166 ber ' + tvitekid166.map(x => x[1] + '× ' + x[0]).join(', ') + ' — vörðurinn prófar fyrstu skilgreininguna en sú síðasta keyrir');
 
@@ -115,7 +115,7 @@ if (tvitekid166.length) brot.push('166 ber ' + tvitekid166.map(x => x[1] + '× '
 const fallTexti = (src.match(/async function skraXmlHofnun\([^)]*\)\s*\{[\s\S]*?\n\}/) || [])[0] || '';
 const fall = fallTexti.replace(/^async function skraXmlHofnun\([^)]*\)\s*\{/, '').replace(/\}$/, '');
 if (!fall) {
-  brot.push('fallið skraXmlHofnun vantar í payday-push.js');
+  brot.push('fallið skraXmlHofnun vantar í payday-push.cjs');
 } else {
   if (!/\/rest\/v1\/app_problems/.test(fall)) brot.push('skraXmlHofnun skrifar ekki í app_problems');
   if (!/kind:\s*'payday_xml_hafnad'/.test(fall)) brot.push("skraXmlHofnun skráir ekki kind 'payday_xml_hafnad'");
@@ -341,7 +341,7 @@ function hegdun166() {
   hegdun166();
   if (brot.length) {
     brot.forEach(b => console.log('  ✗ ' + b));
-    console.log(`RED: ${brot.length} brot — XML-höfnun í Payday getur aftur orðið þögul eða lent rangt á borðinu. Sjá payday-push.js (skraXmlHofnun) og 166 (synaXmlHofnun).`);
+    console.log(`RED: ${brot.length} brot — XML-höfnun í Payday getur aftur orðið þögul eða lent rangt á borðinu. Sjá payday-push.cjs (skraXmlHofnun) og 166 (synaXmlHofnun).`);
     process.exit(1);
   }
   console.log('✅ GRÆNT payday-xml-skráning: app_problems + mál á borði (eitt per sölu, spurning + „Þarf frá þér") + gluggi í 166 (stök/fjölda, esc), á eftir markSaleInvoiced, 3 s þak á öllum köllum, engin kt.');

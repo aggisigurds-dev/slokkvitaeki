@@ -6,7 +6,7 @@
 // innskráningarglugginn að opnast. Annars sýnir vefurinn „ekki virkur enn".
 // Skilar EKKERT viðkvæmu (aðeins nafn + þema fyrir útlit fyrir innskráningu).
 
-const P = require('./_portal');
+const P = require('./_portal.cjs');
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };

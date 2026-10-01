@@ -2,7 +2,7 @@
 'use strict';
 /* TVÍRUKKUNARVARNIR Í PAYDAY-SENDINGU — kyrrstæður vörður (21.09.2026).
  *
- * Af hverju: úttekt 21.09.2026 fann tvær leiðir að tvírukkun í netlify/functions/payday-push.js:
+ * Af hverju: úttekt 21.09.2026 fann tvær leiðir að tvírukkun í netlify/functions/payday-push.cjs:
  *   (1) `await markSaleInvoiced(...)` — svarið var ALDREI lesið. Mistækist sú eina skrift var krafan komin í Payday
  *       en salan sat áfram í „Ósendar" og fór aftur daginn eftir.
  *   (2) „þegar send?" var LESIÐ efst en merkið SKRIFAÐ mörgum sekúndum síðar án skilyrðis — tvær vélar (eða fjölda-
@@ -13,7 +13,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const src = fs.readFileSync(path.join(__dirname, '..', 'netlify', 'functions', 'payday-push.js'), 'utf8');
+const src = fs.readFileSync(path.join(__dirname, '..', 'netlify', 'functions', 'payday-push.cjs'), 'utf8');
 const brot = [];
 const i = (s) => src.indexOf(s);
 
@@ -41,5 +41,5 @@ if (!/const brast = await writebackBrast\(saleId\);[\s\S]{0,200}return json\(409
 const mMerk = src.match(/async function markSaleInvoiced\([\s\S]*?\n}/);
 if (mMerk && !/krafa_sendir_at:\s*null/.test(mMerk[0])) brot.push('merkingin hreinsar ekki frátektina');
 
-if (brot.length) { brot.forEach((b) => console.log('  ✗ ' + b)); console.log('RED: ' + brot.length + ' brot — tvírukkunarvörn í payday-push.js hefur veikst.'); process.exit(1); }
+if (brot.length) { brot.forEach((b) => console.log('  ✗ ' + b)); console.log('RED: ' + brot.length + ' brot — tvírukkunarvörn í payday-push.cjs hefur veikst.'); process.exit(1); }
 console.log('✅ GRÆNT payday-tvírukkun: frátekt á undan Payday (skilyrt, 409 við höfnun) · writeback lesið (gate:writeback + skráning + endursendingargátt) · frátekt hreinsuð við merkingu');
