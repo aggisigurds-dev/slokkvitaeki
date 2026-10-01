@@ -9,6 +9,8 @@
  *
  * Hlaða (407) setur depth svo fyrirtæki + öll tæki fari í gegn nema róðurinn sé Af.
  * Endurnýja á prófíl sækir eitt fyrirtæki í gegnum DB._primeCompany og er ekki lokað hér.
+ * Kennitala, hús og kort: ein umferð á hvern Endurnýja-smell (kallandinn merkir
+ * __coEndurnyja.notad áður en fetch fer). Af stöðvar þær umferðir líka.
  * ========================================================================== */
 (() => {
   if (window.Uppfaerslubord) return;
@@ -150,9 +152,23 @@
     try { return !!(navigator.userActivation && navigator.userActivation.isActive); }
     catch (_) { return false; }
   }
+  // Endurnýja setur __coEndurnyja og kallandinn merkir lykilinn ÁÐUR en fetch fer.
+  // Þá er gildið oft þegar á færslunni, svo hand-stillingin myndi annars stöðva
+  // einu endurnýjunina. Ein umferð á hvern smell. Af stöðvar samt.
+  function endurnyjaLeyfir(job) {
+    const e = window.__coEndurnyja;
+    if (!e || !e.notad) return false;
+    const lykill = job === 'kennitala' ? 'kt' : job;
+    if (!e.notad[lykill]) return false;
+    e._ub = e._ub || {};
+    if (e._ub[job]) return false;
+    e._ub[job] = true;
+    return true;
+  }
   function leyfa(job, url) {
     const mode = modeOf(job);
     if (mode === 'af') return false;
+    if (endurnyjaLeyfir(job)) return true;
     if (mode === 'auto') return due(job);
     if (job === 'kennitala') return !kennitalaASkra(url);
     if (job === 'hus') return !heimilisfangASkra(url);
