@@ -8,7 +8,8 @@
  *
  * Lykillinn er Netlify-env GOOGLE_MAPS_API_KEY. Hann fer aldrei í vafrann og
  * er aldrei skráður. Fallið kallar ekki /api/geocode — vafrinn sendir hnit sem
- * eru þegar til. Prófíll má ekki kalla hingað nema ýtt sé á takka.
+ * eru þegar til. Prófíll kallar hingað einu sinni þegar engin mynd er vistuð
+ * og geymir svarið (líka vantar-lykil) svo næsta opnun kalli ekki aftur.
  *
  * Places API (New) textaleit + places.photos[0] er forsíðumyndin sem Google
  * Maps sýnir. Street View Static (source=outdoor) er aðeins varaleið þegar
