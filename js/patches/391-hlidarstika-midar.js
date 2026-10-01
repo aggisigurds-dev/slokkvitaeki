@@ -83,7 +83,20 @@
       // aðeins" — heitin #c9ced6 → #eaedf2 og 13,5 → 14,5 px (reglan hér að ofan), og
       // táknin falin. Bara falin, ekki fjarlægð: 171/68 og íkona-normið (ico-norm) eiga
       // þau áfram, og síma-skúffan (utan þessa blaðs) heldur sínum.
-      B + ' > svg,' + B + ' > span > svg,' + B + ' > .vnav-icon-norm{display:none!important}',
+      B + ' > svg,' + B + ' > span > svg,' + B + ' .vnav-icon-norm{display:none!important}',
+      // „Sjá meira" (Agnar 01.10.2026): allt sem raðast á eftir Öpp er á bak við eina
+      // línu, lokað sjálfgefið. Virka síðan sést alltaf (:not(.active)). Meðan label()
+      // mælir er data-sbm-maela á nav — annars teldi hún földu hnappana horfna, tæki
+      // merkin af, og þeir birtust aftur (blikk).
+      N + ':not([data-sbm-opin]):not([data-sbm-maela]) > .vnav-btn[data-sbm-meira]:not(.active),' +
+        N + ':not([data-sbm-opin]):not([data-sbm-maela]) > .qlinks-section[data-sbm-meira]{display:none!important}',
+      N + ' > .sbm-meira-tgl{display:flex!important;align-items:center!important;gap:10px!important;height:26px!important;margin:14px 0 2px!important;padding:0 8px!important;cursor:pointer!important;user-select:none!important;font:700 10px/14px ' + MONO + '!important;letter-spacing:.18em!important;text-transform:uppercase!important;color:#9aa3b2!important;white-space:nowrap!important}',
+      N + ' > .sbm-meira-tgl::after{content:""!important;flex:1 1 auto!important;height:1px!important;background:#2b2e35!important}',
+      N + ' > .sbm-meira-tgl:hover{color:#fff!important}',
+      N + ' > .sbm-meira-tgl:focus-visible{outline:2px solid #f0584c!important;outline-offset:1px!important}',
+      // Fyrsti hnappur undir línunni: hópalínan hans væri tvöföld við „Sjá meira"-línuna.
+      B + '[data-sbm-meira="1"].nav-grp-start:not([data-sbm-sec]){margin-top:2px!important}',
+      B + '[data-sbm-meira="1"].nav-grp-start:not([data-sbm-sec])::after{display:none!important}',
       B + ':hover:not(.active){background:rgba(255,255,255,.045)!important;color:#fff!important}',
       B + ':hover:not(.active) > svg[stroke="currentColor"]{color:#c9ced6!important}',
       B + ':focus-visible{outline:2px solid #f0584c!important;outline-offset:1px!important}',
@@ -130,7 +143,8 @@
     ].join('\n');
     const st = document.createElement('style');
     st.id = '_sbm-css';
-    st.textContent = '@media (min-width: 901px){\n' + css + '\n}';
+    // „Sjá meira"-línan er aðeins á tölvuskjá; síma-skúffa og uppsett öpp sjá hana ekki.
+    st.textContent = '.sbm-meira-tgl{display:none}\n@media (min-width: 901px){\n' + css + '\n}';
     (document.head || document.documentElement).appendChild(st);
   }
 
@@ -144,16 +158,97 @@
     return true;
   }
 
+  // Tákn sem standa sem TEXTI fremst í heitinu („📱 Öpp", „📊 Staðan") — 243 pakkar
+  // þeim í .vnav-icon-norm en missir af hnöppum sem fá textann eftir að hann merkti þá.
+  // Sami pakki hér, svo CSS-reglan sem felur táknin nái þeim líka. textContent óbreytt.
+  const EMOJI_RE = /^(\s*)([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{1F1E6}-\u{1F1FF}][\u{FE0F}\u{200D}\u{1F3FB}-\u{1F3FF}\u{20E3}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]*)(\s*)/u;
+  function felaEmoji(btns) {
+    btns.forEach(btn => {
+      const w = document.createTreeWalker(btn, NodeFilter.SHOW_TEXT, {
+        acceptNode: n => (n.parentElement && n.parentElement.closest('.vnav-icon-norm,[class*="badge"],._rb-ljos'))
+          ? NodeFilter.FILTER_REJECT
+          : (String(n.nodeValue || '').trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP)
+      });
+      const tn = w.nextNode();
+      const m = tn ? EMOJI_RE.exec(tn.nodeValue) : null;
+      if (!m) return;
+      const s = document.createElement('span');
+      s.className = 'vnav-icon-norm';
+      s.textContent = m[2];
+      tn.parentNode.insertBefore(s, tn);
+      tn.nodeValue = tn.nodeValue.slice(m[0].length);
+    });
+  }
+
+  // „Sjá meira" (Agnar 01.10.2026: „bæta við einni línu … sem gerir allt fyrir neðan
+  // collapsed … collapsed as default … fyrirsögnina Sjá meira"). Línan fylgir Öpp í
+  // RÖÐ NOTANDANS (171/68 á þjóni), ekki föstum lista: allt sem raðast á eftir Öpp fer
+  // undir hana. Opið/lokað lifir aðeins þessa setu (data-sbm-opin á nav).
+  const MEIRA_EFTIR = 'opp';
+  function sjaMeira(nav, btns) {
+    const k = btns.findIndex(el => el.getAttribute('data-view') === MEIRA_EFTIR);
+    const eftir = k >= 0 ? btns.slice(k + 1) : [];
+    let tgl = nav.querySelector(':scope > .sbm-meira-tgl');
+    if (!eftir.length) {
+      nav.querySelectorAll(':scope > [data-sbm-meira]').forEach(el => el.removeAttribute('data-sbm-meira'));
+      if (tgl) tgl.remove();
+      return;
+    }
+    const undir = new Set(eftir);
+    nav.querySelectorAll(':scope > .vnav-btn[data-sbm-meira]').forEach(el => { if (!undir.has(el)) el.removeAttribute('data-sbm-meira'); });
+    eftir.forEach((el, i) => { const v = i === 0 ? '1' : ''; if (el.getAttribute('data-sbm-meira') !== v) el.setAttribute('data-sbm-meira', v); });
+    const opp = btns[k];
+    const ord = String(opp.style.order || getComputedStyle(opp).order || '0');
+    // Tenglar (qlinks, order 9001) teljast með þegar þeir raðast á eftir Öpp.
+    const ql = nav.querySelector(':scope > .qlinks-section');
+    if (ql) {
+      const ofar = (parseFloat(ql.style.order || getComputedStyle(ql).order) || 0) > (parseFloat(ord) || 0);
+      if (ofar && !ql.hasAttribute('data-sbm-meira')) ql.setAttribute('data-sbm-meira', '');
+      if (!ofar && ql.hasAttribute('data-sbm-meira')) ql.removeAttribute('data-sbm-meira');
+    }
+    if (!tgl) {
+      tgl = document.createElement('div');
+      tgl.className = 'sbm-meira-tgl';
+      tgl.setAttribute('role', 'button');
+      tgl.tabIndex = 0;
+      tgl.addEventListener('click', () => vixlaMeira(nav));
+      tgl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); vixlaMeira(nav); } });
+    }
+    // Sama `order` og Öpp + beint á eftir því í DOM → flex setur línuna strax undir Öpp.
+    if (tgl.style.order !== ord) tgl.style.order = ord;
+    if (opp.nextElementSibling !== tgl) opp.after(tgl);
+    merkjaMeira(nav, tgl);
+  }
+  function vixlaMeira(nav) {
+    if (nav.hasAttribute('data-sbm-opin')) nav.removeAttribute('data-sbm-opin');
+    else nav.setAttribute('data-sbm-opin', '');
+    merkjaMeira(nav, nav.querySelector(':scope > .sbm-meira-tgl'));
+  }
+  function merkjaMeira(nav, tgl) {
+    if (!tgl) return;
+    const opin = nav.hasAttribute('data-sbm-opin');
+    const txt = opin ? 'Sjá minna ▴' : 'Sjá meira ▾';
+    if (tgl.textContent !== txt) tgl.textContent = txt;
+    if (tgl.getAttribute('aria-expanded') !== String(opin)) tgl.setAttribute('aria-expanded', String(opin));
+  }
+
   // Heiti hlutanna á fyrsta hnapp hvers hóps. Les sömu röð og notandinn sér
   // (CSS `order` frá 68, svo DOM-röð) og skrifar aðeins ef eitthvað breyttist.
   function label() {
     const nav = document.querySelector('.topbar nav.view-nav');
     if (!nav) return;
-    const btns = Array.from(nav.querySelectorAll(':scope > .vnav-btn'))
-      .map((el, i) => ({ el, i, ord: parseFloat(el.style.order || getComputedStyle(el).order) || 0 }))
-      .filter(x => x.el.style.display !== 'none' && getComputedStyle(x.el).display !== 'none')
-      .sort((a, b) => (a.ord - b.ord) || (a.i - b.i))
-      .map(x => x.el);
+    // Mælt án „Sjá meira"-felunnar (sjá CSS). data-* á nav er utan vaktarans hér að neðan.
+    nav.setAttribute('data-sbm-maela', '');
+    let btns;
+    try {
+      btns = Array.from(nav.querySelectorAll(':scope > .vnav-btn'))
+        .map((el, i) => ({ el, i, ord: parseFloat(el.style.order || getComputedStyle(el).order) || 0 }))
+        .filter(x => x.el.style.display !== 'none' && getComputedStyle(x.el).display !== 'none')
+        .sort((a, b) => (a.ord - b.ord) || (a.i - b.i))
+        .map(x => x.el);
+    } finally { nav.removeAttribute('data-sbm-maela'); }
+    try { felaEmoji(btns); } catch (_) {}
+    try { sjaMeira(nav, btns); } catch (_) {}
     const groups = [];
     btns.forEach((el, k) => {
       if (k === 0 || el.classList.contains('nav-grp-start')) groups.push([]);
