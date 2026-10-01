@@ -26,7 +26,14 @@
     var vEl = document.getElementById('view-companies'); if(vEl){ vEl.classList.add('active'); vEl.style.display = ''; }
     var nb = document.querySelector('.vnav-btn[data-view="companies"]'); if(nb) nb.classList.add('active');
     if (window.Companies) Companies.currentId = coId;
-    var doOpen = function(){ if(window.Companies && Companies.openDetail) Companies.openDetail(coId); };
+    var doOpen = function(){
+      var paint = function(){ if(window.Companies && Companies.openDetail) Companies.openDetail(coId); };
+      // Already in memory: no uttaeki request. First visit of this company:
+      // one fyrirtaeki_id fetch. Never the full table.
+      if (window.DB && typeof DB._primeCompany === 'function' && !(DB._companyFetched && DB._companyFetched[coId]) && !DB._unitsComplete) {
+        Promise.resolve(DB._primeCompany(coId)).then(paint).catch(paint);
+      } else paint();
+    };
     if (window.Companies && Companies.list && Companies.list.length) {
       doOpen();
     } else if (window.Companies && typeof Companies.load === 'function') {

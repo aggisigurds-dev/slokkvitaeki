@@ -102,21 +102,33 @@ var DB = {
     };
   },
 
+  // Company ids whose units are already in memory this session (including
+  // a confirmed empty list). A later open must not hit uttaeki again.
+  _companyFetched: {},
+
   // #company/<id> on a cold boot. 0 when the hash is some other view.
+  // 357 keeps bootId even after the router rewrites the hash to another view.
   _bootCompanyId: function() {
     try {
       var m = String(location.hash || '').match(/^#(?:company|companies|fyrirtaeki)\/(\d+)/);
-      return m ? +m[1] : 0;
-    } catch (_) { return 0; }
+      if (m) return +m[1];
+    } catch (_) {}
+    try {
+      var b = window.CoDeeplink && CoDeeplink.bootId;
+      if (b) return +b;
+    } catch (_) {}
+    return 0;
   },
 
   // One company row (if it is not already in memory) and that company's units.
   // Shared promise so the deep-link and loadAll do not each fire the query.
-  // Does not page through every uttaeki row — loadAll does that afterwards.
-  _primeCompany: function(id) {
+  // Never pages through every uttaeki row. opts.force is the Endurnýja button:
+  // refetch this company only.
+  _primeCompany: function(id, opts) {
     id = +id;
     if (!id) return Promise.resolve(false);
-    if (this._companySlice && this._companySliceId === id) return this._companySlice;
+    var force = !!(opts && opts.force);
+    if (!force && this._companySlice && this._companySliceId === id) return this._companySlice;
     this._companySliceId = id;
     var self = this;
     this._companySlice = (async function() {
@@ -133,30 +145,48 @@ var DB = {
         }
         return null;
       }
+      function putCo(row) {
+        if (!row) return;
+        var cur = findCo();
+        if (cur) {
+          Object.keys(cur).forEach(function(k) { if (!(k in row)) delete cur[k]; });
+          Object.assign(cur, row);
+          return;
+        }
+        if (!Array.isArray(Companies.list)) Companies.list = [];
+        Companies.list.push(row);
+      }
       var units = (self.cache && self.cache.units) || [];
       var have = false;
-      for (var j = 0; j < units.length; j++) {
-        if (units[j] && +units[j].fyrirtaeki_id === id) { have = true; break; }
+      if (!force && (self._unitsComplete || self._companyFetched[id])) have = true;
+      if (!have) {
+        for (var j = 0; j < units.length; j++) {
+          if (units[j] && +units[j].fyrirtaeki_id === id) { have = true; break; }
+        }
       }
-      var full = !!(self.online && units.length);
       var jobs = [];
-      if (!findCo()) {
+      if (force || !findCo()) {
         jobs.push(self.sb.from('fyrirtaeki').select('*').eq('id', id).maybeSingle().then(function(r) {
           if (!r || r.error || !r.data) return;
-          if (findCo()) return;
-          if (!Array.isArray(Companies.list)) Companies.list = [];
-          Companies.list.push(r.data);
+          if (!force && findCo()) return;
+          putCo(r.data);
         }));
       }
-      if (!have && !full) {
+      if (force || !have) {
         jobs.push(self.fetchAll(function(from, to) {
           return self.sb.from('uttaeki').select('*').eq('fyrirtaeki_id', id).order('id').range(from, to);
         }).then(function(rows) {
           self._mergeCompanyUnits(id, rows || []);
         }));
       }
-      if (jobs.length) await Promise.all(jobs);
-      return !!findCo();
+      try {
+        if (jobs.length) await Promise.all(jobs);
+        self._companyFetched[id] = true;
+        return !!findCo();
+      } catch (e) {
+        if (self._companySliceId === id) { self._companySlice = null; self._companySliceId = 0; }
+        throw e;
+      }
     })();
     return this._companySlice;
   },
@@ -193,9 +223,9 @@ var DB = {
   loadAll: async function() {
     this.setSyncState('syncing');
     try {
-      // 01.10.2026: #company/<id> used to wait here for every uttaeki page
-      // (7 × select *) before the banner could paint. Fetch THIS company
-      // first, paint it, then page the rest in the background.
+      // 01.10.2026: #company/<id> paints from this company's rows only.
+      // The seven uttaeki pages (select * order=client) do not run just
+      // because a profile opened. Endurnýja refetches this company.
       var bootCo = this._bootCompanyId();
       if (bootCo) {
         try { await this._primeCompany(bootCo); }
@@ -259,10 +289,14 @@ var DB = {
       // 1000 rows — jobs would then lose their unit rows (Counter/Workshop unit
       // counts + Income go wrong) with no error. Page through both like uttaeki.
       var self = this;
+      // Profile open is not a reason to download every device. Keep the
+      // slice _primeCompany already merged. Other screens that call loadAll
+      // without a boot company still get the full table.
+      var skipFullUnits = !!bootCo;
       var [j, v, u, s, h] = await Promise.all([
         self.fetchAll(function(from,to){ return self.sb.from('verkbeidnir').select('*').order('created_at', {ascending:false}).order('id').range(from,to); }).then(function(data){ return { data: data }; }),
         self.fetchAll(function(from,to){ return self.sb.from('verklidur').select('*').order('id').range(from,to); }).then(function(data){ return { data: data }; }),
-        loadAllUttaeki(this.sb),
+        skipFullUnits ? Promise.resolve({ skipped: true }) : loadAllUttaeki(this.sb),
         this.sb.from('dagskra').select('*').order('date'),
         this.sb.from('skodunar_saga').select('*').order('created_at', {ascending:false}).limit(20)
       ]);
@@ -271,7 +305,10 @@ var DB = {
         job.units = (v.data||[]).filter(function(u) { return u.job_id === job.id; });
         return job;
       });
-      this.cache.units = u.data || [];
+      if (!(u && u.skipped)) {
+        this.cache.units = u.data || [];
+        this._unitsComplete = true;
+      }
       this.cache.schedule = s.data || [];
       this.cache.history = h.data || [];
       // 2026-05-08: Pre-bucket units by client name ONCE here so callers

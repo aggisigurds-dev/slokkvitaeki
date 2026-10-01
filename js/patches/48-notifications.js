@@ -87,7 +87,14 @@
       safe(DB.fetchAll((from, to) => SB.from('solur').select('id,num,customer_nafn,samtals,created_at,paid_at,greitt_med').neq('status','drog').neq('status','void').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null).lte('created_at', eldraEn30).order('id').range(from, to)).then(data => ({ data, error: null }))),
       // 21.09.2026 (afköst): bjallan sýnir FIMM efstu og heildartölu — en sótti allar 2.118 raðirnar (3 síður) við HVERJA
       // síðuhleðslu. Nú: sömu sía og röðun, 5 raðir + count:'exact' í EINU kalli. Talan er sú sama (nákvæm talning þjónsins).
-      safe(SB.from('uttaeki').select('id,serial,client,next_insp', { count: 'exact' }).not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).order('next_insp',{ascending:true}).order('id').range(0, 4)),
+      // 01.10.2026: opinn prófíll endurtekur ekki tækjalista. Bjallan bíður.
+      (function () {
+        var profill = false;
+        try { profill = !!(window.Companies && Companies._detailOpen && Companies._detailOpen()); } catch (_) {}
+        try { if (!profill && window.DB && DB._bootCompanyId && DB._bootCompanyId()) profill = true; } catch (_) {}
+        if (profill && !(window.DB && DB._unitsComplete)) return Promise.resolve({ data: [], count: 0, error: null });
+        return safe(SB.from('uttaeki').select('id,serial,client,next_insp', { count: 'exact' }).not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).order('next_insp',{ascending:true}).order('id').range(0, 4));
+      })(),
       safe(SB.from('birgdir').select('id,nafn,magn,lagmark,eining').limit(500)),
       safe(SB.from('verkbeidnir').select('id,num,customer,created_at,status').gte('created_at', last7.toISOString()).order('created_at',{ascending:false}).limit(10)),
       tilbodExists

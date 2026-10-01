@@ -31,7 +31,7 @@
   if (window.VerkTenging) return;
 
   const GLUGGI_DAGA = 45;        // afgreitt verk telst hluti af yfirstandandi ársskoðun í 45 daga
-  const TTL_MS = 60000, PUSL_MS = 60000, BITI = 150;
+  const TTL_MS = 60000, BITI = 150;
   const DISP = { hledsla: 'Hlaðið', yfirferd: 'Yfirfarið', nytt: 'Nýtt', vidgerd: 'Viðgert' };
 
   const _lina = new Map();       // uid -> { lina, verk } | null
@@ -58,17 +58,8 @@
       if (r.error) throw r.error;
       (r.data || []).forEach((l) => linur.push(l));
     }
-    // Tækið sjálft líka: „Sótt ✓" (121) setur status/last_insp/next_insp — minnið (DB.cache.units) sem prófíllinn
-    // teiknar úr veit ekki af því fyrr en síða er endurhlaðin. Lagfært hér á staðnum (aðeins lesið úr grunni).
-    const ferskt = new Map();
-    for (let i = 0; i < ids.length; i += BITI) {
-      const r = await s.from('uttaeki').select('id,status,last_insp,next_insp,custody_status').in('id', ids.slice(i, i + BITI));
-      if (!r.error) (r.data || []).forEach((u) => ferskt.set(+u.id, u));
-    }
-    try {
-      const cache = (window.DB && DB.cache && Array.isArray(DB.cache.units)) ? DB.cache.units : [];
-      cache.forEach((c) => { const f = c && ferskt.get(+c.id); if (f) { c.status = f.status; c.last_insp = f.last_insp; c.next_insp = f.next_insp; c.custody_status = f.custody_status; } });
-    } catch (_) {}
+    // 01.10.2026: tækjalistinn er ekki sóttur aftur hér. Prófíllinn teiknar úr
+    // minni. Endurnýja (Companies.endurnyja) sækir tæki þessa fyrirtækis.
     const jobIds = [...new Set(linur.map((l) => l.job_id).filter(Boolean))];
     const verk = new Map();
     for (let i = 0; i < jobIds.length; i += BITI) {
@@ -180,9 +171,8 @@
     clearTimeout(_t);
     _t = setTimeout(() => { endurnyja(true); tilkynna(['*']); }, 400);
   });
-  // (2) púls á meðan prófíll er opinn og sýnilegur (önnur vél breytti á verkstæðinu)
-  setInterval(() => { if (!document.hidden) endurnyja(false); }, PUSL_MS);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') endurnyja(false); });
+  // 01.10.2026: enginn púls. Skilaboðaboxið má pólla. Tæki endurnýjast með
+  // Endurnýja, eða þegar þessi vafri skrifar (gogn-skrifud hér að ofan).
 
   // Stílar — Brunastál C (402): sama plötumerki og .ut-last, litur segir stöðuna. `:not(#_p422)` lyftir
   // sértækninni yfir 402-reglurnar án !important.

@@ -455,7 +455,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
 <script src="/js/rest-samnyting.js?v=20260928a"></script>
-<script src="/js/db.js?v=20261001cold"></script>
+<script src="/js/db.js?v=20261001endur"></script>
 <!-- Problem registry: loads right after db.js so window.logProblem + auto error
      capture are live before every patch below (records problems to app_problems). -->
 <script defer src="/js/patches/309-problem-registry.js?v=20260921a"></script>
@@ -492,7 +492,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/12-mapfix-kill-dots.js?v=20260503"></script>
 <script defer src="/js/patches/13-field-company-deeplink.js?v=20260510f"></script>
 <script defer src="/js/patches/14-companies-openedit.js?v=20260825ktnr"></script>
-<script defer src="/js/patches/15-sidebar-counts.js?v=20260911lanstaeki"></script>
+<script defer src="/js/patches/15-sidebar-counts.js?v=20261001endur"></script>
 <script defer src="/js/patches/16-switchview-dispatch.js?v=20260503"></script>
 <script defer src="/js/patches/17-form-validation.js?v=20260503"></script>
 <script defer src="/js/patches/18-nav-history.js?v=20260928a"></script>
@@ -529,7 +529,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/46-quick-links.js?v=20260510f"></script>
 <script defer src="/js/patches/423-skjaladropp.js?v=20260930a"></script>
 <script defer src="/js/patches/47-mileage-log.js?v=20260510f"></script>
-<script defer src="/js/patches/48-notifications.js?v=20260921g"></script>
+<script defer src="/js/patches/48-notifications.js?v=20261001endur"></script>
 <script defer src="/js/patches/49-backup.js?v=20260510f"></script>
 <script defer src="/js/patches/50-service-contracts.js?v=20260926b"></script>
 <script defer src="/js/patches/51-customer-portal.js?v=20260914pg2"></script>
@@ -615,7 +615,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/134-job-notes-display.js?v=20261001a"></script>
 <script defer src="/js/patches/136-companies-back-fix.js?v=20260607a"></script>
 <script defer src="/js/patches/137-verk-actions.js?v=20260511b"></script>
-<script src="/js/features.js?v=20261001hopp"></script>
+<script src="/js/features.js?v=20261001endur"></script>
 <!-- jsQR er nú hlaðið EFTIR-PÖNTUN (lazy) þegar myndavélar-skanninn opnar — sjá js/scanner.js
      (._loadJsQR) og js/qrscan.js. Áður var þetta render-blocking <script> á HVERRI síðuhleðslu
      (~257 KB) þó það þurfi bara í QR-skönnun. -->
@@ -1066,7 +1066,7 @@ var Lanstaeki = {
      Must run synchronously before newfeatures.js + every patch boots. -->
 <script src="/js/patches/252-mo-throttle.js?v=20260925afk"></script>
 <script src="/js/newfeatures.js?v=20260925afk"></script>
-    <script src="/js/mapfix.js?v=20261001hopp"></script>
+    <script src="/js/mapfix.js?v=20261001endur"></script>
     <script src="/js/floorplanfix.js?v=20260920"></script>
     <script src="/js/navfix.js?v=1776869886801"></script>
     <script src="/js/vbu.js?v=20260911vbu"></script>
@@ -1229,7 +1229,7 @@ var Lanstaeki = {
      Tvö lög á sama borði — sjá docs/HANDOFF-arsskodun-simi.md „Sambúð við 314".
      Skráin er kyrr í js/patches/ ef þarf að bakka. -->
 <script defer src="/js/patches/268-aksturslisti-vakt.js?v=20260914pg"></script>
-<script defer src="/js/patches/269-verkstaedi-loaned.js?v=20260929a"></script>
+<script defer src="/js/patches/269-verkstaedi-loaned.js?v=20261001endur"></script>
 <script defer src="/js/patches/270-report-facts-sync.js?v=20260921a"></script>
 <script defer src="/js/patches/271-visit-year-lock.js?v=20260920a"></script>
 <script defer src="/js/patches/272-brunakerfi-yfirlit.js?v=20260825skyrsla"></script>
@@ -1288,7 +1288,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/354-opp-styribord.js?v=20261001b48c"></script>
 <script defer src="/js/patches/355-kost-vidvorun.js?v=20260906a"></script>
 <script defer src="/js/patches/356-arsgrind-simi.js?v=20260906a"></script>
-<script defer src="/js/patches/357-fyrirtaeki-djuptenging.js?v=20261001cold"></script>
+<script defer src="/js/patches/357-fyrirtaeki-djuptenging.js?v=20261001endur"></script>
 <script defer src="/js/patches/359-samskipti-eitt-box.js?v=20260906b"></script>
 <script defer src="/js/patches/360-raesi-skyndiminni.js?v=20261001cold"></script>
 <script defer src="/js/patches/361-vettvangsathuganir.js?v=20260921i"></script>
@@ -1349,8 +1349,8 @@ var Lanstaeki = {
 <script defer src="/js/patches/418-skodun-efri.js?v=20261001a"></script>
 <script defer src="/js/patches/419-kostnadur.js?v=20260928d"></script>
 <script defer src="/js/patches/420-stjornstod-samstilling.js?v=20260928f"></script>
-<script defer src="/js/patches/421-profill-lifandi.js?v=20261001hopp"></script>
-<script defer src="/js/patches/422-verkstaedi-tenging.js?v=20261001a"></script>
+<script defer src="/js/patches/421-profill-lifandi.js?v=20261001endur"></script>
+<script defer src="/js/patches/422-verkstaedi-tenging.js?v=20261001endur"></script>
 <script defer src="/js/patches/424-brunastal-gluggar.js?v=20261001a"></script>
 <!-- 01.10.2026: Verkspjaldið — eitt verk, einn gluggi (sala → verkstæði → afhending). Afturkall: AppSettings verkspjald.af = true -->
 <script defer src="/js/patches/430-verkspjald.js?v=20261001f"></script>

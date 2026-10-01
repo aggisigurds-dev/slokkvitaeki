@@ -162,6 +162,28 @@ var Companies = {
     this.render();
     Toast.show('Fyrirt\u00e6ki skr\u00e1\u00f0: ' + nafn);
   },
+  // The only manual refresh of this company's row and its units.
+  // Does not page through every device in the database.
+  endurnyja: async function(id) {
+    id = +id;
+    if (!id || !window.DB || typeof DB._primeCompany !== 'function') return;
+    var btn = document.getElementById('_co-endurnyja');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sæki…'; }
+    try {
+      DB._companyFetched[id] = false;
+      DB._companySlice = null;
+      DB._companySliceId = 0;
+      await DB._primeCompany(id, { force: true });
+      try { if (window.__hakHopp) { __hakHopp.sidast = 0; __hakHopp.tegund = ''; } } catch (_) {}
+      this._openedAt = 0;
+      if (this.list && this.list.some(function(x) { return x && x.id === id; })) this.openDetail(id);
+    } catch (e) {
+      console.warn('[profill] endurnýja', e && e.message);
+    } finally {
+      var b2 = document.getElementById('_co-endurnyja');
+      if (b2 && b2.textContent !== 'Endurnýja') { b2.disabled = false; b2.textContent = 'Endurnýja'; }
+    }
+  },
   openDetail: function(id) {
     var c = this.list.find(function(x) { return x.id === id; });
     if (!c) return;
@@ -250,6 +272,7 @@ var Companies = {
           ' Til baka' +
         '</button>' +
         '<div style="display:flex;gap:6px;align-items:center">' +
+          '<button type="button" class="btn btn-outline btn-sm" id="_co-endurnyja" data-co-endurnyja="1" onclick="Companies.endurnyja(' + c.id + ')" style="padding:4px 10px;font-size:12px">Endurnýja</button>' +
           '<button class="btn btn-outline btn-sm" onclick="Companies.openEdit(' + c.id + ')" style="padding:6px 12px;display:inline-flex;align-items:center;gap:5px">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
             ' Breyta' +

@@ -86,10 +86,9 @@
       const t0 = Date.now();
       while (!ready() && Date.now() - t0 < 20000) await sl(50);
       if (!ready()) return;
-      // 01.10.2026: ekki bíða eftir DB.online. Það varð satt fyrst þegar loadAll
-      // hafði sótt ALLAR uttaeki-síðurnar, og prófíllinn málaðist ekki fyrr.
-      // Sneiðin (þetta fyrirtæki + tæki þess) er máluð fyrst. loadAll fyllir
-      // restina í bakgrunni. Sama loforð og db.js — engin önnur fyrirspurn.
+      // 01.10.2026: ekki bíða eftir DB.online. Sneiðin (þetta fyrirtæki +
+      // tæki þess) er máluð fyrst. loadAll sækir ekki allar uttaeki-síðurnar
+      // af því að prófíll opnaðist. Sama loforð og db.js.
       if (!detailOpen(id) && window.DB && typeof DB._primeCompany === 'function') {
         try { await DB._primeCompany(id); } catch (_) {}
       }

@@ -62,12 +62,23 @@ krefst('js/patches/428-hak-hopp.js', /window\.__hakHopp/, '428 kynslóðar-tákn
 krefst('js/patches/428-hak-hopp.js', /a\[href\^="#"\]/, '428 verður að stöðva hash-leiðsögn á hak/Yfirferð');
 
 const html = lesa('index.html');
+// Skrár sem Endurnýja-lagfæringin (01.10) snerti bera nýrra merki. Hinar
+// halda hopp-merkinu. Nýrra merki hleður hopp-kóðann líka — gamalt cache ekki.
+const utgafa = {
+  'features.js': '20261001endur',
+  'mapfix.js': '20261001endur',
+  '421-profill-lifandi.js': '20261001endur',
+};
 ['features.js', 'mapfix.js', '147-brunakerfi.js', '153-arsskodun.js', '218-url-routing.js', '224-uttekt-taeki.js', '227-trip-cloud-sync.js', '274-brunakerfi-fyrirtaeki.js', '385-slokkvikerfi.js', '421-profill-lifandi.js']
   .forEach(f => {
-    if (!new RegExp(f.replace('.', '\\.') + '\\?v=20261001hopp').test(html)) {
-      villur.push('index.html: ' + f + ' vantar ?v=20261001hopp');
+    const v = utgafa[f] || '20261001hopp';
+    if (!new RegExp(f.replace('.', '\\.') + '\\?v=' + v).test(html)) {
+      villur.push('index.html: ' + f + ' vantar ?v=' + v);
     }
   });
+krefst('js/features.js', /data-co-endurnyja/, 'Endurnýja er eina handvirka endurhleðslan á prófílnum');
+krefst('js/db.js', /skipped:\s*true/, 'prófíll á #company má ekki sækja allar uttaeki-síður');
+krefst('js/patches/421-profill-lifandi.js', /skalSleppa/, 'hak/Yfirferð má ekki sækja öll tæki félagsins');
 if (!/428-hak-hopp\.js\?v=20261001b/.test(html)) villur.push('index.html: 428-hak-hopp.js vantar ?v=20261001b');
 
 if (villur.length) {

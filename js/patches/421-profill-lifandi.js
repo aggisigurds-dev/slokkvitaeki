@@ -84,6 +84,9 @@
     // Aldrei rífa reit undan þeim sem er að skrifa, né teikna undir opnum glugga — bíða og reyna aftur.
     if (erAdSkrifa() || gluggiOpinn()) { skipuleggja(600); return; }
     const id = opidId(); if (!id) return;
+    // Hak / Yfirferð / Hleðsla already updated that one row. Do not refetch
+    // every device of the company, and do not remount the list.
+    if (window.__hakHopp && __hakHopp.skalSleppa && __hakHopp.skalSleppa()) { _tafla.clear(); return; }
     const toflur = Array.from(_tafla); _tafla.clear();
     _keyrir = true;
     try {

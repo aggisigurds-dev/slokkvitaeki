@@ -501,3 +501,5 @@ Punktarnir sjálfir opnast í `br-drogstod` (sama hub-iframe, `sessionStorage.ds
 ## Lærdómur
 
 - **30.09.2026** — Borðið í dag er 368-thjonustubord5.js (Shadow DOM). Papp 231 var fjarlægt í d3eb1b78 ásamt spjallinu (347) — kaflinn um 231 hér er sögulegur og lýsir gagnalíkaninu sem 368 erfði, ekki lifandi skrá. thjonustubeidni-taflan og slug-arnir standa óbreyttir. (js/patches/368-thjonustubord5.js)
+
+- **01.10.2026** — Kalt #company sækir ekki lengur allar uttaeki-síður í bakgrunni. Endurnýja á prófílnum sækir aðeins tæki þess félags. Hak og Yfirferð endurteikna ekki listann.

@@ -77,6 +77,22 @@
       // Þjónustutæki: overdue (next_insp < today) — show red, fall back to "due this month" orange.
       const today = todayISO();
       const d30 = in30ISO();
+      // 01.10.2026: opinn prófíll sækir ekki tækjalista. Merkið reiknast úr
+      // minni þegar allt mengið er þegar sótt; annars er netkallinu sleppt.
+      var profill = false;
+      try { profill = !!(window.Companies && Companies._detailOpen && Companies._detailOpen()); } catch (_) {}
+      try { if (!profill && window.DB && DB._bootCompanyId && DB._bootCompanyId()) profill = true; } catch (_) {}
+      if (profill && !(window.DB && DB._unitsComplete)) {
+        /* engin uttaeki-talning út á netið */
+      } else if (window.DB && DB._unitsComplete && DB.cache && Array.isArray(DB.cache.units)) {
+        var ovN = 0, dueN = 0;
+        DB.cache.units.forEach(function (u) {
+          if (!u || String(u.status) === 'urelt' || !u.next_insp) return;
+          if (u.next_insp < today) ovN++;
+          else if (u.next_insp <= d30) dueN++;
+        });
+        setBadge('field', ovN > 0 ? ovN : dueN, ovN > 0 ? 'red' : 'orange');
+      } else {
       const ov = await sb.from('uttaeki').select('id', { count: 'exact', head: true })
       // 2026-09-01: Í NOTKUN = allt NEMA 'urelt'. Áður .eq('status','active').
       // `uttaeki.status` ber FJÖGUR gildi — active 4891 · urelt 482 · „Í lagi" 154 ·
@@ -94,6 +110,7 @@
         const due = await sb.from('uttaeki').select('id', { count: 'exact', head: true })
           .neq('status', 'urelt').gte('next_insp', today).lte('next_insp', d30);
         setBadge('field', due.count || 0, 'orange');
+      }
       }
 
       // Afgreiðsla: opin verk — ekki sótt, ekki eydd, ekki aflýst.

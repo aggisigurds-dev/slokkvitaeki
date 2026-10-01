@@ -263,7 +263,7 @@
     const obs = new MutationObserver(() => {
       if (_injecting) return;
       const vw = document.getElementById('view-workshop');
-      if (!vw || vw.style.display === 'none') return;
+      if (!vw || vw.style.display === 'none' || !vw.classList.contains('active')) return;
       const body = vw.querySelector('.bw-sh-body');
       if (body && !body.querySelector('#_vk-loaned')) { clearTimeout(t); t = setTimeout(() => inject(false), 120); }
     });
@@ -273,7 +273,9 @@
     // sektíónin vantar (MutationObserver missir af þegar DOM breytist ekki).
     const tick = () => {
       const vw = document.getElementById('view-workshop');
-      if (!vw || vw.style.display === 'none') return;
+      // 01.10.2026: ekki sækja lánuð tæki á meðan verkstæðið er ekki opið.
+      // Prófíllinn má ekki kveikja á síðuflettingu yfir uttaeki.
+      if (!vw || vw.style.display === 'none' || !vw.classList.contains('active')) return;
       const body = vw.querySelector('.bw-sh-body');
       if (body && !body.querySelector('#_vk-loaned')) inject(false);
     };
