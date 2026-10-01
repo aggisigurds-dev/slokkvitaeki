@@ -18,9 +18,9 @@ function ok(msg) { console.log('  OK  ' + msg); }
 function bad(msg) { console.log('  RED ' + msg); failed++; }
 function src(rel) { return fs.readFileSync(path.join(ROOT, rel), 'utf8'); }
 
-const sync = src('netlify/functions/payday-sync-paid.js');
-const pull = src('netlify/functions/payday-pull-slokk.js');
-const cron = src('netlify/functions/payday-sync-cron.js');
+const sync = src('netlify/functions/payday-sync-paid.cjs');
+const pull = src('netlify/functions/payday-pull-slokk.cjs');
+const cron = src('netlify/functions/payday-sync-cron.cjs');
 
 if (/httpMethod\s*!==\s*['"]POST['"]/.test(sync) && /const dry\s*=/.test(sync)) {
   ok('payday-sync-paid: dry is forced unless POST');

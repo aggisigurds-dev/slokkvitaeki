@@ -13,7 +13,7 @@ const GY = require('../netlify/functions/_gatt-years.cjs');
 
 const root = path.join(__dirname, '..');
 const portal = fs.readFileSync(path.join(root, 'gatt/portal.js'), 'utf8');
-const gatt = fs.readFileSync(path.join(root, 'netlify/functions/gatt.js'), 'utf8');
+const gatt = fs.readFileSync(path.join(root, 'netlify/functions/gatt.cjs'), 'utf8');
 const src175 = fs.readFileSync(path.join(root, 'js/patches/175-rekstrarfelog.js'), 'utf8');
 const src190 = fs.readFileSync(path.join(root, 'js/patches/190-thjonustu-verkstaedi.js'), 'utf8');
 

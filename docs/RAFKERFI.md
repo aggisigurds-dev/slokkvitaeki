@@ -273,7 +273,7 @@ Lestu `docs/ORYGGISNET.md` og kallaðu **`netvordur`** (`subagent_type: netvordu
 |---|---|---|
 | Invoice OUT | `10-sala-receipt-redesign.js`, `233-uttekt-pdf-autosave.js`, `254-receipt-sender.js` | Tómur/0 kr reikningur fer ekki í póst. Vörn á **OUT**, aldrei á vistun. |
 | Kennitala | `121-pickup-checkout.js`, `js/pos.js` | Innslegin kt dettur ekki í `999999-9999`. |
-| Rukkun | `netlify/functions/payday-push.js` | Per-línu afsláttur + kredit `discount_pct=0`. `accountingCost` = `"kt nr. N"` aðeins ef `_siteTrusted`. |
+| Rukkun | `netlify/functions/payday-push.cjs` | Per-línu afsláttur + kredit `discount_pct=0`. `accountingCost` = `"kt nr. N"` aðeins ef `_siteTrusted`. |
 | Readiness | `153-arsskodun.js`, `187-inservice-row-reports.js` | Ársreitir, `isDoneYear`, inv-dot per stað, tæki per `uttaeki.fyrirtaeki_id`. |
 | Registry | `309-problem-registry.js` | `window.logProblem` — engin þögul bilun, engin persónu-kt í log. |
 | POS afsláttur | `114-unified-pos-search.js` | `discount_pct` skrifast strax; kt með og án bandstriks. |
@@ -599,7 +599,7 @@ Slug → `js/patches/218-url-routing.js`. Gesture = hvernig Agnar opnar.
 | **Stillingar** | `#stillingar` | 300 + 301 | AppSettings | sidebar |
 | **Kennitala-gildra** | Sala checkout | **121** + pos.js | solur.customer_kt | **vörð** |
 | **Invoice OUT** | Sala senda/prenta | **10 / 233 / 254** | solur | **vörð** — Elon snertir ekki |
-| **Payday** | cron + Kröfu 🔄 | `payday-push.js` | solur | **vörð** |
+| **Payday** | cron + Kröfu 🔄 | `payday-push.cjs` | solur | **vörð** |
 | **Öryggisnet** | — | **309** + `tools/audit-all.cjs` | app_problems | `netvordur` |
 
 ---
