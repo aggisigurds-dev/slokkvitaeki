@@ -37,7 +37,7 @@ ok('portal passes building.slo through',
 ok('normalize does not drop hoses with slo: null',
   !/sl: b\.taeki, slo: null/.test(portal));
 
-const gatt = fs.readFileSync(path.join(root, 'netlify/functions/gatt.js'), 'utf8');
+const gatt = fs.readFileSync(path.join(root, 'netlify/functions/gatt.cjs'), 'utf8');
 ok('gatt.js loads _gatt-eq helper', /require\('\.\/_gatt-eq\.cjs'\)/.test(gatt));
 ok('gatt.js reads report equipment.brunaslongur', /eq\.brunaslongur/.test(gatt));
 ok('gatt.js falls back to v_uttaeki_fid_rollup bsl', /v_uttaeki_fid_rollup/.test(gatt));

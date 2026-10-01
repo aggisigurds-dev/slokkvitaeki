@@ -53,7 +53,7 @@ automation health and pings Agnar *only* when something needs him.
 | **POS search doesn't silently drop customers past 1000 rows** — og engin fyrirspurn biður um fleiri en 1000 í einu kalli (14.09.2026) | `DB.fetchAll` með einkvæmri röðun á stórum töflum; fastur `.range(a,b)` > 1000 og `.limit(N>1000)` eru RAUÐ án grunnlínu | — | `audit-pagination.cjs` (+ `audit-rodafjoldi.cjs` mælir töflur við þakið) |
 | **Verkbeiðni fær aðeins kanónískt stöðugildi — og „Til reiknings" telur ekki verk á lokinni sölu** (10.09.2026) | `01` skrifar `ready` / `inprogress` / `collected`, ekki birtingartexta; „🛒 Selja" fer í Sölu; „✓ Skrá reikning" (`Greitt`) fjarlægt; `sottOgOreiknad` sleppir verkum sem bera númer sölu með `status=final` | — | `audit-verk-stada.cjs` |
 | **Stjórnstöð sýnir aldrei lestrarvillu sem 0** (10.09.2026) | `61` `tala()` / `VILLA`: spjald sem náði ekki að lesa sýnir „?" (Lág-birgðir var 400 við hverja hleðslu og sagði „0 · Allt í lagi") | — | *enginn vörður enn* |
-| **Per‑line discount + credit notes bill Payday correctly** | `payday-push.js` per‑line gate + credit `discount_pct=0` strip | `send_failed` (token) | *verified vs 697 live sales; audit TODO* |
+| **Per‑line discount + credit notes bill Payday correctly** | `payday-push.cjs` per‑line gate + credit `discount_pct=0` strip | `send_failed` (token) | *verified vs 697 live sales; audit TODO* |
 | **GET cannot mark invoices paid or upsert the Payday mirror** | `payday-sync-paid` / `payday-pull-slokk`: GET is always dry; POST is the only commit (cron + Kröfu 🔄) | — | `audit-payday-get.cjs` |
 | **Tæki í notkun eru allt NEMA `urelt` — aldrei bara `active`** | `uttaeki.status` ber fjögur gildi (active 4891 · urelt 482 · „Í lagi“ 154 · ok 74). Tuttugu og tveimur kóðastöðum sem síuðu á `active` einu var breytt 01.09.2026 — sex fyrirspurnum server-megin (`153`, `15`×2, `177`, `00-legacy`, `audit-fk-join`) og sextán samanburðum JS-megin á `DB.cache.units`. Þeir földu 228 tæki á 17 fyrirtækjum og létu 14 þeirra líta út fyrir að vera ALVEG TÓM (Bríetartún 48, Dalbrekka 48, Dra ehf 37). **Síaðu aldrei á `active`; notaðu `status != 'urelt'`.** | — | `audit-status-gildi.cjs` |
 | **The tæki→starfsstöð FK join hides no live in‑service customer** | `153` counts devices by `uttaeki.fyrirtaeki_id` (not folded client‑name); soft‑deleted excluded at `153:162` | `uttaeki_null_fid` | `audit-fk-join.cjs` |
@@ -135,7 +135,7 @@ kemur: taktu athugunina út úr verðinum um leið.
 1. **Never remove or weaken a guard** without a replacement guard **and**
    re‑running its audit green.
 2. **Any change to a guarded path** — invoice OUT (`10` / `233` / `254`), kt save
-   (`121` / `pos.js`), readiness (`153` / `187`), billing (`payday-push.js`) —
+   (`121` / `pos.js`), readiness (`153` / `187`), billing (`payday-push.cjs`) —
    **must keep the guard and run `node tools/audit-all.cjs` before pushing.**
 3. **Every new feature that can fail must call `window.logProblem('kind',
    'detail')`** at the failure point. No silent failures. (Kinds are short slugs;
@@ -184,7 +184,7 @@ baseline rows and lowering the constant is how the net tightens over time.
   `error`/`unhandledrejection` capture) → Supabase table `app_problems`, view
   `v_app_problems_open`. Loaded right after `db.js` so it sees every later patch.
 - **Guards:** `js/patches/233-uttekt-pdf-autosave.js` (PDF), `254-receipt-sender.js`
-  (send), `121-pickup-checkout.js` + `js/pos.js` (kt), `netlify/functions/payday-push.js`
+  (send), `121-pickup-checkout.js` + `js/pos.js` (kt), `netlify/functions/payday-push.cjs`
   (billing).
 - **Audits:** `tools/audit-*.cjs`, run together by `tools/audit-all.cjs`.
 - **Sweep:** Routine `trig_013hqjttRBk7TqbrPum2MskF` — 3×/day (08/13/18), reads
@@ -211,7 +211,7 @@ baseline rows and lowering the constant is how the net tightens over time.
 - **2026-09-23 (stöðugt viðmót — VÖRÐUÐU skrárnar 153 og 187)** — AÐEINS teiknun, engin breyting á rökum: hvaða ár er grænt, hvað telst skoðað, talningar og skrif eru ÓSNERTIN. (1) `187-inservice-row-reports.js`: hleðslararnir fimm rifu ÖLL árs-reitina út (mælt á lifandi: 201 hnútar) og byggðu þá aftur — sjö staðir í skránni gerðu þetta, svo taflan mjókkaði á meðan og dálkarnir hoppuðu. Nú EIN samandregin endurbygging (60 ms gluggi, `endurbyggjaArsreiti()`) og reitirnir uppfærðir Á STAÐNUM: sami `<td>`-hnútur, `innerHTML` aðeins snert þegar innihaldið breytist, enginn hnútur fjarlægður. (2) `153-arsskodun.js` `render()`: skrunstaða (líka lárétta skrunið í `._ars-tblscroll` á síma) og fókus í HVAÐA reit sem er (ferðanóta, mánuður, leit) endurheimt í SAMA tifi og teikningin — áður var aðeins `#_ars-search` varinn. (3) `153`: bakgrunns-teikning bíður meðan notandi skrifar (`erAdSkrifa()`) og keyrir strax við `focusout`. (4) `153` `loadAll()`: samtíma kallarar (190 Þjónustuverkstæði · 304 Fjármál-LIVE · `show()`) deila EINNI sókn; kallari eftir lok fær ferska hleðslu eins og áður. **Sönnun:** fingrafar allra árs-reita (klasar + texti, 50 raðir) tekið á lifandi FYRIR og EFTIR — sama hash.
 - **2026-09-21 (afköst — leti-hleðsla í 187, VÖRÐUÐ skrá)** — hleðslararnir fimm (`loadLoc/loadFc/loadInv/loadPairs/loadReik`, ~12 REST-köll) fóru af stað 0,6–0,9 s eftir hverja síðuhleðslu á ÖLLUM síðum. Nú vekur `process()` þá þegar `tr._ars-row` er til í DOM, og `yearInfo()/isKlarad()` vekja þá eins og áður. Bakslag ef hleðslari bregst: frjálst fyrstu 6 s, svo á 20 s fresti. Nýr atburður `irr-gogn` þegar gögn lenda → `317` (Bílstjóri) endurteiknar perurnar. **Rökin sjálf (yearInfo, „tilbúið", litir) ÓSNERT.** Sönnun: fingrafar allra árs-reita á Ársskoðun (klasar + texti, 50 raðir) tekið fyrir og eftir á lifandi síðu — sjá lotuskýrslu.
 - **2026-09-21 (afköst + ártöl)** — `153-arsskodun.js`: AÐEINS birting í prentlista — árs-haus og árs-reitir lesa nú `InserviceRowReports.YEARS` (rúllandi, sama og skjárinn) í stað harðkóðaðs 2023–2026; engin breyting á „tilbúið"-rökum, talningu né skrifum. Utan varðaðra leiða: `304` sækir ekki lengur allt Ársskoðunar-mengið 20 s eftir hverja síðuhleðslu (notar nýsótt mengi / sleppir ef talan á þjóni er < 25 mín), `85` samnýtir samtíma `load()` með kynslóðavörn (hermipróf 6/6), `177` les sýnina `v_uttaeki_i_notkun` (borið saman: 636=636 nöfn, 637=637 auðkenni) með gömlu skönnunina sem varaleið. Verðir: audit-all grænt.
-- **2026‑09‑21** — **Tvær leiðir að tvírukkun í Payday-sendingunni lokaðar (`payday-push.js` vörðuð leið + `166` + nýr vörður `audit-payday-tvirukkun`).**
+- **2026‑09‑21** — **Tvær leiðir að tvírukkun í Payday-sendingunni lokaðar (`payday-push.cjs` vörðuð leið + `166` + nýr vörður `audit-payday-tvirukkun`).**
   Allsherjarúttektin (docs/UTTEKT-20260921.html) fann: (1) `await markSaleInvoiced(...)` — svarið var ALDREI lesið. Mistækist sú
   eina skrift var krafan komin í Payday og í heimabanka kúnnans, en salan sat áfram í „Ósendar" með ✓ á skjánum og fór aftur
   daginn eftir. (2) „þegar send?" var lesið efst en merkið skrifað mörgum sekúndum síðar án skilyrðis — tvær vélar, eða
@@ -274,7 +274,7 @@ baseline rows and lowering the constant is how the net tightens over time.
   gátlistanum fylgt (vistun stöðvast aldrei, nýtt invariant fékk vörð). **Ekki gert:** `bud` er ekki öruggt merki um
   „ekki úttekt" í peningasýnum. Hamraborg ehf (R-000577) og JDÓ ehf. (R-000531) eru úttektir þar sem tækin komu í
   búðina og voru rukkaðar með yfirferðar- og hleðslulínum, svo „Gleymst að rukka?" síar búð ekki út.
-- **2026‑09‑15** — **XML-höfnunarmál lenda undir „Þarf svar frá þér" með samantekt — og vörðurinn keyrir föllin í stað þess að lesa aðeins textann (`payday-push.js` vörðuð leið).**
+- **2026‑09‑15** — **XML-höfnunarmál lenda undir „Þarf svar frá þér" með samantekt — og vörðurinn keyrir föllin í stað þess að lesa aðeins textann (`payday-push.cjs` vörðuð leið).**
   XML-höfnun þarf alltaf svar eða handtak frá Agnari (netfang, XML handvirkt úr Payday eða ákvörðun um að loka), en
   `skraXmlHofnun` stofnaði málin án `spurning` og með `nidurstada` sem samantekt. #1057 (R-000929 Berjarimi 14, 14.09.
   21:45) lenti því undir „Tilbúið — bara samþykkja" í 368aa; Claude merkti #1048–#1050 og #1057 í höndunum. Nú ber
@@ -300,7 +300,7 @@ baseline rows and lowering the constant is how the net tightens over time.
   general-purpose með `.claude/agents/netvordur.md` orðrétt, því agent-tegundin var ekki skráð í lotunni).
   **Utan umfangs, bíður Agnars:** tillögulínan í `notes` segir „dugar pósturinn; lokaðu þá málinu" líka þegar enginn
   póstur fór (samantektin segir rétt til).
-- **2026‑09‑14 (kvöld)** — **XML-höfnun birtist strax á skjánum og stofnar mál á Þjónustuborðinu (`payday-push.js` vörðuð leið + `166`).**
+- **2026‑09‑14 (kvöld)** — **XML-höfnun birtist strax á skjánum og stofnar mál á Þjónustuborðinu (`payday-push.cjs` vörðuð leið + `166`).**
   Agnar: „poppa upp villa strax upp á skjáinn og setja á þjónustuborð". `skraXmlHofnun` stofnar nú líka eitt mál per
   sölu í `thjonustubeidni` (á Agnar; merkin `samthykki`, `payday-xml`, `payday-xml-sala:<id>`). Fyrst er leitað eftir
   merkinu, svo endurtekin sending tvítekur ekki málið (#1048–#1054 standa). Sama 3 s þak og `Promise.allSettled`; kt
@@ -311,7 +311,7 @@ baseline rows and lowering the constant is how the net tightens over time.
   `audit-solu-id` og `audit-t-s-i` (gömul) og `audit-kredit-tenging` (prófkreditnóta R-000951, −52 kr, bíður Agnars).
   netvörður: **SAFE**. Fimm göt í verðinum sem aðeins harnessið nær (leitarsvar, merki án sölu-id, `signal` á
   málsstofnun, `skraVillu` aldrei kallað, `esc`) — herða næst.
-- **2026‑09‑14** — **Payday-höfnun á rafrænum reikningi (XML) er ekki lengur þögul (`payday-push.js`, vörðuð leið).**
+- **2026‑09‑14** — **Payday-höfnun á rafrænum reikningi (XML) er ekki lengur þögul (`payday-push.cjs`, vörðuð leið).**
   Varaleiðin (`/electronic invoice/i`) bjó reikninginn til aftur án XML og sendi í pósti, eins og á að vera, en
   Payday-villan fór aðeins í svar vafrans og gleymdist. Mælt í Payday 14.09. (Saga-flipar, aðeins lesið): af 36
   ógreiddum reikningum fengu 15 ekkert XML, samtals 1.504.935 kr; Plaza R-000852 og tveir aðrir tóku við XML þegar
@@ -380,7 +380,7 @@ baseline rows and lowering the constant is how the net tightens over time.
   48/51 — sömu 3 gömlu rauðu (osendar-krofur, solu-id, t-s-i), engin ný. netvörður: **SAFE** — engin vörðuð
   leið snert, báðir vírar standa, `ready()` hafnar aldrei og enginn kallandi hangir; vörðurinn hertur eftir
   tveimur ábendingum hans (gleyptur `catch` í `_load` og óvarið `__misCanonLoaded` í 89 verða RED).
-- **2026‑09‑12** — **Payday-krafan ber ekki lengur innri bókhaldsmerki (`payday-push.js`, Verkefnalisti c091f2ff).**
+- **2026‑09‑12** — **Payday-krafan ber ekki lengur innri bókhaldsmerki (`payday-push.cjs`, Verkefnalisti c091f2ff).**
   `buildPayload` setti `solur.athugasemdir` óhreinsaða í `description`. Sótt-slóðin (121) skrifar
   „Kt: … [Sótt …] Afsláttur úr sölu: … Greiðsla: reikningur" aftast í nótuna, og það prentaðist á
   reikning kúnnans í Payday (dæmi #249 Colas 04.09.). Lifandi dry-run 12.09. sýndi það á R-000781 og
@@ -548,7 +548,7 @@ baseline rows and lowering the constant is how the net tightens over time.
 - **2026‑08‑25 — GET má ekki skrifa Payday.** `payday-sync-paid` og
   `payday-pull-slokk` skrifuðu á óinnskráð GET (paid_at / payday_invoices_slokk
   spegill). GET er nú alltaf dry-run; POST er eina skrifleiðin. Cron
-  (`payday-sync-cron`) POSTar báða leggina. `payday-push.js` ósnert. Nýtt
+  (`payday-sync-cron`) POSTar báða leggina. `payday-push.cjs` ósnert. Nýtt
   audit `audit-payday-get.cjs` + `audit-brunakerfi-stada.cjs` (`audit-all` 7/7).
   Sama lota: Brunakerfi yfirlit Staða sýnir ✅ Skoðað YYYY AÐEINS þegar
   `customer_documents` á brunakerfi-skýrslu það ár (`272` `r.years`), ekki
@@ -564,7 +564,7 @@ baseline rows and lowering the constant is how the net tightens over time.
   og mátaði aftur á nafni/kt — Hotel Grandi, 🧾-leki á öll systkini, Payday
   ótengt stað. Nú: `co_id` pinnaður, engin `hits[0]`-gisk, `document_pairs` og
   R/PD-númer per stað (`solur.customer_id`). Staðirnir eru **aldrei sameinaðir**.
-  `payday-push.js` ósnert. Audit `audit-rekstrarfelog-sites.cjs`.
+  `payday-push.cjs` ósnert. Audit `audit-rekstrarfelog-sites.cjs`.
 - **2026‑08‑25 — Ársskoðun 🧾-punktar per stað.** `187` `reikMap` var lyklað á
   kennitölu svo einn 2026-reikningur á Center Hótel kveikti bláan punkt á öllum
   11 hótelunum (Hlaðvarpinn, Þverholt 14, Arnarhvoll, …). Nú `reikByCo` á

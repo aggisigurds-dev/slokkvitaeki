@@ -37,7 +37,7 @@ mal('„UNPAID" telst ekki greitt', erGreidsla({ status: 'UNPAID', amountIncludi
 mal('engin staða + greiðsludagsetning + jákvæð upphæð', erGreidsla({ amountIncludingVat: 1000, paidDate: '2026-09-01' }, '2026-09-01'), true);
 
 prof++;
-const sync = fs.readFileSync(path.join(ROOT, 'netlify/functions/payday-sync-paid.js'), 'utf8');
+const sync = fs.readFileSync(path.join(ROOT, 'netlify/functions/payday-sync-paid.cjs'), 'utf8');
 if (/require\(\s*['"]\.\/_payday-greidsla\.cjs['"]\s*\)/.test(sync) && /erGreidsla\(\s*raw/.test(sync) && !/isPaid\s*=\s*!!paidDate/.test(sync)) {
   console.log('  OK  payday-sync-paid notar erGreidsla');
 } else {

@@ -7,7 +7,7 @@
 // portal_users fer í undirritað JWT → einangrun. Læsing eftir of margar
 // tilraunir. Almenn villuskilaboð (ljóstra ekki upp hvort netfang er til).
 
-const P = require('./_portal');
+const P = require('./_portal.cjs');
 
 const MAX_FAILS = 8;
 const LOCK_MINUTES = 15;

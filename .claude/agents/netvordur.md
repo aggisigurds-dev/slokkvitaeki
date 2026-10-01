@@ -17,7 +17,7 @@ að enginn klippi á hana án þess að tengja rétt aftur og keyra enda-í-enda
 2. Áttaðu þig á hvað breytingin snertir. **Vörðu leiðirnar** eru:
    - Reikningar-OUT: `js/patches/10-sala-receipt-redesign.js`, `233-uttekt-pdf-autosave.js`, `254-receipt-sender.js`
    - Kennitala: `js/patches/121-pickup-checkout.js`, `js/pos.js` (checkout-resolver)
-   - Rukkun/Payday: `netlify/functions/payday-push.js`
+   - Rukkun/Payday: `netlify/functions/payday-push.cjs`
    - Tilbúið-staða: `js/patches/153-arsskodun.js`, `187-inservice-row-reports.js`
    - Registry: `js/patches/309-problem-registry.js` (`window.logProblem`)
 

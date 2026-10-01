@@ -39,7 +39,7 @@ Talaðu **íslensku** við Agnar. Skráarheiti, klasar, töflur og dálkar halda
    - **11** — hvaða patch/tafla á bak við borð
    - **5** — vörðu línur (snertu ekki án netvarðar)
 3. Ef verkið snertir vörðu raflínu (invoice OUT `10/233/254`, kennitala
-   `121/pos.js`, `payday-push.js`, readiness `153/187`) → kallaðu
+   `121/pos.js`, `payday-push.cjs`, readiness `153/187`) → kallaðu
    **`netvordur`** áður en þú snertir vír. Lestu `docs/ORYGGISNET.md`.
 4. Þegar pera er vitlaus: hover `title` (byrjar á `ELON ·`) → `data-elon` →
    réttur kafli í RAFKERFI → `file:line`.

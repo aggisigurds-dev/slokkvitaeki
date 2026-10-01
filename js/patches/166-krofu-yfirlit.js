@@ -3419,7 +3419,7 @@
       // eingöngu 'reikningur'. Ekkert greitt_med_prev, ekkert afturkall.
       patch = { greitt_med: 'reikningur' };
       // drög → final: sama regla og allar hinar frágangsleiðirnar fylgja —
-      // payday-push markSaleInvoiced (netlify/functions/payday-push.js ~467,
+      // payday-push markSaleInvoiced (netlify/functions/payday-push.cjs ~467,
       // „kröfusending LYFTIR stöðunni í final", Agnar 13.08.2026), patch 142
       // „✅ Klára sölu" og patch 121 við Sótt ✓. Sat salan áfram sem 'drog'
       // dytti hún út úr tekjuskýrslum sem sía á status='final'.
