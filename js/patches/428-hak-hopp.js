@@ -35,7 +35,7 @@
   };
   window.__hakHopp = hopp;
 
-  var VEL = '.ut-check,.ut-chk,.ut-svc,.ut-onytt,.ut-svcseg,._ars-endur-cb,._ars-endur,._ars-nytt-chk';
+  var VEL = '.ut-check,.ut-chk,.ut-svc,.ut-onytt,.ut-svcseg,._ars-endur-cb,._ars-endur,._ars-nytt-chk,._ars-tu-toggle,._ars-mark';
 
   // Capture: stöðva hash-leiðsögn áður en 218/235/357 sjá smellinn.
   // stopPropagation EKKI hér — 224 á að fá bubbluna.
@@ -48,7 +48,7 @@
       try { t.setAttribute('type', 'button'); } catch (_) {}
       e.preventDefault();
     }
-    var teg = t.classList.contains('ut-check') || t.classList.contains('_ars-endur-cb') || t.classList.contains('_ars-nytt-chk')
+    var teg = t.classList.contains('ut-check') || t.classList.contains('_ars-endur-cb') || t.classList.contains('_ars-nytt-chk') || t.classList.contains('_ars-tu-toggle') || t.classList.contains('_ars-mark')
       ? 'hak'
       : (t.classList.contains('ut-chk') ? 'val' : 'svc');
     hopp.bump(teg);
@@ -81,8 +81,9 @@
     });
     if (window.Arsskodun) {
       wrap(window.Arsskodun, 'loadAll', function () { return hopp.skalSleppa(); });
-      wrap(window.Arsskodun, 'render', function () {
-        return hopp.skalSleppa() && !document.getElementById('view-arsskodun');
+      wrap(window.Arsskodun, 'render', function () { return hopp.skalSleppa(); });
+      wrap(window.Arsskodun, 'openDetail', function () {
+        return hopp.skalSleppa() && !!document.querySelector('._ars-modal-bg ._ars-modal');
       });
     }
     wrap(window.App, 'switchView', function (v) {

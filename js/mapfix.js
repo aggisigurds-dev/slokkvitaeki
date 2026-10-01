@@ -11,11 +11,21 @@
   window._openCompanySafe = function(coId){
     coId = parseInt(coId, 10);
     if (!coId || !window.App || !window.Companies) return;
+    if (window.Companies.currentId === coId && typeof Companies._detailOpen === 'function' && Companies._detailOpen(coId)) {
+      var already = document.getElementById('view-companies');
+      if (already && already.classList.contains('active')) return;
+    }
     window.App.view = 'companies';
-    document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
+    // 01.10.2026: 153/272 setja inline display:block. Aðeins .active fjarlægt
+    // skildi Ársskoðun sýnilega undir prófílnum — hopp + tví-skrun.
+    document.querySelectorAll('.view,[id^="view-"]').forEach(function(el){
+      el.classList.remove('active');
+      if (el.id !== 'view-companies' && el.style && el.style.display === 'block') el.style.display = 'none';
+    });
     document.querySelectorAll('.vnav-btn').forEach(function(el){el.classList.remove('active');});
-    var vEl = document.getElementById('view-companies'); if(vEl) vEl.classList.add('active');
+    var vEl = document.getElementById('view-companies'); if(vEl){ vEl.classList.add('active'); vEl.style.display = ''; }
     var nb = document.querySelector('.vnav-btn[data-view="companies"]'); if(nb) nb.classList.add('active');
+    if (window.Companies) Companies.currentId = coId;
     var doOpen = function(){ if(window.Companies && Companies.openDetail) Companies.openDetail(coId); };
     if (window.Companies && Companies.list && Companies.list.length) {
       doOpen();
