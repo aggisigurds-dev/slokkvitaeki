@@ -216,7 +216,9 @@
   r(SC + ' #_sch-docs span[style*="font-weight:500;color:#94a3b8"]', 'font-family:' + MONO + ';text-transform:none;letter-spacing:0;color:#6b7483;font-size:10.5px');
   r(SC + ' #_sch-body div[style*="font-size:12.5px;font-weight:700;color:#0f172a"],' + SC + ' #_sch-body div[style*="font-size:12.5px;font-weight:600;color:#0f172a"]', 'color:#141822');
   r(SC + ' #_sch-body div[style*="font-size:10.5px;color:#94a3b8"]', 'font-family:' + MONO + ';color:#6b7483');
-  r(SC + ' #_sch-body span[style*="color:#166534"]', 'color:#0e5a2e');
+  // 01.10.2026 (Agnar: „laga græna takkann og setja hvítann texta"): „✓ Greitt"-flísin ber BÆÐI #dcfce7 og #166534
+  // í inline-stílnum. Þessi regla kom á eftir CHIP_GREEN og málaði letrið dökkgrænt á græna málminn — ólæsilegt.
+  r(SC + ' #_sch-body span[style*="color:#166534"]:not([style*="background:#dcfce7"])', 'color:#0e5a2e');
   r(SC + ' #_sch-body span[style*="color:#b91c1c"]', 'color:#b42318');
   r(SC + ' #_sch-body span[style*="color:#b45309"]', 'color:#8a6100');
 

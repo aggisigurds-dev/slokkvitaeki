@@ -297,6 +297,9 @@
       // Sé heimilið horfið (153 endurteiknaði) er takkinn samt EKKI látinn fylgja
       // gámnum í ruslið — hann er lagður í sýnina svo næsta smíði finni hann aftur.
       if (heim && heim.isConnected) heim.appendChild(ch);
+      // …nema ferskur tvíburi með sama auðkenni sé þegar til (153 teiknaði nýjan) —
+      // þá er þessi úreltur og fer. Annars söfnuðust faldir „📍 Númer" í sýnina.
+      else if (ch.id && document.querySelectorAll('[id="' + ch.id + '"]').length > 1) ch.remove();
       else if (vara) { ch.style.setProperty('display', 'none', 'important'); vara.appendChild(ch); }
     });
   }
@@ -725,6 +728,34 @@
     }
   }
 
+  /* 01.10.2026 (Agnar: „númer takkinn virkar ekki að opna"): samruni 153 skiptir
+   * #_ars-pnr-row út í HEILU LAGI við hverja teikningu (auðkennið byrjar á `_ars-`),
+   * svo ferskur „📍 Númer" lenti í földu röðinni og takkinn í hausnum var gamall
+   * tvíburi — aria-expanded stóð í false og hlustun 153 sat á þeim falda. Hér er
+   * ferski takkinn tekinn upp í hausinn og sá gamli fer. bygg() er kallað beint úr
+   * render() 153, FYRIR bindingarnar, svo smellhlustunin lendir á takkanum sem sést.
+   * Ferskur takki í röðinni = ný teikning; sé hann ekki þar er þegar búið að skipta. */
+  function ferskirTakkar(root) {
+    const verkf = root.querySelector('.arsm-sec .arsm-verkf');
+    const row = root.querySelector('#_ars-pnr-row');
+    if (!verkf || !row || !row.querySelector('#_ars-pnr-btn')) return;
+    let a = null;
+    ['_ars-pnr-btn', '_ars-pnr-clear'].forEach(id => {
+      const nyr = row.querySelector('#' + id);
+      const gamlir = Array.from(root.querySelectorAll('[id="' + id + '"]')).filter(n => n !== nyr);
+      const iHaus = gamlir.find(n => n.parentElement === verkf);
+      if (nyr) {
+        HEIM.set(nyr, row);
+        nyr.style.removeProperty('display');
+        if (iHaus) iHaus.replaceWith(nyr);
+        else verkf.insertBefore(nyr, a ? a.nextSibling : verkf.firstChild);
+        a = nyr;
+      }
+      // „✕ Sýna öll" teiknast aðeins meðan sía er á — án fersks eintaks fer það gamla.
+      gamlir.forEach(n => { if (n.isConnected) n.remove(); });
+    });
+  }
+
   // ── 2c · kortið: málmhaus ofan á Leaflet-fletinum ────────────────────────
   // Kortið sjálft er ÓBREYTT (Leaflet + Esri-flísar úr mapfix). Hér bætist aðeins
   // haus ofan á spjaldið og „Fela kort"-takkinn flyst þangað meðan kortið er opið —
@@ -905,6 +936,9 @@
     // Síminn heldur sínum eigin strimli (331/382): stílarnir hér eru allir í
     // @media(min-width:901px), svo hjúpurinn stendur ósmíðaður þar.
     if (innerWidth < 901) { root.querySelectorAll(OKKAR).forEach(n => n.remove()); merkja(false); return; }
+    // Ferski „📍 Númer" upp í hausinn — líka þegar undirskriftin er óbreytt (opna/loka
+    // glugganum breytir henni ekki, en 153 teiknar röðina samt upp á nýtt).
+    try { ferskirTakkar(root); } catch (_) {}
     // Ekkert breyttist og allt er á sínum stað → ekkert gert. (Sjá undirskrift().)
     try { snyrtaAukatakka(root); } catch (_) {}
     const nu = undirskrift(root);
