@@ -1,4 +1,4 @@
-// payday-push.js — push krafnir til Payday API
+// payday-push.cjs — push krafnir til Payday API
 //
 // Twin af brunaholf/payday-pull.js auth-pattern (OAuth2 client_credentials),
 // en hér í slokkvitaeki repo með SLOKKVITAEKI Payday-account creds.

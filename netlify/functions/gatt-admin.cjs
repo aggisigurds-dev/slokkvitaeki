@@ -16,7 +16,7 @@
 // ⚠️ Innri síða — arfar (skort á) auðkenningu hub-sins; á að vera á bak við
 // væntanlega hub-innskráningu. Öll skrif nota service-role (aldrei í vafra).
 
-const P = require('./_portal');
+const P = require('./_portal.cjs');
 const crypto = require('crypto');
 // Póstur fer gegnum slokkvitaeki /api/email-send (Resend). „from" verður að vera
 // staðfest lén í Resend — stillanlegt með PORTAL_MAIL_FROM env.

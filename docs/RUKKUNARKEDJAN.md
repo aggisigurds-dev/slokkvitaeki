@@ -25,7 +25,7 @@ DRÖG → FINAL
   patch 121 (pickup-checkout) klárar greitt_sidar-drög við Sótt ✓
   NÚ EINNIG: kröfusending lyftir status í 'final' (payday-push writeback)
 
-KRAFA Í BANKA — EIN LEIÐ: netlify/functions/payday-push.js
+KRAFA Í BANKA — EIN LEIÐ: netlify/functions/payday-push.cjs
   Kallarar (allir í patch 166 krofu-yfirlit): stök sending [166:~959],
   afturköllun [~1084], bunkasending [~1254 sendSelectedQueue].
   payday-push: fetchSale → GÁTTIR (sjá kafla 3) → buildPayload →

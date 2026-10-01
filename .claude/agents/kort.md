@@ -61,7 +61,7 @@ má ekki setja). `?q=`, `?cc=` (sjálfg. `is`), `?suggest=` (typeahead, ekkert c
 - Tafla `geocode_cache` (`sql/geocode_cache.sql`, þarf handkeyrslu): dálkur heitir
   **`lng`** en API skilar **`lon`** — geocode.js þýðir á :44/:60. Vanti töfluna
   (PGRST205) fellur fallið hljóðlaust á cache-laust.
-- **`/api/geocode-all`** → `geocode-all-background.js` (202 strax, 15 mín, 1100ms
+- **`/api/geocode-all`** → `geocode-all-background.cjs` (202 strax, 15 mín, 1100ms
   throttle, 600 hámark per keyrslu, idempotent). ⚠️ `cleanVariants` er
   **AFRITAÐ orðrétt** þangað — lagirðu annað, lagaðu hitt.
 

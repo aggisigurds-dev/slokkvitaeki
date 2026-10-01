@@ -34,7 +34,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;p
 <h2>Laga fyrst — tíu atriði í forgangsröð</h2>
 
 <div class="f a"><p><span class="m a">ALVARLEGT</span><b>1 · Krafa getur farið í Payday án þess að salan merkist send → tvírukkun</b></p>
-<p class="hv">netlify/functions/payday-push.js:283 og :505–521 · VÖRÐUÐ LEIÐ (netvörður)</p>
+<p class="hv">netlify/functions/payday-push.cjs:283 og :505–521 · VÖRÐUÐ LEIÐ (netvörður)</p>
 <p>Eftir að reikningurinn er orðinn til í Payday er salan merkt send með <code>await markSaleInvoiced(...)</code> — en svarið er aldrei lesið. Mistakist sú eina skrift situr salan áfram í „Ósendar" og fer aftur daginn eftir. Sama fall les „er þegar send?" og skrifar merkið mörgum sekúndum síðar án skilyrðis, svo tvær vélar geta sent sömu kröfuna samtímis.</p>
 <p class="lag"><b>Lagfæring:</b> lesa <code>.ok</code> og skila 502 með skýrum texta; skilyrða PATCH-ið á <code>dk_invoice_id=is.null</code>; óvirkja „Senda kröfu"-takkann ÁÐUR en sendiglugginn opnast (166:1430 — tvísmellur opnar tvo glugga í dag).</p></div>
 
@@ -54,7 +54,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;p
 <p class="lag"><b>Lagfæring:</b> <code>next_kredit_num</code> / <code>next_tilbod_num</code> RPC eins og <code>next_reikningur_num</code>.</p></div>
 
 <div class="f a"><p><span class="m a">ALVARLEGT</span><b>5 · Greiðslusamstillingin segir „tókst" þótt hún mistakist</b></p>
-<p class="hv">netlify/functions/payday-sync-cron.js:14–21</p>
+<p class="hv">netlify/functions/payday-sync-cron.cjs:14–21</p>
 <p>Keyrslan kl. 10 og 15 les aldrei hvort <code>payday-sync-paid</code> svaraði villu. Renni Payday-lykill út uppfærist „greitt" ekki dögum saman og enginn sér það — greiddar kröfur sitja í „Ógreitt".</p>
 <p class="lag"><b>Lagfæring:</b> skila villu og skrá í <code>automation_runs</code> svo dagleg heilsa grípi það.</p></div>
 
