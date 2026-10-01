@@ -564,11 +564,14 @@
       e.preventDefault(); e.stopPropagation();
       hoppBump('svc');
       var bco=+b.dataset.co, v=b.dataset.bulk;
+      var bwrap=document.querySelector('.ut-list[data-uw-co="'+bco+'"]');
       unitsFor(bco).forEach(function(u){
         if(!_sel[u.id]) return;
         try{UnitServicePicker.setChoice(bco,u.id,v);}catch(_){}
-        var chk = document.querySelector('.ut-list[data-uw-co="'+bco+'"] .ut-chk[data-uid="'+u.id+'"]');
-        if(chk) _radUpp(chk.closest('.ut-row'), v);
+        if(bwrap){
+          var bchk=bwrap.querySelector('.ut-chk[data-uid="'+u.id+'"]');
+          if(bchk) _radUpp(bchk.closest('.ut-row'), v);
+        }
       });
       recompute(); return;
     }

@@ -132,14 +132,21 @@
     if (tg) { var e3 = tg.querySelector(':scope > span:nth-child(3)'); if (e3 && !e3.classList.contains('b413-plata-innri')) e3.classList.add('b413-plata-innri'); /* aðeins þegar vantar — classList.add skráir mutation þótt klasinn sé til (mælt 24.09: 65 tikk/s lykkja) */ }
   }
   var timer = null;
-  function tick() { if (!scope()) return; try { spegla(); } catch (e) { console.error('[413]', e); } }
+  function tick() { if (document.hidden || !scope()) return; try { spegla(); } catch (e) { console.error('[413]', e); } }
   function schedule() { if (schedule.inni) return; schedule.inni = true; try { tick(); } finally { schedule.inni = false; } }   // 24.09.2026: vaktin (252) skilar sér í rAF, FYRIR málun — setTimeout héðan lenti EFTIR málun og hrái ramminn sást sem hopp (mælt: 224-listinn 601 → 741 px, valstikan 205 → 154 px). Sama tif, engin millistaða.
   (function watch() {
     var main = document.getElementById('companies-main');
     if (!main) { setTimeout(watch, 500); return; }
-    new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) { var t = ms[i].target; if (t && t.closest && t.closest('.b413-tala,.b413-plata,.b413-plata-innri')) continue; schedule(); return; } }).observe(main, { childList: true, subtree: true, attributes: true, attributeFilter: ['value', 'class'] });
+    new MutationObserver(function (ms) {
+      if (document.hidden) return;
+      for (var i = 0; i < ms.length; i++) {
+        var t = ms[i].target;
+        if (t && (t.id === '_ctc-section' || (t.closest && t.closest('#_ctc-section,.b413-tala,.b413-plata,.b413-plata-innri')))) continue;
+        schedule(); return;
+      }
+    }).observe(main, { childList: true, subtree: true, attributes: true, attributeFilter: ['value', 'class'] });
     main.addEventListener('input', schedule, true); main.addEventListener('change', schedule, true);
     tick();
   })();
-  setInterval(tick, 1500);
+  setInterval(function () { if (!document.hidden) tick(); }, 1500);
 })();

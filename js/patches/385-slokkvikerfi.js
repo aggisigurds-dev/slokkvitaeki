@@ -43,6 +43,7 @@
   const state = Object.assign({ stada: 'allt', man: 0, leit: '', postnr: '', felaUr: FLOKKUR.felaSjalfgefid !== false, sort: 'man', dir: 1 }, lesaSiu());
   let _rows = null, _loading = false, _villa = '';
   let _loadGen = 0, _lastLoad = 0;
+  const CACHE_MS = 60000;
 
   function SB() { return (window.DB && DB.sb) || null; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -107,6 +108,8 @@
   }
   async function reload(opts) {
     opts = opts || {};
+    const force = opts === true || opts.force;
+    if (!force && _rows && (Date.now() - _lastLoad) < CACHE_MS) { render(); return; }
     const gen = ++_loadGen;
     _loading = true; _villa = '';
     // 01.10.2026: fyrsta teikningin má sýna „Sæki…" — endurtekin opnun má EKKI
@@ -364,7 +367,7 @@
       $('_skn-vista').disabled = false;
       if (error || !data || !data[0]) { err.textContent = 'Skráðist ekki: ' + ((error && error.message) || 'þjónninn skilaði engri röð'); return; }
       toast('✓ ' + valid.nafn + ' · ' + data[0].heiti + ' skráð í ' + FLOKKUR.titill);
-      loka(); reload();
+      loka(); reload(true);
     };
     setTimeout(() => $('_skn-leit').focus(), 50);
   }
@@ -379,7 +382,7 @@
       const ub = t.closest('[data-utlit]'); if (ub) { state.utlit = ub.dataset.utlit; vistaSiu(); return render(); }
       if (t.id === '_sk-nytt') return nyttKerfi();
       if (t.id === '_sk-prenta') return prenta();
-      if (t.id === '_sk-aftur') return reload();
+      if (t.id === '_sk-aftur') return reload(true);
       if (t.closest('._sk-nota,._sk-man,a,button,select,textarea,input')) return;   // reitir í röðinni eiga sinn smell
       const row = t.closest('._sk-row'); if (!row) return;
       const fid = +row.dataset.fid;
@@ -612,7 +615,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
   console.log('[patch-385] þjónustuskrá: ' + FLOKKUR.titill);
-  return { open, reload, _stada: stada, _naest: naest };
+  return { open, reload: () => reload(true), _stada: stada, _naest: naest };
   }   // buaTil
 
   window.Thjonustuskra = { buaTil };

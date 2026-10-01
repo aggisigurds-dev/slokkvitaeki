@@ -199,7 +199,7 @@
   }
   var timer = null;
   function tick() {
-    if (!scope()) return;
+    if (document.hidden || !scope()) return;
     var main = document.getElementById('companies-main'); if (!main || !main.querySelector('.co-banner')) return;
     try {
       var editBtn = main.querySelector('button[onclick^="Companies.openEdit"]');
@@ -216,8 +216,15 @@
   function schedule() { if (schedule.inni) return; schedule.inni = true; try { tick(); } finally { schedule.inni = false; } }
   (function watch() {
     var main = document.getElementById('companies-main'); if (!main) { setTimeout(watch, 700); return; }
-    new MutationObserver(function (recs) { for (var i = 0; i < recs.length; i++) { var t = recs[i].target; if (t && t.closest && t.closest('.b405-menu')) continue; schedule(); return; } }).observe(main, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-inservice'] });
-    setInterval(tick, 1500);
+    new MutationObserver(function (recs) {
+      if (document.hidden) return;
+      for (var i = 0; i < recs.length; i++) {
+        var t = recs[i].target;
+        if (t && (t.id === '_ctc-section' || (t.closest && (t.closest('#_ctc-section') || t.closest('.b405-menu'))))) continue;
+        schedule(); return;
+      }
+    }).observe(main, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-inservice'] });
+    setInterval(function () { if (!document.hidden) tick(); }, 1500);
     schedule();
   })();
 

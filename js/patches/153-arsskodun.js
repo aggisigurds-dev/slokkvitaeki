@@ -1841,6 +1841,7 @@
   const skrifNu = () => { try { return (window.RestSamnyting && RestSamnyting.skrif) ? RestSamnyting.skrif() : -1; } catch (_) { return -1; } };
   let _skrifVidHledslu = -2;
   async function backgroundRefresh() {
+    if (document.hidden) return;
     if (_bgRefreshing) return;
     const _aldur = Date.now() - _lastLoad;
     if (_aldur < 8000) return;   // rapid back-and-forth → skip the refetch

@@ -232,8 +232,13 @@
     if (r.error) { if (app) app.innerHTML = '<div class="skel" style="color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     TAEKI = {}; TENGD = null; TEIKN = null;
     try {
-      const u = await DB.fetchAll((from, to) => SB.from('uttaeki').select('id,fyrirtaeki_id').neq('status', 'urelt').order('id').range(from, to));
-      (u || []).forEach(x => { if (x.fyrirtaeki_id != null) TAEKI[x.fyrirtaeki_id] = (TAEKI[x.fyrirtaeki_id] || 0) + 1; });
+      const cached = window.DB && DB.cache && Array.isArray(DB.cache.units) ? DB.cache.units : null;
+      if (cached && cached.length) {
+        cached.forEach(x => { if (x && x.fyrirtaeki_id != null && String(x.status) !== 'urelt') TAEKI[x.fyrirtaeki_id] = (TAEKI[x.fyrirtaeki_id] || 0) + 1; });
+      } else {
+        const u = await DB.fetchAll((from, to) => SB.from('uttaeki').select('id,fyrirtaeki_id').neq('status', 'urelt').order('id').range(from, to));
+        (u || []).forEach(x => { if (x.fyrirtaeki_id != null) TAEKI[x.fyrirtaeki_id] = (TAEKI[x.fyrirtaeki_id] || 0) + 1; });
+      }
     } catch (_) {}
     try {
       const t = await DB.fetchAll((from, to) => SB.from('samskipti_tengd').select('fyrirtaeki_id,reiknad').order('fyrirtaeki_id').range(from, to));
