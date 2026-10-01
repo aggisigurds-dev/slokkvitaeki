@@ -37,7 +37,7 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | B47 | **Hreyfingar vinstra megin, Önnur viðhengi hægra megin** | Claude | ✅ KLÁRT (01.10): tveir dálkar í 403 (.b403-tvenna); tómur dálkur hverfur, einn dálkur undir 760 px. Mælt á 202: 655 + 655 px |
 | B50 | **„dökk græna metal senda takkann og more stylish takka“** — Skýrsla og reikningur saman | Claude | ✅ KLÁRT (01.10): Senda dökkgrænn málmur, Skýrsla/Reikningur silfur með línutáknum, emoji út (403 porTakkar); kortin 2 í röð (560 px) í stað 3 sem brutu textann; „Samtals“-forskeytið burt. Layout-shift 0 |
 | B51 | **„textarnir sjást illa þarna“** — KOMIÐ / 1 þjónusta á ársbandinu | Claude | ✅ KLÁRT (01.10): 313 las hálfgegnsæju merkin sem ljós og skrifaði dökkt blek → .b403-band og .b403-kafli á undanþágulista 313; stöðumerkið litað eftir stöðu |
-| B48 | Öpp-síðurnar samræmdar + layout + sími (Sími-hamur og Tölvusíðu-hamur) | Claude | ⏳ Í RÖÐ |
+| B48 | Öpp-síðurnar samræmdar + layout + sími (Sími-hamur og Tölvusíðu-hamur) | Claude | ✅ KLÁRT (01.10): ræsir, fylki, spjöld, síðuritill, app-skel og Stýriborð (354) í Brunastál C — engin emoji/blátt; dökka bandið nær yfir titilinn (409 málar hann hvítan); fylkið brýtur síðuheiti á síma (309 → 132 px); Opna yfir alla breiddina + 2 jafnir takkar (337). Mælt 1600 / 375 / 980×1940 krom 2,4: engin lárétt skrun, titill hvítur á dökku |
 | B49 | „Sækja inn úr fyrirtæki“ á Verkstæði í Brunastál — málmhaus m. hnoðum, stálplata, silfur/rauður takki, engin emoji; leitin heldur gildi eftir „Velja annað“ (122 v=20261001d, 313 SKIP #_sr-dialog). Prófað í Playwright 1600+375 px: leit, val Test fyrirtæki 1404, hök/Velja öll, til baka, ✕ | Claude | ✅ KLÁRT |
 
 ## 2026-09-30
