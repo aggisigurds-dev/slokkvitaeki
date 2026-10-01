@@ -1238,6 +1238,12 @@
       '.skn{width:100%;border:0;border-bottom:1px dashed transparent;background:transparent;font:700 14px var(--body);color:var(--ink);padding:3px 2px}.skn:focus{outline:none;border-bottom-color:var(--g6)}',
       '.skt{width:100%;border:0;background:transparent;font:13px/1.45 var(--body);color:var(--ink2);padding:2px;resize:vertical;min-height:38px}.skt:focus{outline:none;background:#fffdf7}',
       '.skm{display:flex;flex-direction:column;align-items:flex-start;gap:4px}.skm img{max-width:100%;max-height:160px;border-radius:3px;border:1px solid var(--rule2)}',
+      // 01.10.2026: tenglar og skjöl á spjaldi + merkið þegar skjal er dregið yfir.
+      '.skl{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:2px;min-width:0}',
+      '.skla{display:inline-block;max-width:100%;height:22px;line-height:20px;padding:0 8px;border:1px solid var(--rule3);border-radius:3px;background:linear-gradient(180deg,#fff,#efece6);font:600 11.5px/20px var(--body);color:var(--ink);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}',
+      '.skla:hover{border-color:var(--edge2)}.skfw{display:inline-flex;align-items:center;gap:1px;max-width:100%;min-width:0}',
+      '.skfx{border:0;background:none;color:var(--mute);cursor:pointer;font-size:11px;padding:0 3px}.skfx:hover{color:var(--ink)}',
+      '.skc.skjalyfir,.skgrid.skjalyfir{outline:2px dashed #b8770e;outline-offset:2px}',
       '.skf{font-size:11.5px;color:var(--mute)}.skstada{font-size:11.5px;color:var(--mute)}',
       '.sknew{min-height:96px;border:1px dashed var(--edge2);border-radius:4px;background:transparent;font:600 13px var(--body);color:var(--mute);cursor:pointer}.sknew:hover{background:#fffdf7;color:var(--ink)}',
       // 17.09.2026 (Agnar: „svolítið chaoslegt"): færri hnappar, meiri andrými,
@@ -3786,6 +3792,16 @@
       sale: null,
     };
   }
+  // Tenglar úr textanum + skjöl spjaldsins sem smellanlegar flögur undir textanum (01.10.2026).
+  function skFylgiHtml(id, texti, skjol) {
+    const tl = skTenglar(texti), sk = Array.isArray(skjol) ? skjol.filter(s => s && s.url) : [];
+    if (!tl.length && !sk.length) return '';
+    return '<div class="skl">' +
+      tl.map(u => '<a class="skla" href="' + esc(u) + '" target="_blank" rel="noopener noreferrer" title="' + esc(u) + '">' + esc(skTengilNafn(u)) + ' ›</a>').join('') +
+      sk.map(s => '<span class="skfw"><a class="skla" href="' + esc(s.url) + '" target="_blank" rel="noopener" title="' + esc(s.nafn || '') + '">' + esc(s.nafn || 'Skjal') + '</a>' +
+        '<button type="button" class="skfx" data-t5="sk-skjal-x" data-skid="' + id + '" data-u="' + esc(s.url) + '" aria-label="Taka ' + esc(s.nafn || 'skjal') + ' af spjaldinu" title="Taka af spjaldinu">✕</button></span>').join('') +
+      '</div>';
+  }
   function bottomHtml(k) {
     const n = nu();
     if (k === 'checklisti') return checklistiHtml(k);
@@ -3808,6 +3824,7 @@
             '<button type="button" class="skx" data-t5="sk-del" data-skid="' + id + '" aria-label="Eyða spjaldi" title="Eyða spjaldi">✕</button></div>' +
           '<input class="skn" data-sk="name" data-skid="' + id + '" value="' + esc(nafn) + '" placeholder="Fyrirsögn" aria-label="Fyrirsögn">' +
           '<textarea class="skt" data-sk="title" data-skid="' + id + '" rows="' + Math.min(8, Math.max(2, String(texti).split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er…" aria-label="Texti">' + esc(texti) + '</textarea>' +
+          skFylgiHtml(id, texti, cd.skjol) +
           (cd.mynd ? '<div class="skm"><a href="' + esc(cd.mynd) + '" target="_blank" rel="noopener"><img src="' + esc(cd.mynd) + '" alt="Mynd á spjaldi" loading="lazy"></a>' +
             '<button type="button" class="skb" data-t5="sk-mynd-x" data-skid="' + id + '">Fjarlægja mynd</button></div>' : '') +
           (cd.verkbord_id != null ? '<div class="skf">' + (row ? (row.important ? '<span class="tag hot">★ Áríðandi</span> ' : '') + '<button type="button" class="clink" data-t5="skoda" data-id="' + row.id + '">Opna mál ›</button> · ' + esc(eigandaTexti(row, n)) + ' ' + dagskrarTakki(row) : 'Málið er lokað eða í geymslu') + '</div>' : '') +
@@ -3816,7 +3833,7 @@
       // 19.09.2026 (Agnar: „það á bara að vera taflan"): áríðandi-listinn er farinn héðan í sína eigin einingu (25 Áríðandi).
       const body = '<div class="skwrap">' +
         '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny" draggable="true" data-skdrag="__ny" title="Smelltu — eða dragðu autt spjald þangað sem þú vilt hafa það">+ Nýtt spjald</button></div>' +
-        '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot beint í spjald.') + '</div></div>';
+        '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot í spjald, eða dragðu skjal eða tengil á það.') + '</div></div>';
       return modPanel(k, cards.length + ' spjöld', body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
     }
     if (k === 'postbeidnir') {
@@ -4780,6 +4797,26 @@
         return;
       }
     }
+    // 01.10.2026: skjal eða tengill utan úr stýrikerfinu/vafranum — kemur hvorki með S.skDrag né S.hamDrag.
+    const dt = e.dataTransfer;
+    const ytri = !S.skDrag && !S.hamDrag && dt && Array.from(dt.types || []).some(x => x === 'Files' || x === 'text/uri-list');
+    if (ytri && (e.type === 'dragover' || e.type === 'drop')) {
+      const kortY = t && t.closest ? t.closest('.skc') : null;
+      const svaedi = t && t.closest ? t.closest('.skwrap') : null;
+      if (!kortY && !svaedi) return;
+      e.preventDefault();
+      if (e.type === 'dragover') {
+        try { dt.dropEffect = 'copy'; } catch (_) {}
+        merkjaSkjalYfir(kortY || svaedi.querySelector('.skgrid'));
+        return;
+      }
+      merkjaSkjalYfir(null);
+      const skrar = Array.from(dt.files || []);        // afritað STRAX — FileList tæmist eftir atburðinn
+      if (skrar.length) { if (kortY) hladaSkjolumASpjald(kortY.dataset.skid, skrar); else nyttSpjaldMedSkjolum(skrar); return; }
+      const url = String(dt.getData('text/uri-list') || dt.getData('text/plain') || '').split(/\r?\n/).map(x => x.trim()).find(x => /^https?:\/\//i.test(x));
+      if (url && kortY) tengillASpjald(kortY.dataset.skid, url);
+      return;
+    }
     if (e.type === 'dragstart') {
       const g = t && t.closest ? t.closest('[data-skdrag]') : null;
       if (!g) return;
@@ -4820,6 +4857,93 @@
       S.skDrag = null;
       root.querySelectorAll('.skc.yfir, .skgrid.yfir').forEach(x => x.classList.remove('yfir'));
     }
+  }
+
+  // 01.10.2026 (Agnar: „opnað á möguleikann að maður geti dregið skjal inn á Spjald" · „sett inn linka þarna á td
+  // póst … sem sendir mann á póstinn sem um ræðir"). Skjal dregið á spjald fer í sama hólf og límdar myndir
+  // (verkbord-files/skipulag/) og bætist í cd.skjol = [{ nafn, url, teg }] — spjald sem á enga mynd fær fyrstu
+  // myndina sem `mynd`, eins og líming. Fellt á autt svæði = nýtt spjald með skjalinu. Tengill dreginn á spjald
+  // bætist í textann, og tenglar í textanum birtast smellanlegir undir honum (skTenglar).
+  const SK_HAMARK = 25 * 1024 * 1024;
+  const skSafeNafn = s => String(s || 'skjal').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[ðÐ]/g, 'd').replace(/[þÞ]/g, 'th').replace(/[æÆ]/g, 'ae').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80) || 'skjal';
+  const SK_URL = /\bhttps?:\/\/[^\s<>"']+/gi;
+  function skTenglar(texti) {
+    const sed = new Set();
+    return (String(texti || '').match(SK_URL) || []).map(u => u.replace(/[),.;:!?]+$/, ''))
+      .filter(u => { if (sed.has(u)) return false; sed.add(u); return true; }).slice(0, 8);
+  }
+  function skTengilNafn(u) {
+    let h = '';
+    try { h = new URL(u).hostname.replace(/^www\./, ''); } catch (_) { return 'Tengill'; }
+    if (h === 'mail.google.com') return 'Gmail-póstur';
+    if (h === 'drive.google.com') return 'Google Drive';
+    if (h === 'docs.google.com') return 'Google-skjal';
+    return h;
+  }
+  async function hladaSkjolumASpjald(sid, skrar) {
+    const c = sb();
+    if (!c) { toast('Engin tenging — skjalið vistaðist ekki.', true); return; }
+    const listi = (skrar || []).filter(f => f && f.size);
+    const ofstor = listi.filter(f => f.size > SK_HAMARK);
+    if (ofstor.length) toast(ofstor.map(f => f.name).join(', ') + ' — of stórt (hámark 25 MB).', true);
+    const komin = [];
+    for (const f of listi.filter(f => f.size <= SK_HAMARK)) {
+      toast('Hleð upp ' + (f.name || 'skjali') + '…');
+      const slod = 'skipulag/' + sid + '-' + Date.now() + '-' + skSafeNafn(f.name);
+      try {
+        const up = await c.storage.from('verkbord-files').upload(slod, f, { contentType: f.type || 'application/octet-stream', upsert: false });
+        if (up.error) throw up.error;
+        const url = ((c.storage.from('verkbord-files').getPublicUrl(slod) || {}).data || {}).publicUrl;
+        if (!url) throw new Error('engin slóð');
+        komin.push({ nafn: f.name || 'skjal', url, teg: f.type || '' });
+      } catch (err) { toast((f.name || 'Skjalið') + ' vistaðist ekki: ' + ((err && err.message) || err), true); }
+    }
+    if (!komin.length) return;
+    await vistaSpjold(l => {
+      const cd = l.find(x => x.id === sid);
+      if (!cd) return l;
+      const skjol = Array.isArray(cd.skjol) ? cd.skjol.slice() : [];
+      komin.forEach(s => { if (!cd.mynd && /^image\//.test(s.teg)) cd.mynd = s.url; else skjol.push(s); });
+      cd.skjol = skjol;
+      return l;
+    }, komin.length === 1 ? '„' + komin[0].nafn + '" er komið á spjaldið' : komin.length + ' skjöl komin á spjaldið');
+    render();
+  }
+  async function nyttSpjaldMedSkjolum(skrar) {
+    let nyId = null;
+    S.open[openKey('skipulag')] = true;
+    const ok = await vistaSpjold(l => {
+      const ny = nyttSpjaldHlutur(l);
+      ny.name = String((skrar[0] && skrar[0].name) || '').replace(/\.[^.]+$/, '').slice(0, 60);
+      nyId = ny.id;
+      l.push(ny);
+      return l;
+    });
+    if (ok && nyId) await hladaSkjolumASpjald(nyId, skrar);
+    render();
+  }
+  function tengillASpjald(sid, url) {
+    vistaSpjold(l => {
+      const cd = l.find(x => x.id === sid);
+      if (!cd) return l;
+      const nyr = (cd.title ? String(cd.title).replace(/\s+$/, '') + '\n' : '') + url;
+      cd.title = nyr;
+      // Drög í ritun myndu annars skrifa gamla textann yfir tengilinn í næstu vistun.
+      if (S.skDrog[sid] && S.skDrog[sid].title != null) S.skDrog[sid].title = nyr;
+      return l;
+    }, 'Tengillinn er kominn á spjaldið').then(render);
+  }
+  let _skjalYfirT = null;
+  function merkjaSkjalYfir(el) {
+    const root = rot();
+    if (!root) return;
+    root.querySelectorAll('.skjalyfir').forEach(x => { if (x !== el) x.classList.remove('skjalyfir'); });
+    clearTimeout(_skjalYfirT);
+    if (!el) return;
+    el.classList.add('skjalyfir');
+    // Skrá utan úr stýrikerfinu fær ekkert dragend — merkið fer þegar dragover hættir að berast.
+    _skjalYfirT = setTimeout(() => merkjaSkjalYfir(null), 250);
   }
 
   async function onPaste(e) {
@@ -5263,6 +5387,17 @@
         // Ræman hringar: enginn litur -> fyrsti -> … -> síðasti -> enginn litur.
         const sid = el.dataset.skid;
         vistaSpjold(l => { const cd = l.find(x => x.id === sid); if (cd) { const nyr = cd.type == null ? 0 : cd.type + 1; cd.type = nyr >= SB_TEG.length ? null : nyr; } return l; }).then(render);
+        return;
+      }
+      case 'sk-skjal-x': {
+        const sid = el.dataset.skid, u = el.dataset.u;
+        let tekid = null;
+        vistaSpjold(l => {
+          const cd = l.find(x => x.id === sid);
+          const j = cd && Array.isArray(cd.skjol) ? cd.skjol.findIndex(s => s && s.url === u) : -1;
+          if (j >= 0) { cd.skjol = cd.skjol.slice(); tekid = cd.skjol.splice(j, 1)[0]; }
+          return l;
+        }).then(ok => { if (ok && tekid) toast('„' + (tekid.nafn || 'Skjalið') + '" tekið af spjaldinu'); render(); });
         return;
       }
       case 'sk-mynd-x': {
