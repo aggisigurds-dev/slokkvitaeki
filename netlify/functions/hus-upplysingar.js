@@ -63,10 +63,13 @@ const KJARNI = process.env.KJARNI_TEIKNINGAR_API || 'https://slokkvitaeki.vercel
 const TURBOPAINT = 'https://slokkvitaeki.vercel.app/kjarni/turbopaint';
 
 const RVK_POSTNR = new Set([101, 102, 103, 104, 105, 107, 108, 109, 110, 111, 112, 113, 116, 121, 123, 124, 125, 127, 128, 129, 130, 132, 155, 161, 162]);
+const MAPIS_BASE = 'https://www.map.is';
 const MAPIS = [
   { svf: 1000, nafn: 'Kópavogur', kort: 'Kortasjá Kópavogs', postnr: [200, 201, 202, 203] },
   { svf: 1300, nafn: 'Garðabær', kort: 'Kortasjá Garðabæjar', postnr: [210, 211, 212, 225] },
   { svf: 1400, nafn: 'Hafnarfjörður', kort: 'Kortasjá Hafnarfjarðar', postnr: [220, 221] },
+  // 170 er Seltjarnarnes (SVFNR 1100), ekki Reykjavík. Kortasjáin er opin á map.is.
+  { svf: 1100, nafn: 'Seltjarnarnes', kort: 'Kortasjá Seltjarnarness', postnr: [170], slug: 'seltjarnarnes', bein: true },
 ];
 
 const cors = {
@@ -221,10 +224,99 @@ function samaSvaedi(h, row) {
 
 function heimildFyrir(postnr, svfnr) {
   const sv = svaediFyrir(postnr, svfnr);
-  if (sv === 'rvk') return { heimild: 'reykjavik', svf: null, nafn: 'Skjalasafn Reykjavíkur' };
+  if (sv === 'rvk') return { heimild: 'reykjavik', svf: null, nafn: 'Skjalasafn Reykjavíkur', slug: null, bein: false };
   const m = MAPIS.find((x) => x.svf === sv);
-  if (m) return { heimild: 'map.is', svf: m.svf, nafn: m.kort };
-  return { heimild: null, svf: null, nafn: null };
+  if (m) return { heimild: 'map.is', svf: m.svf, nafn: m.kort, slug: m.slug || null, bein: !!m.bein };
+  return { heimild: null, svf: null, nafn: null, slug: null, bein: false };
+}
+
+/** Raflagnir, lagnir og burðarþol út úr lýsingu kortasjárinnar. Annað er aðaluppdráttur. */
+export function flokkurTeikningar(row) {
+  const texti = `${row.tegund || ''} ${row.gerd || ''} ${row.lysing || ''}`;
+  if (/raf(lagn|lögn|magn|tök)/i.test(texti)) return 'raflagnir';
+  if (/burðarþol|járnlögn/i.test(texti)) return 'burdarthol';
+  if (/lagn|hital|vatnsl|sk[oó]lp|holræs|fráveit|fraveit/i.test(texti)) return 'lagnir';
+  return 'adal';
+}
+
+function mapisRod(row) {
+  const infoUrl = String(row.online_path || '');
+  if (!/^https:\/\//i.test(infoUrl)) return null;
+  const flokkur = flokkurTeikningar(row);
+  const lysing = String(row.lysing || row.gerd || row.tegund || 'Teikning');
+  const haedir = [];
+  const haed = /(\d{1,2})\s*\.\s*hæð/gi;
+  let hm;
+  while ((hm = haed.exec(lysing))) {
+    const n = Number(hm[1]);
+    if (n > 0 && n < 60) haedir.push(n);
+  }
+  return {
+    filename: decodeURIComponent(infoUrl.split('/').pop() || 'teikning.pdf'),
+    infoUrl,
+    thumb: null,
+    lysing,
+    tegund: row.tegund || null,
+    gerd: row.gerd || null,
+    dags: row.dagsetning || null,
+    stada: row.status || null,
+    urelt: row.status === 'Ó' || row.status === 'F',
+    grunnmynd: flokkur === 'adal' && /grunnmynd/i.test(`${lysing} ${row.gerd || ''}`),
+    flokkur,
+    haed: haedir,
+    stig: /kjall/i.test(lysing) ? ['Kjallari'] : [],
+    kjallari: /kjall/i.test(lysing),
+    gata: null,
+  };
+}
+
+function teljaFlokka(results) {
+  const n = { adal: 0, raflagnir: 0, lagnir: 0, burdarthol: 0 };
+  for (const t of results) if (n[t.flokkur] != null) n[t.flokkur] += 1;
+  return n;
+}
+
+async function mapisSeta(slug) {
+  const res = await fetch(`${MAPIS_BASE}/${slug}/`, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Slokkvitaeki/1.0)', Accept: 'text/html' },
+    redirect: 'follow',
+  });
+  if (!res.ok) throw new Error('map.is svaraði ' + res.status);
+  const html = await res.text();
+  const token = (html.match(/config\.t\s*=\s*"([a-z0-9]{20,})"/) || [])[1];
+  if (!token) throw new Error('Fann ekki lykil kortasjárinnar');
+  const raw = typeof res.headers.getSetCookie === 'function'
+    ? res.headers.getSetCookie()
+    : [res.headers.get('set-cookie') || ''];
+  const cookie = raw.map((c) => String(c).split(';')[0].trim()).filter(Boolean).join('; ');
+  if (!/PHPSESSID=/.test(cookie)) throw new Error('Kortasjáin gaf enga setu');
+  return { cookie, token };
+}
+
+/** Bein kortasjá (Seltjarnarnes). Kjarni þekkir ekki SVFNR 1100. */
+async function mapisTeikningarBeint(landnr, heitinr, hm, deadline) {
+  const s = await mapisSeta(hm.slug);
+  const url = `${MAPIS_BASE}/webservice/queryTeiknigrunn.php?landnumer=${landnr}`
+    + `&svfnr=${hm.svf}&heitinumer=${heitinr}&t=${s.token}`;
+  const r = await fetch(url, {
+    headers: {
+      Cookie: s.cookie,
+      Referer: `${MAPIS_BASE}/${hm.slug}/`,
+      'User-Agent': 'Mozilla/5.0 (Slokkvitaeki/1.0)',
+      'X-Requested-With': 'XMLHttpRequest',
+      Accept: 'application/json, text/plain, */*',
+    },
+    signal: frestur(deadline, 8000),
+  });
+  const text = await r.text();
+  if (!r.ok) throw new Error('Kortasjáin svaraði ' + r.status);
+  const trim = text.trim();
+  if (!trim.startsWith('[')) {
+    if (/Engar niðurstöður/i.test(trim)) return [];
+    throw new Error('Kortasjáin svaraði óvænt');
+  }
+  const rows = JSON.parse(trim);
+  return (Array.isArray(rows) ? rows : []).map(mapisRod).filter(Boolean);
 }
 
 /** „Borgartún 8-16A" → { gata:'borgartun', fra:8, til:16 } — bókstafslaus lykill fyrir samanburð. */
@@ -326,7 +418,29 @@ export async function husUpplysingar(heimilisfang, frestMs = FRESTUR_MS) {
   const turbopaint = `${TURBOPAINT}?leit=${encodeURIComponent(label)}`;
 
   if (!hm.heimild) {
-    return { eign, tillogur: {}, teikningar: null, heimild: null, turbopaint, athugasemd: 'Ekkert teikningasafn tengt þessu póstnúmeri (Reykjavík, Kópavogur, Garðabær, Hafnarfjörður).' };
+    return { eign, tillogur: {}, teikningar: { fjoldi: 0, flokkar: teljaFlokka([]) }, heimild: null, turbopaint, athugasemd: 'engin teikning fannst' };
+  }
+  if (hm.bein) {
+    if (!eign.heitinr) {
+      return { eign, tillogur: {}, teikningar: { fjoldi: 0, flokkar: teljaFlokka([]) }, heimild: hm.nafn, turbopaint, athugasemd: 'engin teikning fannst' };
+    }
+    let results;
+    try {
+      results = await mapisTeikningarBeint(eign.landnr, eign.heitinr, hm, deadline);
+    } catch (e) {
+      const timi = e && (e.name === 'TimeoutError' || e.name === 'AbortError');
+      return { eign, tillogur: {}, teikningar: null, heimild: hm.nafn, turbopaint, error: timi ? 'Teikningaþjónustan svaraði ekki í tæka tíð' : ((e && e.message) || 'Náði ekki í teikningasafnið'), reynaAftur: true };
+    }
+    const flokkar = teljaFlokka(results);
+    const { tillogur, teikningar } = tillogurUrTeikningum(results, oviss ? null : label);
+    teikningar.flokkar = flokkar;
+    const svar = {
+      eign, tillogur, teikningar, flokkar, results,
+      heimild: results.length ? lysaHeimild(hm.nafn, teikningar, label) : `${hm.nafn} · engar teikningar skráðar`,
+      turbopaint,
+    };
+    if (!results.length) svar.athugasemd = 'engin teikning fannst';
+    return svar;
   }
   const q = hm.heimild === 'reykjavik'
     ? `landnr=${eign.landnr}`
