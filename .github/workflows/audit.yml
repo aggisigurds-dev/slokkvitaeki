@@ -70,6 +70,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      # audit-agentar.cjs telur vísun dauða nema skráin sé hér EÐA í Brunahólfi
+      # (../brunaholf á vélunum fjórum). Actions klónar aðeins þetta repo, svo
+      # þrjár réttar systur-skrár (REIKNINGALOTA, BROWSER-MCP-SETUP, company-mail)
+      # litu út eins og klipptir vírar. Repóið er opið. Ekki hvítlista slóðirnar.
+      - name: Sækja Brunahólf (systur-skrár)
+        run: git clone --depth 1 https://github.com/aggisigurds-dev/brunaholf.git .sister/brunaholf
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
