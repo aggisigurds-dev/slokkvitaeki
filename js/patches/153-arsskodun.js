@@ -3295,6 +3295,13 @@
     const pnrNote = (!state.search.trim() && state.postnr !== null) ? ` · ${esc(postnrFilterLabel())}` : '';
     const searchNote = (state.search.trim() ? ` · leit: “${esc(state.search.trim())}”` : '') + pnrNote;
 
+    // 01.10.2026 (Agnar prentaði október í skammsniði: „það má þétta vel ársgluggana 4"): dálkar sem segja ekkert
+    // eru faldir — Skoðun ef allar raðir eru í sama mánuði (sían segir mánuðinn í hausnum), 🚗/❗ ef engin röð ber gildi.
+    const _manudir = new Set(arr.map(c => +((c._ars || {}).inspect_month) || 0));
+    const synaSkodun = _manudir.size > 1;
+    const synaAkstur = arr.some(c => ((window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+((c._ars || {}).akstur) || 0)) > 0);
+    const synaForgang = arr.some(c => (+((c._ars || {}).priority) || 0) > 0);
+    const AR = (window.InserviceRowReports && window.InserviceRowReports.YEARS) || ['2023', '2024', '2025', '2026'];
     let totalEst = 0;
     const rows = arr.map((c, i) => {
       const ars = c._ars || {};
@@ -3322,17 +3329,18 @@
       // svo prentaði listinn passar við það sem er á skjánum.
       const yi = (window.InserviceRowReports && window.InserviceRowReports.yearInfo) ? window.InserviceRowReports.yearInfo(c) : {};
       // 21.09.2026 (úttekt): ártölin voru harðkóðuð hér — nú sömu rúllandi ár og 187 sýnir á skjánum.
-      const yearBadges = ((window.InserviceRowReports && window.InserviceRowReports.YEARS) || ['2023', '2024', '2025', '2026']).map(y => {
+      // 01.10.2026: fjórir ársreitir urðu EINN mjór reitur — litaður ferningur per ár (grænt = skýrsla, gult = á
+      // eftir, grátt = ekkert) og strik undir = reikningur tengdur (var 🧾 sem tók eigið pláss). Skýring í hausnum.
+      const yearBadges = AR.map(y => {
         const info = yi[y] || {};
         const done = !!info.has, due = !done && !!info.due;
         const bg = done ? '#DBEEE3' : (due ? '#FBEAC6' : '#F0EFEA');
-        const bd = done ? 'rgba(28,143,96,.35)' : (due ? 'rgba(217,146,6,.5)' : '#E2DFD6');
+        const bd = done ? 'rgba(28,143,96,.45)' : (due ? 'rgba(217,146,6,.55)' : '#E2DFD6');
         const col = done ? '#0F5E3F' : (due ? '#8A5C04' : '#B9B6AC');
-        const dc  = done ? '#1C8F60' : (due ? '#D99206' : 'transparent');
-        const reik = info.reik ? '<span class="reik" title="Reikningur tengdur">🧾</span>' : '';
-        return `<span class="yrtag" style="background:${bg};border-color:${bd};color:${col}"><span class="yrdot" style="background:${dc}"></span>${y.slice(-2)}</span>${reik}`;
+        const tit = '20' + y.slice(-2) + ': ' + (done ? 'skýrsla' : (due ? 'á eftir' : 'ekkert')) + (info.reik ? ' · reikningur tengdur' : '');
+        return `<span class="yrtag${info.reik ? ' reik' : ''}" style="background:${bg};border-color:${bd};color:${col}" title="${tit}">${y.slice(-2)}</span>`;
       });
-      const yearCells = yearBadges.map(h => `<td class="yr">${h}</td>`).join('');   // fullt: 4 reitir (aðeins skrifstofu-prentun)
+      const yearCells = `<td class="yrs">${yearBadges.join('')}</td>`;   // fullt: einn reitur (aðeins skrifstofu-prentun)
       // Aksturslisti (bílstjóra-númer) — sama gildi og chip-inn á skjánum
       const akv = (window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+ars.akstur || 0);
       const aksturCell = `<td class="c">${akv ? `<span class="akstur">🚗${akv}</span>` : ''}</td>`;
@@ -3357,11 +3365,11 @@
         ${yearCells}
         <td>${esc(c.heimilisfang || '')}</td>
         <td class="nowrap">${esc(phone)}</td>
-        <td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>
+        ${synaSkodun ? `<td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>` : ''}
         <td class="c nowrap">${eqTrioHtml(ars.equipment, 'print') || ''}</td>
         <td class="r">${est ? fmtKr(est) : ''}</td>
-        ${aksturCell}
-        ${priCell}
+        ${synaAkstur ? aksturCell : ''}
+        ${synaForgang ? priCell : ''}
         ${stCell}
       </tr>`;
     }).join('');
