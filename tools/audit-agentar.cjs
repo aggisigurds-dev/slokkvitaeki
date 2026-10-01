@@ -50,8 +50,9 @@ const VISAR = /(js\/patches\/[0-9A-Za-z_\-.]+\.js|netlify\/functions\/[0-9A-Za-z
 
 // Systur-repóið. Agentarnir þjóna báðum öppunum og vísa réttilega í skrár
 // þar — `netlify/functions/company-mail.js` er í Brunahólfi, ekki hér.
-// CI klónar það í .sister/brunaholf (sjá .github/workflows/audit.yml) því
+// CI klónar það í ../brunaholf (sjá .github/workflows/audit.yml) því
 // Actions hefur ekki möppuna við hliðina eins og vélarnar fjórar.
+// Ekki inn í tréð — þá telur audit-vafrastada Brunahólf með hér.
 function finnaSystur() {
   const frambod = [
     process.env.BRUNAHOLF_ROOT,
