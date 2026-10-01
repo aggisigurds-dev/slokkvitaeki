@@ -421,7 +421,7 @@
   }
 
   /* ── gögn ── */
-  const SEL = 'id,title,notes,summary,status,type,important,due_at,created_at,updated_at,source,channel_ref,assigned_to,customer_base_id,fyrirtaeki_id,customer_nafn,svarad_at,tags,flokkur,attachment_url';
+  const SEL = 'id,title,notes,summary,status,type,important,due_at,created_at,updated_at,source,channel_ref,assigned_to,customer_base_id,fyrirtaeki_id,customer_nafn,svarad_at,tags,flokkur,attachment_url,sonnun,sonnun_at';
   let _sig = '', _aftur = false, _dbBid = 0, _dbT = 0;
   // Könnunin á 60 s fresti teiknar AÐEINS ef eitthvað breyttist — annars myndi hún rugla skrun
   // í pósti sem verið er að lesa. Sóttímanum er skipt út beint.
@@ -650,7 +650,7 @@
   // Síur: allt/post/beidni/hot velja úr Master · 'oll' = öll opin mál · 'p:<nafn>' = borð eins
   // starfsmanns · 'f:<id>' = opin mál eins fyrirtækis.
   const serSia = f => f === 'oll' || /^[pf]:/.test(f);
-  const matchFilter = (r, f) => f === 'allt' || serSia(f) || (f === 'buid' ? !!virkniEftir(r) : f === 'hot' ? !!r.important : f === 'post' ? isPost(r) : !isPost(r));
+  const matchFilter = (r, f) => f === 'allt' || serSia(f) || (f === 'buid' ? (erBuid(r) || !!(sonn(r) && sonn(r).liklega) || !!virkniEftir(r)) : f === 'hot' ? !!r.important : f === 'post' ? isPost(r) : !isPost(r));
   function feedRows(master) {
     const f = S.filter;
     if (f === 'oll') return S.rows.slice().sort(rodun);
@@ -1097,6 +1097,10 @@
       '.stitle{font-family:var(--disp);font-size:23px;font-weight:800;line-height:1.15;color:var(--on);overflow-wrap:anywhere}',
       '.smeta{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--on2);overflow-wrap:anywhere}',
       '.aisum{font-size:12.5px;line-height:1.55;color:var(--on2)}.aisum .slabel{margin-right:8px}',
+      '.aisum.stada .nsk{display:block;margin-top:3px}.aisum.stada .nsk.m{font-size:11px;opacity:.7}.aisum.stada.buid{color:#8fd3a6}',
+      '.naesta{margin:4px 0 2px;font-size:12.5px;line-height:1.45;color:var(--ink2)}.naesta b{font-weight:700;color:var(--ink)}',
+      '.naesta.buid,.naesta.buid b{color:var(--green)}.naesta.lik b{color:var(--gink)}',
+      '.samt-sonn{font-weight:600}.samt-sonn.ok{color:var(--green)}',
       '.well{border:1px solid #000;border-radius:4px;background:var(--dwell);box-shadow:var(--dwellsh);padding:12px 14px}',
       '.well p{margin:7px 0 0;font-size:13px;line-height:1.6;color:#efe9da;white-space:pre-line;overflow-wrap:anywhere;max-height:260px;overflow:auto}',
       '.sacts{display:flex;gap:8px;flex-wrap:wrap}',
@@ -1133,7 +1137,7 @@
       // FELA (11.09.2026): dauft en lyklaborðsnothæft — full sýn og undirstrik við sveimun og fókus.
       '.radg{display:inline-flex;flex-wrap:wrap;gap:4px 12px;align-items:center}.radg.lina{display:flex;margin-top:6px}',
       '@media (max-width:760px),(pointer:coarse){.fela.adg{min-height:36px;padding:8px 4px;font-size:12.5px}.radg{gap:2px 16px}}',
-      '.fela.adg{opacity:.85;font-weight:600;padding:3px 0;min-height:24px}.fela.adg:hover{opacity:1;text-decoration:underline}.fela.adg.eyda{color:var(--hot,#b42318)}.fela.adg[disabled]{opacity:.35;cursor:default}',
+      '.fela.adg{opacity:.85;font-weight:600;padding:3px 0;min-height:24px}.fela.adg:hover{opacity:1;text-decoration:underline}.fela.adg.eyda{color:var(--hot,#b42318)}.fela.adg.stad{color:var(--gink);opacity:1}.fela.adg[disabled]{opacity:.35;cursor:default}',
       '.fela{display:inline;padding:0;margin:0;border:0;background:none;font:500 11px var(--body);letter-spacing:0;text-transform:none;color:var(--mute);opacity:.6;cursor:pointer}',
       '.fela:hover,.fela:focus-visible{opacity:1;text-decoration:underline;text-underline-offset:2px}',
       '.fela.syna{font-size:12px;opacity:1;text-decoration:underline;text-decoration-color:var(--rule3);text-underline-offset:2px}.fela.syna:hover,.fela.syna:focus-visible{color:var(--ink);text-decoration-color:var(--g6)}',
@@ -1430,6 +1434,36 @@
     if (sk && tStamp(sk.dags) > upphaf) eftir.push('skýrsla');
     return eftir.length ? eftir : null;
   }
+  // 368z4 (01.10.2026, Agnar: „atriðin senda mig áfram á þann stað sem ég get klárað málið"): sönnun, næsta skref og
+  // tengill eru reiknuð á þjóninum (thjb_sonnun_reikna, sql/thjonustubeidni_sonnun.sql) og haldast nýjar án borðsins:
+  // krókar á solur / sara_yfirferd / email_digest setja málið í biðröð sem pg_cron vinnur á mínútu fresti.
+  // buid = gögnin sýna að málið er afgreitt · liklega = sala hjá kúnnanum eftir stofnun · upplysing = aðeins staða sölu.
+  const sonn = r => (r && r.sonnun && typeof r.sonnun === 'object') ? r.sonnun : null;
+  const erBuid = r => !!(sonn(r) && sonn(r).buid);
+  const TENGILL_TEXTI = { sala: t => 'Opna ' + (t.num || 'söluna') + ' ›', sara: () => 'Opna vinnublaðið ›', post: () => 'Opna póstinn ›',
+    payday: () => 'Opna í Payday ↗', fyrirtaeki: () => 'Opna fyrirtækið ›' };
+  function stadTakki(r, cls) {
+    const s = sonn(r), t = s && s.tengill;
+    if (!t || !TENGILL_TEXTI[t.teg]) return '';
+    return '<button type="button" class="' + (cls || 'btn iv sm') + '" data-t5="stad-opna" data-id="' + r.id + '" title="' +
+      esc(s.naesta || 'Fara þangað sem málið er klárað') + '">' + esc(TENGILL_TEXTI[t.teg](t)) + '</button>';
+  }
+  // Ein lína: hvað gögnin segja + næsta skref. Kemur í stað „Svarað" / „Líklega afgreitt" merkjanna.
+  function naestaHtml(r) {
+    const s = sonn(r);
+    if (!s || (!s.texti && !s.naesta)) return '';
+    return '<div class="naesta' + (s.buid ? ' buid' : s.liklega ? ' lik' : '') + '">' + (s.buid ? '✓ ' : '') +
+      (s.texti ? '<b>' + esc(s.texti) + '</b>' : '') + (s.naesta && !s.buid ? (s.texti ? ' — ' : '') + esc(s.naesta) : '') + '</div>';
+  }
+  function stadaHtml(r) {
+    const s = sonn(r);
+    if (!s || (!s.texti && !s.naesta)) return '';
+    return '<div class="aisum stada' + (s.buid ? ' buid' : '') + '"><span class="slabel">Staða úr gögnum</span>' +
+      (s.texti ? (s.buid ? '✓ ' : '') + esc(s.texti) : '') +
+      (s.naesta ? '<span class="nsk">Næsta skref: ' + esc(s.naesta) + '</span>' : '') +
+      (r.sonnun_at ? '<span class="nsk m">Staðan breyttist síðast ' + esc(fmtD(r.sonnun_at)) + ' kl. ' + klukka(new Date(r.sonnun_at)) + ' · metin sjálfkrafa</span>' : '') +
+    '</div>';
+  }
   const kr = x => Math.round(Number(x) || 0).toLocaleString('is-IS').replace(/,/g, '.') + ' kr.';
   function sagaHtml(r) {
     if (!isOn('saga') || !r.customer_base_id) return '';
@@ -1473,6 +1507,8 @@
         isPost(r) ? (r.svarad_at ? 'svarað ' + dd(r.svarad_at) : 'ósvarað') : '',
         // Eldri saga er EKKI send: líkanið las hana sem „búið" (prófað 11.09, 6/6 röng). Hún sést í spjaldinu.
         eftir.length ? 'SAGA EFTIR STOFNUN: ' + eftir.join(', ') : '',
+        // 368z4: staðan sem þjónninn las úr sölu / vinnublaði / pósti — staðreynd, ekki ágiskun
+        sonn(r) && sonn(r).texti ? 'STAÐA ÚR GÖGNUM: ' + sonn(r).texti + (sonn(r).buid ? ' (afgreitt)' : '') + (sonn(r).naesta ? ' — næsta skref: ' + sonn(r).naesta : '') : '',
         texti ? 'TEXTI: ' + texti : ''].filter(Boolean).join(' · ');
       const res = await fetch('/api/tv-summary', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ items: [{ id: r.id, customer_nafn: whereOf(r), type: tegMals(r), title: r.title || '', notes }] }) });
@@ -1481,7 +1517,7 @@
       const txt = String((data.summaries || {})[String(r.id)] || '').trim();
       if (!txt) { toast('Engin tillaga kom til baka.', true); return; }
       // Borðið veit hvort eitthvað kom eftir stofnun — það ræður, ekki líkanið.
-      if (!eftir.length && /l[ií]klega\s+b[uú]i[ðd]/i.test(txt)) {
+      if (!eftir.length && !erBuid(r) && !(sonn(r) && sonn(r).liklega) && /l[ií]klega\s+b[uú]i[ðd]/i.test(txt)) {
         toast('Tillagan sagði „Líklega búið" en engin sala eða skýrsla kom eftir að málið varð til — ekki vistað.', true);
         return;
       }
@@ -1511,14 +1547,63 @@
     if (skil != null) toast(skil === -1 ? 'Sagan var uppfærð fyrir innan við mínútu — sýni nýjustu stöðu.' : 'Saga fyrirtækja uppfærð');
   }
 
+  // „Opna ›": þangað sem málið er klárað. Sala → söluritillinn (371, skrifar ekkert við opnun); vinnublað → Vinnublöð
+  // með málið valið; póstur → málið sjálft með „Svara í sama þræði"; Payday → reikningurinn; annars fyrirtækið.
+  function opnaStad(r, c) {
+    const s = sonn(r), t = s && s.tengill;
+    if (!r || !t) return;
+    if (t.teg === 'sala') {
+      if (window.OpnaSolu && OpnaSolu.opna) OpnaSolu.opna(+t.id);
+      else toast('Söluritillinn er ekki hlaðinn — leitaðu að ' + (t.num || 'sölunni') + ' í Drögum eða Bókhaldi.', true);
+      return;
+    }
+    if (t.teg === 'sara') {
+      if (!stillingarTilbunar()) { toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return; }
+      c.mode = VBR_HAM;
+      S.vbrVal = r.id;
+      if (s.buid) S.vbrBuin = true;          // klárað blað er falið nema „búin" sé sýnd
+      S.view = 'master';
+      render();
+      vistaCfg({ mode: c.mode });
+      return;
+    }
+    if (t.teg === 'post') {
+      S.sel[nu()] = r.id;
+      S.selFra = c.mode;
+      if (!c.baraMitt) S.view = onBoardOf(r, nu()) ? 'mitt' : 'master';
+      render();
+      synaVal();
+      return;
+    }
+    if (t.teg === 'payday') {
+      if (/^https:\/\/app\.payday\.is\//.test(String(t.url || ''))) window.open(t.url, '_blank', 'noopener');
+      return;
+    }
+    if (t.teg === 'fyrirtaeki' && t.id) openCompany(t.id);
+  }
+  async function endurmeta() {
+    const c = sb();
+    if (!c || S.endurmatBid) return;
+    S.endurmatBid = true;
+    render();
+    let d = null;
+    try { const r = await c.rpc('thjonustubeidni_endurmeta'); if (r.error) throw r.error; d = r.data || {}; }
+    catch (e) { toast('Endurmatið tókst ekki: ' + ((e && e.message) || e), true); }
+    S.endurmatBid = false;
+    await load(true);
+    render();                                  // load(true) teiknar ekki ef ekkert breyttist — takkinn sæti á „Met…"
+    if (d) toast('Endurmetið: ' + (d.metin || 0) + ' opin mál · ' + (d.buid || 0) + ' sannanlega afgreidd' + (d.breytt ? ' · ' + d.breytt + ' breyttust' : ' · engin breyting'));
+  }
+
   function feedRow(r, valid) {
     const a = ageDays(r), sam = linur(samantekt(r), 4).slice(0, 600), n = nu(), w = fyrLink(r);
     const tags = samtMerki(r) +
       (r.important ? '<span class="tag hot">Áríðandi</span>' : '') +
       (r.due_at ? '<span class="tag">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
       (r.status === 'i_vinnslu' ? '<span class="tag">Í vinnslu</span>' : '') +
-      (isPost(r) && r.svarad_at ? '<span class="tag ok">Svarað</span>' : '') +
-      (virkniEftir(r) ? '<span class="tag ok" title="Reikningur, sala eða skýrsla eftir að málið varð til">Líklega afgreitt</span>' : '') +
+      (sonn(r) && sonn(r).texti ? '' :
+        (isPost(r) && r.svarad_at ? '<span class="tag ok">Svarað</span>' : '') +
+        (virkniEftir(r) ? '<span class="tag ok" title="Reikningur, sala eða skýrsla eftir að málið varð til">Líklega afgreitt</span>' : '')) +
       (!isFree(r) ? '<span class="tag">' + esc(eigandaTexti(r, n)) + '</span>' : '') +
       skyrirHamir(r).filter(k => k !== cfg().mode).map(k => '<span class="tag ham">' + esc(M(k).l) + '</span>').join('');
     const hlid = onBoardOf(r, n) ? '<span class="lock">Þitt</span>'
@@ -1531,6 +1616,7 @@
         '<button type="button" class="fpick" data-t5="skoda" data-id="' + r.id + '" title="Skoða málið">' +
           '<span class="rt">' + esc(r.title || '(ónefnt mál)') + '</span>' +
           (sam ? '<span class="ai">' + esc(sam) + '</span>' : '') + '</button>' +
+        naestaHtml(r) +
         // Master líka: það á ekki að þurfa að opna mál til að skrifa eina setningu.
         ntReitur(r) +
         (tags ? '<div class="tags">' + tags + '</div>' : '') + malAdg(r, 'lina') + '</div>' + hlid +
@@ -1577,14 +1663,17 @@
         // hún inni í `.mpick`-hnappinum — hnappur í hnappi er ógilt og ekki hægt að
         // smella á hana til að skrifa.
         (sam && !valid ? '<span class="mn les">' + esc(sam) + '</span>' : '') +
+        naestaHtml(r) +
         (valid ? '' : ntReitur(r)) +
         '<div class="mfoot"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
           (r.due_at ? '<span class="lock">Frestur ' + esc(fmtD(r.due_at)) + '</span>' : '') +
           samtMerki(r) +
           (r.important ? '<span class="tag hot">Áríðandi</span>' : '') +
-          (isPost(r) ? (r.svarad_at ? '<span class="tag ok">Svarað</span>' : '<span class="tag">Bíður svars</span>') : '') +
-          (virkniEftir(r) ? '<span class="tag ok">Líklega afgreitt</span>' : '') +
+          (sonn(r) && sonn(r).texti ? '' :
+            (isPost(r) ? (r.svarad_at ? '<span class="tag ok">Svarað</span>' : '<span class="tag">Bíður svars</span>') : '') +
+            (virkniEftir(r) ? '<span class="tag ok">Líklega afgreitt</span>' : '')) +
           '<span class="grow"></span>' +
+          stadTakki(r, 'btn ' + (erBuid(r) ? 'iv' : 'gold') + ' sm') +
           (erSamthykki(r) ? samtTakkar(r, ' sm') :
             '<button type="button" class="btn iv sm" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + '>✓ Lokið</button>' +
             '<button type="button" class="btn iv sm" data-t5="giveback" data-id="' + r.id + '"' + dis(r.id) + '>↩ Skila</button>') +
@@ -1779,8 +1868,10 @@
       (w ? '<div class="sfyr">🏢 ' + w + '</div>' : '') +
       '<div class="smeta">' + esc(meta) + '</div>' +
       (samantekt(r) ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(samantekt(r).slice(0, 600)) + '</div>' : '') +
+      stadaHtml(r) +
       sagaHtml(r) + skjolHtml(r) + well +
-      '<div class="sacts">' + (minn && erSamthykki(r) ? samtTakkar(r, ' lg') + rukkaTakki + fyr : taka + svara + lokid + skila + rukkaTakki + fyr) + b('iv', 'mal-ari', r.important ? '★ Áríðandi af' : '☆ Áríðandi') + b('iv', 'mal-eyda', '🗑 Eyða máli') + '</div>' + (minn && erSamthykki(r) ? skyRitillHtml(r) : '') +
+      // póstmál: málið SJÁLFT er staðurinn (↩ Svara í sama þræði) — enginn „Opna" takki sem vísar á sig sjálft
+      '<div class="sacts">' + (post ? '' : stadTakki(r, 'btn ' + (erBuid(r) ? 'iv' : 'gold') + (minn ? ' lg' : ''))) + (minn && erSamthykki(r) ? (erBuid(r) ? b('gold lg', 'done', '✓ Loka — afgreitt') : '') + samtTakkar(r, ' lg') + rukkaTakki + fyr : taka + svara + lokid + skila + rukkaTakki + fyr) + b('iv', 'mal-ari', r.important ? '★ Áríðandi af' : '☆ Áríðandi') + b('iv', 'mal-eyda', '🗑 Eyða máli') + '</div>' + (minn && erSamthykki(r) ? skyRitillHtml(r) : '') +
       '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + (jm => jm ? b('iv', 'vd-opna', '🗓 ' + fmtD(jm.date) + (jm._n !== nu() ? ' · ' + jm._n : '')) : b('iv', 'vd-add', '🗓 Á dagskrá'))(jobOfMal(r.id)) +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
           ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + hamirHtml(r) + breytaHtml(r);
@@ -1791,7 +1882,8 @@
   // samþykkja". Mál á borði þess sem er við vélina sem bíða svars, í þremur hlutum: tilbúið (samthykki), þarf svar (samthykki
   // + merkið spurning) og svarað (svar:* — bíður Claude). Hægra megin er sama spjald og Valið mál, með allri lýsingunni.
   const SPURNING = 'spurning';
-  const samtHluti = r => (!erSamthykki(r) ? 2 : tagList(r).indexOf(SPURNING) >= 0 ? 1 : 0);
+  // 368z4: mál sem gögnin sýna afgreitt (greitt / sent / klárað / svarað) fara efst — þau þarf aðeins að loka.
+  const samtHluti = r => (erBuid(r) ? -1 : !erSamthykki(r) ? 2 : tagList(r).indexOf(SPURNING) >= 0 ? 1 : 0);
   const samtListi = n => S.rows.filter(r => iHam(r, SAMT_HAM)).sort((a, b) => samtHluti(a) - samtHluti(b) || rodunSamt(a, b));
   function samtRymiHtml(n) {
     if (!S.loaded) return emptyHtml('Sæki mál…');
@@ -1800,7 +1892,7 @@
     let val = listi.find(r => r.id === S.samtVal);
     if (!val) { val = listi.find(erSamthykki) || listi[0]; S.samtVal = val.id; }
     const nr = listi.indexOf(val);
-    const hlutar = [['Tilbúið — bara samþykkja', 0], ['Þarf svar frá þér', 1], ['Svarað · bíður Claude', 2]].map(h => [h[0], listi.filter(r => samtHluti(r) === h[1])]);
+    const hlutar = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1], ['Tilbúið — bara samþykkja', 0], ['Þarf svar frá þér', 1], ['Svarað · bíður Claude', 2]].map(h => [h[0], listi.filter(r => samtHluti(r) === h[1])]);
     const item = r => {
       const ef = aiLine(r), undir = [whereOf(r), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : ''].filter(Boolean).join(' · ');
       // 18.09.2026: upphæðin sést, svo röðin sé læsileg. „≈" af því hún er lesin
@@ -1808,7 +1900,9 @@
       const u = upphaedMals(r);
       return '<button type="button" class="vbr-item' + (erSamthykki(r) ? '' : ' svarad') + '" data-t5="samt-velja" data-id="' + r.id + '" aria-current="' + (r.id === val.id) + '">' +
         (u ? '<span class="samt-kr" title="Upphæð lesin úr texta málsins — vísbending, ekki bókhald">≈ ' + esc(kr(u)) + '</span>' : '') +
-        '<b>' + esc(r.title || '(ónefnt mál)') + '</b>' + (ef ? '<span class="s samt-ef">' + esc(ef) + '</span>' : '') + '<span class="s">' + esc(undir) + '</span></button>';
+        '<b>' + esc(r.title || '(ónefnt mál)') + '</b>' +
+        (sonn(r) && sonn(r).texti ? '<span class="s samt-sonn' + (erBuid(r) ? ' ok' : '') + '">' + (erBuid(r) ? '✓ ' : '') + esc(sonn(r).texti) + '</span>' : '') +
+        (ef ? '<span class="s samt-ef">' + esc(ef) + '</span>' : '') + '<span class="s">' + esc(undir) + '</span></button>';
     };
     return '<div class="vbr samt">' +
       '<aside class="panel vbr-list" aria-label="Bíður svars">' +
@@ -1966,7 +2060,9 @@
       const sr = sara.get(saraIdMals(r)) || null;
       const undir = [sr && (sr.dagsetning || sr.manudur), bladNr(sr), vbrBidur(r) ? '' : svarBidur(r) ? SVOR[svarMals(r)].l : 'Svarað'].filter(Boolean).join(' · ');
       return '<button type="button" class="vbr-item' + (vbrBidur(r) ? '' : ' svarad') + '" data-t5="vbr-velja" data-id="' + r.id + '" aria-current="' + (r.id === val.id) + '">' +
-        '<b>' + esc(vbrNafn(r, sr)) + '</b>' + (undir ? '<span class="s">' + esc(undir) + '</span>' : '') + '</button>';
+        '<b>' + esc(vbrNafn(r, sr)) + '</b>' +
+        (erBuid(r) ? '<span class="s samt-sonn ok">✓ ' + esc(sonn(r).texti) + '</span>' : '') +
+        (undir ? '<span class="s">' + esc(undir) + '</span>' : '') + '</button>';
     };
     const k = vbrKaflar(val.notes);
     const blad = (s && s.blad) || k.blad, kerfiTexti = (s && s.kerfi) || k.kerfi, spurn = s && s.spurning;
@@ -2630,6 +2726,7 @@
   // er mál sömu þrjár aðgerðir: ✓ Lokið · ★ áríðandi af/á · 🗑 Eyða — allar með „Afturkalla". Eyðing er mjúk
   // (deleted_at), sama og í Breyta máli. Mál sem bíður samþykkis fær ekki ✓ (þar ERU svörin aðgerðin).
   const malAdg = (r, cls) => !r || !r.id ? '' : '<span class="radg' + (cls ? ' ' + cls : '') + '">' +
+    stadTakki(r, 'fela adg stad') +
     (erSamthykki(r) ? '' : '<button type="button" class="fela adg" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + ' title="Merkja málið lokið — hverfur af borðinu, hægt að afturkalla">✓ Lokið</button>') +
     '<button type="button" class="fela adg" data-t5="mal-ari" data-id="' + r.id + '"' + dis(r.id) + ' title="' + (r.important ? 'Taka áríðandi-merkið af' : 'Merkja áríðandi') + '">' + (r.important ? '★ af' : '☆ Áríðandi') + '</button>' +
     '<button type="button" class="fela adg eyda" data-t5="mal-eyda" data-id="' + r.id + '"' + dis(r.id) + ' title="Eyða málinu af öllum borðum — hægt að afturkalla">🗑 Eyða</button></span>';
@@ -3276,7 +3373,7 @@
     String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is');
 
   /* ── Hreinsa Master ── */
-  const HR_FLOKKAR = [['tvitekid', 'Tvítekið'], ['buid', 'Líklega búið'], ['ekkertfyr', 'Vantar fyrirtæki'], ['gamalt', 'Gamalt og óhreyft'], ['opid', 'Enn opið']];
+  const HR_FLOKKAR = [['stadfest', 'Staðfest búið'], ['tvitekid', 'Tvítekið'], ['buid', 'Líklega búið'], ['ekkertfyr', 'Vantar fyrirtæki'], ['gamalt', 'Gamalt og óhreyft'], ['opid', 'Enn opið']];
   const titilLykill = t => fold(String(t || '').replace(/^\s*((re|fw|fwd|sv|tr)\s*:\s*)+/i, '')).replace(/[^a-z0-9]+/g, ' ').trim();
   function flokkaMaster() {
     const rows = S.rows.filter(isFree), nyrriTil = {}, nuna = Date.now();
@@ -3295,6 +3392,8 @@
     Object.values(thraedir).forEach(merkjaEldri);
     return rows.map(r => {
       const hreyft = Math.floor((nuna - tStamp(r.updated_at || r.created_at)) / 864e5), vk = virkniEftir(r);
+      if (erBuid(r)) return { r, fl: 'stadfest', astaeda: sonn(r).texti || 'Afgreitt samkvæmt gögnum' };
+      if (sonn(r) && sonn(r).liklega) return { r, fl: 'buid', astaeda: sonn(r).texti };
       if (nyrriTil[r.id]) return { r, fl: 'tvitekid', astaeda: 'Nýrra eintak til: #' + nyrriTil[r.id].id + ' ' + String(nyrriTil[r.id].title || '').slice(0, 50) };
       if (vk) return { r, fl: 'buid', astaeda: 'Eftir að málið varð til: ' + vk.join(' og ') };
       if (!r.fyrirtaeki_id && !r.customer_base_id) return { r, fl: 'ekkertfyr', astaeda: 'Ekki tengt fyrirtæki' };
@@ -3304,7 +3403,7 @@
   }
   function hreinsunHtml() {
     if (!S.hreinsa) return '';
-    const listi = flokkaMaster(), sia = S.hrSia || 'tvitekid', val = S.hrVal || (S.hrVal = {});
+    const listi = flokkaMaster(), sia = S.hrSia || (listi.some(x => x.fl === 'stadfest') ? 'stadfest' : 'tvitekid'), val = S.hrVal || (S.hrVal = {});
     const synd = listi.filter(x => x.fl === sia).sort((a, b) => tStamp(a.r.created_at) - tStamp(b.r.created_at));
     if (sia === 'ekkertfyr') gogn('tf-post', saekjaSendendur, 600000);
     const valin = Object.keys(val).filter(id => val[id] && S.rows.some(r => String(r.id) === id)).length;
@@ -3321,7 +3420,8 @@
           '<input type="checkbox" data-t5="hr-val" data-id="' + x.r.id + '"' + (val[x.r.id] ? ' checked' : '') + ' aria-label="Velja mál #' + x.r.id + '">' +
           '<span class="age ' + ageCls(ageDays(x.r)) + '">' + ageDays(x.r) + 'D</span><span class="hrinfo">' +
           '<button type="button" class="lpick" data-t5="skoda" data-id="' + x.r.id + '"><b>' + esc(x.r.title || '(ónefnt mál)') + '</b></button>' +
-          '<span class="s">' + [fyrLink(x.r), esc(eigandaTexti(x.r, nu())), esc(x.astaeda)].filter(Boolean).join(' · ') + '</span>' + (x.fl === 'ekkertfyr' ? tfTakkar(x.r) : '') + '</span></div>').join('') + '</div>'
+          '<span class="s">' + [fyrLink(x.r), esc(eigandaTexti(x.r, nu())), esc(x.astaeda)].filter(Boolean).join(' · ') + '</span>' + (x.fl === 'ekkertfyr' ? tfTakkar(x.r) : '') +
+          stadTakki(x.r, 'fela adg stad') + '</span></div>').join('') + '</div>'
         : emptyHtml('Ekkert mál í þessum flokki.')) +
     '</section>';
   }
@@ -4361,8 +4461,11 @@
           '<section class="panel colmaster" aria-label="' + esc(siuHeiti) + '">' +
             '<header class="phead">' + plate('02') + '<h2 class="ptitle">' + esc(siuHeiti) + '</h2><span class="sum">' + visible.length + ' mál</span><span class="grow"></span>' +
               (/^[pf]:/.test(S.filter) ? '<button type="button" class="btn iv sm" data-t5="filter" data-f="allt">✕ Aftur á Master</button>' : '') +
-              '<div class="seg" role="group" aria-label="Sía">' + [['allt', 'Allt'], ['post', 'Póstar'], ['beidni', 'Beiðnir'], ['hot', 'Áríðandi'], ['buid', 'Líklega búin'], ['oll', 'Öll opin']].map(f =>
+              '<div class="seg" role="group" aria-label="Sía">' + [['allt', 'Allt'], ['post', 'Póstar'], ['beidni', 'Beiðnir'], ['hot', 'Áríðandi'], ['buid', 'Búin'], ['oll', 'Öll opin']].map(f =>
                 '<button type="button" data-t5="filter" data-f="' + f[0] + '" aria-pressed="' + (S.filter === f[0]) + '">' + f[1] + '<span class="c">' + fjoldi(f[0]) + '</span></button>').join('') + '</div>' +
+              '<button type="button" class="btn iv sm" data-t5="endurmeta"' + (S.endurmatBid ? ' disabled' : '') +
+                ' title="Ber hvert opið mál saman við sölur, vinnublöð og póst. Gerist líka sjálfkrafa þegar sala greiðist, vinnublað klárast eða svar fer út.">' +
+                (S.endurmatBid ? 'Met stöðuna…' : '↻ Endurmeta') + '</button>' +
               '<button type="button" class="btn iv sm" data-t5="hr-opna" aria-pressed="' + !!S.hreinsa + '" title="Fara yfir Master: tvítekið, líklega búið, vantar fyrirtæki, gamalt">🧹 Hreinsa</button>' +
               '<button type="button" class="btn gold sm" data-t5="take-next">Taka næsta ›</button></header>' +
             '<div class="psub">' + nyleg + ' síðustu 30 daga · ' + bunki + ' í bunka Charlize · Á borðum:' +
@@ -4870,6 +4973,8 @@
         return;
       }
       case 'sel-close': S.sel[nu()] = 0; render(); return;
+      case 'stad-opna': opnaStad(S.rows.find(x => x.id === id), c); return;
+      case 'endurmeta': endurmeta(); return;
       case 'fyr':
       case 'fyr-id':
         // Tengill með Ctrl/Shift/Cmd opnast í nýjum flipa (#company/<id>) — vafrinn sér um það.
@@ -5565,7 +5670,7 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368z3' };
+    window.Thjonustubord5 = { show, load, render, version: '368z4' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
