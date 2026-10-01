@@ -2,6 +2,17 @@
 // ============ COUNTER ============
 var Counter = {
   sel: null,
+  // 01.10.2026: „Prenta kvittun" prentaði MIÐA (Print.showJob) eins og hinir tveir prent-takkarnir í
+  // glugganum — engin leið prentaði kvittun úr verkinu. Salan heitir eins og verkið án „-Vn"
+  // (R-001016-V1 → R-001016); reikningurinn opnast með sömu leið og #sale/<num> (235), sem opnar
+  // gluggann strax í smellinum svo sprettigluggavörnin taki hann ekki.
+  prentaKvittun: function(id) {
+    var job=DB.getJob(id), num=job && String(job.num||'').replace(/-V\d+$/i,'');
+    var leid=window.SubRoutes && SubRoutes._routes && SubRoutes._routes.sale;
+    if(!num || !/^[RK]-\d+$/.test(num)) { alert('Engin sala er tengd þessu verki ('+(job&&job.num||'?')+') — kvittun verður til þegar salan er kláruð.'); return; }
+    if(!leid) { alert('Reikningsmótið er ekki tiltækt — reyndu aftur eftir augnablik.'); return; }
+    leid.open(num);
+  },
   render: function() { this.renderList(); if(this.sel) this.select(this.sel); else if(DB.getActiveJobs().length) this.select(DB.getActiveJobs()[0].id); },
   renderList: function() {
     var jobs=DB.getActiveJobs(), el=document.getElementById('job-list');
@@ -156,7 +167,7 @@ var Counter = {
           : '<div style="text-align:center;color:#94a3b8;font-size:10px;margin-top:8px;font-style:italic">Verð ekki skráð á verkbeiðni</div>'
         ) +
         '<div style="text-align:center;color:#94a3b8;font-size:10px;margin-top:8px;font-style:italic">Við hringum þegar tilbúið</div>' +
-        '<button class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:10px" onclick="Print.showJob(DB.getJob('+job.id+'))">Prenta kvittun</button>' +
+        '<button class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:10px" onclick="Counter.prentaKvittun('+job.id+')">Prenta kvittun</button>' +
       '</div></div>';
 
     el.innerHTML=html;

@@ -2,7 +2,12 @@
 (function(){'use strict';
 var _modal=null;
 async function findCurrentJobId(){
-  if(window.Print && Print.job && Print.job.id) return Print.job.id;
+  // 01.10.2026: OPNA verkið fyrst. Print.job.id var lesið fyrst og hreinsast aldrei eftir prentun —
+  // prentaðu verk A, opnaðu verk B, ýttu á Breyta: verk A var breytt. Counter.select setur bæði
+  // Counter.sel og #counter-main[data-job-id] (78:1274/1281).
+  if(window.Counter && Counter.sel) return Counter.sel;
+  var opid=document.getElementById('counter-main');
+  if(opid && opid.dataset && opid.dataset.jobId) return parseInt(opid.dataset.jobId,10);
   var hdr=document.querySelector('.jd-header .jd-title span');
   var num=null, numNoHash=null;
   if(hdr){
@@ -66,7 +71,11 @@ function showEditForm(job){
     DB.sb.from('verkbeidnir').update(update).eq('id',job.id).then(function(r){
       if(r.error){alert('Villa: '+r.error.message);return;}
       close();
-      if(window.App && App.refresh) App.refresh();
+      // 01.10.2026: App.refresh er ekki til — hver vistun endurhlóð ALLA síðuna. Röðin í minni
+      // (DB.cache.jobs = hráar verkbeidnir-raðir) fær breytinguna og sýnin teiknast upp á nýtt.
+      var cj=(window.DB && DB.getJob) ? DB.getJob(job.id) : null;
+      if(cj) Object.assign(cj, update);
+      if(window.App && App.refreshAll) App.refreshAll();
       else if(window.location){window.location.reload();}
     });
   };
