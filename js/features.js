@@ -46,7 +46,14 @@ var Companies = {
         '</div>';
       }).join('') + '</div>';
     }
+    this.currentId = null;
     el.innerHTML = html;
+  },
+  _detailOpen: function(id) {
+    var main = document.getElementById('companies-main');
+    if (!main || !main.querySelector('.co-banner')) return false;
+    if (id == null) return !!(this.currentId);
+    return !!(main.querySelector('button[onclick*="Companies.openEdit(' + id + ')"]'));
   },
   // 21.09.2026 (afköst, mælt á lifandi): við EINA opnun á fyrirtækjaspjaldi kölluðu fjórir aðilar á load() í sömu andrá
   // (allir +0 ms) og hver sótti ALLA töfluna — 1.192 raðir × allar súlur × 4 = 8 netköll og ~2,5 s af sókn og þáttun.
@@ -86,7 +93,7 @@ var Companies = {
     // DB.online var ósatt → Companies.list 1310 raðir en aðeins 12 súlur.
     if (!DB.sb) {
       if (!Array.isArray(this.list)) this.list = [];
-      this.render();
+      if (!this._detailOpen()) this.render();
       return;
     }
     // Page through — Supabase caps each response at 1000 rows.
@@ -97,7 +104,7 @@ var Companies = {
       // Sóknin brást (net/RLS/504). Höldum síðustu góðu mynd — aldrei blanka.
       console.warn('[Companies.load] sókn brást — held eldri lista (' + ((this.list && this.list.length) || 0) + '):', e && e.message || e);
       if (!Array.isArray(this.list)) this.list = [];
-      this.render();
+      if (!this._detailOpen()) this.render();
       return;
     }
     // 0 raðir úr VEL HEPPNAÐRI sókn er í reynd alltaf bilun (RLS/lykill), aldrei
@@ -106,11 +113,14 @@ var Companies = {
     if ((!nyr || !nyr.length) && Array.isArray(this.list) && this.list.length) {
       try { if (window.logProblem) window.logProblem('companies_load_tomt', 'fyrirtaeki skilaði 0 röðum en ' + this.list.length + ' voru í minni — hélt eldri lista'); } catch(_) {}
       console.warn('[Companies.load] 0 raðir úr grunni — held eldri lista (' + this.list.length + ')');
-      this.render();
+      if (!this._detailOpen()) this.render();
       return;
     }
     this.list = nyr;
-    this.render();
+    // 01.10.2026: load() er kallað úr 153/114/146/360 á meðan prófíllinn er opinn.
+    // render() skrifar fyrirtækja-grid yfir #companies-main og stælir valinu —
+    // listinn er uppfærður, spjaldið situr. 357 lýsir sama stuld.
+    if (!this._detailOpen()) this.render();
   },
   openNew: function() {
     var ids = ['nf-nafn', 'nf-kt', 'nf-simi', 'nf-netfang', 'nf-heimilisfang', 'nf-tengiliður', 'nf-athugasemdir'];
@@ -155,6 +165,18 @@ var Companies = {
   openDetail: function(id) {
     var c = this.list.find(function(x) { return x.id === id; });
     if (!c) return;
+    // 01.10.2026: _openCompanySafe + 235 hash + 357 hashchange kölluðu openDetail
+    // á sama id þrisvar á ~300 ms — hvert kall rífur #companies-main og skrunar upp.
+    // Sama félag sem þegar er á skjánum er ekki endurteiknað. v9/unit-save kemur
+    // sekúndum síðar (eftir Vista) og fær þá ferska teikningu.
+    if (this.currentId === id && this._openedAt && (Date.now() - this._openedAt) < 500 && this._detailOpen(id)) {
+      return;
+    }
+    if (this._detailOpen(id) && window.__hakHopp && window.__hakHopp.skalSleppa && window.__hakHopp.skalSleppa()) {
+      return;
+    }
+    this.currentId = id;
+    this._openedAt = Date.now();
     // 2026-09-08: síaði AÐEINS á nafni. Tæki sem ber rétt `fyrirtaeki_id` en
     // staðnað `client` (endurnefnt félag — mælt á fid 1570) hvarf af prófílnum
     // þótt aðalyfirlitið teldi það. Notandinn hélt að vistun hefði mistekist og

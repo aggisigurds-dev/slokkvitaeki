@@ -130,7 +130,7 @@
     var vtHak = h.hak ? ' vt-'+h.hak : '', vtTitill = h.hakTitill;
     var segs = SVC.map(function(s){
       var on = (!onytt && cur===s[0]);
-      return '<button class="ut-svc'+(on?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-v="'+s[0]+'">'+s[1]+'</button>';
+      return '<button type="button" class="ut-svc'+(on?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-v="'+s[0]+'">'+s[1]+'</button>';
     }).join('');
     return '<div class="ut-row'+(onytt?' onytt':'')+(sel?' sel':'')+'">'+
       '<input type="checkbox" class="ut-chk" data-co="'+coId+'" data-uid="'+u.id+'"'+(sel?' checked':'')+' title="Velja">'+
@@ -140,9 +140,9 @@
       '<div class="ut-right">'+
         '<div class="ut-lastcol">'+lastChip(u)+'</div>'+
         '<div class="ut-now">'+
-          '<button class="ut-check'+(done?' on':'')+vtHak+'" data-co="'+coId+'" data-uid="'+u.id+'" title="'+esc(vtTitill)+'">✓</button>'+
+          '<button type="button" class="ut-check'+(done?' on':'')+vtHak+'" data-co="'+coId+'" data-uid="'+u.id+'" title="'+esc(vtTitill)+'">✓</button>'+
           '<div class="ut-svcseg'+(vs?' vt-laest':'')+'"'+(vs?' title="'+esc(h.segTitill)+'"':'')+'>'+segs+'</div>'+
-          '<button class="ut-onytt'+(onytt?' on':'')+(vs?' vt-laest':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-ty="'+esc(u.type)+'" title="Merkja ónýtt — rukkast á yfirferðarverði (vinnan var unnin)">🚫</button>'+
+          '<button type="button" class="ut-onytt'+(onytt?' on':'')+(vs?' vt-laest':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-ty="'+esc(u.type)+'" title="Merkja ónýtt — rukkast á yfirferðarverði (vinnan var unnin)">🚫</button>'+
         '</div>'+
         '<div class="ut-far">'+
           '<button class="ut-act" onclick="Print.showQR(DB.getUnit('+u.id+'))" title="Prenta QR-miða">▦</button>'+
@@ -231,6 +231,7 @@
     // notandinn þurfti að finna sig aftur eftir hvern einasta smell. Efnið er byggt eins og áður; hér er aðeins staðan
     // tekin fyrir og sett aftur í SAMA tifi, svo skjárinn sjái enga millistöðu.
     rerender: function(coId){
+      try{ if(window.__hakHopp && __hakHopp.skalSleppa && __hakHopp.skalSleppa()) return; }catch(_){}
       var wrap = document.querySelector('.ut-list[data-uw-co="'+coId+'"]'); if(!wrap) return;
       var c = window.Companies && Companies.list && Companies.list.find(function(x){return x.id==coId;}); if(!c) return;
       var skrun = [];
@@ -314,7 +315,8 @@
     // Aðrir patchar (t.d. 270 sem læsir listanum sjálfkrafa við lok heimsóknar)
     // geta kveikt á sama skrefi án þess að afrita rökin.
     markListiStadfest: markListiStadfest,
-    isLocked: isUtLocked
+    isLocked: isUtLocked,
+    uppfaeraVal: function(coId){ uppfaeraVal(coId); }
   };
 
   function isUtLocked(coId){ try{ return localStorage.getItem('sk_ut_lock_'+coId)==='1'; }catch(_){ return false; } }
@@ -424,6 +426,44 @@
     });
   }
   function recompute(){ try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){} }
+  function hoppBump(teg){ try{ if(window.__hakHopp && __hakHopp.bump) __hakHopp.bump(teg); }catch(_){} }
+  function uppfaeraVal(coId){
+    var wrap = document.querySelector('.ut-list[data-uw-co="'+coId+'"]'); if(!wrap) return;
+    var units = unitsFor(coId);
+    var n = 0, i;
+    for(i=0;i<units.length;i++) if(_sel[units[i].id]) n++;
+    var allSel = units.length>0 && n===units.length;
+    wrap.querySelectorAll('.ut-row').forEach(function(row){
+      var chk = row.querySelector('.ut-chk'); if(!chk) return;
+      var on = !!_sel[+chk.dataset.uid];
+      chk.checked = on;
+      row.classList.toggle('sel', on);
+    });
+    var bulk = wrap.querySelector('.ut-bulk');
+    if(bulk){
+      bulk.classList.toggle('ut-bulk-tom', !n);
+      var opinStika = false;
+      try{ opinStika = localStorage.getItem('valstika_opin')==='1'; }catch(_){}
+      bulk.classList.toggle('b404-samanfelld', !n && !opinStika);
+      var cnt = bulk.querySelector('.ut-bulk-cnt');
+      if(cnt) cnt.textContent = n ? (n+' valin') : 'Veldu tæki';
+      var selall = bulk.querySelector('.ut-selall');
+      if(selall) selall.textContent = allSel ? 'Hreinsa val' : 'Velja allt';
+      Array.prototype.forEach.call(bulk.querySelectorAll('button,input'), function(el){
+        if(el.classList.contains('ut-selall') || el.classList.contains('b404-valtoggle')) return;
+        if(!n) el.setAttribute('disabled',''); else el.removeAttribute('disabled');
+      });
+    }
+    wrap.querySelectorAll('.ut-grp').forEach(function(g){
+      var cntEl = g.querySelector('.ut-grp-cnt'); if(!cntEl) return;
+      var rows = g.querySelectorAll('.ut-row');
+      var selN = 0;
+      for(i=0;i<rows.length;i++) if(rows[i].classList.contains('sel')) selN++;
+      var total = rows.length;
+      if(!total){ var m = String(cntEl.textContent||'').match(/(\d+)/); total = m ? +m[1] : 0; }
+      cntEl.textContent = total+' tæki'+(selN?' · '+selN+' valin':'');
+    });
+  }
 
   document.addEventListener('click', function(e){
     var b;
@@ -466,6 +506,8 @@
     }
 
     if((b=e.target.closest('.ut-svc'))){
+      e.preventDefault(); e.stopPropagation();
+      hoppBump('svc');
       var sval=b.dataset.v;
       try{ UnitServicePicker.setChoice(+b.dataset.co,+b.dataset.uid,sval); }catch(_){}
       _radUpp(b.closest('.ut-row'), sval);
@@ -477,6 +519,8 @@
       return;
     }
     if((b=e.target.closest('.ut-onytt'))){
+      e.preventDefault(); e.stopPropagation();
+      hoppBump('svc');
       var co=+b.dataset.co, uid=+b.dataset.uid, cur='';
       try{ cur=UnitServicePicker.getChoice(co,uid,b.dataset.ty); }catch(_){}
       var nytt = (cur==='onytt') ? 'yfirferd' : 'onytt';
@@ -497,6 +541,8 @@
       return;
     }
     if((b=e.target.closest('.ut-check'))){
+      e.preventDefault(); e.stopPropagation();
+      hoppBump('hak');
       var duid=+b.dataset.uid, dco=+b.dataset.co;
       if(_done[duid]) delete _done[duid]; else _done[duid]=true;
       saveDone(dco);
@@ -508,11 +554,15 @@
       return;
     }
     if(e.target.classList && e.target.classList.contains('ut-chk')){
+      e.stopPropagation();
+      hoppBump('val');
       var cuid=+e.target.dataset.uid, cco=+e.target.dataset.co;
       if(e.target.checked) _sel[cuid]=true; else delete _sel[cuid];
       uppfaeraVal(cco); return;
     }
     if((b=e.target.closest('.ut-bulk-act'))){
+      e.preventDefault(); e.stopPropagation();
+      hoppBump('svc');
       var bco=+b.dataset.co, v=b.dataset.bulk;
       var bwrap=document.querySelector('.ut-list[data-uw-co="'+bco+'"]');
       unitsFor(bco).forEach(function(u){
@@ -526,6 +576,8 @@
       recompute(); return;
     }
     if((b=e.target.closest('.ut-selall'))){
+      e.preventDefault(); e.stopPropagation();
+      hoppBump('val');
       var sco=+b.dataset.co; var us=unitsFor(sco);
       var allSel=us.length>0 && us.every(function(u){return _sel[u.id];});
       if(allSel){ us.forEach(function(u){ delete _sel[u.id]; }); }

@@ -215,11 +215,26 @@
   // show() og bakgrunns-endurnýjun) gátu ræst hleðsluna á sömu sekúndu — hver sótti ALLT mengið og síðasta svarið yfirskrifaði
   // hin. Nú deila samtíma kallarar EINNI sókn; sá sem kallar EFTIR að henni lauk fær ferska hleðslu eins og áður.
   let _loadP = null;
+  let _loadGen = 0;
   function loadAll() {
     if (_loadP) return _loadP;
+    const gen = ++_loadGen;
     _loadingAll = true;
-    _loadP = (async () => { try { return await _loadAllInner(); } finally { _loadingAll = false; _loadP = null; } })();
+    _loadP = (async () => {
+      try {
+        const r = await _loadAllInner();
+        if (gen !== _loadGen) return null;
+        return r;
+      } finally {
+        _loadingAll = false;
+        _loadP = null;
+      }
+    })();
     return _loadP;
+  }
+  function arsSynVirk() {
+    const v = document.getElementById(VIEW_ID);
+    return !!(v && (v.classList.contains('active') || v.style.display === 'block'));
   }
   async function _loadAllInner() {
     // 08.09.2026: við ræsingu getur DB.sb verið óstofnað þegar fyrsta bakgrunns-sóknin
@@ -1846,7 +1861,7 @@
       // 08.09.2026: sjáanlegt í console hvort bakgrunns-sóknin teiknaði — „Búið"-talan
       // sat föst á snapshot-gildinu og enginn vissi hvers vegna. Þögul catch var hluti.
       try { console.info('[arsskodun] bg-refresh', { changed: ns !== _lastDataSig, editing: !!_editingNote, active: document.activeElement && (document.activeElement.className || document.activeElement.tagName) }); } catch (_) {}
-      if (ns !== _lastDataSig && !_editingNote) { render(); _lastDataSig = ns; }  // only rebuild if data changed
+      if (ns !== _lastDataSig && !_editingNote && arsSynVirk()) { render(); _lastDataSig = ns; }  // only rebuild if data changed + sýnin er enn opin
     } catch (e) { try { console.warn('[arsskodun] backgroundRefresh', e); } catch (_) {} } finally { _bgRefreshing = false; }
   }
 
@@ -1925,6 +1940,7 @@
     }
     const _skrifFyrir = skrifNu();
     await loadAll();
+    if (!arsSynVirk() && document.getElementById('_ars-search')) return;
     _lastLoad = Date.now();
     _skrifVidHledslu = _skrifFyrir;
     render();
@@ -2850,6 +2866,7 @@
     });
     main.querySelectorAll('._ars-endur-cb').forEach(el => el.addEventListener('change', async e => {
       e.stopPropagation();
+      e.preventDefault();
       const coId = +el.dataset.coId; if (!coId) return;
       const nu = !!(_cache.list || []).find(x => +x.id === coId && x._ovisst);
       const sb = getSB();
@@ -2858,7 +2875,16 @@
       if (r.error) { alert('Vista mistókst: ' + r.error.message); el.checked = nu; return; }
       ovrLog(coId, 'ovisst', String(nu), String(!nu));
       const row = (_cache.list || []).find(x => +x.id === coId); if (row) row._ovisst = !nu;
-      render();
+      try { if (window.__hakHopp && __hakHopp.bump) __hakHopp.bump('hak'); } catch (_) {}
+      const lab = el.closest('._ars-endur');
+      if (lab) {
+        const on = !nu;
+        lab.style.borderColor = on ? '#0f766e' : '';
+        lab.style.background = on ? '#ccfbf1' : '';
+        lab.title = on
+          ? '♻️ Í endurheimt — tekið af vinnulista bílstjórans. Taktu hakið af til að setja aftur í venjulega umferð.'
+          : 'Setja í endurheimt: fer af vinnulista bílstjórans og í ♻️-flipann þar til staðan skýrist.';
+      }
     }));
     main.querySelectorAll('._ars-st').forEach(b => b.addEventListener('click', () => {
       state.status = b.dataset.status; saveState(); render();
@@ -3138,16 +3164,22 @@
       // Update local cache so re-render picks up the change without a full reload
       const c = _cache.list.find(x => x.id === coId);
       if (c) c._ars = Object.assign({}, c._ars || {}, { field_inspected_year: newVal });
-      // JUMP-LAGFÆRING: render() endur-teiknar allan listann → skrun stökk á topp.
-      // Varðveita skrunstöðu skrun-hýsilsins (og glugga) yfir endur-teiknun.
-      const host = (function (el) { let n = el; while (n && n !== document.body) { const s = getComputedStyle(n); if (/(auto|scroll)/.test(s.overflowY) && n.scrollHeight > n.clientHeight) return n; n = n.parentElement; } return document.scrollingElement || document.documentElement; })(main);
-      const sy = host ? host.scrollTop : 0, wy = window.scrollY;
-      render();
-      const _restore = () => { try { if (host) host.scrollTop = sy; window.scrollTo(0, wy); } catch (_) {} };
-      requestAnimationFrame(_restore);
-      // Patch 187/267 endur-sprauta ár-dálkum/akstur-chip ASYNC eftir render (breytir
-      // hæð) → endurstilla aftur þegar það hefur sest svo skrun reki ekki til.
-      setTimeout(_restore, 340);
+      // 01.10.2026: render() ríf 700+ röðum og 187/267 sprauta svo ár-dálkum
+      // sem hækka töfluna undir skruninu. Hak á „Í vinnslu" má aðeins snerta
+      // þennan hnapp — sama regla og .ut-check á tækjaröð.
+      try { if (window.__hakHopp && __hakHopp.bump) __hakHopp.bump('hak'); } catch (_) {}
+      const marked = newVal === curYear;
+      btn.disabled = false;
+      btn.classList.toggle('on', marked);
+      btn.title = marked
+        ? 'Í vinnslu (skýrslugerð) — smelltu til að hreinsa'
+        : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)';
+      if (!btn.classList.contains('_chk') && !btn.querySelector('svg')) {
+        btn.textContent = marked ? '✓ Í vinnslu' : '☐ Í vinnslu';
+        btn.style.border = marked ? '1px solid #60a5fa' : '1px solid var(--brd2)';
+        btn.style.background = marked ? '#dbeafe' : 'var(--surface)';
+        btn.style.color = marked ? 'var(--brand)' : 'var(--ink2)';
+      }
     }));
 
     // Skrun og fókus aftur á sinn stað — sama tifi og teikningin, svo ekkert hopp sjáist.
@@ -4354,10 +4386,14 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
   }
 
   // ── Detail modal ─────────────────────────────────────────────────────────
+  let _arsModalId = 0;
   function openDetail(coId, opts) {
     opts = opts || {};
     const c = _cache.list.find(x => x.id === coId);
     if (!c) return;
+    const opin = document.querySelector('._ars-modal-bg ._ars-modal');
+    if (opin && _arsModalId === +coId && !opts.eqEdit && !opts.force) return;
+    _arsModalId = +coId;
     const ars = c._ars || {};
     const eq = ars.equipment || {};
     const m = +ars.inspect_month || 0;
@@ -4632,13 +4668,16 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
     // fyrirtæki án skýrslu. Vistast í arsskodun_customers (nytt_manual + inspect_month).
     bg.querySelector('._ars-nytt-chk')?.addEventListener('change', async (e) => {
       const on = !!e.target.checked;
+      try { if (window.__hakHopp && __hakHopp.bump) __hakHopp.bump('hak'); } catch (_) {}
       let ok;
       try { ok = await window.AppSettings.save({ arsskodun_customers: { [String(coId)]: { nytt_manual: on } } }); }
       catch (err) { alert('Vista mistókst: ' + (err && err.message || err)); return; }
       if (!ok) { alert('Vista mistókst'); return; }
       if (ars) ars.nytt_manual = on;
+      if (c && c._ars) c._ars.nytt_manual = on;
       try { ovrLog(coId, 'nytt_manual', on ? '—' : '🆕', on ? '🆕 Nýtt' : '↺ hreinsað'); } catch (_) {}
-      bg.remove(); openDetail(coId);
+      // Hak á Nýtt má ekki rífa modalinu (bg.remove + openDetail) — það lokaði
+      // hliðarspjaldinu og hoppaði skruni. Gildið er þegar á checkboxinu.
     });
     bg.querySelector('._ars-nytt-month')?.addEventListener('change', async (e) => {
       const mv = parseInt(e.target.value, 10) || 0;
