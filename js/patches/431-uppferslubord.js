@@ -458,12 +458,20 @@
     }
   }
   function boot() {
-    try { saejast(); vefjaFetch(); vefjaLoad(); vefjaHlada(); vefjaPrime(); ensureView(); navTakki(); hook(); limaVidStillingar(); stodvaKort(); } catch (e) {
+    try { saejast(); vefjaFetch(); vefjaLoad(); vefjaHlada(); vefjaPrime(); navTakki(); hook(); limaVidStillingar(); stodvaKort(); } catch (e) {
       console.warn('[431]', e);
     }
   }
   boot();
   [400, 1500, 3500].forEach((ms) => setTimeout(() => { try { boot(); limaVidStillingar(); } catch (_) {} }, ms));
+  // 218 heldur #uppferslubord á meðan síðan er ekki til, og ræsingin má ekki
+  // skrifa yfir hana. Síðan er því ekki búin til fyrr en hér, eftir þann glugga.
+  setTimeout(() => {
+    try {
+      const h = (location.hash || '').replace(/^#/, '');
+      if (h === NAV || h === 'uppfærslubord') show();
+    } catch (_) {}
+  }, 2100);
   setInterval(() => { try { dæla(); } catch (_) {} }, 15000);
   setTimeout(() => {
     try {
