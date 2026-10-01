@@ -158,7 +158,9 @@
       // síma-sýnin (án appmode) situr áfram á dökka Brunastál-borðanum og heldur hvítu.
       MA + '.page-title h1{color:#11141c !important;text-shadow:none !important;font-size:20px !important}' +
       MA + '.page-title p{color:#1e293b !important}' +
-      MA + '.ky-month{color:#11141c !important}' +
+      // B52 (01.10.2026): 409 setur titilbandið dökkt alls staðar (hvítur titill) — mánuðurinn
+      // fylgir því og er ljós, annars var hann dökkur á dökku í app-ham.
+      MA + '.ky-month{color:#e9edf2 !important;-webkit-text-fill-color:#e9edf2 !important;text-shadow:0 1px 1px rgba(0,0,0,.5)}' +
 
       // ── 📱 Dense overview (2026-08-26 P0, restored actions P1) ──
       // Patch 261 `body.appmode .view button{min-height:50px;padding:12px}` +
@@ -222,7 +224,7 @@
       M + '.ky-acts .ky-abtn .ky-abtn-ico{font-size:11px!important}' +
       // Beat 261's 50px hammer with ID-level !important (this view is skipped in 263).
       // Nav/month buttons stay 44px; claim chips stay 16px (do not re-inflate ky-abtn here).
-      M + 'button.ky-navbtn{display:inline-flex!important;min-height:44px!important;height:44px!important;padding-top:0!important;padding-bottom:0!important;overflow:visible!important;pointer-events:auto!important}' +
+      M + 'button.ky-navbtn{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:44px!important;height:44px!important;padding-top:0!important;padding-bottom:0!important;overflow:visible!important;pointer-events:auto!important}' +
       M + 'button._ky-exp{min-height:0!important;padding:6px 8px!important}' +
       M + 'input._ky-note,' + M + 'input._ky-search,' + M + 'select._ky-sort{min-height:44px!important;font-size:16px!important}' +
       M + '{overflow-x:auto;-webkit-overflow-scrolling:touch}';

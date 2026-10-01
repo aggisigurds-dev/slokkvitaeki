@@ -64,8 +64,9 @@
         '.view h2[style*="color:#fff"],.view h2[style*="color: #fff"],.view h2[style*="color:#ffffff"]'),
       '{color:#fff!important;text-shadow:0 2px 8px rgba(0,0,0,.55)!important}',
 
+      /* B52: mánuðurinn á Kröfu yfirliti stendur á dökka titilbandinu (409) — ljós, ekki blek. */
       prefixed('.view .page-title .ky-month,.view .page-title__tools .ky-month'),
-      '{color:' + INK + '!important}',
+      '{color:#e9edf2!important;-webkit-text-fill-color:#e9edf2!important}',
 
       /* Drög orange bar — ID beats the brunastál h2 dark lock. */
       '#view-drog h2{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35)!important}',
@@ -282,7 +283,12 @@
   // 24.09.2026: #_uv-strip (328) situr í SVARTA REIKNINGUR-hausnum og ber sína eigin
   // ljósu liti. Skannin las bakgrunn pillnanna sem ljósan (þær eru hálfgegnsæjar) og
   // skrifaði dökkt blek á þær — dökkt á dökkt, ólæsilegt. Hausinn á sína liti sjálfur.
-  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd,#_uv-strip,.b412-titill,._uv-rb,.b414-top,.arsm-sec,._ars-summary,._tfoot,.b418-top,.b190-top';
+  // 01.10.2026 (B48): Öpp-síðan fékk málmhausa (ljóst letur á dökkum málmi) — spjaldhausar, fylkishaus,
+  // Stýriborðshaus, síðuritilshaus, app-hausinn og -dokkinn, nýtt-app-spjaldið og falin-öpp-línan eiga sína liti.
+  // Kicker Öpp-síðunnar stendur á dökka bandinu (litbrigði — skannin les það sem ljóst) og á sinn ljósgráa lit.
+  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd,#_uv-strip,.b412-titill,._uv-rb,.b414-top,.arsm-sec,._ars-summary,._tfoot,.b418-top,.b190-top,.b403-band,.b403-kafli,#_sr-dialog,#view-opp .op-top,#view-opp .op-ny,#view-opp .op-falin,.mx-sum,#_op-styri .st-h,#_app-pgedit ._pe-h,#_app-hdr,#_app-nav,#view-opp .op-kick,.page-title .ky-month';
+  // 01.10.2026 (B51, Agnar: „textarnir sjást illa þarna“): .b403-band — ársbandið í Skjöl-spjaldinu (403) er málmur;
+  // stöðumerkið (KOMIÐ/YFIRFARIÐ) og „1 þjónusta“ eru hálfgegnsæ og fengu dökkt blek. Sama gildra og #_uv-strip.
 
   function hasOwnText(el) {
     for (let n = el.firstChild; n; n = n.nextSibling) {
