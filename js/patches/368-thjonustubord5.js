@@ -899,8 +899,20 @@
     }
     return out;
   }
+  // 01.10.2026 (Agnar: „bætt við Dagskrá að geta valið td Anni, Agnar, Bjarndís, Afgreiðsla, og síðan bara Allir"):
+  // hvers dagskrá er sýnd. „Allir" = eins og 27.09 — verk allra og sameiginlegar nótur. Nafn = verk þess starfsmanns
+  // (og sameiginleg verk á „Allir") og HANS dagnótur. Valið fylgir þeim sem er við borðið, by_staff.<nafn>.dagskra_syn.
+  const DN_EIG = 'Allir';   // grein sameiginlegu dagskrárinnar/nótanna (27.09.2026)
+  const _dgSynBid = {};
+  const dagskraFolk = () => folk().filter(x => x !== AI_WORKER && x !== DN_EIG).concat([DN_EIG]);
+  function dagskraSyn() {
+    const n = nu();
+    const v = _dgSynBid[n] != null ? _dgSynBid[n] : P(CFG_KEY + '.by_staff.' + n + '.dagskra_syn');
+    return v && dagskraFolk().indexOf(String(v)) >= 0 ? String(v) : DN_EIG;
+  }
   function week() {
-    const jobs = allirJobs(), out = [], d0 = new Date();
+    const syn = dagskraSyn(), out = [], d0 = new Date();
+    const jobs = allirJobs().filter(j => syn === DN_EIG || j._n === syn || j._n === DN_EIG);
     for (let i = 0; i < 7; i++) {
       const d = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i), key = ymd(d);
       out.push({
@@ -960,6 +972,8 @@
       '.acts{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}',
       '.who{display:flex;flex-direction:column;gap:5px;margin:0}',
       '.who select{height:36px;min-width:150px;padding:0 11px;border:1px solid var(--edge);border-radius:4px;background:var(--well);box-shadow:var(--wellsh);font:600 13px var(--body);color:var(--ink)}',
+      // 01.10.2026: hvers dagskrá — við hliðina á „+ Skrá verk" í haus Dagskrár.
+      '.dgsyn{display:inline-flex;align-items:center;gap:7px;margin:0 8px 0 0}.dgsyn select{height:30px;min-width:120px;padding:0 9px;border:1px solid var(--edge);border-radius:4px;background:var(--well);box-shadow:var(--wellsh);font:600 12.5px var(--body);color:var(--ink)}',
       '.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:4px;font:600 12.5px var(--body);cursor:pointer;white-space:nowrap;transition:filter 120ms}',
       '.btn:hover{filter:brightness(1.04)}.btn:active{filter:brightness(.96)}',
       '.btn.sm{height:30px;padding:0 11px;font-size:12px}.btn.lg{height:42px;padding:0 18px;font-size:13.5px}',
@@ -2603,8 +2617,9 @@
   // 27.09.2026: dagnóturnar eru SAMEIGINLEGAR (grein „Allir"). Dagur sem á enga sameiginlega nótu enn sýnir það sem
   // starfsmenn höfðu skrifað hver á sína — öllu haldið, hvert atriði einu sinni — svo ekkert týnist við breytinguna;
   // fyrsta vistun skrifar það í sameiginlegu nótuna.
-  const DN_EIG = 'Allir';
-  const dagNota = (_n, key) => {
+  const dagNota = (eig, key) => {
+    // 01.10.2026: valinn starfsmaður (ekki „Allir") → hans eigin nótur, skrifaðar á hans grein.
+    if (eig && eig !== DN_EIG) return String(P('skipulagsbord.by_staff.' + eig + '.dagnotur.' + key) || '');
     const sam = P('skipulagsbord.by_staff.' + DN_EIG + '.dagnotur.' + key);
     if (typeof sam === 'string') return sam;
     const hlutar = [];
@@ -2616,13 +2631,14 @@
     return hlutar.join('\n');
   };
   function dagNotaHtml(d) {
-    const n = nu();
-    const g = S.dnDrog[d.key] != null ? S.dnDrog[d.key] : dagNota(n, d.key);
-    const st = S.dnStada[d.key];
+    // Lykillinn ber eigandann með („Anni|2026-10-01") svo drög og vistun lendi á réttri grein þótt skipt sé um val.
+    const eig = dagskraSyn(), dk = eig + '|' + d.key;
+    const g = S.dnDrog[dk] != null ? S.dnDrog[dk] : dagNota(eig, d.key);
+    const st = S.dnStada[dk];
     return '<div class="dnota">' +
-      '<textarea data-dn="' + esc(d.key) + '" rows="' + Math.min(10, Math.max(2, g.split('\n').length + 1)) + '"' +
+      '<textarea data-dn="' + esc(dk) + '" rows="' + Math.min(10, Math.max(2, g.split('\n').length + 1)) + '"' +
         ' aria-label="Nóta ' + d.d + ' ' + d.n + '." placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
-      '<span class="dnst ' + (st ? st.t : '') + '" data-dnst="' + esc(d.key) + '">' + esc(st ? st.s : '') + '</span>' +
+      '<span class="dnst ' + (st ? st.t : '') + '" data-dnst="' + esc(dk) + '">' + esc(st ? st.s : '') + '</span>' +
     '</div>';
   }
   function dnStimpla(key) {
@@ -2641,12 +2657,13 @@
     S.dnStada[key] = { t: 'bid', s: 'Óvistað…' };
     dnStimpla(key);
     bida('dn:' + key, async () => {
-      const n = DN_EIG, texti = S.dnDrog[key];
+      const bil = key.indexOf('|'), n = bil > 0 ? key.slice(0, bil) : DN_EIG, dags = bil > 0 ? key.slice(bil + 1) : key;
+      const texti = S.dnDrog[key];
       if (texti == null) return;
       S.dnStada[key] = { t: 'vistar', s: 'Vista…' };
       dnStimpla(key);
       let ok = false;
-      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { dagnotur: { [key]: texti } } } } })); } catch (_) {}
+      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { dagnotur: { [dags]: texti } } } } })); } catch (_) {}
       if (ok && S.dnDrog[key] === texti) delete S.dnDrog[key];
       S.dnStada[key] = ok
         ? { t: 'ok', s: 'Vistað kl. ' + klukka(new Date()) }
@@ -2676,8 +2693,11 @@
         '</div>' +
       '</div>').join('') + '</div>' +
       (open ? '<div class="legend">' + VD_TEG.map(t => '<span><i class="dot" style="background:' + t[1] + '"></i>' + t[0] + '</span>').join('') + '</div>' : '');
-    const action = '<button type="button" class="btn gold sm" data-t5="job-new" data-date="' + days[0].key + '">+ Skrá verk</button>';
-    return modPanel('dagskra', days[0].jobs.length + ' í dag · ' + total + ' næstu 7 daga', body, action, true);
+    const syn = dagskraSyn();
+    const val = '<label class="dgsyn"><span class="lbl">Dagskrá</span><select data-t5="dg-syn" aria-label="Hvers dagskrá er sýnd">' +
+      dagskraFolk().map(x => '<option value="' + esc(x) + '"' + (x === syn ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select></label>';
+    const action = val + '<button type="button" class="btn gold sm" data-t5="job-new" data-date="' + days[0].key + '">+ Skrá verk</button>';
+    return modPanel('dagskra', (syn !== DN_EIG ? syn + ' · ' : '') + days[0].jobs.length + ' í dag · ' + total + ' næstu 7 daga', body, action, true);
   }
   /* ── einingar sem sækja gögn: latar, geymdar í 5 mín (engin sókn við hverja 60 s könnun) ── */
   const G = {};
@@ -5335,7 +5355,8 @@
       }
       case 'link-del': vistaLinks(l => l.filter(x => x.id !== el.dataset.lid), 'Flýtileið fjarlægð'); return;
       case 'job-new':
-        try { if (window.Vikudagskra && Vikudagskra.open) Vikudagskra.open(el.dataset.date); else toast('Dagskrárglugginn er ekki hlaðinn.', true); }
+        // 01.10.2026: sé dagskrá starfsmanns valin fer nýja verkið á hans grein (303 eigandi), annars eins og áður.
+        try { if (window.Vikudagskra && Vikudagskra.open) Vikudagskra.open(el.dataset.date, null, dagskraSyn() !== DN_EIG ? dagskraSyn() : undefined); else toast('Dagskrárglugginn er ekki hlaðinn.', true); }
         catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
         return;
       case 'job-edit': {
@@ -5689,6 +5710,14 @@
       return;
     }
     if (el.dataset.t5 === 'ak-mal') { el.blur(); setjaAkstur(+el.dataset.fid, +el.value); return; }
+    if (el.dataset.t5 === 'dg-syn') {
+      el.blur();
+      const hver = nu(), v = el.value;
+      _dgSynBid[hver] = v;
+      render();
+      vistaCfg({ dagskra_syn: v }).then(() => { if (_dgSynBid[hver] === v) delete _dgSynBid[hver]; });
+      return;
+    }
     if (el.dataset.t5 !== 'who' || !el.value) return;
     el.blur();
     skolaAllt();                                           // texti í ritun vistast á réttan starfsmann
