@@ -901,8 +901,34 @@
     const m = model();
     return priceItems()
       .filter(it => it.link && (!adeins || adeins(it)))
-      .map(it => ({ name: it.name, qty: String(magnTengingar(m, it.link)), price: String(it.price), teg: it.teg || tegAgiskun(it.name) }))
+      .map(it => ({ name: it.name, qty: String(magnTengingar(m, it.link)), price: String(it.price), teg: it.teg || tegAgiskun(it.name), sjalfNytt: erNytt(it.link) ? it.link : undefined }))
       .filter(l => +l.qty > 0);
+  }
+
+  // „Þar af nýtt" STÝRIR vörulínunum (Agnar 01.10: „láta útreikningana sækja verðin og uppfærast miðað við fjöldann sem
+  // er nýtt"). Vara tengd „Nýtt: X" fær magn = þar af nýtt í X. Fjöldi > 0: lína með sama vöruheiti (orðaröð og
+  // broddstafir hunsuð — „Reykskynjari optískur XP95" = „Optiskur Reykskynjari XP95") er tekin yfir og merkt
+  // sjalfNytt, annars bætt við á verðlistaverði. Fjöldi 0: AÐEINS merktri línu eytt — handslegnar línur eru aldrei
+  // snertar, og skýrslur sem aldrei hafa borið „Þar af nýtt" haldast óbreyttar. Vinnur á S; skilar true ef breytt.
+  function lidLykill(x) { return String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ð/g, 'd').replace(/þ/g, 'th').replace(/æ/g, 'ae').replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean).sort().join(' '); }
+  function samraemaNyttS() {
+    const m = model();
+    const verd = S.data.verd = S.data.verd || { linur: [] };
+    const linur = verd.linur = verd.linur || [];
+    let breytt = false;
+    priceItems().filter(it => erNytt(it.link)).forEach(it => {
+      const n = magnTengingar(m, it.link);
+      let ix = linur.findIndex(l => l && l.sjalfNytt === it.link);
+      if (ix < 0 && n > 0) ix = linur.findIndex(l => l && !l.sjalfNytt && lidLykill(l.name) === lidLykill(it.name));
+      if (n > 0) {
+        if (ix < 0) { linur.push({ name: it.name, qty: String(n), price: String(it.price), afsl: '', teg: it.teg || 'vara', sjalfNytt: it.link }); breytt = true; }
+        else {
+          const l = linur[ix];
+          if ((num(l.qty) || 0) !== n || l.sjalfNytt !== it.link) { l.qty = String(n); l.sjalfNytt = it.link; if (!l.teg) l.teg = it.teg || 'vara'; breytt = true; }
+        }
+      } else if (ix >= 0) { linur.splice(ix, 1); breytt = true; }
+    });
+    return breytt;
   }
 
   // 🧾 reikningur úr verðlínunum → solur (greitt_med=reikningur) → Kröfu yfirlit;
@@ -1212,6 +1238,7 @@
       const r = S.data.bunadur[i]; r[k] = Math.max(0, (+r[k] || 0) + d); markDirty();
       const v = w.querySelector('[data-sv="' + i + ':' + k + '"]'); if (v) v.textContent = r[k];
       const sam = w.querySelector('[data-sam="' + i + '"]'); if (sam) sam.textContent = (+r.iLagi || 0) + (+r.ekki || 0);
+      if (k === 'nytt' && samraemaNyttS()) { const vb = w.querySelector('#_bks-verd'); if (vb) { vb.innerHTML = verdBodyHtml(); wireVerd(w); } }
       const eq = document.getElementById('_bks-eqsum'); if (eq) eq.textContent = model().taeki + ' tæki samtals';
       updStats();
     }));
@@ -1928,7 +1955,14 @@
     const prev = S; S = st;
     try { return autoVerdLines(it => erNytt(it.link)); } finally { S = prev; }
   }
-  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun };
+  // Samræmir verðlínur skýrslu (row.data — sama hlutur, breytt á staðnum) við „Þar af nýtt". Vistar EKKI.
+  function samraemaNytt(co, row) {
+    if (!row || !row.data) return false;
+    const st = stateFor(co, row); if (!st) return false;
+    const prev = S; S = st;
+    try { return samraemaNyttS(); } finally { S = prev; }
+  }
+  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun, samraemaNytt };
   console.log('[patch-273] Brunakerfi skoðunarskýrsla v2 (PDF + verð) installed');
 })();
 /* === END BRUNAKERFI SKOÐUNARSKÝRSLA === */

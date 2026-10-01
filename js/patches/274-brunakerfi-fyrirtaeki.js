@@ -126,6 +126,7 @@
   // ALLT data-blobbið; skrifaði ég blobbið sem ég las við teikningu myndi ég
   // henda því sem einhver annar sló inn á meðan.
   let _vistT = null, _vistBid = {};
+  const _nyttSamr = {};   // rep.id → { sig, t } — síðasta vistaða „Þar af nýtt"-samræming (lykkjuvörn)
   // ── B26: aflæst blað — breytingar á búnaðartölum, hljóðmælingum og stöðvarprófunum vistast beint (fresk lesning +
   //    plástur á þá lykla eina, sama mynstur og verðlínurnar) ────────────────────────────────────────────────────
   let _aflaest = false, _bladBreytt = false, _bladT = null;
@@ -138,9 +139,15 @@
       if (rep.data.bunadur) d.bunadur = rep.data.bunadur;
       if (rep.data.hljod) d.hljod = rep.data.hljod;
       if (rep.data.stod) { d.stod = d.stod || {}; d.stod.checks = rep.data.stod.checks; }
+      // 01.10.2026: „Þar af nýtt" stýrir vörulínunum — samræmt hér og vistað Í SÖMU skrift og búnaðartölurnar,
+      // svo tvær vistanir (blað + verðlínur) geti ekki skrifað hvor yfir aðra.
+      let linurBreyttar = false;
+      try { const _bks = window.BrunakerfiSkyrsla; if (_bks && _bks.samraemaNytt) linurBreyttar = _bks.samraemaNytt(C.co, rep); } catch (_) {}
+      if (linurBreyttar) { d.verd = d.verd || {}; d.verd.linur = (rep.data.verd && rep.data.verd.linur) || []; }
       const r = await sb.from('brunakerfi_skyrslur').update({ data: d, updated_at: new Date().toISOString() }).eq('id', rep.id);
       if (r.error) { toast('Skýrslan vistaðist EKKI: ' + r.error.message, true); return; }
-      toast('Skýrsla vistuð ✓');
+      toast(linurBreyttar ? 'Skýrsla vistuð ✓ · verðlínur uppfærðar eftir „Þar af nýtt"' : 'Skýrsla vistuð ✓');
+      if (linurBreyttar) { try { render(); } catch (_) {} }
     } catch (e) { toast('Skýrslan vistaðist EKKI: ' + ((e && e.message) || e), true); }
   }
   function vistaBladSidar(rep) { _bladBreytt = true; if (_bladT) clearTimeout(_bladT); _bladT = setTimeout(() => { _bladT = null; vistaBlad(rep); }, 900); }
@@ -565,7 +572,7 @@
       r('.b274-linur [data-vadd]', 'margin:8px 12px 10px!important;align-self:flex-start'),
       r('.b274-linur .b274-baeta', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 12px 10px'),
       r('.b274-linur .b274-baeta [data-vadd]', 'margin:0!important'),
-      r('.b274-linur .b274-lidval', 'height:30px;max-width:240px;border:1px solid rgba(20,24,34,.14);border-radius:7px;background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);font:600 12px ' + SANS + ';color:#1f2530;padding:0 8px;cursor:pointer'),
+      r('.b274-linur select.b274-lidval', 'appearance:none;-webkit-appearance:none;field-sizing:content;width:auto;max-width:150px;text-align:center;cursor:pointer;box-sizing:border-box;height:33px!important;min-height:0!important;padding-top:0!important;padding-bottom:0!important;line-height:1!important'),   // þemað þvingar 42 px með !important
       r('.b274-linur button._bkc-vteg', 'cursor:pointer;font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase'),
       r('.b274-linur button._bkc-vteg._vara', 'background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%);border-color:rgba(190,150,60,.5);color:#fff'),
       r('.b274-nytt', 'color:#845400'),
@@ -800,6 +807,20 @@
     })();
 
     // verð / reikningsyfirlit
+    // 01.10.2026: „Þar af nýtt" stýrir vörulínunum (273 samraemaNytt) — vistað aðeins ef línur breyttust
+    try {
+      const _bks = window.BrunakerfiSkyrsla;
+      if (_bks && _bks.samraemaNytt) C.reports.forEach(r => {
+        if (!(r && r.data && _bks.samraemaNytt(C.co, r))) return;
+        // lykkjuvörn: SAMA niðurstaða er ekki vistuð aftur innan mínútu (t.d. ef vistun festist ekki og næsta
+        // endurteikning les gömlu línurnar á ný) — annars gæti hver endurteikning vakið nýja skrift
+        const sig = JSON.stringify(((r.data.verd && r.data.verd.linur) || []).filter(l => l && l.sjalfNytt).map(l => [l.name, l.qty]));
+        const f = _nyttSamr[r.id];
+        if (f && f.sig === sig && Date.now() - f.t < 60000) return;
+        _nyttSamr[r.id] = { sig, t: Date.now() };
+        vistaSidar(r);
+      });
+    } catch (_) {}
     const verds = C.reports.map(r => ({ r, v: verdOf(r) })).filter(x => x.v.lines > 0);
     const verdSum = verds.reduce((a, x) => a + x.v.total, 0);
     // 30.09.2026 (Agnar: „þetta er hræðileg samantektar reikningagerð"). Spjaldið
@@ -844,8 +865,8 @@
     })();
     const lidaVal = (teg, merki) => {
       const lidir = verdlistiTeg.map((it, ix) => ({ it, ix })).filter(x => x.it.name && x.it.teg === teg);
-      return lidir.length ? '<select class="b274-lidval" data-vlid="' + teg + '" title="Bæta við ' + merki.toLowerCase() + ' úr verðlistanum">' +
-        '<option value="">＋ ' + merki + ' úr verðlista…</option>' +
+      return lidir.length ? '<select class="_bkc-act _ghost b274-lidval" data-vlid="' + teg + '" title="Bæta við ' + merki.toLowerCase() + ' úr verðlistanum">' +
+        '<option value="">＋ ' + merki + '</option>' +
         lidir.map(x => '<option value="' + x.ix + '">' + esc(x.it.name) + ' · ' + fmtKr(x.it.price) + '</option>').join('') + '</select>' : '';
     };
     // „Þar af nýtt" í skýrslunni × vara tengd „Nýtt: …" í verðlistanum → lína sem vantar eða magn sem stemmir ekki
@@ -989,6 +1010,11 @@
               (meta.dags ? '<span class="b274-plata dokk">📅 Skoðað ' + esc(fmtDags(meta.dags)) + '</span>' : '') +
               '<div class="b274-hb">' +
                 (bladHtml ? '<button type="button" class="_bkc-act ' + (_aflaest ? 'b274-graenn' : 'b274-malmur') + '" id="_bkc-aflaesa" title="' + (_aflaest ? 'Læsa blaðinu aftur' + (repNow.status === 'final' ? ' og uppfæra PDF-skýrsluna' : '') : 'Breyta tölum og hökum beint á blaðinu') + '">' + (_aflaest ? '🔒 Læsa skýrslu' : '🔓 Aflæsa skýrslu') + '</button>' : '') +
+                // 01.10.2026 (Agnar): „Í skýrslu" úr Línum reiknings færður hingað og heitir „Vinnuhamur" — opnar skýrsluna
+                // í vinnuham (verðlistaval, efni úr innkaupum). Sami [data-open]-hlustari og áður.
+                // „Skoðunarskýrsla"/„Halda áfram" (efst í Skýrslu og reikningi) gerði það sama og var fjarlægt (Agnar) —
+                // Vinnuhamur opnar því skýrslu ÁRSINS ef hún er til, annars þá nýjustu.
+                ((repNow || newest) ? '<button type="button" class="_bkc-act b274-silfur" data-open="' + esc((repNow || newest).id) + '" title="Opna skýrsluna í vinnuham — þar eru verðlistaval og efni úr innkaupum">✏️ Vinnuhamur</button>' : '') +
                 (repUrl ? '<button type="button" class="_bkc-act b274-silfur" data-repview="' + esc(repUrl) + '" data-repname="úttekt ' + esc((repNow && repNow.uttekt_nr) || '') + '" title="Opna PDF-skýrsluna">📄 PDF</button>' : '') +
               '</div>' +
             '</div>' +
@@ -1036,9 +1062,9 @@
               (repNow && hasVerd ? '<button type="button" class="_bkc-act b274-silfur" id="_bkc-vista" title="Vista verðlínurnar núna">💾 Vista ' + (repNow.status === 'final' ? '' : 'óklárað') + '</button>' : '') +
               (repNow && repNow.status === 'final' ? '<button type="button" class="_bkc-act b274-silfur" data-send="' + repNow.id + '" title="Senda skýrslu og/eða reikning í tölvupósti">📧 Senda</button>' : '') +
               (repNow && repNow._inv ? '<button type="button" class="_bkc-act b274-silfur" data-invpdf="' + repNow.id + '" title="Opna reikninginn (PDF)">🧾 Reikningur</button>' : '') +
-              // 📄 Búa til úttektarskýrslu · <ár> vantar — eða opna skýrsluna sem er til (drög: halda áfram)
-              (repNow
-                ? '<button type="button" class="_bkc-act b274-malmur" data-open="' + repNow.id + '" title="Opna skoðunarskýrsluna">📄 ' + (repNow.status === 'final' ? 'Skoðunarskýrsla' : 'Halda áfram') + '</button>'
+              // 📄 Búa til úttektarskýrslu · <ár> vantar. (Opna skýrsluna sem er til = „Vinnuhamur" við hlið Aflæsa skýrslu —
+              // „Skoðunarskýrsla"/„Halda áfram" hér gerði það sama og var tekinn út 01.10.2026 að ósk Agnars.)
+              (repNow ? ''
                 : '<button type="button" class="_bkc-act b274-malmur" id="_bkc-nyhaus" title="Ný skoðunarskýrsla ' + NOW + '">📄 Búa til úttektarskýrslu<span class="b274-p">· ' + NOW + ' vantar</span></button>') +
             '</div></div>' +
           '</header>' +
@@ -1055,7 +1081,6 @@
               (verds.some(x => vantarAkstur(x.r)) ? '<span class="b274-plata vantar"><i></i>Akstur vantar</span>' : '') +
               '<span class="b274-sp"></span>' +
               '<button type="button" class="_bkc-act _ghost" id="_bkc-vlist">🏷 Verðlisti</button>' +
-              (newest ? '<button type="button" class="_bkc-act _ghost" data-open="' + esc(newest.id) + '" title="Opna skýrsluna — þar eru verðlistaval og efni úr innkaupum">✏️ Í skýrslu</button>' : '') +
             '</div>' +
             '<div class="b274-linur">' + verdHtml + '</div>' +
             (hasVerd ? '<div class="_bkc-reikn b274-reikn">' +
