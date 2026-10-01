@@ -576,6 +576,7 @@
       r('.b274-linur [data-vadd]', 'margin:8px 12px 10px!important;align-self:flex-start'),
       r('.b274-linur .b274-baeta', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 12px 10px'),
       r('.b274-linur .b274-baeta [data-vadd]', 'margin:0!important'),
+      r('.b274-linur .b274-baeta [data-vvinna]', 'margin:0!important;height:33px!important;min-height:0!important;padding-top:0!important;padding-bottom:0!important;line-height:1!important'),
       r('.b274-linur select.b274-lidval', 'appearance:none;-webkit-appearance:none;field-sizing:content;width:auto;max-width:150px;text-align:center;cursor:pointer;box-sizing:border-box;height:33px!important;min-height:0!important;padding-top:0!important;padding-bottom:0!important;line-height:1!important'),   // þemað þvingar 42 px með !important
       r('.b274-linur button._bkc-vteg', 'cursor:pointer;font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase'),
       r('.b274-linur button._bkc-vteg._vinna', 'background:linear-gradient(145deg,#2a2e35 0%,#5b616c 24%,#8d939d 47%,#a7adb6 53%,#5c626d 76%,#2b2f36 100%);border-color:#22262c;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55)'),   // Agnar: dökkur silfurmálmur, hvítir stafir
@@ -858,6 +859,7 @@
     const tegLinu = (l) => {
       const n = String(l.name || '');
       if (l.teg === 'vara' || l.teg === 'thjonusta') return l.teg;
+      if (l.teg === 'vinna') return 'thjonusta';   // 01.10.2026: vinnulína er þjónusta á reikningnum, merkið segir Vinna
       if (!n.trim()) return 'thjonusta';
       return BKS.tegAgiskun ? BKS.tegAgiskun(n) : (/n[ýy]r|uppsett|skynjari|skipt/i.test(n) ? 'vara' : 'thjonusta');
     };
@@ -865,6 +867,7 @@
       const n = String(l.name || '');
       if (/akstur/i.test(n)) return 'Akstur';
       if (/sk[ýy]rslu|samantekt/i.test(n)) return 'Skýrsla';
+      if (l.teg === 'vinna') return 'Vinna';
       return tegLinu(l) === 'vara' ? 'Vara' : (/^\s*vinna/i.test(n) ? 'Vinna' : 'Skoðun');
     };
     const verdlistiTeg = (function () {
@@ -909,7 +912,7 @@
           '<div class="_bkc-vr">' +
             '<input class="_bkc-vin" data-vk="name" data-vi="' + i + '" value="' + esc(l.name || '') + '" title="' + esc(l.name || '') + '" placeholder="Lýsing">' +
             '<input class="_bkc-vin" data-vk="qty" data-vi="' + i + '" inputmode="numeric" value="' + esc(l.qty == null ? '' : l.qty) + '" style="text-align:center">' +
-            '<button type="button" class="_bkc-vteg' + (tegLinu(l) === 'vara' ? ' _vara' : '') + (tegMerki(l) === 'Vinna' ? ' _vinna' : '') + '" data-vteg="' + i + '" title="Tegund línu — smelltu til að skipta á milli Vöru og Þjónustu">' + tegMerki(l) + '</button>' +
+            '<button type="button" class="_bkc-vteg' + (tegLinu(l) === 'vara' ? ' _vara' : '') + (tegMerki(l) === 'Vinna' ? ' _vinna' : '') + '" data-vteg="' + i + '" title="Tegund línu — smelltu til að skipta: Skoðun → Vara → Vinna">' + tegMerki(l) + '</button>' +
             '<input class="_bkc-vin" data-vk="price" data-vi="' + i + '" inputmode="decimal" value="' + esc(l.price == null ? '' : fmtInn(l.price)) + '" style="text-align:right">' +
             '<span class="_bkc-vvsk">' + VAT_PCT + '%</span>' +
             '<input class="_bkc-vin" data-vk="afsl" data-vi="' + i + '" inputmode="decimal" placeholder="0" value="' + esc(l.afsl == null ? '' : l.afsl) + '" style="text-align:center;color:#b3341a;font-weight:700">' +
@@ -926,6 +929,9 @@
         '<div class="b274-baeta">' +
           '<button type="button" class="_bkc-act _ghost" data-vadd="1">＋ Auð lína</button>' +
           lidaVal('vara', 'Vara') + lidaVal('thjonusta', 'Þjónusta') +
+          // 01.10.2026 (Agnar: „vantar eiginlega að setja inn + vinna"): vinnuliðir reikningsins eru frjáls lýsing
+          // („Bæta við skynjurum í bakhús 3 stk í 11m hæð") — ágiskun á heitinu gerði þá að Vöru og færði línuna í Vörur
+          '<button type="button" class="_bkc-act _ghost" data-vvinna="1" title="Ný vinnulína — skrifaðu lýsinguna; tímaverð úr verðlistanum">＋ Vinna</button>' +
         '</div>' +
         '</div>').join('')
       // 30.09.2026 (Agnar: „skil ekki alveg hvað er í gangi þarna"). Textinn sagði
@@ -1155,7 +1161,9 @@
       const tilLinur = () => { rep.data = rep.data || {}; rep.data.verd = rep.data.verd || {}; rep.data.verd.linur = rep.data.verd.linur || []; return rep.data.verd.linur; };
       blokk.querySelectorAll('[data-vteg]').forEach(b => b.addEventListener('click', () => {
         const l = linur()[+b.dataset.vteg]; if (!l) return;
-        l.teg = tegLinu(l) === 'vara' ? 'thjonusta' : 'vara';
+        // Skoðun → Vara → Vinna → Skoðun. Heiti sem byrjar á „Vinna" er Vinna hvort sem er — þaðan beint í Vöru.
+        const m = tegMerki(l);
+        l.teg = m === 'Vara' ? 'vinna' : m === 'Vinna' ? (/^\s*vinna/i.test(String(l.name || '')) ? 'vara' : 'thjonusta') : 'vara';
         render(); vistaSidar(rep);
       }));
       blokk.querySelectorAll('[data-vlid]').forEach(sel => sel.addEventListener('change', () => {
@@ -1172,12 +1180,26 @@
         l.qty = b.dataset.vnq || l.qty;
         render(); vistaSidar(rep);
       }));
+      // Ný lína: bendillinn fer beint í lýsinguna (á síma opnast lyklaborðið við línuna sem var búin til)
+      const skrifaI = (lina) => {
+        const ix = linur().indexOf(lina); if (ix < 0) return;
+        const inp = w.querySelector('[data-vrep="' + rep.id + '"] [data-vk="name"][data-vi="' + ix + '"]');
+        if (inp) { try { inp.focus({ preventScroll: true }); inp.scrollIntoView({ block: 'nearest' }); } catch (_) {} }
+      };
       const add = blokk.querySelector('[data-vadd]');
       if (add) add.addEventListener('click', async () => {
         rep.data = rep.data || {}; rep.data.verd = rep.data.verd || {};
         rep.data.verd.linur = rep.data.verd.linur || [];
-        rep.data.verd.linur.push({ name: '', qty: '1', price: '', afsl: '' });
-        render(); vistaSidar(rep);
+        const ny = { name: '', qty: '1', price: '', afsl: '' };
+        rep.data.verd.linur.push(ny);
+        render(); vistaSidar(rep); skrifaI(ny);
+      });
+      const vinna = blokk.querySelector('[data-vvinna]');
+      if (vinna) vinna.addEventListener('click', () => {
+        const vl = verdlistiTeg.find(it => /^\s*vinna/i.test(String(it.name || '')));
+        const ny = { name: '', qty: '1', price: vl && vl.price ? String(vl.price) : '', afsl: '', teg: 'vinna' };
+        tilLinur().push(ny);
+        render(); vistaSidar(rep); skrifaI(ny);
       });
     });
     const repNy = w.querySelector('#_bkc-repny');

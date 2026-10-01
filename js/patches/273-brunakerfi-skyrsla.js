@@ -943,6 +943,7 @@
     // sama flokkun og merkið á línunni í 274 (tegMerki): Akstur · Skýrsla · Vara · Vinna · Skoðun
     if (/akstur/i.test(n)) return 4;
     if (/sk[ýy]rslu|samantekt/i.test(n)) return 0;
+    if (l.teg === 'vinna') return 3;   // 01.10.2026: „＋ Vinna" í 274 — frjáls lýsing, tegundin ræður en ekki heitið
     const t = (l.teg === 'vara' || l.teg === 'thjonusta') ? l.teg : tegAgiskun(n);
     if (t === 'vara') return 2;
     return /^\s*vinna/i.test(n) ? 3 : 1;

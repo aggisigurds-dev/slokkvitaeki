@@ -30,6 +30,12 @@
   // ALLUR prófíllinn var endurteiknaður (mælt: fyrsta röð listans 390 → 609 → 740 → 433 → 306 → 272 px á 1,5 s).
   // Skjárinn sýndi þegar nýju stöðuna — app_settings / app_kv / rpc:app_settings_merge eru bakgrunnur hér.
   const BAKGRUNNUR = /^(hradamaelingar|app_problems|year_factcheck|geocode_cache|doc_factcheck|trio_saga|villur|villuvakt|heimsoknir_log|page_views|automation_runs|fjarmal_live|app_settings|app_kv|rpc:app_settings_merge)$/;
+  // 01.10.2026 (Agnar: „brunakerfis skoðun hoppar gríðarlega þegar ég reyni að setja nýtt inn á reikninginn“): Brunakerfis- og
+  // Slökkvikerfis-spjöldin (274/386, hýst í prófílnum) eiga sín gögn og teikna sig sjálf eftir vistun. Verðlínuvistun 274
+  // kom hingað og ALLUR prófíllinn var rifinn ~1,5 s eftir hverja nýja línu (mælt í 412 px: #companies-main 7.215 →
+  // 2.469 px, spjaldið horfið, byggt aftur í lotum á ~1 s). Skýrsluskjöl og reikningar (customer_documents, solur)
+  // endurteikna prófílinn áfram eins og áður — þaðan les Skjöl og viðhengi (199).
+  const SJALFTEIKNA = /^(brunakerfi_skyrslur|slokkvikerfi|slokkvikerfi_skodanir)$/;
   const NOTANDI_MS = 20000, KYRRD_MS = 2500, BID_MS = 450;
 
   let _adgerd = 0;              // síðasta raunverulega aðgerð notanda
@@ -65,6 +71,7 @@
     if (!t || BAKGRUNNUR.test(t)) return;
     // 01.10.2026: 227 vistar með RPC (tafla = 'rpc:app_settings_merge') — sama speglun, sama bakgrunnur
     if (/app_settings|app_kv/.test(t)) return;
+    if (SJALFTEIKNA.test(t)) return;
     const nu = Date.now();
     if (nu < _kyrrdTil && _adgerd < _kyrrdTil - KYRRD_MS) return;   // afleiðing okkar eigin endurteikningar
     if (nu - _adgerd > NOTANDI_MS) return;                           // enginn notandi á bak við — bakgrunnsskrift
