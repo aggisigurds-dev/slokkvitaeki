@@ -68,6 +68,8 @@ const utgafa = {
   'features.js': '20261001sleppa',
   'mapfix.js': '20261001endur',
   '421-profill-lifandi.js': '20261001endur',
+  // Uppfærsluborð bætti #uppferslubord við 218. Nýrra merki hleður hopp-kóðann líka.
+  '218-url-routing.js': '20261001ub',
 };
 ['features.js', 'mapfix.js', '147-brunakerfi.js', '153-arsskodun.js', '218-url-routing.js', '224-uttekt-taeki.js', '227-trip-cloud-sync.js', '274-brunakerfi-fyrirtaeki.js', '385-slokkvikerfi.js', '421-profill-lifandi.js']
   .forEach(f => {
