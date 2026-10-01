@@ -148,10 +148,6 @@
     }
     return false;
   }
-  function adgerd() {
-    try { return !!(navigator.userActivation && navigator.userActivation.isActive); }
-    catch (_) { return false; }
-  }
   // Endurnýja setur __coEndurnyja og kallandinn merkir lykilinn ÁÐUR en fetch fer.
   // Þá er gildið oft þegar á færslunni, svo hand-stillingin myndi annars stöðva
   // einu endurnýjunina. Ein umferð á hvern smell. Af stöðvar samt.
@@ -175,7 +171,6 @@
     if (job === 'kort') {
       if (hnitASkra(url)) return false;
       if (Date.now() < _kortLeyfiTil) return true;
-      if (adgerd()) { _kortLeyfiTil = Date.now() + 20000; return true; }
       return false;
     }
     if (job === 'skilabod') return false;
@@ -456,8 +451,14 @@
     if (btn.closest('#view-field') && /Uppfær/.test(t)) _kortLeyfiTil = Date.now() + 20 * 60 * 1000;
   }, true);
 
+  function stodvaKort() {
+    if (modeOf('kort') === 'auto') return;
+    if (window.GeocodePrewarm && GeocodePrewarm.cancel) {
+      try { GeocodePrewarm.cancel(); } catch (_) {}
+    }
+  }
   function boot() {
-    try { saejast(); vefjaFetch(); vefjaLoad(); vefjaHlada(); vefjaPrime(); ensureView(); navTakki(); hook(); limaVidStillingar(); } catch (e) {
+    try { saejast(); vefjaFetch(); vefjaLoad(); vefjaHlada(); vefjaPrime(); ensureView(); navTakki(); hook(); limaVidStillingar(); stodvaKort(); } catch (e) {
       console.warn('[431]', e);
     }
   }
