@@ -3373,13 +3373,13 @@
         <td class="chk"><span class="box"></span></td>
       </tr>` : `<tr>
         <td class="num">${i + 1}</td>
-        ${nameCell}
+        <td class="nm"><div class="nmw"><strong>${esc(c.nafn || '')}</strong></div>${(c.kennitala || phone) ? `<div class="kt">${c.kennitala ? 'kt. ' + esc(fmtKt(c.kennitala)) : ''}${c.kennitala && phone ? ' · ' : ''}${esc(phone)}</div>` : ''}</td>
         <td class="yrs">${arHtml}</td>
-        <td>${esc(c.heimilisfang || '')}</td>
-        <td class="nowrap">${esc(phone)}</td>
+        <td class="adr"><div class="adrw">${esc(c.heimilisfang || '')}</div></td>
         ${synaSkodun ? `<td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>` : ''}
         <td class="c taeki">${eqTrioHtml(ars.equipment, 'screen') || ''}</td>
         <td class="c stm"><span class="pst pst-${stK}" title="${esc(stTitill)}"></span></td>
+        <td class="fyll"></td>
       </tr>`;
     }).join('');
 
@@ -3390,7 +3390,7 @@
     win.document.write(`<!doctype html><html lang="is"><head><meta charset="utf-8"><title>Fyrirtæki í Þjónustu — ${esc(filterLabel)}</title>
 <style>
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body.portrait table { font-size: 10px; }
+  body.portrait table { font-size: 12px; }
   body.portrait th, body.portrait td { padding: 4px 5px; }
   body { font-family: 'IBM Plex Sans', system-ui, Arial, sans-serif; color:#0f172a; margin:0; padding:18px; }
   .hd { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f172a; padding-bottom:10px; margin-bottom:12px; }
@@ -3424,6 +3424,16 @@
   .pyd i.rep { background:#1f9d57; }
   .pyd i.inv { background:#2f5fe0; }
   td.taeki { white-space:nowrap; }
+  /* 01.10.2026 (Agnar: „geturðu þétt þetta betur — of mikið bil á milli"): taflan dreifði afgangsplássinu á ALLA
+     dálka. Nú sitja dálkarnir þétt (width:1%) og afgangurinn fer í ósýnilega fyllidálkinn aftast. Nafn og
+     heimilisfang hafa fasta hámarksbreidd og brotna í tvær línur — röðin er hvort eð er tvær línur (nafn + kt). */
+  table.full th, table.full td { width:1%; padding-left:5px; padding-right:5px; }
+  table.full th.fyll, table.full td.fyll { width:auto; padding:0; }
+  table.full td.nm .nmw { width:15em; }
+  table.full td.adr .adrw { width:16em; }
+  table.full td.yrs, table.full td.taeki, table.full td.stm, table.full td.num { white-space:nowrap; }
+  table.full td.taeki ._ars-eqtrio { gap:6px !important; }
+  table.full .kt { white-space:nowrap; }
   /* staðan: aðeins litaða platan (Agnar), skýringin í hausnum */
   td.stm { text-align:center; width:30px; }
   .pst { display:inline-block; width:18px; height:11px; border-radius:3px; border:1px solid rgba(20,24,34,.16); background:${LIT.SILVER}; vertical-align:middle; }
@@ -3473,7 +3483,7 @@
     </div>
     <div class="meta">${logo}<div style="margin-top:4px">Slökkvitæki ehf · ${dateStr}</div></div>
   </div>
-  <table>
+  <table class="${compact ? 'akl' : 'full'}">
     <thead><tr>${compact ? `
       <th class="num">#</th><th>Fyrirtæki</th>
       <th>Heimilisfang</th><th>Sími</th>
@@ -3483,10 +3493,11 @@
       <th class="c chk">✓ Búið</th>` : `
       <th class="num">#</th><th>Fyrirtæki</th>
       <th class="c">'${AR[0].slice(-2)}–'${AR[AR.length - 1].slice(-2)}</th>
-      <th>Heimilisfang</th><th>Sími</th>
+      <th>Heimilisfang</th>
       ${synaSkodun ? '<th class="c">Skoðun</th>' : ''}
       <th class="c">Tæki</th>
-      <th class="c" title="Staða ${curYear}">${curYear}</th>`}
+      <th class="c" title="Staða ${curYear}">${curYear}</th>
+      <th class="fyll"></th>`}
     </tr></thead>
     <tbody>${rows}</tbody>
     <tfoot><tr>${compact
