@@ -75,10 +75,15 @@
       // NB: `display` er ALDREI sett hér. app.css gefur .vnav-btn `display:flex`;
       // 68 felur hnappa með inline `display:none` og 162/181 o.fl. með CSS-reglum
       // — `display:flex!important` dró þá ALLA fram (mælt: 17 faldir hnappar birtust).
-      B + '{position:relative!important;overflow:visible!important;align-items:center!important;gap:11px!important;height:36px!important;min-height:36px!important;box-sizing:border-box!important;padding:0 10px 0 26px!important;margin-top:0;border:1px solid transparent!important;border-radius:3px!important;background:transparent!important;box-shadow:none!important;text-shadow:none!important;color:#c9ced6!important;font:500 13.5px/1.2 ' + SANS + '!important;letter-spacing:0!important;text-align:left!important;-webkit-font-smoothing:antialiased}',
+      B + '{position:relative!important;overflow:visible!important;align-items:center!important;gap:11px!important;height:36px!important;min-height:36px!important;box-sizing:border-box!important;padding:0 10px 0 26px!important;margin-top:0;border:1px solid transparent!important;border-radius:3px!important;background:transparent!important;box-shadow:none!important;text-shadow:none!important;color:#eaedf2!important;font:500 14.5px/1.2 ' + SANS + '!important;letter-spacing:0!important;text-align:left!important;-webkit-font-smoothing:antialiased}',
       B + ' svg{flex:none!important;width:16px!important;height:16px!important;margin:0!important}',
       B + ' > svg[stroke="currentColor"],' + B + ' > span > svg[stroke="currentColor"]{color:#8f98a8!important}',
       B + ' .vnav-icon-norm{flex:none!important;width:16px!important;margin:0!important;font-size:14px!important;line-height:1!important;text-align:center!important}',
+      // Agnar 01.10.2026: „stafina aðeins hvítari, taka burtu iconið og stækka stafina
+      // aðeins" — heitin #c9ced6 → #eaedf2 og 13,5 → 14,5 px (reglan hér að ofan), og
+      // táknin falin. Bara falin, ekki fjarlægð: 171/68 og íkona-normið (ico-norm) eiga
+      // þau áfram, og síma-skúffan (utan þessa blaðs) heldur sínum.
+      B + ' > svg,' + B + ' > span > svg,' + B + ' > .vnav-icon-norm{display:none!important}',
       B + ':hover:not(.active){background:rgba(255,255,255,.045)!important;color:#fff!important}',
       B + ':hover:not(.active) > svg[stroke="currentColor"]{color:#c9ced6!important}',
       B + ':focus-visible{outline:2px solid #f0584c!important;outline-offset:1px!important}',
