@@ -99,3 +99,6 @@ tmp_*.py
 
 # remember-plugin session memory (staðbundið, aldrei í Git)
 .remember/
+
+# CI klónar opinbera Brunahólf-repóið hingað svo audit-agentar sjái systur-skrár
+.sister/

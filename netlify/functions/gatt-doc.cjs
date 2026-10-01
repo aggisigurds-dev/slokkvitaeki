@@ -8,7 +8,7 @@
 // skammlífum signed-URL (Supabase Storage) eða beinir á /api/skjal (Drive).
 // Vafrinn fær ALDREI hráan/opinberan bucket-hlekk né skjal annars félags.
 
-const P = require('./_portal');
+const P = require('./_portal.cjs');
 
 const SIGN_TTL = 120; // sekúndur — mínútur, aldrei langt (leka-vörn)
 
