@@ -3295,31 +3295,51 @@
     const pnrNote = (!state.search.trim() && state.postnr !== null) ? ` · ${esc(postnrFilterLabel())}` : '';
     const searchNote = (state.search.trim() ? ` · leit: “${esc(state.search.trim())}”` : '') + pnrNote;
 
-    // 01.10.2026 (Agnar prentaði október í skammsniði: „það má þétta vel ársgluggana 4"): dálkar sem segja ekkert
-    // eru faldir — Skoðun ef allar raðir eru í sama mánuði (sían segir mánuðinn í hausnum), 🚗/❗ ef engin röð ber gildi.
+    // 01.10.2026 (Agnar prentaði október í skammsniði): prentið líkist skjánum — „nota frekar þessa liti", „það má
+    // þétta vel ársgluggana 4", „taka burtu áætlaðar upphæðir", „taka burtu Akstur, Forg., GÓ … ferðanótu" og „minnka
+    // Staða 2026 í helst bara litað merki". Ársflísar og stöðuplata eru LESNAR úr röðinni á skjánum (187/153 reikna
+    // ástandið úr skýrslum, reikningum, gap-flöggum og klarad-pörum), svo prentið segir aldrei annað en skjárinn;
+    // röð sem er ekki teiknuð fellur á yearInfo() og sömu stöðurök og áður. Skoðun-dálkurinn er falinn þegar allar
+    // raðir eru í sama mánuði (sían segir mánuðinn í hausnum).
     const _manudir = new Set(arr.map(c => +((c._ars || {}).inspect_month) || 0));
     const synaSkodun = _manudir.size > 1;
-    const synaAkstur = arr.some(c => ((window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+((c._ars || {}).akstur) || 0)) > 0);
-    const synaForgang = arr.some(c => (+((c._ars || {}).priority) || 0) > 0);
     const AR = (window.InserviceRowReports && window.InserviceRowReports.YEARS) || ['2023', '2024', '2025', '2026'];
-    let totalEst = 0;
+    const skjaRod = (id) => document.querySelector('tr._ars-row[data-co-id="' + id + '"]');
+    const arFraSkja = (tr) => {
+      const tds = tr ? tr.querySelectorAll('td[data-yrcell]') : [];
+      if (!tds.length) return null;
+      return Array.prototype.map.call(tds, (td) => {
+        const a = td.querySelector('._yr'), k = a ? String(a.className) : '';
+        return {
+          st: /\bboth\b/.test(k) ? 'both' : /\binv-only\b/.test(k) ? 'inv' : /\bpenda\b/.test(k) ? 'penda' : /\bnow\b/.test(k) ? 'now' : /\bon\b/.test(k) ? 'on' : 'tomt',
+          rep: !!td.querySelector('u > i.rep'), inv: !!td.querySelector('u > i.inv'),
+          tit: (a && a.getAttribute('title')) || '',
+        };
+      });
+    };
+    const ST_LABEL = { late: 'Á eftir', skip: 'Sleppt', work: 'Í vinnslu', plan: 'Á dagskrá', done: 'Skoðað ' + curYear, off: 'Ekki í þjónustu', none: 'Óvíst' };
+    const stNotad = new Set();
+    // Brunastál-litir skjásins (393 / 153 ._yr, ._st) — sömu málmgljáar á pappír
+    const LIT = {
+      SILVER: 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)',
+      GREEN: 'linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)',
+      RED: 'linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)',
+      GOLD: 'linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)',
+      BLUE: 'linear-gradient(145deg,#040d18 0%,#0b2440 20%,#154a7d 43%,#2f7fc9 53%,#0d2b4c 74%,#040d18 100%)',
+      INV: 'linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%)',
+      GRAPHITE: 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)',
+    };
     const rows = arr.map((c, i) => {
       const ars = c._ars || {};
       const m = +ars.inspect_month || 0;
       const lastYr = +ars.last_year_inspected || 0;
       const fieldYr = +ars.field_inspected_year || 0;
-      const totalEq = Object.values(ars.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
-      const est = (typeof virdiOf === 'function' && typeof c !== 'undefined') ? virdiOf(c) : (+ars.estimated_yearly || 0);
-      totalEst += est;
       // Mirror the on-screen "${curYear}" status dot exactly (same flags,
       // colours and meaning) so the printed list matches what's on screen.
       const isDone = isDoneYear(c, curYear);
       const isFieldOnly = !isDone && fieldYr === curYear;
       const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
       const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
-      // „Á dagskrá" = himinblátt (sky) eins og pillan á skjánum (var grátt) svo
-      // prentaði listinn passi við aðallistann.
-      const dot = isDone ? '#22c55e' : (isFieldOnly ? '#3b82f6' : (isSkipped ? '#f59e0b' : (isOverdue ? '#ef4444' : '#38bdf8')));
       const statusLabel = isDone ? ('Skoðað ' + curYear)
         : (isFieldOnly ? 'Í skýrslugerð'
         : (isSkipped ? ('Sleppt · síðast ' + lastYr)
@@ -3328,28 +3348,20 @@
       // '23–'26 úttektarskýrslu-staða — SAMA uppspretta og aðallistinn (patch 187),
       // svo prentaði listinn passar við það sem er á skjánum.
       const yi = (window.InserviceRowReports && window.InserviceRowReports.yearInfo) ? window.InserviceRowReports.yearInfo(c) : {};
-      // 21.09.2026 (úttekt): ártölin voru harðkóðuð hér — nú sömu rúllandi ár og 187 sýnir á skjánum.
-      // 01.10.2026: fjórir ársreitir urðu EINN mjór reitur — litaður ferningur per ár (grænt = skýrsla, gult = á
-      // eftir, grátt = ekkert) og strik undir = reikningur tengdur (var 🧾 sem tók eigið pláss). Skýring í hausnum.
-      const yearBadges = AR.map(y => {
-        const info = yi[y] || {};
-        const done = !!info.has, due = !done && !!info.due;
-        const bg = done ? '#DBEEE3' : (due ? '#FBEAC6' : '#F0EFEA');
-        const bd = done ? 'rgba(28,143,96,.45)' : (due ? 'rgba(217,146,6,.55)' : '#E2DFD6');
-        const col = done ? '#0F5E3F' : (due ? '#8A5C04' : '#B9B6AC');
-        const tit = '20' + y.slice(-2) + ': ' + (done ? 'skýrsla' : (due ? 'á eftir' : 'ekkert')) + (info.reik ? ' · reikningur tengdur' : '');
-        return `<span class="yrtag${info.reik ? ' reik' : ''}" style="background:${bg};border-color:${bd};color:${col}" title="${tit}">${y.slice(-2)}</span>`;
-      });
-      const yearCells = `<td class="yrs">${yearBadges.join('')}</td>`;   // fullt: einn reitur (aðeins skrifstofu-prentun)
-      // Aksturslisti (bílstjóra-númer) — sama gildi og chip-inn á skjánum
-      const akv = (window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+ars.akstur || 0);
-      const aksturCell = `<td class="c">${akv ? `<span class="akstur">🚗${akv}</span>` : ''}</td>`;
-      // Forgangur — AÐEINS litur (ósk Agnars), engin textamerking
-      const pri = +ars.priority || 0;
-      const PCOL = (window.Priority && window.Priority.COLORS) || ['#cbd5e1', '#16a34a', '#eab308', '#dc2626'];
-      const priCell = `<td class="c">${pri > 0 ? `<span class="pdot" style="background:${PCOL[pri] || PCOL[0]}"></span>` : ''}</td>`;
+      const tr = skjaRod(c.id), skjaAr = arFraSkja(tr);
+      const arHtml = AR.map((y, j) => {
+        const sk = skjaAr && skjaAr[j], info = yi[y] || {};
+        const st = sk ? sk.st : (info.has ? 'both' : (info.due ? 'penda' : 'tomt'));
+        const rep = sk ? sk.rep : !!info.has, inv = sk ? sk.inv : !!info.reik;
+        return `<span class="pyw" title="${esc((sk && sk.tit) || y)}"><span class="py py-${st}">${y.slice(-2)}</span><span class="pyd"><i class="${rep ? 'rep' : ''}"></i><i class="${inv ? 'inv' : ''}"></i></span></span>`;
+      }).join('');
+      const stEl = tr && tr.querySelector('span._st');
+      let stK = '';
+      if (stEl) { const mm = String(stEl.className).match(/_st--(\w+)/); stK = mm ? mm[1] : ''; }
+      if (!stK) stK = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'late' : 'plan';
+      stNotad.add(stK);
+      const stTitill = (stEl && stEl.textContent.trim()) || statusLabel;
       const nameCell = `<td><strong>${esc(c.nafn || '')}</strong>${c.kennitala ? `<div class="kt">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}</td>`;
-      const stCell = `<td class="st"><span class="dot" style="background:${dot}"></span>${esc(statusLabel)}</td>`;
       return compact ? `<tr>
         <td class="num">${i + 1}</td>
         ${nameCell}
@@ -3362,15 +3374,12 @@
       </tr>` : `<tr>
         <td class="num">${i + 1}</td>
         ${nameCell}
-        ${yearCells}
+        <td class="yrs">${arHtml}</td>
         <td>${esc(c.heimilisfang || '')}</td>
         <td class="nowrap">${esc(phone)}</td>
         ${synaSkodun ? `<td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>` : ''}
-        <td class="c nowrap">${eqTrioHtml(ars.equipment, 'print') || ''}</td>
-        <td class="r">${est ? fmtKr(est) : ''}</td>
-        ${synaAkstur ? aksturCell : ''}
-        ${synaForgang ? priCell : ''}
-        ${stCell}
+        <td class="c taeki">${eqTrioHtml(ars.equipment, 'screen') || ''}</td>
+        <td class="c stm"><span class="pst pst-${stK}" title="${esc(stTitill)}"></span></td>
       </tr>`;
     }).join('');
 
@@ -3396,14 +3405,36 @@
   td.nowrap { white-space:nowrap; }
   .kt { font-size:9.5px; color:#94a3b8; font-family:monospace; }
   td.st { white-space:nowrap; }
-  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; box-shadow:0 0 0 1px rgba(0,0,0,.12); }
-  td.yr, th.c { text-align:center; }
-  td.yr { padding:4px 3px; white-space:nowrap; }
-  .yrtag { display:inline-flex; align-items:center; gap:4px; height:15px; padding:0 6px 0 5px; border-radius:2px 8px 8px 2px; font-family:monospace; font-size:9px; font-weight:700; border:1px solid transparent; box-sizing:border-box; }
-  .yrdot { width:4px; height:4px; border-radius:50%; flex:0 0 auto; }
-  .reik { margin-left:2px; font-size:9px; }
-  .akstur { display:inline-block; background:#38bdf8; color:#fff; border:1px solid #0ea5e9; border-radius:99px; padding:1px 7px; font-size:9.5px; font-weight:800; }
-  .pdot { display:inline-block; width:11px; height:11px; border-radius:50%; box-shadow:0 0 0 1px rgba(0,0,0,.12); }
+  th.c { text-align:center; }
+  :root { --ink1:#0f172a; --ink3:#94a3b8; }
+  tbody tr { page-break-inside: avoid; }
+  /* fóturinn aðeins í lokin — sem table-footer-group endurtók Chrome hann neðst á HVERRI síðu („Samtals 46" undir röð 42) */
+  tfoot { display: table-row-group; }
+  /* ársflísar — litir skjásins (393/153 ._yr), þjappaðar: 22 px í stað fjögurra dálka */
+  td.yrs { white-space:nowrap; padding:4px 3px; text-align:center; }
+  .pyw { display:inline-flex; flex-direction:column; align-items:center; gap:2px; margin:0 1px; vertical-align:middle; }
+  .py { display:inline-flex; align-items:center; justify-content:center; width:22px; height:14px; border-radius:3px; font-family:"JetBrains Mono",ui-monospace,monospace; font-size:8.5px; font-weight:700; border:1px solid #d7dbe2; background:${LIT.SILVER}; color:#8a93a3; }
+  .py-on { color:#3a4250; border-color:#cfd5de; }
+  .py-both { background:${LIT.GREEN}; border-color:rgba(52,168,98,.45); color:#fff; }
+  .py-now { background:${LIT.RED}; border-color:rgba(190,32,28,.55); color:#fff; }
+  .py-penda { background:${LIT.GOLD}; border-color:rgba(190,150,60,.5); color:#fff; }
+  .py-inv { background:${LIT.INV}; border-color:#12296b; color:#fff; }
+  .pyd { display:flex; gap:2px; }
+  .pyd i { width:3px; height:3px; border-radius:50%; background:#dde1e7; }
+  .pyd i.rep { background:#1f9d57; }
+  .pyd i.inv { background:#2f5fe0; }
+  td.taeki { white-space:nowrap; }
+  /* staðan: aðeins litaða platan (Agnar), skýringin í hausnum */
+  td.stm { text-align:center; width:30px; }
+  .pst { display:inline-block; width:18px; height:11px; border-radius:3px; border:1px solid rgba(20,24,34,.16); background:${LIT.SILVER}; vertical-align:middle; }
+  .pst-done { background:${LIT.GREEN}; border-color:rgba(52,168,98,.45); }
+  .pst-work { background:${LIT.BLUE}; border-color:rgba(60,120,200,.45); }
+  .pst-plan { background:${LIT.GRAPHITE}; border-color:#000; }
+  .pst-skip { background:${LIT.GOLD}; border-color:rgba(190,150,60,.5); }
+  .pst-late { background:${LIT.RED}; border-color:rgba(190,32,28,.55); }
+  .leg { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; margin-top:6px; font-size:10px; color:#475569; }
+  .leg > span { display:inline-flex; align-items:center; gap:4px; }
+  .leg .pyd { display:inline-flex; }
   tbody tr:nth-child(even) td { background:#fafbfc; }
   tfoot td { font-weight:700; border-top:2px solid #0f172a; background:#fff; }
   .toolbar { margin-bottom:12px; }
@@ -3415,7 +3446,6 @@
   .toolbar .lbl { font-size:12px; color:#64748b; margin:0 4px 0 8px; align-self:center; }
   @media print { .toolbar { display:none; } body { padding:0; } }
   ${compact ? `
-  :root { --ink1:#0f172a; --ink3:#94a3b8; }
   table { font-size:12px; }
   th, td { padding:6px 8px; }
   tbody tr { page-break-inside: avoid; }
@@ -3439,6 +3469,7 @@
       <div class="sub">${compact
         ? `<strong>${esc(filterLabel)}</strong> · ${arr.length} stopp &nbsp;·&nbsp; Bílstjóri: ______________`
         : `Sía: <strong>${esc(filterLabel)}</strong>${searchNote} · ${arr.length} fyrirtæki`}</div>
+      ${compact ? '' : `<div class="leg">${['late', 'skip', 'work', 'plan', 'done', 'off', 'none'].filter(k => stNotad.has(k)).map(k => `<span><span class="pst pst-${k}"></span>${esc(ST_LABEL[k])}</span>`).join('')}<span><span class="pyd"><i class="rep"></i></span>skýrsla</span><span><span class="pyd"><i class="inv"></i></span>reikningur</span></div>`}
     </div>
     <div class="meta">${logo}<div style="margin-top:4px">Slökkvitæki ehf · ${dateStr}</div></div>
   </div>
@@ -3451,16 +3482,16 @@
       <th class="c">Mán.</th>
       <th class="c chk">✓ Búið</th>` : `
       <th class="num">#</th><th>Fyrirtæki</th>
-      ${((window.InserviceRowReports && window.InserviceRowReports.YEARS) || ['2023', '2024', '2025', '2026']).map(y => `<th class="c yr">'${String(y).slice(-2)}</th>`).join('')}
+      <th class="c">'${AR[0].slice(-2)}–'${AR[AR.length - 1].slice(-2)}</th>
       <th>Heimilisfang</th><th>Sími</th>
-      <th class="c">Skoðun</th><th class="c">Tæki (SLT·BSL·RS)</th><th class="r">Áætl.</th>
-      <th class="c" title="Aksturslisti">🚗</th><th class="c" title="Forgangur">❗</th>
-      <th>Staða ${curYear}</th>`}
+      ${synaSkodun ? '<th class="c">Skoðun</th>' : ''}
+      <th class="c">Tæki</th>
+      <th class="c" title="Staða ${curYear}">${curYear}</th>`}
     </tr></thead>
     <tbody>${rows}</tbody>
     <tfoot><tr>${compact
       ? `<td></td><td>Samtals ${arr.length} stopp</td><td colspan="6"></td>`
-      : `<td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="8"></td><td class="r">${fmtKr(totalEst)}</td><td colspan="3"></td>`}</tr></tfoot>
+      : `<td></td><td colspan="${synaSkodun ? 7 : 6}">Samtals ${arr.length} fyrirtæki</td>`}</tr></tfoot>
   </table>
   <script>
     function setOrient(o){
