@@ -797,6 +797,16 @@
     }
     const tripNotes = (tripState.notes != null) ? String(tripState.notes) : '';
     const athSkyrslaBox = (tripState.athugasemdir_skyrsla != null) ? String(tripState.athugasemdir_skyrsla) : '';
+    // 01.10.2026 (hopp): boxið var endurbyggt með innerHTML við HVERJA endurreiknun (hvert hak, hvert val) — tveir
+    // nýir textareitir, hæðin flökti (mælt 362 → 304 → 354 → 352 → 362 px) og hægri dálkurinn hoppaði. Nú er það
+    // byggt EINU SINNI; síðan eru aðeins gildin uppfærð, og aldrei í reit sem verið er að skrifa í.
+    if (notesBox.dataset.byggt === '1') {
+      [['#_ctc-notes-ta', tripNotes], ['#_ctc-athskyrsla', athSkyrslaBox]].forEach(([sel, v]) => {
+        const ta = notesBox.querySelector(sel);
+        if (ta && document.activeElement !== ta && ta.value !== v) ta.value = v;
+      });
+    } else {
+    notesBox.dataset.byggt = '1';
     notesBox.innerHTML =
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
         '<div style="font-size:12.5px;color:var(--ink2);font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Upplýsingar um úttekt</div>' +
@@ -811,6 +821,7 @@
         'style="width:100%;padding:8px 10px;border:1px solid #b4bcc8;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a;box-shadow:inset 0 1px 2px rgba(15,23,42,.06)">' +
         esc(athSkyrslaBox) +
       '</textarea>';
+    }
 
     let section = main.querySelector('#_ctc-section');
     if (!section) {
@@ -1204,6 +1215,10 @@
     // Sama gildir um Vista/Klára-stikuna (._vw-bar, papp 165) sem hangir neðst: hún kom aftur
     // ~sekúndu síðar og var enn eitt „útlitið". Fer aftur neðst, samstundis.
     const _vwBar = section.querySelector(':scope > ._vw-bar');
+    // 01.10.2026 (hopp): spjaldið heldur fyrri hæð sem lágmarki meðan nýja efnið er lagt í það og í tvo ramma á eftir —
+    // það sem stendur fyrir neðan í dálkinum færist ekki þótt efnið sé augnablik styttra. Sleppt um leið og málað er.
+    const _fyrriH = section.offsetHeight;
+    if (_fyrriH > 0) { section.style.minHeight = _fyrriH + 'px'; requestAnimationFrame(() => requestAnimationFrame(() => { section.style.minHeight = ''; })); }
     section.innerHTML =
       '<div style="background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px -10px rgba(0,0,0,.6)">' +
         '<div style="font-size:13px;font-weight:800;letter-spacing:.06em;display:flex;align-items:center;gap:7px">🧾 REIKNINGUR</div>' +
@@ -1385,7 +1400,8 @@
     }
     // Wire report-Athugasemdir textarea.
     const athInp = notesBox.querySelector('#_ctc-athskyrsla');
-    if (athInp) {
+    if (athInp && !athInp.dataset.hlustad) {
+      athInp.dataset.hlustad = '1';
       const onAth = () => { const st = loadTripState(coId); st.athugasemdir_skyrsla = athInp.value; saveTripState(coId, st); };
       athInp.addEventListener('input', onAth);
       athInp.addEventListener('blur', onAth);
@@ -1520,7 +1536,8 @@
 
     // Wire notes textarea — autosave on blur + change (debounced via blur).
     const notesTa = notesBox.querySelector('#_ctc-notes-ta');
-    if (notesTa) {
+    if (notesTa && !notesTa.dataset.hlustad) {
+      notesTa.dataset.hlustad = '1';
       const onNotes = () => {
         const st = loadTripState(coId);
         st.notes = notesTa.value;
