@@ -1273,6 +1273,27 @@
       '.skn{padding:2px 10px;font:700 14.5px var(--body);color:var(--ink)}',
       '.skt{padding:2px 10px 0;font:13px/1.5 var(--body);color:var(--ink)}',
       '.skc .skm,.skc .skf{margin:0 10px}',
+      // 01.10.2026: tenglar/skjöl og merki („@Anni") fá sömu innskot og hin; nafnavalið opnast INNI í spjaldinu
+      // (.skc er overflow:hidden — fljótandi gluggi klipptist).
+      '.skc .skl,.skc .skmk{margin:0 10px}',
+      // Smámyndin (01.10.2026): föst 64×48 efst til hægri; textinn víkur fyrir henni svo spjaldið haldi venjulegri stærð.
+      '.skc{position:relative}.skc .skm.skthumb{position:absolute;top:27px;right:10px;width:64px;height:48px;margin:0;display:block}',
+      '.skc .skm.skthumb a{display:block;width:100%;height:100%}.skc .skm.skthumb img{display:block;width:100%;height:100%;max-height:none;object-fit:cover;border-radius:3px;border:1px solid var(--rule3);box-shadow:0 1px 2px rgba(0,0,0,.12);cursor:zoom-in}',
+      '.skmx{position:absolute;top:-6px;right:-6px;width:18px;height:18px;padding:0;border:1px solid var(--rule3);border-radius:50%;background:#fff;font:400 10px/1 var(--body);color:var(--mute);cursor:pointer;opacity:0}',
+      '.skthumb:hover .skmx,.skmx:focus-visible{opacity:1}.skmx:hover{color:var(--terra)}@media (pointer:coarse){.skmx{opacity:1}}',
+      '.skc.harmynd .skn,.skc.harmynd .skt,.skc.harmynd .skn2,.skc.harmynd .skt2{padding-right:82px}.skc.harmynd .skt{min-height:44px}',
+      '.skmk{display:flex;align-items:center;flex-wrap:wrap;gap:3px 5px;min-height:20px;margin-top:2px}',
+      '.skmc{display:inline-block;height:18px;padding:0 6px;border-radius:3px;background:#2b2e35;color:#fff;font:700 10.5px/18px var(--mono);letter-spacing:.02em}',
+      '.skmb{width:24px;height:20px;padding:0;border:1px solid var(--rule3);border-radius:3px;background:linear-gradient(180deg,#fff,#efece6);font:700 12px/1 var(--mono);color:var(--mute);cursor:pointer}',
+      '.skmb:hover,.skmb[aria-expanded="true"]{color:var(--ink);border-color:var(--edge2)}',
+      '.skmp{display:flex;flex-wrap:wrap;gap:4px;width:100%;padding:6px 0 0}',
+      '.skmp button{height:24px;padding:0 9px;border:1px solid var(--rule3);border-radius:3px;background:#fff;font:600 12px var(--body);color:var(--ink);cursor:pointer}',
+      '.skmp button[aria-checked="true"]{background:#2b2e35;border-color:#000;color:#fff}',
+      '.skmt{margin-top:12px;padding-top:8px;border-top:1px solid var(--rule2)}',
+      '.skmth{margin-bottom:6px;font:700 10.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}',
+      '.skgridm{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr));gap:10px;align-items:start}',
+      '.skcm .skh{cursor:default}.skfra{font:700 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}',
+      '.skn2{display:block;padding:2px 10px;font:700 14.5px var(--body);color:var(--ink)}.skt2{padding:2px 10px 0;white-space:pre-wrap;font:13px/1.5 var(--body);color:var(--ink)}',
       '.skn::placeholder,.skt::placeholder{color:var(--mute);opacity:.14}',
       '.skgrid.yfir{outline:2px dashed var(--g6);outline-offset:4px;border-radius:6px}',
       '.sknew{cursor:grab}.sknew:active{cursor:grabbing}',
@@ -3813,14 +3834,54 @@
     };
   }
   // Tenglar úr textanum + skjöl spjaldsins sem smellanlegar flögur undir textanum (01.10.2026).
-  function skFylgiHtml(id, texti, skjol) {
+  function skFylgiHtml(id, texti, skjol, adeinsLesa) {
     const tl = skTenglar(texti), sk = Array.isArray(skjol) ? skjol.filter(s => s && s.url) : [];
     if (!tl.length && !sk.length) return '';
     return '<div class="skl">' +
       tl.map(u => '<a class="skla" href="' + esc(u) + '" target="_blank" rel="noopener noreferrer" title="' + esc(u) + '">' + esc(skTengilNafn(u)) + ' ›</a>').join('') +
       sk.map(s => '<span class="skfw"><a class="skla" href="' + esc(s.url) + '" target="_blank" rel="noopener" title="' + esc(s.nafn || '') + '">' + esc(s.nafn || 'Skjal') + '</a>' +
-        '<button type="button" class="skfx" data-t5="sk-skjal-x" data-skid="' + id + '" data-u="' + esc(s.url) + '" aria-label="Taka ' + esc(s.nafn || 'skjal') + ' af spjaldinu" title="Taka af spjaldinu">✕</button></span>').join('') +
+        (adeinsLesa ? '' : '<button type="button" class="skfx" data-t5="sk-skjal-x" data-skid="' + id + '" data-u="' + esc(s.url) + '" aria-label="Taka ' + esc(s.nafn || 'skjal') + ' af spjaldinu" title="Taka af spjaldinu">✕</button>') + '</span>').join('') +
       '</div>';
+  }
+  // 01.10.2026 (Agnar: „litið Tag feature í hægra neðra hornið … svo ég geti tag einhvern af starfsmönnunum eða
+  // afgreiðsla"): cd.merki = [nafn]. „@" neðst til hægri opnar nafnavalið inni í spjaldinu; merktur starfsmaður sér
+  // spjaldið á sínu Skipulagsborði undir „Merkt á þig" og hakar „✓ Búið" (tekur sitt nafn af, á borði eigandans).
+  const merkjaFolk = () => folk().filter(x => x !== AI_WORKER && lagt(x) !== 'allir');
+  function skMerkiHtml(id, merki) {
+    const m = Array.isArray(merki) ? merki.filter(Boolean).map(String) : [];
+    const opid = S.skMerkja === id;
+    return '<div class="skmk">' + m.map(x => '<span class="skmc">@' + esc(x) + '</span>').join('') + '<span class="grow"></span>' +
+      '<button type="button" class="skmb" data-t5="sk-merkja" data-skid="' + id + '" aria-expanded="' + opid + '" title="Merkja starfsmann á spjaldið" aria-label="Merkja starfsmann">@</button>' +
+      (opid ? '<div class="skmp" role="group" aria-label="Merkja á">' + merkjaFolk().map(x => {
+        const a = m.some(y => lagt(y) === lagt(x));
+        return '<button type="button" role="switch" aria-checked="' + a + '" data-t5="sk-merki" data-skid="' + id + '" data-n="' + esc(x) + '">' + esc(x) + '</button>';
+      }).join('') + '</div>' : '') +
+      '</div>';
+  }
+  function merktAMig(n) {
+    const out = [];
+    for (const x of folk()) {
+      if (lagt(x) === lagt(n)) continue;
+      for (const cd of spjold(x)) if (cd && Array.isArray(cd.merki) && cd.merki.some(m => lagt(m) === lagt(n))) out.push({ eig: x, cd });
+    }
+    return out;
+  }
+  function merktHtml(n) {
+    const l = merktAMig(n);
+    if (!l.length) return '';
+    return '<div class="skmt"><div class="skmth">Merkt á þig · ' + l.length + '</div><div class="skgridm">' + l.map(({ eig, cd }) => {
+      const t = cd.type != null && SB_TEG[cd.type] ? SB_TEG[cd.type] : null;
+      return '<div class="skc skcm' + (cd.mynd ? ' harmynd' : '') + '">' +
+        '<span class="skstrip" style="background:' + (t ? t[1] : 'var(--rule3)') + '"></span>' +
+        '<div class="skh"><span class="skfra">frá ' + esc(eig) + '</span><span class="grow"></span>' +
+          '<button type="button" class="skb" data-t5="sk-merki-af" data-eig="' + esc(eig) + '" data-skid="' + esc(cd.id) + '" title="Taka nafnið mitt af spjaldinu">✓ Búið</button></div>' +
+        (cd.name ? '<b class="skn2">' + esc(cd.name) + '</b>' : '') +
+        (cd.title ? '<div class="skt2">' + esc(cd.title) + '</div>' : '') +
+        skFylgiHtml('', cd.title, cd.skjol, true) +
+        (cd.mynd ? '<div class="skm skthumb"><a href="' + esc(cd.mynd) + '" target="_blank" rel="noopener" title="Opna mynd í fullri stærð"><img src="' + esc(cd.mynd) + '" alt="Mynd á spjaldi" loading="lazy"></a></div>' : '') +
+        '<div class="skmk">' + cd.merki.map(x => '<span class="skmc">@' + esc(x) + '</span>').join('') + '</div>' +
+      '</div>';
+    }).join('') + '</div></div>';
   }
   function bottomHtml(k) {
     const n = nu();
@@ -3837,7 +3898,7 @@
         // 17.09.2026: punktaröðin (6 hnappar) og örvarnar tvær fóru — liturinn er nú
         // ein ræma efst sem smellt er á til að skipta, og fært er með því að draga
         // hausinn sjálfan (ekki bara ⠿). Það tók fjóra hnappa af hverju spjaldi.
-        return '<div class="skc" data-skid="' + id + '">' +
+        return '<div class="skc' + (cd.mynd ? ' harmynd' : '') + '" data-skid="' + id + '">' +
           '<button type="button" class="skstrip" data-t5="sk-type" data-skid="' + id + '" style="background:' + (t ? t[1] : 'var(--rule3)') + '" title="' + (t ? esc(t[0]) : 'Enginn litur') + ' — smelltu til að skipta um lit" aria-label="Litur spjalds"></button>' +
           '<div class="skh" draggable="true" data-skdrag="' + id + '" title="Dragðu spjaldið til að færa það">' +
             '<span class="skgrip" aria-hidden="true">⠿</span><span class="grow"></span>' +
@@ -3845,16 +3906,21 @@
           '<input class="skn" data-sk="name" data-skid="' + id + '" value="' + esc(nafn) + '" placeholder="Fyrirsögn" aria-label="Fyrirsögn">' +
           '<textarea class="skt" data-sk="title" data-skid="' + id + '" rows="' + Math.min(8, Math.max(2, String(texti).split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er…" aria-label="Texti">' + esc(texti) + '</textarea>' +
           skFylgiHtml(id, texti, cd.skjol) +
-          (cd.mynd ? '<div class="skm"><a href="' + esc(cd.mynd) + '" target="_blank" rel="noopener"><img src="' + esc(cd.mynd) + '" alt="Mynd á spjaldi" loading="lazy"></a>' +
-            '<button type="button" class="skb" data-t5="sk-mynd-x" data-skid="' + id + '">Fjarlægja mynd</button></div>' : '') +
+          // 01.10.2026 (Agnar: „minnkað preview svo spjaldið sé bara nokkuð venjulegt að stærð … síðan opnað myndina"):
+          // smámynd efst til hægri; smellur opnar hana í fullri stærð í nýjum flipa, ✕ birtist þegar bendill er yfir.
+          (cd.mynd ? '<div class="skm skthumb"><a href="' + esc(cd.mynd) + '" target="_blank" rel="noopener" title="Opna mynd í fullri stærð"><img src="' + esc(cd.mynd) + '" alt="Mynd á spjaldi" loading="lazy"></a>' +
+            '<button type="button" class="skmx" data-t5="sk-mynd-x" data-skid="' + id + '" aria-label="Fjarlægja mynd" title="Fjarlægja mynd">✕</button></div>' : '') +
           (cd.verkbord_id != null ? '<div class="skf">' + (row ? (row.important ? '<span class="tag hot">★ Áríðandi</span> ' : '') + '<button type="button" class="clink" data-t5="skoda" data-id="' + row.id + '">Opna mál ›</button> · ' + esc(eigandaTexti(row, n)) + ' ' + dagskrarTakki(row) : 'Málið er lokað eða í geymslu') + '</div>' : '') +
+          skMerkiHtml(id, cd.merki) +
         '</div>';
       }).join('');
       // 19.09.2026 (Agnar: „það á bara að vera taflan"): áríðandi-listinn er farinn héðan í sína eigin einingu (25 Áríðandi).
       const body = '<div class="skwrap">' +
         '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny" draggable="true" data-skdrag="__ny" title="Smelltu — eða dragðu autt spjald þangað sem þú vilt hafa það">+ Nýtt spjald</button></div>' +
-        '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot í spjald, eða dragðu skjal eða tengil á það.') + '</div></div>';
-      return modPanel(k, cards.length + ' spjöld', body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
+        '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot í spjald, eða dragðu skjal eða tengil á það.') + '</div>' +
+        merktHtml(n) + '</div>';
+      const nMerkt = merktAMig(n).length;
+      return modPanel(k, cards.length + ' spjöld' + (nMerkt ? ' · ' + nMerkt + ' merkt á þig' : ''), body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
     }
     if (k === 'postbeidnir') {
       // Sami gluggi og 240 notar (2 mán) og SAMA regla, svo talan hér og talan
@@ -4676,12 +4742,13 @@
     } catch (_) { return null; }
   }
   let _skRod = Promise.resolve();
-  function vistaSpjold(breyta, skilabod) {
+  function vistaSpjold(breyta, skilabod, eigandi) {
     const verk = _skRod.then(async () => {
       if (!stillingarTilbunar()) { toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; }
-      const n = nu();
+      // 01.10.2026: `eigandi` = spjald á borði ANNARS (merkt á mig → „✓ Búið"). Drögin mín fylgja aðeins mínu borði.
+      const n = eigandi || nu(), minn = n === nu();
       const grunnlisti = (await ferskSpjold(n)) || cardsFor(n);
-      const nyr = breyta(grunnlisti.map(x => Object.assign({}, x, S.skDrog[x.id] || {})));
+      const nyr = breyta(grunnlisti.map(x => Object.assign({}, x, minn ? (S.skDrog[x.id] || {}) : {})));
       _vistar++;
       S.skStada = 'Vista…';
       stimplaSk();
@@ -4821,10 +4888,11 @@
     const dt = e.dataTransfer;
     const ytri = !S.skDrag && !S.hamDrag && dt && Array.from(dt.types || []).some(x => x === 'Files' || x === 'text/uri-list');
     if (ytri && (e.type === 'dragover' || e.type === 'drop')) {
-      const kortY = t && t.closest ? t.closest('.skc') : null;
+      const kortY = t && t.closest ? t.closest('.skc:not(.skcm)') : null;
       const svaedi = t && t.closest ? t.closest('.skwrap') : null;
       if (!kortY && !svaedi) return;
       e.preventDefault();
+      if (t.closest('.skcm')) return;                  // spjald annars (merkt á mig) tekur ekki við skjölum
       if (e.type === 'dragover') {
         try { dt.dropEffect = 'copy'; } catch (_) {}
         merkjaSkjalYfir(kortY || svaedi.querySelector('.skgrid'));
@@ -5408,6 +5476,31 @@
         // Ræman hringar: enginn litur -> fyrsti -> … -> síðasti -> enginn litur.
         const sid = el.dataset.skid;
         vistaSpjold(l => { const cd = l.find(x => x.id === sid); if (cd) { const nyr = cd.type == null ? 0 : cd.type + 1; cd.type = nyr >= SB_TEG.length ? null : nyr; } return l; }).then(render);
+        return;
+      }
+      case 'sk-merkja': S.skMerkja = S.skMerkja === el.dataset.skid ? null : el.dataset.skid; render(); return;
+      case 'sk-merki': {
+        const sid = el.dataset.skid, nafn = el.dataset.n;
+        let baett = null;
+        vistaSpjold(l => {
+          const cd = l.find(x => x.id === sid);
+          if (!cd) return l;
+          const m = Array.isArray(cd.merki) ? cd.merki.filter(Boolean).map(String) : [];
+          const i = m.findIndex(y => lagt(y) === lagt(nafn));
+          if (i >= 0) { m.splice(i, 1); baett = false; } else { m.push(nafn); baett = true; }
+          cd.merki = m;
+          return l;
+        }).then(ok => { if (ok && baett != null) toast(baett ? nafn + ' merkt á spjaldið' : nafn + ' tekið af spjaldinu'); render(); });
+        return;
+      }
+      case 'sk-merki-af': {
+        // Spjaldið býr á borði eigandans — nafnið mitt fer af því ÞAR (vistaSpjold með eiganda).
+        const sid = el.dataset.skid, eig = el.dataset.eig, eg = nu();
+        vistaSpjold(l => {
+          const cd = l.find(x => x.id === sid);
+          if (cd && Array.isArray(cd.merki)) cd.merki = cd.merki.filter(y => lagt(y) !== lagt(eg));
+          return l;
+        }, 'Merkt sem búið — spjaldið fór af þínu borði', eig).then(render);
         return;
       }
       case 'sk-skjal-x': {
