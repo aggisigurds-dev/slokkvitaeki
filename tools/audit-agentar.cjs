@@ -46,11 +46,21 @@ const dags = (t) => (t ? new Date(t).toISOString().slice(0, 10) : '—');
 
 // Slóðir sem agent-skrá getur vísað í. Aðeins raunverulegar kóðaslóðir —
 // ekki hvaða orð sem er sem inniheldur skástrik.
-const VISAR = /(js\/patches\/[0-9A-Za-z_\-.]+\.js|netlify\/functions\/[0-9A-Za-z_\-.]+\.js|js\/[0-9A-Za-z_\-.]+\.js|docs\/[0-9A-Za-z_\-.]+\.md|tools\/[0-9A-Za-z_\-.]+\.(cjs|js))/g;
+const VISAR = /(js\/patches\/[0-9A-Za-z_\-.]+\.js|netlify\/functions\/[0-9A-Za-z_\-.]+\.(?:js|cjs)|js\/[0-9A-Za-z_\-.]+\.js|docs\/[0-9A-Za-z_\-.]+\.md|tools\/[0-9A-Za-z_\-.]+\.(?:cjs|js))/g;
 
 // Systur-repóið. Agentarnir þjóna báðum öppunum og vísa réttilega í skrár
 // þar — `netlify/functions/company-mail.js` er í Brunahólfi, ekki hér.
-const SYSTIR = path.join(ROOT, '..', 'brunaholf');
+// CI klónar það í .sister/brunaholf (sjá .github/workflows/audit.yml) því
+// Actions hefur ekki möppuna við hliðina eins og vélarnar fjórar.
+function finnaSystur() {
+  const frambod = [
+    process.env.BRUNAHOLF_ROOT,
+    path.join(ROOT, '..', 'brunaholf'),
+    path.join(ROOT, '.sister', 'brunaholf'),
+  ].filter(Boolean);
+  return frambod.find((p) => fs.existsSync(path.join(p, 'docs'))) || frambod[1];
+}
+const SYSTIR = finnaSystur();
 
 // Agent sem SEGIR að skrá sé horfin er að leiðrétta, ekki að villa um. `kort`
 // byrjar á „js/field.js er EKKI til" — það er staðreyndin sjálf og má ekki
