@@ -53,6 +53,13 @@
       const cv = document.getElementById('view-companies');
       if (cv && (cv.classList.contains('active') || cv.style.display !== 'none')) {
         const id = openCompanyId();
+        // 01.10.2026 (hopp): tækjalistinn og kostnaðarspjaldið lesa úr DB.cache.units sem db.js var að endurnýja —
+        // endurteikna þau ein (224.rerender er vafið af 404: sama tif, skrun helst) í stað alls prófílsins.
+        if (id && window.UttektTaeki && typeof UttektTaeki.rerender === 'function' && document.querySelector('#companies-main .ut-list[data-uw-co="' + id + '"]')) {
+          try { UttektTaeki.rerender(id); } catch (_) {}
+          try { if (window.recomputeCompanyTotalCost) window.recomputeCompanyTotalCost(); } catch (_) {}
+          return;
+        }
         if (id && window.Companies && typeof Companies.openDetail === 'function') {
           Companies.openDetail(id);
           return;

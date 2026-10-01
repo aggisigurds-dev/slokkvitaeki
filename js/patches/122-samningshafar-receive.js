@@ -261,39 +261,121 @@
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
+  // 01.10.2026 (B49, Agnar: „uppfæra útlitið í þessu bæta inn fyrirtæki á verkstæði“): glugginn var
+  // blár innlínustíll; nú Brunastál C — málmhaus með hnoðum, stálplata, silfurtakkar, rauður aðaltakki,
+  // engin emoji. Allt útlit býr í einu stílblaði (#_sr-dlg-css); id-in og data-* eru óbreytt svo smellir og
+  // submitReceive halda. Klasarnir bera forskeytið b49- (228 á _sr-box/_sr-in/... og má ekki rekast á).
+  var B49_MONO = '"JetBrains Mono",ui-monospace,monospace';
+  var B49_SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif';
+  var B49_DISPLAY = '"Playfair Display",Georgia,serif';
+  var B49_METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
+  var B49_METAL_BTN = 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)';
+  var B49_SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
+  var B49_PLATE = 'repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
+  var B49_RIVET = 'radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%)';
+  var B49_RAUTT = 'linear-gradient(180deg,#c22f26 0%,#951818 50%,#650c0d 100%)';
+  var B49_IC = {
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    leit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+    or: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+    til: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+    inn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>'
+  };
+  function b49Css() {
+    if (document.getElementById('_sr-dlg-css')) return;
+    var D = '#_sr-dialog';
+    var BTN = 'height:36px!important;padding:0 16px!important;border-radius:7px!important;font-family:' + B49_SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex!important;align-items:center!important;gap:7px!important;cursor:pointer;line-height:1!important;transition:box-shadow .15s,filter .15s,transform .05s';
+    var SILFUR = 'background:' + B49_SILVER + '!important;border:1px solid rgba(20,24,34,.28)!important;color:#1c2028!important;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.12)!important;text-shadow:none!important';
+    var css = [
+      D + '{position:fixed;inset:0;z-index:100020;background:rgba(6,8,12,.62);display:flex;align-items:center;justify-content:center;padding:16px;font-family:' + B49_SANS + '}',
+      D + ' .b49-kassi{background:' + B49_PLATE + ';border:1px solid #0b0c0f;border-radius:10px;box-shadow:0 24px 64px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.7);width:min(720px,calc(100vw - 24px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden}',
+      D + ' .b49-haus{position:relative;padding:14px 18px 14px 34px;background:' + B49_METAL + ';border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);display:flex;justify-content:space-between;align-items:center;gap:14px}',
+      D + ' .b49-haus::before,' + D + ' .b49-haus::after{content:"";position:absolute;left:13px;width:8px;height:8px;border-radius:50%;background:' + B49_RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.6)}',
+      D + ' .b49-haus::before{top:12px}',
+      D + ' .b49-haus::after{bottom:12px}',
+      D + ' .b49-merki{font-family:' + B49_MONO + ';font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#aab1bb;display:flex;align-items:center;gap:7px}',
+      D + ' .b49-merki svg{width:13px;height:13px;color:#e0605a}',
+      D + ' .b49-haus h3{margin:3px 0 0;font-family:' + B49_DISPLAY + ';font-size:22px;font-weight:800;color:#fff;letter-spacing:.005em;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.35)}',
+      D + ' .b49-undir{font-family:' + B49_SANS + ';font-size:12px;color:#c9ced6;margin-top:2px}',
+      D + ' button#_sr-x{flex:none;width:36px!important;height:36px!important;padding:0!important;border-radius:7px!important;background:' + B49_METAL_BTN + '!important;border:1px solid #000!important;color:#e3e7ee!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.5)!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;cursor:pointer}',
+      D + ' button#_sr-x:hover{color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px rgba(224,96,90,.55)!important}',
+      D + ' button#_sr-x svg{width:15px;height:15px}',
+      D + ' #_sr-body{flex:1;overflow:auto;padding:18px 22px}',
+      D + ' .b49-fotur{padding:12px 22px;border-top:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#e6e9ee,#d6dbe3);box-shadow:inset 0 1px 0 rgba(255,255,255,.7);display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}',
+      D + ' #_sr-summary{font-family:' + B49_MONO + ';font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#3a4250}',
+      D + ' .b49-takkar{display:flex;gap:8px;margin-left:auto}',
+      D + ' button#_sr-cancel,' + D + ' button#_sr-back{' + BTN + ';' + SILFUR + '}',
+      D + ' button#_sr-cancel:hover,' + D + ' button#_sr-back:hover{box-shadow:inset 0 1px 0 #fff,0 0 0 1px rgba(179,38,30,.35),0 2px 6px rgba(0,0,0,.14)!important}',
+      D + ' button#_sr-back{height:30px!important;padding:0 12px 0 8px!important;font-size:12px!important;gap:4px!important}',
+      D + ' button#_sr-back svg{width:15px;height:15px;color:#525b6b}',
+      D + ' button#_sr-create{' + BTN + ';padding:0 20px!important;background:' + B49_RAUTT + '!important;border:1px solid #2a0303!important;color:#fff!important;font-weight:700!important;text-shadow:0 1px 1px rgba(0,0,0,.55)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.28)!important}',
+      D + ' button#_sr-create:hover:not(:disabled){filter:brightness(1.1)}',
+      D + ' button#_sr-create:disabled{filter:grayscale(.75);opacity:.45;cursor:not-allowed}',
+      D + ' button:active:not(:disabled){transform:translateY(1px)}',
+      // Leitin + fyrirtækjalistinn
+      D + ' .b49-leit{position:relative;margin-bottom:12px}',
+      D + ' .b49-leit svg{position:absolute;left:12px;top:50%;width:16px;height:16px;transform:translateY(-50%);color:#6b7381;pointer-events:none}',
+      D + ' input#_sr-search{width:100%;height:42px;padding:0 14px 0 38px;border:1px solid rgba(20,24,34,.28);border-radius:7px;background:linear-gradient(180deg,#fff,#f4f6f9);box-shadow:inset 0 1px 2px rgba(0,0,0,.08);font-family:' + B49_SANS + ';font-size:14px;color:#11141c;box-sizing:border-box;outline:none}',
+      D + ' input#_sr-search:focus{border-color:#b3261e;box-shadow:inset 0 1px 2px rgba(0,0,0,.08),0 0 0 3px rgba(179,38,30,.16)}',
+      D + ' #_sr-co-list,' + D + ' .b49-taeki{border:1px solid rgba(20,24,34,.22);border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06)}',
+      D + ' ._sr-co-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid rgba(20,24,34,.08);cursor:pointer;transition:background .12s,box-shadow .12s}',
+      D + ' ._sr-co-row:last-child,' + D + ' .b49-rod:last-child{border-bottom:none}',
+      D + ' ._sr-co-row:hover{background:#eef1f5;box-shadow:inset 3px 0 0 #b3261e}',
+      D + ' .b49-nafn{font-family:' + B49_SANS + ';font-size:13.5px;font-weight:600;color:#11141c}',
+      D + ' .b49-sh{display:inline-block;vertical-align:1px;margin-left:7px;padding:2px 7px;border-radius:3px;background:' + B49_SILVER + ';border:1px solid rgba(179,38,30,.45);color:#8a1414!important;font-family:' + B49_MONO + ';font-size:9px!important;font-weight:700;letter-spacing:.12em;text-transform:uppercase;line-height:1.4}',
+      D + ' .b49-und{font-family:' + B49_MONO + ';font-size:11px;color:#5a6372;margin-top:3px}',
+      D + ' .b49-or{flex:none;display:inline-flex;width:16px;height:16px;color:#8a93a1;font-style:normal}', D + ' .b49-or svg{width:16px;height:16px}',
+      D + ' ._sr-co-row:hover .b49-or{color:#b3261e}',
+      D + ' .b49-tomt{padding:26px 18px;text-align:center;color:#5a6372;font-size:13px}',
+      D + ' .b49-tomt small{display:block;margin-top:6px;font-size:11.5px;color:#6b7381}',
+      D + ' .b49-tomt.b49-strik{border:1px dashed rgba(20,24,34,.32);border-radius:8px;background:rgba(255,255,255,.55)}',
+      // Tækjavalið
+      D + ' .b49-co{margin:10px 0 14px;padding:12px 16px;background:' + B49_METAL + ';border:1px solid #000;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 2px 6px rgba(0,0,0,.2)}',
+      D + ' .b49-co-nafn{font-family:' + B49_DISPLAY + ';font-size:19px;font-weight:800;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
+      D + ' .b49-co-und{font-family:' + B49_MONO + ';font-size:11px;color:#aab1bb;margin-top:3px}',
+      D + ' .b49-stika{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(180deg,#eef1f5,#e1e5ec);border-bottom:1px solid rgba(20,24,34,.15)}',
+      D + ' .b49-stika label{display:flex;align-items:center;gap:7px;cursor:pointer;font-family:' + B49_MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#3a4250}',
+      D + ' .b49-stika small{font-family:' + B49_MONO + ';font-size:10.5px;color:#5a6372}',
+      D + ' input[type=checkbox]{width:16px;height:16px;margin:0;cursor:pointer;accent-color:#b3261e}',
+      D + ' .b49-rod{display:grid;grid-template-columns:24px 1fr 172px;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid rgba(20,24,34,.07);transition:background .12s}',
+      D + ' .b49-rod:hover{background:#f5f6f8}',
+      D + ' .b49-tl{font-family:' + B49_SANS + ';font-size:13px;font-weight:600;color:#11141c;min-width:0}',
+      D + ' .b49-sn{font-family:' + B49_MONO + ';font-size:12.5px;font-weight:700;color:#11141c}',
+      D + ' .b49-utr{display:inline-block;vertical-align:1px;margin-left:7px;padding:2px 6px;border-radius:3px;background:' + B49_RAUTT + ';color:#fff;font-family:' + B49_MONO + ';font-size:9px!important;font-weight:700;letter-spacing:.1em;text-transform:uppercase;line-height:1.4;text-shadow:0 1px 0 rgba(0,0,0,.4)}',
+      D + ' .b49-stadur{font-size:11.5px;color:#5a6372;margin-top:2px}',
+      D + ' .b49-stadur b{font-family:' + B49_MONO + ';font-weight:600;color:#3a4250}',
+      D + ' select._sr-unit-svc{height:30px;padding:0 8px;border:1px solid rgba(20,24,34,.28);border-radius:6px;background:' + B49_SILVER + ';box-shadow:inset 0 1px 0 #fff;font-family:' + B49_SANS + ';font-size:12px;color:#1c2028;cursor:pointer;width:100%}',
+      D + ' select._sr-unit-svc:focus{outline:none;border-color:#b3261e;box-shadow:0 0 0 3px rgba(179,38,30,.16)}',
+      '@media (max-width:600px){' + D + ' .b49-rod{grid-template-columns:24px 1fr}' + D + ' select._sr-unit-svc{grid-column:2}' + D + ' #_sr-body{padding:14px}' + D + ' .b49-fotur{padding:10px 14px}' + D + ' .b49-haus h3{font-size:19px}}'
+    ].join('\n');
+    var st = document.createElement('style');
+    st.id = '_sr-dlg-css';
+    st.textContent = css;
+    document.head.appendChild(st);
+  }
+
   function renderModal() {
+    b49Css();
     let dlg = document.getElementById('_sr-dialog');
     if (dlg) dlg.remove();
     dlg = document.createElement('div');
     dlg.id = '_sr-dialog';
-    dlg.style.cssText =
-      'position:fixed;inset:0;z-index:100020;background:rgba(15,23,42,0.6);' +
-      'display:flex;align-items:center;justify-content:center;padding:16px';
     dlg.innerHTML =
-      '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.3);' +
-        'width:min(720px,calc(100vw - 24px));max-height:calc(100vh - 40px);' +
-        'display:flex;flex-direction:column;overflow:hidden">' +
-        '<div style="padding:14px 22px;background:linear-gradient(135deg,#0d6efd,#0a58ca);' +
-          'color:#fff;display:flex;justify-content:space-between;align-items:center">' +
+      '<div class="b49-kassi" role="dialog" aria-modal="true" aria-labelledby="_sr-titill">' +
+        '<div class="b49-haus">' +
           '<div>' +
-            '<h3 style="margin:0;font-size:17px;font-weight:700">📥 Sækja inn úr fyrirtæki</h3>' +
-            '<div style="font-size:11px;color:#bfdbfe;margin-top:2px">Veldu fyrirtæki og hvaða tæki komu inn</div>' +
+            '<div class="b49-merki">' + B49_IC.inn + 'Verkstæði · móttaka</div>' +
+            '<h3 id="_sr-titill">Sækja inn úr fyrirtæki</h3>' +
+            '<div class="b49-undir">Veldu fyrirtæki og hvaða tæki komu inn</div>' +
           '</div>' +
-          '<button id="_sr-x" type="button" style="background:transparent;border:1px solid #60a5fa;' +
-            'color:#fff;font-size:20px;width:36px;height:36px;border-radius:7px;cursor:pointer;' +
-            'line-height:1">✕</button>' +
+          '<button id="_sr-x" type="button" aria-label="Loka">' + B49_IC.x + '</button>' +
         '</div>' +
-        '<div id="_sr-body" style="flex:1;overflow:auto;padding:18px 22px"></div>' +
-        '<div style="padding:13px 22px;border-top:1px solid #e2e8f0;display:flex;gap:8px;' +
-          'justify-content:space-between;align-items:center;flex-wrap:wrap">' +
-          '<div id="_sr-summary" style="font-size:12px;color:#64748b"></div>' +
-          '<div style="display:flex;gap:8px">' +
-            '<button id="_sr-cancel" type="button" style="padding:9px 18px;border:1px solid #cbd5e1;' +
-              'border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;' +
-              'color:#475569">Hætta við</button>' +
-            '<button id="_sr-create" type="button" style="padding:9px 18px;background:#0d6efd;' +
-              'color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;' +
-              'font-weight:700" disabled>Stofna verk</button>' +
+        '<div id="_sr-body"></div>' +
+        '<div class="b49-fotur">' +
+          '<div id="_sr-summary"></div>' +
+          '<div class="b49-takkar">' +
+            '<button id="_sr-cancel" type="button">Hætta við</button>' +
+            '<button id="_sr-create" type="button" disabled>Stofna verk</button>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -335,12 +417,10 @@
 
   function renderCompanyPicker() {
     return '' +
-      '<div style="margin-bottom:12px">' +
-        '<input id="_sr-search" type="search" placeholder="Leita að fyrirtæki…" ' +
-          'style="width:100%;padding:10px 14px;border:1px solid #cbd5e1;border-radius:8px;' +
-          'font:inherit;font-size:14px;box-sizing:border-box">' +
+      '<div class="b49-leit">' + B49_IC.leit +
+        '<input id="_sr-search" type="search" placeholder="Leita að fyrirtæki eða kennitölu…" autocomplete="off" value="' + esc(_searchQuery || '') + '">' +
       '</div>' +
-      '<div id="_sr-co-list" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">' +
+      '<div id="_sr-co-list">' +
         renderCompanyList() +
       '</div>';
   }
@@ -360,23 +440,20 @@
       return (a.nafn || '').localeCompare(b.nafn || '', 'is');
     });
     if (!list.length) {
-      return '<div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">Ekkert fyrirtæki fannst</div>';
+      return '<div class="b49-tomt">Ekkert fyrirtæki fannst</div>';
     }
     return list.slice(0, 200).map(c =>
-      '<div class="_sr-co-row" data-co-id="' + esc(c.id) + '" data-co-nafn="' + esc(c.nafn || '') + '" ' +
-        'style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;' +
-        'border-bottom:1px solid #f1f5f9;cursor:pointer" onmouseover="this.style.background=\'#f8fafc\'" ' +
-        'onmouseout="this.style.background=\'\'">' +
-        '<div>' +
-          '<div style="font-weight:600;color:#0f172a;font-size:13px">' + esc(c.nafn || '') +
-            (c.isContract ? ' <span style="background:#dbeafe;color:#1e40af;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;margin-left:4px">Samningshafi</span>' : '') +
+      '<div class="_sr-co-row" data-co-id="' + esc(c.id) + '" data-co-nafn="' + esc(c.nafn || '') + '">' +
+        '<div style="min-width:0">' +
+          '<div class="b49-nafn">' + esc(c.nafn || '') +
+            (c.isContract ? '<small class="b49-sh">Samningshafi</small>' : '') +
           '</div>' +
-          '<div style="font-size:11px;color:#64748b;margin-top:2px">' +
+          '<div class="b49-und">' +
             (c.kennitala ? esc(c.kennitala) : '') +
-            (c.heimilisfang ? ' · ' + esc(c.heimilisfang) : '') +
+            (c.heimilisfang ? (c.kennitala ? ' · ' : '') + esc(c.heimilisfang) : '') +
           '</div>' +
         '</div>' +
-        '<div style="color:#94a3b8;font-size:13px">›</div>' +
+        '<i class="b49-or">' + B49_IC.or + '</i>' +
       '</div>'
     ).join('');
   }
@@ -389,7 +466,7 @@
         _selectedCompany = _companies.find(c => c.id === id) || { id, nafn };
         // Loading state
         const inner = document.getElementById('_sr-body');
-        if (inner) inner.innerHTML = '<div style="padding:30px;text-align:center;color:#64748b;font-size:13px">Hleður tækjum frá ' + esc(nafn) + '…</div>';
+        if (inner) inner.innerHTML = '<div class="b49-tomt">Hleður tækjum frá ' + esc(nafn) + '…</div>';
         await loadUnitsForCompany(nafn);
         renderBody();
       });
@@ -398,25 +475,20 @@
 
   function renderUnitPicker() {
     const c = _selectedCompany;
-    const back = '<button id="_sr-back" type="button" style="background:transparent;border:none;color:#0d6efd;font:inherit;font-size:13px;cursor:pointer;padding:0;font-weight:600">← Velja annað fyrirtæki</button>';
+    const und = [c.kennitala ? 'kt. ' + esc(c.kennitala) : '', c.simi ? esc(c.simi) : '', c.heimilisfang ? esc(c.heimilisfang) : '']
+      .filter(Boolean).join(' · ');
     const head = '' +
-      '<div style="margin-bottom:14px">' +
-        back +
-        '<div style="margin-top:8px;padding:12px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px">' +
-          '<div style="font-size:14px;font-weight:700;color:#0f172a">' + esc(c.nafn || '') + '</div>' +
-          '<div style="font-size:11px;color:#475569;margin-top:2px">' +
-            (c.kennitala ? 'kt. ' + esc(c.kennitala) : '') +
-            (c.simi ? ' · ' + esc(c.simi) : '') +
-            (c.heimilisfang ? ' · ' + esc(c.heimilisfang) : '') +
-          '</div>' +
-        '</div>' +
+      '<button id="_sr-back" type="button">' + B49_IC.til + 'Velja annað fyrirtæki</button>' +
+      '<div class="b49-co">' +
+        '<div class="b49-co-nafn">' + esc(c.nafn || '') + '</div>' +
+        (und ? '<div class="b49-co-und">' + und + '</div>' : '') +
       '</div>';
 
     if (!_units.length) {
       return head +
-        '<div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;border:1px dashed #cbd5e1;border-radius:10px">' +
+        '<div class="b49-tomt b49-strik">' +
           'Engin virk tæki skráð á þetta fyrirtæki í field-service skránni.' +
-          '<div style="margin-top:6px;font-size:11px">Þú getur samt stofnað verkbeiðni handvirkt í gegnum venjulega Counter flæðið.</div>' +
+          '<small>Þú getur samt stofnað verkbeiðni handvirkt í gegnum venjulega Counter flæðið.</small>' +
         '</div>';
     }
 
@@ -424,23 +496,21 @@
       const u = s.u;
       const ni = u.next_insp || '';
       const isOverdue = ni && new Date(ni) < new Date();
-      const overdueChip = isOverdue
-        ? '<span style="background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px">⚠ Útrunnið</span>'
-        : '';
-      return '<div style="display:grid;grid-template-columns:24px 1fr 160px;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid #f1f5f9">' +
-        '<input type="checkbox" class="_sr-unit-chk" data-i="' + i + '" ' + (s.checked ? 'checked' : '') + ' style="width:16px;height:16px;cursor:pointer">' +
-        '<div style="min-width:0">' +
-          '<div style="font-size:13px;font-weight:600;color:#0f172a">' +
-            '<span style="font-family:monospace">' + esc(u.serial || '—') + '</span>' +
+      const overdueChip = isOverdue ? '<small class="b49-utr">Útrunnið</small>' : '';
+      return '<div class="b49-rod">' +
+        '<input type="checkbox" class="_sr-unit-chk" data-i="' + i + '" ' + (s.checked ? 'checked' : '') + '>' +
+        '<div class="b49-tl">' +
+          '<div>' +
+            '<strong class="b49-sn">' + esc(u.serial || '—') + '</strong>' +
             ' · ' + esc(u.type || '—') + (u.size ? ' ' + esc(u.size) : '') +
             overdueChip +
           '</div>' +
-          '<div style="font-size:11px;color:#64748b;margin-top:2px">' +
+          '<div class="b49-stadur">' +
             (u.location ? esc(u.location) + ' · ' : '') +
-            'Næsta skoðun: ' + (ni ? esc(ni) : '—') +
+            'Næsta skoðun: <b>' + (ni ? esc(ni) : '—') + '</b>' +
           '</div>' +
         '</div>' +
-        '<select class="_sr-unit-svc" data-i="' + i + '" style="padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;background:#fff">' +
+        '<select class="_sr-unit-svc" data-i="' + i + '">' +
           SERVICE_TYPES.map(svc => '<option' + (s.service === svc ? ' selected' : '') + '>' + esc(svc) + '</option>').join('') +
         '</select>' +
       '</div>';
@@ -448,14 +518,12 @@
 
     const allChecked = _units.every(s => s.checked);
     const toolbar =
-      '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:12px">' +
-        '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:#475569">' +
-          '<input type="checkbox" id="_sr-toggle-all"' + (allChecked ? ' checked' : '') + ' style="width:14px;height:14px;cursor:pointer"> Velja öll' +
-        '</label>' +
-        '<span style="color:#94a3b8">' + _units.length + ' tæki frá field-service</span>' +
+      '<div class="b49-stika">' +
+        '<label><input type="checkbox" id="_sr-toggle-all"' + (allChecked ? ' checked' : '') + '> Velja öll</label>' +
+        '<small>' + _units.length + ' tæki frá field-service</small>' +
       '</div>';
 
-    return head + '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">' + toolbar + rows + '</div>';
+    return head + '<div class="b49-taeki">' + toolbar + rows + '</div>';
   }
 
   function wireUnitRows(body) {

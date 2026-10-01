@@ -397,6 +397,14 @@
 
     // ── strips: Önnur viðhengi · Hreyfingar · Ósótt · ekki tengt · Laga pörun ──
     var annad = el('div', 'b403-annad');
+    // 01.10.2026 (B47, Agnar: „hreyfingar to half, to the left side, and viðhengi cut in half and put on the right side“):
+    // tveir dálkar hlið við hlið — Hreyfingar vinstra, Önnur viðhengi hægra. Dálkarnir staflast sjálfir á mjóum skjá
+    // (undir 760 px), svo mjór gluggi fær þá hvorn undir öðrum án sér-reglu.
+    var tvenna = null, dalkV = null, dalkH = null;
+    function dalkur(hlid) {
+      if (!tvenna) { tvenna = el('div', 'b403-tvenna'); dalkV = el('div', 'b403-dalkur'); dalkH = el('div', 'b403-dalkur'); tvenna.appendChild(dalkV); tvenna.appendChild(dalkH); stal.appendChild(tvenna); }
+      return hlid === 'v' ? dalkV : dalkH;
+    }
     originals.forEach(function (c) {
       if (!c.classList || !c.classList.contains('sk-strip')) return;
       var l = c.querySelector('.sk-strip-l'); var r = c.querySelector('.sk-strip-r'); var lt = stripEmoji(txt(l));
@@ -404,7 +412,7 @@
         var addV = r.querySelector('.sk-doc.add'); var extras = [];
         if (addV) { addV.classList.add('b403-btn-litill'); addV.innerHTML = ICON.plus + 'Viðhengi'; extras.push(addV); }
         var wraps = Array.prototype.slice.call(r.querySelectorAll('.sk-att-wrap'));
-        stal.appendChild(kafli('Önnur viðhengi', [el('span', 'b403-pill', String(wraps.length)), el('span', 'b403-lina')].concat(extras)));
+        dalkur('h').appendChild(kafli('Önnur viðhengi', [el('span', 'b403-pill', String(wraps.length)), el('span', 'b403-lina')].concat(extras)));
         var vidh = el('div', 'b403-vidh');
         wraps.forEach(function (w) {
           var line = el('div', 'b403-skjal-lina'); var items = [];
@@ -413,7 +421,7 @@
           vidh.appendChild(line);
         });
         if (!wraps.length) vidh.appendChild(el('div', 'b403-skjal-lina daufur', 'Engin önnur viðhengi'));
-        stal.appendChild(vidh);
+        dalkur('h').appendChild(vidh);
         // leifar
         if (interactive(r) > 0) { r.classList.add('b403-leif'); annad.appendChild(r); }
         return;
@@ -421,7 +429,7 @@
       if (/Hreyfingar/i.test(lt) && r) {
         var rows = Array.prototype.slice.call(r.children);
         var last = rows[rows.length - 1];
-        stal.appendChild(kafli('Hreyfingar', [el('span', 'b403-pill', (rows.length - 1) + ' reikningar'), el('span', 'b403-lina'), el('span', 'b403-hint', last ? txt(last.lastElementChild) : '')]));
+        dalkur('v').appendChild(kafli('Hreyfingar', [el('span', 'b403-pill', (rows.length - 1) + ' reikningar'), el('span', 'b403-lina'), el('span', 'b403-hint', last ? txt(last.lastElementChild) : '')]));
         var hreyf = el('div', 'b403-hreyf');
         rows.slice(0, -1).forEach(function (rw) {
           rw.classList.add('b403-skjal-lina', 'hreyf');
@@ -433,7 +441,7 @@
           hreyf.appendChild(rw);
         });
         if (last) { last.classList.add('b403-hidden-info'); hreyf.appendChild(last); } // samtalan stendur í kaflanum
-        stal.appendChild(hreyf);
+        dalkur('v').appendChild(hreyf);
         return;
       }
       if (c.querySelector('a[href*="brunaholf"]')) { var a = c.querySelector('a'); a.classList.add('b403-tengill'); a.innerHTML = 'Laga pörun í Brunahólf ' + ICON.open; var kk = stal.querySelector('.b403-kafli:last-of-type'); (kk || stal).appendChild(a); return; }
@@ -479,13 +487,30 @@
   // Pör-bandið (311, „skýrsla + reikningur — sendu bæði í einu") fellur inn í spjaldið sem kafli (hönnun B).
   // 311 finnur bandið áfram með querySelector og færir það aldrei sjálft eftir fyrstu festingu; teikni 199 spjaldið
   // upp á nýtt hverfur bandið með og 311 býr það til aftur á eftir spjaldinu — þá kemur það hingað inn á ný.
+  // 01.10.2026 (B50, Agnar: „uppfæra útlitið á þessum tökkum, dökk græna metal senda takkann og more stylish takka“):
+  // 311 teiknar hnappana með emoji (📄 🧾 📧) og kortið með 🧯. Hér fá þeir línutákn kerfisins einu sinni (data-b403t);
+  // 311 setur smellina á hnappinn sjálfan (addEventListener), svo innihaldsskipti trufla ekkert.
+  function porTakkar(band) {
+    Array.prototype.slice.call(band.querySelectorAll('button._dpb-rep,button._dpb-inv,button._dpb-inv-doc,button._dpb-send')).forEach(function (b) {
+      if (b.dataset.b403t === '1') return;
+      var ic = b.classList.contains('_dpb-send') ? ICON.send : b.classList.contains('_dpb-rep') ? ICON.doc : ICON.inv;
+      b.dataset.b403t = '1'; b.innerHTML = ic + '<span>' + stripEmoji(txt(b)) + '</span>';
+    });
+    Array.prototype.slice.call(band.querySelectorAll(':scope > div:nth-child(2) > div > span:first-child')).forEach(function (sp) {
+      if (sp.dataset.b403t === '1') return;
+      var t = sp.nextElementSibling ? txt(sp.nextElementSibling.firstElementChild) : '';
+      sp.dataset.b403t = '1'; sp.classList.add('b403-por-ikon'); sp.innerHTML = svcIcon(t);
+    });
+  }
   function porInn(main, s) {
     var stal = s.querySelector('.b403-root > .b403-stal'); if (!stal) return;
-    var band = main.querySelector('._dpb-company'); if (!band || s.contains(band)) return;
+    var band = main.querySelector('._dpb-company'); if (band) porTakkar(band);
+    if (!band || s.contains(band)) return;
     if (band.style.display === 'none' && !band.children.length) return; // 311 hefur ekki teiknað enn
     var k = stal.querySelector('.b403-por-kafli');
     if (!k) { k = kafli('Skýrsla og reikningur saman', [el('span', 'b403-lina'), el('span', 'b403-hint', 'sendu bæði í einu')]); k.classList.add('b403-por-kafli'); }
-    var vidh = stal.querySelector('.b403-kafli:not(.b403-por-kafli)'); // fyrir framan Önnur viðhengi
+    // fyrir framan Önnur viðhengi / Hreyfingar — B47: þeir standa í .b403-tvenna, svo viðmiðið verður að vera beint barn
+    var vidh = stal.querySelector(':scope > .b403-tvenna') || stal.querySelector(':scope > .b403-kafli:not(.b403-por-kafli)');
     if (vidh) { stal.insertBefore(k, vidh); stal.insertBefore(band, vidh); } else { stal.appendChild(k); stal.appendChild(band); }
   }
   function schedule() { if (schedule.inni) return; schedule.inni = true; try { tick(); } finally { schedule.inni = false; } }   // 24.09.2026: vaktin (252) skilar sér í rAF, FYRIR málun — setTimeout héðan lenti EFTIR málun og hrái ramminn sást sem hopp (mælt: 224-listinn 601 → 741 px, valstikan 205 → 154 px). Sama tif, engin millistaða.
@@ -571,6 +596,13 @@
       r('.b403-band > .b403-ar .led', 'width:10px!important;height:10px!important'),
       r('.b403-ar .led', 'width:8px;height:8px;border-radius:50%;background:#8f98a8;box-shadow:0 0 0 3px rgba(255,255,255,.08)'),
       r('.b403-ar.ok .led', 'background:#7fe0a8;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #7fe0a8'), r('.b403-ar.gull .led', 'background:#ffe0a0;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #ffe0a0'), r('.b403-ar.vnsl .led', 'background:#9fd0ff;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #9fd0ff'), r('.b403-ar.nuna .led', 'background:#f7e6a8;box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 12px #f7e6a8'),
+      // B51 (Agnar 01.10, skjámynd af 2024/2023-bandinu: „textarnir sjást illa þarna“): blek-regla annars pappa málaði
+      // stöðumerkið (KOMIÐ/YFIRFARIÐ) og „1 þjónusta“ dökkt á málminn — á bandinu er letrið alltaf ljóst
+      r('.b403-band .b403-ar small', 'color:#f4f6f9!important;background:rgba(255,255,255,.16)!important;border:1px solid rgba(255,255,255,.22)!important;text-shadow:0 1px 1px rgba(0,0,0,.5)!important'),
+      r('.b403-band .b403-ar.ok small', 'color:#c9f5da!important;background:rgba(60,196,124,.18)!important;border-color:rgba(127,224,168,.45)!important'),
+      r('.b403-band .b403-ar.vnsl small', 'color:#d6e8ff!important;background:rgba(90,162,255,.18)!important;border-color:rgba(140,190,255,.45)!important'),
+      r('.b403-band .b403-ar.gull small,.b403-band .b403-ar.nuna small', 'color:#ffecc4!important;background:rgba(224,169,62,.2)!important;border-color:rgba(255,224,160,.45)!important'),
+      r('.b403-band > .b403-pill', 'color:#eef1f4!important;background:rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.2)!important;height:20px!important;font-size:11px!important'),
       r('.b403-pill', 'height:18px;padding:0 7px;border-radius:99px;background:rgba(255,255,255,.12);font-family:' + MONO + ';font-size:10.5px;font-weight:700;color:#fff;display:inline-flex;align-items:center'),
       r('.b403-lina', 'flex:1;height:1px;background:rgba(255,255,255,.12)'),
       r('.b403-band .b403-hint,.b403-kafli .b403-hint', 'margin-left:0;color:#d5dbe6'),
@@ -649,6 +681,11 @@
       // önnur viðhengi · hreyfingar
       r('.b403-vidh', 'display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px'),
       r('.b403-hreyf', 'display:flex;flex-direction:column;gap:6px'),
+      // B47: Hreyfingar | Önnur viðhengi hlið við hlið; tómur dálkur tekur ekkert pláss
+      r('.b403-tvenna', 'display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(380px,calc(50% - 6px))),1fr));gap:12px;align-items:start'),   // mest tveir dálkar; einn undir 760 px; sé annar tómur fær hinn alla breiddina
+      r('.b403-dalkur', 'display:flex;flex-direction:column;gap:12px;min-width:0'),
+      r('.b403-dalkur:empty', 'display:none'),
+      r('.b403-tvenna .b403-vidh', 'grid-template-columns:1fr!important;gap:6px'),
       r('.b403-skjal-lina', LINE + ';display:flex;align-items:center;gap:8px;min-height:40px;padding:0 6px 0 8px!important;font-size:12.5px;color:#3a4250;border:0!important;position:relative'),
       r('.b403-skjal-lina.daufur', 'color:#525b6b;font-size:12px;background:rgba(255,255,255,.35);border:1.5px dashed rgba(20,24,34,.24)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.08)'),
       r('.b403-skjal-lina .teg', 'font-weight:600;color:#1f2530;flex:0 0 76px!important;font-size:12.5px!important'),
@@ -667,7 +704,20 @@
       r('._dpb-company > div:first-child', 'display:none!important'),
       // B35 (Agnar 30.09: „svo langt á milli úttekt og senda — þjappa, sameina í 1/3 eða 1/2 breidd"): raðirnar í rist,
       // 2–3 á breidd eftir plássi (lágmark 420 px hver) — Úttekt og Brunakerfi sama ár standa hlið við hlið.
-      r('._dpb-company > div:nth-child(2)', 'padding:0!important;display:grid!important;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:6px'),
+      r('._dpb-company > div:nth-child(2)', 'padding:0!important;display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(100%,560px),1fr));gap:6px'),   // B50: 420 → 560 px — þrjú í röð brutu titil og stöðu í fjórar línur
+      // B50: Skýrsla/Reikningur silfur, Senda dökkgrænn málmur; hausinn „sendu bæði í einu“ án „Samtals“-forskeytisins
+      r('.b403-por-kafli .b403-hint::before', 'content:none'),
+      r('._dpb-company > div:nth-child(2) > div > div:nth-child(2)', 'flex:1 1 auto;min-width:0'),
+      r('._dpb-company > div:nth-child(2) > div > div:nth-child(2) > :first-child', 'white-space:nowrap'),
+      r('._dpb-company button._dpb-rep,._dpb-company button._dpb-inv,._dpb-company button._dpb-inv-doc', SILVER_BTN + ';height:32px!important;padding:0 12px 0 10px!important;border-radius:7px!important;font-family:' + SANS + '!important;font-size:12px!important;font-weight:600!important;display:inline-flex!important;align-items:center!important;gap:6px!important;cursor:pointer;transition:box-shadow .15s,transform .05s'),
+      r('._dpb-company button._dpb-rep svg,._dpb-company button._dpb-inv svg,._dpb-company button._dpb-inv-doc svg', 'width:15px;height:15px;color:#525b6b;flex:none'),
+      r('._dpb-company button._dpb-rep:hover,._dpb-company button._dpb-inv:hover,._dpb-company button._dpb-inv-doc:hover', 'box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.14)!important'),
+      r('._dpb-company button._dpb-send', 'height:32px!important;padding:0 14px 0 11px!important;border-radius:7px!important;border:1px solid #04190b!important;background:linear-gradient(180deg,#3a7d52 0%,#1d5a33 45%,#0f3d21 100%)!important;color:#eef8f1!important;font-family:' + SANS + '!important;font-size:12px!important;font-weight:700!important;letter-spacing:.02em;text-shadow:0 1px 1px rgba(0,0,0,.6)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.35),0 0 14px -5px rgba(40,170,90,.6),0 2px 4px rgba(0,0,0,.28)!important;display:inline-flex!important;align-items:center!important;gap:7px!important;cursor:pointer;transition:box-shadow .15s,filter .15s'),
+      r('._dpb-company button._dpb-send svg', 'width:14px;height:14px;color:#9fe3b6;flex:none'),
+      r('._dpb-company button._dpb-send:hover', 'filter:brightness(1.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),inset 0 -1px 0 rgba(0,0,0,.35),0 0 18px -4px rgba(40,190,100,.75),0 2px 6px rgba(0,0,0,.32)!important'),
+      r('._dpb-company button._dpb-send:active,._dpb-company button._dpb-rep:active,._dpb-company button._dpb-inv:active,._dpb-company button._dpb-inv-doc:active', 'transform:translateY(1px)'),
+      r('._dpb-company .b403-por-ikon', 'flex:none;width:30px;height:30px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);display:inline-flex!important;align-items:center;justify-content:center;color:#b3261e;font-size:0!important'),
+      r('._dpb-company .b403-por-ikon svg', 'width:16px;height:16px'),
       r('._dpb-company > div:nth-child(2) > div', LINE + ';padding:6px 10px!important;min-height:44px;display:flex;align-items:center;gap:8px;border:0!important')
     ].join('\n');
     // display:flex á valmyndinni vann UA-regluna [hidden]{display:none} — lokaðar valmyndir sáust opnar

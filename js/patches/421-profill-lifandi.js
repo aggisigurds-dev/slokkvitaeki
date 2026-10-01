@@ -25,7 +25,11 @@
   if (window.__profillLifandi421) return;
   window.__profillLifandi421 = true;
 
-  const BAKGRUNNUR = /^(hradamaelingar|app_problems|year_factcheck|geocode_cache|doc_factcheck|trio_saga|villur|villuvakt|heimsoknir_log|page_views|automation_runs|fjarmal_live|app_settings|rpc:app_settings_merge)$/;
+  // 01.10.2026 (Agnar: „hrikaleg hopp í ársskoðun þegar maður ýtir á check í tæki eða breytir hleðslu/yfirferð“): hakið og
+  // valið lifa í localStorage og 227 speglar þau í app_settings 1–2 s síðar. Sú skrift kom hingað sem „breyting“ og
+  // ALLUR prófíllinn var endurteiknaður (mælt: fyrsta röð listans 390 → 609 → 740 → 433 → 306 → 272 px á 1,5 s).
+  // Skjárinn sýndi þegar nýju stöðuna — app_settings / app_kv / rpc:app_settings_merge eru bakgrunnur hér.
+  const BAKGRUNNUR = /^(hradamaelingar|app_problems|year_factcheck|geocode_cache|doc_factcheck|trio_saga|villur|villuvakt|heimsoknir_log|page_views|automation_runs|fjarmal_live|app_settings|app_kv|rpc:app_settings_merge)$/;
   const NOTANDI_MS = 20000, KYRRD_MS = 2500, BID_MS = 450;
 
   let _adgerd = 0;              // síðasta raunverulega aðgerð notanda
@@ -59,6 +63,8 @@
   document.addEventListener('gogn-skrifud', (e) => {
     const t = (e.detail && e.detail.tafla) || '';
     if (!t || BAKGRUNNUR.test(t)) return;
+    // 01.10.2026: 227 vistar með RPC (tafla = 'rpc:app_settings_merge') — sama speglun, sama bakgrunnur
+    if (/app_settings|app_kv/.test(t)) return;
     const nu = Date.now();
     if (nu < _kyrrdTil && _adgerd < _kyrrdTil - KYRRD_MS) return;   // afleiðing okkar eigin endurteikningar
     if (nu - _adgerd > NOTANDI_MS) return;                           // enginn notandi á bak við — bakgrunnsskrift
@@ -83,6 +89,10 @@
     try {
       await endurnyjaMinni(id, toflur);
       if (!erProfill() || opidId() !== id || erAdSkrifa() || gluggiOpinn()) { _tafla = new Set(toflur.concat(Array.from(_tafla))); skipuleggja(600); return; }
+      // 01.10.2026: aðeins tæki breyttust (Merkja skoðun, dagsetningar, staða) → listinn og kostnaðurinn lesa úr
+      // DB.cache.units sem var nýlagfært; 224.rerender er vafið af 404 (uppröðun í sama tifi, skrun helst). Allur
+      // prófíllinn (haus, skjöl, samskipti, teikning) stendur kyrr — hann sækir ekkert úr uttaeki.
+      if (toflur.length && toflur.every((t) => t === 'uttaeki') && document.querySelector('#companies-main .ut-list[data-uw-co="' + id + '"]')) { lett(id); return; }
       teikna(id);
     } catch (err) {
       console.warn('[421] endurnýjun prófíls brást — síðan sýnir áfram fyrri stöðu', err);
@@ -130,6 +140,11 @@
     const l = [document.scrollingElement || document.documentElement];
     ['.main-panel', '#view-companies', '#companies-main', '.main-content', 'main'].forEach((s) => { const e = document.querySelector(s); if (e && l.indexOf(e) < 0) l.push(e); });
     return l;
+  }
+  function lett(id) {
+    _kyrrdTil = Date.now() + KYRRD_MS + 500;
+    try { if (window.UttektTaeki && UttektTaeki.rerender) UttektTaeki.rerender(id); } catch (e) { console.warn('[421] létt endurteikning', e); }
+    try { if (window.recomputeCompanyTotalCost) window.recomputeCompanyTotalCost(); } catch (_) {}
   }
   function teikna(id) {
     // 01.10.2026: hak / Yfirferð / Hleðsla skrifa inspection_trips (227) →
