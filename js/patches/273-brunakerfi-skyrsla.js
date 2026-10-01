@@ -108,6 +108,19 @@
     'Akstur': 'fast'
   };
 
+  // 01.10.2026 (Agnar: „tenging við þar af nýtt — þegar það er t.d. nýr reykskynjari þá reiknar útreikningsforritið
+  // verðið á nýjum reykskynjara miðað við Reykskynjari Vara í verðlista … Column um tegundir … velja Vöru eða
+  // þjónustu lið"). Verðlista-liður getur nú tengst „Nýtt: <búnaður>" — magnið kemur þá úr „Þar af nýtt"-reitnum
+  // (t.d. Optiskur Reykskynjari XP95 × fjöldi nýrra reykskynjara) — og ber TEGUND: Þjónusta eða Vara.
+  const NYTT = 'nytt:';
+  const NYTT_GRUNNUR = [['stjornstod', 'Stjórnstöð'], ['bodbunadur', 'Boðbúnaður'], ['reykskynjarar', 'Reykskynjarar'],
+    ['hitaskynjarar', 'Hitaskynjarar'], ['reykhita', 'Reyk+hitaskynjarar'], ['handbodar', 'Handboðar'],
+    ['bjollur', 'Bjöllur / Sírenur'], ['rafhlodur', 'Rafhlöður']];
+  const TEG_OPTS = [['thjonusta', 'Þjónusta'], ['vara', 'Vara']];
+  // Eldri vistaðir liðir bera enga tegund: „Skoðun á …", Akstur, Vinna, Samantekt … eru þjónusta, annað er vara.
+  function tegAgiskun(name) { return /^\s*(\+|sko[ðd]un|akstur|vinna|samantekt|yfirfer|pr[óo]fun|uppsetning|eftirlit|þjónust)/i.test(String(name || '')) ? 'thjonusta' : 'vara'; }
+  const erNytt = (link) => String(link || '').indexOf(NYTT) === 0;
+
   let S = null, _dirty = false, _autoT = null, _pricelist = null;
   // 21.09.2026 (úttekt): úreldingarvörður verðlistans — sjá savePriceItems.
   let _pricelistAsOf = '', _verdlistiUreltur = false; const _minarVistanir = [];
@@ -301,7 +314,10 @@
       .map(c => ({ label: c.label, iLagi: 0, ekki: 0, vantar: 0, nytt: 0, custom: true, key: c.key }));
   }
   function linkOpts() {
-    return LINK_OPTS.concat(customBunadurList().map(c => [c.key, c.label]));
+    const cust = customBunadurList();
+    return LINK_OPTS.concat(cust.map(c => [c.key, c.label]))
+      .concat(NYTT_GRUNNUR.map(o => [NYTT + o[0], 'Nýtt: ' + o[1]]))
+      .concat(cust.map(c => [NYTT + c.key, 'Nýtt: ' + c.label]));
   }
 
   // ── verðlisti (app_settings.brunakerfi_verdlisti, grunnur = BASE_PRICES) ────
@@ -318,14 +334,15 @@
       ? saved.items.map(x => ({ name: x.name || '', price: +x.price || 0,
           // eldri vistaðir listar án tenginga fá sjálfgefnu tengingarnar; tóm
           // tenging sem notandinn valdi sjálfur ('') er virt
-          link: x.link != null ? x.link : (DEFAULT_LINKS[x.name] || '') }))
-      : BASE_PRICES.map(p => ({ name: p[0], price: p[1], link: DEFAULT_LINKS[p[0]] || '' }));
+          link: x.link != null ? x.link : (DEFAULT_LINKS[x.name] || ''),
+          teg: x.teg === 'vara' || x.teg === 'thjonusta' ? x.teg : tegAgiskun(x.name) }))
+      : BASE_PRICES.map(p => ({ name: p[0], price: p[1], link: DEFAULT_LINKS[p[0]] || '', teg: 'thjonusta' }));
     // Vantar þjónustulið í vistaða listann? Bæta honum við hér — ekki skrifa á
     // þjóninn. Úreldingarvörðurinn í savePriceItems á að vera eina leiðin sem
     // skrifar, og hann krefst þess að notandinn hafi opnað ritilinn.
     THJONUSTU_LIDIR.forEach(t => {
       if (!_pricelist.some(x => (x.name || '').trim().toLowerCase() === t.name.toLowerCase())) {
-        _pricelist.push({ name: t.name, price: t.price, link: t.link });
+        _pricelist.push({ name: t.name, price: t.price, link: t.link, teg: 'thjonusta' });
       }
     });
     return _pricelist;
@@ -869,19 +886,22 @@
   }
 
   // ⚡ verðlínur úr búnaðaryfirlitinu: tengdir verðlista-liðir × talinn búnaður
-  function autoVerdLines() {
+  // Magn verðlista-liðar úr búnaðaryfirlitinu. „nytt:<lykill>" les „Þar af nýtt" í stað samtals.
+  function magnTengingar(m, link) {
+    let svid = 'samtals';
+    if (erNytt(link)) { svid = 'nytt'; link = link.slice(NYTT.length); }
+    const q = r => (r && !r.hidden) ? (+r[svid] || 0) : 0; // faldir liðir gefa 0
+    if (link === 'fast') return svid === 'nytt' ? 0 : 1;
+    if (link === 'reykhita') return q(m.bunRows[LINK_IX.reykskynjarar]) + q(m.bunRows[LINK_IX.hitaskynjarar]);
+    if (LINK_IX[link] != null) return q(m.bunRows[LINK_IX[link]]);
+    // sérsniðinn búnaður: passa á key EÐA slug af heiti raðarinnar
+    return q(m.bunRows.find(r => r.key === link || slugKey(r.label) === link));
+  }
+  function autoVerdLines(adeins) {
     const m = model();
-    const qtyFor = link => {
-      const q = r => (r && !r.hidden) ? r.samtals : 0; // faldir liðir gefa 0
-      if (link === 'fast') return 1;
-      if (link === 'reykhita') return q(m.bunRows[LINK_IX.reykskynjarar]) + q(m.bunRows[LINK_IX.hitaskynjarar]);
-      if (LINK_IX[link] != null) return q(m.bunRows[LINK_IX[link]]);
-      // sérsniðinn búnaður: passa á key EÐA slug af heiti raðarinnar
-      return q(m.bunRows.find(r => r.key === link || slugKey(r.label) === link));
-    };
     return priceItems()
-      .filter(it => it.link)
-      .map(it => ({ name: it.name, qty: String(qtyFor(it.link)), price: String(it.price) }))
+      .filter(it => it.link && (!adeins || adeins(it)))
+      .map(it => ({ name: it.name, qty: String(magnTengingar(m, it.link)), price: String(it.price), teg: it.teg || tegAgiskun(it.name) }))
       .filter(l => +l.qty > 0);
   }
 
@@ -939,7 +959,7 @@
     const pick = box.querySelector('#_bks-v-pick');
     if (pick) pick.addEventListener('change', () => {
       const it = priceItems()[+pick.value];
-      if (it) { S.data.verd.linur.push({ name: it.name, qty: '1', price: String(it.price), afsl: '' }); markDirty(); rerender(); }
+      if (it) { S.data.verd.linur.push({ name: it.name, qty: '1', price: String(it.price), afsl: '', teg: it.teg || tegAgiskun(it.name) }); markDirty(); rerender(); }
     });
     const blankB = box.querySelector('#_bks-v-blank');
     if (blankB) blankB.addEventListener('click', () => { S.data.verd.linur.push({ name: '', qty: '1', price: '', afsl: '' }); markDirty(); rerender(); });
@@ -1006,7 +1026,8 @@
     const items = priceItems();
     const it = items[idx]; if (!it) return;
     const label = (it.name || '').trim(); if (!label) return;
-    const builtinLink = it.link === 'fast' || it.link === 'reykhita' || LINK_IX[it.link] != null;
+    // „Nýtt: …"-tenging telst innbyggð — annars yrði varan endurtengd á eigin búnaðarröð og tengingin týndist.
+    const builtinLink = it.link === 'fast' || it.link === 'reykhita' || LINK_IX[it.link] != null || erNytt(it.link);
     if (!builtinLink) {
       const key = await addCustomBunadur(label, false);
       if (it.link !== key) { it.link = key; await savePriceItems(items); }
@@ -1015,7 +1036,7 @@
       else S.data.bunadur.push({ label, iLagi: 0, ekki: 0, vantar: 0, nytt: 0, custom: true, key });
     }
     if (!(S.data.verd.linur || []).some(l => (l.name || '') === it.name)) {
-      (S.data.verd.linur = S.data.verd.linur || []).push({ name: it.name, qty: '1', price: String(it.price) });
+      (S.data.verd.linur = S.data.verd.linur || []).push({ name: it.name, qty: '1', price: String(it.price), teg: it.teg || tegAgiskun(it.name) });
     }
     markDirty(); renderWork(); updStats();
   }
@@ -1111,20 +1132,28 @@
         '<input class="_bks-in" data-pk="name" data-pi="' + i + '" value="' + esc(it.name) + '" style="flex:1;min-width:170px;border:1px solid #d0d4da;border-radius:8px;padding:7px 10px;font-size:13px">' +
         '<input class="_bks-in" data-pk="price" data-pi="' + i + '" inputmode="numeric" value="' + esc(fmtInn(it.price)) + '" style="width:104px;text-align:right;border:1px solid rgba(20,24,34,.14);border-radius:6px;padding:7px 10px;font-size:13px;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-weight:700;background:#eef1f6;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)">' +
         '<span style="font-size:11px;color:#8a93a3;margin-left:-4px;width:18px">kr</span>' +
-        '<select class="_bks-in" data-pk="link" data-pi="' + i + '" title="Tengist skýrslu — magnið kemur sjálfkrafa úr búnaðaryfirlitinu" style="width:168px;border:1px solid ' + (it.link ? '#1f8a4c' : '#d0d4da') + ';border-radius:8px;padding:7px 8px;font-size:12px;background:' + (it.link ? '#f2faf5' : '#fff') + '">' +
-          linkOpts().map(o => '<option value="' + o[0] + '"' + (o[0] === (it.link || '') ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') +
+        '<select class="_bks-in" data-pk="teg" data-pi="' + i + '" title="Tegund liðar — vara eða þjónusta" style="width:96px;border:1px solid #d0d4da;border-radius:8px;padding:7px 8px;font-size:12px;font-weight:700;background:#fff;color:' + ((it.teg || tegAgiskun(it.name)) === 'vara' ? '#845400' : '#3a4250') + '">' +
+          TEG_OPTS.map(o => '<option value="' + o[0] + '"' + (o[0] === (it.teg || tegAgiskun(it.name)) ? ' selected' : '') + '>' + o[1] + '</option>').join('') +
+        '</select>' +
+        '<select class="_bks-in" data-pk="link" data-pi="' + i + '" title="Tengist skýrslu — magnið kemur sjálfkrafa úr búnaðaryfirlitinu (Nýtt: … = úr Þar af nýtt)" style="width:168px;border:1px solid ' + (it.link ? '#1f8a4c' : '#d0d4da') + ';border-radius:8px;padding:7px 8px;font-size:12px;background:' + (it.link ? '#f2faf5' : '#fff') + '">' +
+          (function () {
+            const opt = o => '<option value="' + o[0] + '"' + (o[0] === (it.link || '') ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+            const allir = linkOpts();
+            return allir.filter(o => !erNytt(o[0])).map(opt).join('') +
+              '<optgroup label="Þar af nýtt — magn úr Þar af nýtt">' + allir.filter(o => erNytt(o[0])).map(opt).join('') + '</optgroup>';
+          })() +
         '</select>' +
         '<button type="button" data-pdel="' + i + '" style="width:28px;height:28px;border-radius:7px;border:1px solid #efb9ab;background:#fff;color:#c93c1d;font-weight:800;cursor:pointer;flex:none">✕</button>' +
       '</div>';
     const render = () => {
       p.innerHTML =
-        '<div style="background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:84vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4);font-family:-apple-system,\'Segoe UI\',Helvetica,Arial,sans-serif">' +
+        '<div style="background:#fff;border-radius:14px;max-width:760px;width:100%;max-height:84vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4);font-family:-apple-system,\'Segoe UI\',Helvetica,Arial,sans-serif">' +
           '<div style="background:#141619;color:#fff;padding:13px 16px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center">' +
             '<div><div style="font-weight:800;font-size:14.5px">🏷 Verðlisti — brunakerfis-skoðun</div>' +
             '<div style="font-size:11px;color:#8b93a1">Verð án VSK. Breytingar gilda alls staðar í appinu.</div></div>' +
             '<button type="button" id="_bks-p-x" style="background:none;border:0;color:#8b93a1;font-size:20px;cursor:pointer;padding:4px 8px">✕</button></div>' +
           '<div style="padding:12px 16px;overflow-y:auto;flex:1" id="_bks-p-rows">' +
-            '<div style="display:flex;gap:8px;font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;padding-bottom:4px"><span style="flex:1;min-width:170px">Liður</span><span style="width:88px;text-align:right">Verð án vsk</span><span style="width:168px">Tengist skýrslu</span><span style="width:28px"></span></div>' +
+            '<div style="display:flex;gap:8px;font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;padding-bottom:4px"><span style="flex:1;min-width:170px">Liður</span><span style="width:88px;text-align:right">Verð án vsk</span><span style="width:96px">Tegund</span><span style="width:168px">Tengist skýrslu</span><span style="width:28px"></span></div>' +
             items.map(row).join('') +
             '<button type="button" id="_bks-p-add" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px dashed #a8b0bb;background:#f8f9fb;color:#334155;font-size:12.5px;font-weight:700;cursor:pointer">＋ Ný lína</button>' +
           '</div>' +
@@ -1134,13 +1163,14 @@
           '</div></div>';
       p.querySelector('#_bks-p-x').addEventListener('click', lokaOruggt);
       p.querySelector('#_bks-p-cancel').addEventListener('click', lokaOruggt);
-      p.querySelector('#_bks-p-add').addEventListener('click', () => { items.push({ name: '', price: 0, link: '' }); render(); });
+      p.querySelector('#_bks-p-add').addEventListener('click', () => { items.push({ name: '', price: 0, link: '', teg: 'vara' }); render(); });
       p.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', () => { items.splice(+b.dataset.pdel, 1); render(); }));
       p.querySelectorAll('[data-pk]').forEach(inp => {
         const apply = () => {
           const it = items[+inp.dataset.pi]; if (!it) return;
           if (inp.dataset.pk === 'name') it.name = inp.value;
           else if (inp.dataset.pk === 'link') it.link = inp.value;
+          else if (inp.dataset.pk === 'teg') { it.teg = inp.value; inp.style.color = it.teg === 'vara' ? '#845400' : '#3a4250'; }
           else it.price = num(inp.value) || 0;
         };
         inp.addEventListener('input', apply);
@@ -1890,7 +1920,15 @@
     const prev = S; S = st;
     try { return await buildPdfBlob(); } finally { S = prev; }
   }
-  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob };
+  // 274 (reikningslínur á fyrirtækjasíðunni): verðlistinn með tegund, og línur sem „Þar af nýtt" kallar á í
+  // tiltekinni skýrslu (vara tengd „Nýtt: …" × fjöldi nýrra). Les aðeins; vistar ekkert.
+  function verdlistiMedTegund() { return priceItems().map(it => ({ name: it.name, price: it.price, link: it.link || '', teg: it.teg || tegAgiskun(it.name) })); }
+  function nyttLinur(co, row) {
+    const st = stateFor(co, row); if (!st) return [];
+    const prev = S; S = st;
+    try { return autoVerdLines(it => erNytt(it.link)); } finally { S = prev; }
+  }
+  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun };
   console.log('[patch-273] Brunakerfi skoðunarskýrsla v2 (PDF + verð) installed');
 })();
 /* === END BRUNAKERFI SKOÐUNARSKÝRSLA === */
