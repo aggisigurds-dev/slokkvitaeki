@@ -435,6 +435,39 @@
   // að tækið datt ÚT ÚR REIKNINGNUM þegjandi. Auðkennið ræður núna; nafnið er
   // aðeins sótt til viðbótar fyrir raðir sem bera EKKERT auðkenni, svo
   // systkinastaður með sama nafni dragist aldrei inn (sbr. 175/239).
+  // 01.10.2026: opnun gekk yfir alla ~6k töfluna tvisvar (félag + munaðarlausar).
+  // Vísitala einu sinni þegar fylkið eða lengd þess breytist. NONBILL er lesin
+  // af hlutnum við uppflettingu svo staðabreyting á hak/ónýtt sjáist án þess
+  // að endurbyggja. Sama útkoma og gamla filter-ið.
+  let _unitIdx = null;
+  function unitIndex(cached) {
+    const head = cached[0];
+    const tail = cached[cached.length - 1];
+    if (_unitIdx && _unitIdx.src === cached && _unitIdx.len === cached.length && _unitIdx.head === head && _unitIdx.tail === tail) {
+      return _unitIdx;
+    }
+    const byCo = new Map();
+    const orphans = new Map();
+    const byName = new Map();
+    for (let i = 0; i < cached.length; i++) {
+      const u = cached[i];
+      if (!u) continue;
+      const name = u.client == null ? '' : String(u.client);
+      const named = byName.get(name);
+      if (named) named.push(u); else byName.set(name, [u]);
+      if (u.fyrirtaeki_id != null) {
+        const k = Number(u.fyrirtaeki_id);
+        const owned = byCo.get(k);
+        if (owned) owned.push(u); else byCo.set(k, [u]);
+      } else {
+        const loose = orphans.get(name);
+        if (loose) loose.push(u); else orphans.set(name, [u]);
+      }
+    }
+    _unitIdx = { src: cached, len: cached.length, head: head, tail: tail, byCo: byCo, orphans: orphans, byName: byName };
+    return _unitIdx;
+  }
+
   async function fetchUnits(client, coId) {
     const NONBILL_PRE = { onytt: 1, geymsla: 1, urelt: 1, i_vinnslu: 1 };
     const normStPre = (window.Companies && Companies._normStatus) ? Companies._normStatus : function (s) {
@@ -449,16 +482,30 @@
     // uttaeki-raðir félagsins úr Supabase við hverja teikningu — og svo AFTUR
     // á nafni fyrir munaðarlausar. Listinn er þegar í DB.cache.units (~6k) og
     // NONBILL-sían er sú sama, svo engin ný tala á reikninginn. Net aðeins ef
-    // skyndiminninu vantar.
+    // skyndiminninu vantar. Opnunargangan les vísitöluna, ekki alla töfluna.
     const cached = window.DB && DB.cache && Array.isArray(DB.cache.units) ? DB.cache.units : null;
     if (cached && cached.length) {
-      return cached.filter(u => {
-        if (!u) return false;
-        const match = coId != null
-          ? ((u.fyrirtaeki_id != null) ? (Number(u.fyrirtaeki_id) === Number(coId)) : (u.client === client))
-          : (u.client === client);
-        return match && !NONBILL_PRE[normStPre(u.status)];
-      });
+      const idx = unitIndex(cached);
+      const name = client == null ? '' : String(client);
+      const rows = [];
+      const seen = new Set();
+      const take = (list) => {
+        if (!list) return;
+        for (let i = 0; i < list.length; i++) {
+          const u = list[i];
+          if (!u || seen.has(u.id) || NONBILL_PRE[normStPre(u.status)]) continue;
+          seen.add(u.id);
+          rows.push(u);
+        }
+      };
+      if (coId != null) {
+        take(idx.byCo.get(Number(coId)));
+        take(idx.orphans.get(name));
+      } else {
+        take(idx.byName.get(name));
+      }
+      rows._fromCache = true;
+      return rows;
     }
     const sb = window.DB && window.DB.sb;
     if (!sb) return [];
@@ -633,7 +680,9 @@
     const units = await fetchUnits(coNafn, coId);
     // Munaðarlausar raðir (fyrirtaeki_id NULL) bera aðeins nafnið — þær eiga
     // áfram heima hjá félaginu og mega ekki detta út við skiptin hér að ofan.
-    if (coId != null) {
+    // Skyndiminnið skilar þeim þegar í fyrstu tölu (_fromCache). Seinni gangan
+    // er aðeins net-leiðin og má ekki fletta uttaeki aftur þegar cache er til.
+    if (coId != null && !units._fromCache) {
       const munadarlaus = (await fetchUnits(coNafn, null)).filter(u => u.fyrirtaeki_id == null);
       const seen = new Set(units.map(u => u.id));
       munadarlaus.forEach(u => { if (!seen.has(u.id)) units.push(u); });
@@ -1768,6 +1817,11 @@
   // teikning fyrr en púlsinn (2,5 s) náði því. Nú er beiðnin geymd (_pending) og
   // keyrð aftur í finally.
   let _pending = false;
+  // Fyrsta teikningin (áður en #_ctc-section er til) er færð út af rammanum
+  // sem málast borðann og tækjalistann. Hak / Yfirferð koma þegar spjaldið
+  // er til og keyra strax — listinn er ekki endurbyggður hér.
+  let _yieldKey = '';
+  let _yieldPending = false;
   async function maybeRender() {
     if (_rendering) { _pending = true; return; }
     // 2026-08-17 („invoice calculator keeps falling out"): þessir tveir
@@ -1787,6 +1841,15 @@
     }
     const key = String(coId);
     if (key === _lastKey && document.getElementById('_ctc-section')) return;
+    if (!document.getElementById('_ctc-section')) {
+      if (_yieldPending && _yieldKey === key) return;
+      if (_yieldKey !== key) {
+        _yieldKey = key;
+        _yieldPending = true;
+        setTimeout(function () { _yieldPending = false; maybeRender(); }, 0);
+        return;
+      }
+    }
     _lastKey = key;
     _rendering = true;
     try {
@@ -1836,7 +1899,9 @@
       if (!view || !view.classList.contains('active')) return;
       const allOurs = muts.every(m => {
         const t = m.target;
-        return t && (t.id === '_ctc-section' || (t.closest && t.closest('#_ctc-section')));
+        if (!t || !t.closest) return false;
+        if (t.id === '_ctc-section' || t.id === '_ctc-notes') return true;
+        return !!(t.closest('#_ctc-section, #_ctc-notes, .co-banner, .ut-list'));
       });
       if (allOurs) return;
       clearTimeout(_t);
