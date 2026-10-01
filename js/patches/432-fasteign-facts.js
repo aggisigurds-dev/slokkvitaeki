@@ -95,11 +95,11 @@
       if (linur.length) {
         return linur.map(([merki, gildi]) =>
           '<div class="_bupp-lina _fasteign-lina"><span class="_bupp-merki">' + esc(merki) + '</span>' +
-          '<span class="_bupp-afsl" title="' + esc(heimild) + '">' + esc(gildi) + '</span></div>'
+          '<span class="_fasteign-gildi" title="' + esc(heimild) + '">' + esc(gildi) + '</span></div>'
         ).join('');
       }
       return '<div class="_bupp-lina _fasteign-lina"><span class="_bupp-merki">Hús</span>' +
-        '<span class="_bupp-afsl" title="Teikningagögnin hafa hvorki hæðir né herbergi. Fermetrar, byggingarár og byggingarefni eru í Fasteignaskrá HMS sem er í áskrift.">vantar heimild</span></div>';
+        '<span class="_fasteign-gildi" title="Teikningagögnin hafa hvorki hæðir né herbergi. Fermetrar, byggingarár og byggingarefni eru í Fasteignaskrá HMS sem er í áskrift.">vantar heimild</span></div>';
     }
     if (h.tomt || h.villa) {
       const i = saekibid.has(lykillAf(adr));
@@ -110,6 +110,7 @@
     return '';
   }
 
+  let _adrRett = 0;
   function syna() {
     const id = coIdNu();
     if (!id) return;
@@ -117,7 +118,13 @@
       document.querySelector('.co-bupp[data-co="' + id + '"]');
     if (!box) return;
     const adr = heimilisfang(id);
-    if (adr == null || !adr || !/\d/.test(adr)) return;
+    // Listinn kemur stundum á eftir bannerinum. Engin netumferð á meðan.
+    if (adr == null) {
+      if (_adrRett < 25) { _adrRett++; setTimeout(syna, 400); }
+      return;
+    }
+    _adrRett = 0;
+    if (!adr || !/\d/.test(adr)) return;
     const lykill = lykillAf(adr);
     lesa(adr);
     const h = minni.get(lykill);
@@ -131,9 +138,9 @@
       el = document.createElement('div');
       el.className = '_fasteign';
       const teikn = box.querySelector('._bupp-teikn-lina');
-      const vixl = box.querySelector('._bupp-vixl');
+      const vixl = box.querySelector(':scope > ._bupp-vixl');
       if (teikn) teikn.insertAdjacentElement('afterend', el);
-      else if (vixl) box.insertBefore(el, vixl);
+      else if (vixl) vixl.insertAdjacentElement('beforebegin', el);
       else box.appendChild(el);
     }
     el.dataset.sig = sig;
@@ -189,7 +196,8 @@
       'box-shadow:none!important;color:rgba(255,255,255,.72)!important;font:inherit!important;font-size:11.5px!important;font-weight:400!important;' +
       'line-height:19px!important;text-decoration:underline!important;text-underline-offset:3px!important;cursor:pointer!important;white-space:nowrap!important}' +
       'button._fasteign-takki:hover{color:#fff!important}' +
-      'button._fasteign-takki:disabled{opacity:.6!important;cursor:default!important}';
+      'button._fasteign-takki:disabled{opacity:.6!important;cursor:default!important}' +
+      '._fasteign-gildi{flex:1 1 auto;min-width:0;font-size:11.5px;line-height:19px;color:rgba(255,255,255,.72);padding:0 2px;white-space:nowrap}';
     (document.head || document.documentElement).appendChild(s);
   }
 
