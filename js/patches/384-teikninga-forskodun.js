@@ -92,8 +92,11 @@
     document.head.appendChild(st);
   }
 
+  // Eintala á blaðinu er „skráningartafla“ (a), fleirtala „skráningartöflur“ (ö).
+  const erSkraning = (d) => /skr[aá]ningart[aö]fl/i.test([d && d.lysing, d && d.filename, d && d.tegund].filter(Boolean).join(' '));
   const synilegar = () => {
     const l = S.listi;
+    if (S.sia === 'skraning') return l.filter(erSkraning);
     if (S.sia === 'allar') return l;
     if (S.sia === 'gild') return l.filter(d => !d.urelt);
     const g = l.filter(d => d.grunnmynd && !d.urelt);
@@ -118,7 +121,7 @@
     el.innerHTML = '<div class="tfs-gl" role="dialog" aria-modal="true" aria-label="Teikningar">' +
       '<div class="tfs-hd"><div style="min-width:0;flex:1"><h2 id="tfs-titill"></h2><div class="tfs-sub" id="tfs-sub"></div></div>' +
         '<div class="tfs-seg" role="group" aria-label="Sía">' +
-          '<button type="button" data-sia="grunn">Grunnmyndir</button><button type="button" data-sia="gild">Gildandi</button><button type="button" data-sia="allar">Allar</button></div>' +
+          '<button type="button" data-sia="grunn">Grunnmyndir</button><button type="button" data-sia="gild">Gildandi</button><button type="button" data-sia="allar">Allar</button><button type="button" data-sia="skraning">Skráningartöflur</button></div>' +
         '<button type="button" class="tfs-tk" data-a="loka" aria-label="Loka">✕ Loka</button></div>' +
       '<div class="tfs-bd"><div class="tfs-li" id="tfs-li"></div>' +
         '<div class="tfs-sv" id="tfs-sv"><div class="tfs-txt" id="tfs-txt" hidden></div>' +
@@ -158,7 +161,7 @@
     li.innerHTML = l.map((d, i) => '<button type="button" class="tfs-kort" data-i="' + i + '" aria-current="' + (d === S.valin) + '">' +
       '<i style="' + (d.thumb ? 'background-image:url(\'' + esc(d.thumb) + '\')' : '') + '"></i><b>' + esc(d.lysing || d.tegund || d.filename || 'Teikning') +
       (d.urelt ? ' <em style="color:#e0a05f;font-weight:400;font-style:normal">(úrelt)</em>' : '') + '</b><span>' + esc([d.dags, erPdf(d) ? 'PDF' : 'TIF'].filter(Boolean).join(' · ')) + '</span></button>').join('') ||
-      '<div class="tfs-sub" style="padding:8px">Engin teikning í þessari síu.</div>';
+      '<div class="tfs-sub" style="padding:8px">' + (S.sia === 'skraning' ? 'Engin skráningartafla í aðaluppdráttunum.' : 'Engin teikning í þessari síu.') + '</div>';
     const sub = document.getElementById('tfs-sub');
     if (sub) sub.textContent = l.length + ' af ' + S.listi.length + ' teikningum · ↑↓ fletta · Esc lokar';
     if (veljaFyrstu && l.length && l.indexOf(S.valin) < 0) velja(l[0]);
@@ -293,7 +296,15 @@
   }
 
   async function opna(landnr, stadur, coId, auka) {
-    Object.assign(S, { listi: [], sia: 'grunn', valin: null, stadur: stadur || '', coId: coId || null });
+    const sia = (auka && auka.sia) || 'grunn';
+    // Sami aðaluppdráttalisti er þegar inni — skipt er um síu án nýs kalls.
+    if (document.getElementById('tfs') && S._landnr === String(landnr) && S.listi.length) {
+      S.sia = sia;
+      if (stadur) S.stadur = stadur;
+      teiknaLista(true);
+      return;
+    }
+    Object.assign(S, { listi: [], sia, valin: null, stadur: stadur || '', coId: coId || null, _landnr: String(landnr) });
     grind();
     document.getElementById('tfs-titill').textContent = '📐 Teikningar' + (stadur ? ' — ' + stadur : '');
     try {
