@@ -65,7 +65,7 @@ const html = lesa('index.html');
 // Skrár sem Endurnýja-lagfæringin (01.10) snerti bera nýrra merki. Hinar
 // halda hopp-merkinu. Nýrra merki hleður hopp-kóðann líka — gamalt cache ekki.
 const utgafa = {
-  'features.js': '20261001endur',
+  'features.js': '20261001sleppa',
   'mapfix.js': '20261001endur',
   '421-profill-lifandi.js': '20261001endur',
 };
