@@ -4347,7 +4347,11 @@
       const opin = fid => S.rows.filter(r => String(r.fyrirtaeki_id) === String(fid)).length;
       const fyr = L.fyr.map((x, i) => '<div class="pitem' + (L.idx === i ? ' on' : '') + '">' +
           '<a class="pmain" href="#company/' + x.id + '" data-t5="fyr-id" data-fid="' + x.id + '"><b>' + esc(x.nafn) + '</b><span>' + esc([x.heim, x.kt].filter(Boolean).join(' · ')) + '</span></a>' +
-          (opin(x.id) ? '<button type="button" class="btn iv sm" data-t5="filter" data-f="f:' + x.id + '">' + opin(x.id) + ' opin mál ›</button>' : '') + '</div>').join('');
+          (opin(x.id) ? '<button type="button" class="btn iv sm" data-t5="filter" data-f="f:' + x.id + '">' + opin(x.id) + ' opin mál ›</button>' : '') +
+          // 01.10.2026 (Agnar: „velja hvort maður vilji sjá fyrri viðskipti eða fara á profile"): sami gluggi og í
+          // Sölu (253 SalaCustomerHistory, source fyrirtaeki = staðurinn) og sama prófílleið og nafnið sjálft.
+          (window.SalaCustomerHistory ? '<button type="button" class="btn iv sm" data-t5="fyr-saga" data-i="' + i + '">Fyrri viðskipti</button>' : '') +
+          '<a class="btn iv sm" href="#company/' + x.id + '" data-t5="fyr-id" data-fid="' + x.id + '">Prófíll ›</a>' + '</div>').join('');
       const mal = malLeit(q).map(r => '<button type="button" class="pitem pmal" data-t5="skoda" data-id="' + r.id + '"><b>' + esc(r.title || '(ónefnt mál)') + '</b>' +
           '<span>' + esc([whereOf(r), eigandaTexti(r, nu())].filter(Boolean).join(' · ')) + '</span></button>').join('');
       pop = '<div class="pop"><div class="plbl">Fyrirtæki</div>' + (fyr || '<div class="pnone">Ekkert fyrirtæki fannst.</div>') +
@@ -5014,6 +5018,14 @@
       case 'sel-close': S.sel[nu()] = 0; render(); return;
       case 'stad-opna': opnaStad(S.rows.find(x => x.id === id), c); return;
       case 'endurmeta': endurmeta(); return;
+      case 'fyr-saga': {
+        const x = (S.leit.fyr || [])[+el.dataset.i];
+        if (!x || !window.SalaCustomerHistory) return;
+        S.leit.opid = false;
+        render();
+        SalaCustomerHistory.open({ id: String(x.id), source: 'fyrirtaeki', kt: x.kt || '', nafn: x.nafn || '' });
+        return;
+      }
       case 'fyr':
       case 'fyr-id':
         // Tengill með Ctrl/Shift/Cmd opnast í nýjum flipa (#company/<id>) — vafrinn sér um það.
