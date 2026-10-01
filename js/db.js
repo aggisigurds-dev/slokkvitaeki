@@ -328,6 +328,13 @@ var DB = {
       // slice _primeCompany already merged. Other screens that call loadAll
       // without a boot company still get the full table.
       var skipFullUnits = !!bootCo && !forceUnits;
+      // 01.10.2026: Uppfærsluborð (431). Handvirkt / Af sleppir endurtekinni
+      // heildarsókn á uttaeki þegar tækin eru þegar í minni. Hlaða sendir forceUnits.
+      try {
+        if (!skipFullUnits && window.Uppfaerslubord && typeof Uppfaerslubord.skipFullUnits === 'function' && Uppfaerslubord.skipFullUnits(!!forceUnits)) {
+          skipFullUnits = true;
+        }
+      } catch (_) {}
       var [j, v, u, s, h] = await Promise.all([
         self.fetchAll(function(from,to){ return self.sb.from('verkbeidnir').select('*').order('created_at', {ascending:false}).order('id').range(from,to); }).then(function(data){ return { data: data }; }),
         self.fetchAll(function(from,to){ return self.sb.from('verklidur').select('*').order('id').range(from,to); }).then(function(data){ return { data: data }; }),
@@ -344,6 +351,7 @@ var DB = {
         this.cache.units = u.data || [];
         this._unitsComplete = true;
         this._markCompaniesFetched();
+        try { if (window.Uppfaerslubord && Uppfaerslubord.note) Uppfaerslubord.note('taeki'); } catch (_) {}
       }
       this.cache.schedule = s.data || [];
       this.cache.history = h.data || [];
