@@ -125,6 +125,19 @@
         }
         return;
       }
+      // 01.10.2026: hak / Yfirferð / Hleðsla skrifa slokk_trip_ strax. applyCloud
+      // sem ræsist af OKKAR eigin vistun (eða eldri lota sem lendir seinna) má
+      // ekki yfirskrifa valið á opna félaginu — það er hoppið sem Agnar sá
+      // (hakið fór af, Yfirferð hoppaði til baka).
+      try {
+        var hopp = window.__hakHopp;
+        if (hopp && hopp.skalSleppa && hopp.skalSleppa()) {
+          var main0 = document.getElementById('companies-main');
+          var el0 = main0 && main0.querySelector('[data-co-id]:not(._cat-section)');
+          var open0 = el0 && el0.getAttribute('data-co-id');
+          if (open0 && String(co) === String(open0)) return;
+        }
+      } catch (_) {}
       // Only overwrite when the cloud copy is strictly newer (so active local
       // edits are never clobbered by a stale cloud snapshot).
       if (!local || ct > lt) {
@@ -152,6 +165,9 @@
     if (!cos || !cos.length) return;
     try { window.dispatchEvent(new CustomEvent('trip-cloud-restored', { detail: { coIds: cos } })); } catch (_) {}
     try {
+      // Hak / þjónustuval er þegar á skjánum. Full rerender hér ríf listann
+      // ~1,2 s síðar (mælt 01.10.2026 á 1173: rerender + app_settings_merge).
+      if (window.__hakHopp && __hakHopp.skalSleppa && __hakHopp.skalSleppa()) return;
       var main = document.getElementById('companies-main');
       var el = main && main.querySelector('[data-co-id]:not(._cat-section)');
       var open = el && el.getAttribute('data-co-id');

@@ -156,7 +156,7 @@
             !document.getElementById('view-' + pendingView) &&
             !(pendingView === 'leidsogn' && window.App && App._leidsognPatched));
           if (pendingMissing && !userTouched) {
-            // Deep-link view not mounted yet. Keep the hash so 368/late
+            // Deep-link view not mounted yet. Keep the hash so 368 and late
             // patches can still land; a boot lander must not rewrite it.
           } else {
             var slug = slugForView(v);

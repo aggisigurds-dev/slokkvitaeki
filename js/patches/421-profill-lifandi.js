@@ -28,7 +28,7 @@
   // 01.10.2026 (Agnar: „hrikaleg hopp í ársskoðun þegar maður ýtir á check í tæki eða breytir hleðslu/yfirferð“): hakið og
   // valið lifa í localStorage og 227 speglar þau í app_settings 1–2 s síðar. Sú skrift kom hingað sem „breyting“ og
   // ALLUR prófíllinn var endurteiknaður (mælt: fyrsta röð listans 390 → 609 → 740 → 433 → 306 → 272 px á 1,5 s).
-  // Skjárinn sýndi þegar nýju stöðuna — app_settings er því bakgrunnur hér.
+  // Skjárinn sýndi þegar nýju stöðuna — app_settings / app_kv / rpc:app_settings_merge eru bakgrunnur hér.
   const BAKGRUNNUR = /^(hradamaelingar|app_problems|year_factcheck|geocode_cache|doc_factcheck|trio_saga|villur|villuvakt|heimsoknir_log|page_views|automation_runs|fjarmal_live|app_settings|app_kv|rpc:app_settings_merge)$/;
   const NOTANDI_MS = 20000, KYRRD_MS = 2500, BID_MS = 450;
 
@@ -147,6 +147,10 @@
     try { if (window.recomputeCompanyTotalCost) window.recomputeCompanyTotalCost(); } catch (_) {}
   }
   function teikna(id) {
+    // 01.10.2026: hak / Yfirferð / Hleðsla skrifa inspection_trips (227) →
+    // gogn-skrifud. Þessi pappi ríf þá ALLAN prófílinn (openDetail) og hakið
+    // / valið / skrunið tapast. Staðbundin aðgerð á tækjaröð er ekki „Allt".
+    try { if (window.__hakHopp && __hakHopp.skalSleppa && __hakHopp.skalSleppa()) return; } catch (_) {}
     const hlutir = skrunarar().map((e) => [e, e.scrollTop]);
     const skila = () => hlutir.forEach(([e, y]) => { if (Math.abs(e.scrollTop - y) > 2) e.scrollTop = y; });
     window.__coLifandi = true;

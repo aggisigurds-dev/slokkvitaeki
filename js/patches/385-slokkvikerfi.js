@@ -41,7 +41,8 @@
   const LS = FLOKKUR.key + '_sia_v1';   // AÐEINS sía/röðun þessa vafra — staða gagna býr á þjóninum
 
   const state = Object.assign({ stada: 'allt', man: 0, leit: '', postnr: '', felaUr: FLOKKUR.felaSjalfgefid !== false, sort: 'man', dir: 1 }, lesaSiu());
-  let _rows = null, _loading = false, _villa = '', _lastLoad = 0;
+  let _rows = null, _loading = false, _villa = '';
+  let _loadGen = 0, _lastLoad = 0;
   const CACHE_MS = 60000;
 
   function SB() { return (window.DB && DB.sb) || null; }
@@ -105,12 +106,33 @@
     }
     return ut;
   }
-  async function reload(force) {
-    if (_loading) return;
+  async function reload(opts) {
+    opts = opts || {};
+    const force = opts === true || opts.force;
     if (!force && _rows && (Date.now() - _lastLoad) < CACHE_MS) { render(); return; }
-    _loading = true; _villa = ''; render();
-    try { _rows = await load(); _lastLoad = Date.now(); } catch (e) { _villa = (e && e.message) || String(e); _rows = _rows || []; console.warn('[slokkvikerfi] load', e); }
-    _loading = false; render();
+    const gen = ++_loadGen;
+    _loading = true; _villa = '';
+    // 01.10.2026: fyrsta teikningin má sýna „Sæki…" — endurtekin opnun má EKKI
+    // tæma síðuna (Agnar: hopp við síusmell / bak / hash). Stale svar hunsað.
+    if (_rows == null) render();
+    try {
+      const rows = await load();
+      if (gen !== _loadGen) return;
+      _rows = rows;
+      _lastLoad = Date.now();
+    } catch (e) {
+      if (gen !== _loadGen) return;
+      _villa = (e && e.message) || String(e);
+      _rows = _rows || [];
+      console.warn('[slokkvikerfi] load', e);
+    }
+    _loading = false;
+    if (gen !== _loadGen) return;
+    if (opts.quiet && !_villa) {
+      const v = document.getElementById(VIEW_ID);
+      if (!(v && v.classList.contains('active'))) return;
+    }
+    render();
   }
   // Vistun les svarið áður en „✓" er sagt (skill heidarlegt-vidmot): uppfærslan skilar röðinni
   // og gildið er borið saman við það sem var sent. RLS sem þegir skilar tómu fylki → villa.
@@ -386,8 +408,12 @@
       if (t.classList.contains('_sk-man')) {
         const kid = +t.dataset.kid, gildi = +t.value || null;
         const sv = await vistaKerfi(kid, { skodunarmanudur: gildi });
-        if (sv.ok) { toast('✓ Skoðunarmánuður vistaður'); reload(true); }
-        else { toast('⚠ Mánuðurinn vistaðist ekki: ' + sv.villa); reload(true); }
+        if (sv.ok) {
+          const r = (_rows || []).find(x => x.kerfi_id === kid);
+          if (r) r.skodunarmanudur = gildi;
+          toast('✓ Skoðunarmánuður vistaður');
+          render();
+        } else { toast('⚠ Mánuðurinn vistaðist ekki: ' + sv.villa); }
       }
     });
   }
@@ -522,7 +548,8 @@
     document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
     try { localStorage.setItem('lastView', NAV_KEY); } catch (_) {}
     try { if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
-    reload();
+    if (_rows == null) reload();
+    else if (!_loading && Date.now() - _lastLoad > 60000) reload({ quiet: true });
   }
   function injectSidebar() {
     const nav = document.querySelector('nav.view-nav, .view-nav');
@@ -578,7 +605,12 @@
       };
       setTimeout(elta, 300);
     }
-    window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
+    window.addEventListener('hashchange', () => {
+      if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) return;
+      const v = document.getElementById(VIEW_ID);
+      if (v && v.classList.contains('active') && _rows) return;
+      open();
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 

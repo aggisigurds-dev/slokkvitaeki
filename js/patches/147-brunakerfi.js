@@ -83,6 +83,7 @@
   }
 
   let _cache = { companies: [], filledDocs: [] };
+  let _bkLoadGen = 0, _bkLastLoad = 0;
 
   // ── Top-of-view notes (free-form instructions for electricians) ──────────
   function getNotes() {
@@ -202,8 +203,9 @@
   }
 
   async function loadAll() {
+    const gen = ++_bkLoadGen;
     const SB = getSB();
-    if (!SB) return;
+    if (!SB) return gen;
     const map = getList();
     // Filter to truthy entries only — AppSettings.save() can't delete keys
     // (it deep-merges), so unsubscribed customers are stored as null.
@@ -215,10 +217,13 @@
       const { data } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,netfang,athugasemdir,tengiliður').in('id', ids);
       companies = (data || []).map(c => ({ ...c, _bk: map[String(c.id)] || {} }));
     }
+    if (gen !== _bkLoadGen) return gen;
     _cache.companies = companies.sort((a, b) => (a.nafn || '').localeCompare(b.nafn || '', 'is'));
     // Saved filled documents (Ársskoðun, Þjónustusamningur) — from AppSettings.skjalasnidmat_filled
     const filled = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('skjalasnidmat_filled')) || [];
     _cache.filledDocs = Array.isArray(filled) ? filled : [];
+    _bkLastLoad = Date.now();
+    return gen;
   }
 
   // ── Sidebar entry ────────────────────────────────────────────────────────
@@ -249,7 +254,16 @@
   async function show() {
     const main = document.getElementById('brunakerfi-main');
     if (!main) return;
-    main.innerHTML = '<div style="padding:24px;color:#94a3b8">Hleður…</div>';
+    const already = !!(main.querySelector('#_bk-notes-ta') || main.querySelector('._bk-card, ._bk-row, ._bk-add'));
+    // 01.10.2026: hver ferð á flipann skrifaði „Hleður…" og ríf allri síðunni
+    // (skrun + nótu-fókus tapaðist). Fast path: teiknað situr, bakgrunns-sókn.
+    if (!already) {
+      main.innerHTML = '<div style="padding:24px;color:#94a3b8">Hleður…</div>';
+    } else if (_notesIsTyping) {
+      return;
+    } else if (_bkLastLoad && Date.now() - _bkLastLoad < 8000) {
+      return;
+    }
     // Refresh AppSettings from Supabase so notes typed on another device
     // show up here (avoids the stale-cache cross-device problem). If the
     // user is currently typing, the onChange listener guards against
@@ -261,7 +275,9 @@
       try { await window.AppSettings.load(); }
       catch (e) { try { if (window.logProblem) window.logProblem('brunakerfi_settings_reload_failed', String((e && e.message) || e), { severity: 'warn' }); } catch (_) {} }
     }
-    await loadAll();
+    const gen = await loadAll();
+    if (gen !== _bkLoadGen) return;
+    if (_notesIsTyping) return;
     renderList();
   }
 
@@ -276,6 +292,7 @@
       if (m >= 1 && m <= 12) (monthBuckets[m] = monthBuckets[m] || []).push(c);
     });
 
+    const _aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(main) : null;
     main.innerHTML = `
       <div style="max-width:1200px;margin:0 auto;padding:22px">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px">
@@ -388,6 +405,7 @@
         `}
       </div>
     `;
+    try { if (_aftur) _aftur(); } catch (_) {}
 
     main.querySelector('._bk-add')?.addEventListener('click', openAddDialog);
     main.querySelector('._bk-share')?.addEventListener('click', shareLink);
@@ -1090,8 +1108,11 @@
     dlg.querySelector('._bk-d-edit').addEventListener('click', () => { dlg.remove(); openEditDialog(coId); });
     dlg.querySelector('._bk-d-fyr').addEventListener('click', () => {
       dlg.remove();
-      if (window.App && App.switchView) App.switchView('companies');
-      setTimeout(() => { if (window.Companies && Companies.openDetail) Companies.openDetail(coId); }, 300);
+      if (window._openCompanySafe) window._openCompanySafe(coId);
+      else {
+        if (window.App && App.switchView) App.switchView('companies');
+        setTimeout(() => { if (window.Companies && Companies.openDetail) Companies.openDetail(coId); }, 300);
+      }
     });
     dlg.querySelectorAll('._bk-doc-row').forEach(r => {
       r.addEventListener('click', () => {
