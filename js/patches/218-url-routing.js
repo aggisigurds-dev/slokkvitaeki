@@ -31,6 +31,10 @@
  *    (e.g. 154's __lastViewWrapped, features.js's _patched) so it does not
  *    trigger a re-wrap, and re-asserts the deep-link view briefly on boot to
  *    win over the boot-time auto-landers (sala.js etc. fire up to ~t=1.5s).
+ *    01.10.2026: the boot tick stops on first real user input (same boundary
+ *    as 154/348). The switchView wrapper keeps a pending clean-slug hash
+ *    while that view is still being mounted, so a late switchView('sala')
+ *    cannot rewrite #verkbord/#bord to #sala and steal the landing.
  */
 (() => {
   if (window.__urlRoutingInstalled) return;
@@ -152,7 +156,7 @@
             !document.getElementById('view-' + pendingView) &&
             !(pendingView === 'leidsogn' && window.App && App._leidsognPatched));
           if (pendingMissing && !userTouched) {
-            // Deep-link view not mounted yet. Keep the hash so late
+            // Deep-link view not mounted yet. Keep the hash so 368 and late
             // patches can still land; a boot lander must not rewrite it.
           } else {
             var slug = slugForView(v);
