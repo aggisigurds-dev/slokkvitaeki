@@ -6,7 +6,8 @@
  *
  * Opnast innan úr Brunakerfi yfirlit (patch 272): „📋 Skýrsla"-hnappur á röð.
  * Vinnusvæði ↔ Skýrsla (A4). Reiknireglur úr README (verða að stemma):
- *   samtals = iLagi + ekki (vantar EKKI með) · mældAh = rýmd × % / 100
+ *   samtals = iLagi + ekki (vantar EKKI með) · nytt = „Þar af nýtt" (hluti af samtals, telst ekki aukalega)
+ *   · mældAh = rýmd × % / 100
  *   áætluðEnding = mældAh / (i1/1000) · lágmarksRýmd = 1.25×(i1/1000)×ending + 0.5×(i2/1000)
  *
  * V2 viðbætur (ósk Agnars 2026-07-21):
@@ -136,7 +137,7 @@
         madur: (function () { try { return localStorage.getItem('bs_employee') || 'Elías'; } catch (_) { return 'Elías'; } })() },
       customer: { nafn: co.nafn || '', kt: fmtKt(co.kennitala), heimili: co.heimilisfang || '',
         umbedid: '', tengi: co['tengiliður'] || co.tengilidur || '' },
-      bunadur: BUN_LABELS.map(label => ({ label, iLagi: 0, ekki: 0, vantar: 0 })).concat(defaultBunadurRows()),
+      bunadur: BUN_LABELS.map(label => ({ label, iLagi: 0, ekki: 0, vantar: 0, nytt: 0 })).concat(defaultBunadurRows()),
       hljod: HLJOD_LABELS.map(label => ({ label, db: '', st: '' })),
       stod: { gerd: 'Rása', fjoldi: '', fjargaesla: '', tegund: '', teiknud: '',
         checks: CHECK_LABELS.map(label => ({ label, st: '' })) },
@@ -192,7 +193,7 @@
     const s = S.data;
     // bunRows helst INDEX-samhliða s.bunadur (LINK_IX + data-sam/data-sv reiða sig
     // á það); faldir liðir (r.hidden) eru áfram með en teljast ekki í heildir.
-    const bunRows = s.bunadur.map(r => ({ ...r, samtals: (+r.iLagi || 0) + (+r.ekki || 0) }));
+    const bunRows = s.bunadur.map(r => ({ ...r, nytt: +r.nytt || 0, samtals: (+r.iLagi || 0) + (+r.ekki || 0) }));
     const taeki = bunRows.reduce((a, r) => a + (r.hidden ? 0 : r.samtals), 0);
     const issues = bunRows.reduce((a, r) => a + (r.hidden ? 0 : (+r.ekki || 0) + (+r.vantar || 0)), 0);
     const rymd = num(s.raf.rymd), pct = num(s.raf.pct), i1 = num(s.raf.i1), i2 = num(s.raf.i2), ending = num(s.raf.ending);
@@ -297,7 +298,7 @@
   // búnaðarraðir sem eiga að birtast sjálfgefið í hverri nýrri skýrslu (dflt)
   function defaultBunadurRows() {
     return customBunadurList().filter(c => c && c.dflt)
-      .map(c => ({ label: c.label, iLagi: 0, ekki: 0, vantar: 0, custom: true, key: c.key }));
+      .map(c => ({ label: c.label, iLagi: 0, ekki: 0, vantar: 0, nytt: 0, custom: true, key: c.key }));
   }
   function linkOpts() {
     return LINK_OPTS.concat(customBunadurList().map(c => [c.key, c.label]));
@@ -415,7 +416,7 @@
       '#_bks-overlay ._bks-lbl{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#7a8290;margin-bottom:3px}' +
       '#_bks-overlay ._bks-in{border:1px solid #d0d4da;border-radius:8px;background:#fff;color:#16181c;padding:7px 10px;font-size:13.5px;min-height:37px;width:100%}' +
       // búnaðaryfirlit
-      '#_bks-overlay ._bks-eqhead,#_bks-overlay ._bks-eqrow{display:grid;grid-template-columns:1fr 92px 92px 92px 70px;gap:6px;align-items:center}' +
+      '#_bks-overlay ._bks-eqhead,#_bks-overlay ._bks-eqrow{display:grid;grid-template-columns:1fr 92px 92px 92px 70px 92px;gap:6px;align-items:center}' +
       '#_bks-overlay ._bks-eqhead{font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;padding:2px 0 6px;border-bottom:1px solid #eef0f3}' +
       '#_bks-overlay ._bks-eqrow{padding:6px 0;border-bottom:1px solid #eef0f3}' +
       '#_bks-overlay ._bks-eqrow>span:first-child{font-size:13px;font-weight:700}' +
@@ -718,11 +719,11 @@
       '<div class="_bks-grid">' +
         '<div style="display:flex;flex-direction:column;gap:14px">' +
           '<div class="_bks-card"><div class="_bks-ch">Búnaðaryfirlit<small id="_bks-eqsum">' + m.taeki + ' tæki samtals</small></div><div class="_bks-body">' +
-            '<div class="_bks-eqhead"><span>Búnaður</span><span style="text-align:center">Í lagi</span><span style="text-align:center">Ekki í lagi</span><span style="text-align:center">Vantar</span><span style="text-align:center">Samtals</span></div>' +
+            '<div class="_bks-eqhead"><span>Búnaður</span><span style="text-align:center">Í lagi</span><span style="text-align:center">Ekki í lagi</span><span style="text-align:center">Vantar</span><span style="text-align:center">Samtals</span><span style="text-align:center" title="Hve mörg af tækjunum eru ný (sett upp eða skipt út í þessari skoðun)">Þar af nýtt</span></div>' +
             s.bunadur.map((r, i) => {
               const step = (k, col) => '<span class="_bks-step">' +
                 '<button type="button" data-si="' + i + '" data-sk="' + k + '" data-sd="-1">−</button>' +
-                '<b style="color:' + col + '" data-sv="' + i + ':' + k + '">' + r[k] + '</b>' +
+                '<b style="color:' + col + '" data-sv="' + i + ':' + k + '">' + (+r[k] || 0) + '</b>' +
                 '<button type="button" data-si="' + i + '" data-sk="' + k + '" data-sd="1">+</button></span>';
               // fela/sýna þennan lið í ÞESSARI skýrslu (birtist ekki í prentun/PDF)
               const hideBtn = '<button type="button" data-eqhide="' + i + '" title="' + (r.hidden ? 'Sýna þennan lið aftur í skýrslunni' : 'Fela þennan lið úr þessari skýrslu') + '" style="border:0;background:none;color:' + (r.hidden ? '#1f8a4c' : '#9aa1ac') + ';font-weight:800;cursor:pointer;font-size:12px;padding:2px 4px;vertical-align:middle">' + (r.hidden ? '↩' : '🚫') + '</button>';
@@ -731,13 +732,14 @@
                 return '<div class="_bks-eqrow" style="opacity:.55">' +
                   '<span style="color:#8b93a1"><span style="text-decoration:line-through">' + esc(r.label) + '</span> ' + hideBtn + delBtn + '</span>' +
                   '<span style="grid-column:2 / span 3;text-align:center;font-size:11px;color:#8b93a1;font-style:italic">falið — birtist ekki í skýrslu</span>' +
-                  '<span></span></div>';
+                  '<span></span><span></span></div>';
               }
               return '<div class="_bks-eqrow"><span>' + esc(r.label) + ' ' + hideBtn + delBtn + '</span>' +
                 '<span style="text-align:center">' + step('iLagi', '#1f8a4c') + '</span>' +
                 '<span style="text-align:center">' + step('ekki', '#c93c1d') + '</span>' +
                 '<span style="text-align:center">' + step('vantar', '#b07a10') + '</span>' +
-                '<span style="text-align:center"><span class="_bks-sam" data-sam="' + i + '">' + m.bunRows[i].samtals + '</span></span></div>';
+                '<span style="text-align:center"><span class="_bks-sam" data-sam="' + i + '">' + m.bunRows[i].samtals + '</span></span>' +
+                '<span style="text-align:center">' + step('nytt', '#3a4250') + '</span></div>';
             }).join('') +
             '<button type="button" id="_bks-eq-add" style="margin-top:10px;padding:7px 14px;border-radius:8px;border:1px dashed #a8b0bb;background:#f8f9fb;color:#334155;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer">＋ Bæta við búnaði úr verðlista</button>' +
             '</div></div>' +
@@ -1010,7 +1012,7 @@
       if (it.link !== key) { it.link = key; await savePriceItems(items); }
       const ex = S.data.bunadur.find(r => r.key === key);
       if (ex) ex.hidden = false;
-      else S.data.bunadur.push({ label, iLagi: 0, ekki: 0, vantar: 0, custom: true, key });
+      else S.data.bunadur.push({ label, iLagi: 0, ekki: 0, vantar: 0, nytt: 0, custom: true, key });
     }
     if (!(S.data.verd.linur || []).some(l => (l.name || '') === it.name)) {
       (S.data.verd.linur = S.data.verd.linur || []).push({ name: it.name, qty: '1', price: String(it.price) });
@@ -1285,9 +1287,10 @@
         custRow('Dags. skoðunar', m.dagsFmt) +
       '</tbody></table>' +
 
-      '<div class="_sec"><table class="_rt"><thead><tr><th>BÚNAÐUR</th><th style="width:70px;text-align:center">SAMTALS</th><th style="width:70px;text-align:center">Í LAGI</th><th style="width:80px;text-align:center">EKKI Í LAGI</th><th style="width:70px;text-align:center">VANTAR</th></tr></thead><tbody>' +
+      '<div class="_sec"><table class="_rt"><thead><tr><th>BÚNAÐUR</th><th style="width:70px;text-align:center">SAMTALS</th><th style="width:70px;text-align:center">ÞAR AF NÝTT</th><th style="width:70px;text-align:center">Í LAGI</th><th style="width:80px;text-align:center">EKKI Í LAGI</th><th style="width:70px;text-align:center">VANTAR</th></tr></thead><tbody>' +
         m.bunRows.map((r, bi) => r.hidden ? '' :
           '<tr data-bi="' + bi + '"><td style="font-weight:700">' + esc(r.label) + '</td><td class="_num" style="font-weight:700" data-bsam="1">' + r.samtals + '</td>' +
+          '<td class="_num" style="font-weight:' + (r.nytt > 0 ? 700 : 400) + '" data-bk="nytt">' + r.nytt + '</td>' +
           '<td class="_num" style="color:#1f7a44" data-bk="iLagi">' + r.iLagi + '</td>' +
           '<td class="_num" style="color:' + (r.ekki > 0 ? '#b3341a' : '#16181c') + ';font-weight:' + (r.ekki > 0 ? 700 : 400) + '" data-bk="ekki">' + r.ekki + '</td>' +
           '<td class="_num" style="color:' + (r.vantar > 0 ? '#a06c00' : '#16181c') + ';font-weight:' + (r.vantar > 0 ? 700 : 400) + '" data-bk="vantar">' + r.vantar + '</td></tr>').join('') +
@@ -1458,12 +1461,13 @@
     y += 8;
 
     // búnaðartafla
-    const bunCols = [{ w: CW - 290 }, { w: 70, align: 'center' }, { w: 70, align: 'center' }, { w: 80, align: 'center' }, { w: 70, align: 'center' }];
+    const bunCols = [{ w: CW - 360 }, { w: 70, align: 'center' }, { w: 70, align: 'center' }, { w: 70, align: 'center' }, { w: 80, align: 'center' }, { w: 70, align: 'center' }];
     row(ML, bunCols, [{ t: 'BÚNAÐUR', bold: true, bg: INK, color: [255, 255, 255], size: 8 },
-      { t: 'SAMTALS', bold: true, bg: INK, color: [255, 255, 255], size: 8 }, { t: 'Í LAGI', bold: true, bg: INK, color: [255, 255, 255], size: 8 },
+      { t: 'SAMTALS', bold: true, bg: INK, color: [255, 255, 255], size: 8 }, { t: 'ÞAR AF NÝTT', bold: true, bg: INK, color: [255, 255, 255], size: 8 },
+      { t: 'Í LAGI', bold: true, bg: INK, color: [255, 255, 255], size: 8 },
       { t: 'EKKI Í LAGI', bold: true, bg: INK, color: [255, 255, 255], size: 8 }, { t: 'VANTAR', bold: true, bg: INK, color: [255, 255, 255], size: 8 }]);
     m.bunRows.filter(r => !r.hidden).forEach(r => row(ML, bunCols, [
-      { t: r.label, bold: true }, { t: r.samtals, bold: true },
+      { t: r.label, bold: true }, { t: r.samtals, bold: true }, { t: r.nytt, bold: r.nytt > 0 },
       { t: r.iLagi, color: GREEN }, { t: r.ekki, bold: r.ekki > 0, color: r.ekki > 0 ? RED : INK },
       { t: r.vantar, bold: r.vantar > 0, color: r.vantar > 0 ? AMBER : INK }]));
 
@@ -1879,7 +1883,14 @@
     catch (e) { toast('PDF endurgerðist EKKI: ' + ((e && e.message) || e), true); return false; }
     finally { if (prev && prev !== st) S = prev; }
   }
-  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf };
+  // 01.10.2026: PDF-ið eitt og sér (blob) fyrir hvaða skýrslu sem er — vistar EKKERT, snertir hvorki skjöl né
+  // reikningsdrög. Til að skoða/prófa útlit PDF-sins án „Ljúka & vista" (sem endurgerir skjalið og drögin).
+  async function pdfBlob(co, row) {
+    const st = stateFor(co, row); if (!st) return null;
+    const prev = S; S = st;
+    try { return await buildPdfBlob(); } finally { S = prev; }
+  }
+  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob };
   console.log('[patch-273] Brunakerfi skoðunarskýrsla v2 (PDF + verð) installed');
 })();
 /* === END BRUNAKERFI SKOÐUNARSKÝRSLA === */
