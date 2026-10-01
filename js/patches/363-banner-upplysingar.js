@@ -181,7 +181,7 @@
   }
 
   // ── Úr skrám: Staðfangaskrá + teikningasafn → hæðir/kjallari/jarðhæð ─────
-  const SKRAR_MINNI = 'bupp_skrar_v1_';           // sessionStorage, per fyrirtæki
+  const SKRAR_MINNI = 'bupp_skrar_v2_';           // localStorage + sessionStorage, per fyrirtæki
   const skrar = new Map();                         // coId -> { svar, sott } | { bid:true }
   /** Heimilisfang félagsins — null þegar félagið er ekki (enn) í Companies.list, '' þegar það er til en heimilisfangslaust. */
   function heimilisfangFyrir(coId) {
@@ -190,56 +190,86 @@
       return c ? String(c.heimilisfang || '').trim() : null;
     } catch (_) { return null; }
   }
-  function skrarSvar(coId) {
+  function lesaGeymslu(coId, heimilisfang) {
     const k = String(coId);
     const m = skrar.get(k);
-    if (m && m.svar) return m.svar;                 // líka error-svör (tengill sýnist ef eign fylgdi)
+    if (m && m.svar && m.heimilisfang === heimilisfang) return m.svar;
     if (m && m.bid) return null;
-    try {
-      const raw = sessionStorage.getItem(SKRAR_MINNI + k);
-      if (raw) {
+    const stores = [];
+    try { stores.push(localStorage); } catch (_) {}
+    try { stores.push(sessionStorage); } catch (_) {}
+    for (const store of stores) {
+      try {
+        const raw = store.getItem(SKRAR_MINNI + k);
+        if (!raw) continue;
         const o = JSON.parse(raw);
-        if (o && o.sott && Date.now() - o.sott < 6 * 3600 * 1000 && o.heimilisfang === heimilisfangFyrir(coId)) {
-          skrar.set(k, { svar: o.svar, sott: o.sott });
+        if (o && o.svar && o.heimilisfang === heimilisfang) {
+          skrar.set(k, { svar: o.svar, sott: o.sott || Date.now(), heimilisfang, reyndi: true });
           return o.svar;
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
     return null;
   }
-  // Ótryggt svar (404, tímaþrot) fer EKKI í sessionStorage. Við opnun er það
-  // ekki sótt aftur — húsið færist ekki.
-  const HAMARK_TILRAUNA = 3;
+  function vistaGeymslu(coId, heimilisfang, svar) {
+    const payload = JSON.stringify({ heimilisfang, svar, sott: Date.now() });
+    try { sessionStorage.setItem(SKRAR_MINNI + coId, payload); } catch (_) {}
+    try { localStorage.setItem(SKRAR_MINNI + coId, payload); } catch (_) {}
+  }
+  function skrarSvar(coId) {
+    const heimilisfang = heimilisfangFyrir(coId);
+    if (!heimilisfang) {
+      const m = skrar.get(String(coId));
+      return (m && m.svar) || null;
+    }
+    return lesaGeymslu(coId, heimilisfang);
+  }
+  // Eitt kall á félag þegar ekkert er í geymslu. Næsta opnun les geymsluna
+  // og kallar ekki aftur. Endurnýja á þessum prófíl má sækja einu sinni enn.
+  // 1200 ms samstillingin kallar hingað en sækir ekki aftur (reyndi/geymsla).
   function saekjaSkrar(coId) {
     const k = String(coId);
     const m = skrar.get(k);
     const heimilisfang = heimilisfangFyrir(coId);
-    // Companies.list getur komið á EFTIR bannernum (hægt net, önnur síða á undan):
-    // þá er ekkert skráð og reynt aftur á næsta samstillingar-takti (engin netumferð).
-    // Fannst það sem tómar flísar á framleiðslu 14.09.2026 (2 af 3 keyrslum).
+    // Companies.list getur komið á EFTIR bannernum: ekkert skráð, reynt á næsta
+    // takti án netumferðar.
     if (heimilisfang == null) return;
-    if (!heimilisfang || !/\d/.test(heimilisfang)) { skrar.set(k, { svar: { engin: true }, sott: Date.now() }); return; }
-    // 01.10.2026: 1,2 s takturinn (haldaVid), opnun prófíls, Endurnýja og Hlaða
-    // sækja ekki. 432 les hus_upplysingar_cache, skrifar sessionStorage og
-    // teiknar. Takkinn sækir einu sinni sjálfur. __fasteignBeidni er aðeins
-    // ein skotleið ef eitthvað biður 363 um það, og hún sleppir ef svar er til.
-    if (skrarSvar(coId)) return;
-    const b = window.__fasteignBeidni;
-    if (!(b && +b.id === +coId && !b.notad)) return;
-    b.notad = true;
+    if (!heimilisfang || !/\d/.test(heimilisfang)) {
+      const svar = { engin: true, athugasemd: 'engin teikning fannst' };
+      skrar.set(k, { svar, sott: Date.now(), heimilisfang: heimilisfang || '', reyndi: true });
+      return;
+    }
+    const endurBeidni = !!(window.__coEndurnyja && +window.__coEndurnyja.id === +coId
+      && !(window.__coEndurnyja.notad && window.__coEndurnyja.notad.hus));
+    if (!endurBeidni && lesaGeymslu(coId, heimilisfang)) return;
     if (m && m.bid) return;
-    const tilraunir = ((m && m.tilraunir) || 0) + 1;
-    skrar.set(k, { bid: true, tilraunir });
+    if (m && m.reyndi && m.heimilisfang === heimilisfang && !endurBeidni) return;
+    if (endurBeidni && !(window.__coMaEndurnyja && window.__coMaEndurnyja(coId, 'hus'))) return;
+    skrar.set(k, { bid: true, reyndi: true, heimilisfang });
+    const loka = (svar) => {
+      const lok = svar && typeof svar === 'object' ? svar : { athugasemd: 'engin teikning fannst' };
+      if (!lok.teikningar && !lok.athugasemd) lok.athugasemd = lok.error || 'engin teikning fannst';
+      if (lok.reynaAftur && !(lok.teikningar && lok.teikningar.fjoldi)) {
+        lok.athugasemd = lok.athugasemd || lok.error || 'engin teikning fannst';
+        delete lok.reynaAftur;
+      }
+      skrar.set(k, { svar: lok, sott: Date.now(), heimilisfang, reyndi: true });
+      vistaGeymslu(coId, heimilisfang, lok);
+    };
     fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(heimilisfang))
-      .then(r => r.json().then(svar => ({ ok: r.ok, svar })))
-      .then(({ ok, svar }) => {
-        const ottrygg = !!(svar && svar.reynaAftur) || (!ok && !(svar && svar.eign) && !(svar && svar.ogilt));
-        const geymt = { svar: svar || {}, sott: Date.now(), tilraunir, reynaAftur: ottrygg && tilraunir < HAMARK_TILRAUNA };
-        skrar.set(k, geymt);
-        // Ótryggt svar fer aldrei í sessionStorage — næsta síðuskoðun spyr upp á nýtt.
-        if (!ottrygg) { try { sessionStorage.setItem(SKRAR_MINNI + k, JSON.stringify({ heimilisfang, svar: geymt.svar, sott: geymt.sott })); } catch (_) {} }
+      .then(r => r.json().then(svar => ({ ok: r.ok, status: r.status, svar })).catch(() => ({ ok: r.ok, status: r.status, svar: null })))
+      .then(({ ok, status, svar }) => {
+        // 431 svarar {} / 503 þegar Hlaða eða annað félag er í gangi. Það er ekki
+        // niðurstaða — geymum hana ekki, svo næsti takti á opnum prófíl nái í gegn.
+        const hol = !svar || (typeof svar === 'object' && !svar.eign && !svar.teikningar && !svar.athugasemd && !svar.error && !svar.engin);
+        if (hol && status === 503) {
+          skrar.delete(k);
+          return;
+        }
+        if (!svar) loka({ athugasemd: 'engin teikning fannst', error: ok ? '' : 'Ekkert svar' });
+        else loka(svar);
       })
-      .catch(() => { skrar.set(k, { svar: { error: 'Náði ekki í skrár' }, sott: Date.now(), tilraunir, reynaAftur: tilraunir < HAMARK_TILRAUNA }); });
+      .catch(() => loka({ error: 'Náði ekki í skrár', athugasemd: 'engin teikning fannst' }));
   }
   /** Flísar úr skránum — sama snið og athugasemda-tillögurnar, merktar skra:true. */
   function skraTillogur(coId) {
@@ -508,7 +538,10 @@
       ${R('button._bupp-flis._till._skra', 'border-color:rgba(96,165,250,.85)!important;color:#93c5fd!important')}
       ${R('button._bupp-flis._till._skra:hover', 'border-color:#93c5fd!important;color:#dbeafe!important')}
       ${R('._bupp-teikn', 'font-size:11.5px;color:#93c5fd;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0')}
+      ${R('button._bupp-teikn', 'margin:0;padding:0;border:0;background:none;background-color:transparent;box-shadow:none;font:inherit;font-size:11.5px;line-height:19px;cursor:pointer;text-align:left')}
       ${R('._bupp-teikn:hover', 'color:#fff;text-decoration:underline')}
+      ${R('._bupp-teikn-inn', 'display:flex;flex-wrap:wrap;gap:1px 10px;min-width:0')}
+      ${R('._bupp-teikn-miss', 'font-size:11.5px;color:rgba(255,255,255,.72)')}
       ${R('._bupp-lina', 'display:flex;align-items:center;gap:8px;min-width:0')}
       ${R('._bupp-merki', 'flex:none;width:96px;text-align:right;font-size:10.5px;line-height:1.5;color:rgba(255,255,255,.45)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}
       ${R('input.co-bupp-reitur', 'flex:1 1 auto;min-width:0;height:19px;background:transparent!important;background-color:transparent!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.20)!important;border-radius:0!important;box-shadow:none!important;color:rgba(255,255,255,.85)!important;font:inherit;font-size:11.5px;line-height:19px;padding:0 2px;margin:0;box-sizing:border-box;outline:none;overflow:hidden;text-overflow:ellipsis')}
@@ -602,6 +635,34 @@
       'title="' + esc(l.merki || 'Frjáls lína') + ' — vistast strax"></div>';
   }
 
+  function teiknHtml(sk, coId) {
+    if (!sk) return '';
+    const fl = sk.flokkar || (sk.teikningar && sk.teikningar.flokkar) || null;
+    const fj = sk.teikningar && sk.teikningar.fjoldi;
+    const lina = (inni) => '<div class="_bupp-lina _bupp-teikn-lina"><span class="_bupp-merki">Teikningar</span><span class="_bupp-teikn-inn">' + inni + '</span></div>';
+    if (fl && fj) {
+      const ord = [['adal', 'Aðaluppdrættir'], ['raflagnir', 'Raflagnir'], ['lagnir', 'Lagnir'], ['burdarthol', 'Burðarþol']];
+      const takkar = ord.filter(([k]) => fl[k] > 0).map(([k, merki]) =>
+        '<button type="button" class="_bupp-teikn" data-flokkur="' + k + '" data-co="' + esc(coId) + '" title="' + esc(merki + ' · ' + fl[k]) + '">' +
+        esc(merki) + ' · ' + esc(fl[k]) + '</button>').join('');
+      if (takkar) return lina(takkar);
+    }
+    if (sk.turbopaint && sk.eign && fj) {
+      return lina('<a class="_bupp-teikn" href="' + esc(sk.turbopaint) + '" target="_blank" rel="noopener" ' +
+        (sk.eign.landnr ? 'data-landnr="' + esc(sk.eign.landnr) + '" data-stadur="' + esc(sk.eign.label) + '" data-co="' + esc(coId) + '" ' +
+          (sk.eign.svf ? 'data-svf="' + esc(sk.eign.svf) + '" data-heitinr="' + esc(sk.eign.heitinr || 0) + '" ' : '') : '') +
+        'title="' + esc((sk.heimild || 'Teikningasafn') + ' — ' + sk.eign.label) + '">📐 ' +
+        esc(sk.eign.oviss
+          ? 'Næsta lóð ' + sk.eign.label + ' · ' + fj + ' teikningar · óvisst'
+          : (fj + ' teikningar · ' + (sk.eign.heimildNafn || ''))) +
+        '</a>');
+    }
+    if (sk.athugasemd || sk.engin || sk.error || (sk.eign && !fj)) {
+      return lina('<span class="_bupp-teikn-miss">engin teikning fannst</span>');
+    }
+    return '';
+  }
+
   function teikna(box, coId) {
     const a = afslattur(coId);
     const st = stolpi(coId);
@@ -616,21 +677,7 @@
     const till = tillogur(coId);
     box.dataset.tillSig = tillSig(coId, till);
     const sk = skrarSvar(coId);
-    const teikn = (sk && sk.turbopaint && sk.eign)
-      ? '<div class="_bupp-lina _bupp-teikn-lina"><span class="_bupp-merki">Teikningar</span>' +
-        // 384: í skjalasafni Reykjavíkur (eign.svf tómt) opnar smellurinn FORSKOÐUN hér í appinu — landnúmerið fylgir
-        // hlekknum. Ctrl-smellur og önnur sveitarfélög fara áfram á TurboPaint eins og áður.
-        '<a class="_bupp-teikn" href="' + esc(sk.turbopaint) + '" target="_blank" rel="noopener" ' +
-        // 21.09.2026 (Agnar: „enda ég inni í TurboPaint og teikningarnar fara á sér borð — þarf að eyða og vesen"): forskoðunin
-        // gilti aðeins fyrir Reykjavík; Kópavogur/Garðabær/Hafnarfjörður fóru beint í TurboPaint. Nú fylgja heitinr + svf.
-        (sk.eign.landnr && sk.teikningar && sk.teikningar.fjoldi ? 'data-landnr="' + esc(sk.eign.landnr) + '" data-stadur="' + esc(sk.eign.label) + '" data-co="' + esc(coId) + '" ' +
-          (sk.eign.svf ? 'data-svf="' + esc(sk.eign.svf) + '" data-heitinr="' + esc(sk.eign.heitinr || 0) + '" ' : '') : '') +
-        'title="' + esc((sk.heimild || 'Teikningasafn') + ' — opnar leitina í TurboPaint með ' + sk.eign.label) + '">📐 ' +
-        esc(sk.eign.oviss
-          ? 'Næsta lóð ' + sk.eign.label + (sk.teikningar && sk.teikningar.fjoldi ? ' · ' + sk.teikningar.fjoldi + ' teikningar' : '') + ' · óvisst'
-          : (sk.teikningar && sk.teikningar.fjoldi ? sk.teikningar.fjoldi + ' teikningar · ' + (sk.eign.heimildNafn || '') : 'Leita í TurboPaint · ' + sk.eign.label)) +
-        '</a></div>'
-      : '';
+    const teikn = teiknHtml(sk, coId);
     box.innerHTML =
       TOLUR.map(t => linaHtml(t.merki,
         t.reitir.map(r => r.reitur).concat((t.flisar || []).map(f => f.reitur)),
@@ -697,8 +744,10 @@
   // aldrei reit sem á óvistaða breytingu.
   function tillSig(coId, till) {
     const sk = skrarSvar(coId);
+    const fl = sk && (sk.flokkar || (sk.teikningar && sk.teikningar.flokkar));
+    const fj = sk && sk.teikningar && sk.teikningar.fjoldi;
     return till.map(t => (t.skra ? 's:' : '') + t.reitur + '=' + t.gildi).join('|') +
-      '#' + (sk ? (sk.turbopaint ? 't' : '') + (sk.error ? 'e' : '') : '');
+      '#' + (sk ? (sk.turbopaint ? 't' : '') + (sk.error ? 'e' : '') + (sk.athugasemd ? 'a' : '') + (fj ? 'n' + fj : '') + (fl ? JSON.stringify(fl) : '') : '');
   }
   function samstilla(box, coId) {
     saekjaSkrar(coId);                            // endursókn eftir tímaþrot (skilar strax annars)

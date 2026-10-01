@@ -455,7 +455,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
 <script src="/js/rest-samnyting.js?v=20260928a"></script>
-<script src="/js/db.js?v=20261001hlada"></script>
+<script src="/js/db.js?v=20261001ub"></script>
 <!-- Problem registry: loads right after db.js so window.logProblem + auto error
      capture are live before every patch below (records problems to app_problems). -->
 <script defer src="/js/patches/309-problem-registry.js?v=20260921a"></script>
@@ -470,7 +470,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/380-reikningsbeidnir-ljos.js?v=20260919a"></script>
 <script defer src="/js/patches/381-kunnaleit-ur-posti.js?v=20260919a"></script>
 <script defer src="/js/patches/148-date-format-unify.js?v=20260515a"></script>
-<script defer src="/js/patches/00-legacy.js?v=20261001a"></script>
+<script defer src="/js/patches/00-legacy.js?v=20261001b"></script>
 <script defer src="/js/patches/290-api-key-header.js?v=20260729"></script>
 <script defer src="/js/patches/169-logo-customization.js?v=20260601b"></script>
 <script defer src="/js/patches/170-unit-delete.js?v=20260624a"></script>
@@ -1142,7 +1142,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/215-address-backfill.js?v=20260720pg"></script>
 <script defer src="/js/patches/216-theme-sidebar-dashboard.js?v=20260617a"></script>
 <script defer src="/js/patches/217-theme-arsskodun-tidy.js?v=20260817off"></script>
-<script defer src="/js/patches/218-url-routing.js?v=20261001hopp"></script>
+<script defer src="/js/patches/218-url-routing.js?v=20261001ub"></script>
 <script defer src="/js/patches/219-bilstjori.js?v=20260919a"></script>
 <script defer src="/js/patches/220-theme-system.js?v=20260817frozen"></script>
 <script defer src="/js/patches/221-kerfi-registry.js?v=20260618a"></script>
@@ -1293,18 +1293,18 @@ var Lanstaeki = {
 <script defer src="/js/patches/360-raesi-skyndiminni.js?v=20261001cold"></script>
 <script defer src="/js/patches/361-vettvangsathuganir.js?v=20260921i"></script>
 <script defer src="/js/patches/362-teikning-fella.js?v=20260909a"></script>
-<script defer src="/js/patches/363-banner-upplysingar.js?v=20261001fe"></script>
+<script defer src="/js/patches/363-banner-upplysingar.js?v=20261001teikn2"></script>
 <script defer src="/js/patches/432-fasteign-facts.js?v=20261001fe3"></script>
 <script src="/js/patches/365-vistun-utskolun.js?v=20260909a"></script>
 <script defer src="/js/patches/366-fljotandi-stafli.js?v=20260909a"></script>
-<script defer src="/js/patches/367-bygging-mynd.js?v=20261001sleppa"></script>
+<script defer src="/js/patches/367-bygging-mynd.js?v=20261001teikn"></script>
 <script defer src="/js/patches/368-thjonustubord5.js?v=20261001l"></script>
 <script defer src="/js/patches/370-hreyfingaryfirlit-takki.js?v=20260924a"></script>
 <script defer src="/js/patches/371-opna-solu.js?v=20260911a"></script>
 <script defer src="/js/patches/374-teikning-saekja.js?v=20260920a"></script>
 <script defer src="/js/patches/375-teikning-vistun.js?v=20260920b"></script>
 <script defer src="/js/patches/383-teikning-hreinsa-3d.js?v=20260920q"></script>
-<script defer src="/js/patches/384-teikninga-forskodun.js?v=20260920d"></script>
+<script defer src="/js/patches/384-teikninga-forskodun.js?v=20261001teikn"></script>
 <script defer src="/js/patches/385-slokkvikerfi.js?v=20261001hopp"></script>
 <script defer src="/js/patches/386-slokkvikerfi-skyrsla.js?v=20260921c"></script>
 <script defer src="/js/patches/388-brunakerfi-skra.js?v=20261001a"></script>
@@ -1318,7 +1318,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/382-ars-simi-samraemi.js?v=20260919b"></script>
 <script defer src="/js/patches/389-tilbuin-midar.js?v=20260922b"></script>
 <script defer src="/js/patches/390-verkstaedi-midar.js?v=20260922d"></script>
-<script defer src="/js/patches/391-hlidarstika-midar.js?v=20261001c"></script>
+<script defer src="/js/patches/391-hlidarstika-midar.js?v=20261001ub"></script>
 <script defer src="/js/patches/392-skodun-midar.js?v=20260926a"></script>
 <script defer src="/js/patches/393-ars-midar.js?v=20260922ae"></script>
 <script defer src="/js/patches/401-fljotandi-rod.js?v=20260923c"></script>
@@ -1355,6 +1355,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/424-brunastal-gluggar.js?v=20261001a"></script>
 <!-- 01.10.2026: Verkspjaldið — eitt verk, einn gluggi (sala → verkstæði → afhending). Afturkall: AppSettings verkspjald.af = true -->
 <script defer src="/js/patches/430-verkspjald.js?v=20261001f"></script>
+<script defer src="/js/patches/431-uppferslubord.js?v=20261001teikn"></script>
 <script defer src="/js/patches/425-allir-brunastal.js?v=20260930a"></script>
 <script defer src="/js/patches/426-kunnasida-brunastal.js?v=20260930c"></script>
 <script defer src="/js/patches/427-stjornstod-ljos.js?v=20260930b"></script>

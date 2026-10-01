@@ -159,6 +159,7 @@
       '.co-mynd-vefja{position:absolute;inset:0;line-height:0}',
       '.co-mynd-vefja img{display:block;width:100%;height:100%;max-width:none;max-height:none;object-fit:cover}',
       '.co-mynd-tomt{font-size:11px;line-height:1.4;color:rgba(255,255,255,.45);text-align:center;padding:8px}',
+      '.co-mynd-engin{font:600 13px/1.35 system-ui,sans-serif;color:rgba(255,255,255,.9);position:relative;z-index:1}',
       // Loftmyndin er sjálfvirk — hún á að sjást aðeins daufari en mynd sem Agnar setti inn,
       // og bera merki svo hún sé aldrei ruglað við hana (sjá loftmynd() neðar).
       '.co-mynd-loft img{opacity:.9}',
@@ -345,7 +346,13 @@
       img.alt = 'Loftmynd af heimilisfanginu';
       img.src = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export' +
         '?bbox=' + bbox + '&bboxSR=4326&imageSR=3857&size=600,320&format=jpg&f=image';
-      img.addEventListener('error', function () { try { vefja.remove(); } catch (_) {} });
+      img.addEventListener('error', function () {
+        try { vefja.remove(); } catch (_) {}
+        var t = flis.querySelector('.co-mynd-engin');
+        if (t) t.hidden = false;
+      });
+      var tomt = flis.querySelector('.co-mynd-engin');
+      if (tomt) tomt.hidden = true;
       vefja.appendChild(img);
       var merki = document.createElement('span');
       merki.className = 'co-mynd-loftmerki';
@@ -370,6 +377,127 @@
         setja(+g.lat, +g.lon);
       })
       .catch(function () {});
+  }
+
+  var _hnitLoford = new Map();
+  var _myndBid = new Set();
+  function vistaHnit(adr, lat, lon) {
+    _loftHnit[adr] = { lat: lat, lon: lon };
+    try {
+      var gc = JSON.parse(localStorage.getItem('_slokk_gc') || '{}');
+      gc[adr] = { lat: lat, lng: lon };
+      localStorage.setItem('_slokk_gc', JSON.stringify(gc));
+    } catch (_) {}
+  }
+  // Eitt les af geocode_cache. Aldrei /api/geocode. Sama loforð ef loftmynd og
+  // útilitsmynd biðja á sama tíma — seinni kallari má ekki halda að hnit vanti.
+  function hnitEinusinni(adr) {
+    var minni = hnitUrMinni(adr);
+    if (minni) { _loftHnit[adr] = minni; return Promise.resolve(minni); }
+    if (!adr) return Promise.resolve(null);
+    if (_hnitLoford.has(adr)) return _hnitLoford.get(adr);
+    var p = (async function () {
+      try {
+        var s = sbKlient();
+        if (!s) return null;
+        var r = await s.from('geocode_cache').select('lat,lng').eq('query', adr).limit(1);
+        var row = r && r.data && r.data[0];
+        var lon = row && (typeof row.lon === 'number' ? row.lon : row.lng);
+        if (row && typeof row.lat === 'number' && typeof lon === 'number') {
+          vistaHnit(adr, row.lat, lon);
+          return _loftHnit[adr];
+        }
+      } catch (_) {}
+      return null;
+    })();
+    _hnitLoford.set(adr, p);
+    return p;
+  }
+  function lesaReynd(coId, adr) {
+    try {
+      var o = JSON.parse(localStorage.getItem('husmynd_reynd_v1_' + coId) || 'null');
+      if (o && o.adr === adr) return o;
+    } catch (_) {}
+    return null;
+  }
+  function vistaReynd(coId, adr, stada) {
+    try { localStorage.setItem('husmynd_reynd_v1_' + coId, JSON.stringify({ adr: adr, stada: stada })); } catch (_) {}
+  }
+  function erVerndud(m) {
+    if (!m || !m.url) return false;
+    var u = m.uppspretta || '';
+    return u === 'handvirkt' || u === 'borgarvefsja' || u === '';
+  }
+  function b64Blob(b64, tegund) {
+    var bin = atob(b64);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: tegund || 'image/jpeg' });
+  }
+  async function vistaGoogle(coId, svar) {
+    var s = sbKlient();
+    if (!s) return false;
+    var blob = b64Blob(svar.image, svar.contentType || 'image/jpeg');
+    var slod = 'bygging/' + coId + '/hus-utan.jpg';
+    var up = await s.storage.from(BUCKET).upload(slod, blob, { contentType: 'image/jpeg', upsert: true });
+    if (up.error) throw up.error;
+    var pub = s.storage.from(BUCKET).getPublicUrl(slod);
+    var url = pub && pub.data && pub.data.publicUrl;
+    if (!url) return false;
+    url += (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + Date.now();
+    await skrifaMynd(coId, {
+      url: url, slod: BUCKET + '/' + slod, ts: new Date().toISOString(),
+      uppspretta: 'google', heimild: svar.heimild || 'google', attribution: svar.attribution || ''
+    });
+    return true;
+  }
+  async function einUtanMynd(coId, adr) {
+    if (!coId || !adr) return;
+    if (!window.AppSettings || !AppSettings.isLoaded || !AppSettings.isLoaded()) return;
+    var m = lesaMynd(coId);
+    if (m && m.url) return;
+    var endur = !!(window.__coEndurnyja && +window.__coEndurnyja.id === +coId
+      && !(window.__coEndurnyja.notad && window.__coEndurnyja.notad.mynd));
+    if (!endur && lesaReynd(coId, adr)) return;
+    if (_myndBid.has(coId)) return;
+    if (endur && !(window.__coMaEndurnyja && window.__coMaEndurnyja(coId, 'mynd'))) return;
+    _myndBid.add(coId);
+    try {
+      var hnit = await hnitEinusinni(adr);
+      var body = hnit ? { lat: hnit.lat, lng: hnit.lon, address: adr } : { address: adr };
+      var r = await fetch('/api/husmynd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      var svar = null;
+      try { svar = await r.json(); } catch (_) { svar = null; }
+      if (!svar || svar.error === 'vantar-lykil') { vistaReynd(coId, adr, 'vantar-lykil'); return; }
+      if (svar.ok && svar.image) {
+        if (erVerndud(lesaMynd(coId))) { vistaReynd(coId, adr, 'hand'); return; }
+        await vistaGoogle(coId, svar);
+        vistaReynd(coId, adr, 'mynd');
+        endurteikna(true);
+        return;
+      }
+      vistaReynd(coId, adr, (svar && svar.error) || 'engin');
+    } catch (_) {
+      vistaReynd(coId, adr, 'villa');
+    } finally {
+      _myndBid.delete(coId);
+    }
+  }
+  function synaMyndEdaTomt(flis, coId) {
+    var adr = heimilisfangNu();
+    var minni = adr && hnitUrMinni(adr);
+    if (minni) loftmynd(flis, adr);
+    else if (adr) {
+      hnitEinusinni(adr).then(function (h) {
+        if (!flis.isConnected) return;
+        if (h) loftmynd(flis, adr);
+      });
+    }
+    einUtanMynd(coId, adr);
   }
 
   // ── Flísin ──────────────────────────────────────────────────────────────
@@ -399,8 +527,8 @@
       // Agnar: „og ekki hafa neinn texta þarna með að líma mynd“. Tóm flís er
       // AÐEINS daufi ramminn; leiðbeiningin lifir í title (sést við hover).
       // v3: hlekkirnir eru ósýnilegir þar til músin fer yfir flísina.
-      flis.innerHTML = UPP + hlekkir;
-      loftmynd(flis, heimilisfangNu());
+      flis.innerHTML = UPP + hlekkir + '<div class="co-mynd-tomt co-mynd-engin">engin mynd</div>';
+      synaMyndEdaTomt(flis, coId);
       flis.addEventListener('click', function (e) {
         if (e.target.closest('.co-mynd-hlekkir') || e.target.closest('.co-mynd-upp')) return;
         veljaMynd(coId);
@@ -428,8 +556,19 @@
     var box = banner.querySelector('.' + HOLF);
     var m = lesaMynd(coId);
     // v3: heimilisfangið er í undirskriftinni svo hlekkirnir fylgi breyttu heimilisfangi.
-    var sig = coId + '|' + ((m && m.url) || '') + '|' + heimilisfangNu();
-    if (box && !thvinga && box.dataset.sig === sig) return;   // ekkert breyst — engin DOM-skrif
+    var adrNuna = heimilisfangNu();
+    var sig = coId + '|' + ((m && m.url) || '') + '|' + adrNuna;
+    if (box && !thvinga && box.dataset.sig === sig) {
+      if (!(m && m.url)) {
+        var flis = box.querySelector('.co-mynd-flis');
+        if (flis && !flis.querySelector('.co-mynd-vefja')) {
+          var h = adrNuna && hnitUrMinni(adrNuna);
+          if (h) loftmynd(flis, adrNuna);
+        }
+        einUtanMynd(coId, adrNuna);
+      }
+      return;
+    }
     if (box) box.remove();
     box = document.createElement('div');
     box.className = HOLF;

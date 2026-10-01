@@ -12,7 +12,7 @@
 const LEYFDIR = new Set(['skjalasafn.reykjavik.is']);
 // 21.09.2026: teikningasöfn Kópavogs, Hafnarfjarðar og Garðabæjar afhenda PDF-ið BEINT (engin .info / rendition).
 // Þau senda enga CORS-hausa, svo forskoðunin (384) getur ekki lesið þau úr vafranum — hér eru þau streymd af sömu rót.
-const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is']);
+const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'luks.seltjarnarnes.is']);
 const HAMARK = 40 * 1024 * 1024;
 
 const cors = {
