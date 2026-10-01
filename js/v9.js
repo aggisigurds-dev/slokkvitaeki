@@ -818,32 +818,63 @@
     close.parentNode.insertBefore(btn, close);
   }
 
-  // 6. Kennitala display in company detail
+  // 6. Kennitala display in company detail.
+  // 01.10.2026: borðinn er .co-banner-name, ekki h1. Gamla fallið leitaði
+  // að h1/h2, setti aldrei ._slokk_kt, og 3s-púlsinn sótti kennitöluna
+  // aftur á meðan prófíllinn stóð opinn (~1200 köll/klst). Nú er borðinn
+  // sjálfur stopp-merkið (.co-banner-kt eða ._slokk_kt) og enginn púls
+  // keyrir á opnum prófíl — aðeins þegar #companies-main fær ný börn.
+  var _ktSeen = null;
+  var _ktFlight = 0;
   function showKennitala() {
     if (!window.Companies || !Companies.currentId) return;
+    var id = Companies.currentId;
     var cm = document.getElementById('companies-main');
     if (!cm) return;
-    if (cm.querySelector('._slokk_kt')) return;
-    DB.sb.from('fyrirtaeki').select('kennitala').eq('id', Companies.currentId).single().then(function(r){
-      if (!r.data || !r.data.kennitala) return;
-      var h1 = cm.querySelector('h1, h2');
-      if (!h1) return;
+    if (cm.querySelector('._slokk_kt, .co-banner-kt')) { _ktSeen = id; return; }
+    if (_ktSeen === id && cm.querySelector('.co-banner')) return;
+    var anchor = cm.querySelector('.co-banner-name') || cm.querySelector('.co-banner');
+    if (!anchor) return;
+    if (_ktFlight === id) return;
+    if (!window.DB || !DB.sb || !DB.sb.from) return;
+    _ktFlight = id;
+    DB.sb.from('fyrirtaeki').select('kennitala').eq('id', id).single().then(function(r){
+      if (_ktFlight === id) _ktFlight = 0;
+      if (!cm.isConnected || !window.Companies || Companies.currentId !== id) return;
+      _ktSeen = id;
+      var kt = r && r.data && r.data.kennitala;
+      if (!kt) return;
+      if (cm.querySelector('._slokk_kt, .co-banner-kt')) return;
+      var nameEl = cm.querySelector('.co-banner-name') || cm.querySelector('.co-banner');
+      if (!nameEl || !nameEl.parentNode) return;
       var span = document.createElement('div');
       span.className = '_slokk_kt';
       span.style.cssText = 'font-size:12px;color:#888;margin-top:4px;';
-      span.textContent = 'Kennitala: '+r.data.kennitala;
-      h1.parentNode.insertBefore(span, h1.nextSibling);
+      span.textContent = 'Kennitala: '+kt;
+      if (nameEl.classList && nameEl.classList.contains('co-banner-name')) {
+        nameEl.parentNode.insertBefore(span, nameEl.nextSibling);
+      } else {
+        nameEl.appendChild(span);
+      }
     });
   }
+  function watchKennitala() {
+    var cm = document.getElementById('companies-main');
+    if (!cm) { setTimeout(watchKennitala, 400); return; }
+    showKennitala();
+    new MutationObserver(function(){ showKennitala(); }).observe(cm, { childList: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchKennitala);
+  else watchKennitala();
 
-  // Run all on interval (skip while the tab/screen is backgrounded)
+  // Run all on interval (skip while the tab/screen is backgrounded).
+  // Kennitalan er EKKI hér — hún má ekki polla á opnum prófíl.
   setInterval(function(){
     if(document.hidden) return;
     fixGeymslaAge();
     injectSearchBoxes();
     setupMobileNav();
     addPrintBtn();
-    showKennitala();
   }, 3000);
   setTimeout(setupRealtime, 1500);
 

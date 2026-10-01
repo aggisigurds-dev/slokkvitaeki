@@ -109,23 +109,50 @@
   }
 
   function decorate() {
-    // Counter view ready cards (green column)
-    document.querySelectorAll('button[onclick*="Counter.markCollected"]').forEach(btn => {
+    // Aðeins afgreiðslan. querySelectorAll á öllu skjalinu á meðan
+    // fyrirtækjaprófíllinn vex er dýrt (onclick*= á stóru tré).
+    const root = document.getElementById('view-counter');
+    if (!root) return;
+    root.querySelectorAll('button[onclick*="Counter.markCollected"]').forEach(btn => {
       const card = btn.closest('div');
       if (card) injectButton(card);
     });
-    // Sidebar "Tilbúið til afhendingar" panel (modal.js + sidebar)
-    document.querySelectorAll('.ready-item').forEach(injectButton);
+    // Sidebar "Tilbúið til afhendingar" (#sidebar-ready) býr inni í view-counter.
+    root.querySelectorAll('.ready-item').forEach(injectButton);
   }
 
-  // Watch the body for new ready cards being rendered
+  // 01.10.2026: vakt á öllu document.body (subtree) kviknaði við hverja
+  // stökkbreytingu í prófílnum (~1,6 s á aðalþræði eftir fyrstu málun).
+  // Tilbúin-spjöldin eru í #view-counter. Borði, #_ctc-section og tækjalisti
+  // eru hunsaðir ef þau rata inn í færslurnar.
   function attach() {
     let _t = 0;
-    new MutationObserver(() => {
-      clearTimeout(_t);
-      _t = setTimeout(decorate, 100);
-    }).observe(document.body, { childList: true, subtree: true });
-    decorate();
+    let observed = null;
+    const PROFILE = '.co-banner, #_ctc-section, #_ctc-notes, .ut-list, #companies-main';
+    const obs = new MutationObserver((muts) => {
+      for (let i = 0; i < muts.length; i++) {
+        const t = muts[i].target;
+        if (!t || !t.closest || !t.closest(PROFILE)) {
+          clearTimeout(_t);
+          _t = setTimeout(decorate, 100);
+          return;
+        }
+      }
+    });
+    function ensure() {
+      const root = document.getElementById('view-counter');
+      if (!root || root === observed) return;
+      try { obs.disconnect(); } catch (_) {}
+      obs.observe(root, { childList: true, subtree: true });
+      observed = root;
+      decorate();
+    }
+    ensure();
+    // childList án subtree: sér ef #view-counter er skipt út, ekki vöxt
+    // inni í #view-companies.
+    if (document.body) {
+      new MutationObserver(ensure).observe(document.body, { childList: true });
+    }
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attach);
