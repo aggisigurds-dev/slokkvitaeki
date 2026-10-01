@@ -142,7 +142,11 @@
       // 01.10.2026: „Þar af nýtt" stýrir vörulínunum — samræmt hér og vistað Í SÖMU skrift og búnaðartölurnar,
       // svo tvær vistanir (blað + verðlínur) geti ekki skrifað hvor yfir aðra.
       let linurBreyttar = false;
-      try { const _bks = window.BrunakerfiSkyrsla; if (_bks && _bks.samraemaNytt) linurBreyttar = _bks.samraemaNytt(C.co, rep); } catch (_) {}
+      try {
+        const _bks = window.BrunakerfiSkyrsla;
+        if (_bks && _bks.samraemaNytt) linurBreyttar = _bks.samraemaNytt(C.co, rep);
+        if (_bks && _bks.radaLinum && rep.data.verd && _bks.radaLinum(rep.data.verd.linur)) linurBreyttar = true;
+      } catch (_) {}
       if (linurBreyttar) { d.verd = d.verd || {}; d.verd.linur = (rep.data.verd && rep.data.verd.linur) || []; }
       const r = await sb.from('brunakerfi_skyrslur').update({ data: d, updated_at: new Date().toISOString() }).eq('id', rep.id);
       if (r.error) { toast('Skýrslan vistaðist EKKI: ' + r.error.message, true); return; }
@@ -574,6 +578,7 @@
       r('.b274-linur .b274-baeta [data-vadd]', 'margin:0!important'),
       r('.b274-linur select.b274-lidval', 'appearance:none;-webkit-appearance:none;field-sizing:content;width:auto;max-width:150px;text-align:center;cursor:pointer;box-sizing:border-box;height:33px!important;min-height:0!important;padding-top:0!important;padding-bottom:0!important;line-height:1!important'),   // þemað þvingar 42 px með !important
       r('.b274-linur button._bkc-vteg', 'cursor:pointer;font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase'),
+      r('.b274-linur button._bkc-vteg._vinna', 'background:linear-gradient(145deg,#2a2e35 0%,#5b616c 24%,#8d939d 47%,#a7adb6 53%,#5c626d 76%,#2b2f36 100%);border-color:#22262c;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55)'),   // Agnar: dökkur silfurmálmur, hvítir stafir
       r('.b274-linur button._bkc-vteg._vara', 'background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%);border-color:rgba(190,150,60,.5);color:#fff'),
       r('.b274-nytt', 'color:#845400'),
       r('.b274-vantar', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px 0;font-family:' + MONO + ';font-size:11px;color:#8a6100;font-weight:700'),
@@ -811,10 +816,13 @@
     try {
       const _bks = window.BrunakerfiSkyrsla;
       if (_bks && _bks.samraemaNytt) C.reports.forEach(r => {
-        if (!(r && r.data && _bks.samraemaNytt(C.co, r))) return;
+        if (!(r && r.data)) return;
+        const samr = _bks.samraemaNytt(C.co, r);                                                   // „Þar af nýtt"
+        const rodun = _bks.radaLinum ? _bks.radaLinum(r.data.verd && r.data.verd.linur) : false;    // skoðun → vörur → vinna → akstur
+        if (!samr && !rodun) return;
         // lykkjuvörn: SAMA niðurstaða er ekki vistuð aftur innan mínútu (t.d. ef vistun festist ekki og næsta
         // endurteikning les gömlu línurnar á ný) — annars gæti hver endurteikning vakið nýja skrift
-        const sig = JSON.stringify(((r.data.verd && r.data.verd.linur) || []).filter(l => l && l.sjalfNytt).map(l => [l.name, l.qty]));
+        const sig = JSON.stringify(((r.data.verd && r.data.verd.linur) || []).map(l => [l.name, l.qty]));
         const f = _nyttSamr[r.id];
         if (f && f.sig === sig && Date.now() - f.t < 60000) return;
         _nyttSamr[r.id] = { sig, t: Date.now() };
@@ -901,7 +909,7 @@
           '<div class="_bkc-vr">' +
             '<input class="_bkc-vin" data-vk="name" data-vi="' + i + '" value="' + esc(l.name || '') + '" title="' + esc(l.name || '') + '" placeholder="Lýsing">' +
             '<input class="_bkc-vin" data-vk="qty" data-vi="' + i + '" inputmode="numeric" value="' + esc(l.qty == null ? '' : l.qty) + '" style="text-align:center">' +
-            '<button type="button" class="_bkc-vteg' + (tegLinu(l) === 'vara' ? ' _vara' : '') + '" data-vteg="' + i + '" title="Tegund línu — smelltu til að skipta á milli Vöru og Þjónustu">' + tegMerki(l) + '</button>' +
+            '<button type="button" class="_bkc-vteg' + (tegLinu(l) === 'vara' ? ' _vara' : '') + (tegMerki(l) === 'Vinna' ? ' _vinna' : '') + '" data-vteg="' + i + '" title="Tegund línu — smelltu til að skipta á milli Vöru og Þjónustu">' + tegMerki(l) + '</button>' +
             '<input class="_bkc-vin" data-vk="price" data-vi="' + i + '" inputmode="decimal" value="' + esc(l.price == null ? '' : fmtInn(l.price)) + '" style="text-align:right">' +
             '<span class="_bkc-vvsk">' + VAT_PCT + '%</span>' +
             '<input class="_bkc-vin" data-vk="afsl" data-vi="' + i + '" inputmode="decimal" placeholder="0" value="' + esc(l.afsl == null ? '' : l.afsl) + '" style="text-align:center;color:#b3341a;font-weight:700">' +

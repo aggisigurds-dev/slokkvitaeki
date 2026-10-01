@@ -684,6 +684,7 @@
   }
 
   function verdBodyHtml() {
+    if (S.data.verd && radaLinum(S.data.verd.linur)) markDirty();
     const m = model();
     const items = priceItems();
     return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">' +
@@ -928,8 +929,32 @@
         }
       } else if (ix >= 0) { linur.splice(ix, 1); breytt = true; }
     });
+    if (radaLinum(linur)) breytt = true;
     return breytt;
   }
+  // Röð reikningslína (Agnar 01.10: „láta skoðunaratriðin koma saman, nýtt skoðunaratriði kemur neðst í
+  // skoðunarröðinni, síðan allar vörur, síðan öll vinna og akstur í lokin"): Skýrsla → skoðun/þjónusta → vörur →
+  // vinna → akstur. STÖÐUG röðun: innan hóps heldur hver lína sínu sæti, svo ný lína lendir neðst í sínum hópi.
+  // Raðað í geymdu línunum sjálfum — reikningsdrögin (291) og PDF fylgja sömu röð. Skilar true ef röðin breyttist.
+  // Nafnlaus lína („＋ Auð lína") bíður neðst þar sem hún var búin til; hún fær sinn hóp þegar hún hefur nafn.
+  function linuHopur(l) {
+    const n = String((l && l.name) || '');
+    if (!n.trim()) return 5;
+    // sama flokkun og merkið á línunni í 274 (tegMerki): Akstur · Skýrsla · Vara · Vinna · Skoðun
+    if (/akstur/i.test(n)) return 4;
+    if (/sk[ýy]rslu|samantekt/i.test(n)) return 0;
+    const t = (l.teg === 'vara' || l.teg === 'thjonusta') ? l.teg : tegAgiskun(n);
+    if (t === 'vara') return 2;
+    return /^\s*vinna/i.test(n) ? 3 : 1;
+  }
+  function radaLinum(linur) {
+    if (!Array.isArray(linur) || linur.length < 2) return false;
+    const rodud = linur.map((l, i) => ({ l, i, h: linuHopur(l) })).sort((a, b) => a.h - b.h || a.i - b.i);
+    if (rodud.every((x, i) => x.i === i)) return false;
+    rodud.forEach((x, i) => { linur[i] = x.l; });
+    return true;
+  }
+
 
   // 🧾 reikningur úr verðlínunum → solur (greitt_med=reikningur) → Kröfu yfirlit;
   // PDF-ið fer sjálfkrafa í reikningsdálk ársins gegnum patch 233. Sama talna-
@@ -1962,7 +1987,7 @@
     const prev = S; S = st;
     try { return samraemaNyttS(); } finally { S = prev; }
   }
-  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun, samraemaNytt };
+  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun, samraemaNytt, radaLinum };
   console.log('[patch-273] Brunakerfi skoðunarskýrsla v2 (PDF + verð) installed');
 })();
 /* === END BRUNAKERFI SKOÐUNARSKÝRSLA === */
