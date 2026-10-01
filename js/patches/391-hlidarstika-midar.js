@@ -172,11 +172,16 @@
       const tn = w.nextNode();
       const m = tn ? EMOJI_RE.exec(tn.nodeValue) : null;
       if (!m) return;
+      // textContent verður að haldast STAFRÉTT: 68 felur hnappa án data-view eftir
+      // textanum („#🏷️ prenta qr miða"). Fyrsta útgáfan át bilið á eftir tákninu og
+      // „Prenta QR miða" (falinn í sidebar_hidden) birtist aftur (mælt 01.10). Því er
+      // aðeins táknið sjálft klofið frá — bilin standa kyrr í textanum.
+      const tak = m[1] ? tn.splitText(m[1].length) : tn;
+      tak.splitText(m[2].length);
       const s = document.createElement('span');
       s.className = 'vnav-icon-norm';
-      s.textContent = m[2];
-      tn.parentNode.insertBefore(s, tn);
-      tn.nodeValue = tn.nodeValue.slice(m[0].length);
+      tak.parentNode.insertBefore(s, tak);
+      s.appendChild(tak);
     });
   }
 
