@@ -88,7 +88,9 @@
     if (!snap || !Array.isArray(snap.list) || !snap.list.length) return false;
     if (Array.isArray(C.list) && C.list.length) return false;
     C.list = snap.list; stada.companiesHydrated = true;
-    try { if (document.querySelector('#view-companies.active') && C.render) C.render(); } catch (_) {}
+    try {
+      if (document.querySelector('#view-companies.active') && C.render && !(C._detailOpen && C._detailOpen())) C.render();
+    } catch (_) {}
     return true;
   }
   async function saveCompanies() {
@@ -104,6 +106,12 @@
     if (DB && typeof DB.loadAll === 'function' && !DB.loadAll.__raesi360) {
       const orig = DB.loadAll;
       const wrapped = async function () {
+        // Kalt #company/<id>: láttu sneiðina fara af stað ÁÐUR en IndexedDB er lesið,
+        // svo biðin eftir skyndiminninu sé ekki á undan bannerinu.
+        try {
+          var bootCo = DB._bootCompanyId && DB._bootCompanyId();
+          if (bootCo && !DB.online && !(DB.cache && DB.cache.units && DB.cache.units.length) && DB._primeCompany) DB._primeCompany(bootCo);
+        } catch (_) {}
         if (!stada.hydrated && !DB.online) { try { await hydrateDb(); } catch (e) { stada.error = String(e && e.message || e); } }
         const r = await orig.apply(this, arguments);
         if (DB.online && DB.cache && Array.isArray(DB.cache.units) && DB.cache.units.length) saveSoon();

@@ -152,7 +152,9 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     if(typeof f0==='function') window.fetch=function(u,o){
       var slod=typeof u==='string'?u:((u&&u.url)||'');
       var adf=String((o&&o.method)||(u&&u.method)||'GET').toUpperCase();
-      if(hulaBuin||slod.indexOf('/rest/v1/')<0||(adf!=='GET'&&adf!=='HEAD')) return f0.apply(this,arguments);
+      // __coSlicePainted: prófílsneiðin er máluð. Bakgrunns-síðurnar (allar uttaeki)
+      // mega ekki halda ræsihulunni uppi.
+      if(hulaBuin||window.__coSlicePainted||slod.indexOf('/rest/v1/')<0||(adf!=='GET'&&adf!=='HEAD')) return f0.apply(this,arguments);
       iGangi++;
       var lokid=function(){ iGangi=Math.max(0,iGangi-1); if(!iGangi) netKyrrFra=Date.now(); };
       var p=f0.apply(this,arguments);
@@ -183,11 +185,18 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     for(var i=0;i<bs.length;i++) if(bs[i].offsetParent) n++;
     if(n!==sidast){ sidast=n; kyrrFra=nu; }
     var kyrr=nu-kyrrFra>=450 && !document.documentElement.classList.contains('sb-settling');
-    var grunnur=a && efni(a) && loadAt && kyrr && !window.__coBootHold && !document.getElementById('_co-settle-veil');
+    var settle=document.getElementById('_co-settle-veil');
+    var settleUppi=!!(settle && settle.style.opacity!=='0');
+    // #company/<id>: borði og tækjalisti eru máluð. Ekki bíða eftir hliðarstiku
+    // né eftir kt-lookup / geocode / company-mail sem skrifa í síðuna á eftir.
+    var profill=!!window.__coSlicePainted && !!(a && a.querySelector && a.querySelector('.co-banner') && a.querySelector('.ut-list, .empty-state, table.dtbl tbody tr'));
+    var grunnur=a && efni(a) && loadAt && (kyrr || profill) && !window.__coBootHold && !settleUppi;
     if(!grunnur) klarFra=0; else if(!klarFra) klarFra=nu;
     // Kyrrð (DOM 350 ms + net 250 ms) fær MEST 0,8 s umfram gömlu skilyrðin — mælt á framleiðslubúntinum: án þaks
     // beið hulan 3 s lengur á síðum sem fá sífellt smáuppfærslur (hún lenti á hámarkinu), sem er verra en hoppið.
-    var kyrrt=(nu-sidastaBreyting>=350 && !iGangi && nu-netKyrrFra>=250) || (klarFra && nu-klarFra>=800);
+    // Eftir að prófílsneiðin er máluð telst netið þegið — bakgrunnssóknin á allar uttaeki-síður bíður ekki.
+    var netThagt=!!window.__coSlicePainted || (!iGangi && nu-netKyrrFra>=250);
+    var kyrrt=profill || ((nu-sidastaBreyting>=350 && netThagt) || (klarFra && nu-klarFra>=800));
     if(grunnur && kyrrt){ clearInterval(iv); try{mo0&&mo0.disconnect()}catch(_){} setTimeout(go,120); return; }
     // öryggis-fallback: hulan hverfur ALLTAF — 6,5 sek eftir load, eða 25 sek frá byrjun
     if((loadAt && nu-loadAt>6500) || nu-t0>25000){ clearInterval(iv); try{mo0&&mo0.disconnect()}catch(_){} go(); }
@@ -446,7 +455,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
 <script src="/js/rest-samnyting.js?v=20260928a"></script>
-<script src="/js/db.js?v=20260925nota"></script>
+<script src="/js/db.js?v=20261001cold"></script>
 <!-- Problem registry: loads right after db.js so window.logProblem + auto error
      capture are live before every patch below (records problems to app_problems). -->
 <script defer src="/js/patches/309-problem-registry.js?v=20260921a"></script>
@@ -454,7 +463,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <!-- 312: EIN uppspretta skoðunarmánaðar/tækjafjölda — hlaðið snemma svo allir flötir lesi sama stað -->
 <script src="/js/patches/312-canon-stadur.js?v=20260914raesing"></script>
 <script src="/js/ui-icons.js?v=20260805c"></script>
-<script src="/js/modal.js?v=20261001a"></script>
+<script src="/js/modal.js?v=20261001cold"></script>
 <!-- 379: virkjast AÐEINS í vöfrum sem kunna ekki is-IS tölusnið. Verður að
      hlaðast á undan öllu sem birtir krónur — sama ástæða og 148. -->
 <script defer src="/js/patches/379-is-IS-varnagli.js?v=20260918a"></script>
@@ -1118,7 +1127,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/191-unit-i-vinnslu.js?v=20260610c"></script>
 <script defer src="/js/patches/193-payment-review.js?v=20260813gaet"></script>
 <!-- hibernated 2026-09-12 (hnappur falinn, settings.eftirfylgni tómt): 194-eftirfylgni.js -->
-<script defer src="/js/patches/195-company-detail-settle.js?v=20260928a"></script>
+<script defer src="/js/patches/195-company-detail-settle.js?v=20261001cold"></script>
 <script defer src="/js/patches/196-sidebar-settle.js?v=20260613a"></script>
 <script defer src="/js/patches/197-bokhald-yfirferd.js?v=20260914pg2"></script>
 <script defer src="/js/patches/198-fyrirtaeki-yfirferd.js?v=20261001a"></script>
@@ -1279,9 +1288,9 @@ var Lanstaeki = {
 <script defer src="/js/patches/354-opp-styribord.js?v=20261001b48c"></script>
 <script defer src="/js/patches/355-kost-vidvorun.js?v=20260906a"></script>
 <script defer src="/js/patches/356-arsgrind-simi.js?v=20260906a"></script>
-<script defer src="/js/patches/357-fyrirtaeki-djuptenging.js?v=20260925afk"></script>
+<script defer src="/js/patches/357-fyrirtaeki-djuptenging.js?v=20261001cold"></script>
 <script defer src="/js/patches/359-samskipti-eitt-box.js?v=20260906b"></script>
-<script defer src="/js/patches/360-raesi-skyndiminni.js?v=20260906b"></script>
+<script defer src="/js/patches/360-raesi-skyndiminni.js?v=20261001cold"></script>
 <script defer src="/js/patches/361-vettvangsathuganir.js?v=20260921i"></script>
 <script defer src="/js/patches/362-teikning-fella.js?v=20260909a"></script>
 <script defer src="/js/patches/363-banner-upplysingar.js?v=20260920t"></script>

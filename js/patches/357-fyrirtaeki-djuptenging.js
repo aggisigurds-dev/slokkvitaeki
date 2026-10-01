@@ -45,7 +45,6 @@
   ['mousedown', 'keydown', 'touchstart', 'pointerdown'].forEach(e => window.addEventListener(e, () => { userTouched = true; }, { capture: true, passive: true }));
 
   function ready() { return !!(window.App && window.Companies && (window._openCompanySafe || Companies.openDetail)); }
-  function listReady() { return !!(window.DB && DB.online) || !!(window.Companies && Companies.list && Companies.list.length); }
   function detailOpen(id) {
     if (!document.querySelector('#view-companies.active')) return false;
     const main = document.getElementById('companies-main');
@@ -68,22 +67,35 @@
     try { const want = '#company/' + id; if (location.hash !== want) history.replaceState(null, '', location.pathname + location.search + want); } catch (_) {}
   }
 
+  // db.js calls this the moment the company slice is in memory, before the
+  // rest of loadAll pages every uttaeki row. Defined here so the paint uses
+  // the same opener as a click. Must exist before DOMContentLoaded.
+  window.__paintBootCompany = function (id) {
+    id = Number(id);
+    if (!id || !ready()) return;
+    if (!detailOpen(id)) openNow(id);
+    window.__coBootHold = false;
+    window.__coSlicePainted = true;
+    try { performance.mark('co-slice-paint'); } catch (_) {}
+  };
+
   let busy = false;
   async function go(id, ms) {
     if (busy) return; busy = true;
     try {
       const t0 = Date.now();
-      while (!ready() && Date.now() - t0 < 20000) await sl(250);
+      while (!ready() && Date.now() - t0 < 20000) await sl(50);
       if (!ready()) return;
-      // bíða eftir gagnagrunninum (Companies.load() skilar tómu meðan DB.online er false)
-      while (!listReady() && Date.now() - t0 < 15000) await sl(250);
-      // 06.09.2026: bíða líka eftir DB.online (loadAll: uttaeki o.fl.) — annars opnast prófíllinn með „Slökkvitæki (0)"
-      // og endurteiknast ekki þegar tækin koma (Örkin: 57 tæki sýnd sem 0 í djúptengdri hleðslu).
-      while (!(window.DB && DB.online) && Date.now() - t0 < 20000) await sl(250);
-      // 25.09.2026: 235 opnar sama prófíl við hashchange þegar DB er komið — ekki opna hann tvisvar
-      // (hvert openDetail endurteiknar allt og leggur „Hleður…"-slæðu 195 yfir).
+      // 01.10.2026: ekki bíða eftir DB.online. Það varð satt fyrst þegar loadAll
+      // hafði sótt ALLAR uttaeki-síðurnar, og prófíllinn málaðist ekki fyrr.
+      // Sneiðin (þetta fyrirtæki + tæki þess) er máluð fyrst. loadAll fyllir
+      // restina í bakgrunni. Sama loforð og db.js — engin önnur fyrirspurn.
+      if (!detailOpen(id) && window.DB && typeof DB._primeCompany === 'function') {
+        try { await DB._primeCompany(id); } catch (_) {}
+      }
       if (!detailOpen(id)) openNow(id);
       window.__coBootHold = false;
+      window.__coSlicePainted = true;
       const deadline = Date.now() + ms;
       let reopened = 0;
       while (Date.now() < deadline && !userTouched) {
@@ -110,7 +122,7 @@
     const start = () => setTimeout(() => go(BOOT_ID, 8000), 400);
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   }
-  window.CoDeeplink = { open: id => go(Number(id), 3000), parseHash, detailOpen, bootId: BOOT_ID, version: '357g' };
+  window.CoDeeplink = { open: id => go(Number(id), 3000), parseHash, detailOpen, bootId: BOOT_ID, version: '357h' };
   console.log('[patch-357] fyrirtæki djúptenging #company/<id>', BOOT_ID || '');
 })();
 /* === END FYRIRTÆKI DJÚPTENGING === */

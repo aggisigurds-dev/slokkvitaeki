@@ -102,9 +102,107 @@ var DB = {
     };
   },
 
+  // #company/<id> on a cold boot. 0 when the hash is some other view.
+  _bootCompanyId: function() {
+    try {
+      var m = String(location.hash || '').match(/^#(?:company|companies|fyrirtaeki)\/(\d+)/);
+      return m ? +m[1] : 0;
+    } catch (_) { return 0; }
+  },
+
+  // One company row (if it is not already in memory) and that company's units.
+  // Shared promise so the deep-link and loadAll do not each fire the query.
+  // Does not page through every uttaeki row — loadAll does that afterwards.
+  _primeCompany: function(id) {
+    id = +id;
+    if (!id) return Promise.resolve(false);
+    if (this._companySlice && this._companySliceId === id) return this._companySlice;
+    this._companySliceId = id;
+    var self = this;
+    this._companySlice = (async function() {
+      var t0 = Date.now();
+      while ((!self.sb || !window.Companies) && Date.now() - t0 < 8000) {
+        await new Promise(function(r) { setTimeout(r, 30); });
+      }
+      if (!self.sb || !window.Companies) return false;
+      function findCo() {
+        var list = Companies.list;
+        if (!list) return null;
+        for (var i = 0; i < list.length; i++) {
+          if (list[i] && +list[i].id === id) return list[i];
+        }
+        return null;
+      }
+      var units = (self.cache && self.cache.units) || [];
+      var have = false;
+      for (var j = 0; j < units.length; j++) {
+        if (units[j] && +units[j].fyrirtaeki_id === id) { have = true; break; }
+      }
+      var full = !!(self.online && units.length);
+      var jobs = [];
+      if (!findCo()) {
+        jobs.push(self.sb.from('fyrirtaeki').select('*').eq('id', id).maybeSingle().then(function(r) {
+          if (!r || r.error || !r.data) return;
+          if (findCo()) return;
+          if (!Array.isArray(Companies.list)) Companies.list = [];
+          Companies.list.push(r.data);
+        }));
+      }
+      if (!have && !full) {
+        jobs.push(self.fetchAll(function(from, to) {
+          return self.sb.from('uttaeki').select('*').eq('fyrirtaeki_id', id).order('id').range(from, to);
+        }).then(function(rows) {
+          self._mergeCompanyUnits(id, rows || []);
+        }));
+      }
+      if (jobs.length) await Promise.all(jobs);
+      return !!findCo();
+    })();
+    return this._companySlice;
+  },
+
+  // Drop this company's previous rows and put the fresh slice in. Other
+  // companies already in the cache stay. Indexes used by the profile are
+  // updated for this id only.
+  _mergeCompanyUnits: function(id, rows) {
+    id = +id;
+    if (!this.cache) this.cache = { jobs: [], units: [], schedule: [], history: [] };
+    if (!Array.isArray(this.cache.units)) this.cache.units = [];
+    var rest = [];
+    for (var i = 0; i < this.cache.units.length; i++) {
+      var u = this.cache.units[i];
+      if (!u || +u.fyrirtaeki_id !== id) rest.push(u);
+    }
+    this.cache.units = rest.concat(rows);
+    if (!this.cache.unitsByFid) this.cache.unitsByFid = Object.create(null);
+    this.cache.unitsByFid[id] = rows.slice();
+    if (!this.cache.unitsByClient) this.cache.unitsByClient = Object.create(null);
+    for (var j = 0; j < rows.length; j++) {
+      var row = rows[j];
+      var k = row.client || '';
+      if (!k) continue;
+      var bucket = this.cache.unitsByClient[k] || (this.cache.unitsByClient[k] = []);
+      var replaced = false;
+      for (var n = 0; n < bucket.length; n++) {
+        if (bucket[n].id === row.id) { bucket[n] = row; replaced = true; break; }
+      }
+      if (!replaced) bucket.push(row);
+    }
+  },
+
   loadAll: async function() {
     this.setSyncState('syncing');
     try {
+      // 01.10.2026: #company/<id> used to wait here for every uttaeki page
+      // (7 × select *) before the banner could paint. Fetch THIS company
+      // first, paint it, then page the rest in the background.
+      var bootCo = this._bootCompanyId();
+      if (bootCo) {
+        try { await this._primeCompany(bootCo); }
+        catch (e) { console.warn('[db] prófíl-sneið', e && e.message); }
+        try { if (window.__paintBootCompany) window.__paintBootCompany(bootCo); }
+        catch (e2) { console.warn('[db] prófíl-málun', e2 && e2.message); }
+      }
       // Paginate uttaeki: PostgREST default cap is 1000 rows. We now have
       // 3,777+ active rows (after the bulk insert from arsskodun) so a
       // single .select() returns at most 1000. Fetch in chunks via .range()

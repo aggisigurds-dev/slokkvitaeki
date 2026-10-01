@@ -45,7 +45,7 @@
     }
     main.appendChild(ov);
 
-    let t = null, done = false;
+    let t = null, done = false, rowsSince = 0;
     const mo = new MutationObserver(() => {
       if (done) return;
       // Renderers sem endursetja innerHTML þurrka slæðuna út — setjum hana
@@ -53,6 +53,10 @@
       if (!ov.isConnected) main.appendChild(ov);
       arm();
     });
+    function listiTil() {
+      if (!main.querySelector('.co-banner')) return false;
+      return !!(main.querySelector('.ut-list') || main.querySelector('.empty-state') || main.querySelector('table.dtbl tbody tr'));
+    }
     function lift() {
       if (done) return;
       done = true;
@@ -60,7 +64,18 @@
       ov.style.opacity = '0';
       setTimeout(() => { try { ov.remove(); } catch (_) {} }, 280);
     }
-    function arm() { clearTimeout(t); t = setTimeout(lift, QUIET_MS); }
+    function arm() {
+      clearTimeout(t);
+      // 01.10.2026: kt-lookup / geocode / company-mail skrifa í borðann EFTIR
+      // fyrstu málun. Þau mega ekki halda „Hleður…“ uppi. Þegar borði og
+      // tækjalisti eru komin lyftist slæðan eftir 180 ms, hvað sem síðar bætist.
+      if (listiTil()) {
+        if (!rowsSince) rowsSince = Date.now();
+        t = setTimeout(lift, Math.max(0, 180 - (Date.now() - rowsSince)));
+        return;
+      }
+      t = setTimeout(lift, QUIET_MS);
+    }
     mo.observe(main, { childList: true, subtree: true });
     arm();
     setTimeout(lift, CAP_MS);
@@ -72,8 +87,13 @@
     if (C.openDetail._settleVeil) return true;
     const orig = C.openDetail;
     const wrapped = function (id) {
+      const main = document.getElementById('companies-main');
+      const before = main ? main.innerHTML : '';
       const r = orig.apply(this, arguments);
-      if (!window.__coLifandi) { try { veil(); } catch (_) {} }   // 421: endurteikning á staðnum eftir vistun — engin hula
+      // 421: endurteikning á staðnum eftir vistun — engin hula.
+      // Early-return (sama prófíll <500 ms, hak/Yfirferð) breytir ekki HTML
+      // og má ekki leggja nýja hulu yfir listann.
+      if (!window.__coLifandi && main && main.innerHTML !== before) { try { veil(); } catch (_) {} }
       return r;
     };
     wrapped._settleVeil = true;

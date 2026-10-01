@@ -408,7 +408,12 @@ var App = {
         }).observe(_fv,{attributes:true,attributeFilter:['class','style']}); }catch(_){}
       }
     }
-    if(this.view==='companies'&&typeof Companies!=='undefined')Companies.render();
+    // 01.10.2026: loadAll endar á refreshAll. render() skrifar fyrirtækja-grid
+    // yfir opinn prófíl — kalt #company/<id> var þá rifið niður og opnað aftur
+    // þegar allar uttaeki-síðurnar loksins komu. Spjaldið situr.
+    if(this.view==='companies'&&typeof Companies!=='undefined'){
+      if(!(Companies._detailOpen&&Companies._detailOpen())) Companies.render();
+    }
     if(this.view==='income'&&typeof Income!=='undefined')Income.render();
     document.getElementById('alert-badge').textContent = DB.getOverdue().length + DB.getDue().length;
   }
