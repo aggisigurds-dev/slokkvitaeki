@@ -110,6 +110,8 @@
     if (post) { var off = post.dataset.off === '1' || /AF\b/.test(post.textContent || ''); var vil = '<i class="' + (off ? 'stal' : 'ok') + '"></i>Póstafrit ' + (off ? '✕' : '✓'); if (post.innerHTML !== vil) post.innerHTML = vil; post.title = off ? 'Póstafrit slökkt — aðeins rafræn krafa. Smelltu til að kveikja.' : 'Póstafrit kveikt — rafrænt + tölvupóstur. Smelltu til að slökkva.'; }
     var imp = main.querySelector('._imp-toggle');
     if (imp && imp.parentElement !== row) { imp.classList.add('b405-imp'); row.insertBefore(imp, row.firstChild); }
+    // 01.10.2026 (B44): aðeins EINN ⚠-hnappur — sá í efstu röðinni; afrit sem 91 bjó til annars staðar fara.
+    Array.prototype.slice.call(main.querySelectorAll('._imp-toggle')).forEach(function (b) { if (b.parentElement !== row && row.querySelector('._imp-toggle')) b.remove(); });
   }
   // ── B27 (Agnar 30.09: „færa þennan bara í tákn á Teikningum í efri hluta sem bara collapsed default, en hægt að expanda") ──
   // Teikningarborðinn (#co-fp-section, newfeatures/109/362) og Viðbóta upplýsingar (#vbu-section, vbu.js) sitja undir

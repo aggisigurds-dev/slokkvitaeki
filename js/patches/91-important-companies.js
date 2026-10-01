@@ -56,7 +56,9 @@
     // leitin upp og takkinn birtist „stundum". Aðgerðaröð fyrirtækisins ber data-co-id (features.js) — hún fyrst.
     const actionsRow = main.querySelector('div[data-co-id][style*="display:flex"][style*="gap:7px"]') || main.querySelector('div[style*="display:flex"][style*="gap:7px"]');
     if (!actionsRow) return;
-    if (actionsRow.querySelector('._imp-toggle')) return;
+    // 01.10.2026 (Agnar: „remove this Merkja mikilvægt, because it is also on top of the page“): 405 flytur hnappinn í efstu
+    // röðina; varaleitin hér að ofan fann þá ANNAÐ flex-hólf og bjó til annan hnapp undir samskiptaboxinu. Einn á síðu.
+    if (main.querySelector('._imp-toggle')) return;
     // Get the company id — the first onclick="Companies.openEdit(...)" gives us the id
     const editBtn = actionsRow.querySelector('button[onclick^="Companies.openEdit"]');
     const m = editBtn && editBtn.getAttribute('onclick').match(/openEdit\((\d+)\)/);

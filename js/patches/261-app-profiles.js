@@ -20,6 +20,83 @@
 
   var VIEW_ID = 'view-opp', NAV_KEY = 'opp', NAV_LABEL = '📱 Öpp';
 
+  // ── 01.10.2026 (B48, Agnar: „fara yfir allar síðurnar í Öpp og samræma … og mobile view“) ──
+  // Brunastál C á ræsinum, fylkinu, app-spjöldunum, síðuritlinum og app-hausnum/-dokkanum:
+  // málmhaus með hnoðum, stálplata, silfur/rauðir takkar, Playfair-titlar, mono-merki.
+  // Engin emoji í viðmótinu lengur — síður fá línutákn (pgIcon) í stað p.emoji. p.emoji
+  // stendur áfram í PAGES (aðrir pappar og manifest mega lesa það).
+  var B48_MONO = '"JetBrains Mono",ui-monospace,monospace';
+  var B48_SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif';
+  var B48_DISP = '"Playfair Display",Georgia,serif';
+  var B48_METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
+  var B48_MBTN = 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)';
+  var B48_SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
+  var B48_PLATE = 'repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
+  var B48_RIVET = 'radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%)';
+  var B48_RAUTT = 'linear-gradient(180deg,#c22f26 0%,#951818 50%,#650c0d 100%)';
+  function b48Hnod(sel) {
+    return [sel + '::before,' + sel + '::after{content:"";position:absolute;left:12px;width:7px;height:7px;border-radius:50%;background:' + B48_RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.6)}',
+      sel + '::before{top:10px}', sel + '::after{bottom:10px}'];
+  }
+  function b48Svg(d) { return '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; }
+  var B48_IK = {
+    opna: b48Svg('<path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/>'),
+    nidur: b48Svg('<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>'),
+    hlekkur: b48Svg('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'),
+    litur: b48Svg('<path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-1.2-1-1.6-1-2.6 0-1 .8-1.7 1.9-1.7H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.2" r="1.2"/>'),
+    rusl: b48Svg('<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/>'),
+    auga: b48Svg('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
+    fela: b48Svg('<path d="M3 3l18 18M10.6 6a9.8 9.8 0 0 1 1.4-.1c6 0 9.5 6.1 9.5 6.1a17 17 0 0 1-2.6 3.3M6.6 6.7C3.9 8.4 2.5 12 2.5 12S6 18.5 12 18.5c1.7 0 3.2-.5 4.4-1.2M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'),
+    plus: b48Svg('<path d="M12 5v14M5 12h14"/>'),
+    chev: b48Svg('<path d="M6 9l6 6 6-6"/>'),
+    ut: b48Svg('<path d="M8 16L16 8M9 8h7v7"/>'),
+    tannhjol: b48Svg('<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>'),
+    x: b48Svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+    bak: b48Svg('<path d="M15 6l-6 6 6 6"/>'),
+    sidur: b48Svg('<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>')
+  };
+  var B48_PG = {
+    money: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',
+    doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+    chart: '<path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+    list: '<path d="M4 7h16M4 12h16M4 17h10"/>',
+    building: '<path d="M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.3-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2 .6 3.1 2.3 3.5 5.2"/>',
+    cart: '<path d="M3 4h2.5l2.2 11h10.6L20.5 8H6.6"/><circle cx="9.5" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/>',
+    grid: '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>',
+    check: '<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
+    wrench: '<path d="M15 4a5 5 0 0 0-4.6 6.9L3.5 17.8a1.8 1.8 0 0 0 2.6 2.6l6.9-6.9A5 5 0 0 0 20 9l-3 1-2-2 1-3z"/>',
+    flame: '<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-7 1.5 1 3 2.5 3 4.5"/>',
+    bell: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/>',
+    inbox: '<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>',
+    hospital: '<path d="M4 21V7h16v14M9 21v-4h6v4M12 10v4M10 12h4"/>',
+    cpu: '<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/>',
+    mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>',
+    shield: '<path d="M12 3l7.5 3v5.5c0 4.5-3.2 8-7.5 9.5-4.3-1.5-7.5-5-7.5-9.5V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+    brush: '<path d="M19 3l-8.5 8.5M14.5 3.5l6 6M10 12c-2.5 0-4 1.5-4 4 0 1.5-1 2.5-3 3 4 1.5 9 .5 9-4z"/>',
+    cube: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>'
+  };
+  var B48_PGMAP = {
+    'krofu-yfirlit': 'money', income: 'money', 'br-krofur': 'money', 'br-krofuyfirlit': 'money', 'br-skuldunautar': 'money',
+    'br-fjarmalyfirlit': 'money', 'br-gerdreikninga': 'money', 'br-reikningagerd': 'money',
+    'bokhalds-yfirlit': 'chart', kostnadur: 'chart', 'br-efniskostnadur': 'chart',
+    'reikninga-postur': 'mail', hreyfingarlisti: 'list', 'br-hreyfingar': 'list',
+    companies: 'building', rekstrarfelog: 'building', 'br-verkkaupar': 'building', vidskiptavinir: 'users',
+    sala: 'cart', bord: 'grid', 'minar-sidur': 'grid', arsskodun: 'check', 'br-yfirferd': 'check',
+    thjonustuverk: 'wrench', 'thjonustu-verkstaedi': 'wrench', 'br-verkstadir': 'wrench',
+    brunayfirlit: 'flame', brunaskra: 'flame', slokkvikerfi: 'bell',
+    'br-vinnubok': 'doc', 'br-eydublod': 'doc', 'br-skyrslustod': 'doc', 'br-drogstod': 'inbox',
+    'br-maeting': 'clock', 'br-dagurinn': 'sun', 'br-nlsh': 'hospital', 'br-jarvis': 'cpu',
+    'br-raddminni': 'mic', 'br-kerfisheilsa': 'shield', turbopaint: 'brush', '3dwork': 'cube'
+  };
+  function pgIcon(p) {
+    var t = (p && B48_PGMAP[p.k]) || (p && p.minarId ? 'grid' : 'doc');
+    return b48Svg(B48_PG[t]);
+  }
+
   // ── catalog of pages that can go into an app (switchView key → label) ────────
   var PAGES = [
     { k: 'krofu-yfirlit',    label: 'Kröfu yfirlit',        short: 'Kröfur',     emoji: '💳' },
@@ -389,8 +466,8 @@
           '</label>' +
         '</div>' +
         '<div style="padding:11px 18px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;background:#f8fafc">' +
-          '<button type="button" id="_op-na-cancel" style="padding:8px 16px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
-          '<button type="button" id="_op-na-ok" style="padding:8px 18px;background:#2563eb;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Búa til</button>' +
+          '<button type="button" id="_op-na-cancel" style="padding:0 16px;min-height:40px;border:1px solid rgba(20,24,34,.28);border-radius:7px;background:' + B48_SILVER + ';box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.12);cursor:pointer;font:inherit;font-size:13px;font-weight:600;color:#1c2028">Hætta við</button>' +
+          '<button type="button" id="_op-na-ok" style="padding:0 18px;min-height:40px;background:' + B48_RAUTT + ';color:#fff;border:1px solid #2a0303;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55)">Búa til</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(dlg);
@@ -402,8 +479,8 @@
     function maerkjaVal() {
       dlg.querySelectorAll('._op-na-ik').forEach(function (b) {
         var a = b.dataset.ik === validIkon;
-        b.style.borderColor = a ? '#2563eb' : 'transparent';
-        b.style.background = a ? '#eff6ff' : '#fff';
+        b.style.borderColor = a ? '#b3261e' : 'transparent';
+        b.style.background = a ? '#fdecea' : '#fff';
       });
       emojiEl.style.opacity = validIkon ? '.4' : '1';
     }
@@ -431,7 +508,7 @@
       });
       close();
       if (r && r.ok) {
-        try { if (window.Toast && Toast.show) Toast.show('📱 „' + r.name + '" búið til — hakaðu við „⚙ Síður í appinu"'); } catch (_) {}
+        try { if (window.Toast && Toast.show) Toast.show('„' + r.name + '" búið til — hakaðu við „Síður í appinu"'); } catch (_) {}
       }
     });
     setTimeout(function () { try { nameEl.focus(); } catch (_) {} }, 40);
@@ -820,7 +897,7 @@
     // Relabel all install buttons so it's clear that pressing them again just
     // re-opens the instructions — not the actual OS install dialog.
     document.querySelectorAll('#_app-inst2,._app-install[data-always]').forEach(function (b) {
-      b.textContent = '📖 Leiðbeiningar';
+      b.textContent = 'Leiðbeiningar';
     });
   }
   // Inni í uppsettu appi: „Setja upp" getur ekkert gert — en notandinn er oftast að leita að tákninu á heimaskjánum.
@@ -832,7 +909,7 @@
     d.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)';
     d.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:22px 20px 32px;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(0,0,0,.25);font-family:system-ui,sans-serif">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
-      '<div style="font-size:17px;font-weight:800;color:#11141c">' + (hystAfOdru() ? '📲 Setja þetta app upp sér' : '✓ Appið er þegar uppsett') + '</div>' +
+      '<div style="font-size:17px;font-weight:800;color:#11141c">' + (hystAfOdru() ? 'Setja þetta app upp sér' : 'Appið er þegar uppsett') + '</div>' +
       '<button id="_app-inst-guide-x" type="button" style="min-width:44px;height:44px;background:#f1f5f9;border:none;border-radius:12px;cursor:pointer;font-size:15px;font-weight:700;color:#334155">Loka</button></div>' +
       (hystAfOdru()
         ? '<div style="font-size:14.5px;color:#1e293b;line-height:1.55">Þetta app er <b>ekki uppsett sér</b> — það opnaðist inni í öðru uppsettu appi (' + esc(_hysill === '/' ? 'aðalappinu Slökkvitæki' : _hysill) + '), og þar er ekki hægt að setja upp. Ýttu á <b>Opna í Chrome</b> og settu það upp þaðan: <b>Setja upp</b>, eða ⋮ → „Setja upp app".</div>'
@@ -855,24 +932,24 @@
     var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
     var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     var steps = isIos
-      ? ['Opnaðu þessa síðu í <b>Safari</b> (ekki Chrome/Firefox á iOS)', 'Ýttu á <b>📤 Share</b> hnappinn neðst á skjánum', 'Veldu <b>„Bæta við heimaskjá"</b> úr listanum']
+      ? ['Opnaðu þessa síðu í <b>Safari</b> (ekki Chrome/Firefox á iOS)', 'Ýttu á <b>Share</b> hnappinn neðst á skjánum', 'Veldu <b>„Bæta við heimaskjá"</b> úr listanum']
       : ['Opnaðu valmynd vafrans (<b>⋮</b> efst til hægri)', 'Veldu <b>„Setja upp app"</b> eða <b>„Bæta á heimaskjá"</b>', 'Ýttu á <b>Setja upp</b> í staðfestingarglugganum'];
     var hint = isIos && !isSafari
-      ? '<div style="background:#7c3aed;color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600">⚠️ iOS krefst Safari — Chrome á iPhone/iPad getur ekki sett upp heimaskjáforrit.</div>'
+      ? '<div style="background:#fff;color:#1c2028;border:1px solid rgba(20,24,34,.16);border-left:3px solid #b3261e;border-radius:7px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600">iOS krefst Safari — Chrome á iPhone/iPad getur ekki sett upp heimaskjáforrit.</div>'
       : '';
     // On Android Chrome the browser's own ⋮ menu is the only path once
     // beforeinstallprompt has been consumed — make that crystal-clear.
     var androidNote = !isIos
-      ? '<div style="background:#fef9c3;border-radius:10px;padding:10px 14px;margin-top:14px;font-size:13px;color:#713f12;line-height:1.5">'
-        + '💡 <b>Af hverju kom enginn gluggi?</b> Chrome býður ekki uppsetningu ef appið er <b>þegar á símanum</b> (gáðu á heimaskjáinn — í ⋮ stendur þá „Opna app") eða ef boðinu var hafnað nýlega. Leiðin um <b>valmynd vafrans (⋮)</b> virkar alltaf.</div>'
+      ? '<div style="background:#fff;border:1px solid rgba(20,24,34,.16);border-left:3px solid #b3261e;border-radius:7px;padding:10px 14px;margin-top:14px;font-size:13px;color:#1c2028;line-height:1.5">'
+        + '<b>Af hverju kom enginn gluggi?</b> Chrome býður ekki uppsetningu ef appið er <b>þegar á símanum</b> (gáðu á heimaskjáinn — í ⋮ stendur þá „Opna app") eða ef boðinu var hafnað nýlega. Leiðin um <b>valmynd vafrans (⋮)</b> virkar alltaf.</div>'
       : '';
     var d = document.createElement('div');
     d.id = '_app-inst-guide';
     d.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)';
     d.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px 22px 36px;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(0,0,0,.25)">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
-      + '<div style="font-size:17px;font-weight:800;color:#11141c">📲 Setja upp í síma</div>'
-      + '<button id="_app-inst-guide-x" type="button" style="width:32px;height:32px;background:#f1f5f9;border:none;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;color:#64748b">✕</button>'
+      + '<div style="font-family:' + B48_DISP + ';font-size:20px;font-weight:800;color:#11141c">Setja upp í síma</div>'
+      + '<button id="_app-inst-guide-x" type="button" style="width:32px;height:32px;background:#f1f5f9;border:none;border-radius:50%;cursor:pointer;line-height:0;color:#3b414b;display:inline-flex;align-items:center;justify-content:center">' + B48_IK.x + '</button>'
       + '</div>'
       + hint
       + '<ol style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px">'
@@ -915,12 +992,17 @@
       // Fyrsta súlan er LÆST (position:sticky) svo síðuheitið sjáist alltaf
       // þegar strokið er til hliðar — annars veit maður ekki hvaða röð maður
       // er að haka við um leið og öppin verða fleiri en skjárinn ber.
-      '.mx-box{padding:0 !important;overflow:hidden}',
-      '.mx-sum{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;list-style:none;user-select:none}',
+      '.mx-box{padding:12px !important;overflow:hidden}',
+      '.mx-sum{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;padding:11px 14px 11px 32px;cursor:pointer;list-style:none;user-select:none;background:' + B48_METAL + ';border:1px solid #000;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 1px 2px rgba(0,0,0,.35)}',
+      '.mx-sum-tt{display:flex;flex-direction:column;min-width:0}',
+      '.mx-sum-k{font-family:' + B48_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#aab1bb !important;line-height:1.2}',
+      '.mx-chev{display:inline-flex;color:#c9ced6;transition:transform .18s}',
+      '.mx-chev svg{width:16px;height:16px}',
+      '.mx-box[open] .mx-chev{transform:rotate(180deg)}',
       '.mx-sum::-webkit-details-marker{display:none}',
-      '.mx-sum-t{font-weight:800;font-size:13.5px;color:#0f172a}',
-      '.mx-sum-n{margin-left:auto;font-size:11px;color:#64748b;white-space:nowrap}',
-      '.mx-scroll{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;border-top:1px solid #e2e8f0}',
+      '.mx-sum-t{font-family:' + B48_DISP + ';font-weight:800;font-size:18px;color:#fff;line-height:1.15;margin-top:2px;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
+      '.mx-sum-n{margin-left:auto;font-family:' + B48_MONO + ';font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#c9ced6;white-space:nowrap}',
+      '.mx-scroll{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;margin-top:10px;border:1px solid rgba(20,24,34,.24);border-radius:7px;background:#fff;box-shadow:inset 0 1px 2px rgba(0,0,0,.06)}',
       // Appið þvingar ALLAR töflur í `display:block;max-width:100%;overflow-x:auto`
       // (almenn "responsive tafla"-regla). Þá verður taflan sjálf skrunbox inni í
       // .mx-scroll, læsta súlan hættir að virka og síðustu dálkarnir KLIPPAST AF
@@ -928,28 +1010,33 @@
       // Hér er hún færð aftur í alvöru töflu og skrunið skilið eftir hjá .mx-scroll.
       '.mx-scroll .mx-t{display:table !important;border-collapse:separate;border-spacing:0;font-size:12.5px;width:max-content !important;min-width:100% !important;max-width:none !important;overflow:visible !important}',
       '.mx-t th,.mx-t td{padding:0;margin:0}',
-      '.mx-t thead th{position:sticky;top:0;z-index:3;background:#f8fafc;border-bottom:1px solid #e2e8f0}',
-      '.mx-cnr{position:sticky;left:0;z-index:4 !important;background:#f8fafc !important;text-align:left;padding:8px 12px !important;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#64748b;min-width:190px;border-right:1px solid #e2e8f0}',
+      '.mx-t thead th{position:sticky;top:0;z-index:3;background:#26262c !important;border-bottom:1px solid #000;color:#e3e7ee}',
+      '.mx-cnr{position:sticky;left:0;z-index:4 !important;background:#1c1e23 !important;text-align:left;padding:8px 12px !important;font-family:' + B48_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#aab1bb !important;min-width:190px;border-right:1px solid #000}',
       '.mx-ah{padding:7px 4px !important;min-width:62px;text-align:center;vertical-align:bottom}',
       '.mx-ae{font-size:17px;line-height:1.1}',
-      '.mx-an{font-size:9px;color:#64748b;line-height:1.15;max-width:62px;margin:2px auto 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.mx-rh{position:sticky;left:0;z-index:2;background:#fff;text-align:left;font-weight:600;color:#0f172a;padding:7px 12px !important;border-right:1px solid #e2e8f0;border-bottom:1px solid #f1f5f9;white-space:nowrap}',
-      '.mx-t tbody tr:nth-child(even) .mx-rh{background:#fcfdff}',
-      '.mx-t tbody tr:nth-child(even) td{background:#fcfdff}',
-      '.mx-pe{margin-right:7px}',
+      '.mx-an{font-family:' + B48_SANS + ';font-size:9px;font-weight:600;color:#c9ced6 !important;line-height:1.15;max-width:62px;margin:2px auto 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.mx-rh{position:sticky;left:0;z-index:2;background:#fff;text-align:left;font-family:' + B48_SANS + ';font-weight:600;color:#1c2028;padding:6px 12px !important;border-right:1px solid rgba(20,24,34,.14);border-bottom:1px solid #eceff3;white-space:nowrap}',
+      '.mx-t tbody tr:nth-child(even) .mx-rh{background:#f5f6f8}',
+      '.mx-t tbody tr:nth-child(even) td{background:#f5f6f8}',
+      '.mx-pe{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-right:8px;vertical-align:-6px;border-radius:5px;border:1px solid rgba(20,24,34,.14);background:' + B48_SILVER + ';color:#b3261e}',
+      '.mx-pe svg{width:13px;height:13px}',
       // Útgáfu-raðir eru inndregnar og merktar v2/v3 svo sjáist strax að þetta
       // er SAMA síðan í annarri útfærslu, ekki ótengd síða.
-      '.mx-sub .mx-rh{padding-left:30px !important;font-weight:500;color:#475569}',
-      '.mx-vb{display:inline-block;margin-right:7px;background:#e0edff;color:#1d4ed8;border-radius:5px;padding:1px 6px;font-size:9.5px;font-weight:800;vertical-align:1px}',
-      '.mx-sub .mx-vb{background:#f1f5f9;color:#64748b}',
-      '.mx-c{text-align:center;border-bottom:1px solid #f1f5f9}',
-      '.mx-c input{width:17px;height:17px;accent-color:#0e7a4f;cursor:pointer;margin:6px auto;display:block}',
-      '.mx-op{width:34px;text-align:center;border-bottom:1px solid #f1f5f9}',
-      '.mx-open{all:unset;cursor:pointer;color:#94a3b8;font-size:13px;padding:4px 6px;border-radius:6px}',
-      '.mx-open:hover{color:#0f172a;background:#eef2f7}',
-      '.mx-hint{padding:8px 14px 12px;font-size:11px;color:#64748b;border-top:1px solid #f1f5f9}',
-      // launcher page
-      '#' + VIEW_ID + '{padding:0 !important;background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%) !important;min-height:100vh}',
+      '.mx-sub .mx-rh{padding-left:30px !important;font-weight:500;color:#4a515c}',
+      '.mx-vb{display:inline-block;margin-right:7px;background:' + B48_SILVER + ';border:1px solid rgba(179,38,30,.45);color:#8a1414;border-radius:4px;padding:1px 5px;font-family:' + B48_MONO + ';font-size:9px;font-weight:700;letter-spacing:.08em;vertical-align:1px}',
+      '.mx-sub .mx-vb{border-color:rgba(20,24,34,.22);color:#5b6370}',
+      // B48 sími: síðudálkurinn má ekki gleypa skjáinn (309 px af 323) — brotnar í línur svo öppin sjáist strax
+      '@media (max-width:600px){.mx-cnr{min-width:0 !important;width:132px}.mx-rh{white-space:normal !important;min-width:132px;max-width:140px;line-height:1.25;padding:6px 8px !important}.mx-sub .mx-rh{padding-left:14px !important}.mx-pe{margin-right:5px}}',
+      '.mx-c{text-align:center;border-bottom:1px solid #eceff3}',
+      '.mx-c input{width:17px;height:17px;accent-color:#b3261e;cursor:pointer;margin:6px auto;display:block}',
+      '.mx-op{width:34px;text-align:center;border-bottom:1px solid #eceff3}',
+      '#view-opp .mx-open{all:unset;cursor:pointer;color:#7a828e !important;background:transparent !important;border:0 !important;box-shadow:none !important;padding:5px 6px;border-radius:6px;display:inline-flex !important;align-items:center;min-height:0 !important}',
+      '#view-opp .mx-open svg{width:15px;height:15px}',
+      '#view-opp .mx-open:hover{color:#b3261e !important;background:#f1f2f4 !important}',
+      '.mx-hint{padding:9px 2px 0;font-family:' + B48_SANS + ';font-size:11.5px;color:#3b414b}',
+      // launcher page — B48: dökka bandið nær niður fyrir titilinn (endar ~335 px á 1600 og í Tölvusíðu-ham);
+      // áður dofnaði það frá 95 px og hvíti 409-titillinn + undirlínan stóðu á miðgráu
+      '#' + VIEW_ID + '{padding:0 !important;background:linear-gradient(180deg,#060607 0px,#101115 300px,#1c1e23 345px,#aeb4be 560px,#9ba1ad 100%) !important;min-height:100vh}',
       // Launcher-inn er hub-síða → fasti Brunastál-borðinn (og hamborgarinn) liggja
       // ofan á honum. Ýtum innihaldinu niður fyrir borðann svo „📱 Öpp" titillinn
       // sé ekki falinn. Á síma er borðinn grennri en á skjáborði.
@@ -958,32 +1045,51 @@
       // Skjár: Fylki-spjaldið var 760px-eyja á risastórum gráum fleti. Breiðara
       // svo Stílstjóri geti málað síðuna. Sími/Tafla halda 760px. Aðrar síður ósnertar.
       'html[data-viewmode="desktop"] #' + VIEW_ID + ' .op-main{max-width:min(1280px,calc(100% - 40px))}',
-      '#' + VIEW_ID + ' .op-h1{margin:0 0 4px;font-size:26px;font-weight:800;color:#fff}',
-      '#' + VIEW_ID + ' .op-sub{margin:0 0 20px;font-size:13px;color:rgba(255,255,255,.65)}',
-      '#' + VIEW_ID + ' .op-card{background:#fff;border-radius:18px;padding:18px;margin:0 0 16px;box-shadow:0 18px 44px -22px rgba(10,20,40,.5)}',
-      '#' + VIEW_ID + ' .op-top{display:flex;align-items:center;gap:13px}',
-      '#' + VIEW_ID + ' .op-ic{width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:30px;flex:none;color:#fff}',
-      '#' + VIEW_ID + ' .op-nm{font-size:19px;font-weight:800;color:#11141c;line-height:1.1}',
-      '#' + VIEW_ID + ' .op-bl{font-size:12.5px;color:#64748b;margin-top:2px}',
-      '#' + VIEW_ID + ' .op-acts{display:flex;flex-wrap:wrap;gap:9px;margin:15px 0 0}',
-      '#' + VIEW_ID + ' .op-btn{font:inherit;font-size:14px;font-weight:700;padding:11px 16px;border-radius:11px;border:1px solid #d7dce4;background:#fff;color:#334155;cursor:pointer;min-height:44px}',
-      '#' + VIEW_ID + ' .op-btn.prim{color:#fff;border:none}',
-      '#' + VIEW_ID + ' .op-btn:hover{filter:brightness(1.04)}',
-      '#' + VIEW_ID + ' .op-sech{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;margin:18px 0 8px}',
+      '#' + VIEW_ID + ' .op-kick{font-family:' + B48_MONO + ';font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#aab1bb !important;margin:0 0 4px}',
+      '#' + VIEW_ID + ' .op-h1{margin:0 0 4px;font-family:' + B48_DISP + ';font-size:32px;font-weight:800;color:#fff;letter-spacing:.005em;line-height:1.1;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 10px rgba(0,0,0,.4)}',
+      '#' + VIEW_ID + ' .op-sub{margin:0 0 20px;font-family:' + B48_SANS + ';font-size:13px;color:#c9ced6}',
+      '#' + VIEW_ID + ' .op-card{background:' + B48_PLATE + ';border:1px solid #0b0c0f;border-radius:10px;padding:14px;margin:0 0 16px;box-shadow:0 18px 40px -22px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.7);font-family:' + B48_SANS + ';color:#1c2028}',
+      '#' + VIEW_ID + ' .op-top{position:relative;display:flex;align-items:center;gap:13px;background:' + B48_METAL + ';border:1px solid #000;border-radius:8px;padding:12px 14px 12px 32px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 1px 2px rgba(0,0,0,.4)}',
+      '#' + VIEW_ID + ' .op-top > div:last-child{min-width:0}',
+      '#' + VIEW_ID + ' .op-ic{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;flex:none;color:#fff;border:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 6px rgba(0,0,0,.5)}',
+      '#' + VIEW_ID + ' .op-nm{font-family:' + B48_DISP + ';font-size:21px;font-weight:800;color:#fff;line-height:1.1;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
+      '#' + VIEW_ID + ' .op-bl{font-family:' + B48_SANS + ';font-size:12.5px;color:#c9ced6;margin-top:3px}',
+      '#' + VIEW_ID + ' .op-acts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}',
+      '#' + VIEW_ID + ' .op-btn{font-family:' + B48_SANS + ' !important;font-size:13px;font-weight:600;padding:0 14px;border-radius:7px !important;border:1px solid rgba(20,24,34,.28) !important;background:' + B48_SILVER + ' !important;color:#1c2028 !important;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.12) !important;text-shadow:none !important;cursor:pointer;min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:7px;line-height:1.1}',
+      '#' + VIEW_ID + ' .op-btn svg{width:15px;height:15px;flex:none;color:#525b6b}',
+      '#' + VIEW_ID + ' .op-btn:hover{box-shadow:inset 0 1px 0 #fff,0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.14) !important}',
+      '#' + VIEW_ID + ' .op-btn:active{transform:translateY(1px)}',
+      '#' + VIEW_ID + ' .op-btn.prim{background:' + B48_RAUTT + ' !important;border-color:#2a0303 !important;color:#fff !important;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.55) !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.3),0 2px 4px rgba(0,0,0,.28) !important}',
+      '#' + VIEW_ID + ' .op-btn.prim svg{color:#ffd9d6}',
+      '#' + VIEW_ID + ' .op-btn.prim:hover{filter:brightness(1.1)}',
+      '#' + VIEW_ID + ' .op-btn.op-haett{color:#8a1414 !important}',
+      '#' + VIEW_ID + ' .op-btn.op-haett svg{color:#b3261e}',
+      '#' + VIEW_ID + ' .op-sech{font-family:' + B48_MONO + ';font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5b6370;margin:18px 0 8px}',
       // Samanbrjótanlegt síðuval (lokað sjálfgefið) — heldur launcher þéttum.
-      '#' + VIEW_ID + ' .op-pagesbox{margin-top:14px;border-top:1px solid #eef1f5;padding-top:6px}',
-      '#' + VIEW_ID + ' .op-pgsum{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;padding:9px 4px;border-radius:10px;min-height:44px;-webkit-tap-highlight-color:transparent}',
+      '#' + VIEW_ID + ' .op-pagesbox{margin-top:12px;border-top:1px solid rgba(20,24,34,.14);padding-top:6px}',
+      '#' + VIEW_ID + ' .op-pgsum{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;padding:9px 4px;border-radius:7px;min-height:44px;-webkit-tap-highlight-color:transparent}',
       '#' + VIEW_ID + ' .op-pgsum::-webkit-details-marker{display:none}',
-      '#' + VIEW_ID + ' .op-pgsum:hover{background:#f6f8fb}',
-      '#' + VIEW_ID + ' .op-pgsum-t{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#64748b}',
-      '#' + VIEW_ID + ' .op-pgcount{margin-left:auto;font-size:12.5px;font-weight:700;color:#0e7a4f;background:#e7f5ee;padding:3px 10px;border-radius:99px}',
-      '#' + VIEW_ID + ' .op-pgchev{font-size:12px;color:#94a3b8;transition:transform .18s}',
+      '#' + VIEW_ID + ' .op-pgsum:hover{background:rgba(255,255,255,.45)}',
+      '#' + VIEW_ID + ' .op-pgsum-t{display:inline-flex;align-items:center;gap:7px;font-family:' + B48_MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#3b414b}',
+      '#' + VIEW_ID + ' .op-pgsum-t svg{width:14px;height:14px;color:#b3261e}',
+      '#' + VIEW_ID + ' .op-pgcount{margin-left:auto;font-family:' + B48_MONO + ';font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8a1414;background:' + B48_SILVER + ';border:1px solid rgba(179,38,30,.45);padding:3px 9px;border-radius:5px;white-space:nowrap}',
+      '#' + VIEW_ID + ' .op-pgchev{display:inline-flex;color:#5b6370;transition:transform .18s}',
+      '#' + VIEW_ID + ' .op-pgchev svg{width:16px;height:16px}',
       '#' + VIEW_ID + ' .op-pagesbox[open] .op-pgchev{transform:rotate(180deg)}',
       '#' + VIEW_ID + ' .op-pages{display:flex;flex-direction:column;gap:2px;margin-top:6px}',
-      '#' + VIEW_ID + ' .op-pg{display:flex;align-items:center;gap:11px;padding:11px 10px;border-radius:10px;cursor:pointer;font-size:14.5px;color:#1f2937}',
-      '#' + VIEW_ID + ' .op-pg:hover{background:#f1f5f9}',
-      '#' + VIEW_ID + ' .op-pg input{width:20px;height:20px;accent-color:#0e7a4f;flex:none}',
-      '#' + VIEW_ID + ' .op-pg .e{font-size:18px}',
+      '#' + VIEW_ID + ' .op-pg{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:14px;color:#1c2028}',
+      '#' + VIEW_ID + ' .op-pg:hover{background:rgba(255,255,255,.5)}',
+      '#' + VIEW_ID + ' .op-pg input{width:19px;height:19px;accent-color:#b3261e;flex:none}',
+      '#' + VIEW_ID + ' .op-pg .e{flex:none;width:28px;height:28px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + B48_SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);display:inline-flex;align-items:center;justify-content:center;color:#b3261e}',
+      '#' + VIEW_ID + ' .op-pg .e svg{width:15px;height:15px}',
+      // Nýtt app-spjaldið og falin-öpp-línan sitja á gráa fletinum — dökkt gler, ljóst letur.
+      '#' + VIEW_ID + ' .op-card.op-ny{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:150px;border:2px dashed rgba(255,255,255,.4);background:rgba(10,12,16,.55);box-shadow:none}',
+      '#' + VIEW_ID + ' .op-ny-plus{width:44px;height:44px;border-radius:50%;background:' + B48_METAL + ';border:1px solid #000;display:flex;align-items:center;justify-content:center;color:#e3e7ee;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.4)}',
+      '#' + VIEW_ID + ' .op-ny-plus svg{width:20px;height:20px}',
+      '#' + VIEW_ID + ' .op-ny-txt{font-size:11.5px;color:#e3e7ee;text-align:center;max-width:240px;line-height:1.45}',
+      '#' + VIEW_ID + ' .op-falin{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:9px;margin:-4px auto 14px;padding:6px 8px 6px 12px;width:max-content;max-width:100%;box-sizing:border-box;border-radius:8px;background:rgba(10,12,16,.6);font-size:12.5px;color:#e3e7ee}',
+      '#' + VIEW_ID + ' .op-falin .op-btn{min-height:32px;padding:0 11px;font-size:12px}',
+      '#' + VIEW_ID + ' .op-ver{text-align:center;font-family:' + B48_MONO + ';font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#2a2f37;margin-top:4px}',
       // ── app mode shell ──
       'body.appmode,body.appmode #app{overflow-x:auto!important;touch-action:pan-x pan-y pinch-zoom}',
       'body.appmode #bstal-banner{display:none !important}',
@@ -1011,25 +1117,30 @@
       // Beat patch 230's ON+':not(#id)…{padding-top:160px}` (id-level specificity) when the
       // Brunastál banner attr is present — otherwise the content sits 160px below my header.
       'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:50px !important;padding-bottom:116px !important}',
-      '#_app-hdr{position:fixed;top:0;left:0;right:0;height:50px;z-index:2147481001;display:flex;align-items:center;gap:10px;padding:0 12px;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)}',
-      '#_app-hdr .nm{font-size:16px;font-weight:800;flex:1;display:flex;align-items:center;gap:8px}',
-      '#_app-hdr button{font:inherit;font-size:13px;font-weight:700;height:34px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;cursor:pointer}',
+      '#_app-hdr{position:fixed;top:0;left:0;right:0;height:50px;z-index:2147481001;display:flex;align-items:center;gap:8px;padding:0 10px 0 12px;color:#fff;border-bottom:1px solid #000;box-shadow:0 2px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18)}',
+      '#_app-hdr .nm{font-family:' + B48_DISP + ';font-size:18px;font-weight:800;flex:1;min-width:0;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 1px rgba(0,0,0,.55)}',
+      '#_app-hdr button{font-family:' + B48_SANS + ' !important;font-size:12.5px;font-weight:600;height:34px;padding:0 11px;border-radius:7px !important;border:1px solid #000 !important;background:' + B48_MBTN + ' !important;color:#e3e7ee !important;cursor:pointer;flex:none;display:inline-flex !important;align-items:center;justify-content:center;gap:6px;text-shadow:none !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.5) !important}',
+      '#_app-hdr button svg{width:16px;height:16px;flex:none}',
+      '#_app-hdr button:hover{color:#fff !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px rgba(224,96,90,.55) !important}',
+      '#_app-hdr ._applbl{font-style:normal}',
       // Bottom nav = 3-column grid (2 rows for up to 6 pages), bigger thumb targets.
       // 2026-07-19: EIN skrunanleg lína (ekki 3-dálka grind sem vafðist í 2
       // raðir — neðri röðin faldist á bak við home-strikuna á síma svo aðeins
       // 3 flipar sáust). flex:1 0 78px → fáir flipar fylla breiddina, margir
       // haldast í einni röð og skrunast lárétt (sama og Verkborð-lausnin).
-      '#_app-nav{position:fixed;bottom:0;left:0;right:0;z-index:2147481001;display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:7px;background:#0c0d10;border-top:1px solid #26262c;padding:9px 9px calc(9px + env(safe-area-inset-bottom,0px));box-shadow:0 -3px 14px rgba(0,0,0,.35)}',
+      '#_app-nav{position:fixed;bottom:0;left:0;right:0;z-index:2147481001;display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:7px;background:' + B48_METAL + ';border-top:1px solid #000;padding:9px 9px calc(9px + env(safe-area-inset-bottom,0px));box-shadow:0 -3px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.1)}',
       '#_app-nav::-webkit-scrollbar{display:none}',
       // 2026-07-29: dokkan var 256px há með 52px emoji — á appi með fáar/eina síðu
       // varð þetta risaflís sem gleypti hálfan skjáinn. Nú þéttur þumal-dokki
       // (~84px) og felst alveg þegar appið hefur bara eina síðu (ekkert að velja).
-      '#_app-nav button{flex:1 0 84px;min-width:84px;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.66);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 5px;border-radius:14px;min-height:120px;text-align:center;line-height:1.15;overflow:hidden}',
-      '#_app-nav button .e{font-size:28px;line-height:1}',
+      '#_app-nav button{flex:1 0 84px;min-width:84px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.015)) !important;border:1px solid rgba(255,255,255,.07) !important;color:#aab1bb !important;font-family:' + B48_SANS + ' !important;font-size:13.5px;font-weight:600;text-shadow:none !important;box-shadow:none !important;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 5px;border-radius:8px !important;min-height:120px;text-align:center;line-height:1.15;overflow:hidden}',
+      '#_app-nav button .e{font-size:28px;line-height:1;display:inline-flex}',
+      '#_app-nav button .e svg{width:1em;height:1em;stroke-width:1.8}',
       'body.appmode-nonav #_app-nav{display:none !important}',
       'body.appmode.appmode-nonav .view.active{padding-bottom:24px !important}',
       'body.appmode-nonav #_app-frame{bottom:0 !important}',
-      '#_app-nav button.on{color:#fff;background:rgba(255,255,255,.08)}',
+      '#_app-nav button.on{color:#fff !important;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.04)) !important;box-shadow:inset 0 2px 0 #c22f26 !important}',
+      '#_app-nav button.on .e{color:#ff7a70}',
       // external-page iframe host (sits between the header and the bottom nav)
       '#_app-frame{position:fixed;top:50px;left:0;right:0;bottom:104px;z-index:2147481000;background:#fff;display:none}',
       '#_app-frame iframe{width:100%;height:100%;border:0;display:block}',
@@ -1069,25 +1180,31 @@
       'body.appmode #ars-main ._ars-tblscroll td:last-child > div{justify-content:flex-start !important}',
       // In-app síðu-ritill (⚙ Síður) — yfirlagt spjald
       '#_app-pgedit{position:fixed;inset:0;z-index:2147482000;background:rgba(6,7,10,.55);display:none;align-items:flex-end;justify-content:center}',
-      '#_app-pgedit ._pe-card{background:#fff;width:100%;max-width:560px;max-height:82vh;display:flex;flex-direction:column;border-radius:20px 20px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.4)}',
-      '#_app-pgedit ._pe-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px 8px;font-size:18px;font-weight:800;color:#11141c}',
-      '#_app-pgedit ._pe-h button{font:inherit;font-size:15px;font-weight:700;padding:9px 15px;border-radius:10px;border:1px solid #d7dce4;background:#f1f5f9;color:#334155;cursor:pointer;min-height:44px}',
-      '#_app-pgedit ._pe-sub{padding:0 18px 8px;font-size:13px;color:#64748b}',
+      '#_app-pgedit ._pe-card{background:' + B48_PLATE + ';border:1px solid #0b0c0f;width:100%;max-width:560px;max-height:82vh;display:flex;flex-direction:column;border-radius:12px 12px 0 0;overflow:hidden;box-shadow:0 -10px 40px rgba(0,0,0,.5);font-family:' + B48_SANS + ';color:#1c2028}',
+      '#_app-pgedit ._pe-h{position:relative;flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px 12px 32px;background:' + B48_METAL + ';border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);font-family:' + B48_DISP + ';font-size:19px;font-weight:800;color:#fff;line-height:1.15;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
+      '#_app-pgedit ._pe-h > span{min-width:0}',
+      '#_app-pgedit ._pe-kick{display:block;font-family:' + B48_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#aab1bb !important;text-shadow:none;margin-bottom:2px}',
+      '#_app-pgedit ._pe-h button{font-family:' + B48_SANS + ' !important;font-size:13px;font-weight:600;padding:0 13px 0 9px;border-radius:7px !important;border:1px solid #000 !important;background:' + B48_MBTN + ' !important;color:#e3e7ee !important;text-shadow:none !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.5) !important;cursor:pointer;min-height:40px;display:inline-flex;align-items:center;gap:5px}',
+      '#_app-pgedit ._pe-h button svg{width:15px;height:15px}',
+      '#_app-pgedit .op-sech{font-family:' + B48_MONO + ';font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5b6370}',
+      '#_app-pgedit ._pe-sub{padding:0 14px 8px;font-size:13px;color:#4a515c}',
       '@media (max-width:700px){#_app-pgedit ._pe-card{max-height:94vh;max-height:94dvh}}',
       '#_app-pgedit ._pe-h button{flex:none}',
-      '#_app-pgedit details._pe-sidur{margin:6px 6px 0;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}',
-      '#_app-pgedit details._pe-sidur>summary{padding:13px 14px;font-size:15px;font-weight:800;color:#11141c;cursor:pointer;list-style:none}',
-      '#_app-pgedit details._pe-sidur>summary::after{content:"▾";float:right;color:#64748b}',
+      '#_app-pgedit details._pe-sidur{margin:6px 6px 0;border:1px solid rgba(20,24,34,.18);border-radius:8px;background:rgba(255,255,255,.6)}',
+      '#_app-pgedit details._pe-sidur>summary{padding:13px 14px;font-family:' + B48_MONO + ';font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1c2028;cursor:pointer;list-style:none}',
+      '#_app-pgedit details._pe-sidur>summary::after{content:"▾";float:right;color:#b3261e}',
       '#_app-pgedit details._pe-sidur[open]>summary::after{content:"▴"}',
-      '#_app-pgedit ._pe-heim{margin:10px 0 0;padding:12px 13px;border-radius:12px;background:#fef9c3;color:#713f12;font-size:13.5px;line-height:1.55}',
+      '#_app-pgedit ._pe-heim{margin:10px 0 0;padding:12px 13px;border-radius:7px;background:#fff;border:1px solid rgba(20,24,34,.16);border-left:3px solid #b3261e;color:#1c2028;font-size:13.5px;line-height:1.55}',
       '#_app-pgedit ._pe-heim ol{margin:6px 0 8px;padding-left:20px}',
-      '#_app-pgedit ._pe-heim a{display:inline-block;padding:10px 14px;border-radius:10px;background:#11141c;color:#fff;font-weight:800;text-decoration:none}',
+      '#_app-pgedit ._pe-heim a{display:inline-block;padding:10px 14px;border-radius:7px;background:' + B48_RAUTT + ';border:1px solid #2a0303;color:#fff;font-weight:700;text-decoration:none;text-shadow:0 1px 1px rgba(0,0,0,.55)}',
       '#_app-pgedit ._pe-list{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 12px calc(20px + env(safe-area-inset-bottom,0px))}',
-      '#_app-pgedit ._pe-row{display:flex;align-items:center;gap:13px;padding:13px 10px;border-radius:12px;cursor:pointer;font-size:16.5px;color:#1f2937}',
-      '#_app-pgedit ._pe-row:active{background:#f1f5f9}',
-      '#_app-pgedit ._pe-row input{width:24px;height:24px;accent-color:#0e7a4f;flex:none}',
-      '#_app-pgedit ._pe-row .e{font-size:22px}',
+      '#_app-pgedit ._pe-row{display:flex;align-items:center;gap:12px;padding:10px 10px;border-radius:7px;cursor:pointer;font-size:15.5px;color:#1c2028}',
+      '#_app-pgedit ._pe-row:active{background:rgba(255,255,255,.7)}',
+      '#_app-pgedit ._pe-row input{width:22px;height:22px;accent-color:#b3261e;flex:none}',
+      '#_app-pgedit ._pe-row .e{flex:none;width:30px;height:30px;border-radius:6px;border:1px solid rgba(20,24,34,.14);background:' + B48_SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);display:inline-flex;align-items:center;justify-content:center;color:#b3261e}',
+      '#_app-pgedit ._pe-row .e svg{width:16px;height:16px}',
     ];
+    css = css.concat(b48Hnod('#' + VIEW_ID + ' .op-top'), b48Hnod('.mx-sum'), b48Hnod('#_app-pgedit ._pe-h'));
     var st = document.createElement('style'); st.id = '_app-styles'; st.textContent = css.join('\n');
     document.head.appendChild(st);
   }
@@ -1184,7 +1301,7 @@
       var p = r.page;
       var nafn = r.parent
         ? '<span class="mx-vb">v' + r.v + '</span>' + esc(p.label)
-        : '<span class="mx-pe">' + p.emoji + '</span>' + esc(p.label) +
+        : '<span class="mx-pe">' + pgIcon(p) + '</span>' + esc(p.label) +
           (r.v === 1 && matrixRows().filter(function (x) { return x.parent === p; }).length
             ? '<span class="mx-vb">v1</span>' : '');
       var cells = apps.map(function (a) {
@@ -1194,16 +1311,17 @@
       return '<tr class="' + (r.parent ? 'mx-sub' : '') + '">' +
         '<th class="mx-rh">' + nafn + '</th>' + cells +
         '<td class="mx-op"><button class="mx-open _op-mxopen" data-k="' + p.k +
-        '" type="button" title="Opna síðuna og sjá útlitið">↗</button></td></tr>';
+        '" type="button" title="Opna síðuna og sjá útlitið">' + B48_IK.ut + '</button></td></tr>';
     }).join('');
 
     return '<details class="op-card mx-box" open><summary class="mx-sum">' +
-        '<span class="mx-sum-t">▦ Fylki — hvaða síður eru í hvaða appi</span>' +
+        '<span class="mx-sum-tt"><small class="mx-sum-k">Fylki · síður × öpp</small><strong class="mx-sum-t">Hvaða síður eru í hvaða appi</strong></span>' +
         '<span class="mx-sum-n">' + matrixRows().length + ' síður · ' + apps.length + ' öpp</span>' +
+        '<span class="mx-chev">' + B48_IK.chev + '</span>' +
       '</summary>' +
-      '<div class="mx-scroll"><table class="mx-t"><thead><tr>' + head + '</tr></thead>' +
+      '<div class="mx-scroll"><table class="mx-t no-skin"><thead><tr>' + head + '</tr></thead>' +
       '<tbody>' + body + '</tbody></table></div>' +
-      '<div class="mx-hint">Strjúktu til hliðar til að sjá fleiri öpp · ↗ opnar síðuna svo þú sjáir útlitið</div>' +
+      '<div class="mx-hint">Strjúktu til hliðar til að sjá fleiri öpp · örin lengst til hægri opnar síðuna svo þú sjáir útlitið</div>' +
     '</details>';
   }
 
@@ -1225,24 +1343,24 @@
       var selSet = {}; sel.forEach(function (k) { selSet[k] = 1; });
       var pageRows = allPages().map(function (p) {
         return '<label class="op-pg"><input type="checkbox" class="_op-pg" data-app="' + a.key + '" data-k="' + p.k + '"' + (selSet[p.k] ? ' checked' : '') + '>' +
-          '<span class="e">' + p.emoji + '</span><span>' + esc(p.label) + '</span></label>';
+          '<span class="e">' + pgIcon(p) + '</span><span>' + esc(p.label) + '</span></label>';
       }).join('');
       // Síðuvalið var áður alltaf opið undir HVERJU appi → risalöng, kaótísk síða
       // (6 öpp × allur síðulistinn). Nú lokað sjálfgefið í <details> með teljara,
       // svo launcher-inn er þéttur; smellt til að velja síður.
       var pagesSection = a.standalone ? '' :
         ('<details class="op-pagesbox"><summary class="op-pgsum">' +
-          '<span class="op-pgsum-t">⚙ Síður í appinu</span>' +
+          '<span class="op-pgsum-t">' + B48_IK.sidur + 'Síður í appinu</span>' +
           '<span class="op-pgcount" data-app="' + a.key + '">' + sel.length + ' valdar</span>' +
-          '<span class="op-pgchev">▾</span>' +
+          '<span class="op-pgchev">' + B48_IK.chev + '</span>' +
         '</summary><div class="op-pages">' + pageRows + '</div></details>');
       return '<div class="op-card">' +
         '<div class="op-top"><div class="op-ic" style="' + (a.key === 'boss' ? BOSS_BG_CSS : ('background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')')) + '">' + (a.key === 'boss' ? bossCrownSvg(30) : ikonHtml(a, 30)) + '</div>' +
           '<div><div class="op-nm">' + esc(a.name) + '</div><div class="op-bl">' + esc(a.blurb) + '</div></div></div>' +
         '<div class="op-acts">' +
-          '<button class="op-btn prim _op-open" data-app="' + a.key + '" style="background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')" type="button">▶ Opna</button>' +
-          '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">⤓ Setja upp í síma</button>' +
-          '<button class="op-btn _op-link" data-app="' + a.key + '" type="button">🔗 Afrita hlekk</button>' +
+          '<button class="op-btn prim _op-open" data-app="' + a.key + '" type="button">' + B48_IK.opna + 'Opna</button>' +
+          '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">' + B48_IK.nidur + 'Setja upp í síma</button>' +
+          '<button class="op-btn _op-link" data-app="' + a.key + '" type="button">' + B48_IK.hlekkur + 'Afrita hlekk</button>' +
           // 2026-09-09 (Agnar: „breytingar mögulegar inn á þjónustuborð, en það
           // er samt ekki á öllum"): ⚙ birtist áður AÐEINS á innbyggðu öppunum.
           // Öppin sem hann bjó til sjálfur fengu bara „Síður í appinu"-kassann,
@@ -1251,11 +1369,11 @@
           // þegar við standalone-öpp, svo það þurfti enga undantekningu.
           // 19.09.2026 (Agnar: „finn ekki lengur option að breyta tákni á eldri öppunum, og opnunarlit"): möguleikinn var
           // hér allan tímann en hét „⚙ Þjónustuborð" — sem er líka nafn á síðu OG appi og segir ekkert um tákn/lit.
-          '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button" title="Nafn, lýsing, tákn, litir' + (a.standalone ? '' : ' og síður') + ' appsins">🎨 Tákn · litur' + (a.standalone ? '' : ' · síður') + '</button>' +
-          (a.custom ? '<button class="op-btn _op-delapp" data-app="' + a.key + '" type="button" style="color:#b91c1c;border-color:#fecaca">🗑 Eyða appi</button>' : '') +
+          '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button" title="Nafn, lýsing, tákn, litir' + (a.standalone ? '' : ' og síður') + ' appsins">' + B48_IK.litur + 'Tákn · litur' + (a.standalone ? '' : ' · síður') + '</button>' +
+          (a.custom ? '<button class="op-btn op-haett _op-delapp" data-app="' + a.key + '" type="button">' + B48_IK.rusl + 'Eyða appi</button>' : '') +
           '<button class="op-btn _op-felaapp" data-app="' + a.key + '" type="button" title="' +
             (a.falid ? 'Sýna appið aftur í ræsaranum' : 'Fela appið úr ræsaranum — ekkert er eytt, það kemur aftur með einum smelli') + '">' +
-            (a.falid ? '👁 Sýna aftur' : '🚫 Fela app') + '</button>' +
+            (a.falid ? B48_IK.auga + 'Sýna aftur' : B48_IK.fela + 'Fela app') + '</button>' +
         '</div>' +
         pagesSection +
       '</div>';
@@ -1263,24 +1381,24 @@
     // Án þessarar línu væri falið app horfið að eilífu — spjaldið með
     // „👁 Sýna aftur" er sjálft falið. Línan er eina leiðin til baka.
     var falinLina = faldirLyklar.length
-      ? '<div style="display:flex;align-items:center;justify-content:center;gap:9px;margin:-4px 0 14px;font-size:12.5px;color:rgba(255,255,255,.62)">' +
+      ? '<div class="op-falin">' +
           '<span>' + faldirLyklar.length + (faldirLyklar.length === 1 ? ' falið app' : ' falin \u00f6pp') + '</span>' +
-          '<button class="op-btn _op-synafalin" type="button" style="padding:4px 11px;font-size:12px">' +
-            (synaFalin ? '\ud83d\ude48 Fela þau aftur' : '\ud83d\udc41 Sýna þau') + '</button>' +
+          '<button class="op-btn _op-synafalin" type="button">' +
+            (synaFalin ? B48_IK.fela + 'Fela þau aftur' : B48_IK.auga + 'Sýna þau') + '</button>' +
         '</div>'
       : '';
     var ver = versionLine();
-    v.innerHTML = '<div class="op-main"><h1 class="op-h1">📱 Öpp</h1>' +
+    v.innerHTML = '<div class="op-main"><div class="op-kick">Slökkvitæki · ræsir</div><h1 class="op-h1">Öpp</h1>' +
       '<p class="op-sub">Léttar, símavænar útgáfur með völdum síðum — hver með eigin hlekk og hægt að setja upp í símann.</p>' +
       matrixHtml() +
       falinLina +
       cards +
-      '<div class="op-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:170px;border:2px dashed #cbd5e1;background:rgba(255,255,255,.06)">' +
-        '<div style="font-size:34px;line-height:1">➕</div>' +
-        '<button class="op-btn prim" id="_op-newapp" type="button" style="background:linear-gradient(180deg,#334155,#0f172a)">Búa til app</button>' +
-        '<div style="font-size:11.5px;color:#94a3b8;text-align:center;max-width:220px">Nefndu appið og hakaðu svo við í „⚙ Síður í appinu" hvaða síður birtast í því</div>' +
+      '<div class="op-card op-ny">' +
+        '<div class="op-ny-plus">' + B48_IK.plus + '</div>' +
+        '<button class="op-btn prim" id="_op-newapp" type="button">Búa til app</button>' +
+        '<div class="op-ny-txt">Nefndu appið og hakaðu svo við í „Síður í appinu" hvaða síður birtast í því</div>' +
       '</div>' +
-      (ver ? '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-top:4px">Útgáfa ' + esc(ver) + '</div>' : '') +
+      (ver ? '<div class="op-ver">Útgáfa ' + esc(ver) + '</div>' : '') +
       '</div>';
     v.querySelectorAll('._op-open').forEach(function (b) { b.addEventListener('click', function () { location.href = appLink(b.dataset.app); }); });
     var nb = v.querySelector('#_op-newapp'); if (nb) nb.addEventListener('click', function (e) { e.preventDefault(); createCustomApp(); });
@@ -1312,7 +1430,7 @@
     }); });
     v.querySelectorAll('._op-link').forEach(function (b) { b.addEventListener('click', function () {
       var url = appLink(b.dataset.app);
-      try { navigator.clipboard.writeText(url); toast('🔗 Hlekkur afritaður'); } catch (_) { toast(url); }
+      try { navigator.clipboard.writeText(url); toast('Hlekkur afritaður'); } catch (_) { toast(url); }
     }); });
     v.querySelectorAll('._op-panel').forEach(function (b) { b.addEventListener('click', function () { openControlPanel(b.dataset.app); }); });
     /* Fylkis-hakið skrifar BEINT í geymsluna og speglar sig svo í gamla
@@ -1389,15 +1507,15 @@
       // Textinn situr í ._applbl svo 316 geti falið hann og skilið EFTIR
       // táknið eitt í 36px reitnum (sjá athugasemd þar). Áður var klippt á
       // miðjum streng og hausinn sýndi „⚙ Þ" og „⤓ Se".
-      (a.standalone ? '' : '<button id="_app-pages" type="button" title="Tákn, litur og síður appsins">⚙<i class="_applbl"> Tákn · litur · síður</i></button>') +
+      (a.standalone ? '' : '<button id="_app-pages" type="button" title="Tákn, litur og síður appsins">' + B48_IK.tannhjol + '<i class="_applbl">Tákn · litur · síður</i></button>') +
       // 🎨 Stílstjórinn var ÓAÐGENGILEGUR í app-ham: 262 hengir takkann sinn á
       // banner-klukkuna og app-hamurinn felur bannerinn alveg
       // (body.appmode #bstal-banner{display:none}). Þar með var ekki hægt að
       // laga útlit þeirra síðna sem maður notar mest — einmitt í símanum þar
       // sem plássið er minnst (Agnar 29.08). Takkinn er því endurtekinn hér.
-      '<button id="_app-style" type="button" title="Stilla útlit þessarar síðu">🎨</button>' +
-      '<button class="_app-install" data-always="1" id="_app-inst2" type="button" title="Setja appið upp í símann">⤓<i class="_applbl"> Setja upp</i></button>' +
-      '<button id="_app-exit" type="button" title="Loka appi">✕</button>';
+      '<button id="_app-style" type="button" title="Stilla útlit þessarar síðu">' + B48_IK.litur + '</button>' +
+      '<button class="_app-install" data-always="1" id="_app-inst2" type="button" title="Setja appið upp í símann">' + B48_IK.nidur + '<i class="_applbl">Setja upp</i></button>' +
+      '<button id="_app-exit" type="button" title="Loka appi">' + B48_IK.x + '</button>';
     if (!hdr.parentNode) document.body.appendChild(hdr);
     var sty = document.getElementById('_app-style');
     if (sty && !sty._wired) { sty._wired = 1; sty.addEventListener('click', function (e) {
@@ -1408,8 +1526,8 @@
     var nav = document.getElementById('_app-nav') || document.createElement('div');
     nav.id = '_app-nav'; nav.style.display = '';
     nav.innerHTML = pages.map(function (k) {
-      var p = pageByKey(k) || { emoji: '•', label: k };
-      return '<button class="_app-tab" data-k="' + k + '"><span class="e">' + p.emoji + '</span>' + esc(p.short || p.label) + '</button>';
+      var p = pageByKey(k) || { k: k, label: k };
+      return '<button class="_app-tab" data-k="' + k + '"><span class="e">' + pgIcon(p) + '</span>' + esc(p.short || p.label) + '</button>';
     }).join('');
     if (!nav.parentNode) document.body.appendChild(nav);
     // Ein síða → ekkert að velja: fela dokkinn alveg (risaflísin fór hálfan skjáinn).
@@ -1519,22 +1637,22 @@
       '<div class="_pe-sub">Hakaðu við síðurnar sem eiga að vera í appinu.</div>' +
       '<div>' + allPages().map(function (p) {
         return '<label class="_pe-row"><input type="checkbox" class="_pe-pg" data-k="' + p.k + '"' + (selSet[p.k] ? ' checked' : '') + '>' +
-          '<span class="e">' + p.emoji + '</span><span>' + esc(p.label) + '</span></label>';
+          '<span class="e">' + pgIcon(p) + '</span><span>' + esc(p.label) + '</span></label>';
       }).join('') + '</div></details>';
     var gamalt = document.getElementById('_app-pgedit');
     var fyrraSkrun = gamalt && gamalt.style.display !== 'none' && gamalt.querySelector('._pe-list') ? gamalt.querySelector('._pe-list').scrollTop : 0;
     ov.innerHTML =
       '<div class="_pe-card">' +
-        '<div class="_pe-h"><span>🎨 Tákn · litur' + (a.standalone ? '' : ' · síður') + ' — ' + esc(a.name) + '</span><button id="_pe-close" type="button">‹ Til baka</button></div>' +
+        '<div class="_pe-h"><span><small class="_pe-kick">Tákn · litur' + (a.standalone ? '' : ' · síður') + '</small>' + esc(a.name) + '</span><button id="_pe-close" type="button">' + B48_IK.bak + 'Til baka</button></div>' +
         '<div class="_pe-list">' +
           '<div class="op-sech" style="margin:4px 8px 8px">Tákn appsins</div>' +
           '<div style="padding:0 10px 12px">' +
-            '<div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:5px">Smelltu á tákn til að velja það, aftur til að afvelja</div>' +
-            '<div class="_pe-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;max-height:236px;overflow:auto;padding:7px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc">' +
+            '<div style="font-size:12px;font-weight:600;color:#3b414b;margin-bottom:5px">Smelltu á tákn til að velja það, aftur til að afvelja</div>' +
+            '<div class="_pe-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;max-height:236px;overflow:auto;padding:7px;border:1px solid rgba(20,24,34,.18);border-radius:8px;background:rgba(255,255,255,.6)">' +
               IKONSAFN.map(function (x) {
                 var valid = a.ikon === x.f;
                 return '<button type="button" class="_pe-ik" data-ik="' + x.f + '" title="' + x.h + '" ' +
-                  'style="padding:3px;border:2px solid ' + (valid ? '#2563eb' : 'transparent') + ';border-radius:10px;background:' + (valid ? '#eff6ff' : '#fff') + ';cursor:pointer;line-height:0">' +
+                  'style="padding:3px;border:2px solid ' + (valid ? '#b3261e' : 'transparent') + ';border-radius:8px;background:' + (valid ? '#fdecea' : '#fff') + ';cursor:pointer;line-height:0">' +
                   '<img src="' + IKON_MAPPA + x.f + '" alt="" width="42" height="42" style="display:block;border-radius:8px">' +
                 '</button>';
               }).join('') +
@@ -1542,7 +1660,7 @@
             (_peTaknBreytt || a.ikon ? heimaskjarHtml(a, _peTaknBreytt) : '') +
           '</div>' +
           '<div class="op-sech" style="margin:4px 8px 8px">Nafn og litir</div>' +
-          '<div style="display:flex;flex-direction:column;gap:10px;padding:0 10px 14px;font-size:13.5px;color:#334155">' +
+          '<div style="display:flex;flex-direction:column;gap:10px;padding:0 10px 14px;font-size:13.5px;color:#1c2028">' +
             '<label style="display:flex;flex-direction:column;gap:4px">Nafn' +
               '<input class="_pe-name" value="' + esc(a.name) + '" style="padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:15px"></label>' +
             '<label style="display:flex;flex-direction:column;gap:4px">Lýsing' +
@@ -1559,13 +1677,13 @@
                 '<input class="_pe-color" type="color" value="' + esc(a.color) + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
               '<label style="display:flex;flex-direction:column;gap:4px">Litur (neðst)' +
                 '<input class="_pe-dark" type="color" value="' + esc(a.dark) + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
-              '<button class="_pe-reset-look" type="button" style="font:inherit;font-size:13px;font-weight:700;padding:9px 13px;border-radius:9px;border:1px solid #d7dce4;background:#f1f5f9;color:#64748b;cursor:pointer;min-height:40px">Núllstilla</button>' +
+              '<button class="_pe-reset-look" type="button" style="font:inherit;font-size:13px;font-weight:600;padding:0 13px;border-radius:7px;border:1px solid rgba(20,24,34,.28);background:' + B48_SILVER + ';color:#1c2028;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.12);cursor:pointer;min-height:40px">Núllstilla</button>' +
             '</div>' +
-            '<div style="font-size:11.5px;color:#94a3b8;line-height:1.5">Breytist strax í appinu (spjald, haus, stöðustika, hleðsluskjár). Táknmynd og opnunarlitur á heimaskjá símans fylgja líka — uppsett app uppfærist sjálft á 1–3 dögum, eða strax ef það er fjarlægt og sett upp aftur.</div>' +
+            '<div style="font-size:11.5px;color:#4a515c;line-height:1.5">Breytist strax í appinu (spjald, haus, stöðustika, hleðsluskjár). Táknmynd og opnunarlitur á heimaskjá símans fylgja líka — uppsett app uppfærist sjálft á 1–3 dögum, eða strax ef það er fjarlægt og sett upp aftur.</div>' +
           '</div>' +
           pagesBlock +
           '<div class="op-sech" style="margin:14px 18px 6px">Upplýsingar</div>' +
-          '<div style="padding:0 18px 18px;font-size:12.5px;color:#64748b;line-height:1.7">' +
+          '<div style="padding:0 18px 18px;font-size:12.5px;color:#4a515c;line-height:1.7">' +
             'Útgáfa: ' + (ver ? esc(ver) : '—') + '<br>' +
             'Hlekkur: <code style="font-size:11.5px">' + esc(appLink(a.key)) + '</code>' +
           '</div>' +

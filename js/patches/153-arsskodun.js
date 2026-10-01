@@ -4279,6 +4279,12 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
               const isFieldOnly = !isDone && fieldYr === curYear;
               const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
               const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
+              // 30.09.2026 (Agnar: „stendur rosalega oft virkja aftur … það er búið að fara víst í ágúst",
+              // BGT ehf #1642, skoðað 01.08.2026). ↩-takkinn sat á HVERRI röð þegar 🟡 Slepptir-sían var
+              // valin — en frjáls leit hunsar stöðusíuna (sjá hasSearch), svo leit með síuna virka sýndi
+              // „Virkja aftur" á fyrirtækjum sem eru ekki sleppt. Takkinn birtist nú AÐEINS á röð sem
+              // uppfyllir sömu hráu reglu og sían sjálf (síðast skoðað fyrir curYear-1). Engin gögn breytast.
+              const rodSleppt = state.status === 'skipped2025' && lastYr > 0 && lastYr < curYear - 1;
               const est = (typeof virdiOf === 'function' && typeof c !== 'undefined') ? virdiOf(c) : (+ars.estimated_yearly || 0);
               const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
               const stLabel = isDone ? ('Skoðað ' + curYear)
@@ -4300,7 +4306,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                   <td class="_ars-namecell">
                     <span class="_co">${esc(c.nafn || '—')}</span>
                     ${c.kennitala ? `<span class="_kt">${esc(fmtKt(c.kennitala))}</span>` : ''}
-                    ${((window.NyttBadge && NyttBadge.is(c.id)) || (window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala) && RekstrarfelagBadge.html(c.kennitala, c.customer_base_id)) || state.status === 'skipped2025') ? `<span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;align-items:center">${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : ''}${state.status === 'skipped2025' ? (ars.ekki_sleppt
+                    ${((window.NyttBadge && NyttBadge.is(c.id)) || (window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala) && RekstrarfelagBadge.html(c.kennitala, c.customer_base_id)) || rodSleppt) ? `<span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;align-items:center">${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : ''}${rodSleppt ? (ars.ekki_sleppt
                       ? `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Handvirkt virkjaður aftur — smelltu til að merkja aftur sem sleppt" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;cursor:pointer;font-weight:700">✓ virkur · ↩ aftur í sleppt</button>`
                       : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</span>` : ''}
                     <input class="_note _ars-plannote _ars-note-under" data-co-id="${c.id}" value="${esc(notaSyn(c.plan_note))}" placeholder="···" title="Sameiginlegur minnispunktur — sami texti og ✍ Athugasemd á fyrirtækjasíðunni og Minnispunktur á Verkstæði. Vistast á fyrirtækinu og fylgir öllum vélum." maxlength="2000">

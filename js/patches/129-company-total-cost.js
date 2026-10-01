@@ -1239,6 +1239,7 @@
     // Sama gildir um Vista/Klára-stikuna (._vw-bar, papp 165) sem hangir neðst: hún kom aftur
     // ~sekúndu síðar og var enn eitt „útlitið". Fer aftur neðst, samstundis.
     const _vwBar = section.querySelector(':scope > ._vw-bar');
+    const _vwTop = section.querySelector('._vw-topbtn');   // B44: „Úttekt búin / í Vinnslu“ (165) situr í hausnum
     // 01.10.2026 (hopp): spjaldið heldur fyrri hæð sem lágmarki meðan nýja efnið er lagt í það og í tvo ramma á eftir —
     // það sem stendur fyrir neðan í dálkinum færist ekki þótt efnið sé augnablik styttra. Sleppt um leið og málað er.
     const _fyrriH = section.offsetHeight;
@@ -1378,6 +1379,7 @@
       (unmatched.length ? '<div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f">⚠ ' + unmatched.length + ' tegund(ir) fundu ekki matchandi þjónustu í verðlista. Bæta við í <a href="#vorur" target="_blank" rel="noopener" style="color:#1d4ed8;font-weight:700">Vörur og þjónustu ↗</a>.</div>' : '');
     if (_strip) { try { const _hd = section.firstElementChild; if (_hd) _hd.parentNode.insertBefore(_strip, _hd.nextSibling); } catch (_) {} }
     if (_vwBar) { try { section.appendChild(_vwBar); } catch (_) {} }
+    if (_vwTop) { try { const _hd2 = section.firstElementChild; if (_hd2) _hd2.appendChild(_vwTop); } catch (_) {} }
     if (_aftur) { try { _aftur(); } catch (_) {} }
 
     // Wire Skoðunaraðili input.

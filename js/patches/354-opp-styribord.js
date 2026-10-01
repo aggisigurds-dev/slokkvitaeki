@@ -182,39 +182,70 @@
       'UA: ' + d.ua
     ];
     const txt = lines.join('\n');
-    const done = () => { state.msg = '📋 Greining afrituð'; render(); };
+    const done = () => { state.msg = 'Greining afrituð'; render(); };
     try { navigator.clipboard.writeText(txt).then(done, () => { state.msg = txt; render(); }); } catch (_) { state.msg = txt; render(); }
   }
 
   /* ── teikning ───────────────────────────────────────────────────────────── */
+  // 01.10.2026 (B48): Brunastál C — málmhaus með hnoðum, silfur-merki, rauður valinn hnappur, línutákn í stað emoji.
+  const MONO = '"JetBrains Mono",ui-monospace,monospace', SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif', DISP = '"Playfair Display",Georgia,serif';
+  const METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
+  const MBTN = 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)';
+  const SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
+  const RIVET = 'radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%)';
+  const RAUTT = 'linear-gradient(180deg,#c22f26 0%,#951818 50%,#650c0d 100%)';
+  const svg = d => '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  const IK = {
+    leita: svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'),
+    afrita: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/>'),
+    endur: svg('<path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"/>'),
+    hreinsa: svg('<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/>'),
+    opna: svg('<path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/>'),
+    nidur: svg('<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>')
+  };
   const CSS = [
-    '#view-opp #' + ID + '{padding:16px 16px 14px}',
-    '#view-opp #' + ID + ' .st-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}',
-    '#view-opp #' + ID + ' .st-t{font-size:17px;font-weight:800;color:#11141c;margin-right:auto}',
-    '#view-opp #' + ID + ' .st-sec{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;margin:14px 0 6px}',
+    '#view-opp #' + ID + '{padding:14px 14px 12px}',
+    '#view-opp #' + ID + ' .st-h{position:relative;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;padding:11px 12px 11px 32px;background:' + METAL + ';border:1px solid #000;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 1px 2px rgba(0,0,0,.4)}',
+    '#view-opp #' + ID + ' .st-h::before{content:"";position:absolute;left:12px;top:10px;width:7px;height:7px;border-radius:50%;background:' + RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.6)}',
+    '#view-opp #' + ID + ' .st-h::after{content:"";position:absolute;left:12px;bottom:10px;width:7px;height:7px;border-radius:50%;background:' + RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.6)}',
+    '#view-opp #' + ID + ' .st-t{margin-right:auto;min-width:0}',
+    '#view-opp #' + ID + ' .st-t small{display:block;font-family:' + MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#aab1bb!important}',
+    '#view-opp #' + ID + ' .st-t strong{display:block;font-family:' + DISP + ';font-size:20px;font-weight:800;color:#fff;line-height:1.15;margin-top:2px;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
+    '#view-opp #' + ID + ' .st-h .op-btn{background:' + MBTN + ' !important;border:1px solid #000 !important;color:#e3e7ee !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.5) !important}',
+    '#view-opp #' + ID + ' .st-h .op-btn svg{color:#c9ced6}',
+    '#view-opp #' + ID + ' .st-h .op-btn:hover{color:#fff !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px rgba(224,96,90,.55) !important}',
+    '#view-opp #' + ID + ' .st-sec{font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5b6370;margin:14px 0 6px}',
     '#view-opp #' + ID + ' .st-chips{display:flex;flex-wrap:wrap;gap:6px}',
-    '#view-opp #' + ID + ' .st-chip{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:#334155;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:99px;padding:5px 10px;line-height:1.2}',
-    '#view-opp #' + ID + ' .st-chip.warn{background:#fff7ed;border-color:#fdba74;color:#9a3412}',
-    '#view-opp #' + ID + ' .st-chip.ok{background:#e7f5ee;border-color:#a7dcc0;color:#166534}',
-    '#view-opp #' + ID + ' .st-note{font-size:12.5px;color:#9a3412;background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.45}',
-    '#view-opp #' + ID + ' .st-seg{display:inline-flex;flex-wrap:wrap;gap:4px;background:#f1f5f9;border-radius:12px;padding:4px}',
-    '#view-opp #' + ID + ' .st-seg button{font:inherit;font-size:13px;font-weight:700;min-height:40px;min-width:44px;padding:0 12px;border:none;border-radius:9px;background:transparent;color:#475569;cursor:pointer}',
-    '#view-opp #' + ID + ' .st-seg button.on{background:#0f172a;color:#fff}',
+    '#view-opp #' + ID + ' .st-chip{display:inline-flex;align-items:baseline;gap:6px;font-family:' + SANS + ';font-size:12.5px;font-weight:600;color:#1c2028;background:' + SILVER + ';border:1px solid rgba(20,24,34,.22);border-radius:6px;padding:5px 9px;line-height:1.2;box-shadow:inset 0 1px 0 #fff}',
+    '#view-opp #' + ID + ' .st-chip small{font-family:' + MONO + ';font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6b7380}',
+    '#view-opp #' + ID + ' .st-chip.warn{border-color:rgba(179,38,30,.5);color:#8a1414}',
+    '#view-opp #' + ID + ' .st-chip.warn small{color:#b3261e}',
+    '#view-opp #' + ID + ' .st-chip.ok{border-color:rgba(29,90,51,.45);color:#1d5a33}',
+    '#view-opp #' + ID + ' .st-chip.ok small{color:#2f7a4b}',
+    '#view-opp #' + ID + ' .st-note{font-size:12.5px;color:#1c2028;background:#fff;border:1px solid rgba(20,24,34,.16);border-left:3px solid #b3261e;border-radius:7px;padding:8px 10px;margin-top:8px;line-height:1.45}',
+    '#view-opp #' + ID + ' .st-seg{display:inline-flex;flex-wrap:wrap;gap:3px;background:#c9ced6;border:1px solid rgba(20,24,34,.25);border-radius:8px;padding:3px;box-shadow:inset 0 1px 3px rgba(0,0,0,.18)}',
+    '#view-opp #' + ID + ' .st-seg button{font-family:' + MONO + ' !important;font-size:12.5px;font-weight:700;min-height:38px;min-width:44px;padding:0 12px;border:1px solid transparent !important;border-radius:6px !important;background:transparent !important;color:#2a2f37 !important;box-shadow:none !important;text-shadow:none !important;cursor:pointer}',
+    '#view-opp #' + ID + ' .st-seg button:hover{background:rgba(255,255,255,.55) !important}',
+    '#view-opp #' + ID + ' .st-seg button.on{background:' + RAUTT + ' !important;border-color:#2a0303 !important;color:#fff !important;text-shadow:0 1px 1px rgba(0,0,0,.55) !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 1px 2px rgba(0,0,0,.3) !important}',
     '#view-opp #' + ID + ' .st-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}',
     /* öpp-listinn: staflað (nafn · staða · takkar) — tafla var of breið á 375px */
     '#view-opp #' + ID + ' .st-apps{display:flex;flex-direction:column;gap:6px}',
-    '#view-opp #' + ID + ' .st-app{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 10px;border:1px solid #eef1f5;border-radius:12px;background:#fafbfc}',
-    '#view-opp #' + ID + ' .st-app .nm{font-size:14px;font-weight:800;color:#11141c;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-    '#view-opp #' + ID + ' .st-app .nm small{font-weight:500;color:#94a3b8;font-size:11px;margin-left:6px}',
+    '#view-opp #' + ID + ' .st-app{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 10px;border:1px solid rgba(20,24,34,.14);border-radius:8px;background:rgba(255,255,255,.72)}',
+    '#view-opp #' + ID + ' .st-app .nm{font-size:14px;font-weight:700;color:#1c2028;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '#view-opp #' + ID + ' .st-app .nm small{font-family:' + MONO + ';font-weight:600;color:#6b7380;font-size:9px;letter-spacing:.12em;text-transform:uppercase;margin-left:8px}',
     '#view-opp #' + ID + ' .st-app .acts{display:flex;gap:4px;grid-row:span 2}',
     '#view-opp #' + ID + ' .st-app .stat{grid-column:1;font-size:12.5px;line-height:1.35;min-width:0;word-break:break-word}',
-    '#view-opp #' + ID + ' .st-ok{color:#166534;font-weight:700}',
-    '#view-opp #' + ID + ' .st-no{color:#64748b}',
-    '#view-opp #' + ID + ' .st-unk{color:#94a3b8}',
-    '#view-opp #' + ID + ' .st-bad{color:#b91c1c;font-weight:700}',
-    '#view-opp #' + ID + ' .st-mini{font:inherit;font-size:15px;font-weight:700;width:40px;height:40px;padding:0;border-radius:9px;border:1px solid #d7dce4;background:#fff;color:#334155;cursor:pointer;flex:none}',
-    '#view-opp #' + ID + ' .st-msg{font-size:12.5px;color:#475569;margin-top:10px;white-space:pre-wrap;word-break:break-word}',
-    '#view-opp #' + ID + ' .op-btn{min-height:40px;padding:8px 13px;font-size:13px}'
+    '#view-opp #' + ID + ' .st-ok{color:#1d5a33;font-weight:700}',
+    '#view-opp #' + ID + ' .st-no{color:#4a515c}',
+    '#view-opp #' + ID + ' .st-unk{color:#6b7380}',
+    '#view-opp #' + ID + ' .st-bad{color:#8a1414;font-weight:700}',
+    '#view-opp #' + ID + ' .st-mini{width:40px;height:40px;padding:0 !important;border-radius:7px !important;border:1px solid rgba(20,24,34,.28) !important;background:' + SILVER + ' !important;color:#1c2028 !important;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.12) !important;text-shadow:none !important;cursor:pointer;flex:none;display:inline-flex !important;align-items:center;justify-content:center}',
+    '#view-opp #' + ID + ' .st-mini svg{width:16px;height:16px}',
+    '#view-opp #' + ID + ' .st-mini[data-open]{color:#b3261e !important}',
+    /* B48 sími: titill fær heila línu, takkarnir deila næstu; Króm-röðin kemst í eina línu á 375 */
+    '@media (max-width:600px){#view-opp #' + ID + ' .st-t{flex:1 1 100%}#view-opp #' + ID + ' .st-h .op-btn{flex:1 1 0;justify-content:center;min-width:0}#view-opp #' + ID + ' .st-seg button{min-width:38px;padding:0 8px}}',
+    '#view-opp #' + ID + ' .st-msg{font-size:12.5px;color:#2a2f37;margin-top:10px;white-space:pre-wrap;word-break:break-word}',
+    '#view-opp #' + ID + ' .op-btn{min-height:40px;padding:0 13px;font-size:13px}'
   ].join('\n');
 
   function mountCss() {
@@ -226,16 +257,16 @@
   function html() {
     const d = diag();
     const chips = [
-      '<span class="st-chip" title="screen.width × screen.height">📐 Skjár ' + esc(d.screen) + ' dp</span>',
-      '<span class="st-chip' + (d.desktopMode ? ' warn' : '') + '" title="innerWidth × innerHeight (CSS-px)">🖥 Síða ' + esc(d.layout) + ' px' + (d.desktopMode ? ' · Tölvusíðu-hamur' : '') + '</span>',
-      '<span class="st-chip' + (d.krom !== 1 ? ' ok' : '') + '">🔍 Króm ×' + fmtNum(d.krom) + (d.manual != null ? ' (handstillt)' : ' (sjálfvirkt)') + '</span>',
-      '<span class="st-chip">🔎 Zoom ' + Math.round(d.zoom * 100) + ' %</span>',
-      '<span class="st-chip' + (d.standalone ? ' ok' : '') + '">' + (d.standalone ? '📲 Uppsett app · ' + esc(d.key) : '🌐 Í vafra') + '</span>',
-      '<span class="st-chip" title="commit · tími">🏷 ' + esc(d.build) + '</span>',
-      '<span class="st-chip' + (d.sw ? ' ok' : ' warn') + '">' + (d.sw ? '⚙ SW virkur' : '⚙ SW enginn') + '</span>'
+      '<span class="st-chip" title="screen.width × screen.height"><small>Skjár</small>' + esc(d.screen) + ' dp</span>',
+      '<span class="st-chip' + (d.desktopMode ? ' warn' : '') + '" title="innerWidth × innerHeight (CSS-px)"><small>Síða</small>' + esc(d.layout) + ' px' + (d.desktopMode ? ' · Tölvusíðu-hamur' : '') + '</span>',
+      '<span class="st-chip' + (d.krom !== 1 ? ' ok' : '') + '"><small>Króm</small>×' + fmtNum(d.krom) + (d.manual != null ? ' (handstillt)' : ' (sjálfvirkt)') + '</span>',
+      '<span class="st-chip"><small>Zoom</small>' + Math.round(d.zoom * 100) + ' %</span>',
+      '<span class="st-chip' + (d.standalone ? ' ok' : '') + '">' + (d.standalone ? '<small>Uppsett app</small>' + esc(d.key) : '<small>Keyrsla</small>Í vafra') + '</span>',
+      '<span class="st-chip" title="commit · tími"><small>Útgáfa</small>' + esc(d.build) + '</span>',
+      '<span class="st-chip' + (d.sw ? ' ok' : ' warn') + '">' + (d.sw ? '<small>SW</small>virkur' : '<small>SW</small>enginn') + '</span>'
     ].join('');
     const note = d.desktopMode
-      ? '<div class="st-note">⚠ Chrome sýnir þessa síðu í <b>Tölvusíðu-ham</b> (síðan er ' + esc(d.layout.split('×')[0]) + ' px breið á ' + esc(d.screen.split('×')[0]) + ' dp skjá). Krómið (haus, ☰, botnstika) er skalað á móti ×' + fmtNum(d.auto) + '. Viljirðu símaútlitið: <b>⋮ → taka hakið af „Tölvusíða"</b>.</div>'
+      ? '<div class="st-note">Chrome sýnir þessa síðu í <b>Tölvusíðu-ham</b> (síðan er ' + esc(d.layout.split('×')[0]) + ' px breið á ' + esc(d.screen.split('×')[0]) + ' dp skjá). Krómið (haus, valmynd, botnstika) er skalað á móti ×' + fmtNum(d.auto) + '. Viljirðu símaútlitið: <b>⋮ → taka hakið af „Tölvusíða"</b>.</div>'
       : '';
     const kromSel = d.manual != null ? String(d.manual) : 'auto';
     const kromSeg = '<div class="st-seg">' + KROM.map(([v, l]) => '<button type="button" data-krom="' + v + '" class="' + (String(v) === kromSel || (kromSel !== 'auto' && +v === +kromSel) ? 'on' : '') + '">' + l + '</button>').join('') + '</div>';
@@ -245,23 +276,23 @@
       const c = state.checks[a.key];
       return '<div class="st-app">' +
         '<div class="nm" title="/app/' + esc(a.key) + '/">' + esc(a.name) + '<small>' + (a.custom ? 'notenda-búið' : 'innbyggt') + '</small></div>' +
-        '<div class="acts"><button type="button" class="st-mini" data-open="' + esc(a.key) + '" title="Opna">▶</button><button type="button" class="st-mini" data-inst="' + esc(a.key) + '" title="Setja upp í síma">⤓</button></div>' +
+        '<div class="acts"><button type="button" class="st-mini" data-open="' + esc(a.key) + '" title="Opna">' + IK.opna + '</button><button type="button" class="st-mini" data-inst="' + esc(a.key) + '" title="Setja upp í síma">' + IK.nidur + '</button></div>' +
         '<div class="stat"><span class="st-' + cls + '">' + esc(txt) + '</span>' + (c ? '<br><span class="' + (c.ok ? 'st-ok' : 'st-bad') + '">' + esc(c.text) + '</span>' : '') + '</div>' +
         '</div>';
     }).join('');
     const relLine = state.related
       ? (state.related.length ? '' : '<div class="st-msg">Chrome skráir ekkert innbyggt app uppsett á þessu tæki (getInstalledRelatedApps).</div>')
       : (state.relatedErr ? '<div class="st-msg">Staðfesting uppsetninga: ' + esc(state.relatedErr) + '</div>' : '');
-    return '<div class="st-h"><div class="st-t">🎛 Stýriborð</div>' +
-      '<button type="button" class="op-btn" data-act="check"' + (state.busy ? ' disabled' : '') + '>🔎 Athuga öpp</button>' +
-      '<button type="button" class="op-btn" data-act="copy">📋 Afrita greiningu</button></div>' +
+    return '<div class="st-h"><div class="st-t"><small>Öpp · tæki og útgáfa</small><strong>Stýriborð</strong></div>' +
+      '<button type="button" class="op-btn" data-act="check"' + (state.busy ? ' disabled' : '') + '>' + IK.leita + 'Athuga öpp</button>' +
+      '<button type="button" class="op-btn" data-act="copy">' + IK.afrita + 'Afrita greiningu</button></div>' +
       '<div class="st-sec">Tæki og útgáfa</div><div class="st-chips">' + chips + '</div>' + note +
-      '<div class="st-sec">Króm-stærð (haus · ☰ · botnstika · zoom-stika)</div>' + kromSeg +
+      '<div class="st-sec">Króm-stærð (haus · valmynd · botnstika · zoom-stika)</div>' + kromSeg +
       '<div class="st-sec">Síðuzoom (efnið)</div>' + zoomSeg +
       '<div class="st-sec">Öpp á þessu tæki</div><div class="st-apps">' + (rows || '<div class="st-msg">Engin öpp fundust á síðunni.</div>') + '</div>' + relLine +
       '<div class="st-sec">Aðgerðir</div><div class="st-row">' +
-      '<button type="button" class="op-btn" data-act="reload">🔄 Endurhlaða</button>' +
-      '<button type="button" class="op-btn" data-act="clear">🧹 Hreinsa skyndiminni + SW</button></div>' +
+      '<button type="button" class="op-btn" data-act="reload">' + IK.endur + 'Endurhlaða</button>' +
+      '<button type="button" class="op-btn" data-act="clear">' + IK.hreinsa + 'Hreinsa skyndiminni + SW</button></div>' +
       (state.msg ? '<div class="st-msg">' + esc(state.msg) + '</div>' : '');
   }
 
