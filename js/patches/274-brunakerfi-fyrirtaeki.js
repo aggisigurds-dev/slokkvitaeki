@@ -32,6 +32,7 @@
   const BUN_LABELS = ['Stjórnstöð', 'Boðbúnaður', 'Reykskynjarar', 'Hitaskynjarar', 'Handboðar', 'Bjöllur / Sírenur', 'Rafhlöður'];
 
   let C = null;          // { co, reports, docs, note }
+  let _bkcGen = 0;
   // 21.09.2026: útlitsval árs-blokkanna (opið/lokað, ⋯ opið) — lifir yfir endurteikningar, núllast þegar skipt er um félag.
   let _arOpid = {}, _arMeira = {}, _arFelag = null, _foldVal = {}, _addOpid = false;
   let _noteT = null, _notePending = null;
@@ -1390,18 +1391,25 @@
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushNote(); });
   } catch (_) {}
 
-  async function open(coId) {
+  async function open(coId, opts) {
+    opts = opts || {};
     flushNote();
     const ov = ensureOverlay();
     ov.style.display = 'block';
     document.body.style.overflow = 'hidden';
-    document.getElementById('_bkc-wrap').innerHTML = '<div style="padding:50px;text-align:center;color:#8b93a1">Hleð…</div>';
+    const same = !!(C && C.co && +C.co.id === +coId && document.getElementById('_bkc-wrap') && document.getElementById('_bkc-wrap').children.length && !document.getElementById('_bkc-wrap').textContent.includes('Hleð…'));
+    if (same && !opts.force) return;
+    const gen = ++_bkcGen;
+    if (!opts.keepScroll) {
+      document.getElementById('_bkc-wrap').innerHTML = '<div style="padding:50px;text-align:center;color:#8b93a1">Hleð…</div>';
+    }
     try { C = await load(coId); } catch (e) { console.warn('[bkc] load', e); C = null; }
+    if (gen !== _bkcGen) return;
     if (!C) { document.getElementById('_bkc-wrap').innerHTML = '<div style="padding:50px;text-align:center;color:#c93c1d">Náði ekki í gögn.</div>'; return; }
     render();
-    ov.scrollTop = 0;
+    if (!opts.keepScroll) ov.scrollTop = 0;
   }
-  async function reload() { if (C && C.co) open(C.co.id); }
+  async function reload() { if (C && C.co) open(C.co.id, { force: true, keepScroll: true }); }
 
   // ── röð-smellur á yfirlitinu (capture → víkur 272-hegðuninni) ──────────────
   function watch() {
