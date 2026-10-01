@@ -322,6 +322,17 @@
   // Hnitin koma úr okkar eigin /api/geocode (Nominatim + skyndiminni í grunni). Finnist
   // heimilisfangið ekki stendur flísin tóm eins og áður — engin ágiskun.
   var _loftHnit = {};
+  // Hnit sem kortið hefur þegar vistað (_slokk_gc) — sama lykill og mapfix/156.
+  function hnitUrMinni(adr) {
+    if (_loftHnit[adr]) return _loftHnit[adr];
+    try {
+      var gc = JSON.parse(localStorage.getItem('_slokk_gc') || '{}');
+      var p = gc[adr];
+      var lon = p && (typeof p.lon === 'number' ? p.lon : p.lng);
+      if (p && typeof p.lat === 'number' && typeof lon === 'number') return { lat: p.lat, lon: lon };
+    } catch (_) {}
+    return null;
+  }
   function loftmynd(flis, adr) {
     if (!adr || !flis) return;
     var setja = function (lat, lon) {
@@ -344,7 +355,13 @@
       vefja.appendChild(merki);
       flis.insertBefore(vefja, flis.firstChild);
     };
-    if (_loftHnit[adr]) { setja(_loftHnit[adr].lat, _loftHnit[adr].lon); return; }
+    var minni = hnitUrMinni(adr);
+    if (minni) { _loftHnit[adr] = minni; setja(minni.lat, minni.lon); }
+    // Heimilisfangið er á færslunni (þaðan kemur adr). Húsið færist ekki —
+    // /api/geocode aðeins þegar ýtt er á Endurnýja og hnitin eru ekki þegar til.
+    var coId = coIdNu();
+    if (minni) return;
+    if (!(coId && window.__coMaEndurnyja && window.__coMaEndurnyja(coId, 'kort'))) return;
     fetch('/api/geocode?q=' + encodeURIComponent(adr))
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (g) {

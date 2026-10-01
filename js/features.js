@@ -1,6 +1,18 @@
 'use strict';
 // Features: Companies, Settings, Income
 
+// Endurnýja á opnum prófíl má sækja kennitölu, hús og kort EINU SINNI.
+// Venjuleg opnun má það ekki þegar gildið er þegar á færslunni.
+// Hvert kall eyðir sínum lykli svo teikning sem keyrir tvisvar sæki ekki tvisvar.
+window.__coMaEndurnyja = function (id, lykill) {
+  var e = window.__coEndurnyja;
+  if (!e || +e.id !== +id) return false;
+  e.notad = e.notad || {};
+  if (e.notad[lykill]) return false;
+  e.notad[lykill] = true;
+  return true;
+};
+
 var Companies = {
   list: [],
   render: function() {
@@ -169,6 +181,7 @@ var Companies = {
     if (!id || !window.DB || typeof DB._primeCompany !== 'function') return;
     var btn = document.getElementById('_co-endurnyja');
     if (btn) { btn.disabled = true; btn.textContent = 'Sæki…'; }
+    window.__coEndurnyja = { id: id, notad: {} };
     try {
       DB._companyFetched[id] = false;
       DB._companySlice = null;
@@ -361,14 +374,12 @@ var Companies = {
     }
     html += '</div><div class="uttekt-col-r" id="_ctc-slot"></div></div>';
     el.innerHTML = html;
-    // 2026-09-16 (ósk Agnars: „heimilisfangið er rétt skrifað á Keldunni, ef þú getur gert
-    // forward því inn á maps.google"). Skráningin sem Keldan birtir kemur úr fyrirtækjaskrá
-    // Skattsins og við sækjum hana nú þegar gegnum /api/kt-lookup — ekkert er sótt af
-    // keldan.is sjálfri. Bannerinn teiknast STRAX með okkar heimilisfangi (ekkert bíður
-    // eftir neti) og Google-slóðin uppfærist þegar skráða heimilisfangið berst. Svarið
-    // geymist í 30 daga per kennitölu, svo uppflettingin fer aðeins einu sinni út á hvert
-    // félag. Bregðist kallið stendur okkar heimilisfang — hlekkurinn verður aldrei dauður.
-    (function (kt, rot, okkarAdr) {
+    // Kennitalan og heimilisfangið eru þegar á færslunni og teiknuð hér að ofan.
+    // 01.10.2026 (Agnar: „hvaðan er verið að flétta kennitölu húsi og korti“ /
+    // „húsið er ekkert að fara færa sig“): /api/kt-lookup er ekki kallað við opnun.
+    // Skráningarlína úr localStorage (ktskra3) er sýnd ef hún er til. Ný uppfletting
+    // fer aðeins út þegar ýtt er á Endurnýja á þessum prófíl.
+    (function (kt, rot, okkarAdr, coId) {
       if (!kt) return;
       // UTGAFA hækkar þegar kt-lookup fer að skila fleiri reitum. Hún þarf að vera bæði í
       // geymslulyklinum OG í fyrirspurninni: 16.09 var aðeins fyrirspurnin útgáfumerkt og þá
@@ -450,31 +461,26 @@ var Companies = {
       };
       try {
         var geymt = JSON.parse(localStorage.getItem(lykill) || 'null');
-        if (geymt && geymt.d && Date.now() - geymt.t < 2592e6) { syna(geymt.d); return; }
+        if (geymt && geymt.d) syna(geymt.d);
       } catch (_) {}
+      // Kennitalan er þegar á færslunni. Ekki sækja Skattinn við opnun.
+      if (!window.__coMaEndurnyja(coId, 'kt')) return;
       // `skra`-talan er útgáfa reitanna sem við lesum. Svarið ber Cache-Control max-age=86400,
       // svo vafri sem sótti kennitöluna fyrir viðbótina fengi annars gamla svarið í sólarhring
       // (það gerðist 16.09: línan sýndi bara heimilisfangið). Hækkaðu töluna þegar kt-lookup
       // fer að skila fleiri reitum.
-      // 17.09.2026 — MÆLT: prófílsopnun kallaði á þessa slóð ÞRISVAR með sömu
-      // kennitölu, 2.541 + 2.449 + 2.048 ms = ~7 sekúndur. Ástæðan er að borðinn
-      // teiknast oftar en einu sinni í ræsingunni og localStorage-geymslan hér að
-      // ofan er tóm þangað til FYRSTA svarið skilar sér — svo öll þrjú fóru af stað
-      // áður en nokkurt þeirra gat vistað. Biðin er því geymd sjálf: seinni
-      // teikningar hengja sig á sama loforð í stað þess að sækja upp á nýtt.
       var bid = (window.__ktBid = window.__ktBid || {});
-      if (!bid[lykill]) {
-        bid[lykill] = fetch('/api/kt-lookup?kt=' + kt + '&skra=' + UTGAFA)
-          .then(function (r) { return r.ok ? r.json() : null; })
-          .then(function (d) {
-            if (!d || d.error) return null;
-            try { localStorage.setItem(lykill, JSON.stringify({ d: d, t: Date.now() })); } catch (_) {}
-            return d;
-          })
-          .catch(function () { return null; });
-      }
+      delete bid[lykill];
+      bid[lykill] = fetch('/api/kt-lookup?kt=' + kt + '&skra=' + UTGAFA)
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d || d.error) return null;
+          try { localStorage.setItem(lykill, JSON.stringify({ d: d, t: Date.now() })); } catch (_) {}
+          return d;
+        })
+        .catch(function () { return null; });
       bid[lykill].then(function (d) { if (d) syna(d); });
-    })(ktTolur, el, addrHreint);
+    })(ktTolur, el, addrHreint, c.id);
 
     // ── Skýrslupunktar ────────────────────────────────────────────────────────
     // 2026-09-16 (ósk Agnars: „jafnvel góða punkta sem eru í skýrslunum sem gefa góða mynd").

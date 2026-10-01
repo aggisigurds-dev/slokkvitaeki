@@ -159,7 +159,9 @@
     for (let i = 0; i < work.length; i++) {
       if (_cancelled) break;
       // Yield to the visible queue if user opened the map
-      while (isVisibleQueueActive() && !_cancelled) {
+      // Prófíll sem er opinn má ekki kveikja landkóðun í bakgrunni.
+      // Húsið færist ekki; Endurnýja á prófílnum sér um eitt kall ef hnit vantar.
+      while ((isVisibleQueueActive() || /#(?:company|companies)\/\d+/.test(String(location.hash || ''))) && !_cancelled) {
         await new Promise(r => setTimeout(r, 1000));
       }
       if (_cancelled) break;

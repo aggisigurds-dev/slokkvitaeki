@@ -207,21 +207,24 @@
     } catch (_) {}
     return null;
   }
-  // Fyrsta svar fyrir stóra lóð getur runnið út á tíma (fallið skilar þá eigninni
-  // + tenglinum með error/reynaAftur) — slík svör fara EKKI í sessionStorage og
-  // eru sótt aftur eftir REYNA_AFTUR_MS; þá er allt orðið heitt.
-  const REYNA_AFTUR_MS = 45 * 1000;
-  const HAMARK_TILRAUNA = 3;                       // svo tóm lóð spyrji ekki endalaust
+  // Ótryggt svar (404, tímaþrot) fer EKKI í sessionStorage. Við opnun er það
+  // ekki sótt aftur — húsið færist ekki. Endurnýja á prófílnum sækir einu sinni.
+  const HAMARK_TILRAUNA = 3;                       // svo Endurnýja á tómri lóð spyrji ekki endalaust
   function saekjaSkrar(coId) {
     const k = String(coId);
     const m = skrar.get(k);
-    if (m && (m.bid || !m.reynaAftur || Date.now() - m.sott < REYNA_AFTUR_MS)) return;
     const heimilisfang = heimilisfangFyrir(coId);
     // Companies.list getur komið á EFTIR bannernum (hægt net, önnur síða á undan):
     // þá er ekkert skráð og reynt aftur á næsta samstillingar-takti (engin netumferð).
     // Fannst það sem tómar flísar á framleiðslu 14.09.2026 (2 af 3 keyrslum).
     if (heimilisfang == null) return;
     if (!heimilisfang || !/\d/.test(heimilisfang)) { skrar.set(k, { svar: { engin: true }, sott: Date.now() }); return; }
+    // 01.10.2026 (Agnar: „húsið er ekkert að fara færa sig“). Heimilisfangið er
+    // þegar á færslunni. Ekki fletta í hus-upplysingar við opnun, og aldrei
+    // reyna aftur 404 (félag 482). Aðeins Endurnýja á þessum prófíl sækir einu sinni.
+    // Svar sem þegar er í minni eða sessionStorage er teiknað án nýs kalls.
+    if (!(window.__coMaEndurnyja && window.__coMaEndurnyja(coId, 'hus'))) return;
+    if (m && m.bid) return;
     const tilraunir = ((m && m.tilraunir) || 0) + 1;
     skrar.set(k, { bid: true, tilraunir });
     fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(heimilisfang))

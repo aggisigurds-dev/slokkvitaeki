@@ -833,6 +833,8 @@
     if (!cm) return;
     if (cm.querySelector('._slokk_kt, .co-banner-kt')) { _ktSeen = id; return; }
     if (_ktSeen === id && cm.querySelector('.co-banner')) return;
+    var listRow = (Companies.list || []).find(function (x) { return x && +x.id === +id; });
+    if (listRow && listRow.kennitala) { _ktSeen = id; return; }
     var anchor = cm.querySelector('.co-banner-name') || cm.querySelector('.co-banner');
     if (!anchor) return;
     if (_ktFlight === id) return;
