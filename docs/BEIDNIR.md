@@ -31,6 +31,14 @@ Staða: `NÝ` · `Í VINNSLU` · `Í YFIRFERÐ` (agent segist búinn, ég á eft
 | # | Beiðni | Hver | Staða |
 |---|-----|---|---|
 | B43 | **„Hrikaleg hopp í ársskoðun þegar maður ýtir á check í tæki eða breytir hleðslu/yfirferð“** — fara yfir alla takka og losna við öll hopp | Claude | ✅ KLÁRT (01.10): rótin var 421 (prófíll uppfærist strax) sem endurteiknaði ALLAN prófílinn ~2 s eftir hverja vistun — líka app_settings-speglun 227 á hökum/vali (rpc:app_settings_merge). Nú hunsuð; uttaeki-breyting = aðeins listinn + kostnaður (líka í 211). 129 endurbyggir ekki athugasemdaboxið og læsir hæð spjaldsins. Mælt: 0 px hreyfing í 26 s yfir 5 aðgerðir (var 390→609→740→433→306→272 px). Eftir: tvíteikning við opnun í kapphlaupi 235/357 (sjaldgæf) |
+| B44 | **„move the vinnslu takkann … remove this Merkja mikilvægt“** | Claude | ✅ KLÁRT (01.10): „Úttekt búin / í Vinnslu“ (165) situr í haus hægra spjaldsins (129 heldur honum við endurbyggingu); 91 bjó til annan ⚠-hnapp → aðeins einn á síðu (91 + 405) |
+| B45 | **„lower the height on those boxes, make the text more visible“** | Claude | ✅ KLÁRT (01.10): textareitir 132/96 → 76/52 px; merkið „Texti á reikning“ dökkt mono á stáli (412) |
+| B46 | **„black text on black“** — SAMTALS M. VSK | Claude | ✅ KLÁRT (01.10): samtölubandið málmur með ljósu letri, talan Playfair (412) |
+| B47 | **Hreyfingar vinstra megin, Önnur viðhengi hægra megin** | Claude | ✅ KLÁRT (01.10): tveir dálkar í 403 (.b403-tvenna); tómur dálkur hverfur, einn dálkur undir 760 px. Mælt á 202: 655 + 655 px |
+| B50 | **„dökk græna metal senda takkann og more stylish takka“** — Skýrsla og reikningur saman | Claude | ✅ KLÁRT (01.10): Senda dökkgrænn málmur, Skýrsla/Reikningur silfur með línutáknum, emoji út (403 porTakkar); kortin 2 í röð (560 px) í stað 3 sem brutu textann; „Samtals“-forskeytið burt. Layout-shift 0 |
+| B51 | **„textarnir sjást illa þarna“** — KOMIÐ / 1 þjónusta á ársbandinu | Claude | ✅ KLÁRT (01.10): 313 las hálfgegnsæju merkin sem ljós og skrifaði dökkt blek → .b403-band og .b403-kafli á undanþágulista 313; stöðumerkið litað eftir stöðu |
+| B48 | Öpp-síðurnar samræmdar + layout + sími (Sími-hamur og Tölvusíðu-hamur) | Claude | ⏳ Í RÖÐ |
+| B49 | „Sækja inn úr fyrirtæki“ á Verkstæði í Brunastál | Claude | ⏳ NÆST |
 
 ## 2026-09-30
 
