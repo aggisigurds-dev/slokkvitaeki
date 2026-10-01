@@ -79,7 +79,7 @@
     rnr: null,           // raðnr. í breytingu (verklidur.id)
     bidTeikn: false
   };
-  let host = null, rot = null, _notaT = null;
+  let host = null, rot = null, _notaT = null, _framhja = null, _tegundFraVsp = false;   // _framhja: verk sem var beðið um í eldri glugga
 
   // ── stíll (úr Verkspjald.dc.html, Brunastál) ─────────────────────────────
   const METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
@@ -199,6 +199,7 @@ input,textarea{font-family:inherit}
 .summa.afsl{color:#b42318}
 .villa{font-size:12.5px;color:#b42318}
 @media (max-width:920px){.stal{grid-template-columns:minmax(0,1fr)}.ov{padding:0}.vsp{border-radius:0;min-height:100%}.haus{border-radius:0}.lina{grid-template-columns:1fr}.fbs .u{display:none}.nafn{font-size:22px}}
+@media (max-width:600px){.haus{flex-wrap:wrap;gap:10px;padding:14px 14px 12px}.merkid{width:44px;height:44px}.haus .grow{flex:1 1 calc(100% - 60px)}.nafn{white-space:normal}.haus>.plata{margin-left:auto}.fbs{padding:9px 10px;gap:6px}.fbs .t{font-size:12px}.stal{padding:10px}.pmenu{right:-50px;width:min(330px,calc(100vw - 20px))}}
 `;
 
   // ── tákn (inline stroke-SVG, Miðakerfi) ─────────────────────────────────
@@ -367,6 +368,7 @@ input,textarea{font-family:inherit}
           (S.meira === u.id ? '<div class="meira" role="menu">' +
             '<button type="button" role="menuitem" data-a="mida-eitt" data-j="' + j.id + '" data-u="' + u.id + '">Prenta miða</button>' +
             '<button type="button" role="menuitem" data-a="rnr" data-u="' + u.id + '">Breyta raðnúmeri</button>' +
+            (sk === 1 ? '<button type="button" role="menuitem" data-a="tegund" data-j="' + j.id + '" data-u="' + u.id + '">Breyta tegund / þjónustu</button>' : '') +
             (sk === 1 ? '<button type="button" role="menuitem" class="eyda" data-a="eyda" data-j="' + j.id + '" data-u="' + u.id + '">Eyða tæki</button>' : '') +
             '</div>' : '') +
           (S.rnr === u.id ? '<div class="rnr"><input class="reitur mono" data-k="rnr" data-u="' + u.id + '" value="' + esc(u.serial || '') + '" aria-label="Raðnúmer"><button type="button" class="vbtn ok" data-a="rnr-vista" data-j="' + j.id + '" data-u="' + u.id + '">Vista</button><button type="button" class="vbtn" data-a="rnr">Hætta við</button></div>' : '') +
@@ -377,6 +379,8 @@ input,textarea{font-family:inherit}
               (sk === 1 ? '<button type="button" class="fjarl" data-a="hluti-x" data-j="' + j.id + '" data-u="' + u.id + '" data-i="' + i + '" aria-label="Taka ' + esc(p.nafn || 'varahlut') + ' af" title="Taka af">' + I.xs + '</button>' : '') + '</td></tr>';
           }).join('') + '</table>' : (sk === 1 ? '' : '<div class="tomt">Engir varahlutir.</div>')) +
           (sk === 1 ? '<button type="button" class="vbtn sm" data-a="hluti" data-j="' + j.id + '" data-u="' + u.id + '">' + I.plus + ' Varahlutur / þjónusta</button>' : '') +
+          // Athugasemd Á TÆKINU (verklidur.notes) — gamli tækjaglugginn hafði hana; hún má ekki hverfa sjónum.
+          '<label><span class="lbl">Athugasemd á tæki</span><textarea class="textar" style="min-height:44px" data-k="tnota" data-j="' + j.id + '" data-u="' + u.id + '" rows="2" placeholder="t.d. skipti um ventil, þrýstiprófað" aria-label="Athugasemd á tæki">' + esc(u.notes || '') + '</textarea></label>' +
         '</div>';
       }
       return '<div class="vk" style="--teg:' + tegLitur(u.type || u.service) + '">' +
@@ -399,7 +403,9 @@ input,textarea{font-family:inherit}
       '<textarea class="textar" data-k="nota" data-j="' + fyrsta.id + '" rows="3" placeholder="Skrifaðu athugasemd — sést á Verkstæði og í Afgreiðslu" aria-label="Athugasemd">' + esc(f.userNote) + '</textarea>' +
       (f.prefix ? '<div class="annad">Þjónusta: ' + esc(f.prefix) + '</div>' : '') +
       adrar.map(x => '<div class="annad"><b>' + esc(String(x.j.num).replace(/^.*-(V\d+)$/i, '$1')) + ':</b> ' + esc(x.n) + '</div>').join('') +
-      '</div>';
+      '</div>' +
+      // Neyðarútgangur á meðan áfangi 2 stendur: gamli glugginn hafði sjaldgæfa takka (Aflýsa, Setja inn greitt, undirskrift).
+      '<button type="button" class="haetta" style="align-self:flex-start" data-a="eldri">Opna í eldri glugga</button>';
   }
 
   function samtalaSolu(jobs, s) {
@@ -557,12 +563,28 @@ input,textarea{font-family:inherit}
       case 'hluti-x': await Workshop.removePartFromUnit(+el.dataset.j, +el.dataset.u, +el.dataset.i); teikna(); return;
       case 'rnr': { const uid = el.dataset.u ? +el.dataset.u : null; S.rnr = uid && S.rnr !== uid ? uid : null; S.meira = null; teikna(); if (S.rnr) { const i = rot.querySelector('[data-k="rnr"]'); if (i) { i.focus(); i.select(); } } return; }
       case 'rnr-vista': vistaRnr(el.dataset.j, el.dataset.u); return;
+      case 'tegund': {
+        // Sjaldgæft: þjónustuval 78 (ensureSvcProducts/svcOptionsHtml) er lokað inni í 78 — gamla breyta-formið opnast
+        // OFAN Á spjaldinu (.bw-ov z 9000); þegar því er lokað teiknar Workshop.render okkur aftur.
+        S.meira = null; teikna();
+        if (window.Workshop && Workshop._renderUnitModal && Workshop.editUnit) {
+          _tegundFraVsp = true;
+          Workshop._unitCtx = { jobId: +el.dataset.j, unitId: +el.dataset.u };
+          Workshop._renderUnitModal();
+          Workshop.editUnit();
+        }
+        return;
+      }
       case 'eyda': { S.meira = null; const ok = await Workshop.deleteUnit(+el.dataset.j, +el.dataset.u); if (ok && S.opid === +el.dataset.u) S.opid = null; teikna(); return; }
       case 'nytt-taeki': Workshop.addUnit(+el.dataset.j); return;   // lítill gluggi (78, z 9000) — Workshop.render teiknar okkur
       case 'senda': {
-        const ids = verkin(job).filter(j => j.status !== 'collected').map(j => j.id);
+        // Takkinn er aðeins virkur þegar ÖLL tæki eru Tilbúin eða Ónýt (teikningin). 78 sendGroupToAfgreidsla telur
+        // Ónýtt sem ótilbúið og spurði „1/2 tilbúin. Senda samt?" — óþörf spurning hér, svo staðan er sett beint.
+        const verk = verkin(job).filter(j => j.status !== 'collected' && j.status !== 'ready');
         el.disabled = true;
-        await Workshop.sendGroupToAfgreidsla(ids);
+        for (const j of verk) { try { await DB.updateJobStatus(j.id, 'ready'); } catch (e) { console.warn('[430 senda]', e); } }
+        toast('Sent í afgreiðslu');
+        try { if (window.Workshop && Workshop.render) Workshop.render(); } catch (_) {}
         teikna(); return;
       }
       case 'afhenda': {
@@ -573,6 +595,13 @@ input,textarea{font-family:inherit}
         return;
       }
       case 'linur': if (window.SaleEditor && SaleEditor.openFromJob) SaleEditor.openFromJob(job.num); return;
+      case 'eldri': {
+        const id = job.id;
+        loka(true);
+        _framhja = id;                       // openJobModal hleypir þessu eina verki í gamla gluggann
+        if (window.Counter && Counter.select) Counter.select(id);
+        return;
+      }
       case 'aftur': {
         const tilb = verkin(job).filter(j => j.status === 'ready');
         if (!window.Counter || !Counter.sendBackToWorkshop) return;
@@ -599,6 +628,9 @@ input,textarea{font-family:inherit}
   function onFocusOut(e) {
     const t = e.target, k = t && t.dataset ? t.dataset.k : null;
     if (k === 'nota') { clearTimeout(_notaT); vistaNotu(t.dataset.j, t.value); }
+    if (k === 'tnota' && window.Workshop && Workshop.saveUnitNote) {
+      Workshop.saveUnitNote(+t.dataset.j, +t.dataset.u, String(t.value || '')).then(() => toast('Athugasemd á tæki vistuð')).catch(() => toast('Vistaðist ekki', true));
+    }
     setTimeout(() => { if (S.bidTeikn && !erAdSkrifa()) { S.bidTeikn = false; teikna(); } }, 0);
   }
   function onKeyDoc(e) {
@@ -643,7 +675,7 @@ input,textarea{font-family:inherit}
     if (!C.openJobModal.__vsp) {
       const orig = C.openJobModal;
       C.openJobModal = function () {
-        if (virkt() && C.sel) {
+        if (virkt() && C.sel && C.sel !== _framhja) {
           const m = document.getElementById('counter-detail-modal'); if (m) m.style.display = 'none';
           if (visa(C.sel)) return;
         }
@@ -653,7 +685,7 @@ input,textarea{font-family:inherit}
     }
     if (!C.closeJobModal.__vsp) {
       const orig = C.closeJobModal;
-      C.closeJobModal = function () { loka(true); return orig.apply(this, arguments); };
+      C.closeJobModal = function () { _framhja = null; loka(true); return orig.apply(this, arguments); };
       C.closeJobModal.__vsp = true;
     }
     if (!W.openUnitModal.__vsp) {
@@ -672,6 +704,18 @@ input,textarea{font-family:inherit}
       };
       W.select.__vsp = true;
     }
+    // Breyta tegund / þjónustu úr spjaldinu: gamla formið lokast sjálft eftir Vista / Hætta við (annars stóð gamli
+    // tækjaglugginn eftir ofan á spjaldinu).
+    ['saveUnitEdit', 'editUnitCancel'].forEach(nm => {
+      if (typeof W[nm] !== 'function' || W[nm].__vsp) return;
+      const orig = W[nm];
+      W[nm] = async function () {
+        const r = await orig.apply(this, arguments);
+        if (_tegundFraVsp) { _tegundFraVsp = false; try { W.closeUnitModal(); } catch (_) {} }
+        return r;
+      };
+      W[nm].__vsp = true;
+    });
     // Aðgerðir 78 enda á Workshop.render() — þá teiknast spjaldið líka (vöruval, nýtt tæki, eyða).
     if (!W.render.__vsp) {
       const orig = W.render;
