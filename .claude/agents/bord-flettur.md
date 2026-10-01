@@ -501,3 +501,5 @@ Punktarnir sjálfir opnast í `br-drogstod` (sama hub-iframe, `sessionStorage.ds
 ## Lærdómur
 
 - **30.09.2026** — Borðið í dag er 368-thjonustubord5.js (Shadow DOM). Papp 231 var fjarlægt í d3eb1b78 ásamt spjallinu (347) — kaflinn um 231 hér er sögulegur og lýsir gagnalíkaninu sem 368 erfði, ekki lifandi skrá. thjonustubeidni-taflan og slug-arnir standa óbreyttir. (js/patches/368-thjonustubord5.js)
+
+- **01.10.2026** — 01.10.2026 — Brunakerfi-flipinn (274) reikningslínur: tegund línu kemur úr l.teg (Vara/Þjónusta, smellur á merkið skiptir; ágiskun aðeins á eldri línum), „Þar af nýtt:“-tillögur (vara tengd „Nýtt: <búnaður>“ í verðlista × bunadur[].nytt; lidLykill hunsar orðaröð og broddstafi), og ＋ Vara / ＋ Þjónusta úr verðlista við hlið „Auð lína“. Les úr window.BrunakerfiSkyrsla (273): verdlistiMedTegund, nyttLinur, tegAgiskun. Fyrirtækjaprófíllinn (357/360) var líka breyttur sama dag í öðru spjalli: kalt op málar borða og tæki áður en allar uttaeki-síður koma.
