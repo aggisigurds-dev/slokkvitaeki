@@ -424,9 +424,8 @@
     try { localStorage.setItem('husmynd_reynd_v1_' + coId, JSON.stringify({ adr: adr, stada: stada })); } catch (_) {}
   }
   function erVerndud(m) {
-    if (!m || !m.url) return false;
-    var u = m.uppspretta || '';
-    return u === 'handvirkt' || u === 'borgarvefsja' || u === '';
+    // Handvirkt, tóm uppspretta og allt sem á þegar slóð er skilið eftir.
+    return !!(m && m.url);
   }
   function b64Blob(b64, tegund) {
     var bin = atob(b64);
@@ -434,70 +433,75 @@
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return new Blob([bytes], { type: tegund || 'image/jpeg' });
   }
-  async function vistaGoogle(coId, svar) {
+  async function vistaUtan(coId, adr, svar) {
+    if (erVerndud(lesaMynd(coId))) return false;
     var s = sbKlient();
     if (!s) return false;
     var blob = b64Blob(svar.image, svar.contentType || 'image/jpeg');
-    var slod = 'bygging/' + coId + '/hus-utan.jpg';
+    var slod = 'bygging/' + coId + '/borgarvefsja-2018.jpg';
     var up = await s.storage.from(BUCKET).upload(slod, blob, { contentType: 'image/jpeg', upsert: true });
     if (up.error) throw up.error;
     var pub = s.storage.from(BUCKET).getPublicUrl(slod);
     var url = pub && pub.data && pub.data.publicUrl;
     if (!url) return false;
+    if (erVerndud(lesaMynd(coId))) return false;
     url += (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + Date.now();
     await skrifaMynd(coId, {
       url: url, slod: BUCKET + '/' + slod, ts: new Date().toISOString(),
-      uppspretta: 'google', heimild: svar.heimild || 'google', attribution: svar.attribution || ''
+      heimilisfang: adr, engin: false,
+      uppspretta: svar.heimild || 'borgarvefsja-2018',
+      heimild: svar.heimild || 'borgarvefsja-2018',
+      attribution: svar.attribution || 'Borgarvefsjá · loftmynd 17.7.2018'
     });
     return true;
   }
+  async function vistaEngin(coId, adr, kodi) {
+    if (erVerndud(lesaMynd(coId))) return false;
+    await skrifaMynd(coId, {
+      engin: true, ts: new Date().toISOString(), heimilisfang: adr,
+      uppspretta: 'borgarvefsja-2018', heimild: kodi || 'engin-mynd',
+      skilabod: 'engin mynd'
+    });
+    return true;
+  }
+  // Ein tilraun þegar engin mynd er vistuð. Næsta opnun les co_bygging_mynd
+  // og kallar ekki aftur. Tími/netvilla er ekki vistuð sem engin, en þessi
+  // síðuhleðsla reynir ekki aftur.
+  var _reynd = new Set();
   async function einUtanMynd(coId, adr) {
     if (!coId || !adr) return;
     if (!window.AppSettings || !AppSettings.isLoaded || !AppSettings.isLoaded()) return;
     var m = lesaMynd(coId);
-    if (m && m.url) return;
-    var endur = !!(window.__coEndurnyja && +window.__coEndurnyja.id === +coId
-      && !(window.__coEndurnyja.notad && window.__coEndurnyja.notad.mynd));
-    if (!endur && lesaReynd(coId, adr)) return;
-    if (_myndBid.has(coId)) return;
-    if (endur && !(window.__coMaEndurnyja && window.__coMaEndurnyja(coId, 'mynd'))) return;
+    if (erVerndud(m)) return;
+    if (m && m.engin && String(m.heimilisfang || '') === String(adr)) return;
+    var lykill = coId + '|' + adr;
+    if (_reynd.has(lykill) || _myndBid.has(coId)) return;
+    _reynd.add(lykill);
     _myndBid.add(coId);
     try {
-      var hnit = await hnitEinusinni(adr);
-      var body = hnit ? { lat: hnit.lat, lng: hnit.lon, address: adr } : { address: adr };
       var r = await fetch('/api/husmynd', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({ address: adr })
       });
       var svar = null;
       try { svar = await r.json(); } catch (_) { svar = null; }
-      if (!svar || svar.error === 'vantar-lykil') { vistaReynd(coId, adr, 'vantar-lykil'); return; }
-      if (svar.ok && svar.image) {
-        if (erVerndud(lesaMynd(coId))) { vistaReynd(coId, adr, 'hand'); return; }
-        await vistaGoogle(coId, svar);
-        vistaReynd(coId, adr, 'mynd');
+      if (erVerndud(lesaMynd(coId))) return;
+      if (svar && svar.ok && svar.image) {
+        await vistaUtan(coId, adr, svar);
         endurteikna(true);
         return;
       }
-      vistaReynd(coId, adr, (svar && svar.error) || 'engin');
-    } catch (_) {
-      vistaReynd(coId, adr, 'villa');
-    } finally {
+      if (svar && svar.error === 'timi') return;
+      await vistaEngin(coId, adr, (svar && svar.error) || 'engin');
+      endurteikna(true);
+    } catch (_) {}
+    finally {
       _myndBid.delete(coId);
     }
   }
   function synaMyndEdaTomt(flis, coId) {
-    var adr = heimilisfangNu();
-    var minni = adr && hnitUrMinni(adr);
-    if (minni) loftmynd(flis, adr);
-    else if (adr) {
-      hnitEinusinni(adr).then(function (h) {
-        if (!flis.isConnected) return;
-        if (h) loftmynd(flis, adr);
-      });
-    }
-    einUtanMynd(coId, adr);
+    einUtanMynd(coId, heimilisfangNu());
   }
 
   // ── Flísin ──────────────────────────────────────────────────────────────
@@ -511,9 +515,26 @@
     if (m && m.url) {
       flis.classList.add('med');
       flis.title = 'Mynd af byggingunni — smelltu til að stækka, skipta um eða fjarlægja · límdu nýja yfir til að skipta';
-      flis.innerHTML = '<div class="co-mynd-vefja"><img alt="Bygging"></div>' +
+      var merki = (m.uppspretta && String(m.uppspretta).indexOf('borgarvefsja') === 0)
+        ? '<span class="co-mynd-loftmerki" title="Loftmynd úr Borgarvefsjá 2018. Ekki mynd sem þú settir inn.">Borgarvefsjá</span>'
+        : '';
+      flis.innerHTML = '<div class="co-mynd-vefja"><img alt="Bygging"></div>' + merki +
         '<button type="button" class="co-mynd-x" title="Fjarlægja myndina">×</button>' + UPP + hlekkir;
-      flis.querySelector('img').src = m.url;
+      var mynd = flis.querySelector('img');
+      mynd.addEventListener('error', function () {
+        var vef = flis.querySelector('.co-mynd-vefja');
+        if (vef) vef.remove();
+        var pill = flis.querySelector('.co-mynd-loftmerki');
+        if (pill) pill.remove();
+        flis.classList.remove('med');
+        if (!flis.querySelector('.co-mynd-engin')) {
+          var t = document.createElement('div');
+          t.className = 'co-mynd-tomt co-mynd-engin';
+          t.textContent = 'engin mynd';
+          flis.appendChild(t);
+        }
+      });
+      mynd.src = m.url;
       flis.addEventListener('click', function (e) {
         if (e.target.closest('.co-mynd-x') || e.target.closest('.co-mynd-hlekkir') || e.target.closest('.co-mynd-upp')) return;
         opnaLjos(m.url, coId);
@@ -559,14 +580,7 @@
     var adrNuna = heimilisfangNu();
     var sig = coId + '|' + ((m && m.url) || '') + '|' + adrNuna;
     if (box && !thvinga && box.dataset.sig === sig) {
-      if (!(m && m.url)) {
-        var flis = box.querySelector('.co-mynd-flis');
-        if (flis && !flis.querySelector('.co-mynd-vefja')) {
-          var h = adrNuna && hnitUrMinni(adrNuna);
-          if (h) loftmynd(flis, adrNuna);
-        }
-        einUtanMynd(coId, adrNuna);
-      }
+      if (!(m && m.url)) einUtanMynd(coId, adrNuna);
       return;
     }
     if (box) box.remove();
@@ -601,5 +615,5 @@
   endurteikna(false);
 
   window.ByggingMynd = { endurteikna: endurteikna, lesaMynd: lesaMynd, opnaLjos: opnaLjos };
-  console.log(TAG, 'virkt v3 — mynd í hæð bannersins + Google/Já-hlekkir á götumynd');
+  console.log(TAG, 'virkt — vistuð mynd, annars ein Borgarvefsjá-tilraun');
 })();
