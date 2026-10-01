@@ -227,9 +227,11 @@
       both('#view-opp .op-ic' + P)
         + '{width:40px!important;height:40px!important;font-size:22px!important;border-radius:11px!important}',
       both('#view-opp .op-nm' + P) + '{font-size:16px!important}',
-      both('#view-opp .op-acts' + P) + strip.slice(0, -1) + ';margin:8px 0 0!important}',
+      /* B48 (01.10.2026): tveir jafnir dálkar, Opna yfir alla breiddina — tötruð flex-röð var þriggja línu óregla */
+      both('#view-opp .op-acts' + P) + '{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin:8px 0 0!important}',
+      both('#view-opp .op-acts .op-btn.prim' + P) + '{grid-column:1/-1!important}',
       both('#view-opp .op-btn' + P)
-        + '{flex:0 0 auto!important;min-width:46px!important;min-height:42px!important;'
+        + '{flex:0 0 auto!important;min-width:0!important;justify-content:center!important;min-height:42px!important;'
         + 'height:42px!important;padding:0 12px!important;font-size:13px!important;'
         + 'white-space:nowrap!important}',
       both('#view-opp .op-card[style*="min-height:170px"]' + P)

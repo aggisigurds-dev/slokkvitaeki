@@ -209,7 +209,7 @@
     '#view-opp #' + ID + ' .st-h::before{content:"";position:absolute;left:12px;top:10px;width:7px;height:7px;border-radius:50%;background:' + RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.6)}',
     '#view-opp #' + ID + ' .st-h::after{content:"";position:absolute;left:12px;bottom:10px;width:7px;height:7px;border-radius:50%;background:' + RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.6)}',
     '#view-opp #' + ID + ' .st-t{margin-right:auto;min-width:0}',
-    '#view-opp #' + ID + ' .st-t small{display:block;font-family:' + MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#aab1bb}',
+    '#view-opp #' + ID + ' .st-t small{display:block;font-family:' + MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#aab1bb!important}',
     '#view-opp #' + ID + ' .st-t strong{display:block;font-family:' + DISP + ';font-size:20px;font-weight:800;color:#fff;line-height:1.15;margin-top:2px;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
     '#view-opp #' + ID + ' .st-h .op-btn{background:' + MBTN + ' !important;border:1px solid #000 !important;color:#e3e7ee !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.5) !important}',
     '#view-opp #' + ID + ' .st-h .op-btn svg{color:#c9ced6}',
@@ -242,6 +242,8 @@
     '#view-opp #' + ID + ' .st-mini{width:40px;height:40px;padding:0 !important;border-radius:7px !important;border:1px solid rgba(20,24,34,.28) !important;background:' + SILVER + ' !important;color:#1c2028 !important;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.12) !important;text-shadow:none !important;cursor:pointer;flex:none;display:inline-flex !important;align-items:center;justify-content:center}',
     '#view-opp #' + ID + ' .st-mini svg{width:16px;height:16px}',
     '#view-opp #' + ID + ' .st-mini[data-open]{color:#b3261e !important}',
+    /* B48 sími: titill fær heila línu, takkarnir deila næstu; Króm-röðin kemst í eina línu á 375 */
+    '@media (max-width:600px){#view-opp #' + ID + ' .st-t{flex:1 1 100%}#view-opp #' + ID + ' .st-h .op-btn{flex:1 1 0;justify-content:center;min-width:0}#view-opp #' + ID + ' .st-seg button{min-width:38px;padding:0 8px}}',
     '#view-opp #' + ID + ' .st-msg{font-size:12.5px;color:#2a2f37;margin-top:10px;white-space:pre-wrap;word-break:break-word}',
     '#view-opp #' + ID + ' .op-btn{min-height:40px;padding:0 13px;font-size:13px}'
   ].join('\n');
@@ -264,7 +266,7 @@
       '<span class="st-chip' + (d.sw ? ' ok' : ' warn') + '">' + (d.sw ? '<small>SW</small>virkur' : '<small>SW</small>enginn') + '</span>'
     ].join('');
     const note = d.desktopMode
-      ? '<div class="st-note">Chrome sýnir þessa síðu í <b>Tölvusíðu-ham</b> (síðan er ' + esc(d.layout.split('×')[0]) + ' px breið á ' + esc(d.screen.split('×')[0]) + ' dp skjá). Krómið (haus, ☰, botnstika) er skalað á móti ×' + fmtNum(d.auto) + '. Viljirðu símaútlitið: <b>⋮ → taka hakið af „Tölvusíða"</b>.</div>'
+      ? '<div class="st-note">Chrome sýnir þessa síðu í <b>Tölvusíðu-ham</b> (síðan er ' + esc(d.layout.split('×')[0]) + ' px breið á ' + esc(d.screen.split('×')[0]) + ' dp skjá). Krómið (haus, valmynd, botnstika) er skalað á móti ×' + fmtNum(d.auto) + '. Viljirðu símaútlitið: <b>⋮ → taka hakið af „Tölvusíða"</b>.</div>'
       : '';
     const kromSel = d.manual != null ? String(d.manual) : 'auto';
     const kromSeg = '<div class="st-seg">' + KROM.map(([v, l]) => '<button type="button" data-krom="' + v + '" class="' + (String(v) === kromSel || (kromSel !== 'auto' && +v === +kromSel) ? 'on' : '') + '">' + l + '</button>').join('') + '</div>';
@@ -285,7 +287,7 @@
       '<button type="button" class="op-btn" data-act="check"' + (state.busy ? ' disabled' : '') + '>' + IK.leita + 'Athuga öpp</button>' +
       '<button type="button" class="op-btn" data-act="copy">' + IK.afrita + 'Afrita greiningu</button></div>' +
       '<div class="st-sec">Tæki og útgáfa</div><div class="st-chips">' + chips + '</div>' + note +
-      '<div class="st-sec">Króm-stærð (haus · ☰ · botnstika · zoom-stika)</div>' + kromSeg +
+      '<div class="st-sec">Króm-stærð (haus · valmynd · botnstika · zoom-stika)</div>' + kromSeg +
       '<div class="st-sec">Síðuzoom (efnið)</div>' + zoomSeg +
       '<div class="st-sec">Öpp á þessu tæki</div><div class="st-apps">' + (rows || '<div class="st-msg">Engin öpp fundust á síðunni.</div>') + '</div>' + relLine +
       '<div class="st-sec">Aðgerðir</div><div class="st-row">' +

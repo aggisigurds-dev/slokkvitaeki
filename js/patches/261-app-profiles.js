@@ -995,7 +995,7 @@
       '.mx-box{padding:12px !important;overflow:hidden}',
       '.mx-sum{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;padding:11px 14px 11px 32px;cursor:pointer;list-style:none;user-select:none;background:' + B48_METAL + ';border:1px solid #000;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 1px 2px rgba(0,0,0,.35)}',
       '.mx-sum-tt{display:flex;flex-direction:column;min-width:0}',
-      '.mx-sum-k{font-family:' + B48_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#aab1bb;line-height:1.2}',
+      '.mx-sum-k{font-family:' + B48_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#aab1bb !important;line-height:1.2}',
       '.mx-chev{display:inline-flex;color:#c9ced6;transition:transform .18s}',
       '.mx-chev svg{width:16px;height:16px}',
       '.mx-box[open] .mx-chev{transform:rotate(180deg)}',
@@ -1010,11 +1010,11 @@
       // Hér er hún færð aftur í alvöru töflu og skrunið skilið eftir hjá .mx-scroll.
       '.mx-scroll .mx-t{display:table !important;border-collapse:separate;border-spacing:0;font-size:12.5px;width:max-content !important;min-width:100% !important;max-width:none !important;overflow:visible !important}',
       '.mx-t th,.mx-t td{padding:0;margin:0}',
-      '.mx-t thead th{position:sticky;top:0;z-index:3;background:#26262c;border-bottom:1px solid #000;color:#e3e7ee}',
-      '.mx-cnr{position:sticky;left:0;z-index:4 !important;background:#1c1e23 !important;text-align:left;padding:8px 12px !important;font-family:' + B48_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#aab1bb;min-width:190px;border-right:1px solid #000}',
+      '.mx-t thead th{position:sticky;top:0;z-index:3;background:#26262c !important;border-bottom:1px solid #000;color:#e3e7ee}',
+      '.mx-cnr{position:sticky;left:0;z-index:4 !important;background:#1c1e23 !important;text-align:left;padding:8px 12px !important;font-family:' + B48_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#aab1bb !important;min-width:190px;border-right:1px solid #000}',
       '.mx-ah{padding:7px 4px !important;min-width:62px;text-align:center;vertical-align:bottom}',
       '.mx-ae{font-size:17px;line-height:1.1}',
-      '.mx-an{font-family:' + B48_SANS + ';font-size:9px;font-weight:600;color:#c9ced6;line-height:1.15;max-width:62px;margin:2px auto 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.mx-an{font-family:' + B48_SANS + ';font-size:9px;font-weight:600;color:#c9ced6 !important;line-height:1.15;max-width:62px;margin:2px auto 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.mx-rh{position:sticky;left:0;z-index:2;background:#fff;text-align:left;font-family:' + B48_SANS + ';font-weight:600;color:#1c2028;padding:6px 12px !important;border-right:1px solid rgba(20,24,34,.14);border-bottom:1px solid #eceff3;white-space:nowrap}',
       '.mx-t tbody tr:nth-child(even) .mx-rh{background:#f5f6f8}',
       '.mx-t tbody tr:nth-child(even) td{background:#f5f6f8}',
@@ -1025,6 +1025,8 @@
       '.mx-sub .mx-rh{padding-left:30px !important;font-weight:500;color:#4a515c}',
       '.mx-vb{display:inline-block;margin-right:7px;background:' + B48_SILVER + ';border:1px solid rgba(179,38,30,.45);color:#8a1414;border-radius:4px;padding:1px 5px;font-family:' + B48_MONO + ';font-size:9px;font-weight:700;letter-spacing:.08em;vertical-align:1px}',
       '.mx-sub .mx-vb{border-color:rgba(20,24,34,.22);color:#5b6370}',
+      // B48 sími: síðudálkurinn má ekki gleypa skjáinn (309 px af 323) — brotnar í línur svo öppin sjáist strax
+      '@media (max-width:600px){.mx-cnr{min-width:0 !important;width:132px}.mx-rh{white-space:normal !important;min-width:132px;max-width:140px;line-height:1.25;padding:6px 8px !important}.mx-sub .mx-rh{padding-left:14px !important}.mx-pe{margin-right:5px}}',
       '.mx-c{text-align:center;border-bottom:1px solid #eceff3}',
       '.mx-c input{width:17px;height:17px;accent-color:#b3261e;cursor:pointer;margin:6px auto;display:block}',
       '.mx-op{width:34px;text-align:center;border-bottom:1px solid #eceff3}',
@@ -1032,8 +1034,9 @@
       '#view-opp .mx-open svg{width:15px;height:15px}',
       '#view-opp .mx-open:hover{color:#b3261e !important;background:#f1f2f4 !important}',
       '.mx-hint{padding:9px 2px 0;font-family:' + B48_SANS + ';font-size:11.5px;color:#3b414b}',
-      // launcher page
-      '#' + VIEW_ID + '{padding:0 !important;background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%) !important;min-height:100vh}',
+      // launcher page — B48: dökka bandið nær niður fyrir titilinn (endar ~335 px á 1600 og í Tölvusíðu-ham);
+      // áður dofnaði það frá 95 px og hvíti 409-titillinn + undirlínan stóðu á miðgráu
+      '#' + VIEW_ID + '{padding:0 !important;background:linear-gradient(180deg,#060607 0px,#101115 300px,#1c1e23 345px,#aeb4be 560px,#9ba1ad 100%) !important;min-height:100vh}',
       // Launcher-inn er hub-síða → fasti Brunastál-borðinn (og hamborgarinn) liggja
       // ofan á honum. Ýtum innihaldinu niður fyrir borðann svo „📱 Öpp" titillinn
       // sé ekki falinn. Á síma er borðinn grennri en á skjáborði.
@@ -1042,7 +1045,7 @@
       // Skjár: Fylki-spjaldið var 760px-eyja á risastórum gráum fleti. Breiðara
       // svo Stílstjóri geti málað síðuna. Sími/Tafla halda 760px. Aðrar síður ósnertar.
       'html[data-viewmode="desktop"] #' + VIEW_ID + ' .op-main{max-width:min(1280px,calc(100% - 40px))}',
-      '#' + VIEW_ID + ' .op-kick{font-family:' + B48_MONO + ';font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#aab1bb;margin:0 0 4px}',
+      '#' + VIEW_ID + ' .op-kick{font-family:' + B48_MONO + ';font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#aab1bb !important;margin:0 0 4px}',
       '#' + VIEW_ID + ' .op-h1{margin:0 0 4px;font-family:' + B48_DISP + ';font-size:32px;font-weight:800;color:#fff;letter-spacing:.005em;line-height:1.1;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 10px rgba(0,0,0,.4)}',
       '#' + VIEW_ID + ' .op-sub{margin:0 0 20px;font-family:' + B48_SANS + ';font-size:13px;color:#c9ced6}',
       '#' + VIEW_ID + ' .op-card{background:' + B48_PLATE + ';border:1px solid #0b0c0f;border-radius:10px;padding:14px;margin:0 0 16px;box-shadow:0 18px 40px -22px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.7);font-family:' + B48_SANS + ';color:#1c2028}',
@@ -1180,7 +1183,7 @@
       '#_app-pgedit ._pe-card{background:' + B48_PLATE + ';border:1px solid #0b0c0f;width:100%;max-width:560px;max-height:82vh;display:flex;flex-direction:column;border-radius:12px 12px 0 0;overflow:hidden;box-shadow:0 -10px 40px rgba(0,0,0,.5);font-family:' + B48_SANS + ';color:#1c2028}',
       '#_app-pgedit ._pe-h{position:relative;flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px 12px 32px;background:' + B48_METAL + ';border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);font-family:' + B48_DISP + ';font-size:19px;font-weight:800;color:#fff;line-height:1.15;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
       '#_app-pgedit ._pe-h > span{min-width:0}',
-      '#_app-pgedit ._pe-kick{display:block;font-family:' + B48_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#aab1bb;text-shadow:none;margin-bottom:2px}',
+      '#_app-pgedit ._pe-kick{display:block;font-family:' + B48_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#aab1bb !important;text-shadow:none;margin-bottom:2px}',
       '#_app-pgedit ._pe-h button{font-family:' + B48_SANS + ' !important;font-size:13px;font-weight:600;padding:0 13px 0 9px;border-radius:7px !important;border:1px solid #000 !important;background:' + B48_MBTN + ' !important;color:#e3e7ee !important;text-shadow:none !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.5) !important;cursor:pointer;min-height:40px;display:inline-flex;align-items:center;gap:5px}',
       '#_app-pgedit ._pe-h button svg{width:15px;height:15px}',
       '#_app-pgedit .op-sech{font-family:' + B48_MONO + ';font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5b6370}',
@@ -1316,7 +1319,7 @@
         '<span class="mx-sum-n">' + matrixRows().length + ' síður · ' + apps.length + ' öpp</span>' +
         '<span class="mx-chev">' + B48_IK.chev + '</span>' +
       '</summary>' +
-      '<div class="mx-scroll"><table class="mx-t"><thead><tr>' + head + '</tr></thead>' +
+      '<div class="mx-scroll"><table class="mx-t no-skin"><thead><tr>' + head + '</tr></thead>' +
       '<tbody>' + body + '</tbody></table></div>' +
       '<div class="mx-hint">Strjúktu til hliðar til að sjá fleiri öpp · örin lengst til hægri opnar síðuna svo þú sjáir útlitið</div>' +
     '</details>';
