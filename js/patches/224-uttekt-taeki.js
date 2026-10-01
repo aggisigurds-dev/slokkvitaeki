@@ -683,7 +683,7 @@
       })();
       return;
     }
-    if((b=e.target.closest('.ut-bulk-clear'))){ _sel={}; UttektTaeki.rerender(+b.dataset.co); return; }
+    if((b=e.target.closest('.ut-bulk-clear'))){ _sel={}; uppfaeraVal(+b.dataset.co); return; }
     if((b=e.target.closest('.ut-grp-h'))){ _collapsed[b.dataset.k]=!_collapsed[b.dataset.k]; UttektTaeki.rerender(+b.dataset.co); return; }
   });
   // Remember the bulk date across re-renders.

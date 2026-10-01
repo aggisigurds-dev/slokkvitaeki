@@ -436,6 +436,30 @@
   // aðeins sótt til viðbótar fyrir raðir sem bera EKKERT auðkenni, svo
   // systkinastaður með sama nafni dragist aldrei inn (sbr. 175/239).
   async function fetchUnits(client, coId) {
+    const NONBILL_PRE = { onytt: 1, geymsla: 1, urelt: 1, i_vinnslu: 1 };
+    const normStPre = (window.Companies && Companies._normStatus) ? Companies._normStatus : function (s) {
+      const c = String(s == null ? '' : s).toLowerCase();
+      if (c === 'onytt' || c === 'ónýtt') return 'onytt';
+      if (/geymsl/.test(c)) return 'geymsla';
+      if (c === 'urelt' || c === 'úrelt') return 'urelt';
+      if (/vinnsl/.test(c)) return 'i_vinnslu';
+      return 'active';
+    };
+    // 01.10.2026 (Agnar: hliðarspjaldið hægt eftir hak / Yfirferð): sótti ALLAR
+    // uttaeki-raðir félagsins úr Supabase við hverja teikningu — og svo AFTUR
+    // á nafni fyrir munaðarlausar. Listinn er þegar í DB.cache.units (~6k) og
+    // NONBILL-sían er sú sama, svo engin ný tala á reikninginn. Net aðeins ef
+    // skyndiminninu vantar.
+    const cached = window.DB && DB.cache && Array.isArray(DB.cache.units) ? DB.cache.units : null;
+    if (cached && cached.length) {
+      return cached.filter(u => {
+        if (!u) return false;
+        const match = coId != null
+          ? ((u.fyrirtaeki_id != null) ? (Number(u.fyrirtaeki_id) === Number(coId)) : (u.client === client))
+          : (u.client === client);
+        return match && !NONBILL_PRE[normStPre(u.status)];
+      });
+    }
     const sb = window.DB && window.DB.sb;
     if (!sb) return [];
     let all = [];
@@ -1771,7 +1795,7 @@
   // Óhætt af því að ENGINN kallandi les DOM-ið samstundis á eftir — staðfest í
   // öllum ellefu. Sá sem þarf það kallar á recomputeCompanyTotalCostNow().
   let _samanT = null;
-  function _ogilda() { _lastKey = ''; _tierCache = { coId: null, tier: null }; }
+  function _ogilda() { _lastKey = ''; }
   window.recomputeCompanyTotalCost = () => {
     _ogilda();
     if (_samanT) return;
