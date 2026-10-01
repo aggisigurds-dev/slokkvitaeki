@@ -1,4 +1,4 @@
-// geocode-all-background.js — one-shot server-side bulk geocoder.
+// geocode-all-background.cjs — one-shot server-side bulk geocoder.
 //
 // Fills the shared `geocode_cache` for every company address that isn't cached
 // yet, so Leiðsögn pins drop for everyone without each browser slowly grinding

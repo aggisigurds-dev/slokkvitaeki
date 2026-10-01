@@ -15,7 +15,7 @@
 // HUB_STAFF_PASSWORD er sett í Netlify, þá 401 { need_login } án hub_session.
 // Kostnaður: eitt kall per hleðslu síðu / smell á „Sækja" — engin vöktun.
 
-const P = require('./_portal');
+const P = require('./_portal.cjs');
 const K = require('./_hreyfingaryfirlit-kjarni.cjs');
 
 async function sbGet(slod, fra, til) {

@@ -25,7 +25,7 @@ function fail(msg) {
   process.exit(1);
 }
 
-const push = fs.readFileSync(path.join(__dirname, '..', 'netlify/functions/payday-push.js'), 'utf8');
+const push = fs.readFileSync(path.join(__dirname, '..', 'netlify/functions/payday-push.cjs'), 'utf8');
 const pos = fs.readFileSync(path.join(__dirname, '..', 'js/pos.js'), 'utf8');
 const ups = fs.readFileSync(path.join(__dirname, '..', 'js/patches/114-unified-pos-search.js'), 'utf8');
 const rf = fs.readFileSync(path.join(__dirname, '..', 'js/patches/175-rekstrarfelog.js'), 'utf8');
