@@ -4,9 +4,8 @@
  * fire extinguishers" · „nota skýrari veggja pælinguna og 3d view" · „plana hvernig sé best að
  * gera þetta svo þetta sé nokkuð fjölbreytilega nothæft".
  *
- * Agnar 02.10.2026: „I was talking about the 3d ghost" — grá lóð UTAN hússins
- * má ekki vera gólfplata í 3D (efri hæðir fela þá neðri). 2D grunnmyndin er
- * ósnert: Skýrari veggir er veggjamaski, ekki hvítun.
+ * Agnar 02.10.2026: 2D má ALDREI skipta grunnmynd út fyrir veggjabitmap né hvíta
+ * hana. 3D sýnir AÐEINS stærsta húsið — grá lóð og CAD-rusl eru ekki gólf né veggir.
  *
  * TVÆR SJÁLFSTÆÐAR EININGAR (vita ekkert um gluggann — nýtanlegar annars staðar síðar):
  *
@@ -261,7 +260,22 @@
     return uti;
   }
 
-  /** 3D-gólf: upprunalega teikningin, gegnsæ UTAN hússins svo efri hæðir feli ekki þá neðri. */
+  /** Stærsta lokaða húsið. Grá lóð, snið og nafnreitur eru aðrir klasar og detta út. */
+  function husMaska(gra, W, H) {
+    const uti = utiMaska(gra, W, H);
+    const inni = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) inni[i] = uti[i] ? 0 : 1;
+    const sv = svaedi(inni, W, H);
+    let best = 0, bn = 0;
+    sv.listi.forEach(s => { if (s.flat > bn) { bn = s.flat; best = s.n; } });
+    const hus = new Uint8Array(W * H);
+    if (!best) return hus;
+    for (let i = 0; i < W * H; i++) if (sv.merki[i] === best) hus[i] = 1;
+    const pad = Math.max(2, Math.round(Math.max(W, H) / 200));
+    return dilate(hus, W, H, pad);
+  }
+
+  /** 3D-gólf: upprunalega teikningin, aðeins stærsta húsið. Utan þess alpha=0. */
   function golfMedUti(mynd, W, H) {
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const x = c.getContext('2d', { willReadFrequently: true });
@@ -269,8 +283,8 @@
     const d = x.getImageData(0, 0, W, H), px = d.data;
     const gra = new Uint8Array(W * H);
     for (let i = 0, j = 0; i < W * H; i++, j += 4) gra[i] = (px[j] * 77 + px[j + 1] * 150 + px[j + 2] * 29) >> 8;
-    const uti = utiMaska(gra, W, H);
-    for (let i = 0, j = 0; i < W * H; i++, j += 4) if (uti[i]) px[j + 3] = 0;
+    const hus = husMaska(gra, W, H);
+    for (let i = 0, j = 0; i < W * H; i++, j += 4) if (!hus[i]) px[j + 3] = 0;
     x.putImageData(d, 0, 0);
     return c;
   }
@@ -350,7 +364,7 @@
     return { valinn: best, yfirlit };
   }
 
-  window.TeiknHreinsun = { hreinsaGogn, hreinsa, finnaHus, blekRammi, utiMaska, golfMedUti, flokkaPdfLinur, veljaVeggjaflokk };
+  window.TeiknHreinsun = { hreinsaGogn, hreinsa, finnaHus, blekRammi, utiMaska, husMaska, golfMedUti, flokkaPdfLinur, veljaVeggjaflokk };
 
   /* ───────────────────────── 2) 3D-SÝN ───────────────────────── */
 
@@ -800,19 +814,10 @@
       }
       ut = G.dauft;
     } else if (val.a) {
-      // 20.09.2026 seint (Agnar, skjáskot af 2. hæð Fiskislóðar: „Þessi er alls ekki að virka. Spurning bara croppa
-      // original við húsið"): myndgreiningin fann 2,5% „veggi" á þunnlínu-CAD og teiknaði BARA þá — slitrur í stað
-      // teikningar. Reglan núna: UPPRUNALEGA teikningin, skorin að húsinu, er alltaf grunnurinn. Myndgreiningin fær
-      // aðeins að skipta henni út þegar hún nær heilu veggjaneti (fylltir veggir gáfu 5,5%; CAD 0,3–2,5%).
-      // PDF-hæð: veggirnir eru lesnir úr VIGRINUM — alltaf reynt, óháð því hvað myndgreiningin fann.
+      // 2D sýnir ALLTAF grunnmyndina. r.strigi er slitrur (CAD-snið, nafnreitur) og má
+      // ekki skipta teikningunni út. reikna() er aðeins fyrir 3D (G.hrein / veggþykkt).
       if (pdfSlod(h) && !h.pdfReynt && !G.pdfBid) { h.pdfReynt = 'sjálfvirkt'; lesaPdfVeggi(true).then(beita); }
-      let r = null;
-      try { r = reikna(G.stig1, l1, val); } catch (e) { segja('⚠ Gat ekki unnið teikninguna: ' + ((e && e.message) || e)); val.a = false; vistaVal(FP.companyId, val); }
-      if (r && r.thekja >= NOTHAEF_THEKJA) ut = r.strigi;
-      else if (r && !G.pdfBid) {
-        skilabod = 'Sjálfvirk veggagreining náði ekki (' + (r.thekja * 100).toFixed(1).replace('.', ',') + '% veggir).' +
-          (pdfSlod(h) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.';
-      }
+      try { reikna(G.stig1, l1, val); } catch (e) { console.warn('[383] reikna', e); }
     }
     const lyk = l1 + '|' + (ut === G.stig1 ? 'frum' : ut === G.dauft ? 'dauft' : G.hreinLykill);
     if (G.lykill !== lyk || FP.bgImage !== ut) {
@@ -1274,7 +1279,6 @@
       const d = x.getImageData(0, 0, r.W, r.H).data;
       for (let i = 0; i < r.W * r.H; i++) if (d[i * 4 + 3] > 96) veggir[i] = 1;
     }
-    let n = 0; for (let i = 0; i < veggir.length; i++) n += veggir[i];
     const iw = stig1.naturalWidth || stig1.width, ih = stig1.naturalHeight || stig1.height;
     const merki = merkiFrum.map(mk => {
       const px = erPx(mk) ? mk.x - sk.x : mk.x * iw, py = erPx(mk) ? mk.y - sk.y : mk.y * ih;
@@ -1289,6 +1293,11 @@
     let golf;
     try { golf = golfMedUti(stig1, r.W, r.H); }
     catch (e) { console.warn('[383] golfMedUti', e); golf = r.vinnu; }
+    try {
+      const gd = golf.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, r.W, r.H).data;
+      for (let i = 0; i < r.W * r.H; i++) if (gd[i * 4 + 3] < 16) veggir[i] = 0;
+    } catch (_) {}
+    let n = 0; for (let i = 0; i < veggir.length; i++) n += veggir[i];
     return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, merki, veggjaPx: n, sk, frumB: fb, frumH: fh };
   }
   async function opna3d() {
@@ -1484,7 +1493,7 @@
           if (h.skurdur) { h.skurdur = null; h.sjalf = false; G.hamur = null; zNullstilla(); } else { G.hamur = G.hamur === 'skera' ? null : 'skera'; G.drag = null; G.kedja = null; }
         })),
         gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
-        gera('fp-hreinsa-btn', '✨ Skýrari veggir', 'Sýna aðeins veggina — málsetningar og texti dofna. Frummyndin geymist óbreytt.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
+        gera('fp-hreinsa-btn', '✨ Skýrari veggir', '2D grunnmyndin helst. 3D sýnir húsið — grátt utan og rusl á blaði hverfur.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
         gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); }),
         gera('fp-tp-btn', 'Opna í TurboPaint', 'Opna hæðina í TurboPaint: teikna á hana, færa tækin og vista staðsetningarnar til baka', opnaITurboPaint)
       ];
