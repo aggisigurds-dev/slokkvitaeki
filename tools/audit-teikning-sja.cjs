@@ -16,7 +16,7 @@ const p433 = fs.readFileSync(path.join(rot, 'js/patches/433-teikning-merking.js'
 const nf = fs.readFileSync(path.join(rot, 'js/newfeatures.js'), 'utf8');
 
 krefst(html, /436-teikning-sja\.js\?v=20261002b/, 'index.html: 436 vantar');
-krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|eyda|att)/, 'index.html: 383 sja-cache');
+krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|eyda|att|staerd)/, 'index.html: 383 sja-cache');
 krefst(html, /434-teikning-takn\.js\?v=20261002(sja|eyda)/, 'index.html: 434 sja-cache');
 krefst(html, /newfeatures\.js\?v=20261002sja/, 'index.html: newfeatures sja-cache');
 if (/435-teikning-gaedi/.test(html)) villur.push('436 má ekki bæta 435 gæði-vali á fyrirtækjasíðu');
@@ -30,7 +30,7 @@ krefst(p436, /teikn-pdf/, '436 á að teikna vigur-PDF innvortis (Full gæði á
 krefst(p436, /imageUrl: url/, '436 má ekki vista blob-slóð í teikning_bord');
 krefst(p436, /bindSrc/, '436 vantar bindSrc');
 krefst(p383, /globalAlpha = 0\.85/, '383 má ekki deyfa blaðið niður í 0.3');
-krefst(p383, /TeiknSja\.stimpilPx|Math\.max\(32/, '383 yfirlag á að teikna stimpla ≥ 32 px');
+krefst(p383, /TeiknSja\.stimpilPx|TeiknMerking\.stimpilPx|Math\.max\(32/, '383 yfirlag á að teikna stimpla ≥ 32 px');
 krefst(p383, /TeiknSja\.bindSrc/, '383 á að nota bindSrc svo PDF verði skýrt');
 krefst(p434, /shadowColor/, '434 tákn þurfa svartan ramma svo þau lesist á ljósri teikningu');
 krefst(p434, /TeiknSja\.taknPx|26 \/ sc/, '434 tæki eiga að fylgja skjástærð');

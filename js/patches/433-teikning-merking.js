@@ -17,11 +17,18 @@
  * og næsti smellur á teikninguna setur það niður. Smellur á merki á
  * teikningunni opnar Snúa/Afrita/Breyta/Eyða í ræmunni — ekki bara hægri
  * smell. Dráttur er pointer-capture, ekki HTML5.
+ *
+ * Agnar 02.10.2026: stærðarhvarfi á skiltunum (24–160 px) svo hægt sé að
+ * stilla ákveðna stærð. Sjálfgefið gildir á öll skilti; valið merki má
+ * hafa sína eigin.
  * ========================================================================== */
 (() => {
   if (window.TeiknMerking) return;
 
   const TAFLA = 'teikning_bord';
+  const STAERD_LS = 'fp_stimpil_staerd';
+  const STAERD_MIN = 24;
+  const STAERD_MAX = 160;
   const STIMPLAR = [
     { id: 'neyðarútgangur', nafn: 'Neyðarútgangur', stutt: 'NÚ', litur: '#15803d', glyff: 'exit' },
     { id: 'ut', nafn: 'Út', stutt: 'ÚT', litur: '#15803d', glyff: 'exit' },
@@ -60,13 +67,41 @@
     return { x: Math.round(x), y: Math.round(y) };
   }
 
-  function gripPx(m, crW) {
-    if (erStimpil(m)) {
-      const s = (window.TeiknSja && TeiknSja.stimpilPx)
-        ? TeiknSja.stimpilPx(crW)
-        : Math.max(32, Math.min(56, Math.round(crW / 12) || 32));
-      return s / 2 + 8;
+  function klemmaStaerd(n) {
+    const v = Math.round(Number(n));
+    if (!v || !isFinite(v)) return 0;
+    return Math.max(STAERD_MIN, Math.min(STAERD_MAX, v));
+  }
+  function autoStaerd(crW) {
+    if (window.TeiknSja && TeiknSja.stimpilPx) return TeiknSja.stimpilPx(crW);
+    const w = Number(crW) || 0;
+    return Math.max(32, Math.min(56, Math.round(w / 12) || 32));
+  }
+  function sjalfStaerd(crW) {
+    const p = plan();
+    const fraPlan = p && klemmaStaerd(p.stimpilStaerd);
+    if (fraPlan) return fraPlan;
+    const hs = p && p.haedir;
+    const v = window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0;
+    const fraHaed = hs && hs[v] && klemmaStaerd(hs[v].stimpilStaerd);
+    if (fraHaed) return fraHaed;
+    try {
+      const ls = klemmaStaerd(localStorage.getItem(STAERD_LS));
+      if (ls) return ls;
+    } catch (_) {}
+    return autoStaerd(crW);
+  }
+  function merkiStaerd(m, crW) {
+    if (m && erStimpil(m)) {
+      const eigin = klemmaStaerd(m.staerd);
+      if (eigin) return eigin;
     }
+    const c = document.getElementById('fp-canvas');
+    const w = crW != null ? crW : (c && c.getBoundingClientRect().width);
+    return sjalfStaerd(w);
+  }
+  function gripPx(m, crW) {
+    if (erStimpil(m)) return merkiStaerd(m, crW) / 2 + 8;
     return 28;
   }
 
@@ -101,7 +136,7 @@
 
   function afritMerki(m) {
     if (!m) return null;
-    return { unitId: m.unitId, kind: m.kind, sign: m.sign, x: m.x, y: m.y, color: m.color, rot: m.rot || 0 };
+    return { unitId: m.unitId, kind: m.kind, sign: m.sign, x: m.x, y: m.y, color: m.color, rot: m.rot || 0, staerd: m.staerd };
   }
   function undoLykill() {
     const F = FP();
@@ -140,6 +175,15 @@
     } else if (a.teg === 'breyta' && a.merki) {
       const m = (p.markers || []).find(x => x.unitId === a.merki.unitId);
       if (m) { m.sign = a.fraSign; m.color = a.fraLitur; }
+    } else if (a.teg === 'staerd') {
+      if (a.merki) {
+        const m = (p.markers || []).find(x => x.unitId === a.merki.unitId);
+        if (m) { if (a.fra) m.staerd = a.fra; else delete m.staerd; }
+      } else {
+        p.stimpilStaerd = a.fra;
+        const hs = p.haedir, v = window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0;
+        if (hs && hs[v]) hs[v].stimpilStaerd = a.fra;
+      }
     }
     try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
     endurteikna();
@@ -235,8 +279,10 @@
     if (!m || !erStimpil(m)) return null;
     const c = document.getElementById('fp-canvas');
     const r = c ? c.getBoundingClientRect() : { width: 200 };
-    const hopp = Math.round(((window.TeiknSja && TeiknSja.stimpilPx) ? TeiknSja.stimpilPx(r.width) : 40) * ((c && c.width && r.width) ? (c.width / r.width) : 1) * 1.15);
-    return setjaStimpil(m.sign, Math.round(m.x) + hopp, Math.round(m.y) + hopp, null, m.rot || 0);
+    const hopp = Math.round(merkiStaerd(m, r.width) * ((c && c.width && r.width) ? (c.width / r.width) : 1) * 1.15);
+    const ny = setjaStimpil(m.sign, Math.round(m.x) + hopp, Math.round(m.y) + hopp, null, m.rot || 0);
+    if (ny && m.staerd) ny.staerd = m.staerd;
+    return ny;
   }
 
   function breytaStimpil(m, signId) {
@@ -266,6 +312,10 @@
       image_url: (fyrsta && typeof fyrsta.image_url === 'string' && fyrsta.image_url) || p.imageUrl || null,
       updated_at: new Date().toISOString()
     };
+    if (p.stimpilStaerd) {
+      const n = klemmaStaerd(p.stimpilStaerd);
+      if (haedirTilbunar) hs.forEach(h => { h.stimpilStaerd = n; });
+    }
     if (haedirTilbunar) row.haedir = hs;
     try {
       localStorage.setItem('fp_' + cid, JSON.stringify({
@@ -571,6 +621,77 @@
     });
   }
 
+  function synlegStaerd() {
+    const c = document.getElementById('fp-canvas');
+    const crW = c ? c.getBoundingClientRect().width : 0;
+    if (S.valinnMerki && erStimpil(S.valinnMerki)) return merkiStaerd(S.valinnMerki, crW);
+    return sjalfStaerd(crW);
+  }
+  function skraStaerd(n, vista) {
+    const v = klemmaStaerd(n);
+    if (!v) return 0;
+    const p = plan();
+    if (S.valinnMerki && erStimpil(S.valinnMerki)) {
+      if (!S._staerdUndo) S._staerdUndo = { merki: S.valinnMerki, fra: S.valinnMerki.staerd || 0 };
+      S.valinnMerki.staerd = v;
+    } else if (p) {
+      if (!S._staerdUndo) S._staerdUndo = { sjalf: true, fra: p.stimpilStaerd || 0 };
+      p.stimpilStaerd = v;
+      const hs = p.haedir;
+      const i = window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0;
+      if (hs && hs[i]) hs[i].stimpilStaerd = v;
+      try { localStorage.setItem(STAERD_LS, String(v)); } catch (_) {}
+    }
+    try { if (FP() && FP()._renderCanvas) FP()._renderCanvas(); } catch (_) {}
+    if (vista) {
+      if (S._staerdUndo) {
+        const u = S._staerdUndo; S._staerdUndo = null;
+        if (u.fra !== v) skraUndo({ teg: 'staerd', merki: u.merki ? afritMerki(u.merki) : null, fra: u.fra, sjalf: !!u.sjalf });
+      }
+      try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
+      vistaAdThjoni();
+    }
+    return v;
+  }
+  function stikaStaerdHvarfa() {
+    const panel = document.getElementById('fp-panel');
+    if (!panel) return;
+    let wrap = document.getElementById('fp-stimpil-staerd-wrap');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.id = 'fp-stimpil-staerd-wrap';
+      wrap.innerHTML =
+        '<div class="fp-stimpil-lbl" id="fp-stimpil-staerd-lbl">Stærð skiltanna</div>' +
+        '<div class="fp-staerd-rod">' +
+          '<input type="range" id="fp-stimpil-staerd" min="' + STAERD_MIN + '" max="' + STAERD_MAX + '" step="2" aria-label="Stærð skiltanna">' +
+          '<span id="fp-stimpil-staerd-val"></span>' +
+        '</div>';
+      const rod = document.getElementById('fp-stimpil');
+      const adgerd = document.getElementById('fp-merki-adgerd');
+      if (adgerd && adgerd.parentNode) adgerd.parentNode.insertBefore(wrap, adgerd.nextSibling);
+      else if (rod && rod.parentNode) rod.parentNode.insertBefore(wrap, rod.nextSibling);
+      else panel.insertBefore(wrap, panel.firstChild);
+      const inn = wrap.querySelector('#fp-stimpil-staerd');
+      inn.addEventListener('pointerdown', e => e.stopPropagation());
+      inn.addEventListener('input', () => {
+        const n = skraStaerd(inn.value, false);
+        const val = document.getElementById('fp-stimpil-staerd-val');
+        if (val) val.textContent = n + ' px';
+      });
+      inn.addEventListener('change', () => { skraStaerd(inn.value, true); });
+    }
+    const inn = document.getElementById('fp-stimpil-staerd');
+    const val = document.getElementById('fp-stimpil-staerd-val');
+    const lbl = document.getElementById('fp-stimpil-staerd-lbl');
+    const n = synlegStaerd();
+    const ser = !!(S.valinnMerki && erStimpil(S.valinnMerki));
+    const lblTxt = ser ? 'Stærð þessa skiltis' : 'Stærð skiltanna';
+    if (lbl && lbl.textContent !== lblTxt) lbl.textContent = lblTxt;
+    const px = n + ' px';
+    if (val && val.textContent !== px) val.textContent = px;
+    if (inn && document.activeElement !== inn && String(inn.value) !== String(n)) inn.value = String(n);
+  }
+
   function stikaValid() {
     if (S._stika) return;
     S._stika = true;
@@ -634,6 +755,7 @@
           : '<div class="fp-merki-acts"><button type="button" class="fp-vm-hætta" data-act="eyda">Fjarlægja af teikningu</button></div>');
       if (stimp) malaValmyndIkon(box);
     } finally {
+      try { stikaStaerdHvarfa(); } catch (_) {}
       S._stika = false;
     }
   }
@@ -670,10 +792,14 @@
     let st = document.getElementById('fp-merking-css');
     const css =
       '#fp-stimpil{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px;align-items:center}' +
-      '#fp-stimpil .fp-stimpil-lbl,#fp-merki-adgerd .fp-stimpil-lbl{width:100%;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px}' +
+      '#fp-stimpil .fp-stimpil-lbl,#fp-merki-adgerd .fp-stimpil-lbl,#fp-stimpil-staerd-wrap .fp-stimpil-lbl{width:100%;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px}' +
       '#fp-stimpil .fp-stimpill{display:flex;align-items:center;gap:5px;padding:4px 6px 4px 4px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.82);font:600 11px system-ui,sans-serif;cursor:grab;flex:1 1 140px;min-width:0;max-width:100%;-webkit-user-drag:none;user-select:none}' +
       '#fp-stimpil .fp-stimpill.on{border-color:#c9a54a;box-shadow:0 0 0 2px rgba(201,165,74,.45);background:rgba(201,165,74,.12)}' +
       '#fp-stimpil .fp-stimpill span,#fp-stimpil .fp-stimpill-ico{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;color:#fff;font:700 8px system-ui,sans-serif;overflow:hidden;flex:none}' +
+      '#fp-stimpil-staerd-wrap{margin:0 0 10px;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)}' +
+      '#fp-stimpil-staerd-wrap .fp-staerd-rod{display:flex;align-items:center;gap:8px}' +
+      '#fp-stimpil-staerd{flex:1 1 auto;min-width:0;accent-color:#c9a54a;height:28px;cursor:pointer}' +
+      '#fp-stimpil-staerd-val{flex:none;min-width:44px;text-align:right;font:700 11px system-ui,sans-serif;color:#f1ede4}' +
       '#fp-merki-adgerd{margin:0 0 10px;padding:8px;border-radius:10px;border:1px solid rgba(201,165,74,.35);background:rgba(201,165,74,.08)}' +
       '#fp-merki-adgerd[hidden]{display:none!important}' +
       '#fp-merki-adgerd .fp-merki-nafn{font:700 12px system-ui,sans-serif;color:#f1ede4;margin:0 0 6px}' +
@@ -733,6 +859,7 @@
         stikaValid();
         return;
       }
+      if (S.valinnMerki) { S.valinnMerki = null; stikaValid(); }
       const uid = this._selectedUnitId;
       smell(e);
       try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
@@ -756,6 +883,7 @@
       geraDraggandi();
       tengjaDropp();
       stikaValid();
+      stikaStaerdHvarfa();
       afturkallaTakki();
     } finally {
       S._tikk = false;
@@ -795,7 +923,8 @@
 
   window.TeiknMerking = {
     grip, iDragi, setjaTaeki, setjaStimpil, vistaAdThjoni, erStimpil, stimplar: STIMPLAR,
-    tikk, afturkalla, eydaMerki, snuaMerki, afritaMerki, opnaValmynd, finnaMerki
+    tikk, afturkalla, eydaMerki, snuaMerki, afritaMerki, opnaValmynd, finnaMerki,
+    stimpilPx: merkiStaerd, setjaStaerd: skraStaerd, sjalfStaerd
   };
 
   if (!vefja()) { let n = 0; const i = setInterval(() => { if (vefja() || ++n > 80) clearInterval(i); }, 150); }

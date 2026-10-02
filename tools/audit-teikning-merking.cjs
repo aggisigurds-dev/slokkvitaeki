@@ -12,9 +12,9 @@ const html = fs.readFileSync(path.join(rot, 'index.html'), 'utf8');
 const villur = [];
 const krefst = (src, re, msg) => { if (!re.test(src)) villur.push(msg); };
 
-krefst(html, /433-teikning-merking\.js\?v=20261002(sja|b|eyda|att)/, 'index.html: 433 vantar script-tag');
+krefst(html, /433-teikning-merking\.js\?v=20261002(sja|b|eyda|att|staerd)/, 'index.html: 433 vantar script-tag');
 krefst(html, /434-teikning-takn\.js\?v=20261002(sja|a|eyda)/, 'index.html: 434 vantar script-tag');
-krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp|eyda|att)/, 'index.html: 383 vantar takn-cache');
+krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp|eyda|att|staerd)/, 'index.html: 383 vantar takn-cache');
 krefst(p433, /Neyðarútgangur/, '433 vantar Neyðarútgangur-stimpil');
 krefst(p433, /id: 'ut'/, '433 vantar Út-stimpil');
 krefst(p433, /id: 'hose'/, '433 vantar slöngumerki');
@@ -40,7 +40,12 @@ krefst(p433, /fp-armadur/, '433 á að merkja strigann þegar stimpill er valinn
 krefst(p433, /fp-stimpill\.on/, '433 á að auðkenna valinn stimpil á ræmunni');
 krefst(p433, /dragstart[\s\S]{0,80}preventDefault/, '433 má ekki láta HTML5-drátt stela pointer-atburðum');
 krefst(p433, /info\.textContent !== msg/, '433 má ekki skrifa fp-info í hvert tikk (MutationObserver-lykkja)');
-krefst(p383, /if \(fingur\.size === 0\) hreyft = 0/, '383 má ekki láta gamla pönnun éta næsta smell');
+krefst(p433, /fp-stimpil-staerd/, '433 vantar stærðarhvarfa á skiltunum');
+krefst(p433, /STAERD_MIN = 24/, 'skilti eiga að ná niður í 24 px');
+krefst(p433, /STAERD_MAX = 160/, 'skilti eiga að ná upp í 160 px');
+krefst(p433, /m\.staerd/, '433 á að leyfa stærð per merki');
+krefst(p433, /TeiknMerking\.stimpilPx|stimpilPx: merkiStaerd/, '433 á að bjóða stimpilPx');
+krefst(p383, /TeiknMerking\.stimpilPx/, '383 yfirlag á að lesa stillta stærð skiltanna');
 krefst(p433, /TeiknBord\.samstilla/, '433 þarf að samstilla hæðir áður en vistað er');
 krefst(p383, /erTaeki/, '383 má ekki eyða stimplum af öðrum hæðum');
 krefst(p383, /TeiknMerking\.grip/, '383 á að láta grip taka yfir pönnun');

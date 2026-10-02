@@ -151,12 +151,21 @@ async function main() {
     if (skipta) skipta.click();
     TeiknMerking.tikk();
     const eftir = (FloorPlan.plans[1612].markers || []).find(m => m.unitId === (sett && sett.unitId));
+    const per = TeiknMerking.setjaStaerd(40, true);
+    const eigin = (FloorPlan.plans[1612].markers || []).find(m => m.unitId === (sett && sett.unitId));
+    FloorPlan.onCanvasClick({ clientX: 2, clientY: 2, preventDefault: function () {}, stopPropagation: function () {} });
+    const sjalf = TeiknMerking.setjaStaerd(96, true);
+    TeiknMerking.tikk();
+    const hvarfi = document.getElementById('fp-stimpil-staerd');
+    const lbl = document.getElementById('fp-stimpil-staerd-lbl');
     return {
       on, armadur, gripOk, n0, n1: merki.length,
       x: sett && sett.x, y: sett && sett.y,
       valið: /Slöngumerki/.test(txt) && /Snúa/.test(txt) && /Eyða/.test(txt) && /Breyta í/.test(txt),
       skipt: !!(eftir && eftir.sign === 'ut'),
-      txt: txt.slice(0, 80)
+      per, eiginStaerd: eigin && eigin.staerd,
+      sjalf, hvarfi: hvarfi && hvarfi.value,
+      lbl: lbl && lbl.textContent
     };
   });
 
@@ -192,6 +201,9 @@ async function main() {
   krefst(att.gripOk && att.n1 === att.n0 + 1 && att.x === 170, 'valinn stimpill átti að setjast á teikninguna: ' + JSON.stringify(att));
   krefst(att.valið, 'valið merki átti að sýna Snúa/Breyta/Eyða í ræmunni: ' + JSON.stringify(att));
   krefst(att.skipt, 'Breyta í átti að skipta slöngumerki yfir í Út: ' + JSON.stringify(att));
+  krefst(att.per === 40 && att.eiginStaerd === 40, 'valið skilti átti að fá eigin stærð 40: ' + JSON.stringify(att));
+  krefst(att.sjalf === 96 && att.hvarfi === '96', 'stærðarhvarfi átti að stilla sjálfgefna stærð skiltanna: ' + JSON.stringify(att));
+  krefst(/Stærð skiltanna/.test(att.lbl || ''), 'ræman á að sýna stærðarhvarfa: ' + att.lbl);
 
   if (villur.length) {
     console.log('TEIKNING-MERKING FIXTURE RAUDT');

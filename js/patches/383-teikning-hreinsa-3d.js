@@ -900,7 +900,7 @@
     }
     const FP = FPx(), h = virkHaed(), mr = main.getBoundingClientRect(), cr = c.getBoundingClientRect();
     const synilegt = c.style.display !== 'none' && cr.width > 2 && FP.bgImage;
-    const stimpil = (plan().markers || []).filter(m => m && m.kind === 'sign').map(m => m.unitId + ':' + Math.round(m.x) + ':' + Math.round(m.y) + ':' + (m.sign || '') + ':' + (m.rot || 0)).join(',');
+    const stimpil = (plan().markers || []).filter(m => m && m.kind === 'sign').map(m => m.unitId + ':' + Math.round(m.x) + ':' + Math.round(m.y) + ':' + (m.sign || '') + ':' + (m.rot || 0) + ':' + (m.staerd || '')).join(',') + '|s' + ((plan().stimpilStaerd) || '');
     const takn = window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '';
     const ei = window.TeiknEi && TeiknEi.fingrafar ? TeiknEi.fingrafar(h) : '';
     const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
@@ -943,9 +943,9 @@
       if (!m || m.kind !== 'sign') return;
       const mx = ox + ((m.x > 1 || m.y > 1) ? m.x : m.x * c.width) * k;
       const my = oy + ((m.x > 1 || m.y > 1) ? m.y : m.y * c.height) * k;
-      const s = (window.TeiknSja && TeiknSja.stimpilPx)
-        ? TeiknSja.stimpilPx(cr.width)
-        : Math.max(32, Math.min(56, cr.width / 12));
+      const s = (window.TeiknMerking && TeiknMerking.stimpilPx)
+        ? TeiknMerking.stimpilPx(m, cr.width)
+        : ((window.TeiknSja && TeiknSja.stimpilPx) ? TeiknSja.stimpilPx(cr.width) : Math.max(32, Math.min(56, cr.width / 12)));
       if (window.TeiknTakn && TeiknTakn.teiknaMerki) { TeiknTakn.teiknaMerki(x, m, mx, my, s, units); return; }
       const def = window.TeiknMerking && TeiknMerking.stimplar && TeiknMerking.stimplar.find(s0 => s0.id === m.sign);
       x.fillStyle = m.color || (def && def.litur) || '#c93c1d';
