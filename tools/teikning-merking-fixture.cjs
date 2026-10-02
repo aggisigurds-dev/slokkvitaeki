@@ -20,7 +20,7 @@ async function main() {
   catch (_) { browser = await chromium.launch(); }
   const page = await browser.newPage();
   await page.goto(html, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => window.__teiknHreinsa3d === true && window.TeiknMerking, null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__teiknHreinsa3d === true && window.TeiknMerking && window.TeiknTakn, null, { timeout: 5000 });
 
   const lettvatn = { id: 25446, type: 'Léttvatn', serial: 'TMP-WFCMBQ', status: 'active' };
 
@@ -38,6 +38,9 @@ async function main() {
     drop.dataTransfer = { getData: function (t) { return t === 'application/x-fp-unit' ? String(u.id) : ''; } };
     main.dispatchEvent(drop);
     const st = TeiknMerking.setjaStimpil('ut', 40, 50);
+    const raf = TeiknMerking.setjaStimpil('rafmagn', 60, 70);
+    const skl = TeiknMerking.setjaStimpil('skilti_slt', 100, 40);
+    const sls = TeiknMerking.setjaStimpil('skilti_slanga', 120, 55);
     TeiknMerking.vistaAdThjoni();
     const p = FloorPlan.plans[1612];
     const rail = document.getElementById('fp-unit-list');
@@ -49,11 +52,12 @@ async function main() {
       haedir: !!document.getElementById('fp-haedir'),
       stimpil: !!document.getElementById('fp-stimpil'),
       merki: (p.markers || []).map(x => ({ unitId: x.unitId, kind: x.kind, sign: x.sign, x: x.x, y: x.y })),
+      nofn: [...document.querySelectorAll('.fp-stimpill')].map(b => b.textContent.replace(/\s+/g, ' ').trim()),
       staðsett: rail && /Staðsetning/.test(rail.textContent),
       draggable: !!(rod && rod.draggable),
       upserts: window.__upserts.length,
       haed0: (p.haedir && p.haedir[0] && p.haedir[0].markers || []).length,
-      drop: !!(st)
+      drop: !!(st && raf && skl && sls)
     };
   }, lettvatn);
 
@@ -109,9 +113,17 @@ async function main() {
   const krefst = (ok, msg) => { if (!ok) villur.push(msg); };
   krefst(eftirDropp.hreinsa && eftirDropp.d3 && eftirDropp.haedir, 'stjórn vantar: ' + JSON.stringify(eftirDropp));
   krefst(eftirDropp.stimpil, 'stimpilröð vantar');
+  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Rafmagnstafla/.test(n)), 'Rafmagnstafla vantar á rönd: ' + JSON.stringify(eftirDropp.nofn));
+  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Skilti slökkvitæki/.test(n)), 'Skilti slökkvitæki vantar');
+  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Skilti brunaslanga/.test(n)), 'Skilti brunaslanga vantar');
+  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Neyðarútgangur/.test(n)) && eftirDropp.nofn.some(n => /^Út$/.test(n) || /\bÚt\b/.test(n)), 'Neyðarútgangur/Út vantar');
   krefst(eftirDropp.drop && eftirDropp.merki.some(m => m.unitId === 25446 && m.x === 80), 'léttvatn fór ekki á 1. hæð: ' + JSON.stringify(eftirDropp.merki));
   krefst(eftirDropp.draggable, 'tæki á ræmunni á að vera draggandi');
   krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'ut'), 'Út-stimpill vantar');
+  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'rafmagn'), 'Rafmagnstafla á að vera merki');
+  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'skilti_slt'), 'Skilti slökkvitæki á að vera merki');
+  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'skilti_slanga'), 'Skilti brunaslanga á að vera merki');
+  krefst(!eftirDropp.merki.some(m => m.sign && m.kind !== 'sign'), 'stimpill mátti ekki verða uttaeki-röð');
   krefst(eftirDropp.upserts > 0, 'ekkert upsert á teikning_bord');
   krefst(haedir.nHaedir >= 2, 'vantar 2 hæðir: ' + JSON.stringify(haedir));
   krefst(haedir.a2.length === 0 && haedir.haed1.length === 0, 'merki áttu að sitja á 1. hæð, ekki 2.: ' + JSON.stringify(haedir));

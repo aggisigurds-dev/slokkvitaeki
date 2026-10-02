@@ -633,7 +633,15 @@
       // með. Veggirnir úr vigrinum segja nákvæmlega hvar húsið er. Aðeins þegar skurðurinn var sjálfvirkur eða enginn —
       // handvalinn skurður notandans stendur. 2.–98. hundraðshluti svo stakt strik úti á lóð dragi kassann ekki út.
       thetturSkurdur(h, iw, ih);
-      segja('✓ ' + h.pdfVeggir.length + ' veggjastrik lesin úr PDF-inu (línuþykkt ' + val.valinn.replace('.', ',') + ' pt).');
+      try {
+        if (window.TeiknEi && TeiknEi.lesaUrPdf) {
+          const ei = await TeiknEi.lesaUrPdf(sida, vp, kx, ky, h);
+          if (ei && ei.length) segja('✓ ' + h.pdfVeggir.length + ' veggjastrik og ' + ei.length + ' EI-ábendingar (ekki eldveggir).');
+          else segja('✓ ' + h.pdfVeggir.length + ' veggjastrik lesin úr PDF-inu (línuþykkt ' + val.valinn.replace('.', ',') + ' pt).');
+        } else segja('✓ ' + h.pdfVeggir.length + ' veggjastrik lesin úr PDF-inu (línuþykkt ' + val.valinn.replace('.', ',') + ' pt).');
+      } catch (_) {
+        segja('✓ ' + h.pdfVeggir.length + ' veggjastrik lesin úr PDF-inu (línuþykkt ' + val.valinn.replace('.', ',') + ' pt).');
+      }
       return true;
     } catch (e) {
       if (!sjalfkrafa) segja('⚠ Las ekki veggi úr PDF: ' + ((e && e.message) || e));
@@ -891,9 +899,11 @@
     }
     const FP = FPx(), h = virkHaed(), mr = main.getBoundingClientRect(), cr = c.getBoundingClientRect();
     const synilegt = c.style.display !== 'none' && cr.width > 2 && FP.bgImage;
-    const stimpil = (plan().markers || []).filter(m => m && m.kind === 'sign').map(m => m.unitId + ':' + Math.round(m.x) + ':' + Math.round(m.y)).join(',');
+    const stimpil = (plan().markers || []).filter(m => m && m.kind === 'sign').map(m => m.unitId + ':' + Math.round(m.x) + ':' + Math.round(m.y) + ':' + (m.sign || '')).join(',');
+    const takn = window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '';
+    const ei = window.TeiknEi && TeiknEi.fingrafar ? TeiknEi.fingrafar(h) : '';
     const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
-      G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height, stimpil].join('|');
+      G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height, stimpil, takn, ei].join('|');
     if (merki === G.teiknad) return;
     G.teiknad = merki;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -927,21 +937,26 @@
       x.fillStyle = 'rgba(20,18,15,.5)'; x.beginPath(); x.rect(ox, oy, cr.width, cr.height); x.rect(X0, Y0, Wd, Hd); x.fill('evenodd');
       x.strokeStyle = '#c9a54a'; x.lineWidth = 2; x.setLineDash([7, 5]); x.strokeRect(X0, Y0, Wd, Hd);
     }
+    const units = (FP && FP.units) || [];
     (plan().markers || []).forEach(m => {
       if (!m || m.kind !== 'sign') return;
       const mx = ox + ((m.x > 1 || m.y > 1) ? m.x : m.x * c.width) * k;
       const my = oy + ((m.x > 1 || m.y > 1) ? m.y : m.y * c.height) * k;
       const s = Math.max(14, Math.min(26, cr.width / 30));
-      x.fillStyle = m.color || (m.sign === 'hose' ? '#c93c1d' : '#15803d');
+      if (window.TeiknTakn && TeiknTakn.teiknaMerki) { TeiknTakn.teiknaMerki(x, m, mx, my, s, units); return; }
+      const def = window.TeiknMerking && TeiknMerking.stimplar && TeiknMerking.stimplar.find(s0 => s0.id === m.sign);
+      x.fillStyle = m.color || (def && def.litur) || '#c93c1d';
       x.beginPath();
       if (x.roundRect) x.roundRect(mx - s / 2, my - s / 2, s, s, 3);
       else x.rect(mx - s / 2, my - s / 2, s, s);
       x.fill();
       x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = 1.25; x.stroke();
-      x.fillStyle = '#fff'; x.font = '700 ' + Math.round(s * 0.36) + 'px system-ui,sans-serif';
+      x.fillStyle = (m.sign === 'rafmagn') ? '#1c1917' : '#fff';
+      x.font = '700 ' + Math.round(s * 0.36) + 'px system-ui,sans-serif';
       x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.fillText(m.sign === 'hose' ? 'SL' : (m.sign === 'ut' ? 'ÚT' : 'NÚ'), mx, my + 0.5);
+      x.fillText((def && def.stutt) || 'MER', mx, my + 0.5);
     });
+    try { if (window.TeiknEi && TeiknEi.teikna) TeiknEi.teikna(x, sx, sy, k, h); } catch (_) {}
     x.restore();
   }
 
@@ -1104,8 +1119,9 @@
     const merki = merkiFrum.map(mk => {
       const px = erPx(mk) ? mk.x - sk.x : mk.x * iw, py = erPx(mk) ? mk.y - sk.y : mk.y * ih;
       if (mk.kind === 'sign' || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('s:') === 0)) {
-        const txt = mk.sign === 'hose' ? 'SL' : (mk.sign === 'ut' ? 'ÚT' : 'NÚ');
-        return { x: px, y: py, litur: mk.color || (mk.sign === 'hose' ? '#c93c1d' : '#15803d'), texti: txt };
+        const def = window.TeiknMerking && TeiknMerking.stimplar && TeiknMerking.stimplar.find(s => s.id === mk.sign);
+        const txt = (def && def.stutt) || 'MER';
+        return { x: px, y: py, litur: mk.color || (def && def.litur) || '#c93c1d', texti: txt };
       }
       const u = einingar.find(q => q.id === mk.unitId);
       return { x: px, y: py, litur: u && u.status === 'overdue' ? '#c93c1d' : '#2f9e55', texti: u ? String(u.serial || '').slice(-6) : '' };

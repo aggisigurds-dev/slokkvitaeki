@@ -2,8 +2,9 @@
  *
  * Agnar 02.10.2026: FloorPlan á að virka eins og Turbopaint-lagið hjá
  * Bílabúð Benna — draga slökkvitæki af ræmunni á plönið, færa rauða
- * punktinn, og stimpla Neyðarútgang / Út / slöngumerki. Ekki EI-30/60
- * og ekki gegnumtök; það er ekki sjálfvirkt.
+ * punktinn, og stimpla Neyðarútgang / Út / slöngumerki, rafmagnstöflu
+ * og slökkvitækja-/slönguskilti. Merkin eru merki, ekki uttaeki-raðir.
+ * Ekki EI-30/60 sem eldveggir — það eru veggja-ábendingar (434).
  *
  * Geymsla: sömu merki og rauðu punktarnir þegar nota (`teikning_bord`
  * per félag, `haedir[].markers` per hæð). Vista án þess að loka, svo
@@ -14,9 +15,12 @@
 
   const TAFLA = 'teikning_bord';
   const STIMPLAR = [
-    { id: 'neyðarútgangur', nafn: 'Neyðarútgangur', stutt: 'NÚ', litur: '#15803d' },
-    { id: 'ut', nafn: 'Út', stutt: 'ÚT', litur: '#15803d' },
-    { id: 'hose', nafn: 'Slöngumerki', stutt: 'SL', litur: '#c93c1d' }
+    { id: 'neyðarútgangur', nafn: 'Neyðarútgangur', stutt: 'NÚ', litur: '#15803d', glyff: 'exit' },
+    { id: 'ut', nafn: 'Út', stutt: 'ÚT', litur: '#15803d', glyff: 'exit' },
+    { id: 'hose', nafn: 'Slöngumerki', stutt: 'SL', litur: '#c93c1d', glyff: 'hose' },
+    { id: 'rafmagn', nafn: 'Rafmagnstafla', stutt: 'RAF', litur: '#eab308', glyff: 'electric' },
+    { id: 'skilti_slt', nafn: 'Skilti slökkvitæki', stutt: 'SKL', litur: '#c93c1d', glyff: 'sign-extinguisher' },
+    { id: 'skilti_slanga', nafn: 'Skilti brunaslanga', stutt: 'SLS', litur: '#c93c1d', glyff: 'sign-hose' }
   ];
 
   const S = { drag: null, bid: null, valinn: null, slepptSmellur: false, vistun: 0 };
@@ -216,15 +220,19 @@
       if (listi && listi.parentNode === panel) panel.insertBefore(rod, listi);
       else panel.appendChild(rod);
     }
-    if (rod.dataset.ok === '1' && rod.querySelector('.fp-stimpill')) return;
-    rod.dataset.ok = '1';
+    const fingur = STIMPLAR.map(s => s.id).join(',') + ((window.TeiknTakn && TeiknTakn.fingrafar) ? TeiknTakn.fingrafar() : '');
+    if (rod.dataset.ok === fingur && rod.querySelector('.fp-stimpill')) return;
+    rod.dataset.ok = fingur;
     rod.innerHTML = '<div class="fp-stimpil-lbl">Merki</div>' + STIMPLAR.map(s =>
       '<button type="button" class="fp-stimpill" draggable="true" data-sign="' + s.id + '" title="' + esc(s.nafn) + ' — dragðu á teikninguna">' +
-      '<span style="background:' + s.litur + '">' + esc(s.stutt) + '</span>' + esc(s.nafn) + '</button>'
+      '<span class="fp-stimpill-ico" style="background:' + s.litur + '"></span>' + esc(s.nafn) + '</button>'
     ).join('');
     rod.querySelectorAll('.fp-stimpill').forEach(b => {
       const id = b.getAttribute('data-sign');
       const def = STIMPLAR.find(s => s.id === id);
+      const ico = b.querySelector('.fp-stimpill-ico');
+      if (ico && window.TeiknTakn && TeiknTakn.teiknaISpan) TeiknTakn.teiknaISpan(ico, def);
+      else if (ico) ico.textContent = def.stutt;
       b.addEventListener('pointerdown', e => {
         S.valinn = id;
         hefjaFraLista(e, 'stimpill', { sign: id, stutt: def.stutt, litur: def.litur });
@@ -290,7 +298,7 @@
       '#fp-stimpil{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px;align-items:center}' +
       '#fp-stimpil .fp-stimpil-lbl{width:100%;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px}' +
       '#fp-stimpil .fp-stimpill{display:flex;align-items:center;gap:5px;padding:4px 6px 4px 4px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.82);font:600 11px system-ui,sans-serif;cursor:grab}' +
-      '#fp-stimpil .fp-stimpill span{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;color:#fff;font:700 8px system-ui,sans-serif}' +
+      '#fp-stimpil .fp-stimpill span,#fp-stimpil .fp-stimpill-ico{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;color:#fff;font:700 8px system-ui,sans-serif;overflow:hidden;flex:none}' +
       '#fp-unit-list>div{cursor:grab}' +
       '#fp-canvas.fp-drop{outline:2px dashed rgba(201,60,29,.45);outline-offset:-2px}';
     document.head.appendChild(st);
