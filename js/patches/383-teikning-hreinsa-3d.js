@@ -140,7 +140,17 @@
     vc.drawImage(mynd, 0, 0, W, H);
     const d = vc.getImageData(0, 0, W, H), px = d.data, gra = new Uint8Array(W * H);
     for (let i = 0, j = 0; i < W * H; i++, j += 4) gra[i] = (px[j] * 77 + px[j + 1] * 150 + px[j + 2] * 29) >> 8;
-    const g = hreinsaGogn(gra, W, H, o);
+    let g = hreinsaGogn(gra, W, H, o);
+    // Þunnlínu-CAD (Skútuvogur / Fiskislóð): sjálfgefin opnun étur 1–2 px veggi og
+    // þekjan lendir í ~1%. Reynum ljósara blek + fyllingu tvöfaldra veggja AÐEINS
+    // þegar fótspor hússins lítur út eins og hús — annars slitrur, ekki 3D.
+    if (g.thekja < 0.04 && !o.thykkt && !o.fylla) {
+      const g2 = hreinsaGogn(gra, W, H, { dokkt: 210, thykkt: 1, fylla: true });
+      let fot = 0;
+      for (let i = 0; i < g2.fotspor.length; i++) fot += g2.fotspor[i];
+      const hluti = fot / (W * H);
+      if (g2.thekja >= 0.04 && hluti >= 0.08 && hluti <= 0.88) g = g2;
+    }
     // Of lítið fannst → ekki þykjast: kallarinn fær að vita og sýnir frummyndina áfram.
     const naerVegg = dilate(g.veggir, W, H, 2);
     // Fá veggir fundust (þunnlínu-CAD): fótsporið er þá götótt og „bara veggir" skildi eftir nær auða mynd.
@@ -176,7 +186,7 @@
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       let m = 255;
       for (let yy = y * k; yy < Math.min(H, (y + 1) * k); yy++) for (let xx = x * k; xx < Math.min(W, (x + 1) * k); xx++) { const v = gra[yy * W + xx]; if (v < m) m = v; }
-      b[y * w + x] = m < 150 ? 1 : 0;
+      b[y * w + x] = m < 205 ? 1 : 0;
     }
     for (let y = 0; y < h; y++) { let n = 0; for (let x = 0; x < w; x++) n += b[y * w + x]; if (n > w * 0.55) for (let x = 0; x < w; x++) b[y * w + x] = 0; }
     for (let x = 0; x < w; x++) { let n = 0; for (let y = 0; y < h; y++) n += b[y * w + x]; if (n > h * 0.55) for (let y = 0; y < h; y++) b[y * w + x] = 0; }
@@ -195,7 +205,32 @@
     const x0 = Math.max(0, q[0] + r - sp), y0 = Math.max(0, q[1] + r - sp), x1 = Math.min(w, q[2] - r + sp + 1), y1 = Math.min(h, q[3] - r + sp + 1);
     const ut = { x: x0 / w, y: y0 / h, w: (x1 - x0) / w, h: (y1 - y0) / h };
     // Nær allt blaðið, eða örlítill biti: þá er ekkert unnið með skurði — skila null frekar en að skera vitlaust.
-    if (ut.w * ut.h > 0.8 || ut.w < 0.12 || ut.h < 0.12) return null;
+    // 0,92 (var 0,80): A0-grunnmynd með ~10% spássíu átti áður að lenda hér og fór ósokkin.
+    if (ut.w * ut.h > 0.92 || ut.w < 0.08 || ut.h < 0.08) return null;
+    return ut;
+  }
+
+  /** Minnsti rammi um blek. Þegar finnaHus skilar null (þunnar grálínur, stórt hvítt blað)
+   * skerum við samt auða spássíu svo húsið fylli rammann — þekjan er þá mæld á húsinu, ekki á A0. */
+  function blekRammi(gra, W, H, dokkt) {
+    dokkt = dokkt == null ? 210 : dokkt;
+    let x0 = W, y0 = H, x1 = -1, y1 = -1, n = 0;
+    for (let y = 0; y < H; y++) {
+      const rod = y * W;
+      for (let x = 0; x < W; x++) {
+        if (gra[rod + x] < dokkt) {
+          n++;
+          if (x < x0) x0 = x; if (x > x1) x1 = x;
+          if (y < y0) y0 = y; if (y > y1) y1 = y;
+        }
+      }
+    }
+    if (n < Math.max(40, W * H * 0.0004) || x1 < x0) return null;
+    const pad = Math.max(6, Math.round(Math.max(W, H) * 0.018));
+    x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
+    x1 = Math.min(W, x1 + pad + 1); y1 = Math.min(H, y1 + pad + 1);
+    const ut = { x: x0 / W, y: y0 / H, w: (x1 - x0) / W, h: (y1 - y0) / H };
+    if (ut.w * ut.h > 0.94 || ut.w < 0.08 || ut.h < 0.08) return null;
     return ut;
   }
 
@@ -274,7 +309,7 @@
     return { valinn: best, yfirlit };
   }
 
-  window.TeiknHreinsun = { hreinsaGogn, hreinsa, finnaHus, flokkaPdfLinur, veljaVeggjaflokk };
+  window.TeiknHreinsun = { hreinsaGogn, hreinsa, finnaHus, blekRammi, flokkaPdfLinur, veljaVeggjaflokk };
 
   /* ───────────────────────── 2) 3D-SÝN ───────────────────────── */
 
@@ -642,10 +677,10 @@
     if (!G.frum || !nu) { stika(); flipar(); return; }
     // Hæð sem á þegar vigurveggi en ber enn LAUSA sjálfvirka skurðinn (vistuð fyrir þétta skurðinn): þétta einu sinni.
     if (h.pdfVeggir.length > 30 && h.sjalf === true && !h.thett) thetturSkurdur(h, G.frum.naturalWidth || G.frum.width, G.frum.naturalHeight || G.frum.height);
-    // SJÁLFGEFINN SKURÐUR AÐ BYGGINGUNNI (Agnar 20.09.2026: „reyna að default croppa að byggingunni"). Aðeins þegar hæðin
-    // á engan skurð og notandinn hefur ekki valið „Sýna allt blaðið" (sjalf === false). Kassinn er víkkaður svo öll
+    // SJÁLFGEFINN SKURÐUR AÐ BYGGINGUNNI. Lausari vistaður sjálfskurður má þéttast.
+    // Handvalinn skurður (sjalf === false) er ósnertur. Kassinn er víkkaður svo öll
     // merki sem þegar eru til lendi innan hans — sjálfvirkni má aldrei fela staðsetningu.
-    if (!h.skurdur && h.sjalf !== false && G.sjalfReynt !== G.frum) {
+    if (h.sjalf !== false && G.sjalfReynt !== G.frum) {
       G.sjalfReynt = G.frum;
       try {
         const iw = G.frum.naturalWidth || G.frum.width, ih = G.frum.naturalHeight || G.frum.height;
@@ -654,13 +689,20 @@
         const x = c.getContext('2d', { willReadFrequently: true }); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.drawImage(G.frum, 0, 0, W, H);
         const d = x.getImageData(0, 0, W, H).data, gra = new Uint8Array(W * H);
         for (let i = 0, j = 0; i < W * H; i++, j += 4) gra[i] = (d[j] * 77 + d[j + 1] * 150 + d[j + 2] * 29) >> 8;
-        const hus = finnaHus(gra, W, H);
+        let hus = finnaHus(gra, W, H);
+        const rammi = blekRammi(gra, W, H);
+        if (!hus) hus = rammi;
         if (hus) {
           let x0 = hus.x * iw, y0 = hus.y * ih, x1 = (hus.x + hus.w) * iw, y1 = (hus.y + hus.h) * ih;
           const sp = Math.max(iw, ih) * 0.02;
           p.markers.forEach(m => { if (erPx(m)) { const mx = m.x + G.rymi.x, my = m.y + G.rymi.y; x0 = Math.min(x0, mx - sp); y0 = Math.min(y0, my - sp); x1 = Math.max(x1, mx + sp); y1 = Math.max(y1, my + sp); } });
           x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(iw, x1); y1 = Math.min(ih, y1);
-          if ((x1 - x0) * (y1 - y0) < iw * ih * 0.85) { h.skurdur = { x: Math.round(x0), y: Math.round(y0), w: Math.round(x1 - x0), h: Math.round(y1 - y0) }; h.sjalf = true; zNullstilla(); }
+          const nw = x1 - x0, nh = y1 - y0, gamall = h.skurdur;
+          const minni = !gamall || (nw * nh < gamall.w * gamall.h * 0.92);
+          if (minni && nw * nh < iw * ih * 0.94 && nw > iw * 0.08 && nh > ih * 0.08) {
+            h.skurdur = { x: Math.round(x0), y: Math.round(y0), w: Math.round(nw), h: Math.round(nh) };
+            h.sjalf = true; zNullstilla();
+          }
         }
       } catch (e) { console.warn('[383] sjálfskurður', e); }
     }
@@ -687,8 +729,8 @@
       try { r = reikna(G.stig1, l1, val); } catch (e) { segja('⚠ Gat ekki unnið teikninguna: ' + ((e && e.message) || e)); val.a = false; vistaVal(FP.companyId, val); }
       if (r && r.thekja >= NOTHAEF_THEKJA) ut = r.strigi;
       else if (r && !G.pdfBid) {
-        skilabod = 'Sjálfvirk veggjagreining nær ekki þessari teikningu (' + (r.thekja * 100).toFixed(1) + '% veggir) — sýni upprunalegu teikninguna, skorna að húsinu.' +
-          (pdfSlod(h) ? ' Enginn vigur lásist úr PDF-inu.' : '') + ' Fyrir 3D: dragðu veggina með ✏ Veggir.';
+        skilabod = 'Sjálfvirk veggagreining náði ekki (' + (r.thekja * 100).toFixed(1).replace('.', ',') + '% veggir).' +
+          (pdfSlod(h) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.';
       }
     }
     const lyk = l1 + '|' + (ut === G.stig1 ? 'frum' : ut === G.dauft ? 'dauft' : G.hreinLykill);
@@ -766,7 +808,7 @@
         (skilabod ? '' : (G.hrein ? '<span style="opacity:.6;font-weight:500">' + (G.hrein.thekja * 100).toFixed(1) + '% veggir · ' + G.hrein.ms + ' ms</span>' : ''));
     }
     if (G.pdfBid && G.hamur !== 'veggir') html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500">⏳ Les veggi úr PDF-skjalinu…</span>';
-    else if (skilabod && !G.hamur && !h.pdfVeggir.length) html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500">' + esc(skilabod) + '</span>';
+    else if (skilabod && !G.hamur && !h.pdfVeggir.length) html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(skilabod) + '</span>';
     if (s._html !== html) { s.innerHTML = html; s._html = html; }
     s.style.display = html ? 'flex' : 'none';
   }
