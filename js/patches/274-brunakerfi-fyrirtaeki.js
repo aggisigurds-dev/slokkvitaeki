@@ -1109,7 +1109,11 @@
               '<span class="b274-hint">' + (repNow && repNow._inv ? 'Reikningur ' + esc(repNow._inv.num || '') + ' · ' + esc(invLabel(repNow._inv)) + '.' : repNow && repNow.status === 'final' ? 'Reikningurinn stofnast úr lokinni skýrslu.' : repNow ? 'Drög þar til skýrslan er kláruð.' : 'Engin skoðun ' + NOW + ' enn.') + '</span>' +
               '<span class="b274-sp"></span>' +
               (repNow && repNow._inv
-                ? '<button type="button" class="_bkc-act b274-malmur b274-stong" data-invpdf="' + repNow.id + '">🧾 Opna reikning ' + esc(repNow._inv.num || '') + '</button>'
+                // 02.10.2026 (Agnar: „drögin eiga ekki lengur við … það er fyrir og ég get ekki klárað nýja reikninginn"):
+                // ósend, ógreidd drög má ógilda héðan — þá stofnast nýr reikningur úr línunum eins og þær eru núna
+                ? (repNow._inv.status === 'drog' && !repNow._inv.krafa_sent_at && !repNow._inv.paid_at
+                    ? '<button type="button" class="_bkc-act _ghost" data-invogilda="' + repNow.id + '" title="Drögin passa ekki lengur við línurnar — ógilda þau (afturkræft) og búa til nýjan reikning úr línunum">Ógilda drögin</button>' : '') +
+                  '<button type="button" class="_bkc-act b274-malmur b274-stong" data-invpdf="' + repNow.id + '">🧾 Opna reikning ' + esc(repNow._inv.num || '') + '</button>'
                 : repNow && repNow.status === 'final'
                   ? '<button type="button" class="_bkc-act b274-graenn b274-stong" id="_bkc-reiknbar">✓ Búa til reikning</button>'
                   : repNow
@@ -1366,6 +1370,31 @@
     w.querySelectorAll('[data-invpdf]').forEach(b => b.addEventListener('click', () => {
       const r = C.reports.find(x => x.id === b.dataset.invpdf);
       if (r && r._inv) openInvoicePdf(r._inv);
+    }));
+    // Ógilda drög sem passa ekki lengur — aðeins status 'drog', engin krafa, ógreitt (skilyrt í skriftinni sjálfri).
+    // Skýrslan er lesin fersk og aðeins sale_id/sale_num tekið af henni; línurnar snertast ekki.
+    w.querySelectorAll('[data-invogilda]').forEach(b => b.addEventListener('click', async () => {
+      const sb = SB();
+      const r = C.reports.find(x => x.id === b.dataset.invogilda), inv = r && r._inv;
+      if (!inv || !sb) return;
+      if (!confirm('Ógilda drögin ' + (inv.num || '') + '? Þau passa ekki lengur við línurnar. Á eftir birtist „Búa til reikning" og nýr reikningur stofnast úr línunum eins og þær eru núna.')) return;
+      b.disabled = true;
+      try {
+        const v = await sb.from('solur').update({ status: 'void' }).eq('id', inv.id).eq('status', 'drog').is('krafa_sent_at', null).is('paid_at', null).select('id');
+        if (v.error) throw v.error;
+        if (!(v.data || []).length) { toast('Drögin breyttust ekki — þau eru ekki lengur ósend drög.', true); b.disabled = false; return; }
+        const f = await sb.from('brunakerfi_skyrslur').select('data').eq('id', r.id).single();
+        if (f.error) throw f.error;
+        const d = f.data.data || {};
+        if (d.verd && String(d.verd.sale_id) === String(inv.id)) {
+          delete d.verd.sale_id; delete d.verd.sale_num;
+          const u = await sb.from('brunakerfi_skyrslur').update({ data: d, updated_at: new Date().toISOString() }).eq('id', r.id);
+          if (u.error) throw u.error;
+        }
+        if (r.data && r.data.verd && String(r.data.verd.sale_id) === String(inv.id)) { delete r.data.verd.sale_id; delete r.data.verd.sale_num; }
+        toast('Drögin ' + (inv.num || '') + ' eru ógild — „Búa til reikning" stofnar nýjan úr línunum');
+        reload();
+      } catch (e) { toast('Ógildingin tókst ekki: ' + ((e && e.message) || e), true); b.disabled = false; }
     }));
     // 📧 Senda — stakt eldra skjal / samningur.
     w.querySelectorAll('[data-docsend]').forEach(b => b.addEventListener('click', async () => {
