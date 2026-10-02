@@ -15,7 +15,7 @@ const p434 = fs.readFileSync(path.join(rot, 'js/patches/434-teikning-takn.js'), 
 const p433 = fs.readFileSync(path.join(rot, 'js/patches/433-teikning-merking.js'), 'utf8');
 const nf = fs.readFileSync(path.join(rot, 'js/newfeatures.js'), 'utf8');
 
-krefst(html, /436-teikning-sja\.js\?v=20261002a/, 'index.html: 436 vantar');
+krefst(html, /436-teikning-sja\.js\?v=20261002b/, 'index.html: 436 vantar');
 krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002sja/, 'index.html: 383 sja-cache');
 krefst(html, /434-teikning-takn\.js\?v=20261002sja/, 'index.html: 434 sja-cache');
 krefst(html, /newfeatures\.js\?v=20261002sja/, 'index.html: newfeatures sja-cache');
