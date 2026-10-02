@@ -488,16 +488,25 @@
     const i = m && m.querySelector('#' + id);
     return i || document.getElementById(id);
   }
+  // cab96432 festi aðeins þegar companyId breyttist. FloorPlan.open rífur
+  // gluggann ALLTAF (old.remove + nýtt #modal-floorplan) — líka fyrir SAMA
+  // félag. Þá sat _festCid eftir og hnappar/flipar lentu á dauðum hnútum
+  // eða komust aldrei inn í nýja hausinn. Nú ræður HNÚTURINN.
   function endurfestaEfNyttFelag() {
+    const m = fpGluggi();
     const FP = FPx();
-    if (!FP || !FP.companyId) return;
-    if (G._festCid === FP.companyId) return;
-    G._festCid = FP.companyId;
+    const cid = FP && FP.companyId;
+    if (!m) return;
+    if (G._festModal === m && G._festCid === cid) return;
+    G._festModal = m;
+    G._festCid = cid;
     G.soknKom = 0;
-    const main = fpEl('fp-main');
+    const main = m.querySelector('#fp-main');
     if (main) delete main._t383;
-    const f = fpEl('fp-haedir'); if (f) { f._html = ''; f.remove(); }
-    const z = fpEl('fp-zoom'); if (z) z.remove();
+    const f = document.getElementById('fp-haedir');
+    if (f && !m.contains(f)) { f._html = ''; f.remove(); }
+    const z = document.getElementById('fp-zoom');
+    if (z && !m.contains(z)) z.remove();
   }
   function plan() { const FP = FPx(); if (!FP.plans[FP.companyId]) FP.plans[FP.companyId] = { markers: [] }; return FP.plans[FP.companyId]; }
   function haedir() {
@@ -1082,12 +1091,17 @@
     if (m.classList.contains('fp-simi') !== simi) { m.classList.toggle('fp-simi', simi); G.teiknad = ''; try { FPx()._renderCanvas(); } catch (_) {} }
   }
   function simaStill() {
-    if (document.getElementById('fp-simi-css')) return;
-    const st = document.createElement('style'); st.id = 'fp-simi-css';
+    let st = document.getElementById('fp-simi-css');
+    if (!st) { st = document.createElement('style'); st.id = 'fp-simi-css'; document.head.appendChild(st); }
+    if (st.dataset.stjorn === '1') return;
+    st.dataset.stjorn = '1';
     st.textContent =
       // Hausinn er nowrap. Þegar Skýrari veggir, 3D og hinir takkarnir bætast við
       // Sækja / Hlaða upp / Hreinsa brotnar röðin í stað þess að fara út fyrir gluggann.
-      '#modal-floorplan.modal.open>.modal-hd{height:auto!important;overflow:visible!important;align-items:flex-start!important;row-gap:8px!important}' +
+      // app.css .modal.open>.modal-hd er 560px — án width:auto hverfa aukahnappanir.
+      '#modal-floorplan>.modal-hd,#modal-floorplan.modal.open>.modal-hd{height:auto!important;overflow:visible!important;align-items:flex-start!important;flex-wrap:wrap!important;width:auto!important;max-width:none!important;row-gap:8px!important}' +
+      '#modal-floorplan>.modal-bd,#modal-floorplan.modal.open>.modal-bd{width:auto!important;max-width:none!important;max-height:none!important}' +
+      '#modal-floorplan>.modal-ft,#modal-floorplan.modal.open>.modal-ft{width:auto!important;max-width:none!important}' +
       '#modal-floorplan .modal-hd>div:last-child{flex-wrap:wrap!important;justify-content:flex-end!important;row-gap:6px!important;max-width:100%!important}' +
       '#modal-floorplan #fp-haedir{z-index:8!important}' +
       '#modal-floorplan .fp-hd-grp{flex-wrap:wrap;justify-content:flex-end}' +
@@ -1110,7 +1124,6 @@
         '.fp-simi #fp-hreinsa-stika{max-width:calc(100% - 20px)!important}' +
         '.fp-simi #fp-zoom button{width:36px!important;height:36px!important}.fp-simi #fp-zoom span{height:36px!important;line-height:36px!important;min-width:46px!important}' +
       '';
-    document.head.appendChild(st);
   }
 
   /* ── TurboPaint-hringferð (Agnar 20.09.2026: „Edit í TurboPaint. Og save-að til baka") ──
@@ -1158,8 +1171,14 @@
 
   /* ── takkar í haus gluggans ── */
   function hnappar() {
-    const hd = document.querySelector('#modal-floorplan .modal-hd'); if (!hd) return;
-    const grp = hd.lastElementChild; if (!grp) return;
+    const m = fpGluggi(); if (!m) return;
+    const hd = m.querySelector('.modal-hd'); if (!hd) return;
+    // Ekki treysta lastElementChild: nýr barn-hnútur (276/405) getur ýtt hnappa-
+    // hópnum innar. Label „Hlaða upp" og Sækja-hnappur 374 eru í réttum hópi.
+    const lbl = hd.querySelector('label');
+    const saek = hd.querySelector('.fp-saekja-btn');
+    const grp = (lbl && lbl.parentElement) || (saek && saek.parentElement) || hd.lastElementChild;
+    if (!grp) return;
     const FP = FPx();
     if (!grp.querySelector('.fp-hreinsa-btn')) {
       const gera = (kl, texti, titill, fn) => {
@@ -1178,8 +1197,10 @@
         gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); }),
         gera('fp-tp-btn', '🖌 TurboPaint', 'Opna hæðina í TurboPaint: teikna á hana, færa tækin og vista staðsetningarnar til baka', opnaITurboPaint)
       ];
-      const upp = grp.querySelector('label') || grp.firstChild;
-      takkar.forEach(b => grp.insertBefore(b, upp));
+      const upp = grp.querySelector('label') || grp.querySelector('.fp-saekja-btn') || grp.firstChild;
+      takkar.forEach(b => {
+        try { grp.insertBefore(b, upp && upp.parentNode === grp ? upp : null); } catch (_) { grp.appendChild(b); }
+      });
       grp.classList.add('fp-hd-grp'); simaStill();
     }
     const val = lesaVal(FP.companyId), h = virkHaed();
@@ -1222,10 +1243,13 @@
 
     FP.open = function () {
       loka3d(); cancelAnimationFrame(G.raf);
-      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, _haedirBid: 0, _festCid: 0 });
+      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, _haedirBid: 0, _festCid: 0, _festModal: null });
       const r = opna.apply(this, arguments);
       Z.s = 1; Z.x = 0; Z.y = 0;
+      try { tikk(); } catch (_) {}
+      setTimeout(tikk, 0);
       setTimeout(tikk, 60);
+      setTimeout(tikk, 200);
       const lykkja = () => { const m = document.getElementById('modal-floorplan'); if (!m || !document.body.contains(m) || !modalSynnilegt()) return; try { yfirlag(); } catch (_) {} G.raf = requestAnimationFrame(lykkja); };
       G.raf = requestAnimationFrame(lykkja);
       return r;
@@ -1279,8 +1303,9 @@
   // áður en hnapparnir náðu að festast. Sama ef open() var kallað áður en skreytingin náðist.
   function modalSynnilegt() {
     const m = document.getElementById('modal-floorplan');
-    if (!m || !document.body.contains(m)) return null;
+    if (!m || !m.isConnected) return null;
     if (m.classList.contains('open')) return m;
+    if (m.style.display && m.style.display !== 'none') return m;
     try { if (getComputedStyle(m).display !== 'none') return m; } catch (_) {}
     return null;
   }
@@ -1312,7 +1337,28 @@
     try { FP.load(FP.companyId); } catch (_) {}
   }
 
+  function vaktGlugga() {
+    if (document.documentElement._t383obs) return;
+    document.documentElement._t383obs = 1;
+    const kveikja = () => {
+      G._festModal = null;
+      try { tikk(); } catch (_) {}
+      setTimeout(() => { try { tikk(); } catch (_) {} }, 80);
+    };
+    new MutationObserver(muts => {
+      for (let i = 0; i < muts.length; i++) {
+        const ns = muts[i].addedNodes;
+        for (let j = 0; j < ns.length; j++) {
+          const n = ns[j];
+          if (!n || n.nodeType !== 1) continue;
+          if (n.id === 'modal-floorplan' || (n.querySelector && n.querySelector('#modal-floorplan'))) kveikja();
+        }
+      }
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  }
+
   try { simaStill(); } catch (_) {}
+  try { vaktGlugga(); } catch (_) {}
   if (!skreyta()) { let n = 0; const i = setInterval(() => { if (skreyta() || ++n > 200) clearInterval(i); }, 150); }
   setInterval(() => { try { tikk(); } catch (e) { console.warn('[383]', e); } }, 400);
 })();
