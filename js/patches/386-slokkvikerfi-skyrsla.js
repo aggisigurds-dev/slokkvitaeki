@@ -662,7 +662,7 @@
     const host = document.getElementById('_sks-host'); if (host) host.style.display = slokk ? '' : 'none';
     const bruHost = document.getElementById('_sks-bru'); if (bruHost) bruHost.style.display = bru ? '' : 'none';
     if (bru) synaBru(); else if (bkcHyst()) { const ov = document.getElementById('_bkc-overlay'); if (ov) ov.style.display = 'none'; }
-    main.querySelectorAll('#_sks-tabs ._sks-tab').forEach(b => b.classList.toggle('on', b.dataset.flipi === f));
+    main.querySelectorAll('#_sks-tabs ._sks-tab').forEach(b => { const on = b.dataset.flipi === f; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
     // Hýsillinn er nýr í hvert sinn sem prófíllinn er endurteiknaður — líka þegar SAMA fyrirtæki er
     // opnað aftur (mælt 21.09: blaðið stóð tómt í annarri opnun). Tómur hýsill → sækja upp á nýtt.
     if (slokk && S.kerfi.length && host && !host.firstChild) {
@@ -694,9 +694,27 @@
       const cols = colsNu;
       const taeki = (cols.textContent.match(/Slökkvitæki\s*\((\d+)\)/) || [])[1];
       const tabs = document.createElement('div'); tabs.id = '_sks-tabs';
-      tabs.innerHTML = '<button type="button" class="_sks-tab" data-flipi="ars">🧯 Slökkvitæki' + (taeki ? ' (' + taeki + ')' : '') + '</button>' +
-        (S.bru ? '<button type="button" class="_sks-tab" data-flipi="bru">🚨 Brunakerfi</button>' : '') +
-        (S.kerfi.length ? '<button type="button" class="_sks-tab" data-flipi="slokk">🍳 Slökkvikerfi' + (S.kerfi.length > 1 ? ' (' + S.kerfi.length + ')' : '') + '</button>' : '');
+      // 02.10.2026 (Agnar: „make the switch button more noticable, that you can change the views" — hönnunin samþykkt á
+      // striganum https://claude.ai/artifact/9frzxk9JbTbojriNh25DjQ, Þjónustuskiptir): stórar flísar með tákni, heiti og
+      // undirlínu; valin flís í málmi þjónustunnar (402). ._sks-tab, data-flipi og .on halda sér — 199:1719 smellir á þær.
+      // Enginn texti byrjar á bili (405 klippir bil framan af textahnútum) — bilin eru í CSS.
+      const ARNU = new Date().getFullYear();
+      const bk = S.bru ? (((window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_customers')) || {})[fid]) : null;
+      const ein = bk && typeof bk === 'object' && +bk.unit_count > 0 ? +bk.unit_count : 0;
+      const sidBru = bk && typeof bk === 'object' && /^\d{4}-\d\d-\d\d/.test(String(bk.last_inspected || '')) ? String(bk.last_inspected).slice(0, 10).split('-').reverse().join('/') : '';
+      const TAKN = {
+        ars: 'M9 3h6M12 3v3M8 9a4 4 0 0 1 8 0v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1zM16 6l3-1',
+        bru: 'M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-7 2 1 3 3 3 3',
+        slokk: 'M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z'
+      };
+      const flis = (k, heiti, undir) => '<button type="button" class="_sks-tab" data-flipi="' + k + '" aria-pressed="false">' +
+        '<span class="_sks-ti" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + TAKN[k] + '"/></svg></span>' +
+        '<span class="_sks-tt"><span class="_sks-th">' + heiti + '</span>' + (undir ? '<span class="_sks-tu">' + esc(undir) + '</span>' : '') + '</span>' +
+        '<span class="_sks-tl" aria-hidden="true"></span></button>';
+      tabs.innerHTML = '<span class="_sks-tlbl" aria-hidden="true"><span>Þjónusta</span><span>á staðnum</span></span>' +
+        flis('ars', 'Slökkvitæki', (taeki ? taeki + ' tæki · ' : '') + 'ársskoðun ' + ARNU) +
+        (S.bru ? flis('bru', 'Brunakerfi', [ein ? ein + (ein === 1 ? ' eining' : ' einingar') : 'Brunaviðvörunarkerfi', sidBru ? 'skoðað ' + sidBru : ''].filter(Boolean).join(' · ')) : '') +
+        (S.kerfi.length ? flis('slokk', 'Slökkvikerfi', S.kerfi.length + (S.kerfi.length === 1 ? ' kerfi' : ' kerfi')) : '');
       tabs.addEventListener('click', e => { const b = e.target.closest('._sks-tab'); if (b) setjaFlipa(b.dataset.flipi); });
       const host = document.createElement('div'); host.id = '_sks-host'; host.style.display = 'none'; wire(host);
       const hl = arsHlutar(main); const akkeri = hl.find(el => el.parentNode === main && (el.compareDocumentPosition(cols) & Node.DOCUMENT_POSITION_FOLLOWING)) || cols;
@@ -722,6 +740,12 @@
       '#_bkc-overlay._sks-inni ._bkc-top{display:none!important}',
       '#_bkc-overlay._sks-inni ._bkc-wrap{max-width:none!important;padding:0 0 10px!important}',
       '#_sks-tabs ._sks-tab.on{background:#fff;border-color:#b0201b;border-bottom:2px solid #fff;color:#0f172a}',
+      // innviðir flísarinnar (02.10.2026) — grunnur; Brunastáls-útlitið er í 402
+      '#_sks-tabs ._sks-tab{display:inline-flex;align-items:center;gap:8px;text-align:left}',
+      '#_sks-tabs ._sks-ti{display:inline-flex}#_sks-tabs ._sks-ti svg{width:18px;height:18px}',
+      '#_sks-tabs ._sks-tt{display:flex;flex-direction:column;gap:2px}',
+      '#_sks-tabs ._sks-tu{font:500 11px var(--mono,monospace);color:#5b6472}',
+      '#_sks-tabs ._sks-tl,#_sks-tabs ._sks-tlbl{display:none}',
       H + '{font-family:var(--ui,system-ui,sans-serif);color:#0f172a;margin-bottom:18px}',
       H + '.sp{flex:1}' + H + '.hint{font-size:12px;color:#64748b}',
       H + '._sks-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;background:#fff;border:1px solid #d8dde6;border-radius:10px;padding:9px 14px}' + H + '._sks-hd h2{margin:0;font-size:17px;font-weight:800;color:#0f172a}' + H + '._sks-hd small{font-weight:500;color:#64748b;font-size:12.5px;margin-left:6px}',

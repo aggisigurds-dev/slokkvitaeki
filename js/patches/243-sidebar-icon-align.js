@@ -80,7 +80,10 @@
     // injected by another patch) → relabel it as our icon class
     if (first.nodeType === 1) {
       const t = (first.textContent || '').trim();
-      if (t && EMOJI_RE.test(t)) {
+      // 02.10.2026: AÐEINS tákn — span sem ber líka heitið („🏢 Rekstrarfélög") var merkt sem tákn og 391 faldi
+      // þá allt heitið (hnappurinn stóð tómur í hliðarstikunni). Táknið eitt er klofið frá af 391 (felaEmoji).
+      const m2 = t ? EMOJI_RE.exec(t) : null;
+      if (m2 && !t.slice(m2[0].length).trim()) {
         first.classList.add('vnav-icon-norm');
         btn.dataset.icoNorm = '1';
         return;

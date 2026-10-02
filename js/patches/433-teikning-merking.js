@@ -211,7 +211,9 @@
       b.textContent = 'Afturkalla';
       b.title = 'Taka síðustu merki-aðgerð til baka (Ctrl+Z)';
       b.addEventListener('click', e => { e.preventDefault(); afturkalla(); });
-      try { grp.insertBefore(b, grp.firstChild); } catch (_) { grp.appendChild(b); }
+      const gaedi = document.getElementById('fp-gaedi');
+      try { grp.insertBefore(b, gaedi && gaedi.nextSibling ? gaedi.nextSibling : grp.firstChild); }
+      catch (_) { grp.appendChild(b); }
     }
     b.hidden = false;
   }
@@ -630,6 +632,13 @@
         F._selectedUnitId = u.id;
         hefjaFraLista(e, 'taeki', { unitId: u.id, stutt: String(u.type || 'SLT').slice(0, 3).toUpperCase() });
         stikaValid();
+      });
+      rod.addEventListener('click', e => {
+        if (e.target && e.target.closest && e.target.closest('button')) return;
+        const pl = plan();
+        const merki = pl && (pl.markers || []).find(m => m.unitId === u.id);
+        if (!merki) return;
+        if (window.TeiknBord && typeof TeiknBord.faraAd === 'function') TeiknBord.faraAd(merki.x, merki.y);
       });
       rod.addEventListener('dragstart', e => { e.preventDefault(); });
     });

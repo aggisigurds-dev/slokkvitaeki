@@ -290,7 +290,9 @@
         '<div class="t434-val">' + GLYFF.map(g =>
           '<button type="button" class="t434-g' + (v[lyk] === g ? ' on' : '') + '" data-g="' + g + '" title="' + esc(GLYFF_NOFN[g]) + '"></button>'
         ).join('') + '</div></div>';
+    const gaedi = (window.TeiknGaedi && TeiknGaedi.gaediHTML) ? TeiknGaedi.gaediHTML() : '';
     return '<div class="t434">' +
+      gaedi +
       '<p class="t434-inng">Táknin gilda á öllum teikningum, á öllum tækjum. Tæki draga tákn af tegund; merki (skilti, útgangur, tafla) eru merki, ekki tækjaraðir.</p>' +
       '<div class="su-section-title">Tæki</div>' +
       rod('lettvatn', 'Léttvatn', 'Slökkvitæki á teikningunni') +
@@ -325,6 +327,9 @@
       '.t434-val{display:flex;flex-wrap:wrap;gap:6px}' +
       '.t434-g{width:36px;height:36px;padding:3px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer}' +
       '.t434-g.on{border-color:#c9a54a;box-shadow:0 0 0 2px rgba(201,165,74,.35)}' +
+      '.t434-gaedi{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}' +
+      '.t434-gq{padding:7px 12px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font:600 12.5px system-ui,sans-serif;color:#334155}' +
+      '.t434-gq.on{border-color:#c9a54a;background:#fbf6e8;color:#14120f;box-shadow:0 0 0 2px rgba(201,165,74,.28)}' +
       '.fp-ei-btn[aria-pressed="true"]{background:#c9a54a!important;color:#14120f!important}';
     document.head.appendChild(st);
   }
@@ -344,8 +349,8 @@
     if (!window.SettingsUI || typeof SettingsUI.registerSection !== 'function') return false;
     return SettingsUI.registerSection({
       id: 'teikning_takn', hopur: 'Vinnusvæði', nafn: 'Tákn á teikningu',
-      lysing: 'Veldu tákn fyrir léttvatn, duft, CO₂, slöngu og merki á teikningunni.',
-      ord: 'teikning tákn léttvatn duft co2 slanga skilti rafmagnstafla ei',
+      lysing: 'Gæði teikningarinnar og tákn fyrir léttvatn, duft, CO₂, slöngu og merki.',
+      ord: 'teikning tákn gæði forskoðun miðlungs fullt léttvatn duft co2 slanga skilti rafmagnstafla ei',
       render: body => {
         stillCss();
         body.innerHTML = stillingarHTML();
@@ -354,6 +359,12 @@
           b.addEventListener('click', () => {
             const lyk = b.closest('.t434-rod').dataset.lyk;
             vistaTakn(lyk, b.dataset.g);
+          });
+        });
+        body.querySelectorAll('.t434-gq').forEach(b => {
+          b.addEventListener('click', () => {
+            if (window.TeiknGaedi && TeiknGaedi.setja) TeiknGaedi.setja(b.getAttribute('data-q'));
+            body.querySelectorAll('.t434-gq').forEach(x => x.classList.toggle('on', x.getAttribute('data-q') === b.getAttribute('data-q')));
           });
         });
       }

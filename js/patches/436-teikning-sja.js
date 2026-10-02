@@ -165,7 +165,8 @@
           try { self._renderCanvas(); self._renderPanel(); } catch (_) {}
         };
         img.onerror = function () { if (fyrsta) { fyrsta = false; res(); } };
-        bindSrc(img, url);
+        if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, url);
+        else bindSrc(img, url);
       });
     };
     F._loadImg.__sja = 1;

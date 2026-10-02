@@ -48,7 +48,9 @@ window.FloorPlan = {
     this.companyId = cid;
     this.companyName = cname || '';
     this.units = units || [];
-    this.bgImage = { width: 200, height: 160, naturalWidth: 200, naturalHeight: 160 };
+    var bg = document.createElement('canvas'); bg.width = 200; bg.height = 160;
+    var bx = bg.getContext('2d'); bx.fillStyle = '#e8e4dc'; bx.fillRect(0, 0, 200, 160);
+    this.bgImage = bg;
     if (!this.plans[cid]) this.plans[cid] = { markers: [], imageUrl: 'fixture.png' };
     var old = document.getElementById('modal-floorplan');
     if (old) old.remove();
@@ -91,4 +93,5 @@ window.FloorPlan = {
 <script src="../js/patches/383-teikning-hreinsa-3d.js"></script>
 <script src="../js/patches/433-teikning-merking.js"></script>
 <script src="../js/patches/434-teikning-takn.js"></script>
+<script src="../js/patches/435-teikning-gaedi.js"></script>
 </body>

@@ -46,6 +46,12 @@
     'Fyrirtæki í Þjónustu':  { d: '<path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M19 21v-8a2 2 0 0 0-2-2h-2"/><path d="M8 7h2M8 11h2M8 15h2"/>', color: '#5b86ff', sw: 2 },
     'Brunakerfisþjónusta':   { d: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>' },
     'Allir Viðskiptavinir':  { d: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/>' },
+    // 02.10.2026: hliðarstikan sýnir táknin aftur (391) — þessir fimm höfðu ekkert tákn og stóðu skakkir í línunni
+    'Þjónustuborð':          { d: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>' },
+    'Teikningar':            { d: '<path d="M3 3h18v18H3z"/><path d="M3 9h8v12M11 13h10"/>' },
+    'Öpp':                   { d: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/>' },
+    'Aksturslisti':          { d: '<path d="M3 17V7a1 1 0 0 1 1-1h10v11"/><path d="M14 9h4l3 4v4h-7"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/>' },
+    'Birgðir':               { d: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>' },
     'Drög':                  { d: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>' },
     'Rekstrarfélög':         { d: '<path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/>' },
     'ÞjónustuVerkstæði':     { d: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2-2 2.6-2.6z"/>' },

@@ -15,17 +15,18 @@ const p434 = fs.readFileSync(path.join(rot, 'js/patches/434-teikning-takn.js'), 
 const p433 = fs.readFileSync(path.join(rot, 'js/patches/433-teikning-merking.js'), 'utf8');
 const nf = fs.readFileSync(path.join(rot, 'js/newfeatures.js'), 'utf8');
 
-krefst(html, /436-teikning-sja\.js\?v=20261002b/, 'index.html: 436 vantar');
-krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|eyda|att|staerd)/, 'index.html: 383 sja-cache');
-krefst(html, /434-teikning-takn\.js\?v=20261002(sja|eyda)/, 'index.html: 434 sja-cache');
+krefst(html, /436-teikning-sja\.js\?v=20261002c/, 'index.html: 436 vantar');
+krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|eyda|att|staerd|gaedi|eitt)/, 'index.html: 383 sja-cache');
+krefst(html, /434-teikning-takn\.js\?v=20261002(sja|eyda|gaedi)/, 'index.html: 434 sja-cache');
 krefst(html, /newfeatures\.js\?v=20261002sja/, 'index.html: newfeatures sja-cache');
-if (/435-teikning-gaedi/.test(html)) villur.push('436 má ekki bæta 435 gæði-vali á fyrirtækjasíðu');
+if (/435-teikning-gaedi/.test(p436)) villur.push('436 má ekki hlaða 435 gæði-vali');
 if (/fp-gaedi/.test(p436)) villur.push('436 má ekki bæta gæði-hnöppum á gluggann');
 krefst(p436, /brightness\(0\.82\).*contrast\(1\.55\)/, '436 vantar filter sem dökkvar fölgráar CAD-línur');
 krefst(p436, /function stimpilPx/, '436 vantar stimpilPx');
 krefst(p436, /Math\.max\(32/, 'stimplar á síma eiga að vera ≥ 32 px');
 krefst(p436, /function taknPx/, '436 vantar taknPx');
 krefst(p436, /26 \/ sc/, 'tákn eiga að vera ~26 skjápunktar');
+krefst(p436, /TeiknGaedi\.bindSrc/, '436 _loadImg á að láta gæði ráða þegar 435 er til');
 krefst(p436, /teikn-pdf/, '436 á að teikna vigur-PDF innvortis (Full gæði án vals)');
 krefst(p436, /imageUrl: url/, '436 má ekki vista blob-slóð í teikning_bord');
 krefst(p436, /bindSrc/, '436 vantar bindSrc');

@@ -32,7 +32,20 @@
   var SILVER_BTN = 'background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);border:1px solid rgba(20,24,34,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530';
   var METAL_BTN = 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);border:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);color:#eef1f4';
   var SEC = '#_ctc-section > ';
-  var D = function (n) { return SEC + 'div:nth-of-type(' + n + ')'; };   // 1 haus · 2 #_uv-strip · 3 reitir · 4 takkar · 5 texti · 6 verðlisti · 7 tafla · 8 samtölur · 9 ._vw-bar
+  // 1 haus · 2 #_uv-strip · 3 reitir · 4 takkar · 5 texti · 6 verðlisti · 7 tafla · 8 samtölur · 9 ._vw-bar
+  // 02.10.2026: hlutarnir þekktir af INNIHALDI, ekki stöðu. nth-of-type(n) gerði ráð fyrir að #_uv-strip væri alltaf
+  // til; þar sem hann vantar færðust allir hlutar um einn — reitirnir (Skoðunaraðili/Framkvæmd/Dags.) fengu enga röð og
+  // lentu OFAN við hausinn, texti og takkar víxluðust (skjámynd Agnars 02.10, fyrirtæki án úttektarstrimils).
+  var HLUTI = {
+    1: 'div:first-of-type',
+    3: 'div:has(#_ctc-skodun)',
+    4: 'div:has(#_ctc-skyrsla)',
+    5: 'div:has(#_ctc-invtext)',
+    6: 'div:has(#_ctc-add-extra)',
+    7: 'div:has(table)',
+    8: 'div:has(#_ctc-sum-subex)'
+  };
+  var D = function (n) { return SEC + HLUTI[n]; };
 
   function r(sel, css) { return sel.split(',').map(function (s) { var m = s.trim().match(/^(.*?)(::?(?:before|after))$/); return S + (m ? m[1] + F + m[2] : s.trim() + F); }).join(',') + '{' + css + '}'; }
   function imp(css) { return css.split(';').filter(Boolean).map(function (d) { return /!important/.test(d) ? d : d + '!important'; }).join(';'); }   // !important á HVERJA eigind (129 skrifar inline)
@@ -57,7 +70,10 @@
     r('#_uv-strip > span', 'height:22px!important;padding:0 8px!important;border-radius:3px!important;border:1px solid rgba(255,255,255,.14)!important;background:rgba(255,255,255,.1)!important;color:#eef1f4!important;font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.06em!important;text-transform:uppercase!important;display:inline-flex!important;align-items:center!important;gap:5px!important;white-space:nowrap'),
     r(D(4), 'margin:0!important;padding:4px 18px 14px!important;background:' + METAL + '!important;border-bottom:1px solid #000!important;display:flex!important;gap:8px!important;flex-wrap:wrap!important;align-items:center!important'),
     r(D(4) + ' button', 'height:36px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-weight:600!important;font-size:12.5px!important;padding:0 14px!important'),
-    r('#_ctc-skyrsla', imp(METAL_BTN) + ';margin-left:auto!important;order:3'),
+    // flex:0 0 auto (02.10): 129 gefur takkanum inline `flex:1;min-width:180px` — breiddin kom úr afgangsplássinu, ekki
+    // innihaldinu, og í 50/50-dálkinum (402) flæddi „✓ 2026"-merkið út fyrir hann. Nú ræður innihaldið og hann fer í
+    // næstu línu þegar plássið þrýtur.
+    r('#_ctc-skyrsla', imp(METAL_BTN) + ';margin-left:auto!important;order:3;flex:0 0 auto!important'),
     // 24.09 (Agnar): „Þegar búið er að ýta á búa til úttektarskýrslu þá á allur takkinn að verða svona
     // grænn" — sami grænn og „Staðfesta lista" (404 SAEKJA). 328 setur klasann ._uv-til þegar skýrslan
     // er til og litla merkið segir „✓ 2026" í hvítu.

@@ -130,13 +130,16 @@
 
 
     /* ── tækjalistinn fær meira pláss en útreikningurinn (Agnar 23.09): 60/40 í stað fastra 780px hægra megin (224) ── */
-    r('.uttekt-cols', 'display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start'),
+    // 02.10.2026 (Agnar: „put the tæki skýrslan the left part the same wide as the skýrslan in brunakerfi, so the
+    // hlutföllin will stay the same switching between slökkvitæki and brunakerfi"): 50/50 og 12px bil — NÁKVÆMLEGA eins
+    // og brunakerfis-gridið (274 ._bkc-grid.b274 1fr 1fr + 12px hér neðar), og sami brotpunktur (1100px) í einn dálk.
+    r('.uttekt-cols', 'display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start'),
     r('.uttekt-col-l,.uttekt-col-r', 'flex:none;width:auto;max-width:none;min-width:0'),
     r('.uttekt-col-r #_ctc-section table', 'min-width:0!important;width:100%'),
     r('.uttekt-col-r #_ctc-section table th,.uttekt-col-r #_ctc-section table td', 'padding:6px 6px!important'),
     r('.uttekt-col-r #_ctc-section table td:last-child,.uttekt-col-r #_ctc-section table th:last-child', 'white-space:nowrap'),
     r('.uttekt-col-r #_ctc-section table td .inn,.uttekt-col-r #_ctc-section table td input', 'width:64px!important;max-width:64px'),
-    '@media(max-width:1420px){' + S + '.uttekt-cols{grid-template-columns:minmax(0,1fr)}}',
+    '@media(max-width:1100px){' + S + '.uttekt-cols{grid-template-columns:minmax(0,1fr)}}',
 
 
     /* ── 23.09 kvöld (skjámynd Agnars, Fríða gull): upplýsingareitirnir teygðust yfir allan vinstri dálkinn sem tómar
@@ -417,10 +420,34 @@
     r('._cpr-toggle', 'font-family:' + SANS + ';font-weight:600'),
 
     /* ── miðjan: þjónustuflipar (386) — efst og neðst eins á 🧯 · 🚨 · 🍳, aðeins miðjan skiptir (Agnar 23.09 19:45) ── */
-    r('#_sks-tabs', 'display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 12px;padding:6px;border:1px solid #000;border-radius:12px;background:' + METAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 14px 28px -16px rgba(0,0,0,.75)'),
-    r('#_sks-tabs ._sks-tab', METAL_BTN_CSS + ';border-radius:8px;padding:9px 18px;margin:0;font-family:' + MONO + ';font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
-    r('#_sks-tabs ._sks-tab:hover', 'filter:brightness(1.18)'),
-    r('#_sks-tabs ._sks-tab.on', SILVER_BTN + ';border-color:#000;color:#11141c;border-radius:8px;filter:none'),
+    // 02.10.2026 — þjónustuskiptirinn (Agnar: „make the switch button more noticable" → samþykkt á striganum, og svo:
+    // „meinti að slökkvitækin væru dökk blá og brunakerfin dark red metal"): HVER flís ber ALLTAF málm þjónustunnar —
+    // slökkvitæki dökkblár, brunakerfi dökkrauður, slökkvikerfi grafít. Óvalin flís er dempuð (birta/mettun niður,
+    // díóðan slökkt); valin flís í fullum lit með ljósum hring og logandi díóðu. Markupið (tákn/heiti/undirlína) er í 386.
+    r('#_sks-tabs', 'display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin:18px 0 12px;padding:10px;border:1px solid #000;border-radius:12px;background:' + METAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 30px -14px rgba(0,0,0,.7)'),
+    r('#_sks-tabs ._sks-tlbl', 'display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 14px 0 8px;border-right:1px solid rgba(255,255,255,.1);font:700 10px/1 ' + MONO + ';letter-spacing:.18em;text-transform:uppercase;color:#c9a95a;white-space:nowrap'),
+    r('#_sks-tabs ._sks-tab', 'flex:1 1 220px;display:flex;align-items:center;gap:14px;min-height:64px;margin:0;padding:10px 18px 10px 12px;box-sizing:border-box;border:1px solid #000;border-radius:9px;background:' + METAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:#fff;font-family:' + SANS + ';text-transform:none;letter-spacing:0;text-align:left;text-shadow:0 1px 1px rgba(0,0,0,.5);cursor:pointer;filter:brightness(.62) saturate(.75);transition:filter .12s'),
+    r('#_sks-tabs ._sks-tab:hover', 'filter:brightness(.85) saturate(.9)'),
+    r('#_sks-tabs ._sks-tab[data-flipi="ars"]', 'background:linear-gradient(145deg,#02060f 0%,#0a1a3a 22%,#183363 45%,#2a4c8f 53%,#0e2147 74%,#03070f 100%);border-color:#020611'),
+    r('#_sks-tabs ._sks-tab[data-flipi="bru"]', 'background:linear-gradient(145deg,#080001 0%,#260304 22%,#4a0809 45%,#6c0d10 53%,#2a0304 74%,#080001 100%);border-color:#0a0102'),
+    r('#_sks-tabs ._sks-ti', 'display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex:none;border-radius:9px;background:rgba(0,0,0,.3);border:1px solid rgba(0,0,0,.35);box-shadow:inset 0 1px 3px rgba(0,0,0,.5);color:#fff'),
+    r('#_sks-tabs ._sks-ti svg', 'width:20px;height:20px'),
+    r('#_sks-tabs ._sks-tt', 'display:flex;flex-direction:column;gap:5px;min-width:0'),
+    r('#_sks-tabs ._sks-th', 'font:700 17px/1 ' + SANS + ';color:#fff'),
+    r('#_sks-tabs ._sks-tu', 'font:500 11.5px/1.2 ' + MONO + ';color:#d5dbe6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
+    r('#_sks-tabs ._sks-tl', 'display:block;margin-left:auto;width:9px;height:9px;flex:none;border-radius:50%;background:#4a4f59;box-shadow:inset 0 1px 1px rgba(0,0,0,.5)'),
+    // valin: fullur litur, ljós hringur, logandi díóða
+    r('#_sks-tabs ._sks-tab.on', 'filter:none;box-shadow:0 0 0 2px rgba(255,255,255,.55),inset 0 1px 0 rgba(255,255,255,.18),0 10px 22px -10px rgba(0,0,0,.9)'),
+    // Agnar 02.10: „make the red and blue bulb light up more when chosen … and some backlight in red and blue" —
+    // stærri, bjartari díóða með þreföldum ljóma, og baklýsing í lit þjónustunnar á bak við valda flís.
+    r('#_sks-tabs ._sks-tab.on ._sks-tl', 'width:12px;height:12px'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="ars"]', 'box-shadow:0 0 0 2px rgba(150,195,255,.7),0 0 26px 4px rgba(46,110,235,.55),0 0 60px 8px rgba(46,110,235,.22),inset 0 1px 0 rgba(255,255,255,.2)'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="ars"] ._sks-tu', 'color:#cfe0ff'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="ars"] ._sks-tl', 'background:radial-gradient(circle at 40% 35%,#ffffff 0%,#bcd9ff 35%,#5b9bff 100%);box-shadow:0 0 0 3px rgba(127,180,255,.3),0 0 10px 3px rgba(127,180,255,.95),0 0 26px 8px rgba(80,140,255,.65)'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="bru"]', 'box-shadow:0 0 0 2px rgba(255,150,140,.7),0 0 26px 4px rgba(225,35,35,.55),0 0 60px 8px rgba(225,35,35,.22),inset 0 1px 0 rgba(255,255,255,.2)'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="bru"] ._sks-tu', 'color:#ffd8d4'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="bru"] ._sks-tl', 'background:radial-gradient(circle at 40% 35%,#ffffff 0%,#ffc2bb 35%,#ff4f42 100%);box-shadow:0 0 0 3px rgba(255,107,94,.3),0 0 10px 3px rgba(255,107,94,.95),0 0 26px 8px rgba(255,60,50,.65)'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="slokk"] ._sks-tl', 'background:#e0a93e;box-shadow:0 0 0 3px rgba(246,181,69,.18),0 0 10px rgba(246,181,69,.85)'),
 
     /* 🚨 Brunakerfi — vinnusíða 274 hýst í #_sks-bru: skel + málmhaus + stálplata, spjöldin hvít með málmhaus */
     // 30.09.2026: miðjan í Brunastáli C (274 b274-*) — hýsillinn er gegnsær, spjöldin tvö standa beint á síðunni eins og 🧯-miðjan
@@ -513,7 +540,9 @@
     p('.ut-list .ut-row .ut-lastcol', 'margin-right:auto!important;flex:none!important'),
     p('.uttekt-cols', 'display:flex!important;flex-direction:column!important;gap:12px!important'),
     p('.uttekt-col-l,.uttekt-col-r', 'width:100%!important;max-width:none!important'),
-    p('#_sks-tabs ._sks-tab', 'flex:1 1 auto!important;text-align:center!important'),
+    p('#_sks-tabs ._sks-tab', 'flex:1 1 auto!important;text-align:left!important'),
+    // sími: flísarnar staflast; merkið „Þjónusta á staðnum" víkur fyrir plássinu
+    p('#_sks-tabs ._sks-tlbl', 'display:none!important'),
     '@media(max-width:600px){' + p('.co-bupp', 'grid-template-columns:minmax(0,1fr)!important') + p('.co-banner-name', 'font-size:22px!important') + '}'
   ].join('\n');
   // ── vinnusíða 274 EIN OG SÉR (úr Brunakerfi yfirliti 272, „Þjónustusíða →" og eigin reload): sömu reglur og undir
