@@ -912,11 +912,30 @@
   // sjalfNytt, annars bætt við á verðlistaverði. Fjöldi 0: AÐEINS merktri línu eytt — handslegnar línur eru aldrei
   // snertar, og skýrslur sem aldrei hafa borið „Þar af nýtt" haldast óbreyttar. Vinnur á S; skilar true ef breytt.
   function lidLykill(x) { return String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ð/g, 'd').replace(/þ/g, 'th').replace(/æ/g, 'ae').replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean).sort().join(' '); }
-  function samraemaNyttS() {
+  // 02.10.2026 (Agnar: „49 reykskynjarar eru ekki að syncast við útreikningana, þeir eru ennþá 46"): skoðunarlínur
+  // tengdar búnaði (t.d. reykhita = reyk- + hitaskynjarar) fylgja nú teljurunum líka — en AÐEINS þegar skýrslan er
+  // ritstýrð (medSkodun), aldrei við hleðslu yfir allar skýrslur félagsins, svo sendir reikningar fyrri ára haggast
+  // ekki. Handslegin tala heldur sér: lína fylgir búnaðinum meðan qty === sjalfMagn (síðasta sjálfvirka talan).
+  // Engri línu er bætt við né eytt — aðeins magni línu sem er þegar til.
+  function samraemaSkodunS(m, linur) {
+    let breytt = false;
+    priceItems().filter(it => it.link && it.link !== 'fast' && !erNytt(it.link)).forEach(it => {
+      const n = magnTengingar(m, it.link);
+      if (n <= 0) return;
+      let ix = linur.findIndex(l => l && l.sjalfLink === it.link);
+      if (ix < 0) ix = linur.findIndex(l => l && !l.sjalfNytt && !l.sjalfLink && lidLykill(l.name) === lidLykill(it.name));
+      if (ix < 0) return;
+      const l = linur[ix];
+      if (l.sjalfLink === it.link && l.sjalfMagn != null && (num(l.qty) || 0) !== (num(l.sjalfMagn) || 0)) return;
+      if ((num(l.qty) || 0) !== n || l.sjalfLink !== it.link) { l.qty = String(n); l.sjalfLink = it.link; l.sjalfMagn = String(n); breytt = true; }
+    });
+    return breytt;
+  }
+  function samraemaNyttS(medSkodun) {
     const m = model();
     const verd = S.data.verd = S.data.verd || { linur: [] };
     const linur = verd.linur = verd.linur || [];
-    let breytt = false;
+    let breytt = medSkodun ? samraemaSkodunS(m, linur) : false;
     priceItems().filter(it => erNytt(it.link)).forEach(it => {
       const n = magnTengingar(m, it.link);
       let ix = linur.findIndex(l => l && l.sjalfNytt === it.link);
@@ -1264,7 +1283,7 @@
       const r = S.data.bunadur[i]; r[k] = Math.max(0, (+r[k] || 0) + d); markDirty();
       const v = w.querySelector('[data-sv="' + i + ':' + k + '"]'); if (v) v.textContent = r[k];
       const sam = w.querySelector('[data-sam="' + i + '"]'); if (sam) sam.textContent = (+r.iLagi || 0) + (+r.ekki || 0);
-      if (k === 'nytt' && samraemaNyttS()) { const vb = w.querySelector('#_bks-verd'); if (vb) { vb.innerHTML = verdBodyHtml(); wireVerd(w); } }
+      if (samraemaNyttS(true)) { const vb = w.querySelector('#_bks-verd'); if (vb) { vb.innerHTML = verdBodyHtml(); wireVerd(w); } }
       const eq = document.getElementById('_bks-eqsum'); if (eq) eq.textContent = model().taeki + ' tæki samtals';
       updStats();
     }));
@@ -1982,11 +2001,12 @@
     try { return autoVerdLines(it => erNytt(it.link)); } finally { S = prev; }
   }
   // Samræmir verðlínur skýrslu (row.data — sama hlutur, breytt á staðnum) við „Þar af nýtt". Vistar EKKI.
-  function samraemaNytt(co, row) {
+  // medSkodun = true aðeins þar sem búnaður skýrslunnar var að breytast (vistun blaðsins í 274), ekki við hleðslu
+  function samraemaNytt(co, row, medSkodun) {
     if (!row || !row.data) return false;
     const st = stateFor(co, row); if (!st) return false;
     const prev = S; S = st;
-    try { return samraemaNyttS(); } finally { S = prev; }
+    try { return samraemaNyttS(!!medSkodun); } finally { S = prev; }
   }
   window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun, samraemaNytt, radaLinum };
   console.log('[patch-273] Brunakerfi skoðunarskýrsla v2 (PDF + verð) installed');

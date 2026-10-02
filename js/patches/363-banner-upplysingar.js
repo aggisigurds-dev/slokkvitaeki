@@ -201,6 +201,20 @@
     if (!svar || hefurBlod(svar) || svar.error || svar.reynaAftur) return false;
     return !!(svar.eign || svar.mapisBeint || (svar.teikningar && Number(svar.teikningar.fjoldi) === 0));
   }
+  // Kópavogur, Garðabær, Hafnarfjörður. 170 (Seltjarnarnes) og Reykjavík eru
+  // þegar leyst á þjóninum: Seltjarnarnes er bein map.is-leið, Reykjavík FotoWeb.
+  function erMapisBaer(adr) {
+    const t = String(adr || '');
+    const eftir = t.split(',').slice(1).join(' ');
+    return !!(/\b(200|201|202|203|210|211|212|225|220|221)\b/.exec(eftir)
+      || /\b(200|201|202|203|210|211|212|225|220|221)\b/.exec(t));
+  }
+  // Eldri missir var skráður án þess að listinn væri sóttur. Hann gildir ekki.
+  // Nýtt svar ber mapisBeint, líka þegar safnið er tómt, og er ekki sótt aftur.
+  function mapisTilbuid(adr, svar) {
+    if (!erMapisBaer(adr)) return true;
+    return !!(svar && svar.mapisBeint);
+  }
   function frambodMedBlodum(coId, heimilisfang) {
     const k = String(coId);
     const stores = [];
@@ -239,7 +253,10 @@
         } catch (_) {}
       }
     }
-    const med = frambod.find(hefurBlod) || frambod.find(tomtEnStadfest);
+    // Blöð haldast. Fyrir Kópavog, Garðabæ og Hafnarfjörð gildir aðeins svar
+    // sem þegar ber mapisBeint, svo hver félagssíða sæki listann einu sinni.
+    const tilbuid = (s) => mapisTilbuid(heimilisfang, s);
+    const med = frambod.find((s) => hefurBlod(s) && tilbuid(s)) || frambod.find((s) => tomtEnStadfest(s) && tilbuid(s));
     if (!med) return null;
     skrar.set(k, { svar: med, sott: Date.now(), heimilisfang, reyndi: true });
     return med;
@@ -287,9 +304,12 @@
         delete lok.reynaAftur;
       }
       // Nýtt „engin teikning" má ekki skrifa yfir eldri blöð í geymslunni.
+      // mapisBeint fylgir með svo Kópavogur, Garðabær og Hafnarfjörður sæki ekki aftur.
       const fyrri = frambodMedBlodum(k, heimilisfang);
       if (!hefurBlod(lok) && fyrri) {
+        if (lok.mapisBeint) fyrri.mapisBeint = true;
         skrar.set(k, { svar: fyrri, sott: Date.now(), heimilisfang, reyndi: true });
+        if (mapisTilbuid(heimilisfang, fyrri)) vistaGeymslu(coId, heimilisfang, fyrri);
         return;
       }
       skrar.set(k, { svar: lok, sott: Date.now(), heimilisfang, reyndi: true });

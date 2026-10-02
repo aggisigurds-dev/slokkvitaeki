@@ -438,7 +438,8 @@
     var s = sbKlient();
     if (!s) return false;
     var blob = b64Blob(svar.image, svar.contentType || 'image/jpeg');
-    var slod = 'bygging/' + coId + '/borgarvefsja-2018.jpg';
+    var nafn = String(svar.heimild || 'borgarvefsja-2018').replace(/[^a-z0-9-]/gi, '') || 'utan';
+    var slod = 'bygging/' + coId + '/' + nafn + '.jpg';
     var up = await s.storage.from(BUCKET).upload(slod, blob, { contentType: 'image/jpeg', upsert: true });
     if (up.error) throw up.error;
     var pub = s.storage.from(BUCKET).getPublicUrl(slod);
@@ -455,11 +456,19 @@
     });
     return true;
   }
-  async function vistaEngin(coId, adr, kodi) {
+  function erMapisPost(adr) {
+    var t = String(adr || '');
+    var eftir = t.split(',').slice(1).join(' ');
+    return /\b(200|201|202|203|210|211|212|225|220|221)\b/.test(eftir)
+      || /\b(200|201|202|203|210|211|212|225|220|221)\b/.test(t);
+  }
+  async function vistaEngin(coId, adr, kodi, svar) {
     if (erVerndud(lesaMynd(coId))) return false;
     await skrifaMynd(coId, {
       engin: true, ts: new Date().toISOString(), heimilisfang: adr,
-      uppspretta: 'borgarvefsja-2018', heimild: kodi || 'engin-mynd',
+      uppspretta: (svar && svar.heimild) || 'borgarvefsja-2018',
+      heimild: kodi || 'engin-mynd',
+      attribution: (svar && svar.attribution) || '',
       skilabod: 'engin mynd'
     });
     return true;
@@ -473,7 +482,11 @@
     if (!window.AppSettings || !AppSettings.isLoaded || !AppSettings.isLoaded()) return;
     var m = lesaMynd(coId);
     if (erVerndud(m)) return;
-    if (m && m.engin && String(m.heimilisfang || '') === String(adr)) return;
+    if (m && m.engin && String(m.heimilisfang || '') === String(adr)) {
+      // Borgarvefsjá er Reykjavík. Ein loftmyndatilraun fyrir map.is-bæina.
+      var src = String(m.uppspretta || '');
+      if (!(erMapisPost(adr) && src.indexOf('borgarvefsja') === 0)) return;
+    }
     var lykill = coId + '|' + adr;
     if (_reynd.has(lykill) || _myndBid.has(coId)) return;
     _reynd.add(lykill);
@@ -493,7 +506,7 @@
         return;
       }
       if (svar && svar.error === 'timi') return;
-      await vistaEngin(coId, adr, (svar && svar.error) || 'engin');
+      await vistaEngin(coId, adr, (svar && svar.error) || 'engin', svar);
       endurteikna(true);
     } catch (_) {}
     finally {
@@ -515,8 +528,14 @@
     if (m && m.url) {
       flis.classList.add('med');
       flis.title = 'Mynd af byggingunni — smelltu til að stækka, skipta um eða fjarlægja · límdu nýja yfir til að skipta';
-      var merki = (m.uppspretta && String(m.uppspretta).indexOf('borgarvefsja') === 0)
-        ? '<span class="co-mynd-loftmerki" title="Loftmynd úr Borgarvefsjá 2018. Ekki mynd sem þú settir inn.">Borgarvefsjá</span>'
+      var src = String(m.uppspretta || '');
+      var mapisLoft = src.indexOf('mapis-loftmynd') === 0;
+      var borgarLoft = src.indexOf('borgarvefsja') === 0;
+      var merki = (mapisLoft || borgarLoft)
+        ? '<span class="co-mynd-loftmerki" title="' + esc(mapisLoft
+          ? 'Loftmynd úr map.is (Loftmyndir). Húsið sést að ofan. Þetta er ekki götumynd og ekki mynd sem þú settir inn.'
+          : 'Loftmynd úr Borgarvefsjá 2018. Ekki mynd sem þú settir inn.') + '">' +
+          (mapisLoft ? 'Loftmynd' : 'Borgarvefsjá') + '</span>'
         : '';
       flis.innerHTML = '<div class="co-mynd-vefja"><img alt="Bygging"></div>' + merki +
         '<button type="button" class="co-mynd-x" title="Fjarlægja myndina">×</button>' + UPP + hlekkir;

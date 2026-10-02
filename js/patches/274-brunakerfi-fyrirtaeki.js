@@ -144,7 +144,7 @@
       let linurBreyttar = false;
       try {
         const _bks = window.BrunakerfiSkyrsla;
-        if (_bks && _bks.samraemaNytt) linurBreyttar = _bks.samraemaNytt(C.co, rep);
+        if (_bks && _bks.samraemaNytt) linurBreyttar = _bks.samraemaNytt(C.co, rep, true);   // búnaðurinn breyttist → skoðunarlínur fylgja
         if (_bks && _bks.radaLinum && rep.data.verd && _bks.radaLinum(rep.data.verd.linur)) linurBreyttar = true;
       } catch (_) {}
       if (linurBreyttar) { d.verd = d.verd || {}; d.verd.linur = (rep.data.verd && rep.data.verd.linur) || []; }
@@ -874,11 +874,14 @@
       try { if (BKS.verdlistiMedTegund) return BKS.verdlistiMedTegund(); } catch (_) {}
       return verdlisti.map(it => ({ name: it.name, price: num(it.price) || 0, link: it.link || '', teg: it.teg || tegLinu({ name: it.name }) }));
     })();
+    // 02.10.2026 (Agnar: „bæta við annari ótengdri vöru, sem ég get skrifað sjálfur og ráðið verðinu"): neðst í
+    // listanum er lína utan verðlistans — tegundin föst (Vara/Þjónusta), heiti og verð skrifuð í línuna sjálfa.
     const lidaVal = (teg, merki) => {
       const lidir = verdlistiTeg.map((it, ix) => ({ it, ix })).filter(x => x.it.name && x.it.teg === teg);
-      return lidir.length ? '<select class="_bkc-act _ghost b274-lidval" data-vlid="' + teg + '" title="Bæta við ' + merki.toLowerCase() + ' úr verðlistanum">' +
+      return '<select class="_bkc-act _ghost b274-lidval" data-vlid="' + teg + '" title="Bæta við ' + merki.toLowerCase() + ' úr verðlistanum — eða skrifa sjálf/ur">' +
         '<option value="">＋ ' + merki + '</option>' +
-        lidir.map(x => '<option value="' + x.ix + '">' + esc(x.it.name) + ' · ' + fmtKr(x.it.price) + '</option>').join('') + '</select>' : '';
+        lidir.map(x => '<option value="' + x.ix + '">' + esc(x.it.name) + ' · ' + fmtKr(x.it.price) + '</option>').join('') +
+        '<option value="ny">✎ Önnur ' + merki.toLowerCase() + ' — skrifa heiti og verð sjálf/ur</option></select>';
     };
     // „Þar af nýtt" í skýrslunni × vara tengd „Nýtt: …" í verðlistanum → lína sem vantar eða magn sem stemmir ekki
     // „Reykskynjari optískur XP95" = „Optiskur Reykskynjari XP95": orðaröð og broddstafir skipta ekki máli
@@ -1167,6 +1170,13 @@
         render(); vistaSidar(rep);
       }));
       blokk.querySelectorAll('[data-vlid]').forEach(sel => sel.addEventListener('change', () => {
+        if (sel.value === 'ny') {
+          // ótengd lína: autt heiti og verð, bendillinn beint í heitið
+          const ny = { name: '', qty: '1', price: '', afsl: '', teg: sel.dataset.vlid === 'thjonusta' ? 'thjonusta' : 'vara' };
+          tilLinur().push(ny);
+          render(); vistaSidar(rep); skrifaI(ny);
+          return;
+        }
         const it = verdlistiTeg[+sel.value]; if (!it) return;
         tilLinur().push({ name: it.name, qty: '1', price: String(it.price), afsl: '', teg: it.teg });
         render(); vistaSidar(rep);
