@@ -19,8 +19,9 @@ async function main() {
   try { browser = await chromium.launch({ channel: 'chrome' }); }
   catch (_) { browser = await chromium.launch(); }
   const page = await browser.newPage();
+  page.on('pageerror', e => console.log('[fixture pageerror]', e.message.split('\n')[0]));
   await page.goto(html, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => window.__teiknHreinsa3d === true && window.TeiknMerking && window.TeiknTakn, null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__teiknHreinsa3d === true && window.TeiknMerking && window.TeiknTakn && window.TeiknGaedi, null, { timeout: 5000 });
 
   const lettvatn = { id: 25446, type: 'Léttvatn', serial: 'TMP-WFCMBQ', status: 'active' };
 
@@ -107,31 +108,6 @@ async function main() {
     };
   });
 
-  await browser.close();
-
-  const villur = [];
-  const krefst = (ok, msg) => { if (!ok) villur.push(msg); };
-  krefst(eftirDropp.hreinsa && eftirDropp.d3 && eftirDropp.haedir, 'stjórn vantar: ' + JSON.stringify(eftirDropp));
-  krefst(eftirDropp.stimpil, 'stimpilröð vantar');
-  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Rafmagnstafla/.test(n)), 'Rafmagnstafla vantar á rönd: ' + JSON.stringify(eftirDropp.nofn));
-  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Skilti slökkvitæki/.test(n)), 'Skilti slökkvitæki vantar');
-  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Skilti brunaslanga/.test(n)), 'Skilti brunaslanga vantar');
-  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Neyðarútgangur/.test(n)) && eftirDropp.nofn.some(n => /^Út$/.test(n) || /\bÚt\b/.test(n)), 'Neyðarútgangur/Út vantar');
-  krefst(eftirDropp.drop && eftirDropp.merki.some(m => m.unitId === 25446 && m.x === 80), 'léttvatn fór ekki á 1. hæð: ' + JSON.stringify(eftirDropp.merki));
-  krefst(eftirDropp.draggable, 'tæki á ræmunni á að vera draggandi');
-  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'ut'), 'Út-stimpill vantar');
-  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'rafmagn'), 'Rafmagnstafla á að vera merki');
-  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'skilti_slt'), 'Skilti slökkvitæki á að vera merki');
-  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'skilti_slanga'), 'Skilti brunaslanga á að vera merki');
-  krefst(!eftirDropp.merki.some(m => m.sign && m.kind !== 'sign'), 'stimpill mátti ekki verða uttaeki-röð');
-  krefst(eftirDropp.upserts > 0, 'ekkert upsert á teikning_bord');
-  krefst(haedir.nHaedir >= 2, 'vantar 2 hæðir: ' + JSON.stringify(haedir));
-  krefst(haedir.a2.length === 0 && haedir.haed1.length === 0, 'merki áttu að sitja á 1. hæð, ekki 2.: ' + JSON.stringify(haedir));
-  krefst(haedir.a1.some(m => m.unitId === 25446) && haedir.haed0.includes(25446), 'merki týndust við að skipta um hæð: ' + JSON.stringify(haedir));
-  krefst(a388.stjorn && a388.loka && a388.vista && a388.rail, '388 mátti ekki missa stjórn/Loka/Vista/rail');
-  krefst(a388.merki1612 >= 2, '1612 merki máttu ekki hverfa við félagsskipti: ' + a388.merki1612);
-  krefst(aftur.merki.includes(25446) && aftur.stimpil && aftur.haedir && aftur.stika, 'close/reopen 1612 tapaði merkjum: ' + JSON.stringify(aftur));
-
   const undo = await page.evaluate(() => {
     TeiknMerking.setjaStimpil('hose', 11, 12);
     const n0 = (FloorPlan.plans[1612].markers || []).length;
@@ -159,6 +135,31 @@ async function main() {
       gq: /Forskoðun/.test(still) && /Miðlungs/.test(still) && /Full gæði/.test(still)
     };
   });
+
+  await browser.close();
+
+  const villur = [];
+  const krefst = (ok, msg) => { if (!ok) villur.push(msg); };
+  krefst(eftirDropp.hreinsa && eftirDropp.d3 && eftirDropp.haedir, 'stjórn vantar: ' + JSON.stringify(eftirDropp));
+  krefst(eftirDropp.stimpil, 'stimpilröð vantar');
+  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Rafmagnstafla/.test(n)), 'Rafmagnstafla vantar á rönd: ' + JSON.stringify(eftirDropp.nofn));
+  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Skilti slökkvitæki/.test(n)), 'Skilti slökkvitæki vantar');
+  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Skilti brunaslanga/.test(n)), 'Skilti brunaslanga vantar');
+  krefst(eftirDropp.nofn && eftirDropp.nofn.some(n => /Neyðarútgangur/.test(n)) && eftirDropp.nofn.some(n => /^Út$/.test(n) || /\bÚt\b/.test(n)), 'Neyðarútgangur/Út vantar');
+  krefst(eftirDropp.drop && eftirDropp.merki.some(m => m.unitId === 25446 && m.x === 80), 'léttvatn fór ekki á 1. hæð: ' + JSON.stringify(eftirDropp.merki));
+  krefst(eftirDropp.draggable, 'tæki á ræmunni á að vera draggandi');
+  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'ut'), 'Út-stimpill vantar');
+  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'rafmagn'), 'Rafmagnstafla á að vera merki');
+  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'skilti_slt'), 'Skilti slökkvitæki á að vera merki');
+  krefst(eftirDropp.merki.some(m => m.kind === 'sign' && m.sign === 'skilti_slanga'), 'Skilti brunaslanga á að vera merki');
+  krefst(!eftirDropp.merki.some(m => m.sign && m.kind !== 'sign'), 'stimpill mátti ekki verða uttaeki-röð');
+  krefst(eftirDropp.upserts > 0, 'ekkert upsert á teikning_bord');
+  krefst(haedir.nHaedir >= 2, 'vantar 2 hæðir: ' + JSON.stringify(haedir));
+  krefst(haedir.a2.length === 0 && haedir.haed1.length === 0, 'merki áttu að sitja á 1. hæð, ekki 2.: ' + JSON.stringify(haedir));
+  krefst(haedir.a1.some(m => m.unitId === 25446) && haedir.haed0.includes(25446), 'merki týndust við að skipta um hæð: ' + JSON.stringify(haedir));
+  krefst(a388.stjorn && a388.loka && a388.vista && a388.rail, '388 mátti ekki missa stjórn/Loka/Vista/rail');
+  krefst(a388.merki1612 >= 2, '1612 merki máttu ekki hverfa við félagsskipti: ' + a388.merki1612);
+  krefst(aftur.merki.includes(25446) && aftur.stimpil && aftur.haedir && aftur.stika, 'close/reopen 1612 tapaði merkjum: ' + JSON.stringify(aftur));
   krefst(undo.ok && undo.n1 === undo.n0 - 1, 'Afturkalla tók ekki síðasta merki: ' + JSON.stringify(undo));
   krefst(undo.n3 === undo.n2 - 1, 'Ctrl+Z tók ekki síðasta stimpil: ' + JSON.stringify(undo));
   krefst(undo.gaedi && undo.forsk && undo.ls === 'midlungs', 'gæði/localStorage: ' + JSON.stringify({ gaedi: undo.gaedi, forsk: undo.forsk, ls: undo.ls }));

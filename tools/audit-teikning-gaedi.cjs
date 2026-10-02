@@ -15,7 +15,7 @@ const html = fs.readFileSync(path.join(rot, 'index.html'), 'utf8');
 const villur = [];
 const krefst = (src, re, msg) => { if (!re.test(src)) villur.push(msg); };
 
-krefst(html, /435-teikning-gaedi\.js\?v=20261002a/, 'index.html: 435 vantar');
+krefst(html, /435-teikning-gaedi\.js\?v=20261002b/, 'index.html: 435 vantar');
 krefst(html, /433-teikning-merking\.js\?v=20261002gaedi/, 'index.html: 433 gaedi-cache');
 krefst(p435, /teikn_gaedi/, '435 vantar localStorage teikn_gaedi');
 krefst(p435, /Forskoðun/, '435 vantar Forskoðun');

@@ -275,6 +275,5 @@
 
   if (!vefjaPdf()) { let n = 0; const i = setInterval(() => { if (vefjaPdf() || ++n > 80) clearInterval(i); }, 150); }
   setInterval(() => { try { tikk(); } catch (_) {} }, 500);
-  new MutationObserver(() => { try { tikk(); } catch (_) {} }).observe(document.documentElement, { childList: true, subtree: true });
   tikk();
 })();
