@@ -1068,6 +1068,11 @@
     if (document.getElementById('fp-simi-css')) return;
     const st = document.createElement('style'); st.id = 'fp-simi-css';
     st.textContent =
+      // Hausinn er nowrap. Þegar Skýrari veggir, 3D og hinir takkarnir bætast við
+      // Sækja / Hlaða upp / Hreinsa brotnar röðin í stað þess að fara út fyrir gluggann.
+      '#modal-floorplan.modal.open>.modal-hd{height:auto!important;overflow:visible!important;align-items:flex-start!important;row-gap:8px!important}' +
+      '#modal-floorplan .modal-hd>div:last-child{flex-wrap:wrap!important;justify-content:flex-end!important;row-gap:6px!important;max-width:100%!important}' +
+      '#modal-floorplan #fp-haedir{z-index:8!important}' +
       '#modal-floorplan .fp-hd-grp{flex-wrap:wrap;justify-content:flex-end}' +
         '#modal-floorplan.fp-simi{width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;margin:0!important}' +
         '#modal-floorplan.fp-simi .modal-hd{flex-direction:column;align-items:stretch;gap:6px;padding:8px 10px 8px 64px}' +
@@ -1199,25 +1204,19 @@
     const opna = FP.open, vista = FP.save;
 
     FP.open = function () {
-      loka3d(); cancelAnimationFrame(G.raf); clearInterval(G.vakt);
-      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '' });
+      loka3d(); cancelAnimationFrame(G.raf);
+      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, _haedirBid: 0 });
       const r = opna.apply(this, arguments);
       Z.s = 1; Z.x = 0; Z.y = 0;
-      const tikk = () => {
-        const m = document.getElementById('modal-floorplan');
-        if (!m || m.style.display === 'none' || !document.body.contains(m)) { clearInterval(G.vakt); cancelAnimationFrame(G.raf); loka3d(); return false; }
-        try { simaKlasi(); tengjaStriga(); zTakkar(); hnappar(); beita(); listaVisbending(); } catch (e) { console.warn('[383]', e); }
-        return true;
-      };
       setTimeout(tikk, 60);
-      G.vakt = setInterval(tikk, 500);
-      const lykkja = () => { const m = document.getElementById('modal-floorplan'); if (!m || !document.body.contains(m)) return; try { yfirlag(); } catch (_) {} G.raf = requestAnimationFrame(lykkja); };
+      const lykkja = () => { const m = document.getElementById('modal-floorplan'); if (!m || !document.body.contains(m) || !modalSynnilegt()) return; try { yfirlag(); } catch (_) {} G.raf = requestAnimationFrame(lykkja); };
       G.raf = requestAnimationFrame(lykkja);
       return r;
     };
 
     // 375 kallar þetta þegar röð þjónsins er komin: merkin eru þá í FRUMMYNDARHNITUM og hæðirnar fylgja.
     FP.__eftirSokn = function (cid, row) {
+      G.soknKom = cid;
       if (FP.companyId !== cid) return;
       const p = plan();
       p.haedir = Array.isArray(row.haedir) && row.haedir.length ? JSON.parse(JSON.stringify(row.haedir)) : null;
@@ -1258,5 +1257,44 @@
     return true;
   }
 
-  if (!skreyta()) { let n = 0; const i = setInterval(() => { if (skreyta() || ++n > 80) clearInterval(i); }, 150); }
+  // Glugginn er sýnilegur þegar hann ber .open. inline display:none má ekki drepa vaktina:
+  // .modal.open { display:flex !important } heldur honum uppi, og eldri vakt hreinsaði sig þá
+  // áður en hnapparnir náðu að festast. Sama ef open() var kallað áður en skreytingin náðist.
+  function modalSynnilegt() {
+    const m = document.getElementById('modal-floorplan');
+    if (!m || !document.body.contains(m)) return null;
+    if (m.classList.contains('open')) return m;
+    try { if (getComputedStyle(m).display !== 'none') return m; } catch (_) {}
+    return null;
+  }
+  function tikk() {
+    if (!modalSynnilegt()) return false;
+    try { if (!FPx() || !FPx().__hreinsaSkreytt) skreyta(); } catch (_) {}
+    try { simaKlasi(); } catch (_) {}
+    try { tengjaStriga(); } catch (_) {}
+    try { zTakkar(); } catch (_) {}
+    try { hnappar(); } catch (e) { console.warn('[383]', e); }
+    try { flipar(); } catch (e) { console.warn('[383]', e); }
+    try { beita(); } catch (e) { console.warn('[383]', e); }
+    try { listaVisbending(); } catch (_) {}
+    try { tryggjaHaedir(); } catch (_) {}
+    return true;
+  }
+  // 375 sækir hæðirnar áður en __eftirSokn er til ef glugginn opnast snemma. Þá verður aðeins
+  // til ein gervihæð. Eftir ~1,5 s, ef tvær hæðir eru ekki komnar, er sótt aftur.
+  function tryggjaHaedir() {
+    const FP = FPx();
+    if (!FP || !FP.__hreinsaSkreytt || !FP.companyId || !modalSynnilegt()) return;
+    if (G.soknKom === FP.companyId) return;
+    const p = FP.plans[FP.companyId];
+    if (p && Array.isArray(p.haedir) && p.haedir.length > 1) { G.soknKom = FP.companyId; return; }
+    if (G._haedirCid !== FP.companyId) { G._haedirCid = FP.companyId; G._haedirBid = Date.now(); return; }
+    if (Date.now() - (G._haedirBid || 0) < 1500) return;
+    G.soknKom = FP.companyId;
+    try { FP.load(FP.companyId); } catch (_) {}
+  }
+
+  try { simaStill(); } catch (_) {}
+  if (!skreyta()) { let n = 0; const i = setInterval(() => { if (skreyta() || ++n > 200) clearInterval(i); }, 150); }
+  setInterval(() => { try { tikk(); } catch (e) { console.warn('[383]', e); } }, 400);
 })();
