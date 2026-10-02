@@ -668,10 +668,10 @@
     if (!G.frum || !nu) { stika(); flipar(); return; }
     // Hæð sem á þegar vigurveggi en ber enn LAUSA sjálfvirka skurðinn (vistuð fyrir þétta skurðinn): þétta einu sinni.
     if (h.pdfVeggir.length > 30 && h.sjalf === true && !h.thett) thetturSkurdur(h, G.frum.naturalWidth || G.frum.width, G.frum.naturalHeight || G.frum.height);
-    // SJÁLFGEFINN SKURÐUR AÐ BYGGINGUNNI (Agnar 20.09.2026: „reyna að default croppa að byggingunni"). Aðeins þegar hæðin
-    // á engan skurð og notandinn hefur ekki valið „Sýna allt blaðið" (sjalf === false). Kassinn er víkkaður svo öll
+    // SJÁLFGEFINN SKURÐUR AÐ BYGGINGUNNI. Lausari vistaður sjálfskurður má þéttast.
+    // Handvalinn skurður (sjalf === false) er ósnertur. Kassinn er víkkaður svo öll
     // merki sem þegar eru til lendi innan hans — sjálfvirkni má aldrei fela staðsetningu.
-    if (!h.skurdur && h.sjalf !== false && G.sjalfReynt !== G.frum) {
+    if (h.sjalf !== false && G.sjalfReynt !== G.frum) {
       G.sjalfReynt = G.frum;
       try {
         const iw = G.frum.naturalWidth || G.frum.width, ih = G.frum.naturalHeight || G.frum.height;
@@ -688,8 +688,10 @@
           const sp = Math.max(iw, ih) * 0.02;
           p.markers.forEach(m => { if (erPx(m)) { const mx = m.x + G.rymi.x, my = m.y + G.rymi.y; x0 = Math.min(x0, mx - sp); y0 = Math.min(y0, my - sp); x1 = Math.max(x1, mx + sp); y1 = Math.max(y1, my + sp); } });
           x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(iw, x1); y1 = Math.min(ih, y1);
-          if ((x1 - x0) * (y1 - y0) < iw * ih * 0.94 && (x1 - x0) > iw * 0.08 && (y1 - y0) > ih * 0.08) {
-            h.skurdur = { x: Math.round(x0), y: Math.round(y0), w: Math.round(x1 - x0), h: Math.round(y1 - y0) };
+          const nw = x1 - x0, nh = y1 - y0, gamall = h.skurdur;
+          const minni = !gamall || (nw * nh < gamall.w * gamall.h * 0.92);
+          if (minni && nw * nh < iw * ih * 0.94 && nw > iw * 0.08 && nh > ih * 0.08) {
+            h.skurdur = { x: Math.round(x0), y: Math.round(y0), w: Math.round(nw), h: Math.round(nh) };
             h.sjalf = true; zNullstilla();
           }
         }

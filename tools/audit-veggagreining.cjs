@@ -27,6 +27,7 @@ if (/sýni upprunalegu teikninguna/.test(skra)) villur.push('gamla slitin setnin
 krefst(/white-space:nowrap;overflow:hidden;text-overflow:ellipsis/, 'viðvörunarstikan á að vera ein lína');
 krefst(/const NOTHAEF_THEKJA = 0\.04/, '3D/hreinsun má ekki þykjast undir 4% þekju');
 krefst(/function blekRammi/, 'blekRammi (spássíuskurður) vantar');
+krefst(/minni && nw \* nh < iw \* ih \* 0\.94/, 'laus sjálfskurður á að geta þéttst, handvalinn ekki');
 krefst(/dokkt: 210, thykkt: 1, fylla: true/, 'þunnlínu-CAD endurtekning vantar');
 krefst(/hluti >= 0\.08 && hluti <= 0\.88/, 'þunnlínu-niðurstaða má aðeins vinna með heilt fótspor');
 krefst(/gera\('fp-veggir-btn', '✏ Veggir'/, '✏ Veggir takki má ekki detta út');
