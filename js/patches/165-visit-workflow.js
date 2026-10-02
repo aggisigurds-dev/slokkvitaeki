@@ -697,6 +697,41 @@
     if (window.Toast && Toast.show) Toast.show(ok ? '🔵 Sett í vinnslu — komið á ÞjónustuVerkstæði' : '⏳ í biðröð — ekki staðfest enn');
   }
 
+  // „Í vinnslu"-vísirinn efst (02.10.2026): staðan lesin úr arsskodun_customers, sama heimild og ✓-hakið í Ársskoðun.
+  // Lokið á árinu (last_year_inspected = árið) telst EKKI í vinnslu.
+  function erIVinnslu(coId) {
+    const AS = window.AppSettings; if (!AS || !AS.path || !coId) return false;
+    const e = (AS.path('arsskodun_customers') || {})[String(coId)] || {};
+    const ar = (window.ArsWorkflow && ArsWorkflow.curYear) || new Date().getFullYear();
+    return +e.field_inspected_year === ar && +e.last_year_inspected !== ar;
+  }
+  // Aðeins snert þegar staðan breytist — vaktin á companies-main myndi annars vekja sig sjálf (classList/attr skrá breytingu).
+  function syncTopBtn(btn) {
+    const on = erIVinnslu(getCompanyId());
+    if (btn.classList.contains('on') !== on) btn.classList.toggle('on', on);
+    const t = on ? 'Í vinnslu — smelltu til að taka af' : 'Merkja í vinnslu (úttekt búin, skýrsla/reikningur eftir)';
+    if (btn.getAttribute('aria-pressed') !== String(on)) btn.setAttribute('aria-pressed', String(on));
+    if (btn.title !== t) btn.title = t;
+    const led = btn.querySelector('._vw-led');
+    if (led && !btn.classList.contains('_vw-ihaus')) { const c = on ? '#3b82f6' : '#c3cad6'; if (led.style.background !== c) led.style.background = c; }
+  }
+  async function onTopVinnsla(b) {
+    const coId = getCompanyId();
+    if (!coId) { alert('Fyrirtæki ekki fundið — opnaðu fyrirtæki að nýju.'); return; }
+    const varA = erIVinnslu(coId);
+    b.disabled = true;
+    let ok = false;
+    if (varA) {
+      // af: sama og ✓-hakið í 153 — -1 = handvirkt slökkt (0 væri ógreinanlegt frá „aldrei snert")
+      ok = !!(window.AppSettings && AppSettings.save && await AppSettings.save({ arsskodun_customers: { [String(coId)]: { field_inspected_year: -1 } } }));
+    } else {
+      ok = window.ArsWorkflow ? await ArsWorkflow.markInVinnsla(coId) : false;
+    }
+    b.disabled = false;
+    syncTopBtn(b);
+    if (window.Toast && Toast.show) Toast.show(!ok ? '⚠ Vistaðist ekki — reyndu aftur' : varA ? 'Tekið úr vinnslu' : 'Sett í vinnslu — komið á ÞjónustuVerkstæði');
+  }
+
   // Efri takki: „Úttekt búin / í Vinnslu" strax undir fyrirtækja-hausnum
   // (.info-grid) svo hann sé aðgengilegur án þess að skruna í kostnaðartöfluna.
   // Sama aðgerð → setur „Úttekt búin" grænt á ÞjónustuVerkstæði + blátt á listanum.
@@ -718,13 +753,19 @@
         btn.classList.add('_vw-ihaus'); haus.appendChild(btn);
         if (bar && bar !== haus && !bar.children.length && bar.parentElement) bar.remove();
       }
+      syncTopBtn(btn);
       return;
     }
+    // 02.10.2026 (Agnar: „í vinnsla button is quite ugly … doesn't need to be big, just some blue light indicator that
+    // this is work in process"): lítill vísir með ljósdíóðu í stað stóra bláa takkans. Hann SÝNIR stöðuna
+    // (arsskodun_customers.field_inspected_year = árið → logar blátt) og víxlar henni: á → markInVinnsla (266),
+    // af → field_inspected_year = -1 (sama og ✓-hakið í Ársskoðun, 153). Útlitið í Brunastáli er í 412.
     btn = document.createElement('button');
     btn.type = 'button'; btn.className = '_vw-topbtn';
-    btn.style.cssText = 'padding:9px 16px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.15)';
-    btn.innerHTML = '\uD83D\uDD35 Úttekt búin / í Vinnslu';
-    btn.addEventListener('click', (ev) => onInVinnsla(ev.currentTarget));
+    btn.style.cssText = 'display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 12px 0 10px;border:1px solid #c3cad6;border-radius:14px;background:#fff;color:#3a4250;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase';
+    btn.innerHTML = '<i class="_vw-led" aria-hidden="true" style="width:8px;height:8px;border-radius:50%;background:#c3cad6;flex:none"></i><span>Í vinnslu</span>';
+    btn.addEventListener('click', (ev) => onTopVinnsla(ev.currentTarget));
+    syncTopBtn(btn);
     if (haus) { btn.classList.add('_vw-ihaus'); haus.appendChild(btn); return; }
     const bar = document.createElement('div');
     bar.style.cssText = 'display:flex;justify-content:flex-end;margin:8px 0 0';

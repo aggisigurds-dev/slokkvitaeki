@@ -569,7 +569,8 @@
     [...main.children].forEach(el => {
       if (el === cols || el.id === '_sks-host' || el.id === '_sks-tabs') return;
       const t = (el.textContent || '').trim();
-      if (t.length < 80 && /Úttekt búin/i.test(t)) ut.push(el);
+      // 02.10.2026: takkinn heitir nú „Í vinnslu" (165) — þekktur af klasanum, textinn aðeins til vara
+      if (t.length < 80 && (/Úttekt búin/i.test(t) || (el.querySelector && el.querySelector('._vw-topbtn')))) ut.push(el);
     });
     ut.push(cols);
     // Agnar 21.09 (strikaði yfir á skjámynd): „Samningar & útfyllt skjöl" (._ufs-section) og „Samræma

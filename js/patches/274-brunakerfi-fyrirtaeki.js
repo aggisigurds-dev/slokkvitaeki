@@ -508,7 +508,15 @@
       r('.b274-hd', 'position:relative;background:' + METAL + ';color:#fff;border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);padding:14px 18px 12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap'),
       r('.b274-hd::before,.b274-hd::after', 'content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:' + RIVET + ';box-shadow:0 1px 1px rgba(0,0,0,.7);top:8px'),
       r('.b274-hd::before', 'left:8px'), r('.b274-hd::after', 'right:8px'),
-      r('.b274-hl', 'display:flex;flex-direction:column;gap:6px;min-width:0'),
+      // 02.10.2026: titillinn í heilli línu, samtalan og „Í vinnslu"-vísirinn hlið við hlið undir (eins og 412 á slökkvitækjum)
+      r('.b274-hl', 'display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0'),
+      r('.b274-hl > .b274-t', 'flex:1 1 100%'),
+      r('.b274-vinnsla', 'display:inline-flex!important;align-items:center!important;gap:7px!important;height:26px!important;padding:0 11px 0 9px!important;margin:0!important;border-radius:13px!important;border:1px solid rgba(255,255,255,.16)!important;background:rgba(0,0,0,.35)!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.5)!important;color:#aeb6c4!important;font:700 10.5px/1 ' + MONO + '!important;letter-spacing:.1em!important;text-transform:uppercase!important;white-space:nowrap!important;cursor:pointer!important'),
+      r('.b274-vinnsla:hover:not([disabled])', 'color:#fff!important;border-color:rgba(255,255,255,.3)!important'),
+      r('.b274-vinnsla[disabled]', 'cursor:default!important'),
+      r('.b274-vinnsla i', 'width:8px!important;height:8px!important;border-radius:50%!important;flex:none!important;background:#4a4f59!important;box-shadow:inset 0 1px 1px rgba(0,0,0,.5)!important'),
+      r('.b274-vinnsla.on', 'color:#cfe0ff!important;border-color:rgba(127,180,255,.45)!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.5),0 0 14px -2px rgba(80,140,255,.55)!important'),
+      r('.b274-vinnsla.on i', 'background:radial-gradient(circle at 40% 35%,#ffffff 0%,#bcd9ff 35%,#5b9bff 100%)!important;box-shadow:0 0 0 3px rgba(127,180,255,.25),0 0 10px 2px rgba(127,180,255,.9)!important'),
       r('.b274-t', 'font-family:' + MONO + ';font-size:11.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#d9dee6;display:flex;align-items:center;gap:9px;white-space:nowrap'),
       r('.b274-led', 'width:8px;height:8px;border-radius:50%;display:inline-block;flex:none'),
       r('.b274-led.g', 'background:#3cc47c;box-shadow:0 0 0 3px rgba(60,196,124,.16),0 0 12px rgba(60,196,124,.8)'),
@@ -979,6 +987,16 @@
     // #_bkc-heroinv, [data-vrep], ._bkc-reikn, #_bkc-vlist, #_bkc-repbig, #_bkc-addtog …) — aðeins umgjörðin er ný.
     // Mockup: Design-strigi spjald K (scratchpad k/mockup-K-brunakerfi.html).
     const repNow = C.reports.find(r => +r.year === NOW && r.status === 'final') || C.reports.find(r => +r.year === NOW) || null;
+    // „Í vinnslu"-vísirinn (02.10.2026, Agnar: „just some blue light indicator that this is work in process … have it in
+    // both sides"): sama lítla plata og á slökkvitækja-hliðinni (165/412). Sama heimild og hakið á Brunakerfis skoðun
+    // (385/388): brunakerfi_customers[fid].in_progress_year = árið, -1 = handvirkt slökkt. Drög ársins → logar og læst.
+    // Aðeins fyrir fyrirtæki á áskriftarlistanum — vistun utan hans myndi búa til færslu og setja það þögult í þjónustu.
+    const bkSt = ((window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_customers')) || {})[String(C.co.id)];
+    const vHand = !!(bkSt && typeof bkSt === 'object' && +bkSt.in_progress_year === NOW);
+    const vDrog = !vHand && !!(repNow && repNow.status !== 'final');
+    const vinnslaVisir = () => (bkSt == null && !vDrog) ? '' :
+      '<button type="button" class="b274-vinnsla' + (vHand || vDrog ? ' on' : '') + '" data-bkc-vinnsla="' + (vHand ? 'af' : 'a') + '"' + (vDrog ? ' disabled' : '') +
+      ' aria-pressed="' + (vHand || vDrog) + '" title="' + (vDrog ? 'Í vinnslu — skýrsla ársins er hafin' : vHand ? 'Í vinnslu — smelltu til að taka af' : 'Merkja í vinnslu') + '"><i aria-hidden="true"></i>Í vinnslu</button>';
     const meta = (repNow && repNow.data && repNow.data.meta) || {};
     const bun = ((repNow && repNow.data && repNow.data.bunadur) || []).map((x, i) => ({ label: x.label || BUN_LABELS[i] || '', n: (+x.iLagi || 0) + (+x.ekki || 0) })).filter(x => x.n > 0);
     const einingar = bun.reduce((t, x) => t + x.n, 0);
@@ -1067,6 +1085,7 @@
             '<div class="b274-hl">' +
               '<div class="b274-t"><i class="b274-led y"></i>Skýrsla og reikningur ' + NOW + '</div>' +
               '<div class="b274-tala"><span class="n">' + (hasVerd ? fmtKr(verdSum).replace(/ kr$/, '') : '—') + '</span><span class="l">kr með vsk</span></div>' +
+              vinnslaVisir() +
             '</div>' +
             '<div class="b274-hm b274-plotur">' +
               '<span class="b274-plata ' + skyrslaPc + '"><i></i>' + esc(skyrslaTxt) + '</span>' +
@@ -1359,6 +1378,19 @@
         try { if (window.logProblem) window.logProblem('bkc_drog_delete_failed', String(del.error.message || del.error).slice(0, 160)); } catch (_) {}
         return;
       }
+      reload();
+    }));
+    // „Í vinnslu"-vísirinn — víxlar in_progress_year á EINU fyrirtæki (eins og 388 merkjaVinnslu) og les til baka.
+    w.querySelectorAll('[data-bkc-vinnsla]').forEach(b => b.addEventListener('click', async () => {
+      const AS = window.AppSettings; if (!AS || !AS.save || !AS.path || !C || !C.co) return;
+      const fid = String(C.co.id), ar = new Date().getFullYear(), gildi = b.dataset.bkcVinnsla === 'af' ? -1 : ar;
+      const sent = { in_progress_year: gildi };
+      const fyrir = (AS.path('brunakerfi_customers') || {})[fid];
+      if (fyrir != null && typeof fyrir !== 'object') sent.co_id = +fid;
+      b.disabled = true;
+      const svar = await AS.save({ brunakerfi_customers: { [fid]: sent } });
+      const nu = (AS.path('brunakerfi_customers') || {})[fid] || {};
+      if (svar === false || +nu.in_progress_year !== gildi) { b.disabled = false; if (window.Toast && Toast.show) Toast.show('⚠ Vistaðist ekki — reyndu aftur'); return; }
       reload();
     }));
     // 📧 Senda — brunakerfisskýrsla (+ reikningur) ársins gegnum póst-ritilinn (254).

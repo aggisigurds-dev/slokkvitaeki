@@ -141,8 +141,14 @@
                 gult:      ['#fde68a', '#7c4a03'],
                 raudt:     ['#fecaca', '#7f1d1d'],
                 graent:    ['#bbf7d0', '#14532d'] }[tone] || ['rgba(255,255,255,.12)', '#e7ebf2'];
-    return '<span style="background:' + c[0] + ';color:' + c[1] + ';font-size:10.5px;font-weight:800;' +
-           'padding:3px 9px;border-radius:99px;white-space:nowrap">' + txt + '</span>';
+    // 02.10.2026 (Agnar: efri hlutinn eins og á brunakerfi — plöturnar hvítar með lituðum punkti uppi í horninu):
+    // data-tone segir 412 hvaða punkt platan fær, og táknið fremst fer í eigin span (._uv-tk) svo Brunastáls-hausinn
+    // geti falið það án þess að snerta textann. Utan Brunastáls lítur pillan út eins og áður.
+    const m = /^(\S+)\s+([\s\S]*)$/.exec(txt);
+    const takn = m && !/[0-9A-Za-zÀ-ÿ]/.test(m[1]) ? m[1] : '';
+    return '<span data-tone="' + (tone || 'hlutlaust') + '" style="background:' + c[0] + ';color:' + c[1] + ';font-size:10.5px;font-weight:800;' +
+           'padding:3px 9px;border-radius:99px;white-space:nowrap">' +
+           (takn ? '<i class="_uv-tk" aria-hidden="true" style="font-style:normal">' + takn + ' </i>' + m[2] : txt) + '</span>';
   }
   function stripHtml(st, year) {
     if (!st) return pill('⏳ athuga stöðu ' + year + '…', 'hlutlaust');
