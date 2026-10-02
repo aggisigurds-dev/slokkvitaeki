@@ -69,7 +69,8 @@ const utgafa = {
   'mapfix.js': '20261001endur',
   // 01.10 kvöld: 421 hunsar vistun Brunakerfis-/Slökkvikerfis-spjaldanna; 274 fékk „＋ Vinna".
   '421-profill-lifandi.js': '20261001sjalf',
-  '274-brunakerfi-fyrirtaeki.js': '20261001vinna',
+  // 02.10: 274 fékk „Önnur vara/þjónusta — skrifa sjálf/ur" og skoðunarlínur sem fylgja búnaðinum.
+  '274-brunakerfi-fyrirtaeki.js': '20261002ottengd',
   // Uppfærsluborð bætti #uppferslubord við 218. Nýrra merki hleður hopp-kóðann líka.
   '218-url-routing.js': '20261001ub',
 };
