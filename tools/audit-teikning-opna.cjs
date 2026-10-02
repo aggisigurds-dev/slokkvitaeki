@@ -16,7 +16,7 @@ const villur = [];
 const krefst = (src, re, msg) => { if (!re.test(src)) villur.push(msg); };
 
 krefst(html, /437-teikning-gluggi\.js\?v=20261002opna/, 'index.html: 437 vantar ?v=20261002opna');
-krefst(html, /384-teikninga-forskodun\.js\?v=20261002opna/, 'index.html: 384 vantar ?v=20261002opna');
+krefst(html, /384-teikninga-forskodun\.js\?v=20261002syn/, 'index.html: 384 vantar ?v=20261002syn');
 krefst(html, /363-banner-upplysingar\.js\?v=20261002opna/, 'index.html: 363 vantar ?v=20261002opna');
 krefst(html, /374-teikning-saekja\.js\?v=20261002opna/, 'index.html: 374 vantar ?v=20261002opna');
 
@@ -29,6 +29,7 @@ krefst(p363, /data-landnr=/, '363 vantar data-landnr á Teikningar-hnöppum');
 krefst(p363, /data-golv=.*eignAttr|eignAttr \+ ' title/, '363 golv-takkar eiga að innihalda eignAttr');
 
 krefst(p384, /function opnaAfEl/, '384 á að opna beint af landnúmeri hnappins');
+krefst(p384, /tfs-bid\[hidden\]\{display:none!important\}/, '384 á að fela Sæki-yfirlagið þegar myndin er komin (display:flex má ekki vinna á [hidden])');
 krefst(p384, /if \(nyr == null\) return S\.coId/, '384 nyskra má ekki loka forskoðun á tómu id');
 krefst(p384, /heimiliFyrir/, '384 á að falla á heimilisfang þegar cache er án lista');
 

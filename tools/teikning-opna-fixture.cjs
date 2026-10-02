@@ -77,7 +77,7 @@ async function main() {
     const tfs = document.getElementById('tfs');
     const kort = tfs ? tfs.querySelectorAll('.tfs-kort').length : 0;
     const titill = (document.getElementById('tfs-titill') || {}).textContent || '';
-    const bid = (document.getElementById('tfs-bid') || {}).textContent || '';
+    const bid = document.getElementById('tfs-bid');
     const img = document.querySelector('#tfs-sv img');
     return {
       tfs: !!tfs,
@@ -86,7 +86,15 @@ async function main() {
       kort,
       titill,
       mynd: !!(img && img.src && img.naturalWidth > 0),
-      myndVilla: /Náði ekki/.test(bid)
+      myndVilla: /Náði ekki/.test(bid && bid.textContent || ''),
+      bidDisplay: bid ? getComputedStyle(bid).display : '',
+      yfirlag: (() => {
+        const sv = document.getElementById('tfs-sv');
+        if (!sv) return '';
+        const r = sv.getBoundingClientRect();
+        const el = document.elementFromPoint(r.left + 80, r.top + 80);
+        return el ? (el.id || el.className || el.tagName) : '';
+      })()
     };
   });
 
@@ -107,6 +115,8 @@ async function main() {
   if (!forskodun.synilegt) villur.push('#tfs er falið');
   if (forskodun.kort < 1) villur.push('forskoðun sýndi engin blöð');
   if (forskodun.myndVilla) villur.push('forskoðun náði ekki í myndina');
+  if (forskodun.mynd && forskodun.bidDisplay !== 'none') villur.push('Sæki-yfirlagið hylur teikninguna: display=' + forskodun.bidDisplay);
+  if (forskodun.mynd && forskodun.yfirlag === 'tfs-bid') villur.push('smellur á teikninguna lendir á Sæki-yfirlaginu');
   if (!/Grensásvegur/.test(forskodun.titill) && !/Teikningar/.test(forskodun.titill)) {
     villur.push('titill forskoðunar: ' + forskodun.titill);
   }

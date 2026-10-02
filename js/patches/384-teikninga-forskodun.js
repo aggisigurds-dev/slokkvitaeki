@@ -144,6 +144,7 @@
       '#tfs .tfs-sv img{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:calc(100% - 24px);max-height:calc(100% - 24px);width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-drag:none;background:#fff}' +
       '#tfs .tfs-sv img.tfs-zoomad{left:0;top:0;max-width:none;max-height:none;object-fit:fill;transform-origin:0 0}' +
       '#tfs .tfs-bid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:rgba(255,255,255,.75);font-size:14px;text-align:center;padding:20px}' +
+      '#tfs .tfs-bid[hidden]{display:none!important}' +
       '#tfs .tfs-zoom{position:absolute;right:10px;top:10px;display:flex;gap:5px;z-index:2}' +
       '#tfs .tfs-zoom button{width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.88);color:#fff;font:700 19px system-ui;cursor:pointer}' +
       '#tfs .tfs-txt{position:absolute;left:10px;top:10px;z-index:2;max-width:calc(100% - 160px);padding:6px 10px;border-radius:9px;background:rgba(20,18,15,.88);font-size:12.5px;line-height:1.35}' +
@@ -407,7 +408,8 @@
     });
     const sv = document.getElementById('tfs-sv'), bid = document.getElementById('tfs-bid'), txt = document.getElementById('tfs-txt');
     const gomul = sv.querySelector('img'); if (gomul) gomul.remove();
-    bid.hidden = false; bid.innerHTML = '<div style="width:26px;height:26px;border:3px solid rgba(255,255,255,.18);border-top-color:#c9a54a;border-radius:50%;animation:bvr .9s linear infinite"></div>Sæki teikningu…';
+    bid.hidden = false; bid.style.removeProperty('display');
+    bid.innerHTML = '<div style="width:26px;height:26px;border:3px solid rgba(255,255,255,.18);border-top-color:#c9a54a;border-radius:50%;animation:bvr .9s linear infinite"></div>Sæki teikningu…';
     txt.hidden = false;
     txt.innerHTML = '<b>' + esc(d.lysing || d.tegund || 'Teikning') + '</b> · ' + esc([d.dags, d.stada, d.bnnr].filter(Boolean).join(' · '));
     document.getElementById('tfs-skra').textContent = d.filename || '';
@@ -415,7 +417,14 @@
     const im = new Image();
     im.alt = d.lysing || 'Teikning'; im.draggable = false;
     im.style.visibility = 'hidden';
-    im.onload = () => { if (S.valin !== d) return; bid.hidden = true; sv.insertBefore(im, sv.firstChild); im.style.visibility = 'visible'; passaSeint(im); };
+    im.onload = () => {
+      if (S.valin !== d) return;
+      bid.hidden = true;
+      bid.style.setProperty('display', 'none', 'important');
+      sv.insertBefore(im, sv.firstChild);
+      im.style.visibility = 'visible';
+      passaSeint(im);
+    };
     im.onerror = () => { if (S.valin !== d) return; bid.innerHTML = '⚠ Náði ekki í teikninguna. Prófaðu aðra, eða opnaðu hana í skjalasafninu með ⬇.'; };
     if (beintPdf(d)) bid.innerHTML = '<div style="width:26px;height:26px;border:3px solid rgba(255,255,255,.18);border-top-color:#c9a54a;border-radius:50%;animation:bvr .9s linear infinite"></div>Sæki PDF og teikna fyrstu síðu…';
     myndSlod(d).then(u => { if (S.valin !== d) return; im.src = u; if (d._sidur > 1) txt.innerHTML += ' · <span style="color:#e8cb7a">síða 1 af ' + d._sidur + ' — allar síður í ⬇ / 🖨</span>'; })
