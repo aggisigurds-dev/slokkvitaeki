@@ -21,7 +21,7 @@ krefst(html, /434-teikning-takn\.js\?v=20261002sja/, 'index.html: 434 sja-cache'
 krefst(html, /newfeatures\.js\?v=20261002sja/, 'index.html: newfeatures sja-cache');
 if (/435-teikning-gaedi/.test(html)) villur.push('436 má ekki bæta 435 gæði-vali á fyrirtækjasíðu');
 if (/fp-gaedi/.test(p436)) villur.push('436 má ekki bæta gæði-hnöppum á gluggann');
-krefst(p436, /contrast\(1\.82\)/, '436 vantar contrast-filter á teikninguna');
+krefst(p436, /brightness\(0\.82\).*contrast\(1\.55\)/, '436 vantar filter sem dökkvar fölgráar CAD-línur');
 krefst(p436, /function stimpilPx/, '436 vantar stimpilPx');
 krefst(p436, /Math\.max\(32/, 'stimplar á síma eiga að vera ≥ 32 px');
 krefst(p436, /function taknPx/, '436 vantar taknPx');

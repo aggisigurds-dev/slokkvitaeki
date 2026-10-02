@@ -14,7 +14,7 @@
   if (window.TeiknSja) return;
 
   const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
-  const FILTER = 'contrast(1.82) brightness(0.9)';
+  const FILTER = 'brightness(0.82) contrast(1.55)';
   const HLID = 7200;
   const _blobs = [];
   let _bindBid = 0;
