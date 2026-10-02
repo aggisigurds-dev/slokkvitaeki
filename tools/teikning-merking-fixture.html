@@ -1,0 +1,94 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>teikning-merking fixture</title>
+<style>
+.modal.open { display: flex; }
+.modal.open > .modal-hd { width: 560px !important; }
+#fp-canvas { width: 200px; height: 160px; background: #ddd; }
+</style>
+<body>
+<script>
+window.U = { e: function (s) { return String(s == null ? '' : s); } };
+window.Toast = { show: function () {} };
+window.__upserts = [];
+window.DB = {
+  sb: {
+    from: function () {
+      return {
+        upsert: function (row) {
+          window.__upserts.push(JSON.parse(JSON.stringify(row)));
+          return { then: function (ok) { ok({ data: [row], error: null }); return { then: function () {} }; } };
+        },
+        select: function () { return this; },
+        eq: function () { return this; },
+        limit: function () { return { then: function (ok) { ok({ data: [], error: null }); } }; }
+      };
+    }
+  }
+};
+window.Modal = {
+  open: function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.classList.add('open'); el.style.display = 'flex'; }
+  },
+  close: function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.classList.remove('open'); el.style.display = 'none'; }
+  }
+};
+window.FloorPlan = {
+  plans: {},
+  companyId: null,
+  companyName: null,
+  units: [],
+  bgImage: null,
+  _selectedUnitId: null,
+  __vistunSkreytt: true,
+  open: function (cid, cname, units) {
+    this.companyId = cid;
+    this.companyName = cname || '';
+    this.units = units || [];
+    this.bgImage = { width: 200, height: 160, naturalWidth: 200, naturalHeight: 160 };
+    if (!this.plans[cid]) this.plans[cid] = { markers: [], imageUrl: 'fixture.png' };
+    var old = document.getElementById('modal-floorplan');
+    if (old) old.remove();
+    var div = document.createElement('div');
+    div.className = 'modal';
+    div.id = 'modal-floorplan';
+    div.innerHTML =
+      '<div class="modal-hd"><div><h2>Teikning — ' + this.companyName + '</h2></div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+      '<button type="button" class="fp-saekja-btn">Sækja teikningu</button>' +
+      '<label class="btn">Hlaða upp<input type="file" style="display:none"></label>' +
+      '<button type="button">Hreinsa</button>' +
+      '<button type="button" class="modal-x">X</button></div></div>' +
+      '<div class="modal-bd"><div id="fp-main"><canvas id="fp-canvas" width="200" height="160"></canvas></div>' +
+      '<div id="fp-panel"><div>SLÖKKVITÆKI</div><div id="fp-unit-list"></div></div></div>' +
+      '<div class="modal-ft"><div id="fp-info">Veldu tæki, smelltu síðan á teikningu</div>' +
+      '<button type="button">Loka</button><button type="button">Vista</button></div>';
+    document.body.appendChild(div);
+    Modal.open('modal-floorplan');
+    var c = document.getElementById('fp-canvas');
+    if (c) { c.getBoundingClientRect = function () { return { left: 0, top: 0, width: 200, height: 160, right: 200, bottom: 160 }; }; }
+    this._renderPanel();
+  },
+  load: function () {},
+  save: function () {},
+  _renderCanvas: function () {},
+  _renderPanel: function () {
+    var el = document.getElementById('fp-unit-list'); if (!el) return;
+    var markers = (this.plans[this.companyId] && this.plans[this.companyId].markers) || [];
+    el.innerHTML = this.units.map(function (u) {
+      var placed = markers.some(function (m) { return m.unitId === u.id; });
+      return '<div data-unit-id="' + u.id + '"><div>' + u.serial + '</div><div>' + u.type + '</div>' +
+        (placed ? '<div>✓ Staðsetning</div>' : '<div>Ekki merkt</div>') + '</div>';
+    }).join('');
+  },
+  onCanvasClick: function () {},
+  selectUnit: function (id) { this._selectedUnitId = id; }
+};
+</script>
+<script src="../js/patches/383-teikning-hreinsa-3d.js"></script>
+<script src="../js/patches/433-teikning-merking.js"></script>
+<script src="../js/patches/434-teikning-takn.js"></script>
+</body>

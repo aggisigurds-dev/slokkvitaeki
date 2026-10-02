@@ -1,0 +1,63 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Tákn og stimpilrönd</title>
+<style>
+body { margin: 0; font: 14px system-ui, sans-serif; background: #1a1916; color: #f1ede4; }
+.wrap { display: grid; grid-template-columns: 360px 1fr; min-height: 100vh; align-items: start; }
+#modal-floorplan { background: #14120f; padding: 16px; border-right: 1px solid rgba(255,255,255,.08); }
+h1 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.4); margin: 0 0 10px; }
+#su-body { background: #f8fafc; color: #0f172a; padding: 20px 24px; min-height: 100vh; }
+.su-section-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; margin: 4px 0 8px; }
+</style>
+<body>
+<div class="wrap">
+  <div id="modal-floorplan">
+    <div id="fp-panel">
+      <h1>Stimpilrönd</h1>
+      <div>SLÖKKVITÆKI</div>
+      <div id="fp-unit-list"></div>
+    </div>
+    <div id="fp-main"><canvas id="fp-canvas" width="200" height="160"></canvas></div>
+  </div>
+  <div id="su-body"></div>
+</div>
+<script>
+window.U = { e: function (s) { return String(s == null ? '' : s); } };
+window.Toast = { show: function () {} };
+window.DB = { sb: { from: function () { return { upsert: function () { return { then: function (ok) { ok({ error: null }); return { then: function () {} }; } }; } }; } } };
+window.AppSettings = {
+  _s: {},
+  get: function (k) { return k ? this._s[k] : this._s; },
+  save: function (p) { Object.assign(this._s, p); return Promise.resolve(true); },
+  onChange: function () {}
+};
+window.SettingsUI = {
+  registerSection: function (sec) { window.__sec = sec; return true; }
+};
+window.FloorPlan = {
+  plans: {}, companyId: 1612, units: [{ id: 25446, type: 'Léttvatn', serial: 'TMP' }],
+  bgImage: { width: 200, height: 160, naturalWidth: 200, naturalHeight: 160 },
+  _renderCanvas: function () {},
+  _renderPanel: function () {
+    var el = document.getElementById('fp-unit-list');
+    el.innerHTML = '<div data-unit-id="25446"><div>TMP</div><div>Léttvatn</div><div>Ekki merkt</div></div>';
+  },
+  open: function () {},
+  onCanvasClick: function () {},
+  selectUnit: function () {}
+};
+window.Modal = { open: function () {}, close: function () {} };
+</script>
+<script src="../js/patches/433-teikning-merking.js"></script>
+<script src="../js/patches/434-teikning-takn.js"></script>
+<script>
+(function () {
+  FloorPlan.plans[1612] = { markers: [] };
+  FloorPlan.companyId = 1612;
+  FloorPlan._renderPanel();
+  if (window.TeiknMerking && TeiknMerking.tikk) TeiknMerking.tikk();
+  if (window.__sec && __sec.render) __sec.render(document.getElementById('su-body'));
+  window.__taknSkja = true;
+})();
+</script>
+</body>
