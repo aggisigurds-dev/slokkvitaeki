@@ -7,9 +7,9 @@
  *   → { ok:false, error:'engin-mynd'|'timi', message }
  *
  * GOOGLE_MAPS_API_KEY er ekki til. Places og Street View eru ekki kallað.
- * Já.is er ekki skrapað. Heimildin er sama ArcGIS-þjónusta og Borgarvefsjá
- * birtir (Loftmynd 17.7.2018). Hún sýnir húsið að ofan, oft með vegg þegar
- * húsið er hátt. Götumynd að utan fæst ekki án lykils.
+ * Já.is er ekki skrapað. Reykjavík: Borgarvefsjá, loftmynd 17.7.2018.
+ * Kópavogur, Garðabær og Hafnarfjörður: loftmynd af map.is (Loftmyndir,
+ * WMS án lykils). Hún sýnir húsið að ofan. Hún er ekki götumynd.
  *
  * Staðfangaskrá (EPSG:3057) finnur punktinn. Ein útflutningsmynd, miðuð á
  * punktinn. Utan þekju eða hvít skilað telst engin mynd. Vafrinn kallar
@@ -20,6 +20,10 @@ const EXPORT =
   'https://borgarvefsja.reykjavik.is/arcgis/rest/services/Borgarvefsja/Loftmynd/MapServer/export';
 const HEIMILD = 'borgarvefsja-2018';
 const ATTR = 'Borgarvefsjá · loftmynd 17.7.2018';
+const MAPIS_LOFT = 'https://ts1.map.is/mapcache/';
+const MAPIS_HEIMILD = 'mapis-loftmynd';
+const MAPIS_ATTR = 'Loftmynd · map.is';
+const MAPIS_POST = new Set([200, 201, 202, 203, 210, 211, 212, 225, 220, 221]);
 // fullExtent á Loftmynd-þjónustunni, mælt 2026-10-01.
 const EXTENT = { xmin: 344000, ymin: 392000, xmax: 384000, ymax: 427000 };
 const MIN_BYTES = 12000;
@@ -55,7 +59,22 @@ function innan(x, y) {
   return x >= EXTENT.xmin && x <= EXTENT.xmax && y >= EXTENT.ymin && y <= EXTENT.ymax;
 }
 
-async function stadfang(address, signal) {
+function postnrUr(address) {
+  const t = String(address || '');
+  const eftir = t.split(',').slice(1).join(' ');
+  const m = /\b(\d{3})\b/.exec(eftir) || /\b(\d{3})\b/.exec(t);
+  const n = m ? +m[1] : 0;
+  return n >= 100 && n <= 999 ? n : 0;
+}
+
+function gataAlias(address) {
+  const s = String(address || '');
+  if (!/uhraun/i.test(s)) return null;
+  const next = s.replace(/uhraun/gi, (m) => (m[0] === 'U' ? 'A' : 'a') + m.slice(1));
+  return next === s ? null : next;
+}
+
+async function stadfang(address, signal, dyp) {
   const s = String(address || '').replace(/\s+/g, ' ').trim();
   const m = /^([^0-9,]+?)\s+(\d{1,4})\s*([A-Za-zÁÐÉÍÓÚÝÞÆÖáðéíóúýþæö])?(?=[\s,\-–]|$)/.exec(s);
   if (!m) return null;
@@ -101,7 +120,30 @@ async function stadfang(address, signal) {
     if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
     return { x, y };
   }
-  return null;
+  if (dyp) return null;
+  const alt = gataAlias(address);
+  if (!alt || alt === String(address)) return null;
+  return stadfang(alt, signal, 1);
+}
+
+async function mapisLoftmynd(x, y, signal) {
+  const dx = 48;
+  const dy = 34;
+  const bbox = `${x - dx},${y - dy},${x + dx},${y + dy}`;
+  const url = MAPIS_LOFT
+    + '?SERVICE=WMS&REQUEST=GetMap&LAYERS=myndkort&STYLES=&FORMAT=image/jpeg'
+    + '&SRS=EPSG:3057&WIDTH=640&HEIGHT=448&BBOX=' + bbox;
+  const r = await fetch(url, {
+    headers: {
+      'User-Agent': 'Slokkvitaeki/1.0 (+https://slokkvitaeki.netlify.app)',
+      Referer: 'https://www.map.is/hafnarfjordur/',
+    },
+    signal,
+  });
+  const tegund = (r.headers.get('content-type') || '').toLowerCase();
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  if (!r.ok || tegund.indexOf('image/jpeg') !== 0 || !erJpeg(bytes)) return null;
+  return bytes;
 }
 
 async function loftmynd(x, y, signal) {
@@ -138,14 +180,31 @@ export default async (req) => {
   }
 
   const signal = AbortSignal.timeout(8000);
+  const mapis = MAPIS_POST.has(postnrUr(address));
   try {
     const p = await stadfang(address, signal);
-    if (!p || !innan(p.x, p.y)) {
-      return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi' });
+    if (!p) {
+      return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: mapis ? MAPIS_HEIMILD : HEIMILD });
+    }
+    if (mapis) {
+      const loft = await mapisLoftmynd(p.x, p.y, signal);
+      if (!loft) {
+        return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: MAPIS_HEIMILD });
+      }
+      return j(200, {
+        ok: true,
+        image: tilB64(loft),
+        contentType: 'image/jpeg',
+        attribution: MAPIS_ATTR,
+        heimild: MAPIS_HEIMILD,
+      });
+    }
+    if (!innan(p.x, p.y)) {
+      return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: HEIMILD });
     }
     const bytes = await loftmynd(p.x, p.y, signal);
     if (!bytes) {
-      return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi' });
+      return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: HEIMILD });
     }
     return j(200, {
       ok: true,
@@ -156,9 +215,9 @@ export default async (req) => {
     });
   } catch (e) {
     if (e && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
-      return j(200, { ok: false, error: 'timi', message: 'Borgarvefsjá svaraði ekki í tæka tíð' });
+      return j(200, { ok: false, error: 'timi', message: mapis ? 'Loftmyndin svaraði ekki í tæka tíð' : 'Borgarvefsjá svaraði ekki í tæka tíð' });
     }
-    return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi' });
+    return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: mapis ? MAPIS_HEIMILD : HEIMILD });
   }
 };
 

@@ -190,10 +190,23 @@
       return c ? String(c.heimilisfang || '').trim() : null;
     } catch (_) { return null; }
   }
+  // Kópavogur, Garðabær, Hafnarfjörður. 170 (Seltjarnarnes) er þegar bein map.is-leið.
+  function erMapisBaer(adr) {
+    const t = String(adr || '');
+    const eftir = t.split(',').slice(1).join(' ');
+    return !!(/\b(200|201|202|203|210|211|212|225|220|221)\b/.exec(eftir)
+      || /\b(200|201|202|203|210|211|212|225|220|221)\b/.exec(t));
+  }
+  // Eldri missir var skráður án þess að listinn væri sóttur. Hann gildir ekki.
+  // Nýtt svar ber mapisBeint, líka þegar safnið er tómt, og er ekki sótt aftur.
+  function mapisTilbuid(adr, svar) {
+    if (!erMapisBaer(adr)) return true;
+    return !!(svar && svar.mapisBeint);
+  }
   function lesaGeymslu(coId, heimilisfang) {
     const k = String(coId);
     const m = skrar.get(k);
-    if (m && m.svar && m.heimilisfang === heimilisfang) return m.svar;
+    if (m && m.svar && m.heimilisfang === heimilisfang && mapisTilbuid(heimilisfang, m.svar)) return m.svar;
     if (m && m.bid) return null;
     const stores = [];
     try { stores.push(localStorage); } catch (_) {}
@@ -203,7 +216,7 @@
         const raw = store.getItem(SKRAR_MINNI + k);
         if (!raw) continue;
         const o = JSON.parse(raw);
-        if (o && o.svar && o.heimilisfang === heimilisfang) {
+        if (o && o.svar && o.heimilisfang === heimilisfang && mapisTilbuid(heimilisfang, o.svar)) {
           skrar.set(k, { svar: o.svar, sott: o.sott || Date.now(), heimilisfang, reyndi: true });
           return o.svar;
         }
