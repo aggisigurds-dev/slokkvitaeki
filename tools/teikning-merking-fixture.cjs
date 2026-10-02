@@ -176,20 +176,20 @@ async function main() {
     b.click();
     TeiknMerking.tikk();
     const n0 = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'neyðarútgangur').length;
-    const ev = { clientX: 185, clientY: 145, button: 0, pointerId: 21, preventDefault: function () {}, stopPropagation: function () {} };
+    const ev = { clientX: 90, clientY: 145, button: 0, pointerId: 21, preventDefault: function () {}, stopPropagation: function () {} };
     TeiknMerking.grip(ev);
     FloorPlan.onCanvasClick(ev);
-    document.dispatchEvent(new PointerEvent('pointerup', { clientX: 185, clientY: 145, bubbles: true }));
+    document.dispatchEvent(new PointerEvent('pointerup', { clientX: 90, clientY: 145, bubbles: true }));
     TeiknMerking.tikk();
     const n1 = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'neyðarútgangur').length;
     const box = document.getElementById('fp-merki-adgerd');
     const txt = box && !box.hidden ? box.textContent : '';
     const armadur = document.getElementById('fp-main').classList.contains('fp-armadur');
-    FloorPlan.onCanvasClick({ clientX: 10, clientY: 10, button: 0, preventDefault: function () {}, stopPropagation: function () {} });
+    FloorPlan.onCanvasClick({ clientX: 15, clientY: 150, button: 0, preventDefault: function () {}, stopPropagation: function () {} });
     const n2 = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'neyðarútgangur').length;
-    FloorPlan.onCanvasClick({ clientX: 12, clientY: 12, button: 0, preventDefault: function () {}, stopPropagation: function () {} });
+    FloorPlan.onCanvasClick({ clientX: 18, clientY: 152, button: 0, preventDefault: function () {}, stopPropagation: function () {} });
     const n3 = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'neyðarútgangur').length;
-    const merki = (FloorPlan.plans[1612].markers || []).find(m => m.sign === 'neyðarútgangur' && m.x === 185);
+    const merki = (FloorPlan.plans[1612].markers || []).find(m => m.sign === 'neyðarútgangur' && m.x === 90);
     let n4 = n3;
     if (merki) {
       FloorPlan.onCanvasClick({ clientX: merki.x, clientY: merki.y, button: 0, preventDefault: function () {}, stopPropagation: function () {} });
