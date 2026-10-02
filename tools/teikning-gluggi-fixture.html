@@ -1,0 +1,114 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>teikning-gluggi fixture</title>
+<style>
+/* Sama grind og app.css — bakgrunnur fullur, spjaldið 560 px. */
+.modal.open {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0,0,0,.55) !important;
+  z-index: 9000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+}
+.modal.open > .modal-hd {
+  width: 560px !important;
+  max-width: 95vw !important;
+  flex-shrink: 0;
+  background: #fff !important;
+}
+.modal.open > .modal-bd {
+  width: 560px !important;
+  max-width: 95vw !important;
+  max-height: calc(90vh - 130px) !important;
+  overflow: hidden !important;
+  background: #1a1814 !important;
+}
+.modal.open > .modal-ft {
+  width: 560px !important;
+  max-width: 95vw !important;
+  flex-shrink: 0;
+  background: #1a1814 !important;
+}
+#fp-panel { width: 250px; }
+</style>
+<body>
+<script>
+window.U = { e: function (s) { return String(s == null ? '' : s); } };
+window.Toast = { show: function () {} };
+window.Modal = {
+  open: function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.classList.add('open'); el.style.display = 'flex'; }
+  },
+  close: function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.classList.remove('open'); el.style.display = 'none'; }
+  }
+};
+window.FloorPlan = {
+  plans: {},
+  companyId: null,
+  companyName: null,
+  units: [],
+  bgImage: null,
+  _selectedUnitId: null,
+  open: function (cid, cname, units) {
+    this.companyId = cid;
+    this.companyName = cname || '';
+    this.units = units || [];
+    var bg = document.createElement('canvas'); bg.width = 800; bg.height = 600;
+    var bx = bg.getContext('2d'); bx.fillStyle = '#d8d2c4'; bx.fillRect(0, 0, 800, 600);
+    this.bgImage = bg;
+    if (!this.plans[cid]) this.plans[cid] = { markers: [], imageUrl: 'fixture.png' };
+    var old = document.getElementById('modal-floorplan');
+    if (old) old.remove();
+    var div = document.createElement('div');
+    div.className = 'modal';
+    div.id = 'modal-floorplan';
+    div.style.cssText = 'width:92vw;max-width:1200px;height:88vh;max-height:88vh;display:flex;flex-direction:column';
+    div.innerHTML =
+      '<div class="modal-hd"><div><h2>Teikning — ' + this.companyName + '</h2>' +
+      '<div>Veldu slökkvitæki, smelltu síðan á teikningu</div></div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+      '<button type="button">Hlaða upp</button>' +
+      '<button type="button">Hreinsa</button>' +
+      '<button type="button" class="modal-x">X</button></div></div>' +
+      '<div class="modal-bd" style="padding:0;overflow:hidden;background:#1a1814;flex:1;display:flex;position:relative">' +
+      '<div id="fp-main" style="flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">' +
+      '<canvas id="fp-canvas" style="display:block;background:#c9c2b4"></canvas></div>' +
+      '<div id="fp-panel" style="width:220px;flex-shrink:0"><div>SLÖKKVITÆKI</div><div id="fp-unit-list"></div></div></div>' +
+      '<div class="modal-ft"><div id="fp-info">Veldu tæki</div>' +
+      '<button type="button">Loka</button><button type="button">Vista</button></div>';
+    document.body.appendChild(div);
+    Modal.open('modal-floorplan');
+    this._renderCanvas();
+    this._renderPanel();
+  },
+  load: function () {},
+  save: function () {},
+  _renderCanvas: function () {
+    var main = document.getElementById('fp-main');
+    var canvas = document.getElementById('fp-canvas');
+    if (!main || !canvas || !this.bgImage) return;
+    var iw = this.bgImage.width, ih = this.bgImage.height;
+    canvas.width = iw; canvas.height = ih;
+    var sc = Math.min((main.offsetWidth - 10) / iw, (main.offsetHeight - 10) / ih);
+    if (sc > 0 && isFinite(sc)) {
+      canvas.style.width = (iw * sc) + 'px';
+      canvas.style.height = (ih * sc) + 'px';
+    }
+  },
+  _renderPanel: function () {
+    var el = document.getElementById('fp-unit-list');
+    if (el) el.textContent = (this.units[0] && this.units[0].serial) || 'Engin tæki';
+  }
+};
+</script>
+<script src="../js/patches/383-teikning-hreinsa-3d.js"></script>
+<script src="../js/patches/437-teikning-gluggi.js"></script>
+</body>
