@@ -570,8 +570,9 @@
     // Stærð FRUMMYNDAR fylgir hæðinni: TurboPaint teiknar sama blað í annarri stærð og þarf hana til að varpa
     // staðsetningum fram og til baka án þess að giska (kjarni: lib/board/uttekt.ts).
     if (G.frum) h.frum = { b: G.frum.naturalWidth || G.frum.width, h: G.frum.naturalHeight || G.frum.height };
-    const her = {}; h.markers.forEach(m => { her[m.unitId] = 1; });
-    hs.forEach((o, i) => { if (i !== G.virk) o.markers = o.markers.filter(m => !her[m.unitId]); });
+    const erTaeki = m => m && m.kind !== 'sign' && m.unitId != null && String(m.unitId).indexOf('s:') !== 0;
+    const her = {}; h.markers.forEach(m => { if (erTaeki(m)) her[m.unitId] = 1; });
+    hs.forEach((o, i) => { if (i !== G.virk) o.markers = o.markers.filter(m => !erTaeki(m) || !her[m.unitId]); });
   }
 
   /* ── veggir úr vigur-PDF hæðarinnar ── */
@@ -890,8 +891,9 @@
     }
     const FP = FPx(), h = virkHaed(), mr = main.getBoundingClientRect(), cr = c.getBoundingClientRect();
     const synilegt = c.style.display !== 'none' && cr.width > 2 && FP.bgImage;
+    const stimpil = (plan().markers || []).filter(m => m && m.kind === 'sign').map(m => m.unitId + ':' + Math.round(m.x) + ':' + Math.round(m.y)).join(',');
     const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
-      G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height].join('|');
+      G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height, stimpil].join('|');
     if (merki === G.teiknad) return;
     G.teiknad = merki;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -925,6 +927,21 @@
       x.fillStyle = 'rgba(20,18,15,.5)'; x.beginPath(); x.rect(ox, oy, cr.width, cr.height); x.rect(X0, Y0, Wd, Hd); x.fill('evenodd');
       x.strokeStyle = '#c9a54a'; x.lineWidth = 2; x.setLineDash([7, 5]); x.strokeRect(X0, Y0, Wd, Hd);
     }
+    (plan().markers || []).forEach(m => {
+      if (!m || m.kind !== 'sign') return;
+      const mx = ox + ((m.x > 1 || m.y > 1) ? m.x : m.x * c.width) * k;
+      const my = oy + ((m.x > 1 || m.y > 1) ? m.y : m.y * c.height) * k;
+      const s = Math.max(14, Math.min(26, cr.width / 30));
+      x.fillStyle = m.color || (m.sign === 'hose' ? '#c93c1d' : '#15803d');
+      x.beginPath();
+      if (x.roundRect) x.roundRect(mx - s / 2, my - s / 2, s, s, 3);
+      else x.rect(mx - s / 2, my - s / 2, s, s);
+      x.fill();
+      x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = 1.25; x.stroke();
+      x.fillStyle = '#fff'; x.font = '700 ' + Math.round(s * 0.36) + 'px system-ui,sans-serif';
+      x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText(m.sign === 'hose' ? 'SL' : (m.sign === 'ut' ? 'ÚT' : 'NÚ'), mx, my + 0.5);
+    });
     x.restore();
   }
 
@@ -1011,10 +1028,12 @@
     const fingur = new Map(); let klipa = 0, midja = null, hreyft = 0;
     main.addEventListener('pointerdown', e => {
       if (!aStriga(e) || document.getElementById('fp-3d')) return;
+      if (window.TeiknMerking && TeiknMerking.grip && TeiknMerking.grip(e)) return;
       fingur.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (fingur.size === 1) hreyft = 0;
       klipa = 0; midja = null;
     }, true);
     main.addEventListener('pointermove', e => {
+      if (window.TeiknMerking && TeiknMerking.iDragi && TeiknMerking.iDragi()) return;
       const f = fingur.get(e.pointerId); if (!f) return;
       const dx = e.clientX - f.x, dy = e.clientY - f.y; f.x = e.clientX; f.y = e.clientY;
       if (fingur.size >= 2) {
@@ -1083,8 +1102,12 @@
     let n = 0; for (let i = 0; i < veggir.length; i++) n += veggir[i];
     const iw = stig1.naturalWidth || stig1.width, ih = stig1.naturalHeight || stig1.height;
     const merki = merkiFrum.map(mk => {
-      const u = einingar.find(q => q.id === mk.unitId);
       const px = erPx(mk) ? mk.x - sk.x : mk.x * iw, py = erPx(mk) ? mk.y - sk.y : mk.y * ih;
+      if (mk.kind === 'sign' || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('s:') === 0)) {
+        const txt = mk.sign === 'hose' ? 'SL' : (mk.sign === 'ut' ? 'ÚT' : 'NÚ');
+        return { x: px, y: py, litur: mk.color || (mk.sign === 'hose' ? '#c93c1d' : '#15803d'), texti: txt };
+      }
+      const u = einingar.find(q => q.id === mk.unitId);
       return { x: px, y: py, litur: u && u.status === 'overdue' ? '#c93c1d' : '#2f9e55', texti: u ? String(u.serial || '').slice(-6) : '' };
     });
     return { veggir, W: r.W, H: r.H, golf: r.vinnu, kvardi: r.kvardi, merki, veggjaPx: n, sk, frumB: fb, frumH: fh };
@@ -1159,6 +1182,7 @@
         '#modal-floorplan.fp-simi #fp-main{min-height:0}' +
         '#modal-floorplan.fp-simi #fp-panel{width:auto!important;flex:none!important;border-left:0!important;border-top:1px solid rgba(255,255,255,.12);padding:8px 10px!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch}' +
         '#modal-floorplan.fp-simi #fp-panel>div:first-child{display:none}' +
+        '#modal-floorplan.fp-simi #fp-stimpil{display:flex;gap:6px;margin:0 0 6px;flex:none}' +
         '#modal-floorplan.fp-simi #fp-unit-list{display:flex;gap:7px}' +
         '#modal-floorplan.fp-simi #fp-unit-list>div{flex:0 0 128px;margin-bottom:0!important}' +
         '#modal-floorplan.fp-simi .modal-ft{padding:8px 10px}' +
@@ -1378,6 +1402,17 @@
     G.soknKom = FP.companyId;
     try { FP.load(FP.companyId); } catch (_) {}
   }
+
+  window.TeiknBord = {
+    samstilla: samstillaVirka,
+    hamur: () => G.hamur,
+    rymi: () => G.rymi,
+    virk: () => G.virk,
+    soknKom: () => G.soknKom,
+    haedir,
+    plan,
+    erPx
+  };
 
   function vaktGlugga() {
     if (document.documentElement._t383obs) return;
