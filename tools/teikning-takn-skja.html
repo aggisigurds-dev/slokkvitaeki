@@ -3,17 +3,21 @@
 <title>Tákn og stimpilrönd</title>
 <style>
 body { margin: 0; font: 14px system-ui, sans-serif; background: #1a1916; color: #f1ede4; }
-.wrap { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
-#fp-panel { background: #14120f; padding: 16px; border-right: 1px solid rgba(255,255,255,.08); }
+.wrap { display: grid; grid-template-columns: 360px 1fr; min-height: 100vh; align-items: start; }
+#modal-floorplan { background: #14120f; padding: 16px; border-right: 1px solid rgba(255,255,255,.08); }
 h1 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.4); margin: 0 0 10px; }
-#su-body { background: #f8fafc; color: #0f172a; padding: 20px 24px; }
+#su-body { background: #f8fafc; color: #0f172a; padding: 20px 24px; min-height: 100vh; }
+.su-section-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; margin: 4px 0 8px; }
 </style>
 <body>
 <div class="wrap">
-  <div id="fp-panel">
-    <h1>Stimpilrönd</h1>
-    <div>SLÖKKVITÆKI</div>
-    <div id="fp-unit-list"></div>
+  <div id="modal-floorplan">
+    <div id="fp-panel">
+      <h1>Stimpilrönd</h1>
+      <div>SLÖKKVITÆKI</div>
+      <div id="fp-unit-list"></div>
+    </div>
+    <div id="fp-main"><canvas id="fp-canvas" width="200" height="160"></canvas></div>
   </div>
   <div id="su-body"></div>
 </div>
@@ -48,12 +52,9 @@ window.Modal = { open: function () {}, close: function () {} };
 <script src="../js/patches/434-teikning-takn.js"></script>
 <script>
 (function () {
-  var m = document.createElement('div');
-  m.id = 'modal-floorplan';
-  m.innerHTML = '<div class="modal-hd"><div class="fp-hd-grp"></div></div><div id="fp-main"><canvas id="fp-canvas" width="200" height="160"></canvas></div>';
-  document.getElementById('fp-panel').appendChild(m.querySelector('#fp-main'));
   FloorPlan.plans[1612] = { markers: [] };
   FloorPlan.companyId = 1612;
+  FloorPlan._renderPanel();
   if (window.TeiknMerking && TeiknMerking.tikk) TeiknMerking.tikk();
   if (window.__sec && __sec.render) __sec.render(document.getElementById('su-body'));
   window.__taknSkja = true;
