@@ -172,6 +172,8 @@ async function main() {
 
   const eitt = await page.evaluate(() => {
     FloorPlan.onCanvasClick({ clientX: 1, clientY: 1, preventDefault: function () {}, stopPropagation: function () {} });
+    TeiknMerking.velja(null);
+    TeiknMerking.setjaStaerd(40, true);
     const b = document.querySelector('.fp-stimpill[data-sign="neyðarútgangur"]');
     if (!b) return { err: 'neyðarútgangur vantar' };
     b.click();
