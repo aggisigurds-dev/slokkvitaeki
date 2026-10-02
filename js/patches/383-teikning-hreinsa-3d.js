@@ -1046,6 +1046,9 @@
     const fingur = new Map(); let klipa = 0, midja = null, hreyft = 0;
     main.addEventListener('pointerdown', e => {
       if (!aStriga(e) || document.getElementById('fp-3d')) return;
+      // Núllstilla áður en grip tekur yfir — annars át fyrri pönnun (hreyft>6) næsta smell,
+      // t.d. að setja stimpil eða velja merki eftir að teikningin var færð.
+      if (fingur.size === 0) hreyft = 0;
       if (window.TeiknMerking && TeiknMerking.grip && TeiknMerking.grip(e)) return;
       fingur.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (fingur.size === 1) hreyft = 0;
       klipa = 0; midja = null;

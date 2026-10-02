@@ -16,7 +16,7 @@ const p433 = fs.readFileSync(path.join(rot, 'js/patches/433-teikning-merking.js'
 const nf = fs.readFileSync(path.join(rot, 'js/newfeatures.js'), 'utf8');
 
 krefst(html, /436-teikning-sja\.js\?v=20261002b/, 'index.html: 436 vantar');
-krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|eyda)/, 'index.html: 383 sja-cache');
+krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|eyda|att)/, 'index.html: 383 sja-cache');
 krefst(html, /434-teikning-takn\.js\?v=20261002(sja|eyda)/, 'index.html: 434 sja-cache');
 krefst(html, /newfeatures\.js\?v=20261002sja/, 'index.html: newfeatures sja-cache');
 if (/435-teikning-gaedi/.test(html)) villur.push('436 má ekki bæta 435 gæði-vali á fyrirtækjasíðu');

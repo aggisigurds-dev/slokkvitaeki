@@ -15,9 +15,10 @@ async function main() {
     catch (e) { console.error('PLAYWRIGHT VANTAR'); process.exit(2); }
   }
   const html = pathToFileURL(path.join(__dirname, 'teikning-merking-fixture.html')).href;
+  const args = ['--no-sandbox', '--disable-dev-shm-usage'];
   let browser;
-  try { browser = await chromium.launch({ channel: 'chrome' }); }
-  catch (_) { browser = await chromium.launch(); }
+  try { browser = await chromium.launch({ channel: 'chrome', args }); }
+  catch (_) { browser = await chromium.launch({ args }); }
   const page = await browser.newPage();
   await page.goto(html, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__teiknHreinsa3d === true && window.TeiknMerking && window.TeiknTakn, null, { timeout: 5000 });
@@ -128,6 +129,37 @@ async function main() {
     };
   });
 
+  const att = await page.evaluate(() => {
+    FloorPlan.onCanvasClick({ clientX: 1, clientY: 1, preventDefault: function () {}, stopPropagation: function () {} });
+    const b = document.querySelector('.fp-stimpill[data-sign="hose"]');
+    if (!b) return { err: 'hose vantar' };
+    b.click();
+    TeiknMerking.tikk();
+    const on = b.classList.contains('on');
+    const armadur = document.getElementById('fp-main').classList.contains('fp-armadur');
+    const n0 = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'hose').length;
+    const ev = { clientX: 170, clientY: 130, button: 0, pointerId: 11, preventDefault: function () {}, stopPropagation: function () {} };
+    const gripOk = TeiknMerking.grip(ev);
+    FloorPlan.onCanvasClick(ev);
+    const merki = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'hose');
+    const sett = merki.find(m => m.x === 170 && m.y === 130) || merki[merki.length - 1];
+    if (sett) FloorPlan.onCanvasClick({ clientX: sett.x, clientY: sett.y, button: 0, preventDefault: function () {}, stopPropagation: function () {} });
+    TeiknMerking.tikk();
+    const box = document.getElementById('fp-merki-adgerd');
+    const txt = box && !box.hidden ? box.textContent : '';
+    const skipta = box && box.querySelector('[data-act="skipta"][data-sign="ut"]');
+    if (skipta) skipta.click();
+    TeiknMerking.tikk();
+    const eftir = (FloorPlan.plans[1612].markers || []).find(m => m.unitId === (sett && sett.unitId));
+    return {
+      on, armadur, gripOk, n0, n1: merki.length,
+      x: sett && sett.x, y: sett && sett.y,
+      valið: /Slöngumerki/.test(txt) && /Snúa/.test(txt) && /Eyða/.test(txt) && /Breyta í/.test(txt),
+      skipt: !!(eftir && eftir.sign === 'ut'),
+      txt: txt.slice(0, 80)
+    };
+  });
+
   await browser.close();
 
   const villur = [];
@@ -156,6 +188,10 @@ async function main() {
   krefst(valmynd.snua && valmynd.afrita && valmynd.eyda && valmynd.breyta, 'valmynd vantar liði: ' + JSON.stringify(valmynd));
   krefst(valmynd.n1 === valmynd.n0 - 1, 'eyða átti að fjarlægja stimpil: ' + JSON.stringify(valmynd));
   krefst(valmynd.okUndo && valmynd.n2 === valmynd.n0, 'afturkalla átti að skila stimpil: ' + JSON.stringify(valmynd));
+  krefst(att.on && att.armadur, 'smellur á merki á ræmu átti að velja það: ' + JSON.stringify(att));
+  krefst(att.gripOk && att.n1 === att.n0 + 1 && att.x === 170, 'valinn stimpill átti að setjast á teikninguna: ' + JSON.stringify(att));
+  krefst(att.valið, 'valið merki átti að sýna Snúa/Breyta/Eyða í ræmunni: ' + JSON.stringify(att));
+  krefst(att.skipt, 'Breyta í átti að skipta slöngumerki yfir í Út: ' + JSON.stringify(att));
 
   if (villur.length) {
     console.log('TEIKNING-MERKING FIXTURE RAUDT');
