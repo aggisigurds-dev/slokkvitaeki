@@ -130,13 +130,16 @@
 
 
     /* ── tækjalistinn fær meira pláss en útreikningurinn (Agnar 23.09): 60/40 í stað fastra 780px hægra megin (224) ── */
-    r('.uttekt-cols', 'display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start'),
+    // 02.10.2026 (Agnar: „put the tæki skýrslan the left part the same wide as the skýrslan in brunakerfi, so the
+    // hlutföllin will stay the same switching between slökkvitæki and brunakerfi"): 50/50 og 12px bil — NÁKVÆMLEGA eins
+    // og brunakerfis-gridið (274 ._bkc-grid.b274 1fr 1fr + 12px hér neðar), og sami brotpunktur (1100px) í einn dálk.
+    r('.uttekt-cols', 'display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start'),
     r('.uttekt-col-l,.uttekt-col-r', 'flex:none;width:auto;max-width:none;min-width:0'),
     r('.uttekt-col-r #_ctc-section table', 'min-width:0!important;width:100%'),
     r('.uttekt-col-r #_ctc-section table th,.uttekt-col-r #_ctc-section table td', 'padding:6px 6px!important'),
     r('.uttekt-col-r #_ctc-section table td:last-child,.uttekt-col-r #_ctc-section table th:last-child', 'white-space:nowrap'),
     r('.uttekt-col-r #_ctc-section table td .inn,.uttekt-col-r #_ctc-section table td input', 'width:64px!important;max-width:64px'),
-    '@media(max-width:1420px){' + S + '.uttekt-cols{grid-template-columns:minmax(0,1fr)}}',
+    '@media(max-width:1100px){' + S + '.uttekt-cols{grid-template-columns:minmax(0,1fr)}}',
 
 
     /* ── 23.09 kvöld (skjámynd Agnars, Fríða gull): upplýsingareitirnir teygðust yfir allan vinstri dálkinn sem tómar
@@ -435,10 +438,15 @@
     r('#_sks-tabs ._sks-tl', 'display:block;margin-left:auto;width:9px;height:9px;flex:none;border-radius:50%;background:#4a4f59;box-shadow:inset 0 1px 1px rgba(0,0,0,.5)'),
     // valin: fullur litur, ljós hringur, logandi díóða
     r('#_sks-tabs ._sks-tab.on', 'filter:none;box-shadow:0 0 0 2px rgba(255,255,255,.55),inset 0 1px 0 rgba(255,255,255,.18),0 10px 22px -10px rgba(0,0,0,.9)'),
+    // Agnar 02.10: „make the red and blue bulb light up more when chosen … and some backlight in red and blue" —
+    // stærri, bjartari díóða með þreföldum ljóma, og baklýsing í lit þjónustunnar á bak við valda flís.
+    r('#_sks-tabs ._sks-tab.on ._sks-tl', 'width:12px;height:12px'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="ars"]', 'box-shadow:0 0 0 2px rgba(150,195,255,.7),0 0 26px 4px rgba(46,110,235,.55),0 0 60px 8px rgba(46,110,235,.22),inset 0 1px 0 rgba(255,255,255,.2)'),
     r('#_sks-tabs ._sks-tab.on[data-flipi="ars"] ._sks-tu', 'color:#cfe0ff'),
-    r('#_sks-tabs ._sks-tab.on[data-flipi="ars"] ._sks-tl', 'background:#7fb4ff;box-shadow:0 0 0 3px rgba(127,180,255,.2),0 0 10px rgba(127,180,255,.9)'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="ars"] ._sks-tl', 'background:radial-gradient(circle at 40% 35%,#ffffff 0%,#bcd9ff 35%,#5b9bff 100%);box-shadow:0 0 0 3px rgba(127,180,255,.3),0 0 10px 3px rgba(127,180,255,.95),0 0 26px 8px rgba(80,140,255,.65)'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="bru"]', 'box-shadow:0 0 0 2px rgba(255,150,140,.7),0 0 26px 4px rgba(225,35,35,.55),0 0 60px 8px rgba(225,35,35,.22),inset 0 1px 0 rgba(255,255,255,.2)'),
     r('#_sks-tabs ._sks-tab.on[data-flipi="bru"] ._sks-tu', 'color:#ffd8d4'),
-    r('#_sks-tabs ._sks-tab.on[data-flipi="bru"] ._sks-tl', 'background:#ff6b5e;box-shadow:0 0 0 3px rgba(255,107,94,.2),0 0 10px rgba(255,107,94,.9)'),
+    r('#_sks-tabs ._sks-tab.on[data-flipi="bru"] ._sks-tl', 'background:radial-gradient(circle at 40% 35%,#ffffff 0%,#ffc2bb 35%,#ff4f42 100%);box-shadow:0 0 0 3px rgba(255,107,94,.3),0 0 10px 3px rgba(255,107,94,.95),0 0 26px 8px rgba(255,60,50,.65)'),
     r('#_sks-tabs ._sks-tab.on[data-flipi="slokk"] ._sks-tl', 'background:#e0a93e;box-shadow:0 0 0 3px rgba(246,181,69,.18),0 0 10px rgba(246,181,69,.85)'),
 
     /* 🚨 Brunakerfi — vinnusíða 274 hýst í #_sks-bru: skel + málmhaus + stálplata, spjöldin hvít með málmhaus */
