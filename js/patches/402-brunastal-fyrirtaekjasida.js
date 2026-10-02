@@ -417,30 +417,28 @@
     r('._cpr-toggle', 'font-family:' + SANS + ';font-weight:600'),
 
     /* ── miðjan: þjónustuflipar (386) — efst og neðst eins á 🧯 · 🚨 · 🍳, aðeins miðjan skiptir (Agnar 23.09 19:45) ── */
-    // 02.10.2026 — þjónustuskiptirinn (Agnar: „make the switch button more noticable" → samþykkt á striganum með
-    // „slökkvitæki alveg dökkblátt metal"): stórar flísar, óvaldar í silfri, valin í málmi ÞJÓNUSTUNNAR — slökkvitæki
-    // dökkblár, brunakerfi rauður, slökkvikerfi grafít — með ljósdíóðu. Markupið (tákn/heiti/undirlína) er í 386.
+    // 02.10.2026 — þjónustuskiptirinn (Agnar: „make the switch button more noticable" → samþykkt á striganum, og svo:
+    // „meinti að slökkvitækin væru dökk blá og brunakerfin dark red metal"): HVER flís ber ALLTAF málm þjónustunnar —
+    // slökkvitæki dökkblár, brunakerfi dökkrauður, slökkvikerfi grafít. Óvalin flís er dempuð (birta/mettun niður,
+    // díóðan slökkt); valin flís í fullum lit með ljósum hring og logandi díóðu. Markupið (tákn/heiti/undirlína) er í 386.
     r('#_sks-tabs', 'display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin:18px 0 12px;padding:10px;border:1px solid #000;border-radius:12px;background:' + METAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 30px -14px rgba(0,0,0,.7)'),
     r('#_sks-tabs ._sks-tlbl', 'display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 14px 0 8px;border-right:1px solid rgba(255,255,255,.1);font:700 10px/1 ' + MONO + ';letter-spacing:.18em;text-transform:uppercase;color:#c9a95a;white-space:nowrap'),
-    r('#_sks-tabs ._sks-tab', 'flex:1 1 220px;display:flex;align-items:center;gap:14px;min-height:64px;margin:0;padding:10px 18px 10px 12px;box-sizing:border-box;border:1px solid rgba(20,24,34,.22);border-radius:9px;background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9);color:#1f2530;font-family:' + SANS + ';text-transform:none;letter-spacing:0;text-align:left;text-shadow:none;cursor:pointer;filter:none'),
-    r('#_sks-tabs ._sks-tab:hover', 'filter:brightness(1.04)'),
-    r('#_sks-tabs ._sks-ti', 'display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex:none;border-radius:9px;background:#fff;border:1px solid rgba(20,24,34,.14);color:#3a4250'),
+    r('#_sks-tabs ._sks-tab', 'flex:1 1 220px;display:flex;align-items:center;gap:14px;min-height:64px;margin:0;padding:10px 18px 10px 12px;box-sizing:border-box;border:1px solid #000;border-radius:9px;background:' + METAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:#fff;font-family:' + SANS + ';text-transform:none;letter-spacing:0;text-align:left;text-shadow:0 1px 1px rgba(0,0,0,.5);cursor:pointer;filter:brightness(.62) saturate(.75);transition:filter .12s'),
+    r('#_sks-tabs ._sks-tab:hover', 'filter:brightness(.85) saturate(.9)'),
+    r('#_sks-tabs ._sks-tab[data-flipi="ars"]', 'background:linear-gradient(145deg,#02060f 0%,#0a1a3a 22%,#183363 45%,#2a4c8f 53%,#0e2147 74%,#03070f 100%);border-color:#020611'),
+    r('#_sks-tabs ._sks-tab[data-flipi="bru"]', 'background:linear-gradient(145deg,#080001 0%,#260304 22%,#4a0809 45%,#6c0d10 53%,#2a0304 74%,#080001 100%);border-color:#0a0102'),
+    r('#_sks-tabs ._sks-ti', 'display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex:none;border-radius:9px;background:rgba(0,0,0,.3);border:1px solid rgba(0,0,0,.35);box-shadow:inset 0 1px 3px rgba(0,0,0,.5);color:#fff'),
     r('#_sks-tabs ._sks-ti svg', 'width:20px;height:20px'),
     r('#_sks-tabs ._sks-tt', 'display:flex;flex-direction:column;gap:5px;min-width:0'),
-    r('#_sks-tabs ._sks-th', 'font:700 17px/1 ' + SANS + ';color:#1f2530'),
-    r('#_sks-tabs ._sks-tu', 'font:500 11.5px/1.2 ' + MONO + ';color:#4a5361;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
-    r('#_sks-tabs ._sks-tl', 'display:block;margin-left:auto;width:9px;height:9px;flex:none;border-radius:50%;background:#c3cad6;box-shadow:inset 0 1px 1px rgba(0,0,0,.25)'),
-    r('#_sks-tabs ._sks-tab.on', 'color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5);filter:none'),
-    r('#_sks-tabs ._sks-tab.on ._sks-ti', 'background:rgba(0,0,0,.3);border-color:transparent;box-shadow:inset 0 1px 3px rgba(0,0,0,.5);color:#fff'),
-    r('#_sks-tabs ._sks-tab.on ._sks-th', 'color:#fff'),
-    r('#_sks-tabs ._sks-tab.on[data-flipi="ars"]', 'background:linear-gradient(145deg,#02060f 0%,#0a1a3a 22%,#183363 45%,#2a4c8f 53%,#0e2147 74%,#03070f 100%);border-color:rgba(42,76,143,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 20px -10px rgba(24,51,99,.85)'),
+    r('#_sks-tabs ._sks-th', 'font:700 17px/1 ' + SANS + ';color:#fff'),
+    r('#_sks-tabs ._sks-tu', 'font:500 11.5px/1.2 ' + MONO + ';color:#d5dbe6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
+    r('#_sks-tabs ._sks-tl', 'display:block;margin-left:auto;width:9px;height:9px;flex:none;border-radius:50%;background:#4a4f59;box-shadow:inset 0 1px 1px rgba(0,0,0,.5)'),
+    // valin: fullur litur, ljós hringur, logandi díóða
+    r('#_sks-tabs ._sks-tab.on', 'filter:none;box-shadow:0 0 0 2px rgba(255,255,255,.55),inset 0 1px 0 rgba(255,255,255,.18),0 10px 22px -10px rgba(0,0,0,.9)'),
     r('#_sks-tabs ._sks-tab.on[data-flipi="ars"] ._sks-tu', 'color:#cfe0ff'),
     r('#_sks-tabs ._sks-tab.on[data-flipi="ars"] ._sks-tl', 'background:#7fb4ff;box-shadow:0 0 0 3px rgba(127,180,255,.2),0 0 10px rgba(127,180,255,.9)'),
-    r('#_sks-tabs ._sks-tab.on[data-flipi="bru"]', 'background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);border-color:rgba(190,32,28,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 20px -10px rgba(151,21,21,.8)'),
     r('#_sks-tabs ._sks-tab.on[data-flipi="bru"] ._sks-tu', 'color:#ffd8d4'),
     r('#_sks-tabs ._sks-tab.on[data-flipi="bru"] ._sks-tl', 'background:#ff6b5e;box-shadow:0 0 0 3px rgba(255,107,94,.2),0 0 10px rgba(255,107,94,.9)'),
-    r('#_sks-tabs ._sks-tab.on[data-flipi="slokk"]', 'background:' + METAL + ';border-color:#000;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 20px -10px rgba(0,0,0,.8)'),
-    r('#_sks-tabs ._sks-tab.on[data-flipi="slokk"] ._sks-tu', 'color:#d5dbe6'),
     r('#_sks-tabs ._sks-tab.on[data-flipi="slokk"] ._sks-tl', 'background:#e0a93e;box-shadow:0 0 0 3px rgba(246,181,69,.18),0 0 10px rgba(246,181,69,.85)'),
 
     /* 🚨 Brunakerfi — vinnusíða 274 hýst í #_sks-bru: skel + málmhaus + stálplata, spjöldin hvít með málmhaus */
