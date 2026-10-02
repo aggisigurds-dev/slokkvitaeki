@@ -4,6 +4,10 @@
  * fire extinguishers" · „nota skýrari veggja pælinguna og 3d view" · „plana hvernig sé best að
  * gera þetta svo þetta sé nokkuð fjölbreytilega nothæft".
  *
+ * Agnar 02.10.2026: „I only meant the grey area outside the building" — Skýrari á 2D
+ * má EKKI endurteikna veggina né skera að auðu/gráu. Grunnmyndin helst; grá lóðarfylling
+ * UTAN hússins verður hvít. 3D notar áfram veggjamaskann.
+ *
  * TVÆR SJÁLFSTÆÐAR EININGAR (vita ekkert um gluggann — nýtanlegar annars staðar síðar):
  *
  *   TeiknHreinsun.hreinsaGogn(gra, W, H, o)  → { veggir, fotspor, thekja }      HREIN gagnavinnsla
@@ -88,6 +92,10 @@
     }
     return { merki, listi };
   }
+
+  // Dökkt blek = veggir/texti. Grá lóð (oft 150–200) er EKKI hús — annars skerst að
+  // lóðinni og „draugahæð" fyllir gluggann.
+  const DOKKT_HUS = 130;
 
   /** gra: Uint8Array grátóna (0 svart – 255 hvítt), W×H. Skilar grímum í sömu stærð. */
   function hreinsaGogn(gra, W, H, o) {
@@ -179,15 +187,19 @@
 
   /** Hvar er HÚSIÐ á blaðinu? Skilar { x, y, w, h } í hlutföllum (0–1) eða null.
    * Blaðið er oft margfalt stærra en grunnmyndin (rammi, nafnreitur, skýringar, afstöðumynd). Aðferð, á ~640 px smækkun
-   * (lágmark í hverjum reit svo þunnar línur lifi): blek → rammalínur (raðir/dálkar sem eru blek að >55%) teknar út →
-   * blekið þanið saman í klasa → stærsti klasinn að FLATARMÁLI BLEKS er húsið. Nafnreitur og skýringar eru minni klasar. */
+   * (lágmark í hverjum reit svo þunnar línur lifi): DÖKKT blek (grátt < DOKKT_HUS) → rammalínur teknar út →
+   * blekið þanið saman í klasa → stærsti klasinn að FLATARMÁLI DÖKKS BLEKS er húsið.
+   * Grá lóðarfylling (oft 150–200) er EKKI blek — annars skerst að lóðinni og glugginn fyllist af gráu eða auðu. */
   function finnaHus(gra, W, H) {
     const k = Math.max(1, Math.ceil(Math.max(W, H) / 640)), w = Math.ceil(W / k), h = Math.ceil(H / k);
     const b = new Uint8Array(w * h);
+    const reit = k * k, minn = Math.max(1, Math.round(reit * 0.08));
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      let m = 255;
-      for (let yy = y * k; yy < Math.min(H, (y + 1) * k); yy++) for (let xx = x * k; xx < Math.min(W, (x + 1) * k); xx++) { const v = gra[yy * W + xx]; if (v < m) m = v; }
-      b[y * w + x] = m < 205 ? 1 : 0;
+      let n = 0;
+      for (let yy = y * k; yy < Math.min(H, (y + 1) * k); yy++) for (let xx = x * k; xx < Math.min(W, (x + 1) * k); xx++) {
+        if (gra[yy * W + xx] < DOKKT_HUS) n++;
+      }
+      b[y * w + x] = n >= minn ? 1 : 0;
     }
     for (let y = 0; y < h; y++) { let n = 0; for (let x = 0; x < w; x++) n += b[y * w + x]; if (n > w * 0.55) for (let x = 0; x < w; x++) b[y * w + x] = 0; }
     for (let x = 0; x < w; x++) { let n = 0; for (let y = 0; y < h; y++) n += b[y * w + x]; if (n > h * 0.55) for (let y = 0; y < h; y++) b[y * w + x] = 0; }
@@ -203,6 +215,9 @@
     let best = 0, bn = 0; for (let n = 1; n < blek.length; n++) if (blek[n] > bn) { bn = blek[n]; best = n; }
     if (!best) return null;
     const q = kassi[best], sp = Math.round(w * 0.015);
+    const flatKassa = (q[2] - q[0] + 1) * (q[3] - q[1] + 1);
+    // Auður/grár kassi (lóð án veggja): ekki skera að hvítu.
+    if (bn < Math.max(12, flatKassa * 0.04)) return null;
     const x0 = Math.max(0, q[0] + r - sp), y0 = Math.max(0, q[1] + r - sp), x1 = Math.min(w, q[2] - r + sp + 1), y1 = Math.min(h, q[3] - r + sp + 1);
     const ut = { x: x0 / w, y: y0 / h, w: (x1 - x0) / w, h: (y1 - y0) / h };
     // Nær allt blaðið, eða örlítill biti: þá er ekkert unnið með skurði — skila null frekar en að skera vitlaust.
@@ -211,10 +226,11 @@
     return ut;
   }
 
-  /** Minnsti rammi um blek. Þegar finnaHus skilar null (þunnar grálínur, stórt hvítt blað)
-   * skerum við samt auða spássíu svo húsið fylli rammann — þekjan er þá mæld á húsinu, ekki á A0. */
+  /** Minnsti rammi um DÖKKT blek. Þegar finnaHus skilar null (þunnar grálínur, stórt hvítt blað)
+   * skerum við samt auða spássíu svo húsið fylli rammann — þekjan er þá mæld á húsinu, ekki á A0.
+   * Grá lóð (150–200) er ekki blek; sjálfgefið þröskuldur er DOKKT_HUS, ekki 210. */
   function blekRammi(gra, W, H, dokkt) {
-    dokkt = dokkt == null ? 210 : dokkt;
+    dokkt = dokkt == null ? DOKKT_HUS : dokkt;
     let x0 = W, y0 = H, x1 = -1, y1 = -1, n = 0;
     for (let y = 0; y < H; y++) {
       const rod = y * W;
@@ -233,6 +249,57 @@
     const ut = { x: x0 / W, y: y0 / H, w: (x1 - x0) / W, h: (y1 - y0) / H };
     if (ut.w * ut.h > 0.94 || ut.w < 0.08 || ut.h < 0.08) return null;
     return ut;
+  }
+
+  /** Flóðfylling utan frá: 1 = UTAN hússins. Veggirnir eru DÖKKT blek, lokað með opnun svo rifur grói. */
+  function utiMaska(gra, W, H) {
+    const dokkt = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) dokkt[i] = gra[i] < DOKKT_HUS ? 1 : 0;
+    const r = Math.max(3, Math.round(Math.max(W, H) / 80));
+    const lokad = erode(dilate(dokkt, W, H, r), W, H, r);
+    const uti = new Uint8Array(W * H), st = new Int32Array(W * H);
+    let top = 0;
+    const yta = p => { if (!lokad[p] && !uti[p]) { uti[p] = 1; st[top++] = p; } };
+    for (let x = 0; x < W; x++) { yta(x); yta((H - 1) * W + x); }
+    for (let y = 0; y < H; y++) { yta(y * W); yta(y * W + W - 1); }
+    while (top) {
+      const p = st[--top], px = p % W, py = (p - px) / W;
+      if (px > 0) yta(p - 1); if (px < W - 1) yta(p + 1); if (py > 0) yta(p - W); if (py < H - 1) yta(p + W);
+    }
+    return uti;
+  }
+
+  /** Grátt UTAN húss → hvítt. Inni í húsinu helst grunnmyndin. Dökkt blek (texti, lóðarlínur) helst. */
+  function hvitaGraUtanGra(gra, W, H) {
+    const uti = utiMaska(gra, W, H);
+    const ut = new Uint8Array(gra);
+    for (let i = 0; i < W * H; i++) {
+      if (uti[i] && gra[i] > 140 && gra[i] < 248) ut[i] = 255;
+    }
+    return ut;
+  }
+
+  /** mynd: <img> eða <canvas>. Skilar striga í sömu punktastærð — grunnmyndin, grá lóð utan húss hvítt. */
+  function hvitaGraUtan(mynd) {
+    const iw = mynd.naturalWidth || mynd.width, ih = mynd.naturalHeight || mynd.height;
+    const c = document.createElement('canvas'); c.width = iw; c.height = ih;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.fillStyle = '#fff'; x.fillRect(0, 0, iw, ih);
+    x.drawImage(mynd, 0, 0);
+    const d = x.getImageData(0, 0, iw, ih), px = d.data;
+    const gra = new Uint8Array(iw * ih);
+    for (let i = 0, j = 0; i < iw * ih; i++, j += 4) gra[i] = (px[j] * 77 + px[j + 1] * 150 + px[j + 2] * 29) >> 8;
+    const uti = utiMaska(gra, iw, ih);
+    for (let i = 0, j = 0; i < iw * ih; i++, j += 4) {
+      if (!uti[i]) continue;
+      const Y = gra[i];
+      if (Y <= 140 || Y >= 248) continue;
+      const mx = Math.max(px[j], px[j + 1], px[j + 2]), mn = Math.min(px[j], px[j + 1], px[j + 2]);
+      if (mx - mn > 48) continue;
+      px[j] = px[j + 1] = px[j + 2] = 255;
+    }
+    x.putImageData(d, 0, 0);
+    return c;
   }
 
   /* ── veggir úr VIGUR-PDF ──
@@ -310,7 +377,7 @@
     return { valinn: best, yfirlit };
   }
 
-  window.TeiknHreinsun = { hreinsaGogn, hreinsa, finnaHus, blekRammi, flokkaPdfLinur, veljaVeggjaflokk };
+  window.TeiknHreinsun = { hreinsaGogn, hreinsa, finnaHus, blekRammi, hvitaGraUtan, hvitaGraUtanGra, utiMaska, flokkaPdfLinur, veljaVeggjaflokk };
 
   /* ───────────────────────── 2) 3D-SÝN ───────────────────────── */
 
@@ -707,6 +774,7 @@
       if (nu.complete === false) return;
       faeraMerki(0, 0);
       G.frum = nu; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
+      G.graUtan = null; G.graUtanLykill = ''; G.dauft = null; G.dauftLykill = '';
       if (typeof p.imageUrl === 'string' && h.image_url !== p.imageUrl) {
         // Önnur teikning en hæðin átti: skurður og veggir áttu við gömlu myndina.
         if (h.image_url) { h.skurdur = null; h.veggir = []; h.pdfVeggir = []; delete h.pdfFlokkar; delete h.sjalf; G.pdf = null; }
@@ -747,32 +815,30 @@
     }
     const sk = h.skurdur && h.skurdur.w > 8 && h.skurdur.h > 8 ? h.skurdur : null;
     const l1 = (G.frum.src || G.frum.width + 'x') + '|' + (sk ? [sk.x, sk.y, sk.w, sk.h].map(Math.round).join(',') : '-');
-    if (!G.stig1 || G.stig1Lykill !== l1) { G.stig1 = sk ? skera(G.frum, sk) : G.frum; G.stig1Lykill = l1; G.hrein = null; G.hreinLykill = ''; }
+    if (!G.stig1 || G.stig1Lykill !== l1) { G.stig1 = sk ? skera(G.frum, sk) : G.frum; G.stig1Lykill = l1; G.hrein = null; G.hreinLykill = ''; G.graUtan = null; G.graUtanLykill = ''; G.dauft = null; G.dauftLykill = ''; }
     let ut = G.stig1, skilabod = '';
-    if (val.a && h.pdfVeggir.length) {
-      // Vigurveggir eru til: þeir eru teiknaðir hnífskarpir á yfirlagið — undir þeim er blaðið aðeins DEYFT.
-      if (!G.dauft || G.dauftLykill !== l1) {
-        const c = document.createElement('canvas'); c.width = G.stig1.naturalWidth || G.stig1.width; c.height = G.stig1.naturalHeight || G.stig1.height;
-        const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.globalAlpha = 0.85; x.drawImage(G.stig1, 0, 0);
-        G.dauft = c; G.dauftLykill = l1;
+    if (val.a) {
+      // Agnar: „I only meant the grey area outside the building" — 2D sýnir grunnmyndina
+      // með gráu UTAN húss hvítað. Aldrei veggjabitmap (r.strigi). 3D notar hreinsa() áfram.
+      const gl = l1 + '|gra';
+      if (!G.graUtan || G.graUtanLykill !== gl) {
+        try { G.graUtan = hvitaGraUtan(G.stig1); G.graUtanLykill = gl; }
+        catch (e) { console.warn('[383] graUtan', e); G.graUtan = G.stig1; G.graUtanLykill = gl; }
       }
-      ut = G.dauft;
-    } else if (val.a) {
-      // 20.09.2026 seint (Agnar, skjáskot af 2. hæð Fiskislóðar: „Þessi er alls ekki að virka. Spurning bara croppa
-      // original við húsið"): myndgreiningin fann 2,5% „veggi" á þunnlínu-CAD og teiknaði BARA þá — slitrur í stað
-      // teikningar. Reglan núna: UPPRUNALEGA teikningin, skorin að húsinu, er alltaf grunnurinn. Myndgreiningin fær
-      // aðeins að skipta henni út þegar hún nær heilu veggjaneti (fylltir veggir gáfu 5,5%; CAD 0,3–2,5%).
-      // PDF-hæð: veggirnir eru lesnir úr VIGRINUM — alltaf reynt, óháð því hvað myndgreiningin fann.
+      ut = G.graUtan;
+      if (h.pdfVeggir.length) {
+        if (!G.dauft || G.dauftLykill !== gl) {
+          const c = document.createElement('canvas');
+          c.width = ut.naturalWidth || ut.width; c.height = ut.naturalHeight || ut.height;
+          const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+          x.globalAlpha = 0.85; x.drawImage(ut, 0, 0);
+          G.dauft = c; G.dauftLykill = gl;
+        }
+        ut = G.dauft;
+      }
       if (pdfSlod(h) && !h.pdfReynt && !G.pdfBid) { h.pdfReynt = 'sjálfvirkt'; lesaPdfVeggi(true).then(beita); }
-      let r = null;
-      try { r = reikna(G.stig1, l1, val); } catch (e) { segja('⚠ Gat ekki unnið teikninguna: ' + ((e && e.message) || e)); val.a = false; vistaVal(FP.companyId, val); }
-      if (r && r.thekja >= NOTHAEF_THEKJA) ut = r.strigi;
-      else if (r && !G.pdfBid) {
-        skilabod = 'Sjálfvirk veggagreining náði ekki (' + (r.thekja * 100).toFixed(1).replace('.', ',') + '% veggir).' +
-          (pdfSlod(h) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.';
-      }
     }
-    const lyk = l1 + '|' + (ut === G.stig1 ? 'frum' : ut === G.dauft ? 'dauft' : G.hreinLykill);
+    const lyk = l1 + '|' + (ut === G.stig1 ? 'frum' : ut === G.dauft ? 'dauft' : ut === G.graUtan ? 'gra' : 'annad');
     if (G.lykill !== lyk || FP.bgImage !== ut) {
       faeraMerki(sk ? Math.round(sk.x) : 0, sk ? Math.round(sk.y) : 0);
       G.synd = ut === G.frum ? null : ut; G.lykill = lyk;
@@ -837,14 +903,8 @@
         '<button type="button" data-hr="s-haetta" style="' + TK + '">Hætta við</button>';
     } else if (val.a && h.pdfVeggir.length) {
       html = '<span>📄 ' + h.pdfVeggir.length + ' veggjastrik úr PDF-inu</span><span style="opacity:.6;font-weight:500">Aðrar línuþykktir og handdregnir veggir: ✏ Veggir</span>';
-    } else if (val.a && G.hrein && G.hrein.thekja < NOTHAEF_THEKJA && !val.thykkt && !val.fylla) {
-      html = '';                                  // upprunalega teikningin er sýnd — engar stillingar sem breyta engu
     } else if (val.a) {
-      const th = (G.hrein && G.hrein.thykkt) || val.thykkt || 2;
-      html = '<span>Veggþykkt</span><button type="button" data-hr="minna" style="' + TK + '" title="Halda líka þynnri veggjum">−</button><span style="min-width:14px;text-align:center">' + th +
-        '</span><button type="button" data-hr="meira" style="' + TK + '" title="Aðeins þykkustu veggir">+</button>' +
-        '<button type="button" data-hr="fylla" aria-pressed="' + !!val.fylla + '" style="' + TK + ';' + (val.fylla ? GULL : '') + '">Fylla tvöfalda veggi</button>' +
-        (skilabod ? '' : (G.hrein ? '<span style="opacity:.6;font-weight:500">' + (G.hrein.thekja * 100).toFixed(1) + '% veggir · ' + G.hrein.ms + ' ms</span>' : ''));
+      html = '<span>Grátt utan húss hreinsað — grunnmyndin helst</span>';
     }
     if (G.pdfBid && G.hamur !== 'veggir') html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500">⏳ Les veggi úr PDF-skjalinu…</span>';
     else if (skilabod && !G.hamur && !h.pdfVeggir.length) html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(skilabod) + '</span>';
@@ -898,6 +958,7 @@
       url: h.image_url || null,
       frum: G.frum, stig1: G.stig1, stig1Lykill: G.stig1Lykill,
       hrein: G.hrein, hreinLykill: G.hreinLykill,
+      graUtan: G.graUtan, graUtanLykill: G.graUtanLykill,
       dauft: G.dauft, dauftLykill: G.dauftLykill,
       lykill: G.lykill, synd: G.synd,
       rymi: { x: G.rymi.x, y: G.rymi.y }
@@ -908,6 +969,7 @@
     if (!m || (m.url || null) !== (h.image_url || null) || !m.frum) return false;
     G.frum = m.frum; G.stig1 = m.stig1; G.stig1Lykill = m.stig1Lykill;
     G.hrein = m.hrein; G.hreinLykill = m.hreinLykill;
+    G.graUtan = m.graUtan; G.graUtanLykill = m.graUtanLykill;
     G.dauft = m.dauft; G.dauftLykill = m.dauftLykill;
     G.lykill = m.lykill; G.synd = m.synd;
     G.rymi = m.rymi ? { x: m.rymi.x, y: m.rymi.y } : { x: 0, y: 0 };
@@ -949,6 +1011,7 @@
       try { beita(); FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
     } else {
       G.frum = null; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
+      G.graUtan = null; G.graUtanLykill = '';
       G.dauft = null; G.dauftLykill = ''; G.sjalfReynt = null;
       FP.bgImage = null;
       if (h.image_url) {
@@ -1106,6 +1169,7 @@
   function nyMynd() {
     G.frum = null; G.stig1 = null; G.stig1Lykill = ''; G.synd = null; G.lykill = '';
     G.hrein = null; G.hreinLykill = ''; G.dauft = null; G.dauftLykill = '';
+    G.graUtan = null; G.graUtanLykill = '';
     G.sjalfReynt = null;
     beita();
     try { const F = FPx(); if (F && F._renderCanvas) F._renderCanvas(); } catch (_) {}
@@ -1269,7 +1333,7 @@
         ut.push(u);
       } catch (_) { sleppt.push(h.nafn + ' (náði ekki í teikningu)'); }
     }
-    if (!ut.length) { loka3d(); segja('Engir veggir til að lyfta upp: ' + sleppt.join(' · ') + '.'); return; }
+    if (!ut.length) { loka3d(); segja('Sjálfvirk veggagreining náði ekki. ' + sleppt.join(' · ') + '.' + (hs.some(x => pdfSlod(x)) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.'); return; }
     try {
       G.syn3d = await syna3d(gamur, { haedir: ut });
       skyr.textContent = 'Draga = snúa · hjól / klípa = aðdráttur · shift-draga eða tveir fingur = færa' + (ut.length > 1 ? ' · ' + ut.length + ' hæðir' : '') + (sleppt.length ? ' · sleppt: ' + sleppt.join(', ') : '');
@@ -1439,7 +1503,7 @@
           if (h.skurdur) { h.skurdur = null; h.sjalf = false; G.hamur = null; zNullstilla(); } else { G.hamur = G.hamur === 'skera' ? null : 'skera'; G.drag = null; G.kedja = null; }
         })),
         gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
-        gera('fp-hreinsa-btn', '✨ Skýrari veggir', 'Sýna aðeins veggina — málsetningar og texti dofna. Frummyndin geymist óbreytt.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
+        gera('fp-hreinsa-btn', '✨ Skýrari veggir', 'Hreinsa grátt UTAN hússins — grunnmyndin helst. Veggirnir eru ekki endurteiknaðir. Frummyndin geymist óbreytt.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
         gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); }),
         gera('fp-tp-btn', 'Opna í TurboPaint', 'Opna hæðina í TurboPaint: teikna á hana, færa tækin og vista staðsetningarnar til baka', opnaITurboPaint)
       ];
@@ -1489,7 +1553,7 @@
 
     FP.open = function () {
       loka3d(); cancelAnimationFrame(G.raf);
-      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, _haedirBid: 0, _festCid: 0, _festModal: null, minni: {}, skipti: (G.skipti || 0) + 1, pdfBid: false });
+      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', graUtan: null, graUtanLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, _haedirBid: 0, _festCid: 0, _festModal: null, minni: {}, skipti: (G.skipti || 0) + 1, pdfBid: false });
       const r = opna.apply(this, arguments);
       Z.s = 1; Z.x = 0; Z.y = 0;
       try { tikk(); } catch (_) {}

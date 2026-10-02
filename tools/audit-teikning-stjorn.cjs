@@ -22,7 +22,7 @@ krefst(/kjarni\.vercel\.app\/kjarni\/turbopaint/, 'TurboPaint-slóð á kjarni.v
 krefst(/TeiknTurboPaint/, '383 verður að birta TeiknTurboPaint API');
 krefst(/vaktAfturkomu/, '383 sækir merki sjálfkrafa þegar TurboPaint-flipinn skilar');
 krefst(/function sameinaHaedir/, '383 má ekki skipta út hæða-hnútum svo myndhleðsla deyji');
-if (!/383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp|eyda|att|staerd|gaedi|eitt|stjorn)/.test(html)) {
+if (!/383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp|eyda|att|staerd|gaedi|eitt|stjorn|gra)/.test(html)) {
   villur.push('index.html: 383 vantar ?v=20261002sja eða gaedi');
 }
 
