@@ -1521,7 +1521,8 @@
       V + '.kym-hint svg{flex:none;color:#3a4250}',
       // fyrirtækin
       V + '.kym-co{margin-bottom:10px;background:#fff;border-top:3px solid var(--kym-rule,#8a93a3);border-radius:2px;box-shadow:0 1px 1px rgba(15,20,30,.2),0 10px 22px -14px rgba(15,20,30,.45);container-type:inline-size}',
-      V + '.kym-co-g{--kym-rule:#16783f}' + V + '.kym-co-a{--kym-rule:#e0a93e}' + V + '.kym-co-r{--kym-rule:#c92a2a}',
+      // Græn rönd tekin af (Agnar 02.10.2026) — nýjar kröfur fá hlutlausa stálrönd; gult/rautt eru einu merkin.
+      V + '.kym-co-a{--kym-rule:#e0a93e}' + V + '.kym-co-r{--kym-rule:#c92a2a}',
       V + '.kym-co-head{display:flex;align-items:center;gap:16px;padding:14px 18px 12px;border-bottom:1px solid #edf0f4}',
       V + '.kym-co-info{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}',
       V + '.kym-co-name{display:flex;align-items:baseline;gap:12px;min-width:0;flex-wrap:wrap}',

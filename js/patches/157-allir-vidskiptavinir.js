@@ -557,6 +557,8 @@
     });
   }
 
+  // „Fleiri síur"-hólfið (02.10.2026): opið/lokað lifir í breytu — render() skrifar innerHTML og DOM-klasi týndist.
+  let _avMoreOpen = false, _avTags = '', _avMoreWired = false;
   function render(main) {
     // 2026-05-19: preserve search-input focus across debounced re-renders.
     // Typing in #_av-search fires a 200ms timeout that calls main.innerHTML=…
@@ -625,91 +627,97 @@
             </div>
           </div>
           <div class="page-title__tools">
-            <input id="_av-search" type="text" placeholder="🔍 Leita..." value="${esc(state.search)}"
-                   style="height:38px;padding:0 14px;border:1px solid rgba(0,0,0,.35);border-radius:10px;font:inherit;font-size:13.5px;width:280px;background:#fff;color:#141822;outline:none;box-shadow:inset 0 1px 3px rgba(0,0,0,.15)">
+            <button id="_av-new-cust" type="button" class="b425-ny" style="padding:8px 16px;height:38px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:11px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);display:flex;align-items:center;gap:5px">+ Nýr viðskiptavinur</button>
           </div>
         </div>
 
-        <!-- B39 (Agnar 30.09: „sama þema og Fyrirtæki í þjónustu, nema ekki með súluritinu“): fjögur stálspjöld með skornum
-             hornum og hnoðum eins og 414 teiknar á Fyrirtæki í þjónustu — smellur síar (var dauður cursor:pointer). CSS í 425. -->
-        ${(() => {
-          const HN = '<span class="hn" style="top:9px;left:9px"></span><span class="hn" style="top:9px;right:26px"></span><span class="hn" style="bottom:9px;left:26px"></span><span class="hn" style="bottom:9px;right:9px"></span>';
-          const pct = (n, d) => d ? Math.max(0, Math.min(100, Math.round(n * 100 / d))) : 0;
-          const bar = (parts, stor) => '<div class="b425-s' + (stor ? ' stor' : '') + '">' + parts.filter(p => p[1] > 0).map(p => '<span class="' + p[0] + '" style="width:' + p[1] + '%"></span>').join('') + '</div>';
-          const kort = (cls, kpi, title, merki, tala, eining, midja) =>
-            '<div class="b425-k ' + cls + ' _kpi" data-kpi="' + kpi + '" title="' + esc(title) + '" role="button" tabindex="0"><div class="b425-i">' + HN +
-              '<div class="b425-m"><i class="led"></i>' + merki + '</div>' +
-              '<div class="b425-t">' + tala + (eining ? '<small>' + eining + '</small>' : '') + '</div>' + midja + '</div></div>';
-          return '<div class="b425-grid">' +
-            kort('gull', 'all', 'Sýna alla', 'Viðskiptavinir · allir', cntAll, 'skráðir',
-              bar([['ra', pct(cntArs, cntAll)], ['bl', pct(cntBru, cntAll)], ['gu', pct(cntFerda, cntAll)], ['st', pct(cntOne, cntAll)]], true) +
-              '<div class="b425-l"><span><i class="ra"></i><b>' + cntArs + '</b><small>fyrirtækjaþj.</small></span><span><i class="bl"></i><b>' + cntBru + '</b><small>brunakerfi</small></span><span><i class="gu"></i><b>' + cntFerda + '</b><small>ferðaþj.</small></span><span><i class="st"></i><b>' + cntOne + '</b><small>án samnings</small></span></div>') +
-            kort('graent', 'fyrirt', 'Sía: fyrirtækjaþjónusta', 'Í þjónustu', cntInService, '',
-              bar([['gr', pct(cntInService, cntAll)]]) +
-              '<div class="b425-l"><span><b>' + cntArs + '</b><small>fyrirtækjaþj.</small></span><span><b>' + cntBru + '</b><small>brunakerfi</small></span></div>') +
-            kort('stal', 'has-units', 'Sía: hefur tæki', 'Með tæki', cntWithUnits, '',
-              bar([['st', pct(cntWithUnits, cntAll)]]) +
-              '<div class="b425-l"><span><b>' + pct(cntWithUnits, cntAll) + '%</b><small>skráð slökkvitæki</small></span></div>') +
-            kort('rautt', 'no-email', 'Sía: vantar netfang', 'Án netfangs', cntNoEmail, '',
-              bar([['ra', pct(cntNoEmail, cntAll)]]) +
-              '<div class="b425-l"><span><b>' + pct(cntNoEmail, cntAll) + '%</b><small>vantar tölvupóst</small></span></div>') +
-          '</div>';
-        })()}
-
-        <!-- Toolbar: view toggle + sort -->
-        <div class="b425-tools" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <div class="b425-seg" style="display:inline-flex;border:1px solid rgba(20,24,34,.14);border-radius:11px;overflow:hidden;background:#fff;padding:3px;gap:3px">
-              <button data-view-mode="card" class="_av-vm" type="button" style="padding:7px 14px;background:${state.view==='card'?'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)':'transparent'};color:${state.view==='card'?'#fff':'#3a4250'};border:none;border-radius:9px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:5px">▦ Kort</button>
-              <button data-view-mode="list" class="_av-vm" type="button" style="padding:7px 14px;background:${state.view==='list'?'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)':'transparent'};color:${state.view==='list'?'#fff':'#3a4250'};border:none;border-radius:9px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:5px">☰ Listi</button>
+        <!-- B39 (Agnar 30.09: „sama þema og Fyrirtæki í þjónustu, nema ekki með súluritinu“): fjögur stálspjöld með skornum
+             hornum og hnoðum eins og 414 teiknar á Fyrirtæki í þjónustu — smellur síar (var dauður cursor:pointer). CSS í 425. -->
+        ${(() => {
+          const HN = '<span class="hn" style="top:9px;left:9px"></span><span class="hn" style="top:9px;right:26px"></span><span class="hn" style="bottom:9px;left:26px"></span><span class="hn" style="bottom:9px;right:9px"></span>';
+          const pct = (n, d) => d ? Math.max(0, Math.min(100, Math.round(n * 100 / d))) : 0;
+          const bar = (parts, stor) => '<div class="b425-s' + (stor ? ' stor' : '') + '">' + parts.filter(p => p[1] > 0).map(p => '<span class="' + p[0] + '" style="width:' + p[1] + '%"></span>').join('') + '</div>';
+          const kort = (cls, kpi, title, merki, tala, eining, midja) =>
+            '<div class="b425-k ' + cls + ' _kpi" data-kpi="' + kpi + '" title="' + esc(title) + '" role="button" tabindex="0"><div class="b425-i">' + HN +
+              '<div class="b425-m"><i class="led"></i>' + merki + '</div>' +
+              '<div class="b425-t">' + tala + (eining ? '<small>' + eining + '</small>' : '') + '</div>' + midja + '</div></div>';
+          return '<div class="b425-grid">' +
+            kort('gull', 'all', 'Sýna alla', 'Viðskiptavinir · allir', cntAll, 'skráðir',
+              bar([['ra', pct(cntArs, cntAll)], ['bl', pct(cntBru, cntAll)], ['gu', pct(cntFerda, cntAll)], ['st', pct(cntOne, cntAll)]], true) +
+              '<div class="b425-l"><span><i class="ra"></i><b>' + cntArs + '</b><small>fyrirtækjaþj.</small></span><span><i class="bl"></i><b>' + cntBru + '</b><small>brunakerfi</small></span><span><i class="gu"></i><b>' + cntFerda + '</b><small>ferðaþj.</small></span><span><i class="st"></i><b>' + cntOne + '</b><small>án samnings</small></span></div>') +
+            kort('graent', 'fyrirt', 'Sía: fyrirtækjaþjónusta', 'Í þjónustu', cntInService, '',
+              bar([['gr', pct(cntInService, cntAll)]]) +
+              '<div class="b425-l"><span><b>' + cntArs + '</b><small>fyrirtækjaþj.</small></span><span><b>' + cntBru + '</b><small>brunakerfi</small></span></div>') +
+            kort('stal', 'has-units', 'Sía: hefur tæki', 'Með tæki', cntWithUnits, '',
+              bar([['st', pct(cntWithUnits, cntAll)]]) +
+              '<div class="b425-l"><span><b>' + pct(cntWithUnits, cntAll) + '%</b><small>skráð slökkvitæki</small></span></div>') +
+            kort('rautt', 'no-email', 'Sía: vantar netfang', 'Án netfangs', cntNoEmail, '',
+              bar([['ra', pct(cntNoEmail, cntAll)]]) +
+              '<div class="b425-l"><span><b>' + pct(cntNoEmail, cntAll) + '%</b><small>vantar tölvupóst</small></span></div>') +
+          '</div>';
+        })()}
+
+        <!-- Síurnar (02.10.2026, Agnar: „can you redesign the filters in allir viðskiptavinir"): sama röð og á Fyrirtæki í
+             þjónustu og skoðunarsíðunum (394/418) — tegundarstikan · „Fleiri síur" (aukasíurnar með fjölda) · leitin sem
+             fyllir línuna · Velja margar. Virkar aukasíur sem flísar með ✕ undir. Sömu klasar og data-eigindi og áður
+             (_av-ft / _av-xft / #_av-search / #_av-selmode / #_av-clear-x) svo víringin hér að neðan er óbreytt. Útlit í 425. -->
+        <div class="b425-rod">
+          <div class="b425-sia" role="group" aria-label="Tegund viðskiptavina">
+            ${[
+              ['all',    'Allir',              cntAll],
+              ['fyrirt', 'Fyrirtækjaþjónusta', cntArs],
+              ['brunak', 'Brunakerfi',         cntBru],
+              ['ferda',  'Ferðaþjónusta',      cntFerda],
+              ['onei',   'Án samnings',        cntOne]
+            ].concat(cntBank ? [['bank', 'Greiðendur (banki)', cntBank]] : [])
+             .concat(cntOvisst ? [['ovisst', 'Óvissir (faldir)', cntOvisst]] : []).map(([key, lbl, n]) => {
+              const sel = state.filter === key;
+              return `<button data-filter="${key}" class="_av-ft${sel ? ' on' : ''}" type="button" aria-pressed="${sel}">${lbl}<b>${n}</b></button>`;
+            }).join('')}
+          </div>
+          ${(() => {
+            const XOPT = [
+              ['review',      'Til skoðunar',       cntReview],
+              ['missing-docs','Vantar skjöl',       cntMissingDocs],
+              ...(_docLoaded ? [['has-samningur', 'Þjónustusamningur', cntSamningur]] : []),
+              ...(_docYearsLoaded ? [
+                ['has-uttekt-2025', 'Úttekt 2025', cntUttekt2025],
+                ['has-uttekt-2026', 'Úttekt 2026', cntUttekt2026]
+              ] : []),
+              ['has-email',   'Með netfang',        cntWithEmail],
+              ['no-email',    'Vantar netfang',     cntNoEmail],
+              ['has-gps',     'GPS-staðsetning',    cntWithGps],
+              ['has-units',   'Hefur tæki',         cntWithUnits],
+              ['no-address',  'Vantar heimilisfang', cntNoAddress],
+              ...(_docYearsLoaded ? [2023, 2024, 2025, 2026].map(yr => ['has-docs-' + yr, 'Skjöl ' + yr, docYearCounts[yr]]) : [])
+            ];
+            const heiti = {}; XOPT.forEach(x => { heiti[x[0]] = x[1]; });
+            const KROSS = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+            const CHEV = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+            _avTags = state.xfilter.length ? '<div class="b425-tags"><i>Virkar síur</i>' + state.xfilter.map(k =>
+                `<button data-xfilter="${k}" class="_av-xft b425-tag" type="button" aria-label="Taka af: ${esc(heiti[k] || k)}"><span aria-hidden="true"></span>${esc(heiti[k] || k)}${KROSS}</button>`).join('') +
+              '<button id="_av-clear-x" type="button" class="b425-hreinsa">Hreinsa allt</button></div>' : '';
+            return `<div class="b425-more">
+            <button id="_av-more" type="button" aria-haspopup="true" aria-expanded="${_avMoreOpen}">Fleiri síur${state.xfilter.length ? `<b>${state.xfilter.length}</b>` : ''}${CHEV}</button>
+            <div class="b425-menu" role="dialog" aria-label="Fleiri síur"${_avMoreOpen ? '' : ' hidden'}>
+              ${XOPT.map(([key, lbl, n]) => { const sel = state.xfilter.includes(key);
+                return `<button data-xfilter="${key}" class="_av-xft${sel ? ' on' : ''}" type="button" aria-pressed="${sel}"><i aria-hidden="true"></i><span>${lbl}</span><b>${n}</b></button>`; }).join('')}
             </div>
-            <button id="_av-new-cust" type="button" style="padding:8px 16px;height:38px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:11px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);display:flex;align-items:center;gap:5px">+ Nýr viðskiptavinur</button>
+          </div>`;
+          })()}
+          <input id="_av-search" type="search" aria-label="Leita að viðskiptavini" placeholder="Leita (nafn · kt · heimilisfang · sími)…" value="${esc(state.search)}">
+          <button id="_av-selmode" type="button" class="b425-velja${state.selectMode ? ' on' : ''}" aria-pressed="${!!state.selectMode}">${state.selectMode ? 'Hætta vali' : 'Velja margar'}</button>
+        </div>
+        ${_avTags}
+
+        <!-- hlutahaus eins og „Staðirnir" á Fyrirtæki í þjónustu: heiti · fjöldi í síunni · Kort/Listi hægra megin -->
+        <div class="b425-sec">
+          <h2>Viðskiptavinir</h2>
+          <span>${filtered.length} af ${state.filter === 'bank' ? cntBank : state.filter === 'ovisst' ? cntOvisst : cntAll} í þessari síu${state.view === 'list' ? ' · smelltu á dálkahaus til að raða' : ''}</span>
+          <div class="b425-seg">
+            <button data-view-mode="card" class="_av-vm${state.view === 'card' ? ' on' : ''}" type="button" aria-pressed="${state.view === 'card'}">Kort</button>
+            <button data-view-mode="list" class="_av-vm${state.view === 'list' ? ' on' : ''}" type="button" aria-pressed="${state.view === 'list'}">Listi</button>
           </div>
-          ${state.view === 'list' ? '<div style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:11px;color:#9098a6">Smelltu á dálkahaus til að raða</div>' : ''}
-        </div>
-
-        <!-- Primary service filter chips -->
-        <div class="b425-sia" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-          ${[
-            ['all',    'Allir',                  cntAll],
-            ['fyrirt', '🔥 Fyrirtækjaþjónusta',  cntArs],
-            ['brunak', '🚨 Brunakerfi',          cntBru],
-            ['ferda',  '🚌 Ferðaþjónusta',       cntFerda],
-            ['onei',   'Án samnings',            cntOne]
-          ].concat(cntBank ? [['bank', '🏦 Greiðendur (bank)', cntBank]] : [])
-           .concat(cntOvisst ? [['ovisst', '🕶 Óvissir (faldir)', cntOvisst]] : []).map(([key, lbl, n]) => {
-            const sel = state.filter === key;
-            const inactive = 'background:linear-gradient(180deg,#fdfdfe,#e3e7ee);border:1px solid rgba(20,24,34,.14);color:#3a4250';
-            const active   = 'background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;border:1px solid #0a0b0d';
-            return `<button data-filter="${key}" class="_av-ft" style="padding:7px 14px;${sel?active:inactive};border-radius:10px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600">${lbl} <span style="font-family:'JetBrains Mono',ui-monospace,monospace;opacity:.7;font-weight:700">${n}</span></button>`;
-          }).join('')}
-        </div>
-
-        <!-- Secondary filter chips (xfilter — AND'd with primary) -->
-        <div class="b425-xsia" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-          <span class="b425-lbl" style="font-size:10.5px;font-weight:700;color:#8a93a5;letter-spacing:.12em;padding-right:4px">SÍA:</span>
-          ${[
-            ['review',     '⚑ Til skoðunar',  cntReview],
-            ['missing-docs','📄 Vantar skjöl', cntMissingDocs],
-            ...(_docLoaded ? [['has-samningur', '📋 Þjónustusamningur', cntSamningur]] : []),
-            ...(_docYearsLoaded ? [
-              ['has-uttekt-2025', '📝 Úttekt \'25', cntUttekt2025],
-              ['has-uttekt-2026', '📝 Úttekt \'26', cntUttekt2026]
-            ] : []),
-            ['has-email',  '✉️ Netfang',      cntWithEmail],
-            ['no-email',   '✉️ Vantar netfang', cntNoEmail],
-            ['has-gps',    '📍 GPS staðsetning', cntWithGps],
-            ['has-units',  '🧯 Hefur tæki',   cntWithUnits],
-            ['no-address', '❌ Vantar heimilisfang', cntNoAddress],
-            ...(_docYearsLoaded ? [2023, 2024, 2025, 2026].map(yr => ['has-docs-' + yr, '📅 Skjöl \'' + String(yr).slice(2), docYearCounts[yr]]) : [])
-          ].map(([key, lbl, n]) => {
-            const sel = state.xfilter.includes(key);
-            const inactive = 'background:#fff;border:1px solid rgba(20,24,34,.14);color:#5b6472';
-            const active   = 'background:#eef3ff;border:1px solid #c6d6ff;color:#2f5fe0;font-weight:700';
-            return `<button data-xfilter="${key}" class="_av-xft" style="padding:5px 11px;${sel?active:inactive};border-radius:8px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${lbl} <span style="font-family:'JetBrains Mono',ui-monospace,monospace;opacity:.7">${n}</span></button>`;
-          }).join('')}
-          ${state.xfilter.length ? `<button id="_av-clear-x" type="button" style="padding:5px 11px;border:none;background:none;color:#c0241f;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">Hreinsa síu ✕</button>` : ''}
-          <button id="_av-selmode" type="button" style="margin-left:auto;padding:6px 13px;border:1px solid ${state.selectMode?'#0a0b0d':'rgba(20,24,34,.14)'};background:${state.selectMode?'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)':'#fff'};color:${state.selectMode?'#fff':'#3a4250'};border-radius:9px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700">☑︎ ${state.selectMode?'Hætta vali':'Velja margar'}</button>
         </div>
 
         ${state.selectMode ? `
@@ -772,6 +780,18 @@
       else state.xfilter.push(key);
       saveState(); render(main);
     }));
+    main.querySelector('#_av-more')?.addEventListener('click', () => { _avMoreOpen = !_avMoreOpen; render(main); const b = main.querySelector('#_av-more'); if (b) b.focus(); });
+    if (!_avMoreWired) {
+      _avMoreWired = true;
+      document.addEventListener('click', e => {
+        if (!_avMoreOpen || !e.isTrusted || (e.target.closest && e.target.closest('.b425-more'))) return;
+        _avMoreOpen = false; const m = document.getElementById('_av-main'); if (m) render(m);
+      });
+      document.addEventListener('keydown', e => {
+        if (e.key !== 'Escape' || !_avMoreOpen) return;
+        _avMoreOpen = false; const m = document.getElementById('_av-main'); if (m) { render(m); const b = m.querySelector('#_av-more'); if (b) b.focus(); }
+      });
+    }
     main.querySelector('#_av-clear-x')?.addEventListener('click', () => {
       state.xfilter = []; saveState(); render(main);
     });
