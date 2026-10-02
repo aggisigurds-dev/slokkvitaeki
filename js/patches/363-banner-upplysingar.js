@@ -190,7 +190,19 @@
       return c ? String(c.heimilisfang || '').trim() : null;
     } catch (_) { return null; }
   }
-  // Kópavogur, Garðabær, Hafnarfjörður. 170 (Seltjarnarnes) er þegar bein map.is-leið.
+  function hefurBlod(svar) {
+    if (!svar || typeof svar !== 'object') return false;
+    if (Array.isArray(svar.results) && svar.results.length) return true;
+    return !!(svar.teikningar && Number(svar.teikningar.fjoldi) > 0);
+  }
+  // Staðfest tómt svar frá skránni. Villa eða bert „engin teikning" án eignar
+  // er það ekki — það má ekki loka á eldri blöð.
+  function tomtEnStadfest(svar) {
+    if (!svar || hefurBlod(svar) || svar.error || svar.reynaAftur) return false;
+    return !!(svar.eign || svar.mapisBeint || (svar.teikningar && Number(svar.teikningar.fjoldi) === 0));
+  }
+  // Kópavogur, Garðabær, Hafnarfjörður. 170 (Seltjarnarnes) og Reykjavík eru
+  // þegar leyst á þjóninum: Seltjarnarnes er bein map.is-leið, Reykjavík FotoWeb.
   function erMapisBaer(adr) {
     const t = String(adr || '');
     const eftir = t.split(',').slice(1).join(' ');
@@ -203,26 +215,51 @@
     if (!erMapisBaer(adr)) return true;
     return !!(svar && svar.mapisBeint);
   }
-  function lesaGeymslu(coId, heimilisfang) {
+  function frambodMedBlodum(coId, heimilisfang) {
     const k = String(coId);
-    const m = skrar.get(k);
-    if (m && m.svar && m.heimilisfang === heimilisfang && mapisTilbuid(heimilisfang, m.svar)) return m.svar;
-    if (m && m.bid) return null;
     const stores = [];
     try { stores.push(localStorage); } catch (_) {}
     try { stores.push(sessionStorage); } catch (_) {}
+    const lyklar = [SKRAR_MINNI + k, 'bupp_skrar_v1_' + k];
     for (const store of stores) {
-      try {
-        const raw = store.getItem(SKRAR_MINNI + k);
-        if (!raw) continue;
-        const o = JSON.parse(raw);
-        if (o && o.svar && o.heimilisfang === heimilisfang && mapisTilbuid(heimilisfang, o.svar)) {
-          skrar.set(k, { svar: o.svar, sott: o.sott || Date.now(), heimilisfang, reyndi: true });
-          return o.svar;
-        }
-      } catch (_) {}
+      for (const lykill of lyklar) {
+        try {
+          const raw = store.getItem(lykill);
+          if (!raw) continue;
+          const o = JSON.parse(raw);
+          if (o && o.svar && o.heimilisfang === heimilisfang && hefurBlod(o.svar)) return o.svar;
+        } catch (_) {}
+      }
     }
     return null;
+  }
+  function lesaGeymslu(coId, heimilisfang) {
+    const k = String(coId);
+    const m = skrar.get(k);
+    if (m && m.bid) return null;
+    const frambod = [];
+    if (m && m.svar && m.heimilisfang === heimilisfang) frambod.push(m.svar);
+    const stores = [];
+    try { stores.push(localStorage); } catch (_) {}
+    try { stores.push(sessionStorage); } catch (_) {}
+    const lyklar = [SKRAR_MINNI + k, 'bupp_skrar_v1_' + k];
+    for (const store of stores) {
+      for (const lykill of lyklar) {
+        try {
+          const raw = store.getItem(lykill);
+          if (!raw) continue;
+          const o = JSON.parse(raw);
+          if (o && o.svar && o.heimilisfang === heimilisfang) frambod.push(o.svar);
+        } catch (_) {}
+      }
+    }
+    // Blöð haldast. Fyrir Kópavog, Garðabæ og Hafnarfjörð gildir aðeins svar
+    // sem þegar ber mapisBeint, svo hver félagssíða sæki listann einu sinni.
+    const tilbuid = (s) => mapisTilbuid(heimilisfang, s);
+    const med = frambod.find((s) => hefurBlod(s) && tilbuid(s)) || frambod.find((s) => tomtEnStadfest(s) && tilbuid(s));
+    if (!med) return null;
+    skrar.set(k, { svar: med, sott: Date.now(), heimilisfang, reyndi: true });
+    return med;
   }
   function vistaGeymslu(coId, heimilisfang, svar) {
     const payload = JSON.stringify({ heimilisfang, svar, sott: Date.now() });
@@ -266,8 +303,17 @@
         lok.athugasemd = lok.athugasemd || lok.error || 'engin teikning fannst';
         delete lok.reynaAftur;
       }
+      // Nýtt „engin teikning" má ekki skrifa yfir eldri blöð í geymslunni.
+      // mapisBeint fylgir með svo Kópavogur, Garðabær og Hafnarfjörður sæki ekki aftur.
+      const fyrri = frambodMedBlodum(k, heimilisfang);
+      if (!hefurBlod(lok) && fyrri) {
+        if (lok.mapisBeint) fyrri.mapisBeint = true;
+        skrar.set(k, { svar: fyrri, sott: Date.now(), heimilisfang, reyndi: true });
+        if (mapisTilbuid(heimilisfang, fyrri)) vistaGeymslu(coId, heimilisfang, fyrri);
+        return;
+      }
       skrar.set(k, { svar: lok, sott: Date.now(), heimilisfang, reyndi: true });
-      vistaGeymslu(coId, heimilisfang, lok);
+      if (hefurBlod(lok) || tomtEnStadfest(lok)) vistaGeymslu(coId, heimilisfang, lok);
     };
     fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(heimilisfang))
       .then(r => r.json().then(svar => ({ ok: r.ok, status: r.status, svar })).catch(() => ({ ok: r.ok, status: r.status, svar: null })))
@@ -648,11 +694,71 @@
       'title="' + esc(l.merki || 'Frjáls lína') + ' — vistast strax"></div>';
   }
 
+  // Sama þáttun og í 384: „1. hæð", „2 og 3.hæð", kjallari, ris.
+  function textiTeikningar(d) {
+    return [d && d.lysing, d && d.gerd, d && d.tegund, d && d.filename].filter(Boolean).join(' ');
+  }
+  function golvTeikningar(d) {
+    const t = textiTeikningar(d);
+    const haed = [];
+    const baeta = (n) => { n = +n; if (n > 0 && n < 60 && haed.indexOf(n) < 0) haed.push(n); };
+    if (d && Array.isArray(d.haed)) d.haed.forEach(baeta);
+    let m;
+    const re1 = /(\d{1,2})\s*\.\s*hæð/gi;
+    while ((m = re1.exec(t))) baeta(m[1]);
+    const reOg = /(\d{1,2})\s+og\s+(\d{1,2})\s*\.?\s*hæð/gi;
+    while ((m = reOg.exec(t))) { baeta(m[1]); baeta(m[2]); }
+    const reBil = /(\d{1,2})\s*[-–]\s*(\d{1,2})\s*\.?\s*hæð/gi;
+    while ((m = reBil.exec(t))) {
+      const a = +m[1], b = +m[2];
+      if (b >= a && b - a <= 12) for (let n = a; n <= b; n++) baeta(n);
+    }
+    const stig = [];
+    const baetaS = (s) => { if (s && stig.indexOf(s) < 0) stig.push(s); };
+    if (d && Array.isArray(d.stig)) d.stig.forEach(baetaS);
+    if (/kjall/i.test(t) || (d && d.kjallari)) baetaS('Kjallari');
+    if (/(?:^|[\s,.:])ris(?:$|[\s,.:])|rishæð/i.test(t) || (d && d.ris)) baetaS('Ris');
+    haed.sort((a, b) => a - b);
+    return { haed, stig };
+  }
+  function haedirALista(listi) {
+    const haed = [];
+    let kjallari = false, ris = false;
+    (listi || []).forEach((d) => {
+      if (!d || d.urelt) return;
+      const g = golvTeikningar(d);
+      g.haed.forEach((n) => { if (haed.indexOf(n) < 0) haed.push(n); });
+      if (g.stig.indexOf('Kjallari') >= 0) kjallari = true;
+      if (g.stig.indexOf('Ris') >= 0) ris = true;
+    });
+    haed.sort((a, b) => a - b);
+    return { haed, kjallari, ris };
+  }
+
   function teiknHtml(sk, coId) {
     if (!sk) return '';
     const fl = sk.flokkar || (sk.teikningar && sk.teikningar.flokkar) || null;
     const fj = sk.teikningar && sk.teikningar.fjoldi;
     const lina = (inni) => '<div class="_bupp-lina _bupp-teikn-lina"><span class="_bupp-merki">Teikningar</span><span class="_bupp-teikn-inn">' + inni + '</span></div>';
+    const rows = Array.isArray(sk.results) ? sk.results : [];
+    const f = haedirALista(rows);
+    if (!f.haed.length && sk.teikningar && Array.isArray(sk.teikningar.haedir)) {
+      sk.teikningar.haedir.forEach((n) => { n = +n; if (n > 0 && n < 60 && f.haed.indexOf(n) < 0) f.haed.push(n); });
+      f.haed.sort((a, b) => a - b);
+    }
+    if (sk.teikningar && Array.isArray(sk.teikningar.stig)) {
+      if (sk.teikningar.stig.indexOf('Kjallari') >= 0) f.kjallari = true;
+      if (sk.teikningar.stig.indexOf('Ris') >= 0) f.ris = true;
+    }
+    const golv = [];
+    f.haed.forEach((n) => golv.push({ k: 'h:' + n, t: n + '. hæð' }));
+    if (f.kjallari) golv.push({ k: 's:Kjallari', t: 'Kjallari' });
+    if (f.ris) golv.push({ k: 's:Ris', t: 'Ris' });
+    if (golv.length) {
+      return lina(golv.map((t) =>
+        '<button type="button" class="_bupp-teikn" data-golv="' + esc(t.k) + '" data-co="' + esc(coId) + '" title="' + esc(t.t) + '">' +
+        esc(t.t) + '</button>').join(''));
+    }
     if (fl && fj) {
       const ord = [['adal', 'Aðaluppdrættir'], ['raflagnir', 'Raflagnir'], ['lagnir', 'Lagnir'], ['burdarthol', 'Burðarþol']];
       const takkar = ord.filter(([k]) => fl[k] > 0).map(([k, merki]) =>
@@ -669,6 +775,9 @@
           ? 'Næsta lóð ' + sk.eign.label + ' · ' + fj + ' teikningar · óvisst'
           : (fj + ' teikningar · ' + (sk.eign.heimildNafn || ''))) +
         '</a>');
+    }
+    if (hefurBlod(sk)) {
+      return lina('<button type="button" class="_bupp-teikn" data-golv="allar" data-co="' + esc(coId) + '">Teikningar</button>');
     }
     if (sk.athugasemd || sk.engin || sk.error || (sk.eign && !fj)) {
       return lina('<span class="_bupp-teikn-miss">engin teikning fannst</span>');
