@@ -750,19 +750,23 @@
       if (sk.teikningar.stig.indexOf('Kjallari') >= 0) f.kjallari = true;
       if (sk.teikningar.stig.indexOf('Ris') >= 0) f.ris = true;
     }
+    const eignAttr = (sk.eign && sk.eign.landnr)
+      ? (' data-landnr="' + esc(sk.eign.landnr) + '" data-stadur="' + esc(sk.eign.label || '') + '"' +
+        (sk.eign.svf ? ' data-svf="' + esc(sk.eign.svf) + '" data-heitinr="' + esc(sk.eign.heitinr || 0) + '"' : ''))
+      : '';
     const golv = [];
     f.haed.forEach((n) => golv.push({ k: 'h:' + n, t: n + '. hæð' }));
     if (f.kjallari) golv.push({ k: 's:Kjallari', t: 'Kjallari' });
     if (f.ris) golv.push({ k: 's:Ris', t: 'Ris' });
     if (golv.length) {
       return lina(golv.map((t) =>
-        '<button type="button" class="_bupp-teikn" data-golv="' + esc(t.k) + '" data-co="' + esc(coId) + '" title="' + esc(t.t) + '">' +
+        '<button type="button" class="_bupp-teikn" data-golv="' + esc(t.k) + '" data-co="' + esc(coId) + '"' + eignAttr + ' title="' + esc(t.t) + '">' +
         esc(t.t) + '</button>').join(''));
     }
     if (fl && fj) {
       const ord = [['adal', 'Aðaluppdrættir'], ['raflagnir', 'Raflagnir'], ['lagnir', 'Lagnir'], ['burdarthol', 'Burðarþol']];
       const takkar = ord.filter(([k]) => fl[k] > 0).map(([k, merki]) =>
-        '<button type="button" class="_bupp-teikn" data-flokkur="' + k + '" data-co="' + esc(coId) + '" title="' + esc(merki + ' · ' + fl[k]) + '">' +
+        '<button type="button" class="_bupp-teikn" data-flokkur="' + k + '" data-co="' + esc(coId) + '"' + eignAttr + ' title="' + esc(merki + ' · ' + fl[k]) + '">' +
         esc(merki) + ' · ' + esc(fl[k]) + '</button>').join('');
       if (takkar) return lina(takkar);
     }
@@ -777,7 +781,7 @@
         '</a>');
     }
     if (hefurBlod(sk)) {
-      return lina('<button type="button" class="_bupp-teikn" data-golv="allar" data-co="' + esc(coId) + '">Teikningar</button>');
+      return lina('<button type="button" class="_bupp-teikn" data-golv="allar" data-co="' + esc(coId) + '"' + eignAttr + '>Teikningar</button>');
     }
     if (sk.athugasemd || sk.engin || sk.error || (sk.eign && !fj)) {
       return lina('<span class="_bupp-teikn-miss">engin teikning fannst</span>');

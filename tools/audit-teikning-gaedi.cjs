@@ -18,7 +18,7 @@ const krefst = (src, re, msg) => { if (!re.test(src)) villur.push(msg); };
 krefst(html, /435-teikning-gaedi\.js\?v=20261002c/, 'index.html: 435 vantar');
 krefst(html, /433-teikning-merking\.js\?v=20261002(gaedi|eitt)/, 'index.html: 433 gaedi-cache');
 krefst(html, /436-teikning-sja\.js\?v=20261002c/, 'index.html: 436 vantar sja ofan á gæði');
-krefst(html, /437-teikning-gluggi\.js\?v=20261002(a|b)/, 'index.html: 437 vantar stærri glugga');
+krefst(html, /437-teikning-gluggi\.js\?v=20261002(a|b|opna)/, 'index.html: 437 vantar stærri glugga');
 krefst(p435, /teikn_gaedi/, '435 vantar localStorage teikn_gaedi');
 krefst(p435, /Forskoðun/, '435 vantar Forskoðun');
 krefst(p435, /Miðlungs/, '435 vantar Miðlungs');

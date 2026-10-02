@@ -16,7 +16,7 @@ krefst(html, /433-teikning-merking\.js\?v=20261002(sja|b|eyda|att|staerd|eitt)/,
 krefst(html, /434-teikning-takn\.js\?v=20261002(sja|a|eyda|gaedi)/, 'index.html: 434 vantar script-tag');
 krefst(html, /435-teikning-gaedi\.js\?v=20261002c/, 'index.html: 435 vantar gæði');
 krefst(html, /436-teikning-sja\.js\?v=20261002c/, 'index.html: 436 vantar sja');
-krefst(html, /437-teikning-gluggi\.js\?v=20261002(a|b)/, 'index.html: 437 vantar glugga');
+krefst(html, /437-teikning-gluggi\.js\?v=20261002(a|b|opna)/, 'index.html: 437 vantar glugga');
 krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp|eyda|att|staerd|gaedi|eitt)/, 'index.html: 383 vantar cache');
 krefst(p433, /Neyðarútgangur/, '433 vantar Neyðarútgangur-stimpil');
 krefst(p433, /id: 'ut'/, '433 vantar Út-stimpil');

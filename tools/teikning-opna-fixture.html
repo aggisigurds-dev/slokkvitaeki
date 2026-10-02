@@ -1,0 +1,137 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>teikning-opna fixture</title>
+<style>
+/* Sama og app.css á framleiðslu: hvítt spjald vinnur á innfelldan dokkkan stíl. */
+.modal.open {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0,0,0,.55) !important;
+  z-index: 9000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+}
+.modal.open > .modal-hd,
+.modal.open > .modal-bd,
+.modal.open > .modal-ft {
+  width: 560px !important;
+  max-width: 95vw !important;
+  background: #fff !important;
+  color: #111 !important;
+}
+.modal.open > .modal-bd {
+  max-height: calc(90vh - 130px) !important;
+  overflow: hidden !important;
+}
+</style>
+<body>
+<div class="co-bupp">
+  <div class="_bupp-lina _bupp-teikn-lina">
+    <span class="_bupp-merki">Teikningar</span>
+    <span class="_bupp-teikn-inn">
+      <button type="button" class="_bupp-teikn" data-golv="h:1" data-co="204"
+        data-landnr="103852" data-stadur="Grensásvegur 14">1. hæð</button>
+    </span>
+  </div>
+</div>
+<script>
+window.U = { e: function (s) { return String(s == null ? '' : s); } };
+window.Toast = { show: function (t) { window.__toast = t; } };
+window.Companies = { list: [{ id: 204, nafn: 'Heimaleiga - G14 ehf', heimilisfang: 'Grensásvegur 14, 108 Reykjavík' }] };
+window.Modal = {
+  open: function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.classList.add('open'); el.style.display = 'flex'; }
+  },
+  close: function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.classList.remove('open'); el.style.display = 'none'; }
+  }
+};
+window.__fetches = [];
+window.fetch = function (url) {
+  window.__fetches.push(String(url));
+  var u = String(url);
+  if (/teikn-listi\?landnr=103852/.test(u)) {
+    return Promise.resolve({
+      ok: true, status: 200,
+      json: function () {
+        return Promise.resolve({
+          results: [
+            { lysing: 'Grunnmynd 1. hæð', tegund: 'Aðaluppdrættir', filename: 'g14.pdf',
+              infoUrl: 'https://skjalasafn.reykjavik.is/fotoweb/x.pdf.info', grunnmynd: true, haed: [1], urelt: false }
+          ]
+        });
+      }
+    });
+  }
+  if (/teikn-listi\?heimilisfang=/.test(u)) {
+    return Promise.resolve({
+      ok: true, status: 200,
+      json: function () {
+        return Promise.resolve({ results: [{ landnr: 103852, label: 'Grensásvegur 14', heimild: 'reykjavik' }] });
+      }
+    });
+  }
+  if (/hus-upplysingar/.test(u)) {
+    return Promise.resolve({
+      ok: true, status: 200,
+      json: function () {
+        return Promise.resolve({
+          eign: { landnr: 103852, label: 'Grensásvegur 14' },
+          teikningar: { fjoldi: 75, haedir: [1, 2, 3, 4] }
+        });
+      }
+    });
+  }
+  return Promise.resolve({ ok: false, status: 404, json: function () { return Promise.resolve({ error: 'nei' }); } });
+};
+window.FloorPlan = {
+  plans: {},
+  companyId: null,
+  companyName: null,
+  units: [],
+  bgImage: null,
+  _selectedUnitId: null,
+  open: function (cid, cname, units) {
+    this.companyId = cid;
+    this.companyName = cname || '';
+    this.units = units || [];
+    this.bgImage = null;
+    if (!this.plans[cid]) this.plans[cid] = { markers: [] };
+    var old = document.getElementById('modal-floorplan');
+    if (old) old.remove();
+    var div = document.createElement('div');
+    div.className = 'modal';
+    div.id = 'modal-floorplan';
+    div.style.cssText = 'width:92vw;max-width:1200px;height:88vh;max-height:88vh;display:flex;flex-direction:column';
+    div.innerHTML =
+      '<div class="modal-hd"><div><h2>Teikning — ' + this.companyName + '</h2>' +
+      '<div>Veldu slökkvitæki</div></div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+      '<button type="button">Hlaða upp</button>' +
+      '<button type="button" class="modal-x">X</button></div></div>' +
+      '<div class="modal-bd" style="padding:0;overflow:hidden;background:#1a1814;flex:1;display:flex;position:relative">' +
+      '<div id="fp-main" style="flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">' +
+      '<div id="fp-drop-msg" style="text-align:center;color:rgba(255,255,255,.35);pointer-events:none;padding:40px">' +
+      '<div>Hlað upp teikningu</div></div>' +
+      '<canvas id="fp-canvas" style="display:none;cursor:crosshair;max-width:100%;max-height:100%"></canvas></div>' +
+      '<div id="fp-panel" style="width:220px;flex-shrink:0"><div id="fp-unit-list"></div></div></div>' +
+      '<div class="modal-ft"><div id="fp-info">0 merki</div></div>';
+    document.body.appendChild(div);
+    Modal.open('modal-floorplan');
+  },
+  load: function () {},
+  save: function () {},
+  _renderCanvas: function () {},
+  _renderPanel: function () {}
+};
+</script>
+<script src="../js/patches/437-teikning-gluggi.js"></script>
+<script src="../js/patches/374-teikning-saekja.js"></script>
+<script src="../js/patches/384-teikninga-forskodun.js"></script>
+</body>

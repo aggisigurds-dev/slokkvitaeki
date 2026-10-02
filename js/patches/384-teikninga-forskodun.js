@@ -14,6 +14,10 @@
  *
  * Ekkert er vistað hér. Myndin kemur um teikn-mynd (6006 px JPEG af sömu rót), frumritið um teikn-pdf (vigur-PDF).
  * TIF-frumrit eru 50–300 MB og fara ekki gegnum fall með 10 sek þak — þar opnast skjalið í skjalasafninu sjálfu.
+ *
+ * Agnar 02.10.2026: 1.–4. hæð á spjaldinu opnaðist ekki. hus-upplysingar skilar
+ * hæðum án `results`; hnappurinn bar aðeins data-co. Nú fer landnúmer með og
+ * smellurinn sækir teikn-listi beint.
  * ========================================================================== */
 (() => {
   if (window.__teiknForskodun) return;
@@ -507,12 +511,42 @@
   let _opnun = 0;
   function nyskraFyrirtaeki(coId) {
     const nyr = coId == null || coId === '' ? null : String(coId);
-    if (S.coId != null && nyr != null && String(S.coId) === nyr) return S.coId;
+    // Tóm kalla (banner-púls án id) mega ekki loka opinni forskoðun.
+    if (nyr == null) return S.coId;
+    if (S.coId != null && String(S.coId) === nyr) return S.coId;
     _opnun++;
     if (document.getElementById('tfs')) loka();
     Object.assign(S, { listi: [], sia: 'grunn', valin: null, stadur: '', coId: nyr, _landnr: '', z: { s: 1, x: 0, y: 0 } });
     return nyr;
   }
+  function heimiliFyrir(coId) {
+    try {
+      const c = ((window.Companies && Companies.list) || []).find(x => String(x.id) === String(coId));
+      return c ? String(c.heimilisfang || '').trim() : '';
+    } catch (_) { return ''; }
+  }
+  function aukaAfEl(el) {
+    const auka = {};
+    if (el && el.dataset && el.dataset.golv) auka.sia = el.dataset.golv;
+    if (el && el.dataset && el.dataset.svf) {
+      auka.svf = el.dataset.svf;
+      auka.heitinr = el.dataset.heitinr || 0;
+    }
+    return auka;
+  }
+  function opnaAfEl(el, flokkur, sia) {
+    if (!el) return;
+    const co = el.dataset.co || null;
+    const land = el.dataset.landnr;
+    if (land) {
+      const auka = aukaAfEl(el);
+      if (sia) auka.sia = sia;
+      opna(land, el.dataset.stadur || '', co, auka);
+      return;
+    }
+    opnaGeymt(co, flokkur, sia || (el.dataset && el.dataset.golv) || '');
+  }
+
   function hnutur(e) {
     let t = e && e.target;
     if (t && t.nodeType === 3) t = t.parentElement;
@@ -577,11 +611,21 @@
     nyskraFyrirtaeki(coId);
     const sk = window.BannerUpplysingar && BannerUpplysingar.skrarSvar && BannerUpplysingar.skrarSvar(coId);
     const allar = (sk && sk.results) || [];
-    if (!allar.length && sk && sk.eign && sk.eign.landnr) {
+    const land = sk && sk.eign && sk.eign.landnr;
+    if (!allar.length && land) {
       const auka = { sia: sia || '' };
       if (sk.eign.svf) { auka.svf = sk.eign.svf; auka.heitinr = sk.eign.heitinr || 0; }
       opna(sk.eign.landnr, (sk.eign && sk.eign.label) || '', coId, auka);
       return;
+    }
+    if (!allar.length) {
+      const heim = heimiliFyrir(coId);
+      if (heim.length >= 3) {
+        opnaHeimilisfang(heim, coId).then(ok => {
+          if (ok && sia) { S.sia = sia; teiknaLista(true); }
+        });
+        return;
+      }
     }
     const listi = flokkur ? allar.filter(d => d.flokkur === flokkur) : allar;
     Object.assign(S, {
@@ -611,8 +655,8 @@
         if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
         e.preventDefault();
         e.stopPropagation();
-        if (el.dataset.golv) opnaGeymt(el.dataset.co, null, el.dataset.golv);
-        else if (el.dataset.flokkur) opnaGeymt(el.dataset.co, el.dataset.flokkur);
+        if (el.dataset.golv) opnaAfEl(el, null, el.dataset.golv);
+        else if (el.dataset.flokkur) opnaAfEl(el, el.dataset.flokkur);
         else if (el.dataset.landnr) opna(el.dataset.landnr, el.dataset.stadur || '', el.dataset.co || null, el.dataset.svf ? { svf: el.dataset.svf, heitinr: el.dataset.heitinr || 0 } : null);
       });
     });
@@ -624,13 +668,13 @@
     const g = t.closest('button._bupp-teikn[data-golv]');
     if (g) {
       e.preventDefault(); e.stopPropagation();
-      opnaGeymt(g.dataset.co, null, g.dataset.golv);
+      opnaAfEl(g, null, g.dataset.golv);
       return;
     }
     const b = t.closest('button._bupp-teikn[data-flokkur]');
     if (b) {
       e.preventDefault(); e.stopPropagation();
-      opnaGeymt(b.dataset.co, b.dataset.flokkur);
+      opnaAfEl(b, b.dataset.flokkur);
       return;
     }
     const a = t.closest('a._bupp-teikn[data-landnr]');

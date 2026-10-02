@@ -42,6 +42,7 @@ async function main() {
     return {
       vw, vh,
       bdW: Math.round(br.width),
+      bdBg: bd ? getComputedStyle(bd).backgroundColor : '',
       mainW: Math.round(mr.width),
       mainH: Math.round(mr.height),
       canvasW: Math.round(cr.width),
@@ -88,6 +89,7 @@ async function main() {
   const villur = [];
   const krefst = (ok, msg) => { if (!ok) villur.push(msg); };
   krefst(desk.bdW >= desk.vw * 0.9, 'bolurinn á að vera ≥90% af skjábreidd, var ' + desk.bdW + '/' + desk.vw);
+  krefst(/26,\s*24,\s*20/.test(desk.bdBg || ''), 'modal-bd á að vera dokkkað gegn app.css #fff, var ' + desk.bdBg);
   krefst(desk.mainW >= desk.vw * 0.7, 'teikningin á að vera ≥70% af skjábreidd, var ' + desk.mainW + '/' + desk.vw);
   krefst(desk.mainH >= desk.vh * 0.55, 'teikningin á að vera ≥55% af skjáhæð, var ' + desk.mainH + '/' + desk.vh);
   krefst(desk.canvasW >= 400 && desk.canvasH >= 300, 'striginn á að stækka með glugganum: ' + desk.canvasW + 'x' + desk.canvasH);

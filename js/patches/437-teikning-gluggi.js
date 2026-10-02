@@ -10,6 +10,11 @@
  * bakgrunninn — inset:0 hunsaði það. Hér fyllir spjaldið næstum skjáinn
  * og teikningin (#fp-main) fær restina. Tækjaræman byrjar á 168 px; draga má
  * vinstri brúnina svo merkin ráðist í fleiri dálka. Sími er óbreyttur.
+ *
+ * Agnar 02.10.2026: tóm teikning var risastórt Hvítt blað. app.css
+ * `.modal.open > .modal-bd { background:#fff !important }` vinnur á
+ * innfellda `#1a1814` og drop-skilaboðin (`rgba(255,255,255,.35)`) hverfa.
+ * Hér er bakgrunnurinn dokkkaður með hærri sérhæfni.
  * ========================================================================== */
 (() => {
   if (window.TeiknGluggi) return;
@@ -23,10 +28,13 @@
     '#modal-floorplan.modal.open{padding:10px!important;align-items:stretch!important;justify-content:stretch!important}' +
     '#modal-floorplan.modal.open>.modal-hd,#modal-floorplan.modal.open>.modal-bd,#modal-floorplan.modal.open>.modal-ft' +
       '{width:100%!important;max-width:none!important;margin:0!important;box-sizing:border-box!important}' +
-    '#modal-floorplan.modal.open>.modal-hd{padding:8px 14px!important;flex:0 0 auto!important;min-height:0!important}' +
+    '#modal-floorplan.modal.open>.modal-hd{padding:8px 14px!important;flex:0 0 auto!important;min-height:0!important;background:#1a1814!important;color:#f1ede4!important;border-bottom-color:rgba(255,255,255,.12)!important}' +
     '#modal-floorplan.modal.open>.modal-hd h2+div{display:none!important}' +
-    '#modal-floorplan.modal.open>.modal-bd{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:hidden!important;display:flex!important}' +
-    '#modal-floorplan.modal.open>.modal-ft{padding:8px 14px!important;flex:0 0 auto!important}' +
+    '#modal-floorplan.modal.open>.modal-bd{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:hidden!important;display:flex!important;background:#1a1814!important;position:relative!important}' +
+    '#modal-floorplan.modal.open>.modal-ft{padding:8px 14px!important;flex:0 0 auto!important;background:#1a1814!important;color:#f1ede4!important;border-top-color:rgba(255,255,255,.12)!important}' +
+    '#modal-floorplan #fp-main{background:#1a1814!important}' +
+    '#fp-drop-msg{color:rgba(255,255,255,.82)!important;pointer-events:auto;cursor:pointer}' +
+    '#fp-drop-msg .fp-drop-cta{display:inline-block;margin-top:14px;padding:8px 14px;border-radius:9px;background:#c9a54a;color:#14120f;font:700 13px system-ui,sans-serif}' +
     '#modal-floorplan:not(.fp-simi) #fp-main{flex:1 1 auto!important;min-width:0!important;min-height:0!important}' +
     '#modal-floorplan:not(.fp-simi) #fp-panel{position:relative;width:var(--fp-panel,168px)!important;flex:0 0 var(--fp-panel,168px)!important;max-width:var(--fp-panel,168px)!important}' +
     '#fp-panel-drag{position:absolute;left:0;top:0;bottom:0;width:10px;cursor:col-resize;z-index:6;touch-action:none}' +
@@ -116,10 +124,17 @@
     setImp(bd, 'max-height', 'none');
     setImp(bd, 'overflow', 'hidden');
     setImp(bd, 'display', 'flex');
+    setImp(bd, 'background', '#1a1814');
+    setImp(bd, 'position', 'relative');
+    setImp(hd, 'background', '#1a1814');
+    setImp(hd, 'color', '#f1ede4');
     setImp(ft, 'flex', '0 0 auto');
+    setImp(ft, 'background', '#1a1814');
+    setImp(ft, 'color', '#f1ede4');
     if (!simi) setImp(ft, 'padding', '8px 14px');
 
     const main = m.querySelector('#fp-main');
+    setImp(main, 'background', '#1a1814');
     const panel = m.querySelector('#fp-panel');
     setImp(main, 'flex', '1 1 auto');
     setImp(main, 'min-width', '0');

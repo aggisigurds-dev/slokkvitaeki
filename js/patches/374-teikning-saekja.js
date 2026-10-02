@@ -10,6 +10,10 @@
  * (engin rafræn teikning til að sækja) → notandi hleður upp handvirkt.
  *
  * VISTUN er ÓBREYTT (localStorage per vafra) — færsla yfir á þjón er næsta skref.
+ *
+ * Agnar 02.10.2026: tómt borð var hvítt og Sækja fannst ekki. Drop-skilaboðin
+ * opna nú listann, og glugginn sækir teikningar hússins sjálfkrafa ef engin
+ * vistuð mynd er á borðinu.
  */
 (function () {
   if (window.__teiknSaekjaSett) return;
@@ -201,6 +205,32 @@
     grp.insertBefore(b, grp.firstChild);
   }
 
+  function undirbuaDrop() {
+    var dm = document.getElementById('fp-drop-msg');
+    if (!dm || dm.dataset.saekja === '1') return;
+    dm.dataset.saekja = '1';
+    dm.style.pointerEvents = 'auto';
+    dm.style.cursor = 'pointer';
+    if (!dm.querySelector('.fp-drop-cta')) {
+      var cta = document.createElement('div');
+      cta.className = 'fp-drop-cta';
+      cta.textContent = 'Sækja teikningu hússins';
+      dm.appendChild(cta);
+    }
+    dm.addEventListener('click', function () { saekja(FloorPlan.companyId); });
+  }
+
+  function saekjaEfTomt(cid) {
+    setTimeout(function () {
+      if (FloorPlan.companyId !== cid) return;
+      if (FloorPlan.bgImage) return;
+      var plan = FloorPlan.plans[cid];
+      if (plan && plan.imageUrl) return;
+      if (!document.getElementById('modal-floorplan') || !document.getElementById('modal-floorplan').classList.contains('open')) return;
+      saekja(cid);
+    }, 700);
+  }
+
   function skreyta() {
     if (!window.FloorPlan) return false;
     if (FloorPlan.__saekjaSkreytt) return true;
@@ -209,6 +239,8 @@
     FloorPlan.open = function () {
       var r = uppruni.apply(this, arguments);
       try { baetaHnappi(); } catch (_) {}
+      try { undirbuaDrop(); } catch (_) {}
+      try { saekjaEfTomt(this.companyId); } catch (_) {}
       return r;
     };
     FloorPlan.__saekjaSkreytt = true;
