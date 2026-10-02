@@ -18,9 +18,10 @@
  * teikningunni opnar Snúa/Afrita/Breyta/Eyða í ræmunni — ekki bara hægri
  * smell. Dráttur er pointer-capture, ekki HTML5.
  *
- * Agnar 02.10.2026: stærðarhvarfi á skiltunum (24–160 px) svo hægt sé að
- * stilla ákveðna stærð. Sjálfgefið gildir á öll skilti; valið merki má
- * hafa sína eigin.
+ * Agnar 02.10.2026: stærðarhvarfi (24–160 px) á BÆÐI tækjum og skiltum.
+ * Sjálfgefið gildir á öll tákn; valið merki má hafa sína eigin. Stærðin
+ * er í skjápunktum við 100% þysjun og fylgir zoominu — merki stækka ekki
+ * þegar farið er út og minnka ekki þegar farið er inn.
  *
  * Agnar 02.10.2026: einn smellur á teikninguna setur EITT merki, velur það
  * (Eyða/Snúa/Breyta í ræmunni) og tekur vopnið af ræmunni. Næsti smellur
@@ -42,6 +43,12 @@
     { id: 'rafmagn', nafn: 'Rafmagnstafla', stutt: 'RAF', litur: '#eab308', glyff: 'electric' },
     { id: 'skilti_slt', nafn: 'Skilti slökkvitæki', stutt: 'SKL', litur: '#c93c1d', glyff: 'sign-extinguisher' },
     { id: 'skilti_slanga', nafn: 'Skilti brunaslanga', stutt: 'SLS', litur: '#c93c1d', glyff: 'sign-hose' }
+  ];
+  const TAEKI_TAKN = [
+    { id: 'lettvatn', nafn: 'Léttvatn', stutt: 'LÉ', litur: '#e11d2e', glyff: 'extinguisher' },
+    { id: 'duft', nafn: 'Duft', stutt: 'DF', litur: '#e11d2e', glyff: 'extinguisher' },
+    { id: 'co2', nafn: 'CO₂', stutt: 'CO', litur: '#e11d2e', glyff: 'extinguisher' },
+    { id: 'slanga', nafn: 'Slanga', stutt: 'SL', litur: '#c93c1d', glyff: 'hose' }
   ];
 
   const S = {
@@ -83,6 +90,15 @@
     const w = Number(crW) || 0;
     return Math.max(32, Math.min(56, Math.round(w / 12) || 32));
   }
+  function thysjun() {
+    const z = window.TeiknBord && typeof TeiknBord.thysjun === 'function' ? TeiknBord.thysjun() : 1;
+    return (z > 0 && isFinite(z)) ? z : 1;
+  }
+  function passaBreidd(crW) {
+    const c = document.getElementById('fp-canvas');
+    const w = crW != null ? Number(crW) : (c && c.getBoundingClientRect().width) || 0;
+    return w / thysjun();
+  }
   function sjalfStaerd(crW) {
     const p = plan();
     const fraPlan = p && klemmaStaerd(p.stimpilStaerd);
@@ -98,17 +114,15 @@
     return autoStaerd(crW);
   }
   function merkiStaerd(m, crW) {
-    if (m && erStimpil(m)) {
-      const eigin = klemmaStaerd(m.staerd);
-      if (eigin) return eigin;
-    }
-    const c = document.getElementById('fp-canvas');
-    const w = crW != null ? crW : (c && c.getBoundingClientRect().width);
-    return sjalfStaerd(w);
+    const eigin = m && klemmaStaerd(m.staerd);
+    if (eigin) return eigin;
+    return sjalfStaerd(passaBreidd(crW));
+  }
+  function skjaStaerd(m, crW) {
+    return merkiStaerd(m, crW) * thysjun();
   }
   function gripPx(m, crW) {
-    if (erStimpil(m)) return merkiStaerd(m, crW) / 2 + 8;
-    return 28;
+    return skjaStaerd(m, crW) / 2 + 8;
   }
 
   function finnaMerki(e) {
@@ -142,7 +156,7 @@
 
   function afritMerki(m) {
     if (!m) return null;
-    return { unitId: m.unitId, kind: m.kind, sign: m.sign, x: m.x, y: m.y, color: m.color, rot: m.rot || 0, staerd: m.staerd };
+    return { unitId: m.unitId, kind: m.kind, sign: m.sign, takn: m.takn, x: m.x, y: m.y, color: m.color, rot: m.rot || 0, staerd: m.staerd };
   }
   function undoLykill() {
     const F = FP();
@@ -180,7 +194,10 @@
       if (m) m.rot = a.fra;
     } else if (a.teg === 'breyta' && a.merki) {
       const m = (p.markers || []).find(x => x.unitId === a.merki.unitId);
-      if (m) { m.sign = a.fraSign; m.color = a.fraLitur; }
+      if (m) { m.sign = a.fraSign; m.color = a.fraLitur; if ('fraTakn' in a) { if (a.fraTakn) m.takn = a.fraTakn; else delete m.takn; } }
+    } else if (a.teg === 'takn' && a.merki) {
+      const m = (p.markers || []).find(x => x.unitId === a.merki.unitId);
+      if (m) { if (a.fra) m.takn = a.fra; else delete m.takn; }
     } else if (a.teg === 'staerd') {
       if (a.merki) {
         const m = (p.markers || []).find(x => x.unitId === a.merki.unitId);
@@ -224,10 +241,11 @@
       const def = STIMPLAR.find(s => s.id === m.sign);
       return (def && def.nafn) || 'Merki';
     }
+    const taknDef = m.takn && (TAEKI_TAKN.find(s => s.id === m.takn) || STIMPLAR.find(s => s.id === m.takn));
     const F = FP();
     const u = F && F.units && F.units.find(q => q && q.id === m.unitId);
-    if (!u) return 'Tæki';
-    return String(u.type || 'Tæki') + (u.serial ? ' · ' + u.serial : '');
+    const grunn = u ? (String(u.type || 'Tæki') + (u.serial ? ' · ' + u.serial : '')) : 'Tæki';
+    return taknDef ? (grunn + ' · ' + taknDef.nafn) : grunn;
   }
 
   function setjaTaeki(unitId, x, y) {
@@ -281,7 +299,7 @@
   }
 
   function snuaMerki(m) {
-    if (!m || !erStimpil(m)) return false;
+    if (!m) return false;
     const fra = m.rot || 0;
     m.rot = (fra + 90) % 360;
     skraUndo({ teg: 'snua', merki: afritMerki(m), fra });
@@ -307,6 +325,20 @@
     if (!def || m.sign === def.id) return false;
     skraUndo({ teg: 'breyta', merki: afritMerki(m), fraSign: m.sign, fraLitur: m.color });
     m.sign = def.id; m.color = def.litur;
+    try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
+    endurteikna();
+    vistaAdThjoni();
+    return true;
+  }
+  function breytaTakn(m, lyk) {
+    if (!m || erStimpil(m) || !lyk) return false;
+    const def = TAEKI_TAKN.find(s => s.id === lyk) || STIMPLAR.find(s => s.id === lyk);
+    if (!def) return false;
+    const fra = m.takn || '';
+    if (fra === def.id) return false;
+    skraUndo({ teg: 'takn', merki: afritMerki(m), fra });
+    m.takn = def.id;
+    if (def.litur) m.color = def.litur;
     try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
     endurteikna();
     vistaAdThjoni();
@@ -362,10 +394,16 @@
       '<button type="button" class="fp-vm-ico' + (virkur === s.id ? ' on' : '') + '" data-act="' + dataAct + '" data-sign="' + s.id + '" title="' + esc(s.nafn) + '"></button>'
     ).join('') + '</div>';
   }
+  function taknRod(virkur) {
+    return '<div class="fp-vm-stimp">' + TAEKI_TAKN.concat(STIMPLAR).map(s =>
+      '<button type="button" class="fp-vm-ico' + (virkur === s.id ? ' on' : '') + '" data-act="takn" data-takn="' + s.id + '" title="' + esc(s.nafn) + '"></button>'
+    ).join('') + '</div>';
+  }
 
   function malaValmyndIkon(el) {
     el.querySelectorAll('.fp-vm-ico').forEach(b => {
-      const def = STIMPLAR.find(s => s.id === b.getAttribute('data-sign'));
+      const id = b.getAttribute('data-takn') || b.getAttribute('data-sign');
+      const def = STIMPLAR.find(s => s.id === id) || TAEKI_TAKN.find(s => s.id === id);
       if (!def) return;
       if (window.TeiknTakn && TeiknTakn.teiknaISpan) TeiknTakn.teiknaISpan(b, def);
       else { b.style.background = def.litur; b.textContent = def.stutt; }
@@ -377,7 +415,7 @@
       el.innerHTML =
         '<div class="fp-vm-h">Breyta í</div>' +
         '<button type="button" class="fp-vm-li" data-act="heim">Til baka</button>' +
-        stimpilRod(merki.sign, 'skipta');
+        (erStimpil(merki) ? stimpilRod(merki.sign, 'skipta') : taknRod(merki.takn || ''));
       malaValmyndIkon(el);
       return;
     }
@@ -394,6 +432,9 @@
     if (merki) {
       el.innerHTML =
         '<div class="fp-vm-h">' + esc(nafnMerkis(merki)) + '</div>' +
+        '<button type="button" class="fp-vm-li" data-act="snua">Snúa tákn</button>' +
+        '<button type="button" class="fp-vm-li" data-act="breyta">Breyta í…</button>' +
+        '<div class="fp-vm-div"></div>' +
         '<button type="button" class="fp-vm-li fp-vm-hætta" data-act="eyda">Fjarlægja af teikningu</button>';
       return;
     }
@@ -415,6 +456,7 @@
     }
     if (act === 'eyda' && merki) { eydaMerki(merki); return; }
     if (act === 'skipta' && merki && sign) { breytaStimpil(merki, sign); lokaValmynd(); return; }
+    if (act === 'takn' && merki && sign) { breytaTakn(merki, sign); lokaValmynd(); return; }
     if (act === 'setja' && sign && stad.hnit) {
       setjaEitt(sign, stad.hnit.x, stad.hnit.y);
       vistaAdThjoni();
@@ -442,7 +484,7 @@
       const b = ev.target.closest('[data-act]');
       if (!b) return;
       ev.preventDefault();
-      keyraValmynd(b.getAttribute('data-act'), b.getAttribute('data-sign'), merki, stad);
+      keyraValmynd(b.getAttribute('data-act'), b.getAttribute('data-sign') || b.getAttribute('data-takn'), merki, stad);
     });
   }
 
@@ -647,14 +689,14 @@
   function synlegStaerd() {
     const c = document.getElementById('fp-canvas');
     const crW = c ? c.getBoundingClientRect().width : 0;
-    if (S.valinnMerki && erStimpil(S.valinnMerki)) return merkiStaerd(S.valinnMerki, crW);
-    return sjalfStaerd(crW);
+    if (S.valinnMerki) return merkiStaerd(S.valinnMerki, crW);
+    return sjalfStaerd(passaBreidd(crW));
   }
   function skraStaerd(n, vista) {
     const v = klemmaStaerd(n);
     if (!v) return 0;
     const p = plan();
-    if (S.valinnMerki && erStimpil(S.valinnMerki)) {
+    if (S.valinnMerki) {
       if (!S._staerdUndo) S._staerdUndo = { merki: S.valinnMerki, fra: S.valinnMerki.staerd || 0 };
       S.valinnMerki.staerd = v;
     } else if (p) {
@@ -666,6 +708,7 @@
       try { localStorage.setItem(STAERD_LS, String(v)); } catch (_) {}
     }
     try { if (FP() && FP()._renderCanvas) FP()._renderCanvas(); } catch (_) {}
+    try { const y = document.getElementById('fp-yfirlag'); if (y) y._t433 = ''; } catch (_) {}
     if (vista) {
       if (S._staerdUndo) {
         const u = S._staerdUndo; S._staerdUndo = null;
@@ -684,9 +727,9 @@
       wrap = document.createElement('div');
       wrap.id = 'fp-stimpil-staerd-wrap';
       wrap.innerHTML =
-        '<div class="fp-stimpil-lbl" id="fp-stimpil-staerd-lbl">Stærð skiltanna</div>' +
+        '<div class="fp-stimpil-lbl" id="fp-stimpil-staerd-lbl">Stærð tákna</div>' +
         '<div class="fp-staerd-rod">' +
-          '<input type="range" id="fp-stimpil-staerd" min="' + STAERD_MIN + '" max="' + STAERD_MAX + '" step="2" aria-label="Stærð skiltanna">' +
+          '<input type="range" id="fp-stimpil-staerd" min="' + STAERD_MIN + '" max="' + STAERD_MAX + '" step="2" aria-label="Stærð tákna">' +
           '<span id="fp-stimpil-staerd-val"></span>' +
         '</div>';
       const rod = document.getElementById('fp-stimpil');
@@ -707,8 +750,8 @@
     const val = document.getElementById('fp-stimpil-staerd-val');
     const lbl = document.getElementById('fp-stimpil-staerd-lbl');
     const n = synlegStaerd();
-    const ser = !!(S.valinnMerki && erStimpil(S.valinnMerki));
-    const lblTxt = ser ? 'Stærð þessa skiltis' : 'Stærð skiltanna';
+    const ser = !!S.valinnMerki;
+    const lblTxt = ser ? (erStimpil(S.valinnMerki) ? 'Stærð þessa skiltis' : 'Stærð þessa tækis') : 'Stærð tákna';
     if (lbl && lbl.textContent !== lblTxt) lbl.textContent = lblTxt;
     const px = n + ' px';
     if (val && val.textContent !== px) val.textContent = px;
@@ -737,7 +780,7 @@
       if (!panel) return;
       let box = document.getElementById('fp-merki-adgerd');
       const m = S.valinnMerki;
-      const lyk = (m ? String(m.unitId) + ':' + (m.sign || '') + ':' + (m.rot || 0) + ':' + (erStimpil(m) ? 's' : 't') : '') + '|' + (S.valinn || '');
+      const lyk = (m ? String(m.unitId) + ':' + (m.sign || '') + ':' + (m.takn || '') + ':' + (m.rot || 0) + ':' + (m.staerd || '') + ':' + (erStimpil(m) ? 's' : 't') : '') + '|' + (S.valinn || '');
       if (!m) {
         if (box && !box.hidden) { box.hidden = true; box.dataset.ok = lyk; }
         return;
@@ -754,12 +797,14 @@
           ev.preventDefault();
           const act = b.getAttribute('data-act');
           const sign = b.getAttribute('data-sign');
+          const takn = b.getAttribute('data-takn');
           if (act === 'snua') snuaMerki(S.valinnMerki);
           else if (act === 'afrita') {
             const ny = afritaMerki(S.valinnMerki);
             if (ny) { vistaAdThjoni(); S.valinnMerki = ny; }
           } else if (act === 'eyda') eydaMerki(S.valinnMerki);
           else if (act === 'skipta' && sign) breytaStimpil(S.valinnMerki, sign);
+          else if (act === 'takn' && takn) breytaTakn(S.valinnMerki, takn);
           stikaValid();
         });
       }
@@ -769,14 +814,13 @@
       const stimp = erStimpil(m);
       box.innerHTML = '<div class="fp-stimpil-lbl">Valið</div>' +
         '<div class="fp-merki-nafn">' + esc(nafnMerkis(m)) + '</div>' +
-        (stimp
-          ? '<div class="fp-merki-acts">' +
-            '<button type="button" data-act="snua">Snúa</button>' +
-            '<button type="button" data-act="afrita">Afrita</button>' +
-            '<button type="button" class="fp-vm-hætta" data-act="eyda">Eyða</button></div>' +
-            '<div class="fp-stimpil-lbl">Breyta í</div>' + stimpilRod(m.sign, 'skipta')
-          : '<div class="fp-merki-acts"><button type="button" class="fp-vm-hætta" data-act="eyda">Fjarlægja af teikningu</button></div>');
-      if (stimp) malaValmyndIkon(box);
+        '<div class="fp-merki-acts">' +
+          '<button type="button" data-act="snua">Snúa</button>' +
+          (stimp ? '<button type="button" data-act="afrita">Afrita</button>' : '') +
+          '<button type="button" class="fp-vm-hætta" data-act="eyda">' + (stimp ? 'Eyða' : 'Fjarlægja af teikningu') + '</button></div>' +
+        '<div class="fp-stimpil-lbl">Breyta í</div>' +
+        (stimp ? stimpilRod(m.sign, 'skipta') : taknRod(m.takn || ''));
+      malaValmyndIkon(box);
     } finally {
       try { stikaStaerdHvarfa(); } catch (_) {}
       S._stika = false;
@@ -947,7 +991,8 @@
   window.TeiknMerking = {
     grip, iDragi, setjaTaeki, setjaStimpil, setjaEitt, vistaAdThjoni, erStimpil, stimplar: STIMPLAR,
     tikk, afturkalla, eydaMerki, snuaMerki, afritaMerki, opnaValmynd, finnaMerki,
-    stimpilPx: merkiStaerd, setjaStaerd: skraStaerd, sjalfStaerd
+    stimpilPx: merkiStaerd, skjaStaerd, passaBreidd, setjaStaerd: skraStaerd, sjalfStaerd, breytaTakn,
+    velja: m => { S.valinnMerki = m || null; stikaValid(); }
   };
 
   if (!vefja()) { let n = 0; const i = setInterval(() => { if (vefja() || ++n > 80) clearInterval(i); }, 150); }

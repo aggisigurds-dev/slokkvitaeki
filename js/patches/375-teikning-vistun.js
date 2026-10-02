@@ -41,6 +41,11 @@
   }
 
   function beitaAServer(cid, row) {
+    var virk = (window.TeiknBord && typeof TeiknBord.virk === 'function') ? TeiknBord.virk() : 0;
+    if (virk !== 0) {
+      try { FloorPlan._renderCanvas(); FloorPlan._renderPanel(); } catch (_) {}
+      return;
+    }
     var c = document.getElementById('fp-canvas');
     if (row.image_url && FloorPlan._srvImg !== row.image_url) {
       FloorPlan._srvImg = row.image_url;

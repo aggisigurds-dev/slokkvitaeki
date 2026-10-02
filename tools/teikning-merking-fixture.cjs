@@ -234,6 +234,48 @@ async function main() {
     };
   });
 
+  const taeki = await page.evaluate(() => {
+    const p = FloorPlan.plans[1612];
+    const m = (p.markers || []).find(x => x.unitId === 25446);
+    if (!m) return { err: 'tæki vantar' };
+    TeiknMerking.velja(m);
+    TeiknMerking.tikk();
+    const box = document.getElementById('fp-merki-adgerd');
+    const txt = box && !box.hidden ? box.textContent : '';
+    const lbl = (document.getElementById('fp-stimpil-staerd-lbl') || {}).textContent;
+    const n = TeiknMerking.setjaStaerd(72, true);
+    const eigin = (FloorPlan.plans[1612].markers || []).find(x => x.unitId === 25446);
+    const co = document.querySelector('#fp-merki-adgerd [data-takn="co2"]');
+    if (co) co.click();
+    TeiknMerking.tikk();
+    if (!co) TeiknMerking.breytaTakn(eigin, 'co2');
+    const eftir = (FloorPlan.plans[1612].markers || []).find(x => x.unitId === 25446);
+    const c = document.getElementById('fp-canvas');
+    const z0 = TeiknBord.thysjun();
+    const s0 = TeiknMerking.skjaStaerd({ staerd: 40 }, c.getBoundingClientRect().width);
+    const inn = document.querySelector('#fp-zoom [data-z="inn"]');
+    if (inn) inn.click();
+    const z1 = TeiknBord.thysjun();
+    const s1 = TeiknMerking.skjaStaerd({ staerd: 40 }, c.getBoundingClientRect().width);
+    const a2 = document.querySelector('#fp-haedir [data-h="1"]');
+    if (a2) a2.click();
+    const virk = TeiknBord.virk();
+    const a1 = document.querySelector('#fp-haedir [data-h="0"]');
+    if (a1) a1.click();
+    const aftur = (FloorPlan.plans[1612].markers || []).find(x => x.unitId === 25446);
+    const p0 = FloorPlan.plans[1612];
+    if (p0.haedir && p0.haedir[0]) p0.haedir[0].pdfVeggir = [[1, 2, 3, 4]];
+    const row = { haedir: JSON.parse(JSON.stringify(p0.haedir || [])) };
+    if (row.haedir[0]) row.haedir[0].pdfVeggir = [];
+    if (typeof FloorPlan.__eftirSokn === 'function') FloorPlan.__eftirSokn(1612, row);
+    const veggirEftir = ((FloorPlan.plans[1612].haedir[0] || {}).pdfVeggir || []).length;
+    return {
+      txt, lbl, n, eigin: eigin && eigin.staerd, takn: (eftir && eftir.takn) || (aftur && aftur.takn),
+      z0, z1, s0, s1, virk, afturStaerd: aftur && aftur.staerd,
+      breyta: /Breyta í/.test(txt), veggirEftir
+    };
+  });
+
   await browser.close();
 
   const villur = [];
@@ -267,8 +309,8 @@ async function main() {
   krefst(att.valið, 'valið merki átti að sýna Snúa/Breyta/Eyða í ræmunni: ' + JSON.stringify(att));
   krefst(att.skipt, 'Breyta í átti að skipta slöngumerki yfir í Út: ' + JSON.stringify(att));
   krefst(att.per === 40 && att.eiginStaerd === 40, 'valið skilti átti að fá eigin stærð 40: ' + JSON.stringify(att));
-  krefst(att.sjalf === 96 && att.hvarfi === '96', 'stærðarhvarfi átti að stilla sjálfgefna stærð skiltanna: ' + JSON.stringify(att));
-  krefst(/Stærð skiltanna/.test(att.lbl || ''), 'ræman á að sýna stærðarhvarfa: ' + att.lbl);
+  krefst(att.sjalf === 96 && att.hvarfi === '96', 'stærðarhvarfi átti að stilla sjálfgefna stærð tákna: ' + JSON.stringify(att));
+  krefst(/Stærð tákna/.test(att.lbl || ''), 'ræman á að sýna stærðarhvarfa: ' + att.lbl);
   krefst(eitt.n1 === eitt.n0 + 1 && eitt.n2 === eitt.n1 && eitt.n3 === eitt.n1, 'einn smellur á að setja eitt merki, ekki fleiri: ' + JSON.stringify(eitt));
   krefst(eitt.eyda && eitt.nafn && !eitt.armadur, 'eftir setningu á merkið að vera valið og ræman óvopnuð: ' + JSON.stringify(eitt));
   krefst(eitt.n4 === eitt.n0, 'Eyða átti að fjarlægja merkið sem var sett: ' + JSON.stringify(eitt));
@@ -277,6 +319,13 @@ async function main() {
   krefst(undo.gaedi && undo.forsk && undo.ls === 'midlungs', 'gæði/localStorage: ' + JSON.stringify({ gaedi: undo.gaedi, forsk: undo.forsk, ls: undo.ls }));
   krefst(undo.gq, 'Stillingar vantar Gæði-hnappa');
   krefst(/translate/.test(String(undo.transform || '')) && /scale/.test(String(undo.transform || '')), 'faraAd átti að þysja: ' + undo.transform);
+  krefst(taeki.n === 72 && taeki.eigin === 72, 'stærðarhvarfi átti að stilla tæki, ekki bara skilti: ' + JSON.stringify(taeki));
+  krefst(taeki.takn === 'co2', 'Breyta í átti að skipta tæki yfir í CO₂ tákn: ' + JSON.stringify(taeki));
+  krefst(taeki.breyta, 'valið tæki átti að sýna Breyta í: ' + JSON.stringify(taeki));
+  krefst(taeki.z1 > taeki.z0 && taeki.s1 > taeki.s0, 'stimpill átti að stækka með zoom inn, ekki minnka: ' + JSON.stringify(taeki));
+  krefst(taeki.virk === 1, 'hæðaflipi 2. hæð átti að virkjast: ' + JSON.stringify(taeki));
+  krefst(taeki.afturStaerd === 72, 'tækjastærð átti að sitja á 1. hæð eftir skipti: ' + JSON.stringify(taeki));
+  krefst(taeki.veggirEftir > 0, 'sækja af þjóni mátti ekki núlla Skýrari veggi: ' + JSON.stringify(taeki));
 
   if (villur.length) {
     console.log('TEIKNING-MERKING FIXTURE RAUDT');

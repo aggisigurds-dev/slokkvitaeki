@@ -149,6 +149,10 @@
     return 'annad';
   }
   function lykillFyrir(m, units) {
+    if (m && m.takn) {
+      if (STIMPIL_LYKILL[m.takn]) return STIMPIL_LYKILL[m.takn];
+      if (SJALF[m.takn] || LITIR[m.takn]) return m.takn;
+    }
     if (m && (m.kind === 'sign' || (typeof m.unitId === 'string' && String(m.unitId).indexOf('s:') === 0))) {
       return STIMPIL_LYKILL[m.sign] || 'annad';
     }
@@ -236,7 +240,7 @@
     if (!span) return;
     const c = document.createElement('canvas');
     c.width = 44; c.height = 44; c.style.cssText = 'width:22px;height:22px;display:block';
-    const lyk = STIMPIL_LYKILL[def && def.id] || 'annad';
+    const lyk = STIMPIL_LYKILL[def && def.id] || ((def && SJALF[def.id]) ? def.id : 'annad');
     const litur = Object.assign({}, LITIR[lyk] || LITIR.annad, def && def.litur ? { bg: def.litur } : {});
     teiknaTakn(c.getContext('2d'), (val()[lyk] || (def && def.glyff) || 'extinguisher'), litur, 22, 22, 40);
     span.innerHTML = ''; span.style.background = 'transparent'; span.appendChild(c);
@@ -256,8 +260,11 @@
     const ctx = canvas.getContext('2d');
     const cw = canvas.width, ch = canvas.height;
     const main = document.getElementById('fp-main');
+    const cr = canvas.getBoundingClientRect();
+    // Tæki eru teiknuð í strigapunktum; CSS-þysjun 383 skalast ofan á. stimpilPx
+    // fær CSS-breiddina (með zoom) og reiknar sjálft 100%-stærðina.
     const sc = main ? Math.min((main.offsetWidth - 10) / cw, (main.offsetHeight - 10) / ch) : 1;
-    const size = (window.TeiknSja && TeiknSja.taknPx)
+    const sjalf = (window.TeiknSja && TeiknSja.taknPx)
       ? TeiknSja.taknPx(cw, sc)
       : Math.max(22, Math.round(cw / 70), (sc > 0 && isFinite(sc)) ? Math.round(26 / sc) : 26);
     const units = F.units || [];
@@ -266,6 +273,11 @@
       const x = mk.x || 0, y = mk.y || 0;
       const mx = (x > 1 || y > 1) ? x : x * cw;
       const my = (x > 1 || y > 1) ? y : y * ch;
+      let size = sjalf;
+      if (window.TeiknMerking && TeiknMerking.stimpilPx) {
+        const css = TeiknMerking.stimpilPx(mk, cr.width);
+        if (css && sc > 0) size = css / sc;
+      }
       teiknaMerki(ctx, mk, mx, my, size, units);
     });
   }

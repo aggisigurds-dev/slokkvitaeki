@@ -514,7 +514,9 @@
     kedja: null,           // síðasti punktur veggjakeðju (frummyndarhnit)
     bendill: null,         // músarstaða í veggjaham (frummyndarhnit) — fyrir forskoðunarlínu
     drag: null,            // skurðarkassi í smíðum (frummyndarhnit)
-    syn3d: null, vakt: 0, raf: 0, teiknad: ''
+    syn3d: null, vakt: 0, raf: 0, teiknad: '',
+    minni: {},             // unnin Skýrari-mynd per hæð — svo skipti endurreikni ekki
+    skipti: 0              // kynslóð hæðaflips — gamlar PDF-sóknið deyja
   };
 
   const FPx = () => window.FloorPlan;
@@ -553,6 +555,26 @@
     p.haedir.forEach(h => { if (!Array.isArray(h.markers)) h.markers = []; if (!Array.isArray(h.veggir)) h.veggir = []; if (!Array.isArray(h.pdfVeggir)) h.pdfVeggir = []; if (!h.id) h.id = nyttId(); });
     if (G.virk >= p.haedir.length) G.virk = 0;
     return p.haedir;
+  }
+  function sameinaHaedir(gamlar, nyjar) {
+    if (!Array.isArray(nyjar) || !nyjar.length) return gamlar || null;
+    const byId = {};
+    (gamlar || []).forEach(h => { if (h && h.id) byId[h.id] = h; });
+    return nyjar.map(n => {
+      const g = n && n.id && byId[n.id];
+      if (!g) return n;
+      if ((g.image_url || null) !== (n.image_url || null)) return n;
+      return Object.assign({}, n, {
+        veggir: (n.veggir && n.veggir.length) ? n.veggir : g.veggir,
+        pdfVeggir: (n.pdfVeggir && n.pdfVeggir.length) ? n.pdfVeggir : g.pdfVeggir,
+        pdfFlokkar: n.pdfFlokkar || g.pdfFlokkar,
+        skurdur: n.skurdur || g.skurdur,
+        sjalf: n.sjalf != null ? n.sjalf : g.sjalf,
+        thett: n.thett || g.thett,
+        pdfReynt: g.pdfReynt,
+        stimpilStaerd: n.stimpilStaerd || g.stimpilStaerd
+      });
+    });
   }
   const virkHaed = () => haedir()[G.virk];
   const erPx = m => (m.x > 1 || m.y > 1);
@@ -612,24 +634,30 @@
     return true;
   }
   async function lesaPdfVeggi(sjalfkrafa) {
-    const h = virkHaed(), slod = pdfSlod(h);
+    const h = virkHaed(), slod = pdfSlod(h), skipti = G.skipti, frum = G.frum;
     if (!slod) { if (!sjalfkrafa) segja('Þessi teikning er ekki PDF úr skjalasafninu — þar er enginn vigur að lesa. Notaðu ✏ til að draga veggina.'); return false; }
-    if (!G.frum || G.pdfBid) return false;
+    if (!frum || (G.pdfBid && G.pdfBid !== skipti)) return false;
+    if (G.pdfBid) return false;
     G.pdfBid = true; stika();
     try {
       await saekjaPdfJs();
+      if (G.skipti !== skipti) return false;
       const r = await fetch(slod);
+      if (G.skipti !== skipti) return false;
       if (!r.ok) { const v = await r.json().catch(() => null); throw new Error((v && v.error) || ('Svar ' + r.status)); }
       const doc = await window.pdfjsLib.getDocument({ data: new Uint8Array(await r.arrayBuffer()) }).promise;
+      if (G.skipti !== skipti) return false;
       const sida = await doc.getPage(1), vp = sida.getViewport({ scale: 1 }), ol = await sida.getOperatorList();
       const fl = flokkaPdfLinur(window.pdfjsLib.OPS, ol.fnArray, ol.argsArray, vp.transform), val = veljaVeggjaflokk(fl, vp.width, vp.height);
-      const iw = G.frum.naturalWidth || G.frum.width, ih = G.frum.naturalHeight || G.frum.height, kx = iw / vp.width, ky = ih / vp.height;
+      const iw = frum.naturalWidth || frum.width, ih = frum.naturalHeight || frum.height, kx = iw / vp.width, ky = ih / vp.height;
       if (!val.valinn) throw new Error(val.yfirlit.length ? 'Fann engan línuflokk sem líkist veggjum.' : 'PDF-ið er skönnuð mynd — þar er enginn vigur. Dragðu veggina með ✏.');
       // Myndin er mynd af SÖMU síðu: hlutföllin verða að stemma, annars lenda veggirnir á skjön (snúið blað / önnur síða).
       if (Math.abs(kx / ky - 1) > 0.02) throw new Error('Blaðið í PDF-inu hefur önnur hlutföll en myndin — veggirnir myndu lenda á skjön.');
+      if (G.skipti !== skipti) return false;
       const px = {}; Object.keys(fl).forEach(l => { if (+l >= 0.3) px[l] = fl[l].map(v => [Math.round(v[0] * kx), Math.round(v[1] * ky), Math.round(v[2] * kx), Math.round(v[3] * ky)]); });
       G.pdf = { haed: h.id, flokkar: px, yfirlit: val.yfirlit.filter(y => +y.breidd >= 0.3 && y.strik >= 8).slice(0, 5), ptIPx: kx };
       h.pdfFlokkar = [val.valinn]; beitaPdfFlokkum(h);
+      if (G.skipti !== skipti) return false;
       // ÞÉTTUR SKURÐUR (Agnar: „croppa kringum byggingu"): blek-klasinn (finnaHus) tekur lóðina og skástrikuð bílastæði
       // með. Veggirnir úr vigrinum segja nákvæmlega hvar húsið er. Aðeins þegar skurðurinn var sjálfvirkur eða enginn —
       // handvalinn skurður notandans stendur. 2.–98. hundraðshluti svo stakt strik úti á lóð dragi kassann ekki út.
@@ -648,7 +676,7 @@
       if (!sjalfkrafa) segja('⚠ Las ekki veggi úr PDF: ' + ((e && e.message) || e));
       h.pdfReynt = String((e && e.message) || e);
       return false;
-    } finally { G.pdfBid = false; G.lykill = ''; stika(); }
+    } finally { if (G.skipti === skipti) { G.pdfBid = false; stika(); } }
   }
 
   /* ── leiðslan: frummynd → skurður → skýrari veggir ── */
@@ -862,31 +890,83 @@
     if (f._html !== html) { f.innerHTML = html; f._html = html; }
   }
 
+  function haedMinniLykill(h) { return String((h && h.id) || '') + '|' + String((h && h.image_url) || ''); }
+  function vistaHaedMinni(h) {
+    if (!h || !h.id) return;
+    G.minni = G.minni || {};
+    G.minni[haedMinniLykill(h)] = {
+      url: h.image_url || null,
+      frum: G.frum, stig1: G.stig1, stig1Lykill: G.stig1Lykill,
+      hrein: G.hrein, hreinLykill: G.hreinLykill,
+      dauft: G.dauft, dauftLykill: G.dauftLykill,
+      lykill: G.lykill, synd: G.synd,
+      rymi: { x: G.rymi.x, y: G.rymi.y }
+    };
+  }
+  function saekjaHaedMinni(h) {
+    const m = G.minni && G.minni[haedMinniLykill(h)];
+    if (!m || (m.url || null) !== (h.image_url || null) || !m.frum) return false;
+    G.frum = m.frum; G.stig1 = m.stig1; G.stig1Lykill = m.stig1Lykill;
+    G.hrein = m.hrein; G.hreinLykill = m.hreinLykill;
+    G.dauft = m.dauft; G.dauftLykill = m.dauftLykill;
+    G.lykill = m.lykill; G.synd = m.synd;
+    G.rymi = m.rymi ? { x: m.rymi.x, y: m.rymi.y } : { x: 0, y: 0 };
+    G.sjalfReynt = G.frum;
+    return true;
+  }
+  function hreinsaStrigaStrax() {
+    const c = fpEl('fp-canvas');
+    if (c) {
+      try { const x = c.getContext('2d'); x.clearRect(0, 0, c.width, c.height); } catch (_) {}
+    }
+    const y = document.getElementById('fp-yfirlag');
+    if (y) {
+      try { y.getContext('2d').clearRect(0, 0, y.width, y.height); } catch (_) {}
+    }
+    G.teiknad = '';
+  }
+
   function virkja(i, anSamstillingar) {
     const FP = FPx(), p = plan(), hs = haedir();
     if (i === G.virk || i < 0 || i >= hs.length) return;
     if (!anSamstillingar) samstillaVirka();
+    vistaHaedMinni(hs[G.virk]);
     loka3d(); G.hamur = null; G.kedja = null; G.drag = null;
+    G.skipti = (G.skipti || 0) + 1;
+    G.pdfBid = false;
     G.virk = i;
     const h = hs[i];
-    p.markers = h.markers.map(m => Object.assign({}, m)); G.rymi = { x: 0, y: 0 };
+    p.markers = h.markers.map(m => Object.assign({}, m));
     p.imageUrl = h.image_url || null;
-    G.frum = null; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
-    FP.bgImage = null; FP._selectedUnitId = null; zNullstilla();
+    FP._selectedUnitId = null; zNullstilla();
+    hreinsaStrigaStrax();
     const c = fpEl('fp-canvas'), dm = fpEl('fp-drop-msg');
-    if (h.image_url) {
-      const img = new Image();
-      img.onload = () => {
-        if (FPx().companyId !== FP.companyId || haedir()[G.virk] !== h) return;
-        FP.bgImage = img; if (c) c.style.display = 'block'; if (dm) dm.style.display = 'none';
-        beita(); try { FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
-      };
-      img.onerror = () => segja('⚠ Náði ekki í teikningu hæðarinnar „' + h.nafn + '".');
-      if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, h.image_url);
-      else if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(img, h.image_url);
-      else img.src = h.image_url;
+    const minni = saekjaHaedMinni(h);
+    if (minni && G.frum) {
+      const ut = G.synd || G.stig1 || G.frum;
+      FP.bgImage = ut;
+      if (c) c.style.display = 'block'; if (dm) dm.style.display = 'none';
+      try { beita(); FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
     } else {
-      if (c) c.style.display = 'none'; if (dm) dm.style.display = '';
+      G.frum = null; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
+      G.dauft = null; G.dauftLykill = ''; G.sjalfReynt = null;
+      FP.bgImage = null;
+      if (h.image_url) {
+        const img = new Image();
+        const skipti = G.skipti;
+            img.onload = () => {
+          const nu = haedir()[G.virk];
+          if (G.skipti !== skipti || FPx().companyId !== FP.companyId || !nu || nu.id !== h.id) return;
+          FP.bgImage = img; if (c) c.style.display = 'block'; if (dm) dm.style.display = 'none';
+          beita(); try { FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
+        };
+        img.onerror = () => segja('⚠ Náði ekki í teikningu hæðarinnar „' + h.nafn + '".');
+        if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, h.image_url);
+        else if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(img, h.image_url);
+        else img.src = h.image_url;
+      } else {
+        if (c) c.style.display = 'none'; if (dm) dm.style.display = '';
+      }
     }
     try { FP._renderPanel(); } catch (_) {}
     flipar(); stika(); hnappar();
@@ -903,7 +983,7 @@
     }
     const FP = FPx(), h = virkHaed(), mr = main.getBoundingClientRect(), cr = c.getBoundingClientRect();
     const synilegt = c.style.display !== 'none' && cr.width > 2 && FP.bgImage;
-    const stimpil = (plan().markers || []).filter(m => m && m.kind === 'sign').map(m => m.unitId + ':' + Math.round(m.x) + ':' + Math.round(m.y) + ':' + (m.sign || '') + ':' + (m.rot || 0) + ':' + (m.staerd || '')).join(',') + '|s' + ((plan().stimpilStaerd) || '');
+    const stimpil = (plan().markers || []).filter(m => m && m.kind === 'sign').map(m => m.unitId + ':' + Math.round(m.x) + ':' + Math.round(m.y) + ':' + (m.sign || '') + ':' + (m.rot || 0) + ':' + (m.staerd || '')).join(',') + '|s' + ((plan().stimpilStaerd) || '') + '|z' + Z.s;
     const takn = window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '';
     const ei = window.TeiknEi && TeiknEi.fingrafar ? TeiknEi.fingrafar(h) : '';
     const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
@@ -946,9 +1026,11 @@
       if (!m || m.kind !== 'sign') return;
       const mx = ox + ((m.x > 1 || m.y > 1) ? m.x : m.x * c.width) * k;
       const my = oy + ((m.x > 1 || m.y > 1) ? m.y : m.y * c.height) * k;
-      const s = (window.TeiknMerking && TeiknMerking.stimpilPx)
-        ? TeiknMerking.stimpilPx(m, cr.width)
-        : ((window.TeiknSja && TeiknSja.stimpilPx) ? TeiknSja.stimpilPx(cr.width) : Math.max(32, Math.min(56, cr.width / 12)));
+      const s = (window.TeiknMerking && TeiknMerking.skjaStaerd)
+        ? TeiknMerking.skjaStaerd(m, cr.width)
+        : ((window.TeiknMerking && TeiknMerking.stimpilPx)
+          ? TeiknMerking.stimpilPx(m, cr.width) * (Z.s || 1)
+          : ((window.TeiknSja && TeiknSja.stimpilPx) ? TeiknSja.stimpilPx(cr.width) : Math.max(32, Math.min(56, cr.width / 12))) * (Z.s || 1));
       if (window.TeiknTakn && TeiknTakn.teiknaMerki) { TeiknTakn.teiknaMerki(x, m, mx, my, s, units); return; }
       const def = window.TeiknMerking && TeiknMerking.stimplar && TeiknMerking.stimplar.find(s0 => s0.id === m.sign);
       x.fillStyle = m.color || (def && def.litur) || '#c93c1d';
@@ -1407,7 +1489,7 @@
 
     FP.open = function () {
       loka3d(); cancelAnimationFrame(G.raf);
-      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, _haedirBid: 0, _festCid: 0, _festModal: null });
+      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, _haedirBid: 0, _festCid: 0, _festModal: null, minni: {}, skipti: (G.skipti || 0) + 1, pdfBid: false });
       const r = opna.apply(this, arguments);
       Z.s = 1; Z.x = 0; Z.y = 0;
       try { tikk(); } catch (_) {}
@@ -1424,12 +1506,21 @@
       G.soknKom = cid;
       if (FP.companyId !== cid) return;
       const p = plan();
-      p.haedir = Array.isArray(row.haedir) && row.haedir.length ? JSON.parse(JSON.stringify(row.haedir)) : null;
-      G.rymi = { x: 0, y: 0 }; G.virk = 0; G.lykill = ''; G.synd = null;
+      const virkAdur = haedir()[G.virk];
+      const idVirk = (virkAdur && virkAdur.id) || null;
+      const urlAdur = (virkAdur && virkAdur.image_url) || null;
+      const nyjar = Array.isArray(row.haedir) && row.haedir.length ? JSON.parse(JSON.stringify(row.haedir)) : null;
+      p.haedir = sameinaHaedir(p.haedir, nyjar);
       const hs = haedir();
-      if (Array.isArray(row.haedir) && row.haedir.length) { p.markers = hs[0].markers.map(m => Object.assign({}, m)); if (hs[0].image_url) p.imageUrl = hs[0].image_url; }
+      let i = idVirk ? hs.findIndex(h => h.id === idVirk) : 0;
+      if (i < 0) i = 0;
+      G.virk = i;
+      p.markers = hs[i].markers.map(m => Object.assign({}, m));
+      if (hs[i].image_url) p.imageUrl = hs[i].image_url;
+      else if (Array.isArray(row.haedir) && row.haedir.length && hs[0].image_url) { /* virk hæð án slóðar */ }
       else { hs[0].markers = (p.markers || []).map(m => Object.assign({}, m)); hs[0].image_url = p.imageUrl || null; }
-      if (G.frum && FP.bgImage !== G.frum) { FP.bgImage = G.frum; G.frum = null; }
+      const urlNu = (hs[i] && hs[i].image_url) || null;
+      if (urlNu !== urlAdur) { G.lykill = ''; G.synd = null; }
     };
 
     FP.save = function () {
@@ -1506,6 +1597,7 @@
     hamur: () => G.hamur,
     rymi: () => G.rymi,
     virk: () => G.virk,
+    thysjun: () => Z.s,
     soknKom: () => G.soknKom,
     haedir,
     plan,

@@ -116,11 +116,15 @@
     return cv;
   }
 
+  const _rasterCache = {};
+  const _rasterWait = {};
+
   function bindSrc(img, url) {
     if (!img || !url) return;
     const pdf = pdfSlodUrMynd(url);
     img._sja = url;
     if (!pdf) { img.src = url; return; }
+    if (_rasterCache[url]) { img.src = _rasterCache[url]; return; }
     const bid = ++_bindBid;
     img._sjaBid = bid;
     const origLoad = img.onload;
@@ -131,7 +135,12 @@
       if (skref === 0) {
         skref = 1;
         const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
-        rasterPdf(pdf, HLID, w, h).then(cv => canvasSlod(cv)).then(slod => {
+        const wait = _rasterWait[url] || (_rasterWait[url] = rasterPdf(pdf, HLID, w, h).then(cv => canvasSlod(cv)).then(slod => {
+          _rasterCache[url] = slod;
+          delete _rasterWait[url];
+          return slod;
+        }));
+        wait.then(slod => {
           if (img._sjaBid !== bid) return;
           img.src = slod;
         }).catch(() => {});
