@@ -14,6 +14,7 @@
   var F = ':not(#_p415a):not(#_p415b):not(#_p415c):not(#_p415d):not(#_p415e):not(#_p415f)';
   var MONO = '"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace';
   var SANS = '"IBM Plex Sans",-apple-system,"Segoe UI",system-ui,sans-serif';
+  var DISPLAY = '"Playfair Display",Georgia,serif';
   var SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
   function blek(css) { return css.replace(/(^|;)color:([^;!]+)(?=;|$)/g, '$1color:$2!important'); }
   function r(sel, css) { return sel.split(',').map(function (x) { return S + x.trim() + F; }).join(',') + '{' + blek(css) + '}'; }
@@ -33,18 +34,21 @@
     r(T + 'tbody td', 'height:58px!important;padding:6px 8px!important;border-top:1px solid #edf0f4!important;font-size:12.5px!important;color:#1f2530;vertical-align:middle!important;background:#fff'),
     r(T + 'tbody tr._ars-row:nth-child(odd) td', 'background:#fafbfd'),
     r(T + 'tbody tr._ars-row:hover td', 'background:#f3f5f9'),
-    // fyrirtæki: nafn 13/700, kt mono 10.5 grátt
-    r(T + '._co', 'font-family:' + SANS + ';font-weight:700!important;font-size:13px!important;color:#11141c;line-height:1.2'),
-    r(T + '._kt', 'font-family:' + MONO + '!important;font-size:10.5px!important;color:#6b7483;font-weight:400'),
+    // 02.10.2026 (Agnar: „finnst fontin eitthvað óskýr og dull … í töflunni") — sama letur og á Brunakerfis- og
+    // Slökkvikerfis skoðun (418): nafn í Playfair 16.5/700 með réttum tölustöfum (Playfair er sjálfgefið með gamaldags
+    // tölustöfum — 0 líktist litlu o), kt og heimilisfang í Mono 500 dekkra, póstnúmer blátt #1d5bbf feitt (6,1:1 á hvítu),
+    // mánuður í Mono hástöfum með breiðu stafabili, tækjatölur í Playfair 19/800. Þykktirnar hleður 394 (_bstal-c-font).
+    r(T + '._co', 'font-family:' + DISPLAY + '!important;font-weight:700!important;font-size:16.5px!important;color:#11141c;line-height:1.2!important;letter-spacing:0!important;font-variant-numeric:lining-nums!important'),
+    r(T + '._kt', 'font-family:' + MONO + '!important;font-size:11px!important;color:#3a4250;font-weight:500!important'),
     // ferðanóta: tvær línur, mjúkt blek
     r(T + '._ars-nota3', '-webkit-line-clamp:2!important;font:400 11.5px/1.35 ' + SANS + '!important;color:#525b6b'),
     // heimilisfang: mono 11.5, póstnúmer grátt á undan
-    r(T + '._addr', 'font-family:' + MONO + '!important;font-size:11.5px!important;color:#1f2530;line-height:1.35!important'),
-    r(T + '._post', 'color:#6b7483;font-weight:400!important;margin-right:4px!important'),
-    // mánuður: mono 12
-    r(T + '._mo', 'font-family:' + MONO + '!important;font-size:12px!important;color:#1f2530'),
-    // tæki: mono 12/700 með 9 px merki
-    r(T + '._devs b', 'font-family:' + MONO + '!important;font-size:12px!important;font-weight:700!important;color:#1f2530'),
+    r(T + '._addr', 'font-family:' + MONO + '!important;font-size:11.5px!important;font-weight:500!important;color:#1f2530;line-height:1.35!important'),
+    r(T + '._post', 'color:#1d5bbf;font-weight:700!important;margin-right:4px!important'),
+    // mánuður: mono hástafir, breitt stafabil
+    r(T + '._mo', 'font-family:' + MONO + '!important;font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.14em!important;color:#1f2530'),
+    // tæki: Playfair 19/800 með réttum tölustöfum, 9 px merki
+    r(T + '._devs b', 'font-family:' + DISPLAY + '!important;font-size:19px!important;font-weight:800!important;line-height:1.1!important;font-variant-numeric:lining-nums tabular-nums!important;color:#1f2530'),
     r(T + '._devs i', 'font-family:' + MONO + '!important;font-size:9px!important;font-weight:700!important;letter-spacing:.1em!important;color:#8a93a3;text-transform:uppercase'),
     r(T + '._devs div + div', 'border-left:0!important'),
     r(T + '._devs div', 'padding:0 6px!important'),
