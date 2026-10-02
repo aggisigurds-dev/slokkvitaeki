@@ -217,8 +217,13 @@
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(0, 0, size, size, size * 0.12);
     else ctx.rect(0, 0, size, size);
+    ctx.shadowColor = 'rgba(0,0,0,.78)';
+    ctx.shadowBlur = Math.max(3, size * 0.22);
+    ctx.shadowOffsetY = 1;
     ctx.fillStyle = litur.bg; ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = Math.max(1, size / 18); ctx.stroke();
+    ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = '#0c0a09'; ctx.lineWidth = Math.max(2.2, size / 11); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.96)'; ctx.lineWidth = Math.max(1.4, size / 16); ctx.stroke();
     ctx.scale(size / 24, size / 24);
     teiknaGlyff(ctx, glyffId, litur.fg, litur.outline);
     ctx.restore();
@@ -249,7 +254,9 @@
     const cw = canvas.width, ch = canvas.height;
     const main = document.getElementById('fp-main');
     const sc = main ? Math.min((main.offsetWidth - 10) / cw, (main.offsetHeight - 10) / ch) : 1;
-    const size = Math.max(14, Math.round(cw / 90), (sc > 0 && isFinite(sc)) ? Math.round(16 / sc) : 16);
+    const size = (window.TeiknSja && TeiknSja.taknPx)
+      ? TeiknSja.taknPx(cw, sc)
+      : Math.max(22, Math.round(cw / 70), (sc > 0 && isFinite(sc)) ? Math.round(26 / sc) : 26);
     const units = F.units || [];
     plan.markers.forEach(mk => {
       if (mk.kind === 'sign' || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('s:') === 0)) return;

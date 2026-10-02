@@ -723,7 +723,7 @@
       // Vigurveggir eru til: þeir eru teiknaðir hnífskarpir á yfirlagið — undir þeim er blaðið aðeins DEYFT.
       if (!G.dauft || G.dauftLykill !== l1) {
         const c = document.createElement('canvas'); c.width = G.stig1.naturalWidth || G.stig1.width; c.height = G.stig1.naturalHeight || G.stig1.height;
-        const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.globalAlpha = 0.3; x.drawImage(G.stig1, 0, 0);
+        const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.globalAlpha = 0.85; x.drawImage(G.stig1, 0, 0);
         G.dauft = c; G.dauftLykill = l1;
       }
       ut = G.dauft;
@@ -880,7 +880,8 @@
         beita(); try { FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
       };
       img.onerror = () => segja('⚠ Náði ekki í teikningu hæðarinnar „' + h.nafn + '".');
-      img.src = h.image_url;
+      if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(img, h.image_url);
+      else img.src = h.image_url;
     } else {
       if (c) c.style.display = 'none'; if (dm) dm.style.display = '';
     }
@@ -942,7 +943,9 @@
       if (!m || m.kind !== 'sign') return;
       const mx = ox + ((m.x > 1 || m.y > 1) ? m.x : m.x * c.width) * k;
       const my = oy + ((m.x > 1 || m.y > 1) ? m.y : m.y * c.height) * k;
-      const s = Math.max(14, Math.min(26, cr.width / 30));
+      const s = (window.TeiknSja && TeiknSja.stimpilPx)
+        ? TeiknSja.stimpilPx(cr.width)
+        : Math.max(32, Math.min(56, cr.width / 12));
       if (window.TeiknTakn && TeiknTakn.teiknaMerki) { TeiknTakn.teiknaMerki(x, m, mx, my, s, units); return; }
       const def = window.TeiknMerking && TeiknMerking.stimplar && TeiknMerking.stimplar.find(s0 => s0.id === m.sign);
       x.fillStyle = m.color || (def && def.litur) || '#c93c1d';
@@ -1096,7 +1099,13 @@
     const g = document.getElementById('fp-3d'); if (g) g.remove();
     const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'false');
   }
-  const hladaMynd = slod => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('mynd')); i.src = slod; });
+  const hladaMynd = slod => new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error('mynd'));
+    if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(i, slod);
+    else i.src = slod;
+  });
   // Hæð → { veggir, W, H, golf, kvardi, merki } í hnitum SKORNU myndarinnar (stig1).
   function undirbua(h, stig1, merkiFrum, val, einingar, frum) {
     const fb = frum.naturalWidth || frum.width, fh = frum.naturalHeight || frum.height;
