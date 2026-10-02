@@ -21,6 +21,12 @@
  * Agnar 02.10.2026: stærðarhvarfi á skiltunum (24–160 px) svo hægt sé að
  * stilla ákveðna stærð. Sjálfgefið gildir á öll skilti; valið merki má
  * hafa sína eigin.
+ *
+ * Agnar 02.10.2026: einn smellur á teikninguna setur EITT merki, velur það
+ * (Eyða/Snúa/Breyta í ræmunni) og tekur vopnið af ræmunni. Næsti smellur
+ * bætir ekki við öðrum Neyðarútgangi. Smelltu aftur á merki í ræmu til
+ * að setja næsta. Yfirlagið velur efsta merkið þegar þau liggja ofan á
+ * hvert öðru.
  * ========================================================================== */
 (() => {
   if (window.TeiknMerking) return;
@@ -118,7 +124,7 @@
       const sy = r.top + my * (r.height / c.height);
       const d = Math.hypot(e.clientX - sx, e.clientY - sy);
       const hit = gripPx(m, r.width);
-      if (d <= hit && d < bd) { bd = d; best = m; }
+      if (d <= hit && d <= bd) { bd = d; best = m; } // jafn fjarlægð: síðasta (efsta) merkið vinnur
     });
     return best;
   }
@@ -247,6 +253,14 @@
     skraUndo({ teg: 'stimpill', merki: afritMerki(m) });
     try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
     endurteikna();
+    return m;
+  }
+
+  function setjaEitt(signId, x, y) {
+    const m = setjaStimpil(signId, x, y);
+    S.valinn = null;
+    S.valinnMerki = m;
+    stikaValid();
     return m;
   }
 
@@ -400,7 +414,7 @@
     if (act === 'eyda' && merki) { eydaMerki(merki); return; }
     if (act === 'skipta' && merki && sign) { breytaStimpil(merki, sign); lokaValmynd(); return; }
     if (act === 'setja' && sign && stad.hnit) {
-      setjaStimpil(sign, stad.hnit.x, stad.hnit.y);
+      setjaEitt(sign, stad.hnit.x, stad.hnit.y);
       vistaAdThjoni();
       lokaValmynd();
     }
@@ -516,14 +530,14 @@
       S.slepptSmellur = true;
       if (!p) { endurteikna(); return; }
       if (d.teg === 'taeki') setjaTaeki(d.unitId, p.x, p.y);
-      else setjaStimpil(d.sign, p.x, p.y);
+      else setjaEitt(d.sign, p.x, p.y);
       vistaAdThjoni();
       stikaValid();
       return;
     }
     if (stad && S.valinn && p) {
       S.slepptSmellur = true;
-      setjaStimpil(S.valinn, p.x, p.y);
+      setjaEitt(S.valinn, p.x, p.y);
       vistaAdThjoni();
       stikaValid();
       return;
@@ -771,7 +785,7 @@
       const uid = e.dataTransfer.getData('application/x-fp-unit');
       const sign = e.dataTransfer.getData('application/x-fp-sign');
       if (uid) setjaTaeki(isNaN(+uid) ? uid : +uid, p.x, p.y);
-      else if (sign) setjaStimpil(sign, p.x, p.y);
+      else if (sign) setjaEitt(sign, p.x, p.y);
       else return;
       vistaAdThjoni();
     });
@@ -855,7 +869,7 @@
       }
       if (S.valinn && this.bgImage) {
         const p = strigaHnit(e);
-        if (p) { setjaStimpil(S.valinn, p.x, p.y); vistaAdThjoni(); }
+        if (p) { setjaEitt(S.valinn, p.x, p.y); vistaAdThjoni(); }
         stikaValid();
         return;
       }
@@ -866,7 +880,7 @@
       if (uid) vistaAdThjoni();
     };
     const info = document.getElementById('fp-info');
-    if (info && /Veldu tæki/i.test(info.textContent || '')) info.textContent = 'Smelltu á merki, svo á teikninguna. Dragðu til eða smelltu á merki til að breyta.';
+    if (info && /Veldu tæki/i.test(info.textContent || '')) info.textContent = 'Smelltu á merki, svo á teikninguna — eitt merki í einu. Smelltu á merkið til að snúa, breyta eða eyða.';
     F.__merkingSkreytt = true;
     return true;
   }
@@ -922,7 +936,7 @@
   }, true);
 
   window.TeiknMerking = {
-    grip, iDragi, setjaTaeki, setjaStimpil, vistaAdThjoni, erStimpil, stimplar: STIMPLAR,
+    grip, iDragi, setjaTaeki, setjaStimpil, setjaEitt, vistaAdThjoni, erStimpil, stimplar: STIMPLAR,
     tikk, afturkalla, eydaMerki, snuaMerki, afritaMerki, opnaValmynd, finnaMerki,
     stimpilPx: merkiStaerd, setjaStaerd: skraStaerd, sjalfStaerd
   };

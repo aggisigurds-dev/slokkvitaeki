@@ -169,6 +169,42 @@ async function main() {
     };
   });
 
+  const eitt = await page.evaluate(() => {
+    FloorPlan.onCanvasClick({ clientX: 1, clientY: 1, preventDefault: function () {}, stopPropagation: function () {} });
+    const b = document.querySelector('.fp-stimpill[data-sign="neyðarútgangur"]');
+    if (!b) return { err: 'neyðarútgangur vantar' };
+    b.click();
+    TeiknMerking.tikk();
+    const n0 = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'neyðarútgangur').length;
+    const ev = { clientX: 185, clientY: 145, button: 0, pointerId: 21, preventDefault: function () {}, stopPropagation: function () {} };
+    TeiknMerking.grip(ev);
+    FloorPlan.onCanvasClick(ev);
+    document.dispatchEvent(new PointerEvent('pointerup', { clientX: 185, clientY: 145, bubbles: true }));
+    TeiknMerking.tikk();
+    const n1 = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'neyðarútgangur').length;
+    const box = document.getElementById('fp-merki-adgerd');
+    const txt = box && !box.hidden ? box.textContent : '';
+    const armadur = document.getElementById('fp-main').classList.contains('fp-armadur');
+    FloorPlan.onCanvasClick({ clientX: 10, clientY: 10, button: 0, preventDefault: function () {}, stopPropagation: function () {} });
+    const n2 = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'neyðarútgangur').length;
+    FloorPlan.onCanvasClick({ clientX: 12, clientY: 12, button: 0, preventDefault: function () {}, stopPropagation: function () {} });
+    const n3 = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'neyðarútgangur').length;
+    const merki = (FloorPlan.plans[1612].markers || []).find(m => m.sign === 'neyðarútgangur' && m.x === 185);
+    let n4 = n3;
+    if (merki) {
+      FloorPlan.onCanvasClick({ clientX: merki.x, clientY: merki.y, button: 0, preventDefault: function () {}, stopPropagation: function () {} });
+      TeiknMerking.tikk();
+      const eyda = document.querySelector('#fp-merki-adgerd [data-act="eyda"]');
+      if (eyda) eyda.click();
+      n4 = (FloorPlan.plans[1612].markers || []).filter(m => m.sign === 'neyðarútgangur').length;
+    }
+    return {
+      n0, n1, n2, n3, n4, armadur,
+      eyda: /Eyða/.test(txt),
+      nafn: /Neyðarútgangur/.test(txt)
+    };
+  });
+
   await browser.close();
 
   const villur = [];
@@ -204,6 +240,9 @@ async function main() {
   krefst(att.per === 40 && att.eiginStaerd === 40, 'valið skilti átti að fá eigin stærð 40: ' + JSON.stringify(att));
   krefst(att.sjalf === 96 && att.hvarfi === '96', 'stærðarhvarfi átti að stilla sjálfgefna stærð skiltanna: ' + JSON.stringify(att));
   krefst(/Stærð skiltanna/.test(att.lbl || ''), 'ræman á að sýna stærðarhvarfa: ' + att.lbl);
+  krefst(eitt.n1 === eitt.n0 + 1 && eitt.n2 === eitt.n1 && eitt.n3 === eitt.n1, 'einn smellur á að setja eitt merki, ekki fleiri: ' + JSON.stringify(eitt));
+  krefst(eitt.eyda && eitt.nafn && !eitt.armadur, 'eftir setningu á merkið að vera valið og ræman óvopnuð: ' + JSON.stringify(eitt));
+  krefst(eitt.n4 === eitt.n0, 'Eyða átti að fjarlægja merkið sem var sett: ' + JSON.stringify(eitt));
 
   if (villur.length) {
     console.log('TEIKNING-MERKING FIXTURE RAUDT');
