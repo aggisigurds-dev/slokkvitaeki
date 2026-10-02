@@ -194,6 +194,15 @@
       return (s && Array.isArray(s.list) && s.list.length) ? s : null;
     } catch (_) { return null; }
   }
+  function listiMedTaeki(list) {
+    var n = 0;
+    (list || []).forEach(function (c) {
+      var a = c && c._ars;
+      if (!a) return;
+      if ((a._units && a._units.length) || (+a._unit_count || 0) > 0) n++;
+    });
+    return n;
+  }
   function writeSnapshot() {
     // tolur fylgir með svo talnakortin sýni síðustu þekktu tölu STRAX á
     // snapshot-málun (í stað „—" þar til ferska sóknin klárar).
@@ -201,7 +210,14 @@
     // `isDoneYear` eingöngu út frá blobbinu — gap-flögg og klarad-pör vantaði —
     // og „Búið 2026" birtist of hátt og hrapaði svo þegar ferska sóknin lenti.
     // Talan á að vera RÉTT strax, ekki leiðrétta sig fyrir augunum á notandanum.
+    // 02.10.2026: tóm tækjatala má ekki yfirskrifa góðan snapshot. PR 879
+    // tæmdi bakgrunns-sóknina; ef hleðsla las prófílsneið sem „öll tæki"
+    // urðu allar SLT/BSL/RS-tölur 0 og næsta opnun málaði þær aftur.
     try {
+      if (!listiMedTaeki(_cache.list)) {
+        var fyrri = readSnapshot();
+        if (fyrri && listiMedTaeki(fyrri.list)) return;
+      }
       localStorage.setItem(SNAP_KEY, JSON.stringify({
         t: Date.now(), list: _cache.list, tolur: _cache.tolur || null,
         fc: _cache.fcCur || null,
@@ -966,19 +982,26 @@
   // kaldri hleðslu, og þeir keyrðu líka þegar Ársskoðun var aldrei opnuð.
   // Minnið fyrst, netið sem varaleið. Sían er ORÐRÉTT sú sama og að neðan;
   // víki þær í sundur stemma tölurnar ekki og audit-status-gildi grípur það.
-  // Fyrsta útgáfan las minnið BEINT og var því ÓVIRK: mælt á lifandi síðu eftir
-  // birtingu keyrðu báðir skannarnir áfram, því 153 spyr áður en db.js hefur
-  // fyllt DB.cache.units. Bíður nú eftir því — sama bið og virkaði í 222, þar
-  // sem skannin hvarf af netinu. Sex sekúndna þak: náist minnið ekki fer
-  // netskönnunin af stað eins og áður, svo þetta getur aldrei orðið verra en
-  // fyrir breytinguna.
+  // 02.10.2026: lengd á `DB.cache.units` er EKKI heildin. Kalt #company/<id>
+  // (og ræsi-skyndiminni 360 eftir prófílsneið) skilur eftir fáein tæki.
+  // Þá taldi borðið aðeins þau og allar aðrar raðir urðu 0 SLT / 0 BSL / 0 RS
+  // með ⚠ afrit / brunakerfi. Aðeins `DB._unitsComplete` (Hlaða eða heildar-
+  // sókn) má lesa minnið. Annars fer netskönnunin af stað — einu sinni.
+  // Tómt minni má bíða í allt að 6 s (ræsing sækir heildina). Hlutmengi
+  // (prófílsneið) bíður ekki — það stækkar ekki af sjálfu sér.
+  function heilTaekiIMinni() {
+    try {
+      return !!(window.DB && DB._unitsComplete && DB.cache && Array.isArray(DB.cache.units) && DB.cache.units.length);
+    } catch (_) { return false; }
+  }
   async function urMinni() {
     for (var i = 0; i < 30; i++) {
+      if (heilTaekiIMinni()) return DB.cache.units;
       var u = (window.DB && DB.cache && DB.cache.units) || null;
-      if (u && u.length) return u;
+      if (u && u.length && !heilTaekiIMinni()) return null;
       await new Promise(function (r) { setTimeout(r, 200); });
     }
-    return null;
+    return heilTaekiIMinni() ? DB.cache.units : null;
   }
 
   async function loadActiveUnitsByFid(SB) {
@@ -1773,6 +1796,7 @@
   // rapid back-and-forth doesn't hammer the DB.
   let _rendered = false;
   let _lastDataSig = '';
+  let _einuSinni = false;
 
   // Cheap fingerprint of what the table draws — id + the few fields that change
   // (inspection status/month, derived unit count/estimate, priority). Far cheaper
@@ -1835,11 +1859,22 @@
     } catch (e) { try { console.warn('[arsskodun] repaintIfChanged', e); } catch (_) {} }
   }
   // 01.10.2026: að koma aftur á sýnina sækir ekki lengur allt mengið.
-  // backgroundRefresh() er tóm. Hlaða kallar á loadAll().
+  // backgroundRefresh() er tóm. Enginn 30 s / 2 mín púls.
+  // 02.10.2026: fyrsta opnun borðsins (eða Hlaða) sækir tækjaskrána EINU SINNI
+  // svo SLT/BSL/RS séu ekki 0. Næstu ferðir lesa minni / snapshot.
   async function backgroundRefresh() {
     // 01.10.2026: sjálfvirk endursókn er slökkt. Að koma aftur á sýnina sótti
     // allt mengið (fyrirtæki, tæki, skjöl) þó listinn væri þegar í minni.
-    // Hlaða kallar á Arsskodun.loadAll(); það teiknar ef gögnin breyttust.
+  }
+  function fyrstaBordHledsla() {
+    if (_einuSinni) return;
+    _einuSinni = true;
+    Promise.resolve(loadAll()).then(function () {
+      if (!(_cache.list && _cache.list.length)) _einuSinni = false;
+    }).catch(function (e) {
+      _einuSinni = false;
+      try { console.warn('[arsskodun] fyrsta hleðsla', e); } catch (_) {}
+    });
   }
 
   // Ný nóta (héðan, af fyrirtækjasíðu, Verkstæði eða annarri vél um realtime): skyndiminnið og allir reitir sem ekki
@@ -1871,7 +1906,7 @@
     // instantly and refresh in the background. No "Hleður…" flash, no blocking
     // rebuild of 743 rows.
     if (_rendered && document.getElementById('_ars-search')) {
-      backgroundRefresh();
+      fyrstaBordHledsla();
       return;
     }
     // Kald opnun: mála STRAX úr localStorage-snapshotinu (síðasta heimsókn) og
@@ -1884,7 +1919,7 @@
     if (!dclBuid()) {
       main.innerHTML = '<div style="padding:24px;color:var(--ink4)">Hleður…</div>';
       await new Promise(r => { document.addEventListener('DOMContentLoaded', r, { once: true }); setTimeout(r, 5000); });
-      if (_rendered && document.getElementById('_ars-search')) { backgroundRefresh(); return; }   // annar show() kláraði á meðan
+      if (_rendered && document.getElementById('_ars-search')) { fyrstaBordHledsla(); return; }   // annar show() kláraði á meðan
     }
     const snap = (!_cache.list.length) ? readSnapshot() : null;
     // 24.09.2026 (Agnar: „reyndu að ná öllu hoppi af ársskoðun síðunni"): kalda málunin úr snapshotinu kom ~1 s eftir ræsingu,
@@ -1904,7 +1939,7 @@
       render();
       _rendered = true;
       _lastDataSig = dataSig();
-      backgroundRefresh();
+      fyrstaBordHledsla();
       return;
     }
     // 30.09.2026 (sama villa og lagfærð var í 199 daginn áður): við hverja
@@ -1916,6 +1951,7 @@
       main.innerHTML = '<div style="padding:24px;color:var(--ink4)">Hleður…</div>';
     }
     await loadAll();
+    _einuSinni = true;
     if (!arsSynVirk() && document.getElementById('_ars-search')) return;
     render();
     _rendered = true;

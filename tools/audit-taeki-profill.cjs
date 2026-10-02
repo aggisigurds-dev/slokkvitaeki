@@ -52,6 +52,9 @@ if (!/from\('uttekt_reikningur_facts'\)/.test(ars)) fail('153 sækir ekki uttekt
 // (4) teikna eftir hleðslu + bíða eftir client
 if (!/repaintIfChanged\(\);\s*\n\s*\}/.test(ars)) fail('153 kallar ekki repaintIfChanged() í lok _loadAllInner.');
 if (!/for \(let i = 0; !SB && i < 40; i\+\+\)/.test(ars)) fail('153 bíður ekki eftir Supabase-client í _loadAllInner (skilar tómu við ræsingu).');
+if (!/function heilTaekiIMinni\(/.test(ars)) fail('153 má ekki lesa prófílsneið sem alla tækjaskrána (0 SLT á borðinu).');
+if (!/function fyrstaBordHledsla\(/.test(ars)) fail('153 sækir ekki tækjaskrá einu sinni þegar Ársskoðun opnast.');
+if (!/DB\._unitsComplete/.test(ars)) fail('153 urMinni þarf DB._unitsComplete — annars verða SLT/BSL/RS 0.');
 
 // (5) lifandi tæki ein og sér = ekki í þjónustu
 if (/return hasArs \|\| hasBru \|\| hasUnits;/.test(ars)) fail('153 inService telur tæki ein og sér sem þjónustu aftur.');

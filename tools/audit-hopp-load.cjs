@@ -35,6 +35,10 @@ krefst('js/mapfix.js', /Companies\.currentId\s*=\s*coId/, '_openCompanySafe ver�
 krefst('js/patches/153-arsskodun.js', /let\s+_loadGen\s*=\s*0/, '153 loadAll þarf kynslóðar-tákn');
 krefst('js/patches/153-arsskodun.js', /function\s+arsSynVirk\s*\(/, '153 þarf arsSynVirk svo bakgrunns-sókn teikni ekki undir prófíl');
 krefst('js/patches/153-arsskodun.js', /_arsModalId/, '153 openDetail má ekki remounta sama modal');
+krefst('js/patches/153-arsskodun.js', /function\s+heilTaekiIMinni\s*\(/, '153 má ekki telja prófílsneið sem alla tækjaskrána');
+krefst('js/patches/153-arsskodun.js', /DB\._unitsComplete/, '153 les aðeins heildar-uttaeki þegar _unitsComplete');
+krefst('js/patches/153-arsskodun.js', /function\s+fyrstaBordHledsla\s*\(/, '153 þarf eina hleðslu þegar Ársskoðun opnast');
+krefst('js/patches/153-arsskodun.js', /fyrstaBordHledsla\(\);\s*\n\s*return;/, '153 snapshot-opnun verður að sækja tækjaskrá einu sinni');
 
 krefst('js/patches/147-brunakerfi.js', /let\s+_bkLoadGen\s*=\s*0/, '147 loadAll þarf kynslóðar-tákn');
 krefst('js/patches/147-brunakerfi.js', /_bkLastLoad\s*&&\s*Date\.now\(\)\s*-\s*_bkLastLoad\s*<\s*8000/, '147 show() má ekki tæma síðuna við hraða endurkomu');
@@ -67,8 +71,8 @@ const html = lesa('index.html');
 const utgafa = {
   'features.js': '20261001sleppa',
   'mapfix.js': '20261001endur',
-  // 01.10: 153 hætti sjálfvirkum endursækjum.
-  '153-arsskodun.js': '20261001saek',
+  // 02.10: 153 sækir tækjaskrá einu sinni við opnun. Enginn 30 s púls.
+  '153-arsskodun.js': '20261002tolur',
   // 01.10 kvöld: 421 hunsar vistun Brunakerfis-/Slökkvikerfis-spjaldanna.
   // 02.10: sama skrá sækir aðeins töfluna sem var skrifuð. Nýtt merki hleður bæði.
   '421-profill-lifandi.js': '20261002saek',
