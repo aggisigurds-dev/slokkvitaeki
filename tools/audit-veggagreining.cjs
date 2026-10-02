@@ -104,21 +104,6 @@ try {
   const hus = T.finnaHus(gra, W, H);
   if (!hus) villur.push('finnaHus átti að finna dökkt hús á hvítu blaði');
 
-  // Grá lóð utan húss: má ekki teljast húsið, og Skýrari má aðeins hvíta hana.
-  const lod = new Uint8Array(W * H); lod.fill(180);
-  for (let t = 0; t < 5; t++) {
-    for (let x = 220; x <= 580; x++) { lod[(140 + t) * W + x] = 40; lod[(460 - t) * W + x] = 40; }
-    for (let y = 140; y <= 460; y++) { lod[y * W + 220 + t] = 40; lod[y * W + 580 - t] = 40; }
-  }
-  const husLod = T.finnaHus(lod, W, H);
-  if (!husLod) villur.push('finnaHus átti að finna dökkt hús inni á grárri lóð');
-  else if (husLod.w * husLod.h > 0.55) villur.push('finnaHus tók gráu lóðina með');
-  if (T.hvitaGraUtanGra) {
-    const hvit = T.hvitaGraUtanGra(lod, W, H);
-    if (hvit[10 * W + 10] < 248) villur.push('grátt utan húss átti að verða hvítt');
-    if (hvit[140 * W + 220] > 60) villur.push('veggur á grárri lóð átti að haldast');
-  }
-
   // Tómt blað: enginn skurður.
   const tomt = new Uint8Array(W * H); tomt.fill(255);
   if (T.blekRammi(tomt, W, H)) villur.push('blekRammi má ekki skera tómt blað');

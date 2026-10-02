@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 /**
- * VÖRÐUR: Skýrari á 2D má aðeins hvíta grátt UTAN hússins.
- * Agnar 02.10.2026: „I only meant the grey area outside the building".
+ * VÖRÐUR: 3D-draugur. Agnar 02.10.2026: „I was talking about the 3d ghost".
  *
  * Fastar:
- *   • 2D notar hvitaGraUtan, ekki veggjabitmap (r.strigi)
- *   • finnaHus / blekRammi hunsa gráa lóð (150–200)
- *   • grunnmyndin inni í húsinu helst
- *   • 3D notar áfram veggjamaskann
+ *   • 2D má EKKI hvíta/bleikja grunnmyndina (hvitaGraUtan / G.graUtan)
+ *   • Skýrari á 2D er veggjamaski (r.strigi) eins og áður
+ *   • 3D-gólf er upprunalega teikningin, gegnsæ UTAN hússins
+ *   • grá lóð (150–200) er ekki veggur — annars fyllir efri hæðin gluggann
  */
 const fs = require('fs');
 const path = require('path');
@@ -19,18 +18,19 @@ const html = fs.readFileSync(path.join(ROT, 'index.html'), 'utf8');
 const villur = [];
 const krefst = (re, msg) => { if (!re.test(skra)) villur.push(msg); };
 
-krefst(/function hvitaGraUtan/, 'hvitaGraUtan vantar — Skýrari á að hvíta grátt utan húss');
-krefst(/function hvitaGraUtanGra/, 'hvitaGraUtanGra vantar (prófanleg grein án striga)');
-krefst(/ut = G\.graUtan/, 'beita á að sýna hvitaða grunnmynd, ekki veggi');
-krefst(/Grátt utan húss hreinsað/, 'stikan á að segja að grátt utan húss sé hreinsað');
-krefst(/const DOKKT_HUS = 130/, 'DOKKT_HUS=130 — grá lóð má ekki teljast blek');
-krefst(/dokkt = dokkt == null \? DOKKT_HUS/, 'blekRammi á að hunsa grátt sjálfgefið');
-krefst(/3D notar hreinsa\(\) áfram/, '3D má ekki missa veggjamaskann');
-if (/if \(r && r\.thekja >= NOTHAEF_THEKJA\) ut = r\.strigi/.test(skra)) {
-  villur.push('2D Skýrari má ekki skipta út grunnmynd fyrir veggjabitmap (r.strigi)');
-}
-if (!/383-teikning-hreinsa-3d\.js\?v=20261002gra/.test(html)) {
-  villur.push('index.html: 383 vantar ?v=20261002gra');
+krefst(/function utiMaska/, 'utiMaska vantar — 3D þarf að vita hvað er UTAN hússins');
+krefst(/function golfMedUti/, 'golfMedUti vantar — 3D-gólf á að vera gegnsætt utan húss');
+krefst(/px\[j \+ 3\] = 0/, '3D-gólf á að stinga alpha=0 utan húss, ekki hvíta');
+krefst(/golfMedUti\(stig1/, 'undirbua á að nota golfMedUti, ekki r.vinnu (grá plata)');
+krefst(/alphaTest: 0\.05/, '3D-gólf þarf alphaTest svo gegnsæir punktar feli ekki neðri hæð');
+krefst(/transparent: true, opacity: nr > 0 \? 0\.42 : 1/, 'allar hæðir transparent — grá lóð má ekki vera ógegnsæ plata');
+krefst(/const DOKKT_HUS = 130/, 'DOKKT_HUS=130 — grá lóð má ekki teljast veggur í 3D');
+krefst(/if \(r && r\.thekja >= NOTHAEF_THEKJA\) ut = r\.strigi/, '2D Skýrari á að vera veggjamaski, ekki hvítun');
+if (/function hvitaGraUtan/.test(skra)) villur.push('hvitaGraUtan má ekki vera — 2D má ekki hvíta teikninguna');
+if (/ut = G\.graUtan/.test(skra)) villur.push('beita má ekki sýna hvitaða grunnmynd (G.graUtan)');
+if (/Grátt utan húss hreinsað/.test(skra)) villur.push('stikan má ekki lofa 2D-hvítun');
+if (!/383-teikning-hreinsa-3d\.js\?v=20261002draugur/.test(html)) {
+  villur.push('index.html: 383 vantar ?v=20261002draugur');
 }
 
 function hlaða() {
@@ -90,37 +90,20 @@ try {
   const gra = new Uint8Array(W * H);
   gra.fill(180);
   veggir(gra, W, H, 250, 160, 550, 440, 40, 6);
-  gra[60 * W + 60] = 20;
 
-  const hus = T.finnaHus(gra, W, H);
-  if (!hus) villur.push('finnaHus átti að finna dökkt hús inni á grárri lóð');
+  const uti = T.utiMaska(gra, W, H);
+  if (!uti) villur.push('utiMaska skilaði engu');
   else {
-    const flat = hus.w * hus.h;
-    if (flat > 0.55) villur.push('finnaHus tók lóðina með: ' + (flat * 100).toFixed(1) + '% af blaði');
-    if (hus.x > 0.36 || hus.y > 0.32) villur.push('finnaHus byrjar of langt inn í húsið');
-    if (hus.x + hus.w < 0.64 || hus.y + hus.h < 0.68) villur.push('finnaHus klippti húsið');
+    if (!uti[20 * W + 20]) villur.push('grá lóð UTAN húss átti að vera gegnsæ í 3D');
+    if (uti[350 * W + 350]) villur.push('inni í húsinu átti gólfið að haldast (ekki gegnsætt)');
+    if (uti[300 * W + 250]) villur.push('veggur átti að loka — ekki gegnsætt');
   }
-
-  const rammi = T.blekRammi(gra, W, H);
-  if (!rammi) villur.push('blekRammi fann ekki hús á grárri lóð');
-  else {
-    const flat = rammi.w * rammi.h;
-    if (flat > 0.55) villur.push('blekRammi tók lóðina með: ' + (flat * 100).toFixed(1) + '%');
-  }
-
-  const ut = T.hvitaGraUtanGra(gra, W, H);
-  const utan = ut[20 * W + 20];
-  const inn = ut[350 * W + 350];
-  const veggur = ut[300 * W + 250];
-  const texti = ut[60 * W + 60];
-  if (utan < 248) villur.push('grá lóð utan húss átti að verða hvít (var ' + utan + ')');
-  if (inn < 160 || inn > 200) villur.push('inni í húsinu átti grátt/upprunalegt að haldast (var ' + inn + ')');
-  if (veggur > 60) villur.push('veggur inni átti að haldast dökkur (var ' + veggur + ')');
-  if (texti > 40) villur.push('dökkur texti utan húss átti að haldast (var ' + texti + ')');
 
   const lod = new Uint8Array(W * H); lod.fill(180);
-  if (T.finnaHus(lod, W, H)) villur.push('finnaHus má ekki skera að auðri/grárri lóð án húss');
-  if (T.blekRammi(lod, W, H)) villur.push('blekRammi má ekki skera að auðri/grárri lóð án húss');
+  const utiLod = T.utiMaska(lod, W, H);
+  let utiN = 0;
+  for (let i = 0; i < W * H; i++) utiN += utiLod[i];
+  if (utiN < W * H * 0.98) villur.push('auð grá lóð án veggja átti að vera algegnsæ í 3D');
 } catch (e) {
   villur.push('keyrsla: ' + ((e && e.stack) || e));
 }
@@ -130,5 +113,5 @@ if (villur.length) {
   villur.forEach(v => console.log('  · ' + v));
   process.exit(1);
 }
-console.log('TEIKNING-GRA GRÆNT — grátt utan húss hvítt, grunnmyndin helst');
+console.log('TEIKNING-GRA GRÆNT — 3D stingur grátt utan húss, 2D teikningin ósnert');
 process.exit(0);
