@@ -96,14 +96,30 @@ const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 const UTGAFA = '2026-09-14';   // verður að fylgja v.utgafa neðar; breytist hún detta eldri raðir út
 
+function hefurBlod(svar) {
+  if (!svar || typeof svar !== 'object') return false;
+  if (Array.isArray(svar.results) && svar.results.length) return true;
+  return !!(svar.teikningar && Number(svar.teikningar.fjoldi) > 0);
+}
+
+async function saekjaSvar(lykill, utgafa) {
+  const u = `${SB_URL}/rest/v1/hus_upplysingar_cache?lykill=eq.${encodeURIComponent(lykill)}`
+          + (utgafa ? `&utgafa=eq.${encodeURIComponent(utgafa)}` : '')
+          + '&select=svar&limit=1';
+  const r = await fetch(u, { headers: SB_HAUS, signal: AbortSignal.timeout(2500) });
+  if (!r.ok) return null;
+  const radir = await r.json();
+  return (Array.isArray(radir) && radir.length && radir[0].svar) ? radir[0].svar : null;
+}
+
 async function lesaVaranlegt(lykill) {
   try {
-    const u = `${SB_URL}/rest/v1/hus_upplysingar_cache?lykill=eq.${encodeURIComponent(lykill)}`
-            + `&utgafa=eq.${encodeURIComponent(UTGAFA)}&select=svar&limit=1`;
-    const r = await fetch(u, { headers: SB_HAUS, signal: AbortSignal.timeout(2500) });
-    if (!r.ok) return null;
-    const radir = await r.json();
-    return (Array.isArray(radir) && radir.length && radir[0].svar) ? radir[0].svar : null;
+    const nuna = await saekjaSvar(lykill, UTGAFA);
+    if (hefurBlod(nuna)) return nuna;
+    // Útgáfa sem segir „engin teikning" má ekki hylja eldri röð með raunverulegum blöðum.
+    const eldri = await saekjaSvar(lykill, null);
+    if (hefurBlod(eldri)) return eldri;
+    return nuna;
   } catch (_) { return null; }
 }
 
@@ -113,6 +129,11 @@ async function lesaVaranlegt(lykill) {
 // ~100 ms EINU SINNI per lykil; sparnaðurinn er 1,7–8,7 s í hvert skipti eftir það.
 async function skrifaVaranlegt(lykill, heimilisfang, svar) {
   try {
+    // Tómt svar má ekki skrifa yfir eldri blöð. Sama lykill er einkvæmur.
+    if (!hefurBlod(svar)) {
+      const fyrri = await lesaVaranlegt(lykill);
+      if (hefurBlod(fyrri)) return;
+    }
     await fetch(`${SB_URL}/rest/v1/hus_upplysingar_cache?on_conflict=lykill`, {
       method: 'POST',
       headers: { ...SB_HAUS, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
@@ -244,13 +265,12 @@ function mapisRod(row) {
   if (!/^https:\/\//i.test(infoUrl)) return null;
   const flokkur = flokkurTeikningar(row);
   const lysing = String(row.lysing || row.gerd || row.tegund || 'Teikning');
-  const haedir = [];
-  const haed = /(\d{1,2})\s*\.\s*hæð/gi;
-  let hm;
-  while ((hm = haed.exec(lysing))) {
-    const n = Number(hm[1]);
-    if (n > 0 && n < 60) haedir.push(n);
-  }
+  const haedir = lesaHaedir(lysing);
+  const kjallari = /kjall/i.test(lysing);
+  const ris = /(?:^|[\s,.:])ris(?:$|[\s,.:])|rishæð/i.test(lysing);
+  const stig = [];
+  if (kjallari) stig.push('Kjallari');
+  if (ris) stig.push('Ris');
   return {
     filename: decodeURIComponent(infoUrl.split('/').pop() || 'teikning.pdf'),
     infoUrl,
@@ -264,10 +284,29 @@ function mapisRod(row) {
     grunnmynd: flokkur === 'adal' && /grunnmynd/i.test(`${lysing} ${row.gerd || ''}`),
     flokkur,
     haed: haedir,
-    stig: /kjall/i.test(lysing) ? ['Kjallari'] : [],
-    kjallari: /kjall/i.test(lysing),
+    stig,
+    kjallari,
+    ris,
     gata: null,
   };
+}
+
+/** „1. hæð", „1.hæð", „2 og 3.hæð", „1-3 hæð". Kjallari og ris eru sér. */
+function lesaHaedir(texti) {
+  const t = String(texti || '');
+  const haedir = [];
+  const baeta = (n) => {
+    n = Number(n);
+    if (n > 0 && n < 60 && !haedir.includes(n)) haedir.push(n);
+  };
+  for (const m of t.matchAll(/(\d{1,2})\s*\.\s*hæð/gi)) baeta(m[1]);
+  for (const m of t.matchAll(/(\d{1,2})\s+og\s+(\d{1,2})\s*\.?\s*hæð/gi)) { baeta(m[1]); baeta(m[2]); }
+  for (const m of t.matchAll(/(\d{1,2})\s*[-–]\s*(\d{1,2})\s*\.?\s*hæð/gi)) {
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (b >= a && b - a <= 12) for (let n = a; n <= b; n++) baeta(n);
+  }
+  return haedir.sort((a, b) => a - b);
 }
 
 function teljaFlokka(results) {
@@ -461,9 +500,9 @@ export async function husUpplysingar(heimilisfang, frestMs = FRESTUR_MS) {
   const tomt = hm.heimild === 'map.is' && teikningar.fjoldi === 0;
   if (oviss) {
     // Lóðin er ágiskun — teikningarnar má skoða, en engar tillögur í reitina.
-    return { eign, tillogur: {}, teikningar, heimild: `${hm.nafn} · ${h.gata} ${h.husnr} er ekki í Staðfangaskrá; næsta lóð er ${label} (${teikningar.fjoldi} teikningar) — engar tillögur`, turbopaint };
+    return { eign, tillogur: {}, teikningar, results: d.results || [], heimild: `${hm.nafn} · ${h.gata} ${h.husnr} er ekki í Staðfangaskrá; næsta lóð er ${label} (${teikningar.fjoldi} teikningar) — engar tillögur`, turbopaint };
   }
-  return { eign, tillogur, teikningar, heimild: teikningar.fjoldi ? lysaHeimild(hm.nafn, teikningar, label) : `${hm.nafn} · engar teikningar skráðar`, turbopaint, ...(tomt ? { reynaAftur: true, tomt: true } : {}) };
+  return { eign, tillogur, teikningar, results: d.results || [], heimild: teikningar.fjoldi ? lysaHeimild(hm.nafn, teikningar, label) : `${hm.nafn} · engar teikningar skráðar`, turbopaint, ...(tomt ? { reynaAftur: true, tomt: true } : {}) };
 }
 
 export default async (req) => {

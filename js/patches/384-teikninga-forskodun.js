@@ -30,6 +30,18 @@
   const beintPdf = d => /\.pdf$/i.test(String(d.infoUrl || '')) && !/skjalasafn\.reykjavik\.is/i.test(String(d.infoUrl || ''));
   const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
   const _myndir = new Map();
+  const _pdf = new Map();
+  const _thumbs = new Map();
+  function pdfGogn(d) {
+    if (!_pdf.has(d.infoUrl)) {
+      _pdf.set(d.infoUrl, (async () => {
+        const r = await fetch(PDF + '?url=' + encodeURIComponent(d.infoUrl), { signal: AbortSignal.timeout(45000) });
+        if (!r.ok) { let v = ''; try { v = (await r.json()).error || ''; } catch (_) {} throw new Error(v || ('PDF fékkst ekki (' + r.status + ')')); }
+        return new Uint8Array(await r.arrayBuffer());
+      })());
+    }
+    return _pdf.get(d.infoUrl);
+  }
   function hladaPdfJs() {
     if (window.pdfjsLib) return Promise.resolve();
     return new Promise((res, rej) => {
@@ -42,9 +54,8 @@
     if (!beintPdf(d)) return MYND + '?url=' + encodeURIComponent(d.infoUrl);
     if (_myndir.has(d.infoUrl)) return _myndir.get(d.infoUrl);
     await hladaPdfJs();
-    const r = await fetch(PDF + '?url=' + encodeURIComponent(d.infoUrl), { signal: AbortSignal.timeout(45000) });
-    if (!r.ok) { let v = ''; try { v = (await r.json()).error || ''; } catch (_) {} throw new Error(v || ('PDF fékkst ekki (' + r.status + ')')); }
-    const doc = await window.pdfjsLib.getDocument({ data: new Uint8Array(await r.arrayBuffer()) }).promise;
+    const gogn = await pdfGogn(d);
+    const doc = await window.pdfjsLib.getDocument({ data: gogn.slice() }).promise;
     const sida = await doc.getPage(1), v0 = sida.getViewport({ scale: 1 });
     const kv = Math.min(4, Math.max(1, 4200 / Math.max(v0.width, v0.height)));          // lengri hlið ~4200 px: læsileg málsetning, hóflegt minni
     const vp = sida.getViewport({ scale: kv }), cv = document.createElement('canvas');
@@ -55,6 +66,48 @@
     const url = URL.createObjectURL(blob); _myndir.set(d.infoUrl, url);
     d._sidur = doc.numPages;
     return url;
+  }
+  async function thumbAf(d) {
+    if (!d) return '';
+    if (d.thumb) return d.thumb;
+    if (_thumbs.has(d.infoUrl)) return _thumbs.get(d.infoUrl);
+    if (!beintPdf(d)) return '';
+    await hladaPdfJs();
+    const gogn = await pdfGogn(d);
+    const doc = await window.pdfjsLib.getDocument({ data: gogn.slice() }).promise;
+    const sida = await doc.getPage(1);
+    const v0 = sida.getViewport({ scale: 1 });
+    const kv = 320 / Math.max(v0.width, v0.height, 1);
+    const vp = sida.getViewport({ scale: kv });
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(vp.width));
+    cv.height = Math.max(1, Math.round(vp.height));
+    const cx = cv.getContext('2d');
+    cx.fillStyle = '#fff';
+    cx.fillRect(0, 0, cv.width, cv.height);
+    await sida.render({ canvasContext: cx, viewport: vp }).promise;
+    const url = cv.toDataURL('image/jpeg', 0.72);
+    _thumbs.set(d.infoUrl, url);
+    return url;
+  }
+  let thumbKedja = Promise.resolve();
+  function fyllaThumbs() {
+    document.querySelectorAll('#tfs .tfs-thumb[data-url]').forEach((el) => {
+      if (el.dataset.th === '1') return;
+      const url = el.getAttribute('data-url');
+      const d = (S.listi || []).find((x) => x && x.infoUrl === url);
+      if (!d) return;
+      el.dataset.th = '1';
+      const setja = (src) => {
+        if (!src || !el.isConnected) return;
+        const im = el.querySelector('img');
+        if (!im) return;
+        im.onerror = () => { im.removeAttribute('src'); };
+        im.src = src;
+      };
+      if (d.thumb) { setja(d.thumb); return; }
+      thumbKedja = thumbKedja.then(() => thumbAf(d)).then(setja).catch(() => {});
+    });
   }
 
   const S = { listi: [], sia: 'grunn', valin: null, stadur: '', coId: null, z: { s: 1, x: 0, y: 0 } };
@@ -68,19 +121,24 @@
       '#tfs .tfs-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,#242320,#141312)}' +
       '#tfs .tfs-hd h2{margin:0;font:700 17px Georgia,serif;color:#e8cb7a;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
       '#tfs .tfs-sub{font-size:12px;color:rgba(255,255,255,.5)}' +
-      '#tfs .tfs-seg{display:inline-flex;border:1px solid rgba(255,255,255,.18);border-radius:9px;overflow:hidden}' +
-      '#tfs .tfs-seg button{height:32px;padding:0 11px;border:0;border-left:1px solid rgba(255,255,255,.12);background:transparent;color:#f1ede4;font:600 12.5px inherit;cursor:pointer}' +
-      '#tfs .tfs-seg button:first-child{border-left:0}#tfs .tfs-seg button[aria-pressed="true"]{background:#c9a54a;color:#14120f}' +
+      '#tfs .tfs-seg{display:inline-flex;flex-wrap:wrap;gap:4px}' +
+      '#tfs .tfs-seg button{height:32px;padding:0 11px;border:1px solid rgba(255,255,255,.18);border-radius:9px;background:transparent;color:#f1ede4;font:600 12.5px inherit;cursor:pointer}' +
+      '#tfs .tfs-seg button[aria-pressed="true"]{background:#c9a54a;color:#14120f;border-color:#c9a54a}' +
       '#tfs .tfs-tk{height:38px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;font:700 13px inherit;cursor:pointer;white-space:nowrap}' +
       '#tfs .tfs-tk:hover{background:rgba(255,255,255,.14)}#tfs .tfs-tk.gull{background:#c9a54a;color:#14120f;border-color:#c9a54a}#tfs .tfs-tk:disabled{opacity:.45;cursor:default}' +
       '#tfs .tfs-bd{flex:1;min-height:0;display:flex}' +
       '#tfs .tfs-li{width:210px;flex:none;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;border-right:1px solid rgba(255,255,255,.1);-webkit-overflow-scrolling:touch}' +
       '#tfs .tfs-kort{flex:none;border:2px solid transparent;border-radius:9px;overflow:hidden;background:rgba(255,255,255,.05);cursor:pointer;text-align:left;padding:0;color:inherit;font:inherit}' +
       '#tfs .tfs-kort[aria-current="true"]{border-color:#c9a54a}' +
-      '#tfs .tfs-kort i{display:block;height:104px;background:#000 center/contain no-repeat}' +
+      '#tfs .tfs-thumb{display:block;position:relative;height:104px;background:#f4efe4;overflow:hidden}' +
+      '#tfs .tfs-thumb img{width:100%;height:100%;object-fit:contain;background:#fff;display:block}' +
+      '#tfs .tfs-thumb img:not([src]){display:none}' +
+      '#tfs .tfs-thumb em{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:8px;text-align:center;font:700 13px/1.25 Georgia,serif;color:#3a3428}' +
+      '#tfs .tfs-thumb img[src]{position:relative;z-index:1}' +
       '#tfs .tfs-kort b{display:block;font-size:12.5px;padding:6px 8px 1px;line-height:1.25}#tfs .tfs-kort span{display:block;font-size:11px;color:rgba(255,255,255,.5);padding:0 8px 7px}' +
       '#tfs .tfs-sv{flex:1;min-width:0;position:relative;overflow:hidden;background:#2a2724;touch-action:none;cursor:grab}' +
-      '#tfs .tfs-sv img{position:absolute;left:0;top:0;transform-origin:0 0;max-width:none;user-select:none;-webkit-user-drag:none;background:#fff}' +
+      '#tfs .tfs-sv img{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:calc(100% - 24px);max-height:calc(100% - 24px);width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-drag:none;background:#fff}' +
+      '#tfs .tfs-sv img.tfs-zoomad{left:0;top:0;max-width:none;max-height:none;object-fit:fill;transform-origin:0 0}' +
       '#tfs .tfs-bid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:rgba(255,255,255,.75);font-size:14px;text-align:center;padding:20px}' +
       '#tfs .tfs-zoom{position:absolute;right:10px;top:10px;display:flex;gap:5px;z-index:2}' +
       '#tfs .tfs-zoom button{width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.88);color:#fff;font:700 19px system-ui;cursor:pointer}' +
@@ -88,17 +146,125 @@
       '#tfs .tfs-ft{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-top:1px solid rgba(255,255,255,.1);background:#0f0e0c}' +
       '#tfs.tfs-simi .tfs-gl{width:100vw;height:100dvh;border-radius:0}#tfs.tfs-simi .tfs-bd{flex-direction:column-reverse}' +
         '#tfs.tfs-simi .tfs-li{width:auto;flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:0;border-top:1px solid rgba(255,255,255,.1);padding:8px}' +
-        '#tfs.tfs-simi .tfs-kort{width:132px}#tfs.tfs-simi .tfs-kort i{height:78px}#tfs.tfs-simi .tfs-ft .tfs-tk{flex:1 1 46%;padding:0 8px;font-size:12.5px}#tfs.tfs-simi .tfs-hd{padding-left:64px}';
+        '#tfs.tfs-simi .tfs-kort{width:132px}#tfs.tfs-simi .tfs-thumb{height:78px}#tfs.tfs-simi .tfs-ft .tfs-tk{flex:1 1 46%;padding:0 8px;font-size:12.5px}#tfs.tfs-simi .tfs-hd{padding-left:64px}';
     document.head.appendChild(st);
   }
 
   // Eintala á blaðinu er „skráningartafla“ (a), fleirtala „skráningartöflur“ (ö).
   const erSkraning = (d) => /skr[aá]ningart[aö]fl/i.test([d && d.lysing, d && d.filename, d && d.tegund].filter(Boolean).join(' '));
+  function textiTeikningar(d) {
+    return [d && d.lysing, d && d.gerd, d && d.tegund, d && d.filename].filter(Boolean).join(' ');
+  }
+  function golvTeikningar(d) {
+    const t = textiTeikningar(d);
+    const haed = [];
+    const baeta = (n) => { n = +n; if (n > 0 && n < 60 && haed.indexOf(n) < 0) haed.push(n); };
+    if (d && Array.isArray(d.haed)) d.haed.forEach(baeta);
+    let m;
+    const re1 = /(\d{1,2})\s*\.\s*hæð/gi;
+    while ((m = re1.exec(t))) baeta(m[1]);
+    const reOg = /(\d{1,2})\s+og\s+(\d{1,2})\s*\.?\s*hæð/gi;
+    while ((m = reOg.exec(t))) { baeta(m[1]); baeta(m[2]); }
+    const reBil = /(\d{1,2})\s*[-–]\s*(\d{1,2})\s*\.?\s*hæð/gi;
+    while ((m = reBil.exec(t))) {
+      const a = +m[1], b = +m[2];
+      if (b >= a && b - a <= 12) for (let n = a; n <= b; n++) baeta(n);
+    }
+    const stig = [];
+    const baetaS = (s) => { if (s && stig.indexOf(s) < 0) stig.push(s); };
+    if (d && Array.isArray(d.stig)) d.stig.forEach(baetaS);
+    if (/kjall/i.test(t) || (d && d.kjallari)) baetaS('Kjallari');
+    if (/(?:^|[\s,.:])ris(?:$|[\s,.:])|rishæð/i.test(t) || (d && d.ris)) baetaS('Ris');
+    haed.sort((a, b) => a - b);
+    return { haed, stig };
+  }
+  function haedirALista(listi) {
+    const haed = [];
+    let kjallari = false, ris = false;
+    (listi || []).forEach((d) => {
+      if (!d || d.urelt) return;
+      const g = golvTeikningar(d);
+      g.haed.forEach((n) => { if (haed.indexOf(n) < 0) haed.push(n); });
+      if (g.stig.indexOf('Kjallari') >= 0) kjallari = true;
+      if (g.stig.indexOf('Ris') >= 0) ris = true;
+    });
+    haed.sort((a, b) => a - b);
+    return { haed, kjallari, ris };
+  }
+  function erGrunn(d) {
+    if (!d) return false;
+    if (d.grunnmynd) return true;
+    const fl = d.flokkur || '';
+    if (fl && fl !== 'adal') return false;
+    return /grunnmynd/i.test(textiTeikningar(d));
+  }
+  function almennGrunn(d) {
+    if (!erGrunn(d)) return false;
+    const g = golvTeikningar(d);
+    return !g.haed.length && g.stig.indexOf('Kjallari') < 0 && g.stig.indexOf('Ris') < 0;
+  }
+  function passarGolv(d, sia) {
+    const g = golvTeikningar(d);
+    if (sia.indexOf('h:') === 0) return g.haed.indexOf(+sia.slice(2)) >= 0;
+    if (sia === 's:Kjallari') return g.stig.indexOf('Kjallari') >= 0;
+    if (sia === 's:Ris') return g.stig.indexOf('Ris') >= 0;
+    return false;
+  }
+  function sheetsForFloor(listi, sia) {
+    const gild = listi.filter((d) => d && !d.urelt);
+    const base = gild.length ? gild : listi;
+    const named = base.filter((d) => passarGolv(d, sia));
+    const ut = [];
+    const add = (arr) => arr.forEach((d) => { if (ut.indexOf(d) < 0) ut.push(d); });
+    add(named.filter(erGrunn));
+    if (sia.indexOf('h:') === 0) add(base.filter(almennGrunn));
+    add(named);
+    return ut;
+  }
+  function siaNafn(k) {
+    if (k && k.indexOf('h:') === 0) return k.slice(2) + '. hæð';
+    if (k === 's:Kjallari') return 'Kjallari';
+    if (k === 's:Ris') return 'Ris';
+    if (k === 'allar') return 'Allar';
+    if (k === 'grunn') return 'Grunnmyndir';
+    return '';
+  }
+  function veljaSia(listi) {
+    const f = haedirALista(listi);
+    if (f.haed.length) return 'h:' + f.haed[0];
+    if (f.kjallari) return 's:Kjallari';
+    if (f.ris) return 's:Ris';
+    return 'grunn';
+  }
+  function haedaTakkar(listi) {
+    const f = haedirALista(listi);
+    const takkar = [];
+    f.haed.forEach((n) => takkar.push({ k: 'h:' + n, t: n + '. hæð' }));
+    if (f.kjallari) takkar.push({ k: 's:Kjallari', t: 'Kjallari' });
+    if (f.ris) takkar.push({ k: 's:Ris', t: 'Ris' });
+    if (takkar.length) takkar.push({ k: 'allar', t: 'Allar' });
+    return takkar;
+  }
+  function thumbMerki(d) {
+    const g = golvTeikningar(d);
+    if (g.haed.length === 1) return g.haed[0] + '. hæð';
+    if (g.haed.length > 1) return g.haed.map((n) => n + '. hæð').join(' + ');
+    if (g.stig.indexOf('Kjallari') >= 0) return 'Kjallari';
+    if (g.stig.indexOf('Ris') >= 0) return 'Ris';
+    if (erGrunn(d)) return 'Grunnmynd';
+    return (d && (d.tegund || d.gerd)) || 'Teikning';
+  }
   const synilegar = () => {
     const l = S.listi;
     if (S.sia === 'skraning') return l.filter(erSkraning);
     if (S.sia === 'allar') return l;
     if (S.sia === 'gild') return l.filter(d => !d.urelt);
+    if (S.sia && (S.sia.indexOf('h:') === 0 || S.sia.indexOf('s:') === 0)) {
+      const s = sheetsForFloor(l, S.sia);
+      if (s.length) return s;
+      const gild = l.filter(d => !d.urelt);
+      return gild.length ? gild : l;
+    }
     const g = l.filter(d => d.grunnmynd && !d.urelt);
     return g.length ? g : l.filter(d => !d.urelt);
   };
@@ -120,8 +286,7 @@
     const el = document.createElement('div'); el.id = 'tfs';
     el.innerHTML = '<div class="tfs-gl" role="dialog" aria-modal="true" aria-label="Teikningar">' +
       '<div class="tfs-hd"><div style="min-width:0;flex:1"><h2 id="tfs-titill"></h2><div class="tfs-sub" id="tfs-sub"></div></div>' +
-        '<div class="tfs-seg" role="group" aria-label="Sía">' +
-          '<button type="button" data-sia="grunn">Grunnmyndir</button><button type="button" data-sia="gild">Gildandi</button><button type="button" data-sia="allar">Allar</button><button type="button" data-sia="skraning">Skráningartöflur</button></div>' +
+        '<div class="tfs-seg" id="tfs-seg" role="group" aria-label="Hæðir"></div>' +
         '<button type="button" class="tfs-tk" data-a="loka" aria-label="Loka">✕ Loka</button></div>' +
       '<div class="tfs-bd"><div class="tfs-li" id="tfs-li"></div>' +
         '<div class="tfs-sv" id="tfs-sv"><div class="tfs-txt" id="tfs-txt" hidden></div>' +
@@ -154,25 +319,54 @@
     tengjaSvid();
   }
 
+  function teiknaSiu() {
+    const seg = document.getElementById('tfs-seg'); if (!seg) return;
+    const haed = haedaTakkar(S.listi);
+    const takkar = haed.length ? haed : [
+      { k: 'grunn', t: 'Grunnmyndir' }, { k: 'gild', t: 'Gildandi' }, { k: 'allar', t: 'Allar' }, { k: 'skraning', t: 'Skráningartöflur' },
+    ];
+    if (!takkar.some((t) => t.k === S.sia)) S.sia = takkar[0].k;
+    seg.innerHTML = takkar.map((t) =>
+      '<button type="button" data-sia="' + esc(t.k) + '" aria-pressed="' + (t.k === S.sia) + '">' + esc(t.t) + '</button>').join('');
+  }
   function teiknaLista(veljaFyrstu) {
     const li = document.getElementById('tfs-li'); if (!li) return;
+    teiknaSiu();
     const l = synilegar();
-    document.querySelectorAll('#tfs [data-sia]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sia === S.sia)));
     li.innerHTML = l.map((d, i) => '<button type="button" class="tfs-kort" data-i="' + i + '" aria-current="' + (d === S.valin) + '">' +
-      '<i style="' + (d.thumb ? 'background-image:url(\'' + esc(d.thumb) + '\')' : '') + '"></i><b>' + esc(d.lysing || d.tegund || d.filename || 'Teikning') +
+      '<span class="tfs-thumb" data-url="' + esc(d.infoUrl || '') + '"><img alt=""><em>' + esc(thumbMerki(d)) + '</em></span>' +
+      '<b>' + esc(d.lysing || d.tegund || d.filename || 'Teikning') +
       (d.urelt ? ' <em style="color:#e0a05f;font-weight:400;font-style:normal">(úrelt)</em>' : '') + '</b><span>' + esc([d.dags, erPdf(d) ? 'PDF' : 'TIF'].filter(Boolean).join(' · ')) + '</span></button>').join('') ||
-      '<div class="tfs-sub" style="padding:8px">' + (S.sia === 'skraning' ? 'Engin skráningartafla í aðaluppdráttunum.' : 'Engin teikning í þessari síu.') + '</div>';
+      '<div class="tfs-sub" style="padding:8px">' + (S.listi.length ? 'Ekkert blað á þessari hæð.' : 'Engin teikning í þessari síu.') + '</div>';
     const sub = document.getElementById('tfs-sub');
-    if (sub) sub.textContent = l.length + ' af ' + S.listi.length + ' teikningum · ↑↓ fletta · Esc lokar';
+    const nafn = siaNafn(S.sia);
+    if (sub) sub.textContent = (nafn ? nafn + ' · ' : '') + (l.length === 1 ? 'heilt blað' : (l.length + ' blöð')) + ' · Esc lokar';
+    fyllaThumbs();
     if (veljaFyrstu && l.length && l.indexOf(S.valin) < 0) velja(l[0]);
   }
 
   /* ── forskoðun með þysjun ── */
   function beita() { const im = document.querySelector('#tfs-sv img'); if (im) im.style.transform = 'translate(' + S.z.x + 'px,' + S.z.y + 'px) scale(' + S.z.s + ')'; }
   function passa() {
-    const sv = document.getElementById('tfs-sv'), im = sv && sv.querySelector('img'); if (!im || !im.naturalWidth) return;
-    const s = Math.min((sv.clientWidth - 16) / im.naturalWidth, (sv.clientHeight - 16) / im.naturalHeight);
-    S.z = { s, x: (sv.clientWidth - im.naturalWidth * s) / 2, y: (sv.clientHeight - im.naturalHeight * s) / 2 }; beita();
+    const sv = document.getElementById('tfs-sv'), im = sv && sv.querySelector('img');
+    if (!im || !im.naturalWidth || !sv.clientWidth || !sv.clientHeight) return false;
+    const s = Math.min((sv.clientWidth - 24) / im.naturalWidth, (sv.clientHeight - 24) / im.naturalHeight);
+    if (!isFinite(s) || s <= 0) return false;
+    im.classList.add('tfs-zoomad');
+    S.z = { s, x: (sv.clientWidth - im.naturalWidth * s) / 2, y: (sv.clientHeight - im.naturalHeight * s) / 2 };
+    beita();
+    im.style.visibility = 'visible';
+    return true;
+  }
+  function passaSeint(im) {
+    let n = 0;
+    const reyna = () => {
+      if (!im || !im.isConnected) return;
+      if (passa()) return;
+      if (++n > 24) { im.style.visibility = 'visible'; return; }
+      requestAnimationFrame(reyna);
+    };
+    reyna();
   }
   function thysja(f, cx, cy) {
     const sv = document.getElementById('tfs-sv'); if (!sv) return;
@@ -216,7 +410,8 @@
     document.querySelector('#tfs [data-a="saekja"]').textContent = erPdf(d) ? '⬇ Sækja í fullum gæðum (PDF)' : '⬇ Sækja frumrit í skjalasafni (TIF)';
     const im = new Image();
     im.alt = d.lysing || 'Teikning'; im.draggable = false;
-    im.onload = () => { if (S.valin !== d) return; bid.hidden = true; sv.insertBefore(im, sv.firstChild); passa(); };
+    im.style.visibility = 'hidden';
+    im.onload = () => { if (S.valin !== d) return; bid.hidden = true; sv.insertBefore(im, sv.firstChild); im.style.visibility = 'visible'; passaSeint(im); };
     im.onerror = () => { if (S.valin !== d) return; bid.innerHTML = '⚠ Náði ekki í teikninguna. Prófaðu aðra, eða opnaðu hana í skjalasafninu með ⬇.'; };
     if (beintPdf(d)) bid.innerHTML = '<div style="width:26px;height:26px;border:3px solid rgba(255,255,255,.18);border-top-color:#c9a54a;border-radius:50%;animation:bvr .9s linear infinite"></div>Sæki PDF og teikna fyrstu síðu…';
     myndSlod(d).then(u => { if (S.valin !== d) return; im.src = u; if (d._sidur > 1) txt.innerHTML += ' · <span style="color:#e8cb7a">síða 1 af ' + d._sidur + ' — allar síður í ⬇ / 🖨</span>'; })
@@ -296,7 +491,7 @@
   }
 
   async function opna(landnr, stadur, coId, auka) {
-    const sia = (auka && auka.sia) || 'grunn';
+    const sia = (auka && auka.sia) || '';
     // Sami aðaluppdráttalisti er þegar inni — skipt er um síu án nýs kalls.
     if (document.getElementById('tfs') && S._landnr === String(landnr) && S.listi.length) {
       S.sia = sia;
@@ -314,6 +509,7 @@
       if (!document.getElementById('tfs')) return;
       if (d.error) throw new Error(d.error);
       S.listi = d.results || [];
+      if (!S.sia) S.sia = veljaSia(S.listi);
       if (!S.listi.length) { document.getElementById('tfs-bid').textContent = 'Engar teikningar skráðar á þetta landnúmer.'; return; }
       teiknaLista(true);
     } catch (e) {
@@ -344,13 +540,19 @@
   window.TeikningaForskodun = { opna, loka, opnaHeimilisfang, opnaGeymt };
 
   // Hlekkurinn á spjaldinu (363 setur data-landnr þegar staðurinn er í skjalasafni Reykjavíkur).
-  function opnaGeymt(coId, flokkur) {
+  function opnaGeymt(coId, flokkur, sia) {
     const sk = window.BannerUpplysingar && BannerUpplysingar.skrarSvar && BannerUpplysingar.skrarSvar(coId);
     const allar = (sk && sk.results) || [];
+    if (!allar.length && sk && sk.eign && sk.eign.landnr) {
+      const auka = { sia: sia || '' };
+      if (sk.eign.svf) { auka.svf = sk.eign.svf; auka.heitinr = sk.eign.heitinr || 0; }
+      opna(sk.eign.landnr, (sk.eign && sk.eign.label) || '', coId, auka);
+      return;
+    }
     const listi = flokkur ? allar.filter(d => d.flokkur === flokkur) : allar;
     Object.assign(S, {
       listi: listi.length ? listi : allar,
-      sia: 'allar',
+      sia: sia || veljaSia(listi.length ? listi : allar),
       valin: null,
       stadur: (sk && sk.eign && sk.eign.label) || '',
       coId: coId || null,
@@ -360,13 +562,19 @@
     if (titill) titill.textContent = '📐 Teikningar' + (S.stadur ? ' — ' + S.stadur : '');
     if (!S.listi.length) {
       const b = document.getElementById('tfs-bid');
-      if (b) b.textContent = 'engin teikning fannst';
+      if (b) b.textContent = 'Engar vistaðar teikningar á þessu húsi.';
       return;
     }
     teiknaLista(true);
   }
 
   document.addEventListener('click', e => {
+    const g = e.target.closest && e.target.closest('button._bupp-teikn[data-golv]');
+    if (g) {
+      e.preventDefault(); e.stopPropagation();
+      opnaGeymt(g.dataset.co, null, g.dataset.golv);
+      return;
+    }
     const b = e.target.closest && e.target.closest('button._bupp-teikn[data-flokkur]');
     if (b) {
       e.preventDefault(); e.stopPropagation();
