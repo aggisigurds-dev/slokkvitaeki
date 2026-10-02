@@ -96,15 +96,18 @@
       // föstu dálkarnir (50+280+150+52+214+110+86+186 = 1128) skildu 41 px eftir handa nafninu, sem braut sig orð fyrir orð.
       // Lágmarkið rúmar nú nafnið (≥ 200 px); umbúðirnar ._sk-tblwrap skruna lárétt á mjórri skjá.
       // 23.09 (hönnun D, „smá overlap"): Skoðun-dálkurinn (52px) lét röðunarörina skarast við Ár; Reikningur (86px) braut upphæðir.
-      R('table._sk-tbl', 'min-width:1382px!important'),
-      R('table._sk-tbl colgroup col:nth-child(5)', 'width:86px!important'),
-      R('table._sk-tbl colgroup col:nth-child(8)', 'width:104px!important'),
-      R('table._sk-tbl colgroup col:nth-child(2)', 'width:auto!important'),
-      R('table._sk-tbl colgroup col:nth-child(3)', 'width:280px!important'),
-      // Stöðudálkurinn er 158px í 385 en platan er 150px + fylling — hann fær 186px
-      // svo hún klippist ekki við hægri kant.
-      R('table._sk-tbl colgroup col:nth-child(9)', 'width:186px!important'),
-      R('table._sk-tbl td textarea._sk-nota', 'max-width:280px'),
+      // 02.10.2026 (Agnar: „allt of stórt bil ennþá þarna" + póstnúmerið fremst í heimilisfangi): Póstur-dálkurinn fór úr
+      // 385, svo dálkanúmerin færðust um einn. Nafnið er ekki lengur auto — það gleypti allt aukaplássið og bjó til bilið
+      // milli nafns og Nótu. Allt er fast nema Staða (8, síðast), sem tekur afganginn aftast í röðinni.
+      // Lágmarkið: 240+250+190+86+214+132+100 = 1212 föst + 186 fyrir hak og stöðuplötu = 1398.
+      R('table._sk-tbl', 'min-width:1398px!important'),
+      R('table._sk-tbl colgroup col:nth-child(1)', 'width:240px!important'),
+      R('table._sk-tbl colgroup col:nth-child(2)', 'width:250px!important'),
+      R('table._sk-tbl colgroup col:nth-child(3)', 'width:190px!important'),
+      R('table._sk-tbl colgroup col:nth-child(4)', 'width:86px!important'),
+      R('table._sk-tbl colgroup col:nth-child(7)', 'width:100px!important'),
+      R('table._sk-tbl colgroup col:nth-child(8)', 'width:auto!important'),
+      R('table._sk-tbl td textarea._sk-nota', 'max-width:none'),
 
       // Ár-flísarnar: sama form og fyrr (46px, díóða) — málmur í stað pastel
       R('._sk-yr', 'border-radius:5px!important;font-family:' + MONO + '!important;background:' + SILVER + '!important;border:1px solid #d7dbe2!important;color:#8a93a3!important'),

@@ -43,12 +43,15 @@
     // ferðanóta: tvær línur, mjúkt blek
     r(T + '._ars-nota3', '-webkit-line-clamp:2!important;font:400 11.5px/1.35 ' + SANS + '!important;color:#525b6b'),
     // heimilisfang: mono 11.5, póstnúmer grátt á undan
-    r(T + '._addr', 'font-family:' + MONO + '!important;font-size:11.5px!important;font-weight:500!important;color:#1f2530;line-height:1.35!important'),
+    r(T + '._addr', 'font-family:' + MONO + '!important;font-size:12.5px!important;font-weight:500!important;color:#1f2530;line-height:1.35!important'),
     r(T + '._post', 'color:#1d5bbf;font-weight:700!important;margin-right:4px!important'),
     // mánuður: mono hástafir, breitt stafabil
     r(T + '._mo', 'font-family:' + MONO + '!important;font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.14em!important;color:#1f2530'),
     // tæki: Playfair 19/800 með réttum tölustöfum, 9 px merki
     r(T + '._devs b', 'font-family:' + DISPLAY + '!important;font-size:19px!important;font-weight:800!important;line-height:1.1!important;font-variant-numeric:lining-nums tabular-nums!important;color:#1f2530'),
+    // Áætlaða upphæðin („251þ") rakst á næsta dálk í 19px (Agnar 02.10: „aðeins minnka fontið í upphæðinni") — 15px,
+    // og línuhæðin jöfnuð við tækjatölurnar svo ÁÆTL-merkið standi í sömu línu og SLT/BSL/RS.
+    r(T + '._devs ._estcell b', 'font-size:15px!important;line-height:20.9px!important'),
     r(T + '._devs i', 'font-family:' + MONO + '!important;font-size:9px!important;font-weight:700!important;letter-spacing:.1em!important;color:#8a93a3;text-transform:uppercase'),
     r(T + '._devs div + div', 'border-left:0!important'),
     r(T + '._devs div', 'padding:0 6px!important'),

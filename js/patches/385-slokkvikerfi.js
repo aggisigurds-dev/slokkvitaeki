@@ -67,6 +67,35 @@
     if (s) { const d = new Date(s); return new Date(d.getFullYear() + 1, d.getMonth(), 1); }
     return r.skodunarmanudur ? new Date(r.ar_nu, r.skodunarmanudur - 1, 1) : null;
   }
+  // ── „Í vinnslu"-hakið (02.10.2026, Agnar: „það vantar líka hökin þarna sem setur stöðuna í vinnslu eins og er í
+  //    fyrirtæki í ársskoðun") — sama merking og _ars-tu-toggle í 153: skoðað á staðnum, skýrsla/reikningur eftir.
+  //    Geymt á ÞJÓNINUM (fjórar vélar): flokkur sem á sína geymslu gefur FLOKKUR.merkjaVinnslu (388: brunakerfi_customers);
+  //    annars AppSettings[`<flokkur>_vinnsla`] = { [kerfi_id]: ár | -1 }. -1 = handvirkt slökkt (sama regla og 153).
+  const VINNSLA_LYKILL = FLOKKUR.key + '_vinnsla';
+  function merktVinnsla(r) {
+    if (r.merkt_vinnsla != null) return !!r.merkt_vinnsla;
+    const AS = window.AppSettings, m = (AS && AS.path && AS.path(VINNSLA_LYKILL)) || {};
+    return +m[String(r.kerfi_id)] === +r.ar_nu;
+  }
+  async function setjaVinnslu(r, on) {
+    if (FLOKKUR.merkjaVinnslu) return FLOKKUR.merkjaVinnslu(r, on);
+    const AS = window.AppSettings;
+    if (!AS || !AS.save || !AS.path) return { ok: false, villa: 'Stillingageymslan (AppSettings) er ekki hlaðin' };
+    const gildi = on ? +r.ar_nu : -1;
+    const svar = await AS.save({ [VINNSLA_LYKILL]: { [String(r.kerfi_id)]: gildi } });
+    if (svar === false) return { ok: false, villa: 'Vistun stillinga mistókst' };
+    const nu = (AS.path(VINNSLA_LYKILL) || {})[String(r.kerfi_id)];
+    return +nu === gildi ? { ok: true } : { ok: false, villa: 'Gildið í stillingunum stemmir ekki við það sem var sent' };
+  }
+  // Hakið situr fremst í Staða-reitnum. Ekkert hak þegar skoðun ársins er komin (Búið/Órukkað) eða kerfið er úr
+  // þjónustu — þá heldur tómur reitur plássinu svo stöðuplöturnar standi í beinni línu.
+  function vinnslaHak(r, s) {
+    if (!r.i_thjonustu || s.k === 'buid' || s.k === 'orukkad' || s.k === 'ur') return '<span class="_sk-vchk-tom" aria-hidden="true"></span>';
+    const hand = merktVinnsla(r), drog = !!r.skodun_id && !hand;
+    const t = drog ? 'Í vinnslu — skýrsla ársins er hafin' : hand ? 'Í vinnslu (skýrslugerð) — smelltu til að hreinsa' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)';
+    return '<button type="button" class="_sk-vchk' + (hand || drog ? ' on' : '') + '" data-vinnsla="' + r.kerfi_id + '"' + (drog ? ' disabled' : '') + ' aria-pressed="' + (hand || drog) + '" title="' + t + '" aria-label="' + t + '">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>';
+  }
   function stada(r) {
     const skodad = !!(r.skodad_at || r.skyrsla_at || r.skodun_status === 'final');
     // Órukkað kemur Á UNDAN þjónustustöðunni: skoðun ársins án reiknings er ógreidd vinna hvort sem fyrirtækið
@@ -74,7 +103,7 @@
     if (skodad && !r.reikningur_at) return { k: 'orukkad', t: 'Órukkað' + (r.i_thjonustu ? '' : r.utan_lista ? ' · ekki á lista' : ' · úr þjónustu'), c: 'late', o: 0 };
     if (!r.i_thjonustu) return { k: 'ur', t: r.utan_lista ? 'Ekki á áskriftarlista' : 'Úr þjónustu', c: 'off', o: 9 };
     if (skodad && r.reikningur_at) return { k: 'buid', t: 'Búið ' + r.ar_nu, c: 'done', o: 5 };
-    if (r.skodun_id) return { k: 'vinnsla', t: 'Í vinnslu', c: 'work', o: 2 };
+    if (r.skodun_id || merktVinnsla(r)) return { k: 'vinnsla', t: 'Í vinnslu', c: 'work', o: 2 };
     const n = naest(r), nu = new Date(), m0 = new Date(nu.getFullYear(), nu.getMonth(), 1);
     if (!n) return { k: 'oskrad', t: 'Mánuð vantar', c: 'skip', o: 1 };
     if (n < m0) return { k: 'fram', t: 'Fram yfir · ' + MON[n.getMonth()] + ' ' + n.getFullYear(), c: 'late', o: 1 };
@@ -166,7 +195,7 @@
         case 'postnr': return String(r.postnumer || '');
         case 'nafn': return String(r.nafn || '').toLowerCase();
         case 'nota': return String(r.nota || '').toLowerCase();
-        case 'heim': return String(r.heimilisfang || '').toLowerCase();
+        case 'heim': return (String(r.postnumer || '') + ' ' + String(r.heimilisfang || '')).toLowerCase();   // póstnúmerið stendur fremst í reitnum
         case 'ar': return String(sidast(r) || '');
         case 'skref': return SKREF.filter(s => r[s[0]]).length;
         case 'verd': return verd(r) || 0;
@@ -233,25 +262,28 @@
         '<select id="_sk-postnr" class="_sk-inp" style="max-width:150px"><option value="">Öll póstnúmer</option>' + Object.keys(pn).sort().map(p => '<option' + (state.postnr === p ? ' selected' : '') + '>' + esc(p) + '</option>').join('') + '</select>' +
         '<label class="_sk-lbl"><input type="checkbox" id="_sk-fela"' + (state.felaUr ? ' checked' : '') + '> Fela þau sem eru úr þjónustu</label>' +
         '<span class="_sk-sp"></span><span class="_sk-lbl">' + sia.length + ' af ' + allt.length + '</span></div>' +
-      '<div class="_sk-tblwrap"><table class="_sk-tbl" data-_pm-status-done="1"><colgroup><col style="width:50px"><col style="width:190px"><col><col style="width:150px"><col style="width:52px"><col style="width:214px"><col style="width:110px"><col style="width:86px"><col style="width:158px"></colgroup>' +
-        '<thead><tr>' + th('postnr', 'Póstur') + th('nafn', 'Fyrirtæki · kerfi') + th('nota', 'Nóta') + th('heim', 'Heimilisfang') + th('man', 'Skoðun') + th('ar', 'Ár', ' style="text-align:center"') + th('skref', 'Skref ' + arNu) + th('verd', FLOKKUR.verdHaus || 'Verð') + th('stada', 'Staða') + '</tr></thead><tbody>' +
+      // 02.10.2026 (Agnar: „allt of stórt bil ennþá þarna, síðan á póstnúmerið að vera fyrir framan heimilisfangið"):
+      // Póstur-dálkurinn er farinn — póstnúmerið stendur fremst í Heimilisfangi eins og á Ársskoðun. Allir dálkar nema
+      // Staða eru fastir; Staða (síðastur) tekur afganginn, svo autt pláss lendir aftast í röðinni, ekki á milli dálka.
+      // 392 á breiddirnar í Brunastáli — dálkanúmerin þar (col:nth-child) fylgja þessari röð.
+      '<div class="_sk-tblwrap"><table class="_sk-tbl" data-_pm-status-done="1"><colgroup><col style="width:240px"><col style="width:250px"><col style="width:190px"><col style="width:86px"><col style="width:214px"><col style="width:132px"><col style="width:100px"><col></colgroup>' +
+        '<thead><tr>' + th('nafn', 'Fyrirtæki · kerfi') + th('nota', 'Nóta') + th('heim', 'Heimilisfang') + th('man', 'Skoðun') + th('ar', 'Ár', ' style="text-align:center"') + th('skref', 'Skref ' + arNu) + th('verd', FLOKKUR.verdHaus || 'Verð') + th('stada', 'Staða') + '</tr></thead><tbody>' +
         (sia.map(x => { const r = x.r; return '<tr class="_sk-row' + (r.i_thjonustu ? '' : ' ur') + '" data-fid="' + r.fyrirtaeki_id + '" data-kid="' + r.kerfi_id + '">' +
-          '<td><span class="_sk-post">' + esc(r.postnumer || '') + '</span></td>' +
           '<td><span class="_sk-co">' + esc(r.nafn) + (r.i_arsskodun ? ' <span class="_sk-svc" title="Líka í ársskoðun slökkvitækja">🧯</span>' : '') + '</span>' +
             (r.kennitala ? '<span class="_sk-kt">kt. ' + esc(fmtKt(r.kennitala)) + '</span>' : '') + '<span class="_sk-kerfi">' + esc(r.heiti) + (r.tegund ? ' · ' + esc(r.tegund) : '') + '</span></td>' +
           '<td class="_sk-notacell"><textarea class="_sk-nota" rows="1" data-kid="' + r.kerfi_id + '" title="' + esc(r.nota || '') + '" placeholder="· · · · · · · ·">' + esc(r.nota || '') + '</textarea><span class="_sk-notast" data-st="' + r.kerfi_id + '"></span></td>' +
-          '<td><span class="_sk-addr">' + esc(r.heimilisfang || '') + '</span></td>' +
+          '<td><span class="_sk-addr">' + (r.postnumer ? '<span class="_sk-post">' + esc(r.postnumer) + '</span> ' : '') + esc(r.heimilisfang || '') + '</span></td>' +
           '<td><select class="_sk-man" data-kid="' + r.kerfi_id + '" title="Skoðunarmánuður"><option value="">—</option>' + MON.map((m, i) => '<option value="' + (i + 1) + '"' + (r.skodunarmanudur === i + 1 ? ' selected' : '') + '>' + m + '</option>').join('') + '</select></td>' +
           '<td style="text-align:center">' + arHtml(r) + '<span class="_sk-sidast">síðast ' + dm(sidast(r)) + '</span></td>' +
           '<td>' + skrefHtml(r) + '</td><td>' + verdHtml(r) + '</td>' +
-          '<td><span class="_sk-st _sk-st--' + x.s.c + '">' + esc(x.s.t) + '</span></td></tr>'; }).join('') ||
-          '<tr><td colspan="9" class="_sk-tomt">' + (allt.length ? 'Ekkert kerfi passar við síuna.' : (FLOKKUR.tomt || 'Ekkert slökkvikerfi skráð enn — smelltu á „＋ Nýtt kerfi".')) + '</td></tr>') +
+          '<td><span class="_sk-stcell">' + vinnslaHak(r, x.s) + '<span class="_sk-st _sk-st--' + x.s.c + '">' + esc(x.s.t) + '</span></span></td></tr>'; }).join('') ||
+          '<tr><td colspan="8" class="_sk-tomt">' + (allt.length ? 'Ekkert kerfi passar við síuna.' : (FLOKKUR.tomt || 'Ekkert slökkvikerfi skráð enn — smelltu á „＋ Nýtt kerfi".')) + '</td></tr>') +
         '</tbody></table></div>' +
       '<div class="_sk-cards">' + sia.map(x => { const r = x.r; return '<div class="_sk-card _sk-row' + (r.i_thjonustu ? '' : ' ur') + '" data-fid="' + r.fyrirtaeki_id + '" data-kid="' + r.kerfi_id + '">' +
         '<div class="_sk-cardhd"><div class="_sk-cardnafn"><span class="_sk-co">' + esc(r.nafn) + (r.i_arsskodun ? ' <span class="_sk-svc" title="Líka í ársskoðun slökkvitækja">🧯</span>' : '') + '</span>' +
           '<span class="_sk-kerfi">' + esc(r.postnumer || '') + (r.heimilisfang ? ' · ' + esc(r.heimilisfang) : '') + '</span>' +
           '<span class="_sk-kerfi">' + esc(r.heiti) + (r.tegund ? ' · ' + esc(r.tegund) : '') + '</span></div>' +
-          '<span class="_sk-st _sk-st--' + x.s.c + '">' + esc(x.s.t) + '</span></div>' +
+          '<span class="_sk-stcell">' + vinnslaHak(r, x.s) + '<span class="_sk-st _sk-st--' + x.s.c + '">' + esc(x.s.t) + '</span></span></div>' +
         '<div class="_sk-cardlina"><label>Skoðun</label><select class="_sk-man" data-kid="' + r.kerfi_id + '" title="Skoðunarmánuður"><option value="">— mánuð vantar —</option>' + MON_FULL.map((m, i) => '<option value="' + (i + 1) + '"' + (r.skodunarmanudur === i + 1 ? ' selected' : '') + '>' + m + '</option>').join('') + '</select>' +
           '<span class="_sk-cardsidast">síðast ' + dm(sidast(r)) + '</span></div>' +
         '<div class="_sk-cardlina">' + arHtml(r).replace('<span class="_sk-sidast">', '<span class="_sk-sidast" style="display:none">') + skrefHtml(r) + '<span class="_sk-sp"></span>' + verdHtml(r) + '</div>' +
@@ -376,6 +408,19 @@
   function wire(v) {
     v.addEventListener('click', e => {
       const t = e.target;
+      const vb = t.closest('[data-vinnsla]');
+      if (vb) {
+        e.stopPropagation();
+        if (vb.disabled) return;
+        const kid = +vb.dataset.vinnsla, r = (_rows || []).find(x => x.kerfi_id === kid); if (!r) return;
+        const on = !merktVinnsla(r);
+        vb.disabled = true;
+        setjaVinnslu(r, on).then(svar => {
+          if (svar && svar.ok) { r.merkt_vinnsla = on; render(); }
+          else { vb.disabled = false; toast('⚠ Vistaðist ekki: ' + ((svar && svar.villa) || 'óþekkt villa')); }
+        }, err => { vb.disabled = false; toast('⚠ Vistaðist ekki: ' + ((err && err.message) || err)); });
+        return;
+      }
       const c = t.closest('[data-st]'); if (c && c.classList.contains('_sk-chip')) { state.stada = c.dataset.st; vistaSiu(); return render(); }
       const m = t.closest('[data-m]'); if (m) { state.man = +m.dataset.m; vistaSiu(); return render(); }
       const s = t.closest('th[data-sort]'); if (s) { if (state.sort === s.dataset.sort) state.dir = -state.dir; else { state.sort = s.dataset.sort; state.dir = 1; } vistaSiu(); return render(); }
@@ -488,6 +533,14 @@
       V + '._sk-vantar{font-size:11.5px;font-weight:600;color:#8a5c04;background:#fbeac6;border:1px solid rgba(217,146,6,.5);border-radius:6px;padding:2px 7px;white-space:nowrap}',
       V + '._sk-st{display:inline-flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:7px;white-space:nowrap;min-height:26px;box-sizing:border-box;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
       V + '._sk-st--work{background:linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%);border:1px solid #060f24}',
+      // „Í vinnslu"-hakið — sama form og ._chk í 153 (hringur 24px, blár málmur þegar á)
+      V + '._sk-stcell{display:inline-flex;align-items:center;gap:8px}',
+      V + '._sk-vchk,' + V + '._sk-vchk-tom{flex:none;width:24px;height:24px;box-sizing:border-box}',
+      V + '._sk-vchk{display:inline-flex;align-items:center;justify-content:center;margin:0;padding:0;border-radius:50%;border:1px solid #c3cad6;background:#fff;color:#aab3c0;cursor:pointer;box-shadow:none}',
+      V + '._sk-vchk:hover{border-color:#8f98a8;color:#5b6472}',
+      V + '._sk-vchk.on{border-color:#060f24;color:#fff;background:linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.28),0 2px 6px -2px rgba(10,25,60,.6)}',
+      V + '._sk-vchk[disabled]{cursor:default;opacity:.7}',
+      V + '._sk-vchk:focus-visible{outline:2px solid #2f5fe0;outline-offset:2px}',
       V + '._sk-st--done{background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border:1px solid #041c0e}',
       V + '._sk-st--plan{background:linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%);border:1px solid #12296b}',
       V + '._sk-st--late{background:linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);border:1px solid #4d0a08}',
