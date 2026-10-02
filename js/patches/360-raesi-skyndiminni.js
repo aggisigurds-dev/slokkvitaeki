@@ -66,6 +66,10 @@
     if (DB.online || (DB.cache.units && DB.cache.units.length)) return false;   // kapphlaup: net vann
     DB.cache.jobs = snap.jobs || []; DB.cache.units = snap.units; DB.cache.schedule = snap.schedule || []; DB.cache.history = snap.history || [];
     DB.cache.unitsByClient = byClient(snap.units);
+    // 02.10.2026: aðeins heildarsókn má merkja _unitsComplete. Prófílsneið
+    // sem var vistuð hingað lét Ársskoðun lesa 10–20 tæki sem „öll" og
+    // mála 0 SLT/BSL/RS á hverja aðra röð.
+    if (snap.complete && snap.units.length) DB._unitsComplete = true;
     DB.online = true; DB._lastLoadOk = DB._lastLoadOk || (snap.t || Date.now());
     try { DB.setSyncState && DB.setSyncState('syncing'); } catch (_) {}          // ferskt er á leiðinni
     stada.hydrated = true; stada.hydratedAt = Math.round(performance.now()); stada.snapAge_s = snap.t ? Math.round((Date.now() - snap.t) / 1000) : null;
@@ -75,8 +79,9 @@
   }
   async function saveDb() {
     const DB = window.DB; if (!DB || !DB.cache || !Array.isArray(DB.cache.units) || !DB.cache.units.length) return;
+    if (!DB._unitsComplete) return;
     try {
-      await put(KEY_DB, { t: Date.now(), jobs: DB.cache.jobs || [], units: DB.cache.units, schedule: DB.cache.schedule || [], history: DB.cache.history || [] });
+      await put(KEY_DB, { t: Date.now(), complete: true, jobs: DB.cache.jobs || [], units: DB.cache.units, schedule: DB.cache.schedule || [], history: DB.cache.history || [] });
       stada.savedAt = Date.now();
     } catch (e) { stada.error = String(e && e.message || e); }
   }
@@ -114,7 +119,7 @@
         } catch (_) {}
         if (!stada.hydrated && !DB.online) { try { await hydrateDb(); } catch (e) { stada.error = String(e && e.message || e); } }
         const r = await orig.apply(this, arguments);
-        if (DB.online && DB.cache && Array.isArray(DB.cache.units) && DB.cache.units.length) saveSoon();
+        if (DB._unitsComplete && DB.online && DB.cache && Array.isArray(DB.cache.units) && DB.cache.units.length) saveSoon();
         return r;
       };
       wrapped.__raesi360 = true;
