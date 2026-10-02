@@ -108,7 +108,11 @@
     const g = gildi();
     const pdf = g === 'fullt' ? pdfSlodUrMynd(url) : '';
     img._gaedi = g + ':' + url;
-    if (!pdf) { img.src = url; return; }
+    if (!pdf) {
+      if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(img, url);
+      else img.src = url;
+      return;
+    }
     const bid = ++_bindBid;
     img._gaediBid = bid;
     const origLoad = img.onload;

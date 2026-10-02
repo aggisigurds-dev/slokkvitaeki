@@ -53,6 +53,7 @@
         try { FloorPlan._renderCanvas(); FloorPlan._renderPanel(); } catch (_) {}
       };
       if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, row.image_url);
+      else if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(img, row.image_url);
       else img.src = row.image_url;
     } else {
       try { FloorPlan._renderCanvas(); FloorPlan._renderPanel(); } catch (_) {}

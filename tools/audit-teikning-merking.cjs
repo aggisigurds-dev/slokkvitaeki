@@ -13,9 +13,11 @@ const villur = [];
 const krefst = (src, re, msg) => { if (!re.test(src)) villur.push(msg); };
 
 krefst(html, /433-teikning-merking\.js\?v=20261002gaedi/, 'index.html: 433 vantar script-tag');
-krefst(html, /434-teikning-takn\.js\?v=20261002gaedi/, 'index.html: 434 vantar script-tag');
-krefst(html, /435-teikning-gaedi\.js\?v=20261002b/, 'index.html: 435 vantar gæði');
-krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002gaedi/, 'index.html: 383 vantar gaedi-cache');
+krefst(html, /434-teikning-takn\.js\?v=20261002(sja|gaedi)/, 'index.html: 434 vantar script-tag');
+krefst(html, /435-teikning-gaedi\.js\?v=20261002c/, 'index.html: 435 vantar gæði');
+krefst(html, /436-teikning-sja\.js\?v=20261002c/, 'index.html: 436 vantar sja');
+krefst(html, /437-teikning-gluggi\.js\?v=20261002a/, 'index.html: 437 vantar glugga');
+krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp|gaedi)/, 'index.html: 383 vantar cache');
 krefst(p433, /Neyðarútgangur/, '433 vantar Neyðarútgangur-stimpil');
 krefst(p433, /id: 'ut'/, '433 vantar Út-stimpil');
 krefst(p433, /id: 'hose'/, '433 vantar slöngumerki');
