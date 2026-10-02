@@ -13,6 +13,7 @@
   var S = 'html[data-thm-preset="brunastal"] body #view-arsskodun ';
   var F = ':not(#_p415a):not(#_p415b):not(#_p415c):not(#_p415d):not(#_p415e):not(#_p415f)';
   var MONO = '"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace';
+  var PF = '"Playfair Display",Georgia,serif';
   var SANS = '"IBM Plex Sans",-apple-system,"Segoe UI",system-ui,sans-serif';
   var SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
   function blek(css) { return css.replace(/(^|;)color:([^;!]+)(?=;|$)/g, '$1color:$2!important'); }
@@ -33,19 +34,19 @@
     r(T + 'tbody td', 'height:58px!important;padding:6px 8px!important;border-top:1px solid #edf0f4!important;font-size:12.5px!important;color:#1f2530;vertical-align:middle!important;background:#fff'),
     r(T + 'tbody tr._ars-row:nth-child(odd) td', 'background:#fafbfd'),
     r(T + 'tbody tr._ars-row:hover td', 'background:#f3f5f9'),
-    // fyrirtæki: nafn 13/700, kt mono 10.5 grátt
-    r(T + '._co', 'font-family:' + SANS + ';font-weight:700!important;font-size:13px!important;color:#11141c;line-height:1.2'),
-    r(T + '._kt', 'font-family:' + MONO + '!important;font-size:10.5px!important;color:#6b7483;font-weight:400'),
+    // fyrirtæki (Kröfu-stíll 02.10): nafn Playfair 16.5/700, kt mono 11.5/500 í ink-600
+    r(T + '._co', 'font-family:' + PF + '!important;font-weight:700!important;font-size:16.5px!important;color:#11141c;line-height:1.15!important;letter-spacing:-.005em;font-variant-numeric:lining-nums'),
+    r(T + '._kt', 'font-family:' + MONO + '!important;font-size:11.5px!important;color:#3a4250;font-weight:500!important;letter-spacing:.03em'),
     // ferðanóta: tvær línur, mjúkt blek
     r(T + '._ars-nota3', '-webkit-line-clamp:2!important;font:400 11.5px/1.35 ' + SANS + '!important;color:#525b6b'),
-    // heimilisfang: mono 11.5, póstnúmer grátt á undan
-    r(T + '._addr', 'font-family:' + MONO + '!important;font-size:11.5px!important;color:#1f2530;line-height:1.35!important'),
-    r(T + '._post', 'color:#6b7483;font-weight:400!important;margin-right:4px!important'),
-    // mánuður: mono 12
-    r(T + '._mo', 'font-family:' + MONO + '!important;font-size:12px!important;color:#1f2530'),
-    // tæki: mono 12/700 með 9 px merki
-    r(T + '._devs b', 'font-family:' + MONO + '!important;font-size:12px!important;font-weight:700!important;color:#1f2530'),
-    r(T + '._devs i', 'font-family:' + MONO + '!important;font-size:9px!important;font-weight:700!important;letter-spacing:.1em!important;color:#8a93a3;text-transform:uppercase'),
+    // heimilisfang: mono 12/500 í ink-700, póstnúmer blátt 700 á undan (#1d5bbf, 6,1:1 á hvítu)
+    r(T + '._addr', 'font-family:' + MONO + '!important;font-size:12px!important;font-weight:500!important;color:#2b313c;line-height:1.4!important'),
+    r(T + '._post', 'color:#1d5bbf;font-weight:700!important;margin-right:4px!important'),
+    // mánuður: mono 11.5/700 hástafir .16em
+    r(T + '._mo', 'font-family:' + MONO + '!important;font-size:11.5px!important;font-weight:700!important;letter-spacing:.16em!important;text-transform:uppercase!important;color:#1f2530'),
+    // tæki: Playfair 19/800 tölur (lining) með mono 9/700 merki
+    r(T + '._devs b', 'font-family:' + PF + '!important;font-size:19px!important;font-weight:800!important;line-height:1!important;font-variant-numeric:lining-nums!important;color:#11141c'),
+    r(T + '._devs i', 'font-family:' + MONO + '!important;font-size:9px!important;font-weight:700!important;letter-spacing:.14em!important;color:#5b6472;text-transform:uppercase'),
     r(T + '._devs div + div', 'border-left:0!important'),
     r(T + '._devs div', 'padding:0 6px!important'),
     // akstur án lista: silfur-flís (litaðir listar 1/2/3 halda sínum lit frá 267)
@@ -58,6 +59,12 @@
   var inni = rules.join('\n');
   var css = '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n';
 
+  // Kröfu-stíll: Playfair 700/800 og JetBrains Mono 500/700 (index.html hleður hvorugt — gervifeitletrun annars)
+  if (!document.getElementById('_ars-tafla-415-font')) {
+    var lf = document.createElement('link'); lf.id = '_ars-tafla-415-font'; lf.rel = 'stylesheet';
+    lf.href = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Playfair+Display:wght@700;800&display=swap';
+    document.head.appendChild(lf);
+  }
   var st = document.getElementById('_ars-tafla-415-css');
   if (!st) { st = document.createElement('style'); st.id = '_ars-tafla-415-css'; document.head.appendChild(st); }
   st.textContent = css;
