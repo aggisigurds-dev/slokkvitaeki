@@ -58,6 +58,9 @@
     var out = {}, leaves = document.querySelectorAll('#view-arsskodun div, #view-arsskodun span');
     for (var i = 0; i < leaves.length; i++) {
       var e = leaves[i]; if (e.children.length) continue;
+      // 02.10.2026: hetjuspjöldin í 414 (Ársskoðun) og 418 eiga sína eigin stiku. Flísin „Áætlað · raun" byrjar á ÁÆTL og var
+      // tekin fyrir gamla Tekjur-spjaldið — stika var hengd INN í 50 px flísina og textinn skarst (Agnar: „overlapping").
+      if (e.closest('.b414-top, .b418-top')) continue;
       var t = e.textContent.trim().toUpperCase(), k = null;
       if (t.indexOf('FJÖLDI') === 0) k = 'FJOLDI';
       else if (t.indexOf('BÚIÐ') === 0) k = 'BUID';

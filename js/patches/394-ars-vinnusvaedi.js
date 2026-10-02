@@ -243,6 +243,12 @@
     st.id = '_arsv-css';
     st.textContent = '@media (min-width: 901px){\n' + css() + '\n}';
     (document.head || document.documentElement).appendChild(st);
+    // Playfair 800 og Mono 700 eru ekki í index.html — án þeirra falsar vafrinn þykktina og letrið verður loðið (deilt með 418)
+    if (!document.getElementById('_bstal-c-font')) {
+      const fl = document.createElement('link'); fl.id = '_bstal-c-font'; fl.rel = 'stylesheet';
+      fl.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:wght@700;800&display=swap';
+      (document.head || document.documentElement).appendChild(fl);
+    }
   }
 
   const talaAf = el => {

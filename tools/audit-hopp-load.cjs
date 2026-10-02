@@ -76,7 +76,7 @@ const utgafa = {
   // 02.10: sama skrá sækir aðeins töfluna sem var skrifuð. Nýtt merki hleður bæði.
   '421-profill-lifandi.js': '20261002saek',
   // 02.10: 274 fékk „Önnur vara/þjónusta — skrifa sjálf/ur" og skoðunarlínur sem fylgja búnaðinum.
-  '274-brunakerfi-fyrirtaeki.js': '20261002ottengd',
+  '274-brunakerfi-fyrirtaeki.js': '20261002ogilda',
   // Uppfærsluborð bætti #uppferslubord við 218. Nýrra merki hleður hopp-kóðann líka.
   '218-url-routing.js': '20261001ub',
 };
