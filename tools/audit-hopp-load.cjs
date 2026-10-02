@@ -68,7 +68,7 @@ const html = lesa('index.html');
 // Skrár sem Endurnýja-lagfæringin (01.10) snerti bera nýrra merki. Hinar
 // halda hopp-merkinu. Nýrra merki hleður hopp-kóðann líka — gamalt cache ekki.
 const utgafa = {
-  'features.js': '20261001sleppa',
+  'features.js': '20261002teikn',
   'mapfix.js': '20261001endur',
   // 02.10: 153 sækir tækjaskrá einu sinni við fyrstu opnun borðsins.
   '153-arsskodun.js': '20261002taek',
@@ -88,6 +88,19 @@ const utgafa = {
     }
   });
 krefst('js/features.js', /data-co-endurnyja/, 'Endurnýja er eina handvirka endurhleðslan á prófílnum');
+krefst('js/features.js', /opnaTeikningu\s*:\s*function/, 'Teikning-takki verður að opna út frá núverandi félagi, ekki gömlum onclick');
+krefst('js/features.js', /_taekiAProfill\s*:\s*function/, 'Teikning má ekki lesa prófílsneið sem alla uttaeki-töfluna');
+krefst('js/features.js', /this\._detailUnits\s*=\s*units/, 'openDetail verður að geyma tæki þessa prófíls');
+krefst('js/patches/384-teikninga-forskodun.js', /function nyskraFyrirtaeki/, '384 verður að núllstilla forskoðun þegar félag breytist');
+krefst('js/patches/384-teikninga-forskodun.js', /function festTakka/, '384 verður að festa Teikningar-takka aftur á nýtt félag');
+krefst('js/patches/363-banner-upplysingar.js', /festTakka\(box\)/, '363 teikna() verður að festa Teikningar-hnappa eftir innerHTML');
+krefst('js/patches/363-banner-upplysingar.js', /hashchange/, '363 verður að remounta banner við fyrirtækjaskipti, ekki bíða eftir púls');
+krefst('js/patches/383-teikning-hreinsa-3d.js', /function endurfestaEfNyttFelag/, '383 hæðaflipar/hnappar verða að festast aftur þegar félag breytist');
+krefst('js/patches/383-teikning-hreinsa-3d.js', /function fpEl/, '383 má ekki binda hæðaflipa á fyrsta #fp-main í skjalinu');
+if (!/384-teikninga-forskodun\.js\?v=20261002smell/.test(html)) villur.push('index.html: 384-teikninga-forskodun.js vantar ?v=20261002smell');
+if (!/383-teikning-hreinsa-3d\.js\?v=20261002smell/.test(html)) villur.push('index.html: 383-teikning-hreinsa-3d.js vantar ?v=20261002smell');
+if (!/363-banner-upplysingar\.js\?v=20261002smell/.test(html)) villur.push('index.html: 363-banner-upplysingar.js vantar ?v=20261002smell');
+if (!/405-efsta-rod\.js\?v=20261002smell/.test(html)) villur.push('index.html: 405-efsta-rod.js vantar ?v=20261002smell');
 krefst('js/db.js', /skipped:\s*true/, 'prófíll á #company má ekki sækja allar uttaeki-síður');
 krefst('js/patches/421-profill-lifandi.js', /skalSleppa/, 'hak/Yfirferð má ekki sækja öll tæki félagsins');
 krefst('js/patches/421-profill-lifandi.js', /SJALFTEIKNA\.test\(t\)/, '421 má ekki rífa prófílinn þegar Brunakerfis-/Slökkvikerfis-spjaldið vistar (hoppið í Línum reiknings 01.10)');

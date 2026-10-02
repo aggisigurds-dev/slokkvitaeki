@@ -455,7 +455,11 @@
   function notaIUttekt() {
     const d = S.valin; if (!d) return;
     if (typeof FloorPlan === 'undefined' || !FloorPlan.open) { segja('Teikniglugginn er ekki tilbúinn — reyndu aftur.'); return; }
-    const takki = [...document.querySelectorAll('button,a')].find(b => b.textContent.trim() === 'Teikning' && /FloorPlan\.open/.test(b.getAttribute('onclick') || ''));
+    const takki = [...document.querySelectorAll('button,a')].find(b => {
+      const t = (b.textContent || '').replace(/\s+/g, ' ').trim();
+      const on = b.getAttribute('onclick') || '';
+      return t === 'Teikning' && (/FloorPlan\.open/.test(on) || /opnaTeikningu/.test(on));
+    });
     if (!takki) { segja('Fann ekki „Teikning"-takkann á spjaldinu — opnaðu úttektarteikninguna og notaðu „📐 Sækja teikningu".'); return; }
     // loka() tekur sögufærsluna af með history.back() — ÓSAMSTILLT. Opnist teikningaglugginn (sem setur sína eigin
     // færslu) á undan, tæki bakkið HANS færslu og næsta lokun færi af spjaldinu. Því er beðið eftir bakkinu.
@@ -490,29 +494,50 @@
     }, 300);
   }
 
+  let _opnun = 0;
+  function nyskraFyrirtaeki(coId) {
+    const nyr = coId == null || coId === '' ? null : String(coId);
+    if (S.coId != null && nyr != null && String(S.coId) === nyr) return S.coId;
+    _opnun++;
+    if (document.getElementById('tfs')) loka();
+    Object.assign(S, { listi: [], sia: 'grunn', valin: null, stadur: '', coId: nyr, _landnr: '', z: { s: 1, x: 0, y: 0 } });
+    return nyr;
+  }
+  function hnutur(e) {
+    let t = e && e.target;
+    if (t && t.nodeType === 3) t = t.parentElement;
+    return t && t.closest ? t : null;
+  }
+
   async function opna(landnr, stadur, coId, auka) {
     const sia = (auka && auka.sia) || '';
+    if (coId != null && coId !== '') nyskraFyrirtaeki(coId);
+    const min = ++_opnun;
     // Sami aðaluppdráttalisti er þegar inni — skipt er um síu án nýs kalls.
-    if (document.getElementById('tfs') && S._landnr === String(landnr) && S.listi.length) {
+    // Ekki endurnýta gluggann þegar félagið breyttist: landnúmer getur verið
+    // það sama á tveimur húsum og þá gleypti fyrri listinn seinni smellinn.
+    if (document.getElementById('tfs') && S._landnr === String(landnr) && S.listi.length
+      && (coId == null || coId === '' || String(S.coId) === String(coId))) {
       S.sia = sia;
       if (stadur) S.stadur = stadur;
       teiknaLista(true);
       return;
     }
-    Object.assign(S, { listi: [], sia, valin: null, stadur: stadur || '', coId: coId || null, _landnr: String(landnr) });
+    Object.assign(S, { listi: [], sia, valin: null, stadur: stadur || '', coId: coId || S.coId || null, _landnr: String(landnr) });
     grind();
     document.getElementById('tfs-titill').textContent = '📐 Teikningar' + (stadur ? ' — ' + stadur : '');
     try {
       const vidbot = auka && auka.svf ? '&svf=' + encodeURIComponent(auka.svf) + '&heitinr=' + encodeURIComponent(auka.heitinr || 0) : '';
       const r = await fetch(LISTI + '?landnr=' + encodeURIComponent(landnr) + vidbot, { signal: AbortSignal.timeout(28000) });
       const d = await r.json();
-      if (!document.getElementById('tfs')) return;
+      if (min !== _opnun || !document.getElementById('tfs')) return;
       if (d.error) throw new Error(d.error);
       S.listi = d.results || [];
       if (!S.sia) S.sia = veljaSia(S.listi);
       if (!S.listi.length) { document.getElementById('tfs-bid').textContent = 'Engar teikningar skráðar á þetta landnúmer.'; return; }
       teiknaLista(true);
     } catch (e) {
+      if (min !== _opnun) return;
       const b = document.getElementById('tfs-bid'); if (b) b.textContent = '⚠ Náði ekki í teikningalistann: ' + ((e && e.message) || e);
     }
   }
@@ -537,10 +562,9 @@
     await opna(d.eign.landnr, d.eign.label || h, coId || null, d.eign.svf ? { svf: d.eign.svf, heitinr: d.eign.heitinr || 0 } : null);
     return true;
   }
-  window.TeikningaForskodun = { opna, loka, opnaHeimilisfang, opnaGeymt };
-
   // Hlekkurinn á spjaldinu (363 setur data-landnr þegar staðurinn er í skjalasafni Reykjavíkur).
   function opnaGeymt(coId, flokkur, sia) {
+    nyskraFyrirtaeki(coId);
     const sk = window.BannerUpplysingar && BannerUpplysingar.skrarSvar && BannerUpplysingar.skrarSvar(coId);
     const allar = (sk && sk.results) || [];
     if (!allar.length && sk && sk.eign && sk.eign.landnr) {
@@ -568,22 +592,51 @@
     teiknaLista(true);
   }
 
-  document.addEventListener('click', e => {
-    const g = e.target.closest && e.target.closest('button._bupp-teikn[data-golv]');
+  function festTakka(rot) {
+    const r = rot && rot.querySelectorAll ? rot : document;
+    r.querySelectorAll('._bupp-teikn').forEach(el => {
+      if (el.dataset.teiknFest === '1') return;
+      el.dataset.teiknFest = '1';
+      el.addEventListener('click', e => {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (el.dataset.golv) opnaGeymt(el.dataset.co, null, el.dataset.golv);
+        else if (el.dataset.flokkur) opnaGeymt(el.dataset.co, el.dataset.flokkur);
+        else if (el.dataset.landnr) opna(el.dataset.landnr, el.dataset.stadur || '', el.dataset.co || null, el.dataset.svf ? { svf: el.dataset.svf, heitinr: el.dataset.heitinr || 0 } : null);
+      });
+    });
+  }
+
+  function smellaTeikn(e) {
+    const t = hnutur(e);
+    if (!t) return;
+    const g = t.closest('button._bupp-teikn[data-golv]');
     if (g) {
       e.preventDefault(); e.stopPropagation();
       opnaGeymt(g.dataset.co, null, g.dataset.golv);
       return;
     }
-    const b = e.target.closest && e.target.closest('button._bupp-teikn[data-flokkur]');
+    const b = t.closest('button._bupp-teikn[data-flokkur]');
     if (b) {
       e.preventDefault(); e.stopPropagation();
       opnaGeymt(b.dataset.co, b.dataset.flokkur);
       return;
     }
-    const a = e.target.closest && e.target.closest('a._bupp-teikn[data-landnr]');
+    const a = t.closest('a._bupp-teikn[data-landnr]');
     if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
     e.preventDefault(); e.stopPropagation();
     opna(a.dataset.landnr, a.dataset.stadur || '', a.dataset.co || null, a.dataset.svf ? { svf: a.dataset.svf, heitinr: a.dataset.heitinr || 0 } : null);
-  }, true);
+  }
+
+  document.addEventListener('click', smellaTeikn, true);
+  window.addEventListener('hashchange', () => {
+    const m = String(location.hash || '').match(/#(?:company|companies)\/(\d+)/);
+    if (m) {
+      nyskraFyrirtaeki(m[1]);
+      setTimeout(() => { try { festTakka(document.querySelector('.co-bupp') || document); } catch (_) {} }, 0);
+    }
+  });
+
+  window.TeikningaForskodun = { opna, loka, opnaHeimilisfang, opnaGeymt, festTakka, nyskraFyrirtaeki };
 })();

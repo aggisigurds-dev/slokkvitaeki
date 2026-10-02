@@ -67,6 +67,24 @@ var Companies = {
     if (id == null) return !!(this.currentId);
     return !!(main.querySelector('button[onclick*="Companies.openEdit(' + id + ')"]'));
   },
+  // Tæki á OPNA prófílnum — ekki DB.cache.units sem heild (prófílsneið er
+  // ekki alla töfluna). Auðkennið ræður; nafn aðeins sem varaleið.
+  _taekiAProfill: function(c) {
+    if (!c) return [];
+    if (this.currentId === c.id && this._detailUnits) return this._detailUnits;
+    var all = (window.DB && DB.cache && DB.cache.units) || [];
+    return all.filter(function(u) {
+      if (String(u.status) === 'urelt') return false;
+      return (u.fyrirtaeki_id != null) ? (+u.fyrirtaeki_id === +c.id) : (u.client === c.nafn);
+    });
+  },
+  opnaTeikningu: function(id) {
+    id = +id;
+    var c = (this.list || []).find(function(x) { return +x.id === id; });
+    if (!c || !window.FloorPlan || typeof FloorPlan.open !== 'function') return;
+    FloorPlan.load(id);
+    FloorPlan.open(id, c.nafn, this._taekiAProfill(c));
+  },
   // 21.09.2026 (afköst, mælt á lifandi): við EINA opnun á fyrirtækjaspjaldi kölluðu fjórir aðilar á load() í sömu andrá
   // (allir +0 ms) og hver sótti ALLA töfluna — 1.192 raðir × allar súlur × 4 = 8 netköll og ~2,5 s af sókn og þáttun.
   // Nú deila kallarar EINNI sókn ef hún hófst fyrir < 800 ms. Glugginn er vísvitandi þröngur: sá sem vistar breytingu og
@@ -212,6 +230,7 @@ var Companies = {
     }
     this.currentId = id;
     this._openedAt = Date.now();
+    this._detailUnits = null;
     // 2026-09-08: síaði AÐEINS á nafni. Tæki sem ber rétt `fyrirtaeki_id` en
     // staðnað `client` (endurnefnt félag — mælt á fid 1570) hvarf af prófílnum
     // þótt aðalyfirlitið teldi það. Notandinn hélt að vistun hefði mistekist og
@@ -221,10 +240,11 @@ var Companies = {
     // Úrelt tæki eru FARIN og eiga hvergi heima í úttektarlistanum — nafnasían
     // faldi þau áður fyrir slysni, auðkennis-sían gerir það ekki. Sama regla og
     // 129/168 nota (NONBILL) og audit-status-gildi ver.
-    var units = DB.cache.units.filter(function(u) {
+    var units = ((window.DB && DB.cache && DB.cache.units) || []).filter(function(u) {
       if (String(u.status) === 'urelt') return false;
       return (u.fyrirtaeki_id != null) ? (u.fyrirtaeki_id === c.id) : (u.client === c.nafn);
     });
+    this._detailUnits = units;
     var el = document.getElementById('companies-main');
     var nafn = U.e(c.nafn);
     var kt = c.kennitala ? U.e(c.kennitala) : '';
@@ -336,7 +356,7 @@ var Companies = {
         // 2026-05-31: opens the main "\u00dej\u00f3nustusamningur" template (patch 94)
         // pre-filled with this company's nafn/kt/heimilisfang.
         '<button class="btn btn-outline btn-sm" onclick="window.DocTemplates&&DocTemplates.openForCompany(' + c.id + ')">\ud83d\udcd1 \u00dej\u00f3nustusamningur</button>' +
-        '<button class="btn btn-outline btn-sm" onclick="FloorPlan.load(' + c.id + ');FloorPlan.open(' + c.id + ',\'' + nafn + '\',' + 'Companies.list.find(function(x){return x.id===' + c.id + ';}) ? DB.cache.units.filter(function(u){return u.client===\'' + nafn + '\';}) : [])"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Teikning</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="Companies.opnaTeikningu(' + c.id + ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Teikning</button>' +
       '</div>';
     // Keep the legacy info-grid empty (kept for other patches that
     // selectorize into it). S\u00edmi + netfang already shown in the card above.

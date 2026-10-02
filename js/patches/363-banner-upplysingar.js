@@ -851,6 +851,14 @@
       });
       vixl.addEventListener('keydown', e => e.stopPropagation());
     }
+    // teikna() rífur innerHTML — gömlu hnútar (og hlustendur 384) deyja.
+    // Festum aftur á NÝJA hnútana svo Teikningar / 1. hæð virki eftir fyrirtækjaskipti.
+    try {
+      if (window.TeikningaForskodun) {
+        if (TeikningaForskodun.nyskraFyrirtaeki) TeikningaForskodun.nyskraFyrirtaeki(coId);
+        if (TeikningaForskodun.festTakka) TeikningaForskodun.festTakka(box);
+      }
+    } catch (_) {}
   }
 
   // Þjappað = auðar línur faldar. Báðir klasarnir eru settir í JS (ekki með
@@ -929,6 +937,7 @@
 
   setInterval(haldaVid, 1200);
   document.addEventListener('DOMContentLoaded', haldaVid);
+  window.addEventListener('hashchange', () => { try { haldaVid(); } catch (_) {} });
   haldaVid();
 
   window.BannerUpplysingar = { haldaVid, gildi, tillogur, skrarSvar, saekjaSkrar, LYKILL };

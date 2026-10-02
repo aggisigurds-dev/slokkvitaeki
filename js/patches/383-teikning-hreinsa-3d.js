@@ -482,6 +482,23 @@
   };
 
   const FPx = () => window.FloorPlan;
+  function fpGluggi() { return document.getElementById('modal-floorplan'); }
+  function fpEl(id) {
+    const m = fpGluggi();
+    const i = m && m.querySelector('#' + id);
+    return i || document.getElementById(id);
+  }
+  function endurfestaEfNyttFelag() {
+    const FP = FPx();
+    if (!FP || !FP.companyId) return;
+    if (G._festCid === FP.companyId) return;
+    G._festCid = FP.companyId;
+    G.soknKom = 0;
+    const main = fpEl('fp-main');
+    if (main) delete main._t383;
+    const f = fpEl('fp-haedir'); if (f) { f._html = ''; f.remove(); }
+    const z = fpEl('fp-zoom'); if (z) z.remove();
+  }
   function plan() { const FP = FPx(); if (!FP.plans[FP.companyId]) FP.plans[FP.companyId] = { markers: [] }; return FP.plans[FP.companyId]; }
   function haedir() {
     const p = plan();
@@ -679,8 +696,8 @@
   const TK = 'min-width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;font:700 13px system-ui;cursor:pointer;padding:0 9px';
   const GULL = 'background:#c9a54a;color:#14120f;border-color:#c9a54a';
   function stikuEl() {
-    const main = document.getElementById('fp-main'); if (!main) return null;
-    let s = document.getElementById('fp-hreinsa-stika');
+    const main = fpEl('fp-main'); if (!main) return null;
+    let s = main.querySelector('#fp-hreinsa-stika') || document.getElementById('fp-hreinsa-stika');
     if (!s) {
       s = document.createElement('div'); s.id = 'fp-hreinsa-stika';
       s.style.cssText = 'position:absolute;left:10px;bottom:10px;z-index:6;display:none;flex-wrap:wrap;align-items:center;gap:8px;max-width:calc(100% - 20px);' +
@@ -747,8 +764,8 @@
 
   // Hæðaflipar efst til vinstri.
   function flipar() {
-    const main = document.getElementById('fp-main'); if (!main) return;
-    let f = document.getElementById('fp-haedir');
+    const main = fpEl('fp-main'); if (!main) return;
+    let f = main.querySelector('#fp-haedir');
     if (!f) {
       f = document.createElement('div'); f.id = 'fp-haedir';
       f.style.cssText = 'position:absolute;left:10px;top:10px;z-index:6;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100% - 215px);font:700 12.5px system-ui,sans-serif';
@@ -794,7 +811,7 @@
     p.imageUrl = h.image_url || null;
     G.frum = null; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
     FP.bgImage = null; FP._selectedUnitId = null; zNullstilla();
-    const c = document.getElementById('fp-canvas'), dm = document.getElementById('fp-drop-msg');
+    const c = fpEl('fp-canvas'), dm = fpEl('fp-drop-msg');
     if (h.image_url) {
       const img = new Image();
       img.onload = () => {
@@ -813,8 +830,8 @@
 
   /* ── yfirlag: handdregnir veggir, forskoðunarlína, skurðarkassi ── */
   function yfirlag() {
-    const main = document.getElementById('fp-main'), c = document.getElementById('fp-canvas'); if (!main || !c) return;
-    let y = document.getElementById('fp-yfirlag');
+    const main = fpEl('fp-main'), c = fpEl('fp-canvas'); if (!main || !c) return;
+    let y = main.querySelector('#fp-yfirlag');
     if (!y) {
       y = document.createElement('canvas'); y.id = 'fp-yfirlag';
       y.style.cssText = 'position:absolute;left:0;top:0;z-index:5;pointer-events:none';
@@ -862,12 +879,12 @@
 
   // Skjáhnit → frummyndarhnit virku hæðarinnar.
   function hnit(e) {
-    const c = document.getElementById('fp-canvas'), r = c.getBoundingClientRect();
+    const c = fpEl('fp-canvas'), r = c.getBoundingClientRect();
     return [(e.clientX - r.left) * (c.width / r.width) + G.rymi.x, (e.clientY - r.top) * (c.height / r.height) + G.rymi.y];
   }
   function smella(p) {
     // Rétta lárétt/lóðrétt (innan ~7°) og grípa í enda sem þegar eru til — þannig lokast herbergi hreint.
-    const c = document.getElementById('fp-canvas'), r = c.getBoundingClientRect(), grip = 12 * (c.width / r.width);
+    const c = fpEl('fp-canvas'), r = c.getBoundingClientRect(), grip = 12 * (c.width / r.width);
     let [X, Y] = p;
     if (G.kedja) { const dx = X - G.kedja[0], dy = Y - G.kedja[1]; if (Math.abs(dx) < Math.abs(dy) * 0.12) X = G.kedja[0]; else if (Math.abs(dy) < Math.abs(dx) * 0.12) Y = G.kedja[1]; }
     let best = null, bd = grip;
@@ -891,21 +908,21 @@
    * tekin yfir: atburðir hennar eru stöðvaðir í capture og takkarnir hennar faldir. */
   const Z = { s: 1, x: 0, y: 0 };
   function zBeita() {
-    const c = document.getElementById('fp-canvas'); if (!c) return;
+    const c = fpEl('fp-canvas'); if (!c) return;
     c.style.transformOrigin = '0 0'; c.style.transform = 'translate(' + Z.x + 'px,' + Z.y + 'px) scale(' + Z.s + ')';
     const m = document.getElementById('fp-zoom-pct'); if (m) m.textContent = Math.round(Z.s * 100) + '%';
   }
   function zThysja(f, cx, cy) {
-    const main = document.getElementById('fp-main'); if (!main) return;
+    const main = fpEl('fp-main'); if (!main) return;
     const r = main.getBoundingClientRect(), mx = cx == null ? r.width / 2 : cx - r.left, my = cy == null ? r.height / 2 : cy - r.top;
     const ns = Math.min(12, Math.max(0.2, Z.s * f));
     Z.x = mx - (mx - Z.x) * (ns / Z.s); Z.y = my - (my - Z.y) * (ns / Z.s); Z.s = ns; zBeita();
   }
   function zNullstilla() { Z.s = 1; Z.x = 0; Z.y = 0; zBeita(); }
   function zTakkar() {
-    const main = document.getElementById('fp-main'); if (!main) return;
+    const main = fpEl('fp-main'); if (!main) return;
     const gamalt = document.getElementById('_fzb'); if (gamalt && gamalt.parentNode && gamalt.parentNode.style.display !== 'none') gamalt.parentNode.style.display = 'none';
-    if (document.getElementById('fp-zoom')) return;
+    if (main.querySelector('#fp-zoom')) return;
     const d = document.createElement('div'); d.id = 'fp-zoom';
     // Efst til hægri (Agnar 20.09.2026 bað um að færa takkana upp) — neðst rákust þeir á þysjunarstiku appsins
     // á síma (353) og á tækjaræmuna.
@@ -919,7 +936,7 @@
     d.addEventListener('click', e => { const t = e.target.closest('[data-z]'); if (!t) return; e.stopPropagation(); if (t.dataset.z === 'passa') zNullstilla(); else zThysja(t.dataset.z === 'inn' ? 1.35 : 1 / 1.35); });
   }
   function tengjaStriga() {
-    const main = document.getElementById('fp-main'); if (!main || main._t383) return;
+    const main = fpEl('fp-main'); if (!main || main._t383) return;
     main._t383 = 1;
     // CAPTURE: á undan merkja-smelli FloorPlan og draga/þysja annarra plástra — aðeins þegar hamur er virkur.
     const stodva = e => { e.stopPropagation(); e.preventDefault(); };
@@ -1022,7 +1039,7 @@
     return { veggir, W: r.W, H: r.H, golf: r.vinnu, kvardi: r.kvardi, merki, veggjaPx: n, sk, frumB: fb, frumH: fh };
   }
   async function opna3d() {
-    const FP = FPx(), main = document.getElementById('fp-main'); if (!FP || !main) return;
+    const FP = FPx(), main = fpEl('fp-main'); if (!FP || !main) return;
     if (document.getElementById('fp-3d')) { loka3d(); return; }
     samstillaVirka();
     const hs = haedir(), val = lesaVal(FP.companyId), einingar = FP.units || [];
@@ -1170,12 +1187,12 @@
     lita('.fp-hreinsa-btn', val.a);
     lita('.fp-veggir-btn', G.hamur === 'veggir', '✏ Veggir' + (h.veggir.length + h.pdfVeggir.length ? ' · ' + (h.veggir.length + h.pdfVeggir.length) : ''));
     lita('.fp-skera-btn', G.hamur === 'skera' || !!h.skurdur, h.skurdur ? '✂ Sýna allt blaðið' : '✂ Skera');
-    const c = document.getElementById('fp-canvas'); if (c) c.style.cursor = G.hamur ? 'crosshair' : '';
+    const c = fpEl('fp-canvas'); if (c) c.style.cursor = G.hamur ? 'crosshair' : '';
   }
 
   // Tækjalistinn þekkir aðeins virku hæðina: segja á hvaða hæð tækið er annars.
   function listaVisbending() {
-    const el = document.getElementById('fp-unit-list'), FP = FPx(); if (!el || !FP.units) return;
+    const el = fpEl('fp-unit-list'), FP = FPx(); if (!el || !FP.units) return;
     if (FP._selectedUnitId !== G.valid) { G.valid = FP._selectedUnitId; const i = FP.units.findIndex(u => u.id === G.valid); if (i >= 0 && el.children[i] && document.querySelector('#modal-floorplan.fp-simi')) { try { el.children[i].scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } catch (_) {} } }
     const hs = haedir();
     [...el.children].forEach((rod, i) => {
@@ -1205,7 +1222,7 @@
 
     FP.open = function () {
       loka3d(); cancelAnimationFrame(G.raf);
-      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, _haedirBid: 0 });
+      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, _haedirBid: 0, _festCid: 0 });
       const r = opna.apply(this, arguments);
       Z.s = 1; Z.x = 0; Z.y = 0;
       setTimeout(tikk, 60);
@@ -1269,6 +1286,7 @@
   }
   function tikk() {
     if (!modalSynnilegt()) return false;
+    try { endurfestaEfNyttFelag(); } catch (_) {}
     try { if (!FPx() || !FPx().__hreinsaSkreytt) skreyta(); } catch (_) {}
     try { simaKlasi(); } catch (_) {}
     try { tengjaStriga(); } catch (_) {}

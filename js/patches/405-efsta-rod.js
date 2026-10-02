@@ -147,7 +147,7 @@
         }
         ensureTeikning(main);
       });
-      var teikn = Array.prototype.slice.call(knappar.querySelectorAll('button')).filter(function (b) { return /FloorPlan\./.test(b.getAttribute('onclick') || ''); })[0];
+      var teikn = Array.prototype.slice.call(knappar.querySelectorAll('button')).filter(function (b) { return /FloorPlan\.|opnaTeikningu/.test(b.getAttribute('onclick') || ''); })[0];
       if (teikn && teikn.nextSibling) knappar.insertBefore(t, teikn.nextSibling); else knappar.appendChild(t);
     } else if (t.innerHTML !== label) t.innerHTML = label;
     t.classList.toggle('opin', opid);
@@ -175,7 +175,7 @@
     if (sky && idb && sky.parentElement !== idb) { sky.classList.add('b405-sky'); idb.appendChild(sky); }
     // Teikning · Þjónustusamningur undir loftmyndinni (hönnun C) — inline onclick, virka hvar sem er; 91/370 nota röðina áfram
     var knappar = banner.querySelector(':scope > .b405-knappar');
-    var kand = Array.prototype.slice.call(main.querySelectorAll('div[data-co-id] > button[onclick]')).filter(function (b) { return /DocTemplates\.openForCompany|FloorPlan\./.test(b.getAttribute('onclick') || ''); });
+    var kand = Array.prototype.slice.call(main.querySelectorAll('div[data-co-id] > button[onclick]')).filter(function (b) { return /DocTemplates\.openForCompany|FloorPlan\.|opnaTeikningu/.test(b.getAttribute('onclick') || ''); });
     if (kand.length) { if (!knappar) { knappar = el('div', 'b405-knappar'); banner.appendChild(knappar); } kand.forEach(function (b) { if (b.parentElement !== knappar) { b.classList.add('b405-knappur'); knappar.appendChild(b); } }); }
     var any = parts.some(function (sel) { var e = banner.querySelector(sel); return e && (!box || !box.contains(e)); });
     if (!any && !box) return;
