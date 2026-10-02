@@ -211,9 +211,12 @@
     }
   }
 
-  function teiknaTakn(ctx, glyffId, litur, x, y, size) {
+  function teiknaTakn(ctx, glyffId, litur, x, y, size, rot) {
     ctx.save();
-    ctx.translate(x - size / 2, y - size / 2);
+    ctx.translate(x, y);
+    const deg = Number(rot) || 0;
+    if (deg) ctx.rotate(deg * Math.PI / 180);
+    ctx.translate(-size / 2, -size / 2);
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(0, 0, size, size, size * 0.12);
     else ctx.rect(0, 0, size, size);
@@ -242,7 +245,7 @@
   function teiknaMerki(ctx, m, mx, my, s, units) {
     const lyk = lykillFyrir(m, units);
     const litur = Object.assign({}, LITIR[lyk] || LITIR.annad, m.color && lyk !== 'lettvatn' && lyk !== 'duft' && lyk !== 'co2' ? { bg: m.color } : {});
-    teiknaTakn(ctx, val()[lyk] || SJALF[lyk] || 'extinguisher', litur, mx, my, s);
+    teiknaTakn(ctx, val()[lyk] || SJALF[lyk] || 'extinguisher', litur, mx, my, s, m && m.rot);
   }
 
   function teiknaOfan(F) {

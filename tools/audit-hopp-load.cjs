@@ -100,7 +100,7 @@ krefst('js/patches/383-teikning-hreinsa-3d.js', /function fpEl/, '383 má ekki b
 krefst('js/patches/383-teikning-hreinsa-3d.js', /_festModal/, '383 verður að festa hnappa aftur þegar FloorPlan.open rífur gluggann, ekki aðeins þegar félagsnúmer breytist');
 krefst('js/patches/383-teikning-hreinsa-3d.js', /function vaktGlugga/, '383 þarf MutationObserver svo nýr #modal-floorplan fái hæðaflipa og Skýrari veggir/3D');
 if (!/384-teikninga-forskodun\.js\?v=20261002smelltp/.test(html)) villur.push('index.html: 384-teikninga-forskodun.js vantar ?v=20261002smelltp');
-if (!/383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp)/.test(html)) villur.push('index.html: 383-teikning-hreinsa-3d.js vantar ?v=20261002sja');
+if (!/383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp|eyda)/.test(html)) villur.push('index.html: 383-teikning-hreinsa-3d.js vantar ?v=20261002sja');
 if (!/363-banner-upplysingar\.js\?v=20261002smell/.test(html)) villur.push('index.html: 363-banner-upplysingar.js vantar ?v=20261002smell');
 if (!/405-efsta-rod\.js\?v=20261002smell/.test(html)) villur.push('index.html: 405-efsta-rod.js vantar ?v=20261002smell');
 krefst('js/db.js', /skipped:\s*true/, 'prófíll á #company má ekki sækja allar uttaeki-síður');

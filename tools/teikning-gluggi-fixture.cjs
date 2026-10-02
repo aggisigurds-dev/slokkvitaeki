@@ -54,6 +54,18 @@ async function main() {
     };
   });
 
+  const breidd = await page.evaluate(() => {
+    const drag = document.getElementById('fp-panel-drag');
+    const w0 = Math.round(document.getElementById('fp-panel').getBoundingClientRect().width);
+    const w1 = Math.round(TeiknGluggi.setjaBreidd(320, true));
+    TeiknGluggi.beita();
+    const wLive = Math.round(document.getElementById('fp-panel').getBoundingClientRect().width);
+    const remembered = TeiknGluggi.lesaBreidd();
+    TeiknGluggi.setjaBreidd(168, true);
+    TeiknGluggi.beita();
+    return { drag: !!drag, w0, w1, wLive, remembered };
+  });
+
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(200);
   await page.evaluate(() => { if (window.TeiknGluggi) TeiknGluggi.beita(); FloorPlan._renderCanvas(); });
@@ -80,6 +92,9 @@ async function main() {
   krefst(desk.mainH >= desk.vh * 0.55, 'teikningin á að vera ≥55% af skjáhæð, var ' + desk.mainH + '/' + desk.vh);
   krefst(desk.canvasW >= 400 && desk.canvasH >= 300, 'striginn á að stækka með glugganum: ' + desk.canvasW + 'x' + desk.canvasH);
   krefst(desk.panelW > 80 && desk.panelW <= 190, 'ræman á að vera þröng en sýnileg, var ' + desk.panelW);
+  krefst(breidd.drag, 'vantar #fp-panel-drag handfang');
+  krefst(breidd.wLive >= 300 && breidd.wLive <= 340, 'draga átti ræmuna í ~320 px, var ' + breidd.wLive);
+  krefst(breidd.remembered === 320, 'breidd átti að vistast, var ' + breidd.remembered);
   krefst(desk.hlutfall >= 0.5, 'teikningin á að fá ≥50% af skjáflateyðinni, var ' + (desk.hlutfall * 100).toFixed(1) + '%');
   krefst(desk.rail && desk.loka, 'Loka og tækjaræma mega ekki hverfa');
   krefst(!desk.simi, '1400x900 á ekki að vera fp-simi');

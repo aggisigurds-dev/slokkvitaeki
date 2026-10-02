@@ -8,10 +8,16 @@
  * eru læst á 560 px (app.css). 383 sleppir 560 með width:auto, en þá
  * skreppur spjaldið að innihaldinu. FloorPlan.open setur 92vw/1200px á
  * bakgrunninn — inset:0 hunsaði það. Hér fyllir spjaldið næstum skjáinn
- * og teikningin (#fp-main) fær restina; tækjaræman þrengist, hún hverfur ekki.
+ * og teikningin (#fp-main) fær restina. Tækjaræman byrjar á 168 px; draga má
+ * vinstri brúnina svo merkin ráðist í fleiri dálka. Sími er óbreyttur.
  * ========================================================================== */
 (() => {
   if (window.TeiknGluggi) return;
+
+  const LS = 'fp_panel_breidd';
+  const SJALF = 168;
+  const MIN = 148;
+  const MAX = 520;
 
   const CSS =
     '#modal-floorplan.modal.open{padding:10px!important;align-items:stretch!important;justify-content:stretch!important}' +
@@ -22,8 +28,12 @@
     '#modal-floorplan.modal.open>.modal-bd{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:hidden!important;display:flex!important}' +
     '#modal-floorplan.modal.open>.modal-ft{padding:8px 14px!important;flex:0 0 auto!important}' +
     '#modal-floorplan:not(.fp-simi) #fp-main{flex:1 1 auto!important;min-width:0!important;min-height:0!important}' +
-    '#modal-floorplan:not(.fp-simi) #fp-panel{width:168px!important;flex:0 0 168px!important;max-width:168px!important}' +
+    '#modal-floorplan:not(.fp-simi) #fp-panel{position:relative;width:var(--fp-panel,168px)!important;flex:0 0 var(--fp-panel,168px)!important;max-width:var(--fp-panel,168px)!important}' +
+    '#fp-panel-drag{position:absolute;left:0;top:0;bottom:0;width:10px;cursor:col-resize;z-index:6;touch-action:none}' +
+    '#fp-panel-drag::after{content:"";position:absolute;left:3px;top:50%;width:2px;height:42px;margin-top:-21px;border-radius:1px;background:rgba(255,255,255,.38)}' +
+    '#fp-panel-drag:hover::after,#modal-floorplan.fp-panel-drag #fp-panel-drag::after{background:#c9a54a}' +
     '#modal-floorplan.fp-simi{padding:0!important}' +
+    '#modal-floorplan.fp-simi #fp-panel-drag{display:none!important}' +
     '#modal-floorplan #fp-canvas{max-width:100%;max-height:100%}';
 
   function still() {
@@ -39,6 +49,38 @@
   function setImp(el, prop, val) {
     if (!el) return;
     el.style.setProperty(prop, val, 'important');
+  }
+
+  function lesaBreidd() {
+    try {
+      const n = parseInt(localStorage.getItem(LS), 10);
+      if (n >= MIN && n <= MAX) return n;
+    } catch (_) {}
+    return SJALF;
+  }
+
+  function klemma(n, modal) {
+    const raw = modal ? Math.round(modal.getBoundingClientRect().width * 0.46) : MAX;
+    const cap = Math.max(MIN, Math.min(MAX, raw || MAX));
+    const v = Math.round(Number(n) || SJALF);
+    return Math.max(MIN, Math.min(cap, v));
+  }
+
+  function setjaBreidd(px, vista) {
+    const m = document.getElementById('modal-floorplan');
+    if (!m || m.classList.contains('fp-simi')) return 0;
+    const w = klemma(px, m);
+    m.style.setProperty('--fp-panel', w + 'px');
+    const panel = m.querySelector('#fp-panel');
+    if (panel) {
+      setImp(panel, 'width', w + 'px');
+      setImp(panel, 'flex', '0 0 ' + w + 'px');
+      setImp(panel, 'max-width', w + 'px');
+    }
+    if (vista) {
+      try { localStorage.setItem(LS, String(w)); } catch (_) {}
+    }
+    return w;
   }
 
   function beita() {
@@ -83,12 +125,55 @@
     setImp(main, 'min-width', '0');
     setImp(main, 'min-height', '0');
     if (panel && !simi) {
-      setImp(panel, 'width', '168px');
-      setImp(panel, 'flex', '0 0 168px');
-      setImp(panel, 'max-width', '168px');
+      setjaBreidd(lesaBreidd(), false);
+      handfang(panel);
+    }
+    if (panel && simi) {
+      panel.style.removeProperty('width');
+      panel.style.removeProperty('flex');
+      panel.style.removeProperty('max-width');
     }
     vaktStaerd(main);
     return true;
+  }
+
+  function handfang(panel) {
+    if (!panel || panel.querySelector('#fp-panel-drag')) return;
+    const h = document.createElement('div');
+    h.id = 'fp-panel-drag';
+    h.title = 'Draga til að breyta breidd ræmunnar · tvísmella til að byrja upp á 168 px';
+    h.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      const m = document.getElementById('modal-floorplan');
+      if (!m || m.classList.contains('fp-simi')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = e.clientX;
+      const startW = panel.getBoundingClientRect().width;
+      m.classList.add('fp-panel-drag');
+      const faera = ev => {
+        setjaBreidd(startW + (startX - ev.clientX), false);
+        teiknaAftur();
+      };
+      const loka = () => {
+        m.classList.remove('fp-panel-drag');
+        document.removeEventListener('pointermove', faera, true);
+        document.removeEventListener('pointerup', loka, true);
+        document.removeEventListener('pointercancel', loka, true);
+        setjaBreidd(panel.getBoundingClientRect().width, true);
+        teiknaAftur();
+      };
+      document.addEventListener('pointermove', faera, true);
+      document.addEventListener('pointerup', loka, true);
+      document.addEventListener('pointercancel', loka, true);
+      try { h.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    h.addEventListener('dblclick', e => {
+      e.preventDefault();
+      setjaBreidd(SJALF, true);
+      teiknaAftur();
+    });
+    panel.appendChild(h);
   }
 
   function teiknaAftur() {
@@ -131,5 +216,5 @@
   }
   window.addEventListener('resize', () => { try { tikkOgTeikna(); } catch (_) {} });
 
-  window.TeiknGluggi = { beita, tikk, still };
+  window.TeiknGluggi = { beita, tikk, still, setjaBreidd, lesaBreidd, klemma, SJALF, MIN, MAX };
 })();

@@ -16,8 +16,8 @@ const p433 = fs.readFileSync(path.join(rot, 'js/patches/433-teikning-merking.js'
 const nf = fs.readFileSync(path.join(rot, 'js/newfeatures.js'), 'utf8');
 
 krefst(html, /436-teikning-sja\.js\?v=20261002b/, 'index.html: 436 vantar');
-krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002sja/, 'index.html: 383 sja-cache');
-krefst(html, /434-teikning-takn\.js\?v=20261002sja/, 'index.html: 434 sja-cache');
+krefst(html, /383-teikning-hreinsa-3d\.js\?v=20261002(sja|eyda)/, 'index.html: 383 sja-cache');
+krefst(html, /434-teikning-takn\.js\?v=20261002(sja|eyda)/, 'index.html: 434 sja-cache');
 krefst(html, /newfeatures\.js\?v=20261002sja/, 'index.html: newfeatures sja-cache');
 if (/435-teikning-gaedi/.test(html)) villur.push('436 má ekki bæta 435 gæði-vali á fyrirtækjasíðu');
 if (/fp-gaedi/.test(p436)) villur.push('436 má ekki bæta gæði-hnöppum á gluggann');
@@ -34,7 +34,7 @@ krefst(p383, /TeiknSja\.stimpilPx|Math\.max\(32/, '383 yfirlag á að teikna sti
 krefst(p383, /TeiknSja\.bindSrc/, '383 á að nota bindSrc svo PDF verði skýrt');
 krefst(p434, /shadowColor/, '434 tákn þurfa svartan ramma svo þau lesist á ljósri teikningu');
 krefst(p434, /TeiknSja\.taknPx|26 \/ sc/, '434 tæki eiga að fylgja skjástærð');
-krefst(p433, /bd = 28/, '433 grip á merki of lítið fyrir stærri stimpla');
+krefst(p433, /gripPx|bd = 28/, '433 grip á merki of lítið fyrir stærri stimpla');
 krefst(nf, /TeiknSja\.punkturPx|14\/sc/, 'newfeatures rauði punkturinn á að vera ~14 skjápunktar');
 if (/kind === 'firewall'|stimpla eldvegg/i.test(p436)) villur.push('436 má ekki stimpla EI/eldveggi');
 if (/v\.a = true/.test(p436)) villur.push('436 má ekki kveikja Skýrari veggir sjálfkrafa');

@@ -107,6 +107,27 @@ async function main() {
     };
   });
 
+  const valmynd = await page.evaluate(() => {
+    const m = TeiknMerking.setjaStimpil('neyðarútgangur', 50, 60);
+    TeiknMerking.snuaMerki(m);
+    const rot = m.rot;
+    const n0 = (FloorPlan.plans[1612].markers || []).length;
+    TeiknMerking.opnaValmynd({ clientX: 24, clientY: 24 }, m);
+    const menu = document.getElementById('fp-valmynd');
+    const txt = menu ? menu.textContent : '';
+    TeiknMerking.eydaMerki(m);
+    const n1 = (FloorPlan.plans[1612].markers || []).length;
+    const okUndo = TeiknMerking.afturkalla();
+    const n2 = (FloorPlan.plans[1612].markers || []).length;
+    return {
+      rot, n0, n1, n2, okUndo,
+      snua: /Snúa/.test(txt),
+      afrita: /Afrita/.test(txt),
+      eyda: /Eyða/.test(txt),
+      breyta: /Breyta í/.test(txt)
+    };
+  });
+
   await browser.close();
 
   const villur = [];
@@ -131,6 +152,10 @@ async function main() {
   krefst(a388.stjorn && a388.loka && a388.vista && a388.rail, '388 mátti ekki missa stjórn/Loka/Vista/rail');
   krefst(a388.merki1612 >= 2, '1612 merki máttu ekki hverfa við félagsskipti: ' + a388.merki1612);
   krefst(aftur.merki.includes(25446) && aftur.stimpil && aftur.haedir && aftur.stika, 'close/reopen 1612 tapaði merkjum: ' + JSON.stringify(aftur));
+  krefst(valmynd.rot === 90, 'snúa átti að setja rot 90, var ' + valmynd.rot);
+  krefst(valmynd.snua && valmynd.afrita && valmynd.eyda && valmynd.breyta, 'valmynd vantar liði: ' + JSON.stringify(valmynd));
+  krefst(valmynd.n1 === valmynd.n0 - 1, 'eyða átti að fjarlægja stimpil: ' + JSON.stringify(valmynd));
+  krefst(valmynd.okUndo && valmynd.n2 === valmynd.n0, 'afturkalla átti að skila stimpil: ' + JSON.stringify(valmynd));
 
   if (villur.length) {
     console.log('TEIKNING-MERKING FIXTURE RAUDT');
