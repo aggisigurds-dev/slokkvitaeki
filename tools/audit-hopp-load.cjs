@@ -67,8 +67,13 @@ const html = lesa('index.html');
 const utgafa = {
   'features.js': '20261001sleppa',
   'mapfix.js': '20261001endur',
+  // 01.10: 153 hætti sjálfvirkum endursækjum.
   '153-arsskodun.js': '20261001saek',
-  '421-profill-lifandi.js': '20261001saek',
+  // 01.10 kvöld: 421 hunsar vistun Brunakerfis-/Slökkvikerfis-spjaldanna.
+  // 02.10: sama skrá sækir aðeins töfluna sem var skrifuð. Nýtt merki hleður bæði.
+  '421-profill-lifandi.js': '20261002saek',
+  // 02.10: 274 fékk „Önnur vara/þjónusta — skrifa sjálf/ur" og skoðunarlínur sem fylgja búnaðinum.
+  '274-brunakerfi-fyrirtaeki.js': '20261002ottengd',
   // Uppfærsluborð bætti #uppferslubord við 218. Nýrra merki hleður hopp-kóðann líka.
   '218-url-routing.js': '20261001ub',
 };
@@ -82,6 +87,7 @@ const utgafa = {
 krefst('js/features.js', /data-co-endurnyja/, 'Endurnýja er eina handvirka endurhleðslan á prófílnum');
 krefst('js/db.js', /skipped:\s*true/, 'prófíll á #company má ekki sækja allar uttaeki-síður');
 krefst('js/patches/421-profill-lifandi.js', /skalSleppa/, 'hak/Yfirferð má ekki sækja öll tæki félagsins');
+krefst('js/patches/421-profill-lifandi.js', /SJALFTEIKNA\.test\(t\)/, '421 má ekki rífa prófílinn þegar Brunakerfis-/Slökkvikerfis-spjaldið vistar (hoppið í Línum reiknings 01.10)');
 if (!/428-hak-hopp\.js\?v=20261001b/.test(html)) villur.push('index.html: 428-hak-hopp.js vantar ?v=20261001b');
 
 if (villur.length) {

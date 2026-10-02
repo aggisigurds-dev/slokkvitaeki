@@ -1,31 +1,32 @@
 /**
- * Mynd af húsi að utan — Places-forsíðumynd, annars Street View.
+ * Mynd af húsi — Borgarvefsjá, loftmynd 2018. Enginn lykill.
  *
  *   POST /api/husmynd
- *   { lat, lng, address }
- *   → { ok:true, image:<base64>, contentType, attribution, heimild:'places'|'streetview' }
- *   → { ok:false, error:'vantar-lykil'|'vantar-hnit'|'engin-mynd'|'google'|'timi', message }
+ *   { address }
+ *   → { ok:true, image:<base64>, contentType, attribution, heimild:'borgarvefsja-2018' }
+ *   → { ok:false, error:'engin-mynd'|'timi', message }
  *
- * Lykillinn er Netlify-env GOOGLE_MAPS_API_KEY. Hann fer aldrei í vafrann og
- * er aldrei skráður. Fallið kallar ekki /api/geocode — vafrinn sendir hnit sem
- * eru þegar til. Prófíll kallar hingað einu sinni þegar engin mynd er vistuð
- * og geymir svarið (líka vantar-lykil) svo næsta opnun kalli ekki aftur.
+ * GOOGLE_MAPS_API_KEY er ekki til. Places og Street View eru ekki kallað.
+ * Já.is er ekki skrapað. Reykjavík: Borgarvefsjá, loftmynd 17.7.2018.
+ * Kópavogur, Garðabær og Hafnarfjörður: loftmynd af map.is (Loftmyndir,
+ * WMS án lykils). Hún sýnir húsið að ofan. Hún er ekki götumynd.
  *
- * Places API (New) textaleit + places.photos[0] er forsíðumyndin sem Google
- * Maps sýnir. Street View Static (source=outdoor) er aðeins varaleið þegar
- * engin forsíðumynd er innan við ~150 m. Loftmynd er ekki varaleið.
+ * Staðfangaskrá (EPSG:3057) finnur punktinn. Ein útflutningsmynd, miðuð á
+ * punktinn. Utan þekju eða hvít skilað telst engin mynd. Vafrinn kallar
+ * einu sinni og vistar svarið.
  */
-const LYKILNAFN = 'GOOGLE_MAPS_API_KEY';
-
-function lesaLykil() {
-  try {
-    if (typeof Netlify !== 'undefined' && Netlify.env && typeof Netlify.env.get === 'function') {
-      const v = Netlify.env.get(LYKILNAFN);
-      if (v && String(v).trim()) return String(v).trim();
-    }
-  } catch (_) {}
-  return String(process.env[LYKILNAFN] || '').trim();
-}
+const WFS = 'https://geo.fasteignaskra.is/ws/geoserver/wfs';
+const EXPORT =
+  'https://borgarvefsja.reykjavik.is/arcgis/rest/services/Borgarvefsja/Loftmynd/MapServer/export';
+const HEIMILD = 'borgarvefsja-2018';
+const ATTR = 'Borgarvefsjá · loftmynd 17.7.2018';
+const MAPIS_LOFT = 'https://ts1.map.is/mapcache/';
+const MAPIS_HEIMILD = 'mapis-loftmynd';
+const MAPIS_ATTR = 'Loftmynd · map.is';
+const MAPIS_POST = new Set([200, 201, 202, 203, 210, 211, 212, 225, 220, 221]);
+// fullExtent á Loftmynd-þjónustunni, mælt 2026-10-01.
+const EXTENT = { xmin: 344000, ymin: 392000, xmax: 384000, ymax: 427000 };
+const MIN_BYTES = 12000;
 
 function cors() {
   return {
@@ -40,33 +41,8 @@ function j(status, obj) {
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...cors() },
   });
 }
-function hreinsa(s) {
-  return String(s || '')
-    .replace(/key=[^&\s"']+/gi, 'key=***')
-    .replace(/AIza[0-9A-Za-z\-_]{10,}/g, '***')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 240);
-}
-function skilabod(msg) {
-  const s = hreinsa(msg);
-  if (/API key not valid|API_KEY_INVALID|REQUEST_DENIED/i.test(s)) return 'Google hafnaði lyklinum';
-  if (/not been used|SERVICE_DISABLED|PERMISSION_DENIED|not enabled/i.test(s)) return 'Places eða Street View er ekki virkt á lyklinum';
-  if (!s || s.charAt(0) === '{') return 'Google hafnaði kallinu';
-  return s;
-}
 
-function metrar(aLat, aLng, bLat, bLng) {
-  const R = 6371000;
-  const dLat = (bLat - aLat) * Math.PI / 180;
-  const dLng = (bLng - aLng) * Math.PI / 180;
-  const s = Math.sin(dLat / 2) ** 2
-    + Math.cos(aLat * Math.PI / 180) * Math.cos(bLat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
-}
-
-function tilB64(buf) {
-  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+function tilB64(bytes) {
   if (typeof Buffer !== 'undefined') return Buffer.from(bytes).toString('base64');
   let s = '';
   for (let i = 0; i < bytes.length; i += 0x8000) {
@@ -75,148 +51,115 @@ function tilB64(buf) {
   return btoa(s);
 }
 
-function erMynd(bytes, tegund) {
-  if (!bytes || bytes.length < 32 || bytes.length > 3_000_000) return false;
-  const t = String(tegund || '').toLowerCase();
-  if (t.indexOf('image/') !== 0) return false;
-  const b = bytes;
-  const jpeg = b[0] === 0xff && b[1] === 0xd8;
-  const png = b[0] === 0x89 && b[1] === 0x50;
-  const webp = b[0] === 0x52 && b[1] === 0x49;
-  return jpeg || png || webp;
+function erJpeg(bytes) {
+  return bytes && bytes.length >= MIN_BYTES && bytes[0] === 0xff && bytes[1] === 0xd8;
 }
 
-function hofundar(photo) {
-  const listi = (photo && photo.authorAttributions) || [];
-  const nofn = [];
-  for (let i = 0; i < listi.length && nofn.length < 2; i++) {
-    const n = listi[i] && listi[i].displayName;
-    if (n) nofn.push(String(n));
+function innan(x, y) {
+  return x >= EXTENT.xmin && x <= EXTENT.xmax && y >= EXTENT.ymin && y <= EXTENT.ymax;
+}
+
+function postnrUr(address) {
+  const t = String(address || '');
+  const eftir = t.split(',').slice(1).join(' ');
+  const m = /\b(\d{3})\b/.exec(eftir) || /\b(\d{3})\b/.exec(t);
+  const n = m ? +m[1] : 0;
+  return n >= 100 && n <= 999 ? n : 0;
+}
+
+function gataAlias(address) {
+  const s = String(address || '');
+  if (!/uhraun/i.test(s)) return null;
+  const next = s.replace(/uhraun/gi, (m) => (m[0] === 'U' ? 'A' : 'a') + m.slice(1));
+  return next === s ? null : next;
+}
+
+async function stadfang(address, signal, dyp) {
+  const s = String(address || '').replace(/\s+/g, ' ').trim();
+  const m = /^([^0-9,]+?)\s+(\d{1,4})\s*([A-Za-zÁÐÉÍÓÚÝÞÆÖáðéíóúýþæö])?(?=[\s,\-–]|$)/.exec(s);
+  if (!m) return null;
+  const gata = m[1].replace(/[.,]+$/, '').trim();
+  const husnr = +m[2];
+  const bokst = (m[3] || '').trim();
+  const pn = s.slice(m[0].length).match(/\b(\d{3})\b/);
+  const postnr = pn ? +pn[1] : null;
+  if (gata.length < 3 || !husnr) return null;
+  const esc = (x) => String(x).replace(/'/g, "''");
+  const cql = (medBokst, medPostnr) => {
+    const b = [`(HEITI_NF ILIKE '${esc(gata)}' OR HEITI_TGF ILIKE '${esc(gata)}')`, `HUSNR=${husnr}`];
+    if (medBokst && bokst) b.push(`BOKST ILIKE '${esc(bokst)}'`);
+    if (medPostnr && postnr) b.push(`POSTNR=${postnr}`);
+    return b.join(' AND ');
+  };
+  const tilraunir = [];
+  if (bokst && postnr) tilraunir.push([true, true]);
+  if (postnr) tilraunir.push([false, true]);
+  if (bokst) tilraunir.push([true, false]);
+  tilraunir.push([false, false]);
+  for (const [mb, mp] of tilraunir) {
+    const url = `${WFS}?service=WFS&version=1.1.0&request=GetFeature`
+      + '&typename=fasteignaskra:VSTADF_ALLT&outputFormat=application/json&maxFeatures=8'
+      + `&srsName=EPSG:3057&CQL_FILTER=${encodeURIComponent(cql(mb, mp))}`;
+    const r = await fetch(url, {
+      headers: { 'User-Agent': 'Slokkvitaeki/1.0 (+https://slokkvitaeki.netlify.app)' },
+      signal,
+    });
+    if (!r.ok) continue;
+    const d = await r.json().catch(() => null);
+    let fs = (d && Array.isArray(d.features) ? d.features : [])
+      .filter((f) => f && f.geometry && Array.isArray(f.geometry.coordinates) && f.geometry.coordinates.length >= 2);
+    if (postnr) fs = fs.filter((f) => +((f.properties || {}).POSTNR) === postnr);
+    if (!fs.length) continue;
+    if (!postnr && fs.length > 1) continue;
+    const vil = bokst.toUpperCase();
+    const skor = (x) => (String(x || '').toUpperCase() === vil ? 0 : (String(x || '') ? 2 : 1));
+    fs.sort((a, b) => skor((a.properties || {}).BOKST) - skor((b.properties || {}).BOKST));
+    const f = fs[0];
+    const x = +f.geometry.coordinates[0];
+    const y = +f.geometry.coordinates[1];
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    return { x, y };
   }
-  return nofn.length ? ('© Google · ' + nofn.join(', ')) : '© Google';
+  if (dyp) return null;
+  const alt = gataAlias(address);
+  if (!alt || alt === String(address)) return null;
+  return stadfang(alt, signal, 1);
 }
 
-async function googleTexti(r) {
-  let t = '';
-  try { t = await r.text(); } catch (_) {}
-  return hreinsa(t);
-}
-
-async function saekjaBytes(url, headers, signal) {
-  const r = await fetch(url, { headers, signal, redirect: 'follow' });
-  const tegund = (r.headers.get('content-type') || '').split(';')[0].trim();
-  if (!r.ok) {
-    const t = await googleTexti(r);
-    const villa = new Error(t || ('Google ' + r.status));
-    villa.status = r.status;
-    throw villa;
-  }
-  const buf = new Uint8Array(await r.arrayBuffer());
-  if (!erMynd(buf, tegund)) {
-    const villa = new Error('Google skilaði ekki mynd');
-    villa.status = r.status;
-    throw villa;
-  }
-  return { bytes: buf, contentType: tegund || 'image/jpeg' };
-}
-
-async function placesMynd(key, lat, lng, address, signal) {
-  const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
+async function mapisLoftmynd(x, y, signal) {
+  const dx = 48;
+  const dy = 34;
+  const bbox = `${x - dx},${y - dy},${x + dx},${y + dy}`;
+  const url = MAPIS_LOFT
+    + '?SERVICE=WMS&REQUEST=GetMap&LAYERS=myndkort&STYLES=&FORMAT=image/jpeg'
+    + '&SRS=EPSG:3057&WIDTH=640&HEIGHT=448&BBOX=' + bbox;
+  const r = await fetch(url, {
     headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': key,
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.photos',
+      'User-Agent': 'Slokkvitaeki/1.0 (+https://slokkvitaeki.netlify.app)',
+      Referer: 'https://www.map.is/hafnarfjordur/',
     },
-    body: JSON.stringify({
-      textQuery: address || (lat + ',' + lng),
-      languageCode: 'is',
-      regionCode: 'IS',
-      pageSize: 5,
-      locationBias: {
-        circle: { center: { latitude: lat, longitude: lng }, radius: 120 },
-      },
-    }),
     signal,
   });
-  if (!r.ok) {
-    const t = await googleTexti(r);
-    const villa = new Error(t || ('Places ' + r.status));
-    villa.status = r.status;
-    throw villa;
-  }
-  const data = await r.json();
-  const places = Array.isArray(data.places) ? data.places : [];
-  let best = null;
-  for (let i = 0; i < places.length; i++) {
-    const p = places[i];
-    const photos = p && p.photos;
-    if (!photos || !photos.length || !photos[0].name) continue;
-    const loc = p.location || {};
-    if (typeof loc.latitude !== 'number' || typeof loc.longitude !== 'number') continue;
-    const d = metrar(lat, lng, loc.latitude, loc.longitude);
-    if (d > 150) continue;
-    if (!best || d < best.d) best = { d, photo: photos[0] };
-  }
-  if (!best) return null;
-  const name = String(best.photo.name);
-  const slod = name.endsWith('/media') ? name : (name + '/media');
-  const url = 'https://places.googleapis.com/v1/' + slod.replace(/^\//, '')
-    + '?maxHeightPx=800&maxWidthPx=1200&skipHttpRedirect=true';
-  const pr = await fetch(url, { headers: { 'X-Goog-Api-Key': key }, signal });
-  if (!pr.ok) {
-    const t = await googleTexti(pr);
-    const villa = new Error(t || ('Places-mynd ' + pr.status));
-    villa.status = pr.status;
-    throw villa;
-  }
-  const tegund = (pr.headers.get('content-type') || '').toLowerCase();
-  let bytes;
-  let contentType = 'image/jpeg';
-  if (tegund.indexOf('application/json') >= 0 || tegund.indexOf('text/') >= 0) {
-    const meta = await pr.json();
-    if (!meta || !meta.photoUri) return null;
-    const img = await saekjaBytes(meta.photoUri, {}, signal);
-    bytes = img.bytes;
-    contentType = img.contentType;
-  } else {
-    const buf = new Uint8Array(await pr.arrayBuffer());
-    if (!erMynd(buf, tegund)) return null;
-    bytes = buf;
-    contentType = tegund.split(';')[0].trim() || 'image/jpeg';
-  }
-  return {
-    bytes,
-    contentType,
-    attribution: hofundar(best.photo),
-    heimild: 'places',
-  };
+  const tegund = (r.headers.get('content-type') || '').toLowerCase();
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  if (!r.ok || tegund.indexOf('image/jpeg') !== 0 || !erJpeg(bytes)) return null;
+  return bytes;
 }
 
-async function streetView(key, lat, lng, signal) {
-  const loc = encodeURIComponent(lat + ',' + lng);
-  const metaUrl = 'https://maps.googleapis.com/maps/api/streetview/metadata?location='
-    + loc + '&source=outdoor&radius=40&key=' + encodeURIComponent(key);
-  const mr = await fetch(metaUrl, { signal });
-  let meta = {};
-  try { meta = await mr.json(); } catch (_) { meta = {}; }
-  const stada = String(meta.status || '');
-  if (stada === 'ZERO_RESULTS' || stada === 'NOT_FOUND') return null;
-  if (stada !== 'OK') {
-    const villa = new Error(hreinsa(meta.error_message || stada || 'Street View'));
-    villa.status = mr.status;
-    throw villa;
-  }
-  const imgUrl = 'https://maps.googleapis.com/maps/api/streetview?size=640x480&location='
-    + loc + '&source=outdoor&radius=40&fov=80&pitch=8&return_error_code=true&key=' + encodeURIComponent(key);
-  const img = await saekjaBytes(imgUrl, {}, signal);
-  const att = hreinsa(meta.copyright || '');
-  return {
-    bytes: img.bytes,
-    contentType: img.contentType,
-    attribution: att && att.indexOf('Google') >= 0 ? att : '© Google',
-    heimild: 'streetview',
-  };
+async function loftmynd(x, y, signal) {
+  const dx = 42;
+  const dy = 30;
+  const bbox = `${x - dx},${y - dy},${x + dx},${y + dy}`;
+  const url = EXPORT
+    + `?bbox=${bbox}&bboxSR=3057&imageSR=3057&size=640,448&format=jpg&layers=show:0&f=image`;
+  const r = await fetch(url, {
+    headers: { 'User-Agent': 'Slokkvitaeki/1.0 (+https://slokkvitaeki.netlify.app)' },
+    signal,
+  });
+  const tegund = (r.headers.get('content-type') || '').toLowerCase();
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  if (!r.ok || tegund.indexOf('image/jpeg') !== 0 || !erJpeg(bytes)) return null;
+  return bytes;
 }
 
 export default async (req) => {
@@ -229,67 +172,53 @@ export default async (req) => {
     if (got !== edge) return j(401, { ok: false, error: 'unauthorized', message: 'Ekki heimild' });
   }
 
-  const key = lesaLykil();
-  if (!key) {
-    return j(200, {
-      ok: false,
-      error: 'vantar-lykil',
-      message: 'Vantar lykil (' + LYKILNAFN + ')',
-    });
-  }
-
   let body = {};
   try { body = await req.json(); } catch (_) { body = {}; }
-  const lat = Number(body && body.lat);
-  const lng = Number(body && body.lng);
   const address = String((body && body.address) || '').trim().slice(0, 180);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return j(200, { ok: false, error: 'vantar-hnit', message: 'Vantar hnit' });
+  if (!address || !/\d/.test(address)) {
+    return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi' });
   }
 
   const signal = AbortSignal.timeout(8000);
-  let placesVilla = null;
+  const mapis = MAPIS_POST.has(postnrUr(address));
   try {
-    const p = await placesMynd(key, lat, lng, address, signal);
-    if (p) {
+    const p = await stadfang(address, signal);
+    if (!p) {
+      return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: mapis ? MAPIS_HEIMILD : HEIMILD });
+    }
+    if (mapis) {
+      const loft = await mapisLoftmynd(p.x, p.y, signal);
+      if (!loft) {
+        return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: MAPIS_HEIMILD });
+      }
       return j(200, {
         ok: true,
-        image: tilB64(p.bytes),
-        contentType: p.contentType,
-        attribution: p.attribution,
-        heimild: p.heimild,
+        image: tilB64(loft),
+        contentType: 'image/jpeg',
+        attribution: MAPIS_ATTR,
+        heimild: MAPIS_HEIMILD,
       });
     }
+    if (!innan(p.x, p.y)) {
+      return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: HEIMILD });
+    }
+    const bytes = await loftmynd(p.x, p.y, signal);
+    if (!bytes) {
+      return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: HEIMILD });
+    }
+    return j(200, {
+      ok: true,
+      image: tilB64(bytes),
+      contentType: 'image/jpeg',
+      attribution: ATTR,
+      heimild: HEIMILD,
+    });
   } catch (e) {
-    if (e && e.name === 'TimeoutError') {
-      return j(200, { ok: false, error: 'timi', message: 'Google svaraði ekki í tæka tíð' });
+    if (e && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
+      return j(200, { ok: false, error: 'timi', message: mapis ? 'Loftmyndin svaraði ekki í tæka tíð' : 'Borgarvefsjá svaraði ekki í tæka tíð' });
     }
-    placesVilla = e;
+    return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: mapis ? MAPIS_HEIMILD : HEIMILD });
   }
-
-  try {
-    const s = await streetView(key, lat, lng, signal);
-    if (s) {
-      return j(200, {
-        ok: true,
-        image: tilB64(s.bytes),
-        contentType: s.contentType,
-        attribution: s.attribution,
-        heimild: s.heimild,
-      });
-    }
-  } catch (e) {
-    if (e && e.name === 'TimeoutError') {
-      return j(200, { ok: false, error: 'timi', message: 'Google svaraði ekki í tæka tíð' });
-    }
-    const skil = placesVilla || e;
-    return j(200, { ok: false, error: 'google', message: skilabod(skil && skil.message) });
-  }
-
-  if (placesVilla) {
-    return j(200, { ok: false, error: 'google', message: skilabod(placesVilla.message) });
-  }
-  return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi að utan' });
 };
 
 export const config = { path: '/api/husmynd' };
