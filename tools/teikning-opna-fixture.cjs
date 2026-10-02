@@ -18,6 +18,13 @@ async function main() {
   try { browser = await chromium.launch({ channel: 'chrome', args }); }
   catch (_) { browser = await chromium.launch({ args }); }
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+  const jpeg = Buffer.from(
+    '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAGf/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPwB//9k=',
+    'base64'
+  );
+  await page.route(/teikn-mynd/, async route => {
+    await route.fulfill({ status: 200, contentType: 'image/jpeg', body: jpeg });
+  });
   await page.goto(html, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.TeiknGluggi && window.TeikningaForskodun, null, { timeout: 5000 });
 
@@ -59,17 +66,27 @@ async function main() {
     const o = document.getElementById('fp-teikn-yfir'); if (o) o.remove();
   });
   await page.click('button._bupp-teikn[data-golv="h:1"]');
-  await page.waitForTimeout(400);
+  await page.waitForFunction(() => {
+    const tfs = document.getElementById('tfs');
+    const img = document.querySelector('#tfs-sv img');
+    const bid = (document.getElementById('tfs-bid') || {}).textContent || '';
+    return !!(tfs && ((img && img.naturalWidth > 0) || /Náði ekki/.test(bid) || (document.querySelectorAll('#tfs .tfs-kort').length > 0 && bid === '')));
+  }, null, { timeout: 5000 }).catch(() => {});
+  await page.waitForTimeout(200);
   const forskodun = await page.evaluate(() => {
     const tfs = document.getElementById('tfs');
     const kort = tfs ? tfs.querySelectorAll('.tfs-kort').length : 0;
     const titill = (document.getElementById('tfs-titill') || {}).textContent || '';
+    const bid = (document.getElementById('tfs-bid') || {}).textContent || '';
+    const img = document.querySelector('#tfs-sv img');
     return {
       tfs: !!tfs,
       synilegt: tfs ? getComputedStyle(tfs).display !== 'none' : false,
       z: tfs ? getComputedStyle(tfs).zIndex : '',
       kort,
-      titill
+      titill,
+      mynd: !!(img && img.src && img.naturalWidth > 0),
+      myndVilla: /Náði ekki/.test(bid)
     };
   });
 
@@ -89,6 +106,7 @@ async function main() {
   if (!forskodun.tfs) villur.push('1. hæð opnaði ekki #tfs');
   if (!forskodun.synilegt) villur.push('#tfs er falið');
   if (forskodun.kort < 1) villur.push('forskoðun sýndi engin blöð');
+  if (forskodun.myndVilla) villur.push('forskoðun náði ekki í myndina');
   if (!/Grensásvegur/.test(forskodun.titill) && !/Teikningar/.test(forskodun.titill)) {
     villur.push('titill forskoðunar: ' + forskodun.titill);
   }
