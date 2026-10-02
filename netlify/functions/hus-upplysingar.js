@@ -30,10 +30,12 @@
  *   Staðfangaskrár (0000 = Reykjavík, 1000/1300/1400 = map.is-bæirnir) og
  *   póstnúmeralistinn er aðeins varaleið.
  *
- * ÞREP 2 — lóð → teikningar. Sama þjónusta og TurboPaint notar
- *   (kjarni: /api/turbopaint/teikningar): FotoWeb-safn Reykjavíkur á landnúmeri,
- *   kortasjár map.is (Hafnarfjörður 1400, Garðabær 1300, Kópavogur 1000) á
- *   landnúmeri + heitinúmeri. Hún þáttar hæðirnar úr lýsingu hverrar teikningar.
+ * ÞREP 2 — lóð → teikningar. FotoWeb-safn Reykjavíkur á landnúmeri (kjarni).
+ *   Kópavogur, Garðabær, Hafnarfjörður og Seltjarnarnes eru sama map.is-kallið
+ *   queryTeiknigrunn (landnúmer + heitinúmer + sveitarfélag). Kjarni skilar
+ *   þeim bæjum aðeins djúptengli, svo listinn er sóttur beint. PDF-in liggja á
+ *   gagnasja.kopavogur.is, teikningar.gardabaer.is, teikningar.hafnarfjordur.is
+ *   og luks.seltjarnarnes.is.
  *
  * ÞREP 3 — teikningar → tillögur. Hæsta hæðarnúmer grunnmyndanna = hæðir ofan
  *   jarðar; „kjallari"/„jarðhæð"/„ris" í lýsingum = já. Þetta eru TILLÖGUR
@@ -65,9 +67,11 @@ const TURBOPAINT = 'https://slokkvitaeki.vercel.app/kjarni/turbopaint';
 const RVK_POSTNR = new Set([101, 102, 103, 104, 105, 107, 108, 109, 110, 111, 112, 113, 116, 121, 123, 124, 125, 127, 128, 129, 130, 132, 155, 161, 162]);
 const MAPIS_BASE = 'https://www.map.is';
 const MAPIS = [
-  { svf: 1000, nafn: 'Kópavogur', kort: 'Kortasjá Kópavogs', postnr: [200, 201, 202, 203] },
-  { svf: 1300, nafn: 'Garðabær', kort: 'Kortasjá Garðabæjar', postnr: [210, 211, 212, 225] },
-  { svf: 1400, nafn: 'Hafnarfjörður', kort: 'Kortasjá Hafnarfjarðar', postnr: [220, 221] },
+  // Sama queryTeiknigrunn og Seltjarnarnes. Slug gefur PHP-setu; ein seta dugar
+  // öllum, en hver bær notar sína kortasjá. Kjarni er ekki spurður.
+  { svf: 1000, nafn: 'Kópavogur', kort: 'Kortasjá Kópavogs', postnr: [200, 201, 202, 203], slug: 'kopavogur', bein: true },
+  { svf: 1300, nafn: 'Garðabær', kort: 'Kortasjá Garðabæjar', postnr: [210, 211, 212, 225], slug: 'gardabaer', bein: true },
+  { svf: 1400, nafn: 'Hafnarfjörður', kort: 'Kortasjá Hafnarfjarðar', postnr: [220, 221], slug: 'hafnarfjordur', bein: true },
   // 170 er Seltjarnarnes (SVFNR 1100), ekki Reykjavík. Kortasjáin er opin á map.is.
   { svf: 1100, nafn: 'Seltjarnarnes', kort: 'Kortasjá Seltjarnarness', postnr: [170], slug: 'seltjarnarnes', bein: true },
 ];
@@ -94,7 +98,7 @@ const minni = new Map();
 const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
 const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
-const UTGAFA = '2026-09-14';   // verður að fylgja v.utgafa neðar; breytist hún detta eldri raðir út
+const UTGAFA = '2026-10-02';   // map.is-bæirnir þrír sækja listann beint; eldri raðir detta út
 
 async function lesaVaranlegt(lykill) {
   try {
@@ -155,6 +159,26 @@ async function wfsStadfang(h, medBokst, medPostnr, deadline) {
   const d = await r.json();
   const fs = Array.isArray(d.features) ? d.features : [];
   return fs.map((f) => f.properties || {}).filter((p) => p.LANDNR);
+}
+
+/**
+ * Staðfangaskrá stafar sumar götur á -ahraun þó færslan segi -uhraun
+ * (Skútuhraun → Skútahraun, Sléttuhraun → Sléttahraun). Aðeins þegar
+ * nákvæma nafnið finnst ekki, og aðeins ein aukaleit.
+ */
+function gataAlias(gata) {
+  const s = String(gata || '');
+  if (!/uhraun/i.test(s)) return null;
+  const next = s.replace(/uhraun/gi, (m) => (m[0] === 'U' ? 'A' : 'a') + m.slice(1));
+  return next === s ? null : next;
+}
+
+/** Ein nákvæm leit: póstnúmer og bókstafur ef þau fylgja heimilisfanginu. */
+async function naekvaemtStadfang(h, deadline) {
+  const rows = (await wfsStadfang(h, !!h.bokst, !!h.postnr, deadline)).filter((r) => samaSvaedi(h, r));
+  if (!rows.length) return null;
+  rows.sort((x, y) => (x.BOKST ? 1 : 0) - (y.BOKST ? 1 : 0));
+  return rows[0];
 }
 
 /** Nákvæm uppfletting; sleppir bókstaf, svo póstnúmeri, ef nákvæma leitin finnur ekkert. */
@@ -234,7 +258,7 @@ function heimildFyrir(postnr, svfnr) {
 export function flokkurTeikningar(row) {
   const texti = `${row.tegund || ''} ${row.gerd || ''} ${row.lysing || ''}`;
   if (/raf(lagn|lögn|magn|tök)/i.test(texti)) return 'raflagnir';
-  if (/burðarþol|járnlögn/i.test(texti)) return 'burdarthol';
+  if (/burðarþol|burðarvirki|járnlögn/i.test(texti)) return 'burdarthol';
   if (/lagn|hital|vatnsl|sk[oó]lp|holræs|fráveit|fraveit/i.test(texti)) return 'lagnir';
   return 'adal';
 }
@@ -397,11 +421,33 @@ export async function husUpplysingar(heimilisfang, frestMs = FRESTUR_MS) {
   const deadline = Date.now() + frestMs;
 
   let st = null;
-  try { st = await finnaStadfang(h, deadline); } catch (_) { st = null; }
+  let stadfangVilla = false;
+  const altGata = gataAlias(h.gata);
+  const reynaStadfang = async (fn) => {
+    if (st) return;
+    try {
+      const fundid = await fn();
+      if (fundid) st = fundid;
+    } catch (_) { stadfangVilla = true; }
+  };
+  await reynaStadfang(() => naekvaemtStadfang(h, deadline));
+  if (altGata) await reynaStadfang(() => naekvaemtStadfang({ ...h, gata: altGata }, deadline));
+  await reynaStadfang(() => finnaStadfang(h, deadline));
+  if (altGata) await reynaStadfang(() => finnaStadfang({ ...h, gata: altGata }, deadline));
+  await reynaStadfang(() => landeignLeit(`${h.gata} ${h.husnr}${h.bokst ? h.bokst : ''}`, h.postnr, h.husnr, deadline));
+  if (altGata) await reynaStadfang(() => landeignLeit(`${altGata} ${h.husnr}${h.bokst ? h.bokst : ''}`, h.postnr, h.husnr, deadline));
   if (!st) {
-    try { st = await landeignLeit(`${h.gata} ${h.husnr}${h.bokst ? h.bokst : ''}`, h.postnr, h.husnr, deadline); } catch (_) { st = null; }
+    // Villa í skránni er ekki tómt safn. Næsta opnun má reyna aftur.
+    if (stadfangVilla) {
+      return { error: 'Staðfangaskrá svaraði ekki', eign: null, reynaAftur: true };
+    }
+    const mapis = MAPIS.some((m) => h.postnr && m.postnr.includes(h.postnr));
+    return {
+      error: 'Fann ekki heimilisfangið í Staðfangaskrá HMS',
+      eign: null,
+      ...(mapis ? { mapisBeint: true, athugasemd: 'engin teikning fannst', teikningar: { fjoldi: 0, flokkar: teljaFlokka([]) } } : {}),
+    };
   }
-  if (!st) return { error: 'Fann ekki heimilisfangið í Staðfangaskrá HMS', eign: null };
 
   const postnr = Number(st.POSTNR) || h.postnr || null;
   const oviss = !!st.OVISS;
@@ -421,14 +467,16 @@ export async function husUpplysingar(heimilisfang, frestMs = FRESTUR_MS) {
     return { eign, tillogur: {}, teikningar: { fjoldi: 0, flokkar: teljaFlokka([]) }, heimild: null, turbopaint, athugasemd: 'engin teikning fannst' };
   }
   if (hm.bein) {
+    const merkja = (svar) => { svar.mapisBeint = true; return svar; };
     if (!eign.heitinr) {
-      return { eign, tillogur: {}, teikningar: { fjoldi: 0, flokkar: teljaFlokka([]) }, heimild: hm.nafn, turbopaint, athugasemd: 'engin teikning fannst' };
+      return merkja({ eign, tillogur: {}, teikningar: { fjoldi: 0, flokkar: teljaFlokka([]) }, heimild: hm.nafn, turbopaint, athugasemd: 'engin teikning fannst' });
     }
     let results;
     try {
       results = await mapisTeikningarBeint(eign.landnr, eign.heitinr, hm, deadline);
     } catch (e) {
       const timi = e && (e.name === 'TimeoutError' || e.name === 'AbortError');
+      // Tími eða bilun er ekki „engin teikning“. mapisBeint er sleppt svo næsta opnun sæki aftur.
       return { eign, tillogur: {}, teikningar: null, heimild: hm.nafn, turbopaint, error: timi ? 'Teikningaþjónustan svaraði ekki í tæka tíð' : ((e && e.message) || 'Náði ekki í teikningasafnið'), reynaAftur: true };
     }
     const flokkar = teljaFlokka(results);
@@ -438,6 +486,7 @@ export async function husUpplysingar(heimilisfang, frestMs = FRESTUR_MS) {
       eign, tillogur, teikningar, flokkar, results,
       heimild: results.length ? lysaHeimild(hm.nafn, teikningar, label) : `${hm.nafn} · engar teikningar skráðar`,
       turbopaint,
+      mapisBeint: true,
     };
     if (!results.length) svar.athugasemd = 'engin teikning fannst';
     return svar;
