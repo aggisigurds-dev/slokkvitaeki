@@ -54,6 +54,22 @@
     r('.co-bupp', 'grid-area:bupp!important;margin:0 0 0 12px!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;align-items:stretch!important'),
     r('.co-bupp ._bupp-lina', 'min-width:0!important'),
     r('.co-bupp .b411-oskrad', 'grid-column:1 / -1!important'),
+    // 02.10.2026 (Agnar, skjámynd af Heimaleigu: „compact the heimaleiga better. Many full page white lines with few
+    // letters. Can you reorganize it"): grindin er nú FJÓRIR dálkar. Hópar sem lögðu fullbreiðar línur hver undir aðra
+    // (._serupp 432-seruppdrattir, ._fasteign 432-fasteign-facts) verða display:contents, svo línurnar þeirra raðast beint
+    // í grindina: Hæðir · Kjallari · Jarðhæð · Afsláttur á EINNI línu, Séruppdrættir ¾ með Skráningartöflur við hliðina,
+    // Tillaga og Teikningar hálf hvor. Aðrar línur (opið „Fleiri upplýsingar") tvær í röð eins og áður. `dense` fyllir göt.
+    // Engin hnútur færður — aðeins CSS; 363/432 teikna áfram sín hólf.
+    r('.co-bupp', 'grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-auto-flow:row dense!important'),
+    r('.co-bupp > ._bupp-lina', 'grid-column:span 2!important'),
+    r('.co-bupp > ._serupp,.co-bupp > ._fasteign', 'display:contents!important'),
+    r('.co-bupp ._serupp > ._bupp-lina', 'grid-column:span 1!important'),
+    r('.co-bupp ._serupp > ._bupp-lina:first-child', 'grid-column:span 3!important'),
+    r('.co-bupp ._serupp > ._bupp-lina:only-child', 'grid-column:1 / -1!important'),
+    r('.co-bupp ._fasteign > ._bupp-lina', 'grid-column:span 1!important'),
+    r('.co-bupp ._fasteign > ._bupp-lina:only-child', 'grid-column:span 2!important'),
+    r('.co-bupp > ._bupp-lina:has(._bupp-afsl)', 'grid-column:span 1!important'),
+    r('.co-bupp ._bupp-lina > ._fasteign-gildi,.co-bupp ._bupp-lina > ._bupp-afsl,.co-bupp ._serupp-lina > ._serupp-inn', 'min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important'),
     r('.b405-knappar', 'grid-area:knappar!important;margin:0 12px 0 0!important;flex-wrap:wrap!important;align-self:start!important'),
     r('.co-mynd', 'align-self:stretch!important'),
     r('.co-banner-right', 'grid-area:note!important;align-self:start!important'),
