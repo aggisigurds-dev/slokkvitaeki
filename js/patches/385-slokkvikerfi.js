@@ -87,12 +87,20 @@
     const nu = (AS.path(VINNSLA_LYKILL) || {})[String(r.kerfi_id)];
     return +nu === gildi ? { ok: true } : { ok: false, villa: 'Gildið í stillingunum stemmir ekki við það sem var sent' };
   }
-  // Hakið situr fremst í Staða-reitnum. Ekkert hak þegar skoðun ársins er komin (Búið/Órukkað) eða kerfið er úr
-  // þjónustu — þá heldur tómur reitur plássinu svo stöðuplöturnar standi í beinni línu.
+  // Hakið situr fremst í Staða-reitnum. Ekkert hak þegar skoðun ársins er rukkuð (Búið) eða kerfið er úr þjónustu —
+  // þá heldur tómur reitur plássinu svo stöðuplöturnar standi í beinni línu.
+  // 02.10.2026 (Agnar: „leyfðu mér að merkja líka það sem er í vinnslu og á eftir að rukka"): Órukkað fær hakið líka,
+  // líka utan þjónustu — skýrslan er komin en reikningurinn í smíðum. Þar er hakið aðeins handvirkt (skýrsla ársins er
+  // lokið, ekki drög), svo það kemur ekki sjálfkrafa á og læst eins og á drögum.
+  const erOrukkad = s => s.k === 'orukkad' || !!s.orukkad;
   function vinnslaHak(r, s) {
-    if (!r.i_thjonustu || s.k === 'buid' || s.k === 'orukkad' || s.k === 'ur') return '<span class="_sk-vchk-tom" aria-hidden="true"></span>';
-    const hand = merktVinnsla(r), drog = !!r.skodun_id && !hand;
-    const t = drog ? 'Í vinnslu — skýrsla ársins er hafin' : hand ? 'Í vinnslu (skýrslugerð) — smelltu til að hreinsa' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)';
+    const ork = erOrukkad(s);
+    // utan_lista: brunakerfi geymir merkið á áskriftarröðinni (388) — fyrirtæki utan lista á enga röð að merkja
+    if (s.k === 'buid' || s.k === 'ur' || (!r.i_thjonustu && (!ork || r.utan_lista))) return '<span class="_sk-vchk-tom" aria-hidden="true"></span>';
+    const hand = merktVinnsla(r), drog = !ork && !!r.skodun_id && !hand;
+    const t = ork
+      ? (hand ? 'Í vinnslu — reikningurinn er í smíðum; smelltu til að hreinsa' : 'Merkja sem Í vinnslu (reikningur eftir)')
+      : drog ? 'Í vinnslu — skýrsla ársins er hafin' : hand ? 'Í vinnslu (skýrslugerð) — smelltu til að hreinsa' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)';
     return '<button type="button" class="_sk-vchk' + (hand || drog ? ' on' : '') + '" data-vinnsla="' + r.kerfi_id + '"' + (drog ? ' disabled' : '') + ' aria-pressed="' + (hand || drog) + '" title="' + t + '" aria-label="' + t + '">' +
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>';
   }
@@ -100,7 +108,13 @@
     const skodad = !!(r.skodad_at || r.skyrsla_at || r.skodun_status === 'final');
     // Órukkað kemur Á UNDAN þjónustustöðunni: skoðun ársins án reiknings er ógreidd vinna hvort sem fyrirtækið
     // er enn í þjónustu eða ekki (mælt 21.09: Hlíðasmári 15 bar skýrslu 2026 en sást aðeins sem „Ekki á áskriftarlista").
-    if (skodad && !r.reikningur_at) return { k: 'orukkad', t: 'Órukkað' + (r.i_thjonustu ? '' : r.utan_lista ? ' · ekki á lista' : ' · úr þjónustu'), c: 'late', o: 0 };
+    if (skodad && !r.reikningur_at) {
+      const vidb = r.i_thjonustu ? '' : r.utan_lista ? ' · ekki á lista' : ' · úr þjónustu';
+      // Merkt „Í vinnslu" (hakið): staðan segir það, en röðin telst ÁFRAM órukkuð (orukkad: true) — KPI, Órukkað-sían
+      // og „felst aldrei" — svo ógreidd vinna týnist ekki þótt reikningurinn sé í smíðum.
+      if (merktVinnsla(r)) return { k: 'vinnsla', t: 'Í vinnslu · órukkað' + vidb, c: 'work', o: 2, orukkad: true };
+      return { k: 'orukkad', t: 'Órukkað' + vidb, c: 'late', o: 0 };
+    }
     if (!r.i_thjonustu) return { k: 'ur', t: r.utan_lista ? 'Ekki á áskriftarlista' : 'Úr þjónustu', c: 'off', o: 9 };
     if (skodad && r.reikningur_at) return { k: 'buid', t: 'Búið ' + r.ar_nu, c: 'done', o: 5 };
     if (r.skodun_id || merktVinnsla(r)) return { k: 'vinnsla', t: 'Í vinnslu', c: 'work', o: 2 };
@@ -182,8 +196,8 @@
     const q = state.leit.trim().toLowerCase();
     const ut = (_rows || []).map(r => ({ r, s: stada(r) })).filter(x => {
       const r = x.r;
-      if (state.felaUr && !r.i_thjonustu && x.s.k !== 'orukkad') return false;   // órukkað felst aldrei
-      if (state.stada !== 'allt' && x.s.k !== state.stada) return false;
+      if (state.felaUr && !r.i_thjonustu && !erOrukkad(x.s)) return false;   // órukkað felst aldrei
+      if (state.stada !== 'allt' && x.s.k !== state.stada && !(state.stada === 'orukkad' && x.s.orukkad)) return false;
       if (state.man && r.skodunarmanudur !== state.man) return false;
       if (state.postnr && String(r.postnumer || '') !== state.postnr) return false;
       if (q && [r.nafn, r.heiti, r.tegund, r.nota, r.heimilisfang, r.kennitala].join(' ').toLowerCase().indexOf(q) < 0) return false;
@@ -253,9 +267,9 @@
       '<div class="_sk-kpis">' +
         kpi('Kerfi í þjónustu', virk.length) + kpi('Skoðað ' + arNu, tel(x => x.r.skodad_at || x.r.skyrsla_at)) +
         kpi('Á gjalddaga / fram yfir', tel(x => x.s.k === 'nu' || x.s.k === 'fram'), true) +
-        kpi('Skoðað en órukkað', allt.filter(x => x.s.k === 'orukkad').length, true) + (FLOKKUR.verdKpi === false ? '' : kpi('Verð vantar', tel(x => verd(x.r) == null), true)) +
+        kpi('Skoðað en órukkað', allt.filter(x => erOrukkad(x.s)).length, true) + (FLOKKUR.verdKpi === false ? '' : kpi('Verð vantar', tel(x => verd(x.r) == null), true)) +
       '</div>' +
-      '<div class="_sk-sia">' + ST.map(s => { const n = s[0] === 'allt' ? virk.length : tel(x => x.s.k === s[0]); return '<button class="_sk-chip' + (state.stada === s[0] ? ' on' : '') + '" data-st="' + s[0] + '">' + s[1] + '<b>' + n + '</b></button>'; }).join('') + '</div>' +
+      '<div class="_sk-sia">' + ST.map(s => { const n = s[0] === 'allt' ? virk.length : tel(x => x.s.k === s[0] || (s[0] === 'orukkad' && x.s.orukkad)); return '<button class="_sk-chip' + (state.stada === s[0] ? ' on' : '') + '" data-st="' + s[0] + '">' + s[1] + '<b>' + n + '</b></button>'; }).join('') + '</div>' +
       '<div class="_sk-sia"><button class="_sk-chip' + (state.man === 0 ? ' on' : '') + '" data-m="0">Allir mánuðir</button>' +
         MON.map((m, i) => { const n = tel(x => x.r.skodunarmanudur === i + 1); return '<button class="_sk-chip' + (state.man === i + 1 ? ' on' : '') + (n ? '' : ' tom') + '" data-m="' + (i + 1) + '">' + m + (n ? '<b>' + n + '</b>' : '') + '</button>'; }).join('') + '</div>' +
       '<div class="_sk-sia"><input id="_sk-leit" class="_sk-inp" placeholder="Leita að fyrirtæki, kerfi eða nótu" value="' + esc(state.leit) + '">' +
