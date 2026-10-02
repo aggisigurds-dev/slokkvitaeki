@@ -67,8 +67,11 @@ const html = lesa('index.html');
 const utgafa = {
   'features.js': '20261001sleppa',
   'mapfix.js': '20261001endur',
-  // 01.10 kvöld: 421 hunsar vistun Brunakerfis-/Slökkvikerfis-spjaldanna; 274 fékk „＋ Vinna".
-  '421-profill-lifandi.js': '20261001sjalf',
+  // 01.10: 153 hætti sjálfvirkum endursækjum.
+  '153-arsskodun.js': '20261001saek',
+  // 01.10 kvöld: 421 hunsar vistun Brunakerfis-/Slökkvikerfis-spjaldanna.
+  // 02.10: sama skrá sækir aðeins töfluna sem var skrifuð. Nýtt merki hleður bæði.
+  '421-profill-lifandi.js': '20261002saek',
   // 02.10: 274 fékk „Önnur vara/þjónusta — skrifa sjálf/ur" og skoðunarlínur sem fylgja búnaðinum.
   '274-brunakerfi-fyrirtaeki.js': '20261002ottengd',
   // Uppfærsluborð bætti #uppferslubord við 218. Nýrra merki hleður hopp-kóðann líka.

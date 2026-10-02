@@ -130,20 +130,8 @@
     }
   }, true); // capture phase so we win against tr.onclick
 
-  // Periodic Companies.list freshness — soft reload every 2 minutes when on
-  // the view, so the in-memory list doesn't go stale.
-  let _refreshTimer = null;
-  document.addEventListener('view-shown', e => {
-    const name = e && e.detail && (e.detail.name || e.detail);
-    if (name === 'companies' || name === 'fyrirtaeki') {
-      clearInterval(_refreshTimer);
-      _refreshTimer = setInterval(() => {
-        const view = document.getElementById('view-companies');
-        if (!view || !view.classList.contains('active')) return;
-        try { if (window.Companies && Companies.load) Companies.load(); } catch (_) {}
-      }, 120000);
-    }
-  });
+  // 01.10.2026: 2 mín púlsinn sem kallaði Companies.load() á opinni
+  // fyrirtækjasýn (líka á prófíl) er farinn. Listinn er í minni. Hlaða sækir hann.
 
   console.log('[patch-146] companies-click-fix installed — clicks on company rows always resolve via DB');
 })();

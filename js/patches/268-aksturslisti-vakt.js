@@ -548,7 +548,7 @@
     try { localStorage.setItem('lastView', NAV_KEY); } catch (_) {}
     try { if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
     reload();
-    if (!_poll) _poll = setInterval(() => { const el = document.getElementById(VIEW_ID); if (el && el.classList.contains('active')) reload(); }, 60000);
+    // 01.10.2026: enginn 60 s púls á meðan listinn er opinn. Opnun sækir einu sinni.
   }
 
   function injectSidebar() {

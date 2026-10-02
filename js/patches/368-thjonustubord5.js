@@ -156,7 +156,7 @@
   window.__thjonustubord368 = true;
 
   const VIEW_ID = 'view-bord', NAV_KEY = 'bord', CFG_KEY = 'thjonustubord5';
-  const PAGE = 15, POLL_MS = 60000;     // engin mörk á fjölda mála á borði (Agnar 11.09.2026)
+  const PAGE = 15;     // engin mörk á fjölda mála á borði (Agnar 11.09.2026)
   const AI_WORKER = 'Charlize';                                        // sama nafn og í 231
   const SENTINELS = { '': 1, Allir: 1, allir: 1, nema_agnar: 1, nema_ai: 1 };
   const LAUS_SIA = 'assigned_to.is.null,assigned_to.in.("",Allir,allir,nema_agnar,nema_ai,' + AI_WORKER + ')';
@@ -5995,16 +5995,9 @@
   }
   let _poll = 0;
   function raesaPoll() {
-    if (_poll) return;
-    _poll = setInterval(() => {
-      const vv = document.getElementById(VIEW_ID);
-      if (!vv || !vv.classList.contains('active')) { clearInterval(_poll); _poll = 0; return; }
-      if (document.hidden) return;
-      // Punktarnir í „Í vinnslu — er það búið?" (skýrsla/reikningur) fylgja líka mínútu-könnuninni, ekki bara 5 mín. geymslu.
-      const gs = G.skyrslur;
-      if (gs && gs.at && !gs.bid && Date.now() - gs.at > POLL_MS) { gs.at = 0; render(); }
-      load(true);
-    }, POLL_MS);
+    // 01.10.2026: 60 s könnunin er slökkt. Borðið sækir við fyrstu opnun og
+    // þegar ýtt er á ↻. Rauntími (db.js) sækir áfram ef röð breytist á meðan
+    // borðið er opið. Skilaboðaboxið póllar á sínum stað.
   }
   function show() {
     if (!ensureView()) return;
@@ -6019,7 +6012,7 @@
         try { history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
       }
       raesaPoll();
-      load(S.loaded);
+      if (!S.loaded) load(false);
       return;
     }
     document.querySelectorAll('[id^="view-"]').forEach(x => { x.style.display = 'none'; x.classList.remove('active'); });
@@ -6033,7 +6026,7 @@
     S.filter = (M(cfg().mode) || MODES.thjonusta).filter || 'allt';
     ferskaEiningar();
     render();
-    load(S.loaded);
+    if (!S.loaded) load(false);
     clearInterval(_poll);
     _poll = 0;
     raesaPoll();
@@ -6086,7 +6079,7 @@
     window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(render, 200); });
     document.addEventListener('visibilitychange', () => {
       const v = document.getElementById(VIEW_ID);
-      if (!document.hidden && v && v.classList.contains('active')) { ferskaEiningar(); render(); load(true); }
+      if (!document.hidden && v && v.classList.contains('active')) { ferskaEiningar(); render(); }
     });
     // Stillingar breytast þegar HVAÐ SEM ER í appinu vistar — teiknað aðeins ef það snertir þetta borð.
     try {

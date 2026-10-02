@@ -2100,10 +2100,9 @@
   }
   var _dygRT=0;
   function _dygRefreshSoon(){ clearTimeout(_dygRT); _dygRT=setTimeout(_dygRefresh, 250); }
-  window.addEventListener('hashchange', _dygRefreshSoon);
-  document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState==='visible') _dygRefreshSoon();
-  });
+  // 01.10.2026: hashchange og visibilitychange sóttu öll skjöl fyrirtækisins
+  // aftur þó þau væru þegar á skjánum. Skrift (skýrsla/reikningur) endurhleður
+  // áfram. Endurnýja rífur prófílinn og inject() sækir einu sinni.
   document.addEventListener('customer-doc-written', _dygRefreshSoon);
 
   if(!document.getElementById('sk-card-css')){

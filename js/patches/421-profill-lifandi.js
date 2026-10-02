@@ -115,25 +115,29 @@
   // Aðeins þetta fyrirtæki og tæki þess — sama lögun og DB.loadAll / Companies.load skila (select *).
   async function endurnyjaMinni(id, toflur) {
     const sb = window.DB && DB.sb; if (!sb) return;
+    // 01.10.2026: aðeins taflan sem var skrifuð. Áður sótti hver vistun bæði
+    // fyrirtækisröðina og öll tæki hennar, líka þegar aðeins ein röð breyttist.
+    const villFyr = toflur.indexOf('fyrirtaeki') > -1;
+    const villTaeki = toflur.indexOf('uttaeki') > -1;
     const verk = [];
-    verk.push(sb.from('fyrirtaeki').select('*').eq('id', id).maybeSingle().then(({ data }) => {
-      if (!data || !window.Companies || !Array.isArray(Companies.list)) return;
-      const c = Companies.list.find((x) => x.id === id);
-      if (c) { Object.keys(c).forEach((k) => { if (!(k in data)) delete c[k]; }); Object.assign(c, data); }
-      else Companies.list.push(data);
-    }));
+    if (villFyr || !villTaeki) {
+      verk.push(sb.from('fyrirtaeki').select('*').eq('id', id).maybeSingle().then(({ data }) => {
+        if (!data || !window.Companies || !Array.isArray(Companies.list)) return;
+        const c = Companies.list.find((x) => x.id === id);
+        if (c) { Object.keys(c).forEach((k) => { if (!(k in data)) delete c[k]; }); Object.assign(c, data); }
+        else Companies.list.push(data);
+      }));
+    }
+    if (!villTaeki) { await Promise.all(verk); return; }
     verk.push(sb.from('uttaeki').select('*').eq('fyrirtaeki_id', id).order('id').range(0, 999).then(({ data }) => {
       if (!data || !window.DB || !DB.cache || !Array.isArray(DB.cache.units)) return;
       const nyjar = new Map(data.map((u) => [u.id, u]));
-      // Fjarlægja raðir þessa fyrirtækis sem eru ekki lengur til (eytt / færðar á annað fyrirtæki), uppfæra hinar, bæta nýjum við.
       DB.cache.units = DB.cache.units.filter((u) => u.fyrirtaeki_id !== id || nyjar.has(u.id))
         .map((u) => (nyjar.has(u.id) ? Object.assign(u, nyjar.get(u.id)) : u));
       const til = new Set(DB.cache.units.map((u) => u.id));
       data.forEach((u) => { if (!til.has(u.id)) DB.cache.units.push(u); });
     }));
-    // Tæki sem var fært AF þessu fyrirtæki ber nú annað fyrirtaeki_id og hverfur úr sókninni hér að ofan — en gamla
-    // eintakið í minninu ber enn þetta id. Síðan sem skrifaði í uttaeki gæti hafa gert það; sækja þau sem minnið telur hér.
-    if (toflur.indexOf('uttaeki') > -1 && window.DB && DB.cache && Array.isArray(DB.cache.units)) {
+    if (window.DB && DB.cache && Array.isArray(DB.cache.units)) {
       const minni = DB.cache.units.filter((u) => u.fyrirtaeki_id === id).map((u) => u.id);
       if (minni.length) verk.push(sb.from('uttaeki').select('*').in('id', minni.slice(0, 500)).range(0, 999).then(({ data }) => {
         if (!data) return;

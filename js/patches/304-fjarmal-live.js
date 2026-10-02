@@ -107,10 +107,8 @@
     } finally { _busy = false; }
   }
 
-  // Einu sinni þegar appið er komið í ró eftir ræsingu, svo á 30 mín fresti
-  // meðan flipinn er opinn — talan er þá aldrei eldri en síðasta virka lota.
-  setTimeout(() => publish(), 20000);
-  // falinn flipi birtir ekki — sýnilegi flipinn (eða næsta vél) sér um það
-  setInterval(() => { if (!document.hidden) publish(); }, 30 * 60 * 1000);
+  // 01.10.2026: sjálfvirk birting (20 s eftir ræsingu, svo á 30 mín fresti)
+  // las Ársskoðun og skrifaði fjarmal_live án þess að nokkur biði um það.
+  // FjarmalLive.publish() er áfram til þegar verk er klárað.
   window.FjarmalLive = { publish };
 })();

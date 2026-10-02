@@ -332,27 +332,19 @@
   // but it's nice to be explicit).
   window.addEventListener('beforeunload', () => { _cancelled = true; });
 
-  // Start after DOM is ready. Customer data load is async (Supabase) so
-  // waitForData polls until the list is populated.
-  // 30.09.2026: byrjaði á DOMContentLoaded og keppti því við ræsinguna sjálfa —
-  // á þeirri stundu er notandinn að bíða eftir fyrstu teikningu. Forhitun er
-  // eðli sínu samkvæmt bakgrunnsverk; hún má bíða. requestIdleCallback þar sem
-  // hann er til, annars fast bil.
+  // 01.10.2026: sjálfvirk forhitun er slökkt. Hún kallaði /api/geocode á
+  // 1,5 s fresti fyrir hundruð heimilisfanga þó enginn opnaði kort.
+  // GeocodePrewarm.start() er til ef kortið biður um það síðar.
   function raesaSidar() {
     var byrja = function () { if (!document.hidden) waitForData(); else setTimeout(byrja, 3000); };
     if (typeof requestIdleCallback === 'function') requestIdleCallback(byrja, { timeout: 15000 });
     else setTimeout(byrja, 8000);
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', raesaSidar);
-  } else {
-    raesaSidar();
-  }
 
-  // Expose for debugging
   window.GeocodePrewarm = {
     status: () => ({ started: _started, done: _done, cancelled: _cancelled }),
-    cancel: () => { _cancelled = true; }
+    cancel: () => { _cancelled = true; },
+    start: () => { _cancelled = false; if (!_started) raesaSidar(); }
   };
 
   console.log('[geocode-prewarm v1] installed');
