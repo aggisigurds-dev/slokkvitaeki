@@ -220,11 +220,28 @@
     // tölustöfum, 0 líktist litlu o), kt og heimilisfang í Mono 500 dekkra, póstnúmer blátt #1d5bbf feitt (6,1:1 á hvítu),
     // mánuður í Mono hástöfum með breiðu stafabili. Þykktirnar eru hlaðnar í FONT-hlekknum hér neðst — engin fölsuð feitletrun.
     // font-variant-numeric þarf !important: `font:`-styttingin með !important núllstillir hana annars (mælt: „normal")
-    r('table._sk-tbl ._sk-co', 'font:700 16.5px/1.2 ' + DISPLAY + '!important;font-variant-numeric:lining-nums!important;letter-spacing:0;color:#11141c'),
-    r('table._sk-tbl ._sk-kt', 'font:500 11px/1.4 ' + MONO + '!important;color:#3a4250'),
-    r('table._sk-tbl ._sk-addr', 'font:500 11.5px/1.35 ' + MONO + '!important;color:#1f2530'),
-    r('table._sk-tbl ._sk-post', 'font:700 11.5px/1.35 ' + MONO + '!important;color:#1d5bbf'),
-    r('table._sk-tbl select._sk-man', 'font:700 11px ' + MONO + '!important;text-transform:uppercase;letter-spacing:.14em;color:#1f2530'),
+    // Sama dag, seinna („hlutfalladreifing á milli atriða, font stærðir, eitthvað off"): EINN kvarði, sá sami og á
+    // Ársskoðun (415) — nafn 15, gögn 12, merki 10.5. Stöðuplöturnar mattar, skrefin sem stuttar stikur, upphæðin hægra megin.
+    r('table._sk-tbl ._sk-co', 'font:700 15px/1.2 ' + DISPLAY + '!important;font-variant-numeric:lining-nums!important;letter-spacing:0;color:#11141c'),
+    r('table._sk-tbl ._sk-kt', 'font:500 10.5px/1.4 ' + MONO + '!important;letter-spacing:.02em;color:#3a4250'),
+    r('table._sk-tbl ._sk-kerfi', 'font:400 11px/1.35 ' + SANS + '!important;color:#4a5361'),
+    r('table._sk-tbl ._sk-addr', 'font:500 12px/1.4 ' + MONO + '!important;color:#1f2530'),
+    r('table._sk-tbl ._sk-post', 'font:700 12px/1.4 ' + MONO + '!important;color:#1d5bbf'),
+    r('table._sk-tbl select._sk-man', 'font:700 10.5px ' + MONO + '!important;text-transform:uppercase;letter-spacing:.14em;color:#1f2530'),
+    r('table._sk-tbl ._sk-mono', 'font:600 12px ' + MONO + '!important;font-variant-numeric:tabular-nums;color:#1f2530'),
+    r('table._sk-tbl th:nth-child(7), table._sk-tbl td:nth-child(7)', 'text-align:right!important'),
+    // skrefin: stutt stika ofan við skammstöfunina (grænt = komið) í stað þriggja kassa
+    r('table._sk-tbl ._sk-skref', 'display:inline-flex!important;gap:3px!important'),
+    r('table._sk-tbl ._sk-skref i', 'display:inline-flex!important;flex-direction:column;align-items:stretch;gap:4px;width:28px!important;height:auto!important;padding:0!important;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;font:700 9px/1 ' + MONO + '!important;letter-spacing:.08em;text-align:center;color:#8e97a6;text-shadow:none!important'),
+    r('table._sk-tbl ._sk-skref i::before', 'content:"";display:block;height:6px;border-radius:2px;background:#e3e7ee;box-shadow:inset 0 1px 1px rgba(0,0,0,.12)'),
+    r('table._sk-tbl ._sk-skref i.on', 'color:#0b6b3a'),
+    r('table._sk-tbl ._sk-skref i.on::before', 'background:linear-gradient(180deg,#63b88c 0%,#1f6f42 50%,#0c3d22 100%);box-shadow:none'),
+    // stöðuplöturnar mattar (392 á formið og díóðuna)
+    r('table._sk-tbl ._sk-st', 'font-size:11.5px!important;font-weight:600!important;text-shadow:0 1px 0 rgba(0,0,0,.35)!important'),
+    r('table._sk-tbl ._sk-st--done', 'background:linear-gradient(180deg,#17663a 0%,#0e4d2b 100%)!important;border:1px solid #0a3a1e!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important'),
+    r('table._sk-tbl ._sk-st--work', 'background:linear-gradient(180deg,#24508f 0%,#173a6d 100%)!important;border:1px solid #0d2547!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important'),
+    r('table._sk-tbl ._sk-st--late', 'background:linear-gradient(180deg,#8f1d1d 0%,#6b1212 100%)!important;border:1px solid #3d0607!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
+    r('table._sk-tbl ._sk-st--skip', 'background:linear-gradient(180deg,#a9842c 0%,#7d5f17 100%)!important;border:1px solid #4d3a0a!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)!important'),
     r('._sk-lbl', 'color:#c9d0da;font:500 12.5px ' + SANS + '!important'),
     r('._sk-sia ._sk-sp + ._sk-lbl', 'background:' + SILVER + '!important;color:#1f2530;border:1px solid rgba(20,24,34,.12)!important;height:24px;padding:0 9px;border-radius:3px;font-family:' + MONO + '!important;font-size:11px!important;font-weight:700!important'),
     // ── taflan: hólfið eins og 415 ──

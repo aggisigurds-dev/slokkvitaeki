@@ -35,23 +35,32 @@
     r(T + 'tbody tr._ars-row:nth-child(odd) td', 'background:#fafbfd'),
     r(T + 'tbody tr._ars-row:hover td', 'background:#f3f5f9'),
     // 02.10.2026 (Agnar: „finnst fontin eitthvað óskýr og dull … í töflunni") — sama letur og á Brunakerfis- og
-    // Slökkvikerfis skoðun (418): nafn í Playfair 16.5/700 með réttum tölustöfum (Playfair er sjálfgefið með gamaldags
+    // Slökkvikerfis skoðun (418): nafn í Playfair með réttum tölustöfum (Playfair er sjálfgefið með gamaldags
     // tölustöfum — 0 líktist litlu o), kt og heimilisfang í Mono 500 dekkra, póstnúmer blátt #1d5bbf feitt (6,1:1 á hvítu),
-    // mánuður í Mono hástöfum með breiðu stafabili, tækjatölur í Playfair 19/800. Þykktirnar hleður 394 (_bstal-c-font).
-    r(T + '._co', 'font-family:' + DISPLAY + '!important;font-weight:700!important;font-size:16.5px!important;color:#11141c;line-height:1.2!important;letter-spacing:0!important;font-variant-numeric:lining-nums!important'),
-    r(T + '._kt', 'font-family:' + MONO + '!important;font-size:11px!important;color:#3a4250;font-weight:500!important'),
+    // mánuður í Mono hástöfum með breiðu stafabili, tækjatölur í Playfair /800. Þykktirnar hleður 394 (_bstal-c-font).
+    // Sama dag, seinna (Agnar: „hlutfalladreifing á milli atriða, font stærðir, eitthvað off"): EINN kvarði á báðum
+    // töflunum (418 eins) — nafn 15, gögn 12 (heimilisfang, upphæð), merki 10.5 (kt, mánuður, SLT…), tölur 17. Áður
+    // stóðu 16.5 / 19 / 15 / 12.5 / 11 hlið við hlið og ekkert eitt réði; nöfnin brutu sig í tvær línur.
+    r(T + '._co', 'font-family:' + DISPLAY + '!important;font-weight:700!important;font-size:15px!important;color:#11141c;line-height:1.2!important;letter-spacing:0!important;font-variant-numeric:lining-nums!important'),
+    r(T + '._kt', 'font-family:' + MONO + '!important;font-size:10.5px!important;color:#3a4250;font-weight:500!important;letter-spacing:.02em'),
     // ferðanóta: tvær línur, mjúkt blek
     r(T + '._ars-nota3', '-webkit-line-clamp:2!important;font:400 11.5px/1.35 ' + SANS + '!important;color:#525b6b'),
     // heimilisfang: mono 11.5, póstnúmer grátt á undan
-    r(T + '._addr', 'font-family:' + MONO + '!important;font-size:12.5px!important;font-weight:500!important;color:#1f2530;line-height:1.35!important'),
+    r(T + '._addr', 'font-family:' + MONO + '!important;font-size:12px!important;font-weight:500!important;color:#1f2530;line-height:1.4!important'),
     r(T + '._post', 'color:#1d5bbf;font-weight:700!important;margin-right:4px!important'),
     // mánuður: mono hástafir, breitt stafabil
-    r(T + '._mo', 'font-family:' + MONO + '!important;font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.14em!important;color:#1f2530'),
-    // tæki: Playfair 19/800 með réttum tölustöfum, 9 px merki
-    r(T + '._devs b', 'font-family:' + DISPLAY + '!important;font-size:19px!important;font-weight:800!important;line-height:1.1!important;font-variant-numeric:lining-nums tabular-nums!important;color:#1f2530'),
-    // Áætlaða upphæðin („251þ") rakst á næsta dálk í 19px (Agnar 02.10: „aðeins minnka fontið í upphæðinni") — 15px,
-    // og línuhæðin jöfnuð við tækjatölurnar svo ÁÆTL-merkið standi í sömu línu og SLT/BSL/RS.
-    r(T + '._devs ._estcell b', 'font-size:15px!important;line-height:20.9px!important'),
+    r(T + '._mo', 'font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.14em!important;color:#1f2530'),
+    // tæki: Playfair 17/800 með réttum tölustöfum, 9 px merki
+    r(T + '._devs b', 'font-family:' + DISPLAY + '!important;font-size:17px!important;font-weight:800!important;line-height:20px!important;font-variant-numeric:lining-nums tabular-nums!important;color:#1f2530'),
+    // Áætlaða upphæðin („251þ") rakst á næsta dálk (Agnar 02.10: „aðeins minnka fontið í upphæðinni") — 14px,
+    // sama línuhæð og tækjatölurnar svo ÁÆTL-merkið standi í sömu línu og SLT/BSL/RS.
+    r(T + '._devs ._estcell b', 'font-size:14px!important;line-height:20px!important'),
+    // Stöðuplöturnar mattar: sami litur, enginn gljáandi ljósrönd á miðjunni (393 á formið og díóðuna)
+    r(T + 'span._st--done', 'background:linear-gradient(180deg,#17663a 0%,#0e4d2b 100%)!important;border:1px solid #0a3a1e!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important'),
+    r(T + 'span._st--work', 'background:linear-gradient(180deg,#24508f 0%,#173a6d 100%)!important;border:1px solid #0d2547!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important'),
+    r(T + 'span._st--late', 'background:linear-gradient(180deg,#8f1d1d 0%,#6b1212 100%)!important;border:1px solid #3d0607!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
+    r(T + 'span._st--skip', 'background:linear-gradient(180deg,#a9842c 0%,#7d5f17 100%)!important;border:1px solid #4d3a0a!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)!important'),
+    r(T + 'span._st', 'font-size:11.5px!important;font-weight:600!important;text-shadow:0 1px 0 rgba(0,0,0,.35)!important'),
     r(T + '._devs i', 'font-family:' + MONO + '!important;font-size:9px!important;font-weight:700!important;letter-spacing:.1em!important;color:#8a93a3;text-transform:uppercase'),
     r(T + '._devs div + div', 'border-left:0!important'),
     r(T + '._devs div', 'padding:0 6px!important'),
