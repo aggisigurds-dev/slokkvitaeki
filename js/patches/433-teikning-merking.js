@@ -23,7 +23,7 @@
     { id: 'skilti_slanga', nafn: 'Skilti brunaslanga', stutt: 'SLS', litur: '#c93c1d', glyff: 'sign-hose' }
   ];
 
-  const S = { drag: null, bid: null, valinn: null, slepptSmellur: false, vistun: 0 };
+  const S = { drag: null, bid: null, valinn: null, slepptSmellur: false, vistun: 0, undo: [], undoLyk: '' };
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const FP = () => window.FloorPlan;
@@ -75,9 +75,69 @@
     }
   }
 
+  function afritMerki(m) { return m ? { unitId: m.unitId, kind: m.kind, sign: m.sign, x: m.x, y: m.y, color: m.color } : null; }
+  function undoLykill() {
+    const F = FP();
+    const v = window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0;
+    return (F && F.companyId) + ':' + v;
+  }
+  function hreinsaUndoEfSkipti() {
+    const l = undoLykill();
+    if (S.undoLyk !== l) { S.undo = []; S.undoLyk = l; }
+  }
+  function skraUndo(ath) {
+    hreinsaUndoEfSkipti();
+    S.undo.push(ath);
+    if (S.undo.length > 24) S.undo.shift();
+    afturkallaTakki();
+  }
+  function afturkalla() {
+    hreinsaUndoEfSkipti();
+    const a = S.undo.pop();
+    if (!a) return false;
+    const p = plan();
+    if (!p) return false;
+    if (a.teg === 'stimpill' && a.merki) {
+      p.markers = (p.markers || []).filter(m => m.unitId !== a.merki.unitId);
+    } else if (a.teg === 'taeki') {
+      p.markers = (p.markers || []).filter(m => m.unitId !== a.unitId);
+      if (a.old) p.markers.push(a.old);
+    } else if (a.teg === 'faera' && a.merki) {
+      const m = (p.markers || []).find(x => x.unitId === a.merki.unitId) || a.merki;
+      m.x = a.fraX; m.y = a.fraY;
+    }
+    try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
+    endurteikna();
+    vistaAdThjoni();
+    afturkallaTakki();
+    return true;
+  }
+  function afturkallaTakki() {
+    const m = document.getElementById('modal-floorplan');
+    if (!m) return;
+    hreinsaUndoEfSkipti();
+    let b = document.getElementById('fp-afturkalla');
+    if (!S.undo.length) { if (b) b.hidden = true; return; }
+    if (!b) {
+      const grp = m.querySelector('.fp-hd-grp') || m.querySelector('.modal-hd > div:last-child');
+      if (!grp) return;
+      b = document.createElement('button');
+      b.type = 'button'; b.id = 'fp-afturkalla';
+      b.textContent = 'Afturkalla';
+      b.title = 'Taka síðasta stimpil eða drátt til baka (Ctrl+Z)';
+      b.addEventListener('click', e => { e.preventDefault(); afturkalla(); });
+      const gaedi = document.getElementById('fp-gaedi');
+      try { grp.insertBefore(b, gaedi && gaedi.nextSibling ? gaedi.nextSibling : grp.firstChild); }
+      catch (_) { grp.appendChild(b); }
+    }
+    b.hidden = false;
+  }
+
   function setjaTaeki(unitId, x, y) {
     const p = plan(), F = FP();
     if (!p || unitId == null) return null;
+    const old = (p.markers || []).find(m => m.unitId === unitId);
+    skraUndo({ teg: 'taeki', unitId, old: afritMerki(old) });
     p.markers = p.markers.filter(m => m.unitId !== unitId);
     const m = { unitId, x, y };
     p.markers.push(m);
@@ -95,6 +155,7 @@
     p.markers = p.markers.filter(m => m.unitId !== id);
     const m = { unitId: id, kind: 'sign', sign: def.id, x, y, color: def.litur };
     p.markers.push(m);
+    skraUndo({ teg: 'stimpill', merki: afritMerki(m) });
     try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
     endurteikna();
     return m;
@@ -135,7 +196,7 @@
     if (!FP() || !FP().bgImage) return false;
     const hit = finnaMerki(e);
     if (!hit) return false;
-    S.drag = { teg: 'faera', merki: hit, pointerId: e.pointerId };
+    S.drag = { teg: 'faera', merki: hit, pointerId: e.pointerId, fraX: hit.x, fraY: hit.y };
     S.slepptSmellur = true;
     try { e.target.setPointerCapture(e.pointerId); } catch (_) {}
     return true;
@@ -174,6 +235,9 @@
     const p = strigaHnit(e);
     if (d.teg === 'faera') {
       if (p && d.merki) { d.merki.x = p.x; d.merki.y = p.y; }
+      if (d.merki && (d.merki.x !== d.fraX || d.merki.y !== d.fraY)) {
+        skraUndo({ teg: 'faera', merki: afritMerki(d.merki), fraX: d.fraX, fraY: d.fraY });
+      }
       try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
       endurteikna();
       vistaAdThjoni();
@@ -266,6 +330,13 @@
         F._selectedUnitId = u.id;
         hefjaFraLista(e, 'taeki', { unitId: u.id, stutt: String(u.type || 'SLT').slice(0, 3).toUpperCase() });
       });
+      rod.addEventListener('click', e => {
+        if (e.target && e.target.closest && e.target.closest('button')) return;
+        const pl = plan();
+        const merki = pl && (pl.markers || []).find(m => m.unitId === u.id);
+        if (!merki) return;
+        if (window.TeiknBord && typeof TeiknBord.faraAd === 'function') TeiknBord.faraAd(merki.x, merki.y);
+      });
       rod.addEventListener('dragstart', e => {
         S.bid = null; S.drag = null; felaDraug();
         e.dataTransfer.setData('application/x-fp-unit', String(u.id));
@@ -300,7 +371,9 @@
       '#fp-stimpil .fp-stimpill{display:flex;align-items:center;gap:5px;padding:4px 6px 4px 4px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.82);font:600 11px system-ui,sans-serif;cursor:grab}' +
       '#fp-stimpil .fp-stimpill span,#fp-stimpil .fp-stimpill-ico{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;color:#fff;font:700 8px system-ui,sans-serif;overflow:hidden;flex:none}' +
       '#fp-unit-list>div{cursor:grab}' +
-      '#fp-canvas.fp-drop{outline:2px dashed rgba(201,60,29,.45);outline-offset:-2px}';
+      '#fp-canvas.fp-drop{outline:2px dashed rgba(201,60,29,.45);outline-offset:-2px}' +
+      '#fp-afturkalla{padding:5px 10px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(20,18,15,.88);color:#f1ede4;font:600 11px system-ui,sans-serif;cursor:pointer}' +
+      '#fp-afturkalla[hidden]{display:none!important}';
     document.head.appendChild(st);
   }
 
@@ -345,14 +418,26 @@
     try { stikaStimpla(); } catch (_) {}
     try { geraDraggandi(); } catch (_) {}
     try { tengjaDropp(); } catch (_) {}
+    try { afturkallaTakki(); } catch (_) {}
   }
 
   document.addEventListener('pointermove', e => { if (S.drag || S.bid) faeraDrag(e); }, true);
   document.addEventListener('pointerup', e => { if (S.drag || S.bid) lokaDrag(e); }, true);
   document.addEventListener('pointercancel', e => { if (S.drag || S.bid) lokaDrag(e); }, true);
+  document.addEventListener('keydown', e => {
+    const z = e.key === 'z' || e.key === 'Z';
+    if (!z || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+    const t = e.target;
+    if (t && t.closest && t.closest('input,textarea,select,[contenteditable="true"]')) return;
+    const m = document.getElementById('modal-floorplan');
+    if (!m || !m.isConnected) return;
+    if (m.style.display === 'none' && !m.classList.contains('open')) return;
+    e.preventDefault();
+    afturkalla();
+  }, true);
 
   window.TeiknMerking = {
-    grip, iDragi, setjaTaeki, setjaStimpil, vistaAdThjoni, erStimpil, stimplar: STIMPLAR, tikk
+    grip, iDragi, setjaTaeki, setjaStimpil, vistaAdThjoni, erStimpil, stimplar: STIMPLAR, tikk, afturkalla
   };
 
   if (!vefja()) { let n = 0; const i = setInterval(() => { if (vefja() || ++n > 80) clearInterval(i); }, 150); }

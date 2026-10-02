@@ -52,7 +52,8 @@
         var dm = document.getElementById('fp-drop-msg'); if (dm) dm.style.display = 'none';
         try { FloorPlan._renderCanvas(); FloorPlan._renderPanel(); } catch (_) {}
       };
-      img.src = row.image_url;
+      if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, row.image_url);
+      else img.src = row.image_url;
     } else {
       try { FloorPlan._renderCanvas(); FloorPlan._renderPanel(); } catch (_) {}
     }

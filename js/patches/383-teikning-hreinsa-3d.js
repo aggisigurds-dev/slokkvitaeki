@@ -131,7 +131,8 @@
   function hreinsa(mynd, o) {
     o = o || {};
     const iw = mynd.naturalWidth || mynd.width, ih = mynd.naturalHeight || mynd.height;
-    const kvardi = Math.min(1, (o.vinnuPx || 2200) / Math.max(iw, ih));
+    const vinnuPx = o.vinnuPx || (window.TeiknGaedi && TeiknGaedi.vinnuPx && TeiknGaedi.vinnuPx()) || 2200;
+    const kvardi = Math.min(1, vinnuPx / Math.max(iw, ih));
     const W = Math.max(1, Math.round(iw * kvardi)), H = Math.max(1, Math.round(ih * kvardi));
     const vinnu = document.createElement('canvas'); vinnu.width = W; vinnu.height = H;
     const vc = vinnu.getContext('2d', { willReadFrequently: true });
@@ -658,7 +659,8 @@
     return c;
   }
   function reikna(stig1, l, val) {
-    const hl = l + '|' + (val.thykkt || 0) + '|' + (val.fylla ? 1 : 0);
+    const vp = (window.TeiknGaedi && TeiknGaedi.vinnuPx) ? TeiknGaedi.vinnuPx() : 2200;
+    const hl = l + '|' + (val.thykkt || 0) + '|' + (val.fylla ? 1 : 0) + '|' + vp;
     if (G.hrein && G.hreinLykill === hl) return G.hrein;
     const t0 = performance.now(), r = hreinsa(stig1, { thykkt: val.thykkt || 0, fylla: !!val.fylla });
     r.ms = Math.round(performance.now() - t0);
@@ -880,7 +882,8 @@
         beita(); try { FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
       };
       img.onerror = () => segja('⚠ Náði ekki í teikningu hæðarinnar „' + h.nafn + '".');
-      img.src = h.image_url;
+      if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, h.image_url);
+      else img.src = h.image_url;
     } else {
       if (c) c.style.display = 'none'; if (dm) dm.style.display = '';
     }
@@ -1002,6 +1005,26 @@
     Z.x = mx - (mx - Z.x) * (ns / Z.s); Z.y = my - (my - Z.y) * (ns / Z.s); Z.s = ns; zBeita();
   }
   function zNullstilla() { Z.s = 1; Z.x = 0; Z.y = 0; zBeita(); }
+  function zFaraAd(imgX, imgY) {
+    const c = fpEl('fp-canvas'), main = fpEl('fp-main');
+    if (!c || !main || imgX == null) return;
+    const cw = c.offsetWidth || c.width, ch = c.offsetHeight || c.height;
+    if (cw < 2 || ch < 2) return;
+    const mx = ((imgX > 1 || imgY > 1) ? imgX : imgX * c.width) - G.rymi.x;
+    const my = ((imgX > 1 || imgY > 1) ? imgY : imgY * c.height) - G.rymi.y;
+    const px = mx * (cw / c.width), py = my * (ch / c.height);
+    if (Z.s < 1.6) Z.s = 1.8;
+    Z.x = (main.clientWidth / 2) - px * Z.s;
+    Z.y = (main.clientHeight / 2) - py * Z.s;
+    zBeita();
+  }
+  function nyMynd() {
+    G.frum = null; G.stig1 = null; G.stig1Lykill = ''; G.synd = null; G.lykill = '';
+    G.hrein = null; G.hreinLykill = ''; G.dauft = null; G.dauftLykill = '';
+    G.sjalfReynt = null;
+    beita();
+    try { const F = FPx(); if (F && F._renderCanvas) F._renderCanvas(); } catch (_) {}
+  }
   function zTakkar() {
     const main = fpEl('fp-main'); if (!main) return;
     const gamalt = document.getElementById('_fzb'); if (gamalt && gamalt.parentNode && gamalt.parentNode.style.display !== 'none') gamalt.parentNode.style.display = 'none';
@@ -1096,7 +1119,11 @@
     const g = document.getElementById('fp-3d'); if (g) g.remove();
     const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'false');
   }
-  const hladaMynd = slod => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('mynd')); i.src = slod; });
+  const hladaMynd = slod => new Promise((res, rej) => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('mynd'));
+    if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(i, slod);
+    else i.src = slod;
+  });
   // Hæð → { veggir, W, H, golf, kvardi, merki } í hnitum SKORNU myndarinnar (stig1).
   function undirbua(h, stig1, merkiFrum, val, einingar, frum) {
     const fb = frum.naturalWidth || frum.width, fh = frum.naturalHeight || frum.height;
@@ -1427,7 +1454,9 @@
     soknKom: () => G.soknKom,
     haedir,
     plan,
-    erPx
+    erPx,
+    faraAd: zFaraAd,
+    nyMynd
   };
 
   function vaktGlugga() {

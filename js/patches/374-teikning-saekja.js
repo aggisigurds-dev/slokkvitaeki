@@ -136,7 +136,8 @@
       if (klarad) return; klarad = true; clearTimeout(thak);
       synaVillu('Náði ekki í myndina. Prófaðu aðra teikningu eða „Hlaða upp" handvirkt.');
     };
-    img.src = url;
+    if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, url);
+    else img.src = url;
   }
 
   /* ── uppfletting: heimilisfang → landnúmer → teikningalisti ───────────────── */
