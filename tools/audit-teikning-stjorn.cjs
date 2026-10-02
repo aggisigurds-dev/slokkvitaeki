@@ -21,8 +21,8 @@ krefst(/Opna í TurboPaint/, '383 verður að hafa Opna í TurboPaint');
 krefst(/kjarni\.vercel\.app\/kjarni\/turbopaint/, 'TurboPaint-slóð á kjarni.vercel.app');
 krefst(/TeiknTurboPaint/, '383 verður að birta TeiknTurboPaint API');
 krefst(/vaktAfturkomu/, '383 sækir merki sjálfkrafa þegar TurboPaint-flipinn skilar');
-if (!/383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp)/.test(html)) {
-  villur.push('index.html: 383 vantar ?v=20261002sja');
+if (!/383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp|gaedi)/.test(html)) {
+  villur.push('index.html: 383 vantar ?v=20261002sja eða gaedi');
 }
 
 if (villur.length) {

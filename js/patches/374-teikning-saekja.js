@@ -136,7 +136,8 @@
       if (klarad) return; klarad = true; clearTimeout(thak);
       synaVillu('Náði ekki í myndina. Prófaðu aðra teikningu eða „Hlaða upp" handvirkt.');
     };
-    if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(img, url);
+    if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, url);
+    else if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(img, url);
     else img.src = url;
   }
 

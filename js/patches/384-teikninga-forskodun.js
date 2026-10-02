@@ -495,7 +495,10 @@
         // Beint PDF: blob-slóðin lifir aðeins í þessum flipa og má EKKI vistast sem imageUrl á þjóninn — þar fer gagnaslóð.
         myndSlod(d).then(async u => {
           if (beintPdf(d)) { try { const b = await (await fetch(u)).blob(); u = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(b); }); } catch (_) {} }
-          url = u; im.src = u;
+          url = u;
+          if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(im, u);
+          else if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(im, u);
+          else im.src = u;
         }).catch(() => segja('⚠ Náði ekki í teikninguna fyrir úttektina.'));
       }, 350);
     }, 300);

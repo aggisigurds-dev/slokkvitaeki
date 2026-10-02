@@ -19,8 +19,9 @@ async function main() {
   try { browser = await chromium.launch({ channel: 'chrome' }); }
   catch (_) { browser = await chromium.launch(); }
   const page = await browser.newPage();
+  page.on('pageerror', e => console.log('[fixture pageerror]', e.message.split('\n')[0]));
   await page.goto(html, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => window.__teiknHreinsa3d === true && window.TeiknMerking && window.TeiknTakn, null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__teiknHreinsa3d === true && window.TeiknMerking && window.TeiknTakn && window.TeiknGaedi, null, { timeout: 5000 });
 
   const lettvatn = { id: 25446, type: 'Léttvatn', serial: 'TMP-WFCMBQ', status: 'active' };
 
@@ -107,6 +108,34 @@ async function main() {
     };
   });
 
+  const undo = await page.evaluate(() => {
+    TeiknMerking.setjaStimpil('hose', 11, 12);
+    const n0 = (FloorPlan.plans[1612].markers || []).length;
+    const ok = TeiknMerking.afturkalla();
+    const n1 = (FloorPlan.plans[1612].markers || []).length;
+    TeiknMerking.setjaStimpil('ut', 30, 40);
+    const n2 = (FloorPlan.plans[1612].markers || []).length;
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
+    const n3 = (FloorPlan.plans[1612].markers || []).length;
+    const gaedi = window.TeiknGaedi && TeiknGaedi.setja('fullt') === 'fullt' && TeiknGaedi.vinnuPx() === 5200;
+    TeiknGaedi.setja('forskodun');
+    const forsk = TeiknGaedi.gildi() === 'forskodun' && TeiknGaedi.vinnuPx() === 1600;
+    TeiknGaedi.setja('midlungs');
+    const ls = localStorage.getItem('teikn_gaedi');
+    const still = TeiknGaedi.gaediHTML();
+    const transform = (function () {
+      try { TeiknBord.faraAd(80, 90); } catch (e) { return String(e && e.message); }
+      const c = document.getElementById('fp-canvas');
+      return c && c.style.transform;
+    })();
+    return {
+      n0, ok, n1, n2, n3, gaedi, forsk, ls, still,
+      transform,
+      afturkallaBtn: !!document.getElementById('fp-afturkalla') || n0 > n1,
+      gq: /Forskoðun/.test(still) && /Miðlungs/.test(still) && /Full gæði/.test(still)
+    };
+  });
+
   await browser.close();
 
   const villur = [];
@@ -131,6 +160,11 @@ async function main() {
   krefst(a388.stjorn && a388.loka && a388.vista && a388.rail, '388 mátti ekki missa stjórn/Loka/Vista/rail');
   krefst(a388.merki1612 >= 2, '1612 merki máttu ekki hverfa við félagsskipti: ' + a388.merki1612);
   krefst(aftur.merki.includes(25446) && aftur.stimpil && aftur.haedir && aftur.stika, 'close/reopen 1612 tapaði merkjum: ' + JSON.stringify(aftur));
+  krefst(undo.ok && undo.n1 === undo.n0 - 1, 'Afturkalla tók ekki síðasta merki: ' + JSON.stringify(undo));
+  krefst(undo.n3 === undo.n2 - 1, 'Ctrl+Z tók ekki síðasta stimpil: ' + JSON.stringify(undo));
+  krefst(undo.gaedi && undo.forsk && undo.ls === 'midlungs', 'gæði/localStorage: ' + JSON.stringify({ gaedi: undo.gaedi, forsk: undo.forsk, ls: undo.ls }));
+  krefst(undo.gq, 'Stillingar vantar Gæði-hnappa');
+  krefst(/translate/.test(String(undo.transform || '')) && /scale/.test(String(undo.transform || '')), 'faraAd átti að þysja: ' + undo.transform);
 
   if (villur.length) {
     console.log('TEIKNING-MERKING FIXTURE RAUDT');
