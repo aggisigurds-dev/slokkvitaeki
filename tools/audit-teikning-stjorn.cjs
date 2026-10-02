@@ -17,8 +17,12 @@ krefst(/fp-hreinsa-btn/, '383 verður að búa til Skýrari veggir');
 krefst(/fp-3d-btn/, '383 verður að búa til 3D');
 krefst(/fp-haedir/, '383 verður að búa til hæðaflipa');
 krefst(/width:auto!important/, 'hausinn má ekki vera 560px — annars hverfjast aukahnappanir');
-if (!/383-teikning-hreinsa-3d\.js\?v=20261002takn/.test(html)) {
-  villur.push('index.html: 383 vantar ?v=20261002takn');
+krefst(/Opna í TurboPaint/, '383 verður að hafa Opna í TurboPaint');
+krefst(/kjarni\.vercel\.app\/kjarni\/turbopaint/, 'TurboPaint-slóð á kjarni.vercel.app');
+krefst(/TeiknTurboPaint/, '383 verður að birta TeiknTurboPaint API');
+krefst(/vaktAfturkomu/, '383 sækir merki sjálfkrafa þegar TurboPaint-flipinn skilar');
+if (!/383-teikning-hreinsa-3d\.js\?v=20261002takntp/.test(html)) {
+  villur.push('index.html: 383 vantar ?v=20261002takntp');
 }
 
 if (villur.length) {

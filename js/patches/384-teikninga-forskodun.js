@@ -20,7 +20,7 @@
   window.__teiknForskodun = true;
 
   const LISTI = '/.netlify/functions/teikn-listi', MYND = '/.netlify/functions/teikn-mynd', PDF = '/.netlify/functions/teikn-pdf';
-  const TURBOPAINT = 'https://slokkvitaeki.vercel.app/kjarni/turbopaint';
+  const TURBOPAINT = 'https://kjarni.vercel.app/kjarni/turbopaint';
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const segja = t => { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} };
   const erPdf = d => /\.pdf(\.info)?$/i.test(String(d.infoUrl || d.filename || ''));
@@ -421,7 +421,14 @@
   /* ── aðgerðir ── */
   function opnaTurboPaint() {
     if (!S.valin) return;
-    window.open(TURBOPAINT + '?plan=' + encodeURIComponent(S.valin.infoUrl), '_blank', 'noopener');
+    const plan = S.valin.infoUrl;
+    if (S.coId && window.TeiknTurboPaint && typeof TeiknTurboPaint.opna === 'function' && window.FloorPlan && String(FloorPlan.companyId) === String(S.coId) && FloorPlan.bgImage) {
+      TeiknTurboPaint.opna({ plan: plan });
+      return;
+    }
+    const q = ['plan=' + encodeURIComponent(plan)];
+    if (S.coId) q.push('uttekt=' + encodeURIComponent(S.coId));
+    window.open(TURBOPAINT + '?' + q.join('&'), '_blank', 'noopener');
   }
   function saekjaFrumrit() {
     const d = S.valin; if (!d) return;

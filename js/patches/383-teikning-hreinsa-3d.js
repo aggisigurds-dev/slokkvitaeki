@@ -1208,34 +1208,78 @@
       '';
   }
 
-  /* ── TurboPaint-hringferð (Agnar 20.09.2026: „Edit í TurboPaint. Og save-að til baka") ──
+  /* ── TurboPaint-hringferð (Agnar 02.10.2026: taka blaðið, opna í TurboPaint, vista til baka — án nýs borðs á spjaldinu) ──
    * TurboPaint les hæðina úr teikning_bord — hún verður því að vera VISTUÐ og eins og hún stendur á skjánum. Óvistaðar
    * breytingar eru vistaðar fyrst (án þess að loka glugganum), svo er hæðin opnuð í nýjum flipa. „Vista í úttekt" þar
-   * skrifar staðsetningar tækjanna aftur í sömu röð; ↻ í hæðaflipunum hér sækir þær. */
-  const TURBOPAINT = 'https://slokkvitaeki.vercel.app/kjarni/turbopaint';
-  async function opnaITurboPaint() {
-    const FP = FPx(), cid = FP.companyId;
-    if (!FP.bgImage || !window.DB || !DB.sb) { segja('Sæktu eða hlaðu upp teikningu fyrst.'); return; }
+   * skrifar staðsetningar tækjanna aftur í sömu röð; glugginn hér sækir þær sjálfur þegar fókus kemur til baka. */
+  const TURBOPAINT = 'https://kjarni.vercel.app/kjarni/turbopaint';
+  let _tpOpnad = 0, _tpVakt = false, _tpBid = 0;
+  function vaktAfturkomu() {
+    if (_tpVakt) return;
+    _tpVakt = true;
+    const lesa = () => {
+      if (!_tpOpnad || Date.now() - _tpOpnad > 2 * 60 * 60 * 1000) return;
+      if (!fpGluggi() || !FPx() || !FPx().companyId) return;
+      if (document.visibilityState === 'hidden') return;
+      endurlesa(true);
+    };
+    window.addEventListener('focus', () => { clearTimeout(_tpBid); _tpBid = setTimeout(lesa, 500); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') { clearTimeout(_tpBid); _tpBid = setTimeout(lesa, 500); }
+    });
+  }
+  function haedOpnastITurboPaint(h) {
+    const u = String((h && h.image_url) || '');
+    if (!u || u.indexOf('blob:') === 0 || u.indexOf('data:') === 0) return false;
+    return /teikn-mynd\?/.test(u) || /^https?:/i.test(u);
+  }
+  async function vistaHaedirFyrirTurboPaint() {
+    const FP = FPx(), cid = FP && FP.companyId;
+    if (!cid || !window.DB || !DB.sb) throw new Error('engin tenging');
     samstillaVirka();
-    const hs = haedir(), h = hs[G.virk];
-    if (!/teikn-mynd\?/.test(String(h.image_url || ''))) { segja('Aðeins teikningar úr skjalasafninu opnast sjálfkrafa í TurboPaint — upphlaðna mynd þarf að flytja þar inn handvirkt.'); return; }
-    // Upphlaðin mynd á ANNARRI hæð er enn blob: — hún má ekki fara þannig í grunninn. Vista-takkinn breytir henni fyrst.
-    if (hs.some(x => String(x.image_url || '').indexOf('blob:') === 0)) { segja('Ein hæðin er með nýupphlaðna mynd — ýttu fyrst á 💾 Vista, opnaðu gluggann aftur og svo TurboPaint.'); return; }
-    const flipi = window.open('about:blank', '_blank');               // opnað í smellinum sjálfum, annars lokar vafrinn á það
+    const hs = haedir();
+    if (hs.some(x => String(x.image_url || '').indexOf('blob:') === 0)) {
+      throw new Error('Ein hæðin er með nýupphlaðna mynd — ýttu fyrst á 💾 Vista, opnaðu gluggann aftur og svo TurboPaint.');
+    }
+    const gogn = JSON.parse(JSON.stringify(hs)); gogn.forEach(x => { delete x.pdfReynt; });
+    const r = await DB.sb.from('teikning_bord').upsert({
+      company_id: cid, markers: gogn[0].markers, image_url: gogn[0].image_url || null, haedir: gogn,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'company_id' }).select('company_id');
+    if (r.error || !r.data || !r.data.length) throw new Error((r.error && r.error.message) || 'ekkert skrifað');
+    return { cid, h: hs[G.virk], hs };
+  }
+  function turboPaintSlod(cid, h, planUrl) {
+    const q = ['uttekt=' + encodeURIComponent(cid)];
+    if (h && h.id) q.push('haed=' + encodeURIComponent(h.id));
+    if (h && h.frum) q.push('b=' + h.frum.b, 'h=' + h.frum.h);
+    if (planUrl) q.push('plan=' + encodeURIComponent(planUrl));
+    return TURBOPAINT + '?' + q.join('&');
+  }
+  async function opnaITurboPaint(auka) {
+    const FP = FPx(), cid = FP && FP.companyId;
+    if (!cid) { segja('Opnaðu teikninguna fyrst.'); return; }
+    if (!FP.bgImage && !(auka && auka.plan)) { segja('Sæktu eða hlaðu upp teikningu fyrst.'); return; }
+    const h = (haedir() || [])[G.virk];
+    if (h && !haedOpnastITurboPaint(h) && !(auka && auka.plan)) {
+      segja('Aðeins teikningar úr skjalasafninu opnast sjálfkrafa í TurboPaint — upphlaðna mynd þarf að flytja þar inn handvirkt.');
+      return;
+    }
+    const flipi = window.open('about:blank', '_blank');
     try {
-      const gogn = JSON.parse(JSON.stringify(hs)); gogn.forEach(x => { delete x.pdfReynt; });
-      const r = await DB.sb.from('teikning_bord').upsert({ company_id: cid, markers: gogn[0].markers, image_url: gogn[0].image_url || null, haedir: gogn, updated_at: new Date().toISOString() }, { onConflict: 'company_id' }).select('company_id');
-      if (r.error || !r.data || !r.data.length) throw new Error((r.error && r.error.message) || 'ekkert skrifað');
-      const slod = TURBOPAINT + '?uttekt=' + encodeURIComponent(cid) + '&haed=' + encodeURIComponent(h.id) + (h.frum ? '&b=' + h.frum.b + '&h=' + h.frum.h : '');
+      const v = await vistaHaedirFyrirTurboPaint();
+      const slod = turboPaintSlod(v.cid, v.h, auka && auka.plan);
       if (flipi) flipi.location.href = slod; else location.href = slod;
-      segja('Hæðin er vistuð og opnast í TurboPaint. Þegar þú ert búinn þar: „💾 Vista í úttekt", og svo ↻ hér.');
+      _tpOpnad = Date.now();
+      vaktAfturkomu();
+      segja('Hæðin er vistuð og opnast í TurboPaint. Þegar þú ert búinn þar: „💾 Vista í úttekt" — merkin koma til baka hér.');
     } catch (e) {
       if (flipi) try { flipi.close(); } catch (_) {}
       segja('⚠ Gat ekki vistað hæðina fyrir TurboPaint: ' + ((e && e.message) || e));
     }
   }
   // Sækja staðsetningar sem TurboPaint (eða önnur vél) vistaði á meðan glugginn stóð opinn.
-  async function endurlesa() {
+  async function endurlesa(hljodlatt) {
     const FP = FPx(), cid = FP.companyId;
     try {
       const r = await DB.sb.from('teikning_bord').select('markers,image_url,haedir,updated_at,updated_by').eq('company_id', cid).limit(1);
@@ -1247,8 +1291,10 @@
       const p = plan(), h = haedir()[i];
       G.virk = i; p.markers = h.markers.map(m => Object.assign({}, m)); G.rymi = { x: 0, y: 0 }; G.lykill = '';
       beita(); try { FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
-      segja('↻ Sótt af þjóni' + (row.updated_by ? ' (síðast vistað af ' + row.updated_by + ')' : '') + ' — ' + p.markers.length + ' staðsetningar á þessari hæð.');
-    } catch (e) { segja('⚠ Náði ekki að sækja: ' + ((e && e.message) || e)); }
+      if (!hljodlatt || row.updated_by === 'TurboPaint') {
+        segja('↻ Sótt af þjóni' + (row.updated_by ? ' (síðast vistað af ' + row.updated_by + ')' : '') + ' — ' + p.markers.length + ' staðsetningar á þessari hæð.');
+      }
+    } catch (e) { if (!hljodlatt) segja('⚠ Náði ekki að sækja: ' + ((e && e.message) || e)); }
   }
 
   /* ── takkar í haus gluggans ── */
@@ -1277,7 +1323,7 @@
         gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
         gera('fp-hreinsa-btn', '✨ Skýrari veggir', 'Sýna aðeins veggina — málsetningar og texti dofna. Frummyndin geymist óbreytt.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
         gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); }),
-        gera('fp-tp-btn', '🖌 TurboPaint', 'Opna hæðina í TurboPaint: teikna á hana, færa tækin og vista staðsetningarnar til baka', opnaITurboPaint)
+        gera('fp-tp-btn', 'Opna í TurboPaint', 'Opna hæðina í TurboPaint: teikna á hana, færa tækin og vista staðsetningarnar til baka', opnaITurboPaint)
       ];
       const upp = grp.querySelector('label') || grp.querySelector('.fp-saekja-btn') || grp.firstChild;
       takkar.forEach(b => {
@@ -1429,6 +1475,7 @@
     plan,
     erPx
   };
+  window.TeiknTurboPaint = { opna: opnaITurboPaint, slod: turboPaintSlod, vistaHaedir: vistaHaedirFyrirTurboPaint };
 
   function vaktGlugga() {
     if (document.documentElement._t383obs) return;
