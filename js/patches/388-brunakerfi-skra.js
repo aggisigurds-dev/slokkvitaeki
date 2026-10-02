@@ -105,6 +105,8 @@
         sidast_okkar: dags.length ? dags[dags.length - 1] : (a && erDags(a.last_inspected) ? String(a.last_inspected).slice(0, 10) : null),
         ar_med_skyrslu: Object.keys(arSlod).map(Number).sort(), ar_slod: arSlod,
         skodun_id: dr ? dr.id : null, skodun_status: dr ? dr.status : (iAr ? 'final' : null),
+        // „Í vinnslu"-hakið (385): in_progress_year = árið sem merkt var, -1 = handvirkt slökkt (sama regla og 153)
+        merkt_vinnsla: !!(a && +a.in_progress_year === arNu),
         skodad_at: iAr || (dr && dr.status === 'final' ? dr.updated_at : null), skyrsla_at: iAr, send_at: null,
         reikningur_at: rk ? (rk.doc_date || arNu + '-01-01') : sl ? sl.created_at : null,
         verd_fast: rk && rk.amount != null ? +rk.amount : sl && sl.samtals != null ? +sl.samtals : null,
@@ -142,6 +144,21 @@
     return stemmir ? { ok: true } : { ok: false, villa: 'Gildið í stillingunum stemmir ekki við það sem var sent' };
   }
 
+  // „Í vinnslu"-hakið (02.10.2026) → brunakerfi_customers[fid].in_progress_year á EINU fyrirtæki, lesið til baka.
+  async function merkjaVinnslu(rod, on) {
+    _saekjaAt = 0; _saekjaRows = null;
+    const AS = window.AppSettings;
+    if (!AS || !AS.save || !AS.path) return { ok: false, villa: 'Stillingageymslan (AppSettings) er ekki hlaðin' };
+    if (!rod || rod.utan_lista) return { ok: false, villa: 'Fyrirtækið er ekki á áskriftarlista brunakerfa' };
+    const fid = String(rod.fyrirtaeki_id), gildi = on ? +rod.ar_nu : -1, sent = { in_progress_year: gildi };
+    const fyrir = (AS.path('brunakerfi_customers') || {})[fid];
+    if (fyrir != null && typeof fyrir !== 'object') sent.co_id = +rod.fyrirtaeki_id;
+    const svar = await AS.save({ brunakerfi_customers: { [fid]: sent } });
+    if (svar === false) return { ok: false, villa: 'Vistun stillinga mistókst (save skilaði false)' };
+    const nu = (AS.path('brunakerfi_customers') || {})[fid] || {};
+    return +nu.in_progress_year === gildi ? { ok: true } : { ok: false, villa: 'Gildið í stillingunum stemmir ekki við það sem var sent' };
+  }
+
   function opna(rod) {
     const fid = +rod.fyrirtaeki_id;
     // Prófíllinn efst eins og í hinum flokkunum: 386 hýsir vinnusíðuna undir 🚨-flipanum.
@@ -169,7 +186,7 @@
     if (!window.Thjonustuskra || !Thjonustuskra.buaTil) { setTimeout(boot, 300); return; }
     window.BrunakerfiSkra = Thjonustuskra.buaTil({
       key: 'brunaskra', titill: 'Brunakerfis skoðun', takn: '', navEftir: 'brunayfirlit',
-      saekja, vista, opna, nytt: false, felaSjalfgefid: false, verdHaus: 'Reikningur', verdTomt: '—', verdKpi: false,
+      saekja, vista, opna, merkjaVinnslu, nytt: false, felaSjalfgefid: false, verdHaus: 'Reikningur', verdTomt: '—', verdKpi: false,
       skref: [['skodad_at', 'Skoðað'], ['skyrsla_at', 'Skýrsla'], ['reikningur_at', 'Reikningur']],
       tomt: 'Ekkert fyrirtæki er á áskriftarlista brunakerfa og engin brunakerfisskýrsla fannst.'
     });

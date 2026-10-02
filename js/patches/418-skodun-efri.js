@@ -214,10 +214,7 @@
     r('.b418-sec', 'display:flex;align-items:baseline;gap:12px;margin:4px 2px 8px'),
     r('.b418-sec h2', 'margin:0!important;padding:0!important;border:0!important;background:none!important;font:800 24px/1.1 ' + DISPLAY + '!important;letter-spacing:-.02em;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6)'),
     r('.b418-sec span', 'font:500 11.5px/1.4 ' + MONO + ';color:#c9d0da'),
-    // Bilið í töflunni (krossað yfir 02.10): 392 gaf Fyrirtæki-dálknum `width:auto`, svo hann gleypti allt aukaplássið og
-    // Nótan byrjaði hálfa leið yfir töfluna. Fyrirtækið fær fasta breidd og Nótan aukaplássið — textinn byrjar strax á eftir.
-    r('table._sk-tbl colgroup col:nth-child(2)', 'width:250px!important'),
-    r('table._sk-tbl colgroup col:nth-child(3)', 'width:auto!important'),
+    // Bilið í töflunni (krossað yfir 02.10): dálkabreiddirnar eiga heima í 392 (col:nth-child fylgir röð 385) — ekki hér.
     // Letrið í töflunni (Agnar 02.10.2026: „finnst fontin eitthvað óskýr og dull … í töflunni") — sama sett á öllum þremur
     // síðunum (Ársskoðun: 394). Nöfn í Playfair 16.5/700 með réttum tölustöfum (Playfair er sjálfgefið með gamaldags
     // tölustöfum, 0 líktist litlu o), kt og heimilisfang í Mono 500 dekkra, póstnúmer blátt #1d5bbf feitt (6,1:1 á hvítu),
@@ -226,7 +223,7 @@
     r('table._sk-tbl ._sk-co', 'font:700 16.5px/1.2 ' + DISPLAY + '!important;font-variant-numeric:lining-nums!important;letter-spacing:0;color:#11141c'),
     r('table._sk-tbl ._sk-kt', 'font:500 11px/1.4 ' + MONO + '!important;color:#3a4250'),
     r('table._sk-tbl ._sk-addr', 'font:500 11.5px/1.35 ' + MONO + '!important;color:#1f2530'),
-    r('table._sk-tbl ._sk-post', 'font:700 12.5px ' + MONO + '!important;color:#1d5bbf'),
+    r('table._sk-tbl ._sk-post', 'font:700 11.5px/1.35 ' + MONO + '!important;color:#1d5bbf'),
     r('table._sk-tbl select._sk-man', 'font:700 11px ' + MONO + '!important;text-transform:uppercase;letter-spacing:.14em;color:#1f2530'),
     r('._sk-lbl', 'color:#c9d0da;font:500 12.5px ' + SANS + '!important'),
     r('._sk-sia ._sk-sp + ._sk-lbl', 'background:' + SILVER + '!important;color:#1f2530;border:1px solid rgba(20,24,34,.12)!important;height:24px;padding:0 9px;border-radius:3px;font-family:' + MONO + '!important;font-size:11px!important;font-weight:700!important'),
