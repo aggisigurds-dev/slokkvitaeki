@@ -137,15 +137,23 @@ eða skilti á Miro — fylgdu þessu ferli sem gaf rétta útkomu fyrir Skútuv
    og skoðaðu hverja mynd; skráðu px-hnit fyrir hvert atriði sem á að merkja.
    Athugaðu skölun myndlesarans (displayed × stuðull = orig px).
 3. **Lestu táknmál teikningarinnar** (staðfest á Skútuvogi 4):
-   - **BRSL SLT spírall** = hönnuð staðsetning brunaslöngu + slökkvitækis;
-     stakt SLT = bara slökkvitæki. Notaðu þessa punkta sem grunn — þeir ráða
-     fjöldanum, tillaga Arnolds er borin saman við þá.
+   - **SLT** = þarna á að setja **slökkvitæki**. **BRSL + spírall** = brunaslanga /
+     slöngukefli. **BRSL SLT saman** = brunaslanga OG slökkvitæki á sama stað
+     (Agnar 03.10.2026). Notaðu þessa punkta sem grunn — þeir ráða fjöldanum,
+     tillaga Arnolds er borin saman við þá.
    - **ÚT-örvar (bleikar)** = flóttaleiðir → grænt E001/E002 skilti á hverja.
    - **EI-60 / EI60-CS / EICS-30 / EI30-CS** við veggi og hurðir = brunahólfun.
+     **Merkið gildir um ALLAN vegginn sem það stendur á, alla leið út í enda
+     línunnar** — ekki bara blettinn við textann (Agnar 03.10.2026). Fylgdu
+     veggnum frá merkinu í báðar áttir þar til hann endar og merktu allan
+     bútinn. Merkin standa í hvaða stefnu sem er (lárétt, lóðrétt, á hvolfi).
      Gáttu að því að EI-60 merkingar leynast víða (líka við grid-línur og
      litla geymsluklefa) — skannaðu ALLAR tiles áður en þú teiknar.
+   - **Veggir á eldri uppdráttum eru oft tvær þunnar samsíða línur (holir)**,
+     ekki fylltir — þykkt línunnar segir þá ekkert; EI-merkið og línuparið gera það.
+   - **Bleikar skýjalínur** = breytingar teiknara (revision clouds), ekki veggir.
    - **AREIM-120** = brunaveggur milli matshluta (MHL1/MHL2).
-   - ÚTSTÖÐ BRUNAVIÐVÖRUNARKERFIS, rafm.tafla = sérpunktar.
+   - ÚTSTÖÐ BRUNAVIÐVÖRUNARKERFIS, **rafm. tafla = rafmagnstafla** = sérpunktar.
 4. **Teiknaðu yfirlögnina með canvas_create_from_svg / canvas_update_from_svg.**
    Reglur sem skipta öllu:
    - **Miro styður EKKI gegnsæja liti** — 8-stafa hex (#rrggbbaa) og `opacity`
