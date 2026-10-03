@@ -385,7 +385,8 @@
 
   /* ── EI-ábendingar ── */
   const EI = { bid: 0, syn: true };
-  function eiSyn() { try { return localStorage.getItem('teikn_ei_syn') !== '0'; } catch (_) { return true; } }
+  // EI-ábendingar sjást ekki lengur í teikningaglugganum — greiningin býr í TurboPaint (Agnar 03.10.2026: „tekið út … EI“).
+  function eiSyn() { return false; }
   function setjaEiSyn(a) { try { localStorage.setItem('teikn_ei_syn', a ? '1' : '0'); } catch (_) {} }
   function inTitleBlock(hit, W, H) {
     const cx = hit.x + hit.width / 2, cy = hit.y + hit.height / 2;

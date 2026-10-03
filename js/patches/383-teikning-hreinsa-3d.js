@@ -753,15 +753,8 @@
       // handvalinn skurður notandans stendur. 2.–98. hundraðshluti svo stakt strik úti á lóð dragi kassann ekki út.
       thetturSkurdur(h, iw, ih);
       vistaSjalfkrafa('veggir úr PDF og skurður að húsinu');
-      try {
-        if (window.TeiknEi && TeiknEi.lesaUrPdf) {
-          const ei = await TeiknEi.lesaUrPdf(sida, vp, kx, ky, h);
-          if (ei && ei.length) segja('✓ ' + h.pdfVeggir.length + ' veggjastrik og ' + ei.length + ' EI-ábendingar (ekki eldveggir).');
-          else segja('✓ ' + h.pdfVeggir.length + ' veggjastrik lesin úr PDF-inu (línuþykkt ' + val.valinn.replace('.', ',') + ' pt).');
-        } else segja('✓ ' + h.pdfVeggir.length + ' veggjastrik lesin úr PDF-inu (línuþykkt ' + val.valinn.replace('.', ',') + ' pt).');
-      } catch (_) {
-        segja('✓ ' + h.pdfVeggir.length + ' veggjastrik lesin úr PDF-inu (línuþykkt ' + val.valinn.replace('.', ',') + ' pt).');
-      }
+      // EI-ábendingar eru ekki lesnar hér lengur — sú greining býr í TurboPaint (vélinni), Agnar 03.10.2026.
+      if (!sjalfkrafa) segja('✓ ' + h.pdfVeggir.length + ' veggjastrik lesin úr PDF-inu (línuþykkt ' + val.valinn.replace('.', ',') + ' pt).');
       return true;
     } catch (e) {
       if (!sjalfkrafa) segja('⚠ Las ekki veggi úr PDF: ' + ((e && e.message) || e));
@@ -807,11 +800,13 @@
     }
     if (!G.frum || !nu) { stika(); flipar(); return; }
     // Hæð sem á þegar vigurveggi en ber enn LAUSA sjálfvirka skurðinn (vistuð fyrir þétta skurðinn): þétta einu sinni.
-    if (h.pdfVeggir.length > 30 && h.sjalf === true && !h.thett) thetturSkurdur(h, G.frum.naturalWidth || G.frum.width, G.frum.naturalHeight || G.frum.height);
+    if (!val.fest && h.pdfVeggir.length > 30 && h.sjalf === true && !h.thett) thetturSkurdur(h, G.frum.naturalWidth || G.frum.width, G.frum.naturalHeight || G.frum.height);
     // SJÁLFGEFINN SKURÐUR AÐ BYGGINGUNNI. Lausari vistaður sjálfskurður má þéttast.
     // Handvalinn skurður (sjalf === false) er ósnertur. Kassinn er víkkaður svo öll
     // merki sem þegar eru til lendi innan hans — sjálfvirkni má aldrei fela staðsetningu.
-    if (h.sjalf !== false && G.sjalfReynt !== G.frum) {
+    // FEST ÚTLIT (Agnar 03.10.2026: „vista takka þegar ég er orðinn sáttur … og það haldist bara“): engin sjálfvirk
+    // skurðarleit, enginn PDF-lestur, engin greining — teikningin opnast nákvæmlega eins og hún var fest.
+    if (!val.fest && h.sjalf !== false && G.sjalfReynt !== G.frum) {
       G.sjalfReynt = G.frum;
       try {
         const iw = G.frum.naturalWidth || G.frum.width, ih = G.frum.naturalHeight || G.frum.height;
@@ -853,8 +848,10 @@
     } else if (val.a) {
       // 2D sýnir ALLTAF grunnmyndina. r.strigi er slitrur (CAD-snið, nafnreitur) og má
       // ekki skipta teikningunni út. reikna() er aðeins fyrir 3D (G.hrein / veggþykkt).
-      if (pdfSlod(h) && !h.pdfReynt && !G.pdfBid) { h.pdfReynt = 'sjálfvirkt'; lesaPdfVeggi(true).then(beita); }
-      try { reikna(G.stig1, l1, val); } catch (e) { console.warn('[383] reikna', e); }
+      if (!val.fest) {
+        if (pdfSlod(h) && !h.pdfReynt && !G.pdfBid) { h.pdfReynt = 'sjálfvirkt'; lesaPdfVeggi(true).then(beita); }
+        try { reikna(G.stig1, l1, val); } catch (e) { console.warn('[383] reikna', e); }
+      }
     }
     const lyk = l1 + '|' + (ut === G.stig1 ? 'frum' : ut === G.dauft ? 'dauft' : G.hreinLykill);
     if (G.lykill !== lyk || FP.bgImage !== ut) {
@@ -1551,6 +1548,11 @@
         gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
         gera('fp-hreinsa-btn', '✨ Skýrari veggir', '2D grunnmyndin helst ósnert. 3D sýnir húsið — grá lóð utan veggja er ekki gólfplata.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
         gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); }),
+        gera('fp-fest-btn', '📌 Festa útlit', 'Sáttur við teikninguna? Festir skurð, Skýrari veggi og hæðir á þjóninum — opnast alltaf svona, ekkert greint upp á nýtt. Smelltu aftur til að breyta.', tharfMynd(() => {
+          const v = lesaVal(FP.companyId); v.fest = !v.fest; G.hamur = null; G.drag = null; G.kedja = null;
+          vistaVal(FP.companyId, v);
+          segja(v.fest ? '📌 Útlitið er fest og vistað — teikningin opnast alltaf svona.' : '🔓 Útlitið er laust — skerðu og stilltu, svo „Festa útlit“ aftur.');
+        })),
         gera('fp-tp-btn', 'Opna í TurboPaint', 'Opna hæðina í TurboPaint: teikna á hana, færa tækin og vista staðsetningarnar til baka', opnaITurboPaint)
       ];
       const upp = grp.querySelector('label') || grp.querySelector('.fp-saekja-btn') || grp.firstChild;
@@ -1562,6 +1564,16 @@
     const val = lesaVal(FP.companyId), h = virkHaed();
     const lita = (kl, a, texti) => { const b = grp.querySelector(kl); if (!b) return; b.setAttribute('aria-pressed', String(!!a)); b.style.background = a ? '#c9a54a' : ''; b.style.color = a ? '#14120f' : ''; if (texti) b.textContent = texti; };
     lita('.fp-hreinsa-btn', val.a);
+    lita('.fp-fest-btn', val.fest, val.fest ? '📌 Útlit fest' : '📌 Festa útlit');
+    const mg = fpGluggi(); if (mg) mg.classList.toggle('fp-fest', !!val.fest);
+    if (!document.getElementById('fp-fest-css')) {
+      // Veggjatalning (✏ Veggir · N) og EI-merki eru greining — hún býr í TurboPaint; glugginn er sýn fyrir þjónustuna
+      // (Agnar 03.10.2026: „tekið út veggjatalningu, EI“). Fest útlit felur líka skurð og Skýrari veggi.
+      const st = document.createElement('style'); st.id = 'fp-fest-css';
+      st.textContent = '#modal-floorplan .fp-veggir-btn,#modal-floorplan .fp-ei-btn{display:none!important}' +
+        '#modal-floorplan.fp-fest .fp-skera-btn,#modal-floorplan.fp-fest .fp-hreinsa-btn{display:none!important}';
+      document.head.appendChild(st);
+    }
     lita('.fp-veggir-btn', G.hamur === 'veggir', '✏ Veggir' + (h.veggir.length + h.pdfVeggir.length ? ' · ' + (h.veggir.length + h.pdfVeggir.length) : ''));
     lita('.fp-skera-btn', G.hamur === 'skera' || !!h.skurdur, h.skurdur ? '✂ Sýna allt blaðið' : '✂ Skera');
     const c = fpEl('fp-canvas'); if (c) c.style.cursor = G.hamur ? 'crosshair' : '';

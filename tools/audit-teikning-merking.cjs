@@ -75,7 +75,8 @@ krefst(p434, /snuaHnit/, '434 á að lesa EI á 0\/90\/180\/270');
 krefst(p434, /pdfVeggir/, '434 á að lesa EI meðfram veggjum');
 krefst(p434, /Eldveggir eru ekki stimplaðir/, '434 má ekki stimpla eldveggi');
 krefst(p434, /skilti_slt/, '434 vantar skilti-slt tákn');
-krefst(p383, /TeiknEi\.lesaUrPdf/, '383 á að lesa EI-ábendingar úr PDF');
+// Agnar 03.10.2026: „tekið út … veggjatalningu, EI" — EI-greiningin býr í TurboPaint, glugginn sýnir hana ekki.
+krefst(p434, /function eiSyn\(\) \{ return false; \}/, '434: EI-ábendingar eiga ekki að sjást í teikningaglugganum');
 krefst(p383, /TeiknEi\.teikna/, '383 á að teikna EI-ábendingar á yfirlag');
 krefst(p383, /TeiknTakn\.teiknaMerki/, '383 á að teikna tákn á stimpla');
 
