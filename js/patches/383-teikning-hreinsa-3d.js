@@ -23,7 +23,7 @@
  * MERKIN HALDA SÉR: hreina myndin er teiknuð í SÖMU punktastærð og frummyndin, og merki eru geymd
  * í punktum frummyndar (375). Frummyndin er ALDREI yfirskrifuð — plan.imageUrl er ósnert, svo
  * Vista geymir áfram upprunalegu slóðina. Hvort hreinsun er á, og stillingar hennar, er útlitsval
- * vafrans per fyrirtæki (localStorage `teikn_hreinsun_<id>`) — ekki staða gagna.
+ * teikningarinnar á þjóninum (haedir[].syn, 03.10.2026) og vistast sjálfkrafa ásamt skurði og PDF-veggjum.
  *
  * Skoðað og EKKI notað: Yytsi/floorplan-to-3d (ResNet-UNet á CubiCasa5K) — keyrir á 512×512 og
  * tekur hreinar SVG-íbúðateikningar; A0-uppdráttur á 6000 px verður þar að graut, og gagnasafnið
@@ -548,9 +548,27 @@
    *   Handdregnir veggir eru teiknaðir á YFIRLAG ofan á strigann — þeir fara aldrei inn í myndina sjálfa.
    */
 
+  // „Skýrari veggir" og stillingar hennar fylgja TEIKNINGUNNI á þjóninum (haedir[].syn), ekki vafranum — Agnar 03.10.2026:
+  // „að ég geti bara ýtt á skýrari veggir, cutt utan húsnæðis og það sé bara þannig". localStorage er aðeins varaleið
+  // fyrir teikningar sem voru stilltar áður en stillingin fór á þjóninn.
   const LYKILL = cid => 'teikn_hreinsun_' + cid;
-  const lesaVal = cid => { try { return JSON.parse(localStorage.getItem(LYKILL(cid)) || 'null') || {}; } catch (_) { return {}; } };
-  const vistaVal = (cid, v) => { try { localStorage.setItem(LYKILL(cid), JSON.stringify(v)); } catch (_) {} };
+  const lesaVal = cid => {
+    try {
+      const hs = FPx() && FPx().plans && FPx().plans[cid] && FPx().plans[cid].haedir;
+      const m = Array.isArray(hs) && hs.find(h => h && h.syn && typeof h.syn === 'object');
+      if (m) return Object.assign({}, m.syn);
+    } catch (_) {}
+    try { return JSON.parse(localStorage.getItem(LYKILL(cid)) || 'null') || {}; } catch (_) { return {}; }
+  };
+  const vistaVal = (cid, v) => {
+    try { localStorage.setItem(LYKILL(cid), JSON.stringify(v)); } catch (_) {}
+    try {
+      const hs = FPx().plans[cid] && FPx().plans[cid].haedir, nytt = JSON.stringify(v || {});
+      let breytt = false;
+      if (Array.isArray(hs)) hs.forEach(h => { if (JSON.stringify(h.syn || {}) !== nytt) { h.syn = JSON.parse(nytt); breytt = true; } });
+      if (breytt) vistaSjalfkrafa('stillingin geymist');
+    } catch (_) {}
+  };
   const segja = t => { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const nyttId = () => 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
@@ -573,6 +591,23 @@
   };
 
   const FPx = () => window.FloorPlan;
+
+  // SJÁLFVISTUN: skurður, „Skýrari veggir", veggir lesnir úr PDF og handdregnir veggir fara á þjóninn um leið — annars
+  // var allt reiknað og lesið upp á nýtt við hverja opnun og á hverri vél („gríðarlega mikið af endurtekinni vinnu").
+  // Sama skrif og fyrir TurboPaint (vistaHaedirFyrirTurboPaint): öll hæðin eins og hún stendur á skjánum.
+  let _sjalfvistBid = 0;
+  function vistaSjalfkrafa(astaeda) {
+    clearTimeout(_sjalfvistBid);
+    _sjalfvistBid = setTimeout(async () => {
+      try {
+        const FP = FPx(); if (!FP || !FP.companyId || !modalSynnilegt()) return;
+        // Nýupphlaðin mynd er blob: — hún lifir aðeins í þessum glugga; 💾 Vista geymir hana fyrst.
+        if (haedir().some(x => String(x.image_url || '').indexOf('blob:') === 0)) return;
+        await vistaHaedirFyrirTurboPaint();
+        segja('✓ Vistað' + (astaeda ? ' — ' + astaeda : ''));
+      } catch (e) { console.warn('[383] sjálfvistun', e); }
+    }, 1200);
+  }
   function fpGluggi() { return document.getElementById('modal-floorplan'); }
   function fpEl(id) {
     const m = fpGluggi();
@@ -621,6 +656,7 @@
         veggir: (n.veggir && n.veggir.length) ? n.veggir : g.veggir,
         pdfVeggir: (n.pdfVeggir && n.pdfVeggir.length) ? n.pdfVeggir : g.pdfVeggir,
         veggjaLinur: (n.veggjaLinur && n.veggjaLinur.length) ? n.veggjaLinur : g.veggjaLinur,
+        syn: n.syn || g.syn,
         pdfFlokkar: n.pdfFlokkar || g.pdfFlokkar,
         skurdur: n.skurdur || g.skurdur,
         sjalf: n.sjalf != null ? n.sjalf : g.sjalf,
@@ -716,6 +752,7 @@
       // með. Veggirnir úr vigrinum segja nákvæmlega hvar húsið er. Aðeins þegar skurðurinn var sjálfvirkur eða enginn —
       // handvalinn skurður notandans stendur. 2.–98. hundraðshluti svo stakt strik úti á lóð dragi kassann ekki út.
       thetturSkurdur(h, iw, ih);
+      vistaSjalfkrafa('veggir úr PDF og skurður að húsinu');
       try {
         if (window.TeiknEi && TeiknEi.lesaUrPdf) {
           const ei = await TeiknEi.lesaUrPdf(sida, vp, kx, ky, h);
@@ -796,6 +833,7 @@
           if (minni && nw * nh < iw * ih * 0.94 && nw > iw * 0.08 && nh > ih * 0.08) {
             h.skurdur = { x: Math.round(x0), y: Math.round(y0), w: Math.round(nw), h: Math.round(nh) };
             h.sjalf = true; zNullstilla();
+            vistaSjalfkrafa('skorið að húsinu');
           }
         }
       } catch (e) { console.warn('[383] sjálfskurður', e); }
@@ -849,6 +887,7 @@
         if (a === 'v-ny') G.kedja = null;
         if (a === 'v-eyda' && window.confirm('Eyða öllum handdregnum veggjum á þessari hæð?')) { h.veggir = []; G.kedja = null; }
         if (a === 'v-buid' || a === 's-haetta') { G.hamur = null; G.kedja = null; G.drag = null; }
+        if (a === 'v-buid' || a === 'pdf-eyda' || a === 'pdf-flokkur' || (a === 'v-eyda' && !h.veggir.length)) vistaSjalfkrafa('veggirnir geymast');
         if (a === 'pdf-lesa') { lesaPdfVeggi(false).then(beita); return; }
         if (a === 'pdf-eyda') { h.pdfVeggir = []; h.pdfFlokkar = []; G.lykill = ''; }
         if (a === 'pdf-flokkur') {
@@ -1117,6 +1156,7 @@
     if (w < 40 || hh < 40) { segja('Kassinn var of lítill — reyndu aftur.'); return; }
     const uti = plan().markers.filter(m => erPx(m) && (m.x + G.rymi.x < x || m.x + G.rymi.x > x + w || m.y + G.rymi.y < y || m.y + G.rymi.y > y + hh)).length;
     h.skurdur = { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(hh) }; h.sjalf = false; delete h.thett; zNullstilla();
+    vistaSjalfkrafa('skurðurinn geymist');
     if (uti) segja('⚠ ' + uti + ' staðsetning' + (uti === 1 ? '' : 'ar') + ' lend' + (uti === 1 ? 'ir' : 'a') + ' utan við skurðinn — þær haldast, en sjást ekki fyrr en „Sýna allt blaðið" er valið.');
   }
   /* ── þysjun og færsla: EIN stýring fyrir mús, hjól, fingur og takka ──
@@ -1506,7 +1546,7 @@
       const takkar = [
         gera('fp-skera-btn', '✂ Skera', 'Skera teikninguna að húsinu — blaðið er oft margfalt stærra en grunnmyndin', tharfMynd(() => {
           const h = virkHaed(); loka3d();
-          if (h.skurdur) { h.skurdur = null; h.sjalf = false; G.hamur = null; zNullstilla(); } else { G.hamur = G.hamur === 'skera' ? null : 'skera'; G.drag = null; G.kedja = null; }
+          if (h.skurdur) { h.skurdur = null; h.sjalf = false; G.hamur = null; zNullstilla(); vistaSjalfkrafa('allt blaðið sýnt'); } else { G.hamur = G.hamur === 'skera' ? null : 'skera'; G.drag = null; G.kedja = null; }
         })),
         gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
         gera('fp-hreinsa-btn', '✨ Skýrari veggir', '2D grunnmyndin helst ósnert. 3D sýnir húsið — grá lóð utan veggja er ekki gólfplata.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
