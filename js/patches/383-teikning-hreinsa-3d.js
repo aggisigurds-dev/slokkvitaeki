@@ -266,17 +266,16 @@
     return uti;
   }
 
-  /** Stærsta lokaða húsið. Aðeins LOKUÐ hvít herbergi telja — þunnar CAD-línur
-   * sem tengja snið við húsið mega ekki sameina allt blaðið í eitt „hús". */
+  /** Stærsta lokaða húsið. Aðeins LOKUÐ ljós herbergi telja. Þunnar CAD-línur
+   * sem tengja snið við grunnmyndina mega ekki sameina allt blaðið, og veggir
+   * má ekki éta burt (annars flæðir flóðið inn og 3D verður tveir smábitar). */
   function husMaska(gra, W, H) {
-    const dokkt = new Uint8Array(W * H);
-    for (let i = 0; i < W * H; i++) dokkt[i] = gra[i] < DOKKT_HUS ? 1 : 0;
-    const veggir = dilate(erode(dokkt, W, H, 1), W, H, 1);
-    const r = Math.max(2, Math.round(Math.max(W, H) / 220));
-    const lokad = erode(dilate(veggir, W, H, r), W, H, r);
     const uti = new Uint8Array(W * H), st = new Int32Array(W * H);
     let top = 0;
-    const yta = p => { if (!lokad[p] && !uti[p]) { uti[p] = 1; st[top++] = p; } };
+    const yta = p => {
+      if (p < 0 || p >= W * H || uti[p] || gra[p] < DOKKT_HUS) return;
+      uti[p] = 1; st[top++] = p;
+    };
     for (let x = 0; x < W; x++) { yta(x); yta((H - 1) * W + x); }
     for (let y = 0; y < H; y++) { yta(y * W); yta(y * W + W - 1); }
     while (top) {
@@ -287,14 +286,16 @@
     for (let i = 0; i < W * H; i++) {
       if (!uti[i] && gra[i] > GRA_MAX) herbergi[i] = 1;
     }
-    const brua = Math.max(3, Math.round(Math.max(W, H) / 120));
+    const brua = Math.max(4, Math.round(Math.max(W, H) / 140));
     const tengt = dilate(herbergi, W, H, brua);
     const sv = svaedi(tengt, W, H);
     let best = 0, bn = 0;
     sv.listi.forEach(s => { if (s.flat > bn) { bn = s.flat; best = s.n; } });
     const hus = new Uint8Array(W * H);
     if (!best) return hus;
-    for (let i = 0; i < W * H; i++) if (sv.merki[i] === best) hus[i] = 1;
+    for (let i = 0; i < W * H; i++) {
+      if (sv.merki[i] === best && !erGraLod(gra[i])) hus[i] = 1;
+    }
     const pad = Math.max(2, Math.round(Math.max(W, H) / 200));
     return dilate(hus, W, H, pad);
   }
