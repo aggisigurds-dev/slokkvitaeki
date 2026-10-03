@@ -156,6 +156,21 @@
     try {
       var d1 = await (await fetch(LISTI + '?heimilisfang=' + encodeURIComponent(addr), { signal: AbortSignal.timeout(28000) })).json();
       var results = (d1 && d1.results) || [];
+      // 03.10.2026: heimilisfang félags er oft í ÞÁGUFALLI („Hátúni 10c, 105 Reykjavík") og Landeignaskrá finnur
+      // aðeins nefnifall („Hátún 10C") — glugginn sagði „Fann ekki húsið" meðan prófíllinn (363) fann teikningarnar
+      // með hus-upplysingar, sem kann bæði föllin. Finnist ekkert er leitað aftur á nefnifallinu þaðan; öll venjuleg
+      // rökvísi (4 vs 4A, kortasjá utan Reykjavíkur) gildir þá áfram.
+      if (!results.length) {
+        try {
+          var hu = await (await fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(addr), { signal: AbortSignal.timeout(20000) })).json();
+          var nefnifall = hu && hu.eign && hu.eign.label;
+          if (nefnifall) {
+            addr = nefnifall + (hu.eign.postnr ? ', ' + hu.eign.postnr : '');
+            var d1b = await (await fetch(LISTI + '?heimilisfang=' + encodeURIComponent(nefnifall), { signal: AbortSignal.timeout(28000) })).json();
+            results = (d1b && d1b.results) || [];
+          }
+        } catch (_) {}
+      }
       // 20.09.2026: tók FYRSTU Reykjavíkur-eignina. Fyrir „Skútuvogur 4, 104 Reykjavík" skilar skráin 4A á undan 4,
       // svo glugginn sótti spennistöðina á 4A (1 blað) í stað hússins (66 teikningar). Nákvæm samsvörun á
       // götu + húsnúmeri ræður nú; fyrsta eignin er aðeins varaleið.
