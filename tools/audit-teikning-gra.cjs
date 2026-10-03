@@ -19,11 +19,13 @@ krefst(/gd\[i \* 4 \+ 3\] < 16\) veggir\[i\] = 0/, '3D-veggir utan húss eiga a�
 krefst(/2D sýnir ALLTAF grunnmyndina/, 'beita má ekki skipta 2D út');
 krefst(/alphaTest: 0\.05/, '3D-gólf þarf alphaTest');
 krefst(/const DOKKT_HUS = 130/, 'DOKKT_HUS=130 — grá lóð má ekki teljast veggur');
+krefst(/erGraLod/, 'grá lóð inni í lóðarmörkum á að detta út úr 3D-gólfi');
+krefst(/Math\.max\(W, H\) \/ 220/, 'utiMaska má ekki innsigla strikuð lóðarmörk með r=max/80');
 if (/ut = r\.strigi/.test(skra)) villur.push('2D má ekki skipta grunnmynd út fyrir r.strigi');
 if (/function hvitaGraUtan/.test(skra)) villur.push('hvitaGraUtan má ekki vera');
 if (/ut = G\.graUtan/.test(skra)) villur.push('beita má ekki sýna hvitaða grunnmynd');
-if (!/383-teikning-hreinsa-3d\.js\?v=20261002hus/.test(html)) {
-  villur.push('index.html: 383 vantar ?v=20261002hus');
+if (!/383-teikning-hreinsa-3d\.js\?v=20261002lod/.test(html)) {
+  villur.push('index.html: 383 vantar ?v=20261002lod');
 }
 
 function hlaða() {
@@ -79,15 +81,26 @@ try {
   const T = hlaða();
   const W = 800, H = 600;
   const gra = new Uint8Array(W * H);
-  gra.fill(180);
+  gra.fill(250);
+  veggir(gra, W, H, 180, 80, 720, 520, 45, 3);
+  for (let y = 84; y <= 516; y++) {
+    for (let x = 184; x <= 716; x++) {
+      if (gra[y * W + x] > 130) gra[y * W + x] = 175;
+    }
+  }
+  for (let y = 162; y <= 438; y++) {
+    for (let x = 252; x <= 548; x++) gra[y * W + x] = 250;
+  }
   veggir(gra, W, H, 250, 160, 550, 440, 40, 6);
-  veggir(gra, W, H, 20, 20, 90, 90, 30, 4);
+  veggir(gra, W, H, 20, 20, 140, 200, 30, 4);
 
   const hus = T.husMaska(gra, W, H);
-  if (!hus[350 * W + 350]) villur.push('stofa inni í húsi átti að haldast');
+  if (!hus[300 * W + 400]) villur.push('stofa inni í húsi átti að haldast');
   if (!hus[300 * W + 250]) villur.push('veggur húss átti að haldast');
-  if (hus[20 * W + 400]) villur.push('grá lóð má ekki vera 3D-gólf');
-  if (hus[40 * W + 40]) villur.push('nafnreitur/snið má ekki vera 3D-hús');
+  if (hus[100 * W + 400]) villur.push('grá lóð inni í lóðarmörkum má ekki vera 3D-gólf');
+  if (hus[80 * W + 400]) villur.push('lóðarmörk mega ekki verða 3D-veggur utan húss');
+  if (hus[10 * W + 10]) villur.push('hvítt blað má ekki vera 3D-gólf');
+  if (hus[60 * W + 40]) villur.push('nafnreitur/snið má ekki vera 3D-hús');
 } catch (e) {
   villur.push('keyrsla: ' + ((e && e.stack) || e));
 }

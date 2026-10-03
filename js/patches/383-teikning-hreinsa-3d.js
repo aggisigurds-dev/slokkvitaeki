@@ -5,7 +5,8 @@
  * gera þetta svo þetta sé nokkuð fjölbreytilega nothæft".
  *
  * Agnar 02.10.2026: 2D má ALDREI skipta grunnmynd út fyrir veggjabitmap né hvíta
- * hana. 3D sýnir AÐEINS stærsta húsið — grá lóð og CAD-rusl eru ekki gólf né veggir.
+ * hana. 3D sýnir AÐEINS húsið. Grá lóð utan veggja (líka inni í lóðarmörkum) er
+ * ekki gólfplata, og CAD-snið/nafnreitur eru ekki veggir.
  *
  * TVÆR SJÁLFSTÆÐAR EININGAR (vita ekkert um gluggann — nýtanlegar annars staðar síðar):
  *
@@ -241,12 +242,17 @@
   // Dökkt blek = veggir. Grá lóð (oft 150–200) er EKKI veggur — annars verður lóðin
   // gólfplata í 3D og efri hæðin fyllir gluggann („draugur").
   const DOKKT_HUS = 130;
+  const GRA_MIN = 135;
+  const GRA_MAX = 215;
+  const erGraLod = l => l >= GRA_MIN && l <= GRA_MAX;
 
   /** Flóðfylling utan frá: 1 = UTAN hússins. Aðeins DÖKKT blek lokar; grá lóð er opin. */
   function utiMaska(gra, W, H) {
     const dokkt = new Uint8Array(W * H);
     for (let i = 0; i < W * H; i++) dokkt[i] = gra[i] < DOKKT_HUS ? 1 : 0;
-    const r = Math.max(3, Math.round(Math.max(W, H) / 80));
+    // Lítil lokun: loka 1–2 px rifum í veggjum. r≈max/80 innsiglaði strikuð
+    // lóðarmörk og hélt gráa fletinum inni sem „hús" (draugaplatan).
+    const r = Math.max(2, Math.round(Math.max(W, H) / 220));
     const lokad = erode(dilate(dokkt, W, H, r), W, H, r);
     const uti = new Uint8Array(W * H), st = new Int32Array(W * H);
     let top = 0;
@@ -260,7 +266,7 @@
     return uti;
   }
 
-  /** Stærsta lokaða húsið. Grá lóð, snið og nafnreitur eru aðrir klasar og detta út. */
+  /** Stærsta lokaða húsið. Grá lóð dettur út þó lóðarmörk umlyki hana; snið og nafnreitur eru aðrir klasar. */
   function husMaska(gra, W, H) {
     const uti = utiMaska(gra, W, H);
     const inni = new Uint8Array(W * H);
@@ -268,14 +274,22 @@
     const sv = svaedi(inni, W, H);
     let best = 0, bn = 0;
     sv.listi.forEach(s => { if (s.flat > bn) { bn = s.flat; best = s.n; } });
+    const hus0 = new Uint8Array(W * H);
+    if (!best) return hus0;
+    for (let i = 0; i < W * H; i++) {
+      if (sv.merki[i] === best && !erGraLod(gra[i])) hus0[i] = 1;
+    }
+    const sv2 = svaedi(hus0, W, H);
+    let best2 = 0, bn2 = 0;
+    sv2.listi.forEach(s => { if (s.flat > bn2) { bn2 = s.flat; best2 = s.n; } });
     const hus = new Uint8Array(W * H);
-    if (!best) return hus;
-    for (let i = 0; i < W * H; i++) if (sv.merki[i] === best) hus[i] = 1;
+    if (!best2) return hus;
+    for (let i = 0; i < W * H; i++) if (sv2.merki[i] === best2) hus[i] = 1;
     const pad = Math.max(2, Math.round(Math.max(W, H) / 200));
     return dilate(hus, W, H, pad);
   }
 
-  /** 3D-gólf: upprunalega teikningin, aðeins stærsta húsið. Utan þess alpha=0. */
+  /** 3D-gólf: upprunalega teikningin, aðeins húsið. Grá lóð og rusl á blaði fá alpha=0. */
   function golfMedUti(mynd, W, H) {
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const x = c.getContext('2d', { willReadFrequently: true });
@@ -1493,7 +1507,7 @@
           if (h.skurdur) { h.skurdur = null; h.sjalf = false; G.hamur = null; zNullstilla(); } else { G.hamur = G.hamur === 'skera' ? null : 'skera'; G.drag = null; G.kedja = null; }
         })),
         gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
-        gera('fp-hreinsa-btn', '✨ Skýrari veggir', '2D grunnmyndin helst. 3D sýnir húsið — grátt utan og rusl á blaði hverfur.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
+        gera('fp-hreinsa-btn', '✨ Skýrari veggir', '2D grunnmyndin helst ósnert. 3D sýnir húsið — grá lóð utan veggja er ekki gólfplata.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
         gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); }),
         gera('fp-tp-btn', 'Opna í TurboPaint', 'Opna hæðina í TurboPaint: teikna á hana, færa tækin og vista staðsetningarnar til baka', opnaITurboPaint)
       ];
