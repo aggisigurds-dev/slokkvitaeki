@@ -43,7 +43,12 @@
   // flýtur líka yfir vöruflísunum á tölvuskjá („keldan like a idiot over there")
   // og Agnar bað upphaflega um að hún færi af SÖLUBORÐINU — ekki bara af símanum.
   // Gildir því í öllum hömum, en áfram AÐEINS meðan Sala er virka sýnin.
-  const scope = 'html:has(#view-sala.active)';
+  // HT-3.10 (03.10.2026, afköst): var 'html:has(#view-sala.active)'. :has() á RÓTINNI gerir <html> að akkeri sem hver
+  // einasta DOM-breyting á síðunni ógildir, og vafrinn endurreiknar þá stíl á öllum stökum sem einhver :has()-regla
+  // nefnir (mælt við endurhleðslu á Fyrirtæki í þjónustu: 160 stílumferðir, 17.183 ms, ~2.650 stök í hverri).
+  // 440-kyrrd setur klasann syn-sala á <html> um leið og #view-sala verður virk — sama skilyrði, sama sértækni
+  // (:not(#_h) heldur auðkennisvæginu sem :has(#view-sala…) gaf).
+  const scope = 'html.syn-sala:not(#_h)';
   const css = HIDE.map((s) => scope + ' ' + s).join(',\n') +
     '{display:none!important}';
 

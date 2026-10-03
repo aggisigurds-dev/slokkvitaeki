@@ -68,7 +68,8 @@ const html = lesa('index.html');
 // Skrár sem Endurnýja-lagfæringin (01.10) snerti bera nýrra merki. Hinar
 // halda hopp-merkinu. Nýrra merki hleður hopp-kóðann líka — gamalt cache ekki.
 const utgafa = {
-  'features.js': '20261002teikn',
+  // 03.10 (HT-3.10): falið fyrirtækja-grid er ekki teiknað; _vaktaSyn teiknar það þegar sýnin opnast.
+  'features.js': '20261003ht',
   'mapfix.js': '20261001endur',
   // 02.10: 153 sækir tækjaskrá einu sinni við fyrstu opnun borðsins.
   '153-arsskodun.js': '20261002taek',

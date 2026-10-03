@@ -54,8 +54,14 @@
       btn.appendChild(badge);
     }
     badge.textContent = count > 0 ? String(count) : '';
-    badge.classList.remove('red', 'orange', 'green', 'blue', 'gray', 'zero');
-    badge.classList.add(count > 0 ? (color || 'gray') : 'zero');
+    // HT-3.10 (03.10.2026): remove+add skráði tvær klasabreytingar og stílumferð við HVERJA talningu þótt liturinn
+    // væri sá sami (mælt: 10 á 6 sek í kyrrstöðu). Nú aðeins þegar liturinn breytist í raun.
+    const LITIR = ['red', 'orange', 'green', 'blue', 'gray', 'zero'];
+    const vil = count > 0 ? (color || 'gray') : 'zero';
+    if (LITIR.some(c => (c === vil) !== badge.classList.contains(c))) {
+      badge.classList.remove('red', 'orange', 'green', 'blue', 'gray', 'zero');
+      badge.classList.add(vil);
+    }
   }
 
   function todayISO() { return new Date().toISOString().slice(0, 10); }

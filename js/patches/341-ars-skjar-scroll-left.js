@@ -180,9 +180,27 @@
   /* Sidebar covering the table: layout rail OR open phone drawer.
      Overlay used to be skipped, but then FYRIRTÆKI sat under the drawer
      at scrollLeft=0 and could not be panned into view. */
+  // HT-3.10 (03.10.2026, afköst): mælingin (getComputedStyle + getBoundingClientRect) þvingar fulla stílumferð, og
+  // pinViewToRail kallar á hana 200 ms eftir HVERJA DOM-breytingu meðan Ársskoðun er á skjánum (mælt: 968 ms við
+  // endurhleðslu, 216 ms við hvert „til baka"). Breiddin ræðst af glugganum og klösum/stíl á html, body og stikunni
+  // sjálfri — meðan ekkert af því breytist er síðasta mæling notuð, þó aldrei eldri en 2 s.
+  let _railLykill = '', _railW = 0, _railT = 0;
   function railWidth() {
     try {
-      const tb = document.querySelector('.topbar');
+      const tb0 = document.querySelector('.topbar');
+      if (!tb0) return 0;
+      const de = document.documentElement;
+      const lykill = window.innerWidth + '|' + de.className + '|' + (de.getAttribute('data-viewmode') || '') + '|' + (document.body ? document.body.className : '') + '|' + tb0.className + '|' + tb0.style.cssText;
+      const nu = Date.now();
+      if (lykill === _railLykill && nu - _railT < 2000) return _railW;
+      const w = railWidthMaeld(tb0);
+      _railLykill = lykill; _railW = w; _railT = nu;
+      return w;
+    } catch (_) {}
+    return 0;
+  }
+  function railWidthMaeld(tb) {
+    try {
       if (!tb) return 0;
       const cs = getComputedStyle(tb);
       if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return 0;

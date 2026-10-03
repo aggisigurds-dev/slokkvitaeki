@@ -138,7 +138,7 @@
 
   function stampHtml(mode) {
     try {
-      document.documentElement.dataset.arsSjon = mode;
+      if (document.documentElement.dataset.arsSjon !== mode) document.documentElement.dataset.arsSjon = mode;   // HT-3.10: ekki skrifa sama gildi á <html> á sekúndu fresti
       document.documentElement.classList.toggle('ars-wide-table', wantsWide(mode) && isPhoneLike());
       // 25.09.2026 (Agnar, S26 appið: „geturðu lagað app símahaminn"): í Tölvusíðu-ham er layout-viewportið
       // ~980 px þótt „Sími" sé valið, svo @media (min-width:901px) og innerWidth>=901 í 414/415/416 tóku

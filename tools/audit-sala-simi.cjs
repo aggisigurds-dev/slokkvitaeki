@@ -26,8 +26,14 @@
  * 2. #pos-scan-top verður að vera áfram í js/pos.js. Um leið og hann hverfur er
  *    #qr-fab ekki lengur tvítekning heldur EINA leiðin til að skanna — og þá má
  *    ekki fela hann.
- * 3. Scope-ið verður að halda sér við `html:has(#view-sala.active)`. Víkkun
- *    fjarlægir takkana af ÖLLUM síðum þar sem þeir eiga heima.
+ * 3. Scope-ið verður að halda sér við Sölu. Víkkun fjarlægir takkana af ÖLLUM
+ *    síðum þar sem þeir eiga heima.
+ *    HT-3.10 (03.10.2026): scope-ið var `html:has(#view-sala.active)`. :has() á
+ *    rótinni ógilti stíl alls skjalsins við hverja DOM-breytingu (mælt: 17 s í
+ *    stílumferðum við endurhleðslu á Fyrirtæki í þjónustu), svo það er nú klasinn
+ *    `html.syn-sala`, sem js/patches/440-kyrrd.js setur þá og því aðeins að
+ *    #view-sala beri .active. Vörðurinn ver BÁÐA helminga: regluna OG vaktina —
+ *    án vaktarinnar birtast takkarnir fimm aftur á Sölu.
  *
  * SOURCE-only, engin lifandi gögn. Sami háttur og audit-rf-column-shift.
  */
@@ -72,9 +78,20 @@ if (src327) {
     fails.push('327 felur #pos-checkout — ✓ ÁFRAM er eina leiðin út úr körfunni');
   }
 
-  // 4 · scope-ið má ekki víkka út fyrir Sölu
-  if (!/html:has\(#view-sala\.active\)/.test(src327)) {
-    fails.push('327 hefur misst scope-ið html:has(#view-sala.active) — felur nú á ÖLLUM síðum');
+  // 4 · scope-ið má ekki víkka út fyrir Sölu — klasinn html.syn-sala (HT-3.10), og 440 verður að halda honum réttum
+  if (!/const scope = 'html\.syn-sala[^']*';/.test(src327)) {
+    fails.push('327 hefur misst scope-ið html.syn-sala — felur nú á ÖLLUM síðum (eða engri)');
+  }
+  if (/const scope = '[^']*:has\(/.test(src327)) {
+    fails.push('327 notar aftur :has() á rótinni sem scope — það ógildir stíl alls skjalsins við hverja DOM-breytingu');
+  }
+  let src440 = '';
+  try { src440 = read('js/patches/440-kyrrd.js'); } catch (_) { fails.push('js/patches/440-kyrrd.js vantar — enginn setur html.syn-sala og takkarnir fimm birtast aftur á Sölu'); }
+  if (src440) {
+    if (!/440-kyrrd\.js/.test(idx)) fails.push('440 er til en EKKI hlaðinn í index.html — html.syn-sala verður aldrei settur');
+    if (!/setja\('syn-sala',\s*!!\(sala && sala\.classList\.contains\('active'\)\)\)/.test(src440)) {
+      fails.push('440 setur ekki lengur syn-sala eftir #view-sala.active — scope-ið fylgir þá ekki Sölu');
+    }
   }
 
   // 5 · reglan verður að vera display:none !important (annars vinnur hún ekki
@@ -95,5 +112,5 @@ if (fails.length) {
   process.exit(1);
 }
 console.log('GREEN: Sala í síma helst hrein — 5 fljótandi takkar faldir, ✓ ÁFRAM og '
-  + '#pos-scan-top ósnertir, scope bundið við #view-sala.active');
+  + '#pos-scan-top ósnertir, scope bundið við #view-sala.active (html.syn-sala, haldið af 440)');
 process.exit(0);

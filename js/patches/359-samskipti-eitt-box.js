@@ -43,7 +43,11 @@
     //             gamla hegðunin: falið þegar kortið er komið.
     // `.smx-gafst` slekkur á :has()-reglunni þegar tímavörðurinn gefst upp á
     // sókninni, svo autt svæði verði aldrei útkoman.
-    st.textContent = '#companies-main:has(._samskipti-host[data-fid]):not(.smx-gafst) ._co-mail-box{display:none !important}' +
+    // HT-3.10 (03.10.2026, afköst): fyrri reglan var '#companies-main:has(._samskipti-host[data-fid])…'. :has() gerði
+    // #companies-main að akkeri sem hver DOM-breyting í prófílnum ógilti (stíll alls prófílsins endurreiknaður í hvert
+    // sinn). 440-kyrrd setur klasann smx-hysill á SAMA AUGNABLIKI og hýsillinn birtist (óinngjöfuð vakt, fyrir málun),
+    // svo blikkið sem reglan var sett til að stöðva kemur ekki aftur. :not(.kyrrd-x) heldur sértækninni (1,4,0).
+    st.textContent = '#companies-main.smx-hysill:not(.smx-gafst):not(.kyrrd-x) ._co-mail-box{display:none !important}' +
       '#companies-main.smx-eitt ._co-mail-box{display:none !important}' +
       '._smx-strip{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:7px 0 2px}' +
       '._smx-sig{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700;white-space:nowrap}' +

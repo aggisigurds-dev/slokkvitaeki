@@ -23,7 +23,10 @@
   if (window.__thett411) return;
   window.__thett411 = true;
 
-  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #companies-main:has(.co-banner) ';
+  // HT-3.10 (03.10.2026, afköst): var '#companies-main:has(.co-banner)'. :has() gerði #companies-main að akkeri sem hver
+  // DOM-breyting inni í prófílnum ógilti, og þá var stíll ALLS prófílsins endurreiknaður í hvert sinn. 440-kyrrd setur
+  // klasann co-opid á #companies-main um leið og .co-banner er þar (sama skilyrði, sama sértækni 1,1,0).
+  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #companies-main.co-opid ';
   var F = ':not(#_p411a):not(#_p411b):not(#_p411c):not(#_p411d):not(#_p411e):not(#_p411f)';   // sex gervi-auðkenni: yfir F í 402 (fimm)
   var MONO = '"JetBrains Mono",ui-monospace,monospace';
   var LINA_H = 20, MAX_LINUR = 5;

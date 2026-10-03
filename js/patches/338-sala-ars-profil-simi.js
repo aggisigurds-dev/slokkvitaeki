@@ -104,7 +104,10 @@
       /* ── 2. Fyrirtækjaprófíll (Companies.openDetail) ─────────────────────
          Aðeins þegar .co-banner er til — listinn í #companies-main er
          annars agents. Aðgerðaröð = Kröfu chips, ekki 50% flísar. */
-      both('#companies-main:has(.co-banner)' + P)
+      // HT-3.10 (03.10.2026, afköst): var '#companies-main:has(.co-banner)'. :has() gerði #companies-main að akkeri sem hver
+      // DOM-breyting inni í prófílnum ógilti, og þá var stíll ALLS prófílsins endurreiknaður í hvert sinn. 440-kyrrd setur
+      // klasann co-opid á #companies-main um leið og .co-banner er þar (sama skilyrði, sama sértækni 1,1,0).
+      both('#companies-main.co-opid' + P)
         + '{padding:8px 8px 48px!important;max-width:none!important;'
         + 'overflow-x:auto!important;-webkit-overflow-scrolling:touch}',
       both('#companies-main .co-banner' + P)
@@ -124,10 +127,10 @@
         + 'font-size:16px!important}',
       both('#companies-main .co-banner-right' + P)
         + '{width:100%!important}',
-      both('#companies-main:has(.co-banner)>div:first-child' + P)
+      both('#companies-main.co-opid>div:first-child' + P)
         + strip.slice(0, -1) + ';margin-bottom:8px!important}',
-      both('#companies-main:has(.co-banner)>div:first-child .btn' + P) + ','
-        + both('#companies-main:has(.co-banner)>div:first-child button' + P)
+      both('#companies-main.co-opid>div:first-child .btn' + P) + ','
+        + both('#companies-main.co-opid>div:first-child button' + P)
         + '{flex:0 0 auto!important;min-height:36px!important;height:36px!important;'
         + 'padding:0 10px!important;font-size:13px!important;white-space:nowrap!important}',
       // 06.09.2026: [data-co-id] er lika a spjoldum 111/199/311/307 (Skjol, Stada eftir ari, Samningur) - thau urdu
@@ -136,8 +139,8 @@
         + strip.slice(0, -1) + ';margin-bottom:10px!important;padding:2px 0 6px!important}',
       both('#companies-main [data-co-id] .btn:not(._co-edit-anchor)' + P) + ','
         + both('#companies-main [data-co-id] button:not(._co-edit-anchor)' + P) + ','
-        + A + '#companies-main:has(.co-banner) [data-co-id] button:not(._co-edit-anchor)' + P + ','
-        + A + '#companies-main:has(.co-banner) [data-co-id] .btn:not(._co-edit-anchor)' + P
+        + A + '#companies-main.co-opid [data-co-id] button:not(._co-edit-anchor)' + P + ','
+        + A + '#companies-main.co-opid [data-co-id] .btn:not(._co-edit-anchor)' + P
         + chip,
       both('#companies-main ._co-edit-anchor' + P)
         + '{display:none!important}',

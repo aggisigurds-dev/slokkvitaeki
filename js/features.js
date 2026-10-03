@@ -18,6 +18,14 @@ var Companies = {
   render: function() {
     var el = document.getElementById('companies-main');
     if (!el) return;
+    // HT-3.10 (03.10.2026, afköst): load() er kallað úr 153/114/146/360 við ræsingu og teiknaði þá ALLT gridið —
+    // 1.217 spjöld + töfluna sem companieslist.js smíðar úr þeim = 28.000 hnútar — inn í sýn sem enginn sér, líka
+    // þegar staðið er á Fyrirtæki í þjónustu. Mælt: DOM 49.000 hnútar, 174 fraus í 14 s við að sía spjöldin og hver
+    // einasta vakt og stílumferð eftir það borgaði fyrir hnúta sem sjást ekki. Falin sýn er nú ekki teiknuð.
+    // Listinn er teiknaður um leið og sýnin verður virk (_vaktaSyn hér fyrir neðan) — úr minni, án nýrrar sóknar.
+    var _syn = document.getElementById('view-companies');
+    if (_syn && !_syn.classList.contains('active')) { this._gridStale = true; this._vaktaSyn(_syn); return; }
+    this._gridStale = false;
     var L = this.list;
     var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
       '<div><div style="font-size:19px;font-weight:600">Fyrirt\u00e6ki</div>' +
@@ -60,6 +68,23 @@ var Companies = {
     }
     this.currentId = null;
     el.innerHTML = html;
+  },
+  // HT-3.10: sýnin verður virk → teikna listann sem var sleppt meðan hún var falin. Ekki er hægt að treysta á load():
+  // 431 (Uppfærsluborð) sleppir endursókn þegar listinn er í minni, og þá kallar enginn á render() — sýnin stæði auð
+  // (mælt: 5 hnútar eftir smell á „Fyrirtæki"). Vaktin er óinngjöfuð og keyrir í sama verki og klasaskiptin, fyrir málun.
+  // EKKI þegar verið er að opna prófíl: _openCompanySafe setur currentId í sama verki og það virkjar sýnina, svo
+  // 1.217 spjöld eru aldrei smíðuð til þess eins að prófíllinn skrifi yfir þau augnabliki síðar.
+  _vaktaSyn: function(el) {
+    if (this._synVakt || !el) return;
+    this._synVakt = true;
+    var self = this;
+    try {
+      new (window.__NativeMutationObserver || MutationObserver)(function() {
+        if (!self._gridStale || !el.classList.contains('active')) return;
+        if (self.currentId != null || self._detailOpen()) return;
+        try { Companies.render(); } catch (e) { console.warn('[Companies] teikning við opnun', e); }
+      }).observe(el, { attributes: true, attributeFilter: ['class'] });
+    } catch (_) { this._synVakt = false; }
   },
   _detailOpen: function(id) {
     var main = document.getElementById('companies-main');

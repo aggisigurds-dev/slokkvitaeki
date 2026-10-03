@@ -156,7 +156,9 @@
       P + ' > #notif-bell .notif-badge{position:absolute!important;top:-7px!important;right:-7px!important;left:auto!important;bottom:auto!important;min-width:0!important;height:18px!important;box-sizing:border-box!important;padding:0 5px!important;border:1px solid #000!important;border-radius:3px!important;background:' + RED_METAL + '!important;color:#fff!important;font:700 9.5px/16px ' + MONO + '!important;box-shadow:none!important}',
       P + ' > #notif-bell .notif-badge:empty{display:none!important}',
       // CG-hnappurinn (fastur neðst til vinstri) fær eigin rönd svo hann hylji ekki notandann
-      'html body:not(.appmode):has(#cg-sk-trigger) .topbar{--sbm-tray:44px;padding-bottom:44px!important}',
+      // HT-3.10 (03.10.2026): var body:has(#cg-sk-trigger). :has() á <body> ógilti stíl ALLRAR hliðarstikunnar við hverja
+      // DOM-breytingu hvar sem er á síðunni (--sbm-tray erfist niður í hvern hnapp). 440 setur klasann hefur-cg á <html>.
+      'html.hefur-cg body:not(.appmode):not(#_h) .topbar{--sbm-tray:44px;padding-bottom:44px!important}',
     ].join('\n');
     const st = document.createElement('style');
     st.id = '_sbm-css';

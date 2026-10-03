@@ -397,7 +397,10 @@ var App = {
     // var falin (mælt: 4.251 DOM-breytingar/s á Hreyfingarlista). Nú: fyrsta teikning alltaf, síðan aðeins ef sýnin er
     // virk — annars merkt úrelt og teiknuð um leið og farið er á hana (switchView). Gögnin sem sjást eru jafn fersk.
     var _fv=document.getElementById('view-field');
-    if(!this._fieldRendered || this.view==='field' || (_fv&&_fv.classList.contains('active'))){ this._fieldRendered=true; this._fieldStale=false; Field.render(); }
+    // HT-3.10 (03.10.2026): „fyrsta teikning alltaf" smíðaði ~1.800 spjöld (12.500 hnúta) inn í FALDA sýn við hverja
+    // ræsingu. Nú gildir sama regla um fyrstu teikningu og allar hinar: teiknað þegar sýnin er virk, annars merkt úrelt
+    // og teiknað um leið og farið er á hana (switchView + vaktin hér fyrir neðan — báðar leiðir voru til fyrir).
+    if(this.view==='field' || (_fv&&_fv.classList.contains('active'))){ this._fieldRendered=true; this._fieldStale=false; Field.render(); }
     else {
       this._fieldStale=true;
       // Vörn óháð switchView (44 skrár skipta um það): sýnin verður virk → teikna strax, í sama verki (fyrir málun).

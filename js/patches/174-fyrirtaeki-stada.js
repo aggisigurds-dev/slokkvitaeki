@@ -86,26 +86,37 @@
     const cur = getFilter();
     const cards = main.querySelectorAll('.company-card');
     let visible = 0;
+    // HT-3.10 (03.10.2026, afköst): lykkjan las getComputedStyle(card) STRAX á eftir skrifum fyrra spjalds (opacity,
+    // filter, display, appendChild). Hvert skrif ógildir stílinn, svo hver lestur þvingaði fulla stílumferð — 1.217
+    // spjöld, mælt 14.133 ms í EINU verki (síðan frosin). Sama mynstur og 313 (23.09). Nú: lesa allt fyrst, skrifa svo.
+    // Og uppflettingin er Map í stað Companies.list.find() á hvert spjald (1.217 × 1.217).
+    const eftirId = new Map();
+    (Companies.list || []).forEach(c => { eftirId.set(+c.id, c); });
+    const verk = [];
     cards.forEach(card => {
       const id = (card.getAttribute('onclick') || '').match(/openDetail\((\d+)\)/);
       if (!id) return;
-      const co = (Companies.list || []).find(c => +c.id === +id[1]);
+      const co = eftirId.get(+id[1]);
       if (!co) return;
       const ovirk = isOvirk(co);
+      const merki = card.querySelector('._stada-badge');
+      verk.push({ card, ovirk, merki, kyrr: (ovirk && !merki) ? getComputedStyle(card).position === 'static' : false });
+    });
+    verk.forEach(({ card, ovirk, merki, kyrr }) => {
       // Tag inactive cards visually
       if (ovirk) {
-        if (!card.querySelector('._stada-badge')) {
+        if (!merki) {
           const badge = document.createElement('div');
           badge.className = '_stada-badge';
           badge.textContent = '⏸ Óvirkt';
           badge.style.cssText = 'position:absolute;top:8px;right:8px;background:#fef3c7;color:#92400e;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;z-index:2';
-          if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
+          if (kyrr) card.style.position = 'relative';
           card.appendChild(badge);
         }
         card.style.opacity = '0.55';
         card.style.filter  = 'grayscale(.35)';
       } else {
-        const b = card.querySelector('._stada-badge'); if (b) b.remove();
+        if (merki) merki.remove();
         card.style.opacity = ''; card.style.filter = '';
       }
       // Filter visibility

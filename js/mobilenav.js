@@ -75,7 +75,7 @@ function ensureBtn(){
   var key = (show?'M':'D')+'_'+(open?'O':'C');
   // Skip if the previously-applied state matches AND our cssText is still on
   // the element (defends against an outside actor wiping our styles).
-  if (_btnKey === key && /position:fixed/.test(btn.style.cssText)) return btn;
+  if (_btnKey === key && /position:\s*fixed/.test(btn.style.cssText)) return btn;   // HT-3.10: vafrinn skilar "position: fixed" með bili — vörnin hitti aldrei
   btn.style.cssText='display:'+(show?'flex':'none')+';position:fixed;top:10px;left:'+(open?'270px':'10px')+';width:44px;height:44px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;z-index:9999;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.15);font-size:22px;padding:0;line-height:1;color:#111;transition:left .2s;';
   _btnKey = key;
   return btn;

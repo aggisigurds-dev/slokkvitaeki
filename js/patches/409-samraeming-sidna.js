@@ -93,11 +93,21 @@
     return null;
   }
   const done = new WeakSet();
+  let sidastMat = 0;
   function tick() {
     const view = document.querySelector('.view.active'); if (!view) return;
     // Endurmetið í hverju tifi: síður teikna efri hlutann ASYNC — fyrsta tifið gat merkt neðri kaflafyrirsögn sem þá var
     // ein í efstu 320 px (mælt 24.09: Punktar og verð). Komi betri frambjóðandi færist merkið.
-    const cand = finnaTitil(view); const cur = view.querySelector('._s409-titill');
+    // HT-3.10 (03.10.2026, afköst): finnaTitil les útlit (getBoundingClientRect) og keyrir í HVERJUM ramma meðan síðan
+    // teiknar sig — hver lestur þvingar fulla stílumferð (mælt: 4.275 ms við endurhleðslu á Fyrirtæki í þjónustu,
+    // 451 ms við hverja opnun á prófíl). Meðan ENGINN titill er merktur er áfram leitað í hverju tifi (annars fengi
+    // titillinn stærðina eftir málun = hopp, sjá 25.09). Sé titill þegar merktur er betri frambjóðanda leitað mest
+    // þrisvar á sekúndu — endurmatið sem lýst er hér að ofan heldur sér, bara ekki 60 sinnum á sekúndu.
+    const cur = view.querySelector('._s409-titill');
+    const nu = performance.now();
+    let cand;
+    if (cur && nu - sidastMat < 300) cand = cur;
+    else { cand = finnaTitil(view); sidastMat = nu; }
     let t = cur;
     if (cand && cand !== cur) {
       if (cur) { cur.classList.remove('_s409-titill'); const cu = cur.nextElementSibling; if (cu) cu.classList.remove('_s409-undir'); }

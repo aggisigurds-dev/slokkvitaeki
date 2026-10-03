@@ -44,7 +44,7 @@
         'border:1px solid #10161f;background:linear-gradient(180deg,#2f5a86,#17324f);color:#eaf1f9;',
         'font-size:22px;line-height:1;cursor:pointer;box-shadow:0 10px 24px -10px rgba(0,0,0,.6);',
         'display:flex;align-items:center;justify-content:center;padding:0}',
-      'html:has(#view-sala.active) #_ad-fab{display:none!important}',
+      'html.syn-sala:not(#_h) #_ad-fab{display:none!important}',   // HT-3.10: var html:has(#view-sala.active) — klasinn kemur úr 440, sjá 327
 
       '#_ad-panel{position:fixed;inset:auto 0 0 0;z-index:2147481200;height:min(72vh,620px);',
         'background:#16181c;color:#e8e6e2;display:flex;flex-direction:column;',

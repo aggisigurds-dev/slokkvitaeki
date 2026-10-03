@@ -34,10 +34,13 @@
   if (document.getElementById('bfs-402')) return;
 
   // Sömu síma-merki og 356 útilokar með: html[data-viewmode="mobile"], html.slokk-phone-dev, body.appmode.
-  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #companies-main:has(.co-banner) ';
+  // HT-3.10 (03.10.2026, afköst): var '#companies-main:has(.co-banner)'. :has() gerði #companies-main að akkeri sem hver
+  // DOM-breyting inni í prófílnum ógilti, og þá var stíll ALLS prófílsins endurreiknaður í hvert sinn. 440-kyrrd setur
+  // klasann co-opid á #companies-main um leið og .co-banner er þar (sama skilyrði, sama sértækni 1,1,0).
+  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #companies-main.co-opid ';
   // Sími / app (Agnar 23.09 19:47 „þetta er svolítið út um allt í símanum. Óuppfært“): SAMA málning, en 338/356 halda
   // uppröðun símans (dálkar undir hver öðrum, flísa-takkar). 403/404/405 keyra ekki í símaham — hér er CSS eitt.
-  var S2 = 'html[data-thm-preset="brunastal"]:is([data-viewmode="mobile"],.slokk-phone-dev,:has(>body.appmode)) body #companies-main:has(.co-banner) ';
+  var S2 = 'html[data-thm-preset="brunastal"]:is([data-viewmode="mobile"],.slokk-phone-dev,.likami-app:not(kyrrd-x)) body #companies-main.co-opid ';
   var F = ':not(#_p402a):not(#_p402b):not(#_p402c):not(#_p402d):not(#_p402e)';
   function p(sel, css) { return sel.split(',').map(function (x) { return S2 + x.trim() + F; }).join(',') + '{' + css + '}'; }
   var MONO = '"JetBrains Mono",ui-monospace,monospace';

@@ -20,7 +20,10 @@
   if (window.__samantekt412) return;
   window.__samantekt412 = true;
 
-  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #companies-main:has(.co-banner) ';
+  // HT-3.10 (03.10.2026, afköst): var '#companies-main:has(.co-banner)'. :has() gerði #companies-main að akkeri sem hver
+  // DOM-breyting inni í prófílnum ógilti, og þá var stíll ALLS prófílsins endurreiknaður í hvert sinn. 440-kyrrd setur
+  // klasann co-opid á #companies-main um leið og .co-banner er þar (sama skilyrði, sama sértækni 1,1,0).
+  var S = 'html[data-thm-preset="brunastal"]:not([data-viewmode="mobile"]):not(.slokk-phone-dev) body:not(.appmode) #companies-main.co-opid ';
   var F = ':not(#_p412a):not(#_p412b):not(#_p412c):not(#_p412d):not(#_p412e):not(#_p412f)';
   var MONO = '"JetBrains Mono",ui-monospace,monospace';
   var SANS = '"IBM Plex Sans",system-ui,sans-serif';

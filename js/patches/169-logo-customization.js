@@ -183,11 +183,13 @@
   // Watch for the Stillingar branding panel rendering and inject a file
   // input + small preview below the existing "Logo URL" text field.
   function injectUploader() {
-    const panels = document.querySelectorAll('.su-panel, [class*="settings"], .su-row');
-    if (!panels.length) return;
     // Find the Logo URL input by its data-bk attribute.
+    // HT-3.10 (03.10.2026): reiturinn fyrst — hann er aðeins til þegar Stillingar eru opnar, svo dýra leitin hér fyrir
+    // neðan ([class*="settings"] yfir allt skjalið, mælt 29–35 ms í hverri umferð) keyrir ekki lengur á 800 ms fresti.
     const urlInp = document.querySelector('input[data-bk="logo_url"]');
     if (!urlInp) return;
+    const panels = document.querySelectorAll('.su-panel, [class*="settings"], .su-row');
+    if (!panels.length) return;
     if (urlInp.dataset._slUpInjected === '1') return;
     urlInp.dataset._slUpInjected = '1';
 
@@ -283,10 +285,13 @@
   }
 
   // Re-check periodically — the settings panel is lazy-opened.
+  // HT-3.10 (03.10.2026): púlsinn HÆTTI eftir 120 umferðir (~96 s frá hleðslu). Væru Stillingar opnaðar seinna en það
+  // kom logo-ramminn aldrei (mælt: 221 → 212 stök í Stillingum þegar þær voru opnaðar 110 s eftir hleðslu). Hann heldur
+  // nú áfram, hægar — umferðin kostar eina querySelector-leit meðan Stillingar eru lokaðar.
   let _tries = 0;
   function poll() {
     injectUploader();
-    if (_tries++ < 120) setTimeout(poll, 800);
+    setTimeout(poll, _tries++ < 120 ? 800 : 2500);
   }
   poll();
 

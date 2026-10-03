@@ -172,15 +172,19 @@
     const phone = document.documentElement.classList.contains('slokk-phone-nav');
     const views = document.querySelectorAll('.view');
     const active = document.querySelector('.view.active');
-    const Z = active ? elZoom(active) : 1;   // .view.active er sjálft zoomað (333)
+    // HT-3.10 (03.10.2026, afköst): Z var mælt hér í HVERRI umferð — getComputedStyle þvingar fulla stílumferð — líka á
+    // tölvu, þar sem hvorug greinin hér fyrir neðan notar það (mælt: 181 ms við hvert „til baka", 1.088 ms við
+    // endurhleðslu á Fyrirtæki í þjónustu). Nú mælt þegar fyrst þarf á því að halda: í appham og símaham.
+    let _z = 0;
+    const Z = () => (_z || (_z = active ? elZoom(active) : 1));   // .view.active er sjálft zoomað (333)
 
     if (app) {
       const hr = rect(document.getElementById('_app-hdr'));
       const nr = body.classList.contains('appmode-nonav') ? null : rect(document.getElementById('_app-nav'));
       const top = hr ? Math.round(hr.bottom + 4) : 52;
       const bot = nr ? Math.round(nr.height + 8) : 24;
-      window.__appHdrPad = Math.round(top / Z) + 'px';        // 314 pinPad les þetta
-      const padBot = Math.round(bot / Z) + 'px';
+      window.__appHdrPad = Math.round(top / Z()) + 'px';        // 314 pinPad les þetta
+      const padBot = Math.round(bot / Z()) + 'px';
       views.forEach(v => { stamp(v, 'padding-top', window.__appHdrPad); stamp(v, 'padding-bottom', padBot); });
       const f = document.getElementById('_app-frame');
       if (f) stamp(f, 'top', Math.round((hr ? hr.bottom : 48) / elZoom(f)) + 'px');   // bottom: 261 syncFrameBottom
@@ -194,7 +198,7 @@
     if (document.documentElement.style.getPropertyValue('--app-zoom-bottom')) document.documentElement.style.removeProperty('--app-zoom-bottom');
     if (phone) {
       const br = rect(document.getElementById('bstal-banner'));
-      bannerPad = br ? Math.round((br.bottom + 12) / Z) + 'px' : null;
+      bannerPad = br ? Math.round((br.bottom + 12) / Z()) + 'px' : null;
       const pad = window.__peBannerPad;                 // getter: mæld eða hrá (323)
       if (pad) views.forEach(v => stamp(v, 'padding-top', pad));
       // Skúffan: mobilenav.js stimplar height:100vh !important — vh deilist ekki

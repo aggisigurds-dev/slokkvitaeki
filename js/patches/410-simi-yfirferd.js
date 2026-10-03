@@ -18,7 +18,10 @@
   const ID = '_s410-simi';
   if (document.getElementById(ID)) return;
 
-  const PH = 'html:is([data-viewmode="mobile"],.slokk-phone-dev,:has(>body.appmode))';
+  // HT-3.10 (03.10.2026, afköst): þriðji liðurinn var :has(>body.appmode). Það gerði <html> að :has()-akkeri, svo hver
+  // klasabreyting á <body> ógilti stíl ALLS skjalsins (mælt: heilar umferðir, 4.500 stök, 300–480 ms hver). 440-kyrrd
+  // setur klasann likami-app á <html> þegar body ber appmode — sama skilyrði; :not(kyrrd-x) heldur sértækninni (0,1,1).
+  const PH = 'html:is([data-viewmode="mobile"],.slokk-phone-dev,.likami-app:not(kyrrd-x))';
   const P5 = ':not(#_p410a):not(#_p410b):not(#_p410c):not(#_p410d):not(#_p410e)'; // fimm gervi-auðkenni: yfir P4 í 353
 
   const css = [
