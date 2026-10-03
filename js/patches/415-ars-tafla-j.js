@@ -60,7 +60,9 @@
     r(T + 'span._st--work', 'background:linear-gradient(180deg,#24508f 0%,#173a6d 100%)!important;border:1px solid #0d2547!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important'),
     r(T + 'span._st--late', 'background:linear-gradient(180deg,#8f1d1d 0%,#6b1212 100%)!important;border:1px solid #3d0607!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
     r(T + 'span._st--skip', 'background:linear-gradient(180deg,#a9842c 0%,#7d5f17 100%)!important;border:1px solid #4d3a0a!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)!important'),
-    r(T + 'span._st', 'font-size:11.5px!important;font-weight:600!important;text-shadow:0 1px 0 rgba(0,0,0,.35)!important'),
+    // 03.10.2026 (samræming við Brunakerfis skoðun, 418): sama stöðuplata og sama hak á báðum töflunum
+    r(T + 'span._st', 'font-size:11.5px!important;font-weight:600!important;text-shadow:0 1px 0 rgba(0,0,0,.35)!important;min-width:128px!important;height:26px!important'),
+    r(T + '._chk:not(.on)', 'border-color:#c3cad6!important;color:#aab3c0!important'),
     r(T + '._devs i', 'font-family:' + MONO + '!important;font-size:9px!important;font-weight:700!important;letter-spacing:.1em!important;color:#8a93a3;text-transform:uppercase'),
     r(T + '._devs div + div', 'border-left:0!important'),
     r(T + '._devs div', 'padding:0 6px!important'),

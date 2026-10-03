@@ -284,7 +284,7 @@
         '<thead><tr>' + th('nafn', 'Fyrirtæki · kerfi') + th('nota', 'Nóta') + th('heim', 'Heimilisfang') + th('man', 'Skoðun') + th('ar', 'Ár', ' style="text-align:center"') + th('skref', 'Skref ' + arNu) + th('verd', FLOKKUR.verdHaus || 'Verð') + th('stada', 'Staða') + '</tr></thead><tbody>' +
         (sia.map(x => { const r = x.r; return '<tr class="_sk-row' + (r.i_thjonustu ? '' : ' ur') + '" data-fid="' + r.fyrirtaeki_id + '" data-kid="' + r.kerfi_id + '">' +
           '<td><span class="_sk-co">' + esc(r.nafn) + (r.i_arsskodun ? ' <span class="_sk-svc" title="Líka í ársskoðun slökkvitækja">🧯</span>' : '') + '</span>' +
-            (r.kennitala ? '<span class="_sk-kt">kt. ' + esc(fmtKt(r.kennitala)) + '</span>' : '') + '<span class="_sk-kerfi">' + esc(r.heiti) + (r.tegund ? ' · ' + esc(r.tegund) : '') + '</span></td>' +
+            '<span class="_sk-undir">' + (r.kennitala ? '<span class="_sk-kt">kt. ' + esc(fmtKt(r.kennitala)) + '</span>' : '') + '<span class="_sk-kerfi">' + esc(r.heiti) + (r.tegund ? ' · ' + esc(r.tegund) : '') + '</span></span></td>' +
           '<td class="_sk-notacell"><textarea class="_sk-nota" rows="1" data-kid="' + r.kerfi_id + '" title="' + esc(r.nota || '') + '" placeholder="· · · · · · · ·">' + esc(r.nota || '') + '</textarea><span class="_sk-notast" data-st="' + r.kerfi_id + '"></span></td>' +
           '<td><span class="_sk-addr">' + (r.postnumer ? '<span class="_sk-post">' + esc(r.postnumer) + '</span> ' : '') + esc(r.heimilisfang || '') + '</span></td>' +
           '<td><select class="_sk-man" data-kid="' + r.kerfi_id + '" title="Skoðunarmánuður"><option value="">—</option>' + MON.map((m, i) => '<option value="' + (i + 1) + '"' + (r.skodunarmanudur === i + 1 ? ' selected' : '') + '>' + m + '</option>').join('') + '</select></td>' +
@@ -521,6 +521,8 @@
       V + '._sk-co{display:block;font-size:13px;font-weight:600}' + V + '._sk-svc{font-size:12px}',
       V + '._sk-kt{display:block;font-family:var(--mono,monospace);font-size:10px;color:#64748b;line-height:1.2}',
       V + '._sk-kerfi{display:block;font-size:11.5px;color:#64748b;margin-top:1px}',
+      // 03.10.2026 (samræming við Fyrirtæki í þjónustu): kt og kerfi á EINNI línu undir nafninu — raðirnar tvær línur eins og á Ársskoðun
+      V + 'table._sk-tbl ._sk-undir{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}' + V + 'table._sk-tbl ._sk-undir ._sk-kt,' + V + 'table._sk-tbl ._sk-undir ._sk-kerfi{display:inline;margin:0}' + V + 'table._sk-tbl ._sk-undir ._sk-kt + ._sk-kerfi::before{content:" · "}',
       V + '._sk-post{font-family:var(--mono,monospace);font-size:11px;font-weight:700;color:#64748b}',
       V + '._sk-addr{display:block;font-size:12.5px;white-space:normal;overflow-wrap:break-word}',
       V + '._sk-mono{font-family:var(--mono,monospace);font-size:12px}',

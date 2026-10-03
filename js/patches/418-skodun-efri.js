@@ -237,7 +237,8 @@
     r('table._sk-tbl ._sk-skref i.on', 'color:#0b6b3a'),
     r('table._sk-tbl ._sk-skref i.on::before', 'background:linear-gradient(180deg,#63b88c 0%,#1f6f42 50%,#0c3d22 100%);box-shadow:none'),
     // stöðuplöturnar mattar (392 á formið og díóðuna)
-    r('table._sk-tbl ._sk-st', 'font-size:11.5px!important;font-weight:600!important;text-shadow:0 1px 0 rgba(0,0,0,.35)!important'),
+    // 03.10.2026 (samræming við Fyrirtæki í þjónustu): sama stærð á stöðuplötunni og þar (415) — 26 px há, 128 px lágmark
+    r('table._sk-tbl ._sk-st', 'font-size:11.5px!important;font-weight:600!important;text-shadow:0 1px 0 rgba(0,0,0,.35)!important;min-width:128px!important;height:26px!important;min-height:26px!important'),
     r('table._sk-tbl ._sk-st--done', 'background:linear-gradient(180deg,#17663a 0%,#0e4d2b 100%)!important;border:1px solid #0a3a1e!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important'),
     r('table._sk-tbl ._sk-st--work', 'background:linear-gradient(180deg,#24508f 0%,#173a6d 100%)!important;border:1px solid #0d2547!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important'),
     r('table._sk-tbl ._sk-st--late', 'background:linear-gradient(180deg,#8f1d1d 0%,#6b1212 100%)!important;border:1px solid #3d0607!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
@@ -247,7 +248,7 @@
     // ── taflan: hólfið eins og 415 ──
     r('._sk-tblwrap', 'border:1px solid #000!important;border-radius:10px!important;box-shadow:0 18px 40px -12px rgba(10,14,22,.6)!important;background:#fff!important;overflow-x:auto'),
     r('table._sk-tbl th', 'height:38px!important;font-family:' + MONO + '!important;font-size:10px!important;font-weight:700!important;letter-spacing:.14em!important;text-transform:uppercase!important;color:#d9dee6;border-bottom:1px solid #000!important'),
-    r('table._sk-tbl tbody td', 'height:58px!important;border-top:1px solid #edf0f4!important;color:#1f2530;vertical-align:middle!important'),
+    r('table._sk-tbl tbody td', 'height:58px!important;padding:6px 10px!important;border-top:1px solid #edf0f4!important;color:#1f2530;vertical-align:middle!important'),
     r('table._sk-tbl tbody tr._sk-row:nth-child(odd) td', 'background:#fafbfd'),
     r('table._sk-tbl tbody tr._sk-row:hover td', 'background:#f3f5f9!important')
   ];
