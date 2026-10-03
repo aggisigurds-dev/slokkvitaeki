@@ -146,7 +146,9 @@ eða skilti á Miro — fylgdu þessu ferli sem gaf rétta útkomu fyrir Skútuv
      **Merkið gildir um ALLAN vegginn sem það stendur á, alla leið út í enda
      línunnar** — ekki bara blettinn við textann (Agnar 03.10.2026). Fylgdu
      veggnum frá merkinu í báðar áttir þar til hann endar og merktu allan
-     bútinn. Merkin standa í hvaða stefnu sem er (lárétt, lóðrétt, á hvolfi).
+     bútinn — **merkið heldur áfram í gegnum T-mót** þar sem þverveggur kemur á
+     (Agnar: „held ég í öllum tilvikum"); það stoppar aðeins þar sem línan sjálf
+     endar. Merkin standa í hvaða stefnu sem er (lárétt, lóðrétt, á hvolfi).
      Gáttu að því að EI-60 merkingar leynast víða (líka við grid-línur og
      litla geymsluklefa) — skannaðu ALLAR tiles áður en þú teiknar.
    - **Veggir á eldri uppdráttum eru oft tvær þunnar samsíða línur (holir)**,
