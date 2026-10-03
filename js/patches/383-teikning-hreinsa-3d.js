@@ -5,8 +5,7 @@
  * gera þetta svo þetta sé nokkuð fjölbreytilega nothæft".
  *
  * Agnar 02.10.2026: 2D má ALDREI skipta grunnmynd út fyrir veggjabitmap né hvíta
- * hana. 3D sýnir AÐEINS húsið. Grá lóð utan veggja (líka inni í lóðarmörkum) er
- * ekki gólfplata, og CAD-snið/nafnreitur eru ekki veggir.
+ * hana. 3D-gólf stingur AÐEINS gráa lóð (draugaplata) — ekki endurbyggja veggi.
  *
  * TVÆR SJÁLFSTÆÐAR EININGAR (vita ekkert um gluggann — nýtanlegar annars staðar síðar):
  *
@@ -266,41 +265,15 @@
     return uti;
   }
 
-  /** Stærsta lokaða húsið. Aðeins LOKUÐ ljós herbergi telja. Þunnar CAD-línur
-   * sem tengja snið við grunnmyndina mega ekki sameina allt blaðið, og veggir
-   * má ekki éta burt (annars flæðir flóðið inn og 3D verður tveir smábitar). */
+  /** 3D-gólf: upprunalega teikningin með GÖTUM á gráu lóðarflatarmáli.
+   * Ekki hússkilgreining — það át CAD og herbergi. Aðeins grátt (150–200) hverfur. */
   function husMaska(gra, W, H) {
-    const uti = new Uint8Array(W * H), st = new Int32Array(W * H);
-    let top = 0;
-    const yta = p => {
-      if (p < 0 || p >= W * H || uti[p] || gra[p] < DOKKT_HUS) return;
-      uti[p] = 1; st[top++] = p;
-    };
-    for (let x = 0; x < W; x++) { yta(x); yta((H - 1) * W + x); }
-    for (let y = 0; y < H; y++) { yta(y * W); yta(y * W + W - 1); }
-    while (top) {
-      const p = st[--top], px = p % W, py = (p - px) / W;
-      if (px > 0) yta(p - 1); if (px < W - 1) yta(p + 1); if (py > 0) yta(p - W); if (py < H - 1) yta(p + W);
-    }
-    const herbergi = new Uint8Array(W * H);
-    for (let i = 0; i < W * H; i++) {
-      if (!uti[i] && gra[i] > GRA_MAX) herbergi[i] = 1;
-    }
-    const brua = Math.max(4, Math.round(Math.max(W, H) / 140));
-    const tengt = dilate(herbergi, W, H, brua);
-    const sv = svaedi(tengt, W, H);
-    let best = 0, bn = 0;
-    sv.listi.forEach(s => { if (s.flat > bn) { bn = s.flat; best = s.n; } });
     const hus = new Uint8Array(W * H);
-    if (!best) return hus;
-    for (let i = 0; i < W * H; i++) {
-      if (sv.merki[i] === best && !erGraLod(gra[i])) hus[i] = 1;
-    }
-    const pad = Math.max(2, Math.round(Math.max(W, H) / 200));
-    return dilate(hus, W, H, pad);
+    for (let i = 0; i < W * H; i++) if (!erGraLod(gra[i])) hus[i] = 1;
+    return hus;
   }
 
-  /** 3D-gólf: upprunalega teikningin, aðeins húsið. Grá lóð og rusl á blaði fá alpha=0. */
+  /** 3D-gólf: upprunalega teikningin, grá lóð með alpha=0 svo hún sé ekki draugaplata. */
   function golfMedUti(mynd, W, H) {
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const x = c.getContext('2d', { willReadFrequently: true });
