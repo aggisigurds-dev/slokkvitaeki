@@ -620,6 +620,7 @@
       return Object.assign({}, n, {
         veggir: (n.veggir && n.veggir.length) ? n.veggir : g.veggir,
         pdfVeggir: (n.pdfVeggir && n.pdfVeggir.length) ? n.pdfVeggir : g.pdfVeggir,
+        veggjaLinur: (n.veggjaLinur && n.veggjaLinur.length) ? n.veggjaLinur : g.veggjaLinur,
         pdfFlokkar: n.pdfFlokkar || g.pdfFlokkar,
         skurdur: n.skurdur || g.skurdur,
         sjalf: n.sjalf != null ? n.sjalf : g.sjalf,
@@ -763,7 +764,7 @@
       G.dauft = null; G.dauftLykill = '';
       if (typeof p.imageUrl === 'string' && h.image_url !== p.imageUrl) {
         // Önnur teikning en hæðin átti: skurður og veggir áttu við gömlu myndina.
-        if (h.image_url) { h.skurdur = null; h.veggir = []; h.pdfVeggir = []; delete h.pdfFlokkar; delete h.sjalf; G.pdf = null; }
+        if (h.image_url) { h.skurdur = null; h.veggir = []; h.pdfVeggir = []; delete h.veggjaLinur; delete h.pdfFlokkar; delete h.sjalf; G.pdf = null; }
         h.image_url = p.imageUrl;
       }
     }
@@ -1265,15 +1266,32 @@
     const fb = frum.naturalWidth || frum.width, fh = frum.naturalHeight || frum.height;
     const sk = h.skurdur || { x: 0, y: 0, w: fb, h: fh };
     const r = hreinsa(stig1, { thykkt: val.thykkt || 0, fylla: !!val.fylla });
-    const veggir = r.thekja >= NOTHAEF_THEKJA && !h.pdfVeggir.length ? r.veggir : new Uint8Array(r.W * r.H);
-    if (h.veggir.length || h.pdfVeggir.length) {
+    // Veggir sem TurboPaint greindi (miðlína + þykkt, punktar frummyndar — „Vista í úttekt" þar) ganga fyrir:
+    // TurboPaint er vélin, þessi gluggi sýnir niðurstöðuna (Agnar 03.10.2026). Þá eru veggirnir heilir — engin
+    // „girðing" úr stökum PDF-strikum og engin sjálfvirk gríma.
+    const tp = Array.isArray(h.veggjaLinur) ? h.veggjaLinur.filter(v => v && Array.isArray(v.p) && v.p.length >= 4) : [];
+    const veggir = r.thekja >= NOTHAEF_THEKJA && !h.pdfVeggir.length && !tp.length ? r.veggir : new Uint8Array(r.W * r.H);
+    if (h.veggir.length || h.pdfVeggir.length || tp.length) {
       const c = document.createElement('canvas'); c.width = r.W; c.height = r.H;
       const x = c.getContext('2d'); x.strokeStyle = '#000'; x.lineCap = 'square'; x.lineWidth = Math.max(3, Math.round(r.W / 240));
       h.veggir.forEach(v => { x.beginPath(); x.moveTo((v[0] - sk.x) * r.kvardi, (v[1] - sk.y) * r.kvardi); x.lineTo((v[2] - sk.x) * r.kvardi, (v[3] - sk.y) * r.kvardi); x.stroke(); });
-      // Vigurveggir eru TVÆR línur með veggþykkt á milli: nógu breitt strik til að parið renni saman í einn heilan vegg.
-      x.lineWidth = Math.max(3, Math.round(r.W / 380)); x.beginPath();
-      h.pdfVeggir.forEach(v => { x.moveTo((v[0] - sk.x) * r.kvardi, (v[1] - sk.y) * r.kvardi); x.lineTo((v[2] - sk.x) * r.kvardi, (v[3] - sk.y) * r.kvardi); });
-      x.stroke();
+      if (tp.length) {
+        x.lineJoin = 'miter';
+        tp.forEach(v => {
+          x.lineWidth = Math.max(2, (Number(v.t) || 1) * r.kvardi);
+          x.beginPath();
+          for (let i = 0; i + 1 < v.p.length; i += 2) {
+            const px = (v.p[i] - sk.x) * r.kvardi, py = (v.p[i + 1] - sk.y) * r.kvardi;
+            if (i) x.lineTo(px, py); else x.moveTo(px, py);
+          }
+          x.stroke();
+        });
+      } else {
+        // Vigurveggir eru TVÆR línur með veggþykkt á milli: nógu breitt strik til að parið renni saman í einn heilan vegg.
+        x.lineWidth = Math.max(3, Math.round(r.W / 380)); x.beginPath();
+        h.pdfVeggir.forEach(v => { x.moveTo((v[0] - sk.x) * r.kvardi, (v[1] - sk.y) * r.kvardi); x.lineTo((v[2] - sk.x) * r.kvardi, (v[3] - sk.y) * r.kvardi); });
+        x.stroke();
+      }
       const d = x.getImageData(0, 0, r.W, r.H).data;
       for (let i = 0; i < r.W * r.H; i++) if (d[i * 4 + 3] > 96) veggir[i] = 1;
     }
@@ -1317,9 +1335,9 @@
         if (!stig1) { if (!h.image_url) { sleppt.push(h.nafn + ' (engin teikning)'); continue; } frum = await hladaMynd(h.image_url); stig1 = h.skurdur ? skera(frum, h.skurdur) : frum; }
         if (!document.getElementById('fp-3d')) return;
         const u = undirbua(h, stig1, h.markers, val, einingar, frum);
-        if (!u.veggjaPx) { sleppt.push(h.nafn + ' (engir veggir — lestu þá úr PDF eða dragðu með ✏)'); continue; }
+        if (!u.veggjaPx) { sleppt.push(h.nafn + ' (engir veggir — greindu þá í TurboPaint og „Vista í úttekt“, lestu úr PDF eða dragðu með ✏)'); continue; }
         ut.push(u);
-      } catch (_) { sleppt.push(h.nafn + ' (náði ekki í teikningu)'); }
+      } catch (e) { console.warn('[383] 3D: ' + h.nafn, e); sleppt.push(h.nafn + ' (náði ekki í teikningu)'); }
     }
     if (!ut.length) { loka3d(); segja('Sjálfvirk veggagreining náði ekki. ' + sleppt.join(' · ') + '.' + (hs.some(x => pdfSlod(x)) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.'); return; }
     try {

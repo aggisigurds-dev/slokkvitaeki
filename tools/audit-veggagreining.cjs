@@ -31,7 +31,8 @@ krefst(/minni && nw \* nh < iw \* ih \* 0\.94/, 'laus sjálfskurður á að geta
 krefst(/dokkt: 210, thykkt: 1, fylla: true/, 'þunnlínu-CAD endurtekning vantar');
 krefst(/hluti >= 0\.08 && hluti <= 0\.88/, 'þunnlínu-niðurstaða má aðeins vinna með heilt fótspor');
 krefst(/gera\('fp-veggir-btn', '✏ Veggir'/, '✏ Veggir takki má ekki detta út');
-krefst(/r\.thekja >= NOTHAEF_THEKJA && !h\.pdfVeggir\.length \? r\.veggir : new Uint8Array/, '3D má ekki lyfta slitrugrímunni');
+krefst(/r\.thekja >= NOTHAEF_THEKJA && !h\.pdfVeggir\.length( && !tp\.length)? \? r\.veggir : new Uint8Array/, '3D má ekki lyfta slitrugrímunni');
+krefst(/h\.veggjaLinur/, '3D á að nota veggi sem TurboPaint greindi (haedir[].veggjaLinur)');
 
 function hlaða() {
   const el = () => ({
