@@ -51,6 +51,7 @@
     var teg = t.classList.contains('ut-check') || t.classList.contains('_ars-endur-cb') || t.classList.contains('_ars-nytt-chk') || t.classList.contains('_ars-tu-toggle') || t.classList.contains('_ars-mark')
       ? 'hak'
       : (t.classList.contains('ut-chk') ? 'val' : 'svc');
+    if (typeof installEinuSinni === 'function') installEinuSinni();
     hopp.bump(teg);
   }, true);
 
@@ -96,9 +97,19 @@
     });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(install, 0); });
-  else setTimeout(install, 0);
-  setTimeout(install, 800);
+  // 03.10.2026 — install() keyrði við ræsingu (t=0 OG t=800). Mælt á Ársskoðun:
+  // 10.777 DOM-breytingar með 428 á móti 6.321 án hans, og 5.637 á grunninum frá
+  // 30.09 — pappinn TVÖFALDAÐI vinnuna við hleðslu. Vefjurnar skipta hins vegar
+  // engu fyrr en EFTIR smell á hak (skalSleppa() krefst bump innan 2,5 s), svo
+  // þær eru settar upp við fyrsta slíkan smell. Hlustarinn hér að ofan keyrir
+  // á undan og kallar install() áður en hann bumpar, svo fyrsti smellur er
+  // jafn varinn og áður.
+  var uppsett = false;
+  function installEinuSinni() { if (uppsett) return; uppsett = true; install(); }
+  document.addEventListener('click', function (e) {
+    var t = e.target && e.target.closest && e.target.closest(VEL);
+    if (t) installEinuSinni();
+  }, true);
 
   try { console.log('[428-hak-hopp] installed'); } catch (_) {}
 })();

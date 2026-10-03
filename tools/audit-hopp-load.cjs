@@ -106,7 +106,11 @@ if (!/405-efsta-rod\.js\?v=20261002smell/.test(html)) villur.push('index.html: 4
 krefst('js/db.js', /skipped:\s*true/, 'prófíll á #company má ekki sækja allar uttaeki-síður');
 krefst('js/patches/421-profill-lifandi.js', /skalSleppa/, 'hak/Yfirferð má ekki sækja öll tæki félagsins');
 krefst('js/patches/421-profill-lifandi.js', /SJALFTEIKNA\.test\(t\)/, '421 má ekki rífa prófílinn þegar Brunakerfis-/Slökkvikerfis-spjaldið vistar (hoppið í Línum reiknings 01.10)');
-if (!/428-hak-hopp\.js\?v=20261001b/.test(html)) villur.push('index.html: 428-hak-hopp.js vantar ?v=20261001b');
+// 03.10.2026: vorourinn njorvaoi EITT utgafumerki fast (?v=20261001b) og fell thvi
+// um leid og merkid var bumpad - sem ER retta adgerdin thegar skranni er breytt.
+// Krafan er ad merki SE til; audit-utgafumerki sannreynir svo ad thad se jafn nytt
+// og efnid. Vordur sem bannar bump kennir ranga reglu.
+if (!/428-hak-hopp\.js\?v=[0-9a-z]+/.test(html)) villur.push('index.html: 428-hak-hopp.js vantar utgafumerki (?v=)');
 
 if (villur.length) {
   console.log('HOPP-LOAD RAUDT — ' + villur.length + ' vantar:');
