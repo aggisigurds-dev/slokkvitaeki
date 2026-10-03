@@ -266,25 +266,35 @@
     return uti;
   }
 
-  /** Stærsta lokaða húsið. Grá lóð dettur út þó lóðarmörk umlyki hana; snið og nafnreitur eru aðrir klasar. */
+  /** Stærsta lokaða húsið. Aðeins LOKUÐ hvít herbergi telja — þunnar CAD-línur
+   * sem tengja snið við húsið mega ekki sameina allt blaðið í eitt „hús". */
   function husMaska(gra, W, H) {
-    const uti = utiMaska(gra, W, H);
-    const inni = new Uint8Array(W * H);
-    for (let i = 0; i < W * H; i++) inni[i] = uti[i] ? 0 : 1;
-    const sv = svaedi(inni, W, H);
+    const dokkt = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) dokkt[i] = gra[i] < DOKKT_HUS ? 1 : 0;
+    const veggir = dilate(erode(dokkt, W, H, 1), W, H, 1);
+    const r = Math.max(2, Math.round(Math.max(W, H) / 220));
+    const lokad = erode(dilate(veggir, W, H, r), W, H, r);
+    const uti = new Uint8Array(W * H), st = new Int32Array(W * H);
+    let top = 0;
+    const yta = p => { if (!lokad[p] && !uti[p]) { uti[p] = 1; st[top++] = p; } };
+    for (let x = 0; x < W; x++) { yta(x); yta((H - 1) * W + x); }
+    for (let y = 0; y < H; y++) { yta(y * W); yta(y * W + W - 1); }
+    while (top) {
+      const p = st[--top], px = p % W, py = (p - px) / W;
+      if (px > 0) yta(p - 1); if (px < W - 1) yta(p + 1); if (py > 0) yta(p - W); if (py < H - 1) yta(p + W);
+    }
+    const herbergi = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) {
+      if (!uti[i] && gra[i] > GRA_MAX) herbergi[i] = 1;
+    }
+    const brua = Math.max(3, Math.round(Math.max(W, H) / 120));
+    const tengt = dilate(herbergi, W, H, brua);
+    const sv = svaedi(tengt, W, H);
     let best = 0, bn = 0;
     sv.listi.forEach(s => { if (s.flat > bn) { bn = s.flat; best = s.n; } });
-    const hus0 = new Uint8Array(W * H);
-    if (!best) return hus0;
-    for (let i = 0; i < W * H; i++) {
-      if (sv.merki[i] === best && !erGraLod(gra[i])) hus0[i] = 1;
-    }
-    const sv2 = svaedi(hus0, W, H);
-    let best2 = 0, bn2 = 0;
-    sv2.listi.forEach(s => { if (s.flat > bn2) { bn2 = s.flat; best2 = s.n; } });
     const hus = new Uint8Array(W * H);
-    if (!best2) return hus;
-    for (let i = 0; i < W * H; i++) if (sv2.merki[i] === best2) hus[i] = 1;
+    if (!best) return hus;
+    for (let i = 0; i < W * H; i++) if (sv.merki[i] === best) hus[i] = 1;
     const pad = Math.max(2, Math.round(Math.max(W, H) / 200));
     return dilate(hus, W, H, pad);
   }

@@ -19,13 +19,13 @@ krefst(/gd\[i \* 4 \+ 3\] < 16\) veggir\[i\] = 0/, '3D-veggir utan húss eiga a�
 krefst(/2D sýnir ALLTAF grunnmyndina/, 'beita má ekki skipta 2D út');
 krefst(/alphaTest: 0\.05/, '3D-gólf þarf alphaTest');
 krefst(/const DOKKT_HUS = 130/, 'DOKKT_HUS=130 — grá lóð má ekki teljast veggur');
-krefst(/erGraLod/, 'grá lóð inni í lóðarmörkum á að detta út úr 3D-gólfi');
+krefst(/herbergi/, 'husMaska á að velja lokuð hvít herbergi, ekki CAD-línunet');
 krefst(/Math\.max\(W, H\) \/ 220/, 'utiMaska má ekki innsigla strikuð lóðarmörk með r=max/80');
 if (/ut = r\.strigi/.test(skra)) villur.push('2D má ekki skipta grunnmynd út fyrir r.strigi');
 if (/function hvitaGraUtan/.test(skra)) villur.push('hvitaGraUtan má ekki vera');
 if (/ut = G\.graUtan/.test(skra)) villur.push('beita má ekki sýna hvitaða grunnmynd');
-if (!/383-teikning-hreinsa-3d\.js\?v=20261002lod/.test(html)) {
-  villur.push('index.html: 383 vantar ?v=20261002lod');
+if (!/383-teikning-hreinsa-3d\.js\?v=20261002her/.test(html)) {
+  villur.push('index.html: 383 vantar ?v=20261002her');
 }
 
 function hlaða() {
@@ -93,6 +93,7 @@ try {
   }
   veggir(gra, W, H, 250, 160, 550, 440, 40, 6);
   veggir(gra, W, H, 20, 20, 140, 200, 30, 4);
+  for (let x = 140; x <= 250; x++) gra[300 * W + x] = 40;
 
   const hus = T.husMaska(gra, W, H);
   if (!hus[300 * W + 400]) villur.push('stofa inni í húsi átti að haldast');
