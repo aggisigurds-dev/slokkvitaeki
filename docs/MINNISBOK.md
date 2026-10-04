@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-10-04 21:41 · 702 virkar staðreyndir
+Sótt 2026-10-04 22:55 · 704 virkar staðreyndir
 
 ---
 
@@ -84,8 +84,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [skjol](#skjol) | 32 |
 | [sweep](#sweep) | 31 |
 | [taeki](#taeki) | 25 |
+| [teikningar](#teikningar) | 24 |
 | [solur](#solur) | 24 |
-| [teikningar](#teikningar) | 22 |
 | [brunaholf](#brunaholf) | 21 |
 | [villuleit](#villuleit) | 18 |
 | [thjonustulisti](#thjonustulisti) | 18 |
@@ -445,6 +445,70 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Má henda og generata upp á nýtt per stað svo það stemmi við síðustu skoðun.
   <br><sub>2026-08-07 · brunaholf · agnar · chat</sub>
 
+### teikningar
+
+- **EI-merki á SKÖNNUÐUM teikningum — mælt 04.10.2026 (E:/pascal-profun: ocr-tilraun.cjs, ocr-flis.cjs, pdf-flis.mjs): í 6006 px myndinni sem teikningaglugginn notar er textinn ~12 px hár og Tesseract les „EI-60" sem „ElL80"/„El.80" — ónothæft, líka stækkað 3×. Í FRUMSKÖNNUNINNI (Álfaborg: PDF með einni innfelldri mynd, 13216 × 9454 px, 400 dpi — sótt með pdf.js page.objs.get án þess að teikna síðuna) les Tesseract „EI-60" og „R60" rétt, EN aðeins eftir að langar línur (dökk hlaup ≥70 px, lárétt og lóðrétt) eru hvítaðar — veggjalína sem liggur við textann eyðir honum annars. Myndlesarinn í 434 (TeiknEi.lesaUrMynd, sniðmátasamanburður) finnur 0 merki á Álfaborg og Fiskislóð. Næsta skref: full gæði + flísar + línur burt + Tesseract í 0°/90°/270°, aðeins nálægt veggjum; niðurstaðan vistuð í haedir[].eiHintar svo þetta sé gert einu sinni. TurboPaint á þegar Tesseract (detect-firewalls.ts) en vistar eldveggi ekki í úttektina.**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikning 3D (383, commit f95e6973, 04.10.2026 kl. 22:50) — fimm viðbætur eftir ábendingar Agnars í símanum: (1) ÚTVEGGIR: sían sem fellir dót utan húss (golfMedUti) felldi útveggina sjálfa því flóðfyllingin nær inn í vegginn; nú fellur veggur aðeins ef ekkert er INNI ≈0,5 m til hliðar við hann (Álfaborg: 15 veggir féllu ranglega → 0). (2) ELDVEGGIR (merkjaEldveggi): EI-60/EI-30 merki litar allan vegginn út í enda línunnar, í gegnum hurðargöt; EI-CS eru hurðir og lita ekkert; merkin koma úr h.eiHintar eða textalagi vigur-PDF við opnun 3D (aðeins í minni; 2D sýnir þau ekki). Fiskislóð: 27 merki → 21 af 48 veggjum rauður. (3) husklasi: aðeins veggjanetið sem hangir saman er húsið — nafnreitur og lóðartákn falla (Arnarhvoll 30 → 0); álmur (drjúgur klasi ≤4 m frá) haldast. (4) hurdagot — regla Agnars „allir veggirnir tengjast, hvort það sé gluggi eða hurð": stutt bil (≤2,75 m) sem er ekki gler fær dyrakarm; laus veggendi tengist veggnum beint fram undan. (5) tengdirVeggir: stakur stuttur veggur úti á gólfi (snertir ekkert, engin hurð/gluggi) fellur. undirbua() skráir talningu hvers skrefs í console.info „[383] 3D <hæð>: {…}" — notaðu hana við villuleit. Vörðurinn audit-teikning-3d.cjs keyrir tíu reglur á tilbúnum gögnum.**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikning 3D á SKÖNNUNUM (383, commit 746c1eb2, 04.10.2026 kvöld) — leysir af hólmi lið (a) í fyrri færslu um það sem vantaði. Skönnunarleið undirbua() er nú fjögur skref: (1) þykkir fylltir veggir úr grímunni (heilirUrGrimu), (2) linubond — útveggur teiknaður sem 3–4 örþunnar línur þétt saman rennur í gráan borða í vinnuupplausn: vægur þröskuldur (215) + opnun r=1 + borðar ≥3,5 díla breiðir og ≥2 m, (3) holirVeggir — hvíta bilið milli tveggja mjórra lína lesið sem borði; greiður (stigar) og stutt stök pör (hurðarblöð) falla, (4) lengjaVeggi — Agnar: „Veggirnir stoppa oft á miðri leið. Eins og með EI-60 og EI-30 veggi, þá ná þeir alla línuna þar til hún endar á annarri eða endar": línunni fylgt á myndinni frá hvorum enda yfir stutt rof, stoppar við hurðargat eða annan vegg. Mælt: Álfaborg 1. hæð 31 → 88 veggir (458 m, allur hægri útveggurinn kominn); Miðgarður 2. hæð 109 → 184 veggir (849 m). LÆRDÓMUR: hærri upplausn ein bætti litlu við (2200 → 4236 px: 410 → 422 m) — vandinn var að ÞEKKJA veggjagerðina, ekki skerpan. Enn ógert: EI-60/EI-30 merkin sem lita veggi í 3D (Agnar stakk upp á; snúa á alla vegu, þurfa textalestur — h.eiHintar og TurboPaint detect-firewalls.ts eru til), gluggar í holum/bandveggjum verða heill veggur, vegghæð er hlutfall en ekki raunhæð.**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikning 3D — hvað VANTAR ENN (04.10.2026): (a) þunnir HOLIR veggir í skönnunum (tvær mjóar línur — efri álma Miðgarðs, Skútuvogur 4, Norðurhella) finnast ekki: lokun grímunnar (fylla) tekur líka áslínur, málsetningu og skástrikun (prófað á Fiskislóð: 545 „veggir", ónothæft) — þarf holveggjagreiningu eins og TurboPaint lib/board/veggir.ts; (b) veggir í þunna línuflokknum (0,24 pt) á vigur-PDF sem liggja ekki í veggjalínu — pörun þess flokks gefur stiga, húsgögn og textakassa með (thunnir.mjs); (c) 2. hæð Fiskislóðar (1612) notar sama blað og 1. hæð; (d) vegghæð er hlutfall af stærð hússins, ekki raunhæð. Almennir rasta→vigur breytar (vtracer o.fl.) leysa þetta EKKI: þeir rekja útlínur bleks en vita ekki hvað er veggur; vandinn er flokkun, ekki rakning. Pascal Editor (pascalorg/editor, MIT, WebGPU) var prófað sem sýn á sömu veggi (E:/pascal-profun) — fallegri skuggar, en gögnin skiptu mestu; ekki tekið inn í appið.**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikning 3D (383), 04.10.2026 (commit 7735def4): „girðingin" í 3D kom úr GÖGNUNUM, ekki teiknaranum — CAD teiknar vegg sem tvær samsíða línur með endastrikum og 3D málaði strikin í grímu sem var lyft í ~420 reita rist. Nú þrjár reiknireglur, allar hrein gagnavinnsla í 383 og prófaðar í tools/audit-teikning-3d.cjs: (1) heilirVeggir — PDF-strik pöruð í veggi (miðlína + þykkt, sama aðferð og TurboPaint pdf-veggir.ts), samlínu bútar sameinaðir yfir ≤18 pt bil (súlur; hurðargöt haldast), endar smelltir á þverveggi; (2) veggirUrGrimu — skönnun: veggjagríman lesin sem langir jafnþykkir borðar (hlaupalengdir → stefna → þversnið í hverjum dálki → Douglas–Peucker), skáveggir verða einn leggur, klessur ekki veggir; (3) glerIBilum — bil milli veggbúta á sömu línu er gler ef myndin sýnir ≥2 samsíða línur þar (autt hurðargat og stök áslína ekki). Mælt: Fiskislóð 41 777 strik → 48 veggir, 245 m, hús 32,9 × 41,2 m (A1, 1:100), 11 glerfletir; Miðgarður 1. hæð (skönnuð TIF) 106 veggir, 6 hæðir í 3D á 25 s. Sýnin: ljós grunnur, skuggar, miðar í skjástærð með tegund þegar raðnúmer er TMP-, „Gegnsætt", hæðatakkar (smellur = sú hæð ein). Gamla ristarleiðin er varaleið.**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikningaglugginn (383): 'Skýrari veggir' og skurður geymast á þjóninum (teikning_bord.haedir[].syn) og vistast sjálfkrafa; '📌 Festa útlit' (syn.fest) stöðvar alla sjálfvirka greiningu svo teikningin opnast alltaf eins. Veggjatalning og EI-merki falin — greining býr í TurboPaint, sem hefur nú hama (Teikning/Slökkvitæki/Brunaþéttingar/Brunakerfi/Rými). Agnar 03.10.2026.**
+  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **TurboPaint er vinnuvélin (greining, veggir, 3D), Slökkvitæki-teikningaglugginn (383) er stíluð sýn fyrir þjónustuna sem les niðurstöðurnar. Veggir fara á milli í teikning_bord.haedir[].veggjaLinur [{p:[x,y,…],t}] í punktum frummyndar — TurboPaint 'Vista í úttekt' skrifar, 383 3D les (Agnar 03.10.2026).**
+  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikningar (Agnar 03.10.2026): EI-60/EI-30 merki heldur áfram í gegnum T-mót (þverveggur sem kemur á), held ég í öllum tilvikum. Það stoppar aðeins þar sem veggjalínan sjálf endar.**
+  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikningar (Agnar 03.10.2026): EI-60 / EI-30 merki gildir um ALLAN vegginn sem það stendur á — alla leið út í enda línunnar (þar sem veggurinn endar), ekki bara blettinn við textann. Merkið er upplýsing um þann vegg. Veggjagreining á að fylgja línunni frá merkinu í báðar áttir þar til hún endar og merkja allan bútinn.**
+  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikningar (Agnar 03.10.2026): SLT á uppdrætti = þar á að setja slökkvitæki. BRSL + spírall = brunaslanga/slöngukefli. BRSL SLT saman = brunaslanga OG slökkvitæki á þeim stað. EI-60 / EICS-30 / AREIM-120 meðfram veggjum (í hvaða stefnu sem er) = brunahólfandi veggir. rafm. tafla = rafmagnstafla.**
+  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Fölgráar CAD-línur á FotoWeb-JPEG grunnmyndum (t.d. Fiskislóð #1612) dökknar með CSS brightness(0.82) contrast(1.55) á #fp-canvas. contrast-fyrst gerir ljósa veggi enn ljósari. Stimplar á síma ≥32 CSS px. Full gæði (pdf.js) má teikna innvortis án gæða-hnapps. 436-teikning-sja. Engir EI-stimplar, engir nýir hamrar.**
+  <br>Agnar 02.10.2026: very haaard to see. Tækjadráttur óbreyttur frá e9c347f. Extra power í TurboPaint.
+  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
+- **Stimplar á FloorPlan (Rafmagnstafla, Skilti slökkvitæki, Skilti brunaslanga, Neyðarútgangur, Út, Slöngumerki) eru merki kind=sign, ekki uttaeki-raðir. Tákn valin í Stillingum (teikning_takn / patch 434).**
+  <br>Patch 433 STIMPLAR + 434 TeiknTakn. Geymsla teikning_bord.haedir[].markers. Agnar 02.10.2026.
+  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
+- **EI-30 og EI-60 á teikningu eru veggja-ÁBENDINGAR (overlay-miðar), ekki eldveggir. Lesið úr PDF-texta í hvaða snúningi sem er (0/90/180/270 og meðfram vegg). AREIM/90/120 hunsað.**
+  <br>TeiknEi í 434; 383 teiknar hintana. Agnar 02.10.2026: ekki stimpla fire walls.
+  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
+- **Sjálfvirk veggagreining á raster-grunnmynd (engin vigur, þunnar línur, stórt hvítt blað) gaf 1,0% veggi og slitrótta viðvörun. 383 mælir nú þekju eftir blekRammi-spássíuskurð og reynir þunnlínu-CAD aðeins með heilt fótspor; undir 4% er upprunalega sýnd og 3D þykist ekki. Viðvörun er ein íslensk lína; Veggir er varaleið.**
+  <br>Álfaborg #661 02.10.2026: eftir lagfæringu 6,2–6,3% veggir, hæðir 5+2 og tækjaræma óbreytt. Handvalinn skurður ósnertur.
+  <br><sub>2026-10-02 · slokkvitaeki · kóði · claude-code</sub>
+- **02.10.2026: Agnar sá EKKI 1. hæð / Skýrari veggir / 3D á LIVE FloorPlan #company/1612 eftir cab96432. Rót: 383 endurfestaEfNyttFelag lyklaði aðeins á companyId, en FloorPlan.open rífur #modal-floorplan alltaf. Lagað 1626d51: _festModal + vaktGlugga + haus width:auto. Sannað live 1612 og 388. Aldrei node deploy.js. Aldrei DELETE document_pairs.**
+  <br><sub>2026-10-02 · slokkvitaeki · claude-code · claude-code</sub>
+- **Kjarni skilar Kópavogi, Garðabæ og Hafnarfirði aðeins djúptengli á map.is, ekki blöðunum. Listinn er queryTeiknigrunn beint (slug kopavogur, gardabaer, hafnarfjordur), eins og Seltjarnarnes.**
+  <br>PDF-hýsar: gagnasja.kopavogur.is, teikningar.gardabaer.is, teikningar.hafnarfjordur.is. heitinumer=0 skilar „Engar niðurstöður“. Séruppdráttur flokkast áfram með aðaluppdráttum; Burðarvirki með burðarþoli. Tómt safn fær mapisBeint og er ekki sótt aftur. Tímaþrot fær ekki mapisBeint.
+  <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
+- **Póstnúmer 170 er Seltjarnarnes, SVFNR 1100, ekki FotoWeb Reykjavíkur. Teikningarnar koma beint úr map.is queryTeiknigrunn og PDF-in liggja á luks.seltjarnarnes.is. Kjarni þekkir ekki 1100.**
+  <br>Fyrirtæki 388, Tjarnarból 2, landnúmer 117672, heitinúmer 1024962: 27 teikningar (aðaluppdrættir, raflagnir, lagnir, burðarþol). Prófíll sýnir bupp_skrar_v2 úr localStorage án nýs kalls. Vanti svarið sækir opinn prófíll hus-upplysingar einu sinni fyrir þetta heimilisfang. Hlaða dreifir ekki kallinu.
+  <br><sub>2026-10-01 · slokkvitaeki · kodi · cursor</sub>
+- **Teikningasvar hus-upplysingar hefur aðeins tillogur.hædir, kjallari, jarðhæð og ris úr grunnmyndum. Herbergi, fermetrar, byggingarár og byggingarefni eru ekki í því svari né í opnu WFS Staðfangaskrár.**
+  <br>Fasteignaskrá SOAP (GetFasteign/FindStadfang) þarfnast billing companyId og userId. api.hms.is svarar 403 án áskriftar. Opnun prófíls les hus_upplysingar_cache; takkinn Sækja fasteignaupplýsingar sækir einu sinni þegar röð vantar.
+  <br><sub>2026-10-01 · slokkvitaeki · kóði · cursor</sub>
+- **Heitinúmerið sem map.is þarf er Heinum-reiturinn í Landeignaskrár-leitinni (geo.fasteignaskra.is/landeignaskra/search?term=) — kemur með landnúmerinu, engin auka-uppfletting.**
+  <br>Sama gildir um Staðfangaskrár-WFS (HEINUM). TurboPaint-leitin skilar nú landnr + heitinr + svf með hverri eign.
+  <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
+- **Teikningasöfn Hafnarfjarðar (svf 1400), Garðabæjar (1300) og Kópavogs (1000) eru öll sami map.is-hlutinn „Teikningar af byggingum": GET https://www.map.is/webservice/queryTeiknigrunn.php?landnumer=&svfnr=&heitinumer=&t=<token> skilar JSON-lista með beinum PDF-slóðum.**
+  <br>Þarf PHP-setu (cookies PHPSESSID + TS…) OG config.t-lykil sem hvaða kortasjár-síða map.is sem er gefur út (t.d. https://www.map.is/hafnarfjordur/); ein seta dugar öllum þremur bæjum. heitinumer=0 gefur „Engar niðurstöður". Raðir: lysing, dagsetning, hofundur_nafn, tegund, gerd, status (null/F/Ó = úr
+  <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
+- **Fjöldi íbúða, stigaganga og herbergja í húsi er EKKI opinber: api.hms.is/ords svarar 403 (áskrift) og hms.is er læst á bak við Vercel-botvörn (429). Þeir reitir á fyrirtækjabannernum eru handvirkir áfram.**
+  <br>Kannað 14.09.2026 þegar húsupplýsingar úr skrám voru settar á bannerinn (patch 363 v3). Það sem ER opið: hæðir/kjallari/jarðhæð/ris úr grunnmyndum teikningasafnanna.
+  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
+- **Eitt landnúmer getur átt mörg hús: L 199350 (Höfðatorg) ber Bríetartún 9-11, Katrínartún 2 (19 hæða turn) og Borgartún 8-16A — hæðatillögur út frá teikningum lóðar má aldrei taka án þess að sía á húsið.**
+  <br>FotoWeb Reykjavíkur merkir hverja teikningu heimilisfangi (gata-reitur), oft SÖGULEGU lóðarheiti („Borgartún 8-16A"); teikningar merktar „Bríetartún" eru engar → hus-upplysingar gefur engar tillögur fyrir Bríetartún 9 (aðeins tengil), í stað þess að segja 19 hæðir. map.is-söfnin merkja ekki götu — þ
+  <br><sub>2026-09-14 · kerfi · sql · claude-code</sub>
+- **Staðfangaskrá HMS er opin sem WFS: https://geo.fasteignaskra.is/ws/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typename=fasteignaskra:VSTADF_ALLT&outputFormat=application/json&CQL_FILTER=… — nákvæm uppfletting á götu+húsnúmeri, engir CORS-hausar (aðeins af þjóni).**
+  <br>Reitir: HEITI_NF (nefnifall) og HEITI_TGF (þágufall — „Dalshrauni" finnst), HUSNR, BOKST, POSTNR, LANDNR, HEINUM, SVFNR (0000 = Reykjavík, 1000 Kópavogur, 1300 Garðabær, 1400 Hafnarfjörður), VEF_BIRTING, HUSMERKING. Gildrur: bil eins og „Bríetartún 9-11" er skráð undir fyrra númerinu; „Borgartún 12"
+  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
+- **Landnúmer → aðaluppdrættir: skjalasafn.reykjavik.is/fotoweb/archives/5000-Aðaluppdrættir/?q=LANDNUMER opnar teikningar eignarinnar. Landeignaskrá-síða eignarinnar er geo.fasteignaskra.is/landeignaskra/LANDNUMER. Hvorugt má setja í iframe.**
+  <br>Tvívirki leitarhnappurinn (patch 325, window.Landnr) sameinar skrefin tvö: Landnr.mount(el) setur hann hvar sem er, Landnr.open() opnar fljótandi. Situr sjálfkrafa á Sölu; TurboPaint þarf bara Landnr.mount(...).
+  <br><sub>2026-08-28 · kerfi · patch 325 + netlify/functions/landnr.js, commit f9dfac8 · claude-code</sub>
+
 ### solur
 
 - **CO₂-áfyllingar fyrir fólk án kennitölu eru skráðar sem drög með „greitt síðar" og kt 999999-9999 og greiðast yfirleitt með korti við afhendingu (dæmi: Ármann R-000953). audit-solu-id verður rauður á meðan þær bíða; mál #1076 (R-000972) og #1077 (R-000957) spyrja Agnar 21.09.2026 hvort vörðurinn eigi að undanskilja slík drög.**
@@ -511,66 +575,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Sala birtist ekki í kröfuyfirliti nema greitt_med, customer_base_id, upphaed_an_vsk OG vsk_upphaed séu öll sett**
   <br>greitt_med='reikningur'. POS-leiðin setur þetta sjálfkrafa, bein SQL-innsetning ekki. Algengasta orsök "salan er til en sést hvergi".
   <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
-
-### teikningar
-
-- **Teikning 3D á SKÖNNUNUM (383, commit 746c1eb2, 04.10.2026 kvöld) — leysir af hólmi lið (a) í fyrri færslu um það sem vantaði. Skönnunarleið undirbua() er nú fjögur skref: (1) þykkir fylltir veggir úr grímunni (heilirUrGrimu), (2) linubond — útveggur teiknaður sem 3–4 örþunnar línur þétt saman rennur í gráan borða í vinnuupplausn: vægur þröskuldur (215) + opnun r=1 + borðar ≥3,5 díla breiðir og ≥2 m, (3) holirVeggir — hvíta bilið milli tveggja mjórra lína lesið sem borði; greiður (stigar) og stutt stök pör (hurðarblöð) falla, (4) lengjaVeggi — Agnar: „Veggirnir stoppa oft á miðri leið. Eins og með EI-60 og EI-30 veggi, þá ná þeir alla línuna þar til hún endar á annarri eða endar": línunni fylgt á myndinni frá hvorum enda yfir stutt rof, stoppar við hurðargat eða annan vegg. Mælt: Álfaborg 1. hæð 31 → 88 veggir (458 m, allur hægri útveggurinn kominn); Miðgarður 2. hæð 109 → 184 veggir (849 m). LÆRDÓMUR: hærri upplausn ein bætti litlu við (2200 → 4236 px: 410 → 422 m) — vandinn var að ÞEKKJA veggjagerðina, ekki skerpan. Enn ógert: EI-60/EI-30 merkin sem lita veggi í 3D (Agnar stakk upp á; snúa á alla vegu, þurfa textalestur — h.eiHintar og TurboPaint detect-firewalls.ts eru til), gluggar í holum/bandveggjum verða heill veggur, vegghæð er hlutfall en ekki raunhæð.**
-  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikning 3D — hvað VANTAR ENN (04.10.2026): (a) þunnir HOLIR veggir í skönnunum (tvær mjóar línur — efri álma Miðgarðs, Skútuvogur 4, Norðurhella) finnast ekki: lokun grímunnar (fylla) tekur líka áslínur, málsetningu og skástrikun (prófað á Fiskislóð: 545 „veggir", ónothæft) — þarf holveggjagreiningu eins og TurboPaint lib/board/veggir.ts; (b) veggir í þunna línuflokknum (0,24 pt) á vigur-PDF sem liggja ekki í veggjalínu — pörun þess flokks gefur stiga, húsgögn og textakassa með (thunnir.mjs); (c) 2. hæð Fiskislóðar (1612) notar sama blað og 1. hæð; (d) vegghæð er hlutfall af stærð hússins, ekki raunhæð. Almennir rasta→vigur breytar (vtracer o.fl.) leysa þetta EKKI: þeir rekja útlínur bleks en vita ekki hvað er veggur; vandinn er flokkun, ekki rakning. Pascal Editor (pascalorg/editor, MIT, WebGPU) var prófað sem sýn á sömu veggi (E:/pascal-profun) — fallegri skuggar, en gögnin skiptu mestu; ekki tekið inn í appið.**
-  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikning 3D (383), 04.10.2026 (commit 7735def4): „girðingin" í 3D kom úr GÖGNUNUM, ekki teiknaranum — CAD teiknar vegg sem tvær samsíða línur með endastrikum og 3D málaði strikin í grímu sem var lyft í ~420 reita rist. Nú þrjár reiknireglur, allar hrein gagnavinnsla í 383 og prófaðar í tools/audit-teikning-3d.cjs: (1) heilirVeggir — PDF-strik pöruð í veggi (miðlína + þykkt, sama aðferð og TurboPaint pdf-veggir.ts), samlínu bútar sameinaðir yfir ≤18 pt bil (súlur; hurðargöt haldast), endar smelltir á þverveggi; (2) veggirUrGrimu — skönnun: veggjagríman lesin sem langir jafnþykkir borðar (hlaupalengdir → stefna → þversnið í hverjum dálki → Douglas–Peucker), skáveggir verða einn leggur, klessur ekki veggir; (3) glerIBilum — bil milli veggbúta á sömu línu er gler ef myndin sýnir ≥2 samsíða línur þar (autt hurðargat og stök áslína ekki). Mælt: Fiskislóð 41 777 strik → 48 veggir, 245 m, hús 32,9 × 41,2 m (A1, 1:100), 11 glerfletir; Miðgarður 1. hæð (skönnuð TIF) 106 veggir, 6 hæðir í 3D á 25 s. Sýnin: ljós grunnur, skuggar, miðar í skjástærð með tegund þegar raðnúmer er TMP-, „Gegnsætt", hæðatakkar (smellur = sú hæð ein). Gamla ristarleiðin er varaleið.**
-  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikningaglugginn (383): 'Skýrari veggir' og skurður geymast á þjóninum (teikning_bord.haedir[].syn) og vistast sjálfkrafa; '📌 Festa útlit' (syn.fest) stöðvar alla sjálfvirka greiningu svo teikningin opnast alltaf eins. Veggjatalning og EI-merki falin — greining býr í TurboPaint, sem hefur nú hama (Teikning/Slökkvitæki/Brunaþéttingar/Brunakerfi/Rými). Agnar 03.10.2026.**
-  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **TurboPaint er vinnuvélin (greining, veggir, 3D), Slökkvitæki-teikningaglugginn (383) er stíluð sýn fyrir þjónustuna sem les niðurstöðurnar. Veggir fara á milli í teikning_bord.haedir[].veggjaLinur [{p:[x,y,…],t}] í punktum frummyndar — TurboPaint 'Vista í úttekt' skrifar, 383 3D les (Agnar 03.10.2026).**
-  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikningar (Agnar 03.10.2026): EI-60/EI-30 merki heldur áfram í gegnum T-mót (þverveggur sem kemur á), held ég í öllum tilvikum. Það stoppar aðeins þar sem veggjalínan sjálf endar.**
-  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikningar (Agnar 03.10.2026): EI-60 / EI-30 merki gildir um ALLAN vegginn sem það stendur á — alla leið út í enda línunnar (þar sem veggurinn endar), ekki bara blettinn við textann. Merkið er upplýsing um þann vegg. Veggjagreining á að fylgja línunni frá merkinu í báðar áttir þar til hún endar og merkja allan bútinn.**
-  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikningar (Agnar 03.10.2026): SLT á uppdrætti = þar á að setja slökkvitæki. BRSL + spírall = brunaslanga/slöngukefli. BRSL SLT saman = brunaslanga OG slökkvitæki á þeim stað. EI-60 / EICS-30 / AREIM-120 meðfram veggjum (í hvaða stefnu sem er) = brunahólfandi veggir. rafm. tafla = rafmagnstafla.**
-  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Fölgráar CAD-línur á FotoWeb-JPEG grunnmyndum (t.d. Fiskislóð #1612) dökknar með CSS brightness(0.82) contrast(1.55) á #fp-canvas. contrast-fyrst gerir ljósa veggi enn ljósari. Stimplar á síma ≥32 CSS px. Full gæði (pdf.js) má teikna innvortis án gæða-hnapps. 436-teikning-sja. Engir EI-stimplar, engir nýir hamrar.**
-  <br>Agnar 02.10.2026: very haaard to see. Tækjadráttur óbreyttur frá e9c347f. Extra power í TurboPaint.
-  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
-- **Stimplar á FloorPlan (Rafmagnstafla, Skilti slökkvitæki, Skilti brunaslanga, Neyðarútgangur, Út, Slöngumerki) eru merki kind=sign, ekki uttaeki-raðir. Tákn valin í Stillingum (teikning_takn / patch 434).**
-  <br>Patch 433 STIMPLAR + 434 TeiknTakn. Geymsla teikning_bord.haedir[].markers. Agnar 02.10.2026.
-  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
-- **EI-30 og EI-60 á teikningu eru veggja-ÁBENDINGAR (overlay-miðar), ekki eldveggir. Lesið úr PDF-texta í hvaða snúningi sem er (0/90/180/270 og meðfram vegg). AREIM/90/120 hunsað.**
-  <br>TeiknEi í 434; 383 teiknar hintana. Agnar 02.10.2026: ekki stimpla fire walls.
-  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
-- **Sjálfvirk veggagreining á raster-grunnmynd (engin vigur, þunnar línur, stórt hvítt blað) gaf 1,0% veggi og slitrótta viðvörun. 383 mælir nú þekju eftir blekRammi-spássíuskurð og reynir þunnlínu-CAD aðeins með heilt fótspor; undir 4% er upprunalega sýnd og 3D þykist ekki. Viðvörun er ein íslensk lína; Veggir er varaleið.**
-  <br>Álfaborg #661 02.10.2026: eftir lagfæringu 6,2–6,3% veggir, hæðir 5+2 og tækjaræma óbreytt. Handvalinn skurður ósnertur.
-  <br><sub>2026-10-02 · slokkvitaeki · kóði · claude-code</sub>
-- **02.10.2026: Agnar sá EKKI 1. hæð / Skýrari veggir / 3D á LIVE FloorPlan #company/1612 eftir cab96432. Rót: 383 endurfestaEfNyttFelag lyklaði aðeins á companyId, en FloorPlan.open rífur #modal-floorplan alltaf. Lagað 1626d51: _festModal + vaktGlugga + haus width:auto. Sannað live 1612 og 388. Aldrei node deploy.js. Aldrei DELETE document_pairs.**
-  <br><sub>2026-10-02 · slokkvitaeki · claude-code · claude-code</sub>
-- **Kjarni skilar Kópavogi, Garðabæ og Hafnarfirði aðeins djúptengli á map.is, ekki blöðunum. Listinn er queryTeiknigrunn beint (slug kopavogur, gardabaer, hafnarfjordur), eins og Seltjarnarnes.**
-  <br>PDF-hýsar: gagnasja.kopavogur.is, teikningar.gardabaer.is, teikningar.hafnarfjordur.is. heitinumer=0 skilar „Engar niðurstöður“. Séruppdráttur flokkast áfram með aðaluppdráttum; Burðarvirki með burðarþoli. Tómt safn fær mapisBeint og er ekki sótt aftur. Tímaþrot fær ekki mapisBeint.
-  <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
-- **Póstnúmer 170 er Seltjarnarnes, SVFNR 1100, ekki FotoWeb Reykjavíkur. Teikningarnar koma beint úr map.is queryTeiknigrunn og PDF-in liggja á luks.seltjarnarnes.is. Kjarni þekkir ekki 1100.**
-  <br>Fyrirtæki 388, Tjarnarból 2, landnúmer 117672, heitinúmer 1024962: 27 teikningar (aðaluppdrættir, raflagnir, lagnir, burðarþol). Prófíll sýnir bupp_skrar_v2 úr localStorage án nýs kalls. Vanti svarið sækir opinn prófíll hus-upplysingar einu sinni fyrir þetta heimilisfang. Hlaða dreifir ekki kallinu.
-  <br><sub>2026-10-01 · slokkvitaeki · kodi · cursor</sub>
-- **Teikningasvar hus-upplysingar hefur aðeins tillogur.hædir, kjallari, jarðhæð og ris úr grunnmyndum. Herbergi, fermetrar, byggingarár og byggingarefni eru ekki í því svari né í opnu WFS Staðfangaskrár.**
-  <br>Fasteignaskrá SOAP (GetFasteign/FindStadfang) þarfnast billing companyId og userId. api.hms.is svarar 403 án áskriftar. Opnun prófíls les hus_upplysingar_cache; takkinn Sækja fasteignaupplýsingar sækir einu sinni þegar röð vantar.
-  <br><sub>2026-10-01 · slokkvitaeki · kóði · cursor</sub>
-- **Heitinúmerið sem map.is þarf er Heinum-reiturinn í Landeignaskrár-leitinni (geo.fasteignaskra.is/landeignaskra/search?term=) — kemur með landnúmerinu, engin auka-uppfletting.**
-  <br>Sama gildir um Staðfangaskrár-WFS (HEINUM). TurboPaint-leitin skilar nú landnr + heitinr + svf með hverri eign.
-  <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
-- **Teikningasöfn Hafnarfjarðar (svf 1400), Garðabæjar (1300) og Kópavogs (1000) eru öll sami map.is-hlutinn „Teikningar af byggingum": GET https://www.map.is/webservice/queryTeiknigrunn.php?landnumer=&svfnr=&heitinumer=&t=<token> skilar JSON-lista með beinum PDF-slóðum.**
-  <br>Þarf PHP-setu (cookies PHPSESSID + TS…) OG config.t-lykil sem hvaða kortasjár-síða map.is sem er gefur út (t.d. https://www.map.is/hafnarfjordur/); ein seta dugar öllum þremur bæjum. heitinumer=0 gefur „Engar niðurstöður". Raðir: lysing, dagsetning, hofundur_nafn, tegund, gerd, status (null/F/Ó = úr
-  <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
-- **Staðfangaskrá HMS er opin sem WFS: https://geo.fasteignaskra.is/ws/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typename=fasteignaskra:VSTADF_ALLT&outputFormat=application/json&CQL_FILTER=… — nákvæm uppfletting á götu+húsnúmeri, engir CORS-hausar (aðeins af þjóni).**
-  <br>Reitir: HEITI_NF (nefnifall) og HEITI_TGF (þágufall — „Dalshrauni" finnst), HUSNR, BOKST, POSTNR, LANDNR, HEINUM, SVFNR (0000 = Reykjavík, 1000 Kópavogur, 1300 Garðabær, 1400 Hafnarfjörður), VEF_BIRTING, HUSMERKING. Gildrur: bil eins og „Bríetartún 9-11" er skráð undir fyrra númerinu; „Borgartún 12"
-  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
-- **Eitt landnúmer getur átt mörg hús: L 199350 (Höfðatorg) ber Bríetartún 9-11, Katrínartún 2 (19 hæða turn) og Borgartún 8-16A — hæðatillögur út frá teikningum lóðar má aldrei taka án þess að sía á húsið.**
-  <br>FotoWeb Reykjavíkur merkir hverja teikningu heimilisfangi (gata-reitur), oft SÖGULEGU lóðarheiti („Borgartún 8-16A"); teikningar merktar „Bríetartún" eru engar → hus-upplysingar gefur engar tillögur fyrir Bríetartún 9 (aðeins tengil), í stað þess að segja 19 hæðir. map.is-söfnin merkja ekki götu — þ
-  <br><sub>2026-09-14 · kerfi · sql · claude-code</sub>
-- **Fjöldi íbúða, stigaganga og herbergja í húsi er EKKI opinber: api.hms.is/ords svarar 403 (áskrift) og hms.is er læst á bak við Vercel-botvörn (429). Þeir reitir á fyrirtækjabannernum eru handvirkir áfram.**
-  <br>Kannað 14.09.2026 þegar húsupplýsingar úr skrám voru settar á bannerinn (patch 363 v3). Það sem ER opið: hæðir/kjallari/jarðhæð/ris úr grunnmyndum teikningasafnanna.
-  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
-- **Landnúmer → aðaluppdrættir: skjalasafn.reykjavik.is/fotoweb/archives/5000-Aðaluppdrættir/?q=LANDNUMER opnar teikningar eignarinnar. Landeignaskrá-síða eignarinnar er geo.fasteignaskra.is/landeignaskra/LANDNUMER. Hvorugt má setja í iframe.**
-  <br>Tvívirki leitarhnappurinn (patch 325, window.Landnr) sameinar skrefin tvö: Landnr.mount(el) setur hann hvar sem er, Landnr.open() opnar fljótandi. Situr sjálfkrafa á Sölu; TurboPaint þarf bara Landnr.mount(...).
-  <br><sub>2026-08-28 · kerfi · patch 325 + netlify/functions/landnr.js, commit f9dfac8 · claude-code</sub>
 
 ### brunaholf
 
@@ -1123,15 +1127,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **BLAÐIÐ RÆÐUR ALLTAF — líka þegar kerfið segir hærri tölu og þegar kerfið þekkir ekki tækið sem stendur á blaðinu. Það á ekki að spyrja um þetta framar**
   <br>Agnar 10.09.2026, spurður fjórum sinnum í röð hvor heimildin réði: „alltaf ad fara eftir vinnubladi." Beitt strax: Ölfusborgir rukkast 37 léttvatnstæki þótt kerfið eigi 41; Endurskoðun rukkast 3 slöngur + 3 léttvatn þótt kerfið eigi 2 tæki og enga slöngu. Umframtæki í kerfinu á að eyða, vantandi tæk
   <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
-- **Takkinn „📄 Búa til úttektarskýrslu" EYÐILEGGUR skráðar skoðunardagsetningar — hann keyrir advanceInspectionDates sem setur last_insp = Í DAG og next_insp ár fram á ÖLL tæki fyrirtækisins**
-  <br>Patch 129, wire á #_ctc-skyrsla. Hagstál 10.09.2026: hefði breytt 20.08.2026 → 10.09.2026 og 20.08.2027 → 2028, og eyðilagt ágúst-skoðunina sem var verið að skrá. Sama mynstur og „Merkja skoðun" (00-legacy). Sé skoðunin í öðrum mánuði en í dag: EKKI nota takkann.
-  <br><sub>2026-09-10 · slokkvitaeki · kóði · claude-code</sub>
 - **Blað 5 („Sumarbústaðir", 37 númeruð léttvatnstæki, „Hús 5-6-7-8-9" og „Hús 28-30-31-33") er Sameignarfélag Ölfusborga**
   <br>Agnar 10.09.2026: „sumarbustadir eru eitthvad í ölfusborgum ölfus. þorlákshöfn". Kerfið á 42 virk tæki: 41 léttvatn 6 L + 1 duft 6 kg, öll með skoðun 01.09.2026. Blaðið telur 37 — fjórum munar og það er óútkljáð. „Engin lykill í Nr 27" stendur á blaðinu.
   <br><sub>2026-09-10 · kunni · agnar · claude-code</sub>
 - **Rétt stöðvunarstaða Söru er: haka við tæki → Staðfesta lista → „💾 Vista / í Vinnslu". Hún snertir hvorki „Klára heimsókn" né „Búa til úttektarskýrslu"**
   <br>Staðfest á Hagstáli 10.09.2026: eftir þessi þrjú skref stendur í skýinu _locked:true, átta _doneIds, computed {ex 38819, vsk 9317, total 48136} og arsskodun_customers steps_2026 {uttekt:true, taekjalisti:true}. Agnar sendir sjálfur í kröfuyfirlit.
   <br><sub>2026-09-10 · slokkvitaeki · sql · claude-code</sub>
+- **Takkinn „📄 Búa til úttektarskýrslu" EYÐILEGGUR skráðar skoðunardagsetningar — hann keyrir advanceInspectionDates sem setur last_insp = Í DAG og next_insp ár fram á ÖLL tæki fyrirtækisins**
+  <br>Patch 129, wire á #_ctc-skyrsla. Hagstál 10.09.2026: hefði breytt 20.08.2026 → 10.09.2026 og 20.08.2027 → 2028, og eyðilagt ágúst-skoðunina sem var verið að skrá. Sama mynstur og „Merkja skoðun" (00-legacy). Sé skoðunin í öðrum mánuði en í dag: EKKI nota takkann.
+  <br><sub>2026-09-10 · slokkvitaeki · kóði · claude-code</sub>
 - **Einingaverð í úttektarreikningi eru færð ÁN VSK og VSK (24%) leggst ofan á — líka á akstur og skýrslugerð**
   <br>Hagstál 09.09.2026: 3×3.387 duft + 3×4.346 slanga + 3.270 CO₂ 5kg + 3.150 léttvatn + 5.600 skýrslugerð + 3.600 akstur = 38.819 án vsk → 48.136 m/vsk. Verðskrárverðin m/vsk (4.200/5.389/4.055/3.906) eru sömu tölur ×1,24.
   <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
@@ -1167,12 +1171,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kort
 
-- **Loftmynd fyrir póstnúmer 200–203, 210–212, 225, 220 og 221 er map.is WMS myndkort (ts1.map.is, EPSG:3057), merkt Loftmynd · map.is. Borgarvefsjá 2018 er Reykjavík þó hnitin lendi innan þekjunnar. Þetta er ekki götumynd og má ekki skrifa yfir mynd sem var sett inn.**
-  <br>Enginn Google-lykill. Handmynd (hvaða url sem er) er vernduð. Geymd engin frá borgarvefsja má reyna loftmynd einu sinni. Tímaþrot er ekki vistað sem engin mynd.
-  <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
 - **Staðfangaskrá stafar sumar götur á -ahraun þó færslan segi -uhraun. Skútahraun 2, 220 (land 122238, heitinr 1030190) er ekki Skútahraun 2A (land 176716) og ekki Skútahraun 2 í póstnúmeri 660.**
   <br>Bókstafslaus röð er tekin á undan 2A. Ein auka-leit uhraun→ahraun, ekki lykkja. Sama mynstur og Sléttuhraun→Sléttahraun.
   <br><sub>2026-10-02 · slokkvitaeki · wfs · cursor</sub>
+- **Loftmynd fyrir póstnúmer 200–203, 210–212, 225, 220 og 221 er map.is WMS myndkort (ts1.map.is, EPSG:3057), merkt Loftmynd · map.is. Borgarvefsjá 2018 er Reykjavík þó hnitin lendi innan þekjunnar. Þetta er ekki götumynd og má ekki skrifa yfir mynd sem var sett inn.**
+  <br>Enginn Google-lykill. Handmynd (hvaða url sem er) er vernduð. Geymd engin frá borgarvefsja má reyna loftmynd einu sinni. Tímaþrot er ekki vistað sem engin mynd.
+  <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
 - **17.09.2026 (framhald): Agnar samþykkti leiðréttingar á heimilisföngum í útkeyrsluþjónustu. 29 heimilisföng leiðrétt í fyrirtaeki (afrit sjálfkrafa í audit_vernd): 22 eftir Staðfangaskrá (m.a. Distica og Vesturhraun 1 í 210 Garðabæ ekki 220, Laugavegur 116/126 í 105 ekki 101, Hörðurkór→Hörðukór, Mörðufell→Möðrufell, Garðarstræti→Garðastræti, Reykjarvíkurvegi→Reykjavíkurvegur x3, Eyrarvegi→Eyravegur, Nýbílavegur→Nýbýlavegur, Gulhellu 1 220→Gullhella 1 221, Sléttuhraun→Sléttahraun, Aspafell→Asparfell, og sex sett saman úr nafni staðar þar sem heimilisfangið var pósthólf/brot) og 7 úr fyrirtækjaskrá Skattsins (fimm staðir höfðu ekkert heimilisfang; Karhólmi reyndist Kjarrhólmi 8; Garðatorg 7 er í 210 ekki 212). Húsnúmerabil halda sér. Staðir í þjónustu með punkt: 585 → 614 af 627. Þrettán eftir og hver þarf ákvörðun Agnars: Engjaás 2 í Borgarnesi er ekki til í skrá (1, 1a, 8, 10 eru til) — 40 tæki; Ölfusborgir og Hótel Kríunes eru staðir án götunúmers; Hringhella og Skútahraun (skráin stafar það Skútahraun, ekki Skútuhraun) vantar húsnúmer; KFC Austurvegi vantar númer; Golfklúbbur Hveragerðis og E fasteignafélag bera pósthólf/lögheimili en ekki starfsstöð; Bifreið.is er skráð á Hjallahraun 4 hjá Skattinum en 14 hjá okkur og Staðfangaskrá þekkir enga Hjallahraun-götu; GG optic er í Kringlunni en félagið GG Invest var AFSKRÁÐ 28.01.2026.**
   <br><sub>2026-09-17 · slokkvitaeki · claude-code · claude-code</sub>
 - **17.09.2026: Útkeyrsluþjónustan (fyrirtaeki.er_i_thjonustu = 627 staðir) yfirfarin sérstaklega vegna staðsetningarpunkta. 585 áttu punkt, 42 ekki. Forrit leitaði að réttu staðfangi í Staðfangaskrá fyrir hvert þeirra (húsnúmer fast, götuheiti borið saman við öll staðföng með sama númeri, valið eftir minnstu villu, sama póstnúmeri og bókstaf) og fann ótvírætt staðfang fyrir 15. Hnitin voru skrifuð undir NÚVERANDI heimilisfangi svo kúnnagögn væru ekki snert — staðir með punkt fóru úr 585 í 600. Textaleiðréttingarnar sjálfar bíða samþykkis: Distica og Vesturhraun 1 eru í 210 Garðabæ ekki 220, Laugavegur 116 og 126 eru í 105 ekki 101, Hörðurkór→Hörðukór, Mörðufell→Möðrufell, Garðarstræti→Garðastræti, Reykjarvíkurvegi→Reykjavíkurvegur (þrír staðir), Eyrarvegi→Eyravegur, Nýbílavegur→Nýbýlavegur, Gulhellu 1 220→Gullhella 1 221, Sléttuhraun→Sléttahraun, Völuteig→Völuteigur. 27 eiga enn engan punkt: 5 án heimilisfangs, 5 án húsnúmers (Skútuhraun, Hringhella, Austurvegur, Brúarholt, Ölfusborgir), 6 þar sem gatan er í nafni staðarins en heimilisfangið er pósthólf eða brot, og restin sveitastaðir eða margræð svör.**
@@ -1579,14 +1583,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### variant
 
-- **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
-  <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
-  <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 3 — AppSettings: hlutir sameinast per lykil en FYLKI og strengir skiptast út í heilu lagi (jsonb_deep_merge sql:34), og engin vél FÆR breytingar annarra fyrr en hún endurhleður (engin realtime/sókn á app_settings, js/db.js:250)**
   <br>Heit fylki: skipulagsbord.by_staff.*.cards (305:99, 148 skrif/30 d), vikudagskra.jobs (303:112, 74), company_pricing/vidsk_pricing (113/116/285), sala.*_product_ids (vorur.js), thjonustuverk.cases (172:70), skjalasnidmat (94), tilbod_hub (201), page_editor_v1_json (262:124 strengur), app_profiles_js
   <br><sub>2026-09-06 · slokkvitaeki · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 2 — heilt object/fylki lesið → breytt í minni → skrifað til baka (read-modify-write án útgáfu-varðar): vél með gamalt eintak þurrkar út breytingar hinna**
   <br>Hub lagað 06.09.2026: hub_state sameinað per lykil OG per undirlykil (RPC hub_state_merge p_deep), wf_state per reit (ky_wf_merge), invoice_drafts með expected_updated_at (409 + spurning). Eftir (slokkvitaeki, úttekt sala-reikningar/kunnaskra/elon): 142 SaleEditor + 121 Sótt skrifa heilt solur.linur
+  <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
+- **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
+  <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
   <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
 
 ### redder
@@ -1603,14 +1607,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### verkbord
 
-- **claimOldJobs() í 231-verkbord.js SKRIFAR assigned_to beint í thjonustubeidni við hverja hleðslu borðsins — gagnaflutningur á úthlutun dugar aldrei einn og sér**
-  <br>Fallið sópar öllu óúthlutuðu, opnu og eldra en 30 daga á AI_WORKER og keyrir í hvert sinn sem Verkborðið hleðst. Þegar bunkinn var færður af Agnari 03.09.2026 hefði hrein SQL-uppfærsla verið undin ofan af sér innan mínútna; kóðinn varð að fara fyrst. Sama gildir um hverja framtíðar-breytingu á því h
+- **Vistuð starfsmannasía býr í localStorage á hverri vél fyrir sig — nafnabreyting á síugildi þarf þýðingu í canonFilter(), annars tapar hver vél valinu þegjandi**
+  <br>WKEY = _vb_worker. Þegar nema_agnar varð nema_ai (03.09.2026) var bætt við `if (s === 'nema_agnar') return 'nema_ai'` í canonFilter() og nema_agnar haldið í WORKER_SENTINELS. Sama mynstur og 'Sara' → 'Bjarndís' notar. Án þess hefðu allar fjórar vélarnar fallið aftur á sjálfgefið gildi án viðvörunar.
   <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
 - **AI-bunkinn á Verkborðinu er Charlize, ekki Agnar — sjálfgefna sían heitir „Allir án Ai" (nema_ai) og felur Charlize**
   <br>Ósk Agnars 03.09.2026. Nafn hans var ruslakistan: óúthlutað + opið + eldra en 30 daga fór sjálfkrafa á hann og sjálfgefna sían faldi þann bunka, svo hans EIGIN mál urðu ósýnileg (mál 817 lá óhreyft í viku, 01.09). Nú: AI_WORKER = 'Charlize' í js/patches/231-verkbord.js stýrir bæði effectiveAssignee(
   <br><sub>2026-09-03 · slokkvitaeki · agnar · claude-code</sub>
-- **Vistuð starfsmannasía býr í localStorage á hverri vél fyrir sig — nafnabreyting á síugildi þarf þýðingu í canonFilter(), annars tapar hver vél valinu þegjandi**
-  <br>WKEY = _vb_worker. Þegar nema_agnar varð nema_ai (03.09.2026) var bætt við `if (s === 'nema_agnar') return 'nema_ai'` í canonFilter() og nema_agnar haldið í WORKER_SENTINELS. Sama mynstur og 'Sara' → 'Bjarndís' notar. Án þess hefðu allar fjórar vélarnar fallið aftur á sjálfgefið gildi án viðvörunar.
+- **claimOldJobs() í 231-verkbord.js SKRIFAR assigned_to beint í thjonustubeidni við hverja hleðslu borðsins — gagnaflutningur á úthlutun dugar aldrei einn og sér**
+  <br>Fallið sópar öllu óúthlutuðu, opnu og eldra en 30 daga á AI_WORKER og keyrir í hvert sinn sem Verkborðið hleðst. Þegar bunkinn var færður af Agnari 03.09.2026 hefði hrein SQL-uppfærsla verið undin ofan af sér innan mínútna; kóðinn varð að fara fyrst. Sama gildir um hverja framtíðar-breytingu á því h
   <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
 
 ### brunavarnir
@@ -1751,20 +1755,20 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### fjarmal
 
-- **Fjármála-yfirlit endurreiknar EKKI „Ósent" (CG-02) — það sækir /api/krofu-yfirlit-bru og les tier2.total/tier2.n beint**
-  <br>Fram til 11.09.2026 var þrep-2 reglan skrifuð upp aftur í netlify/functions/fjarmal-yfirlit.js (C1), með athugasemd sem bað næsta mann að breyta báðum hliðum. Það entist ekki: borðið sagði 14.854.855 á 15 röðum, spjaldið 14.996.115 á 16 — austurströnd 2026-07 (141.260 kr) var falin á borðinu en sást
-  <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
 - **/api/debtors inniheldur AÐEINS þrep 1 (ógreitt) — ósend drög (þrep 2) eru bara í /api/krofu-yfirlit-bru**
   <br>CG_REGISTRY í index.html sagði ranglega að CG-02 kæmi úr /api/debtors. Leiðrétt 11.09.2026 (PR #445). Ef þú þarft ósend drög, sæktu tier2 úr krofu-yfirlit-bru — tier2.debtors[].invoices[] með hidden-merkingunni sem borðið sjálft notar.
+  <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
+- **Fjármála-yfirlit endurreiknar EKKI „Ósent" (CG-02) — það sækir /api/krofu-yfirlit-bru og les tier2.total/tier2.n beint**
+  <br>Fram til 11.09.2026 var þrep-2 reglan skrifuð upp aftur í netlify/functions/fjarmal-yfirlit.js (C1), með athugasemd sem bað næsta mann að breyta báðum hliðum. Það entist ekki: borðið sagði 14.854.855 á 15 röðum, spjaldið 14.996.115 á 16 — austurströnd 2026-07 (141.260 kr) var falin á borðinu en sást
   <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
 
 ### agentar
 
-- **Sara (sara-organizer í brunaholf / sara-coworker í slokkvitaeki) veit hvaða úttektarskýrslur á eftir að senda almennt — Rukkarinn spyr hana um heildarlistann áður en hann segir hvað er tilbúið að senda**
-  <br>Agnar 05.09.2026. Pörin skýrsla↔reikningur búa í v_bundle_coverage (kind/stada) og Sara á þau; Rukkarinn stjórnar lotunni en finnur ekki upp skýrslulista sjálfur.
-  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
 - **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
   <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
+  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
+- **Sara (sara-organizer í brunaholf / sara-coworker í slokkvitaeki) veit hvaða úttektarskýrslur á eftir að senda almennt — Rukkarinn spyr hana um heildarlistann áður en hann segir hvað er tilbúið að senda**
+  <br>Agnar 05.09.2026. Pörin skýrsla↔reikningur búa í v_bundle_coverage (kind/stada) og Sara á þau; Rukkarinn stjórnar lotunni en finnur ekki upp skýrslulista sjálfur.
   <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
 
 ### afslattarhopar
