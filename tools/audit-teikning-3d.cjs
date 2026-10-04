@@ -10,11 +10,17 @@
  *   Fiskislóð 41 (vigur-PDF)      777 strik → 48 heilir veggir, 245 m, húsið 32,9 × 41,2 m · 11 glerfletir, 33 m
  *   Miðgarður 1. hæð (skönnuð TIF) veggjagríma → 106 veggir (skáveggir með) í stað kubba og stafasúlna; 6 hæðir í 3D
  *
- * Þrjár reiknireglur bera þetta, og hver þeirra er PRÓFUÐ HÉR á tilbúnum gögnum (ekki bara leitað að nafni hennar):
+ * Sex reiknireglur bera þetta, og hver þeirra er PRÓFUÐ HÉR á tilbúnum gögnum (ekki bara leitað að nafni hennar):
  *   1. heilirVeggir   — vigurstrik pöruð í veggi (miðlína + þykkt), samlínu bútar sameinaðir yfir súlur, horn smellt saman.
  *   2. veggirUrGrimu  — veggjagríma skönnunar lesin sem langir jafnþykkir borðar; klessur (stafir, tákn) verða ekki veggir.
  *   3. glerIBilum     — bil milli veggbúta á sömu línu er gler ef teikningin sýnir ≥ 2 samsíða línur þar; autt hurðargat
  *                       og stök áslína eru það ekki.
+ *   4. holirVeggir    — léttir milliveggir teiknaðir sem TVÆR mjóar línur: hvíta bilið á milli er lesið sem borði;
+ *                       greiður (stigar, skástrikun) og stutt stök pör (hurðarblöð, húsgögn) eru það ekki.
+ *   5. linubond       — útveggur teiknaður sem nokkrar örþunnar línur þétt saman (Skútuvogur 4): grár borði, breiðari en
+ *                       stök lína og langur. Agnar: „Vantar oft aðal útveggina."
+ *   6. lengjaVeggi    — veggur nær alla línuna þar til hún endar eða rekst á annan vegg (Agnar: „Veggirnir stoppa oft á
+ *                       miðri leið. Eins og með EI-60 og EI-30 veggi"): línunni er fylgt á myndinni yfir stutt rof.
  * Og tengingin: undirbua() verður að rétta syna3d heilu veggina (butar) — annars er gríman lyft eins og áður.
  *
  * SOURCE-only, engin net-köll. Fall: exit 1.
@@ -28,7 +34,7 @@ const but = (a, b) => { const i = src.indexOf(a), j = src.indexOf(b); if (i < 0 
 const m = {};
 try {
   new Function('ut', but('  function summutafla', '  /** mynd: <img> eða <canvas>') + but('  const sameinaBil = ', '  const BAKGRUNNUR_3D') +
-    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum });')(m);
+    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi });')(m);
 } catch (e) { villur.push('383: reiknireglurnar hlaðast ekki sjálfstætt (' + e.message + ') — þær verða að vera hrein gagnavinnsla án DOM'); }
 
 const lengd = v => Math.hypot(v[2] - v[0], v[3] - v[1]);
@@ -87,10 +93,43 @@ if (m.glerIBilum) {
   if (G.length !== 1 || Math.abs(G[0][0] - 150) > 3 || Math.abs(G[0][2] - 250) > 3) villur.push('glerIBilum: aðeins bilið með TVEIMUR samsíða línum er gler (autt gat = hurð, ein lína = áslína); fékk ' + JSON.stringify(G.map(v => v.map(Math.round))));
 }
 
+if (m.holirVeggir) {
+  // 4 · tvær mjóar línur með 6 díla bili (holur veggur) → 1 veggur · greiða úr fimm línum (stigi) → 0 · stakt hurðarblað → 0
+  const W = 500, H = 300, gra = new Uint8Array(W * H).fill(245);
+  const lar = (x0, x1, y) => { for (let x = x0; x < x1; x++) gra[y * W + x] = 60; };
+  const lod = (x, y0, y1) => { for (let y = y0; y < y1; y++) gra[y * W + x] = 60; };
+  lar(40, 300, 50); lar(40, 300, 57); lod(40, 50, 58); lod(299, 50, 58);                     // holur veggur, 260 díla langur
+  for (let i = 0; i < 5; i++) lar(40, 200, 120 + i * 7); lod(40, 120, 149); lod(199, 120, 149);   // stigi: fimm þrep
+  lar(350, 380, 200); lar(350, 380, 206); lod(350, 200, 207); lod(379, 200, 207);             // hurðarblað, 30 díla
+  const Hv = m.holirVeggir(gra, W, H, 1, 1);
+  if (Hv.length !== 1 || Math.abs(Hv[0][1] - 54) > 2 || Math.hypot(Hv[0][2] - Hv[0][0], Hv[0][3] - Hv[0][1]) < 230) villur.push('holirVeggir: holur veggur á að finnast (1), stigi og stakt hurðarblað ekki; fékk ' + JSON.stringify(Hv.map(v => v.map(Math.round))));
+}
+
+if (m.linubond) {
+  // 5 · grár 5 díla borði (nokkrar örþunnar línur runnar saman) → 1 veggur; stök 2 díla lína og stutt band → ekkert
+  const W = 500, H = 200, gra = new Uint8Array(W * H).fill(245);
+  const fl = (x0, y0, x1, y1, g) => { for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) gra[y * W + x] = g; };
+  fl(40, 50, 440, 55, 195); fl(40, 100, 440, 102, 120); fl(40, 150, 80, 155, 195);
+  const B = m.linubond(gra, W, H, 1, 1);
+  if (B.length !== 1 || Math.abs(B[0][1] - 52.5) > 1.5) villur.push('linubond: grár 5 díla borði á að verða 1 veggur, stök lína og stutt band ekki; fékk ' + JSON.stringify(B.map(v => v.map(Math.round))));
+}
+if (m.lengjaVeggi) {
+  // 6 · veggur greindist aðeins að hluta (40–140) en línan á myndinni nær frá 40 til 300 með 6 díla rofi (texti yfir) og
+  //     endar þar; handan við 60 díla hurðargat heldur ANNAR veggur áfram — lengingin má ekki stökkva yfir gatið.
+  const W = 500, H = 100, gra = new Uint8Array(W * H).fill(245);
+  const fl = (x0, y0, x1, y1) => { for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) gra[y * W + x] = 40; };
+  fl(40, 45, 200, 56); fl(206, 45, 300, 56); fl(360, 45, 460, 56);
+  const L = m.lengjaVeggi([[40, 50.5, 140, 50.5, 11]], gra, W, H, 1);
+  if (Math.abs(L[0][2] - 300) > 4 || L[0][0] > 41) villur.push('lengjaVeggi: veggurinn á að ná alla línuna (til 300) yfir stutt rof en EKKI yfir hurðargatið; endaði í ' + Math.round(L[0][2]));
+}
+
 // Tengingin: undirbua → butar/gler → syna3d
 const krefst = (re, skilabod) => { if (!re.test(src)) villur.push('383: ' + skilabod); };
 krefst(/butar = heilirVeggir\(h\.pdfVeggir, fb, fh\)/, 'undirbua verður að para PDF-strikin (heilirVeggir) — annars kemur girðingin aftur');
 krefst(/heilirUrGrimu\(gr, r\.W, r\.H, r\.kvardi, fb, fh\)/, 'undirbua verður að lesa veggi úr grímunni á skönnunum (heilirUrGrimu)');
+krefst(/holirVeggir\(r\.gra, r\.W, r\.H, r\.kvardi, kpt\)/, 'undirbua verður að leita holra veggja (tvær mjóar línur) á skönnunum');
+krefst(/linubond\(r\.gra, r\.W, r\.H, r\.kvardi, kpt\)/, 'undirbua verður að leita línubanda (útveggir úr örþunnum línum) á skönnunum');
+krefst(/lengjaVeggi\(butar, r\.gra, r\.W, r\.H, r\.kvardi\)/, 'undirbua verður að lengja veggi eftir línunni (Agnar: „ná alla línuna þar til hún endar á annarri eða endar")');
 krefst(/veggjaPx: butar \? butar\.length : n, butar, gler/, 'undirbua verður að rétta syna3d heilu veggina og glerið');
 krefst(/if \(hd\.butar && hd\.butar\.length\) \{/, 'syna3d verður að teikna heila veggi (einn kassi á vegg) þegar þeir eru til');
 krefst(/kassarUrGrimu\(hd\.veggir, hd\.W, hd\.H\)/, 'gamla ristarleiðin verður að standa sem varaleið fyrir teikningar án veggjanets');

@@ -756,6 +756,160 @@
     return ut;
   }
 
+  /* ── HOLIR VEGGIR (tvær mjóar samsíða línur með hvítu á milli) ──
+   * Léttir milliveggir eru á mörgum uppdráttum teiknaðir sem TVÆR þunnar línur — þykkt bleksins segir þá ekkert
+   * (Miðgarður efri álma, Skútuvogur 4). Að loka grímunni (fylla) dugar ekki: þá verða áslínur, málsetning og skástrikun
+   * líka að „veggjum" (prófað á Fiskislóð 04.10.2026: 545 veggir, ónothæft).
+   * Hér er leitað að HVÍTA bilinu sjálfu: hvítur díll sem á blek skammt frá sér báðum megin þvert (bil g0–g1) en langt
+   * hvítt hlaup eftir endilöngu er INNI í holum vegg. Sú gríma er lesin sem borðar (veggirUrGrimu), og síðan síað:
+   *   · greiða (≥ 2 samsíða grannar þétt við) = stigi eða skástrikun, ekki veggur;
+   *   · stuttur borði einn á sinni línu = hurðarblað, baðkar, húsgagn; stuttir bútar lifa aðeins á línu sem á langan vegg. */
+  function holirVeggir(gra, W, H, kvardi, k) {
+    const N = W * H, pt = k * kvardi;                     // vinnudílar á pt
+    const g0 = Math.max(2, Math.round(1.6 * pt)), g1 = Math.max(g0 + 2, Math.round(9 * pt));   // bil 1,6–9 pt (≈ 6–32 cm í 1:100)
+    const blek = new Uint8Array(N);
+    for (let i = 0; i < N; i++) blek[i] = gra[i] < 205 ? 1 : 0;
+    const hw = new Uint16Array(N), vw = new Uint16Array(N);
+    for (let y = 0; y < H; y++) {
+      const r = y * W;
+      for (let x = 0; x < W;) {
+        if (blek[r + x]) { x++; continue; }
+        let x1 = x; while (x1 < W && !blek[r + x1]) x1++;
+        const L = (x === 0 || x1 === W) ? 65535 : Math.min(65535, x1 - x);     // hlaup út í jaðar er ekki afmarkað
+        for (let i = x; i < x1; i++) hw[r + i] = L;
+        x = x1;
+      }
+    }
+    for (let x = 0; x < W; x++) for (let y = 0; y < H;) {
+      if (blek[y * W + x]) { y++; continue; }
+      let y1 = y; while (y1 < H && !blek[y1 * W + x]) y1++;
+      const L = (y === 0 || y1 === H) ? 65535 : Math.min(65535, y1 - y);
+      for (let i = y; i < y1; i++) vw[i * W + x] = L;
+      y = y1;
+    }
+    const m = new Uint8Array(N);
+    for (let i = 0; i < N; i++) {
+      if (blek[i]) continue;
+      const a = hw[i], b = vw[i];
+      if ((a >= g0 && a <= g1 && b >= a * 4) || (b >= g0 && b <= g1 && a >= b * 4)) m[i] = 1;
+    }
+    const r = veggirUrGrimu(m, W, H);
+    if (!r) return [];
+    // veggþykkt = hvíta bilið + línurnar tvær
+    let V = r.butar.map(v => [v[0], v[1], v[2], v[3], v[4] + 2]);
+    const stefna = v => { let th = Math.atan2(v[3] - v[1], v[2] - v[0]); if (th < 0) th += Math.PI; if (th >= Math.PI - 0.01) th -= Math.PI; return th; };
+    const lengd = v => Math.hypot(v[2] - v[0], v[3] - v[1]);
+    const lina = V.map(v => { const th = stefna(v), c = Math.cos(th), s = Math.sin(th), t0 = c * v[0] + s * v[1], t1 = c * v[2] + s * v[3]; return { th, rho: (-s * v[0] + c * v[1] - s * v[2] + c * v[3]) / 2, t0: Math.min(t0, t1), t1: Math.max(t0, t1) }; });
+    // greiða: ≥ 2 samsíða grannar innan 3,5 veggþykkta sem skarast að hálfu
+    const halda = V.map((v, i) => {
+      let n = 0;
+      for (let j = 0; j < V.length && n < 2; j++) {
+        if (j === i || Math.abs(lina[j].th - lina[i].th) > 0.05) continue;
+        const d = Math.abs(lina[j].rho - lina[i].rho);
+        if (d < 1 || d > Math.max(v[4], V[j][4]) * 3.5) continue;
+        const skor = Math.min(lina[i].t1, lina[j].t1) - Math.max(lina[i].t0, lina[j].t0);
+        if (skor >= Math.min(lengd(v), lengd(V[j])) * 0.5) n++;
+      }
+      return n < 2;
+    });
+    // stuttir bútar lifa aðeins á línu sem á langan vegg
+    const langt = 34 * pt, stutt = 11 * pt;                 // ≈ 1,2 m og 0,4 m í 1:100
+    const ut = [];
+    for (let i = 0; i < V.length; i++) {
+      if (!halda[i]) continue;
+      const L = lengd(V[i]);
+      if (L >= langt) { ut.push(V[i]); continue; }
+      if (L < stutt) continue;
+      let studd = false;
+      for (let j = 0; j < V.length && !studd; j++) {
+        if (j === i || !halda[j] || lengd(V[j]) < langt) continue;
+        if (Math.abs(lina[j].th - lina[i].th) < 0.02 && Math.abs(lina[j].rho - lina[i].rho) < 2.5) studd = true;
+      }
+      if (studd) ut.push(V[i]);
+    }
+    return ut;
+  }
+  /* ── VEGGUR NÆR ALLA LÍNUNA ──
+   * Agnar 04.10.2026: „Veggirnir stoppa oft á miðri leið. Eins og með EI-60 og EI-30 veggi — þá ná þeir alla línuna þar
+   * til hún endar á annarri eða endar." Greiningin slítur vegg þar sem texti, málsetning eða þverlína liggur yfir hann,
+   * þótt línan á teikningunni haldi áfram. Hér er línunni FYLGT á myndinni frá hvorum enda: haldið er áfram meðan
+   * þversniðið lítur út eins og veggurinn sjálfur (þykkur: dökkt þvert yfir · holur: tvær línur, ein hvoru megin), yfir
+   * stutt rof, og numið staðar þegar línan endar (hurðargat, gluggi í þykkum vegg) eða komið er Á ANNAN VEGG.
+   * butar: [ax,ay,bx,by,t] í dílum skornu myndarinnar; gra: grátónar vinnumyndar; kvardi = vinnudílar á díl. */
+  function lengjaVeggi(butar, gra, W, H, kvardi) {
+    const N = W * H, dokkt = (x, y) => x >= 0 && y >= 0 && x < W && y < H && gra[y * W + x] < 205;
+    // hvar standa veggirnir nú þegar (númer veggjar + 1)
+    const fyrir = new Int32Array(N);
+    const V = butar.map(v => {
+      const ax = v[0] * kvardi, ay = v[1] * kvardi, bx = v[2] * kvardi, by = v[3] * kvardi, L = Math.hypot(bx - ax, by - ay) || 1;
+      return { ax, ay, bx, by, L, ux: (bx - ax) / L, uy: (by - ay) / L, half: Math.max(1, (v[4] || 0) * kvardi / 2) };
+    });
+    V.forEach((w, i) => {
+      for (let s = 0; s <= w.L; s += 0.5) for (let d = -w.half; d <= w.half; d += 0.5) {
+        const x = Math.round(w.ax + w.ux * s - w.uy * d), y = Math.round(w.ay + w.uy * s + w.ux * d);
+        if (x >= 0 && y >= 0 && x < W && y < H) fyrir[y * W + x] = i + 1;
+      }
+    });
+    // þversnið í punkti: [hlutfall dökkra innan þykktar, dökkt við báða jaðra?]
+    const snid = (w, px, py) => {
+      const h = Math.round(w.half);
+      let d = 0, n = 0, vinstri = false, haegri = false;
+      for (let q = -h - 2; q <= h + 2; q++) {
+        const dk = dokkt(Math.round(px - w.uy * q), Math.round(py + w.ux * q));
+        if (q >= -h && q <= h) { n++; if (dk) d++; }
+        if (dk && q <= -h + 2) vinstri = true;
+        if (dk && q >= h - 2) haegri = true;
+      }
+      return { fyllt: d / n, jadrar: vinstri && haegri };
+    };
+    return butar.map((v, i) => {
+      const w = V[i];
+      if (!v[4] || w.L < 6) return v;
+      // tegund veggjar lesin af honum sjálfum
+      let f = 0, m = 0;
+      for (let s = w.L * 0.15; s <= w.L * 0.85; s += Math.max(1, w.L / 24)) { f += snid(w, w.ax + w.ux * s, w.ay + w.uy * s).fyllt; m++; }
+      const thykkur = m && f / m >= 0.6;
+      const likt = (px, py) => { const o = snid(w, px, py); return thykkur ? o.fyllt >= 0.6 : (o.jadrar && o.fyllt < 0.75); };
+      const rof = Math.max(5, Math.round(w.half * 2.5)), hamark = Math.max(W, H);
+      const ganga = (x0, y0, sx, sy) => {
+        let sidast = 0;
+        for (let s = 1; s < hamark; s++) {
+          const px = x0 + sx * s, py = y0 + sy * s, gx = Math.round(px), gy = Math.round(py);
+          if (gx < 0 || gy < 0 || gx >= W || gy >= H) break;
+          const hver = fyrir[gy * W + gx];
+          if (hver && hver !== i + 1) { if (s - sidast <= rof) sidast = s; break; }      // komið á annan vegg
+          if (likt(px, py)) sidast = s;
+          else if (s - sidast > rof) break;
+        }
+        return sidast;
+      };
+      const fram = ganga(w.bx, w.by, w.ux, w.uy), aftur = ganga(w.ax, w.ay, -w.ux, -w.uy);
+      if (fram < 3 && aftur < 3) return v;
+      return [(w.ax - w.ux * (aftur >= 3 ? aftur : 0)) / kvardi, (w.ay - w.uy * (aftur >= 3 ? aftur : 0)) / kvardi, (w.bx + w.ux * (fram >= 3 ? fram : 0)) / kvardi, (w.by + w.uy * (fram >= 3 ? fram : 0)) / kvardi, v[4]];
+    });
+  }
+  /* ── LÍNUBÖND: veggur teiknaður sem 3–4 örþunnar línur þétt saman (klæddir útveggir, Skútuvogur 4) ──
+   * Agnar 04.10.2026: „Vantar oft aðal útveggina." Slíkur veggur er hvorki dökkur og þykkur (þykka gríman) né tvær línur
+   * með hvítu á milli (holur): í vinnuupplausn rennur hann saman í GRÁAN borða. Vægur þröskuldur + opnun (stakar línur
+   * hverfa) → borðar; aðeins þeir sem eru breiðari en stök lína og LANGIR (≥ 2 m í 1:100) teljast — þá kemst ekkert rusl inn. */
+  function linubond(gra, W, H, kvardi, k) {
+    const N = W * H, pt = k * kvardi;
+    let b = new Uint8Array(N);
+    for (let i = 0; i < N; i++) b[i] = gra[i] < 215 ? 1 : 0;
+    b = dilate(erode(b, W, H, 1), W, H, 1);
+    const r = veggirUrGrimu(b, W, H);
+    if (!r) return [];
+    return r.butar.filter(v => v[4] >= 3.5 && v[4] <= 14 * pt && Math.hypot(v[2] - v[0], v[3] - v[1]) >= 56 * pt);
+  }
+  // Liggur v á línu u (samsíða, miðja v innan u og innan veggþykktar)? Notað til að fella holan vegg sem er í raun
+  // útlína þykks veggjar eða gluggi í honum.
+  const aSomuLinu = (v, u) => {
+    const ux = u[2] - u[0], uy = u[3] - u[1], L = Math.hypot(ux, uy) || 1, vx = v[2] - v[0], vy = v[3] - v[1], Lv = Math.hypot(vx, vy) || 1;
+    if (Math.abs(ux * vy - uy * vx) / (L * Lv) > 0.08) return false;
+    const mx = (v[0] + v[2]) / 2 - u[0], my = (v[1] + v[3]) / 2 - u[1];
+    return Math.abs(mx * uy - my * ux) / L <= (u[4] + v[4]) / 2 + 3 && (mx * ux + my * uy) / L >= -2 && (mx * ux + my * uy) / L <= L + 2;
+  };
+
   const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6;
 
   /** gamur: element sem sýnin fyllir. haedir: [{ veggir, W, H, golf:<canvas>, kvardi, merki:[{x,y,litur,texti}], butar? }]
@@ -1819,13 +1973,37 @@
     // þeirri sem „Skýrari veggir" endaði á. Finnist ekki veggjanet stendur gamla ristarleiðin.
     let urGrimu = false;
     if (!butar) {
+      const kpt = Math.max(fb, fh) / 2384, deila = V => V.map(v => v.map(n => n / r.kvardi));
+      const ipt = V => V.map(v => ({ a: [v[0] / kpt, v[1] / kpt], b: [v[2] / kpt, v[3] / kpt], t: v[4] / kpt }));
+      // 1) þykkir fylltir veggir úr grímunni
+      let thykk = null;
       const kostir = r.thykkir && r.thykkir !== r.veggir ? [r.thykkir, r.veggir] : [r.veggir];
       for (const gr of kostir) {
-        let fundid = null;
-        try { fundid = heilirUrGrimu(gr, r.W, r.H, r.kvardi, fb, fh); } catch (e) { console.warn('[383] heilirUrGrimu', e); }
-        if (fundid) { butar = fundid; urGrimu = true; break; }
+        try { thykk = heilirUrGrimu(gr, r.W, r.H, r.kvardi, fb, fh); } catch (e) { console.warn('[383] heilirUrGrimu', e); }
+        if (thykk) break;
       }
-      if (butar) h.veggir.forEach(v => butar.push([v[0] - sk.x, v[1] - sk.y, v[2] - sk.x, v[3] - sk.y, 0]));
+      // 2) línubönd (útveggir teiknaðir sem nokkrar örþunnar línur) — það sem þykka gríman á ekki þegar
+      let grunnur = thykk || [];
+      try { grunnur = grunnur.concat(deila(linubond(r.gra, r.W, r.H, r.kvardi, kpt)).filter(v => !grunnur.some(u => aSomuLinu(v, u)))); } catch (e) { console.warn('[383] linubond', e); }
+      // 3) holir veggir (tvær mjóar línur). Sá sem er útlína veggjar sem þegar er kominn, eða gluggi í honum, er ekki talinn aftur.
+      let hol = [];
+      try { hol = deila(holirVeggir(r.gra, r.W, r.H, r.kvardi, kpt)); } catch (e) { console.warn('[383] holirVeggir', e); }
+      if (hol.length && grunnur.length) {
+        let gl0 = [];
+        try { gl0 = glerIBilum(grunnur, r.gra, r.W, r.H, r.kvardi, kpt); } catch (_) {}
+        const fyrir = grunnur.concat(gl0);
+        hol = hol.filter(v => !fyrir.some(u => aSomuLinu(v, u)));
+      }
+      const allir = grunnur.concat(hol);
+      let lengd = 0;
+      for (const v of allir) lengd += Math.hypot(v[2] - v[0], v[3] - v[1]);
+      if (lengd * r.kvardi >= Math.max(r.W, r.H) * 2) {
+        butar = fragaVeggi(ipt(allir), kpt, 2);
+        // 4) hver veggur nær alla línuna þar til hún endar eða rekst á annan vegg
+        try { butar = fragaVeggi(ipt(lengjaVeggi(butar, r.gra, r.W, r.H, r.kvardi)), kpt, 2); } catch (e) { console.warn('[383] lengjaVeggi', e); }
+        urGrimu = true;
+        h.veggir.forEach(v => butar.push([v[0] - sk.x, v[1] - sk.y, v[2] - sk.x, v[3] - sk.y, 0]));
+      }
     }
     const iw = stig1.naturalWidth || stig1.width, ih = stig1.naturalHeight || stig1.height;
     const merki = merkiFrum.map(mk => {
