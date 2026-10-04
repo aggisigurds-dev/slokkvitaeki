@@ -556,3 +556,7 @@ hverfur ÖLL síuröndin í Ársskoðun og Bílstjóra-sýnin tekur yfir — og 
 **engin leið til baka** í viðmótinu. Agnar sat fastur og sagði: „a back button is
 not hard." Hann hefur rétt fyrir sér. Sé sýn sett sem tekur yfir borð, á
 útgönguleiðin að vera sýnileg í sömu sýn.
+
+## Lærdómur
+
+- **04.10.2026** — 04.10.2026 SÍÐUSTÆRÐ (333): hver síða/gluggi á sína stærð í síma, vistaða á þjóninn (AppSettings simi_sidustaerd {simi,tolva}). Talan = hlutfall af raunstærð (100 % = venjulegt app); virkt zoom = króm (353, ≈2,38 á S26 í Tölvusíðu-ham) × talan. Óstillt síða heldur gömlu stærðinni; BYRJUN-tafla í 333 gefur byrjun (company/teikningar 0,7, kostnadur 0,75 o.fl.). Gluggar (.modal) fá lykil m:<id> + ramma milli app-hauss og botnstiku. Fljótandi #_app-zoom er farinn — litaspjaldið í app-hausnum opnar #_sz-pnl. Á tölvu: S26-snið í 320 (980×1900, ?simikrom=2.38). GILDRA: @media (max-width:760px) kviknar ALDREI á S26 (síðan segist 980 px) — notið gámafyrirspurn (container-type:inline-size) fyrir þröngt útlit, sbr. 419 Kostnaður. GILDRA 2: appham-reglur blása select/input upp í 16–18 px/52 px (261 + simi-compact-layer) — tvöfalt auðkenni þarf til að hemja það í töflum. (js/patches/333-app-page-zoom.js, js/patches/353-simi-krom-zoom.js, js/patches/320-device-frame.js, js/patches/419-kostnadur.js, js/patches/402-brunastal-fyrirtaekjasida.js)

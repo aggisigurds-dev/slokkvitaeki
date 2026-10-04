@@ -504,3 +504,7 @@ Punktarnir sjálfir opnast í `br-drogstod` (sama hub-iframe, `sessionStorage.ds
 
 - **01.10.2026** — Brunakerfi-flipinn (274) reikningslínur: tegund línu kemur úr l.teg (Vara/Þjónusta, smellur á merkið skiptir; ágiskun aðeins á eldri línum), „Þar af nýtt:“-tillögur (vara tengd „Nýtt: <búnaður>“ í verðlista × bunadur[].nytt; lidLykill hunsar orðaröð og broddstafi), og ＋ Vara / ＋ Þjónusta úr verðlista við hlið „Auð lína“. Les úr window.BrunakerfiSkyrsla (273): verdlistiMedTegund, nyttLinur, tegAgiskun. Fyrirtækjaprófíllinn (357/360) var líka breyttur sama dag í öðru spjalli: kalt op málar borða og tæki áður en allar uttaeki-síður koma.
 - **01.10.2026** — Kalt #company sækir ekki lengur allar uttaeki-síður í bakgrunni. Endurnýja á prófílnum sækir aðeins tæki þess félags. Hak og Yfirferð endurteikna ekki listann.
+
+## Lærdómur
+
+- **04.10.2026** — 04.10.2026: litaspjaldið í app-hausnum (#_app-style, 261) opnar nú „Stærð og útlit" (AppPageZoom.vixla, 333) í stað PageEditor beint — „Litir og letur…" þar opnar ritilinn. Síðulykill 333: m:<modal-id> ef gluggi er opinn, f:<app-síða> fyrir iframe-síður, annars hash-rót (#company/123 → company). Companies.openDetail skiptir um slóð án hashchange — 333 vaktar lykilinn á 700 ms fresti. Öpp-stýriborðið (354) fékk S26-hnapp við hvert app (SlokkDevFrame.open('s26')). (js/patches/261-app-profiles.js, js/patches/333-app-page-zoom.js, js/patches/354-opp-styribord.js)

@@ -32,7 +32,6 @@
   const STYLE_ID = 'opp-styribord-354';
   const LS_INST = 'slokk_installed_apps_v1';
   const BUILTIN = ['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss'];
-  const ZOOM_STEPS = [0.7, 0.8, 0.9, 1, 1.15, 1.35, 1.6, 2];   // = 333
   const KROM = [['auto', 'Sjálfvirkt'], ['1', '1,0'], ['1.5', '1,5'], ['2', '2,0'], ['2.5', '2,5'], ['3', '3,0']];
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const state = { checks: {}, related: null, relatedErr: null, busy: false, msg: '' };
@@ -152,11 +151,6 @@
   }
 
   /* ── aðgerðir ───────────────────────────────────────────────────────────── */
-  function zoomStep(dir) {
-    const cur = window.AppPageZoom ? AppPageZoom.get() : 1;
-    if (dir < 0) { let j = ZOOM_STEPS.length - 1; while (j > 0 && ZOOM_STEPS[j] >= cur - 0.001) j--; return ZOOM_STEPS[j]; }
-    let k = 0; while (k < ZOOM_STEPS.length - 1 && ZOOM_STEPS[k] <= cur + 0.001) k++; return ZOOM_STEPS[k];
-  }
   // 17.09.2026 (yfirferð á þöglum villum): þagnirnar hér eru RÉTTAR — báðar
   // hreinsanir eru best-effort og línan á eftir endurhleður síðuna hvort eð er
   // með ?nocache=<tími>, sem framhjá-hleður skyndiminninu. Mistakist önnur
@@ -201,7 +195,8 @@
     endur: svg('<path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"/>'),
     hreinsa: svg('<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/>'),
     opna: svg('<path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/>'),
-    nidur: svg('<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>')
+    nidur: svg('<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>'),
+    simi: svg('<rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/>')
   };
   const CSS = [
     '#view-opp #' + ID + '{padding:14px 14px 12px}',
@@ -270,13 +265,17 @@
       : '';
     const kromSel = d.manual != null ? String(d.manual) : 'auto';
     const kromSeg = '<div class="st-seg">' + KROM.map(([v, l]) => '<button type="button" data-krom="' + v + '" class="' + (String(v) === kromSel || (kromSel !== 'auto' && +v === +kromSel) ? 'on' : '') + '">' + l + '</button>').join('') + '</div>';
-    const zoomSeg = '<div class="st-seg"><button type="button" data-zoom="out">−</button><button type="button" class="on">' + Math.round(d.zoom * 100) + ' %</button><button type="button" data-zoom="in">+</button><button type="button" data-zoom="reset">1:1</button></div>';
+    // 04.10.2026: síðustærð er stillt fyrir HVERJA síðu (333) — litaspjaldið í app-hausnum → Stærð, eða S26-ramminn á tölvunni.
+    const vist = (window.AppPageZoom && AppPageZoom.stillingar) ? Object.keys(AppPageZoom.stillingar()).length : 0;
+    const zoomSeg = '<div class="st-note">Hver síða á sína stærð, vistaða á þjóninn (sími og tölva hvor í sínu hólfi). '
+      + 'Í appinu: <b>litaspjaldið í hausnum → Stærð</b>. Á tölvunni: <b>' + IK.simi + ' S26</b> við hvert app opnar það í S26-ramma '
+      + 'sem sýnir nákvæmlega það sem síminn sýnir — það sem þú stillir þar gildir í símanum. Vistaðar síður hér: <b>' + vist + '</b>.</div>';
     const rows = apps().map(a => {
       const [cls, txt] = installedStatus(a, d);
       const c = state.checks[a.key];
       return '<div class="st-app">' +
         '<div class="nm" title="/app/' + esc(a.key) + '/">' + esc(a.name) + '<small>' + (a.custom ? 'notenda-búið' : 'innbyggt') + '</small></div>' +
-        '<div class="acts"><button type="button" class="st-mini" data-open="' + esc(a.key) + '" title="Opna">' + IK.opna + '</button><button type="button" class="st-mini" data-inst="' + esc(a.key) + '" title="Setja upp í síma">' + IK.nidur + '</button></div>' +
+        '<div class="acts"><button type="button" class="st-mini" data-s26="' + esc(a.key) + '" title="Opna í S26-ramma (stilla stærð hverrar síðu á tölvunni)">' + IK.simi + '</button><button type="button" class="st-mini" data-open="' + esc(a.key) + '" title="Opna">' + IK.opna + '</button><button type="button" class="st-mini" data-inst="' + esc(a.key) + '" title="Setja upp í síma">' + IK.nidur + '</button></div>' +
         '<div class="stat"><span class="st-' + cls + '">' + esc(txt) + '</span>' + (c ? '<br><span class="' + (c.ok ? 'st-ok' : 'st-bad') + '">' + esc(c.text) + '</span>' : '') + '</div>' +
         '</div>';
     }).join('');
@@ -288,7 +287,7 @@
       '<button type="button" class="op-btn" data-act="copy">' + IK.afrita + 'Afrita greiningu</button></div>' +
       '<div class="st-sec">Tæki og útgáfa</div><div class="st-chips">' + chips + '</div>' + note +
       '<div class="st-sec">Króm-stærð (haus · valmynd · botnstika · zoom-stika)</div>' + kromSeg +
-      '<div class="st-sec">Síðuzoom (efnið)</div>' + zoomSeg +
+      '<div class="st-sec">Síðustærð (hver síða)</div>' + zoomSeg +
       '<div class="st-sec">Öpp á þessu tæki</div><div class="st-apps">' + (rows || '<div class="st-msg">Engin öpp fundust á síðunni.</div>') + '</div>' + relLine +
       '<div class="st-sec">Aðgerðir</div><div class="st-row">' +
       '<button type="button" class="op-btn" data-act="reload">' + IK.endur + 'Endurhlaða</button>' +
@@ -301,7 +300,11 @@
       const b = e.target.closest('button'); if (!b || !p.contains(b)) return;
       e.preventDefault();
       if (b.dataset.krom != null) { try { window.AppKrom && AppKrom.set(b.dataset.krom === 'auto' ? 'auto' : +b.dataset.krom); } catch (_) {} render(); return; }
-      if (b.dataset.zoom) { try { if (window.AppPageZoom) AppPageZoom.set(b.dataset.zoom === 'reset' ? 1 : zoomStep(b.dataset.zoom === 'in' ? 1 : -1)); } catch (_) {} setTimeout(render, 120); return; }
+      if (b.dataset.s26) {
+        const k = b.dataset.s26, nm = (apps().find(x => x.key === k) || {}).name || k;
+        try { if (window.SlokkDevFrame) { SlokkDevFrame.open('s26', { url: location.origin + '/?app=' + encodeURIComponent(k) + '&devframe=s26', title: nm + ' · S26' }); return; } } catch (_) {}
+        return;
+      }
       if (b.dataset.open) { location.href = location.origin + '/app/' + b.dataset.open + '/'; return; }
       if (b.dataset.inst) { location.href = location.origin + '/app/' + b.dataset.inst + '/?install=1'; return; }
       if (b.dataset.act === 'check') { checkAll(); return; }

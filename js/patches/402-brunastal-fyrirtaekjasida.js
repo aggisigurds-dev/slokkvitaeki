@@ -536,6 +536,9 @@
     /* Agnar 23.09 20:03 (skjámynd): „galið plássfrekt með engu efni" — 363 felur auðar línur undir „Fleiri upplýsingar" í símanum; reglan að ofan þvingaði þær fram. Loftmyndin fyllir flísina (cover) í stað dökkra randa. */
     p('.co-bupp._bupp-thjappad ._bupp-lina._bupp-tomt,._bupp-simi._bupp-thjappad ._bupp-lina._bupp-tomt', 'display:none!important'),
     p('.co-mynd .co-mynd-flis', 'min-height:170px!important'),
+    /* 04.10.2026 (Agnar, S26: „skelfileg nýting á plássi í company profile"): án myndar var 170 px tómur kassi
+       („engin mynd"). Þá aðeins ræma með myndavélar-takkanum; með mynd stendur 170 px. */
+    p('.co-mynd .co-mynd-flis:has(> .co-mynd-engin)', 'min-height:44px!important;height:44px!important'),
     p('.co-mynd .co-mynd-vefja img', 'object-fit:cover!important'),
     /* „Yfirferðin á ekki að vera þarna megin": Yfirfarið-flísin fylgir nafninu/raðnúmerinu, aðgerðirnar sitja hægra megin */
     p('.ut-list .ut-row .ut-main', 'flex:0 1 auto!important;min-width:0!important'),

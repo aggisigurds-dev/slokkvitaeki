@@ -200,6 +200,9 @@
       // Sími/app: bannerinn staflast — flísin tekur fulla breidd.
       'html[data-viewmode="mobile"] .' + HOLF + ',body.appmode .' + HOLF + '{flex-basis:100%;max-width:none;margin-left:0;margin-top:10px}',
       'html[data-viewmode="mobile"] .co-mynd-flis,body.appmode .co-mynd-flis{width:100%;height:140px}',
+      // 04.10.2026 (Agnar: „skelfileg nýting á plássi í company profile"): tómur kassi („engin mynd") tók 140 px í
+      // símanum. Án myndar er hann aðeins ræma með myndavélar-takkanum.
+      'html[data-viewmode="mobile"] .co-mynd-flis:has(> .co-mynd-engin),body.appmode .co-mynd-flis:has(> .co-mynd-engin){height:44px}',
       // MÆLT 13.09.2026 í 375 px: mobile-baseline-css setur `.view … img{height:auto}` með
       // vægi (0,6,2), svo myndin fékk eðlilega hæð og skarst neðst (2:1 → 154 px í 140 px
       // flís; standandi símamynd hefði sýnt aðeins efsta hlutann). !important heldur henni í rammanum.

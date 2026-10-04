@@ -252,8 +252,11 @@
   }
   function toflHtml(listi) {
     if (!listi.length) return '<div class="k9-tomt">Ekkert í þessari síu.</div>';
-    return '<table class="k9-tafla"><thead><tr><th>Dags</th><th>Seljandi</th><th>Flokkur</th><th class="h">Upphæð</th><th>Tengt</th><th></th></tr></thead><tbody>' +
-      listi.map((r) => rodHtml(r) + (S.opid === r.id ? '<tr class="k9-nanar"><td colspan="6">' + nanarHtml(r) + '</td></tr>' : '')).join('') +
+    // 04.10.2026 (Agnar, S26: „í hundrað er taflan ekki fyllt út í enda … í zoom minnkar aðalhlutinn mest"): sjötti
+    // dálkurinn (Yfirfarið) var tómur í flestum röðum og Tengt fast 24 % — hægri fjórðungurinn dauður. Í þrengri breidd
+    // klemmdist Seljandi í „M…". Nú fimm dálkar: Yfirfarið-platan fer í Tengt, og Seljandi fær ALLT afgangsplássið.
+    return '<table class="k9-tafla"><thead><tr><th>Dags</th><th class="k9-sel">Seljandi</th><th>Flokkur</th><th class="h">Upphæð</th><th>Tengt</th></tr></thead><tbody>' +
+      listi.map((r) => rodHtml(r) + (S.opid === r.id ? '<tr class="k9-nanar"><td colspan="5">' + nanarHtml(r) + '</td></tr>' : '')).join('') +
       '</tbody></table>';
   }
   function rodHtml(r) {
@@ -266,11 +269,10 @@
     const undir = [TEGUND_HEITI[r.tegund] || '', r.samantekt || r.efni || '', r.ai_villa ? 'Lestur mistókst' : ''].filter(Boolean).join(' · ');
     return '<tr class="k9-rod' + (S.opid === r.id ? ' opin' : '') + (erHunsad(r) ? ' hunsad' : '') + '" data-k9="opna" data-id="' + r.id + '">' +
       '<td class="m">' + esc(dags(r.dags || String(r.mottekid_at || '').slice(0, 10))) + '</td>' +
-      '<td><b>' + esc(r.seljandi || r.sendandi || r.sendandi_email || '(óþekkt)') + '</b><small>' + esc(undir.slice(0, 140)) + '</small></td>' +
+      '<td class="k9-sel"><b>' + esc(r.seljandi || r.sendandi || r.sendandi_email || '(óþekkt)') + '</b><small>' + esc(undir.slice(0, 140)) + '</small></td>' +
       '<td>' + flokkur + '</td>' +
       '<td class="h m">' + esc(kr(r.upphaed)) + (r.vsk ? '<small>vsk ' + esc(kr(r.vsk)) + '</small>' : '') + '</td>' +
-      '<td>' + (tengt || '<span class="k9-daufur">Ótengt</span>') + '</td>' +
-      '<td class="h">' + (r.stada === 'yfirfarid' ? '<span class="k9-pl dokk">Yfirfarið</span>' : '') + '</td>' +
+      '<td class="k9-tengt">' + (tengt || '<span class="k9-daufur">Ótengt</span>') + (r.stada === 'yfirfarid' ? '<span class="k9-pl dokk">Yfirfarið</span>' : '') + '</td>' +
     '</tr>';
   }
   function nanarHtml(r) {
@@ -573,9 +575,23 @@
       W + '.k9-tafla th,' + W + '.k9-linur th{background:' + METAL + '!important;color:rgba(255,255,255,.78)!important;font:700 10.5px ' + MONO + '!important;letter-spacing:.08em!important;text-transform:uppercase!important;text-align:left;padding:9px 8px!important;border:0!important}',
       W + '.k9-tafla th.h,' + W + '.k9-linur th.h{text-align:right!important}',
       W + '.k9-reitur span{font:700 10.5px ' + MONO + '!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:#3a4250!important}',
-      V + '.k9-tafla{table-layout:fixed}',
+      V + '.k9-tafla{table-layout:auto}',
       V + '.k9-tafla th,' + V + '.k9-linur th{background:' + METAL + ';color:rgba(255,255,255,.78);font:700 10.5px ' + MONO + ';letter-spacing:.08em;text-transform:uppercase;text-align:left;padding:9px 8px}',
-      V + '.k9-tafla th:nth-child(1){width:92px}' + V + '.k9-tafla th:nth-child(3){width:140px}' + V + '.k9-tafla th:nth-child(4){width:120px}' + V + '.k9-tafla th:nth-child(5){width:24%}' + V + '.k9-tafla th:nth-child(6){width:96px}',
+      // Dálkarnir taka það sem innihaldið þarf (width:1 %); Seljandi tekur afganginn (width:100 % + max-width:0 svo
+      // langur texti styttist með „…" í stað þess að ýta töflunni út fyrir).
+      V + '.k9-tafla th,' + V + '.k9-tafla td{width:1%;white-space:nowrap}',
+      V + '.k9-tafla th.k9-sel,' + V + '.k9-tafla td.k9-sel{width:100%;max-width:0;white-space:normal}',
+      V + '.k9-tafla .k9-flokkur{width:124px}',
+      V + '.k9-tafla td.k9-tengt .k9-pl{display:inline-block;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:20px;vertical-align:top}',
+      V + '.k9-tafla td.k9-tengt{max-width:220px}',
+      // Síminn (S26) keyrir í Tölvusíðu-ham: síðan segist 980 px breið og zoomið (333) minnkar EFNIÐ, svo @media
+      // (max-width:760px) kviknar aldrei. Taflan svarar því eigin breidd (gámafyrirspurn), ekki skjánum.
+      V + '.k9-spjald{container-type:inline-size}',
+      // App-hamurinn (261 + simi-compact-layer) blæs hvert <select> upp í 16–18 px / 52 px — Flokkur-valið klippti
+      // þá „Verkstæði" í „Verkstæ". Tvöfalt auðkenni vinnur á þær reglur; stærðin fylgir nú töflunni.
+      W + 'select.k9-flokkur{font-size:13px!important;height:34px!important;min-height:34px!important;padding:0 4px 0 8px!important;border-radius:6px!important}',
+      '@container (max-width:640px){' + V + '.k9-tafla th:nth-child(5),' + V + '.k9-tafla td:nth-child(5){display:none}'
+        + V + '.k9-tafla .k9-flokkur{width:104px}' + V + '.k9-tafla th,' + V + '.k9-tafla td{padding-left:6px;padding-right:6px}}',
       V + '.k9-tafla td{padding:8px;border-top:1px solid #eceff4;vertical-align:top;font-size:13px;overflow:hidden}',
       V + '.k9-rod{cursor:pointer}' + V + '.k9-rod:hover td{background:#f7f9fd}' + V + '.k9-rod.opin td{background:#f1f4f8}',
       V + '.k9-rod.hunsad td{color:#8a93a1}',
@@ -613,7 +629,7 @@
       V + '.k9-till{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:#3a4250}',
       V + '.k9-nidur{display:flex;flex-wrap:wrap;gap:6px}',
       V + '.k9-adgerdir{display:flex;flex-wrap:wrap;gap:8px;align-items:center}',
-      '@media (max-width:760px){' + V + '.k9-opid.med-skjal{grid-template-columns:1fr}' + V + '.k9-skjal{position:static;max-height:none}' + V + '.k9-tafla th:nth-child(5),' + V + '.k9-tafla td:nth-child(5),' + V + '.k9-tafla th:nth-child(6),' + V + '.k9-tafla td:nth-child(6){display:none}' + V + '.k9-tafla th:nth-child(3){width:112px}' + V + '.k9-tengja{grid-template-columns:1fr}' + V + '.k9-tala b{font-size:30px}}',
+      '@media (max-width:760px){' + V + '.k9-opid.med-skjal{grid-template-columns:1fr}' + V + '.k9-skjal{position:static;max-height:none}' + V + '.k9-tafla th:nth-child(5),' + V + '.k9-tafla td:nth-child(5){display:none}' + V + '.k9-tafla .k9-flokkur{width:112px}' + V + '.k9-tengja{grid-template-columns:1fr}' + V + '.k9-tala b{font-size:30px}}',
     ].join('\n');
     document.head.appendChild(st);
     if (!document.getElementById('_tbm-font') && !document.getElementById('_k9-font')) {

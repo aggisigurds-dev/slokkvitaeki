@@ -1513,14 +1513,19 @@
       // (body.appmode #bstal-banner{display:none}). Þar með var ekki hægt að
       // laga útlit þeirra síðna sem maður notar mest — einmitt í símanum þar
       // sem plássið er minnst (Agnar 29.08). Takkinn er því endurtekinn hér.
-      '<button id="_app-style" type="button" title="Stilla útlit þessarar síðu">' + B48_IK.litur + '</button>' +
+      // 04.10.2026 (Agnar: „sameinast hinu í header … setja inn í Stilla útlit. Default zoom per page"): 🎨 opnar
+      // nú „Stærð og útlit" (333) — stærð ÞESSARAR síðu, vistuð á þjóninn; „Litir og letur…" þar opnar ritilinn.
+      '<button id="_app-style" type="button" title="Stærð og útlit þessarar síðu">' + B48_IK.litur + '</button>' +
       '<button class="_app-install" data-always="1" id="_app-inst2" type="button" title="Setja appið upp í símann">' + B48_IK.nidur + '<i class="_applbl">Setja upp</i></button>' +
       '<button id="_app-exit" type="button" title="Loka appi">' + B48_IK.x + '</button>';
     if (!hdr.parentNode) document.body.appendChild(hdr);
     var sty = document.getElementById('_app-style');
     if (sty && !sty._wired) { sty._wired = 1; sty.addEventListener('click', function (e) {
       e.preventDefault();
-      try { if (window.PageEditor && PageEditor.toggle) PageEditor.toggle(); } catch (_) {}
+      try {
+        if (window.AppPageZoom && AppPageZoom.vixla) AppPageZoom.vixla();
+        else if (window.PageEditor && PageEditor.toggle) PageEditor.toggle();
+      } catch (_) {}
     }); }
 
     var nav = document.getElementById('_app-nav') || document.createElement('div');

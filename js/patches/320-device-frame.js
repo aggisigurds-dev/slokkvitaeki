@@ -67,6 +67,10 @@
     simiL:      { label: '📱 Sími ↔',        w: 844,  h: 390,  radius: 34, vm: 'mobile' },
     tafla:      { label: '📲 Spjaldtölva',   w: 834,  h: 1112, radius: 22, vm: 'table'  },
     taflaL:     { label: '📲 Spjaldtölva ↔', w: 1112, h: 834,  radius: 22, vm: 'table'  },
+    // 04.10.2026 (Agnar: „mobile view generator adjuster á desktop"): S26 eins og hann er í raun — Chrome í
+    // Tölvusíðu-ham, 980 px síða á 411 dp skjá (app-svæðið ≈ 1900 px hátt), króm skalað ×2,38 (353, ?simikrom).
+    // Stærð sem er stillt hér (🎨 → Stærð, 333) vistast í símahólfið og gildir eins í símanum.
+    s26:        { label: '📱 S26',           w: 980,  h: 1900, radius: 34, vm: 'mobile', krom: 2.38 },
   };
   let overlay = null, iframe = null, curDev = null, curUrl = null, curTitle = null;
   let scaler = null;
@@ -181,6 +185,9 @@
     try {
       const u = new URL(target || location.href, location.origin);
       if (!target) u.searchParams.set('devframe', devKey);
+      const dv = DEVICES[devKey];
+      if (dv && dv.krom) u.searchParams.set('simikrom', String(dv.krom));
+      else u.searchParams.delete('simikrom');
       if (isArsUrl(u.toString()) && !u.searchParams.get('arsview'))
         u.searchParams.set('arsview', 'bord');
       return u.toString();
@@ -342,7 +349,7 @@
     const bar = document.querySelector('.pe-toolbar');
     if (!bar) return;
     const hasVm = !!bar.querySelector('.pe-vm');
-    const keys = hasVm ? ['simiL', 'taflaL'] : Object.keys(DEVICES);
+    const keys = hasVm ? ['simiL', 'taflaL', 's26'] : Object.keys(DEVICES);
     // Fjarlægjum portrait-takka sem pe-vm leysir af hólmi.
     if (hasVm) {
       ['simi', 'tafla'].forEach(k => {

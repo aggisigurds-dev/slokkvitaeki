@@ -70,6 +70,18 @@
     } catch (_) {}
     return null;
   }
+  // S26-ramminn (320) á tölvunni: ?simikrom=2.38 þvingar hlutfallið í iframe-inu svo það sýni nákvæmlega það sem
+  // síminn sýnir. Geymt í window.name rammans (ekki localStorage — það er sameiginlegt tölvunni sjálfri) svo það
+  // lifi flakk innan rammans.
+  function readForced() {
+    let v = NaN;
+    try { v = parseFloat(new URLSearchParams(location.search).get('simikrom') || ''); } catch (_) {}
+    let inni = false;
+    try { inni = window.top !== window; } catch (_) { inni = true; }
+    if (v >= 1 && v <= MAX) { if (inni) { try { window.name = 'simikrom:' + v; } catch (_) {} } return v; }
+    if (inni) { const m = /^simikrom:([\d.]+)$/.exec(window.name || ''); if (m && +m[1] >= 1 && +m[1] <= MAX) return +m[1]; }
+    return null;
+  }
   // Snertitæki: aðal-bendill grófur (Android líka í Tölvusíðu-ham) — EKKI
   // Windows-fartölva með snertiskjá og mús (hover:hover).
   function touchPrimary() {
@@ -96,7 +108,7 @@
 
   const CSS = [
     /* ── Króm-ið skalast (zoom). Efnið er ÓSNERT — 333 á það. ────────────── */
-    K + A + '#_app-hdr' + P4 + ',' + K + A + '#_app-nav' + P4 + ',' + K + '#_app-zoom' + P4 + ','
+    K + A + '#_app-hdr' + P4 + ',' + K + A + '#_app-nav' + P4 + ',' + K + '#_sz-aa' + P4 + ',' + K + '#_sz-pnl' + P4 + ','
       + K + '#_app-inst-guide' + P4 + ',' + K + '#_app-pgedit' + P4 + ','
       + KP + '#bstal-banner' + P4 + ',' + KP + '#bstal-ember' + P4 + ','
       + KP + '#_mnav_btn' + P4 + ',' + KP + '.topbar' + P4
@@ -104,10 +116,8 @@
     /* iframe-síður (Boss-heimasíðan = Brunahólf) fylgja síðuzoominu eins og .view.
        Sama bragð og 333: zoom deilir containing-block, svo left/right:0 fylla áfram. */
     'html.app-page-zoomed ' + A + '#_app-frame' + P4 + '{zoom:var(--app-page-zoom)!important}',
-    /* Zoom-stikan á síma/appi: neðst til hægri, ofan við 💬-kúluna / botnstikuna — efst lá hún ofan á
-       borðanum og „Vista/Klára"-stikum síðna (Agnar 06.09, fyrirtækjasíðan). --app-zoom-bottom stimplað í appham. */
-    'html.slokk-phone-nav #_app-zoom' + P4 + ',' + A + '#_app-zoom' + P4
-      + '{top:auto!important;bottom:calc(env(safe-area-inset-bottom,0px) + var(--app-zoom-bottom,84px))!important;right:8px!important}',
+    /* 04.10.2026: fljótandi zoom-stikan (#_app-zoom) er farin — 333 opnar „Stærð og útlit"-blaðið (#_sz-pnl) úr
+       🎨 í app-hausnum eða „Aa"-hnappnum (#_sz-aa) utan apps. Bæði krómskalast hér að ofan. */
     /* 🎨 (262) er position:absolute við hægri brún borðans á síma og lá ofan á 📱▦🖥-rofanum (166) */
     /* Borðinn á síma (mælt 06.09 á 980px/×2,4): andlitið er ~327px; lógó+orðmerki tóku 238, rofinn 105, 🎨 44 →
        komst ekki fyrir. Orðmerkið („SLÖKKVITÆKI EHF.") fer, lógóið 26px, þrengri fyllingar; 🎨 er absolute
@@ -216,7 +226,7 @@
 
   function apply() {
     try {
-      const c = readManual() || autoZoom();
+      const c = readForced() || readManual() || autoZoom();
       C = c;
       const html = document.documentElement;
       if (html.style.getPropertyValue('--app-krom-zoom') !== String(c)) html.style.setProperty('--app-krom-zoom', String(c));
@@ -295,6 +305,7 @@
       return C;
     },
     measure: stampPads,
+    forced: () => readForced() != null,
     version: '353'
   };
   console.log('[patch-353] króm-zoom fyrir síma');
