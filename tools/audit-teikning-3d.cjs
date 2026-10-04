@@ -10,7 +10,7 @@
  *   Fiskislóð 41 (vigur-PDF)      777 strik → 48 heilir veggir, 245 m, húsið 32,9 × 41,2 m · 11 glerfletir, 33 m
  *   Miðgarður 1. hæð (skönnuð TIF) veggjagríma → 106 veggir (skáveggir með) í stað kubba og stafasúlna; 6 hæðir í 3D
  *
- * Sex reiknireglur bera þetta, og hver þeirra er PRÓFUÐ HÉR á tilbúnum gögnum (ekki bara leitað að nafni hennar):
+ * Tíu reiknireglur bera þetta, og hver þeirra er PRÓFUÐ HÉR á tilbúnum gögnum (ekki bara leitað að nafni hennar):
  *   1. heilirVeggir   — vigurstrik pöruð í veggi (miðlína + þykkt), samlínu bútar sameinaðir yfir súlur, horn smellt saman.
  *   2. veggirUrGrimu  — veggjagríma skönnunar lesin sem langir jafnþykkir borðar; klessur (stafir, tákn) verða ekki veggir.
  *   3. glerIBilum     — bil milli veggbúta á sömu línu er gler ef teikningin sýnir ≥ 2 samsíða línur þar; autt hurðargat
@@ -21,6 +21,14 @@
  *                       stök lína og langur. Agnar: „Vantar oft aðal útveggina."
  *   6. lengjaVeggi    — veggur nær alla línuna þar til hún endar eða rekst á annan vegg (Agnar: „Veggirnir stoppa oft á
  *                       miðri leið. Eins og með EI-60 og EI-30 veggi"): línunni er fylgt á myndinni yfir stutt rof.
+ *   7. merkjaEldveggi — EI-60 / EI-30 merki litar ALLAN vegginn sem það stendur við, út í enda línunnar (í gegnum
+ *                       hurðargöt og T-mót); EI-CS merki eru hurðir og lita ekkert.
+ *   8. husklasi       — aðeins veggjanetið sem hangir saman er húsið; stakir smáklasar utan við það (nafnreitur,
+ *                       norðurör, lóðartákn) falla. Agnar um Arnarhvol: „smá mesh þarna".
+ *   9. hurdagot       — rými lokast: stutt bil sem er ekki gler er hurðargat og fær dyrakarm; laus veggendi
+ *                       tengist veggnum beint fram undan sér. Langt op stendur opið.
+ *  10. tengdirVeggir  — stakur stuttur veggur sem snertir ekkert og tengist engu um glugga eða hurð fellur
+ *                       (Agnar: „hindrar þá kannski að stakir veggir úti á gólfi myndast").
  * Og tengingin: undirbua() verður að rétta syna3d heilu veggina (butar) — annars er gríman lyft eins og áður.
  *
  * SOURCE-only, engin net-köll. Fall: exit 1.
@@ -34,7 +42,7 @@ const but = (a, b) => { const i = src.indexOf(a), j = src.indexOf(b); if (i < 0 
 const m = {};
 try {
   new Function('ut', but('  function summutafla', '  /** mynd: <img> eða <canvas>') + but('  const sameinaBil = ', '  const BAKGRUNNUR_3D') +
-    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi });')(m);
+    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi, merkjaEldveggi, husklasi, hurdagot, tengdirVeggir });')(m);
 } catch (e) { villur.push('383: reiknireglurnar hlaðast ekki sjálfstætt (' + e.message + ') — þær verða að vera hrein gagnavinnsla án DOM'); }
 
 const lengd = v => Math.hypot(v[2] - v[0], v[3] - v[1]);
@@ -123,6 +131,45 @@ if (m.lengjaVeggi) {
   if (Math.abs(L[0][2] - 300) > 4 || L[0][0] > 41) villur.push('lengjaVeggi: veggurinn á að ná alla línuna (til 300) yfir stutt rof en EKKI yfir hurðargatið; endaði í ' + Math.round(L[0][2]));
 }
 
+if (m.merkjaEldveggi) {
+  // 7 · EI-60 merki við MIÐBÚT veggjalínu sem er þrír bútar með hurðargötum (60 díla) → allir þrír eldveggir; búturinn
+  //     handan við 300 díla gat (línan endaði) ekki; þverveggur ekki; EI-CS-30 (hurðarmerki) litar ekkert.
+  const veggir = [[100, 200, 300, 200, 8], [360, 200, 560, 200, 8], [620, 200, 800, 200, 8], [1100, 200, 1300, 200, 8], [460, 204, 460, 500, 8], [100, 600, 800, 600, 8]];
+  const E = m.merkjaEldveggi(veggir, [{ x: 450, y: 180, label: 'EI-60', minutes: 60 }, { x: 300, y: 590, label: 'EI-CS-30', minutes: 30 }], 1);
+  if (String(Array.from(E)) !== '60,60,60,0,0,0') villur.push('merkjaEldveggi: merkið á að lita ALLA línuna (yfir hurðargöt), ekki handan við enda hennar, ekki þvervegg, og CS-merki ekkert; fékk ' + Array.from(E).join(','));
+}
+
+if (m.husklasi) {
+  // 8 · hús (ferhyrningur + stakur innveggur inni í því) heldur sér; þrjár stuttar „textalínur" langt til hliðar falla.
+  const hus = [[100, 100, 500, 100, 8], [500, 100, 500, 400, 8], [500, 400, 100, 400, 8], [100, 400, 100, 100, 8], [250, 200, 350, 200, 6]];
+  const rusl = [[900, 120, 1000, 120, 6], [900, 150, 1000, 150, 6], [900, 180, 990, 180, 6]];
+  // álma: tveir veggir 90 díla frá húsinu (ótengd því) á að haldast; ruslið er 400 díla frá og fellur
+  // (álman er undir fjórðungi hússins að lengd, svo aðeins ÁLMUREGLAN heldur henni)
+  const alma = [[590, 100, 590, 300, 8], [590, 100, 700, 100, 8]];
+  const K = m.husklasi(hus.concat(rusl, alma), 30, 115, 115);
+  if (K.length !== 7 || K.some(v => v[0] >= 900)) villur.push('husklasi: húsið (með stökum innvegg) og álman við hlið þess eiga að standa, klasinn langt frá að falla; eftir stóðu ' + K.length);
+}
+
+if (m.hurdagot) {
+  // 9 · veggjalína með 60 díla gati (hurð) og 300 díla gati (op): aðeins hurðin fær karm; gat sem er GLER fær engan;
+  //     laus veggendi 50 díla frá þvervegg tengist honum.
+  const veggir = [[100, 100, 300, 100, 8], [360, 100, 600, 100, 8], [900, 100, 1100, 100, 8], [1160, 100, 1300, 100, 8], [200, 150, 200, 300, 8], [100, 350, 400, 350, 8]];
+  const gler = [[1100, 100, 1160, 100, 8]];
+  const Hu = m.hurdagot(veggir, gler, 1).map(v => v.map(Math.round));
+  const er = (ax, ay, bx, by) => Hu.some(v => Math.abs(v[0] - ax) + Math.abs(v[1] - ay) + Math.abs(v[2] - bx) + Math.abs(v[3] - by) < 8);
+  if (!er(300, 100, 360, 100)) villur.push('hurdagot: 60 díla bil milli samlínu veggja á að vera hurðargat');
+  if (Hu.some(v => v[0] >= 590 && v[2] <= 910 && v[1] === 100)) villur.push('hurdagot: 300 díla op má ekki fá dyrakarm');
+  if (Hu.some(v => v[0] >= 1090 && v[1] === 100)) villur.push('hurdagot: bil sem er gler má ekki líka verða hurð');
+  if (!er(200, 300, 200, 350)) villur.push('hurdagot: laus veggendi 50 díla frá þvervegg á að tengjast honum; fékk ' + JSON.stringify(Hu));
+}
+
+if (m.tengdirVeggir) {
+  // 10 · stakur stuttur veggur úti á gólfi fellur; veggur sem tengist um hurð heldur sér; langur frístandandi líka.
+  const veggir = [[100, 100, 400, 100, 8], [400, 100, 400, 300, 8], [200, 200, 260, 200, 8], [460, 100, 600, 100, 8], [100, 500, 700, 500, 8]];
+  const T = m.tengdirVeggir(veggir, [], [[400, 100, 460, 100, 8]], 1, 400);
+  if (String(T) !== 'true,true,false,true,true') villur.push('tengdirVeggir: stakur stuttur veggur á að falla, veggur tengdur um hurð og langur frístandandi að standa; fékk ' + T);
+}
+
 // Tengingin: undirbua → butar/gler → syna3d
 const krefst = (re, skilabod) => { if (!re.test(src)) villur.push('383: ' + skilabod); };
 krefst(/butar = heilirVeggir\(h\.pdfVeggir, fb, fh\)/, 'undirbua verður að para PDF-strikin (heilirVeggir) — annars kemur girðingin aftur');
@@ -130,7 +177,13 @@ krefst(/heilirUrGrimu\(gr, r\.W, r\.H, r\.kvardi, fb, fh\)/, 'undirbua verður a
 krefst(/holirVeggir\(r\.gra, r\.W, r\.H, r\.kvardi, kpt\)/, 'undirbua verður að leita holra veggja (tvær mjóar línur) á skönnunum');
 krefst(/linubond\(r\.gra, r\.W, r\.H, r\.kvardi, kpt\)/, 'undirbua verður að leita línubanda (útveggir úr örþunnum línum) á skönnunum');
 krefst(/lengjaVeggi\(butar, r\.gra, r\.W, r\.H, r\.kvardi\)/, 'undirbua verður að lengja veggi eftir línunni (Agnar: „ná alla línuna þar til hún endar á annarri eða endar")');
-krefst(/veggjaPx: butar \? butar\.length : n, butar, gler/, 'undirbua verður að rétta syna3d heilu veggina og glerið');
+krefst(/merkjaEldveggi\(butar, eiHintar\.map/, 'undirbua verður að merkja eldveggi út frá EI-merkjunum');
+krefst(/const ei = await eiHintarFyrir3d\(h, fbE, fhE\);/, 'opna3d verður að sækja EI-merkin (vistuð eða úr textalagi PDF-sins) áður en hæðin er undirbúin');
+krefst(/\[0, d, -d\]\.some\(o => inni\(/, 'útisían má ekki fella ÚTVEGGI: veggur fellur aðeins ef ekkert er inni heldur til hliðar við hann (Agnar: „Vantar oft aðal útveggina")');
+krefst(/butar = husklasi\(butar, 30 \* kpt, 115 \* kpt, 115 \* kpt\)/, 'undirbua verður að halda aðeins veggjaneti hússins á skönnunum (nafnreitur og lóðartákn urðu að veggjum — Agnar: „smá mesh þarna")');
+krefst(/hurdir = hurdagot\(butar, gler,/, 'undirbua verður að loka rýmum með hurðargötum (Agnar: „að allir veggirnir tengjast, hvort það sé gluggi eða hurð")');
+krefst(/tengdirVeggir\(butar, gler, hurdir,/, 'undirbua verður að fella staka veggi úti á gólfi á skönnunum');
+krefst(/veggjaPx: butar \? butar\.length : n, butar, gler, hurdir, eld/, 'undirbua verður að rétta syna3d heilu veggina og glerið');
 krefst(/if \(hd\.butar && hd\.butar\.length\) \{/, 'syna3d verður að teikna heila veggi (einn kassi á vegg) þegar þeir eru til');
 krefst(/kassarUrGrimu\(hd\.veggir, hd\.W, hd\.H\)/, 'gamla ristarleiðin verður að standa sem varaleið fyrir teikningar án veggjanets');
 krefst(/syna\(nr\) \{/, 'hæðatakkarnir (ein hæð í einu) eru farnir — fjölhæða hús verða ólæsileg án þeirra');
