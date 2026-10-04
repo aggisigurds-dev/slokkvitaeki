@@ -658,9 +658,15 @@
   }
   // Símahamur: 16px letur á reitina (annars þysjar iOS inn við fókus). Sett sem
   // klasi fremur en sér-regla svo uppblásna vægið gildi líka þar.
+  // 04.10.2026 (Agnar: „allt sem er tómt á að vera falið og birtast þegar maður fer inn í + Fleiri upplýsingar og
+  // setur eitthvað inn" · „óþarfi að eyða plássi í tómar upplýsingar"): opna staðan var EIN tala í localStorage fyrir
+  // öll félög og allar lotur — opnaði maður einu sinni stóð allt opið alls staðar eftir það. Nú gildir hún aðeins
+  // fyrir félagið sem var opnað og aðeins meðan það er á skjánum; lína sem fær gildi er ekki lengur auð og stendur.
   const OPID_LYKILL = 'bupp_opid';
-  function opid() { try { return localStorage.getItem(OPID_LYKILL) === '1'; } catch (_) { return false; } }
-  function setjaOpid(v) { try { localStorage.setItem(OPID_LYKILL, v ? '1' : '0'); } catch (_) {} }
+  try { localStorage.removeItem(OPID_LYKILL); } catch (_) {}
+  let _opidCo = null;
+  function opid(coId) { return _opidCo != null && +_opidCo === +coId; }
+  function setjaOpid(coId, v) { _opidCo = v ? +coId : null; }
   function simiHamur() {
     try {
       return document.documentElement.getAttribute('data-viewmode') === 'mobile' ||
@@ -813,7 +819,7 @@
       (till.length ? linaHtml('Tillaga', null, till.map(f => flisHtml(coId, f, true)).join(''), '_bupp-till-lina') : '') +
       teikn +
       LINUR_FRJALS.map(l => textalinaHtml(coId, l)).join('') +
-      '<div class="_bupp-lina">' +
+      '<div class="_bupp-lina' + (a.texti === '—' ? ' _bupp-tomt' : '') + '">' +
         '<span class="_bupp-merki">Afsláttur</span>' +
         '<span class="_bupp-afsl" title="' + esc(a.titill) + '">' + esc(a.texti) + '</span>' +
       '</div>' +
@@ -824,7 +830,7 @@
               (stMisr ? '⚠ ' : '') + esc(st.texti) + '</span>' +
           '</div>'
         : '') +
-      '<button type="button" class="_bupp-vixl">' + (opid() ? '− Fela auðar línur' : '+ Fleiri upplýsingar') + '</button>';
+      '<button type="button" class="_bupp-vixl">' + (opid(coId) ? '− Fela auðar línur' : '+ Fleiri upplýsingar') + '</button>';
     uppfaeraTomt(box, coId);
     thjappa(box);
 
@@ -849,8 +855,9 @@
     if (vixl) {
       vixl.addEventListener('click', e => {
         e.preventDefault(); e.stopPropagation();
-        setjaOpid(!opid());
-        vixl.textContent = opid() ? '− Fela auðar línur' : '+ Fleiri upplýsingar';
+        const c = +box.dataset.co;
+        setjaOpid(c, !opid(c));
+        vixl.textContent = opid(c) ? '− Fela auðar línur' : '+ Fleiri upplýsingar';
         thjappa(box);
       });
       vixl.addEventListener('keydown', e => e.stopPropagation());
@@ -870,7 +877,7 @@
   // uppblásna vægi og hinar — annars tapa þær fyrir ._bupp-lina-reglunni.
   function thjappa(box) {
     box.classList.toggle('_bupp-simi', simiHamur());
-    box.classList.toggle('_bupp-thjappad', !opid());
+    box.classList.toggle('_bupp-thjappad', !opid(+box.dataset.co));
   }
 
   // Uppfæra gildi sem komu að utan (önnur vél / AppSettings hlóðst) án þess að

@@ -547,7 +547,9 @@
     '@container (max-width:640px){' + [
       p('.co-bupp', 'grid-template-columns:minmax(0,1fr)!important;gap:6px!important'),
       p('.co-bupp > *', 'grid-column:1 / -1!important'),
-      p('.co-bupp ._bupp-lina', 'display:grid!important;grid-template-columns:112px minmax(0,1fr)!important;align-items:center!important;column-gap:10px!important;min-height:42px!important;padding:6px 10px!important'),
+      p('.co-bupp:not(._bupp-thjappad) ._bupp-lina,.co-bupp ._bupp-lina:not(._bupp-tomt)', 'display:grid!important;grid-template-columns:112px minmax(0,1fr)!important;align-items:center!important;column-gap:10px!important;min-height:42px!important;padding:6px 10px!important'),
+      // auðar línur í þjöppuðum ham haldast faldar (363 felur án !important — grid-reglan að ofan má ekki birta þær)
+      p('.co-bupp._bupp-thjappad ._bupp-lina._bupp-tomt', 'display:none!important'),
       p('.co-bupp ._bupp-merki', 'white-space:normal!important;line-height:1.2!important;overflow:visible!important;letter-spacing:.06em!important'),
       p('.co-bupp ._serupp ._bupp-merki,.co-bupp ._fasteign ._bupp-merki', 'flex:0 0 112px!important;width:112px!important'),
       // app-hamurinn blés textareitina (Tengiliður, Aðkoma nánar, Kóði) upp í 52 px / 16 px

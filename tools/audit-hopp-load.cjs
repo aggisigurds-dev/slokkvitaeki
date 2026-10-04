@@ -78,7 +78,8 @@ const utgafa = {
   // 02.10: sama skrá sækir aðeins töfluna sem var skrifuð. Nýtt merki hleður bæði.
   '421-profill-lifandi.js': '20261002saek',
   // 02.10: 274 fékk „Önnur vara/þjónusta — skrifa sjálf/ur" og skoðunarlínur sem fylgja búnaðinum.
-  '274-brunakerfi-fyrirtaeki.js': '20261002ogilda',
+  // 04.10: reikningslínur raðast í þröngri breidd (gámafyrirspurn) — S26 á 95 %.
+  '274-brunakerfi-fyrirtaeki.js': '20261004sz3',
   // Uppfærsluborð bætti #uppferslubord við 218. Nýrra merki hleður hopp-kóðann líka.
   '218-url-routing.js': '20261001ub',
 };
@@ -103,7 +104,8 @@ krefst('js/patches/383-teikning-hreinsa-3d.js', /_festModal/, '383 verður að f
 krefst('js/patches/383-teikning-hreinsa-3d.js', /function vaktGlugga/, '383 þarf MutationObserver svo nýr #modal-floorplan fái hæðaflipa og Skýrari veggir/3D');
 if (!/384-teikninga-forskodun\.js\?v=20261002(smelltp|gaedi|opna|syn)/.test(html)) villur.push('index.html: 384-teikninga-forskodun.js vantar ?v=20261002smelltp eða gaedi eða opna eða syn');
 if (!/383-teikning-hreinsa-3d\.js\?v=20261002(sja|takntp|eyda|att|staerd|gaedi|eitt|stjorn|gra|draugur|hus|lod|her|veg|lot)/.test(html)) villur.push('index.html: 383-teikning-hreinsa-3d.js vantar ?v=20261002sja eða gaedi');
-if (!/363-banner-upplysingar\.js\?v=20261002(smell|opna)/.test(html)) villur.push('index.html: 363-banner-upplysingar.js vantar ?v=20261002smell eða opna');
+// 04.10: 363 felur auðar línur per félag (opna staðan ekki lengur í localStorage) → 20261004tomt
+if (!/363-banner-upplysingar\.js\?v=(20261002(smell|opna)|20261004tomt)/.test(html)) villur.push('index.html: 363-banner-upplysingar.js vantar ?v=20261004tomt (eða 20261002smell/opna)');
 if (!/405-efsta-rod\.js\?v=20261002smell/.test(html)) villur.push('index.html: 405-efsta-rod.js vantar ?v=20261002smell');
 krefst('js/db.js', /skipped:\s*true/, 'prófíll á #company má ekki sækja allar uttaeki-síður');
 krefst('js/patches/421-profill-lifandi.js', /skalSleppa/, 'hak/Yfirferð má ekki sækja öll tæki félagsins');
