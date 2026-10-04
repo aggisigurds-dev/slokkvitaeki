@@ -1011,7 +1011,9 @@
     G.hrein = m.hrein; G.hreinLykill = m.hreinLykill;
     G.dauft = m.dauft; G.dauftLykill = m.dauftLykill;
     G.lykill = m.lykill; G.synd = m.synd;
-    G.rymi = m.rymi ? { x: m.rymi.x, y: m.rymi.y } : { x: 0, y: 0 };
+    // plan.markers eru nýkomin í FRUMMYNDARHNITUM (G.rymi = 0) — færa þau inn í vistaða skurðinn, ekki bara merkja
+    // hliðrunina (þá hoppuðu tækin um skurð hæðarinnar þegar skipt var fram og til baka).
+    faeraMerki(m.rymi ? m.rymi.x : 0, m.rymi ? m.rymi.y : 0);
     G.sjalfReynt = G.frum;
     return true;
   }
@@ -1038,6 +1040,9 @@
     G.virk = i;
     const h = hs[i];
     p.markers = h.markers.map(m => Object.assign({}, m));
+    // Merki nýju hæðarinnar eru í FRUMMYNDARHNITUM. G.rymi bar enn skurð FYRRI hæðar; beita() reiknaði þá nýja
+    // skurðinn út frá röngum grunni og tækin á 2. hæð lentu (861, 1590) frá sínum stað (mælt á Fiskislóð 04.10.2026).
+    G.rymi = { x: 0, y: 0 };
     p.imageUrl = h.image_url || null;
     FP._selectedUnitId = null; zNullstilla();
     hreinsaStrigaStrax();
