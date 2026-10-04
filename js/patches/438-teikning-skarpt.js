@@ -16,7 +16,7 @@
   window.__teiknSkarpt = true;
 
   const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';   // sama útgáfa og 383/435
-  const S = { lykill: '', pdf: null, pdfSlod: '', pdfBid: null, blad: null, bladBid: null, virkt: false };
+  const S = { lykill: '', pdf: null, pdfSlod: '', pdfBid: null, blad: null, bladBid: null, virkt: false, bilad: {} };
 
   // drawImage(bgImage) á #fp-canvas → hvítur flötur á meðan skarpa lagið er virkt (tækin teiknast áfram ofan á).
   function grip(c) {
@@ -71,7 +71,11 @@
       const vp = sida.getViewport({ scale: 1 });
       S.pdf = { sida, b: vp.width, h: vp.height };
       return S.pdf;
-    })().catch(e => { S.pdfSlod = ''; S.pdfBid = null; S.villaTimi = Date.now(); throw e; });
+    })().catch(e => {
+      // PDF sem fæst ekki (t.d. 10 MB skjal sem netfallið klippir við 10 s — Álfaborg 2. hæð) er ekki reynt aftur í
+      // þessari lotu: annars sóttust ~3 MB á 30 s fresti á meðan glugginn stóð opinn. Teikningin sést áfram (JPEG).
+      S.bilad[slod] = 1; S.pdfSlod = ''; S.pdfBid = null; S.villaTimi = Date.now(); throw e;
+    });
     return S.pdfBid;
   }
 
@@ -183,7 +187,7 @@
     const sv = S.pdf ? svaedi(st, S.pdf) : null;
     const tilbuid = !!(S.blad && sv && S.blad.lykill === sv.lykill);
     // ekki reyna aftur í hverjum ramma eftir villu — 30 s bið
-    if (!tilbuid && !S.bladBid && (S.pdf || !S.pdfBid) && Date.now() - (S.villaTimi || 0) > 30000) forteikna(st);
+    if (!tilbuid && !S.bladBid && !S.bilad[st.slod] && (S.pdf || !S.pdfBid) && Date.now() - (S.villaTimi || 0) > 30000) forteikna(st);
     const lykill = [st.slod, Math.round(st.cr.left), Math.round(st.cr.top), Math.round(st.cr.width), st.c.width,
       st.rymi.x, st.rymi.y, Math.round(st.mr.width), Math.round(st.mr.height), upp, tilbuid, !!(st.h.syn && st.h.syn.a)].join('|');
     if (lykill === S.lykill) return;
