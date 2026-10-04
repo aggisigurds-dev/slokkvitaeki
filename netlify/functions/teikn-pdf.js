@@ -29,6 +29,14 @@ function villa(status, error) {
 }
 
 const bida = (ms) => new Promise((r) => setTimeout(r, ms));
+// 04.10.2026: AbortSignal.timeout gildir líka um LESTUR svarsins — straumurinn var klipptur eftir 8 s og 10 MB skannaður
+// uppdráttur (Skútuvogur 4, 2. hæð) kom 3,0 MB og ólæsilegur. Tímamörkin gilda nú aðeins þangað til hausarnir koma.
+async function saekjaMedThaki(slod, ms, valkostir) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms);
+  try { return await fetch(slod, Object.assign({}, valkostir, { signal: ac.signal })); }
+  finally { clearTimeout(t); }
+}
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
@@ -39,7 +47,7 @@ export default async (req) => {
   if (target.protocol === 'https:' && BEINIR.has(target.hostname)) {
     if (!/\.pdf$/i.test(target.pathname)) return villa(415, 'Skjalið er ekki PDF');
     try {
-      const r = await fetch(target.href, { redirect: 'follow', signal: AbortSignal.timeout(9000) });
+      const r = await saekjaMedThaki(target.href, 9000, { redirect: 'follow' });
       if (r.status !== 200 || !r.body) return villa(502, 'Teikningasafnið svaraði ' + r.status);
       const lengd = Number(r.headers.get('content-length') || 0);
       if (lengd > HAMARK) return villa(413, 'Skjalið er stærra en 40 MB');
@@ -76,7 +84,7 @@ export default async (req) => {
 
     for (let i = 0; i < 9; i++) {
       if (i) await bida(800);
-      const r = await fetch(slod, { redirect: 'follow', signal: AbortSignal.timeout(8000) });
+      const r = await saekjaMedThaki(slod, 8000, { redirect: 'follow' });
       if (r.status === 200) {
         const tegund = r.headers.get('content-type') || '';
         if (/text\/html|json/i.test(tegund)) continue;               // enn í vinnslu

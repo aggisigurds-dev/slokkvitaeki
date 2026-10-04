@@ -72,7 +72,14 @@
 
   function synaLista(dr, allarSyndar) {
     var o = overlay(); if (!o) return;
-    var syna = allarSyndar ? dr : dr.filter(function (d) { return d.grunnmynd && !d.urelt; });
+    // 04.10.2026: aðaluppdrættir fyrst (Reykjavík „Aðaluppdrættir", Hafnarfjörður „Bygginganefndarteikning") — á
+    // Norðurhellu 17 voru 33 „grunnmyndir" og aðeins 3 þeirra aðaluppdrættir; hinar burðarvirki, raflagnir og lagnir.
+    var adal = function (d) { return /aðalupp|bygginga?nefnd/i.test(String(d.tegund || '')); };
+    dr = dr.slice().sort(function (a, b) {
+      return (adal(b) - adal(a)) || String(b.dags || '').localeCompare(String(a.dags || ''));
+    });
+    var syna = allarSyndar ? dr : dr.filter(function (d) { return d.grunnmynd && !d.urelt && adal(d); });
+    if (!syna.length && !allarSyndar) syna = dr.filter(function (d) { return d.grunnmynd && !d.urelt; });
     if (!syna.length && !allarSyndar) syna = dr.filter(function (d) { return !d.urelt; });
     if (!syna.length) syna = dr;
     var faldar = dr.length - syna.length;
@@ -178,6 +185,17 @@
       var gata = nrm(addr.split(',')[0]);
       var rvk = results.filter(function (x) { return x.heimild === 'reykjavik'; });
       var eign = rvk.find(function (x) { return nrm(String(x.label || '').split('(')[0]) === gata; }) || rvk[0];
+      // 04.10.2026: Hafnarfjörður / Kópavogur / Garðabær (map.is) eru með rafrænt teikningasafn — teikn-listi sækir það
+      // á landnr + heitinr + svf og 435 teiknar PDF-ið í mynd. Áður stoppaði glugginn hér með „ekki rafrænt safn".
+      var mapisEign = !eign && (results.find(function (x) { return x.heimild === 'map.is' && x.svf && x.heitinr && nrm(String(x.label || '').split('(')[0]) === gata; })
+        || results.find(function (x) { return x.heimild === 'map.is' && x.svf && x.heitinr; }));
+      if (mapisEign) {
+        spinna('Sæki teikningar hússins (' + esc(mapisEign.heimildNafn || 'sveitarfélag') + ')…');
+        var dm2 = await (await fetch(LISTI + '?landnr=' + encodeURIComponent(mapisEign.landnr) + '&heitinr=' + encodeURIComponent(mapisEign.heitinr) +
+          '&svf=' + encodeURIComponent(mapisEign.svf), { signal: AbortSignal.timeout(28000) })).json();
+        var drm = ((dm2 && dm2.results) || []).filter(function (d) { return d && d.infoUrl; });
+        if (drm.length) { synaLista(drm, false); return; }
+      }
       if (!eign) {
         var mapis = results.find(function (x) { return x.heimild === 'map.is' && x.ytriSlod; });
         if (mapis) {
