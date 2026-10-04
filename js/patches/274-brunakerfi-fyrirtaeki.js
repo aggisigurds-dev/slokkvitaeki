@@ -248,7 +248,13 @@
     const fyrri = document.getElementById('_bkc-docview'); if (fyrri) { try { fyrri.remove(); } catch (_) {} }
     const ov = document.createElement('div');
     ov.id = '_bkc-docview';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:100050;background:rgba(15,23,42,.6);display:flex;flex-direction:column';
+    // 04.10.2026 (Agnar: „Thetta gerdist i opp. Brunakerfi appinu“) — z-index var 100050.
+    // I APP-HAM eru #_app-hdr og #_app-nav a 2147481001, svo app-hausinn la OFAN A ✕ Loka:
+    // reikningurinn sast en ekki var haegt ad loka honum, og eina utleidin var ad drepa appid.
+    // Maelt med elementsFromPoint a lokunartakkanum: #_app-hdr kom efst, docview thar undir.
+    // Modal skjalagluggi a ad vera yfir kromi — 2147482000 er yfir hausnum og navinu en undir
+    // app-raesaranum og CG-upptokunni (2147483600). Sama tala sett i 199 (Arsskodun).
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147482000;background:rgba(15,23,42,.6);display:flex;flex-direction:column';
     const bar = document.createElement('div');
     bar.style.cssText = 'flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;background:#0f172a;color:#fff';
     bar.innerHTML = '<b style="font-size:15px">' + esc(o.title || 'Skjal') + '</b>';

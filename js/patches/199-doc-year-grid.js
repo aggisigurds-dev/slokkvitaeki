@@ -744,7 +744,7 @@
     var prev=document.getElementById('_sk-inv-ov'); if(prev){ try{prev.remove();}catch(_){} }
     var ov=document.createElement('div');
     ov.id='_sk-inv-ov';
-    ov.style.cssText='position:fixed;inset:0;z-index:100050;background:rgba(15,23,42,.6);display:flex;flex-direction:column';
+    ov.style.cssText='position:fixed;inset:0;z-index:2147482000;background:rgba(15,23,42,.6);display:flex;flex-direction:column';
     var bar=document.createElement('div');
     bar.style.cssText='flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;background:#0f172a;color:#fff';
     bar.innerHTML='<b style="font-size:15px">Reikningur '+esc(title||'')+'</b>';
