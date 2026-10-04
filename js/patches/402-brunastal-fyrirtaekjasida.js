@@ -539,6 +539,21 @@
     /* 04.10.2026 (Agnar, S26: „skelfileg nýting á plássi í company profile"): án myndar var 170 px tómur kassi
        („engin mynd"). Þá aðeins ræma með myndavélar-takkanum; með mynd stendur 170 px. */
     p('.co-mynd .co-mynd-flis:has(> .co-mynd-engin)', 'min-height:44px!important;height:44px!important'),
+    /* 04.10.2026 (Agnar, S26 á 95 %: „má skipuleggja fyrirtækjaupplýsingahlutann mun betur"): tveir 190 px dálkar
+       gáfu misháa kassa (Einingar/Aðkoma vöfðust í tvær línur) og hálfar auðar raðir (Teikningar, Afsláttur). Í þröngri
+       breidd (gámafyrirspurn — S26 segist 980 px svo @media nær ekki) verða línurnar EINN listi: merki í fastri breidd
+       vinstra megin, stýringar hægra megin. Þjöppunin (auðar línur faldar) heldur — sú regla hefur fleiri klasa. */
+    p('.co-banner', 'container-type:inline-size'),
+    '@container (max-width:640px){' + [
+      p('.co-bupp', 'grid-template-columns:minmax(0,1fr)!important;gap:6px!important'),
+      p('.co-bupp > *', 'grid-column:1 / -1!important'),
+      p('.co-bupp ._bupp-lina', 'display:grid!important;grid-template-columns:112px minmax(0,1fr)!important;align-items:center!important;column-gap:10px!important;min-height:42px!important;padding:6px 10px!important'),
+      p('.co-bupp ._bupp-merki', 'white-space:normal!important;line-height:1.2!important;overflow:visible!important;letter-spacing:.06em!important'),
+      p('.co-bupp ._serupp ._bupp-merki,.co-bupp ._fasteign ._bupp-merki', 'flex:0 0 112px!important;width:112px!important'),
+      // app-hamurinn blés textareitina (Tengiliður, Aðkoma nánar, Kóði) upp í 52 px / 16 px
+      p('.co-bupp input.co-bupp-reitur', 'height:36px!important;min-height:36px!important;font-size:13.5px!important;padding:0 8px!important'),
+      p('.co-bupp ._bupp-innri,.co-bupp ._bupp-teikn-inn', 'display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;min-width:0!important;width:auto!important')
+    ].join('') + '}',
     p('.co-mynd .co-mynd-vefja img', 'object-fit:cover!important'),
     /* „Yfirferðin á ekki að vera þarna megin": Yfirfarið-flísin fylgir nafninu/raðnúmerinu, aðgerðirnar sitja hægra megin */
     p('.ut-list .ut-row .ut-main', 'flex:0 1 auto!important;min-width:0!important'),

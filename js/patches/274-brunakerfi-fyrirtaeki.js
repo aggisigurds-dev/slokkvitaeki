@@ -590,6 +590,21 @@
       r('.b274-linur button._bkc-vteg._vinna', 'background:linear-gradient(145deg,#2a2e35 0%,#5b616c 24%,#8d939d 47%,#a7adb6 53%,#5c626d 76%,#2b2f36 100%);border-color:#22262c;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55)'),   // Agnar: dökkur silfurmálmur, hvítir stafir
       r('.b274-linur button._bkc-vteg._vara', 'background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%);border-color:rgba(190,150,60,.5);color:#fff'),
       r('.b274-nytt', 'color:#845400'),
+      // 04.10.2026 (Agnar, S26 á 95 %: Liður klemmdist í „Samantekt …" og SKÝRSLA-merkið klipptist). Átta dálkar með
+      // föstum breiddum (368 px + bil) komast ekki fyrir í ~430 px. Línan svarar EIGIN breidd (gámafyrirspurn — S26
+      // segist 980 px breiður svo @media nær ekki): undir 620 px fer Liður í heila röð og tölurnar í röð undir.
+      // App-hamurinn blés reitina upp í 16 px / 52 px — tvöfalt auðkenni (P) + !important heldur þeim í töflustærð.
+      r('.b274-linur', 'container-type:inline-size'),
+      r('.b274-linur ._bkc-vin', 'min-height:28px!important;height:28px!important;font-size:12px!important;line-height:normal!important'),
+      r('.b274-linur button._bkc-vteg', 'min-height:0!important;height:22px!important;padding:0 6px!important;font-size:10px!important;letter-spacing:.06em!important;line-height:1!important;max-width:100%;overflow:hidden;text-overflow:clip'),
+      r('.b274-linur ._bkc-vx', 'min-height:0!important;height:24px!important;padding:0!important'),
+      '@container (max-width:620px){' + [
+        r('.b274-linur ._bkc-vh,.b274-linur ._bkc-vr', 'grid-template-columns:40px 76px minmax(0,1fr) 30px 44px max-content 22px!important;grid-template-areas:"nm nm nm nm nm nm nm" "fj tg pr vs af sm x";row-gap:5px!important'),
+        ...['nm', 'fj', 'tg', 'pr', 'vs', 'af', 'sm', 'x'].map((a, i) =>
+          r('.b274-linur ._bkc-vh > :nth-child(' + (i + 1) + '),.b274-linur ._bkc-vr > :nth-child(' + (i + 1) + ')', 'grid-area:' + a)),
+        r('.b274-linur ._bkc-vin[data-vk="name"]', 'font-size:13px!important;padding:0 6px!important'),
+        r('.b274-linur ._bkc-vsum', 'text-align:right;white-space:nowrap')
+      ].join('') + '}',
       r('.b274-vantar', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px 0;font-family:' + MONO + ';font-size:11px;color:#8a6100;font-weight:700'),
       r('.b274-linur ._bkc-empty', 'padding:14px 12px;text-align:center'),
       r('.b274-linur > div > div[style*="8a6100"]', 'padding:6px 12px 0!important;font-family:' + MONO + ';font-size:11px!important'),

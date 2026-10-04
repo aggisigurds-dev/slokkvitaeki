@@ -52,11 +52,11 @@
   // (króm > 1,2). Valið með yfirferð í S26-hermun (42/60/80/100 %): miðgildi leturs ≈ 10–11 dp án útflæðis.
   // Kröfuyfirlit („nokkuð fínt"), Ársskoðun (eigin Sími-hamur) og Brunahólf-iframe-síður halda gömlu stærðinni.
   const BYRJUN = {
-    company: 0.7, 'm:modal-floorplan': 0.7,
+    company: 0.7, 'm:modal-floorplan': 0.7, 'm:_bks-overlay': 0.6, 'm:_bkc-overlay': 0.6,
     hreyfingarlisti: 0.85, thjonustuverk: 0.85, sala: 0.85,
     'thjonustu-verkstaedi': 0.6, rekstrarfelog: 0.8, kostnadur: 0.75
   };
-  const NOFN = { company: 'Fyrirtækjasíða', 'm:modal-floorplan': 'Teikningar' };
+  const NOFN = { company: 'Fyrirtækjasíða', 'm:modal-floorplan': 'Teikningar', 'm:_bks-overlay': 'Skoðunarskýrsla · brunakerfi', 'm:_bkc-overlay': 'Brunakerfi · vinnuhamur' };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const r2 = n => Math.round(n * 100) / 100;
   const klemma = s => { s = +s; if (!isFinite(s)) s = 1; return r2(Math.min(SMAX, Math.max(SMIN, s))); };
@@ -90,15 +90,31 @@
   }
 
   /* ── lyklar ─────────────────────────────────────────────────────────────── */
+  // Föst yfirlög sem eru EKKI .modal en þekja skjáinn eins og gluggi (04.10.2026, Agnar: „vinnuhamur mætti auka zoom
+  // aðeins en það virkar ekki zoom stillingin"): skoðunarskýrsla brunakerfis (273) og brunakerfis-yfirlagið (274) þegar
+  // það er ekki hýst inni í prófílnum (386 setur ._sks-inni). Stillingin breytti áður síðunni UNDIR yfirlaginu.
+  const YFIRLOG = ['_bks-overlay', '_bkc-overlay'];
+  function zVisir(el) { const z = parseInt(getComputedStyle(el).zIndex, 10); return isFinite(z) ? z : 0; }
   function gluggi() {
     try {
+      let modal = null;
       const st = (window.Modal && Array.isArray(Modal.stack)) ? Modal.stack : [];
-      for (let i = st.length - 1; i >= 0; i--) {
+      for (let i = st.length - 1; i >= 0 && !modal; i--) {
         const m = document.getElementById(st[i]);
-        if (m && m.classList.contains('open') && synilegt(m)) return m;
+        if (m && m.classList.contains('open') && synilegt(m)) modal = m;
       }
-      const opnir = [...document.querySelectorAll('.modal.open[id]')].filter(synilegt);
-      return opnir.length ? opnir[opnir.length - 1] : null;
+      if (!modal) {
+        const opnir = [...document.querySelectorAll('.modal.open[id]')].filter(synilegt);
+        modal = opnir.length ? opnir[opnir.length - 1] : null;
+      }
+      let best = modal;
+      YFIRLOG.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || el.style.display !== 'block' || el.classList.contains('_sks-inni') || !synilegt(el)) return;
+        if (getComputedStyle(el).position !== 'fixed') return;
+        if (!best || zVisir(el) > zVisir(best)) best = el;
+      });
+      return best;
     } catch (_) { return null; }
   }
   function siduLykill() {
@@ -195,7 +211,7 @@
     } catch (_) {}
 
     const g = on ? gluggi() : null;
-    document.querySelectorAll('.modal._sz-m').forEach(m => { if (m !== g) m.classList.remove('_sz-m', '_sz-full'); });
+    document.querySelectorAll('._sz-m').forEach(m => { if (m !== g) m.classList.remove('_sz-m', '_sz-full'); });
     if (g) {
       const gk = 'm:' + g.id;
       const gs = staerd(gk, true);
@@ -295,8 +311,8 @@
       'html.app-page-zoomed body.appmode.appmode-nonav .view.active{padding-bottom:calc(24px / var(--app-page-zoom))!important}',
       /* ── GLUGGAR: eigið zoom + rammi undir app-hausnum / yfir botnstikunni.
          .modal ER bakgrunnurinn (inset:0); border-box svo innihaldið lendi milli króms. ── */
-      'body.appmode .modal.open._sz-m,html[data-viewmode="mobile"] .modal.open._sz-m{zoom:var(--app-modal-zoom,1)!important}',
-      'body.appmode .modal.open._sz-full{box-sizing:border-box!important;'
+      'body.appmode ._sz-m._sz-m,html[data-viewmode="mobile"] ._sz-m._sz-m{zoom:var(--app-modal-zoom,1)!important}',
+      'body.appmode ._sz-full._sz-full{box-sizing:border-box!important;'
         + 'border-top:calc(var(--sz-top,0px) / var(--app-modal-zoom,1)) solid transparent!important;'
         + 'border-bottom:calc(var(--sz-bot,0px) / var(--app-modal-zoom,1)) solid transparent!important}',
 

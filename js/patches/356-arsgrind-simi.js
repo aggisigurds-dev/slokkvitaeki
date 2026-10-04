@@ -41,7 +41,10 @@
     r(['.sk-yrwrap'], 'max-width:100%!important;min-width:0!important'),
     // ílátið er spjaldið sjálft svo samnings-grindin (utan .sk-yrwrap) fylgi líka
     r(['._dyg-section.sk-card'], 'container-type:inline-size'),
-    '@container (max-width:520px){' + r(['.sk-svc-grid'], 'grid-template-columns:minmax(0,1fr)!important') + '}',
+    // 04.10.2026: með síðustærð per síðu (333) er efnið nú í raunstærð — 545 px grind gaf tvo 246 px dálka og skjalanöfn,
+    // „— hvaða reikningur" og samningsflísar skárust (S26-skjáskot). Einn dálkur undir 700 px; á gamla 42 %-skalanum
+    // (~900 px grind) standa spjöldin áfram hlið við hlið eins og Agnar bað um 06.09.
+    '@container (max-width:700px){' + r(['.sk-svc-grid'], 'grid-template-columns:minmax(0,1fr)!important') + '}',
     // tómt spjald = ein lína: haus + „engin …" + „+ skýrsla" í sömu línu
     r(['.sk-svc-card.sk-svc-empty'], 'opacity:.85!important;padding:6px 11px!important'),
     r(['.sk-svc-card.sk-svc-empty .sk-svc-hd'], 'margin-bottom:0!important;flex-wrap:wrap!important;gap:6px!important'),
