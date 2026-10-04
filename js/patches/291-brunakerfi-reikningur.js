@@ -78,7 +78,14 @@
 
   // ── sölulíkami úr ctx (SAMA stærðfræði og 273 createInvoice) ───────────────
   function buildDraftBody(co, year, ctx) {
-    let linur = [], to = 0, afsl = 0, missingPrice = false;
+    // 04.10.2026 (Agnar: „útreikningarnir eru ekki að uppfærast miðað við skýrsluna").
+    // Mælt á úttekt 26-0007 (Center Hótel – Arnarhvoll): skýrslan taldi 196 einingar
+    // og REIKNINGURINN var réttur — 9 línur, 347.845 kr, reiknaður úr búnaðartöflunni.
+    // En skýrslan sjálf bar áfram ÞRJÁR gamlar verðlínur (11.471 kr), svo spjaldið
+    // sýndi 14.224 kr. Fallback-greinin hér að neðan reiknar línurnar en skrifaði þær
+    // hvergi — þær lifðu aðeins í sölunni. fraAuto ber þær til baka svo skýrsla,
+    // spjald og reikningur segi allt sömu töluna.
+    let linur = [], to = 0, afsl = 0, missingPrice = false, fraAuto = null;
     const lin = (ctx.linur || []);
     const auto = (ctx.autoLinur || []);
     if (lin.length && Math.round(ctx.verdTotal || 0) > 0) {
@@ -97,6 +104,7 @@
         vsk_pct: VAT_PCT, ref: '' }));
       const sum = al.reduce((a, l) => a + vLina(l), 0);
       to = Math.round(sum * (1 + VAT_PCT / 100));
+      fraAuto = al.map(l => ({ name: l.name || '', qty: String(num(l.qty) || 0), price: String(num(l.price) || 0), afsl: l.afsl == null ? '' : String(l.afsl) }));
     }
     if (!linur.length || !(to > 0)) {
       // ekkert verð finnanlegt → drögin stofnast SAMT (ALLTAF LEYFA VISTUN)
@@ -108,6 +116,7 @@
     const ktd = String(co.kennitala || '').replace(/\D/g, '');
     return {
       missingPrice,
+      fraAuto,
       row: {
         customer_nafn: co.nafn || '', customer_id: co.id, customer_kt: ktd || null,
         starfsmadur: ctx.madur || 'Kassi', linur,
@@ -149,7 +158,7 @@
         toast('Reikningsdrög vistuðust ekki: ' + ins.error.message, true);
         return null;
       }
-      if (ctx.linkSale) { try { await ctx.linkSale(ins.data); } catch (e) { console.warn('[bkr] linkSale', e); } }
+      if (ctx.linkSale) { try { await ctx.linkSale(ins.data, b.fraAuto); } catch (e) { console.warn('[bkr] linkSale', e); } }
       toast('🧾 Reikningsdrög ' + ins.data.num + ' stofnuð sjálfkrafa' +
         (b.missingPrice ? ' — verð vantar, stilla fyrir útgáfu' : ' · ' + fmtKr(b.row.samtals) + ' m. vsk'));
       return ins.data;
@@ -186,7 +195,7 @@
 
   // skrifar sale_id/sale_num aftur inn í brunakerfi_skyrslur.data.verd (prófíl-leiðin;
   // 273-leiðin notar sitt eigið linkSale sem fer gegnum saveDraft á opna forminu)
-  async function linkSaleToReport(rep, row) {
+  async function linkSaleToReport(rep, row, linurFraAuto) {
     try {
       const sb = SB(); if (!sb) return;
       let d = rep.data || {};
@@ -196,6 +205,11 @@
       } catch (_) {}
       d.verd = d.verd || { linur: [] };
       d.verd.sale_id = row.id; d.verd.sale_num = row.num;
+      // Reikningurinn var reiknaður úr búnaðartöflunni af því að skýrslan átti engar
+      // nothæfar verðlínur — skrifum þær þá INN, annars sýnir spjaldið áfram gömlu
+      // töluna meðan reikningurinn ber þá réttu. Skrifum EKKI yfir línur sem einhver
+      // sló inn sjálfur: aðeins þegar fallback-greinin var notuð.
+      if (linurFraAuto && linurFraAuto.length) d.verd.linur = linurFraAuto;
       // 2026-09-17: .error var aldrei lesið (supabase-js kastar ekki). Mistækist þetta
       // ÞÖGULT vissi skýrslan ekki af reikningnum — stöðulínan sagði áfram „Reikningur:
       // enginn ＋ Stofna drög" og næsti smellur bjó til ANNAN reikning fyrir sömu úttekt.
