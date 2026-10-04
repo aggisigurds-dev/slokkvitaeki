@@ -236,14 +236,18 @@
   }
 
   function saekjaEfTomt(cid) {
-    setTimeout(function () {
+    var byrjun = Date.now();
+    if (FloorPlan.__soknLokid === cid) FloorPlan.__soknLokid = 0;   // ný opnun — bíða eftir NÝRRI sókn
+    (function athuga() {
       if (FloorPlan.companyId !== cid) return;
       if (FloorPlan.bgImage) return;
       var plan = FloorPlan.plans[cid];
-      if (plan && plan.imageUrl) return;
+      if (plan && (plan.imageUrl || (plan.haedir || []).some(function (h) { return h && h.image_url; }))) return;
       if (!document.getElementById('modal-floorplan') || !document.getElementById('modal-floorplan').classList.contains('open')) return;
+      // Röð þjónsins enn á leiðinni (375 setur __soknLokid): bíða, í mesta lagi 10 s.
+      if (FloorPlan.__soknLokid !== cid && Date.now() - byrjun < 10000) { setTimeout(athuga, 300); return; }
       saekja(cid);
-    }, 700);
+    })();
   }
 
   function skreyta() {

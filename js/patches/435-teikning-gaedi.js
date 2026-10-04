@@ -103,8 +103,38 @@
     return cv;
   }
 
+  // HREINT PDF (Hafnarfjörður o.fl. — teikningar.hafnarfjordur.is/data/….pdf): engin JPEG-forskoðun er til, teikn-mynd
+  // skilar sjálfu PDF-inu sem <img> getur ekki sýnt. Teiknað beint í mynd af FASTRI stærð (lengri hlið 6000 px) —
+  // staðsetningar tækja eru vistaðar í díl-hnitum myndarinnar, svo stærðin má ekki ráðast af tæki eða gæðavali.
+  const PDF_HLID = 6000;
+  const _pdfMynd = {};
+  function erHreintPdf(url) {
+    try {
+      const u = new URL(url, location.href);
+      if (!/teikn-mynd/.test(u.pathname)) return false;
+      const inn = u.searchParams.get('url') || '';
+      return !!inn && /\.pdf$/i.test(new URL(inn).pathname);
+    } catch (_) { return false; }
+  }
+  function hreintPdfMynd(url) {
+    if (!_pdfMynd[url]) {
+      _pdfMynd[url] = rasterPdf(pdfSlodUrMynd(url), PDF_HLID).then(cv => new Promise(res => {
+        // ekki í geymaBlob: sú slóð má aldrei afturkallast á meðan hæðin getur opnast aftur
+        cv.toBlob(b => { const s = b ? URL.createObjectURL(b) : cv.toDataURL('image/jpeg', 0.92); cv.width = 0; cv.height = 0; res(s); }, 'image/jpeg', 0.92);
+      })).catch(e => { delete _pdfMynd[url]; throw e; });
+    }
+    return _pdfMynd[url];
+  }
+
   function bindSrc(img, url) {
     if (!img || !url) return;
+    if (erHreintPdf(url)) {
+      const bid = ++_bindBid;
+      img._gaediBid = bid; img._gaedi = 'pdf:' + url;
+      hreintPdfMynd(url).then(slod => { if (img._gaediBid === bid) img.src = slod; })
+        .catch(e => { if (img._gaediBid === bid && img.onerror) img.onerror(e); });
+      return;
+    }
     const g = gildi();
     const pdf = g === 'fullt' ? pdfSlodUrMynd(url) : '';
     img._gaedi = g + ':' + url;

@@ -51,11 +51,11 @@
       sk.onerror = () => rej(new Error('pdf.js')); document.head.appendChild(sk);
     });
   }
-  // sama regla og 383 pdfSlod: image_url = teikn-mynd?url=<permalink>; .pdf.info → teikn-pdf
+  // sama regla og 383 pdfSlod: image_url = teikn-mynd?url=<permalink>; .pdf.info (Reykjavík) og .pdf (Hafnarfjörður) → teikn-pdf
   function pdfSlod(h) {
     try {
       const u = new URL(h.image_url, location.href), inn = u.searchParams.get('url') || '';
-      return /\.pdf\.info$/i.test(new URL(inn).pathname) ? '/.netlify/functions/teikn-pdf?url=' + encodeURIComponent(inn) : '';
+      return /\.pdf(\.info)?$/i.test(new URL(inn).pathname) ? '/.netlify/functions/teikn-pdf?url=' + encodeURIComponent(inn) : '';
     } catch (_) { return ''; }
   }
   async function saekjaSidu(slod) {

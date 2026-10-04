@@ -70,6 +70,9 @@
     try {
       DB.sb.from(TAFLA).select('markers,image_url,haedir,updated_at').eq('company_id', cid).limit(1)
         .then(function (r) {
+          // 374 bíður eftir þessu áður en það ályktar að engin teikning sé til (annars opnaðist „Sækja teikningu"
+          // yfir teikningunni ef röð þjónsins var lengur en 0,7 s á leiðinni — fyrsta opnun án skyndiminnis).
+          FloorPlan.__soknLokid = cid;
           if (!r || r.error || !r.data || !r.data.length) return;
           var row = r.data[0];
           var plan = FloorPlan.plans[cid] || (FloorPlan.plans[cid] = { markers: [] });
@@ -86,7 +89,7 @@
           // 383: hæðirnar fylgja röðinni; merkin eru hér í frummyndarhnitum (ritillinn hliðrar þeim sjálfur við skurð).
           try { if (typeof FloorPlan.__eftirSokn === 'function') FloorPlan.__eftirSokn(cid, row); } catch (_) {}
           if (FloorPlan.companyId === cid) beitaAServer(cid, row);   // borðið opið → uppfæra sýn
-        }, function () {});
+        }, function () { FloorPlan.__soknLokid = cid; });
     } catch (_) {}
   }
 
