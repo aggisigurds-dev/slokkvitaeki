@@ -75,7 +75,14 @@
           var plan = FloorPlan.plans[cid] || (FloorPlan.plans[cid] = { markers: [] });
           plan.markers = Array.isArray(row.markers) ? row.markers : [];
           if (row.image_url) plan.imageUrl = row.image_url;
-          try { localStorage.setItem('fp_' + cid, JSON.stringify({ markers: plan.markers, imageUrl: plan.imageUrl })); } catch (_) {}
+          // 04.10.2026: hæðirnar (skurður, Skýrari/fest, veggir) fylgja skyndiminninu — annars opnaðist glugginn með allt
+          // blaðið og án Skýrari veggja þangað til röð þjónsins barst (15–40 s á prófílnum, Agnar: „open sooner").
+          try {
+            localStorage.setItem('fp_' + cid, JSON.stringify({
+              markers: plan.markers, imageUrl: plan.imageUrl,
+              haedir: Array.isArray(row.haedir) && row.haedir.length ? row.haedir : undefined
+            }));
+          } catch (_) {}
           // 383: hæðirnar fylgja röðinni; merkin eru hér í frummyndarhnitum (ritillinn hliðrar þeim sjálfur við skurð).
           try { if (typeof FloorPlan.__eftirSokn === 'function') FloorPlan.__eftirSokn(cid, row); } catch (_) {}
           if (FloorPlan.companyId === cid) beitaAServer(cid, row);   // borðið opið → uppfæra sýn
