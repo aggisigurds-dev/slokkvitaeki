@@ -1591,7 +1591,10 @@
       // takkinn gerði að verkum að „næ henni ekki aftur").
       const st = document.createElement('style'); st.id = 'fp-fest-css';
       st.textContent = '#modal-floorplan .fp-veggir-btn,#modal-floorplan .fp-ei-btn{display:none!important}' +
-        '#modal-floorplan.fp-fest .fp-skera-btn{display:none!important}';
+        '#modal-floorplan.fp-fest .fp-skera-btn{display:none!important}' +
+        // Brunastál-þemað setur !important stálhalla á alla takka í gluggum — virkt ástand (Skýrari veggir, Útlit fest)
+        // sást ekki (04.10.2026: Agnar hélt Skýrari væri af). ID-valið vinnur.
+        'html #modal-floorplan .fp-hd-grp .btn[aria-pressed="true"]{background:#c9a54a!important;color:#14120f!important;border-color:#c9a54a!important}';
       document.head.appendChild(st);
     }
     lita('.fp-veggir-btn', G.hamur === 'veggir', '✏ Veggir' + (h.veggir.length + h.pdfVeggir.length ? ' · ' + (h.veggir.length + h.pdfVeggir.length) : ''));
