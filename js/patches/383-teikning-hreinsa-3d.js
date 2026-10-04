@@ -595,15 +595,34 @@
   // SJÁLFVISTUN: skurður, „Skýrari veggir", veggir lesnir úr PDF og handdregnir veggir fara á þjóninn um leið — annars
   // var allt reiknað og lesið upp á nýtt við hverja opnun og á hverri vél („gríðarlega mikið af endurtekinni vinnu").
   // Sama skrif og fyrir TurboPaint (vistaHaedirFyrirTurboPaint): öll hæðin eins og hún stendur á skjánum.
+  // ÖRYGGI (04.10.2026): sjálfvistun snertir ALDREI tækin né hæðalistann — aðeins stillingar hverrar hæðar (skurður,
+  // Skýrari/fest, veggir) eru skrifaðar inn í FERSKA röð þjónsins. Tæki vistast áfram aðeins með 💾 Vista. Og ekkert er
+  // vistað fyrr en röð þjónsins hefur borist glugganum, svo gamalt staðbundið eintak getur aldrei skrifað yfir hana.
+  const STILLINGAR = ['skurdur', 'sjalf', 'thett', 'syn', 'veggir', 'pdfVeggir', 'pdfFlokkar'];
   let _sjalfvistBid = 0;
   function vistaSjalfkrafa(astaeda) {
     clearTimeout(_sjalfvistBid);
     _sjalfvistBid = setTimeout(async () => {
       try {
-        const FP = FPx(); if (!FP || !FP.companyId || !modalSynnilegt()) return;
-        // Nýupphlaðin mynd er blob: — hún lifir aðeins í þessum glugga; 💾 Vista geymir hana fyrst.
-        if (haedir().some(x => String(x.image_url || '').indexOf('blob:') === 0)) return;
-        await vistaHaedirFyrirTurboPaint();
+        const FP = FPx(), cid = FP && FP.companyId;
+        if (!cid || !modalSynnilegt() || G.soknKom !== cid || !window.DB || !DB.sb) return;
+        const r = await DB.sb.from('teikning_bord').select('haedir').eq('company_id', cid).limit(1);
+        if (r.error || !r.data || !r.data.length || !Array.isArray(r.data[0].haedir) || !r.data[0].haedir.length) return;
+        const minar = {}; haedir().forEach(h => { if (h && h.id) minar[h.id] = h; });
+        let breytt = 0;
+        const nyjar = r.data[0].haedir.map(sh => {
+          const m = sh && minar[sh.id];
+          if (!m || (m.image_url || null) !== (sh.image_url || null)) return sh;
+          const n = Object.assign({}, sh);
+          STILLINGAR.forEach(k => {
+            if (m[k] === undefined) return;
+            if (JSON.stringify(m[k]) !== JSON.stringify(sh[k])) { n[k] = JSON.parse(JSON.stringify(m[k])); breytt++; }
+          });
+          return n;
+        });
+        if (!breytt) return;
+        const u = await DB.sb.from('teikning_bord').update({ haedir: nyjar, updated_at: new Date().toISOString() }).eq('company_id', cid).select('company_id');
+        if (u.error || !u.data || !u.data.length) throw new Error((u.error && u.error.message) || 'ekkert skrifað');
         segja('✓ Vistað' + (astaeda ? ' — ' + astaeda : ''));
       } catch (e) { console.warn('[383] sjálfvistun', e); }
     }, 1200);
@@ -1643,6 +1662,10 @@
       else { hs[0].markers = (p.markers || []).map(m => Object.assign({}, m)); hs[0].image_url = p.imageUrl || null; }
       const urlNu = (hs[i] && hs[i].image_url) || null;
       if (urlNu !== urlAdur) { G.lykill = ''; G.synd = null; }
+      // Merkin eru nú í FRUMMYNDARHNITUM — hliðrunin verður að fylgja (0,0), og beita() setur skurðinn á aftur.
+      // Án þessa hélt G.rymi gamla skurðinum: næsta faeraMerki dró hann frá frummyndarhnitum og tækin hoppuðu
+      // þegar aðeins byggingin sást (Agnar 04.10.2026: „tækin haldast á fullu korti en hoppa þegar sést bara byggingin").
+      G.rymi = { x: 0, y: 0 }; G.lykill = '';
     };
 
     FP.save = function () {
