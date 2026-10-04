@@ -124,6 +124,24 @@
     return h;
   }
 
+  // 04.10.2026 (Agnar: „bæta við takka „Á verkstæði" sem síðan tengist við Úr þjónustu á verkstæðinu. Var hálfbyggt
+  // kerfi — vantaði bara tengingartakkann inn í úttektartækjatöflunni"). Sama skrift og bílstjórinn gerir á Aksturslista
+  // (219 updateForState('verkstaedi')): status='loaned', custody_status=null → tækið birtist í „Komið úr þjónustu"
+  // á Verkstæði (269) sem Nýkomið og fylgir lífsferlinum þar. Tæki í opinni verkbeiðni (422) er þegar á verkstæði —
+  // þá er takkinn læstur. Annar smellur tekur tækið af verkstæðinu (status 'active' eins og hjá bílstjóranum, custody hreinsað).
+  function verkTakki(u, vs){
+    var a = String(u.status||'').toLowerCase()==='loaned';
+    var cs = u.custody_status || '';
+    if(vs && !vs.stadfest) return { on:true, laest:true, txt:'Á verkstæði', titill:'Í verkbeiðni '+(vs.num||'')+' — unnið í Verkröðinni' };
+    if(a) return { on:true, laest:false, txt: cs==='tilbuid' ? 'Tilbúið' : 'Á verkstæði', titill:'Á verkstæði (Komið úr þjónustu'+(cs?' · '+cs:'')+') — smelltu til að taka af verkstæðinu' };
+    return { on:false, laest:false, txt:'Á verkstæði', titill:'Senda á verkstæði — birtist í „Komið úr þjónustu" á Verkstæði' };
+  }
+  var VERK_IK = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>';
+  function verkHtml(coId, u, vs){
+    var t = verkTakki(u, vs);
+    return '<button type="button" class="ut-verk'+(t.on?' on':'')+(t.laest?' vt-laest':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" title="'+esc(t.titill)+'">'+VERK_IK+'<span>'+esc(t.txt)+'</span></button>';
+  }
+
   function rowHtml(coId, u){
     var f = fam(u.type), sel = !!_sel[u.id], h = radStada(coId, u);
     var cur = h.cur, onytt = h.onytt, done = h.done, vs = h.vs;
@@ -143,6 +161,7 @@
           '<button type="button" class="ut-check'+(done?' on':'')+vtHak+'" data-co="'+coId+'" data-uid="'+u.id+'" title="'+esc(vtTitill)+'">✓</button>'+
           '<div class="ut-svcseg'+(vs?' vt-laest':'')+'"'+(vs?' title="'+esc(h.segTitill)+'"':'')+'>'+segs+'</div>'+
           '<button type="button" class="ut-onytt'+(onytt?' on':'')+(vs?' vt-laest':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-ty="'+esc(u.type)+'" title="Merkja ónýtt — rukkast á yfirferðarverði (vinnan var unnin)">🚫</button>'+
+          verkHtml(coId, u, vs)+
         '</div>'+
         '<div class="ut-far">'+
           '<button class="ut-act" onclick="Print.showQR(DB.getUnit('+u.id+'))" title="Prenta QR-miða">▦</button>'+
@@ -297,6 +316,12 @@
           }
           var ony = row.querySelector('.ut-onytt');
           if(ony){ ony.classList.toggle('vt-laest', !!h.vs); ony.classList.toggle('on', h.onytt); }
+          var vk = row.querySelector('.ut-verk');
+          if(vk){
+            var vt = verkTakki(u, h.vs);
+            vk.classList.toggle('on', vt.on); vk.classList.toggle('vt-laest', vt.laest); vk.title = vt.titill;
+            var vsp = vk.querySelector('span'); if(vsp && vsp.textContent !== vt.txt) vsp.textContent = vt.txt;
+          }
           var last = row.querySelector('.ut-last');
           if(last){
             var t = document.createElement('div'); t.innerHTML = lastChip(u);
@@ -512,6 +537,39 @@
       try{ UnitServicePicker.setChoice(+b.dataset.co,+b.dataset.uid,sval); }catch(_){}
       _radUpp(b.closest('.ut-row'), sval);
       recompute(); return;
+    }
+    // Á verkstæði (04.10.2026) — sama skrift og bílstjórinn (219); sjá verkTakki.
+    if((b=e.target.closest('.ut-verk.vt-laest'))){
+      try{ if(window.Toast && Toast.show) Toast.show(b.getAttribute('title')||'Tækið er í verkbeiðni'); }catch(_){}
+      return;
+    }
+    if((b=e.target.closest('.ut-verk'))){
+      e.preventDefault(); e.stopPropagation();
+      if(b.disabled) return;
+      hoppBump('svc');
+      var vco=+b.dataset.co, vuid=+b.dataset.uid, vu=null;
+      var vcache=(window.DB&&DB.cache&&DB.cache.units)||[];
+      for(var vi=0;vi<vcache.length;vi++){ if(+vcache[vi].id===vuid){ vu=vcache[vi]; break; } }
+      if(!vu || !(window.DB&&DB.sb)) return;
+      var afVerk = String(vu.status||'').toLowerCase()==='loaned';
+      // Af verkstæði → 'active' (sama og bílstjórinn, 219); skoðunardagsetningar haldast óbreyttar.
+      var vpatch = afVerk ? { status:'active', custody_status:null } : { status:'loaned', custody_status:null };
+      (async function(){
+        if(afVerk && vu.custody_status && vu.custody_status!=='komid'){
+          var spyr='Tækið er „'+vu.custody_status+'" á verkstæðinu. Taka það samt af verkstæðinu?';
+          var jaa=(window.Confirm&&Confirm.show)?await Confirm.show(spyr):confirm(spyr);
+          if(!jaa) return;
+        }
+        b.disabled=true;
+        var r=null; try{ r=await DB.sb.from('uttaeki').update(vpatch).eq('id',vuid); }catch(err){ r={error:err}; }
+        b.disabled=false;
+        if(r && r.error){ try{ if(window.Toast&&Toast.show) Toast.show('Vistaðist ekki — reyndu aftur'); }catch(_){} return; }
+        vu.status=vpatch.status; vu.custody_status=null;
+        try{ window.UttektTaeki.uppfaeraRadir(vco,[vuid]); }catch(_){}
+        try{ if(window.Toast&&Toast.show) Toast.show(afVerk ? 'Tekið af verkstæðinu' : 'Sent á verkstæði — birtist í „Komið úr þjónustu"'); }catch(_){}
+        recompute();
+      })();
+      return;
     }
     // 422: tæki í verkbeiðni er merkt ónýtt í Verkröðinni, ekki hér (404 býður „Merkja ónýtt" í ⋯-valmynd).
     if((b=e.target.closest('.ut-onytt.vt-laest'))){
@@ -897,6 +955,10 @@
       '.ut-svc.on{background:linear-gradient(180deg,#60a5fa 0%,#2563eb 48%,#1e40af 52%,#1e3a8a 100%)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.25);text-shadow:0 1px 1px rgba(0,0,0,.4);border:1px solid #1e3a8a!important}',
       '.ut-onytt{border:1px solid var(--brd);background:var(--surface);color:var(--ink3);border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer}',
       '.ut-onytt.on{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d);border-color:var(--red-bd,#fca5a5)}',
+      '.ut-verk{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--brd);background:var(--surface);color:var(--ink2);border-radius:8px;padding:5px 9px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
+      '.ut-verk svg{flex:none}',
+      '.ut-verk.on{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);border-color:#000;color:#fff}',
+      '.ut-verk.vt-laest{opacity:.75;cursor:default}',
       '.ut-far{display:flex;align-items:center;margin-left:14px;width:40px;justify-content:flex-end}',
       '.ut-act{border:1px solid var(--brd);background:var(--surface);color:var(--ink2);border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}',
       '.ut-act:hover{border-color:var(--brand);color:var(--brand)}',

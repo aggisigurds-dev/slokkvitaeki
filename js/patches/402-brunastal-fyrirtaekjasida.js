@@ -554,7 +554,7 @@
     p('.ut-list', 'container-type:inline-size'),
     '@container (max-width:720px){' + [
       p('.ut-list.ut-list .ut-row.ut-row', 'display:grid!important;grid-template-columns:4px 22px minmax(0,1fr) auto auto auto!important;'
-        + 'grid-template-areas:"str chk main main sidast check" "str chk seg seg onytt far"!important;column-gap:8px!important;row-gap:7px!important;'
+        + 'grid-template-areas:"str chk main main verk check" "str chk seg onytt sidast far"!important;column-gap:8px!important;row-gap:7px!important;'
         + 'align-items:center!important;overflow:visible!important;flex-wrap:nowrap!important;padding:8px 10px 8px 0!important;min-height:0!important'),
       S2 + '.ut-list.ut-list .ut-row.ut-row' + F + '::before{grid-area:str!important;margin:-8px 0!important;align-self:stretch!important}',   // gervistak síðast — F má ekki koma á eftir ::before
       p('.ut-list.ut-list .ut-row.ut-row .ut-right,.ut-list.ut-list .ut-row.ut-row .ut-now', 'display:contents!important'),
@@ -563,14 +563,18 @@
       p('.ut-list.ut-list .ut-row.ut-row .ut-main', 'grid-area:main!important;min-width:0!important;flex:none!important'),
       p('.ut-list.ut-list .ut-row.ut-row .ut-check', 'grid-area:check!important;justify-self:end!important;width:34px!important;height:34px!important;min-height:0!important;padding:0!important'),
       p('.ut-list.ut-list .ut-row.ut-row .ut-svcseg', 'grid-area:seg!important;justify-self:start!important;flex-wrap:nowrap!important;min-width:0!important'),
-      p('.ut-list.ut-list .ut-row.ut-row .ut-svc', 'height:32px!important;min-height:0!important;padding:0 11px!important;font-size:12.5px!important;line-height:1!important;white-space:nowrap!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-svc', 'height:32px!important;min-height:0!important;padding:0 8px!important;font-size:12.5px!important;line-height:1!important;white-space:nowrap!important'),
       p('.ut-list.ut-list .ut-row.ut-row .ut-onytt', 'grid-area:onytt!important;width:32px!important;height:32px!important;min-height:0!important;padding:0!important'),
-      p('.ut-list.ut-list .ut-row.ut-row .ut-lastcol', 'grid-area:sidast!important;justify-self:end!important;width:auto!important;margin:0!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-lastcol', 'grid-area:sidast!important;justify-self:center!important;width:auto!important;margin:0!important'),
+      // „Á verkstæði" (224, 04.10) í efri röð við hliðina á ✓ — árið („'26") fer niður milli 🚫 og QR (teikning Agnars)
+      p('.ut-list.ut-list .ut-row.ut-row .ut-verk', 'grid-area:verk!important;justify-self:end!important;height:32px!important;min-height:0!important;padding:0 10px!important;font-size:12px!important;line-height:1!important;white-space:nowrap!important'),
       p('.ut-list.ut-list .ut-row.ut-row .ut-last', 'font-size:10.5px!important;padding:2px 6px!important;opacity:.8'),
       p('.ut-list.ut-list .ut-row.ut-row .ut-far', 'grid-area:far!important;width:auto!important;margin:0!important;justify-content:flex-end!important'),
       p('.ut-list.ut-list .ut-row.ut-row .ut-far .ut-act', 'width:30px!important;height:30px!important;min-height:0!important;padding:0!important')
     ].join('') + '}',
     p('.ut-bulk', 'padding:8px 18px!important;gap:6px!important;min-height:0!important'),
+    p('.ut-list .ut-verk', 'background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.18)!important;border-radius:8px!important;color:#1f2530!important;font-family:' + SANS + '!important;font-weight:600!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14)!important'),
+    p('.ut-list .ut-verk.on', 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border-color:#000!important;color:#f6e7b8!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45)!important'),
     p('.ut-bulk button,.ut-bulk .ut-selall', 'height:32px!important;min-height:0!important;padding:0 10px!important;font-size:12.5px!important;line-height:1!important;white-space:nowrap!important;flex:0 0 auto!important'),
     p('.ut-bulk input', 'height:32px!important;min-height:0!important;font-size:13px!important;padding:0 8px!important'),
     p('.ut-bulk .ut-bulk-lbl', 'font-size:10.5px!important;white-space:nowrap!important'),

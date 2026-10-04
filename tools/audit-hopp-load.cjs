@@ -80,6 +80,8 @@ const utgafa = {
   // 02.10: 274 fékk „Önnur vara/þjónusta — skrifa sjálf/ur" og skoðunarlínur sem fylgja búnaðinum.
   // 04.10: reikningslínur raðast í þröngri breidd (gámafyrirspurn) — S26 á 95 %.
   '274-brunakerfi-fyrirtaeki.js': '20261004sz3',
+  // 04.10: 224 fékk „Á verkstæði"-takkann (sama skrift og bílstjórinn → Komið úr þjónustu).
+  '224-uttekt-taeki.js': '20261004verk',
   // Uppfærsluborð bætti #uppferslubord við 218. Nýrra merki hleður hopp-kóðann líka.
   '218-url-routing.js': '20261001ub',
 };
