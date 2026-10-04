@@ -7,9 +7,13 @@ description: >-
   hversu mörg tæki þarf í húsnæði, hvað reglugerðin segir, við gerð
   staðsetningartillagna á teikningar/Miro-borð, við úttektir á nýjum stöðum,
   eða þegar orðin staðsetning, kröfur, byggingarreglugerð, gönguleið,
-  slökkvigildi, notkunarflokkur, flóttaleið eða merkingar koma fyrir.
+  slökkvigildi, notkunarflokkur, flóttaleið eða merkingar koma fyrir. Líka
+  þegar á að finna aðaluppdrætti húss (Reykjavík, Hafnarfjörður, Kópavogur,
+  Garðabær) eða gera teikningu tilbúna í fyrirtækjaprófílnum — skera að húsinu,
+  Skýrari veggir, festa útlit, hæðir — og sannreyna hana án þess að skrifa.
   Kveikjuorð: staðsetning, kröfur, slökkvigildi, flóttaleið, merkingar,
-  byggingarreglugerð, notkunarflokkur, gönguleið.
+  byggingarreglugerð, notkunarflokkur, gönguleið, teikning, aðaluppdráttur,
+  skera að húsinu, festa útlit, teikningagluggi.
 ---
 
 # Arnold — staðsetning og kröfur brunavarnabúnaðar
@@ -109,6 +113,28 @@ tillögu (fjöldi + staðsetning) — ekki bara reglutilvitnun.
 4. Skráðar stærðir eignar: hms.is/fasteignaskra (einingar, merkingar,
    brunabótamat) og geo.fasteignaskra.is (lóð).
 
+## Teikningar utan Reykjavíkur — og hraðleiðin fyrir öll sveitarfélög
+
+Ein uppfletting dugar fyrir Reykjavík, Hafnarfjörð, Kópavog og Garðabæ (mælt 04.10.2026):
+
+1. **Heimilisfang → eign:** `GET slokkvitaeki.netlify.app/.netlify/functions/teikn-listi?heimilisfang=<heimilisfang>`
+   (eða kjarni beint: `slokkvitaeki.vercel.app/api/turbopaint/teikningar?heimilisfang=…`).
+   Reykjavík skilar `heimild:"reykjavik"` + `landnr`; hin sveitarfélögin `heimild:"map.is"` + `landnr`, `heitinr`, `svf`
+   (Hafnarfjörður = 1400). Heimilisfang í þágufalli („Hátúni 10c") finnst oft ekki — leitaðu þá á nefnifalli.
+2. **Eign → teikningar:** Reykjavík `?landnr=…`; map.is **`?landnr=…&heitinr=…&svf=…`** (án heitinr: „Heitinúmer vantar").
+3. **Veldu rétt blöð.** Listinn er langur (Norðurhella 17: 75 skjöl, 33 merkt grunnmynd). Aðeins **aðaluppdrættir** gilda
+   fyrir staðsetningar: Reykjavík `tegund = "Aðaluppdrættir"`, Hafnarfjörður `"Bygginganefndarteikning"`. Burðarvirki,
+   Raflagnir og Lagnateikningar eru líka „grunnmyndir" — slepptu þeim. Taktu nýjustu gildandi (`urelt:false`, `dags`)
+   grunnmynd hverrar hæðar; `lysing` segir hæðina („Grunnmynd 2. hæð, brunaskýrsla" — brunaskýrslublaðið er gulls ígildi,
+   þar stendur hvar slökkvitæki og slöngur eiga að vera).
+4. „Sækja teikningu" í teikningaglugganum gerir þetta sjálft og sýnir aðaluppdrætti fyrst (374).
+
+**Skönnun eða vigur?** Skiptir öllu fyrir hvað hægt er að gera. Vigur-PDF úr CAD (Fiskislóð 41: 0,4 MB, ~22.000
+línuslóðir) gefur hnífskarpa veggi beint úr skjalinu („Skýrari veggir" les þá). Skönnun (Norðurhella 2016: CCITT-mynd í
+PDF; Skútuvogur 4 og Miðgarður: 10 MB / TIF) er ein mynd — engir vigurveggir, sjálfvirkur skurður og veggjagreining
+ruglast á rammanum og suðinu. Hraðpróf: telja `/Subtype /Image` og `l`/`m`-skipanir í efnisstraumunum — ein mynd og
+0 línur = skönnun.
+
 ## Mælireglur flatarmáls (fyrir úttektir og skýrslur)
 
 - **Opinberar skráðar stærðir eru ytra mál** (brúttó, með útveggjum).
@@ -178,6 +204,68 @@ eða skilti á Miro — fylgdu þessu ferli sem gaf rétta útkomu fyrir Skútuv
    vs raunstaða + heildarfjöldi skilta (F001/F002/E001-E002/brunahurðamerki).
 6. **Bíddu eftir yfirferð Agnars** — hann bendir á veggi/punkta sem vantar;
    bættu þeim við með update (ekki nýju create) svo ekkert tvítakist.
+
+## Verkferli: teikning tilbúin í fyrirtækjaprófílnum (Slökkvitæki-appið)
+
+Agnar vill að teikningin **opnist eins og hún var vistuð** — skorin að húsinu, Skýrari veggir á, útlitið fest — án þess
+að greina allt upp á nýtt (04.10.2026). Svona var það gert fyrir Fiskislóð 41, Norðurhellu 17, Álfaborg og Miðgarð:
+
+1. **Finndu aðaluppdrættina** (kaflinn hér að ofan) — eitt blað á hæð. Röð hæða: Kjallari, 1. hæð, 2. hæð …
+2. **Teiknaðu blaðið eins og glugginn gerir og veldu skurðinn með augunum.** Reykjavík: `teikn-mynd?url=<infoUrl>` skilar
+   JPEG, lengri hlið 6006 px. Hreint PDF (Hafnarfjörður o.fl.): glugginn teiknar það í **6000 px lengri hlið**
+   (`kv = 6000 / max(breidd, hæð)` í pt, pdf.js) — notaðu sömu stærð. Skurðurinn (`skurdur {x,y,w,h}` í px þeirrar
+   myndar) nær yfir allt húsið **með málsetningum og ásakrossum**, en **ekki** nafnreit, afstöðumynd, lóð, skýringartexta
+   eða brunaskýrslutexta. Skerðu og skoðaðu útkomuna áður en þú vistar. Sjálfvirki skurðurinn (383 `finnaHus`) virkar á
+   hreinum CAD-blöðum en **gefst upp á skönnunum** — þar velur þú hann.
+3. **Vistaðu í `teikning_bord`** (ein röð á fyrirtæki, `company_id`). `haedir[]` = `{ id, nafn, image_url, markers:[],
+   veggir:[], pdfVeggir:[], frum:{b,h}, skurdur, sjalf:false, thett:true, syn:{a:true, fest:true} }`.
+   `image_url = '/.netlify/functions/teikn-mynd?url=' + encodeURIComponent(infoUrl)`; efsti `image_url` speglar fyrstu
+   hæð. `sjalf:false` = handvalinn skurður (aldrei breytt sjálfvirkt); `syn.fest` = engin endurgreining við opnun.
+   Breyttu aldrei `markers` annarra hæða þegar þú lagar eina.
+4. **Tækin** eru `{unitId, x, y}` í **frummyndar-px** (hnit heila blaðsins, ekki skurðarins) og hvert tæki er aðeins á
+   einni hæð. Skilti: `{kind:'sign', sign, unitId:'s:<tegund>:<id>'}`. Agnar dregur tækin sjálfur; settu ekki inn
+   staðsetningar sem þú veist ekki — nema hann biðji um prufu.
+5. **Sannreyndu á lifandi síðunni án þess að skrifa** (sjá prófunaraðferð hér að neðan): opnast glugginn á hverri hæð,
+   er skurðurinn réttur, eru tækin þar sem þjónninn segir, og var ekkert skrifað.
+
+Viðmiðunarbyggingar (04.10.2026):
+
+| Staður | company_id | Hæðir | Blað | Athugasemd |
+|---|---|---|---|---|
+| Bílabúð Benna, Fiskislóð 41 | 1612 | 1.–2. | Reykjavík, vigur-PDF | 776 vigurveggir; 2. hæð notar sama blað og 1. |
+| E Fasteignafélag, Norðurhella 17 | 1626 | 1.–2. | Hafnarfjörður 2016, skönnun | skurður 1. hæð `{1075,600,2800,2150}` á 6000×4075 |
+| Álfaborg, Skútuvogur 4 | 661 | 1.–2. | Reykjavík 2022, skönnun 10 MB | 2. hæð er aðeins skrifstofuhlutinn (rest „opið niður") |
+| Center Hótel Miðgarður, Laugavegur 120 | 192 | Kj., 1.–5. | Reykjavík 2015/2017, TIF | sami rammi á 1.–5. hæð `{644,300,3796,3580}` |
+
+## Prófunaraðferð — sannreyna án þess að snerta gögn
+
+Staðbundin forskoðun og lifandi síða skrifa í **framleiðslugögnin**. Hver prófun lokar því fyrir skrif fyrst:
+
+```js
+const f = DB.sb.from.bind(DB.sb);
+DB.sb.from = t => { const q = f(t); for (const m of ['insert','update','upsert','delete'])
+  q[m] = () => { const rej = {error:{message:'próf'},data:null};
+    const ch = {select:()=>ch, eq:()=>ch, match:()=>ch, in:()=>ch, single:()=>ch, maybeSingle:()=>ch,
+                then:(r,j)=>Promise.resolve(rej).then(r,j)}; return ch; }; return q; };
+```
+
+Þegar Agnar leyfir prufuvistun: hleyptu aðeins `teikning_bord.upsert` í gegn með `company_id` þess fyrirtækis.
+
+- **Innbyggði vafraglugginn (Browser pane) er oft falinn** — þá keyrir `requestAnimationFrame` ekki og pdf.js klárar
+  aldrei að teikna; tímamælingar þar eru rangar. Notaðu **headless Chromium** (Playwright úr
+  `%APPDATA%/npm/node_modules/@playwright/cli/node_modules/playwright`, `executablePath` =
+  `%LOCALAPPDATA%/ms-playwright/chromium-1228/chrome-win64/chrome.exe`).
+- **S26-hermun:** gluggi 980 px breiður (+ hár), slóð `/?app=fjarmal&simikrom=2.38`. Síminn setur **CSS-zoom (~2,4)**
+  á síðuna: `getBoundingClientRect`/`clientX` eru í skjá-px en `style.width`/`translate` í staðbundnum px — deildu með
+  `rect.width / offsetWidth`. Gleymist það teygist yfirlagið (veggir, skilti) út fyrir teikninguna og dráttur fer
+  2,4× hraðar en fingurinn.
+- **Mældu, ekki giska:** 100 px dráttur á að færa teikninguna 100 px; yfirlagið á að vera jafnstórt glugganum; telja
+  hlustara ef eitthvað gerist tvisvar (hlustarar sem bætast við á hverri opnun ollu 2×, 3× drætti).
+- Opnaðu með `Companies.opnaTeikningu(id)` (sama leið og prófíllinn — tækjalistinn fylgir), dragðu úr tækjaræmunni
+  og berðu saman: hnitin þar sem sleppt var = hnitin í minni = hnitin á þjóninum eftir Vista = hnitin eftir opnun aftur.
+- **Gildrur sem fundust:** stórar PDF (10 MB) klipptust þegar tímamörk náðu líka yfir lestur svarsins (teikn-pdf, lagað);
+  `.pdf.info` (Reykjavík) og `.pdf` (Hafnarfjörður) þurfa bæði að vera leyfð þar sem PDF-slóð er búin til; skipt um hæð
+  verður að núllstilla hliðrun skurðarins (annars lenda tæki 2. hæðar skurði 1. hæðar frá sínum stað).
 
 ## Frágangur og fyrirvari
 
