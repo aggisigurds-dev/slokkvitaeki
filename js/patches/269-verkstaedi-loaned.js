@@ -103,12 +103,16 @@
           '</div>';
       }
       let foot = '';
-      if (cs === 'null') foot = '<div class="vkl-foot vkl-foot--one">' + actBtn(u.id, 'komid', 'Komið', IC.check, 'komid') + '</div>';
-      else if (cs === 'komid') foot = '<div class="vkl-foot">' +
-        actBtn(u.id, 'yfirferd', 'Yfirfarið', IC.check, 'ok') + actBtn(u.id, 'hladid', 'Hlaðið', IC.bolt, 'hlada') +
-        actBtn(u.id, 'onytt', 'Ónýtt', IC.ban, 'onytt') + actBtn(u.id, 'nytt', 'Nýtt', IC.plus, 'nyr') + '</div>';
+      // 04.10.2026 (Agnar: „þarf samt að geta hakað í Hlaðið, Ónýtt og bætt við varahlut" · „hafðu þetta liðugt"):
+      // þjónustutakkarnir birtast STRAX á nýkomnu tæki (áður fyrst „Komið"), Tilbúið fær „Breyta" ef rangt var valið,
+      // og „+ Varahlutur" fer sem aukalína í lokaútreikning fyrirtækisins (129) — rukkast í lokin eins og venjulega.
+      const thjon = actBtn(u.id, 'yfirferd', 'Yfirfarið', IC.check, 'ok') + actBtn(u.id, 'hladid', 'Hlaðið', IC.bolt, 'hlada') +
+        actBtn(u.id, 'onytt', 'Ónýtt', IC.ban, 'onytt') + actBtn(u.id, 'nytt', 'Nýtt', IC.plus, 'nyr');
+      const hluti = '<button type="button" class="vkl-hluti" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.hluti(\'' + u.id + '\')">' + IC.plus + '<span>Varahlutur</span></button>';
+      if (cs === 'null' || cs === 'komid') foot = '<div class="vkl-foot">' + thjon + '</div>' + '<div class="vkl-foot vkl-foot--one">' + hluti + '</div>';
       // „Sótt" LÝKUR lífsferlinum (close → þjónustan skráð á tækið) — sama og áður.
-      else if (cs === 'tilbuid') foot = '<div class="vkl-foot vkl-foot--one">' + actBtn(u.id, 'sott', 'Sótt', IC.out, 'sott') + '</div>';
+      else if (cs === 'tilbuid') foot = '<div class="vkl-foot">' + actBtn(u.id, 'sott', 'Sótt', IC.out, 'sott') + actBtn(u.id, 'komid', 'Breyta', IC.check, 'breyta') + '</div>' +
+        '<div class="vkl-foot vkl-foot--one">' + hluti + '</div>';
       else if (cs === 'farid') foot = '<div class="vkl-foot vkl-foot--one">' + actBtn(u.id, 'sott', 'Ljúka (sótt)', IC.check, 'sott') + '</div>';
       return '<div class="vkl-tile"' + (col ? ' style="--vkm-type:' + esc(col) + '"' : '') + ' title="' + esc((u.serial || '') + ' — ' + label) + '">' +
           '<button type="button" class="vkl-x" aria-label="Eyða tæki" title="Eyða tæki (ef mistalið úr skýrslu)" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.del(\'' + u.id + '\')">' + IC.x + '</button>' +
@@ -116,6 +120,7 @@
             '<div class="vkl-ty">' + esc(label) + '</div>' +
             (serialShort ? '<div class="vkl-ser">' + esc(serialShort) + '</div>' : '') +
             '<div class="vkl-st vkl-st--' + st.cls + '"><i aria-hidden="true"></i>' + esc(st.label(u)) + '</div>' +
+            (() => { const h = hlutir(u); return h.length ? '<div class="vkl-hl" title="' + esc(h.map(x => x.name).join('\n')) + '">' + h.length + (h.length === 1 ? ' varahlutur' : ' varahlutir') + '</div>' : ''; })() +
           '</div>' +
           foot +
         '</div>';
@@ -189,6 +194,10 @@
       W + '.vkl-act:hover{border-color:rgba(201,42,42,.45)}',
       W + '.vkl-act--ok{color:#1d4ed8}' + W + '.vkl-act--hlada{color:#0b6b3a}' + W + '.vkl-act--onytt{color:#b42318}' + W + '.vkl-act--nyr{color:#845400}',
       W + '.vkl-act--komid{border-color:#000;background:' + METAL + ';color:#eef1f4;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}',
+      W + '.vkl-act--breyta{color:#3a4250}',
+      W + '.vkl-hluti{height:26px;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:4px;margin:0;padding:0 6px;border-radius:7px;border:1px dashed rgba(20,24,34,.32);background:transparent;color:#3a4250;font:600 11.5px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}',
+      W + '.vkl-hluti:hover{border-style:solid;background:rgba(20,24,34,.05)}',
+      W + '.vkl-hl{margin-top:3px;font:700 10.5px ' + MONO + ';color:#845400}',
       W + '.vkl-act--sott{border-color:rgba(52,168,98,.55);background:' + GREEN_METAL + ';color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 12px -5px rgba(22,140,72,.65)}',
       W + '.vkl-act--komid:hover,' + W + '.vkl-act--sott:hover{filter:brightness(1.2)}',
       W + '.vkl-empty{padding:16px 8px;color:#525b6b;font-size:12px;text-align:center}',
@@ -203,6 +212,45 @@
   }
 
   // Aðgerðir — inline onclick kallar þessar (áreiðanlegt í þessu appi).
+  // ── Varahlutur → aukalína í lokaútreikningi fyrirtækisins (129: slokk_trip_<coId>.extras; 227 speglar á þjóninn) ──
+  function coFor(client) {
+    const nafn = String(client || '').trim(); if (!nafn) return null;
+    const L = (window.Companies && Companies.list) || [];
+    const kt = nafn.replace(/\D/g, '');
+    const c = L.find(x => String(x.nafn || '').trim() === nafn) || (kt.length === 10 ? L.find(x => String(x.kennitala || '').replace(/\D/g, '') === kt) : null);
+    return c ? c.id : null;
+  }
+  function lesaFerd(coId) { try { return JSON.parse(localStorage.getItem('slokk_trip_' + coId) || '{}') || {}; } catch (_) { return {}; } }
+  function hlutir(u) {
+    const coId = coFor(u.client); if (!coId) return [];
+    const st = lesaFerd(coId);
+    return (Array.isArray(st.extras) ? st.extras : []).filter(x => x && String(x.uttaeki_id) === String(u.id));
+  }
+  function hluti(id) {
+    const u = _shop.find(x => String(x.id) === String(id)); if (!u) return;
+    const coId = coFor(u.client);
+    const toast = m => { try { if (window.Toast && Toast.show) Toast.show(m); } catch (_) {} };
+    if (!coId) { toast('Fyrirtækið „' + (u.client || '') + '" fannst ekki — skráðu varahlutinn á fyrirtækjasíðunni'); return; }
+    if (!window.VorurPicker || typeof VorurPicker.open !== 'function') { toast('Vörulistinn er ekki tiltækur'); return; }
+    VorurPicker.open(prod => {
+      if (!prod) return;
+      const st = lesaFerd(coId);
+      if (!Array.isArray(st.extras)) st.extras = [];
+      st.extras.push({
+        name: (prod.nafn || 'Varahlutur') + (u.serial ? ' · ' + u.serial : ''),
+        qty: 1,
+        unit_price_ex_vat: Number(prod.verd_an_vsk) || 0,
+        vsk_pct: Number(prod.vsk_prosenta) || 24,
+        vorur_id: prod.id || null,
+        uttaeki_id: u.id,
+        fra: 'verkstaedi'
+      });
+      try { localStorage.setItem('slokk_trip_' + coId, JSON.stringify(st)); } catch (_) {}
+      toast('Varahlutur skráður á ' + (u.client || 'fyrirtækið') + ' — rukkast í lokin');
+      inject(true);
+    }, { favorites: true });
+  }
+
   async function act(id, a) {
     if (a === 'sott') return close(id);   // lokun með þjónustu-skráningu (Fasi 2)
     const P = { komid: { custody_status: 'komid' }, yfirferd: { custody_status: 'tilbuid', service_choice: 'yfirferd' },
@@ -298,7 +346,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
   else watch();
 
-  window.VkLoaned = { inject: () => inject(true), act: act, del: del, close: close };
+  window.VkLoaned = { inject: () => inject(true), act: act, del: del, close: close, hluti: hluti };
   console.log('[verkstaedi-loaned] v7 installed (+ rólegur stíll eins og VERK-súlan)');
 })();
 /* === END VERKSTÆÐI: KOMIÐ ÚR ÞJÓNUSTU === */

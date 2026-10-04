@@ -206,6 +206,9 @@
       V + '.bw-shd ._sr-btn{flex-basis:100%;height:40px;margin-top:4px!important;border-radius:10px!important;font-size:13px!important;font-weight:700!important}',
       V + '.bw-sh-col{border-radius:14px!important;border:1px solid rgba(20,24,34,.22)!important;box-shadow:0 14px 32px -16px rgba(0,0,0,.6)!important}',
       V + '.bw-sh-body{background:' + STEEL + ';padding:12px 12px 14px!important}',
+      // 04.10.2026 (Agnar: „það mætti alveg gefa fyrirtækjaglugganum aðeins meira pláss"): Samningshafar / Komið úr
+      // þjónustu 1/3 → 2/5 (Verk 3/5). Aðeins á breiðum skjá — undir 900 px staflast dálkarnir (78) og flex þar má ekki breytast.
+      '@media (min-width:901px){' + V + '.bw-card{flex:3 1 0!important}' + V + '.bw-sh-col{flex:2 1 0!important;min-width:300px}}',
       // miðinn (viðskiptavinur)
       V + '.vkm-wrap{position:relative;margin-bottom:8px;filter:drop-shadow(0 1px 1px rgba(15,20,30,.22)) drop-shadow(0 6px 12px rgba(15,20,30,.12))}',
       V + '.bw-row.vkm-row{--vkm-stub:88px;display:grid;grid-template-columns:var(--vkm-stub) minmax(0,1fr);margin:0!important;padding:0!important;border:0!important;border-radius:12px!important;overflow:hidden;background:#fff!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.07)!important;' +
