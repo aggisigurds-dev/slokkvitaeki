@@ -151,7 +151,29 @@
     S.timi = setTimeout(() => { if (kyn === S.kyn) teikna(stada() || st, kyn); }, 220);
   }
 
-  function lykkja() { try { tikk(); } catch (e) { console.warn('[438]', e); } requestAnimationFrame(lykkja); }
+  // Á meðan teikningin er á leiðinni: „Sæki teikninguna…" í stað „Hlaða upp teikningu" (sem leit út eins og ekkert
+  // væri til — Agnar 04.10.2026 sá tóman glugga sem var aðeins enn að hlaðast).
+  function hledsla() {
+    const m = document.getElementById('modal-floorplan');
+    const main = m && m.classList.contains('open') ? m.querySelector('#fp-main') : null;
+    let e = document.getElementById('fp-saeki');
+    let a = false;
+    if (main && window.FloorPlan && !FloorPlan.bgImage) {
+      const p = FloorPlan.plans && FloorPlan.plans[FloorPlan.companyId];
+      const hs = p && p.haedir, h = hs && window.TeiknBord ? hs[TeiknBord.virk()] : null;
+      a = !!((h && h.image_url) || (p && p.imageUrl));
+    }
+    if (!a) { if (e) e.remove(); return; }
+    if (!e || e.parentNode !== main) {
+      if (e) e.remove();
+      e = document.createElement('div'); e.id = 'fp-saeki';
+      e.style.cssText = 'position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:#1a1814;color:rgba(255,255,255,.78);font:600 14px system-ui,sans-serif;pointer-events:none';
+      e.textContent = 'Sæki teikninguna…';
+      main.appendChild(e);
+    }
+  }
+
+  function lykkja() { try { tikk(); hledsla(); } catch (e) { console.warn('[438]', e); } requestAnimationFrame(lykkja); }
   requestAnimationFrame(lykkja);
   window.TeiknSkarpt = { tikk };
 })();

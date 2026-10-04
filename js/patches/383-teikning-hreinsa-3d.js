@@ -605,7 +605,7 @@
     _sjalfvistBid = setTimeout(async () => {
       try {
         const FP = FPx(), cid = FP && FP.companyId;
-        if (!cid || !modalSynnilegt() || G.soknKom !== cid || !window.DB || !DB.sb) return;
+        if (!cid || !modalSynnilegt() || G.rodKomin !== cid || !window.DB || !DB.sb) return;
         const r = await DB.sb.from('teikning_bord').select('haedir').eq('company_id', cid).limit(1);
         if (r.error || !r.data || !r.data.length || !Array.isArray(r.data[0].haedir) || !r.data[0].haedir.length) return;
         const minar = {}; haedir().forEach(h => { if (h && h.id) minar[h.id] = h; });
@@ -1630,7 +1630,7 @@
 
     FP.open = function () {
       loka3d(); cancelAnimationFrame(G.raf);
-      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, _haedirBid: 0, _festCid: 0, _festModal: null, minni: {}, skipti: (G.skipti || 0) + 1, pdfBid: false });
+      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, rodKomin: 0, _haedirCid: 0, _haedirBid: 0, _festCid: 0, _festModal: null, minni: {}, skipti: (G.skipti || 0) + 1, pdfBid: false });
       const r = opna.apply(this, arguments);
       Z.s = 1; Z.x = 0; Z.y = 0;
       try { tikk(); } catch (_) {}
@@ -1645,6 +1645,7 @@
     // 375 kallar þetta þegar röð þjónsins er komin: merkin eru þá í FRUMMYNDARHNITUM og hæðirnar fylgja.
     FP.__eftirSokn = function (cid, row) {
       G.soknKom = cid;
+      G.rodKomin = cid;   // röð þjónsins RAUNVERULEGA komin (soknKom er líka sett þegar sókn er aðeins hafin)
       if (FP.companyId !== cid) return;
       const p = plan();
       const virkAdur = haedir()[G.virk];
@@ -1731,8 +1732,10 @@
     if (G.soknKom === FP.companyId) return;
     const p = FP.plans[FP.companyId];
     if (p && Array.isArray(p.haedir) && p.haedir.length > 1) { G.soknKom = FP.companyId; return; }
-    if (G._haedirCid !== FP.companyId) { G._haedirCid = FP.companyId; G._haedirBid = Date.now(); return; }
-    if (Date.now() - (G._haedirBid || 0) < 1500) return;
+    // Agnar 04.10.2026: glugginn birtist með eina hæð og tóman flöt þangað til biðin rann út („mjög misjafnt hvað kemur
+    // þegar ég opna"). Sótt strax — ein sókn í hverri opnun.
+    if (G._haedirCid === FP.companyId) return;
+    G._haedirCid = FP.companyId;
     G.soknKom = FP.companyId;
     try { FP.load(FP.companyId); } catch (_) {}
   }
