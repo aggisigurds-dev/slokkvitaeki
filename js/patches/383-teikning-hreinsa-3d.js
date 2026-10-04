@@ -1103,7 +1103,189 @@
     return eld;
   }
 
-  const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xf57c00 };
+  /* Hurð í brunavegg: veggurinn heldur áfram OFAN við hurðina og er því brunaveggur þar líka (Agnar 04.10.2026: „bilið
+   * fyrir ofan hurð á brunavegg ætti þá að vera brunaveggur líka og þá rauður"). Hurðin erfir flokk veggjarins sem hún
+   * situr í: samsíða veggur sem snertir annan hvorn enda hennar. Skilar mínútum á hverja hurð (0 / 30 / 60). */
+  function eldurHurda(hurdir, butar, eld, k) {
+    const ut = new Uint8Array(hurdir.length);
+    if (!eld) return ut;
+    const pkt = (px, py, v) => { const dx = v[2] - v[0], dy = v[3] - v[1], L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((px - v[0]) * dx + (py - v[1]) * dy) / L2)); return Math.hypot(px - (v[0] + dx * t), py - (v[1] + dy * t)); };
+    hurdir.forEach((hd, i) => {
+      const hx = hd[2] - hd[0], hy = hd[3] - hd[1], hL = Math.hypot(hx, hy) || 1;
+      for (let j = 0; j < butar.length; j++) {
+        if (!eld[j] || eld[j] <= ut[i]) continue;
+        const v = butar[j], vL = Math.hypot(v[2] - v[0], v[3] - v[1]) || 1;
+        if (Math.abs((hx * (v[3] - v[1]) - hy * (v[2] - v[0])) / (hL * vL)) > 0.1) continue;      // ekki samsíða
+        const bil = (v[4] || 0) / 2 + 4 * k;
+        if (pkt(hd[0], hd[1], v) <= bil || pkt(hd[2], hd[3], v) <= bil) ut[i] = eld[j];
+      }
+    });
+    return ut;
+  }
+
+  /* ── BRUNAHÓLF ──
+   * Agnar 04.10.2026: „Brunaveggir mynda alltaf lokað öruggt rými svo eldur haldist innan þess rýmis. Sem kallast
+   * brunahólf. Eru þá allan hringinn kringum ákveðið rými með eldveggjum og útveggjum." · „Svo brunaveggir geta ekki
+   * verið stakir. Þeir þurfa alltaf að mynda rými."
+   * Þrjú skref, öll á grófri rist yfir skornu myndina (b × h dílar, k = dílar á pt):
+   *   1. ÚTVEGGIR: allir veggir, gler og hurðir eru þanin (≈ 0,6 m) svo smágöt lokist, flætt er utan frá, og útisvæðið svo
+   *      látið ganga að veggjunum. Veggur sem á útisvæði öðru megin eftir mestallri lengd sinni er útveggur.
+   *   2. LOKUN: endi brunaveggjar sem snertir hvorki annan brunavegg, útvegg né útisvæði hangir í lausu lofti — það getur
+   *      ekki verið. Stysta leið eftir öðrum veggjum (um hurðir og gler líka) að næsta brunavegg eða útvegg, mest ≈ 15 m,
+   *      er ÁLYKTUÐ brunaveggur (sýnd í ljósari lit: þetta er ályktun, ekki merking á teikningunni).
+   *   3. HÓLFIN: brunaveggir (merktir og ályktaðir), hurðir í þeim, útveggir og gler/hurðir í þeim eru hindranir; hvert
+   *      samhangandi svæði innan húss sem þær afmarka er eitt brunahólf.
+   * Skilar { ytri, alyktad, gw, gh, svaedi (númer hólfs á hvern reit, 0 = ekkert), fjoldi, fermetrar[] } eða null. */
+  function brunaholf(butar, gler, hurdir, eld, hurdEld, b, h, k) {
+    const n = butar.length;
+    if (!n || !eld || !eld.some(e => e)) return null;
+    const c = Math.max(b, h) / 480, gw = Math.max(2, Math.ceil(b / c)), gh = Math.max(2, Math.ceil(h / c)), N = gw * gh;
+    const tengi = (gler || []).concat(hurdir || []);
+    const strika = (g, v, auka) => {
+      const L = Math.hypot(v[2] - v[0], v[3] - v[1]) || 1, ux = (v[2] - v[0]) / L, uy = (v[3] - v[1]) / L, half = (v[4] || 0) / 2 + auka;
+      for (let t = -half; t <= L + half; t += c * 0.5) for (let d = -half; d <= half; d += c * 0.5) {
+        const x = Math.floor((v[0] + ux * t - uy * d) / c), y = Math.floor((v[1] + uy * t + ux * d) / c);
+        if (x >= 0 && y >= 0 && x < gw && y < gh) g[y * gw + x] = 1;
+      }
+    };
+    const pkt = (px, py, v) => { const dx = v[2] - v[0], dy = v[3] - v[1], L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((px - v[0]) * dx + (py - v[1]) * dy) / L2)); return Math.hypot(px - (v[0] + dx * t), py - (v[1] + dy * t)); };
+    const skerast = (a, q) => {
+      const d = (q[3] - q[1]) * (a[2] - a[0]) - (q[2] - q[0]) * (a[3] - a[1]);
+      if (Math.abs(d) < 1e-9) return false;
+      const ua = ((q[2] - q[0]) * (a[1] - q[1]) - (q[3] - q[1]) * (a[0] - q[0])) / d, ub = ((a[2] - a[0]) * (a[1] - q[1]) - (a[3] - a[1]) * (a[0] - q[0])) / d;
+      return ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1;
+    };
+    const fjarl = (a, q) => skerast(a, q) ? 0 : Math.min(pkt(a[0], a[1], q), pkt(a[2], a[3], q), pkt(q[0], q[1], a), pkt(q[2], q[3], a));
+    const lengd = v => Math.hypot(v[2] - v[0], v[3] - v[1]);
+
+    // 1 · útisvæði og útveggir
+    const allt = new Uint8Array(N);
+    butar.forEach(v => strika(allt, v, c * 0.5)); tengi.forEach(v => strika(allt, v, c * 0.5));
+    // Tvær umferðir. FYRRI er gróf: veggirnir þandir um ≈ 5 m svo stór göt á útvegg (aksturshurð, veggur sem fannst ekki)
+    // hleypi útisvæðinu ekki inn; þá sést hvaða veggir standa yst (útveggjaefni). Bil ≤ 15 m milli slíkra veggja Á SÖMU
+    // LÍNU er lokað með sýndarvegg — húsið heldur þá vatni. SEINNI umferðin er nákvæm (≈ 0,6 m) á lokaðri umgjörðinni.
+    const st = new Int32Array(N);
+    let top = 0;
+    const flaeda = (hindr, rr) => {
+      const thanid = dilate(hindr, gw, gh, rr), u = new Uint8Array(N);
+      top = 0;
+      const yta = q => { if (!thanid[q] && !u[q]) { u[q] = 1; st[top++] = q; } };
+      for (let x = 0; x < gw; x++) { yta(x); yta((gh - 1) * gw + x); }
+      for (let y = 0; y < gh; y++) { yta(y * gw); yta(y * gw + gw - 1); }
+      while (top) { const q = st[--top], x = q % gw, y = (q - x) / gw; if (x > 0) yta(q - 1); if (x < gw - 1) yta(q + 1); if (y > 0) yta(q - gw); if (y < gh - 1) yta(q + gw); }
+      // útisvæðið gengur að veggjunum (mest þensluna + 2 reiti)
+      let fremst = [];
+      for (let q = 0; q < N; q++) if (u[q]) fremst.push(q);
+      for (let d = 0; d < rr + 2 && fremst.length; d++) {
+        const naest = [];
+        for (const q of fremst) {
+          const x = q % gw, y = (q - x) / gw;
+          for (const w of [x > 0 ? q - 1 : -1, x < gw - 1 ? q + 1 : -1, y > 0 ? q - gw : -1, y < gh - 1 ? q + gw : -1]) if (w >= 0 && !u[w] && !hindr[w]) { u[w] = 1; naest.push(w); }
+        }
+        fremst = naest;
+      }
+      return u;
+    };
+    const yst = u => {
+      const er = (x, y) => { const gx = Math.floor(x / c), gy = Math.floor(y / c); return gx < 0 || gy < 0 || gx >= gw || gy >= gh || u[gy * gw + gx] === 1; };
+      return butar.map(v => {
+        const L = lengd(v) || 1, nx = -(v[3] - v[1]) / L, ny = (v[2] - v[0]) / L, d = (v[4] || 0) / 2 + 2.5 * c;
+        let p1 = 0, p2 = 0;
+        for (const t of [0.1, 0.3, 0.5, 0.7, 0.9]) { const px = v[0] + (v[2] - v[0]) * t, py = v[1] + (v[3] - v[1]) * t; if (er(px + nx * d, py + ny * d)) p1++; if (er(px - nx * d, py - ny * d)) p2++; }
+        return Math.max(p1, p2) >= 3;
+      });
+    };
+    const efni = yst(flaeda(allt, Math.max(4, Math.round(150 * k / c))));
+    const syndar = [], Ln = butar.map(linuhnit), rad = [];
+    for (let i = 0; i < n; i++) if (efni[i]) rad.push(i);
+    rad.sort((p1, p2) => Ln[p1].th - Ln[p2].th);
+    for (let x = 0; x < rad.length;) {
+      let y = x + 1;
+      while (y < rad.length && Ln[rad[y]].th - Ln[rad[y - 1]].th < 0.01) y++;
+      const hopur = rad.slice(x, y); x = y;
+      const th = hopur.reduce((s0, i) => s0 + Ln[i].th, 0) / hopur.length, cs = Math.cos(th), sn = Math.sin(th);
+      const ln = hopur.map(i => { const v = butar[i], t0 = cs * v[0] + sn * v[1], t1 = cs * v[2] + sn * v[3]; return { rho: (-sn * v[0] + cs * v[1] - sn * v[2] + cs * v[3]) / 2, t0: Math.min(t0, t1), t1: Math.max(t0, t1), t: v[4] || 0 }; }).sort((p1, p2) => p1.rho - p2.rho);
+      for (let q = 0; q < ln.length;) {
+        let w = q + 1;
+        while (w < ln.length && ln[w].rho - ln[w - 1].rho < 3 * k) w++;
+        const rod = ln.slice(q, w).sort((p1, p2) => p1.t0 - p2.t0); q = w;
+        let fyrri = rod[0];
+        for (let z = 1; z < rod.length; z++) {
+          const nu = rod[z], bil = nu.t0 - fyrri.t1;
+          if (bil > 0 && bil <= 425 * k) { const rho = (fyrri.rho + nu.rho) / 2; syndar.push([cs * fyrri.t1 - sn * rho, sn * fyrri.t1 + cs * rho, cs * nu.t0 - sn * rho, sn * nu.t0 + cs * rho, Math.max(fyrri.t, nu.t)]); }
+          if (nu.t1 > fyrri.t1) fyrri = nu;
+        }
+      }
+    }
+    const lokad = allt.slice();
+    syndar.forEach(v => strika(lokad, v, c * 0.5));
+    const r = Math.max(3, Math.round(17 * k / c)), uti = flaeda(lokad, r);
+    const erUti = (x, y) => { const gx = Math.floor(x / c), gy = Math.floor(y / c); return gx < 0 || gy < 0 || gx >= gw || gy >= gh || uti[gy * gw + gx] === 1; };
+    const ytri = yst(uti);
+
+    // 2 · lokun: lausir endar brunaveggja
+    const grannar = Array.from({ length: n }, () => []);
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (fjarl(butar[i], butar[j]) <= ((butar[i][4] || 0) + (butar[j][4] || 0)) / 2 + 4 * k) { grannar[i].push(j); grannar[j].push(i); }
+    const vidTengi = tengi.map(g => { const ut = []; for (let i = 0; i < n; i++) if (fjarl(g, butar[i]) <= (butar[i][4] || 0) / 2 + 4 * k) ut.push(i); return ut; });
+    vidTengi.forEach(l => { for (const i of l) for (const j of l) if (i !== j && grannar[i].indexOf(j) < 0) grannar[i].push(j); });
+    const alyktad = new Uint8Array(n), fastur = i => eld[i] || alyktad[i] || ytri[i];
+    const naerUti = (px, py) => { const R = (r + 3) * c; for (let a = 0; a < 8; a++) if (erUti(px + Math.cos(a * Math.PI / 4) * R, py + Math.sin(a * Math.PI / 4) * R)) return true; return erUti(px, py); };
+    const mestLeid = 425 * k;
+    for (let i = 0; i < n; i++) {
+      if (!eld[i]) continue;
+      for (const e of [0, 1]) {
+        const px = e ? butar[i][2] : butar[i][0], py = e ? butar[i][3] : butar[i][1];
+        const vidEnda = j => pkt(px, py, butar[j]) <= ((butar[j][4] || 0) + (butar[i][4] || 0)) / 2 + 6 * k;
+        const umTengi = [];
+        tengi.forEach((g, t) => { if (pkt(px, py, g) <= (butar[i][4] || 0) / 2 + 6 * k) for (const j of vidTengi[t]) if (j !== i) umTengi.push(j); });
+        const naestu = grannar[i].filter(j => vidEnda(j) || umTengi.indexOf(j) >= 0);
+        if (naerUti(px, py) || naestu.some(j => fastur(j))) continue;          // endinn er þegar lokaður
+        // Dijkstra yfir veggi sem eru ekki brunaveggir/útveggir, frá þeim sem standa við lausa endann
+        const kostn = new Float64Array(n).fill(Infinity), fra = new Int32Array(n).fill(-1), buid = new Uint8Array(n);
+        naestu.forEach(j => { kostn[j] = lengd(butar[j]); });
+        let mark = -1;
+        for (;;) {
+          let u = -1, best = Infinity;
+          for (let j = 0; j < n; j++) if (!buid[j] && kostn[j] < best) { best = kostn[j]; u = j; }
+          if (u < 0 || best > mestLeid) break;
+          buid[u] = 1;
+          if (grannar[u].some(j => j !== i && fastur(j))) { mark = u; break; }
+          for (const j of grannar[u]) { if (j === i || buid[j] || fastur(j)) continue; const nk = best + lengd(butar[j]); if (nk < kostn[j]) { kostn[j] = nk; fra[j] = u; } }
+        }
+        for (let u = mark; u >= 0; u = fra[u]) alyktad[u] = eld[i];
+      }
+    }
+
+    // 3 · hólfin
+    const hindrun = new Uint8Array(N);
+    butar.forEach((v, i) => { if (fastur(i)) strika(hindrun, v, c * 0.75); });
+    syndar.forEach(v => strika(hindrun, v, c * 0.75));          // lokuð göt á útvegg eru hluti umgjarðarinnar
+    tengi.forEach((g, t) => {
+      const gx = g[2] - g[0], gy = g[3] - g[1], gL = Math.hypot(gx, gy) || 1;
+      if (vidTengi[t].some(i => { const v = butar[i]; return fastur(i) && Math.abs((gx * (v[3] - v[1]) - gy * (v[2] - v[0])) / (gL * (lengd(v) || 1))) < 0.1; })) strika(hindrun, g, c * 0.75);
+    });
+    const svaedi = new Uint16Array(N), fermetrar = [0], reitM = c / (28.35 * k);       // metrar á reit EF 1:100 á A1
+    let fjoldi = 0;
+    for (let q0 = 0; q0 < N; q0++) {
+      if (uti[q0] || hindrun[q0] || svaedi[q0]) continue;
+      const nr = fermetrar.length; let flat = 0; top = 0; st[top++] = q0; svaedi[q0] = nr;
+      while (top) {
+        const q = st[--top], x = q % gw, y = (q - x) / gw; flat++;
+        for (const w of [x > 0 ? q - 1 : -1, x < gw - 1 ? q + 1 : -1, y > 0 ? q - gw : -1, y < gh - 1 ? q + gw : -1]) if (w >= 0 && !uti[w] && !hindrun[w] && !svaedi[w]) { svaedi[w] = nr; st[top++] = w; }
+      }
+      fermetrar.push(flat * reitM * reitM);
+    }
+    // smásvæði (< 6 m²: bil milli tvöfaldra veggja, afgangar við jaðar) eru ekki hólf
+    const nytt = new Uint16Array(fermetrar.length), fm = [0];
+    for (let i = 1; i < fermetrar.length; i++) if (fermetrar[i] >= 6) { nytt[i] = fm.length; fm.push(Math.round(fermetrar[i])); fjoldi++; }
+    for (let q = 0; q < N; q++) svaedi[q] = nytt[svaedi[q]];
+    return { ytri, alyktad, gw, gh, svaedi, fjoldi, fermetrar: fm };
+  }
+
+  // Litir: EI-60 rauður, EI-30 ljósrauður (veggir). Hurðir sjást ofan frá á litaðri rönd: brunahurð appelsínugul, önnur brún.
+  const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0x8d6e63, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9;
+  // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
+  const HOLFALITIR_3D = [[66, 133, 244], [52, 168, 83], [251, 188, 5], [171, 71, 188], [0, 172, 193], [255, 112, 67], [124, 179, 66], [92, 107, 192]];
 
   /** gamur: element sem sýnin fyllir. haedir: [{ veggir, W, H, golf:<canvas>, kvardi, merki:[{x,y,litur,texti}], butar? }]
    *  (merki í punktum SKORNU myndarinnar). butar = heilir veggir [ax,ay,bx,by,þykkt] í sömu punktum — einn kassi á vegg;
@@ -1124,7 +1306,7 @@
     svid.add(new T.HemisphereLight(0xffffff, 0xbdb8ae, 0.8));
     const sol = new T.DirectionalLight(0xffffff, 0.6); svid.add(sol); svid.add(sol.target);
     const losa = [], veggEfni = [], sporEfni = [], lag = [], midar = [], eldur = {};
-    let staerst = 1, haedY = 0, vidmid = null, heilir = 0;
+    let staerst = 1, haedY = 0, vidmid = null, heilir = 0, hurdaFj = 0, eldhurdir = 0, holfFj = 0, alyktadFj = 0;
     haedir.forEach((hd, nr) => {
       const k = kassarUrGrimu(hd.veggir, hd.W, hd.H);
       staerst = Math.max(staerst, k.gw, k.gh);
@@ -1153,9 +1335,20 @@
       const golfG = new T.PlaneGeometry(k.gw, k.gh), golfE = new T.MeshBasicMaterial({ map: aferd, side: T.DoubleSide, transparent: true, opacity: nr > 0 ? 0.42 : 1, depthWrite: nr === 0, alphaTest: 0.05 });
       const golf = new T.Mesh(golfG, golfE); golf.rotation.x = -Math.PI / 2; hopur.add(golf);
       losa.push(golfG, golfE, aferd); lag.push({ hopur, golfE, nr });
+      // Brunahólf: hvert hólf fær sinn ljósa lit á gólfið (aðeins þegar þau eru fleiri en eitt — annars segir liturinn ekkert).
+      if (hd.holf && hd.holf.fjoldi > 1) {
+        const hs = document.createElement('canvas'); hs.width = hd.holf.gw; hs.height = hd.holf.gh;
+        const hx = hs.getContext('2d'), hm = hx.createImageData(hs.width, hs.height), sv = hd.holf.svaedi;
+        for (let i = 0; i < sv.length; i++) if (sv[i]) { const l = HOLFALITIR_3D[(sv[i] - 1) % HOLFALITIR_3D.length]; hm.data[i * 4] = l[0]; hm.data[i * 4 + 1] = l[1]; hm.data[i * 4 + 2] = l[2]; hm.data[i * 4 + 3] = 255; }
+        hx.putImageData(hm, 0, 0);
+        const hA = new T.CanvasTexture(hs); hA.magFilter = T.NearestFilter; hA.minFilter = T.LinearFilter;
+        const hE = new T.MeshBasicMaterial({ map: hA, transparent: true, opacity: 0.34, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), holfM = new T.Mesh(golfG, hE);
+        holfM.rotation.x = -Math.PI / 2; holfM.position.y = 0.3; holfM.renderOrder = 1; hopur.add(holfM);
+        losa.push(hA, hE);
+      }
       // Skuggafangari rétt ofan við gólfið: gólfið er ólýst mynd (skýr teikning) og tekur því ekki skugga sjálft.
       const skE = new T.ShadowMaterial({ opacity: 0.2 }), skuggi = new T.Mesh(golfG, skE);
-      skuggi.rotation.x = -Math.PI / 2; skuggi.position.y = 0.2; skuggi.receiveShadow = true; hopur.add(skuggi);
+      skuggi.rotation.x = -Math.PI / 2; skuggi.position.y = 0.55; skuggi.receiveShadow = true; skuggi.renderOrder = 2; hopur.add(skuggi);
       losa.push(skE);
       // Veggir: eitt InstancedMesh — eitt teiknikall fyrir alla kassana.
       const f = hd.kvardi / k.c;   // punktar skornu myndarinnar → ristarreitir
@@ -1178,7 +1371,8 @@
         if (hd.eld && hd.eld.some(e => e)) {
           const lit = new T.Color();
           kE.color.setHex(0xffffff); kE.userData.litad = true;
-          for (let i = 0; i < hd.butar.length; i++) veggir.setColorAt(i, lit.setHex(ELDLITIR_3D[hd.eld[i]] || VEGGLITUR_3D));
+          for (let i = 0; i < hd.butar.length; i++) veggir.setColorAt(i, lit.setHex(ELDLITIR_3D[hd.eld[i]] || (hd.holf && hd.holf.alyktad[i] ? ALYKTAD_3D : VEGGLITUR_3D)));
+          if (hd.holf) { holfFj += hd.holf.fjoldi; hd.holf.alyktad.forEach(e => { if (e) alyktadFj++; }); }
           if (veggir.instanceColor) veggir.instanceColor.needsUpdate = true;
           hd.eld.forEach(e => { if (e) eldur[e] = (eldur[e] || 0) + 1; });
         }
@@ -1210,8 +1404,20 @@
             m.compose(st.set((ax + bx) / 2, veggH - karmH / 2, (az + bz) / 2), q, kv3.set(Math.hypot(bx - ax, bz - az), karmH, Math.max(0.8, (v[4] || 0) * f || sjalfg)));
             karmar.setMatrixAt(i, m);
           });
-          if (kE.userData.litad) { const hv = new T.Color(VEGGLITUR_3D); for (let i = 0; i < hd.hurdir.length; i++) karmar.setColorAt(i, hv); }
+          if (kE.userData.litad) { const hv = new T.Color(); for (let i = 0; i < hd.hurdir.length; i++) karmar.setColorAt(i, hv.setHex(ELDLITIR_3D[hd.hurdEld ? hd.hurdEld[i] : 0] || VEGGLITUR_3D)); }
           karmar.instanceMatrix.needsUpdate = true; karmar.castShadow = true; hopur.add(karmar);
+          // Lituð rönd ofan á karminum: hurðirnar sjást þá líka beint ofan frá (grunnmyndarsýn) og þegar veggir eru gegnsæir.
+          const rE = new T.MeshBasicMaterial({ color: 0xffffff }), rendur = new T.InstancedMesh(kG, rE, hd.hurdir.length), rl = new T.Color();
+          hd.hurdir.forEach((v, i) => {
+            const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
+            q.setFromAxisAngle(ofan, -Math.atan2(bz - az, bx - ax));
+            m.compose(st.set((ax + bx) / 2, veggH + veggH * 0.012, (az + bz) / 2), q, kv3.set(Math.hypot(bx - ax, bz - az), veggH * 0.024, Math.max(0.8, (v[4] || 0) * f || sjalfg) * 1.25));
+            rendur.setMatrixAt(i, m);
+            rendur.setColorAt(i, rl.setHex(hd.hurdEld && hd.hurdEld[i] ? ELDHURD_3D : HURDALITUR_3D));
+          });
+          rendur.instanceMatrix.needsUpdate = true; if (rendur.instanceColor) rendur.instanceColor.needsUpdate = true; hopur.add(rendur);
+          losa.push(rE);
+          hurdaFj += hd.hurdir.length; if (hd.hurdEld) hd.hurdEld.forEach(e => { if (e) eldhurdir++; });
         }
       } else {
         veggir = new T.InstancedMesh(kG, kE, Math.max(1, k.kassar.length));
@@ -1311,6 +1517,7 @@
       kassar: haedir.length,
       heilir,
       eldur,   // { 60: fjöldi veggja, 30: … }
+      hurdir: hurdaFj, eldhurdir, brunaholf: holfFj, alyktadir: alyktadFj,
       // Gegnsæir veggir: tækin og teikningin sjást í gegnum húsið.
       gegnsaett(a) {
         veggEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.4 : 1; e.depthWrite = !a; e.color.setHex(e.userData.litad ? (a ? 0xb4b0a8 : 0xffffff) : (a ? 0x9d978c : VEGGLITUR_3D)); e.needsUpdate = true; });
@@ -2282,13 +2489,23 @@
       try { eld = merkjaEldveggi(butar, eiHintar.map(t => ({ x: t.x - sk.x, y: t.y - sk.y, label: t.label, minutes: t.minutes })), Math.max(fb, fh) / 2384); } catch (e) { console.warn('[383] merkjaEldveggi', e); }
       if (eld) { talning.eiMerki = eiHintar.length; talning.eldveggir = eld.reduce((s0, e) => s0 + (e ? 1 : 0), 0); }
     }
+    let hurdEld = null, holf = null;
+    if (hurdir && eld) { try { hurdEld = eldurHurda(hurdir, butar, eld, Math.max(fb, fh) / 2384); } catch (e) { console.warn('[383] eldurHurda', e); } }
+    if (butar && eld) {
+      try { holf = brunaholf(butar, gler, hurdir, eld, hurdEld, sk.w, sk.h, Math.max(fb, fh) / 2384); } catch (e) { console.warn('[383] brunaholf', e); }
+      if (holf) {
+        talning.brunaholf = holf.fjoldi; talning.alyktadir = holf.alyktad.reduce((s0, e) => s0 + (e ? 1 : 0), 0); talning.utveggir = holf.ytri.reduce((s0, e) => s0 + (e ? 1 : 0), 0);
+        // hurð í ályktuðum brunavegg er líka brunahurð
+        if (hurdir && talning.alyktadir) { try { const saman = eld.map((e, i) => e || holf.alyktad[i]); hurdEld = eldurHurda(hurdir, butar, saman, Math.max(fb, fh) / 2384); } catch (_) {} }
+      }
+    }
     if (butar) {
       const mpx = (0.0254 / 72) * 100 / (Math.max(fb, fh) / 2384);   // metrar á díl EF blaðið er A1 í 1:100
       talning.veggir = butar.length; talning.gler = gler ? gler.length : 0; talning.hurdir = hurdir ? hurdir.length : 0;
       talning.metrar = Math.round(butar.reduce((s0, v) => s0 + Math.hypot(v[2] - v[0], v[3] - v[1]), 0) * mpx);
     }
     try { console.info('[383] 3D ' + (h.nafn || '') + ': ' + JSON.stringify(talning)); } catch (_) {}
-    return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, merki, veggjaPx: butar ? butar.length : n, butar, gler, hurdir, eld, talning, sk, frumB: fb, frumH: fh };
+    return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, merki, veggjaPx: butar ? butar.length : n, butar, gler, hurdir, hurdEld, eld, holf, talning, sk, frumB: fb, frumH: fh };
   }
   // EI-merki fyrir 3D: það sem teikningin geymir, annars TEXTALAG vigur-PDF-sins (ódýrt, engin myndgreining). Aðeins í
   // minni — ekkert er skrifað í teikninguna og 2D-glugginn sýnir merkin ekki (Agnar 03.10.2026: sú sýn býr í TurboPaint).
@@ -2351,13 +2568,26 @@
       G.syn3d = await syna3d(gamur, { haedir: ut });
       skyr.textContent = 'Draga = snúa · hjól / klípa = aðdráttur · shift-draga eða tveir fingur = færa' + (ut.length > 1 ? ' · ' + ut.length + ' hæðir' : '') + (sleppt.length ? ' · sleppt: ' + sleppt.join(', ') : '');
       const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'true');
-      // Skýring eldveggja: aðeins þegar einhver veggur fékk lit.
-      const eb = gamur.querySelector('#fp-3d-eld'), el2 = (G.syn3d && G.syn3d.eldur) || {};
-      if (eb && (el2[60] || el2[30])) {
-        const kubbur = (l, t) => '<span style="display:inline-flex;align-items:center;gap:5px"><i style="width:12px;height:12px;border-radius:3px;background:' + l + ';display:inline-block"></i>' + t + '</span>';
-        eb.innerHTML = 'Eldveggir: ' + (el2[60] ? kubbur('#d32f2f', 'EI-60') : '') + (el2[30] ? kubbur('#f57c00', 'EI-30') : '');
-        eb.style.display = 'flex';
-      }
+      // Skýring lita — fylgir því sem er á skjánum: valin hæð ein, eða allar. Litirnir byggja á EI-merkjum sem voru lesin
+      // sjálfvirkt af teikningunni, svo skýringin segir það (þetta er hjálpartæki, ekki staðfest brunahönnun).
+      const eb = gamur.querySelector('#fp-3d-eld');
+      const skyring = valin => {
+        if (!eb) return;
+        const hl = (valin == null ? ut : [ut[valin]]).filter(Boolean);
+        let e60 = 0, e30 = 0, nAl = 0, nH = 0, nEH = 0, nHolf = 0;
+        hl.forEach(u => {
+          (u.eld || []).forEach(e => { if (e === 60) e60++; else if (e === 30) e30++; });
+          if (u.holf) { nHolf += u.holf.fjoldi; u.holf.alyktad.forEach(e => { if (e) nAl++; }); }
+          nH += (u.hurdir || []).length; (u.hurdEld || []).forEach(e => { if (e) nEH++; });
+        });
+        const kubbur = (l, t) => '<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><i style="width:12px;height:12px;border-radius:3px;background:' + l + ';display:inline-block"></i>' + t + '</span>';
+        const html = (e60 ? kubbur('#d32f2f', 'EI-60') : '') + (e30 ? kubbur('#e57373', 'EI-30') : '') + (nAl ? kubbur('#f2a9a9', 'ályktað (lokar hólfi)') : '') +
+          (nEH ? kubbur('#f57c00', 'Brunahurð') : '') + (nH > nEH ? kubbur('#8d6e63', 'Hurð') : '') +
+          (nHolf > 1 ? '<span style="white-space:nowrap">' + nHolf + ' brunahólf' + (hl.length > 1 ? ' alls' : '') + '</span>' : '') +
+          (e60 || e30 ? '<span style="flex-basis:100%;font-weight:500;opacity:.75">Eldveggir eftir EI-merkjum teikningarinnar, lesnum sjálfvirkt — sannreyndu á teikningu.</span>' : '');
+        eb.innerHTML = html; eb.style.display = html ? 'flex' : 'none'; eb.style.flexWrap = 'wrap'; eb.style.maxWidth = 'calc(100% - 20px)'; eb.style.rowGap = '4px';
+      };
+      skyring(null);
       // Hæðatakkar: smellur sýnir þá hæð EINA, annar smellur á sömu hæð sýnir allar aftur.
       const hb = gamur.querySelector('#fp-3d-haedir');
       if (hb && ut.length > 1) {
@@ -2368,7 +2598,7 @@
           const t = e.target.closest('button[data-h]'); if (!t) return;
           const nr = +t.dataset.h; valin = valin === nr ? null : nr;
           if (G.syn3d && G.syn3d.syna) G.syn3d.syna(valin);
-          mala();
+          mala(); skyring(valin);
         });
         mala();
       }

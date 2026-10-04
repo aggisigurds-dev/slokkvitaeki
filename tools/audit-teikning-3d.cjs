@@ -10,7 +10,7 @@
  *   Fiskislóð 41 (vigur-PDF)      777 strik → 48 heilir veggir, 245 m, húsið 32,9 × 41,2 m · 11 glerfletir, 33 m
  *   Miðgarður 1. hæð (skönnuð TIF) veggjagríma → 106 veggir (skáveggir með) í stað kubba og stafasúlna; 6 hæðir í 3D
  *
- * Tíu reiknireglur bera þetta, og hver þeirra er PRÓFUÐ HÉR á tilbúnum gögnum (ekki bara leitað að nafni hennar):
+ * Tólf reiknireglur bera þetta, og hver þeirra er PRÓFUÐ HÉR á tilbúnum gögnum (ekki bara leitað að nafni hennar):
  *   1. heilirVeggir   — vigurstrik pöruð í veggi (miðlína + þykkt), samlínu bútar sameinaðir yfir súlur, horn smellt saman.
  *   2. veggirUrGrimu  — veggjagríma skönnunar lesin sem langir jafnþykkir borðar; klessur (stafir, tákn) verða ekki veggir.
  *   3. glerIBilum     — bil milli veggbúta á sömu línu er gler ef teikningin sýnir ≥ 2 samsíða línur þar; autt hurðargat
@@ -29,6 +29,9 @@
  *                       tengist veggnum beint fram undan sér. Langt op stendur opið.
  *  10. tengdirVeggir  — stakur stuttur veggur sem snertir ekkert og tengist engu um glugga eða hurð fellur
  *                       (Agnar: „hindrar þá kannski að stakir veggir úti á gólfi myndast").
+ *  11. eldurHurda     — hurð í brunavegg erfir flokk hans: karmurinn yfir henni er brunaveggur líka.
+ *  12. brunaholf      — brunaveggir mynda alltaf LOKAÐ rými með öðrum brunaveggjum og útveggjum: útveggir fundnir,
+ *                       laus endi brunaveggjar lokaður eftir stystu leið (ályktað, sýnt í ljósari lit), hólfin talin.
  * Og tengingin: undirbua() verður að rétta syna3d heilu veggina (butar) — annars er gríman lyft eins og áður.
  *
  * SOURCE-only, engin net-köll. Fall: exit 1.
@@ -42,7 +45,7 @@ const but = (a, b) => { const i = src.indexOf(a), j = src.indexOf(b); if (i < 0 
 const m = {};
 try {
   new Function('ut', but('  function summutafla', '  /** mynd: <img> eða <canvas>') + but('  const sameinaBil = ', '  const BAKGRUNNUR_3D') +
-    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi, merkjaEldveggi, husklasi, hurdagot, tengdirVeggir });')(m);
+    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi, merkjaEldveggi, husklasi, hurdagot, tengdirVeggir, eldurHurda, brunaholf });')(m);
 } catch (e) { villur.push('383: reiknireglurnar hlaðast ekki sjálfstætt (' + e.message + ') — þær verða að vera hrein gagnavinnsla án DOM'); }
 
 const lengd = v => Math.hypot(v[2] - v[0], v[3] - v[1]);
@@ -170,6 +173,30 @@ if (m.tengdirVeggir) {
   if (String(T) !== 'true,true,false,true,true') villur.push('tengdirVeggir: stakur stuttur veggur á að falla, veggur tengdur um hurð og langur frístandandi að standa; fékk ' + T);
 }
 
+if (m.eldurHurda) {
+  // 11 · hurð í brunavegg erfir flokk veggjarins (karmurinn yfir henni er þá rauður); hurð í venjulegum vegg ekki;
+  //      þverveggur sem er brunaveggur og snertir enda hurðarinnar gefur henni ekki flokk.
+  const veggir = [[100, 100, 300, 100, 8], [360, 100, 600, 100, 8], [100, 300, 300, 300, 8], [360, 300, 600, 300, 8], [360, 300, 360, 500, 8]];
+  const eld = new Uint8Array([60, 60, 0, 0, 60]);
+  const E = m.eldurHurda([[300, 100, 360, 100, 8], [300, 300, 360, 300, 8]], veggir, eld, 1);
+  if (String(Array.from(E)) !== '60,0') villur.push('eldurHurda: hurð í brunavegg á að erfa EI-60, hurð í venjulegum vegg ekki (þverveggur telst ekki); fékk ' + Array.from(E).join(','));
+}
+
+if (m.brunaholf) {
+  // 12 · hús 600 × 400 með einum brunavegg þvert yfir (merktur) → útveggirnir fjórir þekkjast, tvö brunahólf.
+  //      Sama hús þar sem brunaveggurinn nær aðeins hálfa leið og venjulegur veggur tekur við → hann er ÁLYKTAÐUR
+  //      brunaveggur (lokar hólfinu) og hólfin eru áfram tvö. Án lokunar væri hólfið eitt.
+  const ut4 = [[100, 100, 700, 100, 8], [700, 100, 700, 500, 8], [700, 500, 100, 500, 8], [100, 500, 100, 100, 8]];
+  const heill = ut4.concat([[400, 100, 400, 500, 8]]);
+  const H1 = m.brunaholf(heill, [], [], new Uint8Array([0, 0, 0, 0, 60]), null, 800, 600, 1);
+  if (!H1 || H1.fjoldi !== 2) villur.push('brunaholf: hús með einum brunavegg þvert yfir á að vera tvö brunahólf, fékk ' + (H1 ? H1.fjoldi : 'null'));
+  else if (String(H1.ytri) !== 'true,true,true,true,false') villur.push('brunaholf: útveggirnir fjórir eiga að þekkjast og milliveggurinn ekki; fékk ' + H1.ytri);
+  const halfur = ut4.concat([[400, 100, 400, 300, 8], [400, 300, 400, 500, 8], [150, 250, 250, 250, 8]]);
+  const H2 = m.brunaholf(halfur, [], [], new Uint8Array([0, 0, 0, 0, 60, 0, 0]), null, 800, 600, 1);
+  if (!H2 || H2.alyktad[5] !== 60 || H2.alyktad[6]) villur.push('brunaholf: brunaveggur sem endar í lausu lofti á að lokast eftir veggnum sem tekur við (ályktað), stakur veggur annars staðar ekki; fékk ' + (H2 ? Array.from(H2.alyktad) : 'null'));
+  else if (H2.fjoldi !== 2) villur.push('brunaholf: eftir lokun eiga hólfin að vera tvö, fékk ' + H2.fjoldi);
+}
+
 // Tengingin: undirbua → butar/gler → syna3d
 const krefst = (re, skilabod) => { if (!re.test(src)) villur.push('383: ' + skilabod); };
 krefst(/butar = heilirVeggir\(h\.pdfVeggir, fb, fh\)/, 'undirbua verður að para PDF-strikin (heilirVeggir) — annars kemur girðingin aftur');
@@ -183,7 +210,10 @@ krefst(/\[0, d, -d\]\.some\(o => inni\(/, 'útisían má ekki fella ÚTVEGGI: ve
 krefst(/butar = husklasi\(butar, 30 \* kpt, 115 \* kpt, 115 \* kpt\)/, 'undirbua verður að halda aðeins veggjaneti hússins á skönnunum (nafnreitur og lóðartákn urðu að veggjum — Agnar: „smá mesh þarna")');
 krefst(/hurdir = hurdagot\(butar, gler,/, 'undirbua verður að loka rýmum með hurðargötum (Agnar: „að allir veggirnir tengjast, hvort það sé gluggi eða hurð")');
 krefst(/tengdirVeggir\(butar, gler, hurdir,/, 'undirbua verður að fella staka veggi úti á gólfi á skönnunum');
-krefst(/veggjaPx: butar \? butar\.length : n, butar, gler, hurdir, eld/, 'undirbua verður að rétta syna3d heilu veggina og glerið');
+krefst(/hurdEld = eldurHurda\(hurdir, butar, eld,/, 'karmur yfir hurð í brunavegg verður að fá lit veggjarins (Agnar: „bilið fyrir ofan hurð á brunavegg ætti þá að vera brunaveggur líka")');
+krefst(/rendur\.setColorAt\(i, rl\.setHex\(hd\.hurdEld && hd\.hurdEld\[i\] \? ELDHURD_3D : HURDALITUR_3D\)\)/, 'hurðir verða að sjást ofan frá á litaðri rönd (brunahurð appelsínugul, önnur brún)');
+krefst(/holf = brunaholf\(butar, gler, hurdir, eld, hurdEld, sk\.w, sk\.h,/, 'undirbua verður að reikna brunahólfin (Agnar: „brunaveggir mynda alltaf lokað rými … brunahólf")');
+krefst(/veggjaPx: butar \? butar\.length : n, butar, gler, hurdir, hurdEld, eld, holf/, 'undirbua verður að rétta syna3d heilu veggina og glerið');
 krefst(/if \(hd\.butar && hd\.butar\.length\) \{/, 'syna3d verður að teikna heila veggi (einn kassi á vegg) þegar þeir eru til');
 krefst(/kassarUrGrimu\(hd\.veggir, hd\.W, hd\.H\)/, 'gamla ristarleiðin verður að standa sem varaleið fyrir teikningar án veggjanets');
 krefst(/syna\(nr\) \{/, 'hæðatakkarnir (ein hæð í einu) eru farnir — fjölhæða hús verða ólæsileg án þeirra');
