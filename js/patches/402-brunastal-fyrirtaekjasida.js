@@ -544,6 +544,41 @@
        breidd (gámafyrirspurn — S26 segist 980 px svo @media nær ekki) verða línurnar EINN listi: merki í fastri breidd
        vinstra megin, stýringar hægra megin. Þjöppunin (auðar línur faldar) heldur — sú regla hefur fleiri klasa. */
     p('.co-banner', 'container-type:inline-size'),
+    /* 04.10.2026 (Agnar, S26: „úttektin fyrir slökkvitæki er aðeins of þröng · þyrfti frekar að sjá Yfirferð, Hleðsla
+       frekar en hvenær síðast var yfirfarið '26 · headerinn svolítið stór á köflum"):
+       • 338 lét hverja tækjalínu skruna lárétt — ✓ / Yfirferð | Hleðsla | Nýtt / 🚫 duttu út af hægri brúninni og
+         „↺ Yfirfarið '26" tók plássið. Í þröngri breidd (gámafyrirspurn á .ut-list) fær línan tvær raðir: nafn og ✓ efst,
+         þjónustuvalið + 🚫 + árið (lítið) + QR undir. .ut-right / .ut-now verða display:contents svo börnin raðist í grindina.
+       • Aðgerðastikan (.ut-bulk): app-hamurinn blés takkana í 40–52 px og „→" fór í sér línu ofan við textann.
+       • „Í VINNSLU"-röðin þjöppuð. */
+    p('.ut-list', 'container-type:inline-size'),
+    '@container (max-width:720px){' + [
+      p('.ut-list.ut-list .ut-row.ut-row', 'display:grid!important;grid-template-columns:4px 22px minmax(0,1fr) auto auto auto!important;'
+        + 'grid-template-areas:"str chk main main sidast check" "str chk seg seg onytt far"!important;column-gap:8px!important;row-gap:7px!important;'
+        + 'align-items:center!important;overflow:visible!important;flex-wrap:nowrap!important;padding:8px 10px 8px 0!important;min-height:0!important'),
+      S2 + '.ut-list.ut-list .ut-row.ut-row' + F + '::before{grid-area:str!important;margin:-8px 0!important;align-self:stretch!important}',   // gervistak síðast — F má ekki koma á eftir ::before
+      p('.ut-list.ut-list .ut-row.ut-row .ut-right,.ut-list.ut-list .ut-row.ut-row .ut-now', 'display:contents!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-ico', 'display:none!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-chk', 'grid-area:chk!important;margin:0!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-main', 'grid-area:main!important;min-width:0!important;flex:none!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-check', 'grid-area:check!important;justify-self:end!important;width:34px!important;height:34px!important;min-height:0!important;padding:0!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-svcseg', 'grid-area:seg!important;justify-self:start!important;flex-wrap:nowrap!important;min-width:0!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-svc', 'height:32px!important;min-height:0!important;padding:0 11px!important;font-size:12.5px!important;line-height:1!important;white-space:nowrap!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-onytt', 'grid-area:onytt!important;width:32px!important;height:32px!important;min-height:0!important;padding:0!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-lastcol', 'grid-area:sidast!important;justify-self:end!important;width:auto!important;margin:0!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-last', 'font-size:10.5px!important;padding:2px 6px!important;opacity:.8'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-far', 'grid-area:far!important;width:auto!important;margin:0!important;justify-content:flex-end!important'),
+      p('.ut-list.ut-list .ut-row.ut-row .ut-far .ut-act', 'width:30px!important;height:30px!important;min-height:0!important;padding:0!important')
+    ].join('') + '}',
+    p('.ut-bulk', 'padding:8px 18px!important;gap:6px!important;min-height:0!important'),
+    p('.ut-bulk button,.ut-bulk .ut-selall', 'height:32px!important;min-height:0!important;padding:0 10px!important;font-size:12.5px!important;line-height:1!important;white-space:nowrap!important;flex:0 0 auto!important'),
+    p('.ut-bulk input', 'height:32px!important;min-height:0!important;font-size:13px!important;padding:0 8px!important'),
+    p('.ut-bulk .ut-bulk-lbl', 'font-size:10.5px!important;white-space:nowrap!important'),
+    p('.ut-bulk .ut-bulk-datewrap', 'gap:6px!important;flex:0 0 auto!important'),
+    // „Í VINNSLU" í eigin röð: á milli hennar og tækjalistans geta staðið teikningaborði/verkbeiðnir, svo hún er ekki
+    // hífð upp á fyrirsagnarlínuna (myndi skarast) — röðin er bara þjöppuð.
+    p('> div:has(> ._vw-topbtn)', 'margin:2px 0 4px!important;min-height:0!important'),
+    p('> div:has(> ._vw-topbtn) ._vw-topbtn', 'height:32px!important;min-height:0!important;padding-top:0!important;padding-bottom:0!important'),
     '@container (max-width:640px){' + [
       p('.co-bupp', 'grid-template-columns:minmax(0,1fr)!important;gap:6px!important'),
       p('.co-bupp > *', 'grid-column:1 / -1!important'),

@@ -158,9 +158,11 @@
     return o;
   }
   let prufaS = null;      // AppPageZoom.prufa(s): sýna stærð án þess að vista (yfirferð / samanburður)
+  let lifandi = null;     // { k, s } meðan klipið er út (sjá KLÍPA ÚT neðar)
   // { s, uppruni: 'vistad' | 'byrjun' | 'gamalt' | 'prufa' }
   function staerd(k, erGluggi, viewId) {
     if (prufaS != null) return { s: prufaS, uppruni: 'prufa' };
+    if (lifandi && lifandi.k === k) return { s: lifandi.s, uppruni: 'prufa' };
     const v = stillingar()[flokkur()][k];
     if (v) return { s: klemma(v.s), uppruni: 'vistad' };
     const c = C();
@@ -506,6 +508,59 @@
     loka();
   }, true);
   document.addEventListener('keydown', e => { if (opid && e.key === 'Escape') loka(); });
+
+  /* ── KLÍPA ÚT = minnka síðuna ─────────────────────────────────────────────
+     04.10.2026 (Agnar: „væri til í að geta pinch-zoomað út líka — bara hægt inn eins og er"). Chrome leyfir ekki að
+     klípa lengra út en síðubreiddina (visualViewport.scale = 1) og síðan fyllir skjáinn þegar — svo klipið gerði
+     ekkert. Þar tökum við við: tveir fingur sem NÁLGAST hvor annan á óstækkaðri síðu minnka síðustærðina lifandi í 5 %
+     skrefum, og hún vistast fyrir þessa síðu þegar fingurnir sleppa. Klípa INN er óbreytt — stækkunargler vafrans.
+     Hlustararnir eru óvirkir (passive) og hindra aldrei klípu vafrans. */
+  const KL_ID = '_sz-klipa';
+  let kl = null, _klRaf = 0;
+  const fjarl = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const ostaekkad = () => { try { const vv = window.visualViewport; return !vv || vv.scale <= 1.02; } catch (_) { return true; } };
+  function klMerki(txt) {
+    let m = document.getElementById(KL_ID);
+    if (!txt) { if (m) m.remove(); return; }
+    if (!m) {
+      m = document.createElement('div');
+      m.id = KL_ID;
+      m.style.cssText = 'position:fixed;left:50%;top:calc(var(--sz-pnl-top,60px) + 8px);transform:translateX(-50%);z-index:2147483602;'
+        + 'zoom:var(--app-krom-zoom,1);padding:6px 14px;border-radius:999px;border:1px solid #000;background:' + MALMUR + ';color:#f6e7b8;'
+        + 'font:700 15px ' + DISP + ';box-shadow:0 10px 24px -10px rgba(0,0,0,.7);pointer-events:none';
+      document.body.appendChild(m);
+    }
+    m.textContent = txt;
+  }
+  document.addEventListener('touchstart', e => {
+    if (e.touches.length !== 2 || !virkt() || !ostaekkad()) { if (e.touches.length !== 2) return; kl = null; return; }
+    setVar('--sz-pnl-top', bladTop() + 'px');
+    kl = { d0: fjarl(e.touches), s0: nu.s, s: nu.s, k: nu.k, virkur: false };
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!kl || e.touches.length !== 2) return;
+    if (!ostaekkad()) { if (kl.virkur) { lifandi = null; apply(); klMerki(''); } kl = null; return; }
+    const r = fjarl(e.touches) / (kl.d0 || 1);
+    if (!kl.virkur && r > 0.9) return;                 // dauðasvæði; klípa inn fer til vafrans
+    kl.virkur = true;
+    const s = klemma(Math.round(kl.s0 * Math.min(1, r) * 20) / 20);
+    if (s === kl.s) return;
+    kl.s = s;
+    lifandi = { k: kl.k, s };
+    klMerki(Math.round(s * 100) + ' %');
+    if (!_klRaf) _klRaf = requestAnimationFrame(() => { _klRaf = 0; apply(); });
+  }, { passive: true });
+  const klLok = e => {
+    if (!kl || (e.touches && e.touches.length >= 2)) return;
+    const k = kl;
+    kl = null;
+    lifandi = null;
+    if (k.virkur && k.s !== k.s0) setS(k.s, k.k);
+    else if (k.virkur) apply();
+    setTimeout(() => klMerki(''), k.virkur ? 700 : 0);
+  };
+  document.addEventListener('touchend', klLok, { passive: true });
+  document.addEventListener('touchcancel', klLok, { passive: true });
 
   /* ── vaktir ─────────────────────────────────────────────────────────────── */
   let _at = null;

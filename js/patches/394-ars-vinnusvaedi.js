@@ -112,7 +112,11 @@
       // kortið er opnað með takkanum í hlutahausnum eins og á borðinu.
       F + '._ars-vm{display:none!important}',
       F + '#_ars-pnr-row{display:none!important}',
-      V + '.arsm-seg{display:flex;height:44px;border:1px solid rgba(20,24,34,.22);border-radius:3px;overflow:hidden;background:' + SILVER + ';box-shadow:0 6px 16px -12px rgba(0,0,0,.5)}',
+      // 04.10.2026 (Agnar, S26: „get ekki skrollað filterinn til hliðar"): sjö hólf (731 px) í ~390 px — overflow:hidden
+      // klippti „Á eftir…" og það var ekki hægt að ná í rest. Nú lárétt skrun innan hnappaborðsins.
+      V + '.arsm-seg{display:flex;height:44px;max-width:100%;border:1px solid rgba(20,24,34,.22);border-radius:3px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom;scrollbar-width:none;background:' + SILVER + ';box-shadow:0 6px 16px -12px rgba(0,0,0,.5)}',
+      V + '.arsm-seg::-webkit-scrollbar{display:none}',
+      V + '.arsm-seg button{flex:0 0 auto}',
       // Merkimiði yfir tölu — eins og á borðinu.
       V + '.arsm-seg button{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0 17px;border:0;border-left:1px solid rgba(20,24,34,.14);background:transparent;color:#3a4250;font:600 12.5px ' + SANS + ';line-height:1.15;white-space:nowrap;cursor:pointer}',
       V + '.arsm-seg button:first-child{border-left:0}',
