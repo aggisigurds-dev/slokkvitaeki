@@ -188,7 +188,14 @@
   let _searchQuery = '';
 
   // ── Open ─────────────────────────────────────────────────────────────────
-  async function openReceiveModal() {
+  // 04.10.2026 (Agnar: „velja fyrirtæki og t.d. 10 tæki … virka úr báðum áttum … bara merki fram og til baka, ekki láta
+  // búa til reikning … allur útreikningur er síðan í lokin eins og venjulega"): MERKJA-hamur. Sama fyrirtækja- og
+  // tækjaval, en engin verkbeiðni, ekkert verð. Tæki sem eru þegar á verkstæði (status='loaned') eru forhökuð; Vista
+  // skrifar AÐEINS mismuninn — hakað → á verkstæði (sama og „Á verkstæði"-takkinn á prófílnum, 224, og bílstjórinn,
+  // 219), afhakað → til baka ('active'). Tækin birtast í „Komið úr þjónustu" (269) og á prófílnum.
+  let _merkja = false;
+  async function openReceiveModal(merkja) {
+    _merkja = merkja === true;
     _selectedCompany = null;
     _units = [];
     _searchQuery = '';
@@ -246,7 +253,9 @@
       .filter(u => u.status !== 'urelt' && u.status !== 'disposed' && u.status !== 'scrapped' && u.status !== 'geymsla' && u.status !== 'broken')
       .map(u => ({
         u,
-        checked: true,                  // default: assume driver brought all
+        // Merkja-hamur: hakið sýnir NÚVERANDI stöðu (á verkstæði eða ekki); annars: bílstjórinn kom með allt
+        checked: _merkja ? u.status === 'loaned' : true,
+        var: u.status === 'loaned',
         service: defaultServiceFor(u)
       }));
   }
@@ -348,6 +357,11 @@
       D + ' select._sr-unit-svc:focus{outline:none;border-color:#b3261e;box-shadow:0 0 0 3px rgba(179,38,30,.16)}',
       '@media (max-width:600px){' + D + ' .b49-rod{grid-template-columns:24px 1fr}' + D + ' select._sr-unit-svc{grid-column:2}' + D + ' #_sr-body{padding:14px}' + D + ' .b49-fotur{padding:10px 14px}' + D + ' .b49-haus h3{font-size:19px}}'
     ].join('\n');
+    css += '\n' + [
+      '#_sr-dialog._sr-merkja select._sr-unit-svc{display:none!important}',
+      '#_sr-dialog._sr-merkja .b49-rod{grid-template-columns:24px 1fr!important}',
+      '#_sr-dialog .b49-averk{display:inline-block;vertical-align:1px;margin-left:7px;padding:2px 7px;border-radius:3px;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#f6e7b8;font-family:' + B49_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}'
+    ].join('\n');
     var st = document.createElement('style');
     st.id = '_sr-dlg-css';
     st.textContent = css;
@@ -365,8 +379,8 @@
         '<div class="b49-haus">' +
           '<div>' +
             '<div class="b49-merki">' + B49_IC.inn + 'Verkstæði · móttaka</div>' +
-            '<h3 id="_sr-titill">Sækja inn úr fyrirtæki</h3>' +
-            '<div class="b49-undir">Veldu fyrirtæki og hvaða tæki komu inn</div>' +
+            '<h3 id="_sr-titill">' + (_merkja ? 'Merkja tæki á verkstæði' : 'Sækja inn úr fyrirtæki') + '</h3>' +
+            '<div class="b49-undir">' + (_merkja ? 'Bara merki — hakað = á verkstæði, afhakað = farið aftur. Enginn reikningur.' : 'Veldu fyrirtæki og hvaða tæki komu inn') + '</div>' +
           '</div>' +
           '<button id="_sr-x" type="button" aria-label="Loka">' + B49_IC.x + '</button>' +
         '</div>' +
@@ -375,17 +389,18 @@
           '<div id="_sr-summary"></div>' +
           '<div class="b49-takkar">' +
             '<button id="_sr-cancel" type="button">Hætta við</button>' +
-            '<button id="_sr-create" type="button" disabled>Stofna verk</button>' +
+            '<button id="_sr-create" type="button" disabled>' + (_merkja ? 'Vista merkingar' : 'Stofna verk') + '</button>' +
           '</div>' +
         '</div>' +
       '</div>';
+    if (_merkja) dlg.classList.add('_sr-merkja');
     document.body.appendChild(dlg);
 
     function close() { dlg.remove(); }
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
     dlg.querySelector('#_sr-x').addEventListener('click', close);
     dlg.querySelector('#_sr-cancel').addEventListener('click', close);
-    dlg.querySelector('#_sr-create').addEventListener('click', submitReceive);
+    dlg.querySelector('#_sr-create').addEventListener('click', () => (_merkja ? submitMerkja() : submitReceive()));
 
     renderBody();
   }
@@ -504,6 +519,7 @@
             '<strong class="b49-sn">' + esc(u.serial || '—') + '</strong>' +
             ' · ' + esc(u.type || '—') + (u.size ? ' ' + esc(u.size) : '') +
             overdueChip +
+            (_merkja && s.var ? '<small class="b49-averk">Á verkstæði</small>' : '') +
           '</div>' +
           '<div class="b49-stadur">' +
             (u.location ? esc(u.location) + ' · ' : '') +
@@ -568,8 +584,45 @@
       return;
     }
     const picked = _units.filter(s => s.checked);
+    if (_merkja) {
+      const til = _units.filter(s => s.checked && !s.var).length, af = _units.filter(s => !s.checked && s.var).length;
+      sum.textContent = picked.length + ' af ' + _units.length + ' á verkstæði' + (til || af ? ' · ' + (til ? '+' + til : '') + (til && af ? ' / ' : '') + (af ? '−' + af : '') : '');
+      create.disabled = !(til || af);
+      return;
+    }
     sum.textContent = picked.length + ' af ' + _units.length + ' tækjum valin';
     create.disabled = picked.length === 0;
+  }
+
+  // Merkja-hamur: aðeins mismunurinn skrifast; engin verkbeiðni, engin verð.
+  async function submitMerkja() {
+    const SB = getSB();
+    if (!SB || !_selectedCompany) return;
+    const til = _units.filter(s => s.checked && !s.var).map(s => s.u.id);
+    const af = _units.filter(s => !s.checked && s.var).map(s => s.u.id);
+    if (!til.length && !af.length) return;
+    const create = document.getElementById('_sr-create');
+    if (create) { create.disabled = true; create.textContent = 'Vista…'; }
+    let villa = null;
+    try {
+      if (til.length) { const r = await SB.from('uttaeki').update({ status: 'loaned', custody_status: null }).in('id', til); if (r.error) villa = r.error; }
+      if (!villa && af.length) { const r = await SB.from('uttaeki').update({ status: 'active', custody_status: null }).in('id', af); if (r.error) villa = r.error; }
+    } catch (e) { villa = e; }
+    if (villa) {
+      if (create) { create.disabled = false; create.textContent = 'Vista merkingar'; }
+      try { if (window.Toast && Toast.show) Toast.show('Vistaðist ekki — reyndu aftur'); } catch (_) {}
+      return;
+    }
+    // staðbundið skyndiminni (prófíllinn les DB.cache.units)
+    try {
+      ((window.DB && DB.cache && DB.cache.units) || []).forEach(u => {
+        if (til.indexOf(u.id) >= 0) { u.status = 'loaned'; u.custody_status = null; }
+        if (af.indexOf(u.id) >= 0) { u.status = 'active'; u.custody_status = null; }
+      });
+    } catch (_) {}
+    const dlg = document.getElementById('_sr-dialog'); if (dlg) dlg.remove();
+    try { if (window.VkLoaned && typeof VkLoaned.inject === 'function') VkLoaned.inject(); } catch (_) {}
+    try { if (window.Toast && Toast.show) Toast.show((til.length ? til.length + ' sett á verkstæði' : '') + (til.length && af.length ? ' · ' : '') + (af.length ? af.length + ' farin aftur' : '')); } catch (_) {}
   }
 
   // ── Submit: create verkbeiðni + verklidur ────────────────────────────────

@@ -124,16 +124,25 @@
       const nums = [...new Set(items.map(u => { const s = iVerki(u); return s ? s.num : ''; }))];
       return (nums.length === 1 && nums[0]) ? 'í verki ' + nums[0] + ' — unnið í Verkröðinni' : 'komið úr þjónustu';
     };
+    // 04.10.2026 (Agnar: „bara fyrir okkur að sjá hvað séu mörg af þeim tilbúin svo við getum látið bílstjórann sækja
+    // þau og skilað þeim"): tilbúin = custody 'tilbuid' (þessi lífsferill) eða tilbúið í verkbeiðni (422).
+    const erTilbuid = (u) => { const v = iVerki(u); return v ? v.kind === 'tilbuid' : u.custody_status === 'tilbuid'; };
+    const tilbN = (items) => items.filter(erTilbuid).length;
     const cards = grp.length ? grp.map(g =>
       '<div class="vkl-grp">' +
-        '<div class="vkl-grp-h"><span class="vkl-name">' + esc(g.client) + '</span><span class="vkl-meta">' + g.items.length + ' tæki · ' + esc(meta(g.items)) + '</span></div>' +
+        '<div class="vkl-grp-h"><span class="vkl-name">' + esc(g.client) + '</span><span class="vkl-meta">' + g.items.length + ' tæki' +
+          (tilbN(g.items) ? ' · <b class="vkl-tilb">' + tilbN(g.items) + ' tilbúin</b>' : '') + ' · ' + esc(meta(g.items)) + '</span></div>' +
         '<div class="vkl-tiles">' + g.items.map(tile).join('') + '</div>' +
       '</div>').join('')
       : '<div class="vkl-empty">Engin tæki komin úr þjónustu núna.</div>';
     return '<div id="_vk-loaned">' +
       '<div class="vkl-sec">' + IC.truck + '<span class="vkl-sec-lbl">Komið úr þjónustu</span>' +
         (_shop.length ? '<span class="vkl-sec-n">' + _shop.length + ' tæki</span>' : '') +
-        '<span class="vkl-rule" aria-hidden="true"></span></div>' +
+        (tilbN(_shop) ? '<span class="vkl-sec-n vkl-sec-n--tilb">' + tilbN(_shop) + ' tilbúin</span>' : '') +
+        '<span class="vkl-rule" aria-hidden="true"></span>' +
+        // „+ Merkja tæki" (122 merkja-hamur): velja fyrirtæki og tæki — bara merki, enginn reikningur
+        '<button type="button" class="vkl-merkja" title="Velja fyrirtæki og tæki sem eru á verkstæði — bara merki, enginn reikningur" onclick="event.stopPropagation();window.SamningshafarReceive&&SamningshafarReceive.open(true)">+ Merkja tæki</button>' +
+      '</div>' +
       cards +
     '</div>';
   }
@@ -148,6 +157,11 @@
     const css = [
       '#view-workshop #_vk-loaned{margin-bottom:12px}',
       W + '.vkl-sec{display:flex;align-items:center;gap:8px;margin:2px 2px 8px;color:#3a4250}',
+      W + '.vkl-sec{flex-wrap:wrap!important;row-gap:6px!important}',
+      W + '.vkl-sec .vkl-rule{min-width:12px}',
+      W + '.vkl-sec-n--tilb{color:#0b6b3a!important;font-weight:800!important}',
+      W + '.vkl-tilb{color:#0b6b3a;font-weight:800}',
+      W + '.vkl-merkja{flex:none;height:28px;min-height:0;padding:0 10px;border-radius:7px;border:1px solid rgba(20,24,34,.18);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:600 12px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;white-space:nowrap;margin-left:auto}',
       W + '.vkl-sec-lbl{font-family:' + MONO + ';font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3a4250}',
       W + '.vkl-sec-n{padding:1px 7px;border-radius:99px;background:rgba(20,24,34,.09);font-family:' + MONO + ';font-size:10.5px;font-weight:700;color:#2b313c}',
       W + '.vkl-rule{flex:1 1 auto;height:1px;background:rgba(20,24,34,.16)}',
