@@ -574,6 +574,22 @@
       '#' + VIEW_ID + ' .sv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}',
       '@media(max-width:760px){#' + VIEW_ID + ' .sv-grid{grid-template-columns:1fr}}',
       '#' + VIEW_ID + ' .sv-list{display:flex;flex-direction:column;gap:10px;max-width:640px}',
+      // 04.10.2026 (Agnar, S26-ramminn: „asnaleg hlutföll þarna" · „fyrirtækjanafnið allt of lítið"): í appham/síma
+      // blés 261 + simi-compact-layer hvern takka upp í 17 px / 46 px meðan nafnið var 13,5 px. Nafnið verður
+      // Playfair (eins og í töflunum), takkarnir hóflegir. Tvöfalt auðkenni + !important vinnur á uppblásturinn.
+      ...(() => {
+        const Z = ['body.appmode #' + VIEW_ID + '#' + VIEW_ID, 'html[data-viewmode="mobile"] #' + VIEW_ID + '#' + VIEW_ID];
+        const r = (sel, css) => Z.map(z => sel.split(',').map(x => z + ' ' + x.trim()).join(',')).join(',') + '{' + css + '}';
+        return [
+          r('.sv-nm', "font:700 20px/1.15 'Playfair Display',Georgia,serif!important;font-variant-numeric:lining-nums!important;color:#11141c!important;letter-spacing:0!important"),
+          r('.sv-kt', 'font-size:12px!important;font-weight:500!important;color:#3a4250!important;margin-top:3px!important'),
+          r('.sv-card', 'padding:14px 14px 12px!important;gap:9px!important'),
+          r('._sv-step,.sv-mark', 'font-size:12.5px!important;font-weight:700!important;min-height:32px!important;height:auto!important;padding:5px 11px!important;line-height:1.2!important'),
+          r('._sv-act', 'font-size:13px!important;min-height:36px!important;height:auto!important;padding:6px 12px!important'),
+          r('.sv-note', 'font-size:13px!important;min-height:44px!important'),
+          r('.sv-list', 'max-width:none!important')
+        ];
+      })(),
       // wide mode — full-width, short rows; note + actions on the right
       '#' + VIEW_ID + ' .sv-list-wide{display:flex;flex-direction:column;gap:8px}',
       '#' + VIEW_ID + ' .sv-card.wide{flex-direction:row;align-items:stretch;gap:16px;padding:11px 14px}',
@@ -920,8 +936,8 @@
       '</div>';
   }
   function nameBlock(r, big) {
-    return '<div><div style="font-weight:700;font-size:' + (big ? '15.5px' : '13.5px') + ';color:#11141c;line-height:1.25;letter-spacing:-.005em">' + esc(r.nafn) + '</div>' +
-      (r.kennitala ? '<div style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:11px;color:#9098a6;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
+    return '<div><div class="sv-nm" style="font-weight:700;font-size:' + (big ? '15.5px' : '13.5px') + ';color:#11141c;line-height:1.25;letter-spacing:-.005em">' + esc(r.nafn) + '</div>' +
+      (r.kennitala ? '<div class="sv-kt" style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:11px;color:#9098a6;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
   }
   // Sama hreinsun og Ársskoðun notar (153) — innflutningurinn tvítók sumar
   // áminningar með „---"-skiltingu og án þessa sæist afritið hér áfram.

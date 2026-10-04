@@ -54,7 +54,7 @@
   const BYRJUN = {
     company: 0.7, 'm:modal-floorplan': 0.7,
     hreyfingarlisti: 0.85, thjonustuverk: 0.85, sala: 0.85,
-    'thjonustu-verkstaedi': 0.8, rekstrarfelog: 0.8, kostnadur: 0.75
+    'thjonustu-verkstaedi': 0.6, rekstrarfelog: 0.8, kostnadur: 0.75
   };
   const NOFN = { company: 'Fyrirtækjasíða', 'm:modal-floorplan': 'Teikningar' };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
