@@ -615,7 +615,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/134-job-notes-display.js?v=20261001a"></script>
 <script defer src="/js/patches/136-companies-back-fix.js?v=20260607a"></script>
 <script defer src="/js/patches/137-verk-actions.js?v=20260511b"></script>
-<script src="/js/features.js?v=20261003ht"></script>
+<script src="/js/features.js?v=20261004ht"></script>
 <!-- jsQR er nú hlaðið EFTIR-PÖNTUN (lazy) þegar myndavélar-skanninn opnar — sjá js/scanner.js
      (._loadJsQR) og js/qrscan.js. Áður var þetta render-blocking <script> á HVERRI síðuhleðslu
      (~257 KB) þó það þurfi bara í QR-skönnun. -->
@@ -1364,6 +1364,8 @@ var Lanstaeki = {
 <!-- 01.10.2026: Verkspjaldið — eitt verk, einn gluggi (sala → verkstæði → afhending). Afturkall: AppSettings verkspjald.af = true -->
 <script defer src="/js/patches/430-verkspjald.js?v=20261001f"></script>
 <script defer src="/js/patches/431-uppferslubord.js?v=20261001teikn"></script>
+<!-- HT-3.10 liður 1: köll prófílsins send samtímis við opnun. Á EFTIR 378/431 — forsóknin fer í gegnum þau. -->
+<script defer src="/js/patches/441-forsokn.js?v=20261004a"></script>
 <script defer src="/js/patches/425-allir-brunastal.js?v=20260930a"></script>
 <script defer src="/js/patches/426-kunnasida-brunastal.js?v=20260930c"></script>
 <script defer src="/js/patches/427-stjornstod-ljos.js?v=20260930b"></script>

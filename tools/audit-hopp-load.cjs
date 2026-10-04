@@ -69,7 +69,8 @@ const html = lesa('index.html');
 // halda hopp-merkinu. Nýrra merki hleður hopp-kóðann líka — gamalt cache ekki.
 const utgafa = {
   // 03.10 (HT-3.10): falið fyrirtækja-grid er ekki teiknað; _vaktaSyn teiknar það þegar sýnin opnast.
-  'features.js': '20261003ht',
+  // 04.10: skýrslulínan í borðanum telur systkini úr grunni þegar listinn er ekki heill (ræsing á #company/<id>).
+  'features.js': '20261004ht',
   'mapfix.js': '20261001endur',
   // 02.10: 153 sækir tækjaskrá einu sinni við fyrstu opnun borðsins.
   '153-arsskodun.js': '20261002taek',

@@ -537,7 +537,13 @@ var Companies = {
       try {
         if (!co || !window.DB || !DB.sb) return;
         var fid = co.id, base = co.customer_base_id || null;
-        var systkini = base ? (Companies.list || []).filter(function (x) { return x.customer_base_id === base; }).length : 1;
+        // 04.10.2026 (HT-3.10, fundið við mælingu): systkinin voru talin í Companies.list — en við RÆSINGU á
+        // #company/<id> geymir listinn aðeins sneiðina (EINA röð), svo talan varð 1 og base-lyklaðar línur birtust þótt
+        // baseið eigi fleiri staði. Mælt á 1612 (Bílabúð Benna - Fiskislóð, base 868 = tveir staðir: 532 og 1612):
+        // borðinn sýndi „Skýrsla 2023: 8× Léttvatn …" við beina hleðslu en ekki þegar prófíllinn var opnaður úr listanum.
+        // Sé listinn ekki heill er spurt grunninn; bregðist það er gert ráð fyrir fleiri stöðum (aldrei sýna skýrslu
+        // systurstaðar). Sama slóð og 286 sækir hvort eð er, svo þetta er ekki aukakall.
+        var teikna = function (systkini) {
         var sia = 'fyrirtaeki_id.eq.' + fid + (base && systkini <= 1 ? ',customer_base_id.eq.' + base : '');
         DB.sb.from('uttekt_skyrsla_lines')
           .select('year,category,category_label,cnt,in_order,fyrirtaeki_id,customer_base_id')
@@ -564,6 +570,12 @@ var Companies = {
             var eftir = rot.querySelector('.co-banner-skra') || rot.querySelector('.co-banner-facts');
             if (eftir && eftir.parentNode) eftir.parentNode.insertBefore(lina, eftir.nextSibling);
           }, function () {});
+        };
+        var listi = Companies.list || [];
+        if (!base) teikna(1);
+        else if (listi.length >= 100) teikna(listi.filter(function (x) { return x.customer_base_id === base; }).length);
+        else DB.sb.from('fyrirtaeki').select('id').eq('customer_base_id', base).is('deleted_at', null)
+          .then(function (r) { teikna((r && !r.error && r.data) ? r.data.length : 2); }, function () { teikna(2); });
       } catch (_) {}
     })(c, el);
   },
