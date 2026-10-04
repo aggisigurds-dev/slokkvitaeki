@@ -1587,10 +1587,11 @@
     const mg = fpGluggi(); if (mg) mg.classList.toggle('fp-fest', !!val.fest);
     if (!document.getElementById('fp-fest-css')) {
       // Veggjatalning (✏ Veggir · N) og EI-merki eru greining — hún býr í TurboPaint; glugginn er sýn fyrir þjónustuna
-      // (Agnar 03.10.2026: „tekið út veggjatalningu, EI“). Fest útlit felur líka skurð og Skýrari veggi.
+      // (Agnar 03.10.2026: „tekið út veggjatalningu, EI“). Fest útlit felur skurðinn — EKKI Skýrari veggi (04.10: faldi
+      // takkinn gerði að verkum að „næ henni ekki aftur").
       const st = document.createElement('style'); st.id = 'fp-fest-css';
       st.textContent = '#modal-floorplan .fp-veggir-btn,#modal-floorplan .fp-ei-btn{display:none!important}' +
-        '#modal-floorplan.fp-fest .fp-skera-btn,#modal-floorplan.fp-fest .fp-hreinsa-btn{display:none!important}';
+        '#modal-floorplan.fp-fest .fp-skera-btn{display:none!important}';
       document.head.appendChild(st);
     }
     lita('.fp-veggir-btn', G.hamur === 'veggir', '✏ Veggir' + (h.veggir.length + h.pdfVeggir.length ? ' · ' + (h.veggir.length + h.pdfVeggir.length) : ''));

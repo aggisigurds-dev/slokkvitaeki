@@ -125,7 +125,12 @@
     // aðeins innan teikningarinnar (skurðarins) — utan hennar sést dökki bakgrunnurinn áfram
     x.save(); x.beginPath();
     x.rect((st.cr.left - st.mr.left) * dpr, (st.cr.top - st.mr.top) * dpr, st.cr.width * dpr, st.cr.height * dpr);
-    x.clip(); x.drawImage(t, 0, 0); x.restore();
+    x.clip(); x.drawImage(t, 0, 0);
+    // „Skýrari veggir": blaðið deyft eins og í 383 (globalAlpha 0,85) svo PDF-veggirnir á yfirlaginu standi út.
+    if (st.h.syn && st.h.syn.a && st.h.pdfVeggir && st.h.pdfVeggir.length) {
+      x.globalAlpha = 0.15; x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.globalAlpha = 1;
+    }
+    x.restore();
     grip(st.c);
     setjaVirkt(true);          // canvasinn: hvítt í stað myndar, tækin ofan á
     l.style.opacity = '1';
@@ -140,7 +145,7 @@
     // Skarpt um leið og meira en hálfur díll myndarinnar fer á hvern skjádíl.
     const upp = (st.cr.width / st.c.width) * dpr > 0.45;
     const lykill = [st.slod, Math.round(st.cr.left), Math.round(st.cr.top), Math.round(st.cr.width), st.c.width,
-      st.rymi.x, st.rymi.y, Math.round(st.mr.width), Math.round(st.mr.height), upp].join('|');
+      st.rymi.x, st.rymi.y, Math.round(st.mr.width), Math.round(st.mr.height), upp, !!(st.h.syn && st.h.syn.a)].join('|');
     if (lykill === S.lykill) return;
     S.lykill = lykill; S.kyn++;
     if (l) l.style.opacity = '0';                         // gamla skerpan passar ekki lengur — myndin sést á meðan
