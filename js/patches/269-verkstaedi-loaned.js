@@ -134,9 +134,11 @@
     const erTilbuid = (u) => { const v = iVerki(u); return v ? v.kind === 'tilbuid' : u.custody_status === 'tilbuid'; };
     const tilbN = (items) => items.filter(erTilbuid).length;
     const cards = grp.length ? grp.map(g =>
-      '<div class="vkl-grp">' +
+      '<div class="vkl-grp" data-client="' + esc(g.client) + '">' +
         '<div class="vkl-grp-h"><span class="vkl-name">' + esc(g.client) + '</span><span class="vkl-meta">' + g.items.length + ' tæki' +
-          (tilbN(g.items) ? ' · <b class="vkl-tilb">' + tilbN(g.items) + ' tilbúin</b>' : '') + ' · ' + esc(meta(g.items)) + '</span></div>' +
+          (tilbN(g.items) ? ' · <b class="vkl-tilb">' + tilbN(g.items) + ' tilbúin</b>' : '') + ' · ' + esc(meta(g.items)) + '</span>' +
+          '<button type="button" class="vkl-prenta" title="Prenta QR-miða fyrir öll tæki fyrirtækisins á verkstæðinu (Brother, sama og í Sölu)" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.prenta(this.closest(\'.vkl-grp\').dataset.client)">Prenta miða</button>' +
+          '</div>' +
         '<div class="vkl-tiles">' + g.items.map(tile).join('') + '</div>' +
       '</div>').join('')
       : '<div class="vkl-empty">Engin tæki komin úr þjónustu núna.</div>';
@@ -198,6 +200,8 @@
       W + '.vkl-hluti{height:26px;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:4px;margin:0;padding:0 6px;border-radius:7px;border:1px dashed rgba(20,24,34,.32);background:transparent;color:#3a4250;font:600 11.5px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}',
       W + '.vkl-hluti:hover{border-style:solid;background:rgba(20,24,34,.05)}',
       W + '.vkl-hl{margin-top:3px;font:700 10.5px ' + MONO + ';color:#845400}',
+      W + '.vkl-grp-h{flex-wrap:wrap}',
+      W + '.vkl-prenta{margin-left:auto;height:26px;padding:0 10px;border-radius:7px;border:1px solid rgba(20,24,34,.18);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:600 11.5px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;white-space:nowrap}',
       W + '.vkl-act--sott{border-color:rgba(52,168,98,.55);background:' + GREEN_METAL + ';color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 12px -5px rgba(22,140,72,.65)}',
       W + '.vkl-act--komid:hover,' + W + '.vkl-act--sott:hover{filter:brightness(1.2)}',
       W + '.vkl-empty{padding:16px 8px;color:#525b6b;font-size:12px;text-align:center}',
@@ -249,6 +253,16 @@
       toast('Varahlutur skráður á ' + (u.client || 'fyrirtækið') + ' — rukkast í lokin');
       inject(true);
     }, { favorites: true });
+  }
+
+  // QR-miðar fyrir öll tæki fyrirtækis á verkstæðinu — sama kerfi og Sala (Print.showJob → QrLabelCustomer, Brother).
+  function prenta(client) {
+    const items = _shop.filter(u => (u.client || '— óþekkt —') === client);
+    if (!items.length) return;
+    if (!(window.Print && typeof Print.showJob === 'function')) { alert('Miðaprentunin er ekki hlaðin.'); return; }
+    const L = (window.Companies && Companies.list) || [];
+    const c = L.find(x => String(x.nafn || '').trim() === String(client || '').trim());
+    Print.showJob({ customer: client, phone: (c && c.simi) || '', units: items.map(u => ({ serial: u.serial || '', type: u.type || '', size: u.size || '' })) });
   }
 
   async function act(id, a) {
@@ -346,7 +360,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
   else watch();
 
-  window.VkLoaned = { inject: () => inject(true), act: act, del: del, close: close, hluti: hluti };
+  window.VkLoaned = { inject: () => inject(true), act: act, del: del, close: close, hluti: hluti, prenta: prenta };
   console.log('[verkstaedi-loaned] v7 installed (+ rólegur stíll eins og VERK-súlan)');
 })();
 /* === END VERKSTÆÐI: KOMIÐ ÚR ÞJÓNUSTU === */

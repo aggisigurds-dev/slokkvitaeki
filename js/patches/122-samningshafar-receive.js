@@ -359,6 +359,8 @@
     ].join('\n');
     css += '\n' + [
       '#_sr-dialog._sr-merkja select._sr-unit-svc{display:none!important}',
+      '#_sr-dialog button#_sr-prenta{height:38px;padding:0 14px;border-radius:9px;border:1px solid rgba(20,24,34,.22);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:600 13px ' + B49_SANS + ';cursor:pointer;white-space:nowrap}',
+      '#_sr-dialog button#_sr-prenta:disabled{opacity:.4;cursor:not-allowed}',
       '#_sr-dialog._sr-merkja .b49-rod{grid-template-columns:24px 1fr!important}',
       '#_sr-dialog .b49-averk{display:inline-block;vertical-align:1px;margin-left:7px;padding:2px 7px;border-radius:3px;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#f6e7b8;font-family:' + B49_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}'
     ].join('\n');
@@ -389,6 +391,9 @@
           '<div id="_sr-summary"></div>' +
           '<div class="b49-takkar">' +
             '<button id="_sr-cancel" type="button">Hætta við</button>' +
+            // 04.10.2026 (Agnar: „velja þau 10 og prenta strikamerkin fyrir þau öll í einu — fyrirtækjanafn, tækjanúmer og
+            // QR — sami prentari og kerfi og í Sölu"): Print.showJob (139 → QrLabelCustomer 08, Brother PT-P750W).
+            (_merkja ? '<button id="_sr-prenta" type="button" disabled>Prenta miða</button>' : '') +
             '<button id="_sr-create" type="button" disabled>' + (_merkja ? 'Vista merkingar' : 'Stofna verk') + '</button>' +
           '</div>' +
         '</div>' +
@@ -401,6 +406,17 @@
     dlg.querySelector('#_sr-x').addEventListener('click', close);
     dlg.querySelector('#_sr-cancel').addEventListener('click', close);
     dlg.querySelector('#_sr-create').addEventListener('click', () => (_merkja ? submitMerkja() : submitReceive()));
+    const prentaBtn = dlg.querySelector('#_sr-prenta');
+    if (prentaBtn) prentaBtn.addEventListener('click', () => {
+      const picked = _units.filter(s => s.checked);
+      if (!picked.length || !_selectedCompany) return;
+      if (!(window.Print && typeof Print.showJob === 'function')) { alert('Miðaprentunin er ekki hlaðin.'); return; }
+      Print.showJob({
+        customer: _selectedCompany.nafn || '',
+        phone: _selectedCompany.simi || '',
+        units: picked.map(s => ({ serial: s.u.serial || '', type: s.u.type || '', size: s.u.size || '' }))
+      });
+    });
 
     renderBody();
   }
@@ -585,6 +601,8 @@
     }
     const picked = _units.filter(s => s.checked);
     if (_merkja) {
+      const pr = document.getElementById('_sr-prenta');
+      if (pr) { pr.disabled = !picked.length; pr.textContent = picked.length ? 'Prenta miða (' + picked.length + ')' : 'Prenta miða'; }
       const til = _units.filter(s => s.checked && !s.var).length, af = _units.filter(s => !s.checked && s.var).length;
       sum.textContent = picked.length + ' af ' + _units.length + ' á verkstæði' + (til || af ? ' · ' + (til ? '+' + til : '') + (til && af ? ' / ' : '') + (af ? '−' + af : '') : '');
       create.disabled = !(til || af);
