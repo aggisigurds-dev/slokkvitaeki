@@ -646,8 +646,9 @@
     G._festModal = m;
     G._festCid = cid;
     G.soknKom = 0;
-    const main = m.querySelector('#fp-main');
-    if (main) delete main._t383;
+    // ATH: main._t383 er EKKI hreinsað hér lengur. Sami #fp-main lifir milli opnana; hreinsunin lét tengjaStriga
+    // bæta við nýju setti af pointer-hlustum við hverja opnun — fingurinn dró teikninguna 2×, 3×… hraðar
+    // (mælt 04.10.2026: 11 pointermove → 20 færslur). Nýr hnútur (remount) ber ekki merkið og tengist sjálfur.
     const f = document.getElementById('fp-haedir');
     if (f && !m.contains(f)) { f._html = ''; f.remove(); }
     const z = document.getElementById('fp-zoom');
@@ -1097,7 +1098,9 @@
     if (merki === G.teiknad) return;
     G.teiknad = merki;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    y.width = Math.round(mr.width * dpr); y.height = Math.round(mr.height * dpr); y.style.width = mr.width + 'px'; y.style.height = mr.height + 'px';
+    // stærð striga í tækja-px úr skjá-px; CSS-stærðin í staðbundnum px (án zoom síðunnar — sjá zKv)
+    const zk = zKv(main);
+    y.width = Math.round(mr.width * dpr); y.height = Math.round(mr.height * dpr); y.style.width = (mr.width / zk) + 'px'; y.style.height = (mr.height / zk) + 'px';
     const x = y.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, mr.width, mr.height);
     if (!synilegt) return;
     const k = cr.width / c.width, ox = cr.left - mr.left, oy = cr.top - mr.top;
@@ -1185,6 +1188,15 @@
    * mousedown-færslu, með stöðuna lokaða inni í sér — engin snerting, engin klípa, og 30 px takkar. Hér er hún
    * tekin yfir: atburðir hennar eru stöðvaðir í capture og takkarnir hennar faldir. */
   const Z = { s: 1, x: 0, y: 0 };
+  // CSS-zoom síðunnar (sími: 333/353 setja zoom ≈ 2,4 á gluggann). getBoundingClientRect og clientX eru í SKJÁ-px
+  // (með zoom), en translate/width í stílnum eru í STAÐBUNDNUM px (án zoom). Án þessarar deilingar dró fingurinn
+  // teikninguna 2,4× hraðar en hann hreyfðist og yfirlagið (veggir, skilti) teygðist út fyrir teikninguna
+  // (Agnar 04.10.2026, S26: „Þetta dregst allt til og frá").
+  function zKv(el) {
+    el = el || fpEl('fp-main'); if (!el || !el.offsetWidth) return 1;
+    const k = el.getBoundingClientRect().width / el.offsetWidth;
+    return k > 0.05 && isFinite(k) ? k : 1;
+  }
   function zBeita() {
     const c = fpEl('fp-canvas'); if (!c) return;
     c.style.transformOrigin = '0 0'; c.style.transform = 'translate(' + Z.x + 'px,' + Z.y + 'px) scale(' + Z.s + ')';
@@ -1192,7 +1204,8 @@
   }
   function zThysja(f, cx, cy) {
     const main = fpEl('fp-main'); if (!main) return;
-    const r = main.getBoundingClientRect(), mx = cx == null ? r.width / 2 : cx - r.left, my = cy == null ? r.height / 2 : cy - r.top;
+    const r = main.getBoundingClientRect(), zk = zKv(main);
+    const mx = (cx == null ? r.width / 2 : cx - r.left) / zk, my = (cy == null ? r.height / 2 : cy - r.top) / zk;
     const ns = Math.min(12, Math.max(0.2, Z.s * f));
     Z.x = mx - (mx - Z.x) * (ns / Z.s); Z.y = my - (my - Z.y) * (ns / Z.s); Z.s = ns; zBeita();
   }
@@ -1274,11 +1287,11 @@
         const [a, b] = [...fingur.values()], fj = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
         if (G.drag && !G.drag.buid) G.drag = null;
         if (klipa) zThysja(fj / klipa, mx, my);
-        if (midja) { Z.x += mx - midja[0]; Z.y += my - midja[1]; zBeita(); }
+        if (midja) { const zk = zKv(main); Z.x += (mx - midja[0]) / zk; Z.y += (my - midja[1]) / zk; zBeita(); }
         klipa = fj; midja = [mx, my]; hreyft = 99;
       } else if (G.hamur !== 'skera') {
         hreyft += Math.abs(dx) + Math.abs(dy);
-        if (hreyft > 6) { Z.x += dx; Z.y += dy; zBeita(); main.style.cursor = 'grabbing'; }
+        if (hreyft > 6) { const zk = zKv(main); Z.x += dx / zk; Z.y += dy / zk; zBeita(); main.style.cursor = 'grabbing'; }
       }
     }, true);
     const sleppa = e => { fingur.delete(e.pointerId); klipa = 0; midja = null; main.style.cursor = ''; };

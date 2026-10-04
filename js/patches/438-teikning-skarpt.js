@@ -143,7 +143,9 @@
     const W = Math.round(st.mr.width * dpr), H = Math.round(st.mr.height * dpr);
     const l = lag(st.main);
     if (l.width !== W || l.height !== H) { l.width = W; l.height = H; }
-    l.style.width = st.mr.width + 'px'; l.style.height = st.mr.height + 'px';
+    // CSS-stærð í staðbundnum px: síminn setur zoom á gluggann og mr er í skjá-px (sama og zKv í 383)
+    const zk = st.main.offsetWidth ? st.mr.width / st.main.offsetWidth : 1;
+    l.style.width = (st.mr.width / zk) + 'px'; l.style.height = (st.mr.height / zk) + 'px';
     const x = l.getContext('2d');
     x.clearRect(0, 0, W, H);
     const k = st.cr.width / st.c.width;                    // skjápx á canvas-px (canvas-px = frummyndar-px − rymi)

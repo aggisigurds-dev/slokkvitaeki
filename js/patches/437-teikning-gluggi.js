@@ -68,7 +68,7 @@
   }
 
   function klemma(n, modal) {
-    const raw = modal ? Math.round(modal.getBoundingClientRect().width * 0.46) : MAX;
+    const raw = modal ? Math.round((modal.offsetWidth || modal.getBoundingClientRect().width) * 0.46) : MAX;
     const cap = Math.max(MIN, Math.min(MAX, raw || MAX));
     const v = Math.round(Number(n) || SJALF);
     return Math.max(MIN, Math.min(cap, v));
@@ -164,10 +164,12 @@
       e.preventDefault();
       e.stopPropagation();
       const startX = e.clientX;
-      const startW = panel.getBoundingClientRect().width;
+      // staðbundin px (offsetWidth) — síðustærðin (333) setur CSS-zoom og clientX er í skjá-px
+      const startW = panel.offsetWidth || panel.getBoundingClientRect().width;
+      const zk = panel.offsetWidth ? (panel.getBoundingClientRect().width / panel.offsetWidth) || 1 : 1;
       m.classList.add('fp-panel-drag');
       const faera = ev => {
-        setjaBreidd(startW + (startX - ev.clientX), false);
+        setjaBreidd(startW + (startX - ev.clientX) / zk, false);
         teiknaAftur();
       };
       const loka = () => {
@@ -175,7 +177,7 @@
         document.removeEventListener('pointermove', faera, true);
         document.removeEventListener('pointerup', loka, true);
         document.removeEventListener('pointercancel', loka, true);
-        setjaBreidd(panel.getBoundingClientRect().width, true);
+        setjaBreidd(panel.offsetWidth || panel.getBoundingClientRect().width, true);
         teiknaAftur();
       };
       document.addEventListener('pointermove', faera, true);
