@@ -67,41 +67,49 @@
     return hit ? [hit, n[hit]] : null;
   }
 
-  function pill(txt) {
-    return '<span style="display:inline-block;padding:2px 10px;border-radius:99px;background:#f3e8ff;color:#6b21a8;font-weight:700;font-size:12px">' + esc(txt) + "</span>";
+  // 04.10.2026 (Agnar: „more stylish í samræmi við Fyrirtæki í þjónustu"): Stálspjald (442) í stað fjólubláa
+  // spjaldsins — málmhaus með hnoðum, staðan sem plata með LED, línur á stálplötu, engin emoji. Textinn úr gögnunum
+  // getur byrjað á emoji („🔴 Ósvarað · …") — það fer og liturinn fer í LED-ið.
+  const SP = () => window.Stalspjald || { anEmoji: x => String(x || ''), ledLitur: () => 'gull' };
+  function plata(txt) {
+    return '<span class="ssp-plata" title="' + esc(SP().anEmoji(txt)) + '"><i class="ssp-led ' + SP().ledLitur(txt) + '"></i>' + esc(SP().anEmoji(txt)) + '</span>';
+  }
+  function lina(merki, gildi, cls) {
+    return '<div class="ssp-lina heil efst"><span class="ssp-merki">' + merki + '</span><span class="ssp-gildi' + (cls ? ' ' + cls : '') + '">' + gildi + '</span></div>';
   }
 
   function buildCard(merki, note) {
     const card = document.createElement("div");
-    card.className = "_rf_summa";
+    card.className = "_rf_summa ssp";
     card.dataset.merki = merki;
-    card.style.cssText = "margin:0 0 12px;border:1px solid var(--brd,#e2e8f0);border-left:4px solid #7c3aed;border-radius:10px;padding:12px 14px;font-size:13px;background:var(--surface,#fff)";
 
     const opin = Array.isArray(note.opin_mal) ? note.opin_mal : [];
     const head =
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
-      '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#6d28d9">📋 ÞJÓNUSTU-SUMMA ' +
-        '<button type="button" class="_summa_refresh" title="Sækja ferskt" style="border:none;background:none;cursor:pointer;font-size:12px;padding:0 4px;color:#a78bfa">↻</button></div>' +
-      (note.stada ? pill(note.stada) : "") + "</div>";
+      '<div class="ssp-haus"><span class="ssp-titill">Þjónustusumma</span>' +
+        '<button type="button" class="_summa_refresh ssp-btn ikon" title="Sækja ferskt" aria-label="Sækja ferskt">↻</button>' +
+        '<span class="ssp-hlid">' + (note.stada ? plata(note.stada) : "") + '</span>' +
+      '</div>';
 
     // Alltaf sýnilegt: tölur + næsta skref
     const always =
-      (note.tolur ? '<div style="display:flex;gap:8px;margin-top:7px;line-height:1.45"><span>📨</span><span>' + esc(note.tolur) + "</span></div>" : "") +
-      (note.naesta_skref ? '<div style="display:flex;gap:8px;margin-top:4px;line-height:1.45"><span>🎯</span><span style="font-weight:600">' + esc(note.naesta_skref) + "</span></div>" : "");
+      (note.tolur ? lina('Póstar', esc(note.tolur)) : "") +
+      (note.naesta_skref ? lina('Næsta skref', esc(note.naesta_skref), 'feitt') : "");
 
     // Útvíkkanlegt: tengiliðir + opin mál
     const moreInner =
-      (note.tengilidir ? '<div style="display:flex;gap:8px;margin:6px 0;line-height:1.45"><span>👤</span><span>' + esc(note.tengilidir) + "</span></div>" : "") +
-      (opin.length ? '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em;margin:8px 0 3px">⚠️ OPIN MÁL</div>' +
-        opin.map(m => '<div style="display:flex;gap:7px;margin:3px 0;line-height:1.4"><span style="color:#dc2626">•</span><span>' + esc(m) + "</span></div>").join("") : "") +
-      (note.updated_at ? '<div style="color:#94a3b8;font-size:11px;margin-top:8px">Uppfært ' + esc(note.updated_at) + (note.by ? " · " + esc(note.by) : "") + "</div>" : "");
+      (note.tengilidir ? '<div class="ssp-reitir">' + lina('Tengiliðir', esc(note.tengilidir)) + '</div>' : "") +
+      (opin.length ? '<div class="ssp-skilti">Opin mál</div>' + opin.map(m => '<div class="ssp-mal"><span class="ssp-gildi">' + esc(m) + '</span></div>').join("") : "") +
+      (note.updated_at ? '<div class="ssp-medal" style="margin-top:8px">Uppfært ' + esc(note.updated_at) + (note.by ? " · " + esc(note.by) : "") + '</div>' : "");
 
     const hasMore = !!(note.tengilidir || opin.length);
-    card.innerHTML = head + always +
-      (hasMore
-        ? '<button type="button" class="_rf_summa_tog" style="margin-top:8px;border:1px solid #ddd6fe;background:#f5f3ff;color:#6d28d9;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">Meira ▾</button>' +
-          '<div class="_rf_summa_more" style="display:none;margin-top:8px;border-top:1px dashed #e9d5ff;padding-top:8px">' + moreInner + "</div>"
-        : "");
+    card.innerHTML = head +
+      '<div class="ssp-buk">' +
+        (always ? '<div class="ssp-reitir">' + always + '</div>' : '') +
+        (hasMore
+          ? '<div style="margin-top:8px"><button type="button" class="_rf_summa_tog ssp-btn">Meira ▾</button></div>' +
+            '<div class="_rf_summa_more" style="display:none;margin-top:8px">' + moreInner + "</div>"
+          : "") +
+      '</div>';
 
     const tog = card.querySelector("._rf_summa_tog");
     if (tog) tog.addEventListener("click", e => {
@@ -162,7 +170,7 @@
     if (existing) { if (existing.dataset.fid === fid) return; existing.remove(); }
 
     const el = buildCard("co:" + fid, note);
-    el.className = "_co_summa"; el.dataset.fid = fid;
+    el.className = "_co_summa ssp"; el.dataset.fid = fid;
     // Akkeri: sama röð og 286 (Merkja mikilvægt-hnappurinn), spjaldið fyrir aftan.
     let row = null;
     const mk = [...document.querySelectorAll("button")].find(b => /Merkja mikilvæg|Bæta við tæki|Þjónustusamningur/.test(b.textContent || ""));

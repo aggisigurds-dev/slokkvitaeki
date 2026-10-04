@@ -1071,14 +1071,17 @@
     card = document.createElement("div");
     card.className = "_samskipti-rf"; card.dataset.dom = dom || ""; card.dataset.coids = coidKey;
     card.dataset.state = "loading"; card.dataset.ts = String(Date.now());
-    card.style.cssText = "margin:0 0 14px;border-left:4px solid #6366f1;background:var(--surface,#fff);border:1px solid var(--brd,#e2e8f0);border-left:4px solid #6366f1;border-radius:10px;padding:12px 14px;font-size:13px";
+    // 04.10.2026 (Agnar: „more stylish í samræmi við Fyrirtæki í þjónustu"): Stálspjald (442) — málmhaus með hnoðum,
+    // línur á stálplötu, silfur-/málmtakkar, engin emoji (áður fjólublátt spjald með 💬/✉️/⚠️).
+    card.classList.add("ssp");
+    const haus = hlid => '<div class="ssp-haus"><span class="ssp-titill">Samskiptasaga</span>' +
+      (dom ? '<span class="ssp-undir">@' + esc(dom) + '</span>' : '') + '<span class="ssp-hlid">' + (hlid || '') + '</span></div>';
     if (slot) slot.appendChild(card); else info.parentNode.insertBefore(card, info.nextSibling);
     if (!dom && !coids.length) {
-      card.innerHTML = '<div style="color:#94a3b8">💬 Engin netföng eða byggingar á félaginu — skráðu netfang til að sjá póstsögu.</div>';
+      card.innerHTML = haus('') + '<div class="ssp-buk"><span class="ssp-gildi ssp-daufur">Engin netföng eða byggingar á félaginu — skráðu netfang til að sjá póstsögu.</span></div>';
       card.dataset.state = "done"; return;
     }
-    card.innerHTML = '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA' +
-      (dom ? " (@" + esc(dom) + ")" : "") + '</div><div style="color:#94a3b8;margin-top:4px">Sæki póstsögu…</div>';
+    card.innerHTML = haus('') + '<div class="ssp-buk"><span class="ssp-gildi ssp-daufur">Sæki póstsögu…</span></div>';
     // Póstsagan og ✓-staðan eru ÓHÁÐAR — sóttar SAMHLIÐA. Áður beið
     // ✓-fyrirspurnin eftir póstinum að óþörfu (ein ferð í viðbót í röð).
     const [mails, handled] = await Promise.all([
@@ -1102,30 +1105,35 @@
     const cut = lastUs > handled ? lastUs : handled;
     const openQ = mails.filter(m => m.is_question && !m.fra_okkur && m.received_at > cut).length;
     const top = mails[0];
-    const mailsHtml = mails.map(m =>
-      '<div style="padding:6px 9px;margin:4px 0;border-radius:8px;background:' + (m.is_question && !m.fra_okkur ? "#fef2f2;border:1px solid #fecaca" : "var(--surface2,#f8fafc)") + '">' +
-      '<div style="font-size:11px;color:#64748b">' + fmtD(m.received_at) + " · " + esc(m.fra_okkur ? "Slökkvitæki ehf" : (m.sender_name || m.sender_email)) +
-      (m.is_question && !m.fra_okkur ? ' · <b style="color:#dc2626">spurning</b>' : "") + "</div>" +
-      '<div style="font-weight:600">' + esc(m.subject || "(ekkert efni)") + "</div>" +
-      '<div style="color:#64748b;font-size:12px">' + esc((m.snippet || "").slice(0, 180)) + "</div></div>").join("") ||
-      '<div style="color:#94a3b8;padding:4px 0">Engir póstar fundust' + (dom ? " á @" + esc(dom) : "") + ".</div>";
-    card.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
-      '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA ' +
-      (dom ? '<span style="font-weight:400;color:#94a3b8">@' + esc(dom) + "</span>" : "") + "</div>" +
-      '<div style="display:flex;gap:7px;align-items:center">' +
+    const mailsHtml = mails.map(m => {
+      const spurn = m.is_question && !m.fra_okkur;
+      return '<div class="ssp-lina heil" style="display:block;margin:0 0 6px">' +
+        '<div class="ssp-medal" style="display:flex;align-items:center;gap:6px">' + (spurn ? '<i class="ssp-led rautt"></i>' : '') +
+          fmtD(m.received_at) + " · " + esc(m.fra_okkur ? "Slökkvitæki ehf" : (m.sender_name || m.sender_email)) +
+          (spurn ? ' · <b style="color:#b42318">spurning</b>' : "") + "</div>" +
+        '<div class="ssp-gildi feitt">' + esc(m.subject || "(ekkert efni)") + "</div>" +
+        '<div class="ssp-gildi ssp-daufur" style="font-size:12.5px">' + esc((m.snippet || "").slice(0, 180)) + "</div></div>";
+    }).join("") ||
+      '<span class="ssp-gildi ssp-daufur">Engir póstar fundust' + (dom ? " á @" + esc(dom) : "") + ".</span>";
+    const hlid =
       (openQ > 0 && coids.length
-        ? '<button type="button" class="_ssk-rf-mark" style="border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">✓ Merkja afgreitt</button>'
-        : (handled && !openQ ? '<span style="color:#0f6e3a;font-weight:700;font-size:11.5px">✓ Afgreitt</span>' : "")) +
-      '<button type="button" class="_ssk-rf-toggle" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">Opna ▾</button></div></div>' +
-      '<div style="margin-top:5px">' +
-      (top ? '<div style="display:flex;gap:8px;line-height:1.45"><span>✉️</span><span>' + fmtD(top.received_at) + " — " + esc(top.subject || "(ekkert efni)") +
-        ' <span style="color:#94a3b8">(' + (top.fra_okkur ? "frá okkur" : "frá " + esc(top.sender_name || top.sender_email)) + ")</span></span></div>"
-        : '<div style="color:#94a3b8">Engir póstar fundust' + (dom ? " á @" + esc(dom) : "") + ".</div>") +
-      '<div class="_ssk-rf-warn">' +
-      (openQ ? '<div style="display:flex;gap:8px;margin-top:3px"><span>⚠️</span><span style="color:#dc2626;font-weight:700">' + openQ + " ósvöruð spurning" + (openQ > 1 ? "ar" : "") + " í pósti</span></div>" : "") +
-      "</div></div>" +
-      '<div class="_ssk-rf-full" style="display:none;margin-top:9px;border-top:1px dashed #e2e8f0;padding-top:8px">' + mailsHtml + "</div>";
+        ? '<button type="button" class="_ssk-rf-mark ssp-btn malm">✓ Merkja afgreitt</button>'
+        : (handled && !openQ ? '<span class="ssp-plata"><i class="ssp-led graent"></i>Afgreitt</span>' : "")) +
+      '<button type="button" class="_ssk-rf-toggle ssp-btn">Opna ▾</button>';
+    card.innerHTML = haus(hlid) +
+      '<div class="ssp-buk">' +
+        '<div class="ssp-reitir">' +
+          (top
+            ? '<div class="ssp-lina heil efst"><span class="ssp-merki">Nýjast<small>' + fmtD(top.received_at) + '</small></span>' +
+                '<span class="ssp-gildi">' + esc(top.subject || "(ekkert efni)") +
+                ' <span class="ssp-daufur">· ' + (top.fra_okkur ? "frá okkur" : "frá " + esc(top.sender_name || top.sender_email)) + '</span></span></div>'
+            : '<div class="ssp-lina heil"><span class="ssp-merki">Póstar</span><span class="ssp-gildi ssp-daufur">Engir póstar fundust' + (dom ? " á @" + esc(dom) : "") + ".</span></div>") +
+        '</div>' +
+        '<div class="_ssk-rf-warn">' +
+          (openQ ? '<div class="ssp-mal" style="margin-top:8px"><span class="ssp-gildi feitt" style="color:#b42318">' + openQ + " ósvöruð spurning" + (openQ > 1 ? "ar" : "") + " í pósti</span></div>" : "") +
+        '</div>' +
+        '<div class="_ssk-rf-full" style="display:none;margin-top:10px">' + mailsHtml + "</div>" +
+      '</div>';
     card.querySelector("._ssk-rf-toggle").addEventListener("click", e => {
       const full = card.querySelector("._ssk-rf-full"), open = full.style.display === "none";
       full.style.display = open ? "" : "none";
@@ -1133,7 +1141,7 @@
     });
     const rfMk = card.querySelector("._ssk-rf-mark");
     if (rfMk) rfMk.addEventListener("click", async e => {
-      e.target.disabled = true; e.target.textContent = "⏳ …";
+      e.target.disabled = true; e.target.textContent = "…";
       const nu = new Date().toISOString();
       let who = ""; try { who = localStorage.getItem("ky_me") || localStorage.getItem("bs_employee") || ""; } catch (_) {}
       const rows = coids.map(id => ({ fyrirtaeki_id: id, handled_at: nu, handled_by: who, updated_at: nu }));
@@ -1152,7 +1160,7 @@
       // Uppfæra spjaldið á staðnum (engin endurteiknun þarf): viðvörun burt,
       // hnappur → grænt ✓. Prófílkortin (cache) sjá nýju stöðuna næst.
       const warn = card.querySelector("._ssk-rf-warn"); if (warn) warn.innerHTML = "";
-      e.target.outerHTML = '<span style="color:#0f6e3a;font-weight:700;font-size:11.5px">✓ Afgreitt</span>';
+      e.target.outerHTML = '<span class="ssp-plata"><i class="ssp-led graent"></i>Afgreitt</span>';
       Object.keys(cache).forEach(k => { delete cache[k]; });
     });
     card.dataset.state = "done";

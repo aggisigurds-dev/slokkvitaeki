@@ -1575,7 +1575,8 @@
         '</button>'+
         '<div class="rfa__body"><div class="rfa__pad">'+
           // 2026-06-12 (Todoist): athugasemd beint á borðanum — vistast sjálfkrafa
-          '<input class="_rf_note" value="'+esc(info.notes||'')+'" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa">'+
+          // 04.10.2026: fjöllína svo löng athugasemd sjáist öll (field-sizing:content í 442) — áður klipptist hún í einni línu
+          '<textarea class="_rf_note ssp-reitur" rows="1" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa">'+esc(info.notes||'')+'</textarea>'+
           '<div class="_rf_body"></div>'+
         '</div></div>';
       var body=card.querySelector('._rf_body');
@@ -2197,41 +2198,45 @@
     // sjá Charlize #233). Walk-in kt 9999999999 fær engan takka.
     var ktDigits=String(effKt||'').replace(/[^0-9]/g,'');
     var keldanBtn=(ktDigits.length===10&&ktDigits!=='9999999999')
-      ? ' <a href="https://keldan.is/Fyrirtaeki/Yfirlit/'+ktDigits+'" target="_blank" rel="noopener" title="Opna fyrirtækið á Keldunni — skráning og ársreikningar" style="display:inline-block;font-size:10.5px;font-weight:700;color:var(--brand);border:1px solid var(--brd2);border-radius:99px;padding:1px 8px;text-decoration:none;margin-left:6px;white-space:nowrap">🏢 Keldan</a>'
+      ? '<a class="ssp-btn" href="https://keldan.is/Fyrirtaeki/Yfirlit/'+ktDigits+'" target="_blank" rel="noopener" title="Opna fyrirtækið á Keldunni — skráning og ársreikningar">Keldan</a>'
       : '';
     var effEmails=(info.emails&&info.emails.length)?info.emails:der.emails;
     var effSimi=info.simi||der.simi;
-    var derTag=' <span style="font-size:10.5px;font-weight:700;color:var(--ink3);background:var(--brd);border-radius:99px;padding:1px 7px;white-space:nowrap">úr byggingum</span>';
+    var derTag=' <span class="ssp-daufur" style="font-family:inherit;font-size:11px">· úr byggingum</span>';
     var ktDer=!info.kt&&!!der.kt, emDer=!(info.emails&&info.emails.length)&&der.emails.length>0, siDer=!info.simi&&!!der.simi;
     var fEmails=effEmails.join(', ');
-    var emails=effEmails.map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:var(--ink1);text-decoration:none;font-weight:600">'+esc(e)+'</a>';}).join(' · ');
-    var inS='width:100%;padding:6px 9px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;margin-top:2px';
+    var emails=effEmails.map(function(e){return '<a class="ssp-plata" href="mailto:'+esc(e)+'" title="Senda póst á '+esc(e)+'">'+esc(e)+'</a>';}).join('');
+    // 04.10.2026 (Agnar: „more stylish í samræmi við Fyrirtæki í þjónustu"): Stálspjald úr hönnunarkerfinu (442) —
+    // málmhaus með hnoðum, reitir á stálplötu, netföng sem silfurplötur, engin emoji. Athugasemdin stendur EINU sinni,
+    // í reitnum ofan við spjaldið (._rf_note) — áður birtist sami texti þar og aftur hér undir „Athugasemdir".
+    var lbl=function(t){ return '<label style="display:flex;flex-direction:column;gap:4px;min-width:0"><span class="ssp-merki">'+t+'</span>'; };
     var infoPanel=
-      '<div class="_rf_info" style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
-          '<div style="font-size:11px;font-weight:700;color:var(--ink1);text-transform:uppercase;letter-spacing:.04em">Upplýsingar um rekstrarfélag</div>'+
-          '<button class="_rf_info_edit" type="button" style="font-size:12px;padding:4px 10px;background:var(--surface);border:1px solid var(--brd2);border-radius:7px;color:var(--ink1);font-weight:600;cursor:pointer">✏️ Breyta</button>'+
+      '<div class="_rf_info ssp">'+
+        '<div class="ssp-haus"><span class="ssp-titill">Rekstrarfélag</span>'+
+          (info.domain?'<span class="ssp-undir">'+esc(info.domain)+'</span>':'')+
+          '<span class="ssp-hlid">'+keldanBtn+'<button class="_rf_info_edit ssp-btn" type="button">Breyta</button></span>'+
         '</div>'+
-        '<div class="_rf_info_view" style="font-size:13px;color:var(--ink1);line-height:1.6">'+
-          '<div><b style="color:var(--ink1)">Kennitala:</b> '+(effKt?esc(fmtKt(effKt))+(ktDer?derTag:''):'—')+keldanBtn+'</div>'+
-          '<div><b style="color:var(--ink1)">Netföng:</b> '+(emails||'—')+(emDer?derTag:'')+(info.domain?' &nbsp;·&nbsp; <span style="color:var(--ink2)">'+esc(info.domain)+'</span>':'')+'</div>'+
-          '<div><b style="color:var(--ink1)">Sími:</b> '+(effSimi?esc(effSimi)+(siDer?derTag:''):'—')+' &nbsp;·&nbsp; <b style="color:var(--ink1)">Tengiliður:</b> '+(info.tengilidur?esc(info.tengilidur):'—')+'</div>'+
-          '<div style="margin-top:4px"><b style="color:var(--ink1)">Athugasemdir:</b><div style="white-space:pre-wrap;color:var(--ink1);margin-top:2px">'+(info.notes?esc(info.notes):'—')+'</div></div>'+
-        '</div>'+
-        '<div class="_rf_info_form" style="display:none">'+
-          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
-            '<label style="flex:1;min-width:150px;font-size:12px;color:var(--ink2)">Kennitala<input class="_rf_f_kt" value="'+esc(effKt||'')+'" placeholder="000000-0000" style="'+inS+'"></label>'+
-            '<label style="flex:1;min-width:150px;font-size:12px;color:var(--ink2)">Lén<input class="_rf_f_domain" value="'+esc(info.domain||'')+'" placeholder="domain.is" style="'+inS+'"></label>'+
+        '<div class="ssp-buk">'+
+          '<div class="_rf_info_view ssp-reitir">'+
+            '<div class="ssp-lina"><span class="ssp-merki">Kennitala</span><span class="ssp-gildi mono">'+(effKt?esc(fmtKt(effKt))+(ktDer?derTag:''):'<span class="ssp-daufur">—</span>')+'</span></div>'+
+            '<div class="ssp-lina"><span class="ssp-merki">Sími</span><span class="ssp-gildi mono">'+(effSimi?esc(effSimi)+(siDer?derTag:''):'<span class="ssp-daufur">—</span>')+'</span></div>'+
+            '<div class="ssp-lina heil"><span class="ssp-merki">Tengiliður</span><span class="ssp-gildi">'+(info.tengilidur?esc(info.tengilidur):'<span class="ssp-daufur">—</span>')+'</span></div>'+
+            '<div class="ssp-lina heil efst"><span class="ssp-merki">Netföng'+(emDer?'<small>úr byggingum</small>':'')+'</span>'+
+              (emails?'<span class="ssp-plotur">'+emails+'</span>':'<span class="ssp-gildi ssp-daufur">—</span>')+'</div>'+
           '</div>'+
-          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
-            '<label style="flex:1;min-width:150px;font-size:12px;color:var(--ink2)">Sími<input class="_rf_f_simi" value="'+esc(effSimi||'')+'" placeholder="555-0000" style="'+inS+'"></label>'+
-            '<label style="flex:1;min-width:150px;font-size:12px;color:var(--ink2)">Tengiliður<input class="_rf_f_tengil" value="'+esc(info.tengilidur||'')+'" placeholder="Nafn tengiliðar" style="'+inS+'"></label>'+
-          '</div>'+
-          '<label style="display:block;font-size:12px;color:var(--ink2);margin-bottom:8px">Netföng (aðgreind með kommu)<input class="_rf_f_emails" value="'+esc(fEmails)+'" placeholder="reikningar@... , umsjon@..." style="'+inS+'"></label>'+
-          '<label style="display:block;font-size:12px;color:var(--ink2);margin-bottom:8px">Athugasemdir / viðbótargögn<textarea class="_rf_f_notes" rows="4" style="'+inS+';resize:vertical">'+esc(info.notes||'')+'</textarea></label>'+
-          '<div style="display:flex;gap:8px;justify-content:flex-end">'+
-            '<button class="_rf_info_cancel" type="button" style="padding:6px 14px;background:var(--surface);border:1px solid var(--brd2);border-radius:7px;color:var(--ink2);font-weight:600;font-size:12.5px;cursor:pointer">Hætta við</button>'+
-            '<button class="_rf_info_save" type="button" style="padding:6px 16px;background:#16a34a;color:#fff;border:none;border-radius:7px;font-weight:700;font-size:12.5px;cursor:pointer">💾 Vista</button>'+
+          '<div class="_rf_info_form" style="display:none">'+
+            '<div class="ssp-reitir" style="gap:10px">'+
+              lbl('Kennitala')+'<input class="_rf_f_kt ssp-reitur" value="'+esc(effKt||'')+'" placeholder="000000-0000"></label>'+
+              lbl('Lén')+'<input class="_rf_f_domain ssp-reitur" value="'+esc(info.domain||'')+'" placeholder="domain.is"></label>'+
+              lbl('Sími')+'<input class="_rf_f_simi ssp-reitur" value="'+esc(effSimi||'')+'" placeholder="555-0000"></label>'+
+              lbl('Tengiliður')+'<input class="_rf_f_tengil ssp-reitur" value="'+esc(info.tengilidur||'')+'" placeholder="Nafn tengiliðar"></label>'+
+              '<div style="grid-column:1 / -1">'+lbl('Netföng · aðgreind með kommu')+'<input class="_rf_f_emails ssp-reitur" value="'+esc(fEmails)+'" placeholder="reikningar@… , umsjon@…"></label></div>'+
+              '<div style="grid-column:1 / -1">'+lbl('Athugasemdir / viðbótargögn')+'<textarea class="_rf_f_notes ssp-reitur" rows="4">'+esc(info.notes||'')+'</textarea></label></div>'+
+            '</div>'+
+            '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">'+
+              '<button class="_rf_info_cancel ssp-btn" type="button">Hætta við</button>'+
+              '<button class="_rf_info_save ssp-btn malm" type="button">Vista</button>'+
+            '</div>'+
           '</div>'+
         '</div>'+
       '</div>';
@@ -2291,7 +2296,7 @@
     var infoFormEl=body.querySelector('._rf_info_form');
     function showInfoForm(on){ if(!infoFormEl||!infoViewEl||!infoEditBtn) return;
       infoFormEl.style.display=on?'':'none'; infoViewEl.style.display=on?'none':'';
-      infoEditBtn.textContent=on?'✕ Loka':'✏️ Breyta'; }
+      infoEditBtn.textContent=on?'Loka':'Breyta'; }
     if(infoEditBtn) infoEditBtn.addEventListener('click', function(){ showInfoForm(infoFormEl.style.display==='none'); });
     var infoCancel=body.querySelector('._rf_info_cancel');
     if(infoCancel) infoCancel.addEventListener('click', function(){ showInfoForm(false); });
@@ -2314,6 +2319,7 @@
       info.kt=kt; info.domain=domain; info.emails=emailsArr; info.notes=notes;
       info.simi=simi; info.tengilidur=tengil;
       if(okInfo && window.Toast&&Toast.show) Toast.show('✓ Upplýsingar vistaðar');
+      try{ var nInp=body.parentElement&&body.parentElement.querySelector('._rf_note'); if(nInp&&document.activeElement!==nInp) nInp.value=notes; }catch(_){}
       fillBody(body,name,info); // re-render with the new values
     });
 
