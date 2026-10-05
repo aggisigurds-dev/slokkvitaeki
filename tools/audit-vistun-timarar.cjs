@@ -52,6 +52,8 @@ MOPPUR.forEach(m => {
  * `{` sem það fann, oft líkama allt annars falls langt fyrir neðan. Þannig fékk
  * leitar-tímamælir í 147 á sig skrif sem var hvergi nærri honum. (05.10.2026)
  */
+function linuNr(s, i) { let n = 1; for (let k = 0; k < i; k++) if (s.charCodeAt(k) === 10) n++; return n; }
+
 function likami(s, fra, leita) {
   const i = s.indexOf('{', fra);
   if (i < 0) return '';
@@ -84,7 +86,18 @@ const SKRIF = new RegExp([
 const FLUSH_EV = /addEventListener\s*\(\s*['"](pagehide|visibilitychange|blur|focusout|change)['"]\s*,\s*/g;
 
 const villur = [];
+const sedir = [];     // allt sem vörðurinn DÆMIR
+const sleppt = [];    // og allt sem hann sleppti, með ástæðu
 let timarar = 0, skradar = 0;
+
+/* --listi: prentar hvað vörðurinn sá og hverju hann sleppti.
+ *
+ * 05.10.2026 — Agnar: „skoða þessi mælitæki líka". Vörður sem maður getur ekki
+ * skoðað er vörður sem maður getur ekki treyst. Óháð talning á sömu skrám fann
+ * 89 tímamæla sem NEFNA vistun; þessi dæmir 16. Munurinn á að vera sýnilegur og
+ * skýrður, ekki falinn í einni tölu — annars veit enginn hvort 16 er rétt eða
+ * hvort 73 duttu þegjandi út. */
+const LISTI = process.argv.indexOf('--listi') > -1;
 
 skrar.forEach(rel => {
   let s = ''; try { s = fs.readFileSync(path.join(ROT, rel), 'utf8'); } catch (_) { return; }
@@ -167,7 +180,7 @@ skrar.forEach(rel => {
         if (n.length > 3 && VISTUNARNAFN.test(n)) efni += fallLikami(s, n);
       });
     }
-    if (!SKRIF.test(efni)) continue;                       // tefur ekki SKRIF — sleppum
+    if (!SKRIF.test(efni)) { if (/save|sync|vista|persist|skrif|flush|skola/i.test(b || '')) sleppt.push({ rel, lina: linuNr(s, t.index), tvar, astaeda: 'nefnir vistun en ekkert skrif fannst í líkamanum' }); continue; }
 
     /* HVAR ER LÍNAN DREGIN: tapist dálkabreidd, þysjun eða opin/lokuð spjöld er
      * handtakið endurtakanlegt — notandinn dregur aftur. INNSLEGINN TEXTI er það
@@ -185,15 +198,30 @@ skrar.forEach(rel => {
     })();
     let fraInnslaetti = /\bon(?:input|keyup|paste)\s*=/.test(s);
     if (!fraInnslaetti) {
-      const ire = /addEventListener\s*\(\s*['"](input|keyup|paste)['"]\s*,/g;
+      /* 05.10.2026 (Agnar: „skoða þessi mælitæki líka"). Fyrsta útgáfan las AÐEINS
+       * innfelldan líkama hlustarans. Sé hann nefnt fall — `ta.addEventListener('input',
+       * scheduleSave)`, sem er algengasta myndin — fannst ekkert, og tímamælirinn var
+       * flokkaður sem „bendilhandtak". Listinn (--listi) afhjúpaði það: minnisblokkin
+       * (97) og nóta verkspjaldsins (430) voru sagðar bendilhandtök þótt þær séu
+       * hreinn innsleginn texti. Nákvæmlega sama villa og ég lagaði útskolunarmegin —
+       * í sama verkfæri, hinum megin. Nú er nefnt fall leyst upp, og eitt stig niður
+       * með því, svo `input → onInput() → vista()` sjáist líka. */
+      const ire = /addEventListener\s*\(\s*['"](input|keyup|paste)['"]\s*,\s*/g;
       let im;
       while ((im = ire.exec(s))) {
-        const b2 = likami(s, im.index + im[0].length - 1) ||
-                   s.slice(im.index, im.index + 400);
+        const eftir = s.slice(im.index + im[0].length, im.index + im[0].length + 60);
+        const nefnt = /^([A-Za-z_$][\w$]*)\s*[,)]/.exec(eftir);
+        let b2 = nefnt ? fallLikami(s, nefnt[1]) : likami(s, im.index + im[0].length - 1, 24);
+        if (!b2) b2 = s.slice(im.index, im.index + 400);
+        // eitt stig niður: handlerinn kallar oft á millilið sem setur tímamælinn
+        (b2.match(/\b([a-zA-Z_$][\w$]*)\s*\(/g) || []).forEach(k => {
+          const n = k.replace(/\s*\($/, '');
+          if (n.length > 3 && !/^(if|for|while|return|function|catch|setTimeout|clearTimeout|parseInt|JSON|Object|String|Number)$/.test(n)) b2 += fallLikami(s, n);
+        });
         if (b2.indexOf(tvar) > -1 || (fallSemSetur && b2.indexOf(fallSemSetur) > -1)) { fraInnslaetti = true; break; }
       }
     }
-    if (!fraInnslaetti) continue;
+    if (!fraInnslaetti) { sleppt.push({ rel, lina: linuNr(s, t.index), tvar, astaeda: 'ekki frá innslætti (bendill/gesture → endurtakanlegt)' }); continue; }
 
     timarar++;
     // Hreinsar einhver biti tímamælinn ÁN þess að setja hann aftur? Það er útskolun.
@@ -205,6 +233,7 @@ skrar.forEach(rel => {
     // annars staðar í skránni má ekki hvítþvo tímamæli sem engin blur-leið snertir. Það var
     // einmitt skrár-stigs blindan sem þessi vörður er til að leysa. Hann er aðeins notaður
     // til að greina innslátt (oninput) hér fyrir ofan.
+    sedir.push({ rel, lina: linuNr(s, t.index), tvar, varinn: hreinsadIskolun });
     if (!hreinsadIskolun) {
       const lina = s.slice(0, t.index).split('\n').length;
       villur.push(rel + ':' + lina + '  tímamælirinn `' + tvar + '` tefur skrif á þjón en er ekki hreinsaður ' +
@@ -214,6 +243,14 @@ skrar.forEach(rel => {
   }
 });
 
+if (LISTI) {
+  console.log('DÆMDIR (' + sedir.length + ') — tefja skrif OG bera innslátt:');
+  sedir.forEach(x => console.log('  ' + (x.varinn ? '✓' : '✗') + ' ' + x.rel + ':' + x.lina + '  ' + x.tvar));
+  console.log('');
+  console.log('SLEPPT (' + sleppt.length + ') — með ástæðu:');
+  sleppt.forEach(x => console.log('  · ' + x.rel + ':' + x.lina + '  ' + x.tvar + '  — ' + x.astaeda));
+  console.log('');
+}
 console.log('TAFIN VISTUN — ' + timarar + ' bið-tímamælar sem skrifa á þjón, í ' + skradar + ' skrám');
 if (!villur.length) {
   console.log('✅ GRÆNT: hver einasti þeirra er hreinsaður í útskolunarleið.');
