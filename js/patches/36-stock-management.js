@@ -128,6 +128,11 @@
             <input class="fi" id="nota-magn" type="number" step="1" placeholder="-1">
           </div>
         </div>
+        <div class="frow2" style="margin-top:10px">
+          <div class="fg"><label class="fl">…eða talið magn (setur nákvæma tölu)</label>
+            <input class="fi" id="nota-talid" type="number" min="0" step="1" placeholder="t.d. 2">
+          </div>
+        </div>
         <div class="fg" style="margin-top:10px"><label class="fl">Ástæða / verk</label><input class="fi" id="nota-reason" placeholder="Valfrjálst"></div>
       </div>
       <div class="modal-ft">
@@ -165,15 +170,37 @@
       </div>`;
       return;
     }
-    _items = data || [];
+    // 05.10.2026 (Agnar: „uppfæra birgðastöðu frá öllum söluvörum … auk Kostnaðar-vara undir lið sem heitir
+    // Brunakerfi … tengja við Vörur og þjónusta svo þeir lesa birgðastöðuna þaðan og séu syncuð"): birgðastaða
+    // söluvara býr á EINUM stað, `vorur.birgdir` — sami reitur og Vörur og þjónusta, Sala og brunaholf Vörubirgðir
+    // lesa. Hér birtist hún ásamt gömlu `birgdir`-töflunni (verkstæðisefni sem er ekki selt). Brunakerfisbúnaður er í
+    // vorur með flokkur 'Brunakerfi' og virkt=false: hann er seldur gegnum útreikning Brunakerfis skoðunar, ekki á Sölu.
+    const fraBirgdum = (data || []).map(i => Object.assign({}, i, { k: 'b:' + i.id, uppruni: 'birgdir' }));
+    let vorur = [];
+    try {
+      const r = await SB.from('vorur').select('id,nafn,flokkur,birgdir,kostnadarverd,birgi,lysing,virkt').order('nafn');
+      if (!r.error) vorur = (r.data || [])
+        .filter(v => (v.virkt || v.flokkur === BRUNAKERFI) && ENGAR_BIRGDIR.indexOf(v.flokkur || '') < 0)
+        .map(v => ({ k: 'v:' + v.id, uppruni: 'vorur', id: v.id, nafn: v.nafn, flokkur: v.flokkur || 'Annað',
+          magn: v.birgdir == null ? null : Number(v.birgdir), lagmark: null, eining: 'stk',
+          verd_an_vsk: v.kostnadarverd, birgi: v.birgi, notes: v.lysing, sala: !!v.virkt }));
+    } catch (_) {}
+    _items = vorur.concat(fraBirgdum).sort((a, b) =>
+      ((a.flokkur === BRUNAKERFI ? 0 : 1) - (b.flokkur === BRUNAKERFI ? 0 : 1)) ||
+      String(a.flokkur || '').localeCompare(String(b.flokkur || ''), 'is') || String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
     render();
     updateBadge();
   }
+  const BRUNAKERFI = 'Brunakerfi';
+  // Þjónusta, vinna og leiga eru ekki hlutir á lager.
+  const ENGAR_BIRGDIR = ['Þjónusta', 'Vinna og akstur', 'Leiga'];
+  const erLagt = i => i.lagmark != null && i.magn != null && i.magn <= i.lagmark;
+  const finna = k => _items.find(i => i.k === String(k));
 
   function updateBadge() {
     const badge = document.getElementById('stock-low-badge');
     if (!badge) return;
-    const low = _items.filter(i => i.magn <= i.lagmark).length;
+    const low = _items.filter(erLagt).length;
     badge.textContent = low;
     badge.style.display = low ? 'inline-block' : 'none';
   }
@@ -186,7 +213,9 @@
     if (_filter) { const q=_filter.toLowerCase(); items=items.filter(i=>(i.nafn||'').toLowerCase().includes(q)||(i.flokkur||'').toLowerCase().includes(q)||(i.birgi||'').toLowerCase().includes(q)); }
     if (_catFilter) items = items.filter(i => i.flokkur === _catFilter);
 
-    const lowCount = _items.filter(i => i.magn <= i.lagmark).length;
+    const lowCount = _items.filter(erLagt).length;
+    const nVorur = _items.filter(i => i.uppruni === 'vorur' && i.flokkur !== BRUNAKERFI).length;
+    const nBk = _items.filter(i => i.flokkur === BRUNAKERFI).length;
 
     const cats = [...new Set(_items.map(i=>i.flokkur||'almennt'))].sort();
     const catOpts = `<option value="">Allir flokkar</option>` + cats.map(c=>`<option value="${esc(c)}" ${_catFilter===c?'selected':''}>${esc(c)}</option>`).join('');
@@ -194,7 +223,7 @@
     let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
       <div>
         <div style="font-size:19px;font-weight:600">📦 Birgðir</div>
-        <div style="font-size:13px;color:var(--ink3)">${_items.length} hlutir &middot; ${lowCount > 0 ? `<span style="color:#dc2626;font-weight:600">${lowCount} undir lágmarki ⚠</span>` : '<span style="color:#16a34a">Allt í lagi ✓</span>'}</div>
+        <div style="font-size:13px;color:var(--ink3)">${_items.length} hlutir &middot; ${nVorur} söluvörur &middot; ${nBk} í Brunakerfi &middot; ${lowCount > 0 ? `<span style="color:#dc2626;font-weight:600">${lowCount} undir lágmarki ⚠</span>` : '<span style="color:#16a34a">Allt í lagi ✓</span>'}</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="Stock.exportCsv()">⬇ CSV</button>
@@ -211,25 +240,29 @@
       html += '<div class="empty-state"><div class="es-icon">📦</div><div class="es-title">' + (_filter||_catFilter ? 'Ekkert fannst' : 'Engar birgðir skráðar') + '</div><div class="es-sub">Smelltu á "+ Ný vara" til að bæta við</div></div>';
     } else {
       html += `<div class="tcard"><table class="dtbl"><thead><tr>
-        <th>Nafn</th><th>Flokkur</th><th>Magn</th><th>Lágmark</th><th>Eining</th><th>Verð (án VSK)</th><th>Birgir</th><th></th>
+        <th>Nafn</th><th>Flokkur</th><th>Magn</th><th>Lágmark</th><th>Eining</th><th>Kaupverð (án VSK)</th><th>Birgir</th><th></th>
       </tr></thead><tbody>`;
       items.forEach(i => {
-        const isLow  = i.magn > 0 && i.magn <= i.lagmark;
-        const isZero = i.magn <= 0;
-        const magnCls = isZero ? 'stock-zero' : isLow ? 'stock-low' : 'stock-ok';
+        const otalid = i.magn == null;
+        const isLow  = !otalid && i.lagmark != null && i.magn > 0 && i.magn <= i.lagmark;
+        const isZero = !otalid && i.magn <= 0;
+        const magnCls = otalid ? '' : isZero ? 'stock-zero' : isLow ? 'stock-low' : 'stock-ok';
+        const merki = i.flokkur === BRUNAKERFI ? 'selt gegnum Brunakerfis skoðun'
+          : i.uppruni === 'vorur' ? 'Vörur og þjónusta' : '';
+        const kq = "'" + i.k + "'";
         html += `<tr>
-          <td><strong>${esc(i.nafn)}</strong>${i.notes?`<div style="font-size:11px;color:var(--ink3)">${esc(i.notes)}</div>`:''}
+          <td><strong>${esc(i.nafn)}</strong>${merki?`<span style="margin-left:6px;font-size:10px;color:var(--ink3)">${merki}</span>`:''}${i.notes?`<div style="font-size:11px;color:var(--ink3)">${esc(i.notes)}</div>`:''}
           </td>
           <td><span style="background:var(--bg2);padding:2px 7px;border-radius:4px;font-size:11px">${esc(i.flokkur||'')}</span></td>
-          <td><span class="${magnCls}">${i.magn}</span>${isLow?'<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠ lítið</span>':''}</td>
-          <td style="color:var(--ink3)">${i.lagmark}</td>
+          <td>${otalid ? '<span style="color:var(--ink3);font-style:italic">ótalið</span>' : `<span class="${magnCls}">${i.magn}</span>`}${isLow?'<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠ lítið</span>':''}</td>
+          <td style="color:var(--ink3)">${i.lagmark == null ? '—' : i.lagmark}</td>
           <td style="color:var(--ink3)">${esc(i.eining||'stk')}</td>
           <td>${i.verd_an_vsk ? fmtKr(i.verd_an_vsk) : '—'}</td>
           <td style="color:var(--ink3)">${esc(i.birgi||'—')}</td>
           <td><div style="display:flex;gap:4px">
-            <button class="btn btn-ghost btn-sm" onclick="Stock.openNota(${i.id})" title="Nota / Bæta við" style="color:var(--blu)">± Nota</button>
-            <button class="btn btn-ghost btn-sm" onclick="Stock.openEdit(${i.id})" title="Breyta">✎</button>
-            <button class="btn btn-ghost btn-sm" onclick="Stock.deleteItem(${i.id})" title="Eyða" style="color:#dc2626">🗑</button>
+            <button class="btn btn-ghost btn-sm" onclick="Stock.openNota(${kq})" title="Nota, bæta við eða telja" style="color:var(--blu)">± Nota</button>
+            ${i.uppruni === 'birgdir' ? `<button class="btn btn-ghost btn-sm" onclick="Stock.openEdit(${i.id})" title="Breyta">✎</button>
+            <button class="btn btn-ghost btn-sm" onclick="Stock.deleteItem(${i.id})" title="Eyða" style="color:#dc2626">🗑</button>` : ''}
           </div></td>
         </tr>`;
       });
@@ -250,7 +283,7 @@
   }
 
   function openEdit(id) {
-    const item = _items.find(i=>i.id===id);
+    const item = finna('b:' + id);
     if (!item) return;
     document.getElementById('birgdir-modal-title').textContent = 'Breyta vöru';
     document.getElementById('be-id').value = id;
@@ -289,7 +322,7 @@
   }
 
   async function deleteItem(id) {
-    const item = _items.find(i=>i.id===id);
+    const item = finna('b:' + id);
     if (!await Confirm.show('Eyða "' + (item?.nafn||id) + '"?')) return;
     const SB = getSB();
     if (SB) await SB.from('birgdir').delete().eq('id',id);
@@ -297,37 +330,48 @@
     load();
   }
 
-  function openNota(id) {
-    const item = _items.find(i=>i.id===id);
+  function openNota(k) {
+    const item = finna(k);
     if (!item) return;
     document.getElementById('nota-title').textContent = item.nafn;
-    document.getElementById('nota-id').value = id;
-    document.getElementById('nota-magn').value = '-1';
+    document.getElementById('nota-id').value = item.k;
+    document.getElementById('nota-magn').value = item.magn == null ? '' : '-1';
+    const talid = document.getElementById('nota-talid'); if (talid) talid.value = '';
     document.getElementById('nota-reason').value = '';
     document.getElementById('nota-current').innerHTML =
-      `<strong>${esc(item.nafn)}</strong> &mdash; í birgðum: <strong>${item.magn} ${esc(item.eining||'stk')}</strong>`;
+      `<strong>${esc(item.nafn)}</strong> &mdash; í birgðum: <strong>${item.magn == null ? 'ótalið' : item.magn + ' ' + esc(item.eining||'stk')}</strong>`;
     Modal.open('modal-birgdir-nota');
   }
 
   async function confirmNota() {
-    const id = document.getElementById('nota-id')?.value;
-    const delta = parseFloat(document.getElementById('nota-magn')?.value||0);
-    if (!delta) { Toast.show('Sláðu inn magn'); return; }
-    const item = _items.find(i=>String(i.id)===String(id));
+    const k = document.getElementById('nota-id')?.value;
+    const item = finna(k);
     if (!item) return;
-    const newMagn = Math.max(0, (item.magn||0) + delta);
+    const talidTxt = (document.getElementById('nota-talid')?.value || '').trim();
+    const delta = parseFloat(document.getElementById('nota-magn')?.value||0);
+    if (talidTxt === '' && !delta) { Toast.show('Sláðu inn magn eða talið magn'); return; }
+    const newMagn = talidTxt !== '' ? Math.max(0, Math.round(parseFloat(talidTxt) || 0)) : Math.max(0, (item.magn||0) + delta);
     const SB = getSB();
-    if (SB) await SB.from('birgdir').update({ magn: newMagn }).eq('id', id);
+    if (!SB) { Toast.show('⚠ Ekki tengt gagnagrunni — ekkert vistað'); return; }
+    // Söluvara: vorur.birgdir (heiltala) — sami reitur og Vörur og þjónusta, Sala og brunaholf Vörubirgðir lesa.
+    const r = item.uppruni === 'vorur'
+      ? await SB.from('vorur').update({ birgdir: Math.round(newMagn) }).eq('id', item.id).select('id').maybeSingle()
+      : await SB.from('birgdir').update({ magn: newMagn }).eq('id', item.id).select('id').maybeSingle();
+    if (r.error || !r.data) { Toast.show('⚠ Birgðir vistuðust EKKI: ' + ((r.error && r.error.message) || 'engin röð uppfærð')); return; }
     item.magn = newMagn;
+    if (item.uppruni === 'vorur') { try { if (window.POS && typeof POS.invalidateVorur === 'function') POS.invalidateVorur(); } catch (_) {} }
     Modal.close('modal-birgdir-nota');
-    Toast.show(delta > 0 ? `✓ Bætt við ${delta} ${item.eining||'stk'}` : `✓ Dregið frá ${Math.abs(delta)} ${item.eining||'stk'}`);
+    Toast.show(talidTxt !== '' ? `✓ Talið: ${newMagn} ${item.eining||'stk'}` : delta > 0 ? `✓ Bætt við ${delta} ${item.eining||'stk'}` : `✓ Dregið frá ${Math.abs(delta)} ${item.eining||'stk'}`);
     render();
     updateBadge();
   }
 
   function exportCsv() {
-    const hdr = ['Nafn','Flokkur','Magn','Lágmark','Eining','Verð án VSK','Birgir'];
-    const rows = _items.map(i => [i.nafn,i.flokkur,i.magn,i.lagmark,i.eining,i.verd_an_vsk,i.birgi||''].join(';'));
+    const hdr = ['Nafn','Flokkur','Magn','Lágmark','Eining','Kaupverð án VSK','Birgir','Uppruni'];
+    const rows = _items.map(i => [i.nafn, i.flokkur, i.magn == null ? '' : i.magn, i.lagmark == null ? '' : i.lagmark, i.eining,
+      i.verd_an_vsk == null ? '' : String(i.verd_an_vsk).replace('.', ','), i.birgi || '',
+      i.uppruni === 'vorur' ? (i.flokkur === BRUNAKERFI ? 'Brunakerfi' : 'Vörur og þjónusta') : 'Verkstæði']
+      .map(x => String(x).replace(/;/g, ',')).join(';'));
     const bom = '﻿';
     const csv = bom + hdr.join(';') + '\n' + rows.join('\n');
     const a = document.createElement('a');

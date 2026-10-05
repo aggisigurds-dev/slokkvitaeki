@@ -484,6 +484,14 @@
         sja_adrar_vorur: !!(document.getElementById('f-sja-adrar') && document.getElementById('f-sja-adrar').checked),
         rodun: (function(){ var v = parseInt(document.getElementById('f-rodun').value, 10); return isNaN(v) ? null : v; })()
       };
+      // 05.10.2026: birgðastaðan á EINN stað (vorur.birgdir) og er talin/leiðrétt á Birgðir-síðunni. Breyting á
+      // vöru hér má ekki skrifa yfir nýrri talningu með gömlu gildi úr forminu (eða gera „ótalið" að 0) — reiturinn
+      // fer aðeins með ef hann var breyttur í forminu.
+      if(!isNew){
+        var birgdirAdur = product.birgdir == null ? '' : String(product.birgdir);
+        var birgdirNu = String(document.getElementById('f-birgdir').value || '').trim();
+        if(birgdirNu === birgdirAdur || (birgdirAdur === '' && birgdirNu === '0')) delete data.birgdir;
+      }
       if(!data.nafn){alert('Nafn er skilyrði');return;}
       var btn = document.getElementById('vorur-save');
       btn.disabled = true; btn.textContent = 'Vista...';
