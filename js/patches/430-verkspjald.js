@@ -428,7 +428,7 @@ input,textarea{font-family:inherit}
 
   function linuTafla(s) {
     const l = linurSolu();
-    if (!s) return '<div class="tomt">' + (S.salaVilla ? '<span class="villa">Náði ekki í söluna: ' + esc(S.salaVilla) + '</span>' : 'Engin sala enn — hún verður til við afhendingu og línurnar reiknast úr tækjunum.') + '</div>';
+    if (!s) return '<div class="tomt">' + (S.salaVilla ? '<span class="villa">Náði ekki í söluna: ' + esc(S.salaVilla) + '</span>' : 'Engin sala tengd verkinu.') + '</div>';
     if (!l.length) return '<div class="tomt">Engar línur á sölunni.</div>';
     return '<table class="tafla"><thead><tr><th>Vara</th><th class="h">Magn</th><th class="h">Afsl.</th><th class="h">Samtals</th></tr></thead><tbody>' +
       l.map(x => '<tr><td><div style="font-weight:700">' + esc(x.desc.replace(/\s*·\s*[−-]\s*[\d.,]+\s*%\s*afsl\.?\s*$/i, '')) + '</div><div class="vu">' + kr(x.mVsk) + ' stk.</div></td><td class="h">' + x.q + '</td><td class="h">' + (x.d ? x.d + ' %' : '—') + '</td><td class="h">' + kr(x.samt) + '</td></tr>').join('') +

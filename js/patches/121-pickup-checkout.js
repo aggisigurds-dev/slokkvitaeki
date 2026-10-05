@@ -98,9 +98,7 @@
     });
 
     // Async: fetch the original sale row
-    fetchSaleByNum(saleNum).then(async sale => {
-      // 05.10.2026: „Sækja inn" (122) býr ekki lengur til drög — salan verður til hér, línur úr tækjunum.
-      if (!sale) { try { sale = await salaUrSaekjaInn(job, allUnits, saleNum); } catch (e) { console.warn('[pickup-checkout] salaUrSaekjaInn', e); sale = null; } }
+    fetchSaleByNum(saleNum).then(sale => {
       // 2026-06-23: seed the editable "Athugasemd á reikning" from the sale's
       // own note (print ON by default). Done here (once per open) so re-renders
       // don't clobber the operator's edits.
@@ -825,38 +823,6 @@
     });
   }
 
-  // 05.10.2026 (Agnar: „ekkert að vera gera drög af því sem tengist sækja inn úr fyrirtækjum"): 122 býr ekki lengur
-  // til sölu-drög, svo verk úr „Sækja inn" á enga sölu fyrr en hér. Línurnar eru reiknaðar úr tækjunum með SÖMU
-  // verðreglu og drögin báru (window.SamningshafarVerd úr 122: vörulisti + Tilboðsverð fyrirtækisins); fyrirtækið
-  // kemur úr uttaeki-tengingu tækjanna, ekki nafni. Salan er aðeins í minni (ekkert id) — finalizePickup Path B
-  // stofnar hana með R-númeri verkbeiðninnar. null fyrir verk sem eru ekki úr Sækja inn (engin uttaeki-tenging).
-  async function salaUrSaekjaInn(job, allUnits, saleNum) {
-    const SV = window.SamningshafarVerd;
-    if (!SV || typeof SV.linur !== 'function') return null;
-    const ids = allUnits.map(x => x.unit && x.unit.uttaeki_id).filter(Boolean);
-    if (!ids.length) return null;
-    const SB = getSB(); if (!SB) return null;
-    // fyrirtæki tækjanna (algengasta fyrirtaeki_id) — minnið fyrst, annars þjónninn
-    const minni = ((window.DB && DB.cache && DB.cache.units) || []).filter(u => ids.indexOf(u.id) >= 0);
-    let rad = minni.length === ids.length ? minni : null;
-    if (!rad) { const r = await SB.from('uttaeki').select('id,fyrirtaeki_id').in('id', ids); rad = (r && r.data) || []; }
-    const tal = {}; rad.forEach(u => { if (u.fyrirtaeki_id) tal[u.fyrirtaeki_id] = (tal[u.fyrirtaeki_id] || 0) + 1; });
-    const coId = +(Object.keys(tal).sort((a, b) => tal[b] - tal[a])[0] || 0) || null;
-    if (!coId) return null;
-    let co = ((window.Companies && Array.isArray(Companies.list)) ? Companies.list : []).find(c => +c.id === coId) || null;
-    if (!co) { const r = await SB.from('fyrirtaeki').select('id,nafn').eq('id', coId).maybeSingle(); co = (r && r.data) || null; }
-    const picked = allUnits.map(x => ({ u: { serial: x.unit.serial || '', type: x.unit.type || '', size: x.unit.size || '' }, service: x.unit.service || '' }));
-    const svar = await SV.linur(picked, coId);
-    const linur = (svar && Array.isArray(svar.linur)) ? svar.linur : [];
-    const an = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
-    const vsk = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100), 0);
-    return {
-      num: saleNum, customer_id: coId, customer_nafn: (co && co.nafn) || job.customer || '',
-      linur, upphaed_an_vsk: Math.round(an), vsk_upphaed: Math.round(vsk), afslattur: 0, samtals: Math.round(an + vsk),
-      greitt_med: 'greitt_sidar', athugasemdir: '', status: 'drog', source: 'sott', _urSaekjaInn: true
-    };
-  }
-
   // ── Finalize: update solur, mark verkbeidnir collected, mark units done ─
   async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo, discountPct, discountKrManual, userNote) {
     const SB = getSB();
@@ -1075,9 +1041,8 @@
         num: parentSaleNum(job.num),
         starfsmadur: 'Verkstæði',
         source: 'sott',   // reikningur úr Sótt/afhendingu (verkstæðis-þjónusta)
-        // 05.10.2026: kúnninn fylgir (Sækja inn-verk bera fyrirtækið úr tækjunum; kt-uppfletting ofar getur breytt því)
-        customer_nafn: customerNafnToSave || job.customer || '',
-        customer_id: customerIdToSave || null,
+        customer_nafn: job.customer || '',
+        customer_id: null,
         linur: newLinur,
         upphaed_an_vsk: Math.round(newEx),
         vsk_upphaed: Math.round(newVsk),
