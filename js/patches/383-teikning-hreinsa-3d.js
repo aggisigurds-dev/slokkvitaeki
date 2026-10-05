@@ -2248,7 +2248,7 @@
       FP.bgImage = ut;
       try { FP._renderCanvas(); FP._renderPanel(); } catch (_) {}
     }
-    stika(skilabod); flipar(); hnappar();
+    stika(skilabod); flipar(); hnappar(); merkiUtiStika();
   }
 
   /* ── stikur og takkar ── */
@@ -2318,6 +2318,43 @@
     }
     if (G.pdfBid && G.hamur !== 'veggir') html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500">⏳ Les veggi úr PDF-skjalinu…</span>';
     else if (skilabod && !G.hamur && !h.pdfVeggir.length) html += '<span style="flex-basis:100%;color:#ffd27a;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(skilabod) + '</span>';
+    if (s._html !== html) { s.innerHTML = html; s._html = html; }
+    s.style.display = html ? 'flex' : 'none';
+  }
+
+  /* ── MERKI UTAN TEIKNINGAR ──
+   * Merki sem lendir utan myndarinnar (utan skurðar, eða utan blaðsins eftir gamla stærðargallann í símanum) sést hvergi:
+   * ekki í 2D, og í 3D sveif það við hlið hússins (Agnar 05.10.2026: „Tækin eru fyrir utan húsið"). Rétti staðurinn verður
+   * ekki reiknaður til baka — hliðrunin réðst af því hvar striginn stóð á skjánum — svo hér er ekki giskað: stikan segir
+   * hve mörg þau eru og „Sækja inn" leggur þau í efra hornið með gulum hring, þaðan sem þau eru dregin á sinn stað.
+   * Hringurinn (m.uti, frummyndarhnit hornsins) fer um leið og merkið er fært. Ekkert vistast fyrr en ýtt er á Vista. */
+  function merkiUtan() {
+    const st = G.stig1; if (!st) return [];
+    const iw = st.naturalWidth || st.width, ih = st.naturalHeight || st.height;
+    return (plan().markers || []).filter(m => m && erPx(m) && (m.x < 0 || m.y < 0 || m.x > iw || m.y > ih));
+  }
+  function saekjaMerkiInn() {
+    const st = G.stig1, ut = merkiUtan(); if (!st || !ut.length) return;
+    const iw = st.naturalWidth || st.width, ih = st.naturalHeight || st.height, bil = Math.max(40, Math.min(iw, ih) * 0.07), d = Math.max(1, Math.floor((iw - bil) / bil));
+    ut.forEach((m, i) => { m.x = Math.round(bil * (0.8 + (i % d))); m.y = Math.round(bil * (0.8 + Math.floor(i / d))); m.uti = [m.x + G.rymi.x, m.y + G.rymi.y]; });
+    try { FPx()._renderCanvas(); FPx()._renderPanel(); } catch (_) {}
+    merkiUtiStika();
+    segja('⚠ ' + ut.length + ' merki sótt inn í efra hornið — dragðu hvert á sinn stað og ýttu á Vista.');
+  }
+  function merkiUtiStika() {
+    const main = fpEl('fp-main'); if (!main) return;
+    let s = main.querySelector('#fp-merki-uti');
+    const ut = G.hamur ? [] : merkiUtan(), bida = (plan().markers || []).filter(m => m && m.uti).length;
+    const html = ut.length ? '<span>⚠ ' + ut.length + ' merki ' + (ut.length === 1 ? 'er' : 'eru') + ' utan teikningar</span><button type="button" data-a="inn" style="' + TK + ';' + GULL + '" title="Leggur merkin í efra hornið svo hægt sé að draga þau á sinn stað">Sækja inn</button>'
+      : (bida ? '<span>⚠ ' + bida + ' merki ' + (bida === 1 ? 'bíður' : 'bíða') + ' í horninu — dragðu ' + (bida === 1 ? 'það' : 'þau') + ' á sinn stað og ýttu á Vista</span>' : '');
+    if (!s) {
+      if (!html) return;
+      s = document.createElement('div'); s.id = 'fp-merki-uti';
+      s.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);top:54px;z-index:7;display:none;align-items:center;gap:8px;max-width:calc(100% - 20px);' +
+        'padding:7px 10px;border-radius:10px;background:rgba(20,18,15,.92);color:#ffd27a;font:600 12.5px system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.45)';
+      main.appendChild(s);
+      s.addEventListener('click', e => { if (!e.target.closest('[data-a="inn"]')) return; e.stopPropagation(); saekjaMerkiInn(); });
+    }
     if (s._html !== html) { s.innerHTML = html; s._html = html; }
     s.style.display = html ? 'flex' : 'none';
   }
@@ -2462,7 +2499,8 @@
     const takn = window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '';
     const ei = window.TeiknEi && TeiknEi.fingrafar ? TeiknEi.fingrafar(h) : '';
     const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
-      G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height, stimpil, takn, ei].join('|');
+      G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height, stimpil, takn, ei,
+      (plan().markers || []).filter(m => m && m.uti).map(m => Math.round(m.x) + ':' + Math.round(m.y)).join(',')].join('|');
     if (merki === G.teiknad) return;
     G.teiknad = merki;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -2521,6 +2559,14 @@
       x.textAlign = 'center'; x.textBaseline = 'middle';
       x.fillText((def && def.stutt) || 'MER', mx, my + 0.5);
     });
+    // Merki sem „Sækja inn" lagði í hornið: gulur brotinn hringur þar til það hefur verið fært.
+    let faert = false;
+    (plan().markers || []).forEach(m => {
+      if (!m || !m.uti) return;
+      if (Math.abs(m.x + G.rymi.x - m.uti[0]) > 2 || Math.abs(m.y + G.rymi.y - m.uti[1]) > 2) { delete m.uti; faert = true; return; }
+      x.strokeStyle = '#f59e0b'; x.lineWidth = 3; x.setLineDash([7, 5]); x.beginPath(); x.arc(ox + m.x * k, oy + m.y * k, 30, 0, 6.3); x.stroke(); x.setLineDash([]);
+    });
+    if (faert) setTimeout(merkiUtiStika, 0);
     try { if (window.TeiknEi && TeiknEi.teikna) TeiknEi.teikna(x, sx, sy, k, h); } catch (_) {}
     x.restore();
   }
@@ -2866,7 +2912,7 @@
     // Merki sem lendir UTAN myndarinnar (utan skurðar eða utan blaðsins — gömul staðsetning úr síma með rangri stærð)
     // sveif í lausu lofti við hlið hússins (Agnar 05.10.2026: „Tækin eru fyrir utan húsið"). Þau eru ekki teiknuð í 3D;
     // skýringin segir hve mörg þau eru svo þau gleymist ekki.
-    const merki = merkiOll.filter(m => m.x >= 0 && m.y >= 0 && m.x <= iw && m.y <= ih), merkiUti = merkiOll.length - merki.length;
+    const merki = merkiOll.filter((m, i) => !(merkiFrum[i] && merkiFrum[i].uti) && m.x >= 0 && m.y >= 0 && m.x <= iw && m.y <= ih), merkiUti = merkiOll.length - merki.length;
     let golf;
     try { golf = golfMedUti(stig1, r.W, r.H); }
     catch (e) { console.warn('[383] golfMedUti', e); golf = r.vinnu; }

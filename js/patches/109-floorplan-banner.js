@@ -111,7 +111,17 @@
       overlay.className = '_fpb-marker-overlay';
       vp.appendChild(overlay);
     }
+    // KYRRÐ (05.10.2026): hér var yfirlagið tæmt og endursmíðað í HVERRI umferð. Það er barnabreyting inni í
+    // #companies-main, sem vaktin hér neðst hlustar á → decorate() aftur eftir 250 ms → endalaus hringur á hverjum
+    // prófíl sem sýnir teikningarborðann (mælt á lifandi, Arnarhvoll: 81 breyting og 53 löng verk / 3.903 ms á 8 s í
+    // kyrrstöðu). Án merkja bættist auk þess NÝR „Engir tækjadottar" reitur við í hverri umferð. Nú er aðeins teiknað
+    // þegar eitthvað hefur breyst: fyrirtæki, merki, stærð striga eða stærð gluggans.
+    const sig = [coId, vp.offsetWidth, vp.offsetHeight, canvas.width, canvas.height,
+      markers.map(m => [m.x, m.y, m.color || '', m.label || m.serial || ''].join(':')).join(',')].join('|');
+    if (overlay._fpbSig === sig) return;
+    overlay._fpbSig = sig;
     overlay.innerHTML = '';
+    vp.querySelectorAll('._fpb-empty').forEach(e => e.remove());
 
     // Scale the canvas to fit the viewport (contain)
     fitCanvasToViewport(vp, canvas);

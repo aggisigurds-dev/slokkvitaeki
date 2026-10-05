@@ -116,6 +116,12 @@ krefst('js/patches/169-logo-customization.js', /setTimeout\(poll, _tries\+\+ < 1
 bannar('js/patches/405-efsta-rod.js', /t\.innerHTML !== label/, '405 ber innerHTML saman við eigin streng — alltaf ósatt jafnt, takkinn endurskrifaður í hverri umferð (endalaus hringur)');
 krefst('js/patches/405-efsta-rod.js', /t\._b405Label !== label/, '405 verður að bera saman við strenginn sem var síðast settur (t._b405Label)');
 krefst('js/patches/00-legacy.js', /if \(main\.dataset\._pmDeleteSkipped !== '1'\) main\.dataset\._pmDeleteSkipped = '1';/, '00-legacy skrifar data-_pm-delete-skipped á #companies-main í hverri umferð (eigindabreyting þótt gildið sé eins)');
+// ── 7 · sá sem hlustar á eigin gám má ekki endursmíða innihald hans í hverri umferð (05.10.2026) ──────────
+// 109 (teikningarborðinn á prófílnum) tæmdi yfirlag tækjapunktanna og smíðaði það aftur í hverri umferð, inni í
+// #companies-main sem það vaktar sjálft: hringur á 250 ms fresti. Mælt á lifandi (Arnarhvoll, prófíll í kyrrstöðu):
+// 81 DOM-breyting og 53 löng verk / 3.903 ms á 8 s. Nú er borið saman við fingrafar þess sem síðast var teiknað.
+krefst('js/patches/109-floorplan-banner.js', /if \(overlay\._fpbSig === sig\) return;\s+overlay\._fpbSig = sig;\s+overlay\.innerHTML = '';/, '109 má aðeins endursmíða tækjapunkta borðans þegar fingrafarið (fyrirtæki, merki, stærðir) hefur breyst');
+krefst('js/patches/109-floorplan-banner.js', /vp\.querySelectorAll\('\._fpb-empty'\)\.forEach\(e => e\.remove\(\)\);/, '109 verður að fjarlægja eldri „Engir tækjadottar“ reit áður en nýr er settur — annars hlaðast þeir upp');
 
 if (villur.length) {
   console.log('RED  KYRRÐ — ' + villur.length + ' brot:\n  · ' + villur.join('\n  · '));

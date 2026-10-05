@@ -304,7 +304,10 @@ krefst(/gera\('fp-hus-btn', '⌂ Að húsinu'/, 'takkinn „Að húsinu“ (skor
 krefst(/plan\(\)\.markers\.forEach\(m => \{ if \(erPx\(m\)\) \{ const mx = m\.x \+ G\.rymi\.x, my = m\.y \+ G\.rymi\.y; x0 = Math\.min\(x0, mx - sp\); y0 = Math\.min\(y0, my - sp\); x1 = Math\.max\(x1, mx \+ sp\); y1 = Math\.max\(y1, my \+ sp\); \} \}\);\s+x0 = Math\.max\(0, x0\); y0 = Math\.max\(0, y0\); x1 = Math\.min\(iw, x1\); y1 = Math\.min\(ih, y1\);\s+const nw = x1 - x0, nh = y1 - y0, gamall = h\.skurdur;\s+h\.thett = true;/, 'skeraAdHusi verður að víkka kassann svo merki sem þegar eru til lendi innan hans');
 // 18 · TÆKI UTAN TEIKNINGAR (Agnar 05.10.2026: „Tækin eru fyrir utan húsið“): merki utan myndarinnar er ekki teiknað í 3D,
 //      en skýringin segir hve mörg þau eru.
-krefst(/const merki = merkiOll\.filter\(m => m\.x >= 0 && m\.y >= 0 && m\.x <= iw && m\.y <= ih\), merkiUti = merkiOll\.length - merki\.length;/, 'merki utan myndarinnar má ekki svífa við hlið hússins í 3D');
+krefst(/const merki = merkiOll\.filter\(\(m, i\) => !\(merkiFrum\[i\] && merkiFrum\[i\]\.uti\) && m\.x >= 0 && m\.y >= 0 && m\.x <= iw && m\.y <= ih\), merkiUti = merkiOll\.length - merki\.length;/, 'merki utan myndarinnar (eða sem bíður í horninu) má ekki svífa við hlið hússins í 3D');
+krefst(/function saekjaMerkiInn\(\) \{[\s\S]{0,700}m\.uti = \[m\.x \+ G\.rymi\.x, m\.y \+ G\.rymi\.y\];/, '„Sækja inn“ verður að merkja merkin sem það leggur í hornið (m.uti) — annars líta þau út fyrir að vera rétt staðsett');
+krefst(/stika\(skilabod\); flipar\(\); hnappar\(\); merkiUtiStika\(\);/, 'stikan um merki utan teikningar verður að fylgja hverri teikningu gluggans — líka þegar útlit er fest');
+if (/m\.x \/ 2\.38|m\.y \/ 2\.38/.test(src)) villur.push('383: ekki má giska á réttan stað merkis með því að deila í símakvarðann — hliðrunin réðst af stöðu strigans á skjánum');
 krefst(/nUti \+= u\.merkiUti \|\| 0;/, 'skýringin í 3D verður að telja tæki sem eru staðsett utan teikningar — annars hverfa þau þegjandi');
 krefst(/\(b < h \* 1\.5 \? Math\.min\(2\.6, 1\.5 \* h \/ Math\.max\(1, b\)\) : 1\)/, 'á háum, mjóum striga (sími) verður myndavélin að bakka svo allt húsið sjáist');
 krefst(/const ei = await eiHintarFyrir3d\(h, fbE, fhE\);/, 'opna3d verður að sækja EI-merkin (vistuð eða úr textalagi PDF-sins) áður en hæðin er undirbúin');
