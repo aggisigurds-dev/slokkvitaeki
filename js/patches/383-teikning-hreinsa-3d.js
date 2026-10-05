@@ -1782,7 +1782,9 @@
     const faera = (dx, dy) => {
       const haegri = new T.Vector3().setFromMatrixColumn(vel.matrix, 0), fram = new T.Vector3().crossVectors(new T.Vector3(0, 1, 0), haegri);
       const kv = fjarl / (el.clientHeight || 500) * 1.1;
-      mid.addScaledVector(haegri, -dx * kv).addScaledVector(fram, -dy * kv);
+      // „fram" = frá myndavélinni eftir gólfinu. Draga niður → miðjan fram → teikningin fylgir músinni niður, eins og
+      // hægri/vinstri fylgir henni (Agnar 05.10.2026: „upp og niður eiginlega í vitlausa átt miðað við hægri og vinstri").
+      mid.addScaledVector(haegri, -dx * kv).addScaledVector(fram, dy * kv);
     };
     // Smellur (ekki dráttur, ekki klípa) á vegg: handfangið fær hæð og vegg undir bendlinum (aSmell) — notað í handvali eldveggja.
     const geisli = new T.Raycaster(), ndc = new T.Vector2();

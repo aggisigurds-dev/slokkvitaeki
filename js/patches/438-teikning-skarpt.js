@@ -95,7 +95,7 @@
     '  const f=ifds[0];UTIF.decodeImage(b,f);M={f,W:f.width,H:f.height,les:lesari(f),o:f.t274?f.t274[0]:1};postMessage({id:q.id,W:M.W,H:M.H,o:M.o});return;}',
     ' if(!M)throw new Error("Engin teikning");const les=M.les;',
     ' if(q.cmd==="syni"){const n=q.n,ut=[];for(const c of q.c){const v=varp(c.o,M.W,M.H),a=new Float32Array(n*n);',
-    '  for(let j=0;j<n;j++)for(let i=0;i<n;i++){let s=0;for(let b=0;b<3;b++)for(let k=0;k<3;k++){const p=v(Math.min(c.dW-1,Math.floor(c.x+(i+(k+.5)/3)*c.w/n)),Math.min(c.dH-1,Math.floor(c.y+(j+(b+.5)/3)*c.h/n)));const u=les(p[0],p[1]);s+=(u&255)+(u>>8&255)+(u>>16&255);}a[j*n+i]=s/27;}',
+    '  for(let j=0;j<n;j++)for(let i=0;i<n;i++){let s=0;for(let b=0;b<5;b++)for(let k=0;k<5;k++){const p=v(Math.min(c.dW-1,Math.floor(c.x+(i+(k+.5)/5)*c.w/n)),Math.min(c.dH-1,Math.floor(c.y+(j+(b+.5)/5)*c.h/n)));const u=les(p[0],p[1]);s+=(u&255)+(u>>8&255)+(u>>16&255);}a[j*n+i]=s/75;}',
     '  ut.push(a);}postMessage({id:q.id,ut});return;}',
     ' if(q.cmd==="skera"){const v=varp(q.o,M.W,M.H),w=q.w,h=q.h,px=new Uint32Array(w*h);',
     '  for(let y=0;y<h;y++){const o=y*w;for(let x=0;x<w;x++){const p=v(q.x+x,q.y+y);px[o+x]=les(p[0],p[1]);}}',
@@ -121,11 +121,20 @@
     if (S.blad && S.blad.tif) { try { S.blad.canvas.close(); } catch (_) {} S.blad = null; }
   }
   // Myndin á borðinu (JPEG, skorin að hæðinni) sem n×n grátónanet — mælistikan fyrir snúning TIF-sins.
+  // Minnkuð í HELMINGSÞREPUM: Chrome með skjákorti tekur annars fáa díla úr ~100× minnkun (Agnar 05.10.2026: fylgni 0,59
+  // í hans vafra, 0,77 í prófunarvafranum — TIF-inu var hafnað og JPEG-ið stóð).
   function synishorn(mynd, n) {
+    let src = mynd, w = mynd.naturalWidth || mynd.width, h = mynd.naturalHeight || mynd.height;
+    while (w > n * 2 || h > n * 2) {
+      const nw = Math.max(n, Math.ceil(w / 2)), nh = Math.max(n, Math.ceil(h / 2));
+      const t = document.createElement('canvas'); t.width = nw; t.height = nh;
+      const tx = t.getContext('2d'); tx.fillStyle = '#fff'; tx.fillRect(0, 0, nw, nh); tx.imageSmoothingEnabled = true; tx.imageSmoothingQuality = 'high';
+      tx.drawImage(src, 0, 0, nw, nh); src = t; w = nw; h = nh;
+    }
     const c = document.createElement('canvas'); c.width = n; c.height = n;
     const x = c.getContext('2d', { willReadFrequently: true });
     x.fillStyle = '#fff'; x.fillRect(0, 0, n, n); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
-    x.drawImage(mynd, 0, 0, n, n);
+    x.drawImage(src, 0, 0, n, n);
     const d = x.getImageData(0, 0, n, n).data, a = new Float32Array(n * n);
     for (let i = 0; i < n * n; i++) a[i] = (d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2]) / 3;
     return a;
@@ -149,10 +158,11 @@
     const s = await verk({ cmd: 'syni', n, c: c.map(k => ({ o: k.o, dW: k.dW, dH: k.dH, x: k.x, y: k.y, w: k.w, h: k.h })) });
     let best = null;
     c.forEach((k, i) => { k.r = fylgni(a, s.ut[i]); if (!best || k.r > best.r) best = k; });
-    console.info('[438] TIF ' + r.W + '×' + r.H + ' merki ' + r.o + ' → snúningur ' + best.o + ' (fylgni ' + best.r.toFixed(2) + ')');
-    if (best.r < 0.6) throw new Error('TIF passar ekki við myndina (fylgni ' + best.r.toFixed(2) + ')');
+    console.info('[438] TIF ' + r.W + '×' + r.H + ' merki ' + r.o + ' → snúningur ' + best.o + ' (fylgni ' + c.map(k => k.o + ':' + k.r.toFixed(2)).join(' ') + ')');
+    if (best.r < 0.3) throw new Error('TIF passar ekki við myndina (fylgni ' + best.r.toFixed(2) + ')');
     const sida = { tif: true, o: best.o, b: best.dW, h: best.dH, fx: 0, fy: 0 };
-    try { Object.assign(sida, await hlidrun(sida, best.kp, sk)); } catch (e) { console.warn('[438] hliðrun', e); }
+    // Hliðrunin ber saman fimm reiti í FULLRI upplausn — finnist ekki samsvörun í a.m.k. tveimur er TIF-ið ekki notað.
+    Object.assign(sida, await hlidrun(sida, best.kp, sk));
     return sida;
   }
   // HLIÐRUN (mælt 05.10.2026 á Þingholti: JPEG skjalasafnsins situr 3,4 díla neðar og 0,75 til vinstri miðað við
@@ -191,7 +201,7 @@
       for (let dy = g.dy - SUB + 1; dy <= g.dy + SUB - 1; dy++) for (let dx = g.dx - SUB + 1; dx <= g.dx + SUB - 1; dx++) { if (Math.abs(dx) > D * SUB || Math.abs(dy) > D * SUB) continue; const c = fyl(dx, dy, 2); if (c > best.c) best = { dx, dy, c }; }
       if (best.c > 0.75) nidur.push(best);
     }
-    if (nidur.length < 2) { console.info('[438] hliðrun: of fáir reitir (' + nidur.length + ') — engin færsla'); return { fx: 0, fy: 0 }; }
+    if (nidur.length < 2) throw new Error('TIF passar ekki við myndina (' + nidur.length + ' af 5 reitum)');
     const midgildi = v => { const a = v.slice().sort((x, y) => x - y), m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
     const fx = -midgildi(nidur.map(x => x.dx)) / SUB, fy = -midgildi(nidur.map(x => x.dy)) / SUB;
     console.info('[438] hliðrun TIF → JPEG: ' + fx.toFixed(2) + ', ' + fy.toFixed(2) + ' díll (' + nidur.length + ' reitir, fylgni ' + nidur.map(x => x.c.toFixed(2)).join('/') + ')');
