@@ -115,7 +115,9 @@
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
     { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
     { k: 'thjonustu-verkstaedi', label: 'ÞjónustuVerkstæði', short: 'Verkstæði', emoji: '🔧' },
-    { k: 'brunayfirlit',     label: 'Brunakerfi yfirlit',    short: 'Brunakerfi', emoji: '🚨' },
+    // 05.10.2026 (Agnar: „taka hinar tvær útfærslurnar úr umferð, fyrst gamli síminn hafi verið að pikka upp gömlu
+    // útgáfuna"): 'brunayfirlit' (Brunakerfi yfirlit, 272) tekið úr listanum — 'brunaskra' (Brunakerfis skoðun, 385)
+    // er aðalútgáfan. pagesFor() vísar eldri vistunum og `defaults` þangað.
     // 21.09.2026: þriðji þjónustuflokkurinn (385). Hér svo hægt sé að haka síðuna inn í app — annars vísar app-hamur henni frá.
     { k: 'slokkvikerfi',     label: 'Slökkvikerfis skoðun',  short: 'Slökkvikerfi', emoji: '🍳' },
     { k: 'brunaskra',        label: 'Brunakerfis skoðun',    short: 'Brunaskoðun', emoji: '🚨' },
@@ -210,12 +212,15 @@
       blurb: 'Tengja skýrslur og reikninga við réttan stað — forskoðun efst, listinn undir',
       defaults: ['br-skyrslustod', 'br-drogstod', 'br-krofuyfirlit', 'br-yfirferd'] },
     // Brunakerfi-appið fyrir skoðunarmenn á staðnum (ósk Agnars 2026-07-21):
-    // yfirlitið er heimasíðan; fyrirtækjasíðan (274) og skýrslu-formið (273)
+    // skoðunarlistinn er heimasíðan; fyrirtækjasíðan (274) og skýrslu-formið (273)
     // opnast þaðan sem yfirlög — allt innan sömu læstu skeljar.
+    // 05.10.2026: heimasíðan og `defaults` vísuðu á GAMLA yfirlitið ('brunayfirlit', 272). Vistaði listinn hafði
+    // löngu skipt því út fyrir 'brunaskra', en hvert tæki sem missti af vistaða listanum (eða þegar hann var
+    // yfirskrifaður, sjá flutninginn neðar) datt aftur á gömlu síðuna — „gamla útgáfu með bara 3 síðum".
     { key: 'brunakerfi', emoji: '🚨', name: 'Brunakerfi', color: '#0b0b0d', dark: '#000000',
-      manifest: '/manifest-brunakerfi.json', home: 'brunayfirlit',
+      manifest: '/manifest-brunakerfi.json', home: 'brunaskra',
       blurb: 'Skoðunarmanna-app: fyrirtækin, skoðunarskýrslur og verð — skráð á staðnum',
-      defaults: ['brunayfirlit', 'sala', 'turbopaint'] },
+      defaults: ['brunaskra', 'slokkvikerfi', 'arsskodun', 'sala', 'turbopaint'] },
     // Bílstjóri er STANDALONE: engin botn-nav-skel (patch 219 á heilan
     // læstan fullskjá). Kortið gefur bara Opna / Setja upp / Afrita hlekk —
     // engin „Síður í appinu"-listi. ?app=bilstjori ræsir læsta Bílstjórann.
@@ -614,6 +619,8 @@
     // 19.09.2026 (Agnar: „já"): 'verkbord' (Verkefnalisti) er SAMA sýnin — 368 tók við #verkbord og opnar #bord —
     // svo öpp með bæði báru tvo flipa á sömu síðu (Þjónustuborð, Big Boss). Vísað á 'bord'; de-dup að neðan fellir hinn.
     arr = arr.map(function (k) { return (k === 'thjonustubord' || k === 'verkbord') ? 'bord' : k; });
+    // 05.10.2026: gamla 'brunayfirlit' → aðalútgáfan 'brunaskra' (sjá PAGES). De-dup að neðan fellir tvítekningu.
+    arr = arr.map(function (k) { return k === 'brunayfirlit' ? 'brunaskra' : k; });
     arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
     return arr.filter(function (k) { return pageByKey(k); });
   }
@@ -706,11 +713,30 @@
   // sem var þegar með vistaðar síður — nákvæmlega þeim sem migrationin er fyrir.
   // Tvennt lagar það: (1) flagg er AÐEINS sett þegar fylkið er raunverulega til,
   // (2) reynt aftur í ~12 s meðan skýja-stillingin er að koma.
+  //
+  // GAMALT AFRIT ÁT SÍÐULISTA ALLRA APPANNA — LAGAÐ 05.10.2026 (mælt í audit_vernd: 12:39:57 fór
+  // app_profiles_json úr 1204 stöfum í 608; Brunakerfi, Boss og þrjú notenda-búin öpp duttu út og allir fengu
+  // `defaults` — Agnar: „nú fæ ég líka gamla útgáfu með bara 3 síðum"). Flutningurinn vann á `loadCfg()` STRAX
+  // við hleðslu skrárinnar. Þá skilar AppSettings.get() enn skyndiminninu úr localStorage (85, allt að 30 daga
+  // gamalt) eða staðbundna afritinu. Vanti eitt flagg í ÞAÐ afrit — sími sem var síðast opnaður fyrir síðasta
+  // flutning — taldist það „breytt" og allt gamla afritið var skrifað yfir þjóninn.
+  // Nú er staðbundna afritið aðeins VÍSBENDING um að eitthvað vanti. Sjálfur flutningurinn vinnur á gildi sem
+  // er lesið af þjóninum rétt áður (einn lykill, ekki 1,4 MB blobbinn). Bregðist sá lestur er EKKERT skrifað.
   (function () {
-    var reynt = 0;
-    function keyra() {
+    var reynt = 0, iLestri = false, lokid = false;
+    // → strengur = gildi þjónsins · null = þjónninn á enga stillingu · undefined = lestur brást
+    function saekjaFerskt() {
       try {
-        var c = loadCfg(), changed = false;
+        if (!(window.DB && DB.sb)) return Promise.resolve(undefined);
+        return DB.sb.from('app_settings').select('cfg:settings->>' + CFG_KEY).eq('id', 1).maybeSingle().then(function (r) {
+          if (!r || r.error || !r.data) return undefined;
+          return r.data.cfg == null ? null : String(r.data.cfg);
+        }, function () { return undefined; });
+      } catch (_) { return Promise.resolve(undefined); }
+    }
+    // Hreint fall: breytir `c` á staðnum og skilar true ef eitthvað breyttist.
+    function flytja(c) {
+        var changed = false;
         // appKey er valfrjálst og fellur aftur á 'fjarmal' svo eldri köllin séu óbreytt.
         function insertOnce(flag, key, afterKey, appKey) {
           appKey = appKey || 'fjarmal';
@@ -763,10 +789,24 @@
           });
           c.__bord1 = 1; changed = true;
         }
-        if (changed) {
-          var s = JSON.stringify(c);
-          try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
-          try { if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: s }); } catch (_) {}
+        return changed;
+    }
+    function keyra() {
+      try {
+        // Þurrkeyrsla á AFRITI staðbundna gildisins: vanti ekkert þar er ekkert að gera og enginn lestur fer af stað.
+        if (!lokid && !iLestri && flytja(JSON.parse(JSON.stringify(loadCfg())))) {
+          iLestri = true;
+          saekjaFerskt().then(function (raw) {
+            iLestri = false;
+            if (raw === undefined) return;                 // lestur brást → reynt aftur í næstu umferð, ekkert skrifað
+            lokid = true;
+            if (raw === null) return;                      // þjónninn á enga stillingu → `defaults` sjá um nýju síðurnar
+            var c; try { c = JSON.parse(raw); } catch (_) { return; }
+            if (!c || typeof c !== 'object' || !flytja(c)) return;   // þjónninn var þegar fluttur
+            var s = JSON.stringify(c);
+            try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
+            try { if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: s }); } catch (_) {}
+          });
         }
       // Þögnin rétt (17.09.2026): einskiptis-flutningur sem bætir 'bord' inn í
       // síðulista appanna. Hann keyrir sjálfkrafa upp að 12 sinnum (lína neðar),
@@ -1481,6 +1521,33 @@
   // ── app-mode shell (bottom nav + header) ─────────────────────────────────────
   var _curPage = null;
   var _bootAt = Date.now();
+  // Síðurnar í botnstikunni, í þeirri röð sem skelin sýnir þær.
+  function skelSidur(a) {
+    var pages = pagesFor(a.key); if (!pages.length) pages = a.defaults.slice();
+    // App-mode á að opnast á SÍNU auðkennis-síðu (home), ekki hvað sem raðast
+    // fremst í valdar síður. „Síður í appinu"-hökin vistast í PAGES-röð, svo t.d.
+    // Verkefnalista-appið (verkbord) fékk krofu-yfirlit fremst þegar það var valið
+    // með — og opnaðist ranglega á Fjármála-skjánum. Hífum home fremst í nav + boot.
+    if (a.home && pages.indexOf(a.home) > 0) {
+      pages = [a.home].concat(pages.filter(function (k) { return k !== a.home; }));
+    }
+    return pages;
+  }
+  // 05.10.2026: skelin er byggð við ræsingu af SKYNDIMINNI AppSettings (85). Hafi síðulistinn breyst á annarri vél
+  // sat gamli listinn í botnstikunni þar til appið var opnað í ANNAÐ sinn (mælt: 3 flipar á skjánum, 8 í minni).
+  // Nú er skelin endurbyggð þegar listinn sem hún var byggð af er ekki lengur sá sem gildir.
+  var _skelSidur = null;
+  function vaktaSidulista() {
+    if (window.__appSidulistaVakt || !(window.AppSettings && AppSettings.onChange)) return;
+    window.__appSidulistaVakt = true;
+    AppSettings.onChange(function () {
+      try {
+        if (!ACTIVE || isStandalone(ACTIVE) || _skelSidur == null) return;
+        var a = effectiveApp(ACTIVE); if (!a) return;
+        if (skelSidur(a).join('|') !== _skelSidur) buildShell();
+      } catch (_) {}
+    });
+  }
   function buildShell() {
     _bootAt = Date.now();
     var a = effectiveApp(ACTIVE); if (!a) return;
@@ -1491,14 +1558,8 @@
     // 19.09.2026 (Agnar: „bláa sé svart og þetta appelsínugula uppi líka svart"): stöðustika símans tók litinn úr
     // <meta theme-color> aðalsíðunnar (#C93C1D, eldrautt) í ÖLLUM öppum. Nú fylgir hún haus appsins.
     try { var _tc = document.querySelector('meta[name="theme-color"]'); if (_tc) _tc.setAttribute('content', a.key === 'boss' ? '#0a0a0b' : (a.color || '#0b0b0d')); } catch (_) {}
-    var pages = pagesFor(a.key); if (!pages.length) pages = a.defaults.slice();
-    // App-mode á að opnast á SÍNU auðkennis-síðu (home), ekki hvað sem raðast
-    // fremst í valdar síður. „Síður í appinu"-hökin vistast í PAGES-röð, svo t.d.
-    // Verkefnalista-appið (verkbord) fékk krofu-yfirlit fremst þegar það var valið
-    // með — og opnaðist ranglega á Fjármála-skjánum. Hífum home fremst í nav + boot.
-    if (a.home && pages.indexOf(a.home) > 0) {
-      pages = [a.home].concat(pages.filter(function (k) { return k !== a.home; }));
-    }
+    var pages = skelSidur(a);
+    _skelSidur = pages.join('|');
 
     var isBoss = a.key === 'boss';
     var hdr = document.getElementById('_app-hdr') || document.createElement('div');
@@ -1578,6 +1639,7 @@
   // endurbyggir shellið ef header/nav vantar, er tómt eða falið. buildShell er
   // idempotent (endurnotar element eftir id) og goPage(_curPage) heldur síðunni.
   function startShellGuard() {
+    vaktaSidulista();
     if (window.__appShellGuard) return; window.__appShellGuard = true;
     setInterval(function () {
       try {

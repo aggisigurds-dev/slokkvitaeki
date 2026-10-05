@@ -168,7 +168,8 @@
     return o;
   }
   let prufaS = null;      // AppPageZoom.prufa(s): sýna stærð án þess að vista (yfirferð / samanburður)
-  let lifandi = null;     // { k, s } meðan klipið er út (sjá KLÍPA ÚT neðar)
+  let lifandi = null;     // { k, s } tímabundin klípa út — stendur þar til smellt er á merkið eða farið af síðunni (sjá KLÍPA ÚT neðar)
+  let kl = null;          // klípa í gangi
   // { s, uppruni: 'vistad' | 'byrjun' | 'gamalt' | 'prufa' }
   function staerd(k, erGluggi, viewId) {
     if (prufaS != null) return { s: prufaS, uppruni: 'prufa' };
@@ -243,6 +244,7 @@
     } else {
       nu = { k: vk, s: vs.s, uppruni: vs.uppruni, el: view, gluggi: false, virkt: ve };
     }
+    if (lifandi && !kl && lifandi.k !== vk && lifandi.k !== (g ? 'm:' + g.id : '')) { lifandi = null; klMerki(''); }
     clearCssZoom();
     syncViewport();
     syncAa();
@@ -256,6 +258,7 @@
   function setS(s, k) {
     s = klemma(s);
     k = k || nu.k;
+    if (lifandi && lifandi.k === k) { lifandi = null; klMerki(''); }   // vistuð stærð tekur við af tímabundinni klípu
     const fl = flokkur();
     const n = nafn(k, k === nu.k ? nu.el : null);
     const rod = { s, n, t: Date.now() };
@@ -268,6 +271,7 @@
   }
   function endurstilla(k) {
     k = k || nu.k;
+    if (lifandi && lifandi.k === k) { lifandi = null; klMerki(''); }
     const fl = flokkur();
     bida[fl][k] = null;
     _vbid[fl + '\u0001' + k] = null;
@@ -317,6 +321,14 @@
         + 'width:calc(100vw / var(--app-page-zoom))!important;'
         + 'max-width:calc(100vw / var(--app-page-zoom))!important;'
         + 'min-height:calc(100vh / var(--app-page-zoom))}',
+      /* HÆÐ SÝNAR ÞEGAR HÚN ER SMÆKKUÐ (05.10.2026, mynd frá starfsmanni: Brunakerfis skoðun sýndi eitt spjald og autt þar
+         fyrir neðan). 230 neglir height:100vh!important á .view.active (hún skrunar sjálf). Sé sýnin smækkuð (zoom < 1 —
+         sími í VENJULEGRI breidd, þar er króm-hlutfallið 1 og síðustærðin t.d. 0,7) er 100vh í hennar eigin hnitum aðeins
+         70 % af skjánum: listinn endaði á miðjum skjá. Hæðin er því deilt með zoominu þegar það er undir 1. Yfir 1
+         (Tölvusíðu-hamur, S26) er deilt með 1 — óbreytt. Sérhæfnin (3 auðkenni í :not + 4 klasar + 2 tög) slær 230 út. */
+      'html.app-page-zoomed body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop),'
+        + 'html.app-page-zoomed[data-viewmode="mobile"] body .view.active:not(#view-field):not(#view-counter):not(#view-workshop){'
+        + 'height:calc(100vh / min(1, var(--app-page-zoom, 1)))!important}',
       'html.app-page-zoomed body.appmode .view.active{'
         + 'padding-top:calc(50px / var(--app-page-zoom))!important;'
         + 'padding-bottom:calc((140px + env(safe-area-inset-bottom,0px)) / var(--app-page-zoom))!important}',
@@ -523,13 +535,20 @@
      04.10.2026 (Agnar: „væri til í að geta pinch-zoomað út líka — bara hægt inn eins og er"). Chrome leyfir ekki að
      klípa lengra út en síðubreiddina (visualViewport.scale = 1) og síðan fyllir skjáinn þegar — svo klipið gerði
      ekkert. Þar tökum við við: tveir fingur sem NÁLGAST hvor annan á óstækkaðri síðu minnka síðustærðina lifandi í 5 %
-     skrefum, og hún vistast fyrir þessa síðu þegar fingurnir sleppa. Klípa INN er óbreytt — stækkunargler vafrans.
-     Hlustararnir eru óvirkir (passive) og hindra aldrei klípu vafrans. */
+     skrefum. Klípa INN er óbreytt — stækkunargler vafrans.
+     Hlustararnir eru óvirkir (passive) og hindra aldrei klípu vafrans.
+
+     05.10.2026 — KLÍPAN VISTAR EKKI LENGUR (Agnar: „pinch out zoom minnkar allt hlutfallið, það sem stillingin gerir
+     í top header … þá er allt svo smátt og langt á milli"). Hún skrifaði síðustærðina á þjóninn, og sú stærð er
+     SAMEIGINLEG öllum símum: mælt í audit_vernd 12:28–12:55 fóru fimm síður beint niður í 30 % gólfið (0,7→0,3 ·
+     0,9→0,3 …) og voru lagaðar til baka með sleðanum á milli. Nú er klípan TÍMABUNDIN sýn á þessari síðu á þessum
+     síma: hún helst þar til smellt er á merkið, farið á aðra síðu eða síðan endurhlaðin. Sleðinn í hausnum er eina
+     leiðin til að breyta vistuðu stærðinni. */
   const KL_ID = '_sz-klipa';
-  let kl = null, _klRaf = 0;
+  let _klRaf = 0;
   const fjarl = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
   const ostaekkad = () => { try { const vv = window.visualViewport; return !vv || vv.scale <= 1.02; } catch (_) { return true; } };
-  function klMerki(txt) {
+  function klMerki(txt, fast) {
     let m = document.getElementById(KL_ID);
     if (!txt) { if (m) m.remove(); return; }
     if (!m) {
@@ -538,8 +557,13 @@
       m.style.cssText = 'position:fixed;left:50%;top:calc(var(--sz-pnl-top,60px) + 8px);transform:translateX(-50%);z-index:2147483602;'
         + 'zoom:var(--app-krom-zoom,1);padding:6px 14px;border-radius:999px;border:1px solid #000;background:' + MALMUR + ';color:#f6e7b8;'
         + 'font:700 15px ' + DISP + ';box-shadow:0 10px 24px -10px rgba(0,0,0,.7);pointer-events:none';
+      m.addEventListener('click', () => { if (lifandi) { lifandi = null; apply(); } klMerki(''); });
       document.body.appendChild(m);
     }
+    // fast = klípan stendur eftir að fingurnir sleppa → merkið er leiðin til baka í vistuðu stærðina
+    m.style.pointerEvents = fast ? 'auto' : 'none';
+    m.style.cursor = fast ? 'pointer' : '';
+    if (fast) { m.setAttribute('role', 'button'); m.title = 'Aftur í vistaða stærð'; } else { m.removeAttribute('role'); m.removeAttribute('title'); }
     m.textContent = txt;
   }
   document.addEventListener('touchstart', e => {
@@ -564,10 +588,10 @@
     if (!kl || (e.touches && e.touches.length >= 2)) return;
     const k = kl;
     kl = null;
-    lifandi = null;
-    if (k.virkur && k.s !== k.s0) setS(k.s, k.k);
-    else if (k.virkur) apply();
-    setTimeout(() => klMerki(''), k.virkur ? 700 : 0);
+    if (!k.virkur) return;
+    // Ekkert setS() hér — sjá hausinn. `lifandi` stendur áfram og staerd() les það fyrir þennan lykil.
+    if (lifandi && lifandi.k === k.k) { apply(); klMerki(Math.round(lifandi.s * 100) + ' % · ✕ til baka', true); }
+    else { lifandi = null; apply(); setTimeout(() => klMerki(''), 700); }
   };
   document.addEventListener('touchend', klLok, { passive: true });
   document.addEventListener('touchcancel', klLok, { passive: true });

@@ -4092,7 +4092,7 @@
         if (!body) body = emptyHtml('Ekkert brunakerfi komið á tíma.');
       }
       return modPanel(k, g && g.data ? synd.due + ' komin á tíma · ' + g.data.filter(x => x.done).length + ' búin ' + AR + falinSum(falinAlls) : 'Brunakerfi', body,
-        uppfTakki('bk') + '<button type="button" class="btn iv sm" data-t5="go" data-view="brunayfirlit">Brunakerfi ›</button>');
+        uppfTakki('bk') + '<button type="button" class="btn iv sm" data-t5="go" data-view="brunaskra">Brunakerfi ›</button>');
     }
     if (k === 'starfsmenn') {
       const nuna = Date.now(), dagur = ymd(new Date()), upphafDags = new Date(new Date().toDateString()).getTime();
