@@ -160,7 +160,12 @@
     btn.style.cssText =
       'margin-top:8px;padding:6px 12px;background:#0d6efd;color:#fff;border:none;' +
       'border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;width:100%';
-    btn.addEventListener('click', openReceiveModal);
+    // 05.10.2026 (Agnar, skjámynd af R-001080 bæði í Verkröð og „Komið úr þjónustu": „ég vil ekki hafa þetta báðum
+    // megin, bara hægra megin og ekki verkbeiðni … bara fram og til baka hægra megin"): takkinn opnar MERKJA-haminn —
+    // tækin fá aðeins uttaeki.status='loaned' (eins og „+ Merkja tæki" í 269 og Á verkstæði-takkinn í 224). Engin
+    // verkbeiðni og engin drög verða til; útreikningurinn kemur í lokin eins og venjulega (ársskoðunin, 129).
+    // Áður: openReceiveModal(event) → venjulegur hamur → submitReceive stofnaði verkbeiðni + drög.
+    btn.addEventListener('click', () => openReceiveModal(true));
     colHd.appendChild(btn);
   }
 
