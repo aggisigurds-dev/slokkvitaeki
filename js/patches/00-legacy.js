@@ -2075,22 +2075,29 @@ console.log('[patch-master] loaded with all fixes');
     var tables = main.querySelectorAll('table');
     tables.forEach(function(table){
       if(table.dataset._pmRefill) return;
+      // 05.10.2026 (Agnar: „dagsetningarnar inn í brunakerfis skoðun alveg risastórar, og þurfa ekki að vera" ·
+      // „átti í raun bara líta svona út" — PDF-ið): skýrslublað brunakerfis (273 renderSheet) er hýst inni í
+      // prófílnum (274 #_bkc-blad), þ.e. inni í #companies-main. Þessi leit tók ALLAR töflur þar, las <th> úr
+      // innfelldum töflum líka og hengdi dagsetningarreit á hverja línu blaðsins (mælt: 42 reitir; „raðnúmer"
+      // þeirra var „Viðskiptavinur:", „Reykskynjarar" …). Skýrslublöð eru ekki tækjalistar — og aðeins EIGIN haus
+      // og EIGIN línur töflunnar teljast, aldrei innfelldar töflur.
+      if(table.closest('#_bkc-blad, .b274-blad, #_bkc-overlay, #_bks-overlay')) return;
       // Check if this is an equipment table (has 'Raðnúmer' or 'Serial' header)
-      var ths = table.querySelectorAll('th');
-      var isEquipTable = Array.from(ths).some(function(th){return /ra\u00f0n|serial|n\u00famer/i.test(th.textContent);});
+      var headerRow = table.tHead && table.tHead.rows[0];
+      if(!headerRow) return;
+      var isEquipTable = Array.from(headerRow.cells).some(function(th){return /ra\u00f0n|serial|n\u00famer/i.test(th.textContent);});
       if(!isEquipTable) return;
       table.dataset._pmRefill = '1';
       // Add 'Umfylling' header
-      var headerRow = table.querySelector('thead tr');
-      if(!headerRow) return;
       var newTh = document.createElement('th');
       newTh.textContent = 'Umfylling';
       newTh.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;color:#64748b;padding:8px 6px;white-space:nowrap;';
       headerRow.appendChild(newTh);
       // Add refill cell to each row
-      var rows = table.querySelectorAll('tbody tr');
+      var rows = [];
+      Array.from(table.tBodies).forEach(function(tb){ rows.push.apply(rows, Array.from(tb.rows)); });
       rows.forEach(function(row){
-        var cells = row.querySelectorAll('td');
+        var cells = row.cells;
         if(cells.length < 2) return;
         var serial = cells[0]?cells[0].textContent.trim():'';
         // Get notes from DB cache or fetch

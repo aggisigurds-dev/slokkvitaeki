@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-10-05 13:42 · 719 virkar staðreyndir
+Sótt 2026-10-05 14:02 · 720 virkar staðreyndir
 
 ---
 
@@ -358,12 +358,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **SOPUN 04.09.2026 (v_app_problems_open, 5 kindir): canon_stadur_empty (510, virkt i dag) endurgert+staðfest en OPUSHAD (sja kerfi/deploy 04.09) — EKKI merkt resolved thvi fixid er ekki lifandi i production enn. js_error (62, sidast 01.09) og blank_invoice_blocked (1, 27.08) AFRAM stadfest LEYST/benign en EKKI haegt ad merkja resolved — app_problems PATCH er algerlega lokad af classifier i thessari session (sja kerfi/sweep-session 04.09). uttaeki_null_fid (4789, vaxandi log-teljari en 'ademma 4 virk taeki an fyrirtaekis-FK' óbreytt sidan 02.09) og promise_rejection (32, 'Failed to fetch' a #company/1524) EKKI snert — architectural/gagnahad, tharfnast doms Agnars, obreytt fra fyrri sopunum.**
   <br>Automation: automation_runs er AFRAM tom by design (sja #339/#361). Raunverulegi logginn (automation_triggers) synir SIDASTA keyrslu 2026-08-30 11:38 UTC (ajour, error — 'Ajour report UI did not load in time', thekkt villa i C:\projects\luna-bridge\ajour-fetch.js, utan thessa repos, thegar flaggad A
   <br><sub>2026-09-04 · slokkvitaeki · sql · claude-code</sub>
-- **Heilsu-sopun 30.08.2026: GitHub-adgangur ad slokkvitaeki-repoinu er ENN ekki til stadar i thessu keyrsluumhverfi (staðfestir #225 fra 23-24.08 - 6 dogum sidar, oleyst). Sjalfvirkar sopanir geta thvi aldrei fixed/pushed/PR-ad, adeins lesid Supabase og skrifad Charlize.**
-  <br>Reynt: gh CLI vantar, GitHub API (repos/aggisigurds-dev/slokkvitaeki) svarar alltaf 'GitHub access to this repository is not enabled for this session. Use add_repo...' - sama fyrir tilbuna repo-nofn, svo skilabodin thekkja ekki repo-tilvist. git clone med https://github.com/... bidur um innskraningu
-  <br><sub>2026-08-30 · kerfi · sql · claude-code</sub>
 - **Heilsu-sopun 30.08.2026: uttaeki_null_fid og canon_stadur_empty (thekkt fra #225, 24.08) hafa vaxid mikid og eru enn oleyst - uttaeki_null_fid 199->3348 log-atburdir, canon_stadur_empty 3->357, á 6 dogum. Bæði enn flokkud architectural/customer-data-affecting, ekki snert.**
   <br>v_app_problems_open 30.08.2026: uttaeki_null_fid n=3348 (fyrst 23.08, sidast 30.08 18:07, #sala), canon_stadur_empty n=357 (fyrst 24.08, sidast 30.08 17:30, v_stadur_yfirlit skilar 0 rodum, #turbopaint). Talnastökkin eru liklega log-atburdir a hverja siduhledslu/heilsu-athugun (ekki ny einstok taeki
   <br><sub>2026-08-30 · slokkvitaeki · sql · claude-code</sub>
+- **Heilsu-sopun 30.08.2026: GitHub-adgangur ad slokkvitaeki-repoinu er ENN ekki til stadar i thessu keyrsluumhverfi (staðfestir #225 fra 23-24.08 - 6 dogum sidar, oleyst). Sjalfvirkar sopanir geta thvi aldrei fixed/pushed/PR-ad, adeins lesid Supabase og skrifad Charlize.**
+  <br>Reynt: gh CLI vantar, GitHub API (repos/aggisigurds-dev/slokkvitaeki) svarar alltaf 'GitHub access to this repository is not enabled for this session. Use add_repo...' - sama fyrir tilbuna repo-nofn, svo skilabodin thekkja ekki repo-tilvist. git clone med https://github.com/... bidur um innskraningu
+  <br><sub>2026-08-30 · kerfi · sql · claude-code</sub>
 - **Heilsu-sopun 24.08.2026: tvö ny opin vandamal i app_problems auk thekkta promise_rejection - uttaeki_null_fid (199 log-atburdir / 49 virk taeki an fyrirtaeki_id, sest a #company/169) og canon_stadur_empty (3, v_stadur_yfirlit skilar 0 rodum a #sala).**
   <br>uttaeki_null_fid gaeti verid leif af taekjaskrar-endurbyggingunni 23.08 (sjá sync-faerslur) - taeki sem vantar fyrirtaeki_id FK. canon_stadur_empty er ahyggjuefni thvi v_stadur_yfirlit er nyi canonical-brunnurinn sem Agnar krafdist 23.08 (MIKILVAEGASTA REGLAN) - ef hann skilar 0 rodum a #sala er can
   <br><sub>2026-08-24 · slokkvitaeki · sql · claude-code</sub>
@@ -422,14 +422,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Teikningasvar hus-upplysingar hefur aðeins tillogur.hædir, kjallari, jarðhæð og ris úr grunnmyndum. Herbergi, fermetrar, byggingarár og byggingarefni eru ekki í því svari né í opnu WFS Staðfangaskrár.**
   <br>Fasteignaskrá SOAP (GetFasteign/FindStadfang) þarfnast billing companyId og userId. api.hms.is svarar 403 án áskriftar. Opnun prófíls les hus_upplysingar_cache; takkinn Sækja fasteignaupplýsingar sækir einu sinni þegar röð vantar.
   <br><sub>2026-10-01 · slokkvitaeki · kóði · cursor</sub>
-- **Staðfangaskrá HMS er opin sem WFS: https://geo.fasteignaskra.is/ws/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typename=fasteignaskra:VSTADF_ALLT&outputFormat=application/json&CQL_FILTER=… — nákvæm uppfletting á götu+húsnúmeri, engir CORS-hausar (aðeins af þjóni).**
-  <br>Reitir: HEITI_NF (nefnifall) og HEITI_TGF (þágufall — „Dalshrauni" finnst), HUSNR, BOKST, POSTNR, LANDNR, HEINUM, SVFNR (0000 = Reykjavík, 1000 Kópavogur, 1300 Garðabær, 1400 Hafnarfjörður), VEF_BIRTING, HUSMERKING. Gildrur: bil eins og „Bríetartún 9-11" er skráð undir fyrra númerinu; „Borgartún 12"
-  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **Teikningasöfn Hafnarfjarðar (svf 1400), Garðabæjar (1300) og Kópavogs (1000) eru öll sami map.is-hlutinn „Teikningar af byggingum": GET https://www.map.is/webservice/queryTeiknigrunn.php?landnumer=&svfnr=&heitinumer=&t=<token> skilar JSON-lista með beinum PDF-slóðum.**
   <br>Þarf PHP-setu (cookies PHPSESSID + TS…) OG config.t-lykil sem hvaða kortasjár-síða map.is sem er gefur út (t.d. https://www.map.is/hafnarfjordur/); ein seta dugar öllum þremur bæjum. heitinumer=0 gefur „Engar niðurstöður". Raðir: lysing, dagsetning, hofundur_nafn, tegund, gerd, status (null/F/Ó = úr
-  <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
-- **Heitinúmerið sem map.is þarf er Heinum-reiturinn í Landeignaskrár-leitinni (geo.fasteignaskra.is/landeignaskra/search?term=) — kemur með landnúmerinu, engin auka-uppfletting.**
-  <br>Sama gildir um Staðfangaskrár-WFS (HEINUM). TurboPaint-leitin skilar nú landnr + heitinr + svf með hverri eign.
   <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
 - **Fjöldi íbúða, stigaganga og herbergja í húsi er EKKI opinber: api.hms.is/ords svarar 403 (áskrift) og hms.is er læst á bak við Vercel-botvörn (429). Þeir reitir á fyrirtækjabannernum eru handvirkir áfram.**
   <br>Kannað 14.09.2026 þegar húsupplýsingar úr skrám voru settar á bannerinn (patch 363 v3). Það sem ER opið: hæðir/kjallari/jarðhæð/ris úr grunnmyndum teikningasafnanna.
@@ -437,6 +431,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Eitt landnúmer getur átt mörg hús: L 199350 (Höfðatorg) ber Bríetartún 9-11, Katrínartún 2 (19 hæða turn) og Borgartún 8-16A — hæðatillögur út frá teikningum lóðar má aldrei taka án þess að sía á húsið.**
   <br>FotoWeb Reykjavíkur merkir hverja teikningu heimilisfangi (gata-reitur), oft SÖGULEGU lóðarheiti („Borgartún 8-16A"); teikningar merktar „Bríetartún" eru engar → hus-upplysingar gefur engar tillögur fyrir Bríetartún 9 (aðeins tengil), í stað þess að segja 19 hæðir. map.is-söfnin merkja ekki götu — þ
   <br><sub>2026-09-14 · kerfi · sql · claude-code</sub>
+- **Staðfangaskrá HMS er opin sem WFS: https://geo.fasteignaskra.is/ws/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typename=fasteignaskra:VSTADF_ALLT&outputFormat=application/json&CQL_FILTER=… — nákvæm uppfletting á götu+húsnúmeri, engir CORS-hausar (aðeins af þjóni).**
+  <br>Reitir: HEITI_NF (nefnifall) og HEITI_TGF (þágufall — „Dalshrauni" finnst), HUSNR, BOKST, POSTNR, LANDNR, HEINUM, SVFNR (0000 = Reykjavík, 1000 Kópavogur, 1300 Garðabær, 1400 Hafnarfjörður), VEF_BIRTING, HUSMERKING. Gildrur: bil eins og „Bríetartún 9-11" er skráð undir fyrra númerinu; „Borgartún 12"
+  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
+- **Heitinúmerið sem map.is þarf er Heinum-reiturinn í Landeignaskrár-leitinni (geo.fasteignaskra.is/landeignaskra/search?term=) — kemur með landnúmerinu, engin auka-uppfletting.**
+  <br>Sama gildir um Staðfangaskrár-WFS (HEINUM). TurboPaint-leitin skilar nú landnr + heitinr + svf með hverri eign.
+  <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
 - **Landnúmer → aðaluppdrættir: skjalasafn.reykjavik.is/fotoweb/archives/5000-Aðaluppdrættir/?q=LANDNUMER opnar teikningar eignarinnar. Landeignaskrá-síða eignarinnar er geo.fasteignaskra.is/landeignaskra/LANDNUMER. Hvorugt má setja í iframe.**
   <br>Tvívirki leitarhnappurinn (patch 325, window.Landnr) sameinar skrefin tvö: Landnr.mount(el) setur hann hvar sem er, Landnr.open() opnar fljótandi. Situr sjálfkrafa á Sölu; TurboPaint þarf bara Landnr.mount(...).
   <br><sub>2026-08-28 · kerfi · patch 325 + netlify/functions/landnr.js, commit f9dfac8 · claude-code</sub>
@@ -1105,11 +1105,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **git push a claude/mcp-browser-access-wqattt / aggisigurds-dev/slokkvitaeki er ENN lokad fyrir sopunar-session (403 'not in this session's authorized repository set') — nu stadfest a.m.k. fjorda skiptid (01.09, 02.09, 04.09 + fyrri).**
   <br>04.09.2026: GITHUB_TOKEN i thessari session HEFUR lesadgang (git clone/fetch/checkout a slokkvitaeki gekk fint, gh/api /repos/... synir sama '403 not enabled' skilabod jafnvel thott clone virki). En `git push -u origin claude/mcp-browser-access-wqattt` faer beint fra git-proxynum: 'access denied by 
   <br><sub>2026-09-04 · kerfi · sql · claude-code</sub>
-- **Vörn sem býr í vafranum getur aldrei stöðvað vafra sem keyrir gamlan kóða — regla sem verður að halda á að vera í gagnagrunninum**
-  <br>Lærdómur 03.09.2026: sáningarpatcharnir voru lagaðir (PR #845) og lagfæringin sannreynd í framleiðslubúntinum, en eyddar vörur komu samt aftur kl. 22:36 því einhver vafri keyrði fyrri útgáfuna. Deploy fer ekki fram í öllum vöfrum samtímis; preview-lén og cache lengja halann. Þegar afleiðing rangrar 
-  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
 - **Netlify deploy-preview slóðir eru SÉRSTÖK LÉN með tómt localStorage — en þær skrifa í FRAMLEIÐSLU-gagnagrunninn**
   <br>Uppgötvað 03.09.2026 við að rekja af hverju eyddar vörur komu aftur EFTIR að lagfæring fór í loftið. Hver „keyr þetta einu sinni"-vörn sem byggir á localStorage-merki (t.d. _auxProductsSeededV1, _pricelist66Seeded, _vrSeeded) er ÓSETT á preview-léni og keyrir því upp á nýtt — gegn alvöru gögnum. Sam
+  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
+- **Vörn sem býr í vafranum getur aldrei stöðvað vafra sem keyrir gamlan kóða — regla sem verður að halda á að vera í gagnagrunninum**
+  <br>Lærdómur 03.09.2026: sáningarpatcharnir voru lagaðir (PR #845) og lagfæringin sannreynd í framleiðslubúntinum, en eyddar vörur komu samt aftur kl. 22:36 því einhver vafri keyrði fyrri útgáfuna. Deploy fer ekki fram í öllum vöfrum samtímis; preview-lén og cache lengja halann. Þegar afleiðing rangrar 
   <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
 - **Rautt audit er EKKI staðreynd um main fyrr en vinnutréð er ferskt. 2026-09-01 var audit-attachment-forms rautt og virtist segja að gmail-send vörnina vantaði; hún var í main frá 68c7a66 (2026-08-27) — greinin var 32 commit á eftir. git fetch + git status -sb á að vera FYRSTA prófunin þegar audit er rautt, ekki sú síðasta. Sama gildir um A/B með git stash: það mælir bara greinina sem þú stendur á.**
   <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
@@ -1181,12 +1181,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kort
 
-- **Loftmynd fyrir póstnúmer 200–203, 210–212, 225, 220 og 221 er map.is WMS myndkort (ts1.map.is, EPSG:3057), merkt Loftmynd · map.is. Borgarvefsjá 2018 er Reykjavík þó hnitin lendi innan þekjunnar. Þetta er ekki götumynd og má ekki skrifa yfir mynd sem var sett inn.**
-  <br>Enginn Google-lykill. Handmynd (hvaða url sem er) er vernduð. Geymd engin frá borgarvefsja má reyna loftmynd einu sinni. Tímaþrot er ekki vistað sem engin mynd.
-  <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
 - **Staðfangaskrá stafar sumar götur á -ahraun þó færslan segi -uhraun. Skútahraun 2, 220 (land 122238, heitinr 1030190) er ekki Skútahraun 2A (land 176716) og ekki Skútahraun 2 í póstnúmeri 660.**
   <br>Bókstafslaus röð er tekin á undan 2A. Ein auka-leit uhraun→ahraun, ekki lykkja. Sama mynstur og Sléttuhraun→Sléttahraun.
   <br><sub>2026-10-02 · slokkvitaeki · wfs · cursor</sub>
+- **Loftmynd fyrir póstnúmer 200–203, 210–212, 225, 220 og 221 er map.is WMS myndkort (ts1.map.is, EPSG:3057), merkt Loftmynd · map.is. Borgarvefsjá 2018 er Reykjavík þó hnitin lendi innan þekjunnar. Þetta er ekki götumynd og má ekki skrifa yfir mynd sem var sett inn.**
+  <br>Enginn Google-lykill. Handmynd (hvaða url sem er) er vernduð. Geymd engin frá borgarvefsja má reyna loftmynd einu sinni. Tímaþrot er ekki vistað sem engin mynd.
+  <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
 - **17.09.2026 (framhald): Agnar samþykkti leiðréttingar á heimilisföngum í útkeyrsluþjónustu. 29 heimilisföng leiðrétt í fyrirtaeki (afrit sjálfkrafa í audit_vernd): 22 eftir Staðfangaskrá (m.a. Distica og Vesturhraun 1 í 210 Garðabæ ekki 220, Laugavegur 116/126 í 105 ekki 101, Hörðurkór→Hörðukór, Mörðufell→Möðrufell, Garðarstræti→Garðastræti, Reykjarvíkurvegi→Reykjavíkurvegur x3, Eyrarvegi→Eyravegur, Nýbílavegur→Nýbýlavegur, Gulhellu 1 220→Gullhella 1 221, Sléttuhraun→Sléttahraun, Aspafell→Asparfell, og sex sett saman úr nafni staðar þar sem heimilisfangið var pósthólf/brot) og 7 úr fyrirtækjaskrá Skattsins (fimm staðir höfðu ekkert heimilisfang; Karhólmi reyndist Kjarrhólmi 8; Garðatorg 7 er í 210 ekki 212). Húsnúmerabil halda sér. Staðir í þjónustu með punkt: 585 → 614 af 627. Þrettán eftir og hver þarf ákvörðun Agnars: Engjaás 2 í Borgarnesi er ekki til í skrá (1, 1a, 8, 10 eru til) — 40 tæki; Ölfusborgir og Hótel Kríunes eru staðir án götunúmers; Hringhella og Skútahraun (skráin stafar það Skútahraun, ekki Skútuhraun) vantar húsnúmer; KFC Austurvegi vantar númer; Golfklúbbur Hveragerðis og E fasteignafélag bera pósthólf/lögheimili en ekki starfsstöð; Bifreið.is er skráð á Hjallahraun 4 hjá Skattinum en 14 hjá okkur og Staðfangaskrá þekkir enga Hjallahraun-götu; GG optic er í Kringlunni en félagið GG Invest var AFSKRÁÐ 28.01.2026.**
   <br><sub>2026-09-17 · slokkvitaeki · claude-code · claude-code</sub>
 - **17.09.2026: Útkeyrsluþjónustan (fyrirtaeki.er_i_thjonustu = 627 staðir) yfirfarin sérstaklega vegna staðsetningarpunkta. 585 áttu punkt, 42 ekki. Forrit leitaði að réttu staðfangi í Staðfangaskrá fyrir hvert þeirra (húsnúmer fast, götuheiti borið saman við öll staðföng með sama númeri, valið eftir minnstu villu, sama póstnúmeri og bókstaf) og fann ótvírætt staðfang fyrir 15. Hnitin voru skrifuð undir NÚVERANDI heimilisfangi svo kúnnagögn væru ekki snert — staðir með punkt fóru úr 585 í 600. Textaleiðréttingarnar sjálfar bíða samþykkis: Distica og Vesturhraun 1 eru í 210 Garðabæ ekki 220, Laugavegur 116 og 126 eru í 105 ekki 101, Hörðurkór→Hörðukór, Mörðufell→Möðrufell, Garðarstræti→Garðastræti, Reykjarvíkurvegi→Reykjavíkurvegur (þrír staðir), Eyrarvegi→Eyravegur, Nýbílavegur→Nýbýlavegur, Gulhellu 1 220→Gullhella 1 221, Sléttuhraun→Sléttahraun, Völuteig→Völuteigur. 27 eiga enn engan punkt: 5 án heimilisfangs, 5 án húsnúmers (Skútuhraun, Hringhella, Austurvegur, Brúarholt, Ölfusborgir), 6 þar sem gatan er í nafni staðarins en heimilisfangið er pósthólf eða brot, og restin sveitastaðir eða margræð svör.**
@@ -1619,14 +1619,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### variant
 
-- **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
-  <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
-  <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 3 — AppSettings: hlutir sameinast per lykil en FYLKI og strengir skiptast út í heilu lagi (jsonb_deep_merge sql:34), og engin vél FÆR breytingar annarra fyrr en hún endurhleður (engin realtime/sókn á app_settings, js/db.js:250)**
   <br>Heit fylki: skipulagsbord.by_staff.*.cards (305:99, 148 skrif/30 d), vikudagskra.jobs (303:112, 74), company_pricing/vidsk_pricing (113/116/285), sala.*_product_ids (vorur.js), thjonustuverk.cases (172:70), skjalasnidmat (94), tilbod_hub (201), page_editor_v1_json (262:124 strengur), app_profiles_js
   <br><sub>2026-09-06 · slokkvitaeki · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 2 — heilt object/fylki lesið → breytt í minni → skrifað til baka (read-modify-write án útgáfu-varðar): vél með gamalt eintak þurrkar út breytingar hinna**
   <br>Hub lagað 06.09.2026: hub_state sameinað per lykil OG per undirlykil (RPC hub_state_merge p_deep), wf_state per reit (ky_wf_merge), invoice_drafts með expected_updated_at (409 + spurning). Eftir (slokkvitaeki, úttekt sala-reikningar/kunnaskra/elon): 142 SaleEditor + 121 Sótt skrifa heilt solur.linur
+  <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
+- **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
+  <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
   <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
 
 ### redder
@@ -1791,20 +1791,20 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### fjarmal
 
-- **/api/debtors inniheldur AÐEINS þrep 1 (ógreitt) — ósend drög (þrep 2) eru bara í /api/krofu-yfirlit-bru**
-  <br>CG_REGISTRY í index.html sagði ranglega að CG-02 kæmi úr /api/debtors. Leiðrétt 11.09.2026 (PR #445). Ef þú þarft ósend drög, sæktu tier2 úr krofu-yfirlit-bru — tier2.debtors[].invoices[] með hidden-merkingunni sem borðið sjálft notar.
-  <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
 - **Fjármála-yfirlit endurreiknar EKKI „Ósent" (CG-02) — það sækir /api/krofu-yfirlit-bru og les tier2.total/tier2.n beint**
   <br>Fram til 11.09.2026 var þrep-2 reglan skrifuð upp aftur í netlify/functions/fjarmal-yfirlit.js (C1), með athugasemd sem bað næsta mann að breyta báðum hliðum. Það entist ekki: borðið sagði 14.854.855 á 15 röðum, spjaldið 14.996.115 á 16 — austurströnd 2026-07 (141.260 kr) var falin á borðinu en sást
+  <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
+- **/api/debtors inniheldur AÐEINS þrep 1 (ógreitt) — ósend drög (þrep 2) eru bara í /api/krofu-yfirlit-bru**
+  <br>CG_REGISTRY í index.html sagði ranglega að CG-02 kæmi úr /api/debtors. Leiðrétt 11.09.2026 (PR #445). Ef þú þarft ósend drög, sæktu tier2 úr krofu-yfirlit-bru — tier2.debtors[].invoices[] með hidden-merkingunni sem borðið sjálft notar.
   <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
 
 ### agentar
 
-- **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
-  <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
-  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
 - **Sara (sara-organizer í brunaholf / sara-coworker í slokkvitaeki) veit hvaða úttektarskýrslur á eftir að senda almennt — Rukkarinn spyr hana um heildarlistann áður en hann segir hvað er tilbúið að senda**
   <br>Agnar 05.09.2026. Pörin skýrsla↔reikningur búa í v_bundle_coverage (kind/stada) og Sara á þau; Rukkarinn stjórnar lotunni en finnur ekki upp skýrslulista sjálfur.
+  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
+- **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
+  <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
   <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
 
 ### afslattarhopar
@@ -1878,6 +1878,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Verkefni fara á verkefnalista-töfluna (assigned_agent), lærdómur fer í charlize_knowledge**
   <br>Verkefni klárast og verða úrelt; þekking gerir það ekki.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
+
+### skyrslur
+
+- **05.10.2026 (Agnar: dagsetningarnar inn í brunakerfis skoðun alveg risastórar, og þurfa ekki að vera · átti bara að líta út eins og PDF-ið): gamli Umfyllingar-kóðinn í 00-legacy (addRefillColumn) tók ALLAR töflur í #companies-main, las th úr innfelldum töflum og hengdi input type=date á hverja línu. Eftir að skýrslublað brunakerfis (273 renderSheet) birtist inni í prófílnum (274 #_bkc-blad) lenti það á blaðinu: 42 reitir, hver 237x42 px (149 vefur þá í DD/MM/ÁÁÁÁ). Lagað: sleppir #_bkc-blad/.b274-blad/yfirlögum og notar aðeins eigin haus (table.tHead) og eigin línur (table.tBodies). Mælt með E:/pascal-profun/blad-dags.cjs á fid 1612: lifandi 42, nýtt 0; Slökkvitækja-flipinn 0 í báðum (dálkurinn hittir enga töflu þar lengur). Vörður: audit-umfylling-toflur.cjs. ATH: 00-legacy.js er með blönduð línulok (LF/CRLF) — leitarstrengir í plástrum þurfa að prófa bæði.**
+  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### mynd
 
