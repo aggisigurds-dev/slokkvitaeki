@@ -2582,9 +2582,12 @@
     const gild = docs.filter(d => String(d.year || '') === yr && (d.drive_file_id || d.storage_path));
     const tengd = slokkvikerfi ? (_state.skDocBySala || {})[String(s.id)]
       : brunakerfi ? ((_state.bkDocBySala || {})[String(s.id)] || (_state.bkDocByNum || {})[String(s.num)]) : null;
+    // 05.10.2026 (Agnar: „skýrslurnar haldast við reikningana úr sínu kerfi"): hver reikningur fær AÐEINS skýrslu úr sínu
+    // kerfi. Annar reikningur (ársskoðun, söluborð) fær aðeins úttektarskýrslu — eldri varaleiðin (fyrsta skjal af hvaða tegund sem er) greip áður brunakerfis-/
+    // slökkvikerfisskýrslu staðarins. Sú varaleið var fyrir R-001009 (brunakerfisreikning), sem fer nú um brunakerfi-greinina.
     const doc = slokkvikerfi ? (gild.find(d => tengd != null && String(d.id) === tengd) || gild.find(d => d.doc_type === 'slokkvikerfi'))
       : brunakerfi ? (gild.find(d => tengd != null && String(d.id) === tengd) || gild.find(d => d.doc_type === 'brunakerfi'))
-      : (gild.find(d => d.doc_type === 'uttektarskyrsla') || gild[0]);
+      : gild.find(d => d.doc_type === 'uttektarskyrsla');
     if (doc) return { found: true, kind: 'doc', doc, year: yr, nafn: skyrslaNafn(s) };
     return { found: false, year: yr };
   }

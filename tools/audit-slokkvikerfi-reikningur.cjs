@@ -28,8 +28,16 @@ const fall = (src, nafn) => {
 
 // (1) payday-push
 const pp = lesa('netlify/functions/payday-push.cjs');
-if (!/if \(sale\.source !== 'uttekt' && sale\.source !== 'slokkvikerfi'\) \{\s*attachSkipReason/.test(pp)) brot.push('payday-push: skýrslugáttin hleypir öðru en uttekt/slokkvikerfi í gegn (eða finnst ekki)');
-if (!/sale\.source === 'slokkvikerfi'\s*\?\s*await findSlokkvikerfiPdf\(sale\)\s*:\s*await findReportPdf\(sale, body\.report_storage_path\)/.test(pp)) brot.push('payday-push: slökkvikerfissala sækir ekki skýrslu um findSlokkvikerfiPdf');
+// 05.10.2026: gáttin hleypir líka 'brunakerfi' í gegn — sá fær AÐEINS findBrunakerfiPdf (skýrslan úr sínu kerfi)
+if (!/if \(sale\.source !== 'uttekt' && sale\.source !== 'slokkvikerfi'(?: && sale\.source !== 'brunakerfi')?\) \{\s*attachSkipReason/.test(pp)) brot.push('payday-push: skýrslugáttin hleypir öðru en uttekt/slokkvikerfi/brunakerfi í gegn (eða finnst ekki)');
+if (!/sale\.source === 'slokkvikerfi'\s*\?\s*await findSlokkvikerfiPdf\(sale\)\s*:\s*sale\.source === 'brunakerfi'\s*\?\s*await findBrunakerfiPdf\(sale\)\s*:\s*await findReportPdf\(sale, body\.report_storage_path\)/.test(pp)) brot.push('payday-push: slökkvikerfis-/brunakerfissala sækir ekki skýrslu um sitt eigið fall (findSlokkvikerfiPdf / findBrunakerfiPdf)');
+const fbk = fall(pp, 'findBrunakerfiPdf');
+if (!fbk) brot.push('payday-push: findBrunakerfiPdf finnst ekki');
+else {
+  if (/company_attachments|fetchAppSettings|report_storage_path|explicit/i.test(fbk)) brot.push('payday-push: findBrunakerfiPdf les fyrirtækjaviðhengi eða slóð frá vafranum — þar eru slökkvitækjaskýrslur');
+  if ((fbk.match(/doc_type=eq\.brunakerfi/g) || []).length < 2) brot.push('payday-push: findBrunakerfiPdf síar ekki báðar leitir á doc_type=brunakerfi');
+  if (!/brunakerfi_skyrslur\?data->verd->>sale_id=eq\./.test(fbk)) brot.push('payday-push: findBrunakerfiPdf fer ekki fyrst um tengingu úttektarinnar (sale_id → doc_id)');
+}
 const fsk = fall(pp, 'findSlokkvikerfiPdf');
 if (!fsk) brot.push('payday-push: findSlokkvikerfiPdf finnst ekki');
 else {
@@ -49,6 +57,8 @@ else {
   // Brunakerfisreikningur (R-001081/R-001082, 05.10.2026): aldrei slökkvitækjaskýrsla — hvorki viðhengi né úttektarskýrsla
   if (!/if \(!slokkvikerfi && !brunakerfi\) try \{[\s\S]{0,200}CompanyAttachments/.test(rs)) brot.push('166: brunakerfissala getur fengið fyrirtækjaviðhengi (slökkvitækjaskýrslu)');
   if (!/brunakerfi \?[^:]*gild\.find\(d => d\.doc_type === 'brunakerfi'\)\)\s*:/.test(rs.replace(/\n\s*/g, ' '))) brot.push('166: brunakerfissala velur ekki eingöngu doc_type brunakerfi');
+  // 05.10.2026: ársskoðunar-/söluborðsreikningur fær aldrei skýrslu úr öðru kerfi (enginn `|| gild[0]`)
+  if (/\|\|\s*gild\[0\]/.test(rs)) brot.push('166: annar reikningur getur gripið hvaða skýrslu sem er (|| gild[0]) — líka brunakerfis-/slökkvikerfisskýrslu');
 }
 
 // (3) 187 / 190

@@ -192,7 +192,9 @@ exports.handler = async (event) => {
     const attachReport = body.attach_report !== false; // default on
     let attachment = null, attachSkipReason = null;
     if (attachReport) {
-      if (sale.source !== 'uttekt' && sale.source !== 'slokkvikerfi') {
+      // 05.10.2026 (Agnar: „skýrslurnar haldast við reikningana úr sínu kerfi"): source 'brunakerfi' (273/291) fær
+      // AÐEINS brunakerfisskýrsluna sem úttektin vísar á (findBrunakerfiPdf) — áður fór hann án skýrslu.
+      if (sale.source !== 'uttekt' && sale.source !== 'slokkvikerfi' && sale.source !== 'brunakerfi') {
         attachSkipReason = 'sale.source er ekki uttekt (' + (sale.source || 'null') + ') — engin skýrsla fest';
       } else if (site && site.skyrsla_med_krofu === false) {
         // Per-fyrirtæki hak í prófílnum (patch 14): sum félög vilja EKKI
@@ -202,10 +204,14 @@ exports.handler = async (event) => {
         try {
           attachment = sale.source === 'slokkvikerfi'
             ? await findSlokkvikerfiPdf(sale)
-            : await findReportPdf(sale, body.report_storage_path);
+            : sale.source === 'brunakerfi'
+              ? await findBrunakerfiPdf(sale)
+              : await findReportPdf(sale, body.report_storage_path);
           if (!attachment) attachSkipReason = sale.source === 'slokkvikerfi'
             ? 'engin slökkvikerfisskýrsla fannst fyrir þennan reikning/ár'
-            : 'engin úttektarskýrsla fannst fyrir þennan reikning/ár';
+            : sale.source === 'brunakerfi'
+              ? 'engin brunakerfisskýrsla fannst fyrir þennan reikning/ár'
+              : 'engin úttektarskýrsla fannst fyrir þennan reikning/ár';
         } catch (e) { attachSkipReason = 'skýrslu-sókn brást: ' + String(e.message || e); }
       }
     } else {
@@ -971,6 +977,32 @@ async function findSlokkvikerfiPdf(sale) {
   const skjal = await downloadReport(path);
   // geymsluheitið (2026_2_1791207520678.pdf) segir viðtakandanum ekkert
   skjal.name = 'Slokkvikerfisskyrsla-' + String(new Date(sale.created_at).getFullYear()) + '.pdf';
+  return skjal;
+}
+
+// Brunakerfisreikningur (source 'brunakerfi', 273/291): skýrslan sem úttektin sjálf vísar á —
+// brunakerfi_skyrslur.data.verd.sale_id (eða sale_num) = sölunni → doc_id → customer_documents (doc_type 'brunakerfi').
+// Varaleið: brunakerfisskýrsla SAMA staðar og árs. Engin slóð frá vafranum, engin fyrirtækjaviðhengi
+// (þar eru slökkvitækjaskýrslur). Kallari hefur staðfest sale.source==='brunakerfi'. (05.10.2026)
+async function findBrunakerfiPdf(sale) {
+  const h = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const sok = async url => { const r = await fetch(url, { headers: h }); if (!r.ok) return []; const j = await r.json().catch(() => []); return Array.isArray(j) ? j : []; };
+  let path = null;
+  let bk = await sok(`${SUPABASE_URL}/rest/v1/brunakerfi_skyrslur?data->verd->>sale_id=eq.${encodeURIComponent(sale.id)}&doc_id=not.is.null&select=doc_id&limit=1`);
+  if (!bk.length && sale.num) bk = await sok(`${SUPABASE_URL}/rest/v1/brunakerfi_skyrslur?data->verd->>sale_num=eq.${encodeURIComponent(sale.num)}&doc_id=not.is.null&select=doc_id&limit=1`);
+  const docId = bk[0] && bk[0].doc_id;
+  if (docId != null) {
+    const d = await sok(`${SUPABASE_URL}/rest/v1/customer_documents?id=eq.${encodeURIComponent(docId)}&doc_type=eq.brunakerfi&storage_path=not.is.null&select=storage_path&limit=1`);
+    if (d[0] && d[0].storage_path) path = d[0].storage_path;
+  }
+  if (!path && sale.customer_id) {
+    const year = String(new Date(sale.created_at).getFullYear());
+    const d = await sok(`${SUPABASE_URL}/rest/v1/customer_documents?fyrirtaeki_id=eq.${encodeURIComponent(sale.customer_id)}&doc_type=eq.brunakerfi&year=eq.${encodeURIComponent(year)}&storage_path=not.is.null&or=(is_duplicate.is.null,is_duplicate.eq.false)&select=storage_path&order=id.desc&limit=1`);
+    if (d[0] && d[0].storage_path) path = d[0].storage_path;
+  }
+  if (!path) return null;
+  const skjal = await downloadReport(path);
+  skjal.name = 'Brunakerfisskyrsla-' + String(new Date(sale.created_at).getFullYear()) + '.pdf';
   return skjal;
 }
 
