@@ -63,9 +63,25 @@
   // og 'payday-sync-paid 404' (stadbundinn thjonn hefur engin /api) voru tugir rada sem litu ut eins og bilanir hja
   // notendum. A localhost fer skraningin adeins i console; a ollum odrum slodum er hun obreytt.
   var THROUN = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(String(location.hostname || ''));
+  // 05.10.2026 (Agnar: „sía dev-vélina og vélmennin frá"). Mælt á 30 dögum:
+  // 751 færslur báru `Claude/` í user-agent (agentar að prófa síðuna) og 184 komu
+  // frá höfuðlausum X11-vafra. ÞAÐ ER MEIRIHLUTI SKRÁRINNAR — og þegar 9 af 10
+  // merkjum eru hávaði hættir maður að lesa þau.
+  //
+  // EN SÍAN MÁ ALDREI VERA Á TÆKI EINGÖNGU: X11-vafrinn bar líka payday_xml_hafnad
+  // ×2 — raunverulegt viðskiptaatvik sem hefði horfið þegjandi. Þess vegna er síað
+  // á TEGUND. Aðeins þær tvær sem vafrinn grípur sjálfkrafa (js_error,
+  // promise_rejection) eru felldar niður frá sjálfvirkni; allt sem kóðinn skráir
+  // vísvitandi með logProblem(...) fer óbreytt í gegn, hvaðan sem það kemur.
+  //
+  // Vélaskráin (setup_velar) segir að vélarnar séu Windows + Android, svo X11-Linux
+  // á þessari síðu er aldrei Agnar.
+  var VELMENNI = /Claude\/|HeadlessChrome|Puppeteer|Playwright|X11; Linux/.test(String(navigator.userAgent || ''));
+  var SJALFGRIPID = { js_error: 1, promise_rejection: 1 };
   function logProblem(kind, detail, opts) {
     try {
       if (THROUN) { try { console.warn('[logProblem - throun, ekki skrad]', kind, detail); } catch (_) {} return; }
+      if (VELMENNI && SJALFGRIPID[kind]) return;   // sjalfvirkni-havadi, ekki notandavilla
       var r = row(kind, detail, opts);
       var now = Date.now();
       var last = _recent.get(r._fp) || 0;
