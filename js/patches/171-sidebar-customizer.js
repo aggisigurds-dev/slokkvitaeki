@@ -98,6 +98,49 @@
     return { items, all };
   }
 
+  /* GEYMDA RÖÐIN ER SANNLEIKURINN — ekki DOM-ið (05.10.2026)
+   *
+   * Agnar: „Það er eitthvað vesen að færa úr hliðastikunni." Mælt á lifandi þjóni:
+   * glugginn opnaður og vistaður ÁN þess að nokkru væri hreyft sendi röð þar sem
+   * 47 af 78 stöðum skildu frá þeirri sem stóð á þjóninum. Sama mengi, sama lengd
+   * — bara önnur röð. Þess vegna „færist eitthvað annað" í hvert sinn sem hann
+   * hreyfir einn hlut: vistunin endurskrifar ALLA röðina eftir DOM-inu.
+   *
+   * Rótin er að `readCurrentOrder()` endurgerir röðina úr CSS-`order` og úr
+   * `nav-grp-start`-klösum. Papp 68 setur þá eftir geymdu röðinni, en reglurnar
+   * sem fylla upp í (faldir reitir, hnappar sem koma seint, dauf-línurnar sem eru
+   * leiddar af hópamerkjum) skila ekki nákvæmlega sömu runu til baka. Afleiðingin
+   * er þögul: hver vistun flytur hluti sem notandinn snerti aldrei.
+   *
+   * NÚ les glugginn geymdu röðina og notar DOM-ið AÐEINS fyrir merkimiða og fyrir
+   * hnappa sem eru ekki í geymdu röðinni (nýir flipar → aftast, sýnilegir).
+   * Auðkenni sem er í geymdu röðinni en á engan hnapp lengur er HALDIÐ — annað
+   * tæki gæti enn haft þann flipa, og þögul brottfelling er einmitt það sem þessi
+   * gluggi á að hindra. Finnist engin geymd röð er fallið aftur á DOM-ið, eins og
+   * áður, svo fyrsta uppsetning virki.
+   */
+  function fraThjoni(thjonsrod, snap) {
+    if (!thjonsrod || !Array.isArray(thjonsrod.o) || !thjonsrod.o.length) return null;
+    const eftirId = new Map();
+    (snap.all || []).forEach(it => eftirId.set(it.id, it));
+    const faldir = new Set((thjonsrod.h || []).map(String));
+    const notad = new Set();
+    const items = [];
+    thjonsrod.o.forEach(id => {
+      if (id === SEP) { items.push({ type: 'sep' }); return; }
+      const d = eftirId.get(id);
+      notad.add(id);
+      items.push({
+        type: 'item', id,
+        label: d ? d.label : String(id).replace(/^#/, ''),
+        hidden: faldir.has(String(id)) || !!(d && d.hidden)
+      });
+    });
+    // Flipar sem bættust við eftir að röðin var vistuð — aftast, sýnilegir.
+    (snap.all || []).forEach(it => { if (!notad.has(it.id)) items.push({ type: 'item', id: it.id, label: it.label, hidden: it.hidden }); });
+    return items;
+  }
+
   let _state = { items: [] };
 
   /* ── VISTUNARVÖRN (21.09.2026) ───────────────────────────────────────────────────────────────────────────────────
@@ -130,9 +173,10 @@
       if (window.AppSettings && AppSettings.load) await AppSettings.load();
       if (window.SidebarReorder && SidebarReorder.scheduleReorder) { SidebarReorder.scheduleReorder(); await new Promise(r => setTimeout(r, 450)); }
     } catch (_) {}
-    _grunnur = fingrafar(await lesaAfThjoni());
+    const thjonsrod = await lesaAfThjoni();
+    _grunnur = fingrafar(thjonsrod);
     const snap = readCurrentOrder();
-    _state.items = snap.items;
+    _state.items = fraThjoni(thjonsrod, snap) || snap.items;
     const dlg = document.createElement('div');
     dlg.id = '_sc-modal';
     dlg.style.cssText = 'position:fixed;inset:0;z-index:100070;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:18px;font-family:inherit';
@@ -261,15 +305,59 @@
     }
     const takki = document.getElementById('_sc-save'); if (takki) { takki.disabled = true; takki.textContent = '⏳ Vista…'; }
     const ok = await AppSettings.save({ sidebar_order: order, sidebar_hidden: hidden });
-    // 3. lesa til baka — „✓" aðeins ef þjónninn ber nákvæmlega það sem var vistað
-    const eftir = ok === true ? await lesaAfThjoni() : null;
-    const stadfest = !!eftir && fingrafar(eftir) === fingrafar({ o: order, h: hidden });
+    /* 3. lesa til baka — „✓" aðeins ef þjónninn ber nákvæmlega það sem var vistað.
+     *
+     * 05.10.2026 (Agnar: „Það er eitthvað vesen að færa úr hliðastikunni"). Þrjár
+     * raunverulegar bilanir 07:54–07:58, allar `save=true · lesið til baka=annað gildi`.
+     * Ég reyndi að endurgera það og GAT ÞAÐ EKKI: sama röð, víxluð röð, STYTT fylki
+     * (dauf lína fjarlægð — nákvæmlega það sem hann gerði) og færri faldir reitir
+     * skiluðu sér allir rétt, mælt á lifandi þjóni. Geymslan er því ekki biluð.
+     *
+     * Þrennt lagað hér í staðinn, því ósannreynd ágiskun lagar ekki neitt:
+     *
+     *   a) EINN LESTUR DÆMDI. Hann fór af stað í sömu andrá og rpc-ið skilaði sér, og
+     *      lendi hann á annarri tengingu í pottinum getur hann séð ástandið á undan.
+     *      Nú er lesið allt að þrisvar með stuttu millibili og aðeins dæmt ef ALLIR
+     *      lestrar bera annað gildi. Heppnist seinni lestur er vistunin rétt — og
+     *      viðvörunin sem Agnar sá hverfur án þess að nokkru sé logið.
+     *   b) SKILABOÐIN LUGU í einu tilviki: mistækist LESTURINN (`eftir === null`,
+     *      t.d. augnabliks netglufa) sagði glugginn samt „þjónninn ber EKKI sömu röð".
+     *      Vistunin hafði þá líklega heppnast. Nú er sagt hvort lesturinn náðist.
+     *   c) „annað gildi" SAGÐI EKKERT. Villuskráin fær nú fyrsta stað sem skilur,
+     *      bæði gildin og lengdirnar, svo næsta tilvik sé greinanlegt í stað þess að
+     *      við stöndum aftur hér.
+     */
+    let eftir = null, tilraun = 0;
+    const sent = fingrafar({ o: order, h: hidden });
+    while (ok === true && tilraun < 3) {
+      eftir = await lesaAfThjoni();
+      if (eftir && fingrafar(eftir) === sent) break;
+      tilraun++;
+      if (tilraun < 3) await new Promise(r => setTimeout(r, 300));
+    }
+    const stadfest = !!eftir && fingrafar(eftir) === sent;
     if (!stadfest) {
       if (takki) { takki.disabled = false; takki.textContent = 'Vista'; }
-      try { if (window.logProblem) window.logProblem('sidebar_save_failed', 'save=' + ok + ' · lesið til baka=' + (eftir ? 'annað gildi' : 'náðist ekki')); } catch (_) {}
-      alert(ok === true
-        ? 'Röðin fór af stað en þjónninn ber EKKI sömu röð þegar lesið er til baka — hún gæti horfið. Glugginn er enn opinn; reyndu „Vista" aftur.'
-        : 'Röðin vistaðist EKKI á þjóninn (nettenging?). Hún er í biðröð og reynt verður aftur, en önnur tæki sjá hana ekki fyrr en það tekst. Glugginn er enn opinn; reyndu „Vista" aftur.');
+      try {
+        if (window.logProblem) {
+          let lysing;
+          if (!eftir) lysing = 'lesturinn náðist ekki (' + tilraun + ' tilraunir)';
+          else {
+            const o2 = eftir.o || [];
+            let i = -1;
+            for (let k = 0; k < Math.max(order.length, o2.length); k++) if (order[k] !== o2[k]) { i = k; break; }
+            lysing = 'annað gildi eftir ' + tilraun + ' lestra · lengd sent=' + order.length + ' þjónn=' + o2.length +
+                     ' · faldir sent=' + hidden.length + ' þjónn=' + (eftir.h || []).length +
+                     (i >= 0 ? ' · fyrst skilur við ' + i + ': sent=' + order[i] + ' þjónn=' + o2[i] : ' · aðeins faldir skilja');
+          }
+          window.logProblem('sidebar_save_failed', 'save=' + ok + ' · ' + lysing);
+        }
+      } catch (_) {}
+      alert(ok !== true
+        ? 'Röðin vistaðist EKKI á þjóninn (nettenging?). Hún er í biðröð og reynt verður aftur, en önnur tæki sjá hana ekki fyrr en það tekst. Glugginn er enn opinn; reyndu „Vista" aftur.'
+        : !eftir
+          ? 'Röðin fór af stað og vistaðist líklega — en ekki náðist að lesa hana til baka til að staðfesta það (nettenging?). Glugginn er enn opinn; reyndu „Vista" aftur til að fá staðfestingu.'
+          : 'Röðin fór af stað en þjónninn ber EKKI sömu röð þegar lesið er til baka — hún gæti horfið. Glugginn er enn opinn; reyndu „Vista" aftur.');
       return;
     }
     _grunnur = fingrafar(eftir);
