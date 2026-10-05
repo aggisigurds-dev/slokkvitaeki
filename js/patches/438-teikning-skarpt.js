@@ -305,6 +305,23 @@
     S.bladBid = { lykill: sv.lykill, p };
     return p;
   }
+  // MINNKUÐ ÞREP (Agnar 05.10.2026, 89 % yfirlit: gamla bláleita JPEG-ið sást þar til þysjað var nær). Skönnunin er
+  // nú sýnd úr frumritinu á ÖLLUM aðdráttarstigum; við mikla minnkun tekur skjákortið annars fáa díla (moiré í
+  // þunnum línum), svo blaðið er helmingað í þrepum einu sinni og þrepið næst fyrir ofan þörfina notað.
+  function threp(bl, t) {
+    if (!bl.threp) bl.threp = [];
+    let src = bl.canvas, f = 1, i = 0;
+    while (f / 2 >= t && src.width > 64) {
+      let n = bl.threp[i];
+      if (!n) {
+        n = document.createElement('canvas'); n.width = Math.ceil(src.width / 2); n.height = Math.ceil(src.height / 2);
+        const c = n.getContext('2d'); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+        c.drawImage(src, 0, 0, n.width, n.height); bl.threp[i] = n;
+      }
+      src = n; f /= 2; i++;
+    }
+    return { c: src, fx: src.width / bl.canvas.width, fy: src.height / bl.canvas.height };
+  }
   function afrita(st) {
     const bl = S.blad;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -327,13 +344,15 @@
     x.clip();
     x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
     x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
-    x.setTransform(dpr * s, 0, 0, dpr * s, dx * dpr, dy * dpr);
+    // skönnun minnkuð meira en ~0,7×: helmingað þrep (sjá threp); vigur-PDF er forteiknaður nógu skarpt
+    const m = bl.tif && s * dpr < 0.7 ? threp(bl, s * dpr) : { c: bl.canvas, fx: 1, fy: 1 };
+    x.setTransform(dpr * s / m.fx, 0, 0, dpr * s / m.fy, dx * dpr, dy * dpr);
     // aðeins sýnilegi hlutinn af forteikningunni (24 MP) — annars kostar hver rammi tugi ms
     const vx0 = Math.max(0, st.cr.left - st.mr.left), vx1 = Math.min(st.mr.width, st.cr.right - st.mr.left);
     const vy0 = Math.max(0, st.cr.top - st.mr.top), vy1 = Math.min(st.mr.height, st.cr.bottom - st.mr.top);
-    const sx0 = Math.max(0, Math.floor((vx0 - dx) / s) - 1), sx1 = Math.min(bl.canvas.width, Math.ceil((vx1 - dx) / s) + 1);
-    const sy0 = Math.max(0, Math.floor((vy0 - dy) / s) - 1), sy1 = Math.min(bl.canvas.height, Math.ceil((vy1 - dy) / s) + 1);
-    if (sx1 > sx0 && sy1 > sy0) x.drawImage(bl.canvas, sx0, sy0, sx1 - sx0, sy1 - sy0, sx0, sy0, sx1 - sx0, sy1 - sy0);
+    const sx0 = Math.max(0, Math.floor((vx0 - dx) / s * m.fx) - 1), sx1 = Math.min(m.c.width, Math.ceil((vx1 - dx) / s * m.fx) + 1);
+    const sy0 = Math.max(0, Math.floor((vy0 - dy) / s * m.fy) - 1), sy1 = Math.min(m.c.height, Math.ceil((vy1 - dy) / s * m.fy) + 1);
+    if (sx1 > sx0 && sy1 > sy0) x.drawImage(m.c, sx0, sy0, sx1 - sx0, sy1 - sy0, sx0, sy0, sx1 - sx0, sy1 - sy0);
     x.setTransform(1, 0, 0, 1, 0, 0);
     // „Skýrari veggir": blaðið deyft eins og í 383 (globalAlpha 0,85) svo PDF-veggirnir á yfirlaginu standi út.
     if (st.h.syn && st.h.syn.a && st.h.pdfVeggir && st.h.pdfVeggir.length) {
@@ -360,13 +379,15 @@
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     // 6006 px JPEG skjalasafnsins er sjálf óskýr (1–2 px línur, JPEG-suð) — sést vel löngu áður en hún nær 1:1.
     // Skarpt um leið og meira en hálfur díll myndarinnar fer á hvern skjádíl.
-    const upp = (st.cr.width / st.c.width) * dpr > 0.45;
+    const naer = (st.cr.width / st.c.width) * dpr > 0.45;
+    // Skönnun (TIF): frumritið á öllum aðdráttarstigum — það er hreinna en JPEG-ið líka í yfirliti. Vigur: aðeins nær.
+    const upp = st.tif || naer;
     // Forteikna strax við opnun (líka áður en þysjað er) svo skerpan sé tilbúin þegar á þarf að halda.
     const sv = S.pdf ? svaedi(st, S.pdf) : null;
     const tilbuid = !!(S.blad && sv && S.blad.lykill === sv.lykill);
     // ekki reyna aftur í hverjum ramma eftir villu — 30 s bið
     // TIF-frumrit er 10–15 MB: í síma (farsímagögn) sótt fyrst þegar þysjað er inn, í tölvu strax.
-    const biduTif = st.tif && !upp && window.matchMedia && matchMedia('(max-width: 900px)').matches;
+    const biduTif = st.tif && !naer && window.matchMedia && matchMedia('(max-width: 900px)').matches;
     if (!tilbuid && !biduTif && !S.bladBid && !S.bilad[st.slod] && (S.pdf || !S.pdfBid) && Date.now() - (S.villaTimi || 0) > 30000) forteikna(st);
     const lykill = [st.slod, Math.round(st.cr.left), Math.round(st.cr.top), Math.round(st.cr.width), st.c.width,
       st.rymi.x, st.rymi.y, Math.round(st.mr.width), Math.round(st.mr.height), upp, tilbuid, !!(st.h.syn && st.h.syn.a)].join('|');
