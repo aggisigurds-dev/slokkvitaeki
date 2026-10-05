@@ -620,6 +620,19 @@
     }, 500);
   }
 
+  // 05.10.2026: Birgðir (36) opnar vöru beint hér — smellt á mynd eða nafn í birgðalistanum.
+  window.VorurOgThjonusta = {
+    opna: async function(id){
+      id = Number(id);
+      if(window.App && typeof App.switchView === 'function') App.switchView('vorur');
+      if(!_products.some(function(p){ return p.id === id; })) { try { await loadProducts(); } catch(_){} }
+      for(var i = 0; i < 30 && document.getElementById('view-vorur').innerHTML.indexOf('vorur-grid') < 0; i++){
+        await new Promise(function(r){ setTimeout(r, 150); });
+      }
+      if(_products.some(function(p){ return p.id === id; })) openEditor(id);
+    }
+  };
+
   function init(){
     ensureViewVorur();
     injectNav();

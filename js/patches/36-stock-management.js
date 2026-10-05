@@ -145,7 +145,15 @@
   // ── State ─────────────────────────────────────────────────────────────────
   let _items = [];
   let _filter = '';
-  let _catFilter = '';
+  // Flokkur og stöðusía eru útlitsval þessa tækis (localStorage, sbr. CLAUDE.md) — ekki gögn.
+  const LS_SIA = 'birgdir_sia';
+  let _catFilter = '', _stada = '';
+  try { const v = JSON.parse(localStorage.getItem(LS_SIA) || '{}'); _catFilter = v.f || ''; _stada = v.s || ''; } catch (_) {}
+  const geymaSiu = () => { try { localStorage.setItem(LS_SIA, JSON.stringify({ f: _catFilter, s: _stada })); } catch (_) {} };
+  // Myndir söluvara (vorur.mynd — oft data-URL, ~34 KB) sóttar EFTIR að listinn birtist og fylltar í þær myndir
+  // sem eru á skjánum, svo listinn bíði ekki eftir 2–3 MB. Sölu-skyndiminnið (POS) er notað ef það er til.
+  const _myndir = {};
+  let _myndirSottar = false;
 
   // ── Load ──────────────────────────────────────────────────────────────────
   async function load() {
@@ -216,21 +224,32 @@
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
+  // 05.10.2026 (Agnar: „raðað eftir categories og filtera til að finna þá, og kannski litla mynd tengingu í Vörur
+  // og þjónustu"): flokkaflísar með fjölda, stöðusía (ótalið / á lager / ekkert), listinn í flokkahópum (Brunakerfi
+  // fyrst) og smámynd + nafn sem opna vöruna í Vörum og þjónustu.
+  const STODUR = [['', 'Allt'], ['otalid', 'Ótalið'], ['lager', 'Á lager'], ['ekkert', 'Ekkert á lager']];
+  const passarStodu = i => !_stada ? true : _stada === 'otalid' ? i.magn == null : _stada === 'lager' ? i.magn != null && i.magn > 0 : i.magn != null && i.magn <= 0;
+  const flokkRod = (a, b) => ((a === BRUNAKERFI ? 0 : 1) - (b === BRUNAKERFI ? 0 : 1)) || String(a).localeCompare(String(b), 'is');
+
   function render() {
     const el = document.getElementById('birgdir-main');
     if (!el) return;
-    let items = _items;
-    if (_filter) { const q=_filter.toLowerCase(); items=items.filter(i=>(i.nafn||'').toLowerCase().includes(q)||(i.flokkur||'').toLowerCase().includes(q)||(i.birgi||'').toLowerCase().includes(q)); }
-    if (_catFilter) items = items.filter(i => i.flokkur === _catFilter);
+    const q = (_filter || '').trim().toLowerCase();
+    const leitad = _items.filter(i => !q || (i.nafn||'').toLowerCase().includes(q) || (i.flokkur||'').toLowerCase().includes(q) || (i.birgi||'').toLowerCase().includes(q));
+    let items = leitad.filter(passarStodu);
+    if (_catFilter) items = items.filter(i => (i.flokkur || 'almennt') === _catFilter);
 
     const lowCount = _items.filter(erLagt).length;
     const nVorur = _items.filter(i => i.uppruni === 'vorur' && i.flokkur !== BRUNAKERFI).length;
     const nBk = _items.filter(i => i.flokkur === BRUNAKERFI).length;
 
-    const cats = [...new Set(_items.map(i=>i.flokkur||'almennt'))].sort();
-    const catOpts = `<option value="">Allir flokkar</option>` + cats.map(c=>`<option value="${esc(c)}" ${_catFilter===c?'selected':''}>${esc(c)}</option>`).join('');
+    // Flísar: fjöldi miðað við leit + stöðusíu, svo þær segja hvar það sem leitað er að býr.
+    const fjoldi = {};
+    leitad.filter(passarStodu).forEach(i => { const f = i.flokkur || 'almennt'; fjoldi[f] = (fjoldi[f] || 0) + 1; });
+    const cats = [...new Set(_items.map(i => i.flokkur || 'almennt'))].sort(flokkRod);
+    const flis = (lbl, val, n, virk, fall) => `<button type="button" class="btn btn-sm ${virk ? 'btn-primary' : 'btn-outline'}" onclick="window.Stock.${fall}(${JSON.stringify(val).replace(/"/g, '&quot;')})" style="white-space:nowrap">${esc(lbl)}${n == null ? '' : ` <span style="opacity:.65;font-weight:600">${n}</span>`}</button>`;
 
-    let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <div>
         <div style="font-size:19px;font-weight:600">📦 Birgðir</div>
         <div style="font-size:13px;color:var(--ink3)">${_items.length} hlutir &middot; ${nVorur} söluvörur &middot; ${nBk} í Brunakerfi &middot; ${lowCount > 0 ? `<span style="color:#dc2626;font-weight:600">${lowCount} undir lágmarki ⚠</span>` : '<span style="color:#16a34a">Allt í lagi ✓</span>'}</div>
@@ -240,46 +259,91 @@
         <button class="btn btn-primary btn-sm" onclick="Stock.openNew()">+ Ný vara</button>
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      <input type="text" placeholder="Leita…" value="${esc(_filter)}" oninput="window.Stock._setFilter(this.value)"
-        style="flex:1;min-width:160px;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--ink1)">
-      <select onchange="window.Stock._setCat(this.value)" style="padding:8px 10px;border:1px solid var(--brd);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--ink1)">${catOpts}</select>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+      <input id="stk-leit" type="text" placeholder="Leita að vöru, flokki eða birgja…" value="${esc(_filter)}" oninput="window.Stock._setFilter(this.value)"
+        style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--ink1)">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${STODUR.map(([v, l]) => flis(l, v, null, _stada === v, '_setStada')).join('')}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+      ${flis('Allir flokkar', '', leitad.filter(passarStodu).length, !_catFilter, '_setCat')}
+      ${cats.map(c => flis(c, c, fjoldi[c] || 0, _catFilter === c, '_setCat')).join('')}
     </div>`;
 
     if (!items.length) {
-      html += '<div class="empty-state"><div class="es-icon">📦</div><div class="es-title">' + (_filter||_catFilter ? 'Ekkert fannst' : 'Engar birgðir skráðar') + '</div><div class="es-sub">Smelltu á "+ Ný vara" til að bæta við</div></div>';
+      html += '<div class="empty-state"><div class="es-icon">📦</div><div class="es-title">' + (q || _catFilter || _stada ? 'Ekkert fannst' : 'Engar birgðir skráðar') + '</div><div class="es-sub">' + (q || _catFilter || _stada ? 'Breyttu leitinni eða síunni' : 'Smelltu á "+ Ný vara" til að bæta við') + '</div></div>';
     } else {
       html += `<div class="tcard"><table class="dtbl"><thead><tr>
-        <th>Nafn</th><th>Flokkur</th><th>Magn</th><th title="Selt frá upphafi kerfisins (maí 2026), nettó eftir kreditreikninga">Selt</th><th>Lágmark</th><th>Eining</th><th>Kaupverð (án VSK)</th><th>Birgir</th><th></th>
+        <th style="width:46px"></th><th>Nafn</th><th>Magn</th><th title="Selt frá upphafi kerfisins (maí 2026), nettó eftir kreditreikninga">Selt</th><th>Lágmark</th><th>Eining</th><th>Kaupverð (án VSK)</th><th>Birgir</th><th></th>
       </tr></thead><tbody>`;
-      items.forEach(i => {
-        const otalid = i.magn == null;
-        const isLow  = !otalid && i.lagmark != null && i.magn > 0 && i.magn <= i.lagmark;
-        const isZero = !otalid && i.magn <= 0;
-        const magnCls = otalid ? '' : isZero ? 'stock-zero' : isLow ? 'stock-low' : 'stock-ok';
-        const merki = i.flokkur === BRUNAKERFI ? 'selt gegnum Brunakerfis skoðun'
-          : i.uppruni === 'vorur' ? 'Vörur og þjónusta' : '';
-        const kq = "'" + i.k + "'";
-        html += `<tr>
-          <td><strong>${esc(i.nafn)}</strong>${merki?`<span style="margin-left:6px;font-size:10px;color:var(--ink3)">${merki}</span>`:''}${i.notes && (i.uppruni !== 'vorur' || i.flokkur === BRUNAKERFI)?`<div style="font-size:11px;color:var(--ink3)">${esc(i.notes)}</div>`:''}
-          </td>
-          <td><span style="background:var(--bg2);padding:2px 7px;border-radius:4px;font-size:11px">${esc(i.flokkur||'')}</span></td>
-          <td>${otalid ? '<span style="color:var(--ink3);font-style:italic">ótalið</span>' : `<span class="${magnCls}">${i.magn}</span>`}${isLow?'<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠ lítið</span>':''}</td>
-          <td>${i.uppruni === 'vorur' ? `<strong>${Math.round(i.selt)}</strong>${i.selt30 > 0 ? `<div style="font-size:10px;color:var(--ink3)">${Math.round(i.selt30)} sl. 30 d.</div>` : ''}` : '<span style="color:var(--ink3)">—</span>'}</td>
-          <td style="color:var(--ink3)">${i.lagmark == null ? '—' : i.lagmark}</td>
-          <td style="color:var(--ink3)">${esc(i.eining||'stk')}</td>
-          <td>${i.verd_an_vsk ? fmtKr(i.verd_an_vsk) : '—'}</td>
-          <td style="color:var(--ink3)">${esc(i.birgi||'—')}</td>
-          <td><div style="display:flex;gap:4px">
-            <button class="btn btn-ghost btn-sm" onclick="Stock.openNota(${kq})" title="Nota, bæta við eða telja" style="color:var(--blu)">± Nota</button>
-            ${i.uppruni === 'birgdir' ? `<button class="btn btn-ghost btn-sm" onclick="Stock.openEdit(${i.id})" title="Breyta">✎</button>
-            <button class="btn btn-ghost btn-sm" onclick="Stock.deleteItem(${i.id})" title="Eyða" style="color:#dc2626">🗑</button>` : ''}
-          </div></td>
-        </tr>`;
+      const hopar = {};
+      items.forEach(i => { (hopar[i.flokkur || 'almennt'] = hopar[i.flokkur || 'almennt'] || []).push(i); });
+      Object.keys(hopar).sort(flokkRod).forEach(f => {
+        html += `<tr class="stk-hopur"><td colspan="9" style="background:var(--bg2);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);padding:7px 10px">${esc(f)} <span style="opacity:.6;font-weight:600">· ${hopar[f].length}</span>${f === BRUNAKERFI ? '<span style="text-transform:none;letter-spacing:0;font-weight:500;opacity:.7;margin-left:8px">selt gegnum Brunakerfis skoðun, ekki á Sölu</span>' : ''}</td></tr>`;
+        hopar[f].forEach(i => { html += rod(i); });
       });
       html += '</tbody></table></div>';
     }
+    // Stöðugt viðmót (388): leitarreiturinn heldur fókus og bendli, og skrunið helst, þegar listinn er endurteiknaður.
+    const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(el) : null;
     el.innerHTML = html;
+    if (aftur) aftur();
+    fyllaMyndir();
+  }
+
+  function rod(i) {
+    const otalid = i.magn == null;
+    const isLow  = !otalid && i.lagmark != null && i.magn > 0 && i.magn <= i.lagmark;
+    const isZero = !otalid && i.magn <= 0;
+    const magnCls = otalid ? '' : isZero ? 'stock-zero' : isLow ? 'stock-low' : 'stock-ok';
+    const kq = "'" + i.k + "'";
+    const vara = i.uppruni === 'vorur';
+    const opna = vara ? ` onclick="window.Stock._opnaVoru(${i.id})" title="Opna í Vörum og þjónustu" style="cursor:pointer"` : '';
+    const src = vara ? _myndir[i.id] : '';
+    const mynd = vara
+      ? `<div${opna}><img data-stk-mynd="${i.id}" alt="" loading="lazy" ${src ? `src="${esc(src)}"` : ''} style="width:36px;height:36px;object-fit:cover;border-radius:6px;background:var(--bg2);display:${src ? 'block' : 'none'}"><div data-stk-autt="${i.id}" style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:${src ? 'none' : 'flex'};align-items:center;justify-content:center;font-size:15px;opacity:.55">📦</div></div>`
+      : '<div style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:15px;opacity:.4">🔧</div>';
+    return `<tr>
+      <td style="padding:6px 8px">${mynd}</td>
+      <td><strong${opna}>${esc(i.nafn)}</strong>${vara ? '' : '<span style="margin-left:6px;font-size:10px;color:var(--ink3)">verkstæði</span>'}${i.notes && (!vara || i.flokkur === BRUNAKERFI)?`<div style="font-size:11px;color:var(--ink3)">${esc(i.notes)}</div>`:''}</td>
+      <td>${otalid ? '<span style="color:var(--ink3);font-style:italic">ótalið</span>' : `<span class="${magnCls}">${i.magn}</span>`}${isLow?'<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠ lítið</span>':''}</td>
+      <td>${vara ? `<strong>${Math.round(i.selt)}</strong>${i.selt30 > 0 ? `<div style="font-size:10px;color:var(--ink3)">${Math.round(i.selt30)} sl. 30 d.</div>` : ''}` : '<span style="color:var(--ink3)">—</span>'}</td>
+      <td style="color:var(--ink3)">${i.lagmark == null ? '—' : i.lagmark}</td>
+      <td style="color:var(--ink3)">${esc(i.eining||'stk')}</td>
+      <td>${i.verd_an_vsk ? fmtKr(i.verd_an_vsk) : '—'}</td>
+      <td style="color:var(--ink3)">${esc(i.birgi||'—')}</td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick="Stock.openNota(${kq})" title="Nota, bæta við eða telja" style="color:var(--blu)">± Nota</button>
+        ${!vara ? `<button class="btn btn-ghost btn-sm" onclick="Stock.openEdit(${i.id})" title="Breyta">✎</button>
+        <button class="btn btn-ghost btn-sm" onclick="Stock.deleteItem(${i.id})" title="Eyða" style="color:#dc2626">🗑</button>` : ''}
+      </div></td>
+    </tr>`;
+  }
+
+  // Myndirnar settar í þá hnúta sem eru til — enginn endurteikning listans (Stöðugt viðmót, regla 3).
+  function setjaMyndir() {
+    document.querySelectorAll('#birgdir-main img[data-stk-mynd]').forEach(img => {
+      const src = _myndir[img.getAttribute('data-stk-mynd')];
+      if (!src || img.getAttribute('src') === src) return;
+      img.src = src; img.style.display = 'block';
+      const autt = img.parentNode && img.parentNode.querySelector('[data-stk-autt]'); if (autt) autt.style.display = 'none';
+    });
+  }
+  async function fyllaMyndir() {
+    try {
+      const st = window.POS && typeof POS.getState === 'function' ? POS.getState() : null;
+      if (st) [].concat(st.products || [], st.services || []).forEach(v => { const m = v && (v.image_url || v.mynd); if (m && !_myndir[v.id]) _myndir[v.id] = m; });
+    } catch (_) {}
+    setjaMyndir();
+    if (_myndirSottar) return;
+    const vantar = _items.filter(i => i.uppruni === 'vorur' && !_myndir[i.id]).map(i => i.id);
+    if (!vantar.length) return;
+    _myndirSottar = true;
+    const SB = getSB(); if (!SB) return;
+    try {
+      const r = await SB.from('vorur').select('id,mynd,image_url').in('id', vantar);
+      if (!r.error) (r.data || []).forEach(v => { const m = v.image_url || v.mynd; if (m) _myndir[v.id] = m; });
+    } catch (_) {}
+    setjaMyndir();
   }
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
@@ -422,7 +486,9 @@
   window.Stock = {
     load, render, openNew, openEdit, saveItem, deleteItem, openNota, confirmNota, exportCsv,
     _setFilter(v) { _filter=v; render(); },
-    _setCat(v)    { _catFilter=v; render(); }
+    _setCat(v)    { _catFilter=v; geymaSiu(); render(); },
+    _setStada(v)  { _stada=v; geymaSiu(); render(); },
+    _opnaVoru(id) { if (window.VorurOgThjonusta && VorurOgThjonusta.opna) VorurOgThjonusta.opna(id); else if (window.App) App.switchView('vorur'); }
   };
   console.log('[stock-management] installed');
 })();
