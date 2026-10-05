@@ -2585,7 +2585,7 @@
     const doc = slokkvikerfi ? (gild.find(d => tengd != null && String(d.id) === tengd) || gild.find(d => d.doc_type === 'slokkvikerfi'))
       : brunakerfi ? (gild.find(d => tengd != null && String(d.id) === tengd) || gild.find(d => d.doc_type === 'brunakerfi'))
       : (gild.find(d => d.doc_type === 'uttektarskyrsla') || gild[0]);
-    if (doc) return { found: true, kind: 'doc', doc, year: yr };
+    if (doc) return { found: true, kind: 'doc', doc, year: yr, nafn: skyrslaNafn(s) };
     return { found: false, year: yr };
   }
   // Open the resolved report in a new tab (attachment → public storage URL /
@@ -2614,7 +2614,7 @@
   // Úttektarskýrsla sölu → viðhengi ({url} eða {driveId}) fyrir 📧 Senda-gluggann.
   async function skyrslaAttachment(res) {
     if (!res || !res.found) return null;
-    const fn = 'Úttektarskýrsla' + (res.year ? ' ' + res.year : '') + '.pdf';
+    const fn = (res.nafn || 'Úttektarskýrsla') + (res.year ? ' ' + res.year : '') + '.pdf';   // 05.10.2026: Brunakerfis-/Slökkvikerfisskýrsla heitir sínu nafni
     const getUrl = window.CompanyAttachments && CompanyAttachments.getPublicUrl;
     if (res.kind === 'att' && res.att && res.att.path && getUrl) {
       const url = await CompanyAttachments.getPublicUrl(res.att.path);
