@@ -957,7 +957,8 @@
       '.ut-onytt.on{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d);border-color:var(--red-bd,#fca5a5)}',
       '.ut-verk{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--brd);background:var(--surface);color:var(--ink2);border-radius:8px;padding:5px 9px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '.ut-verk svg{flex:none}',
-      '.ut-verk.on{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);border-color:#000;color:#fff}',
+      // 05.10.2026 (Agnar: „Á verkstæði í meira svona dökk metal bláum"): dökkur málmblár, sama uppskrift og Sækja-málmurinn.
+      '.ut-verk.on{background:linear-gradient(145deg,#02060f 0%,#0a1c3a 20%,#123166 43%,#1b4488 53%,#0b2148 74%,#020814 100%);border-color:rgba(84,132,214,.55);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(40,90,190,.6),0 2px 5px rgba(0,0,0,.35)}',
       '.ut-verk.vt-laest{opacity:.75;cursor:default}',
       '.ut-far{display:flex;align-items:center;margin-left:14px;width:40px;justify-content:flex-end}',
       '.ut-act{border:1px solid var(--brd);background:var(--surface);color:var(--ink2);border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}',

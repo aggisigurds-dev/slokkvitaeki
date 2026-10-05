@@ -574,7 +574,9 @@
     ].join('') + '}',
     p('.ut-bulk', 'padding:8px 18px!important;gap:6px!important;min-height:0!important'),
     p('.ut-list .ut-verk', 'background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.18)!important;border-radius:8px!important;color:#1f2530!important;font-family:' + SANS + '!important;font-weight:600!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14)!important'),
-    p('.ut-list .ut-verk.on', 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border-color:#000!important;color:#f6e7b8!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45)!important'),
+    // 05.10.2026 (Agnar: „geturðu gert Á verkstæði í meira svona dökk metal bláum"): virka staðan er dökkur málmblár,
+    // sama uppskrift og græni Sækja-málmurinn (skáhallur stigull, ljósbrún að innan, daufur bjarmi) — sker sig úr svarta.
+    p('.ut-list .ut-verk.on', 'background:linear-gradient(145deg,#02060f 0%,#0a1c3a 20%,#123166 43%,#1b4488 53%,#0b2148 74%,#020814 100%)!important;border-color:rgba(84,132,214,.55)!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.55)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(40,90,190,.6),0 2px 5px rgba(0,0,0,.35)!important'),
     p('.ut-bulk button,.ut-bulk .ut-selall', 'height:32px!important;min-height:0!important;padding:0 10px!important;font-size:12.5px!important;line-height:1!important;white-space:nowrap!important;flex:0 0 auto!important'),
     p('.ut-bulk input', 'height:32px!important;min-height:0!important;font-size:13px!important;padding:0 8px!important'),
     p('.ut-bulk .ut-bulk-lbl', 'font-size:10.5px!important;white-space:nowrap!important'),
