@@ -177,13 +177,23 @@
     // vorur með flokkur 'Brunakerfi' og virkt=false: hann er seldur gegnum útreikning Brunakerfis skoðunar, ekki á Sölu.
     const fraBirgdum = (data || []).map(i => Object.assign({}, i, { k: 'b:' + i.id, uppruni: 'birgdir' }));
     let vorur = [];
+    // Selt hverrar vöru frá upphafi (maí 2026) og síðustu 30 daga — v_vorur_selt (sql/vorur_selt_og_birgdahreyfing.sql):
+    // POS-línur eftir product_id, úttektarlínur eftir „Nýtt · <vara>", aðeins lokaðar sölur, nettó eftir kredit.
+    // Sami gagnagrunnsregla dregur seldar vörur frá birgðum við hverja sölu (trg_solur_birgdahreyfing).
+    const selt = {};
+    try {
+      const rs = await SB.from('v_vorur_selt').select('vara_id,selt,selt_30d,sidast_selt');
+      if (!rs.error) (rs.data || []).forEach(x => { selt[x.vara_id] = x; });
+    } catch (_) {}
     try {
       const r = await SB.from('vorur').select('id,nafn,flokkur,birgdir,kostnadarverd,birgi,lysing,virkt').order('nafn');
       if (!r.error) vorur = (r.data || [])
         .filter(v => (v.virkt || v.flokkur === BRUNAKERFI) && ENGAR_BIRGDIR.indexOf(v.flokkur || '') < 0)
         .map(v => ({ k: 'v:' + v.id, uppruni: 'vorur', id: v.id, nafn: v.nafn, flokkur: v.flokkur || 'Annað',
           magn: v.birgdir == null ? null : Number(v.birgdir), lagmark: null, eining: 'stk',
-          verd_an_vsk: v.kostnadarverd, birgi: v.birgi, notes: v.lysing, sala: !!v.virkt }));
+          verd_an_vsk: v.kostnadarverd, birgi: v.birgi, notes: v.lysing, sala: !!v.virkt,
+          selt: selt[v.id] ? Number(selt[v.id].selt) || 0 : 0, selt30: selt[v.id] ? Number(selt[v.id].selt_30d) || 0 : 0,
+          sidast: selt[v.id] ? selt[v.id].sidast_selt : null }));
     } catch (_) {}
     _items = vorur.concat(fraBirgdum).sort((a, b) =>
       ((a.flokkur === BRUNAKERFI ? 0 : 1) - (b.flokkur === BRUNAKERFI ? 0 : 1)) ||
@@ -240,7 +250,7 @@
       html += '<div class="empty-state"><div class="es-icon">📦</div><div class="es-title">' + (_filter||_catFilter ? 'Ekkert fannst' : 'Engar birgðir skráðar') + '</div><div class="es-sub">Smelltu á "+ Ný vara" til að bæta við</div></div>';
     } else {
       html += `<div class="tcard"><table class="dtbl"><thead><tr>
-        <th>Nafn</th><th>Flokkur</th><th>Magn</th><th>Lágmark</th><th>Eining</th><th>Kaupverð (án VSK)</th><th>Birgir</th><th></th>
+        <th>Nafn</th><th>Flokkur</th><th>Magn</th><th title="Selt frá upphafi kerfisins (maí 2026), nettó eftir kreditreikninga">Selt</th><th>Lágmark</th><th>Eining</th><th>Kaupverð (án VSK)</th><th>Birgir</th><th></th>
       </tr></thead><tbody>`;
       items.forEach(i => {
         const otalid = i.magn == null;
@@ -251,10 +261,11 @@
           : i.uppruni === 'vorur' ? 'Vörur og þjónusta' : '';
         const kq = "'" + i.k + "'";
         html += `<tr>
-          <td><strong>${esc(i.nafn)}</strong>${merki?`<span style="margin-left:6px;font-size:10px;color:var(--ink3)">${merki}</span>`:''}${i.notes?`<div style="font-size:11px;color:var(--ink3)">${esc(i.notes)}</div>`:''}
+          <td><strong>${esc(i.nafn)}</strong>${merki?`<span style="margin-left:6px;font-size:10px;color:var(--ink3)">${merki}</span>`:''}${i.notes && (i.uppruni !== 'vorur' || i.flokkur === BRUNAKERFI)?`<div style="font-size:11px;color:var(--ink3)">${esc(i.notes)}</div>`:''}
           </td>
           <td><span style="background:var(--bg2);padding:2px 7px;border-radius:4px;font-size:11px">${esc(i.flokkur||'')}</span></td>
           <td>${otalid ? '<span style="color:var(--ink3);font-style:italic">ótalið</span>' : `<span class="${magnCls}">${i.magn}</span>`}${isLow?'<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠ lítið</span>':''}</td>
+          <td>${i.uppruni === 'vorur' ? `<strong>${Math.round(i.selt)}</strong>${i.selt30 > 0 ? `<div style="font-size:10px;color:var(--ink3)">${Math.round(i.selt30)} sl. 30 d.</div>` : ''}` : '<span style="color:var(--ink3)">—</span>'}</td>
           <td style="color:var(--ink3)">${i.lagmark == null ? '—' : i.lagmark}</td>
           <td style="color:var(--ink3)">${esc(i.eining||'stk')}</td>
           <td>${i.verd_an_vsk ? fmtKr(i.verd_an_vsk) : '—'}</td>
@@ -367,8 +378,10 @@
   }
 
   function exportCsv() {
-    const hdr = ['Nafn','Flokkur','Magn','Lágmark','Eining','Kaupverð án VSK','Birgir','Uppruni'];
-    const rows = _items.map(i => [i.nafn, i.flokkur, i.magn == null ? '' : i.magn, i.lagmark == null ? '' : i.lagmark, i.eining,
+    const hdr = ['Nafn','Flokkur','Magn','Selt frá upphafi','Selt síðustu 30 daga','Lágmark','Eining','Kaupverð án VSK','Birgir','Uppruni'];
+    const rows = _items.map(i => [i.nafn, i.flokkur, i.magn == null ? '' : i.magn,
+      i.uppruni === 'vorur' ? Math.round(i.selt) : '', i.uppruni === 'vorur' ? Math.round(i.selt30) : '',
+      i.lagmark == null ? '' : i.lagmark, i.eining,
       i.verd_an_vsk == null ? '' : String(i.verd_an_vsk).replace('.', ','), i.birgi || '',
       i.uppruni === 'vorur' ? (i.flokkur === BRUNAKERFI ? 'Brunakerfi' : 'Vörur og þjónusta') : 'Verkstæði']
       .map(x => String(x).replace(/;/g, ',')).join(';'));
