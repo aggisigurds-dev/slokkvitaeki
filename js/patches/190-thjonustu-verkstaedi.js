@@ -170,9 +170,10 @@
   let _reikCoIds = new Set();
   // Sama regla og Ársskoðun 187: brunakerfi/búð kveikja EKKI úttektar-🧾.
   // Ómerkt/ovisst telst úttekt (Hamraborg 7).
+  // 05.10.2026: sama regla og 187 — slökkvikerfisreikningur (386) er ekki slökkvitækjaúttekt.
   function isUttektInvoiceTeg(teg) {
     const t = String(teg || '').toLowerCase();
-    return t !== 'brunakerfi' && t !== 'bud';
+    return t !== 'brunakerfi' && t !== 'bud' && t !== 'slokkvikerfi';
   }
   async function loadReik2026() {
     try {

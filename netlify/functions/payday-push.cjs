@@ -186,10 +186,13 @@ exports.handler = async (event) => {
     // HARD SAFETY GATE: attach the report ONLY when the sale really is an
     // úttekt (source==='uttekt'). A regular POS sale (source 'pos'/'sott'/null)
     // can NEVER carry the report, even if the client asks for it.
+    // 05.10.2026 (Agnar: slökkvikerfisreikningurinn „fari í kröfuyfirlit með skýrslunni og sendir hana með"):
+    // source 'slokkvikerfi' (386) er líka skoðunarreikningur — en HANS skýrsla er aðeins slökkvikerfisskýrslan sem
+    // skoðunin vísar á (findSlokkvikerfiPdf), aldrei slökkvitækjaskýrsla staðarins og aldrei slóð frá vafranum.
     const attachReport = body.attach_report !== false; // default on
     let attachment = null, attachSkipReason = null;
     if (attachReport) {
-      if (sale.source !== 'uttekt') {
+      if (sale.source !== 'uttekt' && sale.source !== 'slokkvikerfi') {
         attachSkipReason = 'sale.source er ekki uttekt (' + (sale.source || 'null') + ') — engin skýrsla fest';
       } else if (site && site.skyrsla_med_krofu === false) {
         // Per-fyrirtæki hak í prófílnum (patch 14): sum félög vilja EKKI
@@ -197,8 +200,12 @@ exports.handler = async (event) => {
         attachSkipReason = 'fyrirtækið er stillt á að fá EKKI úttektarskýrslu með kröfu';
       } else {
         try {
-          attachment = await findReportPdf(sale, body.report_storage_path);
-          if (!attachment) attachSkipReason = 'engin úttektarskýrsla fannst fyrir þennan reikning/ár';
+          attachment = sale.source === 'slokkvikerfi'
+            ? await findSlokkvikerfiPdf(sale)
+            : await findReportPdf(sale, body.report_storage_path);
+          if (!attachment) attachSkipReason = sale.source === 'slokkvikerfi'
+            ? 'engin slökkvikerfisskýrsla fannst fyrir þennan reikning/ár'
+            : 'engin úttektarskýrsla fannst fyrir þennan reikning/ár';
         } catch (e) { attachSkipReason = 'skýrslu-sókn brást: ' + String(e.message || e); }
       }
     } else {
@@ -938,6 +945,36 @@ async function findReportPdf(sale, explicitPath) {
     if (cd && cd.storage_path) path = cd.storage_path;
   }
   if (!path) return null;
+  return downloadReport(path);
+}
+
+// Slökkvikerfisreikningur (source 'slokkvikerfi', 386): skýrslan sem skoðunin sjálf vísar á —
+// slokkvikerfi_skodanir.sala_id = sölunni → doc_id → customer_documents (doc_type 'slokkvikerfi').
+// Varaleið: slökkvikerfisskýrsla SAMA staðar og árs. Engin slóð frá vafranum, engin fyrirtækjaviðhengi
+// (þar eru slökkvitækjaskýrslur). Kallari hefur staðfest sale.source==='slokkvikerfi'.
+async function findSlokkvikerfiPdf(sale) {
+  const h = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const sok = async url => { const r = await fetch(url, { headers: h }); if (!r.ok) return []; const j = await r.json().catch(() => []); return Array.isArray(j) ? j : []; };
+  let path = null;
+  const sk = await sok(`${SUPABASE_URL}/rest/v1/slokkvikerfi_skodanir?sala_id=eq.${encodeURIComponent(sale.id)}&select=doc_id&limit=1`);
+  const docId = sk[0] && sk[0].doc_id;
+  if (docId != null) {
+    const d = await sok(`${SUPABASE_URL}/rest/v1/customer_documents?id=eq.${encodeURIComponent(docId)}&doc_type=eq.slokkvikerfi&storage_path=not.is.null&select=storage_path&limit=1`);
+    if (d[0] && d[0].storage_path) path = d[0].storage_path;
+  }
+  if (!path && sale.customer_id) {
+    const year = String(new Date(sale.created_at).getFullYear());
+    const d = await sok(`${SUPABASE_URL}/rest/v1/customer_documents?fyrirtaeki_id=eq.${encodeURIComponent(sale.customer_id)}&doc_type=eq.slokkvikerfi&year=eq.${encodeURIComponent(year)}&storage_path=not.is.null&or=(is_duplicate.is.null,is_duplicate.eq.false)&select=storage_path&order=id.desc&limit=1`);
+    if (d[0] && d[0].storage_path) path = d[0].storage_path;
+  }
+  if (!path) return null;
+  const skjal = await downloadReport(path);
+  // geymsluheitið (2026_2_1791207520678.pdf) segir viðtakandanum ekkert
+  skjal.name = 'Slokkvikerfisskyrsla-' + String(new Date(sale.created_at).getFullYear()) + '.pdf';
+  return skjal;
+}
+
+async function downloadReport(path) {
   // Sumar vistaðar slóðir bera bucket-nafnið fremst („samningar/company_...")
   // — þá varð URL-ið samningar/samningar/... og storage svaraði 400, svo
   // skýrslan fylgdi aldrei hjá þeim félögum (fannst 13.08 á sölu R-000395).

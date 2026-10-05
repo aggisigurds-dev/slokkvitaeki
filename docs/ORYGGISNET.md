@@ -678,6 +678,25 @@ baseline rows and lowering the constant is how the net tightens over time.
   `fetch('/api/payday-push')`, `.from('solur').update`, `.delete(` og `localStorage` → RAUTT (5 brot);
   raunskrár → GRÆNT. `audit-daudar-siur` fékk undanþágu fyrir `krofu_verkferli` MEÐ ÁSTÆÐU — taka út
   þegar SQL-inu er beitt. Varðir vírar (`10/233/254`, `121`, `payday-push`, `153/187`) ósnertir.
+- **05.10.2026 — Slökkvikerfisreikningur (386) inn í reikninga- og kröfuleiðina.** Agnar (Hótel Varmaland): „getum
+  ekki útbúið reikninginn, bara skýrsluna … láta þetta virka svipað og ársskoðun … fari svo í kröfuyfirlit með
+  skýrslunni og sendir hana með". 386 fékk „Búa til reikning" (forskoðun → staðfesta → `solur` final,
+  `source:'slokkvikerfi'`, sama stærðfræði og 165 `totalsFromLinur`) og tekur skoðunina (`reikningur_at`, skilyrt á
+  `updated_at`) ÁÐUR en salan verður til; mistekin sala sleppir takinu + `logProblem('slokkvikerfi_reikningur_failed')`;
+  strandað tak (>2 mín, engin sala_id) leitar fyrst að sölunni sem gæti hafa orðið til. **Vörðu vírarnir sem snertust:**
+  `payday-push` — skýrslugáttin hleypir nú `uttekt` OG `slokkvikerfi` í gegn (aðrar sölur áfram aldrei); slökkvikerfissala
+  fær AÐEINS `findSlokkvikerfiPdf` (skoðun.sala_id → doc_id → customer_documents doc_type slokkvikerfi, varaleið sama
+  staður+ár; engin fyrirtækjaviðhengi, engin slóð frá vafranum). `187` — `isUttektInvoiceTeg` og skipNums telja
+  `slokkvikerfi` EKKI sem slökkvitækjaúttekt (annars falskt grænt ár á Varmalandi), sama í 190. `166 resolveSkyrsla` —
+  slökkvikerfissala fær aðeins sína skýrslu (Varmaland á líka slökkvitækjaskýrslu 2026). Invoice OUT (10/233) aðeins
+  KALLAÐ. DB: `sql/slokkvikerfi_reikningur.sql` (beitt) — `set_vidskiptategund` merkir source slokkvikerfi →
+  vidskiptategund slokkvikerfi (var 'uttekt' úr línunum Skýrslugerð+Akstur); `auto_pair` parar slíkan reikning aldrei
+  sjálfkrafa (hefði getað lokað bíðandi úttektarpari sem „klárað"). Vörður `tools/audit-slokkvikerfi-reikningur.cjs` —
+  **sannreyndur í báðar áttir:** fjórar plantaðar veikingar (gátt opnuð fyrir pos, viðhengi í 166, 190 án slokkvikerfi,
+  takinu ekki sleppt) → RAUTT hver um sig; raunskrár → GRÆNT. Prófað í vafra með ÖLLUM skrifum lokuðum/fölsuðum:
+  forskoðun 29.000 + 6.960 = 35.960 kr, röð skrifa tak → sala → tenging, PDF-vistun kölluð með R-númerinu; Kröfu
+  yfirlit með gervisölu sýnir „Slökkvikerfisskýrsla 2026 fylgir" og payday-push-beiðnin (stöðvuð) ber slóð skjals
+  10103; `findSlokkvikerfiPdf` sótti 44 kB %PDF af Varmalandi og null á stað án slökkvikerfis.
 - *Add a line here every time you make something bulletproof.*
 
 ---

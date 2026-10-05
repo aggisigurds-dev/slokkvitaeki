@@ -27,7 +27,14 @@
  * svo skýrslan getur aldrei orðið falskt úttektarpar. HÚN FER EKKI í CompanyAttachments: 199 (attKind)
  * myndi lesa „skoðunarskýrsla" í skráarnafninu sem slökkvitækja-úttekt og lita ár 🧯 grænt — sama gildra
  * og brunakerfið lenti í 29.07.2026. Skjalaspjaldið fær sinn þriðja flokk í sér verki.
- * Ekki enn: reikningsdrög (387).
+ * REIKNINGUR (05.10.2026, Agnar: „getum ekki útbúið reikninginn, bara skýrsluna — fyrir Varmaland … láta þetta virka
+ * svipað og fyrirtæki í þjónustu ársskoðun … fari svo í kröfuyfirlit með skýrslunni og sendir hana með"):
+ * „🧾 Búa til reikning" eftir að skoðun er lokið — sama ferill og 165 (Ársskoðun): forskoðun reikningsins
+ * (SalaInvoice) → „Staðfesta" → sala í `solur` (status final, greitt_med reikningur, source 'slokkvikerfi',
+ * customer_id/kt/base) → reikningur PDF í skjöl (233) → Kröfu yfirlit, sem sendir slökkvikerfisskýrsluna með (166).
+ * Gagnagrunnurinn merkir söluna vidskiptategund 'slokkvikerfi' (sql/slokkvikerfi_reikningur.sql) svo hún litar
+ * hvorki slökkvitækjaárið (187/190) né parast við úttektarskýrslu. Skoðunin er TEKIN (reikningur_at) áður en salan
+ * verður til, svo tvær vélar geta ekki búið til tvo reikninga; sala_id tengir þær á eftir. Ógilt sala opnar aftur.
  *
  * Public: window.SlokkvikerfiSkyrsla = { mount, prenta }.
  */
@@ -43,7 +50,7 @@
   const KOSTN = [['skodun', 'Skoðun slökkvikerfis', 'magn'], ['akstur', 'Akstur', 'km / ferð'], ['skyrsla', 'Skýrslugerð', 'magn'], ['vinna', 'Vinna', 'klst']];
   const LS_MADUR = 'slokkvikerfi_skodunarmadur';   // þægindi eins vafra: síðasta nafn skoðunarmanns
 
-  const S = { fid: null, kerfi: [], bru: false, k: null, rod: null, data: null, kost: null, flipi: 'ars', timer: null, saving: false, dirty: false, stoppad: false };
+  const S = { fid: null, kerfi: [], bru: false, k: null, rod: null, sala: null, data: null, kost: null, flipi: 'ars', timer: null, saving: false, dirty: false, stoppad: false };
 
   function SB() { return (window.DB && DB.sb) || null; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -60,6 +67,11 @@
   function arNu() { return new Date().getFullYear(); }
   function notandi() { try { return (window.CurrentUser && CurrentUser.name) || localStorage.getItem(LS_MADUR) || 'app'; } catch (_) { return 'app'; } }
   function lokad() { return !!(S.rod && S.rod.status === 'final'); }
+  // Reikningur læsir kostnaðarlínunum — nema salan hafi verið ógilt (þá má gera nýjan reikning).
+  function reiknLas() {
+    if (S.sala && S.sala.status === 'void') return false;
+    return !!(S.rod && (S.rod.reikningur_at || S.rod.sala_id));
+  }
   function $(sel) { const h = document.getElementById('_sks-host'); return h ? h.querySelector(sel) : null; }
 
   // ── gögn ────────────────────────────────────────────────────────────────────
@@ -122,7 +134,7 @@
   // ── vistun ──────────────────────────────────────────────────────────────────
   // Kostnaðarlínur má laga eftir að skoðun er lokið (verð liggur oft ekki fyrir á staðnum) — aðeins reikningur læsir þeim.
   function merkjaBreytt() {
-    if (S.stoppad || (S.rod && (S.rod.reikningur_at || S.rod.sala_id))) return;
+    if (S.stoppad || reiknLas()) return;
     S.dirty = true; stadaTexti('…', '');
     clearTimeout(S.timer); S.timer = setTimeout(vista, 1200);
   }
@@ -204,7 +216,7 @@
       : '<div class="hint">Smelltu á reit í „Sjá ath." til að fá númeraða athugasemd.</div>';
   }
   function kostHtml() {
-    const ko = S.kost, ro = !!(S.rod && (S.rod.reikningur_at || S.rod.sala_id)), dis = ro ? ' disabled' : '';
+    const ko = S.kost, ro = reiknLas(), dis = ro ? ' disabled' : '';
     const inn = (attr, kf, gildi, ph, cls) => '<input class="kf' + (cls ? ' ' + cls : '') + '" inputmode="decimal" placeholder="' + ph + '" data-kf="' + kf + '"' + attr + ' value="' + esc(gildi == null ? '' : gildi) + '"' + dis + '>';
     const lina = (attr, heitiHtml, r, ein) => '<div class="kline">' + heitiHtml + inn(attr, 'magn', r.magn, ein) + inn(attr, 'verd', r.verd, 'kr') + inn(attr, 'afsl', r.afsl, '%') + '<div class="ksum" data-ksum="1"' + attr + '></div></div>';
     const vegna = ko.vegna != null ? ko.vegna : 'Skoðun slökkvikerfis — ' + (S.k.heiti || '') + (S.data.haus.dags ? ', ' + dm(S.data.haus.dags) : '');
@@ -212,7 +224,7 @@
       '<textarea class="kgl" data-ktop="glosur" rows="5" placeholder="t.d. sækja bræðivör 182°C × 6 · vinna: skipt um afhleypivír · hringja í kokkinn fyrir komu"' + dis + '>' + esc(ko.glosur || '') + '</textarea></div>' +
       '<div class="khd"><b>🧾 REIKNINGUR</b><span class="sp"></span><span id="_sks-kvantar"></span></div>' +
       '<div class="kstada"><span class="' + (S.rod && S.rod.skyrsla_at ? 'ok' : 'bid') + '">📄 Skoðunarskýrsla ' + arNu() + ' — ' + (S.rod && S.rod.skyrsla_at ? 'PDF vistað ' + esc(dm(S.rod.skyrsla_at)) : lokad() ? 'skoðun lokið, PDF VANTAR' : 'í vinnslu') + '</span>' +
-        '<span class="' + (S.rod && S.rod.reikningur_at ? 'ok' : 'bid') + '">🧾 Reikningur ' + arNu() + ' — ' + (S.rod && S.rod.reikningur_at ? 'kominn ' + esc(dm(S.rod.reikningur_at)) : 'enginn') + '</span></div>' +
+        '<span class="' + (ro ? 'ok' : 'bid') + '">🧾 Reikningur ' + arNu() + ' — ' + reiknStada() + '</span></div>' +
       '<div class="kskjol"><span class="hint">Vistaðar skýrslur:</span> <span id="_sks-skyrslur"><span class="hint">…</span></span></div>' +
       '<label class="klbl">🧾 Texti á reikning <small>sést sem „Vegna…" lína á reikningnum</small></label><input class="kf t" data-ktop="vegna" value="' + esc(vegna) + '"' + dis + '>' +
       '<div class="kline h"><div>Tegund</div><div>Fjöldi</div><div>Per stk</div><div>Afsl.</div><div>Samtals</div></div>' +
@@ -225,7 +237,7 @@
         '<div><span>Afsláttur <input class="kf mini" inputmode="decimal" placeholder="%" data-ktop="afslattur" value="' + esc(ko.afslattur == null ? '' : ko.afslattur) + '"' + dis + '> %</span><b id="_sks-t-afsl"></b></div>' +
         '<div><span>VSK 24%</span><b id="_sks-t-vsk"></b></div>' +
         '<div class="alls"><span>SAMTALS M. VSK</span><b id="_sks-t-alls"></b></div></div>' +
-      '<div class="hint" style="margin-top:8px">Línurnar vistast með skoðuninni og fara óbreyttar í reikningsdrögin. Reikningsgerðin sjálf er næsta skref — hér er enginn takki fyrr en hann gerir eitthvað.</div>';
+      reiknTakkar(ro);
   }
   // Summur uppfærðar Á STAÐNUM — engin endurteikning, svo Tab milli reita heldur fókus.
   function uppfaeraSummur() {
@@ -488,7 +500,7 @@
   }
   async function opnaAftur() {
     const sb = SB(); if (!sb || !S.rod) return;
-    if (S.rod.reikningur_at || S.rod.sala_id) { toast('Reikningur er kominn á þessa skoðun — hún verður ekki opnuð aftur héðan.'); return; }
+    if (reiknLas()) { toast('Reikningur er kominn á þessa skoðun — hún verður ekki opnuð aftur héðan.'); return; }
     const { data, error } = await sb.from('slokkvikerfi_skodanir').update({ status: 'draft', skodad_at: null, skyrsla_at: null, updated_by: notandi() }).eq('id', S.rod.id).eq('updated_at', S.rod.updated_at).select('*');
     if (error || !data || !data[0]) { toast('⚠ Tókst ekki að opna aftur: ' + ((error && error.message) || 'skoðuninni var breytt annars staðar')); return; }
     S.rod = data[0]; syna(); toast('Skoðunin er opin aftur — skrefin „Skoðað" og „Skýrsla" voru tekin af; PDF-ið uppfærist við næstu lok');
@@ -499,11 +511,197 @@
     S.k = k; S.stoppad = false; S.dirty = false;
     const co = ((window.Companies && Companies.list) || []).find(x => x.id === S.fid) || {};
     S.rod = await saekjaSkodun(k);
+    S.sala = await saekjaSolu(S.rod);
     const d = S.rod && S.rod.data && S.rod.data.haus ? S.rod.data : tomtBlad(k, co);
     ['bun', 'auk', 'vok', 'eld'].forEach(h => { if (!Array.isArray(d[h])) d[h] = tomtBlad(k, co)[h]; });
     S.data = d; S.kost = Object.assign({ annad: [] }, (S.rod && S.rod.kostnadur) || {}); if (!Array.isArray(S.kost.annad)) S.kost.annad = [];
     if (!S.rod && S.kost.afslattur == null && +co.afslattur_pct > 0) S.kost.afslattur = String(+co.afslattur_pct);   // sami afsláttur og prófíllinn ber; breytanlegt
     syna();
+  }
+
+  // ── reikningur (sama ferill og 165 Ársskoðun) ──────────────────────────────
+  async function saekjaSolu(rod) {
+    const sb = SB(); if (!sb || !rod || !rod.sala_id) return null;
+    try {
+      const r = await sb.from('solur').select('id,num,status,samtals,created_at,krafa_sent_at,paid_at,dk_invoice_id').eq('id', rod.sala_id).limit(1);
+      return (r.data && r.data[0]) || null;
+    } catch (_) { return null; }
+  }
+  function reiknStada() {
+    const sa = S.sala;
+    if (sa && sa.status === 'void') return esc(sa.num || '') + ' ógiltur — má búa til nýjan';
+    if (sa) return esc(sa.num || '') + ' · ' + (sa.paid_at ? 'greiddur' : (sa.krafa_sent_at || sa.dk_invoice_id) ? 'krafa send' : 'í Kröfu yfirliti') + ' · ' + esc(dm(sa.created_at));
+    if (S.rod && S.rod.reikningur_at) return 'í vinnslu ' + esc(dm(S.rod.reikningur_at));
+    return 'enginn';
+  }
+  // Tak sem tengdist aldrei sölu (vafri lokaðist milli skrefa) — eftir 2 mín má klára það; stofnaReikning leitar þá
+  // fyrst að sölunni sem gæti hafa orðið til, svo enginn reikningur tvítekst.
+  function takStrand() {
+    const r = S.rod; if (!r || !r.reikningur_at || r.sala_id) return false;
+    return Date.now() - Date.parse(r.reikningur_at) > 120000;
+  }
+  function reiknTakkar(ro) {
+    const st = 'margin-top:12px;width:100%;padding:11px 14px;border-radius:9px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;';
+    if (ro && S.sala) return '<button type="button" data-act="skoda-reikning" style="' + st + 'background:#fff;color:#1e293b;border:1px solid #cbd5e1">🖨 Skoða reikning ' + esc(S.sala.num || '') + '</button>' +
+      '<div class="hint" style="margin-top:6px">Reikningurinn er í Kröfu yfirliti og sendist þaðan — slökkvikerfisskýrslan fylgir með. Línurnar eru læstar.</div>';
+    if (ro && takStrand()) return '<button type="button" data-act="reikningur" style="' + st + 'background:#b45309;color:#fff;border:0">🧾 Ljúka reikningsgerð</button>' +
+      '<div class="hint" style="margin-top:6px">Reikningsgerð hófst ' + esc(dm(S.rod.reikningur_at)) + ' en tengdist ekki skoðuninni. Kerfið leitar fyrst að reikningnum sem gæti hafa orðið til — enginn tvítekst.</div>';
+    if (ro) return '<div class="hint" style="margin-top:8px">Reikningur er í vinnslu á annarri vél — endurhlaðið eftir smástund.</div>';
+    if (!lokad()) return '<button type="button" disabled style="' + st + 'background:#e2e8f0;color:#64748b;border:0;cursor:not-allowed">🧾 Búa til reikning</button><div class="hint" style="margin-top:6px">Ljúktu skoðuninni fyrst — reikningurinn fylgir skýrslunni.</div>';
+    if (!reikna(S.kost)) return '<button type="button" disabled style="' + st + 'background:#e2e8f0;color:#64748b;border:0;cursor:not-allowed">🧾 Búa til reikning</button><div class="hint" style="margin-top:6px">Settu verð á línurnar fyrst.</div>';
+    return '<button type="button" data-act="reikningur" style="' + st + 'background:#166534;color:#fff;border:0;box-shadow:0 1px 3px rgba(22,101,52,.3)">🧾 Búa til reikning — ' + kr(reikna(S.kost).medVsk) + '</button>' +
+      '<div class="hint" style="margin-top:6px">Forskoðun fyrst; staðfest reikningur fer í Kröfu yfirlit og slökkvikerfisskýrslan sendist með.</div>';
+  }
+  // Línur: sama röð og reikna() (Skoðun · Vinna · annað · Skýrslugerð · Akstur). Línuafsláttur BAKAÐUR í einingaverðið og
+  // merktur „· −N% afsl." (165/273-venjan — patch 10 sýnir Afsl.%-dálkinn); heildarafsláttur í `afslattur` (kr m. vsk).
+  function reikningsLinur(ko) {
+    const ut = [];
+    const lina = (heiti, r) => {
+      const v = tala(r && r.verd); if (!v) return;
+      const m = tala(r.magn) || 1, a = Math.min(100, Math.max(0, tala(r.afsl)));
+      ut.push({ type: 'service', desc: heiti + (a ? ' · −' + String(a).replace('.', ',') + '% afsl.' : ''), qty: m,
+        unit_price_ex_vat: Math.round(v * (1 - a / 100) * 100) / 100, vsk_pct: 24, ref: '' });
+    };
+    lina('Skoðun slökkvikerfis', ko.skodun); lina('Vinna', ko.vinna);
+    (ko.annad || []).forEach(r => lina(String(r.heiti || '').trim() || 'Annar kostnaður', r));
+    lina('Skýrslugerð', ko.skyrsla); lina('Akstur', ko.akstur);
+    return ut;
+  }
+  // Sama stærðfræði og 165 totalsFromLinur — sú sem SalaInvoice prentar (VSK tekur afgangs-aurinn).
+  function reikningsSummur(linur, afslPct) {
+    let subEx = 0, vsk = 0;
+    linur.forEach(l => { const e = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0); subEx += e; vsk += e * (l.vsk_pct == null ? 24 : Number(l.vsk_pct)) / 100; });
+    const g = Math.max(0, Math.min(100, Number(afslPct) || 0)), gross = subEx + vsk;
+    const afsl = g > 0 ? Math.round(gross * g / 100) : 0, total = Math.round(gross) - afsl, ex = Math.round(subEx * (1 - g / 100));
+    return { subEx: ex, vsk: total - ex, total, afslattur: afsl };
+  }
+  function vegnaTexti() {
+    const ko = S.kost || {};
+    return String(ko.vegna != null ? ko.vegna : 'Skoðun slökkvikerfis — ' + (S.k.heiti || '') + (S.data.haus.dags ? ', ' + dm(S.data.haus.dags) : '')).trim();
+  }
+  async function vidskiptavinur() {
+    const sb = SB(); let c = null;
+    try { const r = await sb.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,simi,customer_base_id').eq('id', S.fid).maybeSingle(); c = r.data || null; } catch (_) {}
+    return c || { id: S.fid, nafn: S.data.haus.vidsk || '' };
+  }
+  async function reikningurForskodun() {
+    if (!lokad() || (reiknLas() && !takStrand())) return;
+    clearTimeout(S.timer);
+    if (S.dirty && !(await vista())) return;                // línurnar verða að vera komnar á þjón fyrst
+    const linur = reikningsLinur(S.kost), tot = reikningsSummur(linur, tala(S.kost.afslattur));
+    if (!linur.length) { toast('Settu verð á línurnar fyrst.'); return; }
+    const co = await vidskiptavinur();
+    const syndi = reikna(S.kost), lofad = syndi ? Math.round(syndi.medVsk) : null;
+    const sala = { num: '(Forskoðun — óvistað)', customer_nafn: co.nafn || '', customer_id: S.fid, starfsmadur: (S.data.haus.madur || '').trim() || 'Kassi',
+      linur, upphaed_an_vsk: tot.subEx, vsk_upphaed: tot.vsk, samtals: tot.total, afslattur: tot.afslattur, greitt_med: 'reikningur',
+      athugasemdir: vegnaTexti(), created_at: new Date().toISOString() };
+    syna_forskodun(sala, co, lofad, tot);
+  }
+  function syna_forskodun(sala, co, lofad, tot) {
+    const fyrri = document.getElementById('_sksr-forskodun'); if (fyrri) fyrri.remove();
+    const misraemi = lofad != null && Math.abs(lofad - tot.total) > 2;
+    const dlg = document.createElement('div'); dlg.id = '_sksr-forskodun';
+    dlg.style.cssText = 'position:fixed;inset:0;z-index:100050;background:rgba(15,23,42,.7);display:flex;align-items:center;justify-content:center;padding:18px';
+    dlg.innerHTML = '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.4);width:min(960px,calc(100vw - 32px));height:calc(100vh - 60px);display:flex;flex-direction:column;overflow:hidden">' +
+      '<div style="padding:12px 18px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#fef3c7"><div>' +
+      '<div style="font-size:14px;font-weight:800;color:#92400e">📄 Forskoðun reiknings — slökkvikerfi · ekki vistað enn</div>' +
+      '<div style="font-size:11px;color:#78350f;margin-top:2px">Svona mun reikningurinn líta út. „Aftur" til að breyta — „Staðfesta" býr hann til og setur í Kröfu yfirlit.</div></div>' +
+      '<button type="button" data-x="loka" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:#78350f;padding:6px">✕</button></div>' +
+      (misraemi ? '<div style="padding:10px 18px;background:#fee2e2;border-bottom:2px solid #dc2626;color:#991b1b;font-size:13px;font-weight:700">⚠ MISRÆMI: blaðið sýndi ' + kr(lofad) + ' en reikningurinn segir ' + kr(tot.total) + '. Farðu „Aftur" og athugaðu línurnar.</div>' : '') +
+      '<iframe style="flex:1;border:none;background:#fff"></iframe>' +
+      '<div style="padding:14px 18px;border-top:1px solid #e2e8f0;background:#f8fafc;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">' +
+      '<button type="button" data-x="loka" style="padding:10px 18px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">← Aftur — breyta enn</button>' +
+      '<button type="button" data-x="stadfesta" style="padding:10px 22px;background:#166534;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:800">✓ Staðfesta — búa til reikning</button></div></div>';
+    document.body.appendChild(dlg);
+    const fr = dlg.querySelector('iframe');
+    setTimeout(() => {
+      try {
+        if (window.SalaInvoice && SalaInvoice.renderFromSale) SalaInvoice.renderFromSale(fr.contentWindow, sala, co, {});
+        else { const d = fr.contentDocument; d.open(); d.write('<div style="padding:30px;font-family:Arial;color:#dc2626">Reikningsmótið er ekki tiltækt — get ekki sýnt forskoðun.</div>'); d.close(); }
+      } catch (e) { try { const d = fr.contentDocument; d.open(); d.write('<div style="padding:30px;font-family:Arial;color:#dc2626">Villa: ' + esc((e && e.message) || e) + '</div>'); d.close(); } catch (_) {} }
+    }, 40);
+    const loka = () => { dlg.remove(); document.removeEventListener('keydown', esc_); };
+    const esc_ = e => { if (e.key === 'Escape') loka(); };
+    document.addEventListener('keydown', esc_);
+    dlg.addEventListener('click', async e => {
+      if (e.target === dlg) return loka();
+      const b = e.target.closest('[data-x]'); if (!b) return;
+      if (b.dataset.x === 'loka') return loka();
+      if (misraemi && !confirm('⚠ Reikningurinn (' + kr(tot.total) + ') stemmir EKKI við blaðið (' + kr(lofad) + ').\n\nBúa hann til SAMT?')) return;
+      b.disabled = true; b.textContent = 'Vinn úr…';
+      const ok = await stofnaReikning(sala, co, tot);
+      if (ok) loka(); else { b.disabled = false; b.textContent = '✓ Staðfesta — búa til reikning'; }
+    });
+  }
+  async function stofnaReikning(sala, co, tot) {
+    const sb = SB(); if (!sb || !S.rod) return false;
+    const vandi = (kind, msg) => { try { if (window.logProblem) logProblem(kind, 'slökkvikerfi skoðun ' + S.rod.id + ': ' + msg); } catch (_) {} };
+    // 1) ferskt: er reikningur þegar kominn (önnur vél)?
+    const f = await sb.from('slokkvikerfi_skodanir').select('*').eq('id', S.rod.id).limit(1);
+    const fersk = f.data && f.data[0];
+    if (!fersk) { toast('⚠ Náði ekki í skoðunina — reyndu aftur'); return false; }
+    if (fersk.sala_id) {
+      // brostinn lestur má ALDREI lesast sem „engin sala" — þá yrði reikningurinn tvítekinn
+      const tr = await sb.from('solur').select('id,num,status,samtals,created_at,krafa_sent_at,paid_at,dk_invoice_id').eq('id', fersk.sala_id).limit(1);
+      if (tr.error) { toast('⚠ Gat ekki lesið reikninginn sem skoðunin vísar á — reyndu aftur'); return false; }
+      const til = tr.data && tr.data[0];
+      if (til && til.status !== 'void') { S.rod = fersk; S.sala = til; syna(); toast('Reikningur ' + (til.num || '') + ' er þegar til fyrir þessa skoðun — enginn nýr búinn til.'); return true; }
+    } else if (fersk.reikningur_at) {
+      // önnur vél tók skoðunina: nýtt tak = hún er að vinna; gamalt tak = leita að sölunni sem gæti hafa orðið til
+      if (Date.now() - Date.parse(fersk.reikningur_at) <= 120000) { S.rod = fersk; syna(); toast('Reikningur er í vinnslu á annarri vél — bíddu smástund og endurhlaðið.'); return false; }
+      const fra = new Date(Date.parse(fersk.reikningur_at) - 5000).toISOString();
+      const m = await sb.from('solur').select('*').eq('source', 'slokkvikerfi').eq('customer_id', S.fid).neq('status', 'void').gte('created_at', fra).order('created_at').limit(1);
+      if (m.error) { toast('⚠ Gat ekki leitað að reikningi sem gæti hafa orðið til — reyndu aftur'); return false; }
+      const munadarlaus = m.data && m.data[0];
+      if (munadarlaus) {
+        const l = await sb.from('slokkvikerfi_skodanir').update({ sala_id: munadarlaus.id, updated_by: notandi() }).eq('id', fersk.id).eq('updated_at', fersk.updated_at).select('*');
+        if (l.data && l.data[0]) S.rod = l.data[0];
+        S.sala = munadarlaus; syna();
+        toast('Fann reikning ' + (munadarlaus.num || '') + ' sem varð til ' + dm(munadarlaus.created_at) + ' — tengdur skoðuninni, enginn nýr búinn til.');
+        return true;
+      }
+    }
+    // 2) taka skoðunina (reikningur_at) — skilyrt á updated_at svo aðeins ein vél kemst í gegn
+    const nu = new Date().toISOString();
+    const t = await sb.from('slokkvikerfi_skodanir').update({ reikningur_at: nu, updated_by: notandi() }).eq('id', fersk.id).eq('updated_at', fersk.updated_at).select('*');
+    if (t.error || !t.data || !t.data[0]) { toast('⚠ Skoðuninni var breytt annars staðar á meðan — endurhlaðið og reynið aftur'); return false; }
+    const tekin = t.data[0];
+    // 3) salan
+    const ktd = String(co.kennitala || '').replace(/\D/g, '');
+    const ins = await sb.from('solur').insert({
+      customer_nafn: co.nafn || sala.customer_nafn || '', customer_id: S.fid, customer_kt: ktd || null, customer_base_id: co.customer_base_id || null,
+      starfsmadur: sala.starfsmadur, linur: sala.linur, upphaed_an_vsk: tot.subEx, vsk_upphaed: tot.vsk, samtals: tot.total, afslattur: tot.afslattur,
+      greitt_med: 'reikningur', source: 'slokkvikerfi', athugasemdir: sala.athugasemdir
+    }).select('*').single();
+    if (ins.error || !ins.data) {
+      const sl = await sb.from('slokkvikerfi_skodanir').update({ reikningur_at: null }).eq('id', tekin.id).eq('updated_at', tekin.updated_at).select('id');   // sleppa takinu
+      if (sl.error || !sl.data || !sl.data[0]) vandi('slokkvikerfi_reikningur_tak', 'takinu var ekki sleppt — „Ljúka reikningsgerð" birtist eftir 2 mín');
+      toast('⚠ Reikningurinn vistaðist ekki: ' + ((ins.error && ins.error.message) || 'engin röð'));
+      vandi('slokkvikerfi_reikningur_failed', (ins.error && ins.error.message) || 'engin röð');
+      S.rod = (await saekjaSkodun(S.k)) || S.rod; syna(); return false;
+    }
+    const nySala = ins.data;
+    // 4) tengja söluna við skoðunina
+    const l = await sb.from('slokkvikerfi_skodanir').update({ sala_id: nySala.id, reikningur_at: nu, updated_by: notandi() }).eq('id', tekin.id).eq('updated_at', tekin.updated_at).select('*');
+    if (l.error || !l.data || !l.data[0]) {
+      toast('⚠ Reikningur ' + nySala.num + ' er til, en tengingin við skoðunina vistaðist ekki — láttu vita');
+      vandi('slokkvikerfi_reikningur_tenging', nySala.num + ' ' + ((l.error && l.error.message) || 'engin röð'));
+    } else S.rod = l.data[0];
+    S.sala = nySala;
+    syna();
+    // 5) PDF reikningsins í skjöl (233) + prentgluggi — sama og Ársskoðun
+    try { if (window.UttektInvoicePdf && UttektInvoicePdf.saveForSale) await UttektInvoicePdf.saveForSale(S.fid, nySala); } catch (e) { console.warn('[slokkvikerfi-skyrsla] reikn-pdf', e); }
+    try { if (window.SalaInvoice && SalaInvoice.renderFromSale) { const w = window.open('', '_blank', 'width=900,height=1100'); if (w) SalaInvoice.renderFromSale(w, nySala, co, {}); } } catch (_) {}
+    toast('🧾 Reikningur ' + nySala.num + ' búinn til — kominn í Kröfu yfirlit; slökkvikerfisskýrslan sendist með ✓');
+    return true;
+  }
+  async function skodaReikning() {
+    const sb = SB(); if (!sb || !S.sala) return;
+    const r = await sb.from('solur').select('*').eq('id', S.sala.id).maybeSingle();
+    if (!r.data) { toast('⚠ Náði ekki í reikninginn'); return; }
+    const co = await vidskiptavinur();
+    const w = window.open('', '_blank', 'width=900,height=1100');
+    if (w && window.SalaInvoice && SalaInvoice.renderFromSale) SalaInvoice.renderFromSale(w, r.data, co, {});
   }
 
   // ── atburðir á hýslinum ─────────────────────────────────────────────────────
@@ -513,7 +711,7 @@
       const t = e.target;
       const kb = t.closest('[data-kerfi]'); if (kb) { const k = S.kerfi.find(x => x.id === +kb.dataset.kerfi); if (k) veljaKerfi(k); return; }
       const act = t.closest('[data-act]');
-      if (act) { const a = act.dataset.act; if (a === 'prenta') return prenta(); if (a === 'ljuka') return ljuka(); if (a === 'opna-aftur') return opnaAftur(); if (a === 'pdf') { act.disabled = true; stadaTexti('⏳ Bý til PDF…', ''); return vistaPdf().then(r => { syna(); toast(r.ok ? '✓ PDF vistað í skjöl fyrirtækisins' : '⚠ PDF vistaðist ekki: ' + r.villa); }); } if (a === 'endurhlada') return veljaKerfi(S.k); }
+      if (act) { const a = act.dataset.act; if (a === 'prenta') return prenta(); if (a === 'ljuka') return ljuka(); if (a === 'opna-aftur') return opnaAftur(); if (a === 'pdf') { act.disabled = true; stadaTexti('⏳ Bý til PDF…', ''); return vistaPdf().then(r => { syna(); toast(r.ok ? '✓ PDF vistað í skjöl fyrirtækisins' : '⚠ PDF vistaðist ekki: ' + r.villa); }); } if (a === 'endurhlada') return veljaKerfi(S.k); if (a === 'reikningur') return reikningurForskodun(); if (a === 'skoda-reikning') return skodaReikning(); }
       if (S.stoppad) return;
       const kb2 = t.closest('[data-baeta="kost"]'), kx2 = t.dataset.kx != null;
       if (lokad() && !kb2 && !kx2) return;

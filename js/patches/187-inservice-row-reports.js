@@ -214,9 +214,11 @@
   // slökkvitækja-punktinn — doc_type er alltaf 'reikningur' fyrir báðar þjónustur;
   // raunverulegi merkimiðinn er customer_documents.vidskiptategund. Óþekkt/ovisst
   // halda áfram (77 reikningar) svo Hamraborg 7 o.fl. slokkni ekki.
+  // 05.10.2026: slökkvikerfisreikningur (386, source/vidskiptategund 'slokkvikerfi') er ekki slökkvitækjaúttekt
+  // heldur — sama regla og brunakerfi, annars litaði reikningur fyrir eldhúskerfi slökkvitækjaárið grænt.
   function isUttektInvoiceTeg(teg) {
     const t = String(teg || '').toLowerCase();
-    return t !== 'brunakerfi' && t !== 'bud';
+    return t !== 'brunakerfi' && t !== 'bud' && t !== 'slokkvikerfi';
   }
   async function loadReik(){
     if (reikLoading || reikMap) return; reikLoading = true;
@@ -234,7 +236,7 @@
         sales.forEach(s => {
           const teg = String(s.vidskiptategund || '').toLowerCase();
           const n = String(s.num || '').trim().toUpperCase();
-          if (teg === 'bud' || teg === 'brunakerfi') { if (n) skipNums.add(n); return; }
+          if (teg === 'bud' || teg === 'brunakerfi' || teg === 'slokkvikerfi') { if (n) skipNums.add(n); return; }
           const st = String(s.status || '').toLowerCase();
           if (st === 'cancelled' || st === 'canceled' || st === 'credit' || st === 'void') return;
           if (s.customer_id == null) return;

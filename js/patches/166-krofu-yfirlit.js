@@ -881,6 +881,13 @@
         });
       }
     } catch (_) {}
+    // 05.10.2026: slökkvikerfisreikningur (386) → NÁKVÆMLEGA skýrslan sem skoðunin vísar á (sala_id → doc_id), svo staður
+    // með fleiri en eitt eldhúskerfi sendi rétta skýrslu með hverjum reikningi. Lítil tafla; villa skilur eftir tómt kort.
+    _state.skDocBySala = {};
+    try {
+      const sk = await DB.fetchAll((from, to) => SB.from('slokkvikerfi_skodanir').select('sala_id,doc_id').not('sala_id', 'is', null).order('id').range(from, to));
+      (sk || []).forEach(r => { if (r.doc_id != null) _state.skDocBySala[String(r.sala_id)] = String(r.doc_id); });
+    } catch (_) {}
 
     // Verkbeidnir for pickup status (same approach as patch 152).
     // 21.09.2026 (úttekt): blaðsíðuflett — án þess datt sóttarstaða út aftan við 1.000. röð.
@@ -1298,8 +1305,8 @@
   function midarSkyrslaBtn(s) {
     const res = resolveSkyrsla(s);
     return res.found
-      ? '<button type="button" class="_ky-skyrsla kym-doc is-found" data-id="' + s.id + '" title="Úttektarskýrsla ' + esc(res.year) + ' — opna og yfirfara áður en krafan er send (fylgir kröfunni sem viðhengi)">' + MIC.clip + '<span>Skýrsla</span></button>'
-      : '<button type="button" class="_ky-skyrsla kym-doc is-missing" data-id="' + s.id + '" data-missing="1" title="Engin úttektarskýrsla fundin fyrir ' + esc(res.year) + '">' + MIC.clip + '<span>Skýrsla</span></button>';
+      ? '<button type="button" class="_ky-skyrsla kym-doc is-found" data-id="' + s.id + '" title="' + skyrslaNafn(s) + ' ' + esc(res.year) + ' — opna og yfirfara áður en krafan er send (fylgir kröfunni sem viðhengi)">' + MIC.clip + '<span>Skýrsla</span></button>'
+      : '<button type="button" class="_ky-skyrsla kym-doc is-missing" data-id="' + s.id + '" data-missing="1" title="Engin ' + skyrslaNafn(s).toLowerCase() + ' fundin fyrir ' + esc(res.year) + '">' + MIC.clip + '<span>Skýrsla</span></button>';
   }
   function renderCompanyMidar(grp) {
     const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
@@ -1955,7 +1962,7 @@
         if (!s) return;
         const res = resolveSkyrsla(s);
         if (!res.found) {
-          const msg = 'Engin úttektarskýrsla fundin fyrir ' + res.year;
+          const msg = 'Engin ' + skyrslaNafn(s).toLowerCase() + ' fundin fyrir ' + res.year;
           if (window.Toast && Toast.show) Toast.show('📄 ' + msg); else alert(msg);
           return;
         }
@@ -2075,7 +2082,7 @@
           attachmentChoices: [
             { label: 'Reikningur ' + nr + ' (PDF)', checked: true,
               build: () => ReceiptSender.invoiceAttachment(s.id) },
-            { label: 'Úttektarskýrsla' + (res.year ? ' ' + res.year : ''),
+            { label: skyrslaNafn(s) + (res.year ? ' ' + res.year : ''),
               checked: res.found, disabled: !res.found,
               build: () => skyrslaAttachment(res) },
           ],
@@ -2519,6 +2526,7 @@
   // (solur.customer_id). Kennitala / customer_base_id er EKKI einkvæm — 19 kt
   // ná yfir 78 staði (Center Hótel, Pizzan, Heimaleiga). Fyrsta systkini-skýrsla
   // málaði Arnarhvoll með Skjaldbreið. Skilar {found, ...} — aldrei giskað.
+  function skyrslaNafn(s) { return String((s && s.source) || '').toLowerCase() === 'slokkvikerfi' ? 'Slökkvikerfisskýrsla' : 'Úttektarskýrsla'; }
   function resolveSkyrsla(s) {
     const yr = String(new Date(s.created_at || Date.now()).getFullYear());
     const candidateIds = [];
@@ -2529,8 +2537,13 @@
     // Án customer_id: nafn-endurheimt eða kt AÐEINS þegar kt-in á einn stað.
     if (!candidateIds.length && rec && rec.coId != null) candidateIds.push(rec.coId);
     if (!candidateIds.length && ktSites.length === 1) candidateIds.push(ktSites[0]);
-    // 1) fyrirtækjaviðhengi (Supabase samningar-bucket)
-    try {
+    // 05.10.2026 (Agnar: slökkvikerfisreikningur „fari í kröfuyfirlit með skýrslunni og sendir hana með"): reikningur
+    // úr slökkvikerfisskoðun (386, source 'slokkvikerfi') fær AÐEINS slökkvikerfisskýrslu sama staðar og árs. Hótel
+    // Varmaland á bæði slökkvitækja-úttektarskýrslu og slökkvikerfisskýrslu 2026 — gamla röðunin (úttektarskýrsla
+    // fyrst, viðhengi fyrst) hefði sent slökkvitækjaskýrsluna með eldhúskerfisreikningnum. Annað óbreytt.
+    const slokkvikerfi = String(s.source || '').toLowerCase() === 'slokkvikerfi';
+    // 1) fyrirtækjaviðhengi (Supabase samningar-bucket) — slökkvitækjaskýrslur; slökkvikerfisskýrslan er aldrei þar (386)
+    if (!slokkvikerfi) try {
       if (window.CompanyAttachments && CompanyAttachments.list) {
         for (const coId of candidateIds) {
           const atts = CompanyAttachments.list(coId) || [];
@@ -2554,7 +2567,9 @@
     // Brunakerfis-/slökkvikerfis-skýrsla er notuð þegar engin úttektarskýrsla er til —
     // þá er HÚN skýrsla úttektarinnar (Agnar 30.09.2026, R-001009).
     const gild = docs.filter(d => String(d.year || '') === yr && (d.drive_file_id || d.storage_path));
-    const doc = gild.find(d => d.doc_type === 'uttektarskyrsla') || gild[0];
+    const tengd = slokkvikerfi ? (_state.skDocBySala || {})[String(s.id)] : null;
+    const doc = slokkvikerfi ? (gild.find(d => tengd != null && String(d.id) === tengd) || gild.find(d => d.doc_type === 'slokkvikerfi'))
+      : (gild.find(d => d.doc_type === 'uttektarskyrsla') || gild[0]);
     if (doc) return { found: true, kind: 'doc', doc, year: yr };
     return { found: false, year: yr };
   }
@@ -2629,14 +2644,14 @@
     const res = resolveSkyrsla(s);
     const lab = compact ? 'Skýr.' : 'Skýrsla';
     return res.found
-      ? kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '"', '📄', lab, '#0f7a43', 'Úttektarskýrsla ' + res.year + ' — opna og yfirfara áður en krafan er send (fylgir kröfunni sem viðhengi)', true)
-      : kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '" data-missing="1"', '📄', lab, '#a6adbb', 'Engin úttektarskýrsla fundin fyrir ' + res.year, false);
+      ? kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '"', '📄', lab, '#0f7a43', skyrslaNafn(s) + ' ' + res.year + ' — opna og yfirfara áður en krafan er send (fylgir kröfunni sem viðhengi)', true)
+      : kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '" data-missing="1"', '📄', lab, '#a6adbb', 'Engin ' + skyrslaNafn(s).toLowerCase() + ' fundin fyrir ' + res.year, false);
   }
   function skyrslaIconFor(s) {
     const res = resolveSkyrsla(s);
     return res.found
-      ? kyIcon('_ky-skyrsla', 'data-id="' + s.id + '"', '📄', '#0f7a43', 'Úttektarskýrsla ' + res.year + ' — opna og yfirfara', true)
-      : kyIcon('_ky-skyrsla', 'data-id="' + s.id + '" data-missing="1"', '📄', '#a6adbb', 'Engin úttektarskýrsla fundin fyrir ' + res.year, false);
+      ? kyIcon('_ky-skyrsla', 'data-id="' + s.id + '"', '📄', '#0f7a43', skyrslaNafn(s) + ' ' + res.year + ' — opna og yfirfara', true)
+      : kyIcon('_ky-skyrsla', 'data-id="' + s.id + '" data-missing="1"', '📄', '#a6adbb', 'Engin ' + skyrslaNafn(s).toLowerCase() + ' fundin fyrir ' + res.year, false);
   }
   // 🏦 Senda-gluggi (kemur í stað confirm): sýnir kröfuna + skýrslu-stöðuna.
   // Skýrsla til → hak „fylgir sem viðhengi" (sjálfgefið á, má afhaka) + 👁 opna.
@@ -2648,22 +2663,24 @@
       const wrap = document.createElement('div');
       wrap.id = '_ky-send-modal';
       wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100070;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif';
-      const isUttekt = !!(sale && sale.source === 'uttekt');
+      // payday-push festir skýrslu á úttektar- OG slökkvikerfiskröfur (05.10.2026); aðrar sölur aldrei
+      const isUttekt = !!(sale && (sale.source === 'uttekt' || sale.source === 'slokkvikerfi'));
+      const skNafn = skyrslaNafn(sale);
       let reportHtml;
       if (res.found) {
         reportHtml =
           '<div style="margin:14px 0;padding:12px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px">' +
             '<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13.5px;color:#065f46;font-weight:700">' +
               '<input type="checkbox" id="_ky-send-attach" checked style="width:17px;height:17px;accent-color:#0f7a43;cursor:pointer;flex-shrink:0">' +
-              '<span>📄 Úttektarskýrsla ' + esc(res.year) + ' fylgir kröfunni sem viðhengi</span>' +
+              '<span>📄 ' + skNafn + ' ' + esc(res.year) + ' fylgir kröfunni sem viðhengi</span>' +
             '</label>' +
             '<div style="margin-top:9px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
               '<button type="button" id="_ky-send-open" style="padding:7px 12px;border:1px solid #0f7a43;background:#fff;color:#0f7a43;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700">👁 Opna og yfirfara skýrsluna</button>' +
-              (!isUttekt ? '<span style="font-size:11.5px;color:#b45309">NB: Payday festir skýrsluna aðeins á úttektar-kröfur (source=uttekt).</span>' : '') +
+              (!isUttekt ? '<span style="font-size:11.5px;color:#b45309">NB: Payday festir skýrsluna aðeins á úttektar- og slökkvikerfiskröfur.</span>' : '') +
             '</div>' +
           '</div>';
       } else {
-        reportHtml = '<div style="margin:14px 0;padding:12px 14px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;font-size:13px;color:#64748b">📄 Engin úttektarskýrsla fundin fyrir ' + esc(res.year) + ' — sending er samt leyfð.</div>';
+        reportHtml = '<div style="margin:14px 0;padding:12px 14px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;font-size:13px;color:#64748b">📄 Engin ' + skNafn.toLowerCase() + ' fundin fyrir ' + esc(res.year) + ' — sending er samt leyfð.</div>';
       }
       wrap.innerHTML =
         '<div style="background:#fff;border-radius:16px;padding:22px 24px;max-width:520px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35)">' +
