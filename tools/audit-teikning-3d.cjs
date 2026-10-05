@@ -294,6 +294,7 @@ krefst(/gerd: gerdTaekis\(u && u\.type\)/, 'hvert tæki verður að bera gerð s
 krefst(/teiknaTaekistakn\(mc, mk\.gerd\)/, 'miðar tækjanna verða að bera tákn tegundarinnar (🧯 🔔 slöngukefli — Agnar 04.10.2026)');
 krefst(/new T\.TorusGeometry\(hr\[0\] \* e, hr\[1\] \* e/, 'slöngukeflið í 3D á að vera spóla úr hringjum eins og táknið');
 krefst(/gerd === 'bjalla'\) \{\s+\/\/ viðvörunarbjalla: rauð skál/, 'viðvörunarbjallan verður að eiga líkan í 3D');
+krefst(/hRef = u && haedir\(\)\.find\(x => x && x\.id === u\.haedId\)/, 'handval verður að skrifast í LIFANDI hæðarhlutinn (fundinn eftir auðkenni) — tilvísun frá opnun 3D verður úrelt þegar röð þjónsins berst og þá vistast valið ekki');
 krefst(/veggjaPx: butar \? butar\.length : n, butar, gler, hurdir, hurdEld, eld, holf/, 'undirbua verður að rétta syna3d heilu veggina og glerið');
 krefst(/if \(hd\.butar && hd\.butar\.length\) \{/, 'syna3d verður að teikna heila veggi (einn kassi á vegg) þegar þeir eru til');
 krefst(/kassarUrGrimu\(hd\.veggir, hd\.W, hd\.H\)/, 'gamla ristarleiðin verður að standa sem varaleið fyrir teikningar án veggjanets');

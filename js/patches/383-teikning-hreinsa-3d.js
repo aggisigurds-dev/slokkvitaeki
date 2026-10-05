@@ -2851,7 +2851,7 @@
         if (!document.getElementById('fp-3d')) return;
         const u = undirbua(h, stig1, h.markers, val, einingar, frum, ei);
         if (!u.veggjaPx) { sleppt.push(h.nafn + ' (engir veggir — greindu þá í TurboPaint og „Vista í úttekt“, lestu úr PDF eða dragðu með ✏)'); continue; }
-        u.nafn = h.nafn; u.haedRef = h; ut.push(u);
+        u.nafn = h.nafn; u.haedId = h.id; ut.push(u);
       } catch (e) { console.warn('[383] 3D: ' + h.nafn, e); sleppt.push(h.nafn + ' (náði ekki í teikningu)'); }
     }
     if (!ut.length) { loka3d(); segja('Sjálfvirk veggagreining náði ekki. ' + sleppt.join(' · ') + '.' + (hs.some(x => pdfSlod(x)) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.'); return; }
@@ -2917,7 +2917,10 @@
         };
         sprettur.addEventListener('click', e => {
           const t = e.target.closest('button[data-m]'); if (!t) return;
-          const nr = +sprettur.dataset.h, vi = +sprettur.dataset.v, u = ut[nr], hRef = u && u.haedRef, min = +t.dataset.m;
+          // Hæðin er fundin EFTIR AUÐKENNI á því augnabliki sem valið er: þegar röð þjónsins berst (__eftirSokn) er hæðahlutunum
+          // skipt út, og tilvísun frá því 3D opnaðist benti þá á gamalt eintak sem sjálfvistunin sér ekki (fannst í alvöru
+          // vistunarprófi á lifandi síðunni 05.10.2026: valið sást í 3D en fór aldrei á þjóninn).
+          const nr = +sprettur.dataset.h, vi = +sprettur.dataset.v, u = ut[nr], hRef = u && haedir().find(x => x && x.id === u.haedId), min = +t.dataset.m;
           if (!u || !hRef || !u.butar[vi]) { lokaVali(); return; }
           const v = u.butar[vi], kE3 = Math.max(u.frumB, u.frumH) / 2384;
           // fyrra handval á SAMA vegg víkur
