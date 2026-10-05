@@ -43,8 +43,12 @@ const ky = lesa('js/patches/166-krofu-yfirlit.js');
 const rs = fall(ky, 'resolveSkyrsla');
 if (!rs) brot.push('166: resolveSkyrsla finnst ekki');
 else {
-  if (!/if \(!slokkvikerfi\) try \{[\s\S]{0,200}CompanyAttachments/.test(rs)) brot.push('166: slökkvikerfissala getur fengið fyrirtækjaviðhengi (slökkvitækjaskýrslu)');
+  // 05.10.2026: brunakerfissala (source 'brunakerfi') fékk sömu vörn — skilyrðið er nú `!slokkvikerfi && !brunakerfi`
+  if (!/if \(!slokkvikerfi(?: && !brunakerfi)?\) try \{[\s\S]{0,200}CompanyAttachments/.test(rs)) brot.push('166: slökkvikerfissala getur fengið fyrirtækjaviðhengi (slökkvitækjaskýrslu)');
   if (!/slokkvikerfi \?[^:]*gild\.find\(d => d\.doc_type === 'slokkvikerfi'\)\)\s*:/.test(rs.replace(/\n\s*/g, ' '))) brot.push('166: slökkvikerfissala velur ekki eingöngu doc_type slokkvikerfi');
+  // Brunakerfisreikningur (R-001081/R-001082, 05.10.2026): aldrei slökkvitækjaskýrsla — hvorki viðhengi né úttektarskýrsla
+  if (!/if \(!slokkvikerfi && !brunakerfi\) try \{[\s\S]{0,200}CompanyAttachments/.test(rs)) brot.push('166: brunakerfissala getur fengið fyrirtækjaviðhengi (slökkvitækjaskýrslu)');
+  if (!/brunakerfi \?[^:]*gild\.find\(d => d\.doc_type === 'brunakerfi'\)\)\s*:/.test(rs.replace(/\n\s*/g, ' '))) brot.push('166: brunakerfissala velur ekki eingöngu doc_type brunakerfi');
 }
 
 // (3) 187 / 190
