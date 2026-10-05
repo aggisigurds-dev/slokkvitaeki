@@ -491,6 +491,10 @@
         var birgdirAdur = product.birgdir == null ? '' : String(product.birgdir);
         var birgdirNu = String(document.getElementById('f-birgdir').value || '').trim();
         if(birgdirNu === birgdirAdur || (birgdirAdur === '' && birgdirNu === '0')) delete data.birgdir;
+        // Sama um söluverðið: það má líka breyta á Birgðir-síðunni. Óbreytt verð í forminu (m/vsk, sama vsk)
+        // fer ekki með, svo gamalt form skrifar ekki yfir verð sem var sett þar á meðan.
+        var verdAdurInc = Math.round((product.verd_an_vsk || 0) * (1 + (product.vsk_prosenta || 24) / 100));
+        if(Math.round(inc) === verdAdurInc && vskPct === (product.vsk_prosenta || 24)) delete data.verd_an_vsk;
       }
       if(!data.nafn){alert('Nafn er skilyrði');return;}
       var btn = document.getElementById('vorur-save');

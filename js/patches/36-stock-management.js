@@ -194,12 +194,13 @@
       if (!rs.error) (rs.data || []).forEach(x => { selt[x.vara_id] = x; });
     } catch (_) {}
     try {
-      const r = await SB.from('vorur').select('id,nafn,flokkur,birgdir,kostnadarverd,birgi,lysing,virkt').order('nafn');
+      const r = await SB.from('vorur').select('id,nafn,flokkur,birgdir,kostnadarverd,verd_an_vsk,vsk_prosenta,birgi,lysing,virkt').order('nafn');
       if (!r.error) vorur = (r.data || [])
         .filter(v => (v.virkt || v.flokkur === BRUNAKERFI) && ENGAR_BIRGDIR.indexOf(v.flokkur || '') < 0)
         .map(v => ({ k: 'v:' + v.id, uppruni: 'vorur', id: v.id, nafn: v.nafn, flokkur: v.flokkur || 'Annað',
           magn: v.birgdir == null ? null : Number(v.birgdir), lagmark: null, eining: 'stk',
           verd_an_vsk: v.kostnadarverd, birgi: v.birgi, notes: v.lysing, sala: !!v.virkt,
+          sv: v.verd_an_vsk == null ? null : Number(v.verd_an_vsk), vsk: v.vsk_prosenta == null ? 24 : Number(v.vsk_prosenta),
           selt: selt[v.id] ? Number(selt[v.id].selt) || 0 : 0, selt30: selt[v.id] ? Number(selt[v.id].selt_30d) || 0 : 0,
           sidast: selt[v.id] ? selt[v.id].sidast_selt : null }));
     } catch (_) {}
@@ -273,12 +274,12 @@
       html += '<div class="empty-state"><div class="es-icon">📦</div><div class="es-title">' + (q || _catFilter || _stada ? 'Ekkert fannst' : 'Engar birgðir skráðar') + '</div><div class="es-sub">' + (q || _catFilter || _stada ? 'Breyttu leitinni eða síunni' : 'Smelltu á "+ Ný vara" til að bæta við') + '</div></div>';
     } else {
       html += `<div class="tcard"><table class="dtbl"><thead><tr>
-        <th style="width:46px"></th><th>Nafn</th><th>Magn</th><th title="Selt frá upphafi kerfisins (maí 2026), nettó eftir kreditreikninga">Selt</th><th>Lágmark</th><th>Eining</th><th>Kaupverð (án VSK)</th><th>Birgir</th><th></th>
+        <th style="width:46px"></th><th>Nafn</th><th>Magn</th><th title="Selt frá upphafi kerfisins (maí 2026), nettó eftir kreditreikninga">Selt</th><th>Lágmark</th><th>Eining</th><th>Kaupverð (án VSK)</th><th title="Söluverð með VSK — sama verð og í Vörum og þjónustu og á Sölu. Enter eða smella út vistar.">Söluverð (m/VSK)</th><th title="(söluverð án VSK − kaupverð) / kaupverð">Álagning</th><th>Birgir</th><th></th>
       </tr></thead><tbody>`;
       const hopar = {};
       items.forEach(i => { (hopar[i.flokkur || 'almennt'] = hopar[i.flokkur || 'almennt'] || []).push(i); });
       Object.keys(hopar).sort(flokkRod).forEach(f => {
-        html += `<tr class="stk-hopur"><td colspan="9" style="background:var(--bg2);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);padding:7px 10px">${esc(f)} <span style="opacity:.6;font-weight:600">· ${hopar[f].length}</span>${f === BRUNAKERFI ? '<span style="text-transform:none;letter-spacing:0;font-weight:500;opacity:.7;margin-left:8px">selt gegnum Brunakerfis skoðun, ekki á Sölu</span>' : ''}</td></tr>`;
+        html += `<tr class="stk-hopur"><td colspan="11" style="background:var(--bg2);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);padding:7px 10px">${esc(f)} <span style="opacity:.6;font-weight:600">· ${hopar[f].length}</span>${f === BRUNAKERFI ? '<span style="text-transform:none;letter-spacing:0;font-weight:500;opacity:.7;margin-left:8px">selt gegnum Brunakerfis skoðun, ekki á Sölu</span>' : ''}</td></tr>`;
         hopar[f].forEach(i => { html += rod(i); });
       });
       html += '</tbody></table></div>';
@@ -287,6 +288,7 @@
     const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(el) : null;
     el.innerHTML = html;
     if (aftur) aftur();
+    tengjaVerd(el);
     fyllaMyndir();
   }
 
@@ -310,6 +312,8 @@
       <td style="color:var(--ink3)">${i.lagmark == null ? '—' : i.lagmark}</td>
       <td style="color:var(--ink3)">${esc(i.eining||'stk')}</td>
       <td>${i.verd_an_vsk ? fmtKr(i.verd_an_vsk) : '—'}</td>
+      <td data-stk-sv="${esc(i.k)}">${vara ? svHtml(i) : '<span style="color:var(--ink3)">—</span>'}</td>
+      <td data-stk-al="${esc(i.k)}">${alagningHtml(i)}</td>
       <td style="color:var(--ink3)">${esc(i.birgi||'—')}</td>
       <td><div style="display:flex;gap:4px">
         <button class="btn btn-ghost btn-sm" onclick="Stock.openNota(${kq})" title="Nota, bæta við eða telja" style="color:var(--blu)">± Nota</button>
@@ -317,6 +321,55 @@
         <button class="btn btn-ghost btn-sm" onclick="Stock.deleteItem(${i.id})" title="Eyða" style="color:#dc2626">🗑</button>` : ''}
       </div></td>
     </tr>`;
+  }
+
+  // ── Söluverð (05.10.2026, Agnar: „hafa söluverðið á birgðasíðunni og sé syncað fram og til baka, að ég geti breytt
+  // söluverðum þarna líka … sýna álagningarprósentu ef það er kaupverð"). Sama reitur og Vörur og þjónusta og Sala:
+  // vorur.verd_an_vsk. Slegið inn MEÐ VSK eins og í Vörum og þjónustu; geymt án VSK með vsk_prosenta vörunnar.
+  const medVsk = i => i.sv == null ? null : Math.round(i.sv * (1 + (i.vsk || 24) / 100));
+  function svHtml(i) {
+    const m = medVsk(i);
+    return `<input type="number" min="0" step="1" class="stk-verd" data-k="${esc(i.k)}" value="${m == null ? '' : m}" placeholder="—"
+        title="Söluverð með VSK — Enter eða smelltu út til að vista" style="width:92px;padding:5px 7px;border:1px solid var(--brd);border-radius:6px;font-size:13px;background:var(--bg1);color:var(--ink1)">
+      <div style="font-size:10px;color:var(--ink3);margin-top:2px">${i.sv == null ? (i.sala ? 'ekkert verð' : 'ekki á Sölu') : fmtKr(i.sv) + ' án vsk'}</div>`;
+  }
+  function alagningHtml(i) {
+    const kv = Number(i.verd_an_vsk) || 0;
+    if (i.uppruni !== 'vorur' || !(kv > 0) || i.sv == null || !(i.sv > 0)) return '<span style="color:var(--ink3)">—</span>';
+    const a = (i.sv - kv) / kv * 100;
+    return `<strong style="color:${a < 0 ? '#dc2626' : a < 15 ? '#b45309' : '#16a34a'}">${Math.round(a)}%</strong>`;
+  }
+  async function vistaSoluverd(inp) {
+    const item = finna(inp.getAttribute('data-k'));
+    if (!item || item.uppruni !== 'vorur') return;
+    const txt = String(inp.value || '').trim();
+    const fyrir = medVsk(item);
+    if (txt === '' ? fyrir == null : Number(txt) === fyrir) return;            // óbreytt
+    if (txt === '' && item.sala) { Toast.show('⚠ Vara á Sölu verður að hafa verð — ekki vistað'); inp.value = fyrir == null ? '' : fyrir; return; }
+    const m = txt === '' ? null : Number(txt);
+    if (m != null && !(m >= 0)) { Toast.show('⚠ Ógilt verð'); inp.value = fyrir == null ? '' : fyrir; return; }
+    const an = m == null ? null : Math.round(m / (1 + (item.vsk || 24) / 100) * 100) / 100;
+    const SB = getSB(); if (!SB) { Toast.show('⚠ Ekki tengt gagnagrunni — ekkert vistað'); return; }
+    inp.disabled = true;
+    const r = await SB.from('vorur').update({ verd_an_vsk: an }).eq('id', item.id).select('id,verd_an_vsk').maybeSingle();
+    inp.disabled = false;
+    if (r.error || !r.data) { Toast.show('⚠ Söluverð vistaðist EKKI: ' + ((r.error && r.error.message) || 'engin röð uppfærð')); inp.value = fyrir == null ? '' : fyrir; return; }
+    item.sv = r.data.verd_an_vsk == null ? null : Number(r.data.verd_an_vsk);
+    try { if (window.POS && typeof POS.invalidateVorur === 'function') POS.invalidateVorur(); } catch (_) {}
+    // Aðeins þessir tveir reitir uppfærast — listinn er ekki endurteiknaður (Stöðugt viðmót, regla 3).
+    const k = CSS.escape(item.k);
+    const tSv = document.querySelector('#birgdir-main [data-stk-sv="' + k + '"] div'); if (tSv) tSv.textContent = item.sv == null ? (item.sala ? 'ekkert verð' : 'ekki á Sölu') : fmtKr(item.sv) + ' án vsk';
+    const tAl = document.querySelector('#birgdir-main [data-stk-al="' + k + '"]'); if (tAl) tAl.innerHTML = alagningHtml(item);
+    Toast.show(m == null ? '✓ Söluverð tekið af' : '✓ Söluverð vistað: ' + fmtKr(m) + ' m/vsk');
+  }
+  function tengjaVerd(el) {
+    if (el._stkVerd) return; el._stkVerd = true;
+    el.addEventListener('change', e => { const inp = e.target.closest && e.target.closest('input.stk-verd'); if (inp) vistaSoluverd(inp); });
+    el.addEventListener('keydown', e => {
+      const inp = e.target.closest && e.target.closest('input.stk-verd'); if (!inp) return;
+      if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+      if (e.key === 'Escape') { const it = finna(inp.getAttribute('data-k')); const m = it ? medVsk(it) : null; inp.value = m == null ? '' : m; inp.blur(); }
+    });
   }
 
   // Myndirnar settar í þá hnúta sem eru til — enginn endurteikning listans (Stöðugt viðmót, regla 3).
@@ -442,11 +495,13 @@
   }
 
   function exportCsv() {
-    const hdr = ['Nafn','Flokkur','Magn','Selt frá upphafi','Selt síðustu 30 daga','Lágmark','Eining','Kaupverð án VSK','Birgir','Uppruni'];
+    const hdr = ['Nafn','Flokkur','Magn','Selt frá upphafi','Selt síðustu 30 daga','Lágmark','Eining','Kaupverð án VSK','Söluverð án VSK','Söluverð m/VSK','Álagning %','Birgir','Uppruni'];
     const rows = _items.map(i => [i.nafn, i.flokkur, i.magn == null ? '' : i.magn,
       i.uppruni === 'vorur' ? Math.round(i.selt) : '', i.uppruni === 'vorur' ? Math.round(i.selt30) : '',
       i.lagmark == null ? '' : i.lagmark, i.eining,
-      i.verd_an_vsk == null ? '' : String(i.verd_an_vsk).replace('.', ','), i.birgi || '',
+      i.verd_an_vsk == null ? '' : String(i.verd_an_vsk).replace('.', ','),
+      i.sv == null ? '' : String(i.sv).replace('.', ','), medVsk(i) == null ? '' : medVsk(i),
+      (Number(i.verd_an_vsk) > 0 && i.sv > 0) ? Math.round((i.sv - i.verd_an_vsk) / i.verd_an_vsk * 100) : '', i.birgi || '',
       i.uppruni === 'vorur' ? (i.flokkur === BRUNAKERFI ? 'Brunakerfi' : 'Vörur og þjónusta') : 'Verkstæði']
       .map(x => String(x).replace(/;/g, ',')).join(';'));
     const bom = '﻿';
