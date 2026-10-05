@@ -54,9 +54,10 @@
     const h = document.documentElement;
     return h.getAttribute('data-viewmode') === 'mobile' || h.classList.contains('slokk-phone-dev') || !!(document.body && document.body.classList.contains('appmode'));
   }
-  const OPEN = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
+  const OPEN = window.__HUB_VP || 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';  // window.__HUB_VP: breitt útlit á síma, ákveðið í <head> (index.html, 05.10.2026)
   function vpLaest(c) {
     c = String(c || '');
+    if (window.__HUB_VP && c === window.__HUB_VP) return false;   // breiða útlitið er valið, ekki læsing
     return !c || /user-scalable\s*=\s*(no|0)/i.test(c) || /maximum-scale\s*=\s*1(?:\.0+)?(?![\d.])/i.test(c) || /(^|,)\s*width\s*=\s*\d+/i.test(c);
   }
   function vordur() {

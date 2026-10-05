@@ -46,7 +46,7 @@
   const STYLE_ID = 'app-page-zoom-333';
   const SMIN = 0.3, SMAX = 1.6, SKREF = 0.05;
   const FORSTILLT = [0.5, 0.6, 0.7, 0.85, 1];
-  const HUB_VP = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
+  const HUB_VP = window.__HUB_VP || 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';  // window.__HUB_VP: breitt útlit á síma, ákveðið í <head> (index.html, 05.10.2026)
   const GRUNNUR = { 'view-thjonustu-verkstaedi': 1.6 };        // 26.09: eldri grunnstækkun (óstillt síða)
   // Byrjunarstærð (Agnar 04.10: „reyna að stilla þetta fyrst svo ég geti bara fínpússað") — aðeins í Tölvusíðu-ham
   // (króm > 1,2). Valið með yfirferð í S26-hermun (42/60/80/100 %): miðgildi leturs ≈ 10–11 dp án útflæðis.

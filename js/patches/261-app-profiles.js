@@ -1011,7 +1011,7 @@
 
   // Brunahólf Fjármála-yfirlit viewport: pinch + hard-zoom reflow. 166 used to
   // write width=390 in appmode (getViewMode → mobile) which froze Android zoom.
-  var HUB_VP = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
+  var HUB_VP = window.__HUB_VP || 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';  // window.__HUB_VP: breitt útlit á síma, ákveðið í <head> (index.html, 05.10.2026)
   function setHubViewport() {
     try {
       var vp = document.querySelector('meta[name="viewport"]');

@@ -7,6 +7,35 @@
 <script src="/js/villuvakt.js?v=20260918c"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover"/>
+<script>
+/* BREITT ÚTLIT Á SÍMA — sama útgáfa á öllum símum (05.10.2026)
+ * Agnar: „einn starfsmaður er með fasta einhverja gamla útfærslu" · „aðalútgáfan er ekki svona grá".
+ * Öppin eru hönnuð og stillt á síma í „Tölvusíðu"-ham Chrome: layout 980 px, 353 skalar krómið og 333 efnið.
+ * Sími sem er EKKI í þeim ham fékk mjóa varaútlitið — spjöld í stað töflu (385) og enga Brunastál-húð (418 krefst
+ * 901 px) — svo stilling í Chrome á hverjum síma réð því hvaða útgáfa sást. Nú biður appið sjálft um 980 px breidd
+ * á snertisíma í app-ham; útlitið er það sama hvort sem Tölvusíða er á eða af. Viewport-verðirnir (166, 261, 331,
+ * 333, 336, 410) lesa window.__HUB_VP. Bílstjórinn (219) er undanskilinn — hann er hannaður mjór.
+ * Af á einu tæki: ?breidd=mjo (geymt í localStorage.simi_breidd) · á aftur: ?breidd=breid. */
+(function () {
+  try {
+    var q = new URLSearchParams(location.search), b = q.get('breidd');
+    if (b === 'mjo') localStorage.setItem('simi_breidd', 'mjo');
+    else if (b === 'breid') localStorage.removeItem('simi_breidd');
+    var m = (location.pathname || '').match(/^\/app\/([a-z]+)\/?/);
+    var app = m ? m[1] : q.get('app');
+    if (!app || app === 'bilstjori') return;
+    if (localStorage.getItem('simi_breidd') === 'mjo') return;
+    var stutt = Math.min(screen.width || 0, screen.height || 0);
+    // snertitæki = sama skilgreining og touchPrimary í 353 (króm-skalinn) — þær verða að vera sammála
+    var snerti = !!window.matchMedia && (matchMedia('(pointer: coarse)').matches || ((navigator.maxTouchPoints || 0) > 1 && matchMedia('(hover: none)').matches));
+    if (!snerti || !(stutt > 0 && stutt <= 700)) return;   // sími = sama skilgreining og isPhoneDevice í 166
+    if ((window.innerWidth || 0) >= 901) return;          // þegar breitt (Tölvusíðu-hamur) — ekkert að gera
+    window.__HUB_VP = 'width=980, user-scalable=yes, viewport-fit=cover';
+    var vp = document.querySelector('meta[name="viewport"]');
+    if (vp) vp.setAttribute('content', window.__HUB_VP);
+  } catch (_) {}
+})();
+</script>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#C93C1D"/>
@@ -1109,7 +1138,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/165-visit-workflow.js?v=20261001a"></script>
 <script defer src="/js/patches/372-payday-spegill.js?v=20260911a"></script>
 <script defer src="/js/patches/373-leidsogn-uttektarplan.js?v=20260925afk"></script>
-<script defer src="/js/patches/166-krofu-yfirlit.js?v=20261001b52b"></script>
+<script defer src="/js/patches/166-krofu-yfirlit.js?v=20261005breidd"></script>
 <script defer src="/js/patches/167-hreyfingarlisti.js?v=20261005stal4"></script>
 <script defer src="/js/patches/168-company-inspection-report.js?v=20260921a"></script>
 <script defer src="/js/patches/176-company-report-email.js?v=20260731felag"></script>
@@ -1177,7 +1206,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/254-receipt-sender.js?v=20260731felag"></script>
 <script defer src="/js/patches/255-auto-discount.js?v=20260909vordur"></script>
 <!-- hibernated 2026-07-09 (rangur dökkur titil-bar úr #260, ekki í comps): 260-global-titlebar.js -->
-<script defer src="/js/patches/261-app-profiles.js?v=20261005ferskt"></script>
+<script defer src="/js/patches/261-app-profiles.js?v=20261005breidd"></script>
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
 <script defer src="/js/patches/262-page-editor.js?v=20261005skol"></script>
 <script defer src="/js/patches/319-column-drag.js?v=20260926a"></script>
@@ -1206,10 +1235,10 @@ var Lanstaeki = {
 <script defer src="/js/patches/318-honnunarhamur.js?v=20260926a"></script>
 <script defer src="/js/patches/332-honnunarhamur-ritill.js?v=20260906c"></script>
 <script defer src="/js/patches/330-ars-simi-fullwidth.js?v=20260829mrg"></script>
-<script defer src="/js/patches/331-ars-phone-skjar.js?v=20261003ht"></script>
-<script defer src="/js/patches/333-app-page-zoom.js?v=20261005klipa"></script>
+<script defer src="/js/patches/331-ars-phone-skjar.js?v=20261005breidd"></script>
+<script defer src="/js/patches/333-app-page-zoom.js?v=20261005breidd"></script>
 <script defer src="/js/patches/334-simi-skjar-zoom-compact.js?v=20260830b"></script>
-<script defer src="/js/patches/336-viewport-brunaholf-zoom.js?v=20260830vp"></script>
+<script defer src="/js/patches/336-viewport-brunaholf-zoom.js?v=20261005breidd"></script>
 <script defer src="/js/patches/340-krofu-acts-zoom-scroll.js?v=20260830m2"></script>
 <script defer src="/js/patches/335-krofu-brunaholf-layout.js?v=20260830acts"></script>
 <script defer src="/js/patches/337-fleiri-yfirlit-compact.js?v=20261001b48"></script>
@@ -1342,7 +1371,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/413-afslaettir-c.js?v=20261003ht"></script>
 <script defer src="/js/patches/408-brunakerfi-skyrsla-inni.js?v=20261005yf"></script>
 <script defer src="/js/patches/409-samraeming-sidna.js?v=20261003ht"></script>
-<script defer src="/js/patches/410-simi-yfirferd.js?v=20261003ht"></script>
+<script defer src="/js/patches/410-simi-yfirferd.js?v=20261005breidd"></script>
 <script defer src="/js/patches/406-bordi-utlit.js?v=20260923b"></script>
 <script defer src="/js/patches/407-hledslutakki.js?v=20261001hlada"></script>
 <script defer src="/js/patches/410-thjonustu-tengingar.js?v=20260930a"></script>

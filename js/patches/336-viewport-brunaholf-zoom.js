@@ -20,11 +20,13 @@
   window.__viewportBrunaholf336 = true;
 
   const STYLE_ID = 'viewport-brunaholf-336';
-  const HUB_VP = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
+  const HUB_VP = window.__HUB_VP || 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';  // window.__HUB_VP: breitt útlit á síma, ákveðið í <head> (index.html, 05.10.2026)
 
   function locked(content) {
     const c = String(content || '').toLowerCase().replace(/\s+/g, '');
     if (!c) return true;
+    // Breiða útlitið (width=980) er VALIÐ, ekki læsing — annars skrifaði sync() það aftur og aftur.
+    if (window.__HUB_VP && c === String(window.__HUB_VP).toLowerCase().replace(/\s+/g, '')) return false;
     if (c.indexOf('user-scalable=no') >= 0 || c.indexOf('user-scalable=0') >= 0) return true;
     if (/maximum-scale=1(?:\.0+)?(?:,|$)/.test(c)) return true;
     if (/width=\d+/.test(c)) return true;

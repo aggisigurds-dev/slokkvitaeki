@@ -37,8 +37,8 @@
   const MAX_CSS = 3;
   const START = 1;
   const STEPS = [0.15, 0.18, 0.22, 0.26, 0.32, 0.42, 0.52, 0.65, 0.8, 1, 1.25, 1.6, 2, 2.5, 3];
-  const ZOOM = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
-  const HUB_VP = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
+  const ZOOM = window.__HUB_VP || 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';  // window.__HUB_VP: breitt útlit á síma, ákveðið í <head> (index.html, 05.10.2026)
+  const HUB_VP = window.__HUB_VP || 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
   const MAP = {
     simi: 'mobile', mobile: 'mobile',
     tafla: 'table', table: 'table',

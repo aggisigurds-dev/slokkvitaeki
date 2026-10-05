@@ -401,7 +401,7 @@
         vp.setAttribute('name', 'viewport');
         (document.head || document.documentElement).appendChild(vp);
       }
-      const open = 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';
+      const open = window.__HUB_VP || 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';  // window.__HUB_VP: breitt útlit á síma, ákveðið í <head> (index.html, 05.10.2026)
       if (vp.getAttribute('content') !== open) vp.setAttribute('content', open);
     } catch (_) {}
   }

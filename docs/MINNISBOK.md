@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-10-05 13:23 · 718 virkar staðreyndir
+Sótt 2026-10-05 13:42 · 719 virkar staðreyndir
 
 ---
 
@@ -425,11 +425,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Staðfangaskrá HMS er opin sem WFS: https://geo.fasteignaskra.is/ws/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typename=fasteignaskra:VSTADF_ALLT&outputFormat=application/json&CQL_FILTER=… — nákvæm uppfletting á götu+húsnúmeri, engir CORS-hausar (aðeins af þjóni).**
   <br>Reitir: HEITI_NF (nefnifall) og HEITI_TGF (þágufall — „Dalshrauni" finnst), HUSNR, BOKST, POSTNR, LANDNR, HEINUM, SVFNR (0000 = Reykjavík, 1000 Kópavogur, 1300 Garðabær, 1400 Hafnarfjörður), VEF_BIRTING, HUSMERKING. Gildrur: bil eins og „Bríetartún 9-11" er skráð undir fyrra númerinu; „Borgartún 12"
   <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
-- **Heitinúmerið sem map.is þarf er Heinum-reiturinn í Landeignaskrár-leitinni (geo.fasteignaskra.is/landeignaskra/search?term=) — kemur með landnúmerinu, engin auka-uppfletting.**
-  <br>Sama gildir um Staðfangaskrár-WFS (HEINUM). TurboPaint-leitin skilar nú landnr + heitinr + svf með hverri eign.
-  <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
 - **Teikningasöfn Hafnarfjarðar (svf 1400), Garðabæjar (1300) og Kópavogs (1000) eru öll sami map.is-hlutinn „Teikningar af byggingum": GET https://www.map.is/webservice/queryTeiknigrunn.php?landnumer=&svfnr=&heitinumer=&t=<token> skilar JSON-lista með beinum PDF-slóðum.**
   <br>Þarf PHP-setu (cookies PHPSESSID + TS…) OG config.t-lykil sem hvaða kortasjár-síða map.is sem er gefur út (t.d. https://www.map.is/hafnarfjordur/); ein seta dugar öllum þremur bæjum. heitinumer=0 gefur „Engar niðurstöður". Raðir: lysing, dagsetning, hofundur_nafn, tegund, gerd, status (null/F/Ó = úr
+  <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
+- **Heitinúmerið sem map.is þarf er Heinum-reiturinn í Landeignaskrár-leitinni (geo.fasteignaskra.is/landeignaskra/search?term=) — kemur með landnúmerinu, engin auka-uppfletting.**
+  <br>Sama gildir um Staðfangaskrár-WFS (HEINUM). TurboPaint-leitin skilar nú landnr + heitinr + svf með hverri eign.
   <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
 - **Fjöldi íbúða, stigaganga og herbergja í húsi er EKKI opinber: api.hms.is/ords svarar 403 (áskrift) og hms.is er læst á bak við Vercel-botvörn (429). Þeir reitir á fyrirtækjabannernum eru handvirkir áfram.**
   <br>Kannað 14.09.2026 þegar húsupplýsingar úr skrám voru settar á bannerinn (patch 363 v3). Það sem ER opið: hæðir/kjallari/jarðhæð/ris úr grunnmyndum teikningasafnanna.
@@ -1105,11 +1105,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **git push a claude/mcp-browser-access-wqattt / aggisigurds-dev/slokkvitaeki er ENN lokad fyrir sopunar-session (403 'not in this session's authorized repository set') — nu stadfest a.m.k. fjorda skiptid (01.09, 02.09, 04.09 + fyrri).**
   <br>04.09.2026: GITHUB_TOKEN i thessari session HEFUR lesadgang (git clone/fetch/checkout a slokkvitaeki gekk fint, gh/api /repos/... synir sama '403 not enabled' skilabod jafnvel thott clone virki). En `git push -u origin claude/mcp-browser-access-wqattt` faer beint fra git-proxynum: 'access denied by 
   <br><sub>2026-09-04 · kerfi · sql · claude-code</sub>
-- **Netlify deploy-preview slóðir eru SÉRSTÖK LÉN með tómt localStorage — en þær skrifa í FRAMLEIÐSLU-gagnagrunninn**
-  <br>Uppgötvað 03.09.2026 við að rekja af hverju eyddar vörur komu aftur EFTIR að lagfæring fór í loftið. Hver „keyr þetta einu sinni"-vörn sem byggir á localStorage-merki (t.d. _auxProductsSeededV1, _pricelist66Seeded, _vrSeeded) er ÓSETT á preview-léni og keyrir því upp á nýtt — gegn alvöru gögnum. Sam
-  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
 - **Vörn sem býr í vafranum getur aldrei stöðvað vafra sem keyrir gamlan kóða — regla sem verður að halda á að vera í gagnagrunninum**
   <br>Lærdómur 03.09.2026: sáningarpatcharnir voru lagaðir (PR #845) og lagfæringin sannreynd í framleiðslubúntinum, en eyddar vörur komu samt aftur kl. 22:36 því einhver vafri keyrði fyrri útgáfuna. Deploy fer ekki fram í öllum vöfrum samtímis; preview-lén og cache lengja halann. Þegar afleiðing rangrar 
+  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
+- **Netlify deploy-preview slóðir eru SÉRSTÖK LÉN með tómt localStorage — en þær skrifa í FRAMLEIÐSLU-gagnagrunninn**
+  <br>Uppgötvað 03.09.2026 við að rekja af hverju eyddar vörur komu aftur EFTIR að lagfæring fór í loftið. Hver „keyr þetta einu sinni"-vörn sem byggir á localStorage-merki (t.d. _auxProductsSeededV1, _pricelist66Seeded, _vrSeeded) er ÓSETT á preview-léni og keyrir því upp á nýtt — gegn alvöru gögnum. Sam
   <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
 - **Rautt audit er EKKI staðreynd um main fyrr en vinnutréð er ferskt. 2026-09-01 var audit-attachment-forms rautt og virtist segja að gmail-send vörnina vantaði; hún var í main frá 68c7a66 (2026-08-27) — greinin var 32 commit á eftir. git fetch + git status -sb á að vera FYRSTA prófunin þegar audit er rautt, ekki sú síðasta. Sama gildir um A/B með git stash: það mælir bara greinina sem þú stendur á.**
   <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
@@ -1181,12 +1181,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kort
 
-- **Staðfangaskrá stafar sumar götur á -ahraun þó færslan segi -uhraun. Skútahraun 2, 220 (land 122238, heitinr 1030190) er ekki Skútahraun 2A (land 176716) og ekki Skútahraun 2 í póstnúmeri 660.**
-  <br>Bókstafslaus röð er tekin á undan 2A. Ein auka-leit uhraun→ahraun, ekki lykkja. Sama mynstur og Sléttuhraun→Sléttahraun.
-  <br><sub>2026-10-02 · slokkvitaeki · wfs · cursor</sub>
 - **Loftmynd fyrir póstnúmer 200–203, 210–212, 225, 220 og 221 er map.is WMS myndkort (ts1.map.is, EPSG:3057), merkt Loftmynd · map.is. Borgarvefsjá 2018 er Reykjavík þó hnitin lendi innan þekjunnar. Þetta er ekki götumynd og má ekki skrifa yfir mynd sem var sett inn.**
   <br>Enginn Google-lykill. Handmynd (hvaða url sem er) er vernduð. Geymd engin frá borgarvefsja má reyna loftmynd einu sinni. Tímaþrot er ekki vistað sem engin mynd.
   <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
+- **Staðfangaskrá stafar sumar götur á -ahraun þó færslan segi -uhraun. Skútahraun 2, 220 (land 122238, heitinr 1030190) er ekki Skútahraun 2A (land 176716) og ekki Skútahraun 2 í póstnúmeri 660.**
+  <br>Bókstafslaus röð er tekin á undan 2A. Ein auka-leit uhraun→ahraun, ekki lykkja. Sama mynstur og Sléttuhraun→Sléttahraun.
+  <br><sub>2026-10-02 · slokkvitaeki · wfs · cursor</sub>
 - **17.09.2026 (framhald): Agnar samþykkti leiðréttingar á heimilisföngum í útkeyrsluþjónustu. 29 heimilisföng leiðrétt í fyrirtaeki (afrit sjálfkrafa í audit_vernd): 22 eftir Staðfangaskrá (m.a. Distica og Vesturhraun 1 í 210 Garðabæ ekki 220, Laugavegur 116/126 í 105 ekki 101, Hörðurkór→Hörðukór, Mörðufell→Möðrufell, Garðarstræti→Garðastræti, Reykjarvíkurvegi→Reykjavíkurvegur x3, Eyrarvegi→Eyravegur, Nýbílavegur→Nýbýlavegur, Gulhellu 1 220→Gullhella 1 221, Sléttuhraun→Sléttahraun, Aspafell→Asparfell, og sex sett saman úr nafni staðar þar sem heimilisfangið var pósthólf/brot) og 7 úr fyrirtækjaskrá Skattsins (fimm staðir höfðu ekkert heimilisfang; Karhólmi reyndist Kjarrhólmi 8; Garðatorg 7 er í 210 ekki 212). Húsnúmerabil halda sér. Staðir í þjónustu með punkt: 585 → 614 af 627. Þrettán eftir og hver þarf ákvörðun Agnars: Engjaás 2 í Borgarnesi er ekki til í skrá (1, 1a, 8, 10 eru til) — 40 tæki; Ölfusborgir og Hótel Kríunes eru staðir án götunúmers; Hringhella og Skútahraun (skráin stafar það Skútahraun, ekki Skútuhraun) vantar húsnúmer; KFC Austurvegi vantar númer; Golfklúbbur Hveragerðis og E fasteignafélag bera pósthólf/lögheimili en ekki starfsstöð; Bifreið.is er skráð á Hjallahraun 4 hjá Skattinum en 14 hjá okkur og Staðfangaskrá þekkir enga Hjallahraun-götu; GG optic er í Kringlunni en félagið GG Invest var AFSKRÁÐ 28.01.2026.**
   <br><sub>2026-09-17 · slokkvitaeki · claude-code · claude-code</sub>
 - **17.09.2026: Útkeyrsluþjónustan (fyrirtaeki.er_i_thjonustu = 627 staðir) yfirfarin sérstaklega vegna staðsetningarpunkta. 585 áttu punkt, 42 ekki. Forrit leitaði að réttu staðfangi í Staðfangaskrá fyrir hvert þeirra (húsnúmer fast, götuheiti borið saman við öll staðföng með sama númeri, valið eftir minnstu villu, sama póstnúmeri og bókstaf) og fann ótvírætt staðfang fyrir 15. Hnitin voru skrifuð undir NÚVERANDI heimilisfangi svo kúnnagögn væru ekki snert — staðir með punkt fóru úr 585 í 600. Textaleiðréttingarnar sjálfar bíða samþykkis: Distica og Vesturhraun 1 eru í 210 Garðabæ ekki 220, Laugavegur 116 og 126 eru í 105 ekki 101, Hörðurkór→Hörðukór, Mörðufell→Möðrufell, Garðarstræti→Garðastræti, Reykjarvíkurvegi→Reykjavíkurvegur (þrír staðir), Eyrarvegi→Eyravegur, Nýbílavegur→Nýbýlavegur, Gulhellu 1 220→Gullhella 1 221, Sléttuhraun→Sléttahraun, Völuteig→Völuteigur. 27 eiga enn engan punkt: 5 án heimilisfangs, 5 án húsnúmers (Skútuhraun, Hringhella, Austurvegur, Brúarholt, Ölfusborgir), 6 þar sem gatan er í nafni staðarins en heimilisfangið er pósthólf eða brot, og restin sveitastaðir eða margræð svör.**
@@ -1204,11 +1204,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### turbopaint
 
-- **pdf.js 5.7 (public/pdfjs í kjarni) notar Map.prototype.getOrInsertComputed sem Chromium 141 og eldri eiga ekki — PDF-innflutningur í TurboPaint brotnaði HLJÓÐLAUST án polyfill.**
-  <br>Lagað 14.09.2026: lib/board/polyfills.ts (fyrsti import í import-files.ts og WhiteboardApp.tsx) setur getOrInsert/getOrInsertComputed á Map og WeakMap; sama lína er fremst í public/pdfjs/pdf.worker.min.mjs (workerinn hleður ekki polyfill aðalþráðar). Muna að endurbæta línuna ef pdf.worker er uppfærð
-  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **/kjarni/turbopaint?leit=<heimilisfang> opnar teikningaleitina með heimilisfanginu fyllt (breytan hverfur strax úr slóðinni) — djúptengill fyrir önnur kerfi, t.d. Teikningar-línuna á fyrirtækjabanner Slökkvitækja-appsins.**
   <br>Kjarni PR #117 (14.09.2026). Slökkvitæki: patch 363 v3 + netlify/functions/hus-upplysingar.js smíðar tengilinn úr Staðfangaskrár-heitinu (t.d. „Dalshraun 1B").
+  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
+- **pdf.js 5.7 (public/pdfjs í kjarni) notar Map.prototype.getOrInsertComputed sem Chromium 141 og eldri eiga ekki — PDF-innflutningur í TurboPaint brotnaði HLJÓÐLAUST án polyfill.**
+  <br>Lagað 14.09.2026: lib/board/polyfills.ts (fyrsti import í import-files.ts og WhiteboardApp.tsx) setur getOrInsert/getOrInsertComputed á Map og WeakMap; sama lína er fremst í public/pdfjs/pdf.worker.min.mjs (workerinn hleður ekki polyfill aðalþráðar). Muna að endurbæta línuna ef pdf.worker er uppfærð
   <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **TurboPaint frá PR #107 (10.09.2026): ⌘C/⌘X/⌘V á hlutum (copy/cut/paste-atburðir vafrans, JSON {turbopaint:1,objects} á klemmuspjaldi → límist líka milli borða/flipa, 24 px hliðrun per límingu, ⌘D = Tvöfalda); sérsniðnir litir með „+" swatch (native litaval, síðustu 6 muna sig í localStorage turbopaint:custom-colors, fylling fær 40% gegnsæi); Gátreitur-tólið (X) = rect með isCheckbox/checked, ✓-hakreitur í hægra horni að neðan, hakað → allur reiturinn grænn.**
   <br>Skrár: lib/board/clipboard.ts, custom-colors.ts, checkbox.ts, components/kjarni/ColorPicker.tsx. Gátreitur byggir á RectObject svo færsla/stærð/afritun/hópun/útflutningur/samstilling fylgja án sérmeðhöndlunar; Magntafla telur „Gátreitir — hakað/óhakað" sér. Prófun: apps/slokkvitaeki/tools/turbopaint
@@ -1431,6 +1431,19 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Afleiðing: svarstaða sem reiðir sig eingöngu á fra_okkur verður röng þegar SENT-innsog situr eftir. SENT kemur frá luna-bridge Sent mbox / gmail-ingest?folder=sent. Nákvæmara "við svöruðum"-merki: SENT-póstur þar sem to_addresses inniheldur nákvæmt netfang kúnnans (sbr. company-mail.js).
   <br><sub>2026-08-19 · baedi · sql · claude-code</sub>
 
+### simi
+
+- **05.10.2026 BREITT ÚTLIT Á SÍMA (Agnar: vil ekki gráu útgáfuna, það á bara að nota núverandi útgáfu af appinu): öppin eru hönnuð á síma í Tölvusíðu-ham Chrome (layout 980). Sími sem var EKKI í þeim ham (gamli síminn hjá starfsmanni) fékk mjóa varaútlitið — 385 spjöld, engin 418-húð (innerWidth>=901). Nú setur inline-skrift í <head> index.html viewport á 'width=980, user-scalable=yes, viewport-fit=cover' og window.__HUB_VP þegar: app-hamur (/app/<key>/ eða ?app=), ekki bilstjori, snertitæki (pointer:coarse, sama og touchPrimary í 353), styttri skjáhlið <=700, innerWidth<901. Sex viewport-verðir (166, 261, 331, 333, 336, 410) lesa window.__HUB_VP; 336 locked() og 410 vpLaest() undanskilja valið. Af á einu tæki: ?breidd=mjo (localStorage.simi_breidd), á aftur ?breidd=breid. Hermun (breidd-prof.cjs, Playwright isMobile 412 dp): innerWidth 980, króm 2,38, tafla + 418 — sama og Tölvusíðu-hermun á brunaskra/sala/arsskodun/bord; tölva, sími utan apps og Bílstjóri ósnert. ATH: Playwright-hermun gefur maxTouchPoints=1, því dugar ekki maxTouchPoints>1 einn. ÓPRÓFAÐ á alvöru síma og iPhone. Vörður: audit-simi-breidd.cjs.**
+  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
+- **05.10.2026 (Agnar: taka hinar tvær útfærslurnar úr umferð): Brunakerfi-appið (261) hafði home/defaults á GAMLA yfirlitinu 'brunayfirlit' (272) — tæki án vistaðs lista lenti þar. Nú home='brunaskra' (Brunakerfis skoðun, 385/418 = aðalútgáfan), 'brunayfirlit' farið úr PAGES og pagesFor vísar eldri vistunum á 'brunaskra'; Þjónustuborðs-hnappurinn 'Brunakerfi ›' (368) líka. ÓGERT: síðurnar sjálfar (#brunayfirlit 272, #brunakerfi 147 Brunakerfisþjónusta) eru enn til í hliðarstiku tölvunnar (faldar hjá Agnari í 171) og þrjú flæði opna inn í 147 (158 viðskiptavinur→Brunakerfi.openCompanyDetail, 153, 150/151 Brunakerfi.show). Venjulegur sími (412 px, ekki Tölvusíðu-hamur) fær spjalda-útlit 385 og enga 418-húð (innerWidth>=901) — það er gráa útgáfan á gamla símanum.**
+  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
+- **05.10.2026: klípa út (333, frá 04.10) vistaði síðustærðina í simi_sidustaerd sem er SAMEIGINLEG öllum símum (flokkur simi) — á 25 mín fóru 5 síður beint í 30 % gólfið (audit_vernd 12:28–13:22; Agnar: allt svo smátt og langt á milli). Nú er klípan tímabundin sýn (lifandi) á þeirri síðu: merkið '40 % · ✕ til baka' skilar vistuðu stærðinni, síðuskipti fella hana, aðeins sleðinn í hausnum vistar. Sama dag: 230 neglir height:100vh á .view.active — minnkuð sýn (zoom<1) náði því aðeins zoom×skjáhæð (641 af 915 px á venjulegum síma, autt fyrir neðan); 333 gefur nú 100vh/min(1,zoom). Prófað með alvöru snertiatburðum um CDP (klipa-prof.cjs): gamla byggingin skrifar, nýja ekki.**
+  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
+- **Síðustærð í síma (04.10.2026, 333): hver síða og gluggi á sína stærð, vistuð í AppSettings simi_sidustaerd (sér hólf simi/tolva). S26 keyrir í Tölvusíðu-ham (980 px síða) svo @media max-width:760 kviknar aldrei — nota gámafyrirspurnir. S26-hermun: 980x1900 + ?simikrom=2.38, eða S26-snið í símarammanum (320).**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Ársskoðun á síma (382-ars-simi-samraemi.js, 18.09.2026): (1) appskelin 261 'body.appmode .view.active:not(#view-opp){background:grátt !important}' (sérhæfni 1,2,1) vann alltaf bakgrunn úr Hönnunarham (#_pe-overrides '#view-x', 1,0,0) — sama síða varð grá í appi en dökkblá á vefslóð; 382 endurómar PE-bakgrunn síðunnar með hærri sérhæfni í appham. (2) .cb-dot úr 237 lendir sem grid-barn í ._arsm-row (enginn titil-hnútur) → eigin lína + 50px lágmarkshæð takka í appham = sporaskja; nú absolute 14x14 í nafnadálki. (3) css/mobile.css (≤900px) setur '.view table thead,tbody{display:table}' — 325 endurreisir töfluna en ekki thead/tbody, svo colgroup gilti ekki í Skjár/Tafla á síma (th≠td, tafla 2455px utan um 1061px); 382 setur table-header-group/row-group + width:auto undir html.ars-wide-table.**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### teikning
 
 - **Teikning (05.10.2026, a01396c3 + 044bae61): ÖLL skrif á teikning_bord fara um TeiknVistun.skrifa (375) — röðin lesin fersk rétt fyrir skrif og SAMEINUÐ hafi önnur vél skrifað síðan þessi vafri sá hana (stillingar hæðar af þjóninum, merki héðan standa, merki/hæðir annarra véla haldast, eytt-hér kemur ekki aftur). Áður skrifuðu 375 (Vista), 433 (hver færsla merkis) og 383 (Opna í TurboPaint) alla röðina úr minni vafrans. Sannreynt með ALVÖRU skrifum á lifandi (Hótel Klöpp, tveir vafrar: sá úrelti bætti við tæki og tæki hins lifði af). Vörður: audit-teikning-vistun (6 tilvik). Teikningarborðinn á prófílnum (newfeatures _coFpInject) sækir nú röðina á þjóninn ef ekkert er í minni vafrans, fylgir skurði 1. hæðar og sækir myndina aðeins þegar hann sést (var 6000 díla strigi við hverja opnun prófíls). Tækjamerki 434: hvítur kútur á rauðri málmplötu með borða í lit tegundar (léttvatn sægrænt, duft blátt, CO2 svart með trekt). 3D: hæðir staflast nema skurðir skarist ≥ 70 % á blaðinu (skorunSkurda).**
@@ -1491,17 +1504,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **kjarni (Next.js 16, cacheComponents) hafnar route segment config — export const dynamic/revalidate/fetchCache í route.ts fellir Vercel-buildið**
   <br>Villan: "Route segment config \"dynamic\" is not compatible with nextConfig.cacheComponents". PR #38 (3dwork GitHub-sync, Cursor) setti force-dynamic í 4 API-routes → ÖLL production-deploy á kjarni-3dwork rauð frá #38 þar til PR #44 fjarlægði línurnar (26.08). Route handlers eru dynamic sjálfgefið u
   <br><sub>2026-08-26 · kerfi · kóði · claude-code</sub>
-
-### simi
-
-- **05.10.2026 (Agnar: taka hinar tvær útfærslurnar úr umferð): Brunakerfi-appið (261) hafði home/defaults á GAMLA yfirlitinu 'brunayfirlit' (272) — tæki án vistaðs lista lenti þar. Nú home='brunaskra' (Brunakerfis skoðun, 385/418 = aðalútgáfan), 'brunayfirlit' farið úr PAGES og pagesFor vísar eldri vistunum á 'brunaskra'; Þjónustuborðs-hnappurinn 'Brunakerfi ›' (368) líka. ÓGERT: síðurnar sjálfar (#brunayfirlit 272, #brunakerfi 147 Brunakerfisþjónusta) eru enn til í hliðarstiku tölvunnar (faldar hjá Agnari í 171) og þrjú flæði opna inn í 147 (158 viðskiptavinur→Brunakerfi.openCompanyDetail, 153, 150/151 Brunakerfi.show). Venjulegur sími (412 px, ekki Tölvusíðu-hamur) fær spjalda-útlit 385 og enga 418-húð (innerWidth>=901) — það er gráa útgáfan á gamla símanum.**
-  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
-- **05.10.2026: klípa út (333, frá 04.10) vistaði síðustærðina í simi_sidustaerd sem er SAMEIGINLEG öllum símum (flokkur simi) — á 25 mín fóru 5 síður beint í 30 % gólfið (audit_vernd 12:28–13:22; Agnar: allt svo smátt og langt á milli). Nú er klípan tímabundin sýn (lifandi) á þeirri síðu: merkið '40 % · ✕ til baka' skilar vistuðu stærðinni, síðuskipti fella hana, aðeins sleðinn í hausnum vistar. Sama dag: 230 neglir height:100vh á .view.active — minnkuð sýn (zoom<1) náði því aðeins zoom×skjáhæð (641 af 915 px á venjulegum síma, autt fyrir neðan); 333 gefur nú 100vh/min(1,zoom). Prófað með alvöru snertiatburðum um CDP (klipa-prof.cjs): gamla byggingin skrifar, nýja ekki.**
-  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
-- **Síðustærð í síma (04.10.2026, 333): hver síða og gluggi á sína stærð, vistuð í AppSettings simi_sidustaerd (sér hólf simi/tolva). S26 keyrir í Tölvusíðu-ham (980 px síða) svo @media max-width:760 kviknar aldrei — nota gámafyrirspurnir. S26-hermun: 980x1900 + ?simikrom=2.38, eða S26-snið í símarammanum (320).**
-  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Ársskoðun á síma (382-ars-simi-samraemi.js, 18.09.2026): (1) appskelin 261 'body.appmode .view.active:not(#view-opp){background:grátt !important}' (sérhæfni 1,2,1) vann alltaf bakgrunn úr Hönnunarham (#_pe-overrides '#view-x', 1,0,0) — sama síða varð grá í appi en dökkblá á vefslóð; 382 endurómar PE-bakgrunn síðunnar með hærri sérhæfni í appham. (2) .cb-dot úr 237 lendir sem grid-barn í ._arsm-row (enginn titil-hnútur) → eigin lína + 50px lágmarkshæð takka í appham = sporaskja; nú absolute 14x14 í nafnadálki. (3) css/mobile.css (≤900px) setur '.view table thead,tbody{display:table}' — 325 endurreisir töfluna en ekki thead/tbody, svo colgroup gilti ekki í Skjár/Tafla á síma (th≠td, tafla 2455px utan um 1061px); 382 setur table-header-group/row-group + width:auto undir html.ars-wide-table.**
-  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### ajour
 
@@ -1617,14 +1619,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### variant
 
+- **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
+  <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
+  <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 3 — AppSettings: hlutir sameinast per lykil en FYLKI og strengir skiptast út í heilu lagi (jsonb_deep_merge sql:34), og engin vél FÆR breytingar annarra fyrr en hún endurhleður (engin realtime/sókn á app_settings, js/db.js:250)**
   <br>Heit fylki: skipulagsbord.by_staff.*.cards (305:99, 148 skrif/30 d), vikudagskra.jobs (303:112, 74), company_pricing/vidsk_pricing (113/116/285), sala.*_product_ids (vorur.js), thjonustuverk.cases (172:70), skjalasnidmat (94), tilbod_hub (201), page_editor_v1_json (262:124 strengur), app_profiles_js
   <br><sub>2026-09-06 · slokkvitaeki · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 2 — heilt object/fylki lesið → breytt í minni → skrifað til baka (read-modify-write án útgáfu-varðar): vél með gamalt eintak þurrkar út breytingar hinna**
   <br>Hub lagað 06.09.2026: hub_state sameinað per lykil OG per undirlykil (RPC hub_state_merge p_deep), wf_state per reit (ky_wf_merge), invoice_drafts með expected_updated_at (409 + spurning). Eftir (slokkvitaeki, úttekt sala-reikningar/kunnaskra/elon): 142 SaleEditor + 121 Sótt skrifa heilt solur.linur
-  <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
-- **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
-  <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
   <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
 
 ### redder
