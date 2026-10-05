@@ -6,7 +6,14 @@
  * Tækin teiknast INN Í #fp-canvas (FloorPlan), svo á meðan skarpa lagið sést teiknar canvasinn hvítan grunn í stað
  * myndarinnar (drawImage(bgImage) er gripið) — tækin standa þá óhögguð á hvítu og skörpu línurnar leggjast yfir.
  * Svæði hæðarinnar er forteiknað einu sinni í bakgrunni (pdf.js, ~8 s á Fiskislóð); eftir það fylgir skerpan
- * þysjun og færslu í hverjum ramma. Engin gögn breytast; skannanir (ekki PDF) eru óbreyttar.
+ * þysjun og færslu í hverjum ramma. Engin gögn breytast.
+ *
+ * SKANNAÐAR TEIKNINGAR (Agnar 05.10.2026, Center Hótel Þingholt í 356 %: „can you try to get better quality in the
+ * teikningar"). Skjalasafnið afhendir 6006 px JPEG sem er mjög þjappað (2 MB á 25 MP → suð og loðnir stafir), en
+ * frumritið er TIF (Þingholt: 7016 px, 8 bita litaspjald, LZW, 13 MB — taplaust). Það er sótt um teikn-pdf (sama
+ * rendition-flæði), afkóðað í vinnuþræði (UTIF) og sett á sama lag og vigurinn; birtuskil á laginu gera línurnar
+ * svartar og pappírinn hvítan. Snúningur TIF-sins er valinn með samsvörun við JPEG-ið (allir átta möguleikarnir
+ * bornir saman við myndina sem er á borðinu) — skrá sem passar ekki fer aldrei upp; þá sést JPEG-ið eins og áður.
  *
  * Varpanir: skjár = canvas-rammi (getBoundingClientRect, með CSS-skölun) + (frummyndar-px − G.rymi) × k, þar sem
  * k = skjápx/canvas-px; frummyndar-px = PDF-pt × (frum.b / síðubreidd).
@@ -58,11 +65,145 @@
       return /\.pdf(\.info)?$/i.test(new URL(inn).pathname) ? '/.netlify/functions/teikn-pdf?url=' + encodeURIComponent(inn) : '';
     } catch (_) { return ''; }
   }
-  async function saekjaSidu(slod) {
+  // Skannað frumrit á skjalasafni Reykjavíkur (.tif.info) → teikn-pdf, sem sækir líka TIF um ORIGINAL-flæðið.
+  function tifSlod(h) {
+    try {
+      const u = new URL(h.image_url, location.href), inn = u.searchParams.get('url') || '', i = new URL(inn);
+      return i.hostname === 'skjalasafn.reykjavik.is' && /\.tiff?\.info$/i.test(i.pathname) ? '/.netlify/functions/teikn-pdf?url=' + encodeURIComponent(inn) : '';
+    } catch (_) { return ''; }
+  }
+
+  /* ── TIF-vinnuþráður: afkóðun (~0,4 s á 35 MP) og skurður gerast utan aðalþráðarins svo glugginn frjósi ekki.
+   * Þráðurinn geymir AÐEINS síðustu teikninguna (hrá gögn, ~1 bæti á díl í litaspjaldi) og er drepinn eftir mínútu
+   * án glugga. Díll er lesinn beint úr hráu gögnunum í gegnum snúning (o 1–8), svo engin full RGBA-afrit verða til. */
+  const VERK = [
+    "importScripts('https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js','https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js');",
+    'let M=null;',
+    'function lesari(f){const d=f.data,w=f.width,ip=f.t262?f.t262[0]:2,bps=f.t258?f.t258[0]:1,spp=f.t258?f.t258.length:1,bpl=Math.ceil(w*bps*spp/8),A=0xff000000;',
+    ' if((ip===0||ip===1)&&spp===1&&(bps===1||bps===4||bps===8)){const mx=(1<<bps)-1,lut=new Uint32Array(mx+1);for(let v=0;v<=mx;v++){let g=Math.round(v*255/mx);if(ip===0)g=255-g;lut[v]=A|g<<16|g<<8|g;}',
+    '  if(bps===8)return(x,y)=>lut[d[y*bpl+x]];if(bps===4)return(x,y)=>lut[(d[y*bpl+(x>>1)]>>(4-4*(x&1)))&15];return(x,y)=>lut[(d[y*bpl+(x>>3)]>>(7-(x&7)))&1];}',
+    ' if(ip===3&&spp===1&&(bps===4||bps===8)&&f.t320){const n=1<<bps,m=f.t320,lut=new Uint32Array(n);for(let v=0;v<n;v++)lut[v]=A|(m[2*n+v]>>8)<<16|(m[n+v]>>8)<<8|(m[v]>>8);',
+    '  if(bps===8)return(x,y)=>lut[d[y*bpl+x]];return(x,y)=>lut[(d[y*bpl+(x>>1)]>>(4-4*(x&1)))&15];}',
+    ' if(ip===2&&bps===8&&(spp===3||spp===4))return(x,y)=>{const i=y*bpl+x*spp;return A|d[i+2]<<16|d[i+1]<<8|d[i];};',
+    ' const r=new Uint32Array(UTIF.toRGBA8(f).buffer);return(x,y)=>r[y*w+x]|A;}',
+    // birtingar-díll (x,y) → hrár díll, fyrir alla átta snúningana (TIFF Orientation)
+    'function varp(o,W,H){switch(o){case 2:return(x,y)=>[W-1-x,y];case 3:return(x,y)=>[W-1-x,H-1-y];case 4:return(x,y)=>[x,H-1-y];',
+    ' case 5:return(x,y)=>[y,x];case 6:return(x,y)=>[y,H-1-x];case 7:return(x,y)=>[W-1-y,H-1-x];case 8:return(x,y)=>[W-1-y,x];default:return(x,y)=>[x,y];}}',
+    'onmessage=async e=>{const q=e.data;try{',
+    ' if(q.cmd==="saekja"){M=null;const r=await fetch(q.slod);if(!r.ok)throw new Error("Svar "+r.status);const b=await r.arrayBuffer();',
+    '  const ifds=UTIF.decode(b).filter(f=>f.t256&&f.t257).sort((a,c)=>c.t256[0]*c.t257[0]-a.t256[0]*a.t257[0]);if(!ifds.length)throw new Error("Engin mynd");',
+    '  const f=ifds[0];UTIF.decodeImage(b,f);M={f,W:f.width,H:f.height,les:lesari(f),o:f.t274?f.t274[0]:1};postMessage({id:q.id,W:M.W,H:M.H,o:M.o});return;}',
+    ' if(!M)throw new Error("Engin teikning");const les=M.les;',
+    ' if(q.cmd==="syni"){const n=q.n,ut=[];for(const c of q.c){const v=varp(c.o,M.W,M.H),a=new Float32Array(n*n);',
+    '  for(let j=0;j<n;j++)for(let i=0;i<n;i++){let s=0;for(let b=0;b<3;b++)for(let k=0;k<3;k++){const p=v(Math.min(c.dW-1,Math.floor(c.x+(i+(k+.5)/3)*c.w/n)),Math.min(c.dH-1,Math.floor(c.y+(j+(b+.5)/3)*c.h/n)));const u=les(p[0],p[1]);s+=(u&255)+(u>>8&255)+(u>>16&255);}a[j*n+i]=s/27;}',
+    '  ut.push(a);}postMessage({id:q.id,ut});return;}',
+    ' if(q.cmd==="skera"){const v=varp(q.o,M.W,M.H),w=q.w,h=q.h,px=new Uint32Array(w*h);',
+    '  for(let y=0;y<h;y++){const o=y*w;for(let x=0;x<w;x++){const p=v(q.x+x,q.y+y);px[o+x]=les(p[0],p[1]);}}',
+    '  const id=new ImageData(new Uint8ClampedArray(px.buffer),w,h);',
+    '  const bm=q.R<0.999?await createImageBitmap(id,{resizeWidth:Math.max(1,Math.round(w*q.R)),resizeHeight:Math.max(1,Math.round(h*q.R)),resizeQuality:"high"}):await createImageBitmap(id);',
+    '  postMessage({id:q.id,bm},[bm]);return;}',
+    '}catch(x){postMessage({id:q.id,villa:String(x&&x.message||x)});}};'
+  ].join('\n');
+  const T = { verk: null, bid: {}, n: 0, sidast: 0 };
+  function verk(skilabod) {
+    if (!T.verk) {
+      T.verk = new Worker(URL.createObjectURL(new Blob([VERK], { type: 'text/javascript' })));
+      T.verk.onmessage = e => { const b = T.bid[e.data.id]; if (!b) return; delete T.bid[e.data.id]; e.data.villa ? b.rej(new Error(e.data.villa)) : b.res(e.data); };
+      T.verk.onerror = e => { Object.keys(T.bid).forEach(k => { T.bid[k].rej(new Error(e.message || 'vinnuþráður')); delete T.bid[k]; }); };
+    }
+    const id = ++T.n;
+    return new Promise((res, rej) => { T.bid[id] = { res, rej }; T.verk.postMessage(Object.assign({ id }, skilabod)); });
+  }
+  function sleppaVerki() {
+    if (T.verk) { try { T.verk.terminate(); } catch (_) {} }
+    T.verk = null; Object.keys(T.bid).forEach(k => { T.bid[k].rej(new Error('hætt')); delete T.bid[k]; });
+    if (S.pdf && S.pdf.tif) { S.pdf = null; S.pdfSlod = ''; S.pdfBid = null; }
+    if (S.blad && S.blad.tif) { try { S.blad.canvas.close(); } catch (_) {} S.blad = null; }
+  }
+  // Myndin á borðinu (JPEG, skorin að hæðinni) sem n×n grátónanet — mælistikan fyrir snúning TIF-sins.
+  function synishorn(mynd, n) {
+    const c = document.createElement('canvas'); c.width = n; c.height = n;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.fillStyle = '#fff'; x.fillRect(0, 0, n, n); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.drawImage(mynd, 0, 0, n, n);
+    const d = x.getImageData(0, 0, n, n).data, a = new Float32Array(n * n);
+    for (let i = 0; i < n * n; i++) a[i] = (d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2]) / 3;
+    return a;
+  }
+  function fylgni(a, b) {
+    const n = a.length; let ma = 0, mb = 0; for (let i = 0; i < n; i++) { ma += a[i]; mb += b[i]; } ma /= n; mb /= n;
+    let ab = 0, aa = 0, bb = 0; for (let i = 0; i < n; i++) { const x = a[i] - ma, y = b[i] - mb; ab += x * y; aa += x * x; bb += y * y; }
+    return aa > 0 && bb > 0 ? ab / Math.sqrt(aa * bb) : 0;
+  }
+  async function saekjaTif(slod, st) {
+    const r = await verk({ cmd: 'saekja', slod: new URL(slod, location.href).href });
+    const fb = st.h.frum.b, fh = st.h.frum.h || 0;
+    const sk = st.h.skurdur && st.h.skurdur.w > 8 ? st.h.skurdur : { x: 0, y: 0, w: fb, h: fh || fb };
+    // snúningar sem passa við hlutföll JPEG-sins (1–4 sömu mál, 5–8 víxluð)
+    const c = [1, 2, 3, 4, 5, 6, 7, 8].map(o => {
+      const dW = o > 4 ? r.H : r.W, dH = o > 4 ? r.W : r.H, kp = fb / dW;
+      return { o, dW, dH, kp, x: sk.x / kp, y: sk.y / kp, w: sk.w / kp, h: sk.h / kp };
+    }).filter(k => !fh || Math.abs(k.dH * k.kp - fh) < fh * 0.015);
+    if (!c.length) throw new Error('TIF passar ekki við myndina');
+    const n = 40, a = synishorn(FloorPlan.bgImage, n);
+    const s = await verk({ cmd: 'syni', n, c: c.map(k => ({ o: k.o, dW: k.dW, dH: k.dH, x: k.x, y: k.y, w: k.w, h: k.h })) });
+    let best = null;
+    c.forEach((k, i) => { k.r = fylgni(a, s.ut[i]); if (!best || k.r > best.r) best = k; });
+    console.info('[438] TIF ' + r.W + '×' + r.H + ' merki ' + r.o + ' → snúningur ' + best.o + ' (fylgni ' + best.r.toFixed(2) + ')');
+    if (best.r < 0.6) throw new Error('TIF passar ekki við myndina (fylgni ' + best.r.toFixed(2) + ')');
+    const sida = { tif: true, o: best.o, b: best.dW, h: best.dH, fx: 0, fy: 0 };
+    try { Object.assign(sida, await hlidrun(sida, best.kp, sk)); } catch (e) { console.warn('[438] hliðrun', e); }
+    return sida;
+  }
+  // HLIÐRUN (mælt 05.10.2026 á Þingholti: JPEG skjalasafnsins situr 3,4 díla neðar og 0,75 til vinstri miðað við
+  // frumritið, jafnt yfir allt blaðið, fylgni 0,93–0,99). Tækin eru vistuð í JPEG-hnitum, svo TIF-ið er fært að
+  // JPEG-inu: fimm reitir innan hæðarinnar, besta hliðrun hvers (⅓ díls nákvæmni), miðgildið notað.
+  async function hlidrun(sida, kp, sk) {
+    const mynd = FloorPlan.bgImage, N = 160, D = 8, SUB = 3, G = N * SUB, M = (N + 2 * D) * SUB;
+    const gra = (cv) => { const d = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, cv.width, cv.height).data, a = new Float32Array(cv.width * cv.height); for (let i = 0; i < a.length; i++) a[i] = d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2]; return a; };
+    const nidur = [];
+    for (const [a, b] of [[0.5, 0.5], [0.3, 0.3], [0.7, 0.3], [0.3, 0.7], [0.7, 0.7]]) {
+      const fx0 = Math.round(sk.x + a * sk.w - N / 2), fy0 = Math.round(sk.y + b * sk.h - N / 2);
+      const j = document.createElement('canvas'); j.width = G; j.height = G;
+      const jx = j.getContext('2d', { willReadFrequently: true }); jx.fillStyle = '#fff'; jx.fillRect(0, 0, G, G); jx.imageSmoothingQuality = 'high';
+      jx.drawImage(mynd, fx0 - sk.x, fy0 - sk.y, N, N, 0, 0, G, G);
+      const A = gra(j);
+      let ma = 0; for (let i = 0; i < A.length; i++) ma += A[i]; ma /= A.length;
+      let va = 0; for (let i = 0; i < A.length; i += 7) va += (A[i] - ma) ** 2;
+      if (va / (A.length / 7) < 400) continue;                       // auður reitur — segir ekkert um hliðrun
+      const tx0 = Math.max(0, Math.floor((fx0 - D) / kp) - 1), ty0 = Math.max(0, Math.floor((fy0 - D) / kp) - 1);
+      const tw = Math.min(sida.b - tx0, Math.ceil((N + 2 * D) / kp) + 3), th = Math.min(sida.h - ty0, Math.ceil((N + 2 * D) / kp) + 3);
+      const r = await verk({ cmd: 'skera', o: sida.o, x: tx0, y: ty0, w: tw, h: th, R: 1 });
+      const t = document.createElement('canvas'); t.width = M; t.height = M;
+      const tc = t.getContext('2d', { willReadFrequently: true }); tc.fillStyle = '#fff'; tc.fillRect(0, 0, M, M); tc.imageSmoothingQuality = 'high';
+      tc.setTransform(SUB * kp, 0, 0, SUB * kp, (tx0 * kp - (fx0 - D)) * SUB, (ty0 * kp - (fy0 - D)) * SUB);
+      tc.drawImage(r.bm, 0, 0); try { r.bm.close(); } catch (_) {}
+      const B = gra(t);
+      const fyl = (dx, dy, sk2) => {
+        let sa = 0, sb = 0, sab = 0, saa = 0, sbb = 0, n = 0;
+        for (let y = 0; y < G; y += sk2) { const ra = y * G, rb = (y + D * SUB + dy) * M + D * SUB + dx; for (let x = 0; x < G; x += sk2) { const p = A[ra + x], q = B[rb + x]; sa += p; sb += q; sab += p * q; saa += p * p; sbb += q * q; n++; } }
+        const v = (saa / n - (sa / n) ** 2) * (sbb / n - (sb / n) ** 2);
+        return v > 0 ? (sab / n - (sa / n) * (sb / n)) / Math.sqrt(v) : 0;
+      };
+      let best = { dx: 0, dy: 0, c: -2 };
+      for (let dy = -D * SUB; dy <= D * SUB; dy += SUB) for (let dx = -D * SUB; dx <= D * SUB; dx += SUB) { const c = fyl(dx, dy, 3); if (c > best.c) best = { dx, dy, c }; }
+      const g = best;
+      for (let dy = g.dy - SUB + 1; dy <= g.dy + SUB - 1; dy++) for (let dx = g.dx - SUB + 1; dx <= g.dx + SUB - 1; dx++) { if (Math.abs(dx) > D * SUB || Math.abs(dy) > D * SUB) continue; const c = fyl(dx, dy, 2); if (c > best.c) best = { dx, dy, c }; }
+      if (best.c > 0.75) nidur.push(best);
+    }
+    if (nidur.length < 2) { console.info('[438] hliðrun: of fáir reitir (' + nidur.length + ') — engin færsla'); return { fx: 0, fy: 0 }; }
+    const midgildi = v => { const a = v.slice().sort((x, y) => x - y), m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
+    const fx = -midgildi(nidur.map(x => x.dx)) / SUB, fy = -midgildi(nidur.map(x => x.dy)) / SUB;
+    console.info('[438] hliðrun TIF → JPEG: ' + fx.toFixed(2) + ', ' + fy.toFixed(2) + ' díll (' + nidur.length + ' reitir, fylgni ' + nidur.map(x => x.c.toFixed(2)).join('/') + ')');
+    return { fx, fy };
+  }
+
+  async function saekjaSidu(slod, st) {
     if (S.pdf && S.pdfSlod === slod) return S.pdf;
     if (S.pdfBid && S.pdfSlod === slod) return S.pdfBid;
     S.pdfSlod = slod; S.pdf = null;
     S.pdfBid = (async () => {
+      if (st && st.tif) { S.pdf = await saekjaTif(slod, st); return S.pdf; }
       await saekjaPdfJs();
       const r = await fetch(slod);
       if (!r.ok) throw new Error('Svar ' + r.status);
@@ -98,11 +239,11 @@
     if (!main || !c || c.style.display === 'none' || !c.width) return null;
     const hs = TeiknBord.haedir(), h = hs && hs[TeiknBord.virk()];
     if (!h || !h.frum || !h.frum.b) return null;
-    const slod = pdfSlod(h);
-    if (!slod) return null;
+    const pdf = pdfSlod(h), tif = pdf ? '' : tifSlod(h), slod = pdf || tif;
+    if (!slod || !FloorPlan.bgImage) return null;
     const mr = main.getBoundingClientRect(), cr = c.getBoundingClientRect();
     if (cr.width < 4 || mr.width < 4) return null;
-    return { main, c, h, slod, mr, cr, rymi: TeiknBord.rymi() };
+    return { main, c, h, slod, tif: !!tif, mr, cr, rymi: TeiknBord.rymi() };
   }
 
   // FORTEIKNAÐ BLAÐ (04.10.2026, mælt á lifandi síðu: pdf.js-teikning Fiskislóðar = 72 þús. aðgerðir ≈ 8 s í hvert
@@ -114,16 +255,33 @@
     const x0 = sk ? sk.x / kp : 0, y0 = sk ? sk.y / kp : 0;
     const w = sk ? sk.w / kp : sida.b, h = sk ? sk.h / kp : sida.h;
     const simi = window.matchMedia && matchMedia('(max-width: 900px)').matches;
+    if (sida.tif) {
+      // heilir dílar svo skurðurinn í vinnuþræðinum og vörpunin hér séu nákvæmlega sama svæðið
+      const xi = Math.max(0, Math.floor(x0)), yi = Math.max(0, Math.floor(y0));
+      const wi = Math.min(sida.b - xi, Math.ceil(x0 + w) - xi), hi = Math.min(sida.h - yi, Math.ceil(y0 + h) - yi);
+      const Rt = Math.min(1, Math.sqrt((simi ? 12e6 : 36e6) / Math.max(1, wi * hi)));
+      return { tif: true, o: sida.o, fx: sida.fx || 0, fy: sida.fy || 0, x0: xi, y0: yi, w: wi, h: hi, R: Rt, kp, lykill: st.slod + '|' + sida.o + '|' + [xi, yi, wi, hi].join(',') + '|' + Rt.toFixed(3) };
+    }
     const R = Math.min(5, Math.sqrt((simi ? 10e6 : 24e6) / (w * h)));
     return { x0, y0, w, h, R, kp, lykill: st.slod + '|' + [x0, y0, w, h].map(Math.round).join(',') + '|' + R.toFixed(2) };
   }
   async function forteikna(st) {
     let sida;
-    try { sida = await saekjaSidu(st.slod); } catch (e) { console.warn('[438] PDF', e); return null; }
+    try { sida = await saekjaSidu(st.slod, st); } catch (e) { console.warn('[438] ' + (st.tif ? 'TIF' : 'PDF'), e); return null; }
     const sv = svaedi(st, sida);
     if (S.blad && S.blad.lykill === sv.lykill) return S.blad;
     if (S.bladBid && S.bladBid.lykill === sv.lykill) return S.bladBid.p;
     const p = (async () => {
+      if (sv.tif) {
+        // Minni upplausn en JPEG-ið (sími, risaskrá án skurðar) bætir engu — JPEG-ið stendur þá.
+        if (sv.R / sv.kp < 0.98) { S.bilad[st.slod] = 1; return null; }
+        const r = await verk({ cmd: 'skera', o: sv.o, x: sv.x0, y: sv.y0, w: sv.w, h: sv.h, R: sv.R });
+        if (S.blad && S.blad.tif) { try { S.blad.canvas.close(); } catch (_) {} }
+        // R mælt af útkomunni (námundun í createImageBitmap)
+        S.blad = Object.assign({ canvas: r.bm }, sv, { R: r.bm.width / sv.w });
+        S.lykill = '';
+        return S.blad;
+      }
       const W = Math.ceil(sv.w * sv.R), H = Math.ceil(sv.h * sv.R);
       const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
       const cx = cv.getContext('2d');
@@ -151,8 +309,8 @@
     const k = st.cr.width / st.c.width;                    // skjápx á canvas-px (canvas-px = frummyndar-px − rymi)
     // forteiknaða blaðið: pt (x0..) × R  →  frummyndar-px = pt × kp  →  skjár
     const s = k * bl.kp / bl.R;                             // skjápx á forteikningar-px
-    const dx = (st.cr.left - st.mr.left) + (bl.x0 * bl.kp - st.rymi.x) * k;
-    const dy = (st.cr.top - st.mr.top) + (bl.y0 * bl.kp - st.rymi.y) * k;
+    const dx = (st.cr.left - st.mr.left) + (bl.x0 * bl.kp + (bl.fx || 0) - st.rymi.x) * k;
+    const dy = (st.cr.top - st.mr.top) + (bl.y0 * bl.kp + (bl.fy || 0) - st.rymi.y) * k;
     x.save();
     x.beginPath();
     x.rect((st.cr.left - st.mr.left) * dpr, (st.cr.top - st.mr.top) * dpr, st.cr.width * dpr, st.cr.height * dpr);
@@ -172,6 +330,9 @@
       x.globalAlpha = 0.15; x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.globalAlpha = 1;
     }
     x.restore();
+    // skönnun: dökkar línur svartar, pappír hvítur (sami bragur og 436 á #fp-canvas, aðeins sterkari)
+    const sia = bl.tif ? 'brightness(0.87) contrast(2.1)' : '';
+    if (l.style.filter !== sia) l.style.filter = sia;
     grip(st.c);
     setjaVirkt(true);          // canvasinn: hvítt í stað myndar, tækin ofan á
     l.style.opacity = '1';
@@ -180,7 +341,12 @@
   function tikk() {
     const st = stada();
     const l = document.getElementById('fp-skarpt');
-    if (!st) { if (l) l.style.opacity = '0'; S.lykill = ''; setjaVirkt(false); return; }
+    if (!st) {
+      if (l) l.style.opacity = '0'; S.lykill = ''; setjaVirkt(false);
+      if (T.verk && Date.now() - T.sidast > 60000) sleppaVerki();
+      return;
+    }
+    T.sidast = Date.now();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     // 6006 px JPEG skjalasafnsins er sjálf óskýr (1–2 px línur, JPEG-suð) — sést vel löngu áður en hún nær 1:1.
     // Skarpt um leið og meira en hálfur díll myndarinnar fer á hvern skjádíl.
@@ -189,7 +355,9 @@
     const sv = S.pdf ? svaedi(st, S.pdf) : null;
     const tilbuid = !!(S.blad && sv && S.blad.lykill === sv.lykill);
     // ekki reyna aftur í hverjum ramma eftir villu — 30 s bið
-    if (!tilbuid && !S.bladBid && !S.bilad[st.slod] && (S.pdf || !S.pdfBid) && Date.now() - (S.villaTimi || 0) > 30000) forteikna(st);
+    // TIF-frumrit er 10–15 MB: í síma (farsímagögn) sótt fyrst þegar þysjað er inn, í tölvu strax.
+    const biduTif = st.tif && !upp && window.matchMedia && matchMedia('(max-width: 900px)').matches;
+    if (!tilbuid && !biduTif && !S.bladBid && !S.bilad[st.slod] && (S.pdf || !S.pdfBid) && Date.now() - (S.villaTimi || 0) > 30000) forteikna(st);
     const lykill = [st.slod, Math.round(st.cr.left), Math.round(st.cr.top), Math.round(st.cr.width), st.c.width,
       st.rymi.x, st.rymi.y, Math.round(st.mr.width), Math.round(st.mr.height), upp, tilbuid, !!(st.h.syn && st.h.syn.a)].join('|');
     if (lykill === S.lykill) return;

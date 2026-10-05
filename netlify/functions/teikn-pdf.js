@@ -63,7 +63,9 @@ export default async (req) => {
     } catch (_) { return villa(502, 'Náði ekki í PDF-skjalið'); }
   }
   if (target.protocol !== 'https:' || !LEYFDIR.has(target.hostname)) return villa(403, 'Hýsillinn er ekki leyfður');
-  if (!/\.pdf\.info$/i.test(target.pathname)) return villa(415, 'Teikningin er ekki PDF — enginn vigur til að lesa.');
+  // 05.10.2026 (438): skannaðar teikningar (.tif.info) — frumritið er taplaust og skarpara en 6006 px JPEG-ið.
+  const tif = /\.tiff?\.info$/i.test(target.pathname);
+  if (!tif && !/\.pdf\.info$/i.test(target.pathname)) return villa(415, 'Teikningin er ekki PDF — enginn vigur til að lesa.');
 
   const base = target.protocol + '//' + target.host;
   try {
@@ -91,7 +93,7 @@ export default async (req) => {
         const lengd = Number(r.headers.get('content-length') || 0);
         if (lengd > HAMARK) return villa(413, 'Skjalið er stærra en 40 MB');
         const headers = new Headers(cors);
-        headers.set('Content-Type', 'application/pdf');
+        headers.set('Content-Type', tif ? 'image/tiff' : 'application/pdf');
         // ?nidurhal=1 (384, „Sækja í fullum gæðum"): vista sem skrá með nafni skjalsins í stað þess að opna í flipa.
         if (new URL(req.url).searchParams.get('nidurhal')) {
           const nafn = decodeURIComponent(target.pathname.split('/').pop() || 'teikning.pdf.info').replace(/\.info$/i, '').replace(/[^\w.\-]+/g, '_');
