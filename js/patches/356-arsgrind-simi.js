@@ -37,6 +37,10 @@
     // áfram, en þéttir; einn dálkur aðeins þegar grindin sjálf er þrengri en 520px (venjulegur sími án Tölvusíðu-hams).
     r(['.sk-svc-grid'], 'grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important;max-width:100%!important'),
     r(['.sk-svc-card'], 'padding:8px 9px 7px!important;border-radius:10px!important;min-width:0!important;max-width:100%!important;overflow:hidden!important'),
+    // 05.10.2026 (yfirferð appa): valið „— hvaða reikningur? —" er jafnbreitt lengsta reikningsheitinu (485 px) og var
+    // klippt í 388 px spjaldi. Fer nú í breidd spjaldsins; langur texti styttist.
+    r(['.sk-link-wrap'], 'max-width:100%!important;min-width:0!important'),
+    r(['.sk-link-sel'], 'max-width:100%!important;min-width:0!important;width:100%!important;text-overflow:ellipsis!important'),
     r(['.sk-yrblock'], 'max-width:100%!important;min-width:0!important;padding:8px 0!important'),
     r(['.sk-yrwrap'], 'max-width:100%!important;min-width:0!important'),
     // ílátið er spjaldið sjálft svo samnings-grindin (utan .sk-yrwrap) fylgi líka

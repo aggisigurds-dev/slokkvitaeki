@@ -440,6 +440,10 @@
       '#_bks-overlay ._bks-step{display:inline-flex;align-items:center;gap:5px;justify-content:center}' +
       '#_bks-overlay ._bks-step button{width:24px;height:26px;border-radius:6px;border:1px solid #d0d4da;background:#f6f7f9;color:#334155;font-size:14px;font-weight:800;cursor:pointer;line-height:1;padding:0}' +
       '#_bks-overlay ._bks-step b{min-width:22px;text-align:center;font-size:13px;font-weight:700}' +
+      // 05.10.2026 (yfirferð appa, S26): −/+ voru ~14×16 dp — of smáir fyrir fingur. Í appinu 34 px (≈ 25–30 dp).
+      'body.appmode #_bks-overlay ._bks-step button{width:34px;height:34px;font-size:17px;border-radius:8px}' +
+      'body.appmode #_bks-overlay ._bks-step{gap:6px}' +
+      'body.appmode #_bks-overlay ._bks-del{width:32px;height:32px}' +
       '#_bks-overlay ._bks-sam{display:inline-block;min-width:34px;padding:3px 8px;border-radius:7px;background:#141619;color:#fff;font-weight:800;font-size:12.5px;text-align:center}' +
       // athugasemdir
       '#_bks-overlay ._bks-athform{background:#f8f9fb;border:1px solid #eef0f3;border-radius:10px;padding:10px}' +

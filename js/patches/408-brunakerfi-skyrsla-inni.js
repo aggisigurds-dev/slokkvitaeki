@@ -182,6 +182,8 @@
     H + ' ._bks-eqrow{padding:2px 0!important}',
     H + ' ._bks-eqrow>span:first-child{font-size:12.5px!important}',
     H + ' ._bks-step button{width:22px!important;height:22px!important;font-size:13px!important}',
+    // 05.10.2026 (yfirferð appa): í appinu/símanum stærri −/+ (22 px ≈ 21 dp var of lítið fyrir fingur)
+    'body.appmode ' + H + ' ._bks-step button{width:32px!important;height:32px!important;font-size:16px!important}',
     H + ' ._bks-sam{min-width:30px!important;padding:1px 6px!important;font-size:12px!important}',
     H + ' ._bks-chk{padding:3px 0!important}',
     H + ' ._bks-chk>span:first-child{font-size:12.5px!important}',

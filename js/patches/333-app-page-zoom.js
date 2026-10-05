@@ -52,9 +52,11 @@
   // (króm > 1,2). Valið með yfirferð í S26-hermun (42/60/80/100 %): miðgildi leturs ≈ 10–11 dp án útflæðis.
   // Kröfuyfirlit („nokkuð fínt"), Ársskoðun (eigin Sími-hamur) og Brunahólf-iframe-síður halda gömlu stærðinni.
   const BYRJUN = {
-    company: 0.7, 'm:modal-floorplan': 0.7, 'm:_bks-overlay': 0.6, 'm:_bkc-overlay': 0.6,
+    company: 0.7, 'm:modal-floorplan': 0.7, 'm:_bks-overlay': 0.75, 'm:_bkc-overlay': 0.75,
+    // 05.10.2026 (yfirferð appa): miðgildi leturs ~7 dp á gömlu stærðinni — of smátt
+    arsskodun: 0.8, brunaskra: 0.8, slokkvikerfi: 0.8, rekstrarfelog: 0.8,
     hreyfingarlisti: 0.85, thjonustuverk: 0.85, sala: 0.85,
-    'thjonustu-verkstaedi': 0.6, rekstrarfelog: 0.8, kostnadur: 0.75
+    'thjonustu-verkstaedi': 0.6, kostnadur: 0.75
   };
   const NOFN = { company: 'Fyrirtækjasíða', 'm:modal-floorplan': 'Teikningar', 'm:_bks-overlay': 'Skoðunarskýrsla · brunakerfi', 'm:_bkc-overlay': 'Brunakerfi · vinnuhamur' };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -126,9 +128,17 @@
       }
     }
     const h = (location.hash || '').replace(/^#\/?/, '').split(/[\/?&=]/)[0];
-    if (h) return h;
     const v = document.querySelector('.view.active');
-    return v ? v.id.replace(/^view-/, '') : 'heim';
+    const vid = v ? v.id.replace(/^view-/, '') : '';
+    if (h) {
+      // 05.10.2026 (yfirferð appa): sumir app-flipar (Rekstrarfélög) skipta um sýn án þess að breyta slóðinni — þá
+      // fékk síðan lykil síðustu síðu (Verkstæði, 60 %) og vistun hefði lent á röngum stað. Vísi slóðin á AÐRA sýn
+      // en þá virku ræður virka sýnin. #company/… á enga eigin sýn og heldur sínum lykli.
+      const hv = document.getElementById('view-' + h);
+      if (vid && hv && hv !== v) return vid;
+      return h;
+    }
+    return vid || 'heim';
   }
   function nafn(k, el) {
     if (NOFN[k]) return NOFN[k];
