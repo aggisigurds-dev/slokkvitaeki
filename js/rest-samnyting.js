@@ -151,6 +151,11 @@
             slod.indexOf(location.origin + '/api/') === 0 || slod.indexOf(location.origin + '/.netlify/functions/') === 0)) {
           tolur.skrif++;
           if (geymsla.size) { geymsla.clear(); tolur.taemt++; }
+          // 05.10.2026: skrift um okkar eigin Netlify-fall getur breytt fyrirtækja-röð ÞJÓNSMEGIN
+          // (rename-cascade, kt-bakfylling, payday-push …) og lokaði samt EKKI minninu — svo stök
+          // röð úr minni gat orðið gömul án þess að nokkur sæi. Hér vitum við ekki hvaða töflu
+          // fallið snerti, svo við lokum alltaf. Þetta er strangara en áður, ekki lausara.
+          minniLokad = true;
           var svar0 = upprunalegt.apply(this, arguments);
           try {
             var fall = (slod.split(/\/api\/|\/\.netlify\/functions\//)[1] || '').split(/[?#/]/)[0];
@@ -180,7 +185,20 @@
             if (r && r.ok) { try { document.dispatchEvent(new CustomEvent('gogn-skrifud', { detail: { tafla: tafla, adferd: adferd } })); } catch (_) {} }
           }, function () {});
         } catch (_) {}
-        minniLokad = true;   // eigin breyting — hætta að svara úr minni þar til listinn endurnýjast
+        // 05.10.2026: ÁÐUR lokaðist minnið við HVERT skrif, á hvaða töflu sem er, og opnaðist
+        // aðeins þegar `Companies.list` varð NÝTT fylki — sem getur verið löngu síðar eða aldrei.
+        // Mælt á prófíl 195: `urMinni` komst í 13, svo urðu tvö skrif (á allt aðrar töflur) og
+        // eftir það fór hvert einasta `fyrirtaeki?select=…&id=eq.195` í netið. Í vinnudegi vistar
+        // Agnar eitthvað á fyrstu mínútunni, svo sparnaðurinn var í reynd dauður allan daginn:
+        // fjögur köll á hverja prófílheimsókn sem sækja EINN dálk hvert úr röð sem er í minni.
+        // Nú lokast minnið AÐEINS þegar skrifað er á fyrirtaeki sjálft, eða um rpc/óþekkta leið
+        // þar sem við vitum ekki hvað var snert. Skrif á solur/verkbeidnir/app_kv eiga ekkert
+        // við dálkana í fyrirtækja-röðinni.
+        try {
+          var _h = (slod.split('/rest/v1/')[1] || '').split(/[?#]/)[0];
+          var _t = _h.indexOf('rpc/') === 0 ? 'rpc:' : _h.split('/')[0];
+          if (_t === 'fyrirtaeki' || _t === 'rpc:') minniLokad = true;
+        } catch (_) { minniLokad = true; }   // vitum ekki hvað var skrifað → verum varkár
         return svar;
       }
       // 25.09.2026: HEAD (talningar, count:'exact', head:true) samnýtt líka — mælt: sama ógreidda-krafna-talningin fór
