@@ -13,6 +13,13 @@ It contains everything Claude Code needs to know to be useful immediately.
 > before EVERY push. Route the change through the **`netvordur`** guardian agent
 > (`subagent_type: netvordur`). Do not cut the power line without reconnecting + testing it.**
 >
+> og [`docs/MAELINGAR.md`](docs/MAELINGAR.md) — **gildrurnar sem láta mælitækið ljúga**
+> (fastur biðtími í stað kyrrstöðu · tilbúinn atburður í stað raunverulegrar afhleðslu ·
+> normalísering sem étur það sem greinir að · tómt svar úr RLS · falið spjald · nafnaleit
+> í minnkuðum búnti · vörður á skrá í stað atriðis). **Lesa áður en sagt er „mælt".**
+> Hver gildra þar er mæld, með því sem hún kostaði. Regla 3 hér að neðan er marklaus ef
+> mælitækið lýgur.
+>
 > **📋 Í upphafi vinnu-session:** líta á opin verk á Verkefnalistanum —
 > `GET https://brunaholf.netlify.app/api/verkefnalisti` (beidni/i_vinnu) — áður en
 > nýtt verk er hafið (Agnar 2026-07-30).

@@ -172,6 +172,33 @@
       }
     }, 400);
   }
+
+  /* ÚTSKOLUN VIÐ LOKUN (05.10.2026) — Agnar: „skoða þessi mælitæki líka".
+   *
+   * Stílstjórinn tafði vistun í 400 ms og hafði ENGA útskolun. Loki notandinn
+   * glugganum, skipti um app eða læsi símanum innan þeirrar biðar fór stílbreytingin
+   * aldrei á þjóninn — og toastið „vistaðist EKKI" birtist ekki heldur, því
+   * tímamælirinn fór aldrei af stað. Þögult.
+   *
+   * Hann fannst EKKI í fyrstu útgáfu `audit-vistun-timarar`: hlustarinn á reitnum er
+   * nefnt fall, og vörðurinn las þá aðeins innfelldan líkama og flokkaði þetta sem
+   * bendilhandtak. Listunin (`--listi`) afhjúpaði það. Verkfærið var lagað fyrst,
+   * svo fundust þessi tvö.
+   *
+   * `AppSettings.saveVidLokun` er sama `app_settings_merge`-kallið og venjulega leiðin,
+   * sent beint á PostgREST með keepalive (papp 85) — svo það lifir af að síðan hverfi.
+   */
+  function skolaStilVidLokun() {
+    if (!_saveT) return;
+    clearTimeout(_saveT); _saveT = null;
+    const o = {}; o[KEY] = JSON.stringify(state);
+    try {
+      if (window.AppSettings && typeof AppSettings.saveVidLokun === 'function' && AppSettings.saveVidLokun(o)) return;
+      if (window.AppSettings && AppSettings.save) AppSettings.save(o);   // of stórt fyrir keepalive → venjulega leiðin
+    } catch (_) {}
+  }
+  window.addEventListener('pagehide', skolaStilVidLokun);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') skolaStilVidLokun(); });
   // ── undo ──────────────────────────────────────────────────────────────────
   // Called BEFORE every state mutation (setDecl/applySize/applyPreset/reset/
   // bakgrunnur/favorites) so „↩ Afturkalla" can step back one change at a time.

@@ -1675,6 +1675,44 @@
     }, 2500);
   }
 
+  /* ÚTSKOLUN VIÐ LOKUN (05.10.2026) — Agnar: „skoða þessi mælitæki líka".
+   *
+   * Sjálfvistun skýrslunnar beið í 2,5 SEKÚNDUR og hafði enga útskolun. Loki Agnar
+   * skýrslunni, skipti um app eða læsi símanum innan þeirrar biðar fór skrifið aldrei
+   * af stað. `bks_mirror` í localStorage heldur vinnunni, en sú endurheimt virkar
+   * AÐEINS á sama tæki og krefst þess að hann opni félagið aftur og samþykki glugga —
+   * skrifstofan sér ekkert á meðan. Það er ekki vörn sem má treysta á úti á vettvangi.
+   *
+   * Þessi fannst ekki í fyrstu útgáfu `audit-vistun-timarar` (hlustarinn er nefnt fall,
+   * sjá þar). Verkfærið var lagað fyrst; þá kom hann fram.
+   *
+   * Á EKKERT auðkenni enn (ný skýrsla) → venjuleg leið: við `hidden` lifir síðan og
+   * `insert` klárast; við raunverulega afhleðslu stendur spegillinn eftir, sem er
+   * einmitt það sem hann er til fyrir. Með auðkenni fer uppfærslan beint á PostgREST
+   * með keepalive (sama bragð og 361/274), svo hún lifi af að glugganum sé lokað.
+   */
+  function skolaSkyrsluVidLokun() {
+    if (!_autoT) return;
+    clearTimeout(_autoT); _autoT = null;
+    try {
+      if (!S || !S.co || !S.data) return;
+      if (!S.id) { saveDraft().catch(() => {}); return; }
+      const url = String(window.SUPABASE_URL || '').replace(/\/+$/, ''), key = window.SUPABASE_KEY;
+      if (!url || !key) { saveDraft().catch(() => {}); return; }
+      fetch(url + '/rest/v1/brunakerfi_skyrslur?id=eq.' + encodeURIComponent(S.id), {
+        method: 'PATCH', keepalive: true,
+        headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          uttekt_nr: S.data.meta.nr || null, status: S.status || 'draft',
+          data: S.data, updated_at: new Date().toISOString()
+        })
+      }).catch(() => {});
+      // Spegillinn er EKKI hreinsaður hér: við vitum ekki hvort beiðnin komst á leiðarenda.
+    } catch (_) {}
+  }
+  window.addEventListener('pagehide', skolaSkyrsluVidLokun);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') skolaSkyrsluVidLokun(); });
+
   async function saveDraft() {
     const sb = SB(); if (!sb) throw new Error('engin gagnabankatenging');
     const rec = { fyrirtaeki_id: S.co.id, year: yearOf(), uttekt_nr: S.data.meta.nr || null,
