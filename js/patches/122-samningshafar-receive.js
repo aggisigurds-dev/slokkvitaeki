@@ -685,7 +685,7 @@
       const _validPhone = p => { const d = String(p || '').replace(/\D/g, ''); return d.length === 7 && !/^(\d)\1{6}$/.test(d); };
       let _phoneToUse = _selectedCompany.simi || '';
       if (!_validPhone(_phoneToUse)) {
-        const _inp = prompt('„Greitt síðar" krefst gilds símanúmers (7 stafir) — hver sækir/borgar?\n\nSímanúmer:', '');
+        const _inp = prompt('Gilt símanúmer vantar (7 stafir) — hver sækir/borgar?\n\nSímanúmer:', '');
         if (!_validPhone(_inp)) {
           if (window.Toast && Toast.show) Toast.show('❌ Gilt símanúmer vantar — móttaka ekki kláruð');
           return;
@@ -693,64 +693,23 @@
         _phoneToUse = String(_inp).replace(/\D/g, '');
       }
 
-      // 2026-05-10 (B4 fix): Insert solur FIRST so the BEFORE-INSERT trigger
-      // can assign the canonical R-NNNNNN num. Then use that same num on the
-      // verkbeiðni so patch 121's parentSaleNum() lookup finds the draft.
-      // Old approach generated `#YYYY-NNN` for verkbeiðni and trusted the
-      // trigger to leave it on solur — but the trigger overrode to R-NNNNNN,
-      // breaking the link.
-      const draftSale = {
-        starfsmadur: 'Verkstæði',
-        customer_nafn: _selectedCompany.nafn || '',
-        customer_id: _selectedCompany.id || null,
-        linur,
-        upphaed_an_vsk: Math.round(draftEx),
-        vsk_upphaed: Math.round(draftVsk),
-        afslattur: 0,
-        samtals: draftTotal,
-        greitt_med: 'greitt_sidar',
-        // NB: staða er GEYMD Í status-dálkinum ('drog'), EKKI í athugasemdum —
-        // athugasemdir PRENTAST á reikninginn (vegna-lína). Áður stóð hér
-        // 'Drög — bíður Sótt ✓' sem lak á prentaða reikninginn (Verkefnalisti
-        // ed7fd0d1). Höfum reitinn tóman; drög-listinn (143) les status-dálkinn.
-        athugasemdir: '',
-        status: 'drog',
-        source: 'sott'
-      };
-      let saleRes = await SB.from('solur').insert(draftSale).select().single();
-      if (saleRes.error && /status/i.test(saleRes.error.message || '')) {
-        const { status, ...rest } = draftSale;
-        saleRes = await SB.from('solur').insert(rest).select().single();
-        if (!saleRes.error && window.Toast && Toast.show) {
-          Toast.show('Drög-staða ekki tiltæk — keyrðu sql/solur_status.sql svo Tekjur feli drög rétt');
-        }
-      }
-      if (saleRes.error) {
-        // 2026-05-11: Was synthesizing 'R-' + Date.now().slice(-6) here as
-        // an "ultra-fallback" but that:
-        //   1. Can collide with REAL R-NNNNNN numbers from the trigger,
-        //      breaking parentSaleNum() lookups in patch 121.
-        //   2. Bypasses the BEFORE-INSERT trigger that assigns canonical IDs.
-        // Better: abort the verkbeiðni creation entirely and tell the user
-        // what went wrong. The customer can retry, and we keep data clean.
-        console.error('[samningshafar-receive] draft solur insert failed:', saleRes.error.message);
-        if (window.Toast && Toast.show) {
-          Toast.show('❌ Gat ekki vistað sölu: ' + saleRes.error.message);
-        } else {
-          alert('Gat ekki vistað sölu — verkbeiðni ekki stofnuð.\n\n' + saleRes.error.message);
-        }
-        return; // abort — don't create orphan verkbeiðni
-      }
-      const num = saleRes.data && saleRes.data.num;
-      if (!num) {
-        // Sale was created but num came back empty (trigger missing?). Same
-        // safety: abort rather than synthesize.
-        console.error('[samningshafar-receive] solur insert succeeded but num is empty');
-        if (window.Toast && Toast.show) Toast.show('❌ Salinn fékk ekki R-númer');
+      // 05.10.2026 (Agnar: „ekkert að vera gera drög af því sem tengist sækja inn úr fyrirtækjum"): Sækja inn býr
+      // EKKI lengur til sölu-drög. Drögin lágu í Drög-listanum þar til afhent var, og þegar verkinu var eytt stóð
+      // salan eftir (R-001077, Álfaborg, 05.10). Verkbeiðnin fær R-númer úr SÖMU röð og sölurnar
+      // (next_reikningur_num → reikningur_seq) og salan verður til VIÐ AFHENDINGU í 121 með því númeri; línurnar
+      // reiknast þá úr afhentu tækjunum með samningsverði fyrirtækisins (window.SamningshafarVerd hér að neðan).
+      // draftTotal er aðeins áætlun á verkbeiðninni (verd).
+      const numSvar = await SB.rpc('next_reikningur_num');
+      const num = numSvar && !numSvar.error && numSvar.data ? String(numSvar.data) : '';
+      if (!/^R-\d+$/.test(num)) {
+        console.error('[samningshafar-receive] next_reikningur_num', numSvar && numSvar.error);
+        const villa = '❌ Verkið fékk ekki R-númer — ekkert stofnað' + (numSvar && numSvar.error ? ': ' + numSvar.error.message : '');
+        if (window.Toast && Toast.show) Toast.show(villa); else alert(villa);
+        if (create) { create.disabled = false; create.textContent = 'Stofna verk'; }
         return;
       }
 
-      // Insert verkbeiðni with the SAME num as the draft solur.
+      // Verkbeiðnin ber R-númerið; salan fær sama númer við afhendingu (121 parentSaleNum).
       const jobIns = await SB.from('verkbeidnir').insert({
         num,
         status: 'received',
@@ -866,6 +825,9 @@
 
   // Public API
   window.SamningshafarReceive = { open: openReceiveModal };
+  // 05.10.2026: 121 (Sókn) reiknar línur sölunnar við afhendingu með SÖMU verðreglu og stóð áður á drögunum
+  // (vörulisti + Tilboðsverð fyrirtækisins). picked = [{ u: { serial, type, size }, service }].
+  window.SamningshafarVerd = { linur: buildLinurFromPicked };
 
   console.log('[samningshafar-receive] installed');
 })();
