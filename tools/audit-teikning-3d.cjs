@@ -50,7 +50,7 @@ const but = (a, b) => { const i = src.indexOf(a), j = src.indexOf(b); if (i < 0 
 const m = {};
 try {
   new Function('ut', but('  function summutafla', '  /** mynd: <img> eða <canvas>') + but('  const sameinaBil = ', '  const BAKGRUNNUR_3D') +
-    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi, merkjaEldveggi, husklasi, hurdagot, tengdirVeggir, eldurHurda, brunaholf, veggurVid, reiknaEld, gerdTaekis, festaAVegg, teiknaTaekistakn });')(m);
+    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi, merkjaEldveggi, husklasi, hurdagot, tengdirVeggir, eldurHurda, brunaholf, veggurVid, reiknaEld, gerdTaekis, festaAVegg, teiknaTaekistakn, klasaButa, hreinsaGogn });')(m);
 } catch (e) { villur.push('383: reiknireglurnar hlaðast ekki sjálfstætt (' + e.message + ') — þær verða að vera hrein gagnavinnsla án DOM'); }
 
 const lengd = v => Math.hypot(v[2] - v[0], v[3] - v[1]);
@@ -276,6 +276,37 @@ krefst(/holirVeggir\(r\.gra, r\.W, r\.H, r\.kvardi, kpt\)/, 'undirbua verður a�
 krefst(/linubond\(r\.gra, r\.W, r\.H, r\.kvardi, kpt\)/, 'undirbua verður að leita línubanda (útveggir úr örþunnum línum) á skönnunum');
 krefst(/lengjaVeggi\(butar, r\.gra, r\.W, r\.H, r\.kvardi\)/, 'undirbua verður að lengja veggi eftir línunni (Agnar: „ná alla línuna þar til hún endar á annarri eða endar")');
 krefst(/merkjaEldveggi\(butar, eiHintar\.map/, 'undirbua verður að merkja eldveggi út frá EI-merkjunum');
+// 16 · FASTUR GREININGARKVARÐI (Agnar 05.10.2026: „3D er fucked á Arnarhóli“). Þröskuldar veggjagrímunnar voru hlutfall af
+//      breidd vinnumyndarinnar, svo sama hús gaf aðra veggi eftir skurði og gæðavali (Arnarhvoll: 172 veggir → 380).
+//      Með `vidmid` eru þeir fastir: sama opnun hvort sem vinnumyndin er 1000 eða 3000 díla breið.
+if (m.hreinsaGogn) {
+  const gera = (W, o) => { const H = 40, g = new Uint8Array(W * H).fill(255); for (let x = 10; x < W - 10; x++) for (let y = 15; y < 23; y++) g[y * W + x] = 0; return m.hreinsaGogn(g, W, H, o).thykkt; };
+  const an = [gera(1000), gera(3000)], med = [gera(1000, { vidmid: 2200 }), gera(3000, { vidmid: 2200 })];
+  if (an[0] === an[1]) villur.push('hreinsaGogn: án viðmiðs á opnunin að fylgja breidd myndarinnar (prófið sjálft er þá marklaust), fékk ' + an.join(' og '));
+  if (med[0] !== 2 || med[1] !== 2) villur.push('hreinsaGogn: með vidmid = 2200 á opnunin að vera 2 dílar óháð breidd vinnumyndar, fékk ' + med.join(' og ') + ' — þá breytist 3D-húsið aftur við það eitt að skera þrengra');
+}
+krefst(/kvardi: greiningarkvardi\(fb, fh\), vidmid: VIDMID_3D/, 'undirbua verður að greina skönnun í FÖSTUM kvarða (greiningarkvardi + vidmid) — annars ræður skurður og gæðaval því hvaða línur verða veggir');
+krefst(/function greiningarkvardi\(fb, fh\) \{ return Math\.min\(1, \(window\.Teikn3D && Teikn3D\.profKvardi\) \|\| BLAD_3D \/ Math\.max\(fb, fh, 1\)\); \}/, 'greiningarkvarðinn á að ráðast af stærð BLAÐSINS (frummyndar), ekki af skurði eða TeiknGaedi.vinnuPx');
+// 17 · SKORIÐ AÐ HÚSINU eftir veggjanetinu (Agnar 05.10.2026: „næ ekki að losna við teikningaupplýsingaruglið á hægri
+//      hliðinni“ · „Cutta að húsinu“). klasaButa flokkar búta sem hanga saman; husRammi velur klasann með mest
+//      veggjaflatarmál (hús = þykkir veggir, nafnreitur = línur) og sker að honum.
+if (m.klasaButa) {
+  const hus = [[100, 100, 500, 100, 8], [500, 100, 500, 400, 8], [500, 400, 100, 400, 8], [100, 400, 100, 100, 8]];
+  const reitur = [[900, 120, 1000, 120, 2], [900, 150, 1000, 150, 2], [1000, 120, 1000, 150, 2]];
+  const nr = m.klasaButa(hus.concat(reitur), 30);
+  if (new Set(nr.slice(0, 4)).size !== 1 || new Set(nr.slice(4)).size !== 1 || nr[0] === nr[4]) villur.push('klasaButa: húsið og nafnreiturinn 400 díla frá eiga að vera TVEIR klasar, fékk ' + JSON.stringify(nr));
+  if (new Set(m.klasaButa(hus.concat([[520, 250, 700, 250, 8]]), 30)).size !== 1) villur.push('klasaButa: veggur 20 díla frá húsinu (innan tengibils) á að lenda í sama klasa');
+} else villur.push('klasaButa vantar — husRammi (skorið að húsinu) byggir á henni');
+krefst(/const adal = K\.reduce\(\(a, q\) => \(!a \|\| q\.flat > a\.flat \? q : a\), null\);/, 'husRammi á að velja klasann með mest veggjaFLATARMÁL (lengd × þykkt) — eftir lengd einni vinnur nafnreiturinn stundum');
+krefst(/const butar = veggirUrMynd\(r, iw, ih, \{\}, true\);/, 'husRammi á að lesa veggjanetið ÁN husklasi (álmureglan þar hélt nafnreit Rauðarárstígs 31 sem álmu)');
+krefst(/if \(!val\.fest && h\.sjalf !== false && !h\.thett && !pdfSlod\(h\) && !h\.pdfVeggir\.length && G\.husReynt !== G\.frum\)/, 'sjálfvirkur skurður skönnunar verður að þéttast einu sinni að veggjanetinu — og aldrei þegar útlit er fest eða skurður handvalinn');
+krefst(/gera\('fp-hus-btn', '⌂ Að húsinu'/, 'takkinn „Að húsinu“ (skorið að húsinu með einum smelli) er farinn');
+krefst(/plan\(\)\.markers\.forEach\(m => \{ if \(erPx\(m\)\) \{ const mx = m\.x \+ G\.rymi\.x, my = m\.y \+ G\.rymi\.y; x0 = Math\.min\(x0, mx - sp\); y0 = Math\.min\(y0, my - sp\); x1 = Math\.max\(x1, mx \+ sp\); y1 = Math\.max\(y1, my \+ sp\); \} \}\);\s+x0 = Math\.max\(0, x0\); y0 = Math\.max\(0, y0\); x1 = Math\.min\(iw, x1\); y1 = Math\.min\(ih, y1\);\s+const nw = x1 - x0, nh = y1 - y0, gamall = h\.skurdur;\s+h\.thett = true;/, 'skeraAdHusi verður að víkka kassann svo merki sem þegar eru til lendi innan hans');
+// 18 · TÆKI UTAN TEIKNINGAR (Agnar 05.10.2026: „Tækin eru fyrir utan húsið“): merki utan myndarinnar er ekki teiknað í 3D,
+//      en skýringin segir hve mörg þau eru.
+krefst(/const merki = merkiOll\.filter\(m => m\.x >= 0 && m\.y >= 0 && m\.x <= iw && m\.y <= ih\), merkiUti = merkiOll\.length - merki\.length;/, 'merki utan myndarinnar má ekki svífa við hlið hússins í 3D');
+krefst(/nUti \+= u\.merkiUti \|\| 0;/, 'skýringin í 3D verður að telja tæki sem eru staðsett utan teikningar — annars hverfa þau þegjandi');
+krefst(/\(b < h \* 1\.5 \? Math\.min\(2\.6, 1\.5 \* h \/ Math\.max\(1, b\)\) : 1\)/, 'á háum, mjóum striga (sími) verður myndavélin að bakka svo allt húsið sjáist');
 krefst(/const ei = await eiHintarFyrir3d\(h, fbE, fhE\);/, 'opna3d verður að sækja EI-merkin (vistuð eða úr textalagi PDF-sins) áður en hæðin er undirbúin');
 krefst(/\[0, d, -d\]\.some\(o => inni\(/, 'útisían má ekki fella ÚTVEGGI: veggur fellur aðeins ef ekkert er inni heldur til hliðar við hann (Agnar: „Vantar oft aðal útveggina")');
 krefst(/butar = husklasi\(butar, 30 \* kpt, 115 \* kpt, 115 \* kpt\)/, 'undirbua verður að halda aðeins veggjaneti hússins á skönnunum (nafnreitur og lóðartákn urðu að veggjum — Agnar: „smá mesh þarna")');

@@ -109,6 +109,14 @@ krefst('js/mobilenav.js', /\/position:\\s\*fixed\/\.test\(btn\.style\.cssText\)/
 krefst('js/patches/331-ars-phone-skjar.js', /if \(document\.documentElement\.dataset\.arsSjon !== mode\)/, '331 skrifar data-ars-sjon á <html> í hverri umferð');
 krefst('js/patches/169-logo-customization.js', /setTimeout\(poll, _tries\+\+ < 120 \? 800 : 2500\)/, '169: púlsinn má ekki hætta — logo-ramminn kæmi þá aldrei ef Stillingar eru opnaðar > 96 s eftir hleðslu');
 
+// ── 6 · samanburður við innerHTML er ekki vörn (05.10.2026) ────────────────────────────────
+// `if (t.innerHTML !== strengur) t.innerHTML = strengur` er ALLTAF satt þegar strengurinn ber <svg><path …/></svg> — vafrinn
+// skilar <path …></path>. 405 endurskrifaði því Teikning-takkann í hverri umferð → endalaus vaktahringur á hverjum prófíl
+// með teikningu (mælt á lifandi: 2.475 löng verk á 5 mín, tímamælar sveltir, sjálfvistun teikningagluggans fór aldrei af stað).
+bannar('js/patches/405-efsta-rod.js', /t\.innerHTML !== label/, '405 ber innerHTML saman við eigin streng — alltaf ósatt jafnt, takkinn endurskrifaður í hverri umferð (endalaus hringur)');
+krefst('js/patches/405-efsta-rod.js', /t\._b405Label !== label/, '405 verður að bera saman við strenginn sem var síðast settur (t._b405Label)');
+krefst('js/patches/00-legacy.js', /if \(main\.dataset\._pmDeleteSkipped !== '1'\) main\.dataset\._pmDeleteSkipped = '1';/, '00-legacy skrifar data-_pm-delete-skipped á #companies-main í hverri umferð (eigindabreyting þótt gildið sé eins)');
+
 if (villur.length) {
   console.log('RED  KYRRÐ — ' + villur.length + ' brot:\n  · ' + villur.join('\n  · '));
   process.exit(1);

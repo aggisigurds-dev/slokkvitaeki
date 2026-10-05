@@ -135,7 +135,7 @@
     var CHEV = svg('<path d="m6 9 6 6 6-6"/>');
     var label = opid ? (CHEV + 'Fela teikningu') : (CHEV + 'Teikning' + (n ? ' · ' + n : ''));
     if (!t) {
-      t = el('button', 'b405-fpt', label); t.id = 'b405-fpt'; t.type = 'button'; t.title = 'Sýna eða fela teikninguna og viðbótaupplýsingar';
+      t = el('button', 'b405-fpt', label); t._b405Label = label; t.id = 'b405-fpt'; t.type = 'button'; t.title = 'Sýna eða fela teikninguna og viðbótaupplýsingar';
       t.addEventListener('click', function (ev) {
         ev.preventDefault(); ev.stopPropagation();
         var nu = !fpOpid(); fpSetja(nu); main.classList.toggle('b405-fp-open', nu);
@@ -149,7 +149,12 @@
       });
       var teikn = Array.prototype.slice.call(knappar.querySelectorAll('button')).filter(function (b) { return /FloorPlan\.|opnaTeikningu/.test(b.getAttribute('onclick') || ''); })[0];
       if (teikn && teikn.nextSibling) knappar.insertBefore(t, teikn.nextSibling); else knappar.appendChild(t);
-    } else if (t.innerHTML !== label) t.innerHTML = label;
+    // KYRRÐ (05.10.2026): hér var innerHTML takkans borið saman við label — alltaf ólíkt, því vafrinn skilar <path …></path> en strengurinn
+    // er <path …/>. Takkinn var því endurskrifaður í HVERRI umferð → childList-breyting → allar vaktir vöknuðu → aftur hingað:
+    // endalaus hringur (~10 á sek) á hverjum prófíl sem á teikningu. Mælt á lifandi (Arnarhvoll, teikningagluggi opinn):
+    // 2.475 löng verk á 5 mín, 200 ms tímamælir kviknaði ekki á 15 s — sjálfvistun teikningagluggans fór aldrei af stað.
+    // Nú er borið saman við strenginn sem var síðast settur.
+    } else if (t._b405Label !== label) { t.innerHTML = label; t._b405Label = label; }
     t.classList.toggle('opin', opid);
   }
   function ensureSamskipti(main) {

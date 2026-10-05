@@ -1749,7 +1749,7 @@ console.log('[patch-master] loaded with all fixes');
     if (SKIP_DELETE_BTN) {
       // Still render the notes/count display below the name (useful chip)
       // by falling through, but mark the dataset so we don't re-do it.
-      main.dataset._pmDeleteSkipped = '1';
+      if (main.dataset._pmDeleteSkipped !== '1') main.dataset._pmDeleteSkipped = '1';   // sama gildi skrifað aftur er samt eigindabreyting (vekur vaktir)
     }
     // Show athugasemdir (notes) under company name
     var nameDiv = main.querySelector('div[style*="font-size:21px"]');

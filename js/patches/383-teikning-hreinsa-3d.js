@@ -96,7 +96,11 @@
   function hreinsaGogn(gra, W, H, o) {
     o = o || {};
     const dokkt = o.dokkt || 185;
-    const r = Math.max(1, o.thykkt || Math.round(W / 1000));
+    // VIÐMIÐ (05.10.2026): þröskuldarnir hér voru allir hlutfall af breidd vinnumyndarinnar. Sama hús gaf því aðra veggi
+    // eftir því hve þröngt var skorið og hvaða gæði voru valin (Arnarhvoll: 172 veggir með lausum skurði, 380 með þröngum —
+    // mállínur og húsgögn urðu veggir). 3D-greiningin sendir `vidmid` og vinnur í föstum kvarða (greiningarkvardi).
+    const Wv = o.vidmid || W;
+    const r = Math.max(1, o.thykkt || Math.round(Wv / 1000));
     let blek = new Uint8Array(W * H);
     for (let i = 0; i < W * H; i++) blek[i] = gra[i] < dokkt ? 1 : 0;
     // Tvöfaldir veggir: loka rifunni Á MILLI línanna áður en þunnt er þurrkað út.
@@ -104,17 +108,17 @@
     let v = dilate(erode(blek, W, H, r), W, H, r);                         // opnun: þunnt hverfur
     v = erode(dilate(v, W, H, r + 1), W, H, r + 1);                        // lokun: göt í veggjum gróa
     // Heilir flekkir lifa af risa-opnun; alvöru veggir gera það aldrei.
-    const R = Math.max(r + 4, Math.round(W / 140));
+    const R = Math.max(r + 4, Math.round(Wv / 140));
     const flekkir = dilate(dilate(erode(v, W, H, R), W, H, R), W, H, 4);
     for (let i = 0; i < W * H; i++) if (flekkir[i]) v[i] = 0;
     // Smáagnir (stafir sem lifðu af, punktar, örvar).
-    const sv = svaedi(v, W, H), lagm = Math.round(W / 54), lagmFlat = Math.round((W / 170) * (W / 170));
+    const sv = svaedi(v, W, H), lagm = Math.round(Wv / 54), lagmFlat = Math.round((Wv / 170) * (Wv / 170));
     const halda = new Uint8Array(sv.listi.length + 1);
     sv.listi.forEach(s => { if (s.flat >= lagmFlat && Math.max(s.b, s.h) >= lagm) halda[s.n] = 1; });
     let fjoldi = 0;
     for (let i = 0; i < W * H; i++) { if (v[i] && !halda[sv.merki[i]]) v[i] = 0; if (v[i]) fjoldi++; }
     // Fótspor: loka veggjanetinu gróft, flóðfylla utan frá; það sem næst ekki í er inni í húsinu.
-    const Rf = Math.max(6, Math.round(W / 70));
+    const Rf = Math.max(6, Math.round(Wv / 70));
     const lokad = erode(dilate(v, W, H, Rf), W, H, Rf);
     const uti = new Uint8Array(W * H), st = new Int32Array(W * H);
     let top = 0;
@@ -135,7 +139,7 @@
     o = o || {};
     const iw = mynd.naturalWidth || mynd.width, ih = mynd.naturalHeight || mynd.height;
     const vinnuPx = o.vinnuPx || (window.TeiknGaedi && TeiknGaedi.vinnuPx && TeiknGaedi.vinnuPx()) || 2200;
-    const kvardi = Math.min(1, vinnuPx / Math.max(iw, ih));
+    const kvardi = o.kvardi ? Math.min(1, o.kvardi) : Math.min(1, vinnuPx / Math.max(iw, ih));
     const W = Math.max(1, Math.round(iw * kvardi)), H = Math.max(1, Math.round(ih * kvardi));
     const vinnu = document.createElement('canvas'); vinnu.width = W; vinnu.height = H;
     const vc = vinnu.getContext('2d', { willReadFrequently: true });
@@ -150,12 +154,14 @@
     // þekjan lendir í ~1%. Reynum ljósara blek + fyllingu tvöfaldra veggja AÐEINS
     // þegar fótspor hússins lítur út eins og hús — annars slitrur, ekki 3D.
     if (g.thekja < 0.04 && !o.thykkt && !o.fylla) {
-      const g2 = hreinsaGogn(gra, W, H, { dokkt: 210, thykkt: 1, fylla: true });
+      const g2 = hreinsaGogn(gra, W, H, { dokkt: 210, thykkt: 1, fylla: true, vidmid: o.vidmid });
       let fot = 0;
       for (let i = 0; i < g2.fotspor.length; i++) fot += g2.fotspor[i];
       const hluti = fot / (W * H);
       if (g2.thekja >= 0.04 && hluti >= 0.08 && hluti <= 0.88) g = g2;
     }
+    // 3D og húsleitin lesa aðeins grímurnar — þá er stóri striginn (allt að 25 MP á heilu blaði) ekki smíðaður.
+    if (o.anStriga) return { strigi: null, vinnu, veggir: g.veggir, thykkir, gra, fotspor: g.fotspor, W, H, kvardi, thekja: g.thekja, thykkt: g.thykkt };
     // Of lítið fannst → ekki þykjast: kallarinn fær að vita og sýnir frummyndina áfram.
     const naerVegg = dilate(g.veggir, W, H, 2);
     // Fá veggir fundust (þunnlínu-CAD): fótsporið er þá götótt og „bara veggir" skildi eftir nær auða mynd.
@@ -917,6 +923,27 @@
     const halda = greidusia(B);        // textalínur í nafnreit og skýringum eru greiða, ekki veggir
     return B.filter((v, i) => halda[i]);
   }
+  /* ── KLASAR: hvaða bútar hanga saman (snertast, skerast eða standa innan við `tengibil` hver frá öðrum) ──
+   * Skilar fylki með klasanúmeri hvers bútar (0, 1, 2 …). */
+  function klasaButa(butar, tengibil) {
+    const n = butar.length, rot = Array.from({ length: n }, (_, i) => i);
+    const finna = i => { while (rot[i] !== i) { rot[i] = rot[rot[i]]; i = rot[i]; } return i; };
+    const pkt = (px, py, v) => { const dx = v[2] - v[0], dy = v[3] - v[1], L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((px - v[0]) * dx + (py - v[1]) * dy) / L2)); return Math.hypot(px - (v[0] + dx * t), py - (v[1] + dy * t)); };
+    const skerast = (a, b) => {
+      const d = (b[3] - b[1]) * (a[2] - a[0]) - (b[2] - b[0]) * (a[3] - a[1]);
+      if (Math.abs(d) < 1e-9) return false;
+      const ua = ((b[2] - b[0]) * (a[1] - b[1]) - (b[3] - b[1]) * (a[0] - b[0])) / d, ub = ((a[2] - a[0]) * (a[1] - b[1]) - (a[3] - a[1]) * (a[0] - b[0])) / d;
+      return ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1;
+    };
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const a = butar[i], b = butar[j], bil = tengibil + ((a[4] || 0) + (b[4] || 0)) / 2;
+      if (Math.min(a[0], a[2]) - bil > Math.max(b[0], b[2]) || Math.min(b[0], b[2]) - bil > Math.max(a[0], a[2]) || Math.min(a[1], a[3]) - bil > Math.max(b[1], b[3]) || Math.min(b[1], b[3]) - bil > Math.max(a[1], a[3])) continue;
+      if (skerast(a, b) || Math.min(pkt(a[0], a[1], b), pkt(a[2], a[3], b), pkt(b[0], b[1], a), pkt(b[2], b[3], a)) <= bil) rot[finna(i)] = finna(j);
+    }
+    const nr = new Map();
+    return butar.map((_, i) => { const r = finna(i); if (!nr.has(r)) nr.set(r, nr.size); return nr.get(r); });
+  }
+
   /* ── HÚSIÐ SJÁLFT: veggjanetið sem hangir saman ──
    * Agnar 04.10.2026 (Arnarhvoll, óskorið blað): textalínur í nafnreit og tákn á lóðinni urðu að veggjum — „smá mesh þarna".
    * Veggir húss mynda NET: þeir snertast eða standa innan við hurðarbreidd hver frá öðrum. Nafnreitur, norðurör og
@@ -1731,7 +1758,8 @@
     // Myndavél á braut um miðjuna: draga = snúa · hjól/klípa = aðdráttur · hægri/shift-draga eða tveir fingur = færa.
     const vel = new T.PerspectiveCamera(42, b / h, 0.1, staerst * 20 + haedY * 6);
     const mid = new T.Vector3(0, haedY * 0.4, 0);
-    let theta = -0.6, phi = 0.95, fjarl = Math.max(staerst * 1.25, haedY * 2.3);
+    // Hár og mjór strigi (sími): sjónsviðið lárétt er þrengra en lóðrétt — bakka svo allt húsið sjáist (05.10.2026).
+    let theta = -0.6, phi = 0.95, fjarl = Math.max(staerst * 1.25, haedY * 2.3) * (b < h * 1.5 ? Math.min(2.6, 1.5 * h / Math.max(1, b)) : 1);
     function stillaVel() {
       phi = Math.min(1.5, Math.max(0.12, phi)); fjarl = Math.min(staerst * 6 + haedY * 2, Math.max(staerst * 0.12, fjarl));
       vel.position.set(mid.x + fjarl * Math.sin(phi) * Math.sin(theta), mid.y + fjarl * Math.cos(phi), mid.z + fjarl * Math.sin(phi) * Math.cos(theta));
@@ -1828,7 +1856,7 @@
     return handfang;
   }
 
-  window.Teikn3D = { syna: syna3d, kassarUrGrimu, heilirVeggir };
+  window.Teikn3D = { syna: syna3d, kassarUrGrimu, heilirVeggir, husRammi, greiningarkvardi };
 
   /* ───────────────────────── 3) TENGING VIÐ TEIKNINGAGLUGGANN (FloorPlan) ─────────────────────────
    *
@@ -1902,7 +1930,7 @@
     _sjalfvistBid = setTimeout(async () => {
       try {
         const FP = FPx(), cid = FP && FP.companyId;
-        if (!cid || !modalSynnilegt() || G.rodKomin !== cid || !window.DB || !DB.sb) return;
+        if (!cid || !modalSynnilegt() || G.rodKomin !== cid || !window.DB || !DB.sb) { console.info('[383] sjálfvistun sleppt (' + (astaeda || '') + '): röð þjónsins ekki komin eða glugginn lokaður'); return; }
         const r = await DB.sb.from('teikning_bord').select('haedir').eq('company_id', cid).limit(1);
         if (r.error || !r.data || !r.data.length || !Array.isArray(r.data[0].haedir) || !r.data[0].haedir.length) return;
         const minar = {}; haedir().forEach(h => { if (h && h.id) minar[h.id] = h; });
@@ -2099,6 +2127,38 @@
   }
   // Undir þessu er niðurstaða myndgreiningarinnar slitrur, ekki veggjanet — þá er hún ekki sýnd og fer ekki í 3D.
   const NOTHAEF_THEKJA = 0.04;
+
+  // SKORIÐ AÐ HÚSINU eftir veggjanetinu (husRammi). sjalfkrafa = einu sinni eftir fyrstu opnun (þéttir lausan sjálfskurð);
+  // annars takkinn „Að húsinu". Kassinn er víkkaður svo öll merki sem þegar eru til lendi innan hans — sjálfvirkni má
+  // aldrei fela staðsetningu. `thett` segir að þéttingin hafi verið reynd, svo hún er ekki endurtekin við hverja opnun.
+  function skeraAdHusi(sjalfkrafa) {
+    const h = virkHaed(); if (!h || !G.frum) return false;
+    const iw = G.frum.naturalWidth || G.frum.width, ih = G.frum.naturalHeight || G.frum.height;
+    if (h.pdfVeggir.length > 30) {
+      // Vigur-PDF: veggirnir eru þegar þekktir — þétti skurðurinn sem fyrir er.
+      h.sjalf = true; delete h.thett;
+      const ok = thetturSkurdur(h, iw, ih);
+      if (ok) vistaSjalfkrafa('skorið að húsinu'); else if (!sjalfkrafa) segja('Fann ekki húsið í vigurlínunum — dragðu kassann sjálfur með ✂ Skera.');
+      return ok;
+    }
+    let hus = null;
+    try { hus = husRammi(G.frum); } catch (e) { console.warn('[383] husRammi', e); }
+    if (!hus) {
+      if (sjalfkrafa) { h.thett = true; vistaSjalfkrafa('húsleit reynd'); }
+      else segja('Fann ekki veggjanet hússins á blaðinu — dragðu kassann sjálfur með ✂ Skera.');
+      return false;
+    }
+    let x0 = hus.x, y0 = hus.y, x1 = hus.x + hus.w, y1 = hus.y + hus.h;
+    const sp = Math.max(iw, ih) * 0.012;
+    plan().markers.forEach(m => { if (erPx(m)) { const mx = m.x + G.rymi.x, my = m.y + G.rymi.y; x0 = Math.min(x0, mx - sp); y0 = Math.min(y0, my - sp); x1 = Math.max(x1, mx + sp); y1 = Math.max(y1, my + sp); } });
+    x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(iw, x1); y1 = Math.min(ih, y1);
+    const nw = x1 - x0, nh = y1 - y0, gamall = h.skurdur;
+    h.thett = true;
+    if (sjalfkrafa && gamall && nw * nh > gamall.w * gamall.h * 0.92) { vistaSjalfkrafa('húsleit reynd'); return false; }
+    h.skurdur = { x: Math.round(x0), y: Math.round(y0), w: Math.round(nw), h: Math.round(nh) }; h.sjalf = true; zNullstilla();
+    vistaSjalfkrafa('skorið að húsinu');
+    return true;
+  }
   const okkar = m => !!m && (m === G.synd);
 
   function beita() {
@@ -2150,6 +2210,16 @@
           }
         }
       } catch (e) { console.warn('[383] sjálfskurður', e); }
+    }
+    // ÞÉTTING EFTIR VEGGJANETINU (05.10.2026): blekleitin hér að ofan tekur nafnreit og skýringar með þegar þær standa
+    // þétt við húsið (Arnarhvoll). Skönnuð hæð með sjálfvirkan skurð er því skorin EINU SINNI að veggjanetinu — þung
+    // greining, þess vegna eftir fyrstu teikningu en ekki í henni. Handvalinn skurður og fest útlit eru ósnert.
+    if (!val.fest && h.sjalf !== false && !h.thett && !pdfSlod(h) && !h.pdfVeggir.length && G.husReynt !== G.frum) {
+      G.husReynt = G.frum; const mynd = G.frum, hid = h.id;
+      setTimeout(() => {
+        try { if (G.frum === mynd && virkHaed() && virkHaed().id === hid && !lesaVal(FPx().companyId).fest && modalSynnilegt() && skeraAdHusi(true)) beita(); }
+        catch (e) { console.warn('[383] húsleit', e); }
+      }, 250);
     }
     const sk = h.skurdur && h.skurdur.w > 8 && h.skurdur.h > 8 ? h.skurdur : null;
     const l1 = (G.frum.src || G.frum.width + 'x') + '|' + (sk ? [sk.x, sk.y, sk.w, sk.h].map(Math.round).join(',') : '-');
@@ -2634,10 +2704,98 @@
     else i.src = slod;
   });
   // Hæð → { veggir, W, H, golf, kvardi, merki } í hnitum SKORNU myndarinnar (stig1).
+  // Veggir SKÖNNUNAR sem heilir bútar [ax,ay,bx,by,t] í dílum myndarinnar sem hreinsa() fékk (skurðurinn eða blaðið allt).
+  // Sama leið fyrir 3D (undirbua) og húsleitina (husRammi). null = ekkert veggjanet fannst.
+  function veggirUrMynd(r, fb, fh, talning, anKlasa) {
+    let butar = null;
+    const kpt = Math.max(fb, fh) / 2384, deila = V => V.map(v => v.map(n => n / r.kvardi));
+    const ipt = V => V.map(v => ({ a: [v[0] / kpt, v[1] / kpt], b: [v[2] / kpt, v[3] / kpt], t: v[4] / kpt }));
+    // 1) þykkir fylltir veggir úr grímunni
+    let thykk = null;
+    const kostir = r.thykkir && r.thykkir !== r.veggir ? [r.thykkir, r.veggir] : [r.veggir];
+    for (const gr of kostir) {
+      try { thykk = heilirUrGrimu(gr, r.W, r.H, r.kvardi, fb, fh); } catch (e) { console.warn('[383] heilirUrGrimu', e); }
+      if (thykk) break;
+    }
+    // 2) línubönd (útveggir teiknaðir sem nokkrar örþunnar línur) — það sem þykka gríman á ekki þegar
+    let grunnur = thykk || [];
+    try { grunnur = grunnur.concat(deila(linubond(r.gra, r.W, r.H, r.kvardi, kpt)).filter(v => !grunnur.some(u => aSomuLinu(v, u)))); } catch (e) { console.warn('[383] linubond', e); }
+    // 3) holir veggir (tvær mjóar línur). Sá sem er útlína veggjar sem þegar er kominn, eða gluggi í honum, er ekki talinn aftur.
+    let hol = [];
+    try { hol = deila(holirVeggir(r.gra, r.W, r.H, r.kvardi, kpt)); } catch (e) { console.warn('[383] holirVeggir', e); }
+    if (hol.length && grunnur.length) {
+      let gl0 = [];
+      try { gl0 = glerIBilum(grunnur, r.gra, r.W, r.H, r.kvardi, kpt); } catch (_) {}
+      const fyrir = grunnur.concat(gl0);
+      hol = hol.filter(v => !fyrir.some(u => aSomuLinu(v, u)));
+    }
+    const allir = grunnur.concat(hol);
+    talning.thykkir = thykk ? thykk.length : 0; talning.bond = grunnur.length - talning.thykkir; talning.holir = hol.length;
+    let lengd = 0;
+    for (const v of allir) lengd += Math.hypot(v[2] - v[0], v[3] - v[1]);
+    if (lengd * r.kvardi >= Math.max(r.W, r.H) * 2) {
+      butar = fragaVeggi(ipt(allir), kpt, 2);
+      // 4) hver veggur nær alla línuna þar til hún endar eða rekst á annan vegg
+      talning.fyrirLengingu = butar.length;
+      try { butar = fragaVeggi(ipt(lengjaVeggi(butar, r.gra, r.W, r.H, r.kvardi)), kpt, 2); } catch (e) { console.warn('[383] lengjaVeggi', e); }
+      // 5) aðeins húsið sjálft — nafnreitur, norðurör og lóðartákn eru stakir klasar utan við veggjanetið
+      const fyrirKlasa = butar.length;
+      if (!anKlasa) try { butar = husklasi(butar, 30 * kpt, 115 * kpt, 115 * kpt); } catch (e) { console.warn('[383] husklasi', e); }
+      talning.utanHuss = fyrirKlasa - butar.length;
+      talning.veggir = butar.length;
+    }
+    return butar;
+  }
+
+  // KVARÐI 3D-GREININGARINNAR — fastur eftir stærð BLAÐSINS (allt blaðið ≈ 2800 dílar), óháður skurði og gæðavali.
+  // Mælt 05.10.2026 á viðmiðunarhúsunum: Miðgarður og Álfaborg gefa sömu veggi við 0,48 og þau gáfu áður við 0,52–0,59
+  // (sem réðst af skurðinum), Arnarhvoll er hreinn við 0,42–0,48 en fer í rugl við 0,68 og ofar. Að mæla veggþykktina
+  // og stilla eftir henni var reynt og reyndist óstöðugt (Arnarhvoll: 13–16 dílar eftir því hvernig skorið var).
+  const VIDMID_3D = 2200, BLAD_3D = 2800;
+  function greiningarkvardi(fb, fh) { return Math.min(1, (window.Teikn3D && Teikn3D.profKvardi) || BLAD_3D / Math.max(fb, fh, 1)); }   // profKvardi: aðeins prófanir
+
+  /** HÚSIÐ á blaðinu eftir VEGGJANETINU (sama greining og 3D): umgjörð veggjanna sem hanga saman + ~1,5 m spássía.
+   * finnaHus/blekRammi mæla blek og taka nafnreit og skýringar með þegar þær standa þétt við húsið (Arnarhvoll,
+   * Agnar 05.10.2026: „næ ekki að losna við teikningaupplýsingaruglið á hægri hliðinni"). Skilar { x, y, w, h } í dílum
+   * myndarinnar eða null ef ekkert veggjanet finnst. */
+  function husRammi(mynd, kemb) {
+    const iw = mynd.naturalWidth || mynd.width, ih = mynd.naturalHeight || mynd.height, kpt = Math.max(iw, ih) / 2384;
+    const r = hreinsa(mynd, { kvardi: greiningarkvardi(iw, ih), vidmid: VIDMID_3D, anStriga: true });
+    const butar = veggirUrMynd(r, iw, ih, {}, true);
+    if (!butar || butar.length < 8) return null;
+    // Klasar veggjanetsins, vegnir með FLATARMÁLI (lengd × þykkt): hús er úr þykkum veggjum, nafnreitur úr línum.
+    const nr = klasaButa(butar, 30 * kpt), K = [];
+    butar.forEach((v, i) => {
+      const q = K[nr[i]] || (K[nr[i]] = { n: 0, lengd: 0, flat: 0, x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity, i: [] });
+      const l = Math.hypot(v[2] - v[0], v[3] - v[1]);
+      q.n++; q.lengd += l; q.flat += l * Math.max(1, v[4] || 0); q.i.push(i);
+      q.x0 = Math.min(q.x0, v[0], v[2]); q.y0 = Math.min(q.y0, v[1], v[3]); q.x1 = Math.max(q.x1, v[0], v[2]); q.y1 = Math.max(q.y1, v[1], v[3]);
+    });
+    const adal = K.reduce((a, q) => (!a || q.flat > a.flat ? q : a), null);
+    adal.med = true;
+    // Álma: drjúgur klasi (≥ fimmtungur aðalklasans) sem stendur innan við ~4 m frá því sem þegar er með.
+    const naerri = 115 * kpt, bil = (a, b) => Math.max(0, Math.max(a.x0, b.x0) - Math.min(a.x1, b.x1), Math.max(a.y0, b.y0) - Math.min(a.y1, b.y1));
+    for (let breytt = true; breytt;) { breytt = false; K.forEach(q => { if (!q.med && q.flat >= adal.flat * 0.2 && K.some(o => o.med && bil(o, q) <= naerri)) { q.med = true; breytt = true; } }); }
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    K.forEach(q => { if (q.med) { x0 = Math.min(x0, q.x0); y0 = Math.min(y0, q.y0); x1 = Math.max(x1, q.x1); y1 = Math.max(y1, q.y1); } });
+    const sp = 42 * kpt;
+    x0 = Math.max(0, x0 - sp); y0 = Math.max(0, y0 - sp); x1 = Math.min(iw, x1 + sp); y1 = Math.min(ih, y1 + sp);
+    const ut = { x: Math.round(x0), y: Math.round(y0), w: Math.round(x1 - x0), h: Math.round(y1 - y0), veggir: butar.length };
+    if (kemb) ut.klasar = K.map(q => ({ n: q.n, lengd: Math.round(q.lengd), flat: Math.round(q.flat), med: !!q.med, kassi: [q.x0, q.y0, q.x1, q.y1].map(Math.round) })).sort((a, b) => b.flat - a.flat).slice(0, 8);
+    if (ut.w < iw * 0.08 || ut.h < ih * 0.08) return null;
+    return ut;
+  }
+
   function undirbua(h, stig1, merkiFrum, val, einingar, frum, eiHintar) {
     const fb = frum.naturalWidth || frum.width, fh = frum.naturalHeight || frum.height;
     const sk = h.skurdur || { x: 0, y: 0, w: fb, h: fh };
-    const r = hreinsa(stig1, { thykkt: val.thykkt || 0, fylla: !!val.fylla });
+    // SKÖNNUN (hvorki vigurveggir né TurboPaint-veggir): greint í FÖSTUM kvarða eftir stærð blaðsins, óháð skurði og
+    // gæðavali — annars breytist húsið í 3D við það eitt að skera þrengra eða velja „Full gæði" (Agnar 05.10.2026:
+    // „3D er fucked á Arnarhóli" — þá var kvarðinn 1,0 í stað 0,45 og mállínur, húsgögn og hurðablöð urðu veggir).
+    const skonnun = !h.pdfVeggir.length && !(Array.isArray(h.veggjaLinur) && h.veggjaLinur.some(v => v && Array.isArray(v.p) && v.p.length >= 4));
+    const r = hreinsa(stig1, skonnun
+      ? { thykkt: val.thykkt || 0, fylla: !!val.fylla, kvardi: greiningarkvardi(fb, fh), vidmid: VIDMID_3D, anStriga: true }
+      : { thykkt: val.thykkt || 0, fylla: !!val.fylla, anStriga: true });
     // Veggir sem TurboPaint greindi (miðlína + þykkt, punktar frummyndar — „Vista í úttekt" þar) ganga fyrir:
     // TurboPaint er vélin, þessi gluggi sýnir niðurstöðuna (Agnar 03.10.2026). Þá eru veggirnir heilir — engin
     // „girðing" úr stökum PDF-strikum og engin sjálfvirk gríma.
@@ -2687,47 +2845,12 @@
     let urGrimu = false;
     const talning = { leid: tp.length ? 'turbopaint' : (butar ? 'pdf' : 'mynd'), veggir: butar ? butar.length : 0 };
     if (!butar) {
-      const kpt = Math.max(fb, fh) / 2384, deila = V => V.map(v => v.map(n => n / r.kvardi));
-      const ipt = V => V.map(v => ({ a: [v[0] / kpt, v[1] / kpt], b: [v[2] / kpt, v[3] / kpt], t: v[4] / kpt }));
-      // 1) þykkir fylltir veggir úr grímunni
-      let thykk = null;
-      const kostir = r.thykkir && r.thykkir !== r.veggir ? [r.thykkir, r.veggir] : [r.veggir];
-      for (const gr of kostir) {
-        try { thykk = heilirUrGrimu(gr, r.W, r.H, r.kvardi, fb, fh); } catch (e) { console.warn('[383] heilirUrGrimu', e); }
-        if (thykk) break;
-      }
-      // 2) línubönd (útveggir teiknaðir sem nokkrar örþunnar línur) — það sem þykka gríman á ekki þegar
-      let grunnur = thykk || [];
-      try { grunnur = grunnur.concat(deila(linubond(r.gra, r.W, r.H, r.kvardi, kpt)).filter(v => !grunnur.some(u => aSomuLinu(v, u)))); } catch (e) { console.warn('[383] linubond', e); }
-      // 3) holir veggir (tvær mjóar línur). Sá sem er útlína veggjar sem þegar er kominn, eða gluggi í honum, er ekki talinn aftur.
-      let hol = [];
-      try { hol = deila(holirVeggir(r.gra, r.W, r.H, r.kvardi, kpt)); } catch (e) { console.warn('[383] holirVeggir', e); }
-      if (hol.length && grunnur.length) {
-        let gl0 = [];
-        try { gl0 = glerIBilum(grunnur, r.gra, r.W, r.H, r.kvardi, kpt); } catch (_) {}
-        const fyrir = grunnur.concat(gl0);
-        hol = hol.filter(v => !fyrir.some(u => aSomuLinu(v, u)));
-      }
-      const allir = grunnur.concat(hol);
-      talning.thykkir = thykk ? thykk.length : 0; talning.bond = grunnur.length - talning.thykkir; talning.holir = hol.length;
-      let lengd = 0;
-      for (const v of allir) lengd += Math.hypot(v[2] - v[0], v[3] - v[1]);
-      if (lengd * r.kvardi >= Math.max(r.W, r.H) * 2) {
-        butar = fragaVeggi(ipt(allir), kpt, 2);
-        // 4) hver veggur nær alla línuna þar til hún endar eða rekst á annan vegg
-        talning.fyrirLengingu = butar.length;
-        try { butar = fragaVeggi(ipt(lengjaVeggi(butar, r.gra, r.W, r.H, r.kvardi)), kpt, 2); } catch (e) { console.warn('[383] lengjaVeggi', e); }
-        // 5) aðeins húsið sjálft — nafnreitur, norðurör og lóðartákn eru stakir klasar utan við veggjanetið
-        const fyrirKlasa = butar.length;
-        try { butar = husklasi(butar, 30 * kpt, 115 * kpt, 115 * kpt); } catch (e) { console.warn('[383] husklasi', e); }
-        talning.utanHuss = fyrirKlasa - butar.length;
-        talning.veggir = butar.length;
-        urGrimu = true;
-        h.veggir.forEach(v => butar.push([v[0] - sk.x, v[1] - sk.y, v[2] - sk.x, v[3] - sk.y, 0]));
-      }
+      butar = veggirUrMynd(r, fb, fh, talning);
+      talning.kvardi = +r.kvardi.toFixed(3);
+      if (butar) { urGrimu = true; h.veggir.forEach(v => butar.push([v[0] - sk.x, v[1] - sk.y, v[2] - sk.x, v[3] - sk.y, 0])); }
     }
     const iw = stig1.naturalWidth || stig1.width, ih = stig1.naturalHeight || stig1.height;
-    const merki = merkiFrum.map(mk => {
+    const merkiOll = merkiFrum.map(mk => {
       const px = erPx(mk) ? mk.x - sk.x : mk.x * iw, py = erPx(mk) ? mk.y - sk.y : mk.y * ih;
       if (mk.kind === 'sign' || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('s:') === 0)) {
         const def = window.TeiknMerking && TeiknMerking.stimplar && TeiknMerking.stimplar.find(s => s.id === mk.sign);
@@ -2740,6 +2863,10 @@
       const radnr = u ? String(u.serial || '') : '';
       return { x: px, y: py, litur: u && u.status === 'overdue' ? '#c93c1d' : '#2f9e55', texti: u ? (u.type ? String(u.type) : radnr.slice(-6)) : '', gerd: gerdTaekis(u && u.type) };
     });
+    // Merki sem lendir UTAN myndarinnar (utan skurðar eða utan blaðsins — gömul staðsetning úr síma með rangri stærð)
+    // sveif í lausu lofti við hlið hússins (Agnar 05.10.2026: „Tækin eru fyrir utan húsið"). Þau eru ekki teiknuð í 3D;
+    // skýringin segir hve mörg þau eru svo þau gleymist ekki.
+    const merki = merkiOll.filter(m => m.x >= 0 && m.y >= 0 && m.x <= iw && m.y <= ih), merkiUti = merkiOll.length - merki.length;
     let golf;
     try { golf = golfMedUti(stig1, r.W, r.H); }
     catch (e) { console.warn('[383] golfMedUti', e); golf = r.vinnu; }
@@ -2791,7 +2918,7 @@
       talning.metrar = Math.round(butar.reduce((s0, v) => s0 + Math.hypot(v[2] - v[0], v[3] - v[1]), 0) * mpx);
     }
     try { console.info('[383] 3D ' + (h.nafn || '') + ': ' + JSON.stringify(talning)); } catch (_) {}
-    return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, merki, veggjaPx: butar ? butar.length : n, butar, gler, hurdir, hurdEld, eld, holf, eldSjalf: uE.eldSjalf, handval: uE.handval, eiHintar: eiHintar || [], talning, sk, frumB: fb, frumH: fh };
+    return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, merki, merkiUti, veggjaPx: butar ? butar.length : n, butar, gler, hurdir, hurdEld, eld, holf, eldSjalf: uE.eldSjalf, handval: uE.handval, eiHintar: eiHintar || [], talning, sk, frumB: fb, frumH: fh };
   }
   // EI-merki fyrir 3D: það sem teikningin geymir, annars TEXTALAG vigur-PDF-sins (ódýrt, engin myndgreining). Aðeins í
   // minni — ekkert er skrifað í teikninguna og 2D-glugginn sýnir merkin ekki (Agnar 03.10.2026: sú sýn býr í TurboPaint).
@@ -2866,10 +2993,10 @@
       const skyring = valin => {
         if (!eb) return;
         const hl = (valin == null ? ut : [ut[valin]]).filter(Boolean);
-        let e60 = 0, e30 = 0, nAl = 0, nH = 0, nEH = 0, nHolf = 0, nHand = 0;
+        let e60 = 0, e30 = 0, nAl = 0, nH = 0, nEH = 0, nHolf = 0, nHand = 0, nUti = 0;
         hl.forEach(u => {
           (u.eld || []).forEach(e => { if (e === 60) e60++; else if (e === 30) e30++; });
-          (u.handval || []).forEach(e => { if (e >= 0) nHand++; });
+          (u.handval || []).forEach(e => { if (e >= 0) nHand++; }); nUti += u.merkiUti || 0;
           if (u.holf) { nHolf += u.holf.fjoldi; u.holf.alyktad.forEach(e => { if (e) nAl++; }); }
           nH += (u.hurdir || []).length; (u.hurdEld || []).forEach(e => { if (e) nEH++; });
         });
@@ -2878,6 +3005,7 @@
           (nEH ? kubbur('#f57c00', 'Brunahurð') : '') + (nH > nEH ? kubbur('#8d6e63', 'Hurð') : '') +
           (nHolf > 1 ? '<span style="white-space:nowrap">' + nHolf + ' brunahólf' + (hl.length > 1 ? ' alls' : '') + '</span>' : '') +
           (nHand ? '<span style="white-space:nowrap">' + nHand + (nHand === 1 ? ' veggur handvalinn' : ' veggir handvaldir') + '</span>' : '') +
+          (nUti ? '<span style="white-space:nowrap;color:#ffd27a">' + nUti + (nUti === 1 ? ' tæki staðsett' : ' tæki staðsett') + ' utan teikningar — færðu ' + (nUti === 1 ? 'það' : 'þau') + ' inn í 2D</span>' : '') +
           (e60 || e30 ? '<span style="flex-basis:100%;font-weight:500;opacity:.75">EI-merki lesin sjálfvirkt — sannreyndu á teikningu. Leiðrétt með „Breyta eldveggjum".</span>' : '');
         eb.innerHTML = html; eb.style.display = html ? 'flex' : 'none'; eb.style.flexWrap = 'wrap'; eb.style.maxWidth = 'calc(100% - 20px)'; eb.style.rowGap = '4px';
       };
@@ -3110,6 +3238,10 @@
           const h = virkHaed(); loka3d();
           if (h.skurdur) { h.skurdur = null; h.sjalf = false; G.hamur = null; zNullstilla(); vistaSjalfkrafa('allt blaðið sýnt'); } else { G.hamur = G.hamur === 'skera' ? null : 'skera'; G.drag = null; G.kedja = null; }
         })),
+        gera('fp-hus-btn', '⌂ Að húsinu', 'Skera sjálfkrafa að húsinu sjálfu — nafnreitur, skýringar og lóð falla burt. Fínstilltu með ✂ ef þarf.', tharfMynd(() => {
+          loka3d(); G.hamur = null; G.drag = null; G.kedja = null;
+          if (skeraAdHusi(false)) segja('✂ Skorið að húsinu — vistast sjálfkrafa.');
+        })),
         gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
         gera('fp-hreinsa-btn', '✨ Skýrari veggir', '2D grunnmyndin helst ósnert. 3D sýnir húsið — grá lóð utan veggja er ekki gólfplata.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
         gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); }),
@@ -3137,7 +3269,7 @@
       // takkinn gerði að verkum að „næ henni ekki aftur").
       const st = document.createElement('style'); st.id = 'fp-fest-css';
       st.textContent = '#modal-floorplan .fp-veggir-btn,#modal-floorplan .fp-ei-btn{display:none!important}' +
-        '#modal-floorplan.fp-fest .fp-skera-btn{display:none!important}' +
+        '#modal-floorplan.fp-fest .fp-skera-btn,#modal-floorplan.fp-fest .fp-hus-btn{display:none!important}' +
         // Brunastál-þemað setur !important stálhalla á alla takka í gluggum — virkt ástand (Skýrari veggir, Útlit fest)
         // sást ekki (04.10.2026: Agnar hélt Skýrari væri af). ID-valið vinnur.
         'html #modal-floorplan .fp-hd-grp .btn[aria-pressed="true"]{background:#c9a54a!important;color:#14120f!important;border-color:#c9a54a!important}';
