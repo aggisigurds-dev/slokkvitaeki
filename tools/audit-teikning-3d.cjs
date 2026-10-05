@@ -50,7 +50,7 @@ const but = (a, b) => { const i = src.indexOf(a), j = src.indexOf(b); if (i < 0 
 const m = {};
 try {
   new Function('ut', but('  function summutafla', '  /** mynd: <img> eða <canvas>') + but('  const sameinaBil = ', '  const BAKGRUNNUR_3D') +
-    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi, merkjaEldveggi, husklasi, hurdagot, tengdirVeggir, eldurHurda, brunaholf, veggurVid, reiknaEld, gerdTaekis, festaAVegg, teiknaTaekistakn, klasaButa, hreinsaGogn });')(m);
+    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi, merkjaEldveggi, husklasi, hurdagot, tengdirVeggir, eldurHurda, brunaholf, veggurVid, reiknaEld, gerdTaekis, festaAVegg, teiknaTaekistakn, klasaButa, hreinsaGogn, skorunSkurda });')(m);
 } catch (e) { villur.push('383: reiknireglurnar hlaðast ekki sjálfstætt (' + e.message + ') — þær verða að vera hrein gagnavinnsla án DOM'); }
 
 const lengd = v => Math.hypot(v[2] - v[0], v[3] - v[1]);
@@ -302,6 +302,16 @@ krefst(/const butar = veggirUrMynd\(r, iw, ih, \{\}, true\);/, 'husRammi á að 
 krefst(/if \(!val\.fest && h\.sjalf !== false && !h\.thett && !pdfSlod\(h\) && !h\.pdfVeggir\.length && G\.husReynt !== G\.frum\)/, 'sjálfvirkur skurður skönnunar verður að þéttast einu sinni að veggjanetinu — og aldrei þegar útlit er fest eða skurður handvalinn');
 krefst(/gera\('fp-hus-btn', '⌂ Að húsinu'/, 'takkinn „Að húsinu“ (skorið að húsinu með einum smelli) er farinn');
 krefst(/plan\(\)\.markers\.forEach\(m => \{ if \(erPx\(m\)\) \{ const mx = m\.x \+ G\.rymi\.x, my = m\.y \+ G\.rymi\.y; x0 = Math\.min\(x0, mx - sp\); y0 = Math\.min\(y0, my - sp\); x1 = Math\.max\(x1, mx \+ sp\); y1 = Math\.max\(y1, my \+ sp\); \} \}\);\s+x0 = Math\.max\(0, x0\); y0 = Math\.max\(0, y0\); x1 = Math\.min\(iw, x1\); y1 = Math\.min\(ih, y1\);\s+const nw = x1 - x0, nh = y1 - y0, gamall = h\.skurdur;\s+h\.thett = true;/, 'skeraAdHusi verður að víkka kassann svo merki sem þegar eru til lendi innan hans');
+// 19 · HÆÐIR STAFLAST (05.10.2026, Hótel Klöpp í 3D: hæðirnar lágu hlið við hlið). Staða skurðar á blaðinu ræður aðeins
+//      þegar skurðirnir skarast greinilega; tvær grunnmyndir hlið við hlið á einu blaði eru miðjaðar hvor yfir annarri.
+if (m.skorunSkurda) {
+  const kj = { x: 180, y: 340, w: 2162, h: 3316 }, h1 = { x: 2523, y: 340, w: 2282, h: 3316 }, h2 = { x: 1562, y: 849, w: 1562, h: 2165 };
+  if (m.skorunSkurda(kj, h1) !== 0) villur.push('skorunSkurda: tvær grunnmyndir hlið við hlið á sama blaði skarast ekki — eiga að gefa 0');
+  if (m.skorunSkurda(kj, h2) >= 0.7) villur.push('skorunSkurda: skurðir sem skarast aðeins að hálfu (Klöpp kjallari / 2. hæð) mega ekki teljast á sama stað, fékk ' + m.skorunSkurda(kj, h2).toFixed(2));
+  const pl = { x: 1312, y: 0, w: 3383, h: 4193 }, p7 = { x: 843, y: 1259, w: 3321, h: 1714 };
+  if (m.skorunSkurda(pl, p7) < 0.7) villur.push('skorunSkurda: minni hæð sem liggur innan þeirrar stærri (Plaza 7. hæð) á að halda stöðu sinni á blaðinu, fékk ' + m.skorunSkurda(pl, p7).toFixed(2));
+} else villur.push('skorunSkurda vantar — án hennar raðast hæðir af ólíkum stöðum á blaði hlið við hlið í 3D');
+krefst(/if \(skorunSkurda\(hd\.sk, vidmid\.sk\) >= 0\.7\) \{/, 'syna3d: staða á blaðinu má aðeins ráða þegar skurðirnir skarast greinilega — annars eru hæðir miðjaðar');
 // 18 · TÆKI UTAN TEIKNINGAR (Agnar 05.10.2026: „Tækin eru fyrir utan húsið“): merki utan myndarinnar er ekki teiknað í 3D,
 //      en skýringin segir hve mörg þau eru.
 krefst(/const merki = merkiOll\.filter\(\(m, i\) => !\(merkiFrum\[i\] && merkiFrum\[i\]\.uti\) && m\.x >= 0 && m\.y >= 0 && m\.x <= iw && m\.y <= ih\), merkiUti = merkiOll\.length - merki\.length;/, 'merki utan myndarinnar (eða sem bíður í horninu) má ekki svífa við hlið hússins í 3D');

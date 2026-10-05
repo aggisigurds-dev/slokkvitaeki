@@ -923,6 +923,13 @@
     const halda = greidusia(B);        // textalínur í nafnreit og skýringum eru greiða, ekki veggir
     return B.filter((v, i) => halda[i]);
   }
+  // Hve stór hluti MINNI skurðarins liggur innan hins (0–1). Notað til að ákveða hvort tvær hæðir standi á sama stað á blaði.
+  function skorunSkurda(a, b) {
+    if (!a || !b) return 0;
+    const ix = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)), iy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+    return (ix * iy) / Math.max(1, Math.min(a.w * a.h, b.w * b.h));
+  }
+
   /* ── KLASAR: hvaða bútar hanga saman (snertast, skerast eða standa innan við `tengibil` hver frá öðrum) ──
    * Skilar fylki með klasanúmeri hvers bútar (0, 1, 2 …). */
   function klasaButa(butar, tengibil) {
@@ -1607,12 +1614,17 @@
       // frummyndarpunktar á ristarreit. Ólík blöð: hæðin er miðjuð eins og áður.
       if (!hd.sk) hd.sk = { x: 0, y: 0, w: hd.W / hd.kvardi, h: hd.H / hd.kvardi };
       const punktar = k.c / hd.kvardi;
-      if (nr === 0) vidmid = { punktar, mx: hd.sk.x + hd.sk.w / 2, my: hd.sk.y + hd.sk.h / 2, b: hd.frumB, h: hd.frumH };
+      if (nr === 0) vidmid = { punktar, mx: hd.sk.x + hd.sk.w / 2, my: hd.sk.y + hd.sk.h / 2, b: hd.frumB, h: hd.frumH, sk: hd.sk };
       else if (vidmid && hd.frumB && Math.abs(hd.frumB - vidmid.b) < vidmid.b * 0.03 && Math.abs(hd.frumH - vidmid.h) < vidmid.h * 0.03) {
         const kv = punktar / vidmid.punktar;
         hopur.scale.set(kv, 1, kv);
-        hopur.position.x = (hd.sk.x + hd.sk.w / 2 - vidmid.mx) / vidmid.punktar;
-        hopur.position.z = (hd.sk.y + hd.sk.h / 2 - vidmid.my) / vidmid.punktar;
+        // 05.10.2026: staða á blaðinu ræður AÐEINS þegar skurðirnir skarast greinilega (hæðir teiknaðar á sama stað á hvoru
+        // blaði). Hæðir klipptar af ólíkum stöðum — tvær grunnmyndir hlið við hlið á einu blaði (Hótel Klöpp: kjallari og
+        // 1. hæð), eða blöð með húsið á öðrum stað — röðuðust annars hlið við hlið í stað þess að staflast. Þær eru miðjaðar.
+        if (skorunSkurda(hd.sk, vidmid.sk) >= 0.7) {
+          hopur.position.x = (hd.sk.x + hd.sk.w / 2 - vidmid.mx) / vidmid.punktar;
+          hopur.position.z = (hd.sk.y + hd.sk.h / 2 - vidmid.my) / vidmid.punktar;
+        }
       }
       // Gólf: hreina myndin sem áferð, svo herbergjaskipan og heiti sjáist undir veggjunum.
       const golfStr = document.createElement('canvas');
