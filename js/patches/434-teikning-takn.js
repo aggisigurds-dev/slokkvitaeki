@@ -8,16 +8,17 @@
 (() => {
   if (typeof window !== 'undefined' && window.TeiknTakn) return;
 
-  const GLYFF = ['extinguisher', 'hose', 'sign-extinguisher', 'sign-hose', 'exit', 'electric', 'hydrant', 'pin', 'alarm', 'detector'];
+  const GLYFF = ['extinguisher', 'hose', 'sign-extinguisher', 'sign-hose', 'exit', 'electric', 'hydrant', 'pin', 'alarm', 'detector', 'magnet'];
   const GLYFF_NOFN = {
     extinguisher: 'Slökkvitæki', hose: 'Slanga', 'sign-extinguisher': 'Skilti SLT',
     'sign-hose': 'Skilti slanga', exit: 'Útgangur', electric: 'Rafmagn',
-    hydrant: 'Hani', pin: 'Pinni', alarm: 'Hnappur', detector: 'Skynjari'
+    hydrant: 'Hani', pin: 'Pinni', alarm: 'Hnappur', detector: 'Skynjari', magnet: 'Segull'
   };
   const SJALF = {
     lettvatn: 'extinguisher', duft: 'extinguisher', co2: 'extinguisher', slanga: 'hose',
     neydarutgangur: 'exit', ut: 'exit', hose: 'hose',
-    rafmagn: 'electric', skilti_slt: 'sign-extinguisher', skilti_slanga: 'sign-hose'
+    rafmagn: 'electric', skilti_slt: 'sign-extinguisher', skilti_slanga: 'sign-hose',
+    reykskynjari: 'detector', hitaskynjari: 'detector', bjalla: 'alarm', segull: 'magnet'
   };
   const LITIR = {
     lettvatn: { bg: '#e11d2e', fg: '#99f6e4' },
@@ -30,11 +31,16 @@
     rafmagn: { bg: '#eab308', fg: '#1c1917' },
     skilti_slt: { bg: '#e11d2e', fg: '#fff' },
     skilti_slanga: { bg: '#e11d2e', fg: '#fff' },
+    reykskynjari: { bg: '#e11d2e', fg: '#fff' },
+    bjalla: { bg: '#e11d2e', fg: '#fff' },
+    segull: { bg: '#e11d2e', fg: '#fff' },
+    hitaskynjari: { bg: '#e11d2e', fg: '#fff' },
     annad: { bg: '#e11d2e', fg: '#fff' }
   };
   const STIMPIL_LYKILL = {
     'neyðarútgangur': 'neydarutgangur', ut: 'ut', hose: 'hose',
-    rafmagn: 'rafmagn', skilti_slt: 'skilti_slt', skilti_slanga: 'skilti_slanga'
+    rafmagn: 'rafmagn', skilti_slt: 'skilti_slt', skilti_slanga: 'skilti_slanga',
+    reykskynjari: 'reykskynjari', hitaskynjari: 'hitaskynjari', bjalla: 'bjalla', segull: 'segull'
   };
 
   const SKIP_EI = /AREIM|REIM|REI.?M/;
@@ -202,6 +208,10 @@
       case 'alarm':
         box(6, 6, 12, 12, 0); ctx.strokeStyle = fg; ctx.lineWidth = 1.6; ctx.stroke();
         ctx.beginPath(); ctx.arc(12, 12, 3, 0, 7); fyll();
+        break;
+      case 'magnet':
+        ctx.beginPath(); ctx.moveTo(7.5, 18); ctx.lineTo(7.5, 10.5); ctx.arc(12, 10.5, 4.5, Math.PI, 0); ctx.lineTo(16.5, 18);
+        ctx.strokeStyle = fg; ctx.lineWidth = 3.4; ctx.lineCap = 'butt'; ctx.lineJoin = 'round'; ctx.stroke();
         break;
       case 'detector':
         ctx.beginPath(); ctx.arc(12, 12, 7, 0, 7); strok();

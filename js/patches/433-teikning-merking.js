@@ -42,7 +42,12 @@
     { id: 'hose', nafn: 'Slöngumerki', stutt: 'SL', litur: '#c93c1d', glyff: 'hose' },
     { id: 'rafmagn', nafn: 'Rafmagnstafla', stutt: 'RAF', litur: '#eab308', glyff: 'electric' },
     { id: 'skilti_slt', nafn: 'Skilti slökkvitæki', stutt: 'SKL', litur: '#c93c1d', glyff: 'sign-extinguisher' },
-    { id: 'skilti_slanga', nafn: 'Skilti brunaslanga', stutt: 'SLS', litur: '#c93c1d', glyff: 'sign-hose' }
+    { id: 'skilti_slanga', nafn: 'Skilti brunaslanga', stutt: 'SLS', litur: '#c93c1d', glyff: 'sign-hose' },
+    // Agnar 04.10.2026 (3D-sýnin): reykskynjari og viðvörunarbjalla — merki sem má setja þótt tækið sé ekki skráð.
+    { id: 'reykskynjari', nafn: 'Reykskynjari', stutt: 'RS', litur: '#c93c1d', glyff: 'detector' },
+    { id: 'hitaskynjari', nafn: 'Hitaskynjari', stutt: 'HS', litur: '#c93c1d', glyff: 'detector' },
+    { id: 'bjalla', nafn: 'Viðvörunarbjalla', stutt: 'BJ', litur: '#c93c1d', glyff: 'alarm' },
+    { id: 'segull', nafn: 'Segulloki', stutt: 'SG', litur: '#c93c1d', glyff: 'magnet' }
   ];
   const TAEKI_TAKN = [
     { id: 'lettvatn', nafn: 'Léttvatn', stutt: 'LÉ', litur: '#e11d2e', glyff: 'extinguisher' },

@@ -10,7 +10,7 @@
  *   Fiskislóð 41 (vigur-PDF)      777 strik → 48 heilir veggir, 245 m, húsið 32,9 × 41,2 m · 11 glerfletir, 33 m
  *   Miðgarður 1. hæð (skönnuð TIF) veggjagríma → 106 veggir (skáveggir með) í stað kubba og stafasúlna; 6 hæðir í 3D
  *
- * Fjórtán reiknireglur bera þetta, og hver þeirra er PRÓFUÐ HÉR á tilbúnum gögnum (ekki bara leitað að nafni hennar):
+ * Fimmtán reiknireglur bera þetta, og hver þeirra er PRÓFUÐ HÉR á tilbúnum gögnum (ekki bara leitað að nafni hennar):
  *   1. heilirVeggir   — vigurstrik pöruð í veggi (miðlína + þykkt), samlínu bútar sameinaðir yfir súlur, horn smellt saman.
  *   2. veggirUrGrimu  — veggjagríma skönnunar lesin sem langir jafnþykkir borðar; klessur (stafir, tákn) verða ekki veggir.
  *   3. glerIBilum     — bil milli veggbúta á sömu línu er gler ef teikningin sýnir ≥ 2 samsíða línur þar; autt hurðargat
@@ -36,6 +36,7 @@
  *                       merkjunum, vistast með hæðinni (haedir[].eldVal) og aftengdur veggur er ekki ályktaður aftur.
  *  14. gerdTaekis /   — tækin eru LÍKÖN (slökkvitæki, slöngukefli, reykskynjari, rafmagnstafla, skilti) sem hanga á
  *      festaAVegg       næsta vegg, þeim megin sem merkið stendur.
+ *  15. teiknaTaekistakn — tákn tegundarinnar á miðanum, í lit (🧯, 🔔 fyrir reykskynjara, slöngukefli með stút).
  * Og tengingin: undirbua() verður að rétta syna3d heilu veggina (butar) — annars er gríman lyft eins og áður.
  *
  * SOURCE-only, engin net-köll. Fall: exit 1.
@@ -49,7 +50,7 @@ const but = (a, b) => { const i = src.indexOf(a), j = src.indexOf(b); if (i < 0 
 const m = {};
 try {
   new Function('ut', but('  function summutafla', '  /** mynd: <img> eða <canvas>') + but('  const sameinaBil = ', '  const BAKGRUNNUR_3D') +
-    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi, merkjaEldveggi, husklasi, hurdagot, tengdirVeggir, eldurHurda, brunaholf, veggurVid, reiknaEld, gerdTaekis, festaAVegg });')(m);
+    '; Object.assign(ut, { heilirVeggir, klippaButa, veggirUrGrimu, heilirUrGrimu, glerIBilum, holirVeggir, linubond, lengjaVeggi, merkjaEldveggi, husklasi, hurdagot, tengdirVeggir, eldurHurda, brunaholf, veggurVid, reiknaEld, gerdTaekis, festaAVegg, teiknaTaekistakn });')(m);
 } catch (e) { villur.push('383: reiknireglurnar hlaðast ekki sjálfstætt (' + e.message + ') — þær verða að vera hrein gagnavinnsla án DOM'); }
 
 const lengd = v => Math.hypot(v[2] - v[0], v[3] - v[1]);
@@ -235,12 +236,36 @@ if (m.reiknaEld && m.veggurVid) {
 if (m.gerdTaekis && m.festaAVegg) {
   // 14 · LÍKÖN: tegund → líkan, og tækið hangir á næsta vegg þeim megin sem merkið er.
   const G = (a, b) => m.gerdTaekis(a, b);
-  const fekk = [G('Léttvatn'), G('ABC Duft'), G('CO2'), G('CO₂'), G('Brunaslanga'), G('Slönguskápur'), G('Reykskynjari'), G('Eldvarnarteppi'), G('Óþekkt'), G(null, 'rafmagn'), G(null, 'hose'), G(null, 'skilti_slt'), G(null, 'ut')].join(',');
-  if (fekk !== 'slokkvitaeki,slokkvitaeki,co2,co2,slanga,slanga,reykskynjari,teppi,slokkvitaeki,rafmagn,slanga,skilti,skilti-ut') villur.push('gerdTaekis: tegundir tækja og stimpla verða að fá rétt líkan; fékk ' + fekk);
+  const fekk = [G('Léttvatn'), G('ABC Duft'), G('CO2'), G('CO₂'), G('Brunaslanga'), G('Slönguskápur'), G('Reykskynjari'), G('Eldvarnarteppi'), G('Óþekkt'), G(null, 'rafmagn'), G(null, 'hose'), G(null, 'skilti_slt'), G(null, 'ut'), G('Viðvörunarbjalla'), G(null, 'bjalla'), G(null, 'reykskynjari'), G(null, 'neyðarútgangur'), G(null, 'segull'), G('Segulloki'), G(null, 'hitaskynjari'), G('Hitaskynjari')].join(',');
+  if (fekk !== 'slokkvitaeki,slokkvitaeki,co2,co2,slanga,slanga,reykskynjari,teppi,slokkvitaeki,rafmagn,slanga,skilti,skilti-ut,bjalla,bjalla,reykskynjari,skilti-ut,segull,segull,hitaskynjari,hitaskynjari') villur.push('gerdTaekis: tegundir tækja og stimpla verða að fá rétt líkan; fékk ' + fekk);
   const F = m.festaAVegg([[100, 100, 500, 100, 10]], 300, 130, 60);
   if (!F.aVegg || Math.abs(F.x - 300) > 0.5 || Math.abs(F.y - 105) > 0.5 || F.ny < 0.99) villur.push('festaAVegg: tæki 30 díla neðan við vegg á að hanga á neðra yfirborði hans og snúa niður; fékk ' + JSON.stringify(F));
   const F2 = m.festaAVegg([[100, 100, 500, 100, 10]], 300, 400, 60);
   if (F2.aVegg || F2.x !== 300 || F2.y !== 400) villur.push('festaAVegg: tæki langt frá vegg á að standa þar sem merkið er');
+}
+
+if (m.teiknaTaekistakn) {
+  // 15 · TÁKN: hver gerð teiknar sitt tákn innan 48 × 48 reitsins og gerðirnar eru ólíkar hver annarri (gervisamhengi
+  //      skráir aðgerðirnar — ekkert DOM þarf).
+  const skra = gerd => {
+    const log = []; let mest = 0, minnst = 0;
+    const hn = (...a) => { a.forEach(v => { if (typeof v === 'number' && Math.abs(v) < 1000) { mest = Math.max(mest, v); minnst = Math.min(minnst, v); } }); };
+    const c = new Proxy({}, { get: (o, k) => (k in o ? o[k] : (...a) => { log.push(String(k)); if (/^(moveTo|lineTo|rect)$/.test(String(k))) hn(...a); if (k === 'arc') hn(a[0] + a[2], a[1] + a[2], a[0] - a[2], a[1] - a[2]); }), set: (o, k, v) => { if (k === 'fillStyle' || k === 'strokeStyle') log.push(k + '=' + v); o[k] = v; return true; } });
+    m.teiknaTaekistakn(c, gerd);
+    return { fp: log.join('|'), mest, minnst, n: log.length };
+  };
+  const gerdir = ['slokkvitaeki', 'co2', 'slanga', 'reykskynjari', 'hitaskynjari', 'bjalla', 'segull', 'rafmagn', 'skilti', 'skilti-ut', 'teppi'], sed = new Map();
+  gerdir.forEach(gd => {
+    const r = skra(gd);
+    if (r.n < 6) villur.push('teiknaTaekistakn: „' + gd + '" teiknar ekkert tákn');
+    if (r.mest > 48.5 || r.minnst < -0.5) villur.push('teiknaTaekistakn: „' + gd + '" fer út fyrir 48 × 48 reitinn (' + r.minnst + ' … ' + r.mest + ')');
+    if (sed.has(r.fp)) villur.push('teiknaTaekistakn: „' + gd + '" og „' + sed.get(r.fp) + '" fá sama táknið'); else sed.set(r.fp, gd);
+  });
+  const rs = skra('reykskynjari').fp, bj = skra('bjalla').fp, rf = skra('rafmagn').fp;
+  if (!/fillStyle=#f6c431/.test(rf) || !/fillStyle=#bdbdbd/.test(rf) || (rf.match(/rect/g) || []).length < 4) villur.push('teiknaTaekistakn: rafmagnstaflan á að vera grár skápur með gulri eldingu og strengjum niður (myndin sem Agnar sendi)');
+  if ((rs.match(/ellipse/g) || []).length < 2 || (rs.match(/quadraticCurveTo/g) || []).length < 10) villur.push('teiknaTaekistakn: reykskynjarinn á að vera skífa við loft með þremur reykjarslæðum (myndin sem Agnar sendi)');
+  if ((bj.match(/arc/g) || []).length < 5 || !/fillStyle=#cfd8dc/.test(bj)) villur.push('teiknaTaekistakn: viðvörunarbjallan á að vera rauð bjalla með nöf og kólfi (myndin sem Agnar sendi)');
+  if ((skra('slanga').fp.match(/arc/g) || []).length < 3) villur.push('teiknaTaekistakn: slöngukeflið á að vera spóla úr hringjum með nöf (myndin sem Agnar sendi)');
 }
 
 // Tengingin: undirbua → butar/gler → syna3d
@@ -266,6 +291,9 @@ krefst(/hRef\.eldVal = fyrri;[\s\S]{0,400}vistaSjalfkrafa\('eldveggir'\)/, 'val 
 krefst(/texti: u \? \(u\.type \? String\(u\.type\) : radnr\.slice\(-6\)\) : '', gerd/, 'miðar tækjanna eiga að sýna TEGUND (Agnar: „grænu pinnarnir sýndu slökkvitæki eða brunaslöngur")');
 krefst(/const lk = taekjalikan\(mk\.gerd, veggH, litur\);/, 'tækin verða að teiknast sem líkön (slökkvitæki, slanga, reykskynjari, rafmagnstafla, skilti) — Agnar 04.10.2026');
 krefst(/gerd: gerdTaekis\(u && u\.type\)/, 'hvert tæki verður að bera gerð sína inn í 3D');
+krefst(/teiknaTaekistakn\(mc, mk\.gerd\)/, 'miðar tækjanna verða að bera tákn tegundarinnar (🧯 🔔 slöngukefli — Agnar 04.10.2026)');
+krefst(/new T\.TorusGeometry\(hr\[0\] \* e, hr\[1\] \* e/, 'slöngukeflið í 3D á að vera spóla úr hringjum eins og táknið');
+krefst(/gerd === 'bjalla'\) \{\s+\/\/ viðvörunarbjalla: rauð skál/, 'viðvörunarbjallan verður að eiga líkan í 3D');
 krefst(/veggjaPx: butar \? butar\.length : n, butar, gler, hurdir, hurdEld, eld, holf/, 'undirbua verður að rétta syna3d heilu veggina og glerið');
 krefst(/if \(hd\.butar && hd\.butar\.length\) \{/, 'syna3d verður að teikna heila veggi (einn kassi á vegg) þegar þeir eru til');
 krefst(/kassarUrGrimu\(hd\.veggir, hd\.W, hd\.H\)/, 'gamla ristarleiðin verður að standa sem varaleið fyrir teikningar án veggjanets');

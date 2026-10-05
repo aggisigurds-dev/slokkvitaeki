@@ -1290,17 +1290,103 @@
     if (stimpill) {
       if (stimpill === 'rafmagn') return 'rafmagn';
       if (stimpill === 'hose' || stimpill === 'slanga') return 'slanga';
-      if (stimpill === 'ut') return 'skilti-ut';
+      if (/segul|magnet/.test(stimpill)) return 'segull';
+      if (/hita|heat/.test(stimpill)) return 'hitaskynjari';
+      if (/bjall|alarm/.test(stimpill)) return 'bjalla';
+      if (/reyk|detector/.test(stimpill)) return 'reykskynjari';
+      if (stimpill === 'ut' || /tgang/.test(stimpill)) return 'skilti-ut';
       if (/^skilti/.test(stimpill)) return 'skilti';
       if (stimpill === 'lettvatn' || stimpill === 'duft') return 'slokkvitaeki';
       return 'skilti';
     }
     const t = String(tegund || '').toLowerCase();
+    if (/segul/.test(t)) return 'segull';
+    if (/hitaskynj|hitanem/.test(t)) return 'hitaskynjari';
+    if (/bjall|viðvörun|vidvorun|brunabo|sírenu|sirenu/.test(t)) return 'bjalla';
     if (/reyk/.test(t)) return 'reykskynjari';
     if (/slang|slöngu/.test(t)) return 'slanga';
     if (/teppi/.test(t)) return 'teppi';
     if (/co2|co₂|kols/.test(t)) return 'co2';
     return 'slokkvitaeki';
+  }
+  /* TÁKN TÆKIS á miðanum — Agnar 04.10.2026 sendi 🧯, 🔔 og mynd af rauðu slöngukefli með stút: tákn í þeim stíl, í
+   * lit, svo tegundin sjáist án þess að lesa. Teiknað í 48 × 48 reit með upphaf efst til vinstri. */
+  function teiknaTaekistakn(c, gerd) {
+    const fy = l => { c.fillStyle = l; c.fill(); };
+    const st = (l, w) => { c.strokeStyle = l; c.lineWidth = w; c.lineCap = 'round'; c.lineJoin = 'round'; c.stroke(); };
+    const rr = (x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
+    const RAUTT = '#e53935', DOKKT = '#263238';
+    if (gerd === 'slanga') {                           // slöngukefli: rauð spóla, hvít nöf með slá, slanga niður og stútur
+      c.beginPath(); c.moveTo(10.5, 21); c.lineTo(10.5, 35); st(RAUTT, 6);
+      c.beginPath(); c.arc(27, 21, 16.5, 0, Math.PI * 2); st(RAUTT, 6);
+      c.beginPath(); c.arc(27, 21, 9.5, 0, Math.PI * 2); st(RAUTT, 5);
+      c.beginPath(); c.arc(27, 21, 5, 0, Math.PI * 2); fy('#ffffff'); st(DOKKT, 1.4);
+      rr(20.5, 19.4, 13, 3.2, 1.5); fy('#cfd8dc'); st(DOKKT, 1);
+      rr(6.5, 34.5, 8, 3.2, 1); fy('#eceff1'); st(DOKKT, 1);
+      c.beginPath(); c.moveTo(7.6, 38); c.lineTo(13.4, 38); c.lineTo(12, 46); c.lineTo(9, 46); c.closePath(); fy('#37474f');
+    } else if (gerd === 'reykskynjari') {              // reykskynjari: rauð skífa við loft, reykur undir (myndin sem Agnar sendi)
+      c.beginPath(); c.moveTo(5, 19); c.lineTo(5, 14); c.quadraticCurveTo(24, 2, 43, 14); c.lineTo(43, 19); c.quadraticCurveTo(24, 10, 5, 19); c.closePath(); fy(RAUTT);
+      c.beginPath(); c.moveTo(6.5, 21.5); c.quadraticCurveTo(24, 12.5, 41.5, 21.5); c.lineTo(37, 27); c.quadraticCurveTo(24, 20, 11, 27); c.closePath(); fy(RAUTT);
+      c.beginPath(); c.ellipse(24, 28.5, 11.5, 5.2, 0, 0, Math.PI * 2); fy(RAUTT);
+      c.beginPath(); c.ellipse(24, 28.5, 5, 2, 0, 0, Math.PI * 2); st('#ffffff', 1.2);
+      for (const dx of [-5.5, 0, 5.5]) { c.beginPath(); c.moveTo(24 + dx, dx ? 37.5 : 36); c.quadraticCurveTo(21 + dx, 39.5, 24 + dx, 41.5); c.quadraticCurveTo(27 + dx, 43.5, 24 + dx, 47); st(RAUTT, 2); }
+    } else if (gerd === 'hitaskynjari') {              // hitaskynjari: grár skynjari við loft, hitastjarna, hitamælir og bylgjur
+      rr(11, 3.5, 26, 6, 3); fy('#9e9e9e');
+      rr(11, 7, 26, 5, 1.5); fy('#333333');
+      c.beginPath(); c.moveTo(12, 12); c.lineTo(36, 12); c.lineTo(32, 19); c.lineTo(16, 19); c.closePath(); fy('#9e9e9e');
+      c.beginPath(); c.ellipse(24, 19.5, 6.5, 3.6, 0, 0, Math.PI * 2); fy('#333333');
+      c.beginPath(); for (let i = 0; i < 16; i++) { const r0 = i % 2 ? 3.4 : 9, h0 = i * Math.PI / 8 - Math.PI / 2, x = 21 + Math.cos(h0) * r0, y = 35.5 + Math.sin(h0) * r0; if (i) c.lineTo(x, y); else c.moveTo(x, y); } c.closePath(); fy('#f9d976');
+      c.beginPath(); c.arc(22, 35.5, 12.2, Math.PI * 0.78, Math.PI * 1.22); st('#757575', 1.5);
+      c.beginPath(); c.arc(27, 35.5, 12.2, -Math.PI * 0.22, Math.PI * 0.22); st('#757575', 1.5);
+      rr(29, 26.5, 4.4, 15, 2.2); fy('#b0bec5'); st('#78909c', 0.8);
+      c.beginPath(); c.arc(31.2, 42.2, 3.6, 0, Math.PI * 2); fy('#b0bec5'); st('#78909c', 0.8);
+      c.beginPath(); c.rect(30.5, 31.5, 1.4, 9.5); fy('#d32f2f');
+      c.beginPath(); c.arc(31.2, 42.2, 2.2, 0, Math.PI * 2); fy('#d32f2f');
+    } else if (gerd === 'segull') {                    // segulloki á eldvarnarhurð: skeifusegull á ská, ljósir pólar, tvær eldingar
+      c.save(); c.translate(24, 22); c.rotate(-Math.PI / 4); c.translate(-24, -22);
+      c.beginPath(); c.moveTo(14.5, 33); c.lineTo(14.5, 19); c.arc(24, 19, 9.5, Math.PI, 0); c.lineTo(33.5, 33); c.strokeStyle = RAUTT; c.lineWidth = 8.5; c.lineCap = 'butt'; c.lineJoin = 'round'; c.stroke();
+      c.beginPath(); c.rect(10.2, 28.5, 8.6, 5.5); fy('#eceff1'); c.strokeStyle = DOKKT; c.lineWidth = 1; c.stroke();
+      c.beginPath(); c.rect(29.2, 28.5, 8.6, 5.5); fy('#eceff1'); c.strokeStyle = DOKKT; c.lineWidth = 1; c.stroke();
+      c.restore();
+      for (const o of [[25, 33], [35.5, 22.5]]) { c.beginPath(); c.moveTo(o[0], o[1]); c.lineTo(o[0] + 4.6, o[1] + 5.2); c.lineTo(o[0] + 2.6, o[1] + 6); c.lineTo(o[0] + 7.4, o[1] + 12); c.lineTo(o[0] + 0.8, o[1] + 7.6); c.lineTo(o[0] + 2.8, o[1] + 6.6); c.closePath(); fy('#f6c431'); }
+    } else if (gerd === 'bjalla') {                    // viðvörunarbjalla: rauð bjalla á fæti með kólfi (myndin sem Agnar sendi)
+      c.beginPath(); c.moveTo(33, 38); c.quadraticCurveTo(43.5, 33, 43.5, 23); st('#b71c1c', 2);
+      c.beginPath(); c.arc(43.5, 20.5, 3.4, 0, Math.PI * 2); fy(RAUTT);
+      c.beginPath(); c.rect(19, 29, 10, 8); fy(DOKKT);
+      c.beginPath(); c.arc(24, 18, 15, 0, Math.PI * 2); fy('#d32f2f'); st('#b71c1c', 1.6);
+      c.beginPath(); c.arc(24, 18, 8.5, 0, Math.PI * 2); fy('#ef5350');
+      c.beginPath(); c.arc(24, 18, 11.6, Math.PI * 1.05, Math.PI * 1.45); st('rgba(255,255,255,.75)', 1.8);
+      c.beginPath(); c.arc(24, 18, 3.2, 0, Math.PI * 2); fy('#cfd8dc'); st('#b71c1c', 1);
+      rr(11, 35.5, 26, 7, 2.5); fy('#c62828');
+      rr(9, 42, 30, 4, 2); fy(DOKKT);
+    } else if (gerd === 'rafmagn') {                   // rafmagnstafla: grár skápur með lömum, gul elding, lás, miði og strengir
+      for (const x of [14, 19, 24, 33]) { c.beginPath(); c.rect(x, 40, 2.6, 6.5); fy('#424242'); }
+      rr(8, 5, 32, 36, 4); fy('#8e8e8e');
+      rr(10.5, 7.5, 27, 31, 2.5); fy('#bdbdbd');
+      rr(6.2, 12, 3.2, 7, 1.2); fy('#7a7a7a'); rr(6.2, 27, 3.2, 7, 1.2); fy('#7a7a7a');
+      c.beginPath(); c.moveTo(27.5, 12); c.lineTo(18.5, 23.5); c.lineTo(23.6, 23.5); c.lineTo(19.5, 33.5); c.lineTo(30, 20.5); c.lineTo(24.6, 20.5); c.closePath(); fy('#f6c431');
+      c.beginPath(); c.arc(34, 23, 1.6, 0, Math.PI * 2); fy('#7a7a7a');
+      rr(29, 32.5, 7, 4, 0.6); fy('#f5f5f5');
+    } else if (gerd === 'skilti-ut') {                 // útgönguskilti: grænt með ör
+      rr(7, 11, 34, 26, 4); fy('#2e7d32');
+      c.beginPath(); c.moveTo(14, 24); c.lineTo(32, 24); c.moveTo(26, 17.5); c.lineTo(33, 24); c.lineTo(26, 30.5); st('#ffffff', 3);
+    } else if (gerd === 'skilti') {                    // skilti: rauð plata með hvítum ramma
+      rr(9, 9, 30, 30, 4); fy(RAUTT);
+      rr(13, 13, 22, 22, 2); st('#ffffff', 2.2);
+      rr(21, 19, 6, 11, 1.5); fy('#ffffff');
+    } else if (gerd === 'teppi') {                     // eldvarnarteppi: rauður kassi með tveimur flipum
+      rr(12, 7, 24, 30, 3); fy(RAUTT);
+      rr(15, 37, 5, 8, 1); fy(DOKKT); rr(28, 37, 5, 8, 1); fy(DOKKT);
+      rr(15, 12, 18, 4, 1); fy('#ffffff');
+    } else {                                           // handslökkvitæki: rauður kútur, svartur haus, handfang og slanga
+      c.beginPath(); c.moveTo(29, 12); c.quadraticCurveTo(39, 11, 39, 20); c.lineTo(39, 30); st(DOKKT, 2.6);
+      rr(16, 15, 16, 30, 5); fy(RAUTT);
+      c.beginPath(); c.rect(16, 26, 16, 7); fy('#ffffff');
+      rr(20.5, 8.5, 7, 7.5, 1.2); fy(DOKKT);
+      c.beginPath(); c.moveTo(19, 8); c.lineTo(32, 5); st(DOKKT, 3);
+      if (gerd === 'co2') { c.beginPath(); c.moveTo(36, 29); c.lineTo(42, 29); c.lineTo(44.5, 40); c.lineTo(33.5, 40); c.closePath(); fy(DOKKT); }
+      else { c.beginPath(); c.moveTo(36.6, 30); c.lineTo(41.4, 30); c.lineTo(39, 35.5); c.closePath(); fy(DOKKT); }
+    }
   }
   /* Hvar á veggnum hangir tækið? Næsti veggur innan `seiling` frá merkinu: tækið fer á yfirborð hans, þeim megin sem
    * merkið stendur, og snýr út frá veggnum. Skilar { x, y, nx, ny, aVegg } í sömu dílum; án veggjar stendur það þar
@@ -1398,16 +1484,46 @@
     const hlutur = (hopurL, geo, e2, x, y, z, rx) => { const ms = new T.Mesh(geo, e2); ms.position.set(x, y, z); if (rx) ms.rotation.x = rx; ms.castShadow = true; hopurL.add(ms); losa.push(geo); return ms; };
     const taekjalikan = (gerd, e, litur) => {
       const g = new T.Group(), RAUTT = efni('rautt', 0xd0281f), SVART = efni('svart', 0x1d1d1d), HVITT = efni('hvitt', 0xf6f5f0), GRATT = efni('gratt', 0x8d939c);
-      if (gerd === 'slanga') {                       // slöngukefli: rauð skífa á vegg, hvít nöf, stútur
-        hlutur(g, new T.CylinderGeometry(0.26 * e, 0.26 * e, 0.1 * e, 28), RAUTT, 0, 0.52 * e, 0.065 * e, Math.PI / 2);
-        hlutur(g, new T.CylinderGeometry(0.1 * e, 0.1 * e, 0.12 * e, 18), HVITT, 0, 0.52 * e, 0.07 * e, Math.PI / 2);
-        hlutur(g, new T.BoxGeometry(0.04 * e, 0.2 * e, 0.04 * e), SVART, 0.22 * e, 0.32 * e, 0.08 * e);
+      if (gerd === 'slanga') {                       // slöngukefli eins og táknið: spóla úr hringjum, nöf með slá, slanga niður og stútur
+        hlutur(g, new T.CylinderGeometry(0.3 * e, 0.3 * e, 0.012 * e, 30), HVITT, 0, 0.56 * e, 0.008 * e, Math.PI / 2);   // bakplata: keflið sést líka á rauðum vegg
+        for (const hr of [[0.245, 0.036], [0.168, 0.034], [0.096, 0.03]]) hlutur(g, new T.TorusGeometry(hr[0] * e, hr[1] * e, 10, 40), RAUTT, 0, 0.56 * e, 0.055 * e);
+        hlutur(g, new T.CylinderGeometry(0.058 * e, 0.058 * e, 0.075 * e, 18), HVITT, 0, 0.56 * e, 0.055 * e, Math.PI / 2);
+        hlutur(g, new T.BoxGeometry(0.2 * e, 0.03 * e, 0.03 * e), efni('stal', 0xcfd8dc), 0, 0.56 * e, 0.1 * e);
+        hlutur(g, new T.CylinderGeometry(0.034 * e, 0.034 * e, 0.24 * e, 10), RAUTT, -0.245 * e, 0.44 * e, 0.055 * e);
+        hlutur(g, new T.CylinderGeometry(0.042 * e, 0.042 * e, 0.03 * e, 10), HVITT, -0.245 * e, 0.31 * e, 0.055 * e);
+        hlutur(g, new T.CylinderGeometry(0.034 * e, 0.018 * e, 0.11 * e, 10), efni('stutur', 0x37474f), -0.245 * e, 0.24 * e, 0.055 * e);
       } else if (gerd === 'reykskynjari') {          // hvít skífa uppi við loft, rautt ljós
         hlutur(g, new T.CylinderGeometry(0.11 * e, 0.125 * e, 0.045 * e, 24), HVITT, 0, 0.98 * e, 0.15 * e);
         hlutur(g, new T.SphereGeometry(0.02 * e, 8, 6), efni('ljos', 0xff2d1f, true), 0.065 * e, 0.955 * e, 0.15 * e);
-      } else if (gerd === 'rafmagn') {               // rafmagnstafla: grár skápur, gul viðvörunarplata
-        hlutur(g, new T.BoxGeometry(0.36 * e, 0.5 * e, 0.08 * e), GRATT, 0, 0.6 * e, 0.041 * e);
-        hlutur(g, new T.BoxGeometry(0.13 * e, 0.13 * e, 0.012 * e), efni('gult', 0xeab308), 0, 0.7 * e, 0.086 * e);
+      } else if (gerd === 'hitaskynjari') {          // hitaskynjari: grár skynjari við loft, dökk rönd og dökk kúpa niður úr
+        hlutur(g, new T.CylinderGeometry(0.115 * e, 0.115 * e, 0.03 * e, 24), GRATT, 0, 0.985 * e, 0.15 * e);
+        hlutur(g, new T.CylinderGeometry(0.118 * e, 0.118 * e, 0.022 * e, 24), SVART, 0, 0.96 * e, 0.15 * e);
+        hlutur(g, new T.CylinderGeometry(0.11 * e, 0.075 * e, 0.045 * e, 24), GRATT, 0, 0.927 * e, 0.15 * e);
+        hlutur(g, new T.SphereGeometry(0.055 * e, 14, 10), SVART, 0, 0.905 * e, 0.15 * e);
+      } else if (gerd === 'segull') {                // segulloki: grá veggplata, dökkur segull með rauðri skífu fremst
+        hlutur(g, new T.BoxGeometry(0.16 * e, 0.16 * e, 0.03 * e), GRATT, 0, 0.42 * e, 0.016 * e);
+        hlutur(g, new T.CylinderGeometry(0.06 * e, 0.06 * e, 0.1 * e, 18), SVART, 0, 0.42 * e, 0.08 * e, Math.PI / 2);
+        hlutur(g, new T.CylinderGeometry(0.045 * e, 0.045 * e, 0.012 * e, 18), RAUTT, 0, 0.42 * e, 0.135 * e, Math.PI / 2);
+      } else if (gerd === 'bjalla') {                // viðvörunarbjalla: rauð skál á dökkum hálsi, rauður fótur, kólfur til hliðar
+        hlutur(g, new T.BoxGeometry(0.24 * e, 0.03 * e, 0.07 * e), SVART, 0, 0.575 * e, 0.036 * e);
+        hlutur(g, new T.BoxGeometry(0.2 * e, 0.07 * e, 0.06 * e), efni('dokkrautt', 0xc62828), 0, 0.625 * e, 0.031 * e);
+        hlutur(g, new T.BoxGeometry(0.07 * e, 0.06 * e, 0.04 * e), SVART, 0, 0.69 * e, 0.03 * e);
+        hlutur(g, new T.CylinderGeometry(0.15 * e, 0.15 * e, 0.06 * e, 28), RAUTT, 0, 0.84 * e, 0.045 * e, Math.PI / 2);
+        hlutur(g, new T.CylinderGeometry(0.085 * e, 0.085 * e, 0.07 * e, 22), efni('ljosrautt', 0xef5350), 0, 0.84 * e, 0.047 * e, Math.PI / 2);
+        hlutur(g, new T.SphereGeometry(0.03 * e, 12, 8), efni('stal', 0xcfd8dc), 0, 0.84 * e, 0.09 * e);
+        hlutur(g, new T.BoxGeometry(0.012 * e, 0.17 * e, 0.012 * e), efni('dokkrautt', 0xc62828), 0.2 * e, 0.73 * e, 0.045 * e);
+        hlutur(g, new T.SphereGeometry(0.032 * e, 12, 8), RAUTT, 0.2 * e, 0.83 * e, 0.045 * e);
+      } else if (gerd === 'rafmagn') {               // rafmagnstafla: grár skápur með ljósari hurð, gul elding, lamir, lás og strengir niður
+        hlutur(g, new T.BoxGeometry(0.36 * e, 0.5 * e, 0.075 * e), efni('skapur', 0x8e8e8e), 0, 0.62 * e, 0.038 * e);
+        hlutur(g, new T.BoxGeometry(0.31 * e, 0.44 * e, 0.012 * e), efni('hurd', 0xbdbdbd), 0, 0.62 * e, 0.08 * e);
+        const eld3 = new T.Shape();
+        [[0.035, 0.17], [-0.075, 0.0], [-0.012, 0.0], [-0.06, -0.15], [0.07, 0.04], [0.002, 0.04]].forEach((pt, i) => { if (i) eld3.lineTo(pt[0] * e, pt[1] * e); else eld3.moveTo(pt[0] * e, pt[1] * e); });
+        hlutur(g, new T.ShapeGeometry(eld3), efni('elding', 0xf6c431, true), -0.02 * e, 0.63 * e, 0.088 * e);
+        hlutur(g, new T.BoxGeometry(0.03 * e, 0.09 * e, 0.03 * e), efni('lamir', 0x7a7a7a), -0.185 * e, 0.74 * e, 0.06 * e);
+        hlutur(g, new T.BoxGeometry(0.03 * e, 0.09 * e, 0.03 * e), efni('lamir', 0x7a7a7a), -0.185 * e, 0.5 * e, 0.06 * e);
+        hlutur(g, new T.CylinderGeometry(0.016 * e, 0.016 * e, 0.012 * e, 12), efni('lamir', 0x7a7a7a), 0.115 * e, 0.62 * e, 0.09 * e, Math.PI / 2);
+        hlutur(g, new T.BoxGeometry(0.08 * e, 0.045 * e, 0.006 * e), HVITT, 0.085 * e, 0.45 * e, 0.088 * e);
+        for (const x of [-0.11, -0.05, 0.01, 0.11]) hlutur(g, new T.BoxGeometry(0.028 * e, 0.09 * e, 0.028 * e), SVART, x * e, 0.33 * e, 0.04 * e);
       } else if (gerd === 'skilti' || gerd === 'skilti-ut') {   // skilti á vegg: lituð plata með hvítum ramma
         hlutur(g, new T.BoxGeometry(0.3 * e, 0.3 * e, 0.012 * e), HVITT, 0, 0.8 * e, 0.008 * e);
         hlutur(g, new T.BoxGeometry(0.25 * e, 0.25 * e, 0.014 * e), efni('skilti' + litur.getHexString(), litur.getHex()), 0, 0.8 * e, 0.012 * e);
@@ -1583,14 +1699,21 @@
           const txt = String(mk.texti).slice(0, 18), letur = '700 34px system-ui,sans-serif';
           const ms = document.createElement('canvas');
           let mc = ms.getContext('2d'); mc.font = letur;
-          ms.width = Math.ceil(mc.measureText(txt).width) + 46; ms.height = 64;
+          const tAkn = mk.gerd ? 54 : 0;                 // rými fyrir táknið (hvítur hringur) vinstra megin
+          ms.width = Math.ceil(mc.measureText(txt).width) + 46 + tAkn; ms.height = 64;
           mc = ms.getContext('2d');
           const bw = ms.width - 4, bh = 60, rr = 16;
           mc.beginPath(); mc.moveTo(2 + rr, 2); mc.arcTo(2 + bw, 2, 2 + bw, 2 + bh, rr); mc.arcTo(2 + bw, 2 + bh, 2, 2 + bh, rr); mc.arcTo(2, 2 + bh, 2, 2, rr); mc.arcTo(2, 2, 2 + bw, 2, rr); mc.closePath();
           mc.fillStyle = '#' + litur.getHexString(); mc.fill();
           mc.lineWidth = 3; mc.strokeStyle = 'rgba(255,255,255,.9)'; mc.stroke();
           mc.fillStyle = (litur.r * 0.299 + litur.g * 0.587 + litur.b * 0.114) > 0.62 ? '#14120f' : '#fff';
-          mc.font = letur; mc.textAlign = 'center'; mc.textBaseline = 'middle'; mc.fillText(txt, ms.width / 2, 34);
+          mc.font = letur; mc.textAlign = 'center'; mc.textBaseline = 'middle'; mc.fillText(txt, (ms.width + tAkn) / 2 - (tAkn ? 4 : 0), 34);
+          if (tAkn) {
+            mc.beginPath(); mc.arc(33, 32, 25.5, 0, Math.PI * 2); mc.fillStyle = '#ffffff'; mc.fill();
+            mc.save(); mc.translate(33 - 24 * 0.9, 32 - 24 * 0.9); mc.scale(0.9, 0.9);
+            try { teiknaTaekistakn(mc, mk.gerd); } catch (_) {}
+            mc.restore();
+          }
           const mA = new T.CanvasTexture(ms), mE = new T.SpriteMaterial({ map: mA, depthTest: false, sizeAttenuation: false });
           const midi = new T.Sprite(mE);
           midi.center.set(0.5, -0.2); midi.renderOrder = 10;
@@ -1660,8 +1783,8 @@
     el.addEventListener('pointerdown', nidur); el.addEventListener('pointermove', hreyfa);
     el.addEventListener('pointerup', upp); el.addEventListener('pointercancel', upp);
     el.addEventListener('wheel', hjol, { passive: false }); el.addEventListener('contextmenu', samhengi);
-    // Miðar eru 26 px háir á skjánum óháð aðdrætti og gluggastærð (sizeAttenuation:false → hæð = kvarði × 1,302 × gluggahæð við 42° sjónhorn).
-    const stillaMida = hh => { const mh = 26 / (1.302 * Math.max(200, hh)); midar.forEach(o => o.midi.scale.set(mh * o.hlutfall, mh, 1)); };
+    // Miðar eru 29 px háir á skjánum óháð aðdrætti og gluggastærð (sizeAttenuation:false → hæð = kvarði × 1,302 × gluggahæð við 42° sjónhorn).
+    const stillaMida = hh => { const mh = 29 / (1.302 * Math.max(200, hh)); midar.forEach(o => o.midi.scale.set(mh * o.hlutfall, mh, 1)); };
     const staerd = () => { const w = gamur.clientWidth || 800, hh = gamur.clientHeight || 500; teiknari.setSize(w, hh); vel.aspect = w / hh; vel.updateProjectionMatrix(); stillaMida(hh); };
     window.addEventListener('resize', staerd);
     stillaMida(h);
