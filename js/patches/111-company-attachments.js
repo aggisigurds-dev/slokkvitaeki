@@ -175,6 +175,12 @@
   async function getPublicUrl(path) {
     const SB = getSB();
     if (!SB) return null;
+    // 05.10.2026 (R-001081/R-001082 í Kröfu yfirliti): customer_documents.storage_path ber fötuna fremst
+    // („samningar/brunakerfi-skyrslur/…" — 533 raðir: brunakerfi, slokkvikerfi, uttektarskyrsla, reikningur, samningur).
+    // Hér bættist fatan við aftur → samningar/samningar/… → 400 og skýrslan opnaðist ekki né fylgdi pósti. Enginn lykill
+    // í fötunni byrjar á „samningar/" (mælt í storage.objects), svo forskeytið er strípað.
+    path = String(path || '').replace(new RegExp('^' + BUCKET + '/'), '');
+    if (!path) return null;
     // 17.09.2026 yfirferð: þögnin er RÉTT hér — keðja varaleiða (undirrituð slóð →
     // opinber slóð → null). Ekkert vistast; kallandinn fær null og segir frá.
     try {

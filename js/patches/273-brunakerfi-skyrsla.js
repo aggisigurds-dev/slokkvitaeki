@@ -1005,7 +1005,9 @@
       starfsmadur: S.data.meta.madur || 'Kassi', linur,
       upphaed_an_vsk: se, vsk_upphaed: vs, samtals: to, afslattur: afsl,
       greitt_med: 'reikningur', status: 'final', source: 'brunakerfi',
-      athugasemdir: 'Brunakerfisskoðun — úttekt ' + (S.data.meta.nr || '') + ' · ' + fmtDags(S.data.meta.dags)
+      // 05.10.2026 (Agnar: „hætta að setja texta á reikninga sem ég veit ekki að"): athugasemdir prentast sem „vegna …"
+      // á reikninginn — enginn sjálfvirkur texti hér lengur.
+      athugasemdir: ''
     }).select('num,id').single();
     if (ins.error) { toast('Reikningur vistaðist ekki: ' + ins.error.message, true); return; }
     S.data.verd.sale_num = ins.data.num; S.data.verd.sale_id = ins.data.id;

@@ -12,7 +12,8 @@
  *    tómar er reynt autoVerdLines() (búnaðarteljarar × tengdir verðlista-liðir,
  *    reiknað í 273 og sent með í ctx.autoLinur); finnist ekkert verð eru drögin
  *    samt stofnuð með EINNI 0-kr línu „Ársskoðun brunaviðvörunarkerfis <ár>" og
- *    athugasemdinni „verð vantar — stilla fyrir útgáfu" (ALLTAF LEYFA VISTUN).
+ *    viðvörun í toasti „verð vantar — stilla fyrir útgáfu" (ALLTAF LEYFA VISTUN). Enginn texti fer í athugasemdir
+ *    (05.10.2026 — þær prentast á reikninginn).
  *
  *    TALNAVENJAN er sú EINA studda (CLAUDE.md „Afsláttar-samræming" / 273
  *    createInvoice): línur bera FULLT einingaverð án vsk, `afslattur` = kr sem
@@ -89,10 +90,19 @@
     const lin = (ctx.linur || []);
     const auto = (ctx.autoLinur || []);
     if (lin.length && Math.round(ctx.verdTotal || 0) > 0) {
-      // verð-línur skýrslunnar: fullt verð í línum, afsláttur sem brúttó-króna
-      linur = lin.map(l => ({ type: 'service', desc: l.name || '', qty: num(l.qty) || 0, unit_price_ex_vat: num(l.price) || 0, vsk_pct: VAT_PCT, ref: '' }));
+      // verð-línur skýrslunnar. 05.10.2026 (Agnar, R-001082 Center Hótel: „var síðan ekki að taka inn afsláttinn"):
+      // línurnar báru FULLT verð og afsl á línu týndist — verdGross (273 model / optsFromReport) er summa línanna EFTIR
+      // línuafslátt, svo afsl hér varð aðeins heildarafslátturinn (0) á meðan samtals var nettó. Prentaði reikningurinn
+      // (10) reiknar úr línunum → 350.760 í stað 285.209. Nú er línuafslátturinn BAKAÐUR í einingaverðið og merktur í
+      // lýsingunni („· −20% afsl.", 165-venjan) — sama og 273 createInvoice og varaleiðin hér að neðan; afsl = aðeins
+      // heildarafslátturinn, reiknaður úr línunum sjálfum svo summa lína − afsl = samtals.
+      const V = window.BrunakerfiVerd;
+      const netto = l => (V && V.netto) ? V.netto(l) : (num(l.price) || 0) * (1 - Math.min(Math.max(num(l.afsl) || 0, 0), 100) / 100);
+      const heiti = l => (V && V.heiti) ? V.heiti(l) : ((l.name || '') + ((num(l.afsl) || 0) > 0 ? ' · −' + String(num(l.afsl)).replace('.', ',') + '% afsl.' : ''));
+      linur = lin.map(l => ({ type: 'service', desc: heiti(l), qty: num(l.qty) || 0, unit_price_ex_vat: netto(l), vsk_pct: VAT_PCT, ref: '' }));
       to = Math.round(ctx.verdTotal);
-      afsl = Math.max(0, Math.round(ctx.verdGross != null ? ctx.verdGross : ctx.verdTotal) - to);
+      const brutto = Math.round(linur.reduce((a, l) => a + l.qty * l.unit_price_ex_vat, 0) * (1 + VAT_PCT / 100));
+      afsl = Math.max(0, brutto - to);
     } else if (auto.some(l => (num(l.qty) || 0) > 0 && (num(l.price) || 0) > 0)) {
       // fallback: reiknaðar línur úr búnaðaryfirlitinu (enginn afsláttur)
       const al = auto.filter(l => (num(l.qty) || 0) > 0);
@@ -129,10 +139,12 @@
         // hafði aldrei virkað. Allt hitt appið notar 'drog' (00 · 11 · 142 · 143 ·
         // 158 · 166 · 167), svo gildið hér er það sem lesið er annars staðar.
         greitt_med: 'reikningur', status: 'drog', source: 'brunakerfi',
-        athugasemdir: 'Brunakerfisskoðun — úttekt ' + (ctx.nr || '') +
-          (ctx.dags ? ' · ' + fmtDags(ctx.dags) : '') +
-          ' · sjálfvirk drög við LOKIÐ' +
-          (missingPrice ? ' · verð vantar — stilla fyrir útgáfu' : '')
+        // 05.10.2026 (Agnar, R-001081 / R-001082: „geturðu tekið út textann. og hætta að setja texta á reikninga sem
+        // ég veit ekki að"): athugasemdir PRENTAST á reikninginn sem „vegna …"-lína (10). Hér stóð
+        // „Brunakerfisskoðun — úttekt … · sjálfvirk drög við LOKIÐ · verð vantar — stilla fyrir útgáfu" — innri texti
+        // sem kúnninn sá. Reiturinn er nú auður; Agnar skrifar sjálfur með „Breyta texta" ef hann vill línu. Að verð vanti
+        // segir toastið við stofnun (onFinal) og 0-kr línan sjálf.
+        athugasemdir: ''
       }
     };
   }

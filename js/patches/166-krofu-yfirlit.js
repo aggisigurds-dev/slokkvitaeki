@@ -888,6 +888,17 @@
       const sk = await DB.fetchAll((from, to) => SB.from('slokkvikerfi_skodanir').select('sala_id,doc_id').not('sala_id', 'is', null).order('id').range(from, to));
       (sk || []).forEach(r => { if (r.doc_id != null) _state.skDocBySala[String(r.sala_id)] = String(r.doc_id); });
     } catch (_) {}
+    // 05.10.2026 (Agnar: „báðar þessar brunakerfisúttektir vilja senda slökkvitækjaskýrsluna í staðinn fyrir
+    // brunakerfisskýrsluna"): brunakerfisreikningur (291/273, source 'brunakerfi') → skýrslan sem úttektin sjálf vísar
+    // á (brunakerfi_skyrslur.data.verd.sale_id/sale_num → doc_id). Sama mynstur og slökkvikerfið hér að ofan.
+    _state.bkDocBySala = {}; _state.bkDocByNum = {};
+    try {
+      const bk = await DB.fetchAll((from, to) => SB.from('brunakerfi_skyrslur').select('doc_id,sale_id:data->verd->>sale_id,sale_num:data->verd->>sale_num').not('doc_id', 'is', null).order('id').range(from, to));
+      (bk || []).forEach(r => {
+        if (r.sale_id) _state.bkDocBySala[String(r.sale_id)] = String(r.doc_id);
+        if (r.sale_num) _state.bkDocByNum[String(r.sale_num)] = String(r.doc_id);
+      });
+    } catch (_) {}
 
     // Verkbeidnir for pickup status (same approach as patch 152).
     // 21.09.2026 (úttekt): blaðsíðuflett — án þess datt sóttarstaða út aftan við 1.000. röð.
@@ -2526,7 +2537,7 @@
   // (solur.customer_id). Kennitala / customer_base_id er EKKI einkvæm — 19 kt
   // ná yfir 78 staði (Center Hótel, Pizzan, Heimaleiga). Fyrsta systkini-skýrsla
   // málaði Arnarhvoll með Skjaldbreið. Skilar {found, ...} — aldrei giskað.
-  function skyrslaNafn(s) { return String((s && s.source) || '').toLowerCase() === 'slokkvikerfi' ? 'Slökkvikerfisskýrsla' : 'Úttektarskýrsla'; }
+  function skyrslaNafn(s) { const src = String((s && s.source) || '').toLowerCase(); return src === 'slokkvikerfi' ? 'Slökkvikerfisskýrsla' : src === 'brunakerfi' ? 'Brunakerfisskýrsla' : 'Úttektarskýrsla'; }
   function resolveSkyrsla(s) {
     const yr = String(new Date(s.created_at || Date.now()).getFullYear());
     const candidateIds = [];
@@ -2542,8 +2553,10 @@
     // Varmaland á bæði slökkvitækja-úttektarskýrslu og slökkvikerfisskýrslu 2026 — gamla röðunin (úttektarskýrsla
     // fyrst, viðhengi fyrst) hefði sent slökkvitækjaskýrsluna með eldhúskerfisreikningnum. Annað óbreytt.
     const slokkvikerfi = String(s.source || '').toLowerCase() === 'slokkvikerfi';
-    // 1) fyrirtækjaviðhengi (Supabase samningar-bucket) — slökkvitækjaskýrslur; slökkvikerfisskýrslan er aldrei þar (386)
-    if (!slokkvikerfi) try {
+    // 05.10.2026: brunakerfisreikningur fær AÐEINS brunakerfisskýrslu (R-001081 / R-001082 fengu slökkvitækjaskýrsluna)
+    const brunakerfi = String(s.source || '').toLowerCase() === 'brunakerfi';
+    // 1) fyrirtækjaviðhengi (Supabase samningar-bucket) — slökkvitækjaskýrslur; slökkvikerfis- og brunakerfisskýrslur eru aldrei þar
+    if (!slokkvikerfi && !brunakerfi) try {
       if (window.CompanyAttachments && CompanyAttachments.list) {
         for (const coId of candidateIds) {
           const atts = CompanyAttachments.list(coId) || [];
@@ -2567,8 +2580,10 @@
     // Brunakerfis-/slökkvikerfis-skýrsla er notuð þegar engin úttektarskýrsla er til —
     // þá er HÚN skýrsla úttektarinnar (Agnar 30.09.2026, R-001009).
     const gild = docs.filter(d => String(d.year || '') === yr && (d.drive_file_id || d.storage_path));
-    const tengd = slokkvikerfi ? (_state.skDocBySala || {})[String(s.id)] : null;
+    const tengd = slokkvikerfi ? (_state.skDocBySala || {})[String(s.id)]
+      : brunakerfi ? ((_state.bkDocBySala || {})[String(s.id)] || (_state.bkDocByNum || {})[String(s.num)]) : null;
     const doc = slokkvikerfi ? (gild.find(d => tengd != null && String(d.id) === tengd) || gild.find(d => d.doc_type === 'slokkvikerfi'))
+      : brunakerfi ? (gild.find(d => tengd != null && String(d.id) === tengd) || gild.find(d => d.doc_type === 'brunakerfi'))
       : (gild.find(d => d.doc_type === 'uttektarskyrsla') || gild[0]);
     if (doc) return { found: true, kind: 'doc', doc, year: yr };
     return { found: false, year: yr };
