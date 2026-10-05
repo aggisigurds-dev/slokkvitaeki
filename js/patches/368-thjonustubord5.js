@@ -4820,7 +4820,20 @@
   const _skT = {}, _skBid = {};
   function bida(lykill, fn) { clearTimeout(_skT[lykill]); _skBid[lykill] = fn; _skT[lykill] = setTimeout(() => { delete _skBid[lykill]; fn(); }, 700); }
   function skola(lykill) { if (!_skBid[lykill]) return; clearTimeout(_skT[lykill]); const fn = _skBid[lykill]; delete _skBid[lykill]; fn(); }
-  const skolaAllt = () => { Object.keys(_skBid).forEach(skola); skolaSkyringu(); };
+  // 05.10.2026 (Agnar: „auk hvort allt vistist í textabox"): verkbeiðna-taflan (vbt) var
+  // EINA tafða vistunin í þessari skrá sem útskolunin náði ekki til. Magn og verð á línu
+  // skrifast eftir 800 ms ró (`e.t` → vbtVista); allt annað hér var varið frá 23.09.
+  // Mælt með audit-vistun-timarar: `e.t` hvergi hreinsaður í útskolunarleið. Slá inn magn
+  // eða ýta á −/+ og skipta um app innan 800 ms = breytingin farin, þegjandi.
+  // Við `visibilitychange → hidden` (app-skipti, símalás) AFHLEÐST síðan ekki, svo venjuleg
+  // sending klárast þar; `pagehide` fær auk þess keepalive-umferðina í skyrVidLokun á eftir.
+  const skolaAllt = () => {
+    Object.keys(_skBid).forEach(skola);
+    skolaSkyringu();
+    try {
+      Object.keys(S.vbt || {}).forEach(sid => { const e = S.vbt[sid]; if (e && e.dirty) vbtVista(sid); });
+    } catch (_) {}
+  };
   function skrifaSk(el) {
     const n = nu(), reitur = el.dataset.sk, id = el.dataset.skid;
     if (!id) return;

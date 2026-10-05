@@ -578,6 +578,15 @@
   ['hashchange', 'popstate', 'pageshow', 'resize'].forEach(ev => window.addEventListener(ev, () => { seinna(0); setTimeout(apply, 250); }));
   document.addEventListener('slokk-viewmode', () => setTimeout(apply, 40));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) apply(); });
+
+  // 05.10.2026: þysjunin skrifast eftir 450 ms ró. Loki notandinn eða skipti um app innan
+  // þeirrar biðar fór hún aldrei á þjóninn og skalinn stökk til baka á næstu vél. Þetta er
+  // útlitsval — ekki innslegin vinna — svo sendingin hér er „gerðu þitt besta": við
+  // `hidden` lifir síðan og venjuleg sending klárast, og mistakist hún við raunverulega
+  // afhleðslu þysjar notandinn einfaldlega aftur. Skrifað svo útskolunin sé samfelld.
+  const skolaThysjun = () => { if (_vt) { clearTimeout(_vt); _vt = null; try { vista(); } catch (_) {} } };
+  window.addEventListener('pagehide', skolaThysjun);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) skolaThysjun(); });
   // Sumar síður skipta um slóð með history-API (enginn hashchange) — t.d. Companies.openDetail. Ódýr vakt á lyklinum.
   setInterval(() => {
     if (document.hidden) return;

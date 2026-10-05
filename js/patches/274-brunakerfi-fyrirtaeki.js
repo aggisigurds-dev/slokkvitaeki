@@ -129,7 +129,7 @@
   const _nyttSamr = {};   // rep.id → { sig, t } — síðasta vistaða „Þar af nýtt"-samræming (lykkjuvörn)
   // ── B26: aflæst blað — breytingar á búnaðartölum, hljóðmælingum og stöðvarprófunum vistast beint (fresk lesning +
   //    plástur á þá lykla eina, sama mynstur og verðlínurnar) ────────────────────────────────────────────────────
-  let _aflaest = false, _bladBreytt = false, _bladT = null;
+  let _aflaest = false, _bladBreytt = false, _bladT = null, _bladBid = null;
   async function vistaBlad(rep) {
     const sb = SB(); if (!sb || !rep) return;
     try {
@@ -154,7 +154,7 @@
       if (linurBreyttar) { try { render(); } catch (_) {} }
     } catch (e) { toast('Skýrslan vistaðist EKKI: ' + ((e && e.message) || e), true); }
   }
-  function vistaBladSidar(rep) { _bladBreytt = true; if (_bladT) clearTimeout(_bladT); _bladT = setTimeout(() => { _bladT = null; vistaBlad(rep); }, 900); }
+  function vistaBladSidar(rep) { _bladBreytt = true; _bladBid = rep; if (_bladT) clearTimeout(_bladT); _bladT = setTimeout(() => { _bladT = null; vistaBlad(rep); }, 900); }
   async function vistaVerdlinur(rep) {
     const sb = SB(); if (!sb || !rep) return;
     try {
@@ -173,6 +173,68 @@
     _vistBid[rep.id] = rep;
     if (_vistT) clearTimeout(_vistT);
     _vistT = setTimeout(() => { const b = _vistBid; _vistBid = {}; Object.keys(b).forEach(k => vistaVerdlinur(b[k])); }, 900);
+  }
+
+  /* ── ÚTSKOLUN VIÐ LOKUN (05.10.2026) ────────────────────────────────────────
+   * Agnar, 05.10: „Auk hvort allt vistist í textabox."
+   *
+   * ÞAÐ GERÐI ÞAÐ EKKI HÉR. Nótan (`saveNote`) var skoluð á `pagehide` frá
+   * 22.08 — en verðlínurnar (`vistaSidar`, 900 ms) og blaðið (`vistaBladSidar`,
+   * 900 ms) voru EKKI. Verðreitirnir vista á `input`; `change` á verði gerði
+   * aðeins endursnið (þúsundapunkt) og vistaði ekki. Þess vegna hjálpaði papp
+   * 365 ekki heldur: hann sendir blur/change/focusout á reitinn í fókus þegar
+   * síðan hverfur, og hér hékk engin vistun á þeim.
+   *
+   * Tapið var því raunverulegt: slá inn verð — eða ýta á −/+ — og loka
+   * glugganum, skipta um app eða læsa símanum innan 900 ms, og breytingin var
+   * farin. Engin villa, ekkert merki. Nákvæmlega mynstrið sem Agnar tapaði vinnu
+   * í 09.09 („Á hverjum degi endalaust") og sem audit-vistun-utskolun.cjs var
+   * búinn til að stöðva — hann var grænn á þessari skrá af því hún HAFÐI
+   * `pagehide` (fyrir nótuna). Vörður á skrá, ekki á hverja tafða vistun.
+   *
+   * TVENNT GERT:
+   *   1. `change` á verð/magn/heiti VISTAR nú (ekki bara endursníður), svo
+   *      blur-leiðin í 365 sé raunveruleg vörn og venjulega leiðin — með
+   *      ferskum lestri og samruna — nái yfir nær allt.
+   *   2. Við lokun fer sendingin BEINT á PostgREST með `keepalive:true` (sama
+   *      bragð og 361/villuvakt.js), því venjulegt supabase-js fetch deyr með
+   *      síðunni — mælt 09.09.
+   *
+   * MÁLAMIÐLUN SEM ÉG SEGI UPPHÁTT: venjulega leiðin les `data` ferskt og
+   * sameinar áður en hún skrifar, svo hún yfirskrifi ekki það sem önnur vél
+   * vistaði á sama tíma. Við lokun er enginn tími fyrir lestur-og-svo-skrift —
+   * beiðnin myndi deyja á miðri leið. Þá er valið: TAPA breytingu Agnars með
+   * vissu, eða yfirskrifa breytingu annarrar vélar á SÖMU skýrslu í sömu
+   * sekúndu. Hið fyrra er visst, hið síðara er sjaldgæft, svo lokunin skrifar
+   * úr minni. Biðfærslan er EKKI hreinsuð (lexía 361, 17.09): lifi síðan af
+   * (pagehide kemur líka við flipa-skipti og bfcache) reynir næsta blur aftur.
+   */
+  function bkcKeepalive(rep) {
+    try {
+      const url = String(window.SUPABASE_URL || '').replace(/\/+$/, '');
+      const key = window.SUPABASE_KEY;
+      if (!url || !key || !rep || !rep.id || !rep.data) return false;
+      fetch(url + '/rest/v1/brunakerfi_skyrslur?id=eq.' + encodeURIComponent(rep.id), {
+        method: 'PATCH', keepalive: true,
+        headers: {
+          apikey: key, Authorization: 'Bearer ' + key,
+          'Content-Type': 'application/json', Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ data: rep.data, updated_at: new Date().toISOString() })
+      }).catch(() => {});
+      return true;
+    } catch (_) { return false; }
+  }
+  function skolaBkcVidLokun() {
+    flushNote();
+    if (_vistT) {
+      clearTimeout(_vistT); _vistT = null;
+      Object.keys(_vistBid).forEach(k => bkcKeepalive(_vistBid[k]));   // _vistBid stendur — næsti blur reynir aftur
+    }
+    if (_bladT) {
+      clearTimeout(_bladT); _bladT = null;
+      if (_bladBid) bkcKeepalive(_bladBid);
+    }
   }
 
   function verdOf(r) {
@@ -1191,7 +1253,17 @@
         l[inp.dataset.vk] = (inp.dataset.vk === 'name' || num(inp.value) == null) ? inp.value : String(num(inp.value));   // geymt hreint, birt með punkti
         uppfaeraTolur(); vistaSidar(rep);
       }));
-      blokk.querySelectorAll('[data-vk="price"]').forEach(inp => inp.addEventListener('change', () => { if (num(inp.value) != null) inp.value = fmtInn(inp.value); }));
+      // 05.10.2026: `change` endursneið AÐEINS töluna (þúsundapunkt) og vistaði ekki — og af því
+      // vistunin hékk eingöngu á `input` með 900 ms töf átti papp 365 (sem sendir blur/change/
+      // focusout á reitinn í fókus við lokun síðu) ekkert til að kveikja. Nú vistar `change` strax,
+      // á ALLA reiti línunnar, svo venjulega leiðin — ferskur lestur og samruni — nái yfir nær allt
+      // og keepalive-lokunin sé aðeins öryggisnetið.
+      blokk.querySelectorAll('[data-vk]').forEach(inp => inp.addEventListener('change', () => {
+        if (inp.dataset.vk === 'price' && num(inp.value) != null) inp.value = fmtInn(inp.value);
+        if (_vistT) { clearTimeout(_vistT); _vistT = null; }
+        const b = _vistBid; _vistBid = {};
+        Object.keys(b).forEach(k => vistaVerdlinur(b[k]));
+      }));
       blokk.querySelectorAll('[data-vdel]').forEach(b => b.addEventListener('click', async () => {
         const l = linur()[+b.dataset.vdel]; if (!l) return;
         if (!confirm('Eyða línunni „' + (l.name || '') + '"?')) return;
@@ -1607,8 +1679,8 @@
   }
 
   try {
-    window.addEventListener('pagehide', flushNote);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushNote(); });
+    window.addEventListener('pagehide', skolaBkcVidLokun);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') skolaBkcVidLokun(); });
   } catch (_) {}
 
   async function open(coId, opts) {
