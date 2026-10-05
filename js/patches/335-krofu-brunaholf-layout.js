@@ -120,7 +120,29 @@
         + 'max-width:none!important}',
       Z + KY + '{overflow-x:auto!important}',
       M + KY + ',' + A + KY
-        + '{overflow-x:auto!important;-webkit-overflow-scrolling:touch}'
+        + '{overflow-x:auto!important;-webkit-overflow-scrolling:touch}',
+
+      /* 05.10.2026 (Agnar: „þegar mér langar að zooma aðeins betur fer layoutið í voðamikið rugl"):
+         333 gefur síðunni 100vw/zoom í breidd — 938 px við 40 % (ein lína passar), 536 px við 70 %,
+         375 px við 100 %. Þá hélt röðin max-content (760 px) með láréttu skruni inni í HVERJU korti,
+         svo takkar og minnispunktur duttu út af. Sé kortið mjórra en 820 px brotnar röðin í þrennt:
+         númer + aldur + skjöl · minnispunktur · upphæð + staða (stöðu-takkarnir vefjast sjálfir).
+         Skjár og 40 % eru breiðari en 820 og halda einni línu — Agnar 30.08 stendur þar. */
+      M + KY + ' .ky-card-rows,' + A + KY + ' .ky-card-rows{container-type:inline-size}',
+      '@container (max-width:820px){'
+        + M + KY + ' .ky-card-rows,' + A + KY + ' .ky-card-rows'
+        + '{overflow-x:visible!important;overflow-y:visible!important}'
+        + M + KY + ' .ky-card-rows>.ky-row,' + A + KY + ' .ky-card-rows>.ky-row'
+        + '{flex-wrap:wrap!important;width:100%!important;min-width:0!important;row-gap:6px!important;padding:8px 10px!important}'
+        + M + KY + ' .ky-card-rows>.ky-row>div:has(>._ky-note),' + A + KY + ' .ky-card-rows>.ky-row>div:has(>._ky-note)'
+        + '{flex:1 1 100%!important;order:3;margin:0!important}'
+        + M + KY + ' .ky-row-end,' + A + KY + ' .ky-row-end'
+        + '{flex:1 1 100%!important;order:4;margin-left:0!important;justify-content:space-between!important;flex-wrap:wrap!important;gap:8px!important}'
+        + M + KY + ' .ky-row-end>div,' + A + KY + ' .ky-row-end>div'
+        + '{flex:1 1 auto!important;min-width:0!important;flex-wrap:wrap!important}'
+        + M + KY + ' .ky-row-end>.ky-num,' + A + KY + ' .ky-row-end>.ky-num'
+        + '{width:auto!important}'
+        + '}'
     ].join('\n');
   }
 
