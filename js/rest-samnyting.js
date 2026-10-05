@@ -24,6 +24,59 @@
 
   var LIFIR_MS = 2000, HAMARK = 300;
 
+  /* ── BIÐRÖÐ: HÁMARK SAMTÍMA LESTRA (05.10.2026) ──────────────────────────
+   * Agnar: „of tíðar sækingar. Eitthvað hægt". Mælt á lifandi síðu 05.10:
+   *     109 Supabase-köll í einni hleðslu
+   *     25 SAMTÍMIS á toppnum (t≈3,0 s)
+   *     meðalsvartími 201 ms — alltof hátt fyrir einfalda PostgREST-fyrirspurn
+   * Hátt meðaltal með 25 í flugi er einkenni, ekki tilviljun: biðröðin er þegar
+   * til, hún er bara ÞJÓNSMEGIN í PostgREST/pgbouncer þar sem við sjáum hana
+   * ekki og þar sem hún bitnar á ÖLLUM flipum og öllum vélum í einu. Þannig fór
+   * 06.09 (PGRST003/504 á allt — sjá project_supabase_stifla_company_mail).
+   *
+   * Köllin koma í þremur bylgjum (15 → 20 → 43) úr ~40 óskyldum pöppum. Að
+   * sameina þær kallar á samræmingu allra þeirra; að setja þak hér nær þeim
+   * öllum með einni breytingu og skilar hverjum kallara nákvæmlega sama svari.
+   *
+   * ÖRYGGI:
+   *   • Aðeins lestrar sem komast hingað niður. SKRIFT bíður ALDREI — hún fer
+   *     fram hjá þessu ofar í fallinu, eins og app_settings, `signal` og
+   *     `no-store`. Vistun má aldrei hægja á sér út af lestrarbiðröð.
+   *   • Sæti losnar eftir SLEPPI_MS þótt svarið sé enn ókomið, svo ein hangandi
+   *     beiðni geti ekki stíflað röðina (beiðnin sjálf er ekki rofin).
+   *   • THAK = 0 slekkur alveg: RestSamnyting.thak(0).
+   */
+  var THAK = 8, SLEPPI_MS = 10000;
+  // Mælirofi: localStorage.setItem('rest_thak','0') + endurhlaða slekkur þakinu FRÁ FYRSTA KALLI.
+  // Nauðsynlegt til að mæla á móti — að slökkva með RestSamnyting.thak(0) eftir hleðslu mælir
+  // blandað ástand (fyrsta bylgjan var þegar komin í röð). 05.10.2026.
+  try { var _o = localStorage.getItem('rest_thak'); if (_o !== null) THAK = Math.max(0, parseInt(_o, 10) || 0); } catch (_) {}
+  var ifluga = 0, bidrod = [];
+
+  function losa(bud) {
+    if (bud.losad) return;
+    bud.losad = true;
+    ifluga--;
+    naestiUrRod();
+  }
+  function naestiUrRod() {
+    while (bidrod.length && (!THAK || ifluga < THAK)) { ifluga++; bidrod.shift()(); }
+  }
+  function medThaki(senda) {
+    if (!THAK) return senda();
+    return new Promise(function (ok, nei) {
+      function starta() {
+        var bud = { losad: false };
+        setTimeout(function () { losa(bud); }, SLEPPI_MS);
+        var p;
+        try { p = senda(); } catch (e) { losa(bud); nei(e); return; }
+        p.then(function (r) { losa(bud); ok(r); }, function (e) { losa(bud); nei(e); });
+      }
+      if (!THAK || ifluga < THAK) { ifluga++; starta(); }
+      else { bidrod.push(starta); if (bidrod.length > tolur.bid_hamark) tolur.bid_hamark = bidrod.length; tolur.bid_samtals++; }
+    });
+  }
+
   /* ── STÖK RÖÐ ÚR MINNI (03.10.2026) ──────────────────────────────────────
    * Agnar: „yrði hægt að láta þennan Hlaða takka í banner uploada meira í
    * vinnsluminni til að vera undirbúinn til að fara fram og til baka inn á
@@ -74,7 +127,7 @@
   }
   var upprunalegt = window.fetch;
   var geymsla = new Map();          // lykill → { t, p: Promise<Response> }
-  var tolur = { samnytt: 0, sott: 0, taemt: 0, skrif: 0 };
+  var tolur = { samnytt: 0, sott: 0, taemt: 0, skrif: 0, bid_samtals: 0, bid_hamark: 0 };
 
   function grunnur() { return String(window.SUPABASE_URL || '').replace(/\/+$/, ''); }
   function haus(h, nafn) {
@@ -177,7 +230,8 @@
       }
       if (geymsla.size > HAMARK) geymsla.clear();
       tolur.sott++;
-      var p = upprunalegt.apply(this, arguments);
+      var sjalf = this, rok = arguments;
+      var p = medThaki(function () { return upprunalegt.apply(sjalf, rok); });
       var faersla = { t: nu, p: p };
       geymsla.set(lykill, faersla);
       p.then(function (r) { if (!r || !r.ok) { if (geymsla.get(lykill) === faersla) geymsla.delete(lykill); } },
@@ -190,7 +244,9 @@
   };
 
   window.RestSamnyting = {
-    tolur: function () { return Object.assign({ i_geymslu: geymsla.size }, tolur); },
+    tolur: function () { return Object.assign({ i_geymslu: geymsla.size, thak: THAK, ifluga: ifluga, i_bid: bidrod.length }, tolur); },
+    // Hámark samtíma lestra. 0 slekkur biðröðinni alveg (til að mæla á móti).
+    thak: function (n) { if (typeof n === 'number' && n >= 0) { THAK = n | 0; naestiUrRod(); } return THAK; },
     taema: function () { geymsla.clear(); },
     // Fjöldi skrifta (allt nema GET/HEAD á Supabase, líka rpc) úr ÞESSUM flipa frá hleðslu. 153 notar þetta til að vita
     // hvort nokkuð var vistað síðan Ársskoðun sótti síðast — sjá backgroundRefresh.
