@@ -534,11 +534,17 @@
       var src = String(m.uppspretta || '');
       var mapisLoft = src.indexOf('mapis-loftmynd') === 0;
       var borgarLoft = src.indexOf('borgarvefsja') === 0;
-      var merki = (mapisLoft || borgarLoft)
-        ? '<span class="co-mynd-loftmerki" title="' + esc(mapisLoft
+      // 05.10.2026 (Agnar: „taka hvert fyrirtækið fyrir sig og fletta upp heimilisfangi og taka screenshot af fyrsta sem
+      // kemur upp og setja inn"): fyrsta mynd fyrirtækisins (eða nágranna á sama heimilisfangi) af Google Maps, sótt í
+      // lotu (E:/pascal-profun/maps-mynd.cjs + maps-setja.cjs). Sjálfsótt → ber merki, eins og loftmyndirnar.
+      var googleMynd = src.indexOf('google-maps') === 0;
+      var merki = (mapisLoft || borgarLoft || googleMynd)
+        ? '<span class="co-mynd-loftmerki" title="' + esc(googleMynd
+          ? ('Fyrsta mynd af Google Maps' + (m.stadur ? ' — ' + m.stadur : '') + '. Sjálfsótt, ekki mynd sem þú settir inn — límdu þína eigin yfir.')
+          : mapisLoft
           ? 'Loftmynd úr map.is (Loftmyndir). Húsið sést að ofan. Þetta er ekki götumynd og ekki mynd sem þú settir inn.'
           : 'Loftmynd úr Borgarvefsjá 2018. Ekki mynd sem þú settir inn.') + '">' +
-          (mapisLoft ? 'Loftmynd' : 'Borgarvefsjá') + '</span>'
+          (googleMynd ? 'Google Maps' : mapisLoft ? 'Loftmynd' : 'Borgarvefsjá') + '</span>'
         : '';
       flis.innerHTML = '<div class="co-mynd-vefja"><img alt="Bygging"></div>' + merki +
         '<button type="button" class="co-mynd-x" title="Fjarlægja myndina">×</button>' + UPP + hlekkir;
