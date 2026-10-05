@@ -110,9 +110,33 @@ function bundleIndexHtml() {
 
   // Split the document into an ordered list of html-gaps and <script> tags.
   const tagRe = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+
+  // 05.10.2026: svæfður patchi er <script> sem er kommentaður út. tagRe sá hann samt
+  // sem LIFANDI skriftu, og það hafði tvennt í för með sér:
+  //
+  //  1) HÆTTA. Kommentaður <script> var „bundleable" (staðbundin src, ekkert async,
+  //     tómt meginmál) og gat því lent inni í bundle — þ.e. VAKNAÐ. Fjórir patchar eru
+  //     í dvala, þar á meðal demoseed.js sem sáði sýnishornsvörum sem Agnar bað um að
+  //     eyða. Mælt 05.10: enginn þeirra hafði lekið inn, en það var hending — hrina af
+  //     stærð 1 er send út óbreytt, svo kommentmerkin umluktu hann áfram. Tveir
+  //     svæfðir hlið við hlið hefðu orðið hrina af stærð 2 og farið í bundle.
+  //
+  //  2) SUNDRUN. Kommentið sjálft lenti í tveimur bilum (`<!--` á undan, `-->` á eftir)
+  //     sem hvorugt er tómt eftir athugasemda-afmáunina hér fyrir neðan, svo bæði
+  //     tæmdu hrinuna. Þar með gerði svæfður patchi einmitt það sem kaflinn um bil
+  //     („hibernating a patch doesn't fragment the bundle") átti að hindra.
+  //
+  // Lausn: athugasemdir eru ÓGAGNSÆJAR. <script> inni í athugasemd tilheyrir
+  // html-bilinu og verður aldrei hluti af hrinu — þá er bilið heil athugasemd, afmást
+  // í heilu lagi og hrinan heldur áfram yfir svæfða patcha eins og til stóð.
+  const kommentasvid = [];
+  { const kre = /<!--[\s\S]*?-->/g; let k; while ((k = kre.exec(html))) kommentasvid.push([k.index, k.index + k[0].length]); }
+  const iKommenti = (i) => kommentasvid.some(([a, b]) => i >= a && i < b);
+
   const parts = [];
   let last = 0, m;
   while ((m = tagRe.exec(html))) {
+    if (iKommenti(m.index)) continue;   // svæfður patchi — aldrei skrifta, aldrei bundle
     if (m.index > last) parts.push({ t: 'html', s: html.slice(last, m.index) });
     const attrs = m[1] || '', body = m[2] || '';
     const srcM = /\bsrc\s*=\s*["']([^"']+)["']/i.exec(attrs);
