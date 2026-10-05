@@ -76,6 +76,13 @@
   var inni = rules.join('\n');
   var css = '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n';
 
+  // 05.10.2026 (yfirferð appa, S26 á 80 %): GÓ-merkið (13×13 dp), forgangs-„i" (14×16), Í vinnslu-hakið (19×14) og ↻
+  // (21×18) voru of smá fyrir fingur. Ósýnilegur rammi (::after, 9 px út fyrir) stækkar snertiflötinn í ~28 dp —
+  // útlitið er óbreytt. Aðeins í síma/appi; takkarnir nota ekki ::after fyrir og reitirnir klippa ekki (mælt).
+  var SN = ['body.appmode #view-arsskodun ', 'html[data-viewmode="mobile"] #view-arsskodun '];
+  var SNT = ['._go-btn', '._pri-btn', '._ars-tu-toggle', '.b414-refresh', '.cb-dot'];
+  css += SN.map(function (z) { return SNT.map(function (t) { return z + t; }).join(','); }).join(',') + '{position:relative}\n'
+    + SN.map(function (z) { return SNT.map(function (t) { return z + t + '::after'; }).join(','); }).join(',') + '{content:"";position:absolute;inset:-9px;border-radius:8px}\n';
   var st = document.getElementById('_ars-tafla-415-css');
   if (!st) { st = document.createElement('style'); st.id = '_ars-tafla-415-css'; document.head.appendChild(st); }
   st.textContent = css;
