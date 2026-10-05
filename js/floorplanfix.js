@@ -89,10 +89,13 @@
     var ctx = canvas.getContext('2d');
     var cw = canvas.width, ch = canvas.height;
     var mr = Math.max(10, Math.round(cw/100));
+    // 05.10.2026: striginn er skorinn að húsinu og smækkaður (newfeatures _coFpInject) — díl-merki (frumdílar) varpast
+    // með data-fp-x0 / -y0 / -kv; án þeirra er striginn öll myndin í fullri stærð eins og áður.
+    var fpKv = parseFloat(canvas.dataset.fpKv) || 1, fpX0 = parseFloat(canvas.dataset.fpX0) || 0, fpY0 = parseFloat(canvas.dataset.fpY0) || 0;
     plan.markers.forEach(function(mk){
       var x = mk.x || 0, y = mk.y || 0;
       var mx, my;
-      if(x > 1 || y > 1){ mx = x; my = y; }
+      if(x > 1 || y > 1){ mx = (x - fpX0) * fpKv; my = (y - fpY0) * fpKv; }
       else { mx = x * cw; my = y * ch; }
       ctx.beginPath();
       ctx.arc(mx, my, mr, 0, 2*Math.PI);
@@ -120,7 +123,8 @@
       var canvas = section.querySelector('canvas');
       if(!canvas) return;
       try {
-        if(canvas.dataset.fpfixCoid !== String(currentCoId)){
+        // KYRRÐ (05.10.2026): án merkja var data-fpfix-marked skrifað (sama gildi) á 600 ms fresti — eigindabreyting sem vakti vaktir.
+        if(canvas.dataset.fpfixCoid !== String(currentCoId) && canvas.dataset.fpfixMarked){
           canvas.dataset.fpfixMarked = '';
         }
         overlayMarkers();

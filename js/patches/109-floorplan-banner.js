@@ -116,7 +116,9 @@
     // prófíl sem sýnir teikningarborðann (mælt á lifandi, Arnarhvoll: 81 breyting og 53 löng verk / 3.903 ms á 8 s í
     // kyrrstöðu). Án merkja bættist auk þess NÝR „Engir tækjadottar" reitur við í hverri umferð. Nú er aðeins teiknað
     // þegar eitthvað hefur breyst: fyrirtæki, merki, stærð striga eða stærð gluggans.
-    const sig = [coId, vp.offsetWidth, vp.offsetHeight, canvas.width, canvas.height,
+    // Striginn er skorinn að húsinu og smækkaður (newfeatures _coFpInject): díl-merki varpast með data-fp-x0 / -y0 / -kv.
+    const fpKv = parseFloat(canvas.dataset.fpKv) || 1, fpX0 = parseFloat(canvas.dataset.fpX0) || 0, fpY0 = parseFloat(canvas.dataset.fpY0) || 0;
+    const sig = [coId, vp.offsetWidth, vp.offsetHeight, canvas.width, canvas.height, fpKv, fpX0, fpY0,
       markers.map(m => [m.x, m.y, m.color || '', m.label || m.serial || ''].join(':')).join(',')].join('|');
     if (overlay._fpbSig === sig) return;
     overlay._fpbSig = sig;
@@ -156,8 +158,10 @@
       dot.className = '_fpb-marker';
       dot.style.background = mk.color || '#c93c1d';
       // Coordinate normalization: support both ratio (0..1) and absolute pixel coords
-      const xR = mk.x > 1 ? mk.x / natW : mk.x;
-      const yR = mk.y > 1 ? mk.y / natH : mk.y;
+      const dill = mk.x > 1 || mk.y > 1;
+      const xR = dill ? ((mk.x - fpX0) * fpKv) / natW : mk.x;
+      const yR = dill ? ((mk.y - fpY0) * fpKv) / natH : mk.y;
+      if (xR < 0 || yR < 0 || xR > 1 || yR > 1) return;          // utan skurðar: enginn punktur á flakki utan myndarinnar
       const px = offX + xR * showW;
       const py = offY + yR * showH;
       dot.style.left = px + 'px';

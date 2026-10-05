@@ -255,16 +255,41 @@ Companies.openDetail = function(id) {
   setTimeout(function() { _coFpInject(id); }, 300);
 };
 
+/* TEIKNINGARBORÐINN Á PRÓFÍLNUM — þrennt lagað 05.10.2026 (Agnar: „Mátt laga það sem þú getur"):
+ *  1. Borðinn var lesinn úr minni VAFRANS (FloorPlan.plans / localStorage fp_<id>): á tæki sem hafði aldrei opnað
+ *     teikningagluggann var hann ekki til, þótt teikningin væri á þjóninum (SAMSTILLT MILLI VÉLA). Nú er röðin sótt
+ *     einu sinni í lotu þegar ekkert er í minni, og borðinn smíðaður þegar hún berst.
+ *  2. Hann sýndi ALLT blaðið — nafnreit og skýringar — þótt hæðin væri skorin að húsinu í glugganum. Nú er skurður
+ *     fyrstu hæðar notaður; data-fp-x0/-y0/-kv á striganum segja 109 og floorplanfix hvernig díl-merki varpast.
+ *  3. Myndin (6000 dílar, ~100 MB sem strigi) var sótt og teiknuð við HVERJA opnun prófíls, líka þegar borðinn er
+ *     falinn (405 felur hann sjálfgefið). Nú er hún aðeins sótt þegar borðinn sést, og striginn er mest 3000 dílar. */
+var _coFpSott = {}, _coFpVakt = null;
+function _coFpSaekja(id) {
+  if (_coFpSott[id] || !window.DB || !DB.sb) return;
+  _coFpSott[id] = 1;
+  try {
+    DB.sb.from('teikning_bord').select('markers,image_url,haedir').eq('company_id', id).limit(1).then(function (r) {
+      var row = r && !r.error && r.data && r.data[0];
+      if (!row || !row.image_url) return;
+      var geymt = { markers: Array.isArray(row.markers) ? row.markers : [], imageUrl: row.image_url, haedir: Array.isArray(row.haedir) && row.haedir.length ? row.haedir : undefined };
+      try { localStorage.setItem('fp_' + id, JSON.stringify(geymt)); } catch (e) {}
+      if (!FloorPlan.plans[id]) FloorPlan.plans[id] = geymt;
+      if (String(window._currentCompanyId) === String(id) && document.getElementById('companies-main') && !document.getElementById('co-fp-section')) _coFpInject(id);
+    }, function () {});
+  } catch (e) {}
+}
 function _coFpInject(id) {
   var el = document.getElementById('companies-main');
   if (!el) return;
   var prev = document.getElementById('co-fp-section');
   if (prev) prev.remove();
-  var fp = FloorPlan.plans[id] || {};
-  if (!fp.imageUrl) {
-    try { var r = localStorage.getItem('fp_'+id); if (r) fp = JSON.parse(r); } catch(e) {}
-  }
-  if (!fp.imageUrl) return;
+  if (_coFpVakt) { try { _coFpVakt.disconnect(); } catch (e) {} _coFpVakt = null; }
+  var fp = FloorPlan.plans[id] || {}, geymt = null;
+  try { geymt = JSON.parse(localStorage.getItem('fp_' + id) || 'null'); } catch (e) {}
+  if (!fp.imageUrl && geymt) fp = geymt;
+  if (!fp.imageUrl) { _coFpSaekja(id); return; }
+  var hs = (Array.isArray(fp.haedir) && fp.haedir.length ? fp.haedir : (geymt && Array.isArray(geymt.haedir) ? geymt.haedir : [])) || [];
+  var fjoldiMerkja = hs.length ? hs.reduce(function (n, h) { return n + (((h && h.markers) || []).length); }, 0) : (fp.markers || []).length;
   var kids = Array.from(el.children);
   var ins = null;
   for (var i = 0; i < kids.length; i++) {
@@ -282,7 +307,7 @@ function _coFpInject(id) {
   hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid #f0f0f0;background:#fafafa;';
   var title = document.createElement('span');
   title.style.cssText = 'font-size:11px;font-weight:600;color:#6b7280;letter-spacing:.06em;text-transform:uppercase;';
-  title.textContent = 'Teikning';
+  title.textContent = 'Teikning' + (fjoldiMerkja ? ' · ' + fjoldiMerkja + ' staðsetningar' : '');
   hdr.appendChild(title);
   var ctrl = document.createElement('div');
   ctrl.style.cssText = 'display:flex;align-items:center;gap:5px;';
@@ -294,14 +319,25 @@ function _coFpInject(id) {
   var cv = document.createElement('canvas');
   cv.id = 'coFpCv';
   cv.style.cssText = 'position:absolute;top:0;left:0;transform-origin:0 0;';
+  cv.width = 0; cv.height = 0;            // ekkert teiknað fyrr en myndin er komin (floorplanfix og 109 bíða eftir stærð)
   vp.appendChild(cv); sec.appendChild(vp);
   el.insertBefore(sec, ins);
   var img = new Image();
   img.onload = function() {
-    var W = vp.offsetWidth||640, H=300, iw=img.naturalWidth, ih=img.naturalHeight;
+    // Skurður fyrstu hæðar (frumdílar) → dílar þessarar myndar; striginn er mest 3000 dílar á lengri hlið.
+    var nb = img.naturalWidth, nhd = img.naturalHeight;
+    var h0 = hs[0] && (hs[0].image_url || null) === (fp.imageUrl || null) ? hs[0] : null;
+    var f = h0 && h0.frum && h0.frum.b ? nb / h0.frum.b : 1;
+    var sk = h0 && h0.skurdur && h0.skurdur.w > 8 && h0.skurdur.h > 8 ? h0.skurdur : null;
+    var sx = sk ? Math.max(0, Math.min(nb - 2, sk.x * f)) : 0, sy = sk ? Math.max(0, Math.min(nhd - 2, sk.y * f)) : 0;
+    var sw = sk ? Math.max(1, Math.min(nb - sx, sk.w * f)) : nb, sh = sk ? Math.max(1, Math.min(nhd - sy, sk.h * f)) : nhd;
+    var kvS = Math.min(1, 3000 / Math.max(sw, sh));
+    var W = vp.offsetWidth||640, H=300, iw=Math.max(1, Math.round(sw * kvS)), ih=Math.max(1, Math.round(sh * kvS));
     cv.width=iw; cv.height=ih;
-    var ctx=cv.getContext('2d'); ctx.drawImage(img,0,0);
+    var ctx=cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, iw, ih); ctx.drawImage(img, sx, sy, sw, sh, 0, 0, iw, ih);
+    cv.dataset.fpX0 = String(sx / f); cv.dataset.fpY0 = String(sy / f); cv.dataset.fpKv = String(kvS * f); cv.dataset.fpfixMarked = '';
     (fp.markers||[]).forEach(function(m){
+      if (m.x > 1 || m.y > 1) return;       // díl-merki teikna floorplanfix og 109 (með vörpuninni hér að ofan); þetta eru gömlu hlutfallsmerkin
       var mx=(m.x||.5)*iw,my=(m.y||.5)*ih;
       ctx.save(); ctx.beginPath(); ctx.arc(mx,my,14,0,2*Math.PI);
       ctx.fillStyle='rgba(220,38,38,0.8)'; ctx.fill();
@@ -322,7 +358,23 @@ function _coFpInject(id) {
     document.addEventListener('mouseup',function(){if(!drag)return;drag=null;var v=document.getElementById('coFpVp');if(v)v.style.cursor='grab';});
   };
   img.onerror=function(){var s=document.getElementById('co-fp-section');if(s)s.remove();};
-  img.src=fp.imageUrl;
+  // Myndin er aðeins sótt þegar borðinn SÉST: 405 felur hann nema #companies-main beri b405-fp-open (Brunastál).
+  var synilegt = function () { return !document.documentElement.matches('html[data-thm-preset="brunastal"]') || el.classList.contains('b405-fp-open'); };
+  var hladid = false;
+  var hlada = function () {
+    if (hladid) return; hladid = true;
+    // Hreint PDF (Hafnarfjörður, Kópavogur …): <img> getur ekki sýnt það — 435 rastar það í mynd.
+    var beint = /[?&]url=[^&]*\.pdf(?:&|$)/i.test(String(fp.imageUrl));
+    if (beint && window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, fp.imageUrl); else img.src = fp.imageUrl;
+  };
+  if (synilegt()) hlada();
+  else {
+    _coFpVakt = new MutationObserver(function () {
+      if (!document.body.contains(sec)) { try { _coFpVakt.disconnect(); } catch (e) {} return; }
+      if (synilegt()) { try { _coFpVakt.disconnect(); } catch (e) {} hlada(); }
+    });
+    _coFpVakt.observe(el, { attributes: true, attributeFilter: ['class'] });
+  }
 }
 
 /* 3. LOGO: Upgrade sidebar brand logo (skips when the Sidebar.dc gradient

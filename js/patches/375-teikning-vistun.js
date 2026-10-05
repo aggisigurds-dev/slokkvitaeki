@@ -13,6 +13,100 @@
 
   var TAFLA = 'teikning_bord';
 
+  /* ── EIN SKRIFLEIÐ, SAMEINUÐ VIÐ FERSKA RÖÐ (05.10.2026) ──
+   * Þrír staðir skrifuðu ALLA röðina (hæðir, skurð, merki) úr minni vafrans án þess að líta á þjóninn: Vista (hér),
+   * hver færsla merkis (433) og „Opna í TurboPaint" (383). Gluggi sem stóð opinn í símanum skrifaði því yfir það sem
+   * önnur vél hafði gert á meðan — skurð, nýja hæð, merki á sömu hæð — þegjandi (SAMSTILLT MILLI VÉLA: fjórar tölvur
+   * og sími í sömu gögnum). Nú fer allt um skrifa(): röðin er lesin fersk rétt fyrir skrif, og hafi einhver annar
+   * skrifað síðan þessi vafri sá hana síðast (_sed) er sameinað í stað þess að yfirskrifa:
+   *   • stillingar hæðar (skurður, Skýrari/fest, veggir, eldVal …) koma af þjóninum — þær vistar 383 sér, jafnóðum;
+   *   • merki þessa vafra standa; merki sem ÖNNUR vél bætti við á sömu hæð haldast; merki sem var eytt HÉR kemur ekki aftur;
+   *   • hæð sem önnur vél bætti við helst; hæð sem var eytt HÉR kemur ekki aftur; tæki er aðeins á einni hæð.
+   * Eftir sameinuð skrif er ritillinn uppfærður með niðurstöðunni, svo næstu skrif byggi ekki á úreltu minni. */
+  var _sed = {};      // cid → { t, ids, merki } — röðin eins og ÞESSI vafri sá hana síðast (sókn eða eigin skrif)
+  function timi(t) { var n = Date.parse(t); return isNaN(n) ? 0 : n; }
+  function sja(cid, updated_at, haedir) {
+    var hs = Array.isArray(haedir) ? haedir : [], merki = {};
+    hs.forEach(function (h) { if (h && h.id) merki[h.id] = (h.markers || []).map(function (m) { return m && m.unitId != null ? String(m.unitId) : null; }).filter(Boolean); });
+    _sed[cid] = { t: timi(updated_at), ids: hs.map(function (h) { return h && h.id; }).filter(Boolean), merki: merki };
+  }
+  // HREIN: hæðir þessa vafra (minar) ofan á ferskar hæðir þjónsins. sed = það sem þessi vafri sá síðast, eða null.
+  function sameinaVidFerska(minar, ferskar, sed) {
+    if (!Array.isArray(ferskar) || !ferskar.length) return minar;
+    if (!Array.isArray(minar) || !minar.length) return ferskar;
+    var lyk = function (m) { return m && m.unitId != null ? String(m.unitId) : null; };
+    var eftirId = {}; ferskar.forEach(function (f) { if (f && f.id) eftirId[f.id] = f; });
+    var notad = {}, minMerki = {};
+    minar.forEach(function (l) { ((l && l.markers) || []).forEach(function (m) { var k = lyk(m); if (k) minMerki[k] = 1; }); });
+    var ut = minar.map(function (l) {
+      if (!l) return l;
+      var f = l.id && eftirId[l.id];
+      // Þessi vafri sá röðina aldrei (sed === null): auðkenni hæðar hér getur verið gervi — þá ræður sama mynd.
+      if (!f && !sed) f = ferskar.filter(function (q) { return q && q.id && !notad[q.id] && !minar.some(function (o) { return o && o.id === q.id; }) && (q.image_url || null) === (l.image_url || null); })[0];
+      if (!f) return l;                                                   // ný hæð hér
+      notad[f.id] = 1;
+      if ((l.image_url || null) !== (f.image_url || null)) return l;     // önnur mynd hér: hæðin er ný að efni
+      var n = {}; Object.keys(f).forEach(function (k) { n[k] = f[k]; });  // stillingar þjónsins
+      var sedHer = (sed && sed.merki && sed.merki[f.id]) || null, herna = {};
+      (l.markers || []).forEach(function (m) { var k = lyk(m); if (k) herna[k] = 1; });
+      n.markers = (l.markers || []).concat((f.markers || []).filter(function (m) {
+        var k = lyk(m);
+        if (!k || herna[k] || minMerki[k]) return false;                  // er hér þegar (þessi hæð eða önnur)
+        return !(sedHer && sedHer.indexOf(k) >= 0);                       // var séð hér áður og vantar nú → eytt hér
+      }));
+      n.nafn = l.nafn;
+      if (l.frum) n.frum = l.frum;
+      if (l.stimpilStaerd !== undefined) n.stimpilStaerd = l.stimpilStaerd;
+      return n;
+    });
+    ferskar.forEach(function (f) {
+      if (!f || !f.id || notad[f.id]) return;
+      if (sed && sed.ids && sed.ids.indexOf(f.id) >= 0) return;           // var séð hér áður og vantar nú → eytt hér
+      var n = {}; Object.keys(f).forEach(function (k) { n[k] = f[k]; });
+      n.markers = (f.markers || []).filter(function (m) { var k = lyk(m); return !k || !minMerki[k]; });
+      ut.push(n);                                                         // hæð sem önnur vél bætti við
+    });
+    return ut;
+  }
+  function uppfaeraRitil(cid, row, tilraun) {
+    try {
+      if (!window.FloorPlan || FloorPlan.companyId !== cid) return;
+      if (window.TeiknMerking && TeiknMerking.iDragi && TeiknMerking.iDragi() && (tilraun || 0) < 6) { setTimeout(function () { uppfaeraRitil(cid, row, (tilraun || 0) + 1); }, 700); return; }
+      var plan = FloorPlan.plans[cid] || (FloorPlan.plans[cid] = { markers: [] });
+      plan.markers = Array.isArray(row.markers) ? row.markers : [];
+      if (typeof FloorPlan.__eftirSokn === 'function') FloorPlan.__eftirSokn(cid, row);
+      beitaAServer(cid, row);
+    } catch (e) { console.warn('[375] uppfæra ritil', e && e.message); }
+  }
+  // Skilar loforði um { error, sameinad }. row = { company_id, markers, image_url, updated_at, haedir? }.
+  function skrifa(cid, row) {
+    return new Promise(function (res) {
+      if (!cid || !row || !window.DB || !DB.sb) { res({ error: new Error('engin tenging') }); return; }
+      var senda = function (sameinad) {
+        DB.sb.from(TAFLA).upsert(row, { onConflict: 'company_id' }).then(function (r) {
+          var villa = r && r.error;
+          if (!villa) {
+            if (Array.isArray(row.haedir)) sja(cid, row.updated_at, row.haedir); else if (_sed[cid]) _sed[cid].t = timi(row.updated_at);
+            if (sameinad) uppfaeraRitil(cid, row);
+          }
+          res({ error: villa || null, sameinad: !!sameinad });
+        }, function (e) { res({ error: e || new Error('náði ekki í þjóninn') }); });
+      };
+      if (!Array.isArray(row.haedir) || !row.haedir.length) { senda(false); return; }
+      DB.sb.from(TAFLA).select('haedir,updated_at').eq('company_id', cid).limit(1).then(function (r) {
+        var f = r && !r.error && r.data && r.data[0], s = _sed[cid] || null;
+        if (f && Array.isArray(f.haedir) && f.haedir.length && (!s || timi(f.updated_at) !== s.t)) {
+          row.haedir = sameinaVidFerska(row.haedir, f.haedir, s);
+          row.markers = (row.haedir[0] && row.haedir[0].markers) || [];
+          row.image_url = (row.haedir[0] && typeof row.haedir[0].image_url === 'string' && row.haedir[0].image_url) || row.image_url || null;
+          console.info('[375] röðin hafði breyst á þjóninum — sameinað í stað þess að yfirskrifa');
+          senda(true);
+        } else senda(false);
+      }, function () { senda(false); });
+    });
+  }
+  window.TeiknVistun = { skrifa: skrifa, sja: sja, sameinaVidFerska: sameinaVidFerska };
+
   function serverUpsert(cid, plan) {
     if (!cid || !plan || !window.DB || !DB.sb) return;
     var row = {
@@ -33,10 +127,12 @@
       // 20.09.2026: grunn-save (scanner.js) segir „aðeins í þessum vafra — sést ekki á hinum vélunum". Það var satt
       // áður en þessi patch kom; nú fer teikningin á þjóninn og tilkynningin laug. Niðurstaða skrifanna ræður textanum.
       var segja = function (t) { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} };
-      DB.sb.from(TAFLA).upsert(row, { onConflict: 'company_id' }).then(function (r) {
-        if (r && r.error) { console.warn('[375] upsert', r.error.message); segja('⚠ Teikningin vistaðist AÐEINS í þessum vafra — þjónninn hafnaði: ' + r.error.message); }
-        else segja('Teikning vistuð ✓ — ' + fjoldi + ' staðsetningar' + (row.haedir && row.haedir.length > 1 ? ' á ' + row.haedir.length + ' hæðum' : '') + ', sést á öllum vélum');
-      }, function (e) { console.warn('[375] upsert', e && e.message); segja('⚠ Teikningin vistaðist AÐEINS í þessum vafra — náði ekki í þjóninn.'); });
+      skrifa(cid, row).then(function (r) {
+        if (r && r.error) { console.warn('[375] upsert', r.error.message); segja('⚠ Teikningin vistaðist AÐEINS í þessum vafra — ' + (r.error.message || 'náði ekki í þjóninn')); return; }
+        if (Array.isArray(row.haedir)) fjoldi = row.haedir.reduce(function (n, h) { return n + ((h.markers || []).length); }, 0);
+        segja('Teikning vistuð ✓ — ' + fjoldi + ' staðsetningar' + (row.haedir && row.haedir.length > 1 ? ' á ' + row.haedir.length + ' hæðum' : '') +
+          (r && r.sameinad ? ', sameinað við breytingar úr annarri vél' : ', sést á öllum vélum'));
+      });
     } catch (e) { console.warn('[375] upsert', e && e.message); }
   }
 
@@ -75,6 +171,7 @@
           FloorPlan.__soknLokid = cid;
           if (!r || r.error || !r.data || !r.data.length) return;
           var row = r.data[0];
+          sja(cid, row.updated_at, row.haedir);
           var plan = FloorPlan.plans[cid] || (FloorPlan.plans[cid] = { markers: [] });
           plan.markers = Array.isArray(row.markers) ? row.markers : [];
           if (row.image_url) plan.imageUrl = row.image_url;

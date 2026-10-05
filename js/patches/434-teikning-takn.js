@@ -21,9 +21,12 @@
     reykskynjari: 'detector', hitaskynjari: 'detector', bjalla: 'alarm', segull: 'magnet'
   };
   const LITIR = {
-    lettvatn: { bg: '#e11d2e', fg: '#99f6e4' },
-    duft: { bg: '#e11d2e', fg: '#93c5fd' },
-    co2: { bg: '#e11d2e', fg: '#7f1d1d', outline: '#0c0a09' },
+    // 05.10.2026 (Agnar: „fallegri útgáfu af slökkvitækjamerkingunum með sínum þemalit"): kúturinn er hvítur á rauðri
+    // málmplötu og ber BORÐA í lit tegundarinnar — léttvatn sægrænt, duft blátt, CO₂ svart með trekt. Áður var allt
+    // táknið litað (sægrænn kútur á rauðu), sem las illa í lítilli stærð.
+    lettvatn: { bg: '#e11d2e', fg: '#fff', band: '#14b8a6' },
+    duft: { bg: '#e11d2e', fg: '#fff', band: '#2563eb' },
+    co2: { bg: '#e11d2e', fg: '#fff', band: '#111827', horn: true },
     slanga: { bg: '#e11d2e', fg: '#fff' },
     neydarutgangur: { bg: '#15803d', fg: '#fff' },
     ut: { bg: '#15803d', fg: '#fff' },
@@ -166,7 +169,7 @@
     return fjold(u);
   }
 
-  function teiknaGlyff(ctx, id, fg, outline) {
+  function teiknaGlyff(ctx, id, fg, outline, litur) {
     const strok = () => { ctx.strokeStyle = fg; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(); };
     const fyll = () => {
       ctx.fillStyle = fg;
@@ -217,12 +220,34 @@
         ctx.beginPath(); ctx.arc(12, 12, 7, 0, 7); strok();
         ctx.beginPath(); ctx.arc(12, 12, 2.4, 0, 7); fyll();
         break;
-      default:
-        box(9, 6, 7, 13, 1); fyll();
-        box(10.5, 3, 4, 3, 0); fyll();
-        ctx.beginPath(); ctx.moveTo(14.5, 3); ctx.lineTo(18, 1.5); ctx.lineTo(18, 5); strok();
-        box(11, 19, 3, 2, 0); fyll();
+      default: {
+        // Slökkvitæki: kútur með ávölum öxlum, borði í lit tegundar, háls, handfang, þrýstimælir og slanga (CO₂: trekt).
+        const band = litur && litur.band, kutur = () => box(7.6, 8.4, 7.6, 12.6, 2.6);
+        kutur(); ctx.fillStyle = fg; ctx.fill();
+        ctx.save(); kutur(); ctx.clip();
+        if (band) { ctx.fillStyle = band; ctx.fillRect(7.6, 12.4, 7.6, 3.9); }
+        ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.fillRect(13.3, 8.4, 1.9, 12.6);              // skuggi hægra megin: rúmtak
+        ctx.restore();
+        box(9.9, 6.1, 3, 2.7, 0.5); ctx.fillStyle = fg; ctx.fill();                          // háls
+        ctx.strokeStyle = fg; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(8.6, 5.5); ctx.lineTo(14.6, 4.1); ctx.stroke();   // handfang
+        ctx.beginPath(); ctx.arc(8.5, 7.4, 1.05, 0, 7); ctx.fillStyle = fg; ctx.fill();      // þrýstimælir
+        if (litur && litur.horn) {
+          ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(12.9, 7.3); ctx.lineTo(16.2, 8.4); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(15.8, 7.6); ctx.lineTo(19.8, 8.6); ctx.lineTo(19.4, 14.6); ctx.lineTo(16.4, 11.4); ctx.closePath(); ctx.fillStyle = fg; ctx.fill();
+        } else {
+          ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(12.9, 7.2); ctx.quadraticCurveTo(18.6, 6.8, 18.3, 12.4); ctx.stroke();
+          box(17.35, 12.1, 1.9, 2.5, 0.4); ctx.fillStyle = fg; ctx.fill();
+        }
+      }
     }
+  }
+
+  function blanda(a, b, t) {
+    const h = c => { const m = /^#?([0-9a-f]{6})$/i.exec(String(c)); if (!m) return null; const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+    const A = h(a), B = h(b);
+    if (!A || !B) return a;                                   // litur sem er ekki #rrggbb (handvalinn): óblandaður
+    return 'rgb(' + A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',') + ')';
   }
 
   function teiknaTakn(ctx, glyffId, litur, x, y, size, rot) {
@@ -231,18 +256,29 @@
     const deg = Number(rot) || 0;
     if (deg) ctx.rotate(deg * Math.PI / 180);
     ctx.translate(-size / 2, -size / 2);
-    ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(0, 0, size, size, size * 0.12);
-    else ctx.rect(0, 0, size, size);
-    ctx.shadowColor = 'rgba(0,0,0,.78)';
-    ctx.shadowBlur = Math.max(3, size * 0.22);
-    ctx.shadowOffsetY = 1;
-    ctx.fillStyle = litur.bg; ctx.fill();
+    // MÁLMPLATA (Brunastál, 05.10.2026): hvítur kragi svo merkið lesist á hvaða fleti sem er, litur með halla frá
+    // ljósu horni í dökkt, mjó gljárák á ská, dökk brún og ljós rönd að innan. Áður: flatur litur með svörtum ramma.
+    const r = size * 0.2, bg = litur.bg || '#e11d2e';
+    const plata = (inn) => { ctx.beginPath(); const i = inn || 0; if (ctx.roundRect) ctx.roundRect(i, i, size - 2 * i, size - 2 * i, Math.max(0, r - i)); else ctx.rect(i, i, size - 2 * i, size - 2 * i); };
+    plata();
+    ctx.shadowColor = 'rgba(0,0,0,.6)';
+    ctx.shadowBlur = Math.max(3, size * 0.2);
+    ctx.shadowOffsetY = Math.max(1, size * 0.05);
+    ctx.fillStyle = bg; ctx.fill();
     ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = '#0c0a09'; ctx.lineWidth = Math.max(2.2, size / 11); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,.96)'; ctx.lineWidth = Math.max(1.4, size / 16); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.96)'; ctx.lineWidth = Math.max(2.4, size / 8.5); ctx.stroke();
+    const halli = ctx.createLinearGradient(0, 0, size * 0.6, size);
+    halli.addColorStop(0, blanda(bg, '#ffffff', 0.24)); halli.addColorStop(0.42, bg); halli.addColorStop(1, blanda(bg, '#000000', 0.42));
+    plata(); ctx.fillStyle = halli; ctx.fill();
+    ctx.save(); plata(); ctx.clip();
+    const gljai = ctx.createLinearGradient(0, 0, size, size * 0.7);
+    gljai.addColorStop(0.26, 'rgba(255,255,255,0)'); gljai.addColorStop(0.38, 'rgba(255,255,255,.24)'); gljai.addColorStop(0.47, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gljai; ctx.fillRect(0, 0, size, size);
+    ctx.restore();
+    plata(); ctx.strokeStyle = blanda(bg, '#000000', 0.66); ctx.lineWidth = Math.max(1.1, size / 22); ctx.stroke();
+    plata(Math.max(1.2, size / 16)); ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = Math.max(0.7, size / 44); ctx.stroke();
     ctx.scale(size / 24, size / 24);
-    teiknaGlyff(ctx, glyffId, litur.fg, litur.outline);
+    teiknaGlyff(ctx, glyffId, litur.fg, litur.outline, litur);
     ctx.restore();
   }
 

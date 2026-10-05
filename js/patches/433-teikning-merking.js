@@ -377,10 +377,15 @@
     } catch (_) {}
     if (!window.DB || !DB.sb) return;
     const bid = ++S.vistun;
-    DB.sb.from(TAFLA).upsert(row, { onConflict: 'company_id' }).then(function (r) {
+    // 05.10.2026: um TeiknVistun.skrifa (375) — röðin er lesin fersk og SAMEINUÐ hafi önnur vél skrifað á meðan, í stað
+    // þess að þessi vafri skrifi allar hæðir og skurði yfir úr minni. Beina leiðin stendur aðeins ef 375 vantar.
+    const skrif = window.TeiknVistun && TeiknVistun.skrifa
+      ? TeiknVistun.skrifa(cid, row)
+      : DB.sb.from(TAFLA).upsert(row, { onConflict: 'company_id' }).then(r => ({ error: r && r.error }), e => ({ error: e }));
+    skrif.then(function (r) {
       if (bid !== S.vistun) return;
-      if (r && r.error) console.warn('[433] upsert', r.error.message);
-    }, function (e) { console.warn('[433] upsert', e && e.message); });
+      if (r && r.error) console.warn('[433] upsert', r.error.message || r.error);
+    });
   }
 
   function lokaValmynd() {

@@ -1946,8 +1946,11 @@
           return n;
         });
         if (!breytt) return;
-        const u = await DB.sb.from('teikning_bord').update({ haedir: nyjar, updated_at: new Date().toISOString() }).eq('company_id', cid).select('company_id');
+        const uppf = new Date().toISOString();
+        const u = await DB.sb.from('teikning_bord').update({ haedir: nyjar, updated_at: uppf }).eq('company_id', cid).select('company_id');
         if (u.error || !u.data || !u.data.length) throw new Error((u.error && u.error.message) || 'ekkert skrifað');
+        // 375 þarf að vita að ÞESSI vafri skrifaði röðina — annars teldi næsta merkjavistun að önnur vél hefði gert það.
+        try { if (window.TeiknVistun && TeiknVistun.sja) TeiknVistun.sja(cid, uppf, nyjar); } catch (_) {}
         segja('✓ Vistað' + (astaeda ? ' — ' + astaeda : ''));
       } catch (e) { console.warn('[383] sjálfvistun', e); }
     }, 1200);
@@ -2155,6 +2158,9 @@
     const nw = x1 - x0, nh = y1 - y0, gamall = h.skurdur;
     h.thett = true;
     if (sjalfkrafa && gamall && nw * nh > gamall.w * gamall.h * 0.92) { vistaSjalfkrafa('húsleit reynd'); return false; }
+    // Sjálfvirk þétting sem skilur eftir innan við fimmtung af fyrri skurði hefur líklega gripið einn klasa af mörgum
+    // (álma, annað hús á blaðinu) — þá er ekki skorið sjálfkrafa; takkinn „Að húsinu" stendur til boða.
+    if (sjalfkrafa && gamall && nw * nh < gamall.w * gamall.h * 0.2) { vistaSjalfkrafa('húsleit reynd'); return false; }
     h.skurdur = { x: Math.round(x0), y: Math.round(y0), w: Math.round(nw), h: Math.round(nh) }; h.sjalf = true; zNullstilla();
     vistaSjalfkrafa('skorið að húsinu');
     return true;
@@ -2339,14 +2345,14 @@
     ut.forEach((m, i) => { m.x = Math.round(bil * (0.8 + (i % d))); m.y = Math.round(bil * (0.8 + Math.floor(i / d))); m.uti = [m.x + G.rymi.x, m.y + G.rymi.y]; });
     try { FPx()._renderCanvas(); FPx()._renderPanel(); } catch (_) {}
     merkiUtiStika();
-    segja('⚠ ' + ut.length + ' merki sótt inn í efra hornið — dragðu hvert á sinn stað og ýttu á Vista.');
+    segja('⚠ ' + ut.length + ' merki sótt inn í efra hornið — dragðu hvert á sinn stað, það vistast þegar þú sleppir.');
   }
   function merkiUtiStika() {
     const main = fpEl('fp-main'); if (!main) return;
     let s = main.querySelector('#fp-merki-uti');
     const ut = G.hamur ? [] : merkiUtan(), bida = (plan().markers || []).filter(m => m && m.uti).length;
     const html = ut.length ? '<span>⚠ ' + ut.length + ' merki ' + (ut.length === 1 ? 'er' : 'eru') + ' utan teikningar</span><button type="button" data-a="inn" style="' + TK + ';' + GULL + '" title="Leggur merkin í efra hornið svo hægt sé að draga þau á sinn stað">Sækja inn</button>'
-      : (bida ? '<span>⚠ ' + bida + ' merki ' + (bida === 1 ? 'bíður' : 'bíða') + ' í horninu — dragðu ' + (bida === 1 ? 'það' : 'þau') + ' á sinn stað og ýttu á Vista</span>' : '');
+      : (bida ? '<span>⚠ ' + bida + ' merki ' + (bida === 1 ? 'bíður' : 'bíða') + ' í horninu — dragðu ' + (bida === 1 ? 'það' : 'þau') + ' á sinn stað</span>' : '');
     if (!s) {
       if (!html) return;
       s = document.createElement('div'); s.id = 'fp-merki-uti';
@@ -3206,11 +3212,12 @@
       throw new Error('Ein hæðin er með nýupphlaðna mynd — ýttu fyrst á 💾 Vista, opnaðu gluggann aftur og svo TurboPaint.');
     }
     const gogn = JSON.parse(JSON.stringify(hs)); gogn.forEach(x => { delete x.pdfReynt; });
-    const r = await DB.sb.from('teikning_bord').upsert({
-      company_id: cid, markers: gogn[0].markers, image_url: gogn[0].image_url || null, haedir: gogn,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'company_id' }).select('company_id');
-    if (r.error || !r.data || !r.data.length) throw new Error((r.error && r.error.message) || 'ekkert skrifað');
+    // 05.10.2026: um TeiknVistun.skrifa (375) — sameinað við ferska röð hafi önnur vél skrifað á meðan.
+    const rodin = { company_id: cid, markers: gogn[0].markers, image_url: gogn[0].image_url || null, haedir: gogn, updated_at: new Date().toISOString() };
+    const r = window.TeiknVistun && TeiknVistun.skrifa
+      ? await TeiknVistun.skrifa(cid, rodin)
+      : await DB.sb.from('teikning_bord').upsert(rodin, { onConflict: 'company_id' }).select('company_id').then(q => ({ error: q.error || (!q.data || !q.data.length ? new Error('ekkert skrifað') : null) }));
+    if (r.error) throw new Error(r.error.message || 'ekkert skrifað');
     return { cid, h: hs[G.virk], hs };
   }
   function turboPaintSlod(cid, h, planUrl) {
