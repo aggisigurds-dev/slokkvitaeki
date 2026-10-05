@@ -275,7 +275,7 @@
   // Agnar: „ætti að vera bara það sem er í Kröfuyfirlit ógreitt … og síðan það sem er eftir í afgreiðslu, ekki búið
   // að sækja". Áður taldist ÖLL ógreidd sala með greitt_med reikningur/greitt_sidar — mælt 05.10.2026 á Allt:
   // 6.955.840 kr, þar af 3.429.975 kr kreditfærðir reikningar, 810.755 kr bakfærðar sölur og 806.073 kr drög (aðeins
-  // 66.047 kr þeirra í afgreiðslu). Rétt sama dag: 2.256.882 (41 krafa = Kröfu yfirlit) + 66.047 (7 drög) = 2.322.929.
+  // 91.267 kr þeirra í afgreiðslu). Rétt sama dag: 2.256.882 (41 krafa = Kröfu yfirlit) + 91.267 (8 drög) = 2.348.149.
   function kreditfaerdur(s) { return _hlKredAllt.has(String(s.id)) || _hlCreditedIds.has(s.id); }
   function erOgreitt(s) {
     if (!s || s.is_credit || s.paid_at) return false;
@@ -428,12 +428,13 @@
   let _hlKredAllt = new Set();     // id upprunareikninga sem einhver kreditnóta vísar á
   let _hlKredUppr = new Map();     // id upprunareiknings → source hans (uppruni kreditnótunnar)
   let _hlAfgrNum = new Set();      // num draga sem bíða í afgreiðslu (verkbeiðni „ready", engin á verkstæði — 143)
+  //   ALLAR verkbeiðnir, ekki bara „R-…-V1": sumar heita sama nafni og salan (R-001002) — 143 les þær líka.
   let _hlById = new Map();         // id → sala í gagnasafninu sem er teiknað
   async function saekjaOgreittSamhengi(SB) {
     try {
       const [kr, vb] = await Promise.all([
         DB.fetchAll((from, to) => SB.from('solur').select('id,credit_of').eq('is_credit', true).not('credit_of', 'is', null).order('id').range(from, to)),
-        DB.fetchAll((from, to) => SB.from('verkbeidnir').select('id,num,status').like('num', 'R-%-V%').in('status', ['received', 'inprogress', 'in_progress', 'ready']).order('id').range(from, to))
+        DB.fetchAll((from, to) => SB.from('verkbeidnir').select('id,num,status').in('status', ['received', 'inprogress', 'in_progress', 'ready']).order('id').range(from, to))
       ]);
       const upp = Array.from(new Set((kr || []).map(r => String(r.credit_of))));
       const uppr = new Map();

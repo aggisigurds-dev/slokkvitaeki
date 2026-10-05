@@ -286,8 +286,8 @@
   // 01.10.2026 (B48): Öpp-síðan fékk málmhausa (ljóst letur á dökkum málmi) — spjaldhausar, fylkishaus,
   // Stýriborðshaus, síðuritilshaus, app-hausinn og -dokkinn, nýtt-app-spjaldið og falin-öpp-línan eiga sína liti.
   // Kicker Öpp-síðunnar stendur á dökka bandinu (litbrigði — skannin les það sem ljóst) og á sinn ljósgráa lit.
-  // 05.10.2026: Hreyfingarlistinn (167, Brunastál C) á sína liti — skannin las silfurflís sem dökka og hvítaði teljarann.
-  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd,#_uv-strip,.b412-titill,._uv-rb,.b414-top,.arsm-sec,._ars-summary,._tfoot,.b418-top,.b190-top,.b403-band,.b403-kafli,#_sr-dialog,#view-opp .op-top,#view-opp .op-ny,#view-opp .op-falin,.mx-sum,#_op-styri .st-h,#_app-pgedit ._pe-h,#_app-hdr,#_app-nav,#view-opp .op-kick,.page-title .ky-month,#view-tilbodhub .th-haus,#view-hreyfingarlisti .hl2';
+  // 05.10.2026: Hreyfingarlistinn (167) og Drög (143), Brunastál C, eiga sína liti — skannin las silfurflís sem dökka og hvítaði teljarann.
+  const SKIP_CLOSEST = '#_pe-panel,#bstal-banner,thead,.cw-col-head,.cw-toolbar,#counter-sidebar,.stat-card--hero,.bstal-hero,.hero-stat,.ky-navbtn,.bw-page-hdr,.kym-head,._sk-hd,#_uv-strip,.b412-titill,._uv-rb,.b414-top,.arsm-sec,._ars-summary,._tfoot,.b418-top,.b190-top,.b403-band,.b403-kafli,#_sr-dialog,#view-opp .op-top,#view-opp .op-ny,#view-opp .op-falin,.mx-sum,#_op-styri .st-h,#_app-pgedit ._pe-h,#_app-hdr,#_app-nav,#view-opp .op-kick,.page-title .ky-month,#view-tilbodhub .th-haus,#view-hreyfingarlisti .hl2,#view-drog .dr2';
   // 01.10.2026 (B51, Agnar: „textarnir sjást illa þarna“): .b403-band — ársbandið í Skjöl-spjaldinu (403) er málmur;
   // stöðumerkið (KOMIÐ/YFIRFARIÐ) og „1 þjónusta“ eru hálfgegnsæ og fengu dökkt blek. Sama gildra og #_uv-strip.
 
