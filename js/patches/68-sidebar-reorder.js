@@ -296,7 +296,32 @@
           h = String(h);
           if (h === id) return true;                 // exact stable-id (data-view) match
           if (aliasHidden(id, txt, h)) return true;  // known label-drift (df864e6a — Stjórnborð→Stjórnstöð)
-          if (h[0] === '#') return false;            // '#label' ids only match via navId (handled above)
+          if (h[0] === '#') {
+            /* 05.10.2026 — FELAN HAFÐI EKKI ÞAÐ ÞOL SEM RÖÐUNIN FÉKK.
+             * `matchCustomEntry` fékk 09.08.2026 vörn gegn merkistölum sem eru
+             * bakaðar inn í merkimiðann („📝Drög 3"), svo STAÐA flipans lifir af
+             * þegar talan breytist. Hér stóð `return false` — og þar með lifði
+             * FELAN það ekki.
+             *
+             * Mælt á lifandi síðu 05.10: hnappurinn „Verkefni 41" var falinn
+             * (`style.display:none`) og `sidebar_hidden` bar `#verkefni 41`. Um
+             * leið og merkistalan varð 42 varð `navId` að `#verkefni 42`, ekkert
+             * í felulistanum passaði, og hnappurinn kom AFTUR Í LJÓS. Hann fór
+             * ekki bara úr felum: næsta vistun hefði skrifað hann sem sýnilegan
+             * og skilið dauða færslu (`#verkefni 41`) eftir í listanum, sem
+             * lengist þá um eina í hvert sinn sem talan breytist.
+             *
+             * Berum því saman án aftasta teljara — og AÐEINS við hnapp sem ber
+             * sjálfur merkimiða-auðkenni, svo `#eitthvað` geti aldrei falið
+             * hnapp sem á raunverulegt data-view. Það sem er VISTAÐ breytist
+             * ekki, aðeins samanburðurinn, svo gamlar og nýjar færslur virka
+             * báðar og eldri vélar halda áfram að skilja listann.
+             */
+            if (id[0] !== '#') return false;
+            const bh = h.slice(1).replace(/\s+\d+$/, '').trim();
+            const bid = id.slice(1).replace(/\s+\d+$/, '').trim();
+            return !!bh && bh === bid;
+          }
           if (allViewIds.has(h)) return false;       // h is another view's id → never substring-match it as a label
           return txt.indexOf(h.toLowerCase()) !== -1; // legacy plain-label entry → substring match
         });

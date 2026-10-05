@@ -52,6 +52,25 @@
     return '#' + String(b.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
   }
 
+  /* Er felu-færslan `h` þessi hnappur? (05.10.2026)
+   *
+   * Merkimiða-auðkenni geta borið lifandi teljara — „Verkefni 41" verður „Verkefni 42"
+   * þegar talan breytist, og þá passar `#verkefni 41` í felulistanum ekki lengur.
+   * Mælt á lifandi síðu: falinn flipi kom aftur í ljós við talnabreytingu. Papp 68 fékk
+   * sömu vörn í röðuninni 09.08; hún vantaði bæði í feluna þar og hér, svo glugginn
+   * sýndi hakið ótikkað og hefði skrifað flipann sem sýnilegan við næstu vistun.
+   * Aðeins samanburðinum er breytt — ekki því sem er vistað — svo gamlar færslur,
+   * nýjar færslur og eldri vélar skilji listann öll eins.
+   */
+  function samiReitur(h, id) {
+    h = String(h);
+    if (h === id) return true;
+    if (h[0] !== '#' || String(id)[0] !== '#') return false;
+    const bh = h.slice(1).replace(/\s+\d+$/, '').trim();
+    const bid = String(id).slice(1).replace(/\s+\d+$/, '').trim();
+    return !!bh && bh === bid;
+  }
+
   // Read the ACTUAL visual order the user sees. 2026-07-01: patch 68 v2 positions
   // nav buttons with CSS `order` and NEVER moves DOM nodes — so `nav.children`
   // order is just injection order, unrelated to what's on screen. Rebasing that
@@ -81,7 +100,7 @@
       // Unplaced/hidden (order 0) → park at the tail in DOM order so nothing is
       // lost and hidden items are reachable to re-enable.
       if (!Number.isFinite(ord) || ord <= 0) ord = 1e6 + domIdx;
-      const hidden = el.style.display === 'none' || hiddenRaw.some(h => String(h) === id);
+      const hidden = el.style.display === 'none' || hiddenRaw.some(h => samiReitur(h, id));
       entries.push({ id, label, hidden, ord, domIdx, grpStart: el.classList.contains('nav-grp-start') });
     });
     // If patch 68 hasn't placed anything yet (very early open), fall back to DOM
@@ -123,17 +142,26 @@
     if (!thjonsrod || !Array.isArray(thjonsrod.o) || !thjonsrod.o.length) return null;
     const eftirId = new Map();
     (snap.all || []).forEach(it => eftirId.set(it.id, it));
-    const faldir = new Set((thjonsrod.h || []).map(String));
     const notad = new Set();
     const items = [];
     thjonsrod.o.forEach(id => {
       if (id === SEP) { items.push({ type: 'sep' }); return; }
-      const d = eftirId.get(id);
+      /* Pörun MÁ EKKI vera á nákvæmu auðkenni einu. Merkimiði getur borið lifandi
+       * teljara, og þá er geymda auðkennið `#verkefni 41` meðan hnappurinn heitir
+       * núna `#verkefni 42`. Mælt 05.10: með nákvæmri pörun hélt glugginn gömlu
+       * færslunni OG bætti hnappinum við sem nýjum flipa aftast — vistunin skrifaði
+       * þá BÆÐI, og listinn óx um eina færslu í hvert sinn sem talan breyttist
+       * (25→26 faldir, 78→79 í röðinni, mælt). Nú er parað með sama þoli og felan
+       * notar, og hnappurinn merktur notaður svo honum sé ekki bætt við aftur.
+       * Geymda auðkennið sjálft er ÓBREYTT — aðeins pörunin er umburðarlyndari. */
+      let d = eftirId.get(id);
+      if (!d) d = (snap.all || []).find(it => !notad.has(it.id) && samiReitur(id, it.id));
+      if (d) notad.add(d.id);
       notad.add(id);
       items.push({
         type: 'item', id,
         label: d ? d.label : String(id).replace(/^#/, ''),
-        hidden: faldir.has(String(id)) || !!(d && d.hidden)
+        hidden: (thjonsrod.h || []).some(h => samiReitur(h, id)) || !!(d && d.hidden)
       });
     });
     // Flipar sem bættust við eftir að röðin var vistuð — aftast, sýnilegir.
