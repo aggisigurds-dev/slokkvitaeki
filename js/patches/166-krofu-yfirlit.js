@@ -2560,7 +2560,8 @@
       if (window.CompanyAttachments && CompanyAttachments.list) {
         for (const coId of candidateIds) {
           const atts = CompanyAttachments.list(coId) || [];
-          const hit = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr);
+          // 05.10.2026: viðhengi með brunakerfis-/slökkvikerfisnafni er aldrei slökkvitækjaskýrsla (gömul kind 'skyrsla')
+          const hit = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr && !/brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String(a.name || '')));
           if (hit) return { found: true, kind: 'att', coId, att: hit, year: yr };
         }
       }

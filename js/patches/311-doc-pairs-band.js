@@ -267,7 +267,7 @@
       if (!siteLocked && baseIds.length) ors.push('customer_base_id.in.(' + baseIds.join(',') + ')');
       if (ors.length) {
         const r = await sb.from('customer_documents')
-          .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id,customer_base_id')
+          .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id,customer_base_id,vidskiptategund')
           .or(ors.join(','))
           .in('doc_type', ['uttektarskyrsla', 'brunakerfi', 'reikningur', 'samningur']);
         docs = (r.data || []).map(mapDocUrl);
@@ -282,11 +282,11 @@
       if (siteLocked && coIds.length) {
         sr = await sb.from('solur').select('id,num,source,samtals,created_at,customer_id')
           .in('customer_id', coIds)
-          .in('source', ['uttekt', 'brunakerfi']).limit(400);
+          .in('source', ['uttekt', 'brunakerfi']).neq('status', 'void').order('created_at', { ascending: false }).limit(400);   // 05.10.2026: ógilt (R-001076) tók sæti R-001082 — nýjasti gildi reikningurinn
       } else if (ktd.length === 10 && ktd !== '9999999999') {
         sr = await sb.from('solur').select('id,num,source,samtals,created_at')
           .or('customer_kt.eq.' + ktd + ',customer_kt.eq.' + ktDashed(ktd))
-          .in('source', ['uttekt', 'brunakerfi']).limit(400);
+          .in('source', ['uttekt', 'brunakerfi']).neq('status', 'void').order('created_at', { ascending: false }).limit(400);   // 05.10.2026: ógilt (R-001076) tók sæti R-001082 — nýjasti gildi reikningurinn
       }
       (sr && sr.data || []).forEach(s => {
         const y = String(s.created_at || '').slice(0, 4);
@@ -320,6 +320,14 @@
       if (bundlesByYear[y].brunakerfi) bundlesByYear[y].brunakerfi.inv = solBySrc['brunakerfi|' + y] || null;
     });
 
+    // 05.10.2026 (Agnar: „skýrslurnar haldast við reikningana úr sínu kerfi"): skjal úr pari fer AÐEINS í hólf síns kerfis.
+    // shared_report-pörin (backfill 05.08) og pör með rangt flokkuðum reikningi settu slökkvitækjaskýrslu í 🔥-hólfið og
+    // brunakerfisreikning í 🧯-hólfið — og þaðan í „Senda"-pakkann. Óþekkt tegund reiknings heldur gömlu hegðuninni.
+    const passarHolfi = (key, d, erReikningur) => {
+      if (!d) return false;
+      if (erReikningur) { const t = String(d.vidskiptategund || '').toLowerCase(); return key === 'brunakerfi' ? (!t || t === 'brunakerfi' || t === 'ovisst') : ['brunakerfi', 'slokkvikerfi', 'bud'].indexOf(t) < 0; }
+      return key === 'brunakerfi' ? d.doc_type === 'brunakerfi' : d.doc_type === 'uttektarskyrsla';
+    };
     // 4) document_pairs (Brunahólf's durable bundle table). Fills gaps the
     //    doc_type/solur grouping can't know (shared_report, invoice_doc_id) AND —
     //    the point of verkefnalisti 688f153b — CREATES a slot for a pair that
@@ -344,7 +352,7 @@
         if (need.size) {
           try {
             const er = await sb.from('customer_documents')
-              .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id,customer_base_id')
+              .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id,customer_base_id,vidskiptategund')
               .in('id', Array.from(need));
             (er.data || []).map(mapDocUrl).forEach(d => { docById[d.id] = d; });
           } catch (_) {}
@@ -357,10 +365,10 @@
           const yb = (bundlesByYear[y] = bundlesByYear[y] || {});
           let slot = yb[key];
           if (!slot) slot = yb[key] = { rep: null, inv: null };
-          if (!slot.rep && row.report_doc_id) { const rd = docById[row.report_doc_id]; if (rd) slot.rep = rd; }
+          if (!slot.rep && row.report_doc_id) { const rd = docById[row.report_doc_id]; if (rd && passarHolfi(key, rd)) slot.rep = rd; }
           if (!slot.inv && row.invoice_doc_id) {
             const invd = docById[row.invoice_doc_id];
-            if (invd) slot.inv = { id: invd.id, num: invd.invoice_number, samtals: invd.amount, _url: invd._url, drive_file_id: invd.drive_file_id, _fromDoc: true };
+            if (invd && passarHolfi(key, invd, true)) slot.inv = { id: invd.id, num: invd.invoice_number, samtals: invd.amount, _url: invd._url, drive_file_id: invd.drive_file_id, _fromDoc: true };
           }
         });
       }

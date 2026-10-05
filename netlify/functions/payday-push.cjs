@@ -941,8 +941,12 @@ async function findReportPdf(sale, explicitPath) {
     const settings = await fetchAppSettings();
     const list = settings && settings.company_attachments && settings.company_attachments[String(coId)];
     if (Array.isArray(list)) {
-      const hit = list.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === year)
-               || list.find(a => a && a.kind === 'skyrsla'); // any skýrsla if the year doesn't line up
+      // 05.10.2026 („skýrslurnar haldast við reikningana úr sínu kerfi"): fyrir 29.07 vistaði 273 brunakerfisskýrslur
+      // líka sem kind 'skyrsla' (Bílabúð Benna 2026 endurmerkt 05.10). Viðhengi sem heitir brunakerfis-/slökkvikerfis-
+      // skýrsla er aldrei slökkvitækjaskýrsla úttektarreiknings, hvað sem kind segir.
+      const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
+      const hit = list.find(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && String(a.year || '') === year)
+               || list.find(a => a && a.kind === 'skyrsla' && !annadKerfi(a)); // any skýrsla if the year doesn't line up
       if (hit && hit.path) path = hit.path;
     }
   }

@@ -61,6 +61,15 @@ else {
   if (/\|\|\s*gild\[0\]/.test(rs)) brot.push('166: annar reikningur getur gripið hvaða skýrslu sem er (|| gild[0]) — líka brunakerfis-/slökkvikerfisskýrslu');
 }
 
+// (2b) 05.10.2026 (netvordur) — „skýrslurnar haldast við reikningana úr sínu kerfi": nafnasían á viðhengjum, hólfareglan
+//      í Pör-bandinu (253/311 — Senda-pakkinn er OUT-leið) og varpið source→tegund í gagnagrunninum
+if (!/annadKerfi\(a\)/.test(fall(pp, 'findReportPdf') || '')) brot.push('payday-push: findReportPdf síar ekki brunakerfis-/slökkvikerfisnefnd viðhengi frá slökkvitækjaskýrslu');
+for (const f of ['js/patches/253-sala-customer-history.js', 'js/patches/311-doc-pairs-band.js']) {
+  const src = lesa(f);
+  if (!/const passarHolfi = /.test(src) || (src.match(/passarHolfi\(key, /g) || []).length < 2) brot.push(f.split('/').pop() + ': Pör-bandið setur skjal úr pari í hólf án þess að athuga kerfi þess (passarHolfi)');
+}
+if (!/elsif new\.source = 'brunakerfi' then\s+new\.vidskiptategund := 'brunakerfi'/.test(lesa('sql/2026-10-05_vidskiptategund_brunakerfi.sql'))) brot.push('sql: set_vidskiptategund varpar brunakerfi ekki í brunakerfi');
+
 // (3) 187 / 190
 for (const f of ['js/patches/187-inservice-row-reports.js', 'js/patches/190-thjonustu-verkstaedi.js']) {
   const src = lesa(f), u = fall(src, 'isUttektInvoiceTeg');

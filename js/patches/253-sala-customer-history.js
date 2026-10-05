@@ -333,7 +333,7 @@
       if (!siteLocked && baseIds.length) ors.push('customer_base_id.in.(' + baseIds.join(',') + ')');
       if (!ors.length) { holder.innerHTML = ''; return; }
       const r = await sb.from('customer_documents')
-        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id')
+        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id,vidskiptategund')
         .or(ors.join(','))
         .in('doc_type', ['uttektarskyrsla', 'brunakerfi', 'reikningur', 'samningur']);
       // 2026-07-20: ÁÐUR var krafist `drive_file_id`, svo skjöl í Supabase Storage
@@ -399,11 +399,11 @@
       if (siteLocked && coIds.length) {
         sr = await sb.from('solur').select('id,num,source,samtals,created_at')
           .in('customer_id', coIds)
-          .in('source', ['uttekt', 'brunakerfi']).limit(400);
+          .in('source', ['uttekt', 'brunakerfi']).neq('status', 'void').order('created_at', { ascending: false }).limit(400);   // 05.10.2026: ógilt (R-001076) tók sæti R-001082 — nýjasti gildi reikningurinn
       } else if (ktb.length === 10 && ktb !== '9999999999') {
         sr = await sb.from('solur').select('id,num,source,samtals,created_at')
           .or('customer_kt.eq.' + ktb + ',customer_kt.eq.' + ktDashed(ktb))
-          .in('source', ['uttekt', 'brunakerfi']).limit(400);
+          .in('source', ['uttekt', 'brunakerfi']).neq('status', 'void').order('created_at', { ascending: false }).limit(400);   // 05.10.2026: ógilt (R-001076) tók sæti R-001082 — nýjasti gildi reikningurinn
       }
       (sr && sr.data || []).forEach(s => {
         const y = String(s.created_at || '').slice(0, 4);
@@ -439,6 +439,14 @@
     // when one physical report already satisfies BOTH kinds for the same year
     // (matched_by='shared_report'), which this purely doc_type-based grouping
     // can't know on its own. Best-effort: never blocks the rest of the modal.
+    // 05.10.2026 (Agnar: „skýrslurnar haldast við reikningana úr sínu kerfi"): skjal úr pari fer AÐEINS í hólf síns kerfis.
+    // shared_report-pörin (backfill 05.08) og pör með rangt flokkuðum reikningi settu slökkvitækjaskýrslu í 🔥-hólfið og
+    // brunakerfisreikning í 🧯-hólfið — og þaðan í „Senda"-pakkann. Óþekkt tegund reiknings heldur gömlu hegðuninni.
+    const passarHolfi = (key, d, erReikningur) => {
+      if (!d) return false;
+      if (erReikningur) { const t = String(d.vidskiptategund || '').toLowerCase(); return key === 'brunakerfi' ? (!t || t === 'brunakerfi' || t === 'ovisst') : ['brunakerfi', 'slokkvikerfi', 'bud'].indexOf(t) < 0; }
+      return key === 'brunakerfi' ? d.doc_type === 'brunakerfi' : d.doc_type === 'uttektarskyrsla';
+    };
     try {
       if (siteLocked && coIds.length) {
         const dp = await sb.from('document_pairs')
@@ -452,11 +460,11 @@
           if (!slot) return;
           if (!slot.rep && row.report_doc_id) {
             const repDoc = docs.find(d => d.id === row.report_doc_id);
-            if (repDoc) slot.rep = repDoc;
+            if (repDoc && passarHolfi(key, repDoc)) slot.rep = repDoc;
           }
           if (!slot.inv && row.invoice_doc_id) {
             const invDoc = docs.find(d => d.id === row.invoice_doc_id);
-            if (invDoc) slot.inv = { id: invDoc.id, num: invDoc.invoice_number, samtals: invDoc.amount, _url: invDoc._url, drive_file_id: invDoc.drive_file_id, _fromDoc: true };
+            if (invDoc && passarHolfi(key, invDoc, true)) slot.inv = { id: invDoc.id, num: invDoc.invoice_number, samtals: invDoc.amount, _url: invDoc._url, drive_file_id: invDoc.drive_file_id, _fromDoc: true };
           }
         });
       } else if (baseIds.length) {
@@ -471,7 +479,7 @@
           if (!slot) return;
           if (!slot.rep && row.report_doc_id) {
             const repDoc = docs.find(d => d.id === row.report_doc_id);
-            if (repDoc) slot.rep = repDoc;
+            if (repDoc && passarHolfi(key, repDoc)) slot.rep = repDoc;
           }
           // 2026-08-05 (Húsfélagið Engjasel 31 — R-000703 til staðar en bandið
           // sagði "vantar reikning"): solur-lyklunin (solBySrc, hér að ofan)
@@ -482,7 +490,7 @@
           // sendBundle viti að opna/senda beint úr skjalinu, ekki úr solur.
           if (!slot.inv && row.invoice_doc_id) {
             const invDoc = docs.find(d => d.id === row.invoice_doc_id);
-            if (invDoc) slot.inv = { id: invDoc.id, num: invDoc.invoice_number, samtals: invDoc.amount, _url: invDoc._url, drive_file_id: invDoc.drive_file_id, _fromDoc: true };
+            if (invDoc && passarHolfi(key, invDoc, true)) slot.inv = { id: invDoc.id, num: invDoc.invoice_number, samtals: invDoc.amount, _url: invDoc._url, drive_file_id: invDoc.drive_file_id, _fromDoc: true };
           }
         });
       }
