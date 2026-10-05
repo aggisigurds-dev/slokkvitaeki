@@ -350,7 +350,9 @@
       D + ' .b49-rod:hover{background:#f5f6f8}',
       D + ' .b49-tl{font-family:' + B49_SANS + ';font-size:13px;font-weight:600;color:#11141c;min-width:0}',
       D + ' .b49-sn{font-family:' + B49_MONO + ';font-size:12.5px;font-weight:700;color:#11141c}',
-      D + ' .b49-utr{display:inline-block;vertical-align:1px;margin-left:7px;padding:2px 6px;border-radius:3px;background:' + B49_RAUTT + ';color:#fff;font-family:' + B49_MONO + ';font-size:9px!important;font-weight:700;letter-spacing:.1em;text-transform:uppercase;line-height:1.4;text-shadow:0 1px 0 rgba(0,0,0,.4)}',
+      // 05.10.2026 (Agnar: „gera textann hvítan í Útrunnið, sést ekki“): almenna reglan `small{color:#3a4250!important}`
+      // (bstal-polish) vann hvíta litinn — hann þarf !important. Sama á við Á verkstæði-merkið (.b49-averk) neðar.
+      D + ' .b49-utr{display:inline-block;vertical-align:1px;margin-left:7px;padding:2px 6px;border-radius:3px;background:' + B49_RAUTT + ';color:#fff!important;font-family:' + B49_MONO + ';font-size:9px!important;font-weight:700;letter-spacing:.1em;text-transform:uppercase;line-height:1.4;text-shadow:0 1px 0 rgba(0,0,0,.4)}',
       D + ' .b49-stadur{font-size:11.5px;color:#5a6372;margin-top:2px}',
       D + ' .b49-stadur b{font-family:' + B49_MONO + ';font-weight:600;color:#3a4250}',
       D + ' select._sr-unit-svc{height:30px;padding:0 8px;border:1px solid rgba(20,24,34,.28);border-radius:6px;background:' + B49_SILVER + ';box-shadow:inset 0 1px 0 #fff;font-family:' + B49_SANS + ';font-size:12px;color:#1c2028;cursor:pointer;width:100%}',
@@ -362,7 +364,7 @@
       '#_sr-dialog button#_sr-prenta{height:38px;padding:0 14px;border-radius:9px;border:1px solid rgba(20,24,34,.22);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:600 13px ' + B49_SANS + ';cursor:pointer;white-space:nowrap}',
       '#_sr-dialog button#_sr-prenta:disabled{opacity:.4;cursor:not-allowed}',
       '#_sr-dialog._sr-merkja .b49-rod{grid-template-columns:24px 1fr!important}',
-      '#_sr-dialog .b49-averk{display:inline-block;vertical-align:1px;margin-left:7px;padding:2px 7px;border-radius:3px;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#f6e7b8;font-family:' + B49_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}'
+      '#_sr-dialog .b49-averk{display:inline-block;vertical-align:1px;margin-left:7px;padding:2px 7px;border-radius:3px;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#f6e7b8!important;font-family:' + B49_MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}'
     ].join('\n');
     var st = document.createElement('style');
     st.id = '_sr-dlg-css';
