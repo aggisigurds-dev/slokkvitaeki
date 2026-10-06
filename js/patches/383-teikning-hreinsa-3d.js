@@ -3320,13 +3320,14 @@
         'border:1px solid #000;border-radius:12px;box-shadow:0 18px 40px -14px rgba(0,0,0,.65),0 2px 6px rgba(0,0,0,.3);overflow:hidden;font:500 12.5px system-ui,sans-serif;color:#1f2530';
       o.innerHTML = '<div style="position:relative;flex:none;display:flex;align-items:center;gap:10px;padding:11px 22px 10px;background:' + BL_MALMUR + ';border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);color:#eef1f4">' +
         blHnod('left') + blHnod('right') +
-        '<span style="font:700 17px \'Playfair Display\',Georgia,serif;letter-spacing:.01em">Blender-mynd</span>' +
+        '<span style="font:700 17px \'Playfair Display\',Georgia,serif;letter-spacing:.01em">Designer-3D</span>' +
         '<span id="fp-3d-bl-timi" style="margin-left:auto;font:700 11px ui-monospace,Consolas,monospace;letter-spacing:.08em;color:#c9ced6"></span></div>' +
         '<div id="fp-3d-bl-meg" style="flex:1 1 auto;min-height:0;overflow:auto;padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px"></div>';
       gamur.appendChild(o);
       o.addEventListener('click', e => {
         const t = e.target.closest('[data-bl]'); if (!t) return;
         if (t.dataset.bl === 'loka') { if (G.blender) G.blender.opid = false; o.remove(); }
+        if (t.dataset.bl === 'aftur') { blBidja(true).catch(err => { console.warn('[383] Designer-3D', err); }); }
       });
     }
     return o;
@@ -3339,7 +3340,10 @@
     if (klukka) klukka.textContent = blTimi((B.lauk || Date.now()) - B.byrjad);
     let html = '';
     if (B.stada === 'done') {
-      html += '<div style="font-weight:600">Tilbúið' + (B.sek ? ' — teiknað á ' + blTimi(B.sek * 1000) + ' mín' : '') + '.</div>';
+      html += B.vistud
+        ? '<div style="font-weight:600;line-height:1.35">Síðasta mynd — teiknuð ' + esc(blDags(B.vistud)) + '.</div>' +
+          (B.urelt ? '<div style="padding:8px 10px;border-radius:8px;background:#fbeac6;border:1px solid #7a4f06;color:#5a3a04;font-weight:600;line-height:1.35">Teikningunni hefur verið breytt síðan. Ýttu á Teikna aftur til að fá nýja mynd.</div>' : '')
+        : '<div style="font-weight:600">Tilbúið' + (B.sek ? ' — teiknað á ' + blTimi(B.sek * 1000) + ' mín' : '') + '.</div>';
       (B.myndir || []).forEach(m => {
         const skra = 'blender-' + (B.felag || 'hus') + '-' + String(m.heiti || 'mynd').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase() + '.png';
         html += '<figure style="margin:0;display:flex;flex-direction:column;gap:6px">' +
@@ -3355,10 +3359,12 @@
       const texti = B.stada === 'sendi' ? 'Sendi beiðni…' : B.stada === 'bida' ? 'Í biðröð — bíð eftir brúartölvunni…' : (B.texti || 'Brúartölvan er byrjuð…');
       html += '<div style="font-weight:600;line-height:1.35">' + esc(texti) + '</div>' +
         '<div style="height:7px;border-radius:4px;background:#c3c9d2;box-shadow:inset 0 1px 2px rgba(0,0,0,.25);overflow:hidden"><div style="height:100%;width:' + (pros ? Math.min(100, +pros) : B.stada === 'running' ? 8 : 3) + '%;background:linear-gradient(180deg,#e6c56f 0%,#b8902f 100%);transition:width .6s"></div></div>' +
-        '<div style="opacity:.75;line-height:1.35">Teiknað í Blender á skrifstofutölvunni — tvær myndir (sjónarhornið þitt og yfirlit), oftast 8–10 mínútur. Óhætt að loka þessu; smelltu aftur á Blender-mynd til að sjá stöðuna.</div>' +
+        '<div style="opacity:.75;line-height:1.35">Teiknað í Blender á skrifstofutölvunni — tvær myndir (sjónarhornið þitt og yfirlit), oftast 8–10 mínútur. Óhætt að loka þessu; smelltu aftur á Designer-3D til að sjá stöðuna.</div>' +
         (B.stada === 'bida' && Date.now() - B.byrjad > BL_BRU_VIDVORUN ? '<div style="padding:8px 10px;border-radius:8px;background:#fbeac6;border:1px solid #7a4f06;color:#5a3a04;font-weight:600;line-height:1.35">Brúartölvan þarf að vera í gangi (skrifstofutölvan, luna-bridge). Beiðnin bíður þar til hún tekur við henni.</div>' : '');
     }
-    html += '<div style="display:flex;justify-content:flex-end;gap:8px"><a data-bl="loka" role="button" tabindex="0" style="' + blTakki(BL_GRAFIT, '#fff') + '">Loka</a></div>';
+    html += '<div style="display:flex;justify-content:flex-end;gap:8px">' +
+      (lokid ? '<a data-bl="aftur" role="button" tabindex="0" title="Senda nýja beiðni — teiknast á skrifstofutölvunni (8–10 mín)" style="' + blTakki(BL_SILFUR, '#11141c') + '">Teikna aftur</a>' : '') +
+      '<a data-bl="loka" role="button" tabindex="0" style="' + blTakki(BL_GRAFIT, '#fff') + '">Loka</a></div>';
     if (meg && meg._html !== html) { meg.innerHTML = html; meg._html = html; }
     if (lokid && klukka) klukka.textContent = blTimi(B.lauk - B.byrjad);
   }
@@ -3388,10 +3394,46 @@
     blTeikna();
     if (B.stada !== 'done' && B.stada !== 'error' && B.stada !== 'timi') B.timer = setTimeout(blKanna, BL_BIL);
   }
-  async function blBidja() {
-    const B0 = G.blender;
+  const blDags = ms => { const d = new Date(ms), t = n => String(n).padStart(2, '0'); return t(d.getDate()) + '/' + t(d.getMonth() + 1) + '/' + d.getFullYear() + ' kl. ' + t(d.getHours()) + ':' + t(d.getMinutes()); };
+  // SÍÐASTA MYND FÉLAGSINS (Agnar 06.10.2026: „vista blender útgáfuna svo hún opnist fljótar eins og hún var síðast,
+  // síðan bara láta endurteikna hana ef þess þarf"). Myndirnar liggja þegar í turbopaint/blender/<félag>/ og slóðirnar í
+  // automation_triggers.result — smellur sýnir þá síðustu strax (engin bið); „Teikna aftur" sendir nýja beiðni. Sé verk
+  // í gangi fyrir félagið (líka úr öðrum vafra) er það sýnt í stað nýrrar beiðni.
+  async function blSidasta(cid) {
+    const r = await DB.sb.from('automation_triggers').select('id,status,result,requested_at,finished_at')
+      .eq('workflow', 'blender').eq('gogn->>company_id', String(cid)).order('id', { ascending: false }).limit(6);
+    return (r && r.data) || [];
+  }
+  const blLesa = t => { try { t = String(t || ''); const j = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)); return j && Array.isArray(j.myndir) && j.myndir.length ? j : null; } catch (_) { return null; } };
+  async function blBidja(nytt) {
+    const B0 = G.blender, cid0 = FPx() && FPx().companyId;
     // Verk í gangi: sýna það aftur í stað þess að senda aðra beiðni.
     if (B0 && B0.stada !== 'done' && B0.stada !== 'error' && B0.stada !== 'timi') { B0.opid = true; blTeikna(); return; }
+    // Mynd þessa félags þegar sótt í þessari lotu: sýna hana aftur.
+    if (!nytt && B0 && B0.stada === 'done' && B0.felag === cid0) { B0.opid = true; blTeikna(); return; }
+    if (!nytt && cid0 && window.DB && DB.sb) {
+      try {
+        const radir = await blSidasta(cid0);
+        const iGangi = radir.find(x => x.status === 'bida' || x.status === 'pending' || x.status === 'running');
+        if (iGangi) {
+          const B = G.blender = { id: iGangi.id, stada: 'bida', byrjad: Date.parse(iGangi.requested_at) || Date.now(), opid: true, felag: cid0, hlutfoll: {} };
+          blTeikna(); B.timer = setTimeout(blKanna, 50); return;
+        }
+        for (const x of radir) {
+          if (x.status !== 'done') continue;
+          const j = blLesa(x.result); if (!j) continue;
+          const lauk = Date.parse(x.finished_at) || Date.now();
+          const B = G.blender = { id: x.id, stada: 'done', myndir: j.myndir, sek: j.sek, byrjad: Date.parse(x.requested_at) || lauk, lauk, vistud: lauk, opid: true, felag: cid0, hlutfoll: {} };
+          blTeikna();
+          try {
+            const t = await DB.sb.from('teikning_bord').select('updated_at').eq('company_id', cid0).limit(1);
+            const u = t && t.data && t.data[0] && Date.parse(t.data[0].updated_at);
+            if (u && u > lauk + 60000 && G.blender === B) { B.urelt = true; const o = document.getElementById('fp-3d-bl-meg'); if (o) o._html = ''; blTeikna(); }
+          } catch (_) {}
+          return;
+        }
+      } catch (e) { console.warn('[383] Designer-3D síðasta mynd', e); }
+    }
     const FP = FPx();
     if (!G.syn3d || !G.syn3d.blenderSena) { segja('3D-sýnin er ekki tilbúin'); return; }
     if (!window.DB || !DB.sb) { segja('Engin tenging við gagnagrunninn'); return; }
@@ -3426,7 +3468,7 @@
       '<button type="button" id="fp-3d-breyta" aria-pressed="false" title="Tengja eða aftengja brunavegg: kveiktu á þessu og smelltu á vegg" style="display:none;height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Breyta eldveggjum</button>' +
       '<button type="button" id="fp-3d-ganga" aria-pressed="false" title="Ganga um hæðina í augnhæð (1,6 m) — draga = líta í kring, hjól / W S = ganga, Esc = hætta" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Ganga</button>' +
       '<button type="button" id="fp-3d-utlit" aria-pressed="false" title="Sýna eldveggi og brunahólf í lit — annars grátt útlit þar sem tækin standa út" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Brunahólf</button>' +
-      '<button type="button" id="fp-3d-blender" title="Fallega gráa Blender-mynd af því sem sést (og yfirlitsmynd af húsinu) — teiknuð á skrifstofutölvunni, tekur nokkrar mínútur" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Blender-mynd</button>' +
+      '<button type="button" id="fp-3d-blender" title="Designer-3D: falleg grá mynd af því sem sést og yfirlit yfir húsið (Blender á skrifstofutölvunni). Síðasta mynd opnast strax; Teikna aftur býr til nýja." style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Designer-3D</button>' +
       '<button type="button" id="fp-3d-gegn" aria-pressed="false" title="Gera veggina gegnsæja svo tækin og teikningin sjáist í gegnum húsið" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Gegnsætt</button>' +
       '<button type="button" id="fp-3d-x" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">✕ Loka 3D</button></div>' +
       '<div id="fp-3d-haedir" style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;pointer-events:auto"></div></div>' +
