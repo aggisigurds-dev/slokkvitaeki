@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-10-06 12:41 · 726 virkar staðreyndir
+Sótt 2026-10-06 12:57 · 727 virkar staðreyndir
 
 ---
 
@@ -402,11 +402,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Fölgráar CAD-línur á FotoWeb-JPEG grunnmyndum (t.d. Fiskislóð #1612) dökknar með CSS brightness(0.82) contrast(1.55) á #fp-canvas. contrast-fyrst gerir ljósa veggi enn ljósari. Stimplar á síma ≥32 CSS px. Full gæði (pdf.js) má teikna innvortis án gæða-hnapps. 436-teikning-sja. Engir EI-stimplar, engir nýir hamrar.**
   <br>Agnar 02.10.2026: very haaard to see. Tækjadráttur óbreyttur frá e9c347f. Extra power í TurboPaint.
   <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
-- **EI-30 og EI-60 á teikningu eru veggja-ÁBENDINGAR (overlay-miðar), ekki eldveggir. Lesið úr PDF-texta í hvaða snúningi sem er (0/90/180/270 og meðfram vegg). AREIM/90/120 hunsað.**
-  <br>TeiknEi í 434; 383 teiknar hintana. Agnar 02.10.2026: ekki stimpla fire walls.
-  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
 - **Stimplar á FloorPlan (Rafmagnstafla, Skilti slökkvitæki, Skilti brunaslanga, Neyðarútgangur, Út, Slöngumerki) eru merki kind=sign, ekki uttaeki-raðir. Tákn valin í Stillingum (teikning_takn / patch 434).**
   <br>Patch 433 STIMPLAR + 434 TeiknTakn. Geymsla teikning_bord.haedir[].markers. Agnar 02.10.2026.
+  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
+- **EI-30 og EI-60 á teikningu eru veggja-ÁBENDINGAR (overlay-miðar), ekki eldveggir. Lesið úr PDF-texta í hvaða snúningi sem er (0/90/180/270 og meðfram vegg). AREIM/90/120 hunsað.**
+  <br>TeiknEi í 434; 383 teiknar hintana. Agnar 02.10.2026: ekki stimpla fire walls.
   <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
 - **Sjálfvirk veggagreining á raster-grunnmynd (engin vigur, þunnar línur, stórt hvítt blað) gaf 1,0% veggi og slitrótta viðvörun. 383 mælir nú þekju eftir blekRammi-spássíuskurð og reynir þunnlínu-CAD aðeins með heilt fótspor; undir 4% er upprunalega sýnd og 3D þykist ekki. Viðvörun er ein íslensk lína; Veggir er varaleið.**
   <br>Álfaborg #661 02.10.2026: eftir lagfæringu 6,2–6,3% veggir, hæðir 5+2 og tækjaræma óbreytt. Handvalinn skurður ósnertur.
@@ -1107,11 +1107,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **git push a claude/mcp-browser-access-wqattt / aggisigurds-dev/slokkvitaeki er ENN lokad fyrir sopunar-session (403 'not in this session's authorized repository set') — nu stadfest a.m.k. fjorda skiptid (01.09, 02.09, 04.09 + fyrri).**
   <br>04.09.2026: GITHUB_TOKEN i thessari session HEFUR lesadgang (git clone/fetch/checkout a slokkvitaeki gekk fint, gh/api /repos/... synir sama '403 not enabled' skilabod jafnvel thott clone virki). En `git push -u origin claude/mcp-browser-access-wqattt` faer beint fra git-proxynum: 'access denied by 
   <br><sub>2026-09-04 · kerfi · sql · claude-code</sub>
-- **Netlify deploy-preview slóðir eru SÉRSTÖK LÉN með tómt localStorage — en þær skrifa í FRAMLEIÐSLU-gagnagrunninn**
-  <br>Uppgötvað 03.09.2026 við að rekja af hverju eyddar vörur komu aftur EFTIR að lagfæring fór í loftið. Hver „keyr þetta einu sinni"-vörn sem byggir á localStorage-merki (t.d. _auxProductsSeededV1, _pricelist66Seeded, _vrSeeded) er ÓSETT á preview-léni og keyrir því upp á nýtt — gegn alvöru gögnum. Sam
-  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
 - **Vörn sem býr í vafranum getur aldrei stöðvað vafra sem keyrir gamlan kóða — regla sem verður að halda á að vera í gagnagrunninum**
   <br>Lærdómur 03.09.2026: sáningarpatcharnir voru lagaðir (PR #845) og lagfæringin sannreynd í framleiðslubúntinum, en eyddar vörur komu samt aftur kl. 22:36 því einhver vafri keyrði fyrri útgáfuna. Deploy fer ekki fram í öllum vöfrum samtímis; preview-lén og cache lengja halann. Þegar afleiðing rangrar 
+  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
+- **Netlify deploy-preview slóðir eru SÉRSTÖK LÉN með tómt localStorage — en þær skrifa í FRAMLEIÐSLU-gagnagrunninn**
+  <br>Uppgötvað 03.09.2026 við að rekja af hverju eyddar vörur komu aftur EFTIR að lagfæring fór í loftið. Hver „keyr þetta einu sinni"-vörn sem byggir á localStorage-merki (t.d. _auxProductsSeededV1, _pricelist66Seeded, _vrSeeded) er ÓSETT á preview-léni og keyrir því upp á nýtt — gegn alvöru gögnum. Sam
   <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
 - **Rautt audit er EKKI staðreynd um main fyrr en vinnutréð er ferskt. 2026-09-01 var audit-attachment-forms rautt og virtist segja að gmail-send vörnina vantaði; hún var í main frá 68c7a66 (2026-08-27) — greinin var 32 commit á eftir. git fetch + git status -sb á að vera FYRSTA prófunin þegar audit er rautt, ekki sú síðasta. Sama gildir um A/B með git stash: það mælir bara greinina sem þú stendur á.**
   <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
@@ -1206,11 +1206,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### turbopaint
 
-- **/kjarni/turbopaint?leit=<heimilisfang> opnar teikningaleitina með heimilisfanginu fyllt (breytan hverfur strax úr slóðinni) — djúptengill fyrir önnur kerfi, t.d. Teikningar-línuna á fyrirtækjabanner Slökkvitækja-appsins.**
-  <br>Kjarni PR #117 (14.09.2026). Slökkvitæki: patch 363 v3 + netlify/functions/hus-upplysingar.js smíðar tengilinn úr Staðfangaskrár-heitinu (t.d. „Dalshraun 1B").
-  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **pdf.js 5.7 (public/pdfjs í kjarni) notar Map.prototype.getOrInsertComputed sem Chromium 141 og eldri eiga ekki — PDF-innflutningur í TurboPaint brotnaði HLJÓÐLAUST án polyfill.**
   <br>Lagað 14.09.2026: lib/board/polyfills.ts (fyrsti import í import-files.ts og WhiteboardApp.tsx) setur getOrInsert/getOrInsertComputed á Map og WeakMap; sama lína er fremst í public/pdfjs/pdf.worker.min.mjs (workerinn hleður ekki polyfill aðalþráðar). Muna að endurbæta línuna ef pdf.worker er uppfærð
+  <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
+- **/kjarni/turbopaint?leit=<heimilisfang> opnar teikningaleitina með heimilisfanginu fyllt (breytan hverfur strax úr slóðinni) — djúptengill fyrir önnur kerfi, t.d. Teikningar-línuna á fyrirtækjabanner Slökkvitækja-appsins.**
+  <br>Kjarni PR #117 (14.09.2026). Slökkvitæki: patch 363 v3 + netlify/functions/hus-upplysingar.js smíðar tengilinn úr Staðfangaskrár-heitinu (t.d. „Dalshraun 1B").
   <br><sub>2026-09-14 · kerfi · kóði · claude-code</sub>
 - **TurboPaint frá PR #107 (10.09.2026): ⌘C/⌘X/⌘V á hlutum (copy/cut/paste-atburðir vafrans, JSON {turbopaint:1,objects} á klemmuspjaldi → límist líka milli borða/flipa, 24 px hliðrun per límingu, ⌘D = Tvöfalda); sérsniðnir litir með „+" swatch (native litaval, síðustu 6 muna sig í localStorage turbopaint:custom-colors, fylling fær 40% gegnsæi); Gátreitur-tólið (X) = rect með isCheckbox/checked, ✓-hakreitur í hægra horni að neðan, hakað → allur reiturinn grænn.**
   <br>Skrár: lib/board/clipboard.ts, custom-colors.ts, checkbox.ts, components/kjarni/ColorPicker.tsx. Gátreitur byggir á RectObject svo færsla/stærð/afritun/hópun/útflutningur/samstilling fylgja án sérmeðhöndlunar; Magntafla telur „Gátreitir — hakað/óhakað" sér. Prófun: apps/slokkvitaeki/tools/turbopaint
@@ -1284,6 +1284,23 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Sjálfvirka pörunin (auto_trigger) keyrir aðeins á yfirstandandi ári — eldri árgangar standa ópöraðir þótt bæði skjölin séu til**
   <br>Mælt 12.08.2026: 2026 = 206 af 279 skýrslum með reikning tengdan (73,8%). 2025 = 1 af 238, þótt 95 þeirra eigi reikning á sömu kt í customer_documents. Reikningasafn 2025 (326 skjöl) er því nánast ósnert af pöruninni. Bakfylling þarf að keyra pörunina á year=2025 sérstaklega.
   <br><sub>2026-08-12 · brunaholf · sql · cowork</sub>
+
+### skyrslur
+
+- **06.10.2026 (Agnar: útbúa auka tól sem les yfir rekstrarfélög, skráir tækjafjölda eftir tegundum úr skýrslu og reikningi — ný/hlaðin/yfirfarin — og parar burtséð frá heitum/heimilisföngum; líka til að spá hleðsluþörf; ekki alltaf að marka eldri skjöl): FRUMGERÐ tools/para-rekstrarfelag.cjs --kt <kt> [--allt] (les aðeins). Þrír vigrar per tegund (lettvatn, duft6, duft2, co2_2, co2_5, slanga, teppi; reykskynjarar utan): STAÐUR=uttaeki, SKÝRSLA=arsskodun_report_facts + arsskodun_customers[fid].history, REIKNINGUR=reikningslinur (Yfirferð+Hleðsla=skoðuð, Slökkvitæki…=ný) OG solur.linur (R-000xxx frá júní 2026, desc/qty). Fyrir hverja skýrslu: besti reikningur innan −1..+4 mán (frávik = summa |mismunar| ± ný, +0,5/mán) og besti staður eftir tækjaskrá; ber saman við document_pairs (fundið á fid+ár, ekki source_doc_id — 201 bar 2026-tölur með 2025-skjali). Gildrur: PostgREST les ->285 sem fylkisvísi (sækja allan arsskodun_customers); sami reikningur getur verið bæði í reikningslestri og solur (salan ræður); staður-frávik getur þýtt ófullkomna tækjaskrá (Arnarhvoll vantar 7 slöngur). Mælt: Steypustöðin 10 skýrslur → 4 stemma, 6 að skoða, 11 ólesnar; Center Hotels 10 → 3/7/25 ólesnar. Hleðsluspá: lesnir reikningar ná aðeins til 2024 en lotan er 5/10 ár → engin spá enn; þarf hleðslusögu (staður, ár, tegund, hlaðin/ný) úr eldri reikningum/skýrslutexta.**
+  <br><sub>2026-10-06 · slokkvitaeki · claude-code · claude-code</sub>
+- **06.10.2026 (Agnar: geturðu opnað og reynt að para saman): Steypustöðvar-skýrslurnar lesnar beint af Drive (Drive-MCP read_file_content á drive_file_id). Skjal 5884 (á 623) ER Borgarnes: 'Steypustöðin Borgarnesi … yfirfarin í oktober 2025' — 17 léttvatn, 20 duft, 1 CO2 5, 2 slöngur = 40 = tækjaskráin = R-107517 (17+14+6 ný+2). Skjal 5887 (á 622) er Helguvík sept. 2025 (1/3/2), 5889 (á 285) Malarhöfði feb. 2025 (19/13/5/3). Tengingarnar voru RÉTTAR — aðeins skráarnöfnin á Drive sögðu 'Malarhöfða 38' (aðalskrifstofa). Gert: par 1308 (623/2025) klárað með R-107517 (matched_by magn+manudur_claude_20261006); doc 5884 doc_date 2025-10-01, 9722 2025-11-17; arsskodun_report_facts[623] → 2025/okt/40 (var 2024/nóv/36); v_skodunar_manudur 623 = 10/skyrsla; Drive-skrár 5884 og 5887 endurnefndar með réttum stað og #fid, file_name uppfært. Afrit: backup_20261006_steypustodin_borgarnes (8 raðir). REGLA: skýrsluheiti á Drive segja ekki staðinn hjá fjölstaða-kúnnum — lesa PDF-ið ('hjá fyrirtækinu …' + 'yfirfarin í <mánuður ár>') áður en parað er.**
+  <br><sub>2026-10-06 · slokkvitaeki · claude-code · claude-code</sub>
+- **06.10.2026 (Agnar: Steypustöðin Borgarnes er í Ársskoðun í feb en október í prófíl; takkinn var alltaf þarna): (1) 403 (01.10) breytti 📅-pillunni (199 SOURCE SWITCH, vistar arsskodun_customers[fid].inspect_month) í blýantstákn uppi í haus skjalaspjaldsins — Agnar fann hana ekki. Nú aftur í 'Staða eftir ári'-röðinni sem plata 'Skoðun · <mánuður>' með blýanti (.b403-manudur); sami takki, sami 199-handler (smellur opnar select[data-month-sel], prófað). (2) Feb hjá 623 kom úr master-skyrslur-innlestri sem paraði á KENNITÖLU: _skyrsla='febrúar 2026/Steypustöðin malarhöfða 2026.pdf' er skýrsla Malarhöfða (285). Steypustöðin á 11 staði á sömu kt. Hinir 8 með rangt skráarnafn (612, 265, 299, 201, 619, 284, 295, 621) reyndust með réttan mánuð þegar skýrsla↔reikningur voru borin saman eftir magni/mánuði. (3) R-107517 (17.11.2025: 17 léttvatn, 14 duft + 6 ný, 2 slöngur = 39) var skráður á Malarhöfða en passar við tækin í Borgarnesi (17/20/2) — færður á 623 (customer_documents 9722 + reikningslestur); afrit í backup_20261006_steypustodin_borgarnes. 623 inspect_month=10 (skýrslur nóv. 2023/2024, skoðun okt. 2025). Skýrslunöfn Steypustöðvarinnar á Drive bera öll 'Malarhöfða 38' (aðalskrifstofa) — nafnið segir ekki staðinn. (4) Af 328 nýjustu pörum skýrsla↔reikningur stemmir mánuðurinn við reikninginn í 178, skeikar um 1 mán í 119 (reikningur eftir á), >1 mán í 31 — flest nýir R-000xxx-reikningar sumarið 2026 þar sem reikningur kom á UNDAN skráðum mánuði; ekki lagað, listi í sessions-skrá.**
+  <br><sub>2026-10-06 · slokkvitaeki · claude-code · claude-code</sub>
+- **06.10.2026 kl. 03:15–03:50 (Agnar: já mátt prófa og yfirfara): Götusýn (Street View) prófuð í headless Chrome — WebGL (SwiftShader) er til en Google sækir engar götumyndarflísar og streetviewpixels/cbk-slóðir svara 403 án undirritunar → ekki hægt án Google-lykils. Allar 356 Google-myndirnar yfirfarnar sjónrænt á 18 yfirlitsblöðum (E:/pascal-profun/ut/maps/yfirferd-NN.jpg): 142 sýndu ekki húsið (innréttingar, vörur, auglýsingar, landslag, fólk) og voru settar aftur í fyrra horf með einni SQL-setningu úr audit_vernd old_row (51 aftur á borgarvefsjá-loftmynd, 91 færslur fjarlægðar = eins og fyrir lotuna); listinn í ut/maps/yfirferd-ekki.txt. Eftir standa 214 Google-myndir sem sýna húsið/framhliðina. Skrárnar standa áfram í geymslunni (aldrei eytt).**
+  <br><sub>2026-10-06 · slokkvitaeki · claude-code · claude-code</sub>
+- **06.10.2026 kl. 01:10 — lotan kláruð: 651 fyrirtæki í þjónustu flett upp á Google Maps á 95 mín (miðgildi 6,7 s), engin villa, engin lokun frá Google. 151 fundust sjálf (eigin mynd), 206 fengu mynd nágranna 'Á þessum stað', 294 fundust hvergi (halda loftmynd/engri). 356 myndir settar inn (bygging/<id>/google-maps-<ts>.jpg, allar opinberar); 46 handvirkar ósnertar. Staðan eftir: 356 google, 106 borgarvefsjá, 46 handvirkt, 4 map.is, 247 enn án færslu. Niðurstöður í E:/pascal-profun/ut/maps/ (nidurstodur.jsonl, sett.jsonl). Endurkeyrsla fyrir ný fyrirtæki: maps-listi → maps-mynd --afram → maps-setja.**
+  <br><sub>2026-10-06 · slokkvitaeki · claude-code · claude-code</sub>
+- **05.10.2026 (Agnar: taka hvert fyrirtækið fyrir sig, fletta upp heimilisfangi á Google Maps, screenshot af fyrsta sem kemur upp og setja inn): byggingarmyndir sóttar í lotu með E:/pascal-profun/maps-listi.cjs (listi: fyrirtæki í þjónustu með heimilisfang, ekki handvirk mynd) → maps-mynd.cjs (Playwright, Chrome-prófíll E:/pascal-profun/chrome-maps-profile, samþykki hafnað; leið 1 = fyrirtækið sjálft ef nafnið passar, leið 2 = fyrsta fyrirtækið 'Á þessum stað'; myndin sótt af lh3-slóð í w1200 í stað skjámyndar; ut/maps/nidurstodur.jsonl) → maps-setja.cjs (storage verkbord-files/bygging/<id>/google-maps-<ts>.jpg með publishable-lykli + app_settings_merge co_bygging_mynd[id] = {uppspretta:'google-maps-skjamynd', heimild:'google-maps', stadur, leid}; handvirkar myndir aldrei snertar, loftmyndir víkja). 367 sýnir merkið 'Google Maps' með nafni staðarins. Af 8 í tilraun fengu 6 mynd; um helmingur er mynd af húsinu, hinar vörur/innréttingar nágranna — Agnar límir eigin mynd yfir þar sem þarf. Götusýn (Street View) á heimilisfangs-spjaldinu er WebGL og náðist ekki í headless — möguleg bæting.**
+  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
+- **05.10.2026 (Agnar: dagsetningarnar inn í brunakerfis skoðun alveg risastórar, og þurfa ekki að vera · átti bara að líta út eins og PDF-ið): gamli Umfyllingar-kóðinn í 00-legacy (addRefillColumn) tók ALLAR töflur í #companies-main, las th úr innfelldum töflum og hengdi input type=date á hverja línu. Eftir að skýrslublað brunakerfis (273 renderSheet) birtist inni í prófílnum (274 #_bkc-blad) lenti það á blaðinu: 42 reitir, hver 237x42 px (149 vefur þá í DD/MM/ÁÁÁÁ). Lagað: sleppir #_bkc-blad/.b274-blad/yfirlögum og notar aðeins eigin haus (table.tHead) og eigin línur (table.tBodies). Mælt með E:/pascal-profun/blad-dags.cjs á fid 1612: lifandi 42, nýtt 0; Slökkvitækja-flipinn 0 í báðum (dálkurinn hittir enga töflu þar lengur). Vörður: audit-umfylling-toflur.cjs. ATH: 00-legacy.js er með blönduð línulok (LF/CRLF) — leitarstrengir í plástrum þurfa að prófa bæði.**
+  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### rukkun
 
@@ -1379,21 +1396,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Engir lyklar eða tokens í nótum, skjölum eða þekkingargrunni — aðeins hvar þeir fást**
   <br>Netlify PAT rennur út milli lota og sækist í User Settings -> Applications -> Personal access tokens.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
-
-### skyrslur
-
-- **06.10.2026 (Agnar: geturðu opnað og reynt að para saman): Steypustöðvar-skýrslurnar lesnar beint af Drive (Drive-MCP read_file_content á drive_file_id). Skjal 5884 (á 623) ER Borgarnes: 'Steypustöðin Borgarnesi … yfirfarin í oktober 2025' — 17 léttvatn, 20 duft, 1 CO2 5, 2 slöngur = 40 = tækjaskráin = R-107517 (17+14+6 ný+2). Skjal 5887 (á 622) er Helguvík sept. 2025 (1/3/2), 5889 (á 285) Malarhöfði feb. 2025 (19/13/5/3). Tengingarnar voru RÉTTAR — aðeins skráarnöfnin á Drive sögðu 'Malarhöfða 38' (aðalskrifstofa). Gert: par 1308 (623/2025) klárað með R-107517 (matched_by magn+manudur_claude_20261006); doc 5884 doc_date 2025-10-01, 9722 2025-11-17; arsskodun_report_facts[623] → 2025/okt/40 (var 2024/nóv/36); v_skodunar_manudur 623 = 10/skyrsla; Drive-skrár 5884 og 5887 endurnefndar með réttum stað og #fid, file_name uppfært. Afrit: backup_20261006_steypustodin_borgarnes (8 raðir). REGLA: skýrsluheiti á Drive segja ekki staðinn hjá fjölstaða-kúnnum — lesa PDF-ið ('hjá fyrirtækinu …' + 'yfirfarin í <mánuður ár>') áður en parað er.**
-  <br><sub>2026-10-06 · slokkvitaeki · claude-code · claude-code</sub>
-- **06.10.2026 (Agnar: Steypustöðin Borgarnes er í Ársskoðun í feb en október í prófíl; takkinn var alltaf þarna): (1) 403 (01.10) breytti 📅-pillunni (199 SOURCE SWITCH, vistar arsskodun_customers[fid].inspect_month) í blýantstákn uppi í haus skjalaspjaldsins — Agnar fann hana ekki. Nú aftur í 'Staða eftir ári'-röðinni sem plata 'Skoðun · <mánuður>' með blýanti (.b403-manudur); sami takki, sami 199-handler (smellur opnar select[data-month-sel], prófað). (2) Feb hjá 623 kom úr master-skyrslur-innlestri sem paraði á KENNITÖLU: _skyrsla='febrúar 2026/Steypustöðin malarhöfða 2026.pdf' er skýrsla Malarhöfða (285). Steypustöðin á 11 staði á sömu kt. Hinir 8 með rangt skráarnafn (612, 265, 299, 201, 619, 284, 295, 621) reyndust með réttan mánuð þegar skýrsla↔reikningur voru borin saman eftir magni/mánuði. (3) R-107517 (17.11.2025: 17 léttvatn, 14 duft + 6 ný, 2 slöngur = 39) var skráður á Malarhöfða en passar við tækin í Borgarnesi (17/20/2) — færður á 623 (customer_documents 9722 + reikningslestur); afrit í backup_20261006_steypustodin_borgarnes. 623 inspect_month=10 (skýrslur nóv. 2023/2024, skoðun okt. 2025). Skýrslunöfn Steypustöðvarinnar á Drive bera öll 'Malarhöfða 38' (aðalskrifstofa) — nafnið segir ekki staðinn. (4) Af 328 nýjustu pörum skýrsla↔reikningur stemmir mánuðurinn við reikninginn í 178, skeikar um 1 mán í 119 (reikningur eftir á), >1 mán í 31 — flest nýir R-000xxx-reikningar sumarið 2026 þar sem reikningur kom á UNDAN skráðum mánuði; ekki lagað, listi í sessions-skrá.**
-  <br><sub>2026-10-06 · slokkvitaeki · claude-code · claude-code</sub>
-- **06.10.2026 kl. 03:15–03:50 (Agnar: já mátt prófa og yfirfara): Götusýn (Street View) prófuð í headless Chrome — WebGL (SwiftShader) er til en Google sækir engar götumyndarflísar og streetviewpixels/cbk-slóðir svara 403 án undirritunar → ekki hægt án Google-lykils. Allar 356 Google-myndirnar yfirfarnar sjónrænt á 18 yfirlitsblöðum (E:/pascal-profun/ut/maps/yfirferd-NN.jpg): 142 sýndu ekki húsið (innréttingar, vörur, auglýsingar, landslag, fólk) og voru settar aftur í fyrra horf með einni SQL-setningu úr audit_vernd old_row (51 aftur á borgarvefsjá-loftmynd, 91 færslur fjarlægðar = eins og fyrir lotuna); listinn í ut/maps/yfirferd-ekki.txt. Eftir standa 214 Google-myndir sem sýna húsið/framhliðina. Skrárnar standa áfram í geymslunni (aldrei eytt).**
-  <br><sub>2026-10-06 · slokkvitaeki · claude-code · claude-code</sub>
-- **06.10.2026 kl. 01:10 — lotan kláruð: 651 fyrirtæki í þjónustu flett upp á Google Maps á 95 mín (miðgildi 6,7 s), engin villa, engin lokun frá Google. 151 fundust sjálf (eigin mynd), 206 fengu mynd nágranna 'Á þessum stað', 294 fundust hvergi (halda loftmynd/engri). 356 myndir settar inn (bygging/<id>/google-maps-<ts>.jpg, allar opinberar); 46 handvirkar ósnertar. Staðan eftir: 356 google, 106 borgarvefsjá, 46 handvirkt, 4 map.is, 247 enn án færslu. Niðurstöður í E:/pascal-profun/ut/maps/ (nidurstodur.jsonl, sett.jsonl). Endurkeyrsla fyrir ný fyrirtæki: maps-listi → maps-mynd --afram → maps-setja.**
-  <br><sub>2026-10-06 · slokkvitaeki · claude-code · claude-code</sub>
-- **05.10.2026 (Agnar: taka hvert fyrirtækið fyrir sig, fletta upp heimilisfangi á Google Maps, screenshot af fyrsta sem kemur upp og setja inn): byggingarmyndir sóttar í lotu með E:/pascal-profun/maps-listi.cjs (listi: fyrirtæki í þjónustu með heimilisfang, ekki handvirk mynd) → maps-mynd.cjs (Playwright, Chrome-prófíll E:/pascal-profun/chrome-maps-profile, samþykki hafnað; leið 1 = fyrirtækið sjálft ef nafnið passar, leið 2 = fyrsta fyrirtækið 'Á þessum stað'; myndin sótt af lh3-slóð í w1200 í stað skjámyndar; ut/maps/nidurstodur.jsonl) → maps-setja.cjs (storage verkbord-files/bygging/<id>/google-maps-<ts>.jpg með publishable-lykli + app_settings_merge co_bygging_mynd[id] = {uppspretta:'google-maps-skjamynd', heimild:'google-maps', stadur, leid}; handvirkar myndir aldrei snertar, loftmyndir víkja). 367 sýnir merkið 'Google Maps' með nafni staðarins. Af 8 í tilraun fengu 6 mynd; um helmingur er mynd af húsinu, hinar vörur/innréttingar nágranna — Agnar límir eigin mynd yfir þar sem þarf. Götusýn (Street View) á heimilisfangs-spjaldinu er WebGL og náðist ekki í headless — möguleg bæting.**
-  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
-- **05.10.2026 (Agnar: dagsetningarnar inn í brunakerfis skoðun alveg risastórar, og þurfa ekki að vera · átti bara að líta út eins og PDF-ið): gamli Umfyllingar-kóðinn í 00-legacy (addRefillColumn) tók ALLAR töflur í #companies-main, las th úr innfelldum töflum og hengdi input type=date á hverja línu. Eftir að skýrslublað brunakerfis (273 renderSheet) birtist inni í prófílnum (274 #_bkc-blad) lenti það á blaðinu: 42 reitir, hver 237x42 px (149 vefur þá í DD/MM/ÁÁÁÁ). Lagað: sleppir #_bkc-blad/.b274-blad/yfirlögum og notar aðeins eigin haus (table.tHead) og eigin línur (table.tBodies). Mælt með E:/pascal-profun/blad-dags.cjs á fid 1612: lifandi 42, nýtt 0; Slökkvitækja-flipinn 0 í báðum (dálkurinn hittir enga töflu þar lengur). Vörður: audit-umfylling-toflur.cjs. ATH: 00-legacy.js er með blönduð línulok (LF/CRLF) — leitarstrengir í plástrum þurfa að prófa bæði.**
-  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### automation
 
@@ -1636,12 +1638,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### variant
 
-- **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
-  <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
-  <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 3 — AppSettings: hlutir sameinast per lykil en FYLKI og strengir skiptast út í heilu lagi (jsonb_deep_merge sql:34), og engin vél FÆR breytingar annarra fyrr en hún endurhleður (engin realtime/sókn á app_settings, js/db.js:250)**
   <br>Heit fylki: skipulagsbord.by_staff.*.cards (305:99, 148 skrif/30 d), vikudagskra.jobs (303:112, 74), company_pricing/vidsk_pricing (113/116/285), sala.*_product_ids (vorur.js), thjonustuverk.cases (172:70), skjalasnidmat (94), tilbod_hub (201), page_editor_v1_json (262:124 strengur), app_profiles_js
   <br><sub>2026-09-06 · slokkvitaeki · villuleit 06.09.2026 · claude-code</sub>
+- **MYNSTUR 1 — staða gagna geymd aðeins í vafra (localStorage/sessionStorage/state.ui) samstillist aldrei milli véla; 4 tölvur í sama rými → hver vél sín útgáfa**
+  <br>Rót: state.ui.ky_sent_mark (Krafa send) 05.09.2026. Lagað: krofur_yfirlit_meta.done, email_to → app_kv ky_settings, cg_reports → app_kv. Vörður: slokkvitaeki/tools/audit-vafrastada.cjs (bannmynstur + grunnlína vafra-lykla, keyrist í audit-all). Eftir (slokkvitaeki): adstod_watchlist_v1 (238:41), fp_
+  <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
 - **MYNSTUR 2 — heilt object/fylki lesið → breytt í minni → skrifað til baka (read-modify-write án útgáfu-varðar): vél með gamalt eintak þurrkar út breytingar hinna**
   <br>Hub lagað 06.09.2026: hub_state sameinað per lykil OG per undirlykil (RPC hub_state_merge p_deep), wf_state per reit (ky_wf_merge), invoice_drafts með expected_updated_at (409 + spurning). Eftir (slokkvitaeki, úttekt sala-reikningar/kunnaskra/elon): 142 SaleEditor + 121 Sótt skrifa heilt solur.linur
   <br><sub>2026-09-06 · baedi · villuleit 06.09.2026 · claude-code</sub>
@@ -1660,15 +1662,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### verkbord
 
-- **AI-bunkinn á Verkborðinu er Charlize, ekki Agnar — sjálfgefna sían heitir „Allir án Ai" (nema_ai) og felur Charlize**
-  <br>Ósk Agnars 03.09.2026. Nafn hans var ruslakistan: óúthlutað + opið + eldra en 30 daga fór sjálfkrafa á hann og sjálfgefna sían faldi þann bunka, svo hans EIGIN mál urðu ósýnileg (mál 817 lá óhreyft í viku, 01.09). Nú: AI_WORKER = 'Charlize' í js/patches/231-verkbord.js stýrir bæði effectiveAssignee(
-  <br><sub>2026-09-03 · slokkvitaeki · agnar · claude-code</sub>
-- **Vistuð starfsmannasía býr í localStorage á hverri vél fyrir sig — nafnabreyting á síugildi þarf þýðingu í canonFilter(), annars tapar hver vél valinu þegjandi**
-  <br>WKEY = _vb_worker. Þegar nema_agnar varð nema_ai (03.09.2026) var bætt við `if (s === 'nema_agnar') return 'nema_ai'` í canonFilter() og nema_agnar haldið í WORKER_SENTINELS. Sama mynstur og 'Sara' → 'Bjarndís' notar. Án þess hefðu allar fjórar vélarnar fallið aftur á sjálfgefið gildi án viðvörunar.
-  <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
 - **claimOldJobs() í 231-verkbord.js SKRIFAR assigned_to beint í thjonustubeidni við hverja hleðslu borðsins — gagnaflutningur á úthlutun dugar aldrei einn og sér**
   <br>Fallið sópar öllu óúthlutuðu, opnu og eldra en 30 daga á AI_WORKER og keyrir í hvert sinn sem Verkborðið hleðst. Þegar bunkinn var færður af Agnari 03.09.2026 hefði hrein SQL-uppfærsla verið undin ofan af sér innan mínútna; kóðinn varð að fara fyrst. Sama gildir um hverja framtíðar-breytingu á því h
   <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
+- **Vistuð starfsmannasía býr í localStorage á hverri vél fyrir sig — nafnabreyting á síugildi þarf þýðingu í canonFilter(), annars tapar hver vél valinu þegjandi**
+  <br>WKEY = _vb_worker. Þegar nema_agnar varð nema_ai (03.09.2026) var bætt við `if (s === 'nema_agnar') return 'nema_ai'` í canonFilter() og nema_agnar haldið í WORKER_SENTINELS. Sama mynstur og 'Sara' → 'Bjarndís' notar. Án þess hefðu allar fjórar vélarnar fallið aftur á sjálfgefið gildi án viðvörunar.
+  <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
+- **AI-bunkinn á Verkborðinu er Charlize, ekki Agnar — sjálfgefna sían heitir „Allir án Ai" (nema_ai) og felur Charlize**
+  <br>Ósk Agnars 03.09.2026. Nafn hans var ruslakistan: óúthlutað + opið + eldra en 30 daga fór sjálfkrafa á hann og sjálfgefna sían faldi þann bunka, svo hans EIGIN mál urðu ósýnileg (mál 817 lá óhreyft í viku, 01.09). Nú: AI_WORKER = 'Charlize' í js/patches/231-verkbord.js stýrir bæði effectiveAssignee(
+  <br><sub>2026-09-03 · slokkvitaeki · agnar · claude-code</sub>
 
 ### brunavarnir
 
@@ -1808,11 +1810,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### fjarmal
 
-- **Fjármála-yfirlit endurreiknar EKKI „Ósent" (CG-02) — það sækir /api/krofu-yfirlit-bru og les tier2.total/tier2.n beint**
-  <br>Fram til 11.09.2026 var þrep-2 reglan skrifuð upp aftur í netlify/functions/fjarmal-yfirlit.js (C1), með athugasemd sem bað næsta mann að breyta báðum hliðum. Það entist ekki: borðið sagði 14.854.855 á 15 röðum, spjaldið 14.996.115 á 16 — austurströnd 2026-07 (141.260 kr) var falin á borðinu en sást
-  <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
 - **/api/debtors inniheldur AÐEINS þrep 1 (ógreitt) — ósend drög (þrep 2) eru bara í /api/krofu-yfirlit-bru**
   <br>CG_REGISTRY í index.html sagði ranglega að CG-02 kæmi úr /api/debtors. Leiðrétt 11.09.2026 (PR #445). Ef þú þarft ósend drög, sæktu tier2 úr krofu-yfirlit-bru — tier2.debtors[].invoices[] með hidden-merkingunni sem borðið sjálft notar.
+  <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
+- **Fjármála-yfirlit endurreiknar EKKI „Ósent" (CG-02) — það sækir /api/krofu-yfirlit-bru og les tier2.total/tier2.n beint**
+  <br>Fram til 11.09.2026 var þrep-2 reglan skrifuð upp aftur í netlify/functions/fjarmal-yfirlit.js (C1), með athugasemd sem bað næsta mann að breyta báðum hliðum. Það entist ekki: borðið sagði 14.854.855 á 15 röðum, spjaldið 14.996.115 á 16 — austurströnd 2026-07 (141.260 kr) var falin á borðinu en sást
   <br><sub>2026-09-11 · brunaholf · kóði · claude-code</sub>
 
 ### agentar
