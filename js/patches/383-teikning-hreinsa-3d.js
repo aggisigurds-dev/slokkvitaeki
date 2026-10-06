@@ -2176,6 +2176,22 @@
       return /\.pdf(\.info)?$/i.test(new URL(inn).pathname) ? '/.netlify/functions/teikn-pdf?url=' + encodeURIComponent(inn) : '';
     } catch (_) { return ''; }
   }
+  // VIGURVEGGIR HÆÐAR SEM ER EKKI VIRK (Agnar 06.10.2026, Fiskislóð 2. hæð í 3D: „the walls are a bit meshed up").
+  // Sjálfvirki PDF-lesturinn (lesaPdfVeggi) keyrir aðeins á VIRKU hæðinni og aldrei þegar útlitið er fest — „Útlit fest"
+  // á 1. hæð gildir um allt húsið, svo 2. hæð fékk aldrei vigurveggi og 3D greindi veggina úr myndinni (stigar og
+  // innréttingar urðu að veggjum). Hér eru veggirnir lesnir úr vigrinum fyrir hvaða hæð sem er, sömu reglur og þar.
+  async function pdfVeggirHaedar(h, fb, fh) {
+    const slod = pdfSlod(h); if (!slod || !(fb > 0) || !(fh > 0)) return null;
+    await saekjaPdfJs();
+    const r = await fetch(slod); if (!r.ok) return null;
+    const doc = await window.pdfjsLib.getDocument({ data: new Uint8Array(await r.arrayBuffer()) }).promise;
+    const sida = await doc.getPage(1), vp = sida.getViewport({ scale: 1 }), ol = await sida.getOperatorList();
+    const fl = flokkaPdfLinur(window.pdfjsLib.OPS, ol.fnArray, ol.argsArray, vp.transform), val = veljaVeggjaflokk(fl, vp.width, vp.height);
+    const kx = fb / vp.width, ky = fh / vp.height;
+    if (!val.valinn || Math.abs(kx / ky - 1) > 0.02) return null;
+    const linur = (fl[val.valinn] || []).map(v => [Math.round(v[0] * kx), Math.round(v[1] * ky), Math.round(v[2] * kx), Math.round(v[3] * ky)]);
+    return linur.length > 30 ? { linur, flokkur: val.valinn } : null;
+  }
   function beitaPdfFlokkum(h) {
     const valid = Array.isArray(h.pdfFlokkar) ? h.pdfFlokkar : [];
     h.pdfVeggir = G.pdf && G.pdf.haed === h.id ? [].concat(...valid.map(l => G.pdf.flokkar[l] || [])) : h.pdfVeggir;
@@ -3159,7 +3175,7 @@
       if (G.syn3d && G.syn3d.gegnsaett) G.syn3d.gegnsaett(a);
     });
     gamur.querySelector('#fp-3d-x').addEventListener('click', loka3d);
-    const skyr = gamur.querySelector('#fp-3d-skyr'), ut = [], sleppt = [];
+    const skyr = gamur.querySelector('#fp-3d-skyr'), ut = [], sleppt = [], nyirPdf = [];
     for (let i = 0; i < hs.length; i++) {
       const h = hs[i];
       try {
@@ -3167,6 +3183,16 @@
         if (!stig1) { if (!h.image_url) { sleppt.push(h.nafn + ' (engin teikning)'); continue; } frum = await hladaMynd(h.image_url); stig1 = h.skurdur ? skera(frum, h.skurdur) : frum; }
         if (!document.getElementById('fp-3d')) return;
         const fbE = frum.naturalWidth || frum.width, fhE = frum.naturalHeight || frum.height;
+        // Vigur-PDF án lesinna veggja (og ekki leiðrétt í TurboPaint): lesa veggina úr vigrinum, geyma á hæðinni.
+        if (pdfSlod(h) && !h.pdfVeggir.length && !(Array.isArray(h.veggjaLinur) && h.veggjaLinur.length) && !h.pdfReynt3d) {
+          h.pdfReynt3d = 1;
+          skyr.textContent = 'Les veggi ' + (h.nafn || 'hæðar') + ' úr PDF…';
+          try {
+            const pv = await pdfVeggirHaedar(h, fbE, fhE);
+            if (pv) { h.pdfVeggir = pv.linur; h.pdfFlokkar = [pv.flokkur]; nyirPdf.push(h.nafn || (i + 1) + '. hæð'); }
+          } catch (e) { console.warn('[383] PDF-veggir í 3D', e); }
+          if (!document.getElementById('fp-3d')) return;
+        }
         const ei = await eiHintarFyrir3d(h, fbE, fhE);
         if (!document.getElementById('fp-3d')) return;
         const u = undirbua(h, stig1, h.markers, val, einingar, frum, ei);
@@ -3177,6 +3203,7 @@
         ut.push(u);
       } catch (e) { console.warn('[383] 3D: ' + h.nafn, e); sleppt.push(h.nafn + ' (náði ekki í teikningu)'); }
     }
+    if (nyirPdf.length) { try { vistaSjalfkrafa('veggir úr PDF (' + nyirPdf.join(', ') + ')'); } catch (_) {} }
     if (!ut.length) { loka3d(); segja('Sjálfvirk veggagreining náði ekki. ' + sleppt.join(' · ') + '.' + (hs.some(x => pdfSlod(x)) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.'); return; }
     try {
       G.syn3d = await syna3d(gamur, { haedir: ut });
