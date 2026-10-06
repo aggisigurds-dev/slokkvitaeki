@@ -319,12 +319,15 @@
     }
     head.appendChild(hl);
     var hr = el('div', 'b403-haus-h');
+    // 06.10.2026 (Agnar: „takkinn var alltaf þarna, og fínt að geta valið mánuðinn þarna sem birtist síðan á
+    // Ársskoðunar síðunni"): 01.10 varð 📅-pillan (199 SOURCE SWITCH) að blýantstákni uppi í hausnum og hvarf Agnari.
+    // Hún fer aftur í „Staða eftir ári"-röðina, við hlið ártalanna, með mánuðinn sýnilegan — sjá ársröðina neðar.
     var month = section.querySelector('.sk-month-pill');
     if (month) {
       var mt = stripEmoji(txt(month)); var mi = MAN_STUTT.indexOf(mt.toLowerCase());
-      var nl = el('div', 'b403-naesta', ICON.cal + 'Næsta úttekt <b>' + (mi >= 0 ? MANUDIR[mi] : (mt || '—')) + '</b>');
-      month.classList.add('b403-blyantur'); month.innerHTML = ICON.pen; nl.appendChild(month);
-      hr.appendChild(nl);
+      var tomur = month.classList.contains('empty') || mi < 0;
+      month.classList.add('b403-manudur');
+      month.innerHTML = ICON.cal + '<span class="mlabel">Skoðun</span><b>' + (mi >= 0 ? MANUDIR[mi] : (tomur ? 'mánuður?' : mt)) + '</b>' + ICON.pen;
     }
     var takkar = el('div', 'b403-takkar');
     var mail = section.querySelector('.sk-mailpref'); if (mail) { mail.classList.add('b403-chip-rofi'); takkar.appendChild(mail); }
@@ -345,6 +348,7 @@
       arrod.appendChild(p);
     });
     var addYr = section.querySelector('[data-add-yr-svc]'); if (addYr) { addYr.classList.add('b403-btn-litill'); addYr.innerHTML = ICON.plus + 'Ár / þjónusta'; arrod.appendChild(addYr); }
+    if (month) arrod.appendChild(month);   // skoðunarmánuðurinn — sami takki og áður (199 vistar í arsskodun_customers)
     var yrAdd = section.querySelector('.sk-yr-add'); var sub = yrAdd && yrAdd.querySelector('.sk-sub'); if (sub) { sub.classList.add('b403-hint'); arrod.appendChild(sub); }
     stal.appendChild(arrod);
 
@@ -561,6 +565,11 @@
       r('.b403-haus-h', 'margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:10px'),
       r('.b403-naesta', 'font-family:' + MONO + ';font-size:11.5px;color:#d5dbe6;display:flex;align-items:center;gap:8px'), r('.b403-naesta b', 'color:#fff;font-weight:700'),
       r('.b403-blyantur', 'all:unset;cursor:pointer;width:24px;height:24px;border-radius:6px;color:#d5dbe6;display:inline-flex;align-items:center;justify-content:center'), r('.b403-blyantur:hover', 'background:rgba(255,255,255,.12);color:#fff'),
+      // skoðunarmánuðurinn í ársröðinni — plata eins og ártölin, mánuðurinn feitur, blýantur sem segir „smelltu"
+      r('.b403-manudur', 'all:unset;cursor:pointer;height:30px;padding:0 10px 0 9px;border-radius:3px;border:1px solid rgba(20,24,34,.12);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);color:#11141c;font-family:' + MONO + ';font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:7px;margin-left:6px'),
+      r('.b403-manudur .mlabel', 'font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#525b6b'), r('.b403-manudur b', 'font-weight:700;color:#11141c;text-transform:capitalize'),
+      r('.b403-manudur svg', 'width:13px;height:13px;color:#525b6b'), r('.b403-manudur:hover', 'background:#fff'),
+      r('.b403-manudur.manual', 'border:1px dashed rgba(190,150,60,.8)'), r('.b403-manudur.empty b', 'color:#8e97a6;font-weight:600'),
       r('.b403-takkar', 'display:flex;gap:8px;align-items:center'),
       r('.b403-chip-rofi', 'height:40px;padding:0 12px!important;border-radius:9px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:600!important;display:inline-flex;align-items:center;gap:8px;cursor:pointer;' + SILVER_BTN),
       r('.b403-chip-rofi::before', 'content:"";width:6px;height:6px;border-radius:50%;background:#1f9d57;display:inline-block'), r('.b403-chip-rofi[data-off="1"]::before', 'background:#e25555'),
