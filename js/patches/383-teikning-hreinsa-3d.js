@@ -2023,10 +2023,12 @@
       merkja(nr, i) { lag.forEach(lg => { const v = lg.nr === nr ? i : null; if (lg.valinn !== v) { lg.valinn = v; litaVeggi(lg); } }); },
       // Bakaðir skuggar hverrar hæðar (prófanir): hlutfall skyggðra díla á striganum, ógegnsæi, sýnileiki.
       skuggar(mynd) {
+        // sýnimynd: dökkir skuggar á hvítu (gríman sjálf er hvít á gegnsæju)
+        const skuggaSyni = s => { const c = document.createElement('canvas'); c.width = s.width; c.height = s.height; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.filter = 'invert(1)'; x.drawImage(s, 0, 0); return c.toDataURL('image/png'); };
         return lag.map(lg => {
           let hlutf = 0;
           try { const s = lg.skuggaStr, d = s.getContext('2d').getImageData(0, 0, s.width, s.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 64) n++; hlutf = +(n / (s.width * s.height)).toFixed(4); } catch (_) {}
-          return { nr: lg.nr, til: !!lg.skuggi, synilegt: !!(lg.skuggi && lg.skuggi.visible && lg.hopur.visible), ogegnsaei: lg.skuggi ? lg.skuggi.material.opacity : null, hlutfall: hlutf, mynd: mynd && lg.skuggaStr ? lg.skuggaStr.toDataURL('image/png') : undefined };
+          return { nr: lg.nr, til: !!lg.skuggi, synilegt: !!(lg.skuggi && lg.skuggi.visible && lg.hopur.visible), ogegnsaei: lg.skuggi ? lg.skuggi.material.opacity : null, hlutfall: hlutf, mynd: mynd && lg.skuggaStr ? skuggaSyni(lg.skuggaStr) : undefined };
         });
       },
       // Skjáhnit miðju veggjar (prófanir).
@@ -3341,7 +3343,7 @@
       (B.myndir || []).forEach(m => {
         const skra = 'blender-' + (B.felag || 'hus') + '-' + String(m.heiti || 'mynd').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase() + '.png';
         html += '<figure style="margin:0;display:flex;flex-direction:column;gap:6px">' +
-          '<a href="' + esc(m.url) + '" target="_blank" rel="noopener" title="Opna í fullri stærð" style="display:block;line-height:0"><img src="' + esc(m.url) + '" alt="' + esc(m.heiti) + '" style="width:100%;aspect-ratio:16/9;object-fit:cover;background:#cfd4db;border:1px solid #000;border-radius:7px"></a>' +
+          '<a href="' + esc(m.url) + '" target="_blank" rel="noopener" title="Opna í fullri stærð" style="display:block;line-height:0"><img src="' + esc(m.url) + '" alt="' + esc(m.heiti) + '" style="width:100%;aspect-ratio:' + ((B.hlutfoll && B.hlutfoll[m.heiti]) || 16 / 9).toFixed(3) + ';object-fit:contain;background:#cfd4db;border:1px solid #000;border-radius:7px"></a>' +
           '<figcaption style="display:flex;align-items:center;gap:8px"><b style="font:700 12px ui-monospace,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:#525b6b">' + esc(m.heiti) + '</b>' +
           '<a data-bl="saekja" href="' + esc(m.url + (m.url.indexOf('?') < 0 ? '?' : '&') + 'download=' + encodeURIComponent(skra)) + '" download="' + esc(skra) + '" style="margin-left:auto;' + blTakki(BL_SILFUR, '#11141c') + '">Sækja</a></figcaption></figure>';
       });
@@ -3392,7 +3394,9 @@
     let sena = G.syn3d.blenderSena();
     if (!sena) { segja('Engin hæð sýnileg í 3D'); return; }
     if (JSON.stringify(sena).length > 1400000) sena = G.syn3d.blenderSena({ myndHamark: 0 });     // of stórt: án gólfmynda
-    const B = G.blender = { stada: 'sendi', byrjad: Date.now(), opid: true, felag: FP && FP.companyId };
+    // hlutföll myndanna (sama klemma og sena.py, 0,5–3) — myndareiturinn fær rétta stærð áður en myndin berst
+    const hlutfoll = {}; (sena.myndavelar || []).forEach(m => { hlutfoll[m.heiti] = Math.max(0.5, Math.min(3, +m.hlutfall || 16 / 9)); });
+    const B = G.blender = { stada: 'sendi', byrjad: Date.now(), opid: true, felag: FP && FP.companyId, hlutfoll };
     blTeikna();
     const gogn = Object.assign({ company_id: FP && FP.companyId }, sena);
     const r = await DB.sb.from('automation_triggers').insert({ workflow: 'blender', status: 'bida', requested_by: 'teikning-3d', gogn }).select('id');
