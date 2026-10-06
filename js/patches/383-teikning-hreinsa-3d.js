@@ -1488,6 +1488,8 @@
   }
 
   // Litir: EI-60 rauður, EI-30 ljósrauður (veggir). Hurðir sjást ofan frá á litaðri rönd: brunahurð appelsínugul, önnur brún.
+  // TOPPLITUR_3D: dökk efri brún veggja svo grunnmyndin lesist ofan frá (Agnar 06.10.2026, úr samanburði þrívíddarteiknara).
+  const TOPPLITUR_3D = 0x5c574f;
   const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0x8d6e63, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
   // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
   const HOLFALITIR_3D = [[66, 133, 244], [52, 168, 83], [251, 188, 5], [171, 71, 188], [0, 172, 193], [255, 112, 67], [124, 179, 66], [92, 107, 192]];
@@ -1496,6 +1498,35 @@
    *  (merki í punktum SKORNU myndarinnar). butar = heilir veggir [ax,ay,bx,by,þykkt] í sömu punktum — einn kassi á vegg;
    *  gler = glerfletir í sömu mynd (aðeins teiknaðir með heilum veggjum); hurdir = hurðargöt (dyrakarmur yfir);
    *  án þeirra er gríman (`veggir`) lyft í ristarreitum eins og áður. */
+  // RAUNHÆÐ VEGGJA (Agnar 06.10.2026, samanburður þrívíddarteiknara á Fiskislóð: veggirnir voru ~1,9 m í raunkvarða —
+  // 4,5 % af lengstu hlið hæðarinnar — svo í augnhæð sást yfir þá). Nú 3,0 m í kvarða teikningarinnar:
+  // dílar á metra = langhlið frummyndar ÷ langhlið blaðsins í mm × 10 (1:100, kvarði grunnmynda aðaluppdrátta).
+  // Blaðstærðin kemur úr teikn-blad (FotoWeb-upplausn fyrir skannanir, MediaBox fyrir PDF). Án hennar, eða ef húsið
+  // yrði ótrúverðugt (< 4 m eða > 300 m), gildir gamla hlutfallið.
+  const _bladStaerd = {};
+  function innriSlod(url) {
+    try { const u = new URL(url, location.href); return /teikn-mynd/.test(u.pathname) ? (u.searchParams.get('url') || '') : ''; } catch (_) { return ''; }
+  }
+  async function dilarAMetra(h, fb, fh) {
+    const inn = innriSlod(h && h.image_url);
+    if (!inn || !(fb > 0) || !(fh > 0)) return 0;
+    if (!_bladStaerd[inn]) {
+      _bladStaerd[inn] = fetch('/.netlify/functions/teikn-blad?url=' + encodeURIComponent(inn), { signal: AbortSignal.timeout(15000) })
+        .then(r => r.ok ? r.json() : null).catch(() => null);
+    }
+    const bl = await _bladStaerd[inn];
+    if (!bl || !(bl.b_mm > 50) || !(bl.h_mm > 50)) { delete _bladStaerd[inn]; return 0; }
+    return Math.max(fb, fh) / Math.max(bl.b_mm, bl.h_mm) * 10;
+  }
+  function vegghaed(hd, k) {
+    const gamalt = Math.max(k.gw, k.gh) * 0.045;
+    const punktar = k.c / hd.kvardi;                 // frummyndardílar á ristarreit
+    if (!(hd.dilarAMetra > 0) || !(punktar > 0)) return gamalt;
+    const husM = Math.max(k.gw, k.gh) * punktar / hd.dilarAMetra;
+    if (husM < 4 || husM > 300) return gamalt;
+    return 3.0 * hd.dilarAMetra / punktar;
+  }
+
   async function syna3d(gamur, gogn) {
     await saekjaThree();
     const T = window.THREE, haedir = (gogn && gogn.haedir) || [];
@@ -1607,7 +1638,7 @@
     haedir.forEach((hd, nr) => {
       const k = kassarUrGrimu(hd.veggir, hd.W, hd.H);
       staerst = Math.max(staerst, k.gw, k.gh);
-      const veggH = Math.max(k.gw, k.gh) * 0.045, bil = veggH * 3.2;
+      const veggH = vegghaed(hd, k), bil = veggH * 3.2;
       const hopur = new T.Group(); hopur.position.y = haedY; svid.add(hopur);
       // Hæðir úr SAMA teikningasetti (sama blaðstærð) raðast eftir stöðu sinni á blaðinu og í sama kvarða — annars
       // sveif álma á 2. hæð yfir miðju 1. hæðar og varð stærri en hún er (skurðirnir eru misstórir). `punktar` =
@@ -1636,7 +1667,7 @@
       // Efri hæðir fá hálfgagnsætt gólf INNI — annars hylur efsta hæðin allar hinar ofan frá.
       const golfG = new T.PlaneGeometry(k.gw, k.gh), golfE = new T.MeshBasicMaterial({ map: aferd, side: T.DoubleSide, transparent: true, opacity: nr > 0 ? 0.42 : 1, depthWrite: nr === 0, alphaTest: 0.05 });
       const golf = new T.Mesh(golfG, golfE); golf.rotation.x = -Math.PI / 2; hopur.add(golf);
-      const lg = { hopur, golfE, golfG, nr, hd, valinn: null };
+      const lg = { hopur, golfE, golfG, nr, hd, valinn: null, veggH, gw: k.gw, gh: k.gh };
       losa.push(golfG, golfE, aferd); lag.push(lg);
       litaHolf(lg);
       // Skuggafangari rétt ofan við gólfið: gólfið er ólýst mynd (skýr teikning) og tekur því ekki skugga sjálft.
@@ -1646,12 +1677,14 @@
       // Veggir: eitt InstancedMesh — eitt teiknikall fyrir alla kassana.
       const f = hd.kvardi / k.c;   // punktar skornu myndarinnar → ristarreitir
       const kG = new T.BoxGeometry(1, 1, 1), kE = new T.MeshLambertMaterial({ color: VEGGLITUR_3D });
+      const kTopp = new T.MeshLambertMaterial({ color: TOPPLITUR_3D }); kTopp.userData.toppur = true;
+      const kEfni = [kE, kE, kTopp, kE, kE, kE];
       const m = new T.Matrix4();
       let veggir;
       if (hd.butar && hd.butar.length) {
         // HEILIR VEGGIR: einn kassi á vegg, lengdur um hálfa þykkt í hvorn enda svo hornin fyllist.
         const sjalfg = Math.max(k.gw, k.gh) * 0.004, q = new T.Quaternion(), ofan = new T.Vector3(0, 1, 0), st = new T.Vector3(), kv3 = new T.Vector3();
-        veggir = new T.InstancedMesh(kG, kE, hd.butar.length);
+        veggir = new T.InstancedMesh(kG, kEfni, hd.butar.length);
         hd.butar.forEach((v, i) => {
           const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
           const th = Math.max(0.8, (v[4] || 0) * f || sjalfg);
@@ -1683,7 +1716,7 @@
         // Hurðargöt: veggurinn heldur áfram OFAN við hurðina (dyrakarmur, efsti fjórðungur vegghæðar) — rýmið lokast en
         // gengt er undir.
         if (hd.hurdir && hd.hurdir.length) {
-          const karmH = veggH * 0.26, karmar = new T.InstancedMesh(kG, kE, hd.hurdir.length);
+          const karmH = veggH * 0.26, karmar = new T.InstancedMesh(kG, kEfni, hd.hurdir.length);
           hd.hurdir.forEach((v, i) => {
             const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
             q.setFromAxisAngle(ofan, -Math.atan2(bz - az, bx - ax));
@@ -1704,7 +1737,7 @@
         }
         litaVeggi(lg);
       } else {
-        veggir = new T.InstancedMesh(kG, kE, Math.max(1, k.kassar.length));
+        veggir = new T.InstancedMesh(kG, kEfni, Math.max(1, k.kassar.length));
         k.kassar.forEach((r, i) => {
           m.makeScale(r.b, veggH, r.h);
           m.setPosition(r.x + r.b / 2 - k.gw / 2, veggH / 2, r.y + r.h / 2 - k.gh / 2);
@@ -1713,7 +1746,7 @@
         veggir.count = k.kassar.length;
       }
       veggir.instanceMatrix.needsUpdate = true; veggir.castShadow = true; veggir.receiveShadow = true; hopur.add(veggir);
-      losa.push(kG, kE); veggEfni.push(kE);
+      losa.push(kG, kE, kTopp); veggEfni.push(kE, kTopp);
       // Merki: stöng + kúla + miði. Miðinn heldur stærð sinni á skjánum (læsilegur í hvaða aðdrætti sem er) og tæki sem
       // standa þétt fá misháar stangir svo miðarnir leggist ekki hver ofan á annan.
       const merki = hd.merki || [], naerri = Math.max(k.gw, k.gh) * 0.07;
@@ -1805,6 +1838,14 @@
     const hreyfa = e => {
       const p = bendlar.get(e.pointerId); if (!p) return;
       const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+      if (ganga) {
+        if (bendlar.size >= 2) {
+          const [a2, c2] = [...bendlar.values()], nuna = Math.hypot(a2.x - c2.x, a2.y - c2.y);
+          if (klipa) gangaFaera((nuna - klipa) * ganga.metri * 0.03, 0);
+          klipa = nuna;
+        } else { ganga.yaw += dx * 0.004; ganga.pitch = Math.max(-1.2, Math.min(1.2, ganga.pitch + dy * 0.004)); }
+        gangaVel(); return;
+      }
       if (bendlar.size >= 2) {
         const [a, c2] = [...bendlar.values()], nuna = Math.hypot(a.x - c2.x, a.y - c2.y);
         if (klipa) fjarl *= klipa / Math.max(1, nuna);
@@ -1820,8 +1861,61 @@
       if (!bendlar.size) fjolsnert = false;
       if (smellur && handfang && handfang.aSmell) { try { handfang.aSmell(veggurUndir(e.clientX, e.clientY), e.clientX, e.clientY); } catch (err) { console.warn('[383] aSmell', err); } }
     };
-    const hjol = e => { e.preventDefault(); fjarl *= e.deltaY > 0 ? 1.12 : 0.89; stillaVel(); };
+    const hjol = e => { e.preventDefault(); if (ganga) { gangaFaera((e.deltaY < 0 ? 1 : -1) * 0.8 * ganga.metri, 0); gangaVel(); return; } fjarl *= e.deltaY > 0 ? 1.12 : 0.89; stillaVel(); };
     const samhengi = e => e.preventDefault();
+    // GÖNGUHAMUR (Agnar 06.10.2026, úr samanburði þrívíddarteiknara — floorplan-3d): augu í 1,6 m hæð á einni hæð.
+    // Draga = líta í kring (gripið um heiminn, eins og snúningurinn) · hjól / W S / ↑ ↓ = ganga · A D / ← → = til hliðar ·
+    // shift = hraðar · tvísmella á gólf = fara þangað · Esc = hætta. Engin árekstrarvörn: gengið er í gegnum veggi.
+    let ganga = null;
+    const takkar = {};
+    const gangaVel = () => {
+      const g = ganga, cp = Math.cos(g.pitch);
+      vel.position.copy(g.pos);
+      vel.lookAt(g.pos.x + Math.sin(g.yaw) * cp, g.pos.y + Math.sin(g.pitch), g.pos.z + Math.cos(g.yaw) * cp);
+    };
+    const gangaFaera = (fram, hlid) => {
+      const g = ganga, sy = Math.sin(g.yaw), cy = Math.cos(g.yaw);
+      g.pos.x += sy * fram - cy * hlid; g.pos.z += cy * fram + sy * hlid;    // hægri = fram × upp = (−cos, 0, sin)
+      g.pos.x = Math.min(g.mork.x1, Math.max(g.mork.x0, g.pos.x)); g.pos.z = Math.min(g.mork.z1, Math.max(g.mork.z0, g.pos.z));
+    };
+    const gangaByrja = nr => {
+      const lg = lag[nr] || lag[0]; if (!lg) return false;
+      const hp = lg.hopur.position, sx = lg.hopur.scale.x, sz = lg.hopur.scale.z, metri = lg.veggH / 3.0;   // ristarreitir á metra
+      ganga = {
+        nr: lg.nr, metri, pos: new T.Vector3(hp.x, hp.y + 1.6 * metri, hp.z), pitch: 0,
+        yaw: lg.gw * sx >= lg.gh * sz ? Math.PI / 2 : 0,                                                       // eftir lengri ásnum
+        mork: { x0: hp.x - lg.gw / 2 * sx, x1: hp.x + lg.gw / 2 * sx, z0: hp.z - lg.gh / 2 * sz, z1: hp.z + lg.gh / 2 * sz }
+      };
+      lag.forEach(o => { const ein = o.nr === lg.nr; o.hopur.visible = ein; if (ein) { o.golfE.opacity = 1; o.golfE.depthWrite = true; o.golfE.needsUpdate = true; } });
+      vel.fov = 70; vel.near = Math.max(0.01, metri * 0.05); vel.updateProjectionMatrix();
+      gangaVel(); return true;
+    };
+    const gangaHaetta = () => { if (!ganga) return; ganga = null; vel.fov = 42; vel.near = 0.1; vel.updateProjectionMatrix(); stillaVel(); };
+    const ATT = { w: ['fram', 1], arrowup: ['fram', 1], s: ['fram', -1], arrowdown: ['fram', -1], d: ['hlid', 1], arrowright: ['hlid', 1], a: ['hlid', -1], arrowleft: ['hlid', -1] };
+    const lykill = (e, nidri) => {
+      if (!ganga) return;
+      const t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      const k2 = String(e.key || '').toLowerCase();
+      // Esc stöðvast hér (gripið fremst, capture) — annars lokaði það líka öllum teikningaglugganum
+      if (k2 === 'escape') { e.preventDefault(); e.stopImmediatePropagation(); if (nidri && handfang && handfang.aGangaLok) handfang.aGangaLok(); return; }
+      if (k2 === 'shift') { takkar.hratt = nidri; return; }
+      const a = ATT[k2]; if (!a) return;
+      e.preventDefault();
+      takkar[k2] = nidri;
+      takkar.fram = (takkar.w || takkar.arrowup ? 1 : 0) - (takkar.s || takkar.arrowdown ? 1 : 0);
+      takkar.hlid = (takkar.d || takkar.arrowright ? 1 : 0) - (takkar.a || takkar.arrowleft ? 1 : 0);
+    };
+    const lykNidur = e => lykill(e, true), lykUpp = e => lykill(e, false);
+    window.addEventListener('keydown', lykNidur, true); window.addEventListener('keyup', lykUpp, true);
+    el.addEventListener('dblclick', e => {
+      if (!ganga) return;
+      const r = el.getBoundingClientRect();
+      ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      geisli.setFromCamera(ndc, vel);
+      const golfY = ganga.pos.y - 1.6 * ganga.metri, pt = new T.Vector3();
+      if (geisli.ray.intersectPlane(new T.Plane(new T.Vector3(0, 1, 0), -golfY), pt)) { ganga.pos.x = pt.x; ganga.pos.z = pt.z; gangaFaera(0, 0); gangaVel(); }
+    });
     el.addEventListener('pointerdown', nidur); el.addEventListener('pointermove', hreyfa);
     el.addEventListener('pointerup', upp); el.addEventListener('pointercancel', upp);
     el.addEventListener('wheel', hjol, { passive: false }); el.addEventListener('contextmenu', samhengi);
@@ -1832,12 +1926,24 @@
     stillaMida(h);
     stillaVel();
     let lifir = true, raf = 0;
-    const lykkja = () => { if (!lifir) return; teiknari.render(svid, vel); raf = requestAnimationFrame(lykkja); };
+    let sidast = performance.now();
+    const lykkja = () => {
+      if (!lifir) return;
+      const nu = performance.now(), dt = Math.min(0.1, (nu - sidast) / 1000); sidast = nu;
+      if (ganga) {
+        if (takkar.fram || takkar.hlid) { const v = 1.6 * ganga.metri * dt * (takkar.hratt ? 2.5 : 1); gangaFaera((takkar.fram || 0) * v, (takkar.hlid || 0) * v); }
+        gangaVel();
+      }
+      teiknari.render(svid, vel); raf = requestAnimationFrame(lykkja);
+    };
     lykkja();
     handfang = {
       kassar: haedir.length,
       heilir,
       aSmell: null,     // fall(hit | null, clientX, clientY) — kallað við smell á sviðið
+      // Gönguhamur á hæð nr (true) eða aftur í snúning (false). aGangaLok: kallað þegar notandinn ýtir á Esc.
+      ganga(a, nr) { if (a) return gangaByrja(nr == null ? 0 : nr); gangaHaetta(); return false; },
+      aGangaLok: null,
       // Nýr eldflokkur á hæð (eftir handval): veggir, karmar, hurðarendur og brunahólf litast aftur án þess að smíða sviðið.
       uppfaera(nr, d) { const lg = lag[nr]; if (!lg) return; if (d) Object.assign(lg.hd, d); litaVeggi(lg); litaHolf(lg); },
       // Veggurinn sem notandinn er að velja flokk á (gylltur); merkja(null) tekur merkinguna af.
@@ -1851,7 +1957,7 @@
       },
       // Gegnsæir veggir: tækin og teikningin sjást í gegnum húsið.
       gegnsaett(a) {
-        veggEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.4 : 1; e.depthWrite = !a; e.color.setHex(e.userData.litad ? (a ? 0xb4b0a8 : 0xffffff) : (a ? 0x9d978c : VEGGLITUR_3D)); e.needsUpdate = true; });
+        veggEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.4 : 1; e.depthWrite = !a; e.color.setHex(e.userData.toppur ? (a ? 0x8a847a : TOPPLITUR_3D) : e.userData.litad ? (a ? 0xb4b0a8 : 0xffffff) : (a ? 0x9d978c : VEGGLITUR_3D)); e.needsUpdate = true; });
         sporEfni.forEach(o => { o.visible = !!a; });
       },
       // Ein hæð í einu (nr) eða allar (null). Stök efri hæð fær heilt gólf — hún hylur þá ekkert.
@@ -1862,6 +1968,7 @@
       },
       loka() {
         lifir = false; cancelAnimationFrame(raf); window.removeEventListener('resize', staerd);
+        window.removeEventListener('keydown', lykNidur, true); window.removeEventListener('keyup', lykUpp, true);
         losa.forEach(x => { try { x.dispose(); } catch (_) {} });
         try { teiknari.dispose(); teiknari.forceContextLoss && teiknari.forceContextLoss(); } catch (_) {}
         if (el.parentNode) el.parentNode.removeChild(el);
@@ -3017,6 +3124,7 @@
     gamur.innerHTML = '<div style="position:absolute;left:10px;right:10px;top:10px;z-index:2;display:flex;flex-direction:column;align-items:flex-end;gap:6px;pointer-events:none">' +
       '<div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;pointer-events:auto">' +
       '<button type="button" id="fp-3d-breyta" aria-pressed="false" title="Tengja eða aftengja brunavegg: kveiktu á þessu og smelltu á vegg" style="display:none;height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Breyta eldveggjum</button>' +
+      '<button type="button" id="fp-3d-ganga" aria-pressed="false" title="Ganga um hæðina í augnhæð (1,6 m) — draga = líta í kring, hjól / W S = ganga, Esc = hætta" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Ganga</button>' +
       '<button type="button" id="fp-3d-gegn" aria-pressed="false" title="Gera veggina gegnsæja svo tækin og teikningin sjáist í gegnum húsið" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Gegnsætt</button>' +
       '<button type="button" id="fp-3d-x" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">✕ Loka 3D</button></div>' +
       '<div id="fp-3d-haedir" style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;pointer-events:auto"></div></div>' +
@@ -3044,7 +3152,10 @@
         if (!document.getElementById('fp-3d')) return;
         const u = undirbua(h, stig1, h.markers, val, einingar, frum, ei);
         if (!u.veggjaPx) { sleppt.push(h.nafn + ' (engir veggir — greindu þá í TurboPaint og „Vista í úttekt“, lestu úr PDF eða dragðu með ✏)'); continue; }
-        u.nafn = h.nafn; u.haedId = h.id; ut.push(u);
+        u.nafn = h.nafn; u.haedId = h.id;
+        u.dilarAMetra = await dilarAMetra(h, fbE, fhE);
+        if (!document.getElementById('fp-3d')) return;
+        ut.push(u);
       } catch (e) { console.warn('[383] 3D: ' + h.nafn, e); sleppt.push(h.nafn + ' (náði ekki í teikningu)'); }
     }
     if (!ut.length) { loka3d(); segja('Sjálfvirk veggagreining náði ekki. ' + sleppt.join(' · ') + '.' + (hs.some(x => pdfSlod(x)) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.'); return; }
@@ -3127,6 +3238,18 @@
           vistaSjalfkrafa('eldveggir');
         });
       }
+      // Gönguhamur: valin hæð (eða sú neðsta). Annar smellur, Esc eða hæðaskipti → aftur í snúning.
+      const gb = gamur.querySelector('#fp-3d-ganga'), skyrTexti = skyr.textContent;
+      const gangaLit = a => { if (!gb) return; gb.setAttribute('aria-pressed', a ? 'true' : 'false'); gb.style.background = a ? '#d9b45a' : 'rgba(20,18,15,.85)'; gb.style.color = a ? '#14120f' : '#fff'; };
+      const gangaAf = () => { gangaLit(false); skyr.textContent = skyrTexti; if (G.syn3d && G.syn3d.ganga) { G.syn3d.ganga(false); if (G.syn3d.syna) G.syn3d.syna(valin); } };
+      if (gb) gb.addEventListener('click', () => {
+        if (!G.syn3d || !G.syn3d.ganga) return;
+        if (gb.getAttribute('aria-pressed') === 'true') { gangaAf(); return; }
+        if (!G.syn3d.ganga(true, valin == null ? 0 : valin)) return;
+        gangaLit(true);
+        skyr.textContent = 'Ganga: draga = líta í kring · hjól / W S / ↑ ↓ = áfram og aftur · A D / ← → = til hliðar · shift = hraðar · tvísmella á gólf = fara þangað · Esc = hætta';
+      });
+      if (G.syn3d) G.syn3d.aGangaLok = gangaAf;
       // Hæðatakkar: smellur sýnir þá hæð EINA, annar smellur á sömu hæð sýnir allar aftur.
       const hb = gamur.querySelector('#fp-3d-haedir');
       if (hb && ut.length > 1) {
@@ -3135,6 +3258,7 @@
         hb.addEventListener('click', e => {
           const t = e.target.closest('button[data-h]'); if (!t) return;
           const nr = +t.dataset.h; valin = valin === nr ? null : nr;
+          if (gb && gb.getAttribute('aria-pressed') === 'true') { gangaLit(false); skyr.textContent = skyrTexti; if (G.syn3d && G.syn3d.ganga) G.syn3d.ganga(false); }
           if (G.syn3d && G.syn3d.syna) G.syn3d.syna(valin);
           mala(); skyring(valin); lokaVali();
         });
