@@ -2079,7 +2079,7 @@
           const hurdir = lg.heilir ? (hd.hurdir || []).map(v => butur(v, 0.8)) : [];
           const taeki = (hd.merki || []).map(mk => {
             const fest = hd.butar ? festaAVegg(hd.butar, mk.x, mk.y, 45 * (Math.max(hd.frumB || 0, hd.frumH || 0) / 2384 || 2.5)) : { x: mk.x, y: mk.y, nx: 0, ny: 1, aVegg: false };
-            return { x: X(fest.x * f - gw2), z: Z(fest.y * f - gh2), nx: +fest.nx.toFixed(4), nz: +fest.ny.toFixed(4), aVegg: !!fest.aVegg, gerd: mk.gerd || 'slokkvitaeki', litur: mk.litur || '', tegund: String(mk.texti || '').slice(0, 40) };
+            return { x: X(fest.x * f - gw2), z: Z(fest.y * f - gh2), nx: +fest.nx.toFixed(4), nz: +fest.ny.toFixed(4), aVegg: !!fest.aVegg, gerd: mk.gerd || 'slokkvitaeki', stimpill: mk.stimpill || undefined, litur: mk.litur || '', tegund: String(mk.texti || '').slice(0, 40) };
           });
           // Gólfið: teikningin á hvítu (gegnsæ lóð verður hvít), smækkuð í JPEG — aðeins ef hún er lítil.
           const golf = { x: M(P.x), z: M(P.z), w: L(lg.gw), h: L(lg.gh) };
@@ -3199,7 +3199,7 @@
       if (mk.kind === 'sign' || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('s:') === 0)) {
         const def = window.TeiknMerking && TeiknMerking.stimplar && TeiknMerking.stimplar.find(s => s.id === mk.sign);
         const txt = (def && (def.nafn || def.stutt)) || 'Merki';
-        return { x: px, y: py, litur: mk.color || (def && def.litur) || '#c93c1d', texti: txt, gerd: gerdTaekis(null, mk.sign || 'skilti') };
+        return { x: px, y: py, litur: mk.color || (def && def.litur) || '#c93c1d', texti: txt, gerd: gerdTaekis(null, mk.sign || 'skilti'), stimpill: mk.sign || 'skilti' };
       }
       const u = einingar.find(q => q.id === mk.unitId);
       // Á miðanum stendur TEGUNDIN (Léttvatn, Brunaslanga …) — Agnar 04.10.2026: „mjög flott … grænu pinnarnir sýndu
@@ -3377,7 +3377,11 @@
           if (j && Array.isArray(j.myndir) && j.myndir.length) { B.stada = 'done'; B.myndir = j.myndir; B.sek = j.sek; }
           else { B.stada = 'error'; B.texti = row.result || 'engin mynd kom til baka'; }
           B.lauk = Date.now();
-        } else if (st === 'error') { B.stada = 'error'; B.texti = row.result; B.lauk = Date.now(); }
+        } else if (st === 'error' && /^Unknown workflow/i.test(String(row.result || '')) && Date.now() - (B.hafnad || (B.hafnad = Date.now())) < 3 * 60000) {
+          // Brúartölva ÁN Blender-verksins (eldri luna-bridge, t.d. heimavélin) náði beiðninni á undan og hafnaði henni.
+          // Skrifstofuvélin tekur slíka beiðni yfir á næsta mínútuhöggi (luna-bridge watcher.js, getHafnad) — beðið áfram.
+          B.stada = 'bida'; B.texti = '';
+        } else if (st === 'error') { B.stada = 'error'; B.texti = /^Unknown workflow/i.test(String(row.result || '')) ? 'engin brúartölva með Blender tók beiðnina — skrifstofutölvan þarf að vera í gangi' : row.result; B.lauk = Date.now(); }
         else { B.stada = st === 'running' ? 'running' : 'bida'; B.texti = st === 'running' ? row.result : ''; }
       }
     } catch (e) { console.warn('[383] Blender-staða', e); }
