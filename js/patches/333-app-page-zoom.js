@@ -54,10 +54,17 @@
   const BYRJUN = {
     company: 0.7, 'm:modal-floorplan': 0.7, 'm:_bks-overlay': 0.75, 'm:_bkc-overlay': 0.75,
     // 05.10.2026 (yfirferð appa): miðgildi leturs ~7 dp á gömlu stærðinni — of smátt
-    arsskodun: 0.8, brunaskra: 0.8, slokkvikerfi: 0.8, rekstrarfelog: 0.8,
+    brunaskra: 0.8, slokkvikerfi: 0.8, rekstrarfelog: 0.8,
+    // 06.10.2026 (öpp-prófun): Pósthólfið í Verkefni-appinu var án stærðar — letur ~5 dp, 13 takkar undir 30 px.
+    'reikninga-postur': 0.75,
     hreyfingarlisti: 0.85, thjonustuverk: 0.85, sala: 0.85,
     'thjonustu-verkstaedi': 0.6, kostnadur: 0.75
   };
+  // 06.10.2026 (öpp-prófun, tools/opp-profun.cjs): Ársskoðun á sinn EIGIN Sími-ham (331, html.ars-simi-phone) sem er
+  // hannaður fyrir 980 px. Síðustærð ofan á hann þrengir síðuna (60 % → 624 px, 100 % → 374 px) og efri hlutinn (414)
+  // og titillinn flæða út. Vistuð 100 % (05.10) gerði síðuna ónothæfa í öllum öppum. Þessar síður halda alltaf
+  // upprunalegri stærð (virkt zoom 1) — sleðinn og vistun snerta þær ekki.
+  const LAEST = { arsskodun: 'Ársskoðun á eigin símaham (980 px) — stærðin er læst' };
   const NOFN = { company: 'Fyrirtækjasíða', 'm:modal-floorplan': 'Teikningar', 'm:_bks-overlay': 'Skoðunarskýrsla · brunakerfi', 'm:_bkc-overlay': 'Brunakerfi · vinnuhamur' };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const r2 = n => Math.round(n * 100) / 100;
@@ -172,6 +179,7 @@
   let kl = null;          // klípa í gangi
   // { s, uppruni: 'vistad' | 'byrjun' | 'gamalt' | 'prufa' }
   function staerd(k, erGluggi, viewId) {
+    if (LAEST[k]) return { s: r2(1 / C()), uppruni: 'laest' };
     if (prufaS != null) return { s: prufaS, uppruni: 'prufa' };
     if (lifandi && lifandi.k === k) return { s: lifandi.s, uppruni: 'prufa' };
     const v = stillingar()[flokkur()][k];
@@ -258,6 +266,7 @@
   function setS(s, k) {
     s = klemma(s);
     k = k || nu.k;
+    if (LAEST[k]) { apply(); return nu.s; }   // læst síða: sleðinn breytir engu og ekkert vistast
     if (lifandi && lifandi.k === k) { lifandi = null; klMerki(''); }   // vistuð stærð tekur við af tímabundinni klípu
     const fl = flokkur();
     const n = nafn(k, k === nu.k ? nu.el : null);
@@ -440,6 +449,7 @@
     if (_vistStada === 'villa') return '<i class="sz-led villa"></i>Vistun mistókst — reynt aftur sjálfkrafa';
     const hvar = flokkur() === 'simi' ? 'fyrir síma' : 'fyrir tölvu (app)';
     if (nu.uppruni === 'vistad') return '<i class="sz-led ok"></i>Vistað fyrir þessa síðu ' + hvar;
+    if (nu.uppruni === 'laest') return '<i class="sz-led ok"></i>' + esc(LAEST[nu.k]);
     if (nu.uppruni === 'byrjun') return '<i class="sz-led"></i>Byrjunarstærð · breyting vistast ' + hvar;
     return '<i class="sz-led"></i>Upprunaleg stærð · breyting vistast ' + hvar;
   }
