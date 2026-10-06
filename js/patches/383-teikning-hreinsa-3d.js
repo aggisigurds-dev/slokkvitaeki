@@ -3402,7 +3402,8 @@
   async function blSidasta(cid) {
     const r = await DB.sb.from('automation_triggers').select('id,status,result,requested_at,finished_at')
       .eq('workflow', 'blender').eq('gogn->>company_id', String(cid)).order('id', { ascending: false }).limit(6);
-    return (r && r.data) || [];
+    if (!r || r.error) throw (r && r.error) || new Error('engin svör');   // brostinn lestur er EKKI „engin mynd til"
+    return r.data || [];
   }
   const blLesa = t => { try { t = String(t || ''); const j = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)); return j && Array.isArray(j.myndir) && j.myndir.length ? j : null; } catch (_) { return null; } };
   async function blBidja(nytt) {
@@ -3427,12 +3428,18 @@
           blTeikna();
           try {
             const t = await DB.sb.from('teikning_bord').select('updated_at').eq('company_id', cid0).limit(1);
+            if (!t || t.error) throw (t && t.error) || new Error('engin svör');
             const u = t && t.data && t.data[0] && Date.parse(t.data[0].updated_at);
             if (u && u > lauk + 60000 && G.blender === B) { B.urelt = true; const o = document.getElementById('fp-3d-bl-meg'); if (o) o._html = ''; blTeikna(); }
           } catch (_) {}
           return;
         }
-      } catch (e) { console.warn('[383] Designer-3D síðasta mynd', e); }
+      } catch (e) {
+        // Náðist ekki að lesa fyrri myndir: EKKI senda nýja beiðni í blindni (gæti tvöfaldað 8 mín teikningu).
+        console.warn('[383] Designer-3D síðasta mynd', e);
+        G.blender = { stada: 'error', texti: 'náði ekki sambandi til að sækja síðustu mynd — reyndu aftur', byrjad: Date.now(), lauk: Date.now(), opid: true, felag: cid0 };
+        blTeikna(); return;
+      }
     }
     const FP = FPx();
     if (!G.syn3d || !G.syn3d.blenderSena) { segja('3D-sýnin er ekki tilbúin'); return; }
