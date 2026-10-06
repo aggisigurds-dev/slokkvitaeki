@@ -1490,6 +1490,13 @@
   // Litir: EI-60 rauður, EI-30 ljósrauður (veggir). Hurðir sjást ofan frá á litaðri rönd: brunahurð appelsínugul, önnur brún.
   // TOPPLITUR_3D: dökk efri brún veggja svo grunnmyndin lesist ofan frá (Agnar 06.10.2026, úr samanburði þrívíddarteiknara).
   const TOPPLITUR_3D = 0x5c574f;
+  // GRÁTT ÚTLIT (Agnar 06.10.2026, eftir Blender-myndina: „use the grey one in slökkvitæki company profile layout,
+  // easier to see the fire extinguishers"): ljósgráir veggir, sól og mjúkir skuggar, daufur grunnur, engir eldlitir á
+  // veggjum og engin lituð brunahólf — rauðu tækin standa út. „Brunahólf" skiptir í litaða útlitið (eldveggir, hólf).
+  // Engin SSAO/korn — Agnar hafnaði því. Val vafrans: localStorage (útlitsval, ekki gögn).
+  const UTLIT_LS = 'teikn3d_utlit';
+  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xe8e6e2, toppur: 0xb9b5ae, hurd: 0x9e978d, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.55 };
+  const lesaUtlit = () => { try { return localStorage.getItem(UTLIT_LS) === 'eld' ? 'eld' : 'gratt'; } catch (_) { return 'gratt'; } };
   const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0x8d6e63, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
   // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
   const HOLFALITIR_3D = [[66, 133, 244], [52, 168, 83], [251, 188, 5], [171, 71, 188], [0, 172, 193], [255, 112, 67], [124, 179, 66], [92, 107, 192]];
@@ -1539,8 +1546,10 @@
     teiknari.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none;cursor:grab';
     gamur.appendChild(teiknari.domElement);
     const svid = new T.Scene();
-    svid.add(new T.HemisphereLight(0xffffff, 0xbdb8ae, 0.8));
+    const himinn = new T.HemisphereLight(0xffffff, 0xbdb8ae, 0.8); svid.add(himinn);
     const sol = new T.DirectionalLight(0xffffff, 0.6); svid.add(sol); svid.add(sol.target);
+    let utlit = (gogn && gogn.utlit) || lesaUtlit();
+    const daufLog = [], skuggaEfni = [];
     const losa = [], veggEfni = [], sporEfni = [], lag = [], midar = [];
     let staerst = 1, haedY = 0, vidmid = null, heilir = 0;
     // LÍKAN TÆKIS: hópur með upphaf á gólfi við yfirborð veggjar, +z snýr út frá veggnum. e = vegghæðin (mælieining
@@ -1609,12 +1618,13 @@
     const litaVeggi = lg => {
       const hd = lg.hd;
       if (!lg.heilir) return;
-      for (let i = 0; i < hd.butar.length; i++) lg.veggir.setColorAt(i, lit.setHex(lg.valinn === i ? VALINN_3D : (hd.eld && ELDLITIR_3D[hd.eld[i]]) || (hd.holf && hd.holf.alyktad[i] ? ALYKTAD_3D : VEGGLITUR_3D)));
+      const grtt = utlit === 'gratt';
+      for (let i = 0; i < hd.butar.length; i++) lg.veggir.setColorAt(i, lit.setHex(lg.valinn === i ? VALINN_3D : grtt ? GRATT_3D.veggur : (hd.eld && ELDLITIR_3D[hd.eld[i]]) || (hd.holf && hd.holf.alyktad[i] ? ALYKTAD_3D : VEGGLITUR_3D)));
       lg.veggir.instanceColor.needsUpdate = true;
       if (lg.karmar) {
         for (let i = 0; i < hd.hurdir.length; i++) {
-          lg.karmar.setColorAt(i, lit.setHex((hd.hurdEld && ELDLITIR_3D[hd.hurdEld[i]]) || VEGGLITUR_3D));
-          lg.rendur.setColorAt(i, lit.setHex(hd.hurdEld && hd.hurdEld[i] ? ELDHURD_3D : HURDALITUR_3D));
+          lg.karmar.setColorAt(i, lit.setHex(grtt ? GRATT_3D.veggur : (hd.hurdEld && ELDLITIR_3D[hd.hurdEld[i]]) || VEGGLITUR_3D));
+          lg.rendur.setColorAt(i, lit.setHex(grtt ? GRATT_3D.hurd : hd.hurdEld && hd.hurdEld[i] ? ELDHURD_3D : HURDALITUR_3D));
         }
         lg.karmar.instanceColor.needsUpdate = true; lg.rendur.instanceColor.needsUpdate = true;
       }
@@ -1622,7 +1632,7 @@
     // Brunahólf: hvert hólf fær sinn ljósa lit á gólfið (aðeins þegar þau eru fleiri en eitt — annars segir liturinn ekkert).
     const litaHolf = lg => {
       const holf = lg.hd.holf;
-      if (!holf || holf.fjoldi < 2) { if (lg.holfM) lg.holfM.visible = false; return; }
+      if (!holf || holf.fjoldi < 2 || utlit === 'gratt') { if (lg.holfM) lg.holfM.visible = false; return; }
       if (!lg.holfM || lg.holfStr.width !== holf.gw || lg.holfStr.height !== holf.gh) {
         if (lg.holfM) lg.hopur.remove(lg.holfM);
         lg.holfStr = document.createElement('canvas'); lg.holfStr.width = holf.gw; lg.holfStr.height = holf.gh;
@@ -1671,13 +1681,17 @@
       losa.push(golfG, golfE, aferd); lag.push(lg);
       litaHolf(lg);
       // Skuggafangari rétt ofan við gólfið: gólfið er ólýst mynd (skýr teikning) og tekur því ekki skugga sjálft.
-      const skE = new T.ShadowMaterial({ opacity: 0.2 }), skuggi = new T.Mesh(golfG, skE);
+      // Grátt útlit: hvít slæða yfir teikningunni (grunnurinn sést dauft, tækin standa út).
+      const dE = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: GRATT_3D.daufur, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+      const dauf = new T.Mesh(golfG, dE); dauf.rotation.x = -Math.PI / 2; dauf.position.y = 0.2; dauf.renderOrder = 1; hopur.add(dauf);
+      losa.push(dE); daufLog.push(dauf);
+      const skE = new T.ShadowMaterial({ opacity: 0.2 }), skuggi = new T.Mesh(golfG, skE); skuggaEfni.push(skE);
       skuggi.rotation.x = -Math.PI / 2; skuggi.position.y = 0.55; skuggi.receiveShadow = true; skuggi.renderOrder = 2; hopur.add(skuggi);
       losa.push(skE);
       // Veggir: eitt InstancedMesh — eitt teiknikall fyrir alla kassana.
       const f = hd.kvardi / k.c;   // punktar skornu myndarinnar → ristarreitir
       const kG = new T.BoxGeometry(1, 1, 1), kE = new T.MeshLambertMaterial({ color: VEGGLITUR_3D });
-      const kTopp = new T.MeshLambertMaterial({ color: TOPPLITUR_3D }); kTopp.userData.toppur = true;
+      const kTopp = new T.MeshLambertMaterial({ color: utlit === 'gratt' ? GRATT_3D.toppur : TOPPLITUR_3D }); kTopp.userData.toppur = true;
       const kEfni = [kE, kE, kTopp, kE, kE, kE];
       const m = new T.Matrix4();
       let veggir;
@@ -1937,8 +1951,21 @@
       teiknari.render(svid, vel); raf = requestAnimationFrame(lykkja);
     };
     lykkja();
+    const beitaUtliti = () => {
+      const g = utlit === 'gratt';
+      teiknari.setClearColor(g ? GRATT_3D.bakgrunnur : BAKGRUNNUR_3D);
+      himinn.color.setHex(g ? GRATT_3D.himinn[0] : 0xffffff); himinn.groundColor.setHex(g ? GRATT_3D.himinn[1] : 0xbdb8ae); himinn.intensity = g ? GRATT_3D.himinn[2] : 0.8;
+      sol.intensity = g ? GRATT_3D.sol : 0.6;
+      daufLog.forEach(m => { m.visible = g; });
+      skuggaEfni.forEach(e => { e.opacity = g ? GRATT_3D.skuggi : 0.2; });
+      veggEfni.forEach(e => { if (e.userData.toppur && !e.transparent) e.color.setHex(g ? GRATT_3D.toppur : TOPPLITUR_3D); });
+      lag.forEach(lg => { litaVeggi(lg); litaHolf(lg); });
+    };
+    beitaUtliti();
     handfang = {
       kassar: haedir.length,
+      // Grátt (sjálfgefið á prófílnum) eða litað útlit eldveggja og brunahólfa.
+      utlit(v) { if (v !== 'gratt' && v !== 'eld') return utlit; utlit = v; try { localStorage.setItem(UTLIT_LS, v); } catch (_) {} beitaUtliti(); return utlit; },
       heilir,
       aSmell: null,     // fall(hit | null, clientX, clientY) — kallað við smell á sviðið
       // Gönguhamur á hæð nr (true) eða aftur í snúning (false). aGangaLok: kallað þegar notandinn ýtir á Esc.
@@ -1957,7 +1984,7 @@
       },
       // Gegnsæir veggir: tækin og teikningin sjást í gegnum húsið.
       gegnsaett(a) {
-        veggEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.4 : 1; e.depthWrite = !a; e.color.setHex(e.userData.toppur ? (a ? 0x8a847a : TOPPLITUR_3D) : e.userData.litad ? (a ? 0xb4b0a8 : 0xffffff) : (a ? 0x9d978c : VEGGLITUR_3D)); e.needsUpdate = true; });
+        veggEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.4 : 1; e.depthWrite = !a; e.color.setHex(e.userData.toppur ? (a ? 0x8a847a : utlit === 'gratt' ? GRATT_3D.toppur : TOPPLITUR_3D) : e.userData.litad ? (a ? 0xb4b0a8 : 0xffffff) : (a ? 0x9d978c : VEGGLITUR_3D)); e.needsUpdate = true; });
         sporEfni.forEach(o => { o.visible = !!a; });
       },
       // Ein hæð í einu (nr) eða allar (null). Stök efri hæð fær heilt gólf — hún hylur þá ekkert.
@@ -3160,6 +3187,7 @@
       '<div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;pointer-events:auto">' +
       '<button type="button" id="fp-3d-breyta" aria-pressed="false" title="Tengja eða aftengja brunavegg: kveiktu á þessu og smelltu á vegg" style="display:none;height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Breyta eldveggjum</button>' +
       '<button type="button" id="fp-3d-ganga" aria-pressed="false" title="Ganga um hæðina í augnhæð (1,6 m) — draga = líta í kring, hjól / W S = ganga, Esc = hætta" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Ganga</button>' +
+      '<button type="button" id="fp-3d-utlit" aria-pressed="false" title="Sýna eldveggi og brunahólf í lit — annars grátt útlit þar sem tækin standa út" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Brunahólf</button>' +
       '<button type="button" id="fp-3d-gegn" aria-pressed="false" title="Gera veggina gegnsæja svo tækin og teikningin sjáist í gegnum húsið" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Gegnsætt</button>' +
       '<button type="button" id="fp-3d-x" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">✕ Loka 3D</button></div>' +
       '<div id="fp-3d-haedir" style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;pointer-events:auto"></div></div>' +
@@ -3230,8 +3258,14 @@
           (nHand ? '<span style="white-space:nowrap">' + nHand + (nHand === 1 ? ' veggur handvalinn' : ' veggir handvaldir') + '</span>' : '') +
           (nUti ? '<span style="white-space:nowrap;color:#ffd27a">' + nUti + (nUti === 1 ? ' tæki staðsett' : ' tæki staðsett') + ' utan teikningar — færðu ' + (nUti === 1 ? 'það' : 'þau') + ' inn í 2D</span>' : '') +
           (e60 || e30 ? '<span style="flex-basis:100%;font-weight:500;opacity:.75">EI-merki lesin sjálfvirkt — sannreyndu á teikningu. Leiðrétt með „Breyta eldveggjum".</span>' : '');
-        eb.innerHTML = html; eb.style.display = html ? 'flex' : 'none'; eb.style.flexWrap = 'wrap'; eb.style.maxWidth = 'calc(100% - 20px)'; eb.style.rowGap = '4px';
+        const graUtlit = G.syn3d && G.syn3d.utlit && G.syn3d.utlit() === 'gratt';
+        eb.innerHTML = html; eb.style.display = html && !graUtlit ? 'flex' : 'none'; eb.style.flexWrap = 'wrap'; eb.style.maxWidth = 'calc(100% - 20px)'; eb.style.rowGap = '4px';
       };
+      // Útlitshnappurinn: Brunahólf (litað) ↔ grátt.
+      const ub = gamur.querySelector('#fp-3d-utlit');
+      const utlitLit = () => { if (!ub || !G.syn3d || !G.syn3d.utlit) return; const a = G.syn3d.utlit() === 'eld'; ub.setAttribute('aria-pressed', a ? 'true' : 'false'); ub.style.background = a ? '#d9b45a' : 'rgba(20,18,15,.85)'; ub.style.color = a ? '#14120f' : '#fff'; };
+      if (ub) ub.addEventListener('click', () => { if (!G.syn3d || !G.syn3d.utlit) return; G.syn3d.utlit(G.syn3d.utlit() === 'eld' ? 'gratt' : 'eld'); utlitLit(); skyring(valin); });
+      utlitLit();
       skyring(null);
       // HANDVAL ELDVEGGJA (Agnar 04.10.2026: „tengt eða aftengt brunavegg ef um einhver mistök hafa orðið og savað síðan
       // réttu útgáfuna"): ✏ Eldveggir → smellur á vegg → EI-60 / EI-30 / ekki brunaveggur. Valið fer í haedir[].eldVal
@@ -3244,6 +3278,7 @@
         bb.style.display = '';
         bb.addEventListener('click', () => {
           breyta = !breyta;
+          if (breyta && G.syn3d && G.syn3d.utlit && G.syn3d.utlit() !== 'eld') { G.syn3d.utlit('eld'); utlitLit(); skyring(valin); }
           bb.setAttribute('aria-pressed', breyta ? 'true' : 'false');
           bb.style.background = breyta ? '#d9b45a' : 'rgba(20,18,15,.85)'; bb.style.color = breyta ? '#14120f' : '#fff';
           skyr.textContent = breyta ? 'Smelltu á vegg til að tengja hann sem brunavegg eða aftengja. Breytingin vistast sjálfkrafa.' : leidsogn;
