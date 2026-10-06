@@ -3382,6 +3382,8 @@
     if (h && h.id) q.push('haed=' + encodeURIComponent(h.id));
     if (h && h.frum) q.push('b=' + h.frum.b, 'h=' + h.frum.h);
     if (planUrl) q.push('plan=' + encodeURIComponent(planUrl));
+    // 06.10.2026 (áfangi 1): opnast í „Teikning og greining" — þar er veggjastikan (Veggur/Gler/Hurð/Tengja/Eyða)
+    q.push('ham=teikning');
     return TURBOPAINT + '?' + q.join('&');
   }
   async function opnaITurboPaint(auka) {
