@@ -56,7 +56,8 @@ krefst(p383, /vistaHaedMinni/, '383 á að muna Skýrari veggir per hæð');
 krefst(p383, /hreinsaStrigaStrax/, '383 á að hreinsa gamla hæð af striganum strax');
 krefst(p383, /function sameinaHaedir/, '383 má ekki skipta út hæða-hnútum svo myndhleðsla deyji');
 krefst(p383, /nu\.id !== h\.id/, '383 onload á að bera saman hæðar-id, ekki hnút');
-krefst(p433, /STAERD_MIN = 24/, 'skilti eiga að ná niður í 24 px');
+// 06.10.2026: lágmarkið lækkað 24 → 10 px að beiðni Agnars („minnka meira"). Vörnin gætir að það HÆKKI ekki aftur.
+krefst(p433, /STAERD_MIN = (1\d|2[0-4]|[1-9])\b/, 'skilti eiga að ná niður í 24 px eða minna (nú 10)');
 krefst(p433, /STAERD_MAX = 160/, 'skilti eiga að ná upp í 160 px');
 krefst(p433, /m\.staerd/, '433 á að leyfa stærð per merki');
 krefst(p433, /TeiknMerking\.stimpilPx|stimpilPx: merkiStaerd/, '433 á að bjóða stimpilPx');
