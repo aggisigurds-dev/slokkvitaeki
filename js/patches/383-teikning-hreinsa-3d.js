@@ -1495,7 +1495,7 @@
   // veggjum og engin lituð brunahólf — rauðu tækin standa út. „Brunahólf" skiptir í litaða útlitið (eldveggir, hólf).
   // Engin SSAO/korn — Agnar hafnaði því. Val vafrans: localStorage (útlitsval, ekki gögn).
   const UTLIT_LS = 'teikn3d_utlit';
-  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xe8e6e2, toppur: 0xb9b5ae, hurd: 0x9e978d, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.55 };
+  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xe8e6e2, toppur: 0xb9b5ae, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.55 };
   const lesaUtlit = () => { try { return localStorage.getItem(UTLIT_LS) === 'eld' ? 'eld' : 'gratt'; } catch (_) { return 'gratt'; } };
   const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0x8d6e63, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
   // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
@@ -1624,7 +1624,7 @@
       if (lg.karmar) {
         for (let i = 0; i < hd.hurdir.length; i++) {
           lg.karmar.setColorAt(i, lit.setHex(grtt ? GRATT_3D.veggur : (hd.hurdEld && ELDLITIR_3D[hd.hurdEld[i]]) || VEGGLITUR_3D));
-          lg.rendur.setColorAt(i, lit.setHex(grtt ? GRATT_3D.hurd : hd.hurdEld && hd.hurdEld[i] ? ELDHURD_3D : HURDALITUR_3D));
+          lg.rendur.setColorAt(i, lit.setHex(hd.hurdEld && hd.hurdEld[i] ? ELDHURD_3D : HURDALITUR_3D));   // hurðir sjást líka í gráu útliti
         }
         lg.karmar.instanceColor.needsUpdate = true; lg.rendur.instanceColor.needsUpdate = true;
       }

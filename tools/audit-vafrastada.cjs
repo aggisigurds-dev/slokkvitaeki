@@ -40,7 +40,10 @@ const BANN = [
 // möppu notandinn valdi síðast, þ.e. stilling ÞESSA vafra. Möppulistinn sjálfur
 // fer á þjóninn (state.ui.drive_leit_moppur), sem er rétt skipting. Talan er
 // hækkuð af því lykillinn stenst regluna, ekki til að fá grænt.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 50 }, slokkvitaeki: { ls: 149, ui: 0 } };
+// 06.10.2026: slokkvitaeki ls 149 -> 150. Nýi lykillinn er `teikn3d_utlit` (383): grátt eða litað útlit 3D-sýnarinnar
+// í Teikning-glugganum — útlitsval ÞESSA vafra (sama flokkur og sía/þema), engin staða gagna. Hækkað af því lykillinn
+// stenst regluna, ekki til að fá grænt.
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 50 }, slokkvitaeki: { ls: 150, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
