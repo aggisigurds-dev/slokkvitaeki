@@ -1647,6 +1647,16 @@
       for (let i = 0; i < sv.length; i++) if (sv[i]) { const l = HOLFALITIR_3D[(sv[i] - 1) % HOLFALITIR_3D.length]; hm.data[i * 4] = l[0]; hm.data[i * 4 + 1] = l[1]; hm.data[i * 4 + 2] = l[2]; hm.data[i * 4 + 3] = 255; }
       hx.putImageData(hm, 0, 0); lg.holfA.needsUpdate = true; lg.holfM.visible = true;
     };
+    // MIÐJA HÚSSINS (veggjanna) í staðbundnum ristarhnitum hæðar: 2.–98. hundraðshluti endapunkta, svo stakt strik
+    // úti á blaði dragi ekki miðjuna. null ef engir heilir veggir.
+    const veggjaMidja = (hd, k) => {
+      const b = hd.butar; if (!b || b.length < 3) return null;
+      const f = hd.kvardi / k.c, xs = [], zs = [];
+      b.forEach(v => { xs.push(v[0], v[2]); zs.push(v[1], v[3]); });
+      xs.sort((a, c) => a - c); zs.sort((a, c) => a - c);
+      const q = (l, p) => l[Math.min(l.length - 1, Math.max(0, Math.round(p * (l.length - 1))))];
+      return { x: (q(xs, 0.02) + q(xs, 0.98)) / 2 * f - k.gw / 2, z: (q(zs, 0.02) + q(zs, 0.98)) / 2 * f - k.gh / 2 };
+    };
     haedir.forEach((hd, nr) => {
       const k = kassarUrGrimu(hd.veggir, hd.W, hd.H);
       staerst = Math.max(staerst, k.gw, k.gh);
@@ -1657,10 +1667,17 @@
       // frummyndarpunktar á ristarreit. Ólík blöð: hæðin er miðjuð eins og áður.
       if (!hd.sk) hd.sk = { x: 0, y: 0, w: hd.W / hd.kvardi, h: hd.H / hd.kvardi };
       const punktar = k.c / hd.kvardi;
-      if (nr === 0) vidmid = { punktar, mx: hd.sk.x + hd.sk.w / 2, my: hd.sk.y + hd.sk.h / 2, b: hd.frumB, h: hd.frumH, sk: hd.sk };
+      if (nr === 0) vidmid = { punktar, mx: hd.sk.x + hd.sk.w / 2, my: hd.sk.y + hd.sk.h / 2, b: hd.frumB, h: hd.frumH, sk: hd.sk, vm: veggjaMidja(hd, k) };
       else if (vidmid && hd.frumB && Math.abs(hd.frumB - vidmid.b) < vidmid.b * 0.03 && Math.abs(hd.frumH - vidmid.h) < vidmid.h * 0.03) {
         const kv = punktar / vidmid.punktar;
         hopur.scale.set(kv, 1, kv);
+        // 06.10.2026 (Agnar: 1–3 hæðir á EINU blaði, t.d. Ægisgata 4): hæðir skornar af ólíkum stöðum blaðsins staflast
+        // eftir MIÐJU VEGGJANNA (hússins), ekki miðju skurðarins — skurðirnir eru misjafnlega rúmir um hverja grunnmynd.
+        const vm = veggjaMidja(hd, k);
+        if (vm && vidmid.vm && skorunSkurda(hd.sk, vidmid.sk) < 0.7) {
+          hopur.position.x = vidmid.vm.x - vm.x * kv;
+          hopur.position.z = vidmid.vm.z - vm.z * kv;
+        }
         // 05.10.2026: staða á blaðinu ræður AÐEINS þegar skurðirnir skarast greinilega (hæðir teiknaðar á sama stað á hvoru
         // blaði). Hæðir klipptar af ólíkum stöðum — tvær grunnmyndir hlið við hlið á einu blaði (Hótel Klöpp: kjallari og
         // 1. hæð), eða blöð með húsið á öðrum stað — röðuðust annars hlið við hlið í stað þess að staflast. Þær eru miðjaðar.
@@ -2029,6 +2046,20 @@
           let hlutf = 0;
           try { const s = lg.skuggaStr, d = s.getContext('2d').getImageData(0, 0, s.width, s.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 64) n++; hlutf = +(n / (s.width * s.height)).toFixed(4); } catch (_) {}
           return { nr: lg.nr, til: !!lg.skuggi, synilegt: !!(lg.skuggi && lg.skuggi.visible && lg.hopur.visible), ogegnsaei: lg.skuggi ? lg.skuggi.material.opacity : null, hlutfall: hlutf, mynd: mynd && lg.skuggaStr ? skuggaSyni(lg.skuggaStr) : undefined };
+        });
+      },
+      // Stafli hæðanna (prófanir): miðja veggjanna í heimshnitum og stærð hússins á hverri hæð.
+      stafli() {
+        const mm = new T.Matrix4(), pv = new T.Vector3();
+        return lag.map(lg => {
+          if (!lg.heilir) return { nr: lg.nr, heilir: false };
+          lg.hopur.updateMatrixWorld(true);
+          const xs = [], zs = [];
+          for (let i = 0; i < lg.veggir.count; i++) { lg.veggir.getMatrixAt(i, mm); pv.setFromMatrixPosition(mm).applyMatrix4(lg.hopur.matrixWorld); xs.push(pv.x); zs.push(pv.z); }
+          xs.sort((a, b) => a - b); zs.sort((a, b) => a - b);
+          const q = (l, p) => l[Math.min(l.length - 1, Math.max(0, Math.round(p * (l.length - 1))))];
+          const m = 1 / (lg.veggH / 3);   // metrar á ristarreit
+          return { nr: lg.nr, x: +((q(xs, .02) + q(xs, .98)) / 2 * m).toFixed(2), z: +((q(zs, .02) + q(zs, .98)) / 2 * m).toFixed(2), b: +((q(xs, .98) - q(xs, .02)) * m).toFixed(1), d: +((q(zs, .98) - q(zs, .02)) * m).toFixed(1) };
         });
       },
       // Skjáhnit miðju veggjar (prófanir).
