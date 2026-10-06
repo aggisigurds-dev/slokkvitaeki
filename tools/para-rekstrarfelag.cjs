@@ -39,6 +39,10 @@ const manTala = s => { const m = String(s || '').toLowerCase(); const i = MAN.fi
 const manIdx = (ar, man) => (+ar) * 12 + (+man || 6) - 1;
 
 // skýrslu-búnaður (lyklar innlesarans) → sameiginlegar tegundir
+// Hvaða staðir í hópnum eru nefndir í texta („vegna húsnæðis Hjallahraun 4“)? Sameiginlega forskeytið („Center Hótel - “) fer af
+// heitunum; borið saman á stofni (fyrstu 6 stafir: Hjallahraun/Hjallahrauni). Tómt fylki = enginn nefndur; fleiri en einn = greinir ekki á milli.
+const hreinsa = s => String(s || '').toLowerCase().replace(/[^a-z0-9áéíóúýðþæö]+/g, ' ').trim();
+function stadirUrTexta(stadir, txt) { const t = hreinsa(txt); if (!t || !stadir.length) return []; const nofn = stadir.map(s => hreinsa(s.nafn)); let forsk = nofn[0]; nofn.forEach(n => { let i = 0; while (i < forsk.length && i < n.length && forsk[i] === n[i]) i++; forsk = forsk.slice(0, i); }); const ordin = t.split(' ').filter(o => o.length >= 4); return stadir.filter((s, i) => nofn[i].slice(forsk.length).split(' ').filter(w => w.length >= 4).some(w => { const st = w.slice(0, 6); return ordin.some(o => o.slice(0, st.length) === st); })).map(s => s.id); }
 function urSkyrslu(e) { e = e || {}; const v = tom(); v.lettvatn = +e.lettvatn || 0; v.duft6 = +e.duft6_12 || 0; v.duft2 = +e.duft2 || 0; v.co2_2 = +e.co2_2 || 0; v.co2_5 = +e.co2_5 || 0; v.slanga = +e.brunaslongur || 0; v.teppi = +e.eldvarnarteppi || 0; return v; }
 // tækjaskráin → tegundir (stærðin ræður dufti og CO₂)
 function urTaeki(rows) { const v = tom(); rows.forEach(r => { const t = String(r.type || ''), s = String(r.size || ''); if (/léttvatn/i.test(t)) v.lettvatn++; else if (/duft/i.test(t)) { if (/(^|[^0-9])2([^0-9]|$)/.test(s)) v.duft2++; else v.duft6++; } else if (/co2|co₂/i.test(t)) { if (/5/.test(s)) v.co2_5++; else v.co2_2++; } else if (/slang|slöngu/i.test(t)) v.slanga++; else if (/teppi/i.test(t)) v.teppi++; }); return v; }
@@ -55,7 +59,7 @@ function urLinum(linur) { const yf = tom(), hl = tom(), ny = tom(); linur.forEac
     get('uttaeki?fyrirtaeki_id=' + inn + '&status=neq.urelt&select=fyrirtaeki_id,type,size'),
     get('customer_documents?fyrirtaeki_id=' + inn + '&doc_type=eq.uttektarskyrsla&is_duplicate=is.false&select=id,fyrirtaeki_id,year,doc_date,file_name,drive_file_id&order=year.desc'),
     get('arsskodun_report_facts?fyrirtaeki_id=' + inn + '&select=fyrirtaeki_id,report_year,inspect_month,equipment,total_devices,source_doc_id'),
-    get('reikningslestur?or=(fyrirtaeki_id.' + inn + ',kennitala.eq.' + encodeURIComponent(kt) + ')&select=reikningur_nr,fyrirtaeki_id,dags,ar,doc_id&order=dags.desc'),
+    get('reikningslestur?or=(fyrirtaeki_id.' + inn + ',kennitala.eq.' + encodeURIComponent(kt) + ')&select=reikningur_nr,fyrirtaeki_id,dags,ar,doc_id,vegna&order=dags.desc'),
     get('document_pairs?fyrirtaeki_id=' + inn + '&select=id,fyrirtaeki_id,year,service_type,report_doc_id,invoice_doc_id,solur_id,status,matched_by'),
     // PostgREST les `->285` sem fylkisvísi, ekki lykil — sækjum því allan arsskodun_customers-hlutann og veljum sjálf
     get('app_settings?id=eq.1&select=a:settings->arsskodun_customers').then(r => { const a = (r[0] && r[0].a) || {}; const o = {}; ids.forEach(i => { o['h' + i] = (a[String(i)] && a[String(i)].history) || []; }); return [o]; })
@@ -79,7 +83,7 @@ function urLinum(linur) { const yf = tom(), hl = tom(), ny = tom(); linur.forEac
   ids.forEach(i => (hist['h' + i] || []).forEach(h => { const ar = +h.year, man = manTala(h.skodun); if (!ar || sk.some(x => x.fid === i && x.ar === ar)) return; sk.push({ fid: i, ar, man, v: urSkyrslu(h.equipment), doc: null, heimild: 'history' + (h.skra ? ' · ' + h.skra : '') }); }));
   const olesin = skjol.filter(d => !sk.some(x => x.fid === d.fyrirtaeki_id && x.ar === d.year));
   // REIKNINGAR
-  const rk = lestur.map(l => { const u = urLinum(linur.filter(x => x.reikningur_nr === l.reikningur_nr)); const d = l.dags ? new Date(l.dags) : null; return Object.assign({ nr: l.reikningur_nr, fid: l.fyrirtaeki_id, dags: l.dags, ar: d ? d.getFullYear() : +l.ar, man: d ? d.getMonth() + 1 : 0, doc: l.doc_id }, u); }).filter(r => sum(r.skodud) + sum(r.ny) > 0);
+  const rk = lestur.map(l => { const u = urLinum(linur.filter(x => x.reikningur_nr === l.reikningur_nr)); const d = l.dags ? new Date(l.dags) : null; return Object.assign({ nr: l.reikningur_nr, vegna: l.vegna || null, fid: l.fyrirtaeki_id, dags: l.dags, ar: d ? d.getFullYear() : +l.ar, man: d ? d.getMonth() + 1 : 0, doc: l.doc_id }, u); }).filter(r => sum(r.skodud) + sum(r.ny) > 0);
   // Nýju reikningarnir (R-000xxx, frá júní 2026) búa í `solur` með línum í JSON — þeir eru ekki í reikningslestri.
   // Agnar 06.10.2026: „ekki alltaf að marka eldri skjöl" — þetta eru nýjustu heimildirnar og verða að vera með.
   const solur = await get('solur?customer_kt=eq.' + encodeURIComponent(kt) + '&is_credit=is.false&select=id,num,customer_id,created_at,linur,vidskiptategund,status&order=created_at.desc');
@@ -89,23 +93,32 @@ function urLinum(linur) { const yf = tom(), hl = tom(), ny = tom(); linur.forEac
     const u = urLinum(linurS); if (sum(u.skodud) + sum(u.ny) === 0) return;
     const d = new Date(s.created_at);
     const fyrri = rk.findIndex(r => r.nr === s.num); if (fyrri >= 0) rk.splice(fyrri, 1);   // sami reikningur líka í reikningslestri → salan ræður (nýrri heimild)
-    rk.push(Object.assign({ nr: s.num, fid: s.customer_id, dags: s.created_at.slice(0, 10), ar: d.getFullYear(), man: d.getMonth() + 1, doc: docEftirNr[s.num] || null, solurId: s.id }, u));
+    rk.push(Object.assign({ nr: s.num, vegna: null, fid: s.customer_id, dags: s.created_at.slice(0, 10), ar: d.getFullYear(), man: d.getMonth() + 1, doc: docEftirNr[s.num] || null, solurId: s.id }, u));
   });
   rk.forEach(r => { if (!r.doc && docEftirNr[r.nr]) r.doc = docEftirNr[r.nr]; });
 
   console.log('\nSKÝRSLUR (' + sk.length + ' með talningu, ' + olesin.length + ' ólesnar) → besti reikningur og besti staður eftir tölunum');
   const nidur = [], tillogur = [], abendingar = [];
+  // EINN REIKNINGUR, EIN SKÝRSLA (06.10.2026, sama regla og brunahólfs-fallið): reikningur bundinn í pari tilheyrir þeirri skýrslu,
+  // vegna-línan útilokar aðra staði, lægsta frávik velur fyrst, tvíræðar tölur (tveir staðir eins sama ár) eru aldrei lagðar til.
+  const lykill = r => r.doc ? 'd' + r.doc : (r.solurId ? 's' + r.solurId : 'n' + r.nr);
+  const tekid = {}; por.filter(p => p.service_type === 'uttekt').forEach(p => { if (p.invoice_doc_id) tekid['d' + p.invoice_doc_id] = { fid: p.fyrirtaeki_id, ar: +p.year }; if (p.solur_id) tekid['s' + p.solur_id] = { fid: p.fyrirtaeki_id, ar: +p.year }; });
+  const val = new Map();
+  sk.forEach(s => { const mi = manIdx(s.ar, s.man), listi = [], utilokad = []; rk.forEach(r => { const dm = manIdx(r.ar, r.man) - mi; if (dm < -1 || dm > 4) return; const vegnaFid = r.vegna ? stadirUrTexta(stadir, r.vegna) : []; const medNy = tom(); TEG.forEach(t => { medNy[t] = r.skodud[t] + r.ny[t]; }); const d = Math.min(fjarl(s.v, r.skodud), fjarl(s.v, medNy)) + Math.abs(dm) * 0.5; if (vegnaFid.length && !vegnaFid.includes(s.fid)) { if (d <= 2) utilokad.push({ nr: r.nr, d, vegna: r.vegna, fid: vegnaFid }); return; } listi.push({ r, d, dm, vegnaFid }); }); listi.sort((a, b) => a.d - b.d); val.set(s, { listi, utilokad, ath: [] }); });
+  sk.slice().sort((a, b) => (val.get(a).listi.length ? val.get(a).listi[0].d : 99) - (val.get(b).listi.length ? val.get(b).listi[0].d : 99) || b.ar - a.ar).forEach(s => { const k = val.get(s); let best = null, upptekinn = null; for (const c of k.listi) { const t = tekid[lykill(c.r)]; if (t && !(t.fid === s.fid && t.ar === +s.ar)) { if (!upptekinn) upptekinn = { nr: c.r.nr, fravik: c.d, fid: t.fid, ar: t.ar }; continue; } best = c; break; } k.best = best; k.oruggt = !!(best && best.d <= Math.max(2, sum(s.v) * 0.1)); if (k.oruggt && !tekid[lykill(best.r)]) tekid[lykill(best.r)] = { fid: s.fid, ar: +s.ar }; if (upptekinn) k.ath.push(upptekinn.nr + ' (frávik ' + upptekinn.fravik + ') er þegar paraður við ' + nafn[upptekinn.fid] + ' ' + upptekinn.ar + (best ? ' — næsti: ' + best.r.nr : ' — enginn annar')); k.utilokad.forEach(u => k.ath.push(u.nr + ' (frávik ' + u.d + ') útilokaður: vegna „' + u.vegna + '“ = ' + u.fid.map(i => nafn[i]).join('/'))); });
   sk.sort((a, b) => b.ar - a.ar || a.fid - b.fid).forEach(s => {
-    const mi = manIdx(s.ar, s.man);
-    let best = null;
-    rk.forEach(r => { const dm = manIdx(r.ar, r.man) - mi; if (dm < -1 || dm > 4) return; const medNy = tom(); TEG.forEach(t => { medNy[t] = r.skodud[t] + r.ny[t]; }); const d = Math.min(fjarl(s.v, r.skodud), fjarl(s.v, medNy)) + Math.abs(dm) * 0.5; if (!best || d < best.d) best = { r, d, dm }; });
+    const k = val.get(s), best = k.best;
+    const tviraed = sk.filter(o => o !== s && +o.ar === +s.ar && o.fid !== s.fid && fjarl(o.v, s.v) === 0).map(o => nafn[o.fid]);
+    const vegnaSker = !!(best && best.vegnaFid.length === 1 && best.vegnaFid[0] === s.fid);
+    if (best && best.r.vegna) k.ath.push('vegna: „' + best.r.vegna + '“' + (vegnaSker ? ' → þessi staður' : ''));
+    if (tviraed.length) k.ath.push('tvíræð: ' + tviraed.join(', ') + ' með sömu tölur ' + s.ar + (vegnaSker ? ' — vegna-línan sker úr' : ''));
     let bs = null; ids.forEach(i => { const d = fjarl(s.v, stadV[i]); if (!bs || d < bs.d) bs = { fid: i, d }; });
     // parið er fundið á (staður, ár) — source_doc_id í report_facts getur verið eldra en árið (mælt: 201 bar 2026-tölur með 2025-skjali)
     const par = por.find(p => p.fyrirtaeki_id === s.fid && +p.year === +s.ar && p.service_type === 'uttekt') || por.find(p => p.report_doc_id === s.doc), parInv = par && (par.invoice_doc_id || par.solur_id);
     const samiReikn = best && par && ((par.invoice_doc_id && par.invoice_doc_id === best.r.doc) || (par.solur_id && par.solur_id === best.r.solurId));
     const parSammala = best ? (parInv ? (samiReikn ? 'já' : 'NEI (parað við annað)') : 'vantar') : (parInv ? 'par án talningar' : '—');
     const stadSammala = bs ? (bs.fid === s.fid ? 'já' : 'NEI → ' + nafn[bs.fid] + ' (' + bs.d + ' frá)') : '—';
-    const sv = sum(s.v), oruggt = best && best.d <= Math.max(2, sv * 0.1);
+    const sv = sum(s.v), oruggt = k.oruggt && (!tviraed.length || vegnaSker);
     const lina = { fid: s.fid, ar: s.ar, man: s.man, reikn: best ? best.r.nr + ' ' + best.r.dags + (oruggt ? '' : ' (?)') : 'enginn innan ±4 mán', stemmir: best ? best.d : null, par: parSammala, stadur: stadSammala };
     nidur.push(lina);
     // TILLÖGUR — það sem má skrifa í document_pairs án þess að hreyfa við handvirkum ákvörðunum:
@@ -116,7 +129,7 @@ function urLinum(linur) { const yf = tom(), hl = tom(), ny = tom(); linur.forEac
     if (oruggt && skDoc && (best.r.doc || best.r.solurId)) {
       const stada = par ? par.status : null, handvirkt = par && /manual/.test(par.matched_by || '');
       if (!par || (stada === 'vantar_reikning' && !handvirkt)) tillogur.push({ adgerd: par ? 'uppfaera' : 'nyskra', par_id: par ? par.id : null, fid: s.fid, base: (stadir.find(x => x.id === s.fid) || {}).customer_base_id || null, nafn: nafn[s.fid], ar: s.ar, report_doc_id: skDoc, invoice_doc_id: best.r.doc || null, solur_id: best.r.solurId || null, reikn: best.r.nr, fravik: best.d, skyrsla: vstr(s.v), reikningur: vstr(best.r.skodud) + (sum(best.r.ny) ? ' + ný ' + vstr(best.r.ny) : '') });
-      else if (!samiReikn) abendingar.push({ fid: s.fid, nafn: nafn[s.fid], ar: s.ar, nu: stada + ' (' + (par.matched_by || '') + ')', tolurnar_segja: best.r.nr, fravik: best.d });
+      else if (!samiReikn) abendingar.push({ fid: s.fid, nafn: nafn[s.fid], ar: s.ar, nu: stada + ' (' + (par.matched_by || '') + ')', tolurnar_segja: best.r.nr, fravik: best.d, ath: k.ath });
     }
     if (bs && bs.fid !== s.fid && bs.d === 0 && fjarl(s.v, stadV[s.fid]) >= Math.max(3, sv * 0.3)) abendingar.push({ fid: s.fid, nafn: nafn[s.fid], ar: s.ar, stadur_vikur: 'tölurnar passa nákvæmlega við ' + nafn[bs.fid] + ' (frávik 0) en ' + fjarl(s.v, stadV[s.fid]) + ' frá eigin tækjaskrá', doc: s.doc, heimild: s.heimild });
     if (!allt && oruggt && parSammala === 'já' && bs && bs.fid === s.fid) return;
@@ -124,6 +137,7 @@ function urLinum(linur) { const yf = tom(), hl = tom(), ny = tom(); linur.forEac
     console.log('  ' + s.ar + '-' + String(s.man || '?').padStart(2, '0') + '  ' + (nafn[s.fid] || s.fid).padEnd(34).slice(0, 34) + '  skýrsla: ' + vstr(s.v) + ' (' + sv + ')' + gamalt);
     if (best) console.log('           reikningur: ' + best.r.nr + ' ' + best.r.dags + '  skoðuð: ' + vstr(best.r.skodud) + '  ný: ' + vstr(best.r.ny) + '  · frávik ' + best.d + (oruggt ? ' ✓' : ' ?') + '  · document_pairs: ' + parSammala);
     else console.log('           reikningur: enginn innan ±4 mánaða' + (parInv ? '  · document_pairs á par (' + parInv + ')' : ''));
+    k.ath.forEach(a => console.log('           ⚑ ' + a));
     console.log('           staður eftir tækjaskrá: ' + stadSammala + (s.heimild !== 'facts' ? '  · heimild: ' + s.heimild : ''));
   });
   if (olesin.length) { console.log('\nÓLESNAR SKÝRSLUR (engin talning — þarf að lesa PDF):'); olesin.forEach(d => console.log('  ' + (d.year || '????') + '  ' + (nafn[d.fyrirtaeki_id] || d.fyrirtaeki_id).padEnd(34).slice(0, 34) + '  doc ' + d.id + '  ' + String(d.file_name || '').slice(0, 70))); }
