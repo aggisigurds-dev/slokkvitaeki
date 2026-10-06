@@ -2125,6 +2125,7 @@
         veggir: (n.veggir && n.veggir.length) ? n.veggir : g.veggir,
         pdfVeggir: (n.pdfVeggir && n.pdfVeggir.length) ? n.pdfVeggir : g.pdfVeggir,
         veggjaLinur: (n.veggjaLinur && n.veggjaLinur.length) ? n.veggjaLinur : g.veggjaLinur,
+        leidrett: n.leidrett || g.leidrett,
         eldVal: n.eldVal || g.eldVal,
         syn: n.syn || g.syn,
         pdfFlokkar: n.pdfFlokkar || g.pdfFlokkar,
@@ -2516,7 +2517,8 @@
     }
     const hs = haedir(), FL = 'height:30px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.22);cursor:pointer;font:inherit;';
     const html = hs.map((h, i) => '<button type="button" data-h="' + i + '" aria-pressed="' + (i === G.virk) + '" style="' + FL + (i === G.virk ? GULL : 'background:rgba(20,18,15,.88);color:#f1ede4') + '">' +
-        esc(h.nafn || (i + 1) + '. hæð') + ' <span style="opacity:.65;font-weight:500">' + (i === G.virk ? plan().markers.length : h.markers.length) + '</span></button>').join('') +
+        esc(h.nafn || (i + 1) + '. hæð') + ' <span style="opacity:.65;font-weight:500">' + (i === G.virk ? plan().markers.length : h.markers.length) + '</span>' +
+        (h.leidrett ? ' <span title="Veggir leiðréttir í TurboPaint — sjálfvirk greining skrifar ekki yfir þá" style="opacity:.8;font-weight:600;font-size:.85em">· leiðrétt</span>' : '') + '</button>').join('') +
       '<button type="button" data-h="saekja" title="Sækja staðsetningar af þjóni — t.d. eftir „Vista í úttekt" í TurboPaint" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">↻</button>' +
       '<button type="button" data-h="nafn" title="Endurnefna virku hæðina" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">✎</button>' +
       (hs.length > 1 ? '<button type="button" data-h="eyda" title="Eyða virku hæðinni" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">🗑</button>' : '') +
@@ -2973,6 +2975,11 @@
     // TurboPaint er vélin, þessi gluggi sýnir niðurstöðuna (Agnar 03.10.2026). Þá eru veggirnir heilir — engin
     // „girðing" úr stökum PDF-strikum og engin sjálfvirk gríma.
     const tp = Array.isArray(h.veggjaLinur) ? h.veggjaLinur.filter(v => v && Array.isArray(v.p) && v.p.length >= 4) : [];
+    // TEGUND (06.10.2026, áfangi 1: TurboPaint sem leiðréttingarbekkur): hver lína ber veggur / gler / hurð. Gler og
+    // hurðir eru EKKI veggir í grímunni — þau fara beint í 3D sem glerfletir og hurðargöt, eins og notandinn merkti þau.
+    const tpVeggir = tp.filter(v => !v.tegund || v.tegund === 'veggur');
+    const tpGler = tp.filter(v => v.tegund === 'gler'), tpHurdir = tp.filter(v => v.tegund === 'hurd');
+    const tpButar = listi => { const ut = []; listi.forEach(v => { const t = Number(v.t) || 0; for (let i = 0; i + 3 < v.p.length; i += 2) ut.push([v.p[i], v.p[i + 1], v.p[i + 2], v.p[i + 3], t]); }); return ut; };
     const veggir = r.thekja >= NOTHAEF_THEKJA && !h.pdfVeggir.length && !tp.length ? r.veggir : new Uint8Array(r.W * r.H);
     if (h.veggir.length || h.pdfVeggir.length || tp.length) {
       const c = document.createElement('canvas'); c.width = r.W; c.height = r.H;
@@ -2980,7 +2987,7 @@
       h.veggir.forEach(v => { x.beginPath(); x.moveTo((v[0] - sk.x) * r.kvardi, (v[1] - sk.y) * r.kvardi); x.lineTo((v[2] - sk.x) * r.kvardi, (v[3] - sk.y) * r.kvardi); x.stroke(); });
       if (tp.length) {
         x.lineJoin = 'miter';
-        tp.forEach(v => {
+        tpVeggir.forEach(v => {
           x.lineWidth = Math.max(2, (Number(v.t) || 1) * r.kvardi);
           x.beginPath();
           for (let i = 0; i + 1 < v.p.length; i += 2) {
@@ -3003,8 +3010,7 @@
     // áfram fyrir teikningar sem hafa hvorugt (myndgreindir veggir).
     let butar = null;
     if (tp.length) {
-      butar = [];
-      tp.forEach(v => { const t = Number(v.t) || 0; for (let i = 0; i + 3 < v.p.length; i += 2) butar.push([v.p[i], v.p[i + 1], v.p[i + 2], v.p[i + 3], t]); });
+      butar = tpButar(tpVeggir);
     } else if (h.pdfVeggir.length) {
       try { butar = heilirVeggir(h.pdfVeggir, fb, fh); } catch (e) { console.warn('[383] heilirVeggir', e); butar = null; }
     }
@@ -3061,12 +3067,25 @@
       }
     } catch (_) {}
     let n = 0; for (let i = 0; i < veggir.length; i++) n += veggir[i];
+    // LEIÐRÉTT Í TURBOPAINT (h.leidrett): merkt gler ræður eitt (engin sjálfvirk glerleit ofan á það sem notandinn
+    // lagaði); merktar hurðir ráða þegar þær eru til, annars finnast hurðargötin sjálfkrafa. Óleiðrétt: hvort tveggja.
+    const leidrett = !!(h.leidrett && tp.length);
+    const merktGler = tpGler.length ? klippaButa(tpButar(tpGler), sk) : null;
+    const merktarHurdir = tpHurdir.length ? klippaButa(tpButar(tpHurdir), sk) : null;
     let gler = null;
-    if (butar && r.gra) { try { gler = glerIBilum(butar, r.gra, r.W, r.H, r.kvardi, Math.max(fb, fh) / 2384); } catch (e) { console.warn('[383] glerIBilum', e); } }
+    if (leidrett) gler = merktGler || [];
+    else {
+      if (butar && r.gra) { try { gler = glerIBilum(butar, r.gra, r.W, r.H, r.kvardi, Math.max(fb, fh) / 2384); } catch (e) { console.warn('[383] glerIBilum', e); } }
+      if (merktGler) gler = (gler || []).concat(merktGler);
+    }
     let hurdir = null;
     if (butar) {
       const kE2 = Math.max(fb, fh) / 2384;
-      try { hurdir = hurdagot(butar, gler, kE2); } catch (e) { console.warn('[383] hurdagot', e); }
+      if (leidrett && merktarHurdir) hurdir = merktarHurdir;
+      else {
+        try { hurdir = hurdagot(butar, gler, kE2); } catch (e) { console.warn('[383] hurdagot', e); }
+        if (merktarHurdir) hurdir = (hurdir || []).concat(merktarHurdir);
+      }
       // stakir veggir úti á gólfi (tengjast engu) falla — aðeins á skönnunum; vigurveggir eru nákvæmir fyrir
       if (urGrimu) {
         try {
