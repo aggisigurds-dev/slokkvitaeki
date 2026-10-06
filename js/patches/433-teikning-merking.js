@@ -34,7 +34,8 @@
 
   const TAFLA = 'teikning_bord';
   const STAERD_LS = 'fp_stimpil_staerd';
-  const STAERD_MIN = 24;
+  // 06.10.2026 (Agnar: „breyta stærðarstillunni svo ég geti minnkað meira“): lágmark 24 → 10 px.
+  const STAERD_MIN = 10;
   const STAERD_MAX = 160;
   const STIMPLAR = [
     { id: 'neyðarútgangur', nafn: 'Neyðarútgangur', stutt: 'NÚ', litur: '#15803d', glyff: 'exit' },
