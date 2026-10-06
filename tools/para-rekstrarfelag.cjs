@@ -46,7 +46,7 @@ function urTaeki(rows) { const v = tom(); rows.forEach(r => { const t = String(r
 function urLinum(linur) { const yf = tom(), hl = tom(), ny = tom(); linur.forEach(l => { const t = l.tegund === 'co2_kg' ? null : l.tegund; if (!t || !TEG.includes(t)) return; const m = +l.magn || 0, d = String(l.lysing || ''); if (/^Yfirferð/i.test(d)) yf[t] += m; else if (/^Hleðsla/i.test(d)) hl[t] += m; else if (/^Slökkvitæki/i.test(d)) ny[t] += m; }); const sk = tom(); TEG.forEach(t => { sk[t] = yf[t] + hl[t]; }); return { yf, hl, ny, skodud: sk }; }
 
 (async () => {
-  const stadir = await get('fyrirtaeki?kennitala=eq.' + encodeURIComponent(kt) + '&select=id,nafn,heimilisfang,er_i_thjonustu&order=id');
+  const stadir = await get('fyrirtaeki?kennitala=eq.' + encodeURIComponent(kt) + '&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,customer_base_id&order=id');
   if (!stadir.length) { console.log('Engir staðir á kt', kt); return; }
   const ids = stadir.map(s => s.id), inn = 'in.(' + ids.join(',') + ')';
   const [taeki, skjol, facts, lestur, por, st] = await Promise.all([
@@ -92,7 +92,7 @@ function urLinum(linur) { const yf = tom(), hl = tom(), ny = tom(); linur.forEac
   rk.forEach(r => { if (!r.doc && docEftirNr[r.nr]) r.doc = docEftirNr[r.nr]; });
 
   console.log('\nSKÝRSLUR (' + sk.length + ' með talningu, ' + olesin.length + ' ólesnar) → besti reikningur og besti staður eftir tölunum');
-  const nidur = [];
+  const nidur = [], tillogur = [], abendingar = [];
   sk.sort((a, b) => b.ar - a.ar || a.fid - b.fid).forEach(s => {
     const mi = manIdx(s.ar, s.man);
     let best = null;
@@ -106,6 +106,17 @@ function urLinum(linur) { const yf = tom(), hl = tom(), ny = tom(); linur.forEac
     const sv = sum(s.v), oruggt = best && best.d <= Math.max(2, sv * 0.1);
     const lina = { fid: s.fid, ar: s.ar, man: s.man, reikn: best ? best.r.nr + ' ' + best.r.dags + (oruggt ? '' : ' (?)') : 'enginn innan ±4 mán', stemmir: best ? best.d : null, par: parSammala, stadur: stadSammala };
     nidur.push(lina);
+    // TILLÖGUR — það sem má skrifa í document_pairs án þess að hreyfa við handvirkum ákvörðunum:
+    //   · parið vantar eða er „vantar_reikning" → fylla inn reikninginn sem tölurnar velja (örugg pörun)
+    //   · par sem er klárað við ANNAN reikning, eða manual/manual_unlink → aðeins ábending
+    // skýrsluskjalið fyrir (staður, ár) úr customer_documents — source_doc_id í facts getur verið eldra skjal
+    const skDoc = (skjol.find(d => d.fyrirtaeki_id === s.fid && +d.year === +s.ar) || {}).id || s.doc;
+    if (oruggt && skDoc && (best.r.doc || best.r.solurId)) {
+      const stada = par ? par.status : null, handvirkt = par && /manual/.test(par.matched_by || '');
+      if (!par || (stada === 'vantar_reikning' && !handvirkt)) tillogur.push({ adgerd: par ? 'uppfaera' : 'nyskra', par_id: par ? par.id : null, fid: s.fid, base: (stadir.find(x => x.id === s.fid) || {}).customer_base_id || null, nafn: nafn[s.fid], ar: s.ar, report_doc_id: skDoc, invoice_doc_id: best.r.doc || null, solur_id: best.r.solurId || null, reikn: best.r.nr, fravik: best.d, skyrsla: vstr(s.v), reikningur: vstr(best.r.skodud) + (sum(best.r.ny) ? ' + ný ' + vstr(best.r.ny) : '') });
+      else if (!samiReikn) abendingar.push({ fid: s.fid, nafn: nafn[s.fid], ar: s.ar, nu: stada + ' (' + (par.matched_by || '') + ')', tolurnar_segja: best.r.nr, fravik: best.d });
+    }
+    if (bs && bs.fid !== s.fid && bs.d === 0 && fjarl(s.v, stadV[s.fid]) >= Math.max(3, sv * 0.3)) abendingar.push({ fid: s.fid, nafn: nafn[s.fid], ar: s.ar, stadur_vikur: 'tölurnar passa nákvæmlega við ' + nafn[bs.fid] + ' (frávik 0) en ' + fjarl(s.v, stadV[s.fid]) + ' frá eigin tækjaskrá', doc: s.doc, heimild: s.heimild });
     if (!allt && oruggt && parSammala === 'já' && bs && bs.fid === s.fid) return;
     const gamalt = (new Date().getFullYear() - s.ar) >= 2 ? '  ⚠ eldri heimild' : '';
     console.log('  ' + s.ar + '-' + String(s.man || '?').padStart(2, '0') + '  ' + (nafn[s.fid] || s.fid).padEnd(34).slice(0, 34) + '  skýrsla: ' + vstr(s.v) + ' (' + sv + ')' + gamalt);
@@ -141,4 +152,12 @@ function urLinum(linur) { const yf = tom(), hl = tom(), ny = tom(); linur.forEac
   console.log('  ATH: lesnir reikningar ná aðeins til ' + Math.min(...rk.map(r => r.ar)) + ' — tæki sem voru hlaðin fyrr sjást ekki hér; skýrslutextinn („átta 6 kg dufttæki endurhlaðin") er næsta heimild.');
   const vafi = nidur.filter(n => n.par !== 'já' || !/^já/.test(n.stadur) || (n.stemmir != null && n.stemmir > 2));
   console.log('\nSamantekt: ' + nidur.length + ' skýrslur með talningu · ' + (nidur.length - vafi.length) + ' stemma við reikning OG stað · ' + vafi.length + ' þarf að skoða · ' + olesin.length + ' ólesnar.');
+  // --tillogur: skrifa tillögurnar (örugg pör sem vantar) og ábendingarnar í skrá — ekkert fer á þjóninn héðan
+  if (args.includes('--tillogur')) {
+    const fs = require('fs'), path = require('path');
+    const skra = path.join(__dirname, '..', 'ut', 'parun-' + kt.replace('-', '') + '.json');
+    fs.mkdirSync(path.dirname(skra), { recursive: true });
+    fs.writeFileSync(skra, JSON.stringify({ kt, stadir: stadir.map(s => ({ id: s.id, nafn: s.nafn, taeki: sum(stadV[s.id]) })), tillogur, abendingar, olesnar: olesin.map(d => ({ doc: d.id, fid: d.fyrirtaeki_id, ar: d.year, skra: d.file_name })) }, null, 1));
+    console.log('Tillögur: ' + tillogur.length + ' örugg pör sem vantar · ábendingar: ' + abendingar.length + ' → ' + skra);
+  }
 })().catch(e => { console.error('BILUN', e.message); process.exit(1); });
