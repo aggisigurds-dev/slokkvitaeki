@@ -3355,7 +3355,7 @@
       const texti = B.stada === 'sendi' ? 'Sendi beiðni…' : B.stada === 'bida' ? 'Í biðröð — bíð eftir brúartölvunni…' : (B.texti || 'Brúartölvan er byrjuð…');
       html += '<div style="font-weight:600;line-height:1.35">' + esc(texti) + '</div>' +
         '<div style="height:7px;border-radius:4px;background:#c3c9d2;box-shadow:inset 0 1px 2px rgba(0,0,0,.25);overflow:hidden"><div style="height:100%;width:' + (pros ? Math.min(100, +pros) : B.stada === 'running' ? 8 : 3) + '%;background:linear-gradient(180deg,#e6c56f 0%,#b8902f 100%);transition:width .6s"></div></div>' +
-        '<div style="opacity:.75;line-height:1.35">Teiknað í Blender á skrifstofutölvunni — tvær myndir (sjónarhornið þitt og yfirlit), oftast 5–9 mínútur. Óhætt að loka þessu; smelltu aftur á Blender-mynd til að sjá stöðuna.</div>' +
+        '<div style="opacity:.75;line-height:1.35">Teiknað í Blender á skrifstofutölvunni — tvær myndir (sjónarhornið þitt og yfirlit), oftast 8–10 mínútur. Óhætt að loka þessu; smelltu aftur á Blender-mynd til að sjá stöðuna.</div>' +
         (B.stada === 'bida' && Date.now() - B.byrjad > BL_BRU_VIDVORUN ? '<div style="padding:8px 10px;border-radius:8px;background:#fbeac6;border:1px solid #7a4f06;color:#5a3a04;font-weight:600;line-height:1.35">Brúartölvan þarf að vera í gangi (skrifstofutölvan, luna-bridge). Beiðnin bíður þar til hún tekur við henni.</div>' : '');
     }
     html += '<div style="display:flex;justify-content:flex-end;gap:8px"><a data-bl="loka" role="button" tabindex="0" style="' + blTakki(BL_GRAFIT, '#fff') + '">Loka</a></div>';
