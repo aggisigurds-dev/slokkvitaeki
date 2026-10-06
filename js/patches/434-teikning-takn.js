@@ -148,12 +148,14 @@
   }
   function fingrafar() { return JSON.stringify(val()); }
 
+  // 06.10.2026: NFKD (ekki NFD) svo lækkaða 2-an í „CO₂" verði 2 — 39 kolsýrutæki lentu annars í „Annað";
+  // „Slönguskápur" (slöng-) er slanga. Sama regla í TurboPaint (kjarni merkjasafn.ts) — prófið þar ber þær saman.
   function fjold(u) {
     const t = String((u && (u.type || u.tegund || u.nafn)) || '').toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      .normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
     if (/co2|kolsyr/.test(t)) return 'co2';
     if (/duft|abc|pfc/.test(t)) return 'duft';
-    if (/slang/.test(t)) return 'slanga';
+    if (/slang|slong/.test(t)) return 'slanga';
     if (/lettvatn|vatn|abf|frod/.test(t)) return 'lettvatn';
     return 'annad';
   }
@@ -721,7 +723,24 @@
     return (h.eiHintar || []).length;
   }
 
+  // KAPPHLAUP (mælt 06.10.2026): opnist Teikning áður en tækjalistinn (DB.cache.units) hefur hlaðist fær FloorPlan tóman
+  // lista — öll tæki teiknast sem „Annað" (enginn borði, slöngur sem slökkvitæki) þar til glugginn er opnaður aftur.
+  // Listinn er sóttur aftur um leið og tækin eru komin og striginn teiknaður upp á nýtt.
+  let _taekiReynt = '';
+  function taekiAftur() {
+    const F = window.FloorPlan, m = document.getElementById('modal-floorplan');
+    if (!F || !F.companyId || !m || !m.classList.contains('open') || (F.units && F.units.length)) return;
+    const C = window.Companies, n = ((window.DB && DB.cache && DB.cache.units) || []).length;
+    if (!C || typeof C._taekiAProfill !== 'function' || !n) return;
+    const lyk = F.companyId + '|' + n; if (_taekiReynt === lyk) return; _taekiReynt = lyk;
+    const c = (C.list || []).find(x => +x.id === +F.companyId);
+    const u = c ? C._taekiAProfill(c) : [];
+    if (!u.length) return;
+    F.units = u;
+    try { F._renderCanvas(); F._renderPanel(); } catch (_) {}
+  }
   function tikk() {
+    try { taekiAftur(); } catch (_) {}
     try { vefjaStriga(); } catch (_) {}
     try { eiTakki(); } catch (_) {}
     try { stillCss(); } catch (_) {}
