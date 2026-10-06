@@ -50,7 +50,9 @@ function urLinum(linur) { const yf = tom(), hl = tom(), ny = tom(); linur.forEac
   if (!stadir.length) { console.log('Engir staðir á kt', kt); return; }
   const ids = stadir.map(s => s.id), inn = 'in.(' + ids.join(',') + ')';
   const [taeki, skjol, facts, lestur, por, st] = await Promise.all([
-    get('uttaeki?fyrirtaeki_id=' + inn + '&status=eq.active&select=fyrirtaeki_id,type,size'),
+    // Í NOTKUN = allt NEMA 'urelt' (sama regla og 153 loadActiveUnitsByFid síðan 01.09.2026): uttaeki.status ber active/„Í lagi"/ok/loaned.
+    // Sían 'active' ein og sér faldi 11 félög alveg — þar á meðal Heimaleiga Dalbrekka 4-6 (48 tæki „Í lagi") og Bríetartún 9-11 (48).
+    get('uttaeki?fyrirtaeki_id=' + inn + '&status=neq.urelt&select=fyrirtaeki_id,type,size'),
     get('customer_documents?fyrirtaeki_id=' + inn + '&doc_type=eq.uttektarskyrsla&is_duplicate=is.false&select=id,fyrirtaeki_id,year,doc_date,file_name,drive_file_id&order=year.desc'),
     get('arsskodun_report_facts?fyrirtaeki_id=' + inn + '&select=fyrirtaeki_id,report_year,inspect_month,equipment,total_devices,source_doc_id'),
     get('reikningslestur?or=(fyrirtaeki_id.' + inn + ',kennitala.eq.' + encodeURIComponent(kt) + ')&select=reikningur_nr,fyrirtaeki_id,dags,ar,doc_id&order=dags.desc'),
