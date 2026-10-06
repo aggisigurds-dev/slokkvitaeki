@@ -1,0 +1,228 @@
+{
+ "fjarmal": [
+  {
+   "view": "view-krofu-yfirlit",
+   "iframe": false,
+   "pz": "1.83",
+   "sw": 981,
+   "over": 0,
+   "overEx": [],
+   "txtN": 545,
+   "fsMed": 23.8,
+   "under10": 0,
+   "btnN": 298,
+   "btnSmall": 0,
+   "textLen": 7486,
+   "k": "krofu-yfirlit",
+   "n": "Kröfur",
+   "err": []
+  },
+  {
+   "view": "view-hreyfingarlisti",
+   "iframe": false,
+   "pz": "2.23",
+   "sw": 981,
+   "over": 214,
+   "overEx": [
+    "_hr-bakfaera-nyjan:1171",
+    "SPAN:1142",
+    "_hr-bakfaera-nyjan:1171"
+   ],
+   "txtN": 1309,
+   "fsMed": 27.9,
+   "under10": 0,
+   "btnN": 662,
+   "btnSmall": 0,
+   "textLen": 138251,
+   "k": "hreyfingarlisti",
+   "n": "Hreyfingar",
+   "err": []
+  },
+  {
+   "view": "view-sala",
+   "iframe": false,
+   "pz": "1.97",
+   "sw": 981,
+   "over": 0,
+   "overEx": [],
+   "txtN": 124,
+   "fsMed": 21.7,
+   "under10": 0,
+   "btnN": 42,
+   "btnSmall": 0,
+   "textLen": 1947,
+   "k": "sala",
+   "n": "Sala",
+   "err": []
+  },
+  {
+   "view": "view-arsskodun",
+   "iframe": false,
+   "pz": "2.62",
+   "sw": 981,
+   "over": 3213,
+   "overEx": [
+    "_ars-stimpill:4959",
+    "b414-refresh:1765",
+    "b414-t:1047"
+   ],
+   "txtN": 538,
+   "fsMed": 30.1,
+   "under10": 0,
+   "btnN": 348,
+   "btnSmall": 0,
+   "textLen": 8814,
+   "k": "arsskodun",
+   "n": "Þjónusta",
+   "err": []
+  },
+  {
+   "view": "view-thjonustuverk",
+   "iframe": false,
+   "pz": "2.23",
+   "sw": 981,
+   "over": 202,
+   "overEx": [
+    "DIV:1127",
+    "SPAN:1016",
+    "SPAN:1031"
+   ],
+   "txtN": 147,
+   "fsMed": 25.6,
+   "under10": 0,
+   "btnN": 67,
+   "btnSmall": 0,
+   "textLen": 7347,
+   "k": "thjonustuverk",
+   "n": "Þj.verk",
+   "err": []
+  },
+  {
+   "view": "view-thjonustu-verkstaedi",
+   "iframe": false,
+   "pz": "1.57",
+   "sw": 981,
+   "over": 0,
+   "overEx": [],
+   "txtN": 603,
+   "fsMed": 19.6,
+   "under10": 0,
+   "btnN": 413,
+   "btnSmall": 0,
+   "textLen": 9376,
+   "k": "thjonustu-verkstaedi",
+   "n": "Verkstæði",
+   "err": []
+  },
+  {
+   "view": "view-rekstrarfelog",
+   "iframe": false,
+   "pz": "2.1",
+   "sw": 981,
+   "over": 3,
+   "overEx": [
+    "SPAN:1308",
+    "rf-btn:1006",
+    "rf-btn:1308"
+   ],
+   "txtN": 156,
+   "fsMed": 23.1,
+   "under10": 0,
+   "btnN": 47,
+   "btnSmall": 0,
+   "textLen": 4606,
+   "k": "rekstrarfelog",
+   "n": "Rekstrarf.",
+   "err": []
+  },
+  {
+   "view": "view-rekstrarfelog",
+   "iframe": true,
+   "pz": "1",
+   "sw": 981,
+   "k": "br-gerdreikninga",
+   "n": "Reikn.gerð",
+   "err": []
+  },
+  {
+   "view": "view-rekstrarfelog",
+   "iframe": true,
+   "pz": "1",
+   "sw": 981,
+   "k": "br-efniskostnadur",
+   "n": "Efniskostn.",
+   "err": []
+  },
+  {
+   "view": "view-kostnadur",
+   "iframe": false,
+   "pz": "1.97",
+   "sw": 981,
+   "over": 0,
+   "overEx": [],
+   "txtN": 222,
+   "fsMed": 25.6,
+   "under10": 0,
+   "btnN": 14,
+   "btnSmall": 0,
+   "textLen": 12964,
+   "k": "kostnadur",
+   "n": "Kostnaður",
+   "err": []
+  },
+  {
+   "view": "view-kostnadur",
+   "iframe": true,
+   "pz": "1",
+   "sw": 981,
+   "k": "br-vinnubok",
+   "n": "Vinnubók",
+   "err": []
+  },
+  {
+   "view": "view-kostnadur",
+   "iframe": true,
+   "pz": "1",
+   "sw": 981,
+   "k": "br-krofur",
+   "n": "Fjárhagur",
+   "err": []
+  },
+  {
+   "view": "view-kostnadur",
+   "iframe": true,
+   "pz": "1",
+   "sw": 981,
+   "k": "br-krofuyfirlit",
+   "n": "BH Kröfur",
+   "err": []
+  },
+  {
+   "view": "view-kostnadur",
+   "iframe": true,
+   "pz": "1",
+   "sw": 981,
+   "k": "br-maeting",
+   "n": "Mæting",
+   "err": []
+  },
+  {
+   "view": "view-kostnadur",
+   "iframe": true,
+   "pz": "1",
+   "sw": 981,
+   "k": "br-jarvis",
+   "n": "Jarvis",
+   "err": []
+  },
+  {
+   "view": "view-kostnadur",
+   "iframe": true,
+   "pz": "1",
+   "sw": 981,
+   "k": "br-skyrslustod",
+   "n": "Skýrslust.",
+   "err": []
+  }
+ ]
+}
