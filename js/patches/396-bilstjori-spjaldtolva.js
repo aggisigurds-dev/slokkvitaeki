@@ -33,7 +33,13 @@
     const R = 'html body #view-bilstjori ._bs-root';
     return [
       // ── Tveir dálkar ─────────────────────────────────────────────────────
-      R + '{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(360px,42%)!important;' +
+      // 07.10.2026 (Agnar: „þegar maður opnar Bílstjóra í tölvunni opnist tablet view“): 219 læsir rótinni
+      // við 440 px á ≥1100 px (sími-rammi miðjaður á skrifstofuskjá) — gridið skipti þá 440 px í 68 + 360 og
+      // vinstri dálkurinn var klipptur (mælt 1400 px: listi 68 px, kort 360 px). Rótin fær fulla breidd hér og
+      // dálkarnir snúa eins og á striganum: listinn 360–400 px til vinstri, kortið fær restina.
+      R + '.bt.screen,html body #view-bilstjori #_bs-root.bt.screen{max-width:100%!important}',
+      'html body #view-bilstjori .bt .dock,html body #view-bilstjori .bt.screen .dock{max-width:100%!important}',
+      R + '{display:grid!important;grid-template-columns:minmax(360px,400px) minmax(0,1fr)!important;' +
         'column-gap:12px!important;align-content:start!important}',
       // Staðsetningin sjálf er sett inline af raða() — eftir INNIHALDI, ekki
       // raðnúmeri. Fyrsta útgáfan notaði :nth-child og þá lenti kortið utan
