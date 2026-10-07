@@ -623,6 +623,9 @@
 .bt .stop__name{font-size:15.5px;font-weight:700;color:var(--ink);line-height:1.2}
 .bt .stop__addr{font-size:12.5px;color:var(--muted);margin-top:2px}
 .bt .stop__meta{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+.bt ._bs-man{display:inline-flex;align-items:center;height:22px;padding:0 7px;border-radius:6px;border:1px solid rgba(20,24,34,.18);background:#fff;color:var(--ink-2);font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;vertical-align:middle}
+.bt ._bs-man:hover{border-color:#1f2530}
+.bt ._bs-man-sel{margin-left:6px;height:26px;border-radius:6px;border:1px solid #1f2530;font-family:inherit;font-size:12px;vertical-align:middle}
 .bt .stop__actions{display:flex;border-top:1px solid rgba(20,24,34,.07)}
 .bt .stop__actions .act{flex:1;height:46px;border:0;border-right:1px solid rgba(20,24,34,.07);background:#f6f8fb;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}
 .bt .act--maps{color:#2f5fe0}.bt .act--call{color:var(--ink-2)}
@@ -938,6 +941,27 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
     // Merkja búið → toggle field_inspected_year (🔵 Í vinnslu). Sends the company
     // to ÞjónustuVerkstæði "Í vinnslu" (finish report) and drops it from the
     // driving list (status becomes in_progress) — same flag as patch 190.
+    // 07.10.2026 (Agnar: „lítið merki í Dagsins verk svo ég geti breytt þeirri áætlun“): 📅-merkið á spjaldinu opnar
+    // mánaðarval; valið skrifar inspect_month í arsskodun_customers — sama reitur og Ársskoðun les, svo áætlunin
+    // breytist alls staðar og fyrirtækið færist milli mánaða á listanum.
+    box.querySelectorAll('._bs-man').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (btn.nextElementSibling && btn.nextElementSibling.classList.contains('_bs-man-sel')) return;
+      const sel = document.createElement('select'); sel.className = '_bs-man-sel';
+      sel.innerHTML = '<option value="0">— enginn —</option>' + MONTHS_IS.map((n, k) => '<option value="' + (k + 1) + '"' + ((k + 1) === +btn.dataset.m ? ' selected' : '') + '>' + n + '</option>').join('');
+      ['click', 'pointerdown', 'mousedown'].forEach(ev => sel.addEventListener(ev, x => x.stopPropagation()));
+      sel.addEventListener('change', async () => {
+        const id = btn.dataset.id, n = +sel.value;
+        sel.disabled = true;
+        const ok = await arsSave(id, { inspect_month: n });
+        if (!ok) { sel.disabled = false; errBar('⚠ Vistun mistókst — mánuðurinn var ekki skráður. Reyndu aftur.', null); return; }
+        logAct('manudur', { co_id: id, m: n });
+        try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
+        renderList(); renderPins();
+      });
+      sel.addEventListener('blur', () => { if (!sel.disabled) sel.remove(); });
+      btn.insertAdjacentElement('afterend', sel); sel.focus();
+    }));
     box.querySelectorAll('[data-vinnsla]').forEach(btn => btn.addEventListener('click', async e => {
       e.stopPropagation();
       const id = btn.dataset.id;
@@ -1006,7 +1030,7 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
             '<div style="display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap">' +
               '<span class="pill pill--' + variant + '">' + esc(x.status.label) + '</span>' +
               (x.urgent ? '<span class="pill pill--overdue">🚨 Skilaboð</span>' : '') +
-              '<span class="stop__meta">' + esc(extra) + '</span>' +
+              '<span class="stop__meta">🧯 ' + nUnits + ' tæki · <button class="_bs-man" type="button" data-id="' + c.id + '" data-m="' + m + '" title="Skoðunarmánuður — smelltu til að breyta áætluninni">📅 ' + (monthName || 'enginn mánuður') + ' ▾</button> · ' + (insYear ? 'síðast ' + insYear : 'óskoðað') + '</span>' +
             '</div>' +
           '</div>' +
         '</div>' +
