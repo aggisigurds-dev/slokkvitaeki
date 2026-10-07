@@ -1505,7 +1505,7 @@
   // veggjum og engin lituð brunahólf — rauðu tækin standa út. „Brunahólf" skiptir í litaða útlitið (eldveggir, hólf).
   // Engin SSAO/korn — Agnar hafnaði því. Val vafrans: localStorage (útlitsval, ekki gögn).
   const UTLIT_LS = 'teikn3d_utlit';
-  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xe8e6e2, toppur: 0x2b2e33, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
+  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xf3f2ef, toppur: 0x2b2e33, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
   const lesaUtlit = () => { try { return localStorage.getItem(UTLIT_LS) === 'eld' ? 'eld' : 'gratt'; } catch (_) { return 'gratt'; } };
   const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0x8d6e63, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
   // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
@@ -3366,6 +3366,41 @@
     let golf;
     try { golf = golfMedUti(stig1, r.W, r.H); }
     catch (e) { console.warn('[383] golfMedUti', e); golf = r.vinnu; }
+    // HÚSIÐ EITT (Agnar 07.10.2026: „ef þú getur gert þessa útgáfu eitthvað flottari"): á leiðréttri hæð ráða línur
+    // TurboPaint útlínunum — veggir, hurðir og gler loka húsinu; flóðfylling utan frá gerir blaðið UTAN hússins gegnsætt,
+    // svo húsið stendur eitt á bakgrunninum eins og á grunnmyndum. Leki flóðið inn (op í útvegg) helst blaðið eins og var.
+    if (tp.length && golf && golf.getContext) {
+      try {
+        const W = r.W, H = r.H, kv = r.kvardi;
+        const hc = document.createElement('canvas'); hc.width = W; hc.height = H;
+        const hx = hc.getContext('2d', { willReadFrequently: true });
+        hx.strokeStyle = '#000'; hx.lineCap = 'square'; hx.lineJoin = 'miter';
+        let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+        tp.forEach(v => {
+          hx.lineWidth = Math.max(3, (Number(v.t) || 0) * kv) + 4;
+          hx.beginPath();
+          for (let i = 0; i + 1 < v.p.length; i += 2) {
+            const px = (v.p[i] - sk.x) * kv, py = (v.p[i + 1] - sk.y) * kv;
+            if (i) hx.lineTo(px, py); else hx.moveTo(px, py);
+            bx0 = Math.min(bx0, px); by0 = Math.min(by0, py); bx1 = Math.max(bx1, px); by1 = Math.max(by1, py);
+          }
+          hx.stroke();
+        });
+        const lok = hx.getImageData(0, 0, W, H).data, uti = new Uint8Array(W * H), st = new Int32Array(W * H);
+        let top = 0;
+        const yta = p => { if (!uti[p] && lok[p * 4 + 3] < 128) { uti[p] = 1; st[top++] = p; } };
+        for (let x = 0; x < W; x++) { yta(x); yta((H - 1) * W + x); }
+        for (let y = 0; y < H; y++) { yta(y * W); yta(y * W + W - 1); }
+        while (top) { const p = st[--top], px = p % W, py = (p - px) / W; if (px > 0) yta(p - 1); if (px < W - 1) yta(p + 1); if (py > 0) yta(p - W); if (py < H - 1) yta(p + W); }
+        let inni = 0; for (let i = 0; i < W * H; i++) if (!uti[i]) inni++;
+        const kassi = Math.max(1, (bx1 - bx0) * (by1 - by0));
+        if (inni > kassi * 0.5) {      // húsið lokað: að minnsta kosti helmingur útlínukassans er inni
+          const gx = golf.getContext('2d', { willReadFrequently: true }), gdat = gx.getImageData(0, 0, W, H), gp = gdat.data;
+          for (let i = 0; i < W * H; i++) if (uti[i]) gp[i * 4 + 3] = 0;
+          gx.putImageData(gdat, 0, 0);
+        }
+      } catch (e) { console.warn('[383] hús úr línum', e); }
+    }
     try {
       const gd = golf.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, r.W, r.H).data;
       for (let i = 0; i < r.W * r.H; i++) if (gd[i * 4 + 3] < 16) veggir[i] = 0;
