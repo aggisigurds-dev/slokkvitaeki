@@ -75,6 +75,8 @@
       'html body #view-bilstjori .bt .stop__body>div>div:last-of-type:not(._bsnota){flex-wrap:nowrap!important}',
       'html body #view-bilstjori .bt .stop__meta{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       'html body #view-bilstjori .bt .stop .pill{white-space:nowrap!important;flex:none!important}',   // „Í lagi 2026“ braut sig í tvær línur (43 px)
+      // 07.10.2026 (Agnar: „fyrst þetta er ekki lengur í símanum þá má taka hringja takkann sjálfan út“) — spjaldtölvan hringir ekki.
+      'html body #view-bilstjori .bt .stop__actions .act--call{display:none!important}',
       // Fyrirtækjaspjaldið (smellur á punkt) rann inn sem 440 px sími-dálkur í MIÐJUNNI yfir kortinu (Agnar: „símalookið
       // kemur ef maður ýtir á punkt“). Á spjaldtölvunni leggst það að hægri brún, 480 px breitt, kortið sést áfram vinstra megin.
       'html body ._bs-sheet.bt.screen{left:auto!important;right:0!important;width:480px!important;max-width:480px!important;box-shadow:-18px 0 40px -20px rgba(0,0,0,.7)!important;border-left:1px solid #000}',
