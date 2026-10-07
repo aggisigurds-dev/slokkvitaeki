@@ -1563,6 +1563,7 @@
     let utlit = (gogn && gogn.utlit) || lesaUtlit();
     const daufLog = [], skuggaEfni = [], hurdaEfni = [];
     const losa = [], veggEfni = [], sporEfni = [], lag = [], midar = [];
+    const taekiHlutir = [];     // líkön, stangir, kúlur og miðar tækjanna — falin þegar föst vinnumynd er tekin (fastMynd)
     let staerst = 1, haedY = 0, vidmid = null, heilir = 0;
     // LÍKAN TÆKIS: hópur með upphaf á gólfi við yfirborð veggjar, +z snýr út frá veggnum. e = vegghæðin (mælieining
     // líkansins — stærðirnar eru ýktar um það bil tvöfalt svo tækin sjáist í yfirliti yfir heilt hús).
@@ -1851,15 +1852,15 @@
         const litur = new T.Color(mk.litur || '#c93c1d'), rad = Math.max(k.gw, k.gh) * 0.012;
         if (mk.gerd) {
           const lk = taekjalikan(mk.gerd, veggH, litur);
-          lk.position.set(gx, 0, gz); lk.rotation.y = Math.atan2(fest.nx, fest.ny); hopur.add(lk);
+          lk.position.set(gx, 0, gz); lk.rotation.y = Math.atan2(fest.nx, fest.ny); hopur.add(lk); taekiHlutir.push(lk);
         }
         let grannar = 0;
         for (let j = 0; j < nrM; j++) if (Math.hypot(merki[j].x - mk.x, merki[j].y - mk.y) * f < naerri) grannar++;
         const toppur = veggH * (1.55 + grannar * 0.85);
         const sG = new T.CylinderGeometry(rad * 0.1, rad * 0.1, toppur, 8), sE = new T.MeshLambertMaterial({ color: litur });
-        const stong = new T.Mesh(sG, sE); stong.position.set(gx, toppur / 2, gz); hopur.add(stong);
+        const stong = new T.Mesh(sG, sE); stong.position.set(gx, toppur / 2, gz); hopur.add(stong); taekiHlutir.push(stong);
         const kG2 = new T.SphereGeometry(rad * 0.7, 18, 12), kE2 = new T.MeshLambertMaterial({ color: litur, emissive: litur, emissiveIntensity: 0.35 });
-        const kula = new T.Mesh(kG2, kE2); kula.position.set(gx, toppur + rad, gz); kula.castShadow = true; hopur.add(kula);
+        const kula = new T.Mesh(kG2, kE2); kula.position.set(gx, toppur + rad, gz); kula.castShadow = true; hopur.add(kula); taekiHlutir.push(kula);
         losa.push(sG, sE, kG2, kE2);
         if (mk.texti) {
           const txt = String(mk.texti).slice(0, 18), letur = '700 34px system-ui,sans-serif';
@@ -1883,7 +1884,7 @@
           const mA = new T.CanvasTexture(ms), mE = new T.SpriteMaterial({ map: mA, depthTest: false, sizeAttenuation: false });
           const midi = new T.Sprite(mE);
           midi.center.set(0.5, -0.2); midi.renderOrder = 10;
-          midi.position.set(gx, toppur + rad * 2, gz); hopur.add(midi);
+          midi.position.set(gx, toppur + rad * 2, gz); hopur.add(midi); taekiHlutir.push(midi);
           losa.push(mA, mE); midar.push({ midi, hlutfall: ms.width / ms.height });
         }
       });
@@ -2102,6 +2103,9 @@
     beitaUtliti();
     handfang = {
       kassar: haedir.length,
+      // auðkenni hæðanna í sviðinu, í röð (445: hvaða hæð „Festa" á við)
+      haedIds: () => lag.map(q => q.hd.haedId || null),
+      synilegar: () => lag.filter(q => q.hopur.visible).map(q => q.hd.haedId || null),
       // Grátt (sjálfgefið á prófílnum) eða litað útlit eldveggja og brunahólfa.
       utlit(v) { if (v !== 'gratt' && v !== 'eld') return utlit; utlit = v; try { localStorage.setItem(UTLIT_LS, v); } catch (_) {} beitaUtliti(); return utlit; },
       // MYND AF SÝNINNI (Agnar 07.10.2026: „This view would be absolutely perfect as the image we put the fire extinguisher
@@ -2113,6 +2117,92 @@
           teiknari.setPixelRatio(pr * k); teiknari.setSize(w, hh, false); teiknari.render(svid, vel);
           return teiknari.domElement.toDataURL('image/png');
         } finally { teiknari.setPixelRatio(pr); teiknari.setSize(w, hh, false); teiknari.render(svid, vel); }
+      },
+      /* FÖST VINNUMYND (Agnar 07.10.2026: „ætti þá í raun ekki að vera léttara að opna svona mynd tilbúna í stað þess að
+       * vera láta kerfið sækja og setja veggina … þegar hún er orðinn bara föst mynd"). Fyrsta hæðin í sviðinu, ofan frá
+       * (sama horn og 'ofan'), römmuð þétt að veggjunum og teiknuð `hamark` dílar á lengri hlið, skorin að innihaldinu.
+       * Skilar striganum og því sem 445 þarf til að varpa á milli myndar og heims ÁN WebGL:
+       *   cam   = projectionMatrix · matrixWorldInverse (16 tölur, dálkaröð three.js) — heimur → klippihnit heildarinnar
+       *   heild = [B, H] teikningarinnar · rammi = [x, y, b, h] skurðurinn úr henni (= myndin sem vistast)
+       *   kort  = teikning → heimur: x = (u − sx)·f − gw/2, z = (v − sy)·f − gh/2 (u, v í dílum frummyndar), y = 0 gólf. */
+      fastMynd(o) {
+        o = o || {};
+        // hæðin: eftir auðkenni (o.haedId), annars sú sem er sýnd ein, annars sú neðsta
+        const lg = (o.haedId && lag.find(q => q.hd.haedId === o.haedId)) || (lag.filter(q => q.hopur.visible).length === 1 && lag.find(q => q.hopur.visible)) || lag[0];
+        if (!lg) return null;
+        if (ganga) gangaHaetta();
+        flug = null;
+        const hamark = Math.max(600, Math.min(4096, Math.round(o.hamark || 2400)));
+        const hd = lg.hd, f = lg.f, gw2 = lg.gw / 2, gh2 = lg.gh / 2;
+        let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+        if (lg.heilir) hd.butar.forEach(v => { for (let j = 0; j < 4; j += 2) { const wx = v[j] * f - gw2, wz = v[j + 1] * f - gh2; if (wx < x0) x0 = wx; if (wx > x1) x1 = wx; if (wz < z0) z0 = wz; if (wz > z1) z1 = wz; } });
+        if (!(x1 > x0) || !(z1 > z0)) { x0 = -gw2; x1 = gw2; z0 = -gh2; z1 = gh2; }
+        const sp = Math.max(x1 - x0, z1 - z0) * 0.03 + lg.veggH * 0.1;
+        x0 -= sp; x1 += sp; z0 -= sp; z1 += sp;
+        const horn = [];
+        lg.hopur.updateMatrixWorld(true);
+        for (const x of [x0, x1]) for (const y of [0, lg.veggH]) for (const z of [z0, z1]) horn.push(new T.Vector3(x, y, z).applyMatrix4(lg.hopur.matrixWorld));
+        // aðeins þessi hæð, og án tækja, merkja og pinna (o.anTaekja !== false)
+        const sjonir = lag.map(q => q.hopur.visible), taekiSjon = taekiHlutir.map(q => q.visible);
+        lag.forEach(q => { q.hopur.visible = q === lg; });
+        if (o.anTaekja !== false) taekiHlutir.forEach(q => { q.visible = false; });
+        const geymt = { theta, phi, fjarl, mid: mid.clone(), aspect: vel.aspect, pr: teiknari.getPixelRatio(), w: el.clientWidth || b, h: el.clientHeight || h };
+        const pv = new T.Vector3(), haegri = new T.Vector3(), upp = new T.Vector3();
+        theta = SJONARHORN.ofan.theta; phi = SJONARHORN.ofan.phi;
+        mid.set(0, 0, 0); horn.forEach(p => mid.add(p)); mid.multiplyScalar(1 / horn.length);
+        let asp = Math.max(0.5, Math.min(2.2, (x1 - x0) / (z1 - z0)));
+        fjarl = Math.max(x1 - x0, z1 - z0) * 1.6;
+        const still = () => { vel.aspect = asp; vel.updateProjectionMatrix(); stillaVel(); vel.updateMatrixWorld(true); };
+        // Rammað í skrefum: miðja færð að miðju umgjarðarinnar á skjánum, hlutföll myndar að hlutföllum hennar, fjarlægð þar
+        // til hún fyllir 96 % — sjónarhornið sjálft (θ, φ) er óbreytt.
+        for (let i = 0; i < 8; i++) {
+          still();
+          let a = Infinity, a2 = -Infinity, c = Infinity, c2 = -Infinity;
+          horn.forEach(p => { pv.copy(p).project(vel); if (pv.x < a) a = pv.x; if (pv.x > a2) a2 = pv.x; if (pv.y < c) c = pv.y; if (pv.y > c2) c2 = pv.y; });
+          const ex = (a2 - a) / 2, ey = (c2 - c) / 2, hH = fjarl * Math.tan(vel.fov * Math.PI / 360);
+          haegri.setFromMatrixColumn(vel.matrixWorld, 0); upp.setFromMatrixColumn(vel.matrixWorld, 1);
+          mid.addScaledVector(haegri, (a2 + a) / 2 * hH * asp).addScaledVector(upp, (c2 + c) / 2 * hH);
+          const nytt = Math.max(0.5, Math.min(2.2, asp * ex / Math.max(1e-6, ey)));
+          const ex2 = ex * asp / nytt;
+          asp = nytt;
+          fjarl *= Math.max(ex2, ey) / 0.96;
+        }
+        still();
+        const W = asp >= 1 ? hamark : Math.round(hamark * asp), H = asp >= 1 ? Math.round(hamark / asp) : hamark;
+        try {
+          teiknari.setPixelRatio(1); teiknari.setSize(W, H, false);
+          vel.aspect = W / H; vel.updateProjectionMatrix(); vel.updateMatrixWorld(true);
+          teiknari.render(svid, vel);
+          const heil = document.createElement('canvas'); heil.width = W; heil.height = H;
+          const hx = heil.getContext('2d', { willReadFrequently: true });
+          hx.drawImage(teiknari.domElement, 0, 0, W, H);
+          // Skorið að innihaldinu: allt sem víkur frá bakgrunnslitnum (horndíllinn — umgjörðin á spássíu þar).
+          const dd = hx.getImageData(0, 0, W, H).data, r0 = dd[0], g0 = dd[1], b0 = dd[2];
+          let rx0 = W, rx1 = -1, ry0 = H, ry1 = -1;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0, i = y * W * 4; x < W; x++, i += 4) {
+              if (Math.abs(dd[i] - r0) + Math.abs(dd[i + 1] - g0) + Math.abs(dd[i + 2] - b0) > 12) { if (x < rx0) rx0 = x; if (x > rx1) rx1 = x; if (y < ry0) ry0 = y; ry1 = y; }
+            }
+          }
+          const sp2 = Math.round(Math.max(W, H) * 0.015);
+          const rammi = rx1 < rx0 ? [0, 0, W, H] : [Math.max(0, rx0 - sp2), Math.max(0, ry0 - sp2), 0, 0];
+          if (rx1 >= rx0) { rammi[2] = Math.min(W, rx1 + 1 + sp2) - rammi[0]; rammi[3] = Math.min(H, ry1 + 1 + sp2) - rammi[1]; }
+          const ut = document.createElement('canvas'); ut.width = rammi[2]; ut.height = rammi[3];
+          ut.getContext('2d').drawImage(heil, -rammi[0], -rammi[1]);
+          // P · V · M(hæðar): fylkið varpar STAÐBUNDNUM hnitum hæðarinnar (kortið hér á eftir) — líka efri hæð sem er hliðrað og kvörðuð
+          const cam = new T.Matrix4().multiplyMatrices(vel.projectionMatrix, vel.matrixWorldInverse).multiply(lg.hopur.matrixWorld).elements.map(n => +n.toPrecision(10));
+          return {
+            strigi: ut, cam, heild: [W, H], rammi, b: rammi[2], h: rammi[3],
+            kort: { f: +f.toPrecision(10), gw: +lg.gw.toPrecision(10), gh: +lg.gh.toPrecision(10), sx: hd.sk.x, sy: hd.sk.y, sw: hd.sk.w, sh: hd.sk.h },
+            veggH: +lg.veggH.toPrecision(8), sjalfg: +(lg.sjalfg || Math.max(lg.gw, lg.gh) * 0.004).toPrecision(8),
+            bakgrunnur: [r0, g0, b0]
+          };
+        } finally {
+          teiknari.setPixelRatio(geymt.pr); teiknari.setSize(geymt.w, geymt.h, false);
+          lag.forEach((q, i) => { q.hopur.visible = sjonir[i]; }); taekiHlutir.forEach((q, i) => { q.visible = taekiSjon[i]; });
+          theta = geymt.theta; phi = geymt.phi; fjarl = geymt.fjarl; mid.copy(geymt.mid);
+          vel.aspect = geymt.aspect; vel.updateProjectionMatrix(); stillaVel();
+        }
       },
       // Sjónarhorn: 'ofan' (beint ofan á teikninguna, aðeins hallað) eða 'ska'. Án gildis: hvort er nær núna.
       sjonarhorn(n) {
@@ -2248,7 +2338,7 @@
     return handfang;
   }
 
-  window.Teikn3D = { syna: syna3d, kassarUrGrimu, heilirVeggir, husRammi, greiningarkvardi, eldveggjaLinur, reiknaEld, klippaButa };
+  window.Teikn3D = { syna: syna3d, kassarUrGrimu, heilirVeggir, husRammi, greiningarkvardi, eldveggjaLinur, reiknaEld, klippaButa, festaAVegg };
 
   /* ───────────────────────── 3) TENGING VIÐ TEIKNINGAGLUGGANN (FloorPlan) ─────────────────────────
    *
@@ -2404,7 +2494,9 @@
         sjalf: n.sjalf != null ? n.sjalf : g.sjalf,
         thett: n.thett || g.thett,
         pdfReynt: g.pdfReynt,
-        stimpilStaerd: n.stimpilStaerd || g.stimpilStaerd
+        stimpilStaerd: n.stimpilStaerd || g.stimpilStaerd,
+        // vinnumynd (445): sú nýrri gildir — hún gæti verið nýsmíðuð hér og ekki enn komin á þjóninn
+        vinnumynd: (g.vinnumynd && (!n.vinnumynd || String(g.vinnumynd.t || '') > String(n.vinnumynd.t || ''))) ? g.vinnumynd : n.vinnumynd
       });
     });
   }
@@ -3052,7 +3144,10 @@
     Z.x = mx - (mx - Z.x) * (ns / Z.s); Z.y = my - (my - Z.y) * (ns / Z.s); Z.s = ns; zBeita();
   }
   function zNullstilla() { Z.s = 1; Z.x = 0; Z.y = 0; zBeita(); }
+  // Vinnumyndin (445) liggur yfir 2D-striganum: hjól og „fara að merki" eiga þá við hana.
+  const vinnumyndSynd = () => !!(window.TeiknVinnumynd && TeiknVinnumynd.synd && TeiknVinnumynd.synd());
   function zFaraAd(imgX, imgY) {
+    if (vinnumyndSynd() && TeiknVinnumynd.faraAd) { TeiknVinnumynd.faraAd(imgX, imgY); return; }
     const c = fpEl('fp-canvas'), main = fpEl('fp-main');
     if (!c || !main || imgX == null) return;
     const cw = c.offsetWidth || c.width, ch = c.offsetHeight || c.height;
@@ -3108,7 +3203,7 @@
     // Gamla stýringin er ALLTAF stöðvuð (mousedown + wheel) — annars toga tvær stýringar í sama strigann.
     const aStriga = e => e.target === main || e.target.id === 'fp-canvas' || e.target.id === 'fp-drop-msg';
     main.addEventListener('mousedown', e => { if (aStriga(e)) e.stopPropagation(); }, true);
-    main.addEventListener('wheel', e => { if (document.getElementById('fp-3d')) return; e.stopPropagation(); e.preventDefault(); zThysja(e.deltaY < 0 ? 1.15 : 0.87, e.clientX, e.clientY); }, { capture: true, passive: false });
+    main.addEventListener('wheel', e => { if (document.getElementById('fp-3d') || vinnumyndSynd()) return; e.stopPropagation(); e.preventDefault(); zThysja(e.deltaY < 0 ? 1.15 : 0.87, e.clientX, e.clientY); }, { capture: true, passive: false });
     main.style.touchAction = 'none';
     const fingur = new Map(); let klipa = 0, midja = null, hreyft = 0;
     main.addEventListener('pointerdown', e => {
@@ -3484,6 +3579,60 @@
     eiSkyndi.set(slod, ut);
     return ut;
   }
+  /* ── VINNUMYND (Agnar 07.10.2026) — sýnin sjálf býr í 445-teikning-vinnumynd.js ──
+   * smidaVinnumynd: föst mynd EINNAR hæðar ofan frá, smíðuð EINU SINNI í huldum 3D-gámi utan skjás og lokuð strax:
+   * gráa útlitið, engin tæki, merki né pinnar (merkiFrum = []), aðeins gólf, veggir, hurðir og gler. Sama leið og 3D
+   * (undirbua → syna3d), svo myndin og lifandi þrívíddin sýna sama hús. */
+  async function smidaVinnumynd(hid, o) {
+    const FP = FPx(), hs = haedir(), h = hs.find(x => x && x.id === hid);
+    if (!FP || !h || !h.image_url) throw new Error('hæðin á enga teikningu');
+    const virk = hs[G.virk], tima = {}, t = () => performance.now();
+    let t0 = t();
+    let frum = virk && virk.id === h.id && G.frum && G.frum.complete !== false && (virk.image_url || null) === (h.image_url || null) ? G.frum : null;
+    // blaðstærðin (vegghæð í metrum) er sótt samhliða myndinni og greiningunni
+    const metrar = dilarAMetra(h, (h.frum && h.frum.b) || 0, (h.frum && h.frum.h) || 0);
+    if (!frum) frum = await hladaMynd(h.image_url);
+    tima.mynd = Math.round(t() - t0); t0 = t();
+    const fb = frum.naturalWidth || frum.width, fh = frum.naturalHeight || frum.height;
+    const stig1 = h.skurdur ? skera(frum, h.skurdur) : frum;
+    const u = undirbua(h, stig1, [], lesaVal(FP.companyId), [], frum, []);
+    if (!u.veggjaPx) throw new Error('engir veggir á hæðinni');
+    tima.undirbua = Math.round(t() - t0); t0 = t();
+    u.nafn = h.nafn; u.haedId = h.id;
+    u.dilarAMetra = (await metrar) || await dilarAMetra(h, fb, fh);
+    tima.metrar = Math.round(t() - t0); t0 = t();
+    const gamur = document.createElement('div');
+    gamur.style.cssText = 'position:fixed;left:-30000px;top:0;width:1200px;height:900px;pointer-events:none;opacity:0';
+    document.body.appendChild(gamur);
+    let syn = null;
+    try {
+      syn = await syna3d(gamur, { haedir: [u], utlit: 'gratt' });
+      tima.svid = Math.round(t() - t0); t0 = t();
+      const r = syn.fastMynd(o);
+      if (!r) throw new Error('myndin teiknaðist ekki');
+      tima.mynd3d = Math.round(t() - t0);
+      r.frum = { b: fb, h: fh }; r.tima = tima;
+      return r;
+    } finally { try { if (syn) syn.loka(); } catch (_) {} gamur.remove(); }
+  }
+  // Veggir hæðarinnar fyrir smelli á vinnumyndina (445) — sömu og 3D fær: TurboPaint-veggir, annars PDF-strikin pöruð
+  // (heilirVeggir), + handdregnir; klipptir við skurð MYNDARINNAR (sk = kort vistuðu myndarinnar, sem getur verið eldri
+  // en skurður hæðarinnar) og í hnitum hennar. Ódýrt, ekkert WebGL. Skönnun án veggja → [] (aðeins gólf).
+  function vinnuButar(h, sk) {
+    const tp = Array.isArray(h && h.veggjaLinur) ? h.veggjaLinur.filter(v => v && Array.isArray(v.p) && v.p.length >= 4) : [];
+    const fr = (h && h.frum) || {};
+    let ut = [];
+    tp.filter(v => !v.tegund || v.tegund === 'veggur' || v.tegund === 'ei60' || v.tegund === 'ei30').forEach(v => {
+      const t = Number(v.t) || 0;
+      for (let i = 0; i + 3 < v.p.length; i += 2) ut.push([v.p[i], v.p[i + 1], v.p[i + 2], v.p[i + 3], t]);
+    });
+    if (!ut.length && Array.isArray(h && h.pdfVeggir) && h.pdfVeggir.length > 30 && fr.b > 0 && fr.h > 0) {
+      try { ut = heilirVeggir(h.pdfVeggir, fr.b, fr.h) || []; } catch (_) { ut = []; }
+    }
+    if (!ut.length) return [];
+    (Array.isArray(h.veggir) ? h.veggir : []).forEach(v => ut.push([v[0], v[1], v[2], v[3], 0]));
+    return klippaButa(ut, sk || h.skurdur || { x: 0, y: 0, w: fr.b || 1e9, h: fr.h || 1e9 });
+  }
   /* ── BLENDER-MYND (Agnar 06.10.2026) ──
    * „Blender-mynd" í 3D: senan sem sést (blenderSena, metrar) fer í automation_triggers (workflow 'blender', gogn = senan).
    * Brúartölvan (luna-bridge watcher.js, á mínútu fresti) tekur beiðnina, teiknar í Blender (Cycles, gráa útlitið) og
@@ -3649,21 +3798,12 @@
   // Klukkan í hausnum og biðviðvörunin hreyfast á milli fyrirspurna.
   setInterval(() => { const B = G.blender; if (B && B.opid && B.stada !== 'done' && B.stada !== 'error' && B.stada !== 'timi' && document.getElementById('fp-3d')) blTeikna(); }, 1000);
 
-  // SJÁLFGEFIÐ 3D OFAN FRÁ (Agnar 07.10.2026: „Geturðu látið hana opnast hérna þegar ég vel Fiskislóð 41"): sé virka
-  // hæðin TILBÚIN (veggir leiðréttir í TurboPaint) opnast glugginn í 3D ofan frá með þá hæð eina. Einu sinni við hverja
-  // opnun — loki notandinn 3D helst 2D. Beðið þar til teikning hæðarinnar er komin (G.stig1).
-  function sjalfgefid3d() {
-    if (G.sjalf3d || !G.stig1) return;
-    G.sjalf3d = true;
-    const h = (haedir() || [])[G.virk];
-    if (!h || !(h.leidrett || (Array.isArray(h.veggjaLinur) && h.veggjaLinur.length)) || document.getElementById('fp-3d')) return;
-    opna3d().then(() => {
-      const hb = document.querySelector('#fp-3d-haedir');
-      const t = hb && [...hb.querySelectorAll('button[data-h]')].find(b => (b.textContent || '').trim() === (h.nafn || '').trim());
-      if (t && t.getAttribute('aria-pressed') !== 'true') t.click();
-    }).catch(e => console.warn('[383] sjálfgefið 3D', e));
-  }
-  async function opna3d() {
+  // SJÁLFGEFIN SÝN TILBÚINNAR HÆÐAR (Agnar 07.10.2026: „Geturðu látið hana opnast hérna þegar ég vel Fiskislóð 41"):
+  // það er nú FASTA VINNUMYNDIN (445) — vistuð mynd ofan frá sem opnast strax, og 3D er aðeins smíðað ef hún vantar.
+  // sjalfgefid3d() (opna lifandi 3D við hverja opnun, 2b4e0134) er farið svo bæði keyri ekki.
+  // o.haedId (445, takkinn „3D" í sýnarvalinu): aðeins SÚ hæð er smíðuð og sýnd — hinar kostuðu sína myndhleðslu,
+  // greiningu og EI-lestur þótt þær sæjust ekki (Álfaborg: „Undirbý hæðir…" í margar sekúndur). 🧊 3D í hausnum sýnir allar.
+  async function opna3d(o) {
     const FP = FPx(), main = fpEl('fp-main'); if (!FP || !main) return;
     if (document.getElementById('fp-3d')) { loka3d(); return; }
     samstillaVirka();
@@ -3673,6 +3813,9 @@
     // Takkar efst (brotna í línur á mjóum skjá), hæðatakkar undir þeim; skýring lita og leiðsögn neðst til vinstri.
     gamur.innerHTML = '<div style="position:absolute;left:10px;right:10px;top:10px;z-index:2;display:flex;flex-direction:column;align-items:flex-end;gap:6px;pointer-events:none">' +
       '<div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;pointer-events:auto">' +
+      // FESTA (Agnar 07.10.2026: „fínt að geta ýtt á festa,,, og síðan bara endurteikna"): sýnin ofan frá, án tækja, verður
+      // föst vinnumynd hæðarinnar (445) — Teikning opnast eftir það strax á henni. Silfurtakki Brunastáls: aðalaðgerðin.
+      '<button type="button" id="fp-3d-festa" title="Festa: hæðin ofan frá, án tækja, verður föst vinnumynd — Teikning opnast strax á henni og tækin eru sett ofan á" style="height:36px;padding:0 16px;border-radius:9px;border:1px solid rgba(20,24,34,.28);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#11141c;font:700 13px system-ui;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.18)">Festa</button>' +
       '<button type="button" id="fp-3d-breyta" aria-pressed="false" title="Tengja eða aftengja brunavegg: kveiktu á þessu og smelltu á vegg" style="display:none;height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Breyta eldveggjum</button>' +
       '<button type="button" id="fp-3d-ganga" aria-pressed="false" title="Ganga um hæðina í augnhæð (1,6 m) — draga = líta í kring, hjól / W S = ganga, Esc = hætta" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Ganga</button>' +
       '<button type="button" id="fp-3d-mynd" title="Vista sýnina eins og hún er — með tækjum og merkjum — sem skarpa PNG-mynd, t.d. í tilboð" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Vista mynd</button>' +
@@ -3694,10 +3837,15 @@
       if (G.syn3d && G.syn3d.gegnsaett) G.syn3d.gegnsaett(a);
     });
     gamur.querySelector('#fp-3d-x').addEventListener('click', loka3d);
+    gamur.querySelector('#fp-3d-festa').addEventListener('click', () => {
+      if (!G.syn3d || !G.syn3d.fastMynd) { segja('3D-sýnin er ekki tilbúin'); return; }
+      if (window.TeiknVinnumynd && TeiknVinnumynd.festa) TeiknVinnumynd.festa(G.syn3d.valinHaedId ? G.syn3d.valinHaedId() : null);
+    });
     gamur.querySelector('#fp-3d-blender').addEventListener('click', () => { blBidja().catch(e => { console.warn('[383] Blender-mynd', e); }); });
     const skyr = gamur.querySelector('#fp-3d-skyr'), ut = [], sleppt = [], nyirPdf = [];
     for (let i = 0; i < hs.length; i++) {
       const h = hs[i];
+      if (o && o.haedId && h.id !== o.haedId) continue;
       try {
         let stig1 = i === G.virk ? G.stig1 : null, frum = i === G.virk ? G.frum : null;
         if (!stig1) { if (!h.image_url) { sleppt.push(h.nafn + ' (engin teikning)'); continue; } frum = await hladaMynd(h.image_url); stig1 = h.skurdur ? skera(frum, h.skurdur) : frum; }
@@ -3861,6 +4009,8 @@
           if (G.syn3d && G.syn3d.syna) G.syn3d.syna(valin);
           mala(); skyring(valin); lokaVali();
         });
+        const fyrst = o && o.haedId ? ut.findIndex(u => u.haedId === o.haedId) : -1;
+        if (fyrst >= 0 && G.syn3d && G.syn3d.syna) { valin = fyrst; G.syn3d.syna(valin); skyring(valin); }
         mala();
       }
     } catch (e) { loka3d(); segja('⚠ 3D-sýnin opnaðist ekki: ' + ((e && e.message) || e)); }
@@ -4117,8 +4267,7 @@
       setTimeout(tikk, 0);
       setTimeout(tikk, 60);
       setTimeout(tikk, 200);
-      G.sjalf3d = false;
-      const lykkja = () => { const m = document.getElementById('modal-floorplan'); if (!m || !document.body.contains(m) || !modalSynnilegt()) return; try { yfirlag(); } catch (_) {} try { sjalfgefid3d(); } catch (_) {} G.raf = requestAnimationFrame(lykkja); };
+      const lykkja = () => { const m = document.getElementById('modal-floorplan'); if (!m || !document.body.contains(m) || !modalSynnilegt()) return; try { yfirlag(); } catch (_) {} G.raf = requestAnimationFrame(lykkja); };
       G.raf = requestAnimationFrame(lykkja);
       return r;
     };
@@ -4233,7 +4382,13 @@
     erPx,
     faraAd: zFaraAd,
     nyMynd,
-    syn3d: () => G.syn3d      // opna þrívíddin (prófanir: skuggar(), blenderSena())
+    syn3d: () => G.syn3d,     // opna þrívíddin (prófanir: skuggar(), blenderSena())
+    // Vinnumyndin (445): röð þjónsins komin? · smíða fasta mynd hæðar · veggir hennar · lifandi 3D opnað/lokað
+    rodKomin: () => G.rodKomin,
+    smidaVinnumynd,
+    vinnuButar,
+    opna3d: o => { if (!document.getElementById('fp-3d')) { G.hamur = null; return opna3d(o); } },
+    loka3d
   };
   window.TeiknTurboPaint = { opna: opnaITurboPaint, slod: turboPaintSlod, vistaHaedir: vistaHaedirFyrirTurboPaint };
 
