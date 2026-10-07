@@ -2104,6 +2104,16 @@
       kassar: haedir.length,
       // Grátt (sjálfgefið á prófílnum) eða litað útlit eldveggja og brunahólfa.
       utlit(v) { if (v !== 'gratt' && v !== 'eld') return utlit; utlit = v; try { localStorage.setItem(UTLIT_LS, v); } catch (_) {} beitaUtliti(); return utlit; },
+      // MYND AF SÝNINNI (Agnar 07.10.2026: „This view would be absolutely perfect as the image we put the fire extinguisher
+      // in its places"): sviðið teiknað k-falt skarpar (sömu CSS-stærð, svo miðar og tæki halda hlutföllum) → PNG.
+      mynd(k) {
+        k = Math.max(1, Math.min(4, k || 2));
+        const w = el.clientWidth || 800, hh = el.clientHeight || 500, pr = teiknari.getPixelRatio();
+        try {
+          teiknari.setPixelRatio(pr * k); teiknari.setSize(w, hh, false); teiknari.render(svid, vel);
+          return teiknari.domElement.toDataURL('image/png');
+        } finally { teiknari.setPixelRatio(pr); teiknari.setSize(w, hh, false); teiknari.render(svid, vel); }
+      },
       // Sjónarhorn: 'ofan' (beint ofan á teikninguna, aðeins hallað) eða 'ska'. Án gildis: hvort er nær núna.
       sjonarhorn(n) {
         if (SJONARHORN[n]) { if (ganga) gangaHaetta(); const s = SJONARHORN[n]; mid.set(0, mid.y, 0); fljuga(s.theta, s.phi, s.fjarl); return n; }
@@ -3616,6 +3626,7 @@
       '<div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;pointer-events:auto">' +
       '<button type="button" id="fp-3d-breyta" aria-pressed="false" title="Tengja eða aftengja brunavegg: kveiktu á þessu og smelltu á vegg" style="display:none;height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Breyta eldveggjum</button>' +
       '<button type="button" id="fp-3d-ganga" aria-pressed="false" title="Ganga um hæðina í augnhæð (1,6 m) — draga = líta í kring, hjól / W S = ganga, Esc = hætta" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Ganga</button>' +
+      '<button type="button" id="fp-3d-mynd" title="Vista sýnina eins og hún er — með tækjum og merkjum — sem skarpa PNG-mynd, t.d. í tilboð" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Vista mynd</button>' +
       '<button type="button" id="fp-3d-sjon" title="Skipta á milli sjónarhorns ofan frá (eins og teikningin) og á ská" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Á ská</button>' +
       '<button type="button" id="fp-3d-utlit" aria-pressed="false" title="Sýna eldveggi og brunahólf í lit — annars grátt útlit þar sem tækin standa út" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Brunahólf</button>' +
       '<button type="button" id="fp-3d-blender" title="Designer-3D: falleg grá mynd af því sem sést og yfirlit yfir húsið (Blender á skrifstofutölvunni). Síðasta mynd opnast strax; Teikna aftur býr til nýja." style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Designer-3D</button>' +
@@ -3698,6 +3709,21 @@
       const ub = gamur.querySelector('#fp-3d-utlit');
       const utlitLit = () => { if (!ub || !G.syn3d || !G.syn3d.utlit) return; const a = G.syn3d.utlit() === 'eld'; ub.setAttribute('aria-pressed', a ? 'true' : 'false'); ub.style.background = a ? '#d9b45a' : 'rgba(20,18,15,.85)'; ub.style.color = a ? '#14120f' : '#fff'; };
       if (ub) ub.addEventListener('click', () => { if (!G.syn3d || !G.syn3d.utlit) return; G.syn3d.utlit(G.syn3d.utlit() === 'eld' ? 'gratt' : 'eld'); utlitLit(); skyring(valin); });
+      // Vista mynd: skrá „Teikning <staður> <hæð> DD-MM-YYYY.png" (ekkert / í skráarnafni).
+      const myb = gamur.querySelector('#fp-3d-mynd');
+      if (myb) myb.addEventListener('click', () => {
+        if (!G.syn3d || !G.syn3d.mynd) return;
+        try {
+          const url = G.syn3d.mynd(2);
+          const haus = document.querySelector('#modal-floorplan h1, #modal-floorplan h2, #modal-floorplan h3');
+          const stadur = String((haus && haus.textContent) || '').replace(/^\s*Teikning\s*[—–-]\s*/, '').trim();
+          const id3 = G.syn3d.valinHaedId ? G.syn3d.valinHaedId() : null, hv = id3 ? (haedir() || []).find(x => x && x.id === id3) : null;
+          const d = new Date(), dags = String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+          const nafn = ['Teikning', stadur, hv ? hv.nafn : (ut.length > 1 ? 'allar hæðir' : ''), dags].filter(Boolean).join(' ').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() + '.png';
+          const a = document.createElement('a'); a.href = url; a.download = nafn; document.body.appendChild(a); a.click(); a.remove();
+          segja('Myndin vistaðist: ' + nafn);
+        } catch (e) { segja('⚠ Gat ekki vistað mynd: ' + ((e && e.message) || e)); }
+      });
       // Sjónarhornshnappurinn sýnir hitt sjónarhornið: „Á ská" þegar horft er ofan frá, „Ofan frá" annars.
       const sjb = gamur.querySelector('#fp-3d-sjon');
       if (sjb) sjb.addEventListener('click', () => {
