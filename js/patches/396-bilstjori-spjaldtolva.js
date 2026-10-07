@@ -79,8 +79,11 @@
       'html body #view-bilstjori .bt .stop__actions .act--call{display:none!important}',
       // Fyrirtækjaspjaldið (smellur á punkt) rann inn sem 440 px sími-dálkur í MIÐJUNNI yfir kortinu (Agnar: „símalookið
       // kemur ef maður ýtir á punkt“). Á spjaldtölvunni leggst það að hægri brún, 480 px breitt, kortið sést áfram vinstra megin.
-      'html body ._bs-sheet.bt.screen{left:auto!important;right:0!important;width:480px!important;max-width:480px!important;box-shadow:-18px 0 40px -20px rgba(0,0,0,.7)!important;border-left:1px solid #000}',
-      'html body ._bs-sheet .dock{left:auto!important;right:0!important;width:480px!important;max-width:480px!important}',
+      // 07.10.2026 (Agnar: „þegar maður opnar fyrirtækið og er að vinna í tækjunum þá mætti það alveg koma í staðinn fyrir
+      //    kortið“): spjaldið tekur kortdálkinn — frá 412 px (listi 400 + bil 12) að hægri brún — listinn sést áfram vinstra megin.
+      'html body ._bs-sheet.bt.screen{left:412px!important;right:0!important;width:auto!important;max-width:none!important;box-shadow:-18px 0 40px -20px rgba(0,0,0,.7)!important;border-left:1px solid #000}',
+      'html body ._bs-sheet .dock{left:412px!important;right:0!important;width:auto!important;max-width:none!important}',
+      'html body:has(._bs-sheet.in) #view-bilstjori ._bs-root>[data-bs-svaedi="kort"]{visibility:hidden!important}',
 
       // ── Mánaðarskoðunin (Agnar 07.10: „það sem er með mánaðarskoðunina núverandi mánuð, það sem er eftir og í vinnslu“)
       'html body #view-bilstjori #_bs-manudur{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 2px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-family:' + MONO + ';font-size:11.5px;color:#c7ccd3}',

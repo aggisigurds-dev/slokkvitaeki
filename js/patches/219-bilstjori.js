@@ -135,7 +135,8 @@
     const isDueNow = !isDone && !isFieldOnly && m === cm;
     if (isDone)      return { key:'done',        color:'#1a7f4b', label:'Í lagi ' + cy };
     if (isFieldOnly) return { key:'in_progress', color:'#b45309', label:'Tekið út — skjöl eftir' };
-    if (isOverdue)   return { key:'overdue',     color:'#C93C1D', label:'Útrunnið (' + (MONTHS_IS[m-1] || '?') + ')' };
+    // 07.10.2026 (Agnar): „Útrunnið (Apríl, 24)“ — ártalið sem síðast var farið fylgir með.
+    if (isOverdue)   return { key:'overdue',     color:'#C93C1D', label:'Útrunnið (' + (MONTHS_IS[m-1] || '?') + (Math.max(lastYr, fieldYr) ? ', ' + String(Math.max(lastYr, fieldYr)).slice(2) : '') + ')' };
     if (isDueNow)    return { key:'duenow',      color:'#b45309', label:'Þessi mánuður' };
     if (m > 0)       return { key:'scheduled',   color:'#404550', label:'Á dagskrá: ' + (MONTHS_IS[m-1] || '?') };
     return { key:'unknown', color:'#8891a0', label:'Engin dagsetning' };

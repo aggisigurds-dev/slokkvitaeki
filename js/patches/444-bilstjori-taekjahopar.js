@@ -28,9 +28,6 @@
   function css() {
     const H = 'html body ._bs-sheet #_bs-hopar';
     return '@media (min-width:900px){' + [
-      // Spjaldið er 480 px í 396 — hóparnir með þremur teljurum þurfa 560.
-      'html body ._bs-sheet._hopar-on.bt.screen{width:560px!important;max-width:560px!important}',
-      'html body ._bs-sheet._hopar-on .dock{width:560px!important;max-width:560px!important}',
       'html body ._bs-sheet._hopar-on #_bs-units{display:none!important}',
       'html body ._bs-sheet._hopar-on._hopar-opin #_bs-units{display:block!important}',
       'html body ._bs-sheet._hopar-opin #_bs-units .dev:not(._hop-syna){display:none!important}',
