@@ -757,7 +757,9 @@
         else { if (r < t0) { inni = false; break; } if (r < t1) t1 = r; }
       }
       if (!inni || (t1 - t0) * Math.hypot(dx, dy) < 2) continue;
-      ut.push([v[0] + dx * t0 - x0, v[1] + dy * t0 - y0, v[0] + dx * t1 - x0, v[1] + dy * t1 - y0, v[4] || 0]);
+      const k = [v[0] + dx * t0 - x0, v[1] + dy * t0 - y0, v[0] + dx * t1 - x0, v[1] + dy * t1 - y0, v[4] || 0];
+      if (v[5]) k.push(v[5]);          // eldflokkur TurboPaint-eldveggjar fylgir
+      ut.push(k);
     }
     return ut;
   }
@@ -1462,11 +1464,19 @@
    * u: { butar, gler, hurdir, sk, frumB, frumH } → fær eld, eldSjalf, handval (−1 = ekki valið), hurdEld, holf. */
   function reiknaEld(u, eiHintar, eldVal) {
     const butar = u.butar, k = Math.max(u.frumB, u.frumH) / 2384;
-    u.eld = u.eldSjalf = u.handval = u.hurdEld = u.holf = null;
+    u.eld = u.eldSjalf = u.handval = u.hurdEld = u.holf = u.tpEld = null;
     if (!butar || !butar.length) return u;
     let eld = null;
     if (eiHintar && eiHintar.length) eld = merkjaEldveggi(butar, eiHintar.map(t => ({ x: t.x - u.sk.x, y: t.y - u.sk.y, label: t.label, minutes: t.minutes })), k);
     u.eldSjalf = eld ? eld.slice() : null;
+    // Eldveggir úr TurboPaint (bútur[5] = 60 / 30): veggurinn ber flokkinn sjálfur.
+    butar.forEach((v, i) => {
+      const m = +v[5] === 60 ? 60 : +v[5] === 30 ? 30 : 0;
+      if (!m) return;
+      if (!eld) eld = new Uint8Array(butar.length);
+      if (!u.tpEld) u.tpEld = new Uint8Array(butar.length);
+      eld[i] = m; u.tpEld[i] = m;
+    });
     const hand = new Int8Array(butar.length).fill(-1), bannad = new Uint8Array(butar.length);
     (Array.isArray(eldVal) ? eldVal : []).forEach(o => {
       if (!o || o.length < 5) return;
@@ -2191,7 +2201,7 @@
     return handfang;
   }
 
-  window.Teikn3D = { syna: syna3d, kassarUrGrimu, heilirVeggir, husRammi, greiningarkvardi };
+  window.Teikn3D = { syna: syna3d, kassarUrGrimu, heilirVeggir, husRammi, greiningarkvardi, eldveggjaLinur, reiknaEld, klippaButa };
 
   /* ───────────────────────── 3) TENGING VIÐ TEIKNINGAGLUGGANN (FloorPlan) ─────────────────────────
    *
@@ -2858,7 +2868,7 @@
     const takn = window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '';
     const ei = window.TeiknEi && TeiknEi.fingrafar ? TeiknEi.fingrafar(h) : '';
     const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
-      G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height, stimpil, takn, ei,
+      G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), eldveggjaLinur(h).map(v => v.e + ':' + v.p.slice(0, 2).join(',')).join(';'), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height, stimpil, takn, ei,
       (plan().markers || []).filter(m => m && m.uti).map(m => Math.round(m.x) + ':' + Math.round(m.y)).join(',')].join('|');
     if (merki === G.teiknad) return;
     G.teiknad = merki;
@@ -2886,6 +2896,18 @@
     }
     x.strokeStyle = G.hamur === 'veggir' ? '#1d4ed8' : '#26221e'; x.lineWidth = bt;
     h.veggir.forEach(v => { x.beginPath(); x.moveTo(sx(v[0]), sy(v[1])); x.lineTo(sx(v[2]), sy(v[3])); x.stroke(); });
+    // Eldveggir úr TurboPaint (veggjaLinur[].eld): EI-60 rauður, EI-30 ljósrauður — hálfgegnsæir svo teikningin sjáist.
+    const eldL = eldveggjaLinur(h);
+    if (eldL.length) {
+      x.save(); x.globalAlpha = 0.72; x.lineCap = 'butt'; x.lineJoin = 'miter';
+      eldL.forEach(v => {
+        x.strokeStyle = v.e === 60 ? '#d32f2f' : '#ef5350'; x.lineWidth = Math.max(3, v.t * k);
+        x.beginPath();
+        for (let i = 0; i + 1 < v.p.length; i += 2) { const px = sx(v.p[i]), py = sy(v.p[i + 1]); if (i) x.lineTo(px, py); else x.moveTo(px, py); }
+        x.stroke();
+      });
+      x.restore();
+    }
     if (G.hamur === 'veggir' && G.kedja) {
       if (G.bendill) { x.strokeStyle = 'rgba(29,78,216,.55)'; x.setLineDash([8, 6]); x.beginPath(); x.moveTo(sx(G.kedja[0]), sy(G.kedja[1])); x.lineTo(sx(G.bendill[0]), sy(G.bendill[1])); x.stroke(); x.setLineDash([]); }
       x.fillStyle = '#1d4ed8'; x.beginPath(); x.arc(sx(G.kedja[0]), sy(G.kedja[1]), bt * 0.9, 0, 6.3); x.fill();
@@ -3191,6 +3213,23 @@
     return ut;
   }
 
+  /* ── ELDVEGGIR ÚR TURBOPAINT (Agnar 07.10.2026: „Eldveggur er veggur með tegund") ──
+   * TurboPaint vistar eldvegg í veggjaLinur sem { p, t, tegund: 'veggur', eld: 60 | 30 } (eldri útgáfa þessa glugga sér
+   * venjulegan vegg — ekkert hverfur) og les líka tegund 'ei60' / 'ei30'. Veggurinn ber flokkinn sjálfur: rauður í 2D og
+   * 3D og brunahólfandi, eins og handval („Breyta eldveggjum" gengur samt fyrir — það er síðasta orð notandans hér). */
+  function eldflokkurVeggs(v) {
+    if (!v) return 0;
+    if (v.tegund === 'ei60') return 60;
+    if (v.tegund === 'ei30') return 30;
+    const e = +v.eld;
+    return (!v.tegund || v.tegund === 'veggur') && (e === 60 || e === 30) ? e : 0;
+  }
+  function eldveggjaLinur(h) {
+    return Array.isArray(h && h.veggjaLinur)
+      ? h.veggjaLinur.filter(v => v && Array.isArray(v.p) && v.p.length >= 4 && eldflokkurVeggs(v)).map(v => ({ p: v.p, t: Number(v.t) || 0, e: eldflokkurVeggs(v) }))
+      : [];
+  }
+
   function undirbua(h, stig1, merkiFrum, val, einingar, frum, eiHintar) {
     const fb = frum.naturalWidth || frum.width, fh = frum.naturalHeight || frum.height;
     const sk = h.skurdur || { x: 0, y: 0, w: fb, h: fh };
@@ -3207,9 +3246,10 @@
     const tp = Array.isArray(h.veggjaLinur) ? h.veggjaLinur.filter(v => v && Array.isArray(v.p) && v.p.length >= 4) : [];
     // TEGUND (06.10.2026, áfangi 1: TurboPaint sem leiðréttingarbekkur): hver lína ber veggur / gler / hurð. Gler og
     // hurðir eru EKKI veggir í grímunni — þau fara beint í 3D sem glerfletir og hurðargöt, eins og notandinn merkti þau.
-    const tpVeggir = tp.filter(v => !v.tegund || v.tegund === 'veggur');
+    const tpVeggir = tp.filter(v => !v.tegund || v.tegund === 'veggur' || v.tegund === 'ei60' || v.tegund === 'ei30');
     const tpGler = tp.filter(v => v.tegund === 'gler'), tpHurdir = tp.filter(v => v.tegund === 'hurd');
-    const tpButar = listi => { const ut = []; listi.forEach(v => { const t = Number(v.t) || 0; for (let i = 0; i + 3 < v.p.length; i += 2) ut.push([v.p[i], v.p[i + 1], v.p[i + 2], v.p[i + 3], t]); }); return ut; };
+    // [ax, ay, bx, by, þykkt, eldflokkur?] — eldflokkurinn (60/30) fylgir aðeins eldveggjum TurboPaint
+    const tpButar = listi => { const ut = []; listi.forEach(v => { const t = Number(v.t) || 0, e = eldflokkurVeggs(v); for (let i = 0; i + 3 < v.p.length; i += 2) ut.push(e ? [v.p[i], v.p[i + 1], v.p[i + 2], v.p[i + 3], t, e] : [v.p[i], v.p[i + 1], v.p[i + 2], v.p[i + 3], t]); }); return ut; };
     const veggir = r.thekja >= NOTHAEF_THEKJA && !h.pdfVeggir.length && !tp.length ? r.veggir : new Uint8Array(r.W * r.H);
     if (h.veggir.length || h.pdfVeggir.length || tp.length) {
       const c = document.createElement('canvas'); c.width = r.W; c.height = r.H;
@@ -3598,9 +3638,10 @@
       const skyring = valin => {
         if (!eb) return;
         const hl = (valin == null ? ut : [ut[valin]]).filter(Boolean);
-        let e60 = 0, e30 = 0, nAl = 0, nH = 0, nEH = 0, nHolf = 0, nHand = 0, nUti = 0;
+        let e60 = 0, e30 = 0, nAl = 0, nH = 0, nEH = 0, nHolf = 0, nHand = 0, nUti = 0, nTp = 0;
         hl.forEach(u => {
           (u.eld || []).forEach(e => { if (e === 60) e60++; else if (e === 30) e30++; });
+          (u.tpEld || []).forEach(e => { if (e) nTp++; });
           (u.handval || []).forEach(e => { if (e >= 0) nHand++; }); nUti += u.merkiUti || 0;
           if (u.holf) { nHolf += u.holf.fjoldi; u.holf.alyktad.forEach(e => { if (e) nAl++; }); }
           nH += (u.hurdir || []).length; (u.hurdEld || []).forEach(e => { if (e) nEH++; });
@@ -3611,7 +3652,7 @@
           (nHolf > 1 ? '<span style="white-space:nowrap">' + nHolf + ' brunahólf' + (hl.length > 1 ? ' alls' : '') + '</span>' : '') +
           (nHand ? '<span style="white-space:nowrap">' + nHand + (nHand === 1 ? ' veggur handvalinn' : ' veggir handvaldir') + '</span>' : '') +
           (nUti ? '<span style="white-space:nowrap;color:#ffd27a">' + nUti + (nUti === 1 ? ' tæki staðsett' : ' tæki staðsett') + ' utan teikningar — færðu ' + (nUti === 1 ? 'það' : 'þau') + ' inn í 2D</span>' : '') +
-          (e60 || e30 ? '<span style="flex-basis:100%;font-weight:500;opacity:.75">EI-merki lesin sjálfvirkt — sannreyndu á teikningu. Leiðrétt með „Breyta eldveggjum".</span>' : '');
+          (e60 || e30 ? '<span style="flex-basis:100%;font-weight:500;opacity:.75">' + (nTp >= e60 + e30 ? 'Eldveggir merktir í TurboPaint. Leiðrétt þar eða með „Breyta eldveggjum".' : 'EI-merki lesin sjálfvirkt — sannreyndu á teikningu. Leiðrétt með „Breyta eldveggjum".') + '</span>' : '');
         const graUtlit = G.syn3d && G.syn3d.utlit && G.syn3d.utlit() === 'gratt';
         eb.innerHTML = html; eb.style.display = html && !graUtlit ? 'flex' : 'none'; eb.style.flexWrap = 'wrap'; eb.style.maxWidth = 'calc(100% - 20px)'; eb.style.rowGap = '4px';
       };
@@ -3645,7 +3686,8 @@
           if (!u || !u.butar) { lokaVali(); return; }
           G.syn3d.merkja(hit.haed, hit.veggur);
           const nu = u.eld ? u.eld[hit.veggur] : 0, al = !!(u.holf && u.holf.alyktad[hit.veggur]), hand = !!(u.handval && u.handval[hit.veggur] >= 0);
-          const stada = nu ? 'EI-' + nu + (hand ? ' — handvalið' : ' — eftir merki á teikningu') : al ? 'Ályktaður brunaveggur (lokar hólfi)' : hand ? 'Ekki brunaveggur — handvalið' : 'Ekki brunaveggur';
+          const tpv = !!(u.tpEld && u.tpEld[hit.veggur]);
+          const stada = nu ? 'EI-' + nu + (hand ? ' — handvalið' : tpv ? ' — merkt í TurboPaint' : ' — eftir merki á teikningu') : al ? 'Ályktaður brunaveggur (lokar hólfi)' : hand ? 'Ekki brunaveggur — handvalið' : 'Ekki brunaveggur';
           const tk = (m, t, l, virkt) => '<button type="button" data-m="' + m + '" style="height:40px;border-radius:9px;border:' + (virkt ? '2px solid #fff' : '1px solid rgba(255,255,255,.22)') + ';background:' + l + ';color:#fff;font:700 13px system-ui;cursor:pointer">' + t + '</button>';
           sprettur.innerHTML = '<div style="opacity:.8;font-weight:500;line-height:1.3">' + esc(u.nafn || '') + ' · ' + stada + '</div>' +
             tk(60, 'EI-60', '#d32f2f', nu === 60) + tk(30, 'EI-30', '#c2605f', nu === 30) + tk(0, 'Ekki brunaveggur', '#5c574f', !nu && hand) + (hand ? tk(-1, '↺ Sjálfvirkt aftur', 'transparent', false) : '');
