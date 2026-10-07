@@ -317,6 +317,18 @@
     const spjaldVakt = () => { const inn = !!document.querySelector('._bs-sheet.in'); if (v.classList.contains('_spjald-opid') !== inn) v.classList.toggle('_spjald-opid', inn); };
     new MO(ms => { for (const m of ms) { if (m.target.classList && m.target.classList.contains('_bs-sheet')) { spjaldVakt(); return; } } }).observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
     spjaldVakt();
+    // Agnar 07.10: „að það kannski skiptist þegar maður ýtir á Keyra leið dagsins“ — á spjaldtölvu með lykil
+    // skiptir takkinn kortdálknum yfir í Google-leiðina í stað þess að opna nýjan flipa. Án lykils, eða í síma,
+    // gerir 219 sitt (Google Maps-appið). Leiðin sjálf hefur „Opna í Google Maps“ í horninu fyrir lifandi leiðsögn.
+    document.addEventListener('click', e => {
+      const b = e.target.closest('#_bs-drive'); if (!b || innerWidth < 900) return;
+      if (!(window.GOOGLE_MAPS_EMBED_KEY || '').trim()) return;
+      e.stopImmediatePropagation(); e.preventDefault();
+      leidHam = true; leidUrl = '';
+      if (!stads && navigator.geolocation) navigator.geolocation.getCurrentPosition(pos => { stads = { lat: pos.coords.latitude, lng: pos.coords.longitude }; leidUrl = ''; leidKort(); }, () => {}, { maximumAge: 120000, timeout: 6000 });
+      leidKort();
+      const kort = document.querySelector('#view-bilstjori ._bs-root .map'); if (kort && kort.scrollIntoView) kort.scrollIntoView({ block: 'nearest' });
+    }, true);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(start, 1000));
