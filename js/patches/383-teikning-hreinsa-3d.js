@@ -1551,7 +1551,7 @@
     const himinn = new T.HemisphereLight(0xffffff, 0xbdb8ae, 0.8); svid.add(himinn);
     const sol = new T.DirectionalLight(0xffffff, 0.6); svid.add(sol); svid.add(sol.target);
     let utlit = (gogn && gogn.utlit) || lesaUtlit();
-    const daufLog = [], skuggaEfni = [];
+    const daufLog = [], skuggaEfni = [], hurdaEfni = [];
     const losa = [], veggEfni = [], sporEfni = [], lag = [], midar = [];
     let staerst = 1, haedY = 0, vidmid = null, heilir = 0;
     // LÍKAN TÆKIS: hópur með upphaf á gólfi við yfirborð veggjar, +z snýr út frá veggnum. e = vegghæðin (mælieining
@@ -1766,6 +1766,37 @@
           });
           rendur.instanceMatrix.needsUpdate = true; hopur.add(rendur);
           losa.push(rE); lg.karmar = karmar; lg.rendur = rendur;
+          // HURÐABLÖÐ (Agnar 07.10.2026: „bílahurðir og venjulegar hurðir sjást ekki á 3D" — opið var tómt). Venjuleg hurð:
+          // blað á hjörum, hálfopið (55°) svo gengt sé um og inn sjáist. Bílahurð (op > 2,4 m): lokuð flekahurð með láréttum
+          // rákum. Brunahurð fær appelsínugulan blæ í Brunahólf-útliti.
+          const metri = veggH / 3, blH = veggH - karmH, blD = Math.max(0.6, 0.05 * metri);
+          const flekaAf = (() => {
+            const c = document.createElement('canvas'); c.width = 8; c.height = 64; const x = c.getContext('2d');
+            x.fillStyle = '#d4d7dc'; x.fillRect(0, 0, 8, 64);
+            for (let y = 0; y < 64; y += 16) { x.fillStyle = '#aeb3ba'; x.fillRect(0, y, 8, 2); x.fillStyle = '#eceef1'; x.fillRect(0, y + 2, 8, 1); }
+            const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; losa.push(t); return t;
+          })();
+          const hjor = new T.Vector3(0, 1, 0);
+          hd.hurdir.forEach((v, i) => {
+            const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
+            const breidd = Math.hypot(bx - ax, bz - az); if (breidd < 0.3 * metri) return;
+            const horn = Math.atan2(bz - az, bx - ax), eld = !!(hd.hurdEld && hd.hurdEld[i]);
+            const bil = breidd / metri > 2.4;
+            let blad;
+            if (bil) {
+              const tx = flekaAf.clone(); tx.needsUpdate = true; tx.repeat.set(1, blH / metri / 0.6); losa.push(tx);
+              const e = new T.MeshLambertMaterial({ color: 0xffffff, map: tx }); e.userData.hurd = 'bil';
+              const g = new T.BoxGeometry(breidd, blH, blD); losa.push(g, e); hurdaEfni.push(e);
+              blad = new T.Mesh(g, e);
+              blad.position.set((ax + bx) / 2, blH / 2, (az + bz) / 2); blad.rotation.y = -horn;
+            } else {
+              const e = new T.MeshLambertMaterial({ color: eld && utlit === 'eld' ? 0xe08a3c : 0xa58a6a }); e.userData.hurd = eld ? 'eld' : 'venjuleg';
+              const g = new T.BoxGeometry(breidd * 0.96, blH * 0.98, blD); g.translate(breidd * 0.48, blH * 0.49, 0); losa.push(g, e); hurdaEfni.push(e);
+              blad = new T.Mesh(g, e);
+              blad.position.set(ax, 0, az); blad.quaternion.setFromAxisAngle(hjor, -horn - 0.96);   // 55° opin
+            }
+            blad.castShadow = false; hopur.add(blad);
+          });
         }
         litaVeggi(lg);
       } else {
@@ -2023,6 +2054,7 @@
       skuggaEfni.forEach(e => { e.opacity = g ? GRATT_3D.skuggi : 0.2; });
       veggEfni.forEach(e => { if (e.userData.toppur && !e.transparent) e.color.setHex(g ? GRATT_3D.toppur : TOPPLITUR_3D); });
       lag.forEach(lg => { litaVeggi(lg); litaHolf(lg); });
+      hurdaEfni.forEach(e => { if (e.userData.hurd === 'eld') e.color.setHex(g ? 0xa58a6a : 0xe08a3c); });
     };
     beitaUtliti();
     handfang = {
@@ -2073,6 +2105,7 @@
       gegnsaett(a) {
         veggEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.4 : 1; e.depthWrite = !a; e.color.setHex(e.userData.toppur ? (a ? 0x8a847a : utlit === 'gratt' ? GRATT_3D.toppur : TOPPLITUR_3D) : e.userData.litad ? (a ? 0xb4b0a8 : 0xffffff) : (a ? 0x9d978c : VEGGLITUR_3D)); e.needsUpdate = true; });
         sporEfni.forEach(o => { o.visible = !!a; });
+        hurdaEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.35 : 1; e.depthWrite = !a; e.needsUpdate = true; });
       },
       // Ein hæð í einu (nr) eða allar (null). Stök efri hæð fær heilt gólf — hún hylur þá ekkert.
       syna(nr) {
