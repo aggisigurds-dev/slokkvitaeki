@@ -78,6 +78,23 @@
   }
   tryMerge();
 
+  /* 07.10.2026 — EINN SAMRUNI ER OF SNEMMA.
+   * `tryMerge` keyrir um leid og `AppSettings.path` skilar EINHVERJU, og thad er oft
+   * stadbundna afritid af stillingunum (eldra). Ferskar stillingar berast sidar, en tha
+   * var samruninn buinn og askriftin ein eftir — og hun kveikir adeins vid VISTUN.
+   *
+   * Maelt a lifandi sidu: stillingarnar baru 1.083 hnit (757 fastir punktar) en
+   * `_slokk_gc` i sama vafra bar 563. Handvirkt kall a `_slokk_mergeGeocodeFromAppSettings()`
+   * faerdi thad strax i 1.083 og Aksturslista 3 ur 2 af 7 i 7 af 7.
+   *
+   * Samruninn er HREINN STADBUNDINN reikningur — engin beidni, engin skrif a thjon — svo
+   * hann ma endurtaka. Faein tif duga til ad na ferskum stillingum, og hann haettir
+   * sjalfkrafa thegar ekkert baetist vid (`merged === 0`).
+   */
+  [3000, 8000, 20000].forEach(function (ms) {
+    setTimeout(function () { try { mergeFromServer(); } catch (_) {} }, ms);
+  });
+
   /* Re-merge whenever AppSettings reload (patches save it periodically).
    *
    * 07.10.2026: þetta stóð `onChange('geocode_cache', mergeFromServer)` — en `onChange(fn)`
