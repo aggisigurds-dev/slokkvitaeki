@@ -86,6 +86,39 @@
       'html body #view-bilstjori #_bs-manudur i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}',
       'html body #view-bilstjori #_bs-manudur .sl{margin-left:auto;color:#8a93a5}',
 
+      // ── 07.10.2026 (Agnar: „setja sem í sama þema og allt hitt“): spjaldtölvu-sýnin í Brunastál C — stálgrár
+      //    röndóttur grunnur, silfur-/málmtakkar í stað grænu og bláu, Playfair-titill, JetBrains Mono á tölum.
+      //    Síminn (<900 px) heldur Bílstjóra-þemanu úr 219 óbreyttu.
+      'html body #view-bilstjori ._bs-root.bt{font-family:' + SANS + '!important;background:#e2e6ec!important;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)!important}',
+      'html body #view-bilstjori{background:#1f2126!important}',
+      'html body #view-bilstjori .bt .topbar__title{font-family:"Playfair Display",Georgia,serif!important;font-weight:800!important;font-size:20px!important}',
+      'html body #view-bilstjori .bt .topbar__sub,html body #view-bilstjori ._bs-prog2,html body #view-bilstjori #_bs-prog2{font-family:' + MONO + '!important}',
+      'html body #view-bilstjori .bt .search{height:42px!important;border-radius:8px!important;border:1px solid rgba(20,24,34,.2)!important;box-shadow:none!important}',
+      'html body #view-bilstjori .bt .seg__btn{height:40px!important;border-radius:8px!important;border:1px solid rgba(20,24,34,.2)!important;background:linear-gradient(180deg,#fdfdfe,#e3e7ee)!important;color:#1f2530!important;font-size:12.5px!important;font-weight:700!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.08)!important}',
+      'html body #view-bilstjori .bt .seg__btn.is-active{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;color:#fff!important;border-color:#000!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)!important}',
+      'html body #view-bilstjori #_bs-vakt>div:first-child span{color:#1f2530!important;font-family:' + MONO + '!important;font-size:10px!important;letter-spacing:.16em!important}',
+      'html body #view-bilstjori #_bs-manudur{background:#fff!important;border:1px solid rgba(20,24,34,.16)!important;color:#3a4250!important}',
+      'html body #view-bilstjori #_bs-manudur b{color:#11141c!important}html body #view-bilstjori #_bs-manudur .mn{color:#8a5a0c!important}html body #view-bilstjori #_bs-manudur .sl{color:#6b7483!important}',
+      'html body #view-bilstjori .bt .stop{border-radius:10px!important;border:1px solid rgba(20,24,34,.14)!important;box-shadow:0 1px 2px rgba(0,0,0,.06)!important}',
+      'html body #view-bilstjori .bt .stop__rail{width:4px!important}',
+      'html body #view-bilstjori .bt .badge{background:#1f2530!important;box-shadow:0 0 0 1px #1f2530!important;font-family:' + MONO + '!important}',
+      'html body #view-bilstjori .bt .badge--todo{background:#c92a2a!important;box-shadow:0 0 0 1px #c92a2a!important}html body #view-bilstjori .bt .badge--done{background:#16783f!important;box-shadow:0 0 0 1px #16783f!important}',
+      'html body #view-bilstjori .bt .stop__addr,html body #view-bilstjori .bt .stop__meta{font-family:' + MONO + '!important}',
+      'html body #view-bilstjori .bt .stop__actions .act{background:#f3f5f8!important;color:#1f2530!important;font-weight:700!important}',
+      'html body #view-bilstjori .bt .act--done{background:#eef7f0!important;color:#0f5c33!important}html body #view-bilstjori .bt .act--done.is-done{background:linear-gradient(180deg,#1f9d5a,#0f6e3a)!important;color:#fff!important}',
+      'html body #view-bilstjori .bt .dock{background:linear-gradient(180deg,rgba(226,230,236,0),rgba(226,230,236,.96) 42%)!important}',
+      // fyrirtækjaspjaldið (._bs-sheet) — sama klæðning
+      'html body ._bs-sheet.bt{font-family:' + SANS + '!important;background:#e2e6ec!important;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)!important}',
+      'html body ._bs-sheet .card{border-radius:10px!important;border:1px solid rgba(20,24,34,.14)!important;box-shadow:0 1px 2px rgba(0,0,0,.06)!important}',
+      'html body ._bs-sheet .sec-label{font-family:' + MONO + '!important;font-size:10px!important;letter-spacing:.16em!important;color:#6b7483!important}',
+      'html body ._bs-sheet .field{border-radius:8px!important;border:1px solid rgba(20,24,34,.18)!important;background:#fff!important}',
+      'html body ._bs-sheet .btn{border-radius:8px!important}',
+      'html body ._bs-sheet .btn--light{background:linear-gradient(180deg,#fdfdfe,#e3e7ee)!important;border:1px solid rgba(20,24,34,.2)!important;color:#1f2530!important}',
+      'html body ._bs-sheet .btn--dark{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border:1px solid #000!important}',
+      'html body ._bs-sheet .seg__btn{height:40px!important;border-radius:8px!important;border:1px solid rgba(20,24,34,.2)!important;background:linear-gradient(180deg,#fdfdfe,#e3e7ee)!important;color:#1f2530!important;font-weight:700!important}',
+      'html body ._bs-sheet .seg__btn.is-active{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;color:#fff!important;border-color:#000!important}',
+      'html body ._bs-sheet .topbar .topbar__title,html body ._bs-sheet .topbar div[style*="font-weight:800"]{font-family:"Playfair Display",Georgia,serif!important}',
+
       // ── Snertifletir í listanum ──────────────────────────────────────────
       'html body #view-bilstjori ._bs-list{padding-bottom:12px!important}',
 
