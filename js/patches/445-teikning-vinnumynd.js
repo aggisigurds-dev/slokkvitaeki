@@ -244,7 +244,11 @@
       if (!m) return;
       const fr = frumHnit(m, M, rymi), sp = aStad(fr[0], fr[1]), s = staerd(staerd100(m, grunnBreidd));
       if (!isFinite(sp[0]) || !isFinite(sp[1])) return;
-      if (window.TeiknTakn && TeiknTakn.teiknaMerki) { try { TeiknTakn.teiknaMerki(x, m, sp[0], sp[1], s, units); } catch (_) {} }
+      if (window.TeiknTakn && TeiknTakn.teiknaMerki) {
+        try { TeiknTakn.teiknaMerki(x, m, sp[0], sp[1], s, units); } catch (_) {}
+        // „Nýtt · <tegund>"-miðinn (tæki í bið, 434) líka á vinnumyndinni og í vinnuskjalinu
+        try { if (TeiknTakn.erNytt && TeiknTakn.erNytt(m) && TeiknTakn.nyttMidi) TeiknTakn.nyttMidi(x, m, sp[0], sp[1], s); } catch (_) {}
+      }
       else { x.beginPath(); x.arc(sp[0], sp[1], s / 2, 0, Math.PI * 2); x.fillStyle = m.color || '#c93c1d'; x.fill(); x.strokeStyle = '#fff'; x.lineWidth = 2; x.stroke(); }
       if (valid && (m === valid || (!erStimpil(m) && m.unitId === F._selectedUnitId && !(TM() && TM().valid && TM().valid())))) {
         x.beginPath(); x.arc(sp[0], sp[1], s * 0.62 + 4, 0, Math.PI * 2); x.strokeStyle = '#c9a54a'; x.lineWidth = 3; x.stroke();

@@ -770,7 +770,7 @@
   }
 
   window.TeiknTakn = {
-    val, fingrafar, teiknaTakn, teiknaMerki, teiknaISpan, teiknaOfan, fjold, glyff: GLYFF, litir: LITIR
+    val, fingrafar, teiknaTakn, teiknaMerki, teiknaISpan, teiknaOfan, fjold, glyff: GLYFF, litir: LITIR, erNytt, nyttMidi
   };
   window.TeiknEi = Object.assign({}, kjarni, {
     lesaUrPdf, lesaUrMynd, teikna: teiknaEi, fingrafar: eiFingrafar, syn: eiSyn, keyra: keyraEiLestur
