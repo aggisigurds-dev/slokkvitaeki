@@ -3614,6 +3614,20 @@
   // Klukkan í hausnum og biðviðvörunin hreyfast á milli fyrirspurna.
   setInterval(() => { const B = G.blender; if (B && B.opid && B.stada !== 'done' && B.stada !== 'error' && B.stada !== 'timi' && document.getElementById('fp-3d')) blTeikna(); }, 1000);
 
+  // SJÁLFGEFIÐ 3D OFAN FRÁ (Agnar 07.10.2026: „Geturðu látið hana opnast hérna þegar ég vel Fiskislóð 41"): sé virka
+  // hæðin TILBÚIN (veggir leiðréttir í TurboPaint) opnast glugginn í 3D ofan frá með þá hæð eina. Einu sinni við hverja
+  // opnun — loki notandinn 3D helst 2D. Beðið þar til teikning hæðarinnar er komin (G.stig1).
+  function sjalfgefid3d() {
+    if (G.sjalf3d || !G.stig1) return;
+    G.sjalf3d = true;
+    const h = (haedir() || [])[G.virk];
+    if (!h || !(h.leidrett || (Array.isArray(h.veggjaLinur) && h.veggjaLinur.length)) || document.getElementById('fp-3d')) return;
+    opna3d().then(() => {
+      const hb = document.querySelector('#fp-3d-haedir');
+      const t = hb && [...hb.querySelectorAll('button[data-h]')].find(b => (b.textContent || '').trim() === (h.nafn || '').trim());
+      if (t && t.getAttribute('aria-pressed') !== 'true') t.click();
+    }).catch(e => console.warn('[383] sjálfgefið 3D', e));
+  }
   async function opna3d() {
     const FP = FPx(), main = fpEl('fp-main'); if (!FP || !main) return;
     if (document.getElementById('fp-3d')) { loka3d(); return; }
@@ -4068,7 +4082,8 @@
       setTimeout(tikk, 0);
       setTimeout(tikk, 60);
       setTimeout(tikk, 200);
-      const lykkja = () => { const m = document.getElementById('modal-floorplan'); if (!m || !document.body.contains(m) || !modalSynnilegt()) return; try { yfirlag(); } catch (_) {} G.raf = requestAnimationFrame(lykkja); };
+      G.sjalf3d = false;
+      const lykkja = () => { const m = document.getElementById('modal-floorplan'); if (!m || !document.body.contains(m) || !modalSynnilegt()) return; try { yfirlag(); } catch (_) {} try { sjalfgefid3d(); } catch (_) {} G.raf = requestAnimationFrame(lykkja); };
       G.raf = requestAnimationFrame(lykkja);
       return r;
     };
