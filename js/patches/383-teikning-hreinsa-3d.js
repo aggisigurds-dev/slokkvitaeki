@@ -3144,7 +3144,7 @@
    * Agnar 20.09.2026: „Má kannski setja zoom takka og leyfa pinch zoom". newfeatures.js átti þysjun með hjóli og
    * mousedown-færslu, með stöðuna lokaða inni í sér — engin snerting, engin klípa, og 30 px takkar. Hér er hún
    * tekin yfir: atburðir hennar eru stöðvaðir í capture og takkarnir hennar faldir. */
-  const Z = { s: 1, x: 0, y: 0 };
+  const Z = { s: 1, x: 0, y: 0, sjalf: true, gs: 1 };
   // CSS-zoom síðunnar (sími: 333/353 setja zoom ≈ 2,4 á gluggann). getBoundingClientRect og clientX eru í SKJÁ-px
   // (með zoom), en translate/width í stílnum eru í STAÐBUNDNUM px (án zoom). Án þessarar deilingar dró fingurinn
   // teikninguna 2,4× hraðar en hann hreyfðist og yfirlagið (veggir, skilti) teygðist út fyrir teikninguna
@@ -3157,16 +3157,37 @@
   function zBeita() {
     const c = fpEl('fp-canvas'); if (!c) return;
     c.style.transformOrigin = '0 0'; c.style.transform = 'translate(' + Z.x + 'px,' + Z.y + 'px) scale(' + Z.s + ')';
-    const m = document.getElementById('fp-zoom-pct'); if (m) m.textContent = Math.round(Z.s * 100) + '%';
+    // Prósentan miðast við grunnstöðuna (síma: smækkuð í svæðið undir flipunum) — „Passa" sýnir 100 %
+    const m = document.getElementById('fp-zoom-pct'); if (m) m.textContent = Math.round(Z.s / (Z.gs || 1) * 100) + '%';
   }
   function zThysja(f, cx, cy) {
     const main = fpEl('fp-main'); if (!main) return;
     const r = main.getBoundingClientRect(), zk = zKv(main);
     const mx = (cx == null ? r.width / 2 : cx - r.left) / zk, my = (cy == null ? r.height / 2 : cy - r.top) / zk;
     const ns = Math.min(12, Math.max(0.2, Z.s * f));
-    Z.x = mx - (mx - Z.x) * (ns / Z.s); Z.y = my - (my - Z.y) * (ns / Z.s); Z.s = ns; zBeita();
+    Z.x = mx - (mx - Z.x) * (ns / Z.s); Z.y = my - (my - Z.y) * (ns / Z.s); Z.s = ns; Z.sjalf = false; zBeita();
   }
-  function zNullstilla() { Z.s = 1; Z.x = 0; Z.y = 0; zBeita(); }
+  /* Grunnstaða teikningarinnar. SÍMI: í svæðinu MILLI flipalínunnar + þysjunarinnar efst og sýnarvalsins neðst
+   * (442 TeiknSimastjorn.rymi) — lifandi prófun 07.10.2026: hæðaflipar huldu horn teikningarinnar. Strigi FloorPlan
+   * fyllir #fp-main (newfeatures/floorplanfix), svo hann er smækkaður og færður hér með sömu umbreytingu og þysjunin;
+   * merkin, yfirlagið og smellir fylgja henni þegar. Tölva: óbreytt (1, 0, 0). */
+  function zGrunnur() {
+    const S = window.TeiknSimastjorn, main = fpEl('fp-main'), c = fpEl('fp-canvas');
+    const ry = S && S.rymi && main ? S.rymi(main) : null;
+    if (!ry || !c || !(ry.efst || ry.nedst)) return { s: 1, x: 0, y: 0 };
+    const W = main.clientWidth, H = main.clientHeight, cw = c.offsetWidth, ch = c.offsetHeight;
+    if (cw < 2 || ch < 2 || W < 2) return { s: 1, x: 0, y: 0 };
+    const h0 = Math.max(10, H - ry.efst - ry.nedst), s = Math.min(1, (W - 10) / cw, h0 / ch);
+    // offsetLeft/Top = staða strigans án umbreytingar (flex-miðjaður í #fp-main)
+    return { s, x: (W - cw * s) / 2 - c.offsetLeft, y: ry.efst + (h0 - ch * s) / 2 - c.offsetTop };
+  }
+  // Z.sjalf = teikningin er í grunnstöðu (enginn hefur þysjað/fært) — þá fylgir hún rýminu (flipar koma inn, snúningur).
+  function zNullstilla() { const g = zGrunnur(); Z.s = g.s; Z.x = g.x; Z.y = g.y; Z.gs = g.s; Z.sjalf = true; zBeita(); }
+  function zFylgjaRymi() {
+    if (!Z.sjalf || document.getElementById('fp-3d')) return;
+    const g = zGrunnur();
+    if (Math.abs(g.s - Z.s) > 0.002 || Math.abs(g.x - Z.x) > 0.5 || Math.abs(g.y - Z.y) > 0.5) { Z.s = g.s; Z.x = g.x; Z.y = g.y; Z.gs = g.s; zBeita(); }
+  }
   // Vinnumyndin (445) liggur yfir 2D-striganum: hjól og „fara að merki" eiga þá við hana.
   const vinnumyndSynd = () => !!(window.TeiknVinnumynd && TeiknVinnumynd.synd && TeiknVinnumynd.synd());
   function zFaraAd(imgX, imgY) {
@@ -3179,6 +3200,7 @@
     const my = ((imgX > 1 || imgY > 1) ? imgY : imgY * c.height) - G.rymi.y;
     const px = mx * (cw / c.width), py = my * (ch / c.height);
     if (Z.s < 1.6) Z.s = 1.8;
+    Z.sjalf = false;
     Z.x = (main.clientWidth / 2) - px * Z.s;
     Z.y = (main.clientHeight / 2) - py * Z.s;
     zBeita();
@@ -3247,11 +3269,11 @@
         const [a, b] = [...fingur.values()], fj = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
         if (G.drag && !G.drag.buid) G.drag = null;
         if (klipa) zThysja(fj / klipa, mx, my);
-        if (midja) { const zk = zKv(main); Z.x += (mx - midja[0]) / zk; Z.y += (my - midja[1]) / zk; zBeita(); }
+        if (midja) { const zk = zKv(main); Z.x += (mx - midja[0]) / zk; Z.y += (my - midja[1]) / zk; Z.sjalf = false; zBeita(); }
         klipa = fj; midja = [mx, my]; hreyft = 99;
       } else if (G.hamur !== 'skera') {
         hreyft += Math.abs(dx) + Math.abs(dy);
-        if (hreyft > 6) { const zk = zKv(main); Z.x += dx / zk; Z.y += dy / zk; zBeita(); main.style.cursor = 'grabbing'; }
+        if (hreyft > 6) { const zk = zKv(main); Z.x += dx / zk; Z.y += dy / zk; Z.sjalf = false; zBeita(); main.style.cursor = 'grabbing'; }
       }
     }, true);
     const sleppa = e => { fingur.delete(e.pointerId); klipa = 0; midja = null; main.style.cursor = ''; };
@@ -4290,7 +4312,7 @@
       loka3d(); cancelAnimationFrame(G.raf);
       Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, rodKomin: 0, _haedirCid: 0, _haedirBid: 0, _festCid: 0, _festModal: null, minni: {}, skipti: (G.skipti || 0) + 1, pdfBid: false });
       const r = opna.apply(this, arguments);
-      Z.s = 1; Z.x = 0; Z.y = 0;
+      Z.s = 1; Z.x = 0; Z.y = 0; Z.sjalf = true; Z.gs = 1;
       try { tikk(); } catch (_) {}
       setTimeout(tikk, 0);
       setTimeout(tikk, 60);
@@ -4382,6 +4404,7 @@
     try { zTakkar(); } catch (_) {}
     try { hnappar(); } catch (e) { console.warn('[383]', e); }
     try { flipar(); } catch (e) { console.warn('[383]', e); }
+    try { zFylgjaRymi(); } catch (_) {}
     try { beita(); } catch (e) { console.warn('[383]', e); }
     try { listaVisbending(); } catch (_) {}
     try { tryggjaHaedir(); } catch (_) {}

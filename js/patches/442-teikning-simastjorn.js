@@ -12,12 +12,24 @@
  * Allt þetta er útlitsval þessa tækis (localStorage), ekki gögn — sbr. CLAUDE.md.
  * 433 teiknar #fp-stimpil sjálft upp á nýtt; hér er AÐEINS bætt við haus fyrir framan
  * það og falið með CSS, svo endurteikning 433 þurrkar ekkert út.
+ *
+ * Lifandi prófun 07.10.2026 (375×812): hæðaflipar 383 brotnuðu í FJÓRAR línur (dálk) efst til vinstri og huldu horn
+ * vinnumyndarinnar og tækin þar; 📷 QR-takkinn (57) lá ofan á „Vista", 💬 og EN á tækjaræmunni og leiðbeiningunni.
+ *  · Sími: flipar í EINNI línu efst sem skrunast lárétt, þysjunin í sömu línu hægra megin (36 px eins og áður).
+ *    „Endurteikna" í þysjunarhópnum víkur á síma — 3D-takkinn í sýnarvalinu gerir það sama (opna3d → Festa) og
+ *    „úrelt"-línan heldur sínum takka.
+ *  · rymi(main): hve mikið stýringarnar taka efst (flipar + þysjun) og neðst (sýnarval) — 445 fellir vinnumyndina og
+ *    383 2D-teikninguna í svæðið á milli, svo ekkert hylji hana. Aðeins sími; tölvan óbreytt.
+ *  · Meðan glugginn er opinn á síma: html.fp-simi-opid felur 📷 / 💬 / EN / Aa (sama og 327 gerir á Sölu). Þeir
+ *    koma aftur um leið og glugganum er lokað.
  * ========================================================================== */
 (() => {
   if (window.__teiknSimastjorn) return;
   window.__teiknSimastjorn = true;
 
   const LS_HD = 'fp_hd_lokad', LS_MERKI = 'fp_merki_lokad', LS_FALIN = 'fp_merki_falin';
+  // Breidd þysjunarhópsins á síma (− · 100% · + · ⤢ á 36 px, sbr. 383/445): flipalínan endar fyrir framan hann.
+  const ZOOM_B = 170;
   const les = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (_) { return d; } };
   const skr = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -62,6 +74,16 @@
       // Fest útlit: „776 veggjastrik úr PDF-inu …"-stikan er talning sem Agnar bað um að fjarlægja og hún hylur
       // neðsta hluta teikningarinnar — á festu blaði er ekkert að greina.
       '#modal-floorplan.fp-fest #fp-hreinsa-stika{display:none!important}' +
+      // SÍMI: hæðaflipar í EINNI línu efst sem skrunast lárétt — ekki dálkur yfir horni myndarinnar. Þysjunin (2D og
+      // vinnumynd) í sömu línu hægra megin; flipalínan endar áður en hún byrjar.
+      '#modal-floorplan.fp-simi #fp-main>#fp-haedir{left:8px!important;top:6px!important;right:auto!important;max-width:calc(100% - ' + (ZOOM_B + 22) + 'px)!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;gap:5px!important;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x}' +
+      '#modal-floorplan.fp-simi #fp-main>#fp-haedir::-webkit-scrollbar{display:none}' +
+      '#modal-floorplan.fp-simi #fp-main>#fp-haedir>button{flex:none!important;white-space:nowrap!important;height:36px!important}' +
+      '#modal-floorplan.fp-simi #fp-main>#fp-zoom,#modal-floorplan.fp-simi #fp-vinnusyn>#fp-vm-zoom{top:6px!important;right:8px!important;flex-wrap:nowrap!important;max-width:none!important;gap:4px!important}' +
+      '#modal-floorplan.fp-simi #fp-vinnusyn>#fp-vm-zoom>.fp-vm-endur{display:none!important}' +
+      // Fljótandi takkar appsins meðan Teikning-glugginn er opinn á síma: þeir lágu á „Vista", tækjaræmunni og
+      // leiðbeiningunni — og „Aa" (333, síðustærð) á ⤢ þegar toppurinn er felldur. html.fp-simi-opid er sett hér að neðan (aldrei :has() á rótinni — sbr. 327).
+      'html.fp-simi-opid:not(#_h) body #qr-fab:not(#_p1),html.fp-simi-opid:not(#_h) body #_ad-fab:not(#_p1),html.fp-simi-opid:not(#_h) body #_sz-aa:not(#_p1),html.fp-simi-opid:not(#_h) body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3){display:none!important}' +
       '';
     document.head.appendChild(st);
   }
@@ -156,7 +178,49 @@
     requestAnimationFrame(() => { try { window.dispatchEvent(new Event('resize')); } catch (_) {} });
   }
 
+  /* Rými stýringanna yfir teikningunni á SÍMA, í staðbundnum px #fp-main (án CSS-zoom 333/353): `efst` = neðri brún
+   * flipalínunnar / þysjunarinnar + 6, `nedst` = frá efri brún sýnarvalsins (Vinnumynd · 2D · 3D) + 6. 445 (vinnumynd)
+   * og 383 (2D, „Passa") fella teikninguna á milli. Tölva: { 0, 0 } — útlitið þar óbreytt. „Úrelt"-línan og
+   * leiðbeiningin teljast ekki með: þær koma og fara, og myndin má ekki hoppa við það (STÖÐUGT VIÐMÓT). */
+  function rymi(main) {
+    const m = document.getElementById('modal-floorplan');
+    if (!main || !m || !m.classList.contains('fp-simi') || !main.offsetHeight) return { efst: 0, nedst: 0 };
+    const mr = main.getBoundingClientRect(), zk = mr.height / main.offsetHeight || 1, H = main.offsetHeight;
+    const synilegt = el => {
+      if (!el || !el.getClientRects().length) return null;
+      const cs = getComputedStyle(el);
+      return cs.visibility === 'hidden' || cs.display === 'none' ? null : el.getBoundingClientRect();
+    };
+    let efst = 0, nedst = 0;
+    ['#fp-haedir', '#fp-zoom', '#fp-vm-zoom'].forEach(s => {
+      const r = synilegt(main.querySelector(s));
+      if (r && r.height && (r.top - mr.top) / zk < H * 0.4) efst = Math.max(efst, (r.bottom - mr.top) / zk + 6);
+    });
+    const sv = synilegt(main.querySelector('#fp-synval'));
+    if (sv && sv.height && (sv.bottom - mr.top) / zk > H * 0.6) nedst = Math.max(nedst, (mr.bottom - sv.top) / zk + 6);
+    // Teikningin fær aldrei minna en helming hæðarinnar (mjög lágur gluggi: stýringarnar víkja þá frekar)
+    if (H - efst - nedst < H * 0.5 && efst + nedst > 0) { const k = (H * 0.5) / (efst + nedst); efst *= k; nedst *= k; }
+    return { efst: Math.round(efst), nedst: Math.round(nedst) };
+  }
+
+  // Fljótandi takkar appsins víkja meðan glugginn er opinn á síma (klasinn aðeins skrifaður þegar staðan breytist).
+  function fljotandi() {
+    const m = document.getElementById('modal-floorplan');
+    const opid = !!(m && m.classList.contains('open') && m.classList.contains('fp-simi'));
+    const r = document.documentElement;
+    if (opid) still();
+    if (r.classList.contains('fp-simi-opid') !== opid) r.classList.toggle('fp-simi-opid', opid);
+  }
+  let vakt = null;
+  function vakaGlugga() {
+    const m = document.getElementById('modal-floorplan');
+    if (!m || vakt === m) return;
+    // Opnun / lokun / síma-klasi gluggans → strax, ekki eftir næsta púls (annars sást 📷 hálfa sekúndu yfir „Vista")
+    vakt = m;
+    try { new MutationObserver(fljotandi).observe(m, { attributes: true, attributeFilter: ['class'] }); } catch (_) {}
+  }
+
   // Ódýr púls á meðan glugginn er opinn (tryggja() hættir strax þegar allt er á sínum stað).
-  setInterval(() => { try { tryggja(); } catch (e) { console.warn('[442]', e); } }, 500);
-  window.TeiknSimastjorn = { tryggja };
+  setInterval(() => { try { vakaGlugga(); fljotandi(); tryggja(); } catch (e) { console.warn('[442]', e); } }, 500);
+  window.TeiknSimastjorn = { tryggja, rymi };
 })();

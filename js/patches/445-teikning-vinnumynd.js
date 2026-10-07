@@ -221,10 +221,14 @@
     const g = V.gamur, r = g.getBoundingClientRect(), zk = g.offsetWidth ? r.width / g.offsetWidth : 1;
     return { x: (e.clientX - r.left) / zk, y: (e.clientY - r.top) / zk, zk, inni: e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom };
   }
+  // Myndin fellur í svæðið MILLI stýringanna (sími: flipalínan + þysjun efst, sýnarvalið neðst — 442 rymi), svo
+  // ekkert hylji hana (lifandi prófun 07.10.2026: hæðaflipadálkurinn huldi horn myndarinnar og tækin þar).
+  // Tölva: { 0, 0 } og sama regla og áður (10 px spássía).
   function grunnur() {
     const M = V.mynd, g = V.gamur, cw = g.offsetWidth, ch = g.offsetHeight;
-    const bs = Math.max(1e-6, Math.min((cw - 20) / M.b, (ch - 20) / M.h));
-    return { bs, ox: (cw - M.b * bs) / 2, oy: (ch - M.h * bs) / 2, cw, ch };
+    const ry = V.rymi || { efst: 0, nedst: 0 }, h0 = ch - ry.efst - ry.nedst, spass = ry.efst || ry.nedst ? 0 : 20;
+    const bs = Math.max(1e-6, Math.min((cw - 20) / M.b, (h0 - spass) / M.h));
+    return { bs, ox: (cw - M.b * bs) / 2, oy: ry.efst + (h0 - M.h * bs) / 2, cw, ch };
   }
   const aSkja = (gr, px, py) => [V.x + (gr.ox + px * gr.bs) * V.s, V.y + (gr.oy + py * gr.bs) * V.s];
   const aMynd = (gr, sx, sy) => [((sx - V.x) / V.s - gr.ox) / gr.bs, ((sy - V.y) / V.s - gr.oy) / gr.bs];
@@ -266,7 +270,8 @@
     const M = V.mynd, F = FP(), p = plan(), T = TB(), rymi = T && T.rymi ? T.rymi() : { x: 0, y: 0 };
     const r = g.getBoundingClientRect(), dpr = Math.min(3, (window.devicePixelRatio || 1) * (r.width / cw || 1));
     const valid = TM() && TM().valid ? TM().valid() : null;
-    const fingur = [cw, ch, dpr, V.s, V.x, V.y, M ? vmLykill(M.vm) : '-', rymi.x, rymi.y, F && F._selectedUnitId, valid && valid.unitId,
+    const ry = V.rymi || { efst: 0, nedst: 0 };
+    const fingur = [cw, ch, dpr, V.s, V.x, V.y, M ? vmLykill(M.vm) : '-', rymi.x, rymi.y, ry.efst, ry.nedst, F && F._selectedUnitId, valid && valid.unitId,
       M ? staerd100({}, grunnur().bs * M.b) : 0, window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '',
       ((p && p.markers) || []).map(m => m ? [m.unitId, m.x, m.y, m.rot || 0, m.staerd || '', m.sign || '', m.takn || '', m.color || ''].join(':') : '').join('|')].join(';');
     if (!force && fingur === V.teiknad) return;
@@ -539,6 +544,10 @@
       V.villa = {}; V.brotin = {}; V.sjalfReynt = {}; V.teiknad = ''; V.opnad = performance.now(); V.synt = 0; V.hint = 0; V.gamur = null; V.synval = null;
     }
     tryggjaDom(main);
+    // Rými stýringanna (442) — lesið einu sinni í ramma; teikna() endurteiknar ef það breytist
+    const S = window.TeiknSimastjorn;
+    const ry = S && S.rymi ? S.rymi(main) : null;
+    if (ry && (!V.rymi || ry.efst !== V.rymi.efst || ry.nedst !== V.rymi.nedst)) V.rymi = ry;
     const h = virkHaed();
     const sig = h ? [h, h.image_url, h.skurdur, h.veggjaLinur, (h.veggir || []).length, h.leidrett, h.vinnumynd, h.pdfVeggir, h.pdfFlokkar] : [null];
     if (!V.sig || sig.length !== V.sig.length || sig.some((x, i) => x !== V.sig[i])) {
