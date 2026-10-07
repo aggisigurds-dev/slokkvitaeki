@@ -466,6 +466,9 @@
     const pub = DB.sb.storage.from(FATA).getPublicUrl(slod);
     vm.url = pub && pub.data && pub.data.publicUrl;
     if (!vm.url) throw new Error('engin slóð á myndina');
+    // Sama slóð þegar hæðin er fest aftur án breytinga á veggjum (Endurteikna → Festa): skráin er yfirskrifuð en
+    // vafrar geyma hana í ár (cacheControl) — aðrar vélar sæju gömlu myndina. Útgáfan í slóðinni = tími festingar.
+    vm.url += (vm.url.indexOf('?') < 0 ? '?' : '&') + 'v=' + (Date.parse(vm.t) || Date.now()).toString(36);
     vm.kb = Math.round(blob.size / 1024);
     const sama = x => x && x.id === hid && (x.image_url || null) === (url0 || null) && lykillHaedar(x) === lyk;
     const T = TB(), heima = T && T.haedir && FP() && FP().companyId === cid ? T.haedir().find(sama) : null;
