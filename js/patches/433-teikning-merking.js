@@ -624,7 +624,7 @@
     let g = document.getElementById('fp-draugur');
     if (!g) {
       g = document.createElement('div'); g.id = 'fp-draugur';
-      g.style.cssText = 'position:fixed;z-index:80;pointer-events:none;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:7px;background:#c93c1d;color:#fff;font:700 10px system-ui,sans-serif;display:none;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.35);border:2px solid #fff';
+      g.style.cssText = 'position:fixed;z-index:100040;pointer-events:none;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:7px;background:#c93c1d;color:#fff;font:700 10px system-ui,sans-serif;display:none;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.35);border:2px solid #fff';
       document.body.appendChild(g);
     }
     return g;
@@ -943,7 +943,7 @@
       '#fp-canvas.fp-drop,#fp-main.fp-armadur #fp-canvas{outline:2px dashed rgba(201,165,74,.55);outline-offset:-2px;cursor:copy}' +
       '#fp-afturkalla{padding:5px 10px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(20,18,15,.88);color:#f1ede4;font:600 11px system-ui,sans-serif;cursor:pointer}' +
       '#fp-afturkalla[hidden]{display:none!important}' +
-      '#fp-valmynd{position:fixed;z-index:4000;min-width:196px;padding:6px;border-radius:12px;background:#1c1916;color:#f1ede4;border:1px solid rgba(255,255,255,.14);box-shadow:0 14px 40px rgba(0,0,0,.5);font:600 13px system-ui,sans-serif}' +
+      '#fp-valmynd{position:fixed;z-index:100050;min-width:196px;padding:6px;border-radius:12px;background:#1c1916;color:#f1ede4;border:1px solid rgba(255,255,255,.14);box-shadow:0 14px 40px rgba(0,0,0,.5);font:600 13px system-ui,sans-serif}' +
       '#fp-valmynd .fp-vm-h{padding:6px 10px 8px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.42)}' +
       '#fp-valmynd .fp-vm-li{display:block;width:100%;text-align:left;padding:8px 10px;border:0;background:transparent;color:inherit;border-radius:8px;cursor:pointer;font:inherit}' +
       '#fp-valmynd .fp-vm-li:hover,#fp-valmynd .fp-vm-ico:hover,#fp-merki-adgerd .fp-vm-ico:hover{background:rgba(255,255,255,.08)}' +
