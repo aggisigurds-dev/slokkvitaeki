@@ -60,6 +60,7 @@
       //    fyrirtækja boxunum“): starfsmanna-spjöldin undir DAGURINN Í DAG hverfa á spjaldtölvunni — nafnarofinn
       //    (rauða flísin) stendur einn. Stoppspjöldin þéttast: mælt 1400 px fyrir ≈ 230 px hvert, eftir ≈ 150 px.
       'html body #view-bilstjori #_bs-vakt>div:not(:first-child){display:none!important}',
+      'html body #view-bilstjori #_bs-vakt>#_bs-manudur{display:flex!important}',   // mánaðarstrimillinn er líka barn #_bs-vakt — má ekki hverfa með spjöldunum
       'html body #view-bilstjori #_bs-vakt>div:first-child{margin-bottom:2px!important}',
       'html body #view-bilstjori #_bs-list{gap:8px!important}',
       'html body #view-bilstjori .bt .stop__body{padding:8px 10px 8px 14px!important;gap:10px!important}',
