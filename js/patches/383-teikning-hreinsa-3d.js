@@ -3685,6 +3685,8 @@
         skyr.textContent = 'Ganga: draga = líta í kring · hjól / W S / ↑ ↓ = áfram og aftur · A D / ← → = til hliðar · shift = hraðar · tvísmella á gólf = fara þangað · Esc = hætta';
       });
       if (G.syn3d) G.syn3d.aGangaLok = gangaAf;
+      // „Opna í TurboPaint" meðan 3D er opið: hæðin sem er sýnd EIN í 3D ræður, ekki flipinn undir (Agnar 07.10.2026).
+      if (G.syn3d) G.syn3d.valinHaedId = () => (valin != null && ut[valin] ? ut[valin].haedId : null);
       // Hæðatakkar: smellur sýnir þá hæð EINA, annar smellur á sömu hæð sýnir allar aftur.
       const hb = gamur.querySelector('#fp-3d-haedir');
       if (hb && ut.length > 1) {
@@ -3776,7 +3778,7 @@
     if (!u || u.indexOf('blob:') === 0 || u.indexOf('data:') === 0) return false;
     return /teikn-mynd\?/.test(u) || /^https?:/i.test(u);
   }
-  async function vistaHaedirFyrirTurboPaint() {
+  async function vistaHaedirFyrirTurboPaint(nr) {
     const FP = FPx(), cid = FP && FP.companyId;
     if (!cid || !window.DB || !DB.sb) throw new Error('engin tenging');
     samstillaVirka();
@@ -3791,7 +3793,7 @@
       ? await TeiknVistun.skrifa(cid, rodin)
       : await DB.sb.from('teikning_bord').upsert(rodin, { onConflict: 'company_id' }).select('company_id').then(q => ({ error: q.error || (!q.data || !q.data.length ? new Error('ekkert skrifað') : null) }));
     if (r.error) throw new Error(r.error.message || 'ekkert skrifað');
-    return { cid, h: hs[G.virk], hs };
+    return { cid, h: hs[nr >= 0 ? nr : G.virk], hs };
   }
   function turboPaintSlod(cid, h, planUrl) {
     const q = ['uttekt=' + encodeURIComponent(cid)];
@@ -3806,19 +3808,25 @@
     const FP = FPx(), cid = FP && FP.companyId;
     if (!cid) { segja('Opnaðu teikninguna fyrst.'); return; }
     if (!FP.bgImage && !(auka && auka.plan)) { segja('Sæktu eða hlaðu upp teikningu fyrst.'); return; }
-    const h = (haedir() || [])[G.virk];
+    // 07.10.2026 (Agnar: „var óvart inn í 3D, þess vegna virkaði það ekki" — 2. hæð opnaðist þótt 1. hæð væri valin í
+    // 3D): sé ein hæð sýnd í 3D opnast HÚN; annars virki flipinn eins og áður.
+    const hs0 = haedir() || [];
+    const id3d = G.syn3d && G.syn3d.valinHaedId ? G.syn3d.valinHaedId() : null;
+    const i3d = id3d ? hs0.findIndex(x => x && x.id === id3d) : -1;
+    const nr = i3d >= 0 ? i3d : G.virk;
+    const h = hs0[nr];
     if (h && !haedOpnastITurboPaint(h) && !(auka && auka.plan)) {
       segja('Aðeins teikningar úr skjalasafninu opnast sjálfkrafa í TurboPaint — upphlaðna mynd þarf að flytja þar inn handvirkt.');
       return;
     }
     const flipi = window.open('about:blank', '_blank');
     try {
-      const v = await vistaHaedirFyrirTurboPaint();
+      const v = await vistaHaedirFyrirTurboPaint(nr);
       const slod = turboPaintSlod(v.cid, v.h, auka && auka.plan);
       if (flipi) flipi.location.href = slod; else location.href = slod;
       _tpOpnad = Date.now();
       vaktAfturkomu();
-      segja('Hæðin er vistuð og opnast í TurboPaint. Þegar þú ert búinn þar: „💾 Vista í úttekt" — merkin koma til baka hér.');
+      segja((v.h && v.h.nafn ? '„' + v.h.nafn + '"' : 'Hæðin') + ' opnast í TurboPaint. Þegar þú ert búinn þar: „💾 Vista í úttekt" — merkin koma til baka hér.');
     } catch (e) {
       if (flipi) try { flipi.close(); } catch (_) {}
       segja('⚠ Gat ekki vistað hæðina fyrir TurboPaint: ' + ((e && e.message) || e));
