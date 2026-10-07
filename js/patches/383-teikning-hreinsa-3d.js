@@ -1505,7 +1505,7 @@
   // veggjum og engin lituð brunahólf — rauðu tækin standa út. „Brunahólf" skiptir í litaða útlitið (eldveggir, hólf).
   // Engin SSAO/korn — Agnar hafnaði því. Val vafrans: localStorage (útlitsval, ekki gögn).
   const UTLIT_LS = 'teikn3d_utlit';
-  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xe8e6e2, toppur: 0xb9b5ae, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
+  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xe8e6e2, toppur: 0x2b2e33, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
   const lesaUtlit = () => { try { return localStorage.getItem(UTLIT_LS) === 'eld' ? 'eld' : 'gratt'; } catch (_) { return 'gratt'; } };
   const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0x8d6e63, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
   // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
@@ -1734,7 +1734,8 @@
         veggir = new T.InstancedMesh(kG, kEfni, hd.butar.length);
         hd.butar.forEach((v, i) => {
           const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
-          const th = Math.max(0.8, (v[4] || 0) * f || sjalfg);
+          // minnst 24 cm (veggH = 3 m): línur úr TurboPaint eru oft 6–8 cm og dökku topparnir hurfu ofan frá (07.10.2026)
+          const th = Math.max(0.8, veggH * 0.08, (v[4] || 0) * f || sjalfg);
           q.setFromAxisAngle(ofan, -Math.atan2(bz - az, bx - ax));
           m.compose(st.set((ax + bx) / 2, veggH / 2, (az + bz) / 2), q, kv3.set(Math.hypot(bx - ax, bz - az) + th, veggH, th));
           veggir.setMatrixAt(i, m);
@@ -1767,7 +1768,7 @@
           hd.hurdir.forEach((v, i) => {
             const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
             q.setFromAxisAngle(ofan, -Math.atan2(bz - az, bx - ax));
-            m.compose(st.set((ax + bx) / 2, veggH - karmH / 2, (az + bz) / 2), q, kv3.set(Math.hypot(bx - ax, bz - az), karmH, Math.max(0.8, (v[4] || 0) * f || sjalfg)));
+            m.compose(st.set((ax + bx) / 2, veggH - karmH / 2, (az + bz) / 2), q, kv3.set(Math.hypot(bx - ax, bz - az), karmH, Math.max(0.8, veggH * 0.08, (v[4] || 0) * f || sjalfg)));
             karmar.setMatrixAt(i, m);
           });
           karmar.instanceMatrix.needsUpdate = true; karmar.castShadow = true; hopur.add(karmar);
@@ -1776,7 +1777,7 @@
           hd.hurdir.forEach((v, i) => {
             const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
             q.setFromAxisAngle(ofan, -Math.atan2(bz - az, bx - ax));
-            m.compose(st.set((ax + bx) / 2, veggH + veggH * 0.012, (az + bz) / 2), q, kv3.set(Math.hypot(bx - ax, bz - az), veggH * 0.024, Math.max(0.8, (v[4] || 0) * f || sjalfg) * 1.25));
+            m.compose(st.set((ax + bx) / 2, veggH + veggH * 0.012, (az + bz) / 2), q, kv3.set(Math.hypot(bx - ax, bz - az), veggH * 0.024, Math.max(0.8, veggH * 0.08, (v[4] || 0) * f || sjalfg) * 1.25));
             rendur.setMatrixAt(i, m);
           });
           rendur.instanceMatrix.needsUpdate = true; hopur.add(rendur);
@@ -1922,8 +1923,8 @@
       };
       const hd = lg.hd, f = lg.f, gw2 = lg.gw / 2, gh2 = lg.gh / 2, sj = lg.sjalfg || Math.max(lg.gw, lg.gh) * 0.004;
       if (lg.heilir) {
-        hd.butar.forEach(v => { const th = Math.max(0.8, (v[4] || 0) * f || sj); varpa(hornAB(v[0] * f - gw2, v[1] * f - gh2, v[2] * f - gw2, v[3] * f - gh2, th / 2, th), 0, 1); });
-        (hd.hurdir || []).forEach(v => { const th = Math.max(0.8, (v[4] || 0) * f || sj); varpa(hornAB(v[0] * f - gw2, v[1] * f - gh2, v[2] * f - gw2, v[3] * f - gh2, 0, th), 0.74, 1); });
+        hd.butar.forEach(v => { const th = Math.max(0.8, lg.veggH * 0.08, (v[4] || 0) * f || sj); varpa(hornAB(v[0] * f - gw2, v[1] * f - gh2, v[2] * f - gw2, v[3] * f - gh2, th / 2, th), 0, 1); });
+        (hd.hurdir || []).forEach(v => { const th = Math.max(0.8, lg.veggH * 0.08, (v[4] || 0) * f || sj); varpa(hornAB(v[0] * f - gw2, v[1] * f - gh2, v[2] * f - gw2, v[3] * f - gh2, 0, th), 0.74, 1); });
       } else {
         (lg.k.kassar || []).forEach(r => { const x0 = r.x - gw2, z0 = r.y - gh2; varpa([[x0, z0], [x0 + r.b, z0], [x0 + r.b, z0 + r.h], [x0, z0 + r.h]], 0, 1); });
       }
@@ -1942,7 +1943,18 @@
     const vel = new T.PerspectiveCamera(42, b / h, 0.1, staerst * 20 + haedY * 6);
     const mid = new T.Vector3(0, haedY * 0.4, 0);
     // Hár og mjór strigi (sími): sjónsviðið lárétt er þrengra en lóðrétt — bakka svo allt húsið sjáist (05.10.2026).
-    let theta = -0.6, phi = 0.95, fjarl = Math.max(staerst * 1.25, haedY * 2.3) * (b < h * 1.5 ? Math.min(2.6, 1.5 * h / Math.max(1, b)) : 1);
+    // 07.10.2026 (Agnar, með mynd af „2D → 3D"-grunnmynd: „bara mappið eins og ég fæ það og rétt að halla því"): opnast
+    // OFAN FRÁ, beint á teikninguna eins og hún snýr í 2D, aðeins hallað svo veggirnir rísi. „Á ská" = gamla sjónarhornið.
+    const fjarlSka = Math.max(staerst * 1.25, haedY * 2.3) * (b < h * 1.5 ? Math.min(2.6, 1.5 * h / Math.max(1, b)) : 1);
+    // ofan frá: allt húsið (og efri hæðir) innan rammans — sjónsviðið nær styttra á gólfinu þegar horft er beint niður
+    const SJONARHORN = { ofan: { theta: 0, phi: 0.42, fjarl: fjarlSka * 1.3 }, ska: { theta: -0.6, phi: 0.95, fjarl: fjarlSka } };
+    let theta = SJONARHORN.ofan.theta, phi = SJONARHORN.ofan.phi, fjarl = SJONARHORN.ofan.fjarl;
+    let flug = null;     // mjúk færsla á milli sjónarhorna (kallað í hverjum ramma)
+    const fljuga = (t, p, fj) => {
+      let d = (t - theta) % (2 * Math.PI); if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
+      const t0 = theta, p0 = phi, f0 = fjarl, s = performance.now();
+      flug = () => { const a = Math.min(1, (performance.now() - s) / 450), e = a * (2 - a); theta = t0 + d * e; phi = p0 + (p - p0) * e; fjarl = f0 + (fj - f0) * e; stillaVel(); if (a >= 1) flug = null; };
+    };
     function stillaVel() {
       phi = Math.min(1.5, Math.max(0.12, phi)); fjarl = Math.min(staerst * 6 + haedY * 2, Math.max(staerst * 0.12, fjarl));
       vel.position.set(mid.x + fjarl * Math.sin(phi) * Math.sin(theta), mid.y + fjarl * Math.cos(phi), mid.z + fjarl * Math.sin(phi) * Math.cos(theta));
@@ -2067,6 +2079,7 @@
     let sidast = performance.now();
     const lykkja = () => {
       if (!lifir) return;
+      if (flug) flug();
       const nu = performance.now(), dt = Math.min(0.1, (nu - sidast) / 1000); sidast = nu;
       if (ganga) {
         if (takkar.fram || takkar.hlid) { const v = 1.6 * ganga.metri * dt * (takkar.hratt ? 2.5 : 1); gangaFaera((takkar.fram || 0) * v, (takkar.hlid || 0) * v); }
@@ -2091,6 +2104,11 @@
       kassar: haedir.length,
       // Grátt (sjálfgefið á prófílnum) eða litað útlit eldveggja og brunahólfa.
       utlit(v) { if (v !== 'gratt' && v !== 'eld') return utlit; utlit = v; try { localStorage.setItem(UTLIT_LS, v); } catch (_) {} beitaUtliti(); return utlit; },
+      // Sjónarhorn: 'ofan' (beint ofan á teikninguna, aðeins hallað) eða 'ska'. Án gildis: hvort er nær núna.
+      sjonarhorn(n) {
+        if (SJONARHORN[n]) { if (ganga) gangaHaetta(); const s = SJONARHORN[n]; mid.set(0, mid.y, 0); fljuga(s.theta, s.phi, s.fjarl); return n; }
+        return phi < 0.72 ? 'ofan' : 'ska';
+      },
       heilir,
       aSmell: null,     // fall(hit | null, clientX, clientY) — kallað við smell á sviðið
       // Gönguhamur á hæð nr (true) eða aftur í snúning (false). aGangaLok: kallað þegar notandinn ýtir á Esc.
@@ -2141,7 +2159,7 @@
       syna(nr) {
         lag.forEach(o => { const ein = nr === o.nr; o.hopur.visible = nr == null || ein; o.golfE.opacity = (o.nr > 0 && !ein) ? 0.42 : 1; o.golfE.depthWrite = o.nr === 0 || ein; o.golfE.needsUpdate = true; });
         mid.y = nr == null ? haedY * 0.4 : lag[nr] ? lag[nr].hopur.position.y : 0;
-        fjarl = nr == null ? Math.max(staerst * 1.25, haedY * 2.3) : staerst * 1.25; stillaVel();
+        fjarl = (nr == null ? Math.max(staerst * 1.25, haedY * 2.3) : staerst * 1.25) * (phi < 0.72 ? 1.3 : 1); stillaVel();   // ofan frá: lengra frá
       },
       /* BLENDER-MYND (Agnar 06.10.2026: gráa Blender-útlitið af húsinu sem hann er að skoða, t.d. í tilboð). Senan sem sést,
        * í METRUM, fyrir brúartölvuna (luna-bridge blender-mynd.js → blender/sena.py). Hnit eins og í sviðinu: x til hægri,
@@ -3598,6 +3616,7 @@
       '<div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;pointer-events:auto">' +
       '<button type="button" id="fp-3d-breyta" aria-pressed="false" title="Tengja eða aftengja brunavegg: kveiktu á þessu og smelltu á vegg" style="display:none;height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Breyta eldveggjum</button>' +
       '<button type="button" id="fp-3d-ganga" aria-pressed="false" title="Ganga um hæðina í augnhæð (1,6 m) — draga = líta í kring, hjól / W S = ganga, Esc = hætta" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Ganga</button>' +
+      '<button type="button" id="fp-3d-sjon" title="Skipta á milli sjónarhorns ofan frá (eins og teikningin) og á ská" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Á ská</button>' +
       '<button type="button" id="fp-3d-utlit" aria-pressed="false" title="Sýna eldveggi og brunahólf í lit — annars grátt útlit þar sem tækin standa út" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Brunahólf</button>' +
       '<button type="button" id="fp-3d-blender" title="Designer-3D: falleg grá mynd af því sem sést og yfirlit yfir húsið (Blender á skrifstofutölvunni). Síðasta mynd opnast strax; Teikna aftur býr til nýja." style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Designer-3D</button>' +
       '<button type="button" id="fp-3d-gegn" aria-pressed="false" title="Gera veggina gegnsæja svo tækin og teikningin sjáist í gegnum húsið" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Gegnsætt</button>' +
@@ -3679,6 +3698,13 @@
       const ub = gamur.querySelector('#fp-3d-utlit');
       const utlitLit = () => { if (!ub || !G.syn3d || !G.syn3d.utlit) return; const a = G.syn3d.utlit() === 'eld'; ub.setAttribute('aria-pressed', a ? 'true' : 'false'); ub.style.background = a ? '#d9b45a' : 'rgba(20,18,15,.85)'; ub.style.color = a ? '#14120f' : '#fff'; };
       if (ub) ub.addEventListener('click', () => { if (!G.syn3d || !G.syn3d.utlit) return; G.syn3d.utlit(G.syn3d.utlit() === 'eld' ? 'gratt' : 'eld'); utlitLit(); skyring(valin); });
+      // Sjónarhornshnappurinn sýnir hitt sjónarhornið: „Á ská" þegar horft er ofan frá, „Ofan frá" annars.
+      const sjb = gamur.querySelector('#fp-3d-sjon');
+      if (sjb) sjb.addEventListener('click', () => {
+        if (!G.syn3d || !G.syn3d.sjonarhorn) return;
+        const nytt = G.syn3d.sjonarhorn() === 'ofan' ? 'ska' : 'ofan';
+        G.syn3d.sjonarhorn(nytt); sjb.textContent = nytt === 'ofan' ? 'Á ská' : 'Ofan frá';
+      });
       utlitLit();
       skyring(null);
       // HANDVAL ELDVEGGJA (Agnar 04.10.2026: „tengt eða aftengt brunavegg ef um einhver mistök hafa orðið og savað síðan
