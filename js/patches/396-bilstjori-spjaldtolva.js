@@ -83,7 +83,8 @@
       //    kortið“): spjaldið tekur kortdálkinn — frá 412 px (listi 400 + bil 12) að hægri brún — listinn sést áfram vinstra megin.
       'html body ._bs-sheet.bt.screen{left:412px!important;right:0!important;width:auto!important;max-width:none!important;box-shadow:-18px 0 40px -20px rgba(0,0,0,.7)!important;border-left:1px solid #000}',
       'html body ._bs-sheet .dock{left:412px!important;right:0!important;width:auto!important;max-width:none!important}',
-      'html body:has(._bs-sheet.in) #view-bilstjori ._bs-root>[data-bs-svaedi="kort"]{visibility:hidden!important}',
+      // :has() á body er bannað (audit-kyrrd) — klasinn _spjald-opid er settur á #view-bilstjori með vakt hér neðar.
+      'html body #view-bilstjori._spjald-opid ._bs-root>[data-bs-svaedi="kort"]{visibility:hidden!important}',
 
       // ── Mánaðarskoðunin (Agnar 07.10: „það sem er með mánaðarskoðunina núverandi mánuð, það sem er eftir og í vinnslu“)
       'html body #view-bilstjori #_bs-manudur{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 2px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-family:' + MONO + ';font-size:11.5px;color:#c7ccd3}',
@@ -133,6 +134,16 @@
       'html body #view-bilstjori ._bs-prog2{background-image:' + STRIPE + METAL + '!important;font-family:' + MONO + '!important}',
       'html body #view-bilstjori ._bs-vakt{font-family:' + MONO + '!important;letter-spacing:.06em!important}',
       'html body #view-bilstjori .dock{font-family:' + SANS + '!important}',
+      // ── Google-leið í stað pinnanna (Agnar 07.10: „að þetta sé inni í glugganum í stað kortsins“) ──
+      'html body #view-bilstjori #_bs-leid-rofi{position:absolute;left:10px;top:10px;z-index:1200;display:flex;gap:4px;padding:3px;border-radius:9px;background:rgba(31,37,48,.92);border:1px solid #000}',
+      'html body #view-bilstjori #_bs-leid-rofi button{height:32px;padding:0 12px;border-radius:7px;border:1px solid transparent;background:transparent;color:#c7ccd3;font:700 12.5px ' + SANS + ';cursor:pointer}',
+      'html body #view-bilstjori #_bs-leid-rofi button._on{background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;border-color:rgba(20,24,34,.2)}',
+      'html body #view-bilstjori #_bs-leid{position:absolute;inset:0;z-index:1100;background:#e9e5dc;display:none}',
+      'html body #view-bilstjori ._bs-root .map._leid #_bs-leid{display:block}',
+      'html body #view-bilstjori #_bs-leid iframe{width:100%;height:100%;border:0;display:block}',
+      'html body #view-bilstjori #_bs-leid .skil{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,90%);padding:18px 20px;border-radius:10px;background:#fff;border:1px solid rgba(20,24,34,.2);font:13.5px/1.5 ' + SANS + ';color:#1f2530;box-shadow:0 18px 40px -16px rgba(0,0,0,.5)}',
+      'html body #view-bilstjori #_bs-leid .skil b{display:block;font-family:"Playfair Display",Georgia,serif;font-size:18px;margin-bottom:6px}',
+      'html body #view-bilstjori #_bs-leid .skil code{font-family:' + MONO + ';font-size:12px;background:#f3f5f8;padding:1px 5px;border-radius:4px}',
     ].join('\n');
   }
 
@@ -180,6 +191,47 @@
     if (el._h !== html) { el.innerHTML = html; el._h = html; }
   }
 
+  /* ── Google-leið í kortdálknum ───────────────────────────────────────────
+   * Maps Embed API (directions) í iframe ofan á Leaflet-kortinu. Upphaf = staðsetning tækisins
+   * (geolocation) ef hún fæst, annars fyrsta stoppið. Lykillinn er window.GOOGLE_MAPS_EMBED_KEY
+   * (js/config.js) — tómur lykill sýnir leiðbeiningu í stað villu. Lifandi leiðsögn er áfram
+   * „Keyra leið dagsins“ → Google Maps-appið; þetta er yfirlitið. */
+  let leidHam = false, leidUrl = '', stads = null;
+  function leidKort() {
+    const map = document.querySelector('#view-bilstjori ._bs-root .map');
+    if (!map || innerWidth < 900) { const r = document.getElementById('_bs-leid-rofi'); if (r) r.remove(); return; }
+    let rofi = document.getElementById('_bs-leid-rofi');
+    if (!rofi) {
+      rofi = document.createElement('div'); rofi.id = '_bs-leid-rofi';
+      rofi.innerHTML = '<button type="button" data-leid="0">Pinnar</button><button type="button" data-leid="1">Google-leið</button>';
+      rofi.addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        leidHam = b.dataset.leid === '1'; leidUrl = '';
+        if (leidHam && !stads && navigator.geolocation) navigator.geolocation.getCurrentPosition(pos => { stads = { lat: pos.coords.latitude, lng: pos.coords.longitude }; leidUrl = ''; leidKort(); }, () => {}, { maximumAge: 120000, timeout: 6000 });
+        leidKort();
+      });
+      map.appendChild(rofi);
+    }
+    rofi.querySelectorAll('button').forEach(b => b.classList.toggle('_on', (b.dataset.leid === '1') === leidHam));
+    let box = document.getElementById('_bs-leid');
+    if (!box) { box = document.createElement('div'); box.id = '_bs-leid'; map.appendChild(box); }
+    map.classList.toggle('_leid', leidHam);
+    if (!leidHam) return;
+    const key = (window.GOOGLE_MAPS_EMBED_KEY || '').trim();
+    const stops = (window.Bilstjori && Bilstjori.routeStops) ? Bilstjori.routeStops() : [];
+    const skil = h => { if (box._h !== h) { box.innerHTML = h; box._h = h; leidUrl = ''; } };
+    if (!key) { skil('<div class="skil"><b>Vantar Google-lykil</b>Leiðin teiknast hér um leið og lykill fyrir Maps Embed API er kominn í <code>js/config.js</code> (línan <code>GOOGLE_MAPS_EMBED_KEY</code>). Þangað til opnar „Keyra leið dagsins“ hana í Google Maps.</div>'); return; }
+    if (!stops.length) { skil('<div class="skil"><b>Engin stopp á leiðinni</b>Veldu aksturslista eða síu með stoppum sem eiga hnit.</div>'); return; }
+    const pts = stops.slice(0, 21).map(s => s.lat + ',' + s.lng);
+    const origin = stads ? stads.lat + ',' + stads.lng : pts.shift();
+    const dest = pts.pop() || origin;
+    const url = 'https://www.google.com/maps/embed/v1/directions?key=' + encodeURIComponent(key) + '&origin=' + origin + '&destination=' + dest + (pts.length ? '&waypoints=' + encodeURIComponent(pts.join('|')) : '') + '&mode=driving&language=is&region=is';
+    if (leidUrl === url) return;
+    leidUrl = url; box._h = null;
+    // referrerpolicy á iframe-inu: netlify.toml sendir no-referrer á síðuna, en lykillinn er takmarkaður við referrer.
+    box.innerHTML = '<iframe src="' + url + '" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe>';
+  }
+
   function raða() {
     if (innerWidth < 900) { hreinsa(); return; }
     const root = document.querySelector('#view-bilstjori ._bs-root');
@@ -202,6 +254,7 @@
     const siur = born.find(c => c !== leit && c !== kort && /Dagsins verk|Akstur/.test(c.textContent || '') && !c.classList.contains('_bs-list'));
     if (!kort || !listi) return;
     try { manudur(); } catch (e) { console.warn('[396] manudur', e); }
+    try { leidKort(); } catch (e) { console.warn('[396] leið', e); }
 
     const set = (el, col, row, svaedi) => {
       if (!el) return;
@@ -260,6 +313,10 @@
       }
     }).observe(v, { childList: true, subtree: true });
     addEventListener('hashchange', puls);
+    // Fyrirtækjaspjaldið (._bs-sheet) fær .in þegar það rennur inn — þá fær sýnin _spjald-opid og kortið víkur.
+    const spjaldVakt = () => { const inn = !!document.querySelector('._bs-sheet.in'); if (v.classList.contains('_spjald-opid') !== inn) v.classList.toggle('_spjald-opid', inn); };
+    new MO(ms => { for (const m of ms) { if (m.target.classList && m.target.classList.contains('_bs-sheet')) { spjaldVakt(); return; } } }).observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
+    spjaldVakt();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(start, 1000));

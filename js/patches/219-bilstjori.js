@@ -989,6 +989,11 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
     );
   }
 
+  // 07.10.2026: stoppin á leið dagsins (hnit í röð) — 396 teiknar þau sem Google-leið inni í kortdálknum á spjaldtölvu.
+  function routeStops(list) {
+    return list.filter(x => x.coord && (x.status.key==='overdue' || x.status.key==='duenow' || x.priority))
+      .map(x => ({ id: x.co.id, name: x.co.nafn, addr: x.co.heimilisfang || '', lat: x.coord.lat, lng: x.coord.lng }));
+  }
   function driveDay(list) {
     const stops = list.filter(x => x.coord && (x.status.key==='overdue' || x.status.key==='duenow' || x.priority))
       .map(x => ({ id: x.co.id, name: x.co.nafn, addr: x.co.heimilisfang || '', lat: x.coord.lat, lng: x.coord.lng }));
@@ -1601,7 +1606,7 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.Bilstjori = { show, render: show, renderList, renderVakt, pickEmp, getEmp, version: 'v2' };
+  window.Bilstjori = { show, render: show, renderList, renderVakt, pickEmp, getEmp, routeStops: () => { try { return routeStops(currentList().list); } catch (_) { return []; } }, version: 'v2' };
   console.log('[bilstjori v2] installed');
 })();
 /* === END BÍLSTJÓRI === */

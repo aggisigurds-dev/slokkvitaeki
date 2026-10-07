@@ -71,7 +71,9 @@
       H + ' .hp-ars .yr::before{content:"";width:7px;height:7px;border-radius:50%;background:rgba(0,0,0,.14)}',
       H + ' .hp-ars .yr._lit{background:linear-gradient(180deg,#1f9d5a,#0f6e3a);color:#fff;border-color:#0c5e30}' + H + ' .hp-ars .yr._lit::before{background:#7df0b4;box-shadow:0 0 5px rgba(125,240,180,.9)}',
       H + ' .hp-ars .vinnsla{margin-left:auto;height:36px;padding:0 12px;border-radius:7px;border:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);font:700 12.5px ' + SANS + ';color:#1f2530;cursor:pointer}',
-      H + ' .hp-ars .vinnsla._on{background:linear-gradient(180deg,#60a5fa,#2563eb 48%,#1e40af);color:#fff;border-color:#1e3a8a}',
+      // 07.10.2026 (Agnar: „✓ flippable — merkja í vinnslu/búið og síðan aftur á gráa ef maður ýtir aftur“)
+      H + ' .hp-ars .vinnsla{height:44px;padding:0 16px;font-size:13.5px;color:#525b6b}',
+      H + ' .hp-ars .vinnsla._on{background:linear-gradient(180deg,#1f9d5a,#0f6e3a);color:#fff;border-color:#0c5e30;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}',
       H + ' .hp-allt{display:flex;align-items:center;gap:8px;padding:4px 2px 0;font-size:12px;color:#525b6b}',
       H + ' .hp-allt button{height:30px;padding:0 10px;border-radius:7px;border:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);font:700 12px ' + SANS + ';color:#1f2530;cursor:pointer}',
       H + ' .hp-allt button._on{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#fff;border-color:#000}',
@@ -132,7 +134,7 @@
     const last = +a.last_year_inspected || 0, vinnsla = +a.field_inspected_year === cy;
     const yrs = [cy - 4, cy - 3, cy - 2, cy - 1, cy].map(y => '<button type="button" class="yr' + (last === y ? ' _lit' : '') + '" data-hp="ar" data-y="' + y + '" title="Síðast farið ' + y + '">' + String(y).slice(2) + '</button>').join('');
     return '<div class="hp-ars"><span class="k">SÍÐAST FARIÐ</span>' + yrs +
-      '<button type="button" class="vinnsla' + (vinnsla ? ' _on' : '') + '" data-hp="vinnsla">' + (vinnsla ? '🔵 Í vinnslu ' + cy + ' — taka úr' : 'Setja í vinnslu ' + cy) + '</button></div>';
+      '<button type="button" class="vinnsla' + (vinnsla ? ' _on' : '') + '" data-hp="vinnsla" title="Ýta aftur til að taka úr">' + (vinnsla ? '✓ Í vinnslu / búið ' + cy : '✓ Merkja í vinnslu / búið') + '</button></div>';
   }
 
   let opnir = new Set();     // hópar sem sýna tækin sín (lifir milli endurteikninga)
