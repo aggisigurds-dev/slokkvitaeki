@@ -76,6 +76,9 @@
   const segja = t => { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} };
 
   function strigaHnit(e) {
+    // Vinnumyndin (445) liggur yfir striganum: þá er staðurinn lesinn af HENNI (afvarpað á gólf eða vegg) og skilað í
+    // sömu hnitum og hér — svo dráttur af ræmunni, valmyndin og stimplar setja merkið á sama hátt og í 2D.
+    if (window.TeiknVinnumynd && TeiknVinnumynd.hnit) { const v = TeiknVinnumynd.hnit(e); if (v !== undefined) return v; }
     const c = document.getElementById('fp-canvas');
     if (!c || !c.width) return null;
     const r = c.getBoundingClientRect();
@@ -536,6 +539,16 @@
   }
 
   function iDragi() { return !!S.drag; }
+  // Merki fært annars staðar en á striganum (vinnumyndin, 445): sama frágangur og þegar drætti lýkur hér — afturkalla,
+  // samstilla hæðir, teikna og vista um TeiknVistun.skrifa.
+  function faert(m, fraX, fraY) {
+    if (!m) return;
+    if (m.x !== fraX || m.y !== fraY) skraUndo({ teg: 'faera', merki: afritMerki(m), fraX, fraY });
+    S.valinnMerki = m;
+    try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
+    endurteikna();
+    vistaAdThjoni();
+  }
 
   function faeraDrag(e) {
     if (S.bid && !S.drag) {
@@ -1003,7 +1016,11 @@
     grip, iDragi, setjaTaeki, setjaStimpil, setjaEitt, vistaAdThjoni, erStimpil, stimplar: STIMPLAR,
     tikk, afturkalla, eydaMerki, snuaMerki, afritaMerki, opnaValmynd, finnaMerki,
     stimpilPx: merkiStaerd, skjaStaerd, passaBreidd, setjaStaerd: skraStaerd, sjalfStaerd, breytaTakn,
-    velja: m => { S.valinnMerki = m || null; stikaValid(); }
+    velja: m => { S.valinnMerki = m || null; stikaValid(); },
+    // Vinnumyndin (445): hvaða stimpill er vopnaður á ræmunni, hvaða merki er valið, og frágangur færslu.
+    vopn: () => S.valinn,
+    valid: () => S.valinnMerki,
+    faert
   };
 
   if (!vefja()) { let n = 0; const i = setInterval(() => { if (vefja() || ++n > 80) clearInterval(i); }, 150); }
