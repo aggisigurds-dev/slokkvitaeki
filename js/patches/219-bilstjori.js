@@ -358,7 +358,11 @@
       (x.co.nafn || '').toLowerCase().includes(q) ||
       (x.co.heimilisfang || '').toLowerCase().includes(q) ||
       (qKt && String(x.co.kennitala || '').replace(/\D/g,'').includes(qKt)));
-    list.sort((a, b) =>
+    // 07.10.2026 (Agnar: „Þessi mánuður sorted by póstnúmer — 100 efst og síðan upp“): mánaðarlistinn raðast eftir
+    // póstnúmeri (dálkurinn, annars 3 tölustafir úr heimilisfanginu), án póstnúmers aftast; nafn innan sama númers.
+    const postnr = x => { const c = x.co || {}; const m = String(c.postnumer || '').match(/\d{3}/) || String(c.heimilisfang || '').match(/\b(\d{3})\b/); return m ? +m[0] : 9999; };
+    if (_seg === 'month') list.sort((a, b) => (postnr(a) - postnr(b)) || String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
+    else list.sort((a, b) =>
       ((+b.priority || 0) - (+a.priority || 0)) ||   // higher forgangur first (3→2→1→0)
       ((DUE[a.status.key] ?? 9) - (DUE[b.status.key] ?? 9)) ||
       String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
