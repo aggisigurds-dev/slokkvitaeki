@@ -4351,6 +4351,11 @@
         p.markers = hs[0].markers.map(m => Object.assign({}, m)); p.imageUrl = hs[0].image_url || null;
         G.rymi = { x: 0, y: 0 }; G.virk = 0;
         vista.call(self);
+        // „Vista" = vista OG loka (scanner.js kallar Modal.close). Modal.close tekur aðeins .open af, en FloorPlan.open og
+        // 437 setja display:flex beint á gluggann — hann sat eftir hálflokaður (z-index 1000, engin yfirbreiðsla) og,
+        // eftir G.virk = 0 hér að ofan, sýndi hann teikningu 2. hæðar með merkjum 1. hæðar (lifandi próf 07.10.2026, 1404).
+        // closeFP lokar honum í alvöru; næsta opnun les hæðirnar upp á nýtt.
+        try { const m = document.getElementById('modal-floorplan'); if (m && !m.classList.contains('open') && m.style.display !== 'none' && typeof window.closeFP === 'function') window.closeFP(); } catch (_) {}
       })();
     };
     FP.__hreinsaSkreytt = true;
