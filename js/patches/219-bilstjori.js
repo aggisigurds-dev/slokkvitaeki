@@ -334,6 +334,7 @@
   }
 
   let _seg = 'today';   // 'today' | 'month' | 'overdue' | 'all' | 'a1' | 'a2' | 'a3'
+  let _synaBuin = false;   // 07.10.2026 (Agnar: „taka allt þetta græna út“): búin/tekin út falin á Dagsins verk og Akstur-listum nema beðið sé um þau
   let _search = '';
   const DUE = { overdue:0, duenow:1, scheduled:2, in_progress:3, done:4, unknown:5 };
   function currentList() {
@@ -343,6 +344,9 @@
     else if (_seg === 'today') list = list.filter(x => x.status.key === 'overdue' || x.status.key === 'duenow' || x.priority);
     else if (_seg === 'month') { const cm = new Date().getMonth() + 1; list = list.filter(x => +((x.ars || {}).inspect_month) === cm && x.status.key !== 'done'); }
     else if (_seg === 'overdue') list = list.filter(x => x.status.key === 'overdue');
+    // Búin (🔵 tekið út í ár / 🟢 í lagi) eru á listanum aðeins undir „Allir í þjónustu“ eða með „Sýna búin“.
+    let buinFalin = 0;
+    if (_seg !== 'all' && !_synaBuin) { const n = list.length; list = list.filter(x => !(x.status.key === 'done' || x.status.key === 'in_progress')); buinFalin = n - list.length; }
     const q = _search.trim().toLowerCase();
     // 30.09.2026: kennitölu-greinin var óvarin. Bókstafaleit („hraun") verður ''
     // þegar tölustafir eru strípaðir, og `"6602190480".includes("")` er alltaf
@@ -358,7 +362,7 @@
       ((+b.priority || 0) - (+a.priority || 0)) ||   // higher forgangur first (3→2→1→0)
       ((DUE[a.status.key] ?? 9) - (DUE[b.status.key] ?? 9)) ||
       String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
-    return { ready:true, list };
+    return { ready:true, list, buinFalin };
   }
 
   // Locked /app/bilstjori/ boots STRAIGHT into this view — nothing navigated to
@@ -889,11 +893,16 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
     const qEl = document.getElementById('_bs-q');
     if (qEl && qEl.value !== _search) qEl.value = _search;
 
-    const { ready, list } = currentList();
+    const { ready, list, buinFalin } = currentList();
     if (!ready) { box.innerHTML = '<div class="_bs-empty">⏳ Sæki gögn…</div>'; return; }
     box.innerHTML = list.length
       ? list.map((x, i) => cardHtml(x, i + 1)).join('')
       : '<div class="_bs-empty">' + (_seg === 'today' ? '✅ Ekkert áríðandi eftir í dag.' : 'Engin fyrirtæki fundust.') + '</div>';
+    if (buinFalin || _synaBuin) {
+      box.insertAdjacentHTML('beforeend', '<button class="_bs-buin" type="button" style="margin:4px 0 8px;height:38px;border-radius:9px;border:1px dashed rgba(20,24,34,.3);background:transparent;color:#525b6b;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer">' +
+        (_synaBuin ? '✓ Búin sýnd — fela aftur' : '✓ ' + buinFalin + ' búin falin — sýna') + '</button>');
+      box.querySelector('._bs-buin').addEventListener('click', () => { _synaBuin = !_synaBuin; renderList(); renderPins(); });
+    }
     box.querySelectorAll('.stop').forEach(card => card.addEventListener('click', e => {
       if (e.target.closest('.act')) return;   // action buttons handled below
       openCompany(+card.dataset.id);
