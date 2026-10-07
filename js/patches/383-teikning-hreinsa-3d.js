@@ -1772,8 +1772,8 @@
           const metri = veggH / 3, blH = veggH - karmH, blD = Math.max(0.6, 0.05 * metri);
           const flekaAf = (() => {
             const c = document.createElement('canvas'); c.width = 8; c.height = 64; const x = c.getContext('2d');
-            x.fillStyle = '#d4d7dc'; x.fillRect(0, 0, 8, 64);
-            for (let y = 0; y < 64; y += 16) { x.fillStyle = '#aeb3ba'; x.fillRect(0, y, 8, 2); x.fillStyle = '#eceef1'; x.fillRect(0, y + 2, 8, 1); }
+            x.fillStyle = '#ffffff'; x.fillRect(0, 0, 8, 64);
+            for (let y = 0; y < 64; y += 16) { x.fillStyle = '#6f757d'; x.fillRect(0, y, 8, 3); x.fillStyle = '#ffffff'; x.fillRect(0, y + 3, 8, 1); }
             const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; losa.push(t); return t;
           })();
           const hjor = new T.Vector3(0, 1, 0);
@@ -1785,8 +1785,9 @@
             let blad;
             if (bil) {
               const tx = flekaAf.clone(); tx.needsUpdate = true; tx.repeat.set(1, blH / metri / 0.6); losa.push(tx);
-              const e = new T.MeshLambertMaterial({ color: 0xffffff, map: tx }); e.userData.hurd = 'bil';
-              const g = new T.BoxGeometry(breidd, blH, blD); losa.push(g, e); hurdaEfni.push(e);
+              // grá flekahurð (ekki hvít eins og veggurinn — 07.10 sást hún ekki), sett inn í opið miðja vegu
+              const e = new T.MeshLambertMaterial({ color: 0xa9afb7, map: tx }); e.userData.hurd = 'bil';
+              const g = new T.BoxGeometry(breidd, blH, Math.max(blD, ((v[4] || 0) * f || sjalfg) * 0.5)); losa.push(g, e); hurdaEfni.push(e);
               blad = new T.Mesh(g, e);
               blad.position.set((ax + bx) / 2, blH / 2, (az + bz) / 2); blad.rotation.y = -horn;
             } else {
