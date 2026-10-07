@@ -6,6 +6,9 @@
  *
  * Ákvarðanir Agnars sama dag:
  *   • Tæki sem koma inn með „Sækja inn úr fyrirtæki" (122) eru unnin AÐEINS í verkbeiðninni (Verkröð).
+ *     ↳ LEYST AF 05.10.2026 (Agnar: „ekki verkbeiðni … bara fram og til baka hægra megin"): 122 opnar nú
+ *       MERKJA-haminn — aðeins uttaeki.status='loaned', engin verkbeiðni. Þessi pappi gildir áfram um
+ *       verkbeiðnir sem til eru (eldri úr 122 og úr Afgreiðslu).
  *   • Þau eru rukkuð AÐEINS á verkbeiðninni — ársskoðunarlistinn (129) telur þau ekki aftur.
  *
  * EIN HEIMILD: verkbeiðnarlínan. 122 skrifar `verklidur.uttaeki_id`, svo hver lína veit úr hvaða prófílröð tækið
