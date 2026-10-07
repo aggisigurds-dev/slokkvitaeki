@@ -167,8 +167,30 @@
     if (m && (m.kind === 'sign' || (typeof m.unitId === 'string' && String(m.unitId).indexOf('s:') === 0))) {
       return STIMPIL_LYKILL[m.sign] || 'annad';
     }
+    // „Nýtt"-merki (TurboPaint): ekkert skráð tæki — tegundin sem það var vistað með ræður tákninu
+    if (erNytt(m)) return fjold({ tegund: m.tegund });
     const u = (units || []).find(q => q && q.id === m.unitId);
     return fjold(u);
+  }
+  function erNytt(m) {
+    return !!(m && (m.nytt === true || (typeof m.unitId === 'string' && String(m.unitId).indexOf('n:') === 0)));
+  }
+  /* Miði Nýtt-tækis undir tákninu: „Nýtt · <tegund>" í hlutlausu indígó (hvorki grænt = tengt né rautt = komið fram yfir)
+   * — tillaga sem bíður samþykkis eiganda (Agnar 07.10.2026). */
+  function nyttMidi(ctx, m, mx, my, s) {
+    const texti = 'Nýtt · ' + (m.tegund || 'tæki');
+    const fs = Math.max(9, Math.round(s * 0.3));
+    ctx.save();
+    ctx.font = '600 ' + fs + 'px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(2, fs / 4);
+    ctx.strokeStyle = '#ffffff';
+    ctx.strokeText(texti, mx, my + s / 2 + 2);
+    ctx.fillStyle = '#4f46e5';
+    ctx.fillText(texti, mx, my + s / 2 + 2);
+    ctx.restore();
   }
 
   function teiknaGlyff(ctx, id, fg, outline, litur) {
@@ -327,6 +349,7 @@
         if (css && sc > 0) size = css / sc;
       }
       teiknaMerki(ctx, mk, mx, my, size, units);
+      if (erNytt(mk)) nyttMidi(ctx, mk, mx, my, size);
     });
   }
 

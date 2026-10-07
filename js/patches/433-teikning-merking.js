@@ -72,6 +72,10 @@
     return p;
   };
   const erStimpil = m => !!(m && (m.kind === 'sign' || (typeof m.unitId === 'string' && String(m.unitId).indexOf('s:') === 0)));
+  // „Nýtt"-merki (TurboPaint, Agnar 07.10.2026): tæki sem á eftir að skrá á félagið — TILLAGA sem bíður samþykkis eiganda.
+  // { unitId: 'n:<lykill>:<id>', x, y, nytt: true, tegund: 'Léttvatn', stada: 'bid' }. ALDREI skráð tæki (ekkert uttaeki):
+  // telst hvorki með tækjum né í talningu þeirra. TurboPaint tengir það sjálfkrafa við skráð tæki þegar þau koma.
+  const erNytt = m => !!(m && (m.nytt === true || (typeof m.unitId === 'string' && String(m.unitId).indexOf('n:') === 0)));
   const hamur = () => !!(window.TeiknBord && TeiknBord.hamur && TeiknBord.hamur());
   const segja = t => { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} };
 
@@ -165,7 +169,9 @@
 
   function afritMerki(m) {
     if (!m) return null;
-    return { unitId: m.unitId, kind: m.kind, sign: m.sign, takn: m.takn, x: m.x, y: m.y, color: m.color, rot: m.rot || 0, staerd: m.staerd };
+    // ALLIR reitir merkisins fylgja (Nýtt: nytt / tegund / stada; reitir frá TurboPaint). Áður voru aðeins þekktir reitir
+    // afritaðir, svo „Afturkalla" eftir eyðingu skilaði Nýtt-merki án nytt/tegund — það varð þá óþekkt tæki.
+    return Object.assign({}, m, { rot: m.rot || 0 });
   }
   function undoLykill() {
     const F = FP();
@@ -246,6 +252,7 @@
 
   function nafnMerkis(m) {
     if (!m) return 'Merki';
+    if (erNytt(m)) return 'Nýtt · ' + (m.tegund || 'tæki') + ' (í bið — bíður samþykkis eiganda)';
     if (erStimpil(m)) {
       const def = STIMPLAR.find(s => s.id === m.sign);
       return (def && def.nafn) || 'Merki';
@@ -640,6 +647,38 @@
     S.bid = Object.assign({ teg, pointerId: e.pointerId, x: e.clientX, y: e.clientY }, gogn);
   }
 
+  function nyttTalning() {
+    const p = plan();
+    if (!p) return { n: 0, eftir: {} };
+    const v = window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0;
+    const hs = Array.isArray(p.haedir) && p.haedir.length ? p.haedir : null;
+    const merki = hs ? hs.reduce((a, h, i) => a.concat(i === v ? (p.markers || []) : (h && h.markers) || []), []) : (p.markers || []);
+    const eftir = {};
+    let n = 0;
+    merki.forEach(m => { if (erNytt(m)) { n++; const t = m.tegund || 'tæki'; eftir[t] = (eftir[t] || 0) + 1; } });
+    return { n, eftir };
+  }
+  function nyttLina() {
+    const panel = document.getElementById('fp-panel');
+    if (!panel) return;
+    const t = nyttTalning();
+    let el = document.getElementById('fp-nytt');
+    if (!t.n) { if (el && !el.hidden) el.hidden = true; return; }
+    if (!el) {
+      el = document.createElement('div'); el.id = 'fp-nytt';
+      el.style.cssText = 'margin:6px 8px;padding:6px 8px;border:1px solid rgba(79,70,229,.35);border-radius:6px;background:rgba(79,70,229,.08);font-size:12px;line-height:1.35;color:#3730a3';
+      el.title = 'Tæki sem á eftir að skrá á félagið — tillaga sem bíður samþykkis eiganda. Tengjast sjálfkrafa þegar tækin hafa verið skráð (TurboPaint: Vista í úttekt).';
+      const listi = document.getElementById('fp-unit-list');
+      if (listi && listi.parentNode === panel) panel.insertBefore(el, listi.nextSibling);
+      else panel.appendChild(el);
+    }
+    if (el.hidden) el.hidden = false;
+    const tegundir = Object.keys(t.eftir).map(k => k + ' ' + t.eftir[k]).join(', ');
+    const texti = 'Nýtt (óskráð): ' + t.n + ' — ' + t.n + ' ný tæki í biðstöðu, bíða samþykkis: ' + tegundir;
+    // aðeins skrifað ef það breyttist (annars lykkjar MutationObserver-inn — audit-teikning-merking)
+    if (el.textContent !== texti) el.textContent = texti;
+  }
+
   function stikaStimpla() {
     const panel = document.getElementById('fp-panel');
     if (!panel) return;
@@ -928,6 +967,7 @@
     F._renderPanel = function () {
       panel();
       try { stikaStimpla(); geraDraggandi(); stikaValid(); } catch (_) {}
+      try { nyttLina(); } catch (_) {}
     };
     if (typeof F.selectUnit === 'function' && !F.__merkingSelect) {
       const velja = F.selectUnit.bind(F);
@@ -974,6 +1014,7 @@
       geraDraggandi();
       tengjaDropp();
       stikaValid();
+      nyttLina();
       stikaStaerdHvarfa();
       afturkallaTakki();
     } finally {
@@ -1013,7 +1054,7 @@
   }, true);
 
   window.TeiknMerking = {
-    grip, iDragi, setjaTaeki, setjaStimpil, setjaEitt, vistaAdThjoni, erStimpil, stimplar: STIMPLAR,
+    grip, iDragi, setjaTaeki, setjaStimpil, setjaEitt, vistaAdThjoni, erStimpil, erNytt, nyttTalning, stimplar: STIMPLAR,
     tikk, afturkalla, eydaMerki, snuaMerki, afritaMerki, opnaValmynd, finnaMerki,
     stimpilPx: merkiStaerd, skjaStaerd, passaBreidd, setjaStaerd: skraStaerd, sjalfStaerd, breytaTakn,
     velja: m => { S.valinnMerki = m || null; stikaValid(); },

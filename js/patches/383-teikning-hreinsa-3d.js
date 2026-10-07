@@ -3448,6 +3448,11 @@
         const txt = (def && (def.nafn || def.stutt)) || 'Merki';
         return { x: px, y: py, litur: mk.color || (def && def.litur) || '#c93c1d', texti: txt, gerd: gerdTaekis(null, mk.sign || 'skilti'), stimpill: mk.sign || 'skilti' };
       }
+      // „Nýtt"-tæki (TurboPaint: tillaga sem bíður samþykkis eiganda, ekkert skráð tæki): hlutlaus indígó-miði
+      // „Nýtt · <tegund>" — aldrei grænn (tengt) né rauður (komið fram yfir).
+      if (mk.nytt === true || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('n:') === 0)) {
+        return { x: px, y: py, litur: '#4f46e5', texti: 'Nýtt · ' + (mk.tegund || 'tæki'), gerd: gerdTaekis(mk.tegund), nytt: true };
+      }
       const u = einingar.find(q => q.id === mk.unitId);
       // Á miðanum stendur TEGUNDIN (Léttvatn, Brunaslanga …) — Agnar 04.10.2026: „mjög flott … grænu pinnarnir sýndu
       // slökkvitæki eða brunaslöngur". Raðnúmerið sést í 2D-glugganum; það stendur hér aðeins ef tegund vantar.
