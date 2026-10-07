@@ -1666,7 +1666,14 @@
       b.forEach(v => { xs.push(v[0], v[2]); zs.push(v[1], v[3]); });
       xs.sort((a, c) => a - c); zs.sort((a, c) => a - c);
       const q = (l, p) => l[Math.min(l.length - 1, Math.max(0, Math.round(p * (l.length - 1))))];
-      return { x: (q(xs, 0.02) + q(xs, 0.98)) / 2 * f - k.gw / 2, z: (q(zs, 0.02) + q(zs, 0.98)) / 2 * f - k.gh / 2 };
+      const x0 = q(xs, 0.02) * f - k.gw / 2, x1 = q(xs, 0.98) * f - k.gw / 2, z0 = q(zs, 0.02) * f - k.gh / 2, z1 = q(zs, 0.98) * f - k.gh / 2;
+      return { x: (x0 + x1) / 2, z: (z0 + z1) / 2, b: x1 - x0, d: z1 - z0 };
+    };
+    // Skörun grunnflata tveggja hæða (umgjörð veggjanna, heimshnit): skörun ÷ minni flötur (1 = önnur innan hinnar).
+    const skorunHusa = (a, b) => {
+      const ix = Math.max(0, Math.min(a.x + a.b / 2, b.x + b.b / 2) - Math.max(a.x - a.b / 2, b.x - b.b / 2));
+      const iz = Math.max(0, Math.min(a.z + a.d / 2, b.z + b.d / 2) - Math.max(a.z - a.d / 2, b.z - b.d / 2));
+      return (ix * iz) / Math.max(1e-6, Math.min(a.b * a.d, b.b * b.d));
     };
     haedir.forEach((hd, nr) => {
       const k = kassarUrGrimu(hd.veggir, hd.W, hd.H);
@@ -1695,6 +1702,22 @@
         if (skorunSkurda(hd.sk, vidmid.sk) >= 0.7) {
           hopur.position.x = (hd.sk.x + hd.sk.w / 2 - vidmid.mx) / vidmid.punktar;
           hopur.position.z = (hd.sk.y + hd.sk.h / 2 - vidmid.my) / vidmid.punktar;
+          // 07.10.2026 (lifandi próf, Norðurhella 17 / 1626): tvö SÉR blöð (…_004.pdf og …_003.pdf) af sömu stærð, húsið
+          // á ólíkum stað á hvoru — staðan á blaðinu setti 2. hæð ~5 m út fyrir 1. hæð þótt grunnflöturinn sé sá sami
+          // (26 × 18 m). Ef grunnfletirnir eru jafnstórir (±25 % á hvorn veg) en skarast illa eftir stöðu á blaðinu
+          // (< 75 %), og miðja veggjanna gefur greinilega betri skörun, ræður miðja veggjanna. Minni álma ofan á stærri
+          // hæð (Klöpp, Þingholt) er ekki jafnstór og heldur stöðu sinni á blaðinu.
+          if (vm && vidmid.vm && vm.b > 0 && vm.d > 0) {
+            const efri = { b: vm.b * kv, d: vm.d * kv }, ned = vidmid.vm;
+            const jafnstor = Math.min(efri.b, ned.b) / Math.max(efri.b, ned.b) >= 0.75 && Math.min(efri.d, ned.d) / Math.max(efri.d, ned.d) >= 0.75;
+            const aBladi = skorunHusa(ned, { x: hopur.position.x + vm.x * kv, z: hopur.position.z + vm.z * kv, b: efri.b, d: efri.d });
+            const aMidju = skorunHusa(ned, { x: ned.x, z: ned.z, b: efri.b, d: efri.d });
+            if (jafnstor && aBladi < 0.75 && aMidju > aBladi + 0.15) {
+              hopur.position.x = ned.x - vm.x * kv;
+              hopur.position.z = ned.z - vm.z * kv;
+              console.info('[383] stafli: ' + (hd.nafn || 'hæð ' + (nr + 1)) + ' miðjuð á veggi 1. hæðar (skörun eftir blaði ' + aBladi.toFixed(2) + ' → ' + aMidju.toFixed(2) + ')');
+            }
+          }
         }
       }
       // Gólf: hreina myndin sem áferð, svo herbergjaskipan og heiti sjáist undir veggjunum.
