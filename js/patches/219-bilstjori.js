@@ -332,7 +332,7 @@
     return { cls: 'annad', emoji: '🧯' };
   }
 
-  let _seg = 'today';   // 'today' | 'all' | 'a1' | 'a2' | 'a3'
+  let _seg = 'today';   // 'today' | 'month' | 'overdue' | 'all' | 'a1' | 'a2' | 'a3'
   let _search = '';
   const DUE = { overdue:0, duenow:1, scheduled:2, in_progress:3, done:4, unknown:5 };
   function currentList() {
@@ -340,6 +340,8 @@
     let list = buildList();
     if (_seg === 'a1' || _seg === 'a2' || _seg === 'a3') { const n = +_seg.slice(1); list = list.filter(x => aksturOf(x.ars) === n); }
     else if (_seg === 'today') list = list.filter(x => x.status.key === 'overdue' || x.status.key === 'duenow' || x.priority);
+    else if (_seg === 'month') { const cm = new Date().getMonth() + 1; list = list.filter(x => +((x.ars || {}).inspect_month) === cm && x.status.key !== 'done'); }
+    else if (_seg === 'overdue') list = list.filter(x => x.status.key === 'overdue');
     const q = _search.trim().toLowerCase();
     // 30.09.2026: kennitölu-greinin var óvarin. Bókstafaleit („hraun") verður ''
     // þegar tölustafir eru strípaðir, og `"6602190480".includes("")` er alltaf
@@ -654,6 +656,7 @@
 .bt .dev--onytt .dev__name{text-decoration:line-through}
 .bt .dev--onytt .usvc{opacity:.42}
 .bt .seg{display:flex;gap:8px}
+.bt ._bs-seg{flex-wrap:wrap}.bt ._bs-seg .seg__btn{flex:1 1 calc(50% - 4px)}
 .bt .seg__btn{flex:1;height:42px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(20,24,34,.14);background:#fff;color:var(--ink-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
 .bt .seg__btn.is-active{border:1px solid #0c5e30;background:var(--green);color:#fff;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.4),0 4px 10px -4px rgba(12,80,40,.5)}
 .bt .field{width:100%;resize:none;padding:11px 13px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#f6f8fb;color:#141822;font-family:inherit;font-size:13.5px;outline:none}
@@ -811,6 +814,10 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
         '<div style="padding:4px 12px 0;display:flex;flex-direction:column;gap:9px">' +
           '<div class="seg _bs-seg">' +
             '<button class="seg__btn" data-seg="today" type="button">📋 Dagsins verk</button>' +
+            // 07.10.2026 (Agnar: „fínt að hafa núverandi mánuð … og síðan annan sem sýnir alla sem eru á eftir áætlun“ — eitthvað
+            // meira en aksturslistinn, minna en Allir í þjónustu).
+            '<button class="seg__btn" data-seg="month" type="button">📅 Þessi mánuður</button>' +
+            '<button class="seg__btn" data-seg="overdue" type="button">⏰ Eftir áætlun</button>' +
             '<button class="seg__btn" data-seg="all" type="button">🏢 Allir í þjónustu</button>' +
           '</div>' +
           '<div class="seg _bs-akstur">' +

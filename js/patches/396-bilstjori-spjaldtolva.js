@@ -56,8 +56,37 @@
       'html body #view-bilstjori ._bs-root .map{height:calc(100vh - 268px)!important;min-height:420px!important;border-radius:2px!important;overflow:hidden!important}',
       'html body #view-bilstjori #_bs-mapcanvas{border-radius:2px!important}',
 
+      // ── 07.10.2026 (Agnar: „taka út Agnar og Hákon kassana, hafa bara nafnið í þessu rauða, lækka hæðina á
+      //    fyrirtækja boxunum“): starfsmanna-spjöldin undir DAGURINN Í DAG hverfa á spjaldtölvunni — nafnarofinn
+      //    (rauða flísin) stendur einn. Stoppspjöldin þéttast: mælt 1400 px fyrir ≈ 230 px hvert, eftir ≈ 150 px.
+      'html body #view-bilstjori #_bs-vakt>div:not(:first-child){display:none!important}',
+      'html body #view-bilstjori #_bs-vakt>div:first-child{margin-bottom:2px!important}',
+      'html body #view-bilstjori #_bs-list{gap:8px!important}',
+      'html body #view-bilstjori .bt .stop__body{padding:8px 10px 8px 14px!important;gap:10px!important}',
+      'html body #view-bilstjori .bt .badge{width:28px!important;height:28px!important;font-size:12px!important}',
+      'html body #view-bilstjori .bt .stop__name{font-size:14px!important}',
+      'html body #view-bilstjori .bt .stop__addr{font-size:12px!important;margin-top:1px!important}',
+      'html body #view-bilstjori .bt .stop__body>div>div:last-of-type:not(._bsnota){margin-top:4px!important}',
+      'html body #view-bilstjori ._bsnota{margin-top:5px!important}',
+      'html body #view-bilstjori ._bsnota input{height:32px!important;font-size:13px!important}',
+      // NB: _bs-list er AUÐKENNI (sjá 397) — ._bs-list hitti aldrei, 52 px reglan hér fyrir neðan heldur ekki.
+      'html body #view-bilstjori #_bs-list .stop__actions .act{min-height:36px!important;height:36px!important;font-size:12.5px!important}',
+      'html body #view-bilstjori .bt .stop__body>div>div:last-of-type:not(._bsnota){flex-wrap:nowrap!important}',
+      'html body #view-bilstjori .bt .stop__meta{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      'html body #view-bilstjori .bt .stop .pill{white-space:nowrap!important;flex:none!important}',   // „Í lagi 2026“ braut sig í tvær línur (43 px)
+      // Fyrirtækjaspjaldið (smellur á punkt) rann inn sem 440 px sími-dálkur í MIÐJUNNI yfir kortinu (Agnar: „símalookið
+      // kemur ef maður ýtir á punkt“). Á spjaldtölvunni leggst það að hægri brún, 480 px breitt, kortið sést áfram vinstra megin.
+      'html body ._bs-sheet.bt.screen{left:auto!important;right:0!important;width:480px!important;max-width:480px!important;box-shadow:-18px 0 40px -20px rgba(0,0,0,.7)!important;border-left:1px solid #000}',
+      'html body ._bs-sheet .dock{left:auto!important;right:0!important;width:480px!important;max-width:480px!important}',
+
+      // ── Mánaðarskoðunin (Agnar 07.10: „það sem er með mánaðarskoðunina núverandi mánuð, það sem er eftir og í vinnslu“)
+      'html body #view-bilstjori #_bs-manudur{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 2px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-family:' + MONO + ';font-size:11.5px;color:#c7ccd3}',
+      'html body #view-bilstjori #_bs-manudur b{color:#fff;font-size:13px}',
+      'html body #view-bilstjori #_bs-manudur .mn{font-weight:800;letter-spacing:.08em;color:#d9b25a;text-transform:uppercase}',
+      'html body #view-bilstjori #_bs-manudur i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}',
+      'html body #view-bilstjori #_bs-manudur .sl{margin-left:auto;color:#8a93a5}',
+
       // ── Snertifletir í listanum ──────────────────────────────────────────
-      'html body #view-bilstjori ._bs-list button{min-height:52px!important;font-size:15px!important}',
       'html body #view-bilstjori ._bs-list{padding-bottom:12px!important}',
 
       // ── Haus og framvinda í Miðakerfinu ─────────────────────────────────
@@ -80,6 +109,38 @@
 
   /* Hver hluti fær sinn reit — greindur á innihaldi svo röðin í 219 megi breytast.
    * Aðeins grid-staðsetning er sett; ekkert element er fært, falið eða smíðað. */
+  /* Mánaðarskoðunin: fyrirtæki í þjónustu með skoðunarmánuð = núverandi mánuður, talin eins og 219 statusFor()
+   * flokkar þau — búið (last_year_inspected = árið), í vinnslu (field_inspected_year = árið, skjöl eftir), eftir
+   * (hvorugt). Lesið beint úr sömu gögnum og listinn (Companies.list + arsskodun_customers), ekkert sótt. */
+  const MAN = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
+  function manudur() {
+    const vakt = document.getElementById('_bs-vakt');
+    if (!vakt) return;
+    if (innerWidth < 900) { const g = document.getElementById('_bs-manudur'); if (g) g.remove(); return; }
+    const cos = (window.Companies && Companies.list) || [];
+    const ars = (window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {};
+    const bru = (window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_customers')) || {};
+    const cy = new Date().getFullYear(), cm = new Date().getMonth() + 1;
+    let buid = 0, vinnsla = 0, eftir = 0;
+    cos.forEach(c => {
+      const a = ars[String(c.id)] || null;
+      const inSv = (c && c.er_i_thjonustu === true) || (a && (a.subscribed === true || a.equipment)) || !!bru[String(c.id)];
+      if (!inSv || !a || +a.inspect_month !== cm) return;
+      if (+a.last_year_inspected === cy) buid++;
+      else if (+a.field_inspected_year === cy) vinnsla++;
+      else eftir++;
+    });
+    const alls = buid + vinnsla + eftir;
+    const html = '<span class="mn">' + MAN[cm - 1] + '</span><span><b>' + alls + '</b> á skoðun</span>' +
+      '<span><i style="background:#e23232"></i><b>' + eftir + '</b> eftir</span>' +
+      '<span><i style="background:#e0a93e"></i><b>' + vinnsla + '</b> í vinnslu</span>' +
+      '<span><i style="background:#1f9d57"></i><b>' + buid + '</b> búið</span>' +
+      '<span class="sl">' + (alls ? Math.round((buid + vinnsla) / alls * 100) : 0) + ' % hafið</span>';
+    let el = document.getElementById('_bs-manudur');
+    if (!el) { el = document.createElement('div'); el.id = '_bs-manudur'; vakt.appendChild(el); }
+    if (el._h !== html) { el.innerHTML = html; el._h = html; }
+  }
+
   function raða() {
     if (innerWidth < 900) { hreinsa(); return; }
     const root = document.querySelector('#view-bilstjori ._bs-root');
@@ -101,6 +162,7 @@
     // Síuhnapparnir: blokkin með „Dagsins verk" sem er hvorki leit né kort.
     const siur = born.find(c => c !== leit && c !== kort && /Dagsins verk|Akstur/.test(c.textContent || '') && !c.classList.contains('_bs-list'));
     if (!kort || !listi) return;
+    try { manudur(); } catch (e) { console.warn('[396] manudur', e); }
 
     const set = (el, col, row, svaedi) => {
       if (!el) return;
