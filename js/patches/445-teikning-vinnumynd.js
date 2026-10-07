@@ -29,7 +29,7 @@
 (() => {
   if (window.TeiknVinnumynd) return;
 
-  const UTGAFA = 1, HAMARK = 2400, FATA = 'turbopaint', GAEDI = 0.9;
+  const UTGAFA = 2, HAMARK = 2400, FATA = 'turbopaint', GAEDI = 0.9;
   const GULL = '#d9b45a', DOKKT = 'rgba(20,18,15,.85)';
   const V = {
     modal: null, gamur: null, strigi: null, val: null,
@@ -56,13 +56,18 @@
   }
   // Slóð án uppruna (sama teikning hvort sem hún er vistuð með https://slokkvitaeki.netlify.app eða afstætt) og tölur
   // og lyklaröð staðlaðar — JSONB þjónsins raðar lyklum öðruvísi en vafrinn.
-  function lykillHaedar(h) {
+  // v2 (07.10.2026, lifandi próf 1404): leidrett.kl er EKKI lengur í lyklinum. „Vista í úttekt" í TurboPaint setur nýjan kl
+  // í hvert sinn, líka þegar aðeins tæki voru sett og veggirnir eru óbreyttir (veggjaLinur eins upp á 0,1 díl). Þá sagði
+  // myndin ranglega „Veggjum breytt síðan myndin var fest". Veggirnir sjálfir (vl, hv, pdf) og skurðurinn eru í lyklinum.
+  // `v1` = gamla formúlan (með kl) — mynd sem var fest með henni telst áfram í lagi þar til kl breytist.
+  function lykillHaedar(h, v1) {
     const sk = h.skurdur ? [h.skurdur.x, h.skurdur.y, h.skurdur.w, h.skurdur.h].map(n => Math.round(+n || 0)) : null;
     const vl = (Array.isArray(h.veggjaLinur) ? h.veggjaLinur : []).map(v => v ? [String(v.tegund || ''), +v.eld || 0, Math.round((+v.t || 0) * 10) / 10, (Array.isArray(v.p) ? v.p : []).map(n => Math.round(+n * 10) / 10)] : null);
     const hv = (Array.isArray(h.veggir) ? h.veggir : []).map(v => (Array.isArray(v) ? v : []).map(n => Math.round(+n || 0)));
     const pdf = Array.isArray(h.pdfVeggir) && h.pdfVeggir.length ? h.pdfVeggir.length + ':' + hash(JSON.stringify(h.pdfVeggir)) + ':' + (h.pdfFlokkar || []).join(',') : '';
     const url = String(h.image_url || '').replace(/^https?:\/\/[^/]+/i, '');
-    return 'v' + UTGAFA + '-' + hash(JSON.stringify([url, sk, vl, hv, (h.leidrett && h.leidrett.kl) || '', pdf]));
+    if (v1) return 'v1-' + hash(JSON.stringify([url, sk, vl, hv, (h.leidrett && h.leidrett.kl) || '', pdf]));
+    return 'v' + UTGAFA + '-' + hash(JSON.stringify([url, sk, vl, hv, pdf]));
   }
   const gildVm = vm => !!(vm && Array.isArray(vm.cam) && vm.cam.length === 16 && Array.isArray(vm.rammi) && Array.isArray(vm.heild) && vm.kort && vm.b > 0 && vm.h > 0);
   const vmLykill = vm => String(vm.lykill || '') + '@' + String(vm.t || '');
@@ -487,7 +492,7 @@
     const vm = vmFyrir(h);
     if (vm) {
       const key = vmLykill(vm);
-      V.urelt = vm.lykill !== V.lykill;        // veggjum, skurði eða teikningu breytt síðan hún var fest
+      V.urelt = vm.lykill !== V.lykill && vm.lykill !== V.lykillV1;        // veggjum, skurði eða teikningu breytt síðan hún var fest
       const til = V.myndir[key]; if (til) return til;
       if (!V.brotin[key]) {
         if (V.sokn[key]) { V.stadaTexti = 'Opna vinnumynd…'; return null; }
@@ -539,7 +544,7 @@
     if (!V.sig || sig.length !== V.sig.length || sig.some((x, i) => x !== V.sig[i])) {
       const hid = h && h.id;
       if (hid !== V.haedId) { V.s = 1; V.x = 0; V.y = 0; V.p = null; }
-      V.sig = sig; V.hRef = h; V.haedId = hid; V.lykill = h ? lykillHaedar(h) : '';
+      V.sig = sig; V.hRef = h; V.haedId = hid; V.lykill = h ? lykillHaedar(h) : ''; V.lykillV1 = h ? lykillHaedar(h, true) : '';
     }
     // sýnd á mynd: hæð sem á fasta mynd (líka handfesta á skönnun), eða tilbúin hæð sem fær hana sjálfkrafa
     V.tilbuin = !!h && (tilbuin(h) || !!vmFyrir(h));
