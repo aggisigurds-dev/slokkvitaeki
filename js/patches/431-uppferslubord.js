@@ -143,7 +143,24 @@
     if (!url) return '';
     if (/kt-lookup/i.test(url) && /[?&]skra=/.test(url)) return 'kennitala';
     if (/hus-upplysingar/i.test(url)) return 'hus';
-    if (/\/geocode/i.test(url) && !/[?&]suggest=1/.test(url) && !/geocode-all/i.test(url)) return 'kort';
+    /* 07.10.2026 (Agnar: „ég sé bara Ljónsstaðir og Sláturfélag Suðurlands í Aksturslista 3").
+     *
+     * Hemillinn á að halda aftur af ytri uppflettingunni `/api/geocode` — Nominatim,
+     * sem má ekki hamast á. En `/\/geocode/` greip LÍKA `/rest/v1/geocode_cache`:
+     * OKKAR EIGIN töflu, sem er ókeypis og er einmitt það sem gerir ytri uppflettingu
+     * óþarfa. Hemillinn lokaði þannig á lausnina við vandamálinu sem hann var settur
+     * upp til að leysa.
+     *
+     * Mælt á lifandi síðu: hver lestur á `geocode_cache` skilaði tilbúnu 503 með tómum
+     * skrokk (`neitun()`), og engin þeirra beiðna sást í edge-skrám Supabase — þær
+     * komust aldrei út. Afleiðing: `syncSharedToLocal` í papp 156 sótti ALDREI
+     * sameiginlega skyndiminnið, svo `_slokk_gc` í þessum vafra bar 563 lykla meðan
+     * taflan á þjóninum bar 1.875 raðir, allar með hnit. Fimm af sjö félögum á
+     * Aksturslista 3 duttu því út úr Leiðsögn — hnitin voru til, vafrinn fékk þau bara
+     * aldrei. Þeir tveir sem sáust leystust um `__co__:<id>`, handsett hnit.
+     */
+    if (/\/geocode/i.test(url) && !/geocode_cache/i.test(url) &&
+        !/[?&]suggest=1/.test(url) && !/geocode-all/i.test(url)) return 'kort';
     if (/company-mail/i.test(url) && !/[?&]co=/.test(url)) return 'skilabod';
     return '';
   }

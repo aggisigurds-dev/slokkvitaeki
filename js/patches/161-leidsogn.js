@@ -408,6 +408,13 @@
           '</div>' +
           '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' +
             '<span style="font-size:11px;color:#cbd5e1;font-weight:600;white-space:nowrap">' + list.length + ' staðir' + (noCoord ? ' · ' + noCoord + ' án hnita' : '') + '</span>' +
+            /* 07.10.2026 (Agnar: „frekar bara refresh takka"). Punktarnir koma nu sem FASTIR
+             * punktar med app_settings og eru EKKI endursottir vid hverja hledslu. Baetist nytt
+             * felag eda nytt heimilisfang vid vantar hnitid thar til einhver saekir — thessi
+             * takki er su leid, og hann birtist adeins thegar eitthvad vantar i raun. */
+            (noCoord
+              ? '<button id="_lds-saekja-hnit" type="button" title="Sækja hnit sem aðrar vélar hafa fundið" style="padding:3px 9px;background:#166534;color:#fff;border:1px solid #15803d;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">↻ Sækja hnit</button>'
+              : '') +
             '<button id="_lds-clearfilter" type="button" title="Hreinsa síu" style="padding:3px 9px;background:#1e293b;color:#fff;border:1px solid #334155;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">✕ Hreinsa</button>' +
           '</div>' +
         '</div>' +
@@ -460,6 +467,16 @@
     }
 
     // Wire interactions
+    const hnitBtn = document.getElementById('_lds-saekja-hnit');
+    if (hnitBtn) hnitBtn.addEventListener('click', async () => {
+      hnitBtn.disabled = true; const fyrri = hnitBtn.textContent; hnitBtn.textContent = '⏳ Sæki…';
+      try {
+        if (window.GeocodePrewarm && GeocodePrewarm.saekjaPunkta) await GeocodePrewarm.saekjaPunkta();
+      } catch (_) {}
+      hnitBtn.textContent = fyrri; hnitBtn.disabled = false;
+      // teikna upp a nytt svo nyju punktarnir birtist strax
+      try { if (_map) renderPins({ fit: false }); renderDueList(); } catch (_) {}
+    });
     const clearBtn = document.getElementById('_lds-clearfilter');
     if (clearBtn) clearBtn.addEventListener('click', () => {
       _state.year = 'all'; _state.flokkur = 'all'; _state.months = [];
