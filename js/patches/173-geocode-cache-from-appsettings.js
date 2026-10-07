@@ -78,9 +78,20 @@
   }
   tryMerge();
 
-  // Re-merge whenever AppSettings reload (patches save it periodically).
+  /* Re-merge whenever AppSettings reload (patches save it periodically).
+   *
+   * 07.10.2026: þetta stóð `onChange('geocode_cache', mergeFromServer)` — en `onChange(fn)`
+   * í papp 85 tekur EITT viðfang og hleypir aðeins föllum að:
+   *     function onChange(fn) { if (typeof fn === 'function') _listeners.push(fn); }
+   * Strengurinn lenti því í `fn`, prófið féll, og ÁSKRIFTIN VAR ALDREI SKRÁÐ. Samruninn
+   * keyrði þá aðeins einu sinni, í kapphlaupi við fyrstu stillingarnar sem bárust.
+   *
+   * Mælt á lifandi dist 07.10: stillingarnar báru 1.083 hnit (757 fastir `__co__:` punktar)
+   * en `_slokk_gc` í sama vafra bar 563 — restin beið áskriftar sem var ekki til. Fimm af
+   * sjö félögum á Aksturslista 3 vantaði því punkt þótt hann væri kominn í stillingarnar.
+   */
   if (window.AppSettings && typeof window.AppSettings.onChange === 'function') {
-    window.AppSettings.onChange('geocode_cache', mergeFromServer);
+    window.AppSettings.onChange(mergeFromServer);
   }
 
   // Expose for debugging / forced refresh.
