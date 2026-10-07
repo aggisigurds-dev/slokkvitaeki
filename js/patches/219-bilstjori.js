@@ -1007,7 +1007,7 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
           '</div>' +
         '</div>' +
         '<div class="stop__actions">' +
-          '<button class="act act--maps" type="button" data-maps data-id="' + c.id + '"' + (x.coord ? '' : ' disabled') + '>↗ Maps</button>' +
+          '<button class="act act--maps" type="button" data-maps data-id="' + c.id + '"' + (x.coord ? '' : ' disabled') + '>↗ Keyra þangað</button>' +
           (ph ? '<a class="act act--call" href="tel:' + esc(String(ph).replace(/\s/g,'')) + '">📞 Hringja</a>'
               : '<button class="act act--call" type="button" disabled>📞 Hringja</button>') +
           // 07.10.2026 (Agnar: „setja við hliðina á Merkja búið „Í vinnslu“ — nota það eiginlega meira, það er tengt á
