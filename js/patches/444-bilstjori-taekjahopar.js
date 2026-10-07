@@ -28,6 +28,9 @@
   function css() {
     const H = 'html body ._bs-sheet #_bs-hopar';
     return '@media (min-width:900px){' + [
+      // Spjaldið er 480 px í 396 — hóparnir með þremur teljurum þurfa 560.
+      'html body ._bs-sheet._hopar-on.bt.screen{width:560px!important;max-width:560px!important}',
+      'html body ._bs-sheet._hopar-on .dock{width:560px!important;max-width:560px!important}',
       'html body ._bs-sheet._hopar-on #_bs-units{display:none!important}',
       'html body ._bs-sheet._hopar-on._hopar-opin #_bs-units{display:block!important}',
       'html body ._bs-sheet._hopar-opin #_bs-units .dev:not(._hop-syna){display:none!important}',
@@ -115,10 +118,10 @@
   /* Félagið á spjaldinu: 219 skrifar kt. í haus spjaldsins — sama kt. finnur félagið í Companies.list. */
   function felag() {
     const sheet = document.querySelector('._bs-sheet'); if (!sheet) return null;
-    const m = ((sheet.querySelector('.topbar') || {}).textContent || '').match(/kt.s*([d-]{6,11})/);
-    const kt = m ? m[1].replace(/D/g, '') : '';
+    const m = ((sheet.querySelector('.topbar') || {}).textContent || '').match(/kt\.\s*([\d-]{6,11})/);
+    const kt = m ? m[1].replace(/\D/g, '') : '';
     if (!kt) return null;
-    return ((window.Companies && Companies.list) || []).find(c => String(c.kennitala || '').replace(/D/g, '') === kt) || null;
+    return ((window.Companies && Companies.list) || []).find(c => String(c.kennitala || '').replace(/\D/g, '') === kt) || null;
   }
   function ars(c) { try { return (AppSettings.path('arsskodun_customers') || {})[String(c.id)] || {}; } catch (_) { return {}; } }
   // SAMA skrifleið og 219 arsSave(): AppSettings.save({ arsskodun_customers: { [id]: patch } }) — samstillt skrifstofa ↔ bílstjóri.
