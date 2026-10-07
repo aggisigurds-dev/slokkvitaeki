@@ -1505,7 +1505,7 @@
   // veggjum og engin lituð brunahólf — rauðu tækin standa út. „Brunahólf" skiptir í litaða útlitið (eldveggir, hólf).
   // Engin SSAO/korn — Agnar hafnaði því. Val vafrans: localStorage (útlitsval, ekki gögn).
   const UTLIT_LS = 'teikn3d_utlit';
-  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xe8e6e2, toppur: 0xb9b5ae, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.55 };
+  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xe8e6e2, toppur: 0xb9b5ae, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
   const lesaUtlit = () => { try { return localStorage.getItem(UTLIT_LS) === 'eld' ? 'eld' : 'gratt'; } catch (_) { return 'gratt'; } };
   const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0x8d6e63, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
   // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
@@ -1709,9 +1709,14 @@
       const lg = { hopur, golfE, golfG, nr, hd, valinn: null, veggH, gw: k.gw, gh: k.gh, k };
       losa.push(golfG, golfE, aferd); lag.push(lg);
       litaHolf(lg);
-      // Grátt útlit: hvít slæða yfir teikningunni (grunnurinn sést dauft, tækin standa út). Skuggar veggjanna koma á
-      // eigin plötu ofan við hana (bakaSkugga, eftir að sólin er komin á sinn stað).
-      const dE = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: GRATT_3D.daufur, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+      // Grátt útlit: grá steypuslæða yfir teikningunni (Agnar 07.10: „make the floor greyish" — áður hvít). Aðeins INNAN
+      // húss: slæðan ber sama alfa og gólfið (source-in), svo utan húss helst gegnsætt. Teikningin sést dauft undir, tækin
+      // standa út. Skuggar veggjanna koma á eigin plötu ofan við hana (bakaSkugga, eftir að sólin er komin á sinn stað).
+      const graStr = document.createElement('canvas'); graStr.width = golfStr.width; graStr.height = golfStr.height;
+      const grx = graStr.getContext('2d'); grx.drawImage(golfStr, 0, 0);
+      grx.globalCompositeOperation = 'source-in'; grx.fillStyle = GRATT_3D.golf; grx.fillRect(0, 0, graStr.width, graStr.height);
+      const graAf = new T.CanvasTexture(graStr); losa.push(graAf);
+      const dE = new T.MeshBasicMaterial({ map: graAf, transparent: true, opacity: nr > 0 ? GRATT_3D.daufur * 0.5 : GRATT_3D.daufur, alphaTest: 0.02, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
       const dauf = new T.Mesh(golfG, dE); dauf.rotation.x = -Math.PI / 2; dauf.position.y = 0.2; dauf.renderOrder = 1; hopur.add(dauf);
       losa.push(dE); daufLog.push(dauf);
       // Veggir: eitt InstancedMesh — eitt teiknikall fyrir alla kassana.
@@ -1780,12 +1785,27 @@
           // blað á hjörum, hálfopið (55°) svo gengt sé um og inn sjáist. Bílahurð (op > 2,4 m): lokuð flekahurð með láréttum
           // rákum. Brunahurð fær appelsínugulan blæ í Brunahólf-útliti.
           const metri = veggH / 3, blH = veggH - karmH, blD = Math.max(0.6, 0.05 * metri);
-          const flekaAf = (() => {
-            const c = document.createElement('canvas'); c.width = 8; c.height = 64; const x = c.getContext('2d');
-            x.fillStyle = '#ffffff'; x.fillRect(0, 0, 8, 64);
-            for (let y = 0; y < 64; y += 16) { x.fillStyle = '#6f757d'; x.fillRect(0, y, 8, 3); x.fillStyle = '#ffffff'; x.fillRect(0, y + 3, 8, 1); }
-            const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; losa.push(t); return t;
-          })();
+          // Bílahurð eins og á myndunum sem Agnar sendi 07.10 („change the garage doors"): iðnaðar-flekahurð — láréttir
+          // flekar (~55 cm) með skuggarák, gluggaröð í næstefsta fleka, dökkur rammi. Áferðin teiknuð í hlutföllum hurðarinnar.
+          const flekahurd = (bM, hM) => {
+            const W = 256, H = Math.max(96, Math.min(512, Math.round(W * hM / Math.max(0.5, bM))));
+            const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+            x.fillStyle = '#a4aab2'; x.fillRect(0, 0, W, H);
+            const n = Math.max(3, Math.round(hM / 0.55)), ph = H / n;
+            for (let p = 0; p < n; p++) {
+              const y = Math.round(p * ph);
+              x.fillStyle = '#5f656d'; x.fillRect(0, y, W, 2);                              // fleka-samskeyti
+              x.fillStyle = '#b6bcc3'; x.fillRect(0, y + 2, W, Math.max(1, ph * 0.16));     // ljós efri brún flekans
+            }
+            const gr = n >= 4 ? 1 : 0, m = Math.max(2, Math.round(bM / 0.9)), jadar = W * 0.08, gb = (W - jadar * 2) / m;
+            for (let j = 0; j < m; j++) {
+              const gx = jadar + j * gb + gb * 0.12, gy = gr * ph + ph * 0.28, gw = gb * 0.76, gh = ph * 0.44;
+              x.fillStyle = '#4f565e'; x.fillRect(gx - 2, gy - 2, gw + 4, gh + 4);
+              x.fillStyle = '#cfe0ea'; x.fillRect(gx, gy, gw, gh);
+            }
+            x.strokeStyle = '#4b5159'; x.lineWidth = 6; x.strokeRect(3, 3, W - 6, H - 6);
+            const t = new T.CanvasTexture(c); t.anisotropy = 4; losa.push(t); return t;
+          };
           const hjor = new T.Vector3(0, 1, 0);
           hd.hurdir.forEach((v, i) => {
             const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
@@ -1794,9 +1814,8 @@
             const bil = breidd / metri > 2.4;
             let blad;
             if (bil) {
-              const tx = flekaAf.clone(); tx.needsUpdate = true; tx.repeat.set(1, blH / metri / 0.6); losa.push(tx);
               // grá flekahurð (ekki hvít eins og veggurinn — 07.10 sást hún ekki), sett inn í opið miðja vegu
-              const e = new T.MeshLambertMaterial({ color: 0xa9afb7, map: tx }); e.userData.hurd = 'bil';
+              const e = new T.MeshLambertMaterial({ color: 0xffffff, map: flekahurd(breidd / metri, blH / metri) }); e.userData.hurd = 'bil';
               const g = new T.BoxGeometry(breidd, blH, Math.max(blD, ((v[4] || 0) * f || sjalfg) * 0.5)); losa.push(g, e); hurdaEfni.push(e);
               blad = new T.Mesh(g, e);
               blad.position.set((ax + bx) / 2, blH / 2, (az + bz) / 2); blad.rotation.y = -horn;
