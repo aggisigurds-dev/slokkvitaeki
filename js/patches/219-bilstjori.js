@@ -622,6 +622,8 @@
 .bt .stop__actions{display:flex;border-top:1px solid rgba(20,24,34,.07)}
 .bt .stop__actions .act{flex:1;height:46px;border:0;border-right:1px solid rgba(20,24,34,.07);background:#f6f8fb;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}
 .bt .act--maps{color:#2f5fe0}.bt .act--call{color:var(--ink-2)}
+.bt .act--vinnsla{color:#1d4ed8}
+.bt .act--vinnsla.is-on{background:linear-gradient(180deg,#60a5fa,#2563eb 48%,#1e40af);color:#fff}
 .bt .act--done{flex:1.3;border-right:0;background:#eef7f0;color:#1f7a45}
 .bt .act--done.is-done{background:var(--green);color:#fff}
 .bt .stop.is-done{opacity:.62}
@@ -932,6 +934,23 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
     // Merkja búið → toggle field_inspected_year (🔵 Í vinnslu). Sends the company
     // to ÞjónustuVerkstæði "Í vinnslu" (finish report) and drops it from the
     // driving list (status becomes in_progress) — same flag as patch 190.
+    box.querySelectorAll('[data-vinnsla]').forEach(btn => btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const wasOn = (+((arsAll()[String(id)] || {}).field_inspected_year) === curYear());
+      btn.classList.toggle('is-on', !wasOn); btn.textContent = !wasOn ? '● Í vinnslu' : '○ Í vinnslu';   // bjartsýn
+      clearErrBar();
+      let ok = false;
+      try {
+        if (wasOn) ok = await arsSave(id, { field_inspected_year: 0 });
+        else if (window.ArsWorkflow && ArsWorkflow.markInVinnsla) ok = await ArsWorkflow.markInVinnsla(id);
+        else ok = await arsSave(id, { field_inspected_year: curYear() });
+      } catch (_) { ok = false; }
+      if (!ok) { btn.classList.toggle('is-on', wasOn); btn.textContent = wasOn ? '● Í vinnslu' : '○ Í vinnslu'; errBar('⚠ Vistun mistókst — „í vinnslu“ ekki skráð. Reyndu aftur.', null); return; }
+      logAct(wasOn ? 'vinnsla_off' : 'vinnsla_on', { co_id: id });
+      try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
+      renderList(); renderPins();
+    }));
     box.querySelectorAll('[data-check]').forEach(btn => btn.addEventListener('click', async e => {
       e.stopPropagation();
       const id = btn.dataset.id;
@@ -991,6 +1010,10 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
           '<button class="act act--maps" type="button" data-maps data-id="' + c.id + '"' + (x.coord ? '' : ' disabled') + '>↗ Maps</button>' +
           (ph ? '<a class="act act--call" href="tel:' + esc(String(ph).replace(/\s/g,'')) + '">📞 Hringja</a>'
               : '<button class="act act--call" type="button" disabled>📞 Hringja</button>') +
+          // 07.10.2026 (Agnar: „setja við hliðina á Merkja búið „Í vinnslu“ — nota það eiginlega meira, það er tengt á
+          // nokkra staði eins og Ársskoðun Staða og Þjónustuverkstæði“): sama leið og blái takkinn í Ársskoðun —
+          // ArsWorkflow.markInVinnsla (266): field_inspected_year + uttekt-þrepið á borðinu + árið opnað aftur.
+          '<button class="act act--vinnsla' + (inVinnsla ? ' is-on' : '') + '" type="button" data-vinnsla data-id="' + c.id + '" title="Í vinnslu — sama og blái takkinn í Ársskoðun; ýta aftur tekur úr">' + (inVinnsla ? '● Í vinnslu' : '○ Í vinnslu') + '</button>' +
           '<button class="act act--done' + (inVinnsla ? ' is-done' : '') + '" type="button" data-check data-id="' + c.id + '">' +
             (inVinnsla ? '✓ Búið' : '✓ Merkja búið') + '</button>' +
         '</div>' +

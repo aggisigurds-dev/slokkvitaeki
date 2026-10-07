@@ -231,7 +231,9 @@
       const patch = a === 'ar'
         ? { last_year_inspected: (+cur.last_year_inspected === +b.dataset.y) ? 0 : +b.dataset.y }   // sama ár aftur → afhaka
         : { field_inspected_year: (+cur.field_inspected_year === cy) ? 0 : cy };
-      arsSkrifa(c, patch).then(() => { try { if (window.Bilstjori && Bilstjori.renderList) Bilstjori.renderList(); } catch (_) {} const box = document.getElementById('_bs-hopar'); if (box) box._h = null; teikna(); });
+      // Kveikt → ArsWorkflow.markInVinnsla (266): sama og blái takkinn í Ársskoðun (uttekt-þrepið á borðinu líka).
+      const skrif = (a === 'vinnsla' && patch.field_inspected_year && window.ArsWorkflow && ArsWorkflow.markInVinnsla) ? ArsWorkflow.markInVinnsla(c.id) : arsSkrifa(c, patch);
+      Promise.resolve(skrif).then(() => { try { if (window.Bilstjori && Bilstjori.renderList) Bilstjori.renderList(); } catch (_) {} const box = document.getElementById('_bs-hopar'); if (box) box._h = null; teikna(); });
       return;
     }
     if (a === 'opna') { if (opnir.has(key)) opnir.delete(key); else opnir.add(key); teikna(); return; }
