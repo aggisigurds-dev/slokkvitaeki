@@ -4095,6 +4095,9 @@
    *   Raunsætt (sjálfgefið) — gogn.utlit = 'raunsaett' → blender/raunsaett.py: „Yfirlit" á ská og „Vinnuskjal" ofan frá
    *     með táknum appsins. Herbergjaheiti, umfelgunarreitir og stigar eru lesin úr PDF-uppdrættinum (raunUrSidu) svo
    *     innréttingarnar lendi í réttum herbergjum. Hreina vinnuskjalið (án tákna) má nota sem fasta vinnumynd (445).
+   *   QA-stíll (08.10.2026, Agnar: QA Graphics-myndin) — gogn.utlit = 'qa' → blender/qa.py: sama smíði og raunsætt
+   *     (herbergi, stigar, sameign úr sneiðmyndarleiðinni) en hvítir mattir veggir, ljóst gólf og rými lituð eftir heiti
+   *     (gogn.qa_litir). Fleiri hæðir koma sprengdar. Hreina vinnuskjalið má líka nota sem vinnumynd.
    *   Einfalt — gamla gráa útlitið (blender/sena.py): sjónarhornið þitt og yfirlit.
    * Valið er útlitsval ÞESSA vafra (localStorage), ekki staða gagna. Hvort útlit á SÍNA síðustu mynd á þjóninum
    * (gogn->>utlit) og sína stöðu hér (BLU), svo verk í gangi týnist ekki þó skipt sé á milli eða 3D lokað og opnað.
@@ -4108,9 +4111,11 @@
   const BL_UTLIT_LS = 'teikn_designer_utlit';
   const BL_UTLIT = {
     raunsaett: { heiti: 'Raunsætt', lysing: 'Yfirlit á ská og vinnuskjal ofan frá með táknum', timi: 'um 10 mín (2 myndir)', ekkert: 'Engin raunsæ mynd til af þessu húsi enn.' },
+    qa: { heiti: 'QA-stíll', lysing: 'Hvítt og hreint, rými lituð eftir gerð', timi: 'um 5 mín á hæð', ekkert: 'Engin QA-mynd til af þessu húsi enn.' },
     einfalt: { heiti: 'Einfalt', lysing: 'Gráa útlitið: sjónarhornið þitt og yfirlit', timi: 'um 4 mín', ekkert: 'Engin einföld mynd til af þessu húsi enn.' }
   };
-  const blUtlit = () => { try { return localStorage.getItem(BL_UTLIT_LS) === 'einfalt' ? 'einfalt' : 'raunsaett'; } catch (_) { return 'raunsaett'; } };
+  const blUtlit = () => { try { const v = localStorage.getItem(BL_UTLIT_LS); return v === 'einfalt' || v === 'qa' ? v : 'raunsaett'; } catch (_) { return 'raunsaett'; } };
+  const blMedHerbergjum = ul => ul === 'raunsaett' || ul === 'qa';   // lesa herbergi og stiga úr PDF, vinnuskjal ofan frá
   const BLU = {};          // útlit → staða síðustu / yfirstandandi myndar þess; G.blender = sú sem er sýnd
   const blLokid = B => !!B && (B.stada === 'done' || B.stada === 'error' || B.stada === 'timi' || B.stada === 'tomt');
   // hlutföll myndar: upplausnin sem Blender skilaði („1800x1290"), annars myndavél beiðninnar, annars 16:9
@@ -4126,11 +4131,11 @@
     }
     return B.vm || vms[0] || null;
   };
-  const blMaVinnumynd = (B, m) => { const vi = blVmFyrir(B, m); return !!(B && B.utlit === 'raunsaett' && vi && vi.haedId && vi.lykill && m && m.hrein && Array.isArray(m.varpa) && m.varpa.length === 16 &&
+  const blMaVinnumynd = (B, m) => { const vi = blVmFyrir(B, m); return !!(B && blMedHerbergjum(B.utlit) && vi && vi.haedId && vi.lykill && m && m.hrein && Array.isArray(m.varpa) && m.varpa.length === 16 &&
     /^\d+x\d+$/.test(String(m.upplausn || '')) && window.TeiknVinnumynd && TeiknVinnumynd.festaMynd && FPx() && B.felag === FPx().companyId); };
   function blValHtml(ul) {
     return '<div role="radiogroup" aria-label="Útlit myndarinnar" style="flex:none;display:flex;border:1px solid #000;border-radius:9px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.25)">' +
-      ['raunsaett', 'einfalt'].map((k, i) => {
+      ['raunsaett', 'qa', 'einfalt'].map((k, i) => {
         const a = k === ul;
         return '<a data-bl="utlit" data-utlit="' + k + '" role="radio" aria-checked="' + a + '" tabindex="0" style="flex:1 1 0;display:flex!important;align-items:center;justify-content:center;height:30px!important;' + (i ? 'border-left:1px solid #000!important;' : '') +
           'background:' + (a ? BL_SILFUR : BL_GRAFIT) + '!important;color:' + (a ? '#11141c' : '#c9ced6') + '!important;font:700 12.5px system-ui,sans-serif!important;letter-spacing:.02em;text-decoration:none!important;cursor:' + (a ? 'default' : 'pointer') + ';' +
@@ -4254,7 +4259,7 @@
   async function blSidasta(cid, ul) {
     let q = DB.sb.from('automation_triggers').select('id,status,result,requested_at,finished_at,vm:gogn->vinnumynd,vms:gogn->vinnumyndir')
       .eq('workflow', 'blender').eq('gogn->>company_id', String(cid));
-    q = ul === 'raunsaett' ? q.eq('gogn->>utlit', 'raunsaett') : q.or('gogn->>utlit.is.null,gogn->>utlit.neq.raunsaett');
+    q = blMedHerbergjum(ul) ? q.eq('gogn->>utlit', ul) : q.or('gogn->>utlit.is.null,gogn->>utlit.not.in.(raunsaett,qa)');
     const r = await q.order('id', { ascending: false }).limit(6);
     if (!r || r.error) throw (r && r.error) || new Error('engin svör');   // brostinn lestur er EKKI „engin mynd til"
     return r.data || [];
@@ -4331,9 +4336,9 @@
     if (!G.blender || G.blender.utlit === ul || !G.blender.opid) synaB(B);
     const syna = () => { if (G.blender === B) blTeikna(); };
     const villa = t => { B.stada = 'error'; B.texti = t; B.lauk = Date.now(); syna(); };
-    // Raunsætt: herbergjaheiti, reitir og stigar úr PDF-uppdrætti hverrar sýnilegrar hæðar (án þeirra kemur myndin samt)
+    // Raunsætt og QA: herbergjaheiti, reitir og stigar úr PDF-uppdrætti hverrar sýnilegrar hæðar (án þeirra kemur myndin samt)
     let pdf = null;
-    if (ul === 'raunsaett') {
+    if (blMedHerbergjum(ul)) {
       pdf = {};
       B.texti = 'Les herbergi og stiga úr teikningunni…'; syna();
       for (const hid of (G.syn3d.synilegar ? G.syn3d.synilegar() : [])) {
@@ -4345,10 +4350,13 @@
       B.texti = '';
       if (!G.syn3d || !G.syn3d.blenderSena) { villa('3D var lokað áður en beiðnin fór — opnaðu 3D og reyndu aftur'); return; }
     }
-    let sena = G.syn3d.blenderSena(pdf ? { utlit: 'raunsaett', pdf } : undefined);
+    // QA byggir senuna eins og raunsætt; snid fylgir alltaf svo sameign komi líka á 1–2 hæða húsum (qa.py hunsar snid sjálft)
+    const raunO = p => Object.assign({ utlit: 'raunsaett', pdf: p }, ul === 'qa' ? { snid: 'snidmynd' } : {});
+    let sena = G.syn3d.blenderSena(pdf ? raunO(pdf) : undefined);
     if (!sena) { villa('engin hæð sýnileg í 3D'); return; }
     // of stórt (sama þak og áður, 1,4 MB): án gólfmynda — raunsætt ber engar, þá án herbergja og stiga
-    if (JSON.stringify(sena).length > 1400000) sena = G.syn3d.blenderSena(pdf ? { utlit: 'raunsaett', pdf: {} } : { myndHamark: 0 });
+    if (JSON.stringify(sena).length > 1400000) sena = G.syn3d.blenderSena(pdf ? raunO({}) : { myndHamark: 0 });
+    if (ul === 'qa') { sena.utlit = 'qa'; sena.qa_litir = true; }
     // „Nota sem vinnumynd": lykill hæðarinnar (445) eins og hún er NÚNA — sé veggjum breytt síðar er myndin úrelt
     const lykillHaedar = hid => { const h = (haedir() || []).find(x => x && x.id === hid); return h && window.TeiknVinnumynd && TeiknVinnumynd.lykill ? TeiknVinnumynd.lykill(h) : ''; };
     if (sena.vinnumynd) {
@@ -4391,7 +4399,7 @@
       const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(img, 0, 0, W, H);
       // fjölhæða: 3D og spjaldið haldast opin svo hin vinnuskjölin megi líka festa
       const fleiri = Array.isArray(B.vms) && B.vms.length > 1;
-      const ok = await TV.festaMynd(h.id, { strigi: c, cam: blMarg4(m.varpa, vi.S), heild: [W, H], rammi: [0, 0, W, H], b: W, h: H, kort: vi.kort, veggH: vi.veggH, sjalfg: vi.sjalfg, frum: vi.frum || null }, 'raunsaett', fleiri ? { halda3d: true } : undefined);
+      const ok = await TV.festaMynd(h.id, { strigi: c, cam: blMarg4(m.varpa, vi.S), heild: [W, H], rammi: [0, 0, W, H], b: W, h: H, kort: vi.kort, veggH: vi.veggH, sjalfg: vi.sjalfg, frum: vi.frum || null }, B.utlit === 'qa' ? 'qa' : 'raunsaett', fleiri ? { halda3d: true } : undefined);
       B.vmS[i] = ok ? 'fest' : ''; B.vmStada = B.vmS[i];
       if (ok && vi.nafn && B.vms && B.vms.length > 1) segja('Vinnuskjalið er orðið föst vinnumynd ' + vi.nafn + '.');
     } catch (e) { B.vmS[i] = ''; B.vmStada = ''; segja('Gat ekki notað myndina sem vinnumynd: ' + ((e && e.message) || e)); }

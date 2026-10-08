@@ -489,7 +489,7 @@
       V.val = null;
       Object.keys(V.villa).forEach(k => { if (k.indexOf(hid + '|') === 0) delete V.villa[k]; });
       if (T.loka3d && !(o && o.halda3d)) T.loka3d();
-      segja('Vinnumynd fest' + (h.nafn ? ' — ' + h.nafn : '') + ' (raunsætt). Teikningin opnast nú strax á henni.');
+      segja('Vinnumynd fest' + (h.nafn ? ' — ' + h.nafn : '') + (hvernig === 'qa' ? ' (QA-stíll)' : ' (raunsætt)') + '. Teikningin opnast nú strax á henni.');
       return await nyFestMynd(h, r, hvernig || 'raunsaett');
     } finally { V.festir = false; }
   }
