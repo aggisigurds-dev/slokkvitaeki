@@ -40,7 +40,7 @@
     ['mikilv', 'Mikilvægast', 'Áríðandi mál efst, svo röð borðsins'],
     ['verdm', 'Verðmætast', 'Hæsta upphæð efst'],
     ['elst', 'Lengst beðið', 'Elsta málið efst — það sem hefur beðið lengst'],
-    ['frestur', 'Frestur', 'Næsti frestur efst; mál án frests aftast']
+    ['postur', 'Svara pósti', 'Mál úr tölvupósti sem bíða svars efst — nýjast fyrst']   // Agnar 08.10: „taka út frest og setja svara pósti“
   ];
   let rodun = 'sjalf';
   try { const v = localStorage.getItem(ROD_LYKILL); if (RADANIR.some(x => x[0] === v)) rodun = v; } catch (_) {}
@@ -54,7 +54,7 @@
     else if (rodun === 'elst') l.sort((a, b) => (ts(a.created_at) - ts(b.created_at)) || d(a, b));
     else if (rodun === 'mikilv') l.sort((a, b) => ((b.important ? 1 : 0) - (a.important ? 1 : 0)) || d(a, b));
     else if (rodun === 'verdm') l.sort((a, b) => (A.upphaed(b) - A.upphaed(a)) || d(a, b));
-    else if (rodun === 'frestur') l.sort((a, b) => ((ts(a.due_at) || 9e15) - (ts(b.due_at) || 9e15)) || d(a, b));
+    else if (rodun === 'postur') { const p = r => (r.source === 'email' || /^email:/.test(String(r.channel_ref || ''))) ? 1 : 0; l.sort((a, b) => (p(b) - p(a)) || (p(a) ? ts(b.created_at) - ts(a.created_at) : 0) || d(a, b)); }
     return l;
   }
   const rodHtml = () => '<div class="sm-rod" role="tablist" aria-label="Röðun">' + RADANIR.map(x => '<button type="button" data-sm="rod" data-v="' + x[0] + '" class="' + (rodun === x[0] ? '_on' : '') + '" title="' + esc(x[2]) + '">' + esc(x[1]) + '</button>').join('') + '</div>';
