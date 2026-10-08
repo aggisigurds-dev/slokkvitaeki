@@ -276,7 +276,8 @@
     const ry = V.rymi || { efst: 0, nedst: 0 };
     const fingur = [cw, ch, dpr, V.s, V.x, V.y, M ? vmLykill(M.vm) : '-', rymi.x, rymi.y, ry.efst, ry.nedst, F && F._selectedUnitId, valid && valid.unitId,
       M ? staerd100({}, grunnur().bs * M.b) : 0, window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '',
-      ((p && p.markers) || []).map(m => m ? [m.unitId, m.x, m.y, m.rot || 0, m.staerd || '', m.sign || '', m.takn || '', m.color || ''].join(':') : '').join('|')].join(';');
+      ((p && p.markers) || []).map(m => m ? [m.unitId, m.x, m.y, m.rot || 0, m.staerd || '', m.sign || '', m.takn || '', m.color || ''].join(':') : '').join('|'),
+      T && T.sameign && T.sameign(V.haedId) ? 'sameign' : ''].join(';');
     if (!force && fingur === V.teiknad) return;
     V.teiknad = fingur;
     const W = Math.round(cw * dpr), H = Math.round(ch * dpr);
@@ -287,6 +288,16 @@
     const gr = grunnur();
     x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
     x.drawImage(M.img, V.x + gr.ox * V.s, V.y + gr.oy * V.s, M.b * gr.bs * V.s, M.h * gr.bs * V.s);
+    // SAMEIGN (446, takkinn „Sameign" í Teikningu): íbúðir deyfðar, sameign og stigar gulleit — vörpuð með cam myndarinnar
+    const samR = T && T.sameign ? T.sameign(V.haedId) : null;
+    if (samR && window.TeiknSameign) {
+      try {
+        const k = M.vm.kort, L0 = V.x + gr.ox * V.s, T0 = V.y + gr.oy * V.s, Bw = M.b * gr.bs * V.s, Bh = M.h * gr.bs * V.s;
+        x.save(); x.beginPath(); x.rect(L0, T0, Bw, Bh); x.clip();
+        TeiknSameign.teikna(x, samR, (px, py) => { const q = varpa(M.vm, px + (samR.skx != null ? samR.skx : k.sx), py + (samR.sky != null ? samR.sky : k.sy)); return aSkja(gr, q[0], q[1]); }, [[L0, T0], [L0 + Bw, T0], [L0 + Bw, T0 + Bh], [L0, T0 + Bh]]);
+        x.restore();
+      } catch (e) { console.warn('[445] sameign', e); }
+    }
     teiknaMerkin(x, M, (u, v) => { const q = varpa(M.vm, u, v); return aSkja(gr, q[0], q[1]); }, s => s * V.s, valid || (F && F._selectedUnitId != null ? {} : null));
     const pct = V.gamur.querySelector('#fp-vm-pct'), t = Math.round(V.s * 100) + '%'; if (pct && pct.textContent !== t) pct.textContent = t;
     if (!V.synt) V.synt = performance.now();

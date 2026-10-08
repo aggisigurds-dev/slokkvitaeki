@@ -70,15 +70,60 @@
     var b = o.querySelector('.fp-teikn-loka'); if (b) b.onclick = lokaYfir;
   }
 
+  /* ── merki blaðs (08.10.2026, Agnar: „Held kerfið lesi þær ekki inn. Bara hæðir og kjallara") ──
+   * Blað sem nær yfir margar hæðir fær merki („2.–7. hæð", „1., 2., 3. hæð", „Allt húsið"), snið og útlit eru merkt
+   * sem slík og verða ALDREI hæð (smellur sýnir blaðið). Sama flokkun og „Finna allt húsið" (383) notar. */
+  function flokkaBlad(d) {
+    var t = String(d.lysing || d.tegund || d.filename || '').replace(/\s+/g, ' ');
+    var tl = t.toLowerCase();
+    var haed = (Array.isArray(d.haed) ? d.haed : []).map(Number).filter(function (n) { return isFinite(n); });
+    var bilM = tl.match(/(\d+)\.?\s*[-–]\s*(\d+)\.?\s*h(æ|ae)ð/);
+    // úr titlinum ef APIið gaf engar hæðir: „2.-7. hæð", „1. hæð, 2. hæð, 3. hæð"
+    if (!haed.length) {
+      if (bilM) { for (var k = +bilM[1]; k <= +bilM[2] && k - +bilM[1] < 30; k++) haed.push(k); }
+      else { var r = /(\d+)\.\s*h(æ|ae)ð/g, q; while ((q = r.exec(tl))) haed.push(+q[1]); }
+    }
+    var kj = !!d.kjallari || /kjallar/.test(tl), ris = !!d.ris || /(^|[^a-zþæöðáéíóúý])ris(i|h(æ|ae)ð)?([^a-zþæöðáéíóúý]|$)/.test(tl);
+    var grunn = !!d.grunnmynd || /grunnmynd/.test(tl);
+    var snid = /(^|[^a-zþæöðáéíóúý])snið/.test(tl), utlit = /útlit|utlit/.test(tl);
+    var hlutar = haed.length + (kj ? 1 : 0) + (ris ? 1 : 0);
+    var merki = '';
+    if (grunn) {
+      if (bilM && haed.length > 1) merki = haed[0] + '.–' + haed[haed.length - 1] + '. hæð' + (kj ? ' + kjallari' : '');
+      else if (hlutar > 1) merki = [kj ? 'Kjallari' : ''].concat(haed.length ? [haed.map(function (n) { return n + '.'; }).join(', ') + ' hæð'] : []).concat(ris ? ['ris'] : []).filter(Boolean).join(', ');
+      else if (!hlutar && /grunnmyndir|allt h(ú|u)s/.test(tl)) merki = 'Allt húsið';
+    }
+    return { grunn: grunn, snid: snid, utlit: utlit, haed: haed, bil: !!bilM, kjallari: kj, ris: ris, merki: merki, adeinsSnidUtlit: !grunn && (snid || utlit) };
+  }
+  function merkiHtml(d) {
+    var f = flokkaBlad(d), m = [];
+    if (f.merki) m.push(f.merki);
+    if (f.snid) m.push('Snið');
+    if (f.utlit) m.push('Útlit');
+    return m.map(function (x) { return '<span style="display:inline-block;margin:0 4px 3px 0;padding:1px 7px;border-radius:7px;background:rgba(217,180,90,.18);border:1px solid rgba(217,180,90,.5);color:#f0d48a;font-size:10.5px;font-weight:700">' + esc(x) + '</span>'; }).join('');
+  }
+  function synaSkodun(url, label) {
+    var o = overlay(); if (!o) return;
+    o.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.1)">' +
+      '<div style="font-weight:700;color:#fff">' + esc(label || 'Teikning') + '</div><div style="font-size:12px;color:rgba(255,255,255,.45)">Snið og útlit eru viðmið — þau verða ekki hæð</div><div style="flex:1"></div>' +
+      '<button class="fp-teikn-aftur btn btn-outline btn-sm" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2)">Til baka</button></div>' +
+      '<div style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:12px"><img alt="" style="max-width:100%;max-height:100%;background:#fff"></div>';
+    var img = o.querySelector('img'), u = MYND + '?url=' + encodeURIComponent(url);
+    if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, u); else img.src = u;
+    o.querySelector('.fp-teikn-aftur').onclick = function () { var L = window.__teiknSidastiListi; if (L) synaLista(L.dr, L.allar); else lokaYfir(); };
+  }
+
   function synaLista(dr, allarSyndar) {
     var o = overlay(); if (!o) return;
+    window.__teiknSidastiListi = { dr: dr, allar: !!allarSyndar };
     // 04.10.2026: aðaluppdrættir fyrst (Reykjavík „Aðaluppdrættir", Hafnarfjörður „Bygginganefndarteikning") — á
     // Norðurhellu 17 voru 33 „grunnmyndir" og aðeins 3 þeirra aðaluppdrættir; hinar burðarvirki, raflagnir og lagnir.
     var adal = function (d) { return /aðalupp|bygginga?nefnd/i.test(String(d.tegund || '')); };
     dr = dr.slice().sort(function (a, b) {
       return (adal(b) - adal(a)) || String(b.dags || '').localeCompare(String(a.dags || ''));
     });
-    var syna = allarSyndar ? dr : dr.filter(function (d) { return d.grunnmynd && !d.urelt && adal(d); });
+    // 08.10.2026: gildandi snið og útlit aðaluppdrátta sjást líka (merkt) — viðmið, ekki hæðir
+    var syna = allarSyndar ? dr : dr.filter(function (d) { var f = flokkaBlad(d); return (d.grunnmynd || f.snid || f.utlit) && !d.urelt && adal(d); });
     if (!syna.length && !allarSyndar) syna = dr.filter(function (d) { return d.grunnmynd && !d.urelt; });
     if (!syna.length && !allarSyndar) syna = dr.filter(function (d) { return !d.urelt; });
     if (!syna.length) syna = dr;
@@ -96,6 +141,7 @@
         '<div style="padding:8px 10px">' +
         '<div style="font-weight:600;font-size:13px;margin-bottom:2px;color:#fff">' + esc(titill) +
         (d.urelt ? ' <span style="color:#e0a05f;font-size:10px;font-weight:400">(úrelt)</span>' : '') + '</div>' +
+        merkiHtml(d) +
         '<div style="font-size:11px;color:rgba(255,255,255,.45)">' + esc(undir) + '</div>' +
         '</div></div>';
     }).join('');
@@ -117,7 +163,12 @@
     var allar = o.querySelector('.fp-teikn-allar');
     if (allar) allar.onclick = function () { synaLista(dr, !allarSyndar); };
     o.querySelectorAll('.fp-teikn-kort').forEach(function (k) {
-      k.onclick = function () { hladaMynd(k.getAttribute('data-url'), k.getAttribute('data-label')); };
+      k.onclick = function () {
+        var d = syna.find(function (x) { return x.infoUrl === k.getAttribute('data-url'); });
+        // snið / útlit (engin grunnmynd á blaðinu) verða ekki hæð — aðeins skoðuð
+        if (d && flokkaBlad(d).adeinsSnidUtlit) { synaSkodun(k.getAttribute('data-url'), k.getAttribute('data-label')); return; }
+        hladaMynd(k.getAttribute('data-url'), k.getAttribute('data-label'));
+      };
     });
   }
 
@@ -153,7 +204,12 @@
   }
 
   /* ── uppfletting: heimilisfang → landnúmer → teikningalisti ───────────────── */
-  async function saekja(coId) {
+  var spinnaYfir = spinna, villaYfir = synaVillu;    // yfirlagið (var-skygging inni í saekja nær ekki hingað)
+  // ui = { spinna, villa(html, hlekkur), listi(dr, eign) } — sjálfgefið yfirlagið hér; 383 „Finna allt húsið" fær listann
+  // beint (TeiknSaekja.finna) án þess að listinn birtist.
+  async function saekja(coId, ui) {
+    ui = ui || { spinna: spinnaYfir, villa: villaYfir, listi: function (dr) { synaLista(dr, false); } };
+    var spinna = ui.spinna, synaVillu = ui.villa;      // skyggja yfir föllin — allt hér fer um ui
     var addr = heimilisfangFyrir(coId);
     if (!addr) {
       synaVillu('Ekkert heimilisfang skráð á þennan viðskiptavin — notaðu „Hlaða upp".');
@@ -194,7 +250,7 @@
         var dm2 = await (await fetch(LISTI + '?landnr=' + encodeURIComponent(mapisEign.landnr) + '&heitinr=' + encodeURIComponent(mapisEign.heitinr) +
           '&svf=' + encodeURIComponent(mapisEign.svf), { signal: AbortSignal.timeout(28000) })).json();
         var drm = ((dm2 && dm2.results) || []).filter(function (d) { return d && d.infoUrl; });
-        if (drm.length) { synaLista(drm, false); return; }
+        if (drm.length) { ui.listi(drm, mapisEign); return; }
       }
       if (!eign) {
         var mapis = results.find(function (x) { return x.heimild === 'map.is' && x.ytriSlod; });
@@ -217,7 +273,7 @@
         synaVillu('Engar teikningar fundust fyrir ' + esc(eign.label || addr) + '.');
         return;
       }
-      synaLista(dr, false);
+      ui.listi(dr, eign);
     } catch (_) {
       synaVillu('Villa við að sækja teikningar. Reyndu aftur eða notaðu „Hlaða upp".');
     }
@@ -283,6 +339,21 @@
     FloorPlan.__saekjaSkreytt = true;
     return true;
   }
+
+  // „Finna allt húsið" (383): listinn án yfirlags — { dr, eign } eða { villa }
+  window.TeiknSaekja = {
+    flokka: flokkaBlad,
+    finna: function (coId) {
+      return new Promise(function (res) {
+        var buid = false, lok = function (v) { if (!buid) { buid = true; res(v); } };
+        saekja(coId, {
+          spinna: function () {},
+          villa: function (h) { lok({ villa: String(h || '').replace(/<[^>]+>/g, '') }); },
+          listi: function (dr, eign) { lok({ dr: dr, eign: eign || null }); }
+        }).then(function () { lok({ villa: 'Engin svör frá teikningaskránni' }); }, function () { lok({ villa: 'Villa við að sækja teikningar' }); });
+      });
+    }
+  };
 
   if (!skreyta()) {
     var reyn = 0;
