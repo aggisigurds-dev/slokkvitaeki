@@ -274,6 +274,8 @@
     p.markers.push(m);
     if (F) F._selectedUnitId = unitId;
     try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
+    // fjölbýli (446): hógvær athugasemd ef tækið lendir utan greindrar sameignar — ekkert stöðvað
+    try { if (window.TeiknBord && TeiknBord.sameignAthuga) TeiknBord.sameignAthuga(x, y); } catch (_) {}
     endurteikna();
     return m;
   }

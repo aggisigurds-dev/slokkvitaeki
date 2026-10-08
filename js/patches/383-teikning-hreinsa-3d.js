@@ -1628,6 +1628,7 @@
     const losa = [], veggEfni = [], sporEfni = [], lag = [], midar = [];
     const taekiHlutir = [];     // líkön, stangir, kúlur og miðar tækjanna — falin þegar föst vinnumynd er tekin (fastMynd)
     let staerst = 1, haedY = 0, vidmid = null, heilir = 0;
+    const lg0StigaHlidrun = [];
     // LÍKAN TÆKIS: hópur með upphaf á gólfi við yfirborð veggjar, +z snýr út frá veggnum. e = vegghæðin (mælieining
     // líkansins — stærðirnar eru ýktar um það bil tvöfalt svo tækin sjáist í yfirliti yfir heilt hús).
     const efniL = {}, efni = (lykill, litur, grunn) => efniL[lykill] || (efniL[lykill] = (losa.push(grunn ? new T.MeshBasicMaterial({ color: litur }) : new T.MeshLambertMaterial({ color: litur })), losa[losa.length - 1]));
@@ -1691,11 +1692,62 @@
     };
     // Litun eftir eldflokki — kölluð við smíði og aftur þegar notandinn breytir flokki veggjar (uppfaera / merkja).
     const lit = new T.Color();
+    let samOn = !!(gogn && gogn.sameign);
+    const SAMEIGN_DAUFT_3D = 0xe9e6df;
+    // SAMEIGN (446): ljós gulleitur flötur á sameign og stigum ofan á gólfinu, íbúðir undir hvítri slæðu (aðeins innan
+    // hússins — gólfmyndin ræður alfanum). Smíðað þegar sýnt fyrst.
+    const smidaSameign = lg => {
+      const hd = lg.hd, res = hd.sameign;
+      if (lg.samM) { lg.hopur.remove(lg.samM); lg.samM = null; }
+      lg.samV = null;
+      if (!res || !window.TeiknSameign) return;
+      const sk = Math.min(1, 1600 / Math.max(hd.W, hd.H)), cw = Math.max(2, Math.round(hd.W * sk)), ch = Math.max(2, Math.round(hd.H * sk));
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      const x = c.getContext('2d'), kk = sk * hd.kvardi;           // dílar skornu myndarinnar → strigi
+      // í 3D sterkari litir (grá gólfslæða undir) og engin heiti — þau sjást í 2D
+      TeiknSameign.teikna(x, res, (px, py) => [px * kk, py * kk], [[0, 0], [cw, 0], [cw, ch], [0, ch]],
+        { deyfa: 'rgba(250,250,247,.5)', sameign: 'rgba(255,196,60,.62)', stigi: 'rgba(240,160,20,.82)', heiti: false });
+      // aðeins innan hússins (gólfmyndin er gegnsæ utan þess)
+      x.globalCompositeOperation = 'destination-in'; x.drawImage(hd.golf, 0, 0, cw, ch); x.globalCompositeOperation = 'source-over';
+      const tex = new T.CanvasTexture(c); tex.anisotropy = 4;
+      const e = new T.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+      lg.samM = new T.Mesh(lg.golfG, e); lg.samM.rotation.x = -Math.PI / 2; lg.samM.position.y = 0.35; lg.samM.renderOrder = 2; lg.hopur.add(lg.samM);
+      losa.push(tex, e);
+      // veggir sem liggja að sameign (innan 0,6 m) halda lit
+      if (hd.butar && hd.butar.length) {
+        const sp = 0.6 * (res.pxm || 70);
+        lg.samV = new Uint8Array(hd.butar.length);
+        hd.butar.forEach((v, i) => { for (const t of [0.15, 0.5, 0.85]) if (TeiknSameign.iSameign(res, v[0] + (v[2] - v[0]) * t, v[1] + (v[3] - v[1]) * t, sp)) { lg.samV[i] = 1; break; } });
+      }
+    };
+    // Íbúðaveggir LÆGRI í sameignarsýn (35 % af hæð) — í húsi á mörgum hæðum hverfur gult gólf annars á bak við veggi
+    const samHaed = (lg, lagur) => {
+      if (!lg.veggir || !lg.samV || !lg.veggir.isInstancedMesh) return;
+      const mm = new T.Matrix4(), p = new T.Vector3(), q = new T.Quaternion(), sc = new T.Vector3();
+      if (!lg.samUpph) { lg.samUpph = []; for (let i = 0; i < lg.samV.length; i++) { lg.veggir.getMatrixAt(i, mm); lg.samUpph.push(mm.clone()); } }
+      for (let i = 0; i < lg.samV.length; i++) {
+        if (lg.samV[i]) continue;
+        mm.copy(lg.samUpph[i]);
+        if (lagur) { mm.decompose(p, q, sc); const h0 = sc.y; sc.y = h0 * 0.35; p.y = p.y - h0 / 2 + sc.y / 2; mm.compose(p, q, sc); }
+        lg.veggir.setMatrixAt(i, mm);
+      }
+      lg.veggir.instanceMatrix.needsUpdate = true;
+    };
+    const synaSameign = on => {
+      samOn = !!on;
+      lag.forEach(lg => {
+        if (samOn && lg.hd.sameign && !lg.samM) { try { smidaSameign(lg); } catch (e) { console.warn('[383] sameign 3D', e); } }
+        if (lg.samM) lg.samM.visible = samOn;
+        try { samHaed(lg, samOn); } catch (e) { console.warn('[383] sameign veggir', e); }
+        litaVeggi(lg);
+      });
+    };
     const litaVeggi = lg => {
       const hd = lg.hd;
       if (!lg.heilir) return;
       const grtt = utlit === 'gratt';
-      for (let i = 0; i < hd.butar.length; i++) lg.veggir.setColorAt(i, lit.setHex(lg.valinn === i ? VALINN_3D : grtt ? GRATT_3D.veggur : (hd.eld && ELDLITIR_3D[hd.eld[i]]) || (hd.holf && hd.holf.alyktad[i] ? ALYKTAD_3D : VEGGLITUR_3D)));
+      const samV = samOn && lg.samV;      // sameignarsýn: veggir íbúða ljósir og daufir, veggir sameignar halda lit sínum
+      for (let i = 0; i < hd.butar.length; i++) lg.veggir.setColorAt(i, lit.setHex(lg.valinn === i ? VALINN_3D : samV && !samV[i] ? SAMEIGN_DAUFT_3D : grtt ? GRATT_3D.veggur : (hd.eld && ELDLITIR_3D[hd.eld[i]]) || (hd.holf && hd.holf.alyktad[i] ? ALYKTAD_3D : VEGGLITUR_3D)));
       lg.veggir.instanceColor.needsUpdate = true;
       if (lg.karmar) {
         for (let i = 0; i < hd.hurdir.length; i++) {
@@ -1782,6 +1834,27 @@
             }
           }
         }
+      }
+      // STIGAR STAFLA (fjölbýli, 3+ hæðir — Agnar 08.10.2026): stigahúsið stendur á sama stað á hverri hæð. Hliðrunin
+      // sem parar staðfesta stiga þessarar hæðar (446) við næstu hæð fyrir neðan sem á stiga ræður, sé hún ≥ 0,4 m frá
+      // því sem reglurnar að ofan gáfu (Berjavellir 6: kjallarinn 5,8 m frá 1. hæð eftir miðju veggja).
+      if (gogn && gogn.stigaStafli && nr > 0 && window.TeiknSameign && hd.sameign && lag[0]) {
+        try {
+          const u0 = lag[0].veggH / 3 || 1;
+          const pkt = (h2, P, f2, kv2, gw2, gh2) => ((h2.sameign && h2.sameign.stigar) || []).filter(q => q.stadfest && !q.uti)
+            .map(q => ({ ass: q.ass, x: (P.x + (((q.x0 + q.x1) / 2) * f2 - gw2 / 2) * kv2) / u0, y: (P.z + (((q.y0 + q.y1) / 2) * f2 - gh2 / 2) * kv2) / u0 }));
+          const mine = pkt(hd, hopur.position, hd.kvardi / k.c, hopur.scale.x || 1, k.gw, k.gh);
+          let ned = null;
+          for (let j = lag.length - 1; j >= 0 && !ned; j--) { const q = lag[j], pq = pkt(q.hd, q.hopur.position, q.hd.kvardi / q.k.c, q.hopur.scale.x || 1, q.gw, q.gh); if (pq.length) ned = pq; }
+          if (mine.length && ned) {
+            const b = TeiknSameign.hlidrun(mine, ned), L = Math.hypot(b.t[0], b.t[1]);
+            if (b.n >= 1 && L >= 0.4 && L <= 12) {
+              hopur.position.x += b.t[0] * u0; hopur.position.z += b.t[1] * u0;
+              lg0StigaHlidrun.push((hd.nafn || 'hæð ' + (nr + 1)) + ': ' + b.t.map(v => v.toFixed(2)).join(', ') + ' m');
+              console.info('[383] stafli eftir stigum: ' + (hd.nafn || 'hæð ' + (nr + 1)) + ' færð ' + b.t.map(v => v.toFixed(2)).join(', ') + ' m (' + b.n + (b.n === 1 ? ' stigi' : ' stigar') + ')');
+            }
+          }
+        } catch (e) { console.warn('[383] stigastafli', e); }
       }
       // Gólf: hreina myndin sem áferð, svo herbergjaskipan og heiti sjáist undir veggjunum.
       const golfStr = document.createElement('canvas');
@@ -2304,6 +2377,10 @@
       uppfaera(nr, d) { const lg = lag[nr]; if (!lg) return; if (d) Object.assign(lg.hd, d); litaVeggi(lg); litaHolf(lg); },
       // Veggurinn sem notandinn er að velja flokk á (gylltur); merkja(null) tekur merkinguna af.
       merkja(nr, i) { lag.forEach(lg => { const v = lg.nr === nr ? i : null; if (lg.valinn !== v) { lg.valinn = v; litaVeggi(lg); } }); },
+      // SAMEIGN (446): sýna / fela gulleitu sameignina og deyfðar íbúðir · setjaSameign(fall(haedId) → niðurstaða)
+      sameign(on) { synaSameign(on); return samOn; },
+      setjaSameign(fn) { lag.forEach(lg => { try { samHaed(lg, false); } catch (_) {} lg.hd.sameign = fn(lg.hd.haedId) || null; if (lg.samM) { lg.hopur.remove(lg.samM); lg.samM = null; } lg.samV = null; lg.samUpph = null; }); synaSameign(samOn); },
+      stigaStafli: () => lg0StigaHlidrun.slice(),
       // Bakaðir skuggar hverrar hæðar (prófanir): hlutfall skyggðra díla á striganum, ógegnsæi, sýnileiki.
       skuggar(mynd) {
         // sýnimynd: dökkir skuggar á hvítu (gríman sjálf er hvít á gegnsæju)
@@ -2364,6 +2441,8 @@
         const u0 = (lag[0] && lag[0].veggH / 3) || 1, M = n => Math.round(n / u0 * 1000) / 1000;
         const ut = [], mork = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity, y1: 0 };
         const myndHamark = raun ? 0 : o.myndHamark == null ? 260000 : o.myndHamark;
+        // sneiðmynd (3+ sýnilegar hæðir): aðeins þá fylgir sameignin — einnar og tveggja hæða myndir haldast óbreyttar
+        const snid = raun && (o.snid || lag.filter(lg => lg.hopur.visible).length >= 3) ? (o.snid || 'snidmynd') : '';
         lag.forEach(lg => {
           if (!lg.hopur.visible) return;
           const hd = lg.hd, f = lg.f, kv = lg.hopur.scale.x || 1, P = lg.hopur.position, gw2 = lg.gw / 2, gh2 = lg.gh / 2;
@@ -2410,6 +2489,10 @@
             };
             try { Object.assign(haed, raunAukagogn(pg, tilM, veggir, gler, hurdir, golf)); } catch (e) { console.warn('[383] Designer-3D herbergi', e); }
           }
+          // SAMEIGN (446, fjölbýli — Agnar 08.10.2026): útlínur sameignar, stigar úr rasta (líka á skönnunum) og heiti
+          if (snid && hd.sameign && o.sameign !== false && window.TeiknSameign) {
+            try { Object.assign(haed, sameignIMetrum(hd.sameign, (px, py) => [X(px * f - gw2), Z(py * f - gh2)], v => L(v * f), haed)); } catch (e) { console.warn('[383] Designer-3D sameign', e); }
+          }
           ut.push(haed);
           mork.x0 = Math.min(mork.x0, golf.x - golf.w / 2); mork.x1 = Math.max(mork.x1, golf.x + golf.w / 2);
           mork.z0 = Math.min(mork.z0, golf.z - golf.h / 2); mork.z1 = Math.max(mork.z1, golf.z + golf.h / 2); mork.y1 = Math.max(mork.y1, y + 3.0);
@@ -2432,6 +2515,9 @@
         if (raun) {
           sena.utlit = 'raunsaett';
           const syn = lag.filter(lg => lg.hopur.visible);
+          // SNEIÐMYND (Agnar 08.10.2026: „heildstæð rendering á svona mörgum hæðum með gegnsærri framhlið"): 3+ hæðir
+          // staflast í réttri hæð með opna framhlið (blender/raunsaett.py). 1–2 hæðir halda sprengdu myndinni.
+          if (snid) sena.snid = snid;
           if (syn.length === 1 && syn[0].hd.haedId) {
             const lg = syn[0], hd = lg.hd;
             lg.hopur.updateMatrixWorld(true);
@@ -2454,6 +2540,7 @@
         if (el.parentNode) el.parentNode.removeChild(el);
       }
     };
+    if (samOn) { try { synaSameign(true); } catch (e) { console.warn('[383] sameign 3D', e); } }
     return handfang;
   }
 
@@ -2585,6 +2672,28 @@
       inni(m, x, z) { const p = reitur(x, z); return p >= 0 && !!m[p]; },
       nx, nz, rs
     };
+  }
+  // Sameign hæðar (446, dílar skornu myndarinnar) → metrar senunnar fyrir blender/raunsaett.py: sameign = [{ teg, poly }],
+  // sameignHeil (kjallarinn allur), stigar úr rasta (sama snið og PDF-stigarnir: miðlína a → b, breidd, threp) ef PDF gaf
+  // enga, og heiti — PDF-heiti fá sameign-merki, greind stigahús/gangar/lyftur bætast við sem nöfn.
+  function sameignIMetrum(sm, pm, Lm, haed) {
+    const r3 = n => Math.round(n * 1000) / 1000, ut = {};
+    const sv = (sm.heil && sm.heildarsvaedi ? [sm.heildarsvaedi] : []).concat(sm.svaedi || []);
+    if (sv.length) ut.sameign = sv.map(v => ({ teg: v.teg, flatarmal: v.flatarmal, poly: v.poly.map(p => pm(p[0], p[1]).map(r3)) }));
+    if (sm.heil) ut.sameignHeil = true;
+    if (!(haed.stigar && haed.stigar.length)) {
+      const st = (sm.stigar || []).filter(k => k.stadfest && !k.uti).map(k => {
+        const cx = (k.x0 + k.x1) / 2, cy = (k.y0 + k.y1) / 2;
+        const a = k.ass === 'x' ? pm(cx, k.y0) : pm(k.x0, cy), b = k.ass === 'x' ? pm(cx, k.y1) : pm(k.x1, cy);
+        return { a: a.map(r3), b: b.map(r3), breidd: r3(Lm(k.ass === 'x' ? k.x1 - k.x0 : k.y1 - k.y0)), threp: k.n, uppruni: 'rasti' };
+      });
+      if (st.length) ut.stigar = st;
+    }
+    const herb = (haed.herbergi || []).map(r => Object.assign({}, r, { sameign: window.TeiknSameign.flokkur(r.texti).hopur === 'sameign' }));
+    const HEITI = { stigahus: 'Stigahús', gangur: 'Gangur', anddyri: 'Anddyri', lyfta: 'Lyfta' };
+    (sm.svaedi || []).forEach(v => { if (HEITI[v.teg] && !v.kassi) { const p = pm(v.x, v.y); herb.push({ texti: HEITI[v.teg], x: r3(p[0]), z: r3(p[1]), sameign: true, flatarmal: v.flatarmal, uppruni: 'greining' }); } });
+    if (herb.length) ut.herbergi = herb;
+    return ut;
   }
   function raunAukagogn(pg, tilM, veggir, gler, hurdir, golf) {
     // tilM(u, v[, an]): hlutföll síðu → [x, z] metrar senunnar; null utan skurðar hæðarinnar (nema an = án athugunar)
@@ -3307,7 +3416,8 @@
     const ei = window.TeiknEi && TeiknEi.fingrafar ? TeiknEi.fingrafar(h) : '';
     const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
       G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), eldveggjaLinur(h).map(v => v.e + ':' + v.p.slice(0, 2).join(',')).join(';'), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height, stimpil, takn, ei,
-      (plan().markers || []).filter(m => m && m.uti).map(m => Math.round(m.x) + ':' + Math.round(m.y)).join(',')].join('|');
+      (plan().markers || []).filter(m => m && m.uti).map(m => Math.round(m.x) + ':' + Math.round(m.y)).join(','),
+      SAM.syn ? 's' + (sameignHaedar(h.id) ? 1 : 0) + (SAM.hus ? SAM.hus.lykill.length : 0) : ''].join('|');
     if (merki === G.teiknad) return;
     G.teiknad = merki;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -3319,6 +3429,11 @@
     const k = cr.width / c.width, ox = cr.left - mr.left, oy = cr.top - mr.top;
     const sx = X => ox + (X - G.rymi.x) * k, sy = Y => oy + (Y - G.rymi.y) * k;
     x.save(); x.beginPath(); x.rect(ox, oy, cr.width, cr.height); x.clip();
+    // SAMEIGN (446): íbúðir deyfðar, sameign og stigar gulleit — undir veggjum, merkjum og stimplum
+    if (SAM.syn && window.TeiknSameign) {
+      const sr = sameignHaedar(h.id);
+      if (sr) { try { TeiknSameign.teikna(x, sr, (px, py) => [sx(px + G.rymi.x), sy(py + G.rymi.y)], [[ox, oy], [ox + cr.width, oy], [ox + cr.width, oy + cr.height], [ox, oy + cr.height]]); } catch (e) { console.warn('[383] sameign 2D', e); } }
+    }
     const bt = Math.max(3, Math.min(9, c.width * k / 170));
     x.lineCap = 'round'; x.lineJoin = 'round';
     if (h.pdfVeggir.length) {
@@ -4258,6 +4373,114 @@
   // Klukkan í hausnum og biðviðvörunin hreyfast á milli fyrirspurna.
   setInterval(() => { const B = G.blender; if (B && B.opid && !blLokid(B) && document.getElementById('fp-3d')) blTeikna(); }, 1000);
 
+  /* ── SAMEIGN Í FJÖLBÝLI (Agnar 08.10.2026) — greiningin sjálf býr í 446 (window.TeiknSameign) ──
+   * „mörg húsfélögin með íbúðir í fjölbýli … tækin oftast bara í sameign sem er þá bara stigagangurinn upp og
+   * kjallari ef slíkur er." Hér: myndir hæðanna sóttar (þær sem 3D hefur þegar eru endurnýttar), dílar á metra eins og
+   * 3D (dilarAMetra, annars A1 1:100), heiti úr textalagi vigur-PDF (raunGognUrPdf) og TeiknSameign.greinaHus.
+   * Niðurstaðan býr AÐEINS í minni (SAM) — ekkert vistað. Takkinn „Sameign" (2D, vinnumynd, 3D) sýnir hana.
+   * Hæðir af sama blaði og skurði (dæmigerð hæð: „2.–4. hæð") eru greindar einu sinni. */
+  const SAM = { syn: false, hus: null, bid: null };
+  const samLykill = h => String((h && h.image_url) || '').replace(/^https?:\/\/[^/]+/i, '') + '|' + JSON.stringify((h && h.skurdur) || null);
+  const samHusLykill = hs => (hs || []).filter(h => h && h.image_url).map(h => h.id + '=' + samLykill(h)).join(';');
+  async function samDilar(h, fb, fh) {
+    const sk = h.skurdur || { w: fb, h: fh };
+    let d = 0; try { d = await dilarAMetra(h, fb, fh); } catch (_) {}
+    if (d > 0 && sk.w / d >= 4 && sk.w / d <= 300) return d;
+    return Math.max(fb, fh) / 841 * 10;          // A1 í 1:100 (sama forsenda og 3D án blaðstærðar)
+  }
+  // hlutir (valkvætt): [{ h, frum, stig1 }] úr 3D svo myndirnar sækist ekki aftur. Skilar SAM.hus.
+  async function greinaSameign(hlutir, framvinda) {
+    const TS = window.TeiknSameign; if (!TS) throw new Error('Sameignargreiningin (446) er ekki hlaðin');
+    const hs = (haedir() || []).filter(h => h && h.image_url), lyk = samHusLykill(hs);
+    if (SAM.hus && SAM.hus.lykill === lyk) return SAM.hus;
+    if (SAM.bid && SAM.bid.lykill === lyk) return SAM.bid.p;
+    const p = (async () => {
+      const t0 = performance.now(), inn = [], afBladi = new Map();
+      for (let i = 0; i < hs.length; i++) {
+        const h = hs[i], kl = samLykill(h);
+        if (framvinda) framvinda('Greini sameign — ' + (h.nafn || (i + 1) + '. hæð') + ' (' + (i + 1) + '/' + hs.length + ')…');
+        let R = afBladi.get(kl), pxm = 0, textar = [];
+        const til = (hlutir || []).find(x => x && x.h && x.h.id === h.id);
+        let frum = til && til.frum, stig1 = til && til.stig1;
+        if (!frum) {
+          const virk = haedir()[G.virk];
+          frum = virk && virk.id === h.id && G.frum && G.frum.complete !== false ? G.frum : await hladaMynd(h.image_url);
+        }
+        const fb = frum.naturalWidth || frum.width, fh = frum.naturalHeight || frum.height, sk = h.skurdur || { x: 0, y: 0, w: fb, h: fh };
+        pxm = await samDilar(h, fb, fh);
+        if (!R) {
+          if (!stig1) stig1 = h.skurdur ? skera(frum, h.skurdur) : frum;
+          R = TS.rasti(stig1, pxm);
+          afBladi.set(kl, R);
+        }
+        // heiti úr textalagi vigur-PDF (Fiskislóð-leiðin): hlutföll síðu → dílar skornu myndarinnar
+        if (pdfSlod(h)) {
+          try {
+            const pg = await raunGognUrPdf(h);
+            (pg && pg.herbergi || []).forEach(r => { const x = r.u * fb - sk.x, y = r.v * fh - sk.y; if (x >= 0 && y >= 0 && x <= sk.w && y <= sk.h) textar.push(Object.assign({ texti: r.texti, x, y }, r.nr ? { nr: r.nr } : {})); });
+          } catch (e) { console.warn('[383] sameign: textar', e); }
+        }
+        inn.push({ lykill: kl, pxmSrc: pxm, R, nafn: h.nafn || '', textar, hid: h.id, skx: sk.x || 0, sky: sk.y || 0 });
+        await new Promise(r => setTimeout(r, 0));     // vafrinn andar á milli hæða
+      }
+      if (framvinda) framvinda('Greini sameign — stigar staðfestir milli hæða…');
+      await new Promise(r => setTimeout(r, 0));
+      const r = TS.greinaHus(inn), haedirM = new Map();
+      inn.forEach((x, i) => haedirM.set(x.hid, Object.assign({}, r.haedir[i], { lykill: x.lykill, pxm: x.pxmSrc, skx: x.skx, sky: x.sky })));
+      const fjolbyli = hs.length >= 3 || r.haedir.some(q => (q.herbergi || []).filter(t => t.hopur === 'ibud').length >= 2);
+      const hus = { lykill: lyk, haedir: haedirM, hlidranir: r.hlidranir, blod: r.blod, fjolbyli, ms: Math.round(performance.now() - t0) };
+      try { console.info('[383] sameign: ' + JSON.stringify({ ms: hus.ms, blod: r.blod, haedir: r.haedir.map((q, i) => (hs[i].nafn || i) + ': ' + q.talning.stigahus + ' stigah., ' + q.talning.gangar + ' gangar' + (q.heil ? ', allt' : '')) })); } catch (_) {}
+      SAM.hus = hus;
+      return hus;
+    })();
+    SAM.bid = { lykill: lyk, p };
+    try { return await p; } finally { if (SAM.bid && SAM.bid.p === p) SAM.bid = null; }
+  }
+  // Niðurstaða hæðar (ef greind og hæðin óbreytt síðan)
+  function sameignHaedar(hid) {
+    const hus = SAM.hus; if (!hus) return null;
+    const r = hus.haedir.get(hid), h = (haedir() || []).find(x => x && x.id === hid);
+    return r && h && r.lykill === samLykill(h) ? r : null;
+  }
+  function samTeiknaAllt() {
+    G.teiknad = '';
+    try { yfirlag(); } catch (_) {}
+    try { if (G.syn3d && G.syn3d.sameign) G.syn3d.sameign(SAM.syn); } catch (e) { console.warn('[383] sameign 3D', e); }
+    const lit = b => { if (!b) return; b.setAttribute('aria-pressed', SAM.syn ? 'true' : 'false'); b.style.background = SAM.syn ? '#d9b45a' : ''; b.style.color = SAM.syn ? '#14120f' : ''; };
+    lit(document.querySelector('#modal-floorplan .fp-sameign-btn'));
+    const b3 = document.getElementById('fp-3d-sameign');
+    if (b3) { b3.setAttribute('aria-pressed', SAM.syn ? 'true' : 'false'); b3.style.background = SAM.syn ? '#d9b45a' : 'rgba(20,18,15,.85)'; b3.style.color = SAM.syn ? '#14120f' : '#fff'; }
+  }
+  // Hógvær athugasemd (433 setjaTaeki): tæki sett UTAN sameignar í fjölbýli — aðeins ef sameignin hefur verið greind
+  // („Sameign" eða 3D með 3+ hæðum), aldrei oftar en á 20 sek fresti, ekkert stöðvað. x, y = hnit ritilsins (skorin mynd).
+  let samAthT = 0;
+  function sameignAthuga(x, y) {
+    if (!SAM.hus || !SAM.hus.fjolbyli || !window.TeiknSameign) return false;
+    const h = virkHaed(), r = h && sameignHaedar(h.id);
+    if (!r || (!(r.svaedi || []).length && !r.heil)) return false;
+    if (TeiknSameign.iSameign(r, x, y, 0.8 * (r.pxm || 70))) return false;
+    if (Date.now() - samAthT < 20000) return true;
+    samAthT = Date.now();
+    segja('Athugaðu: tækið er utan sameignar. Í fjölbýli eru tækin yfirleitt í stigagangi, göngum eða kjallara.');
+    return true;
+  }
+  async function samSkipta() {
+    if (SAM.syn) { SAM.syn = false; samTeiknaAllt(); return; }
+    if (!(haedir() || []).some(h => h && h.image_url)) { segja('Sæktu teikningu fyrst.'); return; }
+    SAM.syn = true; samTeiknaAllt();
+    if (SAM.hus && SAM.hus.lykill === samHusLykill(haedir())) return;
+    try {
+      const hus = await greinaSameign(null, t => { try { const s = document.getElementById('fp-3d-skyr'); if (s) { s.style.display = ''; s.textContent = t; } } catch (_) {} });
+      // 3D opið: niðurstaðan fer á hæðir 3D (sama auðkenni) svo yfirlagið þar teiknist
+      if (G.syn3d && G.syn3d.setjaSameign) G.syn3d.setjaSameign(hid => sameignHaedar(hid));
+      const allar = [...hus.haedir.values()], meðStiga = allar.filter(q => q.talning.stigahus > 0).length;
+      segja(meðStiga ? 'Sameign: stigahús fannst á ' + meðStiga + ' af ' + allar.length + (allar.length === 1 ? ' hæð' : ' hæðum') + ' — íbúðir deyfðar.' : 'Fann ekkert stigahús á teikningunni — sameign óviss.' + (allar.some(q => q.heil) ? ' Kjallarinn er sýndur sem sameign.' : ''));
+    } catch (e) { console.warn('[383] sameign', e); segja('Sameignargreining tókst ekki: ' + ((e && e.message) || e)); SAM.syn = false; }
+    samTeiknaAllt();
+  }
+
+
+
   // SJÁLFGEFIN SÝN TILBÚINNAR HÆÐAR (Agnar 07.10.2026: „Geturðu látið hana opnast hérna þegar ég vel Fiskislóð 41"):
   // það er nú FASTA VINNUMYNDIN (445) — vistuð mynd ofan frá sem opnast strax, og 3D er aðeins smíðað ef hún vantar.
   // sjalfgefid3d() (opna lifandi 3D við hverja opnun, 2b4e0134) er farið svo bæði keyri ekki.
@@ -4281,6 +4504,7 @@
       '<button type="button" id="fp-3d-mynd" title="Vista sýnina eins og hún er — með tækjum og merkjum — sem skarpa PNG-mynd, t.d. í tilboð" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Vista mynd</button>' +
       '<button type="button" id="fp-3d-sjon" title="Skipta á milli sjónarhorns ofan frá (eins og teikningin) og á ská" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Á ská</button>' +
       '<button type="button" id="fp-3d-utlit" aria-pressed="false" title="Sýna eldveggi og brunahólf í lit — annars grátt útlit þar sem tækin standa út" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Brunahólf</button>' +
+      '<button type="button" id="fp-3d-sameign" aria-pressed="' + (SAM.syn ? 'true' : 'false') + '" title="Sameign í fjölbýli: stigahús, gangar og kjallari í ljósum gulleitum lit, íbúðir deyfðar — greint úr teikningunni (stigar endurtaka sig milli hæða)" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:' + (SAM.syn ? '#d9b45a' : 'rgba(20,18,15,.85)') + ';color:' + (SAM.syn ? '#14120f' : '#fff') + ';font:700 13px system-ui;cursor:pointer">Sameign</button>' +
       '<button type="button" id="fp-3d-blender" title="Designer-3D: Raunsætt (yfirlit á ská og vinnuskjal ofan frá) eða Einfalt (gráa útlitið), teiknað í Blender á skrifstofutölvunni. Síðasta mynd opnast strax; Teikna aftur býr til nýja." style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Designer-3D</button>' +
       '<button type="button" id="fp-3d-gegn" aria-pressed="false" title="Gera veggina gegnsæja svo tækin og teikningin sjáist í gegnum húsið" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Gegnsætt</button>' +
       '<button type="button" id="fp-3d-x" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">✕ Loka 3D</button></div>' +
@@ -4302,7 +4526,8 @@
       if (window.TeiknVinnumynd && TeiknVinnumynd.festa) TeiknVinnumynd.festa(G.syn3d.valinHaedId ? G.syn3d.valinHaedId() : null);
     });
     gamur.querySelector('#fp-3d-blender').addEventListener('click', () => { blBidja().catch(e => { console.warn('[383] Blender-mynd', e); }); });
-    const skyr = gamur.querySelector('#fp-3d-skyr'), ut = [], sleppt = [], nyirPdf = [];
+    gamur.querySelector('#fp-3d-sameign').addEventListener('click', () => { samSkipta().catch(e => console.warn('[383] sameign', e)); });
+    const skyr = gamur.querySelector('#fp-3d-skyr'), ut = [], sleppt = [], nyirPdf = [], samHlutir = [];
     for (let i = 0; i < hs.length; i++) {
       const h = hs[i];
       if (o && o.haedId && h.id !== o.haedId) continue;
@@ -4327,14 +4552,24 @@
         if (!u.veggjaPx) { sleppt.push(h.nafn + ' (engir veggir — greindu þá í TurboPaint og „Vista í úttekt“, lestu úr PDF eða dragðu með ✏)'); continue; }
         u.nafn = h.nafn; u.haedId = h.id;
         u.dilarAMetra = await dilarAMetra(h, fbE, fhE);
+        samHlutir.push({ h, frum, stig1 });
         if (!document.getElementById('fp-3d')) return;
         ut.push(u);
       } catch (e) { console.warn('[383] 3D: ' + h.nafn, e); sleppt.push(h.nafn + ' (náði ekki í teikningu)'); }
     }
     if (nyirPdf.length) { try { vistaSjalfkrafa('veggir úr PDF (' + nyirPdf.join(', ') + ')'); } catch (_) {} }
+    // FJÖLBÝLI (3+ hæðir) eða „Sameign" virkt: stigahús og sameign greind strax — 3D staflar hæðunum eftir stigunum
+    // (stigahúsið er á sama stað á hverri hæð; Berjavellir 6: kjallarinn sat 5,8 m frá 1. hæð eftir miðju veggja)
+    if (window.TeiknSameign && ut.length && (ut.length >= 3 || SAM.syn)) {
+      try {
+        await greinaSameign(samHlutir, t => { skyr.textContent = t; });
+        ut.forEach(u => { u.sameign = sameignHaedar(u.haedId); });
+      } catch (e) { console.warn('[383] sameign í 3D', e); }
+      if (!document.getElementById('fp-3d')) return;
+    }
     if (!ut.length) { loka3d(); segja('Sjálfvirk veggagreining náði ekki. ' + sleppt.join(' · ') + '.' + (hs.some(x => pdfSlod(x)) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.'); return; }
     try {
-      G.syn3d = await syna3d(gamur, { haedir: ut });
+      G.syn3d = await syna3d(gamur, { haedir: ut, stigaStafli: ut.length >= 3, sameign: SAM.syn });
       skyr.textContent = 'Draga = snúa · hjól / klípa = aðdráttur · shift-draga eða tveir fingur = færa' + (ut.length > 1 ? ' · ' + ut.length + ' hæðir' : '') + (sleppt.length ? ' · sleppt: ' + sleppt.join(', ') : '');
       const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'true');
       // Skýring lita — fylgir því sem er á skjánum: valin hæð ein, eða allar. Litirnir byggja á EI-merkjum sem voru lesin
@@ -4658,6 +4893,8 @@
         gera('fp-veggir-btn', '✏ Veggir', 'Draga veggina sjálfur — virkar á hvaða teikningu sem er og gefur rétt 3D', tharfMynd(() => { loka3d(); G.hamur = G.hamur === 'veggir' ? null : 'veggir'; G.kedja = null; G.drag = null; })),
         gera('fp-hreinsa-btn', '✨ Skýrari veggir', '2D grunnmyndin helst ósnert. 3D sýnir húsið — grá lóð utan veggja er ekki gólfplata.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
         gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); }),
+        // 08.10.2026 (Agnar: fjölbýli — tækin í sameign, stigagangi og kjallara): greind sameign gulleit, íbúðir deyfðar
+        gera('fp-sameign-btn', 'Sameign', 'Sameign í fjölbýli: stigahús, gangar og kjallari í ljósum gulleitum lit, íbúðir deyfðar — greint úr teikningunni (stigar endurtaka sig milli hæða). Ekkert vistast.', () => { samSkipta().catch(e => console.warn('[383] sameign', e)); }),
         gera('fp-fest-btn', '📌 Festa útlit', 'Sáttur við teikninguna? Festir skurð, Skýrari veggi og hæðir á þjóninum — opnast alltaf svona, ekkert greint upp á nýtt. Smelltu aftur til að breyta.', tharfMynd(() => {
           const v = lesaVal(FP.companyId); v.fest = !v.fest; G.hamur = null; G.drag = null; G.kedja = null;
           vistaVal(FP.companyId, v);
@@ -4676,6 +4913,7 @@
     const val = lesaVal(FP.companyId), h = virkHaed();
     const lita = (kl, a, texti) => { const b = grp.querySelector(kl); if (!b) return; b.setAttribute('aria-pressed', String(!!a)); b.style.background = a ? '#c9a54a' : ''; b.style.color = a ? '#14120f' : ''; if (texti) b.textContent = texti; };
     lita('.fp-hreinsa-btn', val.a);
+    lita('.fp-sameign-btn', SAM.syn);
     lita('.fp-fest-btn', val.fest, val.fest ? '📌 Útlit fest' : '📌 Festa útlit');
     const mg = fpGluggi(); if (mg) mg.classList.toggle('fp-fest', !!val.fest);
     if (!document.getElementById('fp-fest-css')) {
@@ -4864,7 +5102,14 @@
     loka3d,
     // Designer-3D (prófanir): staðan sem er sýnd · PDF-gögn hæðar fyrir raunsætt útlit
     designer: () => (G.blender ? { utlit: G.blender.utlit, stada: G.blender.stada, id: G.blender.id || null, myndir: G.blender.myndir || null, vm: G.blender.vm || null, vmStada: G.blender.vmStada || '' } : null),
-    raunPdf: h => raunGognUrPdf(h)
+    raunPdf: h => raunGognUrPdf(h),
+    // Sameign í fjölbýli (446): niðurstaða hæðar þegar „Sameign" er virkt (445 teiknar hana á vinnumyndina) · greining
+    sameign: hid => (SAM.syn ? sameignHaedar(hid) : null),
+    sameignSyn: () => SAM.syn,
+    sameignHus: () => SAM.hus,
+    greinaSameign: () => greinaSameign(),
+    sameignSkipta: () => samSkipta(),
+    sameignAthuga
   };
   window.TeiknTurboPaint = { opna: opnaITurboPaint, slod: turboPaintSlod, vistaHaedir: vistaHaedirFyrirTurboPaint };
 
