@@ -698,6 +698,13 @@
 .bt.screen--wide{max-width:900px}
 @media (min-width:1100px){ .bt.screen{max-width:440px} }
 #${VIEW_ID}{position:fixed!important;inset:0!important;z-index:1000;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#41454d}
+/* 08.10.2026: Bílstjóri sem FLIPI í appi (261 PAGES) — app-hausinn (50 px) og botnstikan (#_app-nav) eru fixed
+   ofan á öllu (z 2147481001). Yfirlagið og dokkan víkja fyrir þeim; --bs-navh er mæld hæð stikunnar (show/resize). */
+body.appmode #${VIEW_ID}{top:50px!important}
+body.appmode:not(.appmode-nonav) #${VIEW_ID}{bottom:var(--bs-navh,84px)!important}
+body.appmode:not(.appmode-nonav) #${VIEW_ID} .bt .dock,body.appmode:not(.appmode-nonav) #${VIEW_ID} .dock{bottom:var(--bs-navh,84px)!important}
+body.appmode:not(.appmode-nonav) ._bs-sheet{top:50px!important;bottom:var(--bs-navh,84px)!important}
+body.appmode:not(.appmode-nonav) ._bs-sheet .dock{bottom:var(--bs-navh,84px)!important}
 body.bs-active{overflow:hidden}
 body.bs-active > .topbar,body.bs-active nav.view-nav,body.bs-active .sidebar{display:none!important}
 /* Hide the app's global floating chrome so it never leaks OVER the locked
@@ -792,12 +799,23 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
   }
 
   // ── shell + list ─────────────────────────────────────────────────────────
+  // Hæð botnstikunnar í appi (261 #_app-nav) → --bs-navh á <html>, svo yfirlagið og dokkan endi ofan við hana.
+  function maelaNav() {
+    try {
+      const n = document.getElementById('_app-nav');
+      const h = (n && document.body.classList.contains('appmode') && !document.body.classList.contains('appmode-nonav') && getComputedStyle(n).display !== 'none') ? Math.round(n.getBoundingClientRect().height) : 0;
+      const v = h ? h + 'px' : '';
+      if (document.documentElement.style.getPropertyValue('--bs-navh') !== v) { if (v) document.documentElement.style.setProperty('--bs-navh', v); else document.documentElement.style.removeProperty('--bs-navh'); }
+    } catch (_) {}
+  }
+  addEventListener('resize', () => { if (document.body.classList.contains('bs-active')) maelaNav(); });
   function show() {
     ensureView();
     document.querySelectorAll('[id^="view-"]').forEach(v => { v.style.display='none'; v.classList.remove('active'); });
     const v = document.getElementById(VIEW_ID);
     if (v) { v.style.display='block'; v.classList.add('active'); }
     document.body.classList.add('bs-active');   // hides the sidebar (see CSS)
+    maelaNav();
     if (LOCKED) armBack();   // læst app: tryggja history-state svo back loki ekki appinu
     document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
     try { localStorage.setItem('lastView', NAV_KEY); } catch (_) {}

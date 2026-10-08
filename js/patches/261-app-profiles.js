@@ -122,6 +122,9 @@
     { k: 'slokkvikerfi',     label: 'Slökkvikerfis skoðun',  short: 'Slökkvikerfi', emoji: '🍳' },
     { k: 'brunaskra',        label: 'Brunakerfis skoðun',    short: 'Brunaskoðun', emoji: '🚨' },
     { k: 'rekstrarfelog',    label: 'Rekstrarfélög',         short: 'Rekstrarf.', emoji: '🏢' },
+    // 08.10.2026 (Agnar: „hægt að bæta þessu inn sem page í öpp-valsíðunum“): Bílstjóri sem síða í hvaða appi sem er —
+    // 219 leggst undir app-hausinn og botnstikuna (sjá 219 CSS body.appmode #view-bilstjori). Læsta /app/bilstjori/ er óbreytt.
+    { k: 'bilstjori',        label: 'Bílstjóri · leið dagsins', short: 'Bílstjóri', emoji: '🚚' },
     { k: 'minar-sidur',      label: 'Mínar síður',           short: 'Mínar síður', emoji: '🧩' },
     // Brunahólf-síður — birtar inni í appinu í iframe (deep-link á tab-ið).
     { k: 'br-gerdreikninga', label: 'Gerð reikninga',        short: 'Reikn.gerð', emoji: '🧾', url: 'https://brunaholf.netlify.app/?embed=1#gerdreikninga' },
