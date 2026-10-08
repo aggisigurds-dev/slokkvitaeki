@@ -25,8 +25,9 @@
  *                       hurðargöt og T-mót); EI-CS merki eru hurðir og lita ekkert.
  *   8. husklasi       — aðeins veggjanetið sem hangir saman er húsið; stakir smáklasar utan við það (nafnreitur,
  *                       norðurör, lóðartákn) falla. Agnar um Arnarhvol: „smá mesh þarna".
- *   9. hurdagot       — rými lokast: stutt bil sem er ekki gler er hurðargat og fær dyrakarm; laus veggendi
- *                       tengist veggnum beint fram undan sér. Langt op stendur opið.
+ *   9. hurdagot       — rými lokast: stutt bil sem er ekki gler er hurðargat og fær dyrakarm; laus endi FESTS veggjar
+ *                       tengist veggnum beint fram undan sér. Langt op stendur opið. 08.10.2026 (Sléttuvegur 7): stubbur
+ *                       skýtur ekki hurð, hurð fer ekki í gegnum vegg og hurðir skerast ekki.
  *  10. tengdirVeggir  — stakur stuttur veggur sem snertir ekkert og tengist engu um glugga eða hurð fellur
  *                       (Agnar: „hindrar þá kannski að stakir veggir úti á gólfi myndast").
  *  11. eldurHurda     — hurð í brunavegg erfir flokk hans: karmurinn yfir henni er brunaveggur líka.
@@ -160,15 +161,32 @@ if (m.husklasi) {
 
 if (m.hurdagot) {
   // 9 · veggjalína með 60 díla gati (hurð) og 300 díla gati (op): aðeins hurðin fær karm; gat sem er GLER fær engan;
-  //     laus veggendi 50 díla frá þvervegg tengist honum.
-  const veggir = [[100, 100, 300, 100, 8], [360, 100, 600, 100, 8], [900, 100, 1100, 100, 8], [1160, 100, 1300, 100, 8], [200, 150, 200, 300, 8], [100, 350, 400, 350, 8]];
+  //     laus endi FESTS veggjar (T-mót efst) 50 díla frá þvervegg tengist honum.
+  const veggir = [[100, 100, 300, 100, 8], [360, 100, 600, 100, 8], [900, 100, 1100, 100, 8], [1160, 100, 1300, 100, 8], [200, 100, 200, 300, 8], [100, 350, 400, 350, 8]];
   const gler = [[1100, 100, 1160, 100, 8]];
   const Hu = m.hurdagot(veggir, gler, 1).map(v => v.map(Math.round));
   const er = (ax, ay, bx, by) => Hu.some(v => Math.abs(v[0] - ax) + Math.abs(v[1] - ay) + Math.abs(v[2] - bx) + Math.abs(v[3] - by) < 8);
   if (!er(300, 100, 360, 100)) villur.push('hurdagot: 60 díla bil milli samlínu veggja á að vera hurðargat');
   if (Hu.some(v => v[0] >= 590 && v[2] <= 910 && v[1] === 100)) villur.push('hurdagot: 300 díla op má ekki fá dyrakarm');
   if (Hu.some(v => v[0] >= 1090 && v[1] === 100)) villur.push('hurdagot: bil sem er gler má ekki líka verða hurð');
-  if (!er(200, 300, 200, 350)) villur.push('hurdagot: laus veggendi 50 díla frá þvervegg á að tengjast honum; fékk ' + JSON.stringify(Hu));
+  if (!er(200, 300, 200, 350)) villur.push('hurdagot: laus endi fests veggjar 50 díla frá þvervegg á að tengjast honum; fékk ' + JSON.stringify(Hu));
+  // 9b · Sléttuvegur 7 (08.10.2026: „kemur svolítið út í mesh", 89 hurðir þar af 82 úr lausum endum):
+  //   · STUBBUR sem snertir ekkert (feitletrað herbergisheiti, málsetning) skýtur ekki hurð yfir herbergið að næsta vegg —
+  //     en tengist áfram stakra-veggja-síunni (ut.tengi), svo veggirnir eru þeir sömu og áður;
+  //   · hurð fer ekki í gegnum vegg sem liggur nær samsíða geislanum (~10°, skökk álma) — áður sá geislinn hann ekki;
+  //   · tvær hurðir skerast ekki („+" í fundarherbergi): sú styttri lifir.
+  const stubbur = [240, 220, 270, 220, 8];
+  const V2 = veggir.concat([stubbur,
+    [700, 560, 700, 640, 8], [700, 600, 760, 600, 8], [780, 594, 840, 604, 8], [830, 550, 830, 650, 8],
+    [1000, 700, 1000, 830, 8], [1120, 700, 1120, 830, 8], [1000, 700, 1120, 700, 8], [1000, 830, 1120, 830, 8], [1000, 780, 1050, 780, 8], [1080, 700, 1080, 760, 8]]);
+  const H2r = m.hurdagot(V2, gler, 1), H2 = H2r.map(v => v.map(Math.round));
+  const er2 = (ax, ay, bx, by) => H2.some(v => Math.abs(v[0] - ax) + Math.abs(v[1] - ay) + Math.abs(v[2] - bx) + Math.abs(v[3] - by) < 8);
+  if (H2.some(v => v[1] === 220 && v[3] === 220)) villur.push('hurdagot: stubbur sem snertir ekkert má ekki skjóta hurð að næsta vegg; fékk ' + JSON.stringify(H2.filter(v => v[1] === 220)));
+  if (!(H2r.tengi || []).some(v => Math.round(v[1]) === 220)) villur.push('hurdagot: bil stubbsins á samt að vera í ut.tengi (stakra-veggja-sían sér það eins og áður)');
+  if (er2(760, 600, 830, 600)) villur.push('hurdagot: hurð má ekki fara í gegnum vegg sem liggur ~10° frá geislanum');
+  const kross = [er2(1050, 780, 1120, 780), er2(1080, 760, 1080, 830)].filter(Boolean).length;
+  if (kross !== 1) villur.push('hurdagot: af tveimur hurðum sem skerast á nákvæmlega ein að lifa; lifðu ' + kross);
+  if (!er2(200, 300, 200, 350) || !er2(300, 100, 360, 100)) villur.push('hurdagot: nýju reglurnar mega ekki fella venjulegu hurðirnar');
 }
 
 if (m.tengdirVeggir) {
