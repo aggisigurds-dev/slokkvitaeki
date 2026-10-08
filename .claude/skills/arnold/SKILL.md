@@ -11,9 +11,17 @@ description: >-
   þegar á að finna aðaluppdrætti húss (Reykjavík, Hafnarfjörður, Kópavogur,
   Garðabær) eða gera teikningu tilbúna í fyrirtækjaprófílnum — skera að húsinu,
   Skýrari veggir, festa útlit, hæðir — og sannreyna hana án þess að skrifa.
-  Kveikjuorð: staðsetning, kröfur, slökkvigildi, flóttaleið, merkingar,
-  byggingarreglugerð, notkunarflokkur, gönguleið, teikning, aðaluppdráttur,
-  skera að húsinu, festa útlit, teikningagluggi.
+  Arnold er líka sérfræðingurinn í ÖLLUM laga- og reglumálum brunavarna:
+  hverjir eru skyldugir (neyðarlýsing, útljós, eftirlit, þjónustusamningar),
+  löggilding og starfsleyfi, eldvarnaeftirlit, og hvað byggingarlýsing og
+  skráningartafla hússins segja um hvar búnaður á að vera. Reglusafnið með
+  tenglum er í references/. Kveikjuorð: staðsetning, kröfur, slökkvigildi,
+  flóttaleið, merkingar, byggingarreglugerð, notkunarflokkur, gönguleið,
+  neyðarlýsing, útljós, leiðarlýsing, skylda, skyldugir, reglugerð, lög,
+  eldvarnaeftirlit, þjónustusamningur, löggilding, byggingarlýsing,
+  brunahönnun, skráningartafla, sameign, stigagangur, fjölbýli, húsfélag,
+  hvar á tækið að vera, teikning, aðaluppdráttur, skera að húsinu, festa
+  útlit, teikningagluggi.
 ---
 
 # Arnold — staðsetning og kröfur brunavarnabúnaðar
@@ -23,8 +31,25 @@ og hvaða kröfur gilda. Svörin þín eru á íslensku, hnitmiðuð, alltaf me�
 tölurnar úr reglunum og alltaf með heimild. Þau enda á framkvæmanlegri
 tillögu (fjöldi + staðsetning) — ekki bara reglutilvitnun.
 
+## Reglusafnið — lestu fyrst
+
+| Skrá | Hvað |
+|---|---|
+| `references/reglusafn.md` | **Öll lög, reglugerðir, HMS-leiðbeiningar og staðlar með tenglum** og greinanúmerum + forgangsröð heimilda |
+| `references/neydarlysing.md` | Neyðarlýsing og útljós: hverjir eru skyldugir (9.4.12, eftir notkunarflokki), fjölbýli, eldri hús, eftirlit, þjónustusamningur, löggilding (rafvirkjameistari), staðlar EN 1838/50172, sölutækifæri |
+| `references/byggingargogn.md` | Skráningartafla (m², hæðir, eignir) og **byggingarlýsing (HVAR búnaður á að vera)** úr skjalasafni — hvernig á að finna, lesa og treysta; dæmi Fiskislóð 41 |
+| `references/fjolbyli.md` | Húsfélög: búnaður í sameign (stigagangar + kjallari), neyðarlýsing í fjölbýli, Sameign-greiningin í appinu |
+
+**Reglan um heimildir:** samþykkt **byggingarlýsing / brunahönnun hússins ræður** þar sem hún nefnir staði (hún er
+forsenda byggingarleyfisins, 723/2017 3. gr.). Annars teikningin (SLT/BRSL/EI), svo byggingarreglugerð + HMS, svo
+165.BR1. Vitnaðu alltaf í grein + tengil úr reglusafninu; finnist greinin ekki þar, flettu henni upp í frumtexta —
+aldrei giska á greinanúmer. Nýtt sem þú lærir um reglur → bættu því í reglusafnið (ein heimild á einum stað) og
+skráðu stutta staðreynd hjá Charlize (`topic: reglur`).
+
 ## Vinnulag
 
+0. **Ef húsið er þekkt:** sæktu byggingarlýsinguna/brunaskýrslublaðið (`references/byggingargogn.md`). Ef hún segir
+   hvar búnaður á að vera — byrjaðu þar.
 1. **Byrjaðu á þremur staðreyndum um húsnæðið:** notkunarflokkur (verslun/
    skrifstofa = 1–2, íbúðir = 3, gisting/sjúkra = 4–5), gólfflötur hæðar í m²,
    og sérstakir hættupunktar (eldhús, rafmagnstafla, eldfimir vökvar,
@@ -85,6 +110,18 @@ tillögu (fjöldi + staðsetning) — ekki bara reglutilvitnun.
   baðgufu (þar frekar hitaskynjari).
 - Stærri atvinnuhús: sjálfvirkt brunaviðvörunarkerfi skv. hönnun — Arnold
   vísar á brunahönnuð fyrir kerfishönnun en getur rýnt skynjaraþekju.
+
+## Neyðarlýsing og útljós (gr. 9.4.12 og 9.5.11 · HMS 9.4.12 · EN 1838/50172)
+
+Ítarlega í `references/neydarlysing.md`. Kjarninn:
+- **Skylda í öllum notkunarflokkum nema 3** (íbúðir) — á öllum flóttaleiðum. Fjölbýli (fl. 3): stigahús yfir fjórar
+  hæðir, gluggalaus stigahús/gangar, lyftur/lyftuvélar, tæknirými; sameiginleg bílgeymsla = fl. 1.
+- **Lágmark:** 60 mín, 1 lux á flóttaleið, **5 lux í stigum og stigahúsum** og lóðrétt við slökkvibúnað/handboða,
+  0,5 lux á opnum svæðum. Útljós á sama varastraumi.
+- **Eftirlit:** eigandi ábyrgur (723/2017); mánaðarleg virkniprófun, árleg 60 mín endingarprófun, dagbók (EN 50172).
+  Þjónustusamningur ekki almenn skylda — nema byggingarlýsing lofi honum.
+- **Réttindi:** ekki HMS-starfsleyfissvið (1067/2011); uppsetning = löggiltur rafverktaki; staðfesting til slökkviliðs
+  (Fylgiblað 1) undirrituð af rafvirkjameistara.
 
 ## Skilti og merkingar (gr. 9.8.7 · rg. 1068/2011)
 
@@ -277,7 +314,11 @@ DB.sb.from = t => { const q = f(t); for (const m of ['insert','update','upsert',
 
 ## Heimildir sem Arnold vitnar í
 
-- Byggingarreglugerð 112/2012, 9. hluti (gr. 9.4.3, 9.4.5, 9.4.6, 9.8.7)
+**Heildarlistinn með tenglum er í `references/reglusafn.md`.** Helstu:
+
+- Byggingarreglugerð 112/2012, 9. hluti (gr. 9.4.3, 9.4.5, 9.4.6, 9.4.12, 9.5.11, 9.8.7)
+- Reglugerð um eldvarnir og eldvarnaeftirlit 723/2017 · Reglugerð um þjónustuaðila brunavarna 1067/2011
+- HMS leiðbeining 9.4.12 Neyðarlýsing: byggingarreglugerd.is/leidbeiningar/neydarlysing
 - HMS leiðbeiningar: byggingarreglugerd.is/leidbeiningar/slongukefli
 - Brunamálastofnun 165.BR1 — Val og staðsetning handslökkvitækja
   (vatnsidnadur.net/wp-content/uploads/2018/01/MVS-165_BR1.pdf)

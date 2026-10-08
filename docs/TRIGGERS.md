@@ -82,6 +82,8 @@ base 293, Hlaðvarpinn, Steypustöðin 2026.
 | `bilað` / `niðri` / `timeout` / `eitthvað skrítið` | `kerfisheilsa` *(brunaholf)* | Supabase vs Netlify vs Claude vs appið. |
 | `lykill` / `tengingar` / `gult` / `rautt` | `tengingar` *(brunaholf)* | Kerfisheilsu-borðið, endurnýja lykil. |
 | `staðsetning` / `slökkvigildi` / `flóttaleið` / `byggingarreglugerð` | `arnold` | Hvar búnaður á að vera, hve mörg tæki. |
+| `neyðarlýsing` / `útljós` / `skylda` / `hverjir eru skyldugir` / `reglugerð` / `lög` / `eldvarnaeftirlit` / `löggilding` | `arnold` | Öll laga- og reglumál brunavarna. Reglusafn með tenglum: `.claude/skills/arnold/references/reglusafn.md`. |
+| `byggingarlýsing` / `brunahönnun` / `skráningartafla` / `hvar á tækið að vera` / `sameign` / `stigagangur` / `fjölbýli` | `arnold` | Byggingarlýsing hússins ræður staðsetningu; sameign í fjölbýli. `references/byggingargogn.md`, `references/fjolbyli.md`. |
 | `deploy` / `ýta` / `deploy.js` | `deploy` | Aðeins `git push`. Aldrei `node deploy.js`. |
 | `verkefnalisti` / `beidni` / `i_vinnu` | `verkefnalisti` | Opna verk áður en nýtt er hafið. Reiturinn heitir `status`. |
 | `watchlist` / `banner` / `aðstoð` | `adstod` | Customer brief, 🤖-spjald, Aðstoðarmiðstöð. |

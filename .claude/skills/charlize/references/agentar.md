@@ -85,7 +85,7 @@ agent-skrárnar heita eftir **sviði**, svo verk merkt „Samantha" fann ekkert.
 | 🤬 Samuel L. J. | `tengingar` | bh · kj |
 | 🩺 Dr. House | `kerfisheilsa` | bh · kj |
 | 🇺🇸 Trump | `hype` | bh · kj |
-| 💪 Arnold | skill `arnold` (brunavarnir + TurboPaint) · agent `oryggi` (RLS/lyklar) | slokk · bh/kj |
+| 💪 Arnold | skill `arnold` (brunavarnir, **öll laga- og reglumál**, staðsetning búnaðar, TurboPaint) · agent `oryggi` (RLS/lyklar) | slokk · bh/kj |
 | 🏷️ DeVito | `prentun` | slokk · kj |
 | 🗺️ Ramsay | `kort` | slokk · kj |
 | ⚡ Elon Musk | `elon-musk` (agent + skill) | slokk · kj |
@@ -150,3 +150,19 @@ Gildrur, báðar staðfestar 28.08.2026:
   beint um IMAP ef `IMAP_BOKHALD_*` er í `.env`; annars gamla mbox-leiðin.
 - **Ajour er enn háð vafra** og setu-köku sem rennur út. `--capture` tekur upp
   beiðnina svo hægt sé að skipta yfir í hreint JSON-kall síðar.
+
+## Reglur og lög → Arnold (08.10.2026)
+
+Þegar Agnar spyr um **hvar tæki og búnaður eiga að vera**, hve mörg, **hverjir eru skyldugir** (neyðarlýsing, útljós,
+eftirlit, þjónustusamningar), löggildingu/starfsleyfi eða hvað byggingarlýsing hússins segir — kallaðu á skill
+**`arnold`**. Reglusafnið er geymt í repo-inu, ekki í Supabase:
+
+| Skrá | Efni |
+|---|---|
+| `.claude/skills/arnold/references/reglusafn.md` | öll lög, reglugerðir, HMS-leiðbeiningar og staðlar með tenglum + forgangsröð heimilda |
+| `.claude/skills/arnold/references/neydarlysing.md` | neyðarlýsing: skylda eftir notkunarflokki, eftirlit, réttindi, staðlar, sala |
+| `.claude/skills/arnold/references/byggingargogn.md` | skráningartafla + byggingarlýsing úr skjalasafni: hvar búnaður á að vera |
+| `.claude/skills/arnold/references/fjolbyli.md` | húsfélög: búnaður í sameign (stigagangar + kjallari) |
+
+Charlize geymir aðeins stuttar staðreyndir (`topic: reglur`) sem vísa á þessar skrár. Ný regla → í reglusafnið fyrst,
+svo ein lína hjá Charlize.
