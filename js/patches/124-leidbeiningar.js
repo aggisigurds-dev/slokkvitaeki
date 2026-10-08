@@ -2,7 +2,9 @@
  *
  * Injects a sidebar nav button "Leiðbeiningar" and a view that embeds
  * the docs/ folder (live tutorials with talsetning + screenshots).
- * Loads docs/index.html in an iframe so any updates propagate without
+ * Loads /docs/index.html in an iframe so any updates propagate without
+ * (08.10.2026: slóðin var afstæð — í /app/<key>/ varð hún /app/<key>/docs/index.html = skelin sjálf, sem hlóð
+ *  þessa síðu aftur í iframe, sem hlóð … — endalaus hreiðrun, mæld 300+ djúp. Nú algild.)
  * needing a redeploy of this patch.
  */
 (() => {
@@ -25,7 +27,7 @@
             '<button class="btn btn-outline btn-sm" onclick="document.getElementById(\'leidb-frame\').contentWindow.location.reload()">⟲ Endurnýja</button>' +
           '</div>' +
         '</div>' +
-        '<iframe id="leidb-frame" src="docs/index.html" style="flex:1;border:none;background:#fff;width:100%" loading="lazy"></iframe>' +
+        '<iframe id="leidb-frame" src="/docs/index.html" style="flex:1;border:none;background:#fff;width:100%" loading="lazy"></iframe>' +
       '</div>';
     // Other views (view-counter, view-workshop) live as direct children of body.
     // Match that placement so the app's view-routing CSS sizes us correctly.
