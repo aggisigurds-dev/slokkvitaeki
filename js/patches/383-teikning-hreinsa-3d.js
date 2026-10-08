@@ -3914,7 +3914,7 @@
   const blTimi = ms => { const s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
   const BL_UTLIT_LS = 'teikn_designer_utlit';
   const BL_UTLIT = {
-    raunsaett: { heiti: 'Raunsætt', lysing: 'Yfirlit á ská og vinnuskjal ofan frá með táknum', timi: 'um 8 mín (2 myndir)', ekkert: 'Engin raunsæ mynd til af þessu húsi enn.' },
+    raunsaett: { heiti: 'Raunsætt', lysing: 'Yfirlit á ská og vinnuskjal ofan frá með táknum', timi: 'um 10 mín (2 myndir)', ekkert: 'Engin raunsæ mynd til af þessu húsi enn.' },
     einfalt: { heiti: 'Einfalt', lysing: 'Gráa útlitið: sjónarhornið þitt og yfirlit', timi: 'um 4 mín', ekkert: 'Engin einföld mynd til af þessu húsi enn.' }
   };
   const blUtlit = () => { try { return localStorage.getItem(BL_UTLIT_LS) === 'einfalt' ? 'einfalt' : 'raunsaett'; } catch (_) { return 'raunsaett'; } };
