@@ -77,7 +77,8 @@
     var t = String(d.lysing || d.tegund || d.filename || '').replace(/\s+/g, ' ');
     var tl = t.toLowerCase();
     var haed = (Array.isArray(d.haed) ? d.haed : []).map(Number).filter(function (n) { return isFinite(n); });
-    var bilM = tl.match(/(\d+)\.?\s*[-–]\s*(\d+)\.?\s*h(æ|ae)ð/);
+    // „2Á4 hæð": Hafnarfjarðarskráin skilar bandstriki milli talna sem „Á" (Berjavellir 6, 08.10.2026) — lágstafað hér
+    var bilM = tl.match(/(\d+)\.?\s*[-–á]\s*(\d+)\.?\s*h(æ|ae)ð/);
     // úr titlinum ef APIið gaf engar hæðir: „2.-7. hæð", „1. hæð, 2. hæð, 3. hæð"
     if (!haed.length) {
       if (bilM) { for (var k = +bilM[1]; k <= +bilM[2] && k - +bilM[1] < 30; k++) haed.push(k); }
@@ -85,7 +86,7 @@
     }
     var kj = !!d.kjallari || /kjallar/.test(tl), ris = !!d.ris || /(^|[^a-zþæöðáéíóúý])ris(i|h(æ|ae)ð)?([^a-zþæöðáéíóúý]|$)/.test(tl);
     var grunn = !!d.grunnmynd || /grunnmynd/.test(tl);
-    var snid = /(^|[^a-zþæöðáéíóúý])snið/.test(tl), utlit = /útlit|utlit/.test(tl);
+    var snid = /(^|[^a-zþæöðáéíóúý])(snið|sneiðing)/.test(tl), utlit = /útlit|utlit/.test(tl);   // „Sneiðing A og B" (Hafnarfj.)
     var hlutar = haed.length + (kj ? 1 : 0) + (ris ? 1 : 0);
     var merki = '';
     if (grunn) {
