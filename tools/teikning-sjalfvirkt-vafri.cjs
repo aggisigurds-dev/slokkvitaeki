@@ -97,7 +97,7 @@ async function vordur(ctx, nafn, skra) {
   if (NR > 0) { await page.click('#fp-haedir button[data-h="' + NR + '"]'); await page.waitForTimeout(4000); }
   const haedir0 = await page.evaluate(() => TeiknBord.haedir().map((h) => ({ id: h.id, nafn: h.nafn, leidrett: h.leidrett || null, vm: h.vinnumynd ? h.vinnumynd.t : null, skurdur: h.skurdur || null })));
   console.log('hæðir fyrir:', JSON.stringify(haedir0));
-  await page.screenshot({ path: path.join(OUT, '01_teikning_fyrir.png') });
+  await page.screenshot({ path: path.join(OUT, '01_teikning_fyrir.png'), timeout: 90000 }).catch((e) => console.log('   (skjámynd 01_teikning_fyrir tókst ekki: ' + String(e.message).slice(0, 80) + ')'));
 
   // ── 1. takkinn ──
   const takki = await page.evaluate(() => {
@@ -116,7 +116,7 @@ async function vordur(ctx, nafn, skra) {
   console.log('TurboPaint-slóð:', slod);
   check('takkinn opnar TurboPaint með &sjalfvirkt=1 (og uttekt, haed, ham=teikning)', /sjalfvirkt=1/.test(slod) && new RegExp('uttekt=' + CID).test(slod) && new RegExp('haed=' + hid).test(slod) && /ham=teikning/.test(slod), slod);
   await popup.close().catch(() => {});
-  await page.screenshot({ path: path.join(OUT, '02_teikning_takkinn.png') });
+  await page.screenshot({ path: path.join(OUT, '02_teikning_takkinn.png'), timeout: 90000 }).catch((e) => console.log('   (skjámynd 02_teikning_takkinn tókst ekki: ' + String(e.message).slice(0, 80) + ')'));
 
   // ── 2. verkferlið í staðbundnu TurboPaint (sama fyrirspurn) ──
   const ctx2 = await b.newContext({ viewport: { width: 1600, height: 950 } });
@@ -173,7 +173,7 @@ async function vordur(ctx, nafn, skra) {
   console.log('vinnumynd:', JSON.stringify({ fyrir: vm0, eftir: vmNy }), Math.round((Date.now() - tv) / 1000) + ' s');
   check('vinnumyndin smíðaðist upp á nýtt sjálfkrafa (ný föst mynd, „sjalfvirkt")', !!vmNy && vmNy.t && vmNy.t !== vm0 && vmNy.fest === 'sjalfvirkt', JSON.stringify({ vm0, vmNy }));
   await page.waitForTimeout(2500);
-  await page.screenshot({ path: path.join(OUT, '04_teikning_eftir.png') });
+  await page.screenshot({ path: path.join(OUT, '04_teikning_eftir.png'), timeout: 90000 }).catch((e) => console.log('   (skjámynd 04_teikning_eftir tókst ekki: ' + String(e.message).slice(0, 80) + ')'));
 
   // ── vörður ──
   console.log('út fór (aðeins 1404):', [...new Set(skra.ut)].join(', '));
