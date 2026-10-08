@@ -560,7 +560,7 @@
       // Ávarpið er kynhlutlaust — nafn segir ekki til um hvernig á að ávarpa fólk.
       const kvedja = fyrstaNafn ? "Góðan dag " + fyrstaNafn : "Góðan dag";
       try {
-        ReceiptSender.compose({
+        ReceiptSender.compose({ kodi: 'SV-10',
           title: "Nýr póstur" + (nafnFelags ? " — " + nafnFelags : ""),
           to: (vt && vt.to) || "",
           subject: "Slökkvitækjaþjónusta — hvenær hentar?",

@@ -461,7 +461,7 @@
     const bd = document.createElement('div'); bd.id = 'tvp-backdrop'; bd.addEventListener('click', closeModal);
     const md = document.createElement('div'); md.id = 'tvp-modal';
     md.innerHTML =
-      '<div class="mhead"><div><h3>✍️ Svara — ' + esc(g.nafn) + '</h3>' +
+      '<div class="mhead"><div><h3>✍️ Svara — ' + esc(g.nafn) + (window.svKodi ? window.svKodi('SV-20') : '') + '</h3>' +
         '<div class="sub">Til: ' + esc(m.sender_email || m.sender_name || '—') + '</div></div>' +
         '<button class="tvp-btn mx" id="tvp-mx" style="background:#23252c;color:#e2e8f0;border-color:#3a3d45">✕</button></div>' +
       '<div class="mbody">' +

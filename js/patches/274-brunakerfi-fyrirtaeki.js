@@ -288,7 +288,7 @@
       choices.push({ label: '🧾 Reikningur ' + (inv.num || '') + (inv.status !== 'final' ? ' (drög)' : ''), checked: true,
         build: () => ReceiptSender.invoiceAttachment(inv.id) });
     }
-    ReceiptSender.compose({
+    ReceiptSender.compose({ kodi: 'SV-08',
       title: 'Senda brunakerfisúttekt' + (yr ? ' ' + yr : ''),
       to: co.netfang || '',
       subject: 'Brunakerfisskýrsla' + (yr ? ' ' + yr : '') + ' — Slökkvitæki ehf',
@@ -1530,7 +1530,7 @@
       const att = await docAttachment(d, fbase + '.pdf');
       if (!att) { alert('Engin skrá fylgir þessu skjali — ekkert að senda.'); return; }
       if (window.ReceiptSender && ReceiptSender.sendDoc) {
-        ReceiptSender.sendDoc(Object.assign({ kind: kind, to: co.netfang || '', nafn: co.nafn || '', ar: d.year || '', stadur: co.nafn || '' }, att));
+        ReceiptSender.sendDoc(Object.assign({ kodi: 'SV-08', kind: kind, to: co.netfang || '', nafn: co.nafn || '', ar: d.year || '', stadur: co.nafn || '' }, att));
       }
     }));
     // mánuður skoðunar á eldra skjali → doc_date (vistast strax)

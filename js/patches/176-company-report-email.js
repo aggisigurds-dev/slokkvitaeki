@@ -188,7 +188,7 @@
     dlg.innerHTML =
       '<div style="background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:min(440px,calc(100vw - 24px));overflow:hidden">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #e2e8f0;background:#f8fafc">' +
-          '<div style="font-size:14px;font-weight:700;color:#0f172a">📧 Senda úttektarskýrslu</div>' +
+          '<div style="font-size:14px;font-weight:700;color:#0f172a">📧 Senda úttektarskýrslu' + (window.svKodi ? window.svKodi('SV-06') : '') + '</div>' +
           '<button id="_cre-x" type="button" style="background:none;border:none;font-size:18px;color:#94a3b8;cursor:pointer;line-height:1;padding:4px 8px">✕</button>' +
         '</div>' +
         '<div style="padding:18px">' +

@@ -934,7 +934,7 @@
     return '<div class="kvsect">Greiðsluupplýsingar — tilbúinn texti (ekkert sent)</div>' +
       '<div class="kvg"><span>Til</span><b>' + esc(vidtakandi(x) || '(netfang vantar — sjá fyrirtækið)') + '</b></div>' +
       '<pre class="kvpre">' + esc(greidslutexti(m, x)) + '</pre>' +
-      '<div class="kvurr"><button type="button" class="btn iv sm" data-kv="afrita" data-v="greidsla">📋 Afrita texta</button><span class="kvmn">Fylltu inn bankareikninginn áður en þú sendir.</span></div>';
+      '<div class="kvurr"><button type="button" class="btn iv sm" data-kv="afrita" data-v="greidsla">📋 Afrita texta</button><span class="kvmn">Fylltu inn bankareikninginn áður en þú sendir.</span>' + (window.svKodi ? window.svKodi('SV-26') : '') + '</div>';
   }
   function athHtml(gl, taflaVantar) {
     const vist = gl.vf ? (gl.vf.athugasemd || '') : '';

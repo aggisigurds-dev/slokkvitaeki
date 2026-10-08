@@ -2085,7 +2085,7 @@
         const res = resolveSkyrsla(s);
         const nr = s.num || '';
         const email = await emailForSale(s);
-        ReceiptSender.compose({
+        ReceiptSender.compose({ kodi: 'SV-02',
           title: 'Senda — ' + (s.customer_nafn || ''),
           to: email,
           subject: 'Reikningur ' + nr + ' — Slökkvitæki ehf',

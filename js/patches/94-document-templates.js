@@ -1362,7 +1362,7 @@
           pop.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(15,23,42,0.5);display:flex;align-items:center;justify-content:center;padding:20px';
           pop.innerHTML =
             '<div style="background:#fff;border-radius:12px;padding:22px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">' +
-              '<div style="font-size:18px;font-weight:750;margin-bottom:6px">✅ Tengill tilbúinn</div>' +
+              '<div style="font-size:18px;font-weight:750;margin-bottom:6px">✅ Tengill tilbúinn' + (window.svKodi ? window.svKodi('SV-25') : '') + '</div>' +
               '<div style="color:#475569;font-size:13px;margin-bottom:14px">Tengillinn hefur verið afritaður í klippiborð. Sendu hann á kúnnann — gildir í 14 daga.</div>' +
               '<input value="' + esc(url) + '" readonly style="width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:12px;margin-bottom:12px" id="_dt-sendlink-url">' +
               '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' +

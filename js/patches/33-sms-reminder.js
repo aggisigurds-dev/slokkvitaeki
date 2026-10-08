@@ -404,7 +404,7 @@
           <input id="sms-days" class="fi" type="number" min="1" max="30" value="${getOverdueDays()}" style="max-width:80px">
         </div>
         <div>
-          <label class="fl">Sniðmát skilaboða</label>
+          <label class="fl">Sniðmát skilaboða${window.svKodi ? window.svKodi('SV-24') : ''}</label>
           <textarea id="sms-tpl" class="fi" rows="4" style="resize:vertical">${esc(getTemplate())}</textarea>
           <div style="font-size:11px;color:#94a3b8;margin-top:3px">Breytur: {nafn} &nbsp;{num} &nbsp;{phone}</div>
         </div>
