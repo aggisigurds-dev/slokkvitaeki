@@ -263,14 +263,15 @@
   /* ── vistun ─────────────────────────────────────────────────────────────── */
   let _vt = null;
   const _vbid = {};
-  function setS(s, k) {
+  function setS(s, k, fast) {
     s = klemma(s);
     k = k || nu.k;
     if (LAEST[k]) { apply(); return nu.s; }   // læst síða: sleðinn breytir engu og ekkert vistast
     if (lifandi && lifandi.k === k) { lifandi = null; klMerki(''); }   // vistuð stærð tekur við af tímabundinni klípu
     const fl = flokkur();
     const n = nafn(k, k === nu.k ? nu.el : null);
-    const rod = { s, n, t: Date.now() };
+    const fyrri = (stillingar()[fl] || {})[k];
+    const rod = { s, n, t: Date.now(), f: (fast || (fyrri && fyrri.f)) ? 1 : 0 };
     bida[fl][k] = rod;
     _vbid[fl + '\u0001' + k] = rod;
     apply();
@@ -381,6 +382,8 @@
       P + ' .sz-led.ok{background:#5bd28a;box-shadow:0 0 6px #5bd28a}',
       P + ' .sz-led.bid{background:' + GULL + ';box-shadow:0 0 6px ' + GULL + '}',
       P + ' .sz-led.villa{background:#e0605a;box-shadow:0 0 6px #e0605a}',
+      P + ' .sz-festa{display:flex;align-items:center;gap:9px;margin:8px 0 0;font:600 12px/1.3 ' + SANS + ';color:#f6e7b8;cursor:pointer}',
+      P + ' .sz-festa input{width:18px;height:18px;margin:0;accent-color:' + GULL + ';cursor:pointer}',
       P + ' .sz-ak{display:flex;gap:6px;margin:8px 0 0}',
       P + ' .sz-ak button{flex:1;height:34px;border-radius:8px;border:1px solid #000;background:' + SILFUR + ';color:#1f2530;font:600 12.5px ' + SANS + ';box-shadow:inset 0 1px 0 #fff}',
       P + ' .sz-ak button:disabled{opacity:.45;cursor:default}',
@@ -448,6 +451,7 @@
     if (_vistStada === 'vista') return '<i class="sz-led bid"></i>Vista á þjóninn…';
     if (_vistStada === 'villa') return '<i class="sz-led villa"></i>Vistun mistókst — reynt aftur sjálfkrafa';
     const hvar = flokkur() === 'simi' ? 'fyrir síma' : 'fyrir tölvu (app)';
+    if (nu.uppruni === 'vistad' && ((stillingar()[flokkur()] || {})[nu.k] || {}).f) return '<i class="sz-led ok"></i>Fest — sjálfgefin stærð þessarar síðu ' + hvar + ' · klípa út breytir engu';
     if (nu.uppruni === 'vistad') return '<i class="sz-led ok"></i>Vistað fyrir þessa síðu ' + hvar;
     if (nu.uppruni === 'laest') return '<i class="sz-led ok"></i>' + esc(LAEST[nu.k]);
     if (nu.uppruni === 'byrjun') return '<i class="sz-led"></i>Byrjunarstærð · breyting vistast ' + hvar;
@@ -477,11 +481,16 @@
         + '<span class="sz-tala" title="Hlutfall af raunstærð — 100 % = letur eins og í venjulegu síma-appi"><span class="sz-pct"></span><span class="sz-pc">%</span></span></div>'
         + '<div class="sz-for">' + FORSTILLT.map(v => '<button type="button" data-sz-for="' + v + '">' + Math.round(v * 100) + '</button>').join('') + '</div>'
         + '<div class="sz-st"></div>'
+        + '<label class="sz-festa"><input type="checkbox" data-sz-festa> Festa þessa stærð sem sjálfgefna fyrir þessa síðu</label>'
         + '<div class="sz-ak"><button type="button" data-sz="upphafl">Upprunaleg</button>'
         + (window.PageEditor && PageEditor.toggle ? '<button type="button" class="sz-dokk" data-sz="utlit">Litir og letur…</button>' : '') + '</div>'
         + '<details class="sz-listi"></details>'
         + '</div>';
       const rng = p.querySelector('input[type=range]');
+      // 08.10.2026 (Agnar: „bæta við haki að ég geti fest ákveðið zoom, hafa það fast sem default, miðast við hverja síðu og
+      // haldist þannig“): hakið vistar NÚVERANDI stærð — líka klipna, tímabundna stærð — sem vistaða stærð síðunnar, með f:1.
+      // Fest síða svarar ekki klípu út (sjá touchstart). Afhak = Upprunaleg (vistun fjarlægð).
+      p.querySelector('[data-sz-festa]').addEventListener('change', e => { if (e.target.checked) setS(nu.s, nu.k, true); else endurstilla(); });
       rng.addEventListener('input', () => {
         p.querySelector('.sz-pct').textContent = rng.value;
         setS(+rng.value / 100);
@@ -493,6 +502,8 @@
     if (document.activeElement !== rng && +rng.value !== pct) rng.value = String(pct);
     p.querySelectorAll('[data-sz-for]').forEach(b => b.classList.toggle('on', Math.round(+b.dataset.szFor * 100) === pct));
     p.querySelector('.sz-st').innerHTML = stadaHtml();
+    const fx = p.querySelector('[data-sz-festa]');
+    if (fx) { const fest = nu.uppruni === 'vistad'; if (fx.checked !== fest) fx.checked = fest; }
     const up = p.querySelector('[data-sz="upphafl"]');
     if (up) up.disabled = nu.uppruni !== 'vistad';
     const li = p.querySelector('.sz-listi');
@@ -579,6 +590,7 @@
   document.addEventListener('touchstart', e => {
     if (e.touches.length !== 2 || !virkt() || !ostaekkad()) { if (e.touches.length !== 2) return; kl = null; return; }
     setVar('--sz-pnl-top', bladTop() + 'px');
+    { const rec = (stillingar()[flokkur()] || {})[nu.k]; if (rec && rec.f) { kl = null; return; } }   // fest síða: klípa út breytir engu
     kl = { d0: fjarl(e.touches), s0: nu.s, s: nu.s, k: nu.k, virkur: false };
   }, { passive: true });
   document.addEventListener('touchmove', e => {
