@@ -4480,6 +4480,194 @@
   }
 
 
+  /* ── FINNA ALLT HÚSIÐ (Agnar 08.10.2026: „Held kerfið lesi þær ekki inn. Bara hæðir og kjallara. Spurning að bæta því
+   * inn og látið finna úr teikningum allt húsið") ──
+   * Öll gildandi grunnmyndablöð staðarins (374 TeiknSaekja.finna, aðaluppdrættir fyrst) → hæðir: Kjallari, 1., 2. … Ris.
+   *   · blað fyrir EINA hæð: skorið að húsinu (husRammar → stærsta grunnmyndin á blaðinu);
+   *   · DÆMIGERÐ hæð („Grunnmynd 2.–7. hæð"): sama blað og sami skurður á allar hæðirnar sem það nær yfir;
+   *   · SAMSETT blað („Grunnmynd 3. hæð, 4. hæð"): grunnmyndirnar fundnar á blaðinu og raðað í lesröð (efst → neðst,
+   *     vinstri → hægri) á hæðirnar í hækkandi röð — finnist færri en hæðirnar er blaðið notað sem dæmigerð hæð.
+   *     Röðin á blöðum er ekki alltaf eins (Vegamótastígur: neðri hæðir NEÐST), því sýnir tillagan hverja mynd.
+   * Snið og útlit eru aldrei hæðir; nýju hæðirnar geyma þau sem viðmið (haedir[].snidBlod — hæðahæðir síðar).
+   * TILLAGA: ekkert fer á hæðirnar fyrr en „Bæta X hæðum við", hæð sem er til (sama heiti, eða sama blað og skurður)
+   * er aldrei snert, og ekkert vistast fyrr en ýtt er á Vista. */
+  const fahLykill = nafn => {
+    const t = String(nafn || '').toLowerCase();
+    if (/kjall/.test(t)) return 'K';
+    if (/(^|[^a-zþæöðáéíóúý])ris/.test(t)) return 'R';
+    const m = t.match(/(\d+)\.?\s*h(æ|ae)ð/) || t.match(/^(\d+)/);
+    return m ? String(+m[1]) : t;
+  };
+  const fahNafn = k => k === 'K' ? 'Kjallari' : k === 'R' ? 'Ris' : k + '. hæð';
+  const fahRod = k => k === 'K' ? -1 : k === 'R' ? 999 : (isFinite(+k) ? +k : 500);
+  const fahUrl = u => String(u || '').replace(/^https?:\/\/[^/]+/i, '');
+  // Grunnmyndir á blaði: klasar veggjanetsins (husRammi kemb) — drjúgir klasar (≥ 25 % af þeim stærsta) sem standa
+  // > ~4 m frá hver öðrum eru sér grunnmyndir. Lesröð: raðir efst → neðst, innan raðar vinstri → hægri.
+  function husRammar(mynd) {
+    const iw = mynd.naturalWidth || mynd.width, ih = mynd.naturalHeight || mynd.height, kpt = Math.max(iw, ih) / 2384;
+    const hus = husRammi(mynd, true);
+    if (!hus || !hus.klasar || !hus.klasar.length) return hus ? [{ x: hus.x, y: hus.y, w: hus.w, h: hus.h }] : [];
+    const st = hus.klasar[0].flat, naer = 115 * kpt, sp = 42 * kpt;
+    const stor = hus.klasar.filter(q => q.flat >= st * 0.25).map(q => ({ k: q.kassi.slice() }));
+    const bil = (a, b) => Math.max(0, Math.max(a[0], b[0]) - Math.min(a[2], b[2]), Math.max(a[1], b[1]) - Math.min(a[3], b[3]));
+    for (let breytt = true; breytt;) {
+      breytt = false;
+      for (let i = 0; i < stor.length && !breytt; i++) for (let j = i + 1; j < stor.length && !breytt; j++) {
+        if (bil(stor[i].k, stor[j].k) <= naer) {
+          const a = stor[i].k, b = stor[j].k;
+          stor[i].k = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])];
+          stor.splice(j, 1); breytt = true;
+        }
+      }
+    }
+    const ut = stor.map(q => {
+      const x0 = Math.max(0, q.k[0] - sp), y0 = Math.max(0, q.k[1] - sp), x1 = Math.min(iw, q.k[2] + sp), y1 = Math.min(ih, q.k[3] + sp);
+      return { x: Math.round(x0), y: Math.round(y0), w: Math.round(x1 - x0), h: Math.round(y1 - y0) };
+    }).filter(r => r.w > iw * 0.08 && r.h > ih * 0.06);
+    const hh = ut.length ? Math.min(...ut.map(r => r.h)) : 1;
+    ut.sort((a, b) => (Math.abs(a.y + a.h / 2 - (b.y + b.h / 2)) > hh * 0.5 ? (a.y + a.h / 2) - (b.y + b.h / 2) : a.x - b.x));
+    return ut;
+  }
+  function fahYfirlag() {
+    const bd = document.querySelector('#modal-floorplan .modal-bd'); if (!bd) return null;
+    let o = document.getElementById('fp-fah');
+    if (!o) {
+      o = document.createElement('div'); o.id = 'fp-fah';
+      o.style.cssText = 'position:absolute;inset:0;z-index:21;background:rgba(20,18,14,.975);display:flex;flex-direction:column;color:#eee;font:500 13px system-ui,sans-serif';
+      bd.appendChild(o);
+    }
+    o.style.display = 'flex';
+    return o;
+  }
+  const fahLoka = () => { const o = document.getElementById('fp-fah'); if (o) o.style.display = 'none'; };
+  const fahTexti = (o, t) => { if (o) o.innerHTML = '<div style="margin:auto;text-align:center;color:rgba(255,255,255,.75);max-width:520px;line-height:1.5">' + esc(t) + '</div>'; };
+  function fahVilla(o, t) {
+    if (!o) return;
+    o.innerHTML = '<div style="margin:auto;text-align:center;max-width:480px;color:rgba(255,255,255,.85);line-height:1.5;padding:20px">' + esc(t) +
+      '<div style="margin-top:16px"><button type="button" class="btn btn-outline btn-sm" data-fah="loka" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.25)">Loka</button></div></div>';
+    o.querySelector('[data-fah="loka"]').onclick = fahLoka;
+  }
+  // Tillagan fyrir staðinn — reiknuð en ekki beitt (prófanir: TeiknBord.finnaAlltHusid({ anYfirlags: true }))
+  async function fahTillaga(framvinda) {
+    const FP = FPx(); if (!FP || !FP.companyId) throw new Error('Enginn staður opinn');
+    if (!window.TeiknSaekja || !TeiknSaekja.finna) throw new Error('Teikningaskráin (374) er ekki hlaðin');
+    framvinda('Leita að teikningum hússins…');
+    const r = await TeiknSaekja.finna(FP.companyId);
+    if (!r || !r.dr) throw new Error((r && r.villa) || 'Engar teikningar fundust');
+    const adal = d => /aðalupp|bygginga?nefnd/i.test(String(d.tegund || ''));
+    let gild = r.dr.filter(d => d && d.infoUrl && !d.urelt);
+    if (gild.some(adal)) gild = gild.filter(adal);
+    const fl = gild.map(d => ({ d, f: TeiknSaekja.flokka(d) }));
+    const grunn = fl.filter(x => x.f.grunn);
+    const snid = fl.filter(x => x.f.snid || x.f.utlit).sort((a, b) => String(b.d.dags || '').localeCompare(String(a.d.dags || '')));
+    grunn.forEach(x => { x.lyklar = [].concat(x.f.kjallari ? ['K'] : [], x.f.haed.map(n => String(n)), x.f.ris ? ['R'] : []); });
+    // besta blað hverrar hæðar: sem fæstar hæðir á blaðinu (nákvæmast), svo nýjast
+    const val = new Map();
+    grunn.filter(x => x.lyklar.length).forEach(x => x.lyklar.forEach(k => {
+      const b = val.get(k);
+      if (!b || x.lyklar.length < b.lyklar.length || (x.lyklar.length === b.lyklar.length && String(x.d.dags || '') > String(b.d.dags || ''))) val.set(k, x);
+    }));
+    const blod = new Map(); val.forEach((x, k) => { if (!blod.has(x)) blod.set(x, []); blod.get(x).push(k); });
+    const tillaga = [];
+    let i = 0;
+    for (const [x, lyklar] of blod) {
+      i++;
+      framvinda('Les blað ' + i + ' af ' + blod.size + ': ' + (x.d.lysing || x.d.tegund || '') + '…');
+      const url = '/.netlify/functions/teikn-mynd?url=' + encodeURIComponent(x.d.infoUrl);
+      let mynd = null, rammar = [];
+      try { mynd = await hladaMynd(url); } catch (_) {}
+      if (mynd) { try { rammar = husRammar(mynd); } catch (e) { console.warn('[383] húsrammar', e); } }
+      lyklar.sort((a, b) => fahRod(a) - fahRod(b));
+      // skipting miðast við ALLAR hæðir blaðsins, líka þær sem fengu nákvæmara blað (Laugavegur 18: „Grunnmynd 1. hæð,
+      // 2. hæð" þegar 2. hæð á sitt eigið blað — 1. hæð er samt fyrsta grunnmyndin á blaðinu, ekki sú stærsta)
+      const allir = x.lyklar.slice().sort((a, b) => fahRod(a) - fahRod(b));
+      const samsett = !x.f.bil && allir.length > 1 && rammar.length >= allir.length;
+      const staerst = rammar.slice().sort((a, b) => b.w * b.h - a.w * a.h)[0] || null;
+      lyklar.forEach(k => tillaga.push({
+        k, nafn: fahNafn(k), image_url: url, skurdur: samsett ? rammar[allir.indexOf(k)] : staerst,
+        leid: samsett ? 'samsett' : allir.length > 1 ? 'daemigerd' : 'eitt', blad: { lysing: x.d.lysing || x.d.tegund || '', dags: x.d.dags || '', tegund: x.d.tegund || '' }, mynd
+      }));
+      await new Promise(rr => setTimeout(rr, 0));
+    }
+    tillaga.sort((a, b) => fahRod(a.k) - fahRod(b.k));
+    const hs = haedir();
+    tillaga.forEach(t => {
+      t.til = hs.some(h => h && ((h.nafn && fahLykill(h.nafn) === t.k) || (h.image_url && fahUrl(h.image_url) === fahUrl(t.image_url) && (!t.skurdur || !h.skurdur || skorunSkurda(h.skurdur, t.skurdur) > 0.6))));
+    });
+    return { tillaga, snid: snid.map(x => ({ image_url: '/.netlify/functions/teikn-mynd?url=' + encodeURIComponent(x.d.infoUrl), lysing: x.d.lysing || '', dags: x.d.dags || '', snid: !!x.f.snid, utlit: !!x.f.utlit })), grunnBlod: grunn.length };
+  }
+  function fahBeita(tl, valdar) {
+    const hs = haedir(), nyjar = [];
+    const virkId = virkHaed() && virkHaed().id;
+    samstillaVirka();
+    const snidBlod = tl.snid.filter(x => x.snid).slice(0, 4).map(x => ({ image_url: x.image_url, lysing: x.lysing, dags: x.dags }));
+    tl.tillaga.forEach((t, i) => {
+      if (t.til || !valdar[i]) return;
+      const h = { id: nyttId(), nafn: t.nafn, image_url: t.image_url, markers: [], skurdur: t.skurdur ? { x: t.skurdur.x, y: t.skurdur.y, w: t.skurdur.w, h: t.skurdur.h } : null, veggir: [], pdfVeggir: [], uppruni: { af: 'finna-allt-husid', leid: t.leid, blad: t.blad.lysing, dags: t.blad.dags } };
+      if (h.skurdur) h.sjalf = true;
+      if (snidBlod.length) h.snidBlod = snidBlod;
+      hs.push(h); nyjar.push(h);
+    });
+    if (!nyjar.length) return 0;
+    // röð: Kjallari, 1., 2. … Ris — stöðug (hæðir með óþekkt heiti halda sínum stað innbyrðis)
+    const rod = hs.map((h, i) => ({ h, i, k: fahRod(fahLykill(h.nafn)) }));
+    rod.sort((a, b) => (a.k - b.k) || (a.i - b.i));
+    hs.splice(0, hs.length, ...rod.map(r => r.h));
+    const vi = hs.findIndex(h => h.id === virkId);
+    G.virk = -1; virkja(vi >= 0 ? vi : 0, true);
+    flipar();
+    return nyjar.length;
+  }
+  async function finnaAlltHusid(o) {
+    o = o || {};
+    const y = o.anYfirlags ? null : fahYfirlag();
+    let tl;
+    try { tl = await fahTillaga(t => fahTexti(y, t)); }
+    catch (e) { if (y) fahVilla(y, (e && e.message) || String(e)); throw e; }
+    if (o.anYfirlags) return tl;
+    const nyjar = tl.tillaga.filter(t => !t.til).length;
+    if (!tl.tillaga.length) {
+      fahVilla(y, 'Fann engar grunnmyndir með hæðum í titli (' + tl.grunnBlod + ' grunnmyndablöð, ' + tl.snid.length + ' snið og útlit). Notaðu „Sækja teikningu" og veldu blað fyrir hverja hæð.');
+      return tl;
+    }
+    const valdar = tl.tillaga.map(t => !t.til);
+    const LEID = { eitt: 'eitt blað', daemigerd: 'dæmigerð hæð — sama blað', samsett: 'samsett blað — athugaðu röðina' };
+    const mynd = (t, i) => {
+      if (!t.mynd) return '<div style="width:150px;height:96px;background:#000"></div>';
+      return '<canvas data-th="' + i + '" width="150" height="96" style="width:150px;height:96px;background:#fff;border-radius:6px"></canvas>';
+    };
+    y.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.1)">' +
+      '<div style="font-weight:700;color:#fff">Finna allt húsið — tillaga</div><div style="font-size:12px;color:rgba(255,255,255,.5)">' + tl.tillaga.length + ' hæðir á teikningum · ' + nyjar + ' nýjar · ekkert vistast fyrr en þú ýtir á Vista</div><div style="flex:1"></div></div>' +
+      '<div style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px">' +
+      tl.tillaga.map((t, i) => '<label style="display:flex;align-items:center;gap:12px;padding:8px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.04);' + (t.til ? 'opacity:.55' : 'cursor:pointer') + '">' +
+        '<input type="checkbox" data-val="' + i + '"' + (t.til ? ' disabled' : ' checked') + ' style="width:18px;height:18px">' + mynd(t, i) +
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;color:#fff;font-size:14px">' + esc(t.nafn) + (t.til ? ' <span style="font-weight:600;color:#9ad29a;font-size:12px">· er til — óbreytt</span>' : ' <span style="font-weight:600;color:#f0d48a;font-size:12px">· ný</span>') + '</div>' +
+        '<div style="color:rgba(255,255,255,.6);font-size:12px">' + esc(t.blad.lysing) + (t.blad.dags ? ' · ' + esc(t.blad.dags) : '') + '</div>' +
+        '<div style="color:rgba(255,255,255,.45);font-size:11.5px">' + esc(LEID[t.leid] || '') + (t.skurdur ? '' : ' · allt blaðið (fann ekki húsið)') + '</div></div></label>').join('') +
+      (tl.snid.length ? '<div style="margin-top:6px;color:rgba(255,255,255,.6);font-size:12px">Snið og útlit (viðmið, ekki hæðir): ' + tl.snid.slice(0, 6).map(x => esc(x.lysing)).join(' · ') + (tl.snid.length > 6 ? ' …' : '') + '</div>' : '') +
+      '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;padding:12px 16px;border-top:1px solid rgba(255,255,255,.1)">' +
+      '<button type="button" data-fah="haetta" class="btn btn-outline btn-sm" style="color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.25)">Hætta við</button>' +
+      '<button type="button" data-fah="baeta" style="height:34px;padding:0 16px;border-radius:9px;border:1px solid rgba(20,24,34,.28);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#11141c;font:700 13px system-ui;cursor:pointer"></button></div>';
+    tl.tillaga.forEach((t, i) => {
+      const c = y.querySelector('canvas[data-th="' + i + '"]'); if (!c || !t.mynd) return;
+      const iw = t.mynd.naturalWidth || t.mynd.width, ih = t.mynd.naturalHeight || t.mynd.height, sk = t.skurdur || { x: 0, y: 0, w: iw, h: ih };
+      const x = c.getContext('2d'), k = Math.min(150 / sk.w, 96 / sk.h);
+      x.fillStyle = '#fff'; x.fillRect(0, 0, 150, 96);
+      try { x.drawImage(t.mynd, sk.x, sk.y, sk.w, sk.h, (150 - sk.w * k) / 2, (96 - sk.h * k) / 2, sk.w * k, sk.h * k); } catch (_) {}
+    });
+    const takki = y.querySelector('[data-fah="baeta"]');
+    const lita = () => { const n = valdar.filter((v, i) => v && !tl.tillaga[i].til).length; takki.textContent = n ? 'Bæta ' + n + (n === 1 ? ' hæð' : ' hæðum') + ' við' : 'Engin ný hæð valin'; takki.disabled = !n; takki.style.opacity = n ? '1' : '.5'; };
+    lita();
+    y.querySelectorAll('input[data-val]').forEach(b => b.addEventListener('change', () => { valdar[+b.dataset.val] = b.checked; lita(); }));
+    y.querySelector('[data-fah="haetta"]').onclick = fahLoka;
+    takki.onclick = () => {
+      const n = fahBeita(tl, valdar);
+      fahLoka();
+      segja(n ? n + (n === 1 ? ' hæð bætt við' : ' hæðum bætt við') + ' — ýttu á Vista til að geyma þær.' : 'Engu bætt við.');
+    };
+    return tl;
+  }
 
   // SJÁLFGEFIN SÝN TILBÚINNAR HÆÐAR (Agnar 07.10.2026: „Geturðu látið hana opnast hérna þegar ég vel Fiskislóð 41"):
   // það er nú FASTA VINNUMYNDIN (445) — vistuð mynd ofan frá sem opnast strax, og 3D er aðeins smíðað ef hún vantar.
@@ -4894,6 +5082,8 @@
         gera('fp-hreinsa-btn', '✨ Skýrari veggir', '2D grunnmyndin helst ósnert. 3D sýnir húsið — grá lóð utan veggja er ekki gólfplata.', tharfMynd(() => { const v = lesaVal(FP.companyId); v.a = !v.a; vistaVal(FP.companyId, v); })),
         gera('fp-3d-btn', '🧊 3D', 'Lyfta veggjunum upp og sjá tækin í þrívídd — allar hæðir', () => { G.hamur = null; opna3d(); }),
         // 08.10.2026 (Agnar: fjölbýli — tækin í sameign, stigagangi og kjallara): greind sameign gulleit, íbúðir deyfðar
+        // 08.10.2026 (Agnar: „látið finna úr teikningum allt húsið"): öll grunnmyndablöð → tillaga að hæðum
+        gera('fp-fah-btn', 'Finna allt húsið', 'Sækir öll gildandi grunnmyndablöð staðarins og raðar þeim í hæðir (kjallari, 1., 2. …). Samsett blöð skiptast, dæmigerð hæð gildir fyrir allar hæðirnar sem hún nær yfir, snið eru geymd sem viðmið. Tillaga — hæðir sem eru til eru aldrei snertar og ekkert vistast fyrr en þú ýtir á Vista.', () => { finnaAlltHusid().catch(e => console.warn('[383] finna allt húsið', e)); }),
         gera('fp-sameign-btn', 'Sameign', 'Sameign í fjölbýli: stigahús, gangar og kjallari í ljósum gulleitum lit, íbúðir deyfðar — greint úr teikningunni (stigar endurtaka sig milli hæða). Ekkert vistast.', () => { samSkipta().catch(e => console.warn('[383] sameign', e)); }),
         gera('fp-fest-btn', '📌 Festa útlit', 'Sáttur við teikninguna? Festir skurð, Skýrari veggi og hæðir á þjóninum — opnast alltaf svona, ekkert greint upp á nýtt. Smelltu aftur til að breyta.', tharfMynd(() => {
           const v = lesaVal(FP.companyId); v.fest = !v.fest; G.hamur = null; G.drag = null; G.kedja = null;
@@ -5109,7 +5299,10 @@
     sameignHus: () => SAM.hus,
     greinaSameign: () => greinaSameign(),
     sameignSkipta: () => samSkipta(),
-    sameignAthuga
+    sameignAthuga,
+    // Finna allt húsið (prófanir): tillagan án yfirlags · húsrammar blaðs
+    finnaAlltHusid: o => finnaAlltHusid(o),
+    husRammar
   };
   window.TeiknTurboPaint = { opna: opnaITurboPaint, slod: turboPaintSlod, vistaHaedir: vistaHaedirFyrirTurboPaint };
 
