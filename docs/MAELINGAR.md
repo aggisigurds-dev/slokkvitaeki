@@ -123,6 +123,25 @@ verri en enginn — hann er slökktur og þá sést ekkert.
 á biluðu ástandi, grænn á lagfærðu. Gerðu það með því að bakfæra raunverulegu
 lagfæringuna, ekki með tilbúnu dæmi.
 
+## 11. Staðfesting á útskrift í stað stöðu
+
+**08.10.2026.** Ég ýtti breytingu með endurtekningarlykkju sem dæmdi þannig:
+
+```bash
+if git push origin master 2>&1 | tail -1 | grep -qv rejected; then echo YTT; break; fi
+```
+
+Hún prentaði **YTT**. Ýtingin hafði ekki heppnast: `git status -sb` sagði
+`[ahead 3]` og `origin/master` bar ekki breytinguna. Skilyrðið er satt hvenær sem
+síðasta línan er *eitthvað annað* en „rejected" — þar með talið „Everything
+up-to-date", villuboð, eða lína úr pre-push netinu. Ég hélt áfram í þeirri trú að
+verkið væri komið út.
+
+**Reglan:** staðfestu á ÁSTANDINU, ekki á textanum sem skipunin prentaði.
+Eftir ýtingu: `git fetch && git status -sb` (á að vera án `ahead`/`behind`) og
+`git diff origin/master --quiet -- <skrár>`. Sama gildir víðar — `grep` á útskrift
+svarar „stóð þetta orð þarna", ekki „tókst aðgerðin".
+
 ---
 
 ## Gátlisti áður en sagt er „mælt"
@@ -135,3 +154,4 @@ lagfæringuna, ekki með tilbúnu dæmi.
 6. Prófaði ég raunverulega aðgerð eða hermdi ég eftir henni?
 7. Get ég sýnt hvað tækið sá OG hverju það sleppti?
 8. Fékk ég sömu niðurstöðu með óháðri aðferð?
+9. Staðfesti ég á ástandinu — eða bara á því sem skipunin prentaði?
