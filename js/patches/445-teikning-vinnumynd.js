@@ -478,7 +478,9 @@
   // RAUNSÆTT VINNUSKJAL ÚR DESIGNER-3D (383, „Nota sem vinnumynd", Agnar 07.10.2026): hreina Blender-myndin (án tákna)
   // og vörpun hennar í sama sniði og fastMynd (strigi, cam, heild, rammi, kort …) — sama leið og Festa héðan í frá:
   // sýnd strax, svo JPEG í fötuna og haedir[].vinnumynd á þjóninn. 383 hefur þegar borið saman lykil hæðarinnar.
-  async function festaMynd(hid, r, hvernig) {
+  // o.halda3d: 3D (og Designer-3D spjaldið) helst opið — fjölhæða-beiðni, þar sem hvert vinnuskjal verður vinnumynd sinnar
+  // hæðar hvert á eftir öðru (08.10.2026)
+  async function festaMynd(hid, r, hvernig, o) {
     const T = TB(), h = T && T.haedir ? (T.haedir() || []).find(x => x && x.id === hid) : null;
     if (!h || !r || !r.strigi || !Array.isArray(r.cam) || r.cam.length !== 16 || !(r.b > 0) || !(r.h > 0) || !r.kort) { segja('Gat ekki notað myndina sem vinnumynd'); return false; }
     if (V.festir) return false;
@@ -486,7 +488,7 @@
     try {
       V.val = null;
       Object.keys(V.villa).forEach(k => { if (k.indexOf(hid + '|') === 0) delete V.villa[k]; });
-      if (T.loka3d) T.loka3d();
+      if (T.loka3d && !(o && o.halda3d)) T.loka3d();
       segja('Vinnumynd fest' + (h.nafn ? ' — ' + h.nafn : '') + ' (raunsætt). Teikningin opnast nú strax á henni.');
       return await nyFestMynd(h, r, hvernig || 'raunsaett');
     } finally { V.festir = false; }

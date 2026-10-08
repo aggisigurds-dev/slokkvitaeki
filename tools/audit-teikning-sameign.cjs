@@ -14,13 +14,14 @@
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const ROT = path.join(__dirname, '..');
 const villur = [];
+const krefst = (txt, re, m) => { if (!re.test(txt)) villur.push(m); };
 const lesa = f => fs.readFileSync(path.join(ROT, f), 'utf8');
 const s446 = lesa('js/patches/446-teikning-sameign.js'), s383 = lesa('js/patches/383-teikning-hreinsa-3d.js');
 const s445 = lesa('js/patches/445-teikning-vinnumynd.js'), s433 = lesa('js/patches/433-teikning-merking.js'), html = lesa('index.html');
 
-const ctx = { console, Math, Map, Set, Uint8Array, Uint16Array, Uint32Array, Int32Array, Float32Array, JSON, Object, Array, Number, String, Infinity, isFinite };
-ctx.window = ctx; vm.createContext(ctx); vm.runInContext(s446, ctx);
-const TS = ctx.TeiknSameign;
+// 446 keyrt í aðalsamhenginu: vm-samhengi gerði talnalykkjurnar ~20× hægari (38 s í stað nokkurra)
+(0, eval)(s446);
+const TS = globalThis.TeiknSameign;
 if (!TS) { console.log('TEIKNING-SAMEIGN RAUTT — 446 setti ekki window.TeiknSameign'); process.exit(1); }
 
 // 1. heiti
@@ -74,8 +75,59 @@ const einn = TS.greinaHus([
 ]);
 if (einn.haedir[0].svaedi.some(v => v.teg === 'stigahus')) villur.push('stigi á einu blaði af þremur varð stigahús (á að krefjast tveggja staðfestinga)');
 
+// 5. Umferð 2 (08.10.2026): ályktun, hringstigi, skástigi, kvarðaleiðrétting
+// 5a. ÁLYKTUN: stiginn á 1. og 3. hæð (ólík blöð) en ekki 2. — stigahúsið er lagt til á 2. hæð, merkt „ályktað"
+const aly = TS.greinaHus([
+  { lykill: 'A', pxmSrc: PX, R: haed(true), nafn: '1. hæð' }, { lykill: 'B', pxmSrc: PX, R: haed(false), nafn: '2. hæð' }, { lykill: 'C', pxmSrc: PX, R: haed(true), nafn: '3. hæð' }
+]);
+if (!aly.haedir[1].svaedi.some(v => v.teg === 'stigahus' && v.alyktad)) villur.push('ályktun: stigahús á 1. og 3. hæð var ekki lagt til á 2. hæð (' + JSON.stringify(aly.haedir[1].talning) + ')');
+if (aly.haedir[0].svaedi.some(v => v.alyktad)) villur.push('ályktun: hæð þar sem stiginn FANNST fékk ályktað svæði');
+if (!/v\.alyktad \? \[5, 4\]/.test(s446) || !/\(ályktað\)/.test(s446)) villur.push('446 teikna: ályktað stigahús á að vera strikað og merkt „(ályktað)"');
+// 5b. HRINGSTIGI: 10 geislar á 18° fresti um súlu (hálfhringur) finnast; lyftukross (4 geislar) ekki
+function hringMynd(geislar, hornBil) {
+  const W2 = 8 * PX, H2 = 8 * PX, g = new Uint8Array(W2 * H2).fill(255), cx = 4 * PX, cy = 4 * PX;
+  for (let k = 0; k < geislar; k++) {
+    const a = (10 + k * hornBil) * Math.PI / 180;
+    for (let r = 0.3 * PX; r <= 1.3 * PX; r += 0.5) { const x = Math.round(cx + r * Math.cos(a)), y = Math.round(cy + r * Math.sin(a)); g[y * W2 + x] = 0; }
+  }
+  for (let t = 0; t < 2 * Math.PI; t += 0.003) { const x = Math.round(cx + 0.3 * PX * Math.cos(t)), y = Math.round(cy + 0.3 * PX * Math.sin(t)); g[y * W2 + x] = 0; }
+  return { g, W: W2, H: H2, s: 1 };
+}
+const hr = TS.hringstigar(hringMynd(10, 18));
+if (!hr.length || Math.hypot(hr[0].cx - 4 * PX, hr[0].cy - 4 * PX) > 0.3 * PX) villur.push('hringstigi (10 geislar) fannst ekki: ' + JSON.stringify(hr.map(k => [k.n, k.cx, k.cy])));
+if (TS.hringstigar(hringMynd(4, 90)).length) villur.push('kross (4 geislar) taldist hringstigi');
+// 5c. SKÁSTIGI: skáálma á 45° (langir veggir) með 9 þrepum hornrétt á álmuna finnst sem s45/s135
+{
+  const W2 = 16 * PX, H2 = 16 * PX, g = new Uint8Array(W2 * H2).fill(255);
+  const pkt = (x, y) => { const X = Math.round(x * PX), Y = Math.round(y * PX); if (X >= 0 && Y >= 0 && X < W2 && Y < H2) g[Y * W2 + X] = 0; };
+  const strik = (x0, y0, x1, y1) => { const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) * PX * 2); for (let i = 0; i <= n; i++) pkt(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n); };
+  const u = [Math.SQRT1_2, Math.SQRT1_2], nn = [-Math.SQRT1_2, Math.SQRT1_2];
+  // tveir veggir (tvær línur hvor) 13 m langir, 2,6 m á milli
+  for (const d of [0, 0.15, 2.6, 2.75]) strik(2 + nn[0] * d, 2 + nn[1] * d, 2 + nn[0] * d + u[0] * 13, 2 + nn[1] * d + u[1] * 13);
+  // þrep: 9 línur þvert á álmuna (frá vegg að vegg), 0,28 m bil, byrja 5 m inn í álmunni
+  for (let k = 0; k < 9; k++) { const s = 5 + k * 0.28; strik(2 + u[0] * s + nn[0] * 0.3, 2 + u[1] * s + nn[1] * 0.3, 2 + u[0] * s + nn[0] * 2.45, 2 + u[1] * s + nn[1] * 2.45); }
+  const ska = TS.skakambar({ g, W: W2, H: H2, s: 1 });
+  if (!ska.some(k => k.n >= 8 && /^s(45|135)$/.test(k.ass))) villur.push('skástigi á 45° fannst ekki: ' + JSON.stringify(ska.map(k => [k.ass, k.n])) + ' horn ' + JSON.stringify(TS.rikjandiHorn({ g, W: W2, H: H2, s: 1 })));
+}
+// 5d. KVARÐI: kjallari teiknaður í 1:200 (helmingi minni) en lesinn sem 1:100 — endurRasti með réttum kvarða er beðið um
+{
+  const smaekka = (R0, f) => { const W2 = Math.round(R0.W * f), H2 = Math.round(R0.H * f), g = new Uint8Array(W2 * H2).fill(255); for (let y = 0; y < R0.H; y++) for (let x = 0; x < R0.W; x++) if (!R0.g[y * R0.W + x]) g[Math.min(H2 - 1, Math.floor(y * f)) * W2 + Math.min(W2 - 1, Math.floor(x * f))] = 0; return { g, W: W2, H: H2, s: 1 }; };
+  let bedid = null;
+  TS.greinaHus([
+    { lykill: 'K', pxmSrc: PX, R: smaekka(haed(true), 0.5), nafn: 'Kjallari', endurRasti: p => { bedid = p; return haed(true); } },
+    { lykill: 'A', pxmSrc: PX, R: haed(true), nafn: '1. hæð' }, { lykill: 'B', pxmSrc: PX, R: haed(true), nafn: '2. hæð' }, { lykill: 'C', pxmSrc: PX, R: haed(true), nafn: '3. hæð' }
+  ]);
+  if (!bedid || bedid > PX * 0.62) villur.push('kvarði: kjallari í hálfum kvarða var ekki lesinn aftur (endurRasti ' + bedid + ')');
+}
+// 5e. TENGINGAR: takkinn aðeins þegar hann á við, fjölhæða-vinnumyndir, lóðarteikningar
+krefst(s383, /function samAvid\(\)/, '383: samAvid (Sameign-takkinn aðeins í fjölbýli) vantar');
+krefst(s383, /fp-sameign-btn\.fp-ekki\{display:none!important\}/, '383: Sameign-takkinn felst ekki (fp-ekki)');
+krefst(s383, /sena\.vinnumyndir = vms/, '383 blenderSena: vinnumyndir hverrar hæðar vantar');
+krefst(s383, /const blVmFyrir = /, '383: Nota sem vinnumynd á hverju vinnuskjali (blVmFyrir) vantar');
+krefst(s383, /TS\.greinaHusBid/, '383: greiningin á að anda (greinaHusBid)');
+krefst(lesa('netlify/functions/teikn-listi.js'), /heitinumer=0/, 'teikn-listi: lóðarteikningar (heitinumer=0) vantar');
+
 // 4. tengingin
-const krefst = (txt, re, m) => { if (!re.test(txt)) villur.push(m); };
 krefst(html, /446-teikning-sameign\.js/, 'index.html hleður ekki 446');
 krefst(s383, /fp-sameign-btn/, '383: Sameign-takkinn í 2D vantar');
 krefst(s383, /id="fp-3d-sameign"/, '383: Sameign-takkinn í 3D vantar');
@@ -88,4 +140,4 @@ krefst(s433, /TeiknBord\.sameignAthuga/, '433: athugasemd um tæki utan sameigna
 if (/DB\.sb\.from\(['"]teikning_bord['"]\)\.(insert|update|upsert)/.test(s446)) villur.push('446 má ekkert skrifa');
 
 if (villur.length) { console.log('TEIKNING-SAMEIGN RAUTT\n  · ' + villur.join('\n  · ')); process.exit(1); }
-console.log('TEIKNING-SAMEIGN GRÆNT — heiti flokkast, stigi + stigahús + gangur við lyftu finnast á gervigrunnmynd, íbúð ekki, staðfesting milli blaða, kjallari allur, tengt í 2D/3D/vinnumynd/Blender.');
+console.log('TEIKNING-SAMEIGN GRÆNT — heiti flokkast, stigi + stigahús + gangur við lyftu finnast á gervigrunnmynd, íbúð ekki, staðfesting milli blaða, kjallari allur, ályktun á milli hæða, hringstigi, skástigi, kvarði kjallara, tengt í 2D/3D/vinnumynd/Blender/Sameign-takka/lóðarteikningar.');

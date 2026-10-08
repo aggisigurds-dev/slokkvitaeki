@@ -2478,6 +2478,7 @@
           }
           const y = M(P.y);
           const haed = { nr: lg.nr, nafn: hd.nafn || (lg.nr + 1) + '. hæð', 'hæð': y, veggH: 3.0, golf, veggir, gler, hurdir, taeki };
+          if (hd.haedId) haed.haedId = hd.haedId;        // raunsaett.py skilar því aftur með vinnuskjali hæðarinnar
           const pg = raun && o.pdf && hd.haedId && o.pdf[hd.haedId];
           if (pg && hd.frumB > 0 && hd.frumH > 0 && hd.sk) {
             // hlutföll síðunnar → dílar frummyndar − skurður → heimur → metrar: sama leið og veggirnir (butur)
@@ -2518,17 +2519,22 @@
           // SNEIÐMYND (Agnar 08.10.2026: „heildstæð rendering á svona mörgum hæðum með gegnsærri framhlið"): 3+ hæðir
           // staflast í réttri hæð með opna framhlið (blender/raunsaett.py). 1–2 hæðir halda sprengdu myndinni.
           if (snid) sena.snid = snid;
-          if (syn.length === 1 && syn[0].hd.haedId) {
-            const lg = syn[0], hd = lg.hd;
+          // vinnumynd hverrar sýnilegrar hæðar (08.10.2026: líka í fjölhæða-beiðni — eitt vinnuskjal á hverja hæð): S =
+          // staðbundin hnit hæðarinnar → metrar senunnar, eins og ein hæð áður. Ein hæð: líka sena.vinnumynd (eldri lesendur).
+          const vmHaedar = lg => {
+            const hd = lg.hd;
             lg.hopur.updateMatrixWorld(true);
             const S = Array.from(lg.hopur.matrixWorld.elements, (v, i) => +(i % 4 < 3 ? v / u0 : v).toPrecision(10));
-            sena.vinnumynd = {
-              haedId: hd.haedId, S,
+            return {
+              haedId: hd.haedId, nafn: hd.nafn || (lg.nr + 1) + '. hæð', S,
               kort: { f: +lg.f.toPrecision(10), gw: +lg.gw.toPrecision(10), gh: +lg.gh.toPrecision(10), sx: hd.sk.x, sy: hd.sk.y, sw: hd.sk.w, sh: hd.sk.h },
               veggH: +lg.veggH.toPrecision(8), sjalfg: +(lg.sjalfg || Math.max(lg.gw, lg.gh) * 0.004).toPrecision(8),
               frum: hd.frumB > 0 ? { b: hd.frumB, h: hd.frumH } : null
             };
-          }
+          };
+          const vms = syn.filter(lg => lg.hd.haedId && lg.hd.sk).map(vmHaedar);
+          if (vms.length) sena.vinnumyndir = vms;
+          if (syn.length === 1 && vms.length === 1) sena.vinnumynd = vms[0];
         }
         return sena;
       },
@@ -4109,8 +4115,19 @@
   const blLokid = B => !!B && (B.stada === 'done' || B.stada === 'error' || B.stada === 'timi' || B.stada === 'tomt');
   // hlutföll myndar: upplausnin sem Blender skilaði („1800x1290"), annars myndavél beiðninnar, annars 16:9
   const blHlutfall = (B, m) => { const u = String(m.upplausn || '').match(/^(\d+)x(\d+)$/); return Math.max(0.5, Math.min(3, u ? +u[1] / +u[2] : (B.hlutfoll && B.hlutfoll[m.heiti]) || 16 / 9)); };
-  const blMaVinnumynd = (B, m) => !!(B && B.utlit === 'raunsaett' && B.vm && B.vm.haedId && B.vm.lykill && m && m.hrein && Array.isArray(m.varpa) && m.varpa.length === 16 &&
-    /^\d+x\d+$/.test(String(m.upplausn || '')) && window.TeiknVinnumynd && TeiknVinnumynd.festaMynd && FPx() && B.felag === FPx().companyId);
+  // Vörpun hæðarinnar sem vinnuskjalið m sýnir: ein hæð → B.vm; fjölhæða-beiðni (B.vms, 08.10.2026) → hæðin sem brúin
+  // merkti myndina með (m.haedId; eldri brú: m.haed = heiti hæðar, eða „Vinnuskjal <heiti>").
+  const blVmFyrir = (B, m) => {
+    if (!B || !m) return null;
+    const vms = Array.isArray(B.vms) ? B.vms : [];
+    if (vms.length > 1 || (vms.length === 1 && !B.vm)) {
+      const nafn = String(m.haed || String(m.heiti || '').replace(/^Vinnuskjal\s*/i, '')).trim();
+      return vms.find(v => m.haedId && v.haedId === m.haedId) || vms.find(v => nafn && String(v.nafn || '').trim() === nafn) || null;
+    }
+    return B.vm || vms[0] || null;
+  };
+  const blMaVinnumynd = (B, m) => { const vi = blVmFyrir(B, m); return !!(B && B.utlit === 'raunsaett' && vi && vi.haedId && vi.lykill && m && m.hrein && Array.isArray(m.varpa) && m.varpa.length === 16 &&
+    /^\d+x\d+$/.test(String(m.upplausn || '')) && window.TeiknVinnumynd && TeiknVinnumynd.festaMynd && FPx() && B.felag === FPx().companyId); };
   function blValHtml(ul) {
     return '<div role="radiogroup" aria-label="Útlit myndarinnar" style="flex:none;display:flex;border:1px solid #000;border-radius:9px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.25)">' +
       ['raunsaett', 'einfalt'].map((k, i) => {
@@ -4175,12 +4192,12 @@
         : '<div style="font-weight:600">Tilbúið' + (B.sek ? ' — teiknað á ' + blTimi(B.sek * 1000) + ' mín' : '') + '.</div>';
       (B.myndir || []).forEach((m, i) => {
         const skra = 'blender-' + (B.felag || 'hus') + '-' + String(m.heiti || 'mynd').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase() + '.png';
-        const vinn = B.vmStada === 'vinn';
+        const vmS = (B.vmS || {})[i] || '', vinn = vmS === 'vinn';
         html += '<figure style="margin:0;display:flex;flex-direction:column;gap:6px">' +
           '<a href="' + esc(m.url) + '" target="_blank" rel="noopener" title="Opna í fullri stærð" style="display:block;line-height:0"><img src="' + esc(m.url) + '" alt="' + esc(m.heiti) + '" style="width:100%;aspect-ratio:' + blHlutfall(B, m).toFixed(3) + ';object-fit:contain;background:#cfd4db;border:1px solid #000;border-radius:7px"></a>' +
           '<figcaption style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px"><b style="font:700 12px ui-monospace,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:#525b6b">' + esc(m.heiti) + '</b>' +
           '<span style="margin-left:auto;display:flex;gap:6px">' +
-          (blMaVinnumynd(B, m) ? '<a data-bl="vinnumynd" data-i="' + i + '" role="button" tabindex="0" aria-disabled="' + vinn + '" title="Hreina myndin (án tákna) verður föst vinnumynd hæðarinnar — tækin eru teiknuð ofan á hana, eins og eftir Festa" style="' + blTakki(BL_GRAFIT, '#fff') + (vinn ? ';opacity:.6!important;pointer-events:none' : '') + '">' + (vinn ? 'Festi…' : 'Nota sem vinnumynd') + '</a>' : '') +
+          (blMaVinnumynd(B, m) ? '<a data-bl="vinnumynd" data-i="' + i + '" role="button" tabindex="0" aria-disabled="' + vinn + '" title="Hreina myndin (án tákna) verður föst vinnumynd hæðarinnar — tækin eru teiknuð ofan á hana, eins og eftir Festa" style="' + blTakki(BL_GRAFIT, '#fff') + (vinn ? ';opacity:.6!important;pointer-events:none' : '') + '">' + (vinn ? 'Festi…' : vmS === 'fest' ? 'Orðin vinnumynd' : 'Nota sem vinnumynd') + '</a>' : '') +
           '<a data-bl="saekja" href="' + esc(m.url + (m.url.indexOf('?') < 0 ? '?' : '&') + 'download=' + encodeURIComponent(skra)) + '" download="' + esc(skra) + '" style="' + blTakki(BL_SILFUR, '#11141c') + '">Sækja</a></span></figcaption></figure>';
       });
     } else if (B.stada === 'error' || B.stada === 'timi') {
@@ -4235,7 +4252,7 @@
   // gangi fyrir félagið (líka úr öðrum vafra) er það sýnt í stað nýrrar beiðni. Eldri beiðnir (fyrir 07.10.2026) bera
   // ekkert gogn.utlit og eru Einfalt. vm = gogn.vinnumynd (aðeins það, ekki öll senan): vörpun fyrir „Nota sem vinnumynd".
   async function blSidasta(cid, ul) {
-    let q = DB.sb.from('automation_triggers').select('id,status,result,requested_at,finished_at,vm:gogn->vinnumynd')
+    let q = DB.sb.from('automation_triggers').select('id,status,result,requested_at,finished_at,vm:gogn->vinnumynd,vms:gogn->vinnumyndir')
       .eq('workflow', 'blender').eq('gogn->>company_id', String(cid));
     q = ul === 'raunsaett' ? q.eq('gogn->>utlit', 'raunsaett') : q.or('gogn->>utlit.is.null,gogn->>utlit.neq.raunsaett');
     const r = await q.order('id', { ascending: false }).limit(6);
@@ -4244,7 +4261,7 @@
   }
   const blLesa = t => { try { t = String(t || ''); const j = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)); return j && Array.isArray(j.myndir) && j.myndir.length ? j : null; } catch (_) { return null; } };
   // Herbergi, gólflínur og strik PDF-uppdráttar hæðar (raunUrSidu) — einu sinni á hverja skrá í lotunni
-  const raunSkyndi = new Map();
+  const raunSkyndi = new Map(), raunLokid = new Map();   // raunLokid: lesin textalög (samstillt — takkinn Sameign les þaðan)
   async function raunGognUrPdf(h) {
     const slod = pdfSlod(h); if (!slod) return null;
     if (!raunSkyndi.has(slod)) {
@@ -4258,7 +4275,7 @@
         return raunUrSidu(tc, ops, vp);
       })());
     }
-    try { return await raunSkyndi.get(slod); } catch (e) { raunSkyndi.delete(slod); throw e; }
+    try { const r = await raunSkyndi.get(slod); raunLokid.set(slod, r); return r; } catch (e) { raunSkyndi.delete(slod); throw e; }
   }
   async function blBidja(nytt, utlit, skipta) {
     const ul = BL_UTLIT[utlit] ? utlit : blUtlit(), cid0 = FPx() && FPx().companyId, B0 = BLU[ul];
@@ -4281,14 +4298,14 @@
         if (BLU[ul] !== Bs) return;
         const iGangi = radir.find(x => x.status === 'bida' || x.status === 'pending' || x.status === 'running');
         if (iGangi) {
-          const B = { id: iGangi.id, stada: 'bida', byrjad: Date.parse(iGangi.requested_at) || Date.now(), felag: cid0, utlit: ul, hlutfoll: {}, vm: iGangi.vm || null };
+          const B = { id: iGangi.id, stada: 'bida', byrjad: Date.parse(iGangi.requested_at) || Date.now(), felag: cid0, utlit: ul, hlutfoll: {}, vm: iGangi.vm || null, vms: iGangi.vms || null };
           taka(B); B.timer = setTimeout(() => blKanna(B), 50); return;
         }
         for (const x of radir) {
           if (x.status !== 'done') continue;
           const j = blLesa(x.result); if (!j) continue;
           const lauk = Date.parse(x.finished_at) || Date.now();
-          const B = { id: x.id, stada: 'done', myndir: j.myndir, sek: j.sek, byrjad: Date.parse(x.requested_at) || lauk, lauk, vistud: lauk, felag: cid0, utlit: ul, hlutfoll: {}, vm: x.vm || null };
+          const B = { id: x.id, stada: 'done', myndir: j.myndir, sek: j.sek, byrjad: Date.parse(x.requested_at) || lauk, lauk, vistud: lauk, felag: cid0, utlit: ul, hlutfoll: {}, vm: x.vm || null, vms: x.vms || null };
           taka(B);
           try {
             const t = await DB.sb.from('teikning_bord').select('updated_at').eq('company_id', cid0).limit(1);
@@ -4333,12 +4350,18 @@
     // of stórt (sama þak og áður, 1,4 MB): án gólfmynda — raunsætt ber engar, þá án herbergja og stiga
     if (JSON.stringify(sena).length > 1400000) sena = G.syn3d.blenderSena(pdf ? { utlit: 'raunsaett', pdf: {} } : { myndHamark: 0 });
     // „Nota sem vinnumynd": lykill hæðarinnar (445) eins og hún er NÚNA — sé veggjum breytt síðar er myndin úrelt
+    const lykillHaedar = hid => { const h = (haedir() || []).find(x => x && x.id === hid); return h && window.TeiknVinnumynd && TeiknVinnumynd.lykill ? TeiknVinnumynd.lykill(h) : ''; };
     if (sena.vinnumynd) {
-      const h = (haedir() || []).find(x => x && x.id === sena.vinnumynd.haedId);
-      const lyk = h && window.TeiknVinnumynd && TeiknVinnumynd.lykill ? TeiknVinnumynd.lykill(h) : '';
+      const lyk = lykillHaedar(sena.vinnumynd.haedId);
       if (lyk) sena.vinnumynd.lykill = lyk; else delete sena.vinnumynd;
     }
+    // fjölhæða-beiðni: lykill á hverja hæð (08.10.2026 — „Nota sem vinnumynd" á vinnuskjali hverrar hæðar)
+    if (Array.isArray(sena.vinnumyndir)) {
+      sena.vinnumyndir = sena.vinnumyndir.filter(v => { const lyk = lykillHaedar(v.haedId); if (lyk) v.lykill = lyk; return !!lyk; });
+      if (!sena.vinnumyndir.length) delete sena.vinnumyndir;
+    }
     B.vm = sena.vinnumynd || null;
+    B.vms = sena.vinnumyndir || null;
     // hlutföll myndanna (sama klemma og sena.py, 0,5–3) — myndareiturinn fær rétta stærð áður en myndin berst
     (sena.myndavelar || []).forEach(m => { B.hlutfoll[m.heiti] = Math.max(0.5, Math.min(3, +m.hlutfall || 16 / 9)); });
     const gogn = Object.assign({ company_id: FP && FP.companyId }, sena);
@@ -4355,19 +4378,23 @@
   // fór (lykillinn annar) → myndin er ekki notuð; þá þarf að teikna aftur.
   const blMarg4 = (a, b) => { const c = new Array(16); for (let k = 0; k < 4; k++) for (let r = 0; r < 4; r++) { let s = 0; for (let j = 0; j < 4; j++) s += a[j * 4 + r] * b[k * 4 + j]; c[k * 4 + r] = +s.toPrecision(10); } return c; };
   async function blNotaVinnumynd(B, i) {
-    const m = B && B.myndir && B.myndir[i], vi = B && B.vm, TV = window.TeiknVinnumynd;
-    if (!m || !blMaVinnumynd(B, m) || B.vmStada === 'vinn') return;
+    const m = B && B.myndir && B.myndir[i], vi = blVmFyrir(B, m), TV = window.TeiknVinnumynd;
+    B.vmS = B.vmS || {};
+    if (!m || !blMaVinnumynd(B, m) || B.vmS[i] === 'vinn') return;
     const h = (haedir() || []).find(x => x && x.id === vi.haedId);
     if (!h) { segja('Hæðin sem myndin sýnir er ekki í þessari teikningu'); return; }
-    if (TV.lykill(h) !== vi.lykill) { segja('Veggjum, skurði eða teikningu hefur verið breytt síðan myndin var teiknuð. Ýttu á Teikna aftur og notaðu nýju myndina.'); return; }
+    if (TV.lykill(h) !== vi.lykill) { segja('Veggjum, skurði eða teikningu ' + (vi.nafn ? '(' + vi.nafn + ') ' : '') + 'hefur verið breytt síðan myndin var teiknuð. Ýttu á Teikna aftur og notaðu nýju myndina.'); return; }
     const u = String(m.upplausn).match(/^(\d+)x(\d+)$/), W = +u[1], H = +u[2];
-    B.vmStada = 'vinn'; if (G.blender === B) blTeikna();
+    B.vmS[i] = 'vinn'; B.vmStada = 'vinn'; if (G.blender === B) blTeikna();
     try {
       const img = await new Promise((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => rej(new Error('hreina myndin fannst ekki')); im.src = m.hrein; });
       const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(img, 0, 0, W, H);
-      const ok = await TV.festaMynd(h.id, { strigi: c, cam: blMarg4(m.varpa, vi.S), heild: [W, H], rammi: [0, 0, W, H], b: W, h: H, kort: vi.kort, veggH: vi.veggH, sjalfg: vi.sjalfg, frum: vi.frum || null }, 'raunsaett');
-      B.vmStada = ok ? 'fest' : '';
-    } catch (e) { B.vmStada = ''; segja('Gat ekki notað myndina sem vinnumynd: ' + ((e && e.message) || e)); }
+      // fjölhæða: 3D og spjaldið haldast opin svo hin vinnuskjölin megi líka festa
+      const fleiri = Array.isArray(B.vms) && B.vms.length > 1;
+      const ok = await TV.festaMynd(h.id, { strigi: c, cam: blMarg4(m.varpa, vi.S), heild: [W, H], rammi: [0, 0, W, H], b: W, h: H, kort: vi.kort, veggH: vi.veggH, sjalfg: vi.sjalfg, frum: vi.frum || null }, 'raunsaett', fleiri ? { halda3d: true } : undefined);
+      B.vmS[i] = ok ? 'fest' : ''; B.vmStada = B.vmS[i];
+      if (ok && vi.nafn && B.vms && B.vms.length > 1) segja('Vinnuskjalið er orðið föst vinnumynd ' + vi.nafn + '.');
+    } catch (e) { B.vmS[i] = ''; B.vmStada = ''; segja('Gat ekki notað myndina sem vinnumynd: ' + ((e && e.message) || e)); }
     if (G.blender === B) blTeikna();
   }
   // Klukkan í hausnum og biðviðvörunin hreyfast á milli fyrirspurna.
@@ -4411,6 +4438,8 @@
         if (!R) {
           if (!stig1) stig1 = h.skurdur ? skera(frum, h.skurdur) : frum;
           R = TS.rasti(stig1, pxm);
+          // 446 les blaðið aftur á öðrum kvarða ef grunnflötur þess stenst ekki hin blöðin (1:200-kjallari, smækkuð PDF)
+          const mynd = stig1; R.endurRasti = p => TS.rasti(mynd, p);
           afBladi.set(kl, R);
         }
         // heiti úr textalagi vigur-PDF (Fiskislóð-leiðin): hlutföll síðu → dílar skornu myndarinnar
@@ -4420,13 +4449,15 @@
             (pg && pg.herbergi || []).forEach(r => { const x = r.u * fb - sk.x, y = r.v * fh - sk.y; if (x >= 0 && y >= 0 && x <= sk.w && y <= sk.h) textar.push(Object.assign({ texti: r.texti, x, y }, r.nr ? { nr: r.nr } : {})); });
           } catch (e) { console.warn('[383] sameign: textar', e); }
         }
-        inn.push({ lykill: kl, pxmSrc: pxm, R, nafn: h.nafn || '', textar, hid: h.id, skx: sk.x || 0, sky: sk.y || 0 });
+        inn.push({ lykill: kl, pxmSrc: pxm, R, endurRasti: R.endurRasti, nafn: h.nafn || '', textar, hid: h.id, skx: sk.x || 0, sky: sk.y || 0 });
         await new Promise(r => setTimeout(r, 0));     // vafrinn andar á milli hæða
       }
       if (framvinda) framvinda('Greini sameign — stigar staðfestir milli hæða…');
       await new Promise(r => setTimeout(r, 0));
-      const r = TS.greinaHus(inn), haedirM = new Map();
-      inn.forEach((x, i) => haedirM.set(x.hid, Object.assign({}, r.haedir[i], { lykill: x.lykill, pxm: x.pxmSrc, skx: x.skx, sky: x.sky })));
+      // greinaHusBid: sama greining en vafrinn andar á milli þrepa (Asparfell / Þverholt: 15–25 s í einni lotu annars)
+      const r = TS.greinaHusBid ? await TS.greinaHusBid(inn, t => { if (framvinda) framvinda(t); }) : TS.greinaHus(inn), haedirM = new Map();
+      // pxm: leiðréttur kvarði blaðsins ef 446 las það aftur (kvardi), annars kvarði 3D
+      inn.forEach((x, i) => haedirM.set(x.hid, Object.assign({}, r.haedir[i], { lykill: x.lykill, pxm: r.haedir[i].pxm || x.pxmSrc, skx: x.skx, sky: x.sky })));
       const fjolbyli = hs.length >= 3 || r.haedir.some(q => (q.herbergi || []).filter(t => t.hopur === 'ibud').length >= 2);
       const hus = { lykill: lyk, haedir: haedirM, hlidranir: r.hlidranir, blod: r.blod, fjolbyli, ms: Math.round(performance.now() - t0) };
       try { console.info('[383] sameign: ' + JSON.stringify({ ms: hus.ms, blod: r.blod, haedir: r.haedir.map((q, i) => (hs[i].nafn || i) + ': ' + q.talning.stigahus + ' stigah., ' + q.talning.gangar + ' gangar' + (q.heil ? ', allt' : '')) })); } catch (_) {}
@@ -4442,6 +4473,25 @@
     const r = hus.haedir.get(hid), h = (haedir() || []).find(x => x && x.id === hid);
     return r && h && r.lykill === samLykill(h) ? r : null;
   }
+  // Takkinn „Sameign" á aðeins við í fjölbýli (Agnar 08.10.2026: á atvinnuhúsnæði eins og Fiskislóð 1612 og Álfaborg 661
+  // á hann ekki að trufla). Sést ef: sameignarsýnin er virk · greining liggur fyrir og fann sameign í fjölbýli · eða, meðan
+  // ógreint, ≥ 2 hæðir og merki um fjölbýli: ≥ 3 hæðir, húsfélag í nafni, íbúð/sameign í hæðaheiti, eða ≥ 2 íbúðir í
+  // textalagi PDF sem þegar hefur verið lesið (ekkert sótt hér).
+  const SAM_NAFN = /h[úu]sf[ée]lag|h[úu]sf\.|fj[öo]lb[ýy]li/i;
+  function samAvid() {
+    if (SAM.syn) return true;
+    const hs = (haedir() || []).filter(h => h && h.image_url);
+    if (hs.length < 2) return false;
+    const hus = SAM.hus && SAM.hus.lykill === samHusLykill(haedir()) ? SAM.hus : null;
+    if (hus) return !!hus.fjolbyli && [...hus.haedir.values()].some(q => (q.svaedi || []).length || q.heil);
+    if (hs.length >= 3) return true;
+    const FP = FPx();
+    if (SAM_NAFN.test(String((FP && FP.companyName) || ''))) return true;
+    if (hs.some(h => /[íi]b[úu]ð|sameign|stigah/i.test(h.nafn || ''))) return true;
+    const TS = window.TeiknSameign;
+    return !!TS && hs.some(h => { const sl = pdfSlod(h), r = sl && raunLokid.get(sl); return !!r && (r.herbergi || []).filter(t => TS.flokkur(t.texti).hopur === 'ibud').length >= 2; });
+  }
+  function samTakki3d(b3) { b3 = b3 || document.getElementById('fp-3d-sameign'); if (!b3) return; if (samAvid()) b3.style.removeProperty('display'); else b3.style.setProperty('display', 'none', 'important'); }
   function samTeiknaAllt() {
     G.teiknad = '';
     try { yfirlag(); } catch (_) {}
@@ -4449,7 +4499,7 @@
     const lit = b => { if (!b) return; b.setAttribute('aria-pressed', SAM.syn ? 'true' : 'false'); b.style.background = SAM.syn ? '#d9b45a' : ''; b.style.color = SAM.syn ? '#14120f' : ''; };
     lit(document.querySelector('#modal-floorplan .fp-sameign-btn'));
     const b3 = document.getElementById('fp-3d-sameign');
-    if (b3) { b3.setAttribute('aria-pressed', SAM.syn ? 'true' : 'false'); b3.style.background = SAM.syn ? '#d9b45a' : 'rgba(20,18,15,.85)'; b3.style.color = SAM.syn ? '#14120f' : '#fff'; }
+    if (b3) { b3.setAttribute('aria-pressed', SAM.syn ? 'true' : 'false'); b3.style.background = SAM.syn ? '#d9b45a' : 'rgba(20,18,15,.85)'; b3.style.color = SAM.syn ? '#14120f' : '#fff'; samTakki3d(b3); }
   }
   // Hógvær athugasemd (433 setjaTaeki): tæki sett UTAN sameignar í fjölbýli — aðeins ef sameignin hefur verið greind
   // („Sameign" eða 3D með 3+ hæðum), aldrei oftar en á 20 sek fresti, ekkert stöðvað. x, y = hnit ritilsins (skorin mynd).
@@ -4715,6 +4765,7 @@
     });
     gamur.querySelector('#fp-3d-blender').addEventListener('click', () => { blBidja().catch(e => { console.warn('[383] Blender-mynd', e); }); });
     gamur.querySelector('#fp-3d-sameign').addEventListener('click', () => { samSkipta().catch(e => console.warn('[383] sameign', e)); });
+    samTakki3d();
     const skyr = gamur.querySelector('#fp-3d-skyr'), ut = [], sleppt = [], nyirPdf = [], samHlutir = [];
     for (let i = 0; i < hs.length; i++) {
       const h = hs[i];
@@ -5104,6 +5155,7 @@
     const lita = (kl, a, texti) => { const b = grp.querySelector(kl); if (!b) return; b.setAttribute('aria-pressed', String(!!a)); b.style.background = a ? '#c9a54a' : ''; b.style.color = a ? '#14120f' : ''; if (texti) b.textContent = texti; };
     lita('.fp-hreinsa-btn', val.a);
     lita('.fp-sameign-btn', SAM.syn);
+    { const b = grp.querySelector('.fp-sameign-btn'); if (b) b.classList.toggle('fp-ekki', !samAvid()); }
     lita('.fp-fest-btn', val.fest, val.fest ? '📌 Útlit fest' : '📌 Festa útlit');
     const mg = fpGluggi(); if (mg) mg.classList.toggle('fp-fest', !!val.fest);
     if (!document.getElementById('fp-fest-css')) {
@@ -5111,7 +5163,7 @@
       // (Agnar 03.10.2026: „tekið út veggjatalningu, EI“). Fest útlit felur skurðinn — EKKI Skýrari veggi (04.10: faldi
       // takkinn gerði að verkum að „næ henni ekki aftur").
       const st = document.createElement('style'); st.id = 'fp-fest-css';
-      st.textContent = '#modal-floorplan .fp-veggir-btn,#modal-floorplan .fp-ei-btn{display:none!important}' +
+      st.textContent = '#modal-floorplan .fp-veggir-btn,#modal-floorplan .fp-ei-btn,#modal-floorplan .fp-sameign-btn.fp-ekki{display:none!important}' +
         '#modal-floorplan.fp-fest .fp-skera-btn,#modal-floorplan.fp-fest .fp-hus-btn{display:none!important}' +
         // Brunastál-þemað setur !important stálhalla á alla takka í gluggum — virkt ástand (Skýrari veggir, Útlit fest)
         // sást ekki (04.10.2026: Agnar hélt Skýrari væri af). ID-valið vinnur.
@@ -5291,7 +5343,7 @@
     opna3d: o => { if (!document.getElementById('fp-3d')) { G.hamur = null; return opna3d(o); } },
     loka3d,
     // Designer-3D (prófanir): staðan sem er sýnd · PDF-gögn hæðar fyrir raunsætt útlit
-    designer: () => (G.blender ? { utlit: G.blender.utlit, stada: G.blender.stada, id: G.blender.id || null, myndir: G.blender.myndir || null, vm: G.blender.vm || null, vmStada: G.blender.vmStada || '' } : null),
+    designer: () => (G.blender ? { utlit: G.blender.utlit, stada: G.blender.stada, id: G.blender.id || null, myndir: G.blender.myndir || null, vm: G.blender.vm || null, vms: G.blender.vms || null, vmS: G.blender.vmS || {}, vmStada: G.blender.vmStada || '' } : null),
     raunPdf: h => raunGognUrPdf(h),
     // Sameign í fjölbýli (446): niðurstaða hæðar þegar „Sameign" er virkt (445 teiknar hana á vinnumyndina) · greining
     sameign: hid => (SAM.syn ? sameignHaedar(hid) : null),
