@@ -3193,7 +3193,10 @@
     const hs = haedir(), FL = 'height:30px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.22);cursor:pointer;font:inherit;';
     const html = hs.map((h, i) => '<button type="button" data-h="' + i + '" aria-pressed="' + (i === G.virk) + '" style="' + FL + (i === G.virk ? GULL : 'background:rgba(20,18,15,.88);color:#f1ede4') + '">' +
         esc(h.nafn || (i + 1) + '. hæð') + ' <span style="opacity:.65;font-weight:500">' + (i === G.virk ? plan().markers.length : h.markers.length) + '</span>' +
-        (h.leidrett ? ' <span title="Veggir leiðréttir í TurboPaint — sjálfvirk greining skrifar ekki yfir þá" style="opacity:.8;font-weight:600;font-size:.85em">· leiðrétt</span>' : '') + '</button>').join('') +
+        // „· sjálfvirkt" (08.10.2026): sjálfvirka verkferlið vistaði veggina og enginn hefur skoðað þá — Agnar sér hvað er eftir.
+        (h.leidrett ? (h.leidrett.af === 'sjalfvirkt'
+          ? ' <span title="Veggir úr sjálfvirka verkferlinu — ekki enn skoðaðir. Opnaðu í TurboPaint og „Vista í úttekt" þegar þeir eru réttir." style="opacity:.8;font-weight:600;font-size:.85em">· sjálfvirkt</span>'
+          : ' <span title="Veggir leiðréttir í TurboPaint — sjálfvirk greining skrifar ekki yfir þá" style="opacity:.8;font-weight:600;font-size:.85em">· leiðrétt</span>') : '') + '</button>').join('') +
       '<button type="button" data-h="saekja" title="Sækja staðsetningar af þjóni — t.d. eftir „Vista í úttekt" í TurboPaint" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">↻</button>' +
       '<button type="button" data-h="nafn" title="Endurnefna virku hæðina" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">✎</button>' +
       (hs.length > 1 ? '<button type="button" data-h="eyda" title="Eyða virku hæðinni" style="' + FL + 'background:rgba(20,18,15,.88);color:#f1ede4">🗑</button>' : '') +
@@ -4564,13 +4567,15 @@
     if (r.error) throw new Error(r.error.message || 'ekkert skrifað');
     return { cid, h: hs[nr >= 0 ? nr : G.virk], hs };
   }
-  function turboPaintSlod(cid, h, planUrl) {
+  function turboPaintSlod(cid, h, planUrl, sjalfvirkt) {
     const q = ['uttekt=' + encodeURIComponent(cid)];
     if (h && h.id) q.push('haed=' + encodeURIComponent(h.id));
     if (h && h.frum) q.push('b=' + h.frum.b, 'h=' + h.frum.h);
     if (planUrl) q.push('plan=' + encodeURIComponent(planUrl));
     // 06.10.2026 (áfangi 1): opnast í „Teikning og greining" — þar er veggjastikan (Veggur/Gler/Hurð/Tengja/Eyða)
     q.push('ham=teikning');
+    // 08.10.2026 „Sjálfvirkt": TurboPaint keyrir verkferlið (gæði, skurður, veggir, hreinsun, hurðir, EI, tæki) og vistar
+    if (sjalfvirkt) q.push('sjalfvirkt=1');
     return TURBOPAINT + '?' + q.join('&');
   }
   async function opnaITurboPaint(auka) {
@@ -4591,11 +4596,14 @@
     const flipi = window.open('about:blank', '_blank');
     try {
       const v = await vistaHaedirFyrirTurboPaint(nr);
-      const slod = turboPaintSlod(v.cid, v.h, auka && auka.plan);
+      const sjalf = !!(auka && auka.sjalfvirkt === true);
+      const slod = turboPaintSlod(v.cid, v.h, auka && auka.plan, sjalf);
       if (flipi) flipi.location.href = slod; else location.href = slod;
       _tpOpnad = Date.now();
       vaktAfturkomu();
-      segja((v.h && v.h.nafn ? '„' + v.h.nafn + '"' : 'Hæðin') + ' opnast í TurboPaint. Þegar þú ert búinn þar: „💾 Vista í úttekt" — merkin koma til baka hér.');
+      segja((v.h && v.h.nafn ? '„' + v.h.nafn + '"' : 'Hæðin') + (sjalf
+        ? ' opnast í TurboPaint og sjálfvirka verkferlið keyrir (2–4 mín). Hæðin sækist hér þegar þú kemur til baka — merkt „· sjálfvirkt".'
+        : ' opnast í TurboPaint. Þegar þú ert búinn þar: „💾 Vista í úttekt" — merkin koma til baka hér.'));
     } catch (e) {
       if (flipi) try { flipi.close(); } catch (_) {}
       segja('⚠ Gat ekki vistað hæðina fyrir TurboPaint: ' + ((e && e.message) || e));
@@ -4655,7 +4663,9 @@
           vistaVal(FP.companyId, v);
           segja(v.fest ? '📌 Útlitið er fest og vistað — teikningin opnast alltaf svona.' : '🔓 Útlitið er laust — skerðu og stilltu, svo „Festa útlit“ aftur.');
         })),
-        gera('fp-tp-btn', 'Opna í TurboPaint', 'Opna hæðina í TurboPaint: teikna á hana, færa tækin og vista staðsetningarnar til baka', opnaITurboPaint)
+        gera('fp-tp-btn', 'Opna í TurboPaint', 'Opna hæðina í TurboPaint: teikna á hana, færa tækin og vista staðsetningarnar til baka', opnaITurboPaint),
+        // 08.10.2026 (Agnar): „takka sem setur í gang eitthvað automatic verkferli" — TurboPaint ?sjalfvirkt=1
+        gera('fp-tp-sjalf-btn', 'Sjálfvirkt', 'Sjálfvirkt verkferli í TurboPaint: hæstu gæði, skorið að húsinu, veggir greindir og hreinsaðir, hurðir, eldveggir og tæki — vistast sjálft (hæð sem þú hefur leiðrétt er aldrei yfirskrifuð) og birtist hér aftur', () => opnaITurboPaint({ sjalfvirkt: true }))
       ];
       const upp = grp.querySelector('label') || grp.querySelector('.fp-saekja-btn') || grp.firstChild;
       takkar.forEach(b => {
