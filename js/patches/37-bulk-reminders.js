@@ -202,7 +202,7 @@
     wrap.innerHTML = `
       <div class="brem-modal">
         <div class="brem-hd">
-          <div class="brem-title">📧 Senda skoðunaráminningar</div>
+          <div class="brem-title">📧 Senda skoðunaráminningar${window.svKodi ? window.svKodi('SV-23') : ''}</div>
           <button class="brem-close" onclick="BulkReminders.close()">✕</button>
         </div>
         <div id="brem-loading" style="text-align:center;padding:32px;color:var(--ink3)">Hleður tæki…</div>
@@ -246,7 +246,7 @@
 
     modal.innerHTML = `
       <div class="brem-hd">
-        <div class="brem-title">📧 Senda skoðunaráminningar</div>
+        <div class="brem-title">📧 Senda skoðunaráminningar${window.svKodi ? window.svKodi('SV-23') : ''}</div>
         <button class="brem-close" onclick="BulkReminders.close()">✕</button>
       </div>
       <div class="brem-controls">

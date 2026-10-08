@@ -102,7 +102,7 @@
         }
       } catch (_) {}
       const heiti = rec.name || rec.template_name || 'Skýrsla';
-      ReceiptSender.compose({
+      ReceiptSender.compose({ kodi: 'SV-07',
         title: 'Senda — ' + nafn,
         to: email,
         subject: heiti + (nafn ? ' — ' + nafn : '') + ' — Slökkvitæki ehf',

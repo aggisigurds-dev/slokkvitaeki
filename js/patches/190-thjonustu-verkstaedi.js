@@ -826,7 +826,7 @@
     const nafn = co.nafn || ('#' + id);
     const filename = (nafn.replace(/\s+/g, ' ').trim() + ' - úttektarskýrsla ' + curYear + '.pdf');
     if (window.ReceiptSender && ReceiptSender.sendDoc) {
-      ReceiptSender.sendDoc({
+      ReceiptSender.sendDoc({ kodi: 'SV-09',
         kind: 'skyrsla', filename: filename,
         url: docUrl(d) || undefined,
         driveId: (!docUrl(d) && d.drive_file_id) ? d.drive_file_id : undefined,

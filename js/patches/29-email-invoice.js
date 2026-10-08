@@ -85,7 +85,7 @@
     el.innerHTML = `
       <div class="ei-back"></div>
       <div class="ei-card">
-        <div class="ei-head"><h3>📧 Senda reikning á netfang</h3><button class="ei-x" id="ei-x">✕</button></div>
+        <div class="ei-head"><h3>📧 Senda reikning á netfang${window.svKodi ? window.svKodi('SV-04') : ''}</h3><button class="ei-x" id="ei-x">✕</button></div>
         <div class="ei-body" id="ei-body"></div>
         <div class="ei-foot">
           <button class="ei-cancel" id="ei-cancel">Hætta við</button>

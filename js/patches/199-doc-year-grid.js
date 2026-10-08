@@ -1759,7 +1759,7 @@
             return entryAttachment(d.src==='doc' ? d.d : { _att:d.a }, heiti+'.pdf'); } });
         });
         if(!sChoices.length){ alert('Enginn samningur til að senda.'); return; }
-        ReceiptSender.compose({
+        ReceiptSender.compose({ kodi: 'SV-07',
           title:'Senda þjónustusamning — '+sNafn,
           to:sEmail,
           subject:'Þjónustusamningur — Slökkvitæki ehf',
@@ -1813,7 +1813,7 @@
           choices.push({ label:'🧾 Reikningur '+(inv.invoice_number||y), checked:true, build:function(){ return ReceiptSender.invoiceAttachment(inv._saleId); } });
         }
         if(!choices.length){ alert('Engin skjöl til að senda fyrir '+y+'.'); return; }
-        ReceiptSender.compose({
+        ReceiptSender.compose({ kodi: 'SV-07',
           title:'Senda — '+nafn,
           to:email,
           subject:(rep?'Úttektarskýrsla':bru?'Brunakerfisskýrsla':'Reikningur')+' '+y+' — Slökkvitæki ehf',

@@ -145,7 +145,7 @@
       const I = 'width:100%;padding:9px 11px;border:1.5px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13.5px;box-sizing:border-box';
       dlg.innerHTML =
         '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.35);width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 48px);display:flex;flex-direction:column;overflow:hidden">' +
-          '<div style="padding:14px 18px;background:linear-gradient(135deg,#0f766e,#0d5b54);color:#fff;font-size:15px;font-weight:700">' + (o.inReplyTo ? '↩ ' : '📧 ') + esc(o.title || 'Senda í tölvupósti') + (o.inReplyTo ? '<div style="font-size:11.5px;font-weight:600;opacity:.85;margin-top:2px">Svar í sama þræði — lendir undir fyrri póstinum hjá viðtakanda</div>' : '') + '</div>' +
+          '<div style="padding:14px 18px;background:linear-gradient(135deg,#0f766e,#0d5b54);color:#fff;font-size:15px;font-weight:700">' + (o.inReplyTo ? '↩ ' : '📧 ') + esc(o.title || 'Senda í tölvupósti') + (o.kodi && window.svKodi ? window.svKodi(o.kodi) : '') + (o.inReplyTo ? '<div style="font-size:11.5px;font-weight:600;opacity:.85;margin-top:2px">Svar í sama þræði — lendir undir fyrri póstinum hjá viðtakanda</div>' : '') + '</div>' +
           '<div style="padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:12px">' +
             '<div><label style="' + L + '">Sent frá — svör berast hingað</label>' +
               '<select id="_rs-from" style="' + I + '">' +
@@ -294,6 +294,7 @@
     const co = await resolveCustomer(sale);
     const nr = sale.num || '';
     return compose({
+      kodi: 'SV-01',   // Svar-stöð: Senda kvittun eða reikning
       title: 'Senda reikning ' + nr,
       to: opts.to || (co && co.netfang) || '',
       subject: 'Reikningur ' + nr + ' — Brunahólf slökkvitæki ehf',
@@ -316,6 +317,7 @@
       : { filename: opts.filename || 'skjal.pdf', url: opts.url };
     const isRep = opts.kind === 'skyrsla';
     return compose({
+      kodi: opts.kodi || (isRep ? 'SV-09' : 'SV-01'),   // Svar-stöð — kallarinn segir hvaða sendileið
       title: isRep ? 'Senda úttektarskýrslu' : 'Senda reikning',
       to: opts.to || '',
       subject: (isRep ? 'Úttektarskýrsla' : 'Reikningur') + (opts.ar ? ' ' + opts.ar : '') +

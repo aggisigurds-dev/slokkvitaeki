@@ -138,7 +138,7 @@
         '<div class="divider"></div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
           '<button class="btn btn--sm" data-act="open">Opna vef ↗</button>' +
-          '<button class="btn btn--sm btn--accent" data-act="send">✉ Senda á viðskiptavin</button>' +
+          '<button class="btn btn--sm btn--accent" data-act="send">✉ Senda á viðskiptavin</button>' + '<span title="Svar-stöð SV-12 — textinn sem fer héðan er kortlagður þar (slokkvitaeki.netlify.app/#svarstod)" style="display:inline-block;margin-left:8px;padding:0 5px;border:1px solid currentColor;border-radius:3px;font:700 9.5px/1.5 \'JetBrains Mono\',ui-monospace,monospace;letter-spacing:.06em;vertical-align:middle;opacity:.7">SV-12</span>' +
           '<button class="btn btn--sm btn--danger" data-act="del">Aftengja</button>' +
         '</div>' +
         '<div class="note">„Senda" póstar viðskiptavini vefslóð + notandanafn (og lykilorð ef þú bjóst það til núna) gegnum Eldklár-póstinn.</div>' +

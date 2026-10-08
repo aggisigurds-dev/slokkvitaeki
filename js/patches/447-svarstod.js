@@ -127,6 +127,7 @@
       V + ' .ss-sh::before{left:7px}' + V + ' .ss-sh::after{right:7px}',
       V + ' .ss-sh .t{font:600 15px/1.25 ' + SANS + ';color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6);min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;padding:4px 0}',
       V + ' .ss-sh .ss-plata{margin-left:auto}',
+      V + ' .ss-kodi{flex:none;display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:3px;border:1px solid rgba(255,255,255,.35);font:700 10.5px ' + MONO + ';letter-spacing:.06em;color:#e8ebf0}',
       V + ' .ss-buk{padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px}',
       V + ' .ss-lina{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;align-items:baseline;font-size:13px;line-height:1.45}',
       V + ' .ss-k{font:700 10.5px ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#525b6b}',
@@ -180,7 +181,7 @@
   function leidHtml(L) {
     const r = reglaAf(L.id), op = opin.has(L.id), st = STADA[L.stada] || [L.stada || '', ''];
     const linur = [
-      ['Hvaðan', L.hvadan], ['Hvert', L.hvert], ['Sendir', L.sendir], ['Breytur', L.breytur]
+      ['Hvaðan', L.hvadan], ['Hvert', L.hvert], ['Sendir', L.sendir], ['Breytur', L.breytur], ['Merki', L.kodi ? L.kodi + ' · ' + (L.gluggi || '') : '']
     ].filter((x) => x[1]).map((x) => '<div class="ss-lina"><span class="ss-k">' + x[0] + '</span><span class="ss-v">' + esc(x[1]) + '</span></div>').join('');
     const textar = (L.textar || []).map((t) => '<div><div class="ss-k" style="margin-bottom:4px">' + esc(t.heiti || 'Texti') + '</div><pre class="ss-texti">' + snidmat(t.t) + '</pre></div>').join('');
     const skrar = (L.skrar || []).length ? '<div class="ss-lina"><span class="ss-k">Skráður</span><span class="ss-skrar">' + L.skrar.map((s) => '<span>' + esc(s) + '</span>').join('') + '</span></div>' : '';
@@ -191,7 +192,7 @@
     const felag = L.felag ? '<span class="ss-plata">' + esc(L.felag) + '</span>' : '';
     const vist = r.t ? (r.aLeid ? 'Vista…' : (r.kl ? 'Vistað ' + dags(r.kl) + (r.af ? ' · ' + r.af : '') : '')) : 'Ekkert skráð enn';
     return '<article class="ss-spjald' + (op ? ' _opid' : '') + '" data-ss-leid="' + esc(L.id) + '" data-ras="' + esc(L.ras || 'annad') + '">' +
-      '<button type="button" class="ss-sh" data-ss="opna" data-v="' + esc(L.id) + '" aria-expanded="' + op + '"><span class="t">' + esc(L.heiti) + '</span>' +
+      '<button type="button" class="ss-sh" data-ss="opna" data-v="' + esc(L.id) + '" aria-expanded="' + op + '">' + (L.kodi ? '<span class="ss-kodi">' + esc(L.kodi) + '</span>' : '') + '<span class="t">' + esc(L.heiti) + '</span>' +
         '<span class="ss-plata ' + st[1] + '">' + esc(st[0]) + '</span></button>' +
       (felag ? '<div style="display:flex;gap:6px;padding:10px 14px 0">' + felag + '</div>' : '') +
       '<div class="ss-buk">' + linur + textar + skrar + reglur + athuga + fara +
@@ -204,7 +205,7 @@
   function passar(L) {
     if (rasSia !== 'allt' && L.ras !== rasSia) return false;
     if (!leit) return true;
-    const h = [L.heiti, L.hvadan, L.hvert, L.sendir, (L.textar || []).map((t) => t.t).join(' '), (L.reglur || []).join(' '), (L.skrar || []).join(' ')].join(' ').toLowerCase();
+    const h = [L.kodi, L.heiti, L.hvadan, L.hvert, L.sendir, (L.textar || []).map((t) => t.t).join(' '), (L.reglur || []).join(' '), (L.skrar || []).join(' ')].join(' ').toLowerCase();
     return leit.toLowerCase().split(/\s+/).filter(Boolean).every((o) => h.indexOf(o) >= 0);
   }
 
@@ -367,8 +368,31 @@
     App.__svarstodPatched = true;
     return true;
   }
+  // ?sv=SV-07 — komið úr merki í sendingarglugga: Sendileiðir, leitað að kóðanum, spjaldið opið.
+  function lesaSlod() {
+    try {
+      const k = new URLSearchParams(location.search).get('sv');
+      if (!k || !/^SV-\d{2}$/.test(k)) return;
+      const L = DATA.leidir.find((x) => x.kodi === k);
+      flipi = 'leidir'; rasSia = 'allt'; leit = k;
+      if (L) opin.add(L.id);
+    } catch (_) {}
+  }
+  // Smellur á merkið í hvaða glugga sem er (líka inni í Shadow DOM — composedPath) opnar Svar-stöð á spjaldinu.
+  function merkiSmellur(e) {
+    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+    const path = e.composedPath ? e.composedPath() : [e.target];
+    const m = path.find((n) => n && n.getAttribute && n.getAttribute('data-sv-kodi'));
+    if (!m) return;
+    e.preventDefault(); e.stopPropagation();
+    try { window.open(location.pathname + '?sv=' + encodeURIComponent(m.getAttribute('data-sv-kodi')) + '#' + NAV_KEY, '_blank', 'noopener'); } catch (_) {}
+  }
+  document.addEventListener('click', merkiSmellur, true);
+  document.addEventListener('keydown', merkiSmellur, true);
+
   let _tilraunir = 0;
   function start() {
+    lesaSlod();
     // Síðan verður til STRAX, falin, svo djúptengill (#svarstod) og endurhleðsla finni hana (sbr. 419, 28.09.2026).
     if (document.querySelector('.view')) { injectCss(); ensureView(); }
     const ok = navTakki() & hookSwitch();

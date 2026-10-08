@@ -54,7 +54,7 @@
     m.onclick = e => { if(e.target===m) m.remove(); };
     m.innerHTML = `
       <div style="background:#fff;border-radius:14px;padding:22px;max-width:520px;width:100%">
-        <h3 style="margin:0 0 12px">📧 Senda reikning í tölvupósti</h3>
+        <h3 style="margin:0 0 12px">📧 Senda reikning í tölvupósti${window.svKodi ? window.svKodi('SV-05') : ''}</h3>
         <div style="font-size:13px;color:#64748b;margin-bottom:12px">Reikningur ${esc(invoice.num||'#'+invoice.id)} · ${fmtKr(invoice.samtals)}</div>
         <label style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Móttakandi (netfang)</label>
         <input id="ae-to" type="email" placeholder="netfang@example.com" value="${esc(invoice.email||invoice.netfang||'')}" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;box-sizing:border-box;margin-bottom:8px">

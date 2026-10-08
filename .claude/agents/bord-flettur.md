@@ -509,6 +509,10 @@ reglur, „Athugið"), Úttektarlýsing (294-reglurnar + húsmál Söru), Verk v
 skal uppfæra spjaldið þar í sama commiti. „Þín regla" á hverju spjaldi vistast á þjóninn:
 `AppSettings.svarstod.reglur[<leidId>] = { t, af, kl }` (app_settings_merge). Claude/Sara lesa það með
 `Svarstod.regla(id)` eða beint úr app_settings áður en þau skrifa texta. Sjálfvirku sendingarnar lesa það EKKI enn.
+**SV-númerin (08.10.2026):** hver sendileið á `kodi` SV-01 … SV-27 (447a). Sendingargluggar bera merkið smátt í hausnum
+— `window.svKodi('SV-07')` (skilgreint í 447a, hlaðið SNEMMA í index.html), eða `kodi: 'SV-07'` í `ReceiptSender.compose/sendDoc`.
+Nýr sendingargluggi fær nýtt númer + spjald í 447a. Merkið fer ALDREI í texta/skjal sem kúnninn fær (netvörður SAFE 08.10).
+Smellur á merkið opnar `?sv=SV-07#svarstod` í nýjum flipa.
 
 ## Lærdómur
 

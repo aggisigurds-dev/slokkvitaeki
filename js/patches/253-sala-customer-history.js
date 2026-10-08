@@ -520,7 +520,7 @@
           build: () => ReceiptSender.invoiceAttachment(b.inv.id) });
       }
       if (!choices.length) { if (window.Toast && Toast.show) Toast.show('Engin skrá til að senda fyrir þetta par.'); return; }
-      ReceiptSender.compose({
+      ReceiptSender.compose({ kodi: 'SV-07',
         title: 'Senda ' + (isBk ? 'brunakerfi' : 'úttekt') + ' ' + year + (idty.nafn ? ' — ' + idty.nafn : ''),
         to: await custEmail(idty),
         subject: (isBk ? 'Brunakerfisskýrsla' : 'Úttektarskýrsla') + ' + reikningur ' + year + ' — Slökkvitæki ehf',
@@ -698,7 +698,7 @@
         const heiti = rec.name || rec.template_name || 'Skjal';
         b.disabled = true;
         try {
-          ReceiptSender.compose({
+          ReceiptSender.compose({ kodi: 'SV-07',
             title: 'Senda ' + (erSamn ? 'þjónustusamning' : heiti) + (idty.nafn ? ' — ' + idty.nafn : ''),
             to: await custEmail(idty),
             subject: heiti + (idty.nafn ? ' — ' + idty.nafn : '') + ' — Slökkvitæki ehf',
@@ -727,7 +727,7 @@
             m.url = (window.CompanyAttachments && CompanyAttachments.getPublicUrl)
               ? await CompanyAttachments.getPublicUrl(m.att) : '';
           }
-          await ReceiptSender.sendDoc(Object.assign({}, m, {
+          await ReceiptSender.sendDoc(Object.assign({ kodi: 'SV-09',}, m, {
             nafn: idty.nafn || '', to: await custEmail(idty),
           }));
         } finally { b.disabled = false; }

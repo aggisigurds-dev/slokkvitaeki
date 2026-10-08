@@ -1531,7 +1531,7 @@
           : 'Engin skjöl með viðhengi fundust á félaginu.') + '</div>';
 
     openModal(
-      '<div class="rpm-head"><div><h3>✉️ Senda skjöl</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
+      '<div class="rpm-head"><div><h3>✉️ Senda skjöl' + (window.svKodi ? window.svKodi('SV-03') : '') + '</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
       '<div class="rpm-body">' +
         '<div class="rpm-row"><label class="rpm-lbl">Senda á netfang</label><input id="_rpm-to" type="email" value="' + esc(to) + '" placeholder="netfang@daemi.is"></div>' +
         '<div class="rpm-row"><label class="rpm-lbl">Reikningur (valkvæmt — teiknaður sem PDF)</label><div class="rpm-invs">' + invRows + '</div>' +
@@ -1647,7 +1647,7 @@
           : ' <span class="meta">· teiknaður núna</span> <button type="button" class="rpm-opna" data-vidh="' + i + '">Skoða</button>') +
       '</li>').join('');
     openModal(
-      '<div class="rpm-head"><div><h3>📤 Yfirfara áður en sent er</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button" aria-label="Loka">✕</button></div>' +
+      '<div class="rpm-head"><div><h3>📤 Yfirfara áður en sent er' + (window.svKodi ? window.svKodi('SV-03') : '') + '</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button" aria-label="Loka">✕</button></div>' +
       '<div class="rpm-body">' +
         '<div class="rpm-row"><label class="rpm-lbl">Viðtakandi</label><div>' + esc(payload.to.join(', ')) + (payload.inReplyTo ? '<div class="meta">↩ svar í sama þræði — lendir undir fyrri póstinum</div>' : '<div class="meta">⚠ nýr póstur — ekki svar (Message-ID vantar)</div>') + '</div></div>' +
         // 19.09.2026 — SÝNA SENDANDANN. Agnar: „En rangur tölvupóstur þarna."
@@ -1803,7 +1803,7 @@
   // ── Tier 3: 🤖 Semja svar — AI-drafted reply (office reviews before sending) ─
   async function openReplyModal(m) {
     openModal(
-      '<div class="rpm-head"><div><h3>🤖 Aðstoð — yfirlit, svar & skjöl</h3><div class="sub">' + esc(m.sender_name || m.from) + ' · ' + esc(m.from) + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
+      '<div class="rpm-head"><div><h3>🤖 Aðstoð — yfirlit, svar & skjöl' + (window.svKodi ? window.svKodi('SV-19') : '') + '</h3><div class="sub">' + esc(m.sender_name || m.from) + ' · ' + esc(m.from) + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
       '<div class="rpm-body">' +
         '<div class="rpm-row"><label class="rpm-lbl">Upprunalegur póstur</label>' +
           '<div class="rpm-src"><b>' + esc(m.subject || '(ekkert efni)') + '</b><br>' + esc((m.body_preview || m.snippet || '').replace(/\s+/g, ' ').slice(0, 400)) + '</div></div>' +

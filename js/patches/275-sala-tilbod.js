@@ -228,7 +228,7 @@
     const cu = snap.customer || {};
     const to = await resolveEmail(cu);
     const fname = 'Tilboð - ' + (cu.nafn || 'Brunahólf slökkvitæki ehf') + ' - ' + todaySkra() + '.pdf';
-    return ReceiptSender.compose({
+    return ReceiptSender.compose({ kodi: 'SV-11',
       title: 'Senda tilboð' + (cu.nafn ? ' — ' + cu.nafn : ''),
       to: to,
       subject: 'Tilboð — Brunahólf slökkvitæki ehf',

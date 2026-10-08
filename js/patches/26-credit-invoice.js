@@ -92,7 +92,7 @@
       <div class="ci-back"></div>
       <div class="ci-card">
         <div class="ci-head">
-          <h3>Kreditreikningur</h3>
+          <h3>Kreditreikningur${window.svKodi ? window.svKodi('SV-18') : ''}</h3>
           <button class="ci-x" id="ci-x">✕</button>
         </div>
         <div class="ci-body" id="ci-body"></div>

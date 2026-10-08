@@ -196,7 +196,7 @@
         build: () => ReceiptSender.invoiceAttachment(b.inv.id) });
     }
     if (!choices.length) { toast('Engin skrá til að senda fyrir þetta par.'); return; }
-    ReceiptSender.compose({
+    ReceiptSender.compose({ kodi: 'SV-07',
       title: 'Senda ' + (isBk ? 'brunakerfi' : 'úttekt') + ' ' + year + (idty.nafn ? ' — ' + idty.nafn : ''),
       to: await custEmail(idty.kt),
       subject: (isBk ? 'Brunakerfisskýrsla' : 'Úttektarskýrsla') + ' + reikningur ' + year + ' — Slökkvitæki ehf',
