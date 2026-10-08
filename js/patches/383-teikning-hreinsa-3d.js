@@ -1025,8 +1025,24 @@
    * ekki gler er hurðargat og fær dyrakarm yfir sig, svo veggurinn heldur áfram ofan við hurðina og rýmið lokast:
    *   a) bil milli tveggja veggbúta á SÖMU LÍNU;
    *   b) laus veggendi sem á annan vegg beint fram undan sér á línu sinni (hurð í horni, við þvervegg).
-   * Lengra bil stendur opið — það er op, ekki hurð. butar/gler: [ax,ay,bx,by,t]; k = dílar á pt. Skilar bilunum sjálfum. */
-  function hurdagot(butar, gler, k) {
+   * Lengra bil stendur opið — það er op, ekki hurð. butar/gler: [ax,ay,bx,by,t]; k = dílar á pt. Skilar bilunum sjálfum.
+   *
+   * 08.10.2026 (Agnar, Sléttuvegur 7 / 1532 í 3D: „kemur svolítið út í mesh" — tugir hurðarkarma út um allt, á ská og í
+   * kross). Mælt: 89 hurðir, þar af 82 úr (b). Þrennt var að (b):
+   *   1. Hver STUBBUR sem greiningin fann (feitletrað herbergisheiti „01.07 Sjúkraþjálfun 109,0 m²", málsetning, húsgagn)
+   *      er „veggur" með tvo lausa enda og skaut hurð allt að 2,75 m yfir herbergið að næsta vegg. Hurð úr (b) kemur nú
+   *      aðeins úr FESTUM vegg: hann snertir annan vegg, er brúaður samlínu (a), er langur (≥ `langur`), eða annar endinn
+   *      stendur innan við `framhald` (≈ 0,6 m á A1 í 1:100 — mjórra en hurð) frá vegg fram undan. Stakur veggur sem festur
+   *      veggur vísar á fær áfram hurðina (Þingholt kjallari: þykki geymsluveggurinn).
+   *      Veggirnir sjálfir haldast eins og áður: stakra-veggja-sían (tengdirVeggir) les ÖLL bilin (ut.tengi), líka þau sem
+   *      fá enga hurð hér. Að fella stubbana líka var mælt og hafnað: á Arnarhvoli féllu þá tveir raunverulegir
+   *      gangveggjabútar sem héngu aðeins á slíkum bilum (greiningin rofnaði við samskeytin).
+   *   2. Geislinn sá ekki veggi sem liggja innan við ~17° frá stefnu hans (samsíða-reglan) og fór beint í gegnum þá:
+   *      í skakkri álmu (Sléttuvegur: ~12°) lentu hurðir á skáveggjum og þvert í gegnum þá. Hurð sem sker vegg eða gler fellur.
+   *   3. Tveir geislar gátu skorist („+" í fundarherbergi). Hurðir skerast aldrei: (b)-hurð sem sker samlínuhurð fellur,
+   *      og af tveimur (b)-hurðum sem skerast lifir sú styttri. */
+  function hurdagot(butar, gler, k, o) {
+    o = o || {};
     const minnst = 8 * k, mest = 78 * k, vik = 2 * k, ut = [], n = butar.length;
     const L = butar.map(linuhnit), sjalfg = 3 * k;
     const erGler = (ax, ay, bx, by) => (gler || []).some(g => aSomuLinu([ax, ay, bx, by, sjalfg], g));
@@ -1055,8 +1071,20 @@
         }
       }
     }
-    // b) laus endi → næsti veggur beint fram undan
+    const samlina = ut.length;
+    // b) laus endi FESTS veggjar → næsti veggur beint fram undan
     const pkt = (px, py, v) => { const dx = v[2] - v[0], dy = v[3] - v[1], L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((px - v[0]) * dx + (py - v[1]) * dy) / L2)); return Math.hypot(px - (v[0] + dx * t), py - (v[1] + dy * t)); };
+    const lengd = v => Math.hypot(v[2] - v[0], v[3] - v[1]);
+    // Skerast strikin í raun? Endar a (innan `jadar` af lengd hennar) teljast ekki — hurð snertir veggina sem hún liggur á milli.
+    const skera = (a, q, jadar) => {
+      const d = (q[3] - q[1]) * (a[2] - a[0]) - (q[2] - q[0]) * (a[3] - a[1]);
+      if (Math.abs(d) < 1e-9) return false;
+      const ua = ((q[2] - q[0]) * (a[1] - q[1]) - (q[3] - q[1]) * (a[0] - q[0])) / d, ub = ((a[2] - a[0]) * (a[1] - q[1]) - (a[3] - a[1]) * (a[0] - q[0])) / d;
+      return ua > jadar && ua < 1 - jadar && ub >= 0 && ub <= 1;
+    };
+    const kassi = (a, q, m) => !(Math.min(a[0], a[2]) - m > Math.max(q[0], q[2]) || Math.min(q[0], q[2]) - m > Math.max(a[0], a[2]) || Math.min(a[1], a[3]) - m > Math.max(q[1], q[3]) || Math.min(q[1], q[3]) - m > Math.max(a[1], a[3]));
+    // geislar allra lausra enda: snertir endinn vegg, og hvaða vegg hittir hann fyrst fram undan (innan `mest`)?
+    const geislar = [];
     for (let i = 0; i < n; i++) for (const e of [0, 1]) {
       if (bruad[i * 2 + e]) continue;
       const v = butar[i], px = e ? v[2] : v[0], py = e ? v[3] : v[1], Lv = Math.hypot(v[2] - v[0], v[3] - v[1]) || 1;
@@ -1071,10 +1099,45 @@
         const tt = ((w[0] - px) * wy - (w[1] - py) * wx) / d, uu = ((w[0] - px) * uy - (w[1] - py) * ux) / d;
         if (tt > minnst && tt < naest && uu >= -0.02 && uu <= 1.02) { naest = tt; hitt = j; }
       }
-      if (snertir || hitt == null) continue;
-      const bx = px + ux * naest, by = py + uy * naest;
-      if (!erGler(px, py, bx, by)) ut.push([px, py, bx, by, v[4] || sjalfg]);
+      geislar.push({ i, px, py, ux, uy, snertir, naest, hitt });
     }
+    // FESTUR veggur (sjá 1. hér að ofan)
+    const langur = o.langur || 170 * k, framhald = 17 * k;
+    const festur = butar.map((v, i) => {
+      if (bruad[i * 2] || bruad[i * 2 + 1] || lengd(v) >= langur) return true;
+      for (let j = 0; j < n; j++) {
+        if (j === i) continue;
+        const w = butar[j], bil = ((v[4] || 0) + (w[4] || 0)) / 2 + 3 * k;
+        if (kassi(v, w, bil) && (skera(v, w, 0) || Math.min(pkt(v[0], v[1], w), pkt(v[2], v[3], w), pkt(w[0], w[1], v), pkt(w[2], w[3], v)) <= bil)) return true;
+      }
+      return false;
+    });
+    geislar.forEach(g => { if (g.snertir || (g.hitt != null && g.naest <= framhald)) festur[g.i] = true; });
+    const endar = [], fellt = { laus: 0, gegnum: 0, kross: 0 }, tengi = ut.slice();
+    for (const g of geislar) {
+      if (g.snertir || g.hitt == null) continue;
+      const v = butar[g.i], bx = g.px + g.ux * g.naest, by = g.py + g.uy * g.naest, D = [g.px, g.py, bx, by];
+      if (erGler(g.px, g.py, bx, by)) continue;
+      tengi.push([g.px, g.py, bx, by, v[4] || sjalfg]);          // tenging fyrir stakra-veggja-síuna, eins og áður
+      if (!festur[g.i]) { fellt.laus++; continue; }
+      // í gegnum vegg (líka þá sem liggja nær samsíða og geislinn sá ekki) eða gler → engin hurð. Skurður innan veggþykktar
+      // frá endunum telst ekki: veggurinn sem hurðin lendir á er stundum tveir samsíða bútar (þykk gríma + holur veggur).
+      let gegnum = false;
+      const LD = Math.max(1e-6, g.naest);
+      for (let j = 0; j < n && !gegnum; j++) if (j !== g.i && j !== g.hitt && kassi(D, butar[j], 0) && skera(D, butar[j], Math.min(0.45, Math.max(0.02, (((butar[j][4] || 0) + (butar[g.hitt][4] || 0)) / 2 + 4 * k) / LD)))) gegnum = true;
+      for (let j = 0; gler && j < gler.length && !gegnum; j++) if (kassi(D, gler[j], 0) && skera(D, gler[j], Math.min(0.45, Math.max(0.02, (((gler[j][4] || 0) + (butar[g.hitt][4] || 0)) / 2 + 4 * k) / LD)))) gegnum = true;
+      if (gegnum) { fellt.gegnum++; continue; }
+      endar.push([g.px, g.py, bx, by, v[4] || sjalfg]);
+    }
+    // hurðir skerast ekki: samlínuhurð gengur fyrir, svo styttri endahurð
+    endar.sort((p, q) => lengd(p) - lengd(q));
+    for (const D of endar) {
+      const jad = (a, q) => Math.min(0.45, Math.max(0.02, (((a[4] || 0) + (q[4] || 0)) / 2 + 4 * k) / Math.max(1e-6, lengd(a))));
+      if (ut.some(q => kassi(D, q, 0) && skera(D, q, jad(D, q)) && skera(q, D, jad(q, D)))) { fellt.kross++; continue; }
+      ut.push(D);
+    }
+    ut.uppruni = { samlina, endi: ut.length - samlina, fellt };
+    ut.tengi = tengi;
     return ut;
   }
   /* ── STAKIR VEGGIR úti á gólfi ──
@@ -3788,15 +3851,21 @@
     let hurdir = null;
     if (butar) {
       const kE2 = Math.max(fb, fh) / 2384;
+      let tengi = null;          // öll bil sem tengja veggi — líka þau sem fá ekki hurð (hurdagot, 08.10.2026)
       if (leidrett && merktarHurdir) hurdir = merktarHurdir;
       else {
-        try { hurdir = hurdagot(butar, gler, kE2); } catch (e) { console.warn('[383] hurdagot', e); }
-        if (merktarHurdir) hurdir = (hurdir || []).concat(merktarHurdir);
+        try {
+          hurdir = hurdagot(butar, gler, kE2);
+          if (hurdir) tengi = hurdir.tengi || null;
+          if (hurdir && hurdir.uppruni) { talning.hurdSamlina = hurdir.uppruni.samlina; talning.hurdEnda = hurdir.uppruni.endi; talning.hurdFelldar = hurdir.uppruni.fellt; }
+        } catch (e) { console.warn('[383] hurdagot', e); }
+        if (merktarHurdir) { hurdir = (hurdir || []).concat(merktarHurdir); if (tengi) tengi = tengi.concat(merktarHurdir); }
       }
-      // stakir veggir úti á gólfi (tengjast engu) falla — aðeins á skönnunum; vigurveggir eru nákvæmir fyrir
+      // stakir veggir úti á gólfi (tengjast engu) falla — aðeins á skönnunum; vigurveggir eru nákvæmir fyrir.
+      // Metið á ÖLLUM bilum (tengi), líka þeim sem fá ekki hurð — veggirnir eru þeir sömu og fyrir 08.10.2026.
       if (urGrimu) {
         try {
-          const tengdir = tengdirVeggir(butar, gler, hurdir, kE2, 170 * kE2), fyrir = butar.length;
+          const tengdir = tengdirVeggir(butar, gler, tengi || hurdir, kE2, 170 * kE2), fyrir = butar.length;
           butar = butar.filter((v, i) => tengdir[i]);
           talning.stakir = fyrir - butar.length;
         } catch (e) { console.warn('[383] tengdirVeggir', e); }
