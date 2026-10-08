@@ -49,7 +49,9 @@ const BANN = [
 // 07.10.2026: slokkvitaeki ls 150 -> 151. Nýi lykillinn er `teikn_designer_utlit` (383): Raunsætt eða Einfalt í
 // Designer-3D — útlitsval ÞESSA vafra (sami flokkur og `teikn3d_utlit`), engin staða gagna; myndirnar sjálfar og
 // hvaða útlit hver beiðni bar eru á þjóninum (automation_triggers.gogn->>utlit). Hækkað af því lykillinn stenst regluna.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 151, ui: 0 } };
+// 08.10.2026 — `samthykkja_rodun` (446): röðunarval Samþykkja-símasíðunnar, útlitsval þessa vafra; málin og svörin sjálf
+// eru á þjóninum (thjonustubeidni). Hækkað 151 → 152 af því lykillinn stenst regluna.
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 152, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
