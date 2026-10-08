@@ -4534,6 +4534,7 @@
 
   let _frestad = 0;
   function render() {
+    try { ((window.Samthykkja && Samthykkja._eftir) || []).forEach(f => f()); } catch (_) {}   // 446 teiknar með
     const v = document.getElementById(VIEW_ID);
     if (!v || !v.classList.contains('active')) return;
     const root = rot();
@@ -6012,6 +6013,14 @@
     // þegar ýtt er á ↻. Rauntími (db.js) sækir áfram ef röð breytist á meðan
     // borðið er opið. Skilaboðaboxið póllar á sínum stað.
   }
+  /* 08.10.2026 — út fyrir Samþykkja-símasíðuna (446): SAMI listinn, SÖMU svörin (svaraSamthykki / done), sömu
+   * hjálparföll. Síðan teiknar sig þegar þetta borð teiknar (sjá _eftir í render()). Ekkert hér skrifar sjálft. */
+  window.Samthykkja = {
+    listi: () => samtListi(nu()), hluti: samtHluti, svara: svaraSamthykki, loka: done,
+    load: () => load(true), loaded: () => !!S.loaded, busy: id => !!S.busy[id], nu,
+    upphaed: upphaedMals, aiLine, sonn, erBuid, erSamthykki, whereOf, ageDays, svarMals, SVOR, _eftir: [],
+    velja: id => { try { S.sel[nu()] = id; S.samtVal = id; } catch (_) {} }
+  };
   function show() {
     if (!ensureView()) return;
     const v = document.getElementById(VIEW_ID);

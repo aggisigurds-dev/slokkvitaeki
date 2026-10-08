@@ -59,6 +59,7 @@
     'reikninga-postur': 0.75,
     // 08.10.2026: þrjár skrifstofusíður komnar í öpp-valið (261) — sömu rök, letur ≈ 10 dp.
     birgdir: 0.75, aksturslisti: 0.75, vorur: 0.8,
+    samthykkja: 1,   // 446 — símasíða, teiknuð fyrir 375 px
     hreyfingarlisti: 0.85, thjonustuverk: 0.85, sala: 0.85,
     'thjonustu-verkstaedi': 0.6, kostnadur: 0.75
   };

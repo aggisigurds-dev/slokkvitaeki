@@ -109,6 +109,7 @@
     { k: 'vidskiptavinir',   label: 'Viðskiptavinir',        short: 'Kúnnar',     emoji: '👤' },
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
     { k: 'bord',             label: 'Þjónustuborð',          short: 'Borð',       emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
+    { k: 'samthykkja',       label: 'Samþykkja',             short: 'Samþykkja',  emoji: '✅' },   // 446 (08.10.2026) — símasíða Samþykkja-hamsins
     // 19.09.2026: 'verkbord' (Verkefnalisti) tekið úr listanum — sama sýn og 'bord' (368). pagesFor() vísar þangað.
     // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) tekið úr listanum — það teiknar ekkert lengur og var
     // því hak sem gaf auðan skjá. pagesFor() vísar eldri vistunum á 'bord'.
@@ -205,7 +206,7 @@
     { key: 'verkefni', emoji: '📋', name: 'Þjónustuborð', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-verkefni.json', home: 'bord',
       blurb: 'Þjónustuborð — Master borð, mitt borð og eftirfylgni',
-      defaults: ['bord', 'verkbord', 'arsskodun', 'reikninga-postur'] },
+      defaults: ['bord', 'samthykkja', 'arsskodun', 'reikninga-postur'] },
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
@@ -628,6 +629,9 @@
     arr = arr.map(function (k) { return (k === 'thjonustubord' || k === 'verkbord') ? 'bord' : k; });
     // 05.10.2026: gamla 'brunayfirlit' → aðalútgáfan 'brunaskra' (sjá PAGES). De-dup að neðan fellir tvítekningu.
     arr = arr.map(function (k) { return k === 'brunayfirlit' ? 'brunaskra' : k; });
+    // 08.10.2026 (Agnar: „setja hana inn í öpp Þjónustuborð“): Samþykkja-síðan (446) fer á Þjónustuborðs-appið við lestur,
+    // á eftir borðinu, svo vistaðar stillingar þurfi enga handavinnu. Má taka út í síðuvalinu eins og hverja aðra.
+    if (key === 'verkefni' && arr.indexOf('samthykkja') < 0 && !(c && c.__samt446)) { var bi = arr.indexOf('bord'); arr = arr.slice(0, bi + 1).concat(['samthykkja'], arr.slice(bi + 1)); }
     arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
     return arr.filter(function (k) { return pageByKey(k); });
   }
