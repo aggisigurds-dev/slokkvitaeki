@@ -365,10 +365,12 @@
         if (/customer_kt/i.test(msg)) delete row.customer_kt;
         const { data: d2, error: e2 } = await SB.from('solur').insert(row).select().single();
         if (e2) throw e2;
+        await afturkallaKrofuIPayday(origSale.id, isFull);
         return { ...d2, lines: creditLines, customer: origSale.customer };
       }
       throw error;
     }
+    await afturkallaKrofuIPayday(origSale.id, isFull);
     return { ...data, lines: creditLines, customer: origSale.customer };
   }
 
