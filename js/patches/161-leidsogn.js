@@ -470,12 +470,22 @@
     const hnitBtn = document.getElementById('_lds-saekja-hnit');
     if (hnitBtn) hnitBtn.addEventListener('click', async () => {
       hnitBtn.disabled = true; const fyrri = hnitBtn.textContent; hnitBtn.textContent = '⏳ Sæki…';
+      let r = null;
       try {
-        if (window.GeocodePrewarm && GeocodePrewarm.saekjaPunkta) await GeocodePrewarm.saekjaPunkta();
+        if (window.GeocodePrewarm && GeocodePrewarm.saekjaPunkta) r = await GeocodePrewarm.saekjaPunkta();
       } catch (_) {}
       hnitBtn.textContent = fyrri; hnitBtn.disabled = false;
-      // teikna upp a nytt svo nyju punktarnir birtist strax
-      try { if (_map) renderPins({ fit: false }); renderDueList(); } catch (_) {}
+      /* 08.10.2026 (yfirferð, tvennt):
+       *  · Hér stóð `renderPins() + renderDueList()` — handsmíðað afrit af `Leidsogn.refresh`
+       *    MÍNUS `renderAksturRow()`. Það er einmitt röðin sem Agnar horfir á: hún reiknar
+       *    „⚠ Án hnita" og hvort Akstur 1/2/3 takkarnir eru óvirkir. Takkinn hefði því sótt
+       *    hnitin en Aksturslistinn staðið óbreyttur — nákvæmlega einkennið sem hann átti að
+       *    laga. Köllum á eina fallið sem teiknar allt þrennt.
+       *  · Og sleppum teikningu þegar EKKERT bættist við (algengasta tilvikið, því föstu
+       *    punktarnir koma með app_settings): hún rífur ~750 Leaflet-markera út og byggir þá
+       *    aftur, auk þriggja umferða yfir 1.289 fyrirtæki. */
+      const baettist = !r || (r.added + r.updated) > 0;
+      if (baettist) { try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {} }
     });
     const clearBtn = document.getElementById('_lds-clearfilter');
     if (clearBtn) clearBtn.addEventListener('click', () => {

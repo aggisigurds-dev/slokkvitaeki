@@ -34,12 +34,6 @@
   const MAX_PREWARM  = 400;           // cap per session (≥ all ars customers)
 
   let _cancelled = false;
-  /* 07.10.2026: `_cancelled` thydir "haettu vid NOMINATIM-forhitunina" - papp 431 setur hana
-   * thegar `kort` er ekki a sjalfvirkum ham, og `beforeunload` setur hana lika. Nidurhalid a
-   * OKKAR EIGIN toflu er allt annars edlis (ein lesbeidni, enginn ytri thjonn, enginn kostnadur)
-   * og ma ekki deyja med henni - thad var thridji stadurinn thar sem thessu tvennu var blandad
-   * saman. `_farid` er thvi ser: hun segir adeins ad sidan se ad hverfa. */
-  let _farid = false;
   let _done = 0;
   let _started = false;
 
@@ -231,8 +225,10 @@
   //
   // Idempotent: re-fetching always overlays the latest from server. Safe
   // to run on every page load. ~1 second for a few hundred rows.
+  let _sidastSokn = { added: 0, updated: 0 };
   async function syncSharedToLocal() {
-    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) return;
+    _sidastSokn = { added: 0, updated: 0 };
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) return _sidastSokn;
     try {
       // 2026-09-12: PostgREST skilar mest 1.000 röðum í einu og geocode_cache er 1.566 raðir. Án síðuflettingar
       // náðu 566 hnit, sem aðrar vélar höfðu þegar fundið, aldrei inn í vafrann (t.d. Helluhraun 22 og
@@ -255,7 +251,7 @@
         for (const row of page) rows.push(row);
         if (page.length < 1000) break;
       }
-      if (!rows.length) return;
+      if (!rows.length) return _sidastSokn;
       const gc = readGc();
       let added = 0;
       let updated = 0;
@@ -275,6 +271,7 @@
       }
       writeGc(gc);
       console.log('[geocode-prewarm] shared->local: pulled', rows.length, 'rows,', added, 'added,', updated, 'updated');
+      _sidastSokn = { added, updated };   // 08.10: kallandinn (161) sleppir endurteikningu þegar ekkert bættist við
       // Trigger a map refresh if the embedded map is currently visible
       // (patch 155 reads from _slokk_gc on demand, so a fresh re-render
       // picks up the new pins).
@@ -284,6 +281,7 @@
     } catch (e) {
       console.warn('[geocode-prewarm] shared->local sync error', e);
     }
+    return _sidastSokn;
   }
 
   // One-time bulk upload of existing localStorage cache to the shared
@@ -336,7 +334,7 @@
 
   // Cancel on tab close to avoid orphan fetches (browsers handle this anyway,
   // but it's nice to be explicit).
-  window.addEventListener('beforeunload', () => { _cancelled = true; _farid = true; });
+  window.addEventListener('beforeunload', () => { _cancelled = true; });
 
   // 01.10.2026: sjálfvirk forhitun er slökkt. Hún kallaði /api/geocode á
   // 1,5 s fresti fyrir hundruð heimilisfanga þó enginn opnaði kort.
@@ -347,38 +345,21 @@
     else setTimeout(byrja, 8000);
   }
 
-  /* 07.10.2026 (Agnar: „ég sé bara Ljónsstaðir og Sláturfélag Suðurlands í Aksturslista 3").
-   *
-   * `waitForData()` gerði TVENNT: ókeypis niðurhal á OKKAR EIGIN `geocode_cache`-töflu
-   * (`syncSharedToLocal`) og dýru Nominatim-lykkjuna (`runPrewarm`). Þegar lykkjan var
-   * slökkt 01.10 — réttilega, hún kallaði /api/geocode á 1,5 s fresti fyrir hundruð
-   * heimilisfanga þótt enginn opnaði kort — slokknaði niðurhalið með henni, því það
-   * hékk í sama fallinu.
-   *
-   * Afleiðingin var þögul: taflan á þjóninum ber 1.875 hnit, en `_slokk_gc` í þessum
-   * vafra bar 563 (þau komu úr AppSettings um papp 173). Fimm af sjö félögum á
-   * Aksturslista 3 duttu því út úr Leiðsögn — hnitin voru til, vafrinn fékk þau aldrei.
-   *
-   * Niðurhalið er EIN síðuflett lesbeiðni á okkar eigin töflu, enginn Nominatim og
-   * engin kostnaður. Það má því keyra þótt forhitunin sé slökkt. `runPrewarm` er
-   * ÁFRAM slökkt og er hvergi snert hér.
+  /* 07.10.2026 (Agnar: „frekar bara refresh takka"). Niðurhalið er EKKI sjálfvirkt.
+   * Punktarnir koma sem FASTIR PUNKTAR með `app_settings` (lyklar `__co__:<id>`, 741 félag í
+   * þjónustu + brunakerfisþjónustu) sem appið sækir hvort eð er — engin aukabeiðni við ræsingu.
+   * Mælt áður en þetta var ákveðið: sjálfvirka niðurhalið byrjaði á 8.304 ms, löngu eftir load
+   * (1.122 ms), svo það snerti ekki ræsinguna — en 1.875 raðir í hverri hleðslu fyrir gögn sem
+   * breytast varla er samt óþarfi. `runPrewarm` (Nominatim) er ÁFRAM slökkt og hvergi snert.
    */
-  // 07.10.2026 (Agnar: „thetta er ekkert sem tharf ad vera live ad endursaekja punktana i
-  // arsskodun sidunni. Frekar bara refresh takka"). Nidurhalid er thvi EKKI sjalfvirkt.
-  // Punktarnir sjalfir koma nu sem FASTIR PUNKTAR med app_settings (lyklar `__co__:<id>`,
-  // 741 felag i thjonustu + brunakerfisthjonustu) sem appid saekir hvort ed er — engin
-  // auka beidni vid raesingu. Takkinn er fyrir thad eitt thegar NYTT felag eda nytt
-  // heimilisfang baetist vid.
-  //
-  // Maelt adur en thetta var akvedid: sjalfvirka nidurhalid byrjadi a 8.304 ms, long eftir
-  // load (1.122 ms) — thad snerti thvi ekki raesinguna. En ad saekja 1.875 radir i hverri
-  // hledslu fyrir gogn sem breytast varla er samt oTharfi, og Agnar bad um takka.
-
   window.GeocodePrewarm = {
     status: () => ({ started: _started, done: _done, cancelled: _cancelled }),
-    // Handvirkt: saekir sameiginlegu hnitatofluna nidur i thennan vafra. Eina leidin
-    // sem ter thad nuna — sja athugasemdina ofar um fasta punkta.
-    saekjaPunkta: () => (_farid ? Promise.resolve() : syncSharedToLocal()),
+    /* Handvirkt: sækir sameiginlegu hnitatöfluna niður í þennan vafra — eina leiðin núna.
+     * 08.10.2026 (yfirferð): hér stóð vörn á `_farid` (sett við `beforeunload`). Hún gat ekki
+     * gagnast — eftir `beforeunload` kemst enginn smellur að — en gat SKAÐAÐ: lifi síðan af
+     * (bfcache, hætt við leiðsögn) sat flaggið fast í `true` og takkinn þagnaði þegjandi.
+     * Skilar `{ added, updated }` svo kallandinn viti hvort nokkuð bættist við. */
+    saekjaPunkta: () => syncSharedToLocal(),
     cancel: () => { _cancelled = true; },
     start: () => { _cancelled = false; if (!_started) raesaSidar(); }
   };

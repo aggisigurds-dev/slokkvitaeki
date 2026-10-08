@@ -31,9 +31,15 @@
  */
 const fs = require('fs');
 const path = require('path');
+/* 08.10.2026 (yfirferð): vörðurinn mynstur-leitaði í HRÁUM texta — en skrárnar sem hann dæmir
+ * eru um 40% athugasemdir, og orðin sem hann leitar að koma fyrir ÞAR: `geocode_cache` fimm
+ * sinnum í blokkinni beint ofan við `jobOf`, `saekjaPunkta` í athugasemd í 156. Vörður sem
+ * verður grænn á prósa um villuna er einmitt það sem `_athugasemdir.cjs` var skrifað gegn:
+ * „athugasemd sem LÝSIR villunni er ekki villan". */
+const { anAthugasemdaJs } = require('./_athugasemdir.cjs');
 
 const rot = path.join(__dirname, '..');
-const les = p => { try { return fs.readFileSync(path.join(rot, p), 'utf8'); } catch (_) { return ''; } };
+const les = p => { try { return anAthugasemdaJs(fs.readFileSync(path.join(rot, p), 'utf8')); } catch (_) { return ''; } };
 
 const villur = [];
 
@@ -41,18 +47,34 @@ const villur = [];
 const h = les('js/patches/431-uppferslubord.js');
 if (!h) villur.push('js/patches/431-uppferslubord.js fannst ekki — vörðurinn getur ekki dæmt');
 else {
-  // Skilyrðið má spanna fleiri línur (það gerir það eftir 07.10) — `[^\n]*` var rauður
-  // á RÉTTUM kóða í fyrstu útgáfu þessa varðar. Vörður sem gelgir að ósekju verður
-  // þaggaður; sjá docs/MAELINGAR.md gildru 10.
-  const m = h.match(/\/\\\/geocode\/i\.test\(url\)[\s\S]{0,400}?return 'kort';/);
+  /* 08.10.2026 (yfirferð): fyrri útgáfur festu REGLUNA ORÐRÉTT. Sú fyrsta varð rauð á
+   * RÉTTUM kóða (skilyrðið fór á tvær línur); sú næsta festi stafina og bannaði þar með
+   * hverja einföldun á 431. Nú er prófuð ÁVIRKNIN: `jobOf` er keyrð á raunverulegum
+   * slóðum. Þá má endurskrifa hana að vild svo lengi sem hún hemur ytri uppflettinguna
+   * og sleppir okkar eigin töflu. (docs/MAELINGAR.md, gildra 10.) */
+  const m = h.match(/function jobOf\(url\) \{[\s\S]*?\n  \}/);
   if (!m) {
-    villur.push('431: fann ekki `kort`-flokkunina í jobOf — hefur hún verið endurskrifuð? ' +
-                'Vörðurinn verður að sjá hana til að geta tryggt að geocode_cache sleppi.');
-  } else if (!/geocode_cache/.test(m[0])) {
-    villur.push('431 jobOf: `kort`-flokkunin undanskilur EKKI `geocode_cache`. Reglan `/\\/geocode/` ' +
-                'grípur `/rest/v1/geocode_cache` líka, svo lestur á okkar eigin hnitatöflu fær ' +
-                'tilbúið 503 og sameiginlega skyndiminnið berst aldrei í vafrann. Mælt 07.10: ' +
-                '563 lyklar í vafra á móti 1.875 í töflu, fimm félög duttu úr Leiðsögn.');
+    villur.push('431: fann ekki `jobOf` — hefur hún verið endurnefnd? Vörðurinn verður að geta ' +
+                'keyrt hana til að dæma.');
+  } else {
+    let okTafla = null, okYtri = null;
+    try {
+      const f = new Function('url', m[0].replace(/^function jobOf\(url\) \{/, '').replace(/\n  \}$/, ''));
+      okTafla = f('https://x.supabase.co/rest/v1/geocode_cache?select=query&limit=1000') !== 'kort';
+      okYtri  = f('/api/geocode?q=Armuli+23') === 'kort';
+    } catch (e) {
+      villur.push('431: tókst ekki að keyra `jobOf` einangrað (' + (e && e.message) + ') — ' +
+                  'hún styðst líklega við eitthvað utan sín. Vörðurinn getur þá ekki dæmt.');
+    }
+    if (okTafla === false) {
+      villur.push('431 jobOf: lestur á OKKAR EIGIN `geocode_cache` flokkast sem `kort` og hemst því. ' +
+                  'Hann fær tilbúið 503 og sameiginlega skyndiminnið berst aldrei í vafrann. ' +
+                  'Mælt 07.10: 563 lyklar í vafra á móti 1.875 í töflu, fimm félög duttu úr Leiðsögn.');
+    }
+    if (okYtri === false) {
+      villur.push('431 jobOf: ytri uppflettingin `/api/geocode` flokkast EKKI lengur sem `kort`. ' +
+                  'Þá er hemillinn af — og Nominatim má ekki hamast á.');
+    }
   }
 }
 
@@ -72,13 +94,15 @@ else {
     villur.push('156: `saekjaPunkta` er ekki opid ut. Tha er ENGIN leid ad saekja hnit fyrir nytt ' +
                 'felag — sjalfvirka nidurhalid var tekid ur sambandi 07.10 ad beidni Agnars.');
   }
-  if (/\n  raesaNidurhal\(\);/.test(g)) {
-    villur.push('156: nidurhalid er ordid sjalfvirkt aftur. Agnar bad um takka, ekki endursokn ' +
-                'vid hverja hledslu — punktarnir breytast varla.');
-  }
-  if (!/_farid/.test(g)) {
-    villur.push('156: `_farid` er horfid. Handvirka sokinn ma haetta vid ef sidan er ad hverfa, ' +
-                'en ma ALDREI deyja med `_cancelled` (sem 431 setur thegar kort er ekki sjalfvirkt).');
+  /* 08.10.2026 (yfirferð): hér stóðu tvær reglur sem gátu ekki gagnast.
+   *  · Ein vaktaði fallsheitið `raesaNidurhal` — sem var aldrei til í neinni útgáfu skrárinnar.
+   *    Falskt grænt: yrði niðurhalið sjálfvirkt aftur héti það `syncSharedToLocal`.
+   *  · Hin KRAFÐIST `_farid`, og festi þar með aukaástand sem reyndist dauð vörn (eftir
+   *    `beforeunload` kemst enginn smellur að, en lifi síðan af sat flaggið fast í `true`).
+   * Í staðinn er vaktað það sem raunverulega má ekki gerast: toppkall á niðurhalið. */
+  if (/^\s*syncSharedToLocal\(\);/m.test(g)) {
+    villur.push('156: niðurhalið er orðið sjálfvirkt aftur (toppkall á `syncSharedToLocal`). ' +
+                'Agnar bað um takka, ekki endursókn við hverja hleðslu — punktarnir breytast varla.');
   }
 }
 

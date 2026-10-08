@@ -27,11 +27,22 @@
 
   const GC_KEY = '_slokk_gc';
 
+  /* 08.10.2026 (yfirferð): `readLocal` þáttaði ALLT skyndiminnið upp á nýtt í hverju kalli.
+   * Mælt: 0,60 ms fyrir 70 kB á skrifborði, 2–4 ms á síma — og kallið kemur nú við hverja
+   * vistun í appinu (`onChange`), sem eru 290 kallstaðir í 74 skrám. Papp 156 leysir þetta
+   * þegar með `_gcRaw`/`_gcObj`: þátta aðeins þegar hrái strengurinn hefur breyst. Sama
+   * mynstur hér — 0,60 ms verða 0,003 ms þegar enginn skrifaði á milli. Engin hegðunarbreyting. */
+  let _raw = null, _obj = null;
   function readLocal() {
-    try { return JSON.parse(localStorage.getItem(GC_KEY) || '{}'); } catch (_) { return {}; }
+    try {
+      const raw = localStorage.getItem(GC_KEY) || '{}';
+      if (raw === _raw && _obj) return _obj;
+      _raw = raw; _obj = JSON.parse(raw);
+      return _obj;
+    } catch (_) { return {}; }
   }
   function writeLocal(c) {
-    try { localStorage.setItem(GC_KEY, JSON.stringify(c)); } catch (_) {}
+    try { const raw = JSON.stringify(c); localStorage.setItem(GC_KEY, raw); _raw = raw; _obj = c; } catch (_) {}
   }
 
   function getServerCache() {
@@ -66,50 +77,37 @@
     return { merged, total };
   }
 
-  // Wait for AppSettings to be ready, then merge.
-  function tryMerge(attempt) {
+  /* 08.10.2026 — ÁSKRIFTIN VAR DAUÐUR KÓÐI, OG TÍMAMÆLARNIR FALDI ÞAÐ.
+   *
+   * Tvennt var að. Hið fyrra lagaði ég 07.10: hér stóð `onChange('geocode_cache', fn)` en
+   * `onChange(fn)` í papp 85 tekur EITT viðfang og hleypir aðeins föllum að. Hið síðara sást
+   * ekki fyrr en við yfirferð: **173 er hlaðinn á undan 85** (index.html 508 á móti 596, báðir
+   * `defer` → skjalaröð), svo `window.AppSettings` er `undefined` þegar þessi lína er lesin.
+   * Vörðurinn `if (window.AppSettings && …)` var því ósannur og áskriftin ALDREI skráð —
+   * hvor útgáfan sem var. Það sem lét prófin virka voru þrír `setTimeout` (3/8/20 s), þ.e.
+   * ágiskun um hvenær ferskar stillingar bærust.
+   *
+   * RÓTIN er að áskriftin var skráð við eval, áður en það sem á að áskrifa sig að er til.
+   * `tryMerge` bíður ÞEGAR eftir `AppSettings` — svo allt á heima þar:
+   *   · samruni strax (staðbundna afritið sem er komið),
+   *   · `onChange` skráð ÞÁ, þegar fallið er raunverulega til,
+   *   · og `load()` hengt á — það er dedupe-að í 85 (`_loadP`), svo það bætir ENGRI beiðni
+   *     við og leysist nákvæmlega þegar ferskar stillingar eru komnar í minni.
+   * Þrír tímamælar falla út: engin ágiskun, og virkar líka á neti þar sem 20 s dugðu ekki.
+   */
+  function tengjaVidStillingar(attempt) {
     attempt = attempt || 0;
-    if (window.AppSettings && typeof window.AppSettings.path === 'function') {
-      const r = getServerCache();
-      if (r) { mergeFromServer(); return; }
+    const AS = window.AppSettings;
+    if (AS && typeof AS.path === 'function') {
+      if (getServerCache()) mergeFromServer();                 // það sem þegar er komið
+      try { if (typeof AS.onChange === 'function') AS.onChange(mergeFromServer); } catch (_) {}
+      try { if (typeof AS.load === 'function') AS.load().then(mergeFromServer, () => {}); } catch (_) {}
+      return;
     }
-    if (attempt > 30) return;   // give up after ~15 s
-    setTimeout(() => tryMerge(attempt + 1), 500);
+    if (attempt > 60) return;   // ~30 s og svo hætt — 85 kemur seinna í skjalaröðinni
+    setTimeout(() => tengjaVidStillingar(attempt + 1), 500);
   }
-  tryMerge();
-
-  /* 07.10.2026 — EINN SAMRUNI ER OF SNEMMA.
-   * `tryMerge` keyrir um leid og `AppSettings.path` skilar EINHVERJU, og thad er oft
-   * stadbundna afritid af stillingunum (eldra). Ferskar stillingar berast sidar, en tha
-   * var samruninn buinn og askriftin ein eftir — og hun kveikir adeins vid VISTUN.
-   *
-   * Maelt a lifandi sidu: stillingarnar baru 1.083 hnit (757 fastir punktar) en
-   * `_slokk_gc` i sama vafra bar 563. Handvirkt kall a `_slokk_mergeGeocodeFromAppSettings()`
-   * faerdi thad strax i 1.083 og Aksturslista 3 ur 2 af 7 i 7 af 7.
-   *
-   * Samruninn er HREINN STADBUNDINN reikningur — engin beidni, engin skrif a thjon — svo
-   * hann ma endurtaka. Faein tif duga til ad na ferskum stillingum, og hann haettir
-   * sjalfkrafa thegar ekkert baetist vid (`merged === 0`).
-   */
-  [3000, 8000, 20000].forEach(function (ms) {
-    setTimeout(function () { try { mergeFromServer(); } catch (_) {} }, ms);
-  });
-
-  /* Re-merge whenever AppSettings reload (patches save it periodically).
-   *
-   * 07.10.2026: þetta stóð `onChange('geocode_cache', mergeFromServer)` — en `onChange(fn)`
-   * í papp 85 tekur EITT viðfang og hleypir aðeins föllum að:
-   *     function onChange(fn) { if (typeof fn === 'function') _listeners.push(fn); }
-   * Strengurinn lenti því í `fn`, prófið féll, og ÁSKRIFTIN VAR ALDREI SKRÁÐ. Samruninn
-   * keyrði þá aðeins einu sinni, í kapphlaupi við fyrstu stillingarnar sem bárust.
-   *
-   * Mælt á lifandi dist 07.10: stillingarnar báru 1.083 hnit (757 fastir `__co__:` punktar)
-   * en `_slokk_gc` í sama vafra bar 563 — restin beið áskriftar sem var ekki til. Fimm af
-   * sjö félögum á Aksturslista 3 vantaði því punkt þótt hann væri kominn í stillingarnar.
-   */
-  if (window.AppSettings && typeof window.AppSettings.onChange === 'function') {
-    window.AppSettings.onChange(mergeFromServer);
-  }
+  tengjaVidStillingar();
 
   // Expose for debugging / forced refresh.
   window._slokk_mergeGeocodeFromAppSettings = mergeFromServer;
