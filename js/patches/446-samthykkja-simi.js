@@ -39,10 +39,11 @@
     return [
       V + '{display:none;min-height:100vh;background:#e2e6ec;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%);font-family:' + SANS + ';color:#1f2530;padding:0 0 110px!important;max-width:none!important}',
       V + ' .sm-haus{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(180deg,#2b2e35 0%,#191b20 100%);border-bottom:1px solid #000;color:#fff}',
+      V + ' .sm-haus>div{min-width:0;flex:1 1 auto}',   // nafnarofinn klipptist af hægri brún þegar undirtextinn var langur
       V + ' .sm-haus .tt{font-family:' + DISP + ';font-weight:800;font-size:20px;line-height:1}',
       V + ' .sm-haus .st{font-family:' + MONO + ';font-size:10.5px;color:#aab2c0;margin-top:4px;letter-spacing:.04em}',
-      V + ' .sm-haus .hver{margin-left:auto;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);font-size:12.5px;font-weight:700;white-space:nowrap}',
-      V + ' .sm-haus .uppf{width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;font-size:16px;cursor:pointer}',
+      V + ' .sm-haus .hver{flex:none;margin-left:auto;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);font-size:12.5px;font-weight:700;white-space:nowrap}',
+      V + ' .sm-haus .uppf{flex:none;width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;font-size:16px;cursor:pointer}',
       V + ' .sm-hluti{display:flex;align-items:center;gap:8px;margin:14px 12px 6px;font-family:' + MONO + ';font-size:10.5px;letter-spacing:.14em;color:#525b6b;text-transform:uppercase}',
       V + ' .sm-hluti b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:5px;background:#1f2530;color:#fff;font-size:11px;letter-spacing:0}',
       V + ' .sm-hluti._gull b{background:#c99a3a;color:#1c1608}',
