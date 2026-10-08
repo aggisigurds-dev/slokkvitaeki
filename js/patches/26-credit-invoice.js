@@ -193,6 +193,53 @@
     };
   }
 
+  // ── Kreditfærsla á að fella kröfuna niður í Payday líka ───────────────────
+  // 08.10.2026 (Agnar: „Bakfæra … mátt láta afturkalla þarna líka Payday").
+  // Kreditreikningur hjá OKKUR snertir ekki Payday: krafan stendur áfram í
+  // heimabanka kúnnans og hann greiðir hana. Mælt þann dag á R-001029
+  // (Heimaleiga, 52.519 kr): kreditfært 08.10. en Payday-reikningur nr. 374
+  // stóð enn SENT með gjalddaga 12.10.
+  //
+  // TVÖ SKILYRÐI, bæði nauðsynleg:
+  //  · FULL kreditfærsla. `isFull` er satt þegar valdar línur eru öll salan.
+  //    Hlutakredit (ein lína af fimm) má ALDREI fella niður allan reikninginn.
+  //  · ÓGREIDD krafa. Payday neitar að afturkalla greidda kröfu, og greidd
+  //    krafa á að leiðrétast með endurgreiðslu, ekki afturköllun.
+  // Mistakist afturköllunin fellur kreditfærslan samt ekki — hún er þegar
+  // skráð. Þá segjum við frá því hreint út í stað þess að þegja.
+  async function afturkallaKrofuIPayday(modirId, erFull) {
+    if (!modirId || !erFull) return null;
+    const SB = getSB();
+    if (!SB) return null;
+    let modir = null;
+    try {
+      const r = await SB.from('solur').select('num,dk_invoice_id,paid_at').eq('id', modirId).maybeSingle();
+      modir = r && r.data;
+    } catch (_) { return null; }
+    if (!modir || !modir.dk_invoice_id) return null;          // aldrei farin í Payday
+    if (modir.paid_at) {
+      if (window.Toast && Toast.show) {
+        Toast.show('⚠ ' + (modir.num || '') + ' er GREIDD — krafan stendur í Payday. Endurgreiðsla, ekki afturköllun.');
+      }
+      return { skipped: 'greitt' };
+    }
+    try {
+      const r = await fetch('/api/payday-push', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', sale_id: modirId }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      if (window.Toast && Toast.show) Toast.show('⊘ Krafa ' + (modir.num || '') + ' afturkölluð í Payday');
+      return j;
+    } catch (e) {
+      if (window.Toast && Toast.show) {
+        Toast.show('⚠ Kreditfært, EN afturköllun í Payday mistókst: ' + (e.message || e) + ' — krafan stendur enn.');
+      }
+      return { error: String(e.message || e) };
+    }
+  }
+
   // ── Create credit note in DB ──────────────────────────────────────────────
   async function createCreditNote(origSale, lines, reason) {
     const SB = getSB();
