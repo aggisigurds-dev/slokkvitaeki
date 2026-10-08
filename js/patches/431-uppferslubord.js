@@ -139,29 +139,38 @@
     try { return new URL(url, location.href).searchParams.get(key) || ''; }
     catch (_) { return ''; }
   }
+  /* 08.10.2026 (yfirferð) — LEIÐARFESTING Í STAÐ HLUTSTRENGS.
+   *
+   * Reglurnar hér leituðu að HLUTSTRENG í slóðinni. Það gekk þar til 07.10, þegar
+   * `/\/geocode/` greip `/rest/v1/geocode_cache` — OKKAR EIGIN töflu — og hemillinn
+   * lokaði á lausnina við vandamálinu sem hann var settur upp til að leysa: hver lestur
+   * fékk tilbúið 503, `_slokk_gc` sat í 563 lyklum meðan taflan bar 1.875, og fimm af
+   * sjö félögum duttu úr Leiðsögn. Lagað þá með handskrifaðri neitun (`!geocode_cache`),
+   * sem var þriðja neitunin á sömu reglu — og þrjár neitanir eru merki um reglu sem
+   * grípur of breitt.
+   *
+   * MÆLT: hinar þrjár eru í nákvæmlega sömu hættu og sluppu af TILVILJUN. Reglurnar nota
+   * bandstrik en skyndiminnistöflurnar undirstrik, og þær eru til í dag:
+   *     kt_lookup_cache          á móti  /kt-lookup/
+   *     hus_upplysingar_cache    á móti  /hus-upplysingar/
+   * Ein endurnefning (`geocode-cache`, eða ný tafla `kt-lookup-queue`) endurvekur sömu
+   * bilun á næsta stað. Nafnavenja er ekki vörn.
+   *
+   * NÚ er fest á LEIÐINA sem hemja á: `/api/<nafn>` eða `/.netlify/functions/<nafn>`,
+   * með endamarki (`?`, `#` eða endi). Þá hverfa allar þrjár neitanirnar í einu höggi:
+   * `geocode_cache` er ekki undir `/api/`, og `geocode-all` fellur á endamarkinu.
+   * `suggest=1` verður eftir sem skýrt val — það er annars eðlis (tillögur meðan slegið
+   * er inn, ekki uppfletting) og á að sjást.
+   */
+  function erFall(url, nafn) {
+    return new RegExp('/(?:api|\.netlify/functions)/' + nafn + '(?=[?#]|$)', 'i').test(String(url || ''));
+  }
   function jobOf(url) {
     if (!url) return '';
-    if (/kt-lookup/i.test(url) && /[?&]skra=/.test(url)) return 'kennitala';
-    if (/hus-upplysingar/i.test(url)) return 'hus';
-    /* 07.10.2026 (Agnar: „ég sé bara Ljónsstaðir og Sláturfélag Suðurlands í Aksturslista 3").
-     *
-     * Hemillinn á að halda aftur af ytri uppflettingunni `/api/geocode` — Nominatim,
-     * sem má ekki hamast á. En `/\/geocode/` greip LÍKA `/rest/v1/geocode_cache`:
-     * OKKAR EIGIN töflu, sem er ókeypis og er einmitt það sem gerir ytri uppflettingu
-     * óþarfa. Hemillinn lokaði þannig á lausnina við vandamálinu sem hann var settur
-     * upp til að leysa.
-     *
-     * Mælt á lifandi síðu: hver lestur á `geocode_cache` skilaði tilbúnu 503 með tómum
-     * skrokk (`neitun()`), og engin þeirra beiðna sást í edge-skrám Supabase — þær
-     * komust aldrei út. Afleiðing: `syncSharedToLocal` í papp 156 sótti ALDREI
-     * sameiginlega skyndiminnið, svo `_slokk_gc` í þessum vafra bar 563 lykla meðan
-     * taflan á þjóninum bar 1.875 raðir, allar með hnit. Fimm af sjö félögum á
-     * Aksturslista 3 duttu því út úr Leiðsögn — hnitin voru til, vafrinn fékk þau bara
-     * aldrei. Þeir tveir sem sáust leystust um `__co__:<id>`, handsett hnit.
-     */
-    if (/\/geocode/i.test(url) && !/geocode_cache/i.test(url) &&
-        !/[?&]suggest=1/.test(url) && !/geocode-all/i.test(url)) return 'kort';
-    if (/company-mail/i.test(url) && !/[?&]co=/.test(url)) return 'skilabod';
+    if (erFall(url, 'kt-lookup') && /[?&]skra=/.test(url)) return 'kennitala';
+    if (erFall(url, 'hus-upplysingar')) return 'hus';
+    if (erFall(url, 'geocode') && !/[?&]suggest=1/.test(url)) return 'kort';
+    if (erFall(url, 'company-mail') && !/[?&]co=/.test(url)) return 'skilabod';
     return '';
   }
   function kennitalaASkra(url) {

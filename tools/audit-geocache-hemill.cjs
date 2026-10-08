@@ -52,28 +52,62 @@ else {
    * hverja einföldun á 431. Nú er prófuð ÁVIRKNIN: `jobOf` er keyrð á raunverulegum
    * slóðum. Þá má endurskrifa hana að vild svo lengi sem hún hemur ytri uppflettinguna
    * og sleppir okkar eigin töflu. (docs/MAELINGAR.md, gildra 10.) */
-  const m = h.match(/function jobOf\(url\) \{[\s\S]*?\n  \}/);
+  const LOK = '[\\s\\S]*?\\n  \\}';
+  const m  = h.match(new RegExp('function jobOf\\(url\\) \\{' + LOK));
+  const mf = h.match(new RegExp('function erFall\\(' + LOK));
   if (!m) {
     villur.push('431: fann ekki `jobOf` — hefur hún verið endurnefnd? Vörðurinn verður að geta ' +
                 'keyrt hana til að dæma.');
   } else {
-    let okTafla = null, okYtri = null;
+    /* 08.10.2026: prófum ÁVIRKNINA á raunverulegum slóðum, ekki stafina í reglunni. Þá má
+     * endurskrifa `jobOf` að vild svo lengi sem hún hemur ytri föllin og sleppir okkar eigin
+     * töflum. Listinn nær yfir ÖLL fjögur verkin, ekki bara hnitin: systkinareglurnar sluppu
+     * 07.10 aðeins af því töflurnar nota undirstrik en reglurnar bandstrik, og
+     * `kt_lookup_cache` + `hus_upplysingar_cache` eru til í dag. Nafnavenja er ekki vörn. */
+    const HEMJA = [
+      ['/api/kt-lookup?kt=4505051234&skra=1',                  'kennitala'],
+      ['/.netlify/functions/kt-lookup?kt=450505&skra=1',        'kennitala'],
+      ['/api/hus-upplysingar?heimilisfang=Hrismyri+8',          'hus'],
+      ['/api/geocode?q=Armuli+23',                              'kort'],
+      ['https://brunaholf.netlify.app/api/company-mail',        'skilabod']
+    ];
+    const SLEPPA = [
+      'https://x.supabase.co/rest/v1/geocode_cache?select=query&limit=1000',
+      'https://x.supabase.co/rest/v1/kt_lookup_cache?kt=eq.4505051234',
+      'https://x.supabase.co/rest/v1/hus_upplysingar_cache?heimilisfang=eq.X',
+      'https://x.supabase.co/rest/v1/geocode-cache?select=*',
+      'https://x.supabase.co/rest/v1/kt-lookup-queue?select=*',
+      'https://x.supabase.co/rest/v1/company-mail-log?select=*',
+      'https://x.supabase.co/rest/v1/fyrirtaeki?select=id'
+    ];
+    let jobOf = null;
     try {
-      const f = new Function('url', m[0].replace(/^function jobOf\(url\) \{/, '').replace(/\n  \}$/, ''));
-      okTafla = f('https://x.supabase.co/rest/v1/geocode_cache?select=query&limit=1000') !== 'kort';
-      okYtri  = f('/api/geocode?q=Armuli+23') === 'kort';
+      const NL = String.fromCharCode(10);
+      const haus = (mf ? mf[0] + NL : '');
+      jobOf = new Function('url', haus + m[0] + NL + 'return jobOf(url);');
+      jobOf('/api/geocode?q=x');
     } catch (e) {
-      villur.push('431: tókst ekki að keyra `jobOf` einangrað (' + (e && e.message) + ') — ' +
-                  'hún styðst líklega við eitthvað utan sín. Vörðurinn getur þá ekki dæmt.');
+      jobOf = null;
+      villur.push('431: tókst ekki að keyra `jobOf` einangrað (' + (e && e.message) + ') — hún ' +
+                  'styðst líklega við eitthvað utan sín. Vörðurinn getur þá ekki dæmt.');
     }
-    if (okTafla === false) {
-      villur.push('431 jobOf: lestur á OKKAR EIGIN `geocode_cache` flokkast sem `kort` og hemst því. ' +
-                  'Hann fær tilbúið 503 og sameiginlega skyndiminnið berst aldrei í vafrann. ' +
-                  'Mælt 07.10: 563 lyklar í vafra á móti 1.875 í töflu, fimm félög duttu úr Leiðsögn.');
-    }
-    if (okYtri === false) {
-      villur.push('431 jobOf: ytri uppflettingin `/api/geocode` flokkast EKKI lengur sem `kort`. ' +
-                  'Þá er hemillinn af — og Nominatim má ekki hamast á.');
+    if (jobOf) {
+      HEMJA.forEach(([u, vaent]) => {
+        let r; try { r = jobOf(u); } catch (_) { r = '(villa)'; }
+        if (r !== vaent) {
+          villur.push('431 jobOf: `' + u + '` flokkast sem „' + (r || '—') + '" en á að vera „' + vaent +
+                      '". Hemillinn er þá af á ytri uppflettingu sem má ekki hamast á.');
+        }
+      });
+      SLEPPA.forEach(u => {
+        let r; try { r = jobOf(u); } catch (_) { r = '(villa)'; }
+        if (r) {
+          villur.push('431 jobOf: `' + u + '` flokkast sem „' + r + '" og hemst því — en þetta er ' +
+                      'OKKAR EIGIN gagnalestur, ókeypis. Hann fær tilbúið 503 og gögnin berast aldrei. ' +
+                      'Mælt 07.10 á geocode_cache: 563 lyklar í vafra á móti 1.875 í töflu, fimm félög ' +
+                      'duttu úr Leiðsögn.');
+        }
+      });
     }
   }
 }
@@ -118,9 +152,9 @@ if (!m173 || !/AppSettings\.path\('geocode_cache'\)/.test(m173)) {
               'ENGA beidni — an hennar er kortid tomt a nyrri vel thar til einhver ytir a takkann.');
 }
 
-console.log('HNITATAFLAN OG HEMILLINN — ytri uppfletting má hemjast, okkar eigin tafla ekki');
+console.log('HEMILLINN (431) — ytri föllin fjögur mega hemjast, okkar eigin töflur ekki');
 if (!villur.length) {
-  console.log('✅ GRÆNT: `geocode_cache` sleppur við hemilinn og niðurhalið stendur sjálfstætt.');
+  console.log('✅ GRÆNT: öll fjögur ytri föllin hemjast, allar okkar töflur sleppa, og niðurhalið stendur sjálfstætt.');
   process.exit(0);
 }
 villur.forEach(v => console.log('  ❌ ' + v));
