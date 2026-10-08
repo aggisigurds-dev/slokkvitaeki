@@ -31,6 +31,33 @@
   const API = () => window.Samthykkja || null;
 
   const opin = new Set();          // opnuð spjöld (lifir milli teikninga — ekki í DOM)
+  // 08.10.2026 (Agnar: „4 sort stillingar — allavega nýjast, mikilvægast, verðmætast og 1–2 í viðbót"): röðun innan
+  // hvers hluta. „Sjálfgefið" er röð borðsins (áríðandi → upphæð → frestur → elst). Val eins vafra → localStorage.
+  const ROD_LYKILL = 'samthykkja_rodun';
+  const RADANIR = [
+    ['sjalf', 'Sjálfgefið', 'Eins og á borðinu: áríðandi, svo upphæð, svo frestur'],
+    ['nyjast', 'Nýjast', 'Nýjasta málið efst'],
+    ['mikilv', 'Mikilvægast', 'Áríðandi mál efst, svo röð borðsins'],
+    ['verdm', 'Verðmætast', 'Hæsta upphæð efst'],
+    ['elst', 'Lengst beðið', 'Elsta málið efst — það sem hefur beðið lengst'],
+    ['frestur', 'Frestur', 'Næsti frestur efst; mál án frests aftast']
+  ];
+  let rodun = 'sjalf';
+  try { const v = localStorage.getItem(ROD_LYKILL); if (RADANIR.some(x => x[0] === v)) rodun = v; } catch (_) {}
+  const ts = s => { const n = Date.parse(s || ''); return isFinite(n) ? n : 0; };
+  function rada(listi, A) {
+    if (rodun === 'sjalf') return listi;
+    const idx = new Map(listi.map((r, i) => [r.id, i]));
+    const d = (a, b) => idx.get(a.id) - idx.get(b.id);
+    const l = listi.slice();
+    if (rodun === 'nyjast') l.sort((a, b) => (ts(b.created_at) - ts(a.created_at)) || d(a, b));
+    else if (rodun === 'elst') l.sort((a, b) => (ts(a.created_at) - ts(b.created_at)) || d(a, b));
+    else if (rodun === 'mikilv') l.sort((a, b) => ((b.important ? 1 : 0) - (a.important ? 1 : 0)) || d(a, b));
+    else if (rodun === 'verdm') l.sort((a, b) => (A.upphaed(b) - A.upphaed(a)) || d(a, b));
+    else if (rodun === 'frestur') l.sort((a, b) => ((ts(a.due_at) || 9e15) - (ts(b.due_at) || 9e15)) || d(a, b));
+    return l;
+  }
+  const rodHtml = () => '<div class="sm-rod" role="tablist" aria-label="Röðun">' + RADANIR.map(x => '<button type="button" data-sm="rod" data-v="' + x[0] + '" class="' + (rodun === x[0] ? '_on' : '') + '" title="' + esc(x[2]) + '">' + esc(x[1]) + '</button>').join('') + '</div>';
   const sky = {};                  // skýringar í ritun per mál
   let _poll = 0;
 
@@ -44,6 +71,10 @@
       V + ' .sm-haus .st{font-family:' + MONO + ';font-size:10.5px;color:#aab2c0;margin-top:4px;letter-spacing:.04em}',
       V + ' .sm-haus .hver{flex:none;margin-left:auto;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);font-size:12.5px;font-weight:700;white-space:nowrap}',
       V + ' .sm-haus .uppf{flex:none;width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;font-size:16px;cursor:pointer}',
+      V + ' .sm-rod{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:10px 12px 2px;-webkit-overflow-scrolling:touch}',
+      V + ' .sm-rod::-webkit-scrollbar{display:none}',
+      V + ' .sm-rod button{flex:none;height:34px;padding:0 13px;border-radius:8px;border:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font:700 12.5px ' + SANS + ';cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}',
+      V + ' .sm-rod button._on{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#fff;border-color:#000;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}',
       V + ' .sm-hluti{display:flex;align-items:center;gap:8px;margin:14px 12px 6px;font-family:' + MONO + ';font-size:10.5px;letter-spacing:.14em;color:#525b6b;text-transform:uppercase}',
       V + ' .sm-hluti b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:5px;background:#1f2530;color:#fff;font-size:11px;letter-spacing:0}',
       V + ' .sm-hluti._gull b{background:#c99a3a;color:#1c1608}',
@@ -142,12 +173,12 @@
       const listi = A.listi();
       const HL = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1, '_ok'], ['Tilbúið — bara samþykkja', 0, '_gull'], ['Þarf svar frá þér', 1, ''], ['Svarað · bíður Claude', 2, '']];
       if (!listi.length) body = '<div class="sm-tomt">Ekkert bíður svars hjá ' + esc(n) + '.<br>Nýjar tillögur birtast hér um leið og þær eru tilbúnar.</div>';
-      else body = HL.map(h => { const m = listi.filter(r => A.hluti(r) === h[1]); return m.length ? '<div class="sm-hluti ' + h[2] + '"><b>' + m.length + '</b>' + h[0] + '</div>' + m.map(r => malHtml(r, A)).join('') : ''; }).join('');
+      else body = HL.map(h => { const m = rada(listi.filter(r => A.hluti(r) === h[1]), A); return m.length ? '<div class="sm-hluti ' + h[2] + '"><b>' + m.length + '</b>' + h[0] + '</div>' + m.map(r => malHtml(r, A)).join('') : ''; }).join('');
     }
     const listi = A && A.loaded() ? A.listi() : [];
     const t = A ? [listi.filter(r => A.hluti(r) === 0).length + ' tilbúin', listi.filter(r => A.hluti(r) === 1).length + ' spurningar', listi.filter(r => A.hluti(r) === 2).length + ' hjá Claude'].join(' · ') : '';
     const html = '<div class="sm-haus"><div><div class="tt">Samþykkja</div><div class="st">' + esc(t) + '</div></div>' +
-      '<span class="hver">' + esc(n || '—') + '</span><button type="button" class="uppf" data-sm="uppf" title="Sækja aftur">↻</button></div>' + body;
+      '<span class="hver">' + esc(n || '—') + '</span><button type="button" class="uppf" data-sm="uppf" title="Sækja aftur">↻</button></div>' + (A && A.loaded() && listi.length ? rodHtml() : '') + body;
     // Skrunstaða og fókus (textarea í ritun) lifa teikninguna — 388 Stodugt.vernda ef hann er til.
     const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(root) : null;
     if (root._h !== html) { root.innerHTML = html; root._h = html; }
@@ -159,6 +190,7 @@
     const A = API(); if (!A) return;
     const a = b.dataset.sm, id = +b.dataset.id;
     if (a === 'uppf') { A.load(); return; }
+    if (a === 'rod') { rodun = b.dataset.v; try { localStorage.setItem(ROD_LYKILL, rodun); } catch (_) {} render(); return; }
     if (a === 'bord') { e.preventDefault(); try { A.velja(id); } catch (_) {} if (window.App && App.switchView) App.switchView('bord'); else location.hash = '#bord'; return; }
     e.preventDefault();
     const mal = b.closest('[data-sm-mal]');
