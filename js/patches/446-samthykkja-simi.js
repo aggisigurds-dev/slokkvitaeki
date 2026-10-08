@@ -75,7 +75,14 @@
       V + ' .sm-rod::-webkit-scrollbar{display:none}',
       V + ' .sm-rod button{flex:none;height:34px;padding:0 13px;border-radius:8px;border:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font:700 12.5px ' + SANS + ';cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}',
       V + ' .sm-rod button._on{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#fff;border-color:#000;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}',
-      V + ' .sm-hluti{display:flex;align-items:center;gap:8px;margin:14px 12px 6px;font-family:' + MONO + ';font-size:10.5px;letter-spacing:.14em;color:#525b6b;text-transform:uppercase}',
+      V + ' .sm-teljari{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 12px 0}',
+      V + ' .sm-teljari button{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 10px;border-radius:9px;border:1px solid rgba(20,24,34,.22);background:linear-gradient(180deg,#fdfdfe,#e6e9ef);color:#1f2530;font:600 12px ' + SANS + ';text-align:left;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}',
+      V + ' .sm-teljari button b{font-family:' + DISP + ';font-size:22px;line-height:1;min-width:28px;text-align:center}',
+      V + ' .sm-teljari button small{display:block;font:500 10.5px ' + MONO + ';color:#5b6577;letter-spacing:.03em;margin-top:2px}',
+      V + ' .sm-teljari button._claude{grid-column:1 / -1;background:linear-gradient(180deg,#1f6b3c 0%,#145229 100%);color:#fff;border-color:#0b3519;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}',
+      V + ' .sm-teljari button._claude small{color:#bfe3c9}',
+      V + ' .sm-teljari button._gull b{color:#8a6218}',
+      V + ' .sm-hluti{scroll-margin-top:72px;display:flex;align-items:center;gap:8px;margin:14px 12px 6px;font-family:' + MONO + ';font-size:10.5px;letter-spacing:.14em;color:#525b6b;text-transform:uppercase}',
       V + ' .sm-hluti b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:5px;background:#1f2530;color:#fff;font-size:11px;letter-spacing:0}',
       V + ' .sm-hluti._gull b{background:#c99a3a;color:#1c1608}',
       V + ' .sm-hluti._ok b{background:#16783f}',
@@ -182,6 +189,19 @@
       '</div>' + svor + '</article>';
   }
 
+  // 08.10.2026 (Agnar: „counter af hvað ég er búinn að svara mörgum sem Claude á síðan eftir að vinna úr“): teljarar undir
+  // röðuninni. Græni teljarinn = mál sem hann hefur svarað (samþykkt / í vinnslu / endurmeta) og Claude á eftir að vinna úr
+  // — sömu mál og hlutinn „Svarað · bíður Claude“ (hluti 2 í 368). Smellur skrunar að hlutanum. Hafnað fer af borðinu og telst ekki.
+  function teljariHtml(listi, A) {
+    const n = h => listi.filter(r => A.hluti(r) === h).length;
+    const sv = {}; listi.filter(r => A.hluti(r) === 2).forEach(r => { const s = A.svarMals ? A.svarMals(r) : null; sv[s] = (sv[s] || 0) + 1; });
+    const sund = [['samthykkt', 'samþykkt'], ['vinnsla', 'í vinnslu'], ['endurmeta', 'skýring']].filter(x => sv[x[0]]).map(x => sv[x[0]] + ' ' + x[1]).join(' · ');
+    const b = (h, cls, texti, undir) => '<button type="button" data-sm="hoppa" data-v="' + h + '" class="' + cls + '"><b>' + n(h) + '</b><span>' + texti + (undir ? '<small>' + esc(undir) + '</small>' : '') + '</span></button>';
+    return '<div class="sm-teljari">' +
+      b(2, '_claude', 'Svarað — Claude á eftir að vinna úr', sund || 'ekkert bíður') +
+      b(0, '_gull', 'Tilbúið', 'bara samþykkja') + b(1, '', 'Spurningar', 'þarf svar frá þér') + '</div>';
+  }
+
   function render() {
     const v = document.getElementById(VIEW_ID);
     if (!v || !v.classList.contains('active')) return;
@@ -198,14 +218,14 @@
       else {
         const skjol = A.skjolMap ? A.skjolMap(listi.map(r => r.id)) : null;   // ein fyrirspurn, skyndiminni í 368
         if (A.erMynd) A_erMynd = A.erMynd;
-        body = HL.map(h => { const m = rada(listi.filter(r => A.hluti(r) === h[1]), A); return m.length ? '<div class="sm-hluti ' + h[2] + '"><b>' + m.length + '</b>' + h[0] + '</div>' + m.map(r => malHtml(r, A, skjol)).join('') : ''; }).join('');
+        body = HL.map(h => { const m = rada(listi.filter(r => A.hluti(r) === h[1]), A); return m.length ? '<div class="sm-hluti ' + h[2] + '" id="_sm-h' + h[1] + '"><b>' + m.length + '</b>' + h[0] + '</div>' + m.map(r => malHtml(r, A, skjol)).join('') : ''; }).join('');
       }
     }
     const listi = A && A.loaded() ? A.listi() : [];
     const t = A ? [listi.filter(r => A.hluti(r) === 0).length + ' tilbúin', listi.filter(r => A.hluti(r) === 1).length + ' spurningar', listi.filter(r => A.hluti(r) === 2).length + ' hjá Claude'].join(' · ') : '';
     const sott = (A && A.loadedAt && A.loadedAt()) ? ' · sótt kl. ' + String(A.loadedAt().getHours()).padStart(2, '0') + ':' + String(A.loadedAt().getMinutes()).padStart(2, '0') : '';
     const html = '<div class="sm-haus"><div><div class="tt">Samþykkja</div><div class="st">' + esc(t + (A && A.loading && A.loading() ? ' · sæki…' : sott)) + '</div></div>' +
-      '<span class="hver">' + esc(n || '—') + '</span><button type="button" class="uppf" data-sm="uppf" title="Sækja aftur">↻</button></div>' + (A && A.loaded() && listi.length ? rodHtml() : '') + body;
+      '<span class="hver">' + esc(n || '—') + '</span><button type="button" class="uppf" data-sm="uppf" title="Sækja aftur">↻</button></div>' + (A && A.loaded() && listi.length ? rodHtml() + teljariHtml(listi, A) : '') + body;
     // Skrunstaða og fókus (textarea í ritun) lifa teikninguna — 388 Stodugt.vernda ef hann er til.
     const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(root) : null;
     if (root._h !== html) { root.innerHTML = html; root._h = html; }
@@ -217,6 +237,7 @@
     const A = API(); if (!A) return;
     const a = b.dataset.sm, id = +b.dataset.id;
     if (a === 'uppf') { saekja(A, true); return; }
+    if (a === 'hoppa') { const h = document.getElementById('_sm-h' + b.dataset.v); if (h) h.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     if (a === 'rod') { rodun = b.dataset.v; try { localStorage.setItem(ROD_LYKILL, rodun); } catch (_) {} render(); return; }
     if (a === 'bord') { e.preventDefault(); try { A.velja(id); } catch (_) {} if (window.App && App.switchView) App.switchView('bord'); else location.hash = '#bord'; return; }
     e.preventDefault();
