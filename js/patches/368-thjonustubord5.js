@@ -6017,9 +6017,28 @@
    * hjálparföll. Síðan teiknar sig þegar þetta borð teiknar (sjá _eftir í render()). Ekkert hér skrifar sjálft. */
   window.Samthykkja = {
     listi: () => samtListi(nu()), hluti: samtHluti, svara: svaraSamthykki, loka: done,
-    load: () => load(true), loaded: () => !!S.loaded, busy: id => !!S.busy[id], nu,
+    load: () => load(true), loaded: () => !!S.loaded, busy: id => !!S.busy[id], nu, loadedAt: () => S.loadedAt, loading: () => !!S.loading,
+    // Símasíðan (446): S.loading sem situr fast (sókn rofnaði við flipaskipti / svefn símans) stöðvaði hverja nýja sókn
+    // með „_aftur“ — hér er merkið losað og sótt aftur. Nota aðeins þegar hleðsla hefur staðið > 20 s.
+    endurhlada: () => { if (S.loading && S.loadedAt && Date.now() - S.loadedAt.getTime() > 20000) { S.loading = false; } else if (S.loading && !S.loadedAt) { S.loading = false; } return load(true); },
     upphaed: upphaedMals, aiLine, sonn, erBuid, erSamthykki, whereOf, ageDays, svarMals, SVOR, _eftir: [],
-    velja: id => { try { S.sel[nu()] = id; S.samtVal = id; } catch (_) {} }
+    velja: id => { try { S.sel[nu()] = id; S.samtVal = id; } catch (_) {} },
+    // 08.10.2026 — sönnunarmyndir á spjöldin í símanum (Agnar: „screenshot feature þarna inn til sönnunar eða
+    // staðfestingar"): EIN fyrirspurn fyrir allan listann (thjonustubeidni_files .in(ids)), ekki ein per mál.
+    // Skilar { data: { <beidni_id>: [skrár] }, villa } úr sama gogn()-skyndiminni; 368 teiknar (og 446 með) þegar svarið kemur.
+    skjolMap: ids => {
+      const l = (ids || []).map(Number).filter(Boolean).sort((a, b) => a - b);
+      if (!l.length) return { data: {} };
+      return gogn('skjol-listi:' + l.join(','), async () => {
+        const c = sb(); if (!c) return {};
+        const r = await c.from('thjonustubeidni_files').select('id,beidni_id,name,url,mime_type,size,created_at').in('beidni_id', l).order('created_at');
+        if (r.error) throw r.error;
+        const m = {};
+        for (const f of (r.data || [])) (m[f.beidni_id] = m[f.beidni_id] || []).push(f);
+        return m;
+      }, 120000);
+    },
+    erMynd
   };
   function show() {
     if (!ensureView()) return;
