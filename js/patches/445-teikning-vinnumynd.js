@@ -13,6 +13,8 @@
  * AGNAR STÝRIR (07.10.2026: „mjög lengi að loadast,, fínt að geta ýtt á festa,,, og síðan bara endurteikna"):
  *   · „Festa" í 3D-sýninni: hæðin þaðan, ofan frá og án tækja (383 fastMynd), verður fasta myndin.
  *   · „Endurteikna" á myndinni: opnar lifandi 3D af hæðinni; ný mynd vistast þegar ýtt er á „Festa" þar.
+ *   · „Nota sem vinnumynd" við raunsæja vinnuskjalið í Designer-3D (383): hreina Blender-myndin verður fasta myndin
+ *     (festaMynd — sama snið, vörpunin úr Blender).
  *   · Úrelt mynd (veggjum, skurði eða teikningu breytt síðan hún var fest — lykillinn segir það): myndin sést SAMT strax
  *     og lína segir „Veggjum breytt síðan myndin var fest — Endurteikna". Ekkert endurbyggt sjálfkrafa.
  *   · Fyrsta mynd TILBÚINNAR hæðar (leiðrétt í TurboPaint / veggjaLinur) sem á enga er smíðuð og fest sjálfkrafa einu
@@ -461,6 +463,22 @@
       return await nyFestMynd(h, r, 'festa');
     } finally { V.festir = false; }
   }
+  // RAUNSÆTT VINNUSKJAL ÚR DESIGNER-3D (383, „Nota sem vinnumynd", Agnar 07.10.2026): hreina Blender-myndin (án tákna)
+  // og vörpun hennar í sama sniði og fastMynd (strigi, cam, heild, rammi, kort …) — sama leið og Festa héðan í frá:
+  // sýnd strax, svo JPEG í fötuna og haedir[].vinnumynd á þjóninn. 383 hefur þegar borið saman lykil hæðarinnar.
+  async function festaMynd(hid, r, hvernig) {
+    const T = TB(), h = T && T.haedir ? (T.haedir() || []).find(x => x && x.id === hid) : null;
+    if (!h || !r || !r.strigi || !Array.isArray(r.cam) || r.cam.length !== 16 || !(r.b > 0) || !(r.h > 0) || !r.kort) { segja('Gat ekki notað myndina sem vinnumynd'); return false; }
+    if (V.festir) return false;
+    V.festir = true;
+    try {
+      V.val = null;
+      Object.keys(V.villa).forEach(k => { if (k.indexOf(hid + '|') === 0) delete V.villa[k]; });
+      if (T.loka3d) T.loka3d();
+      segja('Vinnumynd fest' + (h.nafn ? ' — ' + h.nafn : '') + ' (raunsætt). Teikningin opnast nú strax á henni.');
+      return await nyFestMynd(h, r, hvernig || 'raunsaett');
+    } finally { V.festir = false; }
+  }
   function endurteikna() {
     const T = TB(); if (!T || !T.opna3d) return;
     T.opna3d({ haedId: V.haedId });
@@ -647,6 +665,7 @@
     varpa: (vm, u, v) => varpa(vm, u, v),
     afvarpa: (vm, px, py) => afvarpa(vmLykill(vm), vm, px, py),
     festa,
+    festaMynd,
     endurteikna,
     lykill: h => lykillHaedar(h),
     tilbuin,

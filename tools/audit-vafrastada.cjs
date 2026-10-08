@@ -46,7 +46,10 @@ const BANN = [
 // 06.10.2026: brunaholf ui 50 -> 51. Nýi lykillinn er `state.ui.gr_vegna` (brunaholf 23e179a, önnur lota):
 // „vegna"-texti reiknings per nafn|mánuð, sama mynstur og `gr_date_text` sem var þegar talinn. state.ui fer á
 // þjóninn um hub_state_merge, svo þetta er ekki vafra-staða eingöngu. Hækkað af því lykillinn stenst regluna.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 150, ui: 0 } };
+// 07.10.2026: slokkvitaeki ls 150 -> 151. Nýi lykillinn er `teikn_designer_utlit` (383): Raunsætt eða Einfalt í
+// Designer-3D — útlitsval ÞESSA vafra (sami flokkur og `teikn3d_utlit`), engin staða gagna; myndirnar sjálfar og
+// hvaða útlit hver beiðni bar eru á þjóninum (automation_triggers.gogn->>utlit). Hækkað af því lykillinn stenst regluna.
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 151, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
