@@ -16,7 +16,8 @@
  *   · „Nota sem vinnumynd" við raunsæja vinnuskjalið í Designer-3D (383): hreina Blender-myndin verður fasta myndin
  *     (festaMynd — sama snið, vörpunin úr Blender).
  *   · Úrelt mynd (veggjum, skurði eða teikningu breytt síðan hún var fest — lykillinn segir það): myndin sést SAMT strax
- *     og lína segir „Veggjum breytt síðan myndin var fest — Endurteikna". Ekkert endurbyggt sjálfkrafa.
+ *     og lína segir „Veggjum breytt síðan myndin var fest — Endurteikna". Ekkert endurbyggt sjálfkrafa — NEMA sjálfvirka
+ *     verkferlið („Sjálfvirkt", leidrett.af = 'sjalfvirkt') hafi vistað veggina eftir að myndin var fest (08.10.2026).
  *   · Fyrsta mynd TILBÚINNAR hæðar (leiðrétt í TurboPaint / veggjaLinur) sem á enga er smíðuð og fest sjálfkrafa einu
  *     sinni (383 smidaVinnumynd, hulið 3D) — svo hann þurfi ekki að muna það.
  *
@@ -516,6 +517,11 @@
     if (vm) {
       const key = vmLykill(vm);
       V.urelt = vm.lykill !== V.lykill && vm.lykill !== V.lykillV1;        // veggjum, skurði eða teikningu breytt síðan hún var fest
+      // SJÁLFVIRKA VERKFERLIÐ (08.10.2026, „Sjálfvirkt" í 383 → TurboPaint): vistaði það veggina EFTIR að myndin var fest
+      // smíðast hún upp á nýtt sjálfkrafa, einu sinni á lykil — gamla myndin sést á meðan. Handvirkar breytingar gera það
+      // ekki (Agnar 07.10: „Endurteikna" ræður þar).
+      if (V.urelt && h.leidrett && h.leidrett.af === 'sjalfvirkt' && (Date.parse(h.leidrett.kl || '') || 0) > (Date.parse(vm.t || '') || 0) &&
+          !V.smidar[h.id] && !V.sjalfReynt[h.id + '|' + V.lykill]) smida(h);
       const til = V.myndir[key]; if (til) return til;
       if (!V.brotin[key]) {
         if (V.sokn[key]) { V.stadaTexti = 'Opna vinnumynd…'; return null; }
