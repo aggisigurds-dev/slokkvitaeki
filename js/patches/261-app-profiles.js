@@ -110,6 +110,7 @@
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
     { k: 'bord',             label: 'Þjónustuborð',          short: 'Borð',       emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
     { k: 'samthykkja',       label: 'Samþykkja',             short: 'Samþykkja',  emoji: '✅' },   // 446 (08.10.2026) — símasíða Samþykkja-hamsins
+    { k: 'svarstod',         label: 'Svar-stöð · hvernig textar verða til', short: 'Svar-stöð', emoji: '✉️' },   // 447 (08.10.2026)
     // 19.09.2026: 'verkbord' (Verkefnalisti) tekið úr listanum — sama sýn og 'bord' (368). pagesFor() vísar þangað.
     // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) tekið úr listanum — það teiknar ekkert lengur og var
     // því hak sem gaf auðan skjá. pagesFor() vísar eldri vistunum á 'bord'.

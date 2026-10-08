@@ -498,6 +498,18 @@ Hubbinn í embed-ham (`https://brunaholf.netlify.app/?embed=1#efniskostnadur`) s
 (`/api/reikningspunktar lesa_kostnad`) og listinn (innkaupabók með hook á kúnna, „📚 Í bókhald").
 Punktarnir sjálfir opnast í `br-drogstod` (sama hub-iframe, `sessionStorage.ds_open_karfa`).
 
+## Svar-stöð `#svarstod` (447 + 447a, 08.10.2026)
+
+Stýristöð texta sem fer úr kerfinu (Agnar: „hvernig texti yrði gerður … fara yfir alla send-takka og athuga hvaða
+texti er skráður hvar"). Hliðarstika: hópurinn Kerfi á eftir Stjórnstöð (391); síðulisti appa: `svarstod` (261 PAGES,
+engin insertOnce — audit-app-sidulisti fylgist með flöggunum). Síðan verður til strax, falin, svo djúptengill virki
+(sama og 419). Fimm flipar: Sendileiðir (27 spjöld — hvaðan, hvert, sendandi, textinn með {breytum}, skrá:lína,
+reglur, „Athugið"), Úttektarlýsing (294-reglurnar + húsmál Söru), Verk við beiðnir, Reglur, Ósamræmi.
+**Gögnin búa í 447a** (`window.__SVARSTOD_DATA`, kortlagt 08.10.2026) — þegar senda-takki eða staðaltexti breytist
+skal uppfæra spjaldið þar í sama commiti. „Þín regla" á hverju spjaldi vistast á þjóninn:
+`AppSettings.svarstod.reglur[<leidId>] = { t, af, kl }` (app_settings_merge). Claude/Sara lesa það með
+`Svarstod.regla(id)` eða beint úr app_settings áður en þau skrifa texta. Sjálfvirku sendingarnar lesa það EKKI enn.
+
 ## Lærdómur
 
 - **30.09.2026** — Borðið í dag er 368-thjonustubord5.js (Shadow DOM). Papp 231 var fjarlægt í d3eb1b78 ásamt spjallinu (347) — kaflinn um 231 hér er sögulegur og lýsir gagnalíkaninu sem 368 erfði, ekki lifandi skrá. thjonustubeidni-taflan og slug-arnir standa óbreyttir. (js/patches/368-thjonustubord5.js)

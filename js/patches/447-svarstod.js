@@ -91,7 +91,6 @@
   const FLIPAR = [['leidir', 'Sendileiðir'], ['uttekt', 'Úttektarlýsing'], ['beidnir', 'Verk við beiðnir'], ['reglur', 'Reglur'], ['osamraemi', 'Ósamræmi']];
   let flipi = 'leidir', rasSia = 'allt', leit = '';
   const opin = new Set();
-  try { const f = localStorage.getItem('svarstod_flipi'); if (f && FLIPAR.some((x) => x[0] === f)) flipi = f; } catch (_) {}
 
   /* ── CSS ───────────────────────────────────────────────────────────────── */
   function css() {
@@ -126,7 +125,7 @@
       V + ' .ss-sh{position:relative;background:' + METAL + ';padding:5px 16px 5px 20px;min-height:46px;color:#fff;display:flex;align-items:center;gap:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);border-bottom:1px solid #000;cursor:pointer;width:100%;border-left:0;border-right:0;border-top:0;text-align:left;font:inherit}',
       V + ' .ss-sh::before,' + V + ' .ss-sh::after{content:"";position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7)}',
       V + ' .ss-sh::before{left:7px}' + V + ' .ss-sh::after{right:7px}',
-      V + ' .ss-sh .t{font:600 15px ' + SANS + ';color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V + ' .ss-sh .t{font:600 15px/1.25 ' + SANS + ';color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6);min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;padding:4px 0}',
       V + ' .ss-sh .ss-plata{margin-left:auto}',
       V + ' .ss-buk{padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px}',
       V + ' .ss-lina{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;align-items:baseline;font-size:13px;line-height:1.45}',
@@ -187,11 +186,14 @@
     const skrar = (L.skrar || []).length ? '<div class="ss-lina"><span class="ss-k">Skráður</span><span class="ss-skrar">' + L.skrar.map((s) => '<span>' + esc(s) + '</span>').join('') + '</span></div>' : '';
     const reglur = (L.reglur || []).length ? '<div><div class="ss-k" style="margin-bottom:4px">Reglur sem gilda</div><ul class="ss-listi">' + L.reglur.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' : '';
     const athuga = (L.athuga || []).length ? '<div><div class="ss-k" style="margin-bottom:4px;color:#8f1d13">Athugið</div><ul class="ss-listi">' + L.athuga.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' : '';
-    const fara = L.fara ? '<div class="ss-takkar"><a class="ss-takki" href="#' + esc(L.fara) + '" data-ss="fara" data-v="' + esc(L.fara) + '">Opna ' + esc(L.faraHeiti || 'síðuna') + '</a></div>' : '';
+    const fara = L.fara ? '<div class="ss-takkar"><a class="ss-takki" href="#' + esc(L.fara) + '" data-ss="fara" data-v="' + esc(L.fara) + '">Opna ' + esc(L.faraHeiti || 'síðuna') + '</a></div>'
+      : L.url ? '<div class="ss-takkar"><a class="ss-takki" href="' + esc(L.url) + '" target="_blank" rel="noopener">Opna ' + esc(L.faraHeiti || 'síðuna') + '</a></div>' : '';
+    const felag = L.felag ? '<span class="ss-plata">' + esc(L.felag) + '</span>' : '';
     const vist = r.t ? (r.aLeid ? 'Vista…' : (r.kl ? 'Vistað ' + dags(r.kl) + (r.af ? ' · ' + r.af : '') : '')) : 'Ekkert skráð enn';
     return '<article class="ss-spjald' + (op ? ' _opid' : '') + '" data-ss-leid="' + esc(L.id) + '" data-ras="' + esc(L.ras || 'annad') + '">' +
       '<button type="button" class="ss-sh" data-ss="opna" data-v="' + esc(L.id) + '" aria-expanded="' + op + '"><span class="t">' + esc(L.heiti) + '</span>' +
         '<span class="ss-plata ' + st[1] + '">' + esc(st[0]) + '</span></button>' +
+      (felag ? '<div style="display:flex;gap:6px;padding:10px 14px 0">' + felag + '</div>' : '') +
       '<div class="ss-buk">' + linur + textar + skrar + reglur + athuga + fara +
         '<div class="ss-regla"><div class="ss-k" style="margin-bottom:4px">Þín regla eða orðalag</div>' +
           '<textarea data-ss-regla="' + esc(L.id) + '" data-saved="' + esc(r.t) + '" placeholder="T.d. „alltaf ‚Góðan dag‘, aldrei ‚Sæl/l‘" eða hvernig textinn á að hljóma — Claude og agentarnir lesa þetta áður en þeir skrifa.">' + esc(r.t) + '</textarea>' +
@@ -292,7 +294,7 @@
     v.addEventListener('click', (e) => {
       const b = e.target.closest('[data-ss]'); if (!b) return;
       const a = b.dataset.ss, val = b.dataset.v;
-      if (a === 'flipi') { flipi = val; try { localStorage.setItem('svarstod_flipi', val); } catch (_) {} teikna(); window.scrollTo(0, 0); return; }
+      if (a === 'flipi') { flipi = val; teikna(); window.scrollTo(0, 0); return; }
       if (a === 'sia') { rasSia = val; teikna(); return; }
       if (a === 'opna') { if (opin.has(val)) opin.delete(val); else opin.add(val); teikna(); return; }
       if (a === 'fara') { e.preventDefault(); if (window.App && App.switchView) App.switchView(val); else location.hash = '#' + val; }
