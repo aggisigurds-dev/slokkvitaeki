@@ -1994,7 +1994,7 @@
     };
     return '<div class="vbr samt">' +
       '<aside class="panel vbr-list" aria-label="Bíður svars">' +
-        '<header class="phead">' + plate('✓') + '<h2 class="ptitle">Samþykkja</h2><span class="sum">' + hlutar[0][1].length + ' tilbúin · ' + hlutar[1][1].length + ' spurningar · ' + hlutar[2][1].length + ' hjá Claude</span></header>' +
+        '<header class="phead">' + plate('✓') + '<h2 class="ptitle">Samþykkja</h2><span class="sum">' + hlutar[1][1].length + ' tilbúin · ' + hlutar[2][1].length + ' spurningar · ' + hlutar[3][1].length + ' hjá Claude' + (hlutar[0][1].length ? ' · ' + hlutar[0][1].length + ' afgreitt' : '') + '</span></header>' +
         '<div class="vbr-items">' + hlutar.map(h => (h[1].length ? '<div class="vbr-sect">' + h[0] + ' · ' + h[1].length + '</div>' + h[1].map(item).join('') : '')).join('') + '</div>' +
       '</aside>' +
       '<div class="vbr-main">' +
