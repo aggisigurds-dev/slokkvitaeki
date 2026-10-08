@@ -57,6 +57,8 @@
     brunaskra: 0.8, slokkvikerfi: 0.8, rekstrarfelog: 0.8,
     // 06.10.2026 (öpp-prófun): Pósthólfið í Verkefni-appinu var án stærðar — letur ~5 dp, 13 takkar undir 30 px.
     'reikninga-postur': 0.75,
+    // 08.10.2026: þrjár skrifstofusíður komnar í öpp-valið (261) — sömu rök, letur ≈ 10 dp.
+    birgdir: 0.75, aksturslisti: 0.75, vorur: 0.8,
     hreyfingarlisti: 0.85, thjonustuverk: 0.85, sala: 0.85,
     'thjonustu-verkstaedi': 0.6, kostnadur: 0.75
   };
