@@ -89,6 +89,14 @@
       V + '.hl2-plata{display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:14px;border:1px solid rgba(0,0,0,.55);background-color:#e2e6ec;background-image:' + STAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 18px 40px -18px rgba(0,0,0,.6)}',
       V + '.hl2-kpi{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}',
       V + '.hl2-k{display:flex;flex-direction:column;gap:7px;min-width:0;padding:12px 14px 11px;border-radius:10px;background:#fff;box-shadow:' + REIT + '}',
+      /* 08.10.2026: smellanlegu yfirlits-spjöldin eru <button>. Þemað málar ALLA <button>
+         (sjá 418 og GÓ-dálkinn), svo reitirnir verða að núlla sig FYRST — `all:unset` fremst
+         og svo .hl2-k-reglan ofan á. Annars fá þau takka-útlit og hætta að líta út eins og
+         tölurnar sem þau eru. */
+      V + '.hl2-k-smell{all:unset;box-sizing:border-box;cursor:pointer}',
+      V + '.hl2-k-smell' + K + '{display:flex!important;flex-direction:column;gap:7px;min-width:0;padding:12px 14px 11px!important;border-radius:10px!important;background:#fff!important;box-shadow:' + REIT + '!important;text-align:left;font:inherit!important;color:inherit!important;height:auto!important;width:100%!important;border:0!important}',
+      V + '.hl2-k-smell:hover' + K + '{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.3),0 3px 8px rgba(10,14,22,.18)!important}',
+      V + '.hl2-k-smell.is-on' + K + '{box-shadow:inset 0 0 0 2px #11141c,0 3px 8px rgba(10,14,22,.2)!important}',
       V + '.hl2-k.malm{border:1px solid #000;background:' + METAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 6px rgba(0,0,0,.35)}',
       V + '.hl2-merki{display:flex;align-items:center;gap:7px;font:700 10.5px/1.2 ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#3a4250;white-space:nowrap}',
       V + '.hl2-k.malm .hl2-merki{color:#d5dbe6}',
@@ -297,6 +305,15 @@
     { k: 'ars',   heiti: 'Ársskoðun',            stutt: 'Ársskoðun',    src: ['uttekt'] },
     { k: 'bk',    heiti: 'Brunakerfis skoðun',   stutt: 'Brunakerfi',   src: ['brunakerfi'] },
     { k: 'sk',    heiti: 'Slökkvikerfis skoðun', stutt: 'Slökkvikerfi', src: ['slokkvikerfi'] },
+    /* 08.10.2026 (Agnar: „and what is annad"): „Annað" var ekki flokkur heldur AFGANGUR —
+     * allt sem bar `source` utan listans hér að ofan lenti þar nafnlaust. Mælt í september
+     * 2026 voru það 1.209.257 kr, og þau áttu sér nöfn:
+     *     vinnublad  335.611 kr — sölur úr vinnublöðum (R-000976/977/978)
+     *     claude     873.646 kr — sala sem sjálfvirknin stofnaði (R-000940 Eclipse ehf.)
+     * Báðir eru raunverulegir uppruni og fá því sína flís. „Annað" stendur eftir fyrir
+     * það sem er raunverulega óþekkt, og flísin segir nú HVAÐA uppruna hún greip. */
+    { k: 'vbl',   heiti: 'Vinnublöð',            stutt: 'Vinnublöð',    src: ['vinnublad'] },
+    { k: 'sjalf', heiti: 'Sjálfvirkt',           stutt: 'Sjálfvirkt',   src: ['claude'] },
     { k: 'annad', heiti: 'Annað',                stutt: 'Annað',        src: null }
   ];
   function uppruni(s) {
@@ -597,6 +614,8 @@
   function applyFilter(rows) {
     // 05.10.2026: uppruna-flísarnar sía líka (smellur aftur = allt).
     if (_state.uppr) rows = rows.filter(r => uppruni(r).k === _state.uppr);
+    // 08.10.2026: „Sölur"-spjaldið síar á NÁKVÆMLEGA sömu raðir og talan er reiknuð úr.
+    if (_state.filter === 'sala')   return rows.filter(r => !r.is_credit && String(r.status || '') !== 'void');
     if (_state.filter === 'paid')   return rows.filter(r => r.paid_at && !r.is_credit);
     if (_state.filter === 'unpaid') return rows.filter(erOgreitt);   // 05.10.2026: sama regla og talan (sjá erOgreitt)
     if (_state.filter === 'credit') return rows.filter(r => r.is_credit);
@@ -659,14 +678,24 @@
 
     // Totals computed against the FULL month, not the filter — gives a stable
     // picture of the month while the chips slice the visible list.
+    /* 08.10.2026 (Agnar: „can you check the summary numbers if they make sense").
+     * ÓGILDAR (void) SÖLUR TÖLDUST MEÐ Í SÖLUM. `erOgreitt` sleppir þeim réttilega
+     * (lína 283) en `sales` gerði það ekki — sama talan var því reiknuð eftir tveimur
+     * reglum í sama spjaldi. Mælt í september 2026: þrjár ógiltar sölur, 722.910 kr,
+     * þar af R-001063 Bílabúð Benna 707.224 kr. Þær hækkuðu Sölur og Nettó en komu
+     * hvergi fram í Greitt eða Ógreitt — þess vegna small hvorki innheimtan né
+     * uppruna-flísarnar á höfuðtöluna. Ógilt er afturkallað: það er ekki sala. */
     let sales = 0, credits = 0, paidIn = 0, unpaidOut = 0;
     let nSala = 0, nKredit = 0, nGreitt = 0, nKrafa = 0, nAfgr = 0;
     const upp = {};
     UPPRUNI.forEach(u => { upp[u.k] = { n: 0, sala: 0, kredit: 0 }; });
+    const annadSrc = new Set();   // hvaða uppruna greip „Annað"? — svo hann sé nefndur, ekki falinn
     all.forEach(s => {
       const total = +s.samtals || 0;
-      const u = upp[uppruni(s).k];
+      const _u = uppruni(s), u = upp[_u.k];
+      if (_u.k === 'annad') annadSrc.add(String(s.source || '(ekkert)'));
       if (s.is_credit) { credits += Math.abs(total); nKredit++; u.kredit += Math.abs(total); }
+      else if (String(s.status || '') === 'void') { /* ógild sala er ekki sala — sjá athugasemd ofar */ }
       else {
         sales += total; nSala++; u.sala += total; u.n++;
         if (s.paid_at) { paidIn += total; nGreitt++; }
@@ -723,18 +752,20 @@
 
         <section class="hl2-plata" aria-label="Yfirlit">
           <div class="hl2-kpi">
-            ${kTile('Sölur', '', fmtTala(sales), ft(nSala, 'sala', 'sölur'))}
-            ${kTile('Kreditfært', 'rautt', fmtTala(-credits), ft(nKredit, 'kreditfærsla', 'kreditfærslur'), 'rautt')}
-            ${kTile(greittLabel, 'graent', fmtTala(paidIn), ft(nGreitt, 'færsla', 'færslur'))}
-            ${kTile('Ógreitt', 'gull', fmtTala(unpaidOut), ft(nKrafa, 'krafa', 'kröfur') + ' · ' + nAfgr + ' í afgreiðslu', '', 'Kröfur í Kröfu yfirliti + drög sem bíða í afgreiðslu (ekki sótt)')}
-            <div class="hl2-k malm"><div class="hl2-merki">${IKON.sigma}Nettó</div><div class="hl2-tala">${fmtTala(net)}</div><div class="hl2-skyr">Sölur − kreditfært</div></div>
+${''/* 08.10.2026 (Agnar: „i dont think i need a sumary of kreditfært"): Kreditfært-spjaldið
+                  er farið. Talan lifir í Nettó (sem segir nú hvað dregst frá) og í Kredit-flögunni
+                  fyrir neðan, svo ekkert tapast — spjaldið eitt var óþarft. */}
+            ${kTile('Sölur', '', fmtTala(sales), ft(nSala, 'sala', 'sölur'), '', 'Allar sölur mánaðarins nema ógiltar og kreditnótur', 'sala')}
+            ${kTile(greittLabel, 'graent', fmtTala(paidIn), ft(nGreitt, 'færsla', 'færslur'), '', 'Sölur mánaðarins sem bera greiðsludag', 'paid')}
+            ${kTile('Ógreitt', 'gull', fmtTala(unpaidOut), ft(nKrafa, 'krafa', 'kröfur') + ' · ' + nAfgr + ' í afgreiðslu', '', 'Kröfur í Kröfu yfirliti + drög sem bíða í afgreiðslu (ekki sótt)', 'unpaid')}
+            <div class="hl2-k malm" title="Sölur ${esc(fmtKr(sales))} − kreditfært ${esc(fmtKr(credits))}"><div class="hl2-merki">${IKON.sigma}Nettó</div><div class="hl2-tala">${fmtTala(net)}</div><div class="hl2-skyr">${credits ? '− ' + esc(fmtKr(credits)) + ' kreditfært' : 'ekkert kreditfært'}</div></div>
           </div>
           ${(paidIn + unpaidOut) > 0 ? `<div class="hl2-innh">
             <div class="hl2-innh-l"><span class="hl2-merki">Innheimta</span><span><b class="g">${innh}%</b> greitt · <b class="o">${100 - innh}%</b> ógreitt · <b>${esc(fmtKr(unpaidOut))}</b> útistandandi</span></div>
             <div class="hl2-strik" role="img" aria-label="${innh}% greitt, ${100 - innh}% ógreitt"><span class="g" style="width:${innh}%"></span><span class="o" style="width:${100 - innh}%"></span></div>
           </div>` : ''}
           <div class="hl2-kafli">Eftir uppruna<span>nettó, að frádregnu kredit</span><i aria-hidden="true"></i>${_state.uppr ? '<button type="button" class="hl2-silfur hl2-up-af">Sýna allt</button>' : ''}</div>
-          <div class="hl2-uppr">${UPPRUNI.filter(u => u.k !== 'annad' || upp.annad.n || upp.annad.kredit).map(u => uTile(u, upp[u.k])).join('')}</div>
+          <div class="hl2-uppr">${UPPRUNI.filter(u => (u.k !== 'annad' && u.k !== 'vbl' && u.k !== 'sjalf') || upp[u.k].n || upp[u.k].kredit).map(u => uTile(u, upp[u.k], [...annadSrc].sort())).join('')}</div>
         </section>
 
         <section class="hl2-skel" aria-label="Færslur">
@@ -905,13 +936,27 @@
   }
 
   // ── Lykiltölur, uppruni, síðasta afgreiðsla ──────────────────────────────────
-  function kTile(label, led, tala, skyr, cls, title) {
-    return '<div class="hl2-k"' + (title ? ' title="' + esc(title) + '"' : '') + '><div class="hl2-merki"><span class="hl2-led' + (led ? ' ' + led : '') + '" aria-hidden="true"></span>' + esc(label) + '</div>' +
-      '<div class="hl2-tala' + (cls ? ' ' + cls : '') + '">' + tala + '</div><div class="hl2-skyr">' + esc(skyr) + '</div></div>';
+  /* 08.10.2026 (Agnar: „enable to filter that summary so it shows what is calculating").
+   * Spjöldin voru dauð <div>. Nú er hvert þeirra sem á sér reglu TAKKI sem síar listann
+   * á nákvæmlega þær raðir sem talan er reiknuð úr — sama `_hr-chip`-leið og flögurnar
+   * fyrir neðan nota, svo talan og listinn geta ekki sagt sitt hvað. Spjald án reglu
+   * (Nettó) helst <div>. */
+  function kTile(label, led, tala, skyr, cls, title, fkey) {
+    const inni = '<div class="hl2-merki"><span class="hl2-led' + (led ? ' ' + led : '') + '" aria-hidden="true"></span>' + esc(label) + '</div>' +
+      '<div class="hl2-tala' + (cls ? ' ' + cls : '') + '">' + tala + '</div><div class="hl2-skyr">' + esc(skyr) + '</div>';
+    const t = title ? ' title="' + esc(title) + '"' : '';
+    if (!fkey) return '<div class="hl2-k"' + t + '>' + inni + '</div>';
+    const on = _state.filter === fkey;
+    return '<button type="button" class="hl2-k hl2-k-smell _hr-chip' + (on ? ' is-on' : '') + '" data-k="' + fkey + '"' +
+      ' aria-pressed="' + on + '"' + (t || ' title="Sía listann á þessar færslur"') + '>' + inni + '</button>';
   }
-  function uTile(u, d) {
+  function uTile(u, d, srcNofn) {
     const on = _state.uppr === u.k, net = d.sala - d.kredit, tomt = !d.n && !d.kredit;
-    return '<button type="button" class="hl2-up' + (on ? ' is-on' : '') + (tomt ? ' tomt' : '') + '" data-u="' + u.k + '" aria-pressed="' + on + '" title="Sía listann á ' + esc(u.heiti) + '">' +
+    // 08.10.2026: „Annað" nefnir uppruna sína í titli — afgangur sem segir ekki hvað hann geymir er bara spurning.
+    const tit = (u.k === 'annad' && srcNofn && srcNofn.length)
+      ? 'Óþekktur uppruni: ' + srcNofn.join(', ') + ' — sía listann'
+      : 'Sía listann á ' + u.heiti;
+    return '<button type="button" class="hl2-up' + (on ? ' is-on' : '') + (tomt ? ' tomt' : '') + '" data-u="' + u.k + '" aria-pressed="' + on + '" title="' + esc(tit) + '">' +
       '<span class="hl2-merki">' + esc(u.heiti) + '</span>' +
       '<span class="hl2-tala">' + fmtTala(net) + '</span>' +
       '<span class="hl2-skyr">' + (tomt ? 'Engin sala skráð' : esc(ft(d.n, 'sala', 'sölur')) + (d.kredit ? ' · kredit ' + esc(fmtKr(-d.kredit)) : '')) + '</span></button>';
