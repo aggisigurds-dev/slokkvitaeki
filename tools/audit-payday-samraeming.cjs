@@ -32,6 +32,11 @@ const KVITTAD = {
   'T4:R-000647': 'viðbót eftir að reikningur fór — aldrei rukka mismun eftir á (Agnar 11.09)',
   'T4:R-000690': 'viðbót eftir að reikningur fór — aldrei rukka mismun eftir á (Agnar 11.09)',
   'T4:R-000476': 'viðbót eftir að reikningur fór — aldrei rukka mismun eftir á (Agnar 11.09)',
+  /* 08.10.2026: ástæðan stendur ORÐRÉTT í kreditnótunni R-001054 — ég bjó hana ekki til.
+   * Félagið er þegar `er_i_thjonustu = false`. ATH samt: úttektarskýrsla 2026 ER til, svo
+   * skoðunin var framkvæmd hjá kúnna sem hafði sagt upp — vinnan er unnin og verður ekki
+   * rukkuð. Það er tap, ekki bókhaldsvilla, og því ekki rautt hér. */
+  'T5:R-001052': 'kreditnótan R-001054 segir sjálf: „eru hættir í þjónustu sögðu upp samning 2025" — enginn nýr reikningur á að fara. Félagið tekið úr þjónustu.',
   'T5:R-000728': 'mál #984 — Eclipse: kemur nýr reikningur?',
   'T5:R-000716': 'mál #986 — Þangbakki 8-10: ný bankakrafa (Eignaumsjón greiðir)',
   'T5:R-000310': 'mál #771 — Prinsinn Mjódd: rétt kennitala óþekkt',

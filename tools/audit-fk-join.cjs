@@ -60,12 +60,31 @@ async function pageAll(pathAndQuery) {
   const units = await pageAll('uttaeki?select=client,status,fyrirtaeki_id&status=neq.urelt&order=id.asc');
 
   const byFid = new Map();          // fyrirtaeki_id -> active-unit count
-  const byFoldClient = new Map();   // foldName(client) -> active-unit count
+  /* 08.10.2026 — NAFNATALNINGIN TALDI TÆKI SEM ERU ÞEGAR TENGD.
+   *
+   * `byFoldClient` taldi ÖLL virk tæki eftir nafni, líka þau sem bera `fyrirtaeki_id`.
+   * Spurningin sem vörðurinn á að svara er þröngri: „myndi FK-tengingin MISSA tæki sem
+   * nafna-tengingin fann?" Tæki sem er þegar FK-tengt tapast ekki — það er á sínum stað.
+   *
+   * Tilvikið sem afhjúpaði þetta (Menja ehf.): TVÆR raðir bera sama nafn, sömu kennitölu
+   * (650184-0259), sama heimilisfang og sama `customer_base_id` (917) — #908 og #1531.
+   * Öll níu tækin eru rétt tengd #1531, sem ER í þjónustu. #908 er tómur tvíburi, ekki í
+   * þjónustu, með núll tæki. Nafnatalningin eignaði honum samt tækin níu og vörðurinn
+   * sagði að FK-tengingin myndi „fela raunverulegan þjónustukúnna". Hún felur ekkert:
+   * tækin eru hjá 1531.
+   *
+   * Þetta er NÁKVÆMLEGA sama ætt og Sigrún-Júlía tilvikið sem lýst er hér að ofan — tvær
+   * einingar með sama nafn — og þar var plástrað með undanþágu fyrir `ovisst`. Rótin er
+   * mælikvarðinn sjálfur. Að telja aðeins ÓTENGD tæki leysir bæði tilvikin og þarf enga
+   * undanþágu. (Og það má ALDREI laga svona með því að FK-tengja tækin á tvíburann líka —
+   * það væri tvítalning, sjá project_taeki_eru_fjoldi.)
+   */
+  const byFoldClient = new Map();   // foldName(client) -> ÓTENGD virk tæki
   let nullFk = 0;
   const nullFkClients = new Set();
   for (const u of units) {
-    if (u.fyrirtaeki_id != null) byFid.set(u.fyrirtaeki_id, (byFid.get(u.fyrirtaeki_id) || 0) + 1);
-    else { nullFk++; nullFkClients.add(foldName(u.client)); }
+    if (u.fyrirtaeki_id != null) { byFid.set(u.fyrirtaeki_id, (byFid.get(u.fyrirtaeki_id) || 0) + 1); continue; }
+    nullFk++; nullFkClients.add(foldName(u.client));
     const k = foldName(u.client);
     if (k) byFoldClient.set(k, (byFoldClient.get(k) || 0) + 1);
   }

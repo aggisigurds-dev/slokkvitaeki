@@ -54,7 +54,7 @@ async function sb(slod) {
 
   // ---- 1. Sölur -----------------------------------------------------------
   const solur = await sb(
-    'solur?select=num,status,samtals,customer_nafn,customer_id,customer_base_id,' +
+    'solur?select=num,status,samtals,customer_nafn,customer_kt,customer_id,customer_base_id,' +
     'krafa_sent_at,paid_at,greitt_med,is_credit,created_at,updated_at&created_at=gte.' + fra + '&order=created_at.desc'
   );
 
@@ -95,8 +95,32 @@ async function sb(slod) {
   // skiptir aðeins máli fyrir sölu sem á eftir að rukka. Sá sem borgaði með korti
   // yfir borðið þarf enga skráningu og hefur aldrei þurft.
   const RUKKA_SIDAR = s => ['reikningur', 'greitt_sidar'].includes(String(s.greitt_med || ''));
-  const soluAnAudkennis = solur.filter(s => nafngreind(s) && s.customer_base_id == null
+  /* 08.10.2026 — GENGIÐ-INN VIÐSKIPTAVINUR ER EKKI ÓTENGD KRAFA.
+   *
+   * Vörðurinn féll á fjórum sölum: Pétur, Gunnar, Sævar Hafberg, Kristinn — allar með
+   * kennitöluna `999999-9999`, sammálið fyrir gengið-inn, allar `greitt_sidar` í DRÖGUM,
+   * samtals 15.763 kr. Hann sagði „krafan verður ekki send".
+   *
+   * En engin krafa á að fara: fast regla Agnars er að EINSTAKLINGAR STAÐGREIÐA ALLTAF og
+   * kröfur fara aðeins á félög. Drög + `greitt_sidar` þýðir „bíður í afgreiðslu, ekki
+   * sótt" (sama og 167 `erIAfgreidslu`) — vörurnar eru enn hér og greitt er við afhendingu.
+   * Tengingin sem vörðurinn kallaði eftir getur ekki orðið til: `999999-9999` er ekki
+   * kúnnaskrá. Hann krafðist því einhvers sem á ekki að vera til, og vörður sem geltir að
+   * ósekju verður þaggaður (docs/MAELINGAR.md, gildra 10).
+   *
+   * MERKIÐ SEM MÁ EKKI TAPAST er annað: vara sem er aldrei sótt. Hún er talin sér og
+   * FELLIR vörðinn þegar hún er orðin eldri en GAMALT_DAGAR — þá kom viðkomandi ekki aftur
+   * og einhver þarf að hringja. Mælt 08.10: elsta var 9 daga (R-001055 Kristinn, 1.798 kr). */
+  const GENGID_INN = '999999-9999';
+  const erGengidInn = s => String(s.customer_kt || '').replace(/\D/g, '') === GENGID_INN.replace(/\D/g, '');
+  const GAMALT_DAGAR = 30;
+  const aldurDaga = s => (Date.now() - new Date(s.created_at).getTime()) / 864e5;
+
+  const ollAnAudkennis = solur.filter(s => nafngreind(s) && s.customer_base_id == null
     && RUKKA_SIDAR(s) && !s.paid_at && !s.is_credit);
+  const bidurAfhendingar = ollAnAudkennis.filter(erGengidInn);
+  const gomulAfhending  = bidurAfhendingar.filter(s => aldurDaga(s) > GAMALT_DAGAR);
+  const soluAnAudkennis = ollAnAudkennis.filter(s => !erGengidInn(s));
   // Greiddar/kredit án tengingar: gat í sögunni (hver keypti hvað), ekki fastur
   // peningur. Þær eru taldar og sagðar frá — en fella ekki vörðinn. Vörður sem
   // hrópar jafn hátt á hvort tveggja kennir manni að hunsa hann.
@@ -113,6 +137,19 @@ async function sb(slod) {
         `${s.customer_id == null ? 'customer_id VANTAR ' : ''}` +
         `${s.customer_base_id == null ? 'customer_base_id VANTAR' : ''}`));
     villur.push(`${soluAnAudkennis.length} sala/sölur síðustu ${GLUGGI} daga eiga eftir að rukkast en enginn kúnni er tengdur — krafan verður ekki send`);
+  }
+
+  if (bidurAfhendingar.length) {
+    const kr = bidurAfhendingar.reduce((n, s) => n + (+s.samtals || 0), 0);
+    console.log(`   ATH: ${bidurAfhendingar.length} gengið-inn sala bíður afhendingar (${kr} kr) — einstaklingar`);
+    console.log('        staðgreiða við afhendingu, svo engin krafa á að fara. Ekki rauð fyrr en þær eldast.');
+    bidurAfhendingar.slice(0, 6).forEach(s =>
+      console.log(`        ${s.num}  ${s.samtals} kr  ${s.customer_nafn || '(nafnlaus)'}  ${Math.floor(aldurDaga(s))} d`));
+  }
+  if (gomulAfhending.length) {
+    gomulAfhending.forEach(s =>
+      console.log(`   ${s.num}  ${s.samtals} kr  ${s.customer_nafn || '(nafnlaus)'}  — ${Math.floor(aldurDaga(s))} daga ósótt`));
+    villur.push(`${gomulAfhending.length} gengið-inn sala hefur beðið afhendingar lengur en ${GAMALT_DAGAR} daga — viðkomandi kom ekki aftur`);
   }
 
   if (sogugat.length) {
